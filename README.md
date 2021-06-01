@@ -1,37 +1,64 @@
-# hiviewdfx_faultloggerd
+# FaultLoggerd<a name="EN-US_TOPIC_0000001162014039"></a>
 
-#### 介绍
-Implementing fault information collection and subscription | 应用故障收集和订阅
+-   [Introduction](#section11660541593)
+-   [Directory Structure](#section161941989596)
+-   [Usage](#section14197309111)
+-   [Repositories Involved](#section1371113476307)
 
-#### 软件架构
-软件架构说明
+## Introduction<a name="section11660541593"></a>
 
+FaultLoggerd is the module of OpenHarmony that generates and manages temporary C and C++ runtime crash logs.
 
-#### 安装教程
-
-1.  xxxx
-2.  xxxx
-3.  xxxx
-
-#### 使用说明
-
-1.  xxxx
-2.  xxxx
-3.  xxxx
-
-#### 参与贡献
-
-1.  Fork 本仓库
-2.  新建 Feat_xxx 分支
-3.  提交代码
-4.  新建 Pull Request
+**Figure  1**  FaultLoggerd log generation process<a name="fig4460722185514"></a>  
 
 
-#### 特技
+![](figures/en-us_image_0000001115694148.png)
 
-1.  使用 Readme\_XXX.md 来支持不同的语言，例如 Readme\_en.md, Readme\_zh.md
-2.  Gitee 官方博客 [blog.gitee.com](https://blog.gitee.com)
-3.  你可以 [https://gitee.com/explore](https://gitee.com/explore) 这个地址来了解 Gitee 上的优秀开源项目
-4.  [GVP](https://gitee.com/gvp) 全称是 Gitee 最有价值开源项目，是综合评定出的优秀开源项目
-5.  Gitee 官方提供的使用手册 [https://gitee.com/help](https://gitee.com/help)
-6.  Gitee 封面人物是一档用来展示 Gitee 会员风采的栏目 [https://gitee.com/gitee-stars/](https://gitee.com/gitee-stars/)
+1. After detecting an abnormal signal, the signal handler of process A forks a child process and starts the ProcessDump tool.
+
+2. The ProcessDump tool initiates a Ptrace to the parent process to read information, such as the register and call stack, about the thread that delivers the abnormal signal.
+
+3. On obtaining the information, the ProcessDump tool writes logs to the FaultLoggerd module for temporary storage.
+
+4. The FaultLoggerd module reports the fault to Hiview, if present, for subsequent processing.
+
+## Directory Structure<a name="section161941989596"></a>
+
+```
+/base/hiviewdfx/faultloggerd
+├── common                        # Common definitions
+├── interfaces                    # External APIs
+│   └── innerkits                 # Header files for internal subsystems
+│       └── faultloggerd_client   # Internal APIs of the FaultLoggerd client
+│       └── signal_handler        # Internal APIs of the signal handler
+├── services                      # FaultLoggerd services
+│   └── config                    # Startup configuration
+├── tools                         # Tools
+│   └── crasher                   # Crash tester
+│   └── process_dump              # ProcessDump tool
+```
+
+## Usage<a name="section14197309111"></a>
+
+If an application crashes, a temporary file will be generated in  **/data/log/faultlog/temp**. You can locate system crash faults based on logs.
+
+## Repositories Involved<a name="section1371113476307"></a>
+
+[DFX subsystem](https://gitee.com/openharmony/docs/blob/master/en/readme/dfx.md)
+
+[hiviewdfx\_hiview](https://gitee.com/openharmony/hiviewdfx_hiview/blob/master/README.md)
+
+[hiviewdfx\_hilog](https://gitee.com/openharmony/hiviewdfx_hilog/blob/master/README.md)
+
+[hiviewdfx\_hiappevent](https://gitee.com/openharmony/hiviewdfx_hiappevent/blob/master/README.md)
+
+[hiviewdfx\_hisysevent](https://gitee.com/openharmony/hiviewdfx_hisysevent/blob/master/README.md)
+
+**hiviewdfx\_faultloggerd**
+
+[hiviewdfx\_hilog\_lite](https://gitee.com/openharmony/hiviewdfx_hilog_lite/blob/master/README.md)
+
+[hiviewdfx\_hievent\_lite](https://gitee.com/openharmony/hiviewdfx_hievent_lite/blob/master/README.md)
+
+[hiviewdfx\_hiview\_lite](https://gitee.com/openharmony/hiviewdfx_hiview_lite/blob/master/README.md)
+
