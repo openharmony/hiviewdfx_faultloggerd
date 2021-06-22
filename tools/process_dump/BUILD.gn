@@ -19,6 +19,7 @@ config("processdump_config") {
 
   include_dirs = [
     ".",
+    "//base/hiviewdfx/faultloggerd/common",
     "//utils/native/base/include",
   ]
 }

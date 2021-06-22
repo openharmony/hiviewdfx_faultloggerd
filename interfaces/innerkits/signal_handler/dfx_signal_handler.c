@@ -13,6 +13,8 @@
  * limitations under the License.
  */
 
+#include "dfx_signal_handler.h"
+
 #include <errno.h>
 #include <fcntl.h>
 #include <inttypes.h>
@@ -34,7 +36,7 @@
 #include <hilog/log_c.h>
 #include <securec.h>
 
-#include "dfx_signal_handler.h"
+#include "dfx_define.h"
 
 #define RESERVED_CHILD_STACK_SIZE (16 * 1024)  // 16K
 #define SIGDUMP 35

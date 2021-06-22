@@ -18,6 +18,7 @@ config("dfx_signal_handler_config") {
 
   include_dirs = [
     "include",
+    "//base/hiviewdfx/faultloggerd/common",
     "//utils/native/base/include",
   ]
 }

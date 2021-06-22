@@ -18,6 +18,7 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <inttypes.h>
+#include <limits.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
@@ -45,7 +46,7 @@ BOOL InitDfxElfImage(const char *path, DfxElfImage **image)
         return FALSE;
     }
 
-    (*image)->fd = TEMP_FAILURE_RETRY(open(realPath, O_RDONLY | O_CLOEXEC));
+    (*image)->fd = open(realPath, O_RDONLY | O_CLOEXEC);
     if ((*image)->fd < 0) {
         DfxLogWarn("Fail to open elf file(%s).", realPath);
         return FALSE;
@@ -81,7 +82,7 @@ BOOL InitDfxElfImage(const char *path, DfxElfImage **image)
 
 BOOL ParseElfHeader(DfxElfImage *image)
 {
-    ssize_t nread = TEMP_FAILURE_RETRY(read(image->fd, &(image->header), sizeof(image->header)));
+    ssize_t nread = read(image->fd, &(image->header), sizeof(image->header));
     if (nread < 0 || nread != sizeof(image->header)) {
         DfxLogWarn("Failed to read elf header.");
         return FALSE;
