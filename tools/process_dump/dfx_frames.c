@@ -14,6 +14,7 @@
  */
 #include "dfx_frames.h"
 
+#include <stdio.h>
 #include <stdlib.h>
 
 #include "dfx_elf.h"

@@ -15,6 +15,7 @@
 #include "dfx_process.h"
 
 #include <dirent.h>
+#include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

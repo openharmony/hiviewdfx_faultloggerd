@@ -33,7 +33,7 @@ void PrintSignal(const siginfo_t *info, int32_t fd)
 #endif
     }
 
-    if (SI_FROMUSER(info) && (info->si_pid != 0)) {
+    if ((info->si_code <= 0) && (info->si_pid != 0)) {
         dprintf(fd, "from:%d:%d", info->si_pid, info->si_uid);
     }
 

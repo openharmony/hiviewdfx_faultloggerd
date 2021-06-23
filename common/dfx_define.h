@@ -15,4 +15,21 @@
 #ifndef DFX_DEFINE_H
 #define DFX_DEFINE_H
 
+#define BOOL int
+#define TRUE 1
+#define FALSE 0
+#define NAME_LEN 128
+
+#if defined(TEMP_FAILURE_RETRY)
+#undef TEMP_FAILURE_RETRY
+#define TEMP_FAILURE_RETRY(exp)            \
+    ({                                     \
+    long int _rc;                          \
+    do {                                   \
+        _rc = (long int)(exp);             \
+    } while ((_rc == -1) && (errno == EINTR)); \
+    _rc;                                   \
+    })
+#endif
+
 #endif
