@@ -20,6 +20,10 @@ config("faultloggerd_client_config") {
     "include",
     "//utils/native/base/include",
   ]
+
+  if (use_musl) {
+    cflags = [ "-DUSE_MUSL" ]
+  }
 }
 
 ohos_shared_library("libfaultloggerd") {

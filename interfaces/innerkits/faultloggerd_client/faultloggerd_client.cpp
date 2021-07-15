@@ -31,7 +31,11 @@
 
 namespace {
 static const int32_t SOCKET_BUFFER_SIZE = 256;
+#if defined(USE_MUSL)
+static const char FAULTLOGGERD_SOCK_PATH[] = "/dev/unix/socket/faultloggerd.server";
+#else
 static const char FAULTLOGGERD_SOCK_PATH[] = "/dev/socket/faultloggerd.server";
+#endif
 }
 
 static int ReadFileDescriptorFromSocket(int socket)
