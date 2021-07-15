@@ -20,15 +20,29 @@ config("faultloggerd_config") {
     ".",
     "//utils/native/base/include",
   ]
+
+  if (use_musl) {
+    cflags = [ "-DUSE_MUSL" ]
+  }
 }
 
 ohos_prebuilt_etc("faultloggerd.rc") {
-  if (target_cpu == "arm") {
-    source = "config/faultloggerd32.rc"
-  } else if (target_cpu == "arm64") {
-    source = "config/faultloggerd64.rc"
-  } else if (target_cpu == "x86_64") {
-    source = "config/faultloggerd64.rc"
+  if (use_musl) {
+    if (target_cpu == "arm") {
+      source = "config/faultloggerd32.cfg"
+    } else if (target_cpu == "arm64") {
+      source = "config/faultloggerd64.cfg"
+    } else if (target_cpu == "x86_64") {
+      source = "config/faultloggerd64.cfg"
+    }
+  } else {
+    if (target_cpu == "arm") {
+      source = "config/faultloggerd32.rc"
+    } else if (target_cpu == "arm64") {
+      source = "config/faultloggerd64.rc"
+    } else if (target_cpu == "x86_64") {
+      source = "config/faultloggerd64.rc"
+    }
   }
 
   relative_install_dir = "init"

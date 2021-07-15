@@ -43,7 +43,11 @@ constexpr int32_t MAX_CONNECTION = 4;
 constexpr int32_t REQUEST_BUF_SIZE = 1024;
 constexpr int32_t MSG_BUF_SIZE = 256;
 constexpr int32_t SYSTEM_UID = 1000;
+#if defined(USE_MUSL)
+static const char FAULTLOGGERD_SOCK_PATH[] = "/dev/unix/socket/faultloggerd.server";
+#else
 static const char FAULTLOGGERD_SOCK_PATH[] = "/dev/socket/faultloggerd.server";
+#endif
 static const char FAULTLOGGERD_BASE_PATH[] = "/data/log/faultlog/temp/";
 
 static std::string GetRequestTypeName(int32_t type)
