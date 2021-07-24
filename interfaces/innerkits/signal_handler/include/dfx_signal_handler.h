@@ -21,6 +21,7 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+#ifndef DFX_LOCAL_UNWIND
 struct ProcessDumpRequest {
     int32_t type;
     int32_t tid;
@@ -31,7 +32,7 @@ struct ProcessDumpRequest {
     siginfo_t siginfo;
     ucontext_t context;
 };
-
+#endif
 void DFX_InstallSignalHandler();
 #ifdef __cplusplus
 }
