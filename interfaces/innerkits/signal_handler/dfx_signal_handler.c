@@ -36,6 +36,16 @@
 #include <hilog/log_c.h>
 #include <securec.h>
 
+#ifdef DFX_LOCAL_UNWIND
+#include <libunwind.h>
+
+#include "dfx_dump_writer.h"
+#include "dfx_log.h"
+#include "dfx_process.h"
+#include "dfx_thread.h"
+#include "dfx_util.h"
+#endif
+
 #include "dfx_define.h"
 
 #define RESERVED_CHILD_STACK_SIZE (16 * 1024)  // 16K
@@ -66,7 +76,7 @@ void __attribute__((constructor)) Init()
     DFX_InstallSignalHandler();
 }
 
-static struct ProcessDumpRequest g_processDumpRequest;
+static struct ProcessDumpRequest g_request;
 static void *g_reservedChildStack;
 static pthread_mutex_t g_signalHandlerMutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutex_t g_dumpMutex = PTHREAD_MUTEX_INITIALIZER;
@@ -151,7 +161,7 @@ static int DFX_ExecDump(void *arg)
 
     struct iovec iovs[1] = {
         {
-            .iov_base = &g_processDumpRequest,
+            .iov_base = &g_request,
             .iov_len = sizeof(struct ProcessDumpRequest)
         },
     };
@@ -194,23 +204,99 @@ static void ResetSignalHandlerIfNeed(int sig)
     }
 }
 
+#ifdef DFX_LOCAL_UNWIND
+static void DFX_UnwindLocal(int sig, siginfo_t *si, void *context)
+{
+    int32_t fromSignalHandler = 1;
+    DfxProcess *process = NULL;
+    DfxThread *keyThread = NULL;
+    if (!InitThreadByContext(&keyThread, g_request.pid, g_request.tid, &(g_request.context))) {
+        HILOG_WARN(LOG_CORE, "Fail to init key thread.");
+        DestroyThread(keyThread);
+        keyThread = NULL;
+        return;
+    }
+
+    if (!InitProcessWithKeyThread(&process, g_request.pid, keyThread)) {
+        HILOG_WARN(LOG_CORE, "Fail to init process with key thread.");
+        DestroyThread(keyThread);
+        keyThread = NULL;
+        return;
+    }
+
+    unw_cursor_t cursor;
+    unw_context_t unwContext = {};
+    unw_getcontext(&unwContext);
+    if (unw_init_local(&cursor, &unwContext) != 0) {
+        HILOG_WARN(LOG_CORE, "Fail to init local unwind context.");
+        return;
+    }
+
+    size_t index = 0;
+    do {
+        DfxFrame *frame = GetAvaliableFrame(keyThread);
+        if (frame == NULL) {
+            HILOG_WARN(LOG_CORE, "Fail to create Frame.");
+            break;
+        }
+
+        frame->index = index;
+        char sym[1024] = {0}; // 1024 : symbol buffer size
+        if (unw_get_reg(&cursor, UNW_REG_IP, (unw_word_t*)(&(frame->pc)))) {
+            HILOG_WARN(LOG_CORE, "Fail to get program counter.");
+            break;
+        }
+
+        if (unw_get_reg(&cursor, UNW_REG_SP, (unw_word_t*)(&(frame->sp)))) {
+            HILOG_WARN(LOG_CORE, "Fail to get stack pointer.");
+            break;
+        }
+
+        if (FindMapByAddr(process->maps, frame->pc, &(frame->map))) {
+            frame->relativePc = GetRelativePc(frame, process->maps);
+        }
+
+        if (unw_get_proc_name(&cursor, sym, sizeof(sym), (unw_word_t*)(&(frame->funcOffset))) == 0) {
+            frame->funcName = TrimAndDupStr(sym);
+        }
+        index++;
+    } while (unw_step(&cursor) > 0);
+    WriteProcessDump(process, &g_request, fromSignalHandler);
+    DestroyProcess(process);
+}
+#endif
+
 static void DFX_SignalHandler(int sig, siginfo_t *si, void *context)
 {
     pthread_mutex_lock(&g_signalHandlerMutex);
-    ResetSignalHandlerIfNeed(sig);
-
-    pid_t tid = gettid();
     HILOG_INFO(LOG_CORE, "Start dump process for tid:%{public}d signal:%{public}d(%{public}d)",
-        tid, sig, si->si_code);
+        gettid(), sig, si->si_code);
 
+    ResetSignalHandlerIfNeed(sig);
+    (void)memset_s(&g_request, sizeof(g_request), 0, sizeof(g_request));
+    g_request.type = sig;
+    g_request.tid = gettid();
+    g_request.pid = getpid();
+    g_request.uid = getuid();
+    g_request.reserved = 0;
+    g_request.timeStamp = time(NULL);
+    if (memcpy_s(&(g_request.siginfo), sizeof(g_request.siginfo),
+        si, sizeof(siginfo_t)) != 0) {
+        HILOG_ERROR(LOG_CORE, "Failed to copy siginfo.");
+        return;
+    }
+
+    if (memcpy_s(&(g_request.context), sizeof(g_request.context),
+        context, sizeof(ucontext_t)) != 0) {
+        HILOG_ERROR(LOG_CORE, "Failed to copy ucontext.");
+        return;
+    }
+
+#ifdef DFX_LOCAL_UNWIND
+    DFX_UnwindLocal(sig, si, context);
+#else
     pid_t childPid;
     int status;
-    struct timespec crashTimeSpec;
-    memset_s(&crashTimeSpec, sizeof(crashTimeSpec), 0, sizeof(crashTimeSpec));
-    clock_gettime(CLOCK_REALTIME, &crashTimeSpec);
-    uint64_t crashTime = (uint64_t)(crashTimeSpec.tv_sec) * SECONDS_TO_MILLSECONDS +
-        (uint64_t)crashTimeSpec.tv_nsec / NANOSECONDS_TO_MILLSECONDS;
-
     // set privilege for dump ourself
     int prevDumpableStatus = prctl(PR_GET_DUMPABLE);
     BOOL isTracerStatusModified = FALSE;
@@ -224,26 +310,6 @@ static void DFX_SignalHandler(int sig, siginfo_t *si, void *context)
         }
     } else {
         isTracerStatusModified = TRUE;
-    }
-
-    // fill dump request
-    memset_s(&g_processDumpRequest, sizeof(g_processDumpRequest), 0, sizeof(g_processDumpRequest));
-    g_processDumpRequest.type = sig;
-    g_processDumpRequest.tid = tid;
-    g_processDumpRequest.pid = getpid();
-    g_processDumpRequest.uid = getuid();
-    g_processDumpRequest.reserved = 0;
-    g_processDumpRequest.timeStamp = crashTime;
-    if (memcpy_s(&(g_processDumpRequest.siginfo), sizeof(g_processDumpRequest.siginfo),
-        si, sizeof(siginfo_t)) != 0) {
-        HILOG_ERROR(LOG_CORE, "Failed to copy siginfo.");
-        goto out;
-    }
-
-    if (memcpy_s(&(g_processDumpRequest.context), sizeof(g_processDumpRequest.context),
-        context, sizeof(ucontext_t)) != 0) {
-        HILOG_ERROR(LOG_CORE, "Failed to copy ucontext.");
-        goto out;
     }
 
     // fork a child process that could ptrace us
@@ -282,7 +348,7 @@ out:
             HILOG_WARN(LOG_CORE, "Failed to resend signal(%{public}d).", si->si_signo);
         }
     }
-
+#endif
     pthread_mutex_unlock(&g_signalHandlerMutex);
 }
 

@@ -24,6 +24,40 @@ config("processdump_config") {
   ]
 }
 
+ohos_source_set("process_info_src") {
+  if (use_musl) {
+    cflags = [ "-DDFX_LOCAL_UNWIND" ]
+  }
+
+  configs = [ ":processdump_config" ]
+  sources = [
+    "dfx_dump_writer.c",
+    "dfx_elf.c",
+    "dfx_frames.c",
+    "dfx_log.c",
+    "dfx_maps.c",
+    "dfx_process.c",
+    "dfx_signal.c",
+    "dfx_thread.c",
+    "dfx_util.c",
+  ]
+
+  if (target_cpu == "arm") {
+    sources += [ "dfx_regs_arm.c" ]
+  } else if (target_cpu == "arm64") {
+    sources += [ "dfx_regs_arm64.c" ]
+  } else if (target_cpu == "x86_64") {
+    sources += [ "dfx_regs_x86_64.c" ]
+  }
+
+  deps = [
+    "$faultloggerd_path/interfaces/innerkits/faultloggerd_client:libfaultloggerd",
+    "//utils/native/base:utils",
+  ]
+
+  external_deps = [ "hilog_native:libhilog" ]
+}
+
 ohos_executable("processdump") {
   install_enable = true
   configs = [ ":processdump_config" ]

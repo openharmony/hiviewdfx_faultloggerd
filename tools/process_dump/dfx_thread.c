@@ -50,6 +50,7 @@ BOOL InitThread(DfxThread **thread, pid_t pid, pid_t tid)
     char buf[NAME_LEN] = {0};
     ReadStringFromFile(path, buf, sizeof(buf));
     (*thread)->threadName = TrimAndDupStr(buf);
+#ifndef DFX_LOCAL_UNWIND
     if (ptrace(PTRACE_ATTACH, tid, NULL, NULL) != 0) {
         DfxLogWarn("Fail to attach thread(%d), errno=%s", tid, strerror(errno));
         return FALSE;
@@ -64,6 +65,7 @@ BOOL InitThread(DfxThread **thread, pid_t pid, pid_t tid)
         }
         errno = 0;
     }
+#endif
     return TRUE;
 }
 
@@ -131,8 +133,9 @@ void DestroyThread(DfxThread *thread)
     if (thread == NULL) {
         return;
     }
-
+#ifndef DFX_LOCAL_UNWIND
     ptrace(PTRACE_DETACH, thread->tid, NULL, NULL);
+#endif
     free(thread->threadName);
     thread->threadName = NULL;
     free(thread);
