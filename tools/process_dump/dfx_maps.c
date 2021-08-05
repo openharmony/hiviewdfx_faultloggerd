@@ -213,5 +213,6 @@ void PrintMap(DfxElfMap *map, int32_t fd)
         return;
     }
 
-    dprintf(fd, "%" PRIx64 "-%" PRIx64 " %s %s\n", map->begin, map->end, map->perms, map->path);
+    dprintf(fd, "%" PRIx64 "-%" PRIx64 " %s %08" PRIx64 " %s\n",
+        map->begin, map->end, map->perms, map->offset, map->path);
 }

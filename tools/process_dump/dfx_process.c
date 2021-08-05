@@ -242,6 +242,16 @@ void PrintProcessWithSiginfo(const DfxProcess *process, const siginfo_t *info, i
     }
 
     PrintProcess(process, fd);
+
+    DfxElfMapsNode *mapsNode = process->maps;
+    if (mapsNode != NULL) {
+        dprintf(fd, "Maps:\n");
+    }
+
+    while (mapsNode != NULL) {
+        PrintMap(mapsNode->map, fd);
+        mapsNode = mapsNode->next;
+    }
 }
 
 void PrintProcess(const DfxProcess *process, int32_t fd)
