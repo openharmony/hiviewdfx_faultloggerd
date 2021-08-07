@@ -31,6 +31,7 @@
 #include "dfx_log.h"
 
 #define MAX_MAP_SIZE 65536
+#define PAGE_SIZE 4096
 
 BOOL InitDfxElfImage(const char *path, DfxElfImage **image)
 {
@@ -123,20 +124,72 @@ BOOL ParseElfProgramHeader(DfxElfImage *image)
     ElfW(Phdr) *phdrTable = (ElfW(Phdr) *)((uint8_t *)map + startOffset);
     for (size_t i = 0; i < image->header.e_phnum; i++) {
         ElfW(Phdr) *phdr = &(phdrTable[i]);
-        if (((phdr->p_type != PT_LOAD) && !(phdr->p_flags & PF_X))) {
+        if (phdr->p_type != PT_LOAD) {
             continue;
         }
-        image->loadBias = (size_t)(phdr->p_vaddr - phdr->p_offset);
-        break;
+        CreateLoadInfo(image, phdr->p_vaddr, phdr->p_offset);
     }
     munmap(map, mapSize);
     return TRUE;
 }
 
+uint64_t FindRealLoadOffset(DfxElfImage *image, uint64_t offset)
+{
+    if (image == NULL) {
+        return offset;
+    }
+
+    LoadInfo *cur = image->infos;
+    while (cur != NULL) {
+        if ((cur->offset & -PAGE_SIZE) == offset) {
+            return offset + (cur->vaddr - cur->offset);
+        }
+        cur = cur->next;
+    }
+    return offset;
+}
+
+void CreateLoadInfo(DfxElfImage *image, uint64_t vaddr, uint64_t offset)
+{
+    if (image == NULL) {
+        return;
+    }
+
+    LoadInfo *info = (LoadInfo *)calloc(1, sizeof(LoadInfo));
+    info->vaddr = vaddr;
+    info->offset = offset;
+
+    if (image->infos == NULL) {
+        image->infos = info;
+        return;
+    }
+
+    LoadInfo *cur = image->infos;
+    while (cur != NULL) {
+        if (cur->next == NULL) {
+            cur->next = info;
+            return;
+        }
+        cur = cur->next;
+    }
+}
+
 void DestroyDfxElfImage(DfxElfImage *image)
 {
+    if (image == NULL) {
+        return;
+    }
+
+    LoadInfo *cur = image->infos;
+    while (cur != NULL) {
+        LoadInfo *tmp = cur;
+        cur = cur->next;
+        free(tmp);
+    }
+
     if (image->fd >= 0) {
         close(image->fd);
         image->fd = -1;
     }
+    free(image);
 }
