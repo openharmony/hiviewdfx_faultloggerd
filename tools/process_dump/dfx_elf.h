@@ -23,6 +23,12 @@
 
 #include "dfx_define.h"
 
+typedef struct LoadInfo {
+    uint64_t vaddr;
+    uint64_t offset;
+    struct LoadInfo *next;
+} LoadInfo;
+
 typedef struct {
     char *name;
     char *path;
@@ -30,11 +36,14 @@ typedef struct {
     size_t loadBias;
     uint64_t size;
     ElfW(Ehdr)header;
+    LoadInfo *infos;
 } DfxElfImage;
 
 BOOL InitDfxElfImage(const char *path, DfxElfImage **image);
 BOOL ParseElfHeader(DfxElfImage *image);
 BOOL ParseElfProgramHeader(DfxElfImage *image);
+uint64_t FindRealLoadOffset(DfxElfImage *image, uint64_t offset);
+void CreateLoadInfo(DfxElfImage *image, uint64_t vaddr, uint64_t offset);
 void DestroyDfxElfImage(DfxElfImage *image);
 
 #endif

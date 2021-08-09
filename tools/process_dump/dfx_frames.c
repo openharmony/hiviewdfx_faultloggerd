@@ -76,7 +76,7 @@ uint64_t CalculateRelativePc(DfxFrame *frame, DfxElfMap *elfMap)
     if (elfMap->image == NULL) {
         frame->relativePc = frame->pc - (frame->map->begin - frame->map->offset);
     } else {
-        frame->relativePc = frame->pc - (frame->map->begin - frame->map->offset - elfMap->image->loadBias);
+        frame->relativePc = (frame->pc - frame->map->begin) + FindRealLoadOffset(elfMap->image, frame->map->offset);
     }
 
     return frame->relativePc;
