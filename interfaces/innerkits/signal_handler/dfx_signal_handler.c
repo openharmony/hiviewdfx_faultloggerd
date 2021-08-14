@@ -104,6 +104,7 @@ static int g_interestedSignalList[] = {
 
 static struct sigaction g_oldSigactionList[NSIG] = {};
 
+#ifndef DFX_LOCAL_UNWIND
 static void SetInterestedSignalMasks(int how)
 {
     sigset_t set;
@@ -186,6 +187,7 @@ static pid_t DFX_ForkAndDump()
 {
     return clone(DFX_ExecDump, g_reservedChildStack, CLONE_VFORK | CLONE_FS | CLONE_UNTRACED, NULL);
 }
+#endif
 
 static void ResetSignalHandlerIfNeed(int sig)
 {
