@@ -63,6 +63,10 @@ BOOL UnwindThread(DfxProcess *process, DfxThread *thread)
     unw_addr_space_t as = unw_create_addr_space(&_UPT_accessors, 0);
     pid_t tid = thread->tid;
     void *context = _UPT_create(tid);
+    if (context == NULL) {
+        DfxLogWarn("Fail to create context for %d.", tid);
+        return FALSE;
+    }
     unw_cursor_t cursor;
     if (unw_init_remote(&cursor, as, context) != 0) {
         DfxLogWarn("Fail to init cursor for remote unwind.");

@@ -229,6 +229,7 @@ static void DFX_UnwindLocal(int sig, siginfo_t *si, void *context)
     unw_getcontext(&unwContext);
     if (unw_init_local(&cursor, &unwContext) != 0) {
         HILOG_WARN(LOG_CORE, "Fail to init local unwind context.");
+        DestroyProcess(process);
         return;
     }
 
