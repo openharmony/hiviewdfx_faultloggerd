@@ -61,15 +61,22 @@ BOOL UnwindThread(DfxProcess *process, DfxThread *thread)
     }
 
     unw_addr_space_t as = unw_create_addr_space(&_UPT_accessors, 0);
+    if (as == NULL) {
+        return FALSE;
+    }
+
     pid_t tid = thread->tid;
     void *context = _UPT_create(tid);
     if (context == NULL) {
-        DfxLogWarn("Fail to create context for %d.", tid);
+        unw_destroy_addr_space(as);
         return FALSE;
     }
+
     unw_cursor_t cursor;
     if (unw_init_remote(&cursor, as, context) != 0) {
         DfxLogWarn("Fail to init cursor for remote unwind.");
+        _UPT_destroy(context);
+        unw_destroy_addr_space(as);
         return FALSE;
     }
 
@@ -103,5 +110,6 @@ BOOL UnwindThread(DfxProcess *process, DfxThread *thread)
         index++;
     } while (unw_step(&cursor) > 0);
     _UPT_destroy(context);
+    unw_destroy_addr_space(as);
     return TRUE;
 }
