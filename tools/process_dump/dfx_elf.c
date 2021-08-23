@@ -156,6 +156,9 @@ void CreateLoadInfo(DfxElfImage *image, uint64_t vaddr, uint64_t offset)
     }
 
     LoadInfo *info = (LoadInfo *)calloc(1, sizeof(LoadInfo));
+    if (info == NULL) {
+        return;
+    }
     info->vaddr = vaddr;
     info->offset = offset;
 

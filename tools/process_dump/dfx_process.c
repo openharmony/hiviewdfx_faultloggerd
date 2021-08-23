@@ -58,6 +58,8 @@ BOOL InitProcessWithKeyThread(DfxProcess **process, pid_t pid, DfxThread *keyThr
     (*process)->processName = calloc(1, NAME_LEN);
     if ((*process)->processName == NULL) {
         DfxLogWarn("Fail to alloc processName.");
+        free(*process);
+        *process = NULL;
         return FALSE;
     }
 
