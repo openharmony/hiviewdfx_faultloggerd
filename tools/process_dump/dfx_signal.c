@@ -17,9 +17,11 @@
 #include <signal.h>
 #include <stdio.h>
 
+#include "dfx_log.h"
+
 void PrintSignal(const siginfo_t *info, int32_t fd)
 {
-    dprintf(fd, "Signal:%s(%s)", FormatSignalName(info->si_signo), FormatCodeName(info->si_signo, info->si_code));
+    WriteLog(fd, "Signal:%s(%s)", FormatSignalName(info->si_signo), FormatCodeName(info->si_signo, info->si_code));
 
     if (IsSignalAddrAvaliable(info->si_signo)) {
 #if defined(__aarch64__)

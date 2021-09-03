@@ -18,6 +18,7 @@
 #include <stdlib.h>
 
 #include "dfx_define.h"
+#include "dfx_log.h"
 
 BOOL InitRegsFromUcontext(DfxRegs **regs, ucontext_t *context)
 {
@@ -72,14 +73,14 @@ void PrintRegs(const DfxRegs *regs, int32_t fd)
         return;
     }
 
-    dprintf(fd, "x0:%016lx x1:%016lx x2:%016lx x3:%016lx\n", regs->r[0], regs->r[1], regs->r[2], regs->r[3]);
-    dprintf(fd, "x4:%016lx x5:%016lx x6:%016lx x7:%016lx\n", regs->r[4], regs->r[5], regs->r[6], regs->r[7]);
-    dprintf(fd, "x8:%016lx x9:%016lx x10:%016lx x11:%016lx\n", regs->r[8], regs->r[9], regs->r[10], regs->r[11]);
-    dprintf(fd, "x12:%016lx x13:%016lx x14:%016lx x15:%016lx\n", regs->r[12], regs->r[13], regs->r[14], regs->r[15]);
-    dprintf(fd, "x16:%016lx x17:%016lx x18:%016lx x19:%016lx\n", regs->r[16], regs->r[17], regs->r[18], regs->r[19]);
-    dprintf(fd, "x20:%016lx x21:%016lx x22:%016lx x23:%016lx\n", regs->r[20], regs->r[21], regs->r[22], regs->r[23]);
-    dprintf(fd, "x24:%016lx x25:%016lx x26:%016lx x27:%016lx\n", regs->r[24], regs->r[25], regs->r[26], regs->r[27]);
-    dprintf(fd, "x28:%016lx x29:%016lx\n", regs->r[28], regs->r[29]);
-    dprintf(fd, "lr:%016lx sp:%016lx pc:%016lx\n", regs->r[30], regs->r[31], regs->r[32]);
-    dprintf(fd, "\n");
+    WriteLog(fd, "x0:%016lx x1:%016lx x2:%016lx x3:%016lx\n", regs->r[0], regs->r[1], regs->r[2], regs->r[3]);
+    WriteLog(fd, "x4:%016lx x5:%016lx x6:%016lx x7:%016lx\n", regs->r[4], regs->r[5], regs->r[6], regs->r[7]);
+    WriteLog(fd, "x8:%016lx x9:%016lx x10:%016lx x11:%016lx\n", regs->r[8], regs->r[9], regs->r[10], regs->r[11]);
+    WriteLog(fd, "x12:%016lx x13:%016lx x14:%016lx x15:%016lx\n", regs->r[12], regs->r[13], regs->r[14], regs->r[15]);
+    WriteLog(fd, "x16:%016lx x17:%016lx x18:%016lx x19:%016lx\n", regs->r[16], regs->r[17], regs->r[18], regs->r[19]);
+    WriteLog(fd, "x20:%016lx x21:%016lx x22:%016lx x23:%016lx\n", regs->r[20], regs->r[21], regs->r[22], regs->r[23]);
+    WriteLog(fd, "x24:%016lx x25:%016lx x26:%016lx x27:%016lx\n", regs->r[24], regs->r[25], regs->r[26], regs->r[27]);
+    WriteLog(fd, "x28:%016lx x29:%016lx\n", regs->r[28], regs->r[29]);
+    WriteLog(fd, "lr:%016lx sp:%016lx pc:%016lx\n", regs->r[30], regs->r[31], regs->r[32]);
+    WriteLog(fd, "\n");
 }

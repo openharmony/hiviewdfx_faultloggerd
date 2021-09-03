@@ -13,6 +13,7 @@
  * limitations under the License.
  */
 
+#include <algorithm>
 #include <cerrno>
 #include <cstring>
 #include <ctime>
@@ -153,6 +154,7 @@ void FaultLoggerDaemon::HandleRequest(int32_t connectionFd)
             break;
         }
 
+        RemoveTempFileIfNeed();
         auto request = reinterpret_cast<FaultLoggerdRequest *>(buf);
         int fd = CreateFileForRequest(request->type, request->pid);
         if (fd < 0) {
@@ -177,6 +179,35 @@ int32_t FaultLoggerDaemon::CreateFileForRequest(int32_t type, int32_t pid) const
         "-" + std::to_string(time(nullptr));
 
     return open(path.c_str(), O_RDWR | O_CREAT, 00660); // 00660 :rw-rw----
+}
+
+void FaultLoggerDaemon::RemoveTempFileIfNeed()
+{
+    const int maxFileCount = 50;
+    if (currentLogCounts_ < maxFileCount) {
+        return;
+    }
+
+    std::vector<std::string> files;
+    OHOS::GetDirFiles(FAULTLOGGERD_BASE_PATH, files);
+    std::sort(files.begin(), files.end(),
+        [](const std::string& lhs, const std::string& rhs) -> int
+    {
+        auto lhsSplitPos = lhs.find_last_of("-");
+        auto rhsSplitPos = rhs.find_last_of("-");
+        if (lhsSplitPos == std::string::npos || rhsSplitPos == std::string::npos) {
+            return lhs.compare(rhs) > 0;
+        }
+
+        return lhs.substr(lhsSplitPos).compare(rhs.substr(rhsSplitPos)) > 0; 
+    });
+
+    int startIndex = maxFileCount / 2;
+    for (int index = startIndex; index < files.size(); index++) {
+        OHOS::RemoveFile(files[index]);
+        OHOS::HiviewDFX::HiLog::Warn(g_LOG_LABLE, "Remove temp fault file:%{public}s", files[index].c_str());
+    }
+    currentLogCounts_ = startIndex;
 }
 } // namespace HiviewDFX
 } // namespace OHOS

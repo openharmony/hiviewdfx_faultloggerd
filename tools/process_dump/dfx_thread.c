@@ -147,8 +147,8 @@ void PrintThread(const DfxThread *thread, int32_t fd)
         return;
     }
 
-    dprintf(fd, "Tid:%d, Name:%s\n", thread->tid, thread->threadName);
+    WriteLog(fd, "Tid:%d, Name:%s\n", thread->tid, thread->threadName);
     PrintRegs(thread->regs, fd);
     PrintFrames(thread->head, fd);
-    dprintf(fd, "\n");
+    WriteLog(fd, "\n");
 }

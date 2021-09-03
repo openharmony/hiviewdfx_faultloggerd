@@ -230,16 +230,16 @@ void PrintProcessWithSiginfo(const DfxProcess *process, const siginfo_t *info, i
         return;
     }
 
-    dprintf(fd, "Pid:%d\n", process->pid);
-    dprintf(fd, "Uid:%d\n", process->uid);
-    dprintf(fd, "Process name:%s\n", process->processName);
+    WriteLog(fd, "Pid:%d\n", process->pid);
+    WriteLog(fd, "Uid:%d\n", process->uid);
+    WriteLog(fd, "Process name:%s\n", process->processName);
     if (info != NULL && info->si_signo != 35) { // 35:SIGDUMP
-        dprintf(fd, "Reason:");
+        WriteLog(fd, "Reason:");
         PrintSignal(info, fd);
 
         if (process->threads != NULL && process->threads->thread != NULL) {
             SkipFramesInSignalHandler(process->threads->thread);
-            dprintf(fd, "Fault thread Info:\n");
+            WriteLog(fd, "Fault thread Info:\n");
         }
     }
 
