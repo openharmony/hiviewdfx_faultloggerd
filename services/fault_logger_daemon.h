@@ -30,6 +30,7 @@ public:
 
 private:
     int32_t CreateFileForRequest(int32_t type, int32_t pid) const;
+    void RemoveTempFileIfNeed();
 
 private:
     int32_t currentLogCounts_;
