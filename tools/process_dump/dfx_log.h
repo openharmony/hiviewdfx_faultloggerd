@@ -14,11 +14,13 @@
  */
 #ifndef DFX_PROCESS_DUMP_LOG_H
 #define DFX_PROCESS_DUMP_LOG_H
+#include <inttypes.h>
 
 int DfxLogDebug(const char *format, ...);
 int DfxLogInfo(const char *format, ...);
 int DfxLogWarn(const char *format, ...);
 int DfxLogError(const char *format, ...);
 int DfxLogFatal(const char *format, ...);
+int WriteLog(int fd, const char *format, ...);
 
 #endif

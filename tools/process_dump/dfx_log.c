@@ -91,3 +91,16 @@ int DfxLogFatal(const char *format, ...)
     HILOG_FATAL(LOG_CORE, "%{public}s", buf);
     return ret;
 }
+
+int WriteLog(int32_t fd, const char *format, ...)
+{
+    int ret;
+    char buf[LOG_BUF_LEN] = {0};
+    va_list args;
+    va_start(args, format);
+    ret = vsnprintf_s(buf, LOG_BUF_LEN, LOG_BUF_LEN - 1, format, args);
+    va_end(args);
+    HILOG_ERROR(LOG_CORE, "%{public}s", buf);
+    dprintf(fd, "%s", buf);
+    return ret;
+}

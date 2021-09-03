@@ -93,12 +93,12 @@ void PrintFrame(DfxFrame *frame, int32_t fd)
     }
 
     if (frame->funcName == NULL) {
-        dprintf(fd, "#%02zu pc %016" PRIx64 "(%016" PRIx64 ") %s\n", frame->index, frame->relativePc,
+        WriteLog(fd, "#%02zu pc %016" PRIx64 "(%016" PRIx64 ") %s\n", frame->index, frame->relativePc,
             frame->pc, (frame->map == NULL) ? "Unknown" : frame->map->path);
         return;
     }
 
-    dprintf(fd, "#%02zu pc %016" PRIx64 "(%016" PRIx64 ") %s(%s+%" PRIu64 ")\n", frame->index, frame->relativePc,
+    WriteLog(fd, "#%02zu pc %016" PRIx64 "(%016" PRIx64 ") %s(%s+%" PRIu64 ")\n", frame->index, frame->relativePc,
         frame->pc, (frame->map == NULL) ? "Unknown" : frame->map->path, frame->funcName, frame->funcOffset);
 }
 

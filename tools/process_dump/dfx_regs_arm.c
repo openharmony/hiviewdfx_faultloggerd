@@ -18,6 +18,7 @@
 #include <stdlib.h>
 
 #include "dfx_define.h"
+#include "dfx_log.h"
 
 BOOL InitRegsFromUcontext(DfxRegs **regs, ucontext_t *context)
 {
@@ -55,10 +56,10 @@ void PrintRegs(const DfxRegs *regs, int32_t fd)
         return;
     }
 
-    dprintf(fd, "r0:%08x r1:%08x r2:%08x r3:%08x\n", regs->r[0], regs->r[1], regs->r[2], regs->r[3]);
-    dprintf(fd, "r4:%08x r5:%08x r6:%08x r7:%08x\n", regs->r[4], regs->r[5], regs->r[6], regs->r[7]);
-    dprintf(fd, "r8:%08x r9:%08x r10:%08x\n", regs->r[8], regs->r[9], regs->r[10]);
-    dprintf(fd, "fp:%08x ip:%08x sp:%08x lr:%08x pc:%08x \n", regs->r[11], regs->r[12], regs->r[13], regs->r[14],
+    WriteLog(fd, "r0:%08x r1:%08x r2:%08x r3:%08x\n", regs->r[0], regs->r[1], regs->r[2], regs->r[3]);
+    WriteLog(fd, "r4:%08x r5:%08x r6:%08x r7:%08x\n", regs->r[4], regs->r[5], regs->r[6], regs->r[7]);
+    WriteLog(fd, "r8:%08x r9:%08x r10:%08x\n", regs->r[8], regs->r[9], regs->r[10]);
+    WriteLog(fd, "fp:%08x ip:%08x sp:%08x lr:%08x pc:%08x \n", regs->r[11], regs->r[12], regs->r[13], regs->r[14],
         regs->r[15]);
-    dprintf(fd, "\n");
+    WriteLog(fd, "\n");
 }
