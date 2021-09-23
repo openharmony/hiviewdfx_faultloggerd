@@ -22,14 +22,14 @@
 
 #if defined(TEMP_FAILURE_RETRY)
 #undef TEMP_FAILURE_RETRY
-#define TEMP_FAILURE_RETRY(exp)                 \
-    []() {                                      \
-    long int _rc;                               \
-    do {                                        \
-        _rc = (long int)(exp);                  \
-    } while ((_rc == -1) && (errno == EINTR));  \
-    _rc;                                        \
-    }()
+#define TEMP_FAILURE_RETRY(exp)            \
+    ({                                     \
+    long int _rc;                          \
+    do {                                   \
+        _rc = (long int)(exp);             \
+    } while ((_rc == -1) && (errno == EINTR)); \
+    _rc;                                   \
+    })
 #endif
 
 #endif
