@@ -79,6 +79,11 @@ uint64_t CalculateRelativePc(DfxFrame *frame, DfxElfMap *elfMap)
         frame->relativePc = (frame->pc - frame->map->begin) + FindRealLoadOffset(elfMap->image, frame->map->offset);
     }
 
+#ifdef __aarch64__
+    frame->relativePc = frame->relativePc - 4; // 4 : instr offset
+#elif defined(__x86_64__)
+    frame->relativePc = frame->relativePc - 1; // 1 : instr offset
+#endif
     return frame->relativePc;
 }
 

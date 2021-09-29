@@ -44,10 +44,13 @@ ohos_source_set("process_info_src") {
 
   if (target_cpu == "arm") {
     sources += [ "dfx_regs_arm.c" ]
+    cflags += [ "-D__arm__" ]
   } else if (target_cpu == "arm64") {
     sources += [ "dfx_regs_arm64.c" ]
+    cflags += [ "-D__aarch64__" ]
   } else if (target_cpu == "x86_64") {
     sources += [ "dfx_regs_x86_64.c" ]
+    cflags += [ "-D__x86_64__" ]
   }
 
   deps = [
@@ -78,10 +81,13 @@ ohos_executable("processdump") {
 
   if (target_cpu == "arm") {
     sources += [ "dfx_regs_arm.c" ]
+    cflags = [ "-D__arm__" ]
   } else if (target_cpu == "arm64") {
     sources += [ "dfx_regs_arm64.c" ]
+    cflags = [ "-D__aarch64__" ]
   } else if (target_cpu == "x86_64") {
     sources += [ "dfx_regs_x86_64.c" ]
+    cflags = [ "-D__x86_64__" ]
   }
 
   deps = [
