@@ -128,14 +128,11 @@ static void DFX_SetUpEnvironment()
     if (devNull < 0) {
         HILOG_ERROR(LOG_CORE, "Failed to open dev/null. error:%{public}s", strerror(errno));
         return;
-    } else if (devNull != 0) {
-        HILOG_ERROR(LOG_CORE, "Failed to open dev/null.");
-        close(devNull);
-        return;
     }
 
     TEMP_FAILURE_RETRY(dup2(devNull, STDOUT_FILENO));
     TEMP_FAILURE_RETRY(dup2(devNull, STDERR_FILENO));
+    syscall(SYS_close, devNull);
     SetInterestedSignalMasks(SIG_BLOCK);
 }
 
@@ -147,7 +144,7 @@ static int DFX_ExecDump(void *arg)
     DFX_SetUpEnvironment();
 
     // create pipe for passing request to processdump
-    if (pipe2(g_pipefd, O_CLOEXEC) != 0) {
+    if (pipe(g_pipefd) != 0) {
         HILOG_ERROR(LOG_CORE, "Failed to create pipe for transfering context.");
         pthread_mutex_unlock(&g_dumpMutex);
         return CREATE_PIPE_FAIL;
@@ -175,9 +172,10 @@ static int DFX_ExecDump(void *arg)
     }
 
     TEMP_FAILURE_RETRY(dup2(g_pipefd[0], STDIN_FILENO));
-    syscall(SYS_close, g_pipefd[0]);
+    if (g_pipefd[0] != STDIN_FILENO) {
+        syscall(SYS_close, g_pipefd[0]);
+    }
     syscall(SYS_close, g_pipefd[1]);
-
     execl("/system/bin/processdump", "-signalhandler", NULL);
     pthread_mutex_unlock(&g_dumpMutex);
     return errno;
@@ -304,11 +302,13 @@ static void DFX_SignalHandler(int sig, siginfo_t *si, void *context)
     int prevDumpableStatus = prctl(PR_GET_DUMPABLE);
     BOOL isTracerStatusModified = FALSE;
     if (prctl(PR_SET_DUMPABLE, 1) != 0) {
+        HILOG_ERROR(LOG_CORE, "Failed to set dumpable.");
         goto out;
     }
 
     if (prctl(PR_SET_PTRACER, PR_SET_PTRACER_ANY) != 0) {
         if (errno != EINVAL) {
+            HILOG_ERROR(LOG_CORE, "Failed to set ptracer.");
             goto out;
         }
     } else {
@@ -321,8 +321,6 @@ static void DFX_SignalHandler(int sig, siginfo_t *si, void *context)
         HILOG_ERROR(LOG_CORE, "Failed to fork child process.");
         goto out;
     }
-
-    sleep(1);
 
     // wait the child process terminated
     if (TEMP_FAILURE_RETRY(waitpid(childPid, &status, __WALL)) == -1) {
@@ -352,6 +350,7 @@ out:
         }
     }
 #endif
+    HILOG_INFO(LOG_CORE, "Exit signal handler.");
     pthread_mutex_unlock(&g_signalHandlerMutex);
 }
 
