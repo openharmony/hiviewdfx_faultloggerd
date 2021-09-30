@@ -15,6 +15,7 @@
 
 #include "process_dump.h"
 
+#include <errno.h>
 #include <inttypes.h>
 #include <signal.h>
 #include <stdio.h>
@@ -76,6 +77,7 @@ static void DumpProcessWithSignalContext(DfxProcess **process, struct ProcessDum
 {
     ssize_t readCount = read(STDIN_FILENO, request, sizeof(struct ProcessDumpRequest));
     if (readCount != sizeof(struct ProcessDumpRequest)) {
+        DfxLogError("Fail to read DumpRequest(%d).", errno);
         return;
     }
 
@@ -98,6 +100,7 @@ static void DumpProcessWithSignalContext(DfxProcess **process, struct ProcessDum
         InitOtherThreads(*process);
     }
 
+    (*process)->uid = request->uid;
     UnwindProcess(*process);
 }
 

@@ -22,10 +22,6 @@ config("dfx_signal_handler_config") {
     "//base/hiviewdfx/faultloggerd/tools/process_dump",
     "//utils/native/base/include",
   ]
-
-  if (use_musl) {
-    cflags = [ "-DDFX_LOCAL_UNWIND" ]
-  }
 }
 
 ohos_shared_library("dfx_signalhandler") {
@@ -34,13 +30,6 @@ ohos_shared_library("dfx_signalhandler") {
   sources = [ "dfx_signal_handler.c" ]
 
   deps = [ "//utils/native/base:utils" ]
-  if (use_musl) {
-    deps += [
-      "//base/hiviewdfx/faultloggerd/tools/process_dump:process_info_src",
-      "//third_party/libunwind:libunwind"
-    ]
-  }
-
   external_deps = [ "hilog_native:libhilog" ]
   part_name = "faultloggerd"
   subsystem_name = "hiviewdfx"

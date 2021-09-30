@@ -27,7 +27,7 @@
 
 #ifdef LOG_TAG
 #undef LOG_TAG
-#define LOG_TAG "ProcessDump"
+#define LOG_TAG "DfxProcessDump"
 #endif
 
 #define LOG_BUF_LEN 1024
