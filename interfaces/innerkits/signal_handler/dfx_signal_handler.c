@@ -270,9 +270,6 @@ static void DFX_UnwindLocal(int sig, siginfo_t *si, void *context)
 static void DFX_SignalHandler(int sig, siginfo_t *si, void *context)
 {
     pthread_mutex_lock(&g_signalHandlerMutex);
-    HILOG_INFO(LOG_CORE, "Start dump process for tid:%{public}d signal:%{public}d(%{public}d)",
-        gettid(), sig, si->si_code);
-
     ResetSignalHandlerIfNeed(sig);
     (void)memset_s(&g_request, sizeof(g_request), 0, sizeof(g_request));
     g_request.type = sig;
@@ -284,12 +281,14 @@ static void DFX_SignalHandler(int sig, siginfo_t *si, void *context)
     if (memcpy_s(&(g_request.siginfo), sizeof(g_request.siginfo),
         si, sizeof(siginfo_t)) != 0) {
         HILOG_ERROR(LOG_CORE, "Failed to copy siginfo.");
+        pthread_mutex_unlock(&g_signalHandlerMutex);
         return;
     }
 
     if (memcpy_s(&(g_request.context), sizeof(g_request.context),
         context, sizeof(ucontext_t)) != 0) {
         HILOG_ERROR(LOG_CORE, "Failed to copy ucontext.");
+        pthread_mutex_unlock(&g_signalHandlerMutex);
         return;
     }
 
@@ -328,16 +327,6 @@ static void DFX_SignalHandler(int sig, siginfo_t *si, void *context)
         goto out;
     }
 
-    if (!(WIFEXITED(status)) || WEXITSTATUS(status) != 0) {
-        if (WIFEXITED(status) && WEXITSTATUS(status) != 0) {
-            HILOG_INFO(LOG_CORE, "processdump exit normally.");
-        } else if (WIFSIGNALED(status)) {
-            HILOG_INFO(LOG_CORE, "processdump terminated by a signal");
-        } else {
-            HILOG_INFO(LOG_CORE, "processdump exit unknown");
-        }
-    }
-
 out:
     prctl(PR_SET_DUMPABLE, prevDumpableStatus);
     if (isTracerStatusModified == TRUE) {
@@ -350,7 +339,6 @@ out:
         }
     }
 #endif
-    HILOG_INFO(LOG_CORE, "Exit signal handler.");
     pthread_mutex_unlock(&g_signalHandlerMutex);
 }
 
