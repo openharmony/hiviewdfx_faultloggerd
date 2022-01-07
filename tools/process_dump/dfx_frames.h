@@ -15,29 +15,52 @@
 #ifndef DFX_FRAME_H
 #define DFX_FRAME_H
 
+#include <memory>
+#include <string>
+
 #include "dfx_elf.h"
 #include "dfx_maps.h"
 #include "dfx_regs.h"
 
-typedef struct {
-    size_t index;
-    uint64_t funcOffset;
-    uint64_t pc;
-    uint64_t sp;
-    uint64_t relativePc;
-    char *funcName;
-    DfxElfMap *map; // managed in DfxProcess struct
-} DfxFrame;
+namespace OHOS {
+namespace HiviewDFX {
+class DfxFrames {
+public:
+    DfxFrames() = default;
+    ~DfxFrames() = default;
 
-typedef struct DfxFramesNode {
-    DfxFrame *frame;
-    struct DfxFramesNode *next;
-} DfxFramesNode;
+    uint64_t GetRelativePc(const std::shared_ptr<DfxElfMaps> head);
+    uint64_t CalculateRelativePc(std::shared_ptr<DfxElfMap> elfMap);
+    void DestroyFrames(const std::shared_ptr<DfxFrames> frameHead);
+    void PrintFrame(const int32_t fd) const;
 
-DfxFrame *CreateNewFrame(DfxFramesNode **node);
-uint64_t GetRelativePc(DfxFrame *frame, DfxElfMapsNode *head);
-uint64_t CalculateRelativePc(DfxFrame *frame, DfxElfMap *elfMap);
-void DestroyFrames(DfxFramesNode *head);
-void PrintFrames(DfxFramesNode *head, int32_t fd);
+    void SetFrameIndex(size_t index);
+    size_t GetFrameIndex() const;
+    void SetFrameFuncOffset(uint64_t funcOffset);
+    uint64_t GetFrameFuncOffset() const;
+    void SetFramePc(uint64_t pc);
+    uint64_t GetFramePc() const;
+    void SetFrameSp(uint64_t sp);
+    uint64_t GetFrameSp() const;
+    void SetFrameRelativePc(uint64_t relativePc);
+    uint64_t GetFrameRelativePc() const;
+    void SetFrameFuncName(const std::string &funcName);
+    std::string GetFrameFuncName() const;
+    void SetFrameMap(const std::shared_ptr<DfxElfMap> map);
+    std::shared_ptr<DfxElfMap> GetFrameMap() const;
+
+private:
+    size_t index_ = 0;
+    uint64_t funcOffset_ = 0;
+    uint64_t pc_ = 0;
+    uint64_t sp_ = 0;
+    uint64_t relativePc_ = 0;
+    std::string funcName_;
+    std::shared_ptr<DfxElfMap> map_ = nullptr; // managed in DfxProcess class
+};
+
+void PrintFrames(std::vector<std::shared_ptr<DfxFrames>> frames, int32_t fd);
+} // namespace HiviewDFX
+} // namespace OHOS
 
 #endif

@@ -19,11 +19,9 @@ config("faultloggerd_client_config") {
   include_dirs = [
     "include",
     "//utils/native/base/include",
+    "//base/hiviewdfx/faultloggerd/tools/process_dump/",
+    "//developtools/bytrace_standard/interfaces/innerkits/native/include",
   ]
-
-  if (use_musl) {
-    cflags = [ "-DUSE_MUSL" ]
-  }
 }
 
 ohos_shared_library("libfaultloggerd") {
@@ -31,9 +29,15 @@ ohos_shared_library("libfaultloggerd") {
 
   include_dirs = [ "." ]
 
-  sources = [ "faultloggerd_client.cpp" ]
+  sources = [
+    "//base/hiviewdfx/faultloggerd/tools/process_dump/dfx_log.cpp",
+    "faultloggerd_client.cpp",
+  ]
 
-  deps = [ "//utils/native/base:utils" ]
+  deps = [
+    "//developtools/bytrace_standard/interfaces/innerkits/native:bytrace_core",
+    "//utils/native/base:utils",
+  ]
 
   if (is_standard_system) {
     external_deps = [ "hiviewdfx_hilog_native:libhilog" ]

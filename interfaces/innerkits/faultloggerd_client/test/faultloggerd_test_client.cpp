@@ -21,7 +21,7 @@
 
 int main()
 {
-    int fd = RequestFileDescriptor(CPP_CRASH);
+    int fd = RequestFileDescriptor(FaultLoggerType::CPP_CRASH);
     if (fd < 0) {
         printf("Fail to request file descriptor\n");
         return -1;

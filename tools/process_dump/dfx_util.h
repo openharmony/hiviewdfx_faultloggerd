@@ -12,13 +12,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+/* This files contains header of util module. */
+
 #ifndef DFX_UTIL_H
 #define DFX_UTIL_H
-#include <stdio.h>
+
+#include <memory>
+#include <cstdio>
+#include <string>
 
 #include "dfx_define.h"
 
-BOOL ReadStringFromFile(const char *path, char *buf, size_t len);
-char *TrimAndDupStr(const char *source);
+namespace OHOS {
+namespace HiviewDFX {
+    bool ReadStringFromFile(const std::string &path, std::string &buf, size_t len);
+    bool TrimAndDupStr(const std::string &source, std::string &str);
+} // nameapace HiviewDFX
+} // nameapace OHOS
 
-#endif
+#endif // DFX_UTIL_H

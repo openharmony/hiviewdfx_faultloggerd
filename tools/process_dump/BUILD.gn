@@ -21,42 +21,45 @@ config("processdump_config") {
     ".",
     "//base/hiviewdfx/faultloggerd/common",
     "//utils/native/base/include",
+    "//developtools/bytrace_standard/interfaces/innerkits/native/include",
   ]
 }
 
 ohos_source_set("process_info_src") {
   if (use_musl) {
     cflags = [ "-DDFX_LOCAL_UNWIND" ]
-  } else {
-    cflags = []
   }
 
   configs = [ ":processdump_config" ]
   sources = [
-    "dfx_dump_writer.c",
-    "dfx_elf.c",
-    "dfx_frames.c",
-    "dfx_log.c",
-    "dfx_maps.c",
-    "dfx_process.c",
-    "dfx_signal.c",
-    "dfx_thread.c",
-    "dfx_util.c",
+    "dfx_dump_writer.cpp",
+    "dfx_elf.cpp",
+    "dfx_frames.cpp",
+    "dfx_log.cpp",
+    "dfx_maps.cpp",
+    "dfx_process.cpp",
+    "dfx_signal.cpp",
+    "dfx_thread.cpp",
+    "dfx_unwind_remote.cpp",
+    "dfx_util.cpp",
+    "process_dumper.cpp",
   ]
 
   if (target_cpu == "arm") {
-    sources += [ "dfx_regs_arm.c" ]
-    cflags += [ "-D__arm__" ]
+    sources += [ "dfx_regs_arm.cpp" ]
+    #cflags += [ "-D__arm__" ]
   } else if (target_cpu == "arm64") {
-    sources += [ "dfx_regs_arm64.c" ]
+    sources += [ "dfx_regs_arm64.cpp" ]
     cflags += [ "-D__aarch64__" ]
   } else if (target_cpu == "x86_64") {
-    sources += [ "dfx_regs_x86_64.c" ]
+    sources += [ "dfx_regs_x86_64.cpp" ]
     cflags += [ "-D__x86_64__" ]
   }
 
   deps = [
     "$faultloggerd_path/interfaces/innerkits/faultloggerd_client:libfaultloggerd",
+    "//developtools/bytrace_standard/bin:bytrace_inner",
+    "//third_party/libunwind:libunwind",
     "//utils/native/base:utils",
   ]
 
@@ -67,33 +70,34 @@ ohos_executable("processdump") {
   install_enable = true
   configs = [ ":processdump_config" ]
   sources = [
-    "dfx_dump_writer.c",
-    "dfx_elf.c",
-    "dfx_frames.c",
-    "dfx_log.c",
-    "dfx_maps.c",
-    "dfx_process.c",
-    "dfx_signal.c",
-    "dfx_thread.c",
-    "dfx_unwind_remote.c",
-    "dfx_util.c",
-    "main.c",
-    "process_dump.c",
+    "dfx_dump_writer.cpp",
+    "dfx_elf.cpp",
+    "dfx_frames.cpp",
+    "dfx_log.cpp",
+    "dfx_maps.cpp",
+    "dfx_process.cpp",
+    "dfx_signal.cpp",
+    "dfx_thread.cpp",
+    "dfx_unwind_remote.cpp",
+    "dfx_util.cpp",
+    "main.cpp",
+    "process_dumper.cpp",
   ]
 
   if (target_cpu == "arm") {
-    sources += [ "dfx_regs_arm.c" ]
+    sources += [ "dfx_regs_arm.cpp" ]
     cflags = [ "-D__arm__" ]
   } else if (target_cpu == "arm64") {
-    sources += [ "dfx_regs_arm64.c" ]
+    sources += [ "dfx_regs_arm64.cpp" ]
     cflags = [ "-D__aarch64__" ]
   } else if (target_cpu == "x86_64") {
-    sources += [ "dfx_regs_x86_64.c" ]
+    sources += [ "dfx_regs_x86_64.cpp" ]
     cflags = [ "-D__x86_64__" ]
   }
 
   deps = [
     "$faultloggerd_path/interfaces/innerkits/faultloggerd_client:libfaultloggerd",
+    "//developtools/bytrace_standard/bin:bytrace_inner",
     "//third_party/libunwind:libunwind",
     "//utils/native/base:utils",
   ]
