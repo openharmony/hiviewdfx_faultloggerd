@@ -35,6 +35,8 @@
 
 #include <hilog/log_c.h>
 #include <securec.h>
+#include "dfx_log.h"
+#include "dfx_define.h"
 
 #ifdef DFX_LOCAL_UNWIND
 #include <libunwind.h>
@@ -46,7 +48,6 @@
 #include "dfx_util.h"
 #endif
 
-#include "dfx_define.h"
 
 #define RESERVED_CHILD_STACK_SIZE (16 * 1024)  // 16K
 #define SIGDUMP 35
@@ -122,11 +123,10 @@ static void DFX_SetUpEnvironment()
     for (int i = 0; i < closeFdCount; i++) {
         syscall(SYS_close, i);
     }
-
     // clear stdout and stderr
     int devNull = TEMP_FAILURE_RETRY(open("/dev/null", O_RDWR));
     if (devNull < 0) {
-        HILOG_ERROR(LOG_CORE, "Failed to open dev/null. error:%{public}s", strerror(errno));
+        DfxLogToSocket("Failed to open dev/null.");
         return;
     }
 
@@ -139,20 +139,17 @@ static void DFX_SetUpEnvironment()
 static int DFX_ExecDump(void *arg)
 {
     (void)arg;
-
     pthread_mutex_lock(&g_dumpMutex);
     DFX_SetUpEnvironment();
-
     // create pipe for passing request to processdump
     if (pipe(g_pipefd) != 0) {
-        HILOG_ERROR(LOG_CORE, "Failed to create pipe for transfering context.");
+        DfxLogToSocket("Failed to create pipe for transfering context.");
         pthread_mutex_unlock(&g_dumpMutex);
         return CREATE_PIPE_FAIL;
     }
-
     ssize_t writeLen = sizeof(struct ProcessDumpRequest);
     if (fcntl(g_pipefd[1], F_SETPIPE_SZ, writeLen) < writeLen) {
-        HILOG_ERROR(LOG_CORE, "Failed to set pipe buffer size.");
+        DfxLogToSocket("Failed to set pipe buffer size.");
         pthread_mutex_unlock(&g_dumpMutex);
         return SET_PIPE_LEN_FAIL;
     }
@@ -163,19 +160,18 @@ static int DFX_ExecDump(void *arg)
             .iov_len = sizeof(struct ProcessDumpRequest)
         },
     };
-
     ssize_t realWriteSize = TEMP_FAILURE_RETRY(writev(g_pipefd[1], iovs, 1));
     if ((ssize_t)writeLen != realWriteSize) {
-        HILOG_INFO(LOG_CORE, "Failed to write pipe.");
+        DfxLogToSocket("Failed to write pipe.");
         pthread_mutex_unlock(&g_dumpMutex);
         return WRITE_PIPE_FAIL;
     }
-
     TEMP_FAILURE_RETRY(dup2(g_pipefd[0], STDIN_FILENO));
     if (g_pipefd[0] != STDIN_FILENO) {
         syscall(SYS_close, g_pipefd[0]);
     }
     syscall(SYS_close, g_pipefd[1]);
+    DfxLogToSocket("Start processdump.");
     execl("/system/bin/processdump", "-signalhandler", NULL);
     pthread_mutex_unlock(&g_dumpMutex);
     return errno;
@@ -199,7 +195,7 @@ static void ResetSignalHandlerIfNeed(int sig)
     }
 
     if (sigaction(sig, &(g_oldSigactionList[sig]), NULL) != 0) {
-        HILOG_WARN(LOG_CORE, "Failed to reset signal(%{public}d).", sig);
+        DfxLogToSocket("Failed to reset signal.");
         signal(sig, SIG_DFL);
     }
 }
@@ -258,7 +254,10 @@ static void DFX_UnwindLocal(int sig, siginfo_t *si, void *context)
         }
 
         if (unw_get_proc_name(&cursor, sym, sizeof(sym), (unw_word_t*)(&(frame->funcOffset))) == 0) {
-            frame->funcName = TrimAndDupStr(sym);
+            std::string funcName;
+            std::string strSym(sym, sym + strlen(sym));
+            TrimAndDupStr(strSym, funcName);
+            frame->funcName = funcName;
         }
         index++;
     } while (unw_step(&cursor) > 0);
@@ -270,6 +269,9 @@ static void DFX_UnwindLocal(int sig, siginfo_t *si, void *context)
 static void DFX_SignalHandler(int sig, siginfo_t *si, void *context)
 {
     pthread_mutex_lock(&g_signalHandlerMutex);
+    DfxLogByTrace(true, "faultlog_native_crash");
+    DfxLogByTrace(true, "faultlog_crash_hold_process");
+
     ResetSignalHandlerIfNeed(sig);
     (void)memset_s(&g_request, sizeof(g_request), 0, sizeof(g_request));
     g_request.type = sig;
@@ -280,18 +282,16 @@ static void DFX_SignalHandler(int sig, siginfo_t *si, void *context)
     g_request.timeStamp = time(NULL);
     if (memcpy_s(&(g_request.siginfo), sizeof(g_request.siginfo),
         si, sizeof(siginfo_t)) != 0) {
-        HILOG_ERROR(LOG_CORE, "Failed to copy siginfo.");
+        DfxLogToSocket("Failed to copy siginfo.");
         pthread_mutex_unlock(&g_signalHandlerMutex);
         return;
     }
-
     if (memcpy_s(&(g_request.context), sizeof(g_request.context),
         context, sizeof(ucontext_t)) != 0) {
-        HILOG_ERROR(LOG_CORE, "Failed to copy ucontext.");
+        DfxLogToSocket("Failed to copy ucontext.");
         pthread_mutex_unlock(&g_signalHandlerMutex);
         return;
     }
-
 #ifdef DFX_LOCAL_UNWIND
     DFX_UnwindLocal(sig, si, context);
 #else
@@ -301,32 +301,29 @@ static void DFX_SignalHandler(int sig, siginfo_t *si, void *context)
     int prevDumpableStatus = prctl(PR_GET_DUMPABLE);
     BOOL isTracerStatusModified = FALSE;
     if (prctl(PR_SET_DUMPABLE, 1) != 0) {
-        HILOG_ERROR(LOG_CORE, "Failed to set dumpable.");
+        DfxLogToSocket("Failed to set dumpable.");
         goto out;
     }
-
     if (prctl(PR_SET_PTRACER, PR_SET_PTRACER_ANY) != 0) {
         if (errno != EINVAL) {
-            HILOG_ERROR(LOG_CORE, "Failed to set ptracer.");
+            DfxLogToSocket("Failed to set ptracer.");
             goto out;
         }
     } else {
         isTracerStatusModified = TRUE;
     }
-
     // fork a child process that could ptrace us
     childPid = DFX_ForkAndDump();
     if (childPid < 0) {
-        HILOG_ERROR(LOG_CORE, "Failed to fork child process.");
+        DfxLogToSocket("Failed to fork child process.");
         goto out;
     }
-
     // wait the child process terminated
     if (TEMP_FAILURE_RETRY(waitpid(childPid, &status, __WALL)) == -1) {
-        HILOG_ERROR(LOG_CORE, "Failed to wait child process terminated. error:%{public}s", strerror(errno));
+        DfxLogToSocket("Failed to wait child process terminated.");
         goto out;
     }
-
+    DfxLogByTrace(false, "faultlog_crash_hold_process");
 out:
     prctl(PR_SET_DUMPABLE, prevDumpableStatus);
     if (isTracerStatusModified == TRUE) {
@@ -335,7 +332,7 @@ out:
 
     if (sig != SIGDUMP) {
         if (syscall(SYS_rt_tgsigqueueinfo, getpid(), gettid(), si->si_signo, si) != 0) {
-            HILOG_WARN(LOG_CORE, "Failed to resend signal(%{public}d).", si->si_signo);
+            DfxLogToSocket("Failed to resend signal.");
         }
     }
 #endif
@@ -353,7 +350,7 @@ void DFX_InstallSignalHandler()
     // reserve stack for fork
     g_reservedChildStack = calloc(RESERVED_CHILD_STACK_SIZE, 1);
     if (g_reservedChildStack == NULL) {
-        HILOG_ERROR(LOG_CORE, "Failed to alloc memory for child stack.");
+        DfxLogToSocket("Failed to alloc memory for child stack.");
         pthread_mutex_unlock(&g_signalHandlerMutex);
         return;
     }
@@ -369,7 +366,7 @@ void DFX_InstallSignalHandler()
     for (size_t i = 0; i < sizeof(g_interestedSignalList) / sizeof(g_interestedSignalList[0]); i++) {
         int32_t sig = g_interestedSignalList[i];
         if (sigaction(sig, &action, &(g_oldSigactionList[sig])) != 0) {
-            HILOG_WARN(LOG_CORE, "Failed to register signal(%{public}d).", g_interestedSignalList[i]);
+            DfxLogToSocket("Failed to register signal.");
         }
     }
     g_hasInit = TRUE;

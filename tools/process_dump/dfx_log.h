@@ -14,13 +14,26 @@
  */
 #ifndef DFX_PROCESS_DUMP_LOG_H
 #define DFX_PROCESS_DUMP_LOG_H
-#include <inttypes.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+#define LOG_BUF_LEN 1024
 
 int DfxLogDebug(const char *format, ...);
 int DfxLogInfo(const char *format, ...);
 int DfxLogWarn(const char *format, ...);
 int DfxLogError(const char *format, ...);
 int DfxLogFatal(const char *format, ...);
+void DfxLogByTrace(bool start, const char *tag); // start : false, finish a tag bytrace; true, start a tag bytrace.
 int WriteLog(int fd, const char *format, ...);
+void DfxLogToSocket(const char *msg);
+void InitDebugLog(int type, int pid, int tid, int uid);
+void CloseDebugLog(void);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

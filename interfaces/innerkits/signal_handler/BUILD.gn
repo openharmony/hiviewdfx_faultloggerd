@@ -21,16 +21,27 @@ config("dfx_signal_handler_config") {
     "//base/hiviewdfx/faultloggerd/common",
     "//base/hiviewdfx/faultloggerd/tools/process_dump",
     "//utils/native/base/include",
+    "//developtools/bytrace_standard/interfaces/innerkits/native/include",
+    "//base/hiviewdfx/faultloggerd/interfaces/innerkits/faultloggerd_client/include",
   ]
 }
 
 ohos_shared_library("dfx_signalhandler") {
   public_configs = [ ":dfx_signal_handler_config" ]
 
-  sources = [ "dfx_signal_handler.c" ]
+  sources = [
+    "//base/hiviewdfx/faultloggerd/tools/process_dump/dfx_log.cpp",
+    "dfx_signal_handler.c",
+  ]
 
-  deps = [ "//utils/native/base:utils" ]
-  external_deps = [ "hilog_native:libhilog" ]
+  deps = [
+    "//base/hiviewdfx/faultloggerd/interfaces/innerkits/faultloggerd_client:libfaultloggerd",
+    "//developtools/bytrace_standard/interfaces/innerkits/native:bytrace_core",
+    "//utils/native/base:utils",
+  ]
+
+  external_deps = [ "hiviewdfx_hilog_native:libhilog" ]
+
   part_name = "faultloggerd"
   subsystem_name = "hiviewdfx"
 }

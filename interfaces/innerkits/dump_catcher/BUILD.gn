@@ -1,0 +1,50 @@
+# Copyright (c) 2021 Huawei Device Co., Ltd.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import("//build/ohos.gni")
+config("dfx_dump_catcher_config") {
+  visibility = [ "*:*" ]
+
+  include_dirs = [
+    "include",
+    "//base/hiviewdfx/faultloggerd/common",
+    "//third_party/libunwind/include",
+    "//base/hiviewdfx/faultloggerd/interfaces/innerkits/faultloggerd_client/include",
+    "//base/hiviewdfx/faultloggerd/tools/process_dump",
+    "//utils/native/base/include",
+    "//developtools/bytrace_standard/interfaces/innerkits/native/include",
+  ]
+}
+
+ohos_shared_library("lib_dfx_dump_catcher") {
+  public_configs = [ ":dfx_dump_catcher_config" ]
+
+  sources = [
+    "//base/hiviewdfx/faultloggerd/tools/process_dump/dfx_elf.cpp",
+    "//base/hiviewdfx/faultloggerd/tools/process_dump/dfx_frames.cpp",
+    "//base/hiviewdfx/faultloggerd/tools/process_dump/dfx_log.cpp",
+    "//base/hiviewdfx/faultloggerd/tools/process_dump/dfx_maps.cpp",
+    "//base/hiviewdfx/faultloggerd/tools/process_dump/dfx_util.cpp",
+    "dfx_dump_catcher.cpp",
+  ]
+
+  deps = [
+    "//base/hiviewdfx/faultloggerd/interfaces/innerkits/faultloggerd_client:libfaultloggerd",
+    "//developtools/bytrace_standard/interfaces/innerkits/native:bytrace_core",
+    "//third_party/libunwind:libunwind",
+    "//utils/native/base:utils",
+  ]
+  external_deps = [ "hilog_native:libhilog" ]
+  part_name = "faultloggerd"
+  subsystem_name = "hiviewdfx"
+}

@@ -1,0 +1,69 @@
+/*
+ * Copyright (c) 2021 Huawei Device Co., Ltd.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+/* This files contains faultlog system test header modules. */
+
+#ifndef FAULTLOGGERD_SYSTEM_TEST_H
+#define FAULTLOGGERD_SYSTEM_TEST_H
+
+#include <gtest/gtest.h>
+#include <map>
+
+namespace OHOS {
+namespace HiviewDFX {
+
+static const int ARRAY_SIZE_HUNDRED = 100;
+
+class FaultLoggerdSystemTest : public testing::Test {
+public:
+    static void SetUpTestCase(void);
+    static void TearDownTestCase(void);
+    void SetUp();
+    void TearDown();
+
+    // 合并
+    static std::string ForkAndRunCommands(const std::vector<std::string>& cmds, int commandStatus);
+
+    // jason update
+    static std::string ForkAndCommands(const std::vector<std::string>& cmds, int cresherType, int udid);
+
+    static std::string ProcessDumpCommands(const std::string cmds);
+    // 合并
+    static std::string GetfileNamePrefix(const std::string errorCMD, int commandStatus);
+    static std::string GetstackfileNamePrefix(const std::string errorCMD, int commandStatus);
+
+    static int CountLines(std::string filename);
+    static bool IsDigit(std::string pid);
+
+    static int CheckCountNum(std::string filePath, std::string pid, std::string errorCMD);
+    static int CheckStacktraceCountNum(std::string filePath, std::string pid, std::string errorCMD);
+    // 合并
+    static void StartCrasherLoop(int type); // 1. system; 2. root; 3.app; 4. root+cpp
+    static std::string FindCmdKey(std::string Cmd);
+
+    static std::string rootTid[ARRAY_SIZE_HUNDRED];
+
+    // 更新为数组
+    static int loopsysPid;
+    static int looprootPid;
+    static int loopcppPid;
+    static int loopappPid;
+
+    static char resultBufShell[ARRAY_SIZE_HUNDRED];
+    static int rootTidCount;
+};
+} // namespace HiviewDFX
+} // namespace OHOS
+#endif // FAULTLOGGERD_SYSTEM_TEST_H
