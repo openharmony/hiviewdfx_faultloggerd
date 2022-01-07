@@ -347,6 +347,7 @@ void DFX_InstallSignalHandler()
         return;
     }
 
+#ifndef DFX_LOCAL_UNWIND
     // reserve stack for fork
     g_reservedChildStack = calloc(RESERVED_CHILD_STACK_SIZE, 1);
     if (g_reservedChildStack == NULL) {
@@ -355,6 +356,7 @@ void DFX_InstallSignalHandler()
         return;
     }
     g_reservedChildStack = (void *)(((uint8_t *)g_reservedChildStack) + RESERVED_CHILD_STACK_SIZE);
+#endif
 
     struct sigaction action;
     memset_s(&action, sizeof(action), 0, sizeof(action));
