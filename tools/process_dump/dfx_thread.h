@@ -40,6 +40,7 @@ public:
     void PrintThread(const int32_t fd);
     void SkipFramesInSignalHandler();
     void Detach();
+    std::string ToString() const;
 
 private:
     enum class ThreadStatus {

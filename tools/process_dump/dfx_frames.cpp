@@ -19,6 +19,7 @@
 
 #include <cstdio>
 #include <cstdlib>
+#include <securec.h>
 
 #include "dfx_elf.h"
 #include "dfx_log.h"
@@ -167,6 +168,20 @@ void DfxFrames::PrintFrame(const int32_t fd) const
     WriteLog(fd, "#%02zu pc %016" PRIx64 "(%016" PRIx64 ") %s(%s+%" PRIu64 ")\n", index_, relativePc_,
         pc_, (map_ == nullptr) ? "Unknown" : map_->GetMapPath().c_str(), funcName_.c_str(), funcOffset_);
     DfxLogInfo("Exit %s.", __func__);
+}
+
+std::string DfxFrames::ToString() const
+{
+    char buf[1024] = "\0"; // 1024 buffer length
+    if (snprintf_s(buf, sizeof(buf), sizeof(buf) - 1, "#%02zu pc %016" PRIx64 " %s(%s+%" PRIu64 ")\n",
+        index_,
+        relativePc_,
+        (map_ == nullptr) ? "Unknown" : map_->GetMapPath().c_str(),
+        funcName_.c_str(),
+        funcOffset_) <= 0) {
+        return "Unknown";
+    }
+    return std::string(buf);
 }
 
 void PrintFrames(std::vector<std::shared_ptr<DfxFrames>> frames, int32_t fd)

@@ -25,6 +25,7 @@
 #include <faultloggerd_client.h>
 #include <securec.h>
 
+#include "cppcrash_reporter.h"
 #include "dfx_log.h"
 #include "dfx_process.h"
 
@@ -149,6 +150,7 @@ void DfxDumpWriter::WriteProcessDump(std::shared_ptr<ProcessDumpRequest> request
         faultloggerdRequest.pid = request->GetPid();
         faultloggerdRequest.tid = request->GetTid();
         faultloggerdRequest.uid = request->GetUid();
+        faultloggerdRequest.time = request->GetTimeStamp();
         if (strncpy_s(faultloggerdRequest.module, sizeof(faultloggerdRequest.module),
             process_->GetProcessName().c_str(), process_->GetProcessName().length()) != 0) {
             DfxLogWarn("Failed to set process name.");
@@ -163,6 +165,9 @@ void DfxDumpWriter::WriteProcessDump(std::shared_ptr<ProcessDumpRequest> request
         auto siginfo = std::make_shared<siginfo_t>(request->GetSiginfo());
         process_->PrintProcessWithSiginfo(siginfo, targetFd);
         close(targetFd);
+
+        CppCrashReporter reporter(faultloggerdRequest.time, request->GetSiginfo().si_signo, process_);
+        reporter.ReportToHiview();
     }
     DfxLogInfo("Exit %s.", __func__);
 }

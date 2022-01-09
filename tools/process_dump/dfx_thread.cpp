@@ -20,6 +20,7 @@
 #include <cerrno>
 #include <climits>
 #include <cstring>
+#include <sstream>
 
 #include <sys/ptrace.h>
 #include <sys/wait.h>
@@ -206,6 +207,25 @@ void DfxThread::Detach()
         DfxLogError("%s(%d), current status: %d, can't detached.", __FILE__, __LINE__, threadStatus_);
     }
     DfxLogInfo("Exit %s.", __func__);
+}
+
+std::string DfxThread::ToString() const
+{
+    if (dfxFrames_.size() == 0) {
+        return "No frame info";
+    }
+
+    std::stringstream threadInfoStream;
+    threadInfoStream << "Tid:" << tid_ << " ";
+    threadInfoStream << "Name:" << threadName_ << "" << std::endl;
+    for (size_t i = 0; i < dfxFrames_.size(); i++) {
+        if (dfxFrames_[i] == nullptr) {
+            continue;
+        }
+        threadInfoStream << dfxFrames_[i]->ToString();
+    }
+
+    return threadInfoStream.str();
 }
 } // namespace HiviewDFX
 } // nampespace OHOS
