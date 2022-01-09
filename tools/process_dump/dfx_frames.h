@@ -48,6 +48,7 @@ public:
     std::string GetFrameFuncName() const;
     void SetFrameMap(const std::shared_ptr<DfxElfMap> map);
     std::shared_ptr<DfxElfMap> GetFrameMap() const;
+    std::string ToString() const;
 
 private:
     size_t index_ = 0;

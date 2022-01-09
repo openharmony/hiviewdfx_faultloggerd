@@ -53,6 +53,7 @@ struct FaultLoggerdRequest {
     int32_t tid;
     int32_t uid;
     char module[128];
+    uint64_t time;
 } __attribute__((packed));
 
 int32_t RequestFileDescriptor(int32_t type);

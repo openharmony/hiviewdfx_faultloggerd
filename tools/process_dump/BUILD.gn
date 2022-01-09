@@ -70,6 +70,7 @@ ohos_executable("processdump") {
   install_enable = true
   configs = [ ":processdump_config" ]
   sources = [
+    "cppcrash_reporter.cpp",
     "dfx_dump_writer.cpp",
     "dfx_elf.cpp",
     "dfx_frames.cpp",
