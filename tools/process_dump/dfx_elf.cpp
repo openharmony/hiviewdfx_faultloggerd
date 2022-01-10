@@ -32,10 +32,13 @@
 #include "dfx_define.h"
 #include "dfx_log.h"
 
+#ifndef PAGE_SIZE
+#define PAGE_SIZE 4096
+#endif
+
 namespace OHOS {
 namespace HiviewDFX {
 static const int MAX_MAP_SIZE = 65536;
-static const int PAGE_SIZE = 4096;
 
 std::shared_ptr<DfxElf> DfxElf::Create(const std::string path)
 {
