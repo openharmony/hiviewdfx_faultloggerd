@@ -152,7 +152,7 @@ NOINLINE int TestFunc10(void)
     string msg = "";
     bool ret = dumplog.DumpCatch(getpid(), gettid(), msg);
     if (ret) {
-        cout << img << endl;
+        cout << msg << endl;
     }
     return 0;
 }
