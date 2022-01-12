@@ -33,7 +33,6 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/wait.h>
-#include <sys/timeb.h>
 #include <securec.h>
 #include <string>
 #include <time.h>
