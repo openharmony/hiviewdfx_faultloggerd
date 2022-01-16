@@ -45,7 +45,7 @@ ohos_unittest("test_service") {
     "//utils/native/base:utils",
   ]
 
-  external_deps = [ "hiviewdfx_hilog_native:libhilog" ]
+  external_deps = [ "hilog_native:libhilog" ]
 }
 
 group("unittest") {

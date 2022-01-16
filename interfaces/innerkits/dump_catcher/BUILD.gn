@@ -40,11 +40,15 @@ ohos_shared_library("lib_dfx_dump_catcher") {
 
   deps = [
     "//base/hiviewdfx/faultloggerd/interfaces/innerkits/faultloggerd_client:libfaultloggerd",
-    "//developtools/bytrace_standard/interfaces/innerkits/native:bytrace_core",
     "//third_party/libunwind:libunwind",
-    "//utils/native/base:utils",
   ]
-  external_deps = [ "hilog_native:libhilog" ]
+
+  external_deps = [
+    "bytrace_standard:bytrace_core",
+    "hilog_native:libhilog",
+    "utils_base:utils",
+  ]
+
   part_name = "faultloggerd"
   subsystem_name = "hiviewdfx"
 }

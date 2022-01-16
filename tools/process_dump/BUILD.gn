@@ -58,12 +58,14 @@ ohos_source_set("process_info_src") {
 
   deps = [
     "$faultloggerd_path/interfaces/innerkits/faultloggerd_client:libfaultloggerd",
-    "//developtools/bytrace_standard/bin:bytrace_inner",
     "//third_party/libunwind:libunwind",
-    "//utils/native/base:utils",
   ]
 
-  external_deps = [ "hilog_native:libhilog" ]
+  external_deps = [
+    "bytrace_standard:bytrace_core",
+    "hilog_native:libhilog",
+    "utils_base:utils",
+  ]
 }
 
 ohos_executable("processdump") {
@@ -98,16 +100,14 @@ ohos_executable("processdump") {
 
   deps = [
     "$faultloggerd_path/interfaces/innerkits/faultloggerd_client:libfaultloggerd",
-    "//developtools/bytrace_standard/bin:bytrace_inner",
     "//third_party/libunwind:libunwind",
-    "//utils/native/base:utils",
   ]
 
-  if (is_standard_system) {
-    external_deps = [ "hiviewdfx_hilog_native:libhilog" ]
-  } else {
-    external_deps = [ "hilog:libhilog" ]
-  }
+  external_deps = [
+    "bytrace_standard:bytrace_core",
+    "hilog_native:libhilog",
+    "utils_base:utils",
+  ]
 
   part_name = "faultloggerd"
   subsystem_name = "hiviewdfx"

@@ -35,8 +35,6 @@ ohos_executable("dumpcatcherdemo") {
   ]
 
   external_deps = [ "hilog_native:libhilog" ]
-
-  install_enable = true
   part_name = "faultloggerd"
   subsystem_name = "hiviewdfx"
 }

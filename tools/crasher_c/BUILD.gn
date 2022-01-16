@@ -22,15 +22,8 @@ config("crasher_config") {
 ohos_executable("crasher_c") {
   configs = [ ":crasher_config" ]
   sources = [ "dfx_crasher.c" ]
-
   deps = [ "//base/hiviewdfx/faultloggerd/interfaces/innerkits/signal_handler:dfx_signalhandler" ]
-
-  if (is_standard_system) {
-    external_deps = [ "hiviewdfx_hilog_native:libhilog" ]
-  } else {
-    external_deps = [ "hilog:libhilog" ]
-  }
-
+  external_deps = [ "hilog_native:libhilog" ]
   part_name = "faultloggerd"
   subsystem_name = "hiviewdfx"
 }

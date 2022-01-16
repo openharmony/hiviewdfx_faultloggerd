@@ -23,7 +23,7 @@ config("faultloggerd_config") {
   ]
 }
 
-ohos_prebuilt_etc("faultloggerd.rc") {
+ohos_prebuilt_etc("faultloggerd.cfg") {
   source = "config/faultloggerd.cfg"
 
   relative_install_dir = "init"
@@ -50,17 +50,15 @@ ohos_executable("faultloggerd") {
 
   deps = [
     ":faultlogger.conf",
-    ":faultloggerd.rc",
+    ":faultloggerd.cfg",
     "$faultloggerd_path/interfaces/innerkits/faultloggerd_client:libfaultloggerd",
-    "//developtools/bytrace_standard/interfaces/innerkits/native:bytrace_core",
-    "//utils/native/base:utils",
   ]
 
-  if (is_standard_system) {
-    external_deps = [ "hiviewdfx_hilog_native:libhilog" ]
-  } else {
-    external_deps = [ "hilog:libhilog" ]
-  }
+  external_deps = [
+    "bytrace_standard:bytrace_core",
+    "hilog_native:libhilog",
+    "utils_base:utils",
+  ]
 
   part_name = "faultloggerd"
   subsystem_name = "hiviewdfx"
