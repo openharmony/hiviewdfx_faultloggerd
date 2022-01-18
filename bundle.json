@@ -1,0 +1,45 @@
+{
+  "name": "@ohos/faultloggerd",
+  "description": "Collecting c/c++ runtime crash log",
+  "version": "3.1",
+  "license": "Apache License 2.0",
+  "component": {
+    "name": "faultloggerd",
+    "subsystem": "hiviewdfx",
+    "syscap": [],
+    "features": [],
+    "adapted_system_type": [ "standard" ],
+    "rom": "1024KB",
+    "ram": "~1024KB",
+    "deps": {
+      "components": [
+        "bytrace_core",
+        "libhilog",
+        "utils"
+      ],
+      "third_party": [
+        "libunwind"
+      ]
+    },
+    "build": {
+      "sub_component": [
+        "//base/hiviewdfx/faultloggerd/interfaces/innerkits/signal_handler:dfx_signalhandler",
+        "//base/hiviewdfx/faultloggerd/interfaces/innerkits/dump_catcher:lib_dfx_dump_catcher",
+        "//base/hiviewdfx/faultloggerd/interfaces/innerkits/faultloggerd_client:libfaultloggerd",
+        "//base/hiviewdfx/faultloggerd/tools/process_dump:processdump",
+        "//base/hiviewdfx/faultloggerd/services:faultloggerd"
+      ],
+      "inner_kits": [],
+      "test": [
+        "//base/hiviewdfx/faultloggerd/example:dumpcatcherdemo",
+        "//base/hiviewdfx/faultloggerd/interfaces/innerkits/dump_catcher/test:harmonystrace",
+        "//base/hiviewdfx/faultloggerd/test:faultloggerd_systemtest",
+        "//base/hiviewdfx/faultloggerd/test:faultloggerd_performancetest",
+        "//base/hiviewdfx/faultloggerd/tools/crasher_c:crasher_c",
+        "//base/hiviewdfx/faultloggerd/tools/crasher_cpp:crasher_cpp",
+        "//base/hiviewdfx/faultloggerd/tools/process_dump/test:processdump_unittest",
+        "//base/hiviewdfx/faultloggerd/services/test:service_unittest"
+      ]
+    }
+  }
+}

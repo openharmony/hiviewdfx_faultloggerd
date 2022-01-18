@@ -24,10 +24,8 @@ ohos_executable("faultloggerd_client") {
   install_enable = true
   configs = [ ":faultloggerd_client_config" ]
   sources = [ "faultloggerd_test_client.cpp" ]
-
-  external_deps = [ "hilog:libhilog" ]
   deps = [ "$faultloggerd_path/interfaces/innerkits/faultloggerd_client:libfaultloggerd" ]
-
+  external_deps = [ "hilog_native:libhilog" ]
   part_name = "faultloggerd"
   subsystem_name = "hiviewdfx"
 }
