@@ -73,10 +73,7 @@ void ProcessDumper::DumpProcessWithSignalContext(std::shared_ptr<DfxProcess> &pr
         return;
     }
 
-    if (request->GetSiginfo().si_signo == SIGDUMP) {
-        process->InitOtherThreads();
-    }
-
+    process->InitOtherThreads();
     process->SetUid(request->GetUid());
     DfxUnwindRemote::GetInstance().UnwindProcess(process);
     DfxLogInfo("Exit %s.", __func__);

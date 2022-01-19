@@ -165,10 +165,8 @@ void DfxElf::CreateLoadInfo(uint64_t vaddr, uint64_t offset)
     info->vaddr = vaddr;
     info->offset = offset;
 
-    if (infos_.size() == 0) {
-        infos_.push_back(*info);
-        return;
-    }
+    infos_.push_back(*info);
+
     DfxLogInfo("Exit %s.", __func__);
 }
 
