@@ -3,6 +3,10 @@
   "description": "Collecting c/c++ runtime crash log",
   "version": "3.1",
   "license": "Apache License 2.0",
+  "publishAs": "code-segment",
+  "segment": {
+      "destPath": "base/hiviewdfx/faultloggerd"
+  },
   "component": {
     "name": "faultloggerd",
     "subsystem": "hiviewdfx",
@@ -13,9 +17,9 @@
     "ram": "~1024KB",
     "deps": {
       "components": [
-        "bytrace_core",
-        "libhilog",
-        "utils"
+        "bytrace_standard",
+        "hilog_native",
+        "utils_base"
       ],
       "third_party": [
         "libunwind"
