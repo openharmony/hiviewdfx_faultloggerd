@@ -42,19 +42,19 @@ static const int SIG_NO = 35;
 
 void DfxProcess::FillProcessName()
 {
-    DfxLogInfo("Enter %s.", __func__);
+    DfxLogDebug("Enter %s.", __func__);
     char path[NAME_LEN] = "\0";
     if (snprintf_s(path, sizeof(path), sizeof(path) - 1, "/proc/%d/cmdline", pid_) <= 0) {
         return;
     }
 
     ReadStringFromFile(path, processName_, NAME_LEN);
-    DfxLogInfo("Exit %s.", __func__);
+    DfxLogDebug("Exit %s.", __func__);
 }
 
 std::shared_ptr<DfxProcess> DfxProcess::CreateProcessWithKeyThread(pid_t pid, std::shared_ptr<DfxThread> keyThread)
 {
-    DfxLogInfo("Enter %s.", __func__);
+    DfxLogDebug("Enter %s.", __func__);
     auto dfxProcess = std::make_shared<DfxProcess>();
 
     dfxProcess->SetPid(pid);
@@ -71,26 +71,26 @@ std::shared_ptr<DfxProcess> DfxProcess::CreateProcessWithKeyThread(pid_t pid, st
     }
 
     DfxLogWarn("Init process dump with pid:%d.", dfxProcess->GetPid());
-    DfxLogInfo("Exit %s.", __func__);
+    DfxLogDebug("Exit %s.", __func__);
     return dfxProcess;
 }
 
 bool DfxProcess::InitProcessMaps()
 {
-    DfxLogInfo("Enter %s.", __func__);
+    DfxLogDebug("Enter %s.", __func__);
     auto maps = DfxElfMaps::Create(pid_);
     if (!maps) {
         return false;
     }
 
     SetMaps(maps);
-    DfxLogInfo("Exit %s.", __func__);
+    DfxLogDebug("Exit %s.", __func__);
     return true;
 }
 
 bool DfxProcess::InitProcessThreads(std::shared_ptr<DfxThread> keyThread)
 {
-    DfxLogInfo("Enter %s.", __func__);
+    DfxLogDebug("Enter %s.", __func__);
     if (keyThread) {
         threads_.push_back(keyThread);
         return true;
@@ -102,13 +102,13 @@ bool DfxProcess::InitProcessThreads(std::shared_ptr<DfxThread> keyThread)
     }
 
     threads_.push_back(keyThread);
-    DfxLogInfo("Exit %s.", __func__);
+    DfxLogDebug("Exit %s.", __func__);
     return true;
 }
 
 bool DfxProcess::InitOtherThreads()
 {
-    DfxLogInfo("Enter %s.", __func__);
+    DfxLogDebug("Enter %s.", __func__);
     char path[NAME_LEN] = {0};
     if (snprintf_s(path, sizeof(path), sizeof(path) - 1, "/proc/%d/task", GetPid()) <= 0) {
         return false;
@@ -142,13 +142,13 @@ bool DfxProcess::InitOtherThreads()
         InsertThreadNode(tid);
     }
     closedir(dir);
-    DfxLogInfo("Exit %s.", __func__);
+    DfxLogDebug("Exit %s.", __func__);
     return true;
 }
 
 void DfxProcess::InsertThreadNode(pid_t tid)
 {
-    DfxLogInfo("Enter %s.", __func__);
+    DfxLogDebug("Enter %s.", __func__);
     for (auto iter = threads_.begin(); iter != threads_.end(); iter++) {
         if ((*iter)->GetThreadId() == tid) {
             return;
@@ -157,12 +157,12 @@ void DfxProcess::InsertThreadNode(pid_t tid)
 
     auto thread = std::make_shared<DfxThread>(GetPid(), tid);
     threads_.push_back(thread);
-    DfxLogInfo("Exit %s.", __func__);
+    DfxLogDebug("Exit %s.", __func__);
 }
 
 void DfxProcess::PrintProcessWithSiginfo(const std::shared_ptr<siginfo_t> info, int32_t fd)
 {
-    DfxLogInfo("Enter %s.", __func__);
+    DfxLogDebug("Enter %s.", __func__);
     WriteLog(fd, "Pid:%d\n", GetPid());
     WriteLog(fd, "Uid:%d\n", GetUid());
     WriteLog(fd, "Process name:%s\n", GetProcessName().c_str());
@@ -179,24 +179,35 @@ void DfxProcess::PrintProcessWithSiginfo(const std::shared_ptr<siginfo_t> info, 
 
     PrintProcess(fd);
 
-    if (GetMaps()) {
-        dprintf(fd, "Maps:\n");
-    }
-
-    auto mapsVector = maps_->GetValues();
-    for (auto iter = mapsVector.begin(); iter != mapsVector.end(); iter++) {
-        (*iter)->PrintMap(fd);
-    }
-    DfxLogInfo("Exit %s.", __func__);
+    DfxLogDebug("Exit %s.", __func__);
 }
 
 void DfxProcess::PrintProcess(int32_t fd)
 {
-    DfxLogInfo("Enter %s.", __func__);
+    DfxLogDebug("Enter %s.", __func__);
+    size_t index = 0;
     for (auto iter = threads_.begin(); iter != threads_.end(); iter++) {
+        if ( index == 1) {
+            dprintf(fd, "Other thread info:\n");
+        }
         (*iter)->PrintThread(fd);
+        if (index == 0) {
+#if defined(__displayMaps__)
+            DfxLogInfo("displayMaps");
+            if (GetMaps()) {
+                dprintf(fd, "Maps:\n");
+            }
+            auto mapsVector = maps_->GetValues();
+            for (auto iter = mapsVector.begin(); iter != mapsVector.end(); iter++) {
+                (*iter)->PrintMap(fd);
+            }
+#else
+            DfxLogInfo("hidden Maps");
+#endif
+        }
+        index++;
     }
-    DfxLogInfo("Exit %s.", __func__);
+    DfxLogDebug("Exit %s.", __func__);
 }
 
 pid_t DfxProcess::GetPid() const

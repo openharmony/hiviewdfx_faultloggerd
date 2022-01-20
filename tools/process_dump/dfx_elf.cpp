@@ -42,7 +42,7 @@ static const int MAX_MAP_SIZE = 65536;
 
 std::shared_ptr<DfxElf> DfxElf::Create(const std::string path)
 {
-    DfxLogInfo("Enter %s.", __func__);
+    DfxLogDebug("Enter %s.", __func__);
     char realPaths[PATH_MAX] = {0};
     if (!realpath(path.c_str(), realPaths)) {
         DfxLogWarn("Fail to do realpath(%s).", path.c_str());
@@ -83,25 +83,25 @@ std::shared_ptr<DfxElf> DfxElf::Create(const std::string path)
 
     close(dfxElf->GetFd());
     dfxElf->SetFd(-1);
-    DfxLogInfo("Exit %s.", __func__);
+    DfxLogDebug("Exit %s.", __func__);
     return dfxElf;
 }
 
 bool DfxElf::ParseElfHeader()
 {
-    DfxLogInfo("Enter %s.", __func__);
+    DfxLogDebug("Enter %s.", __func__);
     ssize_t nread = read(fd_, &(header_), sizeof(header_));
     if (nread < 0 || nread != sizeof(header_)) {
         DfxLogWarn("Failed to read elf header.");
         return false;
     }
-    DfxLogInfo("Exit %s.", __func__);
+    DfxLogDebug("Exit %s.", __func__);
     return true;
 }
 
 bool DfxElf::ParseElfProgramHeader()
 {
-    DfxLogInfo("Enter %s.", __func__);
+    DfxLogDebug("Enter %s.", __func__);
     size_t size = header_.e_phnum * sizeof(ElfW(Phdr));
     if (size > MAX_MAP_SIZE) {
         DfxLogWarn("Exceed max mmap size.");
@@ -139,25 +139,25 @@ bool DfxElf::ParseElfProgramHeader()
         CreateLoadInfo(phdr->p_vaddr, phdr->p_offset);
     }
     munmap(map, mapSize);
-    DfxLogInfo("Exit %s.", __func__);
+    DfxLogDebug("Exit %s.", __func__);
     return true;
 }
 
 uint64_t DfxElf::FindRealLoadOffset(uint64_t offset) const
 {
-    DfxLogInfo("Enter %s.", __func__);
+    DfxLogDebug("Enter %s.", __func__);
     for (auto iter = infos_.begin(); iter != infos_.end(); iter++) {
         if ((iter->offset & -PAGE_SIZE) == offset) {
             return offset + (iter->vaddr - iter->offset);
         }
     }
-    DfxLogInfo("Exit %s.", __func__);
+    DfxLogDebug("Exit %s.", __func__);
     return offset;
 }
 
 void DfxElf::CreateLoadInfo(uint64_t vaddr, uint64_t offset)
 {
-    DfxLogInfo("Enter %s.", __func__);
+    DfxLogDebug("Enter %s.", __func__);
     std::unique_ptr<ElfLoadInfo> info = std::make_unique<ElfLoadInfo>();
     if (info == nullptr) {
         return;
@@ -167,7 +167,7 @@ void DfxElf::CreateLoadInfo(uint64_t vaddr, uint64_t offset)
 
     infos_.push_back(*info);
 
-    DfxLogInfo("Exit %s.", __func__);
+    DfxLogDebug("Exit %s.", __func__);
 }
 
 std::string DfxElf::GetName() const

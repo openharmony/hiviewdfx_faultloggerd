@@ -35,10 +35,10 @@ namespace OHOS {
 namespace HiviewDFX {
 ProcessDumpRequest::ProcessDumpRequest()
 {
-    DfxLogInfo("Enter %s.", __func__);
+    DfxLogDebug("Enter %s.", __func__);
     memset_s(&siginfo_, sizeof(siginfo_), 0, sizeof(siginfo_));
     memset_s(&context_, sizeof(context_), 0, sizeof(context_));
-    DfxLogInfo("Exit %s.", __func__);
+    DfxLogDebug("Exit %s.", __func__);
 }
 
 ProcessDumpType ProcessDumpRequest::GetType() const
@@ -123,15 +123,15 @@ void ProcessDumpRequest::SetContext(ucontext_t const &context)
 
 DfxDumpWriter::DfxDumpWriter(std::shared_ptr<DfxProcess> process, int32_t fromSignalHandler)
 {
-    DfxLogInfo("Enter %s.", __func__);
+    DfxLogDebug("Enter %s.", __func__);
     process_ = process;
     fromSignalHandler_ = fromSignalHandler;
-    DfxLogInfo("Exit %s.", __func__);
+    DfxLogDebug("Exit %s.", __func__);
 }
 
 void DfxDumpWriter::WriteProcessDump(std::shared_ptr<ProcessDumpRequest> request)
 {
-    DfxLogInfo("Enter %s.", __func__);
+    DfxLogDebug("Enter %s.", __func__);
     if (!process_ || !request) {
         DfxLogError("Have no process or request is null.");
         return;
@@ -169,7 +169,7 @@ void DfxDumpWriter::WriteProcessDump(std::shared_ptr<ProcessDumpRequest> request
         CppCrashReporter reporter(faultloggerdRequest.time, request->GetSiginfo().si_signo, process_);
         reporter.ReportToHiview();
     }
-    DfxLogInfo("Exit %s.", __func__);
+    DfxLogDebug("Exit %s.", __func__);
 }
 } // namespace HiviewDFX
 } // namespace OHOS

@@ -46,7 +46,7 @@
 #define CONF_LINE_SIZE 1024
 #define NUMBER_SIXTEEN 16
 
-static const int LOG_LEVEL = LOG_LEVEL_ALL;
+static const int LOG_LEVEL = LOG_LEVEL_INFO;
 
 static const int32_t INVALID_FD = -1;
 static int32_t g_StdErrFilleDes = INVALID_FD;

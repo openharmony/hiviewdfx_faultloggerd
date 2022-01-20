@@ -101,7 +101,7 @@ void DfxFrames::DestroyFrames(const std::shared_ptr<DfxFrames> frameHead) {}
 
 uint64_t DfxFrames::GetRelativePc(const std::shared_ptr<DfxElfMaps> head)
 {
-    DfxLogInfo("Enter %s.", __func__);
+    DfxLogDebug("Enter %s.", __func__);
     if (head == nullptr) {
         return 0;
     }
@@ -122,13 +122,13 @@ uint64_t DfxFrames::GetRelativePc(const std::shared_ptr<DfxElfMaps> head)
         DfxLogWarn("Fail to find Map:%s.", map_->GetMapPath().c_str());
         return 0;
     }
-    DfxLogInfo("Exit %s.", __func__);
+    DfxLogDebug("Exit %s.", __func__);
     return CalculateRelativePc(map);
 }
 
 uint64_t DfxFrames::CalculateRelativePc(std::shared_ptr<DfxElfMap> elfMap)
 {
-    DfxLogInfo("Enter %s.", __func__);
+    DfxLogDebug("Enter %s.", __func__);
     if (elfMap == nullptr || map_ == nullptr) {
         return 0;
     }
@@ -148,13 +148,13 @@ uint64_t DfxFrames::CalculateRelativePc(std::shared_ptr<DfxElfMap> elfMap)
 #elif defined(__x86_64__)
     relativePc_ = relativePc_ - 1; // 1 : instr offset
 #endif
-    DfxLogInfo("Exit %s.", __func__);
+    DfxLogDebug("Exit %s.", __func__);
     return relativePc_;
 }
 
 void DfxFrames::PrintFrame(const int32_t fd) const
 {
-    DfxLogInfo("Enter %s.", __func__);
+    DfxLogDebug("Enter %s.", __func__);
     if (pc_ == 0) {
         return;
     }
@@ -167,7 +167,7 @@ void DfxFrames::PrintFrame(const int32_t fd) const
 
     WriteLog(fd, "#%02zu pc %016" PRIx64 "(%016" PRIx64 ") %s(%s+%" PRIu64 ")\n", index_, relativePc_,
         pc_, (map_ == nullptr) ? "Unknown" : map_->GetMapPath().c_str(), funcName_.c_str(), funcOffset_);
-    DfxLogInfo("Exit %s.", __func__);
+    DfxLogDebug("Exit %s.", __func__);
 }
 
 std::string DfxFrames::ToString() const

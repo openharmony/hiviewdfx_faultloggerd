@@ -43,7 +43,7 @@ DfxUnwindRemote &DfxUnwindRemote::GetInstance()
 
 bool DfxUnwindRemote::UnwindProcess(std::shared_ptr<DfxProcess> process)
 {
-    DfxLogInfo("Enter %s.", __func__);
+    DfxLogDebug("Enter %s.", __func__);
     if (!process) {
         return false;
     }
@@ -53,14 +53,14 @@ bool DfxUnwindRemote::UnwindProcess(std::shared_ptr<DfxProcess> process)
             DfxLogWarn("Fail to unwind thread.");
         }
     }
-    DfxLogInfo("Exit %s.", __func__);
+    DfxLogDebug("Exit %s.", __func__);
     return true;
 }
 
 bool DfxUnwindRemote::DfxUnwindRemoteDoUnwindStep(size_t const & index,
     std::shared_ptr<DfxThread> & thread, unw_cursor_t & cursor, std::shared_ptr<DfxProcess> process)
 {
-    DfxLogInfo("Enter %s.", __func__);
+    DfxLogDebug("Enter %s.", __func__);
     std::shared_ptr<DfxFrames> frame = thread->GetAvaliableFrame();
     if (!frame) {
         DfxLogWarn("Fail to create Frame.");
@@ -105,13 +105,13 @@ bool DfxUnwindRemote::DfxUnwindRemoteDoUnwindStep(size_t const & index,
         frame->SetFrameFuncName(funcName);
         frame->SetFrameFuncOffset(frameOffset);
     }
-    DfxLogInfo("Exit %s.", __func__);
+    DfxLogDebug("Exit %s.", __func__);
     return true;
 }
 
 bool DfxUnwindRemote::UnwindThread(std::shared_ptr<DfxProcess> process, std::shared_ptr<DfxThread> thread)
 {
-    DfxLogInfo("Enter %s.", __func__);
+    DfxLogDebug("Enter %s.", __func__);
     if (!thread) {
         DfxLogWarn("NULL thread needs unwind.");
         return false;
@@ -146,7 +146,7 @@ bool DfxUnwindRemote::UnwindThread(std::shared_ptr<DfxProcess> process, std::sha
     } while ((unw_step(&cursor) > 0) && (index < BACK_STACK_MAX_STEPS));
     _UPT_destroy(context);
     unw_destroy_addr_space(as);
-    DfxLogInfo("Exit %s.", __func__);
+    DfxLogDebug("Exit %s.", __func__);
     return true;
 }
 } // namespace HiviewDFX

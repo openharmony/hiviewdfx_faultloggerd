@@ -48,7 +48,7 @@ namespace OHOS {
 namespace HiviewDFX {
 DfxThread::DfxThread(const pid_t pid, const pid_t tid, const ucontext_t &context)
 {
-    DfxLogInfo("Enter %s.", __func__);
+    DfxLogDebug("Enter %s.", __func__);
     threadStatus_ = ThreadStatus::THREAD_STATUS_INVALID;
     if (!InitThread(pid, tid)) {
         DfxLogWarn("Fail to init thread(%d).", tid);
@@ -63,23 +63,23 @@ DfxThread::DfxThread(const pid_t pid, const pid_t tid, const ucontext_t &context
     reg = std::make_shared<DfxRegsX86_64>(context);
 #endif
     regs_ = reg;
-    DfxLogInfo("Exit %s.", __func__);
+    DfxLogDebug("Exit %s.", __func__);
 }
 
 DfxThread::DfxThread(const pid_t pid, const pid_t tid)
 {
-    DfxLogInfo("Enter %s.", __func__);
+    DfxLogDebug("Enter %s.", __func__);
     threadStatus_ = ThreadStatus::THREAD_STATUS_INIT;
     if (!InitThread(pid, tid)) {
         DfxLogWarn("Fail to init thread(%d).", tid);
         return;
     }
-    DfxLogInfo("Exit %s.", __func__);
+    DfxLogDebug("Exit %s.", __func__);
 }
 
 bool DfxThread::InitThread(const pid_t pid, const pid_t tid)
 {
-    DfxLogInfo("Enter %s.", __func__);
+    DfxLogDebug("Enter %s.", __func__);
     pid_ = pid;
     tid_ = tid;
     char path[NAME_LEN] = {0};
@@ -107,7 +107,7 @@ bool DfxThread::InitThread(const pid_t pid, const pid_t tid)
     }
 #endif
     threadStatus_ = ThreadStatus::THREAD_STATUS_ATTACHED;
-    DfxLogInfo("Exit %s.", __func__);
+    DfxLogDebug("Exit %s.", __func__);
     return true;
 }
 
@@ -143,7 +143,7 @@ void DfxThread::SetThreadRegs(const std::shared_ptr<DfxRegs> &regs)
 
 std::shared_ptr<DfxFrames> DfxThread::GetAvaliableFrame()
 {
-    DfxLogInfo("Enter %s.", __func__);
+    DfxLogDebug("Enter %s.", __func__);
     std::shared_ptr<DfxFrames> frame = std::make_shared<DfxFrames>();
     dfxFrames_.push_back(frame);
     return frame;
@@ -151,23 +151,33 @@ std::shared_ptr<DfxFrames> DfxThread::GetAvaliableFrame()
 
 void DfxThread::PrintThread(const int32_t fd)
 {
-    DfxLogInfo("Enter %s.", __func__);
+    DfxLogDebug("Enter %s.", __func__);
     if (dfxFrames_.size() == 0) {
         return;
     }
-
+#if defined(__displayBacktrace__)
+    DfxLogInfo("displayBacktrace");
     WriteLog(fd, "Tid:%d, Name:%s\n", tid_, threadName_.c_str());
+    PrintFrames(dfxFrames_, fd);
+#else
+    DfxLogInfo("hidden backtrace");
+#endif
+
+#if defined(__displayRegister__)
+    DfxLogInfo("displayBacktrace");
     if (regs_) {
         regs_->PrintRegs(fd);
     }
-    PrintFrames(dfxFrames_, fd);
-    WriteLog(fd, "\n");
-    DfxLogInfo("Exit %s.", __func__);
+#else
+    DfxLogInfo("hidden register");
+#endif
+
+    DfxLogDebug("Exit %s.", __func__);
 }
 
 void DfxThread::SkipFramesInSignalHandler()
 {
-    DfxLogInfo("Enter %s.", __func__);
+    DfxLogDebug("Enter %s.", __func__);
     if (dfxFrames_.size() == 0) {
         return;
     }
@@ -194,19 +204,19 @@ void DfxThread::SkipFramesInSignalHandler()
 
     dfxFrames_.clear();
     dfxFrames_ = skippedFrames;
-    DfxLogInfo("Exit %s.", __func__);
+    DfxLogDebug("Exit %s.", __func__);
 }
 
 void DfxThread::Detach()
 {
-    DfxLogInfo("Enter %s.", __func__);
+    DfxLogDebug("Enter %s.", __func__);
     ptrace(PTRACE_DETACH, tid_, NULL, NULL);
     if (threadStatus_ == ThreadStatus::THREAD_STATUS_ATTACHED) {
         threadStatus_ = ThreadStatus::THREAD_STATUS_DETACHED;
     } else {
         DfxLogError("%s(%d), current status: %d, can't detached.", __FILE__, __LINE__, threadStatus_);
     }
-    DfxLogInfo("Exit %s.", __func__);
+    DfxLogDebug("Exit %s.", __func__);
 }
 
 std::string DfxThread::ToString() const

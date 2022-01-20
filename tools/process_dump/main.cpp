@@ -108,7 +108,7 @@ static bool CheckPidTid(OHOS::HiviewDFX::ProcessDumpType type, int32_t pid, int3
 static bool ParseParamters(int argc, char *argv[], bool &isSignalHdlr, OHOS::HiviewDFX::ProcessDumpType &type,
     int32_t &pid, int32_t &tid)
 {
-    DfxLogInfo("Enter %s.", __func__);
+    DfxLogDebug("Enter %s.", __func__);
     switch (argc) {
         case SIGNAL_HANDLER:
             if (!strcmp("-signalhandler", argv[0])) {
@@ -146,13 +146,13 @@ static bool ParseParamters(int argc, char *argv[], bool &isSignalHdlr, OHOS::Hiv
         default:
             break;
     }
-    DfxLogInfo("Exit %s.", __func__);
+    DfxLogDebug("Exit %s.", __func__);
     return false;
 }
 
 int main(int argc, char *argv[])
 {
-    DfxLogInfo("Enter %s.", __func__);
+    DfxLogDebug("Enter %s.", __func__);
     bool isSignalHdlr = false;
     OHOS::HiviewDFX::ProcessDumpType type = OHOS::HiviewDFX::DUMP_TYPE_PROCESS;
     int32_t pid = 0;
@@ -178,7 +178,7 @@ int main(int argc, char *argv[])
     }
 
     OHOS::HiviewDFX::ProcessDumper::GetInstance().Dump(isSignalHdlr, type, pid, tid);
-    DfxLogInfo("End");
+    DfxLogDebug("End");
 
     DfxLogByTrace(false, "faultlog_native_crash");
     return 0;

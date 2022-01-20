@@ -41,7 +41,7 @@ static const int SIGDUMP = 35;
 void ProcessDumper::DumpProcessWithSignalContext(std::shared_ptr<DfxProcess> &process,
                                                  std::shared_ptr<ProcessDumpRequest> request)
 {
-    DfxLogInfo("Enter %s.", __func__);
+    DfxLogDebug("Enter %s.", __func__);
     ssize_t readCount = read(STDIN_FILENO, request.get(), sizeof(ProcessDumpRequest));
     if (readCount != sizeof(ProcessDumpRequest)) {
         DfxLogError("Fail to read DumpRequest(%d).", errno);
@@ -76,13 +76,13 @@ void ProcessDumper::DumpProcessWithSignalContext(std::shared_ptr<DfxProcess> &pr
     process->InitOtherThreads();
     process->SetUid(request->GetUid());
     DfxUnwindRemote::GetInstance().UnwindProcess(process);
-    DfxLogInfo("Exit %s.", __func__);
+    DfxLogDebug("Exit %s.", __func__);
 }
 
 void ProcessDumper::DumpProcess(std::shared_ptr<DfxProcess> &process,
                                 std::shared_ptr<ProcessDumpRequest> request)
 {
-    DfxLogInfo("Enter %s.", __func__);
+    DfxLogDebug("Enter %s.", __func__);
     if (request->GetType() == DUMP_TYPE_PROCESS) {
         process = DfxProcess::CreateProcessWithKeyThread(request->GetPid(), nullptr);
         process->InitOtherThreads();
@@ -99,7 +99,7 @@ void ProcessDumper::DumpProcess(std::shared_ptr<DfxProcess> &process,
     }
 
     DfxUnwindRemote::GetInstance().UnwindProcess(process);
-    DfxLogInfo("Exit %s.", __func__);
+    DfxLogDebug("Exit %s.", __func__);
 }
 
 ProcessDumper &ProcessDumper::GetInstance()
@@ -110,7 +110,7 @@ ProcessDumper &ProcessDumper::GetInstance()
 
 void ProcessDumper::Dump(bool isSignalHdlr, ProcessDumpType type, int32_t pid, int32_t tid)
 {
-    DfxLogInfo("Enter %s.", __func__);
+    DfxLogDebug("Enter %s.", __func__);
     std::shared_ptr<ProcessDumpRequest> request = std::make_shared<ProcessDumpRequest>();
     if (!request) {
         DfxLogError("Fail to create dump request.");
@@ -146,7 +146,7 @@ void ProcessDumper::Dump(bool isSignalHdlr, ProcessDumpType type, int32_t pid, i
         DfxDumpWriter dumpWriter(process, fromSignalHandler);
         dumpWriter.WriteProcessDump(request);
     }
-    DfxLogInfo("Exit %s.", __func__);
+    DfxLogDebug("Exit %s.", __func__);
 
     CloseDebugLog();
 }

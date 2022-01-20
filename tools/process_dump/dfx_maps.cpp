@@ -35,7 +35,7 @@ static const int MAPINFO_SIZE = 256;
 
 std::shared_ptr<DfxElfMaps> DfxElfMaps::Create(pid_t pid)
 {
-    DfxLogInfo("Enter %s.", __func__);
+    DfxLogDebug("Enter %s.", __func__);
     auto dfxElfMaps = std::make_shared<DfxElfMaps>();
 
     char path[NAME_LEN] = {0};
@@ -71,13 +71,13 @@ std::shared_ptr<DfxElfMaps> DfxElfMaps::Create(pid_t pid)
         DfxLogWarn("Fail to close maps info.");
         return nullptr;
     }
-    DfxLogInfo("Exit %s.", __func__);
+    DfxLogDebug("Exit %s.", __func__);
     return dfxElfMaps;
 }
 
 std::shared_ptr<DfxElfMap> DfxElfMap::Create(const std::string mapInfo, int size)
 {
-    DfxLogInfo("Enter %s.", __func__);
+    DfxLogDebug("Enter %s.", __func__);
     auto dfxElfMap = std::make_shared<DfxElfMap>();
 
     int pos = 0;
@@ -101,13 +101,13 @@ std::shared_ptr<DfxElfMap> DfxElfMap::Create(const std::string mapInfo, int size
     dfxElfMap->SetMapPerms(perms, sizeof(perms));
     TrimAndDupStr(mapInfo.substr(pos), path);
     dfxElfMap->SetMapPath(path);
-    DfxLogInfo("Exit %s.", __func__);
+    DfxLogDebug("Exit %s.", __func__);
     return dfxElfMap;
 }
 
 void DfxElfMaps::InsertMapToElfMaps(std::shared_ptr<DfxElfMap> map)
 {
-    DfxLogInfo("Enter %s.", __func__);
+    DfxLogDebug("Enter %s.", __func__);
     maps_.push_back(map);
 
     return;
@@ -116,7 +116,7 @@ void DfxElfMaps::InsertMapToElfMaps(std::shared_ptr<DfxElfMap> map)
 
 bool DfxElfMaps::FindMapByPath(const std::string path, std::shared_ptr<DfxElfMap>& map) const
 {
-    DfxLogInfo("Enter %s.", __func__);
+    DfxLogDebug("Enter %s.", __func__);
     for (auto iter = maps_.begin(); iter != maps_.end(); iter++) {
         if ((*iter)->GetMapPath() == "") {
             continue;
@@ -127,26 +127,26 @@ bool DfxElfMaps::FindMapByPath(const std::string path, std::shared_ptr<DfxElfMap
             return true;
         }
     }
-    DfxLogInfo("Exit %s.", __func__);
+    DfxLogDebug("Exit %s.", __func__);
     return false;
 }
 
 bool DfxElfMaps::FindMapByAddr(uintptr_t address, std::shared_ptr<DfxElfMap>& map) const
 {
-    DfxLogInfo("Enter %s.", __func__);
+    DfxLogDebug("Enter %s.", __func__);
     for (auto iter = maps_.begin(); iter != maps_.end(); iter++) {
         if (((*iter)->GetMapBegin() < address) && ((*iter)->GetMapEnd() > address)) {
             map = *iter;
             return true;
         }
     }
-    DfxLogInfo("Exit %s.", __func__);
+    DfxLogDebug("Exit %s.", __func__);
     return false;
 }
 
 bool DfxElfMap::IsVaild()
 {
-    DfxLogInfo("Enter %s.", __func__);
+    DfxLogDebug("Enter %s.", __func__);
     if (path_.length() == 0) {
         return false;
     }
@@ -162,7 +162,7 @@ bool DfxElfMap::IsVaild()
     if (strncmp(path_.c_str(), "/system/framework/", 18) == 0) { // 18:length of "/system/framework/"
         return false;
     }
-    DfxLogInfo("Exit %s.", __func__);
+    DfxLogDebug("Exit %s.", __func__);
     return true;
 }
 

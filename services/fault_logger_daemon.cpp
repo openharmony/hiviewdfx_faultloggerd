@@ -17,6 +17,7 @@
 #include <cerrno>
 #include <cstring>
 #include <ctime>
+#include <thread>
 #include <vector>
 
 #include <fcntl.h>
@@ -55,6 +56,8 @@ static const std::string LOG_LABLE = "FaultLoggerd";
 
 static const std::string DAEMON_RESP = "RESP:COMPLETE";
 static const char FAULTLOGGERD_SOCK_PATH[] = "/dev/unix/socket/faultloggerd.server";
+
+static const int GC_TIME_US = 1000000;
 
 static std::string GetRequestTypeName(int32_t type)
 {
@@ -365,12 +368,25 @@ void FaultLoggerDaemon::RemoveTempFileIfNeed()
     }
 }
 
-void FaultLoggerDaemon::LoopAcceptRequestAndFork(int socketFd)
+void FaultLoggerDaemon::GcZStatProcess(void)
 {
     int status = -1;
+
+    while (true) {
+        // try to wait and clear the finished child process(Z status).
+        waitpid(-1, &status, WNOHANG);
+        usleep(GC_TIME_US);
+    }
+}
+
+void FaultLoggerDaemon::LoopAcceptRequestAndFork(int socketFd)
+{
     struct sockaddr_un clientAddr;
     socklen_t clientAddrSize = sizeof(clientAddr);
     int connectionFd = -1;
+
+    auto tGcZStatProcess = std::thread(&FaultLoggerDaemon::GcZStatProcess, this);
+    tGcZStatProcess.detach();
 
     while (true) {
         if ((connectionFd = accept(socketFd, reinterpret_cast<struct sockaddr *>(&clientAddr), &clientAddrSize)) < 0) {
@@ -384,8 +400,7 @@ void FaultLoggerDaemon::LoopAcceptRequestAndFork(int socketFd)
             close(connectionFd);
             break;
         } else if (childPid > 0) {
-            // try to wait and clear the finished child process(Z status).
-            waitpid(-1, &status, WNOHANG);
+            DfxLogInfo("%s :: %s: forked child pid: %d", LOG_LABLE.c_str(), __func__, childPid);
         } else if (childPid == 0) {
             HandleRequest(connectionFd);
             close(connectionFd);

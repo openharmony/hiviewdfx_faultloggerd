@@ -338,7 +338,7 @@ std::string FaultLoggerdSystemTest::ForkAndCommands(const std::vector<std::strin
         GTEST_LOG_(INFO) << "Root ID: " << FaultLoggerdSystemTest::looprootPid;
     } else if (udid == BMS_UID) { // sys
         std::string pidLog;
-        if (fgets(resultBufShell, sizeof(resultBufShell), procFileInfo) != nullptr) {
+        while (fgets(resultBufShell, sizeof(resultBufShell), procFileInfo) != nullptr) {
             pidLog = resultBufShell;
             loopsysPid = atoi(pidLog.c_str());
             GTEST_LOG_(INFO) << "System ID: " << loopsysPid;
