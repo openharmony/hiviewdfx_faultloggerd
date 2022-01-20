@@ -50,9 +50,12 @@ ohos_executable("faultloggerd") {
 
   deps = [
     ":faultlogger.conf",
-    ":faultloggerd.cfg",
     "$faultloggerd_path/interfaces/innerkits/faultloggerd_client:libfaultloggerd",
   ]
+
+  if (!is_asan) {
+    deps += [ ":faultloggerd.cfg" ]
+  }
 
   external_deps = [
     "bytrace_standard:bytrace_core",
