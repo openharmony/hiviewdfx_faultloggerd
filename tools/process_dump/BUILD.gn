@@ -114,7 +114,6 @@ ohos_executable("processdump") {
     cflags += [ "-D__displayMaps__" ]
   }
 
-
   deps = [
     "$faultloggerd_path/interfaces/innerkits/faultloggerd_client:libfaultloggerd",
     "//third_party/libunwind:libunwind",

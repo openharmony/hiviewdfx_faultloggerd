@@ -187,7 +187,7 @@ void DfxProcess::PrintProcess(int32_t fd)
     DfxLogDebug("Enter %s.", __func__);
     size_t index = 0;
     for (auto iter = threads_.begin(); iter != threads_.end(); iter++) {
-        if ( index == 1) {
+        if (index == 1) {
             dprintf(fd, "Other thread info:\n");
         }
         (*iter)->PrintThread(fd);
