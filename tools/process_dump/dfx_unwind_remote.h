@@ -43,6 +43,7 @@ public:
 private:
     bool DfxUnwindRemoteDoUnwindStep(size_t const & index,
         std::shared_ptr<DfxThread> & thread, unw_cursor_t & cursor, std::shared_ptr<DfxProcess> process);
+    uint64_t GetPc(std::shared_ptr<DfxThread> & thread) const;
     uint64_t DfxUnwindRemoteDoAdjustPc(uint64_t pc);
 
 private:

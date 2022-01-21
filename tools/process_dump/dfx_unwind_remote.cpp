@@ -21,6 +21,7 @@
 #include <link.h>
 #include <cstdio>
 #include <cstring>
+#include <signal.h>
 #include <sys/ptrace.h>
 
 #include "dfx_log.h"
@@ -141,6 +142,16 @@ bool DfxUnwindRemote::DfxUnwindRemoteDoUnwindStep(size_t const & index,
     return true;
 }
 
+uint64_t DfxUnwindRemote::GetPc(std::shared_ptr<DfxThread> & thread) const
+{
+    std::shared_ptr<DfxRegs> regs = thread->GetThreadRegs();
+    if (regs != NULL) {
+        std::vector<uintptr_t> regsVector = regs->GetRegsData();
+        return regsVector[REG_PC_NUM];
+    }
+    return 0;
+}
+
 bool DfxUnwindRemote::UnwindThread(std::shared_ptr<DfxProcess> process, std::shared_ptr<DfxThread> thread)
 {
     DfxLogDebug("Enter %s.", __func__);
@@ -192,7 +203,8 @@ bool DfxUnwindRemote::UnwindThread(std::shared_ptr<DfxProcess> process, std::sha
 
         // Add to check pc is valid in maps x segment, if check failed use lr to backtrace instead -S-.
         std::shared_ptr<DfxElfMaps> processMaps = process->GetMaps();
-        if (!processMaps->CheckPcIsValid((uint64_t)tmpPc)) {
+        if (!processMaps->CheckPcIsValid((uint64_t)tmpPc) ||
+            ((process->GetSigno() == SIGILL) && (tmpPc == GetPc(thread)))) {
 #if defined(__arm__)
             unw_get_reg(&cursor, 14, &tmpPc); // 14 : LR
 #elif defined(__aarch64__)

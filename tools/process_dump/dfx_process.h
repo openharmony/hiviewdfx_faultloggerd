@@ -51,9 +51,18 @@ public:
     void SetMaps(std::shared_ptr<DfxElfMaps> maps);
     void SetThreads(const std::vector<std::shared_ptr<DfxThread>> &threads);
     void Detach();
+    void SetSigno(int32_t signo)
+    {
+        signo_ = signo;
+    };
+    int32_t GetSigno()
+    {
+        return signo_;
+    };
 private:
     pid_t pid_ = 0;
     pid_t uid_ = 0;
+    int32_t signo_ = -1;
     std::string processName_;
     std::shared_ptr<DfxElfMaps> maps_;
     std::vector<std::shared_ptr<DfxThread>> threads_;
