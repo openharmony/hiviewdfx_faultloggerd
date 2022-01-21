@@ -81,21 +81,21 @@ void PrintSignal(const siginfo_t &info, const int32_t fd)
     DfxSignal signal(info.si_signo);
     if (signal.IsAddrAvaliable()) {
 #if defined(__aarch64__)
-        dprintf(fd, "@0x%016lx ", (uint64_t)info.si_addr);
+        WriteLog(fd, "@0x%016lx ", (uint64_t)info.si_addr);
 #elif defined(__arm__)
-        dprintf(fd, "@0x%08x ", (uint32_t)info.si_addr);
+        WriteLog(fd, "@0x%08x ", (uint32_t)info.si_addr);
 #elif defined(__x86_64__)
-        dprintf(fd, "@0x%016lx ", static_cast<uint64_t>(info.si_addr));
+        WriteLog(fd, "@0x%016lx ", static_cast<uint64_t>(info.si_addr));
 #else
 #pragma message("Unsupport arch.")
 #endif
     }
 
     if ((info.si_code <= 0) && (info.si_pid != 0)) {
-        dprintf(fd, "from:%d:%d", info.si_pid, info.si_uid);
+        WriteLog(fd, "from:%d:%d", info.si_pid, info.si_uid);
     }
 
-    dprintf(fd, "\n");
+    WriteLog(fd, "\n");
     DfxLogDebug("Exit %s.", __func__);
 }
 

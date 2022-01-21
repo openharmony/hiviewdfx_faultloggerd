@@ -144,6 +144,34 @@ bool DfxElfMaps::FindMapByAddr(uintptr_t address, std::shared_ptr<DfxElfMap>& ma
     return false;
 }
 
+bool DfxElfMaps::CheckPcIsValid(uint64_t pc) const
+{
+    DfxLogDebug("Enter %s.", __func__);
+
+    bool ret = false;
+
+    do {
+        if (pc == 0x0) {
+            break;
+        }
+
+        std::shared_ptr<DfxElfMap> map;
+        for (auto iter = maps_.begin(); iter != maps_.end(); iter++) {
+            if (((*iter)->GetMapBegin() < pc) && ((*iter)->GetMapEnd() > pc)) {
+                map = *iter;
+                std::string perms = map->GetMapPerms();
+                if (perms.find("x") != std::string::npos) {
+                    ret = true;
+                    break;
+                }
+            }
+        }
+    } while (false);
+    
+    DfxLogDebug("Exit %s :: ret(%d).", __func__, ret);
+    return ret;
+}
+
 bool DfxElfMap::IsVaild()
 {
     DfxLogDebug("Enter %s.", __func__);
@@ -168,7 +196,7 @@ bool DfxElfMap::IsVaild()
 
 void DfxElfMap::PrintMap(int32_t fd)
 {
-    dprintf(fd, "%" PRIx64 "-%" PRIx64 " %s %08" PRIx64 " %s\n",
+    WriteLog(fd, "%" PRIx64 "-%" PRIx64 " %s %08" PRIx64 " %s\n",
         begin_, end_, perms_.c_str(), offset_, path_.c_str());
 }
 

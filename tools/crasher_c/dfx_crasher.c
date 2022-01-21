@@ -144,7 +144,6 @@ NOINLINE int Oom(void)
     if (setrlimit(RLIMIT_AS, &rlim) != 0) {
         raise(SIGINT);
     }
-
     char* bufferArray[ARG128] = { 0x00 };
     for (int i = 0; i < ARG128; i++) {
         char* buf = malloc(ARG1024 * ARG1024);
@@ -153,11 +152,56 @@ NOINLINE int Oom(void)
         }
         bufferArray[i] = buf;
     };
-
     for (int i = 0; i < ARG128; i++) {
         printf("0x%x", *(bufferArray[i] + 1));
     }
     
+    return 0;
+}
+
+NOINLINE int ProgramCounterZero(void)
+{
+    printf("test PCZero");
+
+    __asm__ volatile (
+        "mov r0, #0x00\n mov lr, pc\n bx r0\n"
+    );
+
+    return 0;
+}
+
+NOINLINE int MultiThreadCrash(void)
+{
+    printf("test MultiThreadCrash");
+
+    pthread_t t[2];
+    int threadID[2] = {1, 2};
+    pthread_create(&t[0], NULL, SleepThread, &threadID[0]);
+    pthread_create(&t[1], NULL, SleepThread, &threadID[1]);
+    pthread_detach(t[0]);
+    pthread_detach(t[1]);
+    sleep(1);
+
+    raise(SIGSEGV);
+
+    return 0;
+}
+
+NOINLINE int StackOver64(void)
+{
+    printf("test StackOver64");
+
+    return TestFunc1();
+}
+
+void *SleepThread(void *argv)
+{
+    int threadID = *(int *)argv;
+    printf("create MultiThread %d", threadID);
+
+    int sleepTime = 10;
+    sleep(sleepTime);
+
     return 0;
 }
 
@@ -180,6 +224,9 @@ void PrintUsage(void)
     printf("  MaxMethod             trigger SIGSEGV after call a function with longer name\n");
     printf("  OOM                   trigger out of memory\n");
     printf("  STACKOF               trigger a stack overflow\n");
+    printf("  PCZero                trigger pc = 0\n");
+    printf("  MTCrash               trigger crash with multi-thread\n");
+    printf("  StackOver64           trigger SIGSEGV after 70 function call\n");
     printf("  if you want the command execute in a sub thread\n");
     printf("  add thread Prefix, e.g crasher thread-SIGFPE\n");
     printf("\n");
@@ -269,6 +316,19 @@ uint64_t ParseAndDoCrash(const char *arg)
     if (!strcasecmp(arg, "OOM")) {
         return Oom();
     }
+
+    if (!strcasecmp(arg, "PCZero")) {
+        return ProgramCounterZero();
+    }
+
+    if (!strcasecmp(arg, "MTCrash")) {
+        return MultiThreadCrash();
+    }
+
+    if (!strcasecmp(arg, "StackOver64")) {
+        return StackOver64();
+    }
+
     return 0;
 }
 

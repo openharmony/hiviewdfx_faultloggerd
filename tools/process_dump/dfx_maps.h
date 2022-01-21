@@ -69,6 +69,7 @@ public:
     bool FindMapByAddr(uintptr_t address, std::shared_ptr<DfxElfMap>& map) const;
 
     std::vector<std::shared_ptr<DfxElfMap>> GetValues() const;
+    bool CheckPcIsValid(uint64_t pc) const;
 
 private:
     std::vector<std::shared_ptr<DfxElfMap>> maps_;

@@ -52,8 +52,8 @@ static const int32_t INVALID_FD = -1;
 static int32_t g_StdErrFilleDes = INVALID_FD;
 static int32_t g_DebugLogFilleDes = INVALID_FD;
 
-static const OHOS::HiviewDFX::HiLogLabel g_LOG_LABLE = {LOG_CORE, 0xD002D20, "FaultLoggerd"};
-
+static const OHOS::HiviewDFX::HiLogLabel g_LOG_LABEL = {LOG_CORE, 0xD002D20, "FaultLoggerd"};
+struct DisplayConfig g_DisplayConfig = {1, 1, 1};
 int DfxLogDebug(const char *format, ...)
 {
     if (LOG_LEVEL_DBG < LOG_LEVEL) {
@@ -67,7 +67,7 @@ int DfxLogDebug(const char *format, ...)
     ret = vsnprintf_s(buf, LOG_BUF_LEN, LOG_BUF_LEN - 1, format, args);
     va_end(args);
 
-    OHOS::HiviewDFX::HiLog::Debug(g_LOG_LABLE, "%{public}s", buf);
+    OHOS::HiviewDFX::HiLog::Debug(g_LOG_LABEL, "%{public}s", buf);
 
     if (g_DebugLogFilleDes != INVALID_FD) {
         fprintf(stderr, "%s\n", buf);
@@ -88,7 +88,7 @@ int DfxLogInfo(const char *format, ...)
     ret = vsnprintf_s(buf, LOG_BUF_LEN, LOG_BUF_LEN - 1, format, args);
     va_end(args);
 
-    OHOS::HiviewDFX::HiLog::Info(g_LOG_LABLE, "%{public}s", buf);
+    OHOS::HiviewDFX::HiLog::Info(g_LOG_LABEL, "%{public}s", buf);
 
     if (g_DebugLogFilleDes != INVALID_FD) {
         fprintf(stderr, "%s\n", buf);
@@ -109,7 +109,7 @@ int DfxLogWarn(const char *format, ...)
     ret = vsnprintf_s(buf, LOG_BUF_LEN, LOG_BUF_LEN - 1, format, args);
     va_end(args);
 
-    OHOS::HiviewDFX::HiLog::Warn(g_LOG_LABLE, "%{public}s", buf);
+    OHOS::HiviewDFX::HiLog::Warn(g_LOG_LABEL, "%{public}s", buf);
 
     if (g_DebugLogFilleDes != INVALID_FD) {
         fprintf(stderr, "%s\n", buf);
@@ -130,7 +130,7 @@ int DfxLogError(const char *format, ...)
     ret = vsnprintf_s(buf, LOG_BUF_LEN, LOG_BUF_LEN - 1, format, args);
     va_end(args);
 
-    OHOS::HiviewDFX::HiLog::Error(g_LOG_LABLE, "%{public}s", buf);
+    OHOS::HiviewDFX::HiLog::Error(g_LOG_LABEL, "%{public}s", buf);
 
     if (g_DebugLogFilleDes != INVALID_FD) {
         fprintf(stderr, "%s\n", buf);
@@ -151,7 +151,7 @@ int DfxLogFatal(const char *format, ...)
     ret = vsnprintf_s(buf, LOG_BUF_LEN, LOG_BUF_LEN - 1, format, args);
     va_end(args);
 
-    OHOS::HiviewDFX::HiLog::Fatal(g_LOG_LABLE, "%{public}s", buf);
+    OHOS::HiviewDFX::HiLog::Fatal(g_LOG_LABEL, "%{public}s", buf);
 
     if (g_DebugLogFilleDes != INVALID_FD) {
         fprintf(stderr, "%s\n", buf);
@@ -177,7 +177,7 @@ int WriteLog(int32_t fd, const char *format, ...)
     ret = vsnprintf_s(buf, LOG_BUF_LEN, LOG_BUF_LEN - 1, format, args);
     va_end(args);
 
-    OHOS::HiviewDFX::HiLog::Error(g_LOG_LABLE, "%{public}s", buf);
+    OHOS::HiviewDFX::HiLog::Error(g_LOG_LABEL, "%{public}s", buf);
 
     if (g_DebugLogFilleDes != INVALID_FD) {
         fprintf(stderr, "%s\n", buf);
@@ -217,7 +217,19 @@ void InitDebugLog(int type, int pid, int tid, int uid)
             }
             if (!strncmp("faultlogLogPersist=true", line, strlen("faultlogLogPersist=true"))) {
                 logPersist = true;
-                break;
+                continue;
+            }
+            if (!strncmp("displayRigister=false", line, strlen("displayRigister=false"))) {
+                g_DisplayConfig.displayRigister = 0;
+                continue;
+            }
+            if (!strncmp("displayBacktrace=false", line, strlen("displayBacktrace=false"))) {
+                g_DisplayConfig.displayBacktrace = 0;
+                continue;
+            }
+            if (!strncmp("displayMaps=false", line, strlen("displayMaps=false"))) {
+                g_DisplayConfig.displayMaps = 0;
+                continue;
             }
         }
         fclose(fp);

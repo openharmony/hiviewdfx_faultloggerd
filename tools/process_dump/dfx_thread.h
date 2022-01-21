@@ -39,6 +39,7 @@ public:
     std::shared_ptr<DfxFrames> GetAvaliableFrame();
     void PrintThread(const int32_t fd);
     void SkipFramesInSignalHandler();
+    void SetThreadUnwStopReason(int reason);
     void Detach();
     std::string ToString() const;
 
@@ -51,12 +52,14 @@ private:
     };
 
     bool InitThread(const pid_t pid, const pid_t tid);
+    uint64_t DfxThreadDoAdjustPc(uint64_t pc);
     pid_t pid_;
     pid_t tid_;
     std::string threadName_;
     std::shared_ptr<DfxRegs> regs_;
     std::vector<std::shared_ptr<DfxFrames>> dfxFrames_;
     ThreadStatus threadStatus_;
+    int unwStopReason_;
 };
 } // namespace HiviewDFX
 } // namespace OHOS

@@ -33,6 +33,9 @@ public:
     void SetUp();
     void TearDown();
 
+    static std::string GetPidMax();
+    static std::string GetTidMax();
+
     // 合并
     static std::string ForkAndRunCommands(const std::vector<std::string>& cmds, int commandStatus);
 
@@ -48,12 +51,17 @@ public:
     static bool IsDigit(std::string pid);
 
     static int CheckCountNum(std::string filePath, std::string pid, std::string errorCMD);
+    static int CheckCountNumPCZero(std::string filePath, std::string pid, std::string errorCMD);
     static int CheckStacktraceCountNum(std::string filePath, std::string pid, std::string errorCMD);
+    static int CheckCountNumMultiThread(std::string filePath, std::string pid, std::string errorCMD);
+    static int CheckCountNumOverStack(std::string filePath, std::string pid, std::string ErrorCMD);
     // 合并
     static void StartCrasherLoop(int type); // 1. system; 2. root; 3.app; 4. root+cpp
     static std::string FindCmdKey(std::string Cmd);
 
     static std::string rootTid[ARRAY_SIZE_HUNDRED];
+    static std::string appTid[ARRAY_SIZE_HUNDRED];
+    static std::string sysTid[ARRAY_SIZE_HUNDRED];
 
     // 更新为数组
     static int loopsysPid;
@@ -62,7 +70,9 @@ public:
     static int loopappPid;
 
     static char resultBufShell[ARRAY_SIZE_HUNDRED];
+    static int appTidCount;
     static int rootTidCount;
+    static int sysTidCount;
 };
 } // namespace HiviewDFX
 } // namespace OHOS

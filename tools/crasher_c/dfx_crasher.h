@@ -39,6 +39,7 @@ int DumpStackTrace(void);
 
 void PrintUsage(void);
 void *DoCrashInThread(void *inputArg);
+void *SleepThread(void *argv);
 
 uint64_t DoActionOnSubThread(const char *arg);
 uint64_t ParseAndDoCrash(const char *arg);
