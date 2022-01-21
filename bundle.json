@@ -3,6 +3,10 @@
   "description": "Collecting c/c++ runtime crash log",
   "version": "3.1",
   "license": "Apache License 2.0",
+  "publishAs": "code-segment",
+  "segment": {
+      "destPath": "base/hiviewdfx/faultloggerd"
+  },
   "component": {
     "name": "faultloggerd",
     "subsystem": "hiviewdfx",
@@ -13,9 +17,9 @@
     "ram": "~1024KB",
     "deps": {
       "components": [
-        "bytrace_core",
-        "libhilog",
-        "utils"
+        "bytrace_standard",
+        "hilog_native",
+        "utils_base"
       ],
       "third_party": [
         "libunwind"
@@ -33,6 +37,7 @@
       "test": [
         "//base/hiviewdfx/faultloggerd/example:dumpcatcherdemo",
         "//base/hiviewdfx/faultloggerd/interfaces/innerkits/dump_catcher/test:harmonystrace",
+        "//base/hiviewdfx/faultloggerd/test:faultloggerd_moduletest",
         "//base/hiviewdfx/faultloggerd/test:faultloggerd_systemtest",
         "//base/hiviewdfx/faultloggerd/test:faultloggerd_performancetest",
         "//base/hiviewdfx/faultloggerd/tools/crasher_c:crasher_c",

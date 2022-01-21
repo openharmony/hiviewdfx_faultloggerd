@@ -1,4 +1,4 @@
-# Copyright (c) 2021 Huawei Device Co., Ltd.
+# Copyright (c) 2022 Huawei Device Co., Ltd.
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -10,28 +10,28 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 import("//base/hiviewdfx/faultloggerd/faultloggerd.gni")
 import("//build/test.gni")
-group("faultloggerd_moduletest") {
-  testonly = true
-  deps = [ "moduletest:moduletest" ]
+
+module_output_path = "faultloggerd/faultloggerd_native"
+
+config("module_private_config") {
+  visibility = [ ":*" ]
+  include_dirs = [ "include" ]
 }
 
-group("faultloggerd_systemtest") {
-  testonly = true
-  deps = [ "systemtest:systemtest" ]
+ohos_moduletest("FaultloggerdModuleTest") {
+  module_out_path = module_output_path
+  sources = [ "faultloggerd_module_test.cpp" ]
+  configs = [ ":module_private_config" ]
+  deps = [
+    "//third_party/googletest:gtest_main",
+    "//utils/native/base:utils",
+  ]
 }
 
-group("faultloggerd_performancetest") {
+group("moduletest") {
   testonly = true
-  deps = []
-
-  deps += [ "performancetest:performance" ]
-}
-
-group("faultloggerd_fuzzertest") {
-  testonly = true
-  deps = []
-
-  deps += [ "fuzztest:fuzztest" ]
+  deps = [ ":FaultloggerdModuleTest" ]
 }
