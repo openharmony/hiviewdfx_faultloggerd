@@ -20,6 +20,22 @@
 #define FALSE 0
 #define NAME_LEN 128
 
+#if defined(__arm__)
+#define USER_REG_NUM        16
+#define REG_PC_NUM          15
+#define REG_LR_NUM          14
+#elif defined(__aarch64__)
+#define USER_REG_NUM        34
+#define REG_PC_NUM          32
+#define REG_LR_NUM          30
+#elif defined(__x86_64__)
+#define USER_REG_NUM        27
+#define REG_PC_NUM          16
+#endif
+
+#define ARM_EXEC_STEP_NORMAL        4
+#define ARM_EXEC_STEP_THUMB         3
+
 #if defined(TEMP_FAILURE_RETRY)
 #undef TEMP_FAILURE_RETRY
 #define TEMP_FAILURE_RETRY(exp)            \

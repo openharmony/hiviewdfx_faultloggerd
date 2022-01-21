@@ -183,11 +183,11 @@ std::string DfxFrames::ToString() const
 
 void PrintFrames(std::vector<std::shared_ptr<DfxFrames>> frames, int32_t fd)
 {
-    DfxLogInfo("Enter %s.", __func__);
+    DfxLogDebug("Enter %s.", __func__);
     for (size_t i = 0; i < frames.size(); i++) {
         frames[i]->PrintFrame(fd);
     }
-    DfxLogInfo("Exit %s.", __func__);
+    DfxLogDebug("Exit %s.", __func__);
 }
 } // namespace HiviewDFX
 } // namespace OHOS

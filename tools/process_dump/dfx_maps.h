@@ -48,7 +48,6 @@ public:
     void SetMapPerms(const std::string perms, int size);
     void SetMapPath(const std::string path);
     void SetMapImage(std::shared_ptr<DfxElf> image);
-    bool CheckPcIsValid(uint64_t pc) const;
 
 private:
     uint64_t begin_ = 0;
@@ -70,6 +69,7 @@ public:
     bool FindMapByAddr(uintptr_t address, std::shared_ptr<DfxElfMap>& map) const;
 
     std::vector<std::shared_ptr<DfxElfMap>> GetValues() const;
+    bool CheckPcIsValid(uint64_t pc) const;
 
 private:
     std::vector<std::shared_ptr<DfxElfMap>> maps_;

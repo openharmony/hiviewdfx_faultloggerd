@@ -53,7 +53,7 @@ static int32_t g_StdErrFilleDes = INVALID_FD;
 static int32_t g_DebugLogFilleDes = INVALID_FD;
 
 static const OHOS::HiviewDFX::HiLogLabel g_LOG_LABEL = {LOG_CORE, 0xD002D20, "FaultLoggerd"};
-
+struct DisplayConfig g_DisplayConfig = {1, 1, 1};
 int DfxLogDebug(const char *format, ...)
 {
     if (LOG_LEVEL_DBG < LOG_LEVEL) {
@@ -217,7 +217,19 @@ void InitDebugLog(int type, int pid, int tid, int uid)
             }
             if (!strncmp("faultlogLogPersist=true", line, strlen("faultlogLogPersist=true"))) {
                 logPersist = true;
-                break;
+                continue;
+            }
+            if (!strncmp("displayRigister=false", line, strlen("displayRigister=false"))) {
+                g_DisplayConfig.displayRigister = 0;
+                continue;
+            }
+            if (!strncmp("displayBacktrace=false", line, strlen("displayBacktrace=false"))) {
+                g_DisplayConfig.displayBacktrace = 0;
+                continue;
+            }
+            if (!strncmp("displayMaps=false", line, strlen("displayMaps=false"))) {
+                g_DisplayConfig.displayMaps = 0;
+                continue;
             }
         }
         fclose(fp);

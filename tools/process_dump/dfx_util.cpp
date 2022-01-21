@@ -66,7 +66,7 @@ bool TrimAndDupStr(const std::string &source, std::string &str)
     const char *begin = source.data();
     const char *end = begin + source.size();
     if (begin == end) {
-        DfxLogInfo("Source is empty");
+        DfxLogError("Source is empty");
         return false;
     }
 

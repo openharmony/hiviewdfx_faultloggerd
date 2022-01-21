@@ -65,6 +65,7 @@ uint64_t DfxUnwindRemote::DfxUnwindRemoteDoAdjustPc(uint64_t pc)
 
     if (pc == 0) {
         ret = pc; // pc zero is abnormal case, so we don't adjust pc.
+    } else {
 #if defined(__arm__)
         if (pc & 1) { // thumb mode, pc step is 2 byte.
             ret = pc - ARM_EXEC_STEP_THUMB;

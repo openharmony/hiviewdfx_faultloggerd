@@ -171,6 +171,7 @@ uint64_t DfxThread::DfxThreadDoAdjustPc(uint64_t pc)
 
     if (pc == 0) {
         ret = pc; // pc zero is abnormal case, so we don't adjust pc.
+    } else {
 #if defined(__arm__)
         if (pc & 1) { // thumb mode, pc step is 2 byte.
             ret = pc - ARM_EXEC_STEP_THUMB;
@@ -180,6 +181,7 @@ uint64_t DfxThread::DfxThreadDoAdjustPc(uint64_t pc)
 #elif defined(__aarch64__)
         ret = pc - ARM_EXEC_STEP_NORMAL;
 #endif
+    }
 
     DfxLogDebug("Exit %s :: ret(0x%x).", __func__, ret);
     return ret;
