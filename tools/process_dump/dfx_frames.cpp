@@ -155,9 +155,6 @@ uint64_t DfxFrames::CalculateRelativePc(std::shared_ptr<DfxElfMap> elfMap)
 void DfxFrames::PrintFrame(const int32_t fd) const
 {
     DfxLogDebug("Enter %s.", __func__);
-    if (pc_ == 0) {
-        return;
-    }
 
     if (funcName_ == "") {
         WriteLog(fd, "#%02zu pc %016" PRIx64 "(%016" PRIx64 ") %s\n", index_, relativePc_,

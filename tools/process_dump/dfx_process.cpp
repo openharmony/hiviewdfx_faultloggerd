@@ -35,7 +35,7 @@
 #include "dfx_signal.h"
 #include "dfx_thread.h"
 #include "dfx_util.h"
-
+#include "dfx_log.h"
 namespace OHOS {
 namespace HiviewDFX {
 static const int SIG_NO = 35;
@@ -187,23 +187,22 @@ void DfxProcess::PrintProcess(int32_t fd)
     DfxLogDebug("Enter %s.", __func__);
     size_t index = 0;
     for (auto iter = threads_.begin(); iter != threads_.end(); iter++) {
-        if ( index == 1) {
-            dprintf(fd, "Other thread info:\n");
+        if (index == 1) {
+            WriteLog(fd, "Other thread info:\n");
         }
         (*iter)->PrintThread(fd);
         if (index == 0) {
-#if defined(__displayMaps__)
-            DfxLogInfo("displayMaps");
-            if (GetMaps()) {
-                dprintf(fd, "Maps:\n");
+            if (g_DisplayConfig.displayMaps) {
+                if (GetMaps()) {
+                    dprintf(fd, "Maps:\n");
+                }
+                auto mapsVector = maps_->GetValues();
+                for (auto iter = mapsVector.begin(); iter != mapsVector.end(); iter++) {
+                    (*iter)->PrintMap(fd);
+                }
+            } else {
+                DfxLogInfo("hidden Maps");
             }
-            auto mapsVector = maps_->GetValues();
-            for (auto iter = mapsVector.begin(); iter != mapsVector.end(); iter++) {
-                (*iter)->PrintMap(fd);
-            }
-#else
-            DfxLogInfo("hidden Maps");
-#endif
         }
         index++;
     }

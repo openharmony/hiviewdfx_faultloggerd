@@ -272,7 +272,6 @@ static void DFX_SignalHandler(int sig, siginfo_t *si, void *context)
     DfxLogByTrace(true, "faultlog_native_crash");
     DfxLogByTrace(true, "faultlog_crash_hold_process");
 
-    ResetSignalHandlerIfNeed(sig);
     (void)memset_s(&g_request, sizeof(g_request), 0, sizeof(g_request));
     g_request.type = sig;
     g_request.tid = gettid();
@@ -325,6 +324,7 @@ static void DFX_SignalHandler(int sig, siginfo_t *si, void *context)
     }
     DfxLogByTrace(false, "faultlog_crash_hold_process");
 out:
+    ResetSignalHandlerIfNeed(sig);
     prctl(PR_SET_DUMPABLE, prevDumpableStatus);
     if (isTracerStatusModified == TRUE) {
         prctl(PR_SET_PTRACER, 0);

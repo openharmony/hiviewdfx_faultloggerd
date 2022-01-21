@@ -31,7 +31,12 @@ int WriteLog(int fd, const char *format, ...);
 void DfxLogToSocket(const char *msg);
 void InitDebugLog(int type, int pid, int tid, int uid);
 void CloseDebugLog(void);
-
+struct DisplayConfig {
+    int displayRigister;
+    int displayBacktrace;
+    int displayMaps;
+};
+extern struct DisplayConfig g_DisplayConfig;
 #ifdef __cplusplus
 }
 #endif

@@ -27,6 +27,7 @@
 #include <sys/resource.h>
 #include <unistd.h>
 #include <vector>
+#include <thread>
 #include "securec.h"
 
 #include <sys/prctl.h>
@@ -47,6 +48,9 @@
 static const int RAISE35 = 35;
 static const int ARG1024 = 1024;
 static const int ARG128 = 128;
+
+static const int NUMBER_TWO = 2;
+static const int NUMBER_ONE = 1;
 
 DfxCrasher::DfxCrasher() {}
 DfxCrasher::~DfxCrasher() {}
@@ -180,6 +184,47 @@ NOINLINE int DfxCrasher::Oom() const
     return 0;
 }
 
+NOINLINE int DfxCrasher::ProgramCounterZero() const
+{
+    std::cout << "test PCZero" << std::endl;
+
+    __asm__ volatile (
+        "mov r0, #0x00\n mov lr, pc\n bx r0\n"
+    );
+
+    return 0;
+}
+
+NOINLINE int DfxCrasher::MultiThreadCrash() const
+{
+    std::cout << "test MultiThreadCrash" << std::endl;
+
+    std::thread (SleepThread, NUMBER_ONE).detach();
+    std::thread (SleepThread, NUMBER_TWO).detach();
+    sleep(1);
+
+    raise(SIGSEGV);
+
+    return 0;
+}
+
+NOINLINE int DfxCrasher::StackOver64() const
+{
+    std::cout << "test StackOver64" << std::endl;
+
+    return TestFunc1();
+}
+
+int SleepThread(int threadID)
+{
+    std::cout << "create MultiThread " <<  threadID << std::endl;
+
+    int sleepTime = 10;
+    sleep(sleepTime);
+
+    return 0;
+}
+
 void DfxCrasher::PrintUsage() const
 {
     std::cout << "  usage: crasher CMD" << std::endl;
@@ -199,6 +244,9 @@ void DfxCrasher::PrintUsage() const
     std::cout << "  MaxMethod             trigger SIGSEGV after call a function with longer name" << std::endl;
     std::cout << "  STACKOF               trigger a stack overflow" << std::endl;
     std::cout << "  OOM                   trigger out of memory" << std::endl;
+    std::cout << "  PCZero                trigger pc = 0" << std::endl;
+    std::cout << "  MTCrash               trigger crash with multi-thread" << std::endl;
+    std::cout << "  StackOver64           trigger SIGSEGV after 70 function call" << std::endl;
     std::cout << "  if you want the command execute in a sub thread" << std::endl;
     std::cout << "  add thread Prefix, e.g crasher thread-SIGFPE" << std::endl;
     std::cout << std::endl;
@@ -287,6 +335,19 @@ uint64_t DfxCrasher::ParseAndDoCrash(const char *arg)
     if (!strcasecmp(arg, "OOM")) {
         return Oom();
     }
+
+    if (!strcasecmp(arg, "PCZero")) {
+        return ProgramCounterZero();
+    }
+
+    if (!strcasecmp(arg, "MTCrash")) {
+        return MultiThreadCrash();
+    }
+
+    if (!strcasecmp(arg, "StackOver64")) {
+        return StackOver64();
+    }
+    
     return 0;
 }
 

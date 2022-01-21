@@ -48,6 +48,7 @@ public:
     void SetMapPerms(const std::string perms, int size);
     void SetMapPath(const std::string path);
     void SetMapImage(std::shared_ptr<DfxElf> image);
+    bool CheckPcIsValid(uint64_t pc) const;
 
 private:
     uint64_t begin_ = 0;

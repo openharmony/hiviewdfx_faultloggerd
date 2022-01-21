@@ -57,6 +57,29 @@ bool DfxUnwindRemote::UnwindProcess(std::shared_ptr<DfxProcess> process)
     return true;
 }
 
+uint64_t DfxUnwindRemote::DfxUnwindRemoteDoAdjustPc(uint64_t pc)
+{
+    DfxLogDebug("Enter %s :: pc(0x%x).", __func__, pc);
+
+    uint64_t ret = 0;
+
+    if (pc == 0) {
+        ret = pc; // pc zero is abnormal case, so we don't adjust pc.
+#if defined(__arm__)
+        if (pc & 1) { // thumb mode, pc step is 2 byte.
+            ret = pc - ARM_EXEC_STEP_THUMB;
+        } else {
+            ret = pc - ARM_EXEC_STEP_NORMAL;
+        }
+#elif defined(__aarch64__)
+        ret = pc - ARM_EXEC_STEP_NORMAL;
+#endif
+    }
+
+    DfxLogDebug("Exit %s :: ret(0x%x).", __func__, ret);
+    return ret;
+}
+
 bool DfxUnwindRemote::DfxUnwindRemoteDoUnwindStep(size_t const & index,
     std::shared_ptr<DfxThread> & thread, unw_cursor_t & cursor, std::shared_ptr<DfxProcess> process)
 {
@@ -73,6 +96,14 @@ bool DfxUnwindRemote::DfxUnwindRemoteDoUnwindStep(size_t const & index,
     if (unw_get_reg(&cursor, UNW_REG_IP, (unw_word_t*)(&framePc))) {
         DfxLogWarn("Fail to get program counter.");
         return false;
+    }
+
+    std::shared_ptr<DfxRegs> regs = thread->GetThreadRegs();
+    if (regs != NULL) {
+        std::vector<uintptr_t> regsVector = regs->GetRegsData();
+        if (regsVector[REG_PC_NUM] != framePc) {
+            framePc = DfxUnwindRemoteDoAdjustPc(framePc);
+        }
     }
     frame->SetFramePc(framePc);
 
@@ -138,12 +169,46 @@ bool DfxUnwindRemote::UnwindThread(std::shared_ptr<DfxProcess> process, std::sha
     }
 
     size_t index = 0;
+    int unwRet = 0;
+    unw_word_t old_pc = 0;
     do {
+        unw_word_t tmpPc = 0;
+        unw_get_reg(&cursor, UNW_REG_IP, &tmpPc);
+
+        // Exit unwind step as pc has no change. -S-
+        if (old_pc == tmpPc) {
+            DfxLogWarn("Break unwstep as tmpPc is same with old_ip .");
+            break;
+        }
+        old_pc = tmpPc;
+        // Exit unwind step as pc has no change. -E-
+
         if (!DfxUnwindRemoteDoUnwindStep(index, thread, cursor, process)) {
+            DfxLogWarn("Break unwstep as DfxUnwindRemoteDoUnwindStep failed.");
             break;
         }
         index++;
-    } while ((unw_step(&cursor) > 0) && (index < BACK_STACK_MAX_STEPS));
+
+        // Add to check pc is valid in maps x segment, if check failed use lr to backtrace instead -S-.
+        std::shared_ptr<DfxElfMaps> processMaps = process->GetMaps();
+        if (!processMaps->CheckPcIsValid((uint64_t)tmpPc)) {
+#if defined(__arm__)
+            unw_get_reg(&cursor, 14, &tmpPc); // 14 : LR
+#elif defined(__aarch64__)
+            unw_get_reg(&cursor, 30, &tmpPc); // 30 : LR
+#endif
+            unw_set_reg(&cursor, UNW_REG_IP, tmpPc);
+            if (!DfxUnwindRemoteDoUnwindStep(index, thread, cursor, process)) {  // Add lr frame to frame list.
+                DfxLogWarn("Break unwstep as DfxUnwindRemoteDoUnwindStep failed.");
+                break;
+            }
+            index++;
+        }
+        // Add to check pc is valid in maps x segment, if check failed use lr to backtrace instead -E-.
+
+        unwRet = unw_step(&cursor);
+    } while ((unwRet > 0) && (index < BACK_STACK_MAX_STEPS));
+    thread->SetThreadUnwStopReason(unwRet);
     _UPT_destroy(context);
     unw_destroy_addr_space(as);
     DfxLogDebug("Exit %s.", __func__);

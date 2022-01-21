@@ -48,7 +48,9 @@ public:
     uint64_t DoActionOnSubThread(const char* arg) const;
     uint64_t ParseAndDoCrash(const char* arg);
     int MaxStackDepth() const;
-
+    int MultiThreadCrash() const;
+    int ProgramCounterZero() const;
+    int StackOver64() const;
     //           1         2         3         4         5         6         7
     //  1234567890123456789012345678901234567890123456789012345678901234567890
     int MaxMethodNameTest12345678901234567890123456789012345678901234567890ABC() const;
@@ -63,7 +65,7 @@ private:
     DfxCrasher(const DfxCrasher &) = delete;
     DfxCrasher &operator=(const DfxCrasher &) = delete;
 };
-
+int SleepThread(int threadID);
 // test functions for callstack depth test
 int TestFunc0(void);
 int TestFunc1(void);

@@ -33,17 +33,6 @@
 #include "dfx_regs.h"
 #include "dfx_util.h"
 
-#if defined(__arm__)
-static const int USER_REG_NUM = 16;
-static const int REG_PC_NUM = 15;
-#elif defined(__aarch64__)
-static const int USER_REG_NUM = 34;
-static const int REG_PC_NUM = 32;
-#elif defined(__x86_64__)
-static const int USER_REG_NUM = 27;
-static const int REG_PC_NUM = 16;
-#endif
-
 namespace OHOS {
 namespace HiviewDFX {
 DfxThread::DfxThread(const pid_t pid, const pid_t tid, const ucontext_t &context)
@@ -155,24 +144,45 @@ void DfxThread::PrintThread(const int32_t fd)
     if (dfxFrames_.size() == 0) {
         return;
     }
-#if defined(__displayBacktrace__)
-    DfxLogInfo("displayBacktrace");
-    WriteLog(fd, "Tid:%d, Name:%s\n", tid_, threadName_.c_str());
-    PrintFrames(dfxFrames_, fd);
-#else
-    DfxLogInfo("hidden backtrace");
-#endif
 
-#if defined(__displayRegister__)
-    DfxLogInfo("displayBacktrace");
-    if (regs_) {
-        regs_->PrintRegs(fd);
+    if (g_DisplayConfig.displayBacktrace) {
+        WriteLog(fd, "Tid:%d, Name:%s\n", tid_, threadName_.c_str());
+        PrintFrames(dfxFrames_, fd);
+    } else {
+        DfxLogInfo("hidden backtrace");
     }
-#else
-    DfxLogInfo("hidden register");
-#endif
+
+    if (g_DisplayConfig.displayRigister) {
+        if (regs_) {
+            regs_->PrintRegs(fd);
+        }
+    } else {
+        DfxLogInfo("hidden register");
+    }
 
     DfxLogDebug("Exit %s.", __func__);
+}
+
+uint64_t DfxThread::DfxThreadDoAdjustPc(uint64_t pc)
+{
+    DfxLogDebug("Enter %s :: pc(0x%x).", __func__, pc);
+
+    uint64_t ret = 0;
+
+    if (pc == 0) {
+        ret = pc; // pc zero is abnormal case, so we don't adjust pc.
+#if defined(__arm__)
+        if (pc & 1) { // thumb mode, pc step is 2 byte.
+            ret = pc - ARM_EXEC_STEP_THUMB;
+        } else {
+            ret = pc - ARM_EXEC_STEP_NORMAL;
+        }
+#elif defined(__aarch64__)
+        ret = pc - ARM_EXEC_STEP_NORMAL;
+#endif
+
+    DfxLogDebug("Exit %s :: ret(0x%x).", __func__, ret);
+    return ret;
 }
 
 void DfxThread::SkipFramesInSignalHandler()
@@ -192,9 +202,25 @@ void DfxThread::SkipFramesInSignalHandler()
     size_t index = 0;
     std::vector<uintptr_t> regs = regs_->GetRegsData();
     for (int i = 0; i < framesSize; i++) {
-        if (dfxFrames_[i] != NULL && regs[REG_PC_NUM] == dfxFrames_[i]->GetFramePc()) {
+        if (dfxFrames_[i] != NULL && ((regs[REG_PC_NUM] == dfxFrames_[i]->GetFramePc())
+            || (DfxThreadDoAdjustPc(regs[REG_LR_NUM]) == dfxFrames_[i]->GetFramePc()))) {
             skipPos = true;
         }
+        /* when pc is zero the REG_LR_NUM for filtering */
+        if ((regs[REG_PC_NUM] == 0) && (DfxThreadDoAdjustPc(regs[REG_LR_NUM]) == dfxFrames_[i]->GetFramePc())) {
+            skipPos = true;
+            std::shared_ptr<DfxFrames> frame = std::make_shared<DfxFrames>();
+            frame->SetFrameIndex(index);
+            frame->SetFramePc(0);
+            frame->SetFrameRelativePc(0);
+            frame->SetFrameIndex(0);
+            frame->SetFrameMap(nullptr);
+            frame->SetFrameFuncName("");
+            frame->SetFrameFuncOffset(0);
+            skippedFrames.push_back(frame);
+            index++;
+        }
+        /* when pc is zero the REG_LR_NUM for filtering */
         if (skipPos) {
             dfxFrames_[i]->SetFrameIndex(index);
             skippedFrames.push_back(dfxFrames_[i]);
@@ -204,7 +230,14 @@ void DfxThread::SkipFramesInSignalHandler()
 
     dfxFrames_.clear();
     dfxFrames_ = skippedFrames;
-    DfxLogDebug("Exit %s.", __func__);
+    DfxLogDebug("Exit %s :: index(%d).", __func__, index);
+}
+
+void DfxThread::SetThreadUnwStopReason(int reason)
+{
+    DfxLogDebug("Enter %s.", __func__);
+    unwStopReason_ = reason;
+    DfxLogDebug("Exit %s :: unwStopReason_(%d).", __func__, unwStopReason_);
 }
 
 void DfxThread::Detach()

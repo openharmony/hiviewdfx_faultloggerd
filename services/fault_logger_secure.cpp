@@ -45,12 +45,10 @@ namespace OHOS {
 namespace HiviewDFX {
 FaultLoggerSecure::FaultLoggerSecure()
 {
-    DfxLogInfo("%s :: FaultLoggerSecure construct.\n", FaultLoggerSecure_TAG.c_str());
 }
 
 FaultLoggerSecure::~FaultLoggerSecure()
 {
-    DfxLogInfo("%s :: destructor.", FaultLoggerSecure_TAG.c_str());
 }
 
 static int DelSpace(char *src)
