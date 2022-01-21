@@ -60,7 +60,7 @@ enum RegisterSeqNum {
 
 DfxRegsArm64::DfxRegsArm64(const ucontext_t &context)
 {
-    DfxLogInfo("Enter %s.", __func__);
+    DfxLogDebug("Enter %s.", __func__);
     std::vector<uintptr_t> regs {};
     regs.push_back(uintptr_t(context.uc_mcontext.regs[REG_0]));   // 0:x0
     regs.push_back(uintptr_t(context.uc_mcontext.regs[REG_1]));   // 1:x1
@@ -97,15 +97,16 @@ DfxRegsArm64::DfxRegsArm64(const ucontext_t &context)
     regs.push_back(uintptr_t(context.uc_mcontext.pc));       // 32:pc
 
     SetRegs(regs);
-    DfxLogInfo("Exit %s.", __func__);
+    DfxLogDebug("Exit %s.", __func__);
 }
 
 void DfxRegsArm64::PrintRegs(int32_t fd) const
 {
-    DfxLogInfo("Enter %s.", __func__);
+    DfxLogDebug("Enter %s.", __func__);
     if (fd < 0) {
         return;
     }
+    WriteLog(fd, "Registers:\n");
     std::vector<uintptr_t> regs = GetRegsData();
 
     WriteLog(fd, "x0:%016lx x1:%016lx x2:%016lx x3:%016lx\n", regs[REG_0], regs[REG_1],
@@ -124,8 +125,7 @@ void DfxRegsArm64::PrintRegs(int32_t fd) const
         regs[REG_26], regs[REG_27]);
     WriteLog(fd, "x28:%016lx x29:%016lx\n", regs[REG_28], regs[REG_29]);
     WriteLog(fd, "lr:%016lx sp:%016lx pc:%016lx\n", regs[REG_30], regs[REG_31], regs[REG_32]);
-    WriteLog(fd, "\n");
-    DfxLogInfo("Exit %s.", __func__);
+    DfxLogDebug("Exit %s.", __func__);
 }
 } // namespace HiviewDFX
 } // namespace OHOS

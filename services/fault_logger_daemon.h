@@ -37,6 +37,7 @@ private:
     void HandleSDKClientReqeust(int32_t const connectionFd, FaultLoggerdRequest* request);
     void HandleLogFileDesClientReqeust(int32_t connectionFd, const FaultLoggerdRequest * request);
     void HandlePrintTHilogClientReqeust(int32_t const connectionFd, FaultLoggerdRequest * request);
+    void GcZStatProcess(void);
 
 private:
     int32_t currentLogCounts_ {0};
