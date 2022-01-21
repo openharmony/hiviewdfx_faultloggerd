@@ -34,6 +34,8 @@ config("processdump_config") {
 ohos_source_set("process_info_src") {
   if (use_musl) {
     cflags = [ "-DDFX_LOCAL_UNWIND" ]
+  } else {
+    cflags = []
   }
 
   configs = [ ":processdump_config" ]
