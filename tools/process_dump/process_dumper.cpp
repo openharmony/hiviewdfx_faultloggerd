@@ -73,7 +73,6 @@ void ProcessDumper::DumpProcessWithSignalContext(std::shared_ptr<DfxProcess> &pr
         return;
     }
 
-    process->SetSigno(request->GetSiginfo().si_signo);
     process->InitOtherThreads();
     process->SetUid(request->GetUid());
     DfxUnwindRemote::GetInstance().UnwindProcess(process);
