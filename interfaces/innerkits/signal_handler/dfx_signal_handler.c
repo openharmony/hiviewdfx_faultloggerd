@@ -27,6 +27,7 @@
 #include <time.h>
 #include <unistd.h>
 
+#include <sys/capability.h>
 #include <sys/prctl.h>
 #include <sys/syscall.h>
 #include <sys/types.h>
@@ -88,8 +89,44 @@ enum DumpPreparationStage {
     CREATE_PIPE_FAIL = 1,
     SET_PIPE_LEN_FAIL,
     WRITE_PIPE_FAIL,
+    INHERIT_CAP_FAIL,
     EXEC_FAIL,
 };
+
+static int32_t InheritCapabilities()
+{
+    struct __user_cap_header_struct capHeader;
+    if (memset_s(&capHeader, sizeof(capHeader), 0, sizeof(capHeader)) != EOK) {
+        DfxLogToSocket("Failed to memset cap header");
+        return -1;
+    }
+
+    capHeader.version = _LINUX_CAPABILITY_VERSION_3;
+    capHeader.pid = 0;
+    struct __user_cap_data_struct capData[2];
+    if (capget(&capHeader, &capData[0]) == -1) {
+        DfxLogToSocket("Failed to get origin cap data");
+        return -1;
+    }
+
+    capData[0].inheritable = capData[0].permitted;
+    capData[1].inheritable = capData[1].permitted;
+    if (capset(&capHeader, &capData[0]) == -1) {
+        DfxLogToSocket("Failed to set cap data");
+        return -1;
+    }
+
+    uint64_t ambCap = capData[0].inheritable;
+    ambCap = ambCap | ((uint64_t)capData[1].inheritable) << 32;
+    for (size_t i = 0; i < 64; i++) {
+        if (ambCap & ((uint64_t)1)) {
+            (void)prctl(PR_CAP_AMBIENT, PR_CAP_AMBIENT_RAISE, i, 0, 0);
+        }
+        ambCap = ambCap >> 1;
+    }
+    DfxLogToSocket("inheritCapabilities done");
+    return 0;
+}
 
 static int g_interestedSignalList[] = {
     SIGABRT,
@@ -171,8 +208,14 @@ static int DFX_ExecDump(void *arg)
         syscall(SYS_close, g_pipefd[0]);
     }
     syscall(SYS_close, g_pipefd[1]);
+
+    if (InheritCapabilities() != 0) {
+        DfxLogToSocket("Failed to inherit Capabilities from parent.");
+        return INHERIT_CAP_FAIL;
+    }
+
     DfxLogToSocket("Start processdump.");
-    execl("/system/bin/processdump", "-signalhandler", NULL);
+    execle("/system/bin/processdump", "-signalhandler", NULL, NULL);
     pthread_mutex_unlock(&g_dumpMutex);
     return errno;
 }

@@ -27,6 +27,7 @@
 
 #include "dfx_dump_writer.h"
 #include "dfx_log.h"
+#include "dfx_config.h"
 #include "process_dumper.h"
 #include "../../interfaces/innerkits/faultloggerd_client/include/faultloggerd_client.h"
 
@@ -177,6 +178,7 @@ int main(int argc, char *argv[])
         }
     }
 
+    OHOS::HiviewDFX::DfxConfig::GetInstance().readConfig();
     OHOS::HiviewDFX::ProcessDumper::GetInstance().Dump(isSignalHdlr, type, pid, tid);
     DfxLogDebug("End");
 
