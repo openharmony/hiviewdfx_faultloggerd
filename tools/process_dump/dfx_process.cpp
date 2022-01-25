@@ -36,6 +36,8 @@
 #include "dfx_thread.h"
 #include "dfx_util.h"
 #include "dfx_log.h"
+#include "dfx_config.h"
+
 namespace OHOS {
 namespace HiviewDFX {
 static const int SIG_NO = 35;
@@ -182,27 +184,30 @@ void DfxProcess::PrintProcessWithSiginfo(const std::shared_ptr<siginfo_t> info, 
     DfxLogDebug("Exit %s.", __func__);
 }
 
+void DfxProcess::PrintMaps(int32_t fd) const
+{
+    DfxLogDebug("Enter %s.", __func__);
+    if (GetMaps()) {
+        WriteLog(fd, "Maps:\n");
+    }
+    auto mapsVector = maps_->GetValues();
+    for (auto iter = mapsVector.begin(); iter != mapsVector.end(); iter++) {
+        (*iter)->PrintMap(fd);
+    }
+    DfxLogDebug("Exit %s.", __func__);
+}
+
 void DfxProcess::PrintProcess(int32_t fd)
 {
     DfxLogDebug("Enter %s.", __func__);
     size_t index = 0;
     for (auto iter = threads_.begin(); iter != threads_.end(); iter++) {
-        if (index == 1) {
-            WriteLog(fd, "Other thread info:\n");
+        if ( index == 1) {
+            PrintOtherThreadBacktraceHeaderByConfig(fd);
         }
         (*iter)->PrintThread(fd);
         if (index == 0) {
-            if (g_DisplayConfig.displayMaps) {
-                if (GetMaps()) {
-                    dprintf(fd, "Maps:\n");
-                }
-                auto mapsVector = maps_->GetValues();
-                for (auto iter = mapsVector.begin(); iter != mapsVector.end(); iter++) {
-                    (*iter)->PrintMap(fd);
-                }
-            } else {
-                DfxLogInfo("hidden Maps");
-            }
+            PrintProcessMapsByConfig(fd);
         }
         index++;
     }
@@ -269,5 +274,29 @@ void DfxProcess::Detach()
         (*iter)->Detach();
     }
 }
+
+void DfxProcess::PrintProcessMapsByConfig(int32_t fd)
+{
+    if (DfxConfig::GetInstance().GetDisplayMaps()) {
+        if (GetMaps()) {
+            WriteLog(fd, "Maps:\n");
+        }
+        auto mapsVector = maps_->GetValues();
+        for (auto iter = mapsVector.begin(); iter != mapsVector.end(); iter++) {
+            (*iter)->PrintMap(fd);
+        }
+    } else {
+        DfxLogInfo("hidden Maps");
+    }
+}
+
+void DfxProcess::PrintOtherThreadBacktraceHeaderByConfig(int32_t fd){
+    if (DfxConfig::GetInstance().GetDisplayBacktrace()) {
+        WriteLog(fd, "Other thread info:\n");
+    } else {
+        DfxLogInfo("hidden Maps");
+    }
+}
+
 } // namespace HiviewDFX
 } // namespace OHOS

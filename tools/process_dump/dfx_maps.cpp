@@ -155,19 +155,22 @@ bool DfxElfMaps::CheckPcIsValid(uint64_t pc) const
             break;
         }
 
-        std::shared_ptr<DfxElfMap> map;
+        std::shared_ptr<DfxElfMap> map = nullptr;
         for (auto iter = maps_.begin(); iter != maps_.end(); iter++) {
             if (((*iter)->GetMapBegin() < pc) && ((*iter)->GetMapEnd() > pc)) {
                 map = *iter;
-                std::string perms = map->GetMapPerms();
-                if (perms.find("x") != std::string::npos) {
-                    ret = true;
-                    break;
-                }
+                break;
+            }
+        }
+
+        if (map != nullptr) {
+            std::string perms = map->GetMapPerms();
+            if (perms.find("x") != std::string::npos) {
+                ret = true;
             }
         }
     } while (false);
-    
+
     DfxLogDebug("Exit %s :: ret(%d).", __func__, ret);
     return ret;
 }

@@ -32,7 +32,14 @@ public:
 
     void Dump(bool isSignalHdlr, ProcessDumpType type, int32_t pid, int32_t tid);
     ~ProcessDumper() = default;
-
+    void SetDisplayBacktrace(bool displayBacktrace);
+    bool GetDisplayBacktrace() const;
+    void SetDisplayRegister(bool displayRegister);
+    bool GetDisplayRegister() const;
+    void SetDisplayMaps(bool Maps);
+    bool GetDisplayMaps() const;
+    void SetLogPersist(bool logPersist);
+    bool GetLogPersist() const;
 private:
     void DumpProcessWithSignalContext(std::shared_ptr<DfxProcess> &process,
                                       std::shared_ptr<ProcessDumpRequest> request);
@@ -40,6 +47,10 @@ private:
 
     ProcessDumper() = default;
     DISALLOW_COPY_AND_MOVE(ProcessDumper);
+    bool displayBacktrace_ = true;
+    bool displayRegister_ = true;
+    bool displayMaps_ = true;
+    bool logPersist_ = false;
 };
 } // namespace HiviewDFX
 } // namespace OHOS

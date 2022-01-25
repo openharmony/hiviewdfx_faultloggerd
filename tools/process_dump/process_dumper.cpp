@@ -33,6 +33,7 @@
 #include "dfx_process.h"
 #include "dfx_thread.h"
 #include "dfx_unwind_remote.h"
+#include "dfx_config.h"
 
 namespace OHOS {
 namespace HiviewDFX {
@@ -50,8 +51,8 @@ void ProcessDumper::DumpProcessWithSignalContext(std::shared_ptr<DfxProcess> &pr
 
     FaultLoggerType type = (request->GetSiginfo().si_signo == SIGDUMP) ?
         FaultLoggerType::CPP_STACKTRACE : FaultLoggerType::CPP_CRASH;
-    InitDebugLog((int)type, request->GetPid(), request->GetTid(), request->GetUid());
-
+    bool isLogPersist = DfxConfig::GetInstance().GetLogPersist();
+    InitDebugLog((int)type, request->GetPid(), request->GetTid(), request->GetUid(), isLogPersist);
     // We need check pid is same with getppid().
     // As in signal handler, current process is a child process, and target pid is our parent process.
     if (getppid() != request->GetPid()) {
@@ -134,8 +135,8 @@ void ProcessDumper::Dump(bool isSignalHdlr, ProcessDumpType type, int32_t pid, i
         request->SetType(type);
 
         FaultLoggerType type = FaultLoggerType::CPP_STACKTRACE;
-        InitDebugLog((int)type, request->GetPid(), request->GetTid(), request->GetUid());
-
+        bool isLogPersist = DfxConfig::GetInstance().GetLogPersist();
+        InitDebugLog((int)type, request->GetPid(), request->GetTid(), request->GetUid(),isLogPersist);
         DumpProcess(process, request);
     }
 
@@ -150,5 +151,6 @@ void ProcessDumper::Dump(bool isSignalHdlr, ProcessDumpType type, int32_t pid, i
 
     CloseDebugLog();
 }
+
 } // namespace HiviewDFX
 } // namespace OHOS

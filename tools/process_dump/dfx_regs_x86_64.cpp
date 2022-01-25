@@ -81,13 +81,13 @@ void DfxRegsX86_64::PrintRegs(int32_t fd) const
     WriteLog(fd, "Registers:\n");
     std::vector<uintptr_t> regs = GetRegsData();
 
-    dprintf(fd, "  rax:%016lx rdx:%016lx rcx:%016lx rbx:%016lx\n", regs[REGISTER_ZERO], regs[REGISTER_ONE],
+    WriteLog(fd, "  rax:%016lx rdx:%016lx rcx:%016lx rbx:%016lx\n", regs[REGISTER_ZERO], regs[REGISTER_ONE],
         regs[REGISTER_TWO], regs[REGISTER_THREE]);
-    dprintf(fd, "  rsi:%016lx rdi:%016lx rbp:%016lx rsp:%016lx\n", regs[REGISTER_FOUR], regs[REGISTER_FIVE],
+    WriteLog(fd, "  rsi:%016lx rdi:%016lx rbp:%016lx rsp:%016lx\n", regs[REGISTER_FOUR], regs[REGISTER_FIVE],
         regs[REGISTER_SIX], regs[REGISTER_SEVEN]);
-    dprintf(fd, "  r8:%016lx r9:%016lx r10:%016lx r11:%016lx\n", regs[REGISTER_EIGHT], regs[REGISTER_NINE],
+    WriteLog(fd, "  r8:%016lx r9:%016lx r10:%016lx r11:%016lx\n", regs[REGISTER_EIGHT], regs[REGISTER_NINE],
         regs[REGISTER_TEN], regs[REGISTER_ELEVEN]);
-    dprintf(fd, "  r12:%016lx r13:%016lx r14:%016lx r15:%016lx rip:%016lx \n", regs[REGISTER_TWELVE],
+    WriteLog(fd, "  r12:%016lx r13:%016lx r14:%016lx r15:%016lx rip:%016lx \n", regs[REGISTER_TWELVE],
         regs[REGISTER_THIRTEEN], regs[REGISTER_FOURTEEN], regs[REGISTER_FIFTEEN], regs[REGISTER_SIXTEEN]);
     DfxLogDebug("Exit %s.", __func__);
 }

@@ -38,6 +38,8 @@ public:
     void SetThreadRegs(const std::shared_ptr<DfxRegs> &regs);
     std::shared_ptr<DfxFrames> GetAvaliableFrame();
     void PrintThread(const int32_t fd);
+    void PrintThreadBacktraceByConfig(const int32_t fd);
+    void PrintThreadRegisterByConfig(const int32_t fd);
     void SkipFramesInSignalHandler();
     void SetThreadUnwStopReason(int reason);
     void Detach();

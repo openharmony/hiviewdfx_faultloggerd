@@ -40,6 +40,7 @@ ohos_source_set("process_info_src") {
 
   configs = [ ":processdump_config" ]
   sources = [
+    "dfx_config.cpp",
     "dfx_dump_writer.cpp",
     "dfx_elf.cpp",
     "dfx_frames.cpp",
@@ -81,6 +82,7 @@ ohos_executable("processdump") {
   configs = [ ":processdump_config" ]
   sources = [
     "cppcrash_reporter.cpp",
+    "dfx_config.cpp",
     "dfx_dump_writer.cpp",
     "dfx_elf.cpp",
     "dfx_frames.cpp",

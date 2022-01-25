@@ -32,6 +32,7 @@
 #include "dfx_log.h"
 #include "dfx_regs.h"
 #include "dfx_util.h"
+#include "dfx_config.h"
 
 namespace OHOS {
 namespace HiviewDFX {
@@ -145,20 +146,8 @@ void DfxThread::PrintThread(const int32_t fd)
         return;
     }
 
-    if (g_DisplayConfig.displayBacktrace) {
-        WriteLog(fd, "Tid:%d, Name:%s\n", tid_, threadName_.c_str());
-        PrintFrames(dfxFrames_, fd);
-    } else {
-        DfxLogInfo("hidden backtrace");
-    }
-
-    if (g_DisplayConfig.displayRigister) {
-        if (regs_) {
-            regs_->PrintRegs(fd);
-        }
-    } else {
-        DfxLogInfo("hidden register");
-    }
+    PrintThreadBacktraceByConfig(fd);
+    PrintThreadRegisterByConfig(fd);
 
     DfxLogDebug("Exit %s.", __func__);
 }
@@ -254,23 +243,26 @@ void DfxThread::Detach()
     DfxLogDebug("Exit %s.", __func__);
 }
 
-std::string DfxThread::ToString() const
+void DfxThread::PrintThreadBacktraceByConfig(const int32_t fd)
 {
-    if (dfxFrames_.size() == 0) {
-        return "No frame info";
+    if (DfxConfig::GetInstance().GetDisplayBacktrace()) {
+        WriteLog(fd, "Tid:%d, Name:%s\n", tid_, threadName_.c_str());
+        PrintFrames(dfxFrames_, fd);
+    } else {
+        DfxLogInfo("hidden backtrace");
     }
-
-    std::stringstream threadInfoStream;
-    threadInfoStream << "Tid:" << tid_ << " ";
-    threadInfoStream << "Name:" << threadName_ << "" << std::endl;
-    for (size_t i = 0; i < dfxFrames_.size(); i++) {
-        if (dfxFrames_[i] == nullptr) {
-            continue;
-        }
-        threadInfoStream << dfxFrames_[i]->ToString();
-    }
-
-    return threadInfoStream.str();
 }
+
+void DfxThread::PrintThreadRegisterByConfig(const int32_t fd)
+{
+    if (DfxConfig::GetInstance().GetDisplayRegister()) {
+        if (regs_) {
+            regs_->PrintRegs(fd);
+        }
+    } else {
+        DfxLogInfo("hidden register");
+    }
+}
+
 } // namespace HiviewDFX
 } // nampespace OHOS

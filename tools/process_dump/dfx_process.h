@@ -35,6 +35,8 @@ public:
     bool InitProcessThreads(std::shared_ptr<DfxThread> keyThread);
     bool InitOtherThreads();
     void FillProcessName();
+    void PrintProcessMapsByConfig(int32_t fd);
+    void PrintOtherThreadBacktraceHeaderByConfig(int32_t fd);
     void InsertThreadNode(pid_t tid);
     virtual void PrintProcess(int32_t fd);
     virtual void PrintProcessWithSiginfo(const std::shared_ptr<siginfo_t> info, int32_t fd);
@@ -57,6 +59,7 @@ private:
     std::string processName_;
     std::shared_ptr<DfxElfMaps> maps_;
     std::vector<std::shared_ptr<DfxThread>> threads_;
+    void PrintMaps(int32_t fd) const;
 };
 } // namespace HiviewDFX
 } // namespace OHOS

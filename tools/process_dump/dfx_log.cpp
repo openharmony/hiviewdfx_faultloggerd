@@ -43,17 +43,14 @@
 #define LOG_LEVEL_FATAL 7
 #define LOG_LEVEL_OFF   8
 
-#define CONF_LINE_SIZE 1024
 #define NUMBER_SIXTEEN 16
 
 static const int LOG_LEVEL = LOG_LEVEL_INFO;
-
 static const int32_t INVALID_FD = -1;
 static int32_t g_StdErrFilleDes = INVALID_FD;
 static int32_t g_DebugLogFilleDes = INVALID_FD;
-
 static const OHOS::HiviewDFX::HiLogLabel g_LOG_LABEL = {LOG_CORE, 0xD002D20, "FaultLoggerd"};
-struct DisplayConfig g_DisplayConfig = {1, 1, 1};
+
 int DfxLogDebug(const char *format, ...)
 {
     if (LOG_LEVEL_DBG < LOG_LEVEL) {
@@ -196,48 +193,14 @@ void DfxLogToSocket(const char *msg)
 }
 
 
-void InitDebugLog(int type, int pid, int tid, int uid)
+void InitDebugLog(int type, int pid, int tid, int uid, bool isLogPersist)
 {
     if (g_DebugLogFilleDes != INVALID_FD) {
         return;
     }
-
-    do {
-        FILE *fp = nullptr;
-        char line[CONF_LINE_SIZE] = {0};
-        bool logPersist = false;
-
-        fp = fopen("/system/etc/faultlogger.conf", "r");
-        if (fp == nullptr) {
-            break;
-        }
-        while (!feof(fp)) {
-            if (fgets(line, CONF_LINE_SIZE - 1, fp) == nullptr) {
-                continue;
-            }
-            if (!strncmp("faultlogLogPersist=true", line, strlen("faultlogLogPersist=true"))) {
-                logPersist = true;
-                continue;
-            }
-            if (!strncmp("displayRigister=false", line, strlen("displayRigister=false"))) {
-                g_DisplayConfig.displayRigister = 0;
-                continue;
-            }
-            if (!strncmp("displayBacktrace=false", line, strlen("displayBacktrace=false"))) {
-                g_DisplayConfig.displayBacktrace = 0;
-                continue;
-            }
-            if (!strncmp("displayMaps=false", line, strlen("displayMaps=false"))) {
-                g_DisplayConfig.displayMaps = 0;
-                continue;
-            }
-        }
-        fclose(fp);
-
-        if (logPersist == false) {
-            return;
-        }
-    } while (0);
+    if (isLogPersist == false) {
+        return;
+    }
 
     struct FaultLoggerdRequest faultloggerdRequest;
     if (memset_s(&faultloggerdRequest, sizeof(faultloggerdRequest), 0, sizeof(struct FaultLoggerdRequest)) != 0) {
@@ -277,4 +240,3 @@ void CloseDebugLog()
     g_DebugLogFilleDes = INVALID_FD;
     g_StdErrFilleDes = INVALID_FD;
 }
-
