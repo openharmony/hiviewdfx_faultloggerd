@@ -159,6 +159,13 @@ NOINLINE int DfxCrasher::StackOverflow() const
 NOINLINE int DfxCrasher::Oom() const
 {
     std::cout << "test oom" << std::endl;
+    struct rlimit oldRlimit;
+    if (getrlimit(RLIMIT_AS, &oldRlimit) != 0) {
+        std::cout << "getrlimit failed" << std::endl;
+        raise(SIGINT);
+    }
+    std::cout << std::hex << "old rlimit, cur:0x" << oldRlimit.rlim_cur << std::endl;
+    std::cout << std::hex << "old rlimit, max:0x" << oldRlimit.rlim_max << std::endl;
 
     struct rlimit rlim = {
         .rlim_cur = ARG128 * ARG1024 * ARG1024,
@@ -166,6 +173,7 @@ NOINLINE int DfxCrasher::Oom() const
     };
 
     if (setrlimit(RLIMIT_AS, &rlim) != 0) {
+        std::cout << "setrlimit failed" << std::endl;
         raise(SIGINT);
     }
 
@@ -173,6 +181,11 @@ NOINLINE int DfxCrasher::Oom() const
     for (int i = 0; i < ARG128; i++) {
         char* buf = static_cast<char*>(malloc(ARG1024 * ARG1024));
         if (!buf) {
+            std::cout << "malloc return null" << std::endl;
+            if (setrlimit(RLIMIT_AS, &oldRlimit) != 0) {
+                std::cout << "restore rlimit failed" << std::endl;
+            }
+            std::cout << "restore rlimit ok" << std::endl;
             abort();
         }
 
@@ -180,7 +193,7 @@ NOINLINE int DfxCrasher::Oom() const
             std::cout << "oom memset_s failed." << std::endl;
         }
         vec.push_back(buf);
-    };
+    }
     return 0;
 }
 

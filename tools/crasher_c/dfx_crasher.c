@@ -136,22 +136,36 @@ NOINLINE int StackOverflow(void)
 
 NOINLINE int Oom(void)
 {
+    struct rlimit oldRlimit;
+    if (getrlimit(RLIMIT_AS, &oldRlimit) != 0) {
+        printf("getrlimit failed\n");
+        raise(SIGINT);
+    }
+    printf("old rlimit, cur:0x%016" PRIx64 " max:0x%016" PRIx64 "\n",
+        (uint64_t)oldRlimit.rlim_cur, (uint64_t)oldRlimit.rlim_max);
+
     struct rlimit rlim = {
-        .rlim_cur = (ARG128-1) * ARG1024 * ARG1024,
-        .rlim_max = (ARG128-1) * ARG1024 * ARG1024,
+        .rlim_cur = (ARG128 - 1) * ARG1024 * ARG1024,
+        .rlim_max = (ARG128 - 1) * ARG1024 * ARG1024,
     };
 
     if (setrlimit(RLIMIT_AS, &rlim) != 0) {
+        printf("setrlimit failed\n");
         raise(SIGINT);
     }
     char* bufferArray[ARG128] = { 0x00 };
     for (int i = 0; i < ARG128; i++) {
-        char* buf = malloc(ARG1024 * ARG1024);
+        char* buf = (char*)malloc(ARG1024 * ARG1024);
         if (!buf) {
+            printf("malloc return null\n");
+            if (setrlimit(RLIMIT_AS, &oldRlimit) != 0) {
+                printf("restore rlimit failed\n");
+            }
+            printf("restore rlimit ok\n");
             abort();
         }
         bufferArray[i] = buf;
-    };
+    }
     for (int i = 0; i < ARG128; i++) {
         printf("0x%x", *(bufferArray[i] + 1));
     }
