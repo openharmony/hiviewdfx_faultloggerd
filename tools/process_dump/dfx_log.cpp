@@ -174,12 +174,16 @@ int WriteLog(int32_t fd, const char *format, ...)
     ret = vsnprintf_s(buf, LOG_BUF_LEN, LOG_BUF_LEN - 1, format, args);
     va_end(args);
 
-    OHOS::HiviewDFX::HiLog::Error(g_LOG_LABEL, "%{public}s", buf);
+    if (LOG_LEVEL < LOG_LEVEL_DBG) {
+        OHOS::HiviewDFX::HiLog::Debug(g_LOG_LABEL, "%{public}s", buf);
+    }
 
     if (g_DebugLogFilleDes != INVALID_FD) {
-        fprintf(stderr, "%s\n", buf);
+        fprintf(stderr, "%s", buf);
     }
+
     dprintf(fd, "%s", buf);
+
     return ret;
 }
 
@@ -198,7 +202,7 @@ void InitDebugLog(int type, int pid, int tid, int uid, bool isLogPersist)
     if (g_DebugLogFilleDes != INVALID_FD) {
         return;
     }
-    if (isLogPersist == false) {
+    if (!isLogPersist) {
         return;
     }
 

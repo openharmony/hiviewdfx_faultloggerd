@@ -38,6 +38,7 @@ ohos_shared_library("dfx_signalhandler") {
 
   external_deps = [
     "bytrace_standard:bytrace_core",
+    "hilog_native:libhilog_base",
     "hilog_native:libhilog",
     "utils_base:utils",
   ]

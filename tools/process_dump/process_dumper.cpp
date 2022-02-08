@@ -76,6 +76,7 @@ void ProcessDumper::DumpProcessWithSignalContext(std::shared_ptr<DfxProcess> &pr
 
     process->InitOtherThreads();
     process->SetUid(request->GetUid());
+    process->SetIsSignalHdlr(true);
     DfxUnwindRemote::GetInstance().UnwindProcess(process);
     DfxLogDebug("Exit %s.", __func__);
 }
@@ -99,6 +100,7 @@ void ProcessDumper::DumpProcess(std::shared_ptr<DfxProcess> &process,
         return;
     }
 
+    process->SetIsSignalHdlr(false);
     DfxUnwindRemote::GetInstance().UnwindProcess(process);
     DfxLogDebug("Exit %s.", __func__);
 }

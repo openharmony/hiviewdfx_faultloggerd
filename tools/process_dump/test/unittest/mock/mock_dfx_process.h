@@ -28,7 +28,7 @@ class MockDfxProcess : public DfxProcess {
 public:
     MockDfxProcess() = default;
     virtual ~MockDfxProcess() = default;
-    MOCK_METHOD1(PrintProcess, void(int32_t fd));
+    MOCK_METHOD2(PrintProcess, void(int32_t fd, bool printMapFlag));
     MOCK_METHOD2(PrintProcessWithSiginfo, void(const std::shared_ptr<siginfo_t> info, int32_t fd));
 };
 } // namespace HiviewDFX

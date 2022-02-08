@@ -25,7 +25,6 @@
 #include <sys/types.h>
 #include <sys/un.h>
 #include <unistd.h>
-
 #include <hilog/log_c.h>
 #include "dfx_log.h"
 
@@ -201,6 +200,36 @@ static FaultLoggerDaemonSecureCheckResp SendUidToServer(int sockfd)
     } while (false);
 
     return mRsp;
+}
+
+bool CheckConnectStatus()
+{
+    int sockfd = -1;
+    bool check_status = false;
+    if ((sockfd = socket(AF_LOCAL, SOCK_STREAM, 0)) < 0) {
+        return false;
+    }
+    do {
+        struct sockaddr_un server;
+        errno_t ret = memset_s(&server, sizeof(server), 0, sizeof(server));
+        if (ret != EOK) {
+            DfxLogError("memset_s failed, err = %d.", (int)ret);
+            break;
+        }
+        server.sun_family = AF_LOCAL;
+        if (strncpy_s(server.sun_path, sizeof(server.sun_path),
+            FAULTLOGGERD_SOCK_PATH, strlen(FAULTLOGGERD_SOCK_PATH)) != 0) {
+            break;
+        }
+
+        int len = offsetof(struct sockaddr_un, sun_path) + strlen(server.sun_path) + 1;
+        int connect_status = connect(sockfd, reinterpret_cast<struct sockaddr *>(&server), len);
+        if (connect_status == 0) {
+            check_status = true;
+        }
+    } while (false);
+    close(sockfd);
+    return check_status;
 }
 
 bool RequestCheckPermission(int32_t pid)
