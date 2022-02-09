@@ -126,11 +126,6 @@ std::shared_ptr<DfxRegs> DfxThread::GetThreadRegs() const
     return regs_;
 }
 
-std::vector<std::shared_ptr<DfxFrames>> DfxThread::GetThreadDfxFrames() const
-{
-    return dfxFrames_;
-}
-
 void DfxThread::SetThreadRegs(const std::shared_ptr<DfxRegs> &regs)
 {
     regs_ = regs;
@@ -153,7 +148,7 @@ void DfxThread::PrintThread(const int32_t fd)
 
     PrintThreadBacktraceByConfig(fd);
     PrintThreadRegisterByConfig(fd);
-    PrintThreadFaultStackByConfig(fd);
+
     DfxLogDebug("Exit %s.", __func__);
 }
 
@@ -197,19 +192,22 @@ void DfxThread::SkipFramesInSignalHandler()
     bool skipPos = false;
     size_t index = 0;
     std::vector<uintptr_t> regs = regs_->GetRegsData();
-    uintptr_t adjustedLr = DfxThreadDoAdjustPc(regs[REG_LR_NUM]);
     for (int i = 0; i < framesSize; i++) {
         if (dfxFrames_[i] != NULL && ((regs[REG_PC_NUM] == dfxFrames_[i]->GetFramePc())
-            || (adjustedLr == dfxFrames_[i]->GetFramePc()))) {
+            || (DfxThreadDoAdjustPc(regs[REG_LR_NUM]) == dfxFrames_[i]->GetFramePc()))) {
             skipPos = true;
         }
         /* when pc is zero the REG_LR_NUM for filtering */
-        if ((regs[REG_PC_NUM] == 0) && (adjustedLr == dfxFrames_[i]->GetFramePc())) {
-            DfxLogDebug("%s :: add pc=0 frame :: index(%d), i(%d), adjustedLr=0x%x, dfxFrames_[i]->GetFramePc()=0x%x",
-                __func__, index, i, adjustedLr, dfxFrames_[i]->GetFramePc());
+        if ((regs[REG_PC_NUM] == 0) && (DfxThreadDoAdjustPc(regs[REG_LR_NUM]) == dfxFrames_[i]->GetFramePc())) {
             skipPos = true;
             std::shared_ptr<DfxFrames> frame = std::make_shared<DfxFrames>();
             frame->SetFrameIndex(index);
+            frame->SetFramePc(0);
+            frame->SetFrameRelativePc(0);
+            frame->SetFrameIndex(0);
+            frame->SetFrameMap(nullptr);
+            frame->SetFrameFuncName("");
+            frame->SetFrameFuncOffset(0);
             skippedFrames.push_back(frame);
             index++;
         }
@@ -231,82 +229,6 @@ void DfxThread::SetThreadUnwStopReason(int reason)
     DfxLogDebug("Enter %s.", __func__);
     unwStopReason_ = reason;
     DfxLogDebug("Exit %s :: unwStopReason_(%d).", __func__, unwStopReason_);
-}
-
-void DfxThread::CreateFaultStack(std::shared_ptr<DfxElfMaps> maps)
-{
-    DfxLogDebug("Enter %s.", __func__);
-    char code_buffer[FAULTSTACK_ITEM_BUFFER_LENGTH] = {};
-    int lowAddressStep = DfxConfig::GetInstance().GetFaultStackLowAddressStep();
-    int highAddressStep = DfxConfig::GetInstance().GetFaultStackHighAddressStep();
-    for (size_t i = 0; i < dfxFrames_.size(); i++) {
-        std::string strFaultStack;
-        bool displayAll = true;
-        bool displayAdjust = false;
-#if defined(__arm__)
-#define printLength "08"
-        int startSp ,currentSp, nextSp, storeData, totalStepSize, filterStart, filterEnd, regLr;
-        int stepLength = 4;
-        currentSp = (int)dfxFrames_[i]->GetFrameSp();
-        regLr = (i+1 == dfxFrames_.size()) ? 0 : (int)dfxFrames_[i+1]->GetFrameLr();
-#elif defined(__aarch64__)
-#define printLength "16"
-        uint64_t startSp,currentSp,nextSp,storeData,totalStepSize,filterStart,filterEnd, regLr;
-        int stepLength = 8;
-        currentSp = dfxFrames_[i]->GetFrameSp();
-        regLr = (i+1 == dfxFrames_.size()) ? 0 : dfxFrames_[i+1]->GetFrameLr();
-#endif
-        std::shared_ptr<DfxElfMap> map = nullptr;
-        (void)maps->FindMapByAddr((uintptr_t)regLr, map);
-        startSp = currentSp &= ~FAULTSTACK_SP_REVERSE;
-        if (i == (dfxFrames_.size() - 1)) {
-            nextSp = currentSp + FAULTSTACK_FIRST_FRAME_SEARCH_LENGTH;
-        } else {
-#if defined(__arm__)
-            nextSp = (int)dfxFrames_[i+1]->GetFrameSp();
-#elif defined(__aarch64__)
-            nextSp = dfxFrames_[i+1]->GetFrameSp();
-#endif
-        }
-        totalStepSize = (nextSp - currentSp)/stepLength;
-        if (totalStepSize > (lowAddressStep + highAddressStep)) {
-            displayAll = false;
-            filterStart = currentSp + lowAddressStep*stepLength;
-            filterEnd   = currentSp + (totalStepSize - highAddressStep)*stepLength;
-        }
-        while (currentSp < nextSp) {
-            if (!displayAll && (currentSp == filterStart)) {
-                std::string itemFaultStack("    ...\n");
-
-                strFaultStack += itemFaultStack;
-                currentSp = filterEnd;
-                continue;
-            }
-            memset_s(code_buffer, sizeof(code_buffer), '\0', sizeof(code_buffer));
-            if (currentSp == startSp) {
-                (void)sprintf_s(code_buffer, sizeof(code_buffer), "%" printLength "x", currentSp);
-            } else {
-                (void)sprintf_s(code_buffer, sizeof(code_buffer), "    %" printLength "x", currentSp);
-            }
-            storeData = ptrace(PTRACE_PEEKTEXT, tid_, (void*)currentSp, NULL);
-            (void)sprintf_s(code_buffer + strlen(code_buffer),
-                            sizeof(code_buffer),
-                            " %" printLength "x",
-                            storeData);
-            if ((storeData == regLr) && (map != nullptr)) {
-                (void)sprintf_s(code_buffer + strlen(code_buffer),
-                                sizeof(code_buffer),
-                                " %s",
-                                map->GetMapPath().c_str());
-            }
-            std::string itemFaultStack(code_buffer, code_buffer + strlen(code_buffer));
-            itemFaultStack.append("\n");
-            currentSp += stepLength;
-            strFaultStack += itemFaultStack;
-        }
-        dfxFrames_[i]->SetFrameFaultStack(strFaultStack);
-    }
-    DfxLogDebug("Exit %s.", __func__);
 }
 
 void DfxThread::Detach()
@@ -358,15 +280,6 @@ void DfxThread::PrintThreadRegisterByConfig(const int32_t fd)
         }
     } else {
         DfxLogInfo("hidden register");
-    }
-}
-
-void DfxThread::PrintThreadFaultStackByConfig(const int32_t fd)
-{
-    if (DfxConfig::GetInstance().GetDisplayFaultStack()) {
-        PrintFaultStacks(dfxFrames_, fd);
-    } else {
-        DfxLogInfo("hidden faultStack");
     }
 }
 

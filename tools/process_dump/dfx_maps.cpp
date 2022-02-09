@@ -146,7 +146,7 @@ bool DfxElfMaps::FindMapByAddr(uintptr_t address, std::shared_ptr<DfxElfMap>& ma
 
 bool DfxElfMaps::CheckPcIsValid(uint64_t pc) const
 {
-    DfxLogDebug("Enter %s :: pc(0x%x).", __func__, pc);
+    DfxLogDebug("Enter %s.", __func__);
 
     bool ret = false;
 
