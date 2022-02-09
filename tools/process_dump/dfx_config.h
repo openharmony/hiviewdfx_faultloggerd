@@ -14,7 +14,10 @@
  */
 #ifndef DFX_CONFIG_H
 #define DFX_CONFIG_H
+#define CONF_LINE_SIZE 1024
 
+#include<memory>
+#include <iostream>
 namespace OHOS {
 namespace HiviewDFX {
 class DfxConfig final {
@@ -22,33 +25,22 @@ public:
     static DfxConfig &GetInstance();
 
     void readConfig();
-    bool parserConfig(char* filterKey, int keySize, char* filterValue, int valueSize);
     void SetDisplayBacktrace(bool displayBacktrace);
     bool GetDisplayBacktrace() const;
     void SetDisplayRegister(bool displayRegister);
     bool GetDisplayRegister() const;
-    void SetDisplayMaps(bool displayMaps);
+    void SetDisplayMaps(bool Maps);
     bool GetDisplayMaps() const;
-    void SetDisplayFaultStack(bool displayFaultStack);
-    bool GetDisplayFaultStack() const;
-    void SetFaultStackLowAddressStep(unsigned int lowAddressStep);
-    unsigned int GetFaultStackLowAddressStep() const;
-    void SetFaultStackHighAddressStep(unsigned int highAddressStep);
-    unsigned int GetFaultStackHighAddressStep() const;
     void SetLogPersist(bool logPersist);
     bool GetLogPersist() const;
-    void foramtKV(char *line, char *key, char *value);
-    void trim(char *strIn, char *strOut);
+
 private:
     DfxConfig() = default;
     ~DfxConfig() = default;
     bool displayBacktrace_ = true;
     bool displayRegister_ = true;
     bool displayMaps_ = true;
-    bool displayFaultStack_ = true;
     bool logPersist_ = false;
-    unsigned int lowAddressStep_ = 16;
-    unsigned int highAddressStep_ = 4;
 };
 
 } // namespace HiviewDFX

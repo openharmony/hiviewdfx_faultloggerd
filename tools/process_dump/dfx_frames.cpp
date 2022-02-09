@@ -25,7 +25,6 @@
 #include "dfx_log.h"
 #include "dfx_maps.h"
 
-static const int FAULT_STACK_SHOW_FLOOR = 4;
 namespace OHOS {
 namespace HiviewDFX {
 void DfxFrames::SetFrameIndex(size_t index)
@@ -56,16 +55,6 @@ void DfxFrames::SetFramePc(uint64_t pc)
 uint64_t DfxFrames::GetFramePc() const
 {
     return pc_;
-}
-
-void DfxFrames::SetFrameLr(uint64_t lr)
-{
-    lr_ = lr;
-}
-
-uint64_t DfxFrames::GetFrameLr() const
-{
-    return lr_;
 }
 
 void DfxFrames::SetFrameSp(uint64_t sp)
@@ -106,16 +95,6 @@ void DfxFrames::SetFrameMap(const std::shared_ptr<DfxElfMap> map)
 std::shared_ptr<DfxElfMap> DfxFrames::GetFrameMap() const
 {
     return map_;
-}
-
-void DfxFrames::SetFrameFaultStack(const std::string &faultStack)
-{
-    faultStack_ = faultStack;
-}
-
-std::string DfxFrames::GetFrameFaultStack() const
-{
-    return faultStack_;
 }
 
 void DfxFrames::DestroyFrames(const std::shared_ptr<DfxFrames> frameHead) {}
@@ -188,18 +167,6 @@ void DfxFrames::PrintFrame(const int32_t fd) const
     DfxLogDebug("Exit %s.", __func__);
 }
 
-void DfxFrames::PrintFaultStack(const int32_t fd, int i) const
-{
-    DfxLogDebug("Enter %s.", __func__);
-
-    if (faultStack_ == "") {
-        return;
-    }
-
-    WriteLog(fd, "Sp%d:%s", i, faultStack_.c_str());
-    DfxLogDebug("Exit %s.", __func__);
-}
-
 std::string DfxFrames::ToString() const
 {
     char buf[1024] = "\0"; // 1024 buffer length
@@ -219,29 +186,6 @@ void PrintFrames(std::vector<std::shared_ptr<DfxFrames>> frames, int32_t fd)
     DfxLogDebug("Enter %s.", __func__);
     for (size_t i = 0; i < frames.size(); i++) {
         frames[i]->PrintFrame(fd);
-    }
-    DfxLogDebug("Exit %s.", __func__);
-}
-
-void PrintFaultStacks(std::vector<std::shared_ptr<DfxFrames>> frames, int32_t fd)
-{
-    DfxLogDebug("Enter %s.", __func__);
-    bool isEmpty = false;
-    for (size_t i = 0; i < frames.size(); i++) {
-        isEmpty = frames[i]->GetFrameFaultStack().empty();
-        if (i == 0 && (frames[i]->GetFramePc() == 0)) {
-            WriteLog(fd, "FaultStack:\n");
-            WriteLog(fd, "Sp0: Unknow\n");
-            continue;
-        }
-        if (i == 0 && !isEmpty) {
-            WriteLog(fd, "FaultStack:\n");
-        }
-        if (i == FAULT_STACK_SHOW_FLOOR && !isEmpty) {
-            WriteLog(fd, "    ...\n");
-            break;
-        }
-        frames[i]->PrintFaultStack(fd, i);
     }
     DfxLogDebug("Exit %s.", __func__);
 }

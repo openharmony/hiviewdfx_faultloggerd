@@ -30,6 +30,7 @@ void DfxLogByTrace(bool start, const char *tag); // start : false, finish a tag 
 int WriteLog(int fd, const char *format, ...);
 void DfxLogToSocket(const char *msg);
 void InitDebugLog(int type, int pid, int tid, int uid, bool isLogPersist);
+//void InitDebugLog(int type, int pid, int tid, int uid);
 void CloseDebugLog(void);
 #ifdef __cplusplus
 }

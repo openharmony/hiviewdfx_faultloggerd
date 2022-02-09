@@ -59,7 +59,6 @@ struct FaultLoggerdRequest {
 int32_t RequestFileDescriptor(int32_t type);
 int32_t RequestLogFileDescriptor(struct FaultLoggerdRequest *request);
 int RequestFileDescriptorEx(const struct FaultLoggerdRequest *request);
-bool CheckConnectStatus();
 bool RequestCheckPermission(int32_t pid);
 void RequestPrintTHilog(const char *msg, int length);
 

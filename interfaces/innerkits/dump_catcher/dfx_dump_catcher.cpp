@@ -56,7 +56,7 @@
 
 static const int SYMBOL_BUF_SIZE = 4096;
 static const int PID2 = 2;
-static const int BACK_STACK_INFO_SIZE = (128 * 1024);  // 128K
+static const int BACK_STACK_INFO_SIZE = (16 * 1024);  // 16K
 char* g_StackInfo_ = nullptr;
 static const int BACK_STACK_MAX_STEPS = 64;  // max unwind 64 steps.
 static const std::string DFXDUMPCATCHER_TAG = "DfxDumpCatcher";
@@ -193,6 +193,7 @@ bool DfxDumpCatcher::DumpCatch(const int pid, const int tid, std::string& msg)
             if (fp == nullptr) {
                 break;
             }
+            wait(&st);
 
             int count = fread(g_StackInfo_, 1, (BACK_STACK_INFO_SIZE - 1), fp);
             fclose(fp);

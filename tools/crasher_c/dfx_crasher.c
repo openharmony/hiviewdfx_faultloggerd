@@ -219,28 +219,6 @@ void *SleepThread(void *argv)
     return 0;
 }
 
-NOINLINE int StackTop(void)
-{
-    printf("test StackTop");
-
-    int stackTop;
-    __asm__ volatile ("mov %0, sp":"=r"(stackTop)::);
-    printf("crasher_c: stack top is = %08x", stackTop);
-
-    FILE *fp = NULL;
-    fp = fopen("spC", "w");
-    (void)fprintf(fp, "%08x", stackTop);
-    (void)fclose(fp);
-
-    // trigger an error to crash
-    int a = 1;
-    int *b = &a;
-    b = NULL;
-    *b = 1;
-
-    return 0;
-}
-
 void PrintUsage(void)
 {
     printf("  usage: crasher CMD\n");
@@ -263,7 +241,6 @@ void PrintUsage(void)
     printf("  PCZero                trigger pc = 0\n");
     printf("  MTCrash               trigger crash with multi-thread\n");
     printf("  StackOver64           trigger SIGSEGV after 70 function call\n");
-    printf("  StackTop              trigger SIGSEGV to make sure stack top\n");
     printf("  if you want the command execute in a sub thread\n");
     printf("  add thread Prefix, e.g crasher thread-SIGFPE\n");
     printf("\n");
@@ -364,10 +341,6 @@ uint64_t ParseAndDoCrash(const char *arg)
 
     if (!strcasecmp(arg, "StackOver64")) {
         return StackOver64();
-    }
-
-    if (!strcasecmp(arg, "StackTop")) {
-        return StackTop();
     }
 
     return 0;
