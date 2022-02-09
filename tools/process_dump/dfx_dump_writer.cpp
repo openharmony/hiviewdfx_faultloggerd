@@ -138,7 +138,7 @@ void DfxDumpWriter::WriteProcessDump(std::shared_ptr<ProcessDumpRequest> request
     }
 
     if (fromSignalHandler_ == 0) {
-        process_->PrintProcess(STDOUT_FILENO);
+        process_->PrintProcess(STDOUT_FILENO, false);
     } else {
         struct FaultLoggerdRequest faultloggerdRequest;
         if (memset_s(&faultloggerdRequest, sizeof(faultloggerdRequest), 0, sizeof(struct FaultLoggerdRequest)) != 0) {

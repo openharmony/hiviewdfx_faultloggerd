@@ -54,6 +54,12 @@ static void PrintPermissionCheckFailed()
     std::cout << "Only BMS and the process owner can dump stacktrace." << std::endl;
 }
 
+static void PrintFailedConnect()
+{
+    std::cout << DUMP_STACK_TAG_FAILED << std::endl;
+    std::cout << "faultloggerd is not available" << std::endl;
+}
+
 static void PrintPidTidCheckFailed(int32_t pid, int32_t tid)
 {
     std::cout << DUMP_STACK_TAG_FAILED << std::endl;
@@ -167,11 +173,14 @@ int main(int argc, char *argv[])
     }
 
     if (!isSignalHdlr) { // We need do permission check when "false == isSignalHdlr" dump.
+        if (!CheckConnectStatus()) {
+            PrintFailedConnect();
+            return 0;
+        }
         if (!CheckPidTid(type, pid, tid)) { // check pid tid is valid
             PrintPidTidCheckFailed(pid, tid);
             return 0;
         }
-
         if (!RequestCheckPermission(pid)) { // check permission
             PrintPermissionCheckFailed();
             return 0;

@@ -23,6 +23,7 @@
 #include "dfx_define.h"
 #include "dfx_frames.h"
 #include "dfx_regs.h"
+#include "dfx_maps.h"
 
 namespace OHOS {
 namespace HiviewDFX {
@@ -35,13 +36,16 @@ public:
     pid_t GetThreadId() const;
     std::string GetThreadName() const;
     std::shared_ptr<DfxRegs> GetThreadRegs() const;
+    std::vector<std::shared_ptr<DfxFrames>> GetThreadDfxFrames() const;
     void SetThreadRegs(const std::shared_ptr<DfxRegs> &regs);
     std::shared_ptr<DfxFrames> GetAvaliableFrame();
     void PrintThread(const int32_t fd);
     void PrintThreadBacktraceByConfig(const int32_t fd);
     void PrintThreadRegisterByConfig(const int32_t fd);
+    void PrintThreadFaultStackByConfig(const int32_t fd);
     void SkipFramesInSignalHandler();
     void SetThreadUnwStopReason(int reason);
+    void CreateFaultStack(std::shared_ptr<DfxElfMaps> maps);
     void Detach();
     std::string ToString() const;
 

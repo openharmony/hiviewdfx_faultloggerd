@@ -36,6 +36,14 @@ ohos_systemtest("test_faultloggerd") {
     "//third_party/googletest:gtest_main",
     "//utils/native/base:utils",
   ]
+
+  if (target_cpu == "arm") {
+    cflags = [ "-D__arm__" ]
+  } else if (target_cpu == "arm64") {
+    cflags = [ "-D__aarch64__" ]
+  } else if (target_cpu == "x86_64") {
+    cflags = [ "-D__x86_64__" ]
+  }
 }
 
 group("systemtest") {
