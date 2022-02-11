@@ -34,14 +34,14 @@ ohos_shared_library("dfx_signalhandler") {
   sources = [
     "//base/hiviewdfx/faultloggerd/tools/process_dump/dfx_log.cpp",
     "dfx_dump_writer.c",
+    "dfx_elf.c",
     "dfx_frames.c",
     "dfx_maps.c",
     "dfx_process.c",
-    "dfx_thread.c",
-    "dfx_util.c",
-    "dfx_elf.c",
     "dfx_signal.c",
     "dfx_signal_handler.c",
+    "dfx_thread.c",
+    "dfx_util.c",
   ]
 
   if (target_cpu == "arm") {
@@ -59,8 +59,8 @@ ohos_shared_library("dfx_signalhandler") {
 
   external_deps = [
     "bytrace_standard:bytrace_core",
-    "hilog_native:libhilog_base",
     "hilog_native:libhilog",
+    "hilog_native:libhilog_base",
     "utils_base:utils",
   ]
 

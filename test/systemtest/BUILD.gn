@@ -46,8 +46,6 @@ ohos_systemtest("test_faultloggerd") {
   }
 }
 
-
-
 group("systemtest") {
   testonly = true
   deps = [ ":test_faultloggerd" ]
