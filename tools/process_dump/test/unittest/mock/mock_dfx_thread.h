@@ -27,7 +27,7 @@ public:
     MockDfxThread() = default;
     virtual ~MockDfxThread()  = default;
     virtual pid_t GetThreadId() = 0;
-    virtual void PrintThread(const int32_t fd) = 0;
+    virtual void PrintThread(const int32_t fd, bool isSignalDump) = 0;
 };
 
 class DfxThread : public MockDfxThread {
@@ -35,7 +35,7 @@ public:
     DfxThread() = default;
     virtual ~DfxThread()  = default;
     MOCK_METHOD0(GetThreadId, pid_t());
-    MOCK_METHOD1(PrintThread, void(const int32_t fd));
+    MOCK_METHOD2(PrintThread, void(const int32_t fd, bool isSignalDump));
 };
 } // namespace HiviewDFX
 } // namespace OHOS

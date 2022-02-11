@@ -191,7 +191,7 @@ void DfxProcess::PrintProcess(int32_t fd, bool printMapFlag)
         if ( index == 1) {
             PrintThreadsHeaderByConfig(fd);
         }
-        (*iter)->PrintThread(fd);
+        (*iter)->PrintThread(fd, isSignalDump_);
         if (index == 0 && printMapFlag == true) {
             PrintProcessMapsByConfig(fd);
         }
@@ -208,6 +208,16 @@ void DfxProcess::SetIsSignalHdlr(bool isSignalHdlr)
 bool DfxProcess::GetIsSignalHdlr() const
 {
     return isSignalHdlr_;
+}
+
+void DfxProcess::SetIsSignalDump(bool isSignalDump)
+{
+    isSignalDump_ = isSignalDump;
+}
+
+bool DfxProcess::GetIsSignalDump() const
+{
+    return isSignalDump_;
 }
 
 pid_t DfxProcess::GetPid() const

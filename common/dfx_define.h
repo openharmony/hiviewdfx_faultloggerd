@@ -44,6 +44,11 @@
 #define FAULTSTACK_SP_REVERSE 3
 #define FAULTSTACK_FIRST_FRAME_SEARCH_LENGTH 64
 
+// max unwind 64 steps.
+#define BACK_STACK_MAX_STEPS    64
+// 128K back trace stack size
+#define BACK_STACK_INFO_SIZE    (128 * 1024)
+
 #if defined(TEMP_FAILURE_RETRY)
 #undef TEMP_FAILURE_RETRY
 #define TEMP_FAILURE_RETRY(exp)            \

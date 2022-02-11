@@ -144,7 +144,7 @@ std::shared_ptr<DfxFrames> DfxThread::GetAvaliableFrame()
     return frame;
 }
 
-void DfxThread::PrintThread(const int32_t fd)
+void DfxThread::PrintThread(const int32_t fd, bool isSignalDump)
 {
     DfxLogDebug("Enter %s.", __func__);
     if (dfxFrames_.size() == 0) {
@@ -152,8 +152,10 @@ void DfxThread::PrintThread(const int32_t fd)
     }
 
     PrintThreadBacktraceByConfig(fd);
-    PrintThreadRegisterByConfig(fd);
-    PrintThreadFaultStackByConfig(fd);
+    if (isSignalDump == false) {
+        PrintThreadRegisterByConfig(fd);
+        PrintThreadFaultStackByConfig(fd);
+    }
     DfxLogDebug("Exit %s.", __func__);
 }
 
@@ -199,8 +201,9 @@ void DfxThread::SkipFramesInSignalHandler()
     std::vector<uintptr_t> regs = regs_->GetRegsData();
     uintptr_t adjustedLr = DfxThreadDoAdjustPc(regs[REG_LR_NUM]);
     for (int i = 0; i < framesSize; i++) {
-        if (dfxFrames_[i] != NULL && ((regs[REG_PC_NUM] == dfxFrames_[i]->GetFramePc())
-            || (adjustedLr == dfxFrames_[i]->GetFramePc()))) {
+        if (dfxFrames_[i] != NULL && ((regs[REG_PC_NUM] == dfxFrames_[i]->GetFramePc()))) {
+            DfxLogDebug("%s :: frame i(%d), adjustedLr=0x%x, dfxFrames_[i]->GetFramePc()=0x%x, regs[REG_PC_NUM](0x%x)",
+                __func__, i, adjustedLr, dfxFrames_[i]->GetFramePc(), regs[REG_PC_NUM]);
             skipPos = true;
         }
         /* when pc is zero the REG_LR_NUM for filtering */

@@ -43,6 +43,8 @@ public:
 
     void SetIsSignalHdlr(bool isSignalHdlr);
     bool GetIsSignalHdlr() const;
+    void SetIsSignalDump(bool isSignalDump);
+    bool GetIsSignalDump() const;
     pid_t GetPid() const;
     pid_t GetUid() const;
     std::string GetProcessName() const;
@@ -59,6 +61,7 @@ private:
     pid_t pid_ = 0;
     pid_t uid_ = 0;
     bool isSignalHdlr_ = false;
+    bool isSignalDump_ = false;
     std::string processName_;
     std::shared_ptr<DfxElfMaps> maps_;
     std::vector<std::shared_ptr<DfxThread>> threads_;

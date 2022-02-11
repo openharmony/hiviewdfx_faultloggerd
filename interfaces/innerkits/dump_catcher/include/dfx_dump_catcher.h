@@ -36,12 +36,12 @@ public:
     bool DumpCatch(const int pid, const int tid, std::string& msg);
 
 private:
-    bool ExecLocalDump(const int pid, const int tid, std::string& msg);
+    bool ExecLocalDump(const int pid, const int tid, const int skipFramNum);
+    bool DoDumpLocalPidTid(const int pid, const int tid);
+    bool DoDumpLocalPid(const int pid);
+    bool DoDumpRemote(const int pid, const int tid);
     long WriteDumpInfo(long current_position, size_t index, std::shared_ptr<DfxFrames> frame);
     void FreeStackInfo();
-
-private:
-    char* g_StackInfo_;
 };
 } // namespace HiviewDFX
 } // namespace OHOS

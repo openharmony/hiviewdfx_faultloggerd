@@ -32,7 +32,6 @@
 #include "dfx_util.h"
 
 static const int SYMBOL_BUF_SIZE = 4096;
-static const int BACK_STACK_MAX_STEPS = 64;  // max unwind 64 steps.
 
 namespace OHOS {
 namespace HiviewDFX {
@@ -235,8 +234,10 @@ bool DfxUnwindRemote::UnwindThread(std::shared_ptr<DfxProcess> process, std::sha
     bool isSignal = process->GetIsSignalHdlr();
     if (((*(process->GetThreads().begin()))->GetThreadId() == tid) && isSignal) {
         (*(process->GetThreads().begin()))->SkipFramesInSignalHandler();
-        std::shared_ptr<DfxElfMaps> maps = process->GetMaps();
-        thread->CreateFaultStack(maps);
+        if (process->GetIsSignalDump() == false) {
+            std::shared_ptr<DfxElfMaps> maps = process->GetMaps();
+            thread->CreateFaultStack(maps);
+        }
     }
 
     DfxLogDebug("Exit %s.", __func__);

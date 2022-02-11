@@ -39,7 +39,7 @@ public:
     std::vector<std::shared_ptr<DfxFrames>> GetThreadDfxFrames() const;
     void SetThreadRegs(const std::shared_ptr<DfxRegs> &regs);
     std::shared_ptr<DfxFrames> GetAvaliableFrame();
-    void PrintThread(const int32_t fd);
+    void PrintThread(const int32_t fd, bool isSignalDump);
     void PrintThreadBacktraceByConfig(const int32_t fd);
     void PrintThreadRegisterByConfig(const int32_t fd);
     void PrintThreadFaultStackByConfig(const int32_t fd);

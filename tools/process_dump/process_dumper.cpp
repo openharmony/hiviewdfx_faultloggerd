@@ -76,6 +76,12 @@ void ProcessDumper::DumpProcessWithSignalContext(std::shared_ptr<DfxProcess> &pr
         return;
     }
 
+    if (request->GetSiginfo().si_signo != SIGDUMP) {
+        process->SetIsSignalDump(false);
+    } else {
+        process->SetIsSignalDump(true);
+    }
+
     process->InitOtherThreads();
     process->SetUid(request->GetUid());
     process->SetIsSignalHdlr(true);

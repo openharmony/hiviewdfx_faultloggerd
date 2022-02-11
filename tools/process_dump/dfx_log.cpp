@@ -196,9 +196,10 @@ void DfxLogToSocket(const char *msg)
     RequestPrintTHilog(msg, length);
 }
 
-
 void InitDebugLog(int type, int pid, int tid, int uid, bool isLogPersist)
 {
+    DfxLogInfo("InitDebugLog :: type(%d), pid(%d), tid(%d), uid(%d), isLogPersist(%d).",
+        type, pid, tid, uid, isLogPersist);
     if (g_DebugLogFilleDes != INVALID_FD) {
         return;
     }

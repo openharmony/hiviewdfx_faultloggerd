@@ -17,7 +17,13 @@
 
 #include "../../interfaces/innerkits/dump_catcher/include/dfx_dump_catcher.h"
 
-#include <unistd.h>
+#include <cinttypes>
+#include <cstdlib>
+#include <cstdio>
+#include <cstring>
+#include <sys/syscall.h>
+#include <sys/types.h>
+#include <thread>
 
 #define LOG_BUF_LEN 1024
 static const int ARG1 = 1;
@@ -54,7 +60,11 @@ static bool CatchStack(int32_t pid, int32_t tid)
 static bool FunctionThree(int32_t pid, int32_t tid)
 {
     printf("This is function three.\n");
-    bool ret = CatchStack(pid, tid);
+    int currentPid = getpid();
+    int currentTid = syscall(SYS_gettid);
+    bool ret = CatchStack(currentPid, currentTid);
+    ret = CatchStack(currentPid, 0);
+    ret = CatchStack(pid, tid);
     return ret;
 }
 
@@ -70,6 +80,22 @@ static bool FunctionOne(int32_t pid, int32_t tid)
     printf("This is function one.\n");
     bool ret = FunctionTwo(pid, tid);
     return ret;
+}
+
+static int SleepThread(int threadID)
+{
+    printf("SleepThread -Enter- :: threadID(%d).\n", threadID);
+    int sleepTime = 10;
+    sleep(sleepTime);
+    printf("SleepThread -Exit- :: threadID(%d).\n", threadID);
+    return 0;
+}
+
+static int StartMultiThread()
+{
+    std::thread (SleepThread, ARG1).detach();
+    std::thread (SleepThread, ARG2).detach();
+    return 0;
 }
 
 int main(int const argc, char const * const argv[])
@@ -126,7 +152,7 @@ int main(int const argc, char const * const argv[])
     }
 
     setuid(uid);
-
+    StartMultiThread();
     bool ret = FunctionOne(pid, tid);
 
     return ret;

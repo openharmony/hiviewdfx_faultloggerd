@@ -97,6 +97,7 @@ DfxRegsArm64::DfxRegsArm64(const ucontext_t &context)
     regs.push_back(uintptr_t(context.uc_mcontext.pc));       // 32:pc
 
     SetRegs(regs);
+    DfxLogDebug("lr:%016lx sp:%016lx pc:%016lx\n", regs[REG_30], regs[REG_31], regs[REG_32]);
     DfxLogDebug("Exit %s.", __func__);
 }
 

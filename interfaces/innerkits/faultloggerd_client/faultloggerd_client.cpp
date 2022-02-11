@@ -20,6 +20,7 @@
 #include <cstring>
 #include <fcntl.h>
 #include <securec.h>
+#include <sys/syscall.h>
 #include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -158,9 +159,9 @@ int32_t RequestFileDescriptorEx(const struct FaultLoggerdRequest *request)
     return fd;
 }
 
-static FaultLoggerDaemonSecureCheckResp SendUidToServer(int sockfd)
+static FaultLoggerCheckPermissionResp SendUidToServer(int sockfd)
 {
-    FaultLoggerDaemonSecureCheckResp mRsp = FaultLoggerDaemonSecureCheckResp::FAULTLOG_SECURITY_REJECT;
+    FaultLoggerCheckPermissionResp mRsp = FaultLoggerCheckPermissionResp::CHECK_PERMISSION_REJECT;
 
     do {
         struct msghdr msgh;
@@ -196,25 +197,44 @@ static FaultLoggerDaemonSecureCheckResp SendUidToServer(int sockfd)
             break;
         }
 
-        mRsp = (FaultLoggerDaemonSecureCheckResp)atoi(recvbuf);
+        mRsp = (FaultLoggerCheckPermissionResp)atoi(recvbuf);
     } while (false);
 
     return mRsp;
 }
 
-bool RequestCheckPermission(int32_t pid)
+bool CheckConnectStatus()
 {
-    DfxLogInfo("RequestCheckPermission :: %d.", pid);
-
-    if (pid <= 0) {
+    int sockfd = -1;
+    bool check_status = false;
+    if ((sockfd = socket(AF_LOCAL, SOCK_STREAM, 0)) < 0) {
         return false;
     }
+    do {
+        struct sockaddr_un server;
+        errno_t ret = memset_s(&server, sizeof(server), 0, sizeof(server));
+        if (ret != EOK) {
+            DfxLogError("memset_s failed, err = %d.", (int)ret);
+            break;
+        }
+        server.sun_family = AF_LOCAL;
+        if (strncpy_s(server.sun_path, sizeof(server.sun_path),
+            FAULTLOGGERD_SOCK_PATH, strlen(FAULTLOGGERD_SOCK_PATH)) != 0) {
+            break;
+        }
 
-    struct FaultLoggerdRequest request;
-    memset_s(&request, sizeof(request), 0, sizeof(request));
-    request.pid = pid;
-    request.clientType = (int32_t)FaultLoggerClientType::SDK_CLIENT;
+        int len = offsetof(struct sockaddr_un, sun_path) + strlen(server.sun_path) + 1;
+        int connect_status = connect(sockfd, reinterpret_cast<struct sockaddr *>(&server), len);
+        if (connect_status == 0) {
+            check_status = true;
+        }
+    } while (false);
+    close(sockfd);
+    return check_status;
+}
 
+static bool SendRequestToServer(const FaultLoggerdRequest &request)
+{
     int sockfd = -1;
     if ((sockfd = socket(AF_LOCAL, SOCK_STREAM, 0)) < 0) {
         return false;
@@ -253,12 +273,13 @@ bool RequestCheckPermission(int32_t pid)
             break;
         }
 
-        FaultLoggerDaemonSecureCheckResp mRsp = SendUidToServer(sockfd);
+        FaultLoggerCheckPermissionResp mRsp = SendUidToServer(sockfd);
         close(sockfd);
 
-        DfxLogInfo("RequestCheckPermission :: mRsp(%d).", (int)mRsp);
+        DfxLogInfo("SendRequestToServer :: mRsp(%d).", (int)mRsp);
 
-        if (FaultLoggerDaemonSecureCheckResp::FAULTLOG_SECURITY_PASS == mRsp) {
+        if ((FaultLoggerCheckPermissionResp::CHECK_PERMISSION_PASS == mRsp)
+                || (FaultLoggerSdkDumpResp::SDK_DUMP_PASS == (FaultLoggerSdkDumpResp)mRsp)) {
             return true;
         } else {
             return false;
@@ -267,6 +288,42 @@ bool RequestCheckPermission(int32_t pid)
 
     close(sockfd);
     return false;
+}
+
+bool RequestCheckPermission(int32_t pid)
+{
+    DfxLogInfo("RequestCheckPermission :: %d.", pid);
+
+    if (pid <= 0) {
+        return false;
+    }
+
+    struct FaultLoggerdRequest request;
+    memset_s(&request, sizeof(request), 0, sizeof(request));
+
+    request.pid = pid;
+    request.clientType = (int32_t)FaultLoggerClientType::PERMISSION_CLIENT;
+
+    return SendRequestToServer(request);
+}
+
+bool RequestSdkDump(int32_t pid, int32_t tid)
+{
+    DfxLogInfo("RequestSdkDump :: pid(%d), tid(%d).", pid, tid);
+
+    if (pid <= 0 || tid < 0) {
+        return false;
+    }
+
+    struct FaultLoggerdRequest request;
+    memset_s(&request, sizeof(request), 0, sizeof(request));
+    request.pid = pid;
+    request.tid = tid;
+    request.callerPid = getpid();
+    request.callerTid = syscall(SYS_gettid);
+    request.clientType = (int32_t)FaultLoggerClientType::SDK_DUMP_CLIENT;
+
+    return SendRequestToServer(request);
 }
 
 void RequestPrintTHilog(const char *msg, int length)
