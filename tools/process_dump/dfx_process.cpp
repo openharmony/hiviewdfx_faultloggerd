@@ -174,44 +174,40 @@ void DfxProcess::PrintProcessWithSiginfo(const std::shared_ptr<siginfo_t> info, 
         PrintSignal(*(info.get()), fd);
 
         if (threads_.size() != 0) {
-            (*(GetThreads().begin()))->SkipFramesInSignalHandler();
             WriteLog(fd, "Fault thread Info:\n");
         }
     }
 
-    PrintProcess(fd);
+    PrintProcess(fd, true);
 
     DfxLogDebug("Exit %s.", __func__);
 }
 
-void DfxProcess::PrintMaps(int32_t fd) const
-{
-    DfxLogDebug("Enter %s.", __func__);
-    if (GetMaps()) {
-        WriteLog(fd, "Maps:\n");
-    }
-    auto mapsVector = maps_->GetValues();
-    for (auto iter = mapsVector.begin(); iter != mapsVector.end(); iter++) {
-        (*iter)->PrintMap(fd);
-    }
-    DfxLogDebug("Exit %s.", __func__);
-}
-
-void DfxProcess::PrintProcess(int32_t fd)
+void DfxProcess::PrintProcess(int32_t fd, bool printMapFlag)
 {
     DfxLogDebug("Enter %s.", __func__);
     size_t index = 0;
     for (auto iter = threads_.begin(); iter != threads_.end(); iter++) {
         if ( index == 1) {
-            PrintOtherThreadBacktraceHeaderByConfig(fd);
+            PrintThreadsHeaderByConfig(fd);
         }
         (*iter)->PrintThread(fd);
-        if (index == 0) {
+        if (index == 0 && printMapFlag == true) {
             PrintProcessMapsByConfig(fd);
         }
         index++;
     }
     DfxLogDebug("Exit %s.", __func__);
+}
+
+void DfxProcess::SetIsSignalHdlr(bool isSignalHdlr)
+{
+    isSignalHdlr_ = isSignalHdlr;
+}
+
+bool DfxProcess::GetIsSignalHdlr() const
+{
+    return isSignalHdlr_;
 }
 
 pid_t DfxProcess::GetPid() const
@@ -290,13 +286,13 @@ void DfxProcess::PrintProcessMapsByConfig(int32_t fd)
     }
 }
 
-void DfxProcess::PrintOtherThreadBacktraceHeaderByConfig(int32_t fd){
+void DfxProcess::PrintThreadsHeaderByConfig(int32_t fd)
+{
     if (DfxConfig::GetInstance().GetDisplayBacktrace()) {
         WriteLog(fd, "Other thread info:\n");
     } else {
-        DfxLogInfo("hidden Maps");
+        DfxLogInfo("hidden thread info.");
     }
 }
-
 } // namespace HiviewDFX
 } // namespace OHOS

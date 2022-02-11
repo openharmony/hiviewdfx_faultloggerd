@@ -26,8 +26,10 @@
 #include <cstring>
 #include <ucontext.h>
 #include <unistd.h>
-
 #include <faultloggerd_client.h>
+#include <fcntl.h>
+#include <iostream>
+
 #include "dfx_dump_writer.h"
 #include "dfx_log.h"
 #include "dfx_process.h"
@@ -76,6 +78,7 @@ void ProcessDumper::DumpProcessWithSignalContext(std::shared_ptr<DfxProcess> &pr
 
     process->InitOtherThreads();
     process->SetUid(request->GetUid());
+    process->SetIsSignalHdlr(true);
     DfxUnwindRemote::GetInstance().UnwindProcess(process);
     DfxLogDebug("Exit %s.", __func__);
 }
@@ -99,6 +102,7 @@ void ProcessDumper::DumpProcess(std::shared_ptr<DfxProcess> &process,
         return;
     }
 
+    process->SetIsSignalHdlr(false);
     DfxUnwindRemote::GetInstance().UnwindProcess(process);
     DfxLogDebug("Exit %s.", __func__);
 }
@@ -136,7 +140,17 @@ void ProcessDumper::Dump(bool isSignalHdlr, ProcessDumpType type, int32_t pid, i
 
         FaultLoggerType type = FaultLoggerType::CPP_STACKTRACE;
         bool isLogPersist = DfxConfig::GetInstance().GetLogPersist();
-        InitDebugLog((int)type, request->GetPid(), request->GetTid(), request->GetUid(),isLogPersist);
+        if (isLogPersist) {
+            InitDebugLog((int)type, request->GetPid(), request->GetTid(), request->GetUid(),isLogPersist);
+        } else {
+            int devNull = TEMP_FAILURE_RETRY(open("/dev/null", O_RDWR));
+            if (devNull < 0) {
+                std::cout << "Failed to open dev/null." << std::endl;
+                return;
+            }
+            TEMP_FAILURE_RETRY(dup2(devNull, STDERR_FILENO));
+        }
+
         DumpProcess(process, request);
     }
 

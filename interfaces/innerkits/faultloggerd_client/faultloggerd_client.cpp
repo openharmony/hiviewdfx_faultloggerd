@@ -25,7 +25,6 @@
 #include <sys/types.h>
 #include <sys/un.h>
 #include <unistd.h>
-
 #include <hilog/log_c.h>
 #include "dfx_log.h"
 

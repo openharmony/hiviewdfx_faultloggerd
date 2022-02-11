@@ -14,12 +14,6 @@
 import("//base/hiviewdfx/faultloggerd/faultloggerd.gni")
 import("//build/ohos.gni")
 
-declare_args() {
-  displayBacktrace = true
-  displayRegister = true
-  displayMaps = true
-}
-
 config("processdump_config") {
   visibility = [ ":*" ]
 
@@ -106,16 +100,6 @@ ohos_executable("processdump") {
   } else if (target_cpu == "x86_64") {
     sources += [ "dfx_regs_x86_64.cpp" ]
     cflags = [ "-D__x86_64__" ]
-  }
-
-  if (displayBacktrace) {
-    cflags += [ "-D__displayBacktrace__" ]
-  }
-  if (displayRegister) {
-    cflags += [ "-D__displayRegister__" ]
-  }
-  if (displayMaps) {
-    cflags += [ "-D__displayMaps__" ]
   }
 
   deps = [
