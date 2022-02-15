@@ -24,9 +24,6 @@
 #include <unistd.h>
 #include <ucontext.h>
 
-#include "faultloggerd_client.h"
-#include "dfx_frames.h"
-
 namespace OHOS {
 namespace HiviewDFX {
 class DfxDumpCatcher {
@@ -36,11 +33,9 @@ public:
     bool DumpCatch(const int pid, const int tid, std::string& msg);
 
 private:
-    bool ExecLocalDump(const int pid, const int tid, const int skipFramNum);
     bool DoDumpLocalPidTid(const int pid, const int tid);
     bool DoDumpLocalPid(const int pid);
     bool DoDumpRemote(const int pid, const int tid);
-    long WriteDumpInfo(long current_position, size_t index, std::shared_ptr<DfxFrames> frame);
     void FreeStackInfo();
 };
 } // namespace HiviewDFX
