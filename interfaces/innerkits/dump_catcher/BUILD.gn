@@ -36,17 +36,18 @@ ohos_shared_library("lib_dfx_dump_catcher") {
     "//base/hiviewdfx/faultloggerd/tools/process_dump/dfx_maps.cpp",
     "//base/hiviewdfx/faultloggerd/tools/process_dump/dfx_util.cpp",
     "dfx_dump_catcher.cpp",
+    "dfx_dump_catcher_local_dumper.cpp",
   ]
 
   deps = [
     "//base/hiviewdfx/faultloggerd/interfaces/innerkits/faultloggerd_client:libfaultloggerd",
-    "//base/hiviewdfx/faultloggerd/interfaces/innerkits/signal_handler:dfx_signalhandler",
     "//third_party/libunwind:libunwind",
   ]
 
   external_deps = [
     "bytrace_standard:bytrace_core",
     "hilog_native:libhilog",
+    "hilog_native:libhilog_base",
     "utils_base:utils",
   ]
 

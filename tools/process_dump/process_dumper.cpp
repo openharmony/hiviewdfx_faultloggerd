@@ -39,7 +39,6 @@
 
 namespace OHOS {
 namespace HiviewDFX {
-static const int SIGDUMP = 35;
 
 void ProcessDumper::DumpProcessWithSignalContext(std::shared_ptr<DfxProcess> &process,
                                                  std::shared_ptr<ProcessDumpRequest> request)

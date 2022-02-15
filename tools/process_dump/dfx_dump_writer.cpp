@@ -29,8 +29,6 @@
 #include "dfx_log.h"
 #include "dfx_process.h"
 
-static const int SIGDUMP = 35;
-
 namespace OHOS {
 namespace HiviewDFX {
 ProcessDumpRequest::ProcessDumpRequest()

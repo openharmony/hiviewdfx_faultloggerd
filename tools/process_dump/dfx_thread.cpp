@@ -261,9 +261,6 @@ void DfxThread::CreateFaultStack(std::shared_ptr<DfxElfMaps> maps)
 #endif
         std::shared_ptr<DfxElfMap> map = nullptr;
         bool mapCheck = maps->FindMapByAddr((uintptr_t)regLr, map);
-        if (!mapCheck) {
-            map = std::make_shared<DfxElfMap>();
-        }
         startSp = currentSp &= ~FAULTSTACK_SP_REVERSE;
         if (i == (dfxFrames_.size() - 1)) {
             nextSp = currentSp + FAULTSTACK_FIRST_FRAME_SEARCH_LENGTH;
@@ -296,12 +293,12 @@ void DfxThread::CreateFaultStack(std::shared_ptr<DfxElfMaps> maps)
             }
             storeData = ptrace(PTRACE_PEEKTEXT, tid_, (void*)currentSp, NULL);
             (void)sprintf_s(code_buffer + strlen(code_buffer),
-                            sizeof(code_buffer),
+                            sizeof(code_buffer) - strlen(code_buffer),
                             " %" printLength "x",
                             storeData);
             if ((storeData == regLr) && (mapCheck)) {
                 (void)sprintf_s(code_buffer + strlen(code_buffer),
-                                sizeof(code_buffer),
+                                sizeof(code_buffer) - strlen(code_buffer),
                                 " %s",
                                 map->GetMapPath().c_str());
             }

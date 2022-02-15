@@ -37,24 +37,19 @@
 #include <hilog_base/log_base.h>
 #include <securec.h>
 #include "dfx_define.h"
-#include "../../../tools/process_dump/dfx_log.h"
+#include "dfx_log.h"
 
 #ifdef DFX_LOCAL_UNWIND
 #include <libunwind.h>
 
 #include "dfx_dump_writer.h"
-#include "dfx_elf.h"
-#include "dfx_frames.h"
-#include "dfx_maps.h"
 #include "dfx_process.h"
-#include "dfx_regs.h"
 #include "dfx_thread.h"
 #include "dfx_util.h"
 #endif
 
 
 #define RESERVED_CHILD_STACK_SIZE (16 * 1024)  // 16K
-#define SIGDUMP 35
 
 #define BOOL int
 #define TRUE 1
@@ -78,12 +73,6 @@
 
 #define NUMBER_SIXTYFOUR 64
 #define INHERITABLE_OFFSET 32
-
-#ifndef SIGNAL_HANDLER_DEBUG
-#define SIGNAL_HANDLER_DEBUG
-#endif
-#undef SIGNAL_HANDLER_DEBUG
-
 void __attribute__((constructor)) Init()
 {
     DFX_InstallSignalHandler();
@@ -96,9 +85,6 @@ static pthread_mutex_t g_dumpMutex = PTHREAD_MUTEX_INITIALIZER;
 static int g_pipefd[2] = {-1, -1};
 static BOOL g_hasInit = FALSE;
 
-char* g_StackInfo_ = NULL;
-long long g_CurrentPosition = 0;
-
 enum DumpPreparationStage {
     CREATE_PIPE_FAIL = 1,
     SET_PIPE_LEN_FAIL,
@@ -106,21 +92,6 @@ enum DumpPreparationStage {
     INHERIT_CAP_FAIL,
     EXEC_FAIL,
 };
-
-#ifdef SIGNAL_HANDLER_DEBUG
-static void PrintCapability(unsigned long long capability, char *tag)
-{
-    DfxLogToSocket(tag);
-    for (size_t i = 0; i < NUMBER_SIXTYFOUR; i++) {
-        if (capability & ((uint64_t)1)) {
-            DfxLogToSocket("capability: 1");
-        } else {
-            DfxLogToSocket("capability: 0");
-        }
-        capability = capability >> 1;
-    }
-}
-#endif
 
 static int32_t InheritCapabilities()
 {
@@ -147,18 +118,13 @@ static int32_t InheritCapabilities()
 
     uint64_t ambCap = capData[0].inheritable;
     ambCap = ambCap | (((uint64_t)capData[1].inheritable) << INHERITABLE_OFFSET);
-#ifdef SIGNAL_HANDLER_DEBUG
-    PrintCapability((unsigned long long)ambCap, "ambCap");
-    PrintCapability((unsigned long long)capData[0].inheritable, "capData[0].inheritable");
-    PrintCapability((unsigned long long)capData[1].inheritable, "capData[1].inheritable");
-#endif
     for (size_t i = 0; i < NUMBER_SIXTYFOUR; i++) {
         if (ambCap & ((uint64_t)1)) {
             (void)prctl(PR_CAP_AMBIENT, PR_CAP_AMBIENT_RAISE, i, 0, 0);
         }
         ambCap = ambCap >> 1;
     }
-    DfxLogToSocket("InheritCapabilities done");
+    HILOG_BASE_DEBUG(LOG_CORE, "InheritCapabilities done");
     return 0;
 }
 
@@ -176,6 +142,7 @@ static int g_interestedSignalList[] = {
 
 static struct sigaction g_oldSigactionList[NSIG] = {};
 
+#ifndef DFX_LOCAL_UNWIND
 static void SetInterestedSignalMasks(int how)
 {
     sigset_t set;
@@ -210,11 +177,6 @@ static int DFX_ExecDump(void *arg)
 {
     (void)arg;
     pthread_mutex_lock(&g_dumpMutex);
-
-#ifdef SIGNAL_HANDLER_DEBUG
-    HILOG_BASE_DEBUG(LOG_CORE, "DFX_ExecDump.");
-#endif
-
     DFX_SetUpEnvironment();
     // create pipe for passing request to processdump
     if (pipe(g_pipefd) != 0) {
@@ -252,7 +214,7 @@ static int DFX_ExecDump(void *arg)
         return INHERIT_CAP_FAIL;
     }
 
-    DfxLogToSocket("Start processdump.");
+    HILOG_BASE_INFO(LOG_CORE, "Start processdump.");
     execle("/system/bin/processdump", "-signalhandler", NULL, NULL);
     pthread_mutex_unlock(&g_dumpMutex);
     return errno;
@@ -262,6 +224,7 @@ static pid_t DFX_ForkAndDump()
 {
     return clone(DFX_ExecDump, g_reservedChildStack, CLONE_VFORK | CLONE_FS | CLONE_UNTRACED, NULL);
 }
+#endif
 
 static void ResetSignalHandlerIfNeed(int sig)
 {
@@ -281,42 +244,20 @@ static void ResetSignalHandlerIfNeed(int sig)
 }
 
 #ifdef DFX_LOCAL_UNWIND
-long WriteDumpInfo(long current_position, size_t index, DfxFrame *frame)
-{
-    int writeNumber = 0;
-    char* current_pos = g_StackInfo_ + current_position;
-    if (frame->funcName == NULL) {
-        writeNumber = sprintf_s(current_pos, BACK_STACK_INFO_SIZE-current_position,
-        "#%02zu pc %016" PRIx64 "(%016" PRIx64 ") %s\n",
-        index, frame->relativePc, frame->pc, (frame->map== NULL) ? "Unknown" : frame->map->path);
-    } else {
-        writeNumber = sprintf_s(current_pos, BACK_STACK_INFO_SIZE-current_position,
-        "#%02zu pc %016" PRIx64 "(%016" PRIx64 ") %s(%s+%" PRIu64 ")\n", index,
-        frame->relativePc, frame->pc, (frame->map == NULL) ?
-        "Unknown" : frame->map->path, frame->funcName, frame->funcOffset);
-    }
-    return writeNumber;
-}
-
 static void DFX_UnwindLocal(int sig, siginfo_t *si, void *context)
 {
-#ifdef SIGNAL_HANDLER_DEBUG
-    HILOG_BASE_DEBUG(LOG_CORE, "DFX_UnwindLocal :: sig(%{public}d), callerPid(%{public}d), callerTid(%{public}d).",
-        sig, si->si_pid, si->si_uid);
-    HILOG_BASE_DEBUG(LOG_CORE, "DFX_UnwindLocal :: sig(%{public}d), pid(%{public}d), tid(%{public}d).",
-        sig, g_request.pid, g_request.tid);
-#endif
-
     int32_t fromSignalHandler = 1;
     DfxProcess *process = NULL;
     DfxThread *keyThread = NULL;
     if (!InitThreadByContext(&keyThread, g_request.pid, g_request.tid, &(g_request.context))) {
+        HILOG_BASE_WARN(LOG_CORE, "Fail to init key thread.");
         DestroyThread(keyThread);
         keyThread = NULL;
         return;
     }
 
     if (!InitProcessWithKeyThread(&process, g_request.pid, keyThread)) {
+        HILOG_BASE_WARN(LOG_CORE, "Fail to init process with key thread.");
         DestroyThread(keyThread);
         keyThread = NULL;
         return;
@@ -326,25 +267,28 @@ static void DFX_UnwindLocal(int sig, siginfo_t *si, void *context)
     unw_context_t unwContext = {};
     unw_getcontext(&unwContext);
     if (unw_init_local(&cursor, &unwContext) != 0) {
+        HILOG_BASE_WARN(LOG_CORE, "Fail to init local unwind context.");
         DestroyProcess(process);
         return;
     }
 
     size_t index = 0;
-    int hasSkipDumpCatch = false;
     do {
         DfxFrame *frame = GetAvaliableFrame(keyThread);
         if (frame == NULL) {
+            HILOG_BASE_WARN(LOG_CORE, "Fail to create Frame.");
             break;
         }
 
         frame->index = index;
         char sym[1024] = {0}; // 1024 : symbol buffer size
         if (unw_get_reg(&cursor, UNW_REG_IP, (unw_word_t*)(&(frame->pc)))) {
+            HILOG_BASE_WARN(LOG_CORE, "Fail to get program counter.");
             break;
         }
 
         if (unw_get_reg(&cursor, UNW_REG_SP, (unw_word_t*)(&(frame->sp)))) {
+            HILOG_BASE_WARN(LOG_CORE, "Fail to get stack pointer.");
             break;
         }
 
@@ -353,26 +297,14 @@ static void DFX_UnwindLocal(int sig, siginfo_t *si, void *context)
         }
 
         if (unw_get_proc_name(&cursor, sym, sizeof(sym), (unw_word_t*)(&(frame->funcOffset))) == 0) {
-            frame->funcName = TrimAndDupStr(sym);
+            std::string funcName;
+            std::string strSym(sym, sym + strlen(sym));
+            TrimAndDupStr(strSym, funcName);
+            frame->funcName = funcName;
         }
-
-        // skip DumpCatch stack, as this is dump catcher. Caller don't need it.
-        if (hasSkipDumpCatch == true) {
-            int writeNumber = WriteDumpInfo(g_CurrentPosition, index, frame);
-            g_CurrentPosition = g_CurrentPosition + writeNumber;
-#ifdef SIGNAL_HANDLER_DEBUG
-            HILOG_BASE_DEBUG(LOG_CORE, "DFX_UnwindLocal :: index(%{public}d), current_position(%{public}lld).",
-                index, g_CurrentPosition);
-#endif
-            index++;
-        }
-#ifdef SIGNAL_HANDLER_DEBUG
-        HILOG_BASE_DEBUG(LOG_CORE, "DFX_UnwindLocal :: path(%{public}s).", frame->map->path);
-#endif
-        if ((strcmp("/system/lib/libdfx_signalhandler.z.so", frame->map->path) == 0) && hasSkipDumpCatch == false) {
-            hasSkipDumpCatch = true;
-        }
-    } while ((unw_step(&cursor) > 0) && (index < BACK_STACK_MAX_STEPS));
+        index++;
+    } while (unw_step(&cursor) > 0);
+    WriteProcessDump(process, &g_request, fromSignalHandler);
     DestroyProcess(process);
 }
 #endif
@@ -402,29 +334,9 @@ static void DFX_SignalHandler(int sig, siginfo_t *si, void *context)
         pthread_mutex_unlock(&g_signalHandlerMutex);
         return;
     }
-
-#ifdef SIGNAL_HANDLER_DEBUG
-    HILOG_BASE_DEBUG(LOG_CORE, "DFX_SignalHandler :: sig(%{public}d).", sig);
-    HILOG_BASE_DEBUG(LOG_CORE, "DFX_SignalHandler :: pid(%{public}d), tid(%{public}d).", g_request.pid, g_request.tid);
-    if (sig == SIGDUMP) {
-        HILOG_BASE_DEBUG(LOG_CORE, "DFX_SignalHandler :: callerPid(%{public}d), callerTid(%{public}d).",
-            si->si_pid, si->si_uid);
-    }
-#endif
-
 #ifdef DFX_LOCAL_UNWIND
-if (sig == SIGDUMP) {
-    if ((g_request.pid == si->si_pid) && (g_StackInfo_ != NULL)) {
-#ifdef SIGNAL_HANDLER_DEBUG
-        HILOG_BASE_DEBUG(LOG_CORE, "DFX_SignalHandler :: call DFX_UnwindLocal.");
-#endif
-        DFX_UnwindLocal(sig, si, context);
-        pthread_mutex_unlock(&g_signalHandlerMutex);
-        return;
-    }
-}
-#endif
-
+    DFX_UnwindLocal(sig, si, context);
+#else
     pid_t childPid;
     int status;
     // set privilege for dump ourself
@@ -466,7 +378,7 @@ out:
             HILOG_BASE_ERROR(LOG_CORE, "Failed to resend signal.");
         }
     }
-
+#endif
     pthread_mutex_unlock(&g_signalHandlerMutex);
 }
 
@@ -478,6 +390,7 @@ void DFX_InstallSignalHandler()
         return;
     }
 
+#ifndef DFX_LOCAL_UNWIND
     // reserve stack for fork
     g_reservedChildStack = calloc(RESERVED_CHILD_STACK_SIZE, 1);
     if (g_reservedChildStack == NULL) {
@@ -486,6 +399,7 @@ void DFX_InstallSignalHandler()
         return;
     }
     g_reservedChildStack = (void *)(((uint8_t *)g_reservedChildStack) + RESERVED_CHILD_STACK_SIZE);
+#endif
 
     struct sigaction action;
     memset_s(&action, sizeof(action), 0, sizeof(action));
