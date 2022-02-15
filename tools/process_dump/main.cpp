@@ -24,6 +24,8 @@
 #include <securec.h>
 #include <cstdio>
 #include <unistd.h>
+#include <sys/socket.h>
+#include <sys/un.h>
 
 #include "dfx_dump_writer.h"
 #include "dfx_log.h"
@@ -40,6 +42,8 @@ static const int DUMP_ARG_THREE = 3;
 static const int DUMP_ARG_FOUR = 4;
 static const int ALARM_TIME_S = 10;
 static const std::string DUMP_STACK_TAG_FAILED = "failed:";
+static const int32_t SOCKET_BUFFER_SIZE = 256;
+static const char FAULTLOGGERD_SOCK_PATH[] = "/dev/unix/socket/faultloggerd.server";
 
 static void PrintCommandHelp()
 {
@@ -52,6 +56,12 @@ static void PrintPermissionCheckFailed()
 {
     std::cout << DUMP_STACK_TAG_FAILED << std::endl;
     std::cout << "Only BMS and the process owner can dump stacktrace." << std::endl;
+}
+
+static void PrintFailedConnect()
+{
+    std::cout << DUMP_STACK_TAG_FAILED << std::endl;
+    std::cout << "faultloggerd is not available" << std::endl;
 }
 
 static void PrintPidTidCheckFailed(int32_t pid, int32_t tid)
@@ -104,6 +114,36 @@ static bool CheckPidTid(OHOS::HiviewDFX::ProcessDumpType type, int32_t pid, int3
     }
 
     return true;
+}
+
+static bool CheckConnectStatus()
+{
+    int sockfd = -1;
+    bool check_status = false;
+    if ((sockfd = socket(AF_LOCAL, SOCK_STREAM, 0)) < 0) {
+        return false;
+    }
+    do {
+        struct sockaddr_un server;
+        errno_t ret = memset_s(&server, sizeof(server), 0, sizeof(server));
+        if (ret != EOK) {
+            DfxLogError("memset_s failed, err = %d.", (int)ret);
+            break;
+        }
+        server.sun_family = AF_LOCAL;
+        if (strncpy_s(server.sun_path, sizeof(server.sun_path),
+            FAULTLOGGERD_SOCK_PATH, strlen(FAULTLOGGERD_SOCK_PATH)) != 0) {
+            break;
+        }
+
+        int len = offsetof(struct sockaddr_un, sun_path) + strlen(server.sun_path) + 1;
+        int connect_status = connect(sockfd, reinterpret_cast<struct sockaddr *>(&server), len);
+        if (connect_status == 0) {
+            check_status = true;
+        }
+    } while (false);
+    close(sockfd);
+    return check_status;
 }
 
 static bool ParseParamters(int argc, char *argv[], bool &isSignalHdlr, OHOS::HiviewDFX::ProcessDumpType &type,
@@ -167,11 +207,14 @@ int main(int argc, char *argv[])
     }
 
     if (!isSignalHdlr) { // We need do permission check when "false == isSignalHdlr" dump.
+        if (!CheckConnectStatus()) {
+            PrintFailedConnect();
+            return 0;
+        }
         if (!CheckPidTid(type, pid, tid)) { // check pid tid is valid
             PrintPidTidCheckFailed(pid, tid);
             return 0;
         }
-
         if (!RequestCheckPermission(pid)) { // check permission
             PrintPermissionCheckFailed();
             return 0;

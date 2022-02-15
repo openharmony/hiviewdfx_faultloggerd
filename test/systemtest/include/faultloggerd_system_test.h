@@ -55,8 +55,12 @@ public:
     static int CheckStacktraceCountNum(std::string filePath, std::string pid, std::string errorCMD);
     static int CheckCountNumMultiThread(std::string filePath, std::string pid, std::string errorCMD);
     static int CheckCountNumOverStack(std::string filePath, std::string pid, std::string ErrorCMD);
+    static int CheckCountNumStackTop(std::string filePath, std::string pid, std::string ErrorCMD);
+    static std::string GetStackTop();
     // 合并
-    static void StartCrasherLoop(int type); // 1. system; 2. root; 3.app; 4. root+cpp
+    static void StartCrasherLoop(int type);     // 1. system; 2. root; 3.app; 4. root+cpp
+    static void KillCrasherLoopForSomeCase(int type);
+    static void StartCrasherLoopForUnsingPidAndTid(int crasherType);    // 1.c 2.c++
     static std::string FindCmdKey(std::string Cmd);
 
     static std::string rootTid[ARRAY_SIZE_HUNDRED];
@@ -64,15 +68,16 @@ public:
     static std::string sysTid[ARRAY_SIZE_HUNDRED];
 
     // 更新为数组
-    static int loopsysPid;
-    static int looprootPid;
-    static int loopcppPid;
-    static int loopappPid;
+    static int loopSysPid;
+    static int loopRootPid;
+    static int loopCppPid;
+    static int loopAppPid;
 
     static char resultBufShell[ARRAY_SIZE_HUNDRED];
     static int appTidCount;
     static int rootTidCount;
     static int sysTidCount;
+    static unsigned int unsigLoopSysPid;
 };
 } // namespace HiviewDFX
 } // namespace OHOS

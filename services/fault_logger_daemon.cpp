@@ -23,16 +23,18 @@
 #include <fcntl.h>
 #include <unistd.h>
 
+#include <csignal>
+#include <sys/syscall.h>
 #include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/un.h>
 #include <sys/wait.h>
-
 #include <directory_ex.h>
 #include <file_ex.h>
-#include <hilog/log.h>
 #include <securec.h>
+
+#include <hilog/log.h>
 
 #include "dfx_log.h"
 #include "fault_logger_config.h"
@@ -56,6 +58,9 @@ static const std::string LOG_LABLE = "FaultLoggerd";
 
 static const std::string DAEMON_RESP = "RESP:COMPLETE";
 static const char FAULTLOGGERD_SOCK_PATH[] = "/dev/unix/socket/faultloggerd.server";
+
+const int SIGDUMP = 35;
+const int MINUS_ONE_THOUSAND = -1000;
 
 static const int GC_TIME_US = 1000000;
 
@@ -185,74 +190,6 @@ void FaultLoggerDaemon::HandleLogFileDesClientReqeust(int32_t connectionFd, cons
     close(fd);
 }
 
-
-void FaultLoggerDaemon::HandleSDKClientReqeust(int32_t const connectionFd, FaultLoggerdRequest * request)
-{
-    FaultLoggerDaemonSecureCheckResp resSecurityCheck = FaultLoggerDaemonSecureCheckResp::FAULTLOG_SECURITY_REJECT;
-    struct iovec iov;
-    int data;
-    struct ucred rcred;
-    struct msghdr msgh;
-    int optval = 1;
-
-    do {
-        union {
-            char buf[CMSG_SPACE(sizeof(struct ucred))];
-            /* Space large enough to hold a 'ucred' structure */
-            struct cmsghdr align;
-        } controlMsg;
-
-        if (setsockopt(connectionFd, SOL_SOCKET, SO_PASSCRED, &optval, sizeof(optval)) == -1) {
-            break;
-        }
-
-        if (write(connectionFd, DAEMON_RESP.c_str(), DAEMON_RESP.length()) != DAEMON_RESP.length()) {
-            break;
-        }
-
-        msgh.msg_name = nullptr;
-        msgh.msg_namelen = 0;
-
-        msgh.msg_iov = &iov;
-        msgh.msg_iovlen = 1;
-        iov.iov_base = &data;
-        iov.iov_len = sizeof(data);
-
-        msgh.msg_control = controlMsg.buf;
-        msgh.msg_controllen = sizeof(controlMsg.buf);
-
-        ssize_t nr = recvmsg(connectionFd, &msgh, 0);
-        if (nr == -1) {
-            break;
-        }
-        struct cmsghdr *cmsgp = nullptr;
-        cmsgp = CMSG_FIRSTHDR(&msgh);
-        if (cmsgp == nullptr) {
-            break;
-        }
-
-        if (memcpy_s(&rcred, sizeof(rcred), CMSG_DATA(cmsgp), sizeof(struct ucred)) != 0) {
-            break;
-        }
-
-        request->uid = (int32_t)rcred.uid;
-        bool res = faultLoggerSecure_->CheckCallerUID((int)request->uid, request->pid);
-        if (res) {
-            resSecurityCheck = FaultLoggerDaemonSecureCheckResp::FAULTLOG_SECURITY_PASS;
-        }
-
-        DfxLogInfo("%s :: resSecurityCheck(%d).\n", LOG_LABLE.c_str(), (int)resSecurityCheck);
-    } while (false);
-
-    if (FaultLoggerDaemonSecureCheckResp::FAULTLOG_SECURITY_PASS == resSecurityCheck) {
-        send(connectionFd, "1", strlen("1"), 0);
-    }
-
-    if (FaultLoggerDaemonSecureCheckResp::FAULTLOG_SECURITY_REJECT == resSecurityCheck) {
-        send(connectionFd, "2", strlen("2"), 0);
-    }
-}
-
 void FaultLoggerDaemon::HandlePrintTHilogClientReqeust(int32_t const connectionFd, FaultLoggerdRequest * request)
 {
     char buf[LOG_BUF_LEN] = {0};
@@ -265,12 +202,160 @@ void FaultLoggerDaemon::HandlePrintTHilogClientReqeust(int32_t const connectionF
     if (nread < 0) {
         DfxLogError("%s :: Failed to read message", LOG_LABLE.c_str());
     } else if (nread == 0) {
-        DfxLogError("%s :: Read null from request socket", LOG_LABLE.c_str());
+        DfxLogError("%s :: HandlePrintTHilogClientReqeust :: Read null from request socket", LOG_LABLE.c_str());
     } else {
         DfxLogError("%s", buf);
     }
 }
 
+FaultLoggerCheckPermissionResp FaultLoggerDaemon::SecurityCheck(int32_t connectionFd, FaultLoggerdRequest * request)
+{
+    struct iovec iov;
+    int data;
+    struct ucred rcred;
+    struct msghdr msgh;
+    int optval = 1;
+
+    do {
+        union {
+            char buf[CMSG_SPACE(sizeof(struct ucred))];
+
+            /* Space large enough to hold a 'ucred' structure */
+            struct cmsghdr align;
+        } controlMsg;
+
+        if (setsockopt(connectionFd, SOL_SOCKET, SO_PASSCRED, &optval, sizeof(optval)) == -1) {
+            break;
+        }
+
+        if (write(connectionFd, DAEMON_RESP.c_str(), DAEMON_RESP.length()) != DAEMON_RESP.length()) {
+            DfxLogError("%s :: Failed to write DAEMON_RESP.", LOG_LABLE.c_str());
+        }
+
+        msgh.msg_name = nullptr;
+        msgh.msg_namelen = 0;
+        msgh.msg_iov = &iov;
+        msgh.msg_iovlen = 1;
+        iov.iov_base = &data;
+        iov.iov_len = sizeof(data);
+
+        msgh.msg_control = controlMsg.buf;
+        msgh.msg_controllen = sizeof(controlMsg.buf);
+
+        ssize_t nr = recvmsg(connectionFd, &msgh, 0);
+        if (nr == -1) {
+            break;
+        }
+
+        struct cmsghdr *cmsgp = nullptr;
+        cmsgp = CMSG_FIRSTHDR(&msgh);
+        if (cmsgp == nullptr) {
+            break;
+        }
+
+        if (memcpy_s(&rcred, sizeof(rcred), CMSG_DATA(cmsgp), sizeof(struct ucred)) != 0) {
+            break;
+        }
+
+        request->uid = (int32_t)rcred.uid;
+        request->callerPid = (int32_t)rcred.pid;
+        bool res = faultLoggerSecure_->CheckCallerUID((int)request->uid, request->pid);
+        if (res) {
+            return FaultLoggerCheckPermissionResp::CHECK_PERMISSION_PASS;
+        }
+    } while (false);
+
+    return FaultLoggerCheckPermissionResp::CHECK_PERMISSION_REJECT;
+}
+
+void FaultLoggerDaemon::HandlePermissionReqeust(int32_t connectionFd, FaultLoggerdRequest * request)
+{
+    FaultLoggerCheckPermissionResp resSecurityCheck = SecurityCheck(connectionFd, request);
+    DfxLogInfo("%s :: resSecurityCheck(%d).\n", LOG_LABLE.c_str(), (int)resSecurityCheck);
+
+    if (FaultLoggerCheckPermissionResp::CHECK_PERMISSION_PASS == resSecurityCheck) {
+        send(connectionFd, "1", strlen("1"), 0);
+    }
+
+    if (FaultLoggerCheckPermissionResp::CHECK_PERMISSION_REJECT == resSecurityCheck) {
+        send(connectionFd, "2", strlen("2"), 0);
+    }
+}
+
+void FaultLoggerDaemon::HandleSdkDumpReqeust(int32_t connectionFd, FaultLoggerdRequest * request)
+{
+    FaultLoggerSdkDumpResp resSdkDump = FaultLoggerSdkDumpResp::SDK_DUMP_REJECT;
+    FaultLoggerCheckPermissionResp resSecurityCheck = SecurityCheck(connectionFd, request);
+    DfxLogInfo("%s :: resSecurityCheck(%d).\n", LOG_LABLE.c_str(), (int)resSecurityCheck);
+
+    /*
+    *           all     threads my user, local pid             my user, remote pid     other user's process
+    * 3rd       Y       Y(in signal_handler local)     Y(in signal_handler loacl)      N
+    * system    Y       Y(in signal_handler local)     Y(in signal_handler loacl)      Y(in signal_handler remote)
+    * root      Y       Y(in signal_handler local)     Y(in signal_handler loacl)      Y(in signal_handler remote)
+    */
+
+    /*
+    * 1. pid != 0 && tid != 0:    means we want dump a thread, so we send signal to a thread.
+        Main thread stack is tid's stack, we need ignore other thread info.
+    * 2. pid != 0 && tid == 0:    means we want dump a process, so we send signal to process.
+        Main thead stack is pid's stack, we need other tread info.
+    */
+
+    /*
+     * in signal_handler we need to check caller pid and tid(which is send to signal handler by SYS_rt_sig.).
+     * 1. caller pid == signal pid, means we do back trace in ourself process, means local backtrace.
+     *      |- we do all tid back trace in signal handler's local unwind.
+     * 2. pid != signal pid, means we do remote back trace.
+     */
+
+    /*
+     * in local back trace, all unwind stack will save to signal_handler global var.(mutex lock in signal handler.)
+     * in remote back trace, all unwind stack will save to file, and read in dump_catcher, then return.
+     */
+
+    do {
+        if ((request->pid <= 0) || (FaultLoggerCheckPermissionResp::CHECK_PERMISSION_REJECT == resSecurityCheck)) {
+            DfxLogError("%s :: HandleSdkDumpReqeust :: pid or resSecurityCheck fail.\n", LOG_LABLE.c_str());
+            break;
+        }
+
+        int sig = SIGDUMP ;
+        // defined in out/hi3516dv300/obj/third_party/musl/intermidiates/linux/musl_src_ported/include/signal.h
+        siginfo_t si = {
+            .si_signo = SIGDUMP,
+            .si_errno = 0,
+            .si_code = MINUS_ONE_THOUSAND,
+            .si_pid = request->callerPid,
+            .si_uid = request->callerTid
+        };
+
+// means we need dump all the threads in a process.
+        if (request->tid == 0) {
+            if (syscall(SYS_rt_sigqueueinfo, request->pid, sig, &si) != 0) {
+                DfxLogError("Failed to SYS_rt_sigqueueinfo signal(%d), errno(%d)(%s).",
+                    si.si_signo, errno, strerror(errno));
+                break;
+            }
+        } else {
+// means we need dump a specified thread
+            if (syscall(SYS_rt_tgsigqueueinfo, request->pid, request->tid, sig, &si) != 0) {
+                DfxLogError("Failed to SYS_rt_tgsigqueueinfo signal(%d), errno(%d)(%s).",
+                    si.si_signo, errno, strerror(errno));
+                break;
+            }
+        }
+        resSdkDump = FaultLoggerSdkDumpResp::SDK_DUMP_PASS;
+    } while (false);
+
+    if (FaultLoggerSdkDumpResp::SDK_DUMP_PASS == resSdkDump) {
+        send(connectionFd, "1", strlen("1"), 0);
+    }
+
+    if (FaultLoggerSdkDumpResp::SDK_DUMP_REJECT == resSdkDump) {
+        send(connectionFd, "2", strlen("2"), 0);
+    }
+}
 
 void FaultLoggerDaemon::HandleRequest(int32_t connectionFd)
 {
@@ -283,7 +368,7 @@ void FaultLoggerDaemon::HandleRequest(int32_t connectionFd)
             DfxLogError("%s :: Failed to read message", LOG_LABLE.c_str());
             break;
         } else if (nread == 0) {
-            DfxLogError("%s :: Read null from request socket", LOG_LABLE.c_str());
+            DfxLogError("%s :: HandleRequest :: Read null from request socket", LOG_LABLE.c_str());
             break;
         } else if (nread != sizeof(FaultLoggerdRequest)) {
             DfxLogError("%s :: Unmatched request length", LOG_LABLE.c_str());
@@ -300,11 +385,14 @@ void FaultLoggerDaemon::HandleRequest(int32_t connectionFd)
         } else if (request->clientType == (int32_t)FaultLoggerClientType::LOG_FILE_DES_CLIENT) {
             HandleLogFileDesClientReqeust(connectionFd, request);
             break;
-        } else if (request->clientType == (int32_t)FaultLoggerClientType::SDK_CLIENT) {
-            HandleSDKClientReqeust(connectionFd, request);
-            break;
         } else if (request->clientType == (int32_t)FaultLoggerClientType::PRINT_T_HILOG_CLIENT) {
             HandlePrintTHilogClientReqeust(connectionFd, request);
+            break;
+        } else if (request->clientType == (int32_t)FaultLoggerClientType::PERMISSION_CLIENT) {
+            HandlePermissionReqeust(connectionFd, request);
+            break;
+        } else if (request->clientType == (int32_t)FaultLoggerClientType::SDK_DUMP_CLIENT) {
+            HandleSdkDumpReqeust(connectionFd, request);
             break;
         } else {
             DfxLogError("%s :: unknown client just break and close socket.\n", LOG_LABLE.c_str());

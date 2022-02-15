@@ -36,6 +36,19 @@
 #define ARM_EXEC_STEP_NORMAL        4
 #define ARM_EXEC_STEP_THUMB         3
 
+#define CONF_LINE_SIZE 1024
+#define CONF_KEY_SIZE 256
+#define CONF_VALUE_SIZE 256
+
+#define FAULTSTACK_ITEM_BUFFER_LENGTH 56
+#define FAULTSTACK_SP_REVERSE 3
+#define FAULTSTACK_FIRST_FRAME_SEARCH_LENGTH 64
+
+// max unwind 64 steps.
+#define BACK_STACK_MAX_STEPS    64
+// 128K back trace stack size
+#define BACK_STACK_INFO_SIZE    (128 * 1024)
+
 #if defined(TEMP_FAILURE_RETRY)
 #undef TEMP_FAILURE_RETRY
 #define TEMP_FAILURE_RETRY(exp)            \

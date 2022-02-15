@@ -23,6 +23,7 @@
 #include <cstring>
 #include <sys/ptrace.h>
 
+#include "dfx_define.h"
 #include "dfx_log.h"
 #include "dfx_maps.h"
 #include "dfx_process.h"
@@ -31,7 +32,6 @@
 #include "dfx_util.h"
 
 static const int SYMBOL_BUF_SIZE = 4096;
-static const int BACK_STACK_MAX_STEPS = 64;  // max unwind 64 steps.
 
 namespace OHOS {
 namespace HiviewDFX {
@@ -84,7 +84,7 @@ uint64_t DfxUnwindRemote::DfxUnwindRemoteDoAdjustPc(uint64_t pc)
 bool DfxUnwindRemote::DfxUnwindRemoteDoUnwindStep(size_t const & index,
     std::shared_ptr<DfxThread> & thread, unw_cursor_t & cursor, std::shared_ptr<DfxProcess> process)
 {
-    DfxLogDebug("Enter %s.", __func__);
+    DfxLogDebug("Enter %s :: index(%d).", __func__, index);
     std::shared_ptr<DfxFrames> frame = thread->GetAvaliableFrame();
     if (!frame) {
         DfxLogWarn("Fail to create Frame.");
@@ -108,6 +108,13 @@ bool DfxUnwindRemote::DfxUnwindRemoteDoUnwindStep(size_t const & index,
     }
     frame->SetFramePc(framePc);
 
+    uint64_t frameLr = frame->GetFrameLr();
+    if (unw_get_reg(&cursor, REG_LR_NUM, (unw_word_t*)(&frameLr))) {
+        DfxLogWarn("Fail to get program counter.");
+        return false;
+    } else {
+        frame->SetFrameLr(frameLr);
+    }
     uint64_t frameSp = frame->GetFrameSp();
     if (unw_get_reg(&cursor, UNW_REG_SP, (unw_word_t*)(&frameSp))) {
         DfxLogWarn("Fail to get stack pointer.");
@@ -137,7 +144,7 @@ bool DfxUnwindRemote::DfxUnwindRemoteDoUnwindStep(size_t const & index,
         frame->SetFrameFuncName(funcName);
         frame->SetFrameFuncOffset(frameOffset);
     }
-    DfxLogDebug("Exit %s.", __func__);
+    DfxLogDebug("Exit %s :: index(%d), framePc(0x%x), frameSp(0x%x).", __func__, index, framePc, frameSp);
     return true;
 }
 
@@ -193,11 +200,7 @@ bool DfxUnwindRemote::UnwindThread(std::shared_ptr<DfxProcess> process, std::sha
         // Add to check pc is valid in maps x segment, if check failed use lr to backtrace instead -S-.
         std::shared_ptr<DfxElfMaps> processMaps = process->GetMaps();
         if (!processMaps->CheckPcIsValid((uint64_t)tmpPc)) {
-#if defined(__arm__)
-            unw_get_reg(&cursor, 14, &tmpPc); // 14 : LR
-#elif defined(__aarch64__)
-            unw_get_reg(&cursor, 30, &tmpPc); // 30 : LR
-#endif
+            unw_get_reg(&cursor, REG_LR_NUM, &tmpPc);
             unw_set_reg(&cursor, UNW_REG_IP, tmpPc);
             if (!DfxUnwindRemoteDoUnwindStep(index, thread, cursor, process)) {  // Add lr frame to frame list.
                 DfxLogWarn("Break unwstep as DfxUnwindRemoteDoUnwindStep failed.");
@@ -206,12 +209,37 @@ bool DfxUnwindRemote::UnwindThread(std::shared_ptr<DfxProcess> process, std::sha
             index++;
         }
         // Add to check pc is valid in maps x segment, if check failed use lr to backtrace instead -E-.
-
         unwRet = unw_step(&cursor);
+        // if we use context's pc unwind failed, try lr -S-.
+        if (unwRet <= 0) {
+            std::shared_ptr<DfxRegs> regs = thread->GetThreadRegs();
+            if (regs != NULL) {
+                std::vector<uintptr_t> regsVector = regs->GetRegsData();
+                if (regsVector[REG_PC_NUM] == old_pc) {
+                    unw_set_reg(&cursor, UNW_REG_IP, regsVector[REG_LR_NUM]);
+                    if (!DfxUnwindRemoteDoUnwindStep(index, thread, cursor, process)) {  // Add lr frame to frame list.
+                        DfxLogWarn("Break unwstep as DfxUnwindRemoteDoUnwindStep failed.");
+                        break;
+                    }
+                    index++;
+                    unwRet = unw_step(&cursor);
+                }
+            }
+        }
+        // if we use context's pc unwind failed, try lr -E-.
     } while ((unwRet > 0) && (index < BACK_STACK_MAX_STEPS));
     thread->SetThreadUnwStopReason(unwRet);
     _UPT_destroy(context);
     unw_destroy_addr_space(as);
+    bool isSignal = process->GetIsSignalHdlr();
+    if (((*(process->GetThreads().begin()))->GetThreadId() == tid) && isSignal) {
+        (*(process->GetThreads().begin()))->SkipFramesInSignalHandler();
+        if (process->GetIsSignalDump() == false) {
+            std::shared_ptr<DfxElfMaps> maps = process->GetMaps();
+            thread->CreateFaultStack(maps);
+        }
+    }
+
     DfxLogDebug("Exit %s.", __func__);
     return true;
 }

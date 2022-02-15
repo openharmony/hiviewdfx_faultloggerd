@@ -67,6 +67,8 @@ DfxRegsArm::DfxRegsArm(const ucontext_t& context)
     regs.push_back(uintptr_t(context.uc_mcontext.arm_pc));  // 15:pc
 
     SetRegs(regs);
+    DfxLogDebug("fp:%08x ip:%08x sp:%08x lr:%08x pc:%08x \n", regs[REGISTER_ELEVEN], regs[REGISTER_TWELVE],
+        regs[REGISTER_THIRTEEN], regs[REGISTER_FOURTEEN], regs[REGISTER_FIFTEEN]);
     DfxLogDebug("Exit %s.", __func__);
 }
 

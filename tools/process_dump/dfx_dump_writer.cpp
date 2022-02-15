@@ -138,7 +138,7 @@ void DfxDumpWriter::WriteProcessDump(std::shared_ptr<ProcessDumpRequest> request
     }
 
     if (fromSignalHandler_ == 0) {
-        process_->PrintProcess(STDOUT_FILENO);
+        process_->PrintProcess(STDOUT_FILENO, false);
     } else {
         struct FaultLoggerdRequest faultloggerdRequest;
         if (memset_s(&faultloggerdRequest, sizeof(faultloggerdRequest), 0, sizeof(struct FaultLoggerdRequest)) != 0) {
@@ -163,7 +163,11 @@ void DfxDumpWriter::WriteProcessDump(std::shared_ptr<ProcessDumpRequest> request
             return;
         }
         auto siginfo = std::make_shared<siginfo_t>(request->GetSiginfo());
-        process_->PrintProcessWithSiginfo(siginfo, targetFd);
+        if (process_->GetIsSignalDump() == false) {
+            process_->PrintProcessWithSiginfo(siginfo, targetFd);
+        } else {
+            process_->PrintProcess(targetFd, false);
+        }
         close(targetFd);
 
         CppCrashReporter reporter(faultloggerdRequest.time, request->GetSiginfo().si_signo, process_);

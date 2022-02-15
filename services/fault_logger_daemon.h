@@ -34,10 +34,12 @@ private:
     void RemoveTempFileIfNeed();
     void HandleRequest(int32_t connectionFd);
     void HandleDefaultClientReqeust(int32_t connectionFd, const FaultLoggerdRequest* request);
-    void HandleSDKClientReqeust(int32_t const connectionFd, FaultLoggerdRequest* request);
-    void HandleLogFileDesClientReqeust(int32_t connectionFd, const FaultLoggerdRequest * request);
-    void HandlePrintTHilogClientReqeust(int32_t const connectionFd, FaultLoggerdRequest * request);
+    void HandleLogFileDesClientReqeust(int32_t connectionFd, const FaultLoggerdRequest* request);
+    void HandlePrintTHilogClientReqeust(int32_t const connectionFd, FaultLoggerdRequest* request);
     void GcZStatProcess(void);
+    FaultLoggerCheckPermissionResp SecurityCheck(int32_t connectionFd, FaultLoggerdRequest* request);
+    void HandlePermissionReqeust(int32_t connectionFd, FaultLoggerdRequest* request);
+    void HandleSdkDumpReqeust(int32_t connectionFd, FaultLoggerdRequest* request);
 
 private:
     int32_t currentLogCounts_ {0};

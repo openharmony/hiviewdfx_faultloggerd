@@ -51,6 +51,7 @@ public:
     int MultiThreadCrash() const;
     int ProgramCounterZero() const;
     int StackOver64() const;
+    int StackTop() const;
     //           1         2         3         4         5         6         7
     //  1234567890123456789012345678901234567890123456789012345678901234567890
     int MaxMethodNameTest12345678901234567890123456789012345678901234567890ABC() const;

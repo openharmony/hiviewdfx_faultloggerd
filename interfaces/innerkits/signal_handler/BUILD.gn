@@ -19,26 +19,48 @@ config("dfx_signal_handler_config") {
   include_dirs = [
     "include",
     "//base/hiviewdfx/faultloggerd/common",
-    "//base/hiviewdfx/faultloggerd/tools/process_dump",
     "//utils/native/base/include",
     "//developtools/bytrace_standard/interfaces/innerkits/native/include",
     "//base/hiviewdfx/faultloggerd/interfaces/innerkits/faultloggerd_client/include",
+    "//third_party/libunwind/include",
   ]
 }
 
 ohos_shared_library("dfx_signalhandler") {
   public_configs = [ ":dfx_signal_handler_config" ]
 
+  cflags = [ "-DDFX_LOCAL_UNWIND" ]
+
   sources = [
     "//base/hiviewdfx/faultloggerd/tools/process_dump/dfx_log.cpp",
+    "dfx_dump_writer.c",
+    "dfx_elf.c",
+    "dfx_frames.c",
+    "dfx_maps.c",
+    "dfx_process.c",
+    "dfx_signal.c",
     "dfx_signal_handler.c",
+    "dfx_thread.c",
+    "dfx_util.c",
   ]
 
-  deps = [ "//base/hiviewdfx/faultloggerd/interfaces/innerkits/faultloggerd_client:libfaultloggerd" ]
+  if (target_cpu == "arm") {
+    sources += [ "dfx_regs_arm.c" ]
+    cflags += [ "-D__arm__" ]
+  } else if (target_cpu == "arm64") {
+    sources += [ "dfx_regs_arm64.c" ]
+    cflags += [ "-D__aarch64__" ]
+  }
+
+  deps = [
+    "//base/hiviewdfx/faultloggerd/interfaces/innerkits/faultloggerd_client:libfaultloggerd",
+    "//third_party/libunwind:libunwind",
+  ]
 
   external_deps = [
     "bytrace_standard:bytrace_core",
     "hilog_native:libhilog",
+    "hilog_native:libhilog_base",
     "utils_base:utils",
   ]
 

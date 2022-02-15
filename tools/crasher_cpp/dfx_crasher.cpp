@@ -28,6 +28,7 @@
 #include <unistd.h>
 #include <vector>
 #include <thread>
+#include <fstream>
 #include "securec.h"
 
 #include <sys/prctl.h>
@@ -238,6 +239,28 @@ int SleepThread(int threadID)
     return 0;
 }
 
+NOINLINE int DfxCrasher::StackTop() const
+{
+    std::cout << "test StackTop" << std::endl;
+
+    unsigned int stackTop;
+    __asm__ volatile ("mov %0, sp":"=r"(stackTop)::);
+    std::cout << "crasher_c: stack top is = " << std::hex << stackTop << std::endl;
+
+    std::ofstream fout;
+    fout.open("sp");
+    fout << std::hex << stackTop << std::endl;
+    fout.close();
+
+    // trigger an error to crash
+    int a = 1;
+    int *b = &a;
+    b = nullptr;
+    *b = 1;
+
+    return 0;
+}
+
 void DfxCrasher::PrintUsage() const
 {
     std::cout << "  usage: crasher CMD" << std::endl;
@@ -260,6 +283,7 @@ void DfxCrasher::PrintUsage() const
     std::cout << "  PCZero                trigger pc = 0" << std::endl;
     std::cout << "  MTCrash               trigger crash with multi-thread" << std::endl;
     std::cout << "  StackOver64           trigger SIGSEGV after 70 function call" << std::endl;
+    std::cout << "  StackTop              trigger SIGSEGV to make sure stack top" << std::endl;
     std::cout << "  if you want the command execute in a sub thread" << std::endl;
     std::cout << "  add thread Prefix, e.g crasher thread-SIGFPE" << std::endl;
     std::cout << std::endl;
@@ -361,6 +385,10 @@ uint64_t DfxCrasher::ParseAndDoCrash(const char *arg)
         return StackOver64();
     }
     
+    if (!strcasecmp(arg, "StackTop")) {
+        return StackTop();
+    }
+
     return 0;
 }
 

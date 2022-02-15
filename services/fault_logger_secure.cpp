@@ -126,6 +126,10 @@ bool FaultLoggerSecure::CheckCallerUID (const int callingUid, const int32_t pid)
         FaultLoggerSecure_TAG.c_str(), callingUid, FaultLoggerSecure::MAX_SYS_UID);
 
     bool ret = false;
+    if ((callingUid < 0) || (pid <= 0)) {
+        return false;
+    }
+
     // If caller's is BMS / root or caller's uid/pid is validate, just return true
     if ((callingUid == FaultLoggerSecure::BMS_UID)
         || (callingUid == FaultLoggerSecure::ROOT_UID)
