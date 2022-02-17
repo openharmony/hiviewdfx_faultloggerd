@@ -225,6 +225,5 @@ int main(int argc, char *argv[])
     OHOS::HiviewDFX::ProcessDumper::GetInstance().Dump(isSignalHdlr, type, pid, tid);
     DfxLogDebug("End");
 
-    DfxLogByTrace(false, "faultlog_native_crash");
     return 0;
 }
