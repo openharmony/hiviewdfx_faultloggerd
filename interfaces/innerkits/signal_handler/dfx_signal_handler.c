@@ -312,8 +312,6 @@ static void DFX_UnwindLocal(int sig, siginfo_t *si, void *context)
 static void DFX_SignalHandler(int sig, siginfo_t *si, void *context)
 {
     pthread_mutex_lock(&g_signalHandlerMutex);
-    DfxLogByTrace(true, "faultlog_native_crash");
-    DfxLogByTrace(true, "faultlog_crash_hold_process");
 
     (void)memset_s(&g_request, sizeof(g_request), 0, sizeof(g_request));
     g_request.type = sig;
@@ -365,7 +363,6 @@ static void DFX_SignalHandler(int sig, siginfo_t *si, void *context)
         HILOG_BASE_ERROR(LOG_CORE, "Failed to wait child process terminated.");
         goto out;
     }
-    DfxLogByTrace(false, "faultlog_crash_hold_process");
 out:
     ResetSignalHandlerIfNeed(sig);
     prctl(PR_SET_DUMPABLE, prevDumpableStatus);

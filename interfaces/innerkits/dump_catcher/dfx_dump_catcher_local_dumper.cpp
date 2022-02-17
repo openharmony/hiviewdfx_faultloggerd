@@ -187,7 +187,6 @@ void DfxDumpCatcherLocalDumper::DFX_LocalDumperUnwindLocal(int sig, siginfo_t *s
 void DfxDumpCatcherLocalDumper::DFX_LocalDumper(int sig, siginfo_t *si, void *context)
 {
     pthread_mutex_lock(&g_localDumperMutex);
-    DfxLogByTrace(true, "faultlog_local_dump");
 
     (void)memset_s(&g_localDumpRequest, sizeof(g_localDumpRequest), 0, sizeof(g_localDumpRequest));
     g_localDumpRequest.type = sig;
@@ -227,7 +226,6 @@ void DfxDumpCatcherLocalDumper::DFX_LocalDumper(int sig, siginfo_t *si, void *co
             DFX_LocalDumperUnwindLocal(sig, si, context);
         }
     }
-    DfxLogByTrace(false, "faultlog_local_dump");
     pthread_mutex_unlock(&g_localDumperMutex);
 }
 
