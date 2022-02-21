@@ -478,7 +478,7 @@ void FaultLoggerDaemon::LoopAcceptRequestAndFork(int socketFd)
 
     while (true) {
         if ((connectionFd = accept(socketFd, reinterpret_cast<struct sockaddr *>(&clientAddr), &clientAddrSize)) < 0) {
-            DfxLogError("%s :: Failed to accpet connection", LOG_LABLE.c_str());
+            DfxLogError("%s :: Failed to accept connection", LOG_LABLE.c_str());
             continue;
         }
         DfxLogInfo("%s :: %s: accept: %d.", LOG_LABLE.c_str(), __func__, connectionFd);
@@ -495,6 +495,7 @@ void FaultLoggerDaemon::LoopAcceptRequestAndFork(int socketFd)
             exit(0);
         }
 
+        close(connectionFd);
         connectionFd = -1;
     }
 
