@@ -266,13 +266,13 @@ void DfxThread::CreateFaultStack(std::shared_ptr<DfxElfMaps> maps)
         bool displayAdjust = false;
 #if defined(__arm__)
 #define printLength "08"
-        int startSp ,currentSp, nextSp, storeData, totalStepSize, filterStart, filterEnd, regLr;
+        int startSp, currentSp, nextSp, storeData, totalStepSize, filterStart, filterEnd, regLr;
         int stepLength = 4;
         currentSp = (int)dfxFrames_[i]->GetFrameSp();
         regLr = (i+1 == dfxFrames_.size()) ? 0 : (int)dfxFrames_[i+1]->GetFrameLr();
 #elif defined(__aarch64__)
 #define printLength "16"
-        uint64_t startSp,currentSp,nextSp,storeData,totalStepSize,filterStart,filterEnd, regLr;
+        uint64_t startSp, currentSp, nextSp, storeData, totalStepSize, filterStart, filterEnd, regLr;
         int stepLength = 8;
         currentSp = dfxFrames_[i]->GetFrameSp();
         regLr = (i+1 == dfxFrames_.size()) ? 0 : dfxFrames_[i+1]->GetFrameLr();

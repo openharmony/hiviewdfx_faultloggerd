@@ -14,6 +14,7 @@
  */
 #ifndef DFX_CONFIG_H
 #define DFX_CONFIG_H
+#include <string>
 
 namespace OHOS {
 namespace HiviewDFX {
@@ -21,8 +22,8 @@ class DfxConfig final {
 public:
     static DfxConfig &GetInstance();
 
-    void readConfig();
-    bool parserConfig(char* filterKey, int keySize, char* filterValue, int valueSize);
+    void ReadConfig();
+    void ParserConfig(std::string key, std::string value);
     void SetDisplayBacktrace(bool displayBacktrace);
     bool GetDisplayBacktrace() const;
     void SetDisplayRegister(bool displayRegister);
@@ -37,8 +38,7 @@ public:
     unsigned int GetFaultStackHighAddressStep() const;
     void SetLogPersist(bool logPersist);
     bool GetLogPersist() const;
-    void foramtKV(char *line, int lineLength, char *key, int keyLength, char *value, int valueLength);
-    void trim(char *strIn, char *strOut);
+    void Trim(std::string &s);
 private:
     DfxConfig() = default;
     ~DfxConfig() = default;

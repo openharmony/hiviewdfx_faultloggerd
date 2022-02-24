@@ -398,11 +398,22 @@ uint64_t ParseAndDoCrash(const char *arg)
         return StackTop();
     }
 
+    if (!strcasecmp(arg, "CrashTest")) {
+        return CrashTest();
+    }
+
     return 0;
 }
 
 NOINLINE int TestFunc70(void)
 {
+    raise(SIGSEGV);
+    return 0;
+}
+
+NOINLINE int CrashTest(void)
+{
+    sleep(3);
     raise(SIGSEGV);
     return 0;
 }

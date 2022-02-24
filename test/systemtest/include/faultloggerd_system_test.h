@@ -81,6 +81,7 @@ public:
     static void KillCrasherLoopForSomeCase(int type);
     static void StartCrasherLoopForUnsingPidAndTid(int crasherType);    // 1.c 2.c++
     static std::string FindCmdKey(std::string Cmd);
+    static int crashThread(int threadID);
 
     static std::string rootTid[ARRAY_SIZE_HUNDRED];
     static std::string appTid[ARRAY_SIZE_HUNDRED];

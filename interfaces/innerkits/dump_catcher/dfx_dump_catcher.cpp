@@ -24,24 +24,30 @@
 #include <cstdio>
 #include <cstdlib>
 #include <ctime>
-#include <dirent.h>
-#include <directory_ex.h>
-#include <file_ex.h>
-#include <fcntl.h>
 #include <strstream>
+#include <string>
+#include <vector>
+
+#include <directory_ex.h>
+#include <dirent.h>
+#include <fcntl.h>
+#include <file_ex.h>
+#include <poll.h>
 #include <pthread.h>
 #include <securec.h>
+#include <ucontext.h>
+#include <unistd.h>
+
 #include <sstream>
+#include <sys/eventfd.h>
+#include <sys/inotify.h>
+#include <sys/prctl.h>
 #include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/syscall.h>
 #include <sys/types.h>
-#include <string>
 #include <sys/un.h>
 #include <sys/wait.h>
-#include <unistd.h>
-#include <ucontext.h>
-#include <vector>
 
 #include "../faultloggerd_client/include/faultloggerd_client.h"
 
@@ -165,6 +171,70 @@ bool DfxDumpCatcher::DoDumpLocalPid(const int pid)
     return true;
 }
 
+std::string DfxDumpCatcher::WaitForLogGenerate(const std::string path, const std::string prefix)
+{
+    DfxLogDebug("%s :: WaitForLogGenerate :: path(%s), prefix(%s).", \
+        DFXDUMPCATCHER_TAG.c_str(), path.c_str(), prefix.c_str());
+    time_t pastTime = 0;
+    time_t startTime = time(nullptr);
+    int32_t inotifyFd = inotify_init();
+    if (inotifyFd == -1) {
+        return "";
+    }
+
+    int wd = inotify_add_watch(inotifyFd, path.c_str(), IN_CLOSE_WRITE | IN_MOVED_TO);
+    if (wd < 0) {
+        close(inotifyFd);
+        return "";
+    }
+
+    nfds_t nfds = 1;
+    struct pollfd fds[1];
+    fds[0].fd = inotifyFd;
+    fds[0].events = POLLIN;
+    while (true) {
+        pastTime = time(nullptr) - startTime;
+        if (pastTime > 10) {
+            break;
+        }
+
+        int ret = poll(fds, nfds, 1000); // 1000ms
+        if (ret < 0 || fds[0].revents & POLLIN) {
+            continue;
+        }
+
+        char buffer[NUMBER_TWO_KB] = {0}; // 2048 buffer size;
+        char *offset = nullptr;
+        struct inotify_event *event = nullptr;
+        int len = read(inotifyFd, buffer, NUMBER_TWO_KB); // 2048 buffer size;
+        if (len < 0) {
+            break;
+        }
+
+        offset = buffer;
+        event = (struct inotify_event *)buffer;
+        while ((reinterpret_cast<char *>(event) - buffer) < len) {
+            std::string filePath = path + "/" + std::string(event->name);
+            DfxLogDebug("%s :: WaitForLogGenerate :: filePath(%s)", \
+                    DFXDUMPCATCHER_TAG.c_str(), filePath.c_str());
+            if (filePath.find(prefix) != std::string::npos) {
+                DfxLogDebug("%s :: WaitForLogGenerate :: return filePath(%s)", \
+                    DFXDUMPCATCHER_TAG.c_str(), filePath.c_str());
+                inotify_rm_watch (inotifyFd, wd);
+                close(inotifyFd);
+                return filePath;
+            }
+            auto tmpLen = sizeof(struct inotify_event) + event->len;
+            event = (struct inotify_event *)(offset + tmpLen);
+            offset += tmpLen;
+        }
+    }
+    DfxLogDebug("%s :: WaitForLogGenerate :: return empty string", DFXDUMPCATCHER_TAG.c_str());
+    inotify_rm_watch (inotifyFd, wd);
+    close(inotifyFd);
+    return "";
+}
+
 bool DfxDumpCatcher::DoDumpRemote(const int pid, const int tid)
 {
     DfxLogDebug("%s :: DoDumpRemote :: pid(%d), tid(%d).", DFXDUMPCATCHER_TAG.c_str(), pid, tid);
@@ -174,45 +244,14 @@ bool DfxDumpCatcher::DoDumpRemote(const int pid, const int tid)
     }
 
     if (RequestSdkDump(pid, tid) == true) {
-        int time = 0;
         // Get stack trace file
         long long stackFileLength = 0;
         std::string stackTraceFilePatten = LOG_FILE_PATH + "/stacktrace-" + std::to_string(pid);
-        std::string stackTraceFileName = "";
-        do {
-            sleep(1);
-            std::vector<std::string> files;
-            OHOS::GetDirFiles(LOG_FILE_PATH, files);
-            int i = 0;
-            while (i < (int)files.size() && files[i].find(stackTraceFilePatten) == std::string::npos) {
-                i++;
-            }
-            if (i < (int)files.size()) {
-                stackTraceFileName = files[i];
-            }
-            time++;
-        } while (stackTraceFileName == "" && time < DUMP_CATCHER_SLEEP_TIME_TWENTY_S);
-        DfxLogDebug("%s :: DoDumpRemote :: Got stack trace file %s.",
-            DFXDUMPCATCHER_TAG.c_str(), stackTraceFileName.c_str());
 
-        // Get stack trace file length
-        time = 0;
-        do {
-            double filesize = -1;
-            struct stat fileInfo;
-
-            sleep(1);
-            time++;
-
-            if (stat(stackTraceFileName.c_str(), &fileInfo) < 0) {
-                continue;
-            } else if (stackFileLength == fileInfo.st_size) {
-                break;
-            } else {
-                stackFileLength = fileInfo.st_size;
-            }
-        } while (time < DUMP_CATCHER_SLEEP_TIME_TEN_S);
-        DfxLogDebug("%s :: DoDumpRemote :: Got file length %lld.", DFXDUMPCATCHER_TAG.c_str(), stackFileLength);
+        std::string stackTraceFileName = WaitForLogGenerate(LOG_FILE_PATH, stackTraceFilePatten);
+        if (stackTraceFileName.empty()) {
+            return false;
+        }
 
         // Read stack trace file content.
         FILE *fp = nullptr;

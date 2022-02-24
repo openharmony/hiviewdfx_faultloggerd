@@ -37,8 +37,6 @@
 #define ARM_EXEC_STEP_THUMB         3
 
 #define CONF_LINE_SIZE 1024
-#define CONF_KEY_SIZE 512
-#define CONF_VALUE_SIZE 512
 
 #define FAULTSTACK_ITEM_BUFFER_LENGTH 1024
 #define FAULTSTACK_SP_REVERSE 3
@@ -56,6 +54,8 @@
 #define DUMP_CATCHER_SLEEP_TIME_TEN_S           10
 #define DUMP_CATCHER_SLEEP_TIME_TWENTY_S        20
 #define DUMP_CATCHE_WORK_TIME_S                 60
+
+#define NUMBER_TWO_KB                2048
 
 #if defined(TEMP_FAILURE_RETRY)
 #undef TEMP_FAILURE_RETRY

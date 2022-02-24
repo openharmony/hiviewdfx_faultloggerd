@@ -39,6 +39,7 @@ int RaiseSegmentFaultException(void);
 int SegmentFaultException(void);
 int RaiseTrapException(void);
 int DumpStackTrace(void);
+int CrashTest(void);
 
 
 void PrintUsage(void);

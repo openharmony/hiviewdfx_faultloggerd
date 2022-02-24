@@ -221,7 +221,7 @@ int main(int argc, char *argv[])
         }
     }
 
-    OHOS::HiviewDFX::DfxConfig::GetInstance().readConfig();
+    OHOS::HiviewDFX::DfxConfig::GetInstance().ReadConfig();
     OHOS::HiviewDFX::ProcessDumper::GetInstance().Dump(isSignalHdlr, type, pid, tid);
     DfxLogDebug("End");
 

@@ -28,6 +28,7 @@
 #include <unistd.h>
 
 #include <sys/capability.h>
+#include <sys/mman.h>
 #include <sys/prctl.h>
 #include <sys/syscall.h>
 #include <sys/types.h>
@@ -91,6 +92,30 @@ enum DumpPreparationStage {
     INHERIT_CAP_FAIL,
     EXEC_FAIL,
 };
+
+static void PrintWaitStatus(const char *msg, int status)
+{
+    if (msg != NULL)
+        DfxLogDebug("%s", msg);
+
+    if (WIFEXITED(status)) {
+        DfxLogDebug("child exited, status=%d", WEXITSTATUS(status));
+    } else if (WIFSIGNALED(status)) {
+        DfxLogDebug("child killed by signal %d (%s)", WTERMSIG(status), strsignal(WTERMSIG(status)));
+#ifdef WCOREDUMP /* Not in SUSv3, may be absent on some systems */
+        if (WCOREDUMP(status))
+            DfxLogDebug(" (core dumped)");
+#endif
+    } else if (WIFSTOPPED(status)) {
+        DfxLogDebug("child stopped by signal %d (%s)", WSTOPSIG(status), strsignal(WSTOPSIG(status)));
+#ifdef WIFCONTINUED
+    } else if (WIFCONTINUED(status)) {
+        DfxLogDebug("child continued.");
+#endif
+    } else { /* Should never happen */
+        DfxLogDebug("what happened to this child? (status=%x)\n", (unsigned int) status);
+    }
+}
 
 static int32_t InheritCapabilities()
 {
@@ -333,7 +358,7 @@ static void DFX_SignalHandler(int sig, siginfo_t *si, void *context)
         pthread_mutex_unlock(&g_signalHandlerMutex);
         return;
     }
-    HILOG_BASE_INFO(LOG_CORE, "DFX_LocalDumperUnwindLocal :: sig(%{public}d), pid(%{public}d), tid(%{public}d).",
+    HILOG_BASE_INFO(LOG_CORE, "DFX_SignalHandler :: sig(%{public}d), pid(%{public}d), tid(%{public}d).",
         sig, g_request.pid, g_request.tid);
 #ifdef DFX_LOCAL_UNWIND
     DFX_UnwindLocal(sig, si, context);
@@ -358,14 +383,17 @@ static void DFX_SignalHandler(int sig, siginfo_t *si, void *context)
     // fork a child process that could ptrace us
     childPid = DFX_ForkAndDump();
     if (childPid < 0) {
-        HILOG_BASE_ERROR(LOG_CORE, "Failed to fork child process.");
+        HILOG_BASE_ERROR(LOG_CORE, "Failed to fork child process, errno(%{public}d).", errno);
         goto out;
     }
     // wait the child process terminated
     if (TEMP_FAILURE_RETRY(waitpid(childPid, &status, __WALL)) == -1) {
-        HILOG_BASE_ERROR(LOG_CORE, "Failed to wait child process terminated.");
+        HILOG_BASE_ERROR(LOG_CORE, "Failed to wait child process terminated, errno(%{public}d)", errno);
+        HILOG_BASE_INFO(LOG_CORE, "faultlog_crash_hold_process");
         goto out;
     }
+
+    PrintWaitStatus("child process terminated.", status);
     HILOG_BASE_INFO(LOG_CORE, "faultlog_crash_hold_process");
 out:
     ResetSignalHandlerIfNeed(sig);
@@ -393,13 +421,14 @@ void DFX_InstallSignalHandler()
 
 #ifndef DFX_LOCAL_UNWIND
     // reserve stack for fork
-    g_reservedChildStack = calloc(RESERVED_CHILD_STACK_SIZE, 1);
+    g_reservedChildStack = mmap(NULL, RESERVED_CHILD_STACK_SIZE, \
+        PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_STACK, 1, 0);
     if (g_reservedChildStack == NULL) {
         HILOG_BASE_ERROR(LOG_CORE, "Failed to alloc memory for child stack.");
         pthread_mutex_unlock(&g_signalHandlerMutex);
         return;
     }
-    g_reservedChildStack = (void *)(((uint8_t *)g_reservedChildStack) + RESERVED_CHILD_STACK_SIZE);
+    g_reservedChildStack = (void *)(((uint8_t *)g_reservedChildStack) + RESERVED_CHILD_STACK_SIZE - 1);
 #endif
 
     struct sigaction action;

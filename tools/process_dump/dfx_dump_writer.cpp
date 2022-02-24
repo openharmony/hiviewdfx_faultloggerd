@@ -163,13 +163,12 @@ void DfxDumpWriter::WriteProcessDump(std::shared_ptr<ProcessDumpRequest> request
         auto siginfo = std::make_shared<siginfo_t>(request->GetSiginfo());
         if (process_->GetIsSignalDump() == false) {
             process_->PrintProcessWithSiginfo(siginfo, targetFd);
+            CppCrashReporter reporter(faultloggerdRequest.time, request->GetSiginfo().si_signo, process_);
+            reporter.ReportToHiview();
         } else {
             process_->PrintProcess(targetFd, false);
         }
         close(targetFd);
-
-        CppCrashReporter reporter(faultloggerdRequest.time, request->GetSiginfo().si_signo, process_);
-        reporter.ReportToHiview();
     }
     DfxLogDebug("Exit %s.", __func__);
 }

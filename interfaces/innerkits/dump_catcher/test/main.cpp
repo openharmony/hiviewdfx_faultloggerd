@@ -125,7 +125,7 @@ static bool FunctionThree(int32_t pid, int32_t tid)
 
     StartMultiThread();
     char path[NAME_LEN] = {0};
-    if (snprintf_s(path, sizeof(path), sizeof(path) - 1, "/proc/%d/task", pid) <= 0) {
+    if (snprintf_s(path, sizeof(path), sizeof(path) - 1, "/proc/%d/task", currentPid) <= 0) {
         return FALSE;
     }
 

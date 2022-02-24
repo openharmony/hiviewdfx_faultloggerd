@@ -50,7 +50,8 @@ constexpr int32_t MAX_CONNECTION = 30;
 constexpr int32_t REQUEST_BUF_SIZE = 1024;
 constexpr int32_t MSG_BUF_SIZE = 256;
 
-const int32_t FAULTLOG_FILE_PROP = 0640;
+const int32_t FAULTLOG_FILE_PROP = 0644;
+const int32_t FAULTLOG_FOLDER_PROP = 0771;
 
 static const std::string LOG_LABLE = "FaultLoggerd";
 
@@ -142,10 +143,16 @@ bool FaultLoggerDaemon::InitEnvironment()
         DfxLogError("%s :: Failed to ForceCreateDirectory GetLogFilePath", LOG_LABLE.c_str());
         return false;
     }
+    if (!OHOS::ChangeModeDirectory(faultLoggerConfig_->GetLogFilePath(), FAULTLOG_FOLDER_PROP)) {
+        DfxLogError("%s :: Failed to ChangeModeDirectory GetLogFilePath", LOG_LABLE.c_str());
+    }
 
     if (!OHOS::ForceCreateDirectory(faultLoggerConfig_->GetDebugLogFilePath())) {
         DfxLogError("%s :: Failed to ForceCreateDirectory GetDebugLogFilePath", LOG_LABLE.c_str());
         return false;
+    }
+    if (!OHOS::ChangeModeDirectory(faultLoggerConfig_->GetDebugLogFilePath(), FAULTLOG_FOLDER_PROP)) {
+        DfxLogError("%s :: Failed to ChangeModeDirectory GetDebugLogFilePath", LOG_LABLE.c_str());
     }
 
     if (chmod(FAULTLOGGERD_SOCK_PATH, S_IRWXU | S_IRWXG | S_IROTH | S_IWOTH) < 0) {
@@ -331,15 +338,15 @@ void FaultLoggerDaemon::HandleSdkDumpReqeust(int32_t connectionFd, FaultLoggerdR
 // means we need dump all the threads in a process.
         if (request->tid == 0) {
             if (syscall(SYS_rt_sigqueueinfo, request->pid, sig, &si) != 0) {
-                DfxLogError("Failed to SYS_rt_sigqueueinfo signal(%d), errno(%d)(%d).",
-                    si.si_signo, errno, errno);
+                DfxLogError("Failed to SYS_rt_sigqueueinfo signal(%d), errno(%d).",
+                    si.si_signo, errno);
                 break;
             }
         } else {
 // means we need dump a specified thread
             if (syscall(SYS_rt_tgsigqueueinfo, request->pid, request->tid, sig, &si) != 0) {
-                DfxLogError("Failed to SYS_rt_tgsigqueueinfo signal(%d), errno(%d)(%d).",
-                    si.si_signo, errno, errno);
+                DfxLogError("Failed to SYS_rt_tgsigqueueinfo signal(%d), errno(%d).",
+                    si.si_signo, errno);
                 break;
             }
         }
@@ -476,7 +483,7 @@ void FaultLoggerDaemon::LoopAcceptRequestAndFork(int socketFd)
 
     while (true) {
         if ((connectionFd = accept(socketFd, reinterpret_cast<struct sockaddr *>(&clientAddr), &clientAddrSize)) < 0) {
-            DfxLogError("%s :: Failed to accpet connection", LOG_LABLE.c_str());
+            DfxLogError("%s :: Failed to accept connection", LOG_LABLE.c_str());
             continue;
         }
         DfxLogInfo("%s :: %s: accept: %d.", LOG_LABLE.c_str(), __func__, connectionFd);
@@ -493,6 +500,7 @@ void FaultLoggerDaemon::LoopAcceptRequestAndFork(int socketFd)
             exit(0);
         }
 
+        close(connectionFd);
         connectionFd = -1;
     }
 

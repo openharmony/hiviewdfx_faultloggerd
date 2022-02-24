@@ -33,7 +33,6 @@
 
 #include <sys/prctl.h>
 
-
 #include "dfx_signal_handler.h"
 
 #ifdef LOG_DOMAIN

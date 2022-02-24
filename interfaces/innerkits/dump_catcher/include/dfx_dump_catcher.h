@@ -40,6 +40,7 @@ private:
     bool DoDumpLocalPid(const int pid);
     bool DoDumpRemote(const int pid, const int tid);
     void FreeStackInfo();
+    std::string WaitForLogGenerate(const std::string path, const std::string prefix);
 };
 } // namespace HiviewDFX
 } // namespace OHOS
