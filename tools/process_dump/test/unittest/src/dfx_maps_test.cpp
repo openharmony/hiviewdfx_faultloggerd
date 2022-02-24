@@ -50,7 +50,7 @@ HWTEST_F (DfxMapsTest, DfxMapsRequestTest001, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "DfxMapsRequestTest001: start.";
     std::shared_ptr<DfxElfMap> dfxmap = std::make_shared<DfxElfMap>();
-    int32_t input = 1;
+    uint64_t input = 1;
     dfxmap->SetMapBegin(input);
     int32_t output = dfxmap->GetMapBegin();
     EXPECT_EQ(true, input == output) << "DfxMapsRequestTest001 Failed";
@@ -66,7 +66,7 @@ HWTEST_F (DfxMapsTest, DfxMapsRequestTest002, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "DfxMapsRequestTest002: start.";
     std::shared_ptr<DfxElfMap> dfxmap = std::make_shared<DfxElfMap>();
-    int32_t input = 165;
+    uint64_t input = 165;
     dfxmap->SetMapBegin(input);
     int32_t output = dfxmap->GetMapBegin();
     EXPECT_EQ(true, input == output) << "DfxMapsRequestTest002 Failed";
@@ -82,7 +82,7 @@ HWTEST_F (DfxMapsTest, DfxMapsRequestTest003, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "DfxMapsRequestTest003: start.";
     std::shared_ptr<DfxElfMap> dfxmap = std::make_shared<DfxElfMap>();
-    int32_t input = -1;
+    uint64_t input = -1;
     dfxmap->SetMapBegin(input);
     int32_t output = dfxmap->GetMapBegin();
     EXPECT_EQ(true, input == output) << "DfxMapsRequestTest003 Failed";
@@ -98,7 +98,7 @@ HWTEST_F (DfxMapsTest, DfxMapsRequestTest004, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "DfxMapsRequestTest004: start.";
     std::shared_ptr<DfxElfMap> dfxmap = std::make_shared<DfxElfMap>();
-    int32_t input = 1;
+    uint64_t input = 1;
     dfxmap->SetMapEnd(input);
     int32_t output = dfxmap->GetMapEnd();
     EXPECT_EQ(true, input == output) << "DfxMapsRequestTest004 Failed";
@@ -114,7 +114,7 @@ HWTEST_F (DfxMapsTest, DfxMapsRequestTest005, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "DfxMapsRequestTest006: start.";
     std::shared_ptr<DfxElfMap> dfxmap = std::make_shared<DfxElfMap>();
-    int32_t input = 165;
+    uint64_t input = 165;
     dfxmap->SetMapEnd(input);
     int32_t output = dfxmap->GetMapEnd();
     EXPECT_EQ(true, input == output) << "DfxMapsRequestTest005 Failed";
@@ -130,7 +130,7 @@ HWTEST_F (DfxMapsTest, DfxMapsRequestTest006, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "DfxMapsRequestTest006: start.";
     std::shared_ptr<DfxElfMap> dfxmap = std::make_shared<DfxElfMap>();
-    int32_t input = -1;
+    uint64_t input = -1;
     dfxmap->SetMapEnd(input);
     int32_t output = dfxmap->GetMapEnd();
     EXPECT_EQ(true, input == output) << "DfxMapsRequestTest006 Failed";
@@ -146,7 +146,7 @@ HWTEST_F (DfxMapsTest, DfxMapsRequestTest007, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "DfxMapsRequestTest007: start.";
     std::shared_ptr<DfxElfMap> dfxmap = std::make_shared<DfxElfMap>();
-    int32_t input = 1;
+    uint64_t input = 1;
     dfxmap->SetMapOffset(input);
     int32_t output = dfxmap->GetMapOffset();
     EXPECT_EQ(true, input == output) << "DfxMapsRequestTest007 Failed";
@@ -162,7 +162,7 @@ HWTEST_F (DfxMapsTest, DfxMapsRequestTest008, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "DfxMapsRequestTest008: start.";
     std::shared_ptr<DfxElfMap> dfxmap = std::make_shared<DfxElfMap>();
-    int32_t input = 165;
+    uint64_t input = 165;
     dfxmap->SetMapOffset(input);
     int32_t output = dfxmap->GetMapOffset();
     EXPECT_EQ(true, input == output) << "DfxMapsRequestTest008 Failed";
@@ -178,7 +178,7 @@ HWTEST_F (DfxMapsTest, DfxMapsRequestTest009, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "DfxMapsRequestTest009: start.";
     std::shared_ptr<DfxElfMap> dfxmap = std::make_shared<DfxElfMap>();
-    int32_t input = -1;
+    uint64_t input = -1;
     dfxmap->SetMapOffset(input);
     int32_t output = dfxmap->GetMapOffset();
     EXPECT_EQ(true, input == output) << "DfxMapsRequestTest009 Failed";

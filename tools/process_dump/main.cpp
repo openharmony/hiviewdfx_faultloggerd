@@ -136,7 +136,7 @@ static bool CheckConnectStatus()
             break;
         }
 
-        int len = offsetof(struct sockaddr_un, sun_path) + strlen(server.sun_path) + 1;
+        int len = (int)(offsetof(struct sockaddr_un, sun_path) + strlen(server.sun_path) + 1);
         int connect_status = connect(sockfd, reinterpret_cast<struct sockaddr *>(&server), len);
         if (connect_status == 0) {
             check_status = true;
@@ -225,5 +225,6 @@ int main(int argc, char *argv[])
     OHOS::HiviewDFX::ProcessDumper::GetInstance().Dump(isSignalHdlr, type, pid, tid);
     DfxLogDebug("End");
 
+    DfxLogInfo("faultlog_native_crash");
     return 0;
 }

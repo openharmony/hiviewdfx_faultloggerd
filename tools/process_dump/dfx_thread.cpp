@@ -40,10 +40,7 @@ DfxThread::DfxThread(const pid_t pid, const pid_t tid, const ucontext_t &context
 {
     DfxLogDebug("Enter %s.", __func__);
     threadStatus_ = ThreadStatus::THREAD_STATUS_INVALID;
-    if (!InitThread(pid, tid)) {
-        DfxLogWarn("Fail to init thread(%d).", tid);
-        return;
-    }
+
     std::shared_ptr<DfxRegs> reg;
 #if defined(__arm__)
     reg = std::make_shared<DfxRegsArm>(context);
@@ -53,6 +50,13 @@ DfxThread::DfxThread(const pid_t pid, const pid_t tid, const ucontext_t &context
     reg = std::make_shared<DfxRegsX86_64>(context);
 #endif
     regs_ = reg;
+    threadName_ = "";
+    unwStopReason_ = -1;
+    if (!InitThread(pid, tid)) {
+        DfxLogWarn("Fail to init thread(%d).", tid);
+        return;
+    }
+
     DfxLogDebug("Exit %s.", __func__);
 }
 
@@ -60,6 +64,9 @@ DfxThread::DfxThread(const pid_t pid, const pid_t tid)
 {
     DfxLogDebug("Enter %s.", __func__);
     threadStatus_ = ThreadStatus::THREAD_STATUS_INIT;
+    regs_ = nullptr;
+    threadName_ = "";
+    unwStopReason_ = -1;
     if (!InitThread(pid, tid)) {
         DfxLogWarn("Fail to init thread(%d).", tid);
         return;
@@ -72,6 +79,7 @@ bool DfxThread::InitThread(const pid_t pid, const pid_t tid)
     DfxLogDebug("Enter %s.", __func__);
     pid_ = pid;
     tid_ = tid;
+    isCrashThread_ = false;
     char path[NAME_LEN] = {0};
     if (snprintf_s(path, sizeof(path), sizeof(path) - 1, "/proc/%d/comm", tid) <= 0) {
         return false;
@@ -82,7 +90,7 @@ bool DfxThread::InitThread(const pid_t pid, const pid_t tid)
     TrimAndDupStr(buf, threadName_);
 #ifndef DFX_LOCAL_UNWIND
     if (ptrace(PTRACE_ATTACH, tid, NULL, NULL) != 0) {
-        DfxLogWarn("Fail to attach thread(%d), errno=%s", tid, strerror(errno));
+        DfxLogWarn("Fail to attach thread(%d), errno=%d", tid, errno);
         return false;
     }
 
@@ -90,7 +98,7 @@ bool DfxThread::InitThread(const pid_t pid, const pid_t tid)
     while (waitpid(tid, nullptr, __WALL) < 0) {
         if (EINTR != errno) {
             ptrace(PTRACE_DETACH, tid, NULL, NULL);
-            DfxLogWarn("Fail to wait thread(%d) attached, errno=%s", tid, strerror(errno));
+            DfxLogWarn("Fail to wait thread(%d) attached, errno=%s", tid, strerror((errno_t)errno));
             return false;
         }
         errno = 0;
@@ -104,6 +112,16 @@ bool DfxThread::InitThread(const pid_t pid, const pid_t tid)
 DfxThread::~DfxThread()
 {
     threadStatus_ = ThreadStatus::THREAD_STATUS_INVALID;
+}
+
+bool DfxThread::GetIsCrashThread() const
+{
+    return isCrashThread_;
+}
+
+void DfxThread::SetIsCrashThread(bool isCrashThread)
+{
+    isCrashThread_ = isCrashThread;
 }
 
 pid_t DfxThread::GetProcessId() const
@@ -195,7 +213,7 @@ void DfxThread::SkipFramesInSignalHandler()
     }
 
     std::vector<std::shared_ptr<DfxFrames>> skippedFrames;
-    int framesSize = dfxFrames_.size();
+    int framesSize = (int)dfxFrames_.size();
     bool skipPos = false;
     size_t index = 0;
     std::vector<uintptr_t> regs = regs_->GetRegsData();
@@ -239,9 +257,9 @@ void DfxThread::SetThreadUnwStopReason(int reason)
 void DfxThread::CreateFaultStack(std::shared_ptr<DfxElfMaps> maps)
 {
     DfxLogDebug("Enter %s.", __func__);
-    char code_buffer[FAULTSTACK_ITEM_BUFFER_LENGTH] = {};
-    int lowAddressStep = DfxConfig::GetInstance().GetFaultStackLowAddressStep();
-    int highAddressStep = DfxConfig::GetInstance().GetFaultStackHighAddressStep();
+    char codeBuffer[FAULTSTACK_ITEM_BUFFER_LENGTH] = {};
+    int lowAddressStep = (int)DfxConfig::GetInstance().GetFaultStackLowAddressStep();
+    int highAddressStep = (int)DfxConfig::GetInstance().GetFaultStackHighAddressStep();
     for (size_t i = 0; i < dfxFrames_.size(); i++) {
         std::string strFaultStack;
         bool displayAll = true;
@@ -261,7 +279,8 @@ void DfxThread::CreateFaultStack(std::shared_ptr<DfxElfMaps> maps)
 #endif
         std::shared_ptr<DfxElfMap> map = nullptr;
         bool mapCheck = maps->FindMapByAddr((uintptr_t)regLr, map);
-        startSp = currentSp &= ~FAULTSTACK_SP_REVERSE;
+        startSp = currentSp = (unsigned int)currentSp & (~FAULTSTACK_SP_REVERSE);
+
         if (i == (dfxFrames_.size() - 1)) {
             nextSp = currentSp + FAULTSTACK_FIRST_FRAME_SEARCH_LENGTH;
         } else {
@@ -285,24 +304,24 @@ void DfxThread::CreateFaultStack(std::shared_ptr<DfxElfMaps> maps)
                 currentSp = filterEnd;
                 continue;
             }
-            memset_s(code_buffer, sizeof(code_buffer), '\0', sizeof(code_buffer));
+            memset_s(codeBuffer, sizeof(codeBuffer), '\0', sizeof(codeBuffer));
             if (currentSp == startSp) {
-                (void)sprintf_s(code_buffer, sizeof(code_buffer), "%" printLength "x", currentSp);
+                (void)sprintf_s(codeBuffer, sizeof(codeBuffer), "%" printLength "x", currentSp);
             } else {
-                (void)sprintf_s(code_buffer, sizeof(code_buffer), "    %" printLength "x", currentSp);
+                (void)sprintf_s(codeBuffer, sizeof(codeBuffer), "    %" printLength "x", currentSp);
             }
             storeData = ptrace(PTRACE_PEEKTEXT, tid_, (void*)currentSp, NULL);
-            (void)sprintf_s(code_buffer + strlen(code_buffer),
-                            sizeof(code_buffer) - strlen(code_buffer),
+            (void)sprintf_s(codeBuffer + strlen(codeBuffer),
+                            sizeof(codeBuffer) - strlen(codeBuffer),
                             " %" printLength "x",
                             storeData);
             if ((storeData == regLr) && (mapCheck)) {
-                (void)sprintf_s(code_buffer + strlen(code_buffer),
-                                sizeof(code_buffer) - strlen(code_buffer),
+                (void)sprintf_s(codeBuffer + strlen(codeBuffer),
+                                sizeof(codeBuffer) - strlen(codeBuffer),
                                 " %s",
                                 map->GetMapPath().c_str());
             }
-            std::string itemFaultStack(code_buffer, code_buffer + strlen(code_buffer));
+            std::string itemFaultStack(codeBuffer, codeBuffer + strlen(codeBuffer));
             itemFaultStack.append("\n");
             currentSp += stepLength;
             strFaultStack += itemFaultStack;
@@ -366,7 +385,8 @@ void DfxThread::PrintThreadRegisterByConfig(const int32_t fd)
 
 void DfxThread::PrintThreadFaultStackByConfig(const int32_t fd)
 {
-    if (DfxConfig::GetInstance().GetDisplayFaultStack()) {
+    if (DfxConfig::GetInstance().GetDisplayFaultStack() && isCrashThread_) {
+        WriteLog(fd, "FaultStack:\n");
         PrintFaultStacks(dfxFrames_, fd);
     } else {
         DfxLogInfo("hidden faultStack");

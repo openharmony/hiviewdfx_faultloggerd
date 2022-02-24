@@ -40,7 +40,6 @@
 #include <sys/wait.h>
 #include <securec.h>
 
-#include <hilog_base/log_base.h>
 #include <libunwind.h>
 
 #ifdef LOG_DOMAIN
@@ -78,6 +77,7 @@ static struct sigaction g_localDumperOldSigactionList[NSIG] = {};
 
 char* DfxDumpCatcherLocalDumper::g_StackInfo_ = nullptr;
 long long DfxDumpCatcherLocalDumper::g_CurrentPosition = 0;
+std::vector<std::shared_ptr<DfxDumpCatcherFrame>> DfxDumpCatcherLocalDumper::g_FrameV_;
 
 DfxDumpCatcherLocalDumper::DfxDumpCatcherLocalDumper()
 {
@@ -93,29 +93,61 @@ DfxDumpCatcherLocalDumper::~DfxDumpCatcherLocalDumper()
 #endif
 }
 
-long DfxDumpCatcherLocalDumper::WriteDumpInfo(long current_position, size_t index, std::shared_ptr<DfxFrames> frame)
+void DfxDumpCatcherLocalDumper::WritePidTidInfo(std::string msg)
 {
     int writeNumber = 0;
-    char* current_pos = g_StackInfo_ + current_position;
+    if (g_CurrentPosition >= BACK_STACK_INFO_SIZE) {
+        HILOG_BASE_ERROR(LOG_CORE, "%{public}s :: %{public}s : g_CurrentPosition(%{public}lld) overflow.", \
+            LOG_TAG, __func__, g_CurrentPosition);
+        return;
+    }
+    char* current_pos = g_StackInfo_ + g_CurrentPosition;
+    writeNumber = sprintf_s(current_pos, BACK_STACK_INFO_SIZE-g_CurrentPosition, "%s\n", msg.c_str());
+    if (writeNumber >= 0) {
+        g_CurrentPosition = g_CurrentPosition + writeNumber;
+    } else {
+#ifdef LOCAL_DUMPER_DEBUG
+        HILOG_BASE_ERROR(LOG_CORE, "%{public}s :: %{public}s : writeNumber(%{public}d).", \
+            LOG_TAG, __func__, writeNumber);
+#endif
+    }
+}
+
+void DfxDumpCatcherLocalDumper::WriteDumpInfo(size_t index, std::shared_ptr<DfxDumpCatcherFrame> frame)
+{
+    int writeNumber = 0;
+    if (g_CurrentPosition >= BACK_STACK_INFO_SIZE) {
+        HILOG_BASE_ERROR(LOG_CORE, "%{public}s :: %{public}s : g_CurrentPosition(%{public}lld) overflow.", \
+            LOG_TAG, __func__, g_CurrentPosition);
+        return;
+    }
+    char* current_pos = g_StackInfo_ + g_CurrentPosition;
     if (frame->GetFrameFuncName() == "") {
-        writeNumber = sprintf_s(current_pos, BACK_STACK_INFO_SIZE-current_position,
+        writeNumber = sprintf_s(current_pos, BACK_STACK_INFO_SIZE-g_CurrentPosition,
             "#%02zu pc %016" PRIx64 "(%016" PRIx64 ") %s\n",
              index, frame->GetFrameRelativePc(), frame->GetFramePc(), (frame->GetFrameMap() == nullptr) ?
              "Unknown" : frame->GetFrameMap()->GetMapPath().c_str());
     } else {
-        writeNumber = sprintf_s(current_pos, BACK_STACK_INFO_SIZE-current_position,
+        writeNumber = sprintf_s(current_pos, BACK_STACK_INFO_SIZE-g_CurrentPosition,
              "#%02zu pc %016" PRIx64 "(%016" PRIx64 ") %s(%s+%" PRIu64 ")\n", index,
              frame->GetFrameRelativePc(), frame->GetFramePc(), (frame->GetFrameMap() == nullptr) ?
              "Unknown" : frame->GetFrameMap()->GetMapPath().c_str(), frame->GetFrameFuncName().c_str(),
              frame->GetFrameFuncOffset());
     }
-    return writeNumber;
+    if (writeNumber >= 0) {
+        g_CurrentPosition = g_CurrentPosition + writeNumber;
+    } else {
+#ifdef LOCAL_DUMPER_DEBUG
+        HILOG_BASE_ERROR(LOG_CORE, "%{public}s :: %{public}s : writeNumber(%{public}d).", \
+            LOG_TAG, __func__, writeNumber);
+#endif
+    }
 }
 
 bool DfxDumpCatcherLocalDumper::ExecLocalDump(const int pid, const int tid, const int skipFramNum)
 {
 #ifdef LOCAL_DUMPER_DEBUG
-    HILOG_BASE_DEBUG(LOG_CORE, "%{public}s :: %{public}s : pid(%{public}d), tid(%{public}d), skipFramNum(%{public}d).",
+    HILOG_BASE_DEBUG(LOG_CORE, "%{public}s :: %{public}s : pid(%{public}d), tid(%{public}d), skpFram(%{public}d).", \
         LOG_TAG, __func__, pid, tid, skipFramNum);
 #endif
 
@@ -128,7 +160,7 @@ bool DfxDumpCatcherLocalDumper::ExecLocalDump(const int pid, const int tid, cons
     size_t index = 0;
     auto maps = DfxElfMaps::Create(pid);
     while ((unw_step(&cursor) > 0) && (index < BACK_STACK_MAX_STEPS)) {
-        std::shared_ptr<DfxFrames> frame = std::make_shared<DfxFrames>();
+        std::shared_ptr<DfxDumpCatcherFrame> frame = std::make_shared<DfxDumpCatcherFrame>();
 
         unw_word_t pc;
         if (unw_get_reg(&cursor, UNW_REG_IP, (unw_word_t*)(&(pc)))) {
@@ -159,8 +191,8 @@ bool DfxDumpCatcherLocalDumper::ExecLocalDump(const int pid, const int tid, cons
 
         // skip 0 stack, as this is dump catcher. Caller don't need it.
         if (index >= skipFramNum) {
-            int writeNumber = WriteDumpInfo(g_CurrentPosition, index - skipFramNum, frame);
-            g_CurrentPosition = g_CurrentPosition + writeNumber;
+            WriteDumpInfo(index - skipFramNum, frame);
+            g_FrameV_.push_back(frame);
         }
         index++;
     }
@@ -173,15 +205,15 @@ bool DfxDumpCatcherLocalDumper::ExecLocalDump(const int pid, const int tid, cons
 
 void DfxDumpCatcherLocalDumper::DFX_LocalDumperUnwindLocal(int sig, siginfo_t *si, void *context)
 {
-    DfxLogToSocket("DFX_LocalDumperUnwindLocal");
+    DfxLogToSocket("DFX_LocalDumperUnwindLocal -S-");
 #ifdef LOCAL_DUMPER_DEBUG
     HILOG_BASE_DEBUG(LOG_CORE, "%{public}s :: sig(%{public}d), callerPid(%{public}d), callerTid(%{public}d).",
         __func__, sig, si->si_pid, si->si_uid);
     HILOG_BASE_DEBUG(LOG_CORE, "DFX_LocalDumperUnwindLocal :: sig(%{public}d), pid(%{public}d), tid(%{public}d).",
         sig, g_localDumpRequest.pid, g_localDumpRequest.tid);
 #endif
-
-    ExecLocalDump(g_localDumpRequest.pid, g_localDumpRequest.tid, NUMBER_ONE);
+    ExecLocalDump(g_localDumpRequest.pid, g_localDumpRequest.tid, DUMP_CATCHER_NUMBER_ONE);
+    DfxLogToSocket("DFX_LocalDumperUnwindLocal -E-");
 }
 
 void DfxDumpCatcherLocalDumper::DFX_LocalDumper(int sig, siginfo_t *si, void *context)
@@ -192,9 +224,9 @@ void DfxDumpCatcherLocalDumper::DFX_LocalDumper(int sig, siginfo_t *si, void *co
     g_localDumpRequest.type = sig;
     g_localDumpRequest.tid = gettid();
     g_localDumpRequest.pid = getpid();
-    g_localDumpRequest.uid = getuid();
+    g_localDumpRequest.uid = (int32_t)getuid();
     g_localDumpRequest.reserved = 0;
-    g_localDumpRequest.timeStamp = time(NULL);
+    g_localDumpRequest.timeStamp = (uint64_t)time(NULL);
     if (memcpy_s(&(g_localDumpRequest.siginfo), sizeof(g_localDumpRequest.siginfo),
         si, sizeof(siginfo_t)) != 0) {
         HILOG_BASE_ERROR(LOG_CORE, "Failed to copy siginfo.");

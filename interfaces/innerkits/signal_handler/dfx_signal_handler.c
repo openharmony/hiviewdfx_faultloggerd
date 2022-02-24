@@ -34,7 +34,6 @@
 #include <sys/uio.h>
 #include <sys/wait.h>
 
-#include <hilog_base/log_base.h>
 #include <securec.h>
 #include "dfx_define.h"
 #include "dfx_log.h"
@@ -312,14 +311,16 @@ static void DFX_UnwindLocal(int sig, siginfo_t *si, void *context)
 static void DFX_SignalHandler(int sig, siginfo_t *si, void *context)
 {
     pthread_mutex_lock(&g_signalHandlerMutex);
+    HILOG_BASE_INFO(LOG_CORE, "faultlog_native_crash");
+    HILOG_BASE_INFO(LOG_CORE, "faultlog_crash_hold_process");
 
     (void)memset_s(&g_request, sizeof(g_request), 0, sizeof(g_request));
     g_request.type = sig;
     g_request.tid = gettid();
     g_request.pid = getpid();
-    g_request.uid = getuid();
+    g_request.uid = (int32_t)getuid();
     g_request.reserved = 0;
-    g_request.timeStamp = time(NULL);
+    g_request.timeStamp = (int64_t)time(NULL);
     if (memcpy_s(&(g_request.siginfo), sizeof(g_request.siginfo),
         si, sizeof(siginfo_t)) != 0) {
         HILOG_BASE_ERROR(LOG_CORE, "Failed to copy siginfo.");
@@ -332,6 +333,8 @@ static void DFX_SignalHandler(int sig, siginfo_t *si, void *context)
         pthread_mutex_unlock(&g_signalHandlerMutex);
         return;
     }
+    HILOG_BASE_INFO(LOG_CORE, "DFX_LocalDumperUnwindLocal :: sig(%{public}d), pid(%{public}d), tid(%{public}d).",
+        sig, g_request.pid, g_request.tid);
 #ifdef DFX_LOCAL_UNWIND
     DFX_UnwindLocal(sig, si, context);
 #else
@@ -363,6 +366,7 @@ static void DFX_SignalHandler(int sig, siginfo_t *si, void *context)
         HILOG_BASE_ERROR(LOG_CORE, "Failed to wait child process terminated.");
         goto out;
     }
+    HILOG_BASE_INFO(LOG_CORE, "faultlog_crash_hold_process");
 out:
     ResetSignalHandlerIfNeed(sig);
     prctl(PR_SET_DUMPABLE, prevDumpableStatus);

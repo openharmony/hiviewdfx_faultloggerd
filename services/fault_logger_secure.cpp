@@ -91,28 +91,28 @@ bool FaultLoggerSecure::CheckUidAndPid(const int uid, const int32_t pid)
         return ret;
     }
 
-    int count = fread(resp, 1, MAX_RESP_LEN - 1, fp);
+    int count = static_cast<int>(fread(resp, 1, MAX_RESP_LEN - 1, fp));
+    pclose(fp);
     if (count < 0) {
-        fclose(fp);
         return ret;
     }
 
-    pclose(fp);
     DelSpace(reinterpret_cast<char *>(resp));
 
     char delim[] = "\n";
-    char *token = strtok(reinterpret_cast<char *>(resp), delim);
+    char *buf;
+    char *token = strtok_s(reinterpret_cast<char *>(resp), delim, &buf);
     if (token == nullptr) {
         return ret;
     }
-    token = strtok(nullptr, delim);
+    token = strtok_s(nullptr, delim, &buf);
     while (token != nullptr) {
         int tokenPID = atoi(token);
         if (pid == tokenPID) {
             ret = true;
             break;
         }
-        token = strtok(nullptr, delim);
+        token = strtok_s(nullptr, delim, &buf);
     }
 
     DfxLogInfo("%s :: CheckUidAndPid :: ret(%d).\n",

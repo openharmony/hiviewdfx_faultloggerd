@@ -83,7 +83,7 @@ bool TrimAndDupStr(const std::string &source, std::string &str)
     }
 
     uint32_t maxStrLen = NAME_LEN;
-    uint32_t offset = end - begin;
+    uint32_t offset = (uint32_t)(end - begin);
     if (maxStrLen > offset) {
         maxStrLen = offset;
     }

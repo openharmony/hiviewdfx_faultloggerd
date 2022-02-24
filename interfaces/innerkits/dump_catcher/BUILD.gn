@@ -29,14 +29,16 @@ config("dfx_dump_catcher_config") {
 ohos_shared_library("lib_dfx_dump_catcher") {
   public_configs = [ ":dfx_dump_catcher_config" ]
 
+  cflags = [ "-DDFX_LOG_USE_HILOG_BASE" ]
+
   sources = [
     "//base/hiviewdfx/faultloggerd/tools/process_dump/dfx_elf.cpp",
-    "//base/hiviewdfx/faultloggerd/tools/process_dump/dfx_frames.cpp",
     "//base/hiviewdfx/faultloggerd/tools/process_dump/dfx_log.cpp",
     "//base/hiviewdfx/faultloggerd/tools/process_dump/dfx_maps.cpp",
     "//base/hiviewdfx/faultloggerd/tools/process_dump/dfx_util.cpp",
     "dfx_dump_catcher.cpp",
     "dfx_dump_catcher_local_dumper.cpp",
+    "dfx_dump_catcher_frame.cpp",
   ]
 
   deps = [
@@ -45,8 +47,6 @@ ohos_shared_library("lib_dfx_dump_catcher") {
   ]
 
   external_deps = [
-    "bytrace_standard:bytrace_core",
-    "hilog_native:libhilog",
     "hilog_native:libhilog_base",
     "utils_base:utils",
   ]

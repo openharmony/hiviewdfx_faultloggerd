@@ -145,7 +145,7 @@ bool DfxConfig::parserConfig(char* filterKey, int keySize, char* filterValue, in
             continue;
         }
         if (strcmp("displayFaultStack.highAddressStep", filterKey) == 0) {
-            highAddressStep = atoi(filterValue);
+            highAddressStep = (unsigned int)atoi(filterValue);
             DfxConfig::GetInstance().SetFaultStackHighAddressStep(highAddressStep);
             ret = true;
             continue;
@@ -181,7 +181,7 @@ void DfxConfig::readConfig()
             if (fgets(line, CONF_LINE_SIZE -1, fp) == nullptr) {
                 continue;
             }
-            foramtKV(line, key, value);
+            foramtKV(line, CONF_LINE_SIZE, key, CONF_KEY_SIZE, value, CONF_VALUE_SIZE);
             trim(key, filterKey);
             trim(value, filterValue);
 
@@ -197,15 +197,19 @@ void DfxConfig::readConfig()
 void DfxConfig::trim(char *strIn, char *strOut)
 {
     char *temp = strIn;
-
-    while (*temp == ' ') {
+    size_t breakCount = 0;
+    size_t currentLength = strlen(temp);
+    while ((*temp == ' ') && (breakCount < currentLength)) {
         temp++;
+        breakCount++;
     }
+    breakCount = 0;
     char *start = temp;
-
     temp = strIn + strlen(strIn) -1;
-    while (*temp == ' ') {
+    currentLength = strlen(start);
+    while ((*temp == ' ') && (breakCount < currentLength)) {
         temp--;
+        breakCount++;
     }
     char *end = temp;
 
@@ -215,8 +219,9 @@ void DfxConfig::trim(char *strIn, char *strOut)
     *strOut = '\0';
 }
 
-void DfxConfig::foramtKV(char * line, char * key, char * value)
+void DfxConfig::foramtKV(char *line, int lineLength, char *key, int keyLength, char *value, int valueLength)
 {
+    DfxLogDebug("lineLength(%d) keyLength(%d) valueLength(%d)", lineLength, keyLength, valueLength);
     char *p = NULL;
     char *end = line + strlen(line) -1;
     p = strstr(line, "=");

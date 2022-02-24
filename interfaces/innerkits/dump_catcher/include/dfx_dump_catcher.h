@@ -21,8 +21,8 @@
 #include <cinttypes>
 #include <cstring>
 #include <string>
-#include <unistd.h>
-#include <ucontext.h>
+
+#include "dfx_dump_catcher_local_dumper.h"
 
 namespace OHOS {
 namespace HiviewDFX {
@@ -31,6 +31,9 @@ public:
     DfxDumpCatcher();
     ~DfxDumpCatcher();
     bool DumpCatch(const int pid, const int tid, std::string& msg);
+    bool DumpCatchMultiPid(const std::vector<int> pidV, std::string& msg);
+    bool DumpCatchFrame(const int pid, const int tid, std::string& msg, \
+        std::vector<std::shared_ptr<DfxDumpCatcherFrame>>& frameV);
 
 private:
     bool DoDumpLocalPidTid(const int pid, const int tid);

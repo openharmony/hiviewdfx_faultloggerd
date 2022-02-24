@@ -40,6 +40,9 @@ public:
     int RaiseIllegalInstructionException() const;
     int RaiseSegmentFaultException() const;
     int RaiseTrapException() const;
+    int IllegalInstructionException(void) const;
+    int SegmentFaultException(void) const;
+    int Abort(void) const;
 
     int DumpStackTrace() const;
     void PrintUsage() const;

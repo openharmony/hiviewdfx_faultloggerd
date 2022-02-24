@@ -26,11 +26,11 @@
 #include <sys/types.h>
 #include <sys/un.h>
 #include <unistd.h>
-#include <hilog/log_c.h>
 #include "dfx_log.h"
 
 namespace {
 static const int32_t SOCKET_BUFFER_SIZE = 256;
+static const int32_t SOCKET_TIMEOUT = 5;
 static const char FAULTLOGGERD_SOCK_PATH[] = "/dev/unix/socket/faultloggerd.server";
 }
 
@@ -103,7 +103,7 @@ void FillRequest(int32_t type, FaultLoggerdRequest *request)
     request->type = type;
     request->pid = getpid();
     request->tid = gettid();
-    request->uid = getuid();
+    request->uid = (int32_t)getuid();
     ReadStringFromFile("/proc/self/cmdline", request->module, sizeof(request->module));
 }
 
@@ -125,7 +125,10 @@ int32_t RequestFileDescriptorEx(const struct FaultLoggerdRequest *request)
 {
     int sockfd;
     struct sockaddr_un server;
-
+    struct timeval timeout = {
+        SOCKET_TIMEOUT,
+        0
+    };
     if (request == nullptr) {
         DfxLogError("nullptr request");
         return -1;
@@ -135,7 +138,10 @@ int32_t RequestFileDescriptorEx(const struct FaultLoggerdRequest *request)
         DfxLogError("client socket error");
         return -1;
     }
-
+    int setSocketOptRet = setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, (const char*)&timeout, sizeof(timeout));
+    if (setSocketOptRet != 0) {
+        DfxLogError("setSocketOptRet error");
+    }
     memset_s(&server, sizeof(server), 0, sizeof(server));
     server.sun_family = AF_LOCAL;
     if (strncpy_s(server.sun_path, sizeof(server.sun_path),
@@ -145,7 +151,7 @@ int32_t RequestFileDescriptorEx(const struct FaultLoggerdRequest *request)
         return -1;
     }
 
-    int len = offsetof(struct sockaddr_un, sun_path) + strlen(server.sun_path) + 1;
+    int len = (int)(offsetof(struct sockaddr_un, sun_path) + strlen(server.sun_path) + 1);
     if (connect(sockfd, reinterpret_cast<struct sockaddr *>(&server), len) < 0) {
         DfxLogError("RequestFileDescriptorEx :: connect error");
         close(sockfd);
@@ -191,7 +197,7 @@ static FaultLoggerCheckPermissionResp SendUidToServer(int sockfd)
         }
 
         char recvbuf[SOCKET_BUFFER_SIZE] = {'\0'};
-        uint64_t count = recv(sockfd, recvbuf, sizeof(recvbuf), 0);
+        uint64_t count = (uint64_t)recv(sockfd, recvbuf, sizeof(recvbuf), 0);
         if (count < 0) {
             DfxLogError("Failed to recv uid check result from server.");
             break;
@@ -223,7 +229,7 @@ bool CheckConnectStatus()
             break;
         }
 
-        int len = offsetof(struct sockaddr_un, sun_path) + strlen(server.sun_path) + 1;
+        int len = (int)(offsetof(struct sockaddr_un, sun_path) + strlen(server.sun_path) + 1);
         int connect_status = connect(sockfd, reinterpret_cast<struct sockaddr *>(&server), len);
         if (connect_status == 0) {
             check_status = true;
@@ -255,7 +261,7 @@ static bool SendRequestToServer(const FaultLoggerdRequest &request)
             break;
         }
 
-        int len = offsetof(struct sockaddr_un, sun_path) + strlen(server.sun_path) + 1;
+        int len = (int)(offsetof(struct sockaddr_un, sun_path) + strlen(server.sun_path) + 1);
         if (connect(sockfd, reinterpret_cast<struct sockaddr *>(&server), len) < 0) {
             break;
         }
@@ -356,7 +362,7 @@ void RequestPrintTHilog(const char *msg, int length)
             break;
         }
 
-        int len = offsetof(struct sockaddr_un, sun_path) + strlen(server.sun_path) + 1;
+        int len = (int)(offsetof(struct sockaddr_un, sun_path) + strlen(server.sun_path) + 1);
         if (connect(sockfd, reinterpret_cast<struct sockaddr *>(&server), len) < 0) {
             break;
         }

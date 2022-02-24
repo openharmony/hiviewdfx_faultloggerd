@@ -15,15 +15,21 @@
 
 /* This files contains dump_catcher sdk unit test tools. */
 
-#include "../../interfaces/innerkits/dump_catcher/include/dfx_dump_catcher.h"
-
 #include <cinttypes>
-#include <cstdlib>
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
+#include <dirent.h>
+#include <directory_ex.h>
+#include <file_ex.h>
+#include <securec.h>
 #include <sys/syscall.h>
 #include <sys/types.h>
 #include <thread>
+#include <vector>
+
+#include "dfx_dump_catcher.h"
+#include "dfx_dump_catcher_frame.h"
 
 #define LOG_BUF_LEN 1024
 static const int ARG1 = 1;
@@ -33,7 +39,12 @@ static const int ARG4 = 4;
 static const int ARG5 = 5;
 static const int ARG6 = 6;
 static const int ARG7 = 7;
-static const int SLEEP_TIME = 10;
+static const int ARG8 = 8;
+static const int ARG9 = 9;
+static const int ARG10 = 10;
+static const int SLEEP_TIME = 100;
+
+static int StartMultiThread();
 
 static void PrintCommandHelp()
 {
@@ -44,7 +55,7 @@ static void PrintCommandHelp()
 
 static bool CatchStack(int32_t pid, int32_t tid)
 {
-    printf("This is function real catch stack.\n");
+    printf("This is function DumpCatch.\n");
     OHOS::HiviewDFX::DfxDumpCatcher mDfxDumpCatcher;
     std::string msg = "";
     bool ret = mDfxDumpCatcher.DumpCatch(pid, tid, msg);
@@ -57,6 +68,53 @@ static bool CatchStack(int32_t pid, int32_t tid)
     return ret;
 }
 
+static bool CatchStackMulti(const std::vector<int> pidV)
+{
+    printf("This is function DumpCatchMultiPid.\n");
+    OHOS::HiviewDFX::DfxDumpCatcher mDfxDumpCatcher;
+    std::string msg = "";
+    bool ret = mDfxDumpCatcher.DumpCatchMultiPid(pidV, msg);
+
+    printf("DumpCatchMultiPid :: ret: %d.\n", ret);
+
+    long lenStackInfo = msg.length();
+    write(STDOUT_FILENO, msg.c_str(), lenStackInfo);
+
+    return ret;
+}
+
+static bool CatchStackFrame(int32_t pid, int32_t tid)
+{
+    printf("This is function DumpCatchFrame :: pid(%d), tid(%d).\n", pid, tid);
+    OHOS::HiviewDFX::DfxDumpCatcher mDfxDumpCatcher;
+    std::string msg = "";
+    std::vector<std::shared_ptr<OHOS::HiviewDFX::DfxDumpCatcherFrame>> frameV;
+    bool ret = mDfxDumpCatcher.DumpCatchFrame(pid, tid, msg, frameV);
+
+    printf("DumpCatchFrame :: ret: %d, frameV: %d.\n", ret, frameV.size());
+
+    printf("DumpCatchFrame :: msg:\n");
+    long lenStackInfo = msg.length();
+    write(STDOUT_FILENO, msg.c_str(), lenStackInfo);
+
+    printf("DumpCatchFrame :: frame:\n");
+    for (int i = 0; i < frameV.size(); i++) {
+        std::shared_ptr<OHOS::HiviewDFX::DfxDumpCatcherFrame> frame = frameV[i];
+        if (frame->GetFrameFuncName() == "") {
+            printf("#%02zu pc %016" PRIx64 "(%016" PRIx64 ") %s\n",
+                i, frame->GetFrameRelativePc(), frame->GetFramePc(), (frame->GetFrameMap() == nullptr) ? \
+             "Unknown" : frame->GetFrameMap()->GetMapPath().c_str());
+        } else {
+            printf("#%02zu pc %016" PRIx64 "(%016" PRIx64 ") %s(%s+%" PRIu64 ")\n", i, \
+                frame->GetFrameRelativePc(), frame->GetFramePc(), (frame->GetFrameMap() == nullptr) ?
+             "Unknown" : frame->GetFrameMap()->GetMapPath().c_str(), frame->GetFrameFuncName().c_str(), \
+                frame->GetFrameFuncOffset());
+        }
+    }
+
+    return ret;
+}
+
 static bool FunctionThree(int32_t pid, int32_t tid)
 {
     printf("This is function three.\n");
@@ -64,6 +122,44 @@ static bool FunctionThree(int32_t pid, int32_t tid)
     int currentTid = syscall(SYS_gettid);
     bool ret = CatchStack(currentPid, currentTid);
     ret = CatchStack(currentPid, 0);
+
+    StartMultiThread();
+    char path[NAME_LEN] = {0};
+    if (snprintf_s(path, sizeof(path), sizeof(path) - 1, "/proc/%d/task", pid) <= 0) {
+        return FALSE;
+    }
+
+    char realPath[PATH_MAX] = {'\0'};
+    if (realpath(path, realPath) == nullptr) {
+        return FALSE;
+    }
+
+    DIR *dir = opendir(realPath);
+    if (dir == nullptr) {
+        return FALSE;
+    }
+
+    struct dirent *ent;
+    while ((ent = readdir(dir)) != nullptr) {
+        if (strcmp(ent->d_name, ".") == 0) {
+            continue;
+        }
+
+        if (strcmp(ent->d_name, "..") == 0) {
+            continue;
+        }
+
+        pid_t tid_l = atoi(ent->d_name);
+        if (tid_l == 0) {
+            continue;
+        }
+
+        if (tid_l == currentTid) {
+            ret = CatchStackFrame(currentPid, currentTid);
+        } else {
+            ret = CatchStackFrame(currentPid, tid_l);
+        }
+    }
     ret = CatchStack(pid, tid);
     return ret;
 }
@@ -85,7 +181,7 @@ static bool FunctionOne(int32_t pid, int32_t tid)
 static int SleepThread(int threadID)
 {
     printf("SleepThread -Enter- :: threadID(%d).\n", threadID);
-    int sleepTime = 10;
+    int sleepTime = SLEEP_TIME;
     sleep(sleepTime);
     printf("SleepThread -Exit- :: threadID(%d).\n", threadID);
     return 0;
@@ -100,7 +196,9 @@ static int StartMultiThread()
 
 int main(int const argc, char const * const argv[])
 {
+    bool ret = false;
     int32_t pid = 0;
+    std::vector<int> pidV;
     int32_t tid = 0;
     int32_t uid = 1000;
 
@@ -146,6 +244,36 @@ int main(int const argc, char const * const argv[])
             PrintCommandHelp();
             return -1;
         }
+    } else if (argc == ARG10) {
+        if (strcmp("-u", argv[ARG1]) == 0) {
+            uid = atoi(argv[ARG2]);
+        } else {
+            PrintCommandHelp();
+            return -1;
+        }
+
+        if (strcmp("-p", argv[ARG3]) == 0) {
+            pid = atoi(argv[ARG4]);
+            pidV.push_back(pid);
+            pid = atoi(argv[ARG5]);
+            pidV.push_back(pid);
+            pid = atoi(argv[ARG6]);
+            pidV.push_back(pid);
+            pid = atoi(argv[ARG7]);
+            pidV.push_back(pid);
+            int currentPid = getpid();
+            pidV.push_back(currentPid);
+        } else {
+            PrintCommandHelp();
+            return -1;
+        }
+
+        if (strcmp("-t", argv[ARG8]) == 0) {
+            tid = atoi(argv[ARG9]);
+        } else {
+            PrintCommandHelp();
+            return -1;
+        }
     } else {
         PrintCommandHelp();
         return -1;
@@ -153,7 +281,11 @@ int main(int const argc, char const * const argv[])
 
     setuid(uid);
     StartMultiThread();
-    bool ret = FunctionOne(pid, tid);
+    if (argc == ARG10) {
+        ret = CatchStackMulti(pidV);
+    } else {
+        ret = FunctionOne(pid, tid);
+    }
 
     return ret;
 }

@@ -37,7 +37,7 @@ public:
     unsigned int GetFaultStackHighAddressStep() const;
     void SetLogPersist(bool logPersist);
     bool GetLogPersist() const;
-    void foramtKV(char *line, char *key, char *value);
+    void foramtKV(char *line, int lineLength, char *key, int keyLength, char *value, int valueLength);
     void trim(char *strIn, char *strOut);
 private:
     DfxConfig() = default;

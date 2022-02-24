@@ -32,6 +32,8 @@ ohos_executable("crasher_cpp") {
     "//utils/native/base:utils",
   ]
 
+  external_deps = [ "hilog_native:libhilog" ]
+
   part_name = "faultloggerd"
   subsystem_name = "hiviewdfx"
 }

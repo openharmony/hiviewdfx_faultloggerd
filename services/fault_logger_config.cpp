@@ -33,8 +33,6 @@
 #include <file_ex.h>
 #include <securec.h>
 
-#include <hilog/log.h>
-
 #include "dfx_log.h"
 
 namespace OHOS {

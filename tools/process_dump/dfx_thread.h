@@ -32,6 +32,8 @@ public:
     DfxThread(const pid_t pid, const pid_t tid, const ucontext_t &context);
     DfxThread(const pid_t pid, const pid_t tid);
     ~DfxThread();
+    void SetIsCrashThread(bool isCrashThread);
+    bool GetIsCrashThread() const;
     pid_t GetProcessId() const;
     pid_t GetThreadId() const;
     std::string GetThreadName() const;
@@ -66,6 +68,7 @@ private:
     std::vector<std::shared_ptr<DfxFrames>> dfxFrames_;
     ThreadStatus threadStatus_;
     int unwStopReason_;
+    bool isCrashThread_;
 };
 } // namespace HiviewDFX
 } // namespace OHOS

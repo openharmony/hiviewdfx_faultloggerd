@@ -37,6 +37,8 @@ ohos_systemtest("test_faultloggerd") {
     "//utils/native/base:utils",
   ]
 
+  external_deps = [ "hilog_native:libhilog" ]
+
   if (target_cpu == "arm") {
     cflags = [ "-D__arm__" ]
   } else if (target_cpu == "arm64") {
@@ -45,6 +47,8 @@ ohos_systemtest("test_faultloggerd") {
     cflags = [ "-D__x86_64__" ]
   }
 }
+
+
 
 group("systemtest") {
   testonly = true

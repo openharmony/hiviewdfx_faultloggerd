@@ -68,6 +68,7 @@ void ProcessDumper::DumpProcessWithSignalContext(std::shared_ptr<DfxProcess> &pr
         DfxLogError("Fail to init key thread.");
         return;
     }
+    keyThread->SetIsCrashThread(true);
 
     process = DfxProcess::CreateProcessWithKeyThread(request->GetPid(), keyThread);
     if (!process) {
@@ -151,9 +152,9 @@ void ProcessDumper::Dump(bool isSignalHdlr, ProcessDumpType type, int32_t pid, i
             int devNull = TEMP_FAILURE_RETRY(open("/dev/null", O_RDWR));
             if (devNull < 0) {
                 std::cout << "Failed to open dev/null." << std::endl;
-                return;
+            } else {
+                TEMP_FAILURE_RETRY(dup2(devNull, STDERR_FILENO));
             }
-            TEMP_FAILURE_RETRY(dup2(devNull, STDERR_FILENO));
         }
 
         DumpProcess(process, request);
