@@ -32,8 +32,8 @@ ohos_shared_library("dfx_signalhandler") {
   cflags = [ "-DDFX_LOG_USE_HILOG_BASE" ]
 
   sources = [
-    "dfx_signal_handler.c",
     "//base/hiviewdfx/faultloggerd/tools/process_dump/dfx_log.cpp",
+    "dfx_signal_handler.c",
   ]
 
   deps = [ "//base/hiviewdfx/faultloggerd/interfaces/innerkits/faultloggerd_client:libfaultloggerd" ]

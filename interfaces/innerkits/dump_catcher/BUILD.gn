@@ -37,8 +37,8 @@ ohos_shared_library("lib_dfx_dump_catcher") {
     "//base/hiviewdfx/faultloggerd/tools/process_dump/dfx_maps.cpp",
     "//base/hiviewdfx/faultloggerd/tools/process_dump/dfx_util.cpp",
     "dfx_dump_catcher.cpp",
-    "dfx_dump_catcher_local_dumper.cpp",
     "dfx_dump_catcher_frame.cpp",
+    "dfx_dump_catcher_local_dumper.cpp",
   ]
 
   deps = [
