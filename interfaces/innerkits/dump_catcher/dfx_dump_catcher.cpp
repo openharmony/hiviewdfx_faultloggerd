@@ -55,6 +55,8 @@ static const std::string DFXDUMPCATCHER_TAG = "DfxDumpCatcher";
 
 const std::string LOG_FILE_PATH = "/data/log/faultlog/temp";
 
+static const int NUMBER_TEN = 10;
+
 namespace OHOS {
 namespace HiviewDFX {
 static pthread_mutex_t g_dumpCatcherMutex = PTHREAD_MUTEX_INITIALIZER;
@@ -171,12 +173,35 @@ bool DfxDumpCatcher::DoDumpLocalPid(const int pid)
     return true;
 }
 
+std::string DfxDumpCatcher::TryToGetGeneratedLog(const std::string path, const std::string prefix)
+{
+    DfxLogDebug("%s :: TryToGetGeneratedLog :: path(%s), prefix(%s).", \
+        DFXDUMPCATCHER_TAG.c_str(), path.c_str(), prefix.c_str());
+    std::vector<std::string> files;
+    OHOS::GetDirFiles(path, files);
+    int i = 0;
+    while (i < (int)files.size() && files[i].find(prefix) == std::string::npos) {
+        i++;
+    }
+    if (i < (int)files.size()) {
+        DfxLogDebug("%s :: TryToGetGeneratedLog :: return filePath(%s)", \
+            DFXDUMPCATCHER_TAG.c_str(), files[i].c_str());
+        return files[i];
+    }
+    DfxLogDebug("%s :: TryToGetGeneratedLog :: return empty string", DFXDUMPCATCHER_TAG.c_str());
+    return "";
+}
+
 std::string DfxDumpCatcher::WaitForLogGenerate(const std::string path, const std::string prefix)
 {
     DfxLogDebug("%s :: WaitForLogGenerate :: path(%s), prefix(%s).", \
         DFXDUMPCATCHER_TAG.c_str(), path.c_str(), prefix.c_str());
     time_t pastTime = 0;
     time_t startTime = time(nullptr);
+    if (startTime < 0) {
+        DfxLogError("%s :: WaitForLogGenerate :: startTime(%d) is less than zero.", \
+            DFXDUMPCATCHER_TAG.c_str(), startTime);
+    }
     int32_t inotifyFd = inotify_init();
     if (inotifyFd == -1) {
         return "";
@@ -194,12 +219,12 @@ std::string DfxDumpCatcher::WaitForLogGenerate(const std::string path, const std
     fds[0].events = POLLIN;
     while (true) {
         pastTime = time(nullptr) - startTime;
-        if (pastTime > 10) {
+        if (pastTime > NUMBER_TEN) {
             break;
         }
 
         int ret = poll(fds, nfds, 1000); // 1000ms
-        if (ret < 0 || fds[0].revents & POLLIN) {
+        if (ret < 0 || (fds[0].revents & POLLIN)) {
             continue;
         }
 
@@ -216,7 +241,7 @@ std::string DfxDumpCatcher::WaitForLogGenerate(const std::string path, const std
         while ((reinterpret_cast<char *>(event) - buffer) < len) {
             std::string filePath = path + "/" + std::string(event->name);
             DfxLogDebug("%s :: WaitForLogGenerate :: filePath(%s)", \
-                    DFXDUMPCATCHER_TAG.c_str(), filePath.c_str());
+                DFXDUMPCATCHER_TAG.c_str(), filePath.c_str());
             if (filePath.find(prefix) != std::string::npos) {
                 DfxLogDebug("%s :: WaitForLogGenerate :: return filePath(%s)", \
                     DFXDUMPCATCHER_TAG.c_str(), filePath.c_str());
@@ -248,7 +273,13 @@ bool DfxDumpCatcher::DoDumpRemote(const int pid, const int tid)
         long long stackFileLength = 0;
         std::string stackTraceFilePatten = LOG_FILE_PATH + "/stacktrace-" + std::to_string(pid);
 
-        std::string stackTraceFileName = WaitForLogGenerate(LOG_FILE_PATH, stackTraceFilePatten);
+        std::string stackTraceFileName = TryToGetGeneratedLog(LOG_FILE_PATH, stackTraceFilePatten);
+        if (stackTraceFileName.empty()) {
+            stackTraceFileName = WaitForLogGenerate(LOG_FILE_PATH, stackTraceFilePatten);
+        }
+        if (stackTraceFileName.empty()) {
+            stackTraceFileName = TryToGetGeneratedLog(LOG_FILE_PATH, stackTraceFilePatten);
+        }
         if (stackTraceFileName.empty()) {
             return false;
         }

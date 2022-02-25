@@ -413,7 +413,8 @@ NOINLINE int TestFunc70(void)
 
 NOINLINE int CrashTest(void)
 {
-    sleep(3);
+    int sleepTime = 3;
+    sleep(sleepTime);
     raise(SIGSEGV);
     return 0;
 }

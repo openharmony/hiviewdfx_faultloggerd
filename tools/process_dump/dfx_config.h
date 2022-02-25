@@ -14,7 +14,6 @@
  */
 #ifndef DFX_CONFIG_H
 #define DFX_CONFIG_H
-#include <string>
 
 namespace OHOS {
 namespace HiviewDFX {

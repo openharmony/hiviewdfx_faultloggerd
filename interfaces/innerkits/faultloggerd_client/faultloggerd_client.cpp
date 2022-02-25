@@ -129,7 +129,7 @@ int32_t RequestFileDescriptorEx(const struct FaultLoggerdRequest *request)
         SOCKET_TIMEOUT,
         0
     };
-    void * pTimeout = &timeout;
+    void* pTimeout = &timeout;
     if (request == nullptr) {
         DfxLogError("nullptr request");
         return -1;
@@ -139,7 +139,8 @@ int32_t RequestFileDescriptorEx(const struct FaultLoggerdRequest *request)
         DfxLogError("client socket error");
         return -1;
     }
-    int setSocketOptRet = setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, static_cast<const char*>(pTimeout), sizeof(timeout));
+    int setSocketOptRet = setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, \
+        static_cast<const char*>(pTimeout), sizeof(timeout));
     if (setSocketOptRet != 0) {
         DfxLogError("setSocketOptRet error");
     }

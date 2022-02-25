@@ -499,7 +499,6 @@ void FaultLoggerDaemon::LoopAcceptRequestAndFork(int socketFd)
             close(connectionFd);
             exit(0);
         }
-
         close(connectionFd);
         connectionFd = -1;
     }

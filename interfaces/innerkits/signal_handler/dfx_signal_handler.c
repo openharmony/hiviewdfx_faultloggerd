@@ -95,16 +95,18 @@ enum DumpPreparationStage {
 
 static void PrintWaitStatus(const char *msg, int status)
 {
-    if (msg != NULL)
+    if (msg != NULL) {
         DfxLogDebug("%s", msg);
+    }
 
     if (WIFEXITED(status)) {
         DfxLogDebug("child exited, status=%d", WEXITSTATUS(status));
     } else if (WIFSIGNALED(status)) {
         DfxLogDebug("child killed by signal %d (%s)", WTERMSIG(status), strsignal(WTERMSIG(status)));
 #ifdef WCOREDUMP /* Not in SUSv3, may be absent on some systems */
-        if (WCOREDUMP(status))
+        if (WCOREDUMP(status)) {
             DfxLogDebug(" (core dumped)");
+        }
 #endif
     } else if (WIFSTOPPED(status)) {
         DfxLogDebug("child stopped by signal %d (%s)", WSTOPSIG(status), strsignal(WSTOPSIG(status)));
