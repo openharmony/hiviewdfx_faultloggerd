@@ -33,7 +33,11 @@ ohos_executable("harmonystrace") {
     "$faultloggerd_path/interfaces/innerkits/dump_catcher:lib_dfx_dump_catcher",
   ]
 
-  external_deps = [ "hilog_native:libhilog" ]
+  external_deps = [
+    "hilog_native:libhilog",
+    "utils_base:utils",
+  ]
+
   part_name = "faultloggerd"
   subsystem_name = "hiviewdfx"
 }

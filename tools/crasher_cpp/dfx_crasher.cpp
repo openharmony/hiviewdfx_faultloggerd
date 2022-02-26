@@ -33,7 +33,6 @@
 
 #include <sys/prctl.h>
 
-
 #include "dfx_signal_handler.h"
 
 #ifdef LOG_DOMAIN
@@ -64,11 +63,8 @@ DfxCrasher &DfxCrasher::GetInstance()
 
 NOINLINE int DfxCrasher::TriggerTrapException() const
 {
-    std::cout << "test usage in testfunc3!" << std::endl;
-    int a = 1;
-    int *b = &a;
-    b = nullptr;
-    *b = 1;
+    __asm__ volatile(".inst 0xde01");
+
     return 0;
 }
 
@@ -84,6 +80,12 @@ NOINLINE int DfxCrasher::TriggerSegmentFaultException() const
 NOINLINE int DfxCrasher::RaiseAbort() const
 {
     raise(SIGABRT);
+    return 0;
+}
+
+NOINLINE int DfxCrasher::Abort(void) const
+{
+    abort();
     return 0;
 }
 
@@ -110,6 +112,24 @@ NOINLINE int DfxCrasher::RaiseFloatingPointException() const
 NOINLINE int DfxCrasher::RaiseIllegalInstructionException() const
 {
     raise(SIGILL);
+    return 0;
+}
+
+NOINLINE int DfxCrasher::IllegalInstructionException(void) const
+{
+    char mes[] = "ABCDEFGHIJ";
+    char* ptr = mes;
+    ptr = nullptr;
+    *ptr = 0;
+
+    return 0;
+}
+
+NOINLINE int DfxCrasher::SegmentFaultException(void) const
+{
+    volatile char *ptr = nullptr;
+    *ptr;
+
     return 0;
 }
 
@@ -273,8 +293,12 @@ void DfxCrasher::PrintUsage() const
     std::cout << "  SIGABRT               raise a SIGABRT" << std::endl;
     std::cout << "  SIGBUS                raise a SIGBUS" << std::endl;
     std::cout << "  STACKTRACE            raise a SIGDUMP" << std::endl;
-    std::cout << "  triSIGTRAP            trigger a SIGTRAP" << std::endl;
-    std::cout << "  triSIGSEGV            trigger a SIGSEGV" << std::endl;
+
+    std::cout << "  triSIGILL             trigger a SIGILL\n" << std::endl;
+    std::cout << "  triSIGSEGV            trigger a SIGSEGV\n" << std::endl;
+    std::cout << "  triSIGTRAP            trigger a SIGTRAP\n" << std::endl;
+    std::cout << "  triSIGABRT            trigger a SIGABRT\n" << std::endl;
+
     std::cout << "  Loop                  trigger a ForeverLoop" << std::endl;
     std::cout << "  MaxStack              trigger SIGSEGV after 64 function call" << std::endl;
     std::cout << "  MaxMethod             trigger SIGSEGV after call a function with longer name" << std::endl;
@@ -329,8 +353,16 @@ uint64_t DfxCrasher::ParseAndDoCrash(const char *arg)
         return RaiseTrapException();
     }
 
+    if (!strcasecmp(arg, "triSIGILL")) {
+        return IllegalInstructionException();
+    }
+
     if (!strcasecmp(arg, "SIGABRT")) {
         return RaiseAbort();
+    }
+
+    if (!strcasecmp(arg, "triSIGABRT")) {
+            return Abort();
     }
 
     if (!strcasecmp(arg, "SIGBUS")) {
@@ -345,16 +377,16 @@ uint64_t DfxCrasher::ParseAndDoCrash(const char *arg)
         return TriggerTrapException();
     }
 
-    if (!strcasecmp(arg, "triSIGSEGV")) {
-        return TriggerSegmentFaultException();
-    }
-
     if (!strcasecmp(arg, "Loop")) {
         int i = 0;
         while (1) {
             usleep(10000); // 10000:sleep 0.01 second
             i++;
         }
+    }
+
+    if (!strcasecmp(arg, "triSIGSEGV")) {
+        return SegmentFaultException();
     }
 
     if (!strcasecmp(arg, "MaxStack")) {

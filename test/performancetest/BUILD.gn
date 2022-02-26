@@ -36,6 +36,8 @@ ohos_performancetest("test_performance") {
     "//third_party/googletest:gtest_main",
     "//utils/native/base:utils",
   ]
+
+  external_deps = [ "hilog_native:libhilog" ]
 }
 
 group("performance") {

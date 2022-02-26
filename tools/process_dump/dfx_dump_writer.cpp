@@ -36,6 +36,7 @@ ProcessDumpRequest::ProcessDumpRequest()
     DfxLogDebug("Enter %s.", __func__);
     memset_s(&siginfo_, sizeof(siginfo_), 0, sizeof(siginfo_));
     memset_s(&context_, sizeof(context_), 0, sizeof(context_));
+    type_ = DUMP_TYPE_PROCESS;
     DfxLogDebug("Exit %s.", __func__);
 }
 
@@ -158,7 +159,6 @@ void DfxDumpWriter::WriteProcessDump(std::shared_ptr<ProcessDumpRequest> request
         int32_t targetFd = RequestFileDescriptorEx(&faultloggerdRequest);
         if (targetFd < 0) {
             DfxLogWarn("Failed to request fd from faultloggerd.");
-            return;
         }
         auto siginfo = std::make_shared<siginfo_t>(request->GetSiginfo());
         if (process_->GetIsSignalDump() == false) {

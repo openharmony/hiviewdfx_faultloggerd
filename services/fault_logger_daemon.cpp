@@ -34,8 +34,6 @@
 #include <file_ex.h>
 #include <securec.h>
 
-#include <hilog/log.h>
-
 #include "dfx_log.h"
 #include "fault_logger_config.h"
 #include "fault_logger_secure.h"
@@ -52,7 +50,8 @@ constexpr int32_t MAX_CONNECTION = 30;
 constexpr int32_t REQUEST_BUF_SIZE = 1024;
 constexpr int32_t MSG_BUF_SIZE = 256;
 
-const int32_t FAULTLOG_FILE_PROP = 0662;
+const int32_t FAULTLOG_FILE_PROP = 0644;
+const int32_t FAULTLOG_FOLDER_PROP = 0771;
 
 static const std::string LOG_LABLE = "FaultLoggerd";
 
@@ -144,19 +143,25 @@ bool FaultLoggerDaemon::InitEnvironment()
         DfxLogError("%s :: Failed to ForceCreateDirectory GetLogFilePath", LOG_LABLE.c_str());
         return false;
     }
+    if (!OHOS::ChangeModeDirectory(faultLoggerConfig_->GetLogFilePath(), FAULTLOG_FOLDER_PROP)) {
+        DfxLogError("%s :: Failed to ChangeModeDirectory GetLogFilePath", LOG_LABLE.c_str());
+    }
 
     if (!OHOS::ForceCreateDirectory(faultLoggerConfig_->GetDebugLogFilePath())) {
         DfxLogError("%s :: Failed to ForceCreateDirectory GetDebugLogFilePath", LOG_LABLE.c_str());
         return false;
     }
+    if (!OHOS::ChangeModeDirectory(faultLoggerConfig_->GetDebugLogFilePath(), FAULTLOG_FOLDER_PROP)) {
+        DfxLogError("%s :: Failed to ChangeModeDirectory GetDebugLogFilePath", LOG_LABLE.c_str());
+    }
 
     if (chmod(FAULTLOGGERD_SOCK_PATH, S_IRWXU | S_IRWXG | S_IROTH | S_IWOTH) < 0) {
-        DfxLogError("%s :: Failed to chmod, %s", LOG_LABLE.c_str(), strerror(errno));
+        DfxLogError("%s :: Failed to chmod, %d", LOG_LABLE.c_str(), errno);
     }
 
     std::vector<std::string> files;
     OHOS::GetDirFiles(faultLoggerConfig_->GetLogFilePath(), files);
-    currentLogCounts_ = files.size();
+    currentLogCounts_ = (int32_t)files.size();
 
     DfxLogInfo("%s :: %s success finished.", OHOS::HiviewDFX::LOG_LABLE.c_str(), __func__);
     return true;
@@ -194,7 +199,7 @@ void FaultLoggerDaemon::HandlePrintTHilogClientReqeust(int32_t const connectionF
 {
     char buf[LOG_BUF_LEN] = {0};
 
-    if (write(connectionFd, DAEMON_RESP.c_str(), DAEMON_RESP.length()) != DAEMON_RESP.length()) {
+    if (write(connectionFd, DAEMON_RESP.c_str(), DAEMON_RESP.length()) != (ssize_t)DAEMON_RESP.length()) {
         DfxLogError("%s :: Failed to write DAEMON_RESP.", LOG_LABLE.c_str());
     }
 
@@ -228,7 +233,7 @@ FaultLoggerCheckPermissionResp FaultLoggerDaemon::SecurityCheck(int32_t connecti
             break;
         }
 
-        if (write(connectionFd, DAEMON_RESP.c_str(), DAEMON_RESP.length()) != DAEMON_RESP.length()) {
+        if (write(connectionFd, DAEMON_RESP.c_str(), DAEMON_RESP.length()) != (ssize_t)DAEMON_RESP.length()) {
             DfxLogError("%s :: Failed to write DAEMON_RESP.", LOG_LABLE.c_str());
         }
 
@@ -333,15 +338,15 @@ void FaultLoggerDaemon::HandleSdkDumpReqeust(int32_t connectionFd, FaultLoggerdR
 // means we need dump all the threads in a process.
         if (request->tid == 0) {
             if (syscall(SYS_rt_sigqueueinfo, request->pid, sig, &si) != 0) {
-                DfxLogError("Failed to SYS_rt_sigqueueinfo signal(%d), errno(%d)(%s).",
-                    si.si_signo, errno, strerror(errno));
+                DfxLogError("Failed to SYS_rt_sigqueueinfo signal(%d), errno(%d).",
+                    si.si_signo, errno);
                 break;
             }
         } else {
 // means we need dump a specified thread
             if (syscall(SYS_rt_tgsigqueueinfo, request->pid, request->tid, sig, &si) != 0) {
-                DfxLogError("Failed to SYS_rt_tgsigqueueinfo signal(%d), errno(%d)(%s).",
-                    si.si_signo, errno, strerror(errno));
+                DfxLogError("Failed to SYS_rt_tgsigqueueinfo signal(%d), errno(%d).",
+                    si.si_signo, errno);
                 break;
             }
         }
@@ -431,7 +436,7 @@ void FaultLoggerDaemon::RemoveTempFileIfNeed()
 
     std::vector<std::string> files;
     OHOS::GetDirFiles(faultLoggerConfig_->GetLogFilePath(), files);
-    currentLogCounts_ = files.size();
+    currentLogCounts_ = (int32_t)files.size();
 
     maxFileCount = faultLoggerConfig_->GetLogFileMaxNumber();
     if (currentLogCounts_ < maxFileCount) {
@@ -451,7 +456,7 @@ void FaultLoggerDaemon::RemoveTempFileIfNeed()
     });
 
     int startIndex = maxFileCount / 2;
-    for (unsigned int index = startIndex; index < files.size(); index++) {
+    for (unsigned int index = (unsigned int)startIndex; index < files.size(); index++) {
         OHOS::RemoveFile(files[index]);
     }
 }
@@ -494,7 +499,6 @@ void FaultLoggerDaemon::LoopAcceptRequestAndFork(int socketFd)
             close(connectionFd);
             exit(0);
         }
-
         close(connectionFd);
         connectionFd = -1;
     }

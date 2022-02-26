@@ -16,6 +16,7 @@
 #include "dfx_crasher.h"
 
 #include <inttypes.h>
+#include <sys/mman.h>
 #include <pthread.h>
 #include <signal.h>
 #include <stdio.h>
@@ -44,20 +45,8 @@ static const int ARG128 = 128;
 
 NOINLINE int TriggerTrapException(void)
 {
-    printf("test usage in testfunc3! \n");
-    int a = 1;
-    int *b = &a;
-    b = NULL;
-    *b = 1;
-    return 0;
-}
+    __asm__ volatile(".inst 0xde01");
 
-NOINLINE int TriggerSegmentFaultException(void)
-{
-    printf("test TriggerSegmentFaultException \n");
-    // for crash test force cast the type
-    int *a = (int *)(&RaiseAbort);
-    *a = SIGSEGV;
     return 0;
 }
 
@@ -66,28 +55,42 @@ NOINLINE int RaiseAbort(void)
     raise(SIGABRT);
     return 0;
 }
+NOINLINE int Abort(void)
+{
+    abort();
+    return 0;
+}
 
 NOINLINE int RaiseBusError(void)
 {
-    raise(SIGBUS);
+    (void)raise(SIGBUS);
     return 0;
 }
 
 NOINLINE int DumpStackTrace(void)
 {
-    raise(35); // 35:SIGDUMP
+    (void)raise(35); // 35:SIGDUMP
     return 0;
 }
 
 NOINLINE int RaiseFloatingPointException(void)
 {
-    raise(SIGFPE);
+    (void)raise(SIGFPE);
     return 0;
 }
 
 NOINLINE int RaiseIllegalInstructionException(void)
 {
-    raise(SIGILL);
+    (void)raise(SIGILL);
+    return 0;
+}
+NOINLINE int IllegalInstructionException(void)
+{
+    char mes[] = "ABCDEFGHIJ";
+    char* ptr = mes;
+    ptr = NULL;
+    *ptr = 0;
+
     return 0;
 }
 
@@ -98,9 +101,22 @@ NOINLINE int RaiseSegmentFaultException(void)
     return 0;
 }
 
+NOINLINE int SegmentFaultException(void)
+{
+    volatile char *ptr = NULL;
+    *ptr;
+
+    return 0;
+}
+
 NOINLINE int RaiseTrapException(void)
 {
-    raise(SIGTRAP);
+    (void)raise(SIGTRAP);
+    return 0;
+}
+
+NOINLINE int TrapException(void)
+{
     return 0;
 }
 
@@ -210,7 +226,7 @@ NOINLINE int StackOver64(void)
 
 void *SleepThread(void *argv)
 {
-    int threadID = *(int *)argv;
+    int threadID = *(int*)argv;
     printf("create MultiThread %d", threadID);
 
     int sleepTime = 10;
@@ -253,8 +269,12 @@ void PrintUsage(void)
     printf("  SIGABRT               raise a SIGABRT\n");
     printf("  SIGBUS                raise a SIGBUS\n");
     printf("  STACKTRACE            raise a SIGDUMP\n");
-    printf("  triSIGTRAP            trigger a SIGTRAP\n");
+
+    printf("  triSIGILL             trigger a SIGILL\n");
     printf("  triSIGSEGV            trigger a SIGSEGV\n");
+    printf("  triSIGTRAP            trigger a SIGTRAP\n");
+    printf("  triSIGABRT            trigger a SIGABRT\n");
+
     printf("  Loop                  trigger a ForeverLoop\n");
     printf("  MaxStack              trigger SIGSEGV after 64 function call\n");
     printf("  MaxMethod             trigger SIGSEGV after call a function with longer name\n");
@@ -301,32 +321,40 @@ uint64_t ParseAndDoCrash(const char *arg)
         return RaiseIllegalInstructionException();
     }
 
+    if (!strcasecmp(arg, "triSIGILL")) {
+        return IllegalInstructionException();
+    }
+
     if (!strcasecmp(arg, "SIGSEGV")) {
         return RaiseSegmentFaultException();
     }
-
+    
     if (!strcasecmp(arg, "SIGTRAP")) {
         return RaiseTrapException();
     }
-
+    
     if (!strcasecmp(arg, "SIGABRT")) {
         return RaiseAbort();
+    }
+
+    if (!strcasecmp(arg, "triSIGABRT")) {
+        return Abort();
+    }
+
+    if (!strcasecmp(arg, "triSIGSEGV")) {
+        return SegmentFaultException();
     }
 
     if (!strcasecmp(arg, "SIGBUS")) {
         return RaiseBusError();
     }
 
-    if (!strcasecmp(arg, "STACKTRACE")) {
-        return DumpStackTrace();
-    }
-
     if (!strcasecmp(arg, "triSIGTRAP")) {
         return TriggerTrapException();
     }
 
-    if (!strcasecmp(arg, "triSIGSEGV")) {
-        return TriggerSegmentFaultException();
+    if (!strcasecmp(arg, "STACKTRACE")) {
+        return DumpStackTrace();
     }
 
     if (!strcasecmp(arg, "Loop")) {
@@ -370,11 +398,23 @@ uint64_t ParseAndDoCrash(const char *arg)
         return StackTop();
     }
 
+    if (!strcasecmp(arg, "CrashTest")) {
+        return CrashTest();
+    }
+
     return 0;
 }
 
 NOINLINE int TestFunc70(void)
 {
+    raise(SIGSEGV);
+    return 0;
+}
+
+NOINLINE int CrashTest(void)
+{
+    int sleepTime = 3;
+    sleep(sleepTime);
     raise(SIGSEGV);
     return 0;
 }

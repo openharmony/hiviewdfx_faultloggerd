@@ -162,6 +162,15 @@ bool DfxUnwindRemote::UnwindThread(std::shared_ptr<DfxProcess> process, std::sha
     }
 
     pid_t tid = thread->GetThreadId();
+    std::shared_ptr<DfxRegs> regs = thread->GetThreadRegs();
+    uintptr_t regStorePc = 0;
+    uintptr_t regStoreLr = 0;
+    if (regs != NULL) {
+        std::vector<uintptr_t> regsVector = regs->GetRegsData();
+        regStorePc = regsVector[REG_PC_NUM];
+        regStoreLr = regsVector[REG_LR_NUM];
+    }
+
     void *context = _UPT_create(tid);
     if (!context) {
         unw_destroy_addr_space(as);
@@ -178,28 +187,40 @@ bool DfxUnwindRemote::UnwindThread(std::shared_ptr<DfxProcess> process, std::sha
 
     size_t index = 0;
     int unwRet = 0;
-    unw_word_t old_pc = 0;
+    unw_word_t oldPc = 0;
+    unw_word_t oldLr = 0;
+    int crashUnwStepPosition = -1;
+    bool useLrUnwStep = false;
     do {
         unw_word_t tmpPc = 0;
         unw_get_reg(&cursor, UNW_REG_IP, &tmpPc);
-
         // Exit unwind step as pc has no change. -S-
-        if (old_pc == tmpPc) {
+        if (oldPc == tmpPc) {
             DfxLogWarn("Break unwstep as tmpPc is same with old_ip .");
             break;
         }
-        old_pc = tmpPc;
+        oldPc = tmpPc;
         // Exit unwind step as pc has no change. -E-
+
+        if (thread->GetIsCrashThread() && (regStorePc == tmpPc)) {
+            crashUnwStepPosition = index + 1;
+        }
+        if ((index == crashUnwStepPosition) && (tmpPc != oldLr)) {
+            unw_set_reg(&cursor, UNW_REG_IP, oldLr);
+            useLrUnwStep = true;
+        }
 
         if (!DfxUnwindRemoteDoUnwindStep(index, thread, cursor, process)) {
             DfxLogWarn("Break unwstep as DfxUnwindRemoteDoUnwindStep failed.");
             break;
         }
+
+        unw_get_reg(&cursor, REG_LR_NUM, &oldLr);
         index++;
 
         // Add to check pc is valid in maps x segment, if check failed use lr to backtrace instead -S-.
         std::shared_ptr<DfxElfMaps> processMaps = process->GetMaps();
-        if (!processMaps->CheckPcIsValid((uint64_t)tmpPc)) {
+        if (!processMaps->CheckPcIsValid((uint64_t)tmpPc) && (!useLrUnwStep)) {
             unw_get_reg(&cursor, REG_LR_NUM, &tmpPc);
             unw_set_reg(&cursor, UNW_REG_IP, tmpPc);
             if (!DfxUnwindRemoteDoUnwindStep(index, thread, cursor, process)) {  // Add lr frame to frame list.
@@ -212,18 +233,14 @@ bool DfxUnwindRemote::UnwindThread(std::shared_ptr<DfxProcess> process, std::sha
         unwRet = unw_step(&cursor);
         // if we use context's pc unwind failed, try lr -S-.
         if (unwRet <= 0) {
-            std::shared_ptr<DfxRegs> regs = thread->GetThreadRegs();
-            if (regs != NULL) {
-                std::vector<uintptr_t> regsVector = regs->GetRegsData();
-                if (regsVector[REG_PC_NUM] == old_pc) {
-                    unw_set_reg(&cursor, UNW_REG_IP, regsVector[REG_LR_NUM]);
-                    if (!DfxUnwindRemoteDoUnwindStep(index, thread, cursor, process)) {  // Add lr frame to frame list.
-                        DfxLogWarn("Break unwstep as DfxUnwindRemoteDoUnwindStep failed.");
-                        break;
-                    }
-                    index++;
-                    unwRet = unw_step(&cursor);
+            if ((regStorePc != 0) && (regStorePc == oldPc) && (!useLrUnwStep)) {
+                unw_set_reg(&cursor, UNW_REG_IP, regStoreLr);
+                if (!DfxUnwindRemoteDoUnwindStep(index, thread, cursor, process)) {  // Add lr frame to frame list.
+                    DfxLogWarn("Break unwstep as DfxUnwindRemoteDoUnwindStep failed.");
+                    break;
                 }
+                index++;
+                unwRet = unw_step(&cursor);
             }
         }
         // if we use context's pc unwind failed, try lr -E-.

@@ -21,6 +21,7 @@ config("module_private_config") {
 
   include_dirs = [
     "include/",
+    "//utils/native/base/include",
     "//base/hiviewdfx/faultloggerd/interfaces/innerkits/dump_catcher/include/",
   ]
 }
@@ -35,6 +36,11 @@ ohos_systemtest("test_faultloggerd") {
     "//base/hiviewdfx/faultloggerd/interfaces/innerkits/dump_catcher:lib_dfx_dump_catcher",
     "//third_party/googletest:gtest_main",
     "//utils/native/base:utils",
+  ]
+
+  external_deps = [
+    "hilog_native:libhilog",
+    "utils_base:utils",
   ]
 
   if (target_cpu == "arm") {

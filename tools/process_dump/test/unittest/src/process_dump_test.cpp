@@ -622,7 +622,7 @@ HWTEST_F (ProcessDumpTest, ProcessDumpTest035, TestSize.Level2)
 HWTEST_F (ProcessDumpTest, ProcessDumpTest036, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "ProcessDumpTest036: start.";
-    int32_t pid = 243, tid = 243;
+    int32_t pid = 1, tid = 1;
     std::shared_ptr<DfxThread> thread = std::make_shared<DfxThread>(pid, tid);
     std::string threadName = thread->GetThreadName();
     EXPECT_EQ(true, threadName != "");

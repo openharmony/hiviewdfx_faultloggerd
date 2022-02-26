@@ -104,89 +104,72 @@ bool DfxConfig::GetLogPersist() const
     return logPersist_;
 }
 
-bool DfxConfig::parserConfig(char* filterKey, int keySize, char* filterValue, int valueSize)
+void DfxConfig::ParserConfig(std::string key, std::string value)
 {
-    DfxLogDebug("Enter %s :: keySize(%d), valueSize(%d).", __func__, keySize, valueSize);
-
-    bool ret = false;
     unsigned int  lowAddressStep = 0;
     unsigned int  highAddressStep = 0;
-
-    do {
-        if ((strcmp("faultlogLogPersist", filterKey) == 0) && (strcmp("false", filterValue) != 0)) {
+        do {
+        if ((key.compare("faultlogLogPersist") == 0) && (value.compare("true") == 0)) {
             DfxConfig::GetInstance().SetLogPersist(true);
-            ret = true;
             continue;
         }
-        if ((strcmp("displayRigister", filterKey) == 0) && (strcmp("true", filterValue) != 0)) {
+        if ((key.compare("displayRigister") == 0) && (value.compare("false") == 0)) {
             DfxConfig::GetInstance().SetDisplayRegister(false);
-            ret = true;
             continue;
         }
-        if ((strcmp("displayBacktrace", filterKey) == 0) && (strcmp("true", filterValue) != 0)) {
+        if ((key.compare("displayBacktrace") == 0) && (value.compare("false") == 0)) {
             DfxConfig::GetInstance().SetDisplayBacktrace(false);
-            ret = true;
             continue;
         }
-        if ((strcmp("displayMaps", filterKey) == 0) && (strcmp("true", filterValue) != 0)) {
+        if ((key.compare("displayMaps") == 0) && (value.compare("false") == 0)) {
             DfxConfig::GetInstance().SetDisplayMaps(false);
-            ret = true;
             continue;
         }
-        if ((strcmp("displayFaultStack.switch", filterKey) == 0) && (strcmp("true", filterValue) != 0)) {
+        if ((key.compare("displayFaultStack.switch") == 0) && (value.compare("false") == 0)) {
             DfxConfig::GetInstance().SetDisplayFaultStack(false);
-            ret = true;
             continue;
         }
-        if (strcmp("displayFaultStack.lowAddressStep", filterKey) == 0) {
-            lowAddressStep = atoi(filterValue);
+        if (key.compare("displayFaultStack.lowAddressStep") == 0) {
+            lowAddressStep = atoi(value.data());
             DfxConfig::GetInstance().SetFaultStackLowAddressStep(lowAddressStep);
-            ret = true;
             continue;
         }
-        if (strcmp("displayFaultStack.highAddressStep", filterKey) == 0) {
-            highAddressStep = atoi(filterValue);
+        if (key.compare("displayFaultStack.highAddressStep") == 0) {
+            highAddressStep = (unsigned int)atoi(value.data());
             DfxConfig::GetInstance().SetFaultStackHighAddressStep(highAddressStep);
-            ret = true;
             continue;
         }
     } while (0);
-
-    DfxLogDebug("Exit %s :: ret(%d).", __func__, ret);
-    return ret;
 }
 
-void DfxConfig::readConfig()
+void DfxConfig::ReadConfig()
 {
     DfxLogDebug("Enter %s.", __func__);
     do {
         FILE *fp = nullptr;
-        char line[CONF_LINE_SIZE] = {0};
-        char key[CONF_KEY_SIZE] = {};
-        char value[CONF_VALUE_SIZE] = {};
-        char filterKey[CONF_KEY_SIZE] = {};
-        char filterValue[CONF_VALUE_SIZE] = {};
-        unsigned int  lowAddressStep = 0;
-        unsigned int  highAddressStep = 0;
+        char codeBuffer[CONF_LINE_SIZE] = {0};
         fp = fopen("/system/etc/faultlogger.conf", "r");
         if (fp == nullptr) {
             break;
         }
         while (!feof(fp)) {
-            memset_s(line, sizeof(line), '\0', sizeof(line));
-            memset_s(key, sizeof(key), '\0', sizeof(key));
-            memset_s(value, sizeof(value), '\0', sizeof(value));
-            memset_s(filterKey, sizeof(filterKey), '\0', sizeof(filterKey));
-            memset_s(filterValue, sizeof(filterValue), '\0', sizeof(filterValue));
-            if (fgets(line, CONF_LINE_SIZE -1, fp) == nullptr) {
+            memset_s(codeBuffer, sizeof(codeBuffer), '\0', sizeof(codeBuffer));
+            if (fgets(codeBuffer, CONF_LINE_SIZE -1, fp) == nullptr) {
                 continue;
             }
-            foramtKV(line, key, value);
-            trim(key, filterKey);
-            trim(value, filterValue);
-
-            if (parserConfig(filterKey, CONF_KEY_SIZE, filterValue, CONF_VALUE_SIZE)) {
-                continue;
+            std::string line(codeBuffer, sizeof(codeBuffer) -1);
+            std::string key, value;
+            std::string::size_type newLinePos = line.find_first_of("\n");
+            if (newLinePos != line.npos) {
+                line = line.substr(0, newLinePos);
+            }
+            std::string::size_type equalSignPos = line.find_first_of("=");
+            if (equalSignPos != line.npos) {
+                key = line.substr(0, equalSignPos);
+                value = line.substr(equalSignPos + 1);
+                DfxConfig::Trim(key);
+                DfxConfig::Trim(value);
+                DfxConfig::ParserConfig(key, value);
             }
         }
         (void)fclose(fp);
@@ -194,48 +177,14 @@ void DfxConfig::readConfig()
     DfxLogDebug("Exit %s.", __func__);
 }
 
-void DfxConfig::trim(char *strIn, char *strOut)
+void DfxConfig::Trim(std::string &s)
 {
-    char *temp = strIn;
-
-    while (*temp == ' ') {
-        temp++;
-    }
-    char *start = temp;
-
-    temp = strIn + strlen(strIn) -1;
-    while (*temp == ' ') {
-        temp--;
-    }
-    char *end = temp;
-
-    for (strIn = start; strIn <= end;) {
-        *strOut++ = *strIn++;
-    }
-    *strOut = '\0';
-}
-
-void DfxConfig::foramtKV(char * line, char * key, char * value)
-{
-    char *p = NULL;
-    char *end = line + strlen(line) -1;
-    p = strstr(line, "=");
-    if (p == NULL) {
+    if (s.empty()) {
         return ;
     }
-    for (; line < p;) {
-        *key++ = *line++;
-    }
-    *key = '\0';
-    line++;
-
-    for (; line <= end;) {
-        if (*line == '\n') {
-            break;
-        }
-        *value++ = *line++;
-    }
-    *value = '\0';
+    s.erase(0, s.find_first_not_of(" "));
+    s.erase(s.find_last_not_of(" ") + 1);
+    return ;
 }
 } // namespace HiviewDFX
 } // namespace OHOS

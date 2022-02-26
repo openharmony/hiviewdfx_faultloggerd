@@ -23,17 +23,12 @@
 
 #include "dfx_define.h"
 #include "dfx_dump_writer.h"
-#include "dfx_frames.h"
+#include "dfx_dump_catcher_frame.h"
 #include "dfx_log.h"
 #include "dfx_maps.h"
 #include "dfx_process.h"
 #include "dfx_thread.h"
 #include "dfx_util.h"
-
-static const int NUMBER_ONE = 1;
-static const int NUMBER_TWO = 2;
-static const int SLEEP_TIME_TEN_S = 10;
-static const int SLEEP_TIME_TWENTY_S = 20;
 
 namespace OHOS {
 namespace HiviewDFX {
@@ -54,10 +49,12 @@ public:
     static void DFX_InstallLocalDumper(int sig);
     static void DFX_UninstallLocalDumper(int sig);
     static bool ExecLocalDump(const int pid, const int tid, const int skipFramNum);
-    static long WriteDumpInfo(long current_position, size_t index, std::shared_ptr<DfxFrames> frame);
+    static void WriteDumpInfo(size_t index, std::shared_ptr<DfxDumpCatcherFrame> frame);
+    static void WritePidTidInfo(std::string msg);
 
     static char* g_StackInfo_;
     static long long g_CurrentPosition;
+    static std::vector<std::shared_ptr<DfxDumpCatcherFrame>> g_FrameV_;
     static void DFX_LocalDumperUnwindLocal(int sig, siginfo_t *si, void *context);
     static void DFX_LocalDumper(int sig, siginfo_t *si, void *context);
 };

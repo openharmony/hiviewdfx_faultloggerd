@@ -29,8 +29,15 @@ namespace OHOS {
 namespace HiviewDFX {
 class CppCrashReporter {
 public:
-    CppCrashReporter(uint64_t time, int32_t signo, std::shared_ptr<DfxProcess> process) :
-        time_(time), signo_(signo), process_(process) {};
+    CppCrashReporter(uint64_t time, int32_t signo, std::shared_ptr<DfxProcess> process) \
+        : time_(time), signo_(signo), process_(process)
+    {
+        pid_ = 0;
+        uid_ = 0;
+        cmdline_ = "";
+        reason_ = "";
+        stack_ = "";
+    };
     virtual ~CppCrashReporter() {};
 
     void SetCrashReason(const std::string& reason)

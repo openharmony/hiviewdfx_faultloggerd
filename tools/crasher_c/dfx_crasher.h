@@ -30,12 +30,17 @@
 
 
 int RaiseAbort(void);
+int Abort(void);
 int RaiseBusError(void);
 int RaiseFloatingPointException(void);
 int RaiseIllegalInstructionException(void);
+int IllegalInstructionException(void);
 int RaiseSegmentFaultException(void);
+int SegmentFaultException(void);
 int RaiseTrapException(void);
 int DumpStackTrace(void);
+int CrashTest(void);
+
 
 void PrintUsage(void);
 void *DoCrashInThread(void *inputArg);

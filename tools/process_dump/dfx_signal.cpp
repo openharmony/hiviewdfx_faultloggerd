@@ -16,6 +16,8 @@
 #include "dfx_signal.h"
 
 #include <csignal>
+
+#include "dfx_define.h"
 #include "dfx_log.h"
 
 namespace OHOS {
@@ -33,7 +35,7 @@ bool DfxSignal::IsAvaliable() const
         return 0;
     }
     DfxLogDebug("Exit %s.", __func__);
-    return previousAction.sa_flags & SA_SIGINFO;
+    return static_cast<unsigned int>(previousAction.sa_flags) & SA_SIGINFO;
 }
 
 bool DfxSignal::IsAddrAvaliable() const
@@ -119,6 +121,10 @@ std::string FormatSignalName(const int32_t signal)
             return "SIGSYS";
         case SIGTRAP:
             return "SIGTRAP";
+        case SIGDUMP:
+            return "SIGDUMP";
+        case SIGSTKFLT:
+            return "SIGSTKFLT";
         default:
             return "Uncare Signal";
     }

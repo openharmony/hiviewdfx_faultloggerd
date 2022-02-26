@@ -226,18 +226,12 @@ void PrintFrames(std::vector<std::shared_ptr<DfxFrames>> frames, int32_t fd)
 void PrintFaultStacks(std::vector<std::shared_ptr<DfxFrames>> frames, int32_t fd)
 {
     DfxLogDebug("Enter %s.", __func__);
-    bool isEmpty = false;
     for (size_t i = 0; i < frames.size(); i++) {
-        isEmpty = frames[i]->GetFrameFaultStack().empty();
         if (i == 0 && (frames[i]->GetFramePc() == 0)) {
-            WriteLog(fd, "FaultStack:\n");
             WriteLog(fd, "Sp0: Unknow\n");
             continue;
         }
-        if (i == 0 && !isEmpty) {
-            WriteLog(fd, "FaultStack:\n");
-        }
-        if (i == FAULT_STACK_SHOW_FLOOR && !isEmpty) {
+        if (i == FAULT_STACK_SHOW_FLOOR) {
             WriteLog(fd, "    ...\n");
             break;
         }
