@@ -30,18 +30,19 @@ class DfxDumpCatcher {
 public:
     DfxDumpCatcher();
     ~DfxDumpCatcher();
-    bool DumpCatch(const int pid, const int tid, std::string& msg);
+    bool DumpCatch(int pid, int tid, std::string& msg);
     bool DumpCatchMultiPid(const std::vector<int> pidV, std::string& msg);
-    bool DumpCatchFrame(const int pid, const int tid, std::string& msg, \
+    bool DumpCatchFrame(int pid, int tid, std::string& msg, \
         std::vector<std::shared_ptr<DfxDumpCatcherFrame>>& frameV);
 
 private:
-    bool DoDumpLocalPidTid(const int pid, const int tid);
-    bool DoDumpLocalPid(const int pid);
-    bool DoDumpRemote(const int pid, const int tid);
+    bool DoDumpLocalPidTid(int pid, int tid);
+    bool DoDumpLocalPid(int pid);
+    bool DoDumpLocal(int pid, int tid, std::string& msg);
+    bool DoDumpRemote(int pid, int tid, std::string& msg);
     void FreeStackInfo();
-    std::string WaitForLogGenerate(const std::string path, const std::string prefix);
-    std::string TryToGetGeneratedLog(const std::string path, const std::string prefix);
+    std::string WaitForLogGenerate(const std::string& path, const std::string& prefix);
+    std::string TryToGetGeneratedLog(const std::string& path, const std::string& prefix);
 };
 } // namespace HiviewDFX
 } // namespace OHOS
