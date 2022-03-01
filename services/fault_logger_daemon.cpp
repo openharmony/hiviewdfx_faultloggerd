@@ -17,19 +17,19 @@
 #include <cerrno>
 #include <cstring>
 #include <ctime>
-#include <thread>
-#include <vector>
-
-#include <fcntl.h>
-#include <unistd.h>
-
 #include <csignal>
+#include <fcntl.h>
+#include <sstream>
 #include <sys/syscall.h>
 #include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/un.h>
 #include <sys/wait.h>
+#include <thread>
+#include <unistd.h>
+#include <vector>
+
 #include <directory_ex.h>
 #include <file_ex.h>
 #include <securec.h>
@@ -50,7 +50,7 @@ constexpr int32_t MAX_CONNECTION = 30;
 constexpr int32_t REQUEST_BUF_SIZE = 1024;
 constexpr int32_t MSG_BUF_SIZE = 256;
 
-const int32_t FAULTLOG_FILE_PROP = 0644;
+const int32_t FAULTLOG_FILE_PROP = 0662;
 const int32_t FAULTLOG_FOLDER_PROP = 0771;
 
 static const std::string LOG_LABLE = "FaultLoggerd";
@@ -422,12 +422,22 @@ int32_t FaultLoggerDaemon::CreateFileForRequest(int32_t type, int32_t pid, bool 
         filePath = faultLoggerConfig_->GetDebugLogFilePath();
     }
 
-    std::string path = filePath + "/" +
-        GetRequestTypeName(type) + "-" + std::to_string(pid) +
-        "-" + std::to_string(time(nullptr));
+    std::stringstream crashTime;
+    time_t t = time(nullptr);
+    if (t <= 0) {
+        DfxLogError("%s :: time is less than zero CreateFileForRequest", LOG_LABLE.c_str());
+    }
+    crashTime << "-" << t;
+    std::string path = filePath + "/" + GetRequestTypeName(type) + "-" + std::to_string(pid) + crashTime.str();
 
     DfxLogInfo("%s :: file path(%s).\n", LOG_LABLE.c_str(), path.c_str());
-    return open(path.c_str(), O_RDWR | O_CREAT, FAULTLOG_FILE_PROP);
+    int32_t fd = open(path.c_str(), O_RDWR | O_CREAT, FAULTLOG_FILE_PROP);
+    if (fd != -1) {
+        if (!OHOS::ChangeModeFile(path, FAULTLOG_FILE_PROP)) {
+            DfxLogError("%s :: Failed to ChangeMode CreateFileForRequest", LOG_LABLE.c_str());
+        }
+    }
+    return fd;
 }
 
 void FaultLoggerDaemon::RemoveTempFileIfNeed()
