@@ -438,7 +438,7 @@ void DFX_InstallSignalHandler()
     memset_s(&g_oldSigactionList, sizeof(g_oldSigactionList), 0, sizeof(g_oldSigactionList));
     sigfillset(&action.sa_mask);
     action.sa_sigaction = DFX_SignalHandler;
-    action.sa_flags = SA_RESTART | SA_SIGINFO;
+    action.sa_flags = SA_RESTART | SA_SIGINFO | SA_ONSTACK;
 
     for (size_t i = 0; i < sizeof(g_interestedSignalList) / sizeof(g_interestedSignalList[0]); i++) {
         int32_t sig = g_interestedSignalList[i];
