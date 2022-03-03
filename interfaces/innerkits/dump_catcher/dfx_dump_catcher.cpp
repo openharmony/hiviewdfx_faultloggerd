@@ -125,6 +125,9 @@ bool DfxDumpCatcher::DoDumpLocalPid(int pid)
         return false;
     }
 
+#ifdef CURRENT_THREAD_ONLY
+    DfxDumpCatcherLocalDumper::ExecLocalDump(pid, syscall(SYS_gettid), DUMP_CATCHER_NUMBER_TWO);
+#else
     char path[NAME_LEN] = {0};
     if (snprintf_s(path, sizeof(path), sizeof(path) - 1, "/proc/%d/task", pid) <= 0) {
         DfxLogError("%s :: DoDumpLocalPid :: return false as snprintf_s failed.", DFXDUMPCATCHER_TAG.c_str());
@@ -171,6 +174,7 @@ bool DfxDumpCatcher::DoDumpLocalPid(int pid)
         }
     }
     DfxLogDebug("%s :: DoDumpLocalPid :: return true.", DFXDUMPCATCHER_TAG.c_str());
+#endif
     return true;
 }
 
