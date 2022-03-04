@@ -14,9 +14,11 @@
  */
 #ifndef DFX_SIGNAL_HANDLER_H
 #define DFX_SIGNAL_HANDLER_H
+
 #include <signal.h>
 #include <ucontext.h>
 #include <inttypes.h>
+#include "dfx_define.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -31,6 +33,8 @@ struct ProcessDumpRequest {
     uint64_t timeStamp;
     siginfo_t siginfo;
     ucontext_t context;
+    char threadName[NAME_LEN];
+    char processName[NAME_LEN];
 };
 #endif
 void DFX_InstallSignalHandler();

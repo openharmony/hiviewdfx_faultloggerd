@@ -81,10 +81,14 @@ public:
     static void KillCrasherLoopForSomeCase(int type);
     static void StartCrasherLoopForUnsingPidAndTid(int crasherType);    // 1.c 2.c++
     static int crashThread(int threadID);
+    static int getApplyPid(std::string applyName);
+    static void dumpCatchThread(int threadID);
+    static void GetTestFaultLoggerdTid(int testPid);
 
     static std::string rootTid[ARRAY_SIZE_HUNDRED];
     static std::string appTid[ARRAY_SIZE_HUNDRED];
     static std::string sysTid[ARRAY_SIZE_HUNDRED];
+    static std::string testTid[ARRAY_SIZE_HUNDRED];
 
     // 更新为数组
     static int loopSysPid;
@@ -97,6 +101,7 @@ public:
     static int rootTidCount;
     static int sysTidCount;
     static unsigned int unsigLoopSysPid;
+    static int count;
 };
 } // namespace HiviewDFX
 } // namespace OHOS

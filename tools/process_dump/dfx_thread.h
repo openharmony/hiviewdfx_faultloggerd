@@ -37,6 +37,7 @@ public:
     pid_t GetProcessId() const;
     pid_t GetThreadId() const;
     std::string GetThreadName() const;
+    void SetThreadName(std::string &threadName);
     std::shared_ptr<DfxRegs> GetThreadRegs() const;
     std::vector<std::shared_ptr<DfxFrames>> GetThreadDfxFrames() const;
     void SetThreadRegs(const std::shared_ptr<DfxRegs> &regs);

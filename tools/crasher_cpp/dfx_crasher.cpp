@@ -29,10 +29,8 @@
 #include <vector>
 #include <thread>
 #include <fstream>
-#include "securec.h"
-
 #include <sys/prctl.h>
-
+#include "securec.h"
 #include "dfx_signal_handler.h"
 
 #ifdef LOG_DOMAIN

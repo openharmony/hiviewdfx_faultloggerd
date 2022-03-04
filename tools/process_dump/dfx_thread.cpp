@@ -98,7 +98,7 @@ bool DfxThread::InitThread(const pid_t pid, const pid_t tid)
     while (waitpid(tid, nullptr, __WALL) < 0) {
         if (EINTR != errno) {
             ptrace(PTRACE_DETACH, tid, NULL, NULL);
-            DfxLogWarn("Fail to wait thread(%d) attached, errno=%s", tid, strerror((errno_t)errno));
+            DfxLogWarn("Fail to wait thread(%d) attached, errno=%d.", tid, errno);
             return false;
         }
         errno = 0;
@@ -137,6 +137,11 @@ pid_t DfxThread::GetThreadId() const
 std::string DfxThread::GetThreadName() const
 {
     return threadName_;
+}
+
+void DfxThread::SetThreadName(std::string &threadName)
+{
+    threadName_ = threadName;
 }
 
 std::shared_ptr<DfxRegs> DfxThread::GetThreadRegs() const
@@ -219,7 +224,10 @@ void DfxThread::SkipFramesInSignalHandler()
     std::vector<uintptr_t> regs = regs_->GetRegsData();
     uintptr_t adjustedLr = DfxThreadDoAdjustPc(regs[REG_LR_NUM]);
     for (int i = 0; i < framesSize; i++) {
-        if (dfxFrames_[i] != NULL && ((regs[REG_PC_NUM] == dfxFrames_[i]->GetFramePc()))) {
+        if (dfxFrames_[i] == NULL) {
+            continue;
+        }
+        if (regs[REG_PC_NUM] == dfxFrames_[i]->GetFramePc()) {
             DfxLogDebug("%s :: frame i(%d), adjustedLr=0x%x, dfxFrames_[i]->GetFramePc()=0x%x, regs[REG_PC_NUM](0x%x)",
                 __func__, i, adjustedLr, dfxFrames_[i]->GetFramePc(), regs[REG_PC_NUM]);
             skipPos = true;
@@ -304,11 +312,20 @@ void DfxThread::CreateFaultStack(std::shared_ptr<DfxElfMaps> maps)
                 currentSp = filterEnd;
                 continue;
             }
-            memset_s(codeBuffer, sizeof(codeBuffer), '\0', sizeof(codeBuffer));
+            errno_t err = memset_s(codeBuffer, sizeof(codeBuffer), '\0', sizeof(codeBuffer));
+            if (err != EOK) {
+                DfxLogError("%s :: memset_s failed, err = %d\n", __func__, err);
+            }
             if (currentSp == startSp) {
-                (void)sprintf_s(codeBuffer, sizeof(codeBuffer), "%" printLength "x", currentSp);
+                auto pms = sprintf_s(codeBuffer, sizeof(codeBuffer), "%" printLength "x", currentSp);
+                if (pms <= 0) {
+                    DfxLogError("%s :: sprintf_s failed.", __func__);
+                }
             } else {
-                (void)sprintf_s(codeBuffer, sizeof(codeBuffer), "    %" printLength "x", currentSp);
+                auto pms = sprintf_s(codeBuffer, sizeof(codeBuffer), "    %" printLength "x", currentSp);
+                if (pms <= 0) {
+                    DfxLogError("%s :: sprintf_s failed.", __func__);
+                }
             }
             storeData = ptrace(PTRACE_PEEKTEXT, tid_, (void*)currentSp, NULL);
             (void)sprintf_s(codeBuffer + strlen(codeBuffer),
@@ -316,10 +333,11 @@ void DfxThread::CreateFaultStack(std::shared_ptr<DfxElfMaps> maps)
                             " %" printLength "x",
                             storeData);
             if ((storeData == regLr) && (mapCheck)) {
-                (void)sprintf_s(codeBuffer + strlen(codeBuffer),
-                                sizeof(codeBuffer) - strlen(codeBuffer),
-                                " %s",
-                                map->GetMapPath().c_str());
+                auto pms = sprintf_s(codeBuffer + strlen(codeBuffer), \
+                    sizeof(codeBuffer) - strlen(codeBuffer), " %s", map->GetMapPath().c_str());
+                if (pms <= 0) {
+                    DfxLogError("%s :: sprintf_s failed.", __func__);
+                }
             }
             std::string itemFaultStack(codeBuffer, codeBuffer + strlen(codeBuffer));
             itemFaultStack.append("\n");

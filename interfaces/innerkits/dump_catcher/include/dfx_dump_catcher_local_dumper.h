@@ -14,10 +14,14 @@
  */
 #ifndef DFX_DUMPCATCH_LOCAL_DUMPER_H
 #define DFX_DUMPCATCH_LOCAL_DUMPER_H
+#include <chrono>
 #include <cinttypes>
+#include <mutex>
+#include <condition_variable>
 #include <csignal>
 #include <cstring>
 #include <string>
+#include <thread>
 #include <unistd.h>
 #include <ucontext.h>
 
@@ -55,6 +59,9 @@ public:
     static char* g_StackInfo_;
     static long long g_CurrentPosition;
     static std::vector<std::shared_ptr<DfxDumpCatcherFrame>> g_FrameV_;
+    static std::mutex g_localDumperMutx_;
+    static std::condition_variable g_localDumperCV_;
+    static std::shared_ptr<DfxElfMaps> g_localDumperMaps_;
     static void DFX_LocalDumperUnwindLocal(int sig, siginfo_t *si, void *context);
     static void DFX_LocalDumper(int sig, siginfo_t *si, void *context);
 };

@@ -189,7 +189,7 @@ bool DfxUnwindRemote::UnwindThread(std::shared_ptr<DfxProcess> process, std::sha
     int unwRet = 0;
     unw_word_t oldPc = 0;
     unw_word_t oldLr = 0;
-    int crashUnwStepPosition = -1;
+    size_t crashUnwStepPosition = 0;
     bool useLrUnwStep = false;
     do {
         unw_word_t tmpPc = 0;
@@ -205,7 +205,7 @@ bool DfxUnwindRemote::UnwindThread(std::shared_ptr<DfxProcess> process, std::sha
         if (thread->GetIsCrashThread() && (regStorePc == tmpPc)) {
             crashUnwStepPosition = index + 1;
         }
-        if ((index == crashUnwStepPosition) && (tmpPc != oldLr)) {
+        if ((crashUnwStepPosition != 0) && (index == crashUnwStepPosition) && (tmpPc != oldLr)) {
             unw_set_reg(&cursor, UNW_REG_IP, oldLr);
             useLrUnwStep = true;
         }

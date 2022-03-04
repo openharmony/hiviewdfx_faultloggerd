@@ -20,7 +20,7 @@
 
 #include <cinttypes>
 #include <memory>
-
+#include "dfx_define.h"
 #include "dfx_process.h"
 
 namespace OHOS {
@@ -67,6 +67,9 @@ public:
 
     void SetContext(ucontext_t const &context);
 
+    std::string GetThreadNameString() const;
+
+    std::string GetProcessNameString() const;
 private:
     ProcessDumpType type_;
     int32_t tid_ = 0;
@@ -76,6 +79,8 @@ private:
     uint64_t timeStamp_ = 0;
     siginfo_t siginfo_;
     ucontext_t context_;
+    char threadName_[NAME_LEN];
+    char processName_[NAME_LEN];
 };
 
 class DfxDumpWriter {

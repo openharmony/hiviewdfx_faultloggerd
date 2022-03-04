@@ -29,5 +29,6 @@ int main()
 
     char buf[] = "write test log to file.\n";
     write(fd, buf, strlen(buf));
+    close(fd);
     return 0;
 }

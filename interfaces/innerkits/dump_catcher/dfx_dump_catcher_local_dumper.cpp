@@ -78,6 +78,9 @@ static struct sigaction g_localDumperOldSigactionList[NSIG] = {};
 char* DfxDumpCatcherLocalDumper::g_StackInfo_ = nullptr;
 long long DfxDumpCatcherLocalDumper::g_CurrentPosition = 0;
 std::vector<std::shared_ptr<DfxDumpCatcherFrame>> DfxDumpCatcherLocalDumper::g_FrameV_;
+std::mutex DfxDumpCatcherLocalDumper::g_localDumperMutx_;
+std::condition_variable DfxDumpCatcherLocalDumper::g_localDumperCV_;
+std::shared_ptr<DfxElfMaps> DfxDumpCatcherLocalDumper::g_localDumperMaps_ = nullptr;
 
 DfxDumpCatcherLocalDumper::DfxDumpCatcherLocalDumper()
 {
@@ -158,7 +161,9 @@ bool DfxDumpCatcherLocalDumper::ExecLocalDump(const int pid, const int tid, cons
     unw_init_local(&cursor, &context);
 
     size_t index = 0;
-    auto maps = DfxElfMaps::Create(pid);
+    if (g_localDumperMaps_ == nullptr) {
+        g_localDumperMaps_ = DfxElfMaps::Create(pid);
+    }
     while ((unw_step(&cursor) > 0) && (index < BACK_STACK_MAX_STEPS)) {
         std::shared_ptr<DfxDumpCatcherFrame> frame = std::make_shared<DfxDumpCatcherFrame>();
 
@@ -175,8 +180,8 @@ bool DfxDumpCatcherLocalDumper::ExecLocalDump(const int pid, const int tid, cons
         frame->SetFrameSp((uint64_t)sp);
 
         auto frameMap = frame->GetFrameMap();
-        if (maps->FindMapByAddr(frame->GetFramePc(), frameMap)) {
-            frame->SetFrameRelativePc(frame->GetRelativePc(maps));
+        if (g_localDumperMaps_->FindMapByAddr(frame->GetFramePc(), frameMap)) {
+            frame->SetFrameRelativePc(frame->GetRelativePc(g_localDumperMaps_));
         }
 
         char sym[SYMBOL_BUF_SIZE] = {0};
@@ -213,6 +218,8 @@ void DfxDumpCatcherLocalDumper::DFX_LocalDumperUnwindLocal(int sig, siginfo_t *s
         sig, g_localDumpRequest.pid, g_localDumpRequest.tid);
 #endif
     ExecLocalDump(g_localDumpRequest.pid, g_localDumpRequest.tid, DUMP_CATCHER_NUMBER_ONE);
+
+    g_localDumperCV_.notify_one();
     DfxLogToSocket("DFX_LocalDumperUnwindLocal -E-");
 }
 

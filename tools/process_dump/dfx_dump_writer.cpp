@@ -34,8 +34,14 @@ namespace HiviewDFX {
 ProcessDumpRequest::ProcessDumpRequest()
 {
     DfxLogDebug("Enter %s.", __func__);
-    memset_s(&siginfo_, sizeof(siginfo_), 0, sizeof(siginfo_));
-    memset_s(&context_, sizeof(context_), 0, sizeof(context_));
+    errno_t err = memset_s(&siginfo_, sizeof(siginfo_), 0, sizeof(siginfo_));
+    if (err != EOK) {
+        DfxLogError("%s :: msmset_s siginfo_ failed..", __func__);
+    }
+    err = memset_s(&context_, sizeof(context_), 0, sizeof(context_));
+    if (err != EOK) {
+        DfxLogError("%s :: msmset_s context_ failed..", __func__);
+    }
     type_ = DUMP_TYPE_PROCESS;
     DfxLogDebug("Exit %s.", __func__);
 }
@@ -114,6 +120,19 @@ ucontext_t ProcessDumpRequest::GetContext() const
 {
     return context_;
 }
+
+std::string ProcessDumpRequest::GetThreadNameString() const
+{
+    std::string threadName(threadName_, sizeof(threadName_) - 1);
+    return threadName;
+}
+
+std::string ProcessDumpRequest::GetProcessNameString() const
+{
+    std::string processName(processName_, sizeof(processName_) - 1);
+    return processName;
+}
+
 
 void ProcessDumpRequest::SetContext(ucontext_t const &context)
 {
