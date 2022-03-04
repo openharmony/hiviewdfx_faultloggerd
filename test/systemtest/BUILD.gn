@@ -70,7 +70,6 @@ ohos_systemtest("test_faultloggerd_pre") {
   cflags = [ "-D__pre__" ]
 }
 
-
 group("systemtest") {
   testonly = true
   deps = [ ":test_faultloggerd" ]
