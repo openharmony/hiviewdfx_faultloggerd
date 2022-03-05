@@ -40,7 +40,7 @@ public:
     constexpr static int32_t MAX_SYS_VEN_UID = 5999;
     constexpr static int32_t BASE_APP_UID = 10000;
     constexpr static int32_t MAX_APP_UID = 65535;
-    constexpr static int32_t MAX_RESP_LEN = 1024;
+    constexpr static int32_t MAX_RESP_LEN = 128;
     constexpr static int32_t MAX_CMD_LEN = 1024;
 
 private:

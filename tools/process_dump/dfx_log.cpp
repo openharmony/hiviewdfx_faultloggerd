@@ -218,6 +218,10 @@ int WriteLog(int32_t fd, const char *format, ...)
 
 void DfxLogToSocket(const char *msg)
 {
+    if (LOG_LEVEL_DBG < LOG_LEVEL) {
+        return;
+    }
+
     int length = strlen(msg);
     if (length >= LOG_BUF_LEN) {
         return;

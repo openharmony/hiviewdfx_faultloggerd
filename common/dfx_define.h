@@ -53,6 +53,7 @@
 #define DUMP_CATCHER_NUMBER_TWO                 2
 #define DUMP_CATCHER_SLEEP_TIME_TEN_S           10
 #define DUMP_CATCHER_SLEEP_TIME_TWENTY_S        20
+#define DUMP_CATCHER_WAIT_LOG_FILE_GEN_TIME_US        10000
 #define DUMP_CATCHE_WORK_TIME_S                 60
 
 #define NUMBER_TWO_KB                2048

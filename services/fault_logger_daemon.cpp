@@ -423,7 +423,7 @@ int32_t FaultLoggerDaemon::CreateFileForRequest(int32_t type, int32_t pid, bool 
     }
 
     std::stringstream crashTime;
-    time_t t = time(nullptr);
+    time_t t = static_cast<time_t>(time(nullptr));
     if (t <= 0) {
         DfxLogError("%s :: time is less than zero CreateFileForRequest", LOG_LABLE.c_str());
     }
@@ -530,7 +530,10 @@ int32_t StartServer(int argc, char *argv[])
     }
 
     struct sockaddr_un server;
-    memset_s(&server, sizeof(server), 0, sizeof(server));
+    errno_t err = memset_s(&server, sizeof(server), 0, sizeof(server));
+    if (err != EOK) {
+        DfxLogError("%s :: msmset_s server failed..", __func__);
+    }
     server.sun_family = AF_LOCAL;
     if (strncpy_s(server.sun_path, sizeof(server.sun_path), OHOS::HiviewDFX::FAULTLOGGERD_SOCK_PATH,
         strlen(OHOS::HiviewDFX::FAULTLOGGERD_SOCK_PATH)) != 0) {

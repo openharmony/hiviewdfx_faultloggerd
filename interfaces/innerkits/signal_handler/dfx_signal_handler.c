@@ -36,7 +36,6 @@
 #include <sys/wait.h>
 
 #include <securec.h>
-#include "dfx_define.h"
 #include "dfx_log.h"
 
 #ifdef DFX_LOCAL_UNWIND
@@ -335,9 +334,62 @@ static void DFX_UnwindLocal(int sig, siginfo_t *si, void *context)
 }
 #endif
 
+void ReadStringFromFile(char* path, char* pDestStore)
+{
+    char name[NAME_LEN] = {0};
+    char nameFilter[NAME_LEN] = {0};
+
+    memset_s(name, sizeof(name), '\0', sizeof(name));
+    memset_s(nameFilter, sizeof(nameFilter), '\0', sizeof(nameFilter));
+
+    FILE *fp = NULL;
+    fp = fopen(path, "r");
+    if (fp == NULL) {
+        return ;
+    }
+    if (fgets(name, NAME_LEN -1, fp) == NULL) {
+        fclose(fp);
+        return ;
+    }
+    char* p = name;
+    int i = 0;
+    while (*p != '\0') {
+        if ((*p == '\n') || (i == NAME_LEN)) {
+            break;
+        }
+        nameFilter[i] = *p;
+        p++, i++;
+    }
+    if (memcpy_s(pDestStore, NAME_LEN, nameFilter, strlen(nameFilter) + 1) != 0) {
+        HILOG_BASE_ERROR(LOG_CORE, "Failed to copy name.");
+    }
+    int ret = fclose(fp);
+    if (ret == EOF) {
+        printf("close failed!");
+    }
+}
+
+void GetThreadName(void)
+{
+    ReadStringFromFile("proc/self/comm", g_request.threadName);
+}
+
+void GetProcessName(void)
+{
+    char path[NAME_LEN] = {0};
+    memset_s(path, sizeof(path), '\0', sizeof(path));
+    if (snprintf_s(path, sizeof(path), sizeof(path) - 1, "/proc/%d/cmdline", getpid()) <= 0) {
+        return ;
+    }
+    ReadStringFromFile(path, g_request.processName);
+}
+
 static void DFX_SignalHandler(int sig, siginfo_t *si, void *context)
 {
-    pthread_mutex_lock(&g_signalHandlerMutex);
+    int tryLockErr = pthread_mutex_trylock(&g_signalHandlerMutex);
+    if (tryLockErr != 0) {
+        return ;
+    }
     HILOG_BASE_INFO(LOG_CORE, "faultlog_native_crash");
     HILOG_BASE_INFO(LOG_CORE, "faultlog_crash_hold_process");
 
@@ -347,7 +399,10 @@ static void DFX_SignalHandler(int sig, siginfo_t *si, void *context)
     g_request.pid = getpid();
     g_request.uid = (int32_t)getuid();
     g_request.reserved = 0;
-    g_request.timeStamp = (int64_t)time(NULL);
+    g_request.timeStamp = (uint64_t)time(NULL);
+
+    GetThreadName();
+    GetProcessName();
     if (memcpy_s(&(g_request.siginfo), sizeof(g_request.siginfo),
         si, sizeof(siginfo_t)) != 0) {
         HILOG_BASE_ERROR(LOG_CORE, "Failed to copy siginfo.");

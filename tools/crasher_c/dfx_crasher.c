@@ -52,7 +52,10 @@ NOINLINE int TriggerTrapException(void)
 
 NOINLINE int RaiseAbort(void)
 {
-    raise(SIGABRT);
+    int ret = raise(SIGABRT);
+    if (ret != 0) {
+        printf("raise failed!");
+    }
     return 0;
 }
 NOINLINE int Abort(void)
@@ -63,25 +66,37 @@ NOINLINE int Abort(void)
 
 NOINLINE int RaiseBusError(void)
 {
-    (void)raise(SIGBUS);
+    int ret = raise(SIGBUS);
+    if (ret != 0) {
+        printf("remove failed!");
+    }
     return 0;
 }
 
 NOINLINE int DumpStackTrace(void)
 {
-    (void)raise(35); // 35:SIGDUMP
+    int ret = raise(35); // 35:SIGDUMP
+    if (ret != 0) {
+        printf("remove failed!");
+    }
     return 0;
 }
 
 NOINLINE int RaiseFloatingPointException(void)
 {
-    (void)raise(SIGFPE);
+    int ret = raise(SIGFPE);
+    if (ret != 0) {
+        printf("remove failed!");
+    }
     return 0;
 }
 
 NOINLINE int RaiseIllegalInstructionException(void)
 {
-    (void)raise(SIGILL);
+    int ret = raise(SIGILL);
+    if (ret !=0) {
+        printf("ramove failed!");
+    }
     return 0;
 }
 NOINLINE int IllegalInstructionException(void)
@@ -97,7 +112,10 @@ NOINLINE int IllegalInstructionException(void)
 NOINLINE int RaiseSegmentFaultException(void)
 {
     printf("call RaiseSegmentFaultException \n");
-    raise(SIGSEGV);
+    int ret = raise(SIGSEGV);
+    if (ret != 0) {
+        printf("remove failed!");
+    }
     return 0;
 }
 
@@ -111,7 +129,10 @@ NOINLINE int SegmentFaultException(void)
 
 NOINLINE int RaiseTrapException(void)
 {
-    (void)raise(SIGTRAP);
+    int ret = raise(SIGTRAP);
+    if (ret != 0) {
+        printf("remove failed!");
+    }
     return 0;
 }
 
@@ -128,7 +149,10 @@ NOINLINE int MaxStackDepth(void)
 NOINLINE int MaxMethodNameTest12345678901234567890123456789012345678901234567890ABC(void)
 {
     printf("call MaxMethodNameTest12345678901234567890123456789012345678901234567890ABC \n");
-    raise(SIGSEGV);
+    int ret = raise(SIGSEGV);
+    if (ret != 0) {
+        printf("remove failed!");
+    }
     return 0;
 }
 
@@ -212,7 +236,10 @@ NOINLINE int MultiThreadCrash(void)
     pthread_detach(t[1]);
     sleep(1);
 
-    raise(SIGSEGV);
+    int ret = raise(SIGSEGV);
+    if (ret != 0) {
+        printf("remove failed!");
+    }
 
     return 0;
 }
@@ -245,9 +272,17 @@ NOINLINE int StackTop(void)
 
     FILE *fp = NULL;
     fp = fopen("sp", "w");
-    (void)fprintf(fp, "%08x", stackTop);
-    (void)fclose(fp);
-
+    if (fp == NULL) {
+        printf("open file error!");
+    }
+    int ret = fprintf(fp, "%08x", stackTop);
+    if (ret == EOF) {
+        printf("error!");
+    }
+    ret = fclose(fp);
+    if (ret == EOF) {
+        printf("close error!");
+    }
     // trigger an error to crash
     int a = 1;
     int *b = &a;
@@ -407,7 +442,10 @@ uint64_t ParseAndDoCrash(const char *arg)
 
 NOINLINE int TestFunc70(void)
 {
-    raise(SIGSEGV);
+    int ret = raise(SIGSEGV);
+    if (ret != 0) {
+        printf("remove failed!");
+    }
     return 0;
 }
 
@@ -415,7 +453,10 @@ NOINLINE int CrashTest(void)
 {
     int sleepTime = 3;
     sleep(sleepTime);
-    raise(SIGSEGV);
+    int ret = raise(SIGSEGV);
+    if (ret != 0) {
+        printf("remove failed!");
+    }
     return 0;
 }
 

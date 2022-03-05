@@ -110,7 +110,10 @@ void FillRequest(int32_t type, FaultLoggerdRequest *request)
 int32_t RequestFileDescriptor(int32_t type)
 {
     struct FaultLoggerdRequest request;
-    memset_s(&request, sizeof(request), 0, sizeof(request));
+    errno_t err = memset_s(&request, sizeof(request), 0, sizeof(request));
+    if (err != EOK) {
+        DfxLogError("%s :: msmset_s request failed..", __func__);
+    }
     FillRequest(type, &request);
     return RequestFileDescriptorEx(&request);
 }
@@ -144,7 +147,10 @@ int32_t RequestFileDescriptorEx(const struct FaultLoggerdRequest *request)
     if (setSocketOptRet != 0) {
         DfxLogError("setSocketOptRet error");
     }
-    memset_s(&server, sizeof(server), 0, sizeof(server));
+    errno_t err = memset_s(&server, sizeof(server), 0, sizeof(server));
+    if (err != EOK) {
+        DfxLogError("%s :: msmset_s server failed..", __func__);
+    }
     server.sun_family = AF_LOCAL;
     if (strncpy_s(server.sun_path, sizeof(server.sun_path),
         FAULTLOGGERD_SOCK_PATH, strlen(FAULTLOGGERD_SOCK_PATH)) != 0) {
@@ -307,7 +313,10 @@ bool RequestCheckPermission(int32_t pid)
     }
 
     struct FaultLoggerdRequest request;
-    memset_s(&request, sizeof(request), 0, sizeof(request));
+    errno_t err = memset_s(&request, sizeof(request), 0, sizeof(request));
+    if (err != EOK) {
+        DfxLogError("%s :: msmset_s request failed..", __func__);
+    }
 
     request.pid = pid;
     request.clientType = (int32_t)FaultLoggerClientType::PERMISSION_CLIENT;
@@ -324,7 +333,10 @@ bool RequestSdkDump(int32_t pid, int32_t tid)
     }
 
     struct FaultLoggerdRequest request;
-    memset_s(&request, sizeof(request), 0, sizeof(request));
+    errno_t err = memset_s(&request, sizeof(request), 0, sizeof(request));
+    if (err != EOK) {
+        DfxLogError("%s :: msmset_s request failed..", __func__);
+    }
     request.pid = pid;
     request.tid = tid;
     request.callerPid = getpid();
@@ -341,7 +353,10 @@ void RequestPrintTHilog(const char *msg, int length)
     }
 
     struct FaultLoggerdRequest request;
-    memset_s(&request, sizeof(request), 0, sizeof(request));
+    errno_t err = memset_s(&request, sizeof(request), 0, sizeof(request));
+    if (err != EOK) {
+        DfxLogError("%s :: msmset_s request failed..", __func__);
+    }
     request.clientType = (int32_t)FaultLoggerClientType::PRINT_T_HILOG_CLIENT;
 
     int sockfd = -1;

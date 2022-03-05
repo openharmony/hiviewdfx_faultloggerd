@@ -43,8 +43,12 @@ namespace OHOS {
         if (len >= MaxLen - 1) {
             return str;
         }
-
-        srand(time(nullptr));
+        time_t time = time(nullptr);
+        if (time < 0) {
+            printf("worry time !");
+            exit(1);
+        }
+        (void)srand(static_cast<unsigned int>time);
         int i;
         for (i = 0; i < len; i++) {
             switch ((rand() % NUMBER_THREE)) {

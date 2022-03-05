@@ -49,7 +49,8 @@ void ProcessDumper::DumpProcessWithSignalContext(std::shared_ptr<DfxProcess> &pr
         DfxLogError("Fail to read DumpRequest(%d).", errno);
         return;
     }
-
+    std::string storeThreadName = request->GetThreadNameString();
+    std::string storeProcessName = request->GetProcessNameString();
     FaultLoggerType type = (request->GetSiginfo().si_signo == SIGDUMP) ?
         FaultLoggerType::CPP_STACKTRACE : FaultLoggerType::CPP_CRASH;
     bool isLogPersist = DfxConfig::GetInstance().GetLogPersist();
@@ -69,13 +70,18 @@ void ProcessDumper::DumpProcessWithSignalContext(std::shared_ptr<DfxProcess> &pr
         return;
     }
     keyThread->SetIsCrashThread(true);
+    if ((keyThread->GetThreadName()).empty()) {
+        keyThread->SetThreadName(storeThreadName);
+    }
 
     process = DfxProcess::CreateProcessWithKeyThread(request->GetPid(), keyThread);
     if (!process) {
         DfxLogError("Fail to init process with key thread.");
         return;
     }
-
+    if ((process->GetProcessName()).empty()) {
+        process->UpdateProcessName(storeProcessName);
+    }
     if (request->GetSiginfo().si_signo != SIGDUMP) {
         process->SetIsSignalDump(false);
     } else {
@@ -95,7 +101,9 @@ void ProcessDumper::DumpProcess(std::shared_ptr<DfxProcess> &process,
     DfxLogDebug("Enter %s.", __func__);
     if (request->GetType() == DUMP_TYPE_PROCESS) {
         process = DfxProcess::CreateProcessWithKeyThread(request->GetPid(), nullptr);
-        process->InitOtherThreads();
+        if (process) {
+            process->InitOtherThreads();
+        }
     } else if (request->GetType() == DUMP_TYPE_THREAD) {
         process = DfxProcess::CreateProcessWithKeyThread(request->GetTid(), nullptr);
     } else {
