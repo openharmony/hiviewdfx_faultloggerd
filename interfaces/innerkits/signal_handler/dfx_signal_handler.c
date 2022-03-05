@@ -236,6 +236,7 @@ static int DFX_ExecDump(void *arg)
 
     if (InheritCapabilities() != 0) {
         HILOG_BASE_ERROR(LOG_CORE, "Failed to inherit Capabilities from parent.");
+        pthread_mutex_unlock(&g_dumpMutex);
         return INHERIT_CAP_FAIL;
     }
 
