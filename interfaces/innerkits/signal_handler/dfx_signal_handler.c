@@ -36,6 +36,7 @@
 #include <sys/wait.h>
 
 #include <securec.h>
+#include "dfx_func_hook.h"
 #include "dfx_log.h"
 
 #ifdef DFX_LOCAL_UNWIND
@@ -380,7 +381,7 @@ void GetProcessName(void)
     char path[NAME_LEN] = {0};
     memset_s(path, sizeof(path), '\0', sizeof(path));
     if (snprintf_s(path, sizeof(path), sizeof(path) - 1, "/proc/%d/cmdline", getpid()) <= 0) {
-        return ;
+        return;
     }
     ReadStringFromFile(path, g_request.processName);
 }
@@ -389,7 +390,7 @@ static void DFX_SignalHandler(int sig, siginfo_t *si, void *context)
 {
     int tryLockErr = pthread_mutex_trylock(&g_signalHandlerMutex);
     if (tryLockErr != 0) {
-        return ;
+        return;
     }
     HILOG_BASE_INFO(LOG_CORE, "faultlog_native_crash");
     HILOG_BASE_INFO(LOG_CORE, "faultlog_crash_hold_process");
@@ -466,6 +467,8 @@ out:
         }
     }
 #endif
+    HILOG_BASE_INFO(LOG_CORE, "Finish handle signal(%{public}d) in %{public}d:%{public}d",
+        sig, g_request.pid, g_request.tid);
     pthread_mutex_unlock(&g_signalHandlerMutex);
 }
 
@@ -476,6 +479,10 @@ void DFX_InstallSignalHandler()
         pthread_mutex_unlock(&g_signalHandlerMutex);
         return;
     }
+
+#ifdef ENABLE_DEBUG_HOOK
+    StartHookFunc();
+#endif
 
 #ifndef DFX_LOCAL_UNWIND
     // reserve stack for fork
