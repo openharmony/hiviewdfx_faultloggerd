@@ -96,7 +96,7 @@ void CppCrashReporter::ReportToHiview()
     info.summary = stack_;
     info.sectionMaps = kvPairs_;
     addFaultLog(&info);
-    DfxLogInfo("Finish report fault to FaultLogger，%s(%d,%d)", cmdline_.c_str(), pid_, uid_);
+    DfxLogInfo("Finish report fault to FaultLogger %s(%d,%d)", cmdline_.c_str(), pid_, uid_);
     dlclose(handle);
 }
 } // namespace HiviewDFX
