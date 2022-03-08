@@ -33,7 +33,6 @@ ohos_shared_library("dfx_signalhandler") {
 
   sources = [
     "//base/hiviewdfx/faultloggerd/tools/process_dump/dfx_log.cpp",
-    "dfx_func_hook.c",
     "dfx_signal_handler.c",
   ]
 
