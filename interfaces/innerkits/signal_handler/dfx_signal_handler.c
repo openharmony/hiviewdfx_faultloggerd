@@ -388,7 +388,7 @@ void GetProcessName(void)
 
 static void DFX_SignalHandler(int sig, siginfo_t *si, void *context)
 {
-    pthread_mutex_trylock(&g_signalHandlerMutex);
+    pthread_mutex_lock(&g_signalHandlerMutex);
     HILOG_BASE_INFO(LOG_CORE, "faultlog_native_crash");
     HILOG_BASE_INFO(LOG_CORE, "faultlog_crash_hold_process");
 
