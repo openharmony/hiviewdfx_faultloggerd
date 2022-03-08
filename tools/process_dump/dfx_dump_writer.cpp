@@ -18,6 +18,7 @@
 #include "dfx_dump_writer.h"
 
 #include <cinttypes>
+#include <csignal>
 #include <cstdio>
 #include <cstring>
 #include <unistd.h>
@@ -165,6 +166,7 @@ void DfxDumpWriter::WriteProcessDump(std::shared_ptr<ProcessDumpRequest> request
             process_->PrintProcessWithSiginfo(siginfo, targetFd);
             CppCrashReporter reporter(faultloggerdRequest.time, request->GetSiginfo().si_signo, process_);
             reporter.ReportToHiview();
+            kill(request->GetPid(), SIGKILL);
         } else {
             process_->PrintProcess(targetFd, false);
         }
