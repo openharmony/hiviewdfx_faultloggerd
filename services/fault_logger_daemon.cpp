@@ -92,9 +92,11 @@ static void SendFileDescriptorBySocket(int socket, int fd)
     msg.msg_controllen = sizeof(buf);
 
     struct cmsghdr *cmsg = CMSG_FIRSTHDR(&msg);
-    cmsg->cmsg_level = SOL_SOCKET;
-    cmsg->cmsg_type = SCM_RIGHTS;
-    cmsg->cmsg_len = CMSG_LEN(sizeof(fd));
+    if (cmsg != nullptr) {
+        cmsg->cmsg_level = SOL_SOCKET;
+        cmsg->cmsg_type = SCM_RIGHTS;
+        cmsg->cmsg_len = CMSG_LEN(sizeof(fd));
+    }
 
     *(reinterpret_cast<int *>(CMSG_DATA(cmsg))) = fd;
     msg.msg_controllen = CMSG_SPACE(sizeof(fd));
@@ -557,15 +559,15 @@ int32_t StartServer(int argc, char *argv[])
         return -1;
     }
 
-    OHOS::HiviewDFX::FaultLoggerDaemon deamon;
-    if (!deamon.InitEnvironment()) {
+    OHOS::HiviewDFX::FaultLoggerDaemon daemon;
+    if (!daemon.InitEnvironment()) {
         DfxLogError("%s :: Failed to init environment", OHOS::HiviewDFX::LOG_LABLE.c_str());
         close(socketFd);
         return -1;
     }
 
     DfxLogInfo("%s :: %s: start loop accept.", OHOS::HiviewDFX::LOG_LABLE.c_str(), __func__);
-    deamon.LoopAcceptRequestAndFork(socketFd);
+    daemon.LoopAcceptRequestAndFork(socketFd);
 
     close(socketFd);
     DfxLogInfo("%s :: %s: Exit.", OHOS::HiviewDFX::LOG_LABLE.c_str(), __func__);

@@ -45,7 +45,7 @@ std::shared_ptr<DfxElfMaps> DfxElfMaps::Create(pid_t pid)
     }
 
     char realPath[PATH_MAX] = {0};
-    if (realpath(path, realPath) == NULL) {
+    if (realpath(path, realPath) == nullptr) {
         DfxLogWarn("Maps path(%s) is not exist.", path);
         return nullptr;
     }
@@ -63,7 +63,9 @@ std::shared_ptr<DfxElfMaps> DfxElfMaps::Create(pid_t pid)
             DfxLogWarn("Fail to init map info:%s.", mapInfo);
             continue;
         } else {
-            dfxElfMaps->InsertMapToElfMaps(map);
+            if (dfxElfMaps != nullptr) {
+                dfxElfMaps->InsertMapToElfMaps(map);
+            }
         }
     }
     int ret = fclose(fp);
@@ -94,14 +96,15 @@ std::shared_ptr<DfxElfMap> DfxElfMap::Create(const std::string mapInfo, int size
         DfxLogWarn("Fail to parse maps info.");
         return nullptr;
     }
-
-    dfxElfMap->SetMapBegin(begin);
-    dfxElfMap->SetMapEnd(end);
-    dfxElfMap->SetMapOffset(offset);
-    dfxElfMap->SetMapPerms(perms, sizeof(perms));
-    TrimAndDupStr(mapInfo.substr(pos), path);
-    dfxElfMap->SetMapPath(path);
-    DfxLogDebug("Exit %s.", __func__);
+    if (dfxElfMap != nullptr) {
+        dfxElfMap->SetMapBegin(begin);
+        dfxElfMap->SetMapEnd(end);
+        dfxElfMap->SetMapOffset(offset);
+        dfxElfMap->SetMapPerms(perms, sizeof(perms));
+        TrimAndDupStr(mapInfo.substr(pos), path);
+        dfxElfMap->SetMapPath(path);
+        DfxLogDebug("Exit %s.", __func__);
+    }
     return dfxElfMap;
 }
 

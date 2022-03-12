@@ -213,7 +213,7 @@ void DfxThread::SkipFramesInSignalHandler()
         return;
     }
 
-    if (regs_ == NULL) {
+    if (regs_ == nullptr) {
         return;
     }
 
@@ -224,7 +224,7 @@ void DfxThread::SkipFramesInSignalHandler()
     std::vector<uintptr_t> regs = regs_->GetRegsData();
     uintptr_t adjustedLr = DfxThreadDoAdjustPc(regs[REG_LR_NUM]);
     for (int i = 0; i < framesSize; i++) {
-        if (dfxFrames_[i] == NULL) {
+        if (dfxFrames_[i] == nullptr) {
             continue;
         }
         if (regs[REG_PC_NUM] == dfxFrames_[i]->GetFramePc()) {

@@ -43,6 +43,14 @@ ProcessDumpRequest::ProcessDumpRequest()
     if (err != EOK) {
         DfxLogError("%s :: msmset_s context_ failed..", __func__);
     }
+    err = memset_s(&threadName_, sizeof(threadName_), 0, sizeof(threadName_));
+    if (err != EOK) {
+        DfxLogError("%s :: msmset_s threadName_ failed..", __func__);
+    }
+    err = memset_s(&processName_, sizeof(processName_), 0, sizeof(processName_));
+    if (err != EOK) {
+        DfxLogError("%s :: msmset_s processName_ failed..", __func__);
+    }
     type_ = DUMP_TYPE_PROCESS;
     DfxLogDebug("Exit %s.", __func__);
 }

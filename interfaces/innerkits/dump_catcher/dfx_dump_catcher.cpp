@@ -122,20 +122,20 @@ bool DfxDumpCatcher::DoDumpLocalPid(int pid)
     DfxDumpCatcherLocalDumper::ExecLocalDump(pid, syscall(SYS_gettid), DUMP_CATCHER_NUMBER_TWO);
 #else
     char realPath[PATH_MAX] = {'\0'};
-    if (realpath("/proc/self/task", realPath) == NULL) {
+    if (realpath("/proc/self/task", realPath) == nullptr) {
         DfxLogError("%s :: DoDumpLocalPid :: return false as realpath failed.", DFXDUMPCATCHER_TAG.c_str());
         return false;
     }
 
     DIR *dir = opendir(realPath);
-    if (dir == NULL) {
+    if (dir == nullptr) {
         (void)closedir(dir);
         DfxLogError("%s :: DoDumpLocalPid :: return false as opendir failed.", DFXDUMPCATCHER_TAG.c_str());
         return false;
     }
 
     struct dirent *ent;
-    while ((ent = readdir(dir)) != NULL) {
+    while ((ent = readdir(dir)) != nullptr) {
         if (strcmp(ent->d_name, ".") == 0) {
             continue;
         }
@@ -155,7 +155,7 @@ bool DfxDumpCatcher::DoDumpLocalPid(int pid)
 
         int currentTid = syscall(SYS_gettid);
         if (tid == currentTid) {
-            DfxDumpCatcherLocalDumper::ExecLocalDump(pid, tid, DUMP_CATCHER_NUMBER_TWO);
+            DfxDumpCatcherLocalDumper::ExecLocalDump(pid, tid, DUMP_CATCHER_NUMBER_THREE);
         } else {
             DoDumpLocalPidTid(pid, tid);
         }
@@ -295,7 +295,7 @@ bool DfxDumpCatcher::DoDumpLocal(int pid, int tid, std::string& msg)
     DfxDumpCatcherLocalDumper::DFX_InstallLocalDumper(SIGDUMP);
 
     if (tid == syscall(SYS_gettid)) {
-        ret = DfxDumpCatcherLocalDumper::ExecLocalDump(pid, tid, DUMP_CATCHER_NUMBER_ONE);
+        ret = DfxDumpCatcherLocalDumper::ExecLocalDump(pid, tid, DUMP_CATCHER_NUMBER_TWO);
     } else if (tid == 0) {
         ret = DoDumpLocalPid(pid);
     } else {
