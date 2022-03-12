@@ -74,13 +74,13 @@ void CppCrashReporter::ReportToHiview()
     }
 
     void* handle = dlopen("libfaultlogger.z.so", RTLD_LAZY);
-    if(handle == NULL) {
+    if (handle == nullptr) {
         DfxLogWarn("Failed to dlopen libfaultlogger, %s\n", dlerror());
         return;
     }
 
     AddFaultLog addFaultLog = (AddFaultLog)dlsym(handle, "AddFaultLog");
-    if (addFaultLog == NULL) {
+    if (addFaultLog == nullptr) {
         DfxLogWarn("Failed to dlsym AddFaultLog, %s\n", dlerror());
         dlclose(handle);
         return;
@@ -96,7 +96,7 @@ void CppCrashReporter::ReportToHiview()
     info.summary = stack_;
     info.sectionMaps = kvPairs_;
     addFaultLog(&info);
-    DfxLogInfo("Finish report fault to FaultLogger，%s(%d,%d)", cmdline_.c_str(), pid_, uid_);
+    DfxLogInfo("Finish report fault to FaultLogger %s(%d,%d)", cmdline_.c_str(), pid_, uid_);
     dlclose(handle);
 }
 } // namespace HiviewDFX

@@ -25,9 +25,6 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-#define LOG_BUF_LEN 1024
-
 int DfxLogDebug(const char *format, ...);
 int DfxLogInfo(const char *format, ...);
 int DfxLogWarn(const char *format, ...);

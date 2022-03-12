@@ -21,32 +21,21 @@
 
 #include <faultloggerd_client.h>
 
-#ifdef LOG_DOMAIN
-#undef LOG_DOMAIN
-#define LOG_DOMAIN 0xD002D21
-#endif
+enum class LOG_LEVEL_CLASS {
+    LOG_LEVEL_ALL = 1,
+    LOG_LEVEL_TRACE,
+    LOG_LEVEL_DBG,
+    LOG_LEVEL_INFO,
+    LOG_LEVEL_WARN,
+    LOG_LEVEL_ERR,
+    LOG_LEVEL_FATAL,
+    LOG_LEVEL_OFF
+};
 
-#ifdef LOG_TAG
-#undef LOG_TAG
-#define LOG_TAG "DfxFaultLogger"
-#endif
-
-
-#define LOG_LEVEL_ALL   1
-#define LOG_LEVEL_TRACE 2
-#define LOG_LEVEL_DBG   3
-#define LOG_LEVEL_INFO  4
-#define LOG_LEVEL_WARN  5
-#define LOG_LEVEL_ERR   6
-#define LOG_LEVEL_FATAL 7
-#define LOG_LEVEL_OFF   8
-
-#define NUMBER_SIXTEEN 16
-
-static const int LOG_LEVEL = LOG_LEVEL_INFO;
-
+static const LOG_LEVEL_CLASS LOG_LEVEL = LOG_LEVEL_CLASS::LOG_LEVEL_INFO;
 static const int32_t INVALID_FD = -1;
 static int32_t g_DebugLogFilleDes = INVALID_FD;
+static const int LOG_BUF_LEN = 1024;
 #ifndef DFX_LOG_USE_HILOG_BASE
 static int32_t g_StdErrFilleDes = INVALID_FD;
 static const OHOS::HiviewDFX::HiLogLabel g_LOG_LABEL = {LOG_CORE, 0xD002D20, "DfxFaultLogger"};
@@ -54,7 +43,7 @@ static const OHOS::HiviewDFX::HiLogLabel g_LOG_LABEL = {LOG_CORE, 0xD002D20, "Df
 
 int DfxLogDebug(const char *format, ...)
 {
-    if (LOG_LEVEL_DBG < LOG_LEVEL) {
+    if (LOG_LEVEL_CLASS::LOG_LEVEL_DBG < LOG_LEVEL) {
         return 0;
     }
 
@@ -62,7 +51,7 @@ int DfxLogDebug(const char *format, ...)
     char buf[LOG_BUF_LEN] = {0};
     va_list args;
     va_start(args, format);
-    ret = vsnprintf_s(buf, LOG_BUF_LEN, LOG_BUF_LEN - 1, format, args);
+    ret = vsnprintf_s(buf, sizeof(buf), sizeof(buf) - 1, format, args);
     va_end(args);
 
 #ifdef DFX_LOG_USE_HILOG_BASE
@@ -79,7 +68,7 @@ int DfxLogDebug(const char *format, ...)
 
 int DfxLogInfo(const char *format, ...)
 {
-    if (LOG_LEVEL_INFO < LOG_LEVEL) {
+    if (LOG_LEVEL_CLASS::LOG_LEVEL_INFO < LOG_LEVEL) {
         return 0;
     }
 
@@ -87,7 +76,7 @@ int DfxLogInfo(const char *format, ...)
     char buf[LOG_BUF_LEN] = {0};
     va_list args;
     va_start(args, format);
-    ret = vsnprintf_s(buf, LOG_BUF_LEN, LOG_BUF_LEN - 1, format, args);
+    ret = vsnprintf_s(buf, sizeof(buf), sizeof(buf) - 1, format, args);
     va_end(args);
 
 #ifdef DFX_LOG_USE_HILOG_BASE
@@ -104,7 +93,7 @@ int DfxLogInfo(const char *format, ...)
 
 int DfxLogWarn(const char *format, ...)
 {
-    if (LOG_LEVEL_WARN < LOG_LEVEL) {
+    if (LOG_LEVEL_CLASS::LOG_LEVEL_WARN < LOG_LEVEL) {
         return 0;
     }
 
@@ -112,7 +101,7 @@ int DfxLogWarn(const char *format, ...)
     char buf[LOG_BUF_LEN] = {0};
     va_list args;
     va_start(args, format);
-    ret = vsnprintf_s(buf, LOG_BUF_LEN, LOG_BUF_LEN - 1, format, args);
+    ret = vsnprintf_s(buf, sizeof(buf), sizeof(buf) - 1, format, args);
     va_end(args);
 
 #ifdef DFX_LOG_USE_HILOG_BASE
@@ -129,7 +118,7 @@ int DfxLogWarn(const char *format, ...)
 
 int DfxLogError(const char *format, ...)
 {
-    if (LOG_LEVEL_ERR < LOG_LEVEL) {
+    if (LOG_LEVEL_CLASS::LOG_LEVEL_ERR < LOG_LEVEL) {
         return 0;
     }
 
@@ -137,7 +126,7 @@ int DfxLogError(const char *format, ...)
     char buf[LOG_BUF_LEN] = {0};
     va_list args;
     va_start(args, format);
-    ret = vsnprintf_s(buf, LOG_BUF_LEN, LOG_BUF_LEN - 1, format, args);
+    ret = vsnprintf_s(buf, sizeof(buf), sizeof(buf) - 1, format, args);
     va_end(args);
 
 #ifdef DFX_LOG_USE_HILOG_BASE
@@ -154,7 +143,7 @@ int DfxLogError(const char *format, ...)
 
 int DfxLogFatal(const char *format, ...)
 {
-    if (LOG_LEVEL_FATAL < LOG_LEVEL) {
+    if (LOG_LEVEL_CLASS::LOG_LEVEL_FATAL < LOG_LEVEL) {
         return 0;
     }
 
@@ -162,7 +151,7 @@ int DfxLogFatal(const char *format, ...)
     char buf[LOG_BUF_LEN] = {0};
     va_list args;
     va_start(args, format);
-    ret = vsnprintf_s(buf, LOG_BUF_LEN, LOG_BUF_LEN - 1, format, args);
+    ret = vsnprintf_s(buf, sizeof(buf), sizeof(buf) - 1, format, args);
     va_end(args);
 
 #ifdef DFX_LOG_USE_HILOG_BASE
@@ -194,10 +183,10 @@ int WriteLog(int32_t fd, const char *format, ...)
     char buf[LOG_BUF_LEN] = {0};
     va_list args;
     va_start(args, format);
-    ret = vsnprintf_s(buf, LOG_BUF_LEN, LOG_BUF_LEN - 1, format, args);
+    ret = vsnprintf_s(buf, sizeof(buf), sizeof(buf) - 1, format, args);
     va_end(args);
 
-    if ((LOG_LEVEL <= LOG_LEVEL_DBG) || (fd == -1)) {
+    if ((LOG_LEVEL <= LOG_LEVEL_CLASS::LOG_LEVEL_DBG) || (fd == -1)) {
 #ifdef DFX_LOG_USE_HILOG_BASE
         HILOG_BASE_DEBUG(LOG_CORE, "%{public}s", buf);
 #else
@@ -218,6 +207,10 @@ int WriteLog(int32_t fd, const char *format, ...)
 
 void DfxLogToSocket(const char *msg)
 {
+    if (LOG_LEVEL_CLASS::LOG_LEVEL_DBG < LOG_LEVEL) {
+        return;
+    }
+
     int length = strlen(msg);
     if (length >= LOG_BUF_LEN) {
         return;

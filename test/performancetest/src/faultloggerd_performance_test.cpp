@@ -126,6 +126,7 @@ void FaultPerformanceTest::StartRootCrasherLoop()
     if (looprootPid == 0) {
         exit(0);
     }
+
     DfxDumpCatcher dumplog;
     std::string msg = "";
     dumplog.DumpCatch(looprootPid, 0, msg);
@@ -142,29 +143,33 @@ void FaultPerformanceTest::StartRootCrasherLoop()
     pclose(procFileInfo);
 }
 
-void GetTimeLog(std::string errorCMD)
+void FaultPerformanceTest::KillCrasherLoopForSomeCase()
 {
-    std::string startBytrace = "bytrace --trace_begin";
-    system(startBytrace.c_str());
-    std::string setBytrace = "param set debug.bytrace.tags.enableflags 1073741824";
-    system(setBytrace.c_str());
-    std::string startCrash = "/data/crasher_c " + errorCMD;
-    system(startCrash.c_str());
-    std::string dumpTime = "bytrace --trace_dump";
-    GTEST_LOG_(INFO) << "threadCMD = " << dumpTime;
+    int rootuid = 0;
+    setuid(rootuid);
+    system(("kill -9 " + std::to_string(FaultPerformanceTest::looprootPid)).c_str());
+}
+
+int FaultPerformanceTest::getApplyPid(std::string applyName)
+{
+    std::string procCMD = "pgrep '" + applyName + "'";
+    GTEST_LOG_(INFO) << "threadCMD = " << procCMD;
     FILE *procFileInfo = nullptr;
-    char ResultBuf[3000];
-    procFileInfo = popen(dumpTime.c_str(), "r");
+    procFileInfo = popen(procCMD.c_str(), "r");
     if (procFileInfo == nullptr) {
         perror("popen execute failed");
         exit(1);
     }
-    while (fgets(ResultBuf, sizeof(ResultBuf), procFileInfo) != nullptr) {
-        GTEST_LOG_(INFO) << ResultBuf;
+    std::string applyPid;
+    char result_buf_shell[100] = { 0, };
+    while (fgets(result_buf_shell, sizeof(result_buf_shell), procFileInfo) != nullptr) {
+        applyPid = result_buf_shell;
+        GTEST_LOG_(INFO) << "applyPid: " << applyPid;
     }
-    std::string stopBytrace = "bytrace  --trace_finish";
-    system(stopBytrace.c_str());
     pclose(procFileInfo);
+    GTEST_LOG_(INFO) << applyPid;
+    int intApplyPid = std::atoi(applyPid.c_str());
+    return intApplyPid;
 }
 
 /**
@@ -179,8 +184,11 @@ HWTEST_F (FaultPerformanceTest, FaultPerformanceTest001, TestSize.Level2)
     DfxDumpCatcher dumplog;
     std::string msg;
     clock_t befor = GetStartTime();
-    dumplog.DumpCatch(FaultPerformanceTest::looprootPid, FaultPerformanceTest::looprootPid, msg);
-    GTEST_LOG_(INFO) << "DumpCatch API Performance time(PID(root), TID(root)): " << GetStopTime(befor) << "s";
+    for (int i=0; i<1000; i++) {
+        dumplog.DumpCatch(FaultPerformanceTest::looprootPid, FaultPerformanceTest::looprootPid, msg);
+    }
+    GTEST_LOG_(INFO) << "DumpCatch API Performance time(PID(root), TID(root)): " << GetStopTime(befor)/1000 << "s";
+    FaultPerformanceTest::KillCrasherLoopForSomeCase();
     GTEST_LOG_(INFO) << "FaultPerformanceTest001: end.";
 }
 
@@ -192,11 +200,15 @@ HWTEST_F (FaultPerformanceTest, FaultPerformanceTest001, TestSize.Level2)
 HWTEST_F (FaultPerformanceTest, FaultPerformanceTest002, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "FaultPerformanceTest002: start.";
+    FaultPerformanceTest::StartRootCrasherLoop();
     DfxDumpCatcher dumplog;
     std::string msg;
     clock_t befor = GetStartTime();
-    dumplog.DumpCatch(FaultPerformanceTest::looprootPid, 0, msg);
-    GTEST_LOG_(INFO) << "DumpCatch API Performance time(PID(root), TID(0)): " << GetStopTime(befor) << "s";
+    for (int i=0; i <1000; i++) {
+        dumplog.DumpCatch(FaultPerformanceTest::looprootPid, 0, msg);
+    }
+    GTEST_LOG_(INFO) << "DumpCatch API Performance time(PID(root), TID(0)): " << GetStopTime(befor)/1000 << "s";
+    FaultPerformanceTest::KillCrasherLoopForSomeCase();
     GTEST_LOG_(INFO) << "FaultPerformanceTest002: end.";
 }
 
@@ -208,11 +220,16 @@ HWTEST_F (FaultPerformanceTest, FaultPerformanceTest002, TestSize.Level2)
 HWTEST_F (FaultPerformanceTest, FaultPerformanceTest003, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "FaultPerformanceTest003: start.";
+    FaultPerformanceTest::StartRootCrasherLoop();
     std::string procCMD = "processdump -p " + std::to_string(FaultPerformanceTest::looprootPid) + " -t "+
         std::to_string(FaultPerformanceTest::looprootPid);
     clock_t befor = GetStartTime();
-    FaultPerformanceTest::ProcessDumpCommands(procCMD);
-    GTEST_LOG_(INFO) << "Processdump Command Performance time(PID(root), TID(root)): " << GetStopTime(befor) << "s";
+    for (int i=0; i<1000; i++) {
+        FaultPerformanceTest::ProcessDumpCommands(procCMD);
+    }
+    double timeInterval = GetStopTime(befor)/1000;
+    GTEST_LOG_(INFO) << "Processdump Command Performance time(PID(root), TID(root)): " << timeInterval << "s";
+    FaultPerformanceTest::KillCrasherLoopForSomeCase();
     GTEST_LOG_(INFO) << "FaultPerformanceTest003: end.";
 }
 
@@ -224,93 +241,61 @@ HWTEST_F (FaultPerformanceTest, FaultPerformanceTest003, TestSize.Level2)
 HWTEST_F (FaultPerformanceTest, FaultPerformanceTest004, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "FaultPerformanceTest004: start.";
+    FaultPerformanceTest::StartRootCrasherLoop();
     std::string procCMD = "processdump -p " + std::to_string(FaultPerformanceTest::looprootPid);
     clock_t befor = GetStartTime();
-    FaultPerformanceTest::ProcessDumpCommands(procCMD);
-    GTEST_LOG_(INFO) << "Processdump Command Performance time(PID(root)): " << GetStopTime(befor) << "s";
+    for (int i=0; i<1000; i++) {
+        FaultPerformanceTest::ProcessDumpCommands(procCMD);
+    }
+    GTEST_LOG_(INFO) << "Processdump Command Performance time(PID(root)): " << GetStopTime(befor)/1000 << "s";
+    FaultPerformanceTest::KillCrasherLoopForSomeCase();
     GTEST_LOG_(INFO) << "FaultPerformanceTest004: end.";
 }
 
 /**
- * @tc.name: FaultPerformanceTest005_6
- * @tc.desc: test Crash : SIGFPE
+ * @tc.name: FaultPerformanceTest005
+ * @tc.desc: test DumpCatchMultiPid API: PID(root), TID(0)
  * @tc.type: FUNC
  */
-HWTEST_F (FaultPerformanceTest, FaultPerformanceTest005_6, TestSize.Level2)
+HWTEST_F (FaultPerformanceTest, FaultPerformanceTest005, TestSize.Level2)
 {
-    GTEST_LOG_(INFO) << "FaultPerformanceTest005_6: start.";
-    GetTimeLog("SIGFPE");
-    GTEST_LOG_(INFO) << "FaultPerformanceTest005_6: end.";
+    GTEST_LOG_(INFO) << "FaultPerformanceTest005: start.";
+    FaultPerformanceTest::StartRootCrasherLoop();
+    DfxDumpCatcher dumplog;
+    std::string msg;
+    std::string apply = "foundation";
+    int applyPid = FaultPerformanceTest::getApplyPid(apply);
+    std::vector<int> multiPid {applyPid, FaultPerformanceTest::looprootPid};
+    clock_t befor = GetStartTime();
+    for (int i=0; i <1000; i++) {
+        dumplog.DumpCatchMultiPid(multiPid, msg);
+    }
+    double timeInterval = GetStopTime(befor)/1000;
+    GTEST_LOG_(INFO) << "DumpCatchMultiPid API time(PID(root), PID(foundation)): " << timeInterval << "s";
+    FaultPerformanceTest::KillCrasherLoopForSomeCase();
+    GTEST_LOG_(INFO) << "FaultPerformanceTest005: end.";
 }
 
 /**
- * @tc.name: FaultPerformanceTest007_8
- * @tc.desc: test Crash : SIGILL
+ * @tc.name: FaultPerformanceTest006
+ * @tc.desc: test DumpCatchFrame API: app PID(app), TID(0)
  * @tc.type: FUNC
  */
-HWTEST_F (FaultPerformanceTest, FaultPerformanceTest007_8, TestSize.Level2)
+HWTEST_F (FaultPerformanceTest, FaultPerformanceTest006, TestSize.Level2)
 {
-    GTEST_LOG_(INFO) << "FaultPerformanceTest007_8: start.";
-    GetTimeLog("SIGILL");
-    GTEST_LOG_(INFO) << "FaultPerformanceTest007_8: end.";
-}
-
-/**
- * @tc.name: FaultPerformanceTest009_10
- * @tc.desc: test Crash : SIGSEGV
- * @tc.type: FUNC
- */
-HWTEST_F (FaultPerformanceTest, FaultPerformanceTest009_10, TestSize.Level2)
-{
-    GTEST_LOG_(INFO) << "FaultPerformanceTest009_10: start.";
-    GetTimeLog("SIGSEGV");
-    GTEST_LOG_(INFO) << "FaultPerformanceTest009_10: end.";
-}
-
-/**
- * @tc.name: FaultPerformanceTest011_12
- * @tc.desc: test Crash : SIGTRAP
- * @tc.type: FUNC
- */
-HWTEST_F (FaultPerformanceTest, FaultPerformanceTest011_12, TestSize.Level2)
-{
-    GTEST_LOG_(INFO) << "FaultPerformanceTest011_12: start.";
-    GetTimeLog("SIGTRAP");
-    GTEST_LOG_(INFO) << "FaultPerformanceTest011_12: end.";
-}
-
-/**
- * @tc.name: FaultPerformanceTest013_14
- * @tc.desc: test Crash : SIGABRT
- * @tc.type: FUNC
- */
-HWTEST_F (FaultPerformanceTest, FaultPerformanceTest013_14, TestSize.Level2)
-{
-    GTEST_LOG_(INFO) << "FaultPerformanceTest013_14: start.";
-    GetTimeLog("SIGABRT");
-    GTEST_LOG_(INFO) << "FaultPerformanceTest013_14: end.";
-}
-
-/**
- * @tc.name: FaultPerformanceTest015_16
- * @tc.desc: test Crash : SIGBUS
- * @tc.type: FUNC
- */
-HWTEST_F (FaultPerformanceTest, FaultPerformanceTest015_16, TestSize.Level2)
-{
-    GTEST_LOG_(INFO) << "FaultPerformanceTest015_16: start.";
-    GetTimeLog("SIGBUS");
-    GTEST_LOG_(INFO) << "FaultPerformanceTest015_16: end.";
-}
-
-/**
- * @tc.name: FaultPerformanceTest017_18
- * @tc.desc: test Crash : STACKTRACE
- * @tc.type: FUNC
- */
-HWTEST_F (FaultPerformanceTest, FaultPerformanceTest017_18, TestSize.Level2)
-{
-    GTEST_LOG_(INFO) << "FaultPerformanceTest017_18: start.";
-    GetTimeLog("STACKTRACE");
-    GTEST_LOG_(INFO) << "FaultPerformanceTest017_18: end.";
+    GTEST_LOG_(INFO) << "FaultPerformanceTest006: start.";
+    std::string apply = "test_perfor";
+    int testPid = FaultPerformanceTest::getApplyPid(apply);
+    GTEST_LOG_(INFO) << testPid;
+    DfxDumpCatcher dumplog;
+    std::string msg = "";
+    std::vector<std::shared_ptr<DfxDumpCatcherFrame>> frameV;
+    clock_t befor = GetStartTime();
+    for (int i=0; i<1000; i++) {
+        bool ret = dumplog.DumpCatchFrame(testPid, testPid, msg, frameV);
+        GTEST_LOG_(INFO) << ret;
+    }
+    double timeInterval = GetStopTime(befor)/1000;
+    GTEST_LOG_(INFO) << "DumpCatchFrame API time(PID(test_per), PID(test_per)):" << timeInterval << "s";
+    GTEST_LOG_(INFO) << "FaultPerformanceTest006: end.";
 }

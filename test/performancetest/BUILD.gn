@@ -21,6 +21,7 @@ config("module_private_config") {
 
   include_dirs = [
     "include/",
+    "//utils/native/base/include",
     "//base/hiviewdfx/faultloggerd/interfaces/innerkits/dump_catcher/include/",
   ]
 }
@@ -36,8 +37,10 @@ ohos_performancetest("test_performance") {
     "//third_party/googletest:gtest_main",
     "//utils/native/base:utils",
   ]
-
-  external_deps = [ "hilog_native:libhilog" ]
+  external_deps = [
+    "hilog_native:libhilog",
+    "utils_base:utils",
+  ]
 }
 
 group("performance") {

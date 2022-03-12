@@ -52,14 +52,9 @@
 #define LOG_TAG "DfxDumpCatcherLocalDumper"
 #endif
 
-#define SECONDS_TO_MILLSECONDS 1000000
-#define NANOSECONDS_TO_MILLSECONDS 1000
 #ifndef NSIG
 #define NSIG 64
 #endif
-
-#define NUMBER_SIXTYFOUR 64
-#define INHERITABLE_OFFSET 32
 
 #ifndef LOCAL_DUMPER_DEBUG
 #define LOCAL_DUMPER_DEBUG
@@ -68,7 +63,11 @@
 
 namespace OHOS {
 namespace HiviewDFX {
-static const int SYMBOL_BUF_SIZE = 4096;
+static constexpr int SYMBOL_BUF_SIZE = 4096;
+static constexpr int SECONDS_TO_MILLSECONDS = 1000000;
+static constexpr int NANOSECONDS_TO_MILLSECONDS = 1000;
+static constexpr int NUMBER_SIXTYFOUR = 64;
+static constexpr int INHERITABLE_OFFSET = 32;
 
 static struct LocalDumperRequest g_localDumpRequest;
 static pthread_mutex_t g_localDumperMutex = PTHREAD_MUTEX_INITIALIZER;
@@ -78,6 +77,9 @@ static struct sigaction g_localDumperOldSigactionList[NSIG] = {};
 char* DfxDumpCatcherLocalDumper::g_StackInfo_ = nullptr;
 long long DfxDumpCatcherLocalDumper::g_CurrentPosition = 0;
 std::vector<std::shared_ptr<DfxDumpCatcherFrame>> DfxDumpCatcherLocalDumper::g_FrameV_;
+std::mutex DfxDumpCatcherLocalDumper::g_localDumperMutx_;
+std::condition_variable DfxDumpCatcherLocalDumper::g_localDumperCV_;
+std::shared_ptr<DfxElfMaps> DfxDumpCatcherLocalDumper::g_localDumperMaps_ = nullptr;
 
 DfxDumpCatcherLocalDumper::DfxDumpCatcherLocalDumper()
 {
@@ -158,7 +160,9 @@ bool DfxDumpCatcherLocalDumper::ExecLocalDump(const int pid, const int tid, cons
     unw_init_local(&cursor, &context);
 
     size_t index = 0;
-    auto maps = DfxElfMaps::Create(pid);
+    if (g_localDumperMaps_ == nullptr) {
+        g_localDumperMaps_ = DfxElfMaps::Create(pid);
+    }
     while ((unw_step(&cursor) > 0) && (index < BACK_STACK_MAX_STEPS)) {
         std::shared_ptr<DfxDumpCatcherFrame> frame = std::make_shared<DfxDumpCatcherFrame>();
 
@@ -175,8 +179,8 @@ bool DfxDumpCatcherLocalDumper::ExecLocalDump(const int pid, const int tid, cons
         frame->SetFrameSp((uint64_t)sp);
 
         auto frameMap = frame->GetFrameMap();
-        if (maps->FindMapByAddr(frame->GetFramePc(), frameMap)) {
-            frame->SetFrameRelativePc(frame->GetRelativePc(maps));
+        if (g_localDumperMaps_->FindMapByAddr(frame->GetFramePc(), frameMap)) {
+            frame->SetFrameRelativePc(frame->GetRelativePc(g_localDumperMaps_));
         }
 
         char sym[SYMBOL_BUF_SIZE] = {0};
@@ -213,6 +217,8 @@ void DfxDumpCatcherLocalDumper::DFX_LocalDumperUnwindLocal(int sig, siginfo_t *s
         sig, g_localDumpRequest.pid, g_localDumpRequest.tid);
 #endif
     ExecLocalDump(g_localDumpRequest.pid, g_localDumpRequest.tid, DUMP_CATCHER_NUMBER_ONE);
+
+    g_localDumperCV_.notify_one();
     DfxLogToSocket("DFX_LocalDumperUnwindLocal -E-");
 }
 
@@ -220,7 +226,10 @@ void DfxDumpCatcherLocalDumper::DFX_LocalDumper(int sig, siginfo_t *si, void *co
 {
     pthread_mutex_lock(&g_localDumperMutex);
 
-    (void)memset_s(&g_localDumpRequest, sizeof(g_localDumpRequest), 0, sizeof(g_localDumpRequest));
+    int ret = memset_s(&g_localDumpRequest, sizeof(g_localDumpRequest), 0, sizeof(g_localDumpRequest));
+    if (ret != EOK) {
+        printf("memset error!");
+    }
     g_localDumpRequest.type = sig;
     g_localDumpRequest.tid = gettid();
     g_localDumpRequest.pid = getpid();
@@ -228,13 +237,13 @@ void DfxDumpCatcherLocalDumper::DFX_LocalDumper(int sig, siginfo_t *si, void *co
     g_localDumpRequest.reserved = 0;
     g_localDumpRequest.timeStamp = (uint64_t)time(NULL);
     if (memcpy_s(&(g_localDumpRequest.siginfo), sizeof(g_localDumpRequest.siginfo),
-        si, sizeof(siginfo_t)) != 0) {
+        si, sizeof(siginfo_t)) != EOK) {
         HILOG_BASE_ERROR(LOG_CORE, "Failed to copy siginfo.");
         pthread_mutex_unlock(&g_localDumperMutex);
         return;
     }
     if (memcpy_s(&(g_localDumpRequest.context), sizeof(g_localDumpRequest.context),
-        context, sizeof(ucontext_t)) != 0) {
+        context, sizeof(ucontext_t)) != EOK) {
         HILOG_BASE_ERROR(LOG_CORE, "Failed to copy ucontext.");
         pthread_mutex_unlock(&g_localDumperMutex);
         return;
@@ -285,7 +294,7 @@ void DfxDumpCatcherLocalDumper::DFX_InstallLocalDumper(int sig)
     action.sa_sigaction = DfxDumpCatcherLocalDumper::DFX_LocalDumper;
     action.sa_flags = SA_RESTART | SA_SIGINFO;
 
-    if (sigaction(sig, &action, &(g_localDumperOldSigactionList[sig])) != 0) {
+    if (sigaction(sig, &action, &(g_localDumperOldSigactionList[sig])) != EOK) {
         DfxLogToSocket("DFX_InstallLocalDumper :: Failed to register signal.");
     }
     g_localDumperHasInit = true;
@@ -308,7 +317,7 @@ void DfxDumpCatcherLocalDumper::DFX_UninstallLocalDumper(int sig)
         return;
     }
 
-    if (g_localDumperOldSigactionList[sig].sa_sigaction == NULL) {
+    if (g_localDumperOldSigactionList[sig].sa_sigaction == nullptr) {
         signal(sig, SIG_DFL);
         HILOG_BASE_ERROR(LOG_CORE, "DFX_UninstallLocalDumper :: old sig action is null.");
 #ifdef LOCAL_DUMPER_DEBUG
@@ -318,7 +327,7 @@ void DfxDumpCatcherLocalDumper::DFX_UninstallLocalDumper(int sig)
         return;
     }
 
-    if (sigaction(sig, &(g_localDumperOldSigactionList[sig]), NULL) != 0) {
+    if (sigaction(sig, &(g_localDumperOldSigactionList[sig]), NULL) != EOK) {
         DfxLogToSocket("DFX_UninstallLocalDumper :: Failed to reset signal.");
         signal(sig, SIG_DFL);
     }
