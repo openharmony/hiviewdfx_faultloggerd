@@ -31,7 +31,6 @@
 #include "dfx_dump_catcher.h"
 #include "dfx_dump_catcher_frame.h"
 
-#define LOG_BUF_LEN 1024
 static const int ARG1 = 1;
 static const int ARG2 = 2;
 static const int ARG3 = 3;
@@ -126,17 +125,17 @@ static bool FunctionThree(int32_t pid, int32_t tid)
     StartMultiThread();
     char path[NAME_LEN] = {0};
     if (snprintf_s(path, sizeof(path), sizeof(path) - 1, "/proc/%d/task", currentPid) <= 0) {
-        return FALSE;
+        return false;
     }
 
     char realPath[PATH_MAX] = {'\0'};
     if (realpath(path, realPath) == nullptr) {
-        return FALSE;
+        return false;
     }
 
     DIR *dir = opendir(realPath);
     if (dir == nullptr) {
-        return FALSE;
+        return false;
     }
 
     struct dirent *ent;

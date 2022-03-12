@@ -31,6 +31,7 @@
 namespace {
 static const int32_t SOCKET_BUFFER_SIZE = 256;
 static const int32_t SOCKET_TIMEOUT = 5;
+static const int LOG_BUF_LEN = 1024;
 static const char FAULTLOGGERD_SOCK_PATH[] = "/dev/unix/socket/faultloggerd.server";
 }
 

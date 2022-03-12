@@ -52,14 +52,9 @@
 #define LOG_TAG "DfxDumpCatcherLocalDumper"
 #endif
 
-#define SECONDS_TO_MILLSECONDS 1000000
-#define NANOSECONDS_TO_MILLSECONDS 1000
 #ifndef NSIG
 #define NSIG 64
 #endif
-
-#define NUMBER_SIXTYFOUR 64
-#define INHERITABLE_OFFSET 32
 
 #ifndef LOCAL_DUMPER_DEBUG
 #define LOCAL_DUMPER_DEBUG
@@ -68,7 +63,11 @@
 
 namespace OHOS {
 namespace HiviewDFX {
-static const int SYMBOL_BUF_SIZE = 4096;
+static constexpr int SYMBOL_BUF_SIZE = 4096;
+static constexpr int SECONDS_TO_MILLSECONDS = 1000000;
+static constexpr int NANOSECONDS_TO_MILLSECONDS = 1000;
+static constexpr int NUMBER_SIXTYFOUR = 64;
+static constexpr int INHERITABLE_OFFSET = 32;
 
 static struct LocalDumperRequest g_localDumpRequest;
 static pthread_mutex_t g_localDumperMutex = PTHREAD_MUTEX_INITIALIZER;

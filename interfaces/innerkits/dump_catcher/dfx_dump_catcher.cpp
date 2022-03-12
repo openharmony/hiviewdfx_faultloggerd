@@ -124,14 +124,14 @@ bool DfxDumpCatcher::DoDumpLocalPid(int pid)
     char realPath[PATH_MAX] = {'\0'};
     if (realpath("/proc/self/task", realPath) == NULL) {
         DfxLogError("%s :: DoDumpLocalPid :: return false as realpath failed.", DFXDUMPCATCHER_TAG.c_str());
-        return FALSE;
+        return false;
     }
 
     DIR *dir = opendir(realPath);
     if (dir == NULL) {
         (void)closedir(dir);
         DfxLogError("%s :: DoDumpLocalPid :: return false as opendir failed.", DFXDUMPCATCHER_TAG.c_str());
-        return FALSE;
+        return false;
     }
 
     struct dirent *ent;

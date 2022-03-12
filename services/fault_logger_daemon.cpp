@@ -61,6 +61,7 @@ static const char FAULTLOGGERD_SOCK_PATH[] = "/dev/unix/socket/faultloggerd.serv
 const int SIGDUMP = 35;
 const int MINUS_ONE_THOUSAND = -1000;
 
+static const int LOG_BUF_LEN = 1024;
 static const int GC_TIME_US = 1000000;
 
 static std::string GetRequestTypeName(int32_t type)
