@@ -226,7 +226,10 @@ void DfxDumpCatcherLocalDumper::DFX_LocalDumper(int sig, siginfo_t *si, void *co
 {
     pthread_mutex_lock(&g_localDumperMutex);
 
-    (void)memset_s(&g_localDumpRequest, sizeof(g_localDumpRequest), 0, sizeof(g_localDumpRequest));
+    int ret = memset_s(&g_localDumpRequest, sizeof(g_localDumpRequest), 0, sizeof(g_localDumpRequest));
+    if (ret != EOK) {
+        printf("memset error!");
+    }
     g_localDumpRequest.type = sig;
     g_localDumpRequest.tid = gettid();
     g_localDumpRequest.pid = getpid();
@@ -234,13 +237,13 @@ void DfxDumpCatcherLocalDumper::DFX_LocalDumper(int sig, siginfo_t *si, void *co
     g_localDumpRequest.reserved = 0;
     g_localDumpRequest.timeStamp = (uint64_t)time(NULL);
     if (memcpy_s(&(g_localDumpRequest.siginfo), sizeof(g_localDumpRequest.siginfo),
-        si, sizeof(siginfo_t)) != 0) {
+        si, sizeof(siginfo_t)) != EOK) {
         HILOG_BASE_ERROR(LOG_CORE, "Failed to copy siginfo.");
         pthread_mutex_unlock(&g_localDumperMutex);
         return;
     }
     if (memcpy_s(&(g_localDumpRequest.context), sizeof(g_localDumpRequest.context),
-        context, sizeof(ucontext_t)) != 0) {
+        context, sizeof(ucontext_t)) != EOK) {
         HILOG_BASE_ERROR(LOG_CORE, "Failed to copy ucontext.");
         pthread_mutex_unlock(&g_localDumperMutex);
         return;
@@ -291,7 +294,7 @@ void DfxDumpCatcherLocalDumper::DFX_InstallLocalDumper(int sig)
     action.sa_sigaction = DfxDumpCatcherLocalDumper::DFX_LocalDumper;
     action.sa_flags = SA_RESTART | SA_SIGINFO;
 
-    if (sigaction(sig, &action, &(g_localDumperOldSigactionList[sig])) != 0) {
+    if (sigaction(sig, &action, &(g_localDumperOldSigactionList[sig])) != EOK) {
         DfxLogToSocket("DFX_InstallLocalDumper :: Failed to register signal.");
     }
     g_localDumperHasInit = true;
@@ -314,7 +317,7 @@ void DfxDumpCatcherLocalDumper::DFX_UninstallLocalDumper(int sig)
         return;
     }
 
-    if (g_localDumperOldSigactionList[sig].sa_sigaction == NULL) {
+    if (g_localDumperOldSigactionList[sig].sa_sigaction == nullptr) {
         signal(sig, SIG_DFL);
         HILOG_BASE_ERROR(LOG_CORE, "DFX_UninstallLocalDumper :: old sig action is null.");
 #ifdef LOCAL_DUMPER_DEBUG
@@ -324,7 +327,7 @@ void DfxDumpCatcherLocalDumper::DFX_UninstallLocalDumper(int sig)
         return;
     }
 
-    if (sigaction(sig, &(g_localDumperOldSigactionList[sig]), NULL) != 0) {
+    if (sigaction(sig, &(g_localDumperOldSigactionList[sig]), NULL) != EOK) {
         DfxLogToSocket("DFX_UninstallLocalDumper :: Failed to reset signal.");
         signal(sig, SIG_DFL);
     }

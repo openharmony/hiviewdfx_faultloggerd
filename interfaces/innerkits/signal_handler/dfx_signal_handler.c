@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -84,6 +84,7 @@ static pthread_mutex_t g_signalHandlerMutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutex_t g_dumpMutex = PTHREAD_MUTEX_INITIALIZER;
 static int g_pipefd[2] = {-1, -1};
 static BOOL g_hasInit = FALSE;
+static const int ALARM_TIME_S = 10;
 
 enum DumpPreparationStage {
     CREATE_PIPE_FAIL = 1,
@@ -199,11 +200,24 @@ static void DFX_SetUpEnvironment()
     SetInterestedSignalMasks(SIG_BLOCK);
 }
 
+static void DFX_SetUpSigAlarmAction(void)
+{
+    if (signal(SIGALRM, SIG_DFL) == SIG_ERR) {
+        HILOG_BASE_ERROR(LOG_CORE, "signal error!");
+    }
+    sigset_t set;
+    sigemptyset (&set);
+    sigaddset(&set, SIGALRM);
+    sigprocmask(SIG_UNBLOCK, &set, NULL);
+}
+
 static int DFX_ExecDump(void *arg)
 {
     (void)arg;
     pthread_mutex_lock(&g_dumpMutex);
     DFX_SetUpEnvironment();
+    DFX_SetUpSigAlarmAction();
+    alarm(ALARM_TIME_S);
     // create pipe for passing request to processdump
     if (pipe(g_pipefd) != 0) {
         HILOG_BASE_ERROR(LOG_CORE, "Failed to create pipe for transfering context.");
@@ -367,19 +381,27 @@ void ReadStringFromFile(char* path, char* pDestStore)
     }
     int ret = fclose(fp);
     if (ret == EOF) {
-        printf("close failed!");
+        HILOG_BASE_ERROR(LOG_CORE, "close failed!");
     }
 }
 
 void GetThreadName(void)
 {
-    ReadStringFromFile("proc/self/comm", g_request.threadName);
+    char path[NAME_LEN] = {0};
+    memset_s(path, sizeof(path), '\0', sizeof(path));
+    if (snprintf_s(path, sizeof(path), sizeof(path) - 1, "/proc/%d/comm", getpid()) <= 0) {
+        return ;
+    }
+    ReadStringFromFile(path, g_request.threadName);
 }
 
 void GetProcessName(void)
 {
     char path[NAME_LEN] = {0};
-    memset_s(path, sizeof(path), '\0', sizeof(path));
+    int ret = memset_s(path, sizeof(path), '\0', sizeof(path));
+    if (ret != EOK) {
+        printf("memset error!");
+    }
     if (snprintf_s(path, sizeof(path), sizeof(path) - 1, "/proc/%d/cmdline", getpid()) <= 0) {
         return;
     }

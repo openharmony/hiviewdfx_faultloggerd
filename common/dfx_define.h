@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -49,6 +49,7 @@ static const int SIGDUMP = 35;
 
 static const int DUMP_CATCHER_NUMBER_ONE = 1;
 static const int DUMP_CATCHER_NUMBER_TWO = 2;
+static const int DUMP_CATCHER_NUMBER_THREE = 3;
 static const int DUMP_CATCHER_SLEEP_TIME_TEN_S = 10;
 static const int DUMP_CATCHER_SLEEP_TIME_TWENTY_S = 20;
 static const int DUMP_CATCHER_WAIT_LOG_FILE_GEN_TIME_US = 10000;
