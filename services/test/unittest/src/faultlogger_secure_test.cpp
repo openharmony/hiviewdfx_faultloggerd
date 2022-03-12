@@ -53,6 +53,9 @@ HWTEST_F (FaultLoggerSecureTest, FaultLoggerSecureTest001, TestSize.Level2)
     int callingUid = 1000;
     int pid = 100;
     bool ret = secure->CheckCallerUID(callingUid, pid);
+    if (ret != true) {
+        printf("check error!");
+    }
     EXPECT_EQ(true, ret == true);
     GTEST_LOG_(INFO) << "FaultLoggerSecureTest001: end.";
 }

@@ -47,9 +47,27 @@ ohos_systemtest("test_faultloggerd") {
     cflags = [ "-D__arm__" ]
   } else if (target_cpu == "arm64") {
     cflags = [ "-D__aarch64__" ]
-  } else if (target_cpu == "x86_64") {
-    cflags = [ "-D__x86_64__" ]
   }
+}
+
+ohos_systemtest("test_faultloggerd_pre") {
+  module_out_path = module_output_path
+  sources = [ "src/faultloggerd_system_test.cpp" ]
+
+  configs = [ ":module_private_config" ]
+
+  deps = [
+    "//base/hiviewdfx/faultloggerd/interfaces/innerkits/dump_catcher:lib_dfx_dump_catcher",
+    "//third_party/googletest:gtest_main",
+    "//utils/native/base:utils",
+  ]
+
+  external_deps = [
+    "hilog_native:libhilog",
+    "utils_base:utils",
+  ]
+
+  cflags = [ "-D__pre__" ]
 }
 
 group("systemtest") {

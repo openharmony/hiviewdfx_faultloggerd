@@ -130,7 +130,7 @@ void DfxConfig::ParserConfig(std::string key, std::string value)
             continue;
         }
         if (key.compare("displayFaultStack.lowAddressStep") == 0) {
-            lowAddressStep = atoi(value.data());
+            lowAddressStep = (unsigned int)atoi(value.data());
             DfxConfig::GetInstance().SetFaultStackLowAddressStep(lowAddressStep);
             continue;
         }
@@ -153,7 +153,10 @@ void DfxConfig::ReadConfig()
             break;
         }
         while (!feof(fp)) {
-            memset_s(codeBuffer, sizeof(codeBuffer), '\0', sizeof(codeBuffer));
+            errno_t err = memset_s(codeBuffer, sizeof(codeBuffer), '\0', sizeof(codeBuffer));
+            if (err != EOK) {
+                DfxLogError("%s :: msmset_s codeBuffer failed..", __func__);
+            }
             if (fgets(codeBuffer, CONF_LINE_SIZE -1, fp) == nullptr) {
                 continue;
             }

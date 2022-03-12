@@ -84,37 +84,30 @@ void DfxDumpCatcher::FreeStackInfo()
 bool DfxDumpCatcher::DoDumpLocalPidTid(int pid, int tid)
 {
     DfxLogDebug("%s :: DoDumpLocalPidTid :: pid(%d), tid(%d).", DFXDUMPCATCHER_TAG.c_str(), pid, tid);
+    bool ret = false;
     if (pid <= 0 || tid <= 0) {
         DfxLogError("%s :: DoDumpLocalPidTid :: return false as param error.", DFXDUMPCATCHER_TAG.c_str());
-        return false;
+        return ret;
     }
 
     do {
         if (RequestSdkDump(pid, tid) == true) {
-            int time = 0;
-            long long msgLength;
-            do {
-                msgLength = DfxDumpCatcherLocalDumper::g_CurrentPosition;
-                DfxLogDebug("%s :: DoDumpLocalPidTid :: msgLength(%lld), time(%d).",
-                    DFXDUMPCATCHER_TAG.c_str(), msgLength, time);
+            std::unique_lock<std::mutex> lck(DfxDumpCatcherLocalDumper::g_localDumperMutx_);
+            if (DfxDumpCatcherLocalDumper::g_localDumperCV_.wait_for(lck, \
+                std::chrono::seconds(DUMP_CATCHER_NUMBER_TWO))==std::cv_status::timeout) {
+                // time out means we didn't got any back trace msg, just return false.
+                ret = false;
+                break;
+            }
 
-                sleep(1);
-                time++;
-
-                DfxLogDebug("%s :: DoDumpLocalPidTid :: g_CurrentPosition(%lld), time(%d).",
-                    DFXDUMPCATCHER_TAG.c_str(), DfxDumpCatcherLocalDumper::g_CurrentPosition, time);
-            } while (time < DUMP_CATCHER_SLEEP_TIME_TWENTY_S \
-                && msgLength != DfxDumpCatcherLocalDumper::g_CurrentPosition);
-
-            DfxLogDebug("%s :: DoDumpLocalPidTid :: return true.", DFXDUMPCATCHER_TAG.c_str());
-            return true;
+            ret = true;
         } else {
             break;
         }
     } while (false);
 
-    DfxLogError("%s :: DoDumpLocalPidTid :: return false.", DFXDUMPCATCHER_TAG.c_str());
-    return false;
+    DfxLogError("%s :: DoDumpLocalPidTid :: return %d.", DFXDUMPCATCHER_TAG.c_str(), ret);
+    return ret;
 }
 
 bool DfxDumpCatcher::DoDumpLocalPid(int pid)
@@ -125,27 +118,24 @@ bool DfxDumpCatcher::DoDumpLocalPid(int pid)
         return false;
     }
 
-    char path[NAME_LEN] = {0};
-    if (snprintf_s(path, sizeof(path), sizeof(path) - 1, "/proc/%d/task", pid) <= 0) {
-        DfxLogError("%s :: DoDumpLocalPid :: return false as snprintf_s failed.", DFXDUMPCATCHER_TAG.c_str());
-        return FALSE;
-    }
-
+#ifdef CURRENT_THREAD_ONLY
+    DfxDumpCatcherLocalDumper::ExecLocalDump(pid, syscall(SYS_gettid), DUMP_CATCHER_NUMBER_TWO);
+#else
     char realPath[PATH_MAX] = {'\0'};
-    if (realpath(path, realPath) == NULL) {
+    if (realpath("/proc/self/task", realPath) == nullptr) {
         DfxLogError("%s :: DoDumpLocalPid :: return false as realpath failed.", DFXDUMPCATCHER_TAG.c_str());
-        return FALSE;
+        return false;
     }
 
     DIR *dir = opendir(realPath);
-    if (dir == NULL) {
+    if (dir == nullptr) {
         (void)closedir(dir);
         DfxLogError("%s :: DoDumpLocalPid :: return false as opendir failed.", DFXDUMPCATCHER_TAG.c_str());
-        return FALSE;
+        return false;
     }
 
     struct dirent *ent;
-    while ((ent = readdir(dir)) != NULL) {
+    while ((ent = readdir(dir)) != nullptr) {
         if (strcmp(ent->d_name, ".") == 0) {
             continue;
         }
@@ -165,12 +155,17 @@ bool DfxDumpCatcher::DoDumpLocalPid(int pid)
 
         int currentTid = syscall(SYS_gettid);
         if (tid == currentTid) {
-            DfxDumpCatcherLocalDumper::ExecLocalDump(pid, tid, DUMP_CATCHER_NUMBER_TWO);
+            DfxDumpCatcherLocalDumper::ExecLocalDump(pid, tid, DUMP_CATCHER_NUMBER_THREE);
         } else {
             DoDumpLocalPidTid(pid, tid);
         }
     }
+
+    if (closedir(dir) == -1) {
+        DfxLogError("closedir failed.");
+    }
     DfxLogDebug("%s :: DoDumpLocalPid :: return true.", DFXDUMPCATCHER_TAG.c_str());
+#endif
     return true;
 }
 
@@ -214,19 +209,10 @@ std::string DfxDumpCatcher::WaitForLogGenerate(const std::string& path, const st
         return "";
     }
 
-    nfds_t nfds = 1;
-    struct pollfd fds[1];
-    fds[0].fd = inotifyFd;
-    fds[0].events = POLLIN;
     while (true) {
         pastTime = time(nullptr) - startTime;
         if (pastTime > NUMBER_TEN) {
             break;
-        }
-
-        int ret = poll(fds, nfds, 1000); // 1000ms
-        if (ret < 0 || (fds[0].revents & POLLIN)) {
-            continue;
         }
 
         char buffer[NUMBER_TWO_KB] = {0}; // 2048 buffer size;
@@ -259,6 +245,7 @@ std::string DfxDumpCatcher::WaitForLogGenerate(const std::string& path, const st
             event = (struct inotify_event *)(offset + tmpLen);
             offset += tmpLen;
         }
+        usleep(DUMP_CATCHER_WAIT_LOG_FILE_GEN_TIME_US);
     }
     DfxLogDebug("%s :: WaitForLogGenerate :: return empty string", DFXDUMPCATCHER_TAG.c_str());
     inotify_rm_watch (inotifyFd, wd);
@@ -308,7 +295,7 @@ bool DfxDumpCatcher::DoDumpLocal(int pid, int tid, std::string& msg)
     DfxDumpCatcherLocalDumper::DFX_InstallLocalDumper(SIGDUMP);
 
     if (tid == syscall(SYS_gettid)) {
-        ret = DfxDumpCatcherLocalDumper::ExecLocalDump(pid, tid, DUMP_CATCHER_NUMBER_ONE);
+        ret = DfxDumpCatcherLocalDumper::ExecLocalDump(pid, tid, DUMP_CATCHER_NUMBER_TWO);
     } else if (tid == 0) {
         ret = DoDumpLocalPid(pid);
     } else {
@@ -353,7 +340,7 @@ bool DfxDumpCatcher::DumpCatchMultiPid(const std::vector<int> pidV, std::string&
     bool ret = false;
     int currentPid = getpid();
     int currentTid = syscall(SYS_gettid);
-    int pidSize = pidV.size();
+    int pidSize = (int)pidV.size();
     DfxLogDebug("%s :: %s :: cPid(%d), cTid(%d), pidSize(%d).", DFXDUMPCATCHER_TAG.c_str(), \
         __func__, currentPid, currentTid, pidSize);
 
@@ -389,6 +376,7 @@ bool DfxDumpCatcher::DumpCatchMultiPid(const std::vector<int> pidV, std::string&
             DfxDumpCatcherLocalDumper::DFX_UninstallLocalDumper(SIGDUMP);
         } else {
             ret = DoDumpRemote(pid, 0, msg);
+            DfxDumpCatcherLocalDumper::WritePidTidInfo(msg);
         }
 
         time_t currentTime = time(nullptr);

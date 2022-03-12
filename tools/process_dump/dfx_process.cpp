@@ -54,24 +54,27 @@ void DfxProcess::FillProcessName()
     DfxLogDebug("Exit %s.", __func__);
 }
 
+void DfxProcess::UpdateProcessName(std::string processName)
+{
+    processName_ = processName;
+}
+
 std::shared_ptr<DfxProcess> DfxProcess::CreateProcessWithKeyThread(pid_t pid, std::shared_ptr<DfxThread> keyThread)
 {
     DfxLogDebug("Enter %s.", __func__);
     auto dfxProcess = std::make_shared<DfxProcess>();
-
-    dfxProcess->SetPid(pid);
-    dfxProcess->FillProcessName();
-
+    if (dfxProcess != nullptr) {
+        dfxProcess->SetPid(pid);
+        dfxProcess->FillProcessName();
+    }
     if (!dfxProcess->InitProcessMaps()) {
         DfxLogWarn("Fail to init process maps.");
         return nullptr;
     }
-
     if (!dfxProcess->InitProcessThreads(keyThread)) {
         DfxLogWarn("Fail to init threads.");
         return nullptr;
     }
-
     DfxLogWarn("Init process dump with pid:%d.", dfxProcess->GetPid());
     DfxLogDebug("Exit %s.", __func__);
     return dfxProcess;

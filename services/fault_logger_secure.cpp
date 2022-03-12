@@ -77,10 +77,16 @@ bool FaultLoggerSecure::CheckUidAndPid(const int uid, const int32_t pid)
     DfxLogInfo("%s :: CheckUidAndPid :: uid(%d), pid(%d).\n",
         FaultLoggerSecure_TAG.c_str(), uid, (int)pid);
 
-    memset_s(resp, sizeof(resp), '\0', sizeof(resp));
-    memset_s(cmd, sizeof(cmd), '\0', sizeof(cmd));
+    errno_t err = memset_s(resp, sizeof(resp), '\0', sizeof(resp));
+    if (err != EOK) {
+        DfxLogError("%s :: msmset_s resp failed..", __func__);
+    }
+    err = memset_s(cmd, sizeof(cmd), '\0', sizeof(cmd));
+    if (err != EOK) {
+        DfxLogError("%s :: msmset_s cmd failed..", __func__);
+    }
     auto pms = sprintf_s(cmd, sizeof(cmd), "/bin/ps -u %d -o PID", uid);
-    if (pms == 0) {
+    if (pms <= 0) {
         return ret;
     }
     DfxLogInfo("%s :: CheckUidAndPid :: cmd(%s).\n",
@@ -131,9 +137,9 @@ bool FaultLoggerSecure::CheckCallerUID (const int callingUid, const int32_t pid)
     }
 
     // If caller's is BMS / root or caller's uid/pid is validate, just return true
-    if ((callingUid == FaultLoggerSecure::BMS_UID)
-        || (callingUid == FaultLoggerSecure::ROOT_UID)
-        || CheckUidAndPid(callingUid, pid)) {
+    if ((callingUid == FaultLoggerSecure::BMS_UID) || \
+        (callingUid == FaultLoggerSecure::ROOT_UID) ||\
+        CheckUidAndPid(callingUid, pid)) {
         ret = true;
     } else {
         ret = false;

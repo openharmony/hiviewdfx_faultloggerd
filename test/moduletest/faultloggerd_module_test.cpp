@@ -34,7 +34,7 @@ std::string GetCmdResultFromPopen(const std::string& cmd)
     char buffer[bufSize];
     std::string result = "";
     while (!feof(fp)) {
-        if (fgets(buffer, bufSize - 1, fp) != NULL) {
+        if (fgets(buffer, bufSize - 1, fp) != nullptr) {
             result += buffer;
         }
     }
