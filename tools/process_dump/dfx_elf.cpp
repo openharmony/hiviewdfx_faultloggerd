@@ -91,7 +91,7 @@ bool DfxElf::ParseElfHeader()
 {
     DfxLogDebug("Enter %s.", __func__);
     ssize_t nread = read(fd_, &(header_), sizeof(header_));
-    if (nread < 0 || nread != sizeof(header_)) {
+    if (nread < 0 || nread != static_cast<long>(sizeof(header_))) {
         DfxLogWarn("Failed to read elf header.");
         return false;
     }
