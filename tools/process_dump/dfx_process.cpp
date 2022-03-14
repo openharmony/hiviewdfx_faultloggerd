@@ -191,9 +191,10 @@ void DfxProcess::PrintProcess(int32_t fd, bool printMapFlag)
     DfxLogDebug("Enter %s.", __func__);
     size_t index = 0;
     for (auto iter = threads_.begin(); iter != threads_.end(); iter++) {
-        if ( index == 1) {
+        if (index == 1) {
             PrintThreadsHeaderByConfig(fd);
         }
+
         (*iter)->PrintThread(fd, isSignalDump_);
         if (index == 0 && printMapFlag == true) {
             PrintProcessMapsByConfig(fd);
@@ -295,7 +296,7 @@ void DfxProcess::PrintProcessMapsByConfig(int32_t fd)
             (*iter)->PrintMap(fd);
         }
     } else {
-        DfxLogInfo("hidden Maps");
+        DfxLogDebug("hidden Maps");
     }
 }
 
@@ -304,7 +305,7 @@ void DfxProcess::PrintThreadsHeaderByConfig(int32_t fd)
     if (DfxConfig::GetInstance().GetDisplayBacktrace()) {
         WriteLog(fd, "Other thread info:\n");
     } else {
-        DfxLogInfo("hidden thread info.");
+        DfxLogDebug("hidden thread info.");
     }
 }
 } // namespace HiviewDFX

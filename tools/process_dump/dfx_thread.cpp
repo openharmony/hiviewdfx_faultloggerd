@@ -40,7 +40,6 @@ DfxThread::DfxThread(const pid_t pid, const pid_t tid, const ucontext_t &context
 {
     DfxLogDebug("Enter %s.", __func__);
     threadStatus_ = ThreadStatus::THREAD_STATUS_INVALID;
-
     std::shared_ptr<DfxRegs> reg;
 #if defined(__arm__)
     reg = std::make_shared<DfxRegsArm>(context);
@@ -109,6 +108,11 @@ bool DfxThread::InitThread(const pid_t pid, const pid_t tid)
     return true;
 }
 
+bool DfxThread::IsThreadInititalized()
+{
+    return threadStatus_ == ThreadStatus::THREAD_STATUS_ATTACHED;
+}
+
 DfxThread::~DfxThread()
 {
     threadStatus_ = ThreadStatus::THREAD_STATUS_INVALID;
@@ -171,6 +175,7 @@ void DfxThread::PrintThread(const int32_t fd, bool isSignalDump)
 {
     DfxLogDebug("Enter %s.", __func__);
     if (dfxFrames_.size() == 0) {
+        DfxLogWarn("No frame print for tid %d.", tid_);
         return;
     }
 
@@ -227,6 +232,7 @@ void DfxThread::SkipFramesInSignalHandler()
         if (dfxFrames_[i] == nullptr) {
             continue;
         }
+
         if (regs[REG_PC_NUM] == dfxFrames_[i]->GetFramePc()) {
             DfxLogDebug("%s :: frame i(%d), adjustedLr=0x%x, dfxFrames_[i]->GetFramePc()=0x%x, regs[REG_PC_NUM](0x%x)",
                 __func__, i, adjustedLr, dfxFrames_[i]->GetFramePc(), regs[REG_PC_NUM]);
@@ -242,6 +248,7 @@ void DfxThread::SkipFramesInSignalHandler()
             skippedFrames.push_back(frame);
             index++;
         }
+
         /* when pc is zero the REG_LR_NUM for filtering */
         if (skipPos) {
             dfxFrames_[i]->SetFrameIndex(index);
@@ -250,8 +257,13 @@ void DfxThread::SkipFramesInSignalHandler()
         }
     }
 
-    dfxFrames_.clear();
-    dfxFrames_ = skippedFrames;
+    if (skipPos) {
+        dfxFrames_.clear();
+        dfxFrames_ = skippedFrames;
+    } else {
+        DfxLogWarn("signal frame is not skipped.");
+    }
+
     DfxLogDebug("Exit %s :: index(%d).", __func__, index);
 }
 
@@ -386,7 +398,7 @@ void DfxThread::PrintThreadBacktraceByConfig(const int32_t fd)
         WriteLog(fd, "Tid:%d, Name:%s\n", tid_, threadName_.c_str());
         PrintFrames(dfxFrames_, fd);
     } else {
-        DfxLogInfo("hidden backtrace");
+        DfxLogDebug("hidden backtrace");
     }
 }
 
@@ -397,7 +409,7 @@ void DfxThread::PrintThreadRegisterByConfig(const int32_t fd)
             regs_->PrintRegs(fd);
         }
     } else {
-        DfxLogInfo("hidden register");
+        DfxLogDebug("hidden register");
     }
 }
 
@@ -407,7 +419,7 @@ void DfxThread::PrintThreadFaultStackByConfig(const int32_t fd)
         WriteLog(fd, "FaultStack:\n");
         PrintFaultStacks(dfxFrames_, fd);
     } else {
-        DfxLogInfo("hidden faultStack");
+        DfxLogDebug("hidden faultStack");
     }
 }
 
