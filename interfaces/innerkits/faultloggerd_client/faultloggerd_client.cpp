@@ -394,7 +394,8 @@ void RequestPrintTHilog(const char *msg, int length)
             DfxLogError("memset_s failed, err = %d.", (int)ret);
             break;
         }
-        if (read(sockfd, ControlBuffer, sizeof(ControlBuffer) - 1) != static_cast<long>(strlen(FAULTLOGGER_DAEMON_RESP))) {
+        if (read(sockfd, ControlBuffer, sizeof(ControlBuffer) - 1) !=
+            static_cast<long>(strlen(FAULTLOGGER_DAEMON_RESP))) {
             break;
         }
         if (write(sockfd, msg, strlen(msg)) != static_cast<long>(strlen(msg))) {
