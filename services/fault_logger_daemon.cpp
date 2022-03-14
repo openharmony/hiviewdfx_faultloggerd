@@ -367,7 +367,7 @@ void FaultLoggerDaemon::HandleSdkDumpReqeust(int32_t connectionFd, FaultLoggerdR
 
 void FaultLoggerDaemon::HandleRequest(int32_t connectionFd)
 {
-    int nread = -1;
+    ssize_t nread = -1;
     char buf[REQUEST_BUF_SIZE] = {0};
 
     do {
@@ -378,7 +378,7 @@ void FaultLoggerDaemon::HandleRequest(int32_t connectionFd)
         } else if (nread == 0) {
             DfxLogError("%s :: HandleRequest :: Read null from request socket", LOG_LABLE.c_str());
             break;
-        } else if (nread != sizeof(FaultLoggerdRequest)) {
+        } else if (nread != static_cast<long>(sizeof(FaultLoggerdRequest))) {
             DfxLogError("%s :: Unmatched request length", LOG_LABLE.c_str());
             break;
         }
@@ -488,7 +488,7 @@ void FaultLoggerDaemon::GcZStatProcess(void)
 void FaultLoggerDaemon::LoopAcceptRequestAndFork(int socketFd)
 {
     struct sockaddr_un clientAddr;
-    socklen_t clientAddrSize = sizeof(clientAddr);
+    socklen_t clientAddrSize = static_cast<unsigned int>(sizeof(clientAddr));
     int connectionFd = -1;
 
     auto tGcZStatProcess = std::thread(&FaultLoggerDaemon::GcZStatProcess, this);

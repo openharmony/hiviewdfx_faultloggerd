@@ -211,7 +211,7 @@ void DfxLogToSocket(const char *msg)
         return;
     }
 
-    int length = strlen(msg);
+    size_t length = strlen(msg);
     if (length >= LOG_BUF_LEN) {
         return;
     }

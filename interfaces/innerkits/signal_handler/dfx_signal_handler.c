@@ -224,7 +224,7 @@ static int DFX_ExecDump(void *arg)
         pthread_mutex_unlock(&g_dumpMutex);
         return CREATE_PIPE_FAIL;
     }
-    ssize_t writeLen = sizeof(struct ProcessDumpRequest);
+    ssize_t writeLen = (long)(sizeof(struct ProcessDumpRequest));
     if (fcntl(g_pipefd[1], F_SETPIPE_SZ, writeLen) < writeLen) {
         HILOG_BASE_ERROR(LOG_CORE, "Failed to set pipe buffer size.");
         pthread_mutex_unlock(&g_dumpMutex);

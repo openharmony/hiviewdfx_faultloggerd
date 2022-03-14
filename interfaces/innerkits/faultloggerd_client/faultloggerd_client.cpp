@@ -275,7 +275,7 @@ static bool SendRequestToServer(const FaultLoggerdRequest &request)
             break;
         }
 
-        if (write(sockfd, &request, sizeof(struct FaultLoggerdRequest)) != sizeof(request)) {
+        if (write(sockfd, &request, sizeof(struct FaultLoggerdRequest)) != static_cast<long>(sizeof(request))) {
             break;
         }
 
@@ -385,7 +385,7 @@ void RequestPrintTHilog(const char *msg, int length)
             break;
         }
 
-        if (write(sockfd, &request, sizeof(struct FaultLoggerdRequest)) != sizeof(request)) {
+        if (write(sockfd, &request, sizeof(struct FaultLoggerdRequest)) != static_cast<long>(sizeof(request))) {
             break;
         }
 
@@ -394,11 +394,10 @@ void RequestPrintTHilog(const char *msg, int length)
             DfxLogError("memset_s failed, err = %d.", (int)ret);
             break;
         }
-        if (read(sockfd, ControlBuffer, sizeof(ControlBuffer) - 1) != strlen(FAULTLOGGER_DAEMON_RESP)) {
+        if (read(sockfd, ControlBuffer, sizeof(ControlBuffer) - 1) != static_cast<long>(strlen(FAULTLOGGER_DAEMON_RESP))) {
             break;
         }
-
-        if (write(sockfd, msg, strlen(msg)) != strlen(msg)) {
+        if (write(sockfd, msg, strlen(msg)) != static_cast<long>(strlen(msg))) {
             break;
         }
     } while (false);
