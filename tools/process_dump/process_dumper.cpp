@@ -45,7 +45,7 @@ void ProcessDumper::DumpProcessWithSignalContext(std::shared_ptr<DfxProcess> &pr
 {
     DfxLogDebug("Enter %s.", __func__);
     ssize_t readCount = read(STDIN_FILENO, request.get(), sizeof(ProcessDumpRequest));
-    if (readCount != sizeof(ProcessDumpRequest)) {
+    if (readCount != static_cast<long>(sizeof(ProcessDumpRequest))) {
         DfxLogError("Fail to read DumpRequest(%d).", errno);
         return;
     }
