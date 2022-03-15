@@ -31,7 +31,9 @@
 #endif
 
 typedef int (*KillFunc)(pid_t pid, int sig);
+typedef int (*SigactionFunc)(int sig, const struct sigaction *restrict act, struct sigaction *restrict oact);
 static KillFunc hookedKill = NULL;
+static SigactionFunc hookedSigaction = NULL;
 int kill(pid_t pid, int sig)
 {
     HILOG_BASE_WARN(LOG_CORE, "%{public}d send signal(%{public}d) to %{public}d", getpid(), sig, pid);
@@ -40,6 +42,16 @@ int kill(pid_t pid, int sig)
         return -1;
     }
     return hookedKill(pid, sig);
+}
+
+int sigaction(int sig, const struct sigaction *restrict act, struct sigaction *restrict oact)
+{
+    HILOG_BASE_WARN(LOG_CORE, "%{public}d call sigaction and signo is %{public}d", getpid(), sig);
+    if (hookedSigaction == NULL) {
+        HILOG_BASE_ERROR(LOG_CORE, "hooked sigaction is NULL?");
+        return -1;
+    }
+    return hookedSigaction(sig, act, oact);
 }
 
 static void StartHookKillFunction(void)
@@ -57,7 +69,23 @@ static void StartHookKillFunction(void)
     HILOG_BASE_ERROR(LOG_CORE, "Failed to find hooked kill use RTLD_DEFAULT");
 }
 
+static void StartHookSigactionFunction(void)
+{
+    hookedSigaction = (SigactionFunc)dlsym(RTLD_NEXT, "sigaction");
+    if (hookedSigaction != NULL) {
+        return;
+    }
+    HILOG_BASE_ERROR(LOG_CORE, "Failed to find hooked sigaction use RTLD_NEXT");
+
+    hookedSigaction = (SigactionFunc)dlsym(RTLD_DEFAULT, "sigaction");
+    if (hookedSigaction != NULL) {
+        return;
+    }
+    HILOG_BASE_ERROR(LOG_CORE, "Failed to find hooked sigaction use RTLD_DEFAULT");
+}
+
 void StartHookFunc(void)
 {
     StartHookKillFunction();
+    StartHookSigactionFunction();
 }
