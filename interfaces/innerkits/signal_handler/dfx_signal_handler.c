@@ -94,32 +94,6 @@ enum DumpPreparationStage {
     EXEC_FAIL,
 };
 
-static void PrintWaitStatus(const char *msg, int status)
-{
-    if (msg != NULL) {
-        DfxLogDebug("%s", msg);
-    }
-
-    if (WIFEXITED(status)) {
-        DfxLogDebug("child exited, status=%d", WEXITSTATUS(status));
-    } else if (WIFSIGNALED(status)) {
-        DfxLogDebug("child killed by signal %d (%s)", WTERMSIG(status), strsignal(WTERMSIG(status)));
-#ifdef WCOREDUMP /* Not in SUSv3, may be absent on some systems */
-        if (WCOREDUMP(status)) {
-            DfxLogDebug(" (core dumped)");
-        }
-#endif
-    } else if (WIFSTOPPED(status)) {
-        DfxLogDebug("child stopped by signal %d (%s)", WSTOPSIG(status), strsignal(WSTOPSIG(status)));
-#ifdef WIFCONTINUED
-    } else if (WIFCONTINUED(status)) {
-        DfxLogDebug("child continued.");
-#endif
-    } else { /* Should never happen */
-        DfxLogDebug("what happened to this child? (status=%x)\n", (unsigned int) status);
-    }
-}
-
 static int32_t InheritCapabilities()
 {
     struct __user_cap_header_struct capHeader;
@@ -224,7 +198,7 @@ static int DFX_ExecDump(void *arg)
         pthread_mutex_unlock(&g_dumpMutex);
         return CREATE_PIPE_FAIL;
     }
-    ssize_t writeLen = sizeof(struct ProcessDumpRequest);
+    ssize_t writeLen = (long)(sizeof(struct ProcessDumpRequest));
     if (fcntl(g_pipefd[1], F_SETPIPE_SZ, writeLen) < writeLen) {
         HILOG_BASE_ERROR(LOG_CORE, "Failed to set pipe buffer size.");
         pthread_mutex_unlock(&g_dumpMutex);
@@ -410,9 +384,9 @@ void GetProcessName(void)
 
 static void DFX_SignalHandler(int sig, siginfo_t *si, void *context)
 {
+    HILOG_BASE_INFO(LOG_CORE, "DFX_SignalHandler :: sig(%{public}d), pid(%{public}d), tid(%{public}d).",
+        sig, getpid(), gettid());
     pthread_mutex_lock(&g_signalHandlerMutex);
-    HILOG_BASE_INFO(LOG_CORE, "faultlog_native_crash");
-    HILOG_BASE_INFO(LOG_CORE, "faultlog_crash_hold_process");
 
     (void)memset_s(&g_request, sizeof(g_request), 0, sizeof(g_request));
     g_request.type = sig;
@@ -421,6 +395,8 @@ static void DFX_SignalHandler(int sig, siginfo_t *si, void *context)
     g_request.uid = (int32_t)getuid();
     g_request.reserved = 0;
     g_request.timeStamp = (uint64_t)time(NULL);
+    HILOG_BASE_INFO(LOG_CORE, "DFX_SignalHandler :: sig(%{public}d), pid(%{public}d), tid(%{public}d).",
+        sig, g_request.pid, g_request.tid);
 
     GetThreadName();
     GetProcessName();
@@ -436,8 +412,6 @@ static void DFX_SignalHandler(int sig, siginfo_t *si, void *context)
         pthread_mutex_unlock(&g_signalHandlerMutex);
         return;
     }
-    HILOG_BASE_INFO(LOG_CORE, "DFX_SignalHandler :: sig(%{public}d), pid(%{public}d), tid(%{public}d).",
-        sig, g_request.pid, g_request.tid);
 #ifdef DFX_LOCAL_UNWIND
     DFX_UnwindLocal(sig, si, context);
 #else
@@ -467,12 +441,10 @@ static void DFX_SignalHandler(int sig, siginfo_t *si, void *context)
     // wait the child process terminated
     if (TEMP_FAILURE_RETRY(waitpid(childPid, &status, __WALL)) == -1) {
         HILOG_BASE_ERROR(LOG_CORE, "Failed to wait child process terminated, errno(%{public}d)", errno);
-        HILOG_BASE_INFO(LOG_CORE, "faultlog_crash_hold_process");
         goto out;
     }
 
-    PrintWaitStatus("child process terminated.", status);
-    HILOG_BASE_INFO(LOG_CORE, "faultlog_crash_hold_process");
+    HILOG_BASE_INFO(LOG_CORE, "child process(%{public}d) terminated with status(%{public}d)", childPid, status);
 out:
     ResetSignalHandlerIfNeed(sig);
     prctl(PR_SET_DUMPABLE, prevDumpableStatus);
