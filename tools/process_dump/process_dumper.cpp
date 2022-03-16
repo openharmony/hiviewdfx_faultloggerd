@@ -65,22 +65,26 @@ void ProcessDumper::DumpProcessWithSignalContext(std::shared_ptr<DfxProcess> &pr
     std::shared_ptr<DfxThread> keyThread = std::make_shared<DfxThread>(request->GetPid(),
                                                                        request->GetTid(),
                                                                        request->GetContext());
-    if (!keyThread) {
+    if (!keyThread || !keyThread->IsThreadInititalized()) {
         DfxLogError("Fail to init key thread.");
         return;
     }
+
     keyThread->SetIsCrashThread(true);
     if ((keyThread->GetThreadName()).empty()) {
         keyThread->SetThreadName(storeThreadName);
     }
+
     process = DfxProcess::CreateProcessWithKeyThread(request->GetPid(), keyThread);
     if (!process) {
         DfxLogError("Fail to init process with key thread.");
         return;
     }
+
     if ((process->GetProcessName()).empty()) {
         process->UpdateProcessName(storeProcessName);
     }
+
     if (request->GetSiginfo().si_signo != SIGDUMP) {
         process->SetIsSignalDump(false);
     } else {
@@ -157,7 +161,7 @@ void ProcessDumper::Dump(bool isSignalHdlr, ProcessDumpType type, int32_t pid, i
         FaultLoggerType type = FaultLoggerType::CPP_STACKTRACE;
         bool isLogPersist = DfxConfig::GetInstance().GetLogPersist();
         if (isLogPersist) {
-            InitDebugLog((int)type, request->GetPid(), request->GetTid(), request->GetUid(),isLogPersist);
+            InitDebugLog((int)type, request->GetPid(), request->GetTid(), request->GetUid(), isLogPersist);
         } else {
             int devNull = TEMP_FAILURE_RETRY(open("/dev/null", O_RDWR));
             if (devNull < 0) {

@@ -51,6 +51,7 @@ public:
     void CreateFaultStack(std::shared_ptr<DfxElfMaps> maps);
     void Detach();
     std::string ToString() const;
+    bool IsThreadInititalized();
 
 private:
     enum class ThreadStatus {
