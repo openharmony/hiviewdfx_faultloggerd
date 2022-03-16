@@ -36,11 +36,10 @@ public:
         std::vector<std::shared_ptr<DfxDumpCatcherFrame>>& frameV);
 
 private:
-    bool DoDumpLocalPidTid(int pid, int tid);
-    bool DoDumpLocalPid(int pid);
-    bool DoDumpLocal(int pid, int tid, std::string& msg);
-    bool DoDumpRemote(int pid, int tid, std::string& msg);
-    void FreeStackInfo();
+    bool DoDumpLocalTid(int tid);
+    bool DoDumpLocalPid(int pid, std::string& msg);
+    bool DoDumpLocalLocked(int pid, int tid, std::string& msg);
+    bool DoDumpRemoteLocked(int pid, int tid, std::string& msg);
     std::string WaitForLogGenerate(const std::string& path, const std::string& prefix);
     std::string TryToGetGeneratedLog(const std::string& path, const std::string& prefix);
 };
