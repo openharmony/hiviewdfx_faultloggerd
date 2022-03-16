@@ -1111,7 +1111,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0015, TestSize.Level2)
     bool ret = dumplog.DumpCatchMultiPid(multiPid, msg);
     GTEST_LOG_(INFO) << ret;
     GTEST_LOG_(INFO) << msg;
-    EXPECT_EQ(ret, false) << "FaultLoggerdSystemTest0015 Failed";
+    EXPECT_EQ(ret, true) << "FaultLoggerdSystemTest0015 Failed";
     FaultLoggerdSystemTest::KillCrasherLoopForSomeCase(3);
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest0015: end.";
 }
@@ -1185,7 +1185,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0017, TestSize.Level2)
     bool ret = dumplog.DumpCatchMultiPid(multiPid, msg);
     GTEST_LOG_(INFO) << ret;
     GTEST_LOG_(INFO) << msg;
-    EXPECT_EQ(ret, false) << "FaultLoggerdSystemTest0017 Failed";
+    EXPECT_EQ(ret, true) << "FaultLoggerdSystemTest0017 Failed";
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest0017: end.";
 }
 
@@ -1232,7 +1232,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0019, TestSize.Level2)
     bool ret = dumplog.DumpCatchMultiPid(multiPid, msg);
     GTEST_LOG_(INFO) << ret;
     GTEST_LOG_(INFO) << msg;
-    EXPECT_EQ(ret, false) << "FaultLoggerdSystemTest0019 Failed";
+    EXPECT_EQ(ret, true) << "FaultLoggerdSystemTest0019 Failed";
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest0019: end.";
 }
 

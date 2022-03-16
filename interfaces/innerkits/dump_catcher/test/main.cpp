@@ -99,14 +99,14 @@ static bool CatchStackFrame(int32_t pid, int32_t tid)
     printf("DumpCatchFrame :: frame:\n");
     for (int i = 0; i < frameV.size(); i++) {
         std::shared_ptr<OHOS::HiviewDFX::DfxDumpCatcherFrame> frame = frameV[i];
-        if (frame->GetFrameFuncName() == "") {
+        if (std::string(frame->funcName_) == "") {
             printf("#%02zu pc %016" PRIx64 "(%016" PRIx64 ") %s\n",
                 i, frame->GetFrameRelativePc(), frame->GetFramePc(), (frame->GetFrameMap() == nullptr) ? \
              "Unknown" : frame->GetFrameMap()->GetMapPath().c_str());
         } else {
             printf("#%02zu pc %016" PRIx64 "(%016" PRIx64 ") %s(%s+%" PRIu64 ")\n", i, \
                 frame->GetFrameRelativePc(), frame->GetFramePc(), (frame->GetFrameMap() == nullptr) ?
-             "Unknown" : frame->GetFrameMap()->GetMapPath().c_str(), frame->GetFrameFuncName().c_str(), \
+             "Unknown" : frame->GetFrameMap()->GetMapPath().c_str(), std::string(frame->funcName_).c_str(), \
                 frame->GetFrameFuncOffset());
         }
     }

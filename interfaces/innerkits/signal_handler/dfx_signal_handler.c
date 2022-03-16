@@ -84,6 +84,8 @@ static pthread_mutex_t g_signalHandlerMutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutex_t g_dumpMutex = PTHREAD_MUTEX_INITIALIZER;
 static int g_pipefd[2] = {-1, -1};
 static BOOL g_hasInit = FALSE;
+static int g_lastHandledTid[1024] = {0};
+static int g_lastHandledTidIndex = 0;
 static const int ALARM_TIME_S = 10;
 
 enum DumpPreparationStage {
@@ -332,14 +334,14 @@ void ReadStringFromFile(char* path, char* pDestStore)
     memset_s(name, sizeof(name), '\0', sizeof(name));
     memset_s(nameFilter, sizeof(nameFilter), '\0', sizeof(nameFilter));
 
-    FILE *fp = NULL;
-    fp = fopen(path, "r");
-    if (fp == NULL) {
-        return ;
+    int fd = -1;
+    fd = open(path, O_RDONLY);
+    if (fd == -1) {
+        return;
     }
-    if (fgets(name, NAME_LEN -1, fp) == NULL) {
-        fclose(fp);
-        return ;
+    if (read(fd, name, NAME_LEN -1) == -1) {
+        close(fd);
+        return;
     }
     char* p = name;
     int i = 0;
@@ -353,8 +355,8 @@ void ReadStringFromFile(char* path, char* pDestStore)
     if (memcpy_s(pDestStore, NAME_LEN, nameFilter, strlen(nameFilter) + 1) != 0) {
         HILOG_BASE_ERROR(LOG_CORE, "Failed to copy name.");
     }
-    int ret = fclose(fp);
-    if (ret == EOF) {
+    int ret = close(fd);
+    if (ret == -1) {
         HILOG_BASE_ERROR(LOG_CORE, "close failed!");
     }
 }
@@ -382,10 +384,31 @@ void GetProcessName(void)
     ReadStringFromFile(path, g_request.processName);
 }
 
+static int CheckLastHandledTid(int sig, siginfo_t *si)
+{
+    for (int i = 0; i < g_lastHandledTidIndex; i++) {
+        if (g_lastHandledTid[i] == gettid()) {
+            ResetSignalHandlerIfNeed(sig);
+            HILOG_BASE_INFO(LOG_CORE, "Just resend sig(%{public}d), pid(%{public}d), tid(%{public}d) to sys.", \
+                sig, getpid(), gettid());
+            if (syscall(SYS_rt_tgsigqueueinfo, getpid(), gettid(), si->si_signo, si) != 0) {
+                HILOG_BASE_ERROR(LOG_CORE, "Failed to resend signal.");
+            }
+            return TRUE;
+        }
+    }
+    return FALSE;
+}
+
 static void DFX_SignalHandler(int sig, siginfo_t *si, void *context)
 {
     HILOG_BASE_INFO(LOG_CORE, "DFX_SignalHandler :: sig(%{public}d), pid(%{public}d), tid(%{public}d).",
         sig, getpid(), gettid());
+    if (sig != SIGDUMP) {
+        if (CheckLastHandledTid(sig, si) == TRUE) {
+            return;
+        }
+    }
     pthread_mutex_lock(&g_signalHandlerMutex);
 
     (void)memset_s(&g_request, sizeof(g_request), 0, sizeof(g_request));
@@ -400,6 +423,12 @@ static void DFX_SignalHandler(int sig, siginfo_t *si, void *context)
 
     GetThreadName();
     GetProcessName();
+
+    if (sig != SIGDUMP) {
+        g_lastHandledTid[g_lastHandledTidIndex] = g_request.tid;
+        g_lastHandledTidIndex = g_lastHandledTidIndex + 1;
+    }
+
     if (memcpy_s(&(g_request.siginfo), sizeof(g_request.siginfo),
         si, sizeof(siginfo_t)) != 0) {
         HILOG_BASE_ERROR(LOG_CORE, "Failed to copy siginfo.");

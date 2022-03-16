@@ -22,6 +22,8 @@
 #include <cstring>
 #include <string>
 #include <thread>
+#include <sstream>
+
 #include <unistd.h>
 #include <ucontext.h>
 
@@ -50,20 +52,26 @@ class DfxDumpCatcherLocalDumper {
 public:
     DfxDumpCatcherLocalDumper();
     ~DfxDumpCatcherLocalDumper();
+    static bool ExecLocalDump(int pid, int tid, size_t skipFramNum);
     static void DFX_InstallLocalDumper(int sig);
-    static void DFX_UninstallLocalDumper(int sig);
-    static bool ExecLocalDump(const int pid, const int tid, const int skipFramNum);
-    static void WriteDumpInfo(size_t index, std::shared_ptr<DfxDumpCatcherFrame> frame);
-    static void WritePidTidInfo(std::string msg);
-
-    static char* g_StackInfo_;
-    static long long g_CurrentPosition;
-    static std::vector<std::shared_ptr<DfxDumpCatcherFrame>> g_FrameV_;
-    static std::mutex g_localDumperMutx_;
-    static std::condition_variable g_localDumperCV_;
-    static std::shared_ptr<DfxElfMaps> g_localDumperMaps_;
-    static void DFX_LocalDumperUnwindLocal(int sig, siginfo_t *si, void *context);
     static void DFX_LocalDumper(int sig, siginfo_t *si, void *context);
+    static void DFX_LocalDumperUnwindLocal(int sig, siginfo_t *si, void *context);
+    static void DFX_UninstallLocalDumper(int sig);
+    static void WriteFrameInfo(std::ostringstream& ss, size_t index, DfxDumpCatcherFrame& frame);
+    static void ResolveFrameInfo(DfxDumpCatcherFrame& frame);
+    static bool SendLocalDumpRequest(int32_t tid);
+    static std::string CollectUnwindResult();
+    static void CollectUnwindFrames(std::vector<std::shared_ptr<DfxDumpCatcherFrame>>& frames);
+
+    static bool InitLocalDumper();
+    static void DestroyLocalDumper();
+
+    static bool g_isLocalDumperInited;
+    static int32_t g_curIndex;
+    static std::condition_variable g_localDumperCV;
+    static std::mutex g_localDumperMutx;
+    static std::shared_ptr<DfxElfMaps> g_localDumperMaps;
+    static std::vector<DfxDumpCatcherFrame> g_FrameV;
 };
 }
 }

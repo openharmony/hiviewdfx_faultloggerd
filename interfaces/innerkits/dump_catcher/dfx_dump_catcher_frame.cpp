@@ -106,16 +106,6 @@ uint64_t DfxDumpCatcherFrame::GetFrameRelativePc() const
     return relativePc_;
 }
 
-void DfxDumpCatcherFrame::SetFrameFuncName(const std::string &funcName)
-{
-    funcName_ = funcName;
-}
-
-std::string DfxDumpCatcherFrame::GetFrameFuncName() const
-{
-    return funcName_;
-}
-
 void DfxDumpCatcherFrame::SetFrameMap(const std::shared_ptr<DfxElfMap> map)
 {
     map_ = map;
@@ -195,7 +185,7 @@ std::string DfxDumpCatcherFrame::ToString() const
         index_,
         relativePc_,
         (map_ == nullptr) ? "Unknown" : map_->GetMapPath().c_str(),
-        funcName_.c_str(),
+        funcName_,
         funcOffset_) <= 0) {
         return "Unknown";
     }
