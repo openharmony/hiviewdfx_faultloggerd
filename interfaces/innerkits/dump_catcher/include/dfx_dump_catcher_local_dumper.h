@@ -22,6 +22,8 @@
 #include <cstring>
 #include <string>
 #include <thread>
+#include <sstream>
+
 #include <unistd.h>
 #include <ucontext.h>
 
