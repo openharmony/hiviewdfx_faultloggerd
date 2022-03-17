@@ -42,20 +42,16 @@ public:
     uint64_t GetFrameSp() const;
     void SetFrameRelativePc(uint64_t relativePc);
     uint64_t GetFrameRelativePc() const;
-    void SetFrameFuncName(const std::string &funcName);
-    std::string GetFrameFuncName() const;
     void SetFrameMap(const std::shared_ptr<DfxElfMap> map);
     std::shared_ptr<DfxElfMap> GetFrameMap() const;
     std::string ToString() const;
-
-private:
     size_t index_ = 0;
     uint64_t funcOffset_ = 0;
     uint64_t pc_ = 0;
     uint64_t lr_ = 0;
     uint64_t sp_ = 0;
     uint64_t relativePc_ = 0;
-    std::string funcName_;
+    char funcName_[1024] = { 0 }; // 1024 : max func name
     std::shared_ptr<DfxElfMap> map_ = nullptr; // managed in DfxProcess class
 };
 } // namespace HiviewDFX
