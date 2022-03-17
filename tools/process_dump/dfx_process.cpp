@@ -199,6 +199,11 @@ void DfxProcess::PrintProcess(int32_t fd, bool printMapFlag)
         if (index == 0 && printMapFlag == true) {
             PrintProcessMapsByConfig(fd);
         }
+
+        if (GetIsSignalHdlr() && !GetIsSignalDump()) {
+            DfxLogInfo("No need print other thread in crash scenario");
+            break;
+        }
         index++;
     }
     DfxLogDebug("Exit %s.", __func__);

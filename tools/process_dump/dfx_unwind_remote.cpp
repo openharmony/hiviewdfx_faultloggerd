@@ -48,7 +48,17 @@ bool DfxUnwindRemote::UnwindProcess(std::shared_ptr<DfxProcess> process)
         return false;
     }
 
-    for (auto thread : process->GetThreads()) {
+    auto threads = process->GetThreads();
+    if (threads.empty()) {
+        return false;
+    }
+
+    // only need to unwind crash thread in crash scenario
+    if (process->GetIsSignalHdlr() && !process->GetIsSignalDump()) {
+        return UnwindThread(process, threads[0]);
+    }
+
+    for (auto thread : threads) {
         if (!UnwindThread(process, thread)) {
             DfxLogWarn("Fail to unwind thread.");
         }
@@ -255,9 +265,8 @@ bool DfxUnwindRemote::UnwindThread(std::shared_ptr<DfxProcess> process, std::sha
     thread->SetThreadUnwStopReason(unwRet);
     _UPT_destroy(context);
     unw_destroy_addr_space(as);
-    bool isSignal = process->GetIsSignalHdlr();
-    if (((*(process->GetThreads().begin()))->GetThreadId() == tid) && isSignal) {
-        (*(process->GetThreads().begin()))->SkipFramesInSignalHandler();
+    if (process->GetIsSignalHdlr() && thread->GetIsCrashThread()) {
+        thread->SkipFramesInSignalHandler();
         if (process->GetIsSignalDump() == false) {
             std::shared_ptr<DfxElfMaps> maps = process->GetMaps();
             thread->CreateFaultStack(maps);
