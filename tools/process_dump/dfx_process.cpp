@@ -200,7 +200,8 @@ void DfxProcess::PrintProcess(int32_t fd, bool printMapFlag)
             PrintProcessMapsByConfig(fd);
         }
 
-        if (GetIsSignalHdlr() && !GetIsSignalDump()) {
+        if (GetIsSignalHdlr() && !GetIsSignalDump() && \
+            !DfxConfig::GetInstance().GetDumpOtherThreads()) {
             DfxLogInfo("No need print other thread in crash scenario");
             break;
         }
@@ -308,7 +309,9 @@ void DfxProcess::PrintProcessMapsByConfig(int32_t fd)
 void DfxProcess::PrintThreadsHeaderByConfig(int32_t fd)
 {
     if (DfxConfig::GetInstance().GetDisplayBacktrace()) {
-        WriteLog(fd, "Other thread info:\n");
+        if (!isSignalDump_) {
+            WriteLog(fd, "Other thread info:\n");
+        }
     } else {
         DfxLogDebug("hidden thread info.");
     }

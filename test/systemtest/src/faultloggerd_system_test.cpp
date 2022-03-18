@@ -446,7 +446,7 @@ int FaultLoggerdSystemTest::CheckCountNumMultiThread(std::string filePath, std::
     string log[] = {
         "Pid:", "Uid", ":crasher", ErrorCMD, "Tid:", "#00",
         "Registers:", REGISTERS, "FaultStack:", "Maps:",
-        "/crasher", "Other", "Tid:", "Tid:"
+        "/crasher"
     };
     string::size_type idx;
     int count = 0;
@@ -877,7 +877,7 @@ int FaultLoggerdSystemTest::CheckCountNumKill11(std::string filePath, std::strin
     int j = 0;
     string log[] = {
         "Pid:", "Uid", ":foundation", "SIGSEGV", "Tid:", "#00", "Registers:", REGISTERS,
-        "FaultStack:","Maps:", "Other"
+        "FaultStack:","Maps:"
     };
     string::size_type idx;
     int count = 0;
@@ -1023,15 +1023,14 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0012, TestSize.Level2)
     bool ret = dumplog.DumpCatchMultiPid(multiPid, msg);
     GTEST_LOG_(INFO) << ret;
     GTEST_LOG_(INFO) << msg;
-    string log[] = {"Tid:", "Name:", "Other", "Tid:", "Name:crasher_c", "Other"};
+    string log[] = {"Tid:", "Name:", "Tid:", "Name:crasher_c"};
     log[0] = log[0] + std::to_string(applyPid1);
     log[1] = log[1] + apply;
-    log[3] = log[3] + std::to_string(FaultLoggerdSystemTest::loopAppPid);
-    GTEST_LOG_(INFO) << "dump log : \n" << msg;
+    log[2] = log[2] + std::to_string(FaultLoggerdSystemTest::loopAppPid);
     string::size_type idx;
     int j = 0;
     int count = 0;
-    for (int i = 0; i < 6; i++) {
+    for (int i = 0; i < 4; i++) {
         idx = msg.find(log[j]);
         GTEST_LOG_(INFO) << log[j];
         if (idx != string::npos) {
@@ -1111,7 +1110,22 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0015, TestSize.Level2)
     bool ret = dumplog.DumpCatchMultiPid(multiPid, msg);
     GTEST_LOG_(INFO) << ret;
     GTEST_LOG_(INFO) << msg;
-    EXPECT_EQ(ret, true) << "FaultLoggerdSystemTest0015 Failed";
+    string log[] = { "Tid:", "Name:", "Failed" };
+    log[0] = log[0] + std::to_string(applyPid1);
+    log[1] = log[1] + apply;
+    string::size_type idx;
+    int j = 0;
+    int count = 0;
+    for (int i = 0; i < 3; i++) {
+        idx = msg.find(log[j]);
+        GTEST_LOG_(INFO) << log[j];
+        if (idx != string::npos) {
+            count++;
+        }
+        j++;
+    }
+    int expectNum = sizeof(log)/sizeof(log[0]);
+    EXPECT_EQ(count, expectNum) << "FaultLoggerdSystemTest0015 Failed";
     FaultLoggerdSystemTest::KillCrasherLoopForSomeCase(3);
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest0015: end.";
 }
@@ -1141,18 +1155,16 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0016, TestSize.Level2)
     bool ret = dumplog.DumpCatchMultiPid(multiPid, msg);
     GTEST_LOG_(INFO) << ret;
     GTEST_LOG_(INFO) << msg;
-    string log[] = { "Tid:", "Name:", "Other", "Tid:", "Name:crasher_c", "Other",
-    "Tid:", "Name:", "Other"};
+    string log[] = { "Tid:", "Name:", "Tid:", "Name:crasher_c", "Tid:", "Name:" };
     log[0] = log[0] + std::to_string(applyPid1);
     log[1] = log[1] + apply1;
-    log[3] = log[3] + std::to_string(FaultLoggerdSystemTest::loopAppPid);
-    log[6] = log[6] + std::to_string(applyPid3);
-    log[7] = log[7] + apply3;
-    GTEST_LOG_(INFO) << "dump log : \n" << msg;
+    log[2] = log[2] + std::to_string(FaultLoggerdSystemTest::loopAppPid);
+    log[4] = log[4] + std::to_string(applyPid3);
+    log[5] = log[5] + apply3;
     string::size_type idx;
     int j = 0;
     int count = 0;
-    for (int i = 0; i < 9; i++) {
+    for (int i = 0; i < 6; i++) {
         idx = msg.find(log[j]);
         GTEST_LOG_(INFO) << log[j];
         if (idx != string::npos) {
@@ -1185,7 +1197,22 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0017, TestSize.Level2)
     bool ret = dumplog.DumpCatchMultiPid(multiPid, msg);
     GTEST_LOG_(INFO) << ret;
     GTEST_LOG_(INFO) << msg;
-    EXPECT_EQ(ret, true) << "FaultLoggerdSystemTest0017 Failed";
+    string log[] = { "Tid:", "Name:", "Failed"};
+    log[0] = log[0] + std::to_string(applyPid1);
+    log[1] = log[1] + apply;
+    string::size_type idx;
+    int j = 0;
+    int count = 0;
+    for (int i = 0; i < 3; i++) {
+        idx = msg.find(log[j]);
+        GTEST_LOG_(INFO) << log[j];
+        if (idx != string::npos) {
+            count++;
+        }
+        j++;
+    }
+    int expectNum = sizeof(log)/sizeof(log[0]);
+    EXPECT_EQ(count, expectNum) << "FaultLoggerdSystemTest0017 Failed";
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest0017: end.";
 }
 
@@ -1232,7 +1259,22 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0019, TestSize.Level2)
     bool ret = dumplog.DumpCatchMultiPid(multiPid, msg);
     GTEST_LOG_(INFO) << ret;
     GTEST_LOG_(INFO) << msg;
-    EXPECT_EQ(ret, true) << "FaultLoggerdSystemTest0019 Failed";
+    string log[] = { "Tid:", "Name:", "Failed"};
+    log[0] = log[0] + std::to_string(applyPid1);
+    log[1] = log[1] + apply;
+    string::size_type idx;
+    int j = 0;
+    int count = 0;
+    for (int i = 0; i < 3; i++) {
+        idx = msg.find(log[j]);
+        GTEST_LOG_(INFO) << log[j];
+        if (idx != string::npos) {
+            count++;
+        }
+        j++;
+    }
+    int expectNum = sizeof(log)/sizeof(log[0]);
+    EXPECT_EQ(count, expectNum) << "FaultLoggerdSystemTest0019 Failed";
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest0019: end.";
 }
 

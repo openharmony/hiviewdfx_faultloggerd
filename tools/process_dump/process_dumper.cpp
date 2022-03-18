@@ -120,6 +120,7 @@ void ProcessDumper::DumpProcess(std::shared_ptr<DfxProcess> &process,
             return;
         }
 
+        process->SetIsSignalDump(true);
         process->SetIsSignalHdlr(false);
         DfxUnwindRemote::GetInstance().UnwindProcess(process);
     }

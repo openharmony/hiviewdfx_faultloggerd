@@ -23,6 +23,7 @@
 #include <cstring>
 #include <sys/ptrace.h>
 
+#include "dfx_config.h"
 #include "dfx_define.h"
 #include "dfx_log.h"
 #include "dfx_maps.h"
@@ -54,7 +55,8 @@ bool DfxUnwindRemote::UnwindProcess(std::shared_ptr<DfxProcess> process)
     }
 
     // only need to unwind crash thread in crash scenario
-    if (process->GetIsSignalHdlr() && !process->GetIsSignalDump()) {
+    if (process->GetIsSignalHdlr() && !process->GetIsSignalDump() && \
+        !DfxConfig::GetInstance().GetDumpOtherThreads()) {
         return UnwindThread(process, threads[0]);
     }
 
