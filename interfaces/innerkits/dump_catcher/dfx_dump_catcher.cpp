@@ -116,7 +116,6 @@ bool DfxDumpCatcher::DoDumpLocalPid(int pid, std::string& msg)
 
     DIR *dir = opendir(realPath);
     if (dir == nullptr) {
-        (void)closedir(dir);
         DfxLogError("%s :: DoDumpLocalPid :: return false as opendir failed.", DFXDUMPCATCHER_TAG.c_str());
         return false;
     }
@@ -214,7 +213,8 @@ std::string DfxDumpCatcher::WaitForLogGenerate(const std::string& path, const st
         event = (struct inotify_event *)buffer;
         while ((reinterpret_cast<char *>(event) - buffer) < len) {
             if (strlen(event->name) > MAX_TEMP_FILE_LENGTH) {
-                DfxLogError("%s :: DoDumpRemote :: illegal path length(%d)", strlen(event->name));
+                DfxLogError("%s :: DoDumpRemote :: illegal path length(%d)",
+                    DFXDUMPCATCHER_TAG.c_str(), strlen(event->name));
                 auto tmpLen = sizeof(struct inotify_event) + event->len;
                 event = (struct inotify_event *)(offset + tmpLen);
                 offset += tmpLen;

@@ -37,6 +37,8 @@ public:
     unsigned int GetFaultStackHighAddressStep() const;
     void SetLogPersist(bool logPersist);
     bool GetLogPersist() const;
+    void SetDumpOtherThreads(bool dumpOtherThreads);
+    bool GetDumpOtherThreads() const;
     void Trim(std::string &s);
 private:
     DfxConfig() = default;
@@ -46,6 +48,7 @@ private:
     bool displayMaps_ = true;
     bool displayFaultStack_ = true;
     bool logPersist_ = false;
+    bool dumpOtherThreads_ = false;
     unsigned int lowAddressStep_ = 16;
     unsigned int highAddressStep_ = 4;
 };

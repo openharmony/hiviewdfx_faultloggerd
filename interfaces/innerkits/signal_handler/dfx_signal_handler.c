@@ -84,7 +84,8 @@ static pthread_mutex_t g_signalHandlerMutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutex_t g_dumpMutex = PTHREAD_MUTEX_INITIALIZER;
 static int g_pipefd[2] = {-1, -1};
 static BOOL g_hasInit = FALSE;
-static int g_lastHandledTid[1024] = {0};
+static const int MAX_HANDLED_TID_NUMBER = 256;
+static int g_lastHandledTid[MAX_HANDLED_TID_NUMBER] = {0};
 static int g_lastHandledTidIndex = 0;
 static const int ALARM_TIME_S = 10;
 
@@ -386,7 +387,7 @@ void GetProcessName(void)
 
 static int CheckLastHandledTid(int sig, siginfo_t *si)
 {
-    for (int i = 0; i < g_lastHandledTidIndex; i++) {
+    for (int i = 0; i < g_lastHandledTidIndex && i < MAX_HANDLED_TID_NUMBER; i++) {
         if (g_lastHandledTid[i] == gettid()) {
             ResetSignalHandlerIfNeed(sig);
             HILOG_BASE_INFO(LOG_CORE, "Just resend sig(%{public}d), pid(%{public}d), tid(%{public}d) to sys.", \
@@ -424,7 +425,7 @@ static void DFX_SignalHandler(int sig, siginfo_t *si, void *context)
     GetThreadName();
     GetProcessName();
 
-    if (sig != SIGDUMP) {
+    if (sig != SIGDUMP && g_lastHandledTidIndex < MAX_HANDLED_TID_NUMBER) {
         g_lastHandledTid[g_lastHandledTidIndex] = g_request.tid;
         g_lastHandledTidIndex = g_lastHandledTidIndex + 1;
     }
