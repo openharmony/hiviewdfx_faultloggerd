@@ -104,6 +104,16 @@ bool DfxConfig::GetLogPersist() const
     return logPersist_;
 }
 
+void DfxConfig::SetDumpOtherThreads(bool dumpOtherThreads)
+{
+    dumpOtherThreads_ = dumpOtherThreads;
+}
+
+bool DfxConfig::GetDumpOtherThreads() const
+{
+    return dumpOtherThreads_;
+}
+
 void DfxConfig::ParserConfig(std::string key, std::string value)
 {
     unsigned int  lowAddressStep = 0;
@@ -137,6 +147,10 @@ void DfxConfig::ParserConfig(std::string key, std::string value)
         if (key.compare("displayFaultStack.highAddressStep") == 0) {
             highAddressStep = (unsigned int)atoi(value.data());
             DfxConfig::GetInstance().SetFaultStackHighAddressStep(highAddressStep);
+            continue;
+        }
+        if ((key.compare("dumpOtherThreads") == 0) && (value.compare("true") == 0)) {
+            DfxConfig::GetInstance().SetDumpOtherThreads(true);
             continue;
         }
     } while (0);
