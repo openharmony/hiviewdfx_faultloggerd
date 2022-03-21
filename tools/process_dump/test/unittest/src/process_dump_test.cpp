@@ -49,6 +49,7 @@ void ProcessDumpTest::TearDown(void)
 }
 
 namespace {
+constexpr int TEST_PID = 243;
 /**
  * @tc.name: ProcessDumpTest001
  * @tc.desc: test get dump type
@@ -739,8 +740,13 @@ HWTEST_F (ProcessDumpTest, ProcessDumpTest039, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "ProcessDumpTest039: start.";
     std::shared_ptr<DfxProcess> process = std::make_shared<DfxProcess>();
+    pid_t pid = TEST_PID;
+    pid_t tid = TEST_PID;
+    auto thread = std::make_shared<DfxThread>(pid, tid);
+    const std::vector<std::shared_ptr<DfxThread>> threads = { thread };
+    process->SetThreads(threads);
     bool ret = DfxUnwindRemote::GetInstance().UnwindProcess(process);
-    EXPECT_EQ(true, ret == true) << "ProcessDumpTest039 Failed";
+    EXPECT_EQ(true, ret) << "ProcessDumpTest039 Failed";
     GTEST_LOG_(INFO) << "ProcessDumpTest039: end.";
 }
 
