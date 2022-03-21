@@ -206,7 +206,6 @@ bool DfxUnwindRemote::UnwindThread(std::shared_ptr<DfxProcess> process, std::sha
     size_t index = 0;
     int unwRet = 0;
     unw_word_t oldPc = 0;
-    unw_word_t oldLr = 0;
     size_t crashUnwStepPosition = 0;
     bool useLrUnwStep = false;
     bool isSigDump = process->GetIsSignalDump();
@@ -224,24 +223,18 @@ bool DfxUnwindRemote::UnwindThread(std::shared_ptr<DfxProcess> process, std::sha
         if (thread->GetIsCrashThread() && (regStorePc == tmpPc)) {
             crashUnwStepPosition = index + 1;
         }
-        if (!isSigDump && (crashUnwStepPosition != 0) && (index == crashUnwStepPosition) && (tmpPc != oldLr)) {
-            unw_set_reg(&cursor, UNW_REG_IP, oldLr);
-            useLrUnwStep = true;
-        }
 
         if (!DfxUnwindRemoteDoUnwindStep(index, thread, cursor, process)) {
             DfxLogWarn("Break unwstep as DfxUnwindRemoteDoUnwindStep failed.");
             break;
         }
-
-        unw_get_reg(&cursor, REG_LR_NUM, &oldLr);
         index++;
 
         // Add to check pc is valid in maps x segment, if check failed use lr to backtrace instead -S-.
         std::shared_ptr<DfxElfMaps> processMaps = process->GetMaps();
-        if (!isSigDump && !processMaps->CheckPcIsValid((uint64_t)tmpPc) && (!useLrUnwStep)) {
-            unw_get_reg(&cursor, REG_LR_NUM, &tmpPc);
-            unw_set_reg(&cursor, UNW_REG_IP, tmpPc);
+        if (!isSigDump && !processMaps->CheckPcIsValid((uint64_t)tmpPc) &&
+            (crashUnwStepPosition == index)) {
+            unw_set_reg(&cursor, UNW_REG_IP, regStoreLr);
             if (!DfxUnwindRemoteDoUnwindStep(index, thread, cursor, process)) {  // Add lr frame to frame list.
                 DfxLogWarn("Break unwstep as DfxUnwindRemoteDoUnwindStep failed.");
                 break;
@@ -252,7 +245,7 @@ bool DfxUnwindRemote::UnwindThread(std::shared_ptr<DfxProcess> process, std::sha
         unwRet = unw_step(&cursor);
         // if we use context's pc unwind failed, try lr -S-.
         if (unwRet <= 0) {
-            if (!isSigDump && (regStorePc != 0) && (regStorePc == oldPc) && (!useLrUnwStep)) {
+            if (!isSigDump && (crashUnwStepPosition == index)) {
                 unw_set_reg(&cursor, UNW_REG_IP, regStoreLr);
                 if (!DfxUnwindRemoteDoUnwindStep(index, thread, cursor, process)) {  // Add lr frame to frame list.
                     DfxLogWarn("Break unwstep as DfxUnwindRemoteDoUnwindStep failed.");
