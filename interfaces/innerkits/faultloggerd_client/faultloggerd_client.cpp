@@ -404,4 +404,3 @@ void RequestPrintTHilog(const char *msg, int length)
     } while (false);
     close(sockfd);
 }
-

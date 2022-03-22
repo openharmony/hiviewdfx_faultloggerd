@@ -40,6 +40,7 @@ public:
     void SetDumpOtherThreads(bool dumpOtherThreads);
     bool GetDumpOtherThreads() const;
     void Trim(std::string &s);
+
 private:
     DfxConfig() = default;
     ~DfxConfig() = default;

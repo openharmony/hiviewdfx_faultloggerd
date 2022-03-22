@@ -58,6 +58,7 @@ public:
     void SetMaps(std::shared_ptr<DfxElfMaps> maps);
     void SetThreads(const std::vector<std::shared_ptr<DfxThread>> &threads);
     void Detach();
+
 private:
     pid_t pid_ = 0;
     pid_t uid_ = 0;
