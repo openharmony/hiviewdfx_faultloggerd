@@ -488,7 +488,7 @@ void FaultLoggerDaemon::GcZStatProcess(void)
 void FaultLoggerDaemon::LoopAcceptRequestAndFork(int socketFd)
 {
     struct sockaddr_un clientAddr;
-    socklen_t clientAddrSize = static_cast<unsigned int>(sizeof(clientAddr));
+    socklen_t clientAddrSize = static_cast<socklen_t>(sizeof(clientAddr));
     int connectionFd = -1;
 
     auto tGcZStatProcess = std::thread(&FaultLoggerDaemon::GcZStatProcess, this);

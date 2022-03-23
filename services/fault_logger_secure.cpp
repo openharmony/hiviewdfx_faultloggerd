@@ -151,4 +151,3 @@ bool FaultLoggerSecure::CheckCallerUID (const int callingUid, const int32_t pid)
 }
 } // namespace HiviewDfx
 } // namespace OHOS
-

@@ -35,7 +35,6 @@
 #include "dfx_signal.h"
 #include "dfx_thread.h"
 #include "dfx_util.h"
-#include "dfx_log.h"
 #include "dfx_config.h"
 
 namespace OHOS {

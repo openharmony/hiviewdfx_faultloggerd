@@ -962,7 +962,7 @@ void FaultLoggerdSystemTest::dumpCatchThread(int threadID)
 HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0010_pre, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest0010_pre: start.";
-    for (int i=0; i<10; i++) {
+    for (int i = 0; i < 10; i++) {
         mLock.lock();
         std::thread (FaultLoggerdSystemTest::dumpCatchThread, i).join();
         mLock.unlock();
@@ -987,7 +987,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0010_pre, TestSize.Level
 HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0010, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest0010: start.";
-    for (int i=0; i<10; i++) {
+    for (int i = 0; i < 10; i++) {
         system("/data/test_faultloggerd_pre --gtest_filter=FaultLoggerdSystemTest.FaultLoggerdSystemTest0010_pre");
     }
     std::string filePath = "result";
@@ -2579,7 +2579,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest025, TestSize.Level2)
     GTEST_LOG_(INFO) << ret;
     GTEST_LOG_(INFO) << msg;
     string log[] = { "Tid:", "#00", "/data/crasher", "Name:SubTestThread", "usleep"};
-    log[0] = log[0] +std::to_string(FaultLoggerdSystemTest::loopAppPid) + ", Name:crasher";
+    log[0] = log[0] + std::to_string(FaultLoggerdSystemTest::loopAppPid) + ", Name:crasher";
     GTEST_LOG_(INFO) << "dump log : \n" << msg;
     string::size_type idx;
     int j = 0;

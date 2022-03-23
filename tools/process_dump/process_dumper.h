@@ -40,6 +40,7 @@ public:
     bool GetDisplayMaps() const;
     void SetLogPersist(bool logPersist);
     bool GetLogPersist() const;
+
 private:
     void DumpProcessWithSignalContext(std::shared_ptr<DfxProcess> &process,
                                       std::shared_ptr<ProcessDumpRequest> request);
