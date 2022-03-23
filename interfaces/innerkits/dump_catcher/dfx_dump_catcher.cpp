@@ -377,6 +377,7 @@ bool DfxDumpCatcher::DumpCatchFrame(int pid, int tid, std::string& msg, \
     if (!ret) {
         DfxLogError("DumpCatchFrame :: failed to init local dumper.");
         DfxDumpCatcherLocalDumper::DestroyLocalDumper();
+        pthread_mutex_unlock(&g_dumpCatcherMutex);
         return ret;
     }
 

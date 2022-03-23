@@ -22,7 +22,6 @@
 #include <file_ex.h>
 #include <iostream>
 #include <securec.h>
-#include <cstdio>
 #include <unistd.h>
 #include <sys/socket.h>
 #include <sys/un.h>

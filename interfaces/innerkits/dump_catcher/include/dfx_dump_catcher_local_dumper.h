@@ -67,7 +67,7 @@ public:
     static void DestroyLocalDumper();
 
     static bool g_isLocalDumperInited;
-    static int32_t g_curIndex;
+    static uint32_t g_curIndex;
     static std::condition_variable g_localDumperCV;
     static std::mutex g_localDumperMutx;
     static std::shared_ptr<DfxElfMaps> g_localDumperMaps;

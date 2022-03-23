@@ -75,7 +75,7 @@ static struct LocalDumperRequest g_localDumpRequest;
 static pthread_mutex_t g_localDumperMutex = PTHREAD_MUTEX_INITIALIZER;
 static struct sigaction g_localOldSigaction = {};
 
-int32_t DfxDumpCatcherLocalDumper::g_curIndex = 0;
+uint32_t DfxDumpCatcherLocalDumper::g_curIndex = 0;
 bool DfxDumpCatcherLocalDumper::g_isLocalDumperInited = false;
 std::condition_variable DfxDumpCatcherLocalDumper::g_localDumperCV;
 std::shared_ptr<DfxElfMaps> DfxDumpCatcherLocalDumper::g_localDumperMaps = nullptr;
@@ -210,7 +210,7 @@ bool DfxDumpCatcherLocalDumper::ExecLocalDump(int pid, int tid, size_t skipFramN
         g_FrameV[index - skipFramNum].SetFrameSp((uint64_t)sp);
         (void)unw_get_proc_name(&cursor, g_FrameV[index - skipFramNum].funcName_,
             SYMBOL_BUF_SIZE, (unw_word_t*)(&g_FrameV[index - skipFramNum].funcOffset_));
-        DfxDumpCatcherLocalDumper::g_curIndex = index - skipFramNum;
+        DfxDumpCatcherLocalDumper::g_curIndex = static_cast<uint32_t>(index - skipFramNum);
         index++;
     }
 
