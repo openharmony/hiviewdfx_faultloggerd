@@ -274,6 +274,7 @@ NOINLINE int StackTop(void)
     fp = fopen("sp", "w");
     if (fp == NULL) {
         printf("open file error!");
+        return 0;
     }
     int ret = fprintf(fp, "%08x", stackTop);
     if (ret == EOF) {
