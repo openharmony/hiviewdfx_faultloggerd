@@ -206,7 +206,7 @@ static FaultLoggerCheckPermissionResp SendUidToServer(int sockfd)
         }
 
         char recvbuf[SOCKET_BUFFER_SIZE] = {'\0'};
-        uint64_t count = (uint64_t)recv(sockfd, recvbuf, sizeof(recvbuf), 0);
+        ssize_t count = recv(sockfd, recvbuf, sizeof(recvbuf), 0);
         if (count < 0) {
             DfxLogError("Failed to recv uid check result from server.");
             break;
