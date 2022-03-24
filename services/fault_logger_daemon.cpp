@@ -50,7 +50,7 @@ constexpr int32_t MAX_CONNECTION = 30;
 constexpr int32_t REQUEST_BUF_SIZE = 1024;
 constexpr int32_t MSG_BUF_SIZE = 256;
 
-const int32_t FAULTLOG_FILE_PROP = 0662;
+const int32_t FAULTLOG_FILE_PROP = 0640;
 const int32_t FAULTLOG_FOLDER_PROP = 0771;
 
 static const std::string LOG_LABLE = "FaultLoggerd";
@@ -63,6 +63,7 @@ const int MINUS_ONE_THOUSAND = -1000;
 
 static const int LOG_BUF_LEN = 1024;
 static const int GC_TIME_US = 1000000;
+static const int DAEMON_REMOVE_FILE_TIME_S = 60;
 
 static std::string GetRequestTypeName(int32_t type)
 {
@@ -468,9 +469,25 @@ void FaultLoggerDaemon::RemoveTempFileIfNeed()
         return lhs.substr(lhsSplitPos).compare(rhs.substr(rhsSplitPos)) > 0;
     });
 
+    time_t currentTime = static_cast<time_t>(time(nullptr));
+    if (currentTime <= 0) {
+        DfxLogError("%s :: currentTime is less than zero CreateFileForRequest", LOG_LABLE.c_str());
+    }
+
     int startIndex = maxFileCount / 2;
     for (unsigned int index = (unsigned int)startIndex; index < files.size(); index++) {
+        struct stat st;
+        int err = stat(files[index].c_str(), &st);
+        if (err != 0) {
+            DfxLogError("%s :: Get log stat failed.", LOG_LABLE.c_str());
+        } else {
+            if ((currentTime - st.st_mtime) <= DAEMON_REMOVE_FILE_TIME_S) {
+                continue;
+            }
+        }
+
         OHOS::RemoveFile(files[index]);
+        DfxLogDebug("%s :: Now we rm file(%s) as max log number exceeded.", LOG_LABLE.c_str(), files[index].c_str());
     }
 }
 

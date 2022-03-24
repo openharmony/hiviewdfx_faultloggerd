@@ -128,7 +128,7 @@ bool DfxUnwindRemote::DfxUnwindRemoteDoUnwindStep(size_t const & index,
 
     uint64_t frameLr = frame->GetFrameLr();
     if (unw_get_reg(&cursor, REG_LR_NUM, (unw_word_t*)(&frameLr))) {
-        DfxLogWarn("Fail to get program counter.");
+        DfxLogWarn("Fail to get lr.");
         return false;
     } else {
         frame->SetFrameLr(frameLr);
@@ -225,9 +225,10 @@ bool DfxUnwindRemote::UnwindThread(std::shared_ptr<DfxProcess> process, std::sha
         }
 
         if (!DfxUnwindRemoteDoUnwindStep(index, thread, cursor, process)) {
-            DfxLogWarn("Break unwstep as DfxUnwindRemoteDoUnwindStep failed.");
+            DfxLogWarn("Break unwstep as DfxUnwindRemoteDoUnwindStep failed -1.");
             break;
         }
+
         index++;
 
         // Add to check pc is valid in maps x segment, if check failed use lr to backtrace instead -S-.
@@ -236,7 +237,7 @@ bool DfxUnwindRemote::UnwindThread(std::shared_ptr<DfxProcess> process, std::sha
             (crashUnwStepPosition == index)) {
             unw_set_reg(&cursor, UNW_REG_IP, regStoreLr);
             if (!DfxUnwindRemoteDoUnwindStep(index, thread, cursor, process)) {  // Add lr frame to frame list.
-                DfxLogWarn("Break unwstep as DfxUnwindRemoteDoUnwindStep failed.");
+                DfxLogWarn("Break unwstep as DfxUnwindRemoteDoUnwindStep failed -2.");
                 break;
             }
             index++;
@@ -248,7 +249,7 @@ bool DfxUnwindRemote::UnwindThread(std::shared_ptr<DfxProcess> process, std::sha
             if (!isSigDump && (crashUnwStepPosition == index)) {
                 unw_set_reg(&cursor, UNW_REG_IP, regStoreLr);
                 if (!DfxUnwindRemoteDoUnwindStep(index, thread, cursor, process)) {  // Add lr frame to frame list.
-                    DfxLogWarn("Break unwstep as DfxUnwindRemoteDoUnwindStep failed.");
+                    DfxLogWarn("Break unwstep as DfxUnwindRemoteDoUnwindStep failed -3.");
                     break;
                 }
                 index++;

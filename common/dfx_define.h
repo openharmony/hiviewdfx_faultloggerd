@@ -35,7 +35,7 @@ static const int ARM_EXEC_STEP_THUMB = 3;
 
 static const int CONF_LINE_SIZE = 1024;
 
-static const int FAULTSTACK_ITEM_BUFFER_LENGTH = 1024;
+static const int FAULTSTACK_ITEM_BUFFER_LENGTH = 2048;
 static const int FAULTSTACK_SP_REVERSE = 3;
 static const int FAULTSTACK_FIRST_FRAME_SEARCH_LENGTH = 64;
 

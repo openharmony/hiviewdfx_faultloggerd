@@ -1068,7 +1068,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0013, TestSize.Level2)
 
 /**
  * @tc.name: FaultLoggerdSystemTest0014
- * @tc.desc: test DumpCatch API: app PID(app), TID(0)
+ * @tc.desc: test DumpCatchMultiPid API: multiPid{-11,-11}
  * @tc.type: FUNC
  */
 HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0014, TestSize.Level2)
@@ -1090,7 +1090,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0014, TestSize.Level2)
 
 /**
  * @tc.name: FaultLoggerdSystemTest0015
- * @tc.desc: test DumpCatch API: app PID(app), TID(0)
+ * @tc.desc: test DumpCatchMultiPid API: multiPid{PID(telephony),0}
  * @tc.type: FUNC
  */
 HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0015, TestSize.Level2)
@@ -1132,7 +1132,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0015, TestSize.Level2)
 
 /**
  * @tc.name: FaultLoggerdSystemTest0016
- * @tc.desc: test DumpCatch API: app PID(app), TID(0)
+ * @tc.desc: test DumpCatchMultiPid API: multiPid{PID(telephony),PID(app),PID(foundation)}
  * @tc.type: FUNC
  */
 HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0016, TestSize.Level2)
@@ -1180,7 +1180,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0016, TestSize.Level2)
 
 /**
  * @tc.name: FaultLoggerdSystemTest0017
- * @tc.desc: test DumpCatch API: app PID(app), TID(0)
+ * @tc.desc: test DumpCatchMultiPid API: multiPid{PID(telephony),-11}
  * @tc.type: FUNC
  */
 HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0017, TestSize.Level2)
@@ -1218,7 +1218,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0017, TestSize.Level2)
 
 /**
  * @tc.name: FaultLoggerdSystemTest0018
- * @tc.desc: test DumpCatch API: app PID(app), TID(0)
+ * @tc.desc: test DumpCatchMultiPid API: multiPid{9999,9999}
  * @tc.type: FUNC
  */
 HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0018, TestSize.Level2)
@@ -1242,7 +1242,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0018, TestSize.Level2)
 
 /**
  * @tc.name: FaultLoggerdSystemTest0019
- * @tc.desc: test DumpCatch API: app PID(app), TID(0)
+ * @tc.desc: test DumpCatchMultiPid API: multiPid{PID(telephony),9999}
  * @tc.type: FUNC
  */
 HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0019, TestSize.Level2)
@@ -1280,7 +1280,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0019, TestSize.Level2)
 
 /**
  * @tc.name: FaultLoggerdSystemTest0020
- * @tc.desc: test DumpCatch API: app PID(app), TID(0)
+ * @tc.desc: test DumpCatchFrame API: PID(test_faul), TID(test_faul)
  * @tc.type: FUNC
  */
 HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0020, TestSize.Level2)
@@ -1314,7 +1314,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0020, TestSize.Level2)
 
 /**
  * @tc.name: FaultLoggerdSystemTest0021
- * @tc.desc: test DumpCatch API: app PID(app), TID(0)
+ * @tc.desc: test DumpCatchFrame API: PID(test_faul), TID(0)
  * @tc.type: FUNC
  */
 HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0021, TestSize.Level2)
@@ -1335,7 +1335,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0021, TestSize.Level2)
 
 /**
  * @tc.name: FaultLoggerdSystemTest0022
- * @tc.desc: test DumpCatch API: app PID(app), TID(0)
+ * @tc.desc: test DumpCatchFrame API: PID(0), TID(test_faul)
  * @tc.type: FUNC
  */
 HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0022, TestSize.Level2)
@@ -1356,7 +1356,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0022, TestSize.Level2)
 
 /**
  * @tc.name: FaultLoggerdSystemTest0023
- * @tc.desc: test DumpCatch API: app PID(app), TID(0)
+ * @tc.desc: test DumpCatchFrame API: PID(0), PID(0)
  * @tc.type: FUNC
  */
 HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0023, TestSize.Level2)
@@ -1374,7 +1374,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0023, TestSize.Level2)
 
 /**
  * @tc.name: FaultLoggerdSystemTest0024
- * @tc.desc: test DumpCatch API: app PID(app), TID(0)
+ * @tc.desc: test DumpCatchFrame API: app PID(-11), TID(test_faul)
  * @tc.type: FUNC
  */
 HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0024, TestSize.Level2)
@@ -1395,7 +1395,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0024, TestSize.Level2)
 
 /**
  * @tc.name: FaultLoggerdSystemTest0025
- * @tc.desc: test DumpCatch API: app PID(app), TID(0)
+ * @tc.desc: test DumpCatchFrame API: app PID(test_faul), TID(-11)
  * @tc.type: FUNC
  */
 HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0025, TestSize.Level2)
@@ -1416,7 +1416,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0025, TestSize.Level2)
 
 /**
  * @tc.name: FaultLoggerdSystemTest0026
- * @tc.desc: test DumpCatch API: app PID(app), TID(0)
+ * @tc.desc: test DumpCatchFrame API: app PID(-11), TID(-11)
  * @tc.type: FUNC
  */
 HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0026, TestSize.Level2)
@@ -1497,41 +1497,8 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0123, TestSize.Level2)
 }
 
 /**
- * @tc.name: FaultLoggerdSystemTest0124
- * @tc.desc: test CPP crasher application: kill -11
- * @tc.type: FUNC
- */
-HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0124, TestSize.Level2)
-{
-    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest0124: start.";
-    std::string pidfound = FaultLoggerdSystemTest::GetFounationPid();
-    system(("kill -11 " + pidfound).c_str());
-    std::string filePathPid = FaultLoggerdSystemTest::GetfileNameForFounation(pidfound);
-
-    GTEST_LOG_(INFO) << "current filePath and pid = \n" << filePathPid;
-    if (filePathPid.size() < NUMBER_TEN) {
-        EXPECT_EQ(true, false) << "FaultLoggerdSystemTest0124 Failed";
-    } else {
-        char filePath[ARRAY_SIZE_HUNDRED] = { 0, };
-        char pid[ARRAY_SIZE_HUNDRED]  = { 0, };
-        int res = sscanf_s(filePathPid.c_str(), "%s %s", filePath, sizeof(filePath) - 1, pid, sizeof(pid) - 1);
-        if (res <= 0) {
-            GTEST_LOG_(INFO) << "sscanf_s failed.";
-        }
-        GTEST_LOG_(INFO) << "current filepath: \n" << filePath;
-        GTEST_LOG_(INFO) << "current pid: \n" << pid;
-        std::string filePathStr = filePath;
-        std::string pidStr = pid;
-        int ret = FaultLoggerdSystemTest::CheckCountNumKill11(filePathStr, pidStr);
-        GTEST_LOG_(INFO) << "current ret value: \n" << ret;
-        EXPECT_EQ(ret, 0) << "FaultLoggerdSystemTest0124 Failed";
-        GTEST_LOG_(INFO) << "FaultLoggerdSystemTest0124: end.";
-    }
-}
-
-/**
 * @tc.name: FaultLoggerdSystemTest0001
-* @tc.desc: test C crasher application: SIGILL
+* @tc.desc: test C crasher application: triSIGILL
 * @tc.type: FUNC
 */
 HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0001, TestSize.Level2)
@@ -1563,7 +1530,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0001, TestSize.Level2)
 
 /**
 * @tc.name: FaultLoggerdSystemTest0002
-* @tc.desc: test CPP crasher application: SIGILL
+* @tc.desc: test CPP crasher application: triSIGILL
 * @tc.type: FUNC
 */
 HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0002, TestSize.Level2)
@@ -1595,7 +1562,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0002, TestSize.Level2)
 
 /**
 * @tc.name: FaultLoggerdSystemTest0003
-* @tc.desc: test C crasher application: SIGSEGV
+* @tc.desc: test C crasher application: triSIGSEGV
 * @tc.type: FUNC
 */
 HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0003, TestSize.Level2)
@@ -1627,7 +1594,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0003, TestSize.Level2)
 
 /**
 * @tc.name: FaultLoggerdSystemTest0004
-* @tc.desc: test CPP crasher application: SIGSEGV
+* @tc.desc: test CPP crasher application: triSIGSEGV
 * @tc.type: FUNC
 */
 HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0004, TestSize.Level2)
@@ -1659,7 +1626,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0004, TestSize.Level2)
 
 /**
 * @tc.name: FaultLoggerdSystemTest0005
-* @tc.desc: test C crasher application: SIGTRAP
+* @tc.desc: test C crasher application: triSIGTRAP
 * @tc.type: FUNC
 */
 HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0005, TestSize.Level2)
@@ -1691,7 +1658,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0005, TestSize.Level2)
 
 /**
 * @tc.name: FaultLoggerdSystemTest0006
-* @tc.desc: test CPP crasher application: SIGTRAP
+* @tc.desc: test CPP crasher application: triSIGTRAP
 * @tc.type: FUNC
 */
 HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0006, TestSize.Level2)
@@ -1723,7 +1690,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0006, TestSize.Level2)
 
 /**
 * @tc.name: FaultLoggerdSystemTest0007
-* @tc.desc: test C crasher application: SIGABRT
+* @tc.desc: test C crasher application: triSIGABRT
 * @tc.type: FUNC
 */
 HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0007, TestSize.Level2)
@@ -1755,7 +1722,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0007, TestSize.Level2)
 
 /**
 * @tc.name: FaultLoggerdSystemTest0008
-* @tc.desc: test CPP crasher application: SIGABRT
+* @tc.desc: test CPP crasher application: triSIGABRT
 * @tc.type: FUNC
 */
 HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0008, TestSize.Level2)
@@ -1787,7 +1754,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0008, TestSize.Level2)
 
 /**
  * @tc.name: FaultLoggerdSystemTest0009
- * @tc.desc: test CPP crasher application: 50 Abnormal signal
+ * @tc.desc: test C crasher application: 50 Abnormal signal
  * @tc.type: FUNC
  */
 HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0009, TestSize.Level2)
@@ -1848,6 +1815,43 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest001, TestSize.Level2)
         EXPECT_EQ(ret, 0) << "ProcessDfxRequestTest001 Failed";
 
         GTEST_LOG_(INFO) << "FaultLoggerdSystemTest001: end.";
+    }
+}
+
+/**
+ * @tc.name: FaultLoggerdSystemTest001_level0
+ * @tc.desc: test C crasher application: SIGFPE
+ * @tc.type: FUNC
+ */
+HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest001_level0, TestSize.Level0)
+{
+    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest001_level0: start.";
+
+    std::string cmd = "SIGFPE";
+    int cTest = 0;
+    std::string filePathPid = FaultLoggerdSystemTest::GetfileNamePrefix(cmd, cTest);
+    if (filePathPid.size() < NUMBER_TEN) {
+        EXPECT_EQ(true, false) << "FaultLoggerdSystemTest001_level0 Failed";
+    } else {
+        GTEST_LOG_(INFO) << "current filePath and pid = \n" << filePathPid;
+
+        char filePath[ARRAY_SIZE_HUNDRED] = { 0, };
+        char pid[ARRAY_SIZE_HUNDRED]  = { 0, };
+        int res = sscanf_s(filePathPid.c_str(), "%s %s", filePath, sizeof(filePath) - 1, pid, sizeof(pid) - 1);
+        if (res <= 0) {
+            GTEST_LOG_(INFO) << "sscanf_s failed.";
+        }
+        GTEST_LOG_(INFO) << "current filepath: \n" << filePath;
+        GTEST_LOG_(INFO) << "current pid: \n" << pid;
+
+        std::string filePathStr = filePath;
+        std::string pidStr = pid;
+        int ret = FaultLoggerdSystemTest::CheckCountNum(filePathStr, pidStr, cmd);
+        GTEST_LOG_(INFO) << "current ret value: \n" << ret;
+
+        EXPECT_EQ(ret, 0) << "FaultLoggerdSystemTest001_level0 Failed";
+
+        GTEST_LOG_(INFO) << "FaultLoggerdSystemTest001_level0: end.";
     }
 }
 
@@ -2630,6 +2634,38 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest026, TestSize.Level2)
 }
 
 /**
+ * @tc.name: FaultLoggerdSystemTest026_level0
+ * @tc.desc: test DumpCatch API: app PID(app), TID(PID)
+ * @tc.type: FUNC
+ */
+HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest026_level0, TestSize.Level0)
+{
+    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest026_level0: start.";
+    FaultLoggerdSystemTest::StartCrasherLoop(3);
+    DfxDumpCatcher dumplog;
+    std::string msg = "";
+    bool ret = dumplog.DumpCatch(FaultLoggerdSystemTest::loopAppPid, FaultLoggerdSystemTest::loopAppPid, msg);
+    GTEST_LOG_(INFO) << ret;
+    GTEST_LOG_(INFO) << msg;
+    int count = 0;
+    string log[] = {"Tid:", "Name:crasher", "#00", "/data/crasher"};
+    log[0] = log[0] +std::to_string(FaultLoggerdSystemTest::loopAppPid);
+    string::size_type idx;
+    int j = 0;
+    for (int x = 0; x < 4; x = x + 1) {
+        idx = msg.find(log[j]);
+        if (idx != string::npos) {
+            count++;
+        }
+        j++;
+    }
+    GTEST_LOG_(INFO) << count;
+    EXPECT_EQ(count, 4) << "FaultLoggerdSystemTest026_level0 Failed";
+    FaultLoggerdSystemTest::KillCrasherLoopForSomeCase(3);
+    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest026_level0: end.";
+}
+
+/**
  * @tc.name: FaultLoggerdSystemTest027
  * @tc.desc: test DumpCatch API: app PID(app), TID(<>PID)
  * @tc.type: FUNC
@@ -2750,7 +2786,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest030, TestSize.Level2)
 
 /**
  * @tc.name: FaultLoggerdSystemTest031
- * @tc.desc: test DumpCatch API: app PID(root), TID(system)
+ * @tc.desc: test DumpCatch API: app PID(app), TID(system)
  * @tc.type: FUNC
  */
 HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest031, TestSize.Level2)
@@ -2771,7 +2807,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest031, TestSize.Level2)
 
 /**
  * @tc.name: FaultLoggerdSystemTest032
- * @tc.desc: test DumpCatch API: app PID(Null), TID(root)
+ * @tc.desc: test DumpCatch API: app PID(Null), TID(app)
  * @tc.type: FUNC
  */
 HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest032, TestSize.Level2)
@@ -3087,7 +3123,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest038, TestSize.Level2)
 
 /**
  * @tc.name: FaultLoggerdSystemTest039
- * @tc.desc: test DumpCatch API: PID(app), TID(root)
+ * @tc.desc: test DumpCatch API: PID(root), TID(app)
  * @tc.type: FUNC
  */
 HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest039, TestSize.Level2)
@@ -3107,7 +3143,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest039, TestSize.Level2)
 
 /**
  * @tc.name: FaultLoggerdSystemTest040
- * @tc.desc: test processdump command: processdump -p rootpid
+ * @tc.desc: test processdump command: processdump -p apppid
  * @tc.type: FUNC
  */
 HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest040, TestSize.Level2)
@@ -3138,8 +3174,40 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest040, TestSize.Level2)
 }
 
 /**
+ * @tc.name: FaultLoggerdSystemTest040_level0
+ * @tc.desc: test processdump command: processdump -p apppid
+ * @tc.type: FUNC
+ */
+HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest040_level0, TestSize.Level0)
+{
+    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest040_level0: start.";
+    FaultLoggerdSystemTest::StartCrasherLoop(3);
+    std::string procCMD = "processdump -p " + std::to_string(FaultLoggerdSystemTest::loopAppPid);
+    string procDumpLog = FaultLoggerdSystemTest::ProcessDumpCommands(procCMD);
+    GTEST_LOG_(INFO) << "procDumpLog: " << procDumpLog;
+    int count = 0;
+    int apptid1 = std::stoi(FaultLoggerdSystemTest::appTid[0]);
+    int apptid2 = std::stoi(FaultLoggerdSystemTest::appTid[1]);
+    string log[] = {"", "Name:crasher", "Name:SubTestThread", "#00", "/data/crasher", ""};
+    log[0] = log[0] + std::to_string(apptid1);
+    log[5] = log[5] + std::to_string(apptid2);
+    string::size_type idx;
+    for (int i = 0; i < 6; i++) {
+        idx = procDumpLog.find(log[i]);
+        GTEST_LOG_(INFO) << log[i];
+        if (idx != string::npos) {
+            count++;
+        }
+    }
+    GTEST_LOG_(INFO) << count;
+    EXPECT_EQ(count, 6) << "FaultLoggerdSystemTest040_level0 Failed";
+    FaultLoggerdSystemTest::KillCrasherLoopForSomeCase(3);
+    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest040_level0: end.";
+}
+
+/**
  * @tc.name: FaultLoggerdSystemTest041
- * @tc.desc: test processdump command: processdump -p rootpid -t rootpid
+ * @tc.desc: test processdump command: processdump -p apppid -t apppid
  * @tc.type: FUNC
  */
 HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest041, TestSize.Level2)
@@ -3170,7 +3238,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest041, TestSize.Level2)
 
 /**
  * @tc.name: FaultLoggerdSystemTest042
- * @tc.desc: test processdump command: processdump -p apppid -t tid
+ * @tc.desc: test processdump command: processdump -p apppid -t apptid
  * @tc.type: FUNC
  */
 HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest042, TestSize.Level2)
@@ -3217,9 +3285,9 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest043, TestSize.Level2)
     string procDumpLog = FaultLoggerdSystemTest::ProcessDumpCommands(procCMD);
     GTEST_LOG_(INFO) << "procDumpLog: " << procDumpLog;
     int count = 0;
-    string log[] = {"failed", "invalid"};
+    string log[] = {"failed"};
     string::size_type idx;
-    for (int i = 0; i < 2; i++) {
+    for (int i = 0; i < 1; i++) {
         idx = procDumpLog.find(log[i]);
         if (idx != string::npos) {
             GTEST_LOG_(INFO) << count;
@@ -3227,7 +3295,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest043, TestSize.Level2)
             count++;
         }
     }
-    EXPECT_EQ(count, 2) << "FaultLoggerdSystemTest043 Failed";
+    EXPECT_EQ(count, 1) << "FaultLoggerdSystemTest043 Failed";
     FaultLoggerdSystemTest::KillCrasherLoopForSomeCase(1);
     FaultLoggerdSystemTest::KillCrasherLoopForSomeCase(3);
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest043: end.";
@@ -3248,9 +3316,9 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0109, TestSize.Level2)
     string procDumpLog = FaultLoggerdSystemTest::ProcessDumpCommands(procCMD);
     GTEST_LOG_(INFO) << "procDumpLog: " << procDumpLog;
     int count = 0;
-    string log[] = {"failed", "invalid"};
+    string log[] = {"failed"};
     string::size_type idx;
-    for (int i = 0; i < 2; i++) {
+    for (int i = 0; i < 1; i++) {
         idx = procDumpLog.find(log[i]);
         if (idx != string::npos) {
             GTEST_LOG_(INFO) << count;
@@ -3258,7 +3326,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0109, TestSize.Level2)
             count++;
         }
     }
-    EXPECT_EQ(count, 2) << "FaultLoggerdSystemTest0109 Failed";
+    EXPECT_EQ(count, 1) << "FaultLoggerdSystemTest0109 Failed";
     FaultLoggerdSystemTest::KillCrasherLoopForSomeCase(2);
     FaultLoggerdSystemTest::KillCrasherLoopForSomeCase(3);
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest0109: end.";
@@ -3350,7 +3418,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest046, TestSize.Level2)
 
 /**
  * @tc.name: FaultLoggerdSystemTest047
- * @tc.desc: test processdump command: -p systempid -t rootpid
+ * @tc.desc: test processdump command: -p systempid -t apppid
  * @tc.type: FUNC
  */
 HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest047, TestSize.Level2)
@@ -3488,7 +3556,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest051, TestSize.Level2)
 
 /**
  * @tc.name: FaultLoggerdSystemTest052
- * @tc.desc: test processdump command: -p sytempid
+ * @tc.desc: test processdump command: -p systempid
  * @tc.type: FUNC
  */
 HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest052, TestSize.Level2)
@@ -3566,10 +3634,10 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest053, TestSize.Level2)
     string procDumpLog = FaultLoggerdSystemTest::ProcessDumpCommands(procCMD);
     GTEST_LOG_(INFO) << "procDumpLog: " << procDumpLog;
     int count = 0;
-    string log[] = {"failed", "invalid"};
+    string log[] = {"failed"};
     GTEST_LOG_(INFO) << procDumpLog;
     string::size_type idx;
-    for (int i = 0; i < 2; i++) {
+    for (int i = 0; i < 1; i++) {
         idx = procDumpLog.find(log[i]);
         if (idx != string::npos) {
             GTEST_LOG_(INFO) << count;
@@ -3577,7 +3645,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest053, TestSize.Level2)
             count++;
         }
     }
-    EXPECT_EQ(count, 2) << "FaultLoggerdSystemTest053 Failed";
+    EXPECT_EQ(count, 1) << "FaultLoggerdSystemTest053 Failed";
     FaultLoggerdSystemTest::KillCrasherLoopForSomeCase(3);
     FaultLoggerdSystemTest::KillCrasherLoopForSomeCase(1);
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest053: end.";
@@ -3599,10 +3667,10 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0106, TestSize.Level2)
     string procDumpLog = FaultLoggerdSystemTest::ProcessDumpCommands(procCMD);
     GTEST_LOG_(INFO) << "procDumpLog: " << procDumpLog;
     int count = 0;
-    string log[] = {"failed", "invalid"};
+    string log[] = {"failed"};
     GTEST_LOG_(INFO) << procDumpLog;
     string::size_type idx;
-    for (int i = 0; i < 2; i++) {
+    for (int i = 0; i < 1; i++) {
         idx = procDumpLog.find(log[i]);
         if (idx != string::npos) {
             GTEST_LOG_(INFO) << count;
@@ -3610,7 +3678,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0106, TestSize.Level2)
             count++;
         }
     }
-    EXPECT_EQ(count, 2) << "FaultLoggerdSystemTest0106 Failed";
+    EXPECT_EQ(count, 1) << "FaultLoggerdSystemTest0106 Failed";
     FaultLoggerdSystemTest::KillCrasherLoopForSomeCase(2);
     FaultLoggerdSystemTest::KillCrasherLoopForSomeCase(1);
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest0106: end.";
@@ -3653,7 +3721,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0107, TestSize.Level2)
 
 /**
  * @tc.name: FaultLoggerdSystemTest0108
- * @tc.desc: test processdump command: -p apppid
+ * @tc.desc: test processdump command: -p sytempid
  * @tc.type: FUNC
  */
 HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0108, TestSize.Level2)
@@ -3751,7 +3819,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest055, TestSize.Level2)
 }
 
 /**
- * @tc.name: FaultLoggerdSystemTest114
+ * @tc.name: FaultLoggerdSystemTest0114
  * @tc.desc: test processdump command: -p pid-max, -t threads_max
  * @tc.type: FUNC
  */
@@ -3779,7 +3847,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0114, TestSize.Level2)
 }
 
 /**
- * @tc.name: FaultLoggerdSystemTest115
+ * @tc.name: FaultLoggerdSystemTest0115
  * @tc.desc: test processdump command: -p 65535, -t 65535
  * @tc.type: FUNC
  */
@@ -3807,7 +3875,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0115, TestSize.Level2)
 }
 
 /**
- * @tc.name: FaultLoggerdSystemTest116
+ * @tc.name: FaultLoggerdSystemTest0116
  * @tc.desc: test processdump command: -p 65536, -t 65536
  * @tc.type: FUNC
  */
@@ -3835,11 +3903,11 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0116, TestSize.Level2)
 }
 
 /**
- * @tc.name: FaultLoggerdSystemTest117
+ * @tc.name: FaultLoggerdSystemTest0117
  * @tc.desc: test processdump command: -p 65534, -t 65534
  * @tc.type: FUNC
  */
-HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest117, TestSize.Level2)
+HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0117, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest117: start.";
     FaultLoggerdSystemTest::StartCrasherLoop(3);
@@ -3857,14 +3925,14 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest117, TestSize.Level2)
             count++;
         }
     }
-    EXPECT_EQ(count, 2) << "FaultLoggerdSystemTest117 Failed";
+    EXPECT_EQ(count, 2) << "FaultLoggerdSystemTest0117 Failed";
     FaultLoggerdSystemTest::KillCrasherLoopForSomeCase(3);
-    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest117: end.";
+    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest0117: end.";
 }
 
 /**
  * @tc.name: FaultLoggerdSystemTest056
- * @tc.desc: test CPP DumpCatch API: PID(root), TID(0)
+ * @tc.desc: test CPP DumpCatch API: PID(apppid), TID(0)
  * @tc.type: FUNC
  */
 HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest056, TestSize.Level2)
@@ -3902,7 +3970,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest056, TestSize.Level2)
 HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest057, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest057: start.";
-    FaultLoggerdSystemTest::StartCrasherLoop(3);
+    FaultLoggerdSystemTest::StartCrasherLoop(4);
     std::string procCMD = "processdump -p " + std::to_string(FaultLoggerdSystemTest::loopAppPid);
     string procDumpLog = FaultLoggerdSystemTest::ProcessDumpCommands(procCMD);
     GTEST_LOG_(INFO) << "procDumpLog: " << procDumpLog;
@@ -4134,7 +4202,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0112, TestSize.Level2)
     
     GTEST_LOG_(INFO) << "current filePath and pid = \n" << filePathPid;
     if (filePathPid.size() < NUMBER_TEN) {
-        EXPECT_EQ(true, false) << "FaultLoggerdSystemTest111 Failed";
+        EXPECT_EQ(true, false) << "FaultLoggerdSystemTest0112 Failed";
     } else {
         char filePath[ARRAY_SIZE_HUNDRED] = { 0, };
         char pid[ARRAY_SIZE_HUNDRED]  = { 0, };
@@ -4254,7 +4322,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0119, TestSize.Level2)
 
 /**
  * @tc.name: FaultLoggerdSystemTest0120
- * @tc.desc: test DumpCatch API: app unsigned PID(app), unsigned TID(PID)
+ * @tc.desc: test DumpCatch API: app unsigned PID(systempid), unsigned TID(systempid)
  * @tc.type: FUNC
  */
 HWTEST_F (FaultLoggerdSystemTest,  FaultLoggerdSystemTest0120, TestSize.Level2)
@@ -4286,7 +4354,7 @@ HWTEST_F (FaultLoggerdSystemTest,  FaultLoggerdSystemTest0120, TestSize.Level2)
 
 /**
  * @tc.name: FaultLoggerdSystemTest0121
- * @tc.desc: test DumpCatch API: app unsigned PID(app), unsigned TID(PID)
+ * @tc.desc: test DumpCatch API: app unsigned PID(systempid), unsigned TID(systempid)
  * @tc.type: FUNC
  */
 HWTEST_F (FaultLoggerdSystemTest,  FaultLoggerdSystemTest0121, TestSize.Level2)
