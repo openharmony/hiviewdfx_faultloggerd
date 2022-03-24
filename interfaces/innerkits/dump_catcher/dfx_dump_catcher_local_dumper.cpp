@@ -126,7 +126,7 @@ std::string DfxDumpCatcherLocalDumper::CollectUnwindResult()
         result << "Failed to get stacktrace." << std::endl;
     }
 
-    for (int i = 0; i < g_curIndex; ++i) {
+    for (uint32_t i = 0; i < g_curIndex; ++i) {
         ResolveFrameInfo(g_FrameV[i]);
         WriteFrameInfo(result, i, g_FrameV[i]);
     }
@@ -141,7 +141,7 @@ void DfxDumpCatcherLocalDumper::CollectUnwindFrames(std::vector<std::shared_ptr<
         return;
     }
 
-    for (int i = 0; i < g_curIndex; ++i) {
+    for (uint32_t i = 0; i < g_curIndex; ++i) {
         ResolveFrameInfo(g_FrameV[i]);
         frames.push_back(std::make_shared<DfxDumpCatcherFrame>(g_FrameV[i]));
     }
