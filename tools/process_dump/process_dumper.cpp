@@ -40,6 +40,8 @@
 namespace OHOS {
 namespace HiviewDFX {
 
+static const std::string DUMP_STACK_TAG_FAILED = "failed:";
+
 void ProcessDumper::DumpProcessWithSignalContext(std::shared_ptr<DfxProcess> &process,
                                                  std::shared_ptr<ProcessDumpRequest> request)
 {
@@ -134,6 +136,12 @@ ProcessDumper &ProcessDumper::GetInstance()
     return dumper;
 }
 
+void ProcessDumper::PrintDumpFailed()
+{
+    std::cout << DUMP_STACK_TAG_FAILED << std::endl;
+    std::cout << "Dump failed, please check permission and whether pid is valid." << std::endl;
+}
+
 void ProcessDumper::Dump(bool isSignalHdlr, ProcessDumpType type, int32_t pid, int32_t tid)
 {
     DfxLogDebug("Enter %s.", __func__);
@@ -177,6 +185,7 @@ void ProcessDumper::Dump(bool isSignalHdlr, ProcessDumpType type, int32_t pid, i
 
     if (process == nullptr) {
         DfxLogError("process == nullptr");
+        PrintDumpFailed();
     } else {
         process->Detach();
         DfxDumpWriter dumpWriter(process, fromSignalHandler);

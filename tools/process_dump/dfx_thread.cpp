@@ -313,8 +313,8 @@ void DfxThread::CreateFaultStack(std::shared_ptr<DfxElfMaps> maps)
         totalStepSize = (nextSp - currentSp)/stepLength;
         if (totalStepSize > (lowAddressStep + highAddressStep)) {
             displayAll = false;
-            filterStart = currentSp + lowAddressStep*stepLength;
-            filterEnd   = currentSp + (totalStepSize - highAddressStep)*stepLength;
+            filterStart = currentSp + highAddressStep*stepLength;
+            filterEnd   = currentSp + (totalStepSize - lowAddressStep)*stepLength;
         }
         while (currentSp < nextSp) {
             if (!displayAll && (currentSp == filterStart)) {

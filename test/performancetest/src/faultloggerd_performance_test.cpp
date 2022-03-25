@@ -126,21 +126,6 @@ void FaultPerformanceTest::StartRootCrasherLoop()
     if (looprootPid == 0) {
         exit(0);
     }
-
-    DfxDumpCatcher dumplog;
-    std::string msg = "";
-    dumplog.DumpCatch(looprootPid, 0, msg);
-    int sleepSecond = 5;
-    usleep(sleepSecond);
-    std::string procCMD = "ls /proc/" + std::to_string(looprootPid) + "/task";
-    FILE *procFileInfo = nullptr;
-
-    procFileInfo = popen(procCMD.c_str(), "r");
-    if (procFileInfo == nullptr) {
-        perror("popen execute failed");
-        exit(1);
-    }
-    pclose(procFileInfo);
 }
 
 void FaultPerformanceTest::KillCrasherLoopForSomeCase()

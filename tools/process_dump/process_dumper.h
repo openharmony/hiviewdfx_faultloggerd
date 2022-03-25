@@ -45,6 +45,7 @@ private:
     void DumpProcessWithSignalContext(std::shared_ptr<DfxProcess> &process,
                                       std::shared_ptr<ProcessDumpRequest> request);
     void DumpProcess(std::shared_ptr<DfxProcess> &process, std::shared_ptr<ProcessDumpRequest> request);
+    void PrintDumpFailed();
 
     ProcessDumper() = default;
     DISALLOW_COPY_AND_MOVE(ProcessDumper);

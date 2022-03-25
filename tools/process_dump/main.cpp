@@ -40,9 +40,9 @@ static const int DUMP_ARG_TWO = 2;
 static const int DUMP_ARG_THREE = 3;
 static const int DUMP_ARG_FOUR = 4;
 static const int ALARM_TIME_S = 30;
-static const std::string DUMP_STACK_TAG_FAILED = "failed:";
 static const int32_t SOCKET_BUFFER_SIZE = 256;
 static const char FAULTLOGGERD_SOCK_PATH[] = "/dev/unix/socket/faultloggerd.server";
+static const std::string DUMP_STACK_TAG_FAILED = "failed:";
 
 static void PrintCommandHelp()
 {
