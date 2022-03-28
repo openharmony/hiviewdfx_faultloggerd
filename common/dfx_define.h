@@ -57,6 +57,8 @@ static const int DUMP_CATCHE_WORK_TIME_S = 60;
 
 static const int NUMBER_TWO_KB = 2048;
 
+static const int PROCESSDUMP_TIMEOUT = 30;
+
 #if defined(TEMP_FAILURE_RETRY)
 #undef TEMP_FAILURE_RETRY
 #define TEMP_FAILURE_RETRY(exp)            \
