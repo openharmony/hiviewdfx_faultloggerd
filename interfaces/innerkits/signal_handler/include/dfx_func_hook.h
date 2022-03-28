@@ -17,7 +17,7 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-void StartHookFunc(void);
+void StartHookFunc(uintptr_t sighdlr);
 #ifdef __cplusplus
 }
 #endif

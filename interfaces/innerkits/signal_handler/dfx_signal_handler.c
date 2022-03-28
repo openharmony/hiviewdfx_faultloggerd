@@ -502,7 +502,7 @@ void DFX_InstallSignalHandler()
     }
 
 #ifdef ENABLE_DEBUG_HOOK
-    StartHookFunc();
+    StartHookFunc((uintptr_t)DFX_SignalHandler);
 #endif
 
 #ifndef DFX_LOCAL_UNWIND
