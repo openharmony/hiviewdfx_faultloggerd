@@ -88,6 +88,7 @@ static const int MAX_HANDLED_TID_NUMBER = 256;
 static int g_lastHandledTid[MAX_HANDLED_TID_NUMBER] = {0};
 static int g_lastHandledTidIndex = 0;
 static const int ALARM_TIME_S = 10;
+static int g_curSig = -1;
 
 enum DumpPreparationStage {
     CREATE_PIPE_FAIL = 1,
@@ -409,10 +410,14 @@ static void DFX_SignalHandler(int sig, siginfo_t *si, void *context)
         if (CheckLastHandledTid(sig, si) == TRUE) {
             return;
         }
+    } else if (g_curSig == sig) {
+        HILOG_BASE_INFO(LOG_CORE, "We are handling sigdump now, skip same request.");
+        return;
     }
     pthread_mutex_lock(&g_signalHandlerMutex);
 
     (void)memset_s(&g_request, sizeof(g_request), 0, sizeof(g_request));
+    g_curSig = sig;
     g_request.type = sig;
     g_request.tid = gettid();
     g_request.pid = getpid();
@@ -447,6 +452,8 @@ static void DFX_SignalHandler(int sig, siginfo_t *si, void *context)
 #else
     pid_t childPid;
     int status;
+    int ret = -1;
+    int startTime = (int)time(NULL);
     // set privilege for dump ourself
     int prevDumpableStatus = prctl(PR_GET_DUMPABLE);
     BOOL isTracerStatusModified = FALSE;
@@ -468,12 +475,24 @@ static void DFX_SignalHandler(int sig, siginfo_t *si, void *context)
         HILOG_BASE_ERROR(LOG_CORE, "Failed to fork child process, errno(%{public}d).", errno);
         goto out;
     }
-    // wait the child process terminated
-    if (TEMP_FAILURE_RETRY(waitpid(childPid, &status, __WALL)) == -1) {
-        HILOG_BASE_ERROR(LOG_CORE, "Failed to wait child process terminated, errno(%{public}d)", errno);
-        goto out;
-    }
 
+    do {
+        ret = waitpid(childPid, &status, WNOHANG);
+        if (ret < 0) {
+            HILOG_BASE_ERROR(LOG_CORE, "Failed to wait child process terminated, errno(%{public}d)", errno);
+            goto out;
+        }
+
+        if (ret == childPid) {
+            break;
+        }
+
+        if ((int)time(NULL) - startTime > PROCESSDUMP_TIMEOUT) {
+            HILOG_BASE_ERROR(LOG_CORE, "Exceed max wait time, errno(%{public}d)", errno);
+            goto out;
+        }
+        sleep(1);
+    } while (true);
     HILOG_BASE_INFO(LOG_CORE, "child process(%{public}d) terminated with status(%{public}d)", childPid, status);
 out:
     ResetSignalHandlerIfNeed(sig);
@@ -490,6 +509,7 @@ out:
 #endif
     HILOG_BASE_INFO(LOG_CORE, "Finish handle signal(%{public}d) in %{public}d:%{public}d",
         sig, g_request.pid, g_request.tid);
+    g_curSig = -1;
     pthread_mutex_unlock(&g_signalHandlerMutex);
 }
 
@@ -502,7 +522,7 @@ void DFX_InstallSignalHandler()
     }
 
 #ifdef ENABLE_DEBUG_HOOK
-    StartHookFunc();
+    StartHookFunc((uintptr_t)DFX_SignalHandler);
 #endif
 
 #ifndef DFX_LOCAL_UNWIND

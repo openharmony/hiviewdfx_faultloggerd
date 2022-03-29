@@ -26,6 +26,7 @@
 #include <sys/socket.h>
 #include <sys/un.h>
 
+#include "dfx_define.h"
 #include "dfx_dump_writer.h"
 #include "dfx_log.h"
 #include "dfx_config.h"
@@ -39,7 +40,6 @@ static const int DUMP_FIVE = 5;
 static const int DUMP_ARG_TWO = 2;
 static const int DUMP_ARG_THREE = 3;
 static const int DUMP_ARG_FOUR = 4;
-static const int ALARM_TIME_S = 30;
 static const int32_t SOCKET_BUFFER_SIZE = 256;
 static const char FAULTLOGGERD_SOCK_PATH[] = "/dev/unix/socket/faultloggerd.server";
 static const std::string DUMP_STACK_TAG_FAILED = "failed:";
@@ -198,7 +198,7 @@ int main(int argc, char *argv[])
     int32_t pid = 0;
     int32_t tid = 0;
 
-    alarm(ALARM_TIME_S); // wait 10s for process dump done
+    alarm(PROCESSDUMP_TIMEOUT); // wait 30s for process dump done
 
     if (!ParseParamters(argc, argv, isSignalHdlr, type, pid, tid)) {
         PrintCommandHelp();
