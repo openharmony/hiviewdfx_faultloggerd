@@ -166,17 +166,6 @@ int DfxLogFatal(const char *format, ...)
     return ret;
 }
 
-#ifndef DFX_LOG_USE_HILOG_BASE
-void DfxLogByTrace(bool start, const char *tag)
-{
-    if (start) {
-        StartTrace(BYTRACE_TAG_OHOS, tag);
-    } else {
-        FinishTrace(BYTRACE_TAG_OHOS);
-    }
-}
-#endif
-
 int WriteLog(int32_t fd, const char *format, ...)
 {
     int ret;

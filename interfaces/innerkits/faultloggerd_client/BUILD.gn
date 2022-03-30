@@ -20,7 +20,6 @@ config("faultloggerd_client_config") {
     "include",
     "//utils/native/base/include",
     "//base/hiviewdfx/faultloggerd/tools/process_dump/",
-    "//developtools/bytrace_standard/interfaces/innerkits/native/include",
   ]
 }
 
@@ -35,7 +34,6 @@ ohos_shared_library("libfaultloggerd") {
   ]
 
   external_deps = [
-    "bytrace_standard:bytrace_core",
     "hilog_native:libhilog",
     "utils_base:utils",
   ]

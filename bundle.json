@@ -17,7 +17,6 @@
     "ram": "~1024KB",
     "deps": {
       "components": [
-        "bytrace_standard",
         "hilog_native",
         "utils_base"
       ],

@@ -21,7 +21,6 @@ config("dfx_signal_handler_config") {
     "//base/hiviewdfx/faultloggerd/common",
     "//base/hiviewdfx/faultloggerd/tools/process_dump",
     "//utils/native/base/include",
-    "//developtools/bytrace_standard/interfaces/innerkits/native/include",
     "//base/hiviewdfx/faultloggerd/interfaces/innerkits/faultloggerd_client/include",
   ]
 }

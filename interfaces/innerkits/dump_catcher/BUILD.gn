@@ -22,7 +22,6 @@ config("dfx_dump_catcher_config") {
     "//base/hiviewdfx/faultloggerd/interfaces/innerkits/faultloggerd_client/include",
     "//base/hiviewdfx/faultloggerd/tools/process_dump",
     "//utils/native/base/include",
-    "//developtools/bytrace_standard/interfaces/innerkits/native/include",
   ]
 }
 

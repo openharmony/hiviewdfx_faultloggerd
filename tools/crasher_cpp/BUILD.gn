@@ -28,7 +28,6 @@ ohos_executable("crasher_cpp") {
 
   deps = [
     "//base/hiviewdfx/faultloggerd/interfaces/innerkits/signal_handler:dfx_signalhandler",
-    "//developtools/bytrace_standard/bin:bytrace_inner",
     "//utils/native/base:utils",
   ]
 
