@@ -26,7 +26,7 @@
 #include <unistd.h>
 #include <sys/prctl.h>
 
-#include <hilog/log_c.h>
+#include <hilog/log.h>
 
 #include "dfx_signal_handler.h"
 

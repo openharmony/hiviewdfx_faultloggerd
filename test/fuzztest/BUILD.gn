@@ -13,36 +13,49 @@
 
 import("//base/hiviewdfx/faultloggerd/faultloggerd.gni")
 import("//build/config/features.gni")
-import("//build/test.gni")
 
-module_output_path = "faultloggerd/faultloggerd_native"
+if (defined(ohos_lite)) {
+  import("//build/lite/config/test.gni")
+  if (ohos_build_type == "debug") {
+    fuzztest("test_fuzzer") {
+      output_extension = "bin"
+      output_dir = "$root_out_dir/test/fuzztest/faultloggerd"
+      include_dirs = [
+        "./",
+        "//utils/native/base/include",
+      ]
+      sources = [ "./faultloggerd_fuzzer_test.cpp" ]
+      deps = [
+        "//base/hiviewdfx/faultloggerd/interfaces/innerkits/dump_catcher:lib_dfx_dump_catcher",
+      ]
+    }
+  }
+} else {
+  import("//build/test.gni")
+  module_output_path = "faultloggerd/faultloggerd_native"
+  ohos_fuzztest("test_fuzzer") {
+    module_out_path = module_output_path
 
-##############################fuzztest##########################################
-ohos_fuzztest("test_fuzzer") {
-  module_out_path = module_output_path
-
-  include_dirs = [ "./" ]
-  cflags = [
-    "-g",
-    "-O0",
-    "-Wno-unused-variable",
-    "-fno-omit-frame-pointer",
-  ]
-  sources = [ "./faultloggerd_fuzzer_test.cpp" ]
-  deps = [
-    "//base/hiviewdfx/faultloggerd/interfaces/innerkits/dump_catcher:lib_dfx_dump_catcher",
-    "//utils/native/base:utils",
-  ]
+    include_dirs = [ "./" ]
+    cflags = [
+      "-g",
+      "-O0",
+      "-Wno-unused-variable",
+      "-fno-omit-frame-pointer",
+    ]
+    sources = [ "./faultloggerd_fuzzer_test.cpp" ]
+    deps = [
+      "//base/hiviewdfx/faultloggerd/interfaces/innerkits/dump_catcher:lib_dfx_dump_catcher",
+      "//utils/native/base:utils",
+    ]
+  }
 }
 
-###############################################################################
 group("fuzztest") {
   testonly = true
   deps = []
 
   deps += [
-    # deps file
     ":test_fuzzer",
   ]
 }
-###############################################################################

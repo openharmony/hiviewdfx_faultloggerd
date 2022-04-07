@@ -11,33 +11,53 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import("//build/ohos.gni")
+import("//base/hiviewdfx/faultloggerd/faultloggerd.gni")
 
-config("faultloggerd_client_config") {
-  visibility = [ "*:*" ]
+if (defined(ohos_lite)) {
+  shared_library("libfaultloggerd") {
+    visibility = [ "*:*" ]
 
-  include_dirs = [
-    "include",
-    "//utils/native/base/include",
-    "//base/hiviewdfx/faultloggerd/tools/process_dump/",
-  ]
-}
+    include_dirs = [
+      ".",
+      "./include",
+      "//utils/native/base/include",
+      "//base/hiviewdfx/faultloggerd/tools/process_dump/",
+      "$hilog_lite_include_path",
+    ]
 
-ohos_shared_library("libfaultloggerd") {
-  public_configs = [ ":faultloggerd_client_config" ]
+    sources = [
+      "//base/hiviewdfx/faultloggerd/tools/process_dump/dfx_log.cpp",
+      "faultloggerd_client.cpp",
+    ]
 
-  include_dirs = [ "." ]
+    deps = [ "//base/hiviewdfx/hilog_lite/frameworks/featured:hilog_shared" ]
+  }
 
-  sources = [
-    "//base/hiviewdfx/faultloggerd/tools/process_dump/dfx_log.cpp",
-    "faultloggerd_client.cpp",
-  ]
+} else {
+  config("faultloggerd_client_config") {
+    visibility = [ "*:*" ]
 
-  external_deps = [
-    "hilog_native:libhilog",
-    "utils_base:utils",
-  ]
+    include_dirs = [
+      ".",
+      "//utils/native/base/include",
+      "//base/hiviewdfx/faultloggerd/tools/process_dump/",
+    ]
+  }
 
-  part_name = "faultloggerd"
-  subsystem_name = "hiviewdfx"
+  ohos_shared_library("libfaultloggerd") {
+    public_configs = [ ":faultloggerd_client_config" ]
+
+    sources = [
+      "//base/hiviewdfx/faultloggerd/tools/process_dump/dfx_log.cpp",
+      "faultloggerd_client.cpp",
+    ]
+
+    external_deps = [
+      "hilog_native:libhilog",
+      "utils_base:utils",
+    ]
+
+    part_name = "faultloggerd"
+    subsystem_name = "hiviewdfx"
+  }
 }

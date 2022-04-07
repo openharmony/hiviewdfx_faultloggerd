@@ -12,9 +12,6 @@
 # limitations under the License.
 
 import("//base/hiviewdfx/faultloggerd/faultloggerd.gni")
-import("//build/test.gni")
-
-module_output_path = "faultloggerd/processdump_native"
 
 config("module_private_config") {
   visibility = [ ":*" ]
@@ -23,6 +20,7 @@ config("module_private_config") {
     "include/",
     "../../",
     "mock/",
+    "//utils/native/base/include",
     "//base/hiviewdfx/faultloggerd/common",
     "//base/hiviewdfx/faultloggerd/tools/process_dump/test/mock/include/",
     "//base/hiviewdfx/faultloggerd/tools/process_dump/interface",
@@ -30,25 +28,51 @@ config("module_private_config") {
   ]
 }
 
-ohos_unittest("test_processdump") {
-  module_out_path = module_output_path
-  sources = [
-    "src/dfx_maps_test.cpp",
-    "src/mock_processdump_test.cpp",
-    "src/process_dfx_test.cpp",
-    "src/process_dump_test.cpp",
-    "src/process_frames_test.cpp",
-  ]
+if (defined(ohos_lite)) {
+  import("//build/lite/config/test.gni")
+  unittest("test_processdump") {
+    output_extension = "bin"
+    output_dir = "$root_out_dir/test/unittest/faultloggerd"
+    sources = [
+      "src/dfx_maps_test.cpp",
+      "src/mock_processdump_test.cpp",
+      "src/process_dfx_test.cpp",
+      "src/process_dump_test.cpp",
+      "src/process_frames_test.cpp",
+    ]
 
-  configs = [ ":module_private_config" ]
+    configs = [ ":module_private_config" ]
 
-  deps = [
-    "//base/hiviewdfx/faultloggerd/tools/process_dump:process_info_src",
-    "//third_party/googletest:gmock_main",
-    "//third_party/googletest:gtest_main",
-    "//third_party/libunwind:libunwind",
-    "//utils/native/base:utils",
-  ]
+    deps = [
+      "//base/hiviewdfx/faultloggerd/tools/process_dump:process_info_src",
+      "//third_party/googletest:gmock_main",
+      "//third_party/googletest:gtest_main",
+      "//third_party/libunwind:libunwind",
+    ]
+  }
+} else {
+  import("//build/test.gni")
+  module_output_path = "faultloggerd/processdump_native"
+  ohos_unittest("test_processdump") {
+    module_out_path = module_output_path
+    sources = [
+      "src/dfx_maps_test.cpp",
+      "src/mock_processdump_test.cpp",
+      "src/process_dfx_test.cpp",
+      "src/process_dump_test.cpp",
+      "src/process_frames_test.cpp",
+    ]
+
+    configs = [ ":module_private_config" ]
+
+    deps = [
+      "//base/hiviewdfx/faultloggerd/tools/process_dump:process_info_src",
+      "//third_party/googletest:gmock_main",
+      "//third_party/googletest:gtest_main",
+      "//third_party/libunwind:libunwind",
+      "//utils/native/base:utils",
+    ]
+  }
 }
 
 group("unittest") {

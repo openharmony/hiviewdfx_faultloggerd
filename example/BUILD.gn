@@ -12,29 +12,45 @@
 # limitations under the License.
 
 import("//base/hiviewdfx/faultloggerd/faultloggerd.gni")
-import("//build/ohos.gni")
 
-config("dumpcatcherdemo_config") {
-  visibility = [ ":*" ]
+if (defined(ohos_lite)) {
+  executable("dumpcatcherdemo") {
+    sources = [ "dump_catcher_demo.cpp" ]
 
-  include_dirs = [
-    ".",
-    "//utils/native/base/include",
-    "//base/hiviewdfx/faultloggerd/interfaces/innerkits/dump_catcher/include/",
-  ]
-}
+    visibility = [ "*:*" ]
 
-ohos_executable("dumpcatcherdemo") {
-  sources = [ "dump_catcher_demo.cpp" ]
+    include_dirs = [
+      ".",
+      "//utils/native/base/include",
+      "//base/hiviewdfx/faultloggerd/interfaces/innerkits/dump_catcher/include/",
+    ]
 
-  configs = [ ":dumpcatcherdemo_config" ]
+    deps = [
+      "//base/hiviewdfx/faultloggerd/interfaces/innerkits/dump_catcher:lib_dfx_dump_catcher",
+    ]
+  }
+} else {
+  config("dumpcatcherdemo_config") {
+    visibility = [ ":*" ]
 
-  deps = [
-    "//base/hiviewdfx/faultloggerd/interfaces/innerkits/dump_catcher:lib_dfx_dump_catcher",
-    "//utils/native/base:utils",
-  ]
+    include_dirs = [
+      ".",
+      "//utils/native/base/include",
+      "//base/hiviewdfx/faultloggerd/interfaces/innerkits/dump_catcher/include/",
+    ]
+  }
 
-  external_deps = [ "hilog_native:libhilog" ]
-  part_name = "faultloggerd"
-  subsystem_name = "hiviewdfx"
+  ohos_executable("dumpcatcherdemo") {
+    sources = [ "dump_catcher_demo.cpp" ]
+
+    configs = [ ":dumpcatcherdemo_config" ]
+
+    deps = [
+      "//base/hiviewdfx/faultloggerd/interfaces/innerkits/dump_catcher:lib_dfx_dump_catcher",
+      "//utils/native/base:utils",
+    ]
+
+    part_name = "faultloggerd"
+    subsystem_name = "hiviewdfx"
+  }
 }

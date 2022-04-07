@@ -12,12 +12,15 @@
     "subsystem": "hiviewdfx",
     "syscap": [],
     "features": [],
-    "adapted_system_type": [ "standard" ],
+    "adapted_system_type": [
+      "small",
+      "standard"
+    ],
     "rom": "1024KB",
     "ram": "~1024KB",
     "deps": {
       "components": [
-        "hilog_native",
+        "libhilog",
         "utils_base"
       ],
       "third_party": [
@@ -63,14 +66,8 @@
       ],
       "test": [
         "//base/hiviewdfx/faultloggerd/example:dumpcatcherdemo",
-        "//base/hiviewdfx/faultloggerd/interfaces/innerkits/dump_catcher/test:harmonystrace",
-        "//base/hiviewdfx/faultloggerd/test:faultloggerd_moduletest",
-        "//base/hiviewdfx/faultloggerd/test:faultloggerd_systemtest",
-        "//base/hiviewdfx/faultloggerd/test:faultloggerd_performancetest",
         "//base/hiviewdfx/faultloggerd/tools/crasher_c:crasher_c",
-        "//base/hiviewdfx/faultloggerd/tools/crasher_cpp:crasher_cpp",
-        "//base/hiviewdfx/faultloggerd/tools/process_dump/test:processdump_unittest",
-        "//base/hiviewdfx/faultloggerd/services/test:service_unittest"
+        "//base/hiviewdfx/faultloggerd/tools/crasher_cpp:crasher_cpp"
       ]
     }
   }

@@ -12,107 +12,203 @@
 # limitations under the License.
 
 import("//base/hiviewdfx/faultloggerd/faultloggerd.gni")
-import("//build/ohos.gni")
 
-config("processdump_config") {
-  visibility = [ ":*" ]
+if (defined(ohos_lite)) {
+  source_set("process_info_src") {
+    if (use_musl) {
+      cflags = [ "-DDFX_LOCAL_UNWIND" ]
+    } else {
+      cflags = []
+    }
 
-  include_dirs = [
-    ".",
-    "//base/hiviewdfx/faultloggerd/common",
-    "//utils/native/base/include",
-  ]
-}
+    visibility = [ "*:*" ]
 
-ohos_source_set("process_info_src") {
-  if (use_musl) {
-    cflags = [ "-DDFX_LOCAL_UNWIND" ]
-  } else {
-    cflags = []
+    include_dirs = [
+      ".",
+      "//base/hiviewdfx/faultloggerd/common",
+      "//utils/native/base/include",
+      "$faultloggerd_path/interfaces/innerkits/faultloggerd_client/include",
+      "$hilog_lite_include_path",
+    ]
+
+    sources = [
+      "dfx_config.cpp",
+      "dfx_dump_writer.cpp",
+      "dfx_elf.cpp",
+      "dfx_frames.cpp",
+      "dfx_log.cpp",
+      "dfx_maps.cpp",
+      "dfx_process.cpp",
+      "dfx_signal.cpp",
+      "dfx_thread.cpp",
+      "dfx_unwind_remote.cpp",
+      "dfx_util.cpp",
+      "process_dumper.cpp",
+    ]
+
+    if (target_cpu == "arm") {
+      sources += [ "dfx_regs_arm.cpp" ]
+      #cflags += [ "-D__arm__" ]
+    } else if (target_cpu == "arm64") {
+      sources += [ "dfx_regs_arm64.cpp" ]
+      cflags += [ "-D__aarch64__" ]
+    } else if (target_cpu == "x86_64") {
+      sources += [ "dfx_regs_x86_64.cpp" ]
+      cflags += [ "-D__x86_64__" ]
+    }
+
+    deps = [
+      "$faultloggerd_path/interfaces/innerkits/faultloggerd_client:libfaultloggerd",
+      "//base/hiviewdfx/hilog_lite/frameworks/featured:hilog_shared",
+      "//third_party/libunwind:libunwind",
+    ]
   }
 
-  configs = [ ":processdump_config" ]
-  sources = [
-    "dfx_config.cpp",
-    "dfx_dump_writer.cpp",
-    "dfx_elf.cpp",
-    "dfx_frames.cpp",
-    "dfx_log.cpp",
-    "dfx_maps.cpp",
-    "dfx_process.cpp",
-    "dfx_signal.cpp",
-    "dfx_thread.cpp",
-    "dfx_unwind_remote.cpp",
-    "dfx_util.cpp",
-    "process_dumper.cpp",
-  ]
+  executable("processdump") {
+    visibility = [ "*:*" ]
 
-  if (target_cpu == "arm") {
-    sources += [ "dfx_regs_arm.cpp" ]
-    #cflags += [ "-D__arm__" ]
-  } else if (target_cpu == "arm64") {
-    sources += [ "dfx_regs_arm64.cpp" ]
-    cflags += [ "-D__aarch64__" ]
-  } else if (target_cpu == "x86_64") {
-    sources += [ "dfx_regs_x86_64.cpp" ]
-    cflags += [ "-D__x86_64__" ]
+    include_dirs = [
+      ".",
+      "//base/hiviewdfx/faultloggerd/common",
+      "//utils/native/base/include",
+      "$faultloggerd_path/interfaces/innerkits/faultloggerd_client/include",
+      "$hilog_lite_include_path",
+    ]
+    sources = [
+      "cppcrash_reporter.cpp",
+      "dfx_config.cpp",
+      "dfx_dump_writer.cpp",
+      "dfx_elf.cpp",
+      "dfx_frames.cpp",
+      "dfx_log.cpp",
+      "dfx_maps.cpp",
+      "dfx_process.cpp",
+      "dfx_signal.cpp",
+      "dfx_thread.cpp",
+      "dfx_unwind_remote.cpp",
+      "dfx_util.cpp",
+      "main.cpp",
+      "process_dumper.cpp",
+    ]
+
+    if (target_cpu == "arm") {
+      sources += [ "dfx_regs_arm.cpp" ]
+      cflags = [ "-D__arm__" ]
+    } else if (target_cpu == "arm64") {
+      sources += [ "dfx_regs_arm64.cpp" ]
+      cflags = [ "-D__aarch64__" ]
+    } else if (target_cpu == "x86_64") {
+      sources += [ "dfx_regs_x86_64.cpp" ]
+      cflags = [ "-D__x86_64__" ]
+    }
+
+    deps = [
+      "$faultloggerd_path/interfaces/innerkits/faultloggerd_client:libfaultloggerd",
+      "//base/hiviewdfx/hilog_lite/frameworks/featured:hilog_shared",
+      "//third_party/libunwind:libunwind",
+    ]
+  }
+} else {
+  config("processdump_config") {
+    visibility = [ ":*" ]
+
+    include_dirs = [
+      ".",
+      "//base/hiviewdfx/faultloggerd/common",
+      "//utils/native/base/include",
+    ]
   }
 
-  deps = [
-    "$faultloggerd_path/interfaces/innerkits/faultloggerd_client:libfaultloggerd",
-    "//third_party/libunwind:libunwind",
-  ]
+  ohos_source_set("process_info_src") {
+    if (use_musl) {
+      cflags = [ "-DDFX_LOCAL_UNWIND" ]
+    } else {
+      cflags = []
+    }
 
-  external_deps = [
-    "hilog_native:libhilog",
-    "utils_base:utils",
-  ]
+    configs = [ ":processdump_config" ]
+    sources = [
+      "dfx_config.cpp",
+      "dfx_dump_writer.cpp",
+      "dfx_elf.cpp",
+      "dfx_frames.cpp",
+      "dfx_log.cpp",
+      "dfx_maps.cpp",
+      "dfx_process.cpp",
+      "dfx_signal.cpp",
+      "dfx_thread.cpp",
+      "dfx_unwind_remote.cpp",
+      "dfx_util.cpp",
+      "process_dumper.cpp",
+    ]
 
-  part_name = "faultloggerd"
-  subsystem_name = "hiviewdfx"
-}
+    if (target_cpu == "arm") {
+      sources += [ "dfx_regs_arm.cpp" ]
+      #cflags += [ "-D__arm__" ]
+    } else if (target_cpu == "arm64") {
+      sources += [ "dfx_regs_arm64.cpp" ]
+      cflags += [ "-D__aarch64__" ]
+    } else if (target_cpu == "x86_64") {
+      sources += [ "dfx_regs_x86_64.cpp" ]
+      cflags += [ "-D__x86_64__" ]
+    }
 
-ohos_executable("processdump") {
-  install_enable = true
-  configs = [ ":processdump_config" ]
-  sources = [
-    "cppcrash_reporter.cpp",
-    "dfx_config.cpp",
-    "dfx_dump_writer.cpp",
-    "dfx_elf.cpp",
-    "dfx_frames.cpp",
-    "dfx_log.cpp",
-    "dfx_maps.cpp",
-    "dfx_process.cpp",
-    "dfx_signal.cpp",
-    "dfx_thread.cpp",
-    "dfx_unwind_remote.cpp",
-    "dfx_util.cpp",
-    "main.cpp",
-    "process_dumper.cpp",
-  ]
+    deps = [
+      "$faultloggerd_path/interfaces/innerkits/faultloggerd_client:libfaultloggerd",
+      "//third_party/libunwind:libunwind",
+    ]
 
-  if (target_cpu == "arm") {
-    sources += [ "dfx_regs_arm.cpp" ]
-    cflags = [ "-D__arm__" ]
-  } else if (target_cpu == "arm64") {
-    sources += [ "dfx_regs_arm64.cpp" ]
-    cflags = [ "-D__aarch64__" ]
-  } else if (target_cpu == "x86_64") {
-    sources += [ "dfx_regs_x86_64.cpp" ]
-    cflags = [ "-D__x86_64__" ]
+    external_deps = [
+      "hilog_native:libhilog",
+      "utils_base:utils",
+    ]
+
+    part_name = "faultloggerd"
+    subsystem_name = "hiviewdfx"
   }
 
-  deps = [
-    "$faultloggerd_path/interfaces/innerkits/faultloggerd_client:libfaultloggerd",
-    "//third_party/libunwind:libunwind",
-  ]
+  ohos_executable("processdump") {
+    install_enable = true
+    configs = [ ":processdump_config" ]
+    sources = [
+      "cppcrash_reporter.cpp",
+      "dfx_config.cpp",
+      "dfx_dump_writer.cpp",
+      "dfx_elf.cpp",
+      "dfx_frames.cpp",
+      "dfx_log.cpp",
+      "dfx_maps.cpp",
+      "dfx_process.cpp",
+      "dfx_signal.cpp",
+      "dfx_thread.cpp",
+      "dfx_unwind_remote.cpp",
+      "dfx_util.cpp",
+      "main.cpp",
+      "process_dumper.cpp",
+    ]
 
-  external_deps = [
-    "hilog_native:libhilog",
-    "utils_base:utils",
-  ]
+    if (target_cpu == "arm") {
+      sources += [ "dfx_regs_arm.cpp" ]
+      cflags = [ "-D__arm__" ]
+    } else if (target_cpu == "arm64") {
+      sources += [ "dfx_regs_arm64.cpp" ]
+      cflags = [ "-D__aarch64__" ]
+    } else if (target_cpu == "x86_64") {
+      sources += [ "dfx_regs_x86_64.cpp" ]
+      cflags = [ "-D__x86_64__" ]
+    }
 
-  part_name = "faultloggerd"
-  subsystem_name = "hiviewdfx"
+    deps = [
+      "$faultloggerd_path/interfaces/innerkits/faultloggerd_client:libfaultloggerd",
+      "//third_party/libunwind:libunwind",
+    ]
+
+    external_deps = [
+      "hilog_native:libhilog",
+      "utils_base:utils",
+    ]
+
+    part_name = "faultloggerd"
+    subsystem_name = "hiviewdfx"
+  }
 }
