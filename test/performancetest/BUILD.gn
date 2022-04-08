@@ -1,4 +1,4 @@
-# Copyright (c) 2021 Huawei Device Co., Ltd.
+# Copyright (c) 2021-2022 Huawei Device Co., Ltd.
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -43,7 +43,27 @@ ohos_performancetest("test_performance") {
   ]
 }
 
+config("multithread_constructor_config") {
+  visibility = [ ":*" ]
+
+  include_dirs = [
+    "include/",
+    "//utils/native/base/include",
+  ]
+}
+
+ohos_executable("multithread_constructor") {
+  sources = [ "src/multithread_constructor.c" ]
+
+  configs = [ ":multithread_constructor_config" ]
+
+  deps = [ "//utils/native/base:utils" ]
+}
+
 group("performance") {
   testonly = true
-  deps = [ ":test_performance" ]
+  deps = [
+    ":multithread_constructor",
+    ":test_performance",
+  ]
 }
