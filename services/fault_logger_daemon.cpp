@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -35,6 +35,7 @@
 #include <securec.h>
 
 #include "dfx_log.h"
+#include "dfx_define.h"
 #include "fault_logger_config.h"
 #include "fault_logger_secure.h"
 #include "fault_logger_daemon.h"
@@ -61,7 +62,6 @@ static const char FAULTLOGGERD_SOCK_PATH[] = "/dev/unix/socket/faultloggerd.serv
 const int SIGDUMP = 35;
 const int MINUS_ONE_THOUSAND = -1000;
 
-static const int LOG_BUF_LEN = 1024;
 static const int GC_TIME_US = 1000000;
 static const int DAEMON_REMOVE_FILE_TIME_S = 60;
 

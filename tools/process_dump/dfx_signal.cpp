@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -16,6 +16,7 @@
 #include "dfx_signal.h"
 
 #include <csignal>
+#include <securec.h>
 
 #include "dfx_define.h"
 #include "dfx_log.h"
@@ -74,31 +75,75 @@ int32_t DfxSignal::GetSignal() const
     return signal_;
 }
 
-void PrintSignal(const siginfo_t &info, const int32_t fd)
+std::string PrintSignal(const siginfo_t &info)
 {
     DfxLogDebug("Enter %s.", __func__);
-    WriteLog(fd, "Signal:%s(%s)", FormatSignalName(info.si_signo).c_str(),
+    std::string sigString = "";
+    char buf[LOG_BUF_LEN] = {0};
+
+    int ret = snprintf_s(buf, sizeof(buf), sizeof(buf) - 1, "Signal:%s(%s)", FormatSignalName(info.si_signo).c_str(), \
         FormatCodeName(info.si_signo, info.si_code).c_str());
+    if (ret <= 0) {
+        DfxLogError("%s :: snprintf_s failed, line: %d.", __func__, __LINE__);
+    }
+    sigString = sigString + std::string(buf);
+    ret = memset_s(buf, LOG_BUF_LEN, '\0', LOG_BUF_LEN);
+    if (ret != EOK) {
+        DfxLogError("%s :: memset_s failed, line: %d.", __func__, __LINE__);
+    }
 
     DfxSignal signal(info.si_signo);
     if (signal.IsAddrAvaliable()) {
 #if defined(__aarch64__)
-        WriteLog(fd, "@0x%016lx ", (uint64_t)info.si_addr);
+        ret = snprintf_s(buf, sizeof(buf), sizeof(buf) - 1, "@0x%016lx ", (uint64_t)info.si_addr);
+        if (ret <= 0) {
+            DfxLogError("%s :: snprintf_s failed, line: %d.", __func__, __LINE__);
+        }
+        sigString = sigString + std::string(buf);
+        ret = memset_s(buf, LOG_BUF_LEN, '\0', LOG_BUF_LEN);
+        if (ret != EOK) {
+            DfxLogError("%s :: memset_s failed, line: %d.", __func__, __LINE__);
+        }
 #elif defined(__arm__)
-        WriteLog(fd, "@0x%08x ", (uint32_t)info.si_addr);
+        ret = snprintf_s(buf, sizeof(buf), sizeof(buf) - 1, "@0x%08x ", (uint32_t)info.si_addr);
+        if (ret <= 0) {
+            DfxLogError("%s :: snprintf_s failed, line: %d.", __func__, __LINE__);
+        }
+        sigString = sigString + std::string(buf);
+        ret = memset_s(buf, LOG_BUF_LEN, '\0', LOG_BUF_LEN);
+        if (ret != EOK) {
+            DfxLogError("%s :: memset_s failed, line: %d.", __func__, __LINE__);
+        }
 #elif defined(__x86_64__)
-        WriteLog(fd, "@0x%016lx ", static_cast<uint64_t>(info.si_addr));
+        ret = snprintf_s(buf, sizeof(buf), sizeof(buf) - 1, "@0x%016lx ", static_cast<uint64_t>(info.si_addr));
+        if (ret <= 0) {
+            DfxLogError("%s :: snprintf_s failed, line: %d.", __func__, __LINE__);
+        }
+        sigString = sigString + std::string(buf);
+        ret = memset_s(buf, LOG_BUF_LEN, '\0', LOG_BUF_LEN);
+        if (ret != EOK) {
+            DfxLogError("%s :: memset_s failed, line: %d.", __func__, __LINE__);
+        }
 #else
 #pragma message("Unsupport arch.")
 #endif
     }
 
     if ((info.si_code <= 0) && (info.si_pid != 0)) {
-        WriteLog(fd, "from:%d:%d", info.si_pid, info.si_uid);
+        ret = snprintf_s(buf, sizeof(buf), sizeof(buf) - 1, "from:%d:%d", info.si_pid, info.si_uid);
+        if (ret <= 0) {
+            DfxLogError("%s :: snprintf_s failed, line: %d.", __func__, __LINE__);
+        }
+        sigString = sigString + std::string(buf);
+        ret = memset_s(buf, LOG_BUF_LEN, '\0', LOG_BUF_LEN);
+        if (ret != EOK) {
+            DfxLogError("%s :: memset_s failed, line: %d.", __func__, __LINE__);
+        }
     }
 
-    WriteLog(fd, "\n");
+    sigString = sigString + "\n";
     DfxLogDebug("Exit %s.", __func__);
+    return sigString;
 }
 
 std::string FormatSignalName(const int32_t signal)

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -22,6 +22,7 @@
 #include <cstdio>
 #include <cstring>
 #include <sys/ptrace.h>
+#include <securec.h>
 
 #include "dfx_config.h"
 #include "dfx_define.h"
@@ -31,11 +32,12 @@
 #include "dfx_regs.h"
 #include "dfx_thread.h"
 #include "dfx_util.h"
-
-static const int SYMBOL_BUF_SIZE = 4096;
+#include "process_dumper.h"
 
 namespace OHOS {
 namespace HiviewDFX {
+static const int SYMBOL_BUF_SIZE = 4096;
+
 DfxUnwindRemote &DfxUnwindRemote::GetInstance()
 {
     static DfxUnwindRemote ins;
@@ -44,7 +46,6 @@ DfxUnwindRemote &DfxUnwindRemote::GetInstance()
 
 bool DfxUnwindRemote::UnwindProcess(std::shared_ptr<DfxProcess> process)
 {
-    DfxLogDebug("Enter %s.", __func__);
     if (!process) {
         return false;
     }
@@ -54,18 +55,38 @@ bool DfxUnwindRemote::UnwindProcess(std::shared_ptr<DfxProcess> process)
         return false;
     }
 
+    as_ = unw_create_addr_space(&_UPT_accessors, 0);
+    if (!as_) {
+        return false;
+    }
+    unw_set_caching_policy(as_, UNW_CACHE_GLOBAL);
+
     // only need to unwind crash thread in crash scenario
     if (process->GetIsSignalHdlr() && !process->GetIsSignalDump() && \
         !DfxConfig::GetInstance().GetDumpOtherThreads()) {
-        return UnwindThread(process, threads[0]);
+        bool ret = UnwindThread(process, threads[0]);
+        unw_destroy_addr_space(as_);
+        return ret;
     }
 
+    size_t index = 0;
     for (auto thread : threads) {
+        if (index == 1) {
+            process->PrintThreadsHeaderByConfig();
+        }
+
         if (!UnwindThread(process, thread)) {
             DfxLogWarn("Fail to unwind thread.");
         }
+
+        if (thread->GetIsCrashThread() && (process->GetIsSignalDump() == false) && \
+            (process->GetIsSignalHdlr() == true)) {
+            process->PrintProcessMapsByConfig();
+        }
+        index++;
     }
-    DfxLogDebug("Exit %s.", __func__);
+
+    unw_destroy_addr_space(as_);
     return true;
 }
 
@@ -162,6 +183,8 @@ bool DfxUnwindRemote::DfxUnwindRemoteDoUnwindStep(size_t const & index,
         frame->SetFrameFuncName(funcName);
         frame->SetFrameFuncOffset(frameOffset);
     }
+
+    OHOS::HiviewDFX::ProcessDumper::GetInstance().PrintDumpProcessMsg(frame->PrintFrame());
     DfxLogDebug("Exit %s :: index(%d), framePc(0x%x), frameSp(0x%x).", __func__, index, framePc, frameSp);
     return true;
 }
@@ -174,32 +197,37 @@ bool DfxUnwindRemote::UnwindThread(std::shared_ptr<DfxProcess> process, std::sha
         return false;
     }
 
-    unw_addr_space_t as = unw_create_addr_space(&_UPT_accessors, 0);
-    if (!as) {
-        return false;
-    }
-
     pid_t tid = thread->GetThreadId();
     std::shared_ptr<DfxRegs> regs = thread->GetThreadRegs();
+
+    char buf[LOG_BUF_LEN] = {0};
+    int ret = snprintf_s(buf, sizeof(buf), sizeof(buf) - 1, "Tid:%d, Name:%s\n", tid, thread->GetThreadName().c_str());
+    if (ret <= 0) {
+        DfxLogError("%s :: snprintf_s failed, line: %d.", __func__, __LINE__);
+    }
+    OHOS::HiviewDFX::ProcessDumper::GetInstance().PrintDumpProcessMsg(std::string(buf));
+
     uintptr_t regStorePc = 0;
     uintptr_t regStoreLr = 0;
+    uintptr_t regStoreSp = 0;
     if (regs != nullptr) {
         std::vector<uintptr_t> regsVector = regs->GetRegsData();
         regStorePc = regsVector[REG_PC_NUM];
         regStoreLr = regsVector[REG_LR_NUM];
+        regStoreSp = regsVector[REG_SP_NUM];
     }
 
     void *context = _UPT_create(tid);
     if (!context) {
-        unw_destroy_addr_space(as);
+        unw_destroy_addr_space(as_);
         return false;
     }
 
     unw_cursor_t cursor;
-    if (unw_init_remote(&cursor, as, context) != 0) {
+    if (unw_init_remote(&cursor, as_, context) != 0) {
         DfxLogWarn("Fail to init cursor for remote unwind.");
         _UPT_destroy(context);
-        unw_destroy_addr_space(as);
+        unw_destroy_addr_space(as_);
         return false;
     }
 
@@ -207,13 +235,14 @@ bool DfxUnwindRemote::UnwindThread(std::shared_ptr<DfxProcess> process, std::sha
     int unwRet = 0;
     unw_word_t oldPc = 0;
     size_t crashUnwStepPosition = 0;
+    size_t skipFrames = 0;
     bool useLrUnwStep = false;
     bool isSigDump = process->GetIsSignalDump();
     do {
         unw_word_t tmpPc = 0;
         unw_get_reg(&cursor, UNW_REG_IP, &tmpPc);
         // Exit unwind step as pc has no change. -S-
-        if (oldPc == tmpPc) {
+        if (oldPc == tmpPc && index != 0) {
             DfxLogWarn("Break unwstep as tmpPc is same with old_ip .");
             break;
         }
@@ -222,11 +251,27 @@ bool DfxUnwindRemote::UnwindThread(std::shared_ptr<DfxProcess> process, std::sha
 
         if (thread->GetIsCrashThread() && (regStorePc == tmpPc)) {
             crashUnwStepPosition = index + 1;
+            skipFrames = index;
+        } else if (thread->GetIsCrashThread() && (regStoreLr == tmpPc) && (regStorePc == 0x0)) {
+            // Lr position found in crash thread. We need:
+            // 1. mark skipFrames.
+            // 2. Add pc zero frame.
+            useLrUnwStep = true;
+            skipFrames = index;
+            std::shared_ptr<DfxFrames> frame = thread->GetAvaliableFrame();
+            frame->SetFrameIndex(0);
+            frame->SetFramePc(regStorePc);
+            frame->SetFrameLr(regStoreLr);
+            frame->SetFrameSp(regStoreSp);
+            OHOS::HiviewDFX::ProcessDumper::GetInstance().PrintDumpProcessMsg(frame->PrintFrame());
+            index++;
         }
 
-        if (!DfxUnwindRemoteDoUnwindStep(index, thread, cursor, process)) {
-            DfxLogWarn("Break unwstep as DfxUnwindRemoteDoUnwindStep failed -1.");
-            break;
+        if (skipFrames != 0 || thread->GetIsCrashThread() == false) {
+            if (!DfxUnwindRemoteDoUnwindStep((index - skipFrames), thread, cursor, process)) {
+                DfxLogWarn("Break unwstep as DfxUnwindRemoteDoUnwindStep failed -1.");
+                break;
+            }
         }
 
         index++;
@@ -236,7 +281,8 @@ bool DfxUnwindRemote::UnwindThread(std::shared_ptr<DfxProcess> process, std::sha
         if (!isSigDump && !processMaps->CheckPcIsValid((uint64_t)tmpPc) &&
             (crashUnwStepPosition == index)) {
             unw_set_reg(&cursor, UNW_REG_IP, regStoreLr);
-            if (!DfxUnwindRemoteDoUnwindStep(index, thread, cursor, process)) {  // Add lr frame to frame list.
+            // Add lr frame to frame list.
+            if (!DfxUnwindRemoteDoUnwindStep((index - skipFrames), thread, cursor, process)) {
                 DfxLogWarn("Break unwstep as DfxUnwindRemoteDoUnwindStep failed -2.");
                 break;
             }
@@ -248,7 +294,8 @@ bool DfxUnwindRemote::UnwindThread(std::shared_ptr<DfxProcess> process, std::sha
         if (unwRet <= 0) {
             if (!isSigDump && (crashUnwStepPosition == index)) {
                 unw_set_reg(&cursor, UNW_REG_IP, regStoreLr);
-                if (!DfxUnwindRemoteDoUnwindStep(index, thread, cursor, process)) {  // Add lr frame to frame list.
+                // Add lr frame to frame list.
+                if (!DfxUnwindRemoteDoUnwindStep((index - skipFrames), thread, cursor, process)) {
                     DfxLogWarn("Break unwstep as DfxUnwindRemoteDoUnwindStep failed -3.");
                     break;
                 }
@@ -260,12 +307,14 @@ bool DfxUnwindRemote::UnwindThread(std::shared_ptr<DfxProcess> process, std::sha
     } while ((unwRet > 0) && (index < BACK_STACK_MAX_STEPS));
     thread->SetThreadUnwStopReason(unwRet);
     _UPT_destroy(context);
-    unw_destroy_addr_space(as);
-    if (process->GetIsSignalHdlr() && thread->GetIsCrashThread()) {
-        thread->SkipFramesInSignalHandler();
-        if (process->GetIsSignalDump() == false) {
-            std::shared_ptr<DfxElfMaps> maps = process->GetMaps();
+
+    if (process->GetIsSignalHdlr() && thread->GetIsCrashThread() && (process->GetIsSignalDump() == false)) {
+        OHOS::HiviewDFX::ProcessDumper::GetInstance().PrintDumpProcessMsg(regs->PrintRegs());
+        std::shared_ptr<DfxElfMaps> maps = process->GetMaps();
+        if (DfxConfig::GetInstance().GetDisplayFaultStack()) {
             thread->CreateFaultStack(maps);
+            OHOS::HiviewDFX::ProcessDumper::GetInstance().PrintDumpProcessMsg(\
+                thread->PrintThreadFaultStackByConfig() + "\n");
         }
     }
 
