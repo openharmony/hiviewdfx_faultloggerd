@@ -61,8 +61,6 @@ static const char FAULTLOGGERD_SOCK_PATH[] = "/dev/unix/socket/faultloggerd.serv
 
 const int SIGDUMP = 35;
 const int MINUS_ONE_THOUSAND = -1000;
-
-static const int GC_TIME_US = 1000000;
 static const int DAEMON_REMOVE_FILE_TIME_S = 60;
 
 static std::string GetRequestTypeName(int32_t type)
@@ -626,25 +624,12 @@ void FaultLoggerDaemon::RemoveTempFileIfNeed()
     }
 }
 
-void FaultLoggerDaemon::GcZStatProcess(void)
-{
-    int status = -1;
-
-    while (true) {
-        // try to wait and clear the finished child process(Z status).
-        waitpid(-1, &status, WNOHANG);
-        usleep(GC_TIME_US);
-    }
-}
-
 void FaultLoggerDaemon::LoopAcceptRequestAndFork(int socketFd)
 {
     struct sockaddr_un clientAddr;
     socklen_t clientAddrSize = static_cast<socklen_t>(sizeof(clientAddr));
     int connectionFd = -1;
-
-    auto tGcZStatProcess = std::thread(&FaultLoggerDaemon::GcZStatProcess, this);
-    tGcZStatProcess.detach();
+    signal(SIGCHLD, SIG_IGN);
 
     while (true) {
         if ((connectionFd = accept(socketFd, reinterpret_cast<struct sockaddr *>(&clientAddr), &clientAddrSize)) < 0) {
