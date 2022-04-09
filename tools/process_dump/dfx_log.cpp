@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -20,6 +20,7 @@
 #include <unistd.h>
 
 #include <faultloggerd_client.h>
+#include "dfx_define.h"
 
 enum class LOG_LEVEL_CLASS {
     LOG_LEVEL_ALL = 1,
@@ -35,7 +36,6 @@ enum class LOG_LEVEL_CLASS {
 static const LOG_LEVEL_CLASS LOG_LEVEL = LOG_LEVEL_CLASS::LOG_LEVEL_INFO;
 static const int32_t INVALID_FD = -1;
 static int32_t g_DebugLogFilleDes = INVALID_FD;
-static const int LOG_BUF_LEN = 1024;
 #ifndef DFX_LOG_USE_HILOG_BASE
 static int32_t g_StdErrFilleDes = INVALID_FD;
 static const OHOS::HiviewDFX::HiLogLabel g_LOG_LABEL = {LOG_CORE, 0xD002D20, "DfxFaultLogger"};

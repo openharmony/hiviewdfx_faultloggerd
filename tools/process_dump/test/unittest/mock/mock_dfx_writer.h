@@ -27,8 +27,6 @@ class MockDfxWriter : public DfxDumpWriter {
 public:
     MockDfxWriter() = default;
     virtual ~MockDfxWriter() = default;
-    
-    MOCK_METHOD2(WriteProcessDump, void(std::shared_ptr<ProcessDumpRequest> request));
 };
 } // namespace HiviewDFX
 } // namespace OHOS

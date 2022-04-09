@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -181,8 +181,8 @@ void DfxThread::PrintThread(const int32_t fd, bool isSignalDump)
 
     PrintThreadBacktraceByConfig(fd);
     if (isSignalDump == false) {
-        PrintThreadRegisterByConfig(fd);
-        PrintThreadFaultStackByConfig(fd);
+        PrintThreadRegisterByConfig();
+        PrintThreadFaultStackByConfig();
     }
     DfxLogDebug("Exit %s.", __func__);
 }
@@ -402,24 +402,26 @@ void DfxThread::PrintThreadBacktraceByConfig(const int32_t fd)
     }
 }
 
-void DfxThread::PrintThreadRegisterByConfig(const int32_t fd)
+std::string DfxThread::PrintThreadRegisterByConfig()
 {
     if (DfxConfig::GetInstance().GetDisplayRegister()) {
         if (regs_) {
-            regs_->PrintRegs(fd);
+            return regs_->PrintRegs();
         }
+        return "";
     } else {
         DfxLogDebug("hidden register");
+        return "";
     }
 }
 
-void DfxThread::PrintThreadFaultStackByConfig(const int32_t fd)
+std::string DfxThread::PrintThreadFaultStackByConfig()
 {
     if (DfxConfig::GetInstance().GetDisplayFaultStack() && isCrashThread_) {
-        WriteLog(fd, "FaultStack:\n");
-        PrintFaultStacks(dfxFrames_, fd);
+        return "FaultStack:\n" + PrintFaultStacks(dfxFrames_) + "\n";
     } else {
         DfxLogDebug("hidden faultStack");
+        return "";
     }
 }
 

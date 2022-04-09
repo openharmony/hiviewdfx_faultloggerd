@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -19,10 +19,15 @@
 #define DFX_PROCESSDUMP_H
 
 #include <cinttypes>
+#include <condition_variable>
+#include <mutex>
 #include <memory>
+#include <string>
+#include <thread>
 
 #include "nocopyable.h"
 #include "dfx_dump_writer.h"
+#include "dfx_ring_buffer.h"
 
 namespace OHOS {
 namespace HiviewDFX {
@@ -40,12 +45,24 @@ public:
     bool GetDisplayMaps() const;
     void SetLogPersist(bool logPersist);
     bool GetLogPersist() const;
+    void PrintDumpProcessMsg(std::string msg);
+public:
+    int32_t backTraceFileFd_;
+    std::thread backTracePrintThread_;
+    DfxRingBuffer<BACK_TRACE_RING_BUFFER_SIZE, std::string> backTraceRingBuffer_;
+    volatile bool backTraceIsFinished_ = false;
+    static std::condition_variable backTracePrintCV;
+    static std::mutex backTracePrintMutx;
 
 private:
     void DumpProcessWithSignalContext(std::shared_ptr<DfxProcess> &process,
                                       std::shared_ptr<ProcessDumpRequest> request);
     void DumpProcess(std::shared_ptr<DfxProcess> &process, std::shared_ptr<ProcessDumpRequest> request);
+    void InitPrintThread(int32_t fromSignalHandler, std::shared_ptr<ProcessDumpRequest> request, \
+        std::shared_ptr<DfxProcess> process);
     void PrintDumpFailed();
+    void PrintDumpProcessWithSignalContextHeader(std::shared_ptr<DfxProcess> process, siginfo_t info);
+    void PrintDumpProcessFooter(std::shared_ptr<DfxProcess> process, bool printMapFlag);
 
     ProcessDumper() = default;
     DISALLOW_COPY_AND_MOVE(ProcessDumper);

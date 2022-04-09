@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -153,55 +153,6 @@ DfxDumpWriter::DfxDumpWriter(std::shared_ptr<DfxProcess> process, int32_t fromSi
     DfxLogDebug("Enter %s.", __func__);
     process_ = process;
     fromSignalHandler_ = fromSignalHandler;
-    DfxLogDebug("Exit %s.", __func__);
-}
-
-void DfxDumpWriter::WriteProcessDump(std::shared_ptr<ProcessDumpRequest> request)
-{
-    DfxLogDebug("Enter %s.", __func__);
-    if (!process_ || !request) {
-        DfxLogError("Have no process or request is null.");
-        return;
-    }
-
-    if (fromSignalHandler_ == 0) {
-        process_->PrintProcess(STDOUT_FILENO, false);
-    } else {
-        struct FaultLoggerdRequest faultloggerdRequest;
-        if (memset_s(&faultloggerdRequest, sizeof(faultloggerdRequest), 0, sizeof(struct FaultLoggerdRequest)) != 0) {
-            DfxLogError("memset_s error.");
-            return;
-        }
-        faultloggerdRequest.type = (request->GetSiginfo().si_signo == SIGDUMP) ?
-            (int32_t)FaultLoggerType::CPP_STACKTRACE : (int32_t)FaultLoggerType::CPP_CRASH;
-        faultloggerdRequest.pid = request->GetPid();
-        faultloggerdRequest.tid = request->GetTid();
-        faultloggerdRequest.uid = request->GetUid();
-        faultloggerdRequest.time = request->GetTimeStamp();
-        if (strncpy_s(faultloggerdRequest.module, sizeof(faultloggerdRequest.module),
-            process_->GetProcessName().c_str(), process_->GetProcessName().length()) != 0) {
-            DfxLogWarn("Failed to set process name.");
-            return;
-        }
-
-        int32_t targetFd = RequestFileDescriptorEx(&faultloggerdRequest);
-        if (targetFd < 0) {
-            DfxLogWarn("Failed to request fd from faultloggerd.");
-        }
-        auto siginfo = std::make_shared<siginfo_t>(request->GetSiginfo());
-        if (process_->GetIsSignalDump() == false) {
-            process_->PrintProcessWithSiginfo(siginfo, targetFd);
-            close(targetFd);
-            CppCrashReporter reporter(faultloggerdRequest.time, request->GetSiginfo().si_signo, process_);
-            reporter.ReportToHiview();
-
-            DfxLogWarn("Force stop %d due to signal %d.", request->GetPid(), request->GetSiginfo().si_signo);
-            kill(request->GetPid(), SIGKILL);
-        } else {
-            process_->PrintProcess(targetFd, false);
-            close(targetFd);
-        }
-    }
     DfxLogDebug("Exit %s.", __func__);
 }
 } // namespace HiviewDFX

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -88,7 +88,6 @@ public:
     DfxDumpWriter() = default;
     virtual ~DfxDumpWriter() = default;
     DfxDumpWriter(std::shared_ptr<DfxProcess> process, int32_t fromSignalHandler);
-    virtual void WriteProcessDump(std::shared_ptr<ProcessDumpRequest> request);
 private:
     std::shared_ptr<DfxProcess> process_ = nullptr;
     int32_t fromSignalHandler_ = 0;
