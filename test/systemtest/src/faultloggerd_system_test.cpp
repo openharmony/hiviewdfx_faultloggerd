@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -658,11 +658,11 @@ void FaultLoggerdSystemTest::StartCrasherLoop(int type)
     int appTidCount = 0;
     int sysTidCount = 0;
     if (type == NUMBER_ONE) {
-        int cresherType = 0;
+        int crasherType = 0;
         int uidSetting = BMS_UID;
         setuid(uidSetting);
         std::vector<std::string> cmds { "crasher", "thread-Loop" };
-        FaultLoggerdSystemTest::ForkAndCommands(cmds, cresherType, uidSetting);
+        FaultLoggerdSystemTest::ForkAndCommands(cmds, crasherType, uidSetting);
         if (loopSysPid == 0) {
             exit(0);
         }
@@ -685,11 +685,11 @@ void FaultLoggerdSystemTest::StartCrasherLoop(int type)
         setuid(otheruid);
         pclose(procFileInfo);
     } else if (type == NUMBER_TWO) {
-        int cresherType = 0;
+        int crasherType = 0;
         int rootuid = 0;
         setuid(rootuid);
         std::vector<std::string> cmds { "crasher", "thread-Loop" };
-        FaultLoggerdSystemTest::ForkAndCommands(cmds, cresherType, rootuid);
+        FaultLoggerdSystemTest::ForkAndCommands(cmds, crasherType, rootuid);
         if (loopRootPid == 0) {
             exit(0);
         }
@@ -712,11 +712,11 @@ void FaultLoggerdSystemTest::StartCrasherLoop(int type)
         setuid(otheruid);
         pclose(procFileInfo);
     } else if (type == NUMBER_THREE) {
-        int cresherType = 0;
+        int crasherType = 0;
         int uidSetting = OTHER_UID;
         setuid(uidSetting);
         std::vector<std::string> cmds { "crasher", "thread-Loop" };
-        FaultLoggerdSystemTest::ForkAndCommands(cmds, cresherType, uidSetting);
+        FaultLoggerdSystemTest::ForkAndCommands(cmds, crasherType, uidSetting);
         if (loopAppPid == 0) {
             exit(0);
         }
@@ -737,11 +737,11 @@ void FaultLoggerdSystemTest::StartCrasherLoop(int type)
         }
         pclose(procFileInfo);
     } else if (type == NUMBER_FOUR) {
-        int cresherType = 1;
+        int crasherType = 1;
         int otheruid = OTHER_UID;
         setuid(otheruid);
         std::vector<std::string> cmds { "crasher", "thread-Loop" };
-        FaultLoggerdSystemTest::ForkAndCommands(cmds, cresherType, otheruid);
+        FaultLoggerdSystemTest::ForkAndCommands(cmds, crasherType, otheruid);
     }
 }
 void FaultLoggerdSystemTest::GetTestFaultLoggerdTid(int testPid)

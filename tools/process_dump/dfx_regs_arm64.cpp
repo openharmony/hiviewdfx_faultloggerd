@@ -158,7 +158,6 @@ std::string DfxRegsArm64::PrintRegs() const
         DfxLogError("%s :: memset_s failed, line: %d.", __func__, __LINE__);
     }
 
-        regs[REG_18], regs[REG_19]);
     ret = snprintf_s(buf, sizeof(buf), sizeof(buf) - 1, "x16:%016lx x17:%016lx x18:%016lx x19:%016lx\n", \
         regs[REG_16], regs[REG_17], regs[REG_18], regs[REG_19]);
     if (ret <= 0) {
