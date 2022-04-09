@@ -36,7 +36,6 @@ private:
     void HandleDefaultClientReqeust(int32_t connectionFd, const FaultLoggerdRequest* request);
     void HandleLogFileDesClientReqeust(int32_t connectionFd, const FaultLoggerdRequest* request);
     void HandlePrintTHilogClientReqeust(int32_t const connectionFd, FaultLoggerdRequest* request);
-    void GcZStatProcess(void);
     FaultLoggerCheckPermissionResp SecurityCheck(int32_t connectionFd, FaultLoggerdRequest* request);
     void HandlePermissionReqeust(int32_t connectionFd, FaultLoggerdRequest* request);
     void HandleSdkDumpReqeust(int32_t connectionFd, FaultLoggerdRequest* request);
