@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -26,21 +26,159 @@
 #include <cstring>
 #include <ucontext.h>
 #include <unistd.h>
-#include <faultloggerd_client.h>
 #include <fcntl.h>
 #include <iostream>
+#include <pthread.h>
+#include <securec.h>
+#include <string>
 
+#include <faultloggerd_client.h>
+#include "dfx_config.h"
+#include "dfx_define.h"
 #include "dfx_dump_writer.h"
 #include "dfx_log.h"
 #include "dfx_process.h"
+#include "dfx_signal.h"
 #include "dfx_thread.h"
 #include "dfx_unwind_remote.h"
-#include "dfx_config.h"
 
 namespace OHOS {
 namespace HiviewDFX {
 
 static const std::string DUMP_STACK_TAG_FAILED = "failed:";
+std::condition_variable ProcessDumper::backTracePrintCV;
+std::mutex ProcessDumper::backTracePrintMutx;
+
+void LoopPrintBackTraceInfo()
+{
+    DfxLogDebug("Enter %s.", __func__);
+    std::unique_lock<std::mutex> lck(ProcessDumper::backTracePrintMutx);
+    while (true) {
+
+        int available = OHOS::HiviewDFX::ProcessDumper::GetInstance().backTraceRingBuffer_.Available();
+        DfxRingBufferBlock<std::string> item = \
+            OHOS::HiviewDFX::ProcessDumper::GetInstance().backTraceRingBuffer_.Read(available);
+        DfxLogDebug("%s :: available(%d), item.Length(%d) -1.", __func__, available, item.Length());
+        if (available == 0 && (OHOS::HiviewDFX::ProcessDumper::GetInstance().backTraceIsFinished_ == true)) {
+            DfxLogDebug("%s :: print finished, exit loop -1.\n", __func__);
+            break;
+        } else if (available != 0) {
+            for (int i = 0; i < item.Length(); i++) {
+                DfxLogDebug("%s :: print: %s\n", __func__, item.At(i).c_str());
+                WriteLog(OHOS::HiviewDFX::ProcessDumper::GetInstance().backTraceFileFd_, "%s", item.At(i).c_str());
+            }
+            OHOS::HiviewDFX::ProcessDumper::GetInstance().backTraceRingBuffer_.Skip(item.Length());
+        } else if (ProcessDumper::backTracePrintCV.wait_for(lck, \
+            std::chrono::milliseconds(BACK_TRACE_RING_BUFFER_PRINT_WAIT_TIME_MS)) != std::cv_status::timeout) {
+            available = OHOS::HiviewDFX::ProcessDumper::GetInstance().backTraceRingBuffer_.Available();
+            item = OHOS::HiviewDFX::ProcessDumper::GetInstance().backTraceRingBuffer_.Read(available);
+            DfxLogDebug("%s :: available(%d), item.Length(%d) -2.", __func__, available, item.Length());
+            if (available == 0) {
+                if (OHOS::HiviewDFX::ProcessDumper::GetInstance().backTraceIsFinished_ == true) {
+                    DfxLogDebug("%s :: print finished, exit loop -2.\n", __func__);
+                    break;
+                }
+            } else {
+                for (int i = 0; i < item.Length(); i++) {
+                    DfxLogDebug("%s :: print: %s\n", __func__, item.At(i).c_str());
+                    WriteLog(OHOS::HiviewDFX::ProcessDumper::GetInstance().backTraceFileFd_, "%s", item.At(i).c_str());
+                }
+                OHOS::HiviewDFX::ProcessDumper::GetInstance().backTraceRingBuffer_.Skip(item.Length());
+            }
+        }
+    }
+    DfxLogDebug("Exit %s.", __func__);
+}
+
+void ProcessDumper::PrintDumpProcessMsg(std::string msg)
+{
+    DfxLogDebug("Enter %s, msg(%s).", __func__, msg.c_str());
+    backTraceRingBuffer_.Append(msg);
+    backTracePrintCV.notify_one();
+    DfxLogDebug("Exit %s.", __func__);
+}
+
+void ProcessDumper::PrintDumpProcessWithSignalContextHeader(std::shared_ptr<DfxProcess> process, siginfo_t info)
+{
+    DfxLogDebug("Enter %s.", __func__);
+    char buf[LOG_BUF_LEN] = {0};
+    int ret = snprintf_s(buf, sizeof(buf), sizeof(buf) - 1, "Pid:%d\n", process->GetPid());
+    if (ret <= 0) {
+        DfxLogError("%s :: snprintf_s failed, line: %d.", __func__, __LINE__);
+    }
+    PrintDumpProcessMsg(std::string(buf));
+    ret = memset_s(buf, LOG_BUF_LEN, '\0', LOG_BUF_LEN);
+    if (ret != EOK) {
+        DfxLogError("%s :: msmset_s failed, line: %d.", __func__, __LINE__);
+    }
+
+    ret = snprintf_s(buf, sizeof(buf), sizeof(buf) - 1, "Uid:%d\n", process->GetUid());
+    if (ret <= 0) {
+        DfxLogError("%s :: snprintf_s failed, line: %d.", __func__, __LINE__);
+    }
+    PrintDumpProcessMsg(std::string(buf));
+    ret = memset_s(buf, LOG_BUF_LEN, '\0', LOG_BUF_LEN);
+    if (ret != EOK) {
+        DfxLogError("%s :: msmset_s failed, line: %d.", __func__, __LINE__);
+    }
+
+    ret = snprintf_s(buf, sizeof(buf), sizeof(buf) - 1, "Process name:%s\n", process->GetProcessName().c_str());
+    if (ret <= 0) {
+        DfxLogError("%s :: snprintf_s failed, line: %d.", __func__, __LINE__);
+    }
+    PrintDumpProcessMsg(std::string(buf));
+    ret = memset_s(buf, LOG_BUF_LEN, '\0', LOG_BUF_LEN);
+    if (ret != EOK) {
+        DfxLogError("%s :: msmset_s failed, line: %d.", __func__, __LINE__);
+    }
+
+    if (info.si_signo != SIGDUMP) {
+        std::string reason = "Reason:";
+        PrintDumpProcessMsg(reason);
+
+        PrintDumpProcessMsg(PrintSignal(info));
+
+        if (process->GetThreads().size() != 0) {
+            PrintDumpProcessMsg("Fault thread Info:\n");
+        }
+    }
+
+    DfxLogDebug("Exit %s.", __func__);
+}
+
+void ProcessDumper::InitPrintThread(int32_t fromSignalHandler, std::shared_ptr<ProcessDumpRequest> request, \
+    std::shared_ptr<DfxProcess> process)
+{
+    if (fromSignalHandler == 0) {
+        backTraceFileFd_ = STDOUT_FILENO;
+    } else {
+        struct FaultLoggerdRequest faultloggerdRequest;
+        if (memset_s(&faultloggerdRequest, sizeof(faultloggerdRequest), 0, sizeof(struct FaultLoggerdRequest)) != 0) {
+            DfxLogError("memset_s error.");
+            return;
+        }
+        faultloggerdRequest.type = (request->GetSiginfo().si_signo == SIGDUMP) ?
+            (int32_t)FaultLoggerType::CPP_STACKTRACE : (int32_t)FaultLoggerType::CPP_CRASH;
+        faultloggerdRequest.pid = request->GetPid();
+        faultloggerdRequest.tid = request->GetTid();
+        faultloggerdRequest.uid = request->GetUid();
+        faultloggerdRequest.time = request->GetTimeStamp();
+        if (strncpy_s(faultloggerdRequest.module, sizeof(faultloggerdRequest.module),
+            process->GetProcessName().c_str(), process->GetProcessName().length()) != 0) {
+            DfxLogWarn("Failed to set process name.");
+            return;
+        }
+
+        backTraceFileFd_ = RequestFileDescriptorEx(&faultloggerdRequest);
+        if (backTraceFileFd_ < 0) {
+            DfxLogWarn("Failed to request fd from faultloggerd.");
+        }
+    }
+
+    backTracePrintThread_ = std::thread(LoopPrintBackTraceInfo);
+}
+
+
 
 void ProcessDumper::DumpProcessWithSignalContext(std::shared_ptr<DfxProcess> &process,
                                                  std::shared_ptr<ProcessDumpRequest> request)
@@ -96,6 +234,10 @@ void ProcessDumper::DumpProcessWithSignalContext(std::shared_ptr<DfxProcess> &pr
     process->InitOtherThreads();
     process->SetUid(request->GetUid());
     process->SetIsSignalHdlr(true);
+
+    InitPrintThread(true, request, process);
+    PrintDumpProcessWithSignalContextHeader(process, request->GetSiginfo());
+
     DfxUnwindRemote::GetInstance().UnwindProcess(process);
     DfxLogDebug("Exit %s.", __func__);
 }
@@ -124,6 +266,7 @@ void ProcessDumper::DumpProcess(std::shared_ptr<DfxProcess> &process,
 
         process->SetIsSignalDump(true);
         process->SetIsSignalHdlr(false);
+        InitPrintThread(false, nullptr, process);
         DfxUnwindRemote::GetInstance().UnwindProcess(process);
     }
     
@@ -145,6 +288,7 @@ void ProcessDumper::PrintDumpFailed()
 void ProcessDumper::Dump(bool isSignalHdlr, ProcessDumpType type, int32_t pid, int32_t tid)
 {
     DfxLogDebug("Enter %s.", __func__);
+    backTraceIsFinished_ = false;
     std::shared_ptr<ProcessDumpRequest> request = std::make_shared<ProcessDumpRequest>();
     if (!request) {
         DfxLogError("Fail to create dump request.");
@@ -156,8 +300,8 @@ void ProcessDumper::Dump(bool isSignalHdlr, ProcessDumpType type, int32_t pid, i
     std::shared_ptr<DfxProcess> process = nullptr;
     int32_t fromSignalHandler = 0;
     if (isSignalHdlr) {
-        DumpProcessWithSignalContext(process, request);
         fromSignalHandler = 1;
+        DumpProcessWithSignalContext(process, request);
     } else {
         if (type == DUMP_TYPE_PROCESS) {
             request->SetPid(pid);
@@ -188,9 +332,13 @@ void ProcessDumper::Dump(bool isSignalHdlr, ProcessDumpType type, int32_t pid, i
         PrintDumpFailed();
     } else {
         process->Detach();
-        DfxDumpWriter dumpWriter(process, fromSignalHandler);
-        dumpWriter.WriteProcessDump(request);
     }
+
+    backTraceIsFinished_ = true;
+    backTracePrintCV.notify_one();
+    backTracePrintThread_.join();
+
+    DfxLogError("debuggerd_signal_handler :: finished write crash info to file.");
     DfxLogDebug("Exit %s.", __func__);
 
     CloseDebugLog();

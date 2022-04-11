@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -26,12 +26,13 @@
 #include <sys/types.h>
 #include <sys/un.h>
 #include <unistd.h>
+
+#include "dfx_define.h"
 #include "dfx_log.h"
 
 namespace {
 static const int32_t SOCKET_BUFFER_SIZE = 256;
 static const int32_t SOCKET_TIMEOUT = 5;
-static const int LOG_BUF_LEN = 1024;
 static const char FAULTLOGGERD_SOCK_PATH[] = "/dev/unix/socket/faultloggerd.server";
 }
 

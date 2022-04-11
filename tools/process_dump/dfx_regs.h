@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -16,6 +16,7 @@
 #define DFX_REGS_H
 
 #include <cstdint>
+#include <string>
 #include <vector>
 #include <ucontext.h>
 
@@ -33,7 +34,7 @@ public:
     {
         return regsData_;
     }
-    virtual void PrintRegs(int32_t fd) const = 0;
+    virtual std::string PrintRegs() const = 0;
     void SetRegs(const std::vector<uintptr_t> regs)
     {
         regsData_ = regs;
@@ -46,7 +47,7 @@ class DfxRegsArm : public DfxRegs {
 public:
     explicit DfxRegsArm(const ucontext_t &context);
     ~DfxRegsArm() override {};
-    void PrintRegs(int32_t fd) const override;
+    std::string PrintRegs() const override;
 private:
     DfxRegsArm() = delete;
 };
@@ -55,7 +56,7 @@ class DfxRegsArm64 : public DfxRegs {
 public:
     explicit DfxRegsArm64(const ucontext_t &context);
     ~DfxRegsArm64() override {};
-    void PrintRegs(int32_t fd) const override;
+    std::string PrintRegs() const override;
 private:
     DfxRegsArm64() = delete;
 };
@@ -64,7 +65,7 @@ class DfxRegsX86_64 : public DfxRegs {
 public:
     explicit DfxRegsX86_64(const ucontext_t &context);
     ~DfxRegsX86_64() override {};
-    void PrintRegs(int32_t fd) const override;
+    std::string PrintRegs() const override;
 private:
     DfxRegsX86_64() = delete;
 };

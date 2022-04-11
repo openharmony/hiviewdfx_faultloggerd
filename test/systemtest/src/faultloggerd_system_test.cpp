@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -392,7 +392,7 @@ int FaultLoggerdSystemTest::CheckCountNumOverStack(std::string filePath, std::st
     int i = 0;
     int j = 0;
     string log[] = {
-        "Pid:", "Uid", ":crasher", ErrorCMD, "Tid:", "#58", "Registers:", REGISTERS, "FaultStack:", "Maps:", "/crasher"
+        "Pid:", "Uid", ":crasher", ErrorCMD, "Tid:", "#56", "Registers:", REGISTERS, "FaultStack:", "Maps:", "/crasher"
     };
     string::size_type idx;
     int count = 0;
@@ -658,11 +658,11 @@ void FaultLoggerdSystemTest::StartCrasherLoop(int type)
     int appTidCount = 0;
     int sysTidCount = 0;
     if (type == NUMBER_ONE) {
-        int cresherType = 0;
+        int crasherType = 0;
         int uidSetting = BMS_UID;
         setuid(uidSetting);
         std::vector<std::string> cmds { "crasher", "thread-Loop" };
-        FaultLoggerdSystemTest::ForkAndCommands(cmds, cresherType, uidSetting);
+        FaultLoggerdSystemTest::ForkAndCommands(cmds, crasherType, uidSetting);
         if (loopSysPid == 0) {
             exit(0);
         }
@@ -685,11 +685,11 @@ void FaultLoggerdSystemTest::StartCrasherLoop(int type)
         setuid(otheruid);
         pclose(procFileInfo);
     } else if (type == NUMBER_TWO) {
-        int cresherType = 0;
+        int crasherType = 0;
         int rootuid = 0;
         setuid(rootuid);
         std::vector<std::string> cmds { "crasher", "thread-Loop" };
-        FaultLoggerdSystemTest::ForkAndCommands(cmds, cresherType, rootuid);
+        FaultLoggerdSystemTest::ForkAndCommands(cmds, crasherType, rootuid);
         if (loopRootPid == 0) {
             exit(0);
         }
@@ -712,11 +712,11 @@ void FaultLoggerdSystemTest::StartCrasherLoop(int type)
         setuid(otheruid);
         pclose(procFileInfo);
     } else if (type == NUMBER_THREE) {
-        int cresherType = 0;
+        int crasherType = 0;
         int uidSetting = OTHER_UID;
         setuid(uidSetting);
         std::vector<std::string> cmds { "crasher", "thread-Loop" };
-        FaultLoggerdSystemTest::ForkAndCommands(cmds, cresherType, uidSetting);
+        FaultLoggerdSystemTest::ForkAndCommands(cmds, crasherType, uidSetting);
         if (loopAppPid == 0) {
             exit(0);
         }
@@ -737,29 +737,11 @@ void FaultLoggerdSystemTest::StartCrasherLoop(int type)
         }
         pclose(procFileInfo);
     } else if (type == NUMBER_FOUR) {
-        int cresherType = 1;
+        int crasherType = 1;
         int otheruid = OTHER_UID;
         setuid(otheruid);
         std::vector<std::string> cmds { "crasher", "thread-Loop" };
-        FaultLoggerdSystemTest::ForkAndCommands(cmds, cresherType, otheruid);
-        DfxDumpCatcher dumplog;
-        std::string msg = "";
-        dumplog.DumpCatch(loopAppPid, 0, msg);
-
-        int sleepSecond = 5;
-        usleep(sleepSecond);
-        std::string procCMD = "ls /proc/" + std::to_string(loopAppPid) + "/task";
-        FILE *procFileInfo = nullptr;
-
-        procFileInfo = popen(procCMD.c_str(), "r");
-        if (procFileInfo == nullptr) {
-            perror("popen execute failed");
-            exit(1);
-        }
-        while (fgets(resultBufShell, sizeof(resultBufShell), procFileInfo) != nullptr) {
-            GTEST_LOG_(INFO) << "procFileInfo print info = " << resultBufShell;
-        }
-        pclose(procFileInfo);
+        FaultLoggerdSystemTest::ForkAndCommands(cmds, crasherType, otheruid);
     }
 }
 void FaultLoggerdSystemTest::GetTestFaultLoggerdTid(int testPid)
@@ -951,54 +933,6 @@ void FaultLoggerdSystemTest::dumpCatchThread(int threadID)
     if (ret == true) {
         FaultLoggerdSystemTest::count++;
     }
-}
-
-#if __pre__
-/**
-* @tc.name: FaultLoggerdSystemTest0010_pre
-* @tc.desc: test CPP crasher application: Multithreading
-* @tc.type:
-*/
-HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0010_pre, TestSize.Level2)
-{
-    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest0010_pre: start.";
-    for (int i = 0; i < 10; i++) {
-        mLock.lock();
-        std::thread (FaultLoggerdSystemTest::dumpCatchThread, i).join();
-        mLock.unlock();
-    }
-    EXPECT_EQ(FaultLoggerdSystemTest::count, 10) << "FaultLoggerdSystemTest0010_pre Failed";
-    if (count == 10) {
-        std::ofstream fout;
-        fout.open("result", ios::app);
-        fout << "sucess!" << std::endl;
-        fout.close();
-    }
-    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest0010_pre: end.";
-
-}
-#endif
-
-/**
-* @tc.name: FaultLoggerdSystemTest0010
-* @tc.desc: test CPP crasher application: Multi process and Multithreading
-* @tc.type:
-*/
-HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0010, TestSize.Level2)
-{
-    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest0010: start.";
-    for (int i = 0; i < 10; i++) {
-        system("/data/test_faultloggerd_pre --gtest_filter=FaultLoggerdSystemTest.FaultLoggerdSystemTest0010_pre");
-    }
-    std::string filePath = "result";
-    int lines = FaultLoggerdSystemTest::CountLines(filePath);
-    GTEST_LOG_(INFO) << lines;
-    int ret = remove("result");
-    if (ret != 0) {
-        printf("remove failed!");
-    }
-    EXPECT_EQ(lines, 10) << "FaultLoggerdSystemTest0010_pre Failed";
-    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest0010: end.";
 }
 
 /**

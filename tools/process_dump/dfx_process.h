@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -36,11 +36,9 @@ public:
     bool InitOtherThreads();
     void FillProcessName();
     void UpdateProcessName(std::string processName);
-    void PrintProcessMapsByConfig(int32_t fd);
-    void PrintThreadsHeaderByConfig(int32_t fd);
+    void PrintProcessMapsByConfig();
+    void PrintThreadsHeaderByConfig();
     void InsertThreadNode(pid_t tid);
-    virtual void PrintProcess(int32_t fd, bool printMapFlag);
-    virtual void PrintProcessWithSiginfo(const std::shared_ptr<siginfo_t> info, int32_t fd);
 
     void SetIsSignalHdlr(bool isSignalHdlr);
     bool GetIsSignalHdlr() const;

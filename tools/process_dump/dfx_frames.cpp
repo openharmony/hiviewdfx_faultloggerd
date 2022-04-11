@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -173,31 +173,48 @@ uint64_t DfxFrames::CalculateRelativePc(std::shared_ptr<DfxElfMap> elfMap)
     return relativePc_;
 }
 
-void DfxFrames::PrintFrame(const int32_t fd) const
+std::string DfxFrames::PrintFrame() const
 {
     DfxLogDebug("Enter %s.", __func__);
 
+    char buf[LOG_BUF_LEN] = {0};
+
     if (funcName_ == "") {
-        WriteLog(fd, "#%02zu pc %016" PRIx64 "(%016" PRIx64 ") %s\n", index_, relativePc_,
-            pc_, (map_ == nullptr) ? "Unknown" : map_->GetMapPath().c_str());
-        return;
+        int ret = snprintf_s(buf, sizeof(buf), sizeof(buf) - 1, "#%02zu pc %016" PRIx64 "(%016" PRIx64 ") %s\n", \
+            index_, relativePc_, pc_, (map_ == nullptr) ? "Unknown" : map_->GetMapPath().c_str());
+        if (ret <= 0) {
+            DfxLogError("%s :: snprintf_s failed, line: %d.", __func__, __LINE__);
+        }
+        DfxLogDebug("Exit %s.", __func__);
+        return std::string(buf);
     }
 
-    WriteLog(fd, "#%02zu pc %016" PRIx64 "(%016" PRIx64 ") %s(%s+%" PRIu64 ")\n", index_, relativePc_,
+    int ret = snprintf_s(buf, sizeof(buf), sizeof(buf) - 1, \
+        "#%02zu pc %016" PRIx64 "(%016" PRIx64 ") %s(%s+%" PRIu64 ")\n", index_, relativePc_, \
         pc_, (map_ == nullptr) ? "Unknown" : map_->GetMapPath().c_str(), funcName_.c_str(), funcOffset_);
+    if (ret <= 0) {
+        DfxLogError("%s :: snprintf_s failed, line: %d.", __func__, __LINE__);
+    }
     DfxLogDebug("Exit %s.", __func__);
+    return std::string(buf);
 }
 
-void DfxFrames::PrintFaultStack(const int32_t fd, int i) const
+std::string DfxFrames::PrintFaultStack(int i) const
 {
     DfxLogDebug("Enter %s.", __func__);
 
     if (faultStack_ == "") {
-        return;
+        return "";
     }
 
-    WriteLog(fd, "Sp%d:%s", i, faultStack_.c_str());
+    char buf[LOG_BUF_LEN] = {0};
+    int ret = snprintf_s(buf, sizeof(buf), sizeof(buf) - 1, "Sp%d:%s", i, faultStack_.c_str());
+    if (ret <= 0) {
+        DfxLogError("%s :: snprintf_s failed, line: %d.", __func__, __LINE__);
+    }
+
     DfxLogDebug("Exit %s.", __func__);
+    return std::string(buf);
 }
 
 std::string DfxFrames::ToString() const
@@ -218,26 +235,32 @@ void PrintFrames(std::vector<std::shared_ptr<DfxFrames>> frames, int32_t fd)
 {
     DfxLogDebug("Enter %s.", __func__);
     for (size_t i = 0; i < frames.size(); i++) {
-        frames[i]->PrintFrame(fd);
+        frames[i]->PrintFrame();
     }
     DfxLogDebug("Exit %s.", __func__);
 }
 
-void PrintFaultStacks(std::vector<std::shared_ptr<DfxFrames>> frames, int32_t fd)
+std::string PrintFaultStacks(std::vector<std::shared_ptr<DfxFrames>> frames)
 {
     DfxLogDebug("Enter %s.", __func__);
+
+    std::string stackString = "";
+    char buf[LOG_BUF_LEN] = {0};
+
     for (size_t i = 0; i < frames.size(); i++) {
         if (i == 0 && (frames[i]->GetFramePc() == 0)) {
-            WriteLog(fd, "Sp0: Unknow\n");
+            stackString = stackString + "Sp0: Unknow\n";
             continue;
         }
         if (i == FAULT_STACK_SHOW_FLOOR) {
-            WriteLog(fd, "    ...\n");
+            stackString = stackString + "    ...\n";
             break;
         }
-        frames[i]->PrintFaultStack(fd, i);
+        stackString = stackString + frames[i]->PrintFaultStack(i);
     }
+
     DfxLogDebug("Exit %s.", __func__);
+    return stackString;
 }
 } // namespace HiviewDFX
 } // namespace OHOS

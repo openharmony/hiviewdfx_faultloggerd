@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -36,11 +36,11 @@
 #include "dfx_thread.h"
 #include "dfx_util.h"
 #include "dfx_config.h"
+#include "dfx_define.h"
+#include "process_dumper.h"
 
 namespace OHOS {
 namespace HiviewDFX {
-static const int SIG_NO = 35;
-
 void DfxProcess::FillProcessName()
 {
     DfxLogDebug("Enter %s.", __func__);
@@ -164,51 +164,6 @@ void DfxProcess::InsertThreadNode(pid_t tid)
     DfxLogDebug("Exit %s.", __func__);
 }
 
-void DfxProcess::PrintProcessWithSiginfo(const std::shared_ptr<siginfo_t> info, int32_t fd)
-{
-    DfxLogDebug("Enter %s.", __func__);
-    WriteLog(fd, "Pid:%d\n", GetPid());
-    WriteLog(fd, "Uid:%d\n", GetUid());
-    WriteLog(fd, "Process name:%s\n", GetProcessName().c_str());
-    if (info && info->si_signo != SIG_NO) {
-        WriteLog(fd, "Reason:");
-
-        PrintSignal(*(info.get()), fd);
-
-        if (threads_.size() != 0) {
-            WriteLog(fd, "Fault thread Info:\n");
-        }
-    }
-
-    PrintProcess(fd, true);
-
-    DfxLogDebug("Exit %s.", __func__);
-}
-
-void DfxProcess::PrintProcess(int32_t fd, bool printMapFlag)
-{
-    DfxLogDebug("Enter %s.", __func__);
-    size_t index = 0;
-    for (auto iter = threads_.begin(); iter != threads_.end(); iter++) {
-        if (index == 1) {
-            PrintThreadsHeaderByConfig(fd);
-        }
-
-        (*iter)->PrintThread(fd, isSignalDump_);
-        if (index == 0 && printMapFlag == true) {
-            PrintProcessMapsByConfig(fd);
-        }
-
-        if (GetIsSignalHdlr() && !GetIsSignalDump() && \
-            !DfxConfig::GetInstance().GetDumpOtherThreads()) {
-            DfxLogInfo("No need print other thread in crash scenario");
-            break;
-        }
-        index++;
-    }
-    DfxLogDebug("Exit %s.", __func__);
-}
-
 void DfxProcess::SetIsSignalHdlr(bool isSignalHdlr)
 {
     isSignalHdlr_ = isSignalHdlr;
@@ -290,26 +245,26 @@ void DfxProcess::Detach()
     }
 }
 
-void DfxProcess::PrintProcessMapsByConfig(int32_t fd)
+void DfxProcess::PrintProcessMapsByConfig()
 {
     if (DfxConfig::GetInstance().GetDisplayMaps()) {
         if (GetMaps()) {
-            WriteLog(fd, "Maps:\n");
+            OHOS::HiviewDFX::ProcessDumper::GetInstance().PrintDumpProcessMsg("\nMaps:\n");
         }
         auto mapsVector = maps_->GetValues();
         for (auto iter = mapsVector.begin(); iter != mapsVector.end(); iter++) {
-            (*iter)->PrintMap(fd);
+            OHOS::HiviewDFX::ProcessDumper::GetInstance().PrintDumpProcessMsg((*iter)->PrintMap());
         }
     } else {
         DfxLogDebug("hidden Maps");
     }
 }
 
-void DfxProcess::PrintThreadsHeaderByConfig(int32_t fd)
+void DfxProcess::PrintThreadsHeaderByConfig()
 {
     if (DfxConfig::GetInstance().GetDisplayBacktrace()) {
         if (!isSignalDump_) {
-            WriteLog(fd, "Other thread info:\n");
+            OHOS::HiviewDFX::ProcessDumper::GetInstance().PrintDumpProcessMsg("Other thread info:\n");
         }
     } else {
         DfxLogDebug("hidden thread info.");

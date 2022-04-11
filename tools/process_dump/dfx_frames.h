@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -32,8 +32,8 @@ public:
     uint64_t GetRelativePc(const std::shared_ptr<DfxElfMaps> head);
     uint64_t CalculateRelativePc(std::shared_ptr<DfxElfMap> elfMap);
     void DestroyFrames(const std::shared_ptr<DfxFrames> frameHead);
-    void PrintFrame(const int32_t fd) const;
-    void PrintFaultStack(const int32_t fd, int i) const;
+    std::string PrintFrame() const;
+    std::string PrintFaultStack(int i) const;
     void SetFrameIndex(size_t index);
     size_t GetFrameIndex() const;
     void SetFrameFuncOffset(uint64_t funcOffset);
@@ -67,7 +67,7 @@ private:
 };
 
 void PrintFrames(std::vector<std::shared_ptr<DfxFrames>> frames, int32_t fd);
-void PrintFaultStacks(std::vector<std::shared_ptr<DfxFrames>> frames, int32_t fd);
+std::string PrintFaultStacks(std::vector<std::shared_ptr<DfxFrames>> frames);
 } // namespace HiviewDFX
 } // namespace OHOS
 

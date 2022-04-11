@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -28,6 +28,7 @@
 #include "dfx_elf.h"
 #include "dfx_log.h"
 #include "dfx_util.h"
+#include "process_dumper.h"
 
 namespace OHOS {
 namespace HiviewDFX {
@@ -200,10 +201,15 @@ bool DfxElfMap::IsVaild()
     return true;
 }
 
-void DfxElfMap::PrintMap(int32_t fd)
+std::string DfxElfMap::PrintMap()
 {
-    WriteLog(fd, "%" PRIx64 "-%" PRIx64 " %s %08" PRIx64 " %s\n",
+    char buf[LOG_BUF_LEN] = {0};
+    int ret = snprintf_s(buf, sizeof(buf), sizeof(buf) - 1, "%" PRIx64 "-%" PRIx64 " %s %08" PRIx64 " %s\n", \
         begin_, end_, perms_.c_str(), offset_, path_.c_str());
+    if (ret <= 0) {
+        DfxLogError("%s :: snprintf_s failed, line: %d.", __func__, __LINE__);
+    }
+    return std::string(buf);
 }
 
 uint64_t DfxElfMap::GetMapBegin() const

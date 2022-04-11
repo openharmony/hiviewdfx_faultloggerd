@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -14,6 +14,8 @@
  */
 
 /* This files contains arm64 reg module. */
+
+#include <securec.h>
 
 #include "dfx_regs.h"
 
@@ -101,32 +103,117 @@ DfxRegsArm64::DfxRegsArm64(const ucontext_t &context)
     DfxLogDebug("Exit %s.", __func__);
 }
 
-void DfxRegsArm64::PrintRegs(int32_t fd) const
+std::string DfxRegsArm64::PrintRegs() const
 {
     DfxLogDebug("Enter %s.", __func__);
-    if (fd < 0) {
-        return;
-    }
-    WriteLog(fd, "Registers:\n");
+
+    std::string regString = "";
+    char buf[LOG_BUF_LEN] = {0};
+
+    regString = regString + "Registers:\n";
+
     std::vector<uintptr_t> regs = GetRegsData();
 
-    WriteLog(fd, "x0:%016lx x1:%016lx x2:%016lx x3:%016lx\n", regs[REG_0], regs[REG_1],
-        regs[REG_2], regs[REG_3]);
-    WriteLog(fd, "x4:%016lx x5:%016lx x6:%016lx x7:%016lx\n", regs[REG_4], regs[REG_5],
-        regs[REG_6], regs[REG_7]);
-    WriteLog(fd, "x8:%016lx x9:%016lx x10:%016lx x11:%016lx\n", regs[REG_8], regs[REG_9],
-        regs[REG_10], regs[REG_11]);
-    WriteLog(fd, "x12:%016lx x13:%016lx x14:%016lx x15:%016lx\n", regs[REG_12], regs[REG_13],
-        regs[REG_14], regs[REG_15]);
-    WriteLog(fd, "x16:%016lx x17:%016lx x18:%016lx x19:%016lx\n", regs[REG_16], regs[REG_17],
-        regs[REG_18], regs[REG_19]);
-    WriteLog(fd, "x20:%016lx x21:%016lx x22:%016lx x23:%016lx\n", regs[REG_20], regs[REG_21],
-        regs[REG_22], regs[REG_23]);
-    WriteLog(fd, "x24:%016lx x25:%016lx x26:%016lx x27:%016lx\n", regs[REG_24], regs[REG_25],
-        regs[REG_26], regs[REG_27]);
-    WriteLog(fd, "x28:%016lx x29:%016lx\n", regs[REG_28], regs[REG_29]);
-    WriteLog(fd, "lr:%016lx sp:%016lx pc:%016lx\n", regs[REG_30], regs[REG_31], regs[REG_32]);
+    int ret = snprintf_s(buf, sizeof(buf), sizeof(buf) - 1, "x0:%016lx x1:%016lx x2:%016lx x3:%016lx\n", \
+        regs[REG_0], regs[REG_1], regs[REG_2], regs[REG_3]);
+    if (ret <= 0) {
+        DfxLogError("%s :: snprintf_s failed, line: %d.", __func__, __LINE__);
+    }
+    regString = regString + std::string(buf);
+    ret = memset_s(buf, LOG_BUF_LEN, '\0', LOG_BUF_LEN);
+    if (ret != EOK) {
+        DfxLogError("%s :: memset_s failed, line: %d.", __func__, __LINE__);
+    }
+
+    ret = snprintf_s(buf, sizeof(buf), sizeof(buf) - 1, "x4:%016lx x5:%016lx x6:%016lx x7:%016lx\n", \
+        regs[REG_4], regs[REG_5], regs[REG_6], regs[REG_7]);
+    if (ret <= 0) {
+        DfxLogError("%s :: snprintf_s failed, line: %d.", __func__, __LINE__);
+    }
+    regString = regString + std::string(buf);
+    ret = memset_s(buf, LOG_BUF_LEN, '\0', LOG_BUF_LEN);
+    if (ret != EOK) {
+        DfxLogError("%s :: memset_s failed, line: %d.", __func__, __LINE__);
+    }
+
+    ret = snprintf_s(buf, sizeof(buf), sizeof(buf) - 1, "x8:%016lx x9:%016lx x10:%016lx x11:%016lx\n", \
+        regs[REG_8], regs[REG_9], regs[REG_10], regs[REG_11]);
+    if (ret <= 0) {
+        DfxLogError("%s :: snprintf_s failed, line: %d.", __func__, __LINE__);
+    }
+    regString = regString + std::string(buf);
+    ret = memset_s(buf, LOG_BUF_LEN, '\0', LOG_BUF_LEN);
+    if (ret != EOK) {
+        DfxLogError("%s :: memset_s failed, line: %d.", __func__, __LINE__);
+    }
+
+    ret = snprintf_s(buf, sizeof(buf), sizeof(buf) - 1, "x12:%016lx x13:%016lx x14:%016lx x15:%016lx\n", \
+        regs[REG_12], regs[REG_13], regs[REG_14], regs[REG_15]);
+    if (ret <= 0) {
+        DfxLogError("%s :: snprintf_s failed, line: %d.", __func__, __LINE__);
+    }
+    regString = regString + std::string(buf);
+    ret = memset_s(buf, LOG_BUF_LEN, '\0', LOG_BUF_LEN);
+    if (ret != EOK) {
+        DfxLogError("%s :: memset_s failed, line: %d.", __func__, __LINE__);
+    }
+
+    ret = snprintf_s(buf, sizeof(buf), sizeof(buf) - 1, "x16:%016lx x17:%016lx x18:%016lx x19:%016lx\n", \
+        regs[REG_16], regs[REG_17], regs[REG_18], regs[REG_19]);
+    if (ret <= 0) {
+        DfxLogError("%s :: snprintf_s failed, line: %d.", __func__, __LINE__);
+    }
+    regString = regString + std::string(buf);
+    ret = memset_s(buf, LOG_BUF_LEN, '\0', LOG_BUF_LEN);
+    if (ret != EOK) {
+        DfxLogError("%s :: memset_s failed, line: %d.", __func__, __LINE__);
+    }
+
+    ret = snprintf_s(buf, sizeof(buf), sizeof(buf) - 1, "x20:%016lx x21:%016lx x22:%016lx x23:%016lx\n", \
+        regs[REG_20], regs[REG_21], regs[REG_22], regs[REG_23]);
+    if (ret <= 0) {
+        DfxLogError("%s :: snprintf_s failed, line: %d.", __func__, __LINE__);
+    }
+    regString = regString + std::string(buf);
+    ret = memset_s(buf, LOG_BUF_LEN, '\0', LOG_BUF_LEN);
+    if (ret != EOK) {
+        DfxLogError("%s :: memset_s failed, line: %d.", __func__, __LINE__);
+    }
+
+    ret = snprintf_s(buf, sizeof(buf), sizeof(buf) - 1, "x24:%016lx x25:%016lx x26:%016lx x27:%016lx\n", \
+        regs[REG_24], regs[REG_25], regs[REG_26], regs[REG_27]);
+    if (ret <= 0) {
+        DfxLogError("%s :: snprintf_s failed, line: %d.", __func__, __LINE__);
+    }
+    regString = regString + std::string(buf);
+    ret = memset_s(buf, LOG_BUF_LEN, '\0', LOG_BUF_LEN);
+    if (ret != EOK) {
+        DfxLogError("%s :: memset_s failed, line: %d.", __func__, __LINE__);
+    }
+
+    ret = snprintf_s(buf, sizeof(buf), sizeof(buf) - 1, "x28:%016lx x29:%016lx\n", regs[REG_28], regs[REG_29]);
+    if (ret <= 0) {
+        DfxLogError("%s :: snprintf_s failed, line: %d.", __func__, __LINE__);
+    }
+    regString = regString + std::string(buf);
+    ret = memset_s(buf, LOG_BUF_LEN, '\0', LOG_BUF_LEN);
+    if (ret != EOK) {
+        DfxLogError("%s :: memset_s failed, line: %d.", __func__, __LINE__);
+    }
+
+    ret = snprintf_s(buf, sizeof(buf), sizeof(buf) - 1, "lr:%016lx sp:%016lx pc:%016lx\n", \
+        regs[REG_30], regs[REG_31], regs[REG_32]);
+    if (ret <= 0) {
+        DfxLogError("%s :: snprintf_s failed, line: %d.", __func__, __LINE__);
+    }
+    regString = regString + std::string(buf);
+    ret = memset_s(buf, LOG_BUF_LEN, '\0', LOG_BUF_LEN);
+    if (ret != EOK) {
+        DfxLogError("%s :: memset_s failed, line: %d.", __func__, __LINE__);
+    }
+
     DfxLogDebug("Exit %s.", __func__);
+    return regString;
 }
 } // namespace HiviewDFX
 } // namespace OHOS
