@@ -18,18 +18,18 @@
 #include <cstdlib>
 #include <cstdio>
 #include <cstring>
-#include <directory_ex.h>
-#include <file_ex.h>
 #include <iostream>
 #include <securec.h>
 #include <unistd.h>
 #include <sys/socket.h>
 #include <sys/un.h>
 
+#include "file_ex.h"
 #include "dfx_define.h"
 #include "dfx_dump_writer.h"
 #include "dfx_log.h"
 #include "dfx_config.h"
+#include "directory_ex.h"
 #include "process_dumper.h"
 #include "../../interfaces/innerkits/faultloggerd_client/include/faultloggerd_client.h"
 

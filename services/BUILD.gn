@@ -29,6 +29,7 @@ if (defined(ohos_lite)) {
 
     include_dirs = [
       ".",
+      "//base/hiviewdfx/faultloggerd/utils",
       "//utils/native/base/include",
       "$faultloggerd_path/common",
       "$faultloggerd_path/tools/process_dump",
@@ -38,6 +39,7 @@ if (defined(ohos_lite)) {
 
     sources = [
       "//base/hiviewdfx/faultloggerd/tools/process_dump/dfx_log.cpp",
+      "//base/hiviewdfx/faultloggerd/utils/directory_ex.cpp",
       "fault_logger_config.cpp",
       "fault_logger_daemon.cpp",
       "fault_logger_secure.cpp",

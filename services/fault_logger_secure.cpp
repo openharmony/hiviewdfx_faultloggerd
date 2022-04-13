@@ -34,8 +34,8 @@
 #include <cstdlib>
 #include <cstdio>
 
-#include <directory_ex.h>
-#include <file_ex.h>
+#include "directory_ex.h"
+#include "file_ex.h"
 #include <securec.h>
 #include "dfx_log.h"
 

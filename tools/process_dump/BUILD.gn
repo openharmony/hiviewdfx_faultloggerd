@@ -70,11 +70,13 @@ if (defined(ohos_lite)) {
     include_dirs = [
       ".",
       "//base/hiviewdfx/faultloggerd/common",
+      "//base/hiviewdfx/faultloggerd/utils",
       "//utils/native/base/include",
       "$faultloggerd_path/interfaces/innerkits/faultloggerd_client/include",
       "$hilog_lite_include_path",
     ]
     sources = [
+      "//base/hiviewdfx/faultloggerd/utils/directory_ex.cpp",
       "cppcrash_reporter.cpp",
       "dfx_config.cpp",
       "dfx_dump_writer.cpp",

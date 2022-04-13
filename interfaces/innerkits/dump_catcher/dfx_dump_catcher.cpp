@@ -28,7 +28,6 @@
 #include <string>
 #include <vector>
 
-#include <directory_ex.h>
 #include <dirent.h>
 #include <fcntl.h>
 #include <file_ex.h>
@@ -49,6 +48,7 @@
 #include <sys/un.h>
 #include <sys/wait.h>
 
+#include "directory_ex.h"
 #include "../faultloggerd_client/include/faultloggerd_client.h"
 
 static const std::string DFXDUMPCATCHER_TAG = "DfxDumpCatcher";
