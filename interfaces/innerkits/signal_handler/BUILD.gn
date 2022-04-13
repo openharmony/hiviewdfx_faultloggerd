@@ -18,19 +18,19 @@ if (defined(ohos_lite)) {
     visibility = [ "*:*" ]
     include_dirs = [
       "include",
-      "//base/hiviewdfx/faultloggerd/common",
-      "//base/hiviewdfx/faultloggerd/tools/process_dump",
       "//utils/native/base/include",
-      "//base/hiviewdfx/faultloggerd/interfaces/innerkits/faultloggerd_client/include",
+      "$faultloggerd_path/common",
+      "$faultloggerd_path/tools/process_dump",
+      "$faultloggerd_path/interfaces/innerkits/faultloggerd_client/include",
       "$hilog_lite_include_path",
     ]
     sources = [
-      "//base/hiviewdfx/faultloggerd/tools/process_dump/dfx_log.cpp",
+      "$faultloggerd_path/tools/process_dump/dfx_log.cpp",
       "dfx_signal_handler.c",
     ]
 
     deps = [
-      "//base/hiviewdfx/faultloggerd/interfaces/innerkits/faultloggerd_client:libfaultloggerd",
+      "$faultloggerd_path/interfaces/innerkits/faultloggerd_client:libfaultloggerd",
       "//base/hiviewdfx/hilog_lite/frameworks/featured:hilog_shared",
     ]
   }
@@ -40,10 +40,10 @@ if (defined(ohos_lite)) {
 
     include_dirs = [
       "include",
-      "//base/hiviewdfx/faultloggerd/common",
-      "//base/hiviewdfx/faultloggerd/tools/process_dump",
       "//utils/native/base/include",
-      "//base/hiviewdfx/faultloggerd/interfaces/innerkits/faultloggerd_client/include",
+      "$faultloggerd_path/common",
+      "$faultloggerd_path/tools/process_dump",
+      "$faultloggerd_path/interfaces/innerkits/faultloggerd_client/include",
     ]
   }
 
@@ -53,11 +53,11 @@ if (defined(ohos_lite)) {
     cflags = [ "-DDFX_LOG_USE_HILOG_BASE" ]
 
     sources = [
-      "//base/hiviewdfx/faultloggerd/tools/process_dump/dfx_log.cpp",
+      "$faultloggerd_path/tools/process_dump/dfx_log.cpp",
       "dfx_signal_handler.c",
     ]
 
-    deps = [ "//base/hiviewdfx/faultloggerd/interfaces/innerkits/faultloggerd_client:libfaultloggerd" ]
+    deps = [ "$faultloggerd_path/interfaces/innerkits/faultloggerd_client:libfaultloggerd" ]
 
     external_deps = [
       "hilog_native:libhilog_base",

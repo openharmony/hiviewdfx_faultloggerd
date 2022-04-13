@@ -27,7 +27,7 @@ if (defined(ohos_lite)) {
       "$hilog_lite_include_path",
     ]
 
-    cflags = [ "-DCURRENT_THREAD_ONLY" ]
+    cflags = [  "-DCURRENT_THREAD_ONLY" ]
 
     sources = [
       "//base/hiviewdfx/faultloggerd/tools/process_dump/dfx_elf.cpp",

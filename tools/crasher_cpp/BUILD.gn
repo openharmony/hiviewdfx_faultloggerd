@@ -26,6 +26,7 @@ if (defined(ohos_lite)) {
     sources = [ "dfx_crasher.cpp" ]
     deps = [
       "//base/hiviewdfx/faultloggerd/interfaces/innerkits/signal_handler:dfx_signalhandler",
+      "//third_party/bounds_checking_function:libsec_shared",
     ]
   }
 } else {

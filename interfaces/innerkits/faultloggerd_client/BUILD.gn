@@ -22,6 +22,7 @@ if (defined(ohos_lite)) {
       "./include",
       "//utils/native/base/include",
       "//base/hiviewdfx/faultloggerd/tools/process_dump/",
+      "$faultloggerd_path/common",
       "$hilog_lite_include_path",
     ]
 

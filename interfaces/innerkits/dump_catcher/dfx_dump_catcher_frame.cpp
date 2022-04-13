@@ -35,14 +35,14 @@ namespace HiviewDFX {
 DfxDumpCatcherFrame::DfxDumpCatcherFrame()
 {
 #ifdef LOCAL_DUMPER_FRAME_DEBUG
-    HILOG_BASE_DEBUG(LOG_CORE, "%{public}s :: construct.", __func__);
+    DfxLogDebug("%{public}s :: construct.", __func__);
 #endif
 }
 
 DfxDumpCatcherFrame::~DfxDumpCatcherFrame()
 {
 #ifdef LOCAL_DUMPER_FRAME_DEBUG
-    HILOG_BASE_DEBUG(LOG_CORE, "%{public}s :: destructor.", __func__);
+    DfxLogDebug("%{public}s :: destructor.", __func__);
 #endif
 }
 
@@ -119,7 +119,7 @@ std::shared_ptr<DfxElfMap> DfxDumpCatcherFrame::GetFrameMap() const
 uint64_t DfxDumpCatcherFrame::GetRelativePc(const std::shared_ptr<DfxElfMaps> head)
 {
 #ifdef LOCAL_DUMPER_FRAME_DEBUG
-    HILOG_BASE_DEBUG(LOG_CORE, "Enter %{public}s.", __func__);
+    DfxLogDebug("Enter %{public}s.", __func__);
 #endif
 
     if (head == nullptr) {
@@ -133,17 +133,17 @@ uint64_t DfxDumpCatcherFrame::GetRelativePc(const std::shared_ptr<DfxElfMaps> he
     }
 
     if (!map_->IsVaild()) {
-        HILOG_BASE_ERROR(LOG_CORE, "No elf map:%{public}s.", map_->GetMapPath().c_str());
+        DfxLogError("No elf map:%{public}s.", map_->GetMapPath().c_str());
         return 0;
     }
 
     std::shared_ptr<DfxElfMap> map = nullptr;
     if (!head->FindMapByPath(map_->GetMapPath(), map)) {
-        HILOG_BASE_ERROR(LOG_CORE, "Fail to find Map:%{public}s.", map_->GetMapPath().c_str());
+        DfxLogError("Fail to find Map:%{public}s.", map_->GetMapPath().c_str());
         return 0;
     }
 #ifdef LOCAL_DUMPER_FRAME_DEBUG
-    HILOG_BASE_DEBUG(LOG_CORE, "Exit %{public}s.", __func__);
+    DfxLogDebug("Exit %{public}s.", __func__);
 #endif
     return CalculateRelativePc(map);
 }
@@ -151,7 +151,7 @@ uint64_t DfxDumpCatcherFrame::GetRelativePc(const std::shared_ptr<DfxElfMaps> he
 uint64_t DfxDumpCatcherFrame::CalculateRelativePc(std::shared_ptr<DfxElfMap> elfMap)
 {
 #ifdef LOCAL_DUMPER_FRAME_DEBUG
-    HILOG_BASE_DEBUG(LOG_CORE, "Enter %{public}s.", __func__);
+    DfxLogDebug("Enter %{public}s.", __func__);
 #endif
     if (elfMap == nullptr || map_ == nullptr) {
         return 0;
@@ -173,7 +173,7 @@ uint64_t DfxDumpCatcherFrame::CalculateRelativePc(std::shared_ptr<DfxElfMap> elf
     relativePc_ = relativePc_ - 1; // 1 : instr offset
 #endif
 #ifdef LOCAL_DUMPER_FRAME_DEBUG
-    HILOG_BASE_DEBUG(LOG_CORE, "Exit %{public}s.", __func__);
+    DfxLogDebug("Exit %{public}s.", __func__);
 #endif
     return relativePc_;
 }

@@ -18,6 +18,7 @@
 #include <cstring>
 #include <ctime>
 #include <csignal>
+#include <dirent.h>
 #include <fcntl.h>
 #include <sstream>
 #include <sys/syscall.h>
@@ -30,7 +31,6 @@
 #include <unistd.h>
 #include <vector>
 
-#include <directory_ex.h>
 #include <file_ex.h>
 #include <securec.h>
 
@@ -133,6 +133,141 @@ __attribute__((unused)) static int ReadFileDescriptorFromSocket(int socket)
     }
     return *(reinterpret_cast<int *>(CMSG_DATA(cmsg)));
 }
+
+static bool ForceCreateDirectory(const std::string& path)
+{
+    std::string::size_type index = 0;
+    do {
+        std::string subPath;
+        index = path.find('/', index + 1);
+        if (index == std::string::npos) {
+            subPath = path;
+        } else {
+            subPath = path.substr(0, index);
+        }
+
+        if (access(subPath.c_str(), F_OK) != 0) {
+            if (mkdir(subPath.c_str(), (S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH)) != 0 && errno != EEXIST) {
+                return false;
+            }
+        }
+    } while (index != std::string::npos);
+
+    return access(path.c_str(), F_OK) == 0;
+}
+
+static bool RemoveFile(const std::string& fileName)
+{
+    if (access(fileName.c_str(), F_OK) == 0) {
+        return remove(fileName.c_str()) == 0;
+    }
+
+    return true;
+}
+
+static std::string ExcludeTrailingPathDelimiter(const std::string& path)
+{
+    if (path.rfind("/") != path.size() - 1) {
+        return path;
+    }
+
+    if (!path.empty()) {
+        return path.substr(0, (int)path.size() - 1);
+    }
+
+    return path;
+}
+
+static std::string IncludeTrailingPathDelimiter(const std::string& path)
+{
+    if (path.rfind("/") != path.size() - 1) {
+        return path + "/";
+    }
+
+    return path;
+}
+
+static bool ChangeMode(const std::string& fileName, const mode_t& mode)
+{
+    return (chmod(fileName.c_str(), mode) == 0);
+}
+
+static bool ChangeModeFile(const std::string& fileName, const mode_t& mode)
+{
+    if (access(fileName.c_str(), F_OK) != 0) {
+        return false;
+    }
+
+    return (chmod(fileName.c_str(), mode) == 0);
+}
+
+static bool ChangeModeDirectory(const std::string& path, const mode_t& mode)
+{
+    std::string subPath;
+    bool ret = true;
+    DIR *dir = opendir(path.c_str());
+    if (dir == nullptr) {
+        return false;
+    }
+
+    while (true) {
+        struct dirent *ptr = readdir(dir);
+        if (ptr == nullptr) {
+            break;
+        }
+
+        // current dir OR parent dir
+        if (strcmp(ptr->d_name, ".") == 0 || strcmp(ptr->d_name, "..") == 0) {
+            continue;
+        }
+        subPath = IncludeTrailingPathDelimiter(path) + std::string(ptr->d_name);
+        if (ptr->d_type == DT_DIR) {
+            ret = ChangeModeDirectory(subPath, mode);
+        } else {
+            if (access(subPath.c_str(), F_OK) == 0) {
+                if (!ChangeMode(subPath, mode)) {
+                    closedir(dir);
+                    return false;
+                }
+            }
+        }
+    }
+    closedir(dir);
+    std::string currentPath = ExcludeTrailingPathDelimiter(path);
+    if (access(currentPath.c_str(), F_OK) == 0) {
+        if (!ChangeMode(currentPath, mode)) {
+            return false;
+        }
+    }
+    return ret;
+}
+
+static void GetDirFiles(const std::string& path, std::vector<std::string>& files)
+{
+    std::string pathStringWithDelimiter;
+    DIR *dir = opendir(path.c_str());
+    if (dir == nullptr) {
+        return;
+    }
+
+    while (true) {
+        struct dirent *ptr = readdir(dir);
+        if (ptr == nullptr) {
+            break;
+        }
+
+        // current dir OR parent dir
+        if ((strcmp(ptr->d_name, ".") == 0) || (strcmp(ptr->d_name, "..") == 0)) {
+            continue;
+        } else if (ptr->d_type == DT_DIR) {
+            pathStringWithDelimiter = IncludeTrailingPathDelimiter(path) + std::string(ptr->d_name);
+            GetDirFiles(pathStringWithDelimiter, files);
+        } else {
+            files.push_back(IncludeTrailingPathDelimiter(path) + std::string(ptr->d_name));
+        }
+    }
+    closedir(dir);
+}
 }
 
 bool FaultLoggerDaemon::InitEnvironment()
@@ -143,19 +278,19 @@ bool FaultLoggerDaemon::InitEnvironment()
         LOG_FILE_PATH, DEBUG_LOG_FILE_PATH);
     faultLoggerSecure_ = std::make_shared<FaultLoggerSecure>();
 
-    if (!OHOS::ForceCreateDirectory(faultLoggerConfig_->GetLogFilePath())) {
+    if (!ForceCreateDirectory(faultLoggerConfig_->GetLogFilePath())) {
         DfxLogError("%s :: Failed to ForceCreateDirectory GetLogFilePath", LOG_LABLE.c_str());
         return false;
     }
-    if (!OHOS::ChangeModeDirectory(faultLoggerConfig_->GetLogFilePath(), FAULTLOG_FOLDER_PROP)) {
+    if (!ChangeModeDirectory(faultLoggerConfig_->GetLogFilePath(), FAULTLOG_FOLDER_PROP)) {
         DfxLogError("%s :: Failed to ChangeModeDirectory GetLogFilePath", LOG_LABLE.c_str());
     }
 
-    if (!OHOS::ForceCreateDirectory(faultLoggerConfig_->GetDebugLogFilePath())) {
+    if (!ForceCreateDirectory(faultLoggerConfig_->GetDebugLogFilePath())) {
         DfxLogError("%s :: Failed to ForceCreateDirectory GetDebugLogFilePath", LOG_LABLE.c_str());
         return false;
     }
-    if (!OHOS::ChangeModeDirectory(faultLoggerConfig_->GetDebugLogFilePath(), FAULTLOG_FOLDER_PROP)) {
+    if (!ChangeModeDirectory(faultLoggerConfig_->GetDebugLogFilePath(), FAULTLOG_FOLDER_PROP)) {
         DfxLogError("%s :: Failed to ChangeModeDirectory GetDebugLogFilePath", LOG_LABLE.c_str());
     }
 
@@ -164,7 +299,7 @@ bool FaultLoggerDaemon::InitEnvironment()
     }
 
     std::vector<std::string> files;
-    OHOS::GetDirFiles(faultLoggerConfig_->GetLogFilePath(), files);
+    GetDirFiles(faultLoggerConfig_->GetLogFilePath(), files);
     currentLogCounts_ = (int32_t)files.size();
 
     DfxLogInfo("%s :: %s success finished.", OHOS::HiviewDFX::LOG_LABLE.c_str(), __func__);
@@ -336,7 +471,7 @@ void FaultLoggerDaemon::HandleSdkDumpReqeust(int32_t connectionFd, FaultLoggerdR
             .si_errno = 0,
             .si_code = MINUS_ONE_THOUSAND,
             .si_pid = request->callerPid,
-            .si_uid = request->callerTid
+            .si_uid = static_cast<uid_t>(request->callerTid)
         };
 
 // means we need dump all the threads in a process.
@@ -437,7 +572,7 @@ int32_t FaultLoggerDaemon::CreateFileForRequest(int32_t type, int32_t pid, bool 
     DfxLogInfo("%s :: file path(%s).\n", LOG_LABLE.c_str(), path.c_str());
     int32_t fd = open(path.c_str(), O_RDWR | O_CREAT, FAULTLOG_FILE_PROP);
     if (fd != -1) {
-        if (!OHOS::ChangeModeFile(path, FAULTLOG_FILE_PROP)) {
+        if (!ChangeModeFile(path, FAULTLOG_FILE_PROP)) {
             DfxLogError("%s :: Failed to ChangeMode CreateFileForRequest", LOG_LABLE.c_str());
         }
     }
@@ -449,7 +584,7 @@ void FaultLoggerDaemon::RemoveTempFileIfNeed()
     int maxFileCount = 50;
 
     std::vector<std::string> files;
-    OHOS::GetDirFiles(faultLoggerConfig_->GetLogFilePath(), files);
+    GetDirFiles(faultLoggerConfig_->GetLogFilePath(), files);
     currentLogCounts_ = (int32_t)files.size();
 
     maxFileCount = faultLoggerConfig_->GetLogFileMaxNumber();
@@ -486,7 +621,7 @@ void FaultLoggerDaemon::RemoveTempFileIfNeed()
             }
         }
 
-        OHOS::RemoveFile(files[index]);
+        RemoveFile(files[index]);
         DfxLogDebug("%s :: Now we rm file(%s) as max log number exceeded.", LOG_LABLE.c_str(), files[index].c_str());
     }
 }

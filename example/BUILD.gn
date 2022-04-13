@@ -23,10 +23,14 @@ if (defined(ohos_lite)) {
       ".",
       "//utils/native/base/include",
       "//base/hiviewdfx/faultloggerd/interfaces/innerkits/dump_catcher/include/",
+      "$faultloggerd_path/common",
+      "$faultloggerd_path/tools/process_dump",
+      "$hilog_lite_include_path",
     ]
 
     deps = [
       "//base/hiviewdfx/faultloggerd/interfaces/innerkits/dump_catcher:lib_dfx_dump_catcher",
+      "$hilog_lite_deps_path",
     ]
   }
 } else {

@@ -193,7 +193,7 @@ NOINLINE int Oom(void)
         printf("setrlimit failed\n");
         raise(SIGINT);
     }
-    char* bufferArray[ARG128] = { 0x00 };
+    char* bufferArray[ARG128];
     for (int i = 0; i < ARG128; i++) {
         char* buf = (char*)malloc(ARG1024 * ARG1024);
         if (!buf) {
