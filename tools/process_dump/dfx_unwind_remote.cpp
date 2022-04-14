@@ -219,7 +219,6 @@ bool DfxUnwindRemote::UnwindThread(std::shared_ptr<DfxProcess> process, std::sha
 
     void *context = _UPT_create(tid);
     if (!context) {
-        unw_destroy_addr_space(as_);
         return false;
     }
 
@@ -227,7 +226,6 @@ bool DfxUnwindRemote::UnwindThread(std::shared_ptr<DfxProcess> process, std::sha
     if (unw_init_remote(&cursor, as_, context) != 0) {
         DfxLogWarn("Fail to init cursor for remote unwind.");
         _UPT_destroy(context);
-        unw_destroy_addr_space(as_);
         return false;
     }
 
