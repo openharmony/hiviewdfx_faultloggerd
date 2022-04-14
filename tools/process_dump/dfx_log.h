@@ -15,7 +15,11 @@
 #ifndef DFX_PROCESS_DUMP_LOG_H
 #define DFX_PROCESS_DUMP_LOG_H
 
+#ifdef DFX_LOG_USE_HILOG_BASE
+#include <hilog_base/log_base.h>
+#else
 #include <hilog/log.h>
+#endif
 
 #ifdef __cplusplus
 extern "C" {
@@ -27,8 +31,10 @@ int DfxLogError(const char *format, ...);
 int DfxLogFatal(const char *format, ...);
 int WriteLog(int fd, const char *format, ...);
 void DfxLogToSocket(const char *msg);
+#ifndef DFX_LOG_USE_HILOG_BASE
 void InitDebugLog(int type, int pid, int tid, int uid, int isLogPersist);
 void CloseDebugLog(void);
+#endif
 #ifdef __cplusplus
 }
 #endif

@@ -19,7 +19,7 @@
 #include <securec.h>
 #include <unistd.h>
 
-#include <faultloggerd_client.h>
+#include "faultloggerd_client.h"
 #include "dfx_define.h"
 
 enum class LOG_LEVEL_CLASS {
@@ -36,8 +36,10 @@ enum class LOG_LEVEL_CLASS {
 static const LOG_LEVEL_CLASS LOG_LEVEL = LOG_LEVEL_CLASS::LOG_LEVEL_INFO;
 static const int32_t INVALID_FD = -1;
 static int32_t g_DebugLogFilleDes = INVALID_FD;
+#ifndef DFX_LOG_USE_HILOG_BASE
 static int32_t g_StdErrFilleDes = INVALID_FD;
 static const OHOS::HiviewDFX::HiLogLabel g_LOG_LABEL = {LOG_CORE, 0xD002D20, "DfxFaultLogger"};
+#endif
 
 int DfxLogDebug(const char *format, ...)
 {
@@ -51,8 +53,11 @@ int DfxLogDebug(const char *format, ...)
     va_start(args, format);
     ret = vsnprintf_s(buf, sizeof(buf), sizeof(buf) - 1, format, args);
     va_end(args);
-
+#ifdef DFX_LOG_USE_HILOG_BASE
+    HILOG_BASE_DEBUG(LOG_CORE, "%{public}s", buf);
+#else
     OHOS::HiviewDFX::HiLog::Debug(g_LOG_LABEL, "%{public}s", buf);
+#endif
 
     if (g_DebugLogFilleDes != INVALID_FD) {
         fprintf(stderr, "%s\n", buf);
@@ -72,8 +77,11 @@ int DfxLogInfo(const char *format, ...)
     va_start(args, format);
     ret = vsnprintf_s(buf, sizeof(buf), sizeof(buf) - 1, format, args);
     va_end(args);
-
+#ifdef DFX_LOG_USE_HILOG_BASE
+    HILOG_BASE_INFO(LOG_CORE, "%{public}s", buf);
+#else
     OHOS::HiviewDFX::HiLog::Info(g_LOG_LABEL, "%{public}s", buf);
+#endif
 
     if (g_DebugLogFilleDes != INVALID_FD) {
         fprintf(stderr, "%s\n", buf);
@@ -93,8 +101,11 @@ int DfxLogWarn(const char *format, ...)
     va_start(args, format);
     ret = vsnprintf_s(buf, sizeof(buf), sizeof(buf) - 1, format, args);
     va_end(args);
-
+#ifdef DFX_LOG_USE_HILOG_BASE
+    HILOG_BASE_WARN(LOG_CORE, "%{public}s", buf);
+#else
     OHOS::HiviewDFX::HiLog::Warn(g_LOG_LABEL, "%{public}s", buf);
+#endif
 
     if (g_DebugLogFilleDes != INVALID_FD) {
         fprintf(stderr, "%s\n", buf);
@@ -114,8 +125,11 @@ int DfxLogError(const char *format, ...)
     va_start(args, format);
     ret = vsnprintf_s(buf, sizeof(buf), sizeof(buf) - 1, format, args);
     va_end(args);
-
+#ifdef DFX_LOG_USE_HILOG_BASE
+    HILOG_BASE_ERROR(LOG_CORE, "%{public}s", buf);
+#else
     OHOS::HiviewDFX::HiLog::Error(g_LOG_LABEL, "%{public}s", buf);
+#endif
 
     if (g_DebugLogFilleDes != INVALID_FD) {
         fprintf(stderr, "%s\n", buf);
@@ -135,9 +149,11 @@ int DfxLogFatal(const char *format, ...)
     va_start(args, format);
     ret = vsnprintf_s(buf, sizeof(buf), sizeof(buf) - 1, format, args);
     va_end(args);
-
+#ifdef DFX_LOG_USE_HILOG_BASE
+    HILOG_BASE_FATAL(LOG_CORE, "%{public}s", buf);
+#else
     OHOS::HiviewDFX::HiLog::Fatal(g_LOG_LABEL, "%{public}s", buf);
-
+#endif
     if (g_DebugLogFilleDes != INVALID_FD) {
         fprintf(stderr, "%s\n", buf);
     }
@@ -154,7 +170,11 @@ int WriteLog(int32_t fd, const char *format, ...)
     va_end(args);
 
     if ((LOG_LEVEL <= LOG_LEVEL_CLASS::LOG_LEVEL_DBG) || (fd == -1)) {
+#ifdef DFX_LOG_USE_HILOG_BASE
+        HILOG_BASE_DEBUG(LOG_CORE, "%{public}s", buf);
+#else
         OHOS::HiviewDFX::HiLog::Debug(g_LOG_LABEL, "%{public}s", buf);
+#endif
     }
 
     if (g_DebugLogFilleDes != INVALID_FD) {
@@ -189,6 +209,7 @@ void DfxLogToSocket(const char *msg)
     RequestPrintTHilog(msg, length);
 }
 
+#ifndef DFX_LOG_USE_HILOG_BASE
 void InitDebugLog(int type, int pid, int tid, int uid, int isLogPersist)
 {
     DfxLogInfo("InitDebugLog :: type(%d), pid(%d), tid(%d), uid(%d), isLogPersist(%d).",
@@ -238,3 +259,4 @@ void CloseDebugLog()
     g_DebugLogFilleDes = INVALID_FD;
     g_StdErrFilleDes = INVALID_FD;
 }
+#endif

@@ -39,7 +39,7 @@ if (defined(ohos_lite)) {
     visibility = [ "*:*" ]
 
     include_dirs = [
-      ".",
+      "include",
       "//utils/native/base/include",
       "//base/hiviewdfx/faultloggerd/common",
       "//base/hiviewdfx/faultloggerd/tools/process_dump/",
