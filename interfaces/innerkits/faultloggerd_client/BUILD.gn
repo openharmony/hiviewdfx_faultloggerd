@@ -21,7 +21,7 @@ if (defined(ohos_lite)) {
       ".",
       "./include",
       "//utils/native/base/include",
-      "//base/hiviewdfx/faultloggerd/tools/process_dump/",
+      "$faultloggerd_path/tools/process_dump/",
       "$faultloggerd_path/common",
       "$hilog_lite_include_path",
     ]
@@ -33,7 +33,6 @@ if (defined(ohos_lite)) {
 
     deps = [ "//base/hiviewdfx/hilog_lite/frameworks/featured:hilog_shared" ]
   }
-
 } else {
   config("faultloggerd_client_config") {
     visibility = [ "*:*" ]
@@ -41,8 +40,8 @@ if (defined(ohos_lite)) {
     include_dirs = [
       "include",
       "//utils/native/base/include",
-      "//base/hiviewdfx/faultloggerd/common",
-      "//base/hiviewdfx/faultloggerd/tools/process_dump/",
+      "$faultloggerd_path/common",
+      "$faultloggerd_path/tools/process_dump/",
     ]
   }
 

@@ -14,26 +14,37 @@
 import("//base/hiviewdfx/faultloggerd/faultloggerd.gni")
 
 if (defined(ohos_lite)) {
+  import("//build/lite/config/component/lite_component.gni")
   import("//build/lite/config/test.gni")
-  unittest("test_performance") {
-    output_extension = "bin"
-    output_dir = "$root_out_dir/test/peformancetest/faultloggerd"
-    sources = [ "src/faultloggerd_performance_test.cpp" ]
 
-    include_dirs = [
-      "include/",
-      "//utils/native/base/include",
-      "//base/hiviewdfx/faultloggerd/interfaces/innerkits/dump_catcher/include/",
-      "$hilog_lite_include_path",
-    ]
+  if (ohos_build_type == "debug") {
+    unittest("test_performance") {
+      output_extension = "bin"
+      output_dir = "$root_out_dir/test/unittest/faultloggerd"
+      sources = [ "src/faultloggerd_performance_test.cpp" ]
 
-    deps = [
-      "//base/hiviewdfx/faultloggerd/interfaces/innerkits/dump_catcher:lib_dfx_dump_catcher",
-      "//base/hiviewdfx/hilog_lite/frameworks/featured:hilog_shared",
-      "//third_party/googletest:gtest_main",
-    ]
+      include_dirs = [
+        "include/",
+        "//utils/native/base/include",
+        "$faultloggerd_path/common",
+        "$faultloggerd_path/tools/process_dump",
+        "$faultloggerd_path/interfaces/innerkits/faultloggerd_client/include",
+        "$faultloggerd_path/interfaces/innerkits/dump_catcher/include/",
+        "$hilog_lite_include_path",
+      ]
+
+      deps = [
+        "$faultloggerd_path/interfaces/innerkits/dump_catcher:lib_dfx_dump_catcher",
+        "//base/hiviewdfx/hilog_lite/frameworks/featured:hilog_shared",
+      ]
+    }
+  }
+
+  group("performance") {
+    deps = [ ":test_performance" ]
   }
 } else {
+  import("//build/config/features.gni")
   import("//build/test.gni")
 
   config("module_private_config") {
@@ -42,11 +53,12 @@ if (defined(ohos_lite)) {
     include_dirs = [
       "include/",
       "//utils/native/base/include",
-      "//base/hiviewdfx/faultloggerd/interfaces/innerkits/dump_catcher/include/",
+      "$faultloggerd_path/interfaces/innerkits/dump_catcher/include/",
     ]
   }
 
   module_output_path = "faultloggerd/faultloggerd_native"
+
   ohos_performancetest("test_performance") {
     module_out_path = module_output_path
     sources = [ "src/faultloggerd_performance_test.cpp" ]
@@ -54,7 +66,7 @@ if (defined(ohos_lite)) {
     configs = [ ":module_private_config" ]
 
     deps = [
-      "//base/hiviewdfx/faultloggerd/interfaces/innerkits/dump_catcher:lib_dfx_dump_catcher",
+      "$faultloggerd_path/interfaces/innerkits/dump_catcher:lib_dfx_dump_catcher",
       "//third_party/googletest:gtest_main",
       "//utils/native/base:utils",
     ]
@@ -80,15 +92,9 @@ if (defined(ohos_lite)) {
 
     deps = [ "//utils/native/base:utils" ]
   }
-}
 
-group("performance") {
-  testonly = true
-  if (defined(ohos_lite)) {
-    deps = [
-      ":test_performance",
-    ]    
-  } else {
+  group("performance") {
+    testonly = true
     deps = [
       ":multithread_constructor",
       ":test_performance",

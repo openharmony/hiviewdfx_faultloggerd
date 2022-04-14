@@ -19,16 +19,16 @@ if (defined(ohos_lite)) {
 
     include_dirs = [
       "include",
-      "//base/hiviewdfx/faultloggerd/common",
-      "//base/hiviewdfx/faultloggerd/utils",
+      "$faultloggerd_path/common",
+      "$faultloggerd_path/utils",
       "//third_party/libunwind/include",
-      "//base/hiviewdfx/faultloggerd/interfaces/innerkits/faultloggerd_client/include",
-      "//base/hiviewdfx/faultloggerd/tools/process_dump",
+      "$faultloggerd_path/interfaces/innerkits/faultloggerd_client/include",
+      "$faultloggerd_path/tools/process_dump",
       "//utils/native/base/include",
       "$hilog_lite_include_path",
     ]
 
-    cflags = [  "-DCURRENT_THREAD_ONLY" ]
+    cflags = [ "-DCURRENT_THREAD_ONLY" ]
 
     sources = [
       "//base/hiviewdfx/faultloggerd/tools/process_dump/dfx_elf.cpp",
@@ -43,7 +43,7 @@ if (defined(ohos_lite)) {
     ]
 
     deps = [
-      "//base/hiviewdfx/faultloggerd/interfaces/innerkits/faultloggerd_client:libfaultloggerd",
+      "$faultloggerd_path/interfaces/innerkits/faultloggerd_client:libfaultloggerd",
       "//base/hiviewdfx/hilog_lite/frameworks/featured:hilog_shared",
       "//third_party/libunwind:libunwind",
     ]
@@ -54,10 +54,10 @@ if (defined(ohos_lite)) {
 
     include_dirs = [
       "include",
-      "//base/hiviewdfx/faultloggerd/common",
+      "$faultloggerd_path/common",
       "//third_party/libunwind/include",
-      "//base/hiviewdfx/faultloggerd/interfaces/innerkits/faultloggerd_client/include",
-      "//base/hiviewdfx/faultloggerd/tools/process_dump",
+      "$faultloggerd_path/interfaces/innerkits/faultloggerd_client/include",
+      "$faultloggerd_path/tools/process_dump",
       "//utils/native/base/include",
     ]
   }
@@ -79,7 +79,7 @@ if (defined(ohos_lite)) {
     ]
 
     deps = [
-      "//base/hiviewdfx/faultloggerd/interfaces/innerkits/faultloggerd_client:libfaultloggerd",
+      "$faultloggerd_path/interfaces/innerkits/faultloggerd_client:libfaultloggerd",
       "//third_party/libunwind:libunwind",
     ]
 

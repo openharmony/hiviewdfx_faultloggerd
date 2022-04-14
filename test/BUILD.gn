@@ -16,7 +16,6 @@ if (defined(ohos_lite)) {
 } else {
   import("//build/test.gni")
 }
-
 group("faultloggerd_moduletest") {
   testonly = true
   deps = [ "moduletest:moduletest" ]

@@ -18,14 +18,14 @@ if (defined(ohos_lite)) {
     visibility = [ "*:*" ]
     include_dirs = [
       ".",
-      "//base/hiviewdfx/faultloggerd/common",
-      "//base/hiviewdfx/faultloggerd/tools/process_dump/",
-      "//base/hiviewdfx/faultloggerd/interfaces/innerkits/signal_handler/include",
+      "$faultloggerd_path/common",
+      "$faultloggerd_path/tools/process_dump/",
+      "$faultloggerd_path/interfaces/innerkits/signal_handler/include",
       "//utils/native/base/include",
     ]
     sources = [ "dfx_crasher.cpp" ]
     deps = [
-      "//base/hiviewdfx/faultloggerd/interfaces/innerkits/signal_handler:dfx_signalhandler",
+      "$faultloggerd_path/interfaces/innerkits/signal_handler:dfx_signalhandler",
       "//third_party/bounds_checking_function:libsec_shared",
     ]
   }
@@ -35,7 +35,7 @@ if (defined(ohos_lite)) {
 
     include_dirs = [
       ".",
-      "//base/hiviewdfx/faultloggerd/tools/process_dump/",
+      "$faultloggerd_path/tools/process_dump/",
       "//utils/native/base/include",
     ]
   }
@@ -45,7 +45,7 @@ if (defined(ohos_lite)) {
     sources = [ "dfx_crasher.cpp" ]
 
     deps = [
-      "//base/hiviewdfx/faultloggerd/interfaces/innerkits/signal_handler:dfx_signalhandler",
+      "$faultloggerd_path/interfaces/innerkits/signal_handler:dfx_signalhandler",
       "//utils/native/base:utils",
     ]
 

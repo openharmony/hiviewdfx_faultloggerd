@@ -22,14 +22,14 @@ if (defined(ohos_lite)) {
     include_dirs = [
       ".",
       "//utils/native/base/include",
-      "//base/hiviewdfx/faultloggerd/interfaces/innerkits/dump_catcher/include/",
+      "$faultloggerd_path/interfaces/innerkits/dump_catcher/include/",
       "$faultloggerd_path/common",
       "$faultloggerd_path/tools/process_dump",
       "$hilog_lite_include_path",
     ]
 
     deps = [
-      "//base/hiviewdfx/faultloggerd/interfaces/innerkits/dump_catcher:lib_dfx_dump_catcher",
+      "$faultloggerd_path/interfaces/innerkits/dump_catcher:lib_dfx_dump_catcher",
       "$hilog_lite_deps_path",
     ]
   }
@@ -40,7 +40,7 @@ if (defined(ohos_lite)) {
     include_dirs = [
       ".",
       "//utils/native/base/include",
-      "//base/hiviewdfx/faultloggerd/interfaces/innerkits/dump_catcher/include/",
+      "$faultloggerd_path/interfaces/innerkits/dump_catcher/include/",
     ]
   }
 
@@ -50,7 +50,7 @@ if (defined(ohos_lite)) {
     configs = [ ":dumpcatcherdemo_config" ]
 
     deps = [
-      "//base/hiviewdfx/faultloggerd/interfaces/innerkits/dump_catcher:lib_dfx_dump_catcher",
+      "$faultloggerd_path/interfaces/innerkits/dump_catcher:lib_dfx_dump_catcher",
       "//utils/native/base:utils",
     ]
 

@@ -15,11 +15,13 @@ import("//base/hiviewdfx/faultloggerd/faultloggerd.gni")
 
 if (defined(ohos_lite)) {
   executable("harmonystrace") {
-    visibility = [ ":*" ]
+    visibility = [ "*:*" ]
 
     include_dirs = [
       ".",
-      "//base/hiviewdfx/faultloggerd/interfaces/innerkits/dump_catcher/include",
+      "$faultloggerd_path/common",
+      "$faultloggerd_path/tools/process_dump",
+      "$faultloggerd_path/interfaces/innerkits/dump_catcher/include",
       "//utils/native/base/include",
       "$hilog_lite_include_path",
     ]
@@ -27,8 +29,8 @@ if (defined(ohos_lite)) {
     sources = [ "main.cpp" ]
 
     deps = [
-      "//base/hiviewdfx/hilog_lite/frameworks/featured:hilog_shared",
       "$faultloggerd_path/interfaces/innerkits/dump_catcher:lib_dfx_dump_catcher",
+      "//base/hiviewdfx/hilog_lite/frameworks/featured:hilog_shared",
     ]
   }
 } else {
@@ -37,7 +39,7 @@ if (defined(ohos_lite)) {
 
     include_dirs = [
       ".",
-      "//base/hiviewdfx/faultloggerd/interfaces/innerkits/dump_catcher/include",
+      "$faultloggerd_path/interfaces/innerkits/dump_catcher/include",
       "//utils/native/base/include",
     ]
   }
@@ -47,9 +49,7 @@ if (defined(ohos_lite)) {
     configs = [ ":harmony_strace_config" ]
     sources = [ "main.cpp" ]
 
-    deps = [
-      "$faultloggerd_path/interfaces/innerkits/dump_catcher:lib_dfx_dump_catcher",
-    ]
+    deps = [ "$faultloggerd_path/interfaces/innerkits/dump_catcher:lib_dfx_dump_catcher" ]
 
     external_deps = [
       "hilog_native:libhilog",
@@ -59,9 +59,9 @@ if (defined(ohos_lite)) {
     part_name = "faultloggerd"
     subsystem_name = "hiviewdfx"
   }
-}
 
-group("unittest") {
-  testonly = true
-  deps = [ ":harmonystrace" ]
+  group("unittest") {
+    testonly = true
+    deps = [ ":harmonystrace" ]
+  }
 }
