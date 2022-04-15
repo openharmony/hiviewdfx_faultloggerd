@@ -55,16 +55,6 @@
 #define TRUE 1
 #define FALSE 0
 
-#ifdef LOG_DOMAIN
-#undef LOG_DOMAIN
-#define LOG_DOMAIN 0x2D11
-#endif
-
-#ifdef LOG_TAG
-#undef LOG_TAG
-#define LOG_TAG "DfxSignalHandler"
-#endif
-
 #define SECONDS_TO_MILLSECONDS 1000000
 #define NANOSECONDS_TO_MILLSECONDS 1000
 #ifndef NSIG

@@ -65,8 +65,7 @@ if (defined(ohos_lite)) {
   ohos_shared_library("lib_dfx_dump_catcher") {
     public_configs = [ ":dfx_dump_catcher_config" ]
 
-    cflags = [ "-DDFX_LOG_USE_HILOG_BASE" ]
-    cflags += [ "-DCURRENT_THREAD_ONLY" ]
+    cflags = [ "-DCURRENT_THREAD_ONLY" ]
 
     sources = [
       "//base/hiviewdfx/faultloggerd/tools/process_dump/dfx_elf.cpp",
@@ -84,7 +83,7 @@ if (defined(ohos_lite)) {
     ]
 
     external_deps = [
-      "hilog_native:libhilog_base",
+      "hilog_native:libhilog",
       "utils_base:utils",
     ]
 

@@ -22,6 +22,18 @@
 #include "faultloggerd_client.h"
 #include "dfx_define.h"
 
+#ifdef DFX_SIGNALHANDLER_TAG
+#ifdef LOG_DOMAIN
+#undef LOG_DOMAIN
+#define LOG_DOMAIN 0x2D11
+#endif
+
+#ifdef LOG_TAG
+#undef LOG_TAG
+#define LOG_TAG "DfxSignalHandler"
+#endif
+#endif
+
 enum class LOG_LEVEL_CLASS {
     LOG_LEVEL_ALL = 1,
     LOG_LEVEL_TRACE,
