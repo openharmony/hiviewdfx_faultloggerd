@@ -15,13 +15,11 @@
 
 #include "directory_ex.h"
 #include <dirent.h>
-#include <errno.h>
 #include "securec.h"
 #include "unistd.h"
 using namespace std;
 
 namespace OHOS {
-
 string GetCurrentProcFullFileName()
 {
     char procFile[PATH_MAX + 1] = {0};
@@ -65,7 +63,7 @@ string ExcludeTrailingPathDelimiter(const std::string& path)
     }
 
     if (!path.empty()) {
-        return path.substr(0, (int)path.size() - 1);
+        return path.substr(0, path.size() - 1);
     }
 
     return path;
@@ -280,5 +278,4 @@ bool PathToRealPath(const string& path, string& realPath)
     }
     return true;
 }
-
 } // OHOS

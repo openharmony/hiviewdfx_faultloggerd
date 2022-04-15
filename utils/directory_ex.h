@@ -18,10 +18,10 @@
 
 #include <string>
 #include <vector>
+
 #include <sys/stat.h>
 
 namespace OHOS {
-
 /**
  * The GetCurrentProcFullFileName function get the current process exe name.
  */

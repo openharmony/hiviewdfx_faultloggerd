@@ -17,12 +17,8 @@
 #define UTILS_BASE_FILE_EX_H
 
 #include <string>
-#include <vector>
 
 namespace OHOS {
-
 bool LoadStringFromFile(const std::string& filePath, std::string& content);
-
 }
-
 #endif

@@ -25,13 +25,11 @@
 #include <securec.h>
 #include <cstring>
 #include "directory_ex.h"
-
 using namespace std;
 
 const int MAX_FILE_LENGTH = 32 * 1024 * 1024;
 
 namespace OHOS {
-
 bool LoadStringFromFile(const string& filePath, string& content)
 {
     ifstream file(filePath.c_str());
@@ -50,4 +48,4 @@ bool LoadStringFromFile(const string& filePath, string& content)
     copy(istreambuf_iterator<char>(file), istreambuf_iterator<char>(), back_inserter(content));
     return true;
 }
-}
+} // OHOS

@@ -16,28 +16,27 @@
 /* This files contains faultlog secure module. */
 
 #include "fault_logger_secure.h"
+
 #include <algorithm>
 #include <cerrno>
+#include <cstdio>
+#include <cstdlib>
 #include <cstring>
-#include <string>
 #include <ctime>
+#include <string>
 #include <vector>
 
 #include <fcntl.h>
-#include <unistd.h>
-
+#include <securec.h>
 #include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/un.h>
+#include <unistd.h>
 
-#include <cstdlib>
-#include <cstdio>
-
+#include "dfx_log.h"
 #include "directory_ex.h"
 #include "file_ex.h"
-#include <securec.h>
-#include "dfx_log.h"
 
 static const std::string FaultLoggerSecure_TAG = "FaultLoggerSecure";
 

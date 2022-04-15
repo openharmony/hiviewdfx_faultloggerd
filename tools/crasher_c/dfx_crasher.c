@@ -26,19 +26,7 @@
 #include <unistd.h>
 #include <sys/prctl.h>
 
-#include <hilog/log.h>
-
 #include "dfx_signal_handler.h"
-
-#ifdef LOG_DOMAIN
-#undef LOG_DOMAIN
-#define LOG_DOMAIN 0x2D11
-#endif
-
-#ifdef LOG_TAG
-#undef LOG_TAG
-#define LOG_TAG "Unwind"
-#endif
 
 static const int ARG1024 = 1024;
 static const int ARG128 = 128;
@@ -397,7 +385,6 @@ uint64_t ParseAndDoCrash(const char *arg)
         int i = 0;
         while (1) {
             usleep(10000); // 10000:sleep 0.01 second
-            HILOG_INFO(LOG_CORE, "LogTest %{public}d ", i);
             i++;
         }
     }
