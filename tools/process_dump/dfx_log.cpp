@@ -55,6 +55,9 @@ static const OHOS::HiviewDFX::HiLogLabel g_LOG_LABEL = {LOG_CORE, 0xD002D20, "Df
 
 int DfxLogDebug(const char *format, ...)
 {
+#ifdef DFX_NO_PRINT_LOG
+    return 0;
+#endif
     if (LOG_LEVEL_CLASS::LOG_LEVEL_DBG < LOG_LEVEL) {
         return 0;
     }
@@ -79,6 +82,9 @@ int DfxLogDebug(const char *format, ...)
 
 int DfxLogInfo(const char *format, ...)
 {
+#ifdef DFX_NO_PRINT_LOG
+    return 0;
+#endif
     if (LOG_LEVEL_CLASS::LOG_LEVEL_INFO < LOG_LEVEL) {
         return 0;
     }
@@ -103,6 +109,9 @@ int DfxLogInfo(const char *format, ...)
 
 int DfxLogWarn(const char *format, ...)
 {
+#ifdef DFX_NO_PRINT_LOG
+    return 0;
+#endif
     if (LOG_LEVEL_CLASS::LOG_LEVEL_WARN < LOG_LEVEL) {
         return 0;
     }
@@ -127,6 +136,9 @@ int DfxLogWarn(const char *format, ...)
 
 int DfxLogError(const char *format, ...)
 {
+#ifdef DFX_NO_PRINT_LOG
+    return 0;
+#endif
     if (LOG_LEVEL_CLASS::LOG_LEVEL_ERR < LOG_LEVEL) {
         return 0;
     }
@@ -151,6 +163,9 @@ int DfxLogError(const char *format, ...)
 
 int DfxLogFatal(const char *format, ...)
 {
+#ifdef DFX_NO_PRINT_LOG
+    return 0;
+#endif
     if (LOG_LEVEL_CLASS::LOG_LEVEL_FATAL < LOG_LEVEL) {
         return 0;
     }

@@ -16,6 +16,9 @@ import("//base/hiviewdfx/faultloggerd/faultloggerd.gni")
 if (defined(ohos_lite)) {
   shared_library("dfx_signalhandler") {
     visibility = [ "*:*" ]
+
+    cflags = [ "-DDFX_NO_PRINT_LOG" ]
+
     include_dirs = [
       "include",
       "//utils/native/base/include",
