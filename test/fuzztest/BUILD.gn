@@ -1,4 +1,4 @@
-# Copyright (c) 2021 Huawei Device Co., Ltd.
+# Copyright (c) 2021-2022 Huawei Device Co., Ltd.
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -12,37 +12,56 @@
 # limitations under the License.
 
 import("//base/hiviewdfx/faultloggerd/faultloggerd.gni")
-import("//build/config/features.gni")
-import("//build/test.gni")
 
-module_output_path = "faultloggerd/faultloggerd_native"
+if (defined(ohos_lite)) {
+  import("//build/lite/config/component/lite_component.gni")
+  import("//build/lite/config/test.gni")
 
-##############################fuzztest##########################################
-ohos_fuzztest("test_fuzzer") {
-  module_out_path = module_output_path
+  if (ohos_build_type == "debug") {
+    fuzztest("test_fuzzer") {
+      output_extension = "bin"
+      output_dir = "$root_out_dir/test/unittest/faultloggerd"
+      include_dirs = [
+        "./",
+        "//utils/native/base/include",
+        "$hilog_lite_include_path",
+      ]
+      sources = [ "./faultloggerd_fuzzer_test.cpp" ]
+      deps = [
+        "$faultloggerd_path/interfaces/innerkits/dump_catcher:lib_dfx_dump_catcher",
+        "//base/hiviewdfx/hilog_lite/frameworks/featured:hilog_shared",
+      ]
+    }
+  }
 
-  include_dirs = [ "./" ]
-  cflags = [
-    "-g",
-    "-O0",
-    "-Wno-unused-variable",
-    "-fno-omit-frame-pointer",
-  ]
-  sources = [ "./faultloggerd_fuzzer_test.cpp" ]
-  deps = [
-    "//base/hiviewdfx/faultloggerd/interfaces/innerkits/dump_catcher:lib_dfx_dump_catcher",
-    "//utils/native/base:utils",
-  ]
+  group("fuzztest") {
+    deps = [ ":test_fuzzer" ]
+  }
+} else {
+  import("//build/config/features.gni")
+  import("//build/test.gni")
+
+  module_output_path = "faultloggerd/faultloggerd_native"
+
+  ohos_fuzztest("test_fuzzer") {
+    module_out_path = module_output_path
+
+    include_dirs = [ "./" ]
+    cflags = [
+      "-g",
+      "-O0",
+      "-Wno-unused-variable",
+      "-fno-omit-frame-pointer",
+    ]
+    sources = [ "./faultloggerd_fuzzer_test.cpp" ]
+    deps = [
+      "$faultloggerd_path/interfaces/innerkits/dump_catcher:lib_dfx_dump_catcher",
+      "//utils/native/base:utils",
+    ]
+  }
+
+  group("fuzztest") {
+    testonly = true
+    deps = [ ":test_fuzzer" ]
+  }
 }
-
-###############################################################################
-group("fuzztest") {
-  testonly = true
-  deps = []
-
-  deps += [
-    # deps file
-    ":test_fuzzer",
-  ]
-}
-###############################################################################

@@ -18,18 +18,18 @@
 #include <cstdlib>
 #include <cstdio>
 #include <cstring>
-#include <directory_ex.h>
-#include <file_ex.h>
 #include <iostream>
 #include <securec.h>
 #include <unistd.h>
 #include <sys/socket.h>
 #include <sys/un.h>
 
+#include "file_ex.h"
 #include "dfx_define.h"
 #include "dfx_dump_writer.h"
 #include "dfx_log.h"
 #include "dfx_config.h"
+#include "directory_ex.h"
 #include "process_dumper.h"
 #include "../../interfaces/innerkits/faultloggerd_client/include/faultloggerd_client.h"
 
@@ -135,7 +135,7 @@ static bool CheckConnectStatus()
             break;
         }
 
-        int len = (int)(offsetof(struct sockaddr_un, sun_path) + strlen(server.sun_path) + 1);
+        socklen_t len = static_cast<socklen_t>(offsetof(struct sockaddr_un, sun_path) + strlen(server.sun_path) + 1);
         int connect_status = connect(sockfd, reinterpret_cast<struct sockaddr *>(&server), len);
         if (connect_status == 0) {
             check_status = true;

@@ -158,7 +158,7 @@ uint64_t DfxElf::FindRealLoadOffset(uint64_t offset) const
 void DfxElf::CreateLoadInfo(uint64_t vaddr, uint64_t offset)
 {
     DfxLogDebug("Enter %s.", __func__);
-    std::unique_ptr<ElfLoadInfo> info = std::make_unique<ElfLoadInfo>();
+    std::unique_ptr<ElfLoadInfo> info(new ElfLoadInfo());
     if (info == nullptr) {
         return;
     }

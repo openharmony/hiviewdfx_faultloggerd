@@ -107,14 +107,14 @@ bool DfxDumpCatcherLocalDumper::SendLocalDumpRequest(int32_t tid)
 DfxDumpCatcherLocalDumper::DfxDumpCatcherLocalDumper()
 {
 #ifdef LOCAL_DUMPER_DEBUG
-    HILOG_BASE_DEBUG(LOG_CORE, "%{public}s :: construct.", LOG_TAG);
+    DfxLogDebug("%{public}s :: construct.", LOG_TAG);
 #endif
 }
 
 DfxDumpCatcherLocalDumper::~DfxDumpCatcherLocalDumper()
 {
 #ifdef LOCAL_DUMPER_DEBUG
-    HILOG_BASE_DEBUG(LOG_CORE, "%{public}s :: destructor.", LOG_TAG);
+    DfxLogDebug("%{public}s :: destructor.", LOG_TAG);
 #endif
 }
 
@@ -177,7 +177,7 @@ void DfxDumpCatcherLocalDumper::WriteFrameInfo(std::ostringstream& ss, size_t in
 bool DfxDumpCatcherLocalDumper::ExecLocalDump(int pid, int tid, size_t skipFramNum)
 {
 #ifdef LOCAL_DUMPER_DEBUG
-    HILOG_BASE_DEBUG(LOG_CORE, "%{public}s :: %{public}s : pid(%{public}d), tid(%{public}d), skpFram(%{public}d).", \
+    DfxLogDebug("%{public}s :: %{public}s : pid(%{public}d), tid(%{public}d), skpFram(%{public}d).", \
         LOG_TAG, __func__, pid, tid, skipFramNum);
 #endif
 
@@ -215,19 +215,19 @@ bool DfxDumpCatcherLocalDumper::ExecLocalDump(int pid, int tid, size_t skipFramN
     }
 
 #ifdef LOCAL_DUMPER_DEBUG
-    HILOG_BASE_DEBUG(LOG_CORE, "%{public}s :: ExecLocalDump :: return true.", LOG_TAG);
+    DfxLogDebug("%{public}s :: ExecLocalDump :: return true.", LOG_TAG);
 #endif
     return true;
 }
 
 void DfxDumpCatcherLocalDumper::DFX_LocalDumperUnwindLocal(int sig, siginfo_t *si, void *context)
 {
-    HILOG_BASE_DEBUG(LOG_CORE, "%{public}s :: DFX_LocalDumperUnwindLocal.", LOG_TAG);
+    DfxLogDebug("%{public}s :: DFX_LocalDumperUnwindLocal.", LOG_TAG);
     DfxLogToSocket("DFX_LocalDumperUnwindLocal -S-");
 #ifdef LOCAL_DUMPER_DEBUG
-    HILOG_BASE_DEBUG(LOG_CORE, "%{public}s :: sig(%{public}d), callerPid(%{public}d), callerTid(%{public}d).",
+    DfxLogDebug("%{public}s :: sig(%{public}d), callerPid(%{public}d), callerTid(%{public}d).",
         __func__, sig, si->si_pid, si->si_uid);
-    HILOG_BASE_DEBUG(LOG_CORE, "DFX_LocalDumperUnwindLocal :: sig(%{public}d), pid(%{public}d), tid(%{public}d).",
+    DfxLogDebug("DFX_LocalDumperUnwindLocal :: sig(%{public}d), pid(%{public}d), tid(%{public}d).",
         sig, g_localDumpRequest.pid, g_localDumpRequest.tid);
 #endif
     ExecLocalDump(g_localDumpRequest.pid, g_localDumpRequest.tid, DUMP_CATCHER_NUMBER_ONE);

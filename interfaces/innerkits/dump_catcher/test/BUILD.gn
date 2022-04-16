@@ -12,37 +12,56 @@
 # limitations under the License.
 
 import("//base/hiviewdfx/faultloggerd/faultloggerd.gni")
-import("//build/ohos.gni")
 
-config("harmony_strace_config") {
-  visibility = [ ":*" ]
+if (defined(ohos_lite)) {
+  executable("harmonystrace") {
+    visibility = [ "*:*" ]
 
-  include_dirs = [
-    ".",
-    "//base/hiviewdfx/faultloggerd/interfaces/innerkits/dump_catcher/include",
-    "//utils/native/base/include",
-  ]
-}
+    include_dirs = [
+      ".",
+      "$faultloggerd_path/common",
+      "$faultloggerd_path/tools/process_dump",
+      "$faultloggerd_path/interfaces/innerkits/dump_catcher/include",
+      "//utils/native/base/include",
+      "$hilog_lite_include_path",
+    ]
 
-ohos_executable("harmonystrace") {
-  install_enable = true
-  configs = [ ":harmony_strace_config" ]
-  sources = [ "main.cpp" ]
+    sources = [ "main.cpp" ]
 
-  deps = [
-    "$faultloggerd_path/interfaces/innerkits/dump_catcher:lib_dfx_dump_catcher",
-  ]
+    deps = [
+      "$faultloggerd_path/interfaces/innerkits/dump_catcher:lib_dfx_dump_catcher",
+      "//base/hiviewdfx/hilog_lite/frameworks/featured:hilog_shared",
+    ]
+  }
+} else {
+  config("harmony_strace_config") {
+    visibility = [ ":*" ]
 
-  external_deps = [
-    "hilog_native:libhilog",
-    "utils_base:utils",
-  ]
+    include_dirs = [
+      ".",
+      "$faultloggerd_path/interfaces/innerkits/dump_catcher/include",
+      "//utils/native/base/include",
+    ]
+  }
 
-  part_name = "faultloggerd"
-  subsystem_name = "hiviewdfx"
-}
+  ohos_executable("harmonystrace") {
+    install_enable = true
+    configs = [ ":harmony_strace_config" ]
+    sources = [ "main.cpp" ]
 
-group("unittest") {
-  testonly = true
-  deps = [ ":harmonystrace" ]
+    deps = [ "$faultloggerd_path/interfaces/innerkits/dump_catcher:lib_dfx_dump_catcher" ]
+
+    external_deps = [
+      "hilog_native:libhilog",
+      "utils_base:utils",
+    ]
+
+    part_name = "faultloggerd"
+    subsystem_name = "hiviewdfx"
+  }
+
+  group("unittest") {
+    testonly = true
+    deps = [ ":harmonystrace" ]
+  }
 }

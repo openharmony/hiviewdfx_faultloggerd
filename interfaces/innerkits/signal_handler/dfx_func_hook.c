@@ -18,7 +18,7 @@
 #include <dlfcn.h>
 #include <unistd.h>
 
-#include <hilog_base/log_base.h>
+#include "dfx_log.h"
 
 #ifdef LOG_DOMAIN
 #undef LOG_DOMAIN
@@ -37,9 +37,9 @@ static SigactionFunc hookedSigaction = NULL;
 static uintptr_t signalHandler = 0;
 int kill(pid_t pid, int sig)
 {
-    HILOG_BASE_WARN(LOG_CORE, "%{public}d send signal(%{public}d) to %{public}d", getpid(), sig, pid);
+    DfxLogWarn("%{public}d send signal(%{public}d) to %{public}d", getpid(), sig, pid);
     if (hookedKill == NULL) {
-        HILOG_BASE_ERROR(LOG_CORE, "hooked kill is NULL?");
+        DfxLogError("hooked kill is NULL?");
         return -1;
     }
     return hookedKill(pid, sig);
@@ -47,12 +47,12 @@ int kill(pid_t pid, int sig)
 
 int sigaction(int sig, const struct sigaction *restrict act, struct sigaction *restrict oact)
 {
-    HILOG_BASE_WARN(LOG_CORE, "%{public}d call sigaction and signo is %{public}d", getpid(), sig);
+    DfxLogWarn("%{public}d call sigaction and signo is %{public}d", getpid(), sig);
     if (hookedSigaction == NULL) {
-        HILOG_BASE_ERROR(LOG_CORE, "hooked sigaction is NULL?");
+        DfxLogError("hooked sigaction is NULL?");
         return -1;
     }
-    HILOG_BASE_WARN(LOG_CORE, "current signalhandler addr : 0x%{public}x, original signalhandler addr : 0x%{public}x",
+    DfxLogWarn("current signalhandler addr : 0x%{public}x, original signalhandler addr : 0x%{public}x",
         (uintptr_t)act->sa_sigaction, signalHandler);
     return hookedSigaction(sig, act, oact);
 }
@@ -63,13 +63,13 @@ static void StartHookKillFunction(void)
     if (hookedKill != NULL) {
         return;
     }
-    HILOG_BASE_ERROR(LOG_CORE, "Failed to find hooked kill use RTLD_NEXT");
+    DfxLogError("Failed to find hooked kill use RTLD_NEXT");
 
     hookedKill = (KillFunc)dlsym(RTLD_DEFAULT, "kill");
     if (hookedKill != NULL) {
         return;
     }
-    HILOG_BASE_ERROR(LOG_CORE, "Failed to find hooked kill use RTLD_DEFAULT");
+    DfxLogError("Failed to find hooked kill use RTLD_DEFAULT");
 }
 
 static void StartHookSigactionFunction(void)
@@ -78,13 +78,13 @@ static void StartHookSigactionFunction(void)
     if (hookedSigaction != NULL) {
         return;
     }
-    HILOG_BASE_ERROR(LOG_CORE, "Failed to find hooked sigaction use RTLD_NEXT");
+    DfxLogError("Failed to find hooked sigaction use RTLD_NEXT");
 
     hookedSigaction = (SigactionFunc)dlsym(RTLD_DEFAULT, "sigaction");
     if (hookedSigaction != NULL) {
         return;
     }
-    HILOG_BASE_ERROR(LOG_CORE, "Failed to find hooked sigaction use RTLD_DEFAULT");
+    DfxLogError("Failed to find hooked sigaction use RTLD_DEFAULT");
 }
 
 void StartHookFunc(uintptr_t sighdlr)

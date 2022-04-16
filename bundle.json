@@ -12,13 +12,15 @@
     "subsystem": "hiviewdfx",
     "syscap": [],
     "features": [],
-    "adapted_system_type": [ "standard" ],
+    "adapted_system_type": [
+      "small",
+      "standard"
+    ],
     "rom": "1024KB",
     "ram": "~1024KB",
     "deps": {
       "components": [
-        "bytrace_standard",
-        "hilog_native",
+        "libhilog",
         "utils_base"
       ],
       "third_party": [

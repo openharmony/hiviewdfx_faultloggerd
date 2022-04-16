@@ -11,47 +11,83 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import("//build/ohos.gni")
-config("dfx_dump_catcher_config") {
-  visibility = [ "*:*" ]
+import("//base/hiviewdfx/faultloggerd/faultloggerd.gni")
 
-  include_dirs = [
-    "include",
-    "//base/hiviewdfx/faultloggerd/common",
-    "//third_party/libunwind/include",
-    "//base/hiviewdfx/faultloggerd/interfaces/innerkits/faultloggerd_client/include",
-    "//base/hiviewdfx/faultloggerd/tools/process_dump",
-    "//utils/native/base/include",
-    "//developtools/bytrace_standard/interfaces/innerkits/native/include",
-  ]
-}
+if (defined(ohos_lite)) {
+  shared_library("lib_dfx_dump_catcher") {
+    visibility = [ "*:*" ]
 
-ohos_shared_library("lib_dfx_dump_catcher") {
-  public_configs = [ ":dfx_dump_catcher_config" ]
+    include_dirs = [
+      "include",
+      "$faultloggerd_path/common",
+      "$faultloggerd_path/utils",
+      "//third_party/libunwind/include",
+      "$faultloggerd_path/interfaces/innerkits/faultloggerd_client/include",
+      "$faultloggerd_path/tools/process_dump",
+      "//utils/native/base/include",
+      "$hilog_lite_include_path",
+    ]
 
-  cflags = [ "-DDFX_LOG_USE_HILOG_BASE" ]
-  cflags += [ "-DCURRENT_THREAD_ONLY" ]
+    cflags = [ "-DCURRENT_THREAD_ONLY" ]
 
-  sources = [
-    "//base/hiviewdfx/faultloggerd/tools/process_dump/dfx_elf.cpp",
-    "//base/hiviewdfx/faultloggerd/tools/process_dump/dfx_log.cpp",
-    "//base/hiviewdfx/faultloggerd/tools/process_dump/dfx_maps.cpp",
-    "//base/hiviewdfx/faultloggerd/tools/process_dump/dfx_util.cpp",
-    "dfx_dump_catcher.cpp",
-    "dfx_dump_catcher_frame.cpp",
-    "dfx_dump_catcher_local_dumper.cpp",
-  ]
+    sources = [
+      "//base/hiviewdfx/faultloggerd/tools/process_dump/dfx_elf.cpp",
+      "//base/hiviewdfx/faultloggerd/tools/process_dump/dfx_log.cpp",
+      "//base/hiviewdfx/faultloggerd/tools/process_dump/dfx_maps.cpp",
+      "//base/hiviewdfx/faultloggerd/tools/process_dump/dfx_util.cpp",
+      "//base/hiviewdfx/faultloggerd/utils/directory_ex.cpp",
+      "//base/hiviewdfx/faultloggerd/utils/file_ex.cpp",
+      "dfx_dump_catcher.cpp",
+      "dfx_dump_catcher_frame.cpp",
+      "dfx_dump_catcher_local_dumper.cpp",
+    ]
 
-  deps = [
-    "//base/hiviewdfx/faultloggerd/interfaces/innerkits/faultloggerd_client:libfaultloggerd",
-    "//third_party/libunwind:libunwind",
-  ]
+    deps = [
+      "$faultloggerd_path/interfaces/innerkits/faultloggerd_client:libfaultloggerd",
+      "//base/hiviewdfx/hilog_lite/frameworks/featured:hilog_shared",
+      "//third_party/libunwind:libunwind",
+    ]
+  }
+} else {
+  config("dfx_dump_catcher_config") {
+    visibility = [ "*:*" ]
 
-  external_deps = [
-    "hilog_native:libhilog_base",
-    "utils_base:utils",
-  ]
+    include_dirs = [
+      "include",
+      "$faultloggerd_path/common",
+      "//third_party/libunwind/include",
+      "$faultloggerd_path/interfaces/innerkits/faultloggerd_client/include",
+      "$faultloggerd_path/tools/process_dump",
+      "//utils/native/base/include",
+    ]
+  }
 
-  part_name = "faultloggerd"
-  subsystem_name = "hiviewdfx"
+  ohos_shared_library("lib_dfx_dump_catcher") {
+    public_configs = [ ":dfx_dump_catcher_config" ]
+
+    cflags = [ "-DCURRENT_THREAD_ONLY" ]
+
+    sources = [
+      "//base/hiviewdfx/faultloggerd/tools/process_dump/dfx_elf.cpp",
+      "//base/hiviewdfx/faultloggerd/tools/process_dump/dfx_log.cpp",
+      "//base/hiviewdfx/faultloggerd/tools/process_dump/dfx_maps.cpp",
+      "//base/hiviewdfx/faultloggerd/tools/process_dump/dfx_util.cpp",
+      "dfx_dump_catcher.cpp",
+      "dfx_dump_catcher_frame.cpp",
+      "dfx_dump_catcher_local_dumper.cpp",
+    ]
+
+    deps = [
+      "$faultloggerd_path/interfaces/innerkits/faultloggerd_client:libfaultloggerd",
+      "//third_party/libunwind:libunwind",
+    ]
+
+    external_deps = [
+      "hilog_native:libhilog",
+      "utils_base:utils",
+    ]
+
+    part_name = "faultloggerd"
+    subsystem_name = "hiviewdfx"
+  }
 }

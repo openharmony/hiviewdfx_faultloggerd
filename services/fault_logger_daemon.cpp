@@ -18,6 +18,7 @@
 #include <cstring>
 #include <ctime>
 #include <csignal>
+#include <dirent.h>
 #include <fcntl.h>
 #include <sstream>
 #include <sys/syscall.h>
@@ -30,8 +31,8 @@
 #include <unistd.h>
 #include <vector>
 
-#include <directory_ex.h>
-#include <file_ex.h>
+#include "directory_ex.h"
+#include "file_ex.h"
 #include <securec.h>
 
 #include "dfx_log.h"
@@ -334,7 +335,7 @@ void FaultLoggerDaemon::HandleSdkDumpReqeust(int32_t connectionFd, FaultLoggerdR
             .si_errno = 0,
             .si_code = MINUS_ONE_THOUSAND,
             .si_pid = request->callerPid,
-            .si_uid = request->callerTid
+            .si_uid = static_cast<uid_t>(request->callerTid)
         };
 
 // means we need dump all the threads in a process.
@@ -435,7 +436,7 @@ int32_t FaultLoggerDaemon::CreateFileForRequest(int32_t type, int32_t pid, bool 
     DfxLogInfo("%s :: file path(%s).\n", LOG_LABLE.c_str(), path.c_str());
     int32_t fd = open(path.c_str(), O_RDWR | O_CREAT, FAULTLOG_FILE_PROP);
     if (fd != -1) {
-        if (!OHOS::ChangeModeFile(path, FAULTLOG_FILE_PROP)) {
+        if (!ChangeModeFile(path, FAULTLOG_FILE_PROP)) {
             DfxLogError("%s :: Failed to ChangeMode CreateFileForRequest", LOG_LABLE.c_str());
         }
     }

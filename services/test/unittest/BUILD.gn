@@ -12,43 +12,86 @@
 # limitations under the License.
 
 import("//base/hiviewdfx/faultloggerd/faultloggerd.gni")
-import("//build/test.gni")
 
-module_output_path = "faultloggerd/service_native"
+if (defined(ohos_lite)) {
+  import("//build/lite/config/component/lite_component.gni")
+  import("//build/lite/config/test.gni")
 
-config("module_private_config") {
-  visibility = [ ":*" ]
+  if (ohos_build_type == "debug") {
+    unittest("test_service") {
+      output_extension = "bin"
+      output_dir = "$root_out_dir/test/unittest/faultloggerd"
 
-  include_dirs = [
-    "include",
-    "$faultloggerd_path/services",
-  ]
-}
+      include_dirs = [
+        "include",
+        "//utils/native/base/include",
+        "$faultloggerd_path/services",
+        "$hilog_lite_include_path",
+        "$faultloggerd_path/tools/process_dump",
+        "$faultloggerd_path/interfaces/innerkits/faultloggerd_client/include",
+        "$faultloggerd_path/common",
+        "$faultloggerd_path/utils",
+      ]
 
-ohos_unittest("test_service") {
-  module_out_path = module_output_path
-  sources = [
-    "$faultloggerd_path/services/fault_logger_config.cpp",
-    "$faultloggerd_path/services/fault_logger_daemon.cpp",
-    "$faultloggerd_path/services/fault_logger_secure.cpp",
-    "src/faultlogger_config_test.cpp",
-    "src/faultlogger_daemon_test.cpp",
-    "src/faultlogger_secure_test.cpp",
-  ]
+      sources = [
+        "$faultloggerd_path/services/fault_logger_config.cpp",
+        "$faultloggerd_path/services/fault_logger_daemon.cpp",
+        "$faultloggerd_path/services/fault_logger_secure.cpp",
+        "//base/hiviewdfx/faultloggerd/utils/directory_ex.cpp",
+        "src/faultlogger_config_test.cpp",
+        "src/faultlogger_daemon_test.cpp",
+        "src/faultlogger_secure_test.cpp",
+      ]
 
-  configs = [ ":module_private_config" ]
+      deps = [
+        "$faultloggerd_path/interfaces/innerkits/faultloggerd_client:libfaultloggerd",
+        "//base/hiviewdfx/hilog_lite/frameworks/featured:hilog_shared",
+      ]
+    }
+  }
 
-  deps = [
-    "$faultloggerd_path/interfaces/innerkits/faultloggerd_client:libfaultloggerd",
-    "//third_party/googletest:gmock_main",
-    "//third_party/googletest:gtest_main",
-    "//utils/native/base:utils",
-  ]
+  group("unittest") {
+    deps = [ ":test_service" ]
+  }
+} else {
+  import("//build/config/features.gni")
+  import("//build/test.gni")
 
-  external_deps = [ "hilog_native:libhilog" ]
-}
+  config("module_private_config") {
+    visibility = [ ":*" ]
 
-group("unittest") {
-  testonly = true
-  deps = [ ":test_service" ]
+    include_dirs = [
+      "include",
+      "//utils/native/base/include",
+      "$faultloggerd_path/services",
+    ]
+  }
+
+  ohos_unittest("test_service") {
+    module_out_path = "faultloggerd/service_native"
+    sources = [
+      "$faultloggerd_path/services/fault_logger_config.cpp",
+      "$faultloggerd_path/services/fault_logger_daemon.cpp",
+      "$faultloggerd_path/services/fault_logger_secure.cpp",
+      "src/faultlogger_config_test.cpp",
+      "src/faultlogger_daemon_test.cpp",
+      "src/faultlogger_secure_test.cpp",
+    ]
+
+    configs = [ ":module_private_config" ]
+
+    deps = [
+      "$faultloggerd_path/interfaces/innerkits/faultloggerd_client:libfaultloggerd",
+      "//third_party/googletest:gmock_main",
+      "//third_party/googletest:gtest_main",
+      "//utils/native/base:utils",
+    ]
+
+    external_deps = [ "hilog_native:libhilog" ]
+  }
+
+  group("unittest") {
+    testonly = true
+    deps = [ ":test_service" ]
+  }
 }

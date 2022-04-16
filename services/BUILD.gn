@@ -12,58 +12,98 @@
 # limitations under the License.
 
 import("//base/hiviewdfx/faultloggerd/faultloggerd.gni")
-import("//build/ohos.gni")
-config("faultloggerd_config") {
-  visibility = [ ":*" ]
 
-  include_dirs = [
-    ".",
-    "//utils/native/base/include",
-    "//base/hiviewdfx/faultloggerd/common",
-    "//base/hiviewdfx/faultloggerd/tools/process_dump",
-  ]
-}
-
-ohos_prebuilt_etc("faultloggerd.cfg") {
-  source = "config/faultloggerd.cfg"
-
-  relative_install_dir = "init"
-  part_name = "faultloggerd"
-  subsystem_name = "hiviewdfx"
-}
-
-ohos_prebuilt_etc("faultlogger.conf") {
-  source = "config/faultlogger.conf"
-  part_name = "faultloggerd"
-  subsystem_name = "hiviewdfx"
-}
-
-ohos_executable("faultloggerd") {
-  install_enable = true
-  configs = [ ":faultloggerd_config" ]
-  sources = [
-    "//base/hiviewdfx/faultloggerd/tools/process_dump/dfx_log.cpp",
-    "fault_logger_config.cpp",
-    "fault_logger_daemon.cpp",
-    "fault_logger_secure.cpp",
-    "main.cpp",
-  ]
-
-  deps = [
-    ":faultlogger.conf",
-    "$faultloggerd_path/interfaces/innerkits/faultloggerd_client:libfaultloggerd",
-  ]
-
-  if (!is_asan) {
-    deps += [ ":faultloggerd.cfg" ]
+if (defined(ohos_lite)) {
+  copy("faultlogger.cfg") {
+    sources = [ "$faultloggerd_path/services/config/faultloggerd.cfg" ]
+    outputs = [ "$root_out_dir/etc/init/faultloggerd.cfg" ]
   }
 
-  external_deps = [
-    "bytrace_standard:bytrace_core",
-    "hilog_native:libhilog",
-    "utils_base:utils",
-  ]
+  copy("faultlogger.conf") {
+    sources = [ "$faultloggerd_path/services/config/faultlogger.conf" ]
+    outputs = [ "$root_out_dir/etc/faultlogger.conf" ]
+  }
 
-  part_name = "faultloggerd"
-  subsystem_name = "hiviewdfx"
+  executable("faultloggerd") {
+    visibility = [ "*:*" ]
+
+    include_dirs = [
+      ".",
+      "$faultloggerd_path/utils",
+      "//utils/native/base/include",
+      "$faultloggerd_path/common",
+      "$faultloggerd_path/tools/process_dump",
+      "$hilog_lite_include_path",
+      "$faultloggerd_path/interfaces/innerkits/faultloggerd_client/include",
+    ]
+
+    sources = [
+      "//base/hiviewdfx/faultloggerd/tools/process_dump/dfx_log.cpp",
+      "//base/hiviewdfx/faultloggerd/utils/directory_ex.cpp",
+      "fault_logger_config.cpp",
+      "fault_logger_daemon.cpp",
+      "fault_logger_secure.cpp",
+      "main.cpp",
+    ]
+
+    deps = [
+      ":faultlogger.conf",
+      "$faultloggerd_path/interfaces/innerkits/faultloggerd_client:libfaultloggerd",
+      "//base/hiviewdfx/hilog_lite/frameworks/featured:hilog_shared",
+    ]
+  }
+} else {
+  config("faultloggerd_config") {
+    visibility = [ ":*" ]
+
+    include_dirs = [
+      ".",
+      "//utils/native/base/include",
+      "$faultloggerd_path/common",
+      "$faultloggerd_path/tools/process_dump",
+    ]
+  }
+
+  ohos_prebuilt_etc("faultloggerd.cfg") {
+    source = "config/faultloggerd.cfg"
+
+    relative_install_dir = "init"
+    part_name = "faultloggerd"
+    subsystem_name = "hiviewdfx"
+  }
+
+  ohos_prebuilt_etc("faultlogger.conf") {
+    source = "config/faultlogger.conf"
+    part_name = "faultloggerd"
+    subsystem_name = "hiviewdfx"
+  }
+
+  ohos_executable("faultloggerd") {
+    install_enable = true
+    configs = [ ":faultloggerd_config" ]
+    sources = [
+      "//base/hiviewdfx/faultloggerd/tools/process_dump/dfx_log.cpp",
+      "fault_logger_config.cpp",
+      "fault_logger_daemon.cpp",
+      "fault_logger_secure.cpp",
+      "main.cpp",
+    ]
+
+    deps = [
+      ":faultlogger.conf",
+      "$faultloggerd_path/interfaces/innerkits/faultloggerd_client:libfaultloggerd",
+    ]
+
+    if (!is_asan) {
+      deps += [ ":faultloggerd.cfg" ]
+    }
+
+    external_deps = [
+      "hilog_native:libhilog",
+      "utils_base:utils",
+    ]
+
+    part_name = "faultloggerd"
+    subsystem_name = "hiviewdfx"
+  }
 }

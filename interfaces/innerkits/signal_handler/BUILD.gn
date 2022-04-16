@@ -11,38 +11,66 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import("//build/ohos.gni")
+import("//base/hiviewdfx/faultloggerd/faultloggerd.gni")
 
-config("dfx_signal_handler_config") {
-  visibility = [ "*:*" ]
+if (defined(ohos_lite)) {
+  shared_library("dfx_signalhandler") {
+    visibility = [ "*:*" ]
 
-  include_dirs = [
-    "include",
-    "//base/hiviewdfx/faultloggerd/common",
-    "//base/hiviewdfx/faultloggerd/tools/process_dump",
-    "//utils/native/base/include",
-    "//developtools/bytrace_standard/interfaces/innerkits/native/include",
-    "//base/hiviewdfx/faultloggerd/interfaces/innerkits/faultloggerd_client/include",
-  ]
-}
+    cflags = [ "-DDFX_NO_PRINT_LOG" ]
 
-ohos_shared_library("dfx_signalhandler") {
-  public_configs = [ ":dfx_signal_handler_config" ]
+    include_dirs = [
+      "include",
+      "//utils/native/base/include",
+      "$faultloggerd_path/common",
+      "$faultloggerd_path/tools/process_dump",
+      "$faultloggerd_path/interfaces/innerkits/faultloggerd_client/include",
+      "$hilog_lite_include_path",
+    ]
+    sources = [
+      "$faultloggerd_path/tools/process_dump/dfx_log.cpp",
+      "dfx_signal_handler.c",
+    ]
 
-  cflags = [ "-DDFX_LOG_USE_HILOG_BASE" ]
+    deps = [
+      "$faultloggerd_path/interfaces/innerkits/faultloggerd_client:libfaultloggerd",
+      "//base/hiviewdfx/hilog_lite/frameworks/featured:hilog_shared",
+    ]
+  }
+} else {
+  config("dfx_signal_handler_config") {
+    visibility = [ "*:*" ]
 
-  sources = [
-    "//base/hiviewdfx/faultloggerd/tools/process_dump/dfx_log.cpp",
-    "dfx_signal_handler.c",
-  ]
+    include_dirs = [
+      "include",
+      "//utils/native/base/include",
+      "$faultloggerd_path/common",
+      "$faultloggerd_path/tools/process_dump",
+      "$faultloggerd_path/interfaces/innerkits/faultloggerd_client/include",
+    ]
+  }
 
-  deps = [ "//base/hiviewdfx/faultloggerd/interfaces/innerkits/faultloggerd_client:libfaultloggerd" ]
+  ohos_shared_library("dfx_signalhandler") {
+    public_configs = [ ":dfx_signal_handler_config" ]
 
-  external_deps = [
-    "hilog_native:libhilog_base",
-    "utils_base:utils",
-  ]
+    cflags = [
+      "-DDFX_LOG_USE_HILOG_BASE",
+      "-DDFX_SIGNALHANDLER_TAG",
+    ]
 
-  part_name = "faultloggerd"
-  subsystem_name = "hiviewdfx"
+    sources = [
+      "$faultloggerd_path/tools/process_dump/dfx_log.cpp",
+      "dfx_signal_handler.c",
+    ]
+
+    deps = [ "$faultloggerd_path/interfaces/innerkits/faultloggerd_client:libfaultloggerd" ]
+
+    external_deps = [
+      "hilog_native:libhilog_base",
+      "utils_base:utils",
+    ]
+
+    part_name = "faultloggerd"
+    subsystem_name = "hiviewdfx"
+  }
 }

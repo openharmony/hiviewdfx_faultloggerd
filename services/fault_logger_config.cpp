@@ -29,10 +29,10 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/un.h>
-#include <directory_ex.h>
 #include <file_ex.h>
 #include <securec.h>
 
+#include "directory_ex.h"
 #include "dfx_log.h"
 
 namespace OHOS {
