@@ -90,7 +90,7 @@ static bool CatchStackFrame(int32_t pid, int32_t tid)
     std::vector<std::shared_ptr<OHOS::HiviewDFX::DfxDumpCatcherFrame>> frameV;
     bool ret = mDfxDumpCatcher.DumpCatchFrame(pid, tid, msg, frameV);
 
-    printf("DumpCatchFrame :: ret: %d, frameV: %d.\n", ret, frameV.size());
+    printf("DumpCatchFrame :: ret: %d, frameV: %zu.\n", ret, frameV.size());
 
     printf("DumpCatchFrame :: msg:\n");
     long lenStackInfo = msg.length();
@@ -100,11 +100,11 @@ static bool CatchStackFrame(int32_t pid, int32_t tid)
     for (int i = 0; i < frameV.size(); i++) {
         std::shared_ptr<OHOS::HiviewDFX::DfxDumpCatcherFrame> frame = frameV[i];
         if (std::string(frame->funcName_) == "") {
-            printf("#%02zu pc %016" PRIx64 "(%016" PRIx64 ") %s\n",
+            printf("#%02d pc %016" PRIx64 "(%016" PRIx64 ") %s\n",
                 i, frame->GetFrameRelativePc(), frame->GetFramePc(), (frame->GetFrameMap() == nullptr) ? \
              "Unknown" : frame->GetFrameMap()->GetMapPath().c_str());
         } else {
-            printf("#%02zu pc %016" PRIx64 "(%016" PRIx64 ") %s(%s+%" PRIu64 ")\n", i, \
+            printf("#%02d pc %016" PRIx64 "(%016" PRIx64 ") %s(%s+%" PRIu64 ")\n", i, \
                 frame->GetFrameRelativePc(), frame->GetFramePc(), (frame->GetFrameMap() == nullptr) ?
              "Unknown" : frame->GetFrameMap()->GetMapPath().c_str(), std::string(frame->funcName_).c_str(), \
                 frame->GetFrameFuncOffset());

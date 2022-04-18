@@ -204,11 +204,17 @@ NOINLINE int Oom(void)
 NOINLINE int ProgramCounterZero(void)
 {
     printf("test PCZero");
-
+#if defined(__arm__)
     __asm__ volatile (
         "mov r0, #0x00\n mov lr, pc\n bx r0\n"
     );
-
+#elif defined(__aarch64__)
+    __asm__ volatile (
+        "movz x0, #0x0\n"
+        "adr x30, .\n"
+        "br x0\n"
+    );
+#endif
     return 0;
 }
 
@@ -254,9 +260,17 @@ NOINLINE int StackTop(void)
 {
     printf("test StackTop");
 
+#if defined(__arm__)
     int stackTop;
     __asm__ volatile ("mov %0, sp":"=r"(stackTop)::);
     printf("crasher_c: stack top is = %08x", stackTop);
+#elif defined(__aarch64__)
+    uint64_t stackTop;
+    __asm__ volatile ("mov %0, sp":"=r"(stackTop)::);
+    printf("crasher_c: stack top is = %16llx", (unsigned long long)stackTop);
+#else
+    return 0;
+#endif
 
     FILE *fp = NULL;
     fp = fopen("sp", "w");
@@ -264,7 +278,12 @@ NOINLINE int StackTop(void)
         printf("open file error!");
         return 0;
     }
+
+#if defined(__arm__)
     int ret = fprintf(fp, "%08x", stackTop);
+#elif defined(__aarch64__)
+    int ret = fprintf(fp, "%16llx", (unsigned long long)stackTop);
+#endif
     if (ret == EOF) {
         printf("error!");
     }
