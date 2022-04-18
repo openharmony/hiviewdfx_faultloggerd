@@ -219,11 +219,17 @@ NOINLINE int DfxCrasher::Oom() const
 NOINLINE int DfxCrasher::ProgramCounterZero() const
 {
     std::cout << "test PCZero" << std::endl;
-
+#if defined(__arm__)
     __asm__ volatile (
         "mov r0, #0x00\n mov lr, pc\n bx r0\n"
     );
-
+#elif defined(__aarch64__)
+    __asm__ volatile (
+        "movz x0, #0x0\n"
+        "adr x30, .\n"
+        "br x0\n"
+    );
+#endif
     return 0;
 }
 
@@ -260,9 +266,13 @@ int SleepThread(int threadID)
 NOINLINE int DfxCrasher::StackTop() const
 {
     std::cout << "test StackTop" << std::endl;
-
+#if defined(__arm__)
     unsigned int stackTop;
     __asm__ volatile ("mov %0, sp":"=r"(stackTop)::);
+#elif defined(__aarch64__)
+    uint64_t stackTop;
+    __asm__ volatile ("mov %0, sp":"=r"(stackTop)::);
+#endif
     std::cout << "crasher_c: stack top is = " << std::hex << stackTop << std::endl;
 
     std::ofstream fout;
