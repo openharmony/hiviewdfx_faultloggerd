@@ -71,6 +71,10 @@ static std::string GetRequestTypeName(int32_t type)
             return "cppcrash";
         case (int32_t)FaultLoggerType::CPP_STACKTRACE:
             return "stacktrace";
+        case (int32_t)FaultLoggerType::JS_STACKTRACE:
+            return "jsstack";
+        case (int32_t)FaultLoggerType::JS_HEAP_SNAPSHOT:
+            return "jsheap";
         default:
             return "unsupported";
     }

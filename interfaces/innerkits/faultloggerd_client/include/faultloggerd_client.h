@@ -30,6 +30,8 @@ enum class FaultLoggerType {
     APP_FREEZE,
     JAVA_STACKTRACE = 100, // unsupported yet
     CPP_STACKTRACE,
+    JS_STACKTRACE,
+    JS_HEAP_SNAPSHOT,
 };
 
 enum class FaultLoggerClientType {
