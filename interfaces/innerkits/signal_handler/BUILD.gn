@@ -17,7 +17,12 @@ if (defined(ohos_lite)) {
   shared_library("dfx_signalhandler") {
     visibility = [ "*:*" ]
 
-    cflags = [ "-DDFX_NO_PRINT_LOG" ]
+    cflags = [
+      "-fPIC",
+      "-Wall",
+      "-fno-builtin",
+      "-DDFX_NO_PRINT_LOG",
+    ]
 
     include_dirs = [
       "include",
@@ -35,6 +40,7 @@ if (defined(ohos_lite)) {
     deps = [
       "$faultloggerd_path/interfaces/innerkits/faultloggerd_client:libfaultloggerd",
       "//base/hiviewdfx/hilog_lite/frameworks/featured:hilog_shared",
+      "//third_party/bounds_checking_function:libsec_shared",
     ]
   }
 } else {
