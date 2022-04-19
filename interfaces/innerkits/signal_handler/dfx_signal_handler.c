@@ -77,6 +77,16 @@
 
 #define NUMBER_SIXTYFOUR 64
 #define INHERITABLE_OFFSET 32
+
+#define OHOS_TEMP_FAILURE_RETRY(exp)            \
+    ({                                     \
+    long int _rc;                          \
+    do {                                   \
+        _rc = (long int)(exp);             \
+    } while ((_rc == -1) && (errno == EINTR)); \
+    _rc;                                   \
+    })
+
 void __attribute__((constructor)) Init()
 {
     DFX_InstallSignalHandler();
@@ -170,14 +180,14 @@ static void DFX_SetUpEnvironment()
         syscall(SYS_close, i);
     }
     // clear stdout and stderr
-    int devNull = TEMP_FAILURE_RETRY(open("/dev/null", O_RDWR));
+    int devNull = OHOS_TEMP_FAILURE_RETRY(open("/dev/null", O_RDWR));
     if (devNull < 0) {
         DfxLogError("Failed to open dev/null.");
         return;
     }
 
-    TEMP_FAILURE_RETRY(dup2(devNull, STDOUT_FILENO));
-    TEMP_FAILURE_RETRY(dup2(devNull, STDERR_FILENO));
+    OHOS_TEMP_FAILURE_RETRY(dup2(devNull, STDOUT_FILENO));
+    OHOS_TEMP_FAILURE_RETRY(dup2(devNull, STDERR_FILENO));
     syscall(SYS_close, devNull);
     SetInterestedSignalMasks(SIG_BLOCK);
 }
@@ -219,13 +229,13 @@ static int DFX_ExecDump(void *arg)
             .iov_len = sizeof(struct ProcessDumpRequest)
         },
     };
-    ssize_t realWriteSize = TEMP_FAILURE_RETRY(writev(g_pipefd[1], iovs, 1));
+    ssize_t realWriteSize = OHOS_TEMP_FAILURE_RETRY(writev(g_pipefd[1], iovs, 1));
     if ((ssize_t)writeLen != realWriteSize) {
         DfxLogError("Failed to write pipe.");
         pthread_mutex_unlock(&g_dumpMutex);
         return WRITE_PIPE_FAIL;
     }
-    TEMP_FAILURE_RETRY(dup2(g_pipefd[0], STDIN_FILENO));
+    OHOS_TEMP_FAILURE_RETRY(dup2(g_pipefd[0], STDIN_FILENO));
     if (g_pipefd[0] != STDIN_FILENO) {
         syscall(SYS_close, g_pipefd[0]);
     }
@@ -238,7 +248,11 @@ static int DFX_ExecDump(void *arg)
     }
 
     DfxLogInfo("Start processdump.");
+#ifdef DFX_LOG_USE_HILOG_BASE
     execle("/system/bin/processdump", "-signalhandler", NULL, NULL);
+#else
+    execle("/bin/processdump", "-signalhandler", NULL, NULL);
+#endif
     pthread_mutex_unlock(&g_dumpMutex);
     return errno;
 }

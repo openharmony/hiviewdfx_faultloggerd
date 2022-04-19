@@ -65,16 +65,4 @@ static const int BACK_TRACE_RING_BUFFER_PRINT_WAIT_TIME_MS = 10;
 static const int LOG_BUF_LEN = 1024;
 static const int PROCESSDUMP_TIMEOUT = 30;
 
-#if defined(TEMP_FAILURE_RETRY)
-#undef TEMP_FAILURE_RETRY
-#define TEMP_FAILURE_RETRY(exp)            \
-    ({                                     \
-    long int _rc;                          \
-    do {                                   \
-        _rc = (long int)(exp);             \
-    } while ((_rc == -1) && (errno == EINTR)); \
-    _rc;                                   \
-    })
-#endif
-
 #endif

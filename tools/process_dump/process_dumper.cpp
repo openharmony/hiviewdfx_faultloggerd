@@ -42,6 +42,15 @@
 #include "dfx_thread.h"
 #include "dfx_unwind_remote.h"
 
+#define OHOS_TEMP_FAILURE_RETRY(exp)            \
+    ({                                     \
+    long int _rc;                          \
+    do {                                   \
+        _rc = (long int)(exp);             \
+    } while ((_rc == -1) && (errno == EINTR)); \
+    _rc;                                   \
+    })
+
 namespace OHOS {
 namespace HiviewDFX {
 
@@ -316,11 +325,11 @@ void ProcessDumper::Dump(bool isSignalHdlr, ProcessDumpType type, int32_t pid, i
         if (isLogPersist) {
             InitDebugLog((int)type, request->GetPid(), request->GetTid(), request->GetUid(), isLogPersist);
         } else {
-            int devNull = TEMP_FAILURE_RETRY(open("/dev/null", O_RDWR));
+            int devNull = OHOS_TEMP_FAILURE_RETRY(open("/dev/null", O_RDWR));
             if (devNull < 0) {
                 std::cout << "Failed to open dev/null." << std::endl;
             } else {
-                TEMP_FAILURE_RETRY(dup2(devNull, STDERR_FILENO));
+                OHOS_TEMP_FAILURE_RETRY(dup2(devNull, STDERR_FILENO));
             }
         }
 

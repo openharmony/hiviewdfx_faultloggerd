@@ -15,6 +15,7 @@ import("//base/hiviewdfx/faultloggerd/faultloggerd.gni")
 
 if (defined(ohos_lite)) {
   executable("crasher_cpp") {
+    cflags = [ "-funwind-tables" ]
     visibility = [ "*:*" ]
     include_dirs = [
       ".",
@@ -22,10 +23,12 @@ if (defined(ohos_lite)) {
       "$faultloggerd_path/tools/process_dump/",
       "$faultloggerd_path/interfaces/innerkits/signal_handler/include",
       "//utils/native/base/include",
+      "$hilog_lite_include_path",
     ]
     sources = [ "dfx_crasher.cpp" ]
     deps = [
       "$faultloggerd_path/interfaces/innerkits/signal_handler:dfx_signalhandler",
+      "$hilog_lite_deps_path",
       "//third_party/bounds_checking_function:libsec_shared",
     ]
   }

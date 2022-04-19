@@ -213,9 +213,11 @@ int WriteLog(int32_t fd, const char *format, ...)
         if (ret < 0) {
             DfxLogError("WriteLog :: write msg(%s) to fd(%d) failed, ret(%d).", buf, fd, ret);
         } else {
-            ret = fsync(fd);
-            if (ret < 0) {
-                DfxLogError("WriteLog :: fsync failed, ret(%d).", ret);
+            if (fd != STDOUT_FILENO) {
+                ret = fsync(fd);
+                if (ret < 0) {
+                    DfxLogError("WriteLog :: fsync failed, ret(%d).", ret);
+                }
             }
         }
     }

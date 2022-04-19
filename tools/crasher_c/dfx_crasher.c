@@ -26,6 +26,7 @@
 #include <unistd.h>
 #include <sys/prctl.h>
 
+#include "securec.h"
 #include "dfx_signal_handler.h"
 
 static const int ARG1024 = 1024;
