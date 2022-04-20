@@ -65,6 +65,10 @@ bool DfxUnwindRemote::UnwindProcess(std::shared_ptr<DfxProcess> process)
     if (process->GetIsSignalHdlr() && !process->GetIsSignalDump() && \
         !DfxConfig::GetInstance().GetDumpOtherThreads()) {
         bool ret = UnwindThread(process, threads[0]);
+        if (threads[0]->GetIsCrashThread() && (process->GetIsSignalDump() == false) && \
+            (process->GetIsSignalHdlr() == true)) {
+            process->PrintProcessMapsByConfig();
+        }
         unw_destroy_addr_space(as_);
         return ret;
     }

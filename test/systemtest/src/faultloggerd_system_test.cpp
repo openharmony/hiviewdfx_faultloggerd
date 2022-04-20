@@ -17,7 +17,6 @@
 
 #include "faultloggerd_system_test.h"
 
-
 #include <dirent.h>
 #include <fcntl.h>
 #include <unistd.h>
@@ -312,7 +311,7 @@ int FaultLoggerdSystemTest::CheckCountNum(std::string filePath, std::string pid,
         i++;
     }
     file.close();
-    int expectNum = sizeof(log)/sizeof(log[0]);
+    int expectNum = sizeof(log) / sizeof(log[0]);
     if (count == expectNum) {
         return 0;
     } else {
@@ -364,7 +363,7 @@ int FaultLoggerdSystemTest::CheckCountNumPCZero(std::string filePath, std::strin
         i++;
     }
     file.close();
-    int expectNum = sizeof(log)/sizeof(log[0]);
+    int expectNum = sizeof(log) / sizeof(log[0]);
     if (count == expectNum) {
         return 0;
     } else {
@@ -416,7 +415,7 @@ int FaultLoggerdSystemTest::CheckCountNumOverStack(std::string filePath, std::st
         i++;
     }
     file.close();
-    int expectNum = sizeof(log)/sizeof(log[0]);
+    int expectNum = sizeof(log) / sizeof(log[0]);
     if (count == expectNum) {
         return 0;
     } else {
@@ -470,7 +469,7 @@ int FaultLoggerdSystemTest::CheckCountNumMultiThread(std::string filePath, std::
         i++;
     }
     file.close();
-    int expectNum = sizeof(log)/sizeof(log[0]);
+    int expectNum = sizeof(log) / sizeof(log[0]);
     if (count == expectNum) {
         return 0;
     } else {
@@ -543,7 +542,7 @@ int FaultLoggerdSystemTest::CheckCountNumStackTop(std::string filePath, std::str
         i++;
     }
     file.close();
-    int expectNum = sizeof(log)/sizeof(log[0]) + 1;
+    int expectNum = sizeof(log) / sizeof(log[0]) + 1;
     if (count == expectNum) {
         return 0;
     } else {
@@ -577,7 +576,7 @@ int FaultLoggerdSystemTest::CheckStacktraceCountNum(std::string filePath, std::s
         i++;
     }
     file.close();
-    int expectNum = sizeof(log)/sizeof(log[0]);
+    int expectNum = sizeof(log) / sizeof(log[0]);
     if (count == expectNum) {
         return 0;
     } else {
@@ -742,8 +741,26 @@ void FaultLoggerdSystemTest::StartCrasherLoop(int type)
         setuid(otheruid);
         std::vector<std::string> cmds { "crasher", "thread-Loop" };
         FaultLoggerdSystemTest::ForkAndCommands(cmds, crasherType, otheruid);
+        DfxDumpCatcher dumplog;
+        std::string msg = "";
+        dumplog.DumpCatch(loopAppPid, 0, msg);
+        int sleepSecond = 5;
+        sleep(sleepSecond);
+        std::string procCMD = "ls /proc/" + std::to_string(loopAppPid) + "/task";
+        FILE *procFileInfo = nullptr;
+
+        procFileInfo = popen(procCMD.c_str(), "r");
+        if (procFileInfo == nullptr) {
+            perror("popen execute failed");
+            exit(1);
+        }
+        while (fgets(resultBufShell, sizeof(resultBufShell), procFileInfo) != nullptr) {
+            GTEST_LOG_(INFO) << "procFileInfo print info = " << resultBufShell;
+        }
+        pclose(procFileInfo);
     }
 }
+
 void FaultLoggerdSystemTest::GetTestFaultLoggerdTid(int testPid)
 {
     int testTidCount = 0;
@@ -883,7 +900,7 @@ int FaultLoggerdSystemTest::CheckCountNumKill11(std::string filePath, std::strin
         i++;
     }
     file.close();
-    int expectNum = sizeof(log)/sizeof(log[0]);
+    int expectNum = sizeof(log) / sizeof(log[0]);
     if (count == expectNum) {
         return 0;
     } else {
@@ -935,6 +952,55 @@ void FaultLoggerdSystemTest::dumpCatchThread(int threadID)
     }
 }
 
+#if __pre__
+/**
+* @tc.name: FaultLoggerdSystemTest0010_pre
+* @tc.desc: test CPP crasher application: Multithreading
+* @tc.type:
+*/
+HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0010_pre, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest0010_pre: start.";
+    for (int i = 0; i < 10; i++) {
+        mLock.lock();
+        std::thread (FaultLoggerdSystemTest::dumpCatchThread, i).join();
+        sleep(NUMBER_TWO);
+        mLock.unlock();
+    }
+    EXPECT_EQ(FaultLoggerdSystemTest::count, 10) << "FaultLoggerdSystemTest0010_pre Failed";
+    if (count == 10) {
+        std::ofstream fout;
+        fout.open("result", ios::app);
+        fout << "sucess!" << std::endl;
+        fout.close();
+    }
+    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest0010_pre: end.";
+
+}
+#endif
+
+/**
+* @tc.name: FaultLoggerdSystemTest0010
+* @tc.desc: test CPP crasher application: Multi process and Multithreading
+* @tc.type:
+*/
+HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0010, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest0010: start.";
+    for (int i = 0; i < 10; i++) {
+        system("/data/test_faultloggerd_pre --gtest_filter=FaultLoggerdSystemTest.FaultLoggerdSystemTest0010_pre");
+    }
+    std::string filePath = "result";
+    int lines = FaultLoggerdSystemTest::CountLines(filePath);
+    GTEST_LOG_(INFO) << lines;
+    int ret = remove("result");
+    if (ret != 0) {
+        printf("remove failed!");
+    }
+    EXPECT_EQ(lines, 10) << "FaultLoggerdSystemTest0010_pre Failed";
+    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest0010: end.";
+}
+
 /**
  * @tc.name: FaultLoggerdSystemTest0012
  * @tc.desc: test DumpCatchMultiPid API: multiPid{PID(app),PID(telephony)}
@@ -972,9 +1038,10 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0012, TestSize.Level2)
         }
         j++;
     }
-    int expectNum = sizeof(log)/sizeof(log[0]);
+    int expectNum = sizeof(log) / sizeof(log[0]);
     EXPECT_EQ(count, expectNum) << "FaultLoggerdSystemTest0012 Failed";
     FaultLoggerdSystemTest::KillCrasherLoopForSomeCase(3);
+    sleep(NUMBER_TWO);
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest0012: end.";
 }
 
@@ -1058,7 +1125,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0015, TestSize.Level2)
         }
         j++;
     }
-    int expectNum = sizeof(log)/sizeof(log[0]);
+    int expectNum = sizeof(log) / sizeof(log[0]);
     EXPECT_EQ(count, expectNum) << "FaultLoggerdSystemTest0015 Failed";
     FaultLoggerdSystemTest::KillCrasherLoopForSomeCase(3);
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest0015: end.";
@@ -1106,9 +1173,10 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0016, TestSize.Level2)
         }
         j++;
     }
-    int expectNum = sizeof(log)/sizeof(log[0]);
+    int expectNum = sizeof(log) / sizeof(log[0]);
     EXPECT_EQ(count, expectNum) << "FaultLoggerdSystemTest0016 Failed";
     FaultLoggerdSystemTest::KillCrasherLoopForSomeCase(3);
+    sleep(NUMBER_TWO);
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest0016: end.";
 }
 
@@ -1145,8 +1213,9 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0017, TestSize.Level2)
         }
         j++;
     }
-    int expectNum = sizeof(log)/sizeof(log[0]);
+    int expectNum = sizeof(log) / sizeof(log[0]);
     EXPECT_EQ(count, expectNum) << "FaultLoggerdSystemTest0017 Failed";
+    sleep(NUMBER_TWO);
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest0017: end.";
 }
 
@@ -1207,8 +1276,9 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0019, TestSize.Level2)
         }
         j++;
     }
-    int expectNum = sizeof(log)/sizeof(log[0]);
+    int expectNum = sizeof(log) / sizeof(log[0]);
     EXPECT_EQ(count, expectNum) << "FaultLoggerdSystemTest0019 Failed";
+    sleep(NUMBER_TWO);
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest0019: end.";
 }
 
@@ -1241,7 +1311,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0020, TestSize.Level2)
         }
         j++;
     }
-    int expectNum = sizeof(log)/sizeof(log[0]);
+    int expectNum = sizeof(log) / sizeof(log[0]);
     EXPECT_EQ(count, expectNum) << "FaultLoggerdSystemTest0020 Failed";
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest0020: end.";
 }
