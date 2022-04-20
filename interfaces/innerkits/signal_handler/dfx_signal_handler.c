@@ -99,6 +99,7 @@ static pthread_mutex_t g_dumpMutex = PTHREAD_MUTEX_INITIALIZER;
 static int g_pipefd[2] = {-1, -1};
 static BOOL g_hasInit = FALSE;
 static const int MAX_HANDLED_TID_NUMBER = 256;
+static const int SIGNALHANDLER_TIMEOUT = 10000; // 10000 us
 static int g_lastHandledTid[MAX_HANDLED_TID_NUMBER] = {0};
 static int g_lastHandledTidIndex = 0;
 static const int ALARM_TIME_S = 10;
@@ -421,7 +422,6 @@ static int CheckLastHandledTid(int sig, siginfo_t *si)
 
 static void DFX_SignalHandler(int sig, siginfo_t *si, void *context)
 {
-    DfxLogInfo("DFX_SignalHandler :: sig(%d), pid(%d), tid(%d).", sig, getpid(), gettid());
     if (sig != SIGDUMP) {
         if (CheckLastHandledTid(sig, si) == TRUE) {
             return;
@@ -506,7 +506,7 @@ static void DFX_SignalHandler(int sig, siginfo_t *si, void *context)
             DfxLogError("Exceed max wait time, errno(%d)", errno);
             goto out;
         }
-        sleep(1);
+        usleep(SIGNALHANDLER_TIMEOUT); // sleep 10ms
     } while (1);
     DfxLogInfo("child process(%d) terminated with status(%d)", childPid, status);
 out:

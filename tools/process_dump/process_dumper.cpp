@@ -63,8 +63,7 @@ void LoopPrintBackTraceInfo()
     DfxLogDebug("Enter %s.", __func__);
     std::unique_lock<std::mutex> lck(ProcessDumper::backTracePrintMutx);
     while (true) {
-
-        int available = OHOS::HiviewDFX::ProcessDumper::GetInstance().backTraceRingBuffer_.Available();
+        unsigned int available = OHOS::HiviewDFX::ProcessDumper::GetInstance().backTraceRingBuffer_.Available();
         DfxRingBufferBlock<std::string> item = \
             OHOS::HiviewDFX::ProcessDumper::GetInstance().backTraceRingBuffer_.Read(available);
         DfxLogDebug("%s :: available(%d), item.Length(%d) -1.", __func__, available, item.Length());
@@ -72,7 +71,7 @@ void LoopPrintBackTraceInfo()
             DfxLogDebug("%s :: print finished, exit loop -1.\n", __func__);
             break;
         } else if (available != 0) {
-            for (int i = 0; i < item.Length(); i++) {
+            for (unsigned int i = 0; i < item.Length(); i++) {
                 DfxLogDebug("%s :: print: %s\n", __func__, item.At(i).c_str());
                 WriteLog(OHOS::HiviewDFX::ProcessDumper::GetInstance().backTraceFileFd_, "%s", item.At(i).c_str());
             }

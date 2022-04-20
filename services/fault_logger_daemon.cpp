@@ -53,7 +53,6 @@ constexpr int32_t REQUEST_BUF_SIZE = 1024;
 constexpr int32_t MSG_BUF_SIZE = 256;
 
 const int32_t FAULTLOG_FILE_PROP = 0640;
-const int32_t FAULTLOG_FOLDER_PROP = 0771;
 
 static const std::string LOG_LABLE = "FaultLoggerd";
 
@@ -150,16 +149,10 @@ bool FaultLoggerDaemon::InitEnvironment()
         DfxLogError("%s :: Failed to ForceCreateDirectory GetLogFilePath", LOG_LABLE.c_str());
         return false;
     }
-    if (!OHOS::ChangeModeDirectory(faultLoggerConfig_->GetLogFilePath(), FAULTLOG_FOLDER_PROP)) {
-        DfxLogError("%s :: Failed to ChangeModeDirectory GetLogFilePath", LOG_LABLE.c_str());
-    }
 
     if (!OHOS::ForceCreateDirectory(faultLoggerConfig_->GetDebugLogFilePath())) {
         DfxLogError("%s :: Failed to ForceCreateDirectory GetDebugLogFilePath", LOG_LABLE.c_str());
         return false;
-    }
-    if (!OHOS::ChangeModeDirectory(faultLoggerConfig_->GetDebugLogFilePath(), FAULTLOG_FOLDER_PROP)) {
-        DfxLogError("%s :: Failed to ChangeModeDirectory GetDebugLogFilePath", LOG_LABLE.c_str());
     }
 
     if (chmod(FAULTLOGGERD_SOCK_PATH, S_IRWXU | S_IRWXG | S_IROTH | S_IWOTH) < 0) {
