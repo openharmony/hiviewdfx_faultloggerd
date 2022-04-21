@@ -732,7 +732,7 @@ HWTEST_F (ProcessDumpTest, ProcessDumpTest038, TestSize.Level2)
 
 /**
  * @tc.name: ProcessDumpTest039
- * @tc.desc: test UnwindProcess
+ * @tc.desc: test UnwindThread
  * @tc.type: FUNC
  */
 HWTEST_F (ProcessDumpTest, ProcessDumpTest039, TestSize.Level2)
@@ -741,10 +741,8 @@ HWTEST_F (ProcessDumpTest, ProcessDumpTest039, TestSize.Level2)
     std::shared_ptr<DfxProcess> process = std::make_shared<DfxProcess>();
     pid_t pid = 243, tid = 243;
     std::shared_ptr<DfxThread> thread = std::make_shared<DfxThread>(pid, tid);
-    const std::vector<std::shared_ptr<DfxThread>> threads = { thread };
-    process->SetThreads(threads);
-    bool ret = DfxUnwindRemote::GetInstance().UnwindProcess(process);
-    EXPECT_EQ(true, ret) << "ProcessDumpTest039 Failed";
+    bool ret = DfxUnwindRemote::GetInstance().UnwindThread(process, thread);
+    EXPECT_EQ(true, ret != true) << "ProcessDumpTest039 Failed";
     GTEST_LOG_(INFO) << "ProcessDumpTest039: end.";
 }
 
@@ -759,8 +757,10 @@ HWTEST_F (ProcessDumpTest, ProcessDumpTest040, TestSize.Level2)
     std::shared_ptr<DfxProcess> process = std::make_shared<DfxProcess>();
     pid_t pid = 243, tid = 243;
     std::shared_ptr<DfxThread> thread = std::make_shared<DfxThread>(pid, tid);
-    bool ret = DfxUnwindRemote::GetInstance().UnwindThread(process, thread);
-    EXPECT_EQ(true, ret != true) << "ProcessDumpTest040 Failed";
+    const std::vector<std::shared_ptr<DfxThread>> threads = { thread };
+    process->SetThreads(threads);
+    bool ret = DfxUnwindRemote::GetInstance().UnwindProcess(process);
+    EXPECT_EQ(true, ret) << "ProcessDumpTest040 Failed";
     GTEST_LOG_(INFO) << "ProcessDumpTest040: end.";
 }
 }
