@@ -171,7 +171,7 @@ void FaultLoggerDaemon::HandleDefaultClientReqeust(int32_t connectionFd, const F
 {
     RemoveTempFileIfNeed();
 
-    int fd = CreateFileForRequest(request->type, request->pid, false);
+    int fd = CreateFileForRequest(request->type, request->pid, request->time, false);
     if (fd < 0) {
         DfxLogError("%s :: Failed to create log file", LOG_LABLE.c_str());
         return;
@@ -184,7 +184,7 @@ void FaultLoggerDaemon::HandleDefaultClientReqeust(int32_t connectionFd, const F
 
 void FaultLoggerDaemon::HandleLogFileDesClientReqeust(int32_t connectionFd, const FaultLoggerdRequest * request)
 {
-    int fd = CreateFileForRequest(request->type, request->pid, true);
+    int fd = CreateFileForRequest(request->type, request->pid, request->time, true);
     if (fd < 0) {
         DfxLogError("%s :: Failed to create log file", LOG_LABLE.c_str());
         return;
@@ -408,7 +408,7 @@ void FaultLoggerDaemon::HandleRequest(int32_t connectionFd)
     close(connectionFd);
 }
 
-int32_t FaultLoggerDaemon::CreateFileForRequest(int32_t type, int32_t pid, bool debugFlag) const
+int32_t FaultLoggerDaemon::CreateFileForRequest(int32_t type, int32_t pid, uint64_t time, bool debugFlag) const
 {
     if (type != (int32_t)FaultLoggerType::CPP_STACKTRACE && type != (int32_t)FaultLoggerType::CPP_CRASH) {
         DfxLogError("%s :: Unsupported request type", LOG_LABLE.c_str());
@@ -423,11 +423,7 @@ int32_t FaultLoggerDaemon::CreateFileForRequest(int32_t type, int32_t pid, bool 
     }
 
     std::stringstream crashTime;
-    time_t t = static_cast<time_t>(time(nullptr));
-    if (t <= 0) {
-        DfxLogError("%s :: time is less than zero CreateFileForRequest", LOG_LABLE.c_str());
-    }
-    crashTime << "-" << t;
+    crashTime << "-" << time;
     std::string path = filePath + "/" + GetRequestTypeName(type) + "-" + std::to_string(pid) + crashTime.str();
 
     DfxLogInfo("%s :: file path(%s).\n", LOG_LABLE.c_str(), path.c_str());

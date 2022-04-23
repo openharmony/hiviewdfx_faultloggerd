@@ -114,7 +114,7 @@ enum DumpPreparationStage {
     EXEC_FAIL,
 };
 
-static uint64_t GetTimeMillseconds()
+static uint64_t GetTimeMillseconds(void)
 {
     struct timeval time;
     gettimeofday(&time, NULL);
@@ -122,7 +122,7 @@ static uint64_t GetTimeMillseconds()
         (((uint64_t)time.tv_usec) / 1000); // 1000 : microsecond to millsecond convert ratio
 }
 
-static int32_t InheritCapabilities()
+static int32_t InheritCapabilities(void)
 {
     struct __user_cap_header_struct capHeader;
     if (memset_s(&capHeader, sizeof(capHeader), 0, sizeof(capHeader)) != EOK) {
