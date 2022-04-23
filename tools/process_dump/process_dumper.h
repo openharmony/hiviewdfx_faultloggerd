@@ -29,6 +29,8 @@
 #include "dfx_dump_writer.h"
 #include "dfx_ring_buffer.h"
 
+#include "cppcrash_reporter.h"
+
 namespace OHOS {
 namespace HiviewDFX {
 class ProcessDumper final {
@@ -66,6 +68,7 @@ private:
 
     ProcessDumper() = default;
     DISALLOW_COPY_AND_MOVE(ProcessDumper);
+    std::shared_ptr<CppCrashReporter> reporter_;
     bool displayBacktrace_ = true;
     bool displayRegister_ = true;
     bool displayMaps_ = true;

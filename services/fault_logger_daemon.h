@@ -30,7 +30,7 @@ public:
     void LoopAcceptRequestAndFork(int socketFd);
 
 private:
-    int32_t CreateFileForRequest(int32_t type, int32_t pid, bool debugFlag) const;
+    int32_t CreateFileForRequest(int32_t type, int32_t pid, uint64_t time, bool debugFlag) const;
     void RemoveTempFileIfNeed();
     void HandleRequest(int32_t connectionFd);
     void HandleDefaultClientReqeust(int32_t connectionFd, const FaultLoggerdRequest* request);

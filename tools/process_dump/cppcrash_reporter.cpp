@@ -55,13 +55,13 @@ bool CppCrashReporter::Format()
     uid_ = process_->GetUid();
     reason_ = FormatSignalName(signo_);
     auto threads = process_->GetThreads();
-    std::shared_ptr<DfxThread> crashTread = nullptr;
+    std::shared_ptr<DfxThread> crashThread = nullptr;
     if (!threads.empty()) {
-        crashTread = threads.front();
+        crashThread = threads.front();
     }
 
-    if (crashTread != nullptr) {
-        stack_ = crashTread->ToString();
+    if (crashThread != nullptr) {
+        stack_ = crashThread->ToString();
     }
     return true;
 }

@@ -31,6 +31,7 @@
 #include <sys/mman.h>
 #include <sys/prctl.h>
 #include <sys/syscall.h>
+#include <sys/time.h>
 #include <sys/types.h>
 #include <sys/uio.h>
 #include <sys/wait.h>
@@ -113,7 +114,15 @@ enum DumpPreparationStage {
     EXEC_FAIL,
 };
 
-static int32_t InheritCapabilities()
+static uint64_t GetTimeMillseconds(void)
+{
+    struct timeval time;
+    gettimeofday(&time, NULL);
+    return ((uint64_t)time.tv_sec * 1000) + // 1000 : second to millsecond convert ratio
+        (((uint64_t)time.tv_usec) / 1000); // 1000 : microsecond to millsecond convert ratio
+}
+
+static int32_t InheritCapabilities(void)
 {
     struct __user_cap_header_struct capHeader;
     if (memset_s(&capHeader, sizeof(capHeader), 0, sizeof(capHeader)) != EOK) {
@@ -439,7 +448,7 @@ static void DFX_SignalHandler(int sig, siginfo_t *si, void *context)
     g_request.pid = getpid();
     g_request.uid = (int32_t)getuid();
     g_request.reserved = 0;
-    g_request.timeStamp = (uint64_t)time(NULL);
+    g_request.timeStamp = GetTimeMillseconds();
     DfxLogInfo("DFX_SignalHandler :: sig(%d), pid(%d), tid(%d).", sig, g_request.pid, g_request.tid);
 
     GetThreadName();
