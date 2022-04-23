@@ -33,6 +33,10 @@
 #include "dfx_thread.h"
 #include "dfx_util.h"
 #include "process_dumper.h"
+#include "dfx_symbols_cache.h"
+
+#include "libunwind.h"
+#include "libunwind_i-ohos.h"
 
 namespace OHOS {
 namespace HiviewDFX {
@@ -59,6 +63,7 @@ bool DfxUnwindRemote::UnwindProcess(std::shared_ptr<DfxProcess> process)
     if (!as_) {
         return false;
     }
+    unw_set_target_pid(as_, process->GetPid());
     unw_set_caching_policy(as_, UNW_CACHE_GLOBAL);
 
     // only need to unwind crash thread in crash scenario
@@ -70,6 +75,7 @@ bool DfxUnwindRemote::UnwindProcess(std::shared_ptr<DfxProcess> process)
             process->PrintProcessMapsByConfig();
         }
         unw_destroy_addr_space(as_);
+        as_ = nullptr;
         return ret;
     }
 
@@ -91,24 +97,21 @@ bool DfxUnwindRemote::UnwindProcess(std::shared_ptr<DfxProcess> process)
     }
 
     unw_destroy_addr_space(as_);
+    as_ = nullptr;
     return true;
 }
 
-uint64_t DfxUnwindRemote::DfxUnwindRemoteDoAdjustPc(uint64_t pc)
+uint64_t DfxUnwindRemote::DfxUnwindRemoteDoAdjustPc(unw_cursor_t & cursor, uint64_t pc)
 {
     DfxLogDebug("Enter %s :: pc(0x%x).", __func__, pc);
 
     uint64_t ret = 0;
 
-    if (pc == 0) {
+    if (pc <= ARM_EXEC_STEP_NORMAL) {
         ret = pc; // pc zero is abnormal case, so we don't adjust pc.
     } else {
 #if defined(__arm__)
-        if (pc & 1) { // thumb mode, pc step is 2 byte.
-            ret = pc - ARM_EXEC_STEP_THUMB;
-        } else {
-            ret = pc - ARM_EXEC_STEP_NORMAL;
-        }
+        ret = pc - unw_get_previous_instr_sz(&cursor);
 #elif defined(__aarch64__)
         ret = pc - ARM_EXEC_STEP_NORMAL;
 #endif
@@ -141,11 +144,11 @@ bool DfxUnwindRemote::DfxUnwindRemoteDoUnwindStep(size_t const & index,
     if (regs != NULL) {
         std::vector<uintptr_t> regsVector = regs->GetRegsData();
         if (regsVector[REG_PC_NUM] != framePc) {
-            framePc = DfxUnwindRemoteDoAdjustPc(framePc);
+            framePc = DfxUnwindRemoteDoAdjustPc(cursor, framePc);
         }
     } else {
         if (!isSignalHdlr) {
-            framePc = DfxUnwindRemoteDoAdjustPc(framePc);
+            framePc = DfxUnwindRemoteDoAdjustPc(cursor, framePc);
         }
     }
 
@@ -154,7 +157,7 @@ bool DfxUnwindRemote::DfxUnwindRemoteDoUnwindStep(size_t const & index,
     uint64_t frameLr = frame->GetFrameLr();
     if (unw_get_reg(&cursor, REG_LR_NUM, (unw_word_t*)(&frameLr))) {
         DfxLogWarn("Fail to get lr.");
-        return false;
+        frame->SetFrameLr(0);
     } else {
         frame->SetFrameLr(frameLr);
     }
@@ -165,30 +168,26 @@ bool DfxUnwindRemote::DfxUnwindRemoteDoUnwindStep(size_t const & index,
     }
     frame->SetFrameSp(frameSp);
 
-    std::shared_ptr<DfxElfMaps> processMaps = process->GetMaps();
-    if (!processMaps) {
-        DfxLogWarn("Fail to get processMaps pointer.");
-        return false;
+    if (index != 0) {
+        frame->SetFrameRelativePc(unw_get_rel_pc(&cursor) - unw_get_previous_instr_sz(&cursor));
+    } else {
+        // pc frame, so needn't adjust relpc.
+        frame->SetFrameRelativePc(unw_get_rel_pc(&cursor));
     }
-    auto frameMap = frame->GetFrameMap();
-    if (processMaps->FindMapByAddr(frame->GetFramePc(), frameMap)) {
-        frame->SetFrameRelativePc(frame->GetRelativePc(process->GetMaps()));
+    struct map_info* mapInfo = unw_get_map(&cursor);
+    if (mapInfo != nullptr) {
+        frame->SetFrameMapName(mapInfo->path);
     }
 
-    char sym[SYMBOL_BUF_SIZE] = {0};
-    uint64_t frameOffset = frame->GetFrameFuncOffset();
-    if (unw_get_proc_name(&cursor,
-        sym,
-        SYMBOL_BUF_SIZE,
-        (unw_word_t*)(&frameOffset)) == 0) {
-        std::string funcName;
-        std::string strSym(sym, sym + strlen(sym));
-        TrimAndDupStr(strSym, funcName);
+    std::string funcName;
+    uint64_t funcOffset;
+    if (DfxSymbolsCache::GetInstance().GetNameAndOffsetByPc(&cursor, framePc, funcName, funcOffset)) {
         frame->SetFrameFuncName(funcName);
-        frame->SetFrameFuncOffset(frameOffset);
+        frame->SetFrameFuncOffset(funcOffset);
     }
 
     OHOS::HiviewDFX::ProcessDumper::GetInstance().PrintDumpProcessMsg(frame->PrintFrame());
+ 
     DfxLogDebug("Exit %s :: index(%d), framePc(0x%x), frameSp(0x%x).", __func__, index, framePc, frameSp);
     return true;
 }

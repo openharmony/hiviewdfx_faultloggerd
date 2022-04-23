@@ -190,7 +190,7 @@ int DfxLogFatal(const char *format, ...)
 int WriteLog(int32_t fd, const char *format, ...)
 {
     int ret;
-    char buf[LOG_BUF_LEN] = {0};
+    char buf[FILE_WRITE_BUF_LEN] = {0};
     va_list args;
     va_start(args, format);
     ret = vsnprintf_s(buf, sizeof(buf), sizeof(buf) - 1, format, args);
@@ -213,6 +213,7 @@ int WriteLog(int32_t fd, const char *format, ...)
         if (ret < 0) {
             DfxLogError("WriteLog :: write msg(%s) to fd(%d) failed, ret(%d).", buf, fd, ret);
         } else {
+            // if we write msg to normal file then try fsync, otherwise we needn't do this.
             if (fd != STDOUT_FILENO) {
                 ret = fsync(fd);
                 if (ret < 0) {

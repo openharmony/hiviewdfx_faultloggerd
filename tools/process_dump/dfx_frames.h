@@ -53,6 +53,8 @@ public:
     std::string ToString() const;
     void SetFrameFaultStack(const std::string &faultStack);
     std::string GetFrameFaultStack() const;
+    void SetFrameMapName(const std::string &mapName);
+    std::string GetFrameMapName() const;
 
 private:
     size_t index_ = 0;
@@ -62,6 +64,7 @@ private:
     uint64_t sp_ = 0;
     uint64_t relativePc_ = 0;
     std::string funcName_;
+    std::string frameMapName_ = "";
     std::shared_ptr<DfxElfMap> map_ = nullptr; // managed in DfxProcess class
     std::string faultStack_;
 };
