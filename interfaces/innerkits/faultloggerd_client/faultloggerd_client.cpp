@@ -57,6 +57,11 @@ static int ReadFileDescriptorFromSocket(int socket)
     }
 
     struct cmsghdr *cmsg = CMSG_FIRSTHDR(&msg);
+    if (cmsg == nullptr || cmsg->cmsg_len != CMSG_LEN(sizeof(int))) {
+        DfxLogError("Invalid message\n");
+        return -1;
+    }
+
     unsigned char *data = CMSG_DATA(cmsg);
     if (data == nullptr) {
         return -1;

@@ -17,6 +17,8 @@
 
 #include <sstream>
 
+#include "faultloggerd_client.h"
+
 using namespace testing::ext;
 
 namespace {
@@ -65,6 +67,15 @@ void WaitForServiceReady(const std::string& serviceName)
     }
     ASSERT_GT(pid, 0);
 }
+
+void CheckFdRequestFunction(FaultLoggerType type, bool isValidFd)
+{
+    int32_t fd = RequestFileDescriptor(static_cast<int32_t>(type));
+    ASSERT_EQ((fd >= 0), isValidFd);
+    if (fd >= 0) {
+        close(fd);
+    }
+}
 }
 
 /**
@@ -88,4 +99,18 @@ HWTEST_F(FaultloggerdModuleTest, FaultloggerdDfxHandlerPreloadTest001, TestSize.
     std::string cmd = "cat /proc/" + std::to_string(hiviewPid) + "/maps";
     std::string result = GetCmdResultFromPopen(cmd);
     ASSERT_EQ(result.find("libdfx_signalhandler.z.so") != std::string::npos, true);
+}
+
+/**
+ * @tc.name: FaultloggerdClientFdRquestTest001
+ * @tc.desc: check faultloggerd logging function
+ * @tc.type: FUNC
+ */
+HWTEST_F(FaultloggerdModuleTest, FaultloggerdClientFdRquestTest001, TestSize.Level0)
+{
+    CheckFdRequestFunction(FaultLoggerType::CPP_CRASH, true);
+    CheckFdRequestFunction(FaultLoggerType::CPP_STACKTRACE, true);
+    CheckFdRequestFunction(FaultLoggerType::JS_STACKTRACE, true);
+    CheckFdRequestFunction(FaultLoggerType::JS_HEAP_SNAPSHOT, true);
+    CheckFdRequestFunction(FaultLoggerType::JAVA_STACKTRACE, false);
 }
