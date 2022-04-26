@@ -68,7 +68,7 @@ static std::string GetRequestTypeName(int32_t type)
     switch (type) {
         case (int32_t)FaultLoggerType::CPP_CRASH:
             return "cppcrash";
-        case (int32_t)FaultLoggerType::CPP_STACKTRACE:
+        case (int32_t)FaultLoggerType::CPP_STACKTRACE: // change the name to nativestack ?
             return "stacktrace";
         case (int32_t)FaultLoggerType::JS_STACKTRACE:
             return "jsstack";
@@ -410,8 +410,9 @@ void FaultLoggerDaemon::HandleRequest(int32_t connectionFd)
 
 int32_t FaultLoggerDaemon::CreateFileForRequest(int32_t type, int32_t pid, uint64_t time, bool debugFlag) const
 {
-    if (type != (int32_t)FaultLoggerType::CPP_STACKTRACE && type != (int32_t)FaultLoggerType::CPP_CRASH) {
-        DfxLogError("%s :: Unsupported request type", LOG_LABLE.c_str());
+    std::string typeStr = GetRequestTypeName(type);
+    if (typeStr == "unsupported") {
+        DfxLogError("Unsupported request type(%d)", type);
         return -1;
     }
 
@@ -424,7 +425,7 @@ int32_t FaultLoggerDaemon::CreateFileForRequest(int32_t type, int32_t pid, uint6
 
     std::stringstream crashTime;
     crashTime << "-" << time;
-    std::string path = filePath + "/" + GetRequestTypeName(type) + "-" + std::to_string(pid) + crashTime.str();
+    std::string path = filePath + "/" + typeStr + "-" + std::to_string(pid) + crashTime.str();
 
     DfxLogInfo("%s :: file path(%s).\n", LOG_LABLE.c_str(), path.c_str());
     int32_t fd = open(path.c_str(), O_RDWR | O_CREAT, FAULTLOG_FILE_PROP);

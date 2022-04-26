@@ -48,6 +48,7 @@ if (defined(ohos_lite)) {
     sources = [ "faultloggerd_module_test.cpp" ]
     configs = [ ":module_private_config" ]
     deps = [
+      "$faultloggerd_path/interfaces/innerkits/faultloggerd_client:libfaultloggerd",
       "//third_party/googletest:gtest_main",
       "//utils/native/base:utils",
     ]
