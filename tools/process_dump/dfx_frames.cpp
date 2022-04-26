@@ -242,7 +242,7 @@ std::string DfxFrames::ToString() const
     if (snprintf_s(buf, sizeof(buf), sizeof(buf) - 1, "#%02zu pc %016" PRIx64 " %s(%s+%" PRIu64 ")\n",
         index_,
         relativePc_,
-        (map_ == nullptr) ? "Unknown" : map_->GetMapPath().c_str(),
+        frameMapName_.c_str(),
         funcName_.c_str(),
         funcOffset_) <= 0) {
         return "Unknown";
