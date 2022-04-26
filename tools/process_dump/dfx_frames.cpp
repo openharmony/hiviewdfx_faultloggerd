@@ -108,6 +108,16 @@ std::shared_ptr<DfxElfMap> DfxFrames::GetFrameMap() const
     return map_;
 }
 
+void DfxFrames::SetFrameMapName(const std::string &mapName)
+{
+    frameMapName_ = mapName;
+}
+
+std::string DfxFrames::GetFrameMapName() const
+{
+    return frameMapName_;
+}
+
 void DfxFrames::SetFrameFaultStack(const std::string &faultStack)
 {
     faultStack_ = faultStack;
@@ -179,9 +189,18 @@ std::string DfxFrames::PrintFrame() const
 
     char buf[LOG_BUF_LEN] = {0};
 
+    std::string mapName = frameMapName_;
+    if (mapName == "") {
+        if (map_ == nullptr) {
+            mapName = "Unknown";
+        } else {
+            mapName = map_->GetMapPath().c_str();
+        }
+    }
+
     if (funcName_ == "") {
         int ret = snprintf_s(buf, sizeof(buf), sizeof(buf) - 1, "#%02zu pc %016" PRIx64 "(%016" PRIx64 ") %s\n", \
-            index_, relativePc_, pc_, (map_ == nullptr) ? "Unknown" : map_->GetMapPath().c_str());
+            index_, relativePc_, pc_, mapName.c_str());
         if (ret <= 0) {
             DfxLogError("%s :: snprintf_s failed, line: %d.", __func__, __LINE__);
         }
@@ -191,7 +210,7 @@ std::string DfxFrames::PrintFrame() const
 
     int ret = snprintf_s(buf, sizeof(buf), sizeof(buf) - 1, \
         "#%02zu pc %016" PRIx64 "(%016" PRIx64 ") %s(%s+%" PRIu64 ")\n", index_, relativePc_, \
-        pc_, (map_ == nullptr) ? "Unknown" : map_->GetMapPath().c_str(), funcName_.c_str(), funcOffset_);
+        pc_, mapName.c_str(), funcName_.c_str(), funcOffset_);
     if (ret <= 0) {
         DfxLogError("%s :: snprintf_s failed, line: %d.", __func__, __LINE__);
     }

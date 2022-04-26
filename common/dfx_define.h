@@ -63,6 +63,8 @@ static const int BACK_TRACE_RING_BUFFER_SIZE = 32 * 1024;
 static const int BACK_TRACE_RING_BUFFER_PRINT_WAIT_TIME_MS = 10;
 
 static const int LOG_BUF_LEN = 1024;
+static const int FILE_WRITE_BUF_LEN = 4096;
+
 static const int PROCESSDUMP_TIMEOUT = 30;
 
 #endif
