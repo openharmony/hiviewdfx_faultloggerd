@@ -18,7 +18,7 @@ if (defined(ohos_lite)) {
   import("//build/lite/config/test.gni")
 
   if (ohos_build_type == "debug") {
-    fuzztest("test_fuzzer") {
+    fuzztest("FaultloggerdFuzzTest") {
       output_extension = "bin"
       output_dir = "$root_out_dir/test/unittest/faultloggerd"
       include_dirs = [
@@ -26,7 +26,13 @@ if (defined(ohos_lite)) {
         "//utils/native/base/include",
         "$hilog_lite_include_path",
       ]
-      sources = [ "./faultloggerd_fuzzer_test.cpp" ]
+      cflags = [
+        "-g",
+        "-O0",
+        "-Wno-unused-variable",
+        "-fno-omit-frame-pointer",
+      ]
+      sources = [ "./faultloggerd_fuzzer.cpp" ]
       deps = [
         "$faultloggerd_path/interfaces/innerkits/dump_catcher:lib_dfx_dump_catcher",
         "//base/hiviewdfx/hilog_lite/frameworks/featured:hilog_shared",
@@ -35,7 +41,7 @@ if (defined(ohos_lite)) {
   }
 
   group("fuzztest") {
-    deps = [ ":test_fuzzer" ]
+    deps = [ ":FaultloggerdFuzzTest" ]
   }
 } else {
   import("//build/config/features.gni")
@@ -43,9 +49,9 @@ if (defined(ohos_lite)) {
 
   module_output_path = "faultloggerd/faultloggerd_native"
 
-  ohos_fuzztest("test_fuzzer") {
+  ohos_fuzztest("FaultloggerdFuzzTest") {
     module_out_path = module_output_path
-
+    fuzz_config_file = "$faultloggerd_path/test/fuzztest/faultloggerd_fuzzer"
     include_dirs = [ "./" ]
     cflags = [
       "-g",
@@ -53,15 +59,19 @@ if (defined(ohos_lite)) {
       "-Wno-unused-variable",
       "-fno-omit-frame-pointer",
     ]
-    sources = [ "./faultloggerd_fuzzer_test.cpp" ]
+    sources = [ "faultloggerd_fuzzer.cpp" ]
     deps = [
       "$faultloggerd_path/interfaces/innerkits/dump_catcher:lib_dfx_dump_catcher",
-      "//utils/native/base:utils",
+    ]
+
+    external_deps = [
+      "hilog_native:libhilog",
+      "utils_base:utils",
     ]
   }
 
   group("fuzztest") {
     testonly = true
-    deps = [ ":test_fuzzer" ]
+    deps = [ ":FaultloggerdFuzzTest" ]
   }
 }
