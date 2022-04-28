@@ -20,7 +20,6 @@
 
 #include <cstdio>
 #include <cstdlib>
-#include <ctime>
 
 #define FUZZ_PROJECT_NAME "faultloggerd_fuzzer"
 

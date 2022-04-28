@@ -162,8 +162,10 @@ void ProcessDumper::InitPrintThread(int32_t fromSignalHandler, std::shared_ptr<P
         faultloggerdRequest.tid = request->GetTid();
         faultloggerdRequest.uid = request->GetUid();
         faultloggerdRequest.time = request->GetTimeStamp();
+        size_t count = process->GetProcessName().length() >= sizeof(faultloggerdRequest.module) ?
+            sizeof(faultloggerdRequest.module) - 1 : process->GetProcessName().length();
         if (strncpy_s(faultloggerdRequest.module, sizeof(faultloggerdRequest.module),
-            process->GetProcessName().c_str(), process->GetProcessName().length()) != 0) {
+            process->GetProcessName().c_str(), count) != 0) {
             DfxLogWarn("Failed to set process name.");
             return;
         }

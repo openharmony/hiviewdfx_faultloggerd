@@ -27,44 +27,11 @@
 using namespace OHOS::HiviewDFX;
 using namespace std;
 
-static const int RAND_TYPE_ONE = 1;
-static const int RAND_TYPE_TWO = 2;
-static const int RAND_TYPE_TOTAL = 3;
 static const int PID_SIZE = 4;
-static const int RAND_BUF_LIMIT = 8;
-static const int ALPHABET_COUNT = 26;
-static const int NUM_COUNT = 10;
+static const int RAND_BUF_LIMIT = 28;
 static const int RAND_PARAM_SIZE = 20;
 
 namespace OHOS {
-char *RandStr(char *str, const int maxLen, const int len)
-{
-    if (len >= maxLen - 1) {
-        return str;
-    }
-    time_t curTime = time(nullptr);
-    if (curTime < 0) {
-        exit(1);
-    }
-    (void)srand(static_cast<unsigned int>(curTime));
-    int i;
-    for (i = 0; i < len; i++) {
-        switch ((rand() % RAND_TYPE_TOTAL)) {
-            case RAND_TYPE_ONE:
-                str[i] = 'A' + rand() % ALPHABET_COUNT;
-                break;
-            case RAND_TYPE_TWO:
-                str[i] = 'a' + rand() % ALPHABET_COUNT;
-                break;
-            default:
-                str[i] = '0' + rand() % NUM_COUNT;
-                break;
-        }
-    }
-    str[++i] = '\0';
-    return str;
-}
-
 bool DumpStackTraceTest(const uint8_t* data, size_t size)
 {
     shared_ptr<DfxDumpCatcher> catcher = make_shared<DfxDumpCatcher>();
@@ -72,27 +39,33 @@ bool DumpStackTraceTest(const uint8_t* data, size_t size)
         string msg;
         int pid[1];
         int tid[1];
+        char randParam[RAND_PARAM_SIZE + 1] = { '\0' };
         errno_t err = memcpy_s(pid, sizeof(pid), data, PID_SIZE);
         if (err != EOK) {
             cout << "DumpStackTraceTest :: memcpy_s pid failed" << endl;
         }
-        err = memcpy_s(tid, sizeof(tid), data + PID_SIZE, PID_SIZE);
+        data += PID_SIZE;
+        err = memcpy_s(tid, sizeof(tid), data, PID_SIZE);
         if (err != EOK) {
             cout << "DumpStackTraceTest :: memcpy_s tid failed" << endl;
         }
-        cout << "pid = " << pid[0] << " tid = " << tid[0] << endl;
+        data += PID_SIZE;
+        err = strncpy_s(randParam, sizeof(randParam), reinterpret_cast<const char*>(data), RAND_PARAM_SIZE);
+        if (err != EOK) {
+            cout << "DumpStackTraceTest :: strncpy_s randParam failed" << endl;
+        }
+        cout << "pid = " << pid[0] << " tid = " << tid[0] << " randParam = " << string(randParam) << endl;
+
         if (catcher->DumpCatch(pid[0], tid[0], msg)) {
             cout << msg << endl;
         } else {
-            cout << "DumpStackTraceTest :: dump failed." << endl;
+            cout << "DumpStackTraceTest :: dumpcatch failed." << endl;
         }
 
         string processdumpCmd = "processdump -p " + to_string(pid[0]) + " -t " + to_string(tid[0]);
         system(processdumpCmd.c_str());
 
-        char param[RAND_PARAM_SIZE] = { '\0' };
-        string processdumpInvalidCmd = "processdump -" + string(RandStr(param, sizeof(param), RAND_BUF_LIMIT)) +
-            " " + to_string(pid[0]) + " -t " + to_string(tid[0]);
+        string processdumpInvalidCmd = "processdump " + string(randParam);
         system(processdumpInvalidCmd.c_str());
     }
     return true;
