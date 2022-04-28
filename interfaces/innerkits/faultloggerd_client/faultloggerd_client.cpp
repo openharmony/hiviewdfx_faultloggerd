@@ -23,6 +23,7 @@
 #include <sys/syscall.h>
 #include <sys/socket.h>
 #include <sys/stat.h>
+#include <sys/time.h>
 #include <sys/types.h>
 #include <sys/un.h>
 #include <unistd.h>
@@ -102,10 +103,15 @@ void FillRequest(int32_t type, FaultLoggerdRequest *request)
         return;
     }
 
+    struct timeval time;
+    (void)gettimeofday(&time, nullptr);
+
     request->type = type;
     request->pid = getpid();
     request->tid = gettid();
     request->uid = (int32_t)getuid();
+    request->time = (static_cast<uint64_t>(time.tv_sec) * 1000) + // 1000 : second to millsecond convert ratio
+        (static_cast<uint64_t>(time.tv_usec) / 1000); // 1000 : microsecond to millsecond convert ratio
     ReadStringFromFile("/proc/self/cmdline", request->module, sizeof(request->module));
 }
 
