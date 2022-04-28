@@ -31,7 +31,6 @@ extern "C" {
 typedef struct DfxSymbol {
     uint64_t start;
     uint64_t end;
-    uint64_t nameOffset;
     std::string funcName;
 } DfxSymbol;
 #ifdef __cplusplus
