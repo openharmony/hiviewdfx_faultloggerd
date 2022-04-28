@@ -24,14 +24,6 @@
 extern "C" {
 #endif
 static std::vector<DfxSymbol> g_elfSymbols;
-void SymbolCallback(uint64_t start, uint64_t end, uint64_t str)
-{
-    DfxSymbol symbol;
-    symbol.start = start;
-    symbol.end = end;
-    symbol.nameOffset = str;
-    g_elfSymbols.push_back(symbol);
-};
 
 bool SymbolComparator(DfxSymbol s1, DfxSymbol s2)
 {
@@ -55,21 +47,19 @@ bool DfxSymbolsCache::GetNameAndOffsetByPc(struct unw_cursor *cursor,
         return true;
     }
 
-    unw_iterator_elf_symbols(cursor, pc, &SymbolCallback);
-    if (g_elfSymbols.empty()) {
+    char buf[LOG_BUF_LEN] { 0 };
+    DfxSymbol symbol;
+    if (unw_get_symbol_info(cursor, pc, LOG_BUF_LEN, buf, &symbol.start, &symbol.end) != 0) {
         return false;
     }
 
-    DfxSymbol& symbol = g_elfSymbols[0];
-    char buf[LOG_BUF_LEN] { 0 };
-    unw_get_proc_name_by_offset(cursor, symbol.nameOffset, buf, LOG_BUF_LEN);
     if (strlen(buf) < LOG_BUF_LEN - 1) {
         symbol.funcName = std::string(buf, strlen(buf));
     }
+
     offset = pc - symbol.start;
     name = symbol.funcName;
     cachedSymbols_.push_back(symbol);
-    g_elfSymbols.clear();
     std::sort(cachedSymbols_.begin(), cachedSymbols_.end(), SymbolComparator);
     return true;
 }
