@@ -483,8 +483,7 @@ std::string FaultLoggerdSystemTest::GetStackTop(void)
     spFile.open("sp");
     std::string sp;
     spFile >> sp;
-    sp = "sp:" + sp;
-    GTEST_LOG_(INFO) << sp;
+    GTEST_LOG_(INFO) << "sp:" << sp;
     spFile.close();
     int ret = remove("sp");
     if (ret != 0) {
@@ -524,7 +523,7 @@ int FaultLoggerdSystemTest::CheckCountNumStackTop(std::string filePath, std::str
         if (!log[j].compare("sp:")) {
             string stackTop = t.at(i);
             GTEST_LOG_(INFO) << stackTop;
-            if (!sp.compare(stackTop)) {
+            if (stackTop.find(sp) != string::npos) {
                 count++;
             }
         }
