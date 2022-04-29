@@ -67,4 +67,8 @@ static const int FILE_WRITE_BUF_LEN = 4096;
 
 static const int PROCESSDUMP_TIMEOUT = 30;
 
+static const int REGS_PRINT_LEN_ARM = 256;
+static const int REGS_PRINT_LEN_ARM64 = 1024;
+static const int REGS_PRINT_LEN_X86 = 512;
+
 #endif

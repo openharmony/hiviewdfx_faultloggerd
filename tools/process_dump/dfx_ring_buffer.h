@@ -15,8 +15,8 @@
 
 /* This files contains process dump ring buffer module. */
 
-#ifndef RINGBUFFER_H
-#define RINGBUFFER_H
+#ifndef DFX_RING_BUFFER_H
+#define DFX_RING_BUFFER_H
 
 #include "dfx_ring_buffer_block.h"
 

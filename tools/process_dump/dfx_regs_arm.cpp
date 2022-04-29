@@ -78,57 +78,43 @@ std::string DfxRegsArm::PrintRegs() const
     DfxLogDebug("Enter %s.", __func__);
 
     std::string regString = "";
-    char buf[LOG_BUF_LEN] = {0};
+    char buf[REGS_PRINT_LEN_ARM] = {0};
 
     regString = regString + "Registers:\n";
 
     std::vector<uintptr_t> regs = GetRegsData();
-    int ret = snprintf_s(buf, sizeof(buf), sizeof(buf) - 1, "r0:%08x r1:%08x r2:%08x r3:%08x\n", \
+    int ret = snprintf_s(buf, sizeof(buf), sizeof(buf) - 1, \
+        "r0:%08x r1:%08x r2:%08x r3:%08x\n", \
         regs[REGISTER_ZERO], regs[REGISTER_ONE], regs[REGISTER_TWO], \
         regs[REGISTER_THREE]);
     if (ret <= 0) {
         DfxLogError("%s :: snprintf_s failed, line: %d.", __func__, __LINE__);
     }
-    regString = regString + std::string(buf);
-    ret = memset_s(buf, LOG_BUF_LEN, '\0', LOG_BUF_LEN);
-    if (ret != EOK) {
-        DfxLogError("%s :: memset_s failed, line: %d.", __func__, __LINE__);
-    }
 
-    ret = snprintf_s(buf, sizeof(buf), sizeof(buf) - 1, "r4:%08x r5:%08x r6:%08x r7:%08x\n", \
+    ret = snprintf_s(buf + strlen(buf), sizeof(buf) - strlen(buf), sizeof(buf) - strlen(buf) - 1, \
+        "r4:%08x r5:%08x r6:%08x r7:%08x\n", \
         regs[REGISTER_FOUR], regs[REGISTER_FIVE], regs[REGISTER_SIX], \
         regs[REGISTER_SEVEN]);
     if (ret <= 0) {
         DfxLogError("%s :: snprintf_s failed, line: %d.", __func__, __LINE__);
     }
-    regString = regString + std::string(buf);
-    ret = memset_s(buf, LOG_BUF_LEN, '\0', LOG_BUF_LEN);
-    if (ret != EOK) {
-        DfxLogError("%s :: memset_s failed, line: %d.", __func__, __LINE__);
-    }
 
-    ret = snprintf_s(buf, sizeof(buf), sizeof(buf) - 1, "r8:%08x r9:%08x r10:%08x\n", \
+    ret = snprintf_s(buf + strlen(buf), sizeof(buf) - strlen(buf), sizeof(buf) - strlen(buf) - 1, \
+        "r8:%08x r9:%08x r10:%08x\n", \
         regs[REGISTER_EIGHT], regs[REGISTER_NINE], regs[REGISTER_TEN]);
     if (ret <= 0) {
         DfxLogError("%s :: snprintf_s failed, line: %d.", __func__, __LINE__);
     }
-    regString = regString + std::string(buf);
-    ret = memset_s(buf, LOG_BUF_LEN, '\0', LOG_BUF_LEN);
-    if (ret != EOK) {
-        DfxLogError("%s :: memset_s failed, line: %d.", __func__, __LINE__);
-    }
 
-    ret = snprintf_s(buf, sizeof(buf), sizeof(buf) - 1, "fp:%08x ip:%08x sp:%08x lr:%08x pc:%08x \n", \
+    ret = snprintf_s(buf + strlen(buf), sizeof(buf) - strlen(buf), sizeof(buf) - strlen(buf) - 1, \
+        "fp:%08x ip:%08x sp:%08x lr:%08x pc:%08x \n", \
         regs[REGISTER_ELEVEN], regs[REGISTER_TWELVE], \
         regs[REGISTER_THIRTEEN], regs[REGISTER_FOURTEEN], regs[REGISTER_FIFTEEN]);
     if (ret <= 0) {
         DfxLogError("%s :: snprintf_s failed, line: %d.", __func__, __LINE__);
     }
+
     regString = regString + std::string(buf);
-    ret = memset_s(buf, LOG_BUF_LEN, '\0', LOG_BUF_LEN);
-    if (ret != EOK) {
-        DfxLogError("%s :: memset_s failed, line: %d.", __func__, __LINE__);
-    }
 
     DfxLogDebug("Exit %s.", __func__);
     return regString;

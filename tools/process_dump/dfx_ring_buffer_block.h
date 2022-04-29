@@ -15,8 +15,8 @@
 
 /* This files contains process dump ring buffer module. */
 
-#ifndef RINGBUFFER_BLOCK_H
-#define RINGBUFFER_BLOCK_H
+#ifndef DFX_RING_BUFFER_BLOCK_H
+#define DFX_RING_BUFFER_BLOCK_H
 
 #include <cstddef>
 
@@ -90,6 +90,5 @@ private:
 
     unsigned int length_;
 };
-
 
 #endif
