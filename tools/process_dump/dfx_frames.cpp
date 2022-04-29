@@ -250,7 +250,7 @@ std::string DfxFrames::ToString() const
     return std::string(buf);
 }
 
-void PrintFrames(std::vector<std::shared_ptr<DfxFrames>> frames, int32_t fd)
+void PrintFrames(std::vector<std::shared_ptr<DfxFrames>> frames)
 {
     DfxLogDebug("Enter %s.", __func__);
     for (size_t i = 0; i < frames.size(); i++) {
@@ -264,7 +264,6 @@ std::string PrintFaultStacks(std::vector<std::shared_ptr<DfxFrames>> frames)
     DfxLogDebug("Enter %s.", __func__);
 
     std::string stackString = "";
-    char buf[LOG_BUF_LEN] = {0};
 
     for (size_t i = 0; i < frames.size(); i++) {
         if (i == 0 && (frames[i]->GetFramePc() == 0)) {

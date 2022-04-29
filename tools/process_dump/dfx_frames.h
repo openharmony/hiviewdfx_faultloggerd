@@ -69,7 +69,7 @@ private:
     std::string faultStack_;
 };
 
-void PrintFrames(std::vector<std::shared_ptr<DfxFrames>> frames, int32_t fd);
+void PrintFrames(std::vector<std::shared_ptr<DfxFrames>> frames);
 std::string PrintFaultStacks(std::vector<std::shared_ptr<DfxFrames>> frames);
 } // namespace HiviewDFX
 } // namespace OHOS

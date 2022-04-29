@@ -396,7 +396,7 @@ void DfxThread::PrintThreadBacktraceByConfig(const int32_t fd)
 {
     if (DfxConfig::GetInstance().GetDisplayBacktrace()) {
         WriteLog(fd, "Tid:%d, Name:%s\n", tid_, threadName_.c_str());
-        PrintFrames(dfxFrames_, fd);
+        PrintFrames(dfxFrames_);
     } else {
         DfxLogDebug("hidden backtrace");
     }
@@ -408,11 +408,10 @@ std::string DfxThread::PrintThreadRegisterByConfig()
         if (regs_) {
             return regs_->PrintRegs();
         }
-        return "";
     } else {
         DfxLogDebug("hidden register");
-        return "";
     }
+    return "";
 }
 
 std::string DfxThread::PrintThreadFaultStackByConfig()
