@@ -2821,7 +2821,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest032, TestSize.Level2)
     setuid(uidSetting);
     DfxDumpCatcher dumplog;
     std::string msg = "";
-    bool ret = dumplog.DumpCatch(NULL, FaultLoggerdSystemTest::loopAppPid, msg);
+    bool ret = dumplog.DumpCatch(0, FaultLoggerdSystemTest::loopAppPid, msg);
     GTEST_LOG_(INFO) << ret;
     GTEST_LOG_(INFO) << "dump log : \n" << msg;
     EXPECT_EQ(ret, false) << "FaultLoggerdSystemTest032 Failed";
