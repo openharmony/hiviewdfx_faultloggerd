@@ -116,76 +116,14 @@ std::shared_ptr<DfxElfMap> DfxDumpCatcherFrame::GetFrameMap() const
     return map_;
 }
 
-uint64_t DfxDumpCatcherFrame::GetRelativePc(const std::shared_ptr<DfxElfMaps> head)
-{
-#ifdef LOCAL_DUMPER_FRAME_DEBUG
-    DfxLogDebug("Enter %{public}s.", __func__);
-#endif
-
-    if (head == nullptr) {
-        return 0;
-    }
-
-    if (map_ == nullptr) {
-        if (!head->FindMapByAddr(pc_, map_)) {
-            return 0;
-        }
-    }
-
-    if (!map_->IsVaild()) {
-        DfxLogError("No elf map:%{public}s.", map_->GetMapPath().c_str());
-        return 0;
-    }
-
-    std::shared_ptr<DfxElfMap> map = nullptr;
-    if (!head->FindMapByPath(map_->GetMapPath(), map)) {
-        DfxLogError("Fail to find Map:%{public}s.", map_->GetMapPath().c_str());
-        return 0;
-    }
-#ifdef LOCAL_DUMPER_FRAME_DEBUG
-    DfxLogDebug("Exit %{public}s.", __func__);
-#endif
-    return CalculateRelativePc(map);
-}
-
-uint64_t DfxDumpCatcherFrame::CalculateRelativePc(std::shared_ptr<DfxElfMap> elfMap)
-{
-#ifdef LOCAL_DUMPER_FRAME_DEBUG
-    DfxLogDebug("Enter %{public}s.", __func__);
-#endif
-    if (elfMap == nullptr || map_ == nullptr) {
-        return 0;
-    }
-
-    if (elfMap->GetMapImage() == nullptr) {
-        elfMap->SetMapImage(DfxElf::Create(elfMap->GetMapPath().c_str()));
-    }
-
-    if (elfMap->GetMapImage() == nullptr) {
-        relativePc_ = pc_ - (map_->GetMapBegin() - map_->GetMapOffset());
-    } else {
-        relativePc_ = (pc_ - map_->GetMapBegin()) + elfMap->GetMapImage()->FindRealLoadOffset(map_->GetMapOffset());
-    }
-
-#ifdef __aarch64__
-    relativePc_ = relativePc_ - 4; // 4 : instr offset
-#elif defined(__x86_64__)
-    relativePc_ = relativePc_ - 1; // 1 : instr offset
-#endif
-#ifdef LOCAL_DUMPER_FRAME_DEBUG
-    DfxLogDebug("Exit %{public}s.", __func__);
-#endif
-    return relativePc_;
-}
-
 std::string DfxDumpCatcherFrame::ToString() const
 {
     char buf[1024] = "\0"; // 1024 buffer length
     if (snprintf_s(buf, sizeof(buf), sizeof(buf) - 1, "#%02zu pc %016" PRIx64 " %s(%s+%" PRIu64 ")\n",
         index_,
         relativePc_,
-        (map_ == nullptr) ? "Unknown" : map_->GetMapPath().c_str(),
-        funcName_,
+        mapName_,
+        funcName_.c_str(),
         funcOffset_) <= 0) {
         return "Unknown";
     }

@@ -19,6 +19,8 @@
 
 #include <cstdio>
 #include <cstdlib>
+#include <sstream>
+
 #include <securec.h>
 
 #include "dfx_elf.h"
@@ -190,17 +192,21 @@ std::string DfxFrames::PrintFrame() const
     char buf[LOG_BUF_LEN] = {0};
 
     std::string mapName = frameMapName_;
-    if (mapName == "") {
-        if (map_ == nullptr) {
-            mapName = "Unknown";
-        } else {
-            mapName = map_->GetMapPath().c_str();
-        }
+    if (mapName.empty()) {
+        mapName = "Unknown";
     }
 
-    if (funcName_ == "") {
-        int ret = snprintf_s(buf, sizeof(buf), sizeof(buf) - 1, "#%02zu pc %016" PRIx64 "(%016" PRIx64 ") %s\n", \
-            index_, relativePc_, pc_, mapName.c_str());
+#ifdef __LP64__
+    char frameFormatWithMapName[] = "#%02zu pc %016" PRIx64 " %s\n";
+    char frameFormatWithFuncName[] = "#%02zu pc %016" PRIx64 " %s(%s+%" PRIu64 ")\n";
+#else
+    char frameFormatWithMapName[] = "#%02zu pc %08" PRIx64 " %s\n";
+    char frameFormatWithFuncName[] = "#%02zu pc %08" PRIx64 " %s(%s+%" PRIu64 ")\n";
+#endif
+
+    if (funcName_.empty()) {
+        int ret = snprintf_s(buf, sizeof(buf), sizeof(buf) - 1, frameFormatWithMapName, \
+            index_, relativePc_, mapName.c_str());
         if (ret <= 0) {
             DfxLogError("%s :: snprintf_s failed, line: %d.", __func__, __LINE__);
         }
@@ -209,8 +215,8 @@ std::string DfxFrames::PrintFrame() const
     }
 
     int ret = snprintf_s(buf, sizeof(buf), sizeof(buf) - 1, \
-        "#%02zu pc %016" PRIx64 "(%016" PRIx64 ") %s(%s+%" PRIu64 ")\n", index_, relativePc_, \
-        pc_, mapName.c_str(), funcName_.c_str(), funcOffset_);
+        frameFormatWithFuncName, index_, relativePc_, \
+        mapName.c_str(), funcName_.c_str(), funcOffset_);
     if (ret <= 0) {
         DfxLogError("%s :: snprintf_s failed, line: %d.", __func__, __LINE__);
     }
@@ -220,8 +226,6 @@ std::string DfxFrames::PrintFrame() const
 
 std::string DfxFrames::PrintFaultStack(int i) const
 {
-    DfxLogDebug("Enter %s.", __func__);
-
     if (faultStack_ == "") {
         return "";
     }
@@ -232,22 +236,34 @@ std::string DfxFrames::PrintFaultStack(int i) const
         DfxLogError("%s :: snprintf_s failed, line: %d.", __func__, __LINE__);
     }
 
-    DfxLogDebug("Exit %s.", __func__);
     return std::string(buf);
 }
 
 std::string DfxFrames::ToString() const
 {
     char buf[1024] = "\0"; // 1024 buffer length
-    if (snprintf_s(buf, sizeof(buf), sizeof(buf) - 1, "#%02zu pc %016" PRIx64 " %s(%s+%" PRIu64 ")\n",
+#ifdef __LP64__
+    char format[] = "#%02zu pc %016" PRIx64 " %s";
+#else
+    char format[] = "#%02zu pc %08" PRIx64 " %s";
+#endif
+    if (snprintf_s(buf, sizeof(buf), sizeof(buf) - 1, format,
         index_,
         relativePc_,
-        frameMapName_.c_str(),
-        funcName_.c_str(),
-        funcOffset_) <= 0) {
+        frameMapName_.c_str()) <= 0) {
         return "Unknown";
     }
-    return std::string(buf);
+
+    std::ostringstream ss;
+    ss << std::string(buf, strlen(buf));
+    if (funcName_.empty()) {
+        ss << std::endl;
+    } else {
+        ss << "(";
+        ss << funcName_;
+        ss << "+" << funcOffset_ << ")" << std::endl;
+    }
+    return ss.str();
 }
 
 void PrintFrames(std::vector<std::shared_ptr<DfxFrames>> frames)

@@ -60,7 +60,7 @@ public:
     static void WriteFrameInfo(std::ostringstream& ss, size_t index, DfxDumpCatcherFrame& frame);
     static void ResolveFrameInfo(DfxDumpCatcherFrame& frame);
     static bool SendLocalDumpRequest(int32_t tid);
-    static std::string CollectUnwindResult();
+    static std::string CollectUnwindResult(int32_t tid);
     static void CollectUnwindFrames(std::vector<std::shared_ptr<DfxDumpCatcherFrame>>& frames);
 
     static bool InitLocalDumper();

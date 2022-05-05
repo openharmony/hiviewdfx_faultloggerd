@@ -139,10 +139,10 @@ bool DfxDumpCatcher::DoDumpLocalPid(int pid, std::string& msg)
         int currentTid = syscall(SYS_gettid);
         if (tid == currentTid) {
             DfxDumpCatcherLocalDumper::ExecLocalDump(pid, tid, DUMP_CATCHER_NUMBER_THREE);
-            msg.append(DfxDumpCatcherLocalDumper::CollectUnwindResult());
+            msg.append(DfxDumpCatcherLocalDumper::CollectUnwindResult(tid));
         } else {
             if (DoDumpLocalTid(tid)) {
-                msg.append(DfxDumpCatcherLocalDumper::CollectUnwindResult());
+                msg.append(DfxDumpCatcherLocalDumper::CollectUnwindResult(tid));
             } else {
                 msg.append("Failed to dump thread:" + std::to_string(tid) + ".\n");
             }
@@ -277,13 +277,13 @@ bool DfxDumpCatcher::DoDumpLocalLocked(int pid, int tid, std::string& msg)
 
     if (tid == syscall(SYS_gettid)) {
         ret = DfxDumpCatcherLocalDumper::ExecLocalDump(pid, tid, DUMP_CATCHER_NUMBER_TWO);
-        msg.append(DfxDumpCatcherLocalDumper::CollectUnwindResult());
+        msg.append(DfxDumpCatcherLocalDumper::CollectUnwindResult(tid));
     } else if (tid == 0) {
         ret = DoDumpLocalPid(pid, msg);
     } else {
         ret = DoDumpLocalTid(tid);
         if (ret) {
-            msg.append(DfxDumpCatcherLocalDumper::CollectUnwindResult());
+            msg.append(DfxDumpCatcherLocalDumper::CollectUnwindResult(tid));
         } else {
             msg.append("Failed to dump thread:" + std::to_string(tid) + ".\n");
         }
@@ -389,7 +389,7 @@ bool DfxDumpCatcher::DumpCatchFrame(int pid, int tid, std::string& msg, \
     }
 
     if (ret) {
-        msg = DfxDumpCatcherLocalDumper::CollectUnwindResult();
+        msg = DfxDumpCatcherLocalDumper::CollectUnwindResult(tid);
         DfxDumpCatcherLocalDumper::CollectUnwindFrames(frameV);
     }
 

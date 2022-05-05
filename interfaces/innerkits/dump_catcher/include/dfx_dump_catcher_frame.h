@@ -28,8 +28,6 @@ public:
     DfxDumpCatcherFrame();
     ~DfxDumpCatcherFrame();
 
-    uint64_t GetRelativePc(const std::shared_ptr<DfxElfMaps> head);
-    uint64_t CalculateRelativePc(std::shared_ptr<DfxElfMap> elfMap);
     void SetFrameIndex(size_t index);
     size_t GetFrameIndex() const;
     void SetFrameFuncOffset(uint64_t funcOffset);
@@ -51,7 +49,8 @@ public:
     uint64_t lr_ = 0;
     uint64_t sp_ = 0;
     uint64_t relativePc_ = 0;
-    char funcName_[1024] = { 0 }; // 1024 : max func name
+    std::string funcName_;
+    char mapName_[1024] {0}; // 1024 : mapName length;
     std::shared_ptr<DfxElfMap> map_ = nullptr; // managed in DfxProcess class
 };
 } // namespace HiviewDFX

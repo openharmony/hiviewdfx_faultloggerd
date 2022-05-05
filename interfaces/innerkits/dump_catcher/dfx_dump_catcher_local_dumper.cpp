@@ -23,13 +23,14 @@
 #include <cerrno>
 #include <cinttypes>
 #include <csignal>
-#include <cstdlib>
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
 #include <ctime>
 #include <fcntl.h>
 #include <pthread.h>
 #include <sched.h>
+#include <securec.h>
 #include <unistd.h>
 
 #include <sys/capability.h>
@@ -41,6 +42,11 @@
 #include <securec.h>
 
 #include <libunwind.h>
+#include <libunwind_i-ohos.h>
+
+#include "file_ex.h"
+
+#include "dfx_symbols_cache.h"
 
 #ifdef LOG_DOMAIN
 #undef LOG_DOMAIN
@@ -78,31 +84,39 @@ static struct sigaction g_localOldSigaction = {};
 uint32_t DfxDumpCatcherLocalDumper::g_curIndex = 0;
 bool DfxDumpCatcherLocalDumper::g_isLocalDumperInited = false;
 std::condition_variable DfxDumpCatcherLocalDumper::g_localDumperCV;
-std::shared_ptr<DfxElfMaps> DfxDumpCatcherLocalDumper::g_localDumperMaps = nullptr;
 std::vector<DfxDumpCatcherFrame> DfxDumpCatcherLocalDumper::g_FrameV;
 std::mutex DfxDumpCatcherLocalDumper::g_localDumperMutx;
 static sigset_t g_mask;
+static std::unique_ptr<DfxSymbolsCache> g_cache;
+static unw_addr_space_t g_localAddrSpace = nullptr;
 
 bool DfxDumpCatcherLocalDumper::InitLocalDumper()
 {
-    DfxDumpCatcherLocalDumper::g_localDumperMaps = DfxElfMaps::Create(getpid());
+    unw_init_local_address_space(&g_localAddrSpace);
+    if (g_localAddrSpace == nullptr) {
+        return false;
+    }
+
     DfxDumpCatcherLocalDumper::g_FrameV = std::vector<DfxDumpCatcherFrame>(MAX_FRAME_SIZE);
     DfxDumpCatcherLocalDumper::DFX_InstallLocalDumper(SIGLOCAL_DUMP);
-    DfxDumpCatcherLocalDumper::g_isLocalDumperInited = true;
     sigset_t mask;
     sigfillset(&mask);
     sigprocmask(SIG_SETMASK, &mask, &g_mask);
+    g_cache = std::make_unique<DfxSymbolsCache>();
+    DfxDumpCatcherLocalDumper::g_isLocalDumperInited = true;
     return true;
 }
 
 void DfxDumpCatcherLocalDumper::DestroyLocalDumper()
 {
-    DfxDumpCatcherLocalDumper::g_localDumperMaps = nullptr;
     DfxDumpCatcherLocalDumper::g_FrameV.clear();
     DfxDumpCatcherLocalDumper::g_FrameV.shrink_to_fit();
     DfxDumpCatcherLocalDumper::DFX_UninstallLocalDumper(SIGLOCAL_DUMP);
-    DfxDumpCatcherLocalDumper::g_isLocalDumperInited = false;
     sigprocmask(SIG_SETMASK, &g_mask, nullptr);
+    unw_destroy_local_address_space(g_localAddrSpace);
+    g_localAddrSpace = nullptr;
+    g_cache = nullptr;
+    DfxDumpCatcherLocalDumper::g_isLocalDumperInited = false;
 }
 
 bool DfxDumpCatcherLocalDumper::SendLocalDumpRequest(int32_t tid)
@@ -124,10 +138,18 @@ DfxDumpCatcherLocalDumper::~DfxDumpCatcherLocalDumper()
 #endif
 }
 
-std::string DfxDumpCatcherLocalDumper::CollectUnwindResult()
+std::string DfxDumpCatcherLocalDumper::CollectUnwindResult(int32_t tid)
 {
     std::ostringstream result;
-    result << "Tid:" << g_localDumpRequest.tid << std::endl;
+    result << "Tid:" << tid;
+    std::string path = "/proc/self/task/" + std::to_string(tid) + "/comm";
+    std::string threadComm;
+    if (OHOS::LoadStringFromFile(path, threadComm)) {
+        result << " comm:" << threadComm;
+    } else {
+        result << std::endl;
+    }
+
     if (g_curIndex == 0) {
         result << "Failed to get stacktrace." << std::endl;
     }
@@ -155,28 +177,40 @@ void DfxDumpCatcherLocalDumper::CollectUnwindFrames(std::vector<std::shared_ptr<
 
 void DfxDumpCatcherLocalDumper::ResolveFrameInfo(DfxDumpCatcherFrame& frame)
 {
-    if (g_localDumperMaps->FindMapByAddr(frame.GetFramePc(), frame.map_)) {
-        frame.SetFrameRelativePc(frame.GetRelativePc(g_localDumperMaps));
+    if (g_cache == nullptr) {
+        return;
+    }
+
+    if (!g_cache->GetNameAndOffsetByPc(g_localAddrSpace, frame.pc_, frame.funcName_, frame.funcOffset_)) {
+        frame.funcName_ = "";
+        frame.funcOffset_ = 0;
     }
 }
 
 void DfxDumpCatcherLocalDumper::WriteFrameInfo(std::ostringstream& ss, size_t index, DfxDumpCatcherFrame& frame)
 {
+#ifdef __LP64__
+    char format[] = "#%02zu pc %016" PRIx64 " ";
+#else
+    char format[] = "#%02zu pc %08" PRIx64 " ";
+#endif
     char buf[SYMBOL_BUF_SIZE] = { 0 };
-    (void)sprintf_s(buf, sizeof(buf), "#%02zu pc %016" PRIx64 " ", index, frame.relativePc_);
+    (void)sprintf_s(buf, sizeof(buf), format, index, frame.relativePc_);
     if (strlen(buf) > 100) { // 100 : expected result length
         ss << " Illegal frame" << std::endl;
         return;
     }
 
     ss << std::string(buf, strlen(buf)) << " ";
-    if (frame.GetFrameMap() == nullptr) {
-        ss << "Unknown" << std::endl;
+    ss << std::string(frame.mapName_);
+
+    if (frame.funcName_.empty()) {
+        ss << std::endl;
         return;
     }
 
-    ss << frame.GetFrameMap()->GetMapPath() << "(";
-    ss << std::string(frame.funcName_);
+    ss << "(";
+    ss << frame.funcName_;
     ss << "+" << frame.funcOffset_ << ")" << std::endl;
 }
 
@@ -191,7 +225,7 @@ bool DfxDumpCatcherLocalDumper::ExecLocalDump(int pid, int tid, size_t skipFramN
     unw_getcontext(&context);
 
     unw_cursor_t cursor;
-    unw_init_local(&cursor, &context);
+    unw_init_local_with_as(g_localAddrSpace, &cursor, &context);
 
     size_t index = 0;
     DfxDumpCatcherLocalDumper::g_curIndex = 0;
@@ -206,16 +240,24 @@ bool DfxDumpCatcherLocalDumper::ExecLocalDump(int pid, int tid, size_t skipFramN
         if (unw_get_reg(&cursor, UNW_REG_IP, (unw_word_t*)(&(pc)))) {
             break;
         }
-        g_FrameV[index - skipFramNum].SetFramePc((uint64_t)pc);
 
-        unw_word_t sp;
-        if (unw_get_reg(&cursor, UNW_REG_SP, (unw_word_t*)(&(sp)))) {
-            break;
+        unw_word_t relPc = unw_get_rel_pc(&cursor);
+        unw_word_t sz = unw_get_previous_instr_sz(&cursor);
+        if (index - skipFramNum != 0) {
+            pc -= sz;
+            relPc -= sz;
         }
 
-        g_FrameV[index - skipFramNum].SetFrameSp((uint64_t)sp);
-        (void)unw_get_proc_name(&cursor, g_FrameV[index - skipFramNum].funcName_,
-            SYMBOL_BUF_SIZE, (unw_word_t*)(&g_FrameV[index - skipFramNum].funcOffset_));
+        auto& curFrame = g_FrameV[index - skipFramNum];
+        struct map_info* map = unw_get_map(&cursor);
+        if ((map != NULL) && (strlen(map->path) < SYMBOL_BUF_SIZE - 1)) {
+            strcpy_s(curFrame.mapName_, SYMBOL_BUF_SIZE, map->path);
+        } else {
+            strcpy_s(curFrame.mapName_, SYMBOL_BUF_SIZE, "Unknown");
+        }
+
+        curFrame.SetFramePc((uint64_t)pc);
+        curFrame.SetFrameRelativePc((uint64_t)relPc);
         DfxDumpCatcherLocalDumper::g_curIndex = static_cast<uint32_t>(index - skipFramNum);
         index++;
     }
@@ -236,7 +278,7 @@ void DfxDumpCatcherLocalDumper::DFX_LocalDumperUnwindLocal(int sig, siginfo_t *s
     DfxLogDebug("DFX_LocalDumperUnwindLocal :: sig(%{public}d), pid(%{public}d), tid(%{public}d).",
         sig, g_localDumpRequest.pid, g_localDumpRequest.tid);
 #endif
-    ExecLocalDump(g_localDumpRequest.pid, g_localDumpRequest.tid, DUMP_CATCHER_NUMBER_ONE);
+    ExecLocalDump(g_localDumpRequest.pid, g_localDumpRequest.tid, DUMP_CATCHER_NUMBER_TWO);
     g_localDumperCV.notify_one();
     DfxLogToSocket("DFX_LocalDumperUnwindLocal -E-");
 }

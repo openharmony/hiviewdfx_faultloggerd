@@ -26,6 +26,7 @@
 #include <libunwind.h>
 #include "dfx_define.h"
 #include "dfx_process.h"
+#include "dfx_symbols_cache.h"
 #include "dfx_thread.h"
 #include "nocopyable.h"
 
@@ -46,9 +47,10 @@ private:
     uint64_t DfxUnwindRemoteDoAdjustPc(unw_cursor_t & cursor, uint64_t pc);
 
 private:
-    DfxUnwindRemote() = default;
+    DfxUnwindRemote();
     DISALLOW_COPY_AND_MOVE(DfxUnwindRemote);
     unw_addr_space_t as_;
+    std::unique_ptr<DfxSymbolsCache> cache_;
 };
 }   // namespace HiviewDFX
 }   // namespace OHOS

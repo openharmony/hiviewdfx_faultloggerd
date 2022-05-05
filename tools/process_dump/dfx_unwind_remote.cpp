@@ -48,6 +48,11 @@ DfxUnwindRemote &DfxUnwindRemote::GetInstance()
     return ins;
 }
 
+DfxUnwindRemote::DfxUnwindRemote()
+{
+    cache_ = std::make_unique<DfxSymbolsCache>();
+}
+
 bool DfxUnwindRemote::UnwindProcess(std::shared_ptr<DfxProcess> process)
 {
     if (!process) {
@@ -181,7 +186,7 @@ bool DfxUnwindRemote::DfxUnwindRemoteDoUnwindStep(size_t const & index,
 
     std::string funcName;
     uint64_t funcOffset;
-    if (DfxSymbolsCache::GetInstance().GetNameAndOffsetByPc(&cursor, framePc, funcName, funcOffset)) {
+    if (cache_->GetNameAndOffsetByPc(as_, framePc, funcName, funcOffset)) {
         frame->SetFrameFuncName(funcName);
         frame->SetFrameFuncOffset(funcOffset);
     }
