@@ -81,6 +81,7 @@ std::condition_variable DfxDumpCatcherLocalDumper::g_localDumperCV;
 std::shared_ptr<DfxElfMaps> DfxDumpCatcherLocalDumper::g_localDumperMaps = nullptr;
 std::vector<DfxDumpCatcherFrame> DfxDumpCatcherLocalDumper::g_FrameV;
 std::mutex DfxDumpCatcherLocalDumper::g_localDumperMutx;
+static sigset_t g_mask;
 
 bool DfxDumpCatcherLocalDumper::InitLocalDumper()
 {
@@ -88,6 +89,9 @@ bool DfxDumpCatcherLocalDumper::InitLocalDumper()
     DfxDumpCatcherLocalDumper::g_FrameV = std::vector<DfxDumpCatcherFrame>(MAX_FRAME_SIZE);
     DfxDumpCatcherLocalDumper::DFX_InstallLocalDumper(SIGLOCAL_DUMP);
     DfxDumpCatcherLocalDumper::g_isLocalDumperInited = true;
+    sigset_t mask;
+    sigfillset(&mask);
+    sigprocmask(SIG_SETMASK, &mask, &g_mask);
     return true;
 }
 
@@ -95,8 +99,10 @@ void DfxDumpCatcherLocalDumper::DestroyLocalDumper()
 {
     DfxDumpCatcherLocalDumper::g_localDumperMaps = nullptr;
     DfxDumpCatcherLocalDumper::g_FrameV.clear();
+    DfxDumpCatcherLocalDumper::g_FrameV.shrink_to_fit();
     DfxDumpCatcherLocalDumper::DFX_UninstallLocalDumper(SIGLOCAL_DUMP);
     DfxDumpCatcherLocalDumper::g_isLocalDumperInited = false;
+    sigprocmask(SIG_SETMASK, &g_mask, nullptr);
 }
 
 bool DfxDumpCatcherLocalDumper::SendLocalDumpRequest(int32_t tid)

@@ -57,6 +57,7 @@ const std::string LOG_FILE_PATH = "/data/log/faultlog/temp";
 
 static const int NUMBER_TEN = 10;
 constexpr int MAX_TEMP_FILE_LENGTH = 256;
+constexpr int SINGLE_THREAD_UNWIND_TIMEOUT = 100; // 100 millseconds
 
 namespace OHOS {
 namespace HiviewDFX {
@@ -84,7 +85,7 @@ bool DfxDumpCatcher::DoDumpLocalTid(int tid)
         if (DfxDumpCatcherLocalDumper::SendLocalDumpRequest(tid) == true) {
             std::unique_lock<std::mutex> lck(DfxDumpCatcherLocalDumper::g_localDumperMutx);
             if (DfxDumpCatcherLocalDumper::g_localDumperCV.wait_for(lck, \
-                std::chrono::seconds(DUMP_CATCHER_NUMBER_TWO))==std::cv_status::timeout) {
+                std::chrono::milliseconds(SINGLE_THREAD_UNWIND_TIMEOUT))==std::cv_status::timeout) {
                 // time out means we didn't got any back trace msg, just return false.
                 ret = false;
                 break;
