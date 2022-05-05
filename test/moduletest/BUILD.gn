@@ -18,6 +18,7 @@ config("module_private_config") {
   include_dirs = [
     "include",
     "//utils/native/base/include",
+    "$faultloggerd_path/interfaces/innerkits/faultloggerd_client/include",
   ]
 }
 
@@ -29,8 +30,9 @@ if (defined(ohos_lite)) {
     unittest("FaultloggerdModuleTest") {
       output_extension = "bin"
       output_dir = "$root_out_dir/test/unittest/faultloggerd"
-      sources = [ "faultloggerd_module_test.cpp" ]
       configs = [ ":module_private_config" ]
+      sources = [ "faultloggerd_module_test.cpp" ]
+      deps = [ "$faultloggerd_path/interfaces/innerkits/faultloggerd_client:libfaultloggerd" ]
     }
   }
 
