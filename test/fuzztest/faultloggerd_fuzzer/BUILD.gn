@@ -25,8 +25,11 @@ if (defined(ohos_lite)) {
         "./",
         "//utils/native/base/include",
         "$hilog_lite_include_path",
+        "$faultloggerd_path/common",
+        "$faultloggerd_path/tools/process_dump",
+        "$faultloggerd_path/interfaces/innerkits/dump_catcher/include",
       ]
-      cflags = [
+      cflags_cc = [
         "-g",
         "-O0",
         "-Wno-unused-variable",
@@ -60,9 +63,7 @@ if (defined(ohos_lite)) {
       "-fno-omit-frame-pointer",
     ]
     sources = [ "faultloggerd_fuzzer.cpp" ]
-    deps = [
-      "$faultloggerd_path/interfaces/innerkits/dump_catcher:lib_dfx_dump_catcher",
-    ]
+    deps = [ "$faultloggerd_path/interfaces/innerkits/dump_catcher:lib_dfx_dump_catcher" ]
 
     external_deps = [
       "hilog_native:libhilog",
