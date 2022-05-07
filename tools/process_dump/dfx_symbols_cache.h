@@ -36,20 +36,18 @@ typedef struct DfxSymbol {
 #ifdef __cplusplus
 };
 #endif
-struct unw_cursor;
+struct unw_addr_space;
 namespace OHOS {
 namespace HiviewDFX {
 class DfxSymbolsCache final {
 public:
-    static DfxSymbolsCache& GetInstance();
-    bool GetNameAndOffsetByPc(struct unw_cursor *cursor, uint64_t pc, std::string& name, uint64_t& offset);
-    ~DfxSymbolsCache() = default;
+    DfxSymbolsCache() {};
+    ~DfxSymbolsCache() {};
+    bool GetNameAndOffsetByPc(struct unw_addr_space *as, uint64_t pc, std::string& name, uint64_t& offset);
 
 private:
     bool GetNameAndOffsetByPc(uint64_t pc, std::string& name, uint64_t& offset);
     std::vector<DfxSymbol> cachedSymbols_;
-    DfxSymbolsCache() = default;
-    DISALLOW_COPY_AND_MOVE(DfxSymbolsCache);
 };
 } // namespace HiviewDFX
 } // namespace OHOS

@@ -34,13 +34,7 @@ bool SymbolComparator(DfxSymbol s1, DfxSymbol s2)
 #endif
 namespace OHOS {
 namespace HiviewDFX {
-DfxSymbolsCache &DfxSymbolsCache::GetInstance()
-{
-    static DfxSymbolsCache cache;
-    return cache;
-}
-
-bool DfxSymbolsCache::GetNameAndOffsetByPc(struct unw_cursor *cursor,
+bool DfxSymbolsCache::GetNameAndOffsetByPc(struct unw_addr_space *as,
     uint64_t pc, std::string& name, uint64_t& offset)
 {
     if (GetNameAndOffsetByPc(pc, name, offset)) {
@@ -49,7 +43,7 @@ bool DfxSymbolsCache::GetNameAndOffsetByPc(struct unw_cursor *cursor,
 
     char buf[LOG_BUF_LEN] { 0 };
     DfxSymbol symbol;
-    if (unw_get_symbol_info(cursor, pc, LOG_BUF_LEN, buf, &symbol.start, &symbol.end) != 0) {
+    if (unw_get_symbol_info_by_pc(as, pc, LOG_BUF_LEN, buf, &symbol.start, &symbol.end) != 0) {
         return false;
     }
 
