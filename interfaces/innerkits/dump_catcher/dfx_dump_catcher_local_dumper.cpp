@@ -197,7 +197,11 @@ void DfxDumpCatcherLocalDumper::WriteFrameInfo(std::ostringstream& ss, size_t in
     char format[] = "#%02zu pc %08" PRIx64 " ";
 #endif
     char buf[SYMBOL_BUF_SIZE] = { 0 };
-    (void)sprintf_s(buf, sizeof(buf), format, index, frame.relativePc_);
+    auto pms = sprintf_s(buf, sizeof(buf), format, index, frame.relativePc_);
+    if (pms <= 0) {
+        DfxLogError("%s :: sprintf_s failed.", __func__);
+        return;
+    }
     if (strlen(buf) > 100) { // 100 : expected result length
         ss << " Illegal frame" << std::endl;
         return;
@@ -250,10 +254,15 @@ bool DfxDumpCatcherLocalDumper::ExecLocalDump(int tid, size_t skipFramNum)
 
         auto& curFrame = g_FrameV[index - skipFramNum];
         struct map_info* map = unw_get_map(&cursor);
+        errno_t err = EOK;
         if ((map != NULL) && (strlen(map->path) < SYMBOL_BUF_SIZE - 1)) {
-            strcpy_s(curFrame.mapName_, SYMBOL_BUF_SIZE, map->path);
+            err = strcpy_s(curFrame.mapName_, SYMBOL_BUF_SIZE, map->path);
         } else {
-            strcpy_s(curFrame.mapName_, SYMBOL_BUF_SIZE, "Unknown");
+            err = strcpy_s(curFrame.mapName_, SYMBOL_BUF_SIZE, "Unknown");
+        }
+        if (err != EOK) {
+            DfxLogError("%s :: strcpy_s failed.", __func__);
+            return false;
         }
 
         curFrame.SetFramePc((uint64_t)pc);

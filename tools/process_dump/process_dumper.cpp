@@ -70,7 +70,7 @@ void LoopPrintBackTraceInfo()
         DfxRingBufferBlock<std::string> item = \
             ProcessDumper::GetInstance().backTraceRingBuffer_.Read(available);
         DfxLogDebug("%s :: available(%d), item.Length(%d) -1.", __func__, available, item.Length());
-        if ((available == 0) && (hasFinished == true)) {
+        if ((available == 0) && hasFinished) {
             DfxLogDebug("%s :: print finished, exit loop -1.\n", __func__);
             break;
         } else if (available != 0) {
@@ -162,10 +162,8 @@ void ProcessDumper::InitPrintThread(int32_t fromSignalHandler, std::shared_ptr<P
         faultloggerdRequest.tid = request->GetTid();
         faultloggerdRequest.uid = request->GetUid();
         faultloggerdRequest.time = request->GetTimeStamp();
-        size_t count = process->GetProcessName().length() >= sizeof(faultloggerdRequest.module) ?
-            sizeof(faultloggerdRequest.module) - 1 : process->GetProcessName().length();
         if (strncpy_s(faultloggerdRequest.module, sizeof(faultloggerdRequest.module),
-            process->GetProcessName().c_str(), count) != 0) {
+            process->GetProcessName().c_str(), sizeof(faultloggerdRequest.module) - 1) != 0) {
             DfxLogWarn("Failed to set process name.");
             return;
         }
