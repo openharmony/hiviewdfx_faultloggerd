@@ -121,6 +121,8 @@ void DfxDumpCatcherLocalDumper::DestroyLocalDumper()
 
 bool DfxDumpCatcherLocalDumper::SendLocalDumpRequest(int32_t tid)
 {
+    g_localDumpRequest.tid = tid;
+    g_localDumpRequest.timeStamp = (uint64_t)time(NULL);
     return syscall(SYS_tkill, tid, SIGLOCAL_DUMP) == 0;
 }
 
@@ -214,13 +216,8 @@ void DfxDumpCatcherLocalDumper::WriteFrameInfo(std::ostringstream& ss, size_t in
     ss << "+" << frame.funcOffset_ << ")" << std::endl;
 }
 
-bool DfxDumpCatcherLocalDumper::ExecLocalDump(int pid, int tid, size_t skipFramNum)
+bool DfxDumpCatcherLocalDumper::ExecLocalDump(int tid, size_t skipFramNum)
 {
-#ifdef LOCAL_DUMPER_DEBUG
-    DfxLogDebug("%{public}s :: %{public}s : pid(%{public}d), tid(%{public}d), skpFram(%{public}d).", \
-        LOG_TAG, __func__, pid, tid, skipFramNum);
-#endif
-
     unw_context_t context;
     unw_getcontext(&context);
 
@@ -230,6 +227,9 @@ bool DfxDumpCatcherLocalDumper::ExecLocalDump(int pid, int tid, size_t skipFramN
     size_t index = 0;
     DfxDumpCatcherLocalDumper::g_curIndex = 0;
     while ((unw_step(&cursor) > 0) && (index < BACK_STACK_MAX_STEPS)) {
+        if (tid != gettid()) {
+            break;
+        }
         // skip 0 stack, as this is dump catcher. Caller don't need it.
         if (index < skipFramNum) {
             index++;
@@ -261,36 +261,20 @@ bool DfxDumpCatcherLocalDumper::ExecLocalDump(int pid, int tid, size_t skipFramN
         DfxDumpCatcherLocalDumper::g_curIndex = static_cast<uint32_t>(index - skipFramNum);
         index++;
     }
-
-#ifdef LOCAL_DUMPER_DEBUG
-    DfxLogDebug("%{public}s :: ExecLocalDump :: return true.", LOG_TAG);
-#endif
     return true;
 }
 
 void DfxDumpCatcherLocalDumper::DFX_LocalDumperUnwindLocal(int sig, siginfo_t *si, void *context)
 {
-    DfxLogDebug("%{public}s :: DFX_LocalDumperUnwindLocal.", LOG_TAG);
-    DfxLogToSocket("DFX_LocalDumperUnwindLocal -S-");
-#ifdef LOCAL_DUMPER_DEBUG
-    DfxLogDebug("%{public}s :: sig(%{public}d), callerPid(%{public}d), callerTid(%{public}d).",
-        __func__, sig, si->si_pid, si->si_uid);
-    DfxLogDebug("DFX_LocalDumperUnwindLocal :: sig(%{public}d), pid(%{public}d), tid(%{public}d).",
-        sig, g_localDumpRequest.pid, g_localDumpRequest.tid);
-#endif
-    ExecLocalDump(g_localDumpRequest.pid, g_localDumpRequest.tid, DUMP_CATCHER_NUMBER_TWO);
-    g_localDumperCV.notify_one();
-    DfxLogToSocket("DFX_LocalDumperUnwindLocal -E-");
+    ExecLocalDump(g_localDumpRequest.tid, DUMP_CATCHER_NUMBER_TWO);
+    if (g_localDumpRequest.tid == gettid()) {
+        g_localDumperCV.notify_one();
+    }
 }
 
 void DfxDumpCatcherLocalDumper::DFX_LocalDumper(int sig, siginfo_t *si, void *context)
 {
     pthread_mutex_lock(&g_localDumperMutex);
-    (void)memset_s(&g_localDumpRequest, sizeof(g_localDumpRequest), 0, sizeof(g_localDumpRequest));
-    g_localDumpRequest.type = sig;
-    g_localDumpRequest.tid = gettid();
-    g_localDumpRequest.pid = getpid();
-    g_localDumpRequest.timeStamp = (uint64_t)time(NULL);
     DFX_LocalDumperUnwindLocal(sig, si, context);
     pthread_mutex_unlock(&g_localDumperMutex);
 }
