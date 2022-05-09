@@ -138,7 +138,7 @@ bool DfxDumpCatcher::DoDumpLocalPid(int pid, std::string& msg)
 
         int currentTid = syscall(SYS_gettid);
         if (tid == currentTid) {
-            DfxDumpCatcherLocalDumper::ExecLocalDump(pid, tid, DUMP_CATCHER_NUMBER_THREE);
+            DfxDumpCatcherLocalDumper::ExecLocalDump(tid, DUMP_CATCHER_NUMBER_THREE);
             msg.append(DfxDumpCatcherLocalDumper::CollectUnwindResult(tid));
         } else {
             if (DoDumpLocalTid(tid)) {
@@ -276,7 +276,7 @@ bool DfxDumpCatcher::DoDumpLocalLocked(int pid, int tid, std::string& msg)
     }
 
     if (tid == syscall(SYS_gettid)) {
-        ret = DfxDumpCatcherLocalDumper::ExecLocalDump(pid, tid, DUMP_CATCHER_NUMBER_TWO);
+        ret = DfxDumpCatcherLocalDumper::ExecLocalDump(tid, DUMP_CATCHER_NUMBER_TWO);
         msg.append(DfxDumpCatcherLocalDumper::CollectUnwindResult(tid));
     } else if (tid == 0) {
         ret = DoDumpLocalPid(pid, msg);
@@ -383,7 +383,7 @@ bool DfxDumpCatcher::DumpCatchFrame(int pid, int tid, std::string& msg, \
     }
 
     if (tid == syscall(SYS_gettid)) {
-        ret = DfxDumpCatcherLocalDumper::ExecLocalDump(pid, tid, DUMP_CATCHER_NUMBER_ONE);
+        ret = DfxDumpCatcherLocalDumper::ExecLocalDump(tid, DUMP_CATCHER_NUMBER_ONE);
     } else {
         ret = DoDumpLocalTid(tid);
     }

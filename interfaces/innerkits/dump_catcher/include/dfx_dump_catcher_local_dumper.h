@@ -52,7 +52,7 @@ class DfxDumpCatcherLocalDumper {
 public:
     DfxDumpCatcherLocalDumper();
     ~DfxDumpCatcherLocalDumper();
-    static bool ExecLocalDump(int pid, int tid, size_t skipFramNum);
+    static bool ExecLocalDump(int tid, size_t skipFramNum);
     static void DFX_InstallLocalDumper(int sig);
     static void DFX_LocalDumper(int sig, siginfo_t *si, void *context);
     static void DFX_LocalDumperUnwindLocal(int sig, siginfo_t *si, void *context);
