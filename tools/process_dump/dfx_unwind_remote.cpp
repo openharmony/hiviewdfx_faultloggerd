@@ -50,6 +50,7 @@ DfxUnwindRemote &DfxUnwindRemote::GetInstance()
 
 DfxUnwindRemote::DfxUnwindRemote()
 {
+    as_ = nullptr;
     cache_ = std::make_unique<DfxSymbolsCache>();
 }
 
