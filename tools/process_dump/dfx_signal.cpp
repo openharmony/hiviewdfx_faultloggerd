@@ -95,9 +95,9 @@ std::string PrintSignal(const siginfo_t &info)
     DfxSignal signal(info.si_signo);
     if (signal.IsAddrAvaliable()) {
 #if defined(__LP64__)
-        ret = snprintf_s(buf, sizeof(buf), sizeof(buf) - 1, "@0x%016p ", (uint64_t)info.si_addr);
+        ret = snprintf_s(buf, sizeof(buf), sizeof(buf) - 1, "@%018p ", (uint64_t)info.si_addr);
 #else
-        ret = snprintf_s(buf, sizeof(buf), sizeof(buf) - 1, "@0x%08p ", (uint32_t)info.si_addr);
+        ret = snprintf_s(buf, sizeof(buf), sizeof(buf) - 1, "@%010p ", (uint32_t)info.si_addr);
 #endif
         if (ret <= 0) {
             DfxLogError("%s :: snprintf_s failed, line: %d.", __func__, __LINE__);
