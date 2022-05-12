@@ -1127,6 +1127,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0015, TestSize.Level2)
     int expectNum = sizeof(log) / sizeof(log[0]);
     EXPECT_EQ(count, expectNum) << "FaultLoggerdSystemTest0015 Failed";
     FaultLoggerdSystemTest::KillCrasherLoopForSomeCase(3);
+    sleep(NUMBER_TWO);
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest0015: end.";
 }
 
