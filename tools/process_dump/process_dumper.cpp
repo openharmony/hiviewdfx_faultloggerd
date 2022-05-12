@@ -344,6 +344,7 @@ void ProcessDumper::Dump(bool isSignalHdlr, ProcessDumpType type, int32_t pid, i
     backTraceIsFinished_ = true;
     backTracePrintCV.notify_one();
     backTracePrintThread_.join();
+    close(backTraceFileFd_);
 
     DfxLogError("debuggerd_signal_handler :: finished write crash info to file.");
     DfxLogDebug("Exit %s.", __func__);

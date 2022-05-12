@@ -94,39 +94,19 @@ std::string PrintSignal(const siginfo_t &info)
 
     DfxSignal signal(info.si_signo);
     if (signal.IsAddrAvaliable()) {
-#if defined(__aarch64__)
-        ret = snprintf_s(buf, sizeof(buf), sizeof(buf) - 1, "@0x%016lx ", (uint64_t)info.si_addr);
-        if (ret <= 0) {
-            DfxLogError("%s :: snprintf_s failed, line: %d.", __func__, __LINE__);
-        }
-        sigString = sigString + std::string(buf);
-        ret = memset_s(buf, LOG_BUF_LEN, '\0', LOG_BUF_LEN);
-        if (ret != EOK) {
-            DfxLogError("%s :: memset_s failed, line: %d.", __func__, __LINE__);
-        }
-#elif defined(__arm__)
-        ret = snprintf_s(buf, sizeof(buf), sizeof(buf) - 1, "@0x%08x ", (uint32_t)info.si_addr);
-        if (ret <= 0) {
-            DfxLogError("%s :: snprintf_s failed, line: %d.", __func__, __LINE__);
-        }
-        sigString = sigString + std::string(buf);
-        ret = memset_s(buf, LOG_BUF_LEN, '\0', LOG_BUF_LEN);
-        if (ret != EOK) {
-            DfxLogError("%s :: memset_s failed, line: %d.", __func__, __LINE__);
-        }
-#elif defined(__x86_64__)
-        ret = snprintf_s(buf, sizeof(buf), sizeof(buf) - 1, "@0x%016lx ", static_cast<uint64_t>(info.si_addr));
-        if (ret <= 0) {
-            DfxLogError("%s :: snprintf_s failed, line: %d.", __func__, __LINE__);
-        }
-        sigString = sigString + std::string(buf);
-        ret = memset_s(buf, LOG_BUF_LEN, '\0', LOG_BUF_LEN);
-        if (ret != EOK) {
-            DfxLogError("%s :: memset_s failed, line: %d.", __func__, __LINE__);
-        }
+#if defined(__LP64__)
+        ret = snprintf_s(buf, sizeof(buf), sizeof(buf) - 1, "@0x%016p ", (uint64_t)info.si_addr);
 #else
-#pragma message("Unsupport arch.")
+        ret = snprintf_s(buf, sizeof(buf), sizeof(buf) - 1, "@0x%08p ", (uint32_t)info.si_addr);
 #endif
+        if (ret <= 0) {
+            DfxLogError("%s :: snprintf_s failed, line: %d.", __func__, __LINE__);
+        }
+        sigString = sigString + std::string(buf);
+        ret = memset_s(buf, LOG_BUF_LEN, '\0', LOG_BUF_LEN);
+        if (ret != EOK) {
+            DfxLogError("%s :: memset_s failed, line: %d.", __func__, __LINE__);
+        }
     }
 
     if ((info.si_code <= 0) && (info.si_pid != 0)) {
