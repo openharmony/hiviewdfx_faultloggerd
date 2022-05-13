@@ -334,7 +334,9 @@ void ProcessDumper::Dump(bool isSignalHdlr, ProcessDumpType type, int32_t pid, i
         DfxLogError("process == nullptr");
         PrintDumpFailed();
     } else {
-        process->Detach();
+        if (!isSignalHdlr || (isSignalHdlr && process->GetIsSignalDump())) {
+            process->Detach();
+        }
     }
 
     if (reporter_ != nullptr) {
@@ -344,8 +346,13 @@ void ProcessDumper::Dump(bool isSignalHdlr, ProcessDumpType type, int32_t pid, i
     backTraceIsFinished_ = true;
     backTracePrintCV.notify_one();
     backTracePrintThread_.join();
+    close(backTraceFileFd_);
+    backTraceFileFd_ = -1;
 
-    DfxLogError("debuggerd_signal_handler :: finished write crash info to file.");
+    if (isSignalHdlr && process && !process->GetIsSignalDump()) {
+        process->Detach();
+    }
+    DfxLogInfo("processdump :: finished write crash info to file.");
     DfxLogDebug("Exit %s.", __func__);
 
     CloseDebugLog();
