@@ -21,13 +21,17 @@
 
 int main()
 {
-    int fd = RequestFileDescriptor(CPP_CRASH);
+    int fd = RequestFileDescriptor(FaultLoggerType::CPP_CRASH);
     if (fd < 0) {
         printf("Fail to request file descriptor\n");
         return -1;
     }
 
     char buf[] = "write test log to file.\n";
-    write(fd, buf, strlen(buf));
+    int ret = write(fd, buf, strlen(buf));
+    if (ret == -1) {
+        printf("write error!");
+    }
+    close(fd);
     return 0;
 }

@@ -1,0 +1,98 @@
+# Copyright (c) 2021-2022 Huawei Device Co., Ltd.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import("//base/hiviewdfx/faultloggerd/faultloggerd.gni")
+
+if (defined(ohos_lite)) {
+  shared_library("lib_dfx_dump_catcher") {
+    visibility = [ "*:*" ]
+
+    include_dirs = [
+      "include",
+      "$faultloggerd_path/common",
+      "$faultloggerd_path/utils",
+      "//third_party/libunwind/include",
+      "$faultloggerd_path/interfaces/innerkits/faultloggerd_client/include",
+      "$faultloggerd_path/tools/process_dump",
+      "//utils/native/base/include",
+      "$hilog_lite_include_path",
+    ]
+
+    cflags = [ "-DCURRENT_THREAD_ONLY" ]
+
+    sources = [
+      "//base/hiviewdfx/faultloggerd/tools/process_dump/dfx_elf.cpp",
+      "//base/hiviewdfx/faultloggerd/tools/process_dump/dfx_log.cpp",
+      "//base/hiviewdfx/faultloggerd/tools/process_dump/dfx_maps.cpp",
+      "//base/hiviewdfx/faultloggerd/tools/process_dump/dfx_symbols_cache.cpp",
+      "//base/hiviewdfx/faultloggerd/tools/process_dump/dfx_util.cpp",
+      "//base/hiviewdfx/faultloggerd/utils/directory_ex.cpp",
+      "//base/hiviewdfx/faultloggerd/utils/file_ex.cpp",
+      "dfx_dump_catcher.cpp",
+      "dfx_dump_catcher_frame.cpp",
+      "dfx_dump_catcher_local_dumper.cpp",
+    ]
+
+    deps = [
+      "$faultloggerd_path/interfaces/innerkits/faultloggerd_client:libfaultloggerd",
+      "//base/hiviewdfx/hilog_lite/frameworks/featured:hilog_shared",
+      "//third_party/libunwind:libunwind",
+    ]
+  }
+} else {
+  config("dfx_dump_catcher_config") {
+    visibility = [ "*:*" ]
+
+    include_dirs = [
+      "include",
+      "$faultloggerd_path/common",
+      "//third_party/libunwind/include",
+      "$faultloggerd_path/interfaces/innerkits/faultloggerd_client/include",
+      "$faultloggerd_path/tools/process_dump",
+      "//utils/native/base/include",
+    ]
+  }
+
+  ohos_shared_library("lib_dfx_dump_catcher") {
+    public_configs = [ ":dfx_dump_catcher_config" ]
+
+    cflags = [ "-DCURRENT_THREAD_ONLY" ]
+
+    sources = [
+      "//base/hiviewdfx/faultloggerd/tools/process_dump/dfx_elf.cpp",
+      "//base/hiviewdfx/faultloggerd/tools/process_dump/dfx_log.cpp",
+      "//base/hiviewdfx/faultloggerd/tools/process_dump/dfx_maps.cpp",
+      "//base/hiviewdfx/faultloggerd/tools/process_dump/dfx_symbols_cache.cpp",
+      "//base/hiviewdfx/faultloggerd/tools/process_dump/dfx_util.cpp",
+      "dfx_dump_catcher.cpp",
+      "dfx_dump_catcher_frame.cpp",
+      "dfx_dump_catcher_local_dumper.cpp",
+    ]
+
+    deps = [
+      "$faultloggerd_path/interfaces/innerkits/faultloggerd_client:libfaultloggerd",
+      "//third_party/libunwind:libunwind",
+    ]
+
+    external_deps = [
+      "hilog_native:libhilog",
+      "utils_base:utils",
+    ]
+    install_images = [
+      "system",
+      "updater",
+    ]
+    part_name = "faultloggerd"
+    subsystem_name = "hiviewdfx"
+  }
+}

@@ -1,4 +1,4 @@
-# Copyright (c) 2021 Huawei Device Co., Ltd.
+# Copyright (c) 2021-2022 Huawei Device Co., Ltd.
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -11,36 +11,57 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import("//build/ohos.gni")
+import("//base/hiviewdfx/faultloggerd/faultloggerd.gni")
 
-config("faultloggerd_client_config") {
-  visibility = [ "*:*" ]
+if (defined(ohos_lite)) {
+  shared_library("libfaultloggerd") {
+    visibility = [ "*:*" ]
 
-  include_dirs = [
-    "include",
-    "//utils/native/base/include",
-  ]
+    include_dirs = [
+      ".",
+      "./include",
+      "//utils/native/base/include",
+      "$faultloggerd_path/tools/process_dump/",
+      "$faultloggerd_path/common",
+      "$hilog_lite_include_path",
+    ]
 
-  if (use_musl) {
-    cflags = [ "-DUSE_MUSL" ]
+    sources = [
+      "//base/hiviewdfx/faultloggerd/tools/process_dump/dfx_log.cpp",
+      "faultloggerd_client.cpp",
+    ]
+
+    deps = [ "//base/hiviewdfx/hilog_lite/frameworks/featured:hilog_shared" ]
   }
-}
+} else {
+  config("faultloggerd_client_config") {
+    visibility = [ "*:*" ]
 
-ohos_shared_library("libfaultloggerd") {
-  public_configs = [ ":faultloggerd_client_config" ]
-
-  include_dirs = [ "." ]
-
-  sources = [ "faultloggerd_client.cpp" ]
-
-  deps = [ "//utils/native/base:utils" ]
-
-  if (is_standard_system) {
-    external_deps = [ "hiviewdfx_hilog_native:libhilog" ]
-  } else {
-    external_deps = [ "hilog:libhilog" ]
+    include_dirs = [
+      "include",
+      "//utils/native/base/include",
+      "$faultloggerd_path/common",
+      "$faultloggerd_path/tools/process_dump/",
+    ]
   }
 
-  part_name = "faultloggerd"
-  subsystem_name = "hiviewdfx"
+  ohos_shared_library("libfaultloggerd") {
+    public_configs = [ ":faultloggerd_client_config" ]
+
+    sources = [
+      "//base/hiviewdfx/faultloggerd/tools/process_dump/dfx_log.cpp",
+      "faultloggerd_client.cpp",
+    ]
+
+    external_deps = [
+      "hilog_native:libhilog",
+      "utils_base:utils",
+    ]
+    install_images = [
+      "system",
+      "updater",
+    ]
+    part_name = "faultloggerd"
+    subsystem_name = "hiviewdfx"
+  }
 }

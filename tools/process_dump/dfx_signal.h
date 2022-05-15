@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -15,22 +15,35 @@
 #ifndef DFX_SIGNAL_H
 #define DFX_SIGNAL_H
 
-#include <signal.h>
-#include <stdint.h>
+#include <csignal>
+#include <string>
 
-void PrintSignal(const siginfo_t *info, int32_t fd);
+namespace OHOS {
+namespace HiviewDFX {
+class DfxSignal {
+public:
+    explicit DfxSignal(const int32_t signal);
+    ~DfxSignal() {}
 
-int32_t IsSignalInfoAvaliable(int32_t signal);
-int32_t IsSignalAddrAvaliable(int32_t signal);
-int32_t IsSignalPidAvaliable(int32_t sigCode);
-const char *FormatSignalName(int32_t signal);
-const char *FormatCodeName(int32_t signal, int32_t signalCode);
+    bool IsAvaliable() const;
+    bool IsAddrAvaliable() const;
+    bool IsPidAvaliable() const;
+    int32_t GetSignal() const;
+private:
+    int32_t signal_ = 0;
+    DfxSignal() = delete;
+};
 
-const char *FormatSIGBUSCodeName(int32_t signalCode);
-const char *FormatSIGILLCodeName(int32_t signalCode);
-const char *FormatSIGFPECodeName(int32_t signalCode);
-const char *FormatSIGSEGVCodeName(int32_t signalCode);
-const char *FormatSIGTRAPCodeName(int32_t signalCode);
-const char *FormatCommonSignalCodeName(int32_t signalCode);
+std::string PrintSignal(const siginfo_t &info);
+std::string FormatSignalName(const int32_t signal);
+std::string FormatCodeName(const int32_t signal, const int32_t signalCode);
 
+std::string FormatSIGBUSCodeName(const int32_t signalCode);
+std::string FormatSIGILLCodeName(const int32_t signalCode);
+std::string FormatSIGFPECodeName(const int32_t signalCode);
+std::string FormatSIGSEGVCodeName(const int32_t signalCode);
+std::string FormatSIGTRAPCodeName(const int32_t signalCode);
+std::string FormatCommonSignalCodeName(const int32_t signalCode);
+} // namespace Dfx
+} // namespace OHOS
 #endif

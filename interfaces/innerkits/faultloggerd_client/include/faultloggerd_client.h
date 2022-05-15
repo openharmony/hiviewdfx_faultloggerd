@@ -15,31 +15,64 @@
 #ifndef DFX_FAULTLOGGERD_CLIENT_H
 #define DFX_FAULTLOGGERD_CLIENT_H
 
-#include <stdint.h>
+#include <cstdint>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
-enum FaultLoggerType {
+
+#define FAULTLOGGER_DAEMON_RESP "RESP:COMPLETE"
+
+enum class FaultLoggerType {
     JAVA_CRASH = 1,
     CPP_CRASH,
     JS_CRASH,
     APP_FREEZE,
     JAVA_STACKTRACE = 100, // unsupported yet
     CPP_STACKTRACE,
+    JS_STACKTRACE,
+    JS_HEAP_SNAPSHOT,
+};
+
+enum class FaultLoggerClientType {
+    DEFAULT_CLIENT = 0, // For original request crash info file
+    LOG_FILE_DES_CLIENT, // For request a file to record nornal unwind and process dump logs.
+    PRINT_T_HILOG_CLIENT, // For request a file to record nornal unwind and process dump logs.
+    PERMISSION_CLIENT,
+    SDK_DUMP_CLIENT,
+    MAX_CLIENT
+};
+
+enum class FaultLoggerCheckPermissionResp {
+    CHECK_PERMISSION_PASS = 1,
+    CHECK_PERMISSION_REJECT,
+    CHECK_PERMISSION_MAX
+};
+
+enum class FaultLoggerSdkDumpResp {
+    SDK_DUMP_PASS = 1,
+    SDK_DUMP_REJECT,
+    SDK_DUMP_MAX
 };
 
 struct FaultLoggerdRequest {
     int32_t type;
+    int32_t clientType;
     int32_t pid;
     int32_t tid;
     int32_t uid;
+    int32_t callerPid; // only for sdk dump client
+    int32_t callerTid; // only for sdk dump client
     char module[128];
+    uint64_t time;
 } __attribute__((packed));
 
 int32_t RequestFileDescriptor(int32_t type);
-int32_t RequestFileDescriptorEx(const struct FaultLoggerdRequest *request);
-int32_t LogThreadStacktraceToFile(const char *path, int32_t type, int32_t pid, int32_t tid, int32_t timeout);
+int32_t RequestLogFileDescriptor(struct FaultLoggerdRequest *request);
+int RequestFileDescriptorEx(const struct FaultLoggerdRequest *request);
+bool RequestCheckPermission(int32_t pid);
+void RequestPrintTHilog(const char *msg, int length);
+bool RequestSdkDump(int32_t pid, int32_t tid);
 
 #ifdef __cplusplus
 }

@@ -16,6 +16,7 @@
 #define DFX_FAULTLOGGERD_H
 
 #include <cinttypes>
+#include "faultloggerd_client.h"
 
 int32_t StartServer(int argc, char *argv[]);
 
@@ -23,17 +24,24 @@ namespace OHOS {
 namespace HiviewDFX {
 class FaultLoggerDaemon {
 public:
-    FaultLoggerDaemon() : currentLogCounts_(0) {};
+    FaultLoggerDaemon() {};
     ~FaultLoggerDaemon() {};
     bool InitEnvironment();
-    void HandleRequest(int32_t fd);
+    void LoopAcceptRequestAndFork(int socketFd);
 
 private:
-    int32_t CreateFileForRequest(int32_t type, int32_t pid) const;
+    int32_t CreateFileForRequest(int32_t type, int32_t pid, uint64_t time, bool debugFlag) const;
     void RemoveTempFileIfNeed();
+    void HandleRequest(int32_t connectionFd);
+    void HandleDefaultClientReqeust(int32_t connectionFd, const FaultLoggerdRequest* request);
+    void HandleLogFileDesClientReqeust(int32_t connectionFd, const FaultLoggerdRequest* request);
+    void HandlePrintTHilogClientReqeust(int32_t const connectionFd, FaultLoggerdRequest* request);
+    FaultLoggerCheckPermissionResp SecurityCheck(int32_t connectionFd, FaultLoggerdRequest* request);
+    void HandlePermissionReqeust(int32_t connectionFd, FaultLoggerdRequest* request);
+    void HandleSdkDumpReqeust(int32_t connectionFd, FaultLoggerdRequest* request);
 
 private:
-    int32_t currentLogCounts_;
+    int32_t currentLogCounts_ {0};
 };
 } // namespace HiviewDFX
 } // namespace OHOS

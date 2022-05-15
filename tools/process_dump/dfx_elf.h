@@ -12,38 +12,61 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef DFX_ELF_H
-#define DFX_ELF_H
-
+#ifndef DFX_ELF_IMAGE_H
+#define DFX_ELF_IMAGE_H
 #include <elf.h>
-#include <inttypes.h>
+#include <cinttypes>
 #include <link.h>
+#include <string>
+#include <vector>
 
 #include <sys/types.h>
 
 #include "dfx_define.h"
 
-typedef struct LoadInfo {
+namespace OHOS {
+namespace HiviewDFX {
+struct ElfLoadInfo {
     uint64_t vaddr;
     uint64_t offset;
-    struct LoadInfo *next;
-} LoadInfo;
+};
+using ElfLoadInfo = struct ElfLoadInfo;
 
-typedef struct {
-    char *name;
-    char *path;
-    int32_t fd;
-    size_t loadBias;
-    uint64_t size;
-    ElfW(Ehdr)header;
-    LoadInfo *infos;
-} DfxElfImage;
+class DfxElf {
+public:
+    DfxElf() = default;
+    ~DfxElf() = default;
 
-BOOL InitDfxElfImage(const char *path, DfxElfImage **image);
-BOOL ParseElfHeader(DfxElfImage *image);
-BOOL ParseElfProgramHeader(DfxElfImage *image);
-uint64_t FindRealLoadOffset(DfxElfImage *image, uint64_t offset);
-void CreateLoadInfo(DfxElfImage *image, uint64_t vaddr, uint64_t offset);
-void DestroyDfxElfImage(DfxElfImage *image);
+    static std::shared_ptr<DfxElf> Create(const std::string path);
+    bool ParseElfHeader();
+    bool ParseElfProgramHeader();
+    uint64_t FindRealLoadOffset(uint64_t offset) const;
+    void CreateLoadInfo(uint64_t vaddr, uint64_t offset);
 
+    std::string GetName() const;
+    void SetName(const std::string &name);
+    std::string GetPath() const;
+    void SetPath(const std::string &path);
+    int32_t GetFd() const;
+    void SetFd(int32_t fdValue);
+    size_t GetLoadBias() const;
+    void SetLoadBias(size_t loadBias);
+    uint64_t GetSize() const;
+    void SetSize(uint64_t size);
+    ElfW(Ehdr) GetHeader() const;
+    void SetHeader(ElfW(Ehdr) header);
+    std::vector<ElfLoadInfo> GetInfos() const;
+    void SetInfos(const std::vector<ElfLoadInfo> &infos);
+
+private:
+    std::string name_;
+    std::string path_;
+    int32_t fd_;
+    size_t loadBias_;
+    uint64_t size_;
+    ElfW(Ehdr)header_;
+    std::vector<ElfLoadInfo> infos_;
+};
+} // namespace HiviewDFX
+} // namespace OHOS
 #endif
