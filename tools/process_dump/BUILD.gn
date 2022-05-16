@@ -35,13 +35,13 @@ if (defined(ohos_lite)) {
       "dfx_log.cpp",
       "dfx_maps.cpp",
       "dfx_process.cpp",
+      "dfx_regs_arm.cpp",
       "dfx_signal.cpp",
       "dfx_symbols_cache.cpp",
       "dfx_thread.cpp",
       "dfx_unwind_remote.cpp",
       "dfx_util.cpp",
       "process_dumper.cpp",
-      "dfx_regs_arm.cpp",
     ]
 
     deps = [
@@ -73,6 +73,7 @@ if (defined(ohos_lite)) {
       "dfx_log.cpp",
       "dfx_maps.cpp",
       "dfx_process.cpp",
+      "dfx_regs_arm.cpp",
       "dfx_signal.cpp",
       "dfx_symbols_cache.cpp",
       "dfx_thread.cpp",
@@ -80,7 +81,6 @@ if (defined(ohos_lite)) {
       "dfx_util.cpp",
       "main.cpp",
       "process_dumper.cpp",
-      "dfx_regs_arm.cpp",
     ]
 
     deps = [

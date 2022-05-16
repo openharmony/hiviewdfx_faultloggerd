@@ -59,10 +59,7 @@ if (defined(ohos_lite)) {
   ohos_shared_library("dfx_signalhandler") {
     public_configs = [ ":dfx_signal_handler_config" ]
 
-    cflags = [
-      "-DDFX_LOG_USE_HILOG_BASE",
-      "-DDFX_SIGNALHANDLER_TAG",
-    ]
+    cflags = [ "-DDFX_NO_PRINT_LOG" ]
 
     sources = [
       "$faultloggerd_path/tools/process_dump/dfx_log.cpp",
@@ -71,10 +68,7 @@ if (defined(ohos_lite)) {
 
     deps = [ "$faultloggerd_path/interfaces/innerkits/faultloggerd_client:libfaultloggerd" ]
 
-    external_deps = [
-      "hilog_native:libhilog_base",
-      "utils_base:utils",
-    ]
+    external_deps = [ "utils_base:utils" ]
     install_images = [
       "system",
       "updater",

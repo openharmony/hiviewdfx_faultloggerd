@@ -15,10 +15,12 @@
 #ifndef DFX_PROCESS_DUMP_LOG_H
 #define DFX_PROCESS_DUMP_LOG_H
 
+#ifndef DFX_NO_PRINT_LOG
 #ifdef DFX_LOG_USE_HILOG_BASE
 #include <hilog_base/log_base.h>
 #else
 #include <hilog/log.h>
+#endif
 #endif
 
 #ifdef __cplusplus
