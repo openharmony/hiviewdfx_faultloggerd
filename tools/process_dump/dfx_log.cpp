@@ -48,16 +48,18 @@ enum class LOG_LEVEL_CLASS {
 static const LOG_LEVEL_CLASS LOG_LEVEL = LOG_LEVEL_CLASS::LOG_LEVEL_INFO;
 static const int32_t INVALID_FD = -1;
 static int32_t g_DebugLogFilleDes = INVALID_FD;
-#ifndef DFX_LOG_USE_HILOG_BASE
 static int32_t g_StdErrFilleDes = INVALID_FD;
+#ifndef DFX_NO_PRINT_LOG
+#ifndef DFX_LOG_USE_HILOG_BASE
 static const OHOS::HiviewDFX::HiLogLabel g_LOG_LABEL = {LOG_CORE, 0xD002D20, "DfxFaultLogger"};
+#endif
 #endif
 
 int DfxLogDebug(const char *format, ...)
 {
 #ifdef DFX_NO_PRINT_LOG
     return 0;
-#endif
+#else
     if (LOG_LEVEL_CLASS::LOG_LEVEL_DBG < LOG_LEVEL) {
         return 0;
     }
@@ -78,13 +80,14 @@ int DfxLogDebug(const char *format, ...)
         fprintf(stderr, "%s\n", buf);
     }
     return ret;
+#endif
 }
 
 int DfxLogInfo(const char *format, ...)
 {
 #ifdef DFX_NO_PRINT_LOG
     return 0;
-#endif
+#else
     if (LOG_LEVEL_CLASS::LOG_LEVEL_INFO < LOG_LEVEL) {
         return 0;
     }
@@ -105,13 +108,14 @@ int DfxLogInfo(const char *format, ...)
         fprintf(stderr, "%s\n", buf);
     }
     return ret;
+#endif
 }
 
 int DfxLogWarn(const char *format, ...)
 {
 #ifdef DFX_NO_PRINT_LOG
     return 0;
-#endif
+#else
     if (LOG_LEVEL_CLASS::LOG_LEVEL_WARN < LOG_LEVEL) {
         return 0;
     }
@@ -132,13 +136,14 @@ int DfxLogWarn(const char *format, ...)
         fprintf(stderr, "%s\n", buf);
     }
     return ret;
+#endif
 }
 
 int DfxLogError(const char *format, ...)
 {
 #ifdef DFX_NO_PRINT_LOG
     return 0;
-#endif
+#else
     if (LOG_LEVEL_CLASS::LOG_LEVEL_ERR < LOG_LEVEL) {
         return 0;
     }
@@ -159,13 +164,14 @@ int DfxLogError(const char *format, ...)
         fprintf(stderr, "%s\n", buf);
     }
     return ret;
+#endif
 }
 
 int DfxLogFatal(const char *format, ...)
 {
 #ifdef DFX_NO_PRINT_LOG
     return 0;
-#endif
+#else
     if (LOG_LEVEL_CLASS::LOG_LEVEL_FATAL < LOG_LEVEL) {
         return 0;
     }
@@ -185,6 +191,7 @@ int DfxLogFatal(const char *format, ...)
         fprintf(stderr, "%s\n", buf);
     }
     return ret;
+#endif
 }
 
 int WriteLog(int32_t fd, const char *format, ...)
@@ -197,10 +204,12 @@ int WriteLog(int32_t fd, const char *format, ...)
     va_end(args);
 
     if ((LOG_LEVEL <= LOG_LEVEL_CLASS::LOG_LEVEL_DBG) || (fd == -1)) {
+#ifndef DFX_NO_PRINT_LOG
 #ifdef DFX_LOG_USE_HILOG_BASE
         HILOG_BASE_DEBUG(LOG_CORE, "%{public}s", buf);
 #else
         OHOS::HiviewDFX::HiLog::Debug(g_LOG_LABEL, "%{public}s", buf);
+#endif
 #endif
     }
 
