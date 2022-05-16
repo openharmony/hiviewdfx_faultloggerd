@@ -101,6 +101,10 @@ bool DfxDumpCatcherLocalDumper::InitLocalDumper()
     DfxDumpCatcherLocalDumper::DFX_InstallLocalDumper(SIGLOCAL_DUMP);
     sigset_t mask;
     sigfillset(&mask);
+    sigdelset(&mask, SIGABRT);
+    sigdelset(&mask, SIGBUS);
+    sigdelset(&mask, SIGILL);
+    sigdelset(&mask, SIGSEGV);
     sigprocmask(SIG_SETMASK, &mask, &g_mask);
     g_cache = std::make_unique<DfxSymbolsCache>();
     DfxDumpCatcherLocalDumper::g_isLocalDumperInited = true;
