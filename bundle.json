@@ -1,57 +1,81 @@
 {
-    "name": "@ohos/hiviewdfx_faultloggerd",
-    "version": "",
-    "description": "为应用和系统开发人员提供Native崩溃故障定位日志，为测试人员提供质量监控基础。",
-    "homePage": "https://gitee.com/openharmony",
-    "license": "Apache V2",
-    "repository": "https://gitee.com/openharmony/hiviewdfx_faultloggerd",
-    "domain": "os",
-    "language": "",
-    "publishAs": "code-segment",
-    "private": false,
-    "scripts": {},
-    "tags": [
-        "base"
+  "name": "@ohos/faultloggerd",
+  "description": "Collecting c/c++ runtime crash log",
+  "version": "3.1",
+  "license": "Apache License 2.0",
+  "publishAs": "code-segment",
+  "segment": {
+      "destPath": "base/hiviewdfx/faultloggerd"
+  },
+  "component": {
+    "name": "faultloggerd",
+    "subsystem": "hiviewdfx",
+    "syscap": [],
+    "features": [],
+    "adapted_system_type": [
+      "small",
+      "standard"
     ],
-    "keywords": [
-        "hiviewdfx",
-        "faultloggerd"
-    ],
-    "envs": [],
-    "dirs": [],
-    "author": {
-        "name": "",
-        "email": "",
-        "url": ""
+    "rom": "1024KB",
+    "ram": "~1024KB",
+    "deps": {
+      "components": [
+        "libhilog",
+        "utils_base"
+      ],
+      "third_party": [
+        "libunwind"
+      ]
     },
-    "contributors": [
+    "build": {
+      "sub_component": [
+        "//base/hiviewdfx/faultloggerd/interfaces/innerkits/signal_handler:dfx_signalhandler",
+        "//base/hiviewdfx/faultloggerd/interfaces/innerkits/dump_catcher:lib_dfx_dump_catcher",
+        "//base/hiviewdfx/faultloggerd/interfaces/innerkits/faultloggerd_client:libfaultloggerd",
+        "//base/hiviewdfx/faultloggerd/tools/process_dump:processdump",
+        "//base/hiviewdfx/faultloggerd/services:faultloggerd"
+      ],
+      "inner_kits": [
         {
-            "name": "",
-            "email": "",
-            "url": ""
-        }
-    ],
-    "segment": {
-        "destPath": "base/hiviewdfx/faultloggerd"
-    },
-    "component": {
-        "name": "faultloggerd",
-        "subsystem": "hiviewdfx",
-        "syscap": [],
-        "features": [],
-        "adapted_system_type": [
-            "standard"
-        ],
-        "rom": "",
-        "ram": "",
-        "deps": {
-            "components": [],
-            "third_party": []
+          "name": "//base/hiviewdfx/faultloggerd/interfaces/innerkits/dump_catcher:lib_dfx_dump_catcher",
+          "header": {
+            "header_files": [
+              "dfx_dump_catcher.h"
+            ],
+            "header_base": "//base/hiviewdfx/faultloggerd/interfaces/innerkits/dump_catcher/include"
+          }
         },
-        "build": {
-            "sub_component": [],
-            "inner_kits": [],
-            "test": []
+        {
+          "name": "//base/hiviewdfx/faultloggerd/interfaces/innerkits/faultloggerd_client:libfaultloggerd",
+          "header": {
+          "header_files": [
+              "faultloggerd_client.h"
+            ],
+            "header_base": "//base/hiviewdfx/faultloggerd/interfaces/innerkits/faultloggerd_client/include"
+          }
+        },
+        {
+          "name": "//base/hiviewdfx/faultloggerd/interfaces/innerkits/signal_handler:dfx_signalhandler",
+          "header": {
+            "header_files": [
+              "dfx_signal_handler.h"
+            ],
+            "header_base": "//base/hiviewdfx/faultloggerd/interfaces/innerkits/signal_handler/include"
+          }
         }
+      ],
+      "test": [
+        "//base/hiviewdfx/faultloggerd/example:dumpcatcherdemo",
+        "//base/hiviewdfx/faultloggerd/interfaces/innerkits/dump_catcher/test:harmonystrace",
+        "//base/hiviewdfx/faultloggerd/test:faultloggerd_fuzzertest",
+        "//base/hiviewdfx/faultloggerd/test:faultloggerd_moduletest",
+        "//base/hiviewdfx/faultloggerd/test:faultloggerd_systemtest",
+        "//base/hiviewdfx/faultloggerd/test:faultloggerd_performancetest",
+        "//base/hiviewdfx/faultloggerd/tools/crasher_c:crasher_c",
+        "//base/hiviewdfx/faultloggerd/tools/crasher_cpp:crasher_cpp",
+        "//base/hiviewdfx/faultloggerd/tools/process_dump/test:processdump_unittest",
+        "//base/hiviewdfx/faultloggerd/services/test:service_unittest"
+      ]
     }
+  }
 }

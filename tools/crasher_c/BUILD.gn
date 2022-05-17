@@ -1,0 +1,49 @@
+# Copyright (c) 2021-2022 Huawei Device Co., Ltd.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import("//base/hiviewdfx/faultloggerd/faultloggerd.gni")
+
+if (defined(ohos_lite)) {
+  executable("crasher_c") {
+    cflags = [ "-funwind-tables" ]
+
+    visibility = [ "*:*" ]
+    include_dirs = [
+      ".",
+      "$faultloggerd_path/common",
+      "$faultloggerd_path/interfaces/innerkits/signal_handler/include",
+      "//utils/native/base/include",
+      "$hilog_lite_include_path",
+    ]
+    sources = [ "dfx_crasher.c" ]
+    deps = [
+      "$faultloggerd_path/interfaces/innerkits/signal_handler:dfx_signalhandler",
+      "$hilog_lite_deps_path",
+      "//third_party/bounds_checking_function:libsec_shared",
+    ]
+  }
+} else {
+  config("crasher_config") {
+    visibility = [ ":*" ]
+
+    include_dirs = [ "." ]
+  }
+
+  ohos_executable("crasher_c") {
+    configs = [ ":crasher_config" ]
+    sources = [ "dfx_crasher.c" ]
+    deps = [ "$faultloggerd_path/interfaces/innerkits/signal_handler:dfx_signalhandler" ]
+    part_name = "faultloggerd"
+    subsystem_name = "hiviewdfx"
+  }
+}

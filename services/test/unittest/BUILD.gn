@@ -1,0 +1,97 @@
+# Copyright (c) 2021 Huawei Device Co., Ltd.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import("//base/hiviewdfx/faultloggerd/faultloggerd.gni")
+
+if (defined(ohos_lite)) {
+  import("//build/lite/config/component/lite_component.gni")
+  import("//build/lite/config/test.gni")
+
+  if (ohos_build_type == "debug") {
+    unittest("test_service") {
+      output_extension = "bin"
+      output_dir = "$root_out_dir/test/unittest/faultloggerd"
+
+      include_dirs = [
+        "include",
+        "//utils/native/base/include",
+        "$faultloggerd_path/services",
+        "$hilog_lite_include_path",
+        "$faultloggerd_path/tools/process_dump",
+        "$faultloggerd_path/interfaces/innerkits/faultloggerd_client/include",
+        "$faultloggerd_path/common",
+        "$faultloggerd_path/utils",
+      ]
+
+      sources = [
+        "$faultloggerd_path/services/fault_logger_config.cpp",
+        "$faultloggerd_path/services/fault_logger_daemon.cpp",
+        "$faultloggerd_path/services/fault_logger_secure.cpp",
+        "//base/hiviewdfx/faultloggerd/utils/directory_ex.cpp",
+        "src/faultlogger_config_test.cpp",
+        "src/faultlogger_daemon_test.cpp",
+        "src/faultlogger_secure_test.cpp",
+      ]
+
+      deps = [
+        "$faultloggerd_path/interfaces/innerkits/faultloggerd_client:libfaultloggerd",
+        "//base/hiviewdfx/hilog_lite/frameworks/featured:hilog_shared",
+      ]
+    }
+  }
+
+  group("unittest") {
+    deps = [ ":test_service" ]
+  }
+} else {
+  import("//build/config/features.gni")
+  import("//build/test.gni")
+
+  config("module_private_config") {
+    visibility = [ ":*" ]
+
+    include_dirs = [
+      "include",
+      "//utils/native/base/include",
+      "$faultloggerd_path/services",
+    ]
+  }
+
+  ohos_unittest("test_service") {
+    module_out_path = "faultloggerd/service_native"
+    sources = [
+      "$faultloggerd_path/services/fault_logger_config.cpp",
+      "$faultloggerd_path/services/fault_logger_daemon.cpp",
+      "$faultloggerd_path/services/fault_logger_secure.cpp",
+      "src/faultlogger_config_test.cpp",
+      "src/faultlogger_daemon_test.cpp",
+      "src/faultlogger_secure_test.cpp",
+    ]
+
+    configs = [ ":module_private_config" ]
+
+    deps = [
+      "$faultloggerd_path/interfaces/innerkits/faultloggerd_client:libfaultloggerd",
+      "//third_party/googletest:gmock_main",
+      "//third_party/googletest:gtest_main",
+      "//utils/native/base:utils",
+    ]
+
+    external_deps = [ "hilog_native:libhilog" ]
+  }
+
+  group("unittest") {
+    testonly = true
+    deps = [ ":test_service" ]
+  }
+}
