@@ -162,7 +162,11 @@ void DfxConfig::ReadConfig()
     do {
         FILE *fp = nullptr;
         char codeBuffer[CONF_LINE_SIZE] = {0};
+#ifdef SMALL_DEVICES
+        fp = fopen("/etc/faultlogger.conf", "r");
+#else
         fp = fopen("/system/etc/faultlogger.conf", "r");
+#endif
         if (fp == nullptr) {
             break;
         }
