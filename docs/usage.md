@@ -1,6 +1,6 @@
 ## 日志存放路径及结构
 
-OpenHarmony中一些可能导致进程退出的信号会默认由faultloggerd的信号处理器处理，这些信息会记录在以下路径：
+OpenHarmony中一些可能导致进程退出的信号会默认由faultloggerd的信号处理器处理，这些信息会记录在以下路径：\
 ```
 /data/log/faultlog/temp
 ```
@@ -49,14 +49,14 @@ Maps:   <- 虚拟内存空间
 日志文件展示的字段可由配置文件配置，在源码仓的路径为 services/config/faultlogger.conf \
 版本的路径为 system/etc/faultlogger.conf \
 ```
-faultlogLogPersist=false  <- 是否持久化调试日志，包含代码流程日志以及调试日志 \
-displayRigister=true  <- 是否展示故障寄存器信息 \
-displayBacktrace=true  \
-displayMaps=true  <- 是否展示虚拟内存空间映射 \
-displayFaultStack.switch=true <- 是否展示崩溃线程栈内存 \
-displayFaultStack.lowAddressStep=16 <- 崩溃线程堆栈内存向高地址读取的块的数量(逆栈生长方向) \
-displayFaultStack.highAddressStep=4 <- 崩溃线程堆栈内存向低地址读取的块的数量(顺栈生长方向) \
-dumpOtherThreads=false <- 是否展示崩溃进程非崩溃线程的信息 \
+faultlogLogPersist=false  <- 是否持久化调试日志，包含代码流程日志以及调试日志
+displayRigister=true  <- 是否展示故障寄存器信息
+displayBacktrace=true
+displayMaps=true  <- 是否展示虚拟内存空间映射
+displayFaultStack.switch=true <- 是否展示崩溃线程栈内存
+displayFaultStack.lowAddressStep=16 <- 崩溃线程堆栈内存向高地址读取的块的数量(逆栈生长方向)
+displayFaultStack.highAddressStep=4 <- 崩溃线程堆栈内存向低地址读取的块的数量(顺栈生长方向)
+dumpOtherThreads=false <- 是否展示崩溃进程非崩溃线程的信息
 ```
 
 ## 通过日志定位问题
@@ -80,7 +80,7 @@ OpenHarmony\out\rk3568\exe.unstripped
 ```
 addr2line -e [path to libmali-bifrost-g52-g2p0-ohos.so] 94e0bc
 ```
-使用addr2line后，如果得出的行号看起来不是很正确，可以考虑对 地址进行微调(如减1)，或者考虑关闭一些编译优化，已知使用LTO的二进制可能无法正确获得行号。
+使用addr2line后，如果得出的行号看起来不是很正确，可以考虑对 地址进行微调(如减1)，或者考虑关闭一些编译优化，已知使用LTO的二进制可能无法正确获得行号。 \
 
 ## 常见引发崩溃的原因
 目前监控的信号列表可以参考README,这里主要介绍下常见的几种原因:
@@ -121,9 +121,26 @@ Q2.为什么addr2line无法到行 \
 
 Q3.为什么有时候栈看起来不完整 \
 可能有以下几种原因：\
-1)回栈(Unwind)原理上是靠递归读取栈上信息查找前一帧的地址，如果栈帧被覆盖修改，则可能回栈失败
-2)二进制不包含unwind-table或者unwind-table生成有问题
+1)回栈(Unwind)原理上是靠递归读取栈上信息查找前一帧的地址，如果栈帧被覆盖修改，则可能回栈失败 \
+2)二进制不包含unwind-table或者unwind-table生成有问题 \
 
+Q4.进程退出却没有crash日志 \
+进程退出不一定是崩溃，目前在appspawn/init中添加了进程退出的打印 \
+AppSpawn打印到Hilog中的日志如下：\
+```
+93 93 W 0a011/APPSPAWN: [appspawn_service.c:141]com.ohos.launcher with pid 1368 exit with signal:11
+93 93 W 0a011/APPSPAWN: [appspawn_service.c:141]ohos.samples.flashlight with pid 1260 exit with signal:6
+```
+如果hilog丢失还可以使用hisysevent命令查看PROCESS_EXIT打点: \
+```
+{"domain_":"STARTUP","name_":"PROCESS_EXIT","type_":4,"time_":10272435,"tz_":"+0000","pid_":94,"tid_":94,"uid_":0,"PROCESS_NAME":"com.ohos.launcher",
+"PID":1005,"UID":20010010,"STATUS":9,"level_":"CRITICAL","tag_":"Stability","id_":"178184357230479813","info_":""}
+```
+status可以直接使用WIFSIGNALED/WIFEXITED处理，获得实际的exit code 或者signal。\
 
-
+Init中打印日志如下：\
+```
+[pid=1 0][Init][INFO][init_signal_handler.c:47]SigHandler, SIGCHLD received, Service:misc pid:351 uid:0 status:0.
+```
+上述日志表明mis服务正常退出，exit code为0.
 
