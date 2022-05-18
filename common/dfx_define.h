@@ -71,4 +71,7 @@ static const int REGS_PRINT_LEN_ARM = 256;
 static const int REGS_PRINT_LEN_ARM64 = 1024;
 static const int REGS_PRINT_LEN_X86 = 512;
 
+static const int PERFORMANCE_TEST_NUMBER_ONE_HUNDRED = 100;
+static const double PERFORMANCE_TEST_MAX_UNWIND_TIME_S = 0.03;
+
 #endif
