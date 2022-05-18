@@ -17,6 +17,8 @@
 
 #include "dfx_symbols_cache.h"
 
+#include <cxxabi.h>
+
 #include "dfx_define.h"
 #include "libunwind_i-ohos.h"
 
@@ -47,7 +49,17 @@ bool DfxSymbolsCache::GetNameAndOffsetByPc(struct unw_addr_space *as,
         return false;
     }
 
-    if (strlen(buf) < LOG_BUF_LEN - 1) {
+    if (strlen(buf) >= LOG_BUF_LEN - 1) {
+        return false;
+    }
+
+    int status = 0;
+    size_t demangleBufferSize = LOG_BUF_LEN;
+    char demangleBuffer[LOG_BUF_LEN] { 0 };
+    auto ret = abi::__cxa_demangle(buf, demangleBuffer, &demangleBufferSize, &status);
+    if (ret != nullptr) {
+        symbol.funcName = std::string(ret);
+    } else {
         symbol.funcName = std::string(buf, strlen(buf));
     }
 
