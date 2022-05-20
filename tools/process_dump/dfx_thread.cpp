@@ -275,7 +275,7 @@ void DfxThread::SetThreadUnwStopReason(int reason)
 }
 
 #if defined(__LP64__)
-uint64_t ReadTargetMemory(int32_t tid, uintptr_t addr)
+uint64_t ReadTargetMemory(pid_t tid, uintptr_t addr)
 {
     uint64_t ret = 0;
     uintptr_t targetAddr = addr;
@@ -288,7 +288,7 @@ uint64_t ReadTargetMemory(int32_t tid, uintptr_t addr)
     return ret;
 }
 #else
-uint64_t ReadTargetMemory(int32_t tid, uintptr_t addr)
+uint64_t ReadTargetMemory(pid_t tid, uintptr_t addr)
 {
     return ptrace(PTRACE_PEEKTEXT, tid, (void*)addr, nullptr);
 }
