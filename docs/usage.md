@@ -126,21 +126,34 @@ Q3.为什么有时候栈看起来不完整 \
 
 Q4.进程退出却没有crash日志 \
 进程退出不一定是崩溃，目前在appspawn/init中添加了进程退出的打印 \
-AppSpawn打印到Hilog中的日志如下：\
+AppSpawn打印到Hilog中的日志如下：
 ```
 93 93 W 0a011/APPSPAWN: [appspawn_service.c:141]com.ohos.launcher with pid 1368 exit with signal:11
 93 93 W 0a011/APPSPAWN: [appspawn_service.c:141]ohos.samples.flashlight with pid 1260 exit with signal:6
 ```
-如果hilog丢失还可以使用hisysevent命令查看PROCESS_EXIT打点: \
+如果hilog丢失还可以使用hisysevent命令查看PROCESS_EXIT打点:
 ```
 {"domain_":"STARTUP","name_":"PROCESS_EXIT","type_":4,"time_":10272435,"tz_":"+0000","pid_":94,"tid_":94,"uid_":0,"PROCESS_NAME":"com.ohos.launcher",
 "PID":1005,"UID":20010010,"STATUS":9,"level_":"CRITICAL","tag_":"Stability","id_":"178184357230479813","info_":""}
 ```
 status可以直接使用WIFSIGNALED/WIFEXITED处理，获得实际的exit code 或者signal。\
 
-Init中打印日志如下：\
+Init中打印日志如下：
 ```
 [pid=1 0][Init][INFO][init_signal_handler.c:47]SigHandler, SIGCHLD received, Service:misc pid:351 uid:0 status:0.
 ```
 上述日志表明mis服务正常退出，exit code为0.
+
+Q5.打开CoreDump的方法 \
+
+由于rlimit中对core的限制，版本默认不会生成coredump文件，可以手工打开指定进程的coredump
+```
+toybox prlimit -c -H unlimited -P [pid of target process] \\ 设置Hard limit
+toybox prlimit -c -S unlimited -P [pid of target process] \\ 设置Soft limit
+echo /data/log/coredump.%p.bin > /proc/sys/kernel/core_pattern \\ 设置生成文件模板
+```
+如果需要在版本中打开，可以在init.cfg添加类似的命令，设置生成文件的名称以及最大的文件大小
+
+Q6.GDB的位置 \
+版本中未提供，可以使用[三方编译的版本](https://gitee.com/stesen/ohos_cross_tools)
 
