@@ -41,6 +41,8 @@
 #include "fault_logger_secure.h"
 #include "fault_logger_daemon.h"
 
+using namespace std::chrono;
+
 namespace OHOS {
 namespace HiviewDFX {
 using FaultLoggerdRequest = struct FaultLoggerdRequest;
@@ -421,6 +423,10 @@ int32_t FaultLoggerDaemon::CreateFileForRequest(int32_t type, int32_t pid, uint6
         filePath = faultLoggerConfig_->GetLogFilePath();
     } else {
         filePath = faultLoggerConfig_->GetDebugLogFilePath();
+    }
+
+    if (time == 0) {
+        time = duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();
     }
 
     std::stringstream crashTime;
