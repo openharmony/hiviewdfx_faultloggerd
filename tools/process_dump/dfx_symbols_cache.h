@@ -19,7 +19,6 @@
 #define DFX_SYMBOLS_CACHE_H
 
 #include <cinttypes>
-#include <map>
 #include <string>
 #include <vector>
 
