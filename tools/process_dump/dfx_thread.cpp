@@ -382,10 +382,10 @@ void DfxThread::CreateFaultStack(std::shared_ptr<DfxElfMaps> maps)
             }
             std::string itemFaultStack(codeBuffer, codeBuffer + strlen(codeBuffer));
             itemFaultStack.append("\n");
-#if defined(__arm__)            
+#if defined(__arm__)
             currentSp += stepLength;
 #elif defined(__aarch64__)
-            currentSp += (uint64_t)stepLength;    
+            currentSp += (uint64_t)stepLength;
 #endif
             strFaultStack += itemFaultStack;
         }
