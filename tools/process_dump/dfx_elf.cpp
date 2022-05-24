@@ -132,6 +132,9 @@ bool DfxElf::ParseElfProgramHeader()
 
     ElfW(Phdr) *phdrTable = (ElfW(Phdr) *)((uint8_t *)map + startOffset);
     for (size_t i = 0; i < header_.e_phnum; i++) {
+        if ((i + 1) * sizeof(ElfW(Phdr)) + startOffset >= mapSize) {
+            break;
+        }
         ElfW(Phdr) * phdr = &(phdrTable[i]);
         if (phdr->p_type != PT_LOAD) {
             continue;
