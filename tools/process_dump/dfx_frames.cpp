@@ -230,13 +230,10 @@ std::string DfxFrames::PrintFaultStack(int i) const
         return "";
     }
 
-    char buf[LOG_BUF_LEN] = {0};
-    int ret = snprintf_s(buf, sizeof(buf), sizeof(buf) - 1, "Sp%d:%s", i, faultStack_.c_str());
-    if (ret <= 0) {
-        DfxLogError("%s :: snprintf_s failed, line: %d.", __func__, __LINE__);
-    }
-
-    return std::string(buf);
+    std::stringstream ss;
+    ss << "Sp" << i;
+    ss << ":" << faultStack_;
+    return ss.str();
 }
 
 std::string DfxFrames::ToString() const
