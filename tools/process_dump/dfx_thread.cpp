@@ -274,6 +274,26 @@ void DfxThread::SetThreadUnwStopReason(int reason)
     DfxLogDebug("Exit %s :: unwStopReason_(%d).", __func__, unwStopReason_);
 }
 
+#if defined(__LP64__)
+uint64_t ReadTargetMemory(pid_t tid, uintptr_t addr)
+{
+    uint64_t ret = 0;
+    uintptr_t targetAddr = addr;
+    long* retAddr = reinterpret_cast<long*>(&ret);
+    for (size_t i = 0; i < sizeof(uint64_t) / sizeof(long); i++) {
+        *retAddr = ptrace(PTRACE_PEEKTEXT, tid, (void*)targetAddr, nullptr);
+        targetAddr += sizeof(long);
+        retAddr += 1;
+    }
+    return ret;
+}
+#else
+int ReadTargetMemory(pid_t tid, uintptr_t addr)
+{
+    return ptrace(PTRACE_PEEKTEXT, tid, (void*)addr, nullptr);
+}
+#endif
+
 void DfxThread::CreateFaultStack(std::shared_ptr<DfxElfMaps> maps)
 {
     DfxLogDebug("Enter %s.", __func__);
@@ -285,36 +305,36 @@ void DfxThread::CreateFaultStack(std::shared_ptr<DfxElfMaps> maps)
         bool displayAll = true;
         bool displayAdjust = false;
 #if defined(__arm__)
-#define printLength "08"
+#define PRINT_FORMAT "%08x"
         int startSp, currentSp, nextSp, storeData, totalStepSize, filterStart, filterEnd, regLr;
         int stepLength = 4;
         currentSp = (int)dfxFrames_[i]->GetFrameSp();
-        regLr = (i+1 == dfxFrames_.size()) ? 0 : (int)dfxFrames_[i+1]->GetFrameLr();
+        regLr = (i + 1 == dfxFrames_.size()) ? 0 : (int)dfxFrames_[i + 1]->GetFrameLr();
 #elif defined(__aarch64__)
-#define printLength "16"
+#define PRINT_FORMAT "%016llx"
         uint64_t startSp, currentSp, nextSp, storeData, totalStepSize, filterStart, filterEnd, regLr;
         int stepLength = 8;
         currentSp = dfxFrames_[i]->GetFrameSp();
-        regLr = (i+1 == dfxFrames_.size()) ? 0 : dfxFrames_[i+1]->GetFrameLr();
+        regLr = (i + 1 == dfxFrames_.size()) ? 0 : dfxFrames_[i + 1]->GetFrameLr();
 #endif
         std::shared_ptr<DfxElfMap> map = nullptr;
         bool mapCheck = maps->FindMapByAddr((uintptr_t)regLr, map);
-        startSp = currentSp = (unsigned int)currentSp & (~FAULTSTACK_SP_REVERSE);
+        startSp = currentSp = currentSp & (~(sizeof(long) - 1));
 
         if (i == (dfxFrames_.size() - 1)) {
             nextSp = currentSp + FAULTSTACK_FIRST_FRAME_SEARCH_LENGTH;
         } else {
 #if defined(__arm__)
-            nextSp = (int)dfxFrames_[i+1]->GetFrameSp();
+            nextSp = (int)dfxFrames_[i + 1]->GetFrameSp();
 #elif defined(__aarch64__)
-            nextSp = dfxFrames_[i+1]->GetFrameSp();
+            nextSp = dfxFrames_[i + 1]->GetFrameSp();
 #endif
         }
-        totalStepSize = (nextSp - currentSp)/stepLength;
+        totalStepSize = (nextSp - currentSp) / stepLength;
         if (totalStepSize > (lowAddressStep + highAddressStep)) {
             displayAll = false;
-            filterStart = currentSp + highAddressStep*stepLength;
-            filterEnd   = currentSp + (totalStepSize - lowAddressStep)*stepLength;
+            filterStart = currentSp + highAddressStep * stepLength;
+            filterEnd   = currentSp + (totalStepSize - lowAddressStep) * stepLength;
         }
         while (currentSp < nextSp) {
             if (!displayAll && (currentSp == filterStart)) {
@@ -329,20 +349,20 @@ void DfxThread::CreateFaultStack(std::shared_ptr<DfxElfMaps> maps)
                 DfxLogError("%s :: memset_s failed, err = %d\n", __func__, err);
             }
             if (currentSp == startSp) {
-                auto pms = sprintf_s(codeBuffer, sizeof(codeBuffer), "%" printLength "x", currentSp);
+                auto pms = sprintf_s(codeBuffer, sizeof(codeBuffer), PRINT_FORMAT, currentSp);
                 if (pms <= 0) {
                     DfxLogError("%s :: sprintf_s failed.", __func__);
                 }
             } else {
-                auto pms = sprintf_s(codeBuffer, sizeof(codeBuffer), "    %" printLength "x", currentSp);
+                auto pms = sprintf_s(codeBuffer, sizeof(codeBuffer), "    " PRINT_FORMAT, currentSp);
                 if (pms <= 0) {
                     DfxLogError("%s :: sprintf_s failed.", __func__);
                 }
             }
-            storeData = ptrace(PTRACE_PEEKTEXT, tid_, (void*)currentSp, NULL);
+            storeData = ReadTargetMemory(tid_, static_cast<uintptr_t>(currentSp));
             (void)sprintf_s(codeBuffer + strlen(codeBuffer),
                             sizeof(codeBuffer) - strlen(codeBuffer),
-                            " %" printLength "x",
+                            " " PRINT_FORMAT,
                             storeData);
             if ((storeData == regLr) && (mapCheck)) {
                 auto pms = sprintf_s(codeBuffer + strlen(codeBuffer), \
