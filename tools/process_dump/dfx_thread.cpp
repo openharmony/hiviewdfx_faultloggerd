@@ -275,7 +275,7 @@ void DfxThread::SetThreadUnwStopReason(int reason)
 }
 
 #if defined(__LP64__)
-uint64_t ReadTargetMemory(int32_t tid, uintptr_t addr)
+uint64_t ReadTargetMemory(pid_t tid, uintptr_t addr)
 {
     uint64_t ret = 0;
     uintptr_t targetAddr = addr;
@@ -288,7 +288,7 @@ uint64_t ReadTargetMemory(int32_t tid, uintptr_t addr)
     return ret;
 }
 #else
-uint64_t ReadTargetMemory(int32_t tid, uintptr_t addr)
+int ReadTargetMemory(pid_t tid, uintptr_t addr)
 {
     return ptrace(PTRACE_PEEKTEXT, tid, (void*)addr, nullptr);
 }
@@ -330,12 +330,21 @@ void DfxThread::CreateFaultStack(std::shared_ptr<DfxElfMaps> maps)
             nextSp = dfxFrames_[i + 1]->GetFrameSp();
 #endif
         }
+#if defined(__arm__)
         totalStepSize = (nextSp - currentSp) / stepLength;
         if (totalStepSize > (lowAddressStep + highAddressStep)) {
             displayAll = false;
             filterStart = currentSp + highAddressStep * stepLength;
             filterEnd   = currentSp + (totalStepSize - lowAddressStep) * stepLength;
         }
+#elif defined(__aarch64__)
+        totalStepSize = (nextSp - currentSp) / (uint64_t)stepLength;
+        if ((int64_t)totalStepSize > ((int64_t)lowAddressStep + highAddressStep)) {
+            displayAll = false;
+            filterStart = currentSp + (uint64_t)highAddressStep * (uint64_t)stepLength;
+            filterEnd   = (uint64_t)(currentSp + (totalStepSize - (uint64_t)lowAddressStep) * stepLength);
+        }
+#endif
         while (currentSp < nextSp) {
             if (!displayAll && (currentSp == filterStart)) {
                 std::string itemFaultStack("    ...\n");
@@ -373,7 +382,11 @@ void DfxThread::CreateFaultStack(std::shared_ptr<DfxElfMaps> maps)
             }
             std::string itemFaultStack(codeBuffer, codeBuffer + strlen(codeBuffer));
             itemFaultStack.append("\n");
+#if defined(__arm__)
             currentSp += stepLength;
+#elif defined(__aarch64__)
+            currentSp += (uint64_t)stepLength;
+#endif
             strFaultStack += itemFaultStack;
         }
         dfxFrames_[i]->SetFrameFaultStack(strFaultStack);
