@@ -136,8 +136,9 @@ bool FaultLoggerSecure::CheckCallerUID (const int callingUid, const int32_t pid)
     }
 
     // If caller's is BMS / root or caller's uid/pid is validate, just return true
-    if ((callingUid == FaultLoggerSecure::BMS_UID) || \
-        (callingUid == FaultLoggerSecure::ROOT_UID) ||\
+    if ((callingUid == FaultLoggerSecure::BMS_UID) ||
+        (callingUid == FaultLoggerSecure::ROOT_UID) ||
+        (callingUid == FaultLoggerSecure::HIVIEW_UID) ||
         CheckUidAndPid(callingUid, pid)) {
         ret = true;
     } else {

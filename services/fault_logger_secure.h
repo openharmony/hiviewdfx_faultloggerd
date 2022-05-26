@@ -34,6 +34,7 @@ public:
     constexpr static int32_t ROOT_UID = 0;
     constexpr static int32_t BMS_UID = 1000;
     constexpr static int32_t BMS_GID = 1000;
+    constexpr static int32_t HIVIEW_UID = 1201;
     constexpr static int32_t BASE_SYS_UID = 2100;
     constexpr static int32_t MAX_SYS_UID = 2899;
     constexpr static int32_t BASE_SYS_VEN_UID = 5000;
