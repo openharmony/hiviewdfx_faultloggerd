@@ -145,7 +145,7 @@ uint64_t DfxFrames::GetRelativePc(const std::shared_ptr<DfxElfMaps> head)
         }
     }
 
-    if (!map_->IsVaild()) {
+    if (!map_->IsValid()) {
         DfxLogWarn("No elf map:%s.", map_->GetMapPath().c_str());
         return 0;
     }
