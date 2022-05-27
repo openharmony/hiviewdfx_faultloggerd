@@ -32,7 +32,7 @@ public:
     DfxElfMap() = default;
     ~DfxElfMap() = default;
     static std::shared_ptr<DfxElfMap> Create(const std::string mapInfo, int size);
-    bool IsVaild();
+    bool IsValid();
     std::string PrintMap();
 
     uint64_t GetMapBegin() const;

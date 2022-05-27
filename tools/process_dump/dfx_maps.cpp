@@ -179,7 +179,7 @@ bool DfxElfMaps::CheckPcIsValid(uint64_t pc) const
     return ret;
 }
 
-bool DfxElfMap::IsVaild()
+bool DfxElfMap::IsValid()
 {
     DfxLogDebug("Enter %s.", __func__);
     if (path_.length() == 0) {
