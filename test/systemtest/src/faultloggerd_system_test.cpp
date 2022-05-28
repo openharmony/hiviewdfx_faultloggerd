@@ -263,10 +263,15 @@ int FaultLoggerdSystemTest::CheckCountNum(std::string filePath, std::string pid,
 {
     ifstream file;
     std::map<std::string, std::string> CmdKey = {
+#if defined(__LP64__)
+        { std::string("triSIGILL"),  std::string("SIGTRAP") },
+        { std::string("triSIGTRAP"), std::string("SIGILL") },
+#else
         { std::string("triSIGILL"),  std::string("SIGILL") },
-        { std::string("triSIGSEGV"), std::string("SIGSEGV") },
         { std::string("triSIGTRAP"), std::string("SIGTRAP") },
-        { std::string("triSIGABRT"), std::string("SIGABRT") },
+#endif
+	{ std::string("triSIGSEGV"), std::string("SIGSEGV") },
+	{ std::string("triSIGABRT"), std::string("SIGABRT") },
 
         { std::string("MaxStack"), std::string("SIGSEGV") },
         { std::string("MaxMethod"), std::string("SIGSEGV") },
@@ -497,7 +502,11 @@ int FaultLoggerdSystemTest::CheckCountNumStackTop(std::string filePath, std::str
     std::string sp = FaultLoggerdSystemTest::GetStackTop();
     ifstream file;
     std::map<std::string, std::string> CmdKey = {
+#if defined(__LP64__)
+        { std::string("StackTop"), std::string("SIGTRAP") },
+#else
         { std::string("StackTop"), std::string("SIGILL") },
+#endif
     };
     std::map<std::string, std::string>::iterator key;
     key = CmdKey.find(ErrorCMD);
