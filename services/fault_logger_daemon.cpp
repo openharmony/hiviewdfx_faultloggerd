@@ -425,7 +425,7 @@ int32_t FaultLoggerDaemon::CreateFileForRequest(int32_t type, int32_t pid, uint6
     }
 
     if (time == 0) {
-        time = duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();
+        time = (uint64_t)duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();
     }
 
     std::stringstream crashTime;
