@@ -61,7 +61,6 @@ static const std::string LOG_LABLE = "FaultLoggerd";
 static const std::string DAEMON_RESP = "RESP:COMPLETE";
 static const char FAULTLOGGERD_SOCK_PATH[] = "/dev/unix/socket/faultloggerd.server";
 
-const int SIGDUMP = 35;
 const int MINUS_ONE_THOUSAND = -1000;
 static const int DAEMON_REMOVE_FILE_TIME_S = 60;
 
