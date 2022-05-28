@@ -15,7 +15,9 @@
 #ifndef DFX_DEFINE_H
 #define DFX_DEFINE_H
 
-static const int NAME_LEN = 128;
+#define NAME_LEN 128
+#define SIGDUMP 35
+#define PROCESSDUMP_TIMEOUT 30
 
 #if defined(__arm__)
 static const int USER_REG_NUM = 16;
@@ -47,8 +49,6 @@ static const int BACK_STACK_MAX_STEPS = 64;
 // 128K back trace stack size
 static const int BACK_STACK_INFO_SIZE = 128 * 1024;
 
-static const int SIGDUMP = 35;
-
 static const int DUMP_CATCHER_NUMBER_ONE = 1;
 static const int DUMP_CATCHER_NUMBER_TWO = 2;
 static const int DUMP_CATCHER_NUMBER_THREE = 3;
@@ -64,8 +64,6 @@ static const int BACK_TRACE_RING_BUFFER_PRINT_WAIT_TIME_MS = 10;
 
 static const int LOG_BUF_LEN = 1024;
 static const int FILE_WRITE_BUF_LEN = 4096;
-
-static const int PROCESSDUMP_TIMEOUT = 30;
 
 static const int REGS_PRINT_LEN_ARM = 256;
 static const int REGS_PRINT_LEN_ARM64 = 1024;

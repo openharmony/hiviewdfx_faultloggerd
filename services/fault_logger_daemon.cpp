@@ -61,7 +61,6 @@ static const std::string LOG_LABLE = "FaultLoggerd";
 static const std::string DAEMON_RESP = "RESP:COMPLETE";
 static const char FAULTLOGGERD_SOCK_PATH[] = "/dev/unix/socket/faultloggerd.server";
 
-const int SIGDUMP = 35;
 const int MINUS_ONE_THOUSAND = -1000;
 static const int DAEMON_REMOVE_FILE_TIME_S = 60;
 
@@ -426,7 +425,7 @@ int32_t FaultLoggerDaemon::CreateFileForRequest(int32_t type, int32_t pid, uint6
     }
 
     if (time == 0) {
-        time = duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();
+        time = (uint64_t)duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();
     }
 
     std::stringstream crashTime;
