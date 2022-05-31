@@ -259,9 +259,11 @@ bool DfxDumpCatcherLocalDumper::ExecLocalDump(int tid, size_t skipFramNum)
         auto& curFrame = g_FrameV[index - skipFramNum];
         struct map_info* map = unw_get_map(&cursor);
         errno_t err = EOK;
+	bool isValidFrame = true;
         if ((map != NULL) && (strlen(map->path) < SYMBOL_BUF_SIZE - 1)) {
             err = strcpy_s(curFrame.mapName_, SYMBOL_BUF_SIZE, map->path);
         } else {
+	    isValidFrame = false;	
             err = strcpy_s(curFrame.mapName_, SYMBOL_BUF_SIZE, "Unknown");
         }
         if (err != EOK) {
@@ -273,6 +275,9 @@ bool DfxDumpCatcherLocalDumper::ExecLocalDump(int tid, size_t skipFramNum)
         curFrame.SetFrameRelativePc((uint64_t)relPc);
         DfxDumpCatcherLocalDumper::g_curIndex = static_cast<uint32_t>(index - skipFramNum);
         index++;
+	if (!isValidFrame) {
+	    break;
+	}
     }
     return true;
 }
