@@ -41,6 +41,7 @@
 namespace OHOS {
 namespace HiviewDFX {
 static const int SYMBOL_BUF_SIZE = 4096;
+// we should have at least 2 frames, one is pc and the other is lr
 static const int INVALID_FRAME_COUNT = 2;
 
 DfxUnwindRemote &DfxUnwindRemote::GetInstance()
