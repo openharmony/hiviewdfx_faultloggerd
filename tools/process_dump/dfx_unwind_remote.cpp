@@ -42,7 +42,7 @@ namespace OHOS {
 namespace HiviewDFX {
 static const int SYMBOL_BUF_SIZE = 4096;
 // we should have at least 2 frames, one is pc and the other is lr
-static const int INVALID_FRAME_COUNT = 2;
+static const int MIN_VALID_FRAME_COUNT = 2;
 
 DfxUnwindRemote &DfxUnwindRemote::GetInstance()
 {
@@ -199,7 +199,7 @@ bool DfxUnwindRemote::DfxUnwindRemoteDoUnwindStep(size_t const & index,
     OHOS::HiviewDFX::ProcessDumper::GetInstance().PrintDumpProcessMsg(frame->PrintFrame());
  
     DfxLogDebug("Exit %s :: index(%d), framePc(0x%x), frameSp(0x%x).", __func__, index, framePc, frameSp);
-    return index < INVALID_FRAME_COUNT || isValidFrame;
+    return index < MIN_VALID_FRAME_COUNT || isValidFrame;
 }
 
 bool DfxUnwindRemote::UnwindThread(std::shared_ptr<DfxProcess> process, std::shared_ptr<DfxThread> thread)
