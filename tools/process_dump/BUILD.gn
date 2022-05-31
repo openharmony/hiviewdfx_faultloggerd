@@ -21,6 +21,12 @@ if (defined(ohos_lite)) {
       cflags = []
     }
 
+    defines = [
+      "HAVE_CONFIG_H",
+      "HAVE_ELF_H",
+      "HAVE_LINK_H",
+    ]
+
     visibility = [ "*:*" ]
 
     include_dirs = [
@@ -76,6 +82,13 @@ if (defined(ohos_lite)) {
       "$faultloggerd_path/interfaces/innerkits/faultloggerd_client/include",
       "$hilog_lite_include_path",
     ]
+
+    defines = [
+      "HAVE_CONFIG_H",
+      "HAVE_ELF_H",
+      "HAVE_LINK_H",
+    ]
+
     sources = [
       "//base/hiviewdfx/faultloggerd/utils/directory_ex.cpp",
       "cppcrash_reporter.cpp",

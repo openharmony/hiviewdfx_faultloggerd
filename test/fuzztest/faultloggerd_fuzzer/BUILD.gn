@@ -16,35 +16,8 @@ import("//base/hiviewdfx/faultloggerd/faultloggerd.gni")
 if (defined(ohos_lite)) {
   import("//build/lite/config/component/lite_component.gni")
   import("//build/lite/config/test.gni")
-
-  if (ohos_build_type == "debug") {
-    fuzztest("FaultloggerdFuzzTest") {
-      output_extension = "bin"
-      output_dir = "$root_out_dir/test/unittest/faultloggerd"
-      include_dirs = [
-        "./",
-        "//utils/native/base/include",
-        "$hilog_lite_include_path",
-        "$faultloggerd_path/common",
-        "$faultloggerd_path/tools/process_dump",
-        "$faultloggerd_path/interfaces/innerkits/dump_catcher/include",
-      ]
-      cflags_cc = [
-        "-g",
-        "-O0",
-        "-Wno-unused-variable",
-        "-fno-omit-frame-pointer",
-      ]
-      sources = [ "./faultloggerd_fuzzer.cpp" ]
-      deps = [
-        "$faultloggerd_path/interfaces/innerkits/dump_catcher:lib_dfx_dump_catcher",
-        "//base/hiviewdfx/hilog_lite/frameworks/featured:hilog_shared",
-      ]
-    }
-  }
-
   group("fuzztest") {
-    deps = [ ":FaultloggerdFuzzTest" ]
+    deps = []
   }
 } else {
   import("//build/config/features.gni")
