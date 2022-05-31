@@ -263,7 +263,7 @@ bool DfxDumpCatcherLocalDumper::ExecLocalDump(int tid, size_t skipFramNum)
         if ((map != NULL) && (strlen(map->path) < SYMBOL_BUF_SIZE - 1)) {
             err = strcpy_s(curFrame.mapName_, SYMBOL_BUF_SIZE, map->path);
         } else {
-	    isValidFrame = false;
+            isValidFrame = false;
             err = strcpy_s(curFrame.mapName_, SYMBOL_BUF_SIZE, "Unknown");
         }
         if (err != EOK) {

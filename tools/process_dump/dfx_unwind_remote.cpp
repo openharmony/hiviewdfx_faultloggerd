@@ -189,10 +189,10 @@ bool DfxUnwindRemote::DfxUnwindRemoteDoUnwindStep(size_t const & index,
         uint64_t funcOffset;
         if (cache_->GetNameAndOffsetByPc(as_, framePc, funcName, funcOffset)) {
             frame->SetFrameFuncName(funcName);
-	    frame->SetFrameFuncOffset(funcOffset);
-        }	
+            frame->SetFrameFuncOffset(funcOffset);
+	}
     } else {
-        isValidFrame = false;    
+        isValidFrame = false;  
     }
 
     OHOS::HiviewDFX::ProcessDumper::GetInstance().PrintDumpProcessMsg(frame->PrintFrame());
