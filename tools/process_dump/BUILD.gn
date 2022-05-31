@@ -18,6 +18,12 @@ if (defined(ohos_lite)) { # only support arm
     visibility = [ "*:*" ]
     cflags = []
 
+    defines = [
+      "HAVE_CONFIG_H",
+      "HAVE_ELF_H",
+      "HAVE_LINK_H",
+    ]
+
     include_dirs = [
       ".",
       "$faultloggerd_path/common",
@@ -65,6 +71,13 @@ if (defined(ohos_lite)) { # only support arm
       "$hilog_lite_include_path",
       "//third_party/libunwind/include",
     ]
+
+    defines = [
+      "HAVE_CONFIG_H",
+      "HAVE_ELF_H",
+      "HAVE_LINK_H",
+    ]
+
     sources = [
       "//base/hiviewdfx/faultloggerd/utils/directory_ex.cpp",
       "cppcrash_reporter.cpp",
