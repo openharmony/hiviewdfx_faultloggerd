@@ -41,6 +41,7 @@
 namespace OHOS {
 namespace HiviewDFX {
 static const int SYMBOL_BUF_SIZE = 4096;
+static const int INVALID_FRAME_COUNT = 2;
 
 DfxUnwindRemote &DfxUnwindRemote::GetInstance()
 {
@@ -182,21 +183,23 @@ bool DfxUnwindRemote::DfxUnwindRemoteDoUnwindStep(size_t const & index,
         frame->SetFrameRelativePc(unw_get_rel_pc(&cursor));
     }
     struct map_info* mapInfo = unw_get_map(&cursor);
+    bool isValidFrame = true;
     if (mapInfo != nullptr) {
         frame->SetFrameMapName(mapInfo->path);
-    }
-
-    std::string funcName;
-    uint64_t funcOffset;
-    if (cache_->GetNameAndOffsetByPc(as_, framePc, funcName, funcOffset)) {
-        frame->SetFrameFuncName(funcName);
-        frame->SetFrameFuncOffset(funcOffset);
+        std::string funcName;
+        uint64_t funcOffset;
+        if (cache_->GetNameAndOffsetByPc(as_, framePc, funcName, funcOffset)) {
+            frame->SetFrameFuncName(funcName);
+            frame->SetFrameFuncOffset(funcOffset);
+        }
+    } else {
+        isValidFrame = false;
     }
 
     OHOS::HiviewDFX::ProcessDumper::GetInstance().PrintDumpProcessMsg(frame->PrintFrame());
  
     DfxLogDebug("Exit %s :: index(%d), framePc(0x%x), frameSp(0x%x).", __func__, index, framePc, frameSp);
-    return true;
+    return index < INVALID_FRAME_COUNT || isValidFrame;
 }
 
 bool DfxUnwindRemote::UnwindThread(std::shared_ptr<DfxProcess> process, std::shared_ptr<DfxThread> thread)
