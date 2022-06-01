@@ -379,7 +379,7 @@ void ReadStringFromFile(char* path, char* pDestStore)
     }
     char* p = name;
     int i = 0;
-    while (*p != '\0' && i < NAME_LEN ) {
+    while (*p != '\0' && i < NAME_LEN) {
         if (*p == '\n') {
             break;
         }
