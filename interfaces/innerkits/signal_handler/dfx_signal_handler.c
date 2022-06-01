@@ -136,7 +136,7 @@ static int32_t InheritCapabilities(void)
     capHeader.version = _LINUX_CAPABILITY_VERSION_3;
     capHeader.pid = 0;
     struct __user_cap_data_struct capData[2];
-    cap_user_header_t pCapData = &capData[0];
+    cap_user_data_t pCapData = &capData[0];
     if (capget(&capHeader, pCapData) == -1) {
         DfxLogError("Failed to get origin cap data");
         return -1;
