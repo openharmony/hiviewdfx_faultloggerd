@@ -103,7 +103,6 @@ static pthread_mutex_t g_signalHandlerMutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutex_t g_dumpMutex = PTHREAD_MUTEX_INITIALIZER;
 static int g_pipefd[2] = {-1, -1};
 static BOOL g_hasInit = FALSE;
-static const int MAX_HANDLED_TID_NUMBER = 256;
 static const int SIGNALHANDLER_TIMEOUT = 10000; // 10000 us
 static int g_lastHandledTid[MAX_HANDLED_TID_NUMBER] = {0};
 static int g_lastHandledTidIndex = 0;
@@ -137,14 +136,15 @@ static int32_t InheritCapabilities(void)
     capHeader.version = _LINUX_CAPABILITY_VERSION_3;
     capHeader.pid = 0;
     struct __user_cap_data_struct capData[2];
-    if (capget(&capHeader, &capData[0]) == -1) {
+    cap_user_header_t pCapData = &capData[0];
+    if (capget(&capHeader, pCapData) == -1) {
         DfxLogError("Failed to get origin cap data");
         return -1;
     }
 
     capData[0].inheritable = capData[0].permitted;
     capData[1].inheritable = capData[1].permitted;
-    if (capset(&capHeader, &capData[0]) == -1) {
+    if (capset(&capHeader, pCapData) == -1) {
         DfxLogError("Failed to set cap data");
         return -1;
     }
@@ -379,8 +379,8 @@ void ReadStringFromFile(char* path, char* pDestStore)
     }
     char* p = name;
     int i = 0;
-    while (*p != '\0') {
-        if ((*p == '\n') || (i == NAME_LEN)) {
+    while (*p != '\0' && i < NAME_LEN ) {
+        if (*p == '\n') {
             break;
         }
         nameFilter[i] = *p;
@@ -458,7 +458,7 @@ static void DFX_SignalHandler(int sig, siginfo_t *si, void *context)
     GetThreadName();
     GetProcessName();
 
-    if (sig != SIGDUMP && g_lastHandledTidIndex < MAX_HANDLED_TID_NUMBER) {
+    if (sig != SIGDUMP && g_lastHandledTidIndex < MAX_HANDLED_TID_NUMBER && g_lastHandledTidIndex >= 0) {
         g_lastHandledTid[g_lastHandledTidIndex] = g_request.tid;
         g_lastHandledTidIndex = g_lastHandledTidIndex + 1;
     }

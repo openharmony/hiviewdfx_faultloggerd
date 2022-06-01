@@ -18,6 +18,7 @@
 #define NAME_LEN 128
 #define SIGDUMP 35
 #define PROCESSDUMP_TIMEOUT 30
+#define MAX_HANDLED_TID_NUMBER 256
 
 #if defined(__arm__)
 static const int USER_REG_NUM = 16;
