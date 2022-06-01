@@ -515,7 +515,6 @@ void FaultLoggerDaemon::LoopAcceptRequestAndFork(int socketFd)
             exit(0);
         }
         close(connectionFd);
-        connectionFd = -1;
     }
 
     DfxLogInfo("%s :: %s: Exit.", LOG_LABLE.c_str(), __func__);
