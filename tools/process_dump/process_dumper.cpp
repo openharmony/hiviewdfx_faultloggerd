@@ -301,9 +301,7 @@ void ProcessDumper::Dump(bool isSignalHdlr, ProcessDumpType type, int32_t pid, i
     DfxLogDebug("isSignalHdlr(%d), type(%d), pid(%d), tid(%d).", isSignalHdlr, type, pid, tid);
 
     std::shared_ptr<DfxProcess> process = nullptr;
-    int32_t fromSignalHandler = 0;
     if (isSignalHdlr) {
-        fromSignalHandler = 1;
         DumpProcessWithSignalContext(process, request);
     } else {
         if (type == DUMP_TYPE_PROCESS) {

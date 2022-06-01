@@ -256,7 +256,6 @@ bool DfxUnwindRemote::UnwindThread(std::shared_ptr<DfxProcess> process, std::sha
     unw_word_t oldPc = 0;
     size_t crashUnwStepPosition = 0;
     size_t skipFrames = 0;
-    bool useLrUnwStep = false;
     bool isSigDump = process->GetIsSignalDump();
     do {
         unw_word_t tmpPc = 0;
@@ -276,7 +275,6 @@ bool DfxUnwindRemote::UnwindThread(std::shared_ptr<DfxProcess> process, std::sha
             // Lr position found in crash thread. We need:
             // 1. mark skipFrames.
             // 2. Add pc zero frame.
-            useLrUnwStep = true;
             skipFrames = index;
             std::shared_ptr<DfxFrames> frame = thread->GetAvaliableFrame();
             frame->SetFrameIndex(0);
