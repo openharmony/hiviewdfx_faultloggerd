@@ -136,15 +136,14 @@ static int32_t InheritCapabilities(void)
     capHeader.version = _LINUX_CAPABILITY_VERSION_3;
     capHeader.pid = 0;
     struct __user_cap_data_struct capData[2];
-    cap_user_data_t pCapData = &capData[0];
-    if (capget(&capHeader, pCapData) == -1) {
+    if (capget(&capHeader, &capData[0]) == -1) {
         DfxLogError("Failed to get origin cap data");
         return -1;
     }
 
     capData[0].inheritable = capData[0].permitted;
     capData[1].inheritable = capData[1].permitted;
-    if (capset(&capHeader, pCapData) == -1) {
+    if (capset(&capHeader, &capData[0]) == -1) {
         DfxLogError("Failed to set cap data");
         return -1;
     }
@@ -379,8 +378,8 @@ void ReadStringFromFile(char* path, char* pDestStore)
     }
     char* p = name;
     int i = 0;
-    while (*p != '\0' && i < NAME_LEN) {
-        if (*p == '\n') {
+    while (*p != '\0') {
+        if (*p == '\n' || i == NAME_LEN) {
             break;
         }
         nameFilter[i] = *p;
@@ -458,7 +457,7 @@ static void DFX_SignalHandler(int sig, siginfo_t *si, void *context)
     GetThreadName();
     GetProcessName();
 
-    if (sig != SIGDUMP && g_lastHandledTidIndex < MAX_HANDLED_TID_NUMBER && g_lastHandledTidIndex >= 0) {
+    if (sig != SIGDUMP && g_lastHandledTidIndex < MAX_HANDLED_TID_NUMBER) {
         g_lastHandledTid[g_lastHandledTidIndex] = g_request.tid;
         g_lastHandledTidIndex = g_lastHandledTidIndex + 1;
     }
