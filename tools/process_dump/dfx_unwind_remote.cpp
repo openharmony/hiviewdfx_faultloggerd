@@ -147,29 +147,8 @@ bool DfxUnwindRemote::DfxUnwindRemoteDoUnwindStep(size_t const & index,
         DfxLogWarn("Fail to get program counter.");
         return false;
     }
-
-    std::shared_ptr<DfxRegs> regs = thread->GetThreadRegs();
-    bool isSignalHdlr = process->GetIsSignalHdlr();
-    if (regs != NULL) {
-        std::vector<uintptr_t> regsVector = regs->GetRegsData();
-        if (regsVector[REG_PC_NUM] != framePc) {
-            framePc = DfxUnwindRemoteDoAdjustPc(cursor, framePc);
-        }
-    } else {
-        if (!isSignalHdlr) {
-            framePc = DfxUnwindRemoteDoAdjustPc(cursor, framePc);
-        }
-    }
-
     frame->SetFramePc(framePc);
 
-    uint64_t frameLr = frame->GetFrameLr();
-    if (unw_get_reg(&cursor, REG_LR_NUM, (unw_word_t*)(&frameLr))) {
-        DfxLogWarn("Fail to get lr.");
-        frame->SetFrameLr(0);
-    } else {
-        frame->SetFrameLr(frameLr);
-    }
     uint64_t frameSp = frame->GetFrameSp();
     if (unw_get_reg(&cursor, UNW_REG_SP, (unw_word_t*)(&frameSp))) {
         DfxLogWarn("Fail to get stack pointer.");
@@ -177,12 +156,12 @@ bool DfxUnwindRemote::DfxUnwindRemoteDoUnwindStep(size_t const & index,
     }
     frame->SetFrameSp(frameSp);
 
-    if (index != 0) {
-        frame->SetFrameRelativePc(unw_get_rel_pc(&cursor) - unw_get_previous_instr_sz(&cursor));
-    } else {
-        // pc frame, so needn't adjust relpc.
-        frame->SetFrameRelativePc(unw_get_rel_pc(&cursor));
+    uint64_t relPc = unw_get_rel_pc(&cursor);
+    if (index == 0) {
+        relPc = DfxUnwindRemoteDoAdjustPc(cursor, relPc);
     }
+    frame->SetFrameRelativePc(relPc);
+
     struct map_info* mapInfo = unw_get_map(&cursor);
     bool isValidFrame = true;
     if (mapInfo != nullptr) {
@@ -197,10 +176,12 @@ bool DfxUnwindRemote::DfxUnwindRemoteDoUnwindStep(size_t const & index,
         isValidFrame = false;
     }
 
-    OHOS::HiviewDFX::ProcessDumper::GetInstance().PrintDumpProcessMsg(frame->PrintFrame());
- 
+    bool ret = index < MIN_VALID_FRAME_COUNT || isValidFrame;
+    if (ret) {
+        OHOS::HiviewDFX::ProcessDumper::GetInstance().PrintDumpProcessMsg(frame->PrintFrame());
+    }
     DfxLogDebug("Exit %s :: index(%d), framePc(0x%x), frameSp(0x%x).", __func__, index, framePc, frameSp);
-    return index < MIN_VALID_FRAME_COUNT || isValidFrame;
+    return ret;
 }
 
 bool DfxUnwindRemote::UnwindThread(std::shared_ptr<DfxProcess> process, std::shared_ptr<DfxThread> thread)
@@ -213,24 +194,13 @@ bool DfxUnwindRemote::UnwindThread(std::shared_ptr<DfxProcess> process, std::sha
 
     pid_t tid = thread->GetThreadId();
     std::shared_ptr<DfxRegs> regs = thread->GetThreadRegs();
-
     char buf[LOG_BUF_LEN] = {0};
     int ret = snprintf_s(buf, sizeof(buf), sizeof(buf) - 1, "Tid:%d, Name:%s\n", tid, thread->GetThreadName().c_str());
     if (ret <= 0) {
         DfxLogError("%s :: snprintf_s failed, line: %d.", __func__, __LINE__);
     }
+
     OHOS::HiviewDFX::ProcessDumper::GetInstance().PrintDumpProcessMsg(std::string(buf));
-
-    uintptr_t regStorePc = 0;
-    uintptr_t regStoreLr = 0;
-    uintptr_t regStoreSp = 0;
-    if (regs != nullptr) {
-        std::vector<uintptr_t> regsVector = regs->GetRegsData();
-        regStorePc = regsVector[REG_PC_NUM];
-        regStoreLr = regsVector[REG_LR_NUM];
-        regStoreSp = regsVector[REG_SP_NUM];
-    }
-
     void *context = _UPT_create(tid);
     if (!context) {
         return false;
@@ -251,77 +221,32 @@ bool DfxUnwindRemote::UnwindThread(std::shared_ptr<DfxProcess> process, std::sha
         return false;
     }
 
+    if (regs != nullptr) {
+        std::vector<uintptr_t> regsVector = regs->GetRegsData();
+        uwn_set_context(&cursor, regsVector.data(), regsVector.size());
+    }
+
     size_t index = 0;
     int unwRet = 0;
     unw_word_t oldPc = 0;
-    size_t crashUnwStepPosition = 0;
-    size_t skipFrames = 0;
-    bool isSigDump = process->GetIsSignalDump();
     do {
         unw_word_t tmpPc = 0;
         unw_get_reg(&cursor, UNW_REG_IP, &tmpPc);
-        // Exit unwind step as pc has no change. -S-
         if (oldPc == tmpPc && index != 0) {
             DfxLogWarn("Break unwstep as tmpPc is same with old_ip .");
             break;
         }
         oldPc = tmpPc;
-        // Exit unwind step as pc has no change. -E-
 
-        if (thread->GetIsCrashThread() && (regStorePc == tmpPc)) {
-            crashUnwStepPosition = index + 1;
-            skipFrames = index;
-        } else if (thread->GetIsCrashThread() && (regStoreLr == tmpPc) && (regStorePc == 0x0)) {
-            // Lr position found in crash thread. We need:
-            // 1. mark skipFrames.
-            // 2. Add pc zero frame.
-            skipFrames = index;
-            std::shared_ptr<DfxFrames> frame = thread->GetAvaliableFrame();
-            frame->SetFrameIndex(0);
-            frame->SetFramePc(regStorePc);
-            frame->SetFrameLr(regStoreLr);
-            frame->SetFrameSp(regStoreSp);
-            OHOS::HiviewDFX::ProcessDumper::GetInstance().PrintDumpProcessMsg(frame->PrintFrame());
-            index++;
+        // store current frame
+        if (!DfxUnwindRemoteDoUnwindStep(index, thread, cursor, process)) {
+            DfxLogWarn("Break unwstep as DfxUnwindRemoteDoUnwindStep failed -1.");
+            break;
         }
-
-        if (skipFrames != 0 || thread->GetIsCrashThread() == false) {
-            if (!DfxUnwindRemoteDoUnwindStep((index - skipFrames), thread, cursor, process)) {
-                DfxLogWarn("Break unwstep as DfxUnwindRemoteDoUnwindStep failed -1.");
-                break;
-            }
-        }
-
         index++;
 
-        // Add to check pc is valid in maps x segment, if check failed use lr to backtrace instead -S-.
-        std::shared_ptr<DfxElfMaps> processMaps = process->GetMaps();
-        if (!isSigDump && !processMaps->CheckPcIsValid((uint64_t)tmpPc) &&
-            (crashUnwStepPosition == index)) {
-            unw_set_reg(&cursor, UNW_REG_IP, regStoreLr);
-            // Add lr frame to frame list.
-            if (!DfxUnwindRemoteDoUnwindStep((index - skipFrames), thread, cursor, process)) {
-                DfxLogWarn("Break unwstep as DfxUnwindRemoteDoUnwindStep failed -2.");
-                break;
-            }
-            index++;
-        }
-        // Add to check pc is valid in maps x segment, if check failed use lr to backtrace instead -E-.
+        // find next frame
         unwRet = unw_step(&cursor);
-        // if we use context's pc unwind failed, try lr -S-.
-        if (unwRet <= 0) {
-            if (!isSigDump && (crashUnwStepPosition == index)) {
-                unw_set_reg(&cursor, UNW_REG_IP, regStoreLr);
-                // Add lr frame to frame list.
-                if (!DfxUnwindRemoteDoUnwindStep((index - skipFrames), thread, cursor, process)) {
-                    DfxLogWarn("Break unwstep as DfxUnwindRemoteDoUnwindStep failed -3.");
-                    break;
-                }
-                index++;
-                unwRet = unw_step(&cursor);
-            }
-        }
-        // if we use context's pc unwind failed, try lr -E-.
     } while ((unwRet > 0) && (index < BACK_STACK_MAX_STEPS));
     thread->SetThreadUnwStopReason(unwRet);
     _UPT_destroy(context);
