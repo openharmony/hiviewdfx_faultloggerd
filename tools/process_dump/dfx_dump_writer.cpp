@@ -142,6 +142,11 @@ std::string ProcessDumpRequest::GetProcessNameString() const
     return processName;
 }
 
+std::string ProcessDumpRequest::GetLastFatalMessage() const
+{
+    std::string lastMsg(lastFatalMessage_, sizeof(lastFatalMessage_) - 1);
+    return lastMsg;
+}
 
 void ProcessDumpRequest::SetContext(ucontext_t const &context)
 {

@@ -43,6 +43,7 @@ if (defined(ohos_lite)) {
     configs = [ ":crasher_config" ]
     sources = [ "dfx_crasher.c" ]
     deps = [ "$faultloggerd_path/interfaces/innerkits/signal_handler:dfx_signalhandler" ]
+    external_deps = [ "hilog_native:libhilog" ]
     part_name = "faultloggerd"
     subsystem_name = "hiviewdfx"
   }

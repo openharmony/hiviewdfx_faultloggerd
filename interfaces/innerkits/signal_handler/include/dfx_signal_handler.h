@@ -35,6 +35,7 @@ struct ProcessDumpRequest {
     ucontext_t context;
     char threadName[NAME_LEN];
     char processName[NAME_LEN];
+    char lastFatalMessage[1024]; // 1024 : MAX_LOG_SIZE
 };
 #endif
 void DFX_InstallSignalHandler();

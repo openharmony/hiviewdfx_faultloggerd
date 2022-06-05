@@ -95,7 +95,8 @@ void ProcessDumper::PrintDumpProcessMsg(std::string msg)
     DfxLogDebug("Exit %s.", __func__);
 }
 
-void ProcessDumper::PrintDumpProcessWithSignalContextHeader(std::shared_ptr<DfxProcess> process, siginfo_t info)
+void ProcessDumper::PrintDumpProcessWithSignalContextHeader(std::shared_ptr<DfxProcess> process, siginfo_t info,
+                                                            const std::string& msg)
 {
     DfxLogDebug("Enter %s.", __func__);
     char buf[LOG_BUF_LEN] = {0};
@@ -134,6 +135,10 @@ void ProcessDumper::PrintDumpProcessWithSignalContextHeader(std::shared_ptr<DfxP
         PrintDumpProcessMsg(reason);
 
         PrintDumpProcessMsg(PrintSignal(info));
+
+        if ((info.si_signo == SIGABRT) && !msg.empty()) {
+            PrintDumpProcessMsg("LastFatalMessage:" + msg + "\n"); // print fatal msg
+        }
 
         if (process->GetThreads().size() != 0) {
             PrintDumpProcessMsg("Fault thread Info:\n");
@@ -239,7 +244,7 @@ void ProcessDumper::DumpProcessWithSignalContext(std::shared_ptr<DfxProcess> &pr
     process->SetIsSignalHdlr(true);
 
     InitPrintThread(true, request, process);
-    PrintDumpProcessWithSignalContextHeader(process, request->GetSiginfo());
+    PrintDumpProcessWithSignalContextHeader(process, request->GetSiginfo(), request->GetLastFatalMessage());
 
     DfxUnwindRemote::GetInstance().UnwindProcess(process);
     DfxLogDebug("Exit %s.", __func__);
