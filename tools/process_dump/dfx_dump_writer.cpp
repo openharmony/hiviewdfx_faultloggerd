@@ -37,19 +37,23 @@ ProcessDumpRequest::ProcessDumpRequest()
     DfxLogDebug("Enter %s.", __func__);
     errno_t err = memset_s(&siginfo_, sizeof(siginfo_), 0, sizeof(siginfo_));
     if (err != EOK) {
-        DfxLogError("%s :: msmset_s siginfo_ failed..", __func__);
+        DfxLogError("%s :: memset_s siginfo_ failed.", __func__);
     }
     err = memset_s(&context_, sizeof(context_), 0, sizeof(context_));
     if (err != EOK) {
-        DfxLogError("%s :: msmset_s context_ failed..", __func__);
+        DfxLogError("%s :: memset_s context_ failed.", __func__);
     }
     err = memset_s(&threadName_, sizeof(threadName_), 0, sizeof(threadName_));
     if (err != EOK) {
-        DfxLogError("%s :: msmset_s threadName_ failed..", __func__);
+        DfxLogError("%s :: memset_s threadName_ failed.", __func__);
     }
     err = memset_s(&processName_, sizeof(processName_), 0, sizeof(processName_));
     if (err != EOK) {
-        DfxLogError("%s :: msmset_s processName_ failed..", __func__);
+        DfxLogError("%s :: memset_s processName_ failed.", __func__);
+    }
+    err = memset_s(&lastFatalMessage_, sizeof(lastFatalMessage_), 0, sizeof(lastFatalMessage_));
+    if (err != EOK) {
+        DfxLogError("%s :: memset_s lastFatalMessage_ failed.", __func__);
     }
     type_ = DUMP_TYPE_PROCESS;
     DfxLogDebug("Exit %s.", __func__);

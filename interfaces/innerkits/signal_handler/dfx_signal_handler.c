@@ -137,8 +137,8 @@ static void FillLastFatalMessageLocked(int32_t sig)
     }
 
     size_t len = strlen(lastFatalMessage);
-    if (len > 1024) { // 1024 : MAX_LOG_SIZE
-        DfxLogError("Last message is longger than MAX_LOG_SIZE");
+    if (len > MAX_FATAL_MSG_SIZE) {
+        DfxLogError("Last message is longer than MAX_FATAL_MSG_SIZE");
         return;
     }
 

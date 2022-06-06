@@ -136,8 +136,9 @@ void ProcessDumper::PrintDumpProcessWithSignalContextHeader(std::shared_ptr<DfxP
 
         PrintDumpProcessMsg(PrintSignal(info));
 
-        if ((info.si_signo == SIGABRT) && !msg.empty()) {
-            PrintDumpProcessMsg("LastFatalMessage:" + msg + "\n"); // print fatal msg
+        if (info.si_signo == SIGABRT && !msg.empty()) {
+            PrintDumpProcessMsg("LastFatalMessage:" + msg);
+            PrintDumpProcessMsg("\n");
         }
 
         if (process->GetThreads().size() != 0) {

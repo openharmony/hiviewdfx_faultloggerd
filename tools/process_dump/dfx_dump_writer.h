@@ -83,7 +83,7 @@ private:
     ucontext_t context_;
     char threadName_[NAME_LEN];
     char processName_[NAME_LEN];
-    char lastFatalMessage_[1024]; // 1024 : MAX_LOG_SZ;
+    char lastFatalMessage_[MAX_FATAL_MSG_SIZE];
 };
 
 class DfxDumpWriter {
