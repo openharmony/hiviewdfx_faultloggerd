@@ -311,9 +311,9 @@ int FaultLoggerdSystemTest::CheckCountNum(std::string filePath, std::string pid,
             }
             count++;
             j++;
-	    if (j == sizeof(log) / sizeof(log[0])) {
+            if (j == sizeof(log) / sizeof(log[0])) {
                 break;
-	    }
+            }
             continue;
         }
         i++;
@@ -366,9 +366,9 @@ int FaultLoggerdSystemTest::CheckCountNumPCZero(std::string filePath, std::strin
             }
             count++;
             j++;
-	    if (j == sizeof(log) / sizeof(log[0])) {
-	        break;
-	    }
+            if (j == sizeof(log) / sizeof(log[0])) {
+                break;
+            }
             continue;
         }
         i++;
@@ -421,9 +421,9 @@ int FaultLoggerdSystemTest::CheckCountNumOverStack(std::string filePath, std::st
             }
             count++;
             j++;
-	    if (j == sizeof(log) / sizeof(log[0])) {
-	        break;
-	    }
+            if (j == sizeof(log) / sizeof(log[0])) {
+                break;
+            }
             continue;
         }
         i++;
@@ -478,9 +478,9 @@ int FaultLoggerdSystemTest::CheckCountNumMultiThread(std::string filePath, std::
             }
             count++;
             j++;
-	    if (j == sizeof(log) / sizeof(log[0])) {
+            if (j == sizeof(log) / sizeof(log[0])) {
                 break;
-	    }
+            }
             continue;
         }
         i++;
@@ -557,9 +557,9 @@ int FaultLoggerdSystemTest::CheckCountNumStackTop(std::string filePath, std::str
             }
             count++;
             j++;
-	    if (j == sizeof(log) / sizeof(log[0])) {
-	        break;
-	    }
+            if (j == sizeof(log) / sizeof(log[0])) {
+                break;
+            }
             continue;
         }
         i++;
@@ -593,7 +593,7 @@ int FaultLoggerdSystemTest::CheckStacktraceCountNum(std::string filePath, std::s
         if (idx != string::npos) {
             count++;
             j++;
-	    if (j == sizeof(log) / sizeof(log[0])) {
+            if (j == sizeof(log) / sizeof(log[0])) {
                 break;
             }
             GTEST_LOG_(INFO) << t.at(i);
