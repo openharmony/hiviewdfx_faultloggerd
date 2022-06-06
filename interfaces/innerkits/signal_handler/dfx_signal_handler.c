@@ -117,7 +117,7 @@ enum DumpPreparationStage {
     EXEC_FAIL,
 };
 
-const char* GetLastFatalMessage() __attribute__((weak));
+const char* GetLastFatalMessage(void) __attribute__((weak));
 
 static void FillLastFatalMessageLocked(int32_t sig)
 {
