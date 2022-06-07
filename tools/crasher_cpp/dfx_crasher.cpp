@@ -18,20 +18,22 @@
 #include "dfx_crasher.h"
 
 #include <cinttypes>
-#include <pthread.h>
 #include <csignal>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <fstream>
+#include <hilog/log.h>
 #include <iostream>
+#include <pthread.h>
+#include <sys/prctl.h>
 #include <sys/resource.h>
+#include <thread>
 #include <unistd.h>
 #include <vector>
-#include <thread>
-#include <fstream>
-#include <sys/prctl.h>
-#include "securec.h"
+
 #include "dfx_signal_handler.h"
+#include "securec.h"
 
 #ifdef LOG_DOMAIN
 #undef LOG_DOMAIN
@@ -77,12 +79,14 @@ NOINLINE int DfxCrasher::TriggerSegmentFaultException() const
 
 NOINLINE int DfxCrasher::RaiseAbort() const
 {
+    HILOG_FATAL(LOG_CORE, "Test Trigger ABORT!");
     raise(SIGABRT);
     return 0;
 }
 
 NOINLINE int DfxCrasher::Abort(void) const
 {
+    HILOG_FATAL(LOG_CORE, "Test Trigger ABORT!");
     abort();
     return 0;
 }

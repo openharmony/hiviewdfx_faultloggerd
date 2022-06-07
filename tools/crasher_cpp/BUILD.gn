@@ -51,6 +51,7 @@ if (defined(ohos_lite)) {
       "$faultloggerd_path/interfaces/innerkits/signal_handler:dfx_signalhandler",
       "//utils/native/base:utils",
     ]
+    external_deps = [ "hilog_native:libhilog" ]
 
     part_name = "faultloggerd"
     subsystem_name = "hiviewdfx"

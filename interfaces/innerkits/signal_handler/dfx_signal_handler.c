@@ -117,6 +117,35 @@ enum DumpPreparationStage {
     EXEC_FAIL,
 };
 
+const char* GetLastFatalMessage(void) __attribute__((weak));
+
+static void FillLastFatalMessageLocked(int32_t sig)
+{
+    if (sig != SIGABRT) {
+        return;
+    }
+
+    if (GetLastFatalMessage == NULL) {
+        DfxLogError("Could not find GetLastFatalMessage func");
+        return;
+    }
+
+    const char* lastFatalMessage = GetLastFatalMessage();
+    if (lastFatalMessage == NULL) {
+        DfxLogError("Could not find last message");
+        return;
+    }
+
+    size_t len = strlen(lastFatalMessage);
+    if (len > MAX_FATAL_MSG_SIZE) {
+        DfxLogError("Last message is longer than MAX_FATAL_MSG_SIZE");
+        return;
+    }
+
+    (void)strncpy_s(g_request.lastFatalMessage, sizeof(g_request.lastFatalMessage),
+        lastFatalMessage, sizeof(g_request.lastFatalMessage) - 1);
+}
+
 static uint64_t GetTimeMillseconds(void)
 {
     struct timeval time;
@@ -474,6 +503,7 @@ static void DFX_SignalHandler(int sig, siginfo_t *si, void *context)
         pthread_mutex_unlock(&g_signalHandlerMutex);
         return;
     }
+    FillLastFatalMessageLocked(sig);
 #ifdef DFX_LOCAL_UNWIND
     DFX_UnwindLocal(sig, si, context);
 #else

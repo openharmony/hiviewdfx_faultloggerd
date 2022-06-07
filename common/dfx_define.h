@@ -19,6 +19,7 @@
 #define SIGDUMP 35
 #define PROCESSDUMP_TIMEOUT 30
 #define MAX_HANDLED_TID_NUMBER 256
+#define MAX_FATAL_MSG_SIZE 1024
 
 #if defined(__arm__)
 static const int USER_REG_NUM = 16;

@@ -15,19 +15,30 @@
 
 #include "dfx_crasher.h"
 
+#include <hilog/log.h>
 #include <inttypes.h>
-#include <sys/mman.h>
 #include <pthread.h>
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/mman.h>
+#include <sys/prctl.h>
 #include <sys/resource.h>
 #include <unistd.h>
-#include <sys/prctl.h>
 
-#include "securec.h"
 #include "dfx_signal_handler.h"
+#include "securec.h"
+
+#ifdef LOG_DOMAIN
+#undef LOG_DOMAIN
+#define LOG_DOMAIN 0x2D11
+#endif
+
+#ifdef LOG_TAG
+#undef LOG_TAG
+#define LOG_TAG "Unwind"
+#endif
 
 static const int ARG1024 = 1024;
 static const int ARG128 = 128;
@@ -41,6 +52,7 @@ NOINLINE int TriggerTrapException(void)
 
 NOINLINE int RaiseAbort(void)
 {
+    HILOG_FATAL(LOG_CORE, "Test Trigger ABORT!");
     int ret = raise(SIGABRT);
     if (ret != 0) {
         printf("raise failed!");
@@ -49,6 +61,7 @@ NOINLINE int RaiseAbort(void)
 }
 NOINLINE int Abort(void)
 {
+    HILOG_FATAL(LOG_CORE, "Test Trigger ABORT!");
     abort();
     return 0;
 }

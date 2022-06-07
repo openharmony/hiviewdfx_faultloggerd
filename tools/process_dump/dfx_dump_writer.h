@@ -70,6 +70,8 @@ public:
     std::string GetThreadNameString() const;
 
     std::string GetProcessNameString() const;
+
+    std::string GetLastFatalMessage() const;
 private:
     ProcessDumpType type_;
     int32_t tid_ = 0;
@@ -81,6 +83,7 @@ private:
     ucontext_t context_;
     char threadName_[NAME_LEN];
     char processName_[NAME_LEN];
+    char lastFatalMessage_[MAX_FATAL_MSG_SIZE];
 };
 
 class DfxDumpWriter {
