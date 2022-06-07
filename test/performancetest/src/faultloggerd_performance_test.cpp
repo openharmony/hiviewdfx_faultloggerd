@@ -195,11 +195,12 @@ HWTEST_F (FaultPerformanceTest, FaultPerformanceTest002, TestSize.Level2)
     clock_t befor = GetStartTime();
     for (int i = 0; i < PERFORMANCE_TEST_NUMBER_ONE_HUNDRED; i++) {
         dumplog.DumpCatch(FaultPerformanceTest::looprootPid, 0, msg);
+        sleep(1);
     }
     GTEST_LOG_(INFO) << "DumpCatch API Performance time(PID(root), TID(0)): " << \
         GetStopTime(befor)/PERFORMANCE_TEST_NUMBER_ONE_HUNDRED << "s";
     double expectTime = PERFORMANCE_TEST_MAX_UNWIND_TIME_S;
-    double realTime = GetStopTime(befor)/PERFORMANCE_TEST_NUMBER_ONE_HUNDRED;
+    double realTime = GetStopTime(befor)/PERFORMANCE_TEST_NUMBER_ONE_HUNDRED - 1;
     EXPECT_EQ(true, realTime < expectTime) << "FaultPerformanceTest002 Failed";
     FaultPerformanceTest::KillCrasherLoopForSomeCase();
     GTEST_LOG_(INFO) << "FaultPerformanceTest002: end.";
