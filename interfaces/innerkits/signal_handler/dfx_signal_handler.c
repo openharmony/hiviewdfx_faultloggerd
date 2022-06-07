@@ -435,9 +435,9 @@ static int CheckLastHandledTid(int sig, siginfo_t *si)
 static void DFX_SignalHandler(int sig, siginfo_t *si, void *context)
 {
     if (sig != SIGDUMP) {
-       if (CheckLastHandledTid(sig, si) == TRUE) {
-           return;
-       }
+        if (CheckLastHandledTid(sig, si) == TRUE) {
+            return;
+        }
     }
     pthread_mutex_lock(&g_signalHandlerMutex);
 
