@@ -142,8 +142,8 @@ static void FillLastFatalMessageLocked(int32_t sig)
         return;
     }
 
-    (void)memcpy_s(g_request.lastFatalMessage, sizeof(g_request.lastFatalMessage), lastFatalMessage, len);
-    g_request.lastFatalMessage[sizeof(g_request.lastFatalMessage) - 1] = '\0';
+    (void)strncpy_s(g_request.lastFatalMessage, sizeof(g_request.lastFatalMessage),
+        lastFatalMessage, sizeof(g_request.lastFatalMessage) - 1);
 }
 
 static uint64_t GetTimeMillseconds(void)
