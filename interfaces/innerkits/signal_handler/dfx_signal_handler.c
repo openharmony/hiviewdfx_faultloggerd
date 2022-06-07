@@ -438,6 +438,9 @@ static void DFX_SignalHandler(int sig, siginfo_t *si, void *context)
         if (CheckLastHandledTid(sig, si) == TRUE) {
             return;
         }
+    } else if (g_curSig == sig) {
+        DfxLogInfo("We are handling sigdump now, skip same request.");
+        return;
     }
     pthread_mutex_lock(&g_signalHandlerMutex);
 
