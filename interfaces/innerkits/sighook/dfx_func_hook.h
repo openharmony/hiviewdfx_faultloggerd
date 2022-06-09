@@ -14,10 +14,13 @@
  */
 #ifndef DFX_FUNC_HOOK_H
 #define DFX_FUNC_HOOK_H
+#include <inttypes.h>
 #ifdef __cplusplus
 extern "C" {
 #endif
-void StartHookFunc(uintptr_t sighdlr);
+void StartHookFunc(void);
+
+void SetPlatformSignalHandler(uintptr_t handler);
 #ifdef __cplusplus
 }
 #endif
