@@ -158,7 +158,6 @@ void DfxConfig::ParserConfig(std::string key, std::string value)
 
 void DfxConfig::ReadConfig()
 {
-    DfxLogDebug("Enter %s.", __func__);
     do {
         FILE *fp = nullptr;
         char codeBuffer[CONF_LINE_SIZE] = {0};
@@ -191,7 +190,6 @@ void DfxConfig::ReadConfig()
         }
         (void)fclose(fp);
     } while (0);
-    DfxLogDebug("Exit %s.", __func__);
 }
 
 void DfxConfig::Trim(std::string &s)

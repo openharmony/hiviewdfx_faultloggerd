@@ -32,7 +32,6 @@ namespace OHOS {
 namespace HiviewDFX {
 bool ReadStringFromFile(const std::string &path, std::string &buf, size_t len)
 {
-    DfxLogDebug("Enter %s.", __func__);
     if (len <= 1) {
         return false;
     }
@@ -52,13 +51,11 @@ bool ReadStringFromFile(const std::string &path, std::string &buf, size_t len)
     std::string str(start, end);
     buf = str.substr(0, len);
     file.close();
-    DfxLogDebug("Exit %s.", __func__);
     return true;
 }
 
 bool TrimAndDupStr(const std::string &source, std::string &str)
 {
-    DfxLogDebug("Enter %s.", __func__);
     if (source.empty()) {
         return false;
     }
@@ -89,7 +86,6 @@ bool TrimAndDupStr(const std::string &source, std::string &str)
     }
 
     str.assign(begin, maxStrLen);
-    DfxLogDebug("Exit %s.", __func__);
     return true;
 }
 }   // namespace HiviewDFX

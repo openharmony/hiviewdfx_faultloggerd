@@ -60,7 +60,6 @@ void DfxProcess::UpdateProcessName(std::string processName)
 
 std::shared_ptr<DfxProcess> DfxProcess::CreateProcessWithKeyThread(pid_t pid, std::shared_ptr<DfxThread> keyThread)
 {
-    DfxLogDebug("Enter %s.", __func__);
     auto dfxProcess = std::make_shared<DfxProcess>();
     if (dfxProcess != nullptr) {
         dfxProcess->SetPid(pid);
@@ -74,27 +73,23 @@ std::shared_ptr<DfxProcess> DfxProcess::CreateProcessWithKeyThread(pid_t pid, st
         DfxLogWarn("Fail to init threads.");
         return nullptr;
     }
-    DfxLogWarn("Init process dump with pid:%d.", dfxProcess->GetPid());
-    DfxLogDebug("Exit %s.", __func__);
+    DfxLogDebug("Init process dump with pid:%d.", dfxProcess->GetPid());
     return dfxProcess;
 }
 
 bool DfxProcess::InitProcessMaps()
 {
-    DfxLogDebug("Enter %s.", __func__);
     auto maps = DfxElfMaps::Create(pid_);
     if (!maps) {
         return false;
     }
 
     SetMaps(maps);
-    DfxLogDebug("Exit %s.", __func__);
     return true;
 }
 
 bool DfxProcess::InitProcessThreads(std::shared_ptr<DfxThread> keyThread)
 {
-    DfxLogDebug("Enter %s.", __func__);
     if (keyThread) {
         threads_.push_back(keyThread);
         return true;
@@ -106,13 +101,11 @@ bool DfxProcess::InitProcessThreads(std::shared_ptr<DfxThread> keyThread)
     }
 
     threads_.push_back(keyThread);
-    DfxLogDebug("Exit %s.", __func__);
     return true;
 }
 
 bool DfxProcess::InitOtherThreads()
 {
-    DfxLogDebug("Enter %s.", __func__);
     char path[NAME_LEN] = {0};
     if (snprintf_s(path, sizeof(path), sizeof(path) - 1, "/proc/%d/task", GetPid()) <= 0) {
         return false;
@@ -146,13 +139,11 @@ bool DfxProcess::InitOtherThreads()
         InsertThreadNode(tid);
     }
     closedir(dir);
-    DfxLogDebug("Exit %s.", __func__);
     return true;
 }
 
 void DfxProcess::InsertThreadNode(pid_t tid)
 {
-    DfxLogDebug("Enter %s.", __func__);
     for (auto iter = threads_.begin(); iter != threads_.end(); iter++) {
         if ((*iter)->GetThreadId() == tid) {
             return;
@@ -161,7 +152,6 @@ void DfxProcess::InsertThreadNode(pid_t tid)
 
     auto thread = std::make_shared<DfxThread>(GetPid(), tid);
     threads_.push_back(thread);
-    DfxLogDebug("Exit %s.", __func__);
 }
 
 void DfxProcess::SetIsSignalHdlr(bool isSignalHdlr)

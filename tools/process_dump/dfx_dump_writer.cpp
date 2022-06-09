@@ -34,7 +34,6 @@ namespace OHOS {
 namespace HiviewDFX {
 ProcessDumpRequest::ProcessDumpRequest()
 {
-    DfxLogDebug("Enter %s.", __func__);
     errno_t err = memset_s(&siginfo_, sizeof(siginfo_), 0, sizeof(siginfo_));
     if (err != EOK) {
         DfxLogError("%s :: memset_s siginfo_ failed.", __func__);
@@ -56,7 +55,6 @@ ProcessDumpRequest::ProcessDumpRequest()
         DfxLogError("%s :: memset_s lastFatalMessage_ failed.", __func__);
     }
     type_ = DUMP_TYPE_PROCESS;
-    DfxLogDebug("Exit %s.", __func__);
 }
 
 ProcessDumpType ProcessDumpRequest::GetType() const

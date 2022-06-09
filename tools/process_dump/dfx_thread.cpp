@@ -38,7 +38,6 @@ namespace OHOS {
 namespace HiviewDFX {
 DfxThread::DfxThread(const pid_t pid, const pid_t tid, const ucontext_t &context)
 {
-    DfxLogDebug("Enter %s.", __func__);
     threadStatus_ = ThreadStatus::THREAD_STATUS_INVALID;
     std::shared_ptr<DfxRegs> reg;
 #if defined(__arm__)
@@ -55,13 +54,10 @@ DfxThread::DfxThread(const pid_t pid, const pid_t tid, const ucontext_t &context
         DfxLogWarn("Fail to init thread(%d).", tid);
         return;
     }
-
-    DfxLogDebug("Exit %s.", __func__);
 }
 
 DfxThread::DfxThread(const pid_t pid, const pid_t tid)
 {
-    DfxLogDebug("Enter %s.", __func__);
     threadStatus_ = ThreadStatus::THREAD_STATUS_INIT;
     regs_ = nullptr;
     threadName_ = "";
@@ -70,12 +66,10 @@ DfxThread::DfxThread(const pid_t pid, const pid_t tid)
         DfxLogWarn("Fail to init thread(%d).", tid);
         return;
     }
-    DfxLogDebug("Exit %s.", __func__);
 }
 
 bool DfxThread::InitThread(const pid_t pid, const pid_t tid)
 {
-    DfxLogDebug("Enter %s.", __func__);
     pid_ = pid;
     tid_ = tid;
     isCrashThread_ = false;
@@ -104,7 +98,6 @@ bool DfxThread::InitThread(const pid_t pid, const pid_t tid)
     }
 #endif
     threadStatus_ = ThreadStatus::THREAD_STATUS_ATTACHED;
-    DfxLogDebug("Exit %s.", __func__);
     return true;
 }
 
@@ -165,7 +158,6 @@ void DfxThread::SetThreadRegs(const std::shared_ptr<DfxRegs> &regs)
 
 std::shared_ptr<DfxFrames> DfxThread::GetAvaliableFrame()
 {
-    DfxLogDebug("Enter %s.", __func__);
     std::shared_ptr<DfxFrames> frame = std::make_shared<DfxFrames>();
     dfxFrames_.push_back(frame);
     return frame;
@@ -173,7 +165,6 @@ std::shared_ptr<DfxFrames> DfxThread::GetAvaliableFrame()
 
 void DfxThread::PrintThread(const int32_t fd, bool isSignalDump)
 {
-    DfxLogDebug("Enter %s.", __func__);
     if (dfxFrames_.size() == 0) {
         DfxLogWarn("No frame print for tid %d.", tid_);
         return;
@@ -184,13 +175,10 @@ void DfxThread::PrintThread(const int32_t fd, bool isSignalDump)
         PrintThreadRegisterByConfig();
         PrintThreadFaultStackByConfig();
     }
-    DfxLogDebug("Exit %s.", __func__);
 }
 
 uint64_t DfxThread::DfxThreadDoAdjustPc(uint64_t pc)
 {
-    DfxLogDebug("Enter %s :: pc(0x%x).", __func__, pc);
-
     uint64_t ret = 0;
 
     if (pc == 0) {
@@ -206,14 +194,11 @@ uint64_t DfxThread::DfxThreadDoAdjustPc(uint64_t pc)
         ret = pc - ARM_EXEC_STEP_NORMAL;
 #endif
     }
-
-    DfxLogDebug("Exit %s :: ret(0x%x).", __func__, ret);
     return ret;
 }
 
 void DfxThread::SkipFramesInSignalHandler()
 {
-    DfxLogDebug("Enter %s.", __func__);
     if (dfxFrames_.size() == 0) {
         return;
     }
@@ -263,15 +248,11 @@ void DfxThread::SkipFramesInSignalHandler()
     } else {
         DfxLogWarn("signal frame is not skipped.");
     }
-
-    DfxLogDebug("Exit %s :: index(%d).", __func__, index);
 }
 
 void DfxThread::SetThreadUnwStopReason(int reason)
 {
-    DfxLogDebug("Enter %s.", __func__);
     unwStopReason_ = reason;
-    DfxLogDebug("Exit %s :: unwStopReason_(%d).", __func__, unwStopReason_);
 }
 
 #if defined(__LP64__)
@@ -296,7 +277,6 @@ int ReadTargetMemory(pid_t tid, uintptr_t addr)
 
 void DfxThread::CreateFaultStack(std::shared_ptr<DfxElfMaps> maps)
 {
-    DfxLogDebug("Enter %s.", __func__);
     char codeBuffer[FAULTSTACK_ITEM_BUFFER_LENGTH] = {};
     int lowAddressStep = (int)DfxConfig::GetInstance().GetFaultStackLowAddressStep();
     int highAddressStep = (int)DfxConfig::GetInstance().GetFaultStackHighAddressStep();
@@ -391,19 +371,16 @@ void DfxThread::CreateFaultStack(std::shared_ptr<DfxElfMaps> maps)
         }
         dfxFrames_[i]->SetFrameFaultStack(strFaultStack);
     }
-    DfxLogDebug("Exit %s.", __func__);
 }
 
 void DfxThread::Detach()
 {
-    DfxLogDebug("Enter %s.", __func__);
     ptrace(PTRACE_DETACH, tid_, NULL, NULL);
     if (threadStatus_ == ThreadStatus::THREAD_STATUS_ATTACHED) {
         threadStatus_ = ThreadStatus::THREAD_STATUS_DETACHED;
     } else {
         DfxLogError("%s(%d), current status: %d, can't detached.", __FILE__, __LINE__, threadStatus_);
     }
-    DfxLogDebug("Exit %s.", __func__);
 }
 
 std::string DfxThread::ToString() const

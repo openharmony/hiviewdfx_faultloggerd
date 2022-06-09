@@ -31,12 +31,6 @@
 #include "dfx_define.h"
 #include "dfx_log.h"
 
-namespace {
-static const int32_t SOCKET_BUFFER_SIZE = 256;
-static const int32_t SOCKET_TIMEOUT = 5;
-static const char FAULTLOGGERD_SOCK_PATH[] = "/dev/unix/socket/faultloggerd.server";
-}
-
 static int ReadFileDescriptorFromSocket(int socket)
 {
     struct msghdr msg = { 0 };
@@ -141,6 +135,7 @@ int32_t RequestFileDescriptorEx(const struct FaultLoggerdRequest *request)
 {
     int sockfd;
     struct sockaddr_un server;
+    const int32_t SOCKET_TIMEOUT = 5;
     struct timeval timeout = {
         SOCKET_TIMEOUT,
         0
@@ -263,8 +258,9 @@ bool CheckConnectStatus()
 static bool SendRequestToServer(const FaultLoggerdRequest &request)
 {
     int sockfd = -1;
+    bool resRsp = false;
     if ((sockfd = socket(AF_LOCAL, SOCK_STREAM, 0)) < 0) {
-        return false;
+        return resRsp;
     }
 
     do {
@@ -303,18 +299,15 @@ static bool SendRequestToServer(const FaultLoggerdRequest &request)
         FaultLoggerCheckPermissionResp mRsp = SendUidToServer(sockfd);
         close(sockfd);
 
-        DfxLogInfo("SendRequestToServer :: mRsp(%d).", (int)mRsp);
-
         if ((FaultLoggerCheckPermissionResp::CHECK_PERMISSION_PASS == mRsp)
                 || (FaultLoggerSdkDumpResp::SDK_DUMP_PASS == (FaultLoggerSdkDumpResp)mRsp)) {
-            return true;
-        } else {
-            return false;
+            resRsp = true;
         }
     } while (false);
 
     close(sockfd);
-    return false;
+    DfxLogInfo("SendRequestToServer :: resRsp(%d).", resRsp);
+    return resRsp;
 }
 
 bool RequestCheckPermission(int32_t pid)

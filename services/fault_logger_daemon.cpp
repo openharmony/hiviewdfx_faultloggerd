@@ -52,14 +52,12 @@ std::shared_ptr<FaultLoggerSecure> faultLoggerSecure_;
 namespace {
 constexpr int32_t MAX_CONNECTION = 30;
 constexpr int32_t REQUEST_BUF_SIZE = 1024;
-constexpr int32_t MSG_BUF_SIZE = 256;
 
 const int32_t FAULTLOG_FILE_PROP = 0640;
 
-static const std::string LOG_LABLE = "FaultLoggerd";
+static const std::string FAULTLOGGERD_TAG = "FaultLoggerd";
 
 static const std::string DAEMON_RESP = "RESP:COMPLETE";
-static const char FAULTLOGGERD_SOCK_PATH[] = "/dev/unix/socket/faultloggerd.server";
 
 const int MINUS_ONE_THOUSAND = -1000;
 static const int DAEMON_REMOVE_FILE_TIME_S = 60;
@@ -113,7 +111,7 @@ __attribute__((unused)) static int ReadFileDescriptorFromSocket(int socket)
 {
     struct msghdr msg = { 0 };
 
-    char msgBuffer[MSG_BUF_SIZE] = { 0 };
+    char msgBuffer[SOCKET_BUFFER_SIZE] = { 0 };
     struct iovec io = {
         .iov_base = msgBuffer,
         .iov_len = sizeof(msgBuffer)
@@ -121,12 +119,12 @@ __attribute__((unused)) static int ReadFileDescriptorFromSocket(int socket)
     msg.msg_iov = &io;
     msg.msg_iovlen = 1;
 
-    char ctlBuffer[MSG_BUF_SIZE] = { 0 };
+    char ctlBuffer[SOCKET_BUFFER_SIZE] = { 0 };
     msg.msg_control = ctlBuffer;
     msg.msg_controllen = sizeof(ctlBuffer);
 
     if (recvmsg(socket, &msg, 0) < 0) {
-        DfxLogError("%s :: Failed to receive message", LOG_LABLE.c_str());
+        DfxLogError("%s :: Failed to receive message", FAULTLOGGERD_TAG.c_str());
         return -1;
     }
 
@@ -140,31 +138,31 @@ __attribute__((unused)) static int ReadFileDescriptorFromSocket(int socket)
 
 bool FaultLoggerDaemon::InitEnvironment()
 {
-    DfxLogInfo("%s :: %s Enter.", OHOS::HiviewDFX::LOG_LABLE.c_str(), __func__);
+    DfxLogInfo("%s :: %s Enter.", OHOS::HiviewDFX::FAULTLOGGERD_TAG.c_str(), __func__);
 
     faultLoggerConfig_ = std::make_shared<FaultLoggerConfig>(LOG_FILE_NUMBER, LOG_FILE_SIZE,
         LOG_FILE_PATH, DEBUG_LOG_FILE_PATH);
     faultLoggerSecure_ = std::make_shared<FaultLoggerSecure>();
 
     if (!OHOS::ForceCreateDirectory(faultLoggerConfig_->GetLogFilePath())) {
-        DfxLogError("%s :: Failed to ForceCreateDirectory GetLogFilePath", LOG_LABLE.c_str());
+        DfxLogError("%s :: Failed to ForceCreateDirectory GetLogFilePath", FAULTLOGGERD_TAG.c_str());
         return false;
     }
 
     if (!OHOS::ForceCreateDirectory(faultLoggerConfig_->GetDebugLogFilePath())) {
-        DfxLogError("%s :: Failed to ForceCreateDirectory GetDebugLogFilePath", LOG_LABLE.c_str());
+        DfxLogError("%s :: Failed to ForceCreateDirectory GetDebugLogFilePath", FAULTLOGGERD_TAG.c_str());
         return false;
     }
 
     if (chmod(FAULTLOGGERD_SOCK_PATH, S_IRWXU | S_IRWXG | S_IROTH | S_IWOTH) < 0) {
-        DfxLogError("%s :: Failed to chmod, %d", LOG_LABLE.c_str(), errno);
+        DfxLogError("%s :: Failed to chmod, %d", FAULTLOGGERD_TAG.c_str(), errno);
     }
 
     std::vector<std::string> files;
     OHOS::GetDirFiles(faultLoggerConfig_->GetLogFilePath(), files);
     currentLogCounts_ = (int32_t)files.size();
 
-    DfxLogInfo("%s :: %s success finished.", OHOS::HiviewDFX::LOG_LABLE.c_str(), __func__);
+    DfxLogInfo("%s :: %s success finished.", OHOS::HiviewDFX::FAULTLOGGERD_TAG.c_str(), __func__);
     return true;
 }
 
@@ -174,7 +172,7 @@ void FaultLoggerDaemon::HandleDefaultClientReqeust(int32_t connectionFd, const F
 
     int fd = CreateFileForRequest(request->type, request->pid, request->time, false);
     if (fd < 0) {
-        DfxLogError("%s :: Failed to create log file", LOG_LABLE.c_str());
+        DfxLogError("%s :: Failed to create log file", FAULTLOGGERD_TAG.c_str());
         return;
     }
 
@@ -187,7 +185,7 @@ void FaultLoggerDaemon::HandleLogFileDesClientReqeust(int32_t connectionFd, cons
 {
     int fd = CreateFileForRequest(request->type, request->pid, request->time, true);
     if (fd < 0) {
-        DfxLogError("%s :: Failed to create log file", LOG_LABLE.c_str());
+        DfxLogError("%s :: Failed to create log file", FAULTLOGGERD_TAG.c_str());
         return;
     }
 
@@ -201,14 +199,14 @@ void FaultLoggerDaemon::HandlePrintTHilogClientReqeust(int32_t const connectionF
     char buf[LOG_BUF_LEN] = {0};
 
     if (write(connectionFd, DAEMON_RESP.c_str(), DAEMON_RESP.length()) != (ssize_t)DAEMON_RESP.length()) {
-        DfxLogError("%s :: Failed to write DAEMON_RESP.", LOG_LABLE.c_str());
+        DfxLogError("%s :: Failed to write DAEMON_RESP.", FAULTLOGGERD_TAG.c_str());
     }
 
     int nread = read(connectionFd, buf, sizeof(buf) - 1);
     if (nread < 0) {
-        DfxLogError("%s :: Failed to read message", LOG_LABLE.c_str());
+        DfxLogError("%s :: Failed to read message", FAULTLOGGERD_TAG.c_str());
     } else if (nread == 0) {
-        DfxLogError("%s :: HandlePrintTHilogClientReqeust :: Read null from request socket", LOG_LABLE.c_str());
+        DfxLogError("%s :: HandlePrintTHilogClientReqeust :: Read null from request socket", FAULTLOGGERD_TAG.c_str());
     } else {
         DfxLogError("%s", buf);
     }
@@ -216,6 +214,7 @@ void FaultLoggerDaemon::HandlePrintTHilogClientReqeust(int32_t const connectionF
 
 FaultLoggerCheckPermissionResp FaultLoggerDaemon::SecurityCheck(int32_t connectionFd, FaultLoggerdRequest * request)
 {
+    FaultLoggerCheckPermissionResp resCheckPermission = FaultLoggerCheckPermissionResp::CHECK_PERMISSION_REJECT;
     struct iovec iov;
     int data;
     struct ucred rcred;
@@ -235,7 +234,7 @@ FaultLoggerCheckPermissionResp FaultLoggerDaemon::SecurityCheck(int32_t connecti
         }
 
         if (write(connectionFd, DAEMON_RESP.c_str(), DAEMON_RESP.length()) != (ssize_t)DAEMON_RESP.length()) {
-            DfxLogError("%s :: Failed to write DAEMON_RESP.", LOG_LABLE.c_str());
+            DfxLogError("%s :: Failed to write DAEMON_RESP.", FAULTLOGGERD_TAG.c_str());
         }
 
         msgh.msg_name = nullptr;
@@ -267,22 +266,19 @@ FaultLoggerCheckPermissionResp FaultLoggerDaemon::SecurityCheck(int32_t connecti
         request->callerPid = (int32_t)rcred.pid;
         bool res = faultLoggerSecure_->CheckCallerUID((int)request->uid, request->pid);
         if (res) {
-            return FaultLoggerCheckPermissionResp::CHECK_PERMISSION_PASS;
+            resCheckPermission = FaultLoggerCheckPermissionResp::CHECK_PERMISSION_PASS;
         }
     } while (false);
 
-    return FaultLoggerCheckPermissionResp::CHECK_PERMISSION_REJECT;
+    return resCheckPermission;
 }
 
 void FaultLoggerDaemon::HandlePermissionReqeust(int32_t connectionFd, FaultLoggerdRequest * request)
 {
     FaultLoggerCheckPermissionResp resSecurityCheck = SecurityCheck(connectionFd, request);
-    DfxLogInfo("%s :: resSecurityCheck(%d).\n", LOG_LABLE.c_str(), (int)resSecurityCheck);
-
     if (FaultLoggerCheckPermissionResp::CHECK_PERMISSION_PASS == resSecurityCheck) {
         send(connectionFd, "1", strlen("1"), 0);
     }
-
     if (FaultLoggerCheckPermissionResp::CHECK_PERMISSION_REJECT == resSecurityCheck) {
         send(connectionFd, "2", strlen("2"), 0);
     }
@@ -292,7 +288,6 @@ void FaultLoggerDaemon::HandleSdkDumpReqeust(int32_t connectionFd, FaultLoggerdR
 {
     FaultLoggerSdkDumpResp resSdkDump = FaultLoggerSdkDumpResp::SDK_DUMP_REJECT;
     FaultLoggerCheckPermissionResp resSecurityCheck = SecurityCheck(connectionFd, request);
-    DfxLogInfo("%s :: resSecurityCheck(%d).\n", LOG_LABLE.c_str(), (int)resSecurityCheck);
 
     /*
     *           all     threads my user, local pid             my user, remote pid     other user's process
@@ -322,7 +317,8 @@ void FaultLoggerDaemon::HandleSdkDumpReqeust(int32_t connectionFd, FaultLoggerdR
 
     do {
         if ((request->pid <= 0) || (FaultLoggerCheckPermissionResp::CHECK_PERMISSION_REJECT == resSecurityCheck)) {
-            DfxLogError("%s :: HandleSdkDumpReqeust :: pid or resSecurityCheck fail.\n", LOG_LABLE.c_str());
+            DfxLogError("%s :: HandleSdkDumpReqeust :: pid(%d) or resSecurityCheck(%d) fail.\n", \
+                        FAULTLOGGERD_TAG.c_str(), request->pid, (int)resSecurityCheck);
             break;
         }
 
@@ -336,7 +332,7 @@ void FaultLoggerDaemon::HandleSdkDumpReqeust(int32_t connectionFd, FaultLoggerdR
             .si_uid = static_cast<uid_t>(request->callerTid)
         };
 
-// means we need dump all the threads in a process.
+        // means we need dump all the threads in a process.
         if (request->tid == 0) {
             if (syscall(SYS_rt_sigqueueinfo, request->pid, sig, &si) != 0) {
                 DfxLogError("Failed to SYS_rt_sigqueueinfo signal(%d), errno(%d).",
@@ -344,7 +340,7 @@ void FaultLoggerDaemon::HandleSdkDumpReqeust(int32_t connectionFd, FaultLoggerdR
                 break;
             }
         } else {
-// means we need dump a specified thread
+            // means we need dump a specified thread
             if (syscall(SYS_rt_tgsigqueueinfo, request->pid, request->tid, sig, &si) != 0) {
                 DfxLogError("Failed to SYS_rt_tgsigqueueinfo signal(%d), errno(%d).",
                     si.si_signo, errno);
@@ -371,38 +367,37 @@ void FaultLoggerDaemon::HandleRequest(int32_t connectionFd)
     do {
         nread = read(connectionFd, buf, sizeof(buf));
         if (nread < 0) {
-            DfxLogError("%s :: Failed to read message", LOG_LABLE.c_str());
+            DfxLogError("%s :: Failed to read message", FAULTLOGGERD_TAG.c_str());
             break;
         } else if (nread == 0) {
-            DfxLogError("%s :: HandleRequest :: Read null from request socket", LOG_LABLE.c_str());
+            DfxLogError("%s :: HandleRequest :: Read null from request socket", FAULTLOGGERD_TAG.c_str());
             break;
         } else if (nread != static_cast<long>(sizeof(FaultLoggerdRequest))) {
-            DfxLogError("%s :: Unmatched request length", LOG_LABLE.c_str());
+            DfxLogError("%s :: Unmatched request length", FAULTLOGGERD_TAG.c_str());
             break;
         }
 
         auto request = reinterpret_cast<FaultLoggerdRequest *>(buf);
-        DfxLogInfo("%s :: clientType(%d), type(%d).\n", LOG_LABLE.c_str(),
-            request->clientType, request->type);
-
-        if (request->clientType == (int32_t)FaultLoggerClientType::DEFAULT_CLIENT) {
-            HandleDefaultClientReqeust(connectionFd, request);
-            break;
-        } else if (request->clientType == (int32_t)FaultLoggerClientType::LOG_FILE_DES_CLIENT) {
-            HandleLogFileDesClientReqeust(connectionFd, request);
-            break;
-        } else if (request->clientType == (int32_t)FaultLoggerClientType::PRINT_T_HILOG_CLIENT) {
-            HandlePrintTHilogClientReqeust(connectionFd, request);
-            break;
-        } else if (request->clientType == (int32_t)FaultLoggerClientType::PERMISSION_CLIENT) {
-            HandlePermissionReqeust(connectionFd, request);
-            break;
-        } else if (request->clientType == (int32_t)FaultLoggerClientType::SDK_DUMP_CLIENT) {
-            HandleSdkDumpReqeust(connectionFd, request);
-            break;
-        } else {
-            DfxLogError("%s :: unknown client just break and close socket.\n", LOG_LABLE.c_str());
-            break;
+        DfxLogInfo("%s :: clientType(%d).\n", FAULTLOGGERD_TAG.c_str(), request->clientType);
+        switch (request->clientType) {
+            case (int32_t)FaultLoggerClientType::DEFAULT_CLIENT:
+                HandleDefaultClientReqeust(connectionFd, request);
+                break;
+            case (int32_t)FaultLoggerClientType::LOG_FILE_DES_CLIENT:
+                HandleLogFileDesClientReqeust(connectionFd, request);
+                break;
+            case (int32_t)FaultLoggerClientType::PRINT_T_HILOG_CLIENT:
+                HandlePrintTHilogClientReqeust(connectionFd, request);
+                break;
+            case (int32_t)FaultLoggerClientType::PERMISSION_CLIENT:
+                HandlePermissionReqeust(connectionFd, request);
+                break;
+            case (int32_t)FaultLoggerClientType::SDK_DUMP_CLIENT:
+                HandleSdkDumpReqeust(connectionFd, request);
+                break;
+            default:
+                DfxLogError("%s :: unknown clientType(%d).\n", FAULTLOGGERD_TAG.c_str(), request->clientType);
+                break;
         }
     } while (false);
 
@@ -432,11 +427,11 @@ int32_t FaultLoggerDaemon::CreateFileForRequest(int32_t type, int32_t pid, uint6
     crashTime << "-" << time;
     std::string path = filePath + "/" + typeStr + "-" + std::to_string(pid) + crashTime.str();
 
-    DfxLogInfo("%s :: file path(%s).\n", LOG_LABLE.c_str(), path.c_str());
+    DfxLogInfo("%s :: file path(%s).\n", FAULTLOGGERD_TAG.c_str(), path.c_str());
     int32_t fd = open(path.c_str(), O_RDWR | O_CREAT, FAULTLOG_FILE_PROP);
     if (fd != -1) {
         if (!ChangeModeFile(path, FAULTLOG_FILE_PROP)) {
-            DfxLogError("%s :: Failed to ChangeMode CreateFileForRequest", LOG_LABLE.c_str());
+            DfxLogError("%s :: Failed to ChangeMode CreateFileForRequest", FAULTLOGGERD_TAG.c_str());
         }
     }
     return fd;
@@ -469,7 +464,7 @@ void FaultLoggerDaemon::RemoveTempFileIfNeed()
 
     time_t currentTime = static_cast<time_t>(time(nullptr));
     if (currentTime <= 0) {
-        DfxLogError("%s :: currentTime is less than zero CreateFileForRequest", LOG_LABLE.c_str());
+        DfxLogError("%s :: currentTime is less than zero CreateFileForRequest", FAULTLOGGERD_TAG.c_str());
     }
 
     int startIndex = maxFileCount / 2;
@@ -477,7 +472,7 @@ void FaultLoggerDaemon::RemoveTempFileIfNeed()
         struct stat st;
         int err = stat(files[index].c_str(), &st);
         if (err != 0) {
-            DfxLogError("%s :: Get log stat failed.", LOG_LABLE.c_str());
+            DfxLogError("%s :: Get log stat failed.", FAULTLOGGERD_TAG.c_str());
         } else {
             if ((currentTime - st.st_mtime) <= DAEMON_REMOVE_FILE_TIME_S) {
                 continue;
@@ -485,7 +480,8 @@ void FaultLoggerDaemon::RemoveTempFileIfNeed()
         }
 
         OHOS::RemoveFile(files[index]);
-        DfxLogDebug("%s :: Now we rm file(%s) as max log number exceeded.", LOG_LABLE.c_str(), files[index].c_str());
+        DfxLogDebug("%s :: Now we rm file(%s) as max log number exceeded.", \
+                    FAULTLOGGERD_TAG.c_str(), files[index].c_str());
     }
 }
 
@@ -498,17 +494,17 @@ void FaultLoggerDaemon::LoopAcceptRequestAndFork(int socketFd)
 
     while (true) {
         if ((connectionFd = accept(socketFd, reinterpret_cast<struct sockaddr *>(&clientAddr), &clientAddrSize)) < 0) {
-            DfxLogError("%s :: Failed to accept connection", LOG_LABLE.c_str());
+            DfxLogError("%s :: Failed to accept connection", FAULTLOGGERD_TAG.c_str());
             continue;
         }
-        DfxLogInfo("%s :: %s: accept: %d.", LOG_LABLE.c_str(), __func__, connectionFd);
+        DfxLogInfo("%s :: %s: accept: %d.", FAULTLOGGERD_TAG.c_str(), __func__, connectionFd);
 
         int childPid = fork();
         if (childPid < 0) {
             close(connectionFd);
             break;
         } else if (childPid > 0) {
-            DfxLogInfo("%s :: %s: forked child pid: %d", LOG_LABLE.c_str(), __func__, childPid);
+            DfxLogInfo("%s :: %s: forked child pid: %d", FAULTLOGGERD_TAG.c_str(), __func__, childPid);
         } else if (childPid == 0) {
             HandleRequest(connectionFd);
             close(connectionFd);
@@ -516,8 +512,6 @@ void FaultLoggerDaemon::LoopAcceptRequestAndFork(int socketFd)
         }
         close(connectionFd);
     }
-
-    DfxLogInfo("%s :: %s: Exit.", LOG_LABLE.c_str(), __func__);
 }
 } // namespace HiviewDFX
 } // namespace OHOS
@@ -529,48 +523,48 @@ int32_t StartServer(int argc, char *argv[])
     int socketFd = -1;
 
     if ((socketFd = socket(AF_LOCAL, SOCK_STREAM, 0)) < 0) {
-        DfxLogError("%s :: Failed to create socket", OHOS::HiviewDFX::LOG_LABLE.c_str());
+        DfxLogError("%s :: Failed to create socket", OHOS::HiviewDFX::FAULTLOGGERD_TAG.c_str());
         return -1;
     }
 
     struct sockaddr_un server;
     errno_t err = memset_s(&server, sizeof(server), 0, sizeof(server));
     if (err != EOK) {
-        DfxLogError("%s :: msmset_s server failed..", __func__);
+        DfxLogError("%s :: msmset_s server failed..", OHOS::HiviewDFX::FAULTLOGGERD_TAG.c_str());
     }
     server.sun_family = AF_LOCAL;
-    if (strncpy_s(server.sun_path, sizeof(server.sun_path), OHOS::HiviewDFX::FAULTLOGGERD_SOCK_PATH,
-        strlen(OHOS::HiviewDFX::FAULTLOGGERD_SOCK_PATH)) != 0) {
-        DfxLogError("%s :: Failed to set sock path", OHOS::HiviewDFX::LOG_LABLE.c_str());
+    if (strncpy_s(server.sun_path, sizeof(server.sun_path), FAULTLOGGERD_SOCK_PATH,
+        strlen(FAULTLOGGERD_SOCK_PATH)) != 0) {
+        DfxLogError("%s :: Failed to set sock path", OHOS::HiviewDFX::FAULTLOGGERD_TAG.c_str());
         close(socketFd);
         return -1;
     }
 
-    unlink(OHOS::HiviewDFX::FAULTLOGGERD_SOCK_PATH);
+    unlink(FAULTLOGGERD_SOCK_PATH);
     if (bind(socketFd, (struct sockaddr *)&server,
         offsetof(struct sockaddr_un, sun_path) + strlen(server.sun_path)) < 0) {
-        DfxLogError("%s :: Failed to bind socket", OHOS::HiviewDFX::LOG_LABLE.c_str());
+        DfxLogError("%s :: Failed to bind socket", OHOS::HiviewDFX::FAULTLOGGERD_TAG.c_str());
         close(socketFd);
         return -1;
     }
 
     if (listen(socketFd, OHOS::HiviewDFX::MAX_CONNECTION) < 0) {
-        DfxLogError("%s :: Failed to listen socket", OHOS::HiviewDFX::LOG_LABLE.c_str());
+        DfxLogError("%s :: Failed to listen socket", OHOS::HiviewDFX::FAULTLOGGERD_TAG.c_str());
         close(socketFd);
         return -1;
     }
 
     OHOS::HiviewDFX::FaultLoggerDaemon daemon;
     if (!daemon.InitEnvironment()) {
-        DfxLogError("%s :: Failed to init environment", OHOS::HiviewDFX::LOG_LABLE.c_str());
+        DfxLogError("%s :: Failed to init environment", OHOS::HiviewDFX::FAULTLOGGERD_TAG.c_str());
         close(socketFd);
         return -1;
     }
 
-    DfxLogInfo("%s :: %s: start loop accept.", OHOS::HiviewDFX::LOG_LABLE.c_str(), __func__);
+    DfxLogInfo("%s :: %s: start loop accept.", OHOS::HiviewDFX::FAULTLOGGERD_TAG.c_str(), __func__);
     daemon.LoopAcceptRequestAndFork(socketFd);
 
     close(socketFd);
-    DfxLogInfo("%s :: %s: Exit.", OHOS::HiviewDFX::LOG_LABLE.c_str(), __func__);
+    DfxLogInfo("%s :: %s: Exit.", OHOS::HiviewDFX::FAULTLOGGERD_TAG.c_str(), __func__);
     return 0;
 }

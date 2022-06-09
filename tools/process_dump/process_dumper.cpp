@@ -62,7 +62,6 @@ std::mutex ProcessDumper::backTracePrintMutx;
 
 void LoopPrintBackTraceInfo()
 {
-    DfxLogDebug("Enter %s.", __func__);
     std::unique_lock<std::mutex> lck(ProcessDumper::backTracePrintMutx);
     while (true) {
         bool hasFinished = ProcessDumper::GetInstance().backTraceIsFinished_;
@@ -84,21 +83,18 @@ void LoopPrintBackTraceInfo()
                 lck, std::chrono::milliseconds(BACK_TRACE_RING_BUFFER_PRINT_WAIT_TIME_MS));
         }
     }
-    DfxLogDebug("Exit %s.", __func__);
 }
 
 void ProcessDumper::PrintDumpProcessMsg(std::string msg)
 {
-    DfxLogDebug("Enter %s, msg(%s).", __func__, msg.c_str());
+    DfxLogDebug("%s :: msg(%s)", __func__, msg.c_str());
     backTraceRingBuffer_.Append(msg);
     backTracePrintCV.notify_one();
-    DfxLogDebug("Exit %s.", __func__);
 }
 
 void ProcessDumper::PrintDumpProcessWithSignalContextHeader(std::shared_ptr<DfxProcess> process, siginfo_t info,
                                                             const std::string& msg)
 {
-    DfxLogDebug("Enter %s.", __func__);
     char buf[LOG_BUF_LEN] = {0};
     int ret = snprintf_s(buf, sizeof(buf), sizeof(buf) - 1, "Pid:%d\n", process->GetPid());
     if (ret <= 0) {
@@ -145,8 +141,6 @@ void ProcessDumper::PrintDumpProcessWithSignalContextHeader(std::shared_ptr<DfxP
             PrintDumpProcessMsg("Fault thread Info:\n");
         }
     }
-
-    DfxLogDebug("Exit %s.", __func__);
 }
 
 void ProcessDumper::InitPrintThread(int32_t fromSignalHandler, std::shared_ptr<ProcessDumpRequest> request, \
@@ -192,7 +186,6 @@ void ProcessDumper::InitPrintThread(int32_t fromSignalHandler, std::shared_ptr<P
 void ProcessDumper::DumpProcessWithSignalContext(std::shared_ptr<DfxProcess> &process,
                                                  std::shared_ptr<ProcessDumpRequest> request)
 {
-    DfxLogDebug("Enter %s.", __func__);
     ssize_t readCount = read(STDIN_FILENO, request.get(), sizeof(ProcessDumpRequest));
     if (readCount != static_cast<long>(sizeof(ProcessDumpRequest))) {
         DfxLogError("Fail to read DumpRequest(%d).", errno);
@@ -248,13 +241,11 @@ void ProcessDumper::DumpProcessWithSignalContext(std::shared_ptr<DfxProcess> &pr
     PrintDumpProcessWithSignalContextHeader(process, request->GetSiginfo(), request->GetLastFatalMessage());
 
     DfxUnwindRemote::GetInstance().UnwindProcess(process);
-    DfxLogDebug("Exit %s.", __func__);
 }
 
 void ProcessDumper::DumpProcess(std::shared_ptr<DfxProcess> &process,
                                 std::shared_ptr<ProcessDumpRequest> request)
 {
-    DfxLogDebug("Enter %s.", __func__);
     if (request != nullptr) {
         if (request->GetType() == DUMP_TYPE_PROCESS) {
         process = DfxProcess::CreateProcessWithKeyThread(request->GetPid(), nullptr);
@@ -278,8 +269,6 @@ void ProcessDumper::DumpProcess(std::shared_ptr<DfxProcess> &process,
         InitPrintThread(false, nullptr, process);
         DfxUnwindRemote::GetInstance().UnwindProcess(process);
     }
-    
-    DfxLogDebug("Exit %s.", __func__);
 }
 
 ProcessDumper &ProcessDumper::GetInstance()
@@ -296,7 +285,6 @@ void ProcessDumper::PrintDumpFailed()
 
 void ProcessDumper::Dump(bool isSignalHdlr, ProcessDumpType type, int32_t pid, int32_t tid)
 {
-    DfxLogDebug("Enter %s.", __func__);
     backTraceIsFinished_ = false;
     std::shared_ptr<ProcessDumpRequest> request = std::make_shared<ProcessDumpRequest>();
     if (!request) {
@@ -356,8 +344,6 @@ void ProcessDumper::Dump(bool isSignalHdlr, ProcessDumpType type, int32_t pid, i
     if (isSignalHdlr && process && !process->GetIsSignalDump()) {
         process->Detach();
     }
-    DfxLogInfo("processdump :: finished write crash info to file.");
-    DfxLogDebug("Exit %s.", __func__);
 
     CloseDebugLog();
 }

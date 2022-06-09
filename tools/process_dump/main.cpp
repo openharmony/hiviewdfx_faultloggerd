@@ -40,13 +40,13 @@ static const int DUMP_FIVE = 5;
 static const int DUMP_ARG_TWO = 2;
 static const int DUMP_ARG_THREE = 3;
 static const int DUMP_ARG_FOUR = 4;
-static const int32_t SOCKET_BUFFER_SIZE = 256;
-static const char FAULTLOGGERD_SOCK_PATH[] = "/dev/unix/socket/faultloggerd.server";
+
+static const std::string DUMP_STACK_TAG_USAGE = "usage:";
 static const std::string DUMP_STACK_TAG_FAILED = "failed:";
 
 static void PrintCommandHelp()
 {
-    std::cout << "usage:" << std::endl;
+    std::cout << DUMP_STACK_TAG_USAGE << std::endl;
     std::cout << "-p pid -t tid    dump the stacktrace of the thread with given tid." << std::endl;
     std::cout << "-p pid    dump the stacktrace of all the threads with given pid." << std::endl;
 }
@@ -115,40 +115,9 @@ static bool CheckPidTid(OHOS::HiviewDFX::ProcessDumpType type, int32_t pid, int3
     return true;
 }
 
-static bool CheckConnectStatus()
-{
-    int sockfd = -1;
-    bool check_status = false;
-    if ((sockfd = socket(AF_LOCAL, SOCK_STREAM, 0)) < 0) {
-        return false;
-    }
-    do {
-        struct sockaddr_un server;
-        errno_t ret = memset_s(&server, sizeof(server), 0, sizeof(server));
-        if (ret != EOK) {
-            DfxLogError("memset_s failed, err = %d.", (int)ret);
-            break;
-        }
-        server.sun_family = AF_LOCAL;
-        if (strncpy_s(server.sun_path, sizeof(server.sun_path),
-            FAULTLOGGERD_SOCK_PATH, strlen(FAULTLOGGERD_SOCK_PATH)) != 0) {
-            break;
-        }
-
-        socklen_t len = static_cast<socklen_t>(offsetof(struct sockaddr_un, sun_path) + strlen(server.sun_path) + 1);
-        int connect_status = connect(sockfd, reinterpret_cast<struct sockaddr *>(&server), len);
-        if (connect_status == 0) {
-            check_status = true;
-        }
-    } while (false);
-    close(sockfd);
-    return check_status;
-}
-
 static bool ParseParamters(int argc, char *argv[], bool &isSignalHdlr, OHOS::HiviewDFX::ProcessDumpType &type,
     int32_t &pid, int32_t &tid)
 {
-    DfxLogDebug("Enter %s.", __func__);
     switch (argc) {
         case SIGNAL_HANDLER:
             if (!strcmp("-signalhandler", argv[0])) {
@@ -186,13 +155,11 @@ static bool ParseParamters(int argc, char *argv[], bool &isSignalHdlr, OHOS::Hiv
         default:
             break;
     }
-    DfxLogDebug("Exit %s.", __func__);
     return false;
 }
 
 int main(int argc, char *argv[])
 {
-    DfxLogDebug("Enter %s.", __func__);
     bool isSignalHdlr = false;
     OHOS::HiviewDFX::ProcessDumpType type = OHOS::HiviewDFX::DUMP_TYPE_PROCESS;
     int32_t pid = 0;
@@ -222,8 +189,6 @@ int main(int argc, char *argv[])
 
     OHOS::HiviewDFX::DfxConfig::GetInstance().ReadConfig();
     OHOS::HiviewDFX::ProcessDumper::GetInstance().Dump(isSignalHdlr, type, pid, tid);
-    DfxLogDebug("End");
 
-    DfxLogInfo("faultlog_native_crash");
     return 0;
 }
