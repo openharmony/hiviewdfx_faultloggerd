@@ -69,10 +69,14 @@ void FaultPerformanceTest::TearDownTestCase(void)
 
 void FaultPerformanceTest::SetUp(void)
 {
+    GTEST_LOG_(INFO) << "SetUp";
+    FaultPerformanceTest::StartRootCrasherLoop();
 }
 
 void FaultPerformanceTest::TearDown(void)
 {
+    GTEST_LOG_(INFO) << "TearDown";
+    FaultPerformanceTest::KillCrasherLoopForSomeCase();
 }
 
 int FaultPerformanceTest::looprootPid = 0;
@@ -165,7 +169,6 @@ int FaultPerformanceTest::getApplyPid(std::string applyName)
 HWTEST_F (FaultPerformanceTest, FaultPerformanceTest001, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "FaultPerformanceTest001: start.";
-    FaultPerformanceTest::StartRootCrasherLoop();
     DfxDumpCatcher dumplog;
     std::string msg;
     clock_t befor = GetStartTime();
@@ -177,7 +180,6 @@ HWTEST_F (FaultPerformanceTest, FaultPerformanceTest001, TestSize.Level2)
     double expectTime = PERFORMANCE_TEST_MAX_UNWIND_TIME_S;
     double realTime = GetStopTime(befor)/PERFORMANCE_TEST_NUMBER_ONE_HUNDRED;
     EXPECT_EQ(true, realTime < expectTime) << "FaultPerformanceTest001 Failed";
-    FaultPerformanceTest::KillCrasherLoopForSomeCase();
     GTEST_LOG_(INFO) << "FaultPerformanceTest001: end.";
 }
 
@@ -189,7 +191,6 @@ HWTEST_F (FaultPerformanceTest, FaultPerformanceTest001, TestSize.Level2)
 HWTEST_F (FaultPerformanceTest, FaultPerformanceTest002, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "FaultPerformanceTest002: start.";
-    FaultPerformanceTest::StartRootCrasherLoop();
     DfxDumpCatcher dumplog;
     std::string msg;
     clock_t befor = GetStartTime();
@@ -202,7 +203,6 @@ HWTEST_F (FaultPerformanceTest, FaultPerformanceTest002, TestSize.Level2)
     double expectTime = PERFORMANCE_TEST_MAX_UNWIND_TIME_S;
     double realTime = GetStopTime(befor)/PERFORMANCE_TEST_NUMBER_ONE_HUNDRED - 1;
     EXPECT_EQ(true, realTime < expectTime) << "FaultPerformanceTest002 Failed";
-    FaultPerformanceTest::KillCrasherLoopForSomeCase();
     GTEST_LOG_(INFO) << "FaultPerformanceTest002: end.";
 }
 
@@ -214,7 +214,6 @@ HWTEST_F (FaultPerformanceTest, FaultPerformanceTest002, TestSize.Level2)
 HWTEST_F (FaultPerformanceTest, FaultPerformanceTest003, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "FaultPerformanceTest003: start.";
-    FaultPerformanceTest::StartRootCrasherLoop();
     std::string procCMD = "processdump -p " + std::to_string(FaultPerformanceTest::looprootPid) + " -t "+
         std::to_string(FaultPerformanceTest::looprootPid);
     clock_t befor = GetStartTime();
@@ -226,7 +225,6 @@ HWTEST_F (FaultPerformanceTest, FaultPerformanceTest003, TestSize.Level2)
     double expectTime = PERFORMANCE_TEST_MAX_UNWIND_TIME_S;
     double realTime = GetStopTime(befor)/PERFORMANCE_TEST_NUMBER_ONE_HUNDRED;
     EXPECT_EQ(true, realTime < expectTime) << "FaultPerformanceTest003 Failed";
-    FaultPerformanceTest::KillCrasherLoopForSomeCase();
     GTEST_LOG_(INFO) << "FaultPerformanceTest003: end.";
 }
 
@@ -238,7 +236,6 @@ HWTEST_F (FaultPerformanceTest, FaultPerformanceTest003, TestSize.Level2)
 HWTEST_F (FaultPerformanceTest, FaultPerformanceTest004, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "FaultPerformanceTest004: start.";
-    FaultPerformanceTest::StartRootCrasherLoop();
     std::string procCMD = "processdump -p " + std::to_string(FaultPerformanceTest::looprootPid);
     clock_t befor = GetStartTime();
     for (int i = 0; i < PERFORMANCE_TEST_NUMBER_ONE_HUNDRED; i++) {
@@ -250,7 +247,6 @@ HWTEST_F (FaultPerformanceTest, FaultPerformanceTest004, TestSize.Level2)
     double expectTime = PERFORMANCE_TEST_MAX_UNWIND_TIME_S;
     double realTime = GetStopTime(befor)/PERFORMANCE_TEST_NUMBER_ONE_HUNDRED;
     EXPECT_EQ(true, realTime < expectTime) << "FaultPerformanceTest004 Failed";
-    FaultPerformanceTest::KillCrasherLoopForSomeCase();
     GTEST_LOG_(INFO) << "FaultPerformanceTest004: end.";
 }
 
@@ -262,7 +258,6 @@ HWTEST_F (FaultPerformanceTest, FaultPerformanceTest004, TestSize.Level2)
 HWTEST_F (FaultPerformanceTest, FaultPerformanceTest005, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "FaultPerformanceTest005: start.";
-    FaultPerformanceTest::StartRootCrasherLoop();
     DfxDumpCatcher dumplog;
     std::string msg;
     std::string apply = "foundation";
@@ -277,7 +272,6 @@ HWTEST_F (FaultPerformanceTest, FaultPerformanceTest005, TestSize.Level2)
     double expectTime = PERFORMANCE_TEST_MAX_UNWIND_TIME_S;
     double realTime = GetStopTime(befor)/PERFORMANCE_TEST_NUMBER_ONE_HUNDRED;
     EXPECT_EQ(true, realTime < expectTime) << "FaultPerformanceTest005 Failed";
-    FaultPerformanceTest::KillCrasherLoopForSomeCase();
     GTEST_LOG_(INFO) << "FaultPerformanceTest005: end.";
 }
 
