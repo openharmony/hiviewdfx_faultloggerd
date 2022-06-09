@@ -127,9 +127,6 @@ bool FaultLoggerSecure::CheckUidAndPid(const int uid, const int32_t pid)
 
 bool FaultLoggerSecure::CheckCallerUID (const int callingUid, const int32_t pid)
 {
-    DfxLogInfo("%s :: CheckCallerUID, callingUid(%d), MAX_SYS_UID(%d).\n",
-        FaultLoggerSecure_TAG.c_str(), callingUid, FaultLoggerSecure::MAX_SYS_UID);
-
     bool ret = false;
     if ((callingUid < 0) || (pid <= 0)) {
         return false;
@@ -146,8 +143,7 @@ bool FaultLoggerSecure::CheckCallerUID (const int callingUid, const int32_t pid)
         ret = false;
     }
 
-    DfxLogInfo("%s :: CheckCallerUID :: ret(%d).\n",
-        FaultLoggerSecure_TAG.c_str(), ret);
+    DfxLogInfo("%s :: CheckCallerUID :: ret(%d).\n", FaultLoggerSecure_TAG.c_str(), ret);
     return ret;
 }
 } // namespace HiviewDfx

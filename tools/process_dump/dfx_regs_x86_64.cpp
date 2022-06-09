@@ -26,57 +26,53 @@
 namespace OHOS {
 namespace HiviewDFX {
 enum RegisterSeqNum {
-    REGISTER_ZERO = 0,
-    REGISTER_ONE,
-    REGISTER_TWO,
-    REGISTER_THREE,
-    REGISTER_FOUR,
-    REGISTER_FIVE,
-    REGISTER_SIX,
-    REGISTER_SEVEN,
-    REGISTER_EIGHT,
-    REGISTER_NINE,
-    REGISTER_TEN,
-    REGISTER_ELEVEN,
-    REGISTER_TWELVE,
-    REGISTER_THIRTEEN,
-    REGISTER_FOURTEEN,
-    REGISTER_FIFTEEN,
-    REGISTER_SIXTEEN
+    REG_X86_64_R0 = 0,
+    REG_X86_64_R1,
+    REG_X86_64_R2,
+    REG_X86_64_R3,
+    REG_X86_64_R4,
+    REG_X86_64_R5,
+    REG_X86_64_R6,
+    REG_X86_64_R7,
+    REG_X86_64_R8,
+    REG_X86_64_R9,
+    REG_X86_64_R10,
+    REG_X86_64_R11,
+    REG_X86_64_R12,
+    REG_X86_64_R13,
+    REG_X86_64_R14,
+    REG_X86_64_R15,
+    REG_X86_64_R16
 };
 
 
 DfxRegsX86_64::DfxRegsX86_64(const ucontext_t &context)
 {
-    DfxLogDebug("Enter %s.", __func__);
     std::vector<uintptr_t> regs {};
 
-    regs.push_back((uintptr_t)(context.uc_mcontext.gregs[REGISTER_ZERO]));   // 0:rax
-    regs.push_back((uintptr_t)(context.uc_mcontext.gregs[REGISTER_ONE]));   // 1:rdx
-    regs.push_back((uintptr_t)(context.uc_mcontext.gregs[REGISTER_TWO]));   // 2:rcx
-    regs.push_back((uintptr_t)(context.uc_mcontext.gregs[REGISTER_THREE]));   // 3:rbx
-    regs.push_back((uintptr_t)(context.uc_mcontext.gregs[REGISTER_FOUR]));   // 4:rsi
-    regs.push_back((uintptr_t)(context.uc_mcontext.gregs[REGISTER_FIVE]));   // 5:rdi
-    regs.push_back((uintptr_t)(context.uc_mcontext.gregs[REGISTER_SIX]));   // 6:rbp
-    regs.push_back((uintptr_t)(context.uc_mcontext.gregs[REGISTER_SEVEN]));   // 7:rsp
-    regs.push_back((uintptr_t)(context.uc_mcontext.gregs[REGISTER_EIGHT]));   // 8:r8
-    regs.push_back((uintptr_t)(context.uc_mcontext.gregs[REGISTER_NINE]));   // 9:r9
-    regs.push_back((uintptr_t)(context.uc_mcontext.gregs[REGISTER_TEN])); // 10:r10
-    regs.push_back((uintptr_t)(context.uc_mcontext.gregs[REGISTER_ELEVEN])); // 11:r11
-    regs.push_back((uintptr_t)(context.uc_mcontext.gregs[REGISTER_TWELVE])); // 12:r12
-    regs.push_back((uintptr_t)(context.uc_mcontext.gregs[REGISTER_THIRTEEN])); // 13:r13
-    regs.push_back((uintptr_t)(context.uc_mcontext.gregs[REGISTER_FOURTEEN])); // 14:r14
-    regs.push_back((uintptr_t)(context.uc_mcontext.gregs[REGISTER_FIFTEEN])); // 15:r15
-    regs.push_back((uintptr_t)(context.uc_mcontext.gregs[REGISTER_SIXTEEN])); // 16:rip
+    regs.push_back((uintptr_t)(context.uc_mcontext.gregs[REG_X86_64_R0]));   // 0:rax
+    regs.push_back((uintptr_t)(context.uc_mcontext.gregs[REG_X86_64_R1]));   // 1:rdx
+    regs.push_back((uintptr_t)(context.uc_mcontext.gregs[REG_X86_64_R2]));   // 2:rcx
+    regs.push_back((uintptr_t)(context.uc_mcontext.gregs[REG_X86_64_R3]));   // 3:rbx
+    regs.push_back((uintptr_t)(context.uc_mcontext.gregs[REG_X86_64_R4]));   // 4:rsi
+    regs.push_back((uintptr_t)(context.uc_mcontext.gregs[REG_X86_64_R5]));   // 5:rdi
+    regs.push_back((uintptr_t)(context.uc_mcontext.gregs[REG_X86_64_R6]));   // 6:rbp
+    regs.push_back((uintptr_t)(context.uc_mcontext.gregs[REG_X86_64_R7]));   // 7:rsp
+    regs.push_back((uintptr_t)(context.uc_mcontext.gregs[REG_X86_64_R8]));   // 8:r8
+    regs.push_back((uintptr_t)(context.uc_mcontext.gregs[REG_X86_64_R9]));   // 9:r9
+    regs.push_back((uintptr_t)(context.uc_mcontext.gregs[REG_X86_64_R10])); // 10:r10
+    regs.push_back((uintptr_t)(context.uc_mcontext.gregs[REG_X86_64_R11])); // 11:r11
+    regs.push_back((uintptr_t)(context.uc_mcontext.gregs[REG_X86_64_R12])); // 12:r12
+    regs.push_back((uintptr_t)(context.uc_mcontext.gregs[REG_X86_64_R13])); // 13:r13
+    regs.push_back((uintptr_t)(context.uc_mcontext.gregs[REG_X86_64_R14])); // 14:r14
+    regs.push_back((uintptr_t)(context.uc_mcontext.gregs[REG_X86_64_R15])); // 15:r15
+    regs.push_back((uintptr_t)(context.uc_mcontext.gregs[REG_X86_64_R16])); // 16:rip
 
     SetRegs(regs);
-    DfxLogDebug("Exit %s.", __func__);
 }
 
 std::string DfxRegsX86_64::PrintRegs() const
 {
-    DfxLogDebug("Enter %s.", __func__);
-
     std::string regString = "";
     char buf[REGS_PRINT_LEN_X86] = {0};
 
@@ -86,36 +82,34 @@ std::string DfxRegsX86_64::PrintRegs() const
 
     int ret = snprintf_s(buf, sizeof(buf), sizeof(buf) - 1, \
         "  rax:%016lx rdx:%016lx rcx:%016lx rbx:%016lx\n", \
-        regs[REGISTER_ZERO], regs[REGISTER_ONE], regs[REGISTER_TWO], regs[REGISTER_THREE]);
+        regs[REG_X86_64_R0], regs[REG_X86_64_R1], regs[REG_X86_64_R2], regs[REG_X86_64_R3]);
     if (ret <= 0) {
         DfxLogError("%s :: snprintf_s failed, line: %d.", __func__, __LINE__);
     }
 
     ret = snprintf_s(buf + strlen(buf), sizeof(buf) - strlen(buf), sizeof(buf) - strlen(buf) - 1, \
         "  rsi:%016lx rdi:%016lx rbp:%016lx rsp:%016lx\n", \
-        regs[REGISTER_FOUR], regs[REGISTER_FIVE], regs[REGISTER_SIX], regs[REGISTER_SEVEN]);
+        regs[REG_X86_64_R4], regs[REG_X86_64_R5], regs[REG_X86_64_R6], regs[REG_X86_64_R7]);
     if (ret <= 0) {
         DfxLogError("%s :: snprintf_s failed, line: %d.", __func__, __LINE__);
     }
 
     ret = snprintf_s(buf + strlen(buf), sizeof(buf) - strlen(buf), sizeof(buf) - strlen(buf) - 1, \
         "  r8:%016lx r9:%016lx r10:%016lx r11:%016lx\n", \
-        regs[REGISTER_EIGHT], regs[REGISTER_NINE], regs[REGISTER_TEN], regs[REGISTER_ELEVEN]);
+        regs[REG_X86_64_R8], regs[REG_X86_64_R9], regs[REG_X86_64_R10], regs[REG_X86_64_R11]);
     if (ret <= 0) {
         DfxLogError("%s :: snprintf_s failed, line: %d.", __func__, __LINE__);
     }
 
     ret = snprintf_s(buf + strlen(buf), sizeof(buf) - strlen(buf), sizeof(buf) - strlen(buf) - 1, \
         "  r12:%016lx r13:%016lx r14:%016lx r15:%016lx rip:%016lx \n", \
-        regs[REGISTER_TWELVE], regs[REGISTER_THIRTEEN], regs[REGISTER_FOURTEEN], regs[REGISTER_FIFTEEN], \
-        regs[REGISTER_SIXTEEN]);
+        regs[REG_X86_64_R12], regs[REG_X86_64_R13], regs[REG_X86_64_R14], \
+        regs[REG_X86_64_R15], regs[REG_X86_64_R16]);
     if (ret <= 0) {
         DfxLogError("%s :: snprintf_s failed, line: %d.", __func__, __LINE__);
     }
 
     regString = regString + std::string(buf);
-
-    DfxLogDebug("Exit %s.", __func__);
     return regString;
 }
 } // namespace HiviewDFX

@@ -30,18 +30,15 @@ DfxSignal::DfxSignal(const int32_t signal)
 
 bool DfxSignal::IsAvaliable() const
 {
-    DfxLogDebug("Enter %s.", __func__);
     struct sigaction previousAction;
     if (sigaction(signal_, nullptr, &previousAction) < 0) {
         return 0;
     }
-    DfxLogDebug("Exit %s.", __func__);
     return static_cast<unsigned int>(previousAction.sa_flags) & SA_SIGINFO;
 }
 
 bool DfxSignal::IsAddrAvaliable() const
 {
-    DfxLogDebug("Enter %s.", __func__);
     switch (signal_) {
         case SIGABRT:
         case SIGBUS:
@@ -52,12 +49,10 @@ bool DfxSignal::IsAddrAvaliable() const
         default:
             return false;
     }
-    DfxLogDebug("Exit %s.", __func__);
 }
 
 bool DfxSignal::IsPidAvaliable() const
 {
-    DfxLogDebug("Enter %s.", __func__);
     switch (signal_) {
         case SI_USER:
         case SI_QUEUE:
@@ -77,7 +72,6 @@ int32_t DfxSignal::GetSignal() const
 
 std::string PrintSignal(const siginfo_t &info)
 {
-    DfxLogDebug("Enter %s.", __func__);
     std::string sigString = "";
     char buf[LOG_BUF_LEN] = {0};
 
@@ -118,13 +112,11 @@ std::string PrintSignal(const siginfo_t &info)
     }
 
     sigString = sigString + "\n";
-    DfxLogDebug("Exit %s.", __func__);
     return sigString;
 }
 
 std::string FormatSignalName(const int32_t signal)
 {
-    DfxLogDebug("Enter %s.", __func__);
     switch (signal) {
         case SIGABRT:
             return "SIGABRT";
@@ -153,7 +145,6 @@ std::string FormatSignalName(const int32_t signal)
 
 std::string FormatCodeName(const int32_t signal, const int32_t signalCode)
 {
-    DfxLogDebug("Enter %s.", __func__);
     switch (signal) {
         case SIGILL:
             return FormatSIGILLCodeName(signalCode);
@@ -173,7 +164,6 @@ std::string FormatCodeName(const int32_t signal, const int32_t signalCode)
 
 std::string FormatSIGBUSCodeName(const int32_t signalCode)
 {
-    DfxLogDebug("Enter %s.", __func__);
     switch (signalCode) {
         case BUS_ADRALN:
             return "BUS_ADRALN";
@@ -192,7 +182,6 @@ std::string FormatSIGBUSCodeName(const int32_t signalCode)
 
 std::string FormatSIGILLCodeName(const int32_t signalCode)
 {
-    DfxLogDebug("Enter %s.", __func__);
     switch (signalCode) {
         case ILL_ILLOPC:
             return "ILL_ILLOPC";
@@ -217,7 +206,6 @@ std::string FormatSIGILLCodeName(const int32_t signalCode)
 
 std::string FormatSIGFPECodeName(const int32_t signalCode)
 {
-    DfxLogDebug("Enter %s.", __func__);
     switch (signalCode) {
         case FPE_INTDIV:
             return "FPE_INTDIV";
@@ -242,7 +230,6 @@ std::string FormatSIGFPECodeName(const int32_t signalCode)
 
 std::string FormatSIGSEGVCodeName(const int32_t signalCode)
 {
-    DfxLogDebug("Enter %s.", __func__);
     switch (signalCode) {
         case SEGV_MAPERR:
             return "SEGV_MAPERR";
@@ -255,7 +242,6 @@ std::string FormatSIGSEGVCodeName(const int32_t signalCode)
 
 std::string FormatSIGTRAPCodeName(const int32_t signalCode)
 {
-    DfxLogDebug("Enter %s.", __func__);
     switch (signalCode) {
         case TRAP_BRKPT:
             return "TRAP_BRKPT";
@@ -272,7 +258,6 @@ std::string FormatSIGTRAPCodeName(const int32_t signalCode)
 
 std::string FormatCommonSignalCodeName(const int32_t signalCode)
 {
-    DfxLogDebug("Enter %s.", __func__);
     switch (signalCode) {
         case SI_USER:
             return "SI_USER";

@@ -185,7 +185,6 @@ static int32_t InheritCapabilities(void)
         }
         ambCap = ambCap >> 1;
     }
-    DfxLogDebug("InheritCapabilities done");
     return 0;
 }
 

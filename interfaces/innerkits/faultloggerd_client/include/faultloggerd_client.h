@@ -67,6 +67,8 @@ struct FaultLoggerdRequest {
     uint64_t time;
 } __attribute__((packed));
 
+
+bool CheckConnectStatus();
 int32_t RequestFileDescriptor(int32_t type);
 int32_t RequestLogFileDescriptor(struct FaultLoggerdRequest *request);
 int RequestFileDescriptorEx(const struct FaultLoggerdRequest *request);

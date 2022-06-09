@@ -134,7 +134,6 @@ void DfxFrames::DestroyFrames(const std::shared_ptr<DfxFrames> frameHead) {}
 
 uint64_t DfxFrames::GetRelativePc(const std::shared_ptr<DfxElfMaps> head)
 {
-    DfxLogDebug("Enter %s.", __func__);
     if (head == nullptr) {
         return 0;
     }
@@ -155,13 +154,11 @@ uint64_t DfxFrames::GetRelativePc(const std::shared_ptr<DfxElfMaps> head)
         DfxLogWarn("Fail to find Map:%s.", map_->GetMapPath().c_str());
         return 0;
     }
-    DfxLogDebug("Exit %s.", __func__);
     return CalculateRelativePc(map);
 }
 
 uint64_t DfxFrames::CalculateRelativePc(std::shared_ptr<DfxElfMap> elfMap)
 {
-    DfxLogDebug("Enter %s.", __func__);
     if (elfMap == nullptr || map_ == nullptr) {
         return 0;
     }
@@ -181,14 +178,11 @@ uint64_t DfxFrames::CalculateRelativePc(std::shared_ptr<DfxElfMap> elfMap)
 #elif defined(__x86_64__)
     relativePc_ = relativePc_ - 1; // 1 : instr offset
 #endif
-    DfxLogDebug("Exit %s.", __func__);
     return relativePc_;
 }
 
 std::string DfxFrames::PrintFrame() const
 {
-    DfxLogDebug("Enter %s.", __func__);
-
     char buf[LOG_BUF_LEN] = {0};
 
     std::string mapName = frameMapName_;
@@ -210,7 +204,6 @@ std::string DfxFrames::PrintFrame() const
         if (ret <= 0) {
             DfxLogError("%s :: snprintf_s failed, line: %d.", __func__, __LINE__);
         }
-        DfxLogDebug("Exit %s.", __func__);
         return std::string(buf);
     }
 
@@ -220,7 +213,6 @@ std::string DfxFrames::PrintFrame() const
     if (ret <= 0) {
         DfxLogError("%s :: snprintf_s failed, line: %d.", __func__, __LINE__);
     }
-    DfxLogDebug("Exit %s.", __func__);
     return std::string(buf);
 }
 
@@ -265,17 +257,13 @@ std::string DfxFrames::ToString() const
 
 void PrintFrames(std::vector<std::shared_ptr<DfxFrames>> frames)
 {
-    DfxLogDebug("Enter %s.", __func__);
     for (size_t i = 0; i < frames.size(); i++) {
         frames[i]->PrintFrame();
     }
-    DfxLogDebug("Exit %s.", __func__);
 }
 
 std::string PrintFaultStacks(std::vector<std::shared_ptr<DfxFrames>> frames)
 {
-    DfxLogDebug("Enter %s.", __func__);
-
     std::string stackString = "";
 
     for (size_t i = 0; i < frames.size(); i++) {
@@ -289,8 +277,7 @@ std::string PrintFaultStacks(std::vector<std::shared_ptr<DfxFrames>> frames)
         }
         stackString = stackString + frames[i]->PrintFaultStack(i);
     }
-
-    DfxLogDebug("Exit %s.", __func__);
+    
     return stackString;
 }
 } // namespace HiviewDFX

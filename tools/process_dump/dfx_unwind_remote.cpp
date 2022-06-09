@@ -112,7 +112,7 @@ bool DfxUnwindRemote::UnwindProcess(std::shared_ptr<DfxProcess> process)
 
 uint64_t DfxUnwindRemote::DfxUnwindRemoteDoAdjustPc(unw_cursor_t & cursor, uint64_t pc)
 {
-    DfxLogDebug("Enter %s :: pc(0x%x).", __func__, pc);
+    DfxLogDebug("%s :: pc(0x%x).", __func__, pc);
 
     uint64_t ret = 0;
 
@@ -126,14 +126,14 @@ uint64_t DfxUnwindRemote::DfxUnwindRemoteDoAdjustPc(unw_cursor_t & cursor, uint6
 #endif
     }
 
-    DfxLogDebug("Exit %s :: ret(0x%x).", __func__, ret);
+    DfxLogDebug("%s :: ret(0x%x).", __func__, ret);
     return ret;
 }
 
 bool DfxUnwindRemote::DfxUnwindRemoteDoUnwindStep(size_t const & index,
     std::shared_ptr<DfxThread> & thread, unw_cursor_t & cursor, std::shared_ptr<DfxProcess> process)
 {
-    DfxLogDebug("Enter %s :: index(%d).", __func__, index);
+    DfxLogDebug("%s :: index(%d).", __func__, index);
     std::shared_ptr<DfxFrames> frame = thread->GetAvaliableFrame();
     if (!frame) {
         DfxLogWarn("Fail to create Frame.");
@@ -180,13 +180,12 @@ bool DfxUnwindRemote::DfxUnwindRemoteDoUnwindStep(size_t const & index,
     if (ret) {
         OHOS::HiviewDFX::ProcessDumper::GetInstance().PrintDumpProcessMsg(frame->PrintFrame());
     }
-    DfxLogDebug("Exit %s :: index(%d), framePc(0x%x), frameSp(0x%x).", __func__, index, framePc, frameSp);
+    DfxLogDebug("%s :: index(%d), framePc(0x%x), frameSp(0x%x).", __func__, index, framePc, frameSp);
     return ret;
 }
 
 bool DfxUnwindRemote::UnwindThread(std::shared_ptr<DfxProcess> process, std::shared_ptr<DfxThread> thread)
 {
-    DfxLogDebug("Enter %s.", __func__);
     if (!thread) {
         DfxLogWarn("NULL thread needs unwind.");
         return false;
@@ -260,8 +259,6 @@ bool DfxUnwindRemote::UnwindThread(std::shared_ptr<DfxProcess> process, std::sha
                 thread->PrintThreadFaultStackByConfig() + "\n");
         }
     }
-
-    DfxLogDebug("Exit %s.", __func__);
     return true;
 }
 } // namespace HiviewDFX
