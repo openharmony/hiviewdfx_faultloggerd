@@ -37,17 +37,7 @@
 #include <sys/wait.h>
 
 #include <securec.h>
-#include "dfx_func_hook.h"
 #include "dfx_log.h"
-
-#ifdef DFX_LOCAL_UNWIND
-#include <libunwind.h>
-
-#include "dfx_dump_writer.h"
-#include "dfx_process.h"
-#include "dfx_thread.h"
-#include "dfx_util.h"
-#endif
 
 #if defined (__LF64__)
 #define RESERVED_CHILD_STACK_SIZE (32 * 1024)  // 32K
@@ -91,7 +81,7 @@
     _rc;                                   \
     })
 
-void __attribute__((constructor)) Init()
+void __attribute__((constructor)) InitHandler(void)
 {
     DFX_InstallSignalHandler();
 }
@@ -118,6 +108,8 @@ enum DumpPreparationStage {
 };
 
 const char* GetLastFatalMessage(void) __attribute__((weak));
+
+void SetPlatformSignalHandler(uintptr_t handler)  __attribute__((weak));
 
 static void FillLastFatalMessageLocked(int32_t sig)
 {
@@ -587,7 +579,7 @@ void ReserveMainThreadSignalStack(void)
     sigaltstack(&signal_stack, NULL);
 }
 
-void DFX_InstallSignalHandler()
+void DFX_InstallSignalHandler(void)
 {
     pthread_mutex_lock(&g_signalHandlerMutex);
     if (g_hasInit) {
@@ -595,11 +587,10 @@ void DFX_InstallSignalHandler()
         return;
     }
 
-#ifdef ENABLE_DEBUG_HOOK
-    StartHookFunc((uintptr_t)DFX_SignalHandler);
-#endif
+    if (SetPlatformSignalHandler != NULL) {
+        SetPlatformSignalHandler((uintptr_t)DFX_SignalHandler);
+    }
 
-#ifndef DFX_LOCAL_UNWIND
     // reserve stack for fork
     g_reservedChildStack = mmap(NULL, RESERVED_CHILD_STACK_SIZE, \
         PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_STACK, 1, 0);
@@ -609,7 +600,7 @@ void DFX_InstallSignalHandler()
         return;
     }
     g_reservedChildStack = (void *)(((uint8_t *)g_reservedChildStack) + RESERVED_CHILD_STACK_SIZE - 1);
-#endif
+
     ReserveMainThreadSignalStack();
     struct sigaction action;
     memset_s(&action, sizeof(action), 0, sizeof(action));
@@ -624,6 +615,7 @@ void DFX_InstallSignalHandler()
             DfxLogError("Failed to register signal.");
         }
     }
+
     g_hasInit = TRUE;
     pthread_mutex_unlock(&g_signalHandlerMutex);
 }
