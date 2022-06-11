@@ -194,7 +194,6 @@ static int g_interestedSignalList[] = {
 
 static struct sigaction g_oldSigactionList[NSIG] = {};
 
-#ifndef DFX_LOCAL_UNWIND
 static void SetInterestedSignalMasks(int how)
 {
     sigset_t set;
@@ -294,7 +293,6 @@ static pid_t DFX_ForkAndDump()
 {
     return clone(DFX_ExecDump, g_reservedChildStack, CLONE_VFORK | CLONE_FS | CLONE_UNTRACED, NULL);
 }
-#endif
 
 static void ResetSignalHandlerIfNeed(int sig)
 {
@@ -312,72 +310,6 @@ static void ResetSignalHandlerIfNeed(int sig)
         signal(sig, SIG_DFL);
     }
 }
-
-#ifdef DFX_LOCAL_UNWIND
-static void DFX_UnwindLocal(int sig, siginfo_t *si, void *context)
-{
-    int32_t fromSignalHandler = 1;
-    DfxProcess *process = NULL;
-    DfxThread *keyThread = NULL;
-    if (!InitThreadByContext(&keyThread, g_request.pid, g_request.tid, &(g_request.context))) {
-        DfxLogWarn("Fail to init key thread.");
-        DestroyThread(keyThread);
-        keyThread = NULL;
-        return;
-    }
-
-    if (!InitProcessWithKeyThread(&process, g_request.pid, keyThread)) {
-        DfxLogWarn("Fail to init process with key thread.");
-        DestroyThread(keyThread);
-        keyThread = NULL;
-        return;
-    }
-
-    unw_cursor_t cursor;
-    unw_context_t unwContext = {};
-    unw_getcontext(&unwContext);
-    if (unw_init_local(&cursor, &unwContext) != 0) {
-        DfxLogWarn("Fail to init local unwind context.");
-        DestroyProcess(process);
-        return;
-    }
-
-    size_t index = 0;
-    do {
-        DfxFrame *frame = GetAvaliableFrame(keyThread);
-        if (frame == NULL) {
-            DfxLogWarn("Fail to create Frame.");
-            break;
-        }
-
-        frame->index = index;
-        char sym[1024] = {0}; // 1024 : symbol buffer size
-        if (unw_get_reg(&cursor, UNW_REG_IP, (unw_word_t*)(&(frame->pc)))) {
-            DfxLogWarn("Fail to get program counter.");
-            break;
-        }
-
-        if (unw_get_reg(&cursor, UNW_REG_SP, (unw_word_t*)(&(frame->sp)))) {
-            DfxLogWarn("Fail to get stack pointer.");
-            break;
-        }
-
-        if (FindMapByAddr(process->maps, frame->pc, &(frame->map))) {
-            frame->relativePc = GetRelativePc(frame, process->maps);
-        }
-
-        if (unw_get_proc_name(&cursor, sym, sizeof(sym), (unw_word_t*)(&(frame->funcOffset))) == 0) {
-            std::string funcName;
-            std::string strSym(sym, sym + strlen(sym));
-            TrimAndDupStr(strSym, funcName);
-            frame->funcName = funcName;
-        }
-        index++;
-    } while (unw_step(&cursor) > 0);
-    WriteProcessDump(process, &g_request, fromSignalHandler);
-    DestroyProcess(process);
-}
-#endif
 
 void ReadStringFromFile(char* path, char* pDestStore)
 {
@@ -495,9 +427,6 @@ static void DFX_SignalHandler(int sig, siginfo_t *si, void *context)
         return;
     }
     FillLastFatalMessageLocked(sig);
-#ifdef DFX_LOCAL_UNWIND
-    DFX_UnwindLocal(sig, si, context);
-#else
     pid_t childPid;
     int status;
     int ret = -1;
@@ -554,7 +483,7 @@ out:
             DfxLogError("Failed to resend signal.");
         }
     }
-#endif
+
     DfxLogInfo("Finish handle signal(%d) in %d:%d", sig, g_request.pid, g_request.tid);
     g_curSig = -1;
     pthread_mutex_unlock(&g_signalHandlerMutex);
