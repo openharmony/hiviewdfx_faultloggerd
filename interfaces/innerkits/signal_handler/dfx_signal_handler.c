@@ -37,9 +37,10 @@
 #include <sys/wait.h>
 
 #include <securec.h>
+
 #include "dfx_log.h"
 
-#if defined (__LF64__)
+#if defined (__LP64__)
 #define RESERVED_CHILD_STACK_SIZE (32 * 1024)  // 32K
 #else
 #define RESERVED_CHILD_STACK_SIZE (16 * 1024)  // 16K
@@ -430,6 +431,7 @@ static void DFX_SignalHandler(int sig, siginfo_t *si, void *context)
     pid_t childPid;
     int status;
     int ret = -1;
+    int timeout = 0;
     int startTime = (int)time(NULL);
     // set privilege for dump ourself
     int prevDumpableStatus = prctl(PR_GET_DUMPABLE);
@@ -465,6 +467,7 @@ static void DFX_SignalHandler(int sig, siginfo_t *si, void *context)
         }
 
         if ((int)time(NULL) - startTime > PROCESSDUMP_TIMEOUT) {
+            timeout = 1;
             DfxLogError("Exceed max wait time, errno(%d)", errno);
             goto out;
         }
@@ -505,6 +508,7 @@ void ReserveMainThreadSignalStack(void)
     signal_stack.ss_sp = g_reservedMainSignalStack;
     signal_stack.ss_size = RESERVED_CHILD_STACK_SIZE;
     signal_stack.ss_flags = 0;
+    prctl(PR_SET_VMA, PR_SET_VMA_ANON_NAME, signal_stack.ss_sp, signal_stack.ss_size, "signal_stack:main");
     sigaltstack(&signal_stack, NULL);
 }
 

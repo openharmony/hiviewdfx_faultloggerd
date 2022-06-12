@@ -15,7 +15,7 @@
 #ifndef DFX_FAULTLOGGERD_CLIENT_H
 #define DFX_FAULTLOGGERD_CLIENT_H
 
-#include <cstdint>
+#include <inttypes.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -23,7 +23,7 @@ extern "C" {
 
 #define FAULTLOGGER_DAEMON_RESP "RESP:COMPLETE"
 
-enum class FaultLoggerType {
+enum FaultLoggerType {
     JAVA_CRASH = 1,
     CPP_CRASH,
     JS_CRASH,
@@ -34,7 +34,7 @@ enum class FaultLoggerType {
     JS_HEAP_SNAPSHOT,
 };
 
-enum class FaultLoggerClientType {
+enum FaultLoggerClientType {
     DEFAULT_CLIENT = 0, // For original request crash info file
     LOG_FILE_DES_CLIENT, // For request a file to record nornal unwind and process dump logs.
     PRINT_T_HILOG_CLIENT, // For request a file to record nornal unwind and process dump logs.
@@ -43,13 +43,13 @@ enum class FaultLoggerClientType {
     MAX_CLIENT
 };
 
-enum class FaultLoggerCheckPermissionResp {
+enum FaultLoggerCheckPermissionResp {
     CHECK_PERMISSION_PASS = 1,
     CHECK_PERMISSION_REJECT,
     CHECK_PERMISSION_MAX
 };
 
-enum class FaultLoggerSdkDumpResp {
+enum FaultLoggerSdkDumpResp {
     SDK_DUMP_PASS = 1,
     SDK_DUMP_REJECT,
     SDK_DUMP_MAX
