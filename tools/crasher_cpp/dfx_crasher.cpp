@@ -162,7 +162,7 @@ NOINLINE int DfxCrasher::MaxMethodNameTest12345678901234567890123456789012345678
 
 NOINLINE int DfxCrasher::StackOverflow() const
 {
-    std::cout << "test stackoverflow enter" << std::endl;
+    std::cout << "call StackOverflow" << std::endl;
     // for stack overflow test
     char a[1024][1024][1024] = { { {'1'} } };
     char b[1024][1024][1024] = { { {'1'} } };
@@ -173,8 +173,6 @@ NOINLINE int DfxCrasher::StackOverflow() const
     std::cout << b[0][0] << std::endl;
     std::cout << c[0][0] << std::endl;
     std::cout << d[0][0] << std::endl;
-
-    std::cout << "test stackoverflow exit" << std::endl;
 
     return 0;
 }

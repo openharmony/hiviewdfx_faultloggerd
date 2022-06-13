@@ -56,7 +56,6 @@
 namespace OHOS {
 namespace HiviewDFX {
 
-static const std::string DUMP_STACK_TAG_FAILED = "failed:";
 std::condition_variable ProcessDumper::backTracePrintCV;
 std::mutex ProcessDumper::backTracePrintMutx;
 
@@ -68,13 +67,13 @@ void LoopPrintBackTraceInfo()
         unsigned int available = ProcessDumper::GetInstance().backTraceRingBuffer_.Available();
         DfxRingBufferBlock<std::string> item = \
             ProcessDumper::GetInstance().backTraceRingBuffer_.Read(available);
-        DfxLogDebug("%s :: available(%d), item.Length(%d) -1.", __func__, available, item.Length());
+        DfxLogDebug("%s :: available(%d), hasFinished(%d)", __func__, available, hasFinished);
         if ((available == 0) && hasFinished) {
-            DfxLogDebug("%s :: print finished, exit loop -1.\n", __func__);
+            DfxLogDebug("%s :: print finished, exit loop.\n", __func__);
             break;
         } else if (available != 0) {
             for (unsigned int i = 0; i < item.Length(); i++) {
-                DfxLogDebug("%s :: print: %s\n", __func__, item.At(i).c_str());
+                DfxLogDebug("%s :: [%d]print: %s\n", __func__, i, item.At(i).c_str());
                 WriteLog(ProcessDumper::GetInstance().backTraceFileFd_, "%s", item.At(i).c_str());
             }
             ProcessDumper::GetInstance().backTraceRingBuffer_.Skip(item.Length());
@@ -277,12 +276,6 @@ ProcessDumper &ProcessDumper::GetInstance()
     return dumper;
 }
 
-void ProcessDumper::PrintDumpFailed()
-{
-    std::cout << DUMP_STACK_TAG_FAILED << std::endl;
-    std::cout << "Dump failed, please check permission and whether pid is valid." << std::endl;
-}
-
 void ProcessDumper::Dump(bool isSignalHdlr, ProcessDumpType type, int32_t pid, int32_t tid)
 {
     backTraceIsFinished_ = false;
@@ -323,8 +316,7 @@ void ProcessDumper::Dump(bool isSignalHdlr, ProcessDumpType type, int32_t pid, i
     }
 
     if (process == nullptr) {
-        DfxLogError("process == nullptr");
-        PrintDumpFailed();
+        DfxLogError("Dump process failed, please check permission and whether pid is valid.");
     } else {
         if (!isSignalHdlr || (isSignalHdlr && process->GetIsSignalDump())) {
             process->Detach();

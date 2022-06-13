@@ -62,7 +62,6 @@ private:
     void DumpProcess(std::shared_ptr<DfxProcess> &process, std::shared_ptr<ProcessDumpRequest> request);
     void InitPrintThread(int32_t fromSignalHandler, std::shared_ptr<ProcessDumpRequest> request, \
         std::shared_ptr<DfxProcess> process);
-    void PrintDumpFailed();
     void PrintDumpProcessWithSignalContextHeader(std::shared_ptr<DfxProcess> process, siginfo_t info,
                                                  const std::string& msg);
     void PrintDumpProcessFooter(std::shared_ptr<DfxProcess> process, bool printMapFlag);

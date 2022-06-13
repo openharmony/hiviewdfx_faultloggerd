@@ -157,10 +157,8 @@ void ProcessDumpRequest::SetContext(ucontext_t const &context)
 
 DfxDumpWriter::DfxDumpWriter(std::shared_ptr<DfxProcess> process, int32_t fromSignalHandler)
 {
-    DfxLogDebug("Enter %s.", __func__);
     process_ = process;
     fromSignalHandler_ = fromSignalHandler;
-    DfxLogDebug("Exit %s.", __func__);
 }
 } // namespace HiviewDFX
 } // namespace OHOS
