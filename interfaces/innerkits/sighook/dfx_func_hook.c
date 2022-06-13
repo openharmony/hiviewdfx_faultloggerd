@@ -19,12 +19,17 @@
 #include <fcntl.h>
 #include <inttypes.h>
 #include <signal.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <unistd.h>
 
 #include <sys/stat.h>
 
+#include <libunwind_i-ohos.h>
+#include <libunwind.h>
+#include <map_info.h>
 #include <securec.h>
+
 #include "log_wrapper.h"
 
 #ifdef LOG_DOMAIN
@@ -36,6 +41,14 @@
 #undef LOG_TAG
 #define LOG_TAG "DfxFuncHook"
 #endif
+
+#ifndef SIGDUMP
+#define SIGDUMP 35
+#endif
+
+#define MIN_FRAME 4
+#define MAX_FRAME 64
+#define BUF_SZ 512
 
 void __attribute__((constructor)) InitHook(void)
 {
@@ -53,7 +66,7 @@ static SigprocmaskFunc hookedSigprocmask = NULL;
 static SignalFunc hookedSignal = NULL;
 static PthreadSigmaskFunc hookedPthreadSigmask = NULL;
 static uintptr_t g_signalHandler = 0;
-
+static pthread_mutex_t g_backtraceLock = PTHREAD_MUTEX_INITIALIZER;
 void SetPlatformSignalHandler(uintptr_t handler)
 {
     if (g_signalHandler == 0) {
@@ -61,10 +74,97 @@ void SetPlatformSignalHandler(uintptr_t handler)
     }
 }
 
+void LogBacktrace()
+{
+    pthread_mutex_lock(&g_backtraceLock);
+    unw_addr_space_t as = NULL;
+    unw_init_local_address_space(&as);
+    if (as == NULL) {
+        pthread_mutex_unlock(&g_backtraceLock);
+        return;
+    }
+
+    unw_context_t context;
+    unw_getcontext(&context);
+
+    unw_cursor_t cursor;
+    unw_init_local_with_as(as, &cursor, &context);
+
+    int index = 0;
+    unw_word_t pc;
+    unw_word_t relPc;
+    unw_word_t prevPc;
+    unw_word_t sz;
+    uint64_t start;
+    uint64_t end;
+    struct map_info* mapInfo;
+    while (true) {
+        if (index > MAX_FRAME) {
+            break;
+        }
+
+        if (unw_get_reg(&cursor, UNW_REG_IP, (unw_word_t*)(&pc))) {
+            break;
+        }
+
+        if (index > MIN_FRAME && prevPc == pc) {
+            break;
+        }
+        prevPc = pc;
+
+        relPc = unw_get_rel_pc(&cursor);
+        mapInfo = unw_get_map(&cursor);
+        if (mapInfo == NULL && index > 1) {
+            break;
+        }
+
+        sz = unw_get_previous_instr_sz(&cursor);
+        if (index != 0 && relPc != 0) {
+            relPc -= sz;
+        }
+
+        char buf[BUF_SZ];
+        (void)memset_s(&buf, sizeof(buf), 0, sizeof(buf));
+        if (unw_get_symbol_info_by_pc(as, pc, BUF_SZ, buf, &start, &end) == 0) {
+            LOGI("#%02d %016p(%016p) %s %s\n", index, relPc, pc,
+                mapInfo == NULL ? "Unknown" : mapInfo->path,
+                buf);
+        } else {
+            LOGI("#%02d %016p(%016p) %s\n", index, relPc, pc,
+                mapInfo == NULL ? "Unknown" : mapInfo->path);
+        }
+        index++;
+
+        if (unw_step(&cursor) <= 0) {
+            break;
+        }
+    }
+    unw_destroy_local_address_space(as);
+    pthread_mutex_unlock(&g_backtraceLock);
+}
+
+bool IsPlatformHandleSignal(int sig)
+{
+    int platformSignals[] = {
+        SIGABRT, SIGBUS, SIGILL, SIGSEGV, SIGDUMP
+    };
+    for (size_t i = 0; i < sizeof(platformSignals) / sizeof(platformSignals[0]); i++) {
+        if (platformSignals[i] == sig) {
+            return true;
+        }
+    }
+    return false;
+}
+
 int kill(pid_t pid, int sig)
 {
-    // debug kill, abort if kill themself
     LOGI("%d send signal(%d) to %d\n", getpid(), sig, pid);
+    if ((sig == SIGKILL) && (pid == getpid())) {
+        abort();
+    } else if (sig == SIGKILL) {
+        LogBacktrace();
+    }
+
     if (hookedKill == NULL) {
         LOGE("hooked kill is NULL?\n");
         return -1;
@@ -76,9 +176,10 @@ int pthread_sigmask(int how, const sigset_t *restrict set, sigset_t *restrict ol
 {
     if (set != NULL) {
         for (int i = 1; i < 63; i++) {
-            if (sigismember(set, i) &&
+            if (sigismember(set, i) && (IsPlatformHandleSignal(i)) &&
                 ((how == SIG_BLOCK) || (how == SIG_SETMASK))) {
                 LOGI("%d:%d pthread_sigmask signal(%d)\n", getpid(), gettid(), i);
+                LogBacktrace();
             }
         }
     }
@@ -94,9 +195,10 @@ int sigprocmask(int how, const sigset_t *restrict set, sigset_t *restrict oldset
 {
     if (set != NULL) {
         for (int i = 1; i < 63; i++) {
-            if (sigismember(set, i) &&
+            if (sigismember(set, i) && (IsPlatformHandleSignal(i)) &&
                 ((how == SIG_BLOCK) || (how == SIG_SETMASK))) {
                 LOGI("%d:%d sigprocmask signal(%d)\n", getpid(), gettid(), i);
+                LogBacktrace();
             }
         }
     }
@@ -109,7 +211,11 @@ int sigprocmask(int how, const sigset_t *restrict set, sigset_t *restrict oldset
 
 sighandler_t signal(int signum, sighandler_t handler)
 {
-    LOGI("%d register signal handler for signal(%d)\n", getpid(), signum);
+    if (IsPlatformHandleSignal(signum)) {
+        LOGI("%d register signal handler for signal(%d)\n", getpid(), signum);
+        LogBacktrace();
+    }
+
     if (hookedSignal == NULL) {
         LOGE("hooked signal is NULL?\n");
         return NULL;
@@ -119,15 +225,15 @@ sighandler_t signal(int signum, sighandler_t handler)
 
 int sigaction(int sig, const struct sigaction *restrict act, struct sigaction *restrict oact)
 {
-    LOGI("%d call sigaction and signo is %d\n", getpid(), sig);
     if (hookedSigaction == NULL) {
         LOGE("hooked sigaction is NULL?");
         return -1;
     }
 
-    if (act != NULL && ((uintptr_t)(act->sa_sigaction) != (uintptr_t)g_signalHandler)) {
-        LOGE("current signalhandler addr:%p, original addr:%p\n",
-            (uintptr_t)act->sa_sigaction, (uintptr_t)g_signalHandler);
+    if (IsPlatformHandleSignal(sig) && ((act == NULL) ||
+        ((act != NULL) && ((uintptr_t)(act->sa_sigaction) != (uintptr_t)g_signalHandler)))) {
+        LOGI("%d call sigaction and signo is %d\n", getpid(), sig);
+        LogBacktrace();
     }
 
     return hookedSigaction(sig, act, oact);

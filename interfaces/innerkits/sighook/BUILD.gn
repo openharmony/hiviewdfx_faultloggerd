@@ -26,7 +26,10 @@ if (!defined(ohos_lite)) {
 
     sources = [ "dfx_func_hook.c" ]
 
-    deps = [ "$faultloggerd_path/common/log:static_log_wrapper" ]
+    deps = [
+      "$faultloggerd_path/common/log:static_log_wrapper",
+      "//third_party/libunwind:libunwind",
+    ]
 
     external_deps = [
       "hilog_native:libhilog_base",
