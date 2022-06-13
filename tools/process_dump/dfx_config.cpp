@@ -20,6 +20,8 @@
 #include "dfx_log.h"
 #include "dfx_config.h"
 
+static const char FAULTLOGGER_CONF_PATH[] = "/system/etc/faultlogger.conf";
+
 namespace OHOS {
 namespace HiviewDFX {
 DfxConfig &DfxConfig::GetInstance()
@@ -161,7 +163,7 @@ void DfxConfig::ReadConfig()
     do {
         FILE *fp = nullptr;
         char codeBuffer[CONF_LINE_SIZE] = {0};
-        fp = fopen("/system/etc/faultlogger.conf", "r");
+        fp = fopen(FAULTLOGGER_CONF_PATH, "r");
         if (fp == nullptr) {
             break;
         }

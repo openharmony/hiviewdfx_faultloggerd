@@ -288,7 +288,7 @@ static int DFX_ExecDump(void *arg)
         return INHERIT_CAP_FAIL;
     }
 
-    DfxLogInfo("Start processdump.");
+    DfxLogInfo("execle processdump.");
 #ifdef DFX_LOG_USE_HILOG_BASE
     execle("/system/bin/processdump", "-signalhandler", NULL, NULL);
 #else

@@ -192,14 +192,13 @@ bool DfxUnwindRemote::UnwindThread(std::shared_ptr<DfxProcess> process, std::sha
     }
 
     pid_t tid = thread->GetThreadId();
-    std::shared_ptr<DfxRegs> regs = thread->GetThreadRegs();
     char buf[LOG_BUF_LEN] = {0};
     int ret = snprintf_s(buf, sizeof(buf), sizeof(buf) - 1, "Tid:%d, Name:%s\n", tid, thread->GetThreadName().c_str());
     if (ret <= 0) {
         DfxLogError("%s :: snprintf_s failed, line: %d.", __func__, __LINE__);
     }
-
     OHOS::HiviewDFX::ProcessDumper::GetInstance().PrintDumpProcessMsg(std::string(buf));
+
     void *context = _UPT_create(tid);
     if (!context) {
         return false;
@@ -220,6 +219,7 @@ bool DfxUnwindRemote::UnwindThread(std::shared_ptr<DfxProcess> process, std::sha
         return false;
     }
 
+    std::shared_ptr<DfxRegs> regs = thread->GetThreadRegs();
     if (regs != nullptr) {
         std::vector<uintptr_t> regsVector = regs->GetRegsData();
         uwn_set_context(&cursor, regsVector.data(), regsVector.size());

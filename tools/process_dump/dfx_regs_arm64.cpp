@@ -56,8 +56,8 @@ enum RegisterSeqNum {
     REG_AARCH64_X28,
     REG_AARCH64_X29,
     REG_AARCH64_X30,
-    REG_AARCH64_X31,
-    REG_AARCH64_X32
+    REG_AARCH64_SP = 31,
+    REG_AARCH64_PC
 };
 
 DfxRegsArm64::DfxRegsArm64(const ucontext_t &context)
@@ -98,7 +98,7 @@ DfxRegsArm64::DfxRegsArm64(const ucontext_t &context)
     regs.push_back(uintptr_t(context.uc_mcontext.pc));       // 32:pc
 
     SetRegs(regs);
-    DfxLogDebug("lr:%016lx sp:%016lx pc:%016lx\n", regs[REG_AARCH64_X30], regs[REG_AARCH64_X31], regs[REG_AARCH64_X32]);
+    DfxLogDebug("lr:%016lx sp:%016lx pc:%016lx\n", regs[REG_AARCH64_X30], regs[REG_AARCH64_SP], regs[REG_AARCH64_PC]);
 }
 
 std::string DfxRegsArm64::PrintRegs() const
@@ -168,7 +168,7 @@ std::string DfxRegsArm64::PrintRegs() const
 
     ret = snprintf_s(buf + strlen(buf), sizeof(buf) - strlen(buf), sizeof(buf) - strlen(buf) - 1, \
         "lr:%016lx sp:%016lx pc:%016lx\n", \
-        regs[REG_AARCH64_X30], regs[REG_AARCH64_X31], regs[REG_AARCH64_X32]);
+        regs[REG_AARCH64_X30], regs[REG_AARCH64_SP], regs[REG_AARCH64_PC]);
     if (ret <= 0) {
         DfxLogError("%s :: snprintf_s failed, line: %d.", __func__, __LINE__);
     }
