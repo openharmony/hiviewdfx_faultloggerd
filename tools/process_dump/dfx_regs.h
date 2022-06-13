@@ -35,11 +35,12 @@ public:
         return regsData_;
     }
     virtual std::string PrintRegs() const = 0;
+    virtual std::string GetSpecialRegisterName(uintptr_t val) const = 0;
     void SetRegs(const std::vector<uintptr_t> regs)
     {
         regsData_ = regs;
     }
-private:
+protected:
     std::vector<uintptr_t> regsData_ {};
 };
 
@@ -48,6 +49,7 @@ public:
     explicit DfxRegsArm(const ucontext_t &context);
     ~DfxRegsArm() override {};
     std::string PrintRegs() const override;
+    std::string GetSpecialRegisterName(uintptr_t val) const override;
 private:
     DfxRegsArm() = delete;
 };
@@ -57,6 +59,7 @@ public:
     explicit DfxRegsArm64(const ucontext_t &context);
     ~DfxRegsArm64() override {};
     std::string PrintRegs() const override;
+    std::string GetSpecialRegisterName(uintptr_t val) const override;
 private:
     DfxRegsArm64() = delete;
 };
@@ -66,6 +69,7 @@ public:
     explicit DfxRegsX86_64(const ucontext_t &context);
     ~DfxRegsX86_64() override {};
     std::string PrintRegs() const override;
+    std::string GetSpecialRegisterName(uintptr_t val) const override;
 private:
     DfxRegsX86_64() = delete;
 };

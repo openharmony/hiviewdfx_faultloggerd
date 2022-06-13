@@ -101,6 +101,20 @@ DfxRegsArm64::DfxRegsArm64(const ucontext_t &context)
     DfxLogDebug("lr:%016lx sp:%016lx pc:%016lx\n", regs[REG_AARCH64_X30], regs[REG_AARCH64_SP], regs[REG_AARCH64_PC]);
 }
 
+std::string DfxRegsArm64::GetSpecialRegisterName(uintptr_t val) const
+{
+    if (val == regsData_[REG_AARCH64_PC]) {
+        return "pc";
+    } else if (val == regsData_[REG_AARCH64_X30]) {
+        return "lr";
+    } else if (val == regsData_[REG_AARCH64_SP]) {
+        return "sp";
+    } else if (val == regsData_[REG_AARCH64_X29]) {
+        return "fp";
+    }
+    return "";
+}
+
 std::string DfxRegsArm64::PrintRegs() const
 {
     std::string regString = "";

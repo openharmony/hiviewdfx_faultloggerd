@@ -28,6 +28,7 @@ namespace OHOS {
 namespace HiviewDFX {
     bool ReadStringFromFile(const std::string &path, std::string &buf, size_t len);
     bool TrimAndDupStr(const std::string &source, std::string &str);
+    std::string GetCurrentTimeStr(uint64_t current = 0);
 } // nameapace HiviewDFX
 } // nameapace OHOS
 
