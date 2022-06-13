@@ -69,16 +69,16 @@ if (defined(ohos_lite)) {
       "dfx_signal_handler.c",
     ]
 
-    deps = [ "$faultloggerd_path/interfaces/innerkits/faultloggerd_client:libfaultloggerd" ]
-
     external_deps = [
       "hilog_native:libhilog_base",
       "utils_base:utils",
     ]
+
     install_images = [
       "system",
       "updater",
     ]
+
     part_name = "faultloggerd"
     subsystem_name = "hiviewdfx"
   }

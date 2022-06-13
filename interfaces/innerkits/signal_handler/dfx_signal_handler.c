@@ -37,19 +37,10 @@
 #include <sys/wait.h>
 
 #include <securec.h>
-#include "dfx_func_hook.h"
+
 #include "dfx_log.h"
 
-#ifdef DFX_LOCAL_UNWIND
-#include <libunwind.h>
-
-#include "dfx_dump_writer.h"
-#include "dfx_process.h"
-#include "dfx_thread.h"
-#include "dfx_util.h"
-#endif
-
-#if defined (__LF64__)
+#if defined (__LP64__)
 #define RESERVED_CHILD_STACK_SIZE (32 * 1024)  // 32K
 #else
 #define RESERVED_CHILD_STACK_SIZE (16 * 1024)  // 16K
@@ -91,7 +82,7 @@
     _rc;                                   \
     })
 
-void __attribute__((constructor)) Init()
+void __attribute__((constructor)) InitHandler(void)
 {
     DFX_InstallSignalHandler();
 }
@@ -118,6 +109,8 @@ enum DumpPreparationStage {
 };
 
 const char* GetLastFatalMessage(void) __attribute__((weak));
+
+void SetPlatformSignalHandler(uintptr_t handler)  __attribute__((weak));
 
 static void FillLastFatalMessageLocked(int32_t sig)
 {
@@ -202,7 +195,6 @@ static int g_interestedSignalList[] = {
 
 static struct sigaction g_oldSigactionList[NSIG] = {};
 
-#ifndef DFX_LOCAL_UNWIND
 static void SetInterestedSignalMasks(int how)
 {
     sigset_t set;
@@ -302,7 +294,6 @@ static pid_t DFX_ForkAndDump()
 {
     return clone(DFX_ExecDump, g_reservedChildStack, CLONE_VFORK | CLONE_FS | CLONE_UNTRACED, NULL);
 }
-#endif
 
 static void ResetSignalHandlerIfNeed(int sig)
 {
@@ -320,72 +311,6 @@ static void ResetSignalHandlerIfNeed(int sig)
         signal(sig, SIG_DFL);
     }
 }
-
-#ifdef DFX_LOCAL_UNWIND
-static void DFX_UnwindLocal(int sig, siginfo_t *si, void *context)
-{
-    int32_t fromSignalHandler = 1;
-    DfxProcess *process = NULL;
-    DfxThread *keyThread = NULL;
-    if (!InitThreadByContext(&keyThread, g_request.pid, g_request.tid, &(g_request.context))) {
-        DfxLogWarn("Fail to init key thread.");
-        DestroyThread(keyThread);
-        keyThread = NULL;
-        return;
-    }
-
-    if (!InitProcessWithKeyThread(&process, g_request.pid, keyThread)) {
-        DfxLogWarn("Fail to init process with key thread.");
-        DestroyThread(keyThread);
-        keyThread = NULL;
-        return;
-    }
-
-    unw_cursor_t cursor;
-    unw_context_t unwContext = {};
-    unw_getcontext(&unwContext);
-    if (unw_init_local(&cursor, &unwContext) != 0) {
-        DfxLogWarn("Fail to init local unwind context.");
-        DestroyProcess(process);
-        return;
-    }
-
-    size_t index = 0;
-    do {
-        DfxFrame *frame = GetAvaliableFrame(keyThread);
-        if (frame == NULL) {
-            DfxLogWarn("Fail to create Frame.");
-            break;
-        }
-
-        frame->index = index;
-        char sym[1024] = {0}; // 1024 : symbol buffer size
-        if (unw_get_reg(&cursor, UNW_REG_IP, (unw_word_t*)(&(frame->pc)))) {
-            DfxLogWarn("Fail to get program counter.");
-            break;
-        }
-
-        if (unw_get_reg(&cursor, UNW_REG_SP, (unw_word_t*)(&(frame->sp)))) {
-            DfxLogWarn("Fail to get stack pointer.");
-            break;
-        }
-
-        if (FindMapByAddr(process->maps, frame->pc, &(frame->map))) {
-            frame->relativePc = GetRelativePc(frame, process->maps);
-        }
-
-        if (unw_get_proc_name(&cursor, sym, sizeof(sym), (unw_word_t*)(&(frame->funcOffset))) == 0) {
-            std::string funcName;
-            std::string strSym(sym, sym + strlen(sym));
-            TrimAndDupStr(strSym, funcName);
-            frame->funcName = funcName;
-        }
-        index++;
-    } while (unw_step(&cursor) > 0);
-    WriteProcessDump(process, &g_request, fromSignalHandler);
-    DestroyProcess(process);
-}
-#endif
 
 void ReadStringFromFile(char* path, char* pDestStore)
 {
@@ -503,12 +428,10 @@ static void DFX_SignalHandler(int sig, siginfo_t *si, void *context)
         return;
     }
     FillLastFatalMessageLocked(sig);
-#ifdef DFX_LOCAL_UNWIND
-    DFX_UnwindLocal(sig, si, context);
-#else
     pid_t childPid;
     int status;
     int ret = -1;
+    int timeout = 0;
     int startTime = (int)time(NULL);
     // set privilege for dump ourself
     int prevDumpableStatus = prctl(PR_GET_DUMPABLE);
@@ -544,6 +467,7 @@ static void DFX_SignalHandler(int sig, siginfo_t *si, void *context)
         }
 
         if ((int)time(NULL) - startTime > PROCESSDUMP_TIMEOUT) {
+            timeout = 1;
             DfxLogError("Exceed max wait time, errno(%d)", errno);
             goto out;
         }
@@ -562,7 +486,7 @@ out:
             DfxLogError("Failed to resend signal.");
         }
     }
-#endif
+
     DfxLogInfo("Finish handle signal(%d) in %d:%d", sig, g_request.pid, g_request.tid);
     g_curSig = -1;
     pthread_mutex_unlock(&g_signalHandlerMutex);
@@ -584,10 +508,11 @@ void ReserveMainThreadSignalStack(void)
     signal_stack.ss_sp = g_reservedMainSignalStack;
     signal_stack.ss_size = RESERVED_CHILD_STACK_SIZE;
     signal_stack.ss_flags = 0;
+    prctl(PR_SET_VMA, PR_SET_VMA_ANON_NAME, signal_stack.ss_sp, signal_stack.ss_size, "signal_stack:main");
     sigaltstack(&signal_stack, NULL);
 }
 
-void DFX_InstallSignalHandler()
+void DFX_InstallSignalHandler(void)
 {
     pthread_mutex_lock(&g_signalHandlerMutex);
     if (g_hasInit) {
@@ -595,11 +520,10 @@ void DFX_InstallSignalHandler()
         return;
     }
 
-#ifdef ENABLE_DEBUG_HOOK
-    StartHookFunc((uintptr_t)DFX_SignalHandler);
-#endif
+    if (SetPlatformSignalHandler != NULL) {
+        SetPlatformSignalHandler((uintptr_t)DFX_SignalHandler);
+    }
 
-#ifndef DFX_LOCAL_UNWIND
     // reserve stack for fork
     g_reservedChildStack = mmap(NULL, RESERVED_CHILD_STACK_SIZE, \
         PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_STACK, 1, 0);
@@ -609,7 +533,7 @@ void DFX_InstallSignalHandler()
         return;
     }
     g_reservedChildStack = (void *)(((uint8_t *)g_reservedChildStack) + RESERVED_CHILD_STACK_SIZE - 1);
-#endif
+
     ReserveMainThreadSignalStack();
     struct sigaction action;
     memset_s(&action, sizeof(action), 0, sizeof(action));
@@ -624,6 +548,7 @@ void DFX_InstallSignalHandler()
             DfxLogError("Failed to register signal.");
         }
     }
+
     g_hasInit = TRUE;
     pthread_mutex_unlock(&g_signalHandlerMutex);
 }

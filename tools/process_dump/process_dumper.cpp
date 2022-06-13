@@ -338,6 +338,7 @@ void ProcessDumper::Dump(bool isSignalHdlr, ProcessDumpType type, int32_t pid, i
     }
 
     CloseDebugLog();
+    _exit(0);
 }
 
 } // namespace HiviewDFX

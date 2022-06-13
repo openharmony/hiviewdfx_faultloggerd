@@ -160,7 +160,7 @@ NOINLINE int MaxMethodNameTest12345678901234567890123456789012345678901234567890
 
 NOINLINE int StackOverflow(void)
 {
-	printf("call StackOverflow\n");
+    printf("call StackOverflow\n");
     
     // for stack overflow test
     char a[1024][1024][1024] = { { {'1'} } };

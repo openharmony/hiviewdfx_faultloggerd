@@ -157,7 +157,11 @@ bool DfxUnwindRemote::DfxUnwindRemoteDoUnwindStep(size_t const & index,
     frame->SetFrameSp(frameSp);
 
     uint64_t relPc = unw_get_rel_pc(&cursor);
-    if (index == 0) {
+    if (relPc == 0) {
+        relPc = framePc;
+    }
+
+    if (index != 0) {
         relPc = DfxUnwindRemoteDoAdjustPc(cursor, relPc);
     }
     frame->SetFrameRelativePc(relPc);
@@ -173,6 +177,7 @@ bool DfxUnwindRemote::DfxUnwindRemoteDoUnwindStep(size_t const & index,
             frame->SetFrameFuncOffset(funcOffset);
         }
     } else {
+        frame->SetFrameMapName("Not Mapped");
         isValidFrame = false;
     }
 

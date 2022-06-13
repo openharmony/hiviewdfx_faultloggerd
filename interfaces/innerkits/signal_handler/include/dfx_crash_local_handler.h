@@ -12,12 +12,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef DFX_FUNC_HOOK_H
-#define DFX_FUNC_HOOK_H
+#ifndef DFX_CRASH_LOCAL_HANDLER_H
+#define DFX_CRASH_LOCAL_HANDLER_H
+
+#include <signal.h>
+#include <sys/ucontext.h>
+
+#include "dfx_signal_handler.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
-void StartHookFunc(uintptr_t sighdlr);
+// we may fail to unwind in processdump in some circumstances, such as processdump crash or execve timeout
+// in such cases, we should try unwind in signal handler rather than lost a crash event
+// only use for collecting crash signal
+void CrashLocalHandler(struct ProcessDumpRequest* request, siginfo_t* info, ucontext_t* ucontext);
+
 #ifdef __cplusplus
 }
 #endif
