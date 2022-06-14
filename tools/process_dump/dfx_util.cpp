@@ -18,12 +18,15 @@
 #include "dfx_util.h"
 
 #include <cctype>
-#include <fstream>
-#include <iostream>
 #include <climits>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <ctime>
+#include <fstream>
+#include <iostream>
+
+#include <securec.h>
 
 #include "dfx_define.h"
 #include "dfx_log.h"
@@ -87,6 +90,31 @@ bool TrimAndDupStr(const std::string &source, std::string &str)
 
     str.assign(begin, maxStrLen);
     return true;
+}
+
+std::string GetCurrentTimeStr(uint64_t current)
+{
+    time_t now = time(nullptr);
+    int millsecond = 0;
+    const uint64_t ratio = 1000;
+    if (current > static_cast<uint64_t>(now)) {
+        millsecond = current % ratio;
+        now = current / ratio;
+    }
+
+    auto tm = std::localtime(&now);
+    char seconds[128] = {0}; // 128 : time buffer size
+    if (strftime(seconds, sizeof(seconds) - 1, "%Y-%m-%d %H:%M:%S", tm) == 0) {
+        return "invalid timestamp\n";
+    }
+
+    char millBuf[256] = {0}; // 256 : millseconds buffer size
+    int ret = snprintf_s(millBuf, sizeof(millBuf), sizeof(millBuf) - 1,
+        "%s.%03d\n", seconds, millsecond);
+    if (ret <= 0) {
+        return "invalid timestamp\n";
+    }
+    return std::string(millBuf, strlen(millBuf));
 }
 }   // namespace HiviewDFX
 }   // namespace OHOS

@@ -45,6 +45,10 @@ enum RegisterSeqNum {
     REG_X86_64_R16
 };
 
+std::string DfxRegsX86_64::GetSpecialRegisterName(uintptr_t val) const
+{
+    return "";
+}
 
 DfxRegsX86_64::DfxRegsX86_64(const ucontext_t &context)
 {

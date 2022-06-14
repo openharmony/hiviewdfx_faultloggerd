@@ -41,6 +41,7 @@
 #include "dfx_signal.h"
 #include "dfx_thread.h"
 #include "dfx_unwind_remote.h"
+#include "dfx_util.h"
 
 #include "cppcrash_reporter.h"
 
@@ -228,8 +229,10 @@ void ProcessDumper::DumpProcessWithSignalContext(std::shared_ptr<DfxProcess> &pr
 
     if (request->GetSiginfo().si_signo != SIGDUMP) {
         process->SetIsSignalDump(false);
+        PrintDumpProcessMsg("Timestamp:" + GetCurrentTimeStr(request->GetTimeStamp()));
     } else {
         process->SetIsSignalDump(true);
+        PrintDumpProcessMsg("Timestamp:" + GetCurrentTimeStr());
     }
 
     process->InitOtherThreads();

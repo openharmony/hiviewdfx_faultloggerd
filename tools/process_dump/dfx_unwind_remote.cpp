@@ -42,7 +42,8 @@ namespace OHOS {
 namespace HiviewDFX {
 static const int SYMBOL_BUF_SIZE = 4096;
 // we should have at least 2 frames, one is pc and the other is lr
-static const int MIN_VALID_FRAME_COUNT = 2;
+// if pc and lr are both invalid, just try fp
+static const int MIN_VALID_FRAME_COUNT = 3;
 
 DfxUnwindRemote &DfxUnwindRemote::GetInstance()
 {
@@ -177,7 +178,12 @@ bool DfxUnwindRemote::DfxUnwindRemoteDoUnwindStep(size_t const & index,
             frame->SetFrameFuncOffset(funcOffset);
         }
     } else {
-        frame->SetFrameMapName("Not Mapped");
+        std::string tips = "Not mapped ";
+        std::shared_ptr<DfxRegs> regs = thread->GetThreadRegs();
+        if (regs != nullptr) {
+            tips.append(regs->GetSpecialRegisterName(framePc));
+        }
+        frame->SetFrameMapName(tips);
         isValidFrame = false;
     }
 

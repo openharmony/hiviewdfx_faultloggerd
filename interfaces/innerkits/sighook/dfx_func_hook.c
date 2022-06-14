@@ -91,6 +91,7 @@ void LogBacktrace()
     unw_init_local_with_as(as, &cursor, &context);
 
     int index = 0;
+    int ret;
     unw_word_t pc;
     unw_word_t relPc;
     unw_word_t prevPc;
@@ -98,6 +99,7 @@ void LogBacktrace()
     uint64_t start;
     uint64_t end;
     struct map_info* mapInfo;
+    bool shouldContinue = true;
     while (true) {
         if (index > MAX_FRAME) {
             break;
@@ -119,14 +121,14 @@ void LogBacktrace()
         }
 
         sz = unw_get_previous_instr_sz(&cursor);
-        if (index != 0 && relPc != 0) {
+        if (index != 0 && relPc > sz) {
             relPc -= sz;
         }
 
         char buf[BUF_SZ];
         (void)memset_s(&buf, sizeof(buf), 0, sizeof(buf));
         if (unw_get_symbol_info_by_pc(as, pc, BUF_SZ, buf, &start, &end) == 0) {
-            LOGI("#%02d %016p(%016p) %s %s\n", index, relPc, pc,
+            LOGI("#%02d %016p(%016p) %s(%s)\n", index, relPc, pc,
                 mapInfo == NULL ? "Unknown" : mapInfo->path,
                 buf);
         } else {
@@ -135,7 +137,14 @@ void LogBacktrace()
         }
         index++;
 
-        if (unw_step(&cursor) <= 0) {
+        if (!shouldContinue) {
+            break;
+        }
+
+        ret = unw_step(&cursor);
+        if (ret == 0) {
+            shouldContinue = false;
+        } else if (ret < 0) {
             break;
         }
     }

@@ -71,6 +71,20 @@ DfxRegsArm::DfxRegsArm(const ucontext_t& context)
         regs[REG_ARM_R13], regs[REG_ARM_R14], regs[REG_ARM_R15]);
 }
 
+std::string DfxRegsArm::GetSpecialRegisterName(uintptr_t val) const
+{
+    if (val == regsData_[REG_ARM_R15]) {
+        return "pc";
+    } else if (val == regsData_[REG_ARM_R14]) {
+        return "lr";
+    } else if (val == regsData_[REG_ARM_R13]) {
+        return "sp";
+    } else if (val == regsData_[REG_ARM_R11]) {
+        return "fp";
+    }
+    return "";
+}
+
 std::string DfxRegsArm::PrintRegs() const
 {
     std::string regString = "";
