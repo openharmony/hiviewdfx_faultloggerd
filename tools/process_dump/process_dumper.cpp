@@ -207,11 +207,12 @@ void ProcessDumper::DumpProcessWithSignalContext(std::shared_ptr<DfxProcess> &pr
     std::shared_ptr<DfxThread> keyThread = std::make_shared<DfxThread>(request->GetPid(),
                                                                        request->GetTid(),
                                                                        request->GetContext());
-    if (!keyThread || !keyThread->IsThreadInititalized()) {
-        DfxLogError("Fail to init key thread.");
+    if (!keyThread->Attach()) {
+        DfxLogError("Fail to attach key thread.");
         return;
     }
 
+    bool isCrashRequest = (request->GetSiginfo().si_signo != SIGDUMP);
     keyThread->SetIsCrashThread(true);
     if ((keyThread->GetThreadName()).empty()) {
         keyThread->SetThreadName(storeThreadName);
@@ -227,7 +228,7 @@ void ProcessDumper::DumpProcessWithSignalContext(std::shared_ptr<DfxProcess> &pr
         process->UpdateProcessName(storeProcessName);
     }
 
-    if (request->GetSiginfo().si_signo != SIGDUMP) {
+    if (isCrashRequest) {
         process->SetIsSignalDump(false);
         PrintDumpProcessMsg("Timestamp:" + GetCurrentTimeStr(request->GetTimeStamp()));
     } else {
@@ -235,7 +236,7 @@ void ProcessDumper::DumpProcessWithSignalContext(std::shared_ptr<DfxProcess> &pr
         PrintDumpProcessMsg("Timestamp:" + GetCurrentTimeStr());
     }
 
-    process->InitOtherThreads();
+    process->InitOtherThreads(isCrashRequest);
     process->SetUid(request->GetUid());
     process->SetIsSignalHdlr(true);
 
@@ -250,9 +251,9 @@ void ProcessDumper::DumpProcess(std::shared_ptr<DfxProcess> &process,
 {
     if (request != nullptr) {
         if (request->GetType() == DUMP_TYPE_PROCESS) {
-        process = DfxProcess::CreateProcessWithKeyThread(request->GetPid(), nullptr);
-        if (process) {
-            process->InitOtherThreads();
+            process = DfxProcess::CreateProcessWithKeyThread(request->GetPid(), nullptr);
+            if (process) {
+                process->InitOtherThreads(false);
             }
         } else if (request->GetType() == DUMP_TYPE_THREAD) {
             process = DfxProcess::CreateProcessWithKeyThread(request->GetTid(), nullptr);

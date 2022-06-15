@@ -95,8 +95,9 @@ bool DfxUnwindRemote::UnwindProcess(std::shared_ptr<DfxProcess> process)
             process->PrintThreadsHeaderByConfig();
         }
 
-        if (!UnwindThread(process, thread)) {
-            DfxLogWarn("Fail to unwind thread.");
+        if (thread->Attach()) {
+            UnwindThread(process, thread);
+            thread->Detach();
         }
 
         if (thread->GetIsCrashThread() && (process->GetIsSignalDump() == false) && \
@@ -243,14 +244,12 @@ bool DfxUnwindRemote::UnwindThread(std::shared_ptr<DfxProcess> process, std::sha
         unw_word_t tmpPc = 0;
         unw_get_reg(&cursor, UNW_REG_IP, &tmpPc);
         if (oldPc == tmpPc && index != 0) {
-            DfxLogWarn("Break unwstep as tmpPc is same with old_ip .");
             break;
         }
         oldPc = tmpPc;
 
         // store current frame
         if (!DfxUnwindRemoteDoUnwindStep(index, thread, cursor, process)) {
-            DfxLogWarn("Break unwstep as DfxUnwindRemoteDoUnwindStep failed -1.");
             break;
         }
         index++;

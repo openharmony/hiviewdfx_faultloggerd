@@ -58,7 +58,6 @@ DfxThread::DfxThread(const pid_t pid, const pid_t tid, const ucontext_t &context
 
 DfxThread::DfxThread(const pid_t pid, const pid_t tid)
 {
-    threadStatus_ = ThreadStatus::THREAD_STATUS_INIT;
     regs_ = nullptr;
     threadName_ = "";
     unwStopReason_ = -1;
@@ -66,6 +65,7 @@ DfxThread::DfxThread(const pid_t pid, const pid_t tid)
         DfxLogWarn("Fail to init thread(%d).", tid);
         return;
     }
+    threadStatus_ = ThreadStatus::THREAD_STATUS_INIT;
 }
 
 bool DfxThread::InitThread(const pid_t pid, const pid_t tid)
@@ -81,23 +81,6 @@ bool DfxThread::InitThread(const pid_t pid, const pid_t tid)
     std::string buf;
     ReadStringFromFile(pathName, buf, NAME_LEN);
     TrimAndDupStr(buf, threadName_);
-#ifndef DFX_LOCAL_UNWIND
-    if (ptrace(PTRACE_ATTACH, tid, NULL, NULL) != 0) {
-        DfxLogWarn("Fail to attach thread(%d), errno=%d", tid, errno);
-        return false;
-    }
-
-    errno = 0;
-    while (waitpid(tid, nullptr, __WALL) < 0) {
-        if (EINTR != errno) {
-            ptrace(PTRACE_DETACH, tid, NULL, NULL);
-            DfxLogWarn("Fail to wait thread(%d) attached, errno=%d.", tid, errno);
-            return false;
-        }
-        errno = 0;
-    }
-#endif
-    threadStatus_ = ThreadStatus::THREAD_STATUS_ATTACHED;
     return true;
 }
 
@@ -375,12 +358,41 @@ void DfxThread::CreateFaultStack(std::shared_ptr<DfxElfMaps> maps)
 
 void DfxThread::Detach()
 {
-    ptrace(PTRACE_DETACH, tid_, NULL, NULL);
     if (threadStatus_ == ThreadStatus::THREAD_STATUS_ATTACHED) {
+        ptrace(PTRACE_CONT, tid_, 0, 0);
+        ptrace(PTRACE_DETACH, tid_, NULL, NULL);
         threadStatus_ = ThreadStatus::THREAD_STATUS_DETACHED;
-    } else {
-        DfxLogError("%s(%d), current status: %d, can't detached.", __FILE__, __LINE__, threadStatus_);
     }
+}
+
+bool DfxThread::Attach()
+{
+    if (threadStatus_ == ThreadStatus::THREAD_STATUS_ATTACHED) {
+        return true;
+    }
+
+    if (ptrace(PTRACE_SEIZE, tid_, 0, 0) != 0) {
+        DfxLogWarn("Failed to seize thread(%d), errno=%d", tid_, errno);
+        return false;
+    }
+
+    if (ptrace(PTRACE_INTERRUPT, tid_, 0, 0) != 0) {
+        DfxLogWarn("Failed to interrupt thread(%d), errno=%d", tid_, errno);
+        ptrace(PTRACE_DETACH, tid_, NULL, NULL);
+        return false;
+    }
+
+    errno = 0;
+    while (waitpid(tid_, nullptr, __WALL) < 0) {
+        if (EINTR != errno) {
+            ptrace(PTRACE_DETACH, tid_, NULL, NULL);
+            DfxLogWarn("Failed to wait thread(%d) attached, errno=%d.", tid_, errno);
+            return false;
+        }
+        errno = 0;
+    }
+    threadStatus_ = ThreadStatus::THREAD_STATUS_ATTACHED;
+    return true;
 }
 
 std::string DfxThread::ToString() const

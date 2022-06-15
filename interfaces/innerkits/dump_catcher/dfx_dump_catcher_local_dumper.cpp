@@ -234,6 +234,7 @@ bool DfxDumpCatcherLocalDumper::ExecLocalDump(int tid, size_t skipFramNum)
     unw_init_local_with_as(g_localAddrSpace, &cursor, &context);
 
     size_t index = 0;
+    unw_word_t prevPc = 0;
     DfxDumpCatcherLocalDumper::g_curIndex = 0;
     while ((unw_step(&cursor) > 0) && (index < BACK_STACK_MAX_STEPS)) {
         if (tid != gettid()) {
@@ -250,10 +251,14 @@ bool DfxDumpCatcherLocalDumper::ExecLocalDump(int tid, size_t skipFramNum)
             break;
         }
 
+        if (prevPc != 0 && pc == prevPc) {
+            break;
+        }
+        prevPc = pc;
+
         unw_word_t relPc = unw_get_rel_pc(&cursor);
         unw_word_t sz = unw_get_previous_instr_sz(&cursor);
-        if (index - skipFramNum != 0) {
-            pc -= sz;
+        if (relPc > sz) {
             relPc -= sz;
         }
 
