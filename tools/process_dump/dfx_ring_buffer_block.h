@@ -77,6 +77,9 @@ public:
      */
     T At(unsigned int index)
     {
+        if (this->start_ + index == nullptr) {
+            return T();
+        }
         return this->start_[index];
     }
 
