@@ -65,15 +65,18 @@ void LoopPrintBackTraceInfo()
     std::unique_lock<std::mutex> lck(ProcessDumper::backTracePrintMutx);
     while (true) {
         bool hasFinished = ProcessDumper::GetInstance().backTraceIsFinished_;
-        unsigned int available = ProcessDumper::GetInstance().backTraceRingBuffer_.Available();
-        DfxRingBufferBlock<std::string> item = \
-            ProcessDumper::GetInstance().backTraceRingBuffer_.Read(available);
+        auto available = ProcessDumper::GetInstance().backTraceRingBuffer_.Available();
+        auto item = ProcessDumper::GetInstance().backTraceRingBuffer_.Read(available);
         DfxLogDebug("%s :: available(%d), hasFinished(%d)", __func__, available, hasFinished);
-        if ((available == 0) && hasFinished) {
+        if (available != 0 && item.At(0).empty()) {
+            ProcessDumper::GetInstance().backTraceRingBuffer_.Skip(item.Length());
+            continue;
+        }
+        if (available == 0 && hasFinished) {
             DfxLogDebug("%s :: print finished, exit loop.\n", __func__);
             break;
         } else if (available != 0) {
-            for (unsigned int i = 0; i < item.Length(); i++) {
+            for (auto i = 0; i < item.Length(); i++) {
                 DfxLogDebug("%s :: [%d]print: %s\n", __func__, i, item.At(i).c_str());
                 WriteLog(ProcessDumper::GetInstance().backTraceFileFd_, "%s", item.At(i).c_str());
             }
