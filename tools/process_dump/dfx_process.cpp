@@ -73,6 +73,7 @@ std::shared_ptr<DfxProcess> DfxProcess::CreateProcessWithKeyThread(pid_t pid, st
         DfxLogWarn("Fail to init threads.");
         return nullptr;
     }
+
     DfxLogDebug("Init process dump with pid:%d.", dfxProcess->GetPid());
     return dfxProcess;
 }
@@ -90,21 +91,19 @@ bool DfxProcess::InitProcessMaps()
 
 bool DfxProcess::InitProcessThreads(std::shared_ptr<DfxThread> keyThread)
 {
-    if (keyThread) {
-        threads_.push_back(keyThread);
-        return true;
-    }
-
-    keyThread = std::make_shared<DfxThread>(GetPid(), GetPid());
     if (!keyThread) {
+        keyThread = std::make_shared<DfxThread>(GetPid(), GetPid());
+    }
+    
+    if (!keyThread->Attach()) {
+        DfxLogWarn("Fail to attach thread.");
         return false;
     }
-
     threads_.push_back(keyThread);
     return true;
 }
 
-bool DfxProcess::InitOtherThreads()
+bool DfxProcess::InitOtherThreads(bool attach)
 {
     char path[NAME_LEN] = {0};
     if (snprintf_s(path, sizeof(path), sizeof(path) - 1, "/proc/%d/task", GetPid()) <= 0) {
@@ -136,13 +135,13 @@ bool DfxProcess::InitOtherThreads()
             continue;
         }
 
-        InsertThreadNode(tid);
+        InsertThreadNode(tid, attach);
     }
     closedir(dir);
     return true;
 }
 
-void DfxProcess::InsertThreadNode(pid_t tid)
+void DfxProcess::InsertThreadNode(pid_t tid, bool attach)
 {
     for (auto iter = threads_.begin(); iter != threads_.end(); iter++) {
         if ((*iter)->GetThreadId() == tid) {
@@ -151,6 +150,9 @@ void DfxProcess::InsertThreadNode(pid_t tid)
     }
 
     auto thread = std::make_shared<DfxThread>(GetPid(), tid);
+    if (attach) {
+        thread->Attach();
+    }
     threads_.push_back(thread);
 }
 

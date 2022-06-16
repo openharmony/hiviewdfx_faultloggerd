@@ -33,12 +33,12 @@ public:
     static std::shared_ptr<DfxProcess> CreateProcessWithKeyThread(pid_t pid, std::shared_ptr<DfxThread> keyThread);
     bool InitProcessMaps();
     bool InitProcessThreads(std::shared_ptr<DfxThread> keyThread);
-    bool InitOtherThreads();
+    bool InitOtherThreads(bool attach = true);
     void FillProcessName();
     void UpdateProcessName(std::string processName);
     void PrintProcessMapsByConfig();
     void PrintThreadsHeaderByConfig();
-    void InsertThreadNode(pid_t tid);
+    void InsertThreadNode(pid_t tid, bool attach = true);
 
     void SetIsSignalHdlr(bool isSignalHdlr);
     bool GetIsSignalHdlr() const;

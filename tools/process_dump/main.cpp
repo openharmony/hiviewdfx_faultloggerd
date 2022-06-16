@@ -166,7 +166,7 @@ int main(int argc, char *argv[])
     int32_t tid = 0;
 
     alarm(PROCESSDUMP_TIMEOUT); // wait 30s for process dump done
-
+    setsid();
     if (!ParseParamters(argc, argv, isSignalHdlr, type, pid, tid)) {
         PrintCommandHelp();
         return 0;

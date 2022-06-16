@@ -50,6 +50,7 @@ public:
     void SetThreadUnwStopReason(int reason);
     void CreateFaultStack(std::shared_ptr<DfxElfMaps> maps);
     void Detach();
+    bool Attach();
     std::string ToString() const;
     bool IsThreadInititalized();
 
