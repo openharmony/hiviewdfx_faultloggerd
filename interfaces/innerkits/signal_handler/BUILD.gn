@@ -56,18 +56,39 @@ if (defined(ohos_lite)) {
     ]
   }
 
+  ohos_static_library("dfx_local_handler") {
+    sources = [ "dfx_crash_local_handler.c" ]
+    public_configs = [ ":dfx_signal_handler_config" ]
+
+    deps = [
+      "$faultloggerd_path/interfaces/innerkits/faultloggerd_client:libfaultloggerd",
+      "//third_party/libunwind:libunwind",
+    ]
+
+    external_deps = [
+      "hilog_native:libhilog_base",
+      "utils_base:utils",
+    ]
+
+    part_name = "faultloggerd"
+    subsystem_name = "hiviewdfx"
+  }
+
   ohos_shared_library("dfx_signalhandler") {
     public_configs = [ ":dfx_signal_handler_config" ]
 
     cflags = [
       "-DDFX_LOG_USE_HILOG_BASE",
       "-DDFX_SIGNALHANDLER_TAG",
+      "-DCRASH_LOCAL_HANDLER",
     ]
 
     sources = [
       "$faultloggerd_path/tools/process_dump/dfx_log.cpp",
       "dfx_signal_handler.c",
     ]
+
+    deps = [ ":dfx_local_handler" ]
 
     external_deps = [
       "hilog_native:libhilog_base",

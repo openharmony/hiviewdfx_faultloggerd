@@ -217,8 +217,12 @@ if (defined(ohos_lite)) {
       cflags = [ "-D__x86_64__" ]
     }
 
+    cflags_cc = [ "-DDEBUG_PROCESS_DUMP_CRASH" ]
+
     deps = [
+      "$faultloggerd_path/common/util:dfx_cutil",
       "$faultloggerd_path/interfaces/innerkits/faultloggerd_client:libfaultloggerd",
+      "$faultloggerd_path/interfaces/innerkits/signal_handler:dfx_local_handler",
       "//third_party/libunwind:libunwind",
     ]
 
@@ -226,10 +230,12 @@ if (defined(ohos_lite)) {
       "hilog_native:libhilog",
       "utils_base:utils",
     ]
+
     install_images = [
       "system",
       "updater",
     ]
+
     part_name = "faultloggerd"
     subsystem_name = "hiviewdfx"
   }

@@ -24,15 +24,21 @@
 #include <sys/socket.h>
 #include <sys/un.h>
 
+#include "directory_ex.h"
+#include "faultloggerd_client.h"
 #include "file_ex.h"
+
+#include "dfx_config.h"
 #include "dfx_define.h"
 #include "dfx_dump_writer.h"
 #include "dfx_log.h"
-#include "dfx_config.h"
-#include "directory_ex.h"
 #include "process_dumper.h"
-#include "../../interfaces/innerkits/faultloggerd_client/include/faultloggerd_client.h"
 
+#if defined(DEBUG_PROCESS_DUMP_CRASH)
+#include "dfx_crash_local_handler.h"
+#include "dfx_cutil.h"
+#include "dfx_signal_handler.h"
+#endif
 
 static const int SIGNAL_HANDLER = 1;
 static const int DUMP_THIRD = 3;
@@ -158,8 +164,58 @@ static bool ParseParamters(int argc, char *argv[], bool &isSignalHdlr, OHOS::Hiv
     return false;
 }
 
+#if defined(DEBUG_PROCESS_DUMP_CRASH)
+static struct ProcessDumpRequest g_request;
+static void InitDumpRequest(int sig)
+{
+    (void)memset_s(&g_request, sizeof(g_request), 0, sizeof(g_request));
+    if (strncpy_s(g_request.processName, sizeof(g_request.processName), "processdump", strlen("processdump")) != 0) {
+        DfxLogWarn("Failed to set process name.");
+    }
+
+    g_request.type = sig;
+    g_request.tid = gettid();
+    g_request.pid = getpid();
+    g_request.uid = (int32_t)getuid();
+    g_request.reserved = 0;
+    g_request.timeStamp = GetTimeMillseconds();
+    GetThreadName(g_request.threadName, sizeof(g_request.threadName));
+}
+
+static void SignalHandler(int sig, siginfo_t *si, void *context)
+{
+    InitDumpRequest(sig);
+    CrashLocalHandler(&g_request, si, (ucontext *)context);
+}
+
+static void RegisterLocalSighandler()
+{
+    sigset_t set;
+    sigemptyset (&set);
+    struct sigaction action;
+    memset_s(&action, sizeof(action), 0, sizeof(action));
+    sigfillset(&action.sa_mask);
+    action.sa_sigaction = SignalHandler;
+    action.sa_flags = SA_RESTART | SA_SIGINFO | SA_ONSTACK;
+    int platformSignals[] = {
+        SIGABRT, SIGBUS, SIGILL, SIGSEGV
+    };
+    for (size_t i = 0; i < sizeof(platformSignals) / sizeof(platformSignals[0]); i++) {
+        int32_t sig = platformSignals[i];
+        sigaddset(&set, sig);
+        if (sigaction(sig, &action, nullptr) != 0) {
+            DfxLogError("Failed to register signal. %{public}d", sig);
+        }
+    }
+    sigprocmask(SIG_UNBLOCK, &set, NULL);
+}
+#endif
+
 int main(int argc, char *argv[])
 {
+#if defined(DEBUG_PROCESS_DUMP_CRASH)
+    RegisterLocalSighandler();
+#endif
     bool isSignalHdlr = false;
     OHOS::HiviewDFX::ProcessDumpType type = OHOS::HiviewDFX::DUMP_TYPE_PROCESS;
     int32_t pid = 0;
