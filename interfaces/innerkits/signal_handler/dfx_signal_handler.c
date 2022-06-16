@@ -39,6 +39,9 @@
 #include <securec.h>
 
 #include "dfx_log.h"
+#if defined(CRASH_LOCAL_HANDLER)
+#include "dfx_crash_local_handler.h"
+#endif
 
 #if defined (__LP64__)
 #define RESERVED_CHILD_STACK_SIZE (32 * 1024)  // 32K
@@ -456,6 +459,7 @@ static void DFX_SignalHandler(int sig, siginfo_t *si, void *context)
     }
 
     do {
+        errno = 0;
         ret = waitpid(childPid, &status, WNOHANG);
         if (ret < 0) {
             DfxLogError("Failed to wait child process terminated, errno(%d)", errno);
@@ -473,8 +477,13 @@ static void DFX_SignalHandler(int sig, siginfo_t *si, void *context)
         }
         usleep(SIGNALHANDLER_TIMEOUT); // sleep 10ms
     } while (1);
-    DfxLogInfo("child process(%d) terminated with status(%d)", childPid, status);
+    DfxLogInfo("waitpid for process(%d) return with ret(%d) status(%d)", childPid, ret, status);
 out:
+#if defined(CRASH_LOCAL_HANDLER)
+    if ((sig != SIGDUMP) && ((timeout == 1) || ((ret >= 0) && (status != 0)))) {
+        CrashLocalHandler(&g_request, si, context);
+    }
+#endif
     ResetSignalHandlerIfNeed(sig);
     prctl(PR_SET_DUMPABLE, prevDumpableStatus);
     if (isTracerStatusModified == TRUE) {

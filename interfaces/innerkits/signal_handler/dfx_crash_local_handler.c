@@ -19,12 +19,12 @@
 
 #include <sys/ucontext.h>
 
+#include <hilog_base/log_base.h>
 #include <libunwind_i-ohos.h>
 #include <libunwind.h>
 #include <map_info.h>
 #include <securec.h>
 
-#include "dfx_log.h"
 #include "dfx_signal_handler.h"
 #include "faultloggerd_client.h"
 
@@ -44,7 +44,7 @@ __attribute__((noinline)) int RequestOutputLogFile(struct ProcessDumpRequest* re
     faultloggerdRequest.pid = getpid();
     faultloggerdRequest.tid = gettid();
     faultloggerdRequest.uid = getuid();
-    faultloggerdRequest.time = request->timeStamp;
+    faultloggerdRequest.time = request->timeStamp + 1;
     if (strncpy_s(faultloggerdRequest.module, sizeof(faultloggerdRequest.module),
         request->processName, sizeof(faultloggerdRequest.module) - 1) != 0) {
         return -1;
@@ -66,42 +66,10 @@ __attribute__((noinline)) void PrintLog(int fd, const char *format, ...)
     }
 }
 
-#if defined(__arm__)
-void PrintRegs(int fd, ucontext_t* ucontext)
-{
-    PrintLog(fd, "Registers:\n");
-}
-#elif defined(__aarch64__)
-void PrintRegs(int fd, ucontext_t* ucontext)
-{
-    PrintLog(fd, "Registers:\n");
-}
-#endif
-
-void PrintMaps(int fd, struct map_info* list)
-{
-    if (list == NULL) {
-        PrintLog(fd, "No Maps ?\n");
-        return;
-    }
-
-    struct map_info* cur = list;
-    PrintLog(fd, "Maps:\n");
-    while (cur != NULL) {
-        PrintLog(fd, "%p-%p %p %d %s\n",
-            cur->start, cur->end, cur->offset, cur->flags,
-            cur->path == NULL ? "" : cur->path);
-        cur = cur->next;
-    }
-}
-
+// currently, only stacktrace is logged to faultloggerd
 void CrashLocalHandler(struct ProcessDumpRequest* request, siginfo_t* info, ucontext_t* ucontext)
 {
     int fd = RequestOutputLogFile(request);
-    if (fd < 0) {
-        DfxLogWarn("Failed to request output FileDescriptor.");
-    }
-
     PrintLog(fd, "Pid:%d\n", request->pid);
     PrintLog(fd, "Uid:%d\n", request->uid);
     PrintLog(fd, "Process name:%s\n", request->processName);
@@ -127,13 +95,13 @@ void CrashLocalHandler(struct ProcessDumpRequest* request, siginfo_t* info, ucon
             break;
         }
 
-        if (index > 1 && prevPc == pc) {
-            PrintLog(fd, "repeated pc, stop.");
+        if (unw_get_reg(&cursor, UNW_REG_IP, (unw_word_t*)(&pc))) {
+            PrintLog(fd, "Failed to get current pc, stop.\n");
             break;
         }
 
-        if (unw_get_reg(&cursor, UNW_REG_IP, (unw_word_t*)(&pc))) {
-            PrintLog(fd, "Failed to get current pc, stop.\n");
+        if (index > 1 && prevPc == pc) {
+            PrintLog(fd, "repeated pc, stop.\n");
             break;
         }
         prevPc = pc;
@@ -147,17 +115,16 @@ void CrashLocalHandler(struct ProcessDumpRequest* request, siginfo_t* info, ucon
 
         sz = unw_get_previous_instr_sz(&cursor);
         if (index != 0 && relPc != 0) {
-            pc -= sz;
             relPc -= sz;
         }
 
         memset_s(&g_symbol, sizeof(g_symbol), 0, sizeof(g_symbol));
         if (unw_get_proc_name(&cursor, g_symbol, sizeof(g_symbol), (unw_word_t*)(&offset)) == 0) {
-            PrintLog(fd, "#%02d %016p(%016p) %s(%s+%lu)\n", index, relPc, pc,
+            PrintLog(fd, "#%02d %016p %s(%s+%lu)\n", index, relPc,
                 mapInfo == NULL ? "Unknown" : mapInfo->path,
                 g_symbol, offset);
         } else {
-            PrintLog(fd, "#%02d %016p(%016p) %s(%s+%lu)\n", index, relPc, pc,
+            PrintLog(fd, "#%02d %016p %s(%s+%lu)\n", index, relPc,
                 mapInfo == NULL ? "Unknown" : mapInfo->path);
         }
         index++;
@@ -169,8 +136,7 @@ void CrashLocalHandler(struct ProcessDumpRequest* request, siginfo_t* info, ucon
         }
     }
 
-    PrintMaps(fd , unw_get_maps(&cursor));
-    if (fd > 0) {
+    if (fd >= 0) {
         close(fd);
     }
 }
