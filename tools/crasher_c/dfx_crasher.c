@@ -490,7 +490,7 @@ int main(int argc, char *argv[])
         return 0;
     }
 
-    printf("ParseAndDoCrash done: %" PRIu64 "!", ParseAndDoCrash(argv[1]));
+    printf("ParseAndDoCrash done: %" PRIu64 "!\n", ParseAndDoCrash(argv[1]));
     return 0;
 }
 
