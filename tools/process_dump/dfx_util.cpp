@@ -98,8 +98,8 @@ std::string GetCurrentTimeStr(uint64_t current)
     int millsecond = 0;
     const uint64_t ratio = 1000;
     if (current > static_cast<uint64_t>(now)) {
-        millsecond = current % ratio;
-        now = current / ratio;
+        millsecond = (int)(current % ratio);
+        now = (time_t)(current / ratio);
     }
 
     auto tm = std::localtime(&now);

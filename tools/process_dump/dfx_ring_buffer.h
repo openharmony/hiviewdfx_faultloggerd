@@ -219,7 +219,7 @@ private:
 
     T data[LENGTH];
 
-    bool overrun_flag;
+    bool overrun_flag = false;
 };
 
 #endif
