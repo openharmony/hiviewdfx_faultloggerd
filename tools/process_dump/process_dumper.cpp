@@ -106,7 +106,7 @@ void ProcessDumper::PrintDumpProcessWithSignalContextHeader(std::shared_ptr<DfxP
     PrintDumpProcessMsg(std::string(buf));
     ret = memset_s(buf, LOG_BUF_LEN, '\0', LOG_BUF_LEN);
     if (ret != EOK) {
-        DfxLogError("%s :: msmset_s failed, line: %d.", __func__, __LINE__);
+        DfxLogError("%s :: memset_s failed, line: %d.", __func__, __LINE__);
     }
 
     ret = snprintf_s(buf, sizeof(buf), sizeof(buf) - 1, "Uid:%d\n", process->GetUid());
@@ -116,7 +116,7 @@ void ProcessDumper::PrintDumpProcessWithSignalContextHeader(std::shared_ptr<DfxP
     PrintDumpProcessMsg(std::string(buf));
     ret = memset_s(buf, LOG_BUF_LEN, '\0', LOG_BUF_LEN);
     if (ret != EOK) {
-        DfxLogError("%s :: msmset_s failed, line: %d.", __func__, __LINE__);
+        DfxLogError("%s :: memset_s failed, line: %d.", __func__, __LINE__);
     }
 
     ret = snprintf_s(buf, sizeof(buf), sizeof(buf) - 1, "Process name:%s\n", process->GetProcessName().c_str());
@@ -126,7 +126,7 @@ void ProcessDumper::PrintDumpProcessWithSignalContextHeader(std::shared_ptr<DfxP
     PrintDumpProcessMsg(std::string(buf));
     ret = memset_s(buf, LOG_BUF_LEN, '\0', LOG_BUF_LEN);
     if (ret != EOK) {
-        DfxLogError("%s :: msmset_s failed, line: %d.", __func__, __LINE__);
+        DfxLogError("%s :: memset_s failed, line: %d.", __func__, __LINE__);
     }
 
     if (info.si_signo != SIGDUMP) {

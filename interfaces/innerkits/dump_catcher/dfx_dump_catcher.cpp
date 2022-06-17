@@ -57,7 +57,7 @@ const std::string LOG_FILE_PATH = "/data/log/faultlog/temp";
 
 static const int NUMBER_TEN = 10;
 constexpr int MAX_TEMP_FILE_LENGTH = 256;
-constexpr int SINGLE_THREAD_UNWIND_TIMEOUT = 100; // 100 millseconds
+constexpr int SINGLE_THREAD_UNWIND_TIMEOUT = 100; // 100 milliseconds
 
 namespace OHOS {
 namespace HiviewDFX {

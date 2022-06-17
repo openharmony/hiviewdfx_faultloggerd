@@ -146,7 +146,7 @@ std::string ProcessDumpRequest::GetProcessNameString() const
 
 std::string ProcessDumpRequest::GetLastFatalMessage() const
 {
-    std::string lastMsg(lastFatalMessage_, sizeof(lastFatalMessage_) - 1);
+    std::string lastMsg(lastFatalMessage_);
     return lastMsg;
 }
 

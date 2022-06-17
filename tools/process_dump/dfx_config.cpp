@@ -170,7 +170,7 @@ void DfxConfig::ReadConfig()
         while (!feof(fp)) {
             errno_t err = memset_s(codeBuffer, sizeof(codeBuffer), '\0', sizeof(codeBuffer));
             if (err != EOK) {
-                DfxLogError("%s :: msmset_s codeBuffer failed..", __func__);
+                DfxLogError("%s :: memset_s codeBuffer failed..", __func__);
             }
             if (fgets(codeBuffer, CONF_LINE_SIZE -1, fp) == nullptr) {
                 continue;

@@ -108,7 +108,7 @@ std::string GetCurrentTimeStr(uint64_t current)
         return "invalid timestamp\n";
     }
 
-    char millBuf[256] = {0}; // 256 : millseconds buffer size
+    char millBuf[256] = {0}; // 256 : milliseconds buffer size
     int ret = snprintf_s(millBuf, sizeof(millBuf), sizeof(millBuf) - 1,
         "%s.%03d\n", seconds, millsecond);
     if (ret <= 0) {

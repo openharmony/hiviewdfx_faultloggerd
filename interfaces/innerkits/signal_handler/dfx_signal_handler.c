@@ -53,8 +53,8 @@
 #define TRUE 1
 #define FALSE 0
 
-#define SECONDS_TO_MILLSECONDS 1000000
-#define NANOSECONDS_TO_MILLSECONDS 1000
+#define SECONDS_TO_MILLISECONDS 1000000
+#define NANOSECONDS_TO_MILLISECONDS 1000
 #ifndef NSIG
 #define NSIG 64
 #endif
@@ -142,7 +142,7 @@ static void FillLastFatalMessageLocked(int32_t sig)
         lastFatalMessage, sizeof(g_request.lastFatalMessage) - 1);
 }
 
-static uint64_t GetTimeMillseconds(void)
+static uint64_t GetTimeMilliseconds(void)
 {
     struct timeval time;
     gettimeofday(&time, NULL);
@@ -407,7 +407,7 @@ static void DFX_SignalHandler(int sig, siginfo_t *si, void *context)
     g_request.pid = getpid();
     g_request.uid = (int32_t)getuid();
     g_request.reserved = 0;
-    g_request.timeStamp = GetTimeMillseconds();
+    g_request.timeStamp = GetTimeMilliseconds();
     DfxLogInfo("DFX_SignalHandler :: sig(%d), pid(%d), tid(%d).", sig, g_request.pid, g_request.tid);
 
     GetThreadName();
