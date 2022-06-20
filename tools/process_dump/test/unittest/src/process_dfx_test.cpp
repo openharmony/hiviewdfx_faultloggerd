@@ -71,8 +71,7 @@ void ProcessDfxTest::StartRootCrasherLoop()
 {
     int rootuid = 0;
     setuid(rootuid);
-    std::vector<std::string> cmds { "crasher", "thread-Loop" };
-    ProcessDfxTest::ForkAndRootCommands(cmds);
+    ProcessDfxTest::ForkAndRootCommands();
 }
 
 void ProcessDfxTest::KillCrasherLoopForSomeCase()
@@ -110,8 +109,8 @@ HWTEST_F (ProcessDfxTest, ProcessDfxRequestTest002, TestSize.Level2)
     GTEST_LOG_(INFO) << "ProcessDfxRequestTest002: start.";
     ProcessDfxTest::StartRootCrasherLoop();
     std::shared_ptr<DfxProcess> processDfx = std::make_shared<DfxProcess>();
-    pid_t pid = loopRootPid_;
-    pid_t tid = loopRootPid_;
+    pid_t pid = ProcessDfxTest::loopRootPid_;
+    pid_t tid = ProcessDfxTest::loopRootPid_;
     std::shared_ptr<DfxThread> keyThread = std::make_shared<DfxThread>(pid, tid);
     auto dfx = false;
     if (processDfx != nullptr && keyThread != nullptr) {
