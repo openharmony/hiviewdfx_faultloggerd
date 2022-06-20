@@ -42,7 +42,49 @@ void ProcessDfxTest::TearDown(void)
 {
 }
 
-namespace {
+int ProcessDfxTest::looprootPid = 0;
+
+std::string ProcessDfxTest::ForkAndRootCommands(const std::vector<std::string>& cmds)
+{
+    int rootuid = 0;
+    setuid(rootuid);
+    system("/data/crasher_c thread-Loop &");
+    std::string procCMD = "pgrep 'crasher'";
+    GTEST_LOG_(INFO) << "threadCMD = " << procCMD;
+    FILE *procFileInfo = nullptr;
+    procFileInfo = popen(procCMD.c_str(), "r");
+    if (procFileInfo == nullptr) {
+        perror("popen execute failed");
+        exit(1);
+    }
+    std::string pidLog;
+    char result_buf_shell[PERFORMANCE_TEST_NUMBER_ONE_HUNDRED] = { 0, };
+    if (fgets(result_buf_shell, sizeof(result_buf_shell), procFileInfo) != nullptr) {
+        pidLog = result_buf_shell;
+        looprootPid = atoi(pidLog.c_str());
+    }
+    pclose(procFileInfo);
+    return std::to_string(looprootPid);
+}
+
+void ProcessDfxTest::StartRootCrasherLoop()
+{
+    int rootuid = 0;
+    setuid(rootuid);
+    std::vector<std::string> cmds { "crasher", "thread-Loop" };
+    ProcessDfxTest::ForkAndRootCommands(cmds);
+    if (looprootPid == 0) {
+        exit(0);
+    }
+}
+
+void ProcessDfxTest::KillCrasherLoopForSomeCase()
+{
+    int rootuid = 0;
+    setuid(rootuid);
+    system(("kill -9 " + std::to_string(ProcessDfxTest::looprootPid)).c_str());
+}
+
 /**
  * @tc.name: ProcessDfxRequestTest001
  * @tc.desc: test cinit process maps node
@@ -68,6 +110,7 @@ HWTEST_F (ProcessDfxTest, ProcessDfxRequestTest001, TestSize.Level2)
 HWTEST_F (ProcessDfxTest, ProcessDfxRequestTest002, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "ProcessDfxRequestTest002: start.";
+    ProcessDfxTest::StartRootCrasherLoop();
     std::shared_ptr<DfxProcess> processDfx = std::make_shared<DfxProcess>();
     pid_t pid = 100;
     pid_t tid = 100;
@@ -76,6 +119,7 @@ HWTEST_F (ProcessDfxTest, ProcessDfxRequestTest002, TestSize.Level2)
     if (processDfx != nullptr && keyThread != nullptr) {
         dfx = processDfx->InitProcessThreads(keyThread);
     }
+    ProcessDfxTest::KillCrasherLoopForSomeCase();
     EXPECT_EQ(true, dfx == true) << "ProcessDfxRequestTest002 Failed";
     GTEST_LOG_(INFO) << "ProcessDfxRequestTest002: end.";
 }
@@ -272,5 +316,4 @@ HWTEST_F (ProcessDfxTest, ProcessDfxRequestTest012, TestSize.Level2)
     }
     EXPECT_EQ(false, input.size() == output.size()) << "ProcessDfxRequestTest012 Failed";
     GTEST_LOG_(INFO) << "ProcessDfxRequestTest012: end.";
-}
 }
