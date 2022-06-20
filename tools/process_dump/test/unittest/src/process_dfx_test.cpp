@@ -42,9 +42,9 @@ void ProcessDfxTest::TearDown(void)
 {
 }
 
-int ProcessDfxTest::looprootPid = 100;
+int ProcessDfxTest::loopRootPid_ = 100;
 
-std::string ProcessDfxTest::ForkAndRootCommands(const std::vector<std::string>& cmds)
+std::string ProcessDfxTest::ForkAndRootCommands()
 {
     int rootuid = 0;
     setuid(rootuid);
@@ -61,10 +61,10 @@ std::string ProcessDfxTest::ForkAndRootCommands(const std::vector<std::string>& 
     char result_buf_shell[PERFORMANCE_TEST_NUMBER_ONE_HUNDRED] = { 0, };
     if (fgets(result_buf_shell, sizeof(result_buf_shell), procFileInfo) != nullptr) {
         pidLog = result_buf_shell;
-        looprootPid = atoi(pidLog.c_str());
+        loopRootPid_ = atoi(pidLog.c_str());
     }
     pclose(procFileInfo);
-    return std::to_string(looprootPid);
+    return std::to_string(loopRootPid_);
 }
 
 void ProcessDfxTest::StartRootCrasherLoop()
@@ -79,7 +79,7 @@ void ProcessDfxTest::KillCrasherLoopForSomeCase()
 {
     int rootuid = 0;
     setuid(rootuid);
-    system(("kill -9 " + std::to_string(ProcessDfxTest::looprootPid)).c_str());
+    system(("kill -9 " + std::to_string(ProcessDfxTest::loopRootPid_)).c_str());
 }
 
 namespace {
@@ -110,8 +110,8 @@ HWTEST_F (ProcessDfxTest, ProcessDfxRequestTest002, TestSize.Level2)
     GTEST_LOG_(INFO) << "ProcessDfxRequestTest002: start.";
     ProcessDfxTest::StartRootCrasherLoop();
     std::shared_ptr<DfxProcess> processDfx = std::make_shared<DfxProcess>();
-    pid_t pid = looprootPid;
-    pid_t tid = looprootPid;
+    pid_t pid = loopRootPid_;
+    pid_t tid = loopRootPid_;
     std::shared_ptr<DfxThread> keyThread = std::make_shared<DfxThread>(pid, tid);
     auto dfx = false;
     if (processDfx != nullptr && keyThread != nullptr) {
