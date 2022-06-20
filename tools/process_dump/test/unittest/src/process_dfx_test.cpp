@@ -85,6 +85,7 @@ void ProcessDfxTest::KillCrasherLoopForSomeCase()
     system(("kill -9 " + std::to_string(ProcessDfxTest::looprootPid)).c_str());
 }
 
+namespace {
 /**
  * @tc.name: ProcessDfxRequestTest001
  * @tc.desc: test cinit process maps node
@@ -316,4 +317,5 @@ HWTEST_F (ProcessDfxTest, ProcessDfxRequestTest012, TestSize.Level2)
     }
     EXPECT_EQ(false, input.size() == output.size()) << "ProcessDfxRequestTest012 Failed";
     GTEST_LOG_(INFO) << "ProcessDfxRequestTest012: end.";
+}
 }
