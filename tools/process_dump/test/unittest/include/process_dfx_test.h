@@ -33,6 +33,7 @@ public:
     static void StartRootCrasherLoop();
     static void KillCrasherLoopForSomeCase();
     static int getApplyPid(std::string applyName);
+
     static int looprootPid;
 };
 } // namespace HiviewDFX
