@@ -258,7 +258,6 @@ std::string FaultLoggerdSystemTest::GetstackfileNamePrefix(std::string ErrorCMD,
     return filePath + " " + pid;
 }
 
-
 int FaultLoggerdSystemTest::CheckCountNum(std::string filePath, std::string pid, std::string ErrorCMD)
 {
     ifstream file;
@@ -270,9 +269,7 @@ int FaultLoggerdSystemTest::CheckCountNum(std::string filePath, std::string pid,
         { std::string("triSIGILL"),  std::string("SIGILL") },
         { std::string("triSIGTRAP"), std::string("SIGTRAP") },
 #endif
-	{ std::string("triSIGSEGV"), std::string("SIGSEGV") },
-	{ std::string("triSIGABRT"), std::string("SIGABRT") },
-
+        { std::string("triSIGSEGV"), std::string("SIGSEGV") },
         { std::string("MaxStack"), std::string("SIGSEGV") },
         { std::string("MaxMethod"), std::string("SIGSEGV") },
         { std::string("STACKTRACE"), std::string("Tid") },
@@ -297,6 +294,51 @@ int FaultLoggerdSystemTest::CheckCountNum(std::string filePath, std::string pid,
     string::size_type idx;
     int count = 0;
     int minVal = 6;
+    int maxVal = minVal + REGISTERS_NUM + 1;
+    log[0] = log[0] + pid;
+    while (!file.eof()) {
+        file >> t.at(i);
+        idx = t.at(i).find(log[j]);
+        if (idx != string::npos) {
+            GTEST_LOG_(INFO) << t.at(i);
+            if ((j > minVal) && (j < maxVal)) {
+                if (t.at(i).size() < REGISTERS_LENGTH) {
+                    count--;
+                }
+            }
+            count++;
+            j++;
+            if (j == sizeof(log) / sizeof(log[0])) {
+                break;
+            }
+            continue;
+        }
+        i++;
+    }
+    file.close();
+    int expectNum = sizeof(log) / sizeof(log[0]);
+    if (count == expectNum) {
+        return 0;
+    } else {
+        return 1;
+    }
+}
+
+int FaultLoggerdSystemTest::CheckCountNumABRT(std::string filePath, std::string pid)
+{
+    ifstream file;
+    file.open(filePath.c_str(), ios::in);
+    long lines = FaultLoggerdSystemTest::CountLines(filePath);
+    std::vector<string> t(lines * NUMBER_FOUR);
+    int i = 0;
+    int j = 0;
+    string log[] = {
+        "Pid:", "Uid", ":crasher", "SIGABRT", "LastFatalMessage:Test", "ABORT!", "Tid:", "#00", "Registers:",
+        REGISTERS, "FaultStack:", "Maps:", "/crasher"
+    };
+    string::size_type idx;
+    int count = 0;
+    int minVal = 8;
     int maxVal = minVal + REGISTERS_NUM + 1;
     log[0] = log[0] + pid;
     while (!file.eof()) {
@@ -1744,7 +1786,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0007, TestSize.Level2)
         GTEST_LOG_(INFO) << "current pid: \n" << pid;
         std::string filePathStr = filePath;
         std::string pidStr = pid;
-        int ret = FaultLoggerdSystemTest::CheckCountNum(filePathStr, pidStr, cmd);
+        int ret = FaultLoggerdSystemTest::CheckCountNumABRT(filePathStr, pidStr);
         GTEST_LOG_(INFO) << "current ret value: \n" << ret;
         EXPECT_EQ(ret, 0) << "ProcessDfxRequestTest0007 Failed";
         GTEST_LOG_(INFO) << "FaultLoggerdSystemTest0007: end.";
@@ -1776,7 +1818,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0008, TestSize.Level2)
         GTEST_LOG_(INFO) << "current pid: \n" << pid;
         std::string filePathStr = filePath;
         std::string pidStr = pid;
-        int ret = FaultLoggerdSystemTest::CheckCountNum(filePathStr, pidStr, cmd);
+        int ret = FaultLoggerdSystemTest::CheckCountNumABRT(filePathStr, pidStr);
         GTEST_LOG_(INFO) << "current ret value: \n" << ret;
         EXPECT_EQ(ret, 0) << "ProcessDfxRequestTest0008 Failed";
         GTEST_LOG_(INFO) << "FaultLoggerdSystemTest0008: end.";
@@ -2022,7 +2064,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest005, TestSize.Level2)
 
         std::string filePathStr = filePath;
         std::string pidStr = pid;
-        int ret = FaultLoggerdSystemTest::CheckCountNum(filePathStr, pidStr, cmd);
+        int ret = FaultLoggerdSystemTest::CheckCountNumABRT(filePathStr, pidStr);
         GTEST_LOG_(INFO) << "current ret value: \n" << ret;
 
         EXPECT_EQ(ret, 0) << "ProcessDfxRequestTest005 Failed";
@@ -2393,7 +2435,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest017, TestSize.Level2)
         GTEST_LOG_(INFO) << "current pid: \n" << pid;
         std::string filePathStr = filePath;
         std::string pidStr = pid;
-        int ret = FaultLoggerdSystemTest::CheckCountNum(filePathStr, pidStr, cmd);
+        int ret = FaultLoggerdSystemTest::CheckCountNumABRT(filePathStr, pidStr);
 
         GTEST_LOG_(INFO) << "current ret value: \n" << ret;
         EXPECT_EQ(ret, 0) << "ProcessDfxRequestTest017 Failed";

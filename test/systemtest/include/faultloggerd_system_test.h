@@ -65,6 +65,7 @@ public:
     static bool IsDigit(std::string pid);
 
     static int CheckCountNum(std::string filePath, std::string pid, std::string errorCMD);
+    static int CheckCountNumABRT(std::string filePath, std::string pid);
     static int CheckCountNumPCZero(std::string filePath, std::string pid, std::string errorCMD);
     static int CheckStacktraceCountNum(std::string filePath, std::string pid, std::string errorCMD);
     static int CheckCountNumMultiThread(std::string filePath, std::string pid, std::string errorCMD);
