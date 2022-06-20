@@ -55,7 +55,7 @@ std::string ProcessDfxTest::ForkAndRootCommands()
     procFileInfo = popen(procCMD.c_str(), "r");
     if (procFileInfo == nullptr) {
         perror("popen execute failed");
-        exit(1);
+        return std::to_string(loopRootPid_);
     }
     std::string pidLog;
     char result_buf_shell[PERFORMANCE_TEST_NUMBER_ONE_HUNDRED] = { 0, };
