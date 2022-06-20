@@ -530,7 +530,7 @@ int32_t StartServer(int argc, char *argv[])
     struct sockaddr_un server;
     errno_t err = memset_s(&server, sizeof(server), 0, sizeof(server));
     if (err != EOK) {
-        DfxLogError("%s :: msmset_s server failed..", OHOS::HiviewDFX::FAULTLOGGERD_TAG.c_str());
+        DfxLogError("%s :: memset_s server failed..", OHOS::HiviewDFX::FAULTLOGGERD_TAG.c_str());
     }
     server.sun_family = AF_LOCAL;
     if (strncpy_s(server.sun_path, sizeof(server.sun_path), FAULTLOGGERD_SOCK_PATH,

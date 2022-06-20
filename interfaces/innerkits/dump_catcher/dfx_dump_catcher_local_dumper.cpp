@@ -70,8 +70,8 @@
 namespace OHOS {
 namespace HiviewDFX {
 static constexpr int SYMBOL_BUF_SIZE = 1024;
-static constexpr int SECONDS_TO_MILLSECONDS = 1000000;
-static constexpr int NANOSECONDS_TO_MILLSECONDS = 1000;
+static constexpr int SECONDS_TO_MILLISECONDS = 1000000;
+static constexpr int NANOSECONDS_TO_MILLISECONDS = 1000;
 static constexpr int NUMBER_SIXTYFOUR = 64;
 static constexpr int INHERITABLE_OFFSET = 32;
 constexpr int SIGLOCAL_DUMP = 36;
