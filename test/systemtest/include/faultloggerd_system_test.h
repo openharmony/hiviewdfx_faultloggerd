@@ -64,17 +64,18 @@ public:
     static int CountLines(std::string filename);
     static bool IsDigit(std::string pid);
 
-    static int CheckCountNum(std::string filePath, std::string pid, std::string errorCMD);
-    static int CheckCountNumABRT(std::string filePath, std::string pid);
-    static int CheckCountNumPCZero(std::string filePath, std::string pid, std::string errorCMD);
-    static int CheckStacktraceCountNum(std::string filePath, std::string pid, std::string errorCMD);
-    static int CheckCountNumMultiThread(std::string filePath, std::string pid, std::string errorCMD);
-    static int CheckCountNumOverStack(std::string filePath, std::string pid, std::string ErrorCMD);
-    static int CheckCountNumStackTop(std::string filePath, std::string pid, std::string ErrorCMD);
+    static int CheckKeywords(std::string& filePath, std::string *keywords, int length, int minRegIdx);
+    static int CheckCountNum(std::string& filePath, std::string& pid, std::string& errorCMD);
+    static int CheckCountNumAbort(std::string& filePath, std::string& pid);
+    static int CheckCountNumPCZero(std::string& filePath, std::string& pid);
+    static int CheckStacktraceCountNum(std::string& filePath, std::string& pid);
+    static int CheckCountNumMultiThread(std::string& filePath, std::string& pid);
+    static int CheckCountNumOverStack(std::string& filePath, std::string& pid);
+    static int CheckCountNumStackTop(std::string& filePath, std::string& pid, std::string& ErrorCMD);
     static std::string GetStackTop();
-    static std::string GetfileNameForFounation(std::string pidfound);
-    static int CheckCountNumKill11(std::string filePath, std::string pid);
-    static void Trim(std::string & str);
+    static std::string GetfileNameForFounation(std::string& pidfound);
+    static int CheckCountNumKill11(std::string& filePath, std::string& pid);
+    static void Trim(std::string& str);
     static std::string GetFounationPid();
 
     // 合并
