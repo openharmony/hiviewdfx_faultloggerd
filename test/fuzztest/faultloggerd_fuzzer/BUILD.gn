@@ -29,12 +29,6 @@ if (defined(ohos_lite)) {
     module_out_path = module_output_path
     fuzz_config_file = "$faultloggerd_path/test/fuzztest/faultloggerd_fuzzer"
     include_dirs = [ "./" ]
-    cflags = [
-      "-g",
-      "-O0",
-      "-Wno-unused-variable",
-      "-fno-omit-frame-pointer",
-    ]
     sources = [ "faultloggerd_fuzzer.cpp" ]
     deps = [ "$faultloggerd_path/interfaces/innerkits/dump_catcher:lib_dfx_dump_catcher" ]
 
