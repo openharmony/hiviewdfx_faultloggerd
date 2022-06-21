@@ -53,8 +53,6 @@
 #define TRUE 1
 #define FALSE 0
 
-#define SECONDS_TO_MILLISECONDS 1000000
-#define NANOSECONDS_TO_MILLISECONDS 1000
 #ifndef NSIG
 #define NSIG 64
 #endif
@@ -92,7 +90,6 @@ void __attribute__((constructor)) InitHandler(void)
 
 static struct ProcessDumpRequest g_request;
 static void *g_reservedChildStack;
-static void *g_reservedMainSignalStack;
 static pthread_mutex_t g_signalHandlerMutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutex_t g_dumpMutex = PTHREAD_MUTEX_INITIALIZER;
 static int g_pipefd[2] = {-1, -1};
@@ -501,26 +498,6 @@ out:
     pthread_mutex_unlock(&g_signalHandlerMutex);
 }
 
-void ReserveMainThreadSignalStack(void)
-{
-    if (getpid() != gettid()) {
-        return;
-    }
-
-    g_reservedMainSignalStack = mmap(NULL, RESERVED_CHILD_STACK_SIZE, PROT_READ | PROT_WRITE,
-        MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
-    if (g_reservedMainSignalStack == MAP_FAILED) {
-        return;
-    }
-
-    stack_t signal_stack;
-    signal_stack.ss_sp = g_reservedMainSignalStack;
-    signal_stack.ss_size = RESERVED_CHILD_STACK_SIZE;
-    signal_stack.ss_flags = 0;
-    prctl(PR_SET_VMA, PR_SET_VMA_ANON_NAME, signal_stack.ss_sp, signal_stack.ss_size, "signal_stack:main");
-    sigaltstack(&signal_stack, NULL);
-}
-
 void DFX_InstallSignalHandler(void)
 {
     pthread_mutex_lock(&g_signalHandlerMutex);
@@ -543,7 +520,6 @@ void DFX_InstallSignalHandler(void)
     }
     g_reservedChildStack = (void *)(((uint8_t *)g_reservedChildStack) + RESERVED_CHILD_STACK_SIZE - 1);
 
-    ReserveMainThreadSignalStack();
     struct sigaction action;
     memset_s(&action, sizeof(action), 0, sizeof(action));
     memset_s(&g_oldSigactionList, sizeof(g_oldSigactionList), 0, sizeof(g_oldSigactionList));

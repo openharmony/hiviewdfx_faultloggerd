@@ -450,7 +450,7 @@ int main(int argc, char *argv[])
         return 0;
     }
 
-    std::cout << "ParseAndDoCrash done:" << DfxCrasher::GetInstance().ParseAndDoCrash(argv[1]) << "!";
+    std::cout << "ParseAndDoCrash done:" << DfxCrasher::GetInstance().ParseAndDoCrash(argv[1]) << "!\n";
     return 0;
 }
 
