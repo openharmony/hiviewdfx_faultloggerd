@@ -53,14 +53,14 @@ pid_t ProcessDfxTest::GetTelephonyPid()
         return 0;
     }
     std::string pidLog;
-    pid_t loopRootPid = 0;
+    pid_t telephonyPid = 0;
     char result_buf_shell[PERFORMANCE_TEST_NUMBER_ONE_HUNDRED] = { 0, };
     if (fgets(result_buf_shell, sizeof(result_buf_shell), procFileInfo) != nullptr) {
         pidLog = result_buf_shell;
-        loopRootPid = atoi(pidLog.c_str());
+        telephonyPid = atoi(pidLog.c_str());
     }
     pclose(procFileInfo);
-    return loopRootPid;
+    return telephonyPid;
 }
 
 namespace {
@@ -89,14 +89,14 @@ HWTEST_F (ProcessDfxTest, ProcessDfxRequestTest001, TestSize.Level2)
 HWTEST_F (ProcessDfxTest, ProcessDfxRequestTest002, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "ProcessDfxRequestTest002: start.";
-    pid_t loopRootPid = ProcessDfxTest::GetTelephonyPid();
-    if (loopRootPid ==  0) {
+    pid_t telephonyPid = ProcessDfxTest::GetTelephonyPid();
+    if (telephonyPid ==  0) {
         GTEST_LOG_(INFO) << "ProcessDfxRequestTest002: get pid failed.";
         return;
     }
     std::shared_ptr<DfxProcess> processDfx = std::make_shared<DfxProcess>();
-    pid_t pid = loopRootPid;
-    pid_t tid = loopRootPid;
+    pid_t pid = telephonyPid;
+    pid_t tid = telephonyPid;
     std::shared_ptr<DfxThread> keyThread = std::make_shared<DfxThread>(pid, tid);
     auto dfx = false;
     if (processDfx != nullptr && keyThread != nullptr) {
