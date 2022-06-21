@@ -42,7 +42,7 @@ void ProcessDfxTest::TearDown(void)
 {
 }
 
-int ProcessDfxTest::loopRootPid_ = 100;
+int ProcessDfxTest::loopRootPid_ = -1;
 
 std::string ProcessDfxTest::GetTelephonyPid()
 {
@@ -91,6 +91,10 @@ HWTEST_F (ProcessDfxTest, ProcessDfxRequestTest002, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "ProcessDfxRequestTest002: start.";
     ProcessDfxTest::GetTelephonyPid();
+    if (ProcessDfxTest::loopRootPid_ ==  -1) {
+        GTEST_LOG_(INFO) << "ProcessDfxRequestTest002: get pid failed.";
+        return;
+    }
     std::shared_ptr<DfxProcess> processDfx = std::make_shared<DfxProcess>();
     pid_t pid = ProcessDfxTest::loopRootPid_;
     pid_t tid = ProcessDfxTest::loopRootPid_;
@@ -99,6 +103,7 @@ HWTEST_F (ProcessDfxTest, ProcessDfxRequestTest002, TestSize.Level2)
     if (processDfx != nullptr && keyThread != nullptr) {
         dfx = processDfx->InitProcessThreads(keyThread);
     }
+    ProcessDfxTest::loopRootPid_ = -1;
     EXPECT_EQ(true, dfx == true) << "ProcessDfxRequestTest002 Failed";
     GTEST_LOG_(INFO) << "ProcessDfxRequestTest002: end.";
 }
