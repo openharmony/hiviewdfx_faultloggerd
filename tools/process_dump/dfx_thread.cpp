@@ -84,7 +84,7 @@ bool DfxThread::InitThread(const pid_t pid, const pid_t tid)
     return true;
 }
 
-bool DfxThread::IsThreadInititalized()
+bool DfxThread::IsThreadInitialized()
 {
     return threadStatus_ == ThreadStatus::THREAD_STATUS_ATTACHED;
 }

@@ -29,7 +29,7 @@ bool GetThreadName(char* buffer, size_t bufferSz);
 
 bool GetProcessName(char* buffer, size_t bufferSz);
 
-uint64_t GetTimeMillseconds(void);
+uint64_t GetTimeMilliseconds(void);
 
 #ifdef __cplusplus
 }

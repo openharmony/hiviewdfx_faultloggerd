@@ -119,7 +119,7 @@ int32_t RequestFileDescriptor(int32_t type)
     struct FaultLoggerdRequest request;
     errno_t err = memset_s(&request, sizeof(request), 0, sizeof(request));
     if (err != EOK) {
-        DfxLogError("%s :: msmset_s request failed..", __func__);
+        DfxLogError("%s :: memset_s request failed..", __func__);
     }
     FillRequest(type, &request);
     return RequestFileDescriptorEx(&request);
@@ -157,7 +157,7 @@ int32_t RequestFileDescriptorEx(const struct FaultLoggerdRequest *request)
     }
     errno_t err = memset_s(&server, sizeof(server), 0, sizeof(server));
     if (err != EOK) {
-        DfxLogError("%s :: msmset_s server failed..", __func__);
+        DfxLogError("%s :: memset_s server failed..", __func__);
     }
     server.sun_family = AF_LOCAL;
     if (strncpy_s(server.sun_path, sizeof(server.sun_path),
@@ -321,7 +321,7 @@ bool RequestCheckPermission(int32_t pid)
     struct FaultLoggerdRequest request;
     errno_t err = memset_s(&request, sizeof(request), 0, sizeof(request));
     if (err != EOK) {
-        DfxLogError("%s :: msmset_s request failed..", __func__);
+        DfxLogError("%s :: memset_s request failed..", __func__);
     }
 
     request.pid = pid;
@@ -341,7 +341,7 @@ bool RequestSdkDump(int32_t pid, int32_t tid)
     struct FaultLoggerdRequest request;
     errno_t err = memset_s(&request, sizeof(request), 0, sizeof(request));
     if (err != EOK) {
-        DfxLogError("%s :: msmset_s request failed..", __func__);
+        DfxLogError("%s :: memset_s request failed..", __func__);
     }
     request.pid = pid;
     request.tid = tid;
@@ -361,7 +361,7 @@ void RequestPrintTHilog(const char *msg, int length)
     struct FaultLoggerdRequest request;
     errno_t err = memset_s(&request, sizeof(request), 0, sizeof(request));
     if (err != EOK) {
-        DfxLogError("%s :: msmset_s request failed..", __func__);
+        DfxLogError("%s :: memset_s request failed..", __func__);
     }
     request.clientType = (int32_t)FaultLoggerClientType::PRINT_T_HILOG_CLIENT;
 
