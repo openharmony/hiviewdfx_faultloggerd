@@ -28,9 +28,7 @@ public:
     static void TearDownTestCase(void);
     void SetUp();
     void TearDown();
-    static std::string GetTelephonyPid();
-
-    static int loopRootPid_;
+    static int GetTelephonyPid();
 };
 } // namespace HiviewDFX
 } // namespace OHOS
