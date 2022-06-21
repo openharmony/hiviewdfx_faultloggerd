@@ -21,7 +21,7 @@
 #include <string>
 
 #include "dfx_regs.h"
-#include "dfx_dump_writer.h"
+#include "dfx_dump_request.h"
 #include "dfx_signal.h"
 #include "dfx_thread.h"
 #include "process_dumper.h"

@@ -26,9 +26,9 @@
 #include <thread>
 
 #include "nocopyable.h"
-#include "dfx_dump_writer.h"
+#include "dfx_dump_request.h"
 #include "dfx_ring_buffer.h"
-
+#include "dfx_process.h"
 #include "cppcrash_reporter.h"
 
 namespace OHOS {

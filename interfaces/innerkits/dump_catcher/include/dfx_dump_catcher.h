@@ -22,7 +22,7 @@
 #include <cstring>
 #include <string>
 
-#include "dfx_dump_catcher_local_dumper.h"
+#include "dfx_unwind_local.h"
 
 namespace OHOS {
 namespace HiviewDFX {
@@ -30,18 +30,22 @@ class DfxDumpCatcher {
 public:
     DfxDumpCatcher();
     ~DfxDumpCatcher();
+    
     bool DumpCatch(int pid, int tid, std::string& msg);
     bool DumpCatchMultiPid(const std::vector<int> pidV, std::string& msg);
     bool DumpCatchFrame(int pid, int tid, std::string& msg, \
-        std::vector<std::shared_ptr<DfxDumpCatcherFrame>>& frameV);
+        std::vector<std::shared_ptr<DfxFrame>>& frames);
+    bool DumpCatchFd(int pid, int tid, std::string& msg, int fd);
 
 private:
-    bool DoDumpLocalTid(int tid);
+    bool DoDumpLocalTid(int tid, std::string& msg);
     bool DoDumpLocalPid(int pid, std::string& msg);
     bool DoDumpLocalLocked(int pid, int tid, std::string& msg);
     bool DoDumpRemoteLocked(int pid, int tid, std::string& msg);
     std::string WaitForLogGenerate(const std::string& path, const std::string& prefix);
-    std::string TryToGetGeneratedLog(const std::string& path, const std::string& prefix);
+
+private:
+    std::mutex dumpCatcherMutex_;
 };
 } // namespace HiviewDFX
 } // namespace OHOS

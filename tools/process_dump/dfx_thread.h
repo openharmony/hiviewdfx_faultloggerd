@@ -21,7 +21,7 @@
 #include <vector>
 
 #include "dfx_define.h"
-#include "dfx_frames.h"
+#include "dfx_frame.h"
 #include "dfx_regs.h"
 #include "dfx_maps.h"
 
@@ -39,9 +39,9 @@ public:
     std::string GetThreadName() const;
     void SetThreadName(std::string &threadName);
     std::shared_ptr<DfxRegs> GetThreadRegs() const;
-    std::vector<std::shared_ptr<DfxFrames>> GetThreadDfxFrames() const;
+    std::vector<std::shared_ptr<DfxFrame>> GetThreadDfxFrames() const;
     void SetThreadRegs(const std::shared_ptr<DfxRegs> &regs);
-    std::shared_ptr<DfxFrames> GetAvaliableFrame();
+    std::shared_ptr<DfxFrame> GetAvaliableFrame();
     void PrintThread(const int32_t fd, bool isSignalDump);
     void PrintThreadBacktraceByConfig(const int32_t fd);
     std::string PrintThreadRegisterByConfig();
@@ -68,7 +68,7 @@ private:
     pid_t tid_;
     std::string threadName_;
     std::shared_ptr<DfxRegs> regs_;
-    std::vector<std::shared_ptr<DfxFrames>> dfxFrames_;
+    std::vector<std::shared_ptr<DfxFrame>> dfxFrames_;
     ThreadStatus threadStatus_;
     int unwStopReason_;
     bool isCrashThread_;

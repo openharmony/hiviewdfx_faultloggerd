@@ -28,7 +28,6 @@
 #include <securec.h>
 
 #include "dfx_define.h"
-#include "dfx_frames.h"
 #include "dfx_log.h"
 #include "dfx_regs.h"
 #include "dfx_util.h"
@@ -129,7 +128,7 @@ std::shared_ptr<DfxRegs> DfxThread::GetThreadRegs() const
     return regs_;
 }
 
-std::vector<std::shared_ptr<DfxFrames>> DfxThread::GetThreadDfxFrames() const
+std::vector<std::shared_ptr<DfxFrame>> DfxThread::GetThreadDfxFrames() const
 {
     return dfxFrames_;
 }
@@ -139,9 +138,9 @@ void DfxThread::SetThreadRegs(const std::shared_ptr<DfxRegs> &regs)
     regs_ = regs;
 }
 
-std::shared_ptr<DfxFrames> DfxThread::GetAvaliableFrame()
+std::shared_ptr<DfxFrame> DfxThread::GetAvaliableFrame()
 {
-    std::shared_ptr<DfxFrames> frame = std::make_shared<DfxFrames>();
+    std::shared_ptr<DfxFrame> frame = std::make_shared<DfxFrame>();
     dfxFrames_.push_back(frame);
     return frame;
 }
@@ -190,7 +189,7 @@ void DfxThread::SkipFramesInSignalHandler()
         return;
     }
 
-    std::vector<std::shared_ptr<DfxFrames>> skippedFrames;
+    std::vector<std::shared_ptr<DfxFrame>> skippedFrames;
     int framesSize = (int)dfxFrames_.size();
     bool skipPos = false;
     size_t index = 0;
@@ -211,7 +210,7 @@ void DfxThread::SkipFramesInSignalHandler()
             DfxLogDebug("%s :: add pc=0 frame :: index(%d), i(%d), adjustedLr=0x%x, dfxFrames_[i]->GetFramePc()=0x%x",
                 __func__, index, i, adjustedLr, dfxFrames_[i]->GetFramePc());
             skipPos = true;
-            std::shared_ptr<DfxFrames> frame = std::make_shared<DfxFrames>();
+            std::shared_ptr<DfxFrame> frame = std::make_shared<DfxFrame>();
             frame->SetFrameIndex(index);
             skippedFrames.push_back(frame);
             index++;

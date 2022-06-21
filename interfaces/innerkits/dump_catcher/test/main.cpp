@@ -29,7 +29,6 @@
 #include <vector>
 
 #include "dfx_dump_catcher.h"
-#include "dfx_dump_catcher_frame.h"
 
 static const int ARG1 = 1;
 static const int ARG2 = 2;
@@ -67,6 +66,18 @@ static bool CatchStack(int32_t pid, int32_t tid)
     return ret;
 }
 
+static bool CatchStackFd(int32_t pid, int32_t tid)
+{
+    printf("This is function DumpCatch.\n");
+    OHOS::HiviewDFX::DfxDumpCatcher mDfxDumpCatcher;
+    std::string msg = "";
+    int fd = STDOUT_FILENO;
+    bool ret = mDfxDumpCatcher.DumpCatchFd(pid, tid, msg, fd);
+
+    printf("DumpCatchFd :: ret: %d.\n", ret);
+    return ret;
+}
+
 static bool CatchStackMulti(const std::vector<int> pidV)
 {
     printf("This is function DumpCatchMultiPid.\n");
@@ -87,7 +98,7 @@ static bool CatchStackFrame(int32_t pid, int32_t tid)
     printf("This is function DumpCatchFrame :: pid(%d), tid(%d).\n", pid, tid);
     OHOS::HiviewDFX::DfxDumpCatcher mDfxDumpCatcher;
     std::string msg = "";
-    std::vector<std::shared_ptr<OHOS::HiviewDFX::DfxDumpCatcherFrame>> frameV;
+    std::vector<std::shared_ptr<OHOS::HiviewDFX::DfxFrame>> frameV;
     bool ret = mDfxDumpCatcher.DumpCatchFrame(pid, tid, msg, frameV);
 
     printf("DumpCatchFrame :: ret: %d, frameV: %zu.\n", ret, frameV.size());
@@ -98,8 +109,8 @@ static bool CatchStackFrame(int32_t pid, int32_t tid)
 
     printf("DumpCatchFrame :: frame:\n");
     for (int i = 0; i < frameV.size(); i++) {
-        std::shared_ptr<OHOS::HiviewDFX::DfxDumpCatcherFrame> frame = frameV[i];
-        if (std::string(frame->funcName_) == "") {
+        std::shared_ptr<OHOS::HiviewDFX::DfxFrame> frame = frameV[i];
+        if (std::string(frame->GetFrameFuncName()) == "") {
             printf("#%02d pc %016" PRIx64 "(%016" PRIx64 ") %s\n",
                 i, frame->GetFrameRelativePc(), frame->GetFramePc(), (frame->GetFrameMap() == nullptr) ? \
              "Unknown" : frame->GetFrameMap()->GetMapPath().c_str());
@@ -120,7 +131,7 @@ static bool FunctionThree(int32_t pid, int32_t tid)
     int currentPid = getpid();
     int currentTid = syscall(SYS_gettid);
     bool ret = CatchStack(currentPid, currentTid);
-    ret = CatchStack(currentPid, 0);
+    ret = CatchStackFd(currentPid, 0);
 
     StartMultiThread();
     char path[NAME_LEN] = {0};

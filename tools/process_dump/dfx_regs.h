@@ -36,6 +36,7 @@ public:
     }
     virtual std::string PrintRegs() const = 0;
     virtual std::string GetSpecialRegisterName(uintptr_t val) const = 0;
+    virtual int PrintFormat(char *buf, int size, const char *format, ...) const;
     void SetRegs(const std::vector<uintptr_t> regs)
     {
         regsData_ = regs;

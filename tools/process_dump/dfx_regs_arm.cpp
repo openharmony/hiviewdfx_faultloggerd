@@ -93,34 +93,18 @@ std::string DfxRegsArm::PrintRegs() const
     regString = regString + "Registers:\n";
 
     std::vector<uintptr_t> regs = GetRegsData();
-    int ret = snprintf_s(buf, sizeof(buf), sizeof(buf) - 1, \
-        "r0:%08x r1:%08x r2:%08x r3:%08x\n", \
-        regs[REG_ARM_R0], regs[REG_ARM_R1], regs[REG_ARM_R2], regs[REG_ARM_R3]);
-    if (ret <= 0) {
-        DfxLogError("%s :: snprintf_s failed, line: %d.", __func__, __LINE__);
-    }
 
-    ret = snprintf_s(buf + strlen(buf), sizeof(buf) - strlen(buf), sizeof(buf) - strlen(buf) - 1, \
-        "r4:%08x r5:%08x r6:%08x r7:%08x\n", \
-        regs[REG_ARM_R4], regs[REG_ARM_R5], regs[REG_ARM_R6], regs[REG_ARM_R7]);
-    if (ret <= 0) {
-        DfxLogError("%s :: snprintf_s failed, line: %d.", __func__, __LINE__);
-    }
+    PrintFormat(buf, sizeof(buf), "r0:%08x r1:%08x r2:%08x r3:%08x\n", \
+                regs[REG_ARM_R0], regs[REG_ARM_R1], regs[REG_ARM_R2], regs[REG_ARM_R3]);
 
-    ret = snprintf_s(buf + strlen(buf), sizeof(buf) - strlen(buf), sizeof(buf) - strlen(buf) - 1, \
-        "r8:%08x r9:%08x r10:%08x\n", \
-        regs[REG_ARM_R8], regs[REG_ARM_R9], regs[REG_ARM_R10]);
-    if (ret <= 0) {
-        DfxLogError("%s :: snprintf_s failed, line: %d.", __func__, __LINE__);
-    }
+    PrintFormat(buf + strlen(buf), sizeof(buf) - strlen(buf), "r4:%08x r5:%08x r6:%08x r7:%08x\n", \
+                regs[REG_ARM_R4], regs[REG_ARM_R5], regs[REG_ARM_R6], regs[REG_ARM_R7]);
+    
+    PrintFormat(buf + strlen(buf), sizeof(buf) - strlen(buf), "r8:%08x r9:%08x r10:%08x\n", \
+                regs[REG_ARM_R8], regs[REG_ARM_R9], regs[REG_ARM_R10]);
 
-    ret = snprintf_s(buf + strlen(buf), sizeof(buf) - strlen(buf), sizeof(buf) - strlen(buf) - 1, \
-        "fp:%08x ip:%08x sp:%08x lr:%08x pc:%08x \n", \
-        regs[REG_ARM_R11], regs[REG_ARM_R12], \
-        regs[REG_ARM_R13], regs[REG_ARM_R14], regs[REG_ARM_R15]);
-    if (ret <= 0) {
-        DfxLogError("%s :: snprintf_s failed, line: %d.", __func__, __LINE__);
-    }
+    PrintFormat(buf + strlen(buf), sizeof(buf) - strlen(buf), "fp:%08x ip:%08x sp:%08x lr:%08x pc:%08x\n", \
+                regs[REG_ARM_R11], regs[REG_ARM_R12], regs[REG_ARM_R13], regs[REG_ARM_R14], regs[REG_ARM_R15]);
 
     regString = regString + std::string(buf);
     return regString;

@@ -12,8 +12,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef DFX_UNWIND_H
-#define DFX_UNWIND_H
+#ifndef DFX_UNWIND_REMOTE_H
+#define DFX_UNWIND_REMOTE_H
 
 #ifdef __clang__
 #pragma clang diagnostic push
@@ -35,11 +35,10 @@ namespace HiviewDFX {
 class DfxUnwindRemote final {
 public:
     static DfxUnwindRemote &GetInstance();
+    ~DfxUnwindRemote() = default;
 
     bool UnwindProcess(std::shared_ptr<DfxProcess> process);
     bool UnwindThread(std::shared_ptr<DfxProcess> process, std::shared_ptr<DfxThread> thread);
-
-    ~DfxUnwindRemote() = default;
 
 private:
     bool DfxUnwindRemoteDoUnwindStep(size_t const & index,
@@ -49,10 +48,12 @@ private:
 private:
     DfxUnwindRemote();
     DISALLOW_COPY_AND_MOVE(DfxUnwindRemote);
+
+private:
     unw_addr_space_t as_;
     std::unique_ptr<DfxSymbolsCache> cache_;
 };
 }   // namespace HiviewDFX
 }   // namespace OHOS
 
-#endif  // DFX_UNWIND_H
+#endif  // DFX_UNWIND_REMOTE_H
