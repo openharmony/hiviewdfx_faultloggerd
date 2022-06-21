@@ -44,7 +44,7 @@ void ProcessDfxTest::TearDown(void)
 
 int ProcessDfxTest::loopRootPid_ = 100;
 
-std::string ProcessDfxTest::getTelephonyPid()
+std::string ProcessDfxTest::GetTelephonyPid()
 {
     std::string procCMD = "pgrep 'telephony'";
     GTEST_LOG_(INFO) << "threadCMD = " << procCMD;
@@ -90,7 +90,7 @@ HWTEST_F (ProcessDfxTest, ProcessDfxRequestTest001, TestSize.Level2)
 HWTEST_F (ProcessDfxTest, ProcessDfxRequestTest002, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "ProcessDfxRequestTest002: start.";
-    ProcessDfxTest::getTelephonyPid();
+    ProcessDfxTest::GetTelephonyPid();
     std::shared_ptr<DfxProcess> processDfx = std::make_shared<DfxProcess>();
     pid_t pid = ProcessDfxTest::loopRootPid_;
     pid_t tid = ProcessDfxTest::loopRootPid_;

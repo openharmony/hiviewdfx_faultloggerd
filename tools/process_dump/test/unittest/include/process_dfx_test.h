@@ -28,7 +28,7 @@ public:
     static void TearDownTestCase(void);
     void SetUp();
     void TearDown();
-    static std::string getTelephonyPid();
+    static std::string GetTelephonyPid();
 
     static int loopRootPid_;
 };
