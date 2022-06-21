@@ -19,17 +19,20 @@
 #include <securec.h>
 #include <stdbool.h>
 
+#define AT_SYMBOL_VISIBLE       __attribute__ ((visibility("default")))
+#define AT_SYMBOL_HIDDEN        __attribute__ ((visibility("hidden")))
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-bool ReadStringFromFile(char* path, char* dst, size_t dstSz);
+AT_SYMBOL_HIDDEN bool ReadStringFromFile(const char* path, char* dst, size_t dstSz);
 
-bool GetThreadName(char* buffer, size_t bufferSz);
+AT_SYMBOL_HIDDEN bool GetThreadName(char* buffer, size_t bufferSz);
 
-bool GetProcessName(char* buffer, size_t bufferSz);
+AT_SYMBOL_HIDDEN bool GetProcessName(char* buffer, size_t bufferSz);
 
-uint64_t GetTimeMillseconds(void);
+AT_SYMBOL_HIDDEN uint64_t GetTimeMilliseconds(void);
 
 #ifdef __cplusplus
 }

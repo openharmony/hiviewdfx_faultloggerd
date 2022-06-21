@@ -25,7 +25,7 @@
 
 #include "dfx_define.h"
 
-__attribute__((visibility("hidden"))) bool ReadStringFromFile(char* path, char* dst, size_t dstSz)
+bool ReadStringFromFile(const char* path, char* dst, size_t dstSz)
 {
     char name[NAME_LEN];
     char nameFilter[NAME_LEN];
@@ -65,7 +65,7 @@ __attribute__((visibility("hidden"))) bool ReadStringFromFile(char* path, char* 
     return true;
 }
 
-__attribute__((visibility("hidden"))) bool GetThreadName(char* buffer, size_t bufferSz)
+bool GetThreadName(char* buffer, size_t bufferSz)
 {
     char path[NAME_LEN];
     memset_s(path, sizeof(path), '\0', sizeof(path));
@@ -75,7 +75,7 @@ __attribute__((visibility("hidden"))) bool GetThreadName(char* buffer, size_t bu
     return ReadStringFromFile(path, buffer, bufferSz);
 }
 
-__attribute__((visibility("hidden"))) bool GetProcessName(char* buffer, size_t bufferSz)
+bool GetProcessName(char* buffer, size_t bufferSz)
 {
     char path[NAME_LEN];
     memset_s(path, sizeof(path), '\0', sizeof(path));
@@ -85,11 +85,10 @@ __attribute__((visibility("hidden"))) bool GetProcessName(char* buffer, size_t b
     return ReadStringFromFile(path, buffer, bufferSz);
 }
 
-__attribute__((visibility("hidden"))) uint64_t GetTimeMillseconds(void)
+uint64_t GetTimeMilliseconds(void)
 {
     struct timeval time;
     gettimeofday(&time, NULL);
-    return ((uint64_t)time.tv_sec * 1000) + // 1000 : second to millsecond convert ratio
-        (((uint64_t)time.tv_usec) / 1000); // 1000 : microsecond to millsecond convert ratio
+    return ((uint64_t)time.tv_sec * 1000) + // 1000 : second to millisecond convert ratio
+        (((uint64_t)time.tv_usec) / 1000); // 1000 : microsecond to millisecond convert ratio
 }
-

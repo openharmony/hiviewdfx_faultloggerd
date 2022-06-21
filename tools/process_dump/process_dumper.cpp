@@ -94,53 +94,40 @@ void ProcessDumper::PrintDumpProcessMsg(std::string msg)
     backTracePrintCV.notify_one();
 }
 
+int ProcessDumper::PrintDumpProcessBuf(const char *format, ...)
+{
+    int ret = -1;
+    char buf[LOG_BUF_LEN] = {0};
+    (void)memset_s(&buf, sizeof(buf), 0, sizeof(buf));
+    va_list args;
+    va_start(args, format);
+    ret = vsnprintf_s(buf, sizeof(buf), sizeof(buf) - 1, format, args);
+    va_end(args);
+    if (ret <= 0) {
+        DfxLogError("snprintf_s failed.");
+    }
+    PrintDumpProcessMsg(std::string(buf));
+    return ret;
+}
+
 void ProcessDumper::PrintDumpProcessWithSignalContextHeader(std::shared_ptr<DfxProcess> process, siginfo_t info,
                                                             const std::string& msg)
 {
-    char buf[LOG_BUF_LEN] = {0};
-    int ret = snprintf_s(buf, sizeof(buf), sizeof(buf) - 1, "Pid:%d\n", process->GetPid());
-    if (ret <= 0) {
-        DfxLogError("%s :: snprintf_s failed, line: %d.", __func__, __LINE__);
-    }
-    PrintDumpProcessMsg(std::string(buf));
-    ret = memset_s(buf, LOG_BUF_LEN, '\0', LOG_BUF_LEN);
-    if (ret != EOK) {
-        DfxLogError("%s :: msmset_s failed, line: %d.", __func__, __LINE__);
-    }
-
-    ret = snprintf_s(buf, sizeof(buf), sizeof(buf) - 1, "Uid:%d\n", process->GetUid());
-    if (ret <= 0) {
-        DfxLogError("%s :: snprintf_s failed, line: %d.", __func__, __LINE__);
-    }
-    PrintDumpProcessMsg(std::string(buf));
-    ret = memset_s(buf, LOG_BUF_LEN, '\0', LOG_BUF_LEN);
-    if (ret != EOK) {
-        DfxLogError("%s :: msmset_s failed, line: %d.", __func__, __LINE__);
-    }
-
-    ret = snprintf_s(buf, sizeof(buf), sizeof(buf) - 1, "Process name:%s\n", process->GetProcessName().c_str());
-    if (ret <= 0) {
-        DfxLogError("%s :: snprintf_s failed, line: %d.", __func__, __LINE__);
-    }
-    PrintDumpProcessMsg(std::string(buf));
-    ret = memset_s(buf, LOG_BUF_LEN, '\0', LOG_BUF_LEN);
-    if (ret != EOK) {
-        DfxLogError("%s :: msmset_s failed, line: %d.", __func__, __LINE__);
-    }
+    PrintDumpProcessBuf("Pid:%d\n", process->GetPid());
+    PrintDumpProcessBuf("Uid:%d\n", process->GetUid());
+    PrintDumpProcessBuf("Process name:%s\n", process->GetProcessName().c_str());
 
     if (info.si_signo != SIGDUMP) {
-        std::string reason = "Reason:";
-        PrintDumpProcessMsg(reason);
+        PrintDumpProcessBuf("Reason:");
 
         PrintDumpProcessMsg(PrintSignal(info));
 
         if (info.si_signo == SIGABRT && !msg.empty()) {
-            PrintDumpProcessMsg("LastFatalMessage:" + msg);
-            PrintDumpProcessMsg("\n");
+            PrintDumpProcessBuf("LastFatalMessage:%s\n", msg.c_str());
         }
 
         if (process->GetThreads().size() != 0) {
-            PrintDumpProcessMsg("Fault thread Info:\n");
+            PrintDumpProcessBuf("Fault thread Info:\n");
         }
     }
 }

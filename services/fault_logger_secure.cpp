@@ -80,11 +80,11 @@ bool FaultLoggerSecure::CheckUidAndPid(const int uid, const int32_t pid)
 
     errno_t err = memset_s(resp, sizeof(resp), '\0', sizeof(resp));
     if (err != EOK) {
-        DfxLogError("%s :: msmset_s resp failed..", __func__);
+        DfxLogError("%s :: memset_s resp failed..", __func__);
     }
     err = memset_s(cmd, sizeof(cmd), '\0', sizeof(cmd));
     if (err != EOK) {
-        DfxLogError("%s :: msmset_s cmd failed..", __func__);
+        DfxLogError("%s :: memset_s cmd failed..", __func__);
     }
     auto pms = sprintf_s(cmd, sizeof(cmd), "/bin/ps -u %d -o PID", uid);
     if (pms <= 0) {

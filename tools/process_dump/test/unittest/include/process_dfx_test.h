@@ -28,6 +28,11 @@ public:
     static void TearDownTestCase(void);
     void SetUp();
     void TearDown();
+    static std::string ForkAndRootCommands();
+    static void StartRootCrasherLoop();
+    static void KillCrasherLoopForSomeCase();
+
+    static int loopRootPid_;
 };
 } // namespace HiviewDFX
 } // namespace OHOS

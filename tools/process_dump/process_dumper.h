@@ -39,15 +39,9 @@ public:
 
     void Dump(bool isSignalHdlr, ProcessDumpType type, int32_t pid, int32_t tid);
     ~ProcessDumper() = default;
-    void SetDisplayBacktrace(bool displayBacktrace);
-    bool GetDisplayBacktrace() const;
-    void SetDisplayRegister(bool displayRegister);
-    bool GetDisplayRegister() const;
-    void SetDisplayMaps(bool Maps);
-    bool GetDisplayMaps() const;
-    void SetLogPersist(bool logPersist);
-    bool GetLogPersist() const;
+    
     void PrintDumpProcessMsg(std::string msg);
+    int PrintDumpProcessBuf(const char *format, ...);
 public:
     int32_t backTraceFileFd_;
     std::thread backTracePrintThread_;

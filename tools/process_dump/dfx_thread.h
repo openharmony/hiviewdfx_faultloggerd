@@ -52,7 +52,7 @@ public:
     void Detach();
     bool Attach();
     std::string ToString() const;
-    bool IsThreadInititalized();
+    bool IsThreadInitialized();
 
 private:
     enum class ThreadStatus {

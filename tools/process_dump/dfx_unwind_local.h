@@ -19,7 +19,6 @@
 #include <mutex>
 #include <condition_variable>
 #include <csignal>
-#include <libunwind-ptrace.h>
 #include <libunwind.h>
 
 #include "dfx_define.h"

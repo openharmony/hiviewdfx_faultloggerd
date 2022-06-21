@@ -288,7 +288,7 @@ HWTEST_F (FaultPerformanceTest, FaultPerformanceTest006, TestSize.Level2)
     GTEST_LOG_(INFO) << testPid;
     DfxDumpCatcher dumplog;
     std::string msg = "";
-    std::vector<std::shared_ptr<DfxDumpCatcherFrame>> frameV;
+    std::vector<std::shared_ptr<DfxFrame>> frameV;
     clock_t befor = GetStartTime();
     for (int i = 0; i < PERFORMANCE_TEST_NUMBER_ONE_HUNDRED; i++) {
         bool ret = dumplog.DumpCatchFrame(testPid, testPid, msg, frameV);

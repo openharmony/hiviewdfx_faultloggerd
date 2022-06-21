@@ -19,6 +19,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <unistd.h>
 #include <dirent.h>
 #include <directory_ex.h>
 #include <file_ex.h>
@@ -108,16 +109,17 @@ static bool CatchStackFrame(int32_t pid, int32_t tid)
     write(STDOUT_FILENO, msg.c_str(), lenStackInfo);
 
     printf("DumpCatchFrame :: frame:\n");
-    for (int i = 0; i < frameV.size(); i++) {
+    for (int i = 0; i < (int)frameV.size(); i++) {
         std::shared_ptr<OHOS::HiviewDFX::DfxFrame> frame = frameV[i];
         if (std::string(frame->GetFrameFuncName()) == "") {
             printf("#%02d pc %016" PRIx64 "(%016" PRIx64 ") %s\n",
                 i, frame->GetFrameRelativePc(), frame->GetFramePc(), (frame->GetFrameMap() == nullptr) ? \
-             "Unknown" : frame->GetFrameMap()->GetMapPath().c_str());
+                "Unknown" : frame->GetFrameMap()->GetMapPath().c_str());
         } else {
             printf("#%02d pc %016" PRIx64 "(%016" PRIx64 ") %s(%s+%" PRIu64 ")\n", i, \
                 frame->GetFrameRelativePc(), frame->GetFramePc(), (frame->GetFrameMap() == nullptr) ?
-             "Unknown" : frame->GetFrameMap()->GetMapPath().c_str(), std::string(frame->funcName_).c_str(), \
+                "Unknown" : frame->GetFrameMap()->GetMapPath().c_str(), \
+                std::string(frame->GetFrameFuncName()).c_str(), \
                 frame->GetFrameFuncOffset());
         }
     }

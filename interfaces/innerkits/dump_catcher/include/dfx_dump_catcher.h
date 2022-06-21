@@ -21,8 +21,9 @@
 #include <cinttypes>
 #include <cstring>
 #include <string>
-
-#include "dfx_unwind_local.h"
+#include <vector>
+#include <mutex>
+#include "dfx_frame.h"
 
 namespace OHOS {
 namespace HiviewDFX {

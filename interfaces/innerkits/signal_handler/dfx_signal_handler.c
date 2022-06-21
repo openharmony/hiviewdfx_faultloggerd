@@ -39,6 +39,7 @@
 #include <securec.h>
 
 #include "dfx_log.h"
+#include "dfx_cutil.h"
 #if defined(CRASH_LOCAL_HANDLER)
 #include "dfx_crash_local_handler.h"
 #endif
@@ -137,14 +138,6 @@ static void FillLastFatalMessageLocked(int32_t sig)
 
     (void)strncpy_s(g_request.lastFatalMessage, sizeof(g_request.lastFatalMessage),
         lastFatalMessage, sizeof(g_request.lastFatalMessage) - 1);
-}
-
-static uint64_t GetTimeMillseconds(void)
-{
-    struct timeval time;
-    gettimeofday(&time, NULL);
-    return ((uint64_t)time.tv_sec * 1000) + // 1000 : second to millsecond convert ratio
-        (((uint64_t)time.tv_usec) / 1000); // 1000 : microsecond to millsecond convert ratio
 }
 
 static int32_t InheritCapabilities(void)
@@ -292,6 +285,10 @@ static int DFX_ExecDump(void *arg)
 
 static pid_t DFX_ForkAndDump()
 {
+    if (NULL == g_reservedChildStack) {
+        DfxLogError("g_reservedChildStack is null.");
+        return -1;
+    }
     return clone(DFX_ExecDump, g_reservedChildStack, CLONE_VFORK | CLONE_FS | CLONE_UNTRACED, NULL);
 }
 
@@ -310,64 +307,6 @@ static void ResetSignalHandlerIfNeed(int sig)
         DfxLogError("Failed to reset signal.");
         signal(sig, SIG_DFL);
     }
-}
-
-void ReadStringFromFile(char* path, char* pDestStore)
-{
-    char name[NAME_LEN];
-    char nameFilter[NAME_LEN];
-
-    memset_s(name, sizeof(name), '\0', sizeof(name));
-    memset_s(nameFilter, sizeof(nameFilter), '\0', sizeof(nameFilter));
-
-    int fd = -1;
-    fd = open(path, O_RDONLY);
-    if (fd == -1) {
-        return;
-    }
-    if (read(fd, name, NAME_LEN -1) == -1) {
-        close(fd);
-        return;
-    }
-    char* p = name;
-    int i = 0;
-    while (*p != '\0') {
-        if ((*p == '\n') || (i == NAME_LEN)) {
-            break;
-        }
-        nameFilter[i] = *p;
-        p++, i++;
-    }
-    if (memcpy_s(pDestStore, NAME_LEN, nameFilter, strlen(nameFilter) + 1) != 0) {
-        DfxLogError("Failed to copy name.");
-    }
-    int ret = close(fd);
-    if (ret == -1) {
-        DfxLogError("close failed!");
-    }
-}
-
-void GetThreadName(void)
-{
-    char path[NAME_LEN];
-    memset_s(path, sizeof(path), '\0', sizeof(path));
-    if (snprintf_s(path, sizeof(path), sizeof(path) - 1, "/proc/%d/comm", getpid()) <= 0) {
-        return ;
-    }
-    ReadStringFromFile(path, g_request.threadName);
-}
-
-void GetProcessName(void)
-{
-    char path[NAME_LEN];
-    int ret = memset_s(path, sizeof(path), '\0', sizeof(path));
-    if (ret != EOK) {
-        printf("memset error!");
-    }
-    if (snprintf_s(path, sizeof(path), sizeof(path) - 1, "/proc/%d/cmdline", getpid()) <= 0) {
-        return;
-    }
-    ReadStringFromFile(path, g_request.processName);
 }
 
 static int CheckLastHandledTid(int sig, siginfo_t *si)
@@ -395,20 +334,20 @@ static void DFX_SignalHandler(int sig, siginfo_t *si, void *context)
         DfxLogInfo("We are handling sigdump now, skip same request.");
         return;
     }
-    pthread_mutex_lock(&g_signalHandlerMutex);
-
-    (void)memset_s(&g_request, sizeof(g_request), 0, sizeof(g_request));
     g_curSig = sig;
+    
+    pthread_mutex_lock(&g_signalHandlerMutex);
+    (void)memset_s(&g_request, sizeof(g_request), 0, sizeof(g_request));
     g_request.type = sig;
     g_request.tid = gettid();
     g_request.pid = getpid();
     g_request.uid = (int32_t)getuid();
     g_request.reserved = 0;
-    g_request.timeStamp = GetTimeMillseconds();
+    g_request.timeStamp = GetTimeMilliseconds();
     DfxLogInfo("DFX_SignalHandler :: sig(%d), pid(%d), tid(%d).", sig, g_request.pid, g_request.tid);
 
-    GetThreadName();
-    GetProcessName();
+    GetThreadName(g_request.threadName, sizeof(g_request.threadName));
+    GetProcessName(g_request.processName, sizeof(g_request.processName));
 
     if (sig != SIGDUMP && g_lastHandledTidIndex < MAX_HANDLED_TID_NUMBER) {
         g_lastHandledTid[g_lastHandledTidIndex] = g_request.tid;
@@ -500,14 +439,8 @@ out:
 
 void DFX_InstallSignalHandler(void)
 {
-    pthread_mutex_lock(&g_signalHandlerMutex);
     if (g_hasInit) {
-        pthread_mutex_unlock(&g_signalHandlerMutex);
         return;
-    }
-
-    if (SetPlatformSignalHandler != NULL) {
-        SetPlatformSignalHandler((uintptr_t)DFX_SignalHandler);
     }
 
     // reserve stack for fork
@@ -515,10 +448,13 @@ void DFX_InstallSignalHandler(void)
         PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_STACK, 1, 0);
     if (g_reservedChildStack == NULL) {
         DfxLogError("Failed to alloc memory for child stack.");
-        pthread_mutex_unlock(&g_signalHandlerMutex);
         return;
     }
     g_reservedChildStack = (void *)(((uint8_t *)g_reservedChildStack) + RESERVED_CHILD_STACK_SIZE - 1);
+
+    if (SetPlatformSignalHandler != NULL) {
+        SetPlatformSignalHandler((uintptr_t)DFX_SignalHandler);
+    }
 
     struct sigaction action;
     memset_s(&action, sizeof(action), 0, sizeof(action));
@@ -535,5 +471,4 @@ void DFX_InstallSignalHandler(void)
     }
 
     g_hasInit = TRUE;
-    pthread_mutex_unlock(&g_signalHandlerMutex);
 }

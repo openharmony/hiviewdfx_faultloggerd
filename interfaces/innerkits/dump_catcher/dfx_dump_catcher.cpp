@@ -16,6 +16,7 @@
 /* This files contains faultlog sdk interface functions. */
 
 #include "dfx_dump_catcher.h"
+#include "dfx_unwind_local.h"
 
 #include <algorithm>
 #include <climits>
@@ -85,10 +86,9 @@ bool DfxDumpCatcher::DoDumpLocalTid(int tid, std::string& msg)
         ret = DfxUnwindLocal::GetInstance().WaitLocalDumpRequest();
     }
 
-    if(ret) {
+    if (ret) {
         msg.append(DfxUnwindLocal::GetInstance().CollectUnwindResult(tid));
-    }
-    else {
+    } else {
         msg.append("Failed to dump thread:" + std::to_string(tid) + ".\n");
     }
     DfxLogDebug("%s :: DoDumpLocalTid :: return %d.", DFXDUMPCATCHER_TAG.c_str(), ret);
@@ -331,7 +331,7 @@ bool DfxDumpCatcher::DumpCatchMultiPid(const std::vector<int> pidV, std::string&
 }
 
 bool DfxDumpCatcher::DumpCatchFrame(int pid, int tid, std::string& msg, \
-            std::vector<std::shared_ptr<DfxFrame>>& frames)
+    std::vector<std::shared_ptr<DfxFrame>>& frames)
 {
     if (pid != getpid() || tid == 0) {
         DfxLogError("DumpCatchFrame :: only support localDump.");

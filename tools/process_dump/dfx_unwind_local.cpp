@@ -178,8 +178,7 @@ void DfxUnwindLocal::ResolveFrameInfo(size_t index, DfxFrame& frame)
     if (!cache_->GetNameAndOffsetByPc(as_, pc, funcName, funcOffset)) {
         frame.SetFrameFuncName("");
         frame.SetFrameFuncOffset(0);
-    }
-    else {
+    } else {
         frame.SetFramePc(pc);
         frame.SetFrameFuncName(funcName);
         frame.SetFrameFuncOffset(funcOffset);

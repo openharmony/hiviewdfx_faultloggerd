@@ -178,7 +178,7 @@ static void InitDumpRequest(int sig)
     g_request.pid = getpid();
     g_request.uid = (int32_t)getuid();
     g_request.reserved = 0;
-    g_request.timeStamp = GetTimeMillseconds();
+    g_request.timeStamp = GetTimeMilliseconds();
     GetThreadName(g_request.threadName, sizeof(g_request.threadName));
 }
 

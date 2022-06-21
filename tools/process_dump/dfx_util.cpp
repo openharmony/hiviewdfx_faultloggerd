@@ -108,13 +108,26 @@ std::string GetCurrentTimeStr(uint64_t current)
         return "invalid timestamp\n";
     }
 
-    char millBuf[256] = {0}; // 256 : millseconds buffer size
+    char millBuf[256] = {0}; // 256 : milliseconds buffer size
     int ret = snprintf_s(millBuf, sizeof(millBuf), sizeof(millBuf) - 1,
         "%s.%03d\n", seconds, millsecond);
     if (ret <= 0) {
         return "invalid timestamp\n";
     }
     return std::string(millBuf, strlen(millBuf));
+}
+
+int PrintFormat(char *buf, int size, const char *format, ...)
+{
+    int ret = -1;
+    va_list args;
+    va_start(args, format);
+    ret = vsnprintf_s(buf, size, size - 1, format, args);
+    va_end(args);
+    if (ret <= 0) {
+        DfxLogError("snprintf_s failed.");
+    }
+    return ret;
 }
 }   // namespace HiviewDFX
 }   // namespace OHOS
