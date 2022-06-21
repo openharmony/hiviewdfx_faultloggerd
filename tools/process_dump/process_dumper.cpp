@@ -336,7 +336,9 @@ void ProcessDumper::Dump(bool isSignalHdlr, ProcessDumpType type, int32_t pid, i
 
     backTraceIsFinished_ = true;
     backTracePrintCV.notify_one();
-    backTracePrintThread_.join();
+    if (backTracePrintThread_.joinable()) {
+        backTracePrintThread_.join();
+    }
     close(backTraceFileFd_);
     backTraceFileFd_ = -1;
 
