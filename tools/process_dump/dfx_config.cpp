@@ -116,44 +116,44 @@ bool DfxConfig::GetDumpOtherThreads() const
     return dumpOtherThreads_;
 }
 
-void DfxConfig::ParserConfig(std::string key, std::string value)
+void DfxConfig::ParserConfig(std::string& key, std::string& value)
 {
-    unsigned int  lowAddressStep = 0;
-    unsigned int  highAddressStep = 0;
-        do {
+    unsigned int lowAddressStep = 0;
+    unsigned int highAddressStep = 0;
+    do {
         if ((key.compare("faultlogLogPersist") == 0) && (value.compare("true") == 0)) {
-            DfxConfig::GetInstance().SetLogPersist(true);
-            continue;
+            SetLogPersist(true);
+            break;
         }
         if ((key.compare("displayRigister") == 0) && (value.compare("false") == 0)) {
-            DfxConfig::GetInstance().SetDisplayRegister(false);
-            continue;
+            SetDisplayRegister(false);
+            break;
         }
         if ((key.compare("displayBacktrace") == 0) && (value.compare("false") == 0)) {
-            DfxConfig::GetInstance().SetDisplayBacktrace(false);
-            continue;
+            SetDisplayBacktrace(false);
+            break;
         }
         if ((key.compare("displayMaps") == 0) && (value.compare("false") == 0)) {
-            DfxConfig::GetInstance().SetDisplayMaps(false);
-            continue;
+            SetDisplayMaps(false);
+            break;
         }
         if ((key.compare("displayFaultStack.switch") == 0) && (value.compare("false") == 0)) {
-            DfxConfig::GetInstance().SetDisplayFaultStack(false);
-            continue;
+            SetDisplayFaultStack(false);
+            break;
         }
         if (key.compare("displayFaultStack.lowAddressStep") == 0) {
             lowAddressStep = (unsigned int)atoi(value.data());
-            DfxConfig::GetInstance().SetFaultStackLowAddressStep(lowAddressStep);
-            continue;
+            SetFaultStackLowAddressStep(lowAddressStep);
+            break;
         }
         if (key.compare("displayFaultStack.highAddressStep") == 0) {
             highAddressStep = (unsigned int)atoi(value.data());
-            DfxConfig::GetInstance().SetFaultStackHighAddressStep(highAddressStep);
-            continue;
+            SetFaultStackHighAddressStep(highAddressStep);
+            break;
         }
         if ((key.compare("dumpOtherThreads") == 0) && (value.compare("true") == 0)) {
-            DfxConfig::GetInstance().SetDumpOtherThreads(true);
-            continue;
+            SetDumpOtherThreads(true);
+            break;
         }
     } while (0);
 }
@@ -179,15 +179,15 @@ void DfxConfig::ReadConfig()
             std::string key, value;
             std::string::size_type newLinePos = line.find_first_of("\n");
             if (newLinePos != line.npos) {
-                line = line.substr(0, newLinePos);
+                line = line.substr(0, newLinePos - 1);
             }
             std::string::size_type equalSignPos = line.find_first_of("=");
             if (equalSignPos != line.npos) {
                 key = line.substr(0, equalSignPos);
-                value = line.substr(equalSignPos + 1);
-                DfxConfig::Trim(key);
-                DfxConfig::Trim(value);
-                DfxConfig::ParserConfig(key, value);
+                value = line.substr(equalSignPos + 1, newLinePos - equalSignPos - 1);
+                Trim(key);
+                Trim(value);
+                ParserConfig(key, value);
             }
         }
         (void)fclose(fp);

@@ -39,14 +39,6 @@ public:
 
     void Dump(bool isSignalHdlr, ProcessDumpType type, int32_t pid, int32_t tid);
     ~ProcessDumper() = default;
-    void SetDisplayBacktrace(bool displayBacktrace);
-    bool GetDisplayBacktrace() const;
-    void SetDisplayRegister(bool displayRegister);
-    bool GetDisplayRegister() const;
-    void SetDisplayMaps(bool Maps);
-    bool GetDisplayMaps() const;
-    void SetLogPersist(bool logPersist);
-    bool GetLogPersist() const;
     void PrintDumpProcessMsg(std::string msg);
 public:
     int32_t backTraceFileFd_;
@@ -69,10 +61,6 @@ private:
     ProcessDumper() = default;
     DISALLOW_COPY_AND_MOVE(ProcessDumper);
     std::shared_ptr<CppCrashReporter> reporter_;
-    bool displayBacktrace_ = true;
-    bool displayRegister_ = true;
-    bool displayMaps_ = true;
-    bool logPersist_ = false;
 };
 } // namespace HiviewDFX
 } // namespace OHOS
