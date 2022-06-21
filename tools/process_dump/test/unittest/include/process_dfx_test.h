@@ -28,9 +28,7 @@ public:
     static void TearDownTestCase(void);
     void SetUp();
     void TearDown();
-    static std::string ForkAndRootCommands();
-    static void StartRootCrasherLoop();
-    static void KillCrasherLoopForSomeCase();
+    static std::string getTelephonyPid();
 
     static int loopRootPid_;
 };

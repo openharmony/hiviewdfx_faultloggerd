@@ -44,12 +44,9 @@ void ProcessDfxTest::TearDown(void)
 
 int ProcessDfxTest::loopRootPid_ = 100;
 
-std::string ProcessDfxTest::ForkAndRootCommands()
+std::string ProcessDfxTest::getTelephonyPid()
 {
-    int rootuid = 0;
-    setuid(rootuid);
-    system("/data/crasher_c thread-Loop &");
-    std::string procCMD = "pgrep 'crasher'";
+    std::string procCMD = "pgrep 'telephony'";
     GTEST_LOG_(INFO) << "threadCMD = " << procCMD;
     FILE *procFileInfo = nullptr;
     procFileInfo = popen(procCMD.c_str(), "r");
@@ -65,20 +62,6 @@ std::string ProcessDfxTest::ForkAndRootCommands()
     }
     pclose(procFileInfo);
     return std::to_string(loopRootPid_);
-}
-
-void ProcessDfxTest::StartRootCrasherLoop()
-{
-    int rootuid = 0;
-    setuid(rootuid);
-    ProcessDfxTest::ForkAndRootCommands();
-}
-
-void ProcessDfxTest::KillCrasherLoopForSomeCase()
-{
-    int rootuid = 0;
-    setuid(rootuid);
-    system(("kill -9 " + std::to_string(ProcessDfxTest::loopRootPid_)).c_str());
 }
 
 namespace {
@@ -107,7 +90,7 @@ HWTEST_F (ProcessDfxTest, ProcessDfxRequestTest001, TestSize.Level2)
 HWTEST_F (ProcessDfxTest, ProcessDfxRequestTest002, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "ProcessDfxRequestTest002: start.";
-    ProcessDfxTest::StartRootCrasherLoop();
+    ProcessDfxTest::getTelephonyPid();
     std::shared_ptr<DfxProcess> processDfx = std::make_shared<DfxProcess>();
     pid_t pid = ProcessDfxTest::loopRootPid_;
     pid_t tid = ProcessDfxTest::loopRootPid_;
@@ -116,7 +99,6 @@ HWTEST_F (ProcessDfxTest, ProcessDfxRequestTest002, TestSize.Level2)
     if (processDfx != nullptr && keyThread != nullptr) {
         dfx = processDfx->InitProcessThreads(keyThread);
     }
-    ProcessDfxTest::KillCrasherLoopForSomeCase();
     EXPECT_EQ(true, dfx == true) << "ProcessDfxRequestTest002 Failed";
     GTEST_LOG_(INFO) << "ProcessDfxRequestTest002: end.";
 }
