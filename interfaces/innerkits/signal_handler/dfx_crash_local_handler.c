@@ -61,7 +61,7 @@ __attribute__((noinline)) void PrintLog(int fd, const char *format, ...)
     va_end(args);
     if (size == -1) {
         if (fd > 0) {
-            const char* error = "print log fail";
+            const char* error = "PrintLog vsnprintf_s fail\n";
             (void)write(fd, error, strlen(error));
         }
         return;
