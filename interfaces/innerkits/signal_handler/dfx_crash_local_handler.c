@@ -57,8 +57,15 @@ __attribute__((noinline)) void PrintLog(int fd, const char *format, ...)
     (void)memset_s(&buf, sizeof(buf), 0, sizeof(buf));
     va_list args;
     va_start(args, format);
-    (void)vsnprintf_s(buf, sizeof(buf), sizeof(buf) - 1, format, args);
+    int size = vsnprintf_s(buf, sizeof(buf), sizeof(buf) - 1, format, args);
     va_end(args);
+    if (size == -1) {
+        if (fd > 0) {
+            const char* error = "print log fail";
+            (void)write(fd, error, strlen(error));
+        }
+        return;
+    }
     HILOG_BASE_ERROR(LOG_CORE, "%{public}s", buf);
     if (fd > 0) {
         (void)write(fd, buf, strlen(buf));
