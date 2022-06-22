@@ -36,24 +36,21 @@ namespace HiviewDFX {
 class ProcessDumper final {
 public:
     static ProcessDumper &GetInstance();
+    ~ProcessDumper() = default;
 
     void Dump(bool isSignalHdlr, ProcessDumpType type, int32_t pid, int32_t tid);
-    ~ProcessDumper() = default;
     
     void PrintDumpProcessMsg(std::string msg);
     int PrintDumpProcessBuf(const char *format, ...);
-public:
-    int32_t backTraceFileFd_;
-    std::thread backTracePrintThread_;
-    DfxRingBuffer<BACK_TRACE_RING_BUFFER_SIZE, std::string> backTraceRingBuffer_;
-    volatile bool backTraceIsFinished_ = false;
-    static std::condition_variable backTracePrintCV;
-    static std::mutex backTracePrintMutx;
 
 private:
-    void DumpProcessWithSignalContext(std::shared_ptr<DfxProcess> &process,
+    static void LoopPrintBackTraceInfo();
+
+    void DumpProcessWithSignalContext(std::shared_ptr<DfxProcess> &process, \
                                       std::shared_ptr<ProcessDumpRequest> request);
-    void DumpProcess(std::shared_ptr<DfxProcess> &process, std::shared_ptr<ProcessDumpRequest> request);
+    void DumpProcessWithPidTid(std::shared_ptr<DfxProcess> &process, \
+                               std::shared_ptr<ProcessDumpRequest> request);
+    
     void InitPrintThread(int32_t fromSignalHandler, std::shared_ptr<ProcessDumpRequest> request, \
         std::shared_ptr<DfxProcess> process);
     void PrintDumpProcessWithSignalContextHeader(std::shared_ptr<DfxProcess> process, siginfo_t info,
@@ -62,11 +59,17 @@ private:
 
     ProcessDumper() = default;
     DISALLOW_COPY_AND_MOVE(ProcessDumper);
-    std::shared_ptr<CppCrashReporter> reporter_;
-    bool displayBacktrace_ = true;
-    bool displayRegister_ = true;
-    bool displayMaps_ = true;
-    bool logPersist_ = false;
+
+public:
+    static std::condition_variable backTracePrintCV;
+    static std::mutex backTracePrintMutx;
+    DfxRingBuffer<BACK_TRACE_RING_BUFFER_SIZE, std::string> backTraceRingBuffer_;
+
+private:
+    int32_t backTraceFileFd_;
+    std::thread backTracePrintThread_;
+    volatile bool backTraceIsFinished_ = false;
+    std::shared_ptr<CppCrashReporter> reporter_ = nullptr;
 };
 } // namespace HiviewDFX
 } // namespace OHOS
