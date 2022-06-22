@@ -100,7 +100,12 @@ static void SendFileDescriptorBySocket(int socket, int fd)
         cmsg->cmsg_len = CMSG_LEN(sizeof(fd));
     }
 
-    *(reinterpret_cast<int *>(CMSG_DATA(cmsg))) = fd;
+    int* ptr = reinterpret_cast<int *>(CMSG_DATA(cmsg));
+    if (ptr == nullptr) {
+        DfxLogError("msg is invalid");
+        return;
+    }
+    *ptr = fd;
     msg.msg_controllen = CMSG_SPACE(sizeof(fd));
     if (sendmsg(socket, &msg, 0) < 0) {
         DfxLogError("Failed to send message");
