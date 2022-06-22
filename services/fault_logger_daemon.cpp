@@ -100,12 +100,7 @@ static void SendFileDescriptorBySocket(int socket, int fd)
         cmsg->cmsg_len = CMSG_LEN(sizeof(fd));
     }
 
-    int* ptr = reinterpret_cast<int *>(CMSG_DATA(cmsg));
-    if (ptr == nullptr) {
-        DfxLogError("msg is invalid");
-        return;
-    }
-    *ptr = fd;
+    *(reinterpret_cast<int *>(CMSG_DATA(cmsg))) = fd;
     msg.msg_controllen = CMSG_SPACE(sizeof(fd));
     if (sendmsg(socket, &msg, 0) < 0) {
         DfxLogError("Failed to send message");
@@ -263,7 +258,7 @@ FaultLoggerCheckPermissionResp FaultLoggerDaemon::SecurityCheck(int32_t connecti
             break;
         }
 
-        request->uid = (int32_t)rcred.uid;
+        request->uid = rcred.uid;
         request->callerPid = (int32_t)rcred.pid;
         bool res = faultLoggerSecure_->CheckCallerUID((int)request->uid, request->pid);
         if (res) {

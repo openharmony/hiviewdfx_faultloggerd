@@ -258,7 +258,7 @@ void InitDebugLog(int type, int pid, int tid, int uid, int isLogPersist)
     faultloggerdRequest.type = (int)type;
     faultloggerdRequest.pid = pid;
     faultloggerdRequest.tid = tid;
-    faultloggerdRequest.uid = uid;
+    faultloggerdRequest.uid = (uint32_t)uid;
 
     g_DebugLogFilleDes = RequestLogFileDescriptor(&faultloggerdRequest);
     if (g_DebugLogFilleDes <= 0) {
