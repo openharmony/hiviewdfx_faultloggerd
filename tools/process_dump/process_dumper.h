@@ -43,6 +43,7 @@ public:
     void PrintDumpProcessMsg(std::string msg);
     int PrintDumpProcessBuf(const char *format, ...);
 
+    DfxRingBuffer<BACK_TRACE_RING_BUFFER_SIZE, std::string> backTraceRingBuffer_;
 private:
     static void LoopPrintBackTraceInfo();
 
@@ -60,16 +61,12 @@ private:
     ProcessDumper() = default;
     DISALLOW_COPY_AND_MOVE(ProcessDumper);
 
-public:
-    static std::condition_variable backTracePrintCV;
-    static std::mutex backTracePrintMutx;
-    DfxRingBuffer<BACK_TRACE_RING_BUFFER_SIZE, std::string> backTraceRingBuffer_;
-
-private:
     int32_t backTraceFileFd_;
     std::thread backTracePrintThread_;
     volatile bool backTraceIsFinished_ = false;
     std::shared_ptr<CppCrashReporter> reporter_ = nullptr;
+    static std::condition_variable backTracePrintCV;
+    static std::mutex backTracePrintMutx;
 };
 } // namespace HiviewDFX
 } // namespace OHOS

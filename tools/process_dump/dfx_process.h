@@ -35,7 +35,6 @@ public:
     bool InitProcessThreads(std::shared_ptr<DfxThread> keyThread);
     bool InitOtherThreads(bool attach = true);
     void FillProcessName();
-    void UpdateProcessName(std::string processName);
     void PrintProcessMapsByConfig();
     void PrintThreadsHeaderByConfig();
     void InsertThreadNode(pid_t tid, bool attach = true);

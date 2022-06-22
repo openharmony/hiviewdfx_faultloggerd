@@ -23,6 +23,7 @@
 #include <string>
 #include <vector>
 #include <mutex>
+#include <unistd.h>
 #include "dfx_frame.h"
 
 namespace OHOS {

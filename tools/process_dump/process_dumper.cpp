@@ -75,7 +75,7 @@ void ProcessDumper::LoopPrintBackTraceInfo()
         DfxLogDebug("%s :: available(%d), hasFinished(%d)", __func__, available, hasFinished);
 
         if (available != 0) {
-            if(item.At(0).empty()){
+            if (item.At(0).empty()) {
                 ProcessDumper::GetInstance().backTraceRingBuffer_.Skip(item.Length());
                 continue;
             }
@@ -90,7 +90,7 @@ void ProcessDumper::LoopPrintBackTraceInfo()
                 DfxLogDebug("%s :: print finished, exit loop.\n", __func__);
                 break;
             }
-            
+
             backTracePrintCV.wait_for(lck, std::chrono::milliseconds(BACK_TRACE_RING_BUFFER_PRINT_WAIT_TIME_MS));
         }
     }
@@ -223,7 +223,7 @@ void ProcessDumper::DumpProcessWithSignalContext(std::shared_ptr<DfxProcess> &pr
     }
 
     if ((process->GetProcessName()).empty()) {
-        process->UpdateProcessName(storeProcessName);
+        process->SetProcessName(storeProcessName);
     }
 
     if (isCrashRequest) {
@@ -323,7 +323,9 @@ void ProcessDumper::Dump(bool isSignalHdlr, ProcessDumpType type, int32_t pid, i
 
     backTraceIsFinished_ = true;
     backTracePrintCV.notify_one();
-    backTracePrintThread_.join();
+    if (backTracePrintThread_.joinable()) {
+        backTracePrintThread_.join();
+    }
     close(backTraceFileFd_);
     backTraceFileFd_ = -1;
 
