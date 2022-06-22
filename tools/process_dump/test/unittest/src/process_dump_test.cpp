@@ -21,7 +21,7 @@
 #include <string>
 
 #include "dfx_regs.h"
-#include "dfx_dump_writer.h"
+#include "dfx_dump_request.h"
 #include "dfx_signal.h"
 #include "dfx_thread.h"
 #include "process_dumper.h"
@@ -725,7 +725,7 @@ HWTEST_F (ProcessDumpTest, ProcessDumpTest038, TestSize.Level2)
     GTEST_LOG_(INFO) << "ProcessDumpTest038: start.";
     int32_t pid = 243, tid = 243;
     std::shared_ptr<DfxThread> thread = std::make_shared<DfxThread>(pid, tid);
-    std::shared_ptr<DfxFrames> outputrefs= thread->GetAvaliableFrame();
+    std::shared_ptr<DfxFrame> outputrefs= thread->GetAvaliableFrame();
     EXPECT_EQ(true, outputrefs != nullptr) << "ProcessDumpTest038 Failed";
     GTEST_LOG_(INFO) << "ProcessDumpTest038: end.";
 }

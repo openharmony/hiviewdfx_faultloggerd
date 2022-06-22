@@ -17,6 +17,7 @@
 
 #define NAME_LEN 128
 #define SIGDUMP 35
+#define SIGLOCAL_DUMP 36
 #define PROCESSDUMP_TIMEOUT 30
 #define MAX_HANDLED_TID_NUMBER 256
 #define MAX_FATAL_MSG_SIZE 1024
@@ -43,6 +44,11 @@ static const int ARM_EXEC_STEP_NORMAL = 4;
 static const int ARM_EXEC_STEP_THUMB = 3;
 
 static const int CONF_LINE_SIZE = 1024;
+static const int SYMBOL_BUF_SIZE = 1024;
+
+static const int DUMP_CATCHER_NUMBER_ONE = 1;
+static const int DUMP_CATCHER_NUMBER_TWO = 2;
+static const int DUMP_CATCHER_NUMBER_THREE = 3;
 
 static const int FAULTSTACK_ITEM_BUFFER_LENGTH = 2048;
 static const int FAULTSTACK_SP_REVERSE = 3;
@@ -53,16 +59,6 @@ static const int FAULTSTACK_FIRST_FRAME_SEARCH_LENGTH = 64;
 static const int BACK_STACK_MAX_STEPS = 64;
 // 128K back trace stack size
 static const int BACK_STACK_INFO_SIZE = 128 * 1024;
-
-static const int DUMP_CATCHER_NUMBER_ONE = 1;
-static const int DUMP_CATCHER_NUMBER_TWO = 2;
-static const int DUMP_CATCHER_NUMBER_THREE = 3;
-static const int DUMP_CATCHER_SLEEP_TIME_TEN_S = 10;
-static const int DUMP_CATCHER_SLEEP_TIME_TWENTY_S = 20;
-static const int DUMP_CATCHER_WAIT_LOG_FILE_GEN_TIME_US = 10000;
-static const int DUMP_CATCHE_WORK_TIME_S = 60;
-
-static const int NUMBER_TWO_KB = 2048;
 
 static const int BACK_TRACE_RING_BUFFER_SIZE = 32 * 1024;
 static const int BACK_TRACE_RING_BUFFER_PRINT_WAIT_TIME_MS = 10;

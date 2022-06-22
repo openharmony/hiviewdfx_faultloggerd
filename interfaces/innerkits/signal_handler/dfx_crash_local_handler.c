@@ -31,8 +31,6 @@
 #define MAX_FRAME 64
 #define BUF_SZ 512
 
-static char g_globalBuf[BUF_SZ] = {0};
-static char g_symbol[BUF_SZ] = {0};
 __attribute__((noinline)) int RequestOutputLogFile(struct ProcessDumpRequest* request)
 {
     struct FaultLoggerdRequest faultloggerdRequest;
@@ -55,14 +53,15 @@ __attribute__((noinline)) int RequestOutputLogFile(struct ProcessDumpRequest* re
 
 __attribute__((noinline)) void PrintLog(int fd, const char *format, ...)
 {
-    (void)memset_s(&g_globalBuf, sizeof(g_globalBuf), 0, sizeof(g_globalBuf));
+    char buf[BUF_SZ] = {0};
+    (void)memset_s(&buf, sizeof(buf), 0, sizeof(buf));
     va_list args;
     va_start(args, format);
-    (void)vsnprintf_s(g_globalBuf, sizeof(g_globalBuf), sizeof(g_globalBuf) - 1, format, args);
+    (void)vsnprintf_s(buf, sizeof(buf), sizeof(buf) - 1, format, args);
     va_end(args);
-    HILOG_BASE_ERROR(LOG_CORE, "%{public}s", g_globalBuf);
+    HILOG_BASE_ERROR(LOG_CORE, "%{public}s", buf);
     if (fd > 0) {
-        (void)write(fd, g_globalBuf, strlen(g_globalBuf));
+        (void)write(fd, buf, strlen(buf));
     }
 }
 
@@ -118,6 +117,7 @@ void CrashLocalHandler(struct ProcessDumpRequest* request, siginfo_t* info, ucon
             relPc -= sz;
         }
 
+        char g_symbol[BUF_SZ] = {0};
         memset_s(&g_symbol, sizeof(g_symbol), 0, sizeof(g_symbol));
         if (unw_get_proc_name(&cursor, g_symbol, sizeof(g_symbol), (unw_word_t*)(&offset)) == 0) {
             PrintLog(fd, "#%02d %016p %s(%s+%lu)\n", index, relPc,

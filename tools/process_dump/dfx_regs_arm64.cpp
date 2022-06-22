@@ -124,68 +124,32 @@ std::string DfxRegsArm64::PrintRegs() const
 
     std::vector<uintptr_t> regs = GetRegsData();
 
-    int ret = snprintf_s(buf, sizeof(buf), sizeof(buf) - 1, \
-        "x0:%016lx x1:%016lx x2:%016lx x3:%016lx\n", \
-        regs[REG_AARCH64_X0], regs[REG_AARCH64_X1], regs[REG_AARCH64_X2], regs[REG_AARCH64_X3]);
-    if (ret <= 0) {
-        DfxLogError("%s :: snprintf_s failed, line: %d.", __func__, __LINE__);
-    }
+    PrintFormat(buf, sizeof(buf), "x0:%016lx x1:%016lx x2:%016lx x3:%016lx\n", \
+                regs[REG_AARCH64_X0], regs[REG_AARCH64_X1], regs[REG_AARCH64_X2], regs[REG_AARCH64_X3]);
 
-    ret = snprintf_s(buf + strlen(buf), sizeof(buf) - strlen(buf), sizeof(buf) - strlen(buf) - 1, \
-        "x4:%016lx x5:%016lx x6:%016lx x7:%016lx\n", \
-        regs[REG_AARCH64_X4], regs[REG_AARCH64_X5], regs[REG_AARCH64_X6], regs[REG_AARCH64_X7]);
-    if (ret <= 0) {
-        DfxLogError("%s :: snprintf_s failed, line: %d.", __func__, __LINE__);
-    }
+    PrintFormat(buf + strlen(buf), sizeof(buf) - strlen(buf), "x4:%016lx x5:%016lx x6:%016lx x7:%016lx\n", \
+                regs[REG_AARCH64_X4], regs[REG_AARCH64_X5], regs[REG_AARCH64_X6], regs[REG_AARCH64_X7]);
 
-    ret = snprintf_s(buf + strlen(buf), sizeof(buf) - strlen(buf), sizeof(buf) - strlen(buf) - 1, \
-        "x8:%016lx x9:%016lx x10:%016lx x11:%016lx\n", \
-        regs[REG_AARCH64_X8], regs[REG_AARCH64_X9], regs[REG_AARCH64_X10], regs[REG_AARCH64_X11]);
-    if (ret <= 0) {
-        DfxLogError("%s :: snprintf_s failed, line: %d.", __func__, __LINE__);
-    }
+    PrintFormat(buf + strlen(buf), sizeof(buf) - strlen(buf), "x8:%016lx x9:%016lx x10:%016lx x11:%016lx\n", \
+                regs[REG_AARCH64_X8], regs[REG_AARCH64_X9], regs[REG_AARCH64_X10], regs[REG_AARCH64_X11]);
 
-    ret = snprintf_s(buf + strlen(buf), sizeof(buf) - strlen(buf), sizeof(buf) - strlen(buf) - 1, \
-        "x12:%016lx x13:%016lx x14:%016lx x15:%016lx\n", \
-        regs[REG_AARCH64_X12], regs[REG_AARCH64_X13], regs[REG_AARCH64_X14], regs[REG_AARCH64_X15]);
-    if (ret <= 0) {
-        DfxLogError("%s :: snprintf_s failed, line: %d.", __func__, __LINE__);
-    }
+    PrintFormat(buf + strlen(buf), sizeof(buf) - strlen(buf), "x12:%016lx x13:%016lx x14:%016lx x15:%016lx\n", \
+                regs[REG_AARCH64_X12], regs[REG_AARCH64_X13], regs[REG_AARCH64_X14], regs[REG_AARCH64_X15]);
 
-    ret = snprintf_s(buf + strlen(buf), sizeof(buf) - strlen(buf), sizeof(buf) - strlen(buf) - 1, \
-        "x16:%016lx x17:%016lx x18:%016lx x19:%016lx\n", \
-        regs[REG_AARCH64_X16], regs[REG_AARCH64_X17], regs[REG_AARCH64_X18], regs[REG_AARCH64_X19]);
-    if (ret <= 0) {
-        DfxLogError("%s :: snprintf_s failed, line: %d.", __func__, __LINE__);
-    }
+    PrintFormat(buf + strlen(buf), sizeof(buf) - strlen(buf), "x16:%016lx x17:%016lx x18:%016lx x19:%016lx\n", \
+                regs[REG_AARCH64_X16], regs[REG_AARCH64_X17], regs[REG_AARCH64_X18], regs[REG_AARCH64_X19]);
+    
+    PrintFormat(buf + strlen(buf), sizeof(buf) - strlen(buf), "x20:%016lx x21:%016lx x22:%016lx x23:%016lx\n", \
+                regs[REG_AARCH64_X20], regs[REG_AARCH64_X21], regs[REG_AARCH64_X22], regs[REG_AARCH64_X23]);
 
-    ret = snprintf_s(buf + strlen(buf), sizeof(buf) - strlen(buf), sizeof(buf) - strlen(buf) - 1, \
-        "x20:%016lx x21:%016lx x22:%016lx x23:%016lx\n", \
-        regs[REG_AARCH64_X20], regs[REG_AARCH64_X21], regs[REG_AARCH64_X22], regs[REG_AARCH64_X23]);
-    if (ret <= 0) {
-        DfxLogError("%s :: snprintf_s failed, line: %d.", __func__, __LINE__);
-    }
+    PrintFormat(buf + strlen(buf), sizeof(buf) - strlen(buf), "x24:%016lx x25:%016lx x26:%016lx x27:%016lx\n", \
+                regs[REG_AARCH64_X24], regs[REG_AARCH64_X25], regs[REG_AARCH64_X26], regs[REG_AARCH64_X27]);
 
-    ret = snprintf_s(buf + strlen(buf), sizeof(buf) - strlen(buf), sizeof(buf) - strlen(buf) - 1, \
-        "x24:%016lx x25:%016lx x26:%016lx x27:%016lx\n", \
-        regs[REG_AARCH64_X24], regs[REG_AARCH64_X25], regs[REG_AARCH64_X26], regs[REG_AARCH64_X27]);
-    if (ret <= 0) {
-        DfxLogError("%s :: snprintf_s failed, line: %d.", __func__, __LINE__);
-    }
+    PrintFormat(buf + strlen(buf), sizeof(buf) - strlen(buf), "x28:%016lx x29:%016lx\n", \
+                regs[REG_AARCH64_X28], regs[REG_AARCH64_X29]);
 
-    ret = snprintf_s(buf + strlen(buf), sizeof(buf) - strlen(buf), sizeof(buf) - strlen(buf) - 1, \
-        "x28:%016lx x29:%016lx\n", \
-        regs[REG_AARCH64_X28], regs[REG_AARCH64_X29]);
-    if (ret <= 0) {
-        DfxLogError("%s :: snprintf_s failed, line: %d.", __func__, __LINE__);
-    }
-
-    ret = snprintf_s(buf + strlen(buf), sizeof(buf) - strlen(buf), sizeof(buf) - strlen(buf) - 1, \
-        "lr:%016lx sp:%016lx pc:%016lx\n", \
-        regs[REG_AARCH64_X30], regs[REG_AARCH64_SP], regs[REG_AARCH64_PC]);
-    if (ret <= 0) {
-        DfxLogError("%s :: snprintf_s failed, line: %d.", __func__, __LINE__);
-    }
+    PrintFormat(buf + strlen(buf), sizeof(buf) - strlen(buf), "lr:%016lx sp:%016lx pc:%016lx\n", \
+                regs[REG_AARCH64_X30], regs[REG_AARCH64_SP], regs[REG_AARCH64_PC]);
 
     regString = regString + std::string(buf);
     return regString;

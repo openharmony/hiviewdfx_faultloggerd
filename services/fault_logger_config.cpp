@@ -38,7 +38,7 @@
 namespace OHOS {
 namespace HiviewDFX {
 namespace {
-const std::string FaultLoggerConfig_TAG = "FaultLoggerConfig";
+static const std::string FaultLoggerConfig_TAG = "FaultLoggerConfig";
 }
 
 FaultLoggerConfig::FaultLoggerConfig(const int number, const long size, const std::string& path, const std::string& debugPath)

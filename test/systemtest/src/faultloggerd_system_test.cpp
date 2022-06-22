@@ -41,7 +41,6 @@
 #include "directory_ex.h"
 #include "file_ex.h"
 #include "dfx_dump_catcher.h"
-#include "dfx_dump_catcher_frame.h"
 
 /* This files contains faultlog st test case modules. */
 
@@ -1093,7 +1092,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0020, TestSize.Level2)
     GTEST_LOG_(INFO) << testPid;
     DfxDumpCatcher dumplog;
     std::string msg = "";
-    std::vector<std::shared_ptr<DfxDumpCatcherFrame>> frameV;
+    std::vector<std::shared_ptr<DfxFrame>> frameV;
     bool ret = dumplog.DumpCatchFrame(testPid, testPid, msg, frameV);
     GTEST_LOG_(INFO) << ret;
     GTEST_LOG_(INFO) << msg;
@@ -1127,7 +1126,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0021, TestSize.Level2)
     GTEST_LOG_(INFO) << testPid;
     DfxDumpCatcher dumplog;
     std::string msg = "";
-    std::vector<std::shared_ptr<DfxDumpCatcherFrame>> frameV;
+    std::vector<std::shared_ptr<DfxFrame>> frameV;
     bool ret = dumplog.DumpCatchFrame(testPid, 0, msg, frameV);
     GTEST_LOG_(INFO) << ret;
     GTEST_LOG_(INFO) << msg;
@@ -1148,7 +1147,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0022, TestSize.Level2)
     GTEST_LOG_(INFO) << testPid;
     DfxDumpCatcher dumplog;
     std::string msg = "";
-    std::vector<std::shared_ptr<DfxDumpCatcherFrame>> frameV;
+    std::vector<std::shared_ptr<DfxFrame>> frameV;
     bool ret = dumplog.DumpCatchFrame(0, testPid, msg, frameV);
     GTEST_LOG_(INFO) << ret;
     GTEST_LOG_(INFO) << msg;
@@ -1166,7 +1165,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0023, TestSize.Level2)
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest0023: start.";
     DfxDumpCatcher dumplog;
     std::string msg = "";
-    std::vector<std::shared_ptr<DfxDumpCatcherFrame>> frameV;
+    std::vector<std::shared_ptr<DfxFrame>> frameV;
     bool ret = dumplog.DumpCatchFrame(0, 0, msg, frameV);
     GTEST_LOG_(INFO) << ret;
     GTEST_LOG_(INFO) << msg;
@@ -1187,7 +1186,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0024, TestSize.Level2)
     GTEST_LOG_(INFO) << testPid;
     DfxDumpCatcher dumplog;
     std::string msg = "";
-    std::vector<std::shared_ptr<DfxDumpCatcherFrame>> frameV;
+    std::vector<std::shared_ptr<DfxFrame>> frameV;
     bool ret = dumplog.DumpCatchFrame(-11, testPid, msg, frameV);
     GTEST_LOG_(INFO) << ret;
     GTEST_LOG_(INFO) << msg;
@@ -1208,7 +1207,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0025, TestSize.Level2)
     GTEST_LOG_(INFO) << testPid;
     DfxDumpCatcher dumplog;
     std::string msg = "";
-    std::vector<std::shared_ptr<DfxDumpCatcherFrame>> frameV;
+    std::vector<std::shared_ptr<DfxFrame>> frameV;
     bool ret = dumplog.DumpCatchFrame(testPid, -11, msg, frameV);
     GTEST_LOG_(INFO) << ret;
     GTEST_LOG_(INFO) << msg;
@@ -1226,7 +1225,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0026, TestSize.Level2)
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest0026: start.";
     DfxDumpCatcher dumplog;
     std::string msg = "";
-    std::vector<std::shared_ptr<DfxDumpCatcherFrame>> frameV;
+    std::vector<std::shared_ptr<DfxFrame>> frameV;
     bool ret = dumplog.DumpCatchFrame(-11, -11, msg, frameV);
     GTEST_LOG_(INFO) << ret;
     GTEST_LOG_(INFO) << msg;

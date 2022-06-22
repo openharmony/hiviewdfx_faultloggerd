@@ -116,5 +116,18 @@ std::string GetCurrentTimeStr(uint64_t current)
     }
     return std::string(millBuf, strlen(millBuf));
 }
+
+int PrintFormat(char *buf, int size, const char *format, ...)
+{
+    int ret = -1;
+    va_list args;
+    va_start(args, format);
+    ret = vsnprintf_s(buf, size, size - 1, format, args);
+    va_end(args);
+    if (ret <= 0) {
+        DfxLogError("snprintf_s failed.");
+    }
+    return ret;
+}
 }   // namespace HiviewDFX
 }   // namespace OHOS

@@ -40,7 +40,6 @@
 
 namespace OHOS {
 namespace HiviewDFX {
-static const int SYMBOL_BUF_SIZE = 4096;
 // we should have at least 2 frames, one is pc and the other is lr
 // if pc and lr are both invalid, just try fp
 static const int MIN_VALID_FRAME_COUNT = 3;
@@ -136,7 +135,7 @@ bool DfxUnwindRemote::DfxUnwindRemoteDoUnwindStep(size_t const & index,
     std::shared_ptr<DfxThread> & thread, unw_cursor_t & cursor, std::shared_ptr<DfxProcess> process)
 {
     DfxLogDebug("%s :: index(%d).", __func__, index);
-    std::shared_ptr<DfxFrames> frame = thread->GetAvaliableFrame();
+    std::shared_ptr<DfxFrame> frame = thread->GetAvaliableFrame();
     if (!frame) {
         DfxLogWarn("Fail to create Frame.");
         return false;

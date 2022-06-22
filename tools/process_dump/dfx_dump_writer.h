@@ -25,67 +25,6 @@
 
 namespace OHOS {
 namespace HiviewDFX {
-enum ProcessDumpType : int32_t {
-    DUMP_TYPE_PROCESS,
-    DUMP_TYPE_THREAD,
-};
-
-class ProcessDumpRequest {
-public:
-    ProcessDumpRequest();
-    ~ProcessDumpRequest() = default;
-
-    ProcessDumpType GetType() const;
-
-    void SetType(ProcessDumpType type);
-
-    int32_t GetTid() const;
-
-    void SetTid(int32_t tid);
-
-    int32_t GetPid() const;
-
-    void SetPid(int32_t pid);
-
-    int32_t GetUid() const;
-
-    void SetUid(int32_t uid);
-
-    uint64_t GetReserved() const;
-
-    void SetReserved(uint64_t reserved);
-
-    uint64_t GetTimeStamp() const;
-
-    void SetTimeStamp(uint64_t timeStamp);
-
-    siginfo_t GetSiginfo() const;
-
-    void SetSiginfo(siginfo_t &siginfo);
-
-    ucontext_t GetContext() const;
-
-    void SetContext(ucontext_t const &context);
-
-    std::string GetThreadNameString() const;
-
-    std::string GetProcessNameString() const;
-
-    std::string GetLastFatalMessage() const;
-private:
-    ProcessDumpType type_;
-    int32_t tid_ = 0;
-    int32_t pid_ = 0;
-    int32_t uid_ = 0;
-    uint64_t reserved_ = 0;
-    uint64_t timeStamp_ = 0;
-    siginfo_t siginfo_;
-    ucontext_t context_;
-    char threadName_[NAME_LEN];
-    char processName_[NAME_LEN];
-    char lastFatalMessage_[MAX_FATAL_MSG_SIZE];
-};
-
 class DfxDumpWriter {
 public:
     DfxDumpWriter() = default;

@@ -38,6 +38,7 @@ if (defined(ohos_lite)) {
     ]
 
     deps = [
+      "$faultloggerd_path/common/util:dfx_cutil",
       "$faultloggerd_path/interfaces/innerkits/faultloggerd_client:libfaultloggerd",
       "//base/hiviewdfx/hilog_lite/frameworks/featured:hilog_shared",
       "//third_party/bounds_checking_function:libsec_shared",
@@ -88,7 +89,10 @@ if (defined(ohos_lite)) {
       "dfx_signal_handler.c",
     ]
 
-    deps = [ ":dfx_local_handler" ]
+    deps = [
+      ":dfx_local_handler",
+      "$faultloggerd_path/common/util:dfx_cutil",
+    ]
 
     external_deps = [
       "hilog_native:libhilog_base",

@@ -19,7 +19,7 @@
 
 #include <memory>
 
-#include "dfx_frames.h"
+#include "dfx_frame.h"
 
 using namespace OHOS::HiviewDFX;
 using namespace testing::ext;
@@ -51,7 +51,7 @@ namespace {
 HWTEST_F (ProcessFramesTest, ProcessFrameTest001, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "ProcessFrameTest001: start.";
-    std::shared_ptr<DfxFrames> frames = std::make_shared<DfxFrames>();
+    std::shared_ptr<DfxFrame> frames = std::make_shared<DfxFrame>();
     size_t index = 1;
     size_t frameIndex = 0;
     if (frames != nullptr) {
@@ -70,7 +70,7 @@ HWTEST_F (ProcessFramesTest, ProcessFrameTest001, TestSize.Level2)
 HWTEST_F (ProcessFramesTest, ProcessFrameTest002, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "ProcessFrameTest002: start.";
-    std::shared_ptr<DfxFrames> frames = std::make_shared<DfxFrames>();
+    std::shared_ptr<DfxFrame> frames = std::make_shared<DfxFrame>();
     size_t index = 164;
     size_t frameIndex = 0;
     if (frames != nullptr) {
@@ -89,7 +89,7 @@ HWTEST_F (ProcessFramesTest, ProcessFrameTest002, TestSize.Level2)
 HWTEST_F (ProcessFramesTest, ProcessFrameTest003, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "ProcessFrameTest003: start.";
-    std::shared_ptr<DfxFrames> frames = std::make_shared<DfxFrames>();
+    std::shared_ptr<DfxFrame> frames = std::make_shared<DfxFrame>();
     size_t index = -1;
     frames->SetFrameIndex(index);
     size_t frameIndex = frames->GetFrameIndex();
@@ -105,7 +105,7 @@ HWTEST_F (ProcessFramesTest, ProcessFrameTest003, TestSize.Level2)
 HWTEST_F (ProcessFramesTest, ProcessFrameTest004, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "ProcessFrameTest004: start.";
-    std::shared_ptr<DfxFrames> frames = std::make_shared<DfxFrames>();
+    std::shared_ptr<DfxFrame> frames = std::make_shared<DfxFrame>();
     uint64_t offset = 1;
     frames->SetFrameFuncOffset(offset);
     uint64_t frameOffset = frames->GetFrameFuncOffset();
@@ -121,7 +121,7 @@ HWTEST_F (ProcessFramesTest, ProcessFrameTest004, TestSize.Level2)
 HWTEST_F (ProcessFramesTest, ProcessFrameTest005, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "ProcessFrameTest005: start.";
-    std::shared_ptr<DfxFrames> frames = std::make_shared<DfxFrames>();
+    std::shared_ptr<DfxFrame> frames = std::make_shared<DfxFrame>();
     uint64_t offset = 164;
     frames->SetFrameFuncOffset(offset);
     uint64_t frameOffset = frames->GetFrameFuncOffset();
@@ -137,7 +137,7 @@ HWTEST_F (ProcessFramesTest, ProcessFrameTest005, TestSize.Level2)
 HWTEST_F (ProcessFramesTest, ProcessFrameTest006, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "ProcessFrameTest006: start.";
-    std::shared_ptr<DfxFrames> frames = std::make_shared<DfxFrames>();
+    std::shared_ptr<DfxFrame> frames = std::make_shared<DfxFrame>();
     uint64_t offset = -1;
     frames->SetFrameFuncOffset(offset);
     uint64_t frameOffset = frames->GetFrameFuncOffset();
@@ -153,7 +153,7 @@ HWTEST_F (ProcessFramesTest, ProcessFrameTest006, TestSize.Level2)
 HWTEST_F (ProcessFramesTest, ProcessFrameTest007, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "ProcessFrameTest007: start.";
-    std::shared_ptr<DfxFrames> frames = std::make_shared<DfxFrames>();
+    std::shared_ptr<DfxFrame> frames = std::make_shared<DfxFrame>();
     uint64_t pc = 1;
     uint64_t framePc = 0;
     if (frames != nullptr) {
@@ -172,7 +172,7 @@ HWTEST_F (ProcessFramesTest, ProcessFrameTest007, TestSize.Level2)
 HWTEST_F (ProcessFramesTest, ProcessFrameTest008, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "ProcessFrameTest008: start.";
-    std::shared_ptr<DfxFrames> frames = std::make_shared<DfxFrames>();
+    std::shared_ptr<DfxFrame> frames = std::make_shared<DfxFrame>();
     uint64_t pc = 164;
     frames->SetFramePc(pc);
     uint64_t framePc = frames->GetFramePc();
@@ -188,7 +188,7 @@ HWTEST_F (ProcessFramesTest, ProcessFrameTest008, TestSize.Level2)
 HWTEST_F (ProcessFramesTest, ProcessFrameTest009, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "ProcessFrameTest009: start.";
-    std::shared_ptr<DfxFrames> frames = std::make_shared<DfxFrames>();
+    std::shared_ptr<DfxFrame> frames = std::make_shared<DfxFrame>();
     uint64_t pc = -1;
     frames->SetFramePc(pc);
     uint64_t framePc = frames->GetFramePc();
@@ -204,7 +204,7 @@ HWTEST_F (ProcessFramesTest, ProcessFrameTest009, TestSize.Level2)
 HWTEST_F (ProcessFramesTest, ProcessFrameTest010, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "ProcessFrameTest010: start.";
-    std::shared_ptr<DfxFrames> frames = std::make_shared<DfxFrames>();
+    std::shared_ptr<DfxFrame> frames = std::make_shared<DfxFrame>();
     uint64_t sp = 1;
     frames->SetFrameSp(sp);
     uint64_t frameSp = frames->GetFrameSp();
@@ -220,7 +220,7 @@ HWTEST_F (ProcessFramesTest, ProcessFrameTest010, TestSize.Level2)
 HWTEST_F (ProcessFramesTest, ProcessFrameTest011, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "ProcessFrameTest011: start.";
-    std::shared_ptr<DfxFrames> frames = std::make_shared<DfxFrames>();
+    std::shared_ptr<DfxFrame> frames = std::make_shared<DfxFrame>();
     uint64_t sp = 164;
     uint64_t frameSp = 0;
     if (frames != nullptr) {
@@ -239,7 +239,7 @@ HWTEST_F (ProcessFramesTest, ProcessFrameTest011, TestSize.Level2)
 HWTEST_F (ProcessFramesTest, ProcessFrameTest012, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "ProcessFrameTest012: start.";
-    std::shared_ptr<DfxFrames> frames = std::make_shared<DfxFrames>();
+    std::shared_ptr<DfxFrame> frames = std::make_shared<DfxFrame>();
     uint64_t sp = -1;
     frames->SetFrameSp(sp);
     uint64_t frameSp = frames->GetFrameSp();
@@ -255,7 +255,7 @@ HWTEST_F (ProcessFramesTest, ProcessFrameTest012, TestSize.Level2)
 HWTEST_F (ProcessFramesTest, ProcessFrameTest013, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "ProcessFrameTest013: start.";
-    std::shared_ptr<DfxFrames> frames = std::make_shared<DfxFrames>();
+    std::shared_ptr<DfxFrame> frames = std::make_shared<DfxFrame>();
     uint64_t relativePc = 1;
     uint64_t frameRelativePc = 0;
     if (frames != nullptr) {
@@ -274,7 +274,7 @@ HWTEST_F (ProcessFramesTest, ProcessFrameTest013, TestSize.Level2)
 HWTEST_F (ProcessFramesTest, ProcessFrameTest014, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "ProcessFrameTest014: start.";
-    std::shared_ptr<DfxFrames> frames = std::make_shared<DfxFrames>();
+    std::shared_ptr<DfxFrame> frames = std::make_shared<DfxFrame>();
     uint64_t relativePc = 164;
     frames->SetFrameRelativePc(relativePc);
     uint64_t frameRelativePc = frames->GetFrameRelativePc();
@@ -290,7 +290,7 @@ HWTEST_F (ProcessFramesTest, ProcessFrameTest014, TestSize.Level2)
 HWTEST_F (ProcessFramesTest, ProcessFrameTest015, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "ProcessFrameTest015: start.";
-    std::shared_ptr<DfxFrames> frames = std::make_shared<DfxFrames>();
+    std::shared_ptr<DfxFrame> frames = std::make_shared<DfxFrame>();
     uint64_t relativePc = -1;
     frames->SetFrameRelativePc(relativePc);
     uint64_t frameRelativePc = frames->GetFrameRelativePc();
@@ -306,7 +306,7 @@ HWTEST_F (ProcessFramesTest, ProcessFrameTest015, TestSize.Level2)
 HWTEST_F (ProcessFramesTest, ProcessFrameTest016, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "ProcessFrameTest016: start.";
-    std::shared_ptr<DfxFrames> frames = std::make_shared<DfxFrames>();
+    std::shared_ptr<DfxFrame> frames = std::make_shared<DfxFrame>();
     std::string name = "zhangsan";
     std::string frameName = "";
     if (frames != nullptr) {
@@ -325,7 +325,7 @@ HWTEST_F (ProcessFramesTest, ProcessFrameTest016, TestSize.Level2)
 HWTEST_F (ProcessFramesTest, ProcessFrameTest017, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "ProcessFrameTest017: start.";
-    std::shared_ptr<DfxFrames> frames = std::make_shared<DfxFrames>();
+    std::shared_ptr<DfxFrame> frames = std::make_shared<DfxFrame>();
     std::string name = "lisi";
     std::string frameName = "";
     if (frames != nullptr) {
@@ -344,7 +344,7 @@ HWTEST_F (ProcessFramesTest, ProcessFrameTest017, TestSize.Level2)
 HWTEST_F (ProcessFramesTest, ProcessFrameTest018, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "ProcessFrameTest018: start.";
-    std::shared_ptr<DfxFrames> frames = std::make_shared<DfxFrames>();
+    std::shared_ptr<DfxFrame> frames = std::make_shared<DfxFrame>();
     std::string name = "wangwu";
     frames->SetFrameFuncName(name);
     std::string frameName = frames->GetFrameFuncName();
@@ -360,7 +360,7 @@ HWTEST_F (ProcessFramesTest, ProcessFrameTest018, TestSize.Level2)
 HWTEST_F (ProcessFramesTest, ProcessFrameTest019, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "ProcessFrameTest019: start.";
-    std::shared_ptr<DfxFrames> frames = std::make_shared<DfxFrames>();
+    std::shared_ptr<DfxFrame> frames = std::make_shared<DfxFrame>();
     std::string name = "maliu";
     frames->SetFrameFuncName(name);
     std::string frameName = frames->GetFrameFuncName();
@@ -376,7 +376,7 @@ HWTEST_F (ProcessFramesTest, ProcessFrameTest019, TestSize.Level2)
 HWTEST_F (ProcessFramesTest, ProcessFrameTest020, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "ProcessFrameTest020: start.";
-    std::shared_ptr<DfxFrames> frames = std::make_shared<DfxFrames>();
+    std::shared_ptr<DfxFrame> frames = std::make_shared<DfxFrame>();
     std::string name = "liuqi";
     std::string frameName = " ";
     if (frames != nullptr) {
@@ -395,7 +395,7 @@ HWTEST_F (ProcessFramesTest, ProcessFrameTest020, TestSize.Level2)
 HWTEST_F (ProcessFramesTest, ProcessFrameTest021, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "ProcessFrameTest021: start.";
-    std::shared_ptr<DfxFrames> frames = std::make_shared<DfxFrames>();
+    std::shared_ptr<DfxFrame> frames = std::make_shared<DfxFrame>();
     std::string name = "";
     frames->SetFrameFuncName(name);
     std::string frameName = frames->GetFrameFuncName();

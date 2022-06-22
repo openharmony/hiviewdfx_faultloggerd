@@ -41,7 +41,6 @@ private:
     void HandleSdkDumpReqeust(int32_t connectionFd, FaultLoggerdRequest* request);
 
 private:
-    int32_t currentLogCounts_ {0};
 };
 } // namespace HiviewDFX
 } // namespace OHOS
