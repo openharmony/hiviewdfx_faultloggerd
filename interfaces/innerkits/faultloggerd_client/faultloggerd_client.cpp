@@ -292,7 +292,7 @@ static bool SendRequestToServer(const FaultLoggerdRequest &request)
             DfxLogError("memset_s failed, err = %d.", (int)ret);
             break;
         }
-        if (read(sockfd, ControlBuffer, sizeof(ControlBuffer) - 1) != (int)strlen(FAULTLOGGER_DAEMON_RESP)) {
+        if (read(sockfd, ControlBuffer, sizeof(ControlBuffer) - 1) != (ssize_t)strlen(FAULTLOGGER_DAEMON_RESP)) {
             break;
         }
 
