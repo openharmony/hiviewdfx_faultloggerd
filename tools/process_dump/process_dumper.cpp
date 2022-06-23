@@ -300,9 +300,9 @@ void ProcessDumper::Dump(bool isSignalHdlr, ProcessDumpType type, int32_t pid, i
     if (isSignalHdlr) {
         DumpProcessWithSignalContext(process, request);
         if (getppid() != request->GetPid()) {
-            DfxLogError("after unwind, check again: Target process(%s:%d) is not our parent(%d),
-                exit processdump for signal(%d).",
-                storeProcessName.c_str(), request->GetPid(), getppid(), request->GetSiginfo().si_signo);
+            DfxLogError("after unwind, check again: Target process(%s:%d) is not our parent(%d),\
+                exit processdump for signal(%d).",request->GetProcessNameString().c_str(),
+                request->GetPid(), getppid(), request->GetSiginfo().si_signo);
         }
     } else {
         if (type == DUMP_TYPE_PROCESS) {
