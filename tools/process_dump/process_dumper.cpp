@@ -243,6 +243,12 @@ void ProcessDumper::DumpProcessWithSignalContext(std::shared_ptr<DfxProcess> &pr
     PrintDumpProcessWithSignalContextHeader(process, request->GetSiginfo(), request->GetLastFatalMessage());
 
     DfxUnwindRemote::GetInstance().UnwindProcess(process);
+
+    if (getppid() != request->GetPid()) {
+        DfxLogError("after unwind, check again: Target process(%s:%d) is not our parent(%d), exit processdump for signal(%d).",
+            storeProcessName.c_str(), request->GetPid(), getppid(), request->GetSiginfo().si_signo);
+        return;
+    }
 }
 
 void ProcessDumper::DumpProcessWithPidTid(std::shared_ptr<DfxProcess> &process, \
