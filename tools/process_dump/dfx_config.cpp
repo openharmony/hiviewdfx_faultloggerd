@@ -118,7 +118,6 @@ bool DfxConfig::GetDumpOtherThreads() const
 
 void DfxConfig::ParserConfig(std::string& key, std::string& value)
 {
-    DfxLogError("MZYAN :: ParserConfig cur key[%s] value[%s].", key.c_str(), value.c_str());
     unsigned int lowAddressStep = 0;
     unsigned int highAddressStep = 0;
     do {
