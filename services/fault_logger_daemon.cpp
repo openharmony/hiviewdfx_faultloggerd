@@ -48,6 +48,7 @@ namespace HiviewDFX {
 using FaultLoggerdRequest = struct FaultLoggerdRequest;
 std::shared_ptr<FaultLoggerConfig> faultLoggerConfig_;
 std::shared_ptr<FaultLoggerSecure> faultLoggerSecure_;
+FaultLoggerDaemon* FaultLoggerDaemon::faultLoggerDaemon_ = nullptr;
 
 namespace {
 constexpr int32_t MAX_CONNECTION = 30;
@@ -134,6 +135,11 @@ __attribute__((unused)) static int ReadFileDescriptorFromSocket(int socket)
     }
     return *(reinterpret_cast<int *>(CMSG_DATA(cmsg)));
 }
+}
+
+FaultLoggerDaemon::FaultLoggerDaemon()
+{
+    faultLoggerDaemon_ = this;
 }
 
 bool FaultLoggerDaemon::InitEnvironment()
@@ -355,6 +361,11 @@ void FaultLoggerDaemon::HandleSdkDumpReqeust(int32_t connectionFd, FaultLoggerdR
     }
 }
 
+void FaultLoggerDaemon::HandleRequesting(int32_t connectionFd)
+{
+    faultLoggerDaemon_->HandleRequest(connectionFd);
+}
+
 void FaultLoggerDaemon::HandleRequest(int32_t connectionFd)
 {
     ssize_t nread = -1;
@@ -486,28 +497,20 @@ void FaultLoggerDaemon::LoopAcceptRequestAndFork(int socketFd)
 {
     struct sockaddr_un clientAddr;
     socklen_t clientAddrSize = static_cast<socklen_t>(sizeof(clientAddr));
-    int connectionFd = -1;
+    int curCnt = 0;
+    int connectionFds[MAX_CONNECTION];
     signal(SIGCHLD, SIG_IGN);
 
     while (true) {
-        if ((connectionFd = accept(socketFd, reinterpret_cast<struct sockaddr *>(&clientAddr), &clientAddrSize)) < 0) {
+        connectionFds[curCnt] = accept(socketFd, reinterpret_cast<struct sockaddr *>(&clientAddr), &clientAddrSize);
+        if (connectionFds[curCnt] < 0) {
             DfxLogError("%s :: Failed to accept connection", FAULTLOGGERD_TAG.c_str());
             continue;
         }
-        DfxLogInfo("%s :: %s: accept: %d.", FAULTLOGGERD_TAG.c_str(), __func__, connectionFd);
-
-        int childPid = fork();
-        if (childPid < 0) {
-            close(connectionFd);
-            break;
-        } else if (childPid > 0) {
-            DfxLogInfo("%s :: %s: forked child pid: %d", FAULTLOGGERD_TAG.c_str(), __func__, childPid);
-        } else if (childPid == 0) {
-            HandleRequest(connectionFd);
-            close(connectionFd);
-            exit(0);
-        }
-        close(connectionFd);
+        DfxLogInfo("%s :: %s: accept: %d.", FAULTLOGGERD_TAG.c_str(), __func__, connectionFds[curCnt]);
+        curCnt++;
+        std::thread th(FaultLoggerDaemon::HandleRequesting, connectionFds[--curCnt]);
+        th.detach();
     }
 }
 } // namespace HiviewDFX

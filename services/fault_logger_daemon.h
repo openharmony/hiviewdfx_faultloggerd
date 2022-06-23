@@ -24,12 +24,13 @@ namespace OHOS {
 namespace HiviewDFX {
 class FaultLoggerDaemon {
 public:
-    FaultLoggerDaemon() {};
+    FaultLoggerDaemon();
     ~FaultLoggerDaemon() {};
     bool InitEnvironment();
     void LoopAcceptRequestAndFork(int socketFd);
 
 private:
+    static void HandleRequesting(int32_t connectionFd);
     int32_t CreateFileForRequest(int32_t type, int32_t pid, uint64_t time, bool debugFlag) const;
     void RemoveTempFileIfNeed();
     void HandleRequest(int32_t connectionFd);
@@ -41,6 +42,7 @@ private:
     void HandleSdkDumpReqeust(int32_t connectionFd, FaultLoggerdRequest* request);
 
 private:
+    static FaultLoggerDaemon* faultLoggerDaemon_;
 };
 } // namespace HiviewDFX
 } // namespace OHOS
