@@ -199,7 +199,8 @@ void ProcessDumper::DumpProcessWithSignalContext(std::shared_ptr<DfxProcess> &pr
     // We need check pid is same with getppid().
     // As in signal handler, current process is a child process, and target pid is our parent process.
     if (getppid() != request->GetPid()) {
-        DfxLogError("Target pid is not our parent process, some un-expected happened.");
+        DfxLogError("Target process(%s:%d) is not our parent(%d), exit processdump for signal(%d).",
+            storeProcessName.c_str(), request->GetPid(), getppid(), request->GetSiginfo().si_signo);
         return;
     }
 
