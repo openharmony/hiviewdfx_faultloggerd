@@ -36,9 +36,9 @@ namespace HiviewDFX {
 class ProcessDumper final {
 public:
     static ProcessDumper &GetInstance();
+    ~ProcessDumper() = default;
 
     void Dump(bool isSignalHdlr, ProcessDumpType type, int32_t pid, int32_t tid);
-    ~ProcessDumper() = default;
     void PrintDumpProcessMsg(std::string msg);
     int PrintDumpProcessBuf(const char *format, ...);
 public:

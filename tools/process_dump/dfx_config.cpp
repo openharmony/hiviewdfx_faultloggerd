@@ -118,6 +118,7 @@ bool DfxConfig::GetDumpOtherThreads() const
 
 void DfxConfig::ParserConfig(std::string& key, std::string& value)
 {
+    DfxLogError("MZYAN :: ParserConfig cur key[%s] value[%s].", key.c_str(), value.c_str());
     unsigned int lowAddressStep = 0;
     unsigned int highAddressStep = 0;
     do {
@@ -175,16 +176,16 @@ void DfxConfig::ReadConfig()
             if (fgets(codeBuffer, CONF_LINE_SIZE -1, fp) == nullptr) {
                 continue;
             }
-            std::string line(codeBuffer, sizeof(codeBuffer) -1);
+            std::string line(codeBuffer);
             std::string key, value;
             std::string::size_type newLinePos = line.find_first_of("\n");
             if (newLinePos != line.npos) {
-                line = line.substr(0, newLinePos - 1);
+                line = line.substr(0, newLinePos);
             }
             std::string::size_type equalSignPos = line.find_first_of("=");
             if (equalSignPos != line.npos) {
                 key = line.substr(0, equalSignPos);
-                value = line.substr(equalSignPos + 1, newLinePos - equalSignPos - 1);
+                value = line.substr(equalSignPos + 1);
                 Trim(key);
                 Trim(value);
                 ParserConfig(key, value);
@@ -194,14 +195,19 @@ void DfxConfig::ReadConfig()
     } while (0);
 }
 
-void DfxConfig::Trim(std::string &s)
+void DfxConfig::Trim(std::string& s)
 {
     if (s.empty()) {
-        return ;
+        return;
     }
-    s.erase(0, s.find_first_not_of(" "));
-    s.erase(s.find_last_not_of(" ") + 1);
-    return ;
+    size_t n = s.find_first_not_of(" \r\n\t");
+    if (n != std::string::npos) {
+        s.erase(0, n);
+    }
+    n = s.find_last_not_of(" \r\n\t");
+    if (n != std::string::npos) {
+        s.erase(n + 1, s.size() - n);
+    }
 }
 } // namespace HiviewDFX
 } // namespace OHOS
