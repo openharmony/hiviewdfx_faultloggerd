@@ -28,7 +28,7 @@ struct ProcessDumpRequest {
     int32_t type;
     int32_t tid;
     int32_t pid;
-    int32_t uid;
+    uint32_t uid;
     uint64_t reserved;
     uint64_t timeStamp;
     siginfo_t siginfo;

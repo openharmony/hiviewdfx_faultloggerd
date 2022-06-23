@@ -80,7 +80,7 @@ void ProcessDumper::LoopPrintBackTraceInfo()
                 continue;
             }
 
-            for (auto i = 0; i < item.Length(); i++) {
+            for (unsigned int i = 0; i < item.Length(); i++) {
                 DfxLogDebug("%s :: [%d]print: %s\n", __func__, i, item.At(i).c_str());
                 WriteLog(ProcessDumper::GetInstance().backTraceFileFd_, "%s", item.At(i).c_str());
             }

@@ -90,7 +90,7 @@ HWTEST_F (ProcessDfxTest, ProcessDfxRequestTest002, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "ProcessDfxRequestTest002: start.";
     pid_t telephonyPid = ProcessDfxTest::GetTelephonyPid();
-    if (telephonyPid ==  0) {
+    if (telephonyPid == 0) {
         GTEST_LOG_(INFO) << "ProcessDfxRequestTest002: get pid failed.";
         return;
     }
