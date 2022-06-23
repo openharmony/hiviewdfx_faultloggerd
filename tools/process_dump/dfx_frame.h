@@ -12,8 +12,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef DFX_DUMP_CATCHER_FRAME_H
-#define DFX_DUMP_CATCHER_FRAME_H
+#ifndef DFX_FRAME_H
+#define DFX_FRAME_H
 
 #include <memory>
 #include <string>
@@ -21,12 +21,13 @@
 #include "dfx_elf.h"
 #include "dfx_maps.h"
 #include "dfx_regs.h"
+
 namespace OHOS {
 namespace HiviewDFX {
-class DfxDumpCatcherFrame {
+class DfxFrame {
 public:
-    DfxDumpCatcherFrame();
-    ~DfxDumpCatcherFrame();
+    DfxFrame() = default;
+    ~DfxFrame() = default;
 
     void SetFrameIndex(size_t index);
     size_t GetFrameIndex() const;
@@ -40,9 +41,22 @@ public:
     uint64_t GetFrameSp() const;
     void SetFrameRelativePc(uint64_t relativePc);
     uint64_t GetFrameRelativePc() const;
+    void SetFrameFuncName(const std::string &funcName);
+    std::string GetFrameFuncName() const;
     void SetFrameMap(const std::shared_ptr<DfxElfMap> map);
     std::shared_ptr<DfxElfMap> GetFrameMap() const;
+    void SetFrameFaultStack(const std::string &faultStack);
+    std::string GetFrameFaultStack() const;
+    void SetFrameMapName(const std::string &mapName);
+    std::string GetFrameMapName() const;
+
     std::string ToString() const;
+    uint64_t GetRelativePc(const std::shared_ptr<DfxElfMaps> head);
+    uint64_t CalculateRelativePc(std::shared_ptr<DfxElfMap> elfMap);
+    std::string PrintFrame() const;
+    std::string PrintFaultStack(int i) const;
+
+private:
     size_t index_ = 0;
     uint64_t funcOffset_ = 0;
     uint64_t pc_ = 0;
@@ -50,9 +64,13 @@ public:
     uint64_t sp_ = 0;
     uint64_t relativePc_ = 0;
     std::string funcName_;
-    char mapName_[1024] {0}; // 1024 : mapName length;
+    std::string frameMapName_ = "";
     std::shared_ptr<DfxElfMap> map_ = nullptr; // managed in DfxProcess class
+    std::string faultStack_;
 };
+
+void PrintFrames(std::vector<std::shared_ptr<DfxFrame>> frames);
+std::string PrintFaultStacks(std::vector<std::shared_ptr<DfxFrame>> frames);
 } // namespace HiviewDFX
 } // namespace OHOS
 

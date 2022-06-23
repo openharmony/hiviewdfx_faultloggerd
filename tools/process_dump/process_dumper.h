@@ -26,9 +26,9 @@
 #include <thread>
 
 #include "nocopyable.h"
-#include "dfx_dump_writer.h"
+#include "dfx_dump_request.h"
 #include "dfx_ring_buffer.h"
-
+#include "dfx_process.h"
 #include "cppcrash_reporter.h"
 
 namespace OHOS {
@@ -40,6 +40,7 @@ public:
     void Dump(bool isSignalHdlr, ProcessDumpType type, int32_t pid, int32_t tid);
     ~ProcessDumper() = default;
     void PrintDumpProcessMsg(std::string msg);
+    int PrintDumpProcessBuf(const char *format, ...);
 public:
     int32_t backTraceFileFd_;
     std::thread backTracePrintThread_;

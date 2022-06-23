@@ -15,7 +15,7 @@
 
 /* This files contains processdump frame module. */
 
-#include "dfx_frames.h"
+#include "dfx_frame.h"
 
 #include <cstdio>
 #include <cstdlib>
@@ -30,109 +30,107 @@
 static const int FAULT_STACK_SHOW_FLOOR = 4;
 namespace OHOS {
 namespace HiviewDFX {
-void DfxFrames::SetFrameIndex(size_t index)
+void DfxFrame::SetFrameIndex(size_t index)
 {
     index_ = index;
 }
 
-size_t DfxFrames::GetFrameIndex() const
+size_t DfxFrame::GetFrameIndex() const
 {
     return index_;
 }
 
-void DfxFrames::SetFrameFuncOffset(uint64_t funcOffset)
+void DfxFrame::SetFrameFuncOffset(uint64_t funcOffset)
 {
     funcOffset_ = funcOffset;
 }
 
-uint64_t DfxFrames::GetFrameFuncOffset() const
+uint64_t DfxFrame::GetFrameFuncOffset() const
 {
     return funcOffset_;
 }
 
-void DfxFrames::SetFramePc(uint64_t pc)
+void DfxFrame::SetFramePc(uint64_t pc)
 {
     pc_ = pc;
 }
 
-uint64_t DfxFrames::GetFramePc() const
+uint64_t DfxFrame::GetFramePc() const
 {
     return pc_;
 }
 
-void DfxFrames::SetFrameLr(uint64_t lr)
+void DfxFrame::SetFrameLr(uint64_t lr)
 {
     lr_ = lr;
 }
 
-uint64_t DfxFrames::GetFrameLr() const
+uint64_t DfxFrame::GetFrameLr() const
 {
     return lr_;
 }
 
-void DfxFrames::SetFrameSp(uint64_t sp)
+void DfxFrame::SetFrameSp(uint64_t sp)
 {
     sp_ = sp;
 }
 
-uint64_t DfxFrames::GetFrameSp() const
+uint64_t DfxFrame::GetFrameSp() const
 {
     return sp_;
 }
 
-void DfxFrames::SetFrameRelativePc(uint64_t relativePc)
+void DfxFrame::SetFrameRelativePc(uint64_t relativePc)
 {
     relativePc_ = relativePc;
 }
 
-uint64_t DfxFrames::GetFrameRelativePc() const
+uint64_t DfxFrame::GetFrameRelativePc() const
 {
     return relativePc_;
 }
 
-void DfxFrames::SetFrameFuncName(const std::string &funcName)
+void DfxFrame::SetFrameFuncName(const std::string &funcName)
 {
     funcName_ = funcName;
 }
 
-std::string DfxFrames::GetFrameFuncName() const
+std::string DfxFrame::GetFrameFuncName() const
 {
     return funcName_;
 }
 
-void DfxFrames::SetFrameMap(const std::shared_ptr<DfxElfMap> map)
+void DfxFrame::SetFrameMap(const std::shared_ptr<DfxElfMap> map)
 {
     map_ = map;
 }
 
-std::shared_ptr<DfxElfMap> DfxFrames::GetFrameMap() const
+std::shared_ptr<DfxElfMap> DfxFrame::GetFrameMap() const
 {
     return map_;
 }
 
-void DfxFrames::SetFrameMapName(const std::string &mapName)
+void DfxFrame::SetFrameMapName(const std::string &mapName)
 {
     frameMapName_ = mapName;
 }
 
-std::string DfxFrames::GetFrameMapName() const
+std::string DfxFrame::GetFrameMapName() const
 {
     return frameMapName_;
 }
 
-void DfxFrames::SetFrameFaultStack(const std::string &faultStack)
+void DfxFrame::SetFrameFaultStack(const std::string &faultStack)
 {
     faultStack_ = faultStack;
 }
 
-std::string DfxFrames::GetFrameFaultStack() const
+std::string DfxFrame::GetFrameFaultStack() const
 {
     return faultStack_;
 }
 
-void DfxFrames::DestroyFrames(const std::shared_ptr<DfxFrames> frameHead) {}
-
-uint64_t DfxFrames::GetRelativePc(const std::shared_ptr<DfxElfMaps> head)
+uint64_t DfxFrame::GetRelativePc(const std::shared_ptr<DfxElfMaps> head)
 {
     if (head == nullptr) {
         return 0;
@@ -157,7 +155,7 @@ uint64_t DfxFrames::GetRelativePc(const std::shared_ptr<DfxElfMaps> head)
     return CalculateRelativePc(map);
 }
 
-uint64_t DfxFrames::CalculateRelativePc(std::shared_ptr<DfxElfMap> elfMap)
+uint64_t DfxFrame::CalculateRelativePc(std::shared_ptr<DfxElfMap> elfMap)
 {
     if (elfMap == nullptr || map_ == nullptr) {
         return 0;
@@ -181,7 +179,7 @@ uint64_t DfxFrames::CalculateRelativePc(std::shared_ptr<DfxElfMap> elfMap)
     return relativePc_;
 }
 
-std::string DfxFrames::PrintFrame() const
+std::string DfxFrame::PrintFrame() const
 {
     char buf[LOG_BUF_LEN] = {0};
 
@@ -216,7 +214,7 @@ std::string DfxFrames::PrintFrame() const
     return std::string(buf);
 }
 
-std::string DfxFrames::PrintFaultStack(int i) const
+std::string DfxFrame::PrintFaultStack(int i) const
 {
     if (faultStack_ == "") {
         return "";
@@ -228,7 +226,7 @@ std::string DfxFrames::PrintFaultStack(int i) const
     return ss.str();
 }
 
-std::string DfxFrames::ToString() const
+std::string DfxFrame::ToString() const
 {
     char buf[1024] = "\0"; // 1024 buffer length
 #ifdef __LP64__
@@ -255,14 +253,14 @@ std::string DfxFrames::ToString() const
     return ss.str();
 }
 
-void PrintFrames(std::vector<std::shared_ptr<DfxFrames>> frames)
+void PrintFrames(std::vector<std::shared_ptr<DfxFrame>> frames)
 {
     for (size_t i = 0; i < frames.size(); i++) {
         frames[i]->PrintFrame();
     }
 }
 
-std::string PrintFaultStacks(std::vector<std::shared_ptr<DfxFrames>> frames)
+std::string PrintFaultStacks(std::vector<std::shared_ptr<DfxFrame>> frames)
 {
     std::string stackString = "";
 

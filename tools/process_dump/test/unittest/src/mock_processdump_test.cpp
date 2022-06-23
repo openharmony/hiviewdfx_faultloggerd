@@ -20,7 +20,7 @@
 #include <memory>
 
 #include "mock_dfx_process.h"
-#include "dfx_dump_writer.h"
+#include "dfx_dump_request.h"
 
 using namespace OHOS::HiviewDFX;
 using namespace testing::ext;

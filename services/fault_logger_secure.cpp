@@ -38,10 +38,12 @@
 #include "directory_ex.h"
 #include "file_ex.h"
 
-static const std::string FaultLoggerSecure_TAG = "FaultLoggerSecure";
-
 namespace OHOS {
 namespace HiviewDFX {
+namespace {
+static const std::string FaultLoggerSecure_TAG = "FaultLoggerSecure";
+}
+
 FaultLoggerSecure::FaultLoggerSecure()
 {
 }

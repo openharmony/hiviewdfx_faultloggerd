@@ -158,10 +158,6 @@ bool FaultLoggerDaemon::InitEnvironment()
         DfxLogError("%s :: Failed to chmod, %d", FAULTLOGGERD_TAG.c_str(), errno);
     }
 
-    std::vector<std::string> files;
-    OHOS::GetDirFiles(faultLoggerConfig_->GetLogFilePath(), files);
-    currentLogCounts_ = (int32_t)files.size();
-
     DfxLogInfo("%s :: %s success finished.", OHOS::HiviewDFX::FAULTLOGGERD_TAG.c_str(), __func__);
     return true;
 }
@@ -440,13 +436,14 @@ int32_t FaultLoggerDaemon::CreateFileForRequest(int32_t type, int32_t pid, uint6
 void FaultLoggerDaemon::RemoveTempFileIfNeed()
 {
     int maxFileCount = 50;
+    int currentLogCounts = 0;
 
     std::vector<std::string> files;
     OHOS::GetDirFiles(faultLoggerConfig_->GetLogFilePath(), files);
-    currentLogCounts_ = (int32_t)files.size();
+    currentLogCounts = (int)files.size();
 
     maxFileCount = faultLoggerConfig_->GetLogFileMaxNumber();
-    if (currentLogCounts_ < maxFileCount) {
+    if (currentLogCounts < maxFileCount) {
         return;
     }
 

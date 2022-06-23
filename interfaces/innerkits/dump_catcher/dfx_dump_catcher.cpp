@@ -16,6 +16,7 @@
 /* This files contains faultlog sdk interface functions. */
 
 #include "dfx_dump_catcher.h"
+#include "dfx_unwind_local.h"
 
 #include <algorithm>
 #include <climits>
@@ -51,17 +52,19 @@
 #include "directory_ex.h"
 #include "../faultloggerd_client/include/faultloggerd_client.h"
 
-static const std::string DFXDUMPCATCHER_TAG = "DfxDumpCatcher";
-
-const std::string LOG_FILE_PATH = "/data/log/faultlog/temp";
-
+static const std::string LOG_FILE_PATH = "/data/log/faultlog/temp";
 static const int NUMBER_TEN = 10;
-constexpr int MAX_TEMP_FILE_LENGTH = 256;
-constexpr int SINGLE_THREAD_UNWIND_TIMEOUT = 100; // 100 milliseconds
+static const int MAX_TEMP_FILE_LENGTH = 256;
+static const int DUMP_CATCHER_WAIT_LOG_FILE_GEN_TIME_US = 10000;
+static const int DUMP_CATCHE_WORK_TIME_S = 60;
+static const int NUMBER_TWO_KB = 2048;
+
 
 namespace OHOS {
 namespace HiviewDFX {
-static pthread_mutex_t g_dumpCatcherMutex = PTHREAD_MUTEX_INITIALIZER;
+namespace {
+static const std::string DFXDUMPCATCHER_TAG = "DfxDumpCatcher";
+}
 
 DfxDumpCatcher::DfxDumpCatcher()
 {
@@ -71,30 +74,23 @@ DfxDumpCatcher::~DfxDumpCatcher()
 {
 }
 
-bool DfxDumpCatcher::DoDumpLocalTid(int tid)
+bool DfxDumpCatcher::DoDumpLocalTid(int tid, std::string& msg)
 {
     bool ret = false;
     if (tid <= 0) {
         DfxLogError("%s :: DoDumpLocalTid :: return false as param error.", DFXDUMPCATCHER_TAG.c_str());
         return ret;
     }
+    
+    if (DfxUnwindLocal::GetInstance().SendLocalDumpRequest(tid) == true) {
+        ret = DfxUnwindLocal::GetInstance().WaitLocalDumpRequest();
+    }
 
-    do {
-        if (DfxDumpCatcherLocalDumper::SendLocalDumpRequest(tid) == true) {
-            std::unique_lock<std::mutex> lck(DfxDumpCatcherLocalDumper::g_localDumperMutx);
-            if (DfxDumpCatcherLocalDumper::g_localDumperCV.wait_for(lck, \
-                std::chrono::milliseconds(SINGLE_THREAD_UNWIND_TIMEOUT))==std::cv_status::timeout) {
-                // time out means we didn't got any back trace msg, just return false.
-                ret = false;
-                break;
-            }
-
-            ret = true;
-        } else {
-            break;
-        }
-    } while (false);
-
+    if (ret) {
+        msg.append(DfxUnwindLocal::GetInstance().CollectUnwindResult(tid));
+    } else {
+        msg.append("Failed to dump thread:" + std::to_string(tid) + ".\n");
+    }
     DfxLogDebug("%s :: DoDumpLocalTid :: return %d.", DFXDUMPCATCHER_TAG.c_str(), ret);
     return ret;
 }
@@ -121,11 +117,7 @@ bool DfxDumpCatcher::DoDumpLocalPid(int pid, std::string& msg)
 
     struct dirent *ent;
     while ((ent = readdir(dir)) != nullptr) {
-        if (strcmp(ent->d_name, ".") == 0) {
-            continue;
-        }
-
-        if (strcmp(ent->d_name, "..") == 0) {
+        if (strcmp(ent->d_name, ".") == 0 || strcmp(ent->d_name, "..") == 0) {
             continue;
         }
 
@@ -136,16 +128,11 @@ bool DfxDumpCatcher::DoDumpLocalPid(int pid, std::string& msg)
 
         int currentTid = syscall(SYS_gettid);
         if (tid == currentTid) {
-            DfxDumpCatcherLocalDumper::ExecLocalDump(tid, DUMP_CATCHER_NUMBER_THREE);
-            msg.append(DfxDumpCatcherLocalDumper::CollectUnwindResult(tid));
+            DfxUnwindLocal::GetInstance().ExecLocalDumpUnwind(tid, DUMP_CATCHER_NUMBER_THREE);
+            msg.append(DfxUnwindLocal::GetInstance().CollectUnwindResult(tid));
         } else {
-            if (DoDumpLocalTid(tid)) {
-                msg.append(DfxDumpCatcherLocalDumper::CollectUnwindResult(tid));
-            } else {
-                msg.append("Failed to dump thread:" + std::to_string(tid) + ".\n");
-            }
+            ret = DoDumpLocalTid(tid, msg);
         }
-        ret = true;
     }
 
     if (closedir(dir) == -1) {
@@ -154,25 +141,6 @@ bool DfxDumpCatcher::DoDumpLocalPid(int pid, std::string& msg)
     
     DfxLogDebug("%s :: DoDumpLocalPid :: return %d.", DFXDUMPCATCHER_TAG.c_str(), ret);
     return ret;
-}
-
-std::string DfxDumpCatcher::TryToGetGeneratedLog(const std::string& path, const std::string& prefix)
-{
-    DfxLogDebug("%s :: TryToGetGeneratedLog :: path(%s), prefix(%s).", \
-        DFXDUMPCATCHER_TAG.c_str(), path.c_str(), prefix.c_str());
-    std::vector<std::string> files;
-    OHOS::GetDirFiles(path, files);
-    int i = 0;
-    while (i < (int)files.size() && files[i].find(prefix) == std::string::npos) {
-        i++;
-    }
-    if (i < (int)files.size()) {
-        DfxLogDebug("%s :: TryToGetGeneratedLog :: return filePath(%s)", \
-            DFXDUMPCATCHER_TAG.c_str(), files[i].c_str());
-        return files[i];
-    }
-    DfxLogDebug("%s :: TryToGetGeneratedLog :: return empty string", DFXDUMPCATCHER_TAG.c_str());
-    return "";
 }
 
 std::string DfxDumpCatcher::WaitForLogGenerate(const std::string& path, const std::string& prefix)
@@ -256,7 +224,6 @@ bool DfxDumpCatcher::DoDumpRemoteLocked(int pid, int tid, std::string& msg)
         if (stackTraceFileName.empty()) {
             return ret;
         }
-
         ret = OHOS::LoadStringFromFile(stackTraceFileName, msg);
         OHOS::RemoveFile(stackTraceFileName);
     }
@@ -266,70 +233,71 @@ bool DfxDumpCatcher::DoDumpRemoteLocked(int pid, int tid, std::string& msg)
 
 bool DfxDumpCatcher::DoDumpLocalLocked(int pid, int tid, std::string& msg)
 {
-    bool ret = DfxDumpCatcherLocalDumper::InitLocalDumper();
+    bool ret = DfxUnwindLocal::GetInstance().Init();
     if (!ret) {
-        DfxLogError("%s :: DoDumpLocal :: InitLocalDumper error.", DFXDUMPCATCHER_TAG.c_str());
-        DfxDumpCatcherLocalDumper::DestroyLocalDumper();
+        DfxLogError("%s :: DoDumpLocal :: Init error.", DFXDUMPCATCHER_TAG.c_str());
+        DfxUnwindLocal::GetInstance().Destroy();
         return ret;
     }
 
     if (tid == syscall(SYS_gettid)) {
-        ret = DfxDumpCatcherLocalDumper::ExecLocalDump(tid, DUMP_CATCHER_NUMBER_TWO);
-        msg.append(DfxDumpCatcherLocalDumper::CollectUnwindResult(tid));
+        ret = DfxUnwindLocal::GetInstance().ExecLocalDumpUnwind(tid, DUMP_CATCHER_NUMBER_TWO);
+        msg.append(DfxUnwindLocal::GetInstance().CollectUnwindResult(tid));
     } else if (tid == 0) {
         ret = DoDumpLocalPid(pid, msg);
     } else {
-        ret = DoDumpLocalTid(tid);
-        if (ret) {
-            msg.append(DfxDumpCatcherLocalDumper::CollectUnwindResult(tid));
-        } else {
-            msg.append("Failed to dump thread:" + std::to_string(tid) + ".\n");
-        }
+        ret = DoDumpLocalTid(tid, msg);
     }
 
-    DfxDumpCatcherLocalDumper::DestroyLocalDumper();
+    DfxUnwindLocal::GetInstance().Destroy();
     DfxLogDebug("%s :: DoDumpLocal :: ret(%d).", DFXDUMPCATCHER_TAG.c_str(), ret);
     return ret;
 }
 
 bool DfxDumpCatcher::DumpCatch(int pid, int tid, std::string& msg)
 {
-    pthread_mutex_lock(&g_dumpCatcherMutex);
+    bool ret = false;
+    if (pid <= 0 || tid < 0) {
+        DfxLogError("%s :: dump_catch :: param error.", DFXDUMPCATCHER_TAG.c_str());
+        return ret;
+    }
+
+    std::unique_lock<std::mutex> lck(dumpCatcherMutex_);
     int currentPid = getpid();
     DfxLogDebug("%s :: dump_catch :: cPid(%d), pid(%d), tid(%d).",
         DFXDUMPCATCHER_TAG.c_str(), currentPid, pid, tid);
 
-    if (pid <= 0 || tid < 0) {
-        DfxLogError("%s :: dump_catch :: param error.", DFXDUMPCATCHER_TAG.c_str());
-        pthread_mutex_unlock(&g_dumpCatcherMutex);
-        return false;
-    }
-
-    bool ret = false;
     if (pid == currentPid) {
         ret = DoDumpLocalLocked(pid, tid, msg);
     } else {
         ret = DoDumpRemoteLocked(pid, tid, msg);
     }
     DfxLogDebug("%s :: dump_catch :: ret(%d), msg(%s).", DFXDUMPCATCHER_TAG.c_str(), ret, msg.c_str());
-    pthread_mutex_unlock(&g_dumpCatcherMutex);
+    return ret;
+}
+
+bool DfxDumpCatcher::DumpCatchFd(int pid, int tid, std::string& msg, int fd)
+{
+    bool ret = DumpCatch(pid, tid, msg);
+
+    DfxUnwindLocal::GetInstance().WriteUnwindResult(fd, msg);
     return ret;
 }
 
 bool DfxDumpCatcher::DumpCatchMultiPid(const std::vector<int> pidV, std::string& msg)
 {
-    pthread_mutex_lock(&g_dumpCatcherMutex);
-    int currentPid = getpid();
-    int currentTid = syscall(SYS_gettid);
+    bool ret = false;
     int pidSize = (int)pidV.size();
-    DfxLogDebug("%s :: %s :: cPid(%d), cTid(%d), pidSize(%d).", DFXDUMPCATCHER_TAG.c_str(), \
-        __func__, currentPid, currentTid, pidSize);
-
     if (pidSize <= 0) {
         DfxLogError("%s :: %s :: param error, pidSize(%d).", DFXDUMPCATCHER_TAG.c_str(), __func__, pidSize);
-        pthread_mutex_unlock(&g_dumpCatcherMutex);
-        return false;
+        return ret;
     }
+
+    std::unique_lock<std::mutex> lck(dumpCatcherMutex_);
+    int currentPid = getpid();
+    int currentTid = syscall(SYS_gettid);
+    DfxLogDebug("%s :: %s :: cPid(%d), cTid(%d), pidSize(%d).", DFXDUMPCATCHER_TAG.c_str(), \
+        __func__, currentPid, currentTid, pidSize);
 
     time_t startTime = time(nullptr);
     if (startTime > 0) {
@@ -356,44 +324,40 @@ bool DfxDumpCatcher::DumpCatchMultiPid(const std::vector<int> pidV, std::string&
     }
 
     DfxLogDebug("%s :: %s :: msg(%s).", DFXDUMPCATCHER_TAG.c_str(), __func__, msg.c_str());
-    pthread_mutex_unlock(&g_dumpCatcherMutex);
     if (msg.find("Tid:") != std::string::npos) {
-        return true;
-    } else {
-        return false;
+        ret = true;
     }
+    return ret;
 }
 
 bool DfxDumpCatcher::DumpCatchFrame(int pid, int tid, std::string& msg, \
-    std::vector<std::shared_ptr<DfxDumpCatcherFrame>>& frameV)
+    std::vector<std::shared_ptr<DfxFrame>>& frames)
 {
     if (pid != getpid() || tid == 0) {
         DfxLogError("DumpCatchFrame :: only support localDump.");
         return false;
     }
 
-    pthread_mutex_lock(&g_dumpCatcherMutex);
-    bool ret = DfxDumpCatcherLocalDumper::InitLocalDumper();
+    bool ret = DfxUnwindLocal::GetInstance().Init();
     if (!ret) {
         DfxLogError("DumpCatchFrame :: failed to init local dumper.");
-        DfxDumpCatcherLocalDumper::DestroyLocalDumper();
-        pthread_mutex_unlock(&g_dumpCatcherMutex);
+        DfxUnwindLocal::GetInstance().Destroy();
         return ret;
     }
 
+    std::unique_lock<std::mutex> lck(dumpCatcherMutex_);
     if (tid == syscall(SYS_gettid)) {
-        ret = DfxDumpCatcherLocalDumper::ExecLocalDump(tid, DUMP_CATCHER_NUMBER_ONE);
+        ret = DfxUnwindLocal::GetInstance().ExecLocalDumpUnwind(tid, DUMP_CATCHER_NUMBER_ONE);
+        msg = DfxUnwindLocal::GetInstance().CollectUnwindResult(tid);
     } else {
-        ret = DoDumpLocalTid(tid);
+        ret = DoDumpLocalTid(tid, msg);
     }
 
     if (ret) {
-        msg = DfxDumpCatcherLocalDumper::CollectUnwindResult(tid);
-        DfxDumpCatcherLocalDumper::CollectUnwindFrames(frameV);
+        DfxUnwindLocal::GetInstance().CollectUnwindFrames(frames);
     }
 
-    DfxDumpCatcherLocalDumper::DestroyLocalDumper();
-    pthread_mutex_unlock(&g_dumpCatcherMutex);
+    DfxUnwindLocal::GetInstance().Destroy();
     return ret;
 }
 } // namespace HiviewDFX

@@ -42,43 +42,25 @@ void ProcessDfxTest::TearDown(void)
 {
 }
 
-int ProcessDfxTest::loopRootPid_ = 100;
-
-std::string ProcessDfxTest::ForkAndRootCommands()
+pid_t ProcessDfxTest::GetTelephonyPid()
 {
-    int rootuid = 0;
-    setuid(rootuid);
-    system("/data/crasher_c thread-Loop &");
-    std::string procCMD = "pgrep 'crasher'";
+    std::string procCMD = "pgrep 'telephony'";
     GTEST_LOG_(INFO) << "threadCMD = " << procCMD;
     FILE *procFileInfo = nullptr;
     procFileInfo = popen(procCMD.c_str(), "r");
     if (procFileInfo == nullptr) {
         perror("popen execute failed");
-        return std::to_string(loopRootPid_);
+        return 0;
     }
     std::string pidLog;
+    pid_t telephonyPid = 0;
     char result_buf_shell[PERFORMANCE_TEST_NUMBER_ONE_HUNDRED] = { 0, };
     if (fgets(result_buf_shell, sizeof(result_buf_shell), procFileInfo) != nullptr) {
         pidLog = result_buf_shell;
-        loopRootPid_ = atoi(pidLog.c_str());
+        telephonyPid = atoi(pidLog.c_str());
     }
     pclose(procFileInfo);
-    return std::to_string(loopRootPid_);
-}
-
-void ProcessDfxTest::StartRootCrasherLoop()
-{
-    int rootuid = 0;
-    setuid(rootuid);
-    ProcessDfxTest::ForkAndRootCommands();
-}
-
-void ProcessDfxTest::KillCrasherLoopForSomeCase()
-{
-    int rootuid = 0;
-    setuid(rootuid);
-    system(("kill -9 " + std::to_string(ProcessDfxTest::loopRootPid_)).c_str());
+    return telephonyPid;
 }
 
 namespace {
@@ -107,16 +89,19 @@ HWTEST_F (ProcessDfxTest, ProcessDfxRequestTest001, TestSize.Level2)
 HWTEST_F (ProcessDfxTest, ProcessDfxRequestTest002, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "ProcessDfxRequestTest002: start.";
-    ProcessDfxTest::StartRootCrasherLoop();
+    pid_t telephonyPid = ProcessDfxTest::GetTelephonyPid();
+    if (telephonyPid ==  0) {
+        GTEST_LOG_(INFO) << "ProcessDfxRequestTest002: get pid failed.";
+        return;
+    }
     std::shared_ptr<DfxProcess> processDfx = std::make_shared<DfxProcess>();
-    pid_t pid = ProcessDfxTest::loopRootPid_;
-    pid_t tid = ProcessDfxTest::loopRootPid_;
+    pid_t pid = telephonyPid;
+    pid_t tid = telephonyPid;
     std::shared_ptr<DfxThread> keyThread = std::make_shared<DfxThread>(pid, tid);
     auto dfx = false;
     if (processDfx != nullptr && keyThread != nullptr) {
         dfx = processDfx->InitProcessThreads(keyThread);
     }
-    ProcessDfxTest::KillCrasherLoopForSomeCase();
     EXPECT_EQ(true, dfx == true) << "ProcessDfxRequestTest002 Failed";
     GTEST_LOG_(INFO) << "ProcessDfxRequestTest002: end.";
 }
