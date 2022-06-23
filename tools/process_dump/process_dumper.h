@@ -36,10 +36,9 @@ namespace HiviewDFX {
 class ProcessDumper final {
 public:
     static ProcessDumper &GetInstance();
+    ~ProcessDumper() = default;
 
     void Dump(bool isSignalHdlr, ProcessDumpType type, int32_t pid, int32_t tid);
-    ~ProcessDumper() = default;
-    
     void PrintDumpProcessMsg(std::string msg);
     int PrintDumpProcessBuf(const char *format, ...);
 public:
@@ -63,10 +62,6 @@ private:
     ProcessDumper() = default;
     DISALLOW_COPY_AND_MOVE(ProcessDumper);
     std::shared_ptr<CppCrashReporter> reporter_;
-    bool displayBacktrace_ = true;
-    bool displayRegister_ = true;
-    bool displayMaps_ = true;
-    bool logPersist_ = false;
 };
 } // namespace HiviewDFX
 } // namespace OHOS
