@@ -60,7 +60,7 @@ struct FaultLoggerdRequest {
     int32_t clientType;
     int32_t pid;
     int32_t tid;
-    int32_t uid;
+    uint32_t uid;
     int32_t callerPid; // only for sdk dump client
     int32_t callerTid; // only for sdk dump client
     char module[128];

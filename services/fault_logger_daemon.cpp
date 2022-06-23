@@ -258,7 +258,7 @@ FaultLoggerCheckPermissionResp FaultLoggerDaemon::SecurityCheck(int32_t connecti
             break;
         }
 
-        request->uid = (int32_t)rcred.uid;
+        request->uid = rcred.uid;
         request->callerPid = (int32_t)rcred.pid;
         bool res = faultLoggerSecure_->CheckCallerUID((int)request->uid, request->pid);
         if (res) {
