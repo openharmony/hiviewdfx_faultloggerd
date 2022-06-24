@@ -38,7 +38,9 @@ struct ProcessDumpRequest {
     char lastFatalMessage[MAX_FATAL_MSG_SIZE];
 };
 #endif
+
 void DFX_InstallSignalHandler(void);
+
 #ifdef __cplusplus
 }
 #endif

@@ -275,9 +275,9 @@ static int DFX_ExecDump(void *arg)
 
     DfxLogInfo("execle processdump.");
 #ifdef DFX_LOG_USE_HILOG_BASE
-    execle("/system/bin/processdump", "-signalhandler", NULL, NULL);
+    execle("/system/bin/processdump", "processdump", "-signalhandler", NULL, NULL);
 #else
-    execle("/bin/processdump", "-signalhandler", NULL, NULL);
+    execle("/bin/processdump", "processdump", "-signalhandler", NULL, NULL);
 #endif
     pthread_mutex_unlock(&g_dumpMutex);
     return errno;

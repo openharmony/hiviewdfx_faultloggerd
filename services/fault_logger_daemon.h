@@ -18,19 +18,19 @@
 #include <cinttypes>
 #include "faultloggerd_client.h"
 
-int32_t StartServer(int argc, char *argv[]);
-
 namespace OHOS {
 namespace HiviewDFX {
 class FaultLoggerDaemon {
 public:
-    FaultLoggerDaemon() {};
+    FaultLoggerDaemon();
     ~FaultLoggerDaemon() {};
+    int32_t StartServer();
     bool InitEnvironment();
     void LoopAcceptRequestAndFork(int socketFd);
+    int32_t CreateFileForRequest(int32_t type, int32_t pid, uint64_t time, bool debugFlag) const;
 
 private:
-    int32_t CreateFileForRequest(int32_t type, int32_t pid, uint64_t time, bool debugFlag) const;
+    static void HandleRequesting(int32_t connectionFd);
     void RemoveTempFileIfNeed();
     void HandleRequest(int32_t connectionFd);
     void HandleDefaultClientReqeust(int32_t connectionFd, const FaultLoggerdRequest* request);
@@ -41,6 +41,7 @@ private:
     void HandleSdkDumpReqeust(int32_t connectionFd, FaultLoggerdRequest* request);
 
 private:
+    static FaultLoggerDaemon* faultLoggerDaemon_;
 };
 } // namespace HiviewDFX
 } // namespace OHOS
