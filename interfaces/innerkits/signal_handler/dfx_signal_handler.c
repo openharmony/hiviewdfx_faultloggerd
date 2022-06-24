@@ -341,7 +341,7 @@ static void DFX_SignalHandler(int sig, siginfo_t *si, void *context)
     g_request.type = sig;
     g_request.tid = gettid();
     g_request.pid = getpid();
-    g_request.uid = (int32_t)getuid();
+    g_request.uid = getuid();
     g_request.reserved = 0;
     g_request.timeStamp = GetTimeMilliseconds();
     DfxLogInfo("DFX_SignalHandler :: sig(%d), pid(%d), tid(%d).", sig, g_request.pid, g_request.tid);

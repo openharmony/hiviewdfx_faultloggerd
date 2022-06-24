@@ -108,7 +108,7 @@ void FillRequest(int32_t type, FaultLoggerdRequest *request)
     request->type = type;
     request->pid = getpid();
     request->tid = gettid();
-    request->uid = (int32_t)getuid();
+    request->uid = getuid();
     request->time = (static_cast<uint64_t>(time.tv_sec) * 1000) + // 1000 : second to millsecond convert ratio
         (static_cast<uint64_t>(time.tv_usec) / 1000); // 1000 : microsecond to millsecond convert ratio
     ReadStringFromFile("/proc/self/cmdline", request->module, sizeof(request->module));
@@ -292,7 +292,7 @@ static bool SendRequestToServer(const FaultLoggerdRequest &request)
             DfxLogError("memset_s failed, err = %d.", (int)ret);
             break;
         }
-        if (read(sockfd, ControlBuffer, sizeof(ControlBuffer) - 1) != strlen(FAULTLOGGER_DAEMON_RESP)) {
+        if (read(sockfd, ControlBuffer, sizeof(ControlBuffer) - 1) != (ssize_t)strlen(FAULTLOGGER_DAEMON_RESP)) {
             break;
         }
 
