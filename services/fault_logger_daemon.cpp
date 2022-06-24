@@ -142,6 +142,55 @@ FaultLoggerDaemon::FaultLoggerDaemon()
     faultLoggerDaemon_ = this;
 }
 
+int32_t FaultLoggerDaemon::StartServer()
+{
+    int socketFd = -1;
+    if ((socketFd = socket(AF_LOCAL, SOCK_STREAM, 0)) < 0) {
+        DfxLogError("%s :: Failed to create socket", FAULTLOGGERD_TAG.c_str());
+        return -1;
+    }
+
+    struct sockaddr_un server;
+    errno_t err = memset_s(&server, sizeof(server), 0, sizeof(server));
+    if (err != EOK) {
+        DfxLogError("%s :: memset_s server failed..", FAULTLOGGERD_TAG.c_str());
+    }
+    server.sun_family = AF_LOCAL;
+    if (strncpy_s(server.sun_path, sizeof(server.sun_path), FAULTLOGGERD_SOCK_PATH,
+        strlen(FAULTLOGGERD_SOCK_PATH)) != 0) {
+        DfxLogError("%s :: Failed to set sock path", FAULTLOGGERD_TAG.c_str());
+        close(socketFd);
+        return -1;
+    }
+
+    unlink(FAULTLOGGERD_SOCK_PATH);
+    if (bind(socketFd, (struct sockaddr *)&server,
+        offsetof(struct sockaddr_un, sun_path) + strlen(server.sun_path)) < 0) {
+        DfxLogError("%s :: Failed to bind socket", FAULTLOGGERD_TAG.c_str());
+        close(socketFd);
+        return -1;
+    }
+
+    if (listen(socketFd, OHOS::HiviewDFX::MAX_CONNECTION) < 0) {
+        DfxLogError("%s :: Failed to listen socket", FAULTLOGGERD_TAG.c_str());
+        close(socketFd);
+        return -1;
+    }
+
+    if (!InitEnvironment()) {
+        DfxLogError("%s :: Failed to init environment", FAULTLOGGERD_TAG.c_str());
+        close(socketFd);
+        return -1;
+    }
+
+    DfxLogInfo("%s :: %s: start loop accept.", FAULTLOGGERD_TAG.c_str(), __func__);
+    LoopAcceptRequestAndFork(socketFd);
+
+    close(socketFd);
+    DfxLogInfo("%s :: %s: Exit.", FAULTLOGGERD_TAG.c_str(), __func__);
+    return 0;
+}
+
 bool FaultLoggerDaemon::InitEnvironment()
 {
     DfxLogInfo("%s :: %s Enter.", OHOS::HiviewDFX::FAULTLOGGERD_TAG.c_str(), __func__);
@@ -497,74 +546,20 @@ void FaultLoggerDaemon::LoopAcceptRequestAndFork(int socketFd)
 {
     struct sockaddr_un clientAddr;
     socklen_t clientAddrSize = static_cast<socklen_t>(sizeof(clientAddr));
-    int curCnt = 0;
-    int connectionFds[MAX_CONNECTION];
+    int connectionFd = -1;
     signal(SIGCHLD, SIG_IGN);
 
     while (true) {
-        connectionFds[curCnt] = accept(socketFd, reinterpret_cast<struct sockaddr *>(&clientAddr), &clientAddrSize);
-        if (connectionFds[curCnt] < 0) {
+        connectionFd = accept(socketFd, reinterpret_cast<struct sockaddr *>(&clientAddr), &clientAddrSize);
+        if (connectionFd < 0) {
             DfxLogError("%s :: Failed to accept connection", FAULTLOGGERD_TAG.c_str());
             continue;
         }
-        DfxLogInfo("%s :: %s: accept: %d.", FAULTLOGGERD_TAG.c_str(), __func__, connectionFds[curCnt]);
-        curCnt++;
-        std::thread th(FaultLoggerDaemon::HandleRequesting, connectionFds[--curCnt]);
+        DfxLogInfo("%s :: %s: accept: %d.", FAULTLOGGERD_TAG.c_str(), __func__, connectionFd);
+
+        std::thread th(FaultLoggerDaemon::HandleRequesting, connectionFd);
         th.detach();
     }
 }
 } // namespace HiviewDFX
 } // namespace OHOS
-
-int32_t StartServer(int argc, char *argv[])
-{
-    (void)argc;
-    (void)argv;
-    int socketFd = -1;
-
-    if ((socketFd = socket(AF_LOCAL, SOCK_STREAM, 0)) < 0) {
-        DfxLogError("%s :: Failed to create socket", OHOS::HiviewDFX::FAULTLOGGERD_TAG.c_str());
-        return -1;
-    }
-
-    struct sockaddr_un server;
-    errno_t err = memset_s(&server, sizeof(server), 0, sizeof(server));
-    if (err != EOK) {
-        DfxLogError("%s :: memset_s server failed..", OHOS::HiviewDFX::FAULTLOGGERD_TAG.c_str());
-    }
-    server.sun_family = AF_LOCAL;
-    if (strncpy_s(server.sun_path, sizeof(server.sun_path), FAULTLOGGERD_SOCK_PATH,
-        strlen(FAULTLOGGERD_SOCK_PATH)) != 0) {
-        DfxLogError("%s :: Failed to set sock path", OHOS::HiviewDFX::FAULTLOGGERD_TAG.c_str());
-        close(socketFd);
-        return -1;
-    }
-
-    unlink(FAULTLOGGERD_SOCK_PATH);
-    if (bind(socketFd, (struct sockaddr *)&server,
-        offsetof(struct sockaddr_un, sun_path) + strlen(server.sun_path)) < 0) {
-        DfxLogError("%s :: Failed to bind socket", OHOS::HiviewDFX::FAULTLOGGERD_TAG.c_str());
-        close(socketFd);
-        return -1;
-    }
-
-    if (listen(socketFd, OHOS::HiviewDFX::MAX_CONNECTION) < 0) {
-        DfxLogError("%s :: Failed to listen socket", OHOS::HiviewDFX::FAULTLOGGERD_TAG.c_str());
-        close(socketFd);
-        return -1;
-    }
-
-    OHOS::HiviewDFX::FaultLoggerDaemon daemon;
-    if (!daemon.InitEnvironment()) {
-        DfxLogError("%s :: Failed to init environment", OHOS::HiviewDFX::FAULTLOGGERD_TAG.c_str());
-        close(socketFd);
-        return -1;
-    }
-
-    DfxLogInfo("%s :: %s: start loop accept.", OHOS::HiviewDFX::FAULTLOGGERD_TAG.c_str(), __func__);
-    daemon.LoopAcceptRequestAndFork(socketFd);
-
-    close(socketFd);
-    DfxLogInfo("%s :: %s: Exit.", OHOS::HiviewDFX::FAULTLOGGERD_TAG.c_str(), __func__);
-    return 0;
-}

@@ -13,10 +13,42 @@
  * limitations under the License.
  */
 
+#include <unistd.h>
 #include "fault_logger_daemon.h"
+#include "dfx_log.h"
+
+#if defined(DEBUG_PROCESS_DUMP_CRASH)
+#include "dfx_signal_local_handler.h"
+#include "dfx_crash_local_handler.h"
+#include "dfx_cutil.h"
+
+static void DFX_SignalHandler(int sig, siginfo_t *si, void *context)
+{
+    OHOS::HiviewDFX::FaultLoggerDaemon daemon;
+    int32_t type = (int32_t)FaultLoggerType::CPP_CRASH;
+    int32_t pid = getpid();
+    uint64_t time = GetTimeMilliseconds();
+    int fd = daemon.CreateFileForRequest(type, pid, time, false);
+    if (fd < 0) {
+        DfxLogError("%s :: Failed to create log file", __func__);
+        return;
+    }
+
+    struct ProcessDumpRequest request;
+    (void)memset_s(&request, sizeof(request), 0, sizeof(request));
+    DFX_InitDumpRequest(&request, sig);
+
+    CrashLocalHandlerFd(fd, &request, si, (ucontext *)context);
+}
+#endif
 
 int main(int argc, char *argv[])
 {
-    StartServer(argc, argv);
+#if defined(DEBUG_PROCESS_DUMP_CRASH)
+    DFX_SetSignalHandlerFunc(DFX_SignalHandler);
+    DFX_InstallLocalSignalHandler();
+#endif
+    OHOS::HiviewDFX::FaultLoggerDaemon daemon;
+    daemon.StartServer();
     return 0;
 }

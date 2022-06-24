@@ -38,10 +38,10 @@ __attribute__((noinline)) int RequestOutputLogFile(struct ProcessDumpRequest* re
         return -1;
     }
 
-    faultloggerdRequest.type = 2; // 2 : CPP_CRASH
-    faultloggerdRequest.pid = getpid();
-    faultloggerdRequest.tid = gettid();
-    faultloggerdRequest.uid = getuid();
+    faultloggerdRequest.type = (int32_t)CPP_CRASH;
+    faultloggerdRequest.pid = request->pid;
+    faultloggerdRequest.tid = request->tid;
+    faultloggerdRequest.uid = request->uid;
     faultloggerdRequest.time = request->timeStamp + 1;
     if (strncpy_s(faultloggerdRequest.module, sizeof(faultloggerdRequest.module),
         request->processName, sizeof(faultloggerdRequest.module) - 1) != 0) {
@@ -72,15 +72,8 @@ __attribute__((noinline)) void PrintLog(int fd, const char *format, ...)
     }
 }
 
-// currently, only stacktrace is logged to faultloggerd
-void CrashLocalHandler(struct ProcessDumpRequest* request, siginfo_t* info, ucontext_t* ucontext)
+__attribute__((noinline)) void CrashLocalUnwind(int fd, ucontext_t* ucontext)
 {
-    int fd = RequestOutputLogFile(request);
-    PrintLog(fd, "Pid:%d\n", request->pid);
-    PrintLog(fd, "Uid:%d\n", request->uid);
-    PrintLog(fd, "Process name:%s\n", request->processName);
-    PrintLog(fd, "Reason:Signal(%d)\n", info->si_signo);
-    PrintLog(fd, "Tid:%d, Name:%s\n", request->tid, request->threadName);
     size_t index = 0;
     unw_cursor_t cursor;
     if (unw_init_local(&cursor, (unw_context_t*)ucontext) != 0) {
@@ -146,4 +139,22 @@ void CrashLocalHandler(struct ProcessDumpRequest* request, siginfo_t* info, ucon
     if (fd >= 0) {
         close(fd);
     }
+}
+
+// currently, only stacktrace is logged to faultloggerd
+void CrashLocalHandler(struct ProcessDumpRequest* request, siginfo_t* info, ucontext_t* ucontext)
+{
+    int fd = RequestOutputLogFile(request);
+    CrashLocalHandlerFd(fd, request, info, ucontext);
+}
+
+void CrashLocalHandlerFd(int fd, struct ProcessDumpRequest* request, siginfo_t* info, ucontext_t* ucontext)
+{
+    PrintLog(fd, "Pid:%d\n", request->pid);
+    PrintLog(fd, "Uid:%d\n", request->uid);
+    PrintLog(fd, "Process name:%s\n", request->processName);
+    PrintLog(fd, "Reason:Signal(%d)\n", info->si_signo);
+    PrintLog(fd, "Tid:%d, Name:%s\n", request->tid, request->threadName);
+    
+    CrashLocalUnwind(fd, ucontext);
 }

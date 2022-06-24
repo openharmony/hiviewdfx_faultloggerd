@@ -89,9 +89,13 @@ if (defined(ohos_lite)) {
       "main.cpp",
     ]
 
+    cflags_cc = [ "-DDEBUG_PROCESS_DUMP_CRASH" ]
+
     deps = [
       ":faultlogger.conf",
+      "$faultloggerd_path/common/util:dfx_cutil",
       "$faultloggerd_path/interfaces/innerkits/faultloggerd_client:libfaultloggerd",
+      "$faultloggerd_path/interfaces/innerkits/signal_handler:dfx_local_handler",
     ]
 
     if (!is_asan) {
