@@ -217,7 +217,7 @@ private:
     volatile unsigned int read_position;
     volatile unsigned int write_position;
 
-    T data[LENGTH];
+    T data[LENGTH] = {T()};
 
     bool overrun_flag;
 };
