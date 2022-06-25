@@ -39,7 +39,7 @@
 #include "dfx_cutil.h"
 #endif
 
-static const int SIGNAL_HANDLER = 1;
+static const int SIGNAL_HANDLER = 2;
 static const int DUMP_THIRD = 3;
 static const int DUMP_FIVE = 5;
 static const int DUMP_ARG_TWO = 2;
@@ -123,6 +123,7 @@ static bool CheckPidTid(OHOS::HiviewDFX::ProcessDumpType type, int32_t pid, int3
 static bool ParseParamters(int argc, char *argv[], bool &isSignalHdlr, OHOS::HiviewDFX::ProcessDumpType &type,
     int32_t &pid, int32_t &tid)
 {
+    DfxLogDebug("argc:%d, argv1:%s", argc, argv[1]);
     switch (argc) {
         case SIGNAL_HANDLER:
             if (!strcmp("-signalhandler", argv[1])) {
