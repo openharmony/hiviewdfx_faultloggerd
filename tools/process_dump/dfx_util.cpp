@@ -104,7 +104,7 @@ std::string GetCurrentTimeStr(uint64_t current)
 
     auto tm = std::localtime(&now);
     char seconds[128] = {0}; // 128 : time buffer size
-    if (tm == null || strftime(seconds, sizeof(seconds) - 1, "%Y-%m-%d %H:%M:%S", tm) == 0) {
+    if (tm == nullptr || strftime(seconds, sizeof(seconds) - 1, "%Y-%m-%d %H:%M:%S", tm) == 0) {
         return "invalid timestamp\n";
     }
 
