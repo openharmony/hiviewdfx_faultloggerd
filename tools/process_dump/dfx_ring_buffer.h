@@ -48,7 +48,7 @@
 template<unsigned int LENGTH, class T>
 class DfxRingBuffer {
 public:
-    DfxRingBuffer() : read_position(0), write_position(0)
+    DfxRingBuffer() : read_position(0), write_position(0), data {T()}, overrun_flag(false)
     {
     }
 
@@ -219,7 +219,7 @@ private:
 
     T data[LENGTH] = {T()};
 
-    bool overrun_flag;
+    bool overrun_flag = false;
 };
 
 #endif
