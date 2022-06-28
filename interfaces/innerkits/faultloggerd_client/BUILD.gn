@@ -29,6 +29,7 @@ if (defined(ohos_lite)) {
     sources = [
       "//base/hiviewdfx/faultloggerd/tools/process_dump/dfx_log.cpp",
       "faultloggerd_client.cpp",
+      "faultloggerd_socket.cpp",
     ]
 
     deps = [ "//base/hiviewdfx/hilog_lite/frameworks/featured:hilog_shared" ]
@@ -51,6 +52,7 @@ if (defined(ohos_lite)) {
     sources = [
       "//base/hiviewdfx/faultloggerd/tools/process_dump/dfx_log.cpp",
       "faultloggerd_client.cpp",
+      "faultloggerd_socket.cpp",
     ]
 
     external_deps = [

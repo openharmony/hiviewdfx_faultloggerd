@@ -13,6 +13,8 @@
  * limitations under the License.
  */
 
+#include "fault_logger_daemon.h"
+
 #include <algorithm>
 #include <cerrno>
 #include <cstring>
@@ -39,7 +41,7 @@
 #include "dfx_define.h"
 #include "fault_logger_config.h"
 #include "fault_logger_secure.h"
-#include "fault_logger_daemon.h"
+#include "faultloggerd_socket.h"
 
 using namespace std::chrono;
 
@@ -78,63 +80,6 @@ static std::string GetRequestTypeName(int32_t type)
             return "unsupported";
     }
 }
-
-static void SendFileDescriptorBySocket(int socket, int fd)
-{
-    struct msghdr msg = { 0 };
-    char buf[CMSG_SPACE(sizeof(fd))] = { 0 };
-    char iovBase[] = "";
-    struct iovec io = {
-        .iov_base = reinterpret_cast<void *>(iovBase),
-        .iov_len = 1
-    };
-
-    msg.msg_iov = &io;
-    msg.msg_iovlen = 1;
-    msg.msg_control = buf;
-    msg.msg_controllen = sizeof(buf);
-
-    struct cmsghdr *cmsg = CMSG_FIRSTHDR(&msg);
-    if (cmsg != nullptr) {
-        cmsg->cmsg_level = SOL_SOCKET;
-        cmsg->cmsg_type = SCM_RIGHTS;
-        cmsg->cmsg_len = CMSG_LEN(sizeof(fd));
-    }
-
-    *(reinterpret_cast<int *>(CMSG_DATA(cmsg))) = fd;
-    msg.msg_controllen = CMSG_SPACE(sizeof(fd));
-    if (sendmsg(socket, &msg, 0) < 0) {
-        DfxLogError("Failed to send message");
-    }
-}
-
-__attribute__((unused)) static int ReadFileDescriptorFromSocket(int socket)
-{
-    struct msghdr msg = { 0 };
-
-    char msgBuffer[SOCKET_BUFFER_SIZE] = { 0 };
-    struct iovec io = {
-        .iov_base = msgBuffer,
-        .iov_len = sizeof(msgBuffer)
-    };
-    msg.msg_iov = &io;
-    msg.msg_iovlen = 1;
-
-    char ctlBuffer[SOCKET_BUFFER_SIZE] = { 0 };
-    msg.msg_control = ctlBuffer;
-    msg.msg_controllen = sizeof(ctlBuffer);
-
-    if (recvmsg(socket, &msg, 0) < 0) {
-        DfxLogError("%s :: Failed to receive message", FAULTLOGGERD_TAG.c_str());
-        return -1;
-    }
-
-    struct cmsghdr *cmsg = CMSG_FIRSTHDR(&msg);
-    if (cmsg == nullptr) {
-        return -1;
-    }
-    return *(reinterpret_cast<int *>(CMSG_DATA(cmsg)));
-}
 }
 
 FaultLoggerDaemon::FaultLoggerDaemon()
@@ -145,35 +90,8 @@ FaultLoggerDaemon::FaultLoggerDaemon()
 int32_t FaultLoggerDaemon::StartServer()
 {
     int socketFd = -1;
-    if ((socketFd = socket(AF_LOCAL, SOCK_STREAM, 0)) < 0) {
-        DfxLogError("%s :: Failed to create socket", FAULTLOGGERD_TAG.c_str());
-        return -1;
-    }
-
-    struct sockaddr_un server;
-    errno_t err = memset_s(&server, sizeof(server), 0, sizeof(server));
-    if (err != EOK) {
-        DfxLogError("%s :: memset_s server failed..", FAULTLOGGERD_TAG.c_str());
-    }
-    server.sun_family = AF_LOCAL;
-    if (strncpy_s(server.sun_path, sizeof(server.sun_path), FAULTLOGGERD_SOCK_PATH,
-        strlen(FAULTLOGGERD_SOCK_PATH)) != 0) {
-        DfxLogError("%s :: Failed to set sock path", FAULTLOGGERD_TAG.c_str());
-        close(socketFd);
-        return -1;
-    }
-
-    unlink(FAULTLOGGERD_SOCK_PATH);
-    if (bind(socketFd, (struct sockaddr *)&server,
-        offsetof(struct sockaddr_un, sun_path) + strlen(server.sun_path)) < 0) {
-        DfxLogError("%s :: Failed to bind socket", FAULTLOGGERD_TAG.c_str());
-        close(socketFd);
-        return -1;
-    }
-
-    if (listen(socketFd, OHOS::HiviewDFX::MAX_CONNECTION) < 0) {
-        DfxLogError("%s :: Failed to listen socket", FAULTLOGGERD_TAG.c_str());
-        close(socketFd);
+    if (!StartListen(socketFd, FAULTLOGGERD_SOCK_PATH, strlen(FAULTLOGGERD_SOCK_PATH), MAX_CONNECTION)) {
+        DfxLogError("%s :: Failed to start listen", FAULTLOGGERD_TAG.c_str());
         return -1;
     }
 
@@ -227,7 +145,7 @@ void FaultLoggerDaemon::HandleDefaultClientReqeust(int32_t connectionFd, const F
         return;
     }
 
-    SendFileDescriptorBySocket(connectionFd, fd);
+    SendFileDescriptorToSocket(connectionFd, fd);
 
     close(fd);
 }
@@ -240,7 +158,7 @@ void FaultLoggerDaemon::HandleLogFileDesClientReqeust(int32_t connectionFd, cons
         return;
     }
 
-    SendFileDescriptorBySocket(connectionFd, fd);
+    SendFileDescriptorToSocket(connectionFd, fd);
 
     close(fd);
 }
@@ -266,50 +184,21 @@ void FaultLoggerDaemon::HandlePrintTHilogClientReqeust(int32_t const connectionF
 FaultLoggerCheckPermissionResp FaultLoggerDaemon::SecurityCheck(int32_t connectionFd, FaultLoggerdRequest * request)
 {
     FaultLoggerCheckPermissionResp resCheckPermission = FaultLoggerCheckPermissionResp::CHECK_PERMISSION_REJECT;
-    struct iovec iov;
-    int data;
+
     struct ucred rcred;
-    struct msghdr msgh;
-    int optval = 1;
-
     do {
-        union {
-            char buf[CMSG_SPACE(sizeof(struct ucred))];
-
-            /* Space large enough to hold a 'ucred' structure */
-            struct cmsghdr align;
-        } controlMsg;
-
+        int optval = 1;
         if (setsockopt(connectionFd, SOL_SOCKET, SO_PASSCRED, &optval, sizeof(optval)) == -1) {
+            DfxLogError("%s :: setsockopt SO_PASSCRED error.", FAULTLOGGERD_TAG.c_str());
             break;
         }
-
+        
         if (write(connectionFd, DAEMON_RESP.c_str(), DAEMON_RESP.length()) != (ssize_t)DAEMON_RESP.length()) {
             DfxLogError("%s :: Failed to write DAEMON_RESP.", FAULTLOGGERD_TAG.c_str());
         }
 
-        msgh.msg_name = nullptr;
-        msgh.msg_namelen = 0;
-        msgh.msg_iov = &iov;
-        msgh.msg_iovlen = 1;
-        iov.iov_base = &data;
-        iov.iov_len = sizeof(data);
-
-        msgh.msg_control = controlMsg.buf;
-        msgh.msg_controllen = sizeof(controlMsg.buf);
-
-        ssize_t nr = recvmsg(connectionFd, &msgh, 0);
-        if (nr == -1) {
-            break;
-        }
-
-        struct cmsghdr *cmsgp = nullptr;
-        cmsgp = CMSG_FIRSTHDR(&msgh);
-        if (cmsgp == nullptr) {
-            break;
-        }
-
-        if (memcpy_s(&rcred, sizeof(rcred), CMSG_DATA(cmsgp), sizeof(struct ucred)) != 0) {
+        if (!RecvMsgCredFromSocket(connectionFd, &rcred)) {
+            DfxLogError("%s :: Recv msg ucred error.", FAULTLOGGERD_TAG.c_str());
             break;
         }
 
@@ -386,15 +275,13 @@ void FaultLoggerDaemon::HandleSdkDumpReqeust(int32_t connectionFd, FaultLoggerdR
         // means we need dump all the threads in a process.
         if (request->tid == 0) {
             if (syscall(SYS_rt_sigqueueinfo, request->pid, sig, &si) != 0) {
-                DfxLogError("Failed to SYS_rt_sigqueueinfo signal(%d), errno(%d).",
-                    si.si_signo, errno);
+                DfxLogError("Failed to SYS_rt_sigqueueinfo signal(%d), errno(%d).", si.si_signo, errno);
                 break;
             }
         } else {
             // means we need dump a specified thread
             if (syscall(SYS_rt_tgsigqueueinfo, request->pid, request->tid, sig, &si) != 0) {
-                DfxLogError("Failed to SYS_rt_tgsigqueueinfo signal(%d), errno(%d).",
-                    si.si_signo, errno);
+                DfxLogError("Failed to SYS_rt_tgsigqueueinfo signal(%d), errno(%d).", si.si_signo, errno);
                 break;
             }
         }
