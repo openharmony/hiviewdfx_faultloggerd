@@ -176,7 +176,7 @@ pid_t DfxProcess::GetPid() const
     return pid_;
 }
 
-pid_t DfxProcess::GetUid() const
+uid_t DfxProcess::GetUid() const
 {
     return uid_;
 }
@@ -201,7 +201,7 @@ void DfxProcess::SetPid(pid_t pid)
     pid_ = pid;
 }
 
-void DfxProcess::SetUid(pid_t uid)
+void DfxProcess::SetUid(uid_t uid)
 {
     uid_ = uid;
 }
