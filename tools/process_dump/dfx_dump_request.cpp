@@ -82,12 +82,12 @@ void ProcessDumpRequest::SetPid(int32_t pid)
     pid_ = pid;
 }
 
-int32_t ProcessDumpRequest::GetUid() const
+uint32_t ProcessDumpRequest::GetUid() const
 {
     return uid_;
 }
 
-void ProcessDumpRequest::SetUid(int32_t uid)
+void ProcessDumpRequest::SetUid(uint32_t uid)
 {
     uid_ = uid;
 }

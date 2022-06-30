@@ -220,11 +220,11 @@ HWTEST_F (ProcessDumpTest, ProcessDumpTest010, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "ProcessDumpTest010: start.";
     std::shared_ptr<ProcessDumpRequest> processDump = std::make_shared<ProcessDumpRequest>();
-    int32_t inputUid = 1;
+    uint32_t inputUid = 1;
     if (processDump != nullptr) {
         processDump->SetUid(inputUid);
     }
-    int32_t outputUid = processDump->GetUid();
+    uint32_t outputUid = processDump->GetUid();
     EXPECT_EQ(true, inputUid == outputUid) << "ProcessDumpTest010 Failed";
     GTEST_LOG_(INFO) << "ProcessDumpTest010: end.";
 }
@@ -238,11 +238,11 @@ HWTEST_F (ProcessDumpTest, ProcessDumpTest011, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "ProcessDumpTest011: start.";
     std::shared_ptr<ProcessDumpRequest> processDump = std::make_shared<ProcessDumpRequest>();
-    int32_t inputUid = 164;
+    uint32_t inputUid = 164;
     if (processDump != nullptr) {
         processDump->SetUid(inputUid);
     }
-    int32_t outputUid = processDump->GetUid();
+    uint32_t outputUid = processDump->GetUid();
     EXPECT_EQ(true, inputUid == outputUid) << "ProcessDumpTest011 Failed";
     GTEST_LOG_(INFO) << "ProcessDumpTest011: end.";
 }
@@ -256,11 +256,11 @@ HWTEST_F (ProcessDumpTest, ProcessDumpTest012, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "ProcessDumpTest012: start.";
     std::shared_ptr<ProcessDumpRequest> processDump = std::make_shared<ProcessDumpRequest>();
-    int32_t inputUid = 3;
+    uint32_t inputUid = 3;
     if (processDump != nullptr) {
         processDump->SetUid(inputUid);
     }
-    int32_t outputUid = processDump->GetUid();
+    uint32_t outputUid = processDump->GetUid();
     EXPECT_EQ(true, inputUid == outputUid) << "ProcessDumpTest012 Failed";
     GTEST_LOG_(INFO) << "ProcessDumpTest012: end.";
 }

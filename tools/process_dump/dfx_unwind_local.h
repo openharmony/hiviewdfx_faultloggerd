@@ -62,7 +62,7 @@ private:
 private:
     unw_addr_space_t as_;
     std::vector<DfxFrame> frames_;
-    uint32_t curIndex_;
+    uint32_t curIndex_ = 0;
     std::unique_ptr<DfxSymbolsCache> cache_;
     sigset_t mask_;
     struct sigaction oldSigaction_;
