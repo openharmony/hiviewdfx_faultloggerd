@@ -24,7 +24,7 @@
 #include <securec.h>
 
 #include "dfx_elf.h"
-#include "dfx_log.h"
+#include "dfx_logger.h"
 #include "dfx_maps.h"
 
 static const int FAULT_STACK_SHOW_FLOOR = 4;

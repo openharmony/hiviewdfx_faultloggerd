@@ -30,7 +30,7 @@
 #include <sys/types.h>
 
 #include "dfx_define.h"
-#include "dfx_log.h"
+#include "dfx_logger.h"
 
 #ifndef PAGE_SIZE
 #define PAGE_SIZE 4096

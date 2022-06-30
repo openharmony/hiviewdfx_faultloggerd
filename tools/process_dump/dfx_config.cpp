@@ -17,7 +17,7 @@
 
 #include <securec.h>
 #include "dfx_define.h"
-#include "dfx_log.h"
+#include "dfx_logger.h"
 #include "dfx_config.h"
 
 static const char FAULTLOGGER_CONF_PATH[] = "/system/etc/faultlogger.conf";

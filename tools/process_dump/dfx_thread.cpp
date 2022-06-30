@@ -28,7 +28,7 @@
 #include <securec.h>
 
 #include "dfx_define.h"
-#include "dfx_log.h"
+#include "dfx_logger.h"
 #include "dfx_regs.h"
 #include "dfx_util.h"
 #include "dfx_config.h"
