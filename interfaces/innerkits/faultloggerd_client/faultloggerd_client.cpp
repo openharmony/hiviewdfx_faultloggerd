@@ -13,6 +13,7 @@
  * limitations under the License.
  */
 #include "faultloggerd_client.h"
+#include "faultloggerd_socket.h"
 
 #include <climits>
 #include <cstdio>
@@ -30,39 +31,6 @@
 
 #include "dfx_define.h"
 #include "dfx_log.h"
-
-static int ReadFileDescriptorFromSocket(int socket)
-{
-    struct msghdr msg = { 0 };
-    char messageBuffer[SOCKET_BUFFER_SIZE];
-    struct iovec io = {
-        .iov_base = messageBuffer,
-        .iov_len = sizeof(messageBuffer)
-    };
-    msg.msg_iov = &io;
-    msg.msg_iovlen = 1;
-
-    char controlBuffer[SOCKET_BUFFER_SIZE];
-    msg.msg_control = controlBuffer;
-    msg.msg_controllen = sizeof(controlBuffer);
-
-    if (recvmsg(socket, &msg, 0) < 0) {
-        DfxLogError("Failed to receive message\n");
-        return -1;
-    }
-
-    struct cmsghdr *cmsg = CMSG_FIRSTHDR(&msg);
-    if (cmsg == nullptr || cmsg->cmsg_len != CMSG_LEN(sizeof(int))) {
-        DfxLogError("Invalid message\n");
-        return -1;
-    }
-
-    unsigned char *data = CMSG_DATA(cmsg);
-    if (data == nullptr) {
-        return -1;
-    }
-    return *(reinterpret_cast<int *>(data));
-}
 
 bool ReadStringFromFile(const char *path, char *buf, size_t len)
 {
@@ -133,44 +101,15 @@ int32_t RequestLogFileDescriptor(struct FaultLoggerdRequest *request)
 
 int32_t RequestFileDescriptorEx(const struct FaultLoggerdRequest *request)
 {
-    int sockfd;
-    struct sockaddr_un server;
-    const int32_t SOCKET_TIMEOUT = 5;
-    struct timeval timeout = {
-        SOCKET_TIMEOUT,
-        0
-    };
-    void* pTimeout = &timeout;
     if (request == nullptr) {
         DfxLogError("nullptr request");
         return -1;
     }
 
-    if ((sockfd = socket(AF_LOCAL, SOCK_STREAM, 0)) < 0) {
-        DfxLogError("client socket error");
-        return -1;
-    }
-    int setSocketOptRet = setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, \
-        static_cast<const char*>(pTimeout), sizeof(timeout));
-    if (setSocketOptRet != 0) {
-        DfxLogError("setSocketOptRet error");
-    }
-    errno_t err = memset_s(&server, sizeof(server), 0, sizeof(server));
-    if (err != EOK) {
-        DfxLogError("%s :: memset_s server failed..", __func__);
-    }
-    server.sun_family = AF_LOCAL;
-    if (strncpy_s(server.sun_path, sizeof(server.sun_path),
-        FAULTLOGGERD_SOCK_PATH, strlen(FAULTLOGGERD_SOCK_PATH)) != 0) {
-        DfxLogError("Failed to set sock path.");
-        close(sockfd);
-        return -1;
-    }
-
-    int len = (int)(offsetof(struct sockaddr_un, sun_path) + strlen(server.sun_path) + 1);
-    if (connect(sockfd, reinterpret_cast<struct sockaddr *>(&server), len) < 0) {
-        DfxLogError("RequestFileDescriptorEx :: connect error");
-        close(sockfd);
+    int sockfd;
+    const int32_t SOCKET_TIMEOUT = 5;
+    if (!StartConnect(sockfd, FAULTLOGGERD_SOCK_PATH, strlen(FAULTLOGGERD_SOCK_PATH), SOCKET_TIMEOUT)) {
+        DfxLogError("StartConnect failed");
         return -1;
     }
 
@@ -185,101 +124,40 @@ static FaultLoggerCheckPermissionResp SendUidToServer(int sockfd)
 {
     FaultLoggerCheckPermissionResp mRsp = FaultLoggerCheckPermissionResp::CHECK_PERMISSION_REJECT;
 
-    do {
-        struct msghdr msgh;
-        msgh.msg_name = nullptr;
-        msgh.msg_namelen = 0;
+    int data = 12345;
+    if (!SendMsgIovToSocket(sockfd, reinterpret_cast<void *>(&data), sizeof(data))) {
+        DfxLogError("%s :: Failed to sendmsg.", __func__);
+        return mRsp;
+    }
 
-        /* On Linux, we must transmit at least 1 byte of real data in
-           order to send ancillary data */
-
-        int data = 12345;
-        /* Data is optionally taken from command line */
-        struct iovec iov;
-        msgh.msg_iov = &iov;
-        msgh.msg_iovlen = 1;
-        iov.iov_base = &data;
-        iov.iov_len = sizeof(data);
-
-        /* Don't construct an explicit credentials structure. (It is not
-           necessary to do so, if we just want the receiver to receive
-           our real credentials.) */
-        msgh.msg_control = nullptr;
-        msgh.msg_controllen = 0;
-
-        if (sendmsg(sockfd, &msgh, 0) < 0) {
-            DfxLogError("Failed to send uid to server.");
-            break;
-        }
-
-        char recvbuf[SOCKET_BUFFER_SIZE] = {'\0'};
-        ssize_t count = recv(sockfd, recvbuf, sizeof(recvbuf), 0);
-        if (count < 0) {
-            DfxLogError("Failed to recv uid check result from server.");
-            break;
-        }
-
-        mRsp = (FaultLoggerCheckPermissionResp)atoi(recvbuf);
-    } while (false);
-
+    char recvbuf[SOCKET_BUFFER_SIZE] = {'\0'};
+    ssize_t count = recv(sockfd, recvbuf, sizeof(recvbuf), 0);
+    if (count < 0) {
+        DfxLogError("%s :: Failed to recv.", __func__);
+        return mRsp;
+    }
+    
+    mRsp = (FaultLoggerCheckPermissionResp)atoi(recvbuf);
     return mRsp;
 }
 
 bool CheckConnectStatus()
 {
     int sockfd = -1;
-    bool check_status = false;
-    if ((sockfd = socket(AF_LOCAL, SOCK_STREAM, 0)) < 0) {
-        return false;
+    if (StartConnect(sockfd, FAULTLOGGERD_SOCK_PATH, strlen(FAULTLOGGERD_SOCK_PATH), -1)) {
+        close(sockfd);
+        return true;
     }
-    do {
-        struct sockaddr_un server;
-        errno_t ret = memset_s(&server, sizeof(server), 0, sizeof(server));
-        if (ret != EOK) {
-            DfxLogError("memset_s failed, err = %d.", (int)ret);
-            break;
-        }
-        server.sun_family = AF_LOCAL;
-        if (strncpy_s(server.sun_path, sizeof(server.sun_path),
-            FAULTLOGGERD_SOCK_PATH, strlen(FAULTLOGGERD_SOCK_PATH)) != 0) {
-            break;
-        }
-
-        int len = (int)(offsetof(struct sockaddr_un, sun_path) + strlen(server.sun_path) + 1);
-        int connect_status = connect(sockfd, reinterpret_cast<struct sockaddr *>(&server), len);
-        if (connect_status == 0) {
-            check_status = true;
-        }
-    } while (false);
-    close(sockfd);
-    return check_status;
+    return false;
 }
 
 static bool SendRequestToServer(const FaultLoggerdRequest &request)
 {
     int sockfd = -1;
     bool resRsp = false;
-    if ((sockfd = socket(AF_LOCAL, SOCK_STREAM, 0)) < 0) {
-        return resRsp;
-    }
-
     do {
-        struct sockaddr_un server;
-        char ControlBuffer[SOCKET_BUFFER_SIZE];
-
-        errno_t ret = memset_s(&server, sizeof(server), 0, sizeof(server));
-        if (ret != EOK) {
-            DfxLogError("memset_s failed, err = %d.", (int)ret);
-            break;
-        }
-        server.sun_family = AF_LOCAL;
-        if (strncpy_s(server.sun_path, sizeof(server.sun_path),
-            FAULTLOGGERD_SOCK_PATH, strlen(FAULTLOGGERD_SOCK_PATH)) != 0) {
-            break;
-        }
-
-        int len = (int)(offsetof(struct sockaddr_un, sun_path) + strlen(server.sun_path) + 1);
-        if (connect(sockfd, reinterpret_cast<struct sockaddr *>(&server), len) < 0) {
+        if (!StartConnect(sockfd, FAULTLOGGERD_SOCK_PATH, strlen(FAULTLOGGERD_SOCK_PATH), -1)) {
+            DfxLogError("StartConnect failed.");
             break;
         }
 
@@ -287,18 +165,20 @@ static bool SendRequestToServer(const FaultLoggerdRequest &request)
             break;
         }
 
-        ret = memset_s(&ControlBuffer, sizeof(ControlBuffer), 0, SOCKET_BUFFER_SIZE);
-        if (ret != EOK) {
-            DfxLogError("memset_s failed, err = %d.", (int)ret);
+        char ControlBuffer[SOCKET_BUFFER_SIZE];
+        errno_t err = memset_s(&ControlBuffer, sizeof(ControlBuffer), 0, SOCKET_BUFFER_SIZE);
+        if (err != EOK) {
+            DfxLogError("memset_s failed, err = %d.", (int)err);
             break;
         }
-        if (read(sockfd, ControlBuffer, sizeof(ControlBuffer) - 1) != (ssize_t)strlen(FAULTLOGGER_DAEMON_RESP)) {
+		
+        int nread = read(sockfd, ControlBuffer, sizeof(ControlBuffer) - 1);
+        if (nread != (ssize_t)strlen(FAULTLOGGER_DAEMON_RESP)) {
+            DfxLogError("nread: %d.", nread);
             break;
         }
 
         FaultLoggerCheckPermissionResp mRsp = SendUidToServer(sockfd);
-        close(sockfd);
-
         if ((FaultLoggerCheckPermissionResp::CHECK_PERMISSION_PASS == mRsp)
                 || (FaultLoggerSdkDumpResp::SDK_DUMP_PASS == (FaultLoggerSdkDumpResp)mRsp)) {
             resRsp = true;
@@ -313,7 +193,6 @@ static bool SendRequestToServer(const FaultLoggerdRequest &request)
 bool RequestCheckPermission(int32_t pid)
 {
     DfxLogInfo("RequestCheckPermission :: %d.", pid);
-
     if (pid <= 0) {
         return false;
     }
@@ -333,7 +212,6 @@ bool RequestCheckPermission(int32_t pid)
 bool RequestSdkDump(int32_t pid, int32_t tid)
 {
     DfxLogInfo("RequestSdkDump :: pid(%d), tid(%d).", pid, tid);
-
     if (pid <= 0 || tid < 0) {
         return false;
     }
@@ -366,27 +244,9 @@ void RequestPrintTHilog(const char *msg, int length)
     request.clientType = (int32_t)FaultLoggerClientType::PRINT_T_HILOG_CLIENT;
 
     int sockfd = -1;
-    if ((sockfd = socket(AF_LOCAL, SOCK_STREAM, 0)) < 0) {
-        return;
-    }
-
     do {
-        struct sockaddr_un server;
-        char ControlBuffer[SOCKET_BUFFER_SIZE];
-
-        errno_t ret = memset_s(&server, sizeof(server), 0, sizeof(server));
-        if(ret != EOK) {
-            DfxLogError("memset_s failed, err = %d.", (int)ret);
-            break;
-        }
-        server.sun_family = AF_LOCAL;
-        if (strncpy_s(server.sun_path, sizeof(server.sun_path),
-            FAULTLOGGERD_SOCK_PATH, strlen(FAULTLOGGERD_SOCK_PATH)) != 0) {
-            break;
-        }
-
-        int len = (int)(offsetof(struct sockaddr_un, sun_path) + strlen(server.sun_path) + 1);
-        if (connect(sockfd, reinterpret_cast<struct sockaddr *>(&server), len) < 0) {
+        if (!StartConnect(sockfd, FAULTLOGGERD_SOCK_PATH, strlen(FAULTLOGGERD_SOCK_PATH), -1)) {
+            DfxLogError("StartConnect failed");
             break;
         }
 
@@ -394,16 +254,20 @@ void RequestPrintTHilog(const char *msg, int length)
             break;
         }
 
-        ret = memset_s(&ControlBuffer, sizeof(ControlBuffer), 0, SOCKET_BUFFER_SIZE);
-        if (ret != EOK) {
-            DfxLogError("memset_s failed, err = %d.", (int)ret);
+        char ControlBuffer[SOCKET_BUFFER_SIZE];
+        errno_t err = memset_s(&ControlBuffer, sizeof(ControlBuffer), 0, SOCKET_BUFFER_SIZE);
+        if (err != EOK) {
+            DfxLogError("memset_s failed, err = %d.", (int)err);
             break;
         }
         if (read(sockfd, ControlBuffer, sizeof(ControlBuffer) - 1) != \
             static_cast<long>(strlen(FAULTLOGGER_DAEMON_RESP))) {
             break;
         }
-        if (write(sockfd, msg, strlen(msg)) != static_cast<long>(strlen(msg))) {
+		
+        int nwrite = write(sockfd, msg, strlen(msg));
+        if (nwrite != static_cast<long>(strlen(msg))) {
+            DfxLogError("nwrite: %d.", nwrite);
             break;
         }
     } while (false);
