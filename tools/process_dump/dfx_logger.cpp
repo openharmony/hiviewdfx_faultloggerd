@@ -35,6 +35,7 @@ int WriteLog(int32_t fd, const char *format, ...)
     va_start(args, format);
     ret = vsnprintf_s(buf, sizeof(buf), sizeof(buf) - 1, format, args);
     if (ret == -1) {
+        va_end(args);
         return -1;
     }
     

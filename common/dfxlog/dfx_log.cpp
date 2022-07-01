@@ -34,7 +34,7 @@ enum class LOG_LEVEL_CLASS {
 static const int MAX_LOG_SIZE = 1024;
 static const int LOG_BUF_LEN = 1024;
 
-static const LOG_LEVEL_CLASS LOG_LEVEL = LOG_LEVEL_CLASS::LOG_LEVEL_INFO;
+static const LOG_LEVEL_CLASS LOG_LEVEL = LOG_LEVEL_CLASS::LOG_LEVEL_DBG;
 #ifndef DFX_LOG_USE_HILOG_BASE
 static const OHOS::HiviewDFX::HiLogLabel g_LOG_LABEL = {LOG_CORE, 0xD002D20, "DfxFaultLogger"};
 #endif
