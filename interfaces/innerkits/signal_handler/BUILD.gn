@@ -21,6 +21,7 @@ if (defined(ohos_lite)) {
       "-fPIC",
       "-Wall",
       "-fno-builtin",
+      "-DDFX_NO_PRINT_LOG",
     ]
 
     include_dirs = [
@@ -83,6 +84,7 @@ if (defined(ohos_lite)) {
     public_configs = [ ":dfx_signal_handler_config" ]
 
     cflags = [
+      "-DDFX_LOG_USE_HILOG_BASE",
       "-DDFX_SIGNALHANDLER_TAG",
       "-DCRASH_LOCAL_HANDLER",
     ]
