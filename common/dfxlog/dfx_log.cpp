@@ -104,7 +104,7 @@ int DfxLogDebug(const char *format, ...)
     va_end(args);
 
 #ifdef INIT_DMESG
-    LogToDmesg(logLevel, buf);
+    LogToDmesg(LOG_LEVEL_CLASS::LOG_LEVEL_DBG, buf);
 #endif
     return ret;
 }
@@ -130,7 +130,7 @@ int DfxLogInfo(const char *format, ...)
     va_end(args);
 
 #ifdef INIT_DMESG
-    LogToDmesg(logLevel, buf);
+    LogToDmesg(LOG_LEVEL_CLASS::LOG_LEVEL_INFO, buf);
 #endif
     return ret;
 }
@@ -156,7 +156,7 @@ int DfxLogWarn(const char *format, ...)
     va_end(args);
 
 #ifdef INIT_DMESG
-    LogToDmesg(logLevel, buf);
+    LogToDmesg(LOG_LEVEL_CLASS::LOG_LEVEL_WARN, buf);
 #endif
     return ret;
 }
@@ -182,7 +182,7 @@ int DfxLogError(const char *format, ...)
     va_end(args);
 
 #ifdef INIT_DMESG
-    LogToDmesg(logLevel, buf);
+    LogToDmesg(LOG_LEVEL_CLASS::LOG_LEVEL_ERR, buf);
 #endif
     return ret;
 }
@@ -192,7 +192,7 @@ int DfxLogFatal(const char *format, ...)
 #ifdef DFX_NO_PRINT_LOG
     return 0;
 #endif
-    if (LOG_LEVEL_CLASS::LOG_LEVEL_DBG < LOG_LEVEL) {
+    if (LOG_LEVEL_CLASS::LOG_LEVEL_FATAL < LOG_LEVEL) {
         return 0;
     }
 
@@ -208,7 +208,7 @@ int DfxLogFatal(const char *format, ...)
     va_end(args);
 
 #ifdef INIT_DMESG
-    LogToDmesg(logLevel, buf);
+    LogToDmesg(LOG_LEVEL_CLASS::LOG_LEVEL_FATAL, buf);
 #endif
     return ret;
 }
