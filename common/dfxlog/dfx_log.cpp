@@ -125,7 +125,7 @@ int DfxLogInfo(const char *format, ...)
     int ret;
     va_list args;
     va_start(args, format);
-    ret = DfxLog(LOG_LEVEL_CLASS::LOG_LEVEL_DBG, format, args);
+    ret = DfxLog(LOG_LEVEL_CLASS::LOG_LEVEL_INFO, format, args);
     va_end(args);
 
     return ret;
@@ -136,7 +136,7 @@ int DfxLogWarn(const char *format, ...)
     int ret;
     va_list args;
     va_start(args, format);
-    ret = DfxLog(LOG_LEVEL_CLASS::LOG_LEVEL_DBG, format, args);
+    ret = DfxLog(LOG_LEVEL_CLASS::LOG_LEVEL_WARN, format, args);
     va_end(args);
 
     return ret;
@@ -147,7 +147,7 @@ int DfxLogError(const char *format, ...)
     int ret;
     va_list args;
     va_start(args, format);
-    ret = DfxLog(LOG_LEVEL_CLASS::LOG_LEVEL_DBG, format, args);
+    ret = DfxLog(LOG_LEVEL_CLASS::LOG_LEVEL_ERROR, format, args);
     va_end(args);
 
     return ret;
@@ -158,7 +158,7 @@ int DfxLogFatal(const char *format, ...)
     int ret;
     va_list args;
     va_start(args, format);
-    ret = DfxLog(LOG_LEVEL_CLASS::LOG_LEVEL_DBG, format, args);
+    ret = DfxLog(LOG_LEVEL_CLASS::LOG_LEVEL_FATAL, format, args);
     va_end(args);
 
     return ret;
