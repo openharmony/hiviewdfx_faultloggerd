@@ -147,7 +147,7 @@ int DfxLogError(const char *format, ...)
     int ret;
     va_list args;
     va_start(args, format);
-    ret = DfxLog(LOG_LEVEL_CLASS::LOG_LEVEL_ERROR, format, args);
+    ret = DfxLog(LOG_LEVEL_CLASS::LOG_LEVEL_ERR, format, args);
     va_end(args);
 
     return ret;
