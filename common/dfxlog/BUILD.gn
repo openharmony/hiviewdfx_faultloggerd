@@ -46,7 +46,9 @@ if (defined(ohos_lite)) {
 } else {
   config("dfx_log_config") {
     visibility = [ ":*" ]
-    include_dirs = [ "." ]
+    include_dirs = [ ".",
+    "//utils/native/base/include",
+    ]
   }
   ohos_static_library("static_common_log") {
     sources = [ "dfx_log.cpp" ]

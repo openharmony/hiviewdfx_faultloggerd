@@ -31,7 +31,6 @@ enum class LOG_LEVEL_CLASS {
     LOG_LEVEL_OFF
 };
 
-static const int MAX_LOG_SIZE = 1024;
 static const int LOG_BUF_LEN = 1024;
 
 static const LOG_LEVEL_CLASS LOG_LEVEL = LOG_LEVEL_CLASS::LOG_LEVEL_DBG;
@@ -42,6 +41,7 @@ static const OHOS::HiviewDFX::HiLogLabel g_LOG_LABEL = {LOG_CORE, 0xD002D20, "Df
 #ifdef INIT_DMESG
 static int g_fd = -1;
 static const int LEVEL_DEBUG_OFFSET = 3;
+static const int MAX_LOG_SIZE = 1024;
 void OpenLogDevice(void)
 {
     int fd = open("/dev/kmsg", O_WRONLY | O_CLOEXEC, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP);
