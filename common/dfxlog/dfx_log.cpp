@@ -78,32 +78,6 @@ void LogToDmesg(LOG_LEVEL_CLASS logLevel, const char *info)
 }
 #endif
 
-namespace {
-int DfxLog(LOG_LEVEL_CLASS logLevel, const char *format, va_list args)
-{
-#ifdef DFX_NO_PRINT_LOG
-    return 0;
-#endif
-    if (logLevel < LOG_LEVEL) {
-        return 0;
-    }
-
-    int ret;
-    char buf[LOG_BUF_LEN] = {0};
-    ret = vsnprintf_s(buf, sizeof(buf), sizeof(buf) - 1, format, args);
-#ifdef DFX_LOG_USE_HILOG_BASE
-    HILOG_BASE_DEBUG(LOG_CORE, "%{public}s", buf);
-#else
-    OHOS::HiviewDFX::HiLog::Debug(g_LOG_LABEL, "%{public}s", buf);
-#endif
-
-#ifdef INIT_DMESG
-    LogToDmesg(logLevel, buf);
-#endif
-    return ret;
-}
-}
-
 int checkDebugLevel()
 {
     return LOG_LEVEL_CLASS::LOG_LEVEL_DBG >= LOG_LEVEL ? 1 : 0;
@@ -111,55 +85,131 @@ int checkDebugLevel()
 
 int DfxLogDebug(const char *format, ...)
 {
+#ifdef DFX_NO_PRINT_LOG
+    return 0;
+#endif
+    if (LOG_LEVEL_CLASS::LOG_LEVEL_DBG < LOG_LEVEL) {
+        return 0;
+    }
+
     int ret;
+    char buf[LOG_BUF_LEN] = {0};
     va_list args;
-    va_start(args, format);
-    ret = DfxLog(LOG_LEVEL_CLASS::LOG_LEVEL_DBG, format, args);
+    ret = vsnprintf_s(buf, sizeof(buf), sizeof(buf) - 1, format, args);
+#ifdef DFX_LOG_USE_HILOG_BASE
+    HILOG_BASE_DEBUG(LOG_CORE, "%{public}s", buf);
+#else
+    OHOS::HiviewDFX::HiLog::Debug(g_LOG_LABEL, "%{public}s", buf);
+#endif
     va_end(args);
 
+#ifdef INIT_DMESG
+    LogToDmesg(logLevel, buf);
+#endif
     return ret;
 }
 
 int DfxLogInfo(const char *format, ...)
 {
+#ifdef DFX_NO_PRINT_LOG
+    return 0;
+#endif
+    if (LOG_LEVEL_CLASS::LOG_LEVEL_INFO < LOG_LEVEL) {
+        return 0;
+    }
+
     int ret;
+    char buf[LOG_BUF_LEN] = {0};
     va_list args;
-    va_start(args, format);
-    ret = DfxLog(LOG_LEVEL_CLASS::LOG_LEVEL_INFO, format, args);
+    ret = vsnprintf_s(buf, sizeof(buf), sizeof(buf) - 1, format, args);
+#ifdef DFX_LOG_USE_HILOG_BASE
+    HILOG_BASE_INFO(LOG_CORE, "%{public}s", buf);
+#else
+    OHOS::HiviewDFX::HiLog::Info(g_LOG_LABEL, "%{public}s", buf);
+#endif
     va_end(args);
 
+#ifdef INIT_DMESG
+    LogToDmesg(logLevel, buf);
+#endif
     return ret;
 }
 
 int DfxLogWarn(const char *format, ...)
 {
+#ifdef DFX_NO_PRINT_LOG
+    return 0;
+#endif
+    if (LOG_LEVEL_CLASS::LOG_LEVEL_WARN < LOG_LEVEL) {
+        return 0;
+    }
+
     int ret;
+    char buf[LOG_BUF_LEN] = {0};
     va_list args;
-    va_start(args, format);
-    ret = DfxLog(LOG_LEVEL_CLASS::LOG_LEVEL_WARN, format, args);
+    ret = vsnprintf_s(buf, sizeof(buf), sizeof(buf) - 1, format, args);
+#ifdef DFX_LOG_USE_HILOG_BASE
+    HILOG_BASE_WARN(LOG_CORE, "%{public}s", buf);
+#else
+    OHOS::HiviewDFX::HiLog::Warn(g_LOG_LABEL, "%{public}s", buf);
+#endif
     va_end(args);
 
+#ifdef INIT_DMESG
+    LogToDmesg(logLevel, buf);
+#endif
     return ret;
 }
 
 int DfxLogError(const char *format, ...)
 {
+#ifdef DFX_NO_PRINT_LOG
+    return 0;
+#endif
+    if (LOG_LEVEL_CLASS::LOG_LEVEL_ERR < LOG_LEVEL) {
+        return 0;
+    }
+
     int ret;
+    char buf[LOG_BUF_LEN] = {0};
     va_list args;
-    va_start(args, format);
-    ret = DfxLog(LOG_LEVEL_CLASS::LOG_LEVEL_ERR, format, args);
+    ret = vsnprintf_s(buf, sizeof(buf), sizeof(buf) - 1, format, args);
+#ifdef DFX_LOG_USE_HILOG_BASE
+    HILOG_BASE_ERROR(LOG_CORE, "%{public}s", buf);
+#else
+    OHOS::HiviewDFX::HiLog::Error(g_LOG_LABEL, "%{public}s", buf);
+#endif
     va_end(args);
 
+#ifdef INIT_DMESG
+    LogToDmesg(logLevel, buf);
+#endif
     return ret;
 }
 
 int DfxLogFatal(const char *format, ...)
 {
+#ifdef DFX_NO_PRINT_LOG
+    return 0;
+#endif
+    if (LOG_LEVEL_CLASS::LOG_LEVEL_DBG < LOG_LEVEL) {
+        return 0;
+    }
+
     int ret;
+    char buf[LOG_BUF_LEN] = {0};
     va_list args;
-    va_start(args, format);
-    ret = DfxLog(LOG_LEVEL_CLASS::LOG_LEVEL_FATAL, format, args);
+    ret = vsnprintf_s(buf, sizeof(buf), sizeof(buf) - 1, format, args);
+#ifdef DFX_LOG_USE_HILOG_BASE
+    HILOG_BASE_FATAL(LOG_CORE, "%{public}s", buf);
+#else
+    OHOS::HiviewDFX::HiLog::Fatal(g_LOG_LABEL, "%{public}s", buf);
+#endif
     va_end(args);
 
+#ifdef INIT_DMESG
+    LogToDmesg(logLevel, buf);
+#endif
     return ret;
 }
+
