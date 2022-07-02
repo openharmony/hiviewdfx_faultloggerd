@@ -17,6 +17,7 @@
 #include <cstdarg>
 #include <cstdio>
 #include <securec.h>
+#include <iostream>
 #include <unistd.h>
 #include <fcntl.h>
 
@@ -95,6 +96,7 @@ int DfxLogDebug(const char *format, ...)
     int ret;
     char buf[LOG_BUF_LEN] = {0};
     va_list args;
+    va_start(args, format);
     ret = vsnprintf_s(buf, sizeof(buf), sizeof(buf) - 1, format, args);
 #ifdef DFX_LOG_USE_HILOG_BASE
     HILOG_BASE_DEBUG(LOG_CORE, "%{public}s", buf);
@@ -121,6 +123,7 @@ int DfxLogInfo(const char *format, ...)
     int ret;
     char buf[LOG_BUF_LEN] = {0};
     va_list args;
+    va_start(args, format);
     ret = vsnprintf_s(buf, sizeof(buf), sizeof(buf) - 1, format, args);
 #ifdef DFX_LOG_USE_HILOG_BASE
     HILOG_BASE_INFO(LOG_CORE, "%{public}s", buf);
@@ -147,6 +150,7 @@ int DfxLogWarn(const char *format, ...)
     int ret;
     char buf[LOG_BUF_LEN] = {0};
     va_list args;
+    va_start(args, format);
     ret = vsnprintf_s(buf, sizeof(buf), sizeof(buf) - 1, format, args);
 #ifdef DFX_LOG_USE_HILOG_BASE
     HILOG_BASE_WARN(LOG_CORE, "%{public}s", buf);
@@ -173,6 +177,7 @@ int DfxLogError(const char *format, ...)
     int ret;
     char buf[LOG_BUF_LEN] = {0};
     va_list args;
+    va_start(args, format);
     ret = vsnprintf_s(buf, sizeof(buf), sizeof(buf) - 1, format, args);
 #ifdef DFX_LOG_USE_HILOG_BASE
     HILOG_BASE_ERROR(LOG_CORE, "%{public}s", buf);
@@ -199,6 +204,7 @@ int DfxLogFatal(const char *format, ...)
     int ret;
     char buf[LOG_BUF_LEN] = {0};
     va_list args;
+    va_start(args, format);
     ret = vsnprintf_s(buf, sizeof(buf), sizeof(buf) - 1, format, args);
 #ifdef DFX_LOG_USE_HILOG_BASE
     HILOG_BASE_FATAL(LOG_CORE, "%{public}s", buf);
