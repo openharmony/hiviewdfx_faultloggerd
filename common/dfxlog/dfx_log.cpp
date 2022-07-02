@@ -17,7 +17,6 @@
 #include <cstdarg>
 #include <cstdio>
 #include <securec.h>
-#include <iostream>
 #include <unistd.h>
 #include <fcntl.h>
 
@@ -119,7 +118,7 @@ int DfxLogInfo(const char *format, ...)
     if (LOG_LEVEL_CLASS::LOG_LEVEL_INFO < LOG_LEVEL) {
         return 0;
     }
-
+    
     int ret;
     char buf[LOG_BUF_LEN] = {0};
     va_list args;
