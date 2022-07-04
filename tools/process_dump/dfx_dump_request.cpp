@@ -23,7 +23,7 @@
 #include <cstring>
 #include <unistd.h>
 #include <securec.h>
-#include "dfx_log.h"
+#include "dfx_logger.h"
 
 namespace OHOS {
 namespace HiviewDFX {

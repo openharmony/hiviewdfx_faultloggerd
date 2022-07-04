@@ -20,7 +20,7 @@
 #include "dfx_regs.h"
 
 #include "dfx_define.h"
-#include "dfx_log.h"
+#include "dfx_logger.h"
 
 namespace OHOS {
 namespace HiviewDFX {
