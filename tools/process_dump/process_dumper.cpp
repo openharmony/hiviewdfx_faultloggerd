@@ -98,7 +98,7 @@ void ProcessDumper::LoopPrintBackTraceInfo()
 
 void ProcessDumper::PrintDumpProcessMsg(std::string msg)
 {
-    DfxLogDebug("%s :: msg(%s)", __func__, msg.c_str());
+    DfxLogInfo("%s :: msg(%s)", __func__, msg.c_str());
     backTraceRingBuffer_.Append(msg);
     backTracePrintCV.notify_one();
 }
