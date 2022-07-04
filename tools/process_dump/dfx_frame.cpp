@@ -275,7 +275,7 @@ std::string PrintFaultStacks(std::vector<std::shared_ptr<DfxFrame>> frames)
         }
         stackString = stackString + frames[i]->PrintFaultStack(i);
     }
-    
+    DfxLogError("STACK: {%s}", stackString.c_str());
     return stackString;
 }
 } // namespace HiviewDFX

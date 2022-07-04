@@ -441,9 +441,7 @@ std::string DfxThread::PrintThreadRegisterByConfig()
 
 std::string DfxThread::PrintThreadFaultStackByConfig()
 {
-    DfxLogInfo("PrintThreadFaultStackByConfig config displayFaultStack:%d, isCrashThread_:%d", DfxConfig::GetInstance().GetDisplayFaultStack(), isCrashThread_);
     if (DfxConfig::GetInstance().GetDisplayFaultStack() && isCrashThread_) {
-        DfxLogInfo("print faultstack");
         return "FaultStack:\n" + PrintFaultStacks(dfxFrames_) + "\n";
     } else {
         DfxLogDebug("hidden faultStack");
