@@ -34,11 +34,12 @@ int WriteLog(int32_t fd, const char *format, ...)
     va_list args;
     va_start(args, format);
     ret = vsnprintf_s(buf, sizeof(buf), sizeof(buf) - 1, format, args);
+    DfxLogInfo("writelog: ret 1111: %d\n", ret);
     if (ret == -1) {
         va_end(args);
         return -1;
     }
-    
+    DfxLogInfo("writelog: fd : %d\n", fd);
     if (fd == -1) {
         ret = DfxLogDebug(format, args);
     }
@@ -50,6 +51,7 @@ int WriteLog(int32_t fd, const char *format, ...)
 
     if (fd != -1) {
         ret = dprintf(fd, "%s", buf);
+        DfxLogInfo("writelog: ret 2222: %d\n", ret);
         if (ret < 0) {
             DfxLogError("WriteLog :: write msg(%s) to fd(%d) failed, ret(%d).", buf, fd, ret);
         } else if (fd != STDOUT_FILENO && fsync(fd) < 0) {
