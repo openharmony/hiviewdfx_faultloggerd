@@ -98,7 +98,7 @@ void ProcessDumper::LoopPrintBackTraceInfo()
 
 void ProcessDumper::PrintDumpProcessMsg(std::string msg)
 {
-    DfxLogInfo("%s :: msg(%s)", __func__, msg.c_str());
+    DfxLogDebug("%s :: msg(%s)", __func__, msg.c_str());
     backTraceRingBuffer_.Append(msg);
     backTracePrintCV.notify_one();
 }
@@ -213,7 +213,6 @@ void ProcessDumper::DumpProcessWithSignalContext(std::shared_ptr<DfxProcess> &pr
     }
 
     keyThread->SetIsCrashThread(true);
-    DfxLogInfo("SetIsCrashThread true");
     if ((keyThread->GetThreadName()).empty()) {
         keyThread->SetThreadName(storeThreadName);
     }
@@ -227,13 +226,10 @@ void ProcessDumper::DumpProcessWithSignalContext(std::shared_ptr<DfxProcess> &pr
     if ((process->GetProcessName()).empty()) {
         process->SetProcessName(storeProcessName);
     }
-    DfxLogInfo("isCrashRequest %d, signo:%d", isCrashRequest, request->GetSiginfo().si_signo);
     if (isCrashRequest) {
-        DfxLogInfo("SetIsSignalDump: false");
         process->SetIsSignalDump(false);
         PrintDumpProcessMsg("Timestamp:" + GetCurrentTimeStr(request->GetTimeStamp()));
     } else {
-        DfxLogInfo("SetIsSignalDump: true");
         process->SetIsSignalDump(true);
         PrintDumpProcessMsg("Timestamp:" + GetCurrentTimeStr());
     }
@@ -282,7 +278,6 @@ void ProcessDumper::DumpProcessWithPidTid(std::shared_ptr<DfxProcess> &process, 
     }
 
     process->SetIsSignalDump(true);
-    DfxLogInfo("SetIsSignalDump true, DumpProcessWithPidTid");
     process->SetIsSignalHdlr(false);
     InitPrintThread(false, nullptr, process);
 

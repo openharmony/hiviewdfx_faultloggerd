@@ -90,7 +90,6 @@ bool DfxUnwindRemote::UnwindProcess(std::shared_ptr<DfxProcess> process)
 
     size_t index = 0;
     for (auto thread : threads) {
-        DfxLogInfo("for one thread .....");
         if (index == 1) {
             process->PrintThreadsHeaderByConfig();
         }
@@ -198,7 +197,6 @@ bool DfxUnwindRemote::DfxUnwindRemoteDoUnwindStep(size_t const & index,
 
 bool DfxUnwindRemote::UnwindThread(std::shared_ptr<DfxProcess> process, std::shared_ptr<DfxThread> thread)
 {
-    DfxLogWarn("NULL thread needs unwind111111.");
     if (!thread) {
         DfxLogWarn("NULL thread needs unwind.");
         return false;
@@ -260,18 +258,14 @@ bool DfxUnwindRemote::UnwindThread(std::shared_ptr<DfxProcess> process, std::sha
     } while ((unwRet > 0) && (index < BACK_STACK_MAX_STEPS));
     thread->SetThreadUnwStopReason(unwRet);
     _UPT_destroy(context);
-    DfxLogWarn("GetIsSignalHdlr:%d, GetIsCrashThread:%d, GetIsSignalDump:%d", process->GetIsSignalHdlr(), thread->GetIsCrashThread(), process->GetIsSignalDump());
     if (process->GetIsSignalHdlr() && thread->GetIsCrashThread() && (process->GetIsSignalDump() == false)) {
         OHOS::HiviewDFX::ProcessDumper::GetInstance().PrintDumpProcessMsg(regs->PrintRegs());
         std::shared_ptr<DfxElfMaps> maps = process->GetMaps();
         if (DfxConfig::GetInstance().GetDisplayFaultStack()) {
             thread->CreateFaultStack(maps);
-            DfxLogWarn("YYYYYYYYYY.");
             OHOS::HiviewDFX::ProcessDumper::GetInstance().PrintDumpProcessMsg(\
                 thread->PrintThreadFaultStackByConfig() + "\n");
         }
-    } else {
-        DfxLogWarn("NNNNNNNN.");
     }
     return true;
 }
