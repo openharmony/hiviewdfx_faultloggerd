@@ -147,6 +147,7 @@ std::shared_ptr<DfxFrame> DfxThread::GetAvaliableFrame()
 
 void DfxThread::PrintThread(const int32_t fd, bool isSignalDump)
 {
+    DfxLogWarn("PrintThread");
     if (dfxFrames_.size() == 0) {
         DfxLogWarn("No frame print for tid %d.", tid_);
         return;
@@ -154,8 +155,11 @@ void DfxThread::PrintThread(const int32_t fd, bool isSignalDump)
 
     PrintThreadBacktraceByConfig(fd);
     if (isSignalDump == false) {
+        DfxLogWarn("isSignalDump = true");
         PrintThreadRegisterByConfig();
         PrintThreadFaultStackByConfig();
+    } else {
+        DfxLogWarn("isSignalDump = false");
     }
 }
 
@@ -437,7 +441,9 @@ std::string DfxThread::PrintThreadRegisterByConfig()
 
 std::string DfxThread::PrintThreadFaultStackByConfig()
 {
+    DfxLogInfo("PrintThreadFaultStackByConfig config displayFaultStack:%d, isCrashThread_:%d", DfxConfig::GetInstance().GetDisplayFaultStack(), isCrashThread_);
     if (DfxConfig::GetInstance().GetDisplayFaultStack() && isCrashThread_) {
+        DfxLogInfo("print faultstack");
         return "FaultStack:\n" + PrintFaultStacks(dfxFrames_) + "\n";
     } else {
         DfxLogDebug("hidden faultStack");

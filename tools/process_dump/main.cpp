@@ -166,6 +166,7 @@ static bool ParseParamters(int argc, char *argv[], bool &isSignalHdlr, OHOS::Hiv
 
 int main(int argc, char *argv[])
 {
+    DfxLogWarn("processdump main.");
 #if defined(DEBUG_PROCESS_DUMP_CRASH)
     DFX_InstallLocalSignalHandler();
 #endif
@@ -198,6 +199,6 @@ int main(int argc, char *argv[])
 
     OHOS::HiviewDFX::DfxConfig::GetInstance().ReadConfig();
     OHOS::HiviewDFX::ProcessDumper::GetInstance().Dump(isSignalHdlr, type, pid, tid);
-
+    DfxLogWarn("processdump main finish.");
     return 0;
 }

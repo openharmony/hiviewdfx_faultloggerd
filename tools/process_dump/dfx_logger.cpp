@@ -55,8 +55,6 @@ int WriteLog(int32_t fd, const char *format, ...)
         } else if (fd != STDOUT_FILENO && fsync(fd) < 0) {
             // if we write msg to normal file then try fsync, otherwise we needn't do this.
             DfxLogError("WriteLog :: fsync failed, ret(%d).", ret);
-        } else {
-            DfxLogInfo("WriteLog: fsync success.");
         }
     }
 
