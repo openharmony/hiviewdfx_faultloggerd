@@ -188,9 +188,7 @@ if (defined(ohos_lite)) {
       "//third_party/libunwind:libunwind",
     ]
 
-    external_deps = [
-      "utils_base:utils",
-    ]
+    external_deps = [ "utils_base:utils" ]
 
     part_name = "faultloggerd"
     subsystem_name = "hiviewdfx"
@@ -240,9 +238,7 @@ if (defined(ohos_lite)) {
       "//third_party/libunwind:libunwind",
     ]
 
-    external_deps = [
-      "utils_base:utils",
-    ]
+    external_deps = [ "utils_base:utils" ]
 
     install_images = [
       "system",
