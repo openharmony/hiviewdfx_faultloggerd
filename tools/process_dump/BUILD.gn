@@ -189,7 +189,6 @@ if (defined(ohos_lite)) {
     ]
 
     external_deps = [
-      "hilog_native:libhilog",
       "utils_base:utils",
     ]
 
@@ -242,7 +241,6 @@ if (defined(ohos_lite)) {
     ]
 
     external_deps = [
-      "hilog_native:libhilog",
       "utils_base:utils",
     ]
 
