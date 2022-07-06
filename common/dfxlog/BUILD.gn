@@ -66,29 +66,6 @@ if (defined(ohos_lite)) {
   ohos_static_library("static_hilog_base") {
     sources = [ "dfx_log.cpp" ]
     public_configs = [ ":dfx_log_config" ]
-    external_deps = [
-      "hilog_native:libhilog",
-      "utils_base:utils",
-    ]
-    part_name = "faultloggerd"
-    subsystem_name = "hiviewdfx"
-  }
-
-  ohos_static_library("static_hilog") {
-    sources = [ "dfx_log.cpp" ]
-    public_configs = [ ":dfx_log_config" ]
-
-    external_deps = [
-      "hilog_native:libhilog",
-      "utils_base:utils",
-    ]
-    part_name = "faultloggerd"
-    subsystem_name = "hiviewdfx"
-  }
-
-  ohos_static_library("static_no_print_log") {
-    sources = [ "dfx_log.cpp" ]
-    public_configs = [ ":dfx_log_config" ]
     defines = [ "DFX_LOG_USE_HILOG_BASE" ]
     external_deps = [
       "hilog_native:libhilog_base",
