@@ -42,8 +42,6 @@
 #include "dfx_cutil.h"
 
 static SignalHandlerFunc signalHandler = NULL;
-static pthread_mutex_t g_localHandlerMutex = PTHREAD_MUTEX_INITIALIZER;
-static int g_curSig = -1;
 
 static int g_platformSignals[] = {
     SIGABRT,
@@ -66,28 +64,13 @@ void DFX_InitDumpRequest(struct ProcessDumpRequest* request, const int sig)
 
 static void DFX_SignalHandler(int sig, siginfo_t *si, void *context)
 {
-    if (g_curSig == sig) {
-        return;
-    }
-    g_curSig = sig;
-    pthread_mutex_lock(&g_localHandlerMutex);
-    pid_t pid = getpid();
-    pid_t tid = gettid();
-    if (pid != tid) {
-        if (syscall(SYS_tgkill, pid, pid, SIGSTOP) != 0) {
-            DfxLogError("Failed to send SIGSTOP to main thread.");
-        } else {
-            DfxLogInfo("Finish sending SIGSTOP to main thread.");
-        }
-    }
     struct ProcessDumpRequest request;
     (void)memset_s(&request, sizeof(request), 0, sizeof(request));
     DFX_InitDumpRequest(&request, sig);
 
     CrashLocalHandler(&request, si, context);
 
-    g_curSig = -1;
-    pthread_mutex_unlock(&g_localHandlerMutex);
+    _exit(0);
 }
 
 void DFX_SetSignalHandlerFunc(SignalHandlerFunc func)
