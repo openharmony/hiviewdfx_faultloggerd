@@ -78,6 +78,14 @@ void LogToDmesg(LOG_LEVEL_CLASS logLevel, const char *info)
 }
 #endif
 
+void print(char* str) {
+#ifdef DFX_LOG_USE_HILOG_BASE
+    HILOG_BASE_DEBUG(LOG_CORE, "%{public}s", str);
+#else
+    OHOS::HiviewDFX::HiLog::Debug(g_LOG_LABEL, "%{public}s", str);
+#endif
+}
+
 int checkDebugLevel()
 {
     return LOG_LEVEL_CLASS::LOG_LEVEL_DBG >= LOG_LEVEL ? 1 : 0;
@@ -86,9 +94,13 @@ int checkDebugLevel()
 int DfxLogDebug(const char *format, ...)
 {
 #ifdef DFX_NO_PRINT_LOG
+print(format);
+print("no print:");
     return 0;
 #endif
     if (LOG_LEVEL_CLASS::LOG_LEVEL_DBG < LOG_LEVEL) {
+        print(format);
+print("below level:");
         return 0;
     }
 
@@ -113,9 +125,13 @@ int DfxLogDebug(const char *format, ...)
 int DfxLogInfo(const char *format, ...)
 {
 #ifdef DFX_NO_PRINT_LOG
+print(format);
+print("no print:");
     return 0;
 #endif
     if (LOG_LEVEL_CLASS::LOG_LEVEL_INFO < LOG_LEVEL) {
+        print(format);
+print("below level:");
         return 0;
     }
     
@@ -140,9 +156,13 @@ int DfxLogInfo(const char *format, ...)
 int DfxLogWarn(const char *format, ...)
 {
 #ifdef DFX_NO_PRINT_LOG
+print(format);
+print("no print:");
     return 0;
 #endif
     if (LOG_LEVEL_CLASS::LOG_LEVEL_WARN < LOG_LEVEL) {
+        print(format);
+print("below level warn:");
         return 0;
     }
 
@@ -167,9 +187,13 @@ int DfxLogWarn(const char *format, ...)
 int DfxLogError(const char *format, ...)
 {
 #ifdef DFX_NO_PRINT_LOG
+print(format);
+print("no print:");
     return 0;
 #endif
     if (LOG_LEVEL_CLASS::LOG_LEVEL_ERR < LOG_LEVEL) {
+        print(format);
+print("below level err:");
         return 0;
     }
 
@@ -194,9 +218,13 @@ int DfxLogError(const char *format, ...)
 int DfxLogFatal(const char *format, ...)
 {
 #ifdef DFX_NO_PRINT_LOG
+print(format);
+print("no print:");
     return 0;
 #endif
     if (LOG_LEVEL_CLASS::LOG_LEVEL_FATAL < LOG_LEVEL) {
+        print(format);
+print("below level fatal:");
         return 0;
     }
 
