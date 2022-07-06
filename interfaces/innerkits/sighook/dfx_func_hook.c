@@ -72,7 +72,6 @@ void SetPlatformSignalHandler(uintptr_t handler)
     if (g_signalHandler == 0) {
         g_signalHandler = handler;
     }
-    LOGE("SetPlatformSignalHandler OK");
 }
 
 void LogBacktrace()
@@ -184,7 +183,6 @@ int kill(pid_t pid, int sig)
 
 int pthread_sigmask(int how, const sigset_t *restrict set, sigset_t *restrict oldset)
 {
-    LOGI("pthread_sigmask how:%d", how);
     if (set != NULL) {
         for (int i = 1; i < 63; i++) {
             if (sigismember(set, i) && (IsPlatformHandleSignal(i)) &&
@@ -204,7 +202,6 @@ int pthread_sigmask(int how, const sigset_t *restrict set, sigset_t *restrict ol
 
 int sigprocmask(int how, const sigset_t *restrict set, sigset_t *restrict oldset)
 {
-    LOGI("sigprocmask how:%d", how);
     if (set != NULL) {
         for (int i = 1; i < 63; i++) {
             if (sigismember(set, i) && (IsPlatformHandleSignal(i)) &&
@@ -223,7 +220,6 @@ int sigprocmask(int how, const sigset_t *restrict set, sigset_t *restrict oldset
 
 sighandler_t signal(int signum, sighandler_t handler)
 {
-    LOGI("signal signum:", signum);
     if (IsPlatformHandleSignal(signum)) {
         LOGI("%d register signal handler for signal(%d)\n", getpid(), signum);
         LogBacktrace();
@@ -238,7 +234,6 @@ sighandler_t signal(int signum, sighandler_t handler)
 
 int sigaction(int sig, const struct sigaction *restrict act, struct sigaction *restrict oact)
 {
-    LOGI("sigaction, sig:%d", sig);
     if (hookedSigaction == NULL) {
         LOGE("hooked sigaction is NULL?");
         return -1;
@@ -255,7 +250,6 @@ int sigaction(int sig, const struct sigaction *restrict act, struct sigaction *r
 
 static void StartHookKillFunction(void)
 {
-    LOGI("StartHookKillFunction");
     hookedKill = (KillFunc)dlsym(RTLD_NEXT, "kill");
     if (hookedKill != NULL) {
         return;
@@ -271,7 +265,6 @@ static void StartHookKillFunction(void)
 
 static void StartHookSigactionFunction(void)
 {
-    LOGI("StartHookSigactionFunction");
     hookedSigaction = (SigactionFunc)dlsym(RTLD_NEXT, "sigaction");
     if (hookedSigaction != NULL) {
         return;
@@ -330,7 +323,6 @@ static void StartHookSignalFunction(void)
 
 void StartHookFunc(void)
 {
-    LOGI("StartHookFunc");
     StartHookKillFunction();
     StartHookSigactionFunction();
     StartHookSignalFunction();
