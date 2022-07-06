@@ -218,16 +218,14 @@ static void DFX_SetUpEnvironment()
     SetInterestedSignalMasks(SIG_BLOCK);
 }
 
-static void DFX_SetUpSignalAction(void)
+static void DFX_SetUpSigAlarmAction(void)
 {
-    if (signal(SIGALRM, SIG_DFL) == SIG_ERR ||
-        signal(SIGSTOP, SIG_DFL) == SIG_ERR) {
+    if (signal(SIGALRM, SIG_DFL) == SIG_ERR) {
         DfxLogError("signal error!");
     }
     sigset_t set;
     sigemptyset (&set);
     sigaddset(&set, SIGALRM);
-    sigaddset(&set, SIGSTOP);
     sigprocmask(SIG_UNBLOCK, &set, NULL);
 }
 
@@ -236,7 +234,7 @@ static int DFX_ExecDump(void *arg)
     (void)arg;
     pthread_mutex_lock(&g_dumpMutex);
     DFX_SetUpEnvironment();
-    DFX_SetUpSignalAction();
+    DFX_SetUpSigAlarmAction();
     alarm(ALARM_TIME_S);
     // create pipe for passing request to processdump
     if (pipe(g_pipefd) != 0) {
