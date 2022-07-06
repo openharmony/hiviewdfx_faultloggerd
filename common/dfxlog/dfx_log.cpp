@@ -78,7 +78,7 @@ void LogToDmesg(LOG_LEVEL_CLASS logLevel, const char *info)
 }
 #endif
 
-void print(char* str) {
+void print(const char* str) {
 #ifdef DFX_LOG_USE_HILOG_BASE
     HILOG_BASE_DEBUG(LOG_CORE, "%{public}s", str);
 #else
