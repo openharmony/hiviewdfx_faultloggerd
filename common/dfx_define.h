@@ -62,6 +62,7 @@ static const int BACK_STACK_INFO_SIZE = 128 * 1024;
 
 static const int BACK_TRACE_RING_BUFFER_SIZE = 32 * 1024;
 static const int BACK_TRACE_RING_BUFFER_PRINT_WAIT_TIME_MS = 10;
+static const int BACK_TRACE_DUMP_TIMEOUT_S = 10;
 
 static const int LOG_BUF_LEN = 1024;
 static const int FILE_WRITE_BUF_LEN = 4096;
@@ -72,5 +73,14 @@ static const int REGS_PRINT_LEN_X86 = 512;
 
 static const int PERFORMANCE_TEST_NUMBER_ONE_HUNDRED = 100;
 static const double PERFORMANCE_TEST_MAX_UNWIND_TIME_S = 0.03;
+
+#define OHOS_TEMP_FAILURE_RETRY(exp)            \
+    ({                                     \
+    long int _rc;                          \
+    do {                                   \
+        _rc = (long int)(exp);             \
+    } while ((_rc == -1) && (errno == EINTR)); \
+    _rc;                                   \
+    })
 
 #endif

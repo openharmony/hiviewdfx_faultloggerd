@@ -43,6 +43,7 @@ if (defined(ohos_lite)) {
       "$faultloggerd_path/tools/process_dump/dfx_symbols_cache.cpp",
       "$faultloggerd_path/tools/process_dump/dfx_unwind_local.cpp",
       "$faultloggerd_path/tools/process_dump/dfx_util.cpp",
+      "$faultloggerd_path/tools/process_dump/dfx_dump_res.cpp",
       "$faultloggerd_path/utils/directory_ex.cpp",
       "$faultloggerd_path/utils/file_ex.cpp",
       "dfx_dump_catcher.cpp",
@@ -82,6 +83,7 @@ if (defined(ohos_lite)) {
       "$faultloggerd_path/tools/process_dump/dfx_symbols_cache.cpp",
       "$faultloggerd_path/tools/process_dump/dfx_unwind_local.cpp",
       "$faultloggerd_path/tools/process_dump/dfx_util.cpp",
+      "$faultloggerd_path/tools/process_dump/dfx_dump_res.cpp",
       "dfx_dump_catcher.cpp",
     ]
 

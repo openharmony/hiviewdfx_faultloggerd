@@ -57,25 +57,10 @@ static bool CatchStack(int32_t pid, int32_t tid)
     printf("This is function DumpCatch.\n");
     OHOS::HiviewDFX::DfxDumpCatcher mDfxDumpCatcher;
     std::string msg = "";
-    bool ret = mDfxDumpCatcher.DumpCatch(pid, tid, msg);
-
-    printf("DumpCatch :: ret: %d.\n", ret);
-
-    long lenStackInfo = msg.length();
-    write(STDOUT_FILENO, msg.c_str(), lenStackInfo);
-
-    return ret;
-}
-
-static bool CatchStackFd(int32_t pid, int32_t tid)
-{
-    printf("This is function DumpCatch.\n");
-    OHOS::HiviewDFX::DfxDumpCatcher mDfxDumpCatcher;
-    std::string msg = "";
     int fd = STDOUT_FILENO;
     bool ret = mDfxDumpCatcher.DumpCatchFd(pid, tid, msg, fd);
 
-    printf("DumpCatchFd :: ret: %d.\n", ret);
+    printf("DumpCatch :: ret: %d.\n", ret);
     return ret;
 }
 
@@ -133,7 +118,7 @@ static bool FunctionThree(int32_t pid, int32_t tid)
     int currentPid = getpid();
     int currentTid = syscall(SYS_gettid);
     bool ret = CatchStack(currentPid, currentTid);
-    ret = CatchStackFd(currentPid, 0);
+    ret = CatchStack(currentPid, 0);
 
     StartMultiThread();
     char path[NAME_LEN] = {0};

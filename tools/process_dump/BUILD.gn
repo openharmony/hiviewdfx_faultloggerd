@@ -53,6 +53,8 @@ if (defined(ohos_lite)) {
       "dfx_unwind_remote.cpp",
       "dfx_util.cpp",
       "process_dumper.cpp",
+      "dfx_ring_buffer_wrapper.cpp",
+      "dfx_dump_res.cpp",
     ]
 
     if (target_cpu == "arm") {
@@ -110,6 +112,8 @@ if (defined(ohos_lite)) {
       "dfx_util.cpp",
       "main.cpp",
       "process_dumper.cpp",
+      "dfx_ring_buffer_wrapper.cpp",
+      "dfx_dump_res.cpp",
     ]
 
     if (target_cpu == "arm") {
@@ -164,6 +168,8 @@ if (defined(ohos_lite)) {
       "dfx_unwind_remote.cpp",
       "dfx_util.cpp",
       "process_dumper.cpp",
+      "dfx_ring_buffer_wrapper.cpp",
+      "dfx_dump_res.cpp",
     ]
 
     if (target_cpu == "arm") {
@@ -212,6 +218,8 @@ if (defined(ohos_lite)) {
       "dfx_util.cpp",
       "main.cpp",
       "process_dumper.cpp",
+      "dfx_ring_buffer_wrapper.cpp",
+      "dfx_dump_res.cpp",
     ]
 
     if (target_cpu == "arm") {

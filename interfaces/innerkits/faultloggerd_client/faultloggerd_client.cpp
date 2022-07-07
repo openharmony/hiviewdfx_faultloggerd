@@ -99,6 +99,19 @@ int32_t RequestLogFileDescriptor(struct FaultLoggerdRequest *request)
     return RequestFileDescriptorEx(request);
 }
 
+int32_t RequestPipeFd(int32_t pid, int32_t pipeType)
+{
+    struct FaultLoggerdRequest request;
+    if (memset_s(&request, sizeof(request), 0, sizeof(struct FaultLoggerdRequest)) != 0) {
+        DfxLogError("%s :: memset_s request failed..", __func__);
+    }
+    request.pipeType = pipeType;
+    request.pid = pid;
+
+    request.clientType = (int32_t)FaultLoggerClientType::PIPE_FD_CLIENT;
+    return RequestFileDescriptorEx(&request);
+}
+
 int32_t RequestFileDescriptorEx(const struct FaultLoggerdRequest *request)
 {
     if (request == nullptr) {

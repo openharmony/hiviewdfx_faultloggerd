@@ -32,8 +32,8 @@
 #include "dfx_regs.h"
 #include "dfx_thread.h"
 #include "dfx_util.h"
-#include "process_dumper.h"
 #include "dfx_symbols_cache.h"
+#include "dfx_ring_buffer_wrapper.h"
 
 #include "libunwind.h"
 #include "libunwind_i-ohos.h"
@@ -64,6 +64,7 @@ bool DfxUnwindRemote::UnwindProcess(std::shared_ptr<DfxProcess> process)
     }
 
     auto threads = process->GetThreads();
+    DfxLogDebug("%s :: threads(%d)", __func__, threads.size());
     if (threads.empty()) {
         return false;
     }
@@ -104,6 +105,7 @@ bool DfxUnwindRemote::UnwindProcess(std::shared_ptr<DfxProcess> process)
             process->PrintProcessMapsByConfig();
         }
         index++;
+        DfxLogDebug("%s :: index(%d)", __func__, index);
     }
 
     unw_destroy_addr_space(as_);
@@ -134,7 +136,6 @@ uint64_t DfxUnwindRemote::DfxUnwindRemoteDoAdjustPc(unw_cursor_t & cursor, uint6
 bool DfxUnwindRemote::DfxUnwindRemoteDoUnwindStep(size_t const & index,
     std::shared_ptr<DfxThread> & thread, unw_cursor_t & cursor, std::shared_ptr<DfxProcess> process)
 {
-    DfxLogDebug("%s :: index(%d).", __func__, index);
     std::shared_ptr<DfxFrame> frame = thread->GetAvaliableFrame();
     if (!frame) {
         DfxLogWarn("Fail to create Frame.");
@@ -189,7 +190,7 @@ bool DfxUnwindRemote::DfxUnwindRemoteDoUnwindStep(size_t const & index,
 
     bool ret = index < MIN_VALID_FRAME_COUNT || isValidFrame;
     if (ret) {
-        OHOS::HiviewDFX::ProcessDumper::GetInstance().PrintDumpProcessMsg(frame->PrintFrame());
+        DfxRingBufferWrapper::GetInstance().AppendMsg(frame->PrintFrame());
     }
     DfxLogDebug("%s :: index(%d), framePc(0x%x), frameSp(0x%x).", __func__, index, framePc, frameSp);
     return ret;
@@ -208,7 +209,7 @@ bool DfxUnwindRemote::UnwindThread(std::shared_ptr<DfxProcess> process, std::sha
     if (ret <= 0) {
         DfxLogError("%s :: snprintf_s failed, line: %d.", __func__, __LINE__);
     }
-    OHOS::HiviewDFX::ProcessDumper::GetInstance().PrintDumpProcessMsg(std::string(buf));
+    DfxRingBufferWrapper::GetInstance().AppendMsg(std::string(buf));
 
     void *context = _UPT_create(tid);
     if (!context) {
@@ -260,12 +261,11 @@ bool DfxUnwindRemote::UnwindThread(std::shared_ptr<DfxProcess> process, std::sha
     _UPT_destroy(context);
 
     if (process->GetIsSignalHdlr() && thread->GetIsCrashThread() && (process->GetIsSignalDump() == false)) {
-        OHOS::HiviewDFX::ProcessDumper::GetInstance().PrintDumpProcessMsg(regs->PrintRegs());
+        DfxRingBufferWrapper::GetInstance().AppendMsg(regs->PrintRegs());
         std::shared_ptr<DfxElfMaps> maps = process->GetMaps();
         if (DfxConfig::GetInstance().GetDisplayFaultStack()) {
             thread->CreateFaultStack(maps);
-            OHOS::HiviewDFX::ProcessDumper::GetInstance().PrintDumpProcessMsg(\
-                thread->PrintThreadFaultStackByConfig() + "\n");
+            DfxRingBufferWrapper::GetInstance().AppendMsg(thread->PrintThreadFaultStackByConfig() + "\n");
         }
     }
     return true;

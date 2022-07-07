@@ -17,6 +17,7 @@
 
 #include "dfx_dump_catcher.h"
 #include "dfx_unwind_local.h"
+#include "dfx_dump_res.h"
 
 #include <algorithm>
 #include <climits>
@@ -39,8 +40,6 @@
 #include <unistd.h>
 
 #include <sstream>
-#include <sys/eventfd.h>
-#include <sys/inotify.h>
 #include <sys/prctl.h>
 #include <sys/socket.h>
 #include <sys/stat.h>
@@ -52,10 +51,8 @@
 #include "directory_ex.h"
 #include "../faultloggerd_client/include/faultloggerd_client.h"
 
-static const std::string LOG_FILE_PATH = "/data/log/faultlog/temp";
 static const int NUMBER_TEN = 10;
 static const int MAX_TEMP_FILE_LENGTH = 256;
-static const int DUMP_CATCHER_WAIT_LOG_FILE_GEN_TIME_US = 10000;
 static const int DUMP_CATCHE_WORK_TIME_S = 60;
 static const int NUMBER_TWO_KB = 2048;
 
@@ -143,92 +140,9 @@ bool DfxDumpCatcher::DoDumpLocalPid(int pid, std::string& msg)
     return ret;
 }
 
-std::string DfxDumpCatcher::WaitForLogGenerate(const std::string& path, const std::string& prefix)
-{
-    DfxLogDebug("%s :: WaitForLogGenerate :: path(%s), prefix(%s).", \
-        DFXDUMPCATCHER_TAG.c_str(), path.c_str(), prefix.c_str());
-    time_t pastTime = 0;
-    time_t startTime = time(nullptr);
-    if (startTime < 0) {
-        DfxLogError("%s :: WaitForLogGenerate :: startTime(%d) is less than zero.", \
-            DFXDUMPCATCHER_TAG.c_str(), startTime);
-    }
-    int32_t inotifyFd = inotify_init();
-    if (inotifyFd == -1) {
-        return "";
-    }
-
-    int wd = inotify_add_watch(inotifyFd, path.c_str(), IN_CLOSE_WRITE | IN_MOVED_TO);
-    if (wd < 0) {
-        close(inotifyFd);
-        return "";
-    }
-
-    while (true) {
-        pastTime = time(nullptr) - startTime;
-        if (pastTime > NUMBER_TEN) {
-            break;
-        }
-
-        char buffer[NUMBER_TWO_KB] = {0}; // 2048 buffer size;
-        char *offset = nullptr;
-        struct inotify_event *event = nullptr;
-        int len = read(inotifyFd, buffer, NUMBER_TWO_KB); // 2048 buffer size;
-        if (len < 0) {
-            break;
-        }
-
-        offset = buffer;
-        event = (struct inotify_event *)buffer;
-        while ((reinterpret_cast<char *>(event) - buffer) < len) {
-            if (strlen(event->name) > MAX_TEMP_FILE_LENGTH) {
-                DfxLogError("%s :: WaitForLogGenerate :: illegal path length(%d)",
-                    DFXDUMPCATCHER_TAG.c_str(), strlen(event->name));
-                auto tmpLen = sizeof(struct inotify_event) + event->len;
-                event = (struct inotify_event *)(offset + tmpLen);
-                offset += tmpLen;
-                continue;
-            }
-
-            std::string filePath = path + "/" + std::string(event->name);
-            if ((filePath.find(prefix) != std::string::npos) &&
-                (filePath.length() < MAX_TEMP_FILE_LENGTH)) {
-                inotify_rm_watch (inotifyFd, wd);
-                close(inotifyFd);
-                return filePath;
-            }
-            auto tmpLen = sizeof(struct inotify_event) + event->len;
-            event = (struct inotify_event *)(offset + tmpLen);
-            offset += tmpLen;
-        }
-        usleep(DUMP_CATCHER_WAIT_LOG_FILE_GEN_TIME_US);
-    }
-    inotify_rm_watch (inotifyFd, wd);
-    close(inotifyFd);
-    return "";
-}
-
 bool DfxDumpCatcher::DoDumpRemoteLocked(int pid, int tid, std::string& msg)
 {
-    bool ret = false;
-    if (pid <= 0 || tid < 0) {
-        DfxLogError("%s :: DoDumpRemote :: param error.", DFXDUMPCATCHER_TAG.c_str());
-        return ret;
-    }
-
-    if (RequestSdkDump(pid, tid) == true) {
-        // Get stack trace file
-        long long stackFileLength = 0;
-        std::string stackTraceFilePatten = LOG_FILE_PATH + "/stacktrace-" + std::to_string(pid);
-        std::string stackTraceFileName = WaitForLogGenerate(LOG_FILE_PATH, stackTraceFilePatten);
-        if (stackTraceFileName.empty()) {
-            return ret;
-        }
-        ret = OHOS::LoadStringFromFile(stackTraceFileName, msg);
-        OHOS::RemoveFile(stackTraceFileName);
-    }
-    DfxLogDebug("%s :: DoDumpRemote :: ret(%d).", DFXDUMPCATCHER_TAG.c_str(), ret);
-    return ret;
+    return DoDumpCatchRemote(pid, tid, msg);
 }
 
 bool DfxDumpCatcher::DoDumpLocalLocked(int pid, int tid, std::string& msg)
@@ -278,9 +192,67 @@ bool DfxDumpCatcher::DumpCatch(int pid, int tid, std::string& msg)
 
 bool DfxDumpCatcher::DumpCatchFd(int pid, int tid, std::string& msg, int fd)
 {
-    bool ret = DumpCatch(pid, tid, msg);
+    bool ret = false;
+    ret = DumpCatch(pid, tid, msg);
+    if (fd > 0) {
+        ret = write(fd, msg.c_str(), msg.length());
+    }
+    return ret;
+}
 
-    DfxUnwindLocal::GetInstance().WriteUnwindResult(fd, msg);
+bool DfxDumpCatcher::DoDumpCatchRemote(int pid, int tid, std::string& msg)
+{
+    bool ret = false;
+    if (pid <= 0 || tid < 0) {
+        DfxLogError("%s :: DoDumpCatchRemote :: param error.", DFXDUMPCATCHER_TAG.c_str());
+        return ret;
+    }
+
+    if (RequestSdkDump(pid, tid) == true) {
+        int readBufFd = RequestPipeFd(pid, FaultLoggerPipeType::PIPE_FD_READ_BUF);
+        DfxLogDebug("read buf fd: %d", readBufFd);
+
+        int readResFd = RequestPipeFd(pid, FaultLoggerPipeType::PIPE_FD_READ_RES);
+        DfxLogDebug("read res fd: %d", readResFd);
+
+        fd_set readfds;
+        struct timeval tv = {BACK_TRACE_DUMP_TIMEOUT_S, 0};
+        std::string bufMsg, resMsg;
+        char buffer[LOG_BUF_LEN];
+        while (true) {
+            FD_SET(readBufFd, &readfds);
+            FD_SET(readResFd, &readfds);
+            int selRet = select(readResFd + 1, &readfds, NULL, NULL, &tv);
+            if (selRet <= 0) {
+                DfxLogError("%s :: %s :: select error", DFXDUMPCATCHER_TAG.c_str(), __func__);
+                break;
+            }
+
+            if(FD_ISSET(readBufFd, &readfds)){
+                bzero(buffer, sizeof(buffer));
+                ssize_t nread = read(readBufFd, buffer, sizeof(buffer) - 1);
+                if (nread <= 0) {
+                    DfxLogError("%s :: %s :: read error", DFXDUMPCATCHER_TAG.c_str(), __func__);
+                    break;
+                }
+                bufMsg.append(buffer);
+            }
+            else if(FD_ISSET(readResFd, &readfds)){
+                DumpResMsg dumpRes;
+                read(readResFd, &dumpRes, sizeof(struct DumpResMsg));
+                if (dumpRes.res == ProcessDumpRes::DUMP_ESUCCESS) {
+                    ret = true;
+                }
+                DfxDumpRes::GetInstance().SetRes(dumpRes.res);
+                resMsg.append("Result: " + DfxDumpRes::GetInstance().ToString() + "\n");
+                DfxLogDebug("%s :: %s :: resMsg: %s", DFXDUMPCATCHER_TAG.c_str(), __func__, resMsg.c_str());
+                break;
+            }
+        }
+        msg = bufMsg;
+    }
+    RequestPipeFd(pid, FaultLoggerPipeType::PIPE_FD_DELETE);
+    DfxLogDebug("%s :: %s :: ret: %d", DFXDUMPCATCHER_TAG.c_str(), __func__, ret);
     return ret;
 }
 

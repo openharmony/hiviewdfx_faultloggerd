@@ -40,7 +40,16 @@ enum FaultLoggerClientType {
     PRINT_T_HILOG_CLIENT, // For request a file to record nornal unwind and process dump logs.
     PERMISSION_CLIENT,
     SDK_DUMP_CLIENT,
+    PIPE_FD_CLIENT,
     MAX_CLIENT
+};
+
+enum FaultLoggerPipeType {
+    PIPE_FD_READ_BUF = 0,
+    PIPE_FD_WRITE_BUF,
+    PIPE_FD_READ_RES,
+    PIPE_FD_WRITE_RES,
+    PIPE_FD_DELETE,
 };
 
 enum FaultLoggerCheckPermissionResp {
@@ -58,6 +67,7 @@ enum FaultLoggerSdkDumpResp {
 struct FaultLoggerdRequest {
     int32_t type;
     int32_t clientType;
+    int32_t pipeType;
     int32_t pid;
     int32_t tid;
     uint32_t uid;
@@ -70,6 +80,7 @@ struct FaultLoggerdRequest {
 bool CheckConnectStatus();
 int32_t RequestFileDescriptor(int32_t type);
 int32_t RequestLogFileDescriptor(struct FaultLoggerdRequest *request);
+int32_t RequestPipeFd(int32_t pid, int32_t pipeType);
 int RequestFileDescriptorEx(const struct FaultLoggerdRequest *request);
 bool RequestCheckPermission(int32_t pid);
 void RequestPrintTHilog(const char *msg, int length);

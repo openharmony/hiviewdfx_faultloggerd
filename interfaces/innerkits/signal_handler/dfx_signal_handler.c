@@ -75,15 +75,6 @@
 #define NUMBER_SIXTYFOUR 64
 #define INHERITABLE_OFFSET 32
 
-#define OHOS_TEMP_FAILURE_RETRY(exp)            \
-    ({                                     \
-    long int _rc;                          \
-    do {                                   \
-        _rc = (long int)(exp);             \
-    } while ((_rc == -1) && (errno == EINTR)); \
-    _rc;                                   \
-    })
-
 void __attribute__((constructor)) InitHandler(void)
 {
     DFX_InstallSignalHandler();
@@ -274,10 +265,15 @@ static int DFX_ExecDump(void *arg)
     }
 
     DfxLogInfo("execle processdump.");
+    int ret = 0;
 #ifdef DFX_LOG_USE_HILOG_BASE
-    execle("/system/bin/processdump", "processdump", "-signalhandler", NULL, NULL);
+    if ((ret = execle("/system/bin/processdump", "processdump", "-signalhandler", NULL, NULL)) == -1) {
+        DfxLogError("Failed to execle processdump.");
+    }
 #else
-    execle("/bin/processdump", "processdump", "-signalhandler", NULL, NULL);
+    if ((ret = execle("/bin/processdump", "processdump", "-signalhandler", NULL, NULL)) == -1) {
+        DfxLogError("Failed to execle processdump.");
+    }
 #endif
     pthread_mutex_unlock(&g_dumpMutex);
     return errno;

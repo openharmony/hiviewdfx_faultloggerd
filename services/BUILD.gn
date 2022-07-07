@@ -86,6 +86,7 @@ if (defined(ohos_lite)) {
       "fault_logger_config.cpp",
       "fault_logger_daemon.cpp",
       "fault_logger_secure.cpp",
+      "fault_logger_pipe.cpp",
       "main.cpp",
     ]
 
