@@ -23,7 +23,7 @@
 
 #include <dlfcn.h>
 
-#include "dfx_log.h"
+#include "dfx_logger.h"
 #include "dfx_process.h"
 #include "dfx_signal.h"
 #include "dfx_thread.h"

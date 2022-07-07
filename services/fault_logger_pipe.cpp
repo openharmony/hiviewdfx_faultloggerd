@@ -116,9 +116,8 @@ FaultLoggerPipeMap::FaultLoggerPipeMap()
 
 FaultLoggerPipeMap::~FaultLoggerPipeMap()
 {
-    std::map<int, std::shared_ptr<FaultLoggerPipe2> >::iterator iter;
-    iter = faultLoggerPipes_.begin();
-    while(iter != faultLoggerPipes_.end()) {
+    std::map<int, std::shared_ptr<FaultLoggerPipe2> >::iterator iter = faultLoggerPipes_.begin();
+    while (iter != faultLoggerPipes_.end()) {
         faultLoggerPipes_.erase(iter++);
     }
 }

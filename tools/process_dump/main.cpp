@@ -31,7 +31,7 @@
 #include "dfx_config.h"
 #include "dfx_define.h"
 #include "dfx_dump_writer.h"
-#include "dfx_log.h"
+#include "dfx_logger.h"
 #include "process_dumper.h"
 
 #if defined(DEBUG_PROCESS_DUMP_CRASH)
@@ -198,6 +198,5 @@ int main(int argc, char *argv[])
 
     OHOS::HiviewDFX::DfxConfig::GetInstance().ReadConfig();
     OHOS::HiviewDFX::ProcessDumper::GetInstance().Dump(isSignalHdlr, type, pid, tid);
-
     return 0;
 }

@@ -26,7 +26,7 @@
 
 #include "dfx_config.h"
 #include "dfx_define.h"
-#include "dfx_log.h"
+#include "dfx_logger.h"
 #include "dfx_maps.h"
 #include "dfx_process.h"
 #include "dfx_regs.h"
@@ -259,7 +259,6 @@ bool DfxUnwindRemote::UnwindThread(std::shared_ptr<DfxProcess> process, std::sha
     } while ((unwRet > 0) && (index < BACK_STACK_MAX_STEPS));
     thread->SetThreadUnwStopReason(unwRet);
     _UPT_destroy(context);
-
     if (process->GetIsSignalHdlr() && thread->GetIsCrashThread() && (process->GetIsSignalDump() == false)) {
         DfxRingBufferWrapper::GetInstance().AppendMsg(regs->PrintRegs());
         std::shared_ptr<DfxElfMaps> maps = process->GetMaps();

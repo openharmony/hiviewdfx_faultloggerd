@@ -75,12 +75,12 @@ static const int PERFORMANCE_TEST_NUMBER_ONE_HUNDRED = 100;
 static const double PERFORMANCE_TEST_MAX_UNWIND_TIME_S = 0.03;
 
 #define OHOS_TEMP_FAILURE_RETRY(exp)            \
-    ({                                     \
-    long int _rc;                          \
-    do {                                   \
-        _rc = (long int)(exp);             \
-    } while ((_rc == -1) && (errno == EINTR)); \
-    _rc;                                   \
-    })
+    ( {                                         \
+    long int _rc;                               \
+    do {                                        \
+        _rc = (long int)(exp);                  \
+    } while ((_rc == -1) && (errno == EINTR));  \
+    _rc;                                        \
+    } )
 
 #endif

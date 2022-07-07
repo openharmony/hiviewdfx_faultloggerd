@@ -27,6 +27,7 @@ if (!defined(ohos_lite)) {
     sources = [ "dfx_func_hook.c" ]
 
     deps = [
+      "$faultloggerd_path/common/dfxlog:static_no_print_log",
       "$faultloggerd_path/common/log:static_log_wrapper",
       "//third_party/libunwind:libunwind",
     ]

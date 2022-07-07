@@ -24,7 +24,7 @@
 #include <securec.h>
 
 #include "dfx_elf.h"
-#include "dfx_log.h"
+#include "dfx_logger.h"
 #include "dfx_maps.h"
 
 static const int FAULT_STACK_SHOW_FLOOR = 4;
@@ -275,7 +275,6 @@ std::string PrintFaultStacks(std::vector<std::shared_ptr<DfxFrame>> frames)
         }
         stackString = stackString + frames[i]->PrintFaultStack(i);
     }
-    
     return stackString;
 }
 } // namespace HiviewDFX

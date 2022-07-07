@@ -208,49 +208,52 @@ bool DfxDumpCatcher::DoDumpCatchRemote(int pid, int tid, std::string& msg)
         return ret;
     }
 
-    if (RequestSdkDump(pid, tid) == true) {
-        int readBufFd = RequestPipeFd(pid, FaultLoggerPipeType::PIPE_FD_READ_BUF);
-        DfxLogDebug("read buf fd: %d", readBufFd);
-
-        int readResFd = RequestPipeFd(pid, FaultLoggerPipeType::PIPE_FD_READ_RES);
-        DfxLogDebug("read res fd: %d", readResFd);
-
-        fd_set readfds;
-        struct timeval tv = {BACK_TRACE_DUMP_TIMEOUT_S, 0};
-        std::string bufMsg, resMsg;
-        char buffer[LOG_BUF_LEN];
-        while (true) {
-            FD_SET(readBufFd, &readfds);
-            FD_SET(readResFd, &readfds);
-            int selRet = select(readResFd + 1, &readfds, NULL, NULL, &tv);
-            if (selRet <= 0) {
-                DfxLogError("%s :: %s :: select error", DFXDUMPCATCHER_TAG.c_str(), __func__);
-                break;
-            }
-
-            if(FD_ISSET(readBufFd, &readfds)){
-                bzero(buffer, sizeof(buffer));
-                ssize_t nread = read(readBufFd, buffer, sizeof(buffer) - 1);
-                if (nread <= 0) {
-                    DfxLogError("%s :: %s :: read error", DFXDUMPCATCHER_TAG.c_str(), __func__);
-                    break;
-                }
-                bufMsg.append(buffer);
-            }
-            else if(FD_ISSET(readResFd, &readfds)){
-                DumpResMsg dumpRes;
-                read(readResFd, &dumpRes, sizeof(struct DumpResMsg));
-                if (dumpRes.res == ProcessDumpRes::DUMP_ESUCCESS) {
-                    ret = true;
-                }
-                DfxDumpRes::GetInstance().SetRes(dumpRes.res);
-                resMsg.append("Result: " + DfxDumpRes::GetInstance().ToString() + "\n");
-                DfxLogDebug("%s :: %s :: resMsg: %s", DFXDUMPCATCHER_TAG.c_str(), __func__, resMsg.c_str());
-                break;
-            }
-        }
-        msg = bufMsg;
+    if (RequestSdkDump(pid, tid) == false) {
+        DfxLogError("%s :: DoDumpCatchRemote :: request SdkDump error.", DFXDUMPCATCHER_TAG.c_str());
+        return ret;
     }
+
+    int readBufFd = RequestPipeFd(pid, FaultLoggerPipeType::PIPE_FD_READ_BUF);
+    DfxLogDebug("read buf fd: %d", readBufFd);
+
+    int readResFd = RequestPipeFd(pid, FaultLoggerPipeType::PIPE_FD_READ_RES);
+    DfxLogDebug("read res fd: %d", readResFd);
+
+    fd_set readfds;
+    struct timeval tv = {BACK_TRACE_DUMP_TIMEOUT_S, 0};
+    std::string bufMsg, resMsg;
+    char buffer[LOG_BUF_LEN];
+    while (true) {
+        FD_SET(readBufFd, &readfds);
+        FD_SET(readResFd, &readfds);
+        int selRet = select(readResFd + 1, &readfds, NULL, NULL, &tv);
+        if (selRet <= 0) {
+            DfxLogError("%s :: %s :: select error", DFXDUMPCATCHER_TAG.c_str(), __func__);
+            break;
+        }
+
+        if (FD_ISSET(readBufFd, &readfds)) {
+            bzero(buffer, sizeof(buffer));
+            ssize_t nread = read(readBufFd, buffer, sizeof(buffer) - 1);
+            if (nread <= 0) {
+                DfxLogError("%s :: %s :: read error", DFXDUMPCATCHER_TAG.c_str(), __func__);
+                break;
+            }
+            bufMsg.append(buffer);
+        } else if (FD_ISSET(readResFd, &readfds)) {
+            DumpResMsg dumpRes;
+            read(readResFd, &dumpRes, sizeof(struct DumpResMsg));
+            if (dumpRes.res == ProcessDumpRes::DUMP_ESUCCESS) {
+                ret = true;
+            }
+            DfxDumpRes::GetInstance().SetRes(dumpRes.res);
+            resMsg.append("Result: " + DfxDumpRes::GetInstance().ToString() + "\n");
+            DfxLogDebug("%s :: %s :: resMsg: %s", DFXDUMPCATCHER_TAG.c_str(), __func__, resMsg.c_str());
+            break;
+        }
+    }
+    msg = bufMsg;
+    
     RequestPipeFd(pid, FaultLoggerPipeType::PIPE_FD_DELETE);
     DfxLogDebug("%s :: %s :: ret: %d", DFXDUMPCATCHER_TAG.c_str(), __func__, ret);
     return ret;

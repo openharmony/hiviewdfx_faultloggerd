@@ -17,28 +17,13 @@
 
 #include "dfx_ring_buffer_wrapper.h"
 
-#include <cerrno>
-#include <cinttypes>
-#include <memory>
-#include <csignal>
-#include <cstdio>
-#include <cstdlib>
-#include <cstring>
-#include <ucontext.h>
-#include <unistd.h>
-#include <stdio.h>
-#include <fcntl.h>
-#include <iostream>
-#include <pthread.h>
 #include <securec.h>
-#include <string>
 
 #include "dfx_define.h"
-#include "dfx_log.h"
+#include "dfx_logger.h"
 
 namespace OHOS {
 namespace HiviewDFX {
-
 std::condition_variable DfxRingBufferWrapper::printCV_;
 std::mutex DfxRingBufferWrapper::printMutex_;
 
@@ -50,6 +35,11 @@ DfxRingBufferWrapper &DfxRingBufferWrapper::GetInstance()
 
 void DfxRingBufferWrapper::LoopPrintRingBuffer()
 {
+    if (DfxRingBufferWrapper::GetInstance().fd_ < 0) {
+        DfxLogError("%s :: please set fd first.\n", __func__);
+        return;
+    }
+
     std::unique_lock<std::mutex> lck(printMutex_);
     while (true) {
         bool hasFinished = DfxRingBufferWrapper::GetInstance().hasFinished_;
@@ -57,22 +47,18 @@ void DfxRingBufferWrapper::LoopPrintRingBuffer()
         auto item = DfxRingBufferWrapper::GetInstance().ringBuffer_.Read(available);
         
         if (available != 0) {
-            //DfxLogDebug("%s :: item.Length(%d)", __func__, item.Length());
             if (item.At(0).empty()) {
                 DfxRingBufferWrapper::GetInstance().ringBuffer_.Skip(item.Length());
                 continue;
             }
 
             for (unsigned int i = 0; i < item.Length(); i++) {
-                //DfxLogDebug("%s :: [%d]print: %s\n", __func__, i, item.At(i).c_str());
-                if (DfxRingBufferWrapper::GetInstance().fd_ > 0) {
-                    if (DfxRingBufferWrapper::GetInstance().writeFunc_ != nullptr) {
-                        DfxRingBufferWrapper::GetInstance().writeFunc_(DfxRingBufferWrapper::GetInstance().fd_, \
-                            item.At(i).c_str(), item.At(i).length());
-                    } else {
-                        DfxRingBufferWrapper::GetInstance().DefaultWrite(DfxRingBufferWrapper::GetInstance().fd_, \
-                            item.At(i).c_str(), item.At(i).length());
-                    }
+                if (DfxRingBufferWrapper::GetInstance().writeFunc_ != nullptr) {
+                    DfxRingBufferWrapper::GetInstance().writeFunc_(DfxRingBufferWrapper::GetInstance().fd_, \
+                        item.At(i).c_str(), item.At(i).length());
+                } else {
+                    DfxRingBufferWrapper::GetInstance().DefaultWrite(DfxRingBufferWrapper::GetInstance().fd_, \
+                        item.At(i).c_str(), item.At(i).length());
                 }
             }
             DfxRingBufferWrapper::GetInstance().ringBuffer_.Skip(item.Length());
