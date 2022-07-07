@@ -110,11 +110,7 @@ int DfxLogDebug(const char *format, ...)
     va_start(args, format);
     ret = vsnprintf_s(buf, sizeof(buf), sizeof(buf) - 1, format, args);
 #ifdef DFX_LOG_USE_HILOG_BASE
-#ifdef DFX_SIGNALHANDLER_TAG
-    HiLogBasePrint(LOG_CORE, LOG_DEBUG, LOG_DOMAIN, LOG_TAG, "%{public}s", buf);
-#else
     HILOG_BASE_DEBUG(LOG_CORE, "%{public}s", buf);
-#endif
 #else
     OHOS::HiviewDFX::HiLog::Debug(g_LOG_LABEL, "%{public}s", buf);
 #endif
@@ -141,11 +137,7 @@ int DfxLogInfo(const char *format, ...)
     va_start(args, format);
     ret = vsnprintf_s(buf, sizeof(buf), sizeof(buf) - 1, format, args);
 #ifdef DFX_LOG_USE_HILOG_BASE
-#ifdef DFX_SIGNALHANDLER_TAG
-    HiLogBasePrint(LOG_CORE, LOG_INFO, LOG_DOMAIN, LOG_TAG, "%{public}s", buf);
-#else
     HILOG_BASE_INFO(LOG_CORE, "%{public}s", buf);
-#endif
 #else
     OHOS::HiviewDFX::HiLog::Info(g_LOG_LABEL, "%{public}s", buf);
 #endif
@@ -172,11 +164,7 @@ int DfxLogWarn(const char *format, ...)
     va_start(args, format);
     ret = vsnprintf_s(buf, sizeof(buf), sizeof(buf) - 1, format, args);
 #ifdef DFX_LOG_USE_HILOG_BASE
-#ifdef DFX_SIGNALHANDLER_TAG
-    HiLogBasePrint(LOG_CORE, LOG_WARN, LOG_DOMAIN, LOG_TAG, "%{public}s", buf);
-#else
     HILOG_BASE_WARN(LOG_CORE, "%{public}s", buf);
-#endif
 #else
     OHOS::HiviewDFX::HiLog::Warn(g_LOG_LABEL, "%{public}s", buf);
 #endif
@@ -203,11 +191,7 @@ int DfxLogError(const char *format, ...)
     va_start(args, format);
     ret = vsnprintf_s(buf, sizeof(buf), sizeof(buf) - 1, format, args);
 #ifdef DFX_LOG_USE_HILOG_BASE
-#ifdef DFX_SIGNALHANDLER_TAG
-    HiLogBasePrint(LOG_CORE, LOG_ERROR, LOG_DOMAIN, LOG_TAG, "%{public}s", buf);
-#else
     HILOG_BASE_ERROR(LOG_CORE, "%{public}s", buf);
-#endif
 #else
     OHOS::HiviewDFX::HiLog::Error(g_LOG_LABEL, "%{public}s", buf);
 #endif
@@ -234,11 +218,7 @@ int DfxLogFatal(const char *format, ...)
     va_start(args, format);
     ret = vsnprintf_s(buf, sizeof(buf), sizeof(buf) - 1, format, args);
 #ifdef DFX_LOG_USE_HILOG_BASE
-#ifdef DFX_SIGNALHANDLER_TAG
-    HiLogBasePrint(LOG_CORE, LOG_FATAL, LOG_DOMAIN, LOG_TAG, "%{public}s", buf);
-#else
     HILOG_BASE_FATAL(LOG_CORE, "%{public}s", buf);
-#endif
 #else
     OHOS::HiviewDFX::HiLog::Fatal(g_LOG_LABEL, "%{public}s", buf);
 #endif
