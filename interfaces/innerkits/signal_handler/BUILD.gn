@@ -65,7 +65,7 @@ if (defined(ohos_lite)) {
     public_configs = [ ":dfx_signal_handler_config" ]
 
     deps = [
-      "$faultloggerd_path/common/dfxlog:static_no_print_log",
+      "$faultloggerd_path/common/dfxlog:static_hilog_base",
       "$faultloggerd_path/common/util:dfx_cutil",
       "$faultloggerd_path/interfaces/innerkits/faultloggerd_client:libfaultloggerd",
       "//third_party/libunwind:libunwind",
@@ -93,7 +93,7 @@ if (defined(ohos_lite)) {
 
     deps = [
       ":dfx_local_handler",
-      "$faultloggerd_path/common/dfxlog:static_no_print_log",
+      "$faultloggerd_path/common/dfxlog:static_hilog_base",
       "$faultloggerd_path/common/util:dfx_cutil",
     ]
 
