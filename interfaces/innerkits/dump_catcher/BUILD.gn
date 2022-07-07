@@ -20,6 +20,7 @@ if (defined(ohos_lite)) {
     include_dirs = [
       "include",
       "$faultloggerd_path/common",
+      "$faultloggerd_path/common/dfxlog",
       "$faultloggerd_path/utils",
       "//third_party/libunwind/include",
       "$faultloggerd_path/interfaces/innerkits/faultloggerd_client/include",
@@ -36,20 +37,21 @@ if (defined(ohos_lite)) {
 
     sources = [
       "$faultloggerd_path/tools/process_dump/dfx_dump_request.cpp",
+      "$faultloggerd_path/tools/process_dump/dfx_dump_res.cpp",
       "$faultloggerd_path/tools/process_dump/dfx_elf.cpp",
       "$faultloggerd_path/tools/process_dump/dfx_frame.cpp",
-      "$faultloggerd_path/tools/process_dump/dfx_log.cpp",
+      "$faultloggerd_path/tools/process_dump/dfx_logger.cpp",
       "$faultloggerd_path/tools/process_dump/dfx_maps.cpp",
       "$faultloggerd_path/tools/process_dump/dfx_symbols_cache.cpp",
       "$faultloggerd_path/tools/process_dump/dfx_unwind_local.cpp",
       "$faultloggerd_path/tools/process_dump/dfx_util.cpp",
-      "$faultloggerd_path/tools/process_dump/dfx_dump_res.cpp",
       "$faultloggerd_path/utils/directory_ex.cpp",
       "$faultloggerd_path/utils/file_ex.cpp",
       "dfx_dump_catcher.cpp",
     ]
 
     deps = [
+      "$faultloggerd_path/common/dfxlog:static_common_log",
       "$faultloggerd_path/interfaces/innerkits/faultloggerd_client:libfaultloggerd",
       "//base/hiviewdfx/hilog_lite/frameworks/featured:hilog_shared",
       "//third_party/libunwind:libunwind",
@@ -62,6 +64,7 @@ if (defined(ohos_lite)) {
     include_dirs = [
       "include",
       "$faultloggerd_path/common",
+      "$faultloggerd_path/common/dfxlog",
       "//third_party/libunwind/include",
       "$faultloggerd_path/interfaces/innerkits/faultloggerd_client/include",
       "$faultloggerd_path/tools/process_dump",
@@ -76,18 +79,19 @@ if (defined(ohos_lite)) {
 
     sources = [
       "$faultloggerd_path/tools/process_dump/dfx_dump_request.cpp",
+      "$faultloggerd_path/tools/process_dump/dfx_dump_res.cpp",
       "$faultloggerd_path/tools/process_dump/dfx_elf.cpp",
       "$faultloggerd_path/tools/process_dump/dfx_frame.cpp",
-      "$faultloggerd_path/tools/process_dump/dfx_log.cpp",
+      "$faultloggerd_path/tools/process_dump/dfx_logger.cpp",
       "$faultloggerd_path/tools/process_dump/dfx_maps.cpp",
       "$faultloggerd_path/tools/process_dump/dfx_symbols_cache.cpp",
       "$faultloggerd_path/tools/process_dump/dfx_unwind_local.cpp",
       "$faultloggerd_path/tools/process_dump/dfx_util.cpp",
-      "$faultloggerd_path/tools/process_dump/dfx_dump_res.cpp",
       "dfx_dump_catcher.cpp",
     ]
 
     deps = [
+      "$faultloggerd_path/common/dfxlog:static_common_log",
       "$faultloggerd_path/interfaces/innerkits/faultloggerd_client:libfaultloggerd",
       "//third_party/libunwind:libunwind",
     ]

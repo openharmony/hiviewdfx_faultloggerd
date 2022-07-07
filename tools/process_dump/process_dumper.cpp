@@ -35,7 +35,7 @@
 #include <faultloggerd_client.h>
 #include "dfx_config.h"
 #include "dfx_define.h"
-#include "dfx_log.h"
+#include "dfx_logger.h"
 #include "dfx_process.h"
 #include "dfx_signal.h"
 #include "dfx_thread.h"
@@ -84,7 +84,7 @@ void ProcessDumper::InitPrintThread(int32_t fromSignalHandler, std::shared_ptr<P
         DfxRingBufferWrapper::GetInstance().SetWriteFunc(ProcessDumper::WriteDumpBuf);
     } else {
         int32_t pid = request->GetPid();
-		int32_t signo = request->GetSiginfo().si_signo;
+        int32_t signo = request->GetSiginfo().si_signo;
         bool isCrash = (signo != SIGDUMP);
         FaultLoggerType type = isCrash ? FaultLoggerType::CPP_CRASH : FaultLoggerType::CPP_STACKTRACE;
 

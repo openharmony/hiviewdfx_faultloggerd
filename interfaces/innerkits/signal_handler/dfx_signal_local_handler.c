@@ -69,6 +69,8 @@ static void DFX_SignalHandler(int sig, siginfo_t *si, void *context)
     DFX_InitDumpRequest(&request, sig);
 
     CrashLocalHandler(&request, si, context);
+
+    _exit(0);
 }
 
 void DFX_SetSignalHandlerFunc(SignalHandlerFunc func)

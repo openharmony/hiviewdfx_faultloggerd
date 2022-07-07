@@ -26,7 +26,7 @@
 
 #include "dfx_define.h"
 #include "dfx_elf.h"
-#include "dfx_log.h"
+#include "dfx_logger.h"
 #include "dfx_util.h"
 #include "process_dumper.h"
 

@@ -32,13 +32,13 @@ if (defined(ohos_lite)) {
       "$faultloggerd_path/utils",
       "//utils/native/base/include",
       "$faultloggerd_path/common",
+      "$faultloggerd_path/common/dfxlog",
       "$faultloggerd_path/tools/process_dump",
       "$hilog_lite_include_path",
       "$faultloggerd_path/interfaces/innerkits/faultloggerd_client/include",
     ]
 
     sources = [
-      "//base/hiviewdfx/faultloggerd/tools/process_dump/dfx_log.cpp",
       "//base/hiviewdfx/faultloggerd/utils/directory_ex.cpp",
       "fault_logger_config.cpp",
       "fault_logger_daemon.cpp",
@@ -48,6 +48,7 @@ if (defined(ohos_lite)) {
 
     deps = [
       ":faultlogger.conf",
+      "$faultloggerd_path/common/dfxlog:static_common_log",
       "$faultloggerd_path/interfaces/innerkits/faultloggerd_client:libfaultloggerd",
       "//base/hiviewdfx/hilog_lite/frameworks/featured:hilog_shared",
     ]
@@ -60,6 +61,7 @@ if (defined(ohos_lite)) {
       ".",
       "//utils/native/base/include",
       "$faultloggerd_path/common",
+      "$faultloggerd_path/common/dfxlog",
       "$faultloggerd_path/tools/process_dump",
     ]
   }
@@ -82,7 +84,6 @@ if (defined(ohos_lite)) {
     install_enable = true
     configs = [ ":faultloggerd_config" ]
     sources = [
-      "//base/hiviewdfx/faultloggerd/tools/process_dump/dfx_log.cpp",
       "fault_logger_config.cpp",
       "fault_logger_daemon.cpp",
       "fault_logger_secure.cpp",
@@ -94,6 +95,7 @@ if (defined(ohos_lite)) {
 
     deps = [
       ":faultlogger.conf",
+      "$faultloggerd_path/common/dfxlog:static_common_log",
       "$faultloggerd_path/common/util:dfx_cutil",
       "$faultloggerd_path/interfaces/innerkits/faultloggerd_client:libfaultloggerd",
       "$faultloggerd_path/interfaces/innerkits/signal_handler:dfx_local_handler",

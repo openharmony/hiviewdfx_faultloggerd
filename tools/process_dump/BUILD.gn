@@ -32,6 +32,7 @@ if (defined(ohos_lite)) {
     include_dirs = [
       ".",
       "$faultloggerd_path/common",
+      "$faultloggerd_path/common/dfxlog",
       "//utils/native/base/include",
       "$faultloggerd_path/interfaces/innerkits/faultloggerd_client/include",
       "$hilog_lite_include_path",
@@ -43,7 +44,7 @@ if (defined(ohos_lite)) {
       "dfx_dump_writer.cpp",
       "dfx_elf.cpp",
       "dfx_frame.cpp",
-      "dfx_log.cpp",
+      "dfx_logger.cpp",
       "dfx_maps.cpp",
       "dfx_process.cpp",
       "dfx_signal.cpp",
@@ -69,6 +70,7 @@ if (defined(ohos_lite)) {
     }
 
     deps = [
+      "$faultloggerd_path/common/dfxlog:static_common_log",
       "$faultloggerd_path/interfaces/innerkits/faultloggerd_client:libfaultloggerd",
       "//base/hiviewdfx/hilog_lite/frameworks/featured:hilog_shared",
       "//third_party/libunwind:libunwind",
@@ -81,6 +83,7 @@ if (defined(ohos_lite)) {
     include_dirs = [
       ".",
       "$faultloggerd_path/common",
+      "$faultloggerd_path/common/dfxlog",
       "$faultloggerd_path/utils",
       "//utils/native/base/include",
       "$faultloggerd_path/interfaces/innerkits/faultloggerd_client/include",
@@ -101,7 +104,7 @@ if (defined(ohos_lite)) {
       "dfx_dump_writer.cpp",
       "dfx_elf.cpp",
       "dfx_frame.cpp",
-      "dfx_log.cpp",
+      "dfx_logger.cpp",
       "dfx_maps.cpp",
       "dfx_process.cpp",
       "dfx_signal.cpp",
@@ -128,6 +131,7 @@ if (defined(ohos_lite)) {
     }
 
     deps = [
+      "$faultloggerd_path/common/dfxlog:static_common_log",
       "$faultloggerd_path/interfaces/innerkits/faultloggerd_client:libfaultloggerd",
       "//base/hiviewdfx/hilog_lite/frameworks/featured:hilog_shared",
       "//third_party/libunwind:libunwind",
@@ -140,6 +144,7 @@ if (defined(ohos_lite)) {
     include_dirs = [
       ".",
       "//base/hiviewdfx/faultloggerd/common",
+      "//base/hiviewdfx/faultloggerd/common/dfxlog",
       "//utils/native/base/include",
     ]
   }
@@ -158,7 +163,7 @@ if (defined(ohos_lite)) {
       "dfx_dump_writer.cpp",
       "dfx_elf.cpp",
       "dfx_frame.cpp",
-      "dfx_log.cpp",
+      "dfx_logger.cpp",
       "dfx_maps.cpp",
       "dfx_process.cpp",
       "dfx_signal.cpp",
@@ -184,6 +189,7 @@ if (defined(ohos_lite)) {
     }
 
     deps = [
+      "$faultloggerd_path/common/dfxlog:static_common_log",
       "$faultloggerd_path/interfaces/innerkits/faultloggerd_client:libfaultloggerd",
       "//third_party/libunwind:libunwind",
     ]
@@ -207,7 +213,7 @@ if (defined(ohos_lite)) {
       "dfx_dump_writer.cpp",
       "dfx_elf.cpp",
       "dfx_frame.cpp",
-      "dfx_log.cpp",
+      "dfx_logger.cpp",
       "dfx_maps.cpp",
       "dfx_process.cpp",
       "dfx_signal.cpp",
@@ -236,6 +242,7 @@ if (defined(ohos_lite)) {
     cflags_cc = [ "-DDEBUG_PROCESS_DUMP_CRASH" ]
 
     deps = [
+      "$faultloggerd_path/common/dfxlog:static_common_log",
       "$faultloggerd_path/common/util:dfx_cutil",
       "$faultloggerd_path/interfaces/innerkits/faultloggerd_client:libfaultloggerd",
       "$faultloggerd_path/interfaces/innerkits/signal_handler:dfx_local_handler",

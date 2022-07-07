@@ -15,14 +15,11 @@
 #ifndef DFX_DUMP_RES_H
 #define DFX_DUMP_RES_H
 
-#include <inttypes.h>
 #include <string>
 
 namespace OHOS {
 namespace HiviewDFX {
-
-enum ProcessDumpRes
-{
+enum ProcessDumpRes {
     DUMP_ESUCCESS = 0,  /* no error */
     DUMP_EGETPPID,      /* ppid is crash */
     DUMP_EUNSPEC,       /* unspecified (general) error */
@@ -58,7 +55,6 @@ private:
 
     DumpResMsg resMsg_;
 };
-
 } // namespace HiviewDFX
 } // namespace OHOS
 #endif

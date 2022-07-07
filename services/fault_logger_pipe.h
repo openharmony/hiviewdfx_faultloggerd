@@ -18,7 +18,6 @@
 #ifndef _FAULT_LOGGER_PIPE_H
 #define _FAULT_LOGGER_PIPE_H
 
-#include <cinttypes>
 #include <string>
 #include <memory>
 #include <map>
@@ -56,10 +55,10 @@ public:
     FaultLoggerPipeMap();
     ~FaultLoggerPipeMap();
 
-    void Set(int pid, std::shared_ptr<FaultLoggerPipe2> faultLoggerPipeFd);
+    void Set(int pid, std::shared_ptr<FaultLoggerPipe2> faultLoggerPipe);
     FaultLoggerPipe2* Get(int pid);
     void Del(int pid);
-    bool Find(int pid); 
+    bool Find(int pid);
 private:
     std::map<int, std::shared_ptr<FaultLoggerPipe2> > faultLoggerPipes_;
 };
