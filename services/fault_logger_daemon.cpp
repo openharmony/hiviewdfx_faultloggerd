@@ -112,8 +112,6 @@ int32_t FaultLoggerDaemon::StartServer()
 
 bool FaultLoggerDaemon::InitEnvironment()
 {
-    DfxLogInfo("%s :: %s Enter.", OHOS::HiviewDFX::FAULTLOGGERD_TAG.c_str(), __func__);
-
     faultLoggerConfig_ = std::make_shared<FaultLoggerConfig>(LOG_FILE_NUMBER, LOG_FILE_SIZE,
         LOG_FILE_PATH, DEBUG_LOG_FILE_PATH);
     faultLoggerSecure_ = std::make_shared<FaultLoggerSecure>();
@@ -132,8 +130,6 @@ bool FaultLoggerDaemon::InitEnvironment()
     if (chmod(FAULTLOGGERD_SOCK_PATH, S_IRWXU | S_IRWXG | S_IROTH | S_IWOTH) < 0) {
         DfxLogError("%s :: Failed to chmod, %d", FAULTLOGGERD_TAG.c_str(), errno);
     }
-
-    DfxLogInfo("%s :: %s success finished.", OHOS::HiviewDFX::FAULTLOGGERD_TAG.c_str(), __func__);
     return true;
 }
 
@@ -165,7 +161,7 @@ void FaultLoggerDaemon::HandleLogFileDesClientReqeust(int32_t connectionFd, cons
 
 void FaultLoggerDaemon::HandlePipeFdClientReqeust(int32_t connectionFd, const FaultLoggerdRequest * request)
 {
-    DfxLogInfo("%s :: pid(%d), pipeType(%d).\n", FAULTLOGGERD_TAG.c_str(), request->pid, request->pipeType);
+    DfxLogDebug("%s :: pid(%d), pipeType(%d).\n", FAULTLOGGERD_TAG.c_str(), request->pid, request->pipeType);
     int fd = -1;
 
     if (request->pipeType == (int32_t)FaultLoggerPipeType::PIPE_FD_DELETE) {
@@ -301,7 +297,7 @@ void FaultLoggerDaemon::HandleSdkDumpReqeust(int32_t connectionFd, FaultLoggerdR
             DfxLogError("%s :: pid(%d) is dumping, break.\n", FAULTLOGGERD_TAG.c_str(), request->pid);
             break;
         }
-        std::shared_ptr<FaultLoggerPipe2> ptr = std::make_shared<FaultLoggerPipe2>();
+        std::shared_ptr<FaultLoggerPipe2> ptr(new FaultLoggerPipe2());
         faultLoggerPipeMap_->Set(request->pid, ptr);
 
         int sig = SIGDUMP;

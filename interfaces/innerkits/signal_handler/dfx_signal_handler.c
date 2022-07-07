@@ -322,16 +322,20 @@ static int CheckLastHandledTid(int sig, siginfo_t *si)
 
 static void DFX_SignalHandler(int sig, siginfo_t *si, void *context)
 {
-    if (g_doSignalHandlering == TRUE) {
-        DfxLogError("Handlering sigdump now, skip sig(%d) request.", sig);
-        return;
-    }
-    g_doSignalHandlering = TRUE;
-
     if (sig != SIGDUMP) {
         if (CheckLastHandledTid(sig, si) == TRUE) {
             return;
         }
+        if (g_lastHandledTidIndex < MAX_HANDLED_TID_NUMBER) {
+            g_lastHandledTid[g_lastHandledTidIndex] = gettid();
+            g_lastHandledTidIndex = g_lastHandledTidIndex + 1;
+        }
+
+        if (g_doSignalHandlering == TRUE) {
+            DfxLogError("Handlering sigdump now, skip sig(%d) request.", sig);
+            return;
+        }
+        g_doSignalHandlering = TRUE;
     }
     
     pthread_mutex_lock(&g_signalHandlerMutex);
@@ -346,11 +350,6 @@ static void DFX_SignalHandler(int sig, siginfo_t *si, void *context)
 
     GetThreadName(g_request.threadName, sizeof(g_request.threadName));
     GetProcessName(g_request.processName, sizeof(g_request.processName));
-
-    if (sig != SIGDUMP && g_lastHandledTidIndex < MAX_HANDLED_TID_NUMBER) {
-        g_lastHandledTid[g_lastHandledTidIndex] = g_request.tid;
-        g_lastHandledTidIndex = g_lastHandledTidIndex + 1;
-    }
 
     if (memcpy_s(&(g_request.siginfo), sizeof(g_request.siginfo), si, sizeof(siginfo_t)) != 0) {
         DfxLogError("Failed to copy siginfo.");
@@ -427,10 +426,10 @@ out:
         if (syscall(SYS_rt_tgsigqueueinfo, getpid(), gettid(), si->si_signo, si) != 0) {
             DfxLogError("Failed to resend signal(%d).", sig);
         }
+        g_doSignalHandlering = FALSE;
     }
 
     DfxLogInfo("Finish handle signal(%d) in %d:%d", sig, g_request.pid, g_request.tid);
-    g_doSignalHandlering = FALSE;
     pthread_mutex_unlock(&g_signalHandlerMutex);
 }
 

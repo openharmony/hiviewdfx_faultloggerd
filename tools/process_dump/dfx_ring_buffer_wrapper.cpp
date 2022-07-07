@@ -18,6 +18,7 @@
 #include "dfx_ring_buffer_wrapper.h"
 
 #include <securec.h>
+#include <unistd.h>
 
 #include "dfx_define.h"
 #include "dfx_logger.h"
@@ -40,6 +41,10 @@ void DfxRingBufferWrapper::LoopPrintRingBuffer()
         return;
     }
 
+    if (DfxRingBufferWrapper::GetInstance().writeFunc_ == nullptr) {
+        DfxRingBufferWrapper::GetInstance().writeFunc_ = DfxRingBufferWrapper::DefaultWrite;
+    }
+
     std::unique_lock<std::mutex> lck(printMutex_);
     while (true) {
         bool hasFinished = DfxRingBufferWrapper::GetInstance().hasFinished_;
@@ -53,13 +58,8 @@ void DfxRingBufferWrapper::LoopPrintRingBuffer()
             }
 
             for (unsigned int i = 0; i < item.Length(); i++) {
-                if (DfxRingBufferWrapper::GetInstance().writeFunc_ != nullptr) {
-                    DfxRingBufferWrapper::GetInstance().writeFunc_(DfxRingBufferWrapper::GetInstance().fd_, \
-                        item.At(i).c_str(), item.At(i).length());
-                } else {
-                    DfxRingBufferWrapper::GetInstance().DefaultWrite(DfxRingBufferWrapper::GetInstance().fd_, \
-                        item.At(i).c_str(), item.At(i).length());
-                }
+                DfxRingBufferWrapper::GetInstance().writeFunc_(DfxRingBufferWrapper::GetInstance().fd_, \
+                    item.At(i).c_str(), item.At(i).length());
             }
             DfxRingBufferWrapper::GetInstance().ringBuffer_.Skip(item.Length());
         } else {

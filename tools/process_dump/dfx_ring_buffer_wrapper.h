@@ -42,12 +42,12 @@ public:
 
     void SetWriteBufFd(int32_t fd);
     void SetWriteFunc(RingBufferWriteFunc func);
-    int DefaultWrite(int32_t fd, const char *buf, const int len);
 
     void AppendMsg(std::string msg);
     int AppendBuf(const char *format, ...);
 private:
     static void LoopPrintRingBuffer();
+    static int DefaultWrite(int32_t fd, const char *buf, const int len);
 
     DfxRingBufferWrapper() = default;
     DISALLOW_COPY_AND_MOVE(DfxRingBufferWrapper);

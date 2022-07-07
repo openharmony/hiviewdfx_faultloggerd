@@ -37,6 +37,7 @@ if (defined(ohos_lite)) {
       sources = [
         "$faultloggerd_path/services/fault_logger_config.cpp",
         "$faultloggerd_path/services/fault_logger_daemon.cpp",
+        "$faultloggerd_path/services/fault_logger_pipe.cpp",
         "$faultloggerd_path/services/fault_logger_secure.cpp",
         "//base/hiviewdfx/faultloggerd/utils/directory_ex.cpp",
         "src/faultlogger_config_test.cpp",
@@ -75,6 +76,7 @@ if (defined(ohos_lite)) {
     sources = [
       "$faultloggerd_path/services/fault_logger_config.cpp",
       "$faultloggerd_path/services/fault_logger_daemon.cpp",
+      "$faultloggerd_path/services/fault_logger_pipe.cpp",
       "$faultloggerd_path/services/fault_logger_secure.cpp",
       "src/faultlogger_config_test.cpp",
       "src/faultlogger_daemon_test.cpp",

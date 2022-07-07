@@ -242,7 +242,11 @@ bool DfxDumpCatcher::DoDumpCatchRemote(int pid, int tid, std::string& msg)
             bufMsg.append(buffer);
         } else if (FD_ISSET(readResFd, &readfds)) {
             DumpResMsg dumpRes;
-            read(readResFd, &dumpRes, sizeof(struct DumpResMsg));
+            ssize_t nread = read(readResFd, &dumpRes, sizeof(struct DumpResMsg));
+            if (nread != sizeof(struct DumpResMsg)) {
+                DfxLogWarn("%s :: %s :: read error", DFXDUMPCATCHER_TAG.c_str(), __func__);
+                continue;
+            }
             if (dumpRes.res == ProcessDumpRes::DUMP_ESUCCESS) {
                 ret = true;
             }

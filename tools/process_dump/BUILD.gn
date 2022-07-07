@@ -41,12 +41,14 @@ if (defined(ohos_lite)) {
     sources = [
       "dfx_config.cpp",
       "dfx_dump_request.cpp",
+      "dfx_dump_res.cpp",
       "dfx_dump_writer.cpp",
       "dfx_elf.cpp",
       "dfx_frame.cpp",
       "dfx_logger.cpp",
       "dfx_maps.cpp",
       "dfx_process.cpp",
+      "dfx_ring_buffer_wrapper.cpp",
       "dfx_signal.cpp",
       "dfx_symbols_cache.cpp",
       "dfx_thread.cpp",
@@ -54,8 +56,6 @@ if (defined(ohos_lite)) {
       "dfx_unwind_remote.cpp",
       "dfx_util.cpp",
       "process_dumper.cpp",
-      "dfx_ring_buffer_wrapper.cpp",
-      "dfx_dump_res.cpp",
     ]
 
     if (target_cpu == "arm") {
@@ -101,12 +101,14 @@ if (defined(ohos_lite)) {
       "cppcrash_reporter.cpp",
       "dfx_config.cpp",
       "dfx_dump_request.cpp",
+      "dfx_dump_res.cpp",
       "dfx_dump_writer.cpp",
       "dfx_elf.cpp",
       "dfx_frame.cpp",
       "dfx_logger.cpp",
       "dfx_maps.cpp",
       "dfx_process.cpp",
+      "dfx_ring_buffer_wrapper.cpp",
       "dfx_signal.cpp",
       "dfx_symbols_cache.cpp",
       "dfx_thread.cpp",
@@ -115,8 +117,6 @@ if (defined(ohos_lite)) {
       "dfx_util.cpp",
       "main.cpp",
       "process_dumper.cpp",
-      "dfx_ring_buffer_wrapper.cpp",
-      "dfx_dump_res.cpp",
     ]
 
     if (target_cpu == "arm") {
@@ -160,12 +160,14 @@ if (defined(ohos_lite)) {
     sources = [
       "dfx_config.cpp",
       "dfx_dump_request.cpp",
+      "dfx_dump_res.cpp",
       "dfx_dump_writer.cpp",
       "dfx_elf.cpp",
       "dfx_frame.cpp",
       "dfx_logger.cpp",
       "dfx_maps.cpp",
       "dfx_process.cpp",
+      "dfx_ring_buffer_wrapper.cpp",
       "dfx_signal.cpp",
       "dfx_symbols_cache.cpp",
       "dfx_thread.cpp",
@@ -173,8 +175,6 @@ if (defined(ohos_lite)) {
       "dfx_unwind_remote.cpp",
       "dfx_util.cpp",
       "process_dumper.cpp",
-      "dfx_ring_buffer_wrapper.cpp",
-      "dfx_dump_res.cpp",
     ]
 
     if (target_cpu == "arm") {
@@ -210,12 +210,14 @@ if (defined(ohos_lite)) {
       "cppcrash_reporter.cpp",
       "dfx_config.cpp",
       "dfx_dump_request.cpp",
+      "dfx_dump_res.cpp",
       "dfx_dump_writer.cpp",
       "dfx_elf.cpp",
       "dfx_frame.cpp",
       "dfx_logger.cpp",
       "dfx_maps.cpp",
       "dfx_process.cpp",
+      "dfx_ring_buffer_wrapper.cpp",
       "dfx_signal.cpp",
       "dfx_symbols_cache.cpp",
       "dfx_thread.cpp",
@@ -224,8 +226,6 @@ if (defined(ohos_lite)) {
       "dfx_util.cpp",
       "main.cpp",
       "process_dumper.cpp",
-      "dfx_ring_buffer_wrapper.cpp",
-      "dfx_dump_res.cpp",
     ]
 
     if (target_cpu == "arm") {
