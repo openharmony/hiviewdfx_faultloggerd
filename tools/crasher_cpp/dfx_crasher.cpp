@@ -23,14 +23,17 @@
 #include <cstdlib>
 #include <cstring>
 #include <fstream>
-#include <hilog/log.h>
 #include <iostream>
+#include <thread>
+#include <vector>
+
 #include <pthread.h>
+#include <unistd.h>
+
 #include <sys/prctl.h>
 #include <sys/resource.h>
-#include <thread>
-#include <unistd.h>
-#include <vector>
+
+#include <hilog/log.h>
 
 #include "dfx_signal_handler.h"
 #include "securec.h"
@@ -45,7 +48,6 @@
 #define LOG_TAG "Unwind"
 #endif
 
-static const int RAISE35 = 35;
 static const int ARG1024 = 1024;
 static const int ARG128 = 128;
 
@@ -99,7 +101,7 @@ NOINLINE int DfxCrasher::RaiseBusError() const
 
 NOINLINE int DfxCrasher::DumpStackTrace() const
 {
-    if (raise(RAISE35) != 0) {
+    if (raise(SIGDUMP) != 0) {
         std::cout << "raise error" << std::endl;
     }
     return 0;
@@ -323,6 +325,21 @@ void DfxCrasher::PrintUsage() const
     std::cout << std::endl;
 }
 
+NOINLINE static uint64_t CrashInLambda()
+{
+    std::function<void()> lambda = TestFunc50;
+    lambda();
+    return 0;
+}
+
+NOINLINE static uint64_t DoDumpCrash()
+{
+    std::thread t(TestFunc1);
+    raise(SIGDUMP);
+    t.join();
+    return 0;
+}
+
 void* DfxCrasher::DoCrashInThread(void * inputArg)
 {
     prctl(PR_SET_NAME, "SubTestThread");
@@ -426,11 +443,18 @@ uint64_t DfxCrasher::ParseAndDoCrash(const char *arg)
     if (!strcasecmp(arg, "StackOver64")) {
         return StackOver64();
     }
-    
+
     if (!strcasecmp(arg, "StackTop")) {
         return StackTop();
     }
 
+    if (!strcasecmp(arg, "DumpCrash")) {
+        return DoDumpCrash();
+    }
+
+    if (!strcasecmp(arg, "CrashInLambda")) {
+        return CrashInLambda();
+    }
     return 0;
 }
 
