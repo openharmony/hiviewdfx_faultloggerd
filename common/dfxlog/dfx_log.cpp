@@ -20,6 +20,18 @@
 #include <unistd.h>
 #include <fcntl.h>
 
+#ifdef DFX_SIGNALHANDLER_TAG
+#ifdef LOG_DOMAIN
+#undef LOG_DOMAIN
+#define LOG_DOMAIN 0x2D11
+#endif
+
+#ifdef LOG_TAG
+#undef LOG_TAG
+#define LOG_TAG "DfxSignalHandler"
+#endif
+#endif
+
 enum class LOG_LEVEL_CLASS {
     LOG_LEVEL_ALL = 1,
     LOG_LEVEL_TRACE,
@@ -78,14 +90,6 @@ void LogToDmesg(LOG_LEVEL_CLASS logLevel, const char *info)
 }
 #endif
 
-void print(const char* str) {
-#ifdef DFX_LOG_USE_HILOG_BASE
-    HILOG_BASE_DEBUG(LOG_CORE, "%{public}s", str);
-#else
-    OHOS::HiviewDFX::HiLog::Debug(g_LOG_LABEL, "%{public}s", str);
-#endif
-}
-
 int checkDebugLevel()
 {
     return LOG_LEVEL_CLASS::LOG_LEVEL_DBG >= LOG_LEVEL ? 1 : 0;
@@ -94,13 +98,9 @@ int checkDebugLevel()
 int DfxLogDebug(const char *format, ...)
 {
 #ifdef DFX_NO_PRINT_LOG
-print(format);
-print("no print:");
     return 0;
 #endif
     if (LOG_LEVEL_CLASS::LOG_LEVEL_DBG < LOG_LEVEL) {
-        print(format);
-print("below level:");
         return 0;
     }
 
@@ -110,7 +110,11 @@ print("below level:");
     va_start(args, format);
     ret = vsnprintf_s(buf, sizeof(buf), sizeof(buf) - 1, format, args);
 #ifdef DFX_LOG_USE_HILOG_BASE
+#ifdef DFX_SIGNALHANDLER_TAG
+    HiLogBasePrint(LOG_CORE, LOG_DEBUG, LOG_DOMAIN, LOG_TAG, "%{public}s", buf);
+#else
     HILOG_BASE_DEBUG(LOG_CORE, "%{public}s", buf);
+#endif
 #else
     OHOS::HiviewDFX::HiLog::Debug(g_LOG_LABEL, "%{public}s", buf);
 #endif
@@ -125,13 +129,9 @@ print("below level:");
 int DfxLogInfo(const char *format, ...)
 {
 #ifdef DFX_NO_PRINT_LOG
-print(format);
-print("no print:");
     return 0;
 #endif
     if (LOG_LEVEL_CLASS::LOG_LEVEL_INFO < LOG_LEVEL) {
-        print(format);
-print("below level:");
         return 0;
     }
     
@@ -141,7 +141,11 @@ print("below level:");
     va_start(args, format);
     ret = vsnprintf_s(buf, sizeof(buf), sizeof(buf) - 1, format, args);
 #ifdef DFX_LOG_USE_HILOG_BASE
+#ifdef DFX_SIGNALHANDLER_TAG
+    HiLogBasePrint(LOG_CORE, LOG_INFO, LOG_DOMAIN, LOG_TAG, "%{public}s", buf);
+#else
     HILOG_BASE_INFO(LOG_CORE, "%{public}s", buf);
+#endif
 #else
     OHOS::HiviewDFX::HiLog::Info(g_LOG_LABEL, "%{public}s", buf);
 #endif
@@ -156,13 +160,9 @@ print("below level:");
 int DfxLogWarn(const char *format, ...)
 {
 #ifdef DFX_NO_PRINT_LOG
-print(format);
-print("no print:");
     return 0;
 #endif
     if (LOG_LEVEL_CLASS::LOG_LEVEL_WARN < LOG_LEVEL) {
-        print(format);
-print("below level warn:");
         return 0;
     }
 
@@ -172,7 +172,11 @@ print("below level warn:");
     va_start(args, format);
     ret = vsnprintf_s(buf, sizeof(buf), sizeof(buf) - 1, format, args);
 #ifdef DFX_LOG_USE_HILOG_BASE
+#ifdef DFX_SIGNALHANDLER_TAG
+    HiLogBasePrint(LOG_CORE, LOG_WARN, LOG_DOMAIN, LOG_TAG, "%{public}s", buf);
+#else
     HILOG_BASE_WARN(LOG_CORE, "%{public}s", buf);
+#endif
 #else
     OHOS::HiviewDFX::HiLog::Warn(g_LOG_LABEL, "%{public}s", buf);
 #endif
@@ -187,13 +191,9 @@ print("below level warn:");
 int DfxLogError(const char *format, ...)
 {
 #ifdef DFX_NO_PRINT_LOG
-print(format);
-print("no print:");
     return 0;
 #endif
     if (LOG_LEVEL_CLASS::LOG_LEVEL_ERR < LOG_LEVEL) {
-        print(format);
-print("below level err:");
         return 0;
     }
 
@@ -203,7 +203,11 @@ print("below level err:");
     va_start(args, format);
     ret = vsnprintf_s(buf, sizeof(buf), sizeof(buf) - 1, format, args);
 #ifdef DFX_LOG_USE_HILOG_BASE
+#ifdef DFX_SIGNALHANDLER_TAG
+    HiLogBasePrint(LOG_CORE, LOG_ERROR, LOG_DOMAIN, LOG_TAG, "%{public}s", buf);
+#else
     HILOG_BASE_ERROR(LOG_CORE, "%{public}s", buf);
+#endif
 #else
     OHOS::HiviewDFX::HiLog::Error(g_LOG_LABEL, "%{public}s", buf);
 #endif
@@ -218,13 +222,9 @@ print("below level err:");
 int DfxLogFatal(const char *format, ...)
 {
 #ifdef DFX_NO_PRINT_LOG
-print(format);
-print("no print:");
     return 0;
 #endif
     if (LOG_LEVEL_CLASS::LOG_LEVEL_FATAL < LOG_LEVEL) {
-        print(format);
-print("below level fatal:");
         return 0;
     }
 
@@ -234,7 +234,11 @@ print("below level fatal:");
     va_start(args, format);
     ret = vsnprintf_s(buf, sizeof(buf), sizeof(buf) - 1, format, args);
 #ifdef DFX_LOG_USE_HILOG_BASE
+#ifdef DFX_SIGNALHANDLER_TAG
+    HiLogBasePrint(LOG_CORE, LOG_FATAL, LOG_DOMAIN, LOG_TAG, "%{public}s", buf);
+#else
     HILOG_BASE_FATAL(LOG_CORE, "%{public}s", buf);
+#endif
 #else
     OHOS::HiviewDFX::HiLog::Fatal(g_LOG_LABEL, "%{public}s", buf);
 #endif
