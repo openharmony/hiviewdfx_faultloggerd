@@ -33,6 +33,7 @@
 #include "dfx_dump_writer.h"
 #include "dfx_logger.h"
 #include "process_dumper.h"
+#include "dfx_maps.h"
 
 #if defined(DEBUG_PROCESS_DUMP_CRASH)
 #include "dfx_signal_local_handler.h"
@@ -100,6 +101,11 @@ static bool CheckPidTid(OHOS::HiviewDFX::ProcessDumpType type, int32_t pid, int3
             DfxLogWarn("tid is zero or negative.");
             return false;
         }
+    }
+
+    auto maps = OHOS::HiviewDFX::DfxElfMaps::Create(pid_);
+    if (!maps) {
+        return false;
     }
 
     // check pid, make sure /proc/xxx/maps is valid.
