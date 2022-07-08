@@ -103,7 +103,7 @@ static bool CheckPidTid(OHOS::HiviewDFX::ProcessDumpType type, int32_t pid, int3
         }
     }
 
-    auto maps = OHOS::HiviewDFX::DfxElfMaps::Create(pid_);
+    auto maps = OHOS::HiviewDFX::DfxElfMaps::Create(pid);
     if (!maps) {
         return false;
     }
