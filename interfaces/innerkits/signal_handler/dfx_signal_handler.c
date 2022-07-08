@@ -75,15 +75,6 @@
 #define NUMBER_SIXTYFOUR 64
 #define INHERITABLE_OFFSET 32
 
-#define OHOS_TEMP_FAILURE_RETRY(exp)            \
-    ({                                     \
-    long int _rc;                          \
-    do {                                   \
-        _rc = (long int)(exp);             \
-    } while ((_rc == -1) && (errno == EINTR)); \
-    _rc;                                   \
-    })
-
 void __attribute__((constructor)) InitHandler(void)
 {
     DFX_InstallSignalHandler();
@@ -99,7 +90,7 @@ static const int SIGNALHANDLER_TIMEOUT = 10000; // 10000 us
 static int g_lastHandledTid[MAX_HANDLED_TID_NUMBER] = {0};
 static int g_lastHandledTidIndex = 0;
 static const int ALARM_TIME_S = 10;
-static int g_curSig = -1;
+static BOOL g_doSignalHandlering = FALSE;
 
 enum DumpPreparationStage {
     CREATE_PIPE_FAIL = 1,
@@ -274,10 +265,15 @@ static int DFX_ExecDump(void *arg)
     }
 
     DfxLogInfo("execle processdump.");
+    int ret = 0;
 #ifdef DFX_LOG_USE_HILOG_BASE
-    execle("/system/bin/processdump", "processdump", "-signalhandler", NULL, NULL);
+    if ((ret = execle("/system/bin/processdump", "processdump", "-signalhandler", NULL, NULL)) == -1) {
+        DfxLogError("Failed to execle processdump.");
+    }
 #else
-    execle("/bin/processdump", "processdump", "-signalhandler", NULL, NULL);
+    if ((ret = execle("/bin/processdump", "processdump", "-signalhandler", NULL, NULL)) == -1) {
+        DfxLogError("Failed to execle processdump.");
+    }
 #endif
     pthread_mutex_unlock(&g_dumpMutex);
     return errno;
@@ -330,11 +326,17 @@ static void DFX_SignalHandler(int sig, siginfo_t *si, void *context)
         if (CheckLastHandledTid(sig, si) == TRUE) {
             return;
         }
-    } else if (g_curSig == sig) {
-        DfxLogInfo("We are handling sigdump now, skip same request.");
-        return;
+        if (g_lastHandledTidIndex < MAX_HANDLED_TID_NUMBER) {
+            g_lastHandledTid[g_lastHandledTidIndex] = gettid();
+            g_lastHandledTidIndex = g_lastHandledTidIndex + 1;
+        }
+
+        if (g_doSignalHandlering == TRUE) {
+            DfxLogError("Handlering sigdump now, skip sig(%d) request.", sig);
+            return;
+        }
+        g_doSignalHandlering = TRUE;
     }
-    g_curSig = sig;
     
     pthread_mutex_lock(&g_signalHandlerMutex);
     (void)memset_s(&g_request, sizeof(g_request), 0, sizeof(g_request));
@@ -349,19 +351,12 @@ static void DFX_SignalHandler(int sig, siginfo_t *si, void *context)
     GetThreadName(g_request.threadName, sizeof(g_request.threadName));
     GetProcessName(g_request.processName, sizeof(g_request.processName));
 
-    if (sig != SIGDUMP && g_lastHandledTidIndex < MAX_HANDLED_TID_NUMBER) {
-        g_lastHandledTid[g_lastHandledTidIndex] = g_request.tid;
-        g_lastHandledTidIndex = g_lastHandledTidIndex + 1;
-    }
-
-    if (memcpy_s(&(g_request.siginfo), sizeof(g_request.siginfo),
-        si, sizeof(siginfo_t)) != 0) {
+    if (memcpy_s(&(g_request.siginfo), sizeof(g_request.siginfo), si, sizeof(siginfo_t)) != 0) {
         DfxLogError("Failed to copy siginfo.");
         pthread_mutex_unlock(&g_signalHandlerMutex);
         return;
     }
-    if (memcpy_s(&(g_request.context), sizeof(g_request.context),
-        context, sizeof(ucontext_t)) != 0) {
+    if (memcpy_s(&(g_request.context), sizeof(g_request.context), context, sizeof(ucontext_t)) != 0) {
         DfxLogError("Failed to copy ucontext.");
         pthread_mutex_unlock(&g_signalHandlerMutex);
         return;
@@ -370,11 +365,11 @@ static void DFX_SignalHandler(int sig, siginfo_t *si, void *context)
     pid_t childPid;
     int status;
     int ret = -1;
-    int timeout = 0;
+    bool isTimeout = false;
     int startTime = (int)time(NULL);
     // set privilege for dump ourself
     int prevDumpableStatus = prctl(PR_GET_DUMPABLE);
-    BOOL isTracerStatusModified = FALSE;
+    bool isTracerStatusModified = false;
     if (prctl(PR_SET_DUMPABLE, 1) != 0) {
         DfxLogError("Failed to set dumpable.");
         goto out;
@@ -385,8 +380,9 @@ static void DFX_SignalHandler(int sig, siginfo_t *si, void *context)
             goto out;
         }
     } else {
-        isTracerStatusModified = TRUE;
+        isTracerStatusModified = true;
     }
+
     // fork a child process that could ptrace us
     childPid = DFX_ForkAndDump();
     if (childPid < 0) {
@@ -407,7 +403,7 @@ static void DFX_SignalHandler(int sig, siginfo_t *si, void *context)
         }
 
         if ((int)time(NULL) - startTime > PROCESSDUMP_TIMEOUT) {
-            timeout = 1;
+            isTimeout = true;
             DfxLogError("Exceed max wait time, errno(%d)", errno);
             goto out;
         }
@@ -416,24 +412,24 @@ static void DFX_SignalHandler(int sig, siginfo_t *si, void *context)
     DfxLogInfo("waitpid for process(%d) return with ret(%d) status(%d)", childPid, ret, status);
 out:
 #if defined(CRASH_LOCAL_HANDLER)
-    if ((sig != SIGDUMP) && ((timeout == 1) || ((ret >= 0) && (status != 0)))) {
+    if ((sig != SIGDUMP) && ((isTimeout) || ((ret >= 0) && (status != 0)))) {
         CrashLocalHandler(&g_request, si, context);
     }
 #endif
     ResetSignalHandlerIfNeed(sig);
     prctl(PR_SET_DUMPABLE, prevDumpableStatus);
-    if (isTracerStatusModified == TRUE) {
+    if (isTracerStatusModified == true) {
         prctl(PR_SET_PTRACER, 0);
     }
 
     if (sig != SIGDUMP) {
         if (syscall(SYS_rt_tgsigqueueinfo, getpid(), gettid(), si->si_signo, si) != 0) {
-            DfxLogError("Failed to resend signal.");
+            DfxLogError("Failed to resend signal(%d).", sig);
         }
+        g_doSignalHandlering = FALSE;
     }
 
     DfxLogInfo("Finish handle signal(%d) in %d:%d", sig, g_request.pid, g_request.tid);
-    g_curSig = -1;
     pthread_mutex_unlock(&g_signalHandlerMutex);
 }
 

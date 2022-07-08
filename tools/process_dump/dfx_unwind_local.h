@@ -48,7 +48,6 @@ public:
     bool ExecLocalDumpUnwind(int tid, size_t skipFramNum);
     void ResolveFrameInfo(size_t index, DfxFrame& frame);
     std::string CollectUnwindResult(int32_t tid);
-    int WriteUnwindResult(int fd, const std::string msg);
     void CollectUnwindFrames(std::vector<std::shared_ptr<DfxFrame>>& frames);
     bool SendLocalDumpRequest(int32_t tid);
     bool WaitLocalDumpRequest();

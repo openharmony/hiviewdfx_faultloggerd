@@ -37,20 +37,18 @@
 #include "dfx_util.h"
 #include "dfx_config.h"
 #include "dfx_define.h"
-#include "process_dumper.h"
+#include "dfx_ring_buffer_wrapper.h"
 
 namespace OHOS {
 namespace HiviewDFX {
 void DfxProcess::FillProcessName()
 {
-    DfxLogDebug("Enter %s.", __func__);
     char path[NAME_LEN] = "\0";
     if (snprintf_s(path, sizeof(path), sizeof(path) - 1, "/proc/%d/cmdline", pid_) <= 0) {
         return;
     }
 
     ReadStringFromFile(path, processName_, NAME_LEN);
-    DfxLogDebug("Exit %s.", __func__);
 }
 
 std::shared_ptr<DfxProcess> DfxProcess::CreateProcessWithKeyThread(pid_t pid, std::shared_ptr<DfxThread> keyThread)
@@ -117,11 +115,7 @@ bool DfxProcess::InitOtherThreads(bool attach)
 
     struct dirent *ent;
     while ((ent = readdir(dir))) {
-        if (strcmp(ent->d_name, ".") == 0) {
-            continue;
-        }
-
-        if (strcmp(ent->d_name, "..") == 0) {
+        if ((strcmp(ent->d_name, ".") == 0) || (strcmp(ent->d_name, "..") == 0)) {
             continue;
         }
 
@@ -236,11 +230,11 @@ void DfxProcess::PrintProcessMapsByConfig()
 {
     if (DfxConfig::GetInstance().GetDisplayMaps()) {
         if (GetMaps()) {
-            OHOS::HiviewDFX::ProcessDumper::GetInstance().PrintDumpProcessMsg("\nMaps:\n");
+            DfxRingBufferWrapper::GetInstance().AppendMsg("\nMaps:\n");
         }
         auto mapsVector = maps_->GetValues();
         for (auto iter = mapsVector.begin(); iter != mapsVector.end(); iter++) {
-            OHOS::HiviewDFX::ProcessDumper::GetInstance().PrintDumpProcessMsg((*iter)->PrintMap());
+            DfxRingBufferWrapper::GetInstance().AppendMsg((*iter)->PrintMap());
         }
     } else {
         DfxLogDebug("hidden Maps");
@@ -251,7 +245,7 @@ void DfxProcess::PrintThreadsHeaderByConfig()
 {
     if (DfxConfig::GetInstance().GetDisplayBacktrace()) {
         if (!isSignalDump_) {
-            OHOS::HiviewDFX::ProcessDumper::GetInstance().PrintDumpProcessMsg("Other thread info:\n");
+            DfxRingBufferWrapper::GetInstance().AppendMsg("Other thread info:\n");
         }
     } else {
         DfxLogDebug("hidden thread info.");

@@ -27,7 +27,6 @@
 
 #include "nocopyable.h"
 #include "dfx_dump_request.h"
-#include "dfx_ring_buffer.h"
 #include "dfx_process.h"
 #include "cppcrash_reporter.h"
 
@@ -39,21 +38,16 @@ public:
     ~ProcessDumper() = default;
 
     void Dump(bool isSignalHdlr, ProcessDumpType type, int32_t pid, int32_t tid);
-    
-    void PrintDumpProcessMsg(std::string msg);
-    int PrintDumpProcessBuf(const char *format, ...);
-
-    DfxRingBuffer<BACK_TRACE_RING_BUFFER_SIZE, std::string> backTraceRingBuffer_;
+    void WriteDumpRes(int32_t res);
 private:
-    static void LoopPrintBackTraceInfo();
-
+    static int WriteDumpBuf(int fd, const char* buf, const int len);
     void DumpProcessWithSignalContext(std::shared_ptr<DfxProcess> &process, \
                                       std::shared_ptr<ProcessDumpRequest> request);
     void DumpProcessWithPidTid(std::shared_ptr<DfxProcess> &process, \
                                std::shared_ptr<ProcessDumpRequest> request);
     
     void InitPrintThread(int32_t fromSignalHandler, std::shared_ptr<ProcessDumpRequest> request, \
-        std::shared_ptr<DfxProcess> process);
+                         std::shared_ptr<DfxProcess> process);
     void PrintDumpProcessWithSignalContextHeader(std::shared_ptr<DfxProcess> process, siginfo_t info,
                                                  const std::string& msg);
     void PrintDumpProcessFooter(std::shared_ptr<DfxProcess> process, bool printMapFlag);
@@ -61,12 +55,9 @@ private:
     ProcessDumper() = default;
     DISALLOW_COPY_AND_MOVE(ProcessDumper);
 
-    int32_t backTraceFileFd_;
-    std::thread backTracePrintThread_;
-    volatile bool backTraceIsFinished_ = false;
     std::shared_ptr<CppCrashReporter> reporter_ = nullptr;
-    static std::condition_variable backTracePrintCV;
-    static std::mutex backTracePrintMutx;
+    int32_t resFd_ = -1;
+    int32_t resDump_ = 0;
 };
 } // namespace HiviewDFX
 } // namespace OHOS

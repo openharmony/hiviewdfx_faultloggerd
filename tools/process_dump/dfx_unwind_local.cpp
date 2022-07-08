@@ -144,15 +144,6 @@ std::string DfxUnwindLocal::CollectUnwindResult(int32_t tid)
     return result.str();
 }
 
-int DfxUnwindLocal::WriteUnwindResult(int fd, const std::string msg)
-{
-    int ret = 0;
-    if (fd > 0) {
-        ret = write(fd, msg.c_str(), msg.length());
-    }
-    return ret;
-}
-
 void DfxUnwindLocal::CollectUnwindFrames(std::vector<std::shared_ptr<DfxFrame>>& frames)
 {
     if (curIndex_ == 0) {

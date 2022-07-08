@@ -147,7 +147,6 @@ std::shared_ptr<DfxFrame> DfxThread::GetAvaliableFrame()
 
 void DfxThread::PrintThread(const int32_t fd, bool isSignalDump)
 {
-    DfxLogWarn("PrintThread");
     if (dfxFrames_.size() == 0) {
         DfxLogWarn("No frame print for tid %d.", tid_);
         return;
@@ -155,11 +154,8 @@ void DfxThread::PrintThread(const int32_t fd, bool isSignalDump)
 
     PrintThreadBacktraceByConfig(fd);
     if (isSignalDump == false) {
-        DfxLogWarn("isSignalDump = true");
         PrintThreadRegisterByConfig();
         PrintThreadFaultStackByConfig();
-    } else {
-        DfxLogWarn("isSignalDump = false");
     }
 }
 

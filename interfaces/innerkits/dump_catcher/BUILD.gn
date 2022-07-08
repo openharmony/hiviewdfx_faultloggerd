@@ -37,6 +37,7 @@ if (defined(ohos_lite)) {
 
     sources = [
       "$faultloggerd_path/tools/process_dump/dfx_dump_request.cpp",
+      "$faultloggerd_path/tools/process_dump/dfx_dump_res.cpp",
       "$faultloggerd_path/tools/process_dump/dfx_elf.cpp",
       "$faultloggerd_path/tools/process_dump/dfx_frame.cpp",
       "$faultloggerd_path/tools/process_dump/dfx_logger.cpp",
@@ -78,6 +79,7 @@ if (defined(ohos_lite)) {
 
     sources = [
       "$faultloggerd_path/tools/process_dump/dfx_dump_request.cpp",
+      "$faultloggerd_path/tools/process_dump/dfx_dump_res.cpp",
       "$faultloggerd_path/tools/process_dump/dfx_elf.cpp",
       "$faultloggerd_path/tools/process_dump/dfx_frame.cpp",
       "$faultloggerd_path/tools/process_dump/dfx_logger.cpp",

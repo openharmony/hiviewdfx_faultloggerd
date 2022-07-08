@@ -41,102 +41,36 @@
 #include "dfx_thread.h"
 #include "dfx_unwind_remote.h"
 #include "dfx_util.h"
-
+#include "dfx_ring_buffer_wrapper.h"
+#include "dfx_dump_res.h"
 #include "cppcrash_reporter.h"
-
-#define OHOS_TEMP_FAILURE_RETRY(exp)            \
-    ({                                     \
-    long int _rc;                          \
-    do {                                   \
-        _rc = (long int)(exp);             \
-    } while ((_rc == -1) && (errno == EINTR)); \
-    _rc;                                   \
-    })
 
 namespace OHOS {
 namespace HiviewDFX {
-
-std::condition_variable ProcessDumper::backTracePrintCV;
-std::mutex ProcessDumper::backTracePrintMutx;
-
 ProcessDumper &ProcessDumper::GetInstance()
 {
-    static ProcessDumper dumper;
-    return dumper;
-}
-
-void ProcessDumper::LoopPrintBackTraceInfo()
-{
-    std::unique_lock<std::mutex> lck(backTracePrintMutx);
-    while (true) {
-        bool hasFinished = ProcessDumper::GetInstance().backTraceIsFinished_;
-        auto available = ProcessDumper::GetInstance().backTraceRingBuffer_.Available();
-        auto item = ProcessDumper::GetInstance().backTraceRingBuffer_.Read(available);
-        DfxLogDebug("%s :: available(%d), hasFinished(%d)", __func__, available, hasFinished);
-
-        if (available != 0) {
-            if (item.At(0).empty()) {
-                ProcessDumper::GetInstance().backTraceRingBuffer_.Skip(item.Length());
-                continue;
-            }
-
-            for (unsigned int i = 0; i < item.Length(); i++) {
-                DfxLogDebug("%s :: [%d]print: %s\n", __func__, i, item.At(i).c_str());
-                WriteLog(ProcessDumper::GetInstance().backTraceFileFd_, "%s", item.At(i).c_str());
-            }
-            ProcessDumper::GetInstance().backTraceRingBuffer_.Skip(item.Length());
-        } else {
-            if (hasFinished) {
-                DfxLogDebug("%s :: print finished, exit loop.\n", __func__);
-                break;
-            }
-
-            backTracePrintCV.wait_for(lck, std::chrono::milliseconds(BACK_TRACE_RING_BUFFER_PRINT_WAIT_TIME_MS));
-        }
-    }
-}
-
-void ProcessDumper::PrintDumpProcessMsg(std::string msg)
-{
-    DfxLogDebug("%s :: msg(%s)", __func__, msg.c_str());
-    backTraceRingBuffer_.Append(msg);
-    backTracePrintCV.notify_one();
-}
-
-int ProcessDumper::PrintDumpProcessBuf(const char *format, ...)
-{
-    int ret = -1;
-    char buf[LOG_BUF_LEN] = {0};
-    (void)memset_s(&buf, sizeof(buf), 0, sizeof(buf));
-    va_list args;
-    va_start(args, format);
-    ret = vsnprintf_s(buf, sizeof(buf), sizeof(buf) - 1, format, args);
-    va_end(args);
-    if (ret <= 0) {
-        DfxLogError("snprintf_s failed.");
-    }
-    PrintDumpProcessMsg(std::string(buf));
-    return ret;
+    static ProcessDumper ins;
+    return ins;
 }
 
 void ProcessDumper::PrintDumpProcessWithSignalContextHeader(std::shared_ptr<DfxProcess> process, siginfo_t info,
                                                             const std::string& msg)
 {
-    PrintDumpProcessBuf("Pid:%d\n", process->GetPid());
-    PrintDumpProcessBuf("Uid:%d\n", process->GetUid());
-    PrintDumpProcessBuf("Process name:%s\n", process->GetProcessName().c_str());
+    DfxRingBufferWrapper::GetInstance().AppendBuf("Pid:%d\n", process->GetPid());
+    DfxRingBufferWrapper::GetInstance().AppendBuf("Uid:%d\n", process->GetUid());
+    DfxRingBufferWrapper::GetInstance().AppendBuf("Process name:%s\n", process->GetProcessName().c_str());
 
     if (info.si_signo != SIGDUMP) {
-        PrintDumpProcessBuf("Reason:");
+        DfxRingBufferWrapper::GetInstance().AppendBuf("Reason:");
 
-        PrintDumpProcessMsg(PrintSignal(info));
+        DfxRingBufferWrapper::GetInstance().AppendMsg(PrintSignal(info));
 
         if (info.si_signo == SIGABRT && !msg.empty()) {
-            PrintDumpProcessBuf("LastFatalMessage:%s\n", msg.c_str());
+            DfxRingBufferWrapper::GetInstance().AppendBuf("LastFatalMessage:%s\n", msg.c_str());
         }
 
         if (process->GetThreads().size() != 0) {
-            PrintDumpProcessBuf("Fault thread Info:\n");
+            DfxRingBufferWrapper::GetInstance().AppendBuf("Fault thread Info:\n");
         }
     }
 }
@@ -144,39 +78,52 @@ void ProcessDumper::PrintDumpProcessWithSignalContextHeader(std::shared_ptr<DfxP
 void ProcessDumper::InitPrintThread(int32_t fromSignalHandler, std::shared_ptr<ProcessDumpRequest> request, \
     std::shared_ptr<DfxProcess> process)
 {
+    int fd = -1;
     if (fromSignalHandler == 0) {
-        backTraceFileFd_ = STDOUT_FILENO;
+        fd = STDOUT_FILENO;
+        DfxRingBufferWrapper::GetInstance().SetWriteFunc(ProcessDumper::WriteDumpBuf);
     } else {
+        int32_t pid = request->GetPid();
+        int32_t signo = request->GetSiginfo().si_signo;
+        bool isCrash = (signo != SIGDUMP);
+        FaultLoggerType type = isCrash ? FaultLoggerType::CPP_CRASH : FaultLoggerType::CPP_STACKTRACE;
+
         struct FaultLoggerdRequest faultloggerdRequest;
         if (memset_s(&faultloggerdRequest, sizeof(faultloggerdRequest), 0, sizeof(struct FaultLoggerdRequest)) != 0) {
             DfxLogError("memset_s error.");
             return;
         }
+        
+        if (isCrash) {
+            faultloggerdRequest.type = (int32_t)type;
+            faultloggerdRequest.pid = request->GetPid();
+            faultloggerdRequest.tid = request->GetTid();
+            faultloggerdRequest.uid = request->GetUid();
+            faultloggerdRequest.time = request->GetTimeStamp();
+            if (strncpy_s(faultloggerdRequest.module, sizeof(faultloggerdRequest.module),
+                process->GetProcessName().c_str(), sizeof(faultloggerdRequest.module) - 1) != 0) {
+                DfxLogWarn("Failed to set process name.");
+                return;
+            }
+            fd = RequestFileDescriptorEx(&faultloggerdRequest);
 
-        int32_t signo = request->GetSiginfo().si_signo;
-        faultloggerdRequest.type = (signo == SIGDUMP) ?
-            (int32_t)FaultLoggerType::CPP_STACKTRACE : (int32_t)FaultLoggerType::CPP_CRASH;
-        faultloggerdRequest.pid = request->GetPid();
-        faultloggerdRequest.tid = request->GetTid();
-        faultloggerdRequest.uid = request->GetUid();
-        faultloggerdRequest.time = request->GetTimeStamp();
-        if (strncpy_s(faultloggerdRequest.module, sizeof(faultloggerdRequest.module),
-            process->GetProcessName().c_str(), sizeof(faultloggerdRequest.module) - 1) != 0) {
-            DfxLogWarn("Failed to set process name.");
-            return;
+            DfxRingBufferWrapper::GetInstance().SetWriteFunc(ProcessDumper::WriteDumpBuf);
+            reporter_ = std::make_shared<CppCrashReporter>(request->GetTimeStamp(), signo, process);
+        } else {
+            fd = RequestPipeFd(pid, FaultLoggerPipeType::PIPE_FD_WRITE_BUF);
+            DfxLogDebug("write buf fd: %d", fd);
+
+            resFd_ = RequestPipeFd(pid, FaultLoggerPipeType::PIPE_FD_WRITE_RES);
+            DfxLogDebug("write res fd: %d", resFd_);
         }
 
-        backTraceFileFd_ = RequestFileDescriptorEx(&faultloggerdRequest);
-        if (backTraceFileFd_ < 0) {
+        if (fd < 0) {
             DfxLogWarn("Failed to request fd from faultloggerd.");
-        }
-
-        if (signo != SIGDUMP) {
-            reporter_ = std::make_shared<CppCrashReporter>(faultloggerdRequest.time, signo, process);
         }
     }
 
-    backTracePrintThread_ = std::thread(ProcessDumper::LoopPrintBackTraceInfo);
+    DfxRingBufferWrapper::GetInstance().SetWriteBufFd(fd);
+    DfxRingBufferWrapper::GetInstance().StartThread();
 }
 
 
@@ -192,8 +139,8 @@ void ProcessDumper::DumpProcessWithSignalContext(std::shared_ptr<DfxProcess> &pr
     std::string storeThreadName = request->GetThreadNameString();
     std::string storeProcessName = request->GetProcessNameString();
 
-    bool isCrashRequest = (request->GetSiginfo().si_signo != SIGDUMP);
-    FaultLoggerType type = isCrashRequest ? FaultLoggerType::CPP_CRASH : FaultLoggerType::CPP_STACKTRACE;
+    bool isCrash = (request->GetSiginfo().si_signo != SIGDUMP);
+    FaultLoggerType type = isCrash ? FaultLoggerType::CPP_CRASH : FaultLoggerType::CPP_STACKTRACE;
     bool isLogPersist = DfxConfig::GetInstance().GetLogPersist();
     InitDebugLog((int)type, request->GetPid(), request->GetTid(), request->GetUid(), isLogPersist);
     // We need check pid is same with getppid().
@@ -226,15 +173,16 @@ void ProcessDumper::DumpProcessWithSignalContext(std::shared_ptr<DfxProcess> &pr
     if ((process->GetProcessName()).empty()) {
         process->SetProcessName(storeProcessName);
     }
-    if (isCrashRequest) {
+
+    if (isCrash) {
         process->SetIsSignalDump(false);
-        PrintDumpProcessMsg("Timestamp:" + GetCurrentTimeStr(request->GetTimeStamp()));
+        DfxRingBufferWrapper::GetInstance().AppendMsg("Timestamp:" + GetCurrentTimeStr(request->GetTimeStamp()));
     } else {
         process->SetIsSignalDump(true);
-        PrintDumpProcessMsg("Timestamp:" + GetCurrentTimeStr());
+        DfxRingBufferWrapper::GetInstance().AppendMsg("Timestamp:" + GetCurrentTimeStr());
     }
 
-    process->InitOtherThreads(isCrashRequest);
+    process->InitOtherThreads(isCrash);
     process->SetUid(request->GetUid());
     process->SetIsSignalHdlr(true);
 
@@ -286,7 +234,6 @@ void ProcessDumper::DumpProcessWithPidTid(std::shared_ptr<DfxProcess> &process, 
 
 void ProcessDumper::Dump(bool isSignalHdlr, ProcessDumpType type, int32_t pid, int32_t tid)
 {
-    backTraceIsFinished_ = false;
     std::shared_ptr<ProcessDumpRequest> request = std::make_shared<ProcessDumpRequest>();
     if (!request) {
         DfxLogError("Fail to create dump request.");
@@ -299,9 +246,10 @@ void ProcessDumper::Dump(bool isSignalHdlr, ProcessDumpType type, int32_t pid, i
     if (isSignalHdlr) {
         DumpProcessWithSignalContext(process, request);
         if (getppid() != request->GetPid()) {
-            PrintDumpProcessBuf("after unwind, check again: Target process(%s:%d) is not our parent(%d),\
-                exit processdump for signal(%d).",request->GetProcessNameString().c_str(),
-                request->GetPid(), getppid(), request->GetSiginfo().si_signo);
+            resDump_ = ProcessDumpRes::DUMP_EGETPPID;
+            DfxRingBufferWrapper::GetInstance().AppendBuf("after unwind, check again: \
+                Target process(%s:%d) is not parent pid(%d)\n.", \
+                request->GetProcessNameString().c_str(), request->GetPid(), getppid());
         }
     } else {
         if (type == DUMP_TYPE_PROCESS) {
@@ -326,13 +274,8 @@ void ProcessDumper::Dump(bool isSignalHdlr, ProcessDumpType type, int32_t pid, i
         reporter_->ReportToHiview();
     }
 
-    backTraceIsFinished_ = true;
-    backTracePrintCV.notify_one();
-    if (backTracePrintThread_.joinable()) {
-        backTracePrintThread_.join();
-    }
-    close(backTraceFileFd_);
-    backTraceFileFd_ = -1;
+    DfxRingBufferWrapper::GetInstance().StopThread();
+    WriteDumpRes(resDump_);
 
     if (isSignalHdlr && process && !process->GetIsSignalDump()) {
         process->Detach();
@@ -340,6 +283,29 @@ void ProcessDumper::Dump(bool isSignalHdlr, ProcessDumpType type, int32_t pid, i
 
     CloseDebugLog();
     _exit(0);
+}
+
+int ProcessDumper::WriteDumpBuf(int fd, const char* buf, const int len)
+{
+    if ((fd < 0) || (buf == nullptr)) {
+        return -1;
+    }
+    return WriteLog(fd, "%s", buf);
+}
+
+void ProcessDumper::WriteDumpRes(int32_t res)
+{
+    if (resFd_ < 0) {
+        return;
+    }
+    DfxLogDebug("%s :: res: %d", __func__, res);
+    DumpResMsg dumpResMsg;
+    dumpResMsg.res = res;
+    const char* strRes = DfxDumpRes::GetInstance().GetResStr(res);
+    if (strncpy_s(dumpResMsg.strRes, sizeof(dumpResMsg.strRes), strRes, strlen(strRes)) != 0) {
+        DfxLogError("%s :: strncpy failed.", __func__);
+    }
+    write(resFd_, &dumpResMsg, sizeof(struct DumpResMsg));
 }
 
 } // namespace HiviewDFX

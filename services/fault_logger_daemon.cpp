@@ -42,6 +42,7 @@
 #include "fault_logger_config.h"
 #include "fault_logger_secure.h"
 #include "faultloggerd_socket.h"
+#include "fault_logger_pipe.h"
 
 using namespace std::chrono;
 
@@ -50,6 +51,7 @@ namespace HiviewDFX {
 using FaultLoggerdRequest = struct FaultLoggerdRequest;
 std::shared_ptr<FaultLoggerConfig> faultLoggerConfig_;
 std::shared_ptr<FaultLoggerSecure> faultLoggerSecure_;
+std::shared_ptr<FaultLoggerPipeMap> faultLoggerPipeMap_;
 FaultLoggerDaemon* FaultLoggerDaemon::faultLoggerDaemon_ = nullptr;
 
 namespace {
@@ -105,17 +107,15 @@ int32_t FaultLoggerDaemon::StartServer()
     LoopAcceptRequestAndFork(socketFd);
 
     close(socketFd);
-    DfxLogInfo("%s :: %s: Exit.", FAULTLOGGERD_TAG.c_str(), __func__);
     return 0;
 }
 
 bool FaultLoggerDaemon::InitEnvironment()
 {
-    DfxLogInfo("%s :: %s Enter.", OHOS::HiviewDFX::FAULTLOGGERD_TAG.c_str(), __func__);
-
     faultLoggerConfig_ = std::make_shared<FaultLoggerConfig>(LOG_FILE_NUMBER, LOG_FILE_SIZE,
         LOG_FILE_PATH, DEBUG_LOG_FILE_PATH);
     faultLoggerSecure_ = std::make_shared<FaultLoggerSecure>();
+    faultLoggerPipeMap_ = std::make_shared<FaultLoggerPipeMap>();
 
     if (!OHOS::ForceCreateDirectory(faultLoggerConfig_->GetLogFilePath())) {
         DfxLogError("%s :: Failed to ForceCreateDirectory GetLogFilePath", FAULTLOGGERD_TAG.c_str());
@@ -130,8 +130,6 @@ bool FaultLoggerDaemon::InitEnvironment()
     if (chmod(FAULTLOGGERD_SOCK_PATH, S_IRWXU | S_IRWXG | S_IROTH | S_IWOTH) < 0) {
         DfxLogError("%s :: Failed to chmod, %d", FAULTLOGGERD_TAG.c_str(), errno);
     }
-
-    DfxLogInfo("%s :: %s success finished.", OHOS::HiviewDFX::FAULTLOGGERD_TAG.c_str(), __func__);
     return true;
 }
 
@@ -144,7 +142,6 @@ void FaultLoggerDaemon::HandleDefaultClientReqeust(int32_t connectionFd, const F
         DfxLogError("%s :: Failed to create log file", FAULTLOGGERD_TAG.c_str());
         return;
     }
-
     SendFileDescriptorToSocket(connectionFd, fd);
 
     close(fd);
@@ -157,10 +154,44 @@ void FaultLoggerDaemon::HandleLogFileDesClientReqeust(int32_t connectionFd, cons
         DfxLogError("%s :: Failed to create log file", FAULTLOGGERD_TAG.c_str());
         return;
     }
-
     SendFileDescriptorToSocket(connectionFd, fd);
 
     close(fd);
+}
+
+void FaultLoggerDaemon::HandlePipeFdClientReqeust(int32_t connectionFd, const FaultLoggerdRequest * request)
+{
+    DfxLogDebug("%s :: pid(%d), pipeType(%d).\n", FAULTLOGGERD_TAG.c_str(), request->pid, request->pipeType);
+    int fd = -1;
+
+    if (request->pipeType == (int32_t)FaultLoggerPipeType::PIPE_FD_DELETE) {
+        faultLoggerPipeMap_->Del(request->pid);
+        return;
+    }
+    FaultLoggerPipe2* faultLoggerPipe = faultLoggerPipeMap_->Get(request->pid);
+    switch (request->pipeType) {
+        case (int32_t)FaultLoggerPipeType::PIPE_FD_READ_BUF:
+            fd = faultLoggerPipe->faultLoggerPipeBuf_->GetReadFd();
+            break;
+        case (int32_t)FaultLoggerPipeType::PIPE_FD_WRITE_BUF:
+            fd = faultLoggerPipe->faultLoggerPipeBuf_->GetWriteFd();
+            break;
+        case (int32_t)FaultLoggerPipeType::PIPE_FD_READ_RES:
+            fd = faultLoggerPipe->faultLoggerPipeRes_->GetReadFd();
+            break;
+        case (int32_t)FaultLoggerPipeType::PIPE_FD_WRITE_RES:
+            fd = faultLoggerPipe->faultLoggerPipeRes_->GetWriteFd();
+            break;
+        default:
+            DfxLogError("%s :: unknown pipeType(%d).\n", FAULTLOGGERD_TAG.c_str(), request->pipeType);
+            break;
+    }
+
+    if (fd < 0) {
+        DfxLogError("%s :: Failed to get pipe fd", FAULTLOGGERD_TAG.c_str());
+        return;
+    }
+    SendFileDescriptorToSocket(connectionFd, fd);
 }
 
 void FaultLoggerDaemon::HandlePrintTHilogClientReqeust(int32_t const connectionFd, FaultLoggerdRequest * request)
@@ -262,7 +293,14 @@ void FaultLoggerDaemon::HandleSdkDumpReqeust(int32_t connectionFd, FaultLoggerdR
             break;
         }
 
-        int sig = SIGDUMP ;
+        if (faultLoggerPipeMap_->Find(request->pid)) {
+            DfxLogError("%s :: pid(%d) is dumping, break.\n", FAULTLOGGERD_TAG.c_str(), request->pid);
+            break;
+        }
+        std::shared_ptr<FaultLoggerPipe2> ptr(new FaultLoggerPipe2());
+        faultLoggerPipeMap_->Set(request->pid, ptr);
+
+        int sig = SIGDUMP;
         // defined in out/hi3516dv300/obj/third_party/musl/intermidiates/linux/musl_src_ported/include/signal.h
         siginfo_t si = {
             .si_signo = SIGDUMP,
@@ -337,6 +375,9 @@ void FaultLoggerDaemon::HandleRequest(int32_t connectionFd)
                 break;
             case (int32_t)FaultLoggerClientType::SDK_DUMP_CLIENT:
                 HandleSdkDumpReqeust(connectionFd, request);
+                break;
+            case (int32_t)FaultLoggerClientType::PIPE_FD_CLIENT:
+                HandlePipeFdClientReqeust(connectionFd, request);
                 break;
             default:
                 DfxLogError("%s :: unknown clientType(%d).\n", FAULTLOGGERD_TAG.c_str(), request->clientType);
