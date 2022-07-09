@@ -21,7 +21,7 @@
 #include "dfx_dump_catcher.h"
 using namespace std;
 
-NOINLINE int TestFunc10(void)
+static NOINLINE int TestFunc10(void)
 {
     OHOS::HiviewDFX::DfxDumpCatcher dumplog;
     string msg = "";
@@ -32,7 +32,7 @@ NOINLINE int TestFunc10(void)
     return 0;
 }
 
-NOINLINE int TestFuncRemote(int32_t pid, int32_t tid)
+static NOINLINE int TestFuncRemote(int32_t pid, int32_t tid)
 {
     OHOS::HiviewDFX::DfxDumpCatcher dumplog;
     string msg = "";

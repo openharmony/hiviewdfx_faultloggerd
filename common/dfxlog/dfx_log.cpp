@@ -90,7 +90,7 @@ void LogToDmesg(LOG_LEVEL_CLASS logLevel, const char *info)
 }
 #endif
 
-int checkDebugLevel()
+int CheckDebugLevel()
 {
     return LOG_LEVEL_CLASS::LOG_LEVEL_DBG >= LOG_LEVEL ? 1 : 0;
 }

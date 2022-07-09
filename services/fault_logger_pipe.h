@@ -32,7 +32,7 @@ public:
     int GetReadFd();
     int GetWriteFd();
 
-    void Close(int fd);
+    void Close(int fd) const;
 private:
     bool Init();
     void Destroy();
@@ -58,7 +58,7 @@ public:
     void Set(int pid, std::shared_ptr<FaultLoggerPipe2> faultLoggerPipe);
     FaultLoggerPipe2* Get(int pid);
     void Del(int pid);
-    bool Find(int pid);
+    bool Find(int pid) const;
 private:
     std::map<int, std::shared_ptr<FaultLoggerPipe2> > faultLoggerPipes_;
 };

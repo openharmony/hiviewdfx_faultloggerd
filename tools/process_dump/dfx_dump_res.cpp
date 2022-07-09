@@ -41,7 +41,7 @@ int32_t DfxDumpRes::GetRes() const
     return resMsg_.res;
 }
 
-const char* DfxDumpRes::GetResStr(const int res)
+const char* DfxDumpRes::GetResStr(const int res) const
 {
     const char *cp;
     switch (res) {
@@ -62,7 +62,7 @@ const char* DfxDumpRes::GetResStr(const int res)
     return cp;
 }
 
-std::string DfxDumpRes::ToString()
+std::string DfxDumpRes::ToString() const
 {
     std::stringstream ss;
     ss << std::to_string(resMsg_.res) << " ( " << GetResStr(resMsg_.res) << " )\n";

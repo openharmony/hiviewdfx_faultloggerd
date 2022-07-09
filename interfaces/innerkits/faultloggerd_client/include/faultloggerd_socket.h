@@ -26,11 +26,11 @@ extern "C" {
 bool StartConnect(int& sockfd, const char* path, const int pathLen, const int timeout);
 bool StartListen(int& sockfd, const char* path, const int pathLen, const int listenCnt);
 
-bool RecvMsgFromSocket(int sockfd, unsigned char* data, int& len);
+static bool RecvMsgFromSocket(int sockfd, unsigned char* data, int& len);
 bool RecvMsgCredFromSocket(int sockfd, struct ucred* pucred);
 
 bool SendMsgIovToSocket(int sockfd, void *iovBase, const int iovLen);
-bool SendMsgCtlToSocket(int sockfd, void *cmsg, const int cmsgLen);
+static bool SendMsgCtlToSocket(int sockfd, void *cmsg, const int cmsgLen);
 
 bool SendFileDescriptorToSocket(int sockfd, int fd);
 int ReadFileDescriptorFromSocket(int sockfd);

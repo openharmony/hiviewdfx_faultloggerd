@@ -92,15 +92,15 @@ void FaultLoggerPipe::Destroy()
     bInit_ = false;
 }
 
-void FaultLoggerPipe::Close(int fd)
+void FaultLoggerPipe::Close(int fd) const
 {
     syscall(SYS_close, fd);
 }
 
 FaultLoggerPipe2::FaultLoggerPipe2()
 {
-    faultLoggerPipeBuf_ = std::unique_ptr<FaultLoggerPipe>(new FaultLoggerPipe());
-    faultLoggerPipeRes_ = std::unique_ptr<FaultLoggerPipe>(new FaultLoggerPipe());
+    faultLoggerPipeBuf_ = std::make_unique<FaultLoggerPipe>();
+    faultLoggerPipeRes_ = std::make_unique<FaultLoggerPipe>();
 }
 
 FaultLoggerPipe2::~FaultLoggerPipe2()
@@ -147,7 +147,7 @@ void FaultLoggerPipeMap::Del(int pid)
     }
 }
 
-bool FaultLoggerPipeMap::Find(int pid)
+bool FaultLoggerPipeMap::Find(int pid) const
 {
     std::map<int, std::shared_ptr<FaultLoggerPipe2> >::iterator iter = faultLoggerPipes_.find(pid);
     if (iter != faultLoggerPipes_.end()) {
