@@ -18,6 +18,7 @@
 #ifndef DFX_FAULTLOGGERD_SOCKET_H
 #define DFX_FAULTLOGGERD_SOCKET_H
 
+#include <inttypes.h>
 #include <cinttypes>
 
 #ifdef __cplusplus
