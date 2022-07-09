@@ -96,7 +96,6 @@ static bool CheckPidTid(OHOS::HiviewDFX::ProcessDumpType type, int32_t pid, int3
     // check pid
     if ((pid == 0) || (pid < 0)) {
         fillErrorInfo(error, "pid is zero or negative.");
-        DfxLogWarn(error.c_str());
         return false;
     }
 
@@ -110,37 +109,35 @@ static bool CheckPidTid(OHOS::HiviewDFX::ProcessDumpType type, int32_t pid, int3
             OHOS::GetDirFiles(path, files);
             if (files.size() == 0) {
                 fillErrorInfo(error, "Cannot find tid(%d) in process(%d).", tid, pid);
-                DfxLogWarn(error.c_str());
                 return false;
             }
         } else {
             fillErrorInfo(error, "tid is zero or negative.");
-            DfxLogWarn(error.c_str());
             return false;
         }
-    }
-
-    auto maps = OHOS::HiviewDFX::DfxElfMaps::Create(pid);
-    if (!maps) {
-        fillErrorInfo(error, "Cannot read /proc/%d/maps.", pid);
-        DfxLogWarn(error.c_str());
-        return false;
     }
 
     // check pid, make sure /proc/xxx/maps is valid.
     if (pid > 0) {
-        std::vector<std::string> files;
-        std::string path = "/proc/" + std::to_string(pid);
+        char path[NAME_LEN] = {0};
+        if (snprintf_s(path, sizeof(path), sizeof(path) - 1, "/proc/%d/maps", pid) <= 0) {
+            fillErrorInfo(error, "Fail to print path.");
+            return false;
+        }
 
-        OHOS::GetDirFiles(path, files);
-        if (files.size() == 0) {
-            fillErrorInfo(error, "Cannot find pid(%d) in /proc.", pid);
-            DfxLogWarn(error.c_str());
+        char realPath[PATH_MAX] = {0};
+        if (realpath(path, realPath) == nullptr) {
+            fillErrorInfo(error, "Maps path(%s) is not exist.", path);
+            return false;
+        }
+
+        FILE *fp = fopen(realPath, "r");
+        if (fp == nullptr) {
+            fillErrorInfo(error, "Fail to open maps info.");
             return false;
         }
     } else {
         fillErrorInfo(error, "pid is zero or negative.");
-        DfxLogWarn(error.c_str());
         return false;
     }
 
