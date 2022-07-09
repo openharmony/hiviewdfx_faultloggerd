@@ -156,7 +156,7 @@ bool RecvMsgFromSocket(int sockfd, unsigned char* data, int& len)
             break;
         }
 
-        len = (int)cmsg->cmsg_len - (int)(sizeof(struct cmsghdr));
+        len = static_cast<int>(cmsg->cmsg_len) - static_cast<int>(sizeof(struct cmsghdr));
         if (memcpy_s(data, len, CMSG_DATA(cmsg), len) != 0) {
             DfxLogError("%s :: memcpy error\n", __func__);
             break;
