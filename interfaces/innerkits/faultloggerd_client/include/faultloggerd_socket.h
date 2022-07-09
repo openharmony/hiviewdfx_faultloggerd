@@ -26,7 +26,7 @@ extern "C" {
 bool StartConnect(int& sockfd, const char* path, const int pathLen, const int timeout);
 bool StartListen(int& sockfd, const char* path, const int pathLen, const int listenCnt);
 
-bool RecvMsgFromSocket(int sockfd, unsigned char* data, int& len);
+bool RecvMsgFromSocket(int sockfd, unsigned char* data, size_t& len);
 bool RecvMsgCredFromSocket(int sockfd, struct ucred* pucred);
 
 bool SendMsgIovToSocket(int sockfd, void *iovBase, const int iovLen);
