@@ -28,6 +28,7 @@
 #include <sys/types.h>
 #include <sys/un.h>
 #include <unistd.h>
+#include <inttypes.h>
 
 #include "dfx_define.h"
 #include "dfx_log.h"
