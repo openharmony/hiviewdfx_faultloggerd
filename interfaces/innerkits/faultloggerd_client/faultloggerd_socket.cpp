@@ -124,7 +124,7 @@ bool StartListen(int& sockfd, const char* path, const int pathLen, const int lis
     return ret;
 }
 
-bool RecvMsgFromSocket(int sockfd, unsigned char* data, int& len)
+bool RecvMsgFromSocket(int sockfd, unsigned char* data, size_t& len)
 {
     bool ret = false;
     if ((sockfd < 0) || (data == nullptr)) {
@@ -156,7 +156,7 @@ bool RecvMsgFromSocket(int sockfd, unsigned char* data, int& len)
             break;
         }
 
-        len = static_cast<int>(cmsg->cmsg_len) - static_cast<int>(sizeof(struct cmsghdr));
+        len = cmsg->cmsg_len - sizeof(struct cmsghdr);
         if (memcpy_s(data, len, CMSG_DATA(cmsg), len) != 0) {
             DfxLogError("%s :: memcpy error\n", __func__);
             break;
@@ -288,7 +288,7 @@ bool SendFileDescriptorToSocket(int sockfd, int fd)
 
 int ReadFileDescriptorFromSocket(int sockfd)
 {
-    int len = sizeof(int);
+    size_t len = sizeof(int);
     unsigned char data[len + 1];
     if (!RecvMsgFromSocket(sockfd, data, len)) {
         DfxLogError("%s :: Failed to recv message", __func__);
