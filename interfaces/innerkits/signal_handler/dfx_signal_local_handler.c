@@ -62,7 +62,7 @@ void DFX_InitDumpRequest(struct ProcessDumpRequest* request, const int sig)
     GetProcessName(request->processName, sizeof(request->processName));
 }
 
-static void DFX_SignalHandler(int sig, const siginfo_t *si, void *context)
+static void DFX_SignalHandler(int sig, siginfo_t *si, void *context)
 {
     struct ProcessDumpRequest request;
     (void)memset_s(&request, sizeof(request), 0, sizeof(request));

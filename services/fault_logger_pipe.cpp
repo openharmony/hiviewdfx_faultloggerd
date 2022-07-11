@@ -141,7 +141,7 @@ FaultLoggerPipe2* FaultLoggerPipeMap::Get(int pid)
 
 void FaultLoggerPipeMap::Del(int pid)
 {
-    const std::map<int, std::shared_ptr<FaultLoggerPipe2> >::iterator iter = faultLoggerPipes_.find(pid);
+    std::map<int, std::shared_ptr<FaultLoggerPipe2> >::const_iterator iter = faultLoggerPipes_.find(pid);
     if (iter != faultLoggerPipes_.end()) {
         faultLoggerPipes_.erase(iter);
     }
@@ -149,7 +149,7 @@ void FaultLoggerPipeMap::Del(int pid)
 
 bool FaultLoggerPipeMap::Find(int pid) const
 {
-    const std::map<int, std::shared_ptr<FaultLoggerPipe2> >::iterator iter = faultLoggerPipes_.find(pid);
+    std::map<int, std::shared_ptr<FaultLoggerPipe2> >::const_iterator iter = faultLoggerPipes_.find(pid);
     if (iter != faultLoggerPipes_.end()) {
         return true;
     }
