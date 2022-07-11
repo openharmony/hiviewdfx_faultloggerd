@@ -133,7 +133,7 @@ bool FaultLoggerDaemon::InitEnvironment()
     return true;
 }
 
-void FaultLoggerDaemon::HandleDefaultClientReqeust(int32_t connectionFd, const FaultLoggerdRequest * request)
+void FaultLoggerDaemon::HandleDefaultClientRequest(int32_t connectionFd, const FaultLoggerdRequest * request)
 {
     RemoveTempFileIfNeed();
 
@@ -147,7 +147,7 @@ void FaultLoggerDaemon::HandleDefaultClientReqeust(int32_t connectionFd, const F
     close(fd);
 }
 
-void FaultLoggerDaemon::HandleLogFileDesClientReqeust(int32_t connectionFd, const FaultLoggerdRequest * request)
+void FaultLoggerDaemon::HandleLogFileDesClientRequest(int32_t connectionFd, const FaultLoggerdRequest * request)
 {
     int fd = CreateFileForRequest(request->type, request->pid, request->time, true);
     if (fd < 0) {
@@ -159,7 +159,7 @@ void FaultLoggerDaemon::HandleLogFileDesClientReqeust(int32_t connectionFd, cons
     close(fd);
 }
 
-void FaultLoggerDaemon::HandlePipeFdClientReqeust(int32_t connectionFd, const FaultLoggerdRequest * request)
+void FaultLoggerDaemon::HandlePipeFdClientRequest(int32_t connectionFd, const FaultLoggerdRequest * request)
 {
     DfxLogDebug("%s :: pid(%d), pipeType(%d).\n", FAULTLOGGERD_TAG.c_str(), request->pid, request->pipeType);
     int fd = -1;
@@ -194,7 +194,7 @@ void FaultLoggerDaemon::HandlePipeFdClientReqeust(int32_t connectionFd, const Fa
     SendFileDescriptorToSocket(connectionFd, fd);
 }
 
-void FaultLoggerDaemon::HandlePrintTHilogClientReqeust(int32_t const connectionFd, FaultLoggerdRequest * request)
+void FaultLoggerDaemon::HandlePrintTHilogClientRequest(int32_t const connectionFd, FaultLoggerdRequest * request)
 {
     char buf[LOG_BUF_LEN] = {0};
 
@@ -206,7 +206,7 @@ void FaultLoggerDaemon::HandlePrintTHilogClientReqeust(int32_t const connectionF
     if (nread < 0) {
         DfxLogError("%s :: Failed to read message", FAULTLOGGERD_TAG.c_str());
     } else if (nread == 0) {
-        DfxLogError("%s :: HandlePrintTHilogClientReqeust :: Read null from request socket", FAULTLOGGERD_TAG.c_str());
+        DfxLogError("%s :: HandlePrintTHilogClientRequest :: Read null from request socket", FAULTLOGGERD_TAG.c_str());
     } else {
         DfxLogError("%s", buf);
     }
@@ -244,7 +244,7 @@ FaultLoggerCheckPermissionResp FaultLoggerDaemon::SecurityCheck(int32_t connecti
     return resCheckPermission;
 }
 
-void FaultLoggerDaemon::HandlePermissionReqeust(int32_t connectionFd, FaultLoggerdRequest * request)
+void FaultLoggerDaemon::HandlePermissionRequest(int32_t connectionFd, FaultLoggerdRequest * request)
 {
     FaultLoggerCheckPermissionResp resSecurityCheck = SecurityCheck(connectionFd, request);
     if (FaultLoggerCheckPermissionResp::CHECK_PERMISSION_PASS == resSecurityCheck) {
@@ -255,7 +255,7 @@ void FaultLoggerDaemon::HandlePermissionReqeust(int32_t connectionFd, FaultLogge
     }
 }
 
-void FaultLoggerDaemon::HandleSdkDumpReqeust(int32_t connectionFd, FaultLoggerdRequest * request)
+void FaultLoggerDaemon::HandleSdkDumpRequest(int32_t connectionFd, FaultLoggerdRequest * request)
 {
     FaultLoggerSdkDumpResp resSdkDump = FaultLoggerSdkDumpResp::SDK_DUMP_REJECT;
     FaultLoggerCheckPermissionResp resSecurityCheck = SecurityCheck(connectionFd, request);
@@ -288,7 +288,7 @@ void FaultLoggerDaemon::HandleSdkDumpReqeust(int32_t connectionFd, FaultLoggerdR
 
     do {
         if ((request->pid <= 0) || (FaultLoggerCheckPermissionResp::CHECK_PERMISSION_REJECT == resSecurityCheck)) {
-            DfxLogError("%s :: HandleSdkDumpReqeust :: pid(%d) or resSecurityCheck(%d) fail.\n", \
+            DfxLogError("%s :: HandleSdkDumpRequest :: pid(%d) or resSecurityCheck(%d) fail.\n", \
                         FAULTLOGGERD_TAG.c_str(), request->pid, (int)resSecurityCheck);
             break;
         }
@@ -362,22 +362,22 @@ void FaultLoggerDaemon::HandleRequest(int32_t connectionFd)
         DfxLogInfo("%s :: clientType(%d).\n", FAULTLOGGERD_TAG.c_str(), request->clientType);
         switch (request->clientType) {
             case (int32_t)FaultLoggerClientType::DEFAULT_CLIENT:
-                HandleDefaultClientReqeust(connectionFd, request);
+                HandleDefaultClientRequest(connectionFd, request);
                 break;
             case (int32_t)FaultLoggerClientType::LOG_FILE_DES_CLIENT:
-                HandleLogFileDesClientReqeust(connectionFd, request);
+                HandleLogFileDesClientRequest(connectionFd, request);
                 break;
             case (int32_t)FaultLoggerClientType::PRINT_T_HILOG_CLIENT:
-                HandlePrintTHilogClientReqeust(connectionFd, request);
+                HandlePrintTHilogClientRequest(connectionFd, request);
                 break;
             case (int32_t)FaultLoggerClientType::PERMISSION_CLIENT:
-                HandlePermissionReqeust(connectionFd, request);
+                HandlePermissionRequest(connectionFd, request);
                 break;
             case (int32_t)FaultLoggerClientType::SDK_DUMP_CLIENT:
-                HandleSdkDumpReqeust(connectionFd, request);
+                HandleSdkDumpRequest(connectionFd, request);
                 break;
             case (int32_t)FaultLoggerClientType::PIPE_FD_CLIENT:
-                HandlePipeFdClientReqeust(connectionFd, request);
+                HandlePipeFdClientRequest(connectionFd, request);
                 break;
             default:
                 DfxLogError("%s :: unknown clientType(%d).\n", FAULTLOGGERD_TAG.c_str(), request->clientType);
