@@ -33,7 +33,6 @@
 #include "dfx_dump_writer.h"
 #include "dfx_logger.h"
 #include "process_dumper.h"
-#include "dfx_maps.h"
 
 #if defined(DEBUG_PROCESS_DUMP_CRASH)
 #include "dfx_signal_local_handler.h"
@@ -73,6 +72,7 @@ static void PrintPidTidCheckFailed(int32_t pid, int32_t tid, std::string& error)
 {
     std::cout << DUMP_STACK_TAG_FAILED << std::endl;
     std::cout << error << std::endl;
+    DfxLogWarn(error.c_str());
     std::cout << "The pid or tid is invalid." << std::endl;
 }
 
@@ -86,7 +86,6 @@ static void FillErrorInfo(std::string& error, const char* format, ...)
         DfxLogWarn("fillErrorInfo, vsnprintf_s fail");
     }
     va_end(args);
-    DfxLogWarn(buffer);
     std::string temp(buffer);
     error = temp;
 }
