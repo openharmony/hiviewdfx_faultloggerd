@@ -101,8 +101,8 @@ void DfxUnwindLocal::Destroy()
 
 bool DfxUnwindLocal::SendLocalDumpRequest(int32_t tid)
 {
-    localDumpRequest_.tid_ = tid;
-    localDumpRequest_.timeStamp_ = (uint64_t)time(NULL);
+    localDumpRequest_.tid = tid;
+    localDumpRequest_.timeStamp = (uint64_t)time(NULL);
     return syscall(SYS_tkill, tid, SIGLOCAL_DUMP) == 0;
 }
 
@@ -241,8 +241,8 @@ bool DfxUnwindLocal::ExecLocalDumpUnwind(int tid, size_t skipFramNum)
 void DfxUnwindLocal::LocalDumperUnwind(int sig, siginfo_t *si, void *context)
 {
     std::unique_lock<std::mutex> lck(localDumperMutex_);
-    ExecLocalDumpUnwind(localDumpRequest_.tid_, DUMP_CATCHER_NUMBER_TWO);
-    if (localDumpRequest_.tid_ == gettid()) {
+    ExecLocalDumpUnwind(localDumpRequest_.tid, DUMP_CATCHER_NUMBER_TWO);
+    if (localDumpRequest_.tid == gettid()) {
         localDumperCV_.notify_one();
     }
 }

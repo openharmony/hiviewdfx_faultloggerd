@@ -124,7 +124,7 @@ bool StartListen(int& sockfd, const char* path, const int pathLen, const int lis
     return ret;
 }
 
-static bool RecvMsgFromSocket(int sockfd, const unsigned char* data, int& len)
+static bool RecvMsgFromSocket(int sockfd, unsigned char* data, int& len)
 {
     bool ret = false;
     if ((sockfd < 0) || (data == nullptr)) {
@@ -167,7 +167,7 @@ static bool RecvMsgFromSocket(int sockfd, const unsigned char* data, int& len)
     return ret;
 }
 
-bool RecvMsgCredFromSocket(int sockfd, const struct ucred* pucred)
+bool RecvMsgCredFromSocket(int sockfd, struct ucred* pucred)
 {
     bool ret = false;
     if ((sockfd < 0) || (pucred == nullptr)) {

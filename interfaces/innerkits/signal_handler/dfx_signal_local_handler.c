@@ -50,7 +50,7 @@ static int g_platformSignals[] = {
     SIGSEGV,
 };
 
-void DFX_InitDumpRequest(const struct ProcessDumpRequest* request, const int sig)
+void DFX_InitDumpRequest(struct ProcessDumpRequest* request, const int sig)
 {
     request->type = sig;
     request->tid = gettid();
