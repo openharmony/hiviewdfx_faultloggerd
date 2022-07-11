@@ -191,8 +191,8 @@ HWTEST_F (ProcessDfxTest, ProcessDfxRequestTest007, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "ProcessDfxRequestTest007: start.";
     std::shared_ptr<DfxProcess> processDfx = std::make_shared<DfxProcess>();
-    pid_t uid = 1;
-    pid_t getuid = 0;
+    uid_t uid = 1;
+    uid_t getuid = 0;
     if (processDfx != nullptr) {
         processDfx->SetUid(uid);
         getuid = processDfx->GetUid();
@@ -210,8 +210,8 @@ HWTEST_F (ProcessDfxTest, ProcessDfxRequestTest008, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "ProcessDfxRequestTest008: start.";
     std::shared_ptr<DfxProcess> processDfx = std::make_shared<DfxProcess>();
-    pid_t uid = 164;
-    pid_t getuid = 0;
+    uid_t uid = 164;
+    uid_t getuid = 0;
     if (processDfx != nullptr) {
         processDfx->SetUid(uid);
         getuid = processDfx->GetUid();
@@ -229,8 +229,8 @@ HWTEST_F (ProcessDfxTest, ProcessDfxRequestTest009, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "ProcessDfxRequestTest009: start.";
     std::shared_ptr<DfxProcess> processDfx = std::make_shared<DfxProcess>();
-    pid_t uid = -1;
-    pid_t getuid = 0;
+    uid_t uid = -1;
+    uid_t getuid = 0;
     if (processDfx != nullptr) {
         processDfx->SetUid(uid);
         getuid = processDfx->GetUid();

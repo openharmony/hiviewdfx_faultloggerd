@@ -47,8 +47,8 @@ public:
     int32_t GetPid() const;
     void SetPid(int32_t pid);
 
-    int32_t GetUid() const;
-    void SetUid(int32_t uid);
+    uint32_t GetUid() const;
+    void SetUid(uint32_t uid);
 
     uint64_t GetReserved() const;
     void SetReserved(uint64_t reserved);
@@ -69,7 +69,7 @@ private:
     ProcessDumpType type_;
     int32_t tid_ = 0;
     int32_t pid_ = 0;
-    int32_t uid_ = 0;
+    uint32_t uid_ = 0;
     uint64_t reserved_ = 0;
     uint64_t timeStamp_ = 0;
     siginfo_t siginfo_;
@@ -83,7 +83,7 @@ struct LocalDumperRequest {
     int32_t type_;
     int32_t tid_;
     int32_t pid_;
-    int32_t uid_;
+    uint32_t uid_;
     uint64_t reserved_;
     uint64_t timeStamp_;
     siginfo_t siginfo_;

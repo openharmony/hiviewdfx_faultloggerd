@@ -68,19 +68,34 @@ static void PrintFailedConnect()
     std::cout << "faultloggerd is not available" << std::endl;
 }
 
-static void PrintPidTidCheckFailed(int32_t pid, int32_t tid)
+static void PrintPidTidCheckFailed(int32_t pid, int32_t tid, std::string& error)
 {
     std::cout << DUMP_STACK_TAG_FAILED << std::endl;
-    std::cout << "The " << tid  << " is not a thread of " << pid << std::endl;
+    std::cout << error << std::endl;
+    DfxLogWarn(error.c_str());
     std::cout << "The pid or tid is invalid." << std::endl;
 }
 
+static void FillErrorInfo(std::string& error, const char* format, ...)
+{
+    char buffer[LOG_BUF_LEN] = {0};
+    va_list args;
+    va_start(args, format);
+    int size = vsnprintf_s(buffer, sizeof(buffer), sizeof(buffer) - 1, format, args);
+    if (size == -1) {
+        DfxLogWarn("fillErrorInfo, vsnprintf_s fail");
+    }
+    va_end(args);
+    std::string temp(buffer);
+    error = temp;
+}
+
 // Check whether the tid is owned by pid.
-static bool CheckPidTid(OHOS::HiviewDFX::ProcessDumpType type, int32_t pid, int32_t tid)
+static bool CheckPidTid(OHOS::HiviewDFX::ProcessDumpType type, int32_t pid, int32_t tid, std::string& error)
 {
     // check pid
     if ((pid == 0) || (pid < 0)) {
-        DfxLogWarn("pid is zero or negative.");
+        FillErrorInfo(error, "pid is zero or negative.");
         return false;
     }
 
@@ -93,27 +108,37 @@ static bool CheckPidTid(OHOS::HiviewDFX::ProcessDumpType type, int32_t pid, int3
 
             OHOS::GetDirFiles(path, files);
             if (files.size() == 0) {
-                DfxLogWarn("Cannot find tid(%d) in process(%d).", tid, pid);
+                FillErrorInfo(error, "Cannot find tid(%d) in process(%d).", tid, pid);
                 return false;
             }
         } else {
-            DfxLogWarn("tid is zero or negative.");
+            FillErrorInfo(error, "tid is zero or negative.");
             return false;
         }
     }
 
     // check pid, make sure /proc/xxx/maps is valid.
     if (pid > 0) {
-        std::vector<std::string> files;
-        std::string path = "/proc/" + std::to_string(pid);
-
-        OHOS::GetDirFiles(path, files);
-        if (files.size() == 0) {
-            DfxLogWarn("Cannot find pid(%d) in /proc.", pid);
+        char path[NAME_LEN] = {0};
+        if (snprintf_s(path, sizeof(path), sizeof(path) - 1, "/proc/%d/maps", pid) <= 0) {
+            FillErrorInfo(error, "Fail to print path.");
             return false;
         }
+
+        char realPath[PATH_MAX] = {0};
+        if (realpath(path, realPath) == nullptr) {
+            FillErrorInfo(error, "Maps path(%s) is not exist.", path);
+            return false;
+        }
+
+        FILE *fp = fopen(realPath, "r");
+        if (fp == nullptr) {
+            FillErrorInfo(error, "Fail to open maps info.");
+            return false;
+        }
+        fclose(fp);
     } else {
-        DfxLogWarn("pid is zero or negative.");
+        FillErrorInfo(error, "pid is zero or negative.");
         return false;
     }
 
@@ -186,8 +211,9 @@ int main(int argc, char *argv[])
             PrintFailedConnect();
             return 0;
         }
-        if (!CheckPidTid(type, pid, tid)) { // check pid tid is valid
-            PrintPidTidCheckFailed(pid, tid);
+        std::string error;
+        if (!CheckPidTid(type, pid, tid, error)) { // check pid tid is valid
+            PrintPidTidCheckFailed(pid, tid, error);
             return 0;
         }
         if (!RequestCheckPermission(pid)) { // check permission
