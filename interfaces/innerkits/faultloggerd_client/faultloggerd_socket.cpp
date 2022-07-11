@@ -124,7 +124,7 @@ bool StartListen(int& sockfd, const char* path, const int pathLen, const int lis
     return ret;
 }
 
-static bool RecvMsgFromSocket(int sockfd, unsigned char* data, int& len)
+static bool RecvMsgFromSocket(int sockfd, unsigned char* data, size_t& len)
 {
     bool ret = false;
     if ((sockfd < 0) || (data == nullptr)) {
