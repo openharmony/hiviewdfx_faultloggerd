@@ -288,7 +288,7 @@ bool SendFileDescriptorToSocket(int sockfd, int fd)
 
 int ReadFileDescriptorFromSocket(int sockfd)
 {
-    int len = sizeof(int);
+    size_t len = sizeof(int);
     unsigned char data[len + 1];
     if (!RecvMsgFromSocket(sockfd, data, len)) {
         DfxLogError("%s :: Failed to recv message", __func__);

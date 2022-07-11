@@ -125,7 +125,6 @@ FaultLoggerPipeMap::~FaultLoggerPipeMap()
 void FaultLoggerPipeMap::Set(int pid, std::shared_ptr<FaultLoggerPipe2> faultLoggerPipe)
 {
     if (!Find(pid)) {
-        DfxLogDebug("%s :: Set ptr(%p)", __func__, faultLoggerPipe.get());
         faultLoggerPipes_.insert(make_pair(pid, faultLoggerPipe));
     }
 }
