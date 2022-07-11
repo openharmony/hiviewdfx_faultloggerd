@@ -18,8 +18,8 @@
 #ifndef DFX_FAULTLOGGERD_SOCKET_H
 #define DFX_FAULTLOGGERD_SOCKET_H
 
-#include <inttypes.h>
 #include <cinttypes>
+#include <sys/types.h>
 
 #ifdef __cplusplus
 extern "C" {
