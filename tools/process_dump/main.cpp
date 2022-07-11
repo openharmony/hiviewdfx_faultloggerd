@@ -136,6 +136,7 @@ static bool CheckPidTid(OHOS::HiviewDFX::ProcessDumpType type, int32_t pid, int3
             fillErrorInfo(error, "Fail to open maps info.");
             return false;
         }
+        fclose(fp);
     } else {
         fillErrorInfo(error, "pid is zero or negative.");
         return false;
