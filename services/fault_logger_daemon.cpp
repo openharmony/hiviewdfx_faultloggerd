@@ -168,7 +168,13 @@ void FaultLoggerDaemon::HandlePipeFdClientReqeust(int32_t connectionFd, const Fa
         faultLoggerPipeMap_->Del(request->pid);
         return;
     }
+    
     FaultLoggerPipe2* faultLoggerPipe = faultLoggerPipeMap_->Get(request->pid);
+    if (faultLoggerPipe == nullptr) {
+        DfxLogError("%s :: cannot find pipe fd for pid(%d).\n", FAULTLOGGERD_TAG.c_str(), request->pid);
+        return;
+    }
+
     switch (request->pipeType) {
         case (int32_t)FaultLoggerPipeType::PIPE_FD_READ_BUF:
             fd = faultLoggerPipe->faultLoggerPipeBuf_->GetReadFd();

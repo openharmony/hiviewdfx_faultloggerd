@@ -34,6 +34,9 @@ int WriteLog(int32_t fd, const char *format, ...)
     va_list args;
     va_start(args, format);
     ret = vsnprintf_s(buf, sizeof(buf), sizeof(buf) - 1, format, args);
+    if (ret == -1) {
+        DfxLogWarn("WriteLog: vsnprintf_s fail");
+    }
     va_end(args);
     if (fd == -1) {
         ret = DfxLogDebug(buf);
