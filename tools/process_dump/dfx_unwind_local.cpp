@@ -83,7 +83,7 @@ bool DfxUnwindLocal::Init()
     sigdelset(&mask, SIGILL);
     sigdelset(&mask, SIGSEGV);
     sigprocmask(SIG_SETMASK, &mask, &mask_);
-    std::unique_ptr<DfxSymbolsCache> cache = std::make_unique<DfxSymbolsCache>();
+    std::unique_ptr<DfxSymbolsCache> cache(new DfxSymbolsCache());
     cache_ = std::move(cache);
     return true;
 }

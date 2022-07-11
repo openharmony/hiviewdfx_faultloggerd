@@ -99,8 +99,8 @@ void FaultLoggerPipe::Close(int fd) const
 
 FaultLoggerPipe2::FaultLoggerPipe2()
 {
-    faultLoggerPipeBuf_ = std::make_unique<FaultLoggerPipe>();
-    faultLoggerPipeRes_ = std::make_unique<FaultLoggerPipe>();
+    faultLoggerPipeBuf_ = std::unique_ptr<FaultLoggerPipe>(new FaultLoggerPipe());
+    faultLoggerPipeRes_ = std::unique_ptr<FaultLoggerPipe>(new FaultLoggerPipe());
 }
 
 FaultLoggerPipe2::~FaultLoggerPipe2()
