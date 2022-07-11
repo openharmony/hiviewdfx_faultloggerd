@@ -96,7 +96,7 @@ static bool CheckPidTid(OHOS::HiviewDFX::ProcessDumpType type, int32_t pid, int3
 {
     // check pid
     if ((pid == 0) || (pid < 0)) {
-        fillErrorInfo(error, "pid is zero or negative.");
+        FillErrorInfo(error, "pid is zero or negative.");
         return false;
     }
 
@@ -109,11 +109,11 @@ static bool CheckPidTid(OHOS::HiviewDFX::ProcessDumpType type, int32_t pid, int3
 
             OHOS::GetDirFiles(path, files);
             if (files.size() == 0) {
-                fillErrorInfo(error, "Cannot find tid(%d) in process(%d).", tid, pid);
+                FillErrorInfo(error, "Cannot find tid(%d) in process(%d).", tid, pid);
                 return false;
             }
         } else {
-            fillErrorInfo(error, "tid is zero or negative.");
+            FillErrorInfo(error, "tid is zero or negative.");
             return false;
         }
     }
@@ -122,24 +122,24 @@ static bool CheckPidTid(OHOS::HiviewDFX::ProcessDumpType type, int32_t pid, int3
     if (pid > 0) {
         char path[NAME_LEN] = {0};
         if (snprintf_s(path, sizeof(path), sizeof(path) - 1, "/proc/%d/maps", pid) <= 0) {
-            fillErrorInfo(error, "Fail to print path.");
+            FillErrorInfo(error, "Fail to print path.");
             return false;
         }
 
         char realPath[PATH_MAX] = {0};
         if (realpath(path, realPath) == nullptr) {
-            fillErrorInfo(error, "Maps path(%s) is not exist.", path);
+            FillErrorInfo(error, "Maps path(%s) is not exist.", path);
             return false;
         }
 
         FILE *fp = fopen(realPath, "r");
         if (fp == nullptr) {
-            fillErrorInfo(error, "Fail to open maps info.");
+            FillErrorInfo(error, "Fail to open maps info.");
             return false;
         }
         fclose(fp);
     } else {
-        fillErrorInfo(error, "pid is zero or negative.");
+        FillErrorInfo(error, "pid is zero or negative.");
         return false;
     }
 
