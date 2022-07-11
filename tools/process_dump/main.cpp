@@ -76,9 +76,9 @@ static void PrintPidTidCheckFailed(int32_t pid, int32_t tid, std::string& error)
     std::cout << "The pid or tid is invalid." << std::endl;
 }
 
-static void fillErrorInfo(std::string& error, const char* format, ...)
+static void FillErrorInfo(std::string& error, const char* format, ...)
 {
-    char buffer[LOG_BUF_LEN];
+    char buffer[LOG_BUF_LEN] = {0};
     va_list args;
     va_start(args, format);
     int size = vsnprintf_s(buffer, sizeof(buffer), sizeof(buffer) - 1, format, args);
@@ -86,6 +86,7 @@ static void fillErrorInfo(std::string& error, const char* format, ...)
         DfxLogWarn("fillErrorInfo, vsnprintf_s fail");
     }
     va_end(args);
+    DfxLogWarn(buffer);
     std::string temp(buffer);
     error = temp;
 }
