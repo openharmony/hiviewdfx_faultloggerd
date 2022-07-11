@@ -25,7 +25,7 @@
 
 #include "dfx_define.h"
 
-bool ReadStringFromFile(const char* path, const char* dst, size_t dstSz)
+bool ReadStringFromFile(const char* path, char* dst, size_t dstSz)
 {
     char name[NAME_LEN];
     char nameFilter[NAME_LEN];
@@ -65,7 +65,7 @@ bool ReadStringFromFile(const char* path, const char* dst, size_t dstSz)
     return true;
 }
 
-bool GetThreadName(const char* buffer, size_t bufferSz)
+bool GetThreadName(char* buffer, size_t bufferSz)
 {
     char path[NAME_LEN];
     memset_s(path, sizeof(path), '\0', sizeof(path));
@@ -75,7 +75,7 @@ bool GetThreadName(const char* buffer, size_t bufferSz)
     return ReadStringFromFile(path, buffer, bufferSz);
 }
 
-bool GetProcessName(const char* buffer, size_t bufferSz)
+bool GetProcessName(char* buffer, size_t bufferSz)
 {
     char path[NAME_LEN];
     memset_s(path, sizeof(path), '\0', sizeof(path));
