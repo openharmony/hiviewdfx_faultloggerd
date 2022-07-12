@@ -276,7 +276,7 @@ static int DFX_ExecDump(void *arg)
 
 static pid_t DFX_ForkAndDump()
 {
-    if (NULL == g_reservedChildStack) {
+    if (g_reservedChildStack == NULL) {
         DfxLogError("g_reservedChildStack is null.");
         return -1;
     }
