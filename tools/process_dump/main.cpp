@@ -68,8 +68,9 @@ static void PrintFailedConnect()
     std::cout << "faultloggerd is not available" << std::endl;
 }
 
-static void PrintPidTidCheckFailed(int32_t pid, int32_t tid, std::string& error)
+static void PrintPidTidCheckFailed(int32_t pid, int32_t tid, const std::string& error)
 {
+    DfxLogWarn("pid:%d, tid:%d check failed", pid, tid);
     std::cout << DUMP_STACK_TAG_FAILED << std::endl;
     std::cout << error << std::endl;
     DfxLogWarn(error.c_str());

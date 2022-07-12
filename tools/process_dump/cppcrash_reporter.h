@@ -66,7 +66,7 @@ private:
     uint64_t time_;
     int32_t signo_;
     int32_t pid_;
-    int32_t uid_;
+    uint32_t uid_;
     std::string cmdline_;
     std::string reason_;
     std::string stack_;

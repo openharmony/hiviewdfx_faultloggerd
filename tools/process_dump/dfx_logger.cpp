@@ -21,6 +21,7 @@
 #include "faultloggerd_client.h"
 #include "dfx_define.h"
 
+static const int WRITE_LOG_BUF_LEN = 2048;
 static const int32_t INVALID_FD = -1;
 static int32_t g_DebugLogFilleDes = INVALID_FD;
 #ifndef DFX_LOG_USE_HILOG_BASE
@@ -30,7 +31,7 @@ static int32_t g_StdErrFilleDes = INVALID_FD;
 int WriteLog(int32_t fd, const char *format, ...)
 {
     int ret;
-    char buf[LOG_BUF_LEN] = {0};
+    char buf[WRITE_LOG_BUF_LEN] = {0};
     va_list args;
     va_start(args, format);
     ret = vsnprintf_s(buf, sizeof(buf), sizeof(buf) - 1, format, args);
@@ -73,7 +74,7 @@ void DfxLogToSocket(const char *msg)
 }
 
 #ifndef DFX_LOG_USE_HILOG_BASE
-void InitDebugLog(int type, int pid, int tid, int uid, int isLogPersist)
+void InitDebugLog(int type, int pid, int tid, unsigned int uid, int isLogPersist)
 {
     DfxLogInfo("InitDebugLog :: type(%d), pid(%d), tid(%d), uid(%d), isLogPersist(%d).",
         type, pid, tid, uid, isLogPersist);

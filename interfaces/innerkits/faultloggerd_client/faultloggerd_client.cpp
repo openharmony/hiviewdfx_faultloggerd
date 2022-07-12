@@ -121,7 +121,7 @@ int32_t RequestFileDescriptorEx(const struct FaultLoggerdRequest *request)
 
     int sockfd;
     const int32_t SOCKET_TIMEOUT = 5;
-    if (!StartConnect(sockfd, FAULTLOGGERD_SOCK_PATH, strlen(FAULTLOGGERD_SOCK_PATH), SOCKET_TIMEOUT)) {
+    if (!StartConnect(sockfd, FAULTLOGGERD_SOCK_PATH, SOCKET_TIMEOUT)) {
         DfxLogError("StartConnect failed");
         return -1;
     }
@@ -157,7 +157,7 @@ static FaultLoggerCheckPermissionResp SendUidToServer(int sockfd)
 bool CheckConnectStatus()
 {
     int sockfd = -1;
-    if (StartConnect(sockfd, FAULTLOGGERD_SOCK_PATH, strlen(FAULTLOGGERD_SOCK_PATH), -1)) {
+    if (StartConnect(sockfd, FAULTLOGGERD_SOCK_PATH, -1)) {
         close(sockfd);
         return true;
     }
@@ -169,7 +169,7 @@ static bool SendRequestToServer(const FaultLoggerdRequest &request)
     int sockfd = -1;
     bool resRsp = false;
     do {
-        if (!StartConnect(sockfd, FAULTLOGGERD_SOCK_PATH, strlen(FAULTLOGGERD_SOCK_PATH), -1)) {
+        if (!StartConnect(sockfd, FAULTLOGGERD_SOCK_PATH, -1)) {
             DfxLogError("StartConnect failed.");
             break;
         }
@@ -258,7 +258,7 @@ void RequestPrintTHilog(const char *msg, int length)
 
     int sockfd = -1;
     do {
-        if (!StartConnect(sockfd, FAULTLOGGERD_SOCK_PATH, strlen(FAULTLOGGERD_SOCK_PATH), -1)) {
+        if (!StartConnect(sockfd, FAULTLOGGERD_SOCK_PATH, -1)) {
             DfxLogError("StartConnect failed");
             break;
         }
