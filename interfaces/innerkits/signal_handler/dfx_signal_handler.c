@@ -263,19 +263,14 @@ static int DFX_ExecDump(void *arg)
         pthread_mutex_unlock(&g_dumpMutex);
         return INHERIT_CAP_FAIL;
     }
-
-    DfxLogInfo("execle processdump.");
-    int ret = 0;
-#ifdef DFX_LOG_USE_HILOG_BASE
-    if ((ret = execle("/system/bin/processdump", "processdump", "-signalhandler", NULL, NULL)) == -1) {
-        DfxLogError("Failed to execle processdump.");
-    }
-#else
-    if ((ret = execle("/bin/processdump", "processdump", "-signalhandler", NULL, NULL)) == -1) {
-        DfxLogError("Failed to execle processdump.");
-    }
-#endif
     pthread_mutex_unlock(&g_dumpMutex);
+    DfxLogInfo("execle processdump.");
+#ifdef DFX_LOG_USE_HILOG_BASE
+    execle("/system/bin/processdump", "processdump", "-signalhandler", NULL, NULL);
+#else
+    execle("/bin/processdump", "processdump", "-signalhandler", NULL, NULL);
+#endif
+    DfxLogError("Failed to execle processdump, errno: %d(%s)", errno, strerror(errno));
     return errno;
 }
 

@@ -186,6 +186,8 @@ bool DfxUnwindLocal::ExecLocalDumpUnwind(int tid, size_t skipFramNum)
 
     size_t index = 0;
     curIndex_ = 0;
+    unw_word_t pc = 0;
+    unw_word_t prevPc = 0;
     while ((unw_step(&cursor) > 0) && (index < BACK_STACK_MAX_STEPS)) {
         if (tid != gettid()) {
             break;
@@ -196,15 +198,19 @@ bool DfxUnwindLocal::ExecLocalDumpUnwind(int tid, size_t skipFramNum)
             continue;
         }
 
-        unw_word_t pc;
         if (unw_get_reg(&cursor, UNW_REG_IP, (unw_word_t*)(&(pc)))) {
+            DfxLogWarn("%s :: Failed to get current pc, stop.", __func__);
             break;
         }
+        if (curIndex_ > 1 && prevPc == pc) {
+            DfxLogWarn("%s :: repeated pc, stop.", __func__);
+            break;
+        }
+        prevPc = pc;
 
         unw_word_t relPc = unw_get_rel_pc(&cursor);
         unw_word_t sz = unw_get_previous_instr_sz(&cursor);
         if (index - skipFramNum != 0) {
-            pc -= sz;
             relPc -= sz;
         }
 
