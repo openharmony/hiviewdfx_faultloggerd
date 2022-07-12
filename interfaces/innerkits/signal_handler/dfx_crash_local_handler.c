@@ -142,13 +142,13 @@ __attribute__((noinline)) void CrashLocalUnwind(int fd, ucontext_t* ucontext)
 }
 
 // currently, only stacktrace is logged to faultloggerd
-void CrashLocalHandler(struct ProcessDumpRequest* request, siginfo_t* info, ucontext_t* ucontext)
+void CrashLocalHandler(struct ProcessDumpRequest* request, const siginfo_t* info, ucontext_t* ucontext)
 {
     int fd = RequestOutputLogFile(request);
     CrashLocalHandlerFd(fd, request, info, ucontext);
 }
 
-void CrashLocalHandlerFd(int fd, struct ProcessDumpRequest* request, siginfo_t* info, ucontext_t* ucontext)
+void CrashLocalHandlerFd(int fd, struct ProcessDumpRequest* request, const siginfo_t* info, ucontext_t* ucontext)
 {
     PrintLog(fd, "Pid:%d\n", request->pid);
     PrintLog(fd, "Uid:%d\n", request->uid);

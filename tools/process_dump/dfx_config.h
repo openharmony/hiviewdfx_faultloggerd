@@ -24,7 +24,7 @@ public:
     static DfxConfig &GetInstance();
 
     void ReadConfig();
-    void ParserConfig(std::string& key, std::string& value);
+    void ParserConfig(const std::string& key, const std::string& value);
     void SetDisplayBacktrace(bool displayBacktrace);
     bool GetDisplayBacktrace() const;
     void SetDisplayRegister(bool displayRegister);

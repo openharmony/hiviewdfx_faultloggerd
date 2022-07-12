@@ -116,7 +116,7 @@ bool DfxConfig::GetDumpOtherThreads() const
     return dumpOtherThreads_;
 }
 
-void DfxConfig::ParserConfig(std::string& key, std::string& value)
+void DfxConfig::ParserConfig(const std::string& key, const std::string& value)
 {
     unsigned int lowAddressStep = 0;
     unsigned int highAddressStep = 0;

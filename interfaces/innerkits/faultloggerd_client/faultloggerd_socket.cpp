@@ -124,7 +124,7 @@ bool StartListen(int& sockfd, const char* path, const int pathLen, const int lis
     return ret;
 }
 
-bool RecvMsgFromSocket(int sockfd, unsigned char* data, size_t& len)
+static bool RecvMsgFromSocket(int sockfd, unsigned char* data, size_t& len)
 {
     bool ret = false;
     if ((sockfd < 0) || (data == nullptr)) {
@@ -244,7 +244,7 @@ bool SendMsgIovToSocket(int sockfd, void *iovBase, const int iovLen)
     return true;
 }
 
-bool SendMsgCtlToSocket(int sockfd, void *cmsg, const int cmsgLen)
+static bool SendMsgCtlToSocket(int sockfd, const void *cmsg, const int cmsgLen)
 {
     if ((sockfd < 0) || (cmsg == nullptr) || (cmsgLen == 0)) {
         return false;

@@ -46,9 +46,9 @@ public:
     int32_t GetRes() const;
     void SetRes(int32_t res);
 
-    const char *GetResStr(const int res);
+    const char *GetResStr(const int res) const;
 
-    std::string ToString();
+    std::string ToString() const;
 private:
     DfxDumpRes() = default;
     ~DfxDumpRes() = default;

@@ -80,14 +80,14 @@ private:
 };
 
 struct LocalDumperRequest {
-    int32_t type_;
-    int32_t tid_;
-    int32_t pid_;
-    uint32_t uid_;
-    uint64_t reserved_;
-    uint64_t timeStamp_;
-    siginfo_t siginfo_;
-    ucontext_t context_;
+    int32_t type;
+    int32_t tid;
+    int32_t pid;
+    uint32_t uid;
+    uint64_t reserved;
+    uint64_t timeStamp;
+    siginfo_t siginfo;
+    ucontext_t context;
 };
 } // namespace HiviewDFX
 } // namespace OHOS

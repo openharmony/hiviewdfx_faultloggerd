@@ -34,7 +34,7 @@ int DfxLogInfo(const char *format, ...);
 int DfxLogWarn(const char *format, ...);
 int DfxLogError(const char *format, ...);
 int DfxLogFatal(const char *format, ...);
-int checkDebugLevel();
+int CheckDebugLevel();
 #ifdef __cplusplus
 }
 #endif

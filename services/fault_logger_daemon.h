@@ -33,13 +33,13 @@ private:
     static void HandleRequesting(int32_t connectionFd);
     void RemoveTempFileIfNeed();
     void HandleRequest(int32_t connectionFd);
-    void HandleDefaultClientReqeust(int32_t connectionFd, const FaultLoggerdRequest* request);
-    void HandleLogFileDesClientReqeust(int32_t connectionFd, const FaultLoggerdRequest* request);
-    void HandlePrintTHilogClientReqeust(int32_t const connectionFd, FaultLoggerdRequest* request);
+    void HandleDefaultClientRequest(int32_t connectionFd, const FaultLoggerdRequest* request);
+    void HandleLogFileDesClientRequest(int32_t connectionFd, const FaultLoggerdRequest* request);
+    void HandlePrintTHilogClientRequest(int32_t const connectionFd, FaultLoggerdRequest* request);
     FaultLoggerCheckPermissionResp SecurityCheck(int32_t connectionFd, FaultLoggerdRequest* request);
-    void HandlePermissionReqeust(int32_t connectionFd, FaultLoggerdRequest* request);
-    void HandleSdkDumpReqeust(int32_t connectionFd, FaultLoggerdRequest* request);
-    void HandlePipeFdClientReqeust(int32_t connectionFd, const FaultLoggerdRequest* request);
+    void HandlePermissionRequest(int32_t connectionFd, FaultLoggerdRequest* request);
+    void HandleSdkDumpRequest(int32_t connectionFd, FaultLoggerdRequest* request);
+    void HandlePipeFdClientRequest(int32_t connectionFd, const FaultLoggerdRequest* request);
 
 private:
     static FaultLoggerDaemon* faultLoggerDaemon_;
