@@ -65,7 +65,7 @@ DfxUnwindLocal::DfxUnwindLocal()
     as_ = nullptr;
     frames_.clear();
     curIndex_ = 0;
-    memset(&oldSigaction_, 0, sizeof(struct sigaction));
+    memset_s(&oldSigaction_, sizeof(struct sigaction), 0, sizeof(struct sigaction));
     sigemptyset(&mask_);
 }
 
