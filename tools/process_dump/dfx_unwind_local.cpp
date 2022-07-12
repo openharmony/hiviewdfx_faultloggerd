@@ -65,6 +65,8 @@ DfxUnwindLocal::DfxUnwindLocal()
     as_ = nullptr;
     frames_.clear();
     curIndex_ = 0;
+    memset(&oldSigaction_, 0, sizeof(struct sigaction));
+    sigemptyset(&mask_);
 }
 
 bool DfxUnwindLocal::Init()

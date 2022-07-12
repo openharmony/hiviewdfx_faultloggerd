@@ -34,7 +34,7 @@
 #include "dfx_define.h"
 #include "dfx_log.h"
 
-bool StartConnect(int& sockfd, const char* path, const int pathLen, const int timeout)
+bool StartConnect(int& sockfd, const char* path, const int timeout)
 {
     bool ret = false;
     if ((sockfd = socket(AF_LOCAL, SOCK_STREAM, 0)) < 0) {
@@ -62,7 +62,7 @@ bool StartConnect(int& sockfd, const char* path, const int pathLen, const int ti
             break;
         }
         server.sun_family = AF_LOCAL;
-        if (strncpy_s(server.sun_path, sizeof(server.sun_path), path, pathLen) != 0) {
+        if (strncpy_s(server.sun_path, sizeof(server.sun_path), path, sizeof(server.sun_path) - 1) != 0) {
             DfxLogError("%s :: strncpy failed.", __func__);
             break;
         }
@@ -83,7 +83,7 @@ bool StartConnect(int& sockfd, const char* path, const int pathLen, const int ti
     return ret;
 }
 
-bool StartListen(int& sockfd, const char* path, const int pathLen, const int listenCnt)
+bool StartListen(int& sockfd, const char* path, const int listenCnt)
 {
     bool ret = false;
     if ((sockfd = socket(AF_LOCAL, SOCK_STREAM, 0)) < 0) {
@@ -99,7 +99,7 @@ bool StartListen(int& sockfd, const char* path, const int pathLen, const int lis
             break;
         }
         server.sun_family = AF_LOCAL;
-        if (strncpy_s(server.sun_path, sizeof(server.sun_path), path, pathLen) != 0) {
+        if (strncpy_s(server.sun_path, sizeof(server.sun_path), path, sizeof(server.sun_path) - 1) != 0) {
             DfxLogError("%s :: strncpy failed.", __func__);
             break;
         }

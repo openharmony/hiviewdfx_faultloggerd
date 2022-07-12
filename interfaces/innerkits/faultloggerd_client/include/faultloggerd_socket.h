@@ -24,8 +24,8 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-bool StartConnect(int& sockfd, const char* path, const int pathLen, const int timeout);
-bool StartListen(int& sockfd, const char* path, const int pathLen, const int listenCnt);
+bool StartConnect(int& sockfd, const char* path, const int timeout);
+bool StartListen(int& sockfd, const char* path, const int listenCnt);
 
 bool RecvMsgCredFromSocket(int sockfd, struct ucred* pucred);
 
