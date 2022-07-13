@@ -87,10 +87,8 @@ static pthread_mutex_t g_dumpMutex = PTHREAD_MUTEX_INITIALIZER;
 static int g_pipefd[2] = {-1, -1};
 static BOOL g_hasInit = FALSE;
 static const int SIGNALHANDLER_TIMEOUT = 10000; // 10000 us
-static int g_lastHandledTid[MAX_HANDLED_TID_NUMBER] = {0};
-static int g_lastHandledTidIndex = 0;
 static const int ALARM_TIME_S = 10;
-static BOOL g_doSignalHandlering = FALSE;
+static int g_currentHandledSignal = SIGDUMP;
 
 enum DumpPreparationStage {
     CREATE_PIPE_FAIL = 1,
@@ -300,40 +298,36 @@ static void ResetSignalHandlerIfNeed(int sig)
     }
 }
 
-static int CheckLastHandledTid(int sig, siginfo_t *si)
+static void BlockMainThreadIfNeed(int sig)
 {
-    for (int i = 0; i < g_lastHandledTidIndex && i < MAX_HANDLED_TID_NUMBER; i++) {
-        if (g_lastHandledTid[i] == gettid()) {
-            ResetSignalHandlerIfNeed(sig);
-            DfxLogInfo("Just resend sig(%d), pid(%d), tid(%d) to sys.", sig, getpid(), gettid());
-            if (syscall(SYS_rt_tgsigqueueinfo, getpid(), gettid(), si->si_signo, si) != 0) {
-                DfxLogError("Failed to resend signal.");
-            }
-            return TRUE;
-        }
+    if (getpid() == gettid() || sig == SIGDUMP) {
+        return;
     }
-    return FALSE;
+
+    DfxLogInfo("Crash(%d) in child thread(%d), try stop main thread.", sig, gettid());
+    siginfo_t si;
+    si.si_signo = SIGSTOP;
+    (void)syscall(SYS_rt_tgsigqueueinfo, getpid(), getpid(), si.si_signo, &si);
 }
 
 static void DFX_SignalHandler(int sig, siginfo_t *si, void *context)
 {
-    if (sig != SIGDUMP) {
-        if (CheckLastHandledTid(sig, si) == TRUE) {
-            return;
-        }
-        if (g_lastHandledTidIndex < MAX_HANDLED_TID_NUMBER) {
-            g_lastHandledTid[g_lastHandledTidIndex] = gettid();
-            g_lastHandledTidIndex = g_lastHandledTidIndex + 1;
-        }
-
-        if (g_doSignalHandlering == TRUE) {
-            DfxLogError("Handlering sigdump now, skip sig(%d) request.", sig);
-            return;
-        }
-        g_doSignalHandlering = TRUE;
+    if (sig == SIGDUMP && getpid() != gettid()) {
+        DfxLogInfo("SIGDUMP should always be handled in main thread.");
+        return;
     }
-    
+
+    // crash signal should never be skipped
     pthread_mutex_lock(&g_signalHandlerMutex);
+    BlockMainThreadIfNeed(sig);
+    if (g_currentHandledSignal != SIGDUMP) {
+        ResetSignalHandlerIfNeed(sig);
+        (void)syscall(SYS_rt_tgsigqueueinfo, getpid(), gettid(), si->si_signo, si);
+        DfxLogInfo("Current process has encount a crash, rethrow sig(%d).", sig);
+        return;
+    }
+    g_currentHandledSignal = sig;
+
     (void)memset_s(&g_request, sizeof(g_request), 0, sizeof(g_request));
     g_request.type = sig;
     g_request.tid = gettid();
@@ -421,7 +415,6 @@ out:
         if (syscall(SYS_rt_tgsigqueueinfo, getpid(), gettid(), si->si_signo, si) != 0) {
             DfxLogError("Failed to resend signal(%d).", sig);
         }
-        g_doSignalHandlering = FALSE;
     }
 
     DfxLogInfo("Finish handle signal(%d) in %d:%d", sig, g_request.pid, g_request.tid);

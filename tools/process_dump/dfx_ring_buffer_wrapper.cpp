@@ -112,6 +112,9 @@ void DfxRingBufferWrapper::StopThread()
         if (thread_.joinable()) {
             thread_.join();
             DfxLogDebug("%s :: thread join", __func__);
+        } else {
+            constexpr int timeout = 2;
+            sleep(timeout);
         }
         close(fd_);
         fd_ = -1;
