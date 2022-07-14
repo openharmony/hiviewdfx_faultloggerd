@@ -86,7 +86,8 @@ bool StartConnect(int& sockfd, const char* path, const int timeout)
 
 static bool startListenInitFd(int& sockfd, const char* name, const int listenCnt)
 {
-    if (sockfd = GetControlSocket(name) < 0)
+    sockfd = GetControlSocket(name);
+    if (sockfd < 0)
     {
         DfxLogError("%s :: Failed to get init socket fd", __func__);
         return false;
