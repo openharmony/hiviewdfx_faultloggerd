@@ -92,7 +92,7 @@ FaultLoggerDaemon::FaultLoggerDaemon()
 int32_t FaultLoggerDaemon::StartServer()
 {
     int socketFd = -1;
-    if (!StartListen(socketFd, FAULTLOGGERD_SOCK_PATH, MAX_CONNECTION)) {
+    if (!StartListen(socketFd, SERVER_SOCKET_NAME, MAX_CONNECTION)) {
         DfxLogError("%s :: Failed to start listen", FAULTLOGGERD_TAG.c_str());
         return -1;
     }
