@@ -31,7 +31,7 @@
 #define MAX_FRAME 64
 #define BUF_SZ 512
 
-__attribute__((noinline)) int RequestOutputLogFile(struct ProcessDumpRequest* const request)
+__attribute__((noinline)) int RequestOutputLogFile(const struct ProcessDumpRequest* request)
 {
     struct FaultLoggerdRequest faultloggerdRequest;
     if (memset_s(&faultloggerdRequest, sizeof(faultloggerdRequest), 0, sizeof(struct FaultLoggerdRequest)) != 0) {
@@ -142,13 +142,13 @@ __attribute__((noinline)) void CrashLocalUnwind(int fd, ucontext_t* ucontext)
 }
 
 // currently, only stacktrace is logged to faultloggerd
-void CrashLocalHandler(struct ProcessDumpRequest* const request, const siginfo_t* info, ucontext_t* ucontext)
+void CrashLocalHandler(const struct ProcessDumpRequest* request, const siginfo_t* info, ucontext_t* ucontext)
 {
     int fd = RequestOutputLogFile(request);
     CrashLocalHandlerFd(fd, request, info, ucontext);
 }
 
-void CrashLocalHandlerFd(int fd, struct ProcessDumpRequest* const request, const siginfo_t* const info, ucontext_t* ucontext)
+void CrashLocalHandlerFd(int fd, const struct ProcessDumpRequest* request, const siginfo_t* info, ucontext_t* ucontext)
 {
     PrintLog(fd, "Pid:%d\n", request->pid);
     PrintLog(fd, "Uid:%d\n", request->uid);
