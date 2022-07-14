@@ -84,19 +84,69 @@ bool StartConnect(int& sockfd, const char* path, const int timeout)
     return ret;
 }
 
-bool StartListen(int& sockfd, const char* name, const int listenCnt)
+static bool startListenInitFd(int& sockfd, const char* name, const int listenCnt)
 {
-    if ((sockfd = GetControlSocket(name)) < 0) {
-        DfxLogError("%s :: Failed to create socket", __func__);
+    if (sockfd = GetControlSocket(name) < 0)
+    {
+        DfxLogError("%s :: Failed to get init socket fd", __func__);
         return false;
     }
 
-    if (listen(sockfd, listenCnt) < 0) {
+    if (listen(sockfd, listenCnt) < 0)
+    {
         DfxLogError("%s :: Failed to listen socket", __func__);
         close(sockfd);
+        sockfd = -1;
         return false;
     }
+    DfxLogInfo("%s :: success to listen socket", __func__);
     return true;
+}
+
+bool StartListen(int& sockfd, const char* name, const char* path, const int listenCnt)
+{
+    if (startListenInitFd(sockfd, name, listenCnt))
+    {
+        return true;
+    }
+
+    bool ret = false;
+    if ((sockfd = socket(AF_LOCAL, SOCK_STREAM, 0)) < 0) {
+        DfxLogError("%s :: Failed to create socket", __func__);
+        return ret;
+    }
+
+    do {
+        struct sockaddr_un server;
+        errno_t err = memset_s(&server, sizeof(server), 0, sizeof(server));
+        if (err != EOK) {
+            DfxLogError("%s :: memset_s failed, err = %d.", __func__, (int)err);
+            break;
+        }
+        server.sun_family = AF_LOCAL;
+        if (strncpy_s(server.sun_path, sizeof(server.sun_path), path, sizeof(server.sun_path) - 1) != 0) {
+            DfxLogError("%s :: strncpy failed.", __func__);
+            break;
+        }
+
+        unlink(path);
+        if (bind(sockfd, (struct sockaddr *)&server,
+            offsetof(struct sockaddr_un, sun_path) + strlen(server.sun_path)) < 0) {
+            DfxLogError("%s :: Failed to bind socket", __func__);
+            break;
+        }
+
+        if (listen(sockfd, listenCnt) < 0) {
+            DfxLogError("%s :: Failed to listen socket", __func__);
+            break;
+        }
+        ret = true;
+    } while (false);
+
+    if (!ret) {
+        close(sockfd);
+    }
+    return ret;
 }
 
 static bool RecvMsgFromSocket(int sockfd, unsigned char* data, size_t& len)
