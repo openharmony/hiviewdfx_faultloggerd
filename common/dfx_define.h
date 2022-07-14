@@ -23,8 +23,8 @@
 #define MAX_FATAL_MSG_SIZE 1024
 
 static const int SOCKET_BUFFER_SIZE = 256;
-static const char FAULTLOGGERD_SOCK_PATH[] = "/dev/unix/socket/faultloggerd.server";
-static const char SERVER_SOCKET_NAME[] = "faultloggerd.server";
+static const char FAULTLOGGERD_SOCK_PATH[] = "/dev/unix/socket/faultloggerd";
+static const char SERVER_SOCKET_NAME[] = "faultloggerd";
 
 #if defined(__arm__)
 static const int USER_REG_NUM = 16;
