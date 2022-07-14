@@ -67,6 +67,7 @@ DfxUnwindLocal::DfxUnwindLocal()
     curIndex_ = 0;
     memset_s(&oldSigaction_, sizeof(struct sigaction), 0, sizeof(struct sigaction));
     sigemptyset(&mask_);
+    memset_s(&localDumpRequest_, sizeof(struct LocalDumperRequest), 0, sizeof(struct LocalDumperRequest));
 }
 
 bool DfxUnwindLocal::Init()
@@ -122,6 +123,10 @@ bool DfxUnwindLocal::WaitLocalDumpRequest()
 
 std::string DfxUnwindLocal::CollectUnwindResult(int32_t tid)
 {
+    if (tic < 0) {
+        return string("");
+    }
+
     std::ostringstream result;
     result << "Tid:" << tid;
     std::string path = "/proc/self/task/" + std::to_string(tid) + "/comm";

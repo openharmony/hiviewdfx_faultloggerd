@@ -50,7 +50,7 @@ static int g_platformSignals[] = {
     SIGSEGV,
 };
 
-void DFX_InitDumpRequest(struct ProcessDumpRequest* request, const int sig)
+void DFX_InitDumpRequest(struct ProcessDumpRequest* const request, const int sig)
 {
     request->type = sig;
     request->tid = gettid();
@@ -62,7 +62,7 @@ void DFX_InitDumpRequest(struct ProcessDumpRequest* request, const int sig)
     GetProcessName(request->processName, sizeof(request->processName));
 }
 
-static void DFX_SignalHandler(int sig, siginfo_t *si, void *context)
+static void DFX_SignalHandler(int sig, siginfo_t * const si, void * const context)
 {
     struct ProcessDumpRequest request;
     (void)memset_s(&request, sizeof(request), 0, sizeof(request));
