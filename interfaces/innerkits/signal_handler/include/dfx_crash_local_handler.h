@@ -26,8 +26,8 @@ extern "C" {
 // we may fail to unwind in processdump in some circumstances, such as processdump crash or execve timeout
 // in such cases, we should try unwind in signal handler rather than lost a crash event
 // only use for collecting crash signal
-void CrashLocalHandler(struct ProcessDumpRequest* request, const siginfo_t* info, ucontext_t* ucontext);
-void CrashLocalHandlerFd(int fd, struct ProcessDumpRequest* request, const siginfo_t* info, ucontext_t* ucontext);
+void CrashLocalHandler(const struct ProcessDumpRequest* request, const siginfo_t* info, ucontext_t* ucontext);
+void CrashLocalHandlerFd(int fd, const struct ProcessDumpRequest* request, const siginfo_t* info, ucontext_t* ucontext);
 #ifdef __cplusplus
 }
 #endif
