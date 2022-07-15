@@ -23,15 +23,17 @@
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <climits>
+#include <cstdlib>
 
 #include "bits/fcntl.h"
 #include "bits/stat.h"
 #include "dfx_log.h"
 #include "elf.h"
-#include "limits.h"
+
 #include "link.h"
 #include "new"
-#include "stdlib.h"
+
 #include "string"
 #include "vector"
 
