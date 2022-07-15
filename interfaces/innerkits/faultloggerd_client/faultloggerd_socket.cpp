@@ -17,22 +17,15 @@
 
 #include "faultloggerd_socket.h"
 
-#include <climits>
-#include <cstdio>
-#include <cstdlib>
-#include <cstring>
-#include <fcntl.h>
 #include <securec.h>
-#include <sys/syscall.h>
 #include <sys/socket.h>
-#include <sys/stat.h>
 #include <sys/time.h>
-#include <sys/types.h>
 #include <sys/un.h>
 #include <unistd.h>
 
 #include "dfx_define.h"
 #include "dfx_log.h"
+#include "stddef.h"
 
 bool StartConnect(int& sockfd, const char* path, const int timeout)
 {

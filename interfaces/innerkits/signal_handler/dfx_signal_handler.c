@@ -15,29 +15,28 @@
 
 #include "dfx_signal_handler.h"
 
-#include <errno.h>
 #include <fcntl.h>
-#include <inttypes.h>
 #include <pthread.h>
 #include <sched.h>
+#include <securec.h>
 #include <signal.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include <stdint.h>
 #include <time.h>
 #include <unistd.h>
-
 #include <sys/capability.h>
 #include <sys/mman.h>
 #include <sys/prctl.h>
-#include <sys/syscall.h>
-#include <sys/time.h>
-#include <sys/types.h>
 #include <sys/uio.h>
 #include <sys/wait.h>
 
-#include <securec.h>
-
+#include "bits/errno.h"
+#include "bits/signal.h"
+#include "bits/syscall.h"
+#include "dfx_crash_local_handler.h"
+#include "dfx_define.h"
+#include "errno.h"
+#include "linux/capability.h"
+#include "string.h"
 #include "dfx_log.h"
 #include "dfx_cutil.h"
 #if defined(CRASH_LOCAL_HANDLER)

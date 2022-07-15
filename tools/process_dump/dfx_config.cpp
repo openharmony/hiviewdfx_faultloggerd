@@ -16,9 +16,12 @@
 /* This files contains config module. */
 
 #include <securec.h>
+#include <stdio.h>
 #include "dfx_define.h"
 #include "dfx_logger.h"
 #include "dfx_config.h"
+#include "stdio.h"
+#include "stdlib.h"
 
 static const char FAULTLOGGER_CONF_PATH[] = "/system/etc/faultlogger.conf";
 
