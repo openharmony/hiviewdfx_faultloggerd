@@ -89,6 +89,7 @@ static BOOL g_hasInit = FALSE;
 static const int SIGNALHANDLER_TIMEOUT = 10000; // 10000 us
 static const int ALARM_TIME_S = 10;
 static int g_currentHandledSignal = SIGDUMP;
+static BOOL g_isDumping = FALSE;
 
 enum DumpPreparationStage {
     CREATE_PIPE_FAIL = 1,
@@ -312,8 +313,8 @@ static void BlockMainThreadIfNeed(int sig)
 
 static void DFX_SignalHandler(int sig, siginfo_t *si, void *context)
 {
-    if (sig == SIGDUMP && getpid() != gettid()) {
-        DfxLogInfo("SIGDUMP should always be handled in main thread.");
+    if (sig == SIGDUMP && g_isDumping) {
+        DfxLogInfo("Current Process is dumping stacktrace now.");
         return;
     }
 
@@ -327,6 +328,7 @@ static void DFX_SignalHandler(int sig, siginfo_t *si, void *context)
         return;
     }
     g_currentHandledSignal = sig;
+    g_isDumping = TRUE;
 
     (void)memset_s(&g_request, sizeof(g_request), 0, sizeof(g_request));
     g_request.type = sig;
@@ -418,6 +420,7 @@ out:
     }
 
     DfxLogInfo("Finish handle signal(%d) in %d:%d", sig, g_request.pid, g_request.tid);
+    g_isDumping = FALSE;
     pthread_mutex_unlock(&g_signalHandlerMutex);
 }
 
