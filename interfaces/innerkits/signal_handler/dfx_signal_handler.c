@@ -88,7 +88,7 @@ static int g_pipefd[2] = {-1, -1};
 static BOOL g_hasInit = FALSE;
 static const int SIGNALHANDLER_TIMEOUT = 10000; // 10000 us
 static const int ALARM_TIME_S = 10;
-static int g_currentHandledSignal = SIGDUMP;
+static int g_prevHandledSignal = SIGDUMP;
 
 enum DumpPreparationStage {
     CREATE_PIPE_FAIL = 1,
@@ -163,16 +163,9 @@ static int32_t InheritCapabilities(void)
     return 0;
 }
 
-static int g_interestedSignalList[] = {
-    SIGABRT,
-    SIGBUS,
-    SIGDUMP,
-    SIGFPE,
-    SIGILL,
-    SIGSEGV,
-    SIGSTKFLT,
-    SIGSYS,
-    SIGTRAP,
+static const int g_interestedSignalList[] = {
+    SIGABRT, SIGBUS, SIGDUMP, SIGFPE, SIGILL,
+    SIGSEGV, SIGSTKFLT, SIGSYS, SIGTRAP,
 };
 
 static struct sigaction g_oldSigactionList[NSIG] = {};
@@ -180,7 +173,7 @@ static struct sigaction g_oldSigactionList[NSIG] = {};
 static void SetInterestedSignalMasks(int how)
 {
     sigset_t set;
-    sigemptyset (&set);
+    sigemptyset(&set);
     for (size_t i = 0; i < sizeof(g_interestedSignalList) / sizeof(g_interestedSignalList[0]); i++) {
         sigaddset(&set, g_interestedSignalList[i]);
     }
@@ -213,7 +206,7 @@ static void DFX_SetUpSigAlarmAction(void)
         DfxLogError("signal error!");
     }
     sigset_t set;
-    sigemptyset (&set);
+    sigemptyset(&set);
     sigaddset(&set, SIGALRM);
     sigprocmask(SIG_UNBLOCK, &set, NULL);
 }
@@ -307,7 +300,9 @@ static void BlockMainThreadIfNeed(int sig)
     DfxLogInfo("Crash(%d) in child thread(%d), try stop main thread.", sig, gettid());
     siginfo_t si;
     si.si_signo = SIGSTOP;
-    (void)syscall(SYS_rt_tgsigqueueinfo, getpid(), getpid(), si.si_signo, &si);
+    if (syscall(SYS_rt_tgsigqueueinfo, getpid(), getpid(), si¡£si_signo, &si) != 0) {
+        DfxLogError("Failed to send signal(%d) to main thread, errno(%d).", si¡£si_signo, errno);
+    }
 }
 
 static void DFX_SignalHandler(int sig, siginfo_t *si, void *context)
@@ -320,13 +315,16 @@ static void DFX_SignalHandler(int sig, siginfo_t *si, void *context)
     // crash signal should never be skipped
     pthread_mutex_lock(&g_signalHandlerMutex);
     BlockMainThreadIfNeed(sig);
-    if (g_currentHandledSignal != SIGDUMP) {
+    if (g_prevHandledSignal != SIGDUMP) {
         ResetSignalHandlerIfNeed(sig);
-        (void)syscall(SYS_rt_tgsigqueueinfo, getpid(), gettid(), si->si_signo, si);
-        DfxLogInfo("Current process has encount a crash, rethrow sig(%d).", sig);
+        if (syscall(SYS_rt_tgsigqueueinfo, getpid(), gettid(), si->si_signo, si) != 0) {
+            DfxLogError("Failed to resend signal(%d), errno(%d).", si->si_signo, errno);
+        } else {
+            DfxLogInfo("Current process has encount a crash, rethrow sig(%d).", si->si_signo);
+        }
         return;
     }
-    g_currentHandledSignal = sig;
+    g_prevHandledSignal = sig;
 
     (void)memset_s(&g_request, sizeof(g_request), 0, sizeof(g_request));
     g_request.type = sig;
@@ -413,7 +411,7 @@ out:
 
     if (sig != SIGDUMP) {
         if (syscall(SYS_rt_tgsigqueueinfo, getpid(), gettid(), si->si_signo, si) != 0) {
-            DfxLogError("Failed to resend signal(%d).", sig);
+            DfxLogError("Failed to resend signal(%d), errno(%d).", si->si_signo, errno);
         }
     }
 
@@ -450,7 +448,7 @@ void DFX_InstallSignalHandler(void)
     for (size_t i = 0; i < sizeof(g_interestedSignalList) / sizeof(g_interestedSignalList[0]); i++) {
         int32_t sig = g_interestedSignalList[i];
         if (sigaction(sig, &action, &(g_oldSigactionList[sig])) != 0) {
-            DfxLogError("Failed to register signal.");
+            DfxLogError("Failed to register signal. %{public}d", sig);
         }
     }
 

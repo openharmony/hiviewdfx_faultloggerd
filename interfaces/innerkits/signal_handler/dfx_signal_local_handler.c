@@ -44,10 +44,7 @@
 static SignalHandlerFunc signalHandler = NULL;
 
 static int g_platformSignals[] = {
-    SIGABRT,
-    SIGBUS,
-    SIGILL,
-    SIGSEGV,
+    SIGABRT, SIGBUS, SIGILL, SIGSEGV,
 };
 
 void DFX_InitDumpRequest(struct ProcessDumpRequest* request, const int sig)
@@ -81,7 +78,7 @@ void DFX_SetSignalHandlerFunc(SignalHandlerFunc func)
 void DFX_InstallLocalSignalHandler(void)
 {
     sigset_t set;
-    sigemptyset (&set);
+    sigemptyset(&set);
     struct sigaction action;
     memset_s(&action, sizeof(action), 0, sizeof(action));
     sigfillset(&action.sa_mask);

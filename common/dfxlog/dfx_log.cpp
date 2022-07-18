@@ -109,6 +109,7 @@ int DfxLogDebug(const char *format, ...)
     va_list args;
     va_start(args, format);
     ret = vsnprintf_s(buf, sizeof(buf), sizeof(buf) - 1, format, args);
+    va_end(args);
 #ifdef DFX_LOG_USE_HILOG_BASE
 #ifdef DFX_SIGNALHANDLER_TAG
     HiLogBasePrint(LOG_CORE, LOG_DEBUG, LOG_DOMAIN, LOG_TAG, "%{public}s", buf);
@@ -118,7 +119,6 @@ int DfxLogDebug(const char *format, ...)
 #else
     OHOS::HiviewDFX::HiLog::Debug(g_LOG_LABEL, "%{public}s", buf);
 #endif
-    va_end(args);
 
 #ifdef INIT_DMESG
     LogToDmesg(LOG_LEVEL_CLASS::LOG_LEVEL_DBG, buf);
@@ -140,6 +140,7 @@ int DfxLogInfo(const char *format, ...)
     va_list args;
     va_start(args, format);
     ret = vsnprintf_s(buf, sizeof(buf), sizeof(buf) - 1, format, args);
+    va_end(args);
 #ifdef DFX_LOG_USE_HILOG_BASE
 #ifdef DFX_SIGNALHANDLER_TAG
     HiLogBasePrint(LOG_CORE, LOG_INFO, LOG_DOMAIN, LOG_TAG, "%{public}s", buf);
@@ -149,7 +150,6 @@ int DfxLogInfo(const char *format, ...)
 #else
     OHOS::HiviewDFX::HiLog::Info(g_LOG_LABEL, "%{public}s", buf);
 #endif
-    va_end(args);
 
 #ifdef INIT_DMESG
     LogToDmesg(LOG_LEVEL_CLASS::LOG_LEVEL_INFO, buf);
@@ -171,6 +171,7 @@ int DfxLogWarn(const char *format, ...)
     va_list args;
     va_start(args, format);
     ret = vsnprintf_s(buf, sizeof(buf), sizeof(buf) - 1, format, args);
+    va_end(args);
 #ifdef DFX_LOG_USE_HILOG_BASE
 #ifdef DFX_SIGNALHANDLER_TAG
     HiLogBasePrint(LOG_CORE, LOG_WARN, LOG_DOMAIN, LOG_TAG, "%{public}s", buf);
@@ -180,7 +181,6 @@ int DfxLogWarn(const char *format, ...)
 #else
     OHOS::HiviewDFX::HiLog::Warn(g_LOG_LABEL, "%{public}s", buf);
 #endif
-    va_end(args);
 
 #ifdef INIT_DMESG
     LogToDmesg(LOG_LEVEL_CLASS::LOG_LEVEL_WARN, buf);
@@ -202,6 +202,7 @@ int DfxLogError(const char *format, ...)
     va_list args;
     va_start(args, format);
     ret = vsnprintf_s(buf, sizeof(buf), sizeof(buf) - 1, format, args);
+    va_end(args);
 #ifdef DFX_LOG_USE_HILOG_BASE
 #ifdef DFX_SIGNALHANDLER_TAG
     HiLogBasePrint(LOG_CORE, LOG_ERROR, LOG_DOMAIN, LOG_TAG, "%{public}s", buf);
@@ -211,7 +212,6 @@ int DfxLogError(const char *format, ...)
 #else
     OHOS::HiviewDFX::HiLog::Error(g_LOG_LABEL, "%{public}s", buf);
 #endif
-    va_end(args);
 
 #ifdef INIT_DMESG
     LogToDmesg(LOG_LEVEL_CLASS::LOG_LEVEL_ERR, buf);
@@ -233,6 +233,7 @@ int DfxLogFatal(const char *format, ...)
     va_list args;
     va_start(args, format);
     ret = vsnprintf_s(buf, sizeof(buf), sizeof(buf) - 1, format, args);
+    va_end(args);
 #ifdef DFX_LOG_USE_HILOG_BASE
 #ifdef DFX_SIGNALHANDLER_TAG
     HiLogBasePrint(LOG_CORE, LOG_FATAL, LOG_DOMAIN, LOG_TAG, "%{public}s", buf);
@@ -242,7 +243,6 @@ int DfxLogFatal(const char *format, ...)
 #else
     OHOS::HiviewDFX::HiLog::Fatal(g_LOG_LABEL, "%{public}s", buf);
 #endif
-    va_end(args);
 
 #ifdef INIT_DMESG
     LogToDmesg(LOG_LEVEL_CLASS::LOG_LEVEL_FATAL, buf);

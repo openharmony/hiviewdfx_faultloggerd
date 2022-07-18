@@ -54,7 +54,7 @@ pid_t ProcessDfxTest::GetTelephonyPid()
     }
     std::string pidLog;
     pid_t telephonyPid = 0;
-    char result_buf_shell[PERFORMANCE_TEST_NUMBER_ONE_HUNDRED] = { 0, };
+    char result_buf_shell[NAME_LEN] = { 0, };
     if (fgets(result_buf_shell, sizeof(result_buf_shell), procFileInfo) != nullptr) {
         pidLog = result_buf_shell;
         telephonyPid = atoi(pidLog.c_str());

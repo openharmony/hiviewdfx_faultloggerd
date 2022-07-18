@@ -15,10 +15,11 @@
 #ifndef DFX_DEFINE_H
 #define DFX_DEFINE_H
 
-#define NAME_LEN 128
 #define SIGDUMP 35
 #define SIGLOCAL_DUMP 36
 #define PROCESSDUMP_TIMEOUT 30
+#define NAME_LEN 128
+#define PATH_LEN 1024
 #define MAX_HANDLED_TID_NUMBER 256
 #define MAX_FATAL_MSG_SIZE 1024
 
@@ -70,9 +71,6 @@ static const int FILE_WRITE_BUF_LEN = 4096;
 static const int REGS_PRINT_LEN_ARM = 256;
 static const int REGS_PRINT_LEN_ARM64 = 1024;
 static const int REGS_PRINT_LEN_X86 = 512;
-
-static const int PERFORMANCE_TEST_NUMBER_ONE_HUNDRED = 100;
-static const double PERFORMANCE_TEST_MAX_UNWIND_TIME_S = 0.03;
 
 #define OHOS_TEMP_FAILURE_RETRY(exp)            \
     ({                                          \

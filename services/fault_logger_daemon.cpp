@@ -306,7 +306,6 @@ void FaultLoggerDaemon::HandleSdkDumpRequest(int32_t connectionFd, FaultLoggerdR
         std::shared_ptr<FaultLoggerPipe2> ptr = std::make_shared<FaultLoggerPipe2>();
         faultLoggerPipeMap_->Set(request->pid, ptr);
 
-        int sig = SIGDUMP;
         // defined in out/hi3516dv300/obj/third_party/musl/intermidiates/linux/musl_src_ported/include/signal.h
         siginfo_t si = {
             .si_signo = SIGDUMP,
@@ -318,13 +317,13 @@ void FaultLoggerDaemon::HandleSdkDumpRequest(int32_t connectionFd, FaultLoggerdR
 
         // means we need dump all the threads in a process.
         if (request->tid == 0) {
-            if (syscall(SYS_rt_sigqueueinfo, request->pid, sig, &si) != 0) {
+            if (syscall(SYS_rt_sigqueueinfo, request->pid, si.si_signo, &si) != 0) {
                 DfxLogError("Failed to SYS_rt_sigqueueinfo signal(%d), errno(%d).", si.si_signo, errno);
                 break;
             }
         } else {
             // means we need dump a specified thread
-            if (syscall(SYS_rt_tgsigqueueinfo, request->pid, request->tid, sig, &si) != 0) {
+            if (syscall(SYS_rt_tgsigqueueinfo, request->pid, request->tid, si.si_signo, &si) != 0) {
                 DfxLogError("Failed to SYS_rt_tgsigqueueinfo signal(%d), errno(%d).", si.si_signo, errno);
                 break;
             }
