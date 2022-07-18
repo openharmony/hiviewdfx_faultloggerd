@@ -25,7 +25,7 @@
 extern "C" {
 #endif
 bool StartConnect(int& sockfd, const char* path, const int timeout);
-bool StartListen(int& sockfd, const char* name, const char* path, const int listenCnt);
+bool StartListen(int& sockfd, const char* name, const int listenCnt);
 
 bool RecvMsgCredFromSocket(int sockfd, struct ucred* pucred);
 
