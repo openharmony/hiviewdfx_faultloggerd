@@ -89,6 +89,7 @@ static BOOL g_hasInit = FALSE;
 static const int SIGNALHANDLER_TIMEOUT = 10000; // 10000 us
 static const int ALARM_TIME_S = 10;
 static int g_prevHandledSignal = SIGDUMP;
+static BOOL g_isDumping = FALSE;
 
 enum DumpPreparationStage {
     CREATE_PIPE_FAIL = 1,
@@ -300,15 +301,15 @@ static void BlockMainThreadIfNeed(int sig)
     DfxLogInfo("Crash(%d) in child thread(%d), try stop main thread.", sig, gettid());
     siginfo_t si;
     si.si_signo = SIGSTOP;
-    if (syscall(SYS_rt_tgsigqueueinfo, getpid(), getpid(), si¡£si_signo, &si) != 0) {
-        DfxLogError("Failed to send signal(%d) to main thread, errno(%d).", si¡£si_signo, errno);
+    if (syscall(SYS_rt_tgsigqueueinfo, getpid(), getpid(), si.si_signo, &si) != 0) {
+        DfxLogError("Failed to send signal(%d) to main thread, errno(%d).", si.si_signo, errno);
     }
 }
 
 static void DFX_SignalHandler(int sig, siginfo_t *si, void *context)
 {
-    if (sig == SIGDUMP && getpid() != gettid()) {
-        DfxLogInfo("SIGDUMP should always be handled in main thread.");
+    if (sig == SIGDUMP && g_isDumping) {
+        DfxLogInfo("Current Process is dumping stacktrace now.");
         return;
     }
 
@@ -325,6 +326,7 @@ static void DFX_SignalHandler(int sig, siginfo_t *si, void *context)
         return;
     }
     g_prevHandledSignal = sig;
+    g_isDumping = TRUE;
 
     (void)memset_s(&g_request, sizeof(g_request), 0, sizeof(g_request));
     g_request.type = sig;
@@ -416,6 +418,7 @@ out:
     }
 
     DfxLogInfo("Finish handle signal(%d) in %d:%d", sig, g_request.pid, g_request.tid);
+    g_isDumping = FALSE;
     pthread_mutex_unlock(&g_signalHandlerMutex);
 }
 

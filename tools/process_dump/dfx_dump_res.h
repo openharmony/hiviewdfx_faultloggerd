@@ -23,7 +23,7 @@ enum ProcessDumpRes {
     DUMP_ESUCCESS = 0,  /* no error */
     DUMP_EREADREQUEST,  /* read request error */
     DUMP_EGETPPID,      /* ppid is crash */
-    DUMP_EATTACH,       /* ptrace attach thread failed*/
+    DUMP_EATTACH,       /* ptrace attach thread failed */
     DUMP_EGETFD,        /* get fd error */
     DUMP_ENOMEM,        /* out of memory */
     DUMP_EBADREG,       /* bad register number */

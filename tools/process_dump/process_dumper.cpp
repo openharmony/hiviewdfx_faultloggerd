@@ -136,7 +136,7 @@ int ProcessDumper::InitPrintThread(int32_t fromSignalHandler, std::shared_ptr<Pr
 
 
 int ProcessDumper::DumpProcessWithSignalContext(std::shared_ptr<DfxProcess> &process,
-                                                 std::shared_ptr<ProcessDumpRequest> request)
+                                                std::shared_ptr<ProcessDumpRequest> request)
 {
     int dumpRes = ProcessDumpRes::DUMP_ESUCCESS;
     do {

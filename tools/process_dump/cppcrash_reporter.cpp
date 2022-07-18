@@ -30,7 +30,7 @@
 
 struct FaultLogInfoInner {
     uint64_t time {0};
-    int32_t id {-1};
+    uint32_t id {0};
     int32_t pid {-1};
     int32_t faultLogType {0};
     std::string module;
