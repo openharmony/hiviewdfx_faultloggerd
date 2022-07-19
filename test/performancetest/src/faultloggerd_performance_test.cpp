@@ -48,6 +48,9 @@ using namespace OHOS::HiviewDFX;
 using namespace testing::ext;
 using namespace std;
 
+static const int PERFORMANCE_TEST_NUMBER_ONE_HUNDRED = 100;
+static const double PERFORMANCE_TEST_MAX_UNWIND_TIME_S = 0.03;
+
 clock_t GetStartTime ()
 {
     return clock();
@@ -90,7 +93,7 @@ std::string FaultPerformanceTest::ProcessDumpCommands(const std::string cmds)
         perror("popen execute failed");
         exit(1);
     }
-    char result_buf_shell[PERFORMANCE_TEST_NUMBER_ONE_HUNDRED] = {'\0'};
+    char result_buf_shell[NAME_LEN] = {'\0'};
     while (fgets(result_buf_shell, sizeof(result_buf_shell), procFileInfo) != nullptr) {
         cmdLog = cmdLog + result_buf_shell;
     }
@@ -112,7 +115,7 @@ std::string FaultPerformanceTest::ForkAndRootCommands(const std::vector<std::str
         exit(1);
     }
     std::string pidLog;
-    char result_buf_shell[PERFORMANCE_TEST_NUMBER_ONE_HUNDRED] = { 0, };
+    char result_buf_shell[NAME_LEN] = { 0, };
     if (fgets(result_buf_shell, sizeof(result_buf_shell), procFileInfo) != nullptr) {
         pidLog = result_buf_shell;
         looprootPid = atoi(pidLog.c_str());
