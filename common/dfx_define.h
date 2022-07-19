@@ -24,6 +24,7 @@
 
 static const int SOCKET_BUFFER_SIZE = 256;
 static const char FAULTLOGGERD_SOCK_PATH[] = "/dev/unix/socket/faultloggerd.server";
+static const char SERVER_SOCKET_NAME[] = "faultloggerd.server";
 
 #if defined(__arm__)
 static const int USER_REG_NUM = 16;
