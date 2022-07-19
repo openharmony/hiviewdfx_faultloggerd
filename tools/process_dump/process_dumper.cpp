@@ -124,7 +124,6 @@ int ProcessDumper::InitPrintThread(int32_t fromSignalHandler, std::shared_ptr<Pr
 
         if (fd < 0) {
             DfxLogWarn("Failed to request fd from faultloggerd.");
-            return fd;
         }
     }
 
@@ -313,7 +312,7 @@ void ProcessDumper::Dump(bool isSignalHdlr, ProcessDumpType type, int32_t pid, i
 
 int ProcessDumper::WriteDumpBuf(int fd, const char* buf, const int len)
 {
-    if ((fd < 0) || (buf == nullptr)) {
+    if (buf == nullptr) {
         return -1;
     }
     return WriteLog(fd, "%s", buf);
