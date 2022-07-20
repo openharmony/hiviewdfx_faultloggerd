@@ -163,11 +163,6 @@ void FaultLoggerDaemon::HandlePipeFdClientRequest(int32_t connectionFd, const Fa
 {
     DfxLogDebug("%s :: pid(%d), pipeType(%d).\n", FAULTLOGGERD_TAG.c_str(), request->pid, request->pipeType);
     int fd = -1;
-
-    if (request->pipeType == (int32_t)FaultLoggerPipeType::PIPE_FD_DELETE) {
-        faultLoggerPipeMap_->Del(request->pid);
-        return;
-    }
     
     FaultLoggerPipe2* faultLoggerPipe = faultLoggerPipeMap_->Get(request->pid);
     if (faultLoggerPipe == nullptr) {
@@ -187,6 +182,10 @@ void FaultLoggerDaemon::HandlePipeFdClientRequest(int32_t connectionFd, const Fa
             break;
         case (int32_t)FaultLoggerPipeType::PIPE_FD_WRITE_RES:
             fd = faultLoggerPipe->faultLoggerPipeRes_->GetWriteFd();
+            break;
+        case (int32_t)FaultLoggerPipeType::PIPE_FD_DELETE:
+            faultLoggerPipeMap_->Del(request->pid);
+            fd = 0;
             break;
         default:
             DfxLogError("%s :: unknown pipeType(%d).\n", FAULTLOGGERD_TAG.c_str(), request->pipeType);
