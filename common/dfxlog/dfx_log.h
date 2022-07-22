@@ -15,6 +15,7 @@
 #ifndef DFX_LOG_H
 #define DFX_LOG_H
 
+#include <sys/types.h>
 #ifdef DFX_LOG_USE_HILOG_BASE
 #include <hilog_base/log_base.h>
 #else
@@ -35,6 +36,7 @@ int DfxLogWarn(const char *format, ...);
 int DfxLogError(const char *format, ...);
 int DfxLogFatal(const char *format, ...);
 int CheckDebugLevel(void);
+void InitDebugFd(int32_t fd);
 #ifdef __cplusplus
 }
 #endif
