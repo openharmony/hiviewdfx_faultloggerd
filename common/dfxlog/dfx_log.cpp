@@ -46,7 +46,7 @@ static const int32_t INVALID_FD = -1;
 static int32_t g_DebugFd = INVALID_FD;
 static const int LOG_BUF_LEN = 1024;
 
-static const LOG_LEVEL_CLASS LOG_LEVEL = LOG_LEVEL_CLASS::LOG_LEVEL_DBG;
+static const LOG_LEVEL_CLASS LOG_LEVEL = LOG_LEVEL_CLASS::LOG_LEVEL_ALL;
 #ifndef DFX_LOG_USE_HILOG_BASE
 static const OHOS::HiviewDFX::HiLogLabel g_LOG_LABEL = {LOG_CORE, 0xD002D20, "DfxFaultLogger"};
 #endif
@@ -91,6 +91,30 @@ void LogToDmesg(LOG_LEVEL_CLASS logLevel, const char *info)
 }
 #endif
 
+static int DfxLogBase(const char *format, ...)
+{
+#ifdef DFX_NO_PRINT_LOG
+    return 0;
+#endif
+
+    int ret;
+    char buf[LOG_BUF_LEN] = {0};
+    va_list args;
+    va_start(args, format);
+    ret = vsnprintf_s(buf, sizeof(buf), sizeof(buf) - 1, format, args);
+    va_end(args);
+#ifdef DFX_LOG_USE_HILOG_BASE
+#ifdef DFX_SIGNALHANDLER_TAG
+    HiLogBasePrint(LOG_CORE, LOG_INFO, LOG_DOMAIN, LOG_TAG, "%{public}s", buf);
+#else
+    HILOG_BASE_INFO(LOG_CORE, "%{public}s", buf);
+#endif
+#else
+    OHOS::HiviewDFX::HiLog::Info(g_LOG_LABEL, "%{public}s", buf);
+#endif
+    return ret;
+}
+
 int CheckDebugLevel(void)
 {
     return LOG_LEVEL_CLASS::LOG_LEVEL_DBG >= LOG_LEVEL ? 1 : 0;
@@ -99,6 +123,7 @@ int CheckDebugLevel(void)
 void InitDebugFd(int32_t fd)
 {
     g_DebugFd = fd;
+    DfxLogBase("InitDebugFd:%d", g_DebugFd);
 }
 
 int DfxLogDebug(const char *format, ...)
@@ -130,11 +155,14 @@ int DfxLogDebug(const char *format, ...)
     LogToDmesg(LOG_LEVEL_CLASS::LOG_LEVEL_DBG, buf);
 #endif
 
+DfxLogBase("DfxLogDebug:%d", g_DebugFd);
     if (g_DebugFd != INVALID_FD) {
         fprintf(stderr, "%s", buf);
     }
     return ret;
 }
+
+
 
 int DfxLogInfo(const char *format, ...)
 {
@@ -164,7 +192,9 @@ int DfxLogInfo(const char *format, ...)
 #ifdef INIT_DMESG
     LogToDmesg(LOG_LEVEL_CLASS::LOG_LEVEL_INFO, buf);
 #endif
+DfxLogBase("DfxLogInfo:%d", g_DebugFd);
     if (g_DebugFd != INVALID_FD) {
+        DfxLogBase("stderr %s", buf);
         fprintf(stderr, "%s", buf);
     }
     return ret;
@@ -198,7 +228,9 @@ int DfxLogWarn(const char *format, ...)
 #ifdef INIT_DMESG
     LogToDmesg(LOG_LEVEL_CLASS::LOG_LEVEL_WARN, buf);
 #endif
+DfxLogBase("DfxLogWarn:%d", g_DebugFd);
     if (g_DebugFd != INVALID_FD) {
+        DfxLogBase("stderr %s", buf);
         fprintf(stderr, "%s", buf);
     }
     return ret;
@@ -232,7 +264,9 @@ int DfxLogError(const char *format, ...)
 #ifdef INIT_DMESG
     LogToDmesg(LOG_LEVEL_CLASS::LOG_LEVEL_ERR, buf);
 #endif
+DfxLogBase("DfxLogError:%d", g_DebugFd);
     if (g_DebugFd != INVALID_FD) {
+        DfxLogBase("stderr %s", buf);
         fprintf(stderr, "%s", buf);
     }
     return ret;
@@ -267,6 +301,7 @@ int DfxLogFatal(const char *format, ...)
     LogToDmesg(LOG_LEVEL_CLASS::LOG_LEVEL_FATAL, buf);
 #endif
     if (g_DebugFd != INVALID_FD) {
+        DfxLogBase("stderr %s", buf);
         fprintf(stderr, "%s", buf);
     }
     return ret;
