@@ -15,7 +15,7 @@
 #ifndef DFX_LOG_H
 #define DFX_LOG_H
 
-#include <cstdint>
+#include <sys/types.h>
 #ifdef DFX_LOG_USE_HILOG_BASE
 #include <hilog_base/log_base.h>
 #else
