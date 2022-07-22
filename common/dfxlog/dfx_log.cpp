@@ -96,7 +96,8 @@ int CheckDebugLevel(void)
     return LOG_LEVEL_CLASS::LOG_LEVEL_DBG >= LOG_LEVEL ? 1 : 0;
 }
 
-void InitDebugFd(int32_t fd) {
+void InitDebugFd(int32_t fd)
+{
     g_DebugFd = fd;
 }
 
