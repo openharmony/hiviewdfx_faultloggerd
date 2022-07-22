@@ -46,7 +46,7 @@ static const int32_t INVALID_FD = -1;
 static int32_t g_DebugFd = INVALID_FD;
 static const int LOG_BUF_LEN = 1024;
 
-static const LOG_LEVEL_CLASS LOG_LEVEL = LOG_LEVEL_CLASS::LOG_LEVEL_ALL;
+static const LOG_LEVEL_CLASS LOG_LEVEL = LOG_LEVEL_CLASS::LOG_LEVEL_DBG;
 #ifndef DFX_LOG_USE_HILOG_BASE
 static const OHOS::HiviewDFX::HiLogLabel g_LOG_LABEL = {LOG_CORE, 0xD002D20, "DfxFaultLogger"};
 #endif
