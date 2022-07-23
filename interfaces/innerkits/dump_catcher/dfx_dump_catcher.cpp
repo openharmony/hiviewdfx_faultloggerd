@@ -219,40 +219,64 @@ bool DfxDumpCatcher::DoDumpCatchRemote(int pid, int tid, std::string& msg)
     int readResFd = RequestPipeFd(pid, FaultLoggerPipeType::PIPE_FD_READ_RES);
     DfxLogDebug("read res fd: %d", readResFd);
 
-    fd_set readfds;
-    struct timeval tv = {BACK_TRACE_DUMP_TIMEOUT_S, 0};
     std::string bufMsg, resMsg;
     char buffer[LOG_BUF_LEN];
+
+    struct pollfd readfds[2];
+    readfds[0].fd = readBufFd;
+    readfds[0].events = POLLIN;
+    readfds[1].fd = readResFd;
+    readfds[1].events = POLLIN;
+    int fdsSize = sizeof(readfds) / sizeof(readfds[0]);
     while (true) {
-        FD_SET(readBufFd, &readfds);
-        FD_SET(readResFd, &readfds);
-        int selRet = select(readResFd + 1, &readfds, NULL, NULL, &tv);
-        if (selRet <= 0) {
-            DfxLogError("%s :: %s :: select error", DFXDUMPCATCHER_TAG.c_str(), __func__);
+        if (readBufFd < 0 || readResFd < 0) {
+            DfxLogError("%s :: %s :: Failed to get read fd", DFXDUMPCATCHER_TAG.c_str(), __func__);
             break;
         }
 
-        if (FD_ISSET(readBufFd, &readfds)) {
-            bzero(buffer, sizeof(buffer));
-            ssize_t nread = read(readBufFd, buffer, sizeof(buffer) - 1);
-            if (nread <= 0) {
-                DfxLogError("%s :: %s :: read error", DFXDUMPCATCHER_TAG.c_str(), __func__);
-                break;
-            }
-            bufMsg.append(buffer);
-        } else if (FD_ISSET(readResFd, &readfds)) {
-            DumpResMsg dumpRes;
-            ssize_t nread = read(readResFd, &dumpRes, sizeof(struct DumpResMsg));
-            if (nread != sizeof(struct DumpResMsg)) {
-                DfxLogWarn("%s :: %s :: read error", DFXDUMPCATCHER_TAG.c_str(), __func__);
+        int pollRet = poll(readfds, fdsSize, BACK_TRACE_DUMP_TIMEOUT_S * 1000);
+        if (pollRet <= 0) {
+            DfxLogError("%s :: %s :: poll error", DFXDUMPCATCHER_TAG.c_str(), __func__);
+            break;
+        }
+
+        bool fdsLoop = true;
+        for (int i = 0; i < fdsSize; ++i) {
+            if ((readfds[i].revents & POLLIN) != POLLIN) {
                 continue;
             }
-            if (dumpRes.res == ProcessDumpRes::DUMP_ESUCCESS) {
-                ret = true;
+            
+            if (readfds[i].fd == readBufFd) {
+                bzero(buffer, sizeof(buffer));
+                ssize_t nread = read(readBufFd, buffer, sizeof(buffer) - 1);
+                if (nread <= 0) {
+                    DfxLogWarn("%s :: %s :: read error", DFXDUMPCATCHER_TAG.c_str(), __func__);
+                    fdsLoop = false;
+                    break;
+                } else {
+                    bufMsg.append(buffer);
+                }
             }
-            DfxDumpRes::GetInstance().SetRes(dumpRes.res);
-            resMsg.append("Result: " + DfxDumpRes::GetInstance().ToString() + "\n");
-            DfxLogDebug("%s :: %s :: resMsg: %s", DFXDUMPCATCHER_TAG.c_str(), __func__, resMsg.c_str());
+
+            if (readfds[i].fd == readResFd) {
+                DumpResMsg dumpRes;
+                ssize_t nread = read(readResFd, &dumpRes, sizeof(struct DumpResMsg));
+                if (nread != sizeof(struct DumpResMsg)) {
+                    DfxLogWarn("%s :: %s :: read error", DFXDUMPCATCHER_TAG.c_str(), __func__);
+                } else {
+                    if (dumpRes.res == ProcessDumpRes::DUMP_ESUCCESS) {
+                        ret = true;
+                    }
+                    DfxDumpRes::GetInstance().SetRes(dumpRes.res);
+                    resMsg.append("Result: " + DfxDumpRes::GetInstance().ToString() + "\n");
+                    DfxLogDebug("%s :: %s :: resMsg: %s", DFXDUMPCATCHER_TAG.c_str(), __func__, resMsg.c_str());
+                    fdsLoop = false;
+                }
+                break;
+            }
+        }
+
+        if (fdsLoop == false) {
             break;
         }
     }
