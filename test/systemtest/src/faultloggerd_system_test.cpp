@@ -2474,7 +2474,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest028, TestSize.Level2)
     bool ret = dumplog.DumpCatch(FaultLoggerdSystemTest::loopSysPid, 0, msg);
     GTEST_LOG_(INFO) << ret;
     GTEST_LOG_(INFO) << "dump log : \n" << msg;
-    EXPECT_EQ(ret, false) << "FaultLoggerdSystemTest028 Failed";
+    EXPECT_EQ(ret, true) << "FaultLoggerdSystemTest028 Failed";
     FaultLoggerdSystemTest::KillCrasherLoopForSomeCase(1);
     FaultLoggerdSystemTest::KillCrasherLoopForSomeCase(3);
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest028: end.";
@@ -2497,7 +2497,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0104, TestSize.Level2)
     bool ret = dumplog.DumpCatch(FaultLoggerdSystemTest::loopRootPid, 0, msg);
     GTEST_LOG_(INFO) << ret;
     GTEST_LOG_(INFO) << "dump log : \n" << msg;
-    EXPECT_EQ(ret, false) << "FaultLoggerdSystemTest0104 Failed";
+    EXPECT_EQ(ret, true) << "FaultLoggerdSystemTest0104 Failed";
     FaultLoggerdSystemTest::KillCrasherLoopForSomeCase(2);
     FaultLoggerdSystemTest::KillCrasherLoopForSomeCase(3);
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest0104: end.";
@@ -2905,27 +2905,13 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest039, TestSize.Level2)
  */
 HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest040, TestSize.Level2)
 {
-    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest040: start.";
+    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest040_level0: start uid:" << getuid();
     FaultLoggerdSystemTest::StartCrasherLoop(3);
     std::string procCMD = "processdump -p " + std::to_string(FaultLoggerdSystemTest::loopAppPid);
     string procDumpLog = FaultLoggerdSystemTest::ProcessDumpCommands(procCMD);
     GTEST_LOG_(INFO) << "procDumpLog: " << procDumpLog;
-    int count = 0;
-    int apptid1 = std::stoi(FaultLoggerdSystemTest::appTid[0]);
-    int apptid2 = std::stoi(FaultLoggerdSystemTest::appTid[1]);
-    string log[] = {"", "Name:crasher", "Name:SubTestThread", "#00", "/data/crasher", ""};
-    log[0] = log[0] + std::to_string(apptid1);
-    log[5] = log[5] + std::to_string(apptid2);
-    string::size_type idx;
-    for (int i = 0; i < 6; i++) {
-        idx = procDumpLog.find(log[i]);
-        GTEST_LOG_(INFO) << log[i];
-        if (idx != string::npos) {
-            count++;
-        }
-    }
-    GTEST_LOG_(INFO) << count;
-    EXPECT_EQ(count, 6) << "FaultLoggerdSystemTest040 Failed";
+    bool ret = procDumpLog.find("Only BMS and the process owner can dump stacktrace") != std::string::npos;
+    EXPECT_EQ(ret, true) << "FaultLoggerdSystemTest040 Failed";
     FaultLoggerdSystemTest::KillCrasherLoopForSomeCase(3);
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest040: end.";
 }
@@ -2937,27 +2923,13 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest040, TestSize.Level2)
  */
 HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest040_level0, TestSize.Level0)
 {
-    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest040_level0: start.";
+    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest040_level0: start uid:" << getuid();
     FaultLoggerdSystemTest::StartCrasherLoop(3);
     std::string procCMD = "processdump -p " + std::to_string(FaultLoggerdSystemTest::loopAppPid);
     string procDumpLog = FaultLoggerdSystemTest::ProcessDumpCommands(procCMD);
     GTEST_LOG_(INFO) << "procDumpLog: " << procDumpLog;
-    int count = 0;
-    int apptid1 = std::stoi(FaultLoggerdSystemTest::appTid[0]);
-    int apptid2 = std::stoi(FaultLoggerdSystemTest::appTid[1]);
-    string log[] = {"", "Name:crasher", "Name:SubTestThread", "#00", "/data/crasher", ""};
-    log[0] = log[0] + std::to_string(apptid1);
-    log[5] = log[5] + std::to_string(apptid2);
-    string::size_type idx;
-    for (int i = 0; i < 6; i++) {
-        idx = procDumpLog.find(log[i]);
-        GTEST_LOG_(INFO) << log[i];
-        if (idx != string::npos) {
-            count++;
-        }
-    }
-    GTEST_LOG_(INFO) << count;
-    EXPECT_EQ(count, 6) << "FaultLoggerdSystemTest040_level0 Failed";
+    bool ret = procDumpLog.find("Only BMS and the process owner can dump stacktrace") != std::string::npos;
+    EXPECT_EQ(ret, true) << "FaultLoggerdSystemTest040_level0 Failed";
     FaultLoggerdSystemTest::KillCrasherLoopForSomeCase(3);
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest040_level0: end.";
 }
@@ -2969,26 +2941,14 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest040_level0, TestSize.Lev
  */
 HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest041, TestSize.Level2)
 {
-    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest041: start.";
+    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest041: start uid:" << getuid();
     FaultLoggerdSystemTest::StartCrasherLoop(3);
     std::string procCMD = "processdump -p " + std::to_string(FaultLoggerdSystemTest::loopAppPid) + " -t "+
     std::to_string(FaultLoggerdSystemTest::loopAppPid);
     string procDumpLog = FaultLoggerdSystemTest::ProcessDumpCommands(procCMD);
     GTEST_LOG_(INFO) << "procDumpLog: " << procDumpLog;
-    int count = 0;
-    string log[] = {"", "Name:crasher", "#00", "/data/crasher"};
-    log[0] = log[0] + std::to_string(FaultLoggerdSystemTest::loopAppPid);
-    string::size_type idx;
-    for (int i = 0; i < 4; i++) {
-        idx = procDumpLog.find(log[i]);
-        if (idx != string::npos) {
-            GTEST_LOG_(INFO) << count;
-            GTEST_LOG_(INFO) << log[i];
-            count++;
-        }
-    }
-    GTEST_LOG_(INFO) << count;
-    EXPECT_EQ(count, 4) << "FaultLoggerdSystemTest041 Failed";
+    bool ret = procDumpLog.find("Only BMS and the process owner can dump stacktrace") != std::string::npos;
+    EXPECT_EQ(ret, true) << "FaultLoggerdSystemTest041 Failed";
     FaultLoggerdSystemTest::KillCrasherLoopForSomeCase(3);
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest041: end.";
 }
@@ -3000,7 +2960,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest041, TestSize.Level2)
  */
 HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest042, TestSize.Level2)
 {
-    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest042: start.";
+    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest042: start uid:" << getuid();
     FaultLoggerdSystemTest::StartCrasherLoop(3);
     int tid = std::stoi(FaultLoggerdSystemTest::appTid[0]);
     if (FaultLoggerdSystemTest::loopAppPid == std::stoi(FaultLoggerdSystemTest::appTid[0])) {
@@ -3010,19 +2970,8 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest042, TestSize.Level2)
         std::to_string(tid);
     string procDumpLog = FaultLoggerdSystemTest::ProcessDumpCommands(procCMD);
     GTEST_LOG_(INFO) << "procDumpLog: " << procDumpLog;
-    int count = 0;
-    string log[] = {"", "Name:SubTestThread", "#00", "/data/crasher"};
-    log[0] = log[0] + std::to_string(tid);
-    string::size_type idx;
-    for (int i = 0; i < 4; i++) {
-        idx = procDumpLog.find(log[i]);
-        if (idx != string::npos) {
-            GTEST_LOG_(INFO) << count;
-            GTEST_LOG_(INFO) << log[i];
-            count++;
-        }
-    }
-    EXPECT_EQ(count, 4) << "FaultLoggerdSystemTest042 Failed";
+    bool ret = procDumpLog.find("Only BMS and the process owner can dump stacktrace") != std::string::npos;
+    EXPECT_EQ(ret, true) << "FaultLoggerdSystemTest042 Failed";
     FaultLoggerdSystemTest::KillCrasherLoopForSomeCase(3);
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest042: end.";
 }
@@ -3694,7 +3643,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0117, TestSize.Level2)
  */
 HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest056, TestSize.Level2)
 {
-    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest056: start.";
+    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest056: start uid:" << getuid();
     FaultLoggerdSystemTest::StartCrasherLoop(4);
     DfxDumpCatcher dumplog;
     std::string msg = "";
@@ -3726,27 +3675,13 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest056, TestSize.Level2)
  */
 HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest057, TestSize.Level2)
 {
-    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest057: start.";
+    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest057: start uid:" << getuid();
     FaultLoggerdSystemTest::StartCrasherLoop(4);
     std::string procCMD = "processdump -p " + std::to_string(FaultLoggerdSystemTest::loopAppPid);
     string procDumpLog = FaultLoggerdSystemTest::ProcessDumpCommands(procCMD);
     GTEST_LOG_(INFO) << "procDumpLog: " << procDumpLog;
-    int count = 0;
-    string log[] = {"", "Name:crasher", "#00", "/data/crasher"};
-    log[0] = log[0] + std::to_string(FaultLoggerdSystemTest::loopAppPid);
-    string::size_type idx;
-    for (int i = 0; i < 4; i++) {
-        idx = procDumpLog.find(log[i]);
-        if (idx != string::npos) {
-            GTEST_LOG_(INFO) << count;
-            GTEST_LOG_(INFO) << log[i];
-            count++;
-        }
-    }
-    GTEST_LOG_(INFO) << count;
-    EXPECT_EQ(count, 4) << "FaultLoggerdSystemTest057 Failed";
-    int uidSetting = 0;
-    setuid(uidSetting);
+    bool ret = procDumpLog.find("Only BMS and the process owner can dump stacktrace") != std::string::npos;
+    EXPECT_EQ(ret, true) << "FaultLoggerdSystemTest057 Failed";
     FaultLoggerdSystemTest::KillCrasherLoopForSomeCase(3);
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest057: end.";
 }

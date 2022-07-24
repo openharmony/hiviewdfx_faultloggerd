@@ -200,6 +200,28 @@ bool DfxDumpCatcher::DumpCatchFd(int pid, int tid, std::string& msg, int fd)
     return ret;
 }
 
+static bool SignalTargetProcess(int pid, int tid)
+{
+    siginfo_t si = {
+        .si_signo = SIGDUMP,
+        .si_errno = 0,
+        .si_code = -1000, // -1000 : hardcode SIGDUMP code
+        .si_pid = pid,
+        .si_uid = static_cast<uid_t>(tid)
+    };
+
+    if (tid == 0) {
+        if (syscall(SYS_rt_sigqueueinfo, pid, si.si_signo, &si) != 0) {
+            return false;
+        }
+    } else {
+        if (syscall(SYS_rt_tgsigqueueinfo, pid, tid, si.si_signo, &si) != 0) {
+            return false;
+        }
+    }
+    return true;
+}
+
 bool DfxDumpCatcher::DoDumpCatchRemote(int pid, int tid, std::string& msg)
 {
     bool ret = false;
@@ -210,7 +232,9 @@ bool DfxDumpCatcher::DoDumpCatchRemote(int pid, int tid, std::string& msg)
 
     if (RequestSdkDump(pid, tid) == false) {
         DfxLogError("%s :: DoDumpCatchRemote :: request SdkDump error.", DFXDUMPCATCHER_TAG.c_str());
-        return ret;
+        if (!SignalTargetProcess(pid, tid)) {
+            return ret;
+        }
     }
 
     int readBufFd = RequestPipeFd(pid, FaultLoggerPipeType::PIPE_FD_READ_BUF);
@@ -336,7 +360,7 @@ bool DfxDumpCatcher::DumpCatchMultiPid(const std::vector<int> pidV, std::string&
 bool DfxDumpCatcher::DumpCatchFrame(int pid, int tid, std::string& msg, \
     std::vector<std::shared_ptr<DfxFrame>>& frames)
 {
-    if (pid != getpid() || tid == 0) {
+    if (pid != getpid() || tid <= 0) {
         DfxLogError("DumpCatchFrame :: only support localDump.");
         return false;
     }
