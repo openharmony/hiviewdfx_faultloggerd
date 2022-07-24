@@ -291,11 +291,12 @@ void FaultLoggerDaemon::HandleSdkDumpRequest(int32_t connectionFd, FaultLoggerdR
      * in remote back trace, all unwind stack will save to file, and read in dump_catcher, then return.
      */
 
+    bool needSignalTarget = true;
     do {
         if ((request->pid <= 0) || (FaultLoggerCheckPermissionResp::CHECK_PERMISSION_REJECT == resSecurityCheck)) {
             DfxLogError("%s :: HandleSdkDumpRequest :: pid(%d) or resSecurityCheck(%d) fail.\n", \
                         FAULTLOGGERD_TAG.c_str(), request->pid, (int)resSecurityCheck);
-            break;
+            needSignalTarget = false;
         }
 
         if (faultLoggerPipeMap_->Find(request->pid)) {
@@ -304,6 +305,11 @@ void FaultLoggerDaemon::HandleSdkDumpRequest(int32_t connectionFd, FaultLoggerdR
         }
         std::shared_ptr<FaultLoggerPipe2> ptr = std::make_shared<FaultLoggerPipe2>();
         faultLoggerPipeMap_->Set(request->pid, ptr);
+
+        if (!needSignalTarget) {
+            DfxLogError("Failed to check permission, if caller can signal target, we may still get result.");
+            break;
+        }
 
         // defined in out/hi3516dv300/obj/third_party/musl/intermidiates/linux/musl_src_ported/include/signal.h
         siginfo_t si = {
