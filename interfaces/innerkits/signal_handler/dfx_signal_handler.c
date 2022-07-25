@@ -44,6 +44,16 @@
 #include "dfx_crash_local_handler.h"
 #endif
 
+#ifdef LOG_DOMAIN
+#undef LOG_DOMAIN
+#define LOG_DOMAIN 0x2D11
+#endif
+
+#ifdef LOG_TAG
+#undef LOG_TAG
+#define LOG_TAG "DfxSignalHandler"
+#endif
+
 #if defined (__LP64__)
 #define RESERVED_CHILD_STACK_SIZE (32 * 1024)  // 32K
 #else

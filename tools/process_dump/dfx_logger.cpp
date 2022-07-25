@@ -62,7 +62,7 @@ int WriteLog(int32_t fd, const char *format, ...)
 
 void DfxLogToSocket(const char *msg)
 {
-    if (CheckDebugLevel() > 0) {
+    if (CheckDebugLevel()) {
         return;
     }
 
