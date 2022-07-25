@@ -292,6 +292,12 @@ static void ResetSignalHandlerIfNeed(int sig)
     }
 }
 
+static void PauseMainThreadHandler(int sig)
+{
+    // only work when subthread crash and send SIGDUMP to mainthread.
+    sleep(2); // 2 : main thread sleep 2s
+}
+
 static void BlockMainThreadIfNeed(int sig)
 {
     if (getpid() == gettid() || sig == SIGDUMP) {
@@ -299,10 +305,9 @@ static void BlockMainThreadIfNeed(int sig)
     }
 
     DfxLogInfo("Crash(%d) in child thread(%d), try stop main thread.", sig, gettid());
-    siginfo_t si;
-    si.si_signo = SIGSTOP;
-    if (syscall(SYS_rt_tgsigqueueinfo, getpid(), getpid(), si.si_signo, &si) != 0) {
-        DfxLogError("Failed to send signal(%d) to main thread, errno(%d).", si.si_signo, errno);
+    (void)signal(SIGDUMP, PauseMainThreadHandler);
+    if (syscall(SYS_tgkill, getpid(), getpid(), SIGDUMP) != 0) {
+        DfxLogError("Failed to send SIGDUMP to main thread, errno(%d).", errno);
     }
 }
 
