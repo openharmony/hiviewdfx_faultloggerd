@@ -50,6 +50,7 @@ using namespace std;
 
 static const int PERFORMANCE_TEST_NUMBER_ONE_HUNDRED = 100;
 static const double PERFORMANCE_TEST_MAX_UNWIND_TIME_S = 0.03;
+static const double PERFORMANCE_TEST_MAX_UNWIND_TIME_NEW_S = 0.04;
 
 clock_t GetStartTime ()
 {
@@ -272,7 +273,7 @@ HWTEST_F (FaultPerformanceTest, FaultPerformanceTest005, TestSize.Level2)
     }
     double timeInterval = GetStopTime(befor)/PERFORMANCE_TEST_NUMBER_ONE_HUNDRED;
     GTEST_LOG_(INFO) << "DumpCatchMultiPid API time(PID(root), PID(foundation)): " << timeInterval << "s";
-    double expectTime = PERFORMANCE_TEST_MAX_UNWIND_TIME_S;
+    double expectTime = PERFORMANCE_TEST_MAX_UNWIND_TIME_NEW_S;
     double realTime = GetStopTime(befor)/PERFORMANCE_TEST_NUMBER_ONE_HUNDRED;
     EXPECT_EQ(true, realTime < expectTime) << "FaultPerformanceTest005 Failed";
     GTEST_LOG_(INFO) << "FaultPerformanceTest005: end.";

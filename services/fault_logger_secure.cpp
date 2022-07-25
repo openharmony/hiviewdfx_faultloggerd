@@ -138,8 +138,7 @@ bool FaultLoggerSecure::CheckCallerUID (const int callingUid, const int32_t pid)
     if ((callingUid == FaultLoggerSecure::BMS_UID) ||
         (callingUid == FaultLoggerSecure::ROOT_UID) ||
         (callingUid == FaultLoggerSecure::HIVIEW_UID) ||
-        (callingUid == FaultLoggerSecure::HIDUMPER_SERVICE_UID) ||
-        CheckUidAndPid(callingUid, pid)) {
+        (callingUid == FaultLoggerSecure::HIDUMPER_SERVICE_UID)) {
         ret = true;
     } else {
         ret = false;

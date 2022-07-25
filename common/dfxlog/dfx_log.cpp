@@ -29,7 +29,8 @@ static LogLevel g_LOG_LEVEL[] = { LOG_DEBUG, LOG_INFO, LOG_WARN, LOG_ERROR, LOG_
 #else
 static const OHOS::HiviewDFX::HiLogLabel g_LOG_LABEL = {LOG_CORE, 0xD002D20, "DfxFaultLogger"};
 #endif
-
+static const int32_t INVALID_FD = -1;
+static int32_t g_DebugFd = INVALID_FD;
 static const Level g_logLevel = Level::DEBUG;
 static const int LOG_BUF_LEN = 1024;
 #ifdef DFX_LOG_USE_DMESG
@@ -47,7 +48,7 @@ void LogToDmesg(Level logLevel, const char *tag, const char *info)
         g_fd = open("/dev/kmsg", O_WRONLY, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP);
     }
     char logInfo[MAX_LOG_SIZE];
-    if (snprintf_s(logInfo, MAX_LOG_SIZE, MAX_LOG_SIZE - 1, "%s[pid=%d %d][%s][%s]%s",
+    if (snprintf_s(logInfo, sizeof(logInfo), sizeof(logInfo) - 1, "%s[pid=%d %d][%s][%s]%s",
         LOG_KLEVEL_STR[logLevel], getpid(), getppid(), tag, LOG_LEVEL_STR[logLevel], info) == -1) {
         close(g_fd);
         g_fd = -1;
@@ -59,6 +60,11 @@ void LogToDmesg(Level logLevel, const char *tag, const char *info)
     }
 }
 #endif
+
+void InitDebugFd(int32_t fd)
+{
+    g_DebugFd = fd;
+}
 
 bool CheckDebugLevel(void)
 {
@@ -78,25 +84,25 @@ int DfxLog(const Level logLevel, const unsigned int domain, const char* tag, con
     ret = vsnprintf_s(buf, sizeof(buf), sizeof(buf) - 1, fmt, args);
     va_end(args);
 #ifdef DFX_LOG_USE_HILOG_BASE
-    if ((logLevel < DEBUG) || (logLevel > FATAL)) {
+    if ((logLevel < Level::DEBUG) || (logLevel > Level::FATAL)) {
         return -1;
     }
     HiLogBasePrint(LOG_CORE, g_LOG_LEVEL[logLevel], domain, tag, "%{public}s", buf);
 #else
-    switch ((int)logLevel) {
-        case (int)DEBUG:
+    switch (static_cast<int>(logLevel)) {
+        case static_cast<int>(DEBUG):
             OHOS::HiviewDFX::HiLog::Debug(g_LOG_LABEL, "%{public}s", buf);
             break;
-        case (int)INFO:
+        case static_cast<int>(INFO):
             OHOS::HiviewDFX::HiLog::Info(g_LOG_LABEL, "%{public}s", buf);
             break;
-        case (int)WARN:
+        case static_cast<int>(WARN):
             OHOS::HiviewDFX::HiLog::Warn(g_LOG_LABEL, "%{public}s", buf);
             break;
-        case (int)ERROR:
+        case static_cast<int>(ERROR):
             OHOS::HiviewDFX::HiLog::Error(g_LOG_LABEL, "%{public}s", buf);
             break;
-        case (int)FATAL:
+        case static_cast<int>(FATAL):
             OHOS::HiviewDFX::HiLog::Fatal(g_LOG_LABEL, "%{public}s", buf);
             break;
         default:
@@ -107,5 +113,8 @@ int DfxLog(const Level logLevel, const unsigned int domain, const char* tag, con
 #ifdef DFX_LOG_USE_DMESG
     LogToDmesg(logLevel, tag, buf);
 #endif
+    if (g_DebugFd != INVALID_FD) {
+        fprintf(stderr, "%s", buf);
+    }
     return ret;
 }

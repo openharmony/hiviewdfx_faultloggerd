@@ -200,6 +200,28 @@ bool DfxDumpCatcher::DumpCatchFd(int pid, int tid, std::string& msg, int fd)
     return ret;
 }
 
+static bool SignalTargetProcess(int pid, int tid)
+{
+    siginfo_t si = {
+        .si_signo = SIGDUMP,
+        .si_errno = 0,
+        .si_code = -1000, // -1000 : hardcode SIGDUMP code
+        .si_pid = pid,
+        .si_uid = static_cast<uid_t>(tid)
+    };
+
+    if (tid == 0) {
+        if (syscall(SYS_rt_sigqueueinfo, pid, si.si_signo, &si) != 0) {
+            return false;
+        }
+    } else {
+        if (syscall(SYS_rt_tgsigqueueinfo, pid, tid, si.si_signo, &si) != 0) {
+            return false;
+        }
+    }
+    return true;
+}
+
 bool DfxDumpCatcher::DoDumpCatchRemote(int pid, int tid, std::string& msg)
 {
     bool ret = false;
@@ -210,9 +232,17 @@ bool DfxDumpCatcher::DoDumpCatchRemote(int pid, int tid, std::string& msg)
 
     if (RequestSdkDump(pid, tid) == false) {
         DfxLogError("%s :: DoDumpCatchRemote :: request SdkDump error.", DFXDUMPCATCHER_TAG.c_str());
-        return ret;
+        if (!SignalTargetProcess(pid, tid)) {
+            return ret;
+        }
     }
 
+    return DoDumpRemotePid(pid, msg);
+}
+
+bool DfxDumpCatcher::DoDumpRemotePid(int pid, std::string& msg)
+{
+    bool ret = false;
     int readBufFd = RequestPipeFd(pid, FaultLoggerPipeType::PIPE_FD_READ_BUF);
     DfxLogDebug("read buf fd: %d", readBufFd);
 
@@ -220,7 +250,6 @@ bool DfxDumpCatcher::DoDumpCatchRemote(int pid, int tid, std::string& msg)
     DfxLogDebug("read res fd: %d", readResFd);
 
     std::string bufMsg, resMsg;
-    char buffer[LOG_BUF_LEN];
 
     struct pollfd readfds[2];
     readfds[0].fd = readBufFd;
@@ -240,43 +269,22 @@ bool DfxDumpCatcher::DoDumpCatchRemote(int pid, int tid, std::string& msg)
             break;
         }
 
-        bool fdsLoop = true;
+        bool bufRet = true, resRet = true;
         for (int i = 0; i < fdsSize; ++i) {
             if ((readfds[i].revents & POLLIN) != POLLIN) {
                 continue;
             }
             
             if (readfds[i].fd == readBufFd) {
-                bzero(buffer, sizeof(buffer));
-                ssize_t nread = read(readBufFd, buffer, sizeof(buffer) - 1);
-                if (nread <= 0) {
-                    DfxLogWarn("%s :: %s :: read error", DFXDUMPCATCHER_TAG.c_str(), __func__);
-                    fdsLoop = false;
-                    break;
-                } else {
-                    bufMsg.append(buffer);
-                }
+                bufRet = DoReadBuf(readBufFd, bufMsg);
             }
 
             if (readfds[i].fd == readResFd) {
-                DumpResMsg dumpRes;
-                ssize_t nread = read(readResFd, &dumpRes, sizeof(struct DumpResMsg));
-                if (nread != sizeof(struct DumpResMsg)) {
-                    DfxLogWarn("%s :: %s :: read error", DFXDUMPCATCHER_TAG.c_str(), __func__);
-                } else {
-                    if (dumpRes.res == ProcessDumpRes::DUMP_ESUCCESS) {
-                        ret = true;
-                    }
-                    DfxDumpRes::GetInstance().SetRes(dumpRes.res);
-                    resMsg.append("Result: " + DfxDumpRes::GetInstance().ToString() + "\n");
-                    DfxLogDebug("%s :: %s :: resMsg: %s", DFXDUMPCATCHER_TAG.c_str(), __func__, resMsg.c_str());
-                    fdsLoop = false;
-                }
-                break;
+                resRet = DoReadRes(readResFd, ret, resMsg);
             }
         }
 
-        if (fdsLoop == false) {
+        if ((bufRet == false) || (resRet == true)) {
             break;
         }
     }
@@ -285,6 +293,37 @@ bool DfxDumpCatcher::DoDumpCatchRemote(int pid, int tid, std::string& msg)
     RequestPipeFd(pid, FaultLoggerPipeType::PIPE_FD_DELETE);
     DfxLogDebug("%s :: %s :: ret: %d", DFXDUMPCATCHER_TAG.c_str(), __func__, ret);
     return ret;
+}
+
+bool DfxDumpCatcher::DoReadBuf(int fd, std::string& msg)
+{
+    char buffer[LOG_BUF_LEN];
+    bzero(buffer, sizeof(buffer));
+    ssize_t nread = read(fd, buffer, sizeof(buffer) - 1);
+    if (nread <= 0) {
+        DfxLogWarn("%s :: %s :: read error", DFXDUMPCATCHER_TAG.c_str(), __func__);
+        return false;
+    }
+    msg.append(buffer);
+    return true;
+}
+
+bool DfxDumpCatcher::DoReadRes(int fd, bool &ret, std::string& msg)
+{
+    DumpResMsg dumpRes;
+    ssize_t nread = read(fd, &dumpRes, sizeof(struct DumpResMsg));
+    if (nread != sizeof(struct DumpResMsg)) {
+        DfxLogWarn("%s :: %s :: read error", DFXDUMPCATCHER_TAG.c_str(), __func__);
+        return false;
+    }
+
+    if (dumpRes.res == ProcessDumpRes::DUMP_ESUCCESS) {
+        ret = true;
+    }
+    DfxDumpRes::GetInstance().SetRes(dumpRes.res);
+    msg.append("Result: " + DfxDumpRes::GetInstance().ToString() + "\n");
+    DfxLogDebug("%s :: %s :: %s", DFXDUMPCATCHER_TAG.c_str(), __func__, msg.c_str());
+    return true;
 }
 
 bool DfxDumpCatcher::DumpCatchMultiPid(const std::vector<int> pidV, std::string& msg)
@@ -336,7 +375,7 @@ bool DfxDumpCatcher::DumpCatchMultiPid(const std::vector<int> pidV, std::string&
 bool DfxDumpCatcher::DumpCatchFrame(int pid, int tid, std::string& msg, \
     std::vector<std::shared_ptr<DfxFrame>>& frames)
 {
-    if (pid != getpid() || tid == 0) {
+    if (pid != getpid() || tid <= 0) {
         DfxLogError("DumpCatchFrame :: only support localDump.");
         return false;
     }

@@ -38,7 +38,7 @@ if (defined(ohos_lite)) {
     ]
   }
 
-  ohos_static_library("dfxsignalhandler") {
+  static_library("dfxsignalhandler") {
     cflags = [ "-DDFX_NO_PRINT_LOG" ]
 
     include_dirs = [
@@ -50,9 +50,7 @@ if (defined(ohos_lite)) {
 
     sources = [ "dfx_signal_handler.c" ]
 
-    deps = [
-      "$faultloggerd_path/common/util:dfx_cutil",
-    ]
+    deps = [ "$faultloggerd_path/common/util:dfx_cutil" ]
   }
 } else {
   config("dfx_signal_handler_config") {
@@ -133,9 +131,7 @@ if (defined(ohos_lite)) {
 
     sources = [ "dfx_signal_handler.c" ]
 
-    deps = [
-      "$faultloggerd_path/common/util:dfx_cutil",
-    ]
+    deps = [ "$faultloggerd_path/common/util:dfx_cutil" ]
 
     part_name = "faultloggerd"
     subsystem_name = "hiviewdfx"
