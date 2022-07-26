@@ -145,12 +145,12 @@ void DfxConfig::ParserConfig(const std::string& key, const std::string& value)
             break;
         }
         if (key.compare("displayFaultStack.lowAddressStep") == 0) {
-            lowAddressStep = (unsigned int)atoi(value.data());
+            lowAddressStep = static_cast<unsigned int>(atoi(value.data()));
             SetFaultStackLowAddressStep(lowAddressStep);
             break;
         }
         if (key.compare("displayFaultStack.highAddressStep") == 0) {
-            highAddressStep = (unsigned int)atoi(value.data());
+            highAddressStep = static_cast<unsigned int>(atoi(value.data()));
             SetFaultStackHighAddressStep(highAddressStep);
             break;
         }
