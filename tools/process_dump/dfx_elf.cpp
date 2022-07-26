@@ -27,7 +27,6 @@
 #include <cstdlib>
 
 #include "bits/fcntl.h"
-#include "bits/stat.h"
 #include "dfx_log.h"
 #include "elf.h"
 
