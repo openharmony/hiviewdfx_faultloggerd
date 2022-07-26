@@ -21,7 +21,7 @@
     "deps": {
       "components": [
         "libhilog",
-        "utils_base"
+        "c_utils"
       ],
       "third_party": [
         "libunwind"
