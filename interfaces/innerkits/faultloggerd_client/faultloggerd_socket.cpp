@@ -26,6 +26,7 @@
 
 #include "dfx_define.h"
 #include "dfx_log.h"
+#include "init_socket.h"
 
 
 bool StartConnect(int& sockfd, const char* path, const int timeout)
