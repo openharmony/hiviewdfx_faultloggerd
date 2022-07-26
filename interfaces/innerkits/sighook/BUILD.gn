@@ -24,10 +24,15 @@ if (!defined(ohos_lite)) {
     public_configs = [ ":dfx_sighook_config" ]
     install_enable = true
 
+    cflags = [
+      "-DDFX_LOG_USE_HILOG_BASE",
+      "-DDFX_LOG_USE_DMESG",
+    ]
+
     sources = [ "dfx_func_hook.c" ]
 
     deps = [
-      "$faultloggerd_path/common/log:static_log_wrapper",
+      "$faultloggerd_path/common/dfxlog:static_hilog_base_dmesg",
       "//third_party/libunwind:libunwind",
     ]
 

@@ -45,6 +45,9 @@ private:
     bool DoDumpLocalLocked(int pid, int tid, std::string& msg);
     bool DoDumpRemoteLocked(int pid, int tid, std::string& msg);
     bool DoDumpCatchRemote(int pid, int tid, std::string& msg);
+    bool DoDumpRemotePid(int pid, std::string& msg);
+    bool DoReadBuf(int fd, std::string& msg);
+    bool DoReadRes(int fd, bool &ret, std::string& msg);
 
 private:
     std::mutex dumpCatcherMutex_;

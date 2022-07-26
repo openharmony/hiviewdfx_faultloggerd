@@ -30,7 +30,7 @@
 #include <map_info.h>
 #include <securec.h>
 
-#include "log_wrapper.h"
+#include "dfx_log.h"
 
 #ifdef LOG_DOMAIN
 #undef LOG_DOMAIN
