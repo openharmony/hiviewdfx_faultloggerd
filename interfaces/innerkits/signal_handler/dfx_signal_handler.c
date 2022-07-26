@@ -30,7 +30,6 @@
 #include <sys/wait.h>
 
 #include "bits/errno.h"
-#include "bits/signal.h"
 #include "bits/syscall.h"
 #include "dfx_crash_local_handler.h"
 #include "dfx_define.h"
