@@ -120,6 +120,10 @@ bool DfxUnwindLocal::WaitLocalDumpRequest()
 
 std::string DfxUnwindLocal::CollectUnwindResult(int32_t tid)
 {
+    if (tid < 0) {
+        return std::string("");
+    }
+
     std::ostringstream result;
     result << "Tid:" << tid;
     std::string path = "/proc/self/task/" + std::to_string(tid) + "/comm";
