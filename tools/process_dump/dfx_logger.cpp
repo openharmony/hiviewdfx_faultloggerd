@@ -20,6 +20,7 @@
 
 #include "faultloggerd_client.h"
 #include "dfx_define.h"
+#include "dfx_log.h"
 
 static const int WRITE_LOG_BUF_LEN = 2048;
 static const int32_t INVALID_FD = -1;
@@ -62,7 +63,7 @@ int WriteLog(int32_t fd, const char *format, ...)
 
 void DfxLogToSocket(const char *msg)
 {
-    if (CheckDebugLevel() > 0) {
+    if (CheckDebugLevel()) {
         return;
     }
 
@@ -108,6 +109,8 @@ void InitDebugLog(int type, int pid, int tid, unsigned int uid, int isLogPersist
             g_StdErrFilleDes = INVALID_FD;
         }
     }
+
+    InitDebugFd(g_DebugLogFilleDes);
 }
 
 void CloseDebugLog()
@@ -122,5 +125,7 @@ void CloseDebugLog()
     close(g_DebugLogFilleDes);
     g_DebugLogFilleDes = INVALID_FD;
     g_StdErrFilleDes = INVALID_FD;
+
+    InitDebugFd(g_DebugLogFilleDes);
 }
 #endif

@@ -21,6 +21,7 @@ if (defined(ohos_lite)) {
       ".",
       "./include",
       "//utils/native/base/include",
+      "//base/startup/init/interfaces/innerkits/include",
       "$faultloggerd_path/tools/process_dump/",
       "$faultloggerd_path/common",
       "$faultloggerd_path/common/dfxlog",
@@ -36,6 +37,7 @@ if (defined(ohos_lite)) {
     deps = [
       "$faultloggerd_path/common/dfxlog:static_common_log",
       "//base/hiviewdfx/hilog_lite/frameworks/featured:hilog_shared",
+      "//base/startup/init/interfaces/innerkits:libbegetutil",
     ]
   }
 } else {
@@ -45,6 +47,7 @@ if (defined(ohos_lite)) {
     include_dirs = [
       "include",
       "//utils/native/base/include",
+      "//base/startup/init/interfaces/innerkits/include",
       "$faultloggerd_path/common",
       "$faultloggerd_path/common/dfxlog",
       "$faultloggerd_path/tools/process_dump/",
@@ -63,6 +66,7 @@ if (defined(ohos_lite)) {
 
     external_deps = [
       "hilog_native:libhilog",
+      "init:libbegetutil",
       "utils_base:utils",
     ]
     install_images = [

@@ -115,6 +115,9 @@ if (defined(ohos_lite)) {
 
   group("systemtest") {
     testonly = true
-    deps = [ ":test_faultloggerd" ]
+    deps = [
+      ":test_faultloggerd",
+      ":test_faultloggerd_pre",
+    ]
   }
 }

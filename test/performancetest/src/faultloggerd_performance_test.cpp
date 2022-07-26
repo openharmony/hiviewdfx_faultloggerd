@@ -48,6 +48,10 @@ using namespace OHOS::HiviewDFX;
 using namespace testing::ext;
 using namespace std;
 
+static const int PERFORMANCE_TEST_NUMBER_ONE_HUNDRED = 100;
+static const double PERFORMANCE_TEST_MAX_UNWIND_TIME_S = 0.03;
+static const double PERFORMANCE_TEST_MAX_UNWIND_TIME_NEW_S = 0.04;
+
 clock_t GetStartTime ()
 {
     return clock();
@@ -90,7 +94,7 @@ std::string FaultPerformanceTest::ProcessDumpCommands(const std::string cmds)
         perror("popen execute failed");
         exit(1);
     }
-    char result_buf_shell[PERFORMANCE_TEST_NUMBER_ONE_HUNDRED] = {'\0'};
+    char result_buf_shell[NAME_LEN] = {'\0'};
     while (fgets(result_buf_shell, sizeof(result_buf_shell), procFileInfo) != nullptr) {
         cmdLog = cmdLog + result_buf_shell;
     }
@@ -112,7 +116,7 @@ std::string FaultPerformanceTest::ForkAndRootCommands(const std::vector<std::str
         exit(1);
     }
     std::string pidLog;
-    char result_buf_shell[PERFORMANCE_TEST_NUMBER_ONE_HUNDRED] = { 0, };
+    char result_buf_shell[NAME_LEN] = { 0, };
     if (fgets(result_buf_shell, sizeof(result_buf_shell), procFileInfo) != nullptr) {
         pidLog = result_buf_shell;
         looprootPid = atoi(pidLog.c_str());
@@ -269,7 +273,7 @@ HWTEST_F (FaultPerformanceTest, FaultPerformanceTest005, TestSize.Level2)
     }
     double timeInterval = GetStopTime(befor)/PERFORMANCE_TEST_NUMBER_ONE_HUNDRED;
     GTEST_LOG_(INFO) << "DumpCatchMultiPid API time(PID(root), PID(foundation)): " << timeInterval << "s";
-    double expectTime = PERFORMANCE_TEST_MAX_UNWIND_TIME_S;
+    double expectTime = PERFORMANCE_TEST_MAX_UNWIND_TIME_NEW_S;
     double realTime = GetStopTime(befor)/PERFORMANCE_TEST_NUMBER_ONE_HUNDRED;
     EXPECT_EQ(true, realTime < expectTime) << "FaultPerformanceTest005 Failed";
     GTEST_LOG_(INFO) << "FaultPerformanceTest005: end.";

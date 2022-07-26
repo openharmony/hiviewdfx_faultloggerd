@@ -125,7 +125,7 @@ FaultLoggerPipeMap::~FaultLoggerPipeMap()
 void FaultLoggerPipeMap::Set(int pid, std::shared_ptr<FaultLoggerPipe2> faultLoggerPipe)
 {
     if (!Find(pid)) {
-        faultLoggerPipes_.insert(make_pair(pid, faultLoggerPipe));
+        faultLoggerPipes_.insert(make_pair(pid, std::move(faultLoggerPipe)));
     }
 }
 

@@ -46,8 +46,10 @@ const char* DfxDumpRes::GetResStr(const int res) const
     const char *cp;
     switch (res) {
         case DUMP_ESUCCESS:     cp = "no error"; break;
+        case DUMP_EREADREQUEST: cp = "read dump request error"; break;
         case DUMP_EGETPPID:     cp = "ppid is crashed before unwind"; break;
-        case DUMP_EUNSPEC:      cp = "unspecified (general) error"; break;
+        case DUMP_EATTACH:      cp = "ptrace attach thread failed"; break;
+        case DUMP_EGETFD:       cp = "get fd error"; break;
         case DUMP_ENOMEM:       cp = "out of memory"; break;
         case DUMP_EBADREG:      cp = "bad register number"; break;
         case DUMP_EREADONLYREG: cp = "attempt to write read-only register"; break;

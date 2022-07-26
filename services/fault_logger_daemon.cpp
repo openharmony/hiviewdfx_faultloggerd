@@ -92,7 +92,7 @@ FaultLoggerDaemon::FaultLoggerDaemon()
 int32_t FaultLoggerDaemon::StartServer()
 {
     int socketFd = -1;
-    if (!StartListen(socketFd, FAULTLOGGERD_SOCK_PATH, MAX_CONNECTION)) {
+    if (!StartListen(socketFd, SERVER_SOCKET_NAME, MAX_CONNECTION)) {
         DfxLogError("%s :: Failed to start listen", FAULTLOGGERD_TAG.c_str());
         return -1;
     }
@@ -163,11 +163,6 @@ void FaultLoggerDaemon::HandlePipeFdClientRequest(int32_t connectionFd, const Fa
 {
     DfxLogDebug("%s :: pid(%d), pipeType(%d).\n", FAULTLOGGERD_TAG.c_str(), request->pid, request->pipeType);
     int fd = -1;
-
-    if (request->pipeType == (int32_t)FaultLoggerPipeType::PIPE_FD_DELETE) {
-        faultLoggerPipeMap_->Del(request->pid);
-        return;
-    }
     
     FaultLoggerPipe2* faultLoggerPipe = faultLoggerPipeMap_->Get(request->pid);
     if (faultLoggerPipe == nullptr) {
@@ -187,6 +182,10 @@ void FaultLoggerDaemon::HandlePipeFdClientRequest(int32_t connectionFd, const Fa
             break;
         case (int32_t)FaultLoggerPipeType::PIPE_FD_WRITE_RES:
             fd = faultLoggerPipe->faultLoggerPipeRes_->GetWriteFd();
+            break;
+        case (int32_t)FaultLoggerPipeType::PIPE_FD_DELETE:
+            faultLoggerPipeMap_->Del(request->pid);
+            fd = 0;
             break;
         default:
             DfxLogError("%s :: unknown pipeType(%d).\n", FAULTLOGGERD_TAG.c_str(), request->pipeType);
@@ -292,11 +291,12 @@ void FaultLoggerDaemon::HandleSdkDumpRequest(int32_t connectionFd, FaultLoggerdR
      * in remote back trace, all unwind stack will save to file, and read in dump_catcher, then return.
      */
 
+    bool needSignalTarget = true;
     do {
         if ((request->pid <= 0) || (FaultLoggerCheckPermissionResp::CHECK_PERMISSION_REJECT == resSecurityCheck)) {
             DfxLogError("%s :: HandleSdkDumpRequest :: pid(%d) or resSecurityCheck(%d) fail.\n", \
                         FAULTLOGGERD_TAG.c_str(), request->pid, (int)resSecurityCheck);
-            break;
+            needSignalTarget = false;
         }
 
         if (faultLoggerPipeMap_->Find(request->pid)) {
@@ -306,7 +306,11 @@ void FaultLoggerDaemon::HandleSdkDumpRequest(int32_t connectionFd, FaultLoggerdR
         std::shared_ptr<FaultLoggerPipe2> ptr = std::make_shared<FaultLoggerPipe2>();
         faultLoggerPipeMap_->Set(request->pid, ptr);
 
-        int sig = SIGDUMP;
+        if (!needSignalTarget) {
+            DfxLogError("Failed to check permission, if caller can signal target, we may still get result.");
+            break;
+        }
+
         // defined in out/hi3516dv300/obj/third_party/musl/intermidiates/linux/musl_src_ported/include/signal.h
         siginfo_t si = {
             .si_signo = SIGDUMP,
@@ -318,13 +322,13 @@ void FaultLoggerDaemon::HandleSdkDumpRequest(int32_t connectionFd, FaultLoggerdR
 
         // means we need dump all the threads in a process.
         if (request->tid == 0) {
-            if (syscall(SYS_rt_sigqueueinfo, request->pid, sig, &si) != 0) {
+            if (syscall(SYS_rt_sigqueueinfo, request->pid, si.si_signo, &si) != 0) {
                 DfxLogError("Failed to SYS_rt_sigqueueinfo signal(%d), errno(%d).", si.si_signo, errno);
                 break;
             }
         } else {
             // means we need dump a specified thread
-            if (syscall(SYS_rt_tgsigqueueinfo, request->pid, request->tid, sig, &si) != 0) {
+            if (syscall(SYS_rt_tgsigqueueinfo, request->pid, request->tid, si.si_signo, &si) != 0) {
                 DfxLogError("Failed to SYS_rt_tgsigqueueinfo signal(%d), errno(%d).", si.si_signo, errno);
                 break;
             }

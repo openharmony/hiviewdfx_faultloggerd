@@ -29,19 +29,28 @@ if (defined(ohos_lite)) {
       "//utils/native/base/include",
       "$faultloggerd_path/common",
       "$faultloggerd_path/common/dfxlog",
-      "$faultloggerd_path/tools/process_dump",
-      "$faultloggerd_path/interfaces/innerkits/faultloggerd_client/include",
-      "$hilog_lite_include_path",
     ]
     sources = [ "dfx_signal_handler.c" ]
 
     deps = [
-      "$faultloggerd_path/common/dfxlog:static_no_print_log",
       "$faultloggerd_path/common/util:dfx_cutil",
-      "$faultloggerd_path/interfaces/innerkits/faultloggerd_client:libfaultloggerd",
-      "//base/hiviewdfx/hilog_lite/frameworks/featured:hilog_shared",
       "//third_party/bounds_checking_function:libsec_shared",
     ]
+  }
+
+  static_library("dfxsignalhandler") {
+    cflags = [ "-DDFX_NO_PRINT_LOG" ]
+
+    include_dirs = [
+      "include",
+      "//utils/native/base/include",
+      "$faultloggerd_path/common",
+      "$faultloggerd_path/common/dfxlog",
+    ]
+
+    sources = [ "dfx_signal_handler.c" ]
+
+    deps = [ "$faultloggerd_path/common/util:dfx_cutil" ]
   }
 } else {
   config("dfx_signal_handler_config") {
@@ -85,7 +94,6 @@ if (defined(ohos_lite)) {
 
     cflags = [
       "-DDFX_LOG_USE_HILOG_BASE",
-      "-DDFX_SIGNALHANDLER_TAG",
       "-DCRASH_LOCAL_HANDLER",
     ]
 
@@ -106,6 +114,24 @@ if (defined(ohos_lite)) {
       "system",
       "updater",
     ]
+
+    part_name = "faultloggerd"
+    subsystem_name = "hiviewdfx"
+  }
+
+  ohos_static_library("dfxsignalhandler") {
+    cflags = [ "-DDFX_NO_PRINT_LOG" ]
+
+    include_dirs = [
+      "include",
+      "//utils/native/base/include",
+      "$faultloggerd_path/common",
+      "$faultloggerd_path/common/dfxlog",
+    ]
+
+    sources = [ "dfx_signal_handler.c" ]
+
+    deps = [ "$faultloggerd_path/common/util:dfx_cutil" ]
 
     part_name = "faultloggerd"
     subsystem_name = "hiviewdfx"

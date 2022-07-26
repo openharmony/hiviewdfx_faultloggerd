@@ -21,8 +21,10 @@ namespace OHOS {
 namespace HiviewDFX {
 enum ProcessDumpRes {
     DUMP_ESUCCESS = 0,  /* no error */
+    DUMP_EREADREQUEST,  /* read request error */
     DUMP_EGETPPID,      /* ppid is crash */
-    DUMP_EUNSPEC,       /* unspecified (general) error */
+    DUMP_EATTACH,       /* ptrace attach thread failed */
+    DUMP_EGETFD,        /* get fd error */
     DUMP_ENOMEM,        /* out of memory */
     DUMP_EBADREG,       /* bad register number */
     DUMP_EREADONLYREG,  /* attempt to write read-only register */

@@ -36,11 +36,6 @@ DfxRingBufferWrapper &DfxRingBufferWrapper::GetInstance()
 
 void DfxRingBufferWrapper::LoopPrintRingBuffer()
 {
-    if (DfxRingBufferWrapper::GetInstance().fd_ < 0) {
-        DfxLogError("%s :: please set fd first.\n", __func__);
-        return;
-    }
-
     if (DfxRingBufferWrapper::GetInstance().writeFunc_ == nullptr) {
         DfxRingBufferWrapper::GetInstance().writeFunc_ = DfxRingBufferWrapper::DefaultWrite;
     }
@@ -124,6 +119,9 @@ void DfxRingBufferWrapper::StopThread()
 void DfxRingBufferWrapper::SetWriteBufFd(int32_t fd)
 {
     fd_ = fd;
+    if (fd_ < 0) {
+        DfxLogWarn("%s :: Failed to set fd.\n", __func__);
+    }
 }
 
 void DfxRingBufferWrapper::SetWriteFunc(RingBufferWriteFunc func)
@@ -134,7 +132,10 @@ void DfxRingBufferWrapper::SetWriteFunc(RingBufferWriteFunc func)
 int DfxRingBufferWrapper::DefaultWrite(int32_t fd, const char *buf, const int len)
 {
     WriteLog(-1, "%s", buf);
-    return write(fd, buf, len);
+    if (fd > 0) {
+        return write(fd, buf, len);
+    }
+    return 0;
 }
 } // namespace HiviewDFX
 } // namespace OHOS
