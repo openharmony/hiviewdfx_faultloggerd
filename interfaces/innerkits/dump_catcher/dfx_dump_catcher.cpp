@@ -242,7 +242,7 @@ bool DfxDumpCatcher::DoDumpCatchRemote(int pid, int tid, std::string& msg)
 
         bool fdsLoop = true;
         for (int i = 0; i < fdsSize; ++i) {
-            if ((readfds[i].revents & POLLIN) != POLLIN) {
+            if ((static_cast<unsigned short>(readfds[i].revents) & POLLIN) != POLLIN) {
                 continue;
             }
             
