@@ -39,6 +39,7 @@ struct FaultLogInfoInner {
     std::string logPath;
     std::map<std::string, std::string> sectionMaps;
 };
+static const char HIVIEW_PROCESS_NAME[] = "/system/bin/hiview";
 
 using AddFaultLog = void (*)(FaultLogInfoInner* info);
 namespace OHOS {
@@ -70,6 +71,11 @@ void CppCrashReporter::ReportToHiview()
 {
     if (!Format()) {
         DfxLogWarn("Failed to format crash report.");
+        return;
+    }
+
+    if (!process_->GetProcessName().compare(HIVIEW_PROCESS_NAME)) {
+        DfxLogWarn("Failed to report, hiview is crashed.");
         return;
     }
 
