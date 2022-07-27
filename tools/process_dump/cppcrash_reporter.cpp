@@ -74,7 +74,7 @@ void CppCrashReporter::ReportToHiview()
         return;
     }
 
-    if (!strcmp(process_->GetProcessName().c_str(), HIVIEW_PROCESS_NAME)) {
+    if (!process_->GetProcessName().compare(HIVIEW_PROCESS_NAME)) {
         DfxLogWarn("Failed to report, hiview is crashed.");
         return;
     }
