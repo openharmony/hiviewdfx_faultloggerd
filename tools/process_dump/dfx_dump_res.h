@@ -15,7 +15,7 @@
 #ifndef DFX_DUMP_RES_H
 #define DFX_DUMP_RES_H
 
-#include <cinttypes>
+#include <sys/types.h>
 #include "iosfwd"    // for string
 
 namespace OHOS {

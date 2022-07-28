@@ -16,11 +16,7 @@
 #include <unistd.h>                    // for getpid
 #include <cstdint>                    // for int32_t, uint64_t
 #include <csignal>                    // for siginfo_t, ucontext
-#include "dfx_crash_local_handler.h"   // for CrashLocalHandlerFd
-#include "dfx_cutil.h"                 // for GetTimeMilliseconds
 #include "dfx_log.h"                   // for DfxLogError
-#include "dfx_signal_handler.h"        // for ProcessDumpRequest
-#include "dfx_signal_local_handler.h"  // for DFX_InitDumpRequest, DFX_Insta...
 #include "fault_logger_daemon.h"       // for FaultLoggerDaemon
 #include "faultloggerd_client.h"       // for CPP_CRASH, FaultLoggerType
 #include "securec.h"                   // for memset_s
