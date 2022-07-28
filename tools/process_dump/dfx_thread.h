@@ -21,6 +21,7 @@
 #include <vector>
 
 #include "dfx_define.h"
+#include "dfx_fault_stack.h"
 #include "dfx_frame.h"
 #include "dfx_regs.h"
 #include "dfx_maps.h"
@@ -45,10 +46,9 @@ public:
     void PrintThread(const int32_t fd, bool isSignalDump);
     void PrintThreadBacktraceByConfig(const int32_t fd);
     std::string PrintThreadRegisterByConfig();
-    std::string PrintThreadFaultStackByConfig();
-    void SkipFramesInSignalHandler();
+    void PrintThreadFaultStackByConfig();
     void SetThreadUnwStopReason(int reason);
-    void CreateFaultStack(std::shared_ptr<DfxElfMaps> maps);
+    void CreateFaultStack();
     void Detach();
     bool Attach();
     std::string ToString() const;
@@ -63,7 +63,6 @@ private:
     };
 
     bool InitThread(const pid_t pid, const pid_t tid);
-    uint64_t DfxThreadDoAdjustPc(uint64_t pc);
     pid_t pid_;
     pid_t tid_;
     std::string threadName_;
@@ -72,6 +71,7 @@ private:
     ThreadStatus threadStatus_;
     int unwStopReason_;
     bool isCrashThread_;
+    std::unique_ptr<FaultStack> faultstack_ {nullptr};
 };
 } // namespace HiviewDFX
 } // namespace OHOS
