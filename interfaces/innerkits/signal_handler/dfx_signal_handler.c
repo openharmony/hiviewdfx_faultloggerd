@@ -34,7 +34,6 @@
 #include "dfx_define.h"               // for SIGDUMP, OHOS_TEMP_FAILURE_RETRY
 #include "dfx_log.h"                  // for DfxLogError, DfxLogInfo
 #include "errno.h"                    // for errno
-#include "hilog_base/log_base.h"      // for LOG_DOMAIN, LOG_TAG
 #include "linux/capability.h"         // for __user_cap_data_struct, __user_...
 #include "stdbool.h"                  // for true, bool, false
 #include "string.h"                   // for strerror, strlen
