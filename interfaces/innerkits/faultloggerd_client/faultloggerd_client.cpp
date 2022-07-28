@@ -21,12 +21,12 @@
 #include <sys/un.h>               // for strlen
 #include <unistd.h>               // for close, write, getpid, read, gettid
 #include <cstdio>                 // for size_t, EOF, FILE
+#include <climits>               // for PATH_MAX
+#include <cstdlib>               // for atoi, realpath
 #include "bits/syscall.h"         // for SYS_gettid
 #include "dfx_define.h"           // for SOCKET_BUFFER_SIZE, FAULTLOGGERD_SO...
 #include "dfx_log.h"              // for DfxLogError, DfxLogInfo, DfxLogDebug
 #include "faultloggerd_socket.h"  // for StartConnect, ReadFileDescriptorFro...
-#include <climits>               // for PATH_MAX
-#include <cstdlib>               // for atoi, realpath
 
 bool ReadStringFromFile(const char *path, char *buf, size_t len)
 {

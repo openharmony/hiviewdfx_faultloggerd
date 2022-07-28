@@ -19,9 +19,9 @@
 #define DFX_DUMP_REQUEST_H
 
 #include <cstdint>       // for int32_t, uint64_t, uint32_t
-#include "dfx_define.h"   // for NAME_LEN, MAX_FATAL_MSG_SIZE
-#include "iosfwd"         // for string
 #include <csignal>       // for siginfo_t
+#include "iosfwd"         // for string
+#include "dfx_define.h"   // for NAME_LEN, MAX_FATAL_MSG_SIZE
 
 namespace OHOS {
 namespace HiviewDFX {

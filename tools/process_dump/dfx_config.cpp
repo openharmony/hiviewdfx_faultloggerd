@@ -16,11 +16,11 @@
 #include "dfx_config.h"
 
 #include <securec.h>     // for memset_s, EOK, errno_t
-#include "dfx_define.h"  // for CONF_LINE_SIZE
-#include "dfx_log.h"     // for DfxLogError
 #include <cstdio>       // for fclose, feof, fgets, fopen
 #include <cstdlib>      // for atoi
 #include <string>        // for basic_string
+#include "dfx_define.h"  // for CONF_LINE_SIZE
+#include "dfx_log.h"     // for DfxLogError
 
 static const char FAULTLOGGER_CONF_PATH[] = "/system/etc/faultlogger.conf";
 

@@ -20,10 +20,9 @@
 #include <securec.h>  // for strtok_s, memset_s, sprintf_s, EOK, errno_t
 #include <cstdio>     // for FILE
 #include <string>     // for basic_string
-#include "dfx_log.h"  // for DfxLogInfo, DfxLogError
-#include "iosfwd"     // for string
-#include <cstdio>    // for fread, pclose, popen
 #include <cstdlib>   // for atoi
+#include "iosfwd"     // for string
+#include "dfx_log.h"  // for DfxLogInfo, DfxLogError
 
 namespace OHOS {
 namespace HiviewDFX {

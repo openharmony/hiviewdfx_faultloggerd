@@ -15,7 +15,6 @@
 #ifndef DFX_DUMP_RES_H
 #define DFX_DUMP_RES_H
 
-#include <cstdint>
 #include "iosfwd"    // for string
 
 namespace OHOS {

@@ -26,10 +26,8 @@
 #include "bits/fcntl.h"  // for O_CLOEXEC
 #include "dfx_log.h"     // for DfxLogWarn
 #include "elf.h"         // for Elf32_Ehdr, Elf32_Phdr, PT_LOAD
-#include "limits.h"      // for PATH_MAX
 #include "link.h"        // for ElfW
 #include "new"           // for operator new
-#include "stdlib.h"      // for realpath
 #include "string"        // for basic_string
 #include "vector"        // for vector
 

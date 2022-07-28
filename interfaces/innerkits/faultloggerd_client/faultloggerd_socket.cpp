@@ -23,10 +23,10 @@
 #include <sys/un.h>               // for sockaddr_un, iovec, strlen
 #include <unistd.h>               // for close
 #include <cstdio>                 // for size_t
+#include <cstddef>               // for offsetof
 #include "dfx_define.h"           // for SOCKET_BUFFER_SIZE
 #include "dfx_log.h"              // for DfxLogError, DfxLogDebug, DfxLogInfo
 #include "init_socket.h"          // for GetControlSocket
-#include <cstddef>               // for offsetof
 
 bool StartConnect(int& sockfd, const char* path, const int timeout)
 {

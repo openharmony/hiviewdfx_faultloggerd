@@ -18,18 +18,18 @@
 #include "dfx_maps.h"
 #include <securec.h>     // for snprintf_s, sscanf_s
 #include <cstdio>        // for FILE
+#include <cstdio>       // for fclose, fgets, fopen
+#include <cstdlib>      // for realpath
+#include <cinttypes>    // for PRIx64, SCNxPTR
+#include <climits>      // for PATH_MAX
+#include <cstring>      // for strncmp, strcmp
+#include "memory"        // for shared_ptr, operator!=, make_shared
+#include "string"        // for basic_string, operator==
+#include "vector"        // for vector
 #include "dfx_define.h"  // for LOG_BUF_LEN, NAME_LEN
 #include "dfx_elf.h"     // for DfxElf
 #include "dfx_log.h"     // for DfxLogWarn, DfxLogDebug, DfxLogError
 #include "dfx_util.h"    // for TrimAndDupStr
-#include <cinttypes>    // for PRIx64, SCNxPTR
-#include <climits>      // for PATH_MAX
-#include "memory"        // for shared_ptr, operator!=, make_shared
-#include <cstdio>       // for fclose, fgets, fopen
-#include <cstdlib>      // for realpath
-#include "string"        // for basic_string, operator==
-#include <cstring>      // for strncmp, strcmp
-#include "vector"        // for vector
 
 namespace OHOS {
 namespace HiviewDFX {

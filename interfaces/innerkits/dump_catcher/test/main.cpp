@@ -22,19 +22,19 @@
 #include <unistd.h>            // for getpid, write, STDOUT_FILENO, alarm
 #include <thread>              // for thread
 #include <vector>              // for vector
+#include <cstdio>             // for printf
+#include <cstdlib>            // for atoi, realpath
+#include <cstring>              // for basic_string, operator==
+#include <climits>           // for PATH_MAX
+#include <cinttypes>          // for PRIx64, PRIu64
 #include "bits/syscall.h"      // for SYS_gettid
+#include "iosfwd"              // for string
+#include "memory"              // for shared_ptr, operator==
+#include "string.h"            // for strcmp
 #include "dfx_define.h"        // for NAME_LEN
 #include "dfx_dump_catcher.h"  // for DfxDumpCatcher
 #include "dfx_frame.h"         // for DfxFrame
 #include "dfx_maps.h"          // for DfxElfMap
-#include <cinttypes>          // for PRIx64, PRIu64
-#include "iosfwd"              // for string
-#include <climits>           // for PATH_MAX
-#include "memory"              // for shared_ptr, operator==
-#include <cstdio>             // for printf
-#include <cstdlib>            // for atoi, realpath
-#include <cstring>              // for basic_string, operator==
-#include "string.h"            // for strcmp
 
 static const int ARG1 = 1;
 static const int ARG2 = 2;

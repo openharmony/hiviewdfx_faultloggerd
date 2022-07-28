@@ -19,12 +19,13 @@
 #include <unistd.h>            // for getpid, gettid
 #include <iostream>            // for cout
 #include <string>              // for basic_string
-#include "__config"            // for std
-#include "dfx_dump_catcher.h"  // for DfxDumpCatcher
-#include "iosfwd"              // for string, ostream
-#include "ostream"             // for operator<<, basic_ostream, endl
 #include <cstdlib>           // for atoi
 #include <cstring>            // for strcmp
+#include "__config"            // for std
+#include "iosfwd"              // for string, ostream
+#include "ostream"             // for operator<<, basic_ostream, endl
+#include "dfx_dump_catcher.h"  // for DfxDumpCatcher
+
 using namespace std;
 
 static NOINLINE int TestFunc10(void)

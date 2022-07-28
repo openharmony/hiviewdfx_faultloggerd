@@ -17,7 +17,6 @@
 #include <elf.h>     // for Elf32_Ehdr
 #include <link.h>    // for ElfW
 #include <cstddef>  // for size_t
-#include <cstdint>  // for uint64_t, int32_t
 #include <string>    // for basic_string
 #include <vector>    // for vector
 #include "iosfwd"    // for string
