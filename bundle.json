@@ -30,6 +30,7 @@
     "build": {
       "sub_component": [
         "//base/hiviewdfx/faultloggerd/interfaces/innerkits/signal_handler:dfx_signalhandler",
+        "//base/hiviewdfx/faultloggerd/interfaces/innerkits/signal_handler:dfxsignalhandler",
         "//base/hiviewdfx/faultloggerd/interfaces/innerkits/dump_catcher:lib_dfx_dump_catcher",
         "//base/hiviewdfx/faultloggerd/interfaces/innerkits/faultloggerd_client:libfaultloggerd",
         "//base/hiviewdfx/faultloggerd/interfaces/innerkits/sighook:dfxsighook_group",
@@ -49,7 +50,7 @@
         {
           "name": "//base/hiviewdfx/faultloggerd/interfaces/innerkits/faultloggerd_client:libfaultloggerd",
           "header": {
-          "header_files": [
+            "header_files": [
               "faultloggerd_client.h"
             ],
             "header_base": "//base/hiviewdfx/faultloggerd/interfaces/innerkits/faultloggerd_client/include"
@@ -57,6 +58,15 @@
         },
         {
           "name": "//base/hiviewdfx/faultloggerd/interfaces/innerkits/signal_handler:dfx_signalhandler",
+          "header": {
+            "header_files": [
+              "dfx_signal_handler.h"
+            ],
+            "header_base": "//base/hiviewdfx/faultloggerd/interfaces/innerkits/signal_handler/include"
+          }
+        },
+        {
+          "name": "//base/hiviewdfx/faultloggerd/interfaces/innerkits/signal_handler:dfxsignalhandler",
           "header": {
             "header_files": [
               "dfx_signal_handler.h"

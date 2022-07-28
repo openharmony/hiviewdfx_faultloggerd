@@ -114,7 +114,7 @@ int DfxLog(const Level logLevel, const unsigned int domain, const char* tag, con
     LogToDmesg(logLevel, tag, buf);
 #endif
     if (g_DebugFd != INVALID_FD) {
-        fprintf(stderr, "%s", buf);
+        fprintf(stderr, "%s\n", buf);
     }
     return ret;
 }

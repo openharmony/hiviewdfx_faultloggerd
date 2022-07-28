@@ -482,7 +482,6 @@ NOINLINE int CrashTest(void)
 
 int main(int argc, char *argv[])
 {
-    DFX_InstallSignalHandler();
     PrintUsage();
     if (argc <= 1) {
         printf("wrong usage!");

@@ -34,7 +34,7 @@
 #include "dfx_logger.h"
 #include "process_dumper.h"
 
-#if defined(DEBUG_PROCESS_DUMP_CRASH)
+#if defined(DEBUG_CRASH_LOCAL_HANDLER)
 #include "dfx_signal_local_handler.h"
 #include "dfx_cutil.h"
 #endif
@@ -192,7 +192,7 @@ static bool ParseParamters(int argc, char *argv[], bool &isSignalHdlr, OHOS::Hiv
 
 int main(int argc, char *argv[])
 {
-#if defined(DEBUG_PROCESS_DUMP_CRASH)
+#if defined(DEBUG_CRASH_LOCAL_HANDLER)
     DFX_InstallLocalSignalHandler();
 #endif
     bool isSignalHdlr = false;
