@@ -23,9 +23,9 @@
 #include <cinttypes>    // for PRIx64, SCNxPTR
 #include <climits>      // for PATH_MAX
 #include <cstring>      // for strncmp, strcmp
-#include "memory"        // for shared_ptr, operator!=, make_shared
-#include "string"        // for basic_string, operator==
-#include "vector"        // for vector
+#include <memory>        // for shared_ptr, operator!=, make_shared
+#include <string>        // for basic_string, operator==
+#include <vector>        // for vector
 #include "dfx_define.h"  // for LOG_BUF_LEN, NAME_LEN
 #include "dfx_elf.h"     // for DfxElf
 #include "dfx_log.h"     // for DfxLogWarn, DfxLogDebug, DfxLogError
