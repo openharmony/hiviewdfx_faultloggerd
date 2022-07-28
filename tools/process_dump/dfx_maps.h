@@ -18,12 +18,13 @@
 #ifndef DFX_MAPS_H
 #define DFX_MAPS_H
 
-#include <cinttypes>
-#include <memory>
-#include <string>
-#include <vector>
-
-#include "dfx_elf.h"
+#include <stdint.h>     // for uint64_t, uintptr_t
+#include <sys/types.h>  // for pid_t
+#include <memory>       // for shared_ptr
+#include <string>       // for basic_string
+#include <vector>       // for vector
+#include "dfx_elf.h"    // for DfxElf
+#include "iosfwd"       // for string
 
 namespace OHOS {
 namespace HiviewDFX {

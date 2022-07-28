@@ -15,7 +15,8 @@
 #ifndef DFX_DUMP_RES_H
 #define DFX_DUMP_RES_H
 
-#include <string>
+#include <stdint.h>  // for int32_t
+#include "iosfwd"    // for string
 
 namespace OHOS {
 namespace HiviewDFX {

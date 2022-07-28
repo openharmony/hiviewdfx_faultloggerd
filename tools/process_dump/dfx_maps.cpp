@@ -16,19 +16,20 @@
 /* This files contains process dump dfx maps module. */
 
 #include "dfx_maps.h"
-
-#include <climits>
-#include <cstdio>
-#include <cstdlib>
-#include <cstring>
-
-#include <securec.h>
-
-#include "dfx_define.h"
-#include "dfx_elf.h"
-#include "dfx_logger.h"
-#include "dfx_util.h"
-#include "process_dumper.h"
+#include <securec.h>     // for snprintf_s, sscanf_s
+#include <cstdio>        // for FILE
+#include "dfx_define.h"  // for LOG_BUF_LEN, NAME_LEN
+#include "dfx_elf.h"     // for DfxElf
+#include "dfx_log.h"     // for DfxLogWarn, DfxLogDebug, DfxLogError
+#include "dfx_util.h"    // for TrimAndDupStr
+#include "inttypes.h"    // for PRIx64, SCNxPTR
+#include "limits.h"      // for PATH_MAX
+#include "memory"        // for shared_ptr, operator!=, make_shared
+#include "stdio.h"       // for fclose, fgets, fopen
+#include "stdlib.h"      // for realpath
+#include "string"        // for basic_string, operator==
+#include "string.h"      // for strncmp, strcmp
+#include "vector"        // for vector
 
 namespace OHOS {
 namespace HiviewDFX {

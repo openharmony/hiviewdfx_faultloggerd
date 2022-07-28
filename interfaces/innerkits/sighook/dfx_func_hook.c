@@ -15,22 +15,20 @@
 
 #include "dfx_func_hook.h"
 
-#include <dlfcn.h>
-#include <fcntl.h>
-#include <inttypes.h>
-#include <signal.h>
-#include <stdbool.h>
-#include <stdio.h>
-#include <unistd.h>
-
-#include <sys/stat.h>
-
-#include <libunwind_i-ohos.h>
-#include <libunwind.h>
-#include <map_info.h>
-#include <securec.h>
-
-#include "dfx_log.h"
+#include <dlfcn.h>                // for dlsym, RTLD_DEFAULT, RTLD_NEXT
+#include <libunwind_i-ohos.h>     // for _Uarm_init_local_with_as, unw_destr...
+#include <map_info.h>             // for map_info
+#include <securec.h>              // for memset_s
+#include <signal.h>               // for sigset_t, sigaction, sigismember
+#include <stdio.h>                // for NULL, size_t
+#include <unistd.h>               // for getpid, gettid, pid_t
+#include "dfx_log.h"              // for LOGE, LOGI
+#include "hilog_base/log_base.h"  // for LOG_DOMAIN, LOG_TAG
+#include "libunwind-arm.h"        // for unw_word_t, _Uarm_get_reg, _Uarm_step
+#include "libunwind_i.h"          // for unw_addr_space
+#include "pthread.h"              // for pthread_mutex_unlock, pthread_mutex...
+#include "stdbool.h"              // for true, bool, false
+#include "stdlib.h"               // for abort
 
 #ifdef LOG_DOMAIN
 #undef LOG_DOMAIN

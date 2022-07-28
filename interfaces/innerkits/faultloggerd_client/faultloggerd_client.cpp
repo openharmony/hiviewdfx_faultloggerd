@@ -12,25 +12,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "faultloggerd_client.h"
-#include "faultloggerd_socket.h"
+#include "faultloggerd_client.h"  // for FaultLoggerdRequest, FaultLoggerChe...
 
-#include <climits>
-#include <cstdio>
-#include <cstdlib>
-#include <cstring>
-#include <fcntl.h>
-#include <securec.h>
-#include <sys/syscall.h>
-#include <sys/socket.h>
-#include <sys/stat.h>
-#include <sys/time.h>
-#include <sys/types.h>
-#include <sys/un.h>
-#include <unistd.h>
-
-#include "dfx_define.h"
-#include "dfx_log.h"
+#include <securec.h>              // for memset_s, EOK, errno_t
+#include <stdint.h>               // for int32_t, uint64_t
+#include <sys/socket.h>           // for recv
+#include <sys/time.h>             // for gettimeofday, timeval
+#include <sys/un.h>               // for strlen
+#include <unistd.h>               // for close, write, getpid, read, gettid
+#include <cstdio>                 // for size_t, EOF, FILE
+#include "bits/syscall.h"         // for SYS_gettid
+#include "dfx_define.h"           // for SOCKET_BUFFER_SIZE, FAULTLOGGERD_SO...
+#include "dfx_log.h"              // for DfxLogError, DfxLogInfo, DfxLogDebug
+#include "faultloggerd_socket.h"  // for StartConnect, ReadFileDescriptorFro...
+#include "limits.h"               // for PATH_MAX
+#include "stdio.h"                // for fclose, fopen, getc
+#include "stdlib.h"               // for atoi, realpath
 
 bool ReadStringFromFile(const char *path, char *buf, size_t len)
 {

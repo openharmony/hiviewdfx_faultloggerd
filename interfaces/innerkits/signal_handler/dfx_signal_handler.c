@@ -12,32 +12,32 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include "dfx_signal_handler.h"       // for ProcessDumpRequest, DFX_Install...
 
-#include "dfx_signal_handler.h"
-
-#include <fcntl.h>
-#include <pthread.h>
-#include <sched.h>
-#include <securec.h>
-#include <signal.h>
-#include <stdint.h>
-#include <time.h>
-#include <unistd.h>
-#include <sys/capability.h>
-#include <sys/mman.h>
-#include <sys/prctl.h>
-#include <sys/uio.h>
-#include <sys/wait.h>
-
-#include "bits/errno.h"
-#include "bits/syscall.h"
-#include "dfx_crash_local_handler.h"
-#include "dfx_define.h"
-#include "errno.h"
-#include "linux/capability.h"
-#include "string.h"
-#include "dfx_log.h"
-#include "dfx_cutil.h"
+#include <fcntl.h>                    // for fcntl, open, F_SETPIPE_SZ, pthr...
+#include <pthread.h>                  // for pthread_mutex_unlock, pthread_m...
+#include <sched.h>                    // for clone, CLONE_FS, CLONE_UNTRACED
+#include <securec.h>                  // for memset_s, memcpy_s, strncpy_s, EOK
+#include <signal.h>                   // for sigaction, signal, siginfo_t
+#include <stdint.h>                   // for int32_t, uint64_t, uint8_t, uin...
+#include <sys/capability.h>           // for capget, capset
+#include <sys/mman.h>                 // for mmap, MAP_ANONYMOUS, MAP_PRIVATE
+#include <sys/prctl.h>                // for prctl, PR_SET_DUMPABLE, PR_SET_...
+#include <sys/uio.h>                  // for writev
+#include <sys/wait.h>                 // for waitpid, WNOHANG
+#include <time.h>                     // for NULL, time, size_t
+#include <unistd.h>                   // for syscall, getpid, gettid, dup2
+#include "bits/errno.h"               // for EINVAL
+#include "bits/syscall.h"             // for SYS_close, SYS_rt_tgsigqueueinfo
+#include "dfx_crash_local_handler.h"  // for CrashLocalHandler
+#include "dfx_cutil.h"                // for GetProcessName, GetThreadName
+#include "dfx_define.h"               // for SIGDUMP, OHOS_TEMP_FAILURE_RETRY
+#include "dfx_log.h"                  // for DfxLogError, DfxLogInfo
+#include "errno.h"                    // for errno
+#include "hilog_base/log_base.h"      // for LOG_DOMAIN, LOG_TAG
+#include "linux/capability.h"         // for __user_cap_data_struct, __user_...
+#include "stdbool.h"                  // for true, bool, false
+#include "string.h"                   // for strerror, strlen
 #if defined(CRASH_LOCAL_HANDLER)
 #include "dfx_crash_local_handler.h"
 #endif

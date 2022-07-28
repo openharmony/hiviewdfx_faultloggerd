@@ -18,11 +18,10 @@
 #ifndef DFX_SYMBOLS_CACHE_H
 #define DFX_SYMBOLS_CACHE_H
 
-#include <cinttypes>
-#include <string>
-#include <vector>
-
-#include "nocopyable.h"
+#include <stdint.h>  // for uint64_t
+#include <string>    // for basic_string
+#include <vector>    // for vector
+#include "iosfwd"    // for string
 
 #ifdef __cplusplus
 extern "C" {

@@ -13,33 +13,17 @@
  * limitations under the License.
  */
 
-#include "dfx_signal_local_handler.h"
-#include "dfx_crash_local_handler.h"
+#include "dfx_signal_local_handler.h"  // for SignalHandlerFunc, DFX_InitDum...
 
-#include <errno.h>
-#include <fcntl.h>
-#include <inttypes.h>
-#include <pthread.h>
-#include <sched.h>
-#include <signal.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <time.h>
-#include <unistd.h>
-
-#include <sys/capability.h>
-#include <sys/mman.h>
-#include <sys/prctl.h>
-#include <sys/syscall.h>
-#include <sys/time.h>
-#include <sys/types.h>
-#include <sys/uio.h>
-#include <sys/wait.h>
-#include <securec.h>
-
-#include "dfx_log.h"
-#include "dfx_cutil.h"
+#include <securec.h>                   // for memset_s
+#include <signal.h>                    // for sigaction, sigaddset, sigemptyset
+#include <stdint.h>                    // for int32_t
+#include <stdio.h>                     // for NULL, size_t
+#include <unistd.h>                    // for _exit, getpid, gettid, getuid
+#include "dfx_crash_local_handler.h"   // for CrashLocalHandler
+#include "dfx_cutil.h"                 // for GetProcessName, GetThreadName
+#include "dfx_log.h"                   // for DfxLogError
+#include "dfx_signal_handler.h"        // for ProcessDumpRequest
 
 static SignalHandlerFunc signalHandler = NULL;
 

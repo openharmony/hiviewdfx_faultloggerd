@@ -18,7 +18,8 @@
 #ifndef _FAULT_LOGGER_CONFIG_H
 #define _FAULT_LOGGER_CONFIG_H
 
-#include <string>
+#include <string>  // for basic_string
+#include "iosfwd"  // for string
 
 constexpr int LOG_FILE_NUMBER = 50;
 constexpr long LOG_FILE_SIZE = 1 * 1024 * 1024;

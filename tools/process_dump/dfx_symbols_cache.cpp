@@ -16,11 +16,15 @@
 /* This files contains process dump header. */
 
 #include "dfx_symbols_cache.h"
-
-#include <cxxabi.h>
-
-#include "dfx_define.h"
-#include "libunwind_i-ohos.h"
+#include <cxxabi.h>            // for __cxa_demangle
+#include <stdlib.h>            // for size_t, free, malloc
+#include "algorithm"           // for sort
+#include "cstdlib"             // for free
+#include "dfx_define.h"        // for LOG_BUF_LEN
+#include "libunwind_i-ohos.h"  // for unw_get_symbol_info_by_pc
+#include "string"              // for basic_string
+#include "string.h"            // for strlen
+#include "vector"              // for vector
 
 #ifdef __cplusplus
 extern "C" {

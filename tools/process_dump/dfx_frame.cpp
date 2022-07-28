@@ -16,16 +16,18 @@
 /* This files contains processdump frame module. */
 
 #include "dfx_frame.h"
-
-#include <cstdio>
-#include <cstdlib>
-#include <sstream>
-
-#include <securec.h>
-
-#include "dfx_elf.h"
-#include "dfx_logger.h"
-#include "dfx_maps.h"
+#include <securec.h>     // for snprintf_s
+#include <cstdio>        // for size_t
+#include <sstream>       // for basic_ostringstream, basic_stringstream
+#include "dfx_define.h"  // for LOG_BUF_LEN
+#include "dfx_elf.h"     // for DfxElf
+#include "dfx_log.h"     // for DfxLogError, DfxLogWarn
+#include "dfx_maps.h"    // for DfxElfMap, DfxElfMaps
+#include "inttypes.h"    // for PRIx64, PRIu64
+#include "memory"        // for shared_ptr, operator==
+#include "ostream"       // for operator<<, basic_ostream, endl
+#include "string"        // for basic_string, operator+, operator==
+#include "string.h"      // for strlen
 
 static const int FAULT_STACK_SHOW_FLOOR = 4;
 namespace OHOS {

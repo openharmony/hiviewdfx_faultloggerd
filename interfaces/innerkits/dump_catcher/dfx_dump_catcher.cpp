@@ -15,41 +15,30 @@
 
 /* This files contains faultlog sdk interface functions. */
 
-#include "dfx_dump_catcher.h"
-#include "dfx_unwind_local.h"
-#include "dfx_dump_res.h"
+#include "dfx_dump_catcher.h"                                    // for DfxD...
 
-#include <algorithm>
-#include <climits>
-#include <cerrno>
-#include <cstring>
-#include <cstdio>
-#include <cstdlib>
-#include <ctime>
-#include <strstream>
-#include <string>
-#include <vector>
-
-#include <dirent.h>
-#include <fcntl.h>
-#include <file_ex.h>
-#include <poll.h>
-#include <pthread.h>
-#include <securec.h>
-#include <ucontext.h>
-#include <unistd.h>
-
-#include <sstream>
-#include <sys/prctl.h>
-#include <sys/socket.h>
-#include <sys/stat.h>
-#include <sys/syscall.h>
-#include <sys/types.h>
-#include <sys/un.h>
-#include <sys/wait.h>
-
-#include "directory_ex.h"
-#include "../faultloggerd_client/include/faultloggerd_client.h"
+#include <dirent.h>                                              // for clos...
+#include <poll.h>                                                // for pollfd
+#include <sys/types.h>                                           // for time_t
+#include <unistd.h>                                              // for syscall
+#include <string>                                                // for basi...
+#include <vector>                                                // for vector
+#include "faultloggerd_client.h"                                 // for Requ...
+#include "__mutex_base"                                          // for mutex
+#include "bits/syscall.h"                                        // for SYS_...
+#include "dfx_define.h"                                          // for BACK...
+#include "dfx_dump_res.h"                                        // for Dump...
+#include "dfx_frame.h"                                           // for DfxF...
+#include "dfx_log.h"                                             // for DfxL...
+#include "dfx_unwind_local.h"                                    // for DfxU...
+#include "iosfwd"                                                // for string
+#include "limits.h"                                              // for PATH...
+#include "memory"                                                // for shar...
+#include "signal.h"                                              // for sigi...
+#include "stdlib.h"                                              // for atoi
+#include "string.h"                                              // for strcmp
+#include "strings.h"                                             // for bzero
+#include "time.h"                                                // for time
 
 static const int NUMBER_TEN = 10;
 static const int MAX_TEMP_FILE_LENGTH = 256;

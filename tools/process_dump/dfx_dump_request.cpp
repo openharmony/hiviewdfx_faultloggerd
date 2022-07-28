@@ -17,13 +17,9 @@
 
 #include "dfx_dump_request.h"
 
-#include <cinttypes>
-#include <csignal>
-#include <cstdio>
-#include <cstring>
-#include <unistd.h>
-#include <securec.h>
-#include "dfx_logger.h"
+#include <securec.h>  // for memset_s, EOK, errno_t
+#include "dfx_log.h"  // for DfxLogError
+#include "string"     // for basic_string
 
 namespace OHOS {
 namespace HiviewDFX {
