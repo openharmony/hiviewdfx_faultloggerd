@@ -54,7 +54,6 @@ static const int NUMBER_ONE = 1;
 static const int NUMBER_TWO = 2;
 static const int NUMBER_THREE = 3;
 static const int NUMBER_FOUR = 4;
-static const int NUMBER_TEN = 10;
 static const int NUMBER_SIXTY = 60;
 static const int NUMBER_FIFTY = 50;
 static string DEFAULT_PID_MAX = "32768";
@@ -776,6 +775,8 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0010_pre, TestSize.Level
 #endif
 
 #ifndef __pre__
+static const int NUMBER_TEN = 10;
+
 /**
 * @tc.name: FaultLoggerdSystemTest0010
 * @tc.desc: test CPP crasher application: Multi process and Multithreading
