@@ -19,7 +19,6 @@
 #include <signal.h>              // for raise, SIGSEGV, SIGINT, SIGABRT, SIGBUS
 #include <sys/prctl.h>           // for prctl, PR_SET_NAME
 #include <sys/resource.h>        // for setrlimit, rlimit, RLIMIT_AS, getrlimit
-#include <string>              // for strlen, strncmp
 #include <unistd.h>              // for sleep, __pthread, pthread_t, usleep
 #include "dfx_signal_handler.h"  // for DFX_InstallSignalHandler
 #include "hilog/log.h"         // for HILOG_FATAL, LOG_CORE, LOG_DOMAIN
@@ -27,6 +26,7 @@
 #include "stdlib.h"              // for malloc
 #include "stdio.h"
 #include "inttypes.h"            // for PRIx64, PRIu64
+#include "string.h"              // for strlen, strncmp
 
 #ifdef LOG_DOMAIN
 #undef LOG_DOMAIN
