@@ -19,8 +19,8 @@
 #include <cstddef>  // for size_t
 #include <string>    // for basic_string
 #include <vector>    // for vector
+#include <memory>         // for shared_ptr
 #include "iosfwd"    // for string
-#include "memory"    // for shared_ptr
 
 namespace OHOS {
 namespace HiviewDFX {

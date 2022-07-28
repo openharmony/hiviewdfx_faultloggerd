@@ -25,6 +25,7 @@
 #include <sys/prctl.h>                // for prctl, PR_SET_DUMPABLE, PR_SET_...
 #include <sys/uio.h>                  // for writev
 #include <sys/wait.h>                 // for waitpid, WNOHANG
+#include <cstring>                   // for strerror, strlen
 #include <time.h>                     // for NULL, time, size_t
 #include <unistd.h>                   // for syscall, getpid, gettid, dup2
 #include "bits/errno.h"               // for EINVAL
@@ -36,7 +37,7 @@
 #include "errno.h"                    // for errno
 #include "linux/capability.h"         // for __user_cap_data_struct, __user_...
 #include "stdbool.h"                  // for true, bool, false
-#include "string.h"                   // for strerror, strlen
+
 #if defined(CRASH_LOCAL_HANDLER)
 #include "dfx_crash_local_handler.h"
 #endif

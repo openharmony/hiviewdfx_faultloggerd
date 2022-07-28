@@ -27,9 +27,9 @@
 #include <climits>           // for PATH_MAX
 #include <cinttypes>          // for PRIx64, PRIu64
 #include <cstring>            // for strcmp
+#include <memory>                                                // for shar...
 #include "bits/syscall.h"      // for SYS_gettid
 #include "iosfwd"              // for string
-#include "memory"              // for shared_ptr, operator==
 #include "dfx_define.h"        // for NAME_LEN
 #include "dfx_dump_catcher.h"  // for DfxDumpCatcher
 #include "dfx_frame.h"         // for DfxFrame
