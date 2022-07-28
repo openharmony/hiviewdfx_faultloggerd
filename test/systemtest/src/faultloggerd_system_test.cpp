@@ -748,7 +748,7 @@ void FaultLoggerdSystemTest::dumpCatchThread(int threadID)
     }
 }
 
-#if __pre__
+#ifdef __pre__
 /**
 * @tc.name: FaultLoggerdSystemTest0010_pre
 * @tc.desc: test CPP crasher application: Multithreading
@@ -775,6 +775,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0010_pre, TestSize.Level
 }
 #endif
 
+#ifndef __pre__
 /**
 * @tc.name: FaultLoggerdSystemTest0010
 * @tc.desc: test CPP crasher application: Multi process and Multithreading
@@ -4075,3 +4076,4 @@ HWTEST_F (FaultLoggerdSystemTest,  FaultLoggerdSystemTest0121, TestSize.Level2)
     FaultLoggerdSystemTest::KillCrasherLoopForSomeCase(4);
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest0121: end.";
 }
+#endif
