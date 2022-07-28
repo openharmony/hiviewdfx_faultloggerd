@@ -17,20 +17,24 @@
 
 #include "dfx_elf.h"
 
-#include <cerrno>
 #include <fcntl.h>
-#include <cinttypes>
-#include <climits>
 #include <cstdlib>
-#include <cstring>
 #include <unistd.h>
-
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <climits>
+#include <cstdlib>
 
-#include "dfx_define.h"
-#include "dfx_logger.h"
+#include "bits/fcntl.h"
+#include "dfx_log.h"
+#include "elf.h"
+
+#include "link.h"
+#include "new"
+
+#include "string"
+#include "vector"
 
 #ifndef PAGE_SIZE
 #define PAGE_SIZE 4096

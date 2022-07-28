@@ -54,7 +54,6 @@ static const int NUMBER_ONE = 1;
 static const int NUMBER_TWO = 2;
 static const int NUMBER_THREE = 3;
 static const int NUMBER_FOUR = 4;
-static const int NUMBER_TEN = 10;
 static const int NUMBER_SIXTY = 60;
 static const int NUMBER_FIFTY = 50;
 static string DEFAULT_PID_MAX = "32768";
@@ -748,7 +747,7 @@ void FaultLoggerdSystemTest::dumpCatchThread(int threadID)
     }
 }
 
-#if __pre__
+#ifdef __pre__
 /**
 * @tc.name: FaultLoggerdSystemTest0010_pre
 * @tc.desc: test CPP crasher application: Multithreading
@@ -774,6 +773,9 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0010_pre, TestSize.Level
 
 }
 #endif
+
+#ifndef __pre__
+static const int NUMBER_TEN = 10;
 
 /**
 * @tc.name: FaultLoggerdSystemTest0010
@@ -4075,3 +4077,4 @@ HWTEST_F (FaultLoggerdSystemTest,  FaultLoggerdSystemTest0121, TestSize.Level2)
     FaultLoggerdSystemTest::KillCrasherLoopForSomeCase(4);
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest0121: end.";
 }
+#endif

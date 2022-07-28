@@ -17,19 +17,12 @@
 
 #include "faultloggerd_socket.h"
 
-#include <climits>
-#include <cstdio>
-#include <cstdlib>
-#include <cstring>
-#include <fcntl.h>
 #include <securec.h>
-#include <sys/syscall.h>
 #include <sys/socket.h>
-#include <sys/stat.h>
 #include <sys/time.h>
-#include <sys/types.h>
 #include <sys/un.h>
 #include <unistd.h>
+#include <cstddef>
 
 #include "dfx_define.h"
 #include "dfx_log.h"
@@ -68,7 +61,7 @@ bool StartConnect(int& sockfd, const char* path, const int timeout)
             break;
         }
 
-        int len = (int)(offsetof(struct sockaddr_un, sun_path) + strlen(server.sun_path) + 1);
+        int len = static_cast<int>(offsetof(struct sockaddr_un, sun_path) + strlen(server.sun_path) + 1);
         int connected = connect(sockfd, reinterpret_cast<struct sockaddr *>(&server), len);
         if (connected < 0) {
             DfxLogError("%s :: strncpy failed.", __func__);
