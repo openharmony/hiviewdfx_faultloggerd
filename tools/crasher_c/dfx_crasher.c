@@ -23,7 +23,7 @@
 #include <sys/resource.h>        // for setrlimit, rlimit, RLIMIT_AS, getrlimit
 #include <unistd.h>              // for sleep, __pthread, pthread_t, usleep
 #include "dfx_signal_handler.h"  // for DFX_InstallSignalHandler
-#include "hilog/log_c.h"         // for HILOG_FATAL, LOG_CORE, LOG_DOMAIN
+#include "hilog/log.h"         // for HILOG_FATAL, LOG_CORE, LOG_DOMAIN
 #include "inttypes.h"            // for PRIx64, PRIu64
 #include "stdio.h"               // for printf, fclose, fopen, fprintf
 #include "stdlib.h"              // for abort
