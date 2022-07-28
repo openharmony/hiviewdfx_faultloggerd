@@ -43,6 +43,7 @@
 #include "directory_ex.h"
 #include "file_ex.h"
 #include "dfx_dump_catcher.h"
+#include "dfx_define.h"
 
 using namespace OHOS::HiviewDFX;
 using namespace testing::ext;
