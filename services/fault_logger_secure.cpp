@@ -22,8 +22,8 @@
 #include <string>     // for basic_string
 #include "dfx_log.h"  // for DfxLogInfo, DfxLogError
 #include "iosfwd"     // for string
-#include "stdio.h"    // for fread, pclose, popen
-#include "stdlib.h"   // for atoi
+#include <cstdio>    // for fread, pclose, popen
+#include <cstdlib>   // for atoi
 
 namespace OHOS {
 namespace HiviewDFX {

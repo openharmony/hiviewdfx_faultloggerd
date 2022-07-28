@@ -15,8 +15,6 @@
 #ifndef DFX_FRAME_H
 #define DFX_FRAME_H
 
-#include <stddef.h>    // for size_t
-#include <stdint.h>    // for uint64_t
 #include <memory>      // for shared_ptr
 #include <string>      // for basic_string
 #include "dfx_maps.h"  // for DfxElfMap, DfxElfMaps

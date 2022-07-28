@@ -22,13 +22,13 @@
 #include "dfx_elf.h"     // for DfxElf
 #include "dfx_log.h"     // for DfxLogWarn, DfxLogDebug, DfxLogError
 #include "dfx_util.h"    // for TrimAndDupStr
-#include "inttypes.h"    // for PRIx64, SCNxPTR
-#include "limits.h"      // for PATH_MAX
+#include <cinttypes>    // for PRIx64, SCNxPTR
+#include <climits>      // for PATH_MAX
 #include "memory"        // for shared_ptr, operator!=, make_shared
-#include "stdio.h"       // for fclose, fgets, fopen
-#include "stdlib.h"      // for realpath
+#include <cstdio>       // for fclose, fgets, fopen
+#include <cstdlib>      // for realpath
 #include "string"        // for basic_string, operator==
-#include "string.h"      // for strncmp, strcmp
+#include <cstring>      // for strncmp, strcmp
 #include "vector"        // for vector
 
 namespace OHOS {

@@ -18,7 +18,7 @@
 #ifndef DFX_SYMBOLS_CACHE_H
 #define DFX_SYMBOLS_CACHE_H
 
-#include <stdint.h>  // for uint64_t
+#include <cstdint>  // for uint64_t
 #include <string>    // for basic_string
 #include <vector>    // for vector
 #include "iosfwd"    // for string

@@ -16,8 +16,8 @@
 #define DFX_ELF_IMAGE_H
 #include <elf.h>     // for Elf32_Ehdr
 #include <link.h>    // for ElfW
-#include <stddef.h>  // for size_t
-#include <stdint.h>  // for uint64_t, int32_t
+#include <cstddef>  // for size_t
+#include <cstdint>  // for uint64_t, int32_t
 #include <string>    // for basic_string
 #include <vector>    // for vector
 #include "iosfwd"    // for string

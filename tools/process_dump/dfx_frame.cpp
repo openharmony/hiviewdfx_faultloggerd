@@ -23,11 +23,11 @@
 #include "dfx_elf.h"     // for DfxElf
 #include "dfx_log.h"     // for DfxLogError, DfxLogWarn
 #include "dfx_maps.h"    // for DfxElfMap, DfxElfMaps
-#include "inttypes.h"    // for PRIx64, PRIu64
+#include <cinttypes>    // for PRIx64, PRIu64
 #include "memory"        // for shared_ptr, operator==
 #include "ostream"       // for operator<<, basic_ostream, endl
 #include "string"        // for basic_string, operator+, operator==
-#include "string.h"      // for strlen
+#include <cstring>      // for strlen
 
 static const int FAULT_STACK_SHOW_FLOOR = 4;
 namespace OHOS {

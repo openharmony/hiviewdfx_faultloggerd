@@ -13,14 +13,13 @@
  * limitations under the License.
  */
 
-/* This files contains config module. */
-#include <securec.h>     // for memset_s, EOK, errno_t
 #include "dfx_config.h"
-#include <stdio.h>       // for FILE, size_t
+
+#include <securec.h>     // for memset_s, EOK, errno_t
 #include "dfx_define.h"  // for CONF_LINE_SIZE
 #include "dfx_log.h"     // for DfxLogError
-#include "stdio.h"       // for fclose, feof, fgets, fopen
-#include "stdlib.h"      // for atoi
+#include <cstdio>       // for fclose, feof, fgets, fopen
+#include <cstdlib>      // for atoi
 #include <string>        // for basic_string
 
 static const char FAULTLOGGER_CONF_PATH[] = "/system/etc/faultlogger.conf";

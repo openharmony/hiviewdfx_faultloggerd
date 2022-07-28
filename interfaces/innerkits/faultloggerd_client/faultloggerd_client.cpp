@@ -15,7 +15,7 @@
 #include "faultloggerd_client.h"  // for FaultLoggerdRequest, FaultLoggerChe...
 
 #include <securec.h>              // for memset_s, EOK, errno_t
-#include <stdint.h>               // for int32_t, uint64_t
+#include <cstdint>               // for int32_t, uint64_t
 #include <sys/socket.h>           // for recv
 #include <sys/time.h>             // for gettimeofday, timeval
 #include <sys/un.h>               // for strlen
@@ -25,9 +25,8 @@
 #include "dfx_define.h"           // for SOCKET_BUFFER_SIZE, FAULTLOGGERD_SO...
 #include "dfx_log.h"              // for DfxLogError, DfxLogInfo, DfxLogDebug
 #include "faultloggerd_socket.h"  // for StartConnect, ReadFileDescriptorFro...
-#include "limits.h"               // for PATH_MAX
-#include "stdio.h"                // for fclose, fopen, getc
-#include "stdlib.h"               // for atoi, realpath
+#include <climits>               // for PATH_MAX
+#include <cstdlib>               // for atoi, realpath
 
 bool ReadStringFromFile(const char *path, char *buf, size_t len)
 {

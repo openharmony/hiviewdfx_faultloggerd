@@ -18,7 +18,7 @@
 #include <cinttypes>
 #include <dirent.h>            // for opendir, readdir, DIR
 #include <securec.h>           // for snprintf_s
-#include <stdint.h>            // for int32_t
+#include <cstdint>            // for int32_t
 #include <unistd.h>            // for getpid, write, STDOUT_FILENO, alarm
 #include <thread>              // for thread
 #include <vector>              // for vector
@@ -27,13 +27,13 @@
 #include "dfx_dump_catcher.h"  // for DfxDumpCatcher
 #include "dfx_frame.h"         // for DfxFrame
 #include "dfx_maps.h"          // for DfxElfMap
-#include "inttypes.h"          // for PRIx64, PRIu64
+#include <cinttypes>          // for PRIx64, PRIu64
 #include "iosfwd"              // for string
-#include "limits.h"            // for PATH_MAX
+#include <climits>           // for PATH_MAX
 #include "memory"              // for shared_ptr, operator==
-#include "stdio.h"             // for printf
-#include "stdlib.h"            // for atoi, realpath
-#include "string"              // for basic_string, operator==
+#include <cstdio>             // for printf
+#include <cstdlib>            // for atoi, realpath
+#include <cstring>              // for basic_string, operator==
 #include "string.h"            // for strcmp
 
 static const int ARG1 = 1;

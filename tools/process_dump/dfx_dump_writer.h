@@ -18,7 +18,7 @@
 #ifndef DFX_DUMP_WIRTTER_H
 #define DFX_DUMP_WIRTTER_H
 
-#include <stdint.h>       // for int32_t
+#include <cstdint>       // for int32_t
 #include <memory>         // for shared_ptr
 #include "dfx_process.h"  // for DfxProcess
 

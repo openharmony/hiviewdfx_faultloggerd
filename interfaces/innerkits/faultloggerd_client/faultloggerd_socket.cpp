@@ -26,7 +26,7 @@
 #include "dfx_define.h"           // for SOCKET_BUFFER_SIZE
 #include "dfx_log.h"              // for DfxLogError, DfxLogDebug, DfxLogInfo
 #include "init_socket.h"          // for GetControlSocket
-#include "stddef.h"               // for offsetof
+#include <cstddef>               // for offsetof
 
 bool StartConnect(int& sockfd, const char* path, const int timeout)
 {
