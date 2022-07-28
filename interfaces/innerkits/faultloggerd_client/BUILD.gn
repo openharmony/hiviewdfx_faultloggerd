@@ -20,7 +20,7 @@ if (defined(ohos_lite)) {
     include_dirs = [
       ".",
       "./include",
-      "//utils/native/base/include",
+      "//commonlibrary/c_utils/base/include",
       "//base/startup/init/interfaces/innerkits/include",
       "$faultloggerd_path/tools/process_dump/",
       "$faultloggerd_path/common",
@@ -46,7 +46,7 @@ if (defined(ohos_lite)) {
 
     include_dirs = [
       "include",
-      "//utils/native/base/include",
+      "//commonlibrary/c_utils/base/include",
       "//base/startup/init/interfaces/innerkits/include",
       "$faultloggerd_path/common",
       "$faultloggerd_path/common/dfxlog",
@@ -65,9 +65,9 @@ if (defined(ohos_lite)) {
     ]
 
     external_deps = [
+      "c_utils:utils",
       "hilog_native:libhilog",
       "init:libbegetutil",
-      "utils_base:utils",
     ]
     install_images = [
       "system",

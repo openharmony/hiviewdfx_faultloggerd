@@ -33,8 +33,8 @@ if (defined(ohos_lite)) {
     deps = [ "$faultloggerd_path/interfaces/innerkits/dump_catcher:lib_dfx_dump_catcher" ]
 
     external_deps = [
+      "c_utils:utils",
       "hilog_native:libhilog",
-      "utils_base:utils",
     ]
   }
 

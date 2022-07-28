@@ -26,7 +26,7 @@ if (defined(ohos_lite)) {
         "include/",
         "../../",
         "mock/",
-        "//utils/native/base/include",
+        "//commonlibrary/c_utils/base/include",
         "$faultloggerd_path/common",
         "$faultloggerd_path/tools/process_dump/test/mock/include/",
         "$faultloggerd_path/tools/process_dump",
@@ -65,7 +65,7 @@ if (defined(ohos_lite)) {
       "include/",
       "../../",
       "mock/",
-      "//utils/native/base/include",
+      "//commonlibrary/c_utils/base/include",
       "$faultloggerd_path/common",
       "$faultloggerd_path/tools/process_dump/test/mock/include/",
       "$faultloggerd_path/tools/process_dump",
@@ -93,8 +93,8 @@ if (defined(ohos_lite)) {
       "//third_party/googletest:gmock_main",
       "//third_party/googletest:gtest_main",
       "//third_party/libunwind:libunwind",
-      "//utils/native/base:utils",
     ]
+    external_deps = [ "c_utils:utils" ]
   }
 
   group("unittest") {

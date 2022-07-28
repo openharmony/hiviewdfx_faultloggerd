@@ -26,7 +26,7 @@ if (defined(ohos_lite)) {
 
     include_dirs = [
       "include",
-      "//utils/native/base/include",
+      "//commonlibrary/c_utils/base/include",
       "$faultloggerd_path/common",
       "$faultloggerd_path/common/dfxlog",
     ]
@@ -43,7 +43,7 @@ if (defined(ohos_lite)) {
 
     include_dirs = [
       "include",
-      "//utils/native/base/include",
+      "//commonlibrary/c_utils/base/include",
       "$faultloggerd_path/common",
       "$faultloggerd_path/common/dfxlog",
     ]
@@ -58,7 +58,7 @@ if (defined(ohos_lite)) {
 
     include_dirs = [
       "include",
-      "//utils/native/base/include",
+      "//commonlibrary/c_utils/base/include",
       "$faultloggerd_path/common",
       "$faultloggerd_path/common/dfxlog",
       "$faultloggerd_path/tools/process_dump",
@@ -81,8 +81,8 @@ if (defined(ohos_lite)) {
     ]
 
     external_deps = [
+      "c_utils:utils",
       "hilog_native:libhilog_base",
-      "utils_base:utils",
     ]
 
     part_name = "faultloggerd"
@@ -106,8 +106,8 @@ if (defined(ohos_lite)) {
     ]
 
     external_deps = [
+      "c_utils:utils",
       "hilog_native:libhilog_base",
-      "utils_base:utils",
     ]
 
     install_images = [
@@ -124,7 +124,7 @@ if (defined(ohos_lite)) {
 
     include_dirs = [
       "include",
-      "//utils/native/base/include",
+      "//commonlibrary/c_utils/base/include",
       "$faultloggerd_path/common",
       "$faultloggerd_path/common/dfxlog",
     ]

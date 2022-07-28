@@ -22,7 +22,7 @@ if (defined(ohos_lite)) {
       ".",
       "$faultloggerd_path/common",
       "$faultloggerd_path/interfaces/innerkits/signal_handler/include",
-      "//utils/native/base/include",
+      "//commonlibrary/c_utils/base/include",
       "$hilog_lite_include_path",
     ]
     sources = [ "dfx_crasher.c" ]
