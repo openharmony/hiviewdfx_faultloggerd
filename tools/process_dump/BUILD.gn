@@ -15,11 +15,7 @@ import("//base/hiviewdfx/faultloggerd/faultloggerd.gni")
 
 if (defined(ohos_lite)) {
   source_set("process_info_src") {
-    if (use_musl) {
-      cflags = [ "-DDFX_LOCAL_UNWIND" ]
-    } else {
-      cflags = []
-    }
+    cflags = []
 
     defines = [
       "HAVE_CONFIG_H",
@@ -33,7 +29,7 @@ if (defined(ohos_lite)) {
       ".",
       "$faultloggerd_path/common",
       "$faultloggerd_path/common/dfxlog",
-      "//utils/native/base/include",
+      "//commonlibrary/c_utils/base/include",
       "$faultloggerd_path/interfaces/innerkits/faultloggerd_client/include",
       "$hilog_lite_include_path",
     ]
@@ -44,6 +40,7 @@ if (defined(ohos_lite)) {
       "dfx_dump_res.cpp",
       "dfx_dump_writer.cpp",
       "dfx_elf.cpp",
+      "dfx_fault_stack.cpp",
       "dfx_frame.cpp",
       "dfx_logger.cpp",
       "dfx_maps.cpp",
@@ -85,7 +82,7 @@ if (defined(ohos_lite)) {
       "$faultloggerd_path/common",
       "$faultloggerd_path/common/dfxlog",
       "$faultloggerd_path/utils",
-      "//utils/native/base/include",
+      "//commonlibrary/c_utils/base/include",
       "$faultloggerd_path/interfaces/innerkits/faultloggerd_client/include",
       "$hilog_lite_include_path",
     ]
@@ -104,6 +101,7 @@ if (defined(ohos_lite)) {
       "dfx_dump_res.cpp",
       "dfx_dump_writer.cpp",
       "dfx_elf.cpp",
+      "dfx_fault_stack.cpp",
       "dfx_frame.cpp",
       "dfx_logger.cpp",
       "dfx_maps.cpp",
@@ -145,16 +143,12 @@ if (defined(ohos_lite)) {
       ".",
       "//base/hiviewdfx/faultloggerd/common",
       "//base/hiviewdfx/faultloggerd/common/dfxlog",
-      "//utils/native/base/include",
+      "//commonlibrary/c_utils/base/include",
     ]
   }
 
   ohos_source_set("process_info_src") {
-    if (use_musl) {
-      cflags = [ "-DDFX_LOCAL_UNWIND" ]
-    } else {
-      cflags = []
-    }
+    cflags = []
 
     configs = [ ":processdump_config" ]
     sources = [
@@ -163,6 +157,7 @@ if (defined(ohos_lite)) {
       "dfx_dump_res.cpp",
       "dfx_dump_writer.cpp",
       "dfx_elf.cpp",
+      "dfx_fault_stack.cpp",
       "dfx_frame.cpp",
       "dfx_logger.cpp",
       "dfx_maps.cpp",
@@ -195,8 +190,8 @@ if (defined(ohos_lite)) {
     ]
 
     external_deps = [
+      "c_utils:utils",
       "hilog_native:libhilog",
-      "utils_base:utils",
     ]
 
     part_name = "faultloggerd"
@@ -213,6 +208,7 @@ if (defined(ohos_lite)) {
       "dfx_dump_res.cpp",
       "dfx_dump_writer.cpp",
       "dfx_elf.cpp",
+      "dfx_fault_stack.cpp",
       "dfx_frame.cpp",
       "dfx_logger.cpp",
       "dfx_maps.cpp",
@@ -239,7 +235,7 @@ if (defined(ohos_lite)) {
       cflags = [ "-D__x86_64__" ]
     }
 
-    cflags_cc = [ "-DDEBUG_PROCESS_DUMP_CRASH" ]
+    cflags_cc = [ "-DDEBUG_CRASH_LOCAL_HANDLER" ]
 
     deps = [
       "$faultloggerd_path/common/dfxlog:static_common_log",
@@ -250,8 +246,8 @@ if (defined(ohos_lite)) {
     ]
 
     external_deps = [
+      "c_utils:utils",
       "hilog_native:libhilog",
-      "utils_base:utils",
     ]
 
     install_images = [

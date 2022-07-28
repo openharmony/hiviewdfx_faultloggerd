@@ -25,7 +25,7 @@ if (defined(ohos_lite)) {
 
       include_dirs = [
         "include/",
-        "//utils/native/base/include",
+        "//commonlibrary/c_utils/base/include",
         "$faultloggerd_path/common",
         "$faultloggerd_path/tools/process_dump",
         "$faultloggerd_path/interfaces/innerkits/faultloggerd_client/include",
@@ -52,7 +52,7 @@ if (defined(ohos_lite)) {
 
     include_dirs = [
       "include/",
-      "//utils/native/base/include",
+      "//commonlibrary/c_utils/base/include",
       "$faultloggerd_path/interfaces/innerkits/dump_catcher/include/",
     ]
   }
@@ -68,11 +68,10 @@ if (defined(ohos_lite)) {
     deps = [
       "$faultloggerd_path/interfaces/innerkits/dump_catcher:lib_dfx_dump_catcher",
       "//third_party/googletest:gtest_main",
-      "//utils/native/base:utils",
     ]
     external_deps = [
+      "c_utils:utils",
       "hilog_native:libhilog",
-      "utils_base:utils",
     ]
   }
 
@@ -81,7 +80,7 @@ if (defined(ohos_lite)) {
 
     include_dirs = [
       "include/",
-      "//utils/native/base/include",
+      "//commonlibrary/c_utils/base/include",
     ]
   }
 
@@ -89,8 +88,7 @@ if (defined(ohos_lite)) {
     sources = [ "src/multithread_constructor.c" ]
 
     configs = [ ":multithread_constructor_config" ]
-
-    deps = [ "//utils/native/base:utils" ]
+    external_deps = [ "c_utils:utils" ]
   }
 
   group("performance") {

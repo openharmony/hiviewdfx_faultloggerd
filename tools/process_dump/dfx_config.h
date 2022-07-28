@@ -53,7 +53,7 @@ private:
     bool logPersist_ = false;
     bool dumpOtherThreads_ = false;
     unsigned int lowAddressStep_ = 16;
-    unsigned int highAddressStep_ = 4;
+    unsigned int highAddressStep_ = 64;
 };
 
 } // namespace HiviewDFX

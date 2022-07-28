@@ -123,16 +123,6 @@ std::string DfxFrame::GetFrameMapName() const
     return frameMapName_;
 }
 
-void DfxFrame::SetFrameFaultStack(const std::string &faultStack)
-{
-    faultStack_ = faultStack;
-}
-
-std::string DfxFrame::GetFrameFaultStack() const
-{
-    return faultStack_;
-}
-
 uint64_t DfxFrame::GetRelativePc(const std::shared_ptr<DfxElfMaps> head)
 {
     if (head == nullptr) {
@@ -217,18 +207,6 @@ std::string DfxFrame::PrintFrame() const
     return std::string(buf);
 }
 
-std::string DfxFrame::PrintFaultStack(int i) const
-{
-    if (faultStack_ == "") {
-        return "";
-    }
-
-    std::stringstream ss;
-    ss << "Sp" << i;
-    ss << ":" << faultStack_;
-    return ss.str();
-}
-
 std::string DfxFrame::ToString() const
 {
     char buf[1024] = "\0"; // 1024 buffer length
@@ -261,24 +239,6 @@ void PrintFrames(std::vector<std::shared_ptr<DfxFrame>> frames)
     for (size_t i = 0; i < frames.size(); i++) {
         frames[i]->PrintFrame();
     }
-}
-
-std::string PrintFaultStacks(std::vector<std::shared_ptr<DfxFrame>> frames)
-{
-    std::string stackString = "";
-
-    for (size_t i = 0; i < frames.size(); i++) {
-        if (i == 0 && (frames[i]->GetFramePc() == 0)) {
-            stackString = stackString + "Sp0: Unknow\n";
-            continue;
-        }
-        if (i == FAULT_STACK_SHOW_FLOOR) {
-            stackString = stackString + "    ...\n";
-            break;
-        }
-        stackString = stackString + frames[i]->PrintFaultStack(i);
-    }
-    return stackString;
 }
 } // namespace HiviewDFX
 } // namespace OHOS

@@ -21,7 +21,8 @@
 #include "faultloggerd_client.h"       // for CPP_CRASH, FaultLoggerType
 #include "securec.h"                   // for memset_s
 
-#if defined(DEBUG_PROCESS_DUMP_CRASH)
+#if defined(DEBUG_CRASH_LOCAL_HANDLER)
+#include <securec.h>
 #include "dfx_signal_local_handler.h"
 #include "dfx_crash_local_handler.h"
 #include "dfx_cutil.h"
@@ -48,7 +49,7 @@ static void DFX_SignalHandler(int sig, siginfo_t *si, void *context)
 
 int main(int argc, char *argv[])
 {
-#if defined(DEBUG_PROCESS_DUMP_CRASH)
+#if defined(DEBUG_CRASH_LOCAL_HANDLER)
     DFX_SetSignalHandlerFunc(DFX_SignalHandler);
     DFX_InstallLocalSignalHandler();
 #endif

@@ -198,7 +198,7 @@ int ProcessDumper::DumpProcessWithSignalContext(std::shared_ptr<DfxProcess> &pro
         process->SetIsSignalHdlr(true);
 
         if (InitPrintThread(true, request, process) < 0) {
-            DfxLogError("Failed to init print thraed");
+            DfxLogError("Failed to init print thread.");
             dumpRes = ProcessDumpRes::DUMP_EGETFD;
         }
         PrintDumpProcessWithSignalContextHeader(process, request->GetSiginfo(), \

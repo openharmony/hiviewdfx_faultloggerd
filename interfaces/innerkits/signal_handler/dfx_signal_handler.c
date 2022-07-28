@@ -98,6 +98,7 @@ static const int SIGNALHANDLER_TIMEOUT = 10000; // 10000 us
 static const int ALARM_TIME_S = 10;
 static int g_prevHandledSignal = SIGDUMP;
 static BOOL g_isDumping = FALSE;
+static struct sigaction g_oldSigactionList[NSIG] = {};
 
 enum DumpPreparationStage {
     CREATE_PIPE_FAIL = 1,
@@ -176,8 +177,6 @@ static const int g_interestedSignalList[] = {
     SIGABRT, SIGBUS, SIGDUMP, SIGFPE, SIGILL,
     SIGSEGV, SIGSTKFLT, SIGSYS, SIGTRAP,
 };
-
-static struct sigaction g_oldSigactionList[NSIG] = {};
 
 static void SetInterestedSignalMasks(int how)
 {

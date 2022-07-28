@@ -24,7 +24,7 @@ if (defined(ohos_lite)) {
 
       include_dirs = [
         "include",
-        "//utils/native/base/include",
+        "//commonlibrary/c_utils/base/include",
         "$faultloggerd_path/services",
         "$hilog_lite_include_path",
         "$faultloggerd_path/tools/process_dump",
@@ -65,7 +65,7 @@ if (defined(ohos_lite)) {
 
     include_dirs = [
       "include",
-      "//utils/native/base/include",
+      "//commonlibrary/c_utils/base/include",
       "$faultloggerd_path/services",
       "$faultloggerd_path/common/dfxlog",
     ]
@@ -90,10 +90,12 @@ if (defined(ohos_lite)) {
       "$faultloggerd_path/interfaces/innerkits/faultloggerd_client:libfaultloggerd",
       "//third_party/googletest:gmock_main",
       "//third_party/googletest:gtest_main",
-      "//utils/native/base:utils",
     ]
 
-    external_deps = [ "hilog_native:libhilog" ]
+    external_deps = [
+      "c_utils:utils",
+      "hilog_native:libhilog",
+    ]
   }
 
   group("unittest") {

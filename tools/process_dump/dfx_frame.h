@@ -44,8 +44,6 @@ public:
     std::string GetFrameFuncName() const;
     void SetFrameMap(const std::shared_ptr<DfxElfMap> map);
     std::shared_ptr<DfxElfMap> GetFrameMap() const;
-    void SetFrameFaultStack(const std::string &faultStack);
-    std::string GetFrameFaultStack() const;
     void SetFrameMapName(const std::string &mapName);
     std::string GetFrameMapName() const;
 
@@ -53,7 +51,6 @@ public:
     uint64_t GetRelativePc(const std::shared_ptr<DfxElfMaps> head);
     uint64_t CalculateRelativePc(std::shared_ptr<DfxElfMap> elfMap);
     std::string PrintFrame() const;
-    std::string PrintFaultStack(int i) const;
 
 private:
     size_t index_ = 0;
@@ -65,11 +62,9 @@ private:
     std::string funcName_;
     std::string frameMapName_ = "";
     std::shared_ptr<DfxElfMap> map_ = nullptr; // managed in DfxProcess class
-    std::string faultStack_;
 };
 
 void PrintFrames(std::vector<std::shared_ptr<DfxFrame>> frames);
-std::string PrintFaultStacks(std::vector<std::shared_ptr<DfxFrame>> frames);
 } // namespace HiviewDFX
 } // namespace OHOS
 
