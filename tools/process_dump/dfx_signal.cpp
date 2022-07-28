@@ -19,7 +19,6 @@
 #include <string>         // for allocator, char_traits
 #include "dfx_define.h"   // for LOG_BUF_LEN, SIGDUMP
 #include "dfx_log.h"      // for DfxLogError
-#include "string"         // for basic_string, operator+
 
 namespace OHOS {
 namespace HiviewDFX {

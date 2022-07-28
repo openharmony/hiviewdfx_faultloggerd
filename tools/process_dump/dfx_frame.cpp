@@ -23,7 +23,7 @@
 #include <cinttypes>    // for PRIx64, PRIu64
 #include "memory"        // for shared_ptr, operator==
 #include "ostream"       // for operator<<, basic_ostream, endl
-#include "string"        // for basic_string, operator+, operator==
+#include <string>        // for basic_string, operator+, operator==
 
 #include "dfx_define.h"  // for LOG_BUF_LEN
 #include "dfx_elf.h"     // for DfxElf

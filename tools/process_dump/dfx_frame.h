@@ -17,9 +17,9 @@
 
 #include <memory>      // for shared_ptr
 #include <string>      // for basic_string
+#include <vector>      // for vector
 #include "dfx_maps.h"  // for DfxElfMap, DfxElfMaps
 #include "iosfwd"      // for string
-#include "vector"      // for vector
 
 namespace OHOS {
 namespace HiviewDFX {

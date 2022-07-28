@@ -17,7 +17,6 @@
 #include <sstream>  // for basic_stringstream
 #include <string>   // for char_traits
 #include "ostream"  // for operator<<, basic_ostream
-#include "string"   // for to_string, basic_string
 
 namespace OHOS {
 namespace HiviewDFX {

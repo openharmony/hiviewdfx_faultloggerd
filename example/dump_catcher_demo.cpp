@@ -21,7 +21,7 @@
 #include <string>              // for basic_string
 #include <cstdlib>           // for atoi
 #include <cstring>            // for strcmp
-#include "__config"            // for std
+#include <config>            // for std
 #include "iosfwd"              // for string, ostream
 #include "ostream"             // for operator<<, basic_ostream, endl
 #include "dfx_dump_catcher.h"  // for DfxDumpCatcher
