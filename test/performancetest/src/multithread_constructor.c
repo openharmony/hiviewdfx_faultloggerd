@@ -15,10 +15,11 @@
 
 #include "multithread_constructor.h"
 
-#include <pthread.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
+#include <pthread.h>  // for __pthread, pthread_create, pthread_detach, pthr...
+#include <stdio.h>    // for NULL
+#include <unistd.h>   // for sleep
+#include "stdio.h"    // for printf
+#include "stdlib.h"   // for atoi
 
 const static int ARGUMENT_LIMIT = 2;
 const static unsigned int SLEEP_TIMEOUT = 360000;

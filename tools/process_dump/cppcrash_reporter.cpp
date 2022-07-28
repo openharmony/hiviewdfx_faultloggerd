@@ -20,9 +20,7 @@
 #include <cinttypes>
 #include <map>
 #include <string>
-
 #include <dlfcn.h>
-
 #include "dfx_logger.h"
 #include "dfx_process.h"
 #include "dfx_signal.h"

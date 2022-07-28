@@ -18,7 +18,7 @@
 #ifndef DFX_CRASHER_H
 #define DFX_CRASHER_H
 
-#include <inttypes.h>
+#include <stdint.h>  // for uint64_t
 
 #define NOINLINE __attribute__((noinline))
 

@@ -13,9 +13,13 @@
  * limitations under the License.
  */
 
-#include <unistd.h>
-#include "fault_logger_daemon.h"
-#include "dfx_log.h"
+#include <unistd.h>                    // for getpid
+#include <cstdint>                    // for int32_t, uint64_t
+#include <csignal>                    // for siginfo_t, ucontext
+#include "dfx_log.h"                   // for DfxLogError
+#include "fault_logger_daemon.h"       // for FaultLoggerDaemon
+#include "faultloggerd_client.h"       // for CPP_CRASH, FaultLoggerType
+#include "securec.h"                   // for memset_s
 
 #if defined(DEBUG_CRASH_LOCAL_HANDLER)
 #include <securec.h>

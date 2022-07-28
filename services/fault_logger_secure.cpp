@@ -17,26 +17,12 @@
 
 #include "fault_logger_secure.h"
 
-#include <algorithm>
-#include <cerrno>
-#include <cstdio>
-#include <cstdlib>
-#include <cstring>
-#include <ctime>
-#include <string>
-#include <vector>
-
-#include <fcntl.h>
-#include <securec.h>
-#include <sys/socket.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <sys/un.h>
-#include <unistd.h>
-
-#include "dfx_log.h"
-#include "directory_ex.h"
-#include "file_ex.h"
+#include <securec.h>  // for strtok_s, memset_s, sprintf_s, EOK, errno_t
+#include <cstdio>     // for FILE
+#include <string>     // for basic_string
+#include <cstdlib>   // for atoi
+#include "iosfwd"     // for string
+#include "dfx_log.h"  // for DfxLogInfo, DfxLogError
 
 namespace OHOS {
 namespace HiviewDFX {

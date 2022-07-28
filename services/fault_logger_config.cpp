@@ -17,23 +17,8 @@
 
 #include "fault_logger_config.h"
 
-#include <algorithm>
-#include <cerrno>
-#include <cstring>
-#include <string>
-#include <ctime>
-#include <vector>
-#include <fcntl.h>
-#include <unistd.h>
-#include <sys/socket.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <sys/un.h>
-#include <file_ex.h>
-#include <securec.h>
-
-#include "directory_ex.h"
-#include "dfx_log.h"
+#include <string>     // for basic_string
+#include "dfx_log.h"  // for DfxLogDebug
 
 namespace OHOS {
 namespace HiviewDFX {

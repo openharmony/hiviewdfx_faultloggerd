@@ -15,12 +15,11 @@
 #ifndef DFX_FRAME_H
 #define DFX_FRAME_H
 
-#include <memory>
-#include <string>
-
-#include "dfx_elf.h"
-#include "dfx_maps.h"
-#include "dfx_regs.h"
+#include <memory>      // for shared_ptr
+#include <string>      // for basic_string
+#include <vector>      // for vector
+#include "dfx_maps.h"  // for DfxElfMap, DfxElfMaps
+#include "iosfwd"      // for string
 
 namespace OHOS {
 namespace HiviewDFX {

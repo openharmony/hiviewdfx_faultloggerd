@@ -18,13 +18,10 @@
 #ifndef DFX_DUMP_REQUEST_H
 #define DFX_DUMP_REQUEST_H
 
-#include <cinttypes>
-#include <memory>
-#include <csignal>
-#include <thread>
-#include <unistd.h>
-#include <ucontext.h>
-#include "dfx_define.h"
+#include <cstdint>       // for int32_t, uint64_t, uint32_t
+#include <csignal>       // for siginfo_t
+#include "iosfwd"         // for string
+#include "dfx_define.h"   // for NAME_LEN, MAX_FATAL_MSG_SIZE
 
 namespace OHOS {
 namespace HiviewDFX {

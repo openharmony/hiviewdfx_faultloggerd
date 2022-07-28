@@ -15,21 +15,25 @@
 
 /* This files contains dump_catcher sdk unit test tools. */
 
-#include <cinttypes>
-#include <cstdio>
-#include <cstdlib>
-#include <cstring>
-#include <unistd.h>
-#include <dirent.h>
-#include <directory_ex.h>
-#include <file_ex.h>
-#include <securec.h>
-#include <sys/syscall.h>
-#include <sys/types.h>
-#include <thread>
-#include <vector>
-
-#include "dfx_dump_catcher.h"
+#include <dirent.h>            // for opendir, readdir, DIR
+#include <securec.h>           // for snprintf_s
+#include <cstdint>            // for int32_t
+#include <unistd.h>            // for getpid, write, STDOUT_FILENO, alarm
+#include <thread>              // for thread
+#include <vector>              // for vector
+#include <cstdio>             // for printf
+#include <cstdlib>            // for atoi, realpath
+#include <cstring>              // for basic_string, operator==
+#include <climits>           // for PATH_MAX
+#include <cinttypes>          // for PRIx64, PRIu64
+#include <cstring>            // for strcmp
+#include <memory>                                                // for shar...
+#include "bits/syscall.h"      // for SYS_gettid
+#include "iosfwd"              // for string
+#include "dfx_define.h"        // for NAME_LEN
+#include "dfx_dump_catcher.h"  // for DfxDumpCatcher
+#include "dfx_frame.h"         // for DfxFrame
+#include "dfx_maps.h"          // for DfxElfMap
 
 static const int ARG1 = 1;
 static const int ARG2 = 2;

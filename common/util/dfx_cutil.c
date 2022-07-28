@@ -15,16 +15,16 @@
 
 #include "dfx_cutil.h"
 
-#include <errno.h>
 #include <fcntl.h>
 #include <stdio.h>
-#include <time.h>
+#include <sys/time.h>
 #include <unistd.h>
 
-#include <sys/time.h>
-#include <securec.h>
-
 #include "dfx_define.h"
+#include "securec.h"
+#include "stdio.h"
+#include "string.h"
+
 
 bool ReadStringFromFile(const char* path, char* dst, size_t dstSz)
 {

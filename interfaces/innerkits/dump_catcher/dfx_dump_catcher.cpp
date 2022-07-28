@@ -15,41 +15,31 @@
 
 /* This files contains faultlog sdk interface functions. */
 
-#include "dfx_dump_catcher.h"
-#include "dfx_unwind_local.h"
-#include "dfx_dump_res.h"
+#include "dfx_dump_catcher.h"                                    // for DfxD...
 
-#include <algorithm>
-#include <climits>
-#include <cerrno>
-#include <cstring>
-#include <cstdio>
-#include <cstdlib>
-#include <ctime>
-#include <strstream>
-#include <string>
-#include <vector>
+#include <dirent.h>                                              // for clos...
+#include <poll.h>                                                // for pollfd
+#include <sys/types.h>                                           // for time_t
+#include <unistd.h>                                              // for syscall
+#include <string>                                                // for basi...
+#include <vector>                                                // for vector
+#include <csignal>                                              // for sigi...
+#include <cstdlib>                                              // for atoi
+#include <cstring>                                              // for strcmp
+#include <ctime>                                                // for time
 
-#include <dirent.h>
-#include <fcntl.h>
-#include <file_ex.h>
-#include <poll.h>
-#include <pthread.h>
-#include <securec.h>
-#include <ucontext.h>
-#include <unistd.h>
-
-#include <sstream>
-#include <sys/prctl.h>
-#include <sys/socket.h>
-#include <sys/stat.h>
-#include <sys/syscall.h>
-#include <sys/types.h>
-#include <sys/un.h>
-#include <sys/wait.h>
-
-#include "directory_ex.h"
-#include "../faultloggerd_client/include/faultloggerd_client.h"
+#include <climits>                                              // for PATH...
+#include <mutex>                                          // for mutex
+#include <memory>                                                // for shar...
+#include "bits/syscall.h"                                        // for SYS_...
+#include "iosfwd"                                                // for string
+#include "strings.h"                                            // for bzero
+#include "faultloggerd_client.h"                                 // for Requ...
+#include "dfx_dump_res.h"                                        // for Dump...
+#include "dfx_frame.h"                                           // for DfxF...
+#include "dfx_log.h"                                             // for DfxL...
+#include "dfx_unwind_local.h"                                    // for DfxU...
+#include "dfx_define.h"                                          // for BACK...
 
 static const int NUMBER_TEN = 10;
 static const int MAX_TEMP_FILE_LENGTH = 256;

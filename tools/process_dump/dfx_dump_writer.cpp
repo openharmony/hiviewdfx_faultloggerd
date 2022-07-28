@@ -16,14 +16,8 @@
 /* This files is writer log to file module on process dump module. */
 
 #include "dfx_dump_writer.h"
-
-#include <cinttypes>
-#include <csignal>
-#include <cstdio>
-#include <cstring>
-#include <unistd.h>
-#include <securec.h>
-#include "dfx_process.h"
+#include <memory>                                                // for shar...
+#include "dfx_process.h"  // for DfxProcess
 
 namespace OHOS {
 namespace HiviewDFX {

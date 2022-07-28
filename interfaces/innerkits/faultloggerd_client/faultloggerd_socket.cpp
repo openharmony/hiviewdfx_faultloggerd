@@ -15,18 +15,18 @@
 
 /* This files is writer log to file module on process dump module. */
 
-#include "faultloggerd_socket.h"
+#include "faultloggerd_socket.h"  // for ReadFileDescriptorFromSocket, RecvM...
 
-#include <securec.h>
-#include <sys/socket.h>
-#include <sys/time.h>
-#include <sys/un.h>
-#include <unistd.h>
-#include <cstddef>
-
-#include "dfx_define.h"
-#include "dfx_log.h"
-#include "init_socket.h"
+#include <securec.h>              // for memcpy_s, memset_s, strncpy_s, EOK
+#include <sys/socket.h>           // for msghdr, cmsghdr, recvmsg, sendmsg
+#include <sys/time.h>             // for timeval
+#include <sys/un.h>               // for sockaddr_un, iovec, strlen
+#include <unistd.h>               // for close
+#include <cstdio>                 // for size_t
+#include <cstddef>               // for offsetof
+#include "dfx_define.h"           // for SOCKET_BUFFER_SIZE
+#include "dfx_log.h"              // for DfxLogError, DfxLogDebug, DfxLogInfo
+#include "init_socket.h"          // for GetControlSocket
 
 bool StartConnect(int& sockfd, const char* path, const int timeout)
 {

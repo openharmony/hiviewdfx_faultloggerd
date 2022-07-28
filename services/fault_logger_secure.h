@@ -18,7 +18,7 @@
 #ifndef _FAULT_LOGGER_SECURE_H
 #define _FAULT_LOGGER_SECURE_H
 
-#include <string>
+#include <cstdint>  // for int32_t
 
 namespace OHOS {
 namespace HiviewDFX {

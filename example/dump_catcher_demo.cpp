@@ -15,10 +15,16 @@
 
 #include "dump_catcher_demo.h"
 
-#include <iostream>
-#include <string>
-#include <unistd.h>
-#include "dfx_dump_catcher.h"
+#include <cstdint>            // for int32_t
+#include <unistd.h>            // for getpid, gettid
+#include <iostream>            // for cout
+#include <string>              // for basic_string
+#include <cstdlib>           // for atoi
+#include <cstring>            // for strcmp
+#include "iosfwd"              // for string, ostream
+#include "ostream"             // for operator<<, basic_ostream, endl
+#include "dfx_dump_catcher.h"  // for DfxDumpCatcher
+
 using namespace std;
 
 static NOINLINE int TestFunc10(void)
