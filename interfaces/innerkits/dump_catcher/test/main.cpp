@@ -15,7 +15,6 @@
 
 /* This files contains dump_catcher sdk unit test tools. */
 
-#include <cinttypes>
 #include <dirent.h>            // for opendir, readdir, DIR
 #include <securec.h>           // for snprintf_s
 #include <cstdint>            // for int32_t
@@ -27,10 +26,10 @@
 #include <cstring>              // for basic_string, operator==
 #include <climits>           // for PATH_MAX
 #include <cinttypes>          // for PRIx64, PRIu64
+#include <cstring>            // for strcmp
 #include "bits/syscall.h"      // for SYS_gettid
 #include "iosfwd"              // for string
 #include "memory"              // for shared_ptr, operator==
-#include "string.h"            // for strcmp
 #include "dfx_define.h"        // for NAME_LEN
 #include "dfx_dump_catcher.h"  // for DfxDumpCatcher
 #include "dfx_frame.h"         // for DfxFrame
