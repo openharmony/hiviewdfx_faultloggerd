@@ -269,7 +269,7 @@ bool DfxDumpCatcher::DoDumpRemotePid(int pid, std::string& msg)
             break;
         }
 
-        bool bufRet = true, resRet = true;
+        bool bufRet = true, resRet = false;
         for (int i = 0; i < fdsSize; ++i) {
             if ((readfds[i].revents & POLLIN) != POLLIN) {
                 continue;
@@ -291,7 +291,7 @@ bool DfxDumpCatcher::DoDumpRemotePid(int pid, std::string& msg)
     msg = bufMsg;
     
     RequestPipeFd(pid, FaultLoggerPipeType::PIPE_FD_DELETE);
-    DfxLogDebug("%s :: %s :: ret: %d", DFXDUMPCATCHER_TAG.c_str(), __func__, ret);
+    DfxLogInfo("%s :: %s :: ret: %d", DFXDUMPCATCHER_TAG.c_str(), __func__, ret);
     return ret;
 }
 

@@ -22,6 +22,7 @@
 #include <unistd.h>
 
 #include <sys/time.h>
+#include <securec.h>
 
 #include "dfx_define.h"
 

@@ -15,11 +15,7 @@ import("//base/hiviewdfx/faultloggerd/faultloggerd.gni")
 
 if (defined(ohos_lite)) {
   source_set("process_info_src") {
-    if (use_musl) {
-      cflags = [ "-DDFX_LOCAL_UNWIND" ]
-    } else {
-      cflags = []
-    }
+    cflags = []
 
     defines = [
       "HAVE_CONFIG_H",
@@ -150,11 +146,7 @@ if (defined(ohos_lite)) {
   }
 
   ohos_source_set("process_info_src") {
-    if (use_musl) {
-      cflags = [ "-DDFX_LOCAL_UNWIND" ]
-    } else {
-      cflags = []
-    }
+    cflags = []
 
     configs = [ ":processdump_config" ]
     sources = [
@@ -239,7 +231,7 @@ if (defined(ohos_lite)) {
       cflags = [ "-D__x86_64__" ]
     }
 
-    cflags_cc = [ "-DDEBUG_PROCESS_DUMP_CRASH" ]
+    cflags_cc = [ "-DDEBUG_CRASH_LOCAL_HANDLER" ]
 
     deps = [
       "$faultloggerd_path/common/dfxlog:static_common_log",

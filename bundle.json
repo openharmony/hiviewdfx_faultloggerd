@@ -49,7 +49,7 @@
         {
           "name": "//base/hiviewdfx/faultloggerd/interfaces/innerkits/faultloggerd_client:libfaultloggerd",
           "header": {
-          "header_files": [
+            "header_files": [
               "faultloggerd_client.h"
             ],
             "header_base": "//base/hiviewdfx/faultloggerd/interfaces/innerkits/faultloggerd_client/include"

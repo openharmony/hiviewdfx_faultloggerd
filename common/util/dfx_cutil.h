@@ -16,8 +16,8 @@
 #define DFX_COMMON_CUTIL_H
 
 #include <inttypes.h>
-#include <securec.h>
 #include <stdbool.h>
+#include <stddef.h>
 
 #define AT_SYMBOL_VISIBLE       __attribute__ ((visibility("default")))
 #define AT_SYMBOL_HIDDEN        __attribute__ ((visibility("hidden")))

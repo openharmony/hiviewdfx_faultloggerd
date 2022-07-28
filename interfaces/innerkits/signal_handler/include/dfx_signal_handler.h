@@ -23,7 +23,6 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-#ifndef DFX_LOCAL_UNWIND
 struct ProcessDumpRequest {
     int32_t type;
     int32_t tid;
@@ -37,7 +36,6 @@ struct ProcessDumpRequest {
     char processName[NAME_LEN];
     char lastFatalMessage[MAX_FATAL_MSG_SIZE];
 };
-#endif
 
 void DFX_InstallSignalHandler(void);
 

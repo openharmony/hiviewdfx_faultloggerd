@@ -92,7 +92,7 @@ if (defined(ohos_lite)) {
       "main.cpp",
     ]
 
-    cflags_cc = [ "-DDEBUG_PROCESS_DUMP_CRASH" ]
+    cflags_cc = [ "-DDEBUG_CRASH_LOCAL_HANDLER" ]
 
     deps = [
       ":faultlogger.conf",

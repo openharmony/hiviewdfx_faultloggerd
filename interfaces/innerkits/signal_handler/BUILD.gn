@@ -37,21 +37,6 @@ if (defined(ohos_lite)) {
       "//third_party/bounds_checking_function:libsec_shared",
     ]
   }
-
-  static_library("dfxsignalhandler") {
-    cflags = [ "-DDFX_NO_PRINT_LOG" ]
-
-    include_dirs = [
-      "include",
-      "//commonlibrary/c_utils/base/include",
-      "$faultloggerd_path/common",
-      "$faultloggerd_path/common/dfxlog",
-    ]
-
-    sources = [ "dfx_signal_handler.c" ]
-
-    deps = [ "$faultloggerd_path/common/util:dfx_cutil" ]
-  }
 } else {
   config("dfx_signal_handler_config") {
     visibility = [ "*:*" ]
@@ -114,24 +99,6 @@ if (defined(ohos_lite)) {
       "system",
       "updater",
     ]
-
-    part_name = "faultloggerd"
-    subsystem_name = "hiviewdfx"
-  }
-
-  ohos_static_library("dfxsignalhandler") {
-    cflags = [ "-DDFX_NO_PRINT_LOG" ]
-
-    include_dirs = [
-      "include",
-      "//commonlibrary/c_utils/base/include",
-      "$faultloggerd_path/common",
-      "$faultloggerd_path/common/dfxlog",
-    ]
-
-    sources = [ "dfx_signal_handler.c" ]
-
-    deps = [ "$faultloggerd_path/common/util:dfx_cutil" ]
 
     part_name = "faultloggerd"
     subsystem_name = "hiviewdfx"
