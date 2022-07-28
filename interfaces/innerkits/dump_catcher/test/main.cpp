@@ -22,7 +22,6 @@
 #include <unistd.h>            // for getpid, write, STDOUT_FILENO, alarm
 #include <thread>              // for thread
 #include <vector>              // for vector
-#include "bits/dirent.h"       // for dirent
 #include "bits/syscall.h"      // for SYS_gettid
 #include "dfx_define.h"        // for NAME_LEN
 #include "dfx_dump_catcher.h"  // for DfxDumpCatcher
