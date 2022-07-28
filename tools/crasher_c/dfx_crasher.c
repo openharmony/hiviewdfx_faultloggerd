@@ -17,7 +17,6 @@
 
 #include <pthread.h>             // for pthread_create, pthread_detach, pthr...
 #include <signal.h>              // for raise, SIGSEGV, SIGINT, SIGABRT, SIGBUS
-#include <cinttypes>            // for PRIx64, PRIu64
 #include <sys/prctl.h>           // for prctl, PR_SET_NAME
 #include <sys/resource.h>        // for setrlimit, rlimit, RLIMIT_AS, getrlimit
 #include <string>              // for strlen, strncmp
@@ -27,6 +26,7 @@
 #include "strings.h"             // for strcasecmp
 #include "stdlib.h"              // for malloc
 #include "stdio.h"
+#include "inttypes.h"            // for PRIx64, PRIu64
 
 #ifdef LOG_DOMAIN
 #undef LOG_DOMAIN
