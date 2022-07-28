@@ -22,7 +22,7 @@ if (defined(ohos_lite)) {
       "$faultloggerd_path/common",
       "$faultloggerd_path/tools/process_dump/",
       "$faultloggerd_path/interfaces/innerkits/signal_handler/include",
-      "//utils/native/base/include",
+      "//commonlibrary/c_utils/base/include",
       "$hilog_lite_include_path",
     ]
     sources = [ "dfx_crasher.cpp" ]
@@ -39,7 +39,7 @@ if (defined(ohos_lite)) {
     include_dirs = [
       ".",
       "$faultloggerd_path/tools/process_dump/",
-      "//utils/native/base/include",
+      "//commonlibrary/c_utils/base/include",
     ]
   }
 
@@ -47,11 +47,11 @@ if (defined(ohos_lite)) {
     configs = [ ":crasher_config" ]
     sources = [ "dfx_crasher.cpp" ]
 
-    deps = [
-      "$faultloggerd_path/interfaces/innerkits/signal_handler:dfx_signalhandler",
-      "//utils/native/base:utils",
+    deps = [ "$faultloggerd_path/interfaces/innerkits/signal_handler:dfx_signalhandler" ]
+    external_deps = [
+      "c_utils:utils",
+      "hilog_native:libhilog",
     ]
-    external_deps = [ "hilog_native:libhilog" ]
 
     part_name = "faultloggerd"
     subsystem_name = "hiviewdfx"

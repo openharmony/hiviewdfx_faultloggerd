@@ -20,8 +20,10 @@
 #include <stdio.h>
 #include <time.h>
 #include <unistd.h>
+
 #include <sys/time.h>
 #include <securec.h>
+
 #include "dfx_define.h"
 
 bool ReadStringFromFile(const char* path, char* dst, size_t dstSz)

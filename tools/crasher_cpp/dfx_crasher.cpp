@@ -466,6 +466,7 @@ NOINLINE int TestFunc70()
 
 int main(int argc, char *argv[])
 {
+    DFX_InstallSignalHandler();
     DfxCrasher::GetInstance().PrintUsage();
     if (argc <= 1) {
         std::cout << "wrong usage!";

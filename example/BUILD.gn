@@ -21,7 +21,7 @@ if (defined(ohos_lite)) {
 
     include_dirs = [
       ".",
-      "//utils/native/base/include",
+      "//commonlibrary/c_utils/base/include",
       "$faultloggerd_path/interfaces/innerkits/dump_catcher/include/",
       "$faultloggerd_path/common",
       "$faultloggerd_path/tools/process_dump",
@@ -39,7 +39,7 @@ if (defined(ohos_lite)) {
 
     include_dirs = [
       ".",
-      "//utils/native/base/include",
+      "//commonlibrary/c_utils/base/include",
       "$faultloggerd_path/interfaces/innerkits/dump_catcher/include/",
     ]
   }
@@ -49,12 +49,12 @@ if (defined(ohos_lite)) {
 
     configs = [ ":dumpcatcherdemo_config" ]
 
-    deps = [
-      "$faultloggerd_path/interfaces/innerkits/dump_catcher:lib_dfx_dump_catcher",
-      "//utils/native/base:utils",
-    ]
+    deps = [ "$faultloggerd_path/interfaces/innerkits/dump_catcher:lib_dfx_dump_catcher" ]
 
-    external_deps = [ "hilog_native:libhilog" ]
+    external_deps = [
+      "c_utils:utils",
+      "hilog_native:libhilog",
+    ]
 
     part_name = "faultloggerd"
     subsystem_name = "hiviewdfx"

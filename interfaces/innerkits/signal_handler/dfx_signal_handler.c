@@ -15,9 +15,12 @@
 
 #include "dfx_signal_handler.h"
 
+#include <stdbool.h>
+#include <stddef.h>
 #include <fcntl.h>
 #include <pthread.h>
 #include <sched.h>
+#include <securec.h>
 #include <signal.h>
 #include <stdint.h>
 #include <time.h>
@@ -30,6 +33,7 @@
 
 #include "bits/errno.h"
 #include "bits/syscall.h"
+#include "dfx_crash_local_handler.h"
 #include "dfx_define.h"
 #include "errno.h"
 #include "linux/capability.h"
@@ -38,9 +42,6 @@
 #include "dfx_cutil.h"
 #if defined(CRASH_LOCAL_HANDLER)
 #include "dfx_crash_local_handler.h"
-#endif
-#ifndef __MUSL__
-#include <securec.h>
 #endif
 
 #ifdef LOG_DOMAIN
@@ -84,13 +85,10 @@
 #define NUMBER_SIXTYFOUR 64
 #define INHERITABLE_OFFSET 32
 
-#ifndef __MUSL__
 void __attribute__((constructor)) InitHandler(void)
 {
-    printf("%s :: DFX_InstallSignalHandler\n", __func__);
     DFX_InstallSignalHandler();
 }
-#endif
 
 static struct ProcessDumpRequest g_request;
 static void *g_reservedChildStack;
@@ -139,13 +137,17 @@ static void FillLastFatalMessageLocked(int32_t sig)
         return;
     }
 
-    (void)strncpy(g_request.lastFatalMessage, lastFatalMessage, sizeof(g_request.lastFatalMessage) - 1);
+    (void)strncpy_s(g_request.lastFatalMessage, sizeof(g_request.lastFatalMessage),
+        lastFatalMessage, sizeof(g_request.lastFatalMessage) - 1);
 }
 
 static int32_t InheritCapabilities(void)
 {
     struct __user_cap_header_struct capHeader;
-    memset(&capHeader, 0, sizeof(capHeader));
+    if (memset_s(&capHeader, sizeof(capHeader), 0, sizeof(capHeader)) != EOK) {
+        DfxLogError("Failed to memset cap header.");
+        return -1;
+    }
 
     capHeader.version = _LINUX_CAPABILITY_VERSION_3;
     capHeader.pid = 0;
@@ -340,7 +342,7 @@ static void DFX_SignalHandler(int sig, siginfo_t *si, void *context)
     g_prevHandledSignal = sig;
     g_isDumping = TRUE;
 
-    memset(&g_request, 0, sizeof(g_request));
+    (void)memset_s(&g_request, sizeof(g_request), 0, sizeof(g_request));
     g_request.type = sig;
     g_request.tid = gettid();
     g_request.pid = getpid();
@@ -352,12 +354,12 @@ static void DFX_SignalHandler(int sig, siginfo_t *si, void *context)
     GetThreadName(g_request.threadName, sizeof(g_request.threadName));
     GetProcessName(g_request.processName, sizeof(g_request.processName));
 
-    if (memcpy(&(g_request.siginfo), si, sizeof(siginfo_t)) != 0) {
+    if (memcpy_s(&(g_request.siginfo), sizeof(g_request.siginfo), si, sizeof(siginfo_t)) != 0) {
         DfxLogError("Failed to copy siginfo.");
         pthread_mutex_unlock(&g_signalHandlerMutex);
         return;
     }
-    if (memcpy(&(g_request.context), context, sizeof(ucontext_t)) != 0) {
+    if (memcpy_s(&(g_request.context), sizeof(g_request.context), context, sizeof(ucontext_t)) != 0) {
         DfxLogError("Failed to copy ucontext.");
         pthread_mutex_unlock(&g_signalHandlerMutex);
         return;
@@ -454,8 +456,8 @@ void DFX_InstallSignalHandler(void)
     }
 
     struct sigaction action;
-    memset(&action, 0, sizeof(action));
-    memset(&g_oldSigactionList, 0, sizeof(g_oldSigactionList));
+    memset_s(&action, sizeof(action), 0, sizeof(action));
+    memset_s(&g_oldSigactionList, sizeof(g_oldSigactionList), 0, sizeof(g_oldSigactionList));
     sigfillset(&action.sa_mask);
     action.sa_sigaction = DFX_SignalHandler;
     action.sa_flags = SA_RESTART | SA_SIGINFO | SA_ONSTACK;
