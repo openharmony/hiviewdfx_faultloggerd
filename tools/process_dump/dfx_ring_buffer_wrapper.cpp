@@ -42,7 +42,6 @@ void DfxRingBufferWrapper::LoopPrintRingBuffer()
 
     std::unique_lock<std::mutex> lck(printMutex_);
     while (true) {
-        bool hasFinished = DfxRingBufferWrapper::GetInstance().hasFinished_;
         auto available = DfxRingBufferWrapper::GetInstance().ringBuffer_.Available();
         auto item = DfxRingBufferWrapper::GetInstance().ringBuffer_.Read(available);
         
@@ -58,7 +57,7 @@ void DfxRingBufferWrapper::LoopPrintRingBuffer()
             }
             DfxRingBufferWrapper::GetInstance().ringBuffer_.Skip(item.Length());
         } else {
-            if (hasFinished) {
+            if (DfxRingBufferWrapper::GetInstance().hasFinished_) {
                 DfxLogDebug("%s :: print finished, exit loop.\n", __func__);
                 break;
             }
