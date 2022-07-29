@@ -124,7 +124,7 @@ __attribute__((noinline)) void CrashLocalUnwind(int fd, ucontext_t* ucontext)
                 mapInfo == NULL ? "Unknown" : mapInfo->path,
                 g_symbol, offset);
         } else {
-            PrintLog(fd, "#%02d %016p %s(%s+%lu)\n", index, relPc,
+            PrintLog(fd, "#%02d %016p %s\n", index, relPc,
                 mapInfo == NULL ? "Unknown" : mapInfo->path);
         }
         index++;
