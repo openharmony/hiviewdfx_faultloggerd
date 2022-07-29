@@ -242,6 +242,7 @@ bool DfxDumpCatcher::DoDumpRemotePid(int pid, std::string& msg)
     std::string bufMsg, resMsg;
 
     struct pollfd readfds[2];
+    memset(readfds, 0, sizeof(readfds));
     readfds[0].fd = readBufFd;
     readfds[0].events = POLLIN;
     readfds[1].fd = readResFd;

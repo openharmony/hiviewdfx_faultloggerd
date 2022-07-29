@@ -17,7 +17,6 @@
 #include <fcntl.h>                    // for fcntl, open, F_SETPIPE_SZ, pthr...
 #include <pthread.h>                  // for pthread_mutex_unlock, pthread_m...
 #include <sched.h>                    // for clone, CLONE_FS, CLONE_UNTRACED
-#include <securec.h>                  // for memset_s, memcpy_s, strncpy_s, EOK
 #include <signal.h>                   // for sigaction, signal, siginfo_t
 #include <stdint.h>                   // for int32_t, uint64_t, uint8_t, uin...
 #include <sys/capability.h>           // for capget, capset
@@ -26,17 +25,22 @@
 #include <sys/uio.h>                  // for writev
 #include <sys/wait.h>                 // for waitpid, WNOHANG
 #include <time.h>                     // for NULL, time, size_t
+#include <sys/time.h>
+#include <sys/types.h>
 #include <unistd.h>                   // for syscall, getpid, gettid, dup2
+#include <stdio.h>
+#include <sys/syscall.h>
 #include "bits/syscall.h"             // for SYS_close, SYS_rt_tgsigqueueinfo
-#include "dfx_crash_local_handler.h"  // for CrashLocalHandler
-#include "dfx_cutil.h"                // for GetProcessName, GetThreadName
 #include "dfx_define.h"               // for SIGDUMP, OHOS_TEMP_FAILURE_RETRY
 #include "dfx_log.h"                  // for DfxLogError, DfxLogInfo
 #include "errno.h"                    // for errno
 #include "linux/capability.h"         // for __user_cap_data_struct, __user_...
 #include "stdbool.h"                  // for true, bool, false
 #include "string.h"
-
+#ifndef DFX_SIGNAL_LIBC
+#include <securec.h>
+#include "dfx_cutil.h"
+#endif
 #if defined(CRASH_LOCAL_HANDLER)
 #include "dfx_crash_local_handler.h"
 #endif
@@ -82,10 +86,80 @@
 #define NUMBER_SIXTYFOUR 64
 #define INHERITABLE_OFFSET 32
 
+#ifndef __MUSL__
 void __attribute__((constructor)) InitHandler(void)
 {
     DFX_InstallSignalHandler();
 }
+#endif
+
+#ifdef DFX_SIGNAL_LIBC
+static bool ReadStringFromFile(const char* path, char* dst, size_t dstSz)
+{
+    char name[NAME_LEN];
+    char nameFilter[NAME_LEN];
+    memset(name, 0, sizeof(name));
+    memset(nameFilter, 0, sizeof(nameFilter));
+
+    int fd = -1;
+    fd = open(path, O_RDONLY);
+    if (fd < 0) {
+        return false;
+    }
+
+    if (read(fd, name, NAME_LEN -1) == -1) {
+        close(fd);
+        return false;
+    }
+
+    char* p = name;
+    int i = 0;
+    while (*p != '\0') {
+        if ((*p == '\n') || (i == NAME_LEN)) {
+            break;
+        }
+        nameFilter[i] = *p;
+        p++, i++;
+    }
+    nameFilter[NAME_LEN - 1] = '\0';
+
+    size_t cpyLen = strlen(nameFilter) + 1;
+    if (cpyLen > dstSz) {
+        cpyLen = dstSz;
+    }
+    memcpy(dst, nameFilter, cpyLen);
+    close(fd);
+    return true;
+}
+
+static bool GetThreadName(char* buffer, size_t bufferSz)
+{
+    char path[NAME_LEN];
+    memset(path, '\0', sizeof(path));
+    if (snprintf(path, sizeof(path) - 1, "/proc/%d/comm", getpid()) <= 0) {
+        return false;
+    }
+    return ReadStringFromFile(path, buffer, bufferSz);
+}
+
+static bool GetProcessName(char* buffer, size_t bufferSz)
+{
+    char path[NAME_LEN];
+    memset(path, '\0', sizeof(path));
+    if (snprintf(path, sizeof(path) - 1, "/proc/%d/cmdline", getpid()) <= 0) {
+        return false;
+    }
+    return ReadStringFromFile(path, buffer, bufferSz);
+}
+
+static uint64_t GetTimeMilliseconds(void)
+{
+    struct timeval time;
+    gettimeofday(&time, NULL);
+    return ((uint64_t)time.tv_sec * 1000) + // 1000 : second to millisecond convert ratio
+        (((uint64_t)time.tv_usec) / 1000); // 1000 : microsecond to millisecond convert ratio
+}
+#endif
 
 static struct ProcessDumpRequest g_request;
 static void *g_reservedChildStack;
@@ -134,17 +208,13 @@ static void FillLastFatalMessageLocked(int32_t sig)
         return;
     }
 
-    (void)strncpy_s(g_request.lastFatalMessage, sizeof(g_request.lastFatalMessage),
-        lastFatalMessage, sizeof(g_request.lastFatalMessage) - 1);
+    (void)strncpy(g_request.lastFatalMessage, lastFatalMessage, sizeof(g_request.lastFatalMessage) - 1);
 }
 
 static int32_t InheritCapabilities(void)
 {
     struct __user_cap_header_struct capHeader;
-    if (memset_s(&capHeader, sizeof(capHeader), 0, sizeof(capHeader)) != EOK) {
-        DfxLogError("Failed to memset cap header.");
-        return -1;
-    }
+    memset(&capHeader, 0, sizeof(capHeader));
 
     capHeader.version = _LINUX_CAPABILITY_VERSION_3;
     capHeader.pid = 0;
@@ -262,13 +332,13 @@ static int DFX_ExecDump(void *arg)
         return INHERIT_CAP_FAIL;
     }
     pthread_mutex_unlock(&g_dumpMutex);
-    DfxLogInfo("execle processdump.");
+    DfxLogInfo("execl processdump.");
 #ifdef DFX_LOG_USE_HILOG_BASE
-    execle("/system/bin/processdump", "processdump", "-signalhandler", NULL, NULL);
+    execl("/system/bin/processdump", "processdump", "-signalhandler", NULL);
 #else
-    execle("/bin/processdump", "processdump", "-signalhandler", NULL, NULL);
+    execl("/bin/processdump", "processdump", "-signalhandler", NULL);
 #endif
-    DfxLogError("Failed to execle processdump, errno: %d(%s)", errno, strerror(errno));
+    DfxLogError("Failed to execl processdump, errno: %d(%s)", errno, strerror(errno));
     return errno;
 }
 
@@ -339,7 +409,7 @@ static void DFX_SignalHandler(int sig, siginfo_t *si, void *context)
     g_prevHandledSignal = sig;
     g_isDumping = TRUE;
 
-    (void)memset_s(&g_request, sizeof(g_request), 0, sizeof(g_request));
+    memset(&g_request, 0, sizeof(g_request));
     g_request.type = sig;
     g_request.tid = gettid();
     g_request.pid = getpid();
@@ -351,16 +421,9 @@ static void DFX_SignalHandler(int sig, siginfo_t *si, void *context)
     GetThreadName(g_request.threadName, sizeof(g_request.threadName));
     GetProcessName(g_request.processName, sizeof(g_request.processName));
 
-    if (memcpy_s(&(g_request.siginfo), sizeof(g_request.siginfo), si, sizeof(siginfo_t)) != 0) {
-        DfxLogError("Failed to copy siginfo.");
-        pthread_mutex_unlock(&g_signalHandlerMutex);
-        return;
-    }
-    if (memcpy_s(&(g_request.context), sizeof(g_request.context), context, sizeof(ucontext_t)) != 0) {
-        DfxLogError("Failed to copy ucontext.");
-        pthread_mutex_unlock(&g_signalHandlerMutex);
-        return;
-    }
+    memcpy(&(g_request.siginfo), si, sizeof(siginfo_t));
+    memcpy(&(g_request.context), context, sizeof(ucontext_t));
+
     FillLastFatalMessageLocked(sig);
     pid_t childPid;
     int status;
@@ -453,8 +516,8 @@ void DFX_InstallSignalHandler(void)
     }
 
     struct sigaction action;
-    memset_s(&action, sizeof(action), 0, sizeof(action));
-    memset_s(&g_oldSigactionList, sizeof(g_oldSigactionList), 0, sizeof(g_oldSigactionList));
+    memset(&action, 0, sizeof(action));
+    memset(&g_oldSigactionList, 0, sizeof(g_oldSigactionList));
     sigfillset(&action.sa_mask);
     action.sa_sigaction = DFX_SignalHandler;
     action.sa_flags = SA_RESTART | SA_SIGINFO | SA_ONSTACK;
