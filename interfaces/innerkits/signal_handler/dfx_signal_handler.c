@@ -27,7 +27,6 @@
 #include <sys/wait.h>                 // for waitpid, WNOHANG
 #include <time.h>                     // for NULL, time, size_t
 #include <unistd.h>                   // for syscall, getpid, gettid, dup2
-#include "bits/errno.h"               // for EINVAL
 #include "bits/syscall.h"             // for SYS_close, SYS_rt_tgsigqueueinfo
 #include "dfx_crash_local_handler.h"  // for CrashLocalHandler
 #include "dfx_cutil.h"                // for GetProcessName, GetThreadName
