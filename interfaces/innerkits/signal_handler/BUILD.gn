@@ -14,16 +14,18 @@
 import("//base/hiviewdfx/faultloggerd/faultloggerd.gni")
 
 if (defined(ohos_lite)) {
-  shared_library("dfx_signalhandler") {
+  config("dfxsignalhandler_config") {
     visibility = [ "*:*" ]
 
-    cflags = [
-      "-fPIC",
-      "-Wall",
-      "-fno-builtin",
-      "-DDFX_NO_PRINT_LOG",
+    include_dirs = [
+      "include",
+      "$faultloggerd_path/common",
+      "$faultloggerd_path/common/dfxlog",
     ]
+  }
 
+  shared_library("dfx_signalhandler") {
+    visibility = [ "*:*" ]
     include_dirs = [
       "include",
       "//commonlibrary/c_utils/base/include",
@@ -36,6 +38,24 @@ if (defined(ohos_lite)) {
       "$faultloggerd_path/common/util:dfx_cutil",
       "//third_party/bounds_checking_function:libsec_shared",
     ]
+
+    cflags = [
+      "-fPIC",
+      "-Wall",
+      "-fno-builtin",
+      "-DDFX_NO_PRINT_LOG",
+    ]
+  }
+
+  static_library("dfxsignalhandler") {
+    public_configs = [ ":dfxsignalhandler_config" ]
+
+    cflags = [
+      "-DDFX_NO_PRINT_LOG",
+      "-DDFX_SIGNAL_LIBC",
+    ]
+
+    sources = [ "dfx_signal_handler.c" ]
   }
 } else {
   config("dfx_signal_handler_config") {
@@ -48,6 +68,16 @@ if (defined(ohos_lite)) {
       "$faultloggerd_path/common/dfxlog",
       "$faultloggerd_path/tools/process_dump",
       "$faultloggerd_path/interfaces/innerkits/faultloggerd_client/include",
+    ]
+  }
+
+  config("dfxsignalhandler_config") {
+    visibility = [ "*:*" ]
+
+    include_dirs = [
+      "include",
+      "$faultloggerd_path/common",
+      "$faultloggerd_path/common/dfxlog",
     ]
   }
 
@@ -99,6 +129,19 @@ if (defined(ohos_lite)) {
       "system",
       "updater",
     ]
+
+    part_name = "faultloggerd"
+    subsystem_name = "hiviewdfx"
+  }
+
+  ohos_static_library("dfxsignalhandler") {
+    public_configs = [ ":dfxsignalhandler_config" ]
+    cflags = [
+      "-DDFX_NO_PRINT_LOG",
+      "-DDFX_SIGNAL_LIBC",
+    ]
+
+    sources = [ "dfx_signal_handler.c" ]
 
     part_name = "faultloggerd"
     subsystem_name = "hiviewdfx"
