@@ -71,8 +71,7 @@ void CppCrashReporter::ReportToHiview()
         DfxLogWarn("Failed to format crash report.");
         return;
     }
-
-    if (!process_->GetProcessName().compare(HIVIEW_PROCESS_NAME)) {
+    if (process_->GetProcessName().find(HIVIEW_PROCESS_NAME) != std::string::npos) {
         DfxLogWarn("Failed to report, hiview is crashed.");
         return;
     }
