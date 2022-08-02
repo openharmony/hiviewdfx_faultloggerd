@@ -19,6 +19,7 @@
 #include <sched.h>                    // for clone, CLONE_FS, CLONE_UNTRACED
 #include <signal.h>                   // for sigaction, signal, siginfo_t
 #include <stdint.h>                   // for int32_t, uint64_t, uint8_t, uin...
+#include <sys/syscall.h>
 #include <sys/capability.h>           // for capget, capset
 #include <sys/mman.h>                 // for mmap, MAP_ANONYMOUS, MAP_PRIVATE
 #include <sys/prctl.h>                // for prctl, PR_SET_DUMPABLE, PR_SET_...
@@ -29,8 +30,6 @@
 #include <sys/types.h>
 #include <unistd.h>                   // for syscall, getpid, gettid, dup2
 #include <stdio.h>
-#include <sys/syscall.h>
-#include "bits/syscall.h"             // for SYS_close, SYS_rt_tgsigqueueinfo
 #include "dfx_define.h"               // for SIGDUMP, OHOS_TEMP_FAILURE_RETRY
 #include "dfx_log.h"                  // for DfxLogError, DfxLogInfo
 #include "errno.h"                    // for errno
