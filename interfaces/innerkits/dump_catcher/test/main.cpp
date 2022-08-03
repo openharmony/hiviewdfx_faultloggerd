@@ -19,6 +19,7 @@
 #include <securec.h>           // for snprintf_s
 #include <cstdint>            // for int32_t
 #include <unistd.h>            // for getpid, write, STDOUT_FILENO, alarm
+#include <sys/syscall.h>
 #include <thread>              // for thread
 #include <vector>              // for vector
 #include <cstdio>             // for printf
@@ -28,7 +29,6 @@
 #include <cinttypes>          // for PRIx64, PRIu64
 #include <cstring>            // for strcmp
 #include <memory>                                                // for shar...
-#include "bits/syscall.h"      // for SYS_gettid
 #include "iosfwd"              // for string
 #include "dfx_define.h"        // for NAME_LEN
 #include "dfx_dump_catcher.h"  // for DfxDumpCatcher

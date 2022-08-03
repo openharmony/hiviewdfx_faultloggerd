@@ -213,20 +213,20 @@ HWTEST_F (FaultPerformanceTest, FaultPerformanceTest002, TestSize.Level2)
 
 /**
  * @tc.name: FaultPerformanceTest003
- * @tc.desc: test processdump command: PID(root), TID(root)
+ * @tc.desc: test dumpcatcher command: PID(root), TID(root)
  * @tc.type: FUNC
  */
 HWTEST_F (FaultPerformanceTest, FaultPerformanceTest003, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "FaultPerformanceTest003: start.";
-    std::string procCMD = "processdump -p " + std::to_string(FaultPerformanceTest::looprootPid) + " -t "+
+    std::string procCMD = "dumpcatcher -p " + std::to_string(FaultPerformanceTest::looprootPid) + " -t "+
         std::to_string(FaultPerformanceTest::looprootPid);
     clock_t befor = GetStartTime();
     for (int i = 0; i < PERFORMANCE_TEST_NUMBER_ONE_HUNDRED; i++) {
         FaultPerformanceTest::ProcessDumpCommands(procCMD);
     }
     double timeInterval = GetStopTime(befor)/PERFORMANCE_TEST_NUMBER_ONE_HUNDRED;
-    GTEST_LOG_(INFO) << "Processdump Command Performance time(PID(root), TID(root)): " << timeInterval << "s";
+    GTEST_LOG_(INFO) << "dumpcatcher Command Performance time(PID(root), TID(root)): " << timeInterval << "s";
     double expectTime = PERFORMANCE_TEST_MAX_UNWIND_TIME_S;
     double realTime = GetStopTime(befor)/PERFORMANCE_TEST_NUMBER_ONE_HUNDRED;
     EXPECT_EQ(true, realTime < expectTime) << "FaultPerformanceTest003 Failed";
@@ -241,12 +241,12 @@ HWTEST_F (FaultPerformanceTest, FaultPerformanceTest003, TestSize.Level2)
 HWTEST_F (FaultPerformanceTest, FaultPerformanceTest004, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "FaultPerformanceTest004: start.";
-    std::string procCMD = "processdump -p " + std::to_string(FaultPerformanceTest::looprootPid);
+    std::string procCMD = "dumpcatcher -p " + std::to_string(FaultPerformanceTest::looprootPid);
     clock_t befor = GetStartTime();
     for (int i = 0; i < PERFORMANCE_TEST_NUMBER_ONE_HUNDRED; i++) {
         FaultPerformanceTest::ProcessDumpCommands(procCMD);
     }
-    GTEST_LOG_(INFO) << "Processdump Command Performance time(PID(root)): " << \
+    GTEST_LOG_(INFO) << "dumpcatcher Command Performance time(PID(root)): " << \
         GetStopTime(befor)/PERFORMANCE_TEST_NUMBER_ONE_HUNDRED << "s";
 
     double expectTime = PERFORMANCE_TEST_MAX_UNWIND_TIME_S;

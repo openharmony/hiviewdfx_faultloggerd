@@ -25,7 +25,6 @@
 #include <sys/un.h>
 
 #include "directory_ex.h"
-#include "faultloggerd_client.h"
 #include "file_ex.h"
 
 #include "dfx_define.h"

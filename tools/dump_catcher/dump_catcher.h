@@ -19,8 +19,6 @@
 #define DFX_DUMP_CATCHER_H
 
 #include <cinttypes>
-#include <memory>
-#include <string>
 #include "nocopyable.h"
 
 namespace OHOS {

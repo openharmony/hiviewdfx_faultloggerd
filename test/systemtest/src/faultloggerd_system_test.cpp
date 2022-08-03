@@ -2902,14 +2902,14 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest039, TestSize.Level2)
 
 /**
  * @tc.name: FaultLoggerdSystemTest040
- * @tc.desc: test processdump command: processdump -p apppid
+ * @tc.desc: test dumpcatcher command: dumpcatcher -p apppid
  * @tc.type: FUNC
  */
 HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest040, TestSize.Level2)
 {
-    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest040_level0: start uid:" << getuid();
+    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest040: start uid:" << getuid();
     FaultLoggerdSystemTest::StartCrasherLoop(3);
-    std::string procCMD = "processdump -p " + std::to_string(FaultLoggerdSystemTest::loopAppPid);
+    std::string procCMD = "dumpcatcher -p " + std::to_string(FaultLoggerdSystemTest::loopAppPid);
     string procDumpLog = FaultLoggerdSystemTest::ProcessDumpCommands(procCMD);
     GTEST_LOG_(INFO) << "procDumpLog: " << procDumpLog;
     bool ret = procDumpLog.find("Only BMS and the process owner can dump stacktrace") != std::string::npos;
@@ -2920,14 +2920,14 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest040, TestSize.Level2)
 
 /**
  * @tc.name: FaultLoggerdSystemTest040_level0
- * @tc.desc: test processdump command: processdump -p apppid
+ * @tc.desc: test dumpcatcher command: dumpcatcher -p apppid
  * @tc.type: FUNC
  */
 HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest040_level0, TestSize.Level0)
 {
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest040_level0: start uid:" << getuid();
     FaultLoggerdSystemTest::StartCrasherLoop(3);
-    std::string procCMD = "processdump -p " + std::to_string(FaultLoggerdSystemTest::loopAppPid);
+    std::string procCMD = "dumpcatcher -p " + std::to_string(FaultLoggerdSystemTest::loopAppPid);
     string procDumpLog = FaultLoggerdSystemTest::ProcessDumpCommands(procCMD);
     GTEST_LOG_(INFO) << "procDumpLog: " << procDumpLog;
     bool ret = procDumpLog.find("Only BMS and the process owner can dump stacktrace") != std::string::npos;
@@ -2938,14 +2938,14 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest040_level0, TestSize.Lev
 
 /**
  * @tc.name: FaultLoggerdSystemTest041
- * @tc.desc: test processdump command: processdump -p apppid -t apppid
+ * @tc.desc: test dumpcatcher command: dumpcatcher -p apppid -t apppid
  * @tc.type: FUNC
  */
 HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest041, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest041: start uid:" << getuid();
     FaultLoggerdSystemTest::StartCrasherLoop(3);
-    std::string procCMD = "processdump -p " + std::to_string(FaultLoggerdSystemTest::loopAppPid) + " -t "+
+    std::string procCMD = "dumpcatcher -p " + std::to_string(FaultLoggerdSystemTest::loopAppPid) + " -t "+
     std::to_string(FaultLoggerdSystemTest::loopAppPid);
     string procDumpLog = FaultLoggerdSystemTest::ProcessDumpCommands(procCMD);
     GTEST_LOG_(INFO) << "procDumpLog: " << procDumpLog;
@@ -2957,7 +2957,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest041, TestSize.Level2)
 
 /**
  * @tc.name: FaultLoggerdSystemTest042
- * @tc.desc: test processdump command: processdump -p apppid -t apptid
+ * @tc.desc: test dumpcatcher command: dumpcatcher -p apppid -t apptid
  * @tc.type: FUNC
  */
 HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest042, TestSize.Level2)
@@ -2968,7 +2968,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest042, TestSize.Level2)
     if (FaultLoggerdSystemTest::loopAppPid == std::stoi(FaultLoggerdSystemTest::appTid[0])) {
         tid = std::stoi(FaultLoggerdSystemTest::appTid[1]);
     }
-    std::string procCMD = "processdump -p " + std::to_string(FaultLoggerdSystemTest::loopAppPid) + " -t "+
+    std::string procCMD = "dumpcatcher -p " + std::to_string(FaultLoggerdSystemTest::loopAppPid) + " -t "+
         std::to_string(tid);
     string procDumpLog = FaultLoggerdSystemTest::ProcessDumpCommands(procCMD);
     GTEST_LOG_(INFO) << "procDumpLog: " << procDumpLog;
@@ -2980,7 +2980,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest042, TestSize.Level2)
 
 /**
  * @tc.name: FaultLoggerdSystemTest043
- * @tc.desc: test processdump command: -p systempid
+ * @tc.desc: test dumpcatcher command: -p systempid
  * @tc.type: FUNC
  */
 HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest043, TestSize.Level2)
@@ -2988,7 +2988,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest043, TestSize.Level2)
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest043: start.";
     FaultLoggerdSystemTest::StartCrasherLoop(1);
     FaultLoggerdSystemTest::StartCrasherLoop(3);
-    std::string procCMD = "processdump -p " + std::to_string(FaultLoggerdSystemTest::loopSysPid) + " -t "
+    std::string procCMD = "dumpcatcher -p " + std::to_string(FaultLoggerdSystemTest::loopSysPid) + " -t "
         + std::to_string(FaultLoggerdSystemTest::loopSysPid);
     string procDumpLog = FaultLoggerdSystemTest::ProcessDumpCommands(procCMD);
     GTEST_LOG_(INFO) << "procDumpLog: " << procDumpLog;
@@ -3011,7 +3011,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest043, TestSize.Level2)
 
 /**
  * @tc.name: FaultLoggerdSystemTest0109
- * @tc.desc: test processdump command: -p rootpid
+ * @tc.desc: test dumpcatcher command: -p rootpid
  * @tc.type: FUNC
  */
 HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0109, TestSize.Level2)
@@ -3019,7 +3019,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0109, TestSize.Level2)
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest0109: start.";
     FaultLoggerdSystemTest::StartCrasherLoop(2);
     FaultLoggerdSystemTest::StartCrasherLoop(3);
-    std::string procCMD = "processdump -p " + std::to_string(FaultLoggerdSystemTest::loopRootPid) + " -t "
+    std::string procCMD = "dumpcatcher -p " + std::to_string(FaultLoggerdSystemTest::loopRootPid) + " -t "
         + std::to_string(FaultLoggerdSystemTest::loopRootPid);
     string procDumpLog = FaultLoggerdSystemTest::ProcessDumpCommands(procCMD);
     GTEST_LOG_(INFO) << "procDumpLog: " << procDumpLog;
@@ -3042,14 +3042,14 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0109, TestSize.Level2)
 
 /**
  * @tc.name: FaultLoggerdSystemTest044
- * @tc.desc: test processdump command: -p 9999 -t apppid
+ * @tc.desc: test dumpcatcher command: -p 9999 -t apppid
  * @tc.type: FUNC
  */
 HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest044, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest044: start.";
     FaultLoggerdSystemTest::StartCrasherLoop(3);
-    std::string procCMD = "processdump -p 9999 -t "+ std::to_string(FaultLoggerdSystemTest::loopAppPid);
+    std::string procCMD = "dumpcatcher -p 9999 -t "+ std::to_string(FaultLoggerdSystemTest::loopAppPid);
     string procDumpLog = FaultLoggerdSystemTest::ProcessDumpCommands(procCMD);
     int count = 0;
     string log[] = {"failed", "invalid"};
@@ -3069,14 +3069,14 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest044, TestSize.Level2)
 
 /**
  * @tc.name: FaultLoggerdSystemTest045
- * @tc.desc: test processdump command: -p apppid -t 9999
+ * @tc.desc: test dumpcatcher command: -p apppid -t 9999
  * @tc.type: FUNC
  */
 HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest045, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest045: start.";
     FaultLoggerdSystemTest::StartCrasherLoop(3);
-    std::string procCMD = "processdump -p " + std::to_string(FaultLoggerdSystemTest::loopAppPid) + " -t 9999";
+    std::string procCMD = "dumpcatcher -p " + std::to_string(FaultLoggerdSystemTest::loopAppPid) + " -t 9999";
     string procDumpLog = FaultLoggerdSystemTest::ProcessDumpCommands(procCMD);
     int count = 0;
     string log[] = {"failed", "invalid"};
@@ -3096,7 +3096,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest045, TestSize.Level2)
 
 /**
  * @tc.name: FaultLoggerdSystemTest046
- * @tc.desc: test processdump command: -p apppid -t systempid
+ * @tc.desc: test dumpcatcher command: -p apppid -t systempid
  * @tc.type: FUNC
  */
 HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest046, TestSize.Level2)
@@ -3104,7 +3104,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest046, TestSize.Level2)
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest046: start.";
     FaultLoggerdSystemTest::StartCrasherLoop(1);
     FaultLoggerdSystemTest::StartCrasherLoop(3);
-    std::string procCMD = "processdump -p " + std::to_string(FaultLoggerdSystemTest::loopAppPid) + " -t "
+    std::string procCMD = "dumpcatcher -p " + std::to_string(FaultLoggerdSystemTest::loopAppPid) + " -t "
         + std::to_string(FaultLoggerdSystemTest::loopSysPid);
     string procDumpLog = FaultLoggerdSystemTest::ProcessDumpCommands(procCMD);
     int count = 0;
@@ -3126,7 +3126,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest046, TestSize.Level2)
 
 /**
  * @tc.name: FaultLoggerdSystemTest047
- * @tc.desc: test processdump command: -p systempid -t apppid
+ * @tc.desc: test dumpcatcher command: -p systempid -t apppid
  * @tc.type: FUNC
  */
 HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest047, TestSize.Level2)
@@ -3134,7 +3134,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest047, TestSize.Level2)
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest047: start.";
     FaultLoggerdSystemTest::StartCrasherLoop(1);
     FaultLoggerdSystemTest::StartCrasherLoop(3);
-    std::string procCMD = "processdump -p " + std::to_string(FaultLoggerdSystemTest::loopSysPid) + " -t "
+    std::string procCMD = "dumpcatcher -p " + std::to_string(FaultLoggerdSystemTest::loopSysPid) + " -t "
         + std::to_string(FaultLoggerdSystemTest::loopAppPid);
     string procDumpLog = FaultLoggerdSystemTest::ProcessDumpCommands(procCMD);
     int count = 0;
@@ -3156,14 +3156,14 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest047, TestSize.Level2)
 
 /**
  * @tc.name: FaultLoggerdSystemTest048
- * @tc.desc: test processdump command: -p  -t apppid
+ * @tc.desc: test dumpcatcher command: -p  -t apppid
  * @tc.type: FUNC
  */
 HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest048, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest048: start.";
     FaultLoggerdSystemTest::StartCrasherLoop(3);
-    std::string procCMD = "processdump -p  -t " + std::to_string(FaultLoggerdSystemTest::loopAppPid);
+    std::string procCMD = "dumpcatcher -p  -t " + std::to_string(FaultLoggerdSystemTest::loopAppPid);
     string procDumpLog = FaultLoggerdSystemTest::ProcessDumpCommands(procCMD);
     int count = 0;
     string log[] = {"usage:", "dump the stacktrace"};
@@ -3183,14 +3183,14 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest048, TestSize.Level2)
 
 /**
  * @tc.name: FaultLoggerdSystemTest049
- * @tc.desc: test processdump command: -p apppid -t
+ * @tc.desc: test dumpcatcher command: -p apppid -t
  * @tc.type: FUNC
  */
 HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest049, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest049: start.";
     FaultLoggerdSystemTest::StartCrasherLoop(3);
-    std::string procCMD = "processdump -p " + std::to_string(FaultLoggerdSystemTest::loopAppPid) + " -t ";
+    std::string procCMD = "dumpcatcher -p " + std::to_string(FaultLoggerdSystemTest::loopAppPid) + " -t ";
     string procDumpLog = FaultLoggerdSystemTest::ProcessDumpCommands(procCMD);
     int count = 0;
     string log[] = {"usage:", "dump the stacktrace"};
@@ -3210,14 +3210,14 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest049, TestSize.Level2)
 
 /**
  * @tc.name: FaultLoggerdSystemTest050
- * @tc.desc: test processdump command: -p -11 -t apppid
+ * @tc.desc: test dumpcatcher command: -p -11 -t apppid
  * @tc.type: FUNC
  */
 HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest050, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest050: start.";
     FaultLoggerdSystemTest::StartCrasherLoop(3);
-    std::string procCMD = "processdump -p -11 -t " + std::to_string(FaultLoggerdSystemTest::loopAppPid);
+    std::string procCMD = "dumpcatcher -p -11 -t " + std::to_string(FaultLoggerdSystemTest::loopAppPid);
     string procDumpLog = FaultLoggerdSystemTest::ProcessDumpCommands(procCMD);
     int count = 0;
     string log[] = {"failed", "invalid"};
@@ -3237,14 +3237,14 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest050, TestSize.Level2)
 
 /**
  * @tc.name: FaultLoggerdSystemTest051
- * @tc.desc: test processdump command: -p apppid -t -11
+ * @tc.desc: test dumpcatcher command: -p apppid -t -11
  * @tc.type: FUNC
  */
 HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest051, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest051: start.";
     FaultLoggerdSystemTest::StartCrasherLoop(3);
-    std::string procCMD = "processdump -p " + std::to_string(FaultLoggerdSystemTest::loopAppPid) + " -t -11";
+    std::string procCMD = "dumpcatcher -p " + std::to_string(FaultLoggerdSystemTest::loopAppPid) + " -t -11";
     string procDumpLog = FaultLoggerdSystemTest::ProcessDumpCommands(procCMD);
     int count = 0;
     string log[] = {"failed", "invalid"};
@@ -3264,7 +3264,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest051, TestSize.Level2)
 
 /**
  * @tc.name: FaultLoggerdSystemTest052
- * @tc.desc: test processdump command: -p systempid
+ * @tc.desc: test dumpcatcher command: -p systempid
  * @tc.type: FUNC
  */
 HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest052, TestSize.Level2)
@@ -3273,7 +3273,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest052, TestSize.Level2)
     FaultLoggerdSystemTest::StartCrasherLoop(1);
     int uidSetting = BMS_UID;
     setuid(uidSetting);
-    std::string procCMD = "processdump -p " + std::to_string(FaultLoggerdSystemTest::loopSysPid);
+    std::string procCMD = "dumpcatcher -p " + std::to_string(FaultLoggerdSystemTest::loopSysPid);
     string procDumpLog = FaultLoggerdSystemTest::ProcessDumpCommands(procCMD);
     GTEST_LOG_(INFO) << "procDumpLog: " << procDumpLog;
     int count = 0;
@@ -3296,7 +3296,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest052, TestSize.Level2)
 
 /**
  * @tc.name: FaultLoggerdSystemTest0105
- * @tc.desc: test processdump command: -p rootpid
+ * @tc.desc: test dumpcatcher command: -p rootpid
  * @tc.type: FUNC
  */
 HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0105, TestSize.Level2)
@@ -3305,7 +3305,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0105, TestSize.Level2)
     FaultLoggerdSystemTest::StartCrasherLoop(2);
     int uidSetting = 0;
     setuid(uidSetting);
-    std::string procCMD = "processdump -p " + std::to_string(FaultLoggerdSystemTest::loopRootPid);
+    std::string procCMD = "dumpcatcher -p " + std::to_string(FaultLoggerdSystemTest::loopRootPid);
     string procDumpLog = FaultLoggerdSystemTest::ProcessDumpCommands(procCMD);
     GTEST_LOG_(INFO) << "procDumpLog: " << procDumpLog;
     int count = 0;
@@ -3328,7 +3328,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0105, TestSize.Level2)
 
 /**
  * @tc.name: FaultLoggerdSystemTest053
- * @tc.desc: test processdump command: -p apppid
+ * @tc.desc: test dumpcatcher command: -p apppid
  * @tc.type: FUNC
  */
 HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest053, TestSize.Level2)
@@ -3338,7 +3338,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest053, TestSize.Level2)
     FaultLoggerdSystemTest::StartCrasherLoop(1);
     int uidSetting = BMS_UID;
     setuid(uidSetting);
-    std::string procCMD = "processdump -p " + std::to_string(FaultLoggerdSystemTest::loopAppPid);
+    std::string procCMD = "dumpcatcher -p " + std::to_string(FaultLoggerdSystemTest::loopAppPid);
     string procDumpLog = FaultLoggerdSystemTest::ProcessDumpCommands(procCMD);
     GTEST_LOG_(INFO) << "procDumpLog: " << procDumpLog;
     int count = 0;
@@ -3361,7 +3361,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest053, TestSize.Level2)
 
 /**
  * @tc.name: FaultLoggerdSystemTest0106
- * @tc.desc: test processdump command: -p apppid
+ * @tc.desc: test dumpcatcher command: -p apppid
  * @tc.type: FUNC
  */
 HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0106, TestSize.Level2)
@@ -3371,7 +3371,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0106, TestSize.Level2)
     FaultLoggerdSystemTest::StartCrasherLoop(1);
     int uidSetting = BMS_UID;
     setuid(uidSetting);
-    std::string procCMD = "processdump -p " + std::to_string(FaultLoggerdSystemTest::loopRootPid);
+    std::string procCMD = "dumpcatcher -p " + std::to_string(FaultLoggerdSystemTest::loopRootPid);
     string procDumpLog = FaultLoggerdSystemTest::ProcessDumpCommands(procCMD);
     GTEST_LOG_(INFO) << "procDumpLog: " << procDumpLog;
     int count = 0;
@@ -3394,7 +3394,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0106, TestSize.Level2)
 
 /**
  * @tc.name: FaultLoggerdSystemTest0107
- * @tc.desc: test processdump command: -p apppid
+ * @tc.desc: test dumpcatcher command: -p apppid
  * @tc.type: FUNC
  */
 HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0107, TestSize.Level2)
@@ -3404,7 +3404,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0107, TestSize.Level2)
     FaultLoggerdSystemTest::StartCrasherLoop(2);
     int uidSetting = 0;
     setuid(uidSetting);
-    std::string procCMD = "processdump -p " + std::to_string(FaultLoggerdSystemTest::loopAppPid);
+    std::string procCMD = "dumpcatcher -p " + std::to_string(FaultLoggerdSystemTest::loopAppPid);
     string procDumpLog = FaultLoggerdSystemTest::ProcessDumpCommands(procCMD);
     GTEST_LOG_(INFO) << "procDumpLog: " << procDumpLog;
     int count = 0;
@@ -3429,7 +3429,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0107, TestSize.Level2)
 
 /**
  * @tc.name: FaultLoggerdSystemTest0108
- * @tc.desc: test processdump command: -p sytempid
+ * @tc.desc: test dumpcatcher command: -p sytempid
  * @tc.type: FUNC
  */
 HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0108, TestSize.Level2)
@@ -3439,7 +3439,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0108, TestSize.Level2)
     FaultLoggerdSystemTest::StartCrasherLoop(2);
     int uidSetting = 0;
     setuid(uidSetting);
-    std::string procCMD = "processdump -p " + std::to_string(FaultLoggerdSystemTest::loopSysPid);
+    std::string procCMD = "dumpcatcher -p " + std::to_string(FaultLoggerdSystemTest::loopSysPid);
     string procDumpLog = FaultLoggerdSystemTest::ProcessDumpCommands(procCMD);
     GTEST_LOG_(INFO) << "procDumpLog: " << procDumpLog;
     int count = 0;
@@ -3466,7 +3466,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0108, TestSize.Level2)
 
 /**
  * @tc.name: FaultLoggerdSystemTest054
- * @tc.desc: test processdump command: -p apppid -t rootpid
+ * @tc.desc: test dumpcatcher command: -p apppid -t rootpid
  * @tc.type: FUNC
  */
 HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest054, TestSize.Level2)
@@ -3474,7 +3474,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest054, TestSize.Level2)
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest054: start.";
     FaultLoggerdSystemTest::StartCrasherLoop(2);
     FaultLoggerdSystemTest::StartCrasherLoop(3);
-    std::string procCMD = "processdump -p " + std::to_string(FaultLoggerdSystemTest::loopAppPid) + " -t " +
+    std::string procCMD = "dumpcatcher -p " + std::to_string(FaultLoggerdSystemTest::loopAppPid) + " -t " +
         std::to_string(FaultLoggerdSystemTest::loopRootPid);
     string procDumpLog = FaultLoggerdSystemTest::ProcessDumpCommands(procCMD);
     int count = 0;
@@ -3497,7 +3497,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest054, TestSize.Level2)
 
 /**
  * @tc.name: FaultLoggerdSystemTest055
- * @tc.desc: test processdump command: -p rootpid, -t apppid
+ * @tc.desc: test dumpcatcher command: -p rootpid, -t apppid
  * @tc.type: FUNC
  */
 HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest055, TestSize.Level2)
@@ -3505,7 +3505,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest055, TestSize.Level2)
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest055: start.";
     FaultLoggerdSystemTest::StartCrasherLoop(2);
     FaultLoggerdSystemTest::StartCrasherLoop(3);
-    std::string procCMD = "processdump -p " + std::to_string(FaultLoggerdSystemTest::loopRootPid) + " -t " +
+    std::string procCMD = "dumpcatcher -p " + std::to_string(FaultLoggerdSystemTest::loopRootPid) + " -t " +
         std::to_string(FaultLoggerdSystemTest::loopAppPid);
     string procDumpLog = FaultLoggerdSystemTest::ProcessDumpCommands(procCMD);
     int count = 0;
@@ -3528,14 +3528,14 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest055, TestSize.Level2)
 
 /**
  * @tc.name: FaultLoggerdSystemTest0114
- * @tc.desc: test processdump command: -p pid-max, -t threads_max
+ * @tc.desc: test dumpcatcher command: -p pid-max, -t threads_max
  * @tc.type: FUNC
  */
 HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0114, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest0114: start.";
     FaultLoggerdSystemTest::StartCrasherLoop(3);
-    std::string procCMD = "processdump -p " + GetPidMax() + " -t " + GetTidMax();
+    std::string procCMD = "dumpcatcher -p " + GetPidMax() + " -t " + GetTidMax();
     string procDumpLog = FaultLoggerdSystemTest::ProcessDumpCommands(procCMD);
     int count = 0;
     string log[] = {"failed", "invalid"};
@@ -3556,14 +3556,14 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0114, TestSize.Level2)
 
 /**
  * @tc.name: FaultLoggerdSystemTest0115
- * @tc.desc: test processdump command: -p 65535, -t 65535
+ * @tc.desc: test dumpcatcher command: -p 65535, -t 65535
  * @tc.type: FUNC
  */
 HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0115, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest0115: start.";
     FaultLoggerdSystemTest::StartCrasherLoop(3);
-    std::string procCMD = "processdump -p 65535 -t 65535";
+    std::string procCMD = "dumpcatcher -p 65535 -t 65535";
     string procDumpLog = FaultLoggerdSystemTest::ProcessDumpCommands(procCMD);
     int count = 0;
     string log[] = {"failed", "invalid"};
@@ -3584,14 +3584,14 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0115, TestSize.Level2)
 
 /**
  * @tc.name: FaultLoggerdSystemTest0116
- * @tc.desc: test processdump command: -p 65536, -t 65536
+ * @tc.desc: test dumpcatcher command: -p 65536, -t 65536
  * @tc.type: FUNC
  */
 HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0116, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest0116: start.";
     FaultLoggerdSystemTest::StartCrasherLoop(3);
-    std::string procCMD = "processdump -p 65536 -t 65536";
+    std::string procCMD = "dumpcatcher -p 65536 -t 65536";
     string procDumpLog = FaultLoggerdSystemTest::ProcessDumpCommands(procCMD);
     int count = 0;
     string log[] = {"failed", "invalid"};
@@ -3612,14 +3612,14 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0116, TestSize.Level2)
 
 /**
  * @tc.name: FaultLoggerdSystemTest0117
- * @tc.desc: test processdump command: -p 65534, -t 65534
+ * @tc.desc: test dumpcatcher command: -p 65534, -t 65534
  * @tc.type: FUNC
  */
 HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0117, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest117: start.";
     FaultLoggerdSystemTest::StartCrasherLoop(3);
-    std::string procCMD = "processdump -p 65534 -t 65534";
+    std::string procCMD = "dumpcatcher -p 65534 -t 65534";
     string procDumpLog = FaultLoggerdSystemTest::ProcessDumpCommands(procCMD);
     int count = 0;
     string log[] = {"failed", "invalid"};
@@ -3672,14 +3672,14 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest056, TestSize.Level2)
 
 /**
  * @tc.name: FaultLoggerdSystemTest057
- * @tc.desc: test processdump command: -p rootpid
+ * @tc.desc: test dumpcatcher command: -p rootpid
  * @tc.type: FUNC
  */
 HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest057, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest057: start uid:" << getuid();
     FaultLoggerdSystemTest::StartCrasherLoop(4);
-    std::string procCMD = "processdump -p " + std::to_string(FaultLoggerdSystemTest::loopAppPid);
+    std::string procCMD = "dumpcatcher -p " + std::to_string(FaultLoggerdSystemTest::loopAppPid);
     string procDumpLog = FaultLoggerdSystemTest::ProcessDumpCommands(procCMD);
     GTEST_LOG_(INFO) << "procDumpLog: " << procDumpLog;
     bool ret = procDumpLog.find("Only BMS and the process owner can dump stacktrace") != std::string::npos;

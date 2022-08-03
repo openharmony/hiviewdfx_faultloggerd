@@ -59,10 +59,10 @@ bool DumpStackTraceTest(const uint8_t* data, size_t size)
         cout << "DumpStackTraceTest :: dumpcatch failed." << endl;
     }
 
-    string processdumpCmd = "processdump -p " + to_string(pid[0]) + " -t " + to_string(tid[0]);
+    string processdumpCmd = "dumpcatcher -p " + to_string(pid[0]) + " -t " + to_string(tid[0]);
     system(processdumpCmd.c_str());
 
-    string processdumpInvalidCmd = "processdump -" + to_string(invalidOption) + " -p " +
+    string processdumpInvalidCmd = "dumpcatcher -" + to_string(invalidOption) + " -p " +
         to_string(pid[0]) + " -t " + to_string(tid[0]);
     system(processdumpInvalidCmd.c_str());
 

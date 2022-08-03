@@ -16,6 +16,7 @@
 
 #include <securec.h>              // for memset_s, EOK, errno_t
 #include <cstdint>               // for int32_t, uint64_t
+#include <sys/syscall.h>
 #include <sys/socket.h>           // for recv
 #include <sys/time.h>             // for gettimeofday, timeval
 #include <sys/un.h>               // for strlen
@@ -23,7 +24,6 @@
 #include <cstdio>                 // for size_t, EOF, FILE
 #include <climits>               // for PATH_MAX
 #include <cstdlib>               // for atoi, realpath
-#include "bits/syscall.h"         // for SYS_gettid
 #include "dfx_define.h"           // for SOCKET_BUFFER_SIZE, FAULTLOGGERD_SO...
 #include "dfx_log.h"              // for DfxLogError, DfxLogInfo, DfxLogDebug
 #include "faultloggerd_socket.h"  // for StartConnect, ReadFileDescriptorFro...

@@ -13,25 +13,13 @@
  * limitations under the License.
  */
 
-/* This files contains process dump main module. */
+/* This files contains dumpcatcher main module. */
 
 #include "dump_catcher.h"
-#include "dfx_dump_catcher.h"
-
-#include <cerrno>
-#include <cinttypes>
-#include <memory>
-#include <csignal>
-#include <cstdio>
-#include <cstdlib>
-#include <cstring>
-#include <ucontext.h>
-#include <unistd.h>
-#include <fcntl.h>
 #include <iostream>
-#include <string>
 #include "dfx_define.h"
 #include "dfx_logger.h"
+#include "dfx_dump_catcher.h"
 
 namespace OHOS {
 namespace HiviewDFX {
@@ -48,6 +36,8 @@ void DumpCatcher::Dump(int32_t pid, int32_t tid)
     bool ret = dumplog.DumpCatch(pid, tid, msg);
     if (ret) {
         std::cout << msg << std::endl;
+    } else {
+        DfxLogWarn("DumpCatch fail.");
     }
 }
 } // namespace HiviewDFX
