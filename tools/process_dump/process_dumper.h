@@ -37,20 +37,17 @@ public:
     static ProcessDumper &GetInstance();
     ~ProcessDumper() = default;
 
-    void Dump(bool isSignalHdlr, ProcessDumpType type, int32_t pid, int32_t tid);
+    void Dump();
     void WriteDumpRes(int32_t res);
 private:
     static int WriteDumpBuf(int fd, const char* buf, const int len);
     int DumpProcessWithSignalContext(std::shared_ptr<DfxProcess> &process, \
                                       std::shared_ptr<ProcessDumpRequest> request);
-    void DumpProcessWithPidTid(std::shared_ptr<DfxProcess> &process, \
-                               std::shared_ptr<ProcessDumpRequest> request);
     
-    int InitPrintThread(int32_t fromSignalHandler, std::shared_ptr<ProcessDumpRequest> request, \
+    int InitPrintThread(bool fromSignalHandler, std::shared_ptr<ProcessDumpRequest> request, \
                          std::shared_ptr<DfxProcess> process);
     void PrintDumpProcessWithSignalContextHeader(std::shared_ptr<DfxProcess> process, siginfo_t info,
                                                  uint64_t timeStamp, const std::string& msg);
-    void PrintDumpProcessFooter(std::shared_ptr<DfxProcess> process, bool printMapFlag);
 
     ProcessDumper() = default;
     DISALLOW_COPY_AND_MOVE(ProcessDumper);

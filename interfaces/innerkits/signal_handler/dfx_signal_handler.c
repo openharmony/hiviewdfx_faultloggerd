@@ -524,7 +524,7 @@ void DFX_InstallSignalHandler(void)
     for (size_t i = 0; i < sizeof(g_interestedSignalList) / sizeof(g_interestedSignalList[0]); i++) {
         int32_t sig = g_interestedSignalList[i];
         if (sigaction(sig, &action, &(g_oldSigactionList[sig])) != 0) {
-            DfxLogError("Failed to register signal. %{public}d", sig);
+            DfxLogError("Failed to register signal(%d)", sig);
         }
     }
 

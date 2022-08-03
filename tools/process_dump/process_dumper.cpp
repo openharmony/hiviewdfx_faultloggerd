@@ -80,11 +80,11 @@ void ProcessDumper::PrintDumpProcessWithSignalContextHeader(std::shared_ptr<DfxP
     }
 }
 
-int ProcessDumper::InitPrintThread(int32_t fromSignalHandler, std::shared_ptr<ProcessDumpRequest> request, \
+int ProcessDumper::InitPrintThread(bool fromSignalHandler, std::shared_ptr<ProcessDumpRequest> request, \
     std::shared_ptr<DfxProcess> process)
 {
     int fd = -1;
-    if (fromSignalHandler == 0) {
+    if (!fromSignalHandler) {
         fd = STDOUT_FILENO;
         DfxRingBufferWrapper::GetInstance().SetWriteFunc(ProcessDumper::WriteDumpBuf);
     } else {
@@ -222,47 +222,7 @@ int ProcessDumper::DumpProcessWithSignalContext(std::shared_ptr<DfxProcess> &pro
     return dumpRes;
 }
 
-void ProcessDumper::DumpProcessWithPidTid(std::shared_ptr<DfxProcess> &process, \
-                                          std::shared_ptr<ProcessDumpRequest> request)
-{
-    FaultLoggerType type = FaultLoggerType::CPP_STACKTRACE;
-    bool isLogPersist = DfxConfig::GetInstance().GetLogPersist();
-    if (isLogPersist) {
-        InitDebugLog((int)type, request->GetPid(), request->GetTid(), request->GetUid(), isLogPersist);
-    } else {
-        int devNull = OHOS_TEMP_FAILURE_RETRY(open("/dev/null", O_RDWR));
-        if (devNull < 0) {
-            std::cout << "Failed to open dev/null." << std::endl;
-        } else {
-            OHOS_TEMP_FAILURE_RETRY(dup2(devNull, STDERR_FILENO));
-        }
-    }
-
-    if (request->GetType() == DUMP_TYPE_PROCESS) {
-        process = DfxProcess::CreateProcessWithKeyThread(request->GetPid(), nullptr);
-        if (process) {
-            process->InitOtherThreads(false);
-        }
-    } else if (request->GetType() == DUMP_TYPE_THREAD) {
-        process = DfxProcess::CreateProcessWithKeyThread(request->GetTid(), nullptr);
-    } else {
-        DfxLogError("dump type is not support.");
-        return;
-    }
-
-    if (!process) {
-        DfxLogError("Fail to init key thread.");
-        return;
-    }
-
-    process->SetIsSignalDump(true);
-    process->SetIsSignalHdlr(false);
-    InitPrintThread(false, nullptr, process);
-
-    DfxUnwindRemote::GetInstance().UnwindProcess(process);
-}
-
-void ProcessDumper::Dump(bool isSignalHdlr, ProcessDumpType type, int32_t pid, int32_t tid)
+void ProcessDumper::Dump()
 {
     std::shared_ptr<ProcessDumpRequest> request = std::make_shared<ProcessDumpRequest>();
     if (!request) {
@@ -270,26 +230,13 @@ void ProcessDumper::Dump(bool isSignalHdlr, ProcessDumpType type, int32_t pid, i
         return;
     }
 
-    DfxLogDebug("isSignalHdlr(%d), type(%d), pid(%d), tid(%d).", isSignalHdlr, type, pid, tid);
-
     std::shared_ptr<DfxProcess> process = nullptr;
-    if (isSignalHdlr) {
-        resDump_ = DumpProcessWithSignalContext(process, request);
-    } else {
-        if (type == DUMP_TYPE_PROCESS) {
-            request->SetPid(pid);
-        } else {
-            request->SetPid(pid);
-            request->SetTid(tid);
-        }
-        request->SetType(type);
-        DumpProcessWithPidTid(process, request);
-    }
+    resDump_ = DumpProcessWithSignalContext(process, request);
 
     if (process == nullptr) {
         DfxLogError("Dump process failed, please check permission and whether pid is valid.");
     } else {
-        if (!isSignalHdlr || (isSignalHdlr && process->GetIsSignalDump())) {
+        if (process->GetIsSignalDump()) {
             process->Detach();
         }
     }
@@ -300,10 +247,6 @@ void ProcessDumper::Dump(bool isSignalHdlr, ProcessDumpType type, int32_t pid, i
 
     DfxRingBufferWrapper::GetInstance().StopThread();
     WriteDumpRes(resDump_);
-
-    if (isSignalHdlr && process && !process->GetIsSignalDump()) {
-        process->Detach();
-    }
 
     CloseDebugLog();
     _exit(0);
