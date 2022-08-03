@@ -39,153 +39,30 @@
 #include "dfx_cutil.h"
 #endif
 
-static const int SIGNAL_HANDLER = 2;
-static const int DUMP_THIRD = 3;
-static const int DUMP_FIVE = 5;
-static const int DUMP_ARG_TWO = 2;
-static const int DUMP_ARG_THREE = 3;
-static const int DUMP_ARG_FOUR = 4;
-
+static const int DUMP_ARG_ONE = 1;
 static const std::string DUMP_STACK_TAG_USAGE = "usage:";
 static const std::string DUMP_STACK_TAG_FAILED = "failed:";
 
 static void PrintCommandHelp()
 {
     std::cout << DUMP_STACK_TAG_USAGE << std::endl;
-    std::cout << "-p pid -t tid    dump the stacktrace of the thread with given tid." << std::endl;
-    std::cout << "-p pid    dump the stacktrace of all the threads with given pid." << std::endl;
+    std::cout << "please use dumpcatcher" << std::endl;
 }
 
-static void PrintPermissionCheckFailed()
+static bool ParseParamters(int argc, char *argv[], bool &isSignalHdlr)
 {
-    std::cout << DUMP_STACK_TAG_FAILED << std::endl;
-    std::cout << "Only BMS and the process owner can dump stacktrace." << std::endl;
-}
-
-static void PrintFailedConnect()
-{
-    std::cout << DUMP_STACK_TAG_FAILED << std::endl;
-    std::cout << "faultloggerd is not available" << std::endl;
-}
-
-static void PrintPidTidCheckFailed(int32_t pid, int32_t tid, const std::string& error)
-{
-    DfxLogWarn("pid:%d, tid:%d check failed", pid, tid);
-    std::cout << DUMP_STACK_TAG_FAILED << std::endl;
-    std::cout << error << std::endl;
-    DfxLogWarn(error.c_str());
-    std::cout << "The pid or tid is invalid." << std::endl;
-}
-
-static void FillErrorInfo(std::string& error, const char* format, ...)
-{
-    char buffer[LOG_BUF_LEN] = {0};
-    va_list args;
-    va_start(args, format);
-    int size = vsnprintf_s(buffer, sizeof(buffer), sizeof(buffer) - 1, format, args);
-    if (size == -1) {
-        DfxLogWarn("fillErrorInfo, vsnprintf_s fail");
-    }
-    va_end(args);
-    std::string temp(buffer);
-    error = temp;
-}
-
-// Check whether the tid is owned by pid.
-static bool CheckPidTid(OHOS::HiviewDFX::ProcessDumpType type, int32_t pid, int32_t tid, std::string& error)
-{
-    // check pid
-    if ((pid == 0) || (pid < 0)) {
-        FillErrorInfo(error, "pid is zero or negative.");
+    if (argc <= DUMP_ARG_ONE) {
         return false;
     }
+    DfxLogDebug("argc: %d, argv1: %s", argc, argv[1]);
 
-    // user specified a tid, we need to check tid / pid is valid or not.
-    if (type == OHOS::HiviewDFX::DUMP_TYPE_THREAD) {
-        if (tid > 0) {
-            std::vector<std::string> files;
-
-            std::string path = "/proc/" + std::to_string(pid) + "/task/" + std::to_string(tid);
-
-            OHOS::GetDirFiles(path, files);
-            if (files.size() == 0) {
-                FillErrorInfo(error, "Cannot find tid(%d) in process(%d).", tid, pid);
-                return false;
-            }
-        } else {
-            FillErrorInfo(error, "tid is zero or negative.");
-            return false;
-        }
+    if (!strcmp("-signalhandler", argv[DUMP_ARG_ONE])) {
+        isSignalHdlr = true;
+        return true;
     }
 
-    // check pid, make sure /proc/xxx/maps is valid.
-    if (pid > 0) {
-        char path[NAME_LEN] = {0};
-        if (snprintf_s(path, sizeof(path), sizeof(path) - 1, "/proc/%d/maps", pid) <= 0) {
-            FillErrorInfo(error, "Fail to print path.");
-            return false;
-        }
-
-        char realPath[PATH_MAX] = {0};
-        if (realpath(path, realPath) == nullptr) {
-            FillErrorInfo(error, "Maps path(%s) is not exist.", path);
-            return false;
-        }
-
-        FILE *fp = fopen(realPath, "r");
-        if (fp == nullptr) {
-            FillErrorInfo(error, "Fail to open maps info.");
-            return false;
-        }
-        fclose(fp);
-    } else {
-        FillErrorInfo(error, "pid is zero or negative.");
+    if ((!strcmp("-p", argv[DUMP_ARG_ONE])) || (!strcmp("-t", argv[DUMP_ARG_ONE]))) {
         return false;
-    }
-
-    return true;
-}
-
-static bool ParseParamters(int argc, char *argv[], bool &isSignalHdlr, OHOS::HiviewDFX::ProcessDumpType &type,
-    int32_t &pid, int32_t &tid)
-{
-    DfxLogDebug("argc:%d, argv1:%s", argc, argv[1]);
-    switch (argc) {
-        case SIGNAL_HANDLER:
-            if (!strcmp("-signalhandler", argv[1])) {
-                isSignalHdlr = true;
-                return true;
-            }
-            break;
-        case DUMP_THIRD:
-            if (!strcmp("-p", argv[1])) {
-                type = OHOS::HiviewDFX::DUMP_TYPE_PROCESS;
-                pid = atoi(argv[DUMP_ARG_TWO]);
-                return true;
-            }
-            break;
-        case DUMP_FIVE:
-            if (!strcmp("-p", argv[1])) {
-                type = OHOS::HiviewDFX::DUMP_TYPE_PROCESS;
-                pid = atoi(argv[DUMP_ARG_TWO]);
-
-                if (!strcmp("-t", argv[DUMP_ARG_THREE])) {
-                    type = OHOS::HiviewDFX::DUMP_TYPE_THREAD;
-                    tid = atoi(argv[DUMP_ARG_FOUR]);
-                    return true;
-                }
-            } else if (!strcmp("-t", argv[1])) {
-                type = OHOS::HiviewDFX::DUMP_TYPE_THREAD;
-                tid = atoi(argv[DUMP_ARG_TWO]);
-
-                if (!strcmp("-p", argv[DUMP_ARG_THREE])) {
-                    pid = atoi(argv[DUMP_ARG_FOUR]);
-                    return true;
-                }
-            }
-            break;
-        default:
-            break;
     }
     return false;
 }
@@ -196,34 +73,18 @@ int main(int argc, char *argv[])
     DFX_InstallLocalSignalHandler();
 #endif
     bool isSignalHdlr = false;
-    OHOS::HiviewDFX::ProcessDumpType type = OHOS::HiviewDFX::DUMP_TYPE_PROCESS;
-    int32_t pid = 0;
-    int32_t tid = 0;
 
     alarm(PROCESSDUMP_TIMEOUT); // wait 30s for process dump done
     setsid();
-    if (!ParseParamters(argc, argv, isSignalHdlr, type, pid, tid)) {
+
+    if (!ParseParamters(argc, argv, isSignalHdlr)) {
         PrintCommandHelp();
         return 0;
     }
 
-    if (!isSignalHdlr) { // We need do permission check when "false == isSignalHdlr" dump.
-        if (!CheckConnectStatus()) {
-            PrintFailedConnect();
-            return 0;
-        }
-        std::string error;
-        if (!CheckPidTid(type, pid, tid, error)) { // check pid tid is valid
-            PrintPidTidCheckFailed(pid, tid, error);
-            return 0;
-        }
-        if (!RequestCheckPermission(pid)) { // check permission
-            PrintPermissionCheckFailed();
-            return 0;
-        }
+    if (isSignalHdlr) {
+        OHOS::HiviewDFX::DfxConfig::GetInstance().ReadConfig();
+        OHOS::HiviewDFX::ProcessDumper::GetInstance().Dump();
     }
-
-    OHOS::HiviewDFX::DfxConfig::GetInstance().ReadConfig();
-    OHOS::HiviewDFX::ProcessDumper::GetInstance().Dump(isSignalHdlr, type, pid, tid);
     return 0;
 }

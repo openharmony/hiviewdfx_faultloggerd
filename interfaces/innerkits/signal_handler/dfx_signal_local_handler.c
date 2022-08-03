@@ -77,7 +77,7 @@ void DFX_InstallLocalSignalHandler(void)
         int32_t sig = g_platformSignals[i];
         sigaddset(&set, sig);
         if (sigaction(sig, &action, NULL) != 0) {
-            DfxLogError("Failed to register signal. %{public}d", sig);
+            DfxLogError("Failed to register signal(%d)", sig);
         }
     }
     sigprocmask(SIG_UNBLOCK, &set, NULL);
