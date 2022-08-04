@@ -77,12 +77,56 @@ bool StartConnect(int& sockfd, const char* path, const int timeout)
     return ret;
 }
 
+static bool GetServerSocket(int& sockfd, const char* path)
+{
+    sockfd = OHOS_TEMP_FAILURE_RETRY(socket(AF_LOCAL, SOCK_STREAM, 0));
+    if (sockfd < 0) {
+        DfxLogError("%s :: Failed to create socket", __func__);
+        return false;
+    }
+    
+    struct sockaddr_un server;
+    errno_t err = memset_s(&server, sizeof(server), 0, sizeof(server));
+    if (err != EOK) {
+        DfxLogError("%s :: memset_s failed, err = %d.", __func__, (int)err);
+        return false;
+    }
+    server.sun_family = AF_LOCAL;
+    if (strncpy_s(server.sun_path, sizeof(server.sun_path), path, sizeof(server.sun_path) - 1) != 0) {
+        DfxLogError("%s :: strncpy failed.", __func__);
+        return false;
+    }
+
+    unlink(path);
+
+    int optval = 1;
+    int ret = setsockopt(sockfd, SOL_SOCKET, SO_PASSCRED, &optval, sizeof(optval));
+    if (ret < 0) {
+        return false;
+    }
+
+    if (bind(sockfd, (struct sockaddr *)&server,
+        offsetof(struct sockaddr_un, sun_path) + strlen(server.sun_path)) < 0) {
+        DfxLogError("%s :: Failed to bind socket", __func__);
+        return false;
+    }
+    
+    return true;
+}
+
 bool StartListen(int& sockfd, const char* name, const int listenCnt)
 {
+    if (name == nullptr) {
+        return false;
+    }
     sockfd = GetControlSocket(name);
     if (sockfd < 0) {
-        DfxLogError("%s :: Failed to get init socket fd", __func__);
-        return false;
+        DfxLogWarn("%s :: Failed to get socket fd by cfg", __func__);
+
+        if (GetServerSocket(sockfd, FAULTLOGGERD_SOCK_PATH) == false) {
+            DfxLogError("%s :: Failed to get socket fd by path", __func__);
+            return false;
+        }
     }
 
     if (listen(sockfd, listenCnt) < 0) {
