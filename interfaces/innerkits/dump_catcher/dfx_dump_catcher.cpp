@@ -19,6 +19,7 @@
 
 #include <dirent.h>                                              // for clos...
 #include <poll.h>                                                // for pollfd
+#include <securec.h>
 #include <sys/syscall.h>
 #include <sys/types.h>                                           // for time_t
 #include <unistd.h>                                              // for syscall
@@ -242,7 +243,7 @@ bool DfxDumpCatcher::DoDumpRemotePid(int pid, std::string& msg)
     std::string bufMsg, resMsg;
 
     struct pollfd readfds[2];
-    memset(readfds, 0, sizeof(readfds));
+    (void)memset_s(readfds, sizeof(readfds), 0, sizeof(readfds));
     readfds[0].fd = readBufFd;
     readfds[0].events = POLLIN;
     readfds[1].fd = readResFd;
@@ -262,7 +263,7 @@ bool DfxDumpCatcher::DoDumpRemotePid(int pid, std::string& msg)
 
         bool bufRet = true, resRet = false;
         for (int i = 0; i < fdsSize; ++i) {
-            if ((readfds[i].revents & POLLIN) != POLLIN) {
+            if (((uint32_t)readfds[i].revents & POLLIN) != POLLIN) {
                 continue;
             }
             
