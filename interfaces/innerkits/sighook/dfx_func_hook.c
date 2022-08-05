@@ -22,8 +22,9 @@
 #include <signal.h>               // for sigset_t, sigaction, sigismember
 #include <stdio.h>                // for NULL, size_t
 #include <unistd.h>               // for getpid, gettid, pid_t
+#include <string.h>
 #include "dfx_log.h"              // for LOGE, LOGI
-#include "hilog_base/log_base.h"  // for LOG_DOMAIN, LOG_TAG
+#include "dfx_define.h"
 #include "libunwind-arm.h"        // for unw_word_t, _Uarm_get_reg, _Uarm_step
 #include "libunwind_i.h"          // for unw_addr_space
 #include "pthread.h"              // for pthread_mutex_unlock, pthread_mutex...
@@ -47,6 +48,7 @@
 #define MIN_FRAME 4
 #define MAX_FRAME 64
 #define BUF_SZ 512
+#define MAPINFO_SIZE 256
 
 void __attribute__((constructor)) InitHook(void)
 {
@@ -63,14 +65,7 @@ static SigactionFunc hookedSigaction = NULL;
 static SigprocmaskFunc hookedSigprocmask = NULL;
 static SignalFunc hookedSignal = NULL;
 static PthreadSigmaskFunc hookedPthreadSigmask = NULL;
-static uintptr_t g_signalHandler = 0;
 static pthread_mutex_t g_backtraceLock = PTHREAD_MUTEX_INITIALIZER;
-void SetPlatformSignalHandler(uintptr_t handler)
-{
-    if (g_signalHandler == 0) {
-        g_signalHandler = handler;
-    }
-}
 
 void LogBacktrace()
 {
@@ -230,6 +225,49 @@ sighandler_t signal(int signum, sighandler_t handler)
     return hookedSignal(signum, handler);
 }
 
+static bool IsSigactionAddr(uintptr_t sigactionAddr)
+{
+    char path[NAME_LEN] = {0};
+    if (snprintf_s(path, sizeof(path), sizeof(path) - 1, "/proc/self/maps") <= 0) {
+        LOGW("Fail to print path.");
+        return false;
+    }
+
+    FILE *fp = fopen(path, "r");
+    if (fp == NULL) {
+        LOGW("Fail to open maps info.");
+        return false;
+    }
+
+    char mapInfo[MAPINFO_SIZE] = {0};
+    int pos = 0;
+    uint64_t begin = 0;
+    uint64_t end = 0;
+    uint64_t offset = 0;
+    char perms[5] = {0}; // 5:rwxp
+    while (fgets(mapInfo, sizeof(mapInfo), fp) != NULL) {
+        // f79d6000-f7a62000 r-xp 0004b000 b3:06 1605                               /system/lib/ld-musl-arm.so.1
+        if (sscanf_s(mapInfo, "%" SCNxPTR "-%" SCNxPTR " %4s %" SCNxPTR " %*x:%*x %*d%n", &begin, &end,
+            &perms, sizeof(perms), &offset, &pos) != 4) { // 4:scan size
+            LOGW("Fail to parse maps info.");
+            continue;
+        }
+
+        if ((strstr(mapInfo, "r-xp") != NULL) && (strstr(mapInfo, "ld-musl") != NULL)) {
+            LOGI("begin: %lu, end: %lu, sigactionAddr: %lu", begin, end, sigactionAddr);
+            if ((sigactionAddr >= begin) && (sigactionAddr <= end)) {
+                return true;
+            }
+        } else {
+            continue;
+        }
+    }
+    if (fclose(fp) != 0) {
+        LOGW("Fail to close maps info.");
+    }
+    return false;
+}
+
 int sigaction(int sig, const struct sigaction *restrict act, struct sigaction *restrict oact)
 {
     if (hookedSigaction == NULL) {
@@ -238,7 +276,7 @@ int sigaction(int sig, const struct sigaction *restrict act, struct sigaction *r
     }
 
     if (IsPlatformHandleSignal(sig) && ((act == NULL) ||
-        ((act != NULL) && ((uintptr_t)(act->sa_sigaction) != (uintptr_t)g_signalHandler)))) {
+        ((act != NULL) && (IsSigactionAddr((uintptr_t)(act->sa_sigaction)))))) {
         LOGI("%d call sigaction and signo is %d\n", getpid(), sig);
         LogBacktrace();
     }
@@ -246,78 +284,26 @@ int sigaction(int sig, const struct sigaction *restrict act, struct sigaction *r
     return hookedSigaction(sig, act, oact);
 }
 
-static void StartHookKillFunction(void)
-{
-    hookedKill = (KillFunc)dlsym(RTLD_NEXT, "kill");
-    if (hookedKill != NULL) {
-        return;
-    }
-    LOGE("Failed to find hooked kill use RTLD_NEXT\n");
-
-    hookedKill = (KillFunc)dlsym(RTLD_DEFAULT, "kill");
-    if (hookedKill != NULL) {
-        return;
-    }
-    LOGE("Failed to find hooked kill use RTLD_DEFAULT\n");
+#define GenHookFunc(StartHookFunction, RealHookFunc, FuncName, RealFuncName) \
+void StartHookFunction(void) \
+{ \
+    RealFuncName = (RealHookFunc)dlsym(RTLD_NEXT, FuncName); \
+    if (RealFuncName != NULL) { \
+        return; \
+    } \
+    LOGE("Failed to find hooked %s use RTLD_NEXT\n", FuncName); \
+    RealFuncName = (RealHookFunc)dlsym(RTLD_DEFAULT, FuncName); \
+    if (RealFuncName != NULL) { \
+        return; \
+    } \
+    LOGE("Failed to find hooked %s use RTLD_DEFAULT\n", FuncName); \
 }
 
-static void StartHookSigactionFunction(void)
-{
-    hookedSigaction = (SigactionFunc)dlsym(RTLD_NEXT, "sigaction");
-    if (hookedSigaction != NULL) {
-        return;
-    }
-    LOGE("Failed to find hooked sigaction use RTLD_NEXT\n");
-
-    hookedSigaction = (SigactionFunc)dlsym(RTLD_DEFAULT, "sigaction");
-    if (hookedSigaction != NULL) {
-        return;
-    }
-    LOGE("Failed to find hooked sigaction use RTLD_DEFAULT\n");
-}
-
-static void StartHookSigprocmaskFunction(void)
-{
-    hookedSigprocmask = (SigprocmaskFunc)dlsym(RTLD_NEXT, "sigprocmask");
-    if (hookedSigprocmask != NULL) {
-        return;
-    }
-    LOGE("Failed to find hooked Sigprocmask use RTLD_NEXT\n");
-
-    hookedSigprocmask = (SigprocmaskFunc)dlsym(RTLD_DEFAULT, "sigprocmask");
-    if (hookedSigprocmask != NULL) {
-        return;
-    }
-    LOGE("Failed to find hooked Sigprocmask use RTLD_DEFAULT\n");
-}
-
-static void StartHookPthreadSigmaskFunction(void)
-{
-    hookedPthreadSigmask = (SigprocmaskFunc)dlsym(RTLD_NEXT, "pthread_sigmask");
-    if (hookedPthreadSigmask != NULL) {
-        return;
-    }
-    LOGE("Failed to find hooked Sigprocmask use RTLD_NEXT\n");
-
-    hookedPthreadSigmask = (SigprocmaskFunc)dlsym(RTLD_DEFAULT, "pthread_sigmask");
-    if (hookedPthreadSigmask != NULL) {
-        return;
-    }
-    LOGE("Failed to find hooked Sigprocmask use RTLD_DEFAULT\n");
-}
-
-static void StartHookSignalFunction(void)
-{
-    hookedSignal = (SignalFunc)dlsym(RTLD_NEXT, "signal");
-    if (hookedSignal != NULL) {
-        return;
-    }
-
-    hookedSignal = (SignalFunc)dlsym(RTLD_DEFAULT, "signal");
-    if (hookedSignal != NULL) {
-        return;
-    }
-}
+GenHookFunc(StartHookKillFunction, KillFunc, "kill", hookedKill)
+GenHookFunc(StartHookSigactionFunction, SigactionFunc, "sigaction", hookedSigaction)
+GenHookFunc(StartHookSignalFunction, SignalFunc, "signal", hookedSignal)
+GenHookFunc(StartHookSigprocmaskFunction, SigprocmaskFunc, "sigprocmask", hookedSigprocmask)
+GenHookFunc(StartHookPthreadSigmaskFunction, PthreadSigmaskFunc, "pthread_sigmask", hookedPthreadSigmask)
 
 void StartHookFunc(void)
 {
