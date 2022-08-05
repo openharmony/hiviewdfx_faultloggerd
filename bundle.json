@@ -20,7 +20,10 @@
     "ram": "~1024KB",
     "deps": {
       "components": [
-        "libhilog",
+        "common",
+        "bounds_checking_function",
+        "init",
+        "hilog_native",
         "c_utils"
       ],
       "third_party": [
