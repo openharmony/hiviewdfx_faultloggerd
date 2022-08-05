@@ -18,9 +18,9 @@
 #ifndef _FAULT_LOGGER_PIPE_H
 #define _FAULT_LOGGER_PIPE_H
 
-#include <string>
-#include <memory>
 #include <map>
+#include <memory>
+#include <string>
 
 namespace OHOS {
 namespace HiviewDFX {

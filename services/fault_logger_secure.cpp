@@ -17,12 +17,12 @@
 
 #include "fault_logger_secure.h"
 
-#include <securec.h>  // for strtok_s, memset_s, sprintf_s, EOK, errno_t
-#include <cstdio>     // for FILE
-#include <string>     // for basic_string
-#include <cstdlib>   // for atoi
-#include "iosfwd"     // for string
-#include "dfx_log.h"  // for DfxLogInfo, DfxLogError
+#include <cstdio>
+#include <cstdlib>
+#include <securec.h>
+#include <string>
+#include "dfx_log.h"
+#include "iosfwd"
 
 namespace OHOS {
 namespace HiviewDFX {

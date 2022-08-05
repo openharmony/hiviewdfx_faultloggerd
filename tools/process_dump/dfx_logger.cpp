@@ -14,13 +14,12 @@
  */
 #include "dfx_logger.h"
 
-#include <unistd.h>
 #include <cstdio>
 #include <securec.h>
-
-#include "faultloggerd_client.h"
+#include <unistd.h>
 #include "dfx_define.h"
 #include "dfx_log.h"
+#include "faultloggerd_client.h"
 
 static const int WRITE_LOG_BUF_LEN = 2048;
 static const int32_t INVALID_FD = -1;

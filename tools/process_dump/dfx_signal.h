@@ -15,9 +15,9 @@
 #ifndef DFX_SIGNAL_H
 #define DFX_SIGNAL_H
 
-#include <cstdint>  // for int32_t
-#include <csignal>  // for siginfo_t
-#include "iosfwd"    // for string
+#include <csignal>
+#include <cstdint>
+#include "iosfwd"
 
 namespace OHOS {
 namespace HiviewDFX {

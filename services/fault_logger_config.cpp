@@ -17,8 +17,8 @@
 
 #include "fault_logger_config.h"
 
-#include <string>     // for basic_string
-#include "dfx_log.h"  // for DfxLogDebug
+#include <string>
+#include "dfx_log.h"
 
 namespace OHOS {
 namespace HiviewDFX {

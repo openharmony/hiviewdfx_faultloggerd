@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#include "directory_ex.h"
 #include <dirent.h>
+#include "directory_ex.h"
 #include "securec.h"
 #include "unistd.h"
 using namespace std;

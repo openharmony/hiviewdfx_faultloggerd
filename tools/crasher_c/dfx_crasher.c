@@ -15,18 +15,18 @@
 
 #include "dfx_crasher.h"
 
-#include <pthread.h>             // for pthread_create, pthread_detach, pthr...
-#include <signal.h>              // for raise, SIGSEGV, SIGINT, SIGABRT, SIGBUS
-#include <sys/prctl.h>           // for prctl, PR_SET_NAME
-#include <sys/resource.h>        // for setrlimit, rlimit, RLIMIT_AS, getrlimit
-#include <unistd.h>              // for sleep, __pthread, pthread_t, usleep
-#include "dfx_signal_handler.h"  // for DFX_InstallSignalHandler
-#include "hilog/log.h"         // for HILOG_FATAL, LOG_CORE, LOG_DOMAIN
-#include "strings.h"             // for strcasecmp
-#include "stdlib.h"              // for malloc
+#include <pthread.h>
+#include <signal.h>
+#include <sys/prctl.h>
+#include <sys/resource.h>
+#include <unistd.h>
+#include "dfx_signal_handler.h"
+#include "hilog/log.h"
+#include "inttypes.h"
 #include "stdio.h"
-#include "inttypes.h"            // for PRIx64, PRIu64
-#include "string.h"              // for strlen, strncmp
+#include "stdlib.h"
+#include "string.h"
+#include "strings.h"
 
 #ifdef LOG_DOMAIN
 #undef LOG_DOMAIN

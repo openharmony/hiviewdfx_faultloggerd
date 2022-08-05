@@ -17,19 +17,19 @@
 
 #include "dfx_elf.h"
 
-#include <fcntl.h>       // for open, O_RDONLY
-#include <sys/mman.h>    // for mmap, munmap, MAP_FAILED, MAP_PRIVATE, PROT_...
-#include <sys/stat.h>    // for fstat
-#include <sys/types.h>   // for off_t, ssize_t
-#include <unistd.h>      // for close, getpagesize, read
-#include <cstdlib>       // for size_t
-#include <new>           // for operator new
-#include <string>        // for basic_string
-#include <vector>        // for vector
-#include "bits/fcntl.h"  // for O_CLOEXEC
-#include "dfx_log.h"     // for DfxLogWarn
-#include "elf.h"         // for Elf32_Ehdr, Elf32_Phdr, PT_LOAD
-#include "link.h"        // for ElfW
+#include <cstdlib>
+#include <fcntl.h>
+#include <new>
+#include <string>
+#include <sys/mman.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
+#include <vector>
+#include "bits/fcntl.h"
+#include "dfx_log.h"
+#include "elf.h"
+#include "link.h"
 
 #ifndef PAGE_SIZE
 #define PAGE_SIZE 4096

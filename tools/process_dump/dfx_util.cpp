@@ -25,9 +25,7 @@
 #include <ctime>
 #include <fstream>
 #include <iostream>
-
 #include <securec.h>
-
 #include "dfx_define.h"
 #include "dfx_logger.h"
 

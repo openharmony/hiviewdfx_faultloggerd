@@ -17,9 +17,9 @@
 
 #include "dfx_dump_request.h"
 
-#include <securec.h>  // for memset_s, EOK, errno_t
-#include <string>     // for basic_string
-#include "dfx_log.h"  // for DfxLogError
+#include <securec.h>
+#include <string>
+#include "dfx_log.h"
 
 namespace OHOS {
 namespace HiviewDFX {

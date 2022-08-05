@@ -16,11 +16,9 @@
 /* This files contains arm64 reg module. */
 
 #include <securec.h>
-
-#include "dfx_regs.h"
-
 #include "dfx_define.h"
 #include "dfx_logger.h"
+#include "dfx_regs.h"
 
 namespace OHOS {
 namespace HiviewDFX {

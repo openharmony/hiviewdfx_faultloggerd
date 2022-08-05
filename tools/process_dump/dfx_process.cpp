@@ -17,27 +17,24 @@
 
 #include "dfx_process.h"
 
-#include <dirent.h>
 #include <climits>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <dirent.h>
+#include <securec.h>
+#include <sys/types.h>
 #include <unistd.h>
 #include <vector>
-
-#include <sys/types.h>
-
-#include <securec.h>
-
+#include "dfx_config.h"
+#include "dfx_define.h"
 #include "dfx_define.h"
 #include "dfx_logger.h"
 #include "dfx_maps.h"
+#include "dfx_ring_buffer_wrapper.h"
 #include "dfx_signal.h"
 #include "dfx_thread.h"
 #include "dfx_util.h"
-#include "dfx_config.h"
-#include "dfx_define.h"
-#include "dfx_ring_buffer_wrapper.h"
 
 namespace OHOS {
 namespace HiviewDFX {

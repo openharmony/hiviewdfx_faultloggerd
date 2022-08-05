@@ -19,9 +19,7 @@
 
 #include <algorithm>
 #include <csignal>
-
 #include <sys/ptrace.h>
-
 #include "dfx_config.h"
 #include "dfx_logger.h"
 #include "dfx_ring_buffer_wrapper.h"

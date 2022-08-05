@@ -28,27 +28,23 @@
 #include <cstring>
 #include <ctime>
 #include <fcntl.h>
+#include <iostream>
+#include <libunwind.h>
+#include <libunwind_i-ohos.h>
 #include <pthread.h>
 #include <sched.h>
 #include <securec.h>
-#include <unistd.h>
-#include <iostream>
+#include <securec.h>
 #include <sstream>
-
 #include <sys/capability.h>
 #include <sys/prctl.h>
 #include <sys/syscall.h>
 #include <sys/types.h>
 #include <sys/uio.h>
 #include <sys/wait.h>
-#include <securec.h>
-
-#include <libunwind.h>
-#include <libunwind_i-ohos.h>
-
-#include "file_ex.h"
-
+#include <unistd.h>
 #include "dfx_symbols_cache.h"
+#include "file_ex.h"
 
 namespace OHOS {
 namespace HiviewDFX {

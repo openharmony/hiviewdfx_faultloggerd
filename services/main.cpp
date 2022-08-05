@@ -13,19 +13,19 @@
  * limitations under the License.
  */
 
-#include <unistd.h>                    // for getpid
-#include <cstdint>                    // for int32_t, uint64_t
-#include <csignal>                    // for siginfo_t, ucontext
-#include "dfx_log.h"                   // for DfxLogError
-#include "fault_logger_daemon.h"       // for FaultLoggerDaemon
-#include "faultloggerd_client.h"       // for CPP_CRASH, FaultLoggerType
-#include "securec.h"                   // for memset_s
+#include <csignal>
+#include <cstdint>
+#include <unistd.h>
+#include "dfx_log.h"
+#include "fault_logger_daemon.h"
+#include "faultloggerd_client.h"
+#include "securec.h"
 
 #if defined(DEBUG_CRASH_LOCAL_HANDLER)
 #include <securec.h>
-#include "dfx_signal_local_handler.h"
 #include "dfx_crash_local_handler.h"
 #include "dfx_cutil.h"
+#include "dfx_signal_local_handler.h"
 
 static void DFX_SignalHandler(int sig, siginfo_t *si, void *context)
 {

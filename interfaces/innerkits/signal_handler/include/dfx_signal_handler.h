@@ -15,9 +15,9 @@
 #ifndef DFX_SIGNAL_HANDLER_H
 #define DFX_SIGNAL_HANDLER_H
 
+#include <inttypes.h>
 #include <signal.h>
 #include <ucontext.h>
-#include <inttypes.h>
 #include "dfx_define.h"
 
 #ifdef __cplusplus

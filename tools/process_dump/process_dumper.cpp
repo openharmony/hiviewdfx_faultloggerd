@@ -19,31 +19,30 @@
 
 #include <cerrno>
 #include <cinttypes>
-#include <memory>
 #include <csignal>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
-#include <ucontext.h>
-#include <unistd.h>
+#include <faultloggerd_client.h>
 #include <fcntl.h>
 #include <iostream>
+#include <memory>
 #include <pthread.h>
 #include <securec.h>
 #include <string>
-
-#include <faultloggerd_client.h>
+#include <ucontext.h>
+#include <unistd.h>
+#include "cppcrash_reporter.h"
 #include "dfx_config.h"
 #include "dfx_define.h"
+#include "dfx_dump_res.h"
 #include "dfx_logger.h"
 #include "dfx_process.h"
+#include "dfx_ring_buffer_wrapper.h"
 #include "dfx_signal.h"
 #include "dfx_thread.h"
 #include "dfx_unwind_remote.h"
 #include "dfx_util.h"
-#include "dfx_ring_buffer_wrapper.h"
-#include "dfx_dump_res.h"
-#include "cppcrash_reporter.h"
 
 namespace OHOS {
 namespace HiviewDFX {

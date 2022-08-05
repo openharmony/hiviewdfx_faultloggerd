@@ -18,11 +18,11 @@
 #ifndef DFX_MAPS_H
 #define DFX_MAPS_H
 
-#include <memory>       // for shared_ptr
-#include <string>       // for basic_string
-#include <vector>       // for vector
-#include "dfx_elf.h"    // for DfxElf
-#include "iosfwd"       // for string
+#include <memory>
+#include <string>
+#include <vector>
+#include "dfx_elf.h"
+#include "iosfwd"
 
 namespace OHOS {
 namespace HiviewDFX {

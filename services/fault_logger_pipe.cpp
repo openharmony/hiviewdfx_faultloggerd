@@ -23,19 +23,19 @@
 #include <cstdlib>
 #include <cstring>
 #include <ctime>
-#include <string>
-#include <vector>
-
 #include <fcntl.h>
 #include <securec.h>
+#include <string>
 #include <sys/socket.h>
 #include <sys/stat.h>
-#include <sys/types.h>
 #include <sys/syscall.h>
+#include <sys/types.h>
 #include <sys/un.h>
 #include <unistd.h>
+#include <vector>
 #include "dfx_define.h"
 #include "dfx_log.h"
+
 
 namespace OHOS {
 namespace HiviewDFX {

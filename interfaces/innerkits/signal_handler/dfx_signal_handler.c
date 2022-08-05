@@ -12,29 +12,29 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "dfx_signal_handler.h"       // for ProcessDumpRequest, DFX_Install...
+#include "dfx_signal_handler.h"
 
-#include <fcntl.h>                    // for fcntl, open, F_SETPIPE_SZ, pthr...
-#include <pthread.h>                  // for pthread_mutex_unlock, pthread_m...
-#include <sched.h>                    // for clone, CLONE_FS, CLONE_UNTRACED
-#include <signal.h>                   // for sigaction, signal, siginfo_t
-#include <stdint.h>                   // for int32_t, uint64_t, uint8_t, uin...
+#include <fcntl.h>
+#include <pthread.h>
+#include <sched.h>
+#include <signal.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <sys/capability.h>
+#include <sys/mman.h>
+#include <sys/prctl.h>
 #include <sys/syscall.h>
-#include <sys/capability.h>           // for capget, capset
-#include <sys/mman.h>                 // for mmap, MAP_ANONYMOUS, MAP_PRIVATE
-#include <sys/prctl.h>                // for prctl, PR_SET_DUMPABLE, PR_SET_...
-#include <sys/uio.h>                  // for writev
-#include <sys/wait.h>                 // for waitpid, WNOHANG
-#include <time.h>                     // for NULL, time, size_t
 #include <sys/time.h>
 #include <sys/types.h>
-#include <unistd.h>                   // for syscall, getpid, gettid, dup2
-#include <stdio.h>
-#include "dfx_define.h"               // for SIGDUMP, OHOS_TEMP_FAILURE_RETRY
-#include "dfx_log.h"                  // for DfxLogError, DfxLogInfo
-#include "errno.h"                    // for errno
-#include "linux/capability.h"         // for __user_cap_data_struct, __user_...
-#include "stdbool.h"                  // for true, bool, false
+#include <sys/uio.h>
+#include <sys/wait.h>
+#include <time.h>
+#include <unistd.h>
+#include "dfx_define.h"
+#include "dfx_log.h"
+#include "errno.h"
+#include "linux/capability.h"
+#include "stdbool.h"
 #include "string.h"
 #ifndef DFX_SIGNAL_LIBC
 #include <securec.h>
@@ -46,7 +46,7 @@
 
 #ifdef LOG_DOMAIN
 #undef LOG_DOMAIN
-#define LOG_DOMAIN 0x2D11
+#define LOG_DOMAIN 0xD002D11
 #endif
 
 #ifdef LOG_TAG

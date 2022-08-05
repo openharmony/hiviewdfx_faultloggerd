@@ -15,25 +15,25 @@
 
 /* This files contains dump_catcher sdk unit test tools. */
 
-#include <dirent.h>            // for opendir, readdir, DIR
-#include <securec.h>           // for snprintf_s
-#include <cstdint>            // for int32_t
-#include <unistd.h>            // for getpid, write, STDOUT_FILENO, alarm
+#include <cinttypes>
+#include <climits>
+#include <cstdint>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <cstring>
+#include <dirent.h>
+#include <memory>
+#include <securec.h>
 #include <sys/syscall.h>
-#include <thread>              // for thread
-#include <vector>              // for vector
-#include <cstdio>             // for printf
-#include <cstdlib>            // for atoi, realpath
-#include <cstring>              // for basic_string, operator==
-#include <climits>           // for PATH_MAX
-#include <cinttypes>          // for PRIx64, PRIu64
-#include <cstring>            // for strcmp
-#include <memory>                                                // for shar...
-#include "iosfwd"              // for string
-#include "dfx_define.h"        // for NAME_LEN
-#include "dfx_dump_catcher.h"  // for DfxDumpCatcher
-#include "dfx_frame.h"         // for DfxFrame
-#include "dfx_maps.h"          // for DfxElfMap
+#include <thread>
+#include <unistd.h>
+#include <vector>
+#include "dfx_define.h"
+#include "dfx_dump_catcher.h"
+#include "dfx_frame.h"
+#include "dfx_maps.h"
+#include "iosfwd"
 
 static const int ARG1 = 1;
 static const int ARG2 = 2;

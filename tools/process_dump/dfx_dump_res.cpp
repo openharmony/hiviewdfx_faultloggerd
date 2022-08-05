@@ -14,9 +14,9 @@
  */
 #include "dfx_dump_res.h"
 
-#include <sstream>  // for basic_stringstream
-#include <string>   // for char_traits
-#include "ostream"  // for operator<<, basic_ostream
+#include <sstream>
+#include <string>
+#include "ostream"
 
 namespace OHOS {
 namespace HiviewDFX {

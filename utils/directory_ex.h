@@ -17,9 +17,8 @@
 #define DIRECTORY_EX_H
 
 #include <string>
-#include <vector>
-
 #include <sys/stat.h>
+#include <vector>
 
 namespace OHOS {
 /**

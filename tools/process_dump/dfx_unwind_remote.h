@@ -20,10 +20,9 @@
 #pragma clang diagnostic ignored "-Wextern-c-compat"
 #endif
 
-#include <memory>
-
 #include <libunwind-ptrace.h>
 #include <libunwind.h>
+#include <memory>
 #include "dfx_define.h"
 #include "dfx_process.h"
 #include "dfx_symbols_cache.h"

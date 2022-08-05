@@ -20,19 +20,16 @@
 #include <cerrno>
 #include <climits>
 #include <cstring>
+#include <securec.h>
 #include <sstream>
-
 #include <sys/ptrace.h>
 #include <sys/wait.h>
-
-#include <securec.h>
-
+#include "dfx_config.h"
 #include "dfx_define.h"
 #include "dfx_fault_stack.h"
 #include "dfx_logger.h"
 #include "dfx_regs.h"
 #include "dfx_util.h"
-#include "dfx_config.h"
 
 namespace OHOS {
 namespace HiviewDFX {

@@ -20,7 +20,6 @@
 #include <cstdio>
 #include <cstdlib>
 #include <securec.h>
-
 #include "dfx_define.h"
 #include "dfx_logger.h"
 

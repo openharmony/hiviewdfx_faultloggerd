@@ -15,7 +15,7 @@
 #ifndef DFX_CONFIG_H
 #define DFX_CONFIG_H
 
-#include "iosfwd"  // for string
+#include "iosfwd"
 
 namespace OHOS {
 namespace HiviewDFX {

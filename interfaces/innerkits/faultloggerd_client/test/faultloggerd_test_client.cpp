@@ -14,10 +14,8 @@
  */
 #include <cstdio>
 #include <cstring>
-
 #include <unistd.h>
-
-#include <faultloggerd_client.h>
+#include "faultloggerd_client.h"
 
 int main()
 {

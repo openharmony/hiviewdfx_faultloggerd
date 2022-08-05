@@ -15,23 +15,21 @@
 
 /* This files contains process dump entry function. */
 
-#include <cstdlib>
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
 #include <iostream>
 #include <securec.h>
-#include <unistd.h>
 #include <sys/socket.h>
 #include <sys/un.h>
-
-#include "directory_ex.h"
-#include "faultloggerd_client.h"
-#include "file_ex.h"
-
+#include <unistd.h>
 #include "dfx_config.h"
 #include "dfx_define.h"
 #include "dfx_dump_writer.h"
 #include "dfx_logger.h"
+#include "directory_ex.h"
+#include "faultloggerd_client.h"
+#include "file_ex.h"
 #include "process_dumper.h"
 
 #if defined(DEBUG_CRASH_LOCAL_HANDLER)

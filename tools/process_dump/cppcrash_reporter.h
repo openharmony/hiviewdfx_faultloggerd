@@ -22,7 +22,6 @@
 #include <map>
 #include <memory>
 #include <string>
-
 #include "dfx_process.h"
 
 namespace OHOS {

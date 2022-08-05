@@ -15,15 +15,15 @@
 
 /* This files contains process dump header. */
 
+#include <algorithm>
+#include <cstdlib>
+#include <cstring>
+#include <cxxabi.h>
+#include <string>
+#include <vector>
+#include "dfx_define.h"
 #include "dfx_symbols_cache.h"
-#include <cxxabi.h>            // for __cxa_demangle
-#include <cstdlib>             // for free
-#include <cstring>            // for strlen
-#include <algorithm>           // for sort
-#include <string>              // for basic_string
-#include <vector>              // for vector
-#include "libunwind_i-ohos.h"  // for unw_get_symbol_info_by_pc
-#include "dfx_define.h"        // for LOG_BUF_LEN
+#include "libunwind_i-ohos.h"
 
 #ifdef __cplusplus
 extern "C" {

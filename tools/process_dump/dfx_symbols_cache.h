@@ -18,10 +18,10 @@
 #ifndef DFX_SYMBOLS_CACHE_H
 #define DFX_SYMBOLS_CACHE_H
 
-#include <cstdint>  // for uint64_t
-#include <string>    // for basic_string
-#include <vector>    // for vector
-#include "iosfwd"    // for string
+#include <cstdint>
+#include <string>
+#include <vector>
+#include "iosfwd"
 
 #ifdef __cplusplus
 extern "C" {

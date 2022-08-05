@@ -17,32 +17,30 @@
 
 #include <algorithm>
 #include <cerrno>
+#include <csignal>
 #include <cstring>
 #include <ctime>
-#include <csignal>
 #include <dirent.h>
 #include <fcntl.h>
+#include <securec.h>
 #include <sstream>
-#include <sys/syscall.h>
 #include <sys/socket.h>
 #include <sys/stat.h>
+#include <sys/syscall.h>
 #include <sys/types.h>
 #include <sys/un.h>
 #include <sys/wait.h>
 #include <thread>
 #include <unistd.h>
 #include <vector>
-
-#include "directory_ex.h"
-#include "file_ex.h"
-#include <securec.h>
-
-#include "dfx_log.h"
 #include "dfx_define.h"
+#include "dfx_log.h"
+#include "directory_ex.h"
 #include "fault_logger_config.h"
+#include "fault_logger_pipe.h"
 #include "fault_logger_secure.h"
 #include "faultloggerd_socket.h"
-#include "fault_logger_pipe.h"
+#include "file_ex.h"
 
 using namespace std::chrono;
 
