@@ -180,6 +180,17 @@ enum DumpPreparationStage {
     EXEC_FAIL,
 };
 
+TraceInfo HiTraceGetId(void) __attribute__((weak));
+static void FillTraceIdLocked(struct ProcessDumpRequest* request)
+{
+    if (HiTraceGetId == NULL || request == NULL) {
+        return;
+    }
+
+    TraceInfo id = HiTraceGetId();
+    memcpy(&(request->traceInfo), &id, sizeof(TraceInfo));
+}
+
 const char* GetLastFatalMessage(void) __attribute__((weak));
 static void FillLastFatalMessageLocked(int32_t sig)
 {
@@ -420,6 +431,7 @@ static void DFX_SignalHandler(int sig, siginfo_t *si, void *context)
     memcpy(&(g_request.siginfo), si, sizeof(siginfo_t));
     memcpy(&(g_request.context), context, sizeof(ucontext_t));
 
+    FillTraceIdLocked(&g_request);
     FillLastFatalMessageLocked(sig);
     pid_t childPid;
     int status;

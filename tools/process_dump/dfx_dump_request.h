@@ -62,6 +62,8 @@ public:
     std::string GetThreadNameString() const;
     std::string GetProcessNameString() const;
     std::string GetLastFatalMessage() const;
+    TraceInfo GetTraceInfo() const;
+
 private:
     ProcessDumpType type_;
     int32_t tid_ = 0;
@@ -74,6 +76,7 @@ private:
     char threadName_[NAME_LEN];
     char processName_[NAME_LEN];
     char lastFatalMessage_[MAX_FATAL_MSG_SIZE];
+    TraceInfo traceInfo;
 };
 
 struct LocalDumperRequest {

@@ -15,9 +15,10 @@
 #ifndef DFX_SIGNAL_HANDLER_H
 #define DFX_SIGNAL_HANDLER_H
 
+#include <inttypes.h>
 #include <signal.h>
 #include <ucontext.h>
-#include <inttypes.h>
+
 #include "dfx_define.h"
 
 #ifdef __cplusplus
@@ -35,6 +36,7 @@ struct ProcessDumpRequest {
     char threadName[NAME_LEN];
     char processName[NAME_LEN];
     char lastFatalMessage[MAX_FATAL_MSG_SIZE];
+    TraceInfo traceInfo;
 };
 
 void DFX_InstallSignalHandler(void);
