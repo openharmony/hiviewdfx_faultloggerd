@@ -145,5 +145,10 @@ void ProcessDumpRequest::SetContext(ucontext_t const &context)
 {
     context_ = context;
 }
+
+TraceInfo ProcessDumpRequest::GetTraceInfo() const
+{
+    return traceInfo;
+}
 } // namespace HiviewDFX
 } // namespace OHOS

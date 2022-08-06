@@ -38,6 +38,11 @@
 #include "dfx_signal_handler.h"
 #include "securec.h"
 
+#ifdef HAS_HITRACE
+#include <hitrace/hitrace.h>
+using namespace OHOS::HiviewDFX;
+#endif
+
 #ifdef LOG_DOMAIN
 #undef LOG_DOMAIN
 #define LOG_DOMAIN 0x2D11
@@ -362,7 +367,9 @@ uint64_t DfxCrasher::ParseAndDoCrash(const char *arg)
     if (!strncmp(arg, "thread-", strlen("thread-"))) {
         return DoActionOnSubThread(arg + strlen("thread-"));
     }
-
+#ifdef HAS_HITRACE
+    auto beginId = HiTrace::Begin("test", HITRACE_FLAG_NO_BE_INFO);
+#endif
     // Action
     if (!strcasecmp(arg, "SIGFPE")) {
         return RaiseFloatingPointException();
@@ -455,6 +462,9 @@ uint64_t DfxCrasher::ParseAndDoCrash(const char *arg)
     if (!strcasecmp(arg, "CrashInLambda")) {
         return CrashInLambda();
     }
+#ifdef HAS_HITRACE
+    HiTrace::End(beginId);
+#endif
     return 0;
 }
 
