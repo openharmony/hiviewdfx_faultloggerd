@@ -15,6 +15,7 @@
 
 /* This files contains processdump frame module. */
 
+#include "dfx_frame.h"
 #include <cinttypes>
 #include <cstdio>
 #include <cstring>
@@ -25,7 +26,6 @@
 #include <string>
 #include "dfx_define.h"
 #include "dfx_elf.h"
-#include "dfx_frame.h"
 #include "dfx_log.h"
 #include "dfx_maps.h"
 
