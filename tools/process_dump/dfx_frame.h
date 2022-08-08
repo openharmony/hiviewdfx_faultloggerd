@@ -16,7 +16,6 @@
 #define DFX_FRAME_H
 
 #include <string>
-#include <vector>
 #include "dfx_maps.h"
 #include "iosfwd"
 

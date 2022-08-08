@@ -19,7 +19,6 @@
 #define DFX_MAPS_H
 
 #include <string>
-#include <vector>
 #include "dfx_elf.h"
 #include "iosfwd"
 
