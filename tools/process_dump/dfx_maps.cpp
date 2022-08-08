@@ -14,6 +14,7 @@
  */
 
 /* This files contains process dump dfx maps module. */
+#include "dfx_maps.h"
 
 #include <cinttypes>
 #include <climits>
@@ -28,7 +29,6 @@
 #include "dfx_define.h"
 #include "dfx_elf.h"
 #include "dfx_log.h"
-#include "dfx_maps.h"
 #include "dfx_util.h"
 
 namespace OHOS {

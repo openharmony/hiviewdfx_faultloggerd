@@ -18,7 +18,6 @@
 #ifndef DFX_MAPS_H
 #define DFX_MAPS_H
 
-#include <memory>
 #include <string>
 #include <vector>
 #include "dfx_elf.h"

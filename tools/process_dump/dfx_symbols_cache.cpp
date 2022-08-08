@@ -14,6 +14,7 @@
  */
 
 /* This files contains process dump header. */
+#include "dfx_symbols_cache.h"
 
 #include <algorithm>
 #include <cstdlib>
@@ -22,7 +23,6 @@
 #include <string>
 #include <vector>
 #include "dfx_define.h"
-#include "dfx_symbols_cache.h"
 #include "libunwind_i-ohos.h"
 
 #ifdef __cplusplus

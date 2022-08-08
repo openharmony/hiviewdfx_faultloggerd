@@ -15,7 +15,6 @@
 #ifndef DFX_FRAME_H
 #define DFX_FRAME_H
 
-#include <memory>
 #include <string>
 #include <vector>
 #include "dfx_maps.h"

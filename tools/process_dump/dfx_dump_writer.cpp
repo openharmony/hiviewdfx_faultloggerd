@@ -14,9 +14,9 @@
  */
 
 /* This files is writer log to file module on process dump module. */
+#include "dfx_dump_writer.h"
 
 #include <memory>
-#include "dfx_dump_writer.h"
 #include "dfx_process.h"
 
 namespace OHOS {
