@@ -38,6 +38,7 @@
 #include "dfx_unwind_local.h"
 #include "faultloggerd_client.h"
 #include "iosfwd"
+#include "securec.h"
 #include "strings.h"
 
 static const int NUMBER_TEN = 10;
