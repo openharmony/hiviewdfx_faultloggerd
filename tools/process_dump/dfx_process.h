@@ -18,7 +18,6 @@
 #include <cinttypes>
 #include <memory>
 #include <string>
-
 #include "dfx_define.h"
 #include "dfx_elf.h"
 #include "dfx_maps.h"

@@ -15,22 +15,20 @@
 
 /* This files contains process dump entry function. */
 
-#include <cstdlib>
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
 #include <iostream>
 #include <securec.h>
-#include <unistd.h>
 #include <sys/socket.h>
 #include <sys/un.h>
-
-#include "directory_ex.h"
-#include "file_ex.h"
-
+#include <unistd.h>
 #include "dfx_define.h"
-#include "dfx_logger.h"
 #include "dfx_dump_request.h"
+#include "dfx_logger.h"
+#include "directory_ex.h"
 #include "dump_catcher.h"
+#include "file_ex.h"
 
 #if defined(DEBUG_CRASH_LOCAL_HANDLER)
 #include "dfx_signal_local_handler.h"

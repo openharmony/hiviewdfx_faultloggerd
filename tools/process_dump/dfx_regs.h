@@ -17,11 +17,9 @@
 
 #include <cstdint>
 #include <string>
-#include <vector>
-#include <ucontext.h>
-
 #include <sys/types.h>
-
+#include <ucontext.h>
+#include <vector>
 #include "dfx_define.h"
 #include "dfx_util.h"
 

@@ -20,7 +20,6 @@
 #include <cstddef>
 #include <cstdint>
 #include <iostream>
-
 #include "dfx_dump_catcher.h"
 #include "securec.h"
 

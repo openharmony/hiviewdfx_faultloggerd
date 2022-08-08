@@ -15,10 +15,10 @@
 
 #include "dfx_signal.h"
 
-#include <securec.h>      // for snprintf_s, memset_s, EOK
-#include <string>         // for allocator, char_traits
-#include "dfx_define.h"   // for LOG_BUF_LEN, SIGDUMP
-#include "dfx_log.h"      // for DfxLogError
+#include <securec.h>
+#include <string>
+#include "dfx_define.h"
+#include "dfx_log.h"
 
 namespace OHOS {
 namespace HiviewDFX {

@@ -15,11 +15,11 @@
 
 /* This files contains dumpcatcher main module. */
 
-#include "dump_catcher.h"
 #include <iostream>
 #include "dfx_define.h"
-#include "dfx_logger.h"
 #include "dfx_dump_catcher.h"
+#include "dfx_logger.h"
+#include "dump_catcher.h"
 
 namespace OHOS {
 namespace HiviewDFX {

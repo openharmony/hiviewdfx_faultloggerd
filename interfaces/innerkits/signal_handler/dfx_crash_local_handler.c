@@ -14,17 +14,14 @@
  */
 #include "dfx_crash_local_handler.h"
 
-#include <signal.h>
-#include <unistd.h>
-
-#include <sys/ucontext.h>
-
 #include <hilog_base/log_base.h>
-#include <libunwind_i-ohos.h>
 #include <libunwind.h>
+#include <libunwind_i-ohos.h>
 #include <map_info.h>
 #include <securec.h>
-
+#include <signal.h>
+#include <sys/ucontext.h>
+#include <unistd.h>
 #include "dfx_signal_handler.h"
 #include "faultloggerd_client.h"
 

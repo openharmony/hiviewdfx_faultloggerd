@@ -18,7 +18,6 @@
 #include <inttypes.h>
 #include <signal.h>
 #include <ucontext.h>
-
 #include "dfx_define.h"
 
 #ifdef __cplusplus

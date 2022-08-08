@@ -20,13 +20,13 @@
 
 #include <cinttypes>
 #include <condition_variable>
-#include <mutex>
 #include <memory>
+#include <mutex>
 #include <string>
 #include <thread>
 #include "dfx_define.h"
-#include "nocopyable.h"
 #include "dfx_ring_buffer.h"
+#include "nocopyable.h"
 
 typedef int (*RingBufferWriteFunc) (int32_t fd, const char *buf, const int len);
 

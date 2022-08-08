@@ -17,7 +17,6 @@
 
 #include <memory>
 #include <vector>
-
 #include "dfx_frame.h"
 #include "dfx_regs.h"
 

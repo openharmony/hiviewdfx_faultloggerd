@@ -18,9 +18,9 @@
 #ifndef DFX_DUMP_WIRTTER_H
 #define DFX_DUMP_WIRTTER_H
 
-#include <cstdint>       // for int32_t
-#include <memory>         // for shared_ptr
-#include "dfx_process.h"  // for DfxProcess
+#include <cstdint>
+#include <memory>
+#include "dfx_process.h"
 
 namespace OHOS {
 namespace HiviewDFX {

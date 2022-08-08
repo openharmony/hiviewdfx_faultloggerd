@@ -18,10 +18,9 @@
 #ifndef DFX_UTIL_H
 #define DFX_UTIL_H
 
-#include <memory>
 #include <cstdio>
+#include <memory>
 #include <string>
-
 #include "dfx_define.h"
 
 namespace OHOS {

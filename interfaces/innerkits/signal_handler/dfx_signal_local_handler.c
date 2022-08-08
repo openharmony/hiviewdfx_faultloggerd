@@ -15,15 +15,15 @@
 
 #include "dfx_signal_local_handler.h"  // for SignalHandlerFunc, DFX_InitDum...
 
-#include <securec.h>                   // for memset_s
-#include <signal.h>                    // for sigaction, sigaddset, sigemptyset
-#include <stdint.h>                    // for int32_t
-#include <stdio.h>                     // for NULL, size_t
-#include <unistd.h>                    // for _exit, getpid, gettid, getuid
-#include "dfx_crash_local_handler.h"   // for CrashLocalHandler
-#include "dfx_cutil.h"                 // for GetProcessName, GetThreadName
-#include "dfx_log.h"                   // for DfxLogError
-#include "dfx_signal_handler.h"        // for ProcessDumpRequest
+#include <securec.h>
+#include <signal.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <unistd.h>
+#include "dfx_crash_local_handler.h"
+#include "dfx_cutil.h"
+#include "dfx_log.h"
+#include "dfx_signal_handler.h"
 
 static SignalHandlerFunc signalHandler = NULL;
 

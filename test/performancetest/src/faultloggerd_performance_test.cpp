@@ -17,9 +17,9 @@
 
 #include "faultloggerd_performance_test.h"
 
+#include <cerrno>
 #include <cstdio>
 #include <cstring>
-#include <cerrno>
 #include <ctime>
 #include <dirent.h>
 #include <fcntl.h>
@@ -27,23 +27,23 @@
 #include <iostream>
 #include <memory>
 #include <pthread.h>
-#include <sys/time.h>
-#include <string.h>
+#include <securec.h>
 #include <stdlib.h>
+#include <string.h>
+#include <string>
 #include <sys/stat.h>
+#include <sys/time.h>
 #include <sys/types.h>
 #include <sys/wait.h>
-#include <securec.h>
-#include <string>
 #include <time.h>
 #include <unistd.h>
 #include <vector>
-
-#include "syscall.h"
+#include "dfx_define.h"
+#include "dfx_dump_catcher.h"
 #include "directory_ex.h"
 #include "file_ex.h"
-#include "dfx_dump_catcher.h"
-#include "dfx_define.h"
+#include "syscall.h"
+
 
 using namespace OHOS::HiviewDFX;
 using namespace testing::ext;

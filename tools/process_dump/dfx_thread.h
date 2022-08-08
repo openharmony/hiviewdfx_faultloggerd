@@ -15,16 +15,15 @@
 #ifndef DFX_THREAD_H
 #define DFX_THREAD_H
 
-#include <sys/types.h>
 #include <cstdint>
 #include <string>
+#include <sys/types.h>
 #include <vector>
-
 #include "dfx_define.h"
 #include "dfx_fault_stack.h"
 #include "dfx_frame.h"
-#include "dfx_regs.h"
 #include "dfx_maps.h"
+#include "dfx_regs.h"
 
 namespace OHOS {
 namespace HiviewDFX {

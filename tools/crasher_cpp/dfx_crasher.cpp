@@ -23,18 +23,14 @@
 #include <cstdlib>
 #include <cstring>
 #include <fstream>
+#include <hilog/log.h>
 #include <iostream>
-#include <thread>
-#include <vector>
-
 #include <pthread.h>
-#include <unistd.h>
-
 #include <sys/prctl.h>
 #include <sys/resource.h>
-
-#include <hilog/log.h>
-
+#include <thread>
+#include <unistd.h>
+#include <vector>
 #include "dfx_signal_handler.h"
 #include "securec.h"
 

@@ -15,32 +15,31 @@
 
 /* This files contains faultlog sdk interface functions. */
 
-#include "dfx_dump_catcher.h"                                    // for DfxD...
+#include "dfx_dump_catcher.h"
 
-#include <dirent.h>                                              // for clos...
-#include <poll.h>                                                // for pollfd
-#include <securec.h>
+#include <climits>
+#include <csignal>
+#include <cstdlib>
+#include <cstring>
+#include <ctime>
+#include <dirent.h>
+#include <memory>
+#include <mutex>
+#include <poll.h>
+#include <string>
 #include <sys/syscall.h>
-#include <sys/types.h>                                           // for time_t
-#include <unistd.h>                                              // for syscall
-#include <string>                                                // for basi...
-#include <vector>                                                // for vector
-#include <csignal>                                              // for sigi...
-#include <cstdlib>                                              // for atoi
-#include <cstring>                                              // for strcmp
-#include <ctime>                                                // for time
-
-#include <climits>                                              // for PATH...
-#include <mutex>                                          // for mutex
-#include <memory>                                                // for shar...
-#include "iosfwd"                                                // for string
-#include "strings.h"                                            // for bzero
-#include "faultloggerd_client.h"                                 // for Requ...
-#include "dfx_dump_res.h"                                        // for Dump...
-#include "dfx_frame.h"                                           // for DfxF...
-#include "dfx_log.h"                                             // for DfxL...
-#include "dfx_unwind_local.h"                                    // for DfxU...
-#include "dfx_define.h"                                          // for BACK...
+#include <sys/types.h>
+#include <unistd.h>
+#include <vector>
+#include "dfx_define.h"
+#include "dfx_dump_res.h"
+#include "dfx_frame.h"
+#include "dfx_log.h"
+#include "dfx_unwind_local.h"
+#include "faultloggerd_client.h"
+#include "iosfwd"
+#include "securec.h"
+#include "strings.h"
 
 static const int NUMBER_TEN = 10;
 static const int MAX_TEMP_FILE_LENGTH = 256;

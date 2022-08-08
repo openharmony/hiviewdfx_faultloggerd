@@ -13,18 +13,18 @@
  * limitations under the License.
  */
 
-#include "file_ex.h"
+#include <algorithm>
+#include <cstdio>
+#include <cstring>
+#include <fcntl.h>
 #include <fstream>
 #include <iostream>
-#include <algorithm>
 #include <iterator>
+#include <securec.h>
 #include <sys/stat.h>
 #include <unistd.h>
-#include <fcntl.h>
-#include <cstdio>
-#include <securec.h>
-#include <cstring>
 #include "directory_ex.h"
+#include "file_ex.h"
 using namespace std;
 
 const int MAX_FILE_LENGTH = 32 * 1024 * 1024;

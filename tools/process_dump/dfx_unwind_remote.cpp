@@ -17,24 +17,22 @@
 
 #include "dfx_unwind_remote.h"
 
-#include <elf.h>
-#include <link.h>
 #include <cstdio>
 #include <cstring>
-#include <sys/ptrace.h>
+#include <elf.h>
+#include <link.h>
 #include <securec.h>
-
+#include <sys/ptrace.h>
 #include "dfx_config.h"
 #include "dfx_define.h"
 #include "dfx_logger.h"
 #include "dfx_maps.h"
 #include "dfx_process.h"
 #include "dfx_regs.h"
+#include "dfx_ring_buffer_wrapper.h"
+#include "dfx_symbols_cache.h"
 #include "dfx_thread.h"
 #include "dfx_util.h"
-#include "dfx_symbols_cache.h"
-#include "dfx_ring_buffer_wrapper.h"
-
 #include "libunwind.h"
 #include "libunwind_i-ohos.h"
 

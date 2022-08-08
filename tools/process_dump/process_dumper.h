@@ -20,15 +20,14 @@
 
 #include <cinttypes>
 #include <condition_variable>
-#include <mutex>
 #include <memory>
+#include <mutex>
 #include <string>
 #include <thread>
-
-#include "nocopyable.h"
+#include "cppcrash_reporter.h"
 #include "dfx_dump_request.h"
 #include "dfx_process.h"
-#include "cppcrash_reporter.h"
+#include "nocopyable.h"
 
 namespace OHOS {
 namespace HiviewDFX {

@@ -20,10 +20,10 @@
 
 #include <cinttypes>
 #include <cstring>
-#include <string>
-#include <vector>
 #include <mutex>
+#include <string>
 #include <unistd.h>
+#include <vector>
 #include "dfx_frame.h"
 
 namespace OHOS {

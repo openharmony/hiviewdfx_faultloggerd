@@ -12,21 +12,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "faultloggerd_client.h"  // for FaultLoggerdRequest, FaultLoggerChe...
+#include "faultloggerd_client.h"
 
-#include <securec.h>              // for memset_s, EOK, errno_t
-#include <cstdint>               // for int32_t, uint64_t
+#include <climits>
+#include <cstdint>
+#include <cstdio>
+#include <cstdlib>
+#include <securec.h>
+#include <sys/socket.h>
 #include <sys/syscall.h>
-#include <sys/socket.h>           // for recv
-#include <sys/time.h>             // for gettimeofday, timeval
-#include <sys/un.h>               // for strlen
-#include <unistd.h>               // for close, write, getpid, read, gettid
-#include <cstdio>                 // for size_t, EOF, FILE
-#include <climits>               // for PATH_MAX
-#include <cstdlib>               // for atoi, realpath
-#include "dfx_define.h"           // for SOCKET_BUFFER_SIZE, FAULTLOGGERD_SO...
-#include "dfx_log.h"              // for DfxLogError, DfxLogInfo, DfxLogDebug
-#include "faultloggerd_socket.h"  // for StartConnect, ReadFileDescriptorFro...
+#include <sys/time.h>
+#include <sys/un.h>
+#include <unistd.h>
+#include "dfx_define.h"
+#include "dfx_log.h"
+#include "faultloggerd_socket.h"
 
 bool ReadStringFromFile(const char *path, char *buf, size_t len)
 {

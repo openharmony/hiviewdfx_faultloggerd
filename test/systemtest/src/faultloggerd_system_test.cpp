@@ -17,30 +17,30 @@
 
 #include "faultloggerd_system_test.h"
 
+#include <cerrno>
+#include <cstdio>
+#include <cstring>
+#include <ctime>
 #include <dirent.h>
 #include <fcntl.h>
-#include <unistd.h>
+#include <fstream>
+#include <iostream>
+#include <memory>
+#include <mutex>
+#include <pthread.h>
+#include <securec.h>
 #include <stdlib.h>
+#include <string>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/wait.h>
-#include <cerrno>
-#include <cstdio>
-#include <ctime>
-#include <fstream>
-#include <iostream>
-#include <securec.h>
-#include <mutex>
-#include <pthread.h>
 #include <thread>
-#include <memory>
-#include <string>
+#include <unistd.h>
 #include <vector>
-#include <cstring>
-#include "syscall.h"
+#include "dfx_dump_catcher.h"
 #include "directory_ex.h"
 #include "file_ex.h"
-#include "dfx_dump_catcher.h"
+#include "syscall.h"
 
 /* This files contains faultlog st test case modules. */
 
