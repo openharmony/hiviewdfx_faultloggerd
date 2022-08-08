@@ -180,10 +180,18 @@ enum DumpPreparationStage {
     EXEC_FAIL,
 };
 
+TraceInfo HiTraceGetId(void) __attribute__((weak));
+static void FillTraceIdLocked(struct ProcessDumpRequest* request)
+{
+    if (HiTraceGetId == NULL || request == NULL) {
+        return;
+    }
+
+    TraceInfo id = HiTraceGetId();
+    memcpy(&(request->traceInfo), &id, sizeof(TraceInfo));
+}
+
 const char* GetLastFatalMessage(void) __attribute__((weak));
-
-void SetPlatformSignalHandler(uintptr_t handler)  __attribute__((weak));
-
 static void FillLastFatalMessageLocked(int32_t sig)
 {
     if (sig != SIGABRT) {
@@ -423,6 +431,7 @@ static void DFX_SignalHandler(int sig, siginfo_t *si, void *context)
     memcpy(&(g_request.siginfo), si, sizeof(siginfo_t));
     memcpy(&(g_request.context), context, sizeof(ucontext_t));
 
+    FillTraceIdLocked(&g_request);
     FillLastFatalMessageLocked(sig);
     pid_t childPid;
     int status;
@@ -509,10 +518,6 @@ void DFX_InstallSignalHandler(void)
         return;
     }
     g_reservedChildStack = (void *)(((uint8_t *)g_reservedChildStack) + RESERVED_CHILD_STACK_SIZE - 1);
-
-    if (SetPlatformSignalHandler != NULL) {
-        SetPlatformSignalHandler((uintptr_t)DFX_SignalHandler);
-    }
 
     struct sigaction action;
     memset(&action, 0, sizeof(action));

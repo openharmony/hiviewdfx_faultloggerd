@@ -35,6 +35,7 @@ struct ProcessDumpRequest {
     char threadName[NAME_LEN];
     char processName[NAME_LEN];
     char lastFatalMessage[MAX_FATAL_MSG_SIZE];
+    TraceInfo traceInfo;
 };
 
 void DFX_InstallSignalHandler(void);

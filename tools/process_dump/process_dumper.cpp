@@ -52,11 +52,13 @@ ProcessDumper &ProcessDumper::GetInstance()
     return ins;
 }
 
-void ProcessDumper::PrintDumpProcessWithSignalContextHeader(std::shared_ptr<DfxProcess> process, siginfo_t info,
-                                                            uint64_t timeStamp, const std::string& msg)
+void ProcessDumper::PrintDumpProcessWithSignalContextHeader(std::shared_ptr<DfxProcess> process,
+    std::shared_ptr<ProcessDumpRequest> request)
 {
+    auto info = request->GetSiginfo();
+    auto msg = request->GetLastFatalMessage();
     if (info.si_signo != SIGDUMP) {
-        DfxRingBufferWrapper::GetInstance().AppendMsg("Timestamp:" + GetCurrentTimeStr(timeStamp));
+        DfxRingBufferWrapper::GetInstance().AppendMsg("Timestamp:" + GetCurrentTimeStr(request->GetTimeStamp()));
     } else {
         DfxRingBufferWrapper::GetInstance().AppendMsg("Timestamp:" + GetCurrentTimeStr());
     }
@@ -66,11 +68,15 @@ void ProcessDumper::PrintDumpProcessWithSignalContextHeader(std::shared_ptr<DfxP
 
     if (info.si_signo != SIGDUMP) {
         DfxRingBufferWrapper::GetInstance().AppendBuf("Reason:");
-
         DfxRingBufferWrapper::GetInstance().AppendMsg(PrintSignal(info));
-
         if (info.si_signo == SIGABRT && !msg.empty()) {
             DfxRingBufferWrapper::GetInstance().AppendBuf("LastFatalMessage:%s\n", msg.c_str());
+        }
+
+        auto traceId = request->GetTraceInfo();
+        if (traceId.chainId != 0) {
+            DfxRingBufferWrapper::GetInstance().AppendBuf("TraceId:%llx\n",
+                static_cast<unsigned long long>(traceId.chainId));
         }
 
         if (process->GetThreads().size() != 0) {
@@ -200,8 +206,7 @@ int ProcessDumper::DumpProcessWithSignalContext(std::shared_ptr<DfxProcess> &pro
             DfxLogError("Failed to init print thread.");
             dumpRes = ProcessDumpRes::DUMP_EGETFD;
         }
-        PrintDumpProcessWithSignalContextHeader(process, request->GetSiginfo(), \
-            request->GetTimeStamp(), request->GetLastFatalMessage());
+        PrintDumpProcessWithSignalContextHeader(process, request);
 
         if (DfxUnwindRemote::GetInstance().UnwindProcess(process) == false) {
             DfxLogError("Fail to unwind process.");

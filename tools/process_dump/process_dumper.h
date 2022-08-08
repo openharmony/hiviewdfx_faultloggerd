@@ -45,8 +45,9 @@ private:
     
     int InitPrintThread(bool fromSignalHandler, std::shared_ptr<ProcessDumpRequest> request, \
                          std::shared_ptr<DfxProcess> process);
-    void PrintDumpProcessWithSignalContextHeader(std::shared_ptr<DfxProcess> process, siginfo_t info,
-                                                 uint64_t timeStamp, const std::string& msg);
+
+    void PrintDumpProcessWithSignalContextHeader(std::shared_ptr<DfxProcess> process,
+        std::shared_ptr<ProcessDumpRequest> request);
 
     ProcessDumper() = default;
     DISALLOW_COPY_AND_MOVE(ProcessDumper);

@@ -15,6 +15,8 @@
 #ifndef DFX_DEFINE_H
 #define DFX_DEFINE_H
 
+#include <endian.h>
+
 #define SIGDUMP 35
 #define SIGLOCAL_DUMP 36
 #define PROCESSDUMP_TIMEOUT 30
@@ -82,4 +84,27 @@ static const int REGS_PRINT_LEN_X86 = 512;
     _rc;                                        \
     })
 
+// keep sync with the definition in hitracec.h
+typedef struct TraceInfo {
+#if __BYTE_ORDER == __LITTLE_ENDIAN
+    uint64_t valid : 1;
+    uint64_t ver : 3;
+    uint64_t chainId : 60;
+
+    uint64_t flags : 12;
+    uint64_t spanId : 26;
+    uint64_t parentSpanId : 26;
+#elif __BYTE_ORDER == __BIG_ENDIAN
+    uint64_t chainId : 60;
+    uint64_t ver : 3;
+    uint64_t valid : 1;
+
+    uint64_t parentSpanId : 26;
+    uint64_t spanId : 26;
+    uint64_t flags : 12;
+#else
+#error "ERROR: No BIG_LITTLE_ENDIAN defines."
 #endif
+} TraceInfo;
+
+#endif // DFX_DEFINE_H
