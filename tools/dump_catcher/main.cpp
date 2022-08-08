@@ -53,76 +53,6 @@ static void PrintCommandHelp()
     std::cout << "-T type    dump the stacktrace of the type." << std::endl;
 }
 
-static void PrintPidTidCheckFailed(int32_t pid, int32_t tid, const std::string& error)
-{
-    DfxLogWarn("pid:%d, tid:%d check failed", pid, tid);
-    std::cout << DUMP_STACK_TAG_FAILED << std::endl;
-    std::cout << error << std::endl;
-    DfxLogWarn(error.c_str());
-    std::cout << "The pid or tid is invalid." << std::endl;
-}
-
-static void FillErrorInfo(std::string& error, const char* format, ...)
-{
-    char buffer[LOG_BUF_LEN] = {0};
-    va_list args;
-    va_start(args, format);
-    int size = vsnprintf_s(buffer, sizeof(buffer), sizeof(buffer) - 1, format, args);
-    if (size == -1) {
-        DfxLogWarn("FillErrorInfo :: vsnprintf_s fail");
-    }
-    va_end(args);
-    std::string temp(buffer);
-    error = temp;
-}
-
-// Check whether the tid is owned by pid.
-static bool CheckPidTid(OHOS::HiviewDFX::ProcessDumpType type, int32_t pid, int32_t tid, std::string& error)
-{
-    // check pid
-    if (pid <= 0) {
-        FillErrorInfo(error, "pid is zero or negative.");
-        return false;
-    }
-
-    // user specified a tid, we need to check tid / pid is valid or not.
-    if (type == OHOS::HiviewDFX::DUMP_TYPE_THREAD) {
-        if (tid > 0) {
-            std::vector<std::string> files;
-            std::string path = "/proc/" + std::to_string(pid) + "/task/" + std::to_string(tid);
-            OHOS::GetDirFiles(path, files);
-            if (files.size() == 0) {
-                FillErrorInfo(error, "Cannot find tid(%d) in process(%d).", tid, pid);
-                return false;
-            }
-        } else {
-            FillErrorInfo(error, "tid is zero or negative.");
-            return false;
-        }
-    }
-
-    // check pid, make sure /proc/xxx/maps is valid.
-    if (pid > 0) {
-        char path[NAME_LEN] = {0};
-        if (snprintf_s(path, sizeof(path), sizeof(path) - 1, "/proc/%d/maps", pid) <= 0) {
-            FillErrorInfo(error, "Fail to snprintf path.");
-            return false;
-        }
-
-        FILE *fp = fopen(path, "r");
-        if (fp == nullptr) {
-            FillErrorInfo(error, "Fail to open maps info.");
-            return false;
-        }
-        fclose(fp);
-    } else {
-        FillErrorInfo(error, "pid is zero or negative.");
-        return false;
-    }
-
-    return true;
-}
-
 static bool ParseParamters(int argc, char *argv[], OHOS::HiviewDFX::ProcessDumpType &type,
     int32_t &pid, int32_t &tid)
 {
@@ -179,12 +109,6 @@ int main(int argc, char *argv[])
 
     if (!ParseParamters(argc, argv, type, pid, tid)) {
         PrintCommandHelp();
-        return 0;
-    }
-
-    std::string error;
-    if (!CheckPidTid(type, pid, tid, error)) { // check pid tid is valid
-        PrintPidTidCheckFailed(pid, tid, error);
         return 0;
     }
 

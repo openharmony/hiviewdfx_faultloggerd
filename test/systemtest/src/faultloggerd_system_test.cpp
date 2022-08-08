@@ -323,7 +323,7 @@ int FaultLoggerdSystemTest::CheckCountNum(std::string& filePath, std::string& pi
 int FaultLoggerdSystemTest::CheckCountNumAbort(std::string& filePath, std::string& pid)
 {
     string log[] = {
-        "Pid:", "Uid", ":crasher", "SIGABRT", "LastFatalMessage:Test", "ABORT!", "Tid:", "#00", "Registers:",
+        "Pid:", "Uid", ":crasher", "SIGABRT", "LastFatalMessage:", "ABORT!", "Tid:", "#00", "Registers:",
         REGISTERS, "FaultStack:", "Maps:", "/crasher"
     };
     log[0] = log[0] + pid;
@@ -2912,8 +2912,18 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest040, TestSize.Level2)
     std::string procCMD = "dumpcatcher -p " + std::to_string(FaultLoggerdSystemTest::loopAppPid);
     string procDumpLog = FaultLoggerdSystemTest::ProcessDumpCommands(procCMD);
     GTEST_LOG_(INFO) << "procDumpLog: " << procDumpLog;
-    bool ret = procDumpLog.find("Only BMS and the process owner can dump stacktrace") != std::string::npos;
-    EXPECT_EQ(ret, true) << "FaultLoggerdSystemTest040 Failed";
+    int count = 0;
+    string log[] = {"", "Name:crasher", "Name:SubTestThread", "#00", "/data/crasher"};
+    log[0] = log[0] + std::to_string(FaultLoggerdSystemTest::loopAppPid);
+    string::size_type idx;
+    for (int i = 0; i < 5; i++) {
+        idx = procDumpLog.find(log[i]);
+        if (idx != string::npos) {
+            GTEST_LOG_(INFO) << log[i];
+            count++;
+        }
+    }
+    EXPECT_EQ(count, 5) << "FaultLoggerdSystemTest040 Failed";
     FaultLoggerdSystemTest::KillCrasherLoopForSomeCase(3);
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest040: end.";
 }
@@ -2930,8 +2940,18 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest040_level0, TestSize.Lev
     std::string procCMD = "dumpcatcher -p " + std::to_string(FaultLoggerdSystemTest::loopAppPid);
     string procDumpLog = FaultLoggerdSystemTest::ProcessDumpCommands(procCMD);
     GTEST_LOG_(INFO) << "procDumpLog: " << procDumpLog;
-    bool ret = procDumpLog.find("Only BMS and the process owner can dump stacktrace") != std::string::npos;
-    EXPECT_EQ(ret, true) << "FaultLoggerdSystemTest040_level0 Failed";
+    int count = 0;
+    string log[] = {"", "Name:crasher", "Name:SubTestThread", "#00", "/data/crasher"};
+    log[0] = log[0] + std::to_string(FaultLoggerdSystemTest::loopAppPid);
+    string::size_type idx;
+    for (int i = 0; i < 5; i++) {
+        idx = procDumpLog.find(log[i]);
+        if (idx != string::npos) {
+            GTEST_LOG_(INFO) << log[i];
+            count++;
+        }
+    }
+    EXPECT_EQ(count, 5) << "FaultLoggerdSystemTest040_level0 Failed";
     FaultLoggerdSystemTest::KillCrasherLoopForSomeCase(3);
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest040_level0: end.";
 }
@@ -2946,11 +2966,21 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest041, TestSize.Level2)
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest041: start uid:" << getuid();
     FaultLoggerdSystemTest::StartCrasherLoop(3);
     std::string procCMD = "dumpcatcher -p " + std::to_string(FaultLoggerdSystemTest::loopAppPid) + " -t "+
-    std::to_string(FaultLoggerdSystemTest::loopAppPid);
+        std::to_string(FaultLoggerdSystemTest::loopAppPid);
     string procDumpLog = FaultLoggerdSystemTest::ProcessDumpCommands(procCMD);
     GTEST_LOG_(INFO) << "procDumpLog: " << procDumpLog;
-    bool ret = procDumpLog.find("Only BMS and the process owner can dump stacktrace") != std::string::npos;
-    EXPECT_EQ(ret, true) << "FaultLoggerdSystemTest041 Failed";
+    int count = 0;
+    string log[] = {"", "Name:crasher", "Name:SubTestThread", "#00", "/data/crasher"};
+    log[0] = log[0] + std::to_string(FaultLoggerdSystemTest::loopAppPid);
+    string::size_type idx;
+    for (int i = 0; i < 5; i++) {
+        idx = procDumpLog.find(log[i]);
+        if (idx != string::npos) {
+            GTEST_LOG_(INFO) << log[i];
+            count++;
+        }
+    }
+    EXPECT_EQ(count, 5) << "FaultLoggerdSystemTest041 Failed";
     FaultLoggerdSystemTest::KillCrasherLoopForSomeCase(3);
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest041: end.";
 }
@@ -2972,8 +3002,18 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest042, TestSize.Level2)
         std::to_string(tid);
     string procDumpLog = FaultLoggerdSystemTest::ProcessDumpCommands(procCMD);
     GTEST_LOG_(INFO) << "procDumpLog: " << procDumpLog;
-    bool ret = procDumpLog.find("Only BMS and the process owner can dump stacktrace") != std::string::npos;
-    EXPECT_EQ(ret, true) << "FaultLoggerdSystemTest042 Failed";
+    int count = 0;
+    string log[] = {"", "Name:crasher", "Name:SubTestThread", "#00", "/data/crasher"};
+    log[0] = log[0] + std::to_string(FaultLoggerdSystemTest::loopAppPid);
+    string::size_type idx;
+    for (int i = 0; i < 5; i++) {
+        idx = procDumpLog.find(log[i]);
+        if (idx != string::npos) {
+            GTEST_LOG_(INFO) << log[i];
+            count++;
+        }
+    }
+    EXPECT_EQ(count, 5) << "FaultLoggerdSystemTest042 Failed";
     FaultLoggerdSystemTest::KillCrasherLoopForSomeCase(3);
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest042: end.";
 }
@@ -2993,7 +3033,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest043, TestSize.Level2)
     string procDumpLog = FaultLoggerdSystemTest::ProcessDumpCommands(procCMD);
     GTEST_LOG_(INFO) << "procDumpLog: " << procDumpLog;
     int count = 0;
-    string log[] = {"failed"};
+    string log[] = {"Failed"};
     string::size_type idx;
     for (int i = 0; i < 1; i++) {
         idx = procDumpLog.find(log[i]);
@@ -3024,7 +3064,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0109, TestSize.Level2)
     string procDumpLog = FaultLoggerdSystemTest::ProcessDumpCommands(procCMD);
     GTEST_LOG_(INFO) << "procDumpLog: " << procDumpLog;
     int count = 0;
-    string log[] = {"failed"};
+    string log[] = {"Failed"};
     string::size_type idx;
     for (int i = 0; i < 1; i++) {
         idx = procDumpLog.find(log[i]);
@@ -3051,10 +3091,11 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest044, TestSize.Level2)
     FaultLoggerdSystemTest::StartCrasherLoop(3);
     std::string procCMD = "dumpcatcher -p 9999 -t "+ std::to_string(FaultLoggerdSystemTest::loopAppPid);
     string procDumpLog = FaultLoggerdSystemTest::ProcessDumpCommands(procCMD);
+    GTEST_LOG_(INFO) << "procDumpLog: " << procDumpLog;
     int count = 0;
-    string log[] = {"failed", "invalid"};
+    string log[] = {"Failed"};
     string::size_type idx;
-    for (int i = 0; i < 2; i++) {
+    for (int i = 0; i < 1; i++) {
         idx = procDumpLog.find(log[i]);
         if (idx != string::npos) {
             GTEST_LOG_(INFO) << count;
@@ -3062,7 +3103,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest044, TestSize.Level2)
             count++;
         }
     }
-    EXPECT_EQ(count, 2) << "FaultLoggerdSystemTest044 Failed";
+    EXPECT_EQ(count, 1) << "FaultLoggerdSystemTest044 Failed";
     FaultLoggerdSystemTest::KillCrasherLoopForSomeCase(3);
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest044: end.";
 }
@@ -3078,10 +3119,11 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest045, TestSize.Level2)
     FaultLoggerdSystemTest::StartCrasherLoop(3);
     std::string procCMD = "dumpcatcher -p " + std::to_string(FaultLoggerdSystemTest::loopAppPid) + " -t 9999";
     string procDumpLog = FaultLoggerdSystemTest::ProcessDumpCommands(procCMD);
+    GTEST_LOG_(INFO) << "procDumpLog: " << procDumpLog;
     int count = 0;
-    string log[] = {"failed", "invalid"};
+    string log[] = {"Failed"};
     string::size_type idx;
-    for (int i = 0; i < 2; i++) {
+    for (int i = 0; i < 1; i++) {
         idx = procDumpLog.find(log[i]);
         if (idx != string::npos) {
             GTEST_LOG_(INFO) << count;
@@ -3089,7 +3131,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest045, TestSize.Level2)
             count++;
         }
     }
-    EXPECT_EQ(count, 2) << "FaultLoggerdSystemTest045 Failed";
+    EXPECT_EQ(count, 1) << "FaultLoggerdSystemTest045 Failed";
     FaultLoggerdSystemTest::KillCrasherLoopForSomeCase(3);
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest045: end.";
 }
@@ -3107,10 +3149,11 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest046, TestSize.Level2)
     std::string procCMD = "dumpcatcher -p " + std::to_string(FaultLoggerdSystemTest::loopAppPid) + " -t "
         + std::to_string(FaultLoggerdSystemTest::loopSysPid);
     string procDumpLog = FaultLoggerdSystemTest::ProcessDumpCommands(procCMD);
+    GTEST_LOG_(INFO) << "procDumpLog: " << procDumpLog;
     int count = 0;
-    string log[] = {"failed", "invalid"};
+    string log[] = {"Failed"};
     string::size_type idx;
-    for (int i = 0; i < 2; i++) {
+    for (int i = 0; i < 1; i++) {
         idx = procDumpLog.find(log[i]);
         if (idx != string::npos) {
             GTEST_LOG_(INFO) << count;
@@ -3118,7 +3161,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest046, TestSize.Level2)
             count++;
         }
     }
-    EXPECT_EQ(count, 2) << "FaultLoggerdSystemTest046 Failed";
+    EXPECT_EQ(count, 1) << "FaultLoggerdSystemTest046 Failed";
     FaultLoggerdSystemTest::KillCrasherLoopForSomeCase(1);
     FaultLoggerdSystemTest::KillCrasherLoopForSomeCase(3);
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest046: end.";
@@ -3137,10 +3180,11 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest047, TestSize.Level2)
     std::string procCMD = "dumpcatcher -p " + std::to_string(FaultLoggerdSystemTest::loopSysPid) + " -t "
         + std::to_string(FaultLoggerdSystemTest::loopAppPid);
     string procDumpLog = FaultLoggerdSystemTest::ProcessDumpCommands(procCMD);
+    GTEST_LOG_(INFO) << "procDumpLog: " << procDumpLog;
     int count = 0;
-    string log[] = {"failed", "invalid"};
+    string log[] = {"Failed"};
     string::size_type idx;
-    for (int i = 0; i < 2; i++) {
+    for (int i = 0; i < 1; i++) {
         idx = procDumpLog.find(log[i]);
         if (idx != string::npos) {
             GTEST_LOG_(INFO) << count;
@@ -3148,7 +3192,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest047, TestSize.Level2)
             count++;
         }
     }
-    EXPECT_EQ(count, 2) << "FaultLoggerdSystemTest047 Failed";
+    EXPECT_EQ(count, 1) << "FaultLoggerdSystemTest047 Failed";
     FaultLoggerdSystemTest::KillCrasherLoopForSomeCase(1);
     FaultLoggerdSystemTest::KillCrasherLoopForSomeCase(3);
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest047: end.";
@@ -3165,6 +3209,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest048, TestSize.Level2)
     FaultLoggerdSystemTest::StartCrasherLoop(3);
     std::string procCMD = "dumpcatcher -p  -t " + std::to_string(FaultLoggerdSystemTest::loopAppPid);
     string procDumpLog = FaultLoggerdSystemTest::ProcessDumpCommands(procCMD);
+    GTEST_LOG_(INFO) << "procDumpLog: " << procDumpLog;
     int count = 0;
     string log[] = {"usage:", "dump the stacktrace"};
     string::size_type idx;
@@ -3192,6 +3237,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest049, TestSize.Level2)
     FaultLoggerdSystemTest::StartCrasherLoop(3);
     std::string procCMD = "dumpcatcher -p " + std::to_string(FaultLoggerdSystemTest::loopAppPid) + " -t ";
     string procDumpLog = FaultLoggerdSystemTest::ProcessDumpCommands(procCMD);
+    GTEST_LOG_(INFO) << "procDumpLog: " << procDumpLog;
     int count = 0;
     string log[] = {"usage:", "dump the stacktrace"};
     string::size_type idx;
@@ -3219,10 +3265,11 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest050, TestSize.Level2)
     FaultLoggerdSystemTest::StartCrasherLoop(3);
     std::string procCMD = "dumpcatcher -p -11 -t " + std::to_string(FaultLoggerdSystemTest::loopAppPid);
     string procDumpLog = FaultLoggerdSystemTest::ProcessDumpCommands(procCMD);
+    GTEST_LOG_(INFO) << "procDumpLog: " << procDumpLog;
     int count = 0;
-    string log[] = {"failed", "invalid"};
+    string log[] = {"Failed"};
     string::size_type idx;
-    for (int i = 0; i < 2; i++) {
+    for (int i = 0; i < 1; i++) {
         idx = procDumpLog.find(log[i]);
         if (idx != string::npos) {
             GTEST_LOG_(INFO) << count;
@@ -3230,7 +3277,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest050, TestSize.Level2)
             count++;
         }
     }
-    EXPECT_EQ(count, 2) << "FaultLoggerdSystemTest050 Failed";
+    EXPECT_EQ(count, 1) << "FaultLoggerdSystemTest050 Failed";
     FaultLoggerdSystemTest::KillCrasherLoopForSomeCase(3);
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest050: end.";
 }
@@ -3246,10 +3293,11 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest051, TestSize.Level2)
     FaultLoggerdSystemTest::StartCrasherLoop(3);
     std::string procCMD = "dumpcatcher -p " + std::to_string(FaultLoggerdSystemTest::loopAppPid) + " -t -11";
     string procDumpLog = FaultLoggerdSystemTest::ProcessDumpCommands(procCMD);
+    GTEST_LOG_(INFO) << "procDumpLog: " << procDumpLog;
     int count = 0;
-    string log[] = {"failed", "invalid"};
+    string log[] = {"Failed"};
     string::size_type idx;
-    for (int i = 0; i < 2; i++) {
+    for (int i = 0; i < 1; i++) {
         idx = procDumpLog.find(log[i]);
         if (idx != string::npos) {
             GTEST_LOG_(INFO) << count;
@@ -3257,7 +3305,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest051, TestSize.Level2)
             count++;
         }
     }
-    EXPECT_EQ(count, 2) << "FaultLoggerdSystemTest051 Failed";
+    EXPECT_EQ(count, 1) << "FaultLoggerdSystemTest051 Failed";
     FaultLoggerdSystemTest::KillCrasherLoopForSomeCase(3);
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest051: end.";
 }
@@ -3342,18 +3390,17 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest053, TestSize.Level2)
     string procDumpLog = FaultLoggerdSystemTest::ProcessDumpCommands(procCMD);
     GTEST_LOG_(INFO) << "procDumpLog: " << procDumpLog;
     int count = 0;
-    string log[] = {"failed"};
-    GTEST_LOG_(INFO) << procDumpLog;
+    string log[] = {"", "Name:crasher", "Name:SubTestThread", "#00", "/data/crasher"};
+    log[0] = log[0] + std::to_string(FaultLoggerdSystemTest::loopRootPid);
     string::size_type idx;
-    for (int i = 0; i < 1; i++) {
+    for (int i = 0; i < 5; i++) {
         idx = procDumpLog.find(log[i]);
         if (idx != string::npos) {
-            GTEST_LOG_(INFO) << count;
             GTEST_LOG_(INFO) << log[i];
             count++;
         }
     }
-    EXPECT_EQ(count, 1) << "FaultLoggerdSystemTest053 Failed";
+    EXPECT_EQ(count, 5) << "FaultLoggerdSystemTest053 Failed";
     FaultLoggerdSystemTest::KillCrasherLoopForSomeCase(3);
     FaultLoggerdSystemTest::KillCrasherLoopForSomeCase(1);
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest053: end.";
@@ -3375,18 +3422,17 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0106, TestSize.Level2)
     string procDumpLog = FaultLoggerdSystemTest::ProcessDumpCommands(procCMD);
     GTEST_LOG_(INFO) << "procDumpLog: " << procDumpLog;
     int count = 0;
-    string log[] = {"failed"};
-    GTEST_LOG_(INFO) << procDumpLog;
+    string log[] = {"", "Name:crasher", "Name:SubTestThread", "#00", "/data/crasher"};
+    log[0] = log[0] + std::to_string(FaultLoggerdSystemTest::loopRootPid);
     string::size_type idx;
-    for (int i = 0; i < 1; i++) {
+    for (int i = 0; i < 5; i++) {
         idx = procDumpLog.find(log[i]);
         if (idx != string::npos) {
-            GTEST_LOG_(INFO) << count;
             GTEST_LOG_(INFO) << log[i];
             count++;
         }
     }
-    EXPECT_EQ(count, 1) << "FaultLoggerdSystemTest0106 Failed";
+    EXPECT_EQ(count, 5) << "FaultLoggerdSystemTest0106 Failed";
     FaultLoggerdSystemTest::KillCrasherLoopForSomeCase(2);
     FaultLoggerdSystemTest::KillCrasherLoopForSomeCase(1);
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest0106: end.";
@@ -3477,11 +3523,11 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest054, TestSize.Level2)
     std::string procCMD = "dumpcatcher -p " + std::to_string(FaultLoggerdSystemTest::loopAppPid) + " -t " +
         std::to_string(FaultLoggerdSystemTest::loopRootPid);
     string procDumpLog = FaultLoggerdSystemTest::ProcessDumpCommands(procCMD);
+    GTEST_LOG_(INFO) << "procDumpLog: " << procDumpLog;
     int count = 0;
-    string log[] = {"failed", "invalid"};
-    GTEST_LOG_(INFO) << procDumpLog;
+    string log[] = {"Failed"};
     string::size_type idx;
-    for (int i = 0; i < 2; i++) {
+    for (int i = 0; i < 1; i++) {
         idx = procDumpLog.find(log[i]);
         if (idx != string::npos) {
             GTEST_LOG_(INFO) << count;
@@ -3489,7 +3535,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest054, TestSize.Level2)
             count++;
         }
     }
-    EXPECT_EQ(count, 2) << "FaultLoggerdSystemTest054 Failed";
+    EXPECT_EQ(count, 1) << "FaultLoggerdSystemTest054 Failed";
     FaultLoggerdSystemTest::KillCrasherLoopForSomeCase(2);
     FaultLoggerdSystemTest::KillCrasherLoopForSomeCase(3);
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest054: end.";
@@ -3508,11 +3554,11 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest055, TestSize.Level2)
     std::string procCMD = "dumpcatcher -p " + std::to_string(FaultLoggerdSystemTest::loopRootPid) + " -t " +
         std::to_string(FaultLoggerdSystemTest::loopAppPid);
     string procDumpLog = FaultLoggerdSystemTest::ProcessDumpCommands(procCMD);
+    GTEST_LOG_(INFO) << "procDumpLog: " << procDumpLog;
     int count = 0;
-    string log[] = {"failed", "invalid"};
-    GTEST_LOG_(INFO) << procDumpLog;
+    string log[] = {"Failed"};
     string::size_type idx;
-    for (int i = 0; i < 2; i++) {
+    for (int i = 0; i < 1; i++) {
         idx = procDumpLog.find(log[i]);
         if (idx != string::npos) {
             GTEST_LOG_(INFO) << count;
@@ -3520,7 +3566,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest055, TestSize.Level2)
             count++;
         }
     }
-    EXPECT_EQ(count, 2) << "FaultLoggerdSystemTest055 Failed";
+    EXPECT_EQ(count, 1) << "FaultLoggerdSystemTest055 Failed";
     FaultLoggerdSystemTest::KillCrasherLoopForSomeCase(2);
     FaultLoggerdSystemTest::KillCrasherLoopForSomeCase(3);
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest055: end.";
@@ -3537,11 +3583,11 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0114, TestSize.Level2)
     FaultLoggerdSystemTest::StartCrasherLoop(3);
     std::string procCMD = "dumpcatcher -p " + GetPidMax() + " -t " + GetTidMax();
     string procDumpLog = FaultLoggerdSystemTest::ProcessDumpCommands(procCMD);
+    GTEST_LOG_(INFO) << "procDumpLog: " << procDumpLog;
     int count = 0;
-    string log[] = {"failed", "invalid"};
-    GTEST_LOG_(INFO) << procDumpLog;
+    string log[] = {"Failed"};
     string::size_type idx;
-    for (int i = 0; i < 2; i++) {
+    for (int i = 0; i < 1; i++) {
         idx = procDumpLog.find(log[i]);
         if (idx != string::npos) {
             GTEST_LOG_(INFO) << count;
@@ -3549,7 +3595,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0114, TestSize.Level2)
             count++;
         }
     }
-    EXPECT_EQ(count, 2) << "FaultLoggerdSystemTest0114 Failed";
+    EXPECT_EQ(count, 1) << "FaultLoggerdSystemTest0114 Failed";
     FaultLoggerdSystemTest::KillCrasherLoopForSomeCase(3);
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest0114: end.";
 }
@@ -3565,11 +3611,11 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0115, TestSize.Level2)
     FaultLoggerdSystemTest::StartCrasherLoop(3);
     std::string procCMD = "dumpcatcher -p 65535 -t 65535";
     string procDumpLog = FaultLoggerdSystemTest::ProcessDumpCommands(procCMD);
+    GTEST_LOG_(INFO) << "procDumpLog: " << procDumpLog;
     int count = 0;
-    string log[] = {"failed", "invalid"};
-    GTEST_LOG_(INFO) << procDumpLog;
+    string log[] = {"Failed"};
     string::size_type idx;
-    for (int i = 0; i < 2; i++) {
+    for (int i = 0; i < 1; i++) {
         idx = procDumpLog.find(log[i]);
         if (idx != string::npos) {
             GTEST_LOG_(INFO) << count;
@@ -3577,7 +3623,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0115, TestSize.Level2)
             count++;
         }
     }
-    EXPECT_EQ(count, 2) << "FaultLoggerdSystemTest0115 Failed";
+    EXPECT_EQ(count, 1) << "FaultLoggerdSystemTest0115 Failed";
     FaultLoggerdSystemTest::KillCrasherLoopForSomeCase(3);
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest0115: end.";
 }
@@ -3593,11 +3639,11 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0116, TestSize.Level2)
     FaultLoggerdSystemTest::StartCrasherLoop(3);
     std::string procCMD = "dumpcatcher -p 65536 -t 65536";
     string procDumpLog = FaultLoggerdSystemTest::ProcessDumpCommands(procCMD);
+    GTEST_LOG_(INFO) << "procDumpLog: " << procDumpLog;
     int count = 0;
-    string log[] = {"failed", "invalid"};
-    GTEST_LOG_(INFO) << procDumpLog;
+    string log[] = {"Failed"};
     string::size_type idx;
-    for (int i = 0; i < 2; i++) {
+    for (int i = 0; i < 1; i++) {
         idx = procDumpLog.find(log[i]);
         if (idx != string::npos) {
             GTEST_LOG_(INFO) << count;
@@ -3605,7 +3651,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0116, TestSize.Level2)
             count++;
         }
     }
-    EXPECT_EQ(count, 2) << "FaultLoggerdSystemTest0116 Failed";
+    EXPECT_EQ(count, 1) << "FaultLoggerdSystemTest0116 Failed";
     FaultLoggerdSystemTest::KillCrasherLoopForSomeCase(3);
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest0116: end.";
 }
@@ -3621,11 +3667,11 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0117, TestSize.Level2)
     FaultLoggerdSystemTest::StartCrasherLoop(3);
     std::string procCMD = "dumpcatcher -p 65534 -t 65534";
     string procDumpLog = FaultLoggerdSystemTest::ProcessDumpCommands(procCMD);
+    GTEST_LOG_(INFO) << "procDumpLog: " << procDumpLog;
     int count = 0;
-    string log[] = {"failed", "invalid"};
-    GTEST_LOG_(INFO) << procDumpLog;
+    string log[] = {"Failed"};
     string::size_type idx;
-    for (int i = 0; i < 2; i++) {
+    for (int i = 0; i < 1; i++) {
         idx = procDumpLog.find(log[i]);
         if (idx != string::npos) {
             GTEST_LOG_(INFO) << count;
@@ -3633,7 +3679,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0117, TestSize.Level2)
             count++;
         }
     }
-    EXPECT_EQ(count, 2) << "FaultLoggerdSystemTest0117 Failed";
+    EXPECT_EQ(count, 1) << "FaultLoggerdSystemTest0117 Failed";
     FaultLoggerdSystemTest::KillCrasherLoopForSomeCase(3);
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest0117: end.";
 }
@@ -3682,8 +3728,18 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest057, TestSize.Level2)
     std::string procCMD = "dumpcatcher -p " + std::to_string(FaultLoggerdSystemTest::loopAppPid);
     string procDumpLog = FaultLoggerdSystemTest::ProcessDumpCommands(procCMD);
     GTEST_LOG_(INFO) << "procDumpLog: " << procDumpLog;
-    bool ret = procDumpLog.find("Only BMS and the process owner can dump stacktrace") != std::string::npos;
-    EXPECT_EQ(ret, true) << "FaultLoggerdSystemTest057 Failed";
+    int count = 0;
+    string log[] = {"", "Name:crasher", "Name:SubTestThread", "#00", "/data/crasher"};
+    log[0] = log[0] + std::to_string(FaultLoggerdSystemTest::loopAppPid);
+    string::size_type idx;
+    for (int i = 0; i < 5; i++) {
+        idx = procDumpLog.find(log[i]);
+        if (idx != string::npos) {
+            GTEST_LOG_(INFO) << log[i];
+            count++;
+        }
+    }
+    EXPECT_EQ(count, 5) << "FaultLoggerdSystemTest057 Failed";
     FaultLoggerdSystemTest::KillCrasherLoopForSomeCase(3);
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest057: end.";
 }

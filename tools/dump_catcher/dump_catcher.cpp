@@ -33,10 +33,14 @@ void DumpCatcher::Dump(int32_t pid, int32_t tid)
 {
     DfxDumpCatcher dumplog;
     std::string msg = "";
-    bool ret = dumplog.DumpCatch(pid, tid, msg);
-    if (ret) {
-        std::cout << msg << std::endl;
+    if (dumplog.DumpCatch(pid, tid, msg)) {
+        if (!msg.empty()) {
+            std::cout << msg << std::endl;
+        } else {
+            std::cout << "Dump Failed." << std::endl;
+        }
     } else {
+        std::cout << "Dump Failed." << std::endl;
         DfxLogWarn("DumpCatch fail.");
     }
 }
