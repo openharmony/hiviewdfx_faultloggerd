@@ -3391,7 +3391,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest053, TestSize.Level2)
     GTEST_LOG_(INFO) << "procDumpLog: " << procDumpLog;
     int count = 0;
     string log[] = {"", "Name:crasher", "Name:SubTestThread", "#00", "/data/crasher"};
-    log[0] = log[0] + std::to_string(FaultLoggerdSystemTest::loopRootPid);
+    log[0] = log[0] + std::to_string(FaultLoggerdSystemTest::loopAppPid);
     string::size_type idx;
     for (int i = 0; i < 5; i++) {
         idx = procDumpLog.find(log[i]);
