@@ -30,7 +30,7 @@
 
 #ifdef LOG_DOMAIN
 #undef LOG_DOMAIN
-#define LOG_DOMAIN 0x2D11
+#define LOG_DOMAIN 0xD002D11
 #endif
 
 #ifdef LOG_TAG

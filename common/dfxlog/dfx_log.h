@@ -46,7 +46,7 @@ extern "C" {
 #define FILE_NAME   (strrchr((__FILE__), '/') ? strrchr((__FILE__), '/') + 1 : (__FILE__))
 
 #ifndef LOG_DOMAIN
-#define LOG_DOMAIN 0x2D11
+#define LOG_DOMAIN 0xD002D11
 #endif
 
 #ifndef LOG_TAG
