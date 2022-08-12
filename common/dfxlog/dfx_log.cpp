@@ -31,11 +31,11 @@ static const OHOS::HiviewDFX::HiLogLabel g_LOG_LABEL = {LOG_CORE, 0xD002D20, "Df
 #endif
 static const int32_t INVALID_FD = -1;
 static int32_t g_DebugFd = INVALID_FD;
-static const Level g_logLevel = Level::DEBUG;
+static const Level g_LogLevel = Level::DEBUG;
 static const int LOG_BUF_LEN = 1024;
 #ifdef DFX_LOG_USE_DMESG
 static const int MAX_LOG_SIZE = 1024;
-static int g_fd = -1;
+static int g_Fd = -1;
 #endif
 
 #ifdef DFX_LOG_USE_DMESG
@@ -45,18 +45,18 @@ void LogToDmesg(Level logLevel, const char *tag, const char *info)
     static const char *LOG_KLEVEL_STR[] = { "<7>", "<6>", "<4>", "<3>", "<3>" };
 
     if (UNLIKELY(g_fd < 0)) {
-        g_fd = open("/dev/kmsg", O_WRONLY, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP);
+        g_Fd = open("/dev/kmsg", O_WRONLY, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP);
     }
     char logInfo[MAX_LOG_SIZE];
     if (snprintf_s(logInfo, sizeof(logInfo), sizeof(logInfo) - 1, "%s[pid=%d %d][%s][%s]%s",
         LOG_KLEVEL_STR[logLevel], getpid(), getppid(), tag, LOG_LEVEL_STR[logLevel], info) == -1) {
-        close(g_fd);
-        g_fd = -1;
+        close(g_Fd);
+        g_Fd = -1;
         return;
     }
-    if (write(g_fd, logInfo, strlen(logInfo)) < 0) {
-        close(g_fd);
-        g_fd = -1;
+    if (write(g_Fd, logInfo, strlen(logInfo)) < 0) {
+        close(g_Fd);
+        g_Fd = -1;
     }
 }
 #endif
@@ -73,7 +73,7 @@ bool CheckDebugLevel(void)
 
 int DfxLog(const Level logLevel, const unsigned int domain, const char* tag, const char *fmt, ...)
 {
-    if (logLevel < g_logLevel) {
+    if (logLevel < g_LogLevel) {
         return -1;
     }
 

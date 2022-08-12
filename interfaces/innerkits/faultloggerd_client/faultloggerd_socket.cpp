@@ -105,7 +105,7 @@ static bool GetServerSocket(int& sockfd, const char* path)
         return false;
     }
 
-    if (bind(sockfd, (struct sockaddr *)&server,
+    if (bind(sockfd, static_cast<struct sockaddr *>(&server),
         offsetof(struct sockaddr_un, sun_path) + strlen(server.sun_path)) < 0) {
         DfxLogError("%s :: Failed to bind socket", __func__);
         return false;

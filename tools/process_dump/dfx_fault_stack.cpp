@@ -27,7 +27,6 @@
 namespace OHOS {
 namespace HiviewDFX {
 namespace {
-constexpr size_t MAX_FAULT_STACK_SZ = 4;
 constexpr size_t MEM_BLOCK_BUF_SZ = 64;
 #if defined(__arm__)
 constexpr uint64_t STEP = 4;
@@ -35,7 +34,7 @@ constexpr uint64_t STEP = 4;
 constexpr uint64_t STEP = 8;
 #endif
 }
-bool FaultStack::ReadTargetMemory(uintptr_t addr, uintptr_t &value)
+bool FaultStack::ReadTargetMemory(uintptr_t addr, uintptr_t &value) const
 {
     uintptr_t targetAddr = addr;
     auto retAddr = reinterpret_cast<long*>(&value);
@@ -87,7 +86,7 @@ bool FaultStack::CollectStackInfo(std::shared_ptr<DfxRegs> reg, const std::vecto
     if (firstFrame != nullptr) {
         prevSp = static_cast<uintptr_t>(firstFrame->GetFrameSp());
     }
-
+    constexpr size_t MAX_FAULT_STACK_SZ = 4;
     for (index = 1; index < frames.size(); index++) {
         if (index > MAX_FAULT_STACK_SZ) {
             break;
@@ -114,7 +113,7 @@ bool FaultStack::CollectStackInfo(std::shared_ptr<DfxRegs> reg, const std::vecto
     return true;
 }
 
-uintptr_t FaultStack::PrintMemoryBlock(const MemoryBlockInfo& info)
+uintptr_t FaultStack::PrintMemoryBlock(const MemoryBlockInfo& info) const
 {
 #if defined(__arm__)
 #define PRINT_FORMAT "%08x"

@@ -29,7 +29,7 @@ DumpCatcher &DumpCatcher::GetInstance()
     return ins;
 }
 
-void DumpCatcher::Dump(int32_t pid, int32_t tid)
+void DumpCatcher::Dump(int32_t pid, int32_t tid) const
 {
     DfxDumpCatcher dumplog;
     std::string msg = "";
