@@ -97,8 +97,8 @@ static bool ReadStringFromFile(const char* path, char* dst, size_t dstSz)
 {
     char name[NAME_LEN];
     char nameFilter[NAME_LEN];
-    memset_s(name, 0, sizeof(name));
-    memset_s(nameFilter, 0, sizeof(nameFilter));
+    memset_s(name, sizeof(name), 0, sizeof(name));
+    memset_s(nameFilter, sizeof(nameFilter), 0, sizeof(nameFilter));
 
     int fd = -1;
     fd = open(path, O_RDONLY);
@@ -126,7 +126,7 @@ static bool ReadStringFromFile(const char* path, char* dst, size_t dstSz)
     if (cpyLen > dstSz) {
         cpyLen = dstSz;
     }
-    memcpy_s(dst, nameFilter, cpyLen);
+    memcpy_s(dst, dstSz, nameFilter, cpyLen);
     close(fd);
     return true;
 }
@@ -134,7 +134,7 @@ static bool ReadStringFromFile(const char* path, char* dst, size_t dstSz)
 static bool GetThreadName(char* buffer, size_t bufferSz)
 {
     char path[NAME_LEN];
-    memset_s(path, '\0', sizeof(path));
+    memset_s(path, sizeof(path), '\0', sizeof(path));
     if (snprintf_s(path, sizeof(path) - 1, "/proc/%d/comm", getpid()) <= 0) {
         return false;
     }
@@ -144,7 +144,7 @@ static bool GetThreadName(char* buffer, size_t bufferSz)
 static bool GetProcessName(char* buffer, size_t bufferSz)
 {
     char path[NAME_LEN];
-    memset_s(path, '\0', sizeof(path));
+    memset_s(path, sizeof(path), '\0', sizeof(path));
     if (snprintf_s(path, sizeof(path) - 1, "/proc/%d/cmdline", getpid()) <= 0) {
         return false;
     }
@@ -188,7 +188,7 @@ static void FillTraceIdLocked(struct ProcessDumpRequest* request)
     }
 
     TraceInfo id = HiTraceGetId();
-    memcpy_s(&(request->traceInfo), &id, sizeof(TraceInfo));
+    memcpy_s(&(request->traceInfo), sizeof(TraceInfo), &id, sizeof(TraceInfo));
 }
 
 const char* GetLastFatalMessage(void) __attribute__((weak));
@@ -221,7 +221,7 @@ static void FillLastFatalMessageLocked(int32_t sig)
 static int32_t InheritCapabilities(void)
 {
     struct __user_cap_header_struct capHeader;
-    memset_s(&capHeader, 0, sizeof(capHeader));
+    memset_s(&capHeader, sizeof(capHeader), 0, sizeof(capHeader));
 
     capHeader.version = _LINUX_CAPABILITY_VERSION_3;
     capHeader.pid = 0;
@@ -416,7 +416,7 @@ static void DFX_SignalHandler(int sig, siginfo_t *si, void *context)
     g_prevHandledSignal = sig;
     g_isDumping = TRUE;
 
-    memset_s(&g_request, 0, sizeof(g_request));
+    memset_s(&g_request, sizeof(g_request), 0, sizeof(g_request));
     g_request.type = sig;
     g_request.tid = gettid();
     g_request.pid = getpid();
@@ -428,8 +428,8 @@ static void DFX_SignalHandler(int sig, siginfo_t *si, void *context)
     GetThreadName(g_request.threadName, sizeof(g_request.threadName));
     GetProcessName(g_request.processName, sizeof(g_request.processName));
 
-    memcpy_s(&(g_request.siginfo), si, sizeof(siginfo_t));
-    memcpy_s(&(g_request.context), context, sizeof(ucontext_t));
+    memcpy_s(&(g_request.siginfo), sizeof(siginfo_t), si, sizeof(siginfo_t));
+    memcpy_s(&(g_request.context), sizeof(ucontext_t), context, sizeof(ucontext_t));
 
     FillTraceIdLocked(&g_request);
     FillLastFatalMessageLocked(sig);
@@ -520,8 +520,8 @@ void DFX_InstallSignalHandler(void)
     g_reservedChildStack = (void *)(((uint8_t *)g_reservedChildStack) + RESERVED_CHILD_STACK_SIZE - 1);
 
     struct sigaction action;
-    memset_s(&action, 0, sizeof(action));
-    memset_s(&g_oldSigactionList, 0, sizeof(g_oldSigactionList));
+    memset_s(&action, sizeof(action), 0, sizeof(action));
+    memset_s(&g_oldSigactionList, sizeof(g_oldSigactionList), 0, sizeof(g_oldSigactionList));
     sigfillset(&action.sa_mask);
     action.sa_sigaction = DFX_SignalHandler;
     action.sa_flags = SA_RESTART | SA_SIGINFO | SA_ONSTACK;

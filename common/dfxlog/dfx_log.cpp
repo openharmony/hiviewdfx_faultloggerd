@@ -44,7 +44,7 @@ void LogToDmesg(Level logLevel, const char *tag, const char *info)
     static const char *LOG_LEVEL_STR[] = { "DEBUG", "INFO", "WARNING", "ERROR", "FATAL" };
     static const char *LOG_KLEVEL_STR[] = { "<7>", "<6>", "<4>", "<3>", "<3>" };
 
-    if (UNLIKELY(g_fd < 0)) {
+    if (UNLIKELY(g_Fd < 0)) {
         g_Fd = open("/dev/kmsg", O_WRONLY, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP);
     }
     char logInfo[MAX_LOG_SIZE];
@@ -68,7 +68,7 @@ void InitDebugFd(int32_t fd)
 
 bool CheckDebugLevel(void)
 {
-    return Level::DEBUG >= g_logLevel ? true : false;
+    return Level::DEBUG >= g_LogLevel ? true : false;
 }
 
 int DfxLog(const Level logLevel, const unsigned int domain, const char* tag, const char *fmt, ...)
