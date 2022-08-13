@@ -17,6 +17,7 @@
 #include <fcntl.h>
 #include <pthread.h>
 #include <sched.h>
+#include <securec.h>
 #include <signal.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -37,7 +38,6 @@
 #include "stdbool.h"
 #include "string.h"
 #ifndef DFX_SIGNAL_LIBC
-#include <securec.h>
 #include "dfx_cutil.h"
 #endif
 #if defined(CRASH_LOCAL_HANDLER)
