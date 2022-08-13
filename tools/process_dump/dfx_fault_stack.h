@@ -40,9 +40,9 @@ public:
     void Print();
 
 private:
-    bool ReadTargetMemory(uintptr_t addr, uintptr_t &value);
+    bool ReadTargetMemory(uintptr_t addr, uintptr_t &value) const;
     uintptr_t AdjustAndCreateMemoryBlock(size_t index, uintptr_t prevSp, uintptr_t prevEndAddr, uintptr_t size);
-    uintptr_t PrintMemoryBlock(const MemoryBlockInfo& info);
+    uintptr_t PrintMemoryBlock(const MemoryBlockInfo& info) const;
     void CreateMemoryBlock(uintptr_t addr, uintptr_t offset, uintptr_t size, std::string name);
 
 private:
