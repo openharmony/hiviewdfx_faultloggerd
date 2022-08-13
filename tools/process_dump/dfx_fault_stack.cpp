@@ -40,11 +40,11 @@ bool FaultStack::ReadTargetMemory(uintptr_t addr, uintptr_t &value) const
     auto retAddr = reinterpret_cast<long*>(&value);
     for (size_t i = 0; i < sizeof(uintptr_t) / sizeof(long); i++) {
         *retAddr = ptrace(PTRACE_PEEKTEXT, tid_, reinterpret_cast<void*>(targetAddr), nullptr);
-        targetAddr += sizeof(long);
-        retAddr += 1;
         if (*retAddr == -1) {
             return false;
         }
+        targetAddr += sizeof(long);
+        retAddr += 1;
     }
 
     return true;
@@ -106,7 +106,7 @@ bool FaultStack::CollectStackInfo(std::shared_ptr<DfxRegs> reg, const std::vecto
         prevSp = curSp;
     }
 
-    if (index < MAX_FAULT_STACK_SZ) {
+    if (blocks_.size() < MAX_FAULT_STACK_SZ) {
         size = highAddrLength;
         AdjustAndCreateMemoryBlock(index, prevSp, prevEndAddr, size);
     }
