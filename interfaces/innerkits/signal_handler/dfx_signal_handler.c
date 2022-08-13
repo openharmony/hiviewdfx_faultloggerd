@@ -135,7 +135,7 @@ static bool GetThreadName(char* buffer, size_t bufferSz)
 {
     char path[NAME_LEN];
     memset(path, '\0', sizeof(path));
-    if (snprintf_s(path, sizeof(path) - 1, "/proc/%d/comm", getpid()) <= 0) {
+    if (snprintf(path, sizeof(path) - 1, "/proc/%d/comm", getpid()) <= 0) {
         return false;
     }
     return ReadStringFromFile(path, buffer, bufferSz);
@@ -145,7 +145,7 @@ static bool GetProcessName(char* buffer, size_t bufferSz)
 {
     char path[NAME_LEN];
     memset(path, '\0', sizeof(path));
-    if (snprintf_s(path, sizeof(path) - 1, "/proc/%d/cmdline", getpid()) <= 0) {
+    if (snprintf(path, sizeof(path) - 1, "/proc/%d/cmdline", getpid()) <= 0) {
         return false;
     }
     return ReadStringFromFile(path, buffer, bufferSz);
