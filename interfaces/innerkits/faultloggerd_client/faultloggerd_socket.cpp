@@ -274,7 +274,7 @@ static bool SendMsgCtlToSocket(int sockfd, const void *cmsg, const int cmsgLen)
     msgh.msg_iov = &iov;
     msgh.msg_iovlen = 1;
 
-    int controlBufLen = CMSG_SPACE(cmsgLen);
+    int controlBufLen = CMSG_SPACE(static_cast<unsigned int>(cmsgLen));
     char controlBuf[controlBufLen];
     msgh.msg_control = controlBuf;
     msgh.msg_controllen = sizeof(controlBuf);
