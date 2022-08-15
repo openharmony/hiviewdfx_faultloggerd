@@ -232,7 +232,7 @@ bool DfxUnwindRemote::UnwindThread(std::shared_ptr<DfxProcess> process, std::sha
     std::shared_ptr<DfxRegs> regs = thread->GetThreadRegs();
     if (regs != nullptr) {
         std::vector<uintptr_t> regsVector = regs->GetRegsData();
-        uwn_set_context(&cursor, regsVector.data(), regsVector.size());
+        unw_set_context(&cursor, regsVector.data(), regsVector.size());
     }
 
     size_t index = 0;
