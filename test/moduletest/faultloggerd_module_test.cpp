@@ -16,6 +16,7 @@
 #include "faultloggerd_module_test.h"
 
 #include <sstream>
+#include <unistd.h>
 
 #include "faultloggerd_client.h"
 
@@ -95,8 +96,7 @@ HWTEST_F(FaultloggerdModuleTest, FaultloggerdServiceTest001, TestSize.Level0)
  */
 HWTEST_F(FaultloggerdModuleTest, FaultloggerdDfxHandlerPreloadTest001, TestSize.Level0)
 {
-    int hiviewPid = GetServicePid("hiview");
-    std::string cmd = "cat /proc/" + std::to_string(hiviewPid) + "/maps";
+    std::string cmd = "cat /proc/" + std::to_string(getpid()) + "/maps";
     std::string result = GetCmdResultFromPopen(cmd);
     ASSERT_EQ(result.find("libdfx_signalhandler.z.so") != std::string::npos, true);
 }
