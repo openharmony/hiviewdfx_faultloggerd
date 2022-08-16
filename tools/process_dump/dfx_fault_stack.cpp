@@ -137,7 +137,7 @@ uintptr_t FaultStack::PrintMemoryBlock(const MemoryBlockInfo& info) const
     return targetAddr;
 }
 
-void FaultStack::Print()
+void FaultStack::Print() const
 {
     if (blocks_.empty()) {
         return;
