@@ -37,7 +37,7 @@ public:
     ~FaultStack() = default;
 
     bool CollectStackInfo(std::shared_ptr<DfxRegs> reg, const std::vector<std::shared_ptr<DfxFrame>> &frames);
-    void Print();
+    void Print() const;
 
 private:
     bool ReadTargetMemory(uintptr_t addr, uintptr_t &value) const;
