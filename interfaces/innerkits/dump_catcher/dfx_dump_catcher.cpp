@@ -176,7 +176,7 @@ bool DfxDumpCatcher::DumpCatch(int pid, int tid, std::string& msg)
     } else {
         ret = DoDumpRemoteLocked(pid, tid, msg);
     }
-    DfxLogDebug("%s :: dump_catch :: ret(%d), msg(%s).", DFXDUMPCATCHER_TAG.c_str(), ret, msg.c_str());
+    DfxLogDebug("%s :: dump_catch :: ret: %d, msg: %s", DFXDUMPCATCHER_TAG.c_str(), ret, msg.c_str());
     return ret;
 }
 
@@ -220,10 +220,21 @@ bool DfxDumpCatcher::DoDumpCatchRemote(int pid, int tid, std::string& msg)
         return ret;
     }
 
-    if (RequestSdkDump(pid, tid) == false) {
-        DfxLogError("%s :: DoDumpCatchRemote :: request SdkDump error.", DFXDUMPCATCHER_TAG.c_str());
-        if (!SignalTargetProcess(pid, tid)) {
+    int sdkdumpRet = RequestSdkDump(pid, tid);
+    if (sdkdumpRet != (int)FaultLoggerSdkDumpResp::SDK_DUMP_PASS) {
+        if (sdkdumpRet == (int)FaultLoggerSdkDumpResp::SDK_DUMP_REPEAT) {
+            msg.append("Result: pid(" + std::to_string(pid) + ") is dumping.\n");
+            DfxLogWarn("%s :: %s :: %s", DFXDUMPCATCHER_TAG.c_str(), __func__, msg.c_str());
             return ret;
+        } else if (sdkdumpRet == (int)FaultLoggerSdkDumpResp::SDK_DUMP_REJECT) {
+            msg.append("Result: pid(" + std::to_string(pid) + ") check permission error.\n");
+            DfxLogWarn("%s :: %s :: %s", DFXDUMPCATCHER_TAG.c_str(), __func__, msg.c_str());
+
+            if (!SignalTargetProcess(pid, tid)) {
+                msg.append("Result: syscall SIGDUMP error.\n");
+                DfxLogWarn("%s :: %s :: %s", DFXDUMPCATCHER_TAG.c_str(), __func__, msg.c_str());
+                return ret;
+            }
         }
     }
 
@@ -248,6 +259,7 @@ bool DfxDumpCatcher::DoDumpRemotePid(int pid, std::string& msg)
     readfds[1].fd = readResFd;
     readfds[1].events = POLLIN;
     int fdsSize = sizeof(readfds) / sizeof(readfds[0]);
+    bool bPipeConnect = false;
     while (true) {
         if (readBufFd < 0 || readResFd < 0) {
             DfxLogError("%s :: %s :: Failed to get read fd", DFXDUMPCATCHER_TAG.c_str(), __func__);
@@ -256,12 +268,24 @@ bool DfxDumpCatcher::DoDumpRemotePid(int pid, std::string& msg)
 
         int pollRet = poll(readfds, fdsSize, BACK_TRACE_DUMP_TIMEOUT_S * 1000);
         if (pollRet <= 0) {
-            DfxLogError("%s :: %s :: poll error", DFXDUMPCATCHER_TAG.c_str(), __func__);
+            resMsg.append("Result: poll error.\n");
+            DfxLogError("%s :: %s :: %s", DFXDUMPCATCHER_TAG.c_str(), __func__, resMsg.c_str());
             break;
         }
 
-        bool bufRet = true, resRet = false;
+        bool bufRet = true, resRet = false, eventRet = true;
         for (int i = 0; i < fdsSize; ++i) {
+            if (!bPipeConnect && ((uint32_t)readfds[i].revents & POLLIN)) {
+                bPipeConnect = true;
+            }
+            if (bPipeConnect &&
+                (((uint32_t)readfds[i].revents & POLLERR) || ((uint32_t)readfds[i].revents & POLLHUP))) {
+                eventRet = false;
+                resMsg.append("Result: poll events error.\n");
+                DfxLogWarn("%s :: %s :: %s", DFXDUMPCATCHER_TAG.c_str(), __func__, resMsg.c_str());
+                break;
+            }
+
             if (((uint32_t)readfds[i].revents & POLLIN) != POLLIN) {
                 continue;
             }
@@ -275,11 +299,11 @@ bool DfxDumpCatcher::DoDumpRemotePid(int pid, std::string& msg)
             }
         }
 
-        if ((bufRet == false) || (resRet == true)) {
+        if ((eventRet == false) || (bufRet == false) || (resRet == true)) {
             break;
         }
     }
-    msg = bufMsg;
+    msg = resMsg + bufMsg;
     
     RequestPipeFd(pid, FaultLoggerPipeType::PIPE_FD_DELETE);
     DfxLogInfo("%s :: %s :: ret: %d", DFXDUMPCATCHER_TAG.c_str(), __func__, ret);
@@ -313,7 +337,7 @@ bool DfxDumpCatcher::DoReadRes(int fd, bool &ret, std::string& msg)
     }
     DfxDumpRes::GetInstance().SetRes(dumpRes.res);
     msg.append("Result: " + DfxDumpRes::GetInstance().ToString() + "\n");
-    DfxLogDebug("%s :: %s :: %s", DFXDUMPCATCHER_TAG.c_str(), __func__, msg.c_str());
+    DfxLogInfo("%s :: %s :: %s", DFXDUMPCATCHER_TAG.c_str(), __func__, msg.c_str());
     return true;
 }
 
