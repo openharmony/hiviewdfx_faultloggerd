@@ -31,7 +31,7 @@ static const OHOS::HiviewDFX::HiLogLabel g_LOG_LABEL = {LOG_CORE, 0xD002D20, "Df
 #endif
 static const int32_t INVALID_FD = -1;
 static int32_t g_DebugFd = INVALID_FD;
-static const Level g_LogLevel = Level::DEBUG;
+static const Level g_LogLevel = Level::INFO;
 static const int LOG_BUF_LEN = 1024;
 #ifdef DFX_LOG_USE_DMESG
 static const int MAX_LOG_SIZE = 1024;
