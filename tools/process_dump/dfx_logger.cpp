@@ -51,9 +51,6 @@ int WriteLog(int32_t fd, const char *format, ...)
         ret = dprintf(fd, "%s", buf);
         if (ret < 0) {
             DfxLogError("WriteLog :: write msg(%s) to fd(%d) failed, ret(%d).", buf, fd, ret);
-        } else if (fd != STDOUT_FILENO && fsync(fd) < 0) {
-            // if we write msg to normal file then try fsync, otherwise we needn't do this.
-            DfxLogError("WriteLog :: fsync failed, ret(%d).", ret);
         }
     }
 
