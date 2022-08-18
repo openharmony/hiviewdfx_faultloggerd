@@ -70,6 +70,10 @@ int main(int argc, char *argv[])
 #if defined(DEBUG_CRASH_LOCAL_HANDLER)
     DFX_InstallLocalSignalHandler();
 #endif
+    if (signal(SIGCHLD, SIG_IGN) == SIG_ERR) {
+        DfxLogError("Processdump ignore SIGCHLD failed.");
+    }
+
     bool isSignalHdlr = false;
 
     alarm(PROCESSDUMP_TIMEOUT); // wait 30s for process dump done
