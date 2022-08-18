@@ -70,8 +70,7 @@ void DfxRingBufferWrapper::LoopPrintRingBuffer()
 void DfxRingBufferWrapper::AppendMsg(std::string msg)
 {
     DfxLogDebug("%s :: msg: %s", __func__, msg.c_str());
-    ringBuffer_.Append(msg);
-    printCV_.notify_one();
+    WriteLog(fd_, "%s", msg.c_str());
 }
 
 int DfxRingBufferWrapper::AppendBuf(const char *format, ...)
@@ -94,25 +93,12 @@ int DfxRingBufferWrapper::AppendBuf(const char *format, ...)
 void DfxRingBufferWrapper::StartThread()
 {
     hasFinished_ = false;
-    thread_ = std::thread(DfxRingBufferWrapper::LoopPrintRingBuffer);
 }
 
 void DfxRingBufferWrapper::StopThread()
 {
-    printCV_.notify_one();
-    if (!hasFinished_) {
-        hasFinished_ = true;
-        printCV_.notify_one();
-        if (thread_.joinable()) {
-            thread_.join();
-            DfxLogDebug("%s :: thread join", __func__);
-        } else {
-            constexpr int timeout = 2;
-            sleep(timeout);
-        }
-        close(fd_);
-        fd_ = -1;
-    }
+    close(fd_);
+    fd_ = -1;
 }
 
 void DfxRingBufferWrapper::SetWriteBufFd(int32_t fd)
