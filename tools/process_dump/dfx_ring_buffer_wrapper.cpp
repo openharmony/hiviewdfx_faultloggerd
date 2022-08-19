@@ -70,7 +70,10 @@ void DfxRingBufferWrapper::LoopPrintRingBuffer()
 void DfxRingBufferWrapper::AppendMsg(std::string msg)
 {
     DfxLogDebug("%s :: msg: %s", __func__, msg.c_str());
-    WriteLog(fd_, "%s", msg.c_str());
+    if (writeFunc_ == nullptr) {
+        writeFunc_ = DfxRingBufferWrapper::DefaultWrite;
+    }
+    writeFunc_(fd_, msg.c_str(), msg.length());
 }
 
 int DfxRingBufferWrapper::AppendBuf(const char *format, ...)
@@ -116,6 +119,9 @@ void DfxRingBufferWrapper::SetWriteFunc(RingBufferWriteFunc func)
 
 int DfxRingBufferWrapper::DefaultWrite(int32_t fd, const char *buf, const int len)
 {
+    if (buf == nullptr) {
+        return -1;
+    }
     WriteLog(-1, "%s", buf);
     if (fd > 0) {
         return write(fd, buf, len);
