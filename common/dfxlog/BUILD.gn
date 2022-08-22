@@ -46,7 +46,6 @@ if (defined(ohos_lite)) {
   ohos_static_library("static_common_log") {
     sources = [ "dfx_log.cpp" ]
     public_configs = [ ":dfx_log_config" ]
-    defines = [ "DFX_LOG_USE_DMESG" ]
     external_deps = [
       "c_utils:utils",
       "hilog_native:libhilog",
