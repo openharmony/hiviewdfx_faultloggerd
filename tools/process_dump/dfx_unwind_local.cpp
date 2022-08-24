@@ -191,6 +191,7 @@ bool DfxUnwindLocal::ExecLocalDumpUnwind(int tid, size_t skipFramNum)
     curIndex_ = 0;
     unw_word_t pc = 0;
     unw_word_t prevPc = 0;
+    char mapName[SYMBOL_BUF_SIZE] = {0};
     while ((unw_step(&cursor) > 0) && (index < BACK_STACK_MAX_STEPS)) {
         if (tid != gettid()) {
             break;
@@ -221,7 +222,7 @@ bool DfxUnwindLocal::ExecLocalDumpUnwind(int tid, size_t skipFramNum)
         struct map_info* map = unw_get_map(&cursor);
         errno_t err = EOK;
         bool isValidFrame = true;
-        char mapName[SYMBOL_BUF_SIZE] = {0};
+        memset_s(mapName, SYMBOL_BUF_SIZE, 0, SYMBOL_BUF_SIZE);
         if ((map != NULL) && (strlen(map->path) < SYMBOL_BUF_SIZE - 1)) {
             err = strcpy_s(mapName, SYMBOL_BUF_SIZE, map->path);
         } else {
