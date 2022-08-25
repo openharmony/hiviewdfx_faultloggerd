@@ -40,7 +40,7 @@
 namespace OHOS {
 namespace HiviewDFX {
 namespace {
-static const std::string FaultLoggerPipe_TAG = "FaultLoggerPipe";
+static const std::string FAULTLOGGER_PIPE_TAG = "FaultLoggerPipe";
 
 static const int PIPE_READ = 0;
 static const int PIPE_WRITE = 1;
@@ -116,16 +116,17 @@ FaultLoggerPipeMap::FaultLoggerPipeMap()
 
 FaultLoggerPipeMap::~FaultLoggerPipeMap()
 {
-    std::map<int, std::shared_ptr<FaultLoggerPipe2> >::iterator iter = faultLoggerPipes_.begin();
+    std::map<int, std::unique_ptr<FaultLoggerPipe2> >::iterator iter = faultLoggerPipes_.begin();
     while (iter != faultLoggerPipes_.end()) {
         faultLoggerPipes_.erase(iter++);
     }
 }
 
-void FaultLoggerPipeMap::Set(int pid, std::shared_ptr<FaultLoggerPipe2> faultLoggerPipe)
+void FaultLoggerPipeMap::Set(int pid)
 {
     if (!Find(pid)) {
-        faultLoggerPipes_.insert(make_pair(pid, std::move(faultLoggerPipe)));
+        std::unique_ptr<FaultLoggerPipe2> ptr = std::unique_ptr<FaultLoggerPipe2>(new FaultLoggerPipe2());
+        faultLoggerPipes_.insert(make_pair(pid, std::move(ptr)));
     }
 }
 
@@ -134,13 +135,12 @@ FaultLoggerPipe2* FaultLoggerPipeMap::Get(int pid)
     if (!Find(pid)) {
         return nullptr;
     }
-    std::shared_ptr<FaultLoggerPipe2> faultLoggerPipe = faultLoggerPipes_[pid];
-    return faultLoggerPipe.get();
+    return faultLoggerPipes_[pid].get();
 }
 
 void FaultLoggerPipeMap::Del(int pid)
 {
-    std::map<int, std::shared_ptr<FaultLoggerPipe2> >::const_iterator iter = faultLoggerPipes_.find(pid);
+    std::map<int, std::unique_ptr<FaultLoggerPipe2> >::const_iterator iter = faultLoggerPipes_.find(pid);
     if (iter != faultLoggerPipes_.end()) {
         faultLoggerPipes_.erase(iter);
     }
@@ -148,7 +148,7 @@ void FaultLoggerPipeMap::Del(int pid)
 
 bool FaultLoggerPipeMap::Find(int pid) const
 {
-    std::map<int, std::shared_ptr<FaultLoggerPipe2> >::const_iterator iter = faultLoggerPipes_.find(pid);
+    std::map<int, std::unique_ptr<FaultLoggerPipe2> >::const_iterator iter = faultLoggerPipes_.find(pid);
     if (iter != faultLoggerPipes_.end()) {
         return true;
     }

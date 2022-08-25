@@ -302,8 +302,7 @@ void FaultLoggerDaemon::HandleSdkDumpRequest(int32_t connectionFd, FaultLoggerdR
             DfxLogError("%s :: pid(%d) is dumping, break.\n", FAULTLOGGERD_TAG.c_str(), request->pid);
             break;
         }
-        std::shared_ptr<FaultLoggerPipe2> ptr = std::make_shared<FaultLoggerPipe2>();
-        faultLoggerPipeMap_->Set(request->pid, ptr);
+        faultLoggerPipeMap_->Set(request->pid);
 
         if (!needSignalTarget) {
             DfxLogError("Failed to check permission, if caller can signal target, we may still get result.");
