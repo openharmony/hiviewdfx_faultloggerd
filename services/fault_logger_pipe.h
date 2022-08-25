@@ -55,12 +55,12 @@ public:
     FaultLoggerPipeMap();
     ~FaultLoggerPipeMap();
 
-    void Set(int pid, std::shared_ptr<FaultLoggerPipe2> faultLoggerPipe);
+    void Set(int pid);
     FaultLoggerPipe2* Get(int pid);
     void Del(int pid);
     bool Find(int pid) const;
 private:
-    std::map<int, std::shared_ptr<FaultLoggerPipe2> > faultLoggerPipes_;
+    std::map<int, std::unique_ptr<FaultLoggerPipe2> > faultLoggerPipes_;
 };
 } // namespace HiviewDFX
 } // namespace OHOS
