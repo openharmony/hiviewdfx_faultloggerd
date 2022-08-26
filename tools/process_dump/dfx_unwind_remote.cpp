@@ -82,6 +82,7 @@ bool DfxUnwindRemote::UnwindProcess(std::shared_ptr<DfxProcess> process)
             (process->GetIsSignalHdlr() == true)) {
             process->PrintProcessMapsByConfig();
         }
+        PrintBuildIds();
         unw_destroy_addr_space(as_);
         as_ = nullptr;
         return ret;
@@ -106,6 +107,7 @@ bool DfxUnwindRemote::UnwindProcess(std::shared_ptr<DfxProcess> process)
         DfxLogDebug("%s :: index(%d)", __func__, index);
     }
 
+    PrintBuildIds();
     unw_destroy_addr_space(as_);
     as_ = nullptr;
     return true;
@@ -129,6 +131,21 @@ uint64_t DfxUnwindRemote::DfxUnwindRemoteDoAdjustPc(unw_cursor_t & cursor, uint6
 
     DfxLogDebug("%s :: ret(0x%x).", __func__, ret);
     return ret;
+}
+
+std::string DfxUnwindRemote::GetReadableBuildId(uint8_t* buildId)
+{
+    int32_t buildIdLength = 16;
+    static const char hexTable[] = "0123456789abcdef";
+    uint8_t* buildIdPtr = buildId;
+    std::string buildIdStr;
+    while (buildIdLength >= 0) {
+        buildIdStr.push_back(hexTable[*buildIdPtr >> 4]); // 4 : higher 4 bit of uint8
+        buildIdStr.push_back(hexTable[*buildIdPtr & 0xf]);
+        buildIdPtr++;
+        buildIdLength--;
+    }
+    return buildIdStr;
 }
 
 bool DfxUnwindRemote::DfxUnwindRemoteDoUnwindStep(size_t const & index,
@@ -165,33 +182,64 @@ bool DfxUnwindRemote::DfxUnwindRemoteDoUnwindStep(size_t const & index,
         relPc = DfxUnwindRemoteDoAdjustPc(cursor, relPc);
     }
     frame->SetFrameRelativePc(relPc);
+    bool ret = UpdateAndPrintFrameInfo(cursor, thread, frame,
+        (thread->GetIsCrashThread() && !process->GetIsSignalDump()));
+    DfxLogDebug("%s :: index(%d), framePc(0x%x), frameSp(0x%x).", __func__, index, framePc, frameSp);
+    return ret;
+}
 
+bool DfxUnwindRemote::UpdateAndPrintFrameInfo(unw_cursor_t& cursor, std::shared_ptr<DfxThread> thread,
+    std::shared_ptr<DfxFrame> frame, bool enableBuildId)
+{
     struct map_info* mapInfo = unw_get_map(&cursor);
     bool isValidFrame = true;
     if (mapInfo != nullptr) {
-        frame->SetFrameMapName(mapInfo->path);
+        std::string mapPath = std::string(mapInfo->path);
+        frame->SetFrameMapName(mapPath);
         std::string funcName;
         uint64_t funcOffset;
-        if (cache_->GetNameAndOffsetByPc(as_, framePc, funcName, funcOffset)) {
+        if (cache_->GetNameAndOffsetByPc(as_, frame->GetFramePc(), funcName, funcOffset)) {
             frame->SetFrameFuncName(funcName);
             frame->SetFrameFuncOffset(funcOffset);
+        }
+
+        if (enableBuildId && (buildIds_.find(mapPath) == buildIds_.end())) {
+            uint8_t* buildId = unw_get_build_id(mapInfo);
+            if (buildId != nullptr) {
+                buildIds_.insert(std::pair<std::string, std::string>(std::string(mapPath),
+                    GetReadableBuildId(buildId)));
+            } else {
+                buildIds_.insert(std::pair<std::string, std::string>(std::string(mapPath), "No GNU BuildId"));
+            }
         }
     } else {
         std::string tips = "Not mapped ";
         std::shared_ptr<DfxRegs> regs = thread->GetThreadRegs();
         if (regs != nullptr) {
-            tips.append(regs->GetSpecialRegisterName(framePc));
+            tips.append(regs->GetSpecialRegisterName(frame->GetFramePc()));
         }
         frame->SetFrameMapName(tips);
         isValidFrame = false;
     }
 
-    bool ret = index < MIN_VALID_FRAME_COUNT || isValidFrame;
+    bool ret = frame->GetFrameIndex() < MIN_VALID_FRAME_COUNT || isValidFrame;
     if (ret) {
         DfxRingBufferWrapper::GetInstance().AppendMsg(frame->PrintFrame());
     }
-    DfxLogDebug("%s :: index(%d), framePc(0x%x), frameSp(0x%x).", __func__, index, framePc, frameSp);
     return ret;
+}
+
+void DfxUnwindRemote::PrintBuildIds() const
+{
+    if (buildIds_.size() == 0) {
+        return;
+    }
+
+    DfxRingBufferWrapper::GetInstance().AppendMsg("Related elf build-id:\n");
+    for (auto const& buildId : buildIds_) {
+        std::string line = buildId.first + ":" + buildId.second + "\n";
+        DfxRingBufferWrapper::GetInstance().AppendMsg(line);
+    }
 }
 
 bool DfxUnwindRemote::UnwindThread(std::shared_ptr<DfxProcess> process, std::shared_ptr<DfxThread> thread)
