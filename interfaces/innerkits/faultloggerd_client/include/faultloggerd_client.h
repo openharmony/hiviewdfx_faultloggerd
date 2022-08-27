@@ -61,6 +61,7 @@ enum FaultLoggerCheckPermissionResp {
 enum FaultLoggerSdkDumpResp {
     SDK_DUMP_PASS = 1,
     SDK_DUMP_REJECT,
+    SDK_DUMP_REPEAT,
     SDK_DUMP_MAX
 };
 
@@ -84,7 +85,7 @@ int32_t RequestPipeFd(int32_t pid, int32_t pipeType);
 int RequestFileDescriptorEx(const struct FaultLoggerdRequest *request);
 bool RequestCheckPermission(int32_t pid);
 void RequestPrintTHilog(const char *msg, int length);
-bool RequestSdkDump(int32_t pid, int32_t tid);
+int RequestSdkDump(int32_t pid, int32_t tid);
 
 #ifdef __cplusplus
 }

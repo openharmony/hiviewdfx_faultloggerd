@@ -129,9 +129,9 @@ int32_t RequestFileDescriptorEx(const struct FaultLoggerdRequest *request)
     return fd;
 }
 
-static FaultLoggerCheckPermissionResp SendUidToServer(int sockfd)
+static int SendUidToServer(int sockfd)
 {
-    FaultLoggerCheckPermissionResp mRsp = FaultLoggerCheckPermissionResp::CHECK_PERMISSION_REJECT;
+    int mRsp = (int)FaultLoggerCheckPermissionResp::CHECK_PERMISSION_REJECT;
 
     int data = 12345;
     if (!SendMsgIovToSocket(sockfd, reinterpret_cast<void *>(&data), sizeof(data))) {
@@ -146,7 +146,7 @@ static FaultLoggerCheckPermissionResp SendUidToServer(int sockfd)
         return mRsp;
     }
     
-    mRsp = (FaultLoggerCheckPermissionResp)atoi(recvbuf);
+    mRsp = atoi(recvbuf);
     return mRsp;
 }
 
@@ -160,10 +160,10 @@ bool CheckConnectStatus()
     return false;
 }
 
-static bool SendRequestToServer(const FaultLoggerdRequest &request)
+static int SendRequestToServer(const FaultLoggerdRequest &request)
 {
     int sockfd = -1;
-    bool resRsp = false;
+    int resRsp = (int)FaultLoggerCheckPermissionResp::CHECK_PERMISSION_PASS;
     do {
         if (!StartConnect(sockfd, FAULTLOGGERD_SOCK_PATH, -1)) {
             DfxLogError("StartConnect failed.");
@@ -186,12 +186,7 @@ static bool SendRequestToServer(const FaultLoggerdRequest &request)
             DfxLogError("nread: %d.", nread);
             break;
         }
-
-        FaultLoggerCheckPermissionResp mRsp = SendUidToServer(sockfd);
-        if ((FaultLoggerCheckPermissionResp::CHECK_PERMISSION_PASS == mRsp)
-                || (FaultLoggerSdkDumpResp::SDK_DUMP_PASS == (FaultLoggerSdkDumpResp)mRsp)) {
-            resRsp = true;
-        }
+        resRsp = SendUidToServer(sockfd);
     } while (false);
 
     close(sockfd);
@@ -215,10 +210,14 @@ bool RequestCheckPermission(int32_t pid)
     request.pid = pid;
     request.clientType = (int32_t)FaultLoggerClientType::PERMISSION_CLIENT;
 
-    return SendRequestToServer(request);
+    bool ret = false;
+    if (SendRequestToServer(request) == (int)FaultLoggerCheckPermissionResp::CHECK_PERMISSION_PASS) {
+        ret = true;
+    }
+    return ret;
 }
 
-bool RequestSdkDump(int32_t pid, int32_t tid)
+int RequestSdkDump(int32_t pid, int32_t tid)
 {
     DfxLogInfo("RequestSdkDump :: pid(%d), tid(%d).", pid, tid);
     if (pid <= 0 || tid < 0) {

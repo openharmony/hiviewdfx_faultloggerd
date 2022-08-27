@@ -62,7 +62,7 @@ const char* DfxDumpRes::GetResStr(const int res) const
 std::string DfxDumpRes::ToString() const
 {
     std::stringstream ss;
-    ss << std::to_string(resMsg_.res) << " ( " << GetResStr(resMsg_.res) << " )\n";
+    ss << std::to_string(resMsg_.res) << " ( " << GetResStr(resMsg_.res) << " )";
     return ss.str();
 }
 } // namespace HiviewDFX
