@@ -298,11 +298,11 @@ void FaultLoggerDaemon::HandleSdkDumpRequest(int32_t connectionFd, FaultLoggerdR
         }
 
         if (faultLoggerPipeMap_->Find(request->pid)) {
+            resSdkDump = FaultLoggerSdkDumpResp::SDK_DUMP_REPEAT;
             DfxLogError("%s :: pid(%d) is dumping, break.\n", FAULTLOGGERD_TAG.c_str(), request->pid);
             break;
         }
-        std::shared_ptr<FaultLoggerPipe2> ptr = std::make_shared<FaultLoggerPipe2>();
-        faultLoggerPipeMap_->Set(request->pid, ptr);
+        faultLoggerPipeMap_->Set(request->pid);
 
         if (!needSignalTarget) {
             DfxLogError("Failed to check permission, if caller can signal target, we may still get result.");
@@ -337,9 +337,11 @@ void FaultLoggerDaemon::HandleSdkDumpRequest(int32_t connectionFd, FaultLoggerdR
     if (FaultLoggerSdkDumpResp::SDK_DUMP_PASS == resSdkDump) {
         send(connectionFd, "1", strlen("1"), 0);
     }
-
     if (FaultLoggerSdkDumpResp::SDK_DUMP_REJECT == resSdkDump) {
         send(connectionFd, "2", strlen("2"), 0);
+    }
+    if (FaultLoggerSdkDumpResp::SDK_DUMP_REPEAT == resSdkDump) {
+        send(connectionFd, "3", strlen("3"), 0);
     }
 }
 
