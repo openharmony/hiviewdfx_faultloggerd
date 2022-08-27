@@ -20,9 +20,12 @@
 #pragma clang diagnostic ignored "-Wextern-c-compat"
 #endif
 
+#include <map>
+#include <memory>
+
 #include <libunwind-ptrace.h>
 #include <libunwind.h>
-#include <memory>
+
 #include "dfx_define.h"
 #include "dfx_process.h"
 #include "dfx_symbols_cache.h"
@@ -43,6 +46,10 @@ private:
     bool DfxUnwindRemoteDoUnwindStep(size_t const & index,
         std::shared_ptr<DfxThread> & thread, unw_cursor_t & cursor, std::shared_ptr<DfxProcess> process);
     uint64_t DfxUnwindRemoteDoAdjustPc(unw_cursor_t & cursor, uint64_t pc);
+    bool UpdateAndPrintFrameInfo(unw_cursor_t& cursor, std::shared_ptr<DfxThread> thread,
+        std::shared_ptr<DfxFrame> frame, bool enableBuildId);
+    std::string GetReadableBuildId(uint8_t* buildId);
+    void PrintBuildIds() const;
 
 private:
     DfxUnwindRemote();
@@ -51,6 +58,7 @@ private:
 private:
     unw_addr_space_t as_;
     std::unique_ptr<DfxSymbolsCache> cache_;
+    std::map<std::string, std::string> buildIds_;
 };
 }   // namespace HiviewDFX
 }   // namespace OHOS
