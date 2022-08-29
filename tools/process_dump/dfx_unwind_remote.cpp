@@ -133,17 +133,21 @@ uint64_t DfxUnwindRemote::DfxUnwindRemoteDoAdjustPc(unw_cursor_t & cursor, uint6
     return ret;
 }
 
-std::string DfxUnwindRemote::GetReadableBuildId(uint8_t* buildId)
+std::string DfxUnwindRemote::GetReadableBuildId(uint8_t* buildId, size_t length)
 {
-    int32_t buildIdLength = 16;
+    constexpr size_t MAX_BUILD_ID_LENGTH = 32;
+    if (length > MAX_BUILD_ID_LENGTH) {
+        std::string ret = "Wrong Build-Id length:" + std::to_string(length);
+        return ret;
+    }
+
     static const char hexTable[] = "0123456789abcdef";
     uint8_t* buildIdPtr = buildId;
     std::string buildIdStr;
-    while (buildIdLength >= 0) {
+    for (size_t i = 0; i < length; i++) {
         buildIdStr.push_back(hexTable[*buildIdPtr >> 4]); // 4 : higher 4 bit of uint8
         buildIdStr.push_back(hexTable[*buildIdPtr & 0xf]);
         buildIdPtr++;
-        buildIdLength--;
     }
     return buildIdStr;
 }
@@ -204,10 +208,11 @@ bool DfxUnwindRemote::UpdateAndPrintFrameInfo(unw_cursor_t& cursor, std::shared_
         }
 
         if (enableBuildId && (buildIds_.find(mapPath) == buildIds_.end())) {
-            uint8_t* buildId = unw_get_build_id(mapInfo);
-            if (buildId != nullptr) {
+            uint8_t* buildId = nullptr;
+            size_t length = 0;
+            if (unw_get_build_id(mapInfo, &buildId, &length)) {
                 buildIds_.insert(std::pair<std::string, std::string>(std::string(mapPath),
-                    GetReadableBuildId(buildId)));
+                    GetReadableBuildId(buildId, length)));
             } else {
                 buildIds_.insert(std::pair<std::string, std::string>(std::string(mapPath), "No GNU BuildId"));
             }
