@@ -32,6 +32,8 @@ constexpr size_t MEM_BLOCK_BUF_SZ = 64;
 constexpr uint64_t STEP = 4;
 #elif defined(__aarch64__)
 constexpr uint64_t STEP = 8;
+#else
+constexpr uint64_t STEP = 8;
 #endif
 }
 bool FaultStack::ReadTargetMemory(uintptr_t addr, uintptr_t &value) const
@@ -118,6 +120,8 @@ uintptr_t FaultStack::PrintMemoryBlock(const MemoryBlockInfo& info) const
 #if defined(__arm__)
 #define PRINT_FORMAT "%08x"
 #elif defined(__aarch64__)
+#define PRINT_FORMAT "%016llx"
+#else
 #define PRINT_FORMAT "%016llx"
 #endif
     uintptr_t targetAddr = info.startAddr;
