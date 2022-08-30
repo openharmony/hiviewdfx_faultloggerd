@@ -31,8 +31,8 @@ bool ReadStringFromFile(const char* path, char* dst, size_t dstSz)
     char name[NAME_LEN];
     char nameFilter[NAME_LEN];
 
-    memset_s(name, sizeof(name), '\0', sizeof(name));
-    memset_s(nameFilter, sizeof(nameFilter), '\0', sizeof(nameFilter));
+    (void)memset_s(name, sizeof(name), '\0', sizeof(name));
+    (void)memset_s(nameFilter, sizeof(nameFilter), '\0', sizeof(nameFilter));
 
     int fd = -1;
     fd = open(path, O_RDONLY);
@@ -69,7 +69,7 @@ bool ReadStringFromFile(const char* path, char* dst, size_t dstSz)
 bool GetThreadName(char* buffer, size_t bufferSz)
 {
     char path[NAME_LEN];
-    memset_s(path, sizeof(path), '\0', sizeof(path));
+    (void)memset_s(path, sizeof(path), '\0', sizeof(path));
     if (snprintf_s(path, sizeof(path), sizeof(path) - 1, "/proc/%d/comm", getpid()) <= 0) {
         return false;
     }
@@ -79,7 +79,7 @@ bool GetThreadName(char* buffer, size_t bufferSz)
 bool GetProcessName(char* buffer, size_t bufferSz)
 {
     char path[NAME_LEN];
-    memset_s(path, sizeof(path), '\0', sizeof(path));
+    (void)memset_s(path, sizeof(path), '\0', sizeof(path));
     if (snprintf_s(path, sizeof(path), sizeof(path) - 1, "/proc/%d/cmdline", getpid()) <= 0) {
         return false;
     }
