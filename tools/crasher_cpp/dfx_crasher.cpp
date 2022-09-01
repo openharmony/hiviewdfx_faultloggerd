@@ -31,7 +31,6 @@
 #include <thread>
 #include <unistd.h>
 #include <vector>
-#include "dfx_signal_handler.h"
 #include "securec.h"
 
 #ifdef HAS_HITRACE
@@ -54,6 +53,8 @@ static const int ARG128 = 128;
 
 static const int NUMBER_TWO = 2;
 static const int NUMBER_ONE = 1;
+
+static const int SIGDUMP = 35;
 
 DfxCrasher::DfxCrasher() {}
 DfxCrasher::~DfxCrasher() {}

@@ -20,7 +20,6 @@
 #include <sys/prctl.h>
 #include <sys/resource.h>
 #include <unistd.h>
-#include "dfx_signal_handler.h"
 #include "hilog/log.h"
 #include "inttypes.h"
 #include "stdio.h"
