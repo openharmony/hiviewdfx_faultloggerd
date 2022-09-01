@@ -75,11 +75,10 @@ bool DfxUnwindRemote::UnwindProcess(std::shared_ptr<DfxProcess> process)
     unw_set_caching_policy(as_, UNW_CACHE_GLOBAL);
 
     // only need to unwind crash thread in crash scenario
-    if (process->GetIsSignalHdlr() && !process->GetIsSignalDump() && \
+    if (!process->GetIsSignalDump() && \
         !DfxConfig::GetInstance().GetDumpOtherThreads()) {
         bool ret = UnwindThread(process, threads[0]);
-        if (threads[0]->GetIsCrashThread() && (process->GetIsSignalDump() == false) && \
-            (process->GetIsSignalHdlr() == true)) {
+        if (threads[0]->GetIsCrashThread() && (process->GetIsSignalDump() == false)) {
             process->PrintProcessMapsByConfig();
         }
         PrintBuildIds();
@@ -99,8 +98,7 @@ bool DfxUnwindRemote::UnwindProcess(std::shared_ptr<DfxProcess> process)
             thread->Detach();
         }
 
-        if (thread->GetIsCrashThread() && (process->GetIsSignalDump() == false) && \
-            (process->GetIsSignalHdlr() == true)) {
+        if (thread->GetIsCrashThread() && (process->GetIsSignalDump() == false)) {
             process->PrintProcessMapsByConfig();
         }
         index++;
@@ -309,7 +307,7 @@ bool DfxUnwindRemote::UnwindThread(std::shared_ptr<DfxProcess> process, std::sha
         unwRet = unw_step(&cursor);
     } while ((unwRet > 0) && (index < BACK_STACK_MAX_STEPS));
     thread->SetThreadUnwStopReason(unwRet);
-    if (process->GetIsSignalHdlr() && thread->GetIsCrashThread() && (process->GetIsSignalDump() == false)) {
+    if (thread->GetIsCrashThread() && (process->GetIsSignalDump() == false)) {
         DfxRingBufferWrapper::GetInstance().AppendMsg(regs->PrintRegs());
         if (DfxConfig::GetInstance().GetDisplayFaultStack()) {
             thread->CreateFaultStack();

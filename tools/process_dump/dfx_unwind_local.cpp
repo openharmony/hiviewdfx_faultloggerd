@@ -34,7 +34,6 @@
 #include <pthread.h>
 #include <sched.h>
 #include <securec.h>
-#include <securec.h>
 #include <sstream>
 #include <sys/capability.h>
 #include <sys/prctl.h>
@@ -48,8 +47,6 @@
 
 namespace OHOS {
 namespace HiviewDFX {
-static constexpr int SINGLE_THREAD_UNWIND_TIMEOUT = 100; // 100 millseconds
-
 DfxUnwindLocal &DfxUnwindLocal::GetInstance()
 {
     static DfxUnwindLocal ins;
@@ -109,11 +106,10 @@ bool DfxUnwindLocal::WaitLocalDumpRequest()
 {
     bool ret = true;
     std::unique_lock<std::mutex> lck(localDumperMutex_);
-    if (localDumperCV_.wait_for(lck, \
-        std::chrono::milliseconds(SINGLE_THREAD_UNWIND_TIMEOUT)) == std::cv_status::timeout) {
-        // time out means we didn't got any back trace msg, just return false.
-        ret = false;
-    }
+    localDumperCV_.wait(lck);
+
+    unw_context_t *unw_ctx = (unw_context_t*)&context_;
+    ret = ExecLocalDumpUnwinding(unw_ctx, DUMP_CATCHER_NUMBER_TWO);
     return ret;
 }
 
@@ -179,13 +175,17 @@ void DfxUnwindLocal::ResolveFrameInfo(size_t index, DfxFrame& frame)
     }
 }
 
-bool DfxUnwindLocal::ExecLocalDumpUnwind(int tid, size_t skipFramNum)
+bool DfxUnwindLocal::ExecLocalDumpUnwind(size_t skipFramNum)
 {
     unw_context_t context;
     unw_getcontext(&context);
+    return ExecLocalDumpUnwinding(&context, skipFramNum);
+}
 
+bool DfxUnwindLocal::ExecLocalDumpUnwinding(unw_context_t *ctx, size_t skipFramNum)
+{
     unw_cursor_t cursor;
-    unw_init_local_with_as(as_, &cursor, &context);
+    unw_init_local_with_as(as_, &cursor, ctx);
 
     size_t index = 0;
     curIndex_ = 0;
@@ -193,9 +193,6 @@ bool DfxUnwindLocal::ExecLocalDumpUnwind(int tid, size_t skipFramNum)
     unw_word_t prevPc = 0;
     char mapName[SYMBOL_BUF_SIZE] = {0};
     while ((unw_step(&cursor) > 0) && (index < BACK_STACK_MAX_STEPS)) {
-        if (tid != gettid()) {
-            break;
-        }
         // skip 0 stack, as this is dump catcher. Caller don't need it.
         if (index < skipFramNum) {
             index++;
@@ -248,10 +245,12 @@ bool DfxUnwindLocal::ExecLocalDumpUnwind(int tid, size_t skipFramNum)
     return true;
 }
 
-void DfxUnwindLocal::LocalDumperUnwind(int sig, siginfo_t *si, void *context)
+void DfxUnwindLocal::LocalDumper(int sig, siginfo_t *si, void *context)
 {
     std::unique_lock<std::mutex> lck(localDumperMutex_);
-    ExecLocalDumpUnwind(localDumpRequest_.tid, DUMP_CATCHER_NUMBER_TWO);
+    if (memcpy_s(&(context_), sizeof(ucontext_t), context, sizeof(ucontext_t)) != 0) {
+        DfxLogWarn("%s :: memcpy context error.", __func__);
+    }
     if (localDumpRequest_.tid == gettid()) {
         localDumperCV_.notify_one();
     }
@@ -259,7 +258,7 @@ void DfxUnwindLocal::LocalDumperUnwind(int sig, siginfo_t *si, void *context)
 
 void DfxUnwindLocal::LocalDumpering(int sig, siginfo_t *si, void *context)
 {
-    DfxUnwindLocal::GetInstance().LocalDumperUnwind(sig, si, context);
+    DfxUnwindLocal::GetInstance().LocalDumper(sig, si, context);
 }
 
 void DfxUnwindLocal::InstallLocalDumper(int sig)
