@@ -28,7 +28,7 @@ public:
     static DumpCatcher &GetInstance();
     ~DumpCatcher() = default;
 
-    void Dump(int32_t pid, int32_t tid) const;
+    void Dump(int32_t type, int32_t pid, int32_t tid) const;
 
 private:
     DumpCatcher() = default;

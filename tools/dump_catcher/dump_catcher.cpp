@@ -29,19 +29,34 @@ DumpCatcher &DumpCatcher::GetInstance()
     return ins;
 }
 
-void DumpCatcher::Dump(int32_t pid, int32_t tid) const
+void DumpCatcher::Dump(int32_t type, int32_t pid, int32_t tid) const
 {
-    DfxDumpCatcher dumplog;
+    DfxDumpCatcher dfxDump;
     std::string msg = "";
-    if (dumplog.DumpCatch(pid, tid, msg)) {
+    bool dumpRet = false;
+    switch (type) {
+        case DUMP_TYPE_NATIVE:
+            dumpRet = dfxDump.DumpCatch(pid, tid, msg);
+            break;
+        case DUMP_TYPE_MIX:
+            dumpRet = dfxDump.DumpCatchMix(pid, tid, msg);
+            break;
+        case DUMP_TYPE_KERNEL:
+            break;
+        default:
+            DfxLogWarn("type(%d) invalid, must %d(native), %d(mix), %d(kernel)", \
+                type, DUMP_TYPE_NATIVE, DUMP_TYPE_MIX, DUMP_TYPE_KERNEL);
+            break;
+    }
+
+    if (dumpRet) {
         if (!msg.empty()) {
             std::cout << msg << std::endl;
         } else {
             std::cout << "Dump msg empty." << std::endl;
         }
     } else {
-        std::cout << "Dump Failed." << std::endl;
-        DfxLogWarn("DumpCatch fail.");
+        std::cout << "Dump failed." << std::endl;
     }
 }
 } // namespace HiviewDFX

@@ -23,24 +23,17 @@
 #include <sys/socket.h>
 #include <sys/un.h>
 #include <unistd.h>
+#include <getopt.h>
 #include "dfx_define.h"
-#include "dfx_dump_request.h"
 #include "dfx_logger.h"
 #include "directory_ex.h"
 #include "dump_catcher.h"
-#include "file_ex.h"
+#include "dfx_dump_catcher.h"
 
 #if defined(DEBUG_CRASH_LOCAL_HANDLER)
 #include "dfx_signal_local_handler.h"
 #include "dfx_cutil.h"
 #endif
-
-static const int DUMP_THIRD = 3;
-static const int DUMP_FIVE = 5;
-static const int DUMP_ARG_ONE = 1;
-static const int DUMP_ARG_TWO = 2;
-static const int DUMP_ARG_THREE = 3;
-static const int DUMP_ARG_FOUR = 4;
 
 static const std::string DUMP_STACK_TAG_USAGE = "usage:";
 static const std::string DUMP_STACK_TAG_FAILED = "failed:";
@@ -48,50 +41,36 @@ static const std::string DUMP_STACK_TAG_FAILED = "failed:";
 static void PrintCommandHelp()
 {
     std::cout << DUMP_STACK_TAG_USAGE << std::endl;
-    std::cout << "-p pid -t tid    dump the stacktrace of the thread with given tid." << std::endl;
-    std::cout << "-p pid    dump the stacktrace of all the threads with given pid." << std::endl;
-    std::cout << "-T type    dump the stacktrace of the type." << std::endl;
+    std::cout << "(-T type) -p pid -t tid    dump the stacktrace of the thread with given tid." << std::endl;
+    std::cout << "(-T type) -p pid    dump the stacktrace of all the threads with given pid." << std::endl;
 }
 
-static bool ParseParamters(int argc, char *argv[], OHOS::HiviewDFX::ProcessDumpType &type,
-    int32_t &pid, int32_t &tid)
+static bool ParseParamters(int argc, char *argv[], int &type, int32_t &pid, int32_t &tid)
 {
-    if (argc <= DUMP_ARG_ONE) {
+    if (argc <= 1) {
         return false;
     }
     DfxLogDebug("argc: %d, argv1: %s", argc, argv[1]);
-    switch (argc) {
-        case DUMP_THIRD:
-            if (!strcmp("-p", argv[DUMP_ARG_ONE])) {
-                type = OHOS::HiviewDFX::DUMP_TYPE_PROCESS;
-                pid = atoi(argv[DUMP_ARG_TWO]);
-                return true;
-            }
-            break;
-        case DUMP_FIVE:
-            if (!strcmp("-p", argv[DUMP_ARG_ONE])) {
-                type = OHOS::HiviewDFX::DUMP_TYPE_PROCESS;
-                pid = atoi(argv[DUMP_ARG_TWO]);
 
-                if (!strcmp("-t", argv[DUMP_ARG_THREE])) {
-                    type = OHOS::HiviewDFX::DUMP_TYPE_THREAD;
-                    tid = atoi(argv[DUMP_ARG_FOUR]);
-                    return true;
-                }
-            } else if (!strcmp("-t", argv[DUMP_ARG_ONE])) {
-                type = OHOS::HiviewDFX::DUMP_TYPE_THREAD;
-                tid = atoi(argv[DUMP_ARG_TWO]);
-
-                if (!strcmp("-p", argv[DUMP_ARG_THREE])) {
-                    pid = atoi(argv[DUMP_ARG_FOUR]);
-                    return true;
-                }
-            }
-            break;
-        default:
-            break;
+    int optRet;
+    const char *optString = "-:T:p:t:";
+    while ((optRet = getopt(argc, argv, optString)) != -1) {
+        switch (optRet) {
+            case 'T':
+                type = atoi(optarg);
+                break;
+            case 'p':
+                pid = atoi(optarg);
+                break;
+            case 't':
+                tid = atoi(optarg);
+                break;
+            default:
+                PrintCommandHelp();
+                break;
+        }
     }
-    return false;
+    return true;
 }
 
 int main(int argc, char *argv[])
@@ -100,7 +79,7 @@ int main(int argc, char *argv[])
     DFX_InstallLocalSignalHandler();
 #endif
 
-    OHOS::HiviewDFX::ProcessDumpType type = OHOS::HiviewDFX::DUMP_TYPE_PROCESS;
+    int32_t type = OHOS::HiviewDFX::DUMP_TYPE_NATIVE;
     int32_t pid = 0;
     int32_t tid = 0;
 
@@ -112,6 +91,7 @@ int main(int argc, char *argv[])
         return 0;
     }
 
-    OHOS::HiviewDFX::DumpCatcher::GetInstance().Dump(pid, tid);
+    DfxLogDebug("type: %d, pid: %d, tid: %d", type, pid, tid);
+    OHOS::HiviewDFX::DumpCatcher::GetInstance().Dump(type, pid, tid);
     return 0;
 }

@@ -62,7 +62,6 @@ static const std::string FAULTLOGGERD_TAG = "FaultLoggerd";
 
 static const std::string DAEMON_RESP = "RESP:COMPLETE";
 
-const int MINUS_ONE_THOUSAND = -1000;
 static const int DAEMON_REMOVE_FILE_TIME_S = 60;
 
 static std::string GetRequestTypeName(int32_t type)
@@ -313,7 +312,8 @@ void FaultLoggerDaemon::HandleSdkDumpRequest(int32_t connectionFd, FaultLoggerdR
         siginfo_t si = {
             .si_signo = SIGDUMP,
             .si_errno = 0,
-            .si_code = MINUS_ONE_THOUSAND,
+            .si_code = request->sigCode,
+            .si_value.sival_int = request->tid,
             .si_pid = request->callerPid,
             .si_uid = static_cast<uid_t>(request->callerTid)
         };

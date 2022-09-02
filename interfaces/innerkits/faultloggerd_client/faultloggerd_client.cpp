@@ -217,9 +217,9 @@ bool RequestCheckPermission(int32_t pid)
     return ret;
 }
 
-int RequestSdkDump(int32_t pid, int32_t tid)
+int RequestSdkDump(int32_t type, int32_t pid, int32_t tid)
 {
-    DfxLogInfo("RequestSdkDump :: pid(%d), tid(%d).", pid, tid);
+    DfxLogInfo("RequestSdkDump :: type(%d), pid(%d), tid(%d).", type, pid, tid);
     if (pid <= 0 || tid < 0) {
         return false;
     }
@@ -229,6 +229,7 @@ int RequestSdkDump(int32_t pid, int32_t tid)
     if (err != EOK) {
         DfxLogError("%s :: memset_s request failed..", __func__);
     }
+    request.sigCode = type;
     request.pid = pid;
     request.tid = tid;
     request.callerPid = getpid();
