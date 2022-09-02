@@ -165,7 +165,8 @@ bool DfxDumpCatcher::DoDumpLocalPid(int pid, std::string& msg)
 
 bool DfxDumpCatcher::DoDumpRemoteLocked(int pid, int tid, std::string& msg)
 {
-    return DoDumpCatchRemote(pid, tid, msg);
+    int type = static_cast<int>(DUMP_TYPE_NATIVE);
+    return DoDumpCatchRemote(type, pid, tid, msg);
 }
 
 bool DfxDumpCatcher::DoDumpLocalLocked(int pid, int tid, std::string& msg)
@@ -193,6 +194,12 @@ bool DfxDumpCatcher::DoDumpLocalLocked(int pid, int tid, std::string& msg)
     DfxUnwindLocal::GetInstance().Destroy();
     DfxLogDebug("%s :: DoDumpLocal :: ret(%d).", DFXDUMPCATCHER_TAG.c_str(), ret);
     return ret;
+}
+
+bool DfxDumpCatcher::DumpCatchMix(int pid, int tid, std::string& msg)
+{
+    int type = static_cast<int>(DUMP_TYPE_MIX);
+    return DoDumpCatchRemote(type, pid, tid, msg);
 }
 
 bool DfxDumpCatcher::DumpCatch(int pid, int tid, std::string& msg)
@@ -227,12 +234,14 @@ bool DfxDumpCatcher::DumpCatchFd(int pid, int tid, std::string& msg, int fd)
     return ret;
 }
 
-static bool SignalTargetProcess(int pid, int tid)
+static bool SignalTargetProcess(const int type, int pid, int tid)
 {
+    DfxLogDebug("%s :: SignalTargetProcess :: type: %d", DFXDUMPCATCHER_TAG.c_str(), type);
     siginfo_t si = {
         .si_signo = SIGDUMP,
         .si_errno = 0,
-        .si_code = -1000, // -1000 : hardcode SIGDUMP code
+        .si_code = type,
+        .si_value.sival_int = tid,
         .si_pid = pid,
         .si_uid = static_cast<uid_t>(tid)
     };
@@ -266,7 +275,7 @@ static bool IsPidUninterruptible(int pid)
     return false;
 }
 
-bool DfxDumpCatcher::DoDumpCatchRemote(int pid, int tid, std::string& msg)
+bool DfxDumpCatcher::DoDumpCatchRemote(const int type, int pid, int tid, std::string& msg)
 {
     bool ret = false;
     if (pid <= 0 || tid < 0) {
@@ -275,7 +284,7 @@ bool DfxDumpCatcher::DoDumpCatchRemote(int pid, int tid, std::string& msg)
         return ret;
     }
 
-    int sdkdumpRet = RequestSdkDump(pid, tid);
+    int sdkdumpRet = RequestSdkDump(type, pid, tid);
     if (sdkdumpRet != (int)FaultLoggerSdkDumpResp::SDK_DUMP_PASS) {
         if (sdkdumpRet == (int)FaultLoggerSdkDumpResp::SDK_DUMP_REPEAT) {
             msg.append("Result: pid(" + std::to_string(pid) + ") is dumping.\n");
@@ -285,7 +294,7 @@ bool DfxDumpCatcher::DoDumpCatchRemote(int pid, int tid, std::string& msg)
             msg.append("Result: pid(" + std::to_string(pid) + ") check permission error.\n");
             DfxLogWarn("%s :: %s :: %s", DFXDUMPCATCHER_TAG.c_str(), __func__, msg.c_str());
 
-            if (!SignalTargetProcess(pid, tid)) {
+            if (!SignalTargetProcess(type, pid, tid)) {
                 msg.append("Result: syscall SIGDUMP error.\n");
                 DfxLogWarn("%s :: %s :: %s", DFXDUMPCATCHER_TAG.c_str(), __func__, msg.c_str());
                 RequestPipeFd(pid, FaultLoggerPipeType::PIPE_FD_DELETE);

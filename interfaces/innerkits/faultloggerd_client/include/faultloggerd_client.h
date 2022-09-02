@@ -69,6 +69,7 @@ struct FaultLoggerdRequest {
     int32_t type;
     int32_t clientType;
     int32_t pipeType;
+    int32_t sigCode;
     int32_t pid;
     int32_t tid;
     uint32_t uid;
@@ -85,7 +86,7 @@ int32_t RequestPipeFd(int32_t pid, int32_t pipeType);
 int RequestFileDescriptorEx(const struct FaultLoggerdRequest *request);
 bool RequestCheckPermission(int32_t pid);
 void RequestPrintTHilog(const char *msg, int length);
-int RequestSdkDump(int32_t pid, int32_t tid);
+int RequestSdkDump(int32_t type, int32_t pid, int32_t tid);
 
 #ifdef __cplusplus
 }

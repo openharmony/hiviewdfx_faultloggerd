@@ -161,6 +161,7 @@ int ProcessDumper::DumpProcessWithSignalContext(std::shared_ptr<DfxProcess> &pro
             break;
         }
 
+        int tid = request->GetSiginfo().si_value.sival_int;
         bool isCrash = (request->GetSiginfo().si_signo != SIGDUMP);
         FaultLoggerType type = isCrash ? FaultLoggerType::CPP_CRASH : FaultLoggerType::CPP_STACKTRACE;
         bool isLogPersist = DfxConfig::GetInstance().GetLogPersist();
@@ -196,7 +197,10 @@ int ProcessDumper::DumpProcessWithSignalContext(std::shared_ptr<DfxProcess> &pro
         } else {
             process->SetIsSignalDump(true);
         }
-        process->InitOtherThreads(isCrash);
+
+        if (tid == 0) {
+            process->InitOtherThreads(isCrash);
+        }
         process->SetUid(request->GetUid());
 
         if (InitPrintThread(true, request, process) < 0) {

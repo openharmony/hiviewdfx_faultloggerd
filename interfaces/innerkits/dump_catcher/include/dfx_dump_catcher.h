@@ -28,12 +28,19 @@
 
 namespace OHOS {
 namespace HiviewDFX {
+enum DfxDumpType : int32_t {
+    DUMP_TYPE_NATIVE = -1,
+    DUMP_TYPE_MIX = -2,
+    DUMP_TYPE_KERNEL = -3,
+};
+
 class DfxDumpCatcher {
 public:
     DfxDumpCatcher();
     ~DfxDumpCatcher();
     
     bool DumpCatch(int pid, int tid, std::string& msg);
+    bool DumpCatchMix(int pid, int tid, std::string& msg);
     bool DumpCatchFd(int pid, int tid, std::string& msg, int fd);
     bool DumpCatchMultiPid(const std::vector<int> pidV, std::string& msg);
     bool DumpCatchFrame(int pid, int tid, std::string& msg, \
@@ -44,7 +51,7 @@ private:
     bool DoDumpLocalPid(int pid, std::string& msg);
     bool DoDumpLocalLocked(int pid, int tid, std::string& msg);
     bool DoDumpRemoteLocked(int pid, int tid, std::string& msg);
-    bool DoDumpCatchRemote(int pid, int tid, std::string& msg);
+    bool DoDumpCatchRemote(const int type, int pid, int tid, std::string& msg);
     bool DoDumpRemotePid(int pid, std::string& msg);
     bool DoReadBuf(int fd, std::string& msg);
     bool DoReadRes(int fd, bool &ret, std::string& msg);
