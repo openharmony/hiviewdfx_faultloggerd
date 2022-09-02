@@ -19,13 +19,12 @@ if (defined(ohos_lite)) {
 
     include_dirs = [
       "include",
+      "//commonlibrary/c_utils/base/include",
       "$faultloggerd_path/common",
       "$faultloggerd_path/common/dfxlog",
-      "$faultloggerd_path/utils",
       "//third_party/libunwind/include",
       "$faultloggerd_path/interfaces/innerkits/faultloggerd_client/include",
       "$faultloggerd_path/tools/process_dump",
-      "//commonlibrary/c_utils/base/include",
       "$hilog_lite_include_path",
     ]
 
@@ -63,19 +62,17 @@ if (defined(ohos_lite)) {
 
     include_dirs = [
       "include",
+      "//commonlibrary/c_utils/base/include",
       "$faultloggerd_path/common",
       "$faultloggerd_path/common/dfxlog",
       "//third_party/libunwind/include",
       "$faultloggerd_path/interfaces/innerkits/faultloggerd_client/include",
       "$faultloggerd_path/tools/process_dump",
-      "//commonlibrary/c_utils/base/include",
     ]
   }
 
   ohos_shared_library("lib_dfx_dump_catcher") {
     public_configs = [ ":dfx_dump_catcher_config" ]
-
-    cflags = [ "-DCURRENT_THREAD_ONLY" ]
 
     sources = [
       "$faultloggerd_path/tools/process_dump/dfx_dump_request.cpp",

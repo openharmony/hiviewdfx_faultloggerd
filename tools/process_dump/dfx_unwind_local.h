@@ -41,10 +41,7 @@ public:
     bool Init();
     void Destroy();
 
-    void InstallLocalDumper(int sig);
-    void UninstallLocalDumper(int sig);
-    void LocalDumperUnwind(int sig, siginfo_t *si, void *context);
-    bool ExecLocalDumpUnwind(int tid, size_t skipFramNum);
+    bool ExecLocalDumpUnwind(size_t skipFramNum);
     void ResolveFrameInfo(size_t index, DfxFrame& frame);
     std::string CollectUnwindResult(int32_t tid);
     void CollectUnwindFrames(std::vector<std::shared_ptr<DfxFrame>>& frames);
@@ -55,10 +52,17 @@ private:
     DfxUnwindLocal();
     DISALLOW_COPY_AND_MOVE(DfxUnwindLocal);
 
+    void InstallLocalDumper(int sig);
+    void UninstallLocalDumper(int sig);
+
     static void LocalDumpering(int sig, siginfo_t *si, void *context);
+    void LocalDumper(int sig, siginfo_t *si, void *context);
+
+    bool ExecLocalDumpUnwinding(unw_context_t *ctx, size_t skipFramNum);
 
 private:
     unw_addr_space_t as_;
+    ucontext_t context_;
     std::vector<DfxFrame> frames_;
     uint32_t curIndex_ = 0;
     std::unique_ptr<DfxSymbolsCache> cache_;
