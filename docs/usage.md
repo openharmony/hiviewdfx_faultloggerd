@@ -182,4 +182,10 @@ Q7.进程崩溃退出而没有日志可能原因? \
 ```
 https://gitee.com/openharmony/third_party_pulseaudio/pulls/20
 ```
+Q8.进程崩溃退出发现生成了CPPCRASH日志，但是日志内容为空可能原因？\
+此问题在自测试工具中比较常见，多是因为手动删除了`/data/log/faultlog/temp`并手动创建了该目录导致，该目录的SELinux标签失效（从`u:object_r:faultloggerd_temp_file:s0`变为了`u:object_r:data_log:s0`），导致因为SELinux权限限制导致无法写数据到文件中。\
 
+解决方案：更新目录标签
+```
+restorecon /data/log/faultlog/temp
+```
