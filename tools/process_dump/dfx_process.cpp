@@ -142,6 +142,16 @@ void DfxProcess::InsertThreadNode(pid_t tid, bool attach)
     threads_.push_back(thread);
 }
 
+void DfxProcess::SetIsSignalHdlr(bool isSignalHdlr)
+{
+    isSignalHdlr_ = isSignalHdlr;
+}
+
+bool DfxProcess::GetIsSignalHdlr() const
+{
+    return isSignalHdlr_;
+}
+
 void DfxProcess::SetIsSignalDump(bool isSignalDump)
 {
     isSignalDump_ = isSignalDump;

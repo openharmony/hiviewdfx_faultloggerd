@@ -137,6 +137,8 @@ int ProcessDumper::InitPrintThread(bool fromSignalHandler, std::shared_ptr<Proce
     return fd;
 }
 
+
+
 int ProcessDumper::DumpProcessWithSignalContext(std::shared_ptr<DfxProcess> &process,
                                                 std::shared_ptr<ProcessDumpRequest> request)
 {
@@ -202,6 +204,7 @@ int ProcessDumper::DumpProcessWithSignalContext(std::shared_ptr<DfxProcess> &pro
             process->InitOtherThreads(isCrash);
         }
         process->SetUid(request->GetUid());
+        process->SetIsSignalHdlr(true);
 
         if (InitPrintThread(true, request, process) < 0) {
             DfxLogError("Failed to init print thread.");
