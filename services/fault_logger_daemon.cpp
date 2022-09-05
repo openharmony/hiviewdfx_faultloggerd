@@ -307,7 +307,8 @@ void FaultLoggerDaemon::HandleSdkDumpRequest(int32_t connectionFd, FaultLoggerdR
             DfxLogError("Failed to check permission, if caller can signal target, we may still get result.");
             break;
         }
-
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Winitializer-overrides"
         // defined in out/hi3516dv300/obj/third_party/musl/intermidiates/linux/musl_src_ported/include/signal.h
         siginfo_t si = {
             .si_signo = SIGDUMP,
@@ -317,7 +318,7 @@ void FaultLoggerDaemon::HandleSdkDumpRequest(int32_t connectionFd, FaultLoggerdR
             .si_pid = request->callerPid,
             .si_uid = static_cast<uid_t>(request->callerTid)
         };
-
+#pragma clang diagnostic pop
         // means we need dump all the threads in a process.
         if (request->tid == 0) {
             if (syscall(SYS_rt_sigqueueinfo, request->pid, si.si_signo, &si) != 0) {

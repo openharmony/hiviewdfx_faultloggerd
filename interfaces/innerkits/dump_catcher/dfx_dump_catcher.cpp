@@ -237,6 +237,8 @@ bool DfxDumpCatcher::DumpCatchFd(int pid, int tid, std::string& msg, int fd)
 static bool SignalTargetProcess(const int type, int pid, int tid)
 {
     DfxLogDebug("%s :: SignalTargetProcess :: type: %d", DFXDUMPCATCHER_TAG.c_str(), type);
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Winitializer-overrides"
     siginfo_t si = {
         .si_signo = SIGDUMP,
         .si_errno = 0,
@@ -245,7 +247,7 @@ static bool SignalTargetProcess(const int type, int pid, int tid)
         .si_pid = pid,
         .si_uid = static_cast<uid_t>(tid)
     };
-
+#pragma clang diagnostic pop
     if (tid == 0) {
         if (syscall(SYS_rt_sigqueueinfo, pid, si.si_signo, &si) != 0) {
             return false;
