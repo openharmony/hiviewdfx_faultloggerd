@@ -1236,6 +1236,103 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0026, TestSize.Level2)
 }
 
 /**
+ * @tc.name: FaultLoggerdSystemTest0029
+ * @tc.desc: test DumpCatchMix API: PID(systemui pid), TID(-1)
+ * @tc.type: FUNC
+ * @tc.require: issueI5PJ9O
+ */
+HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0029, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest0029: start.";
+    std::string systemui = "com.ohos.systemui";
+    int systemuiPid = FaultLoggerdSystemTest::getApplyPid(systemui);
+    DfxDumpCatcher dumplog;
+    std::string msg = "";
+    bool ret = dumplog.DumpCatchMix(systemuiPid, -1, msg);
+    sleep(2);
+    GTEST_LOG_(INFO) << ret;
+    GTEST_LOG_(INFO) << msg;
+    EXPECT_EQ(ret, false) << "FaultLoggerdSystemTest0029 Failed";
+    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest0029: end.";
+}
+
+/**
+ * @tc.name: FaultLoggerdSystemTest0030
+ * @tc.desc: test DumpCatchMix API: PID(-1), TID(-1)
+ * @tc.type: FUNC
+ * @tc.require: issueI5PJ9O
+ */
+HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0030, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest0030: start.";
+    DfxDumpCatcher dumplog;
+    std::string msg = "";
+    bool ret = dumplog.DumpCatchMix(-1, -1, msg);
+    sleep(2);
+    GTEST_LOG_(INFO) << ret;
+    GTEST_LOG_(INFO) << msg;
+    EXPECT_EQ(ret, false) << "FaultLoggerdSystemTest0030 Failed";
+    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest0030: end.";
+}
+
+/**
+ * @tc.name: FaultLoggerdSystemTest0033
+ * @tc.desc: test dumpcatcher command: -T -2 -p systemui tid -1
+ * @tc.type: FUNC
+ * @tc.require: issueI5PJ9O
+ */
+HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0033, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest0033: start.";
+    std::string systemui = "com.ohos.systemui";
+    int systemuiPid = FaultLoggerdSystemTest::getApplyPid(systemui);
+    std::string procCMD = "dumpcatcher -T -2 -p " + std::to_string(systemuiPid) + " -t -1";
+    string procDumpLog = FaultLoggerdSystemTest::ProcessDumpCommands(procCMD);
+    GTEST_LOG_(INFO) << "procDumpLog: " << procDumpLog;
+    int count = 0;
+    string log[] = {"Failed"};
+    string::size_type idx;
+    for (int i = 0; i < 1; i++) {
+        idx = procDumpLog.find(log[i]);
+        if (idx != string::npos) {
+            GTEST_LOG_(INFO) << count;
+            GTEST_LOG_(INFO) << log[i];
+            count++;
+        }
+    }
+    EXPECT_EQ(count, 1) << "FaultLoggerdSystemTest0033 Failed";
+    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest0033: end.";
+}
+
+/**
+ * @tc.name: FaultLoggerdSystemTest0034
+ * @tc.desc: test dumpcatcher command: -T -2 -p -1 tid -1
+ * @tc.type: FUNC
+ * @tc.require: issueI5PJ9O
+ */
+HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0034, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest0034: start.";
+    std::string systemui = "com.ohos.systemui";
+    std::string procCMD = "dumpcatcher -T -2 -p -1 -t -1";
+    string procDumpLog = FaultLoggerdSystemTest::ProcessDumpCommands(procCMD);
+    GTEST_LOG_(INFO) << "procDumpLog: " << procDumpLog;
+    int count = 0;
+    string log[] = {"Failed"};
+    string::size_type idx;
+    for (int i = 0; i < 1; i++) {
+        idx = procDumpLog.find(log[i]);
+        if (idx != string::npos) {
+            GTEST_LOG_(INFO) << count;
+            GTEST_LOG_(INFO) << log[i];
+            count++;
+        }
+    }
+    EXPECT_EQ(count, 1) << "FaultLoggerdSystemTest0034 Failed";
+    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest0034: end.";
+}
+
+/**
  * @tc.name: FaultLoggerdSystemTest0122
  * @tc.desc: test C crasher application: StackTop
  * @tc.type: FUNC
@@ -2970,7 +3067,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest041, TestSize.Level2)
     string procDumpLog = FaultLoggerdSystemTest::ProcessDumpCommands(procCMD);
     GTEST_LOG_(INFO) << "procDumpLog: " << procDumpLog;
     int count = 0;
-    string log[] = {"", "Name:crasher", "Name:SubTestThread", "#00", "/data/crasher"};
+    string log[] = {"", "name:/data/crasher", "Name:crasher_c", "#00", "/data/crasher"};
     log[0] = log[0] + std::to_string(FaultLoggerdSystemTest::loopAppPid);
     string::size_type idx;
     for (int i = 0; i < 5; i++) {
@@ -3003,7 +3100,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest042, TestSize.Level2)
     string procDumpLog = FaultLoggerdSystemTest::ProcessDumpCommands(procCMD);
     GTEST_LOG_(INFO) << "procDumpLog: " << procDumpLog;
     int count = 0;
-    string log[] = {"", "Name:crasher", "Name:SubTestThread", "#00", "/data/crasher"};
+    string log[] = {"", "name:/data/crasher", "Name:SubTestThread", "#00", "/data/crasher"};
     log[0] = log[0] + std::to_string(FaultLoggerdSystemTest::loopAppPid);
     string::size_type idx;
     for (int i = 0; i < 5; i++) {
