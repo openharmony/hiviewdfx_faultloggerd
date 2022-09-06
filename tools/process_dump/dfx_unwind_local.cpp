@@ -68,6 +68,10 @@ DfxUnwindLocal::DfxUnwindLocal()
 
 bool DfxUnwindLocal::Init()
 {
+    std::unique_lock<std::mutex> lck(localDumperMutex_);
+    if (isInited) {
+        return isInited;
+    }
     unw_init_local_address_space(&as_);
     if (as_ == nullptr) {
         return false;
@@ -84,11 +88,16 @@ bool DfxUnwindLocal::Init()
     sigprocmask(SIG_SETMASK, &mask, &mask_);
     std::unique_ptr<DfxSymbolsCache> cache(new DfxSymbolsCache());
     cache_ = std::move(cache);
-    return true;
+    isInited = true;
+    return isInited;
 }
 
 void DfxUnwindLocal::Destroy()
 {
+    std::unique_lock<std::mutex> lck(localDumperMutex_);
+    if (!isInited) {
+        return;
+    }
     frames_.clear();
     frames_.shrink_to_fit();
     UninstallLocalDumper(SIGLOCAL_DUMP);
@@ -96,6 +105,12 @@ void DfxUnwindLocal::Destroy()
     unw_destroy_local_address_space(as_);
     as_ = nullptr;
     cache_ = nullptr;
+    isInited = false;
+}
+
+bool DfxUnwindLocal::HasInit()
+{
+    return isInited;
 }
 
 bool DfxUnwindLocal::SendLocalDumpRequest(int32_t tid)

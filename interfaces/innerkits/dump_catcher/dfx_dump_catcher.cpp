@@ -59,6 +59,7 @@ DfxDumpCatcher::DfxDumpCatcher()
 
 DfxDumpCatcher::~DfxDumpCatcher()
 {
+    DfxUnwindLocal::GetInstance().Destroy();
 }
 
 bool DfxDumpCatcher::DoDumpLocalTid(int tid, std::string& msg)
@@ -138,7 +139,10 @@ bool DfxDumpCatcher::DoDumpRemoteLocked(int pid, int tid, std::string& msg)
 
 bool DfxDumpCatcher::DoDumpLocalLocked(int pid, int tid, std::string& msg)
 {
-    bool ret = DfxUnwindLocal::GetInstance().Init();
+    bool ret = false;
+    if (!DfxUnwindLocal::GetInstance().HasInit()) {
+        ret = DfxUnwindLocal::GetInstance().Init();
+    }
     if (!ret) {
         DfxLogError("%s :: DoDumpLocal :: Init error.", DFXDUMPCATCHER_TAG.c_str());
         DfxUnwindLocal::GetInstance().Destroy();
@@ -154,7 +158,6 @@ bool DfxDumpCatcher::DoDumpLocalLocked(int pid, int tid, std::string& msg)
         ret = DoDumpLocalTid(tid, msg);
     }
 
-    DfxUnwindLocal::GetInstance().Destroy();
     DfxLogDebug("%s :: DoDumpLocal :: ret(%d).", DFXDUMPCATCHER_TAG.c_str(), ret);
     return ret;
 }
@@ -406,7 +409,10 @@ bool DfxDumpCatcher::DumpCatchFrame(int pid, int tid, std::string& msg, \
         return false;
     }
 
-    bool ret = DfxUnwindLocal::GetInstance().Init();
+    bool ret = false;
+    if (!DfxUnwindLocal::GetInstance().HasInit()) {
+        ret = DfxUnwindLocal::GetInstance().Init();
+    }
     if (!ret) {
         DfxLogError("DumpCatchFrame :: failed to init local dumper.");
         DfxUnwindLocal::GetInstance().Destroy();
@@ -425,7 +431,6 @@ bool DfxDumpCatcher::DumpCatchFrame(int pid, int tid, std::string& msg, \
         DfxUnwindLocal::GetInstance().CollectUnwindFrames(frames);
     }
 
-    DfxUnwindLocal::GetInstance().Destroy();
     return ret;
 }
 } // namespace HiviewDFX
