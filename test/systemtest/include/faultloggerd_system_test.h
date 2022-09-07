@@ -84,6 +84,8 @@ public:
     static void StartCrasherLoopForUnsingPidAndTid(int crasherType);    // 1.c 2.c++
     static int crashThread(int threadID);
     static int getApplyPid(std::string applyName);
+    static std::string GetCmdResultFromPopen(const std::string& cmd);
+    static int GetServicePid(const std::string& serviceName);
     static void dumpCatchThread(int threadID);
     static void GetTestFaultLoggerdTid(int testPid);
 
