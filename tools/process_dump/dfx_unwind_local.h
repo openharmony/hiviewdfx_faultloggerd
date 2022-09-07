@@ -40,6 +40,7 @@ public:
 
     bool Init();
     void Destroy();
+    bool HasInit();
 
     void InstallLocalDumper(int sig);
     void UninstallLocalDumper(int sig);
@@ -67,6 +68,7 @@ private:
     struct LocalDumperRequest localDumpRequest_;
     std::condition_variable localDumperCV_;
     std::mutex localDumperMutex_;
+    bool isInited = false;
 };
 } // namespace HiviewDFX
 } // namespace OHOS
