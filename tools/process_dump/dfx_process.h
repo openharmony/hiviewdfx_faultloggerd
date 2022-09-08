@@ -38,8 +38,6 @@ public:
     void PrintThreadsHeaderByConfig();
     void InsertThreadNode(pid_t tid, bool attach = true);
 
-    void SetIsSignalHdlr(bool isSignalHdlr);
-    bool GetIsSignalHdlr() const;
     void SetIsSignalDump(bool isSignalDump);
     bool GetIsSignalDump() const;
     pid_t GetPid() const;
@@ -58,7 +56,6 @@ public:
 private:
     pid_t pid_ = 0;
     uid_t uid_ = 0;
-    bool isSignalHdlr_ = false;
     bool isSignalDump_ = false;
     std::string processName_;
     std::shared_ptr<DfxElfMaps> maps_;

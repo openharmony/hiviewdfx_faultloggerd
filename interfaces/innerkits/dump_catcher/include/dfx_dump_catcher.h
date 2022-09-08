@@ -47,7 +47,8 @@ public:
         std::vector<std::shared_ptr<DfxFrame>>& frames);
 
 private:
-    bool DoDumpLocalTid(int tid, std::string& msg);
+    bool DoDumpCurrTid(const size_t skipFramNum, int tid, std::string& msg);
+    bool DoDumpLocalTid(const size_t skipFramNum, int tid, std::string& msg);
     bool DoDumpLocalPid(int pid, std::string& msg);
     bool DoDumpLocalLocked(int pid, int tid, std::string& msg);
     bool DoDumpRemoteLocked(int pid, int tid, std::string& msg);

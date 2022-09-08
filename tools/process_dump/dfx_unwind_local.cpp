@@ -34,7 +34,6 @@
 #include <pthread.h>
 #include <sched.h>
 #include <securec.h>
-#include <securec.h>
 #include <sstream>
 #include <sys/capability.h>
 #include <sys/prctl.h>
@@ -48,8 +47,6 @@
 
 namespace OHOS {
 namespace HiviewDFX {
-static constexpr int SINGLE_THREAD_UNWIND_TIMEOUT = 100; // 100 millseconds
-
 DfxUnwindLocal &DfxUnwindLocal::GetInstance()
 {
     static DfxUnwindLocal ins;
@@ -69,13 +66,15 @@ DfxUnwindLocal::DfxUnwindLocal()
 bool DfxUnwindLocal::Init()
 {
     std::unique_lock<std::mutex> lck(localDumperMutex_);
-    if (isInited) {
-        return isInited;
+    if (isInited_) {
+        return isInited_;
     }
     unw_init_local_address_space(&as_);
     if (as_ == nullptr) {
         return false;
     }
+
+    (void)memset_s(&context_, sizeof(context_), 0, sizeof(context_));
 
     frames_ = std::vector<DfxFrame>(BACK_STACK_MAX_STEPS);
     InstallLocalDumper(SIGLOCAL_DUMP);
@@ -88,14 +87,14 @@ bool DfxUnwindLocal::Init()
     sigprocmask(SIG_SETMASK, &mask, &mask_);
     std::unique_ptr<DfxSymbolsCache> cache(new DfxSymbolsCache());
     cache_ = std::move(cache);
-    isInited = true;
-    return isInited;
+    isInited_ = true;
+    return isInited_;
 }
 
 void DfxUnwindLocal::Destroy()
 {
     std::unique_lock<std::mutex> lck(localDumperMutex_);
-    if (!isInited) {
+    if (!isInited_) {
         return;
     }
     frames_.clear();
@@ -105,12 +104,12 @@ void DfxUnwindLocal::Destroy()
     unw_destroy_local_address_space(as_);
     as_ = nullptr;
     cache_ = nullptr;
-    isInited = false;
+    isInited_ = false;
 }
 
 bool DfxUnwindLocal::HasInit()
 {
-    return isInited;
+    return isInited_;
 }
 
 bool DfxUnwindLocal::SendLocalDumpRequest(int32_t tid)
@@ -120,16 +119,10 @@ bool DfxUnwindLocal::SendLocalDumpRequest(int32_t tid)
     return syscall(SYS_tkill, tid, SIGLOCAL_DUMP) == 0;
 }
 
-bool DfxUnwindLocal::WaitLocalDumpRequest()
+void DfxUnwindLocal::WaitLocalDumpRequest()
 {
-    bool ret = true;
     std::unique_lock<std::mutex> lck(localDumperMutex_);
-    if (localDumperCV_.wait_for(lck, \
-        std::chrono::milliseconds(SINGLE_THREAD_UNWIND_TIMEOUT)) == std::cv_status::timeout) {
-        // time out means we didn't got any back trace msg, just return false.
-        ret = false;
-    }
-    return ret;
+    localDumperCV_.wait(lck);
 }
 
 std::string DfxUnwindLocal::CollectUnwindResult(int32_t tid)
@@ -194,23 +187,32 @@ void DfxUnwindLocal::ResolveFrameInfo(size_t index, DfxFrame& frame)
     }
 }
 
-bool DfxUnwindLocal::ExecLocalDumpUnwind(int tid, size_t skipFramNum)
+bool DfxUnwindLocal::ExecLocalDumpUnwindByWait(size_t skipFramNum)
+{
+    bool ret = ExecLocalDumpUnwinding(&context_, skipFramNum);
+    localDumperCV_.notify_one();
+    return ret;
+}
+
+bool DfxUnwindLocal::ExecLocalDumpUnwind(size_t skipFramNum)
 {
     unw_context_t context;
     unw_getcontext(&context);
+    return ExecLocalDumpUnwinding(&context, skipFramNum);
+}
 
+bool DfxUnwindLocal::ExecLocalDumpUnwinding(unw_context_t *ctx, size_t skipFramNum)
+{
     unw_cursor_t cursor;
-    unw_init_local_with_as(as_, &cursor, &context);
+    unw_init_local_with_as(as_, &cursor, ctx);
 
+    int ret = 0;
     size_t index = 0;
     curIndex_ = 0;
     unw_word_t pc = 0;
     unw_word_t prevPc = 0;
     char mapName[SYMBOL_BUF_SIZE] = {0};
-    while ((unw_step(&cursor) > 0) && (index < BACK_STACK_MAX_STEPS)) {
-        if (tid != gettid()) {
-            break;
-        }
+    do {
         // skip 0 stack, as this is dump catcher. Caller don't need it.
         if (index < skipFramNum) {
             index++;
@@ -229,15 +231,14 @@ bool DfxUnwindLocal::ExecLocalDumpUnwind(int tid, size_t skipFramNum)
 
         unw_word_t relPc = unw_get_rel_pc(&cursor);
         unw_word_t sz = unw_get_previous_instr_sz(&cursor);
-        if (index - skipFramNum != 0) {
+        if ((index - skipFramNum != 0) && (relPc > sz)) {
             relPc -= sz;
         }
 
-        auto& curFrame = frames_[index - skipFramNum];
         struct map_info* map = unw_get_map(&cursor);
         errno_t err = EOK;
         bool isValidFrame = true;
-        memset_s(mapName, SYMBOL_BUF_SIZE, 0, SYMBOL_BUF_SIZE);
+        (void)memset_s(mapName, SYMBOL_BUF_SIZE, 0, SYMBOL_BUF_SIZE);
         if ((map != NULL) && (strlen(map->path) < SYMBOL_BUF_SIZE - 1)) {
             err = strcpy_s(mapName, SYMBOL_BUF_SIZE, map->path);
         } else {
@@ -250,6 +251,8 @@ bool DfxUnwindLocal::ExecLocalDumpUnwind(int tid, size_t skipFramNum)
         }
 
         curIndex_ = static_cast<uint32_t>(index - skipFramNum);
+        DfxLogDebug("%s :: curIndex_: %d", __func__, curIndex_);
+        auto& curFrame = frames_[curIndex_];
         curFrame.SetFrameIndex((size_t)curIndex_);
         curFrame.SetFramePc((uint64_t)pc);
         curFrame.SetFrameRelativePc((uint64_t)relPc);
@@ -257,24 +260,50 @@ bool DfxUnwindLocal::ExecLocalDumpUnwind(int tid, size_t skipFramNum)
         
         index++;
         if (!isValidFrame) {
+            DfxLogError("%s :: get map error.", __func__);
             break;
         }
-    }
+    } while ((unw_step(&cursor) > 0) && (index < BACK_STACK_MAX_STEPS));
     return true;
 }
 
-void DfxUnwindLocal::LocalDumperUnwind(int sig, siginfo_t *si, void *context)
+void DfxUnwindLocal::LocalDumper(int sig, siginfo_t *si, void *context)
 {
     std::unique_lock<std::mutex> lck(localDumperMutex_);
-    ExecLocalDumpUnwind(localDumpRequest_.tid, DUMP_CATCHER_NUMBER_TWO);
+#if defined(__arm__)
+    (void)memset_s(&context_, sizeof(context_), 0, sizeof(context_));
+    ucontext_t *uc = (ucontext_t *)context;
+    context_.regs[0] = uc->uc_mcontext.arm_r0;
+    context_.regs[1] = uc->uc_mcontext.arm_r1;
+    context_.regs[2] = uc->uc_mcontext.arm_r2;
+    context_.regs[3] = uc->uc_mcontext.arm_r3;
+    context_.regs[4] = uc->uc_mcontext.arm_r4;
+    context_.regs[5] = uc->uc_mcontext.arm_r5;
+    context_.regs[6] = uc->uc_mcontext.arm_r6;
+    context_.regs[7] = uc->uc_mcontext.arm_r7;
+    context_.regs[8] = uc->uc_mcontext.arm_r8;
+    context_.regs[9] = uc->uc_mcontext.arm_r9;
+    context_.regs[10] = uc->uc_mcontext.arm_r10;
+    context_.regs[11] = uc->uc_mcontext.arm_fp;
+    context_.regs[12] = uc->uc_mcontext.arm_ip;
+    context_.regs[13] = uc->uc_mcontext.arm_sp;
+    context_.regs[14] = uc->uc_mcontext.arm_lr;
+    context_.regs[15] = uc->uc_mcontext.arm_pc;
+#else
+    if (memcpy_s(&context_, sizeof(ucontext_t), context, sizeof(ucontext_t)) != 0) {
+        DfxLogWarn("%s :: memcpy context error.", __func__);
+    }
+#endif
+
     if (localDumpRequest_.tid == gettid()) {
         localDumperCV_.notify_one();
+        localDumperCV_.wait(lck);
     }
 }
 
 void DfxUnwindLocal::LocalDumpering(int sig, siginfo_t *si, void *context)
 {
-    DfxUnwindLocal::GetInstance().LocalDumperUnwind(sig, si, context);
+    DfxUnwindLocal::GetInstance().LocalDumper(sig, si, context);
 }
 
 void DfxUnwindLocal::InstallLocalDumper(int sig)
