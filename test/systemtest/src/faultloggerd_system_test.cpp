@@ -1125,26 +1125,17 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0020, TestSize.Level2)
     std::string apply = "test_faul";
     int testPid = FaultLoggerdSystemTest::getApplyPid(apply);
     GTEST_LOG_(INFO) << testPid;
-    DfxDumpCatcher dumplog;
+    DfxDumpCatcher dumplog(getpid());
     std::string msg = "";
     std::vector<std::shared_ptr<DfxFrame>> frameV;
-    bool ret = dumplog.DumpCatchFrame(testPid, testPid, msg, frameV);
-    GTEST_LOG_(INFO) << ret;
-    GTEST_LOG_(INFO) << msg;
-    string log[] = { "#00", "/data/test_faultloggerd"};
-    string::size_type idx;
-    int j = 0;
-    int count = 0;
-    for (int i = 0; i < 2; i++) {
-        idx = msg.find(log[j]);
-        GTEST_LOG_(INFO) << log[j];
-        if (idx != string::npos) {
-            count++;
-        }
-        j++;
-    }
-    int expectNum = sizeof(log) / sizeof(log[0]);
-    EXPECT_EQ(count, expectNum) << "FaultLoggerdSystemTest0020 Failed";
+    bool ret = dumplog.InitFrameCatcher();
+    EXPECT_EQ(ret, true);
+    ret = dumplog.RequestCatchFrame(gettid());
+    EXPECT_EQ(ret, true);
+    ret = dumplog.CatchFrame(gettid(), frameV);
+    EXPECT_EQ(ret, true);
+    dumplog.DestroyFrameCatcher();
+    EXPECT_GT(frameV.size(), 0) << "FaultLoggerdSystemTest0020 Failed";
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest0020: end.";
 }
 
@@ -1160,52 +1151,11 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0021, TestSize.Level2)
     int testPid = FaultLoggerdSystemTest::getApplyPid(apply);
     GTEST_LOG_(INFO) << testPid;
     DfxDumpCatcher dumplog;
-    std::string msg = "";
     std::vector<std::shared_ptr<DfxFrame>> frameV;
-    bool ret = dumplog.DumpCatchFrame(testPid, 0, msg, frameV);
+    bool ret = dumplog.CatchFrame(testPid, frameV);
     GTEST_LOG_(INFO) << ret;
-    GTEST_LOG_(INFO) << msg;
     EXPECT_EQ(ret, false) << "FaultLoggerdSystemTest0021 Failed";
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest0021: end.";
-}
-
-/**
- * @tc.name: FaultLoggerdSystemTest0022
- * @tc.desc: test DumpCatchFrame API: PID(0), TID(test_faul)
- * @tc.type: FUNC
- */
-HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0022, TestSize.Level2)
-{
-    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest0022: start.";
-    std::string apply = "test_faul";
-    int testPid = FaultLoggerdSystemTest::getApplyPid(apply);
-    GTEST_LOG_(INFO) << testPid;
-    DfxDumpCatcher dumplog;
-    std::string msg = "";
-    std::vector<std::shared_ptr<DfxFrame>> frameV;
-    bool ret = dumplog.DumpCatchFrame(0, testPid, msg, frameV);
-    GTEST_LOG_(INFO) << ret;
-    GTEST_LOG_(INFO) << msg;
-    EXPECT_EQ(ret, false) << "FaultLoggerdSystemTest0022 Failed";
-    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest0022: end.";
-}
-
-/**
- * @tc.name: FaultLoggerdSystemTest0023
- * @tc.desc: test DumpCatchFrame API: PID(0), PID(0)
- * @tc.type: FUNC
- */
-HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0023, TestSize.Level2)
-{
-    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest0023: start.";
-    DfxDumpCatcher dumplog;
-    std::string msg = "";
-    std::vector<std::shared_ptr<DfxFrame>> frameV;
-    bool ret = dumplog.DumpCatchFrame(0, 0, msg, frameV);
-    GTEST_LOG_(INFO) << ret;
-    GTEST_LOG_(INFO) << msg;
-    EXPECT_EQ(ret, false) << "FaultLoggerdSystemTest0023 Failed";
-    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest0023: end.";
 }
 
 /**
@@ -1222,7 +1172,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0024, TestSize.Level2)
     DfxDumpCatcher dumplog;
     std::string msg = "";
     std::vector<std::shared_ptr<DfxFrame>> frameV;
-    bool ret = dumplog.DumpCatchFrame(-11, testPid, msg, frameV);
+    bool ret = dumplog.CatchFrame(-99, frameV);
     GTEST_LOG_(INFO) << ret;
     GTEST_LOG_(INFO) << msg;
     EXPECT_EQ(ret, false) << "FaultLoggerdSystemTest0024 Failed";
@@ -1243,7 +1193,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0025, TestSize.Level2)
     DfxDumpCatcher dumplog;
     std::string msg = "";
     std::vector<std::shared_ptr<DfxFrame>> frameV;
-    bool ret = dumplog.DumpCatchFrame(testPid, -11, msg, frameV);
+    bool ret = dumplog.CatchFrame(-1, frameV);
     GTEST_LOG_(INFO) << ret;
     GTEST_LOG_(INFO) << msg;
     EXPECT_EQ(ret, false) << "FaultLoggerdSystemTest0025 Failed";
@@ -1261,7 +1211,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0026, TestSize.Level2)
     DfxDumpCatcher dumplog;
     std::string msg = "";
     std::vector<std::shared_ptr<DfxFrame>> frameV;
-    bool ret = dumplog.DumpCatchFrame(-11, -11, msg, frameV);
+    bool ret = dumplog.CatchFrame(-11, frameV);
     GTEST_LOG_(INFO) << ret;
     GTEST_LOG_(INFO) << msg;
     EXPECT_EQ(ret, false) << "FaultLoggerdSystemTest0026 Failed";
@@ -1285,13 +1235,14 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0027, TestSize.Level2)
     sleep(10);
     GTEST_LOG_(INFO) << ret;
     GTEST_LOG_(INFO) << msg;
-    string log[] = { "Tid:", "comm:com.ohos.system", "#00", "/system/bin/appspawn", "comm:SignalHandler",
-        "comm:dfx_watchdog", "comm:GC_WorkerThread", "comm:anr", "comm:ace.bg.1"};
+    string log[] = { "Tid:", "comm:com.ohos.system", "#00", "/system/bin/appspawn",
+        "comm:dfx_watchdog", "comm:GC_WorkerThread", "comm:ace.bg.1"};
     log[0] += std::to_string(systemuiPid);
     string::size_type idx;
     int j = 0;
     int count = 0;
-    for (int i = 0; i < 9; i++) {
+    int expectNum = sizeof(log) / sizeof(log[0]);
+    for (int i = 0; i < expectNum; i++) {
         idx = msg.find(log[j]);
         GTEST_LOG_(INFO) << log[j];
         if (idx != string::npos) {
@@ -1299,7 +1250,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0027, TestSize.Level2)
         }
         j++;
     }
-    int expectNum = sizeof(log) / sizeof(log[0]);
+
     EXPECT_EQ(count, expectNum) << "FaultLoggerdSystemTest0027 Failed";
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest0027: end.";
 }
@@ -1394,18 +1345,19 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0031, TestSize.Level2)
     string procDumpLog = FaultLoggerdSystemTest::ProcessDumpCommands(procCMD);
     GTEST_LOG_(INFO) << "procDumpLog: " << procDumpLog;
     int count = 0;
-    string log[] = { "Tid:", "comm:com.ohos.system", "#00", "/system/bin/appspawn", "comm:SignalHandler",
-        "comm:dfx_watchdog", "comm:GC_WorkerThread", "comm:anr", "comm:ace.bg.1"};
+    string log[] = { "Tid:", "comm:com.ohos.system", "#00", "/system/bin/appspawn",
+        "comm:dfx_watchdog", "comm:GC_WorkerThread", "comm:ace.bg.1"};
     log[0] += std::to_string(systemuiPid);
     string::size_type idx;
-    for (int i = 0; i < 9; i++) {
+    int expectNum = sizeof(log) / sizeof(log[0]);
+    for (int i = 0; i < expectNum; i++) {
         idx = procDumpLog.find(log[i]);
         if (idx != string::npos) {
             GTEST_LOG_(INFO) << log[i];
             count++;
         }
     }
-    EXPECT_EQ(count, 9) << "FaultLoggerdSystemTest0031 Failed";
+    EXPECT_EQ(count, expectNum) << "FaultLoggerdSystemTest0031 Failed";
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest0031: end.";
 }
 

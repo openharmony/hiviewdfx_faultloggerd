@@ -14,6 +14,7 @@
  */
 #ifndef DFX_UNWIND_LOCAL_H
 #define DFX_UNWIND_LOCAL_H
+#include <atomic>
 #include <chrono>
 #include <cinttypes>
 #include <condition_variable>
@@ -47,7 +48,7 @@ public:
     std::string CollectUnwindResult(int32_t tid);
     void CollectUnwindFrames(std::vector<std::shared_ptr<DfxFrame>>& frames);
     bool SendLocalDumpRequest(int32_t tid);
-    void WaitLocalDumpRequest();
+    bool WaitLocalDumpRequest();
 
 private:
     DfxUnwindLocal();
@@ -74,6 +75,7 @@ private:
     struct LocalDumperRequest localDumpRequest_;
     std::condition_variable localDumperCV_;
     std::mutex localDumperMutex_;
+    std::atomic<bool> insideSignalHandler_;
     bool isInited_ = false;
 };
 } // namespace HiviewDFX

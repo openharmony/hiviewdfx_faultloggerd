@@ -37,14 +37,18 @@ enum DfxDumpType : int32_t {
 class DfxDumpCatcher {
 public:
     DfxDumpCatcher();
+    explicit DfxDumpCatcher(int32_t pid);
     ~DfxDumpCatcher();
     
     bool DumpCatch(int pid, int tid, std::string& msg);
     bool DumpCatchMix(int pid, int tid, std::string& msg);
     bool DumpCatchFd(int pid, int tid, std::string& msg, int fd);
     bool DumpCatchMultiPid(const std::vector<int> pidV, std::string& msg);
-    bool DumpCatchFrame(int pid, int tid, std::string& msg, \
-        std::vector<std::shared_ptr<DfxFrame>>& frames);
+
+    bool InitFrameCatcher();
+    bool RequestCatchFrame(int tid);
+    bool CatchFrame(int tid, std::vector<std::shared_ptr<DfxFrame>>& frames);
+    void DestroyFrameCatcher();
 
 private:
     bool DoDumpCurrTid(const size_t skipFramNum, int tid, std::string& msg);
@@ -59,6 +63,8 @@ private:
 
 private:
     std::mutex dumpCatcherMutex_;
+    bool initFrameCatcher_;
+    int32_t frameCatcherPid_;
 };
 } // namespace HiviewDFX
 } // namespace OHOS

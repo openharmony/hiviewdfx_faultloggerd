@@ -31,6 +31,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <vector>
+
 #include "dfx_define.h"
 #include "dfx_dump_res.h"
 #include "dfx_frame.h"
@@ -51,48 +52,23 @@ namespace HiviewDFX {
 namespace {
 static const std::string DFXDUMPCATCHER_TAG = "DfxDumpCatcher";
 static const char UNINTERRUPTIBLE[] = "refrigerator";
-}
-
-static bool IsThreadInCurPid(int tid)
+static bool IsThreadInCurPid(int32_t tid)
 {
-    bool ret = false;
-    if (tid <= 0) {
-        return ret;
-    }
-    
-    char realPath[PATH_MAX];
-    if (!realpath("/proc/self/task", realPath)) {
-        return ret;
-    }
-
-    DIR *dir = opendir(realPath);
-    if (!dir) {
-        return ret;
-    }
-
-    struct dirent *ent;
-    while ((ent = readdir(dir))) {
-        if ((strcmp(ent->d_name, ".") == 0) || (strcmp(ent->d_name, "..") == 0)) {
-            continue;
-        }
-
-        pid_t tt = atoi(ent->d_name);
-        if (tt == tid) {
-            ret = true;
-            break;
-        }
-    }
-    closedir(dir);
-    return ret;
+    std::string path = "/proc/self/task/" + std::to_string(tid);
+    return access(path.c_str(), F_OK) == 0;
+}
 }
 
 DfxDumpCatcher::DfxDumpCatcher()
 {
 }
 
+DfxDumpCatcher::DfxDumpCatcher(int32_t pid) : frameCatcherPid_(pid)
+{
+}
+
 DfxDumpCatcher::~DfxDumpCatcher()
 {
-    DfxUnwindLocal::GetInstance().Destroy();
 }
 
 bool DfxDumpCatcher::DoDumpCurrTid(const size_t skipFramNum, int tid, std::string& msg)
@@ -485,37 +461,60 @@ bool DfxDumpCatcher::DumpCatchMultiPid(const std::vector<int> pidV, std::string&
     return ret;
 }
 
-bool DfxDumpCatcher::DumpCatchFrame(int pid, int tid, std::string& msg, \
-    std::vector<std::shared_ptr<DfxFrame>>& frames)
+bool DfxDumpCatcher::InitFrameCatcher()
 {
-    if (pid != getpid() || tid <= 0) {
-        DfxLogError("DumpCatchFrame :: only support localDump.");
+    std::unique_lock<std::mutex> lck(dumpCatcherMutex_);
+    initFrameCatcher_ = true;
+    bool ret = DfxUnwindLocal::GetInstance().Init();
+    if (!ret) {
+        DfxUnwindLocal::GetInstance().Destroy();
+    }
+    return ret;
+}
+
+void DfxDumpCatcher::DestroyFrameCatcher()
+{
+    std::unique_lock<std::mutex> lck(dumpCatcherMutex_);
+    DfxUnwindLocal::GetInstance().Destroy();
+}
+
+bool DfxDumpCatcher::RequestCatchFrame(int tid)
+{
+    if (tid == syscall(SYS_gettid)) {
+        return true;
+    }
+
+    if (DfxUnwindLocal::GetInstance().SendLocalDumpRequest(tid) == true) {
+        return DfxUnwindLocal::GetInstance().WaitLocalDumpRequest();
+    }
+    return false;
+}
+
+bool DfxDumpCatcher::CatchFrame(int tid, std::vector<std::shared_ptr<DfxFrame>>& frames)
+{
+    if (tid <= 0 || frameCatcherPid_ != getpid()) {
+        DfxLogError("DfxDumpCatchFrame :: only support localDump.");
         return false;
     }
 
-    bool ret = false;
-    if (!DfxUnwindLocal::GetInstance().HasInit()) {
-        ret = DfxUnwindLocal::GetInstance().Init();
-    }
-    if (!ret) {
-        DfxLogError("DumpCatchFrame :: failed to init local dumper.");
-        DfxUnwindLocal::GetInstance().Destroy();
-        return ret;
+    if (!IsThreadInCurPid(tid)) {
+        DfxLogError("DfxDumpCatchFrame :: target tid is not in our task.");
+        return false;
     }
 
     std::unique_lock<std::mutex> lck(dumpCatcherMutex_);
-    size_t skipFramNum = DUMP_CATCHER_NUMBER_ONE;
     if (tid == syscall(SYS_gettid)) {
-        ret = DoDumpCurrTid(skipFramNum, tid, msg);
-    } else {
-        ret = DoDumpLocalTid(skipFramNum, tid, msg);
+        if(!DfxUnwindLocal::GetInstance().ExecLocalDumpUnwind(DUMP_CATCHER_NUMBER_ONE)) {
+            DfxLogError("DfxDumpCatchFrame :: failed to unwind for current thread(%d).", tid);
+            return false;
+        }
+    } else if (!DfxUnwindLocal::GetInstance().ExecLocalDumpUnwindByWait(0)) {
+        DfxLogError("DfxDumpCatchFrame :: failed to unwind for thread(%d).", tid);
+        return false;
     }
 
-    if (ret) {
-        DfxUnwindLocal::GetInstance().CollectUnwindFrames(frames);
-    }
-
-    return ret;
+    DfxUnwindLocal::GetInstance().CollectUnwindFrames(frames);
+    return true;
 }
 } // namespace HiviewDFX
 } // namespace OHOS

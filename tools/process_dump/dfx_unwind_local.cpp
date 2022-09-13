@@ -56,8 +56,8 @@ DfxUnwindLocal &DfxUnwindLocal::GetInstance()
 DfxUnwindLocal::DfxUnwindLocal()
 {
     as_ = nullptr;
-    frames_.clear();
     curIndex_ = 0;
+    insideSignalHandler_ = false;
     memset_s(&oldSigaction_, sizeof(struct sigaction), 0, sizeof(struct sigaction));
     sigemptyset(&mask_);
     memset_s(&localDumpRequest_, sizeof(struct LocalDumperRequest), 0, sizeof(struct LocalDumperRequest));
@@ -67,15 +67,17 @@ bool DfxUnwindLocal::Init()
 {
     std::unique_lock<std::mutex> lck(localDumperMutex_);
     if (isInited_) {
+        DfxLogError("local handler has been inited.");
         return isInited_;
     }
+
     unw_init_local_address_space(&as_);
     if (as_ == nullptr) {
+        DfxLogError("Failed to init local address aspace.");
         return false;
     }
 
     (void)memset_s(&context_, sizeof(context_), 0, sizeof(context_));
-
     frames_ = std::vector<DfxFrame>(BACK_STACK_MAX_STEPS);
     InstallLocalDumper(SIGLOCAL_DUMP);
     sigset_t mask;
@@ -116,13 +118,8 @@ bool DfxUnwindLocal::SendLocalDumpRequest(int32_t tid)
 {
     localDumpRequest_.tid = tid;
     localDumpRequest_.timeStamp = (uint64_t)time(NULL);
+    insideSignalHandler_ = false;
     return syscall(SYS_tkill, tid, SIGLOCAL_DUMP) == 0;
-}
-
-void DfxUnwindLocal::WaitLocalDumpRequest()
-{
-    std::unique_lock<std::mutex> lck(localDumperMutex_);
-    localDumperCV_.wait(lck);
 }
 
 std::string DfxUnwindLocal::CollectUnwindResult(int32_t tid)
@@ -189,9 +186,28 @@ void DfxUnwindLocal::ResolveFrameInfo(size_t index, DfxFrame& frame)
 
 bool DfxUnwindLocal::ExecLocalDumpUnwindByWait(size_t skipFramNum)
 {
-    bool ret = ExecLocalDumpUnwinding(&context_, skipFramNum);
+    std::unique_lock<std::mutex> lck(localDumperMutex_);
+    bool ret = ExecLocalDumpUnwinding(&context_, 0);
     localDumperCV_.notify_one();
     return ret;
+}
+
+bool DfxUnwindLocal::WaitLocalDumpRequest()
+{
+    int left = 1000; // 1000 : 1000us
+    constexpr int pollTime = 10; // 10 : 10us
+    while (!insideSignalHandler_) {
+        int ret = usleep(pollTime);
+        if (ret == 0) {
+            left -= pollTime;
+        } else {
+            left -= ret;
+        }
+        if (left <= 0) {
+            return false;
+        }
+    }
+    return true;
 }
 
 bool DfxUnwindLocal::ExecLocalDumpUnwind(size_t skipFramNum)
@@ -270,6 +286,7 @@ bool DfxUnwindLocal::ExecLocalDumpUnwinding(unw_context_t *ctx, size_t skipFramN
 void DfxUnwindLocal::LocalDumper(int sig, siginfo_t *si, void *context)
 {
     std::unique_lock<std::mutex> lck(localDumperMutex_);
+    insideSignalHandler_ = true;
 #if defined(__arm__)
     (void)memset_s(&context_, sizeof(context_), 0, sizeof(context_));
     ucontext_t *uc = (ucontext_t *)context;
@@ -296,8 +313,7 @@ void DfxUnwindLocal::LocalDumper(int sig, siginfo_t *si, void *context)
 #endif
 
     if (localDumpRequest_.tid == gettid()) {
-        localDumperCV_.notify_one();
-        localDumperCV_.wait(lck);
+        localDumperCV_.wait_for(lck, std::chrono::milliseconds(2000)); // 2000 : 2000ms
     }
 }
 

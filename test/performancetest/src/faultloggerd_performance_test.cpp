@@ -291,12 +291,14 @@ HWTEST_F (FaultPerformanceTest, FaultPerformanceTest006, TestSize.Level2)
     std::string apply = "test_perfor";
     int testPid = FaultPerformanceTest::getApplyPid(apply);
     GTEST_LOG_(INFO) << testPid;
-    DfxDumpCatcher dumplog;
-    std::string msg = "";
+    DfxDumpCatcher dumplog(testPid);
+    if (!dumplog.InitFrameCatcher()) {
+        GTEST_LOG_(ERROR) << "Failed to suspend thread(" << testPid << ").";
+    }
     std::vector<std::shared_ptr<DfxFrame>> frameV;
     clock_t befor = GetStartTime();
     for (int i = 0; i < PERFORMANCE_TEST_NUMBER_ONE_HUNDRED; i++) {
-        bool ret = dumplog.DumpCatchFrame(testPid, testPid, msg, frameV);
+        bool ret = dumplog.CatchFrame(testPid, frameV);
         GTEST_LOG_(INFO) << ret;
     }
     double timeInterval = GetStopTime(befor)/PERFORMANCE_TEST_NUMBER_ONE_HUNDRED;
