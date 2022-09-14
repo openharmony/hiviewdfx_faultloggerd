@@ -28,6 +28,8 @@ public:
     static void TearDownTestCase(void);
     void SetUp();
     void TearDown();
+
+    static int GetProcessPid(std::string processName);
 };
 } // namespace HiviewDFX
 } // namespace OHOS
