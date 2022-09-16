@@ -44,11 +44,10 @@ public:
     bool HasInit();
 
     bool ExecLocalDumpUnwind(size_t skipFramNum);
-    bool ExecLocalDumpUnwindByWait(size_t skipFramNum);
+    bool ExecLocalDumpUnwindByWait();
     std::string CollectUnwindResult(int32_t tid);
     void CollectUnwindFrames(std::vector<std::shared_ptr<DfxFrame>>& frames);
-    bool SendLocalDumpRequest(int32_t tid);
-    bool WaitLocalDumpRequest();
+    bool SendAndWaitRequest(int32_t tid);
 
 private:
     DfxUnwindLocal();
@@ -56,6 +55,9 @@ private:
 
     void InstallLocalDumper(int sig);
     void UninstallLocalDumper(int sig);
+
+    bool SendLocalDumpRequest(int32_t tid);
+    bool WaitLocalDumpRequest();
 
     void ResolveFrameInfo(size_t index, DfxFrame& frame);
 
@@ -72,7 +74,6 @@ private:
     std::unique_ptr<DfxSymbolsCache> cache_;
     sigset_t mask_;
     struct sigaction oldSigaction_;
-    struct LocalDumperRequest localDumpRequest_;
     std::condition_variable localDumperCV_;
     std::mutex localDumperMutex_;
     std::atomic<bool> insideSignalHandler_;
