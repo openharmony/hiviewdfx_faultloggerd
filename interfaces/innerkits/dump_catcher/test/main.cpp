@@ -86,17 +86,15 @@ static bool CatchStackMulti(const std::vector<int> pidV)
 static bool CatchStackFrame(int32_t pid, int32_t tid)
 {
     printf("This is function DumpCatchFrame :: pid(%d), tid(%d).\n", pid, tid);
-    OHOS::HiviewDFX::DfxDumpCatcher mDfxDumpCatcher;
-    std::string msg = "";
+    OHOS::HiviewDFX::DfxDumpCatcher mDfxDumpCatcher(pid);
+    mDfxDumpCatcher.InitFrameCatcher();
+    if (!mDfxDumpCatcher.RequestCatchFrame(tid)) {
+        printf("Failed to suspend thread(%d).\n", tid);
+        return false;
+    }
     std::vector<std::shared_ptr<OHOS::HiviewDFX::DfxFrame>> frameV;
-    bool ret = mDfxDumpCatcher.DumpCatchFrame(pid, tid, msg, frameV);
-
+    bool ret = mDfxDumpCatcher.CatchFrame(tid, frameV);
     printf("DumpCatchFrame :: ret: %d, frameV: %zu.\n", ret, frameV.size());
-
-    printf("DumpCatchFrame :: msg:\n");
-    long lenStackInfo = msg.length();
-    write(STDOUT_FILENO, msg.c_str(), lenStackInfo);
-
     printf("DumpCatchFrame :: frame:\n");
     for (int i = 0; i < (int)frameV.size(); i++) {
         std::shared_ptr<OHOS::HiviewDFX::DfxFrame> frame = frameV[i];
