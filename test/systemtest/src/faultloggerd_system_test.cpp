@@ -1332,7 +1332,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0030, TestSize.Level2)
 
 /**
  * @tc.name: FaultLoggerdSystemTest0031
- * @tc.desc: test dumpcatcher command: -T -2 -p systemui
+ * @tc.desc: test dumpcatcher command: -m -p systemui
  * @tc.type: FUNC
  * @tc.require: issueI5PJ9O
  */
@@ -1341,7 +1341,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0031, TestSize.Level2)
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest0031: start.";
     std::string systemui = "com.ohos.systemui";
     int systemuiPid = FaultLoggerdSystemTest::GetServicePid(systemui);
-    std::string procCMD = "dumpcatcher -T -2 -p " + std::to_string(systemuiPid);
+    std::string procCMD = "dumpcatcher -m -p " + std::to_string(systemuiPid);
     string procDumpLog = FaultLoggerdSystemTest::ProcessDumpCommands(procCMD);
     GTEST_LOG_(INFO) << "procDumpLog: " << procDumpLog;
     int count = 0;
@@ -1363,7 +1363,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0031, TestSize.Level2)
 
 /**
  * @tc.name: FaultLoggerdSystemTest0032
- * @tc.desc: test dumpcatcher command: -T -2 -p systemui tid mainthread
+ * @tc.desc: test dumpcatcher command: -m -p systemui tid mainthread
  * @tc.type: FUNC
  * @tc.require: issueI5PJ9O
  */
@@ -1372,7 +1372,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0032, TestSize.Level2)
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest0032: start.";
     std::string systemui = "com.ohos.systemui";
     int systemuiPid = FaultLoggerdSystemTest::GetServicePid(systemui);
-    std::string procCMD = "dumpcatcher -T -2 -p " + std::to_string(systemuiPid) +
+    std::string procCMD = "dumpcatcher -m -p " + std::to_string(systemuiPid) +
         " -t " + std::to_string(systemuiPid);
     string procDumpLog = FaultLoggerdSystemTest::ProcessDumpCommands(procCMD);
     GTEST_LOG_(INFO) << "procDumpLog: " << procDumpLog;
@@ -1393,7 +1393,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0032, TestSize.Level2)
 
 /**
  * @tc.name: FaultLoggerdSystemTest0033
- * @tc.desc: test dumpcatcher command: -T -2 -p systemui tid -1
+ * @tc.desc: test dumpcatcher command: -m -p systemui tid -1
  * @tc.type: FUNC
  * @tc.require: issueI5PJ9O
  */
@@ -1402,7 +1402,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0033, TestSize.Level2)
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest0033: start.";
     std::string systemui = "com.ohos.systemui";
     int systemuiPid = FaultLoggerdSystemTest::GetServicePid(systemui);
-    std::string procCMD = "dumpcatcher -T -2 -p " + std::to_string(systemuiPid) + " -t -1";
+    std::string procCMD = "dumpcatcher -m -p " + std::to_string(systemuiPid) + " -t -1";
     string procDumpLog = FaultLoggerdSystemTest::ProcessDumpCommands(procCMD);
     GTEST_LOG_(INFO) << "procDumpLog: " << procDumpLog;
     int count = 0;
@@ -1422,7 +1422,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0033, TestSize.Level2)
 
 /**
  * @tc.name: FaultLoggerdSystemTest0034
- * @tc.desc: test dumpcatcher command: -T -2 -p -1 tid -1
+ * @tc.desc: test dumpcatcher command: -m -p -1 tid -1
  * @tc.type: FUNC
  * @tc.require: issueI5PJ9O
  */
@@ -1430,7 +1430,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0034, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest0034: start.";
     std::string systemui = "com.ohos.systemui";
-    std::string procCMD = "dumpcatcher -T -2 -p -1 -t -1";
+    std::string procCMD = "dumpcatcher -m -p -1 -t -1";
     string procDumpLog = FaultLoggerdSystemTest::ProcessDumpCommands(procCMD);
     GTEST_LOG_(INFO) << "procDumpLog: " << procDumpLog;
     int count = 0;
