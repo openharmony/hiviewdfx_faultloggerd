@@ -238,8 +238,8 @@ static bool SignalTargetProcess(const int type, int pid, int tid)
         .si_errno = 0,
         .si_code = type,
         .si_value.sival_int = tid,
-        .si_pid = pid,
-        .si_uid = static_cast<uid_t>(tid)
+        .si_pid = getpid(),
+        .si_uid = static_cast<uid_t>(syscall(SYS_gettid))
     };
 #pragma clang diagnostic pop
     if (tid == 0) {
