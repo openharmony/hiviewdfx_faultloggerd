@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -81,7 +81,7 @@ bool TrimAndDupStr(const std::string &source, std::string &str)
     }
 
     uint32_t maxStrLen = NAME_LEN;
-    uint32_t offset = (uint32_t)(end - begin);
+    uint32_t offset = static_cast<uint32_t>(end - begin);
     if (maxStrLen > offset) {
         maxStrLen = offset;
     }
@@ -93,11 +93,11 @@ bool TrimAndDupStr(const std::string &source, std::string &str)
 std::string GetCurrentTimeStr(uint64_t current)
 {
     time_t now = time(nullptr);
-    int millsecond = 0;
+    uint64_t millsecond = 0;
     const uint64_t ratio = 1000;
     if (current > static_cast<uint64_t>(now)) {
-        millsecond = (int)(current % ratio);
-        now = (time_t)(current / ratio);
+        millsecond = current % ratio;
+        now = static_cast<time_t>(current / ratio);
     }
 
     auto tm = std::localtime(&now);
@@ -108,7 +108,7 @@ std::string GetCurrentTimeStr(uint64_t current)
 
     char millBuf[256] = {0}; // 256 : milliseconds buffer size
     int ret = snprintf_s(millBuf, sizeof(millBuf), sizeof(millBuf) - 1,
-        "%s.%03d\n", seconds, millsecond);
+        "%s.%03u\n", seconds, millsecond);
     if (ret <= 0) {
         return "invalid timestamp\n";
     }
