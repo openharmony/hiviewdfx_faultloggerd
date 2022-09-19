@@ -31,7 +31,6 @@
 #include <time.h>
 #include <unistd.h>
 #include "dfx_define.h"
-#include "dfx_log.h"
 #include "errno.h"
 #include "linux/capability.h"
 #include "stdbool.h"
@@ -39,6 +38,10 @@
 #ifndef DFX_SIGNAL_LIBC
 #include <securec.h>
 #include "dfx_cutil.h"
+#include "dfx_log.h"
+#else
+#include "musl_cutil.h"
+#include "musl_log.h"
 #endif
 #if defined(CRASH_LOCAL_HANDLER)
 #include "dfx_crash_local_handler.h"
@@ -89,74 +92,6 @@
 void __attribute__((constructor)) InitHandler(void)
 {
     DFX_InstallSignalHandler();
-}
-#endif
-
-#ifdef DFX_SIGNAL_LIBC
-static bool ReadStringFromFile(const char* path, char* dst, size_t dstSz)
-{
-    char name[NAME_LEN];
-    char nameFilter[NAME_LEN];
-    memset(name, 0, sizeof(name));
-    memset(nameFilter, 0, sizeof(nameFilter));
-
-    int fd = -1;
-    fd = open(path, O_RDONLY);
-    if (fd < 0) {
-        return false;
-    }
-
-    if (read(fd, name, NAME_LEN -1) == -1) {
-        close(fd);
-        return false;
-    }
-
-    char* p = name;
-    int i = 0;
-    while (*p != '\0') {
-        if ((*p == '\n') || (i == NAME_LEN)) {
-            break;
-        }
-        nameFilter[i] = *p;
-        p++, i++;
-    }
-    nameFilter[NAME_LEN - 1] = '\0';
-
-    size_t cpyLen = strlen(nameFilter) + 1;
-    if (cpyLen > dstSz) {
-        cpyLen = dstSz;
-    }
-    memcpy(dst, nameFilter, cpyLen);
-    close(fd);
-    return true;
-}
-
-static bool GetThreadName(char* buffer, size_t bufferSz)
-{
-    char path[NAME_LEN];
-    memset(path, '\0', sizeof(path));
-    if (snprintf(path, sizeof(path) - 1, "/proc/%d/comm", getpid()) <= 0) {
-        return false;
-    }
-    return ReadStringFromFile(path, buffer, bufferSz);
-}
-
-static bool GetProcessName(char* buffer, size_t bufferSz)
-{
-    char path[NAME_LEN];
-    memset(path, '\0', sizeof(path));
-    if (snprintf(path, sizeof(path) - 1, "/proc/%d/cmdline", getpid()) <= 0) {
-        return false;
-    }
-    return ReadStringFromFile(path, buffer, bufferSz);
-}
-
-static uint64_t GetTimeMilliseconds(void)
-{
-    struct timeval time;
-    gettimeofday(&time, NULL);
-    return ((uint64_t)time.tv_sec * 1000) + // 1000 : second to millisecond convert ratio
-        (((uint64_t)time.tv_usec) / 1000); // 1000 : microsecond to millisecond convert ratio
 }
 #endif
 

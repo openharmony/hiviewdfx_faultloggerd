@@ -73,6 +73,7 @@ if (defined(ohos_lite)) {
       "include",
       "$faultloggerd_path/common",
       "$faultloggerd_path/common/dfxlog",
+      "$faultloggerd_path/common/util",
     ]
 
     defines = []
@@ -93,6 +94,8 @@ if (defined(ohos_lite)) {
       "__MUSL__",
       "_LIBCPP_HAS_MUSL_LIBC",
       "__BUILD_LINUX_WITH_CLANG",
+      "ENABLE_MUSL_LOG",
+      "ENABLE_MUSL_CUTIL",
     ]
 
     ldflags = [ "-nostdlib" ]
@@ -152,10 +155,7 @@ if (defined(ohos_lite)) {
   }
 
   source_set("dfxsignalhandler") {
-    cflags = [
-      "-DDFX_NO_PRINT_LOG",
-      "-DDFX_SIGNAL_LIBC",
-    ]
+    cflags = [ "-DDFX_SIGNAL_LIBC" ]
 
     sources = [ "dfx_signal_handler.c" ]
     configs -= inherited_configs
