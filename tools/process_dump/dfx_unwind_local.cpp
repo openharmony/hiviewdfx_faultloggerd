@@ -58,9 +58,6 @@ DfxUnwindLocal::DfxUnwindLocal()
     as_ = nullptr;
     curIndex_ = 0;
     insideSignalHandler_ = false;
-    memset_s(&oldSigaction_, sizeof(struct sigaction), 0, sizeof(struct sigaction));
-    sigemptyset(&mask_);
-    memset_s(&localDumpRequest_, sizeof(struct LocalDumperRequest), 0, sizeof(struct LocalDumperRequest));
 }
 
 bool DfxUnwindLocal::Init()
@@ -80,6 +77,7 @@ bool DfxUnwindLocal::Init()
     (void)memset_s(&context_, sizeof(context_), 0, sizeof(context_));
     frames_ = std::vector<DfxFrame>(BACK_STACK_MAX_STEPS);
     InstallLocalDumper(SIGLOCAL_DUMP);
+    sigemptyset(&mask_);
     sigset_t mask;
     sigfillset(&mask);
     sigdelset(&mask, SIGABRT);
@@ -114,10 +112,16 @@ bool DfxUnwindLocal::HasInit()
     return isInited_;
 }
 
+bool DfxUnwindLocal::SendAndWaitRequest(int tid)
+{
+    if (SendLocalDumpRequest(tid)) {
+        return WaitLocalDumpRequest();
+    }
+    return false;
+}
+
 bool DfxUnwindLocal::SendLocalDumpRequest(int32_t tid)
 {
-    localDumpRequest_.tid = tid;
-    localDumpRequest_.timeStamp = (uint64_t)time(NULL);
     insideSignalHandler_ = false;
     return syscall(SYS_tkill, tid, SIGLOCAL_DUMP) == 0;
 }
@@ -184,10 +188,15 @@ void DfxUnwindLocal::ResolveFrameInfo(size_t index, DfxFrame& frame)
     }
 }
 
-bool DfxUnwindLocal::ExecLocalDumpUnwindByWait(size_t skipFramNum)
+bool DfxUnwindLocal::ExecLocalDumpUnwindByWait()
 {
+    bool ret = false;
+    if (!insideSignalHandler_) {
+        DfxLogError("%s :: must be send request first.", __func__);
+        return ret;
+    }
     std::unique_lock<std::mutex> lck(localDumperMutex_);
-    bool ret = ExecLocalDumpUnwinding(&context_, 0);
+    ret = ExecLocalDumpUnwinding(&context_, 0);
     localDumperCV_.notify_one();
     return ret;
 }
@@ -263,7 +272,7 @@ bool DfxUnwindLocal::ExecLocalDumpUnwinding(unw_context_t *ctx, size_t skipFramN
         }
         if (err != EOK) {
             DfxLogError("%s :: strcpy_s failed.", __func__);
-            return false;
+            break;
         }
 
         curIndex_ = static_cast<uint32_t>(index - skipFramNum);
@@ -312,9 +321,7 @@ void DfxUnwindLocal::LocalDumper(int sig, siginfo_t *si, void *context)
     }
 #endif
 
-    if (localDumpRequest_.tid == gettid()) {
-        localDumperCV_.wait_for(lck, std::chrono::milliseconds(2000)); // 2000 : 2000ms
-    }
+    localDumperCV_.wait_for(lck, std::chrono::milliseconds(2000)); // 2000 : 2000ms
 }
 
 void DfxUnwindLocal::LocalDumpering(int sig, siginfo_t *si, void *context)
