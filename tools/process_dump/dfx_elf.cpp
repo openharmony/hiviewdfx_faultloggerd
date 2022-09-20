@@ -124,7 +124,7 @@ bool DfxElf::ParseElfProgramHeader()
         return false;
     }
 
-    ElfW(Phdr) *phdrTable = (ElfW(Phdr) *)((uint8_t *)map + startOffset);
+    ElfW(Phdr) *phdrTable = (ElfW(Phdr) *)(static_cast<uint8_t*>(map) + startOffset);
     for (size_t i = 0; i < header_.e_phnum; i++) {
         ElfW(Phdr) * phdr = &(phdrTable[i]);
         if (phdr->p_type != PT_LOAD) {

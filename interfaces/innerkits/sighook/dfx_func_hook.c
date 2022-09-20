@@ -49,6 +49,7 @@
 #define MAX_FRAME 64
 #define BUF_SZ 512
 #define MAPINFO_SIZE 256
+#define MAX_SIGNO 63
 
 void __attribute__((constructor)) InitHook(void)
 {
@@ -177,7 +178,7 @@ int kill(pid_t pid, int sig)
 int pthread_sigmask(int how, const sigset_t *restrict set, sigset_t *restrict oldset)
 {
     if (set != NULL) {
-        for (int i = 1; i < 63; i++) {
+        for (int i = 1; i < MAX_SIGNO; i++) {
             if (sigismember(set, i) && (IsPlatformHandleSignal(i)) &&
                 ((how == SIG_BLOCK) || (how == SIG_SETMASK))) {
                 LOGI("%d:%d pthread_sigmask signal(%d)\n", getpid(), gettid(), i);
@@ -196,7 +197,7 @@ int pthread_sigmask(int how, const sigset_t *restrict set, sigset_t *restrict ol
 int sigprocmask(int how, const sigset_t *restrict set, sigset_t *restrict oldset)
 {
     if (set != NULL) {
-        for (int i = 1; i < 63; i++) {
+        for (int i = 1; i < MAX_SIGNO; i++) {
             if (sigismember(set, i) && (IsPlatformHandleSignal(i)) &&
                 ((how == SIG_BLOCK) || (how == SIG_SETMASK))) {
                 LOGI("%d:%d sigprocmask signal(%d)\n", getpid(), gettid(), i);

@@ -32,6 +32,8 @@ using namespace OHOS::HiviewDFX;
 using namespace testing::ext;
 using namespace std;
 
+static const int CMD_BUF_LEN = 100;
+
 void ProcessDumpTest::SetUpTestCase(void)
 {
 }
@@ -46,6 +48,26 @@ void ProcessDumpTest::SetUp(void)
 
 void ProcessDumpTest::TearDown(void)
 {
+}
+
+int ProcessDumpTest::GetProcessPid(std::string processName)
+{
+    std::string procCMD = "pgrep '" + processName + "'";
+    GTEST_LOG_(INFO) << "threadCMD = " << procCMD;
+    FILE *procFileInfo = nullptr;
+    procFileInfo = popen(procCMD.c_str(), "r");
+    if (procFileInfo == nullptr) {
+        perror("popen execute failed");
+        exit(1);
+    }
+    std::string processPid;
+    char resultBuf[CMD_BUF_LEN] = { 0, };
+    while (fgets(resultBuf, sizeof(resultBuf), procFileInfo) != nullptr) {
+        processPid = resultBuf;
+        GTEST_LOG_(INFO) << "applyPid: " << processPid;
+    }
+    pclose(procFileInfo);
+    return std::atoi(processPid.c_str());
 }
 
 namespace {
@@ -678,7 +700,7 @@ HWTEST_F (ProcessDumpTest, ProcessDumpTest035, TestSize.Level2)
     int32_t pid = 243, tid = 243;
     std::shared_ptr<DfxThread> thread = std::make_shared<DfxThread>(pid, tid);
     pid_t threadId = thread->GetThreadId();
-    EXPECT_EQ(true, threadId == tid);
+    EXPECT_EQ(true, threadId == tid) << "ProcessDumpTest035 failed";
     GTEST_LOG_(INFO) << "ProcessDumpTest035: end.";
 }
 
@@ -732,34 +754,40 @@ HWTEST_F (ProcessDumpTest, ProcessDumpTest038, TestSize.Level2)
 
 /**
  * @tc.name: ProcessDumpTest039
- * @tc.desc: test UnwindThread
+ * @tc.desc: test UnwindProcess
  * @tc.type: FUNC
  */
 HWTEST_F (ProcessDumpTest, ProcessDumpTest039, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "ProcessDumpTest039: start.";
     std::shared_ptr<DfxProcess> process = std::make_shared<DfxProcess>();
-    pid_t pid = 243, tid = 243;
+    pid_t pid = GetProcessPid("telephony");
+    pid_t tid = pid;
     std::shared_ptr<DfxThread> thread = std::make_shared<DfxThread>(pid, tid);
-    bool ret = DfxUnwindRemote::GetInstance().UnwindThread(process, thread);
-    EXPECT_EQ(true, ret != true) << "ProcessDumpTest039 Failed";
+    const std::vector<std::shared_ptr<DfxThread>> threads = { thread };
+    process->SetThreads(threads);
+    thread->Attach();
+    bool ret = DfxUnwindRemote::GetInstance().UnwindProcess(process);
+    thread->Detach();
+    EXPECT_EQ(true, ret) << "ProcessDumpTest039 Failed";
     GTEST_LOG_(INFO) << "ProcessDumpTest039: end.";
 }
 
 /**
  * @tc.name: ProcessDumpTest040
- * @tc.desc: test UnwindProcess
+ * @tc.desc: test UnwindThread
  * @tc.type: FUNC
  */
 HWTEST_F (ProcessDumpTest, ProcessDumpTest040, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "ProcessDumpTest040: start.";
     std::shared_ptr<DfxProcess> process = std::make_shared<DfxProcess>();
-    pid_t pid = 243, tid = 243;
+    pid_t pid = GetProcessPid("telephony");
+    pid_t tid = pid;
     std::shared_ptr<DfxThread> thread = std::make_shared<DfxThread>(pid, tid);
-    const std::vector<std::shared_ptr<DfxThread>> threads = { thread };
-    process->SetThreads(threads);
-    bool ret = DfxUnwindRemote::GetInstance().UnwindProcess(process);
+    thread->Attach();
+    bool ret = DfxUnwindRemote::GetInstance().UnwindThread(process, thread);
+    thread->Detach();
     EXPECT_EQ(true, ret) << "ProcessDumpTest040 Failed";
     GTEST_LOG_(INFO) << "ProcessDumpTest040: end.";
 }

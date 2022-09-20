@@ -38,9 +38,12 @@
 
 namespace OHOS {
 namespace HiviewDFX {
+namespace {
 // we should have at least 2 frames, one is pc and the other is lr
 // if pc and lr are both invalid, just try fp
 static const int MIN_VALID_FRAME_COUNT = 3;
+static constexpr size_t MAX_BUILD_ID_LENGTH = 32;
+}
 
 DfxUnwindRemote &DfxUnwindRemote::GetInstance()
 {
@@ -133,7 +136,6 @@ uint64_t DfxUnwindRemote::DfxUnwindRemoteDoAdjustPc(unw_cursor_t & cursor, uint6
 
 std::string DfxUnwindRemote::GetReadableBuildId(uint8_t* buildId, size_t length)
 {
-    constexpr size_t MAX_BUILD_ID_LENGTH = 32;
     if (length > MAX_BUILD_ID_LENGTH) {
         std::string ret = "Wrong Build-Id length:" + std::to_string(length);
         return ret;

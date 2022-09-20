@@ -72,11 +72,12 @@ static bool ParseParamters(int argc, char *argv[], int &type, int32_t &pid, int3
                 type = OHOS::HiviewDFX::DUMP_TYPE_KERNEL;
                 break;
             case 'p':
+                ret = false;
                 if (optarg != nullptr) {
-                    ret = true;
-                    pid = atoi(optarg);
-                } else {
-                    ret = false;
+                    if (atoi(optarg) > 0) {
+                        ret = true;
+                        pid = atoi(optarg);
+                    }
                 }
                 break;
             case 't':
