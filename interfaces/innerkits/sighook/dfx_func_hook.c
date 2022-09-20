@@ -228,6 +228,7 @@ sighandler_t signal(int signum, sighandler_t handler)
 
 static bool IsSigactionAddr(uintptr_t sigactionAddr)
 {
+    bool ret = false;
     char path[NAME_LEN] = {0};
     if (snprintf_s(path, sizeof(path), sizeof(path) - 1, "/proc/self/maps") <= 0) {
         LOGW("Fail to print path.");
@@ -257,7 +258,8 @@ static bool IsSigactionAddr(uintptr_t sigactionAddr)
         if ((strstr(mapInfo, "r-xp") != NULL) && (strstr(mapInfo, "ld-musl") != NULL)) {
             LOGI("begin: %lu, end: %lu, sigactionAddr: %lu", begin, end, sigactionAddr);
             if ((sigactionAddr >= begin) && (sigactionAddr <= end)) {
-                return true;
+                ret = true;
+                break;
             }
         } else {
             continue;
@@ -266,7 +268,7 @@ static bool IsSigactionAddr(uintptr_t sigactionAddr)
     if (fclose(fp) != 0) {
         LOGW("Fail to close maps info.");
     }
-    return false;
+    return ret;
 }
 
 int sigaction(int sig, const struct sigaction *restrict act, struct sigaction *restrict oact)
