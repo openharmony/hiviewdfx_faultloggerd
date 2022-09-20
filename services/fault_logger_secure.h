@@ -28,23 +28,6 @@ public:
     ~FaultLoggerSecure();
     static bool CheckCallerUID(const int callingUid, const int32_t pid);
 
-public:
-    constexpr static int32_t INVALID_UID = -1;
-    constexpr static int32_t INVALID_GID = -1;
-    constexpr static int32_t ROOT_UID = 0;
-    constexpr static int32_t BMS_UID = 1000;
-    constexpr static int32_t BMS_GID = 1000;
-    constexpr static int32_t HIVIEW_UID = 1201;
-    constexpr static int32_t HIDUMPER_SERVICE_UID = 1212;
-    constexpr static int32_t BASE_SYS_UID = 2100;
-    constexpr static int32_t MAX_SYS_UID = 2899;
-    constexpr static int32_t BASE_SYS_VEN_UID = 5000;
-    constexpr static int32_t MAX_SYS_VEN_UID = 5999;
-    constexpr static int32_t BASE_APP_UID = 10000;
-    constexpr static int32_t MAX_APP_UID = 65535;
-    constexpr static int32_t MAX_RESP_LEN = 128;
-    constexpr static int32_t MAX_CMD_LEN = 1024;
-
 private:
     static bool CheckUidAndPid(const int uid, const int32_t pid);
 };

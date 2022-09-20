@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -346,7 +346,7 @@ void* DfxCrasher::DoCrashInThread(void * inputArg)
 {
     prctl(PR_SET_NAME, "SubTestThread");
     const char* arg = (const char *)(inputArg);
-    return (void*)((uint64_t)(DfxCrasher::GetInstance().ParseAndDoCrash(arg)));
+    return (void*)(DfxCrasher::GetInstance().ParseAndDoCrash(arg));
 }
 
 uint64_t DfxCrasher::DoActionOnSubThread(const char *arg) const
@@ -393,7 +393,7 @@ uint64_t DfxCrasher::ParseAndDoCrash(const char *arg)
     }
 
     if (!strcasecmp(arg, "triSIGABRT")) {
-            return Abort();
+        return Abort();
     }
 
     if (!strcasecmp(arg, "SIGBUS")) {
