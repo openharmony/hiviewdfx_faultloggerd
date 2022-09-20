@@ -178,10 +178,12 @@ Q7.进程崩溃退出而没有日志可能原因? \
  [dfx_func_hook.c:67]2361 send signal(9) to 1461 // 进程 1261 给 进程 1461 发送 SIGKILL
  [dfx_func_hook.c:130]current signalhandler addr:0x7faf8199ec, original addr:0x7fafa4ee8c // 使用sigaction替换了系统的signalhandler
 ```
+也可使用strace来排查，strace -p pid 操作后查看是否有signal/sigaction/sigprocmask/sigblock等函数,导致block信号或替换掉了原handler。
 如果自身的代码里没有使用，可以考虑排查是否引入的三方库中拦截、替换了信号处理。一个例子如下：
 ```
 https://gitee.com/openharmony/third_party_pulseaudio/pulls/20
 ```
+
 Q8.进程崩溃退出发现生成了CPPCRASH日志，但是日志内容为空可能原因？\
 此问题在自测试工具中比较常见，多是因为手动删除了`/data/log/faultlog/temp`并手动创建了该目录导致，该目录的SELinux标签失效（从`u:object_r:faultloggerd_temp_file:s0`变为了`u:object_r:data_log:s0`），导致因为SELinux权限限制导致无法写数据到文件中。\
 
