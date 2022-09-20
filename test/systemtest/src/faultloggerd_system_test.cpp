@@ -48,6 +48,7 @@ using namespace OHOS::HiviewDFX;
 using namespace testing::ext;
 using namespace std;
 
+namespace {
 static const int BMS_UID = 1000;
 static const int OTHER_UID = 10000;
 static const int NUMBER_ONE = 1;
@@ -56,9 +57,11 @@ static const int NUMBER_THREE = 3;
 static const int NUMBER_FOUR = 4;
 static const int NUMBER_SIXTY = 60;
 static const int NUMBER_FIFTY = 50;
-static string DEFAULT_PID_MAX = "32768";
-static string DEFAULT_TID_MAX = "8825";
-mutex mLock;
+static const string DEFAULT_PID_MAX = "32768";
+static const string DEFAULT_TID_MAX = "8825";
+static mutex g_mutex;
+}
+
 void FaultLoggerdSystemTest::SetUpTestCase(void)
 {
 }
@@ -93,6 +96,7 @@ void FaultLoggerdSystemTest::KillCrasherLoopForSomeCase(int type)
         system(("kill -9 " + std::to_string(FaultLoggerdSystemTest::unsigLoopSysPid)).c_str());
     }
 }
+
 std::string FaultLoggerdSystemTest::rootTid[ARRAY_SIZE_HUNDRED] = { "", };
 std::string FaultLoggerdSystemTest::appTid[ARRAY_SIZE_HUNDRED] = { "", };
 std::string FaultLoggerdSystemTest::sysTid[ARRAY_SIZE_HUNDRED] = { "", };
@@ -104,6 +108,7 @@ int FaultLoggerdSystemTest::loopAppPid = 0;
 int FaultLoggerdSystemTest::count = 0;
 char FaultLoggerdSystemTest::resultBufShell[ARRAY_SIZE_HUNDRED] = { 0, };
 unsigned int FaultLoggerdSystemTest::unsigLoopSysPid = 0;
+
 std::string FaultLoggerdSystemTest::GetPidMax()
 {
     const string path = "/proc/sys/kernel/pid_max";
@@ -133,6 +138,7 @@ std::string FaultLoggerdSystemTest::GetTidMax()
     }
     return DEFAULT_TID_MAX;
 }
+
 std::string FaultLoggerdSystemTest::ProcessDumpCommands(const std::string cmds)
 {
     GTEST_LOG_(INFO) << "threadCMD = " << cmds;
@@ -780,6 +786,7 @@ void FaultLoggerdSystemTest::dumpCatchThread(int threadID)
     }
 }
 
+namespace {
 #ifdef __pre__
 /**
 * @tc.name: FaultLoggerdSystemTest0010_pre
@@ -790,10 +797,10 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0010_pre, TestSize.Level
 {
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest0010_pre: start.";
     for (int i = 0; i < 10; i++) {
-        mLock.lock();
+        g_mutex.lock();
         std::thread (FaultLoggerdSystemTest::dumpCatchThread, i).join();
         sleep(NUMBER_TWO);
-        mLock.unlock();
+        g_mutex.unlock();
     }
     EXPECT_EQ(FaultLoggerdSystemTest::count, 10) << "FaultLoggerdSystemTest0010_pre Failed";
     if (count == 10) {
@@ -4347,3 +4354,4 @@ HWTEST_F (FaultLoggerdSystemTest,  FaultLoggerdSystemTest0121, TestSize.Level2)
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest0121: end.";
 }
 #endif
+}
