@@ -43,7 +43,7 @@ static void PrintCommandHelp()
     std::cout << DUMP_STACK_TAG_USAGE << std::endl;
     std::cout << "-p pid -t tid    dump the stacktrace of the thread with given tid." << std::endl;
     std::cout << "-p pid    dump the stacktrace of all the threads with given pid." << std::endl;
-    std::cout << "[-c -m -k]    optional parameter, -c(cpp) -m(mix) -k(kernel." << std::endl;
+    std::cout << "[-c -m -k]    optional parameter, -c(cpp) -m(mix) -k(kernel)." << std::endl;
 }
 
 static bool ParseParamters(int argc, char *argv[], int &type, int32_t &pid, int32_t &tid)
@@ -75,12 +75,19 @@ static bool ParseParamters(int argc, char *argv[], int &type, int32_t &pid, int3
                 if (optarg != nullptr) {
                     ret = true;
                     pid = atoi(optarg);
+                } else {
+                    ret = false;
                 }
                 break;
             case 't':
-                tid = atoi(optarg);
+                if (optarg != nullptr) {
+                    tid = atoi(optarg);
+                } else {
+                    ret = false;
+                }
                 break;
             default:
+                ret = false;
                 break;
         }
     }
