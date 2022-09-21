@@ -27,7 +27,7 @@
 #ifdef DFX_LOG_USE_HILOG_BASE
 static LogLevel g_LOG_LEVEL[] = { LOG_DEBUG, LOG_INFO, LOG_WARN, LOG_ERROR, LOG_FATAL };
 #else
-static const OHOS::HiviewDFX::HiLogLabel g_LOG_LABEL = {LOG_CORE, 0xD002D20, "DfxFaultLogger"};
+static const OHOS::HiviewDFX::HiLogLabel LOG_LABEL = {LOG_CORE, 0xD002D20, "DfxFaultLogger"};
 #endif
 static const int32_t INVALID_FD = -1;
 static int32_t g_DebugFd = INVALID_FD;
@@ -91,19 +91,19 @@ int DfxLog(const Level logLevel, const unsigned int domain, const char* tag, con
 #else
     switch (static_cast<int>(logLevel)) {
         case static_cast<int>(DEBUG):
-            OHOS::HiviewDFX::HiLog::Debug(g_LOG_LABEL, "%{public}s", buf);
+            OHOS::HiviewDFX::HiLog::Debug(LOG_LABEL, "%{public}s", buf);
             break;
         case static_cast<int>(INFO):
-            OHOS::HiviewDFX::HiLog::Info(g_LOG_LABEL, "%{public}s", buf);
+            OHOS::HiviewDFX::HiLog::Info(LOG_LABEL, "%{public}s", buf);
             break;
         case static_cast<int>(WARN):
-            OHOS::HiviewDFX::HiLog::Warn(g_LOG_LABEL, "%{public}s", buf);
+            OHOS::HiviewDFX::HiLog::Warn(LOG_LABEL, "%{public}s", buf);
             break;
         case static_cast<int>(ERROR):
-            OHOS::HiviewDFX::HiLog::Error(g_LOG_LABEL, "%{public}s", buf);
+            OHOS::HiviewDFX::HiLog::Error(LOG_LABEL, "%{public}s", buf);
             break;
         case static_cast<int>(FATAL):
-            OHOS::HiviewDFX::HiLog::Fatal(g_LOG_LABEL, "%{public}s", buf);
+            OHOS::HiviewDFX::HiLog::Fatal(LOG_LABEL, "%{public}s", buf);
             break;
         default:
             break;

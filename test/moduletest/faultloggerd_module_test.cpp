@@ -77,7 +77,6 @@ void CheckFdRequestFunction(FaultLoggerType type, bool isValidFd)
         close(fd);
     }
 }
-}
 
 /**
  * @tc.name: FaultloggerdServiceTest001
@@ -113,4 +112,5 @@ HWTEST_F(FaultloggerdModuleTest, FaultloggerdClientFdRquestTest001, TestSize.Lev
     CheckFdRequestFunction(FaultLoggerType::JS_STACKTRACE, true);
     CheckFdRequestFunction(FaultLoggerType::JS_HEAP_SNAPSHOT, true);
     CheckFdRequestFunction(FaultLoggerType::JAVA_STACKTRACE, false);
+}
 }

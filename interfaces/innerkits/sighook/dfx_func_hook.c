@@ -49,6 +49,7 @@
 #define MAX_FRAME 64
 #define BUF_SZ 512
 #define MAPINFO_SIZE 256
+#define MAX_SIGNO 63
 
 void __attribute__((constructor)) InitHook(void)
 {
@@ -177,7 +178,7 @@ int kill(pid_t pid, int sig)
 int pthread_sigmask(int how, const sigset_t *restrict set, sigset_t *restrict oldset)
 {
     if (set != NULL) {
-        for (int i = 1; i < 63; i++) {
+        for (int i = 1; i < MAX_SIGNO; i++) {
             if (sigismember(set, i) && (IsPlatformHandleSignal(i)) &&
                 ((how == SIG_BLOCK) || (how == SIG_SETMASK))) {
                 LOGI("%d:%d pthread_sigmask signal(%d)\n", getpid(), gettid(), i);
@@ -196,7 +197,7 @@ int pthread_sigmask(int how, const sigset_t *restrict set, sigset_t *restrict ol
 int sigprocmask(int how, const sigset_t *restrict set, sigset_t *restrict oldset)
 {
     if (set != NULL) {
-        for (int i = 1; i < 63; i++) {
+        for (int i = 1; i < MAX_SIGNO; i++) {
             if (sigismember(set, i) && (IsPlatformHandleSignal(i)) &&
                 ((how == SIG_BLOCK) || (how == SIG_SETMASK))) {
                 LOGI("%d:%d sigprocmask signal(%d)\n", getpid(), gettid(), i);
@@ -227,6 +228,7 @@ sighandler_t signal(int signum, sighandler_t handler)
 
 static bool IsSigactionAddr(uintptr_t sigactionAddr)
 {
+    bool ret = false;
     char path[NAME_LEN] = {0};
     if (snprintf_s(path, sizeof(path), sizeof(path) - 1, "/proc/self/maps") <= 0) {
         LOGW("Fail to print path.");
@@ -256,7 +258,8 @@ static bool IsSigactionAddr(uintptr_t sigactionAddr)
         if ((strstr(mapInfo, "r-xp") != NULL) && (strstr(mapInfo, "ld-musl") != NULL)) {
             LOGI("begin: %lu, end: %lu, sigactionAddr: %lu", begin, end, sigactionAddr);
             if ((sigactionAddr >= begin) && (sigactionAddr <= end)) {
-                return true;
+                ret = true;
+                break;
             }
         } else {
             continue;
@@ -265,7 +268,7 @@ static bool IsSigactionAddr(uintptr_t sigactionAddr)
     if (fclose(fp) != 0) {
         LOGW("Fail to close maps info.");
     }
-    return false;
+    return ret;
 }
 
 int sigaction(int sig, const struct sigaction *restrict act, struct sigaction *restrict oact)

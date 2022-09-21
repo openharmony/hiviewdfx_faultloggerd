@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -71,25 +71,22 @@ DfxDumpCatcher::~DfxDumpCatcher()
 {
 }
 
-bool DfxDumpCatcher::DoDumpCurrTid(const size_t skipFramNum, int tid, std::string& msg)
+bool DfxDumpCatcher::DoDumpCurrTid(const size_t skipFramNum, std::string& msg)
 {
     bool ret = false;
-    if (tid <= 0) {
-        DfxLogError("%s :: DoDumpCurrTid :: return false as param error.", DFXDUMPCATCHER_TAG.c_str());
-        return ret;
-    }
+    int currTid = syscall(SYS_gettid);
     size_t tmpSkipFramNum = skipFramNum + 1;
     ret = DfxUnwindLocal::GetInstance().ExecLocalDumpUnwind(tmpSkipFramNum);
     if (ret) {
-        msg.append(DfxUnwindLocal::GetInstance().CollectUnwindResult(tid));
+        msg.append(DfxUnwindLocal::GetInstance().CollectUnwindResult(currTid));
     } else {
-        msg.append("Failed to dump curr thread:" + std::to_string(tid) + ".\n");
+        msg.append("Failed to dump curr thread:" + std::to_string(currTid) + ".\n");
     }
     DfxLogDebug("%s :: DoDumpCurrTid :: return %d.", DFXDUMPCATCHER_TAG.c_str(), ret);
     return ret;
 }
 
-bool DfxDumpCatcher::DoDumpLocalTid(const size_t skipFramNum, int tid, std::string& msg)
+bool DfxDumpCatcher::DoDumpLocalTid(const int tid, std::string& msg)
 {
     bool ret = false;
     if (tid <= 0) {
@@ -97,10 +94,8 @@ bool DfxDumpCatcher::DoDumpLocalTid(const size_t skipFramNum, int tid, std::stri
         return ret;
     }
 
-    if (DfxUnwindLocal::GetInstance().SendLocalDumpRequest(tid) == true) {
-        DfxUnwindLocal::GetInstance().WaitLocalDumpRequest();
-        size_t tmpSkipFramNum = skipFramNum + 1;
-        ret = DfxUnwindLocal::GetInstance().ExecLocalDumpUnwindByWait(tmpSkipFramNum);
+    if (DfxUnwindLocal::GetInstance().SendAndWaitRequest(tid)) {
+        ret = DfxUnwindLocal::GetInstance().ExecLocalDumpUnwindByWait();
     }
 
     if (ret) {
@@ -119,6 +114,7 @@ bool DfxDumpCatcher::DoDumpLocalPid(int pid, std::string& msg)
         DfxLogError("%s :: DoDumpLocalPid :: return false as param error.", DFXDUMPCATCHER_TAG.c_str());
         return ret;
     }
+    size_t skipFramNum = DUMP_CATCHER_NUMBER_THREE;
 
     char realPath[PATH_MAX] = {'\0'};
     if (realpath("/proc/self/task", realPath) == nullptr) {
@@ -132,7 +128,6 @@ bool DfxDumpCatcher::DoDumpLocalPid(int pid, std::string& msg)
         return ret;
     }
 
-    size_t skipFramNum = DUMP_CATCHER_NUMBER_THREE;
     struct dirent *ent;
     while ((ent = readdir(dir)) != nullptr) {
         if (strcmp(ent->d_name, ".") == 0 || strcmp(ent->d_name, "..") == 0) {
@@ -146,9 +141,9 @@ bool DfxDumpCatcher::DoDumpLocalPid(int pid, std::string& msg)
 
         int currentTid = syscall(SYS_gettid);
         if (tid == currentTid) {
-            ret = DoDumpCurrTid(skipFramNum, tid, msg);
+            ret = DoDumpCurrTid(skipFramNum, msg);
         } else {
-            ret = DoDumpLocalTid(skipFramNum, tid, msg);
+            ret = DoDumpLocalTid(tid, msg);
         }
     }
 
@@ -180,14 +175,14 @@ bool DfxDumpCatcher::DoDumpLocalLocked(int pid, int tid, std::string& msg)
 
     size_t skipFramNum = DUMP_CATCHER_NUMBER_TWO;
     if (tid == syscall(SYS_gettid)) {
-        ret = DoDumpCurrTid(skipFramNum, tid, msg);
+        ret = DoDumpCurrTid(skipFramNum, msg);
     } else if (tid == 0) {
         ret = DoDumpLocalPid(pid, msg);
     } else {
         if (!IsThreadInCurPid(tid)) {
             msg.append("tid(" + std::to_string(tid) + ") is not in pid(" + std::to_string(pid) + ").\n");
         } else {
-            ret = DoDumpLocalTid(skipFramNum, tid, msg);
+            ret = DoDumpLocalTid(tid, msg);
         }
     }
 
@@ -243,8 +238,8 @@ static bool SignalTargetProcess(const int type, int pid, int tid)
         .si_errno = 0,
         .si_code = type,
         .si_value.sival_int = tid,
-        .si_pid = pid,
-        .si_uid = static_cast<uid_t>(tid)
+        .si_pid = getpid(),
+        .si_uid = static_cast<uid_t>(syscall(SYS_gettid))
     };
 #pragma clang diagnostic pop
     if (tid == 0) {
@@ -464,7 +459,6 @@ bool DfxDumpCatcher::DumpCatchMultiPid(const std::vector<int> pidV, std::string&
 bool DfxDumpCatcher::InitFrameCatcher()
 {
     std::unique_lock<std::mutex> lck(dumpCatcherMutex_);
-    initFrameCatcher_ = true;
     bool ret = DfxUnwindLocal::GetInstance().Init();
     if (!ret) {
         DfxUnwindLocal::GetInstance().Destroy();
@@ -483,11 +477,7 @@ bool DfxDumpCatcher::RequestCatchFrame(int tid)
     if (tid == syscall(SYS_gettid)) {
         return true;
     }
-
-    if (DfxUnwindLocal::GetInstance().SendLocalDumpRequest(tid) == true) {
-        return DfxUnwindLocal::GetInstance().WaitLocalDumpRequest();
-    }
-    return false;
+    return DfxUnwindLocal::GetInstance().SendAndWaitRequest(tid);
 }
 
 bool DfxDumpCatcher::CatchFrame(int tid, std::vector<std::shared_ptr<DfxFrame>>& frames)
@@ -501,14 +491,15 @@ bool DfxDumpCatcher::CatchFrame(int tid, std::vector<std::shared_ptr<DfxFrame>>&
         DfxLogError("DfxDumpCatchFrame :: target tid is not in our task.");
         return false;
     }
+    size_t skipFramNum = DUMP_CATCHER_NUMBER_ONE;
 
     std::unique_lock<std::mutex> lck(dumpCatcherMutex_);
     if (tid == syscall(SYS_gettid)) {
-        if(!DfxUnwindLocal::GetInstance().ExecLocalDumpUnwind(DUMP_CATCHER_NUMBER_ONE)) {
+        if (!DfxUnwindLocal::GetInstance().ExecLocalDumpUnwind(skipFramNum)) {
             DfxLogError("DfxDumpCatchFrame :: failed to unwind for current thread(%d).", tid);
             return false;
         }
-    } else if (!DfxUnwindLocal::GetInstance().ExecLocalDumpUnwindByWait(0)) {
+    } else if (!DfxUnwindLocal::GetInstance().ExecLocalDumpUnwindByWait()) {
         DfxLogError("DfxDumpCatchFrame :: failed to unwind for thread(%d).", tid);
         return false;
     }

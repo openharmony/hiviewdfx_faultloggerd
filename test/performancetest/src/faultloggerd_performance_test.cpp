@@ -49,6 +49,7 @@ using namespace OHOS::HiviewDFX;
 using namespace testing::ext;
 using namespace std;
 
+namespace {
 static const int PERFORMANCE_TEST_NUMBER_ONE_HUNDRED = 100;
 static const double PERFORMANCE_TEST_MAX_UNWIND_TIME_S = 0.03;
 static const double PERFORMANCE_TEST_MAX_UNWIND_TIME_NEW_S = 0.04;
@@ -62,6 +63,7 @@ double GetStopTime(clock_t befor)
 {
     clock_t StartTimer = clock();
     return  ((StartTimer - befor) / double(CLOCKS_PER_SEC));
+}
 }
 
 void FaultPerformanceTest::SetUpTestCase(void)
@@ -166,6 +168,7 @@ int FaultPerformanceTest::getApplyPid(std::string applyName)
     return intApplyPid;
 }
 
+namespace {
 /**
  * @tc.name: FaultPerformanceTest001
  * @tc.desc: test DumpCatch API: PID(root), TID(root)
@@ -307,4 +310,5 @@ HWTEST_F (FaultPerformanceTest, FaultPerformanceTest006, TestSize.Level2)
     double realTime = GetStopTime(befor)/PERFORMANCE_TEST_NUMBER_ONE_HUNDRED;
     EXPECT_EQ(true, realTime < expectTime) << "FaultPerformanceTest006 Failed";
     GTEST_LOG_(INFO) << "FaultPerformanceTest006: end.";
+}
 }

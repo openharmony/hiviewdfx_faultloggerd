@@ -51,8 +51,8 @@ public:
     void DestroyFrameCatcher();
 
 private:
-    bool DoDumpCurrTid(const size_t skipFramNum, int tid, std::string& msg);
-    bool DoDumpLocalTid(const size_t skipFramNum, int tid, std::string& msg);
+    bool DoDumpCurrTid(const size_t skipFramNum, std::string& msg);
+    bool DoDumpLocalTid(const int tid, std::string& msg);
     bool DoDumpLocalPid(int pid, std::string& msg);
     bool DoDumpLocalLocked(int pid, int tid, std::string& msg);
     bool DoDumpRemoteLocked(int pid, int tid, std::string& msg);
@@ -63,7 +63,6 @@ private:
 
 private:
     std::mutex dumpCatcherMutex_;
-    bool initFrameCatcher_;
     int32_t frameCatcherPid_;
 };
 } // namespace HiviewDFX

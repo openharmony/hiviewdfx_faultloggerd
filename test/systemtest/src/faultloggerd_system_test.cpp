@@ -48,6 +48,7 @@ using namespace OHOS::HiviewDFX;
 using namespace testing::ext;
 using namespace std;
 
+namespace {
 static const int BMS_UID = 1000;
 static const int OTHER_UID = 10000;
 static const int NUMBER_ONE = 1;
@@ -56,9 +57,11 @@ static const int NUMBER_THREE = 3;
 static const int NUMBER_FOUR = 4;
 static const int NUMBER_SIXTY = 60;
 static const int NUMBER_FIFTY = 50;
-static string DEFAULT_PID_MAX = "32768";
-static string DEFAULT_TID_MAX = "8825";
-mutex mLock;
+static const string DEFAULT_PID_MAX = "32768";
+static const string DEFAULT_TID_MAX = "8825";
+static mutex g_mutex;
+}
+
 void FaultLoggerdSystemTest::SetUpTestCase(void)
 {
 }
@@ -93,6 +96,7 @@ void FaultLoggerdSystemTest::KillCrasherLoopForSomeCase(int type)
         system(("kill -9 " + std::to_string(FaultLoggerdSystemTest::unsigLoopSysPid)).c_str());
     }
 }
+
 std::string FaultLoggerdSystemTest::rootTid[ARRAY_SIZE_HUNDRED] = { "", };
 std::string FaultLoggerdSystemTest::appTid[ARRAY_SIZE_HUNDRED] = { "", };
 std::string FaultLoggerdSystemTest::sysTid[ARRAY_SIZE_HUNDRED] = { "", };
@@ -104,6 +108,7 @@ int FaultLoggerdSystemTest::loopAppPid = 0;
 int FaultLoggerdSystemTest::count = 0;
 char FaultLoggerdSystemTest::resultBufShell[ARRAY_SIZE_HUNDRED] = { 0, };
 unsigned int FaultLoggerdSystemTest::unsigLoopSysPid = 0;
+
 std::string FaultLoggerdSystemTest::GetPidMax()
 {
     const string path = "/proc/sys/kernel/pid_max";
@@ -133,6 +138,7 @@ std::string FaultLoggerdSystemTest::GetTidMax()
     }
     return DEFAULT_TID_MAX;
 }
+
 std::string FaultLoggerdSystemTest::ProcessDumpCommands(const std::string cmds)
 {
     GTEST_LOG_(INFO) << "threadCMD = " << cmds;
@@ -780,6 +786,7 @@ void FaultLoggerdSystemTest::dumpCatchThread(int threadID)
     }
 }
 
+namespace {
 #ifdef __pre__
 /**
 * @tc.name: FaultLoggerdSystemTest0010_pre
@@ -790,10 +797,10 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0010_pre, TestSize.Level
 {
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest0010_pre: start.";
     for (int i = 0; i < 10; i++) {
-        mLock.lock();
+        g_mutex.lock();
         std::thread (FaultLoggerdSystemTest::dumpCatchThread, i).join();
         sleep(NUMBER_TWO);
-        mLock.unlock();
+        g_mutex.unlock();
     }
     EXPECT_EQ(FaultLoggerdSystemTest::count, 10) << "FaultLoggerdSystemTest0010_pre Failed";
     if (count == 10) {
@@ -1332,7 +1339,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0030, TestSize.Level2)
 
 /**
  * @tc.name: FaultLoggerdSystemTest0031
- * @tc.desc: test dumpcatcher command: -T -2 -p systemui
+ * @tc.desc: test dumpcatcher command: -m -p systemui
  * @tc.type: FUNC
  * @tc.require: issueI5PJ9O
  */
@@ -1341,7 +1348,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0031, TestSize.Level2)
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest0031: start.";
     std::string systemui = "com.ohos.systemui";
     int systemuiPid = FaultLoggerdSystemTest::GetServicePid(systemui);
-    std::string procCMD = "dumpcatcher -T -2 -p " + std::to_string(systemuiPid);
+    std::string procCMD = "dumpcatcher -m -p " + std::to_string(systemuiPid);
     string procDumpLog = FaultLoggerdSystemTest::ProcessDumpCommands(procCMD);
     GTEST_LOG_(INFO) << "procDumpLog: " << procDumpLog;
     int count = 0;
@@ -1363,7 +1370,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0031, TestSize.Level2)
 
 /**
  * @tc.name: FaultLoggerdSystemTest0032
- * @tc.desc: test dumpcatcher command: -T -2 -p systemui tid mainthread
+ * @tc.desc: test dumpcatcher command: -m -p systemui tid mainthread
  * @tc.type: FUNC
  * @tc.require: issueI5PJ9O
  */
@@ -1372,7 +1379,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0032, TestSize.Level2)
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest0032: start.";
     std::string systemui = "com.ohos.systemui";
     int systemuiPid = FaultLoggerdSystemTest::GetServicePid(systemui);
-    std::string procCMD = "dumpcatcher -T -2 -p " + std::to_string(systemuiPid) +
+    std::string procCMD = "dumpcatcher -m -p " + std::to_string(systemuiPid) +
         " -t " + std::to_string(systemuiPid);
     string procDumpLog = FaultLoggerdSystemTest::ProcessDumpCommands(procCMD);
     GTEST_LOG_(INFO) << "procDumpLog: " << procDumpLog;
@@ -1393,7 +1400,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0032, TestSize.Level2)
 
 /**
  * @tc.name: FaultLoggerdSystemTest0033
- * @tc.desc: test dumpcatcher command: -T -2 -p systemui tid -1
+ * @tc.desc: test dumpcatcher command: -m -p systemui tid -1
  * @tc.type: FUNC
  * @tc.require: issueI5PJ9O
  */
@@ -1402,7 +1409,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0033, TestSize.Level2)
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest0033: start.";
     std::string systemui = "com.ohos.systemui";
     int systemuiPid = FaultLoggerdSystemTest::GetServicePid(systemui);
-    std::string procCMD = "dumpcatcher -T -2 -p " + std::to_string(systemuiPid) + " -t -1";
+    std::string procCMD = "dumpcatcher -m -p " + std::to_string(systemuiPid) + " -t -1";
     string procDumpLog = FaultLoggerdSystemTest::ProcessDumpCommands(procCMD);
     GTEST_LOG_(INFO) << "procDumpLog: " << procDumpLog;
     int count = 0;
@@ -1422,7 +1429,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0033, TestSize.Level2)
 
 /**
  * @tc.name: FaultLoggerdSystemTest0034
- * @tc.desc: test dumpcatcher command: -T -2 -p -1 tid -1
+ * @tc.desc: test dumpcatcher command: -m -p -1 tid -1
  * @tc.type: FUNC
  * @tc.require: issueI5PJ9O
  */
@@ -1430,7 +1437,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0034, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest0034: start.";
     std::string systemui = "com.ohos.systemui";
-    std::string procCMD = "dumpcatcher -T -2 -p -1 -t -1";
+    std::string procCMD = "dumpcatcher -m -p -1 -t -1";
     string procDumpLog = FaultLoggerdSystemTest::ProcessDumpCommands(procCMD);
     GTEST_LOG_(INFO) << "procDumpLog: " << procDumpLog;
     int count = 0;
@@ -4347,3 +4354,4 @@ HWTEST_F (FaultLoggerdSystemTest,  FaultLoggerdSystemTest0121, TestSize.Level2)
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest0121: end.";
 }
 #endif
+}

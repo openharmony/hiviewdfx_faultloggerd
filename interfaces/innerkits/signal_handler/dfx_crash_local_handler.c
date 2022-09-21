@@ -114,12 +114,12 @@ __attribute__((noinline)) void CrashLocalUnwind(int fd, ucontext_t* ucontext)
             relPc -= sz;
         }
 
-        char g_symbol[BUF_SZ] = {0};
-        memset_s(&g_symbol, sizeof(g_symbol), 0, sizeof(g_symbol));
-        if (unw_get_proc_name(&cursor, g_symbol, sizeof(g_symbol), (unw_word_t*)(&offset)) == 0) {
+        char symbol[BUF_SZ] = {0};
+        memset_s(&symbol, sizeof(symbol), 0, sizeof(symbol));
+        if (unw_get_proc_name(&cursor, symbol, sizeof(symbol), (unw_word_t*)(&offset)) == 0) {
             PrintLog(fd, "#%02d %016p %s(%s+%lu)\n", index, relPc,
                 mapInfo == NULL ? "Unknown" : mapInfo->path,
-                g_symbol, offset);
+                symbol, offset);
         } else {
             PrintLog(fd, "#%02d %016p %s\n", index, relPc,
                 mapInfo == NULL ? "Unknown" : mapInfo->path);

@@ -41,34 +41,59 @@ static const std::string DUMP_STACK_TAG_FAILED = "failed:";
 static void PrintCommandHelp()
 {
     std::cout << DUMP_STACK_TAG_USAGE << std::endl;
-    std::cout << "(-T type) -p pid -t tid    dump the stacktrace of the thread with given tid." << std::endl;
-    std::cout << "(-T type) -p pid    dump the stacktrace of all the threads with given pid." << std::endl;
+    std::cout << "-p pid -t tid    dump the stacktrace of the thread with given tid." << std::endl;
+    std::cout << "-p pid    dump the stacktrace of all the threads with given pid." << std::endl;
+    std::cout << "[-c -m -k]    optional parameter, -c(cpp) -m(mix) -k(kernel)." << std::endl;
 }
 
 static bool ParseParamters(int argc, char *argv[], int &type, int32_t &pid, int32_t &tid)
 {
+    bool ret = false;
     if (argc <= 1) {
-        return false;
+        return ret;
     }
     DfxLogDebug("argc: %d, argv1: %s", argc, argv[1]);
 
     int optRet;
-    const char *optString = "-:T:p:t:";
+    const char *optString = "cmkp:t:";
     while ((optRet = getopt(argc, argv, optString)) != -1) {
         switch (optRet) {
-            case 'T':
-                type = atoi(optarg);
+            case 'c':
+                if ((type != OHOS::HiviewDFX::DUMP_TYPE_KERNEL) && (type != OHOS::HiviewDFX::DUMP_TYPE_MIX)) {
+                    type = OHOS::HiviewDFX::DUMP_TYPE_NATIVE;
+                }
+                break;
+            case 'm':
+                if (type != OHOS::HiviewDFX::DUMP_TYPE_KERNEL) {
+                    type = OHOS::HiviewDFX::DUMP_TYPE_MIX;
+                }
+                break;
+            case 'k':
+                type = OHOS::HiviewDFX::DUMP_TYPE_KERNEL;
                 break;
             case 'p':
-                pid = atoi(optarg);
+                ret = false;
+                if (optarg != nullptr) {
+                    if (atoi(optarg) > 0) {
+                        ret = true;
+                        pid = atoi(optarg);
+                    }
+                }
                 break;
             case 't':
-                tid = atoi(optarg);
+                if (optarg != nullptr) {
+                    tid = atoi(optarg);
+                } else {
+                    ret = false;
+                }
                 break;
             default:
-                PrintCommandHelp();
+                ret = false;
                 break;
         }
+    }
+    if (!ret) {
+        PrintCommandHelp();
     }
     return true;
 }

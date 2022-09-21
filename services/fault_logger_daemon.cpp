@@ -158,7 +158,7 @@ void FaultLoggerDaemon::HandleLogFileDesClientRequest(int32_t connectionFd, cons
 
 void FaultLoggerDaemon::HandlePipeFdClientRequest(int32_t connectionFd, const FaultLoggerdRequest * request)
 {
-    DfxLogDebug("%s :: pid(%d), pipeType(%d).\n", FAULTLOGGERD_TAG.c_str(), request->pid, request->pipeType);
+    DfxLogInfo("%s :: pid(%d), pipeType(%d).\n", FAULTLOGGERD_TAG.c_str(), request->pid, request->pipeType);
     int fd = -1;
     
     FaultLoggerPipe2* faultLoggerPipe = faultLoggerPipeMap_->Get(request->pid);
@@ -200,7 +200,7 @@ void FaultLoggerDaemon::HandlePrintTHilogClientRequest(int32_t const connectionF
 {
     char buf[LOG_BUF_LEN] = {0};
 
-    if (write(connectionFd, DAEMON_RESP.c_str(), DAEMON_RESP.length()) != (ssize_t)DAEMON_RESP.length()) {
+    if (write(connectionFd, DAEMON_RESP.c_str(), DAEMON_RESP.length()) != static_cast<ssize_t>(DAEMON_RESP.length())) {
         DfxLogError("%s :: Failed to write DAEMON_RESP.", FAULTLOGGERD_TAG.c_str());
     }
 
@@ -226,7 +226,8 @@ FaultLoggerCheckPermissionResp FaultLoggerDaemon::SecurityCheck(int32_t connecti
             break;
         }
         
-        if (write(connectionFd, DAEMON_RESP.c_str(), DAEMON_RESP.length()) != (ssize_t)DAEMON_RESP.length()) {
+        if (write(connectionFd, DAEMON_RESP.c_str(), DAEMON_RESP.length()) !=
+            static_cast<ssize_t>(DAEMON_RESP.length())) {
             DfxLogError("%s :: Failed to write DAEMON_RESP.", FAULTLOGGERD_TAG.c_str());
         }
 
@@ -236,8 +237,8 @@ FaultLoggerCheckPermissionResp FaultLoggerDaemon::SecurityCheck(int32_t connecti
         }
 
         request->uid = rcred.uid;
-        request->callerPid = (int32_t)rcred.pid;
-        bool res = faultLoggerSecure_->CheckCallerUID((int)request->uid, request->pid);
+        request->callerPid = static_cast<int32_t>(rcred.pid);
+        bool res = faultLoggerSecure_->CheckCallerUID(static_cast<int>(request->uid), request->pid);
         if (res) {
             resCheckPermission = FaultLoggerCheckPermissionResp::CHECK_PERMISSION_PASS;
         }
@@ -415,7 +416,7 @@ int32_t FaultLoggerDaemon::CreateFileForRequest(int32_t type, int32_t pid, uint6
     }
 
     if (time == 0) {
-        time = (uint64_t)duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();
+        time = static_cast<uint64_t>(duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count());
     }
 
     std::stringstream crashTime;
