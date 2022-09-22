@@ -71,7 +71,7 @@
       ],
       "test": [
         "//base/hiviewdfx/faultloggerd/example:dumpcatcherdemo",
-        "//base/hiviewdfx/faultloggerd/interfaces/innerkits/dump_catcher/test:harmonystrace",
+        "//base/hiviewdfx/faultloggerd/interfaces/innerkits/dump_catcher/test:dumpcatcher_unittest",
         "//base/hiviewdfx/faultloggerd/test:faultloggerd_fuzzertest",
         "//base/hiviewdfx/faultloggerd/test:faultloggerd_moduletest",
         "//base/hiviewdfx/faultloggerd/test:faultloggerd_systemtest",
