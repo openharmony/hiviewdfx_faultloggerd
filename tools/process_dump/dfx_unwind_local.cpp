@@ -80,6 +80,9 @@ DfxUnwindLocal::DfxUnwindLocal()
     as_ = nullptr;
     curIndex_ = 0;
     insideSignalHandler_ = false;
+    sigemptyset(&mask_);
+    (void)memset_s(&oldSigaction_, sizeof(oldSigaction_), 0, sizeof(oldSigaction_));
+    (void)memset_s(&context_, sizeof(context_), 0, sizeof(context_));
 }
 
 bool DfxUnwindLocal::Init()
