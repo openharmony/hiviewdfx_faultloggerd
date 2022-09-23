@@ -3431,9 +3431,9 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest048, TestSize.Level2)
     string procDumpLog = FaultLoggerdSystemTest::ProcessDumpCommands(procCMD);
     GTEST_LOG_(INFO) << "procDumpLog: " << procDumpLog;
     int count = 0;
-    string log[] = {"usage:", "dump the stacktrace"};
+    string log[] = {"Failed"};
     string::size_type idx;
-    for (int i = 0; i < 2; i++) {
+    for (int i = 0; i < 1; i++) {
         idx = procDumpLog.find(log[i]);
         if (idx != string::npos) {
             GTEST_LOG_(INFO) << count;
@@ -3441,7 +3441,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest048, TestSize.Level2)
             count++;
         }
     }
-    EXPECT_EQ(count, 2) << "FaultLoggerdSystemTest048 Failed";
+    EXPECT_EQ(count, 1) << "FaultLoggerdSystemTest048 Failed";
     FaultLoggerdSystemTest::KillCrasherLoopForSomeCase(3);
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest048: end.";
 }
@@ -3459,7 +3459,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest049, TestSize.Level2)
     string procDumpLog = FaultLoggerdSystemTest::ProcessDumpCommands(procCMD);
     GTEST_LOG_(INFO) << "procDumpLog: " << procDumpLog;
     int count = 0;
-    string log[] = {"usage:", "dump the stacktrace"};
+    string log[] = {"Usage:", "dump the stacktrace"};
     string::size_type idx;
     for (int i = 0; i < 2; i++) {
         idx = procDumpLog.find(log[i]);

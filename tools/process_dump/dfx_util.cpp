@@ -26,11 +26,68 @@
 #include <fstream>
 #include <iostream>
 #include <securec.h>
+#include <unistd.h>
 #include "dfx_define.h"
 #include "dfx_logger.h"
 
 namespace OHOS {
 namespace HiviewDFX {
+int GetProcStatus(struct ProcInfo& procInfo)
+{
+    procInfo.pid = getpid();
+    procInfo.tid = gettid();
+    procInfo.ppid = getppid();
+    procInfo.ns = false;
+
+    char buf[STATUS_LINE_SIZE];
+    FILE *fp = fopen(PROC_SELF_STATUS_PATH, "r");
+    if (fp == nullptr) {
+        return -1;
+    }
+
+    int p = 0, pp = 0, t = 0;
+    while (!feof(fp)) {
+        if (fgets(buf, STATUS_LINE_SIZE, fp) == nullptr) {
+            fclose(fp);
+            return -1;
+        }
+
+        if (strncmp(buf, PID_STR_NAME, strlen(PID_STR_NAME)) == 0) {
+            // Pid:    1892
+            if (sscanf_s(buf, "%*[^0-9]%d", &p) != 1) {
+                DfxLogError("sscanf_s failed.");
+            }
+            procInfo.pid = p;
+            if (procInfo.pid == getpid()) {
+                procInfo.ns = false;
+                break;
+            }
+            procInfo.ns = true;
+            continue;
+        }
+
+        if (strncmp(buf, PPID_STR_NAME, strlen(PPID_STR_NAME)) == 0) {
+            // PPid:   240
+            if (sscanf_s(buf, "%*[^0-9]%d", &pp) != 1) {
+                DfxLogError("sscanf_s failed.");
+            }
+            procInfo.ppid = pp;
+            continue;
+        }
+
+        // NSpid:  1892    1
+        if (strncmp(buf, NSPID_STR_NAME, strlen(NSPID_STR_NAME)) == 0) {
+            if (sscanf_s(buf, "%*[^0-9]%d%*[^0-9]%d", &p, &t) != 2) {
+                DfxLogError("sscanf_s failed.");
+            }
+            procInfo.tid = t;
+            break;
+        }
+    }
+    (void)fclose(fp);
+    return 0;
+}
+
 bool ReadStringFromFile(const std::string &path, std::string &buf, size_t len)
 {
     if (len <= 1) {

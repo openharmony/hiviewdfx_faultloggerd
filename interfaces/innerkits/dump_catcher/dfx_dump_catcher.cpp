@@ -41,6 +41,7 @@
 #include "iosfwd"
 #include "securec.h"
 #include "strings.h"
+#include "file_ex.h"
 
 static const int NUMBER_TEN = 10;
 static const int MAX_TEMP_FILE_LENGTH = 256;
@@ -254,21 +255,24 @@ static bool SignalTargetProcess(const int type, int pid, int tid)
     return true;
 }
 
-static bool IsPidUninterruptible(int pid)
+static void LoadPidStat(const int pid, std::string& msg)
 {
-    char path[NAME_LEN] = {0};
-    if (snprintf_s(path, sizeof(path), sizeof(path) - 1, "/proc/%d/wchan", pid) <= 0) {
-        return false;
+    std::string statPath = "/proc/" + std::to_string(pid) + "/stat";
+    std::string wchanPath = "/proc/" + std::to_string(pid) + "/wchan";
+    std::string statContent;
+    std::string wchanContent;
+    LoadStringFromFile(statPath, statContent);
+    LoadStringFromFile(wchanPath, wchanContent);
+
+    if (!statContent.empty()) {
+        std::string str = "stat\n:" + statContent + "\n";
+        msg.append(str);
     }
 
-    std::string buf;
-    if (!ReadStringFromFile(path, buf, NAME_LEN)) {
-        return false;
+    if (!wchanContent.empty()) {
+        std::string str = "wchan\n:" + wchanContent + "\n";
+        msg.append(str);
     }
-    if (buf.find(UNINTERRUPTIBLE) != std::string::npos) {
-        return true;
-    }
-    return false;
 }
 
 bool DfxDumpCatcher::DoDumpCatchRemote(const int type, int pid, int tid, std::string& msg)
@@ -333,11 +337,8 @@ bool DfxDumpCatcher::DoDumpRemotePid(int pid, std::string& msg)
             DfxLogError("%s :: %s :: %s", DFXDUMPCATCHER_TAG.c_str(), __func__, resMsg.c_str());
             break;
         } else if (pollRet == 0) {
-            if (IsPidUninterruptible(pid)) {
-                resMsg.append("Result: pid(" + std::to_string(pid) + ") uninterruptible.\n");
-            } else {
-                resMsg.append("Result: poll timeout.\n");
-            }
+            resMsg.append("Result: pid(" + std::to_string(pid) + ") poll timeout.\n");
+            LoadPidStat(pid, resMsg);
             DfxLogError("%s :: %s :: %s", DFXDUMPCATCHER_TAG.c_str(), __func__, resMsg.c_str());
             break;
         }

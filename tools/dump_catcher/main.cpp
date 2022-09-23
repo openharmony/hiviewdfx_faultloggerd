@@ -35,8 +35,8 @@
 #include "dfx_cutil.h"
 #endif
 
-static const std::string DUMP_STACK_TAG_USAGE = "usage:";
-static const std::string DUMP_STACK_TAG_FAILED = "failed:";
+static const std::string DUMP_STACK_TAG_USAGE = "Usage:";
+static const std::string DUMP_STACK_TAG_FAILED = "Failed:";
 
 static void PrintCommandHelp()
 {
@@ -46,9 +46,15 @@ static void PrintCommandHelp()
     std::cout << "[-c -m -k]    optional parameter, -c(cpp) -m(mix) -k(kernel)." << std::endl;
 }
 
-static bool ParseParamters(int argc, char *argv[], int &type, int32_t &pid, int32_t &tid)
+static void PrintCommandFailed()
 {
-    bool ret = false;
+    std::cout << DUMP_STACK_TAG_FAILED << std::endl;
+    std::cout << "pid and tid must > 0." << std::endl;
+}
+
+static int ParseParamters(int argc, char *argv[], int &type, int32_t &pid, int32_t &tid)
+{
+    int ret = 0;
     if (argc <= 1) {
         return ret;
     }
@@ -72,30 +78,37 @@ static bool ParseParamters(int argc, char *argv[], int &type, int32_t &pid, int3
                 type = OHOS::HiviewDFX::DUMP_TYPE_KERNEL;
                 break;
             case 'p':
-                ret = false;
+                ret = 0;
                 if (optarg != nullptr) {
                     if (atoi(optarg) > 0) {
-                        ret = true;
+                        ret = 1;
                         pid = atoi(optarg);
+                    } else {
+                        ret = -1;
+                        PrintCommandFailed();
                     }
                 }
                 break;
             case 't':
                 if (optarg != nullptr) {
-                    tid = atoi(optarg);
-                } else {
-                    ret = false;
+                    if (atoi(optarg) > 0) {
+                        tid = atoi(optarg);
+                    } else {
+                        ret = -1;
+                        PrintCommandFailed();
+                    }
                 }
                 break;
             default:
-                ret = false;
+                ret = 0;
                 break;
         }
     }
-    if (!ret) {
+
+    if (ret == 0) {
         PrintCommandHelp();
     }
-    return true;
+    return ret;
 }
 
 int main(int argc, char *argv[])
@@ -111,8 +124,7 @@ int main(int argc, char *argv[])
     alarm(PROCESSDUMP_TIMEOUT); // wait 30s for process dump done
     setsid();
 
-    if (!ParseParamters(argc, argv, type, pid, tid)) {
-        PrintCommandHelp();
+    if (ParseParamters(argc, argv, type, pid, tid) <= 0) {
         return 0;
     }
 

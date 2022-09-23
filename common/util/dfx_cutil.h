@@ -18,6 +18,7 @@
 #include <stddef.h>
 #include <stdint.h>
 #include "stdbool.h"
+#include "dfx_define.h"
 
 #define AT_SYMBOL_VISIBLE       __attribute__ ((visibility("default")))
 #define AT_SYMBOL_HIDDEN        __attribute__ ((visibility("hidden")))
@@ -25,6 +26,8 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+AT_SYMBOL_HIDDEN int GetProcStatus(struct ProcInfo* procInfo);
 
 AT_SYMBOL_HIDDEN bool ReadStringFromFile(const char* path, char* dst, size_t dstSz);
 

@@ -16,6 +16,7 @@
 #define DFX_DEFINE_H
 
 #include <endian.h>
+#include <stdbool.h>
 
 #define SIGDUMP 35
 #define SIGLOCAL_DUMP 36
@@ -28,6 +29,7 @@
 static const int SOCKET_BUFFER_SIZE = 256;
 static const char FAULTLOGGERD_SOCK_PATH[] = "/dev/unix/socket/faultloggerd.server";
 static const char SERVER_SOCKET_NAME[] = "faultloggerd.server";
+static const char PROC_SELF_STATUS_PATH[] = "/proc/self/status";
 
 #if defined(__arm__)
 static const int USER_REG_NUM = 16;
@@ -47,6 +49,11 @@ static const int REG_PC_NUM = 16;
 static const int ARM_EXEC_STEP_NORMAL = 4;
 static const int ARM_EXEC_STEP_THUMB = 3;
 
+static const char PID_STR_NAME[] = "Pid:";
+static const char PPID_STR_NAME[] = "PPid:";
+static const char NSPID_STR_NAME[] = "NSpid:";
+
+static const int STATUS_LINE_SIZE = 1024;
 static const int CONF_LINE_SIZE = 1024;
 static const int SYMBOL_BUF_SIZE = 1024;
 
@@ -106,5 +113,12 @@ typedef struct TraceInfo {
 #error "ERROR: No BIG_LITTLE_ENDIAN defines."
 #endif
 } TraceInfo;
+
+typedef struct ProcInfo {
+    int32_t tid;
+    int32_t pid;
+    int32_t ppid;
+    bool ns;
+} ProcInfo;
 
 #endif // DFX_DEFINE_H
