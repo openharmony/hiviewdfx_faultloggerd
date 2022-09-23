@@ -61,6 +61,7 @@ static bool IsThreadInCurPid(int32_t tid)
 
 DfxDumpCatcher::DfxDumpCatcher()
 {
+    frameCatcherPid_ = 0;
 }
 
 DfxDumpCatcher::DfxDumpCatcher(int32_t pid) : frameCatcherPid_(pid)
