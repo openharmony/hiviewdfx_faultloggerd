@@ -42,12 +42,15 @@ public:
     bool GetIsSignalDump() const;
     pid_t GetPid() const;
     uid_t GetUid() const;
+    bool GetNs() const;
+    int TidToNstid(const int tid, int& nstid);
     std::string GetProcessName() const;
     std::shared_ptr<DfxElfMaps> GetMaps() const;
     std::vector<std::shared_ptr<DfxThread>> GetThreads() const;
 
     void SetPid(pid_t pid);
     void SetUid(uid_t uid);
+    void SetNs(bool ns);
     void SetProcessName(const std::string &processName);
     void SetMaps(std::shared_ptr<DfxElfMaps> maps);
     void SetThreads(const std::vector<std::shared_ptr<DfxThread>> &threads);
@@ -56,6 +59,7 @@ public:
 private:
     pid_t pid_ = 0;
     uid_t uid_ = 0;
+    bool ns_ = false;
     bool isSignalDump_ = false;
     std::string processName_;
     std::shared_ptr<DfxElfMaps> maps_;

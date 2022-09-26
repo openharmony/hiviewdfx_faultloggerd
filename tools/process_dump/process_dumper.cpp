@@ -149,14 +149,21 @@ int ProcessDumper::DumpProcessWithSignalContext(std::shared_ptr<DfxProcess> &pro
             break;
         }
 
+        ProcInfo procInfo;
+        if (memset_s(&procInfo, sizeof(procInfo), 0, sizeof(struct ProcInfo)) != 0) {
+            DfxLogError("memset_s error.");
+        }
+        GetProcStatus(procInfo);
+        DfxLogDebug("GetProcStatus :: ns(%d), ppid(%d), pid(%d).", procInfo.ns, procInfo.ppid, request->GetPid());
+
         std::string storeThreadName = request->GetThreadNameString();
         std::string storeProcessName = request->GetProcessNameString();
 
         // We need check pid is same with getppid().
         // As in signal handler, current process is a child process, and target pid is our parent process.
-        if (getppid() != request->GetPid()) {
+        if (procInfo.ppid != request->GetPid()) {
             DfxLogError("Target process(%s:%d) is not parent pid(%d), exit processdump for signal(%d).",
-                storeProcessName.c_str(), request->GetPid(), getppid(), request->GetSiginfo().si_signo);
+                storeProcessName.c_str(), request->GetPid(), procInfo.ppid, request->GetSiginfo().si_signo);
             dumpRes = ProcessDumpRes::DUMP_EGETPPID;
             break;
         }
@@ -197,6 +204,7 @@ int ProcessDumper::DumpProcessWithSignalContext(std::shared_ptr<DfxProcess> &pro
         } else {
             process->SetIsSignalDump(true);
         }
+        process->SetNs(procInfo.ns);
 
         if (tid == 0) {
             process->InitOtherThreads(isCrash);
@@ -215,10 +223,10 @@ int ProcessDumper::DumpProcessWithSignalContext(std::shared_ptr<DfxProcess> &pro
             break;
         }
 
-        if (getppid() != request->GetPid()) {
+        if (procInfo.ppid != request->GetPid()) {
             DfxRingBufferWrapper::GetInstance().AppendBuf("after unwind, check again: \
                 Target process(%s:%d) is not parent pid(%d)\n.", \
-                storeProcessName.c_str(), request->GetPid(), getppid());
+                storeProcessName.c_str(), request->GetPid(), procInfo.ppid);
             dumpRes = ProcessDumpRes::DUMP_EGETPPID;
             break;
         }

@@ -121,7 +121,12 @@ bool DfxProcess::InitOtherThreads(bool attach)
             continue;
         }
 
-        InsertThreadNode(tid, attach);
+        pid_t nstid = tid;
+        if (GetNs()) {
+            TidToNstid(tid, nstid);
+        }
+
+        InsertThreadNode(nstid, attach);
     }
     closedir(dir);
     return true;
@@ -142,6 +147,39 @@ void DfxProcess::InsertThreadNode(pid_t tid, bool attach)
     threads_.push_back(thread);
 }
 
+int DfxProcess::TidToNstid(const int tid, int& nstid)
+{
+    char path[NAME_LEN];
+    (void)memset_s(path, sizeof(path), '\0', sizeof(path));
+    if (snprintf_s(path, sizeof(path), sizeof(path) - 1, "/proc/%d/task/%d/status", GetPid(), tid) <= 0) {
+        DfxLogWarn("snprintf_s error.");
+        return -1;
+    }
+
+    char buf[STATUS_LINE_SIZE];
+    FILE *fp = fopen(path, "r");
+    if (fp == NULL) {
+        return -1;
+    }
+
+    int p = 0, t = 0;
+    while (!feof(fp)) {
+        if (fgets(buf, STATUS_LINE_SIZE, fp) == NULL) {
+            fclose(fp);
+            return -1;
+        }
+
+        // NSpid:  1892    1
+        if (strncmp(buf, NSPID_STR_NAME, strlen(NSPID_STR_NAME)) == 0) {
+            (void)sscanf(buf, "%*[^0-9]%d%*[^0-9]%d", &p, &t);
+            nstid = t;
+            break;
+        }
+    }
+    (void)fclose(fp);
+    return 0;
+}
+
 void DfxProcess::SetIsSignalDump(bool isSignalDump)
 {
     isSignalDump_ = isSignalDump;
@@ -160,6 +198,11 @@ pid_t DfxProcess::GetPid() const
 uid_t DfxProcess::GetUid() const
 {
     return uid_;
+}
+
+bool DfxProcess::GetNs() const
+{
+    return ns_;
 }
 
 std::string DfxProcess::GetProcessName() const
@@ -185,6 +228,11 @@ void DfxProcess::SetPid(pid_t pid)
 void DfxProcess::SetUid(uid_t uid)
 {
     uid_ = uid;
+}
+
+void DfxProcess::SetNs(bool ns)
+{
+    ns_ = ns;
 }
 
 void DfxProcess::SetProcessName(const std::string &processName)
