@@ -115,9 +115,9 @@ typedef struct TraceInfo {
 } TraceInfo;
 
 typedef struct ProcInfo {
-    int32_t tid;
-    int32_t pid;
-    int32_t ppid;
+    int tid;
+    int pid;
+    int ppid;
     bool ns;
 } ProcInfo;
 
