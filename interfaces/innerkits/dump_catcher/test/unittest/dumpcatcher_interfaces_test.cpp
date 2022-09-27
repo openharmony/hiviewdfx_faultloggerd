@@ -98,6 +98,14 @@ static int GetServicePid(const std::string& serviceName)
     return pid;
 }
 
+static int LaunchTestHap(const std::string& abilityName, const std::string& bundleName)
+{
+    std::string launchCmd = "/system/bin/aa start -a " + abilityName + " -b " + bundleName;
+    (void)GetCmdResultFromPopen(launchCmd);
+    sleep(2); // 2 : sleep 2s
+    return GetServicePid(bundleName);
+}
+
 /**
  * @tc.name: DumpCatcherInterfacesTest001
  * @tc.desc: test DumpCatchMultiPid API: multiPid{PID(app), PID(telephony)}
@@ -392,15 +400,16 @@ HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest009, TestSize.Level
 HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest010, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest010: start.";
-    std::string testProcess = "com.ohos.systemui";
-    int testPid = GetServicePid(testProcess);
-    DfxDumpCatcher dumplog(testPid);
+    std::string calcBundleName = "ohos.samples.distributedcalc";
+    std::string calcAbiltyName = calcBundleName + ".MainAbility";
+    int calcPid = LaunchTestHap(calcAbiltyName, calcBundleName);
+    DfxDumpCatcher dumplog(calcPid);
     std::vector<std::shared_ptr<DfxFrame>> frameV;
     bool ret = dumplog.InitFrameCatcher();
     EXPECT_EQ(ret, true);
-    ret = dumplog.RequestCatchFrame(testPid);
+    ret = dumplog.RequestCatchFrame(calcPid);
     EXPECT_EQ(ret, false);
-    ret = dumplog.CatchFrame(testPid, frameV);
+    ret = dumplog.CatchFrame(calcPid, frameV);
     EXPECT_EQ(ret, false);
     dumplog.DestroyFrameCatcher();
     EXPECT_EQ(frameV.size(), 0) << "DumpCatcherInterfacesTest010 Failed";
@@ -464,16 +473,17 @@ HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest013, TestSize.Level
 HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest014, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest014: start.";
-    std::string systemui = "com.ohos.systemui";
-    int systemuiPid = GetServicePid(systemui);
+    std::string calcBundleName = "ohos.samples.distributedcalc";
+    std::string calcAbiltyName = calcBundleName + ".MainAbility";
+    int calcPid = LaunchTestHap(calcAbiltyName, calcBundleName);
     DfxDumpCatcher dumplog;
     std::string msg = "";
-    bool ret = dumplog.DumpCatchMix(systemuiPid, 0, msg);
+    bool ret = dumplog.DumpCatchMix(calcPid, 0, msg);
     GTEST_LOG_(INFO) << ret;
     GTEST_LOG_(INFO) << msg;
-    string log[] = { "Tid:", "comm:com.ohos.system", "#00", "/system/bin/appspawn",
+    string log[] = { "Tid:", "comm:ohos.samples.di", "#00", "/system/bin/appspawn",
         "comm:dfx_watchdog", "comm:GC_WorkerThread", "comm:ace.bg.1"};
-    log[0] += std::to_string(systemuiPid);
+    log[0] += std::to_string(calcPid);
     string::size_type idx;
     int j = 0;
     int count = 0;
@@ -500,15 +510,16 @@ HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest014, TestSize.Level
 HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest015, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest015: start.";
-    std::string systemui = "com.ohos.systemui";
-    int systemuiPid = GetServicePid(systemui);
+    std::string calcBundleName = "ohos.samples.distributedcalc";
+    std::string calcAbiltyName = calcBundleName + ".MainAbility";
+    int calcPid = LaunchTestHap(calcAbiltyName, calcBundleName);
     DfxDumpCatcher dumplog;
     std::string msg = "";
-    bool ret = dumplog.DumpCatchMix(systemuiPid, systemuiPid, msg);
+    bool ret = dumplog.DumpCatchMix(calcPid, calcPid, msg);
     GTEST_LOG_(INFO) << ret;
     GTEST_LOG_(INFO) << msg;
-    string log[] = { "Tid:", "comm:com.ohos.system", "#00", "/system/bin/appspawn"};
-    log[0] += std::to_string(systemuiPid);
+    string log[] = { "Tid:", "comm:ohos.samples.di", "#00", "/system/bin/appspawn"};
+    log[0] += std::to_string(calcPid);
     int expectNum = sizeof(log) / sizeof(log[0]);
     string::size_type idx;
     int j = 0;
@@ -534,11 +545,12 @@ HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest015, TestSize.Level
 HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest016, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest016: start.";
-    std::string systemui = "com.ohos.systemui";
-    int systemuiPid = GetServicePid(systemui);
+    std::string calcBundleName = "ohos.samples.distributedcalc";
+    std::string calcAbiltyName = calcBundleName + ".MainAbility";
+    int calcPid = LaunchTestHap(calcAbiltyName, calcBundleName);
     DfxDumpCatcher dumplog;
     std::string msg = "";
-    bool ret = dumplog.DumpCatchMix(systemuiPid, -1, msg);
+    bool ret = dumplog.DumpCatchMix(calcPid, -1, msg);
     GTEST_LOG_(INFO) << ret;
     GTEST_LOG_(INFO) << msg;
     EXPECT_EQ(ret, false) << "DumpCatcherInterfacesTest016 Failed";
