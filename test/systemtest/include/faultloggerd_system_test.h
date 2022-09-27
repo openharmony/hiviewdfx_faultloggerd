@@ -86,6 +86,7 @@ public:
     static int getApplyPid(std::string applyName);
     static std::string GetCmdResultFromPopen(const std::string& cmd);
     static int GetServicePid(const std::string& serviceName);
+    static int LaunchTestHap(const std::string& abilityName, const std::string& bundleName);
     static void dumpCatchThread(int threadID);
     static void GetTestFaultLoggerdTid(int testPid);
 
