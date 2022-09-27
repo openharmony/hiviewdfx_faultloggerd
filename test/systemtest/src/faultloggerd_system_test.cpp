@@ -773,6 +773,14 @@ int FaultLoggerdSystemTest::GetServicePid(const std::string& serviceName)
     return pid;
 }
 
+int FaultLoggerdSystemTest::LaunchTestHap(const std::string& abilityName, const std::string& bundleName)
+{
+    std::string launchCmd = "/system/bin/aa start -a " + abilityName + " -b " + bundleName;
+    (void)GetCmdResultFromPopen(launchCmd);
+    sleep(2); // 2 : sleep 2s
+    return GetServicePid(bundleName);
+}
+
 void FaultLoggerdSystemTest::dumpCatchThread(int threadID)
 {
     std::string telephony = "telephony";
@@ -1234,17 +1242,17 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0026, TestSize.Level2)
 HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0027, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest0027: start.";
-    std::string systemui = "com.ohos.systemui";
-    int systemuiPid = FaultLoggerdSystemTest::GetServicePid(systemui);
+    std::string calcBundleName = "ohos.samples.distributedcalc";
+    std::string calcAbiltyName = calcBundleName + ".MainAbility";
+    int calcPid = LaunchTestHap(calcAbiltyName, calcBundleName);
     DfxDumpCatcher dumplog;
     std::string msg = "";
-    bool ret = dumplog.DumpCatchMix(systemuiPid, 0, msg);
-    sleep(10);
+    bool ret = dumplog.DumpCatchMix(calcPid, 0, msg);
     GTEST_LOG_(INFO) << ret;
     GTEST_LOG_(INFO) << msg;
-    string log[] = { "Tid:", "comm:com.ohos.system", "#00", "/system/bin/appspawn",
+    string log[] = { "Tid:", "comm:ohos.samples.di", "#00", "/system/bin/appspawn",
         "comm:dfx_watchdog", "comm:GC_WorkerThread", "comm:ace.bg.1"};
-    log[0] += std::to_string(systemuiPid);
+    log[0] += std::to_string(calcPid);
     string::size_type idx;
     int j = 0;
     int count = 0;
@@ -1271,16 +1279,16 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0027, TestSize.Level2)
 HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0028, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest0028: start.";
-    std::string systemui = "com.ohos.systemui";
-    int systemuiPid = FaultLoggerdSystemTest::GetServicePid(systemui);
+    std::string calcBundleName = "ohos.samples.distributedcalc";
+    std::string calcAbiltyName = calcBundleName + ".MainAbility";
+    int calcPid = LaunchTestHap(calcAbiltyName, calcBundleName);
     DfxDumpCatcher dumplog;
     std::string msg = "";
-    bool ret = dumplog.DumpCatchMix(systemuiPid, systemuiPid, msg);
-    sleep(5);
+    bool ret = dumplog.DumpCatchMix(calcPid, calcPid, msg);
     GTEST_LOG_(INFO) << ret;
     GTEST_LOG_(INFO) << msg;
-    string log[] = { "Tid:", "comm:com.ohos.system", "#00", "/system/bin/appspawn"};
-    log[0] += std::to_string(systemuiPid);
+    string log[] = { "Tid:", "comm:ohos.samples.di", "#00", "/system/bin/appspawn"};
+    log[0] += std::to_string(calcPid);
     string::size_type idx;
     int j = 0;
     int count = 0;
@@ -1299,18 +1307,19 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0028, TestSize.Level2)
 
 /**
  * @tc.name: FaultLoggerdSystemTest0029
- * @tc.desc: test DumpCatchMix API: PID(systemui pid), TID(-1)
+ * @tc.desc: test DumpCatchMix API: PID(hap pid), TID(-1)
  * @tc.type: FUNC
  * @tc.require: issueI5PJ9O
  */
 HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0029, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest0029: start.";
-    std::string systemui = "com.ohos.systemui";
-    int systemuiPid = FaultLoggerdSystemTest::GetServicePid(systemui);
+    std::string calcBundleName = "ohos.samples.distributedcalc";
+    std::string calcAbiltyName = calcBundleName + ".MainAbility";
+    int calcPid = LaunchTestHap(calcAbiltyName, calcBundleName);
     DfxDumpCatcher dumplog;
     std::string msg = "";
-    bool ret = dumplog.DumpCatchMix(systemuiPid, -1, msg);
+    bool ret = dumplog.DumpCatchMix(calcPid, -1, msg);
     sleep(2);
     GTEST_LOG_(INFO) << ret;
     GTEST_LOG_(INFO) << msg;
@@ -1346,15 +1355,16 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0030, TestSize.Level2)
 HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0031, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest0031: start.";
-    std::string systemui = "com.ohos.systemui";
-    int systemuiPid = FaultLoggerdSystemTest::GetServicePid(systemui);
-    std::string procCMD = "dumpcatcher -m -p " + std::to_string(systemuiPid);
+    std::string calcBundleName = "ohos.samples.distributedcalc";
+    std::string calcAbiltyName = calcBundleName + ".MainAbility";
+    int calcPid = LaunchTestHap(calcAbiltyName, calcBundleName);
+    std::string procCMD = "dumpcatcher -m -p " + std::to_string(calcPid);
     string procDumpLog = FaultLoggerdSystemTest::ProcessDumpCommands(procCMD);
     GTEST_LOG_(INFO) << "procDumpLog: " << procDumpLog;
     int count = 0;
-    string log[] = { "Tid:", "comm:com.ohos.system", "#00", "/system/bin/appspawn",
+    string log[] = { "Tid:", "comm:ohos.samples.di", "#00", "/system/bin/appspawn",
         "comm:dfx_watchdog", "comm:GC_WorkerThread", "comm:ace.bg.1"};
-    log[0] += std::to_string(systemuiPid);
+    log[0] += std::to_string(calcPid);
     string::size_type idx;
     int expectNum = sizeof(log) / sizeof(log[0]);
     for (int i = 0; i < expectNum; i++) {
@@ -1377,16 +1387,18 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0031, TestSize.Level2)
 HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0032, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest0032: start.";
-    std::string systemui = "com.ohos.systemui";
-    int systemuiPid = FaultLoggerdSystemTest::GetServicePid(systemui);
-    std::string procCMD = "dumpcatcher -m -p " + std::to_string(systemuiPid) +
-        " -t " + std::to_string(systemuiPid);
+    std::string calcBundleName = "ohos.samples.distributedcalc";
+    std::string calcAbiltyName = calcBundleName + ".MainAbility";
+    int calcPid = LaunchTestHap(calcAbiltyName, calcBundleName);
+    std::string procCMD = "dumpcatcher -m -p " + std::to_string(calcPid) +
+        " -t " + std::to_string(calcPid);
     string procDumpLog = FaultLoggerdSystemTest::ProcessDumpCommands(procCMD);
     GTEST_LOG_(INFO) << "procDumpLog: " << procDumpLog;
     int count = 0;
-    string log[] = { "Tid:", "comm:com.ohos.system", "#00", "/system/bin/appspawn"};
-    log[0] += std::to_string(systemuiPid);
+    string log[] = { "Tid:", "comm:ohos.samples.di", "#00", "/system/bin/appspawn"};
+    log[0] += std::to_string(calcPid);
     string::size_type idx;
+    int expectNum = sizeof(log) / sizeof(log[0]);
     for (int i = 0; i < 4; i++) {
         idx = procDumpLog.find(log[i]);
         if (idx != string::npos) {
@@ -1394,7 +1406,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0032, TestSize.Level2)
             count++;
         }
     }
-    EXPECT_EQ(count, 4) << "FaultLoggerdSystemTest0032 Failed";
+    EXPECT_EQ(count, expectNum) << "FaultLoggerdSystemTest0032 Failed";
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest0032: end.";
 }
 
