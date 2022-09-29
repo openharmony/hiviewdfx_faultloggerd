@@ -171,7 +171,9 @@ int DfxProcess::TidToNstid(const int tid, int& nstid)
 
         // NSpid:  1892    1
         if (strncmp(buf, NSPID_STR_NAME, strlen(NSPID_STR_NAME)) == 0) {
-            (void)sscanf(buf, "%*[^0-9]%d%*[^0-9]%d", &p, &t);
+            if (sscanf_s(buf, "%*[^0-9]%d%*[^0-9]%d", &p, &t) != 2) {
+                DfxLogError("sscanf_s failed.");
+            }
             nstid = t;
             break;
         }
