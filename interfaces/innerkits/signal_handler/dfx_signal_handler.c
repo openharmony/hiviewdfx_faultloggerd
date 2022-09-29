@@ -311,17 +311,17 @@ static void ResetSignalHandlerIfNeed(int sig)
     }
 }
 
-static pid_t GetPid()
+static pid_t GetPid(void)
 {
     return g_procInfo.pid;
 }
 
-static pid_t GetTid()
+static pid_t GetTid(void)
 {
     return g_procInfo.tid;
 }
 
-static bool IsMainThread()
+static bool IsMainThread(void)
 {
     if (g_procInfo.ns) {
         if (GetTid() == 1) {
