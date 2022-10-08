@@ -761,7 +761,7 @@ HWTEST_F (ProcessDumpTest, ProcessDumpTest039, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "ProcessDumpTest039: start.";
     std::shared_ptr<DfxProcess> process = std::make_shared<DfxProcess>();
-    pid_t pid = GetProcessPid("telephony");
+    pid_t pid = GetProcessPid("accountmgr");
     pid_t tid = pid;
     std::shared_ptr<DfxThread> thread = std::make_shared<DfxThread>(pid, tid);
     const std::vector<std::shared_ptr<DfxThread>> threads = { thread };
@@ -782,7 +782,7 @@ HWTEST_F (ProcessDumpTest, ProcessDumpTest040, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "ProcessDumpTest040: start.";
     std::shared_ptr<DfxProcess> process = std::make_shared<DfxProcess>();
-    pid_t pid = GetProcessPid("telephony");
+    pid_t pid = GetProcessPid("accountmgr");
     pid_t tid = pid;
     std::shared_ptr<DfxThread> thread = std::make_shared<DfxThread>(pid, tid);
     thread->Attach();

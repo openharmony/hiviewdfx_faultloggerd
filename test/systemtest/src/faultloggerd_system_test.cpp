@@ -783,11 +783,11 @@ int FaultLoggerdSystemTest::LaunchTestHap(const std::string& abilityName, const 
 
 void FaultLoggerdSystemTest::dumpCatchThread(int threadID)
 {
-    std::string telephony = "telephony";
-    int telephonyPid = FaultLoggerdSystemTest::getApplyPid(telephony);
+    std::string accountmgr = "accountmgr";
+    int accountmgrPid = FaultLoggerdSystemTest::getApplyPid(accountmgr);
     DfxDumpCatcher dumplog;
     std::string msg = "";
-    bool ret = dumplog.DumpCatch(telephonyPid, 0, msg);
+    bool ret = dumplog.DumpCatch(accountmgrPid, 0, msg);
     GTEST_LOG_(INFO) << "ret:" << ret;
     if (ret == true) {
         FaultLoggerdSystemTest::count++;
@@ -849,7 +849,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0010, TestSize.Level2)
 
 /**
  * @tc.name: FaultLoggerdSystemTest0012
- * @tc.desc: test DumpCatchMultiPid API: multiPid{PID(app),PID(telephony)}
+ * @tc.desc: test DumpCatchMultiPid API: multiPid{PID(app),PID(accountmgr)}
  * @tc.type: FUNC
  */
 HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0012, TestSize.Level2)
@@ -858,7 +858,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0012, TestSize.Level2)
     FaultLoggerdSystemTest::StartCrasherLoop(3);
     int uidSetting = 0;
     setuid(uidSetting);
-    std::string apply = "telephony";
+    std::string apply = "accountmgr";
     int applyPid1 = FaultLoggerdSystemTest::getApplyPid(apply);
     GTEST_LOG_(INFO) << "applyPid1:" << applyPid1;
     int applyPid2 = FaultLoggerdSystemTest::loopAppPid;
@@ -937,7 +937,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0014, TestSize.Level2)
 
 /**
  * @tc.name: FaultLoggerdSystemTest0015
- * @tc.desc: test DumpCatchMultiPid API: multiPid{PID(telephony),0}
+ * @tc.desc: test DumpCatchMultiPid API: multiPid{PID(accountmgr),0}
  * @tc.type: FUNC
  */
 HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0015, TestSize.Level2)
@@ -946,7 +946,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0015, TestSize.Level2)
     FaultLoggerdSystemTest::StartCrasherLoop(3);
     int uidSetting = 0;
     setuid(uidSetting);
-    std::string apply = "telephony";
+    std::string apply = "accountmgr";
     int applyPid1 = FaultLoggerdSystemTest::getApplyPid(apply);
     GTEST_LOG_(INFO) << "applyPid1:" << applyPid1;
     int applyPid2 = 0;
@@ -980,7 +980,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0015, TestSize.Level2)
 
 /**
  * @tc.name: FaultLoggerdSystemTest0016
- * @tc.desc: test DumpCatchMultiPid API: multiPid{PID(telephony),PID(app),PID(foundation)}
+ * @tc.desc: test DumpCatchMultiPid API: multiPid{PID(accountmgr),PID(app),PID(foundation)}
  * @tc.type: FUNC
  */
 HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0016, TestSize.Level2)
@@ -989,7 +989,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0016, TestSize.Level2)
     FaultLoggerdSystemTest::StartCrasherLoop(3);
     int uidSetting = 0;
     setuid(uidSetting);
-    std::string apply1 = "telephony";
+    std::string apply1 = "accountmgr";
     int applyPid1 = FaultLoggerdSystemTest::getApplyPid(apply1);
     GTEST_LOG_(INFO) << "applyPid1:" << applyPid1;
     int applyPid2 = FaultLoggerdSystemTest::loopAppPid;
@@ -1029,13 +1029,13 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0016, TestSize.Level2)
 
 /**
  * @tc.name: FaultLoggerdSystemTest0017
- * @tc.desc: test DumpCatchMultiPid API: multiPid{PID(telephony),-11}
+ * @tc.desc: test DumpCatchMultiPid API: multiPid{PID(accountmgr),-11}
  * @tc.type: FUNC
  */
 HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0017, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest0017: start.";
-    std::string apply = "telephony";
+    std::string apply = "accountmgr";
     int applyPid1 = FaultLoggerdSystemTest::getApplyPid(apply);
     GTEST_LOG_(INFO) << "applyPid1:" << applyPid1;
     int applyPid2 = -11;
@@ -1092,13 +1092,13 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0018, TestSize.Level2)
 
 /**
  * @tc.name: FaultLoggerdSystemTest0019
- * @tc.desc: test DumpCatchMultiPid API: multiPid{PID(telephony),9999}
+ * @tc.desc: test DumpCatchMultiPid API: multiPid{PID(accountmgr),9999}
  * @tc.type: FUNC
  */
 HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0019, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest0019: start.";
-    std::string apply = "telephony";
+    std::string apply = "accountmgr";
     int applyPid1 = FaultLoggerdSystemTest::getApplyPid(apply);
     GTEST_LOG_(INFO) << "applyPid1:" << applyPid1;
     int applyPid2 = 9999;
