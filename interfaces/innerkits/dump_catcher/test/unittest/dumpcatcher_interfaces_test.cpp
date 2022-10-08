@@ -108,13 +108,13 @@ static int LaunchTestHap(const std::string& abilityName, const std::string& bund
 
 /**
  * @tc.name: DumpCatcherInterfacesTest001
- * @tc.desc: test DumpCatchMultiPid API: multiPid{PID(app), PID(telephony)}
+ * @tc.desc: test DumpCatchMultiPid API: multiPid{PID(app), PID(accountmgr)}
  * @tc.type: FUNC
  */
 HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest001, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest001: start.";
-    std::string testProcess1 = "telephony";
+    std::string testProcess1 = "accountmgr";
     int testPid1 = GetProcessPid(testProcess1);
     GTEST_LOG_(INFO) << "testPid1:" << testPid1;
     std::string testProcess2 = "foundation";
@@ -193,13 +193,13 @@ HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest003, TestSize.Level
 
 /**
  * @tc.name: DumpCatcherInterfacesTest004
- * @tc.desc: test DumpCatchMultiPid API: multiPid{PID(telephony), 0}
+ * @tc.desc: test DumpCatchMultiPid API: multiPid{PID(accountmgr), 0}
  * @tc.type: FUNC
  */
 HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest004, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest004: start.";
-    std::string testProcess = "telephony";
+    std::string testProcess = "accountmgr";
     int applyPid1 = GetProcessPid(testProcess);
     GTEST_LOG_(INFO) << "applyPid1:" << applyPid1;
     int applyPid2 = 0;
@@ -212,7 +212,7 @@ HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest004, TestSize.Level
     GTEST_LOG_(INFO) << msg;
     string log[] = { "Tid:", "Name:", "Failed" };
     log[0] = log[0] + std::to_string(applyPid1);
-    log[1] = log[1] + "telephony";
+    log[1] = log[1] + "accountmgr";
     string::size_type idx;
     int expectNum = sizeof(log) / sizeof(log[0]);
     int j = 0;
@@ -231,13 +231,13 @@ HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest004, TestSize.Level
 
 /**
  * @tc.name: DumpCatcherInterfacesTest005
- * @tc.desc: test DumpCatchMultiPid API: multiPid{PID(telephony),PID(app),PID(foundation)}
+ * @tc.desc: test DumpCatchMultiPid API: multiPid{PID(accountmgr),PID(app),PID(foundation)}
  * @tc.type: FUNC
  */
 HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest005, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest005: start.";
-    std::string testProcess1 = "telephony";
+    std::string testProcess1 = "accountmgr";
     int testPid1 = GetProcessPid(testProcess1);
     GTEST_LOG_(INFO) << "testPid1:" << testPid1;
     std::string testProcess2 = "foundation";
@@ -277,13 +277,13 @@ HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest005, TestSize.Level
 
 /**
  * @tc.name: DumpCatcherInterfacesTest006
- * @tc.desc: test DumpCatchMultiPid API: multiPid{PID(telephony), -11}
+ * @tc.desc: test DumpCatchMultiPid API: multiPid{PID(accountmgr), -11}
  * @tc.type: FUNC
  */
 HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest006, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest006: start.";
-    std::string testProcess = "telephony";
+    std::string testProcess = "accountmgr";
     int testPid1 = GetProcessPid(testProcess);
     GTEST_LOG_(INFO) << "applyPid1:" << testPid1;
     int testPid2 = -11;
@@ -296,7 +296,7 @@ HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest006, TestSize.Level
     GTEST_LOG_(INFO) << msg;
     string log[] = { "Tid:", "Name:", "Failed"};
     log[0] = log[0] + std::to_string(testPid1);
-    log[1] = log[1] + "telephony";
+    log[1] = log[1] + "accountmgr";
     string::size_type idx;
     int expectNum = sizeof(log) / sizeof(log[0]);
     int j = 0;
@@ -335,13 +335,13 @@ HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest007, TestSize.Level
 
 /**
  * @tc.name: DumpCatcherInterfacesTest008
- * @tc.desc: test DumpCatchMultiPid API: multiPid{PID(telephony), 9999}
+ * @tc.desc: test DumpCatchMultiPid API: multiPid{PID(accountmgr), 9999}
  * @tc.type: FUNC
  */
 HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest008, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest0019: start.";
-    std::string apply = "telephony";
+    std::string apply = "accountmgr";
     int applyPid1 = GetProcessPid(apply);
     GTEST_LOG_(INFO) << "applyPid1:" << applyPid1;
     int applyPid2 = 9999;

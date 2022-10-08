@@ -28,7 +28,7 @@ public:
     static void TearDownTestCase(void);
     void SetUp();
     void TearDown();
-    static pid_t GetTelephonyPid();
+    static pid_t GetAccountmgrPid();
 };
 } // namespace HiviewDFX
 } // namespace OHOS

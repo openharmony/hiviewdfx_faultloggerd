@@ -42,9 +42,9 @@ void ProcessDfxTest::TearDown(void)
 {
 }
 
-pid_t ProcessDfxTest::GetTelephonyPid()
+pid_t ProcessDfxTest::GetAccountmgrPid()
 {
-    std::string procCMD = "pgrep 'telephony'";
+    std::string procCMD = "pgrep 'accountmgr'";
     GTEST_LOG_(INFO) << "threadCMD = " << procCMD;
     FILE *procFileInfo = nullptr;
     procFileInfo = popen(procCMD.c_str(), "r");
@@ -53,14 +53,14 @@ pid_t ProcessDfxTest::GetTelephonyPid()
         return 0;
     }
     std::string pidLog;
-    pid_t telephonyPid = 0;
+    pid_t accountmgrPid = 0;
     char result_buf_shell[NAME_LEN] = { 0, };
     if (fgets(result_buf_shell, sizeof(result_buf_shell), procFileInfo) != nullptr) {
         pidLog = result_buf_shell;
-        telephonyPid = atoi(pidLog.c_str());
+        accountmgrPid = atoi(pidLog.c_str());
     }
     pclose(procFileInfo);
-    return telephonyPid;
+    return accountmgrPid;
 }
 
 namespace {
@@ -89,14 +89,14 @@ HWTEST_F (ProcessDfxTest, ProcessDfxRequestTest001, TestSize.Level2)
 HWTEST_F (ProcessDfxTest, ProcessDfxRequestTest002, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "ProcessDfxRequestTest002: start.";
-    pid_t telephonyPid = ProcessDfxTest::GetTelephonyPid();
-    if (telephonyPid == 0) {
+    pid_t accountmgrPid = ProcessDfxTest::GetAccountmgrPid();
+    if (accountmgrPid == 0) {
         GTEST_LOG_(INFO) << "ProcessDfxRequestTest002: get pid failed.";
         return;
     }
     std::shared_ptr<DfxProcess> processDfx = std::make_shared<DfxProcess>();
-    pid_t pid = telephonyPid;
-    pid_t tid = telephonyPid;
+    pid_t pid = accountmgrPid;
+    pid_t tid = accountmgrPid;
     std::shared_ptr<DfxThread> keyThread = std::make_shared<DfxThread>(pid, tid);
     auto dfx = false;
     if (processDfx != nullptr && keyThread != nullptr) {
