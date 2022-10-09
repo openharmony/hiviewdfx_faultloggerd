@@ -50,7 +50,7 @@ if (defined(ohos_lite)) {
     external_deps = [
       "c_utils:utils",
       "hilog_native:libhilog",
-      "hitrace_native:libhitrace",
+      "hitrace_native:libhitracechain",
     ]
 
     part_name = "faultloggerd"

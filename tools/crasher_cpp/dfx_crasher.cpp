@@ -34,7 +34,7 @@
 #include "securec.h"
 
 #ifdef HAS_HITRACE
-#include <hitrace/hitrace.h>
+#include <hitrace/hitracechain.h>
 using namespace OHOS::HiviewDFX;
 #endif
 
@@ -365,7 +365,7 @@ uint64_t DfxCrasher::ParseAndDoCrash(const char *arg)
         return DoActionOnSubThread(arg + strlen("thread-"));
     }
 #ifdef HAS_HITRACE
-    auto beginId = HiTrace::Begin("test", HITRACE_FLAG_NO_BE_INFO);
+    auto beginId = HiTraceChain::Begin("test", HITRACE_FLAG_NO_BE_INFO);
 #endif
     // Action
     if (!strcasecmp(arg, "SIGFPE")) {
@@ -460,7 +460,7 @@ uint64_t DfxCrasher::ParseAndDoCrash(const char *arg)
         return CrashInLambda();
     }
 #ifdef HAS_HITRACE
-    HiTrace::End(beginId);
+    HiTraceChain::End(beginId);
 #endif
     return 0;
 }
