@@ -482,7 +482,7 @@ HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest014, TestSize.Level
     GTEST_LOG_(INFO) << ret;
     GTEST_LOG_(INFO) << msg;
     string log[] = { "Tid:", "comm:ohos.samples.di", "#00", "/system/bin/appspawn",
-        "comm:dfx_watchdog", "comm:GC_WorkerThread", "comm:ace.bg.1"};
+        "comm:jsThread-", "comm:GC_WorkerThread", "comm:ace.bg.1"};
     log[0] += std::to_string(calcPid);
     string::size_type idx;
     int j = 0;
