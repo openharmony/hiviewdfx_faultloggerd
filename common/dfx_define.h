@@ -16,6 +16,7 @@
 #define DFX_DEFINE_H
 
 #include <endian.h>
+#include <inttypes.h>
 #include <stdbool.h>
 
 #define SIGDUMP 35

@@ -127,6 +127,8 @@ uint64_t DfxUnwindRemote::DfxUnwindRemoteDoAdjustPc(unw_cursor_t & cursor, uint6
         ret = pc - unw_get_previous_instr_sz(&cursor);
 #elif defined(__aarch64__)
         ret = pc - ARM_EXEC_STEP_NORMAL;
+#elif defined(__x86_64__)
+        ret = pc - 1;
 #endif
     }
 
