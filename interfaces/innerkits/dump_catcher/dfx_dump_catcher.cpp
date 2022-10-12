@@ -32,6 +32,7 @@
 #include <unistd.h>
 #include <vector>
 
+#include "dfx_cutil.h"
 #include "dfx_define.h"
 #include "dfx_dump_res.h"
 #include "dfx_frame.h"
@@ -63,6 +64,7 @@ static bool IsThreadInCurPid(int32_t tid)
 DfxDumpCatcher::DfxDumpCatcher()
 {
     frameCatcherPid_ = 0;
+    (void)GetProcStatus(&procInfo_);
 }
 
 DfxDumpCatcher::DfxDumpCatcher(int32_t pid) : frameCatcherPid_(pid)
@@ -429,7 +431,7 @@ bool DfxDumpCatcher::DumpCatchMultiPid(const std::vector<int> pidV, std::string&
 
     time_t startTime = time(nullptr);
     if (startTime > 0) {
-        DfxLogDebug("%s :: %s :: startTime(%ld).", DFXDUMPCATCHER_TAG.c_str(), __func__, startTime);
+        DfxLogDebug("%s :: %s :: startTime(%lld).", DFXDUMPCATCHER_TAG.c_str(), __func__, startTime);
     }
 
     for (int i = 0; i < pidSize; i++) {
@@ -443,7 +445,7 @@ bool DfxDumpCatcher::DumpCatchMultiPid(const std::vector<int> pidV, std::string&
 
         time_t currentTime = time(nullptr);
         if (currentTime > 0) {
-            DfxLogDebug("%s :: %s :: startTime(%ld), currentTime(%ld).", DFXDUMPCATCHER_TAG.c_str(), \
+            DfxLogDebug("%s :: %s :: startTime(%lld), currentTime(%lld).", DFXDUMPCATCHER_TAG.c_str(), \
                 __func__, startTime, currentTime);
             if (currentTime > startTime + DUMP_CATCHE_WORK_TIME_S) {
                 break;
@@ -461,6 +463,7 @@ bool DfxDumpCatcher::DumpCatchMultiPid(const std::vector<int> pidV, std::string&
 bool DfxDumpCatcher::InitFrameCatcher()
 {
     std::unique_lock<std::mutex> lck(dumpCatcherMutex_);
+    (void)GetProcStatus(&procInfo_);
     bool ret = DfxUnwindLocal::GetInstance().Init();
     if (!ret) {
         DfxUnwindLocal::GetInstance().Destroy();
@@ -476,7 +479,7 @@ void DfxDumpCatcher::DestroyFrameCatcher()
 
 bool DfxDumpCatcher::RequestCatchFrame(int tid)
 {
-    if (tid == syscall(SYS_gettid)) {
+    if (tid == procInfo_.tid) {
         return true;
     }
     return DfxUnwindLocal::GetInstance().SendAndWaitRequest(tid);
@@ -484,19 +487,19 @@ bool DfxDumpCatcher::RequestCatchFrame(int tid)
 
 bool DfxDumpCatcher::CatchFrame(int tid, std::vector<std::shared_ptr<DfxFrame>>& frames)
 {
-    if (tid <= 0 || frameCatcherPid_ != getpid()) {
+    if (tid <= 0 || frameCatcherPid_ != procInfo_.pid) {
         DfxLogError("DfxDumpCatchFrame :: only support localDump.");
         return false;
     }
 
-    if (!IsThreadInCurPid(tid)) {
+    if (!IsThreadInCurPid(tid) && !procInfo_.ns) {
         DfxLogError("DfxDumpCatchFrame :: target tid is not in our task.");
         return false;
     }
     size_t skipFramNum = DUMP_CATCHER_NUMBER_ONE;
 
     std::unique_lock<std::mutex> lck(dumpCatcherMutex_);
-    if (tid == syscall(SYS_gettid)) {
+    if (tid == procInfo_.tid) {
         if (!DfxUnwindLocal::GetInstance().ExecLocalDumpUnwind(skipFramNum)) {
             DfxLogError("DfxDumpCatchFrame :: failed to unwind for current thread(%d).", tid);
             return false;
