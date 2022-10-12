@@ -22,6 +22,7 @@ if (defined(ohos_lite)) {
       "//commonlibrary/c_utils/base/include",
       "$faultloggerd_path/common",
       "$faultloggerd_path/common/dfxlog",
+      "$faultloggerd_path/common/util",
       "//third_party/libunwind/include",
       "$faultloggerd_path/interfaces/innerkits/faultloggerd_client/include",
       "$faultloggerd_path/tools/process_dump",
@@ -51,6 +52,7 @@ if (defined(ohos_lite)) {
 
     deps = [
       "$faultloggerd_path/common/dfxlog:static_common_log",
+      "$faultloggerd_path/common/util:dfx_cutil",
       "$faultloggerd_path/interfaces/innerkits/faultloggerd_client:libfaultloggerd",
       "//base/hiviewdfx/hilog_lite/frameworks/featured:hilog_shared",
       "//third_party/libunwind:libunwind",
@@ -89,6 +91,7 @@ if (defined(ohos_lite)) {
 
     deps = [
       "$faultloggerd_path/common/dfxlog:static_common_log",
+      "$faultloggerd_path/common/util:dfx_cutil",
       "$faultloggerd_path/interfaces/innerkits/faultloggerd_client:libfaultloggerd",
       "//third_party/libunwind:libunwind",
     ]

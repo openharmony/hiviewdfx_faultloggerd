@@ -24,6 +24,7 @@
 #include <string>
 #include <unistd.h>
 #include <vector>
+#include "dfx_define.h"
 #include "dfx_frame.h"
 
 namespace OHOS {
@@ -64,6 +65,7 @@ private:
 private:
     std::mutex dumpCatcherMutex_;
     int32_t frameCatcherPid_;
+    struct ProcInfo procInfo_;
 };
 } // namespace HiviewDFX
 } // namespace OHOS
