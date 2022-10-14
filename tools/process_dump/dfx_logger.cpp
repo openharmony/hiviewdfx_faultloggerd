@@ -71,14 +71,10 @@ void DfxLogToSocket(const char *msg)
 }
 
 #ifndef DFX_LOG_USE_HILOG_BASE
-void InitDebugLog(int type, int pid, int tid, unsigned int uid, int isLogPersist)
+void InitDebugLog(int type, int pid, int tid, unsigned int uid)
 {
-    DfxLogInfo("InitDebugLog :: type(%d), pid(%d), tid(%d), uid(%d), isLogPersist(%d).",
-        type, pid, tid, uid, isLogPersist);
+    DfxLogInfo("InitDebugLog :: type(%d), pid(%d), tid(%d), uid(%d).", type, pid, tid, uid);
     if (g_DebugLogFilleDes != INVALID_FD) {
-        return;
-    }
-    if (!isLogPersist) {
         return;
     }
 

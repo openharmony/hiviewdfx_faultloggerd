@@ -23,7 +23,7 @@ extern "C" {
 int WriteLog(int fd, const char *format, ...);
 void DfxLogToSocket(const char *msg);
 #ifndef DFX_LOG_USE_HILOG_BASE
-void InitDebugLog(int type, int pid, int tid, unsigned int uid, int isLogPersist);
+void InitDebugLog(int type, int pid, int tid, unsigned int uid);
 void CloseDebugLog(void);
 #endif
 #ifdef __cplusplus

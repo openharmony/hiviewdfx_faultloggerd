@@ -77,36 +77,35 @@ bool DfxUnwindRemote::UnwindProcess(std::shared_ptr<DfxProcess> process)
     unw_set_target_pid(as_, process->GetPid());
     unw_set_caching_policy(as_, UNW_CACHE_GLOBAL);
 
-    // only need to unwind crash thread in crash scenario
-    if (!process->GetIsSignalDump() && \
-        !DfxConfig::GetInstance().GetDumpOtherThreads()) {
-        bool ret = UnwindThread(process, threads[0]);
-        if (threads[0]->GetIsCrashThread() && (process->GetIsSignalDump() == false)) {
-            process->PrintProcessMapsByConfig();
-        }
-        PrintBuildIds();
-        unw_destroy_addr_space(as_);
-        as_ = nullptr;
-        return ret;
-    }
-
-    size_t index = 0;
-    for (auto thread : threads) {
-        if (index == 1) {
-            process->PrintThreadsHeaderByConfig();
+    do {
+        // only need to unwind crash thread in crash scenario
+        if (!process->GetIsSignalDump() && \
+            !DfxConfig::GetInstance().GetDumpOtherThreads()) {
+            bool ret = UnwindThread(process, threads[0]);
+            if (threads[0]->GetIsCrashThread() && (!process->GetIsSignalDump())) {
+                process->PrintProcessMapsByConfig();
+            }
+            break;
         }
 
-        if (thread->Attach()) {
-            UnwindThread(process, thread);
-            thread->Detach();
-        }
+        size_t index = 0;
+        for (auto thread : threads) {
+            if (index == 1) {
+                process->PrintThreadsHeaderByConfig();
+            }
 
-        if (thread->GetIsCrashThread() && (process->GetIsSignalDump() == false)) {
-            process->PrintProcessMapsByConfig();
+            if (thread->Attach()) {
+                UnwindThread(process, thread);
+                thread->Detach();
+            }
+
+            if (thread->GetIsCrashThread() && (!process->GetIsSignalDump())) {
+                process->PrintProcessMapsByConfig();
+            }
+            index++;
+            DfxLogDebug("%s :: index(%d)", __func__, index);
         }
-        index++;
-        DfxLogDebug("%s :: index(%d)", __func__, index);
-    }
+    } while (false);
 
     PrintBuildIds();
     unw_destroy_addr_space(as_);
@@ -157,10 +156,11 @@ std::string DfxUnwindRemote::GetReadableBuildId(uint8_t* buildId, size_t length)
 bool DfxUnwindRemote::DfxUnwindRemoteDoUnwindStep(size_t const & index,
     std::shared_ptr<DfxThread> & thread, unw_cursor_t & cursor, std::shared_ptr<DfxProcess> process)
 {
+    bool ret = false;
     std::shared_ptr<DfxFrame> frame = thread->GetAvaliableFrame();
     if (!frame) {
         DfxLogWarn("Fail to create Frame.");
-        return false;
+        return ret;
     }
 
     frame->SetFrameIndex(index);
@@ -169,10 +169,10 @@ bool DfxUnwindRemote::DfxUnwindRemoteDoUnwindStep(size_t const & index,
     static unw_word_t oldPc = 0;
     if (unw_get_reg(&cursor, UNW_REG_IP, (unw_word_t*)(&framePc))) {
         DfxLogWarn("Fail to get program counter.");
-        return false;
+        return ret;
     }
     if (oldPc == framePc && index != 0) {
-        return false;
+        return ret;
     }
     oldPc = framePc;
     frame->SetFramePc(framePc);
@@ -180,7 +180,7 @@ bool DfxUnwindRemote::DfxUnwindRemoteDoUnwindStep(size_t const & index,
     uint64_t frameSp = frame->GetFrameSp();
     if (unw_get_reg(&cursor, UNW_REG_SP, (unw_word_t*)(&frameSp))) {
         DfxLogWarn("Fail to get stack pointer.");
-        return false;
+        return ret;
     }
     frame->SetFrameSp(frameSp);
 
@@ -193,7 +193,8 @@ bool DfxUnwindRemote::DfxUnwindRemoteDoUnwindStep(size_t const & index,
         relPc = DfxUnwindRemoteDoAdjustPc(cursor, relPc);
     }
     frame->SetFrameRelativePc(relPc);
-    bool ret = UpdateAndPrintFrameInfo(cursor, thread, frame,
+
+    ret = UpdateAndPrintFrameInfo(cursor, thread, frame,
         (thread->GetIsCrashThread() && !process->GetIsSignalDump()));
     DfxLogDebug("%s :: index(%d), framePc(0x%x), frameSp(0x%x).", __func__, index, framePc, frameSp);
     return ret;

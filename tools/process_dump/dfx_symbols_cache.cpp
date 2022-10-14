@@ -28,8 +28,6 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-static std::vector<DfxSymbol> g_elfSymbols;
-
 bool SymbolComparator(DfxSymbol s1, DfxSymbol s2)
 {
     return (s1.start < s2.start);
@@ -37,6 +35,7 @@ bool SymbolComparator(DfxSymbol s1, DfxSymbol s2)
 #ifdef __cplusplus
 };
 #endif
+
 namespace OHOS {
 namespace HiviewDFX {
 bool DfxSymbolsCache::GetNameAndOffsetByPc(struct unw_addr_space *as,
