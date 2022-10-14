@@ -58,10 +58,6 @@ static bool ParseParamters(int argc, char *argv[], bool &isSignalHdlr)
         isSignalHdlr = true;
         return true;
     }
-
-    if ((!strcmp("-p", argv[DUMP_ARG_ONE])) || (!strcmp("-t", argv[DUMP_ARG_ONE]))) {
-        return false;
-    }
     return false;
 }
 
