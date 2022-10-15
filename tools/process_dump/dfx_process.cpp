@@ -82,7 +82,7 @@ bool DfxProcess::InitProcessMaps()
 bool DfxProcess::InitProcessThreads(std::shared_ptr<DfxThread> keyThread)
 {
     if (!keyThread) {
-        keyThread = std::make_shared<DfxThread>(GetPid(), GetPid());
+        keyThread = std::make_shared<DfxThread>(pid_, pid_, pid_);
     }
     
     if (!keyThread->Attach()) {
@@ -91,6 +91,11 @@ bool DfxProcess::InitProcessThreads(std::shared_ptr<DfxThread> keyThread)
     }
     threads_.push_back(keyThread);
     return true;
+}
+
+void DfxProcess::SetRecycleTid(uid_t nstid)
+{
+    recycleTid_ = nstid;
 }
 
 bool DfxProcess::InitOtherThreads(bool attach)
@@ -126,13 +131,18 @@ bool DfxProcess::InitOtherThreads(bool attach)
             TidToNstid(tid, nstid);
         }
 
-        InsertThreadNode(nstid, attach);
+        if (isSignalDump_ && (nstid == recycleTid_)) {
+            DfxLogWarn("skip recycle tid:%d nstid:%d.", recycleTid_, nstid);
+            continue;
+        }
+
+        InsertThreadNode(tid, nstid, attach);
     }
     closedir(dir);
     return true;
 }
 
-void DfxProcess::InsertThreadNode(pid_t tid, bool attach)
+void DfxProcess::InsertThreadNode(pid_t tid, pid_t nsTid, bool attach)
 {
     for (auto iter = threads_.begin(); iter != threads_.end(); iter++) {
         if ((*iter)->GetThreadId() == tid) {
@@ -140,7 +150,7 @@ void DfxProcess::InsertThreadNode(pid_t tid, bool attach)
         }
     }
 
-    auto thread = std::make_shared<DfxThread>(GetPid(), tid);
+    auto thread = std::make_shared<DfxThread>(pid_, tid, nsTid);
     if (attach) {
         thread->Attach();
     }
