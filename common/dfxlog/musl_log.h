@@ -50,7 +50,7 @@ typedef enum {
 #define LOG_TAG "DfxFaultLogger"
 #endif
 
-#ifdef ENABLE_MUSL_LOG
+#ifdef ENABLE_SIGHAND_MUSL_LOG
 extern int HiLogAdapterPrint(LogType type, LogLevel level, unsigned int domain, const char *tag, const char *fmt, ...);
 extern int vsnprintfp_s(char *strDest, size_t destMax, size_t count, int priv, const char *format, va_list arglist);
 
