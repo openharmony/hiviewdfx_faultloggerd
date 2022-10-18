@@ -172,7 +172,6 @@ bool DfxUnwindRemote::DfxUnwindRemoteDoUnwindStep(size_t const & index,
         return ret;
     }
     if (oldPc == framePc && index != 0) {
-        thread->ClearLastFrame();
         return ret;
     }
     oldPc = framePc;
@@ -263,7 +262,6 @@ bool DfxUnwindRemote::UnwindThread(std::shared_ptr<DfxProcess> process, std::sha
         return false;
     }
 
-    pid_t nsTid = thread->GetRealTid();
     pid_t tid = thread->GetThreadId();
     char buf[LOG_BUF_LEN] = {0};
     int ret = snprintf_s(buf, sizeof(buf), sizeof(buf) - 1, "Tid:%d, Name:%s\n", tid, thread->GetThreadName().c_str());
@@ -272,7 +270,7 @@ bool DfxUnwindRemote::UnwindThread(std::shared_ptr<DfxProcess> process, std::sha
     }
     DfxRingBufferWrapper::GetInstance().AppendMsg(std::string(buf));
 
-    void *context = _UPT_create(nsTid);
+    void *context = _UPT_create(tid);
     if (!context) {
         return false;
     }

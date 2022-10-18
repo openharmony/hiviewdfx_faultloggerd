@@ -33,8 +33,7 @@
 
 namespace OHOS {
 namespace HiviewDFX {
-DfxThread::DfxThread(const pid_t pid, const pid_t tid, pid_t nsTid, const ucontext_t &context)
-    :isCrashThread_(false), pid_(pid), tid_(tid), nsTid_(nsTid), unwStopReason_(-1)
+DfxThread::DfxThread(const pid_t pid, const pid_t tid, const ucontext_t &context)
 {
     threadStatus_ = ThreadStatus::THREAD_STATUS_INVALID;
     std::shared_ptr<DfxRegs> reg;
@@ -46,31 +45,35 @@ DfxThread::DfxThread(const pid_t pid, const pid_t tid, pid_t nsTid, const uconte
     reg = std::make_shared<DfxRegsX86_64>(context);
 #endif
     regs_ = reg;
-    if (!InitThread()) {
+    threadName_ = "";
+    unwStopReason_ = -1;
+    if (!InitThread(pid, tid)) {
         DfxLogWarn("Fail to init thread(%d).", tid);
         return;
     }
-    threadStatus_ = ThreadStatus::THREAD_STATUS_INIT;
 }
 
-DfxThread::DfxThread(pid_t pid, pid_t tid, pid_t nsTid)
-    :isCrashThread_(false), pid_(pid), tid_(tid), nsTid_(nsTid), unwStopReason_(-1)
+DfxThread::DfxThread(const pid_t pid, const pid_t tid)
 {
     regs_ = nullptr;
-    if (!InitThread()) {
+    threadName_ = "";
+    unwStopReason_ = -1;
+    if (!InitThread(pid, tid)) {
         DfxLogWarn("Fail to init thread(%d).", tid);
         return;
     }
     threadStatus_ = ThreadStatus::THREAD_STATUS_INIT;
 }
 
-bool DfxThread::InitThread()
+bool DfxThread::InitThread(const pid_t pid, const pid_t tid)
 {
+    pid_ = pid;
+    tid_ = tid;
+    isCrashThread_ = false;
     char path[NAME_LEN] = {0};
-    if (snprintf_s(path, sizeof(path), sizeof(path) - 1, "/proc/%d/comm", tid_) <= 0) {
+    if (snprintf_s(path, sizeof(path), sizeof(path) - 1, "/proc/%d/comm", tid) <= 0) {
         return false;
     }
-
     std::string pathName = path;
     std::string buf;
     ReadStringFromFile(pathName, buf, NAME_LEN);
@@ -174,33 +177,28 @@ void DfxThread::Detach()
     }
 }
 
-pid_t DfxThread::GetRealTid() const
-{
-    return nsTid_;
-}
-
 bool DfxThread::Attach()
 {
     if (threadStatus_ == ThreadStatus::THREAD_STATUS_ATTACHED) {
         return true;
     }
 
-    if (ptrace(PTRACE_SEIZE, nsTid_, 0, 0) != 0) {
-        DfxLogWarn("Failed to seize thread(%d), errno=%d", nsTid_, errno);
+    if (ptrace(PTRACE_SEIZE, tid_, 0, 0) != 0) {
+        DfxLogWarn("Failed to seize thread(%d), errno=%d", tid_, errno);
         return false;
     }
 
-    if (ptrace(PTRACE_INTERRUPT, nsTid_, 0, 0) != 0) {
-        DfxLogWarn("Failed to interrupt thread(%d), errno=%d", nsTid_, errno);
-        ptrace(PTRACE_DETACH, nsTid_, NULL, NULL);
+    if (ptrace(PTRACE_INTERRUPT, tid_, 0, 0) != 0) {
+        DfxLogWarn("Failed to interrupt thread(%d), errno=%d", tid_, errno);
+        ptrace(PTRACE_DETACH, tid_, NULL, NULL);
         return false;
     }
 
     errno = 0;
-    while (waitpid(nsTid_, nullptr, __WALL) < 0) {
+    while (waitpid(tid_, nullptr, __WALL) < 0) {
         if (EINTR != errno) {
-            ptrace(PTRACE_DETACH, nsTid_, NULL, NULL);
-            DfxLogWarn("Failed to wait thread(%d) attached, errno=%d.", nsTid_, errno);
+            ptrace(PTRACE_DETACH, tid_, NULL, NULL);
+            DfxLogWarn("Failed to wait thread(%d) attached, errno=%d.", tid_, errno);
             return false;
         }
         errno = 0;
@@ -259,11 +257,6 @@ void DfxThread::PrintThreadFaultStackByConfig()
     } else {
         DfxLogDebug("hidden faultStack");
     }
-}
-
-void DfxThread::ClearLastFrame()
-{
-    dfxFrames_.pop_back();
 }
 } // namespace HiviewDFX
 } // nampespace OHOS
