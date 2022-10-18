@@ -116,7 +116,6 @@ typedef struct TraceInfo {
 } TraceInfo;
 
 typedef struct ProcInfo {
-    int tid;
     int pid;
     int ppid;
     bool ns;

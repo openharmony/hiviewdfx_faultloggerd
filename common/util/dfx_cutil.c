@@ -28,7 +28,6 @@
 int GetProcStatus(struct ProcInfo* procInfo)
 {
     procInfo->pid = getpid();
-    procInfo->tid = gettid();
     procInfo->ppid = getppid();
     procInfo->ns = false;
 
@@ -38,7 +37,7 @@ int GetProcStatus(struct ProcInfo* procInfo)
         return -1;
     }
 
-    int p = 0, pp = 0, t = 0;
+    int p = 0, pp = 0;
     while (!feof(fp)) {
         if (fgets(buf, STATUS_LINE_SIZE, fp) == NULL) {
             fclose(fp);
@@ -66,15 +65,6 @@ int GetProcStatus(struct ProcInfo* procInfo)
             }
             procInfo->ppid = pp;
             continue;
-        }
-
-        // NSpid:  1892    1
-        if (strncmp(buf, NSPID_STR_NAME, strlen(NSPID_STR_NAME)) == 0) {
-            if (sscanf_s(buf, "%*[^0-9]%d%*[^0-9]%d", &p, &t) != 2) {
-                perror("sscanf_s failed.");
-            }
-            procInfo->tid = t;
-            break;
         }
     }
     (void)fclose(fp);
