@@ -665,7 +665,7 @@ HWTEST_F (ProcessDumpTest, ProcessDumpTest033, TestSize.Level2)
     GTEST_LOG_(INFO) << "ProcessDumpTest033: start.";
     int32_t pid = 1, tid = 1;
     ucontext_t context;
-    std::shared_ptr<DfxThread> thread = std::make_shared<DfxThread>(pid, tid, tid, context);
+    std::shared_ptr<DfxThread> thread = std::make_shared<DfxThread>(pid, tid, context);
     pid_t processID = thread->GetProcessId();
     GTEST_LOG_(INFO) << "ProcessDumpTest033: result = " << processID;
     EXPECT_EQ(true, pid == processID) << "ProcessDumpTest033 failed";
@@ -682,7 +682,7 @@ HWTEST_F (ProcessDumpTest, ProcessDumpTest034, TestSize.Level2)
     GTEST_LOG_(INFO) << "ProcessDumpTest034: start.";
     int32_t pid = 243, tid = 243;
     ucontext_t context;
-    std::shared_ptr<DfxThread> thread = std::make_shared<DfxThread>(pid, tid, tid, context);
+    std::shared_ptr<DfxThread> thread = std::make_shared<DfxThread>(pid, tid, context);
     pid_t threadId = thread->GetThreadId();
     GTEST_LOG_(INFO) << "ProcessDumpTest034: result = " << threadId;
     EXPECT_EQ(true, tid == threadId) << "ProcessDumpTest034 failed";
@@ -698,7 +698,7 @@ HWTEST_F (ProcessDumpTest, ProcessDumpTest035, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "ProcessDumpTest035: start.";
     int32_t pid = 243, tid = 243;
-    std::shared_ptr<DfxThread> thread = std::make_shared<DfxThread>(pid, tid, tid);
+    std::shared_ptr<DfxThread> thread = std::make_shared<DfxThread>(pid, tid);
     pid_t threadId = thread->GetThreadId();
     EXPECT_EQ(true, threadId == tid) << "ProcessDumpTest035 failed";
     GTEST_LOG_(INFO) << "ProcessDumpTest035: end.";
@@ -713,7 +713,7 @@ HWTEST_F (ProcessDumpTest, ProcessDumpTest036, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "ProcessDumpTest036: start.";
     int32_t pid = 1, tid = 1;
-    std::shared_ptr<DfxThread> thread = std::make_shared<DfxThread>(pid, tid, tid);
+    std::shared_ptr<DfxThread> thread = std::make_shared<DfxThread>(pid, tid);
     std::string threadName = thread->GetThreadName();
     EXPECT_EQ(true, threadName != "");
     GTEST_LOG_(INFO) << "ProcessDumpTest036: result = " << threadName;
@@ -729,7 +729,7 @@ HWTEST_F (ProcessDumpTest, ProcessDumpTest037, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "ProcessDumpTest037: start.";
     int32_t pid = 243, tid = 243;
-    std::shared_ptr<DfxThread> thread = std::make_shared<DfxThread>(pid, tid, tid);
+    std::shared_ptr<DfxThread> thread = std::make_shared<DfxThread>(pid, tid);
     std::shared_ptr<DfxRegs> inputrefs;
     thread->SetThreadRegs(inputrefs);
     std::shared_ptr<DfxRegs> outputrefs= thread->GetThreadRegs();
@@ -746,7 +746,7 @@ HWTEST_F (ProcessDumpTest, ProcessDumpTest038, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "ProcessDumpTest038: start.";
     int32_t pid = 243, tid = 243;
-    std::shared_ptr<DfxThread> thread = std::make_shared<DfxThread>(pid, tid, tid);
+    std::shared_ptr<DfxThread> thread = std::make_shared<DfxThread>(pid, tid);
     std::shared_ptr<DfxFrame> outputrefs= thread->GetAvaliableFrame();
     EXPECT_EQ(true, outputrefs != nullptr) << "ProcessDumpTest038 Failed";
     GTEST_LOG_(INFO) << "ProcessDumpTest038: end.";
@@ -763,7 +763,7 @@ HWTEST_F (ProcessDumpTest, ProcessDumpTest039, TestSize.Level2)
     std::shared_ptr<DfxProcess> process = std::make_shared<DfxProcess>();
     pid_t pid = GetProcessPid("accountmgr");
     pid_t tid = pid;
-    std::shared_ptr<DfxThread> thread = std::make_shared<DfxThread>(pid, tid, tid);
+    std::shared_ptr<DfxThread> thread = std::make_shared<DfxThread>(pid, tid);
     const std::vector<std::shared_ptr<DfxThread>> threads = { thread };
     process->SetThreads(threads);
     thread->Attach();
@@ -784,7 +784,7 @@ HWTEST_F (ProcessDumpTest, ProcessDumpTest040, TestSize.Level2)
     std::shared_ptr<DfxProcess> process = std::make_shared<DfxProcess>();
     pid_t pid = GetProcessPid("accountmgr");
     pid_t tid = pid;
-    std::shared_ptr<DfxThread> thread = std::make_shared<DfxThread>(pid, tid, tid);
+    std::shared_ptr<DfxThread> thread = std::make_shared<DfxThread>(pid, tid);
     thread->Attach();
     bool ret = DfxUnwindRemote::GetInstance().UnwindThread(process, thread);
     thread->Detach();

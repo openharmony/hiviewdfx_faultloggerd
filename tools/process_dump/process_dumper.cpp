@@ -168,21 +168,16 @@ int ProcessDumper::DumpProcessWithSignalContext(std::shared_ptr<DfxProcess> &pro
             break;
         }
 
-        // move those assignment to process.cpp
         int tid = request->GetSiginfo().si_value.sival_int;
-        int targetPid = request->GetPid();
-        int targetTid = request->GetTid();
         bool isCrash = (request->GetSiginfo().si_signo != SIGDUMP);
         FaultLoggerType type = isCrash ? FaultLoggerType::CPP_CRASH : FaultLoggerType::CPP_STACKTRACE;
         if (DfxConfig::GetInstance().GetLogPersist()) {
-            InitDebugLog((int)type, targetPid, targetTid, request->GetUid());
+            InitDebugLog((int)type, request->GetPid(), request->GetTid(), request->GetUid());
         }
 
-        DfxLogDebug("processdump tid:%d, targetPid:%d, targetTid:%d.", tid, targetPid, targetTid);
-        // if Nspid is enabled, target tid and real tid should be paresed from /proc/pid/task
-        std::shared_ptr<DfxThread> keyThread = isCrash ?
-            std::make_shared<DfxThread>(targetPid, targetTid, targetTid, request->GetContext()) :
-            std::make_shared<DfxThread>(targetPid, tid == 0 ? targetPid : tid, targetTid);
+        std::shared_ptr<DfxThread> keyThread = std::make_shared<DfxThread>(request->GetPid(),
+                                                                        request->GetTid(),
+                                                                        request->GetContext());
         if (!keyThread->Attach()) {
             DfxLogError("Fail to attach key thread.");
             dumpRes = ProcessDumpRes::DUMP_EATTACH;
@@ -210,9 +205,7 @@ int ProcessDumper::DumpProcessWithSignalContext(std::shared_ptr<DfxProcess> &pro
         } else {
             process->SetIsSignalDump(true);
         }
-
         process->SetNs(procInfo.ns);
-        process->SetRecycleTid(request->GetRecycleTid());
 
         if (tid == 0) {
             process->InitOtherThreads(isCrash);
