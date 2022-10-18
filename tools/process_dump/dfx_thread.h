@@ -29,14 +29,13 @@ namespace OHOS {
 namespace HiviewDFX {
 class DfxThread {
 public:
-    DfxThread(pid_t pid, pid_t tid, pid_t nsTid, const ucontext_t &context);
-    DfxThread(pid_t pid, pid_t tid, pid_t nsTid);
+    DfxThread(const pid_t pid, const pid_t tid, const ucontext_t &context);
+    DfxThread(const pid_t pid, const pid_t tid);
     ~DfxThread();
     void SetIsCrashThread(bool isCrashThread);
     bool GetIsCrashThread() const;
     pid_t GetProcessId() const;
     pid_t GetThreadId() const;
-    pid_t GetRealTid() const;
     std::string GetThreadName() const;
     void SetThreadName(std::string &threadName);
     std::shared_ptr<DfxRegs> GetThreadRegs() const;
@@ -53,7 +52,6 @@ public:
     bool Attach();
     std::string ToString() const;
     bool IsThreadInitialized();
-    void ClearLastFrame();
 
 private:
     enum class ThreadStatus {
@@ -63,16 +61,15 @@ private:
         THREAD_STATUS_ATTACHED = 3
     };
 
-    bool InitThread();
-    bool isCrashThread_;
+    bool InitThread(const pid_t pid, const pid_t tid);
     pid_t pid_;
     pid_t tid_;
-    pid_t nsTid_;
-    int unwStopReason_;
-    ThreadStatus threadStatus_;
     std::string threadName_;
     std::shared_ptr<DfxRegs> regs_;
     std::vector<std::shared_ptr<DfxFrame>> dfxFrames_;
+    ThreadStatus threadStatus_;
+    int unwStopReason_;
+    bool isCrashThread_;
     std::unique_ptr<FaultStack> faultstack_ {nullptr};
 };
 } // namespace HiviewDFX

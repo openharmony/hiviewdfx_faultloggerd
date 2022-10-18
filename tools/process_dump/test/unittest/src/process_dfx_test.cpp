@@ -97,7 +97,7 @@ HWTEST_F (ProcessDfxTest, ProcessDfxRequestTest002, TestSize.Level2)
     std::shared_ptr<DfxProcess> processDfx = std::make_shared<DfxProcess>();
     pid_t pid = accountmgrPid;
     pid_t tid = accountmgrPid;
-    std::shared_ptr<DfxThread> keyThread = std::make_shared<DfxThread>(pid, tid, tid);
+    std::shared_ptr<DfxThread> keyThread = std::make_shared<DfxThread>(pid, tid);
     auto dfx = false;
     if (processDfx != nullptr && keyThread != nullptr) {
         dfx = processDfx->InitProcessThreads(keyThread);
@@ -288,7 +288,7 @@ HWTEST_F (ProcessDfxTest, ProcessDfxRequestTest012, TestSize.Level2)
     std::shared_ptr<DfxProcess> processDfx = std::make_shared<DfxProcess>();
     pid_t pid = 100;
     pid_t tid = 100;
-    std::shared_ptr<DfxThread> thread = std::make_shared<DfxThread>(pid, tid, tid);
+    std::shared_ptr<DfxThread> thread = std::make_shared<DfxThread>(pid, tid);
     std::vector<std::shared_ptr<DfxThread>> input;
     std::vector<std::shared_ptr<DfxThread>> output;
     if (processDfx != nullptr && thread != nullptr) {

@@ -68,16 +68,6 @@ void ProcessDumpRequest::SetTid(int32_t tid)
     tid_ = tid;
 }
 
-int32_t ProcessDumpRequest::GetRecycleTid() const
-{
-    return recycleTid_;
-}
-
-void ProcessDumpRequest::SetRecycleTid(int32_t tid)
-{
-    recycleTid_ = tid;
-}
-
 int32_t ProcessDumpRequest::GetPid() const
 {
     return pid_;
