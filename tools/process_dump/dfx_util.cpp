@@ -38,6 +38,7 @@ int GetProcStatus(struct ProcInfo& procInfo)
     procInfo.tid = gettid();
     procInfo.ppid = getppid();
     procInfo.ns = false;
+    return 0;
 
     char buf[STATUS_LINE_SIZE];
     FILE *fp = fopen(PROC_SELF_STATUS_PATH, "r");
