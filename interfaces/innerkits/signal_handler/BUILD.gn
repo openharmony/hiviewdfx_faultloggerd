@@ -94,7 +94,7 @@ if (defined(ohos_lite)) {
       "__MUSL__",
       "_LIBCPP_HAS_MUSL_LIBC",
       "__BUILD_LINUX_WITH_CLANG",
-      "ENABLE_MUSL_LOG",
+      "ENABLE_SIGHAND_MUSL_LOG",
       "ENABLE_MUSL_CUTIL",
     ]
 
