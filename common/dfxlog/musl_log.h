@@ -50,11 +50,24 @@ typedef enum {
 #define LOG_TAG "DfxFaultLogger"
 #endif
 
-#ifdef ENABLE_MUSL_LOG
-extern int HiLogAdapterPrint(LogType type, LogLevel level, unsigned int domain, const char *tag, const char *fmt, ...);
+#ifdef ENABLE_SIGHAND_MUSL_LOG
+extern int HiLogAdapterPrintArgs(
+    const LogType type, const LogLevel level, const unsigned int domain, const char *tag, const char *fmt, va_list ap);
 extern int vsnprintfp_s(char *strDest, size_t destMax, size_t count, int priv, const char *format, va_list arglist);
 
-int DfxLog(const LogLevel logLevel, const unsigned int domain, const char* tag, const char *fmt, ...)
+__attribute__ ((visibility("hidden"))) int MuslHiLogPrinter(
+    LogType type, LogLevel level, unsigned int domain, const char *tag, const char *fmt, ...)
+{
+    int ret;
+    va_list ap;
+    va_start(ap, fmt);
+    ret = HiLogAdapterPrintArgs(type, level, domain, tag, fmt, ap);
+    va_end(ap);
+    return ret;
+}
+
+__attribute__ ((visibility("hidden"))) int DfxLog(
+    const LogLevel logLevel, const unsigned int domain, const char* tag, const char *fmt, ...)
 {
     int ret;
     char buf[LOG_BUF_LEN] = {0};
@@ -62,7 +75,7 @@ int DfxLog(const LogLevel logLevel, const unsigned int domain, const char* tag, 
     va_start(args, fmt);
     ret = vsnprintfp_s(buf, sizeof(buf), sizeof(buf) - 1, false, fmt, args);
     va_end(args);
-    HiLogAdapterPrint(LOG_CORE, logLevel, domain, tag, "%{public}s", buf);
+    MuslHiLogPrinter(LOG_CORE, logLevel, domain, tag, "%{public}s", buf);
     return ret;
 }
 
