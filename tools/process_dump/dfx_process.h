@@ -18,6 +18,7 @@
 #include <cinttypes>
 #include <memory>
 #include <string>
+
 #include "dfx_define.h"
 #include "dfx_elf.h"
 #include "dfx_maps.h"
@@ -36,7 +37,7 @@ public:
     void FillProcessName();
     void PrintProcessMapsByConfig();
     void PrintThreadsHeaderByConfig();
-    void InsertThreadNode(pid_t tid, bool attach = true);
+    void InsertThreadNode(pid_t tid, pid_t nsTid, bool attach = true);
 
     void SetIsSignalDump(bool isSignalDump);
     bool GetIsSignalDump() const;

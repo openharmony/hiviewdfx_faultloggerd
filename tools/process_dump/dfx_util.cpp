@@ -32,14 +32,19 @@
 
 namespace OHOS {
 namespace HiviewDFX {
+int GetRealTargetPid()
+{
+    ProcInfo procInfo;
+    (void)memset_s(&procInfo, sizeof(procInfo), 0, sizeof(struct ProcInfo));
+    if (GetProcStatus(procInfo) == -1) {
+        return -1;
+    }
+
+    return procInfo.ppid;
+}
+
 int GetProcStatus(struct ProcInfo& procInfo)
 {
-    procInfo.pid = getpid();
-    procInfo.tid = gettid();
-    procInfo.ppid = getppid();
-    procInfo.ns = false;
-    return 0;
-
     char buf[STATUS_LINE_SIZE];
     FILE *fp = fopen(PROC_SELF_STATUS_PATH, "r");
     if (fp == nullptr) {
