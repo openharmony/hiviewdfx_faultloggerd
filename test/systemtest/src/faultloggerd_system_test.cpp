@@ -1251,7 +1251,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0027, TestSize.Level2)
     GTEST_LOG_(INFO) << ret;
     GTEST_LOG_(INFO) << msg;
     string log[] = { "Tid:", "comm:ohos.samples.di", "#00", "/system/bin/appspawn",
-        "comm:dfx_watchdog", "comm:GC_WorkerThread", "comm:ace.bg.1"};
+        "comm:DfxWatchdog", "comm:GC_WorkerThread", "comm:ace.bg.1"};
     log[0] += std::to_string(calcPid);
     string::size_type idx;
     int j = 0;
@@ -1363,7 +1363,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0031, TestSize.Level2)
     GTEST_LOG_(INFO) << "procDumpLog: " << procDumpLog;
     int count = 0;
     string log[] = { "Tid:", "comm:ohos.samples.di", "#00", "/system/bin/appspawn",
-        "comm:dfx_watchdog", "comm:GC_WorkerThread", "comm:ace.bg.1"};
+        "comm:DfxWatchdog", "comm:GC_WorkerThread", "comm:ace.bg.1"};
     log[0] += std::to_string(calcPid);
     string::size_type idx;
     int expectNum = sizeof(log) / sizeof(log[0]);

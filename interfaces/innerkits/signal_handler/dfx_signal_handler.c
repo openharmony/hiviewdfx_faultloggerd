@@ -365,8 +365,6 @@ static void DFX_SignalHandler(int sig, siginfo_t *si, void *context)
     pthread_mutex_lock(&g_signalHandlerMutex);
     memset(&g_procInfo, 0, sizeof(g_procInfo));
     GetProcStatus(&g_procInfo);
-    DfxLogDebug("DFX_SignalHandler :: ns(%d), pid(%d), tid(%d).", g_procInfo.ns, g_procInfo.pid, g_procInfo.tid);
-
     BlockMainThreadIfNeed(sig);
     if (g_prevHandledSignal != SIGDUMP) {
         ResetSignalHandlerIfNeed(sig);
@@ -375,6 +373,7 @@ static void DFX_SignalHandler(int sig, siginfo_t *si, void *context)
         } else {
             DfxLogInfo("Current process has encount a crash, rethrow sig(%d).", si->si_signo);
         }
+        pthread_mutex_unlock(&g_signalHandlerMutex);
         return;
     }
     g_prevHandledSignal = sig;
