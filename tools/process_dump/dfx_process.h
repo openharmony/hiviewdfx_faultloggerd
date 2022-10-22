@@ -51,6 +51,7 @@ public:
 
     void SetPid(pid_t pid);
     void SetUid(uid_t uid);
+    void SetRecycleTid(uid_t nstid);
     void SetNs(bool ns);
     void SetProcessName(const std::string &processName);
     void SetMaps(std::shared_ptr<DfxElfMaps> maps);
@@ -60,6 +61,7 @@ public:
 private:
     pid_t pid_ = 0;
     uid_t uid_ = 0;
+    pid_t recycleTid_ = 0;
     bool ns_ = false;
     bool isSignalDump_ = false;
     std::string processName_;

@@ -218,7 +218,7 @@ int ProcessDumper::DumpProcessWithSignalContext(std::shared_ptr<DfxProcess> &pro
         process->SetIsSignalDump(!isCrash);
         process->SetNs(isPidNsEnabled);
         process->SetUid(request->GetUid());
-
+        process->SetRecycleTid(request->GetRecycleTid());
         if (tid == 0) {
             process->InitOtherThreads(isCrash);
         }
