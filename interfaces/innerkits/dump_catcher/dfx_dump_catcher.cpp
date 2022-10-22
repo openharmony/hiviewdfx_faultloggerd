@@ -32,7 +32,7 @@
 #include <unistd.h>
 #include <vector>
 
-#include "dfx_cutil.h"
+#include "dfx_util.h"
 #include "dfx_define.h"
 #include "dfx_dump_res.h"
 #include "dfx_frame.h"
@@ -64,11 +64,12 @@ static bool IsThreadInCurPid(int32_t tid)
 DfxDumpCatcher::DfxDumpCatcher()
 {
     frameCatcherPid_ = 0;
-    (void)GetProcStatus(&procInfo_);
+    (void)GetProcStatus(procInfo_);
 }
 
 DfxDumpCatcher::DfxDumpCatcher(int32_t pid) : frameCatcherPid_(pid)
 {
+    (void)GetProcStatus(procInfo_);
 }
 
 DfxDumpCatcher::~DfxDumpCatcher()
@@ -463,7 +464,6 @@ bool DfxDumpCatcher::DumpCatchMultiPid(const std::vector<int> pidV, std::string&
 bool DfxDumpCatcher::InitFrameCatcher()
 {
     std::unique_lock<std::mutex> lck(dumpCatcherMutex_);
-    (void)GetProcStatus(&procInfo_);
     bool ret = DfxUnwindLocal::GetInstance().Init();
     if (!ret) {
         DfxUnwindLocal::GetInstance().Destroy();
