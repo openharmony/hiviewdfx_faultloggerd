@@ -66,6 +66,8 @@ int GetProcStatus(struct ProcInfo& procInfo)
             procInfo.pid = p;
             if (procInfo.pid == getpid()) {
                 procInfo.ns = false;
+                procInfo.tid = gettid();
+                procInfo.ppid = getppid();
                 break;
             }
             procInfo.ns = true;
