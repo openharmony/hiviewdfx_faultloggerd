@@ -77,6 +77,7 @@ private:
     std::condition_variable localDumperCV_;
     std::mutex localDumperMutex_;
     std::atomic<bool> insideSignalHandler_;
+    std::atomic<int> initTimes_;
     bool isInited_ = false;
 };
 } // namespace HiviewDFX

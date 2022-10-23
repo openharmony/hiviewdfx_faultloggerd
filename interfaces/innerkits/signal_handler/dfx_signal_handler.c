@@ -14,6 +14,10 @@
  */
 #include "dfx_signal_handler.h"
 
+#ifndef _GNU_SOURCE
+#define _GNU_SOURCE 1
+#endif
+
 #include <fcntl.h>
 #include <pthread.h>
 #include <sched.h>
@@ -73,16 +77,6 @@
 
 #ifndef F_SETPIPE_SZ
 #define F_SETPIPE_SZ 1031
-#endif
-
-#ifndef CLONE_VFORK
-#define CLONE_VFORK 0x00004000
-#endif
-#ifndef CLONE_FS
-#define CLONE_FS 0x00000200
-#endif
-#ifndef CLONE_UNTRACED
-#define CLONE_UNTRACED 0x00800000
 #endif
 
 #define NUMBER_SIXTYFOUR 64
@@ -338,6 +332,11 @@ static void BlockMainThreadIfNeed(int sig)
     }
 }
 
+static pid_t __fork()
+{
+    return syscall(SYS_clone, SIGCHLD, 0);
+}
+
 static int DoProcessDump(void* arg)
 {
     (void)arg;
@@ -364,7 +363,7 @@ static int DoProcessDump(void* arg)
     }
 
     // fork a child process that could ptrace us
-    childPid = fork();
+    childPid = __fork();
     if (childPid == 0) {
         _exit(DFX_ExecDump(NULL));
     } else if (childPid < 0) {
@@ -386,12 +385,12 @@ static int DoProcessDump(void* arg)
 
         if ((int)time(NULL) - startTime > PROCESSDUMP_TIMEOUT) {
             isTimeout = true;
-            DfxLogError("Exceed max wait time, errno(%d)", errno);
-            goto out;
+            break;
         }
         usleep(SIGNALHANDLER_TIMEOUT); // sleep 10ms
     } while (1);
-    DfxLogInfo("waitpid for process(%d) return with ret(%d) status(%d)", childPid, ret, status);
+    DfxLogInfo("(%d) wait for process(%d) return with ret(%d) status(%d) timeout(%d)",
+        g_request.recycleTid, childPid, ret, status, isTimeout);
 out:
 #if defined(CRASH_LOCAL_HANDLER)
     if ((g_prevHandledSignal != SIGDUMP) && ((isTimeout) || ((ret >= 0) && (status != 0)))) {
