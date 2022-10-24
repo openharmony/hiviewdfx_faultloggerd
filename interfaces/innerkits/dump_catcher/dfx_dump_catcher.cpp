@@ -22,15 +22,19 @@
 #include <cstdlib>
 #include <cstring>
 #include <ctime>
-#include <dirent.h>
 #include <memory>
 #include <mutex>
-#include <poll.h>
 #include <string>
+#include <vector>
+
+#include <dirent.h>
+#include <errno.h>
+#include <poll.h>
+#include <string.h>
+#include <unistd.h>
+
 #include <sys/syscall.h>
 #include <sys/types.h>
-#include <unistd.h>
-#include <vector>
 
 #include "dfx_util.h"
 #include "dfx_define.h"
@@ -256,24 +260,32 @@ static bool SignalTargetProcess(const int type, int pid, int tid)
     return true;
 }
 
+static void LoadPathContent(const std::string& desc, const std::string& path, std::string& result)
+{
+    if (access(path.c_str(), F_OK) != 0) {
+        result.append("Target path(");
+        result.append(path);
+        result.append(") is not exist. errno(");
+        result.append(std::to_string(errno));
+        result.append(").\n");
+        return;
+    }
+
+    std::string content;
+    LoadStringFromFile(path, content);
+    if (!content.empty()) {
+        std::string str = desc + ":\n" + content + "\n";
+        result.append(str);
+    }
+    return;
+}
+
 static void LoadPidStat(const int pid, std::string& msg)
 {
     std::string statPath = "/proc/" + std::to_string(pid) + "/stat";
     std::string wchanPath = "/proc/" + std::to_string(pid) + "/wchan";
-    std::string statContent;
-    std::string wchanContent;
-    LoadStringFromFile(statPath, statContent);
-    LoadStringFromFile(wchanPath, wchanContent);
-
-    if (!statContent.empty()) {
-        std::string str = "stat\n:" + statContent + "\n";
-        msg.append(str);
-    }
-
-    if (!wchanContent.empty()) {
-        std::string str = "wchan\n:" + wchanContent + "\n";
-        msg.append(str);
-    }
+    LoadPathContent("stat", statPath, msg);
+    LoadPathContent("wchan", wchanPath, msg);
 }
 
 bool DfxDumpCatcher::DoDumpCatchRemote(const int type, int pid, int tid, std::string& msg)
