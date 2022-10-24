@@ -88,6 +88,8 @@ DfxUnwindLocal::DfxUnwindLocal()
 bool DfxUnwindLocal::Init()
 {
     std::unique_lock<std::mutex> lck(localDumperMutex_);
+    initTimes_++;
+
     if (isInited_) {
         DfxLogError("local handler has been inited.");
         return isInited_;
@@ -119,9 +121,20 @@ bool DfxUnwindLocal::Init()
 void DfxUnwindLocal::Destroy()
 {
     std::unique_lock<std::mutex> lck(localDumperMutex_);
+    if (initTimes_ >= 0) {
+        initTimes_--;
+    } else {
+        DfxLogError("%s :: Init must be called before Destroy.", __func__);
+    }
+
     if (!isInited_) {
         return;
     }
+
+    if (initTimes_ > 0) {
+        return;
+    }
+
     frames_.clear();
     frames_.shrink_to_fit();
     UninstallLocalDumper(SIGLOCAL_DUMP);

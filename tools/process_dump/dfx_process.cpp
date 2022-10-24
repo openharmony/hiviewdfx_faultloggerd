@@ -93,6 +93,11 @@ bool DfxProcess::InitProcessThreads(std::shared_ptr<DfxThread> keyThread)
     return true;
 }
 
+void DfxProcess::SetRecycleTid(uid_t nstid)
+{
+    recycleTid_ = nstid;
+}
+
 bool DfxProcess::InitOtherThreads(bool attach)
 {
     char path[NAME_LEN] = {0};
@@ -124,6 +129,11 @@ bool DfxProcess::InitOtherThreads(bool attach)
         pid_t nstid = tid;
         if (GetNs()) {
             TidToNstid(tid, nstid);
+        }
+
+        if (isSignalDump_ && (nstid == recycleTid_)) {
+            DfxLogInfo("skip recycle tid:%d nstid:%d.", recycleTid_, nstid);
+            continue;
         }
 
         InsertThreadNode(tid, nstid, attach);
