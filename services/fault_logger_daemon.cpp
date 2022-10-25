@@ -182,7 +182,6 @@ void FaultLoggerDaemon::HandlePipeFdClientRequest(int32_t connectionFd, const Fa
             break;
         case (int32_t)FaultLoggerPipeType::PIPE_FD_DELETE:
             faultLoggerPipeMap_->Del(request->pid);
-            fd = 0;
             break;
         default:
             DfxLogError("%s :: unknown pipeType(%d).\n", FAULTLOGGERD_TAG.c_str(), request->pipeType);
