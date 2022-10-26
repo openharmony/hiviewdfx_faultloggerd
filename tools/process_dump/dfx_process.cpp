@@ -132,7 +132,7 @@ bool DfxProcess::InitOtherThreads(bool attach)
         }
 
         if (isSignalDump_ && (nstid == recycleTid_)) {
-            DfxLogInfo("skip recycle tid:%d nstid:%d.", recycleTid_, nstid);
+            DfxLogDebug("skip recycle tid:%d nstid:%d.", recycleTid_, nstid);
             continue;
         }
 
