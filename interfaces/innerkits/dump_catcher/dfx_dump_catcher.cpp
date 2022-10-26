@@ -310,7 +310,7 @@ bool DfxDumpCatcher::DoDumpCatchRemote(const int type, int pid, int tid, std::st
             if (!SignalTargetProcess(type, pid, tid)) {
                 msg.append("Result: syscall SIGDUMP error.\n");
                 DfxLogWarn("%s :: %s :: %s", DFXDUMPCATCHER_TAG.c_str(), __func__, msg.c_str());
-                RequestPipeFd(pid, FaultLoggerPipeType::PIPE_FD_DELETE);
+                RequestDelPipeFd(pid);
                 return ret;
             }
         }
@@ -389,7 +389,7 @@ bool DfxDumpCatcher::DoDumpRemotePid(int pid, std::string& msg)
     msg = resMsg + bufMsg;
 
     // request close fds in faultloggerd
-    RequestPipeFd(pid, FaultLoggerPipeType::PIPE_FD_DELETE);
+    RequestDelPipeFd(pid);
     if (readBufFd >= 0) {
         close(readBufFd);
     }
