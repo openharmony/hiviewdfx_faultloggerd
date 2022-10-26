@@ -320,7 +320,7 @@ bool DfxUnwindLocal::ExecLocalDumpUnwinding(unw_context_t *ctx, size_t skipFramN
         curFrame.SetFramePc((uint64_t)pc);
         curFrame.SetFrameRelativePc((uint64_t)relPc);
         curFrame.SetFrameMapName(std::string(mapName));
-        
+
         index++;
         if (!isValidFrame) {
             DfxLogError("%s :: get map error.", __func__);
@@ -353,9 +353,13 @@ void DfxUnwindLocal::LocalDumper(int sig, siginfo_t *si, void *context)
     context_.regs[ARM_SP] = uc->uc_mcontext.arm_sp;
     context_.regs[ARM_LR] = uc->uc_mcontext.arm_lr;
     context_.regs[ARM_PC] = uc->uc_mcontext.arm_pc;
-#else
+#elif defined(__aarch64__)
+    if (memcpy_s(context_.uc_link, sizeof(ucontext_t), context, sizeof(ucontext_t)) != 0) {
+        DfxLogWarn("%s :: memcpy_s context error.", __func__);
+    }
+#elif defined(__x86_64__)
     if (memcpy_s(&context_, sizeof(ucontext_t), context, sizeof(ucontext_t)) != 0) {
-        DfxLogWarn("%s :: memcpy context error.", __func__);
+        DfxLogWarn("%s :: memcpy_s context error.", __func__);
     }
 #endif
 
