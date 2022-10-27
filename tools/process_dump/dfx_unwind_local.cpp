@@ -307,7 +307,7 @@ bool DfxUnwindLocal::ExecLocalDumpUnwinding(unw_context_t *ctx, size_t skipFramN
         curFrame.SetFramePc((uint64_t)pc);
         curFrame.SetFrameRelativePc((uint64_t)relPc);
         curFrame.SetFrameMapName(std::string(mapName));
-        
+
         index++;
         if (!isValidFrame) {
             DfxLogError("%s :: get map error.", __func__);
@@ -341,8 +341,9 @@ void DfxUnwindLocal::LocalDumper(int sig, siginfo_t *si, void *context)
     context_.regs[ARM_LR] = uc->uc_mcontext.arm_lr;
     context_.regs[ARM_PC] = uc->uc_mcontext.arm_pc;
 #else
-    if (memcpy_s(&context_, sizeof(ucontext_t), context, sizeof(ucontext_t)) != 0) {
-        DfxLogWarn("%s :: memcpy context error.", __func__);
+    // the ucontext.uc_mcontext.__reserved of libunwind is simplified with the system's own in aarch64
+    if (memcpy_s(&context_, sizeof(unw_context_t), context, sizeof(unw_context_t)) != 0) {
+        DfxLogWarn("%s :: memcpy_s context error.", __func__);
     }
 #endif
 
