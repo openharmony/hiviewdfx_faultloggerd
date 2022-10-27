@@ -353,10 +353,9 @@ void DfxUnwindLocal::LocalDumper(int sig, siginfo_t *si, void *context)
     context_.regs[ARM_SP] = uc->uc_mcontext.arm_sp;
     context_.regs[ARM_LR] = uc->uc_mcontext.arm_lr;
     context_.regs[ARM_PC] = uc->uc_mcontext.arm_pc;
-#elif defined(__aarch64__)
-    unw_getcontext(&context_);
-#elif defined(__x86_64__)
-    if (memcpy_s(&context_, sizeof(ucontext_t), context, sizeof(ucontext_t)) != 0) {
+#else
+    // the ucontext.uc_mcontext.__reserved of libunwind is simplified with the system's own in aarch64
+    if (memcpy_s(&context_, sizeof(unw_context_t), context, sizeof(unw_context_t)) != 0) {
         DfxLogWarn("%s :: memcpy_s context error.", __func__);
     }
 #endif
