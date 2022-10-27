@@ -38,6 +38,8 @@
 
 namespace OHOS {
 namespace HiviewDFX {
+static const int COUNT_ARGS = 2;
+
 void DfxProcess::FillProcessName()
 {
     char path[NAME_LEN] = "\0";
@@ -158,7 +160,7 @@ int DfxProcess::TidToNstid(const int tid, int& nstid)
 
     char buf[STATUS_LINE_SIZE];
     FILE *fp = fopen(path, "r");
-    if (fp == NULL) {
+    if (fp == nullptr) {
         return -1;
     }
 
@@ -171,7 +173,7 @@ int DfxProcess::TidToNstid(const int tid, int& nstid)
 
         // NSpid:  1892    1
         if (strncmp(buf, NSPID_STR_NAME, strlen(NSPID_STR_NAME)) == 0) {
-            if (sscanf_s(buf, "%*[^0-9]%d%*[^0-9]%d", &p, &t) != 2) {
+            if (sscanf_s(buf, "%*[^0-9]%d%*[^0-9]%d", &p, &t) != COUNT_ARGS) {
                 DfxLogError("sscanf_s failed.");
             }
             nstid = t;
