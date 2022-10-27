@@ -379,6 +379,13 @@ bool DfxDumpCatcher::DoDumpRemotePid(int pid, std::string& msg)
     msg = resMsg + bufMsg;
     
     RequestPipeFd(pid, FaultLoggerPipeType::PIPE_FD_DELETE);
+    if (readBufFd >= 0) {
+        close(readBufFd);
+    }
+
+    if (readResFd >= 0) {
+        close(readResFd);
+    }
     DfxLogInfo("%s :: %s :: ret: %d", DFXDUMPCATCHER_TAG.c_str(), __func__, ret);
     return ret;
 }
