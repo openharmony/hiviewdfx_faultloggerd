@@ -360,7 +360,6 @@ void DfxUnwindLocal::LocalDumper(int sig, siginfo_t *si, void *context)
     }
 #endif
 
-
     localDumperCV_.wait_for(lck, std::chrono::milliseconds(2000)); // 2000 : 2000ms
 }
 
