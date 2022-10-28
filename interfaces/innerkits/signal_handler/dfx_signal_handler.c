@@ -332,7 +332,7 @@ static void BlockMainThreadIfNeed(int sig)
     }
 }
 
-static pid_t __fork()
+static pid_t ForkBySyscall(void)
 {
     return syscall(SYS_clone, SIGCHLD, 0);
 }
@@ -363,7 +363,7 @@ static int DoProcessDump(void* arg)
     }
 
     // fork a child process that could ptrace us
-    childPid = __fork();
+    childPid = ForkBySyscall();
     if (childPid == 0) {
         _exit(DFX_ExecDump(NULL));
     } else if (childPid < 0) {

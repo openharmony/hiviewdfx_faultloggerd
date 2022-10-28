@@ -33,7 +33,7 @@
 
 namespace OHOS {
 namespace HiviewDFX {
-DfxThread::DfxThread(const pid_t pid, const pid_t tid, pid_t nsTid, const ucontext_t &context)
+DfxThread::DfxThread(pid_t pid, pid_t tid, pid_t nsTid, const ucontext_t &context)
     :isCrashThread_(false), pid_(pid), tid_(tid), nsTid_(nsTid), unwStopReason_(-1)
 {
     threadStatus_ = ThreadStatus::THREAD_STATUS_INVALID;

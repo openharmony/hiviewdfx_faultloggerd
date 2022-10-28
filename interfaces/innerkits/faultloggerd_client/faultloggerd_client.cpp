@@ -28,6 +28,8 @@
 #include "dfx_log.h"
 #include "faultloggerd_socket.h"
 
+static const int32_t SOCKET_TIMEOUT = 5;
+
 bool ReadStringFromFile(const char *path, char *buf, size_t len)
 {
     if ((len <= 1) || (buf == nullptr) || (path == nullptr)) {
@@ -118,7 +120,6 @@ int32_t RequestDelPipeFd(int32_t pid)
     request.clientType = (int32_t)FaultLoggerClientType::PIPE_FD_CLIENT;
 
     int sockfd;
-    const int32_t SOCKET_TIMEOUT = 5;
     if (!StartConnect(sockfd, FAULTLOGGERD_SOCK_PATH, SOCKET_TIMEOUT)) {
         DfxLogError("StartConnect failed");
         return -1;
@@ -137,7 +138,6 @@ int32_t RequestFileDescriptorEx(const struct FaultLoggerdRequest *request)
     }
 
     int sockfd;
-    const int32_t SOCKET_TIMEOUT = 5;
     if (!StartConnect(sockfd, FAULTLOGGERD_SOCK_PATH, SOCKET_TIMEOUT)) {
         DfxLogError("StartConnect failed");
         return -1;
