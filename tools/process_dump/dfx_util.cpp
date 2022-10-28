@@ -32,6 +32,9 @@
 
 namespace OHOS {
 namespace HiviewDFX {
+static const int ARGS_COUNT_ONE = 1;
+static const int ARGS_COUNT_TWO = 2;
+
 int GetRealTargetPid()
 {
     ProcInfo procInfo;
@@ -60,7 +63,7 @@ int GetProcStatus(struct ProcInfo& procInfo)
 
         if (strncmp(buf, PID_STR_NAME, strlen(PID_STR_NAME)) == 0) {
             // Pid:    1892
-            if (sscanf_s(buf, "%*[^0-9]%d", &p) != 1) {
+            if (sscanf_s(buf, "%*[^0-9]%d", &p) != ARGS_COUNT_ONE) {
                 DfxLogError("sscanf_s failed.");
             }
             procInfo.pid = p;
@@ -76,7 +79,7 @@ int GetProcStatus(struct ProcInfo& procInfo)
 
         if (strncmp(buf, PPID_STR_NAME, strlen(PPID_STR_NAME)) == 0) {
             // PPid:   240
-            if (sscanf_s(buf, "%*[^0-9]%d", &pp) != 1) {
+            if (sscanf_s(buf, "%*[^0-9]%d", &pp) != ARGS_COUNT_ONE) {
                 DfxLogError("sscanf_s failed.");
             }
             procInfo.ppid = pp;
@@ -85,7 +88,7 @@ int GetProcStatus(struct ProcInfo& procInfo)
 
         // NSpid:  1892    1
         if (strncmp(buf, NSPID_STR_NAME, strlen(NSPID_STR_NAME)) == 0) {
-            if (sscanf_s(buf, "%*[^0-9]%d%*[^0-9]%d", &p, &t) != 2) {
+            if (sscanf_s(buf, "%*[^0-9]%d%*[^0-9]%d", &p, &t) != ARGS_COUNT_TWO) {
                 DfxLogError("sscanf_s failed.");
             }
             procInfo.tid = t;
