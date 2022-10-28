@@ -69,6 +69,10 @@ DfxDumpCatcher::DfxDumpCatcher()
 
 DfxDumpCatcher::DfxDumpCatcher(int32_t pid) : frameCatcherPid_(pid)
 {
+    procInfo_.tid = 0;
+    procInfo_.ppid = 0;
+    procInfo_.pid = 0;
+    procInfo_.ns = false;
 }
 
 DfxDumpCatcher::~DfxDumpCatcher()
