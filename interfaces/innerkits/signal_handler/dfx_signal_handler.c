@@ -394,7 +394,7 @@ static int DoProcessDump(void* arg)
 out:
 #if defined(CRASH_LOCAL_HANDLER)
     if ((g_prevHandledSignal != SIGDUMP) && ((isTimeout) || ((ret >= 0) && (status != 0)))) {
-        CrashLocalHandler(&g_request, &(g_request.siginfo), &(g_request.context));
+        CrashLocalHandler(&g_request);
     }
 #endif
     prctl(PR_SET_DUMPABLE, prevDumpableStatus);
@@ -459,6 +459,7 @@ static void DFX_SignalHandler(int sig, siginfo_t *si, void *context)
         int recycleTid = clone(DoProcessDump, g_reservedChildStack, CLONE_THREAD | CLONE_SIGHAND | CLONE_VM, NULL);
         if (recycleTid == -1) {
             DfxLogError("Failed to create thread for recycle dump process");
+            pthread_mutex_unlock(&g_signalHandlerMutex);
         }
     }
 
