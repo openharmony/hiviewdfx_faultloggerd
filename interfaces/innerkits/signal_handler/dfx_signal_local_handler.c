@@ -32,19 +32,12 @@
 #include "dfx_log.h"
 #include "dfx_signal_handler.h"
 
-#define RESERVED_CHILD_STACK_SIZE (64 * 1024) // 64K
+#define LOCAL_HANDLER_STACK_SIZE (64 * 1024) // 64K
 
 static CrashFdFunc g_crashFdFn = NULL;
 static void *g_reservedChildStack;
 static struct ProcessDumpRequest g_request;
 static pthread_mutex_t g_signalHandlerMutex = PTHREAD_MUTEX_INITIALIZER;
-
-struct DebugThreadInfo {
-    pid_t crashingTid;
-    pid_t pseudothreadTid;
-    int signalNumber;
-    siginfo_t* info;
-};
 
 static int g_platformSignals[] = {
     SIGABRT, SIGBUS, SIGILL, SIGSEGV,
@@ -53,13 +46,13 @@ static int g_platformSignals[] = {
 static void ReserveChildThreadSignalStack(void)
 {
     // reserve stack for fork
-    g_reservedChildStack = mmap(NULL, RESERVED_CHILD_STACK_SIZE, \
+    g_reservedChildStack = mmap(NULL, LOCAL_HANDLER_STACK_SIZE, \
         PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_STACK, 1, 0);
     if (g_reservedChildStack == NULL) {
         DfxLogError("Failed to alloc memory for child stack.");
         return;
     }
-    g_reservedChildStack = (void *)(((uint8_t *)g_reservedChildStack) + RESERVED_CHILD_STACK_SIZE - 1);
+    g_reservedChildStack = (void *)(((uint8_t *)g_reservedChildStack) + LOCAL_HANDLER_STACK_SIZE - 1);
 }
 
 static void FutexWait(volatile void* ftx, int value)
@@ -88,10 +81,8 @@ static void DFX_SignalHandler(int sig, siginfo_t * si, void * context)
     g_request.type = sig;
     g_request.tid = gettid();
     g_request.pid = getpid();
-    g_request.uid = getuid();
-    g_request.reserved = 0;
     g_request.timeStamp = GetTimeMilliseconds();
-    DfxLogInfo("DFX_SignalHandler :: sig(%d), pid(%d), tid(%d).", sig, g_request.pid, g_request.tid);
+    DfxLogInfo("CrashHandler :: sig(%d), pid(%d), tid(%d).", sig, g_request.pid, g_request.tid);
 
     GetThreadName(g_request.threadName, sizeof(g_request.threadName));
     GetProcessName(g_request.processName, sizeof(g_request.processName));
@@ -99,27 +90,18 @@ static void DFX_SignalHandler(int sig, siginfo_t * si, void * context)
     memcpy_s(&(g_request.siginfo), sizeof(siginfo_t), si, sizeof(siginfo_t));
     memcpy_s(&(g_request.context), sizeof(ucontext_t), context, sizeof(ucontext_t));
 
-    struct DebugThreadInfo threadInfo = {
-        .pseudothreadTid = -1,
-        .crashingTid = gettid(),
-        .signalNumber = sig,
-        .info = si
-    };
-
+    int pseudothreadTid = 0;
     pid_t clildTid = clone(DoCrashHandler, g_reservedChildStack, \
         CLONE_THREAD | CLONE_SIGHAND | CLONE_VM | CLONE_CHILD_SETTID | CLONE_CHILD_CLEARTID, \
-        &threadInfo, NULL, NULL, &threadInfo.pseudothreadTid);
+        NULL, NULL, NULL, &pseudothreadTid);
     if (clildTid == -1) {
         DfxLogError("Failed to create thread for crash local handler");
         pthread_mutex_unlock(&g_signalHandlerMutex);
         return;
     }
 
-    // wait for the child to start ...
-    FutexWait(&threadInfo.pseudothreadTid, -1);
-
-    // and then wait for it to finish.
-    FutexWait(&threadInfo.pseudothreadTid, clildTid);
+    FutexWait(&pseudothreadTid, -1);
+    FutexWait(&pseudothreadTid, clildTid);
 
     DfxLogInfo("child thread(%d) exit.", clildTid);
     syscall(__NR_exit, 0);

@@ -14,7 +14,6 @@
  */
 #include "dfx_crash_local_handler.h"
 
-#include <hilog_base/log_base.h>
 #include <libunwind.h>
 #include <libunwind_i-ohos.h>
 #include <map_info.h>
@@ -22,18 +21,9 @@
 #include <signal.h>
 #include <sys/ucontext.h>
 #include <unistd.h>
+#include "dfx_log.h"
 #include "dfx_signal_handler.h"
 #include "faultloggerd_client.h"
-
-#ifdef LOG_DOMAIN
-#undef LOG_DOMAIN
-#define LOG_DOMAIN 0xD002D11
-#endif
-
-#ifdef LOG_TAG
-#undef LOG_TAG
-#define LOG_TAG "DfxCrashLocal"
-#endif
 
 #define MAX_FRAME 64
 #define BUF_SZ 512
@@ -94,7 +84,7 @@ __attribute__((noinline)) void PrintLog(int fd, const char *format, ...)
         }
         return;
     }
-    HILOG_BASE_ERROR(LOG_CORE, "%{public}s", buf);
+    DfxLogError(buf);
     if (fd > 0) {
         (void)write(fd, buf, strlen(buf));
     }
@@ -190,8 +180,11 @@ __attribute__((noinline)) void CrashLocalUnwind(const int fd, const ucontext_t* 
         index++;
 
         int ret = unw_step(cursor);
-        if (ret <= 0) {
-            PrintLog(fd, "Step stop, reason:%d.\n", ret);
+        if (ret < 0) {
+            PrintLog(fd, "Unwind step stop, reason:%d.\n", ret);
+            break;
+        } else if (ret == 0) {
+            DfxLogInfo("Unwind step finish\n");
             break;
         }
     }

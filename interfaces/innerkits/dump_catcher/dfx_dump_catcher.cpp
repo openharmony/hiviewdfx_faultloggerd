@@ -17,6 +17,7 @@
 
 #include "dfx_dump_catcher.h"
 
+#include <cerrno>
 #include <climits>
 #include <csignal>
 #include <cstdlib>
@@ -28,9 +29,7 @@
 #include <vector>
 
 #include <dirent.h>
-#include <errno.h>
 #include <poll.h>
-#include <string.h>
 #include <unistd.h>
 
 #include <sys/syscall.h>
