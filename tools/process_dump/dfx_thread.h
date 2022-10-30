@@ -54,6 +54,7 @@ public:
     std::string ToString() const;
     bool IsThreadInitialized();
     void ClearLastFrame();
+    void AddFrame(std::shared_ptr<DfxFrame> frame);
 
 private:
     enum class ThreadStatus {

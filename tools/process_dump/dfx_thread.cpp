@@ -265,5 +265,10 @@ void DfxThread::ClearLastFrame()
 {
     dfxFrames_.pop_back();
 }
+
+void DfxThread::AddFrame(std::shared_ptr<DfxFrame> frame)
+{
+    dfxFrames_.push_back(frame);
+}
 } // namespace HiviewDFX
 } // nampespace OHOS
