@@ -90,20 +90,20 @@ static void DFX_SignalHandler(int sig, siginfo_t * si, void * context)
     memcpy_s(&(g_request.siginfo), sizeof(siginfo_t), si, sizeof(siginfo_t));
     memcpy_s(&(g_request.context), sizeof(ucontext_t), context, sizeof(ucontext_t));
 
-    int pseudothreadTid = 0;
-    pid_t clildTid = clone(DoCrashHandler, g_reservedChildStack, \
+    int pseudothreadTid = -1;
+    pid_t childTid = clone(DoCrashHandler, g_reservedChildStack, \
         CLONE_THREAD | CLONE_SIGHAND | CLONE_VM | CLONE_CHILD_SETTID | CLONE_CHILD_CLEARTID, \
-        NULL, NULL, NULL, &pseudothreadTid);
-    if (clildTid == -1) {
+        &pseudothreadTid, NULL, NULL, &pseudothreadTid);
+    if (childTid == -1) {
         DfxLogError("Failed to create thread for crash local handler");
         pthread_mutex_unlock(&g_signalHandlerMutex);
         return;
     }
 
     FutexWait(&pseudothreadTid, -1);
-    FutexWait(&pseudothreadTid, clildTid);
+    FutexWait(&pseudothreadTid, childTid);
 
-    DfxLogInfo("child thread(%d) exit.", clildTid);
+    DfxLogInfo("child thread(%d) exit.", childTid);
     syscall(__NR_exit, 0);
 }
 
