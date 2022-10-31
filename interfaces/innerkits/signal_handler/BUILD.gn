@@ -127,10 +127,7 @@ if (defined(ohos_lite)) {
   ohos_shared_library("dfx_signalhandler") {
     public_configs = [ ":dfx_signal_handler_config" ]
 
-    cflags = [
-      "-DDFX_LOG_USE_HILOG_BASE",
-      "-DCRASH_LOCAL_HANDLER",
-    ]
+    cflags = [ "-DDFX_LOG_USE_HILOG_BASE" ]
 
     sources = [ "dfx_signal_handler.c" ]
 

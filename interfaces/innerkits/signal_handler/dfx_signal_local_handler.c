@@ -20,57 +20,108 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <unistd.h>
+#include <pthread.h>
+#include <sched.h>
+#include <sys/syscall.h>
+#include <sys/mman.h>
+#include <sys/prctl.h>
+#include <sys/wait.h>
+#include <linux/futex.h>
 #include "dfx_crash_local_handler.h"
 #include "dfx_cutil.h"
 #include "dfx_log.h"
 #include "dfx_signal_handler.h"
 
-static SignalHandlerFunc signalHandler = NULL;
+#define LOCAL_HANDLER_STACK_SIZE (64 * 1024) // 64K
+
+static CrashFdFunc g_crashFdFn = NULL;
+static void *g_reservedChildStack;
+static struct ProcessDumpRequest g_request;
+static pthread_mutex_t g_signalHandlerMutex = PTHREAD_MUTEX_INITIALIZER;
 
 static int g_platformSignals[] = {
     SIGABRT, SIGBUS, SIGILL, SIGSEGV,
 };
 
-void DFX_InitDumpRequest(struct ProcessDumpRequest* request, const int sig)
+static void ReserveChildThreadSignalStack(void)
 {
-    request->type = sig;
-    request->tid = gettid();
-    request->pid = getpid();
-    request->uid = getuid();
-    request->reserved = 0;
-    request->timeStamp = GetTimeMilliseconds();
-    GetThreadName(request->threadName, sizeof(request->threadName));
-    GetProcessName(request->processName, sizeof(request->processName));
+    // reserve stack for fork
+    g_reservedChildStack = mmap(NULL, LOCAL_HANDLER_STACK_SIZE, \
+        PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_STACK, 1, 0);
+    if (g_reservedChildStack == NULL) {
+        DfxLogError("Failed to alloc memory for child stack.");
+        return;
+    }
+    g_reservedChildStack = (void *)(((uint8_t *)g_reservedChildStack) + LOCAL_HANDLER_STACK_SIZE - 1);
+}
+
+static void FutexWait(volatile void* ftx, int value)
+{
+    syscall(__NR_futex, ftx, FUTEX_WAIT, value, NULL, NULL, 0);
+}
+
+static int DoCrashHandler(void* arg)
+{
+    (void)arg;
+    if (g_crashFdFn == NULL) {
+        CrashLocalHandler(&g_request);
+    } else {
+        int fd = g_crashFdFn();
+        CrashLocalHandlerFd(fd, &g_request);
+    }
+    pthread_mutex_unlock(&g_signalHandlerMutex);
+    syscall(__NR_exit, 0);
+    return 0;
 }
 
 static void DFX_SignalHandler(int sig, siginfo_t * si, void * context)
 {
-    struct ProcessDumpRequest request;
-    (void)memset_s(&request, sizeof(request), 0, sizeof(request));
-    DFX_InitDumpRequest(&request, sig);
+    pthread_mutex_lock(&g_signalHandlerMutex);
+    (void)memset_s(&g_request, sizeof(g_request), 0, sizeof(g_request));
+    g_request.type = sig;
+    g_request.tid = gettid();
+    g_request.pid = getpid();
+    g_request.timeStamp = GetTimeMilliseconds();
+    DfxLogInfo("CrashHandler :: sig(%d), pid(%d), tid(%d).", sig, g_request.pid, g_request.tid);
 
-    CrashLocalHandler(&request, si, context);
+    GetThreadName(g_request.threadName, sizeof(g_request.threadName));
+    GetProcessName(g_request.processName, sizeof(g_request.processName));
 
-    _exit(0);
+    memcpy_s(&(g_request.siginfo), sizeof(siginfo_t), si, sizeof(siginfo_t));
+    memcpy_s(&(g_request.context), sizeof(ucontext_t), context, sizeof(ucontext_t));
+
+    int pseudothreadTid = 0;
+    pid_t clildTid = clone(DoCrashHandler, g_reservedChildStack, \
+        CLONE_THREAD | CLONE_SIGHAND | CLONE_VM | CLONE_CHILD_SETTID | CLONE_CHILD_CLEARTID, \
+        NULL, NULL, NULL, &pseudothreadTid);
+    if (clildTid == -1) {
+        DfxLogError("Failed to create thread for crash local handler");
+        pthread_mutex_unlock(&g_signalHandlerMutex);
+        return;
+    }
+
+    FutexWait(&pseudothreadTid, -1);
+    FutexWait(&pseudothreadTid, clildTid);
+
+    DfxLogInfo("child thread(%d) exit.", clildTid);
+    syscall(__NR_exit, 0);
 }
 
-void DFX_SetSignalHandlerFunc(SignalHandlerFunc func)
+void DFX_GetCrashFdFunc(CrashFdFunc fn)
 {
-    signalHandler = func;
+    g_crashFdFn = fn;
 }
 
 void DFX_InstallLocalSignalHandler(void)
 {
+    ReserveChildThreadSignalStack();
+
     sigset_t set;
     sigemptyset(&set);
     struct sigaction action;
     memset_s(&action, sizeof(action), 0, sizeof(action));
     sigfillset(&action.sa_mask);
-    if (signalHandler != NULL) {
-        action.sa_sigaction = signalHandler;
-    } else {
-        action.sa_sigaction = DFX_SignalHandler;
-    }
+    action.sa_sigaction = DFX_SignalHandler;
     action.sa_flags = SA_RESTART | SA_SIGINFO | SA_ONSTACK;
     
     for (size_t i = 0; i < sizeof(g_platformSignals) / sizeof(g_platformSignals[0]); i++) {
