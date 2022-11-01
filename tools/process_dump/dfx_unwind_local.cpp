@@ -88,6 +88,8 @@ DfxUnwindLocal::DfxUnwindLocal()
 bool DfxUnwindLocal::Init()
 {
     std::unique_lock<std::mutex> lck(localDumperMutex_);
+    initTimes_++;
+
     if (isInited_) {
         DfxLogError("local handler has been inited.");
         return isInited_;
@@ -119,9 +121,20 @@ bool DfxUnwindLocal::Init()
 void DfxUnwindLocal::Destroy()
 {
     std::unique_lock<std::mutex> lck(localDumperMutex_);
+    if (initTimes_ >= 0) {
+        initTimes_--;
+    } else {
+        DfxLogError("%s :: Init must be called before Destroy.", __func__);
+    }
+
     if (!isInited_) {
         return;
     }
+
+    if (initTimes_ > 0) {
+        return;
+    }
+
     frames_.clear();
     frames_.shrink_to_fit();
     UninstallLocalDumper(SIGLOCAL_DUMP);
@@ -273,6 +286,9 @@ bool DfxUnwindLocal::ExecLocalDumpUnwinding(unw_context_t *ctx, size_t skipFramN
             DfxLogWarn("%s :: Failed to get current pc, stop.", __func__);
             break;
         }
+
+        curIndex_ = static_cast<uint32_t>(index - skipFramNum);
+        DfxLogDebug("%s :: curIndex_: %d", __func__, curIndex_);
         if (curIndex_ > 1 && prevPc == pc) {
             DfxLogWarn("%s :: repeated pc, stop.", __func__);
             break;
@@ -281,7 +297,7 @@ bool DfxUnwindLocal::ExecLocalDumpUnwinding(unw_context_t *ctx, size_t skipFramN
 
         unw_word_t relPc = unw_get_rel_pc(&cursor);
         unw_word_t sz = unw_get_previous_instr_sz(&cursor);
-        if ((index - skipFramNum != 0) && (relPc > sz)) {
+        if ((curIndex_ > 0) && (relPc > sz)) {
             relPc -= sz;
         }
 
@@ -300,14 +316,12 @@ bool DfxUnwindLocal::ExecLocalDumpUnwinding(unw_context_t *ctx, size_t skipFramN
             break;
         }
 
-        curIndex_ = static_cast<uint32_t>(index - skipFramNum);
-        DfxLogDebug("%s :: curIndex_: %d", __func__, curIndex_);
         auto& curFrame = frames_[curIndex_];
         curFrame.SetFrameIndex((size_t)curIndex_);
         curFrame.SetFramePc((uint64_t)pc);
         curFrame.SetFrameRelativePc((uint64_t)relPc);
         curFrame.SetFrameMapName(std::string(mapName));
-        
+
         index++;
         if (!isValidFrame) {
             DfxLogError("%s :: get map error.", __func__);
@@ -341,8 +355,9 @@ void DfxUnwindLocal::LocalDumper(int sig, siginfo_t *si, void *context)
     context_.regs[ARM_LR] = uc->uc_mcontext.arm_lr;
     context_.regs[ARM_PC] = uc->uc_mcontext.arm_pc;
 #else
-    if (memcpy_s(&context_, sizeof(ucontext_t), context, sizeof(ucontext_t)) != 0) {
-        DfxLogWarn("%s :: memcpy context error.", __func__);
+    // the ucontext.uc_mcontext.__reserved of libunwind is simplified with the system's own in aarch64
+    if (memcpy_s(&context_, sizeof(unw_context_t), context, sizeof(unw_context_t)) != 0) {
+        DfxLogWarn("%s :: memcpy_s context error.", __func__);
     }
 #endif
 

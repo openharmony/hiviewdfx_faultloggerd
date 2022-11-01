@@ -294,7 +294,7 @@ bool DfxDumpCatcher::DoDumpCatchRemote(const int type, int pid, int tid, std::st
             if (!SignalTargetProcess(type, pid, tid)) {
                 msg.append("Result: syscall SIGDUMP error.\n");
                 DfxLogWarn("%s :: %s :: %s", DFXDUMPCATCHER_TAG.c_str(), __func__, msg.c_str());
-                RequestPipeFd(pid, FaultLoggerPipeType::PIPE_FD_DELETE);
+                RequestDelPipeFd(pid);
                 return ret;
             }
         }
@@ -376,7 +376,7 @@ bool DfxDumpCatcher::DoDumpRemotePid(int pid, std::string& msg)
     msg = resMsg + bufMsg;
 
     // request close fds in faultloggerd
-    RequestPipeFd(pid, FaultLoggerPipeType::PIPE_FD_DELETE);
+    RequestDelPipeFd(pid);
     if (readBufFd >= 0) {
         close(readBufFd);
     }
@@ -437,7 +437,7 @@ bool DfxDumpCatcher::DumpCatchMultiPid(const std::vector<int> pidV, std::string&
 
     time_t startTime = time(nullptr);
     if (startTime > 0) {
-        DfxLogDebug("%s :: %s :: startTime(%ld).", DFXDUMPCATCHER_TAG.c_str(), __func__, startTime);
+        DfxLogDebug("%s :: %s :: startTime(%lld).", DFXDUMPCATCHER_TAG.c_str(), __func__, startTime);
     }
 
     for (int i = 0; i < pidSize; i++) {
@@ -451,7 +451,7 @@ bool DfxDumpCatcher::DumpCatchMultiPid(const std::vector<int> pidV, std::string&
 
         time_t currentTime = time(nullptr);
         if (currentTime > 0) {
-            DfxLogDebug("%s :: %s :: startTime(%ld), currentTime(%ld).", DFXDUMPCATCHER_TAG.c_str(), \
+            DfxLogDebug("%s :: %s :: startTime(%lld), currentTime(%lld).", DFXDUMPCATCHER_TAG.c_str(), \
                 __func__, startTime, currentTime);
             if (currentTime > startTime + DUMP_CATCHE_WORK_TIME_S) {
                 break;

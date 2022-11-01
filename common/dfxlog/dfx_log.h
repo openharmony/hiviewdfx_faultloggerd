@@ -45,11 +45,13 @@ extern "C" {
 
 #define FILE_NAME   (strrchr((__FILE__), '/') ? strrchr((__FILE__), '/') + 1 : (__FILE__))
 
-#ifndef LOG_DOMAIN
+#ifdef LOG_DOMAIN
+#undef LOG_DOMAIN
 #define LOG_DOMAIN 0xD002D11
 #endif
 
-#ifndef LOG_TAG
+#ifdef LOG_TAG
+#undef LOG_TAG
 #define LOG_TAG "DfxFaultLogger"
 #endif
 
