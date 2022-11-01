@@ -27,7 +27,7 @@
 #ifdef DFX_LOG_USE_HILOG_BASE
 static LogLevel g_LOG_LEVEL[] = { LOG_DEBUG, LOG_INFO, LOG_WARN, LOG_ERROR, LOG_FATAL };
 #else
-static const OHOS::HiviewDFX::HiLogLabel LOG_LABEL = {LOG_CORE, 0xD002D20, "DfxFaultLogger"};
+static const OHOS::HiviewDFX::HiLogLabel LOG_LABEL = {LOG_CORE, LOG_DOMAIN, LOG_TAG};
 #endif
 static const int32_t INVALID_FD = -1;
 static int32_t g_DebugFd = INVALID_FD;

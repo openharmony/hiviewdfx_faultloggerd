@@ -419,7 +419,7 @@ static void DFX_SignalHandler(int sig, siginfo_t *si, void *context)
 out:
 #if defined(CRASH_LOCAL_HANDLER)
     if ((sig != SIGDUMP) && ((isTimeout) || ((ret >= 0) && (status != 0)))) {
-        CrashLocalHandler(&g_request, si, context);
+        CrashLocalHandler(&g_request);
     }
 #endif
     ResetSignalHandlerIfNeed(sig);
