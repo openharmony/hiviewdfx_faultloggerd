@@ -38,6 +38,7 @@
 #include "dfx_log.h"
 #include "dfx_unwind_local.h"
 #include "faultloggerd_client.h"
+#include "file_ex.h"
 #include "iosfwd"
 #include "securec.h"
 #include "strings.h"
@@ -151,7 +152,7 @@ bool DfxDumpCatcher::DoDumpLocalPid(int pid, std::string& msg)
     if (closedir(dir) == -1) {
         DfxLogError("closedir failed.");
     }
-    
+
     DfxLogDebug("%s :: DoDumpLocalPid :: return %d.", DFXDUMPCATCHER_TAG.c_str(), ret);
     return ret;
 }
@@ -272,6 +273,34 @@ static bool IsPidUninterruptible(int pid)
     return false;
 }
 
+static void LoadPathContent(const std::string& desc, const std::string& path, std::string& result)
+{
+    if (access(path.c_str(), F_OK) != 0) {
+        result.append("Target path(");
+        result.append(path);
+        result.append(") is not exist. errno(");
+        result.append(std::to_string(errno));
+        result.append(").\n");
+        return;
+    }
+
+    std::string content;
+    LoadStringFromFile(path, content);
+    if (!content.empty()) {
+        std::string str = desc + ":\n" + content + "\n";
+        result.append(str);
+    }
+    return;
+}
+
+static void LoadPidStat(const int pid, std::string& msg)
+{
+    std::string statPath = "/proc/" + std::to_string(pid) + "/stat";
+    std::string wchanPath = "/proc/" + std::to_string(pid) + "/wchan";
+    LoadPathContent("stat", statPath, msg);
+    LoadPathContent("wchan", wchanPath, msg);
+}
+
 bool DfxDumpCatcher::DoDumpCatchRemote(const int type, int pid, int tid, std::string& msg)
 {
     bool ret = false;
@@ -339,6 +368,7 @@ bool DfxDumpCatcher::DoDumpRemotePid(int pid, std::string& msg)
             } else {
                 resMsg.append("Result: poll timeout.\n");
             }
+            LoadPidStat(pid, resMsg);
             DfxLogError("%s :: %s :: %s", DFXDUMPCATCHER_TAG.c_str(), __func__, resMsg.c_str());
             break;
         }
@@ -359,7 +389,7 @@ bool DfxDumpCatcher::DoDumpRemotePid(int pid, std::string& msg)
             if (((uint32_t)readfds[i].revents & POLLIN) != POLLIN) {
                 continue;
             }
-            
+
             if (readfds[i].fd == readBufFd) {
                 bufRet = DoReadBuf(readBufFd, bufMsg);
             }
