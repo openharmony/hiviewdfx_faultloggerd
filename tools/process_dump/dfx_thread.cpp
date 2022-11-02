@@ -133,7 +133,7 @@ void DfxThread::SetThreadRegs(const std::shared_ptr<DfxRegs> &regs)
     regs_ = regs;
 }
 
-std::shared_ptr<DfxFrame> DfxThread::GetAvaliableFrame()
+std::shared_ptr<DfxFrame> DfxThread::GetAvailableFrame()
 {
     std::shared_ptr<DfxFrame> frame = std::make_shared<DfxFrame>();
     dfxFrames_.push_back(frame);
