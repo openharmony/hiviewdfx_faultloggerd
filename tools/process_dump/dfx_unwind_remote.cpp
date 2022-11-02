@@ -157,45 +157,45 @@ bool DfxUnwindRemote::DfxUnwindRemoteDoUnwindStep(size_t const & index,
     std::shared_ptr<DfxThread> & thread, unw_cursor_t & cursor, std::shared_ptr<DfxProcess> process)
 {
     bool ret = false;
-    std::shared_ptr<DfxFrame> frame = thread->GetAvaliableFrame();
-    if (!frame) {
-        DfxLogWarn("Fail to create Frame.");
-        return ret;
-    }
-
-    frame->SetFrameIndex(index);
-    std::string strSym;
-    uint64_t framePc = frame->GetFramePc();
+    uint64_t framePc;
     static unw_word_t oldPc = 0;
     if (unw_get_reg(&cursor, UNW_REG_IP, (unw_word_t*)(&framePc))) {
         DfxLogWarn("Fail to get program counter.");
         return ret;
     }
-    if (oldPc == framePc && index != 0) {
-        return ret;
-    }
-    oldPc = framePc;
-    frame->SetFramePc(framePc);
 
-    uint64_t frameSp = frame->GetFrameSp();
+    uint64_t frameSp;
     if (unw_get_reg(&cursor, UNW_REG_SP, (unw_word_t*)(&frameSp))) {
         DfxLogWarn("Fail to get stack pointer.");
         return ret;
     }
-    frame->SetFrameSp(frameSp);
+
+    if (oldPc == framePc && index != 0) {
+        return ret;
+    }
+    oldPc = framePc;
 
     uint64_t relPc = unw_get_rel_pc(&cursor);
+    if (index != 0) {
+        relPc = DfxUnwindRemoteDoAdjustPc(cursor, relPc);
+        framePc = DfxUnwindRemoteDoAdjustPc(cursor, framePc);
+    }
+
     if (relPc == 0) {
         relPc = framePc;
     }
 
-    if (index != 0) {
-        relPc = DfxUnwindRemoteDoAdjustPc(cursor, relPc);
-    }
+    auto frame = std::make_shared<DfxFrame>();
     frame->SetFrameRelativePc(relPc);
-
+    frame->SetFramePc(framePc);
+    frame->SetFrameSp(frameSp);
+    frame->SetFrameIndex(index);
     ret = UpdateAndPrintFrameInfo(cursor, thread, frame,
         (thread->GetIsCrashThread() && !process->GetIsSignalDump()));
+    if (ret) {
+        thread->AddFrame(frame);
+    }
+
     DfxLogDebug("%s :: index(%d), framePc(0x%x), frameSp(0x%x).", __func__, index, framePc, frameSp);
     return ret;
 }
@@ -262,6 +262,7 @@ bool DfxUnwindRemote::UnwindThread(std::shared_ptr<DfxProcess> process, std::sha
         return false;
     }
 
+    pid_t nsTid = thread->GetRealTid();
     pid_t tid = thread->GetThreadId();
     char buf[LOG_BUF_LEN] = {0};
     int ret = snprintf_s(buf, sizeof(buf), sizeof(buf) - 1, "Tid:%d, Name:%s\n", tid, thread->GetThreadName().c_str());
@@ -270,7 +271,7 @@ bool DfxUnwindRemote::UnwindThread(std::shared_ptr<DfxProcess> process, std::sha
     }
     DfxRingBufferWrapper::GetInstance().AppendMsg(std::string(buf));
 
-    void *context = _UPT_create(tid);
+    void *context = _UPT_create(nsTid);
     if (!context) {
         return false;
     }

@@ -14,6 +14,10 @@
  */
 #include "dfx_signal_handler.h"
 
+#ifndef _GNU_SOURCE
+#define _GNU_SOURCE 1
+#endif
+
 #include <fcntl.h>
 #include <pthread.h>
 #include <sched.h>
@@ -75,16 +79,6 @@
 #define F_SETPIPE_SZ 1031
 #endif
 
-#ifndef CLONE_VFORK
-#define CLONE_VFORK 0x00004000
-#endif
-#ifndef CLONE_FS
-#define CLONE_FS 0x00000200
-#endif
-#ifndef CLONE_UNTRACED
-#define CLONE_UNTRACED 0x00800000
-#endif
-
 #define NUMBER_SIXTYFOUR 64
 #define INHERITABLE_OFFSET 32
 
@@ -99,7 +93,6 @@ static struct ProcessDumpRequest g_request;
 static struct ProcInfo g_procInfo;
 static void *g_reservedChildStack;
 static pthread_mutex_t g_signalHandlerMutex = PTHREAD_MUTEX_INITIALIZER;
-static pthread_mutex_t g_dumpMutex = PTHREAD_MUTEX_INITIALIZER;
 static int g_pipefd[2] = {-1, -1};
 static BOOL g_hasInit = FALSE;
 static const int SIGNALHANDLER_TIMEOUT = 10000; // 10000 us
@@ -234,20 +227,17 @@ static void DFX_SetUpSigAlarmAction(void)
 static int DFX_ExecDump(void *arg)
 {
     (void)arg;
-    pthread_mutex_lock(&g_dumpMutex);
     DFX_SetUpEnvironment();
     DFX_SetUpSigAlarmAction();
     alarm(ALARM_TIME_S);
     // create pipe for passing request to processdump
     if (pipe(g_pipefd) != 0) {
         DfxLogError("Failed to create pipe for transfering context.");
-        pthread_mutex_unlock(&g_dumpMutex);
         return CREATE_PIPE_FAIL;
     }
     ssize_t writeLen = (long)(sizeof(struct ProcessDumpRequest));
     if (fcntl(g_pipefd[1], F_SETPIPE_SZ, writeLen) < writeLen) {
         DfxLogError("Failed to set pipe buffer size.");
-        pthread_mutex_unlock(&g_dumpMutex);
         return SET_PIPE_LEN_FAIL;
     }
 
@@ -260,7 +250,6 @@ static int DFX_ExecDump(void *arg)
     ssize_t realWriteSize = OHOS_TEMP_FAILURE_RETRY(writev(g_pipefd[1], iovs, 1));
     if ((ssize_t)writeLen != realWriteSize) {
         DfxLogError("Failed to write pipe.");
-        pthread_mutex_unlock(&g_dumpMutex);
         return WRITE_PIPE_FAIL;
     }
     OHOS_TEMP_FAILURE_RETRY(dup2(g_pipefd[0], STDIN_FILENO));
@@ -271,10 +260,8 @@ static int DFX_ExecDump(void *arg)
 
     if (InheritCapabilities() != 0) {
         DfxLogError("Failed to inherit Capabilities from parent.");
-        pthread_mutex_unlock(&g_dumpMutex);
         return INHERIT_CAP_FAIL;
     }
-    pthread_mutex_unlock(&g_dumpMutex);
     DfxLogInfo("execl processdump.");
 #ifdef DFX_LOG_USE_HILOG_BASE
     execl("/system/bin/processdump", "processdump", "-signalhandler", NULL);
@@ -283,15 +270,6 @@ static int DFX_ExecDump(void *arg)
 #endif
     DfxLogError("Failed to execl processdump, errno: %d(%s)", errno, strerror(errno));
     return errno;
-}
-
-static pid_t DFX_ForkAndDump()
-{
-    if (g_reservedChildStack == NULL) {
-        DfxLogError("g_reservedChildStack is null.");
-        return -1;
-    }
-    return clone(DFX_ExecDump, g_reservedChildStack, CLONE_VFORK | CLONE_FS | CLONE_UNTRACED, NULL);
 }
 
 static void ResetSignalHandlerIfNeed(int sig)
@@ -354,54 +332,20 @@ static void BlockMainThreadIfNeed(int sig)
     }
 }
 
-static void DFX_SignalHandler(int sig, siginfo_t *si, void *context)
+static pid_t ForkBySyscall(void)
 {
-    if (sig == SIGDUMP && g_isDumping) {
-        DfxLogInfo("Current Process is dumping stacktrace now.");
-        return;
-    }
+    return syscall(SYS_clone, SIGCHLD, 0);
+}
 
-    // crash signal should never be skipped
-    pthread_mutex_lock(&g_signalHandlerMutex);
-    memset(&g_procInfo, 0, sizeof(g_procInfo));
-    GetProcStatus(&g_procInfo);
-    DfxLogDebug("DFX_SignalHandler :: ns(%d), pid(%d), tid(%d).", g_procInfo.ns, g_procInfo.pid, g_procInfo.tid);
-
-    BlockMainThreadIfNeed(sig);
-    if (g_prevHandledSignal != SIGDUMP) {
-        ResetSignalHandlerIfNeed(sig);
-        if (syscall(SYS_rt_tgsigqueueinfo, GetPid(), GetTid(), si->si_signo, si) != 0) {
-            DfxLogError("Failed to resend signal(%d), errno(%d).", si->si_signo, errno);
-        } else {
-            DfxLogInfo("Current process has encount a crash, rethrow sig(%d).", si->si_signo);
-        }
-        return;
-    }
-    g_prevHandledSignal = sig;
-    g_isDumping = TRUE;
-
-    memset(&g_request, 0, sizeof(g_request));
-    g_request.type = sig;
-    g_request.pid = GetPid();
-    g_request.tid = GetTid();
-    g_request.uid = getuid();
-    g_request.reserved = 0;
-    g_request.timeStamp = GetTimeMilliseconds();
-    DfxLogInfo("DFX_SignalHandler :: sig(%d), pid(%d), tid(%d).", sig, g_request.pid, g_request.tid);
-
-    GetThreadName(g_request.threadName, sizeof(g_request.threadName));
-    GetProcessName(g_request.processName, sizeof(g_request.processName));
-
-    memcpy(&(g_request.siginfo), si, sizeof(siginfo_t));
-    memcpy(&(g_request.context), context, sizeof(ucontext_t));
-
-    FillTraceIdLocked(&g_request);
-    FillLastFatalMessageLocked(sig);
-    pid_t childPid;
+static int DoProcessDump(void* arg)
+{
+    (void)arg;
     int status;
     int ret = -1;
-    bool isTimeout = false;
+    int childPid = -1;
     int startTime = (int)time(NULL);
+    bool isTimeout = false;
+    g_request.recycleTid = syscall(SYS_gettid);
     // set privilege for dump ourself
     int prevDumpableStatus = prctl(PR_GET_DUMPABLE);
     bool isTracerStatusModified = false;
@@ -419,8 +363,10 @@ static void DFX_SignalHandler(int sig, siginfo_t *si, void *context)
     }
 
     // fork a child process that could ptrace us
-    childPid = DFX_ForkAndDump();
-    if (childPid < 0) {
+    childPid = ForkBySyscall();
+    if (childPid == 0) {
+        _exit(DFX_ExecDump(NULL));
+    } else if (childPid < 0) {
         DfxLogError("Failed to fork child process, errno(%d).", errno);
         goto out;
     }
@@ -439,33 +385,85 @@ static void DFX_SignalHandler(int sig, siginfo_t *si, void *context)
 
         if ((int)time(NULL) - startTime > PROCESSDUMP_TIMEOUT) {
             isTimeout = true;
-            DfxLogError("Exceed max wait time, errno(%d)", errno);
-            goto out;
+            break;
         }
         usleep(SIGNALHANDLER_TIMEOUT); // sleep 10ms
     } while (1);
-    DfxLogInfo("waitpid for process(%d) return with ret(%d) status(%d)", childPid, ret, status);
+    DfxLogInfo("(%d) wait for process(%d) return with ret(%d) status(%d) timeout(%d)",
+        g_request.recycleTid, childPid, ret, status, isTimeout);
 out:
 #if defined(CRASH_LOCAL_HANDLER)
-    if ((sig != SIGDUMP) && ((isTimeout) || ((ret >= 0) && (status != 0)))) {
-        CrashLocalHandler(&g_request, si, context);
+    if ((g_prevHandledSignal != SIGDUMP) && ((isTimeout) || ((ret >= 0) && (status != 0)))) {
+        CrashLocalHandler(&g_request);
     }
 #endif
-    ResetSignalHandlerIfNeed(sig);
     prctl(PR_SET_DUMPABLE, prevDumpableStatus);
     if (isTracerStatusModified == true) {
         prctl(PR_SET_PTRACER, 0);
     }
+    g_isDumping = FALSE;
+    pthread_mutex_unlock(&g_signalHandlerMutex);
+    return 0;
+}
 
-    if (sig != SIGDUMP) {
+static void DFX_SignalHandler(int sig, siginfo_t *si, void *context)
+{
+    if (sig == SIGDUMP && g_isDumping) {
+        DfxLogInfo("Current Process is dumping stacktrace now.");
+        return;
+    }
+
+    // crash signal should never be skipped
+    pthread_mutex_lock(&g_signalHandlerMutex);
+    memset(&g_procInfo, 0, sizeof(g_procInfo));
+    GetProcStatus(&g_procInfo);
+    BlockMainThreadIfNeed(sig);
+    if (g_prevHandledSignal != SIGDUMP) {
+        ResetSignalHandlerIfNeed(sig);
         if (syscall(SYS_rt_tgsigqueueinfo, GetPid(), GetTid(), si->si_signo, si) != 0) {
             DfxLogError("Failed to resend signal(%d), errno(%d).", si->si_signo, errno);
+        } else {
+            DfxLogInfo("Current process has encount a crash, rethrow sig(%d).", si->si_signo);
+        }
+        return;
+    }
+    g_prevHandledSignal = sig;
+    g_isDumping = TRUE;
+    memset(&g_request, 0, sizeof(g_request));
+    g_request.type = sig;
+    g_request.pid = GetPid();
+    g_request.tid = syscall(SYS_gettid);
+    g_request.uid = getuid();
+    g_request.reserved = 0;
+    g_request.timeStamp = GetTimeMilliseconds();
+    DfxLogInfo("DFX_SignalHandler :: sig(%d), pid(%d), tid(%d).", sig, g_request.pid, g_request.tid);
+
+    GetThreadName(g_request.threadName, sizeof(g_request.threadName));
+    GetProcessName(g_request.processName, sizeof(g_request.processName));
+
+    memcpy(&(g_request.siginfo), si, sizeof(siginfo_t));
+    memcpy(&(g_request.context), context, sizeof(ucontext_t));
+
+    FillTraceIdLocked(&g_request);
+    FillLastFatalMessageLocked(sig);
+
+    // for protecting g_reservedChildStack
+    // g_signalHandlerMutex will be unlocked in DoProcessDump function
+    if (sig != SIGDUMP) {
+        DoProcessDump(NULL);
+        ResetSignalHandlerIfNeed(sig);
+        if (syscall(SYS_rt_tgsigqueueinfo, GetPid(), syscall(SYS_gettid), si->si_signo, si) != 0) {
+            DfxLogError("Failed to resend signal(%d), errno(%d).", si->si_signo, errno);
+        }
+    } else {
+        int recycleTid = clone(DoProcessDump, g_reservedChildStack, CLONE_THREAD | CLONE_SIGHAND | CLONE_VM, NULL);
+        if (recycleTid == -1) {
+            DfxLogError("Failed to create thread for recycle dump process");
+            pthread_mutex_unlock(&g_signalHandlerMutex);
         }
     }
 
     DfxLogInfo("Finish handle signal(%d) in %d:%d", sig, g_request.pid, g_request.tid);
-    g_isDumping = FALSE;
-    pthread_mutex_unlock(&g_signalHandlerMutex);
 }
 
 void DFX_InstallSignalHandler(void)

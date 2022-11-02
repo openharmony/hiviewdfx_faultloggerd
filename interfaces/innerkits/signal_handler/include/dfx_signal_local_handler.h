@@ -24,10 +24,8 @@
 extern "C" {
 #endif
 
-typedef void (*SignalHandlerFunc) (int, siginfo_t *, void *);
-void DFX_SetSignalHandlerFunc(SignalHandlerFunc func);
-
-void DFX_InitDumpRequest(struct ProcessDumpRequest* request, const int sig);
+typedef int (*CrashFdFunc) (void);
+void DFX_GetCrashFdFunc(CrashFdFunc fn);
 
 void DFX_InstallLocalSignalHandler(void);
 
