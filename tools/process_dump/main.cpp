@@ -47,7 +47,7 @@ static void PrintCommandHelp()
     std::cout << "please use dumpcatcher" << std::endl;
 }
 
-static bool ParseParamters(int argc, char *argv[], bool &isSignalHdlr)
+static bool ParseParameters(int argc, char *argv[], bool &isSignalHdlr)
 {
     if (argc <= DUMP_ARG_ONE) {
         return false;
@@ -75,7 +75,7 @@ int main(int argc, char *argv[])
     alarm(PROCESSDUMP_TIMEOUT); // wait 30s for process dump done
     setsid();
 
-    if (!ParseParamters(argc, argv, isSignalHdlr)) {
+    if (!ParseParameters(argc, argv, isSignalHdlr)) {
         PrintCommandHelp();
         return 0;
     }
