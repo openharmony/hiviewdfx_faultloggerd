@@ -38,7 +38,7 @@
 
 namespace OHOS {
 namespace HiviewDFX {
-static const int COUNT_ARGS = 2;
+static const int ARGS_COUNT_TWO = 2;
 
 void DfxProcess::FillProcessName()
 {
@@ -84,15 +84,20 @@ bool DfxProcess::InitProcessMaps()
 bool DfxProcess::InitProcessThreads(std::shared_ptr<DfxThread> keyThread)
 {
     if (!keyThread) {
-        keyThread = std::make_shared<DfxThread>(GetPid(), GetPid());
+        keyThread = std::make_shared<DfxThread>(pid_, pid_, pid_);
     }
-    
+
     if (!keyThread->Attach()) {
         DfxLogWarn("Fail to attach thread.");
         return false;
     }
     threads_.push_back(keyThread);
     return true;
+}
+
+void DfxProcess::SetRecycleTid(uid_t nstid)
+{
+    recycleTid_ = nstid;
 }
 
 bool DfxProcess::InitOtherThreads(bool attach)
@@ -128,13 +133,18 @@ bool DfxProcess::InitOtherThreads(bool attach)
             TidToNstid(tid, nstid);
         }
 
-        InsertThreadNode(nstid, attach);
+        if (isSignalDump_ && (nstid == recycleTid_)) {
+            DfxLogDebug("skip recycle tid:%d nstid:%d.", recycleTid_, nstid);
+            continue;
+        }
+
+        InsertThreadNode(tid, nstid, attach);
     }
     closedir(dir);
     return true;
 }
 
-void DfxProcess::InsertThreadNode(pid_t tid, bool attach)
+void DfxProcess::InsertThreadNode(pid_t tid, pid_t nsTid, bool attach)
 {
     for (auto iter = threads_.begin(); iter != threads_.end(); iter++) {
         if ((*iter)->GetThreadId() == tid) {
@@ -142,7 +152,7 @@ void DfxProcess::InsertThreadNode(pid_t tid, bool attach)
         }
     }
 
-    auto thread = std::make_shared<DfxThread>(GetPid(), tid);
+    auto thread = std::make_shared<DfxThread>(pid_, tid, nsTid);
     if (attach) {
         thread->Attach();
     }
@@ -153,7 +163,7 @@ int DfxProcess::TidToNstid(const int tid, int& nstid)
 {
     char path[NAME_LEN];
     (void)memset_s(path, sizeof(path), '\0', sizeof(path));
-    if (snprintf_s(path, sizeof(path), sizeof(path) - 1, "/proc/%d/task/%d/status", GetPid(), tid) <= 0) {
+    if (snprintf_s(path, sizeof(path), sizeof(path) - 1, "/proc/%d/task/%d/status", pid_, tid) <= 0) {
         DfxLogWarn("snprintf_s error.");
         return -1;
     }
@@ -173,8 +183,8 @@ int DfxProcess::TidToNstid(const int tid, int& nstid)
 
         // NSpid:  1892    1
         if (strncmp(buf, NSPID_STR_NAME, strlen(NSPID_STR_NAME)) == 0) {
-            if (sscanf_s(buf, "%*[^0-9]%d%*[^0-9]%d", &p, &t) != COUNT_ARGS) {
-                DfxLogError("sscanf_s failed.");
+            if (sscanf_s(buf, "%*[^0-9]%d%*[^0-9]%d", &p, &t) != ARGS_COUNT_TWO) {
+                DfxLogWarn("TidToNstid sscanf_s failed.");
             }
             nstid = t;
             break;

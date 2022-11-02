@@ -49,14 +49,14 @@ void DumpCatcher::Dump(int32_t type, int32_t pid, int32_t tid) const
             break;
     }
 
-    if (dumpRet) {
-        if (!msg.empty()) {
-            std::cout << msg << std::endl;
-        } else {
-            std::cout << "Dump msg empty." << std::endl;
-        }
-    } else {
+    if (!dumpRet) {
         std::cout << "Dump Failed." << std::endl;
+    }
+
+    if (!msg.empty()) {
+        std::cout << msg << std::endl;
+    } else {
+        std::cout << "Dump msg empty." << std::endl;
     }
 }
 } // namespace HiviewDFX

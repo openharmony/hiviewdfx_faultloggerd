@@ -70,7 +70,6 @@ void DfxLogToSocket(const char *msg)
     RequestPrintTHilog(msg, length);
 }
 
-#ifndef DFX_LOG_USE_HILOG_BASE
 void InitDebugLog(int type, int pid, int tid, unsigned int uid)
 {
     DfxLogInfo("InitDebugLog :: type(%d), pid(%d), tid(%d), uid(%d).", type, pid, tid, uid);
@@ -120,4 +119,3 @@ void CloseDebugLog()
 
     InitDebugFd(g_DebugLogFilleDes);
 }
-#endif

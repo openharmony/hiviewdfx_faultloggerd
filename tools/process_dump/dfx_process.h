@@ -18,6 +18,7 @@
 #include <cinttypes>
 #include <memory>
 #include <string>
+
 #include "dfx_define.h"
 #include "dfx_elf.h"
 #include "dfx_maps.h"
@@ -36,7 +37,7 @@ public:
     void FillProcessName();
     void PrintProcessMapsByConfig();
     void PrintThreadsHeaderByConfig();
-    void InsertThreadNode(pid_t tid, bool attach = true);
+    void InsertThreadNode(pid_t tid, pid_t nsTid, bool attach = true);
 
     void SetIsSignalDump(bool isSignalDump);
     bool GetIsSignalDump() const;
@@ -50,6 +51,7 @@ public:
 
     void SetPid(pid_t pid);
     void SetUid(uid_t uid);
+    void SetRecycleTid(uid_t nstid);
     void SetNs(bool ns);
     void SetProcessName(const std::string &processName);
     void SetMaps(std::shared_ptr<DfxElfMaps> maps);
@@ -59,6 +61,7 @@ public:
 private:
     pid_t pid_ = 0;
     uid_t uid_ = 0;
+    pid_t recycleTid_ = 0;
     bool ns_ = false;
     bool isSignalDump_ = false;
     std::string processName_;

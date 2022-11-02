@@ -28,6 +28,8 @@
 #include "dfx_log.h"
 #include "faultloggerd_socket.h"
 
+static const int32_t SOCKET_TIMEOUT = 5;
+
 bool ReadStringFromFile(const char *path, char *buf, size_t len)
 {
     if ((len <= 1) || (buf == nullptr) || (path == nullptr)) {
@@ -103,9 +105,29 @@ int32_t RequestPipeFd(int32_t pid, int32_t pipeType)
     }
     request.pipeType = pipeType;
     request.pid = pid;
-
     request.clientType = (int32_t)FaultLoggerClientType::PIPE_FD_CLIENT;
     return RequestFileDescriptorEx(&request);
+}
+
+int32_t RequestDelPipeFd(int32_t pid)
+{
+    struct FaultLoggerdRequest request;
+    if (memset_s(&request, sizeof(request), 0, sizeof(struct FaultLoggerdRequest)) != 0) {
+        DfxLogError("%s :: memset_s request failed..", __func__);
+    }
+    request.pipeType = FaultLoggerPipeType::PIPE_FD_DELETE;
+    request.pid = pid;
+    request.clientType = (int32_t)FaultLoggerClientType::PIPE_FD_CLIENT;
+
+    int sockfd;
+    if (!StartConnect(sockfd, FAULTLOGGERD_SOCK_PATH, SOCKET_TIMEOUT)) {
+        DfxLogError("StartConnect failed");
+        return -1;
+    }
+
+    write(sockfd, &request, sizeof(struct FaultLoggerdRequest));
+    close(sockfd);
+    return 0;
 }
 
 int32_t RequestFileDescriptorEx(const struct FaultLoggerdRequest *request)
@@ -116,7 +138,6 @@ int32_t RequestFileDescriptorEx(const struct FaultLoggerdRequest *request)
     }
 
     int sockfd;
-    const int32_t SOCKET_TIMEOUT = 5;
     if (!StartConnect(sockfd, FAULTLOGGERD_SOCK_PATH, SOCKET_TIMEOUT)) {
         DfxLogError("StartConnect failed");
         return -1;

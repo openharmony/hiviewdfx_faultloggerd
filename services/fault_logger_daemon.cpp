@@ -100,7 +100,7 @@ int32_t FaultLoggerDaemon::StartServer()
         return -1;
     }
 
-    DfxLogInfo("%s :: %s: start loop accept.", FAULTLOGGERD_TAG.c_str(), __func__);
+    DfxLogDebug("%s :: %s: start loop accept.", FAULTLOGGERD_TAG.c_str(), __func__);
     LoopAcceptRequestAndFork(socketFd);
 
     close(socketFd);
@@ -158,9 +158,9 @@ void FaultLoggerDaemon::HandleLogFileDesClientRequest(int32_t connectionFd, cons
 
 void FaultLoggerDaemon::HandlePipeFdClientRequest(int32_t connectionFd, const FaultLoggerdRequest * request)
 {
-    DfxLogInfo("%s :: pid(%d), pipeType(%d).\n", FAULTLOGGERD_TAG.c_str(), request->pid, request->pipeType);
+    DfxLogDebug("%s :: pid(%d), pipeType(%d).\n", FAULTLOGGERD_TAG.c_str(), request->pid, request->pipeType);
     int fd = -1;
-    
+
     FaultLoggerPipe2* faultLoggerPipe = faultLoggerPipeMap_->Get(request->pid);
     if (faultLoggerPipe == nullptr) {
         DfxLogError("%s :: cannot find pipe fd for pid(%d).\n", FAULTLOGGERD_TAG.c_str(), request->pid);
@@ -182,10 +182,10 @@ void FaultLoggerDaemon::HandlePipeFdClientRequest(int32_t connectionFd, const Fa
             break;
         case (int32_t)FaultLoggerPipeType::PIPE_FD_DELETE:
             faultLoggerPipeMap_->Del(request->pid);
-            break;
+            return;
         default:
             DfxLogError("%s :: unknown pipeType(%d).\n", FAULTLOGGERD_TAG.c_str(), request->pipeType);
-            break;
+            return;
     }
 
     if (fd < 0) {
@@ -224,7 +224,7 @@ FaultLoggerCheckPermissionResp FaultLoggerDaemon::SecurityCheck(int32_t connecti
             DfxLogError("%s :: setsockopt SO_PASSCRED error.", FAULTLOGGERD_TAG.c_str());
             break;
         }
-        
+
         if (write(connectionFd, DAEMON_RESP.c_str(), DAEMON_RESP.length()) !=
             static_cast<ssize_t>(DAEMON_RESP.length())) {
             DfxLogError("%s :: Failed to write DAEMON_RESP.", FAULTLOGGERD_TAG.c_str());
@@ -259,6 +259,7 @@ void FaultLoggerDaemon::HandlePermissionRequest(int32_t connectionFd, FaultLogge
 
 void FaultLoggerDaemon::HandleSdkDumpRequest(int32_t connectionFd, FaultLoggerdRequest * request)
 {
+    DfxLogInfo("Receive dump request for pid:%d tid:%d.", request->pid, request->tid);
     FaultLoggerSdkDumpResp resSdkDump = FaultLoggerSdkDumpResp::SDK_DUMP_REJECT;
     FaultLoggerCheckPermissionResp resSecurityCheck = SecurityCheck(connectionFd, request);
 
@@ -370,7 +371,7 @@ void FaultLoggerDaemon::HandleRequest(int32_t connectionFd)
         }
 
         auto request = reinterpret_cast<FaultLoggerdRequest *>(buf);
-        DfxLogInfo("%s :: clientType(%d).\n", FAULTLOGGERD_TAG.c_str(), request->clientType);
+        DfxLogDebug("%s :: clientType(%d).\n", FAULTLOGGERD_TAG.c_str(), request->clientType);
         switch (request->clientType) {
             case (int32_t)FaultLoggerClientType::DEFAULT_CLIENT:
                 HandleDefaultClientRequest(connectionFd, request);
@@ -494,7 +495,7 @@ void FaultLoggerDaemon::LoopAcceptRequestAndFork(int socketFd)
             DfxLogError("%s :: Failed to accept connection", FAULTLOGGERD_TAG.c_str());
             continue;
         }
-        DfxLogInfo("%s :: %s: accept: %d.", FAULTLOGGERD_TAG.c_str(), __func__, connectionFd);
+        DfxLogDebug("%s :: %s: accept: %d.", FAULTLOGGERD_TAG.c_str(), __func__, connectionFd);
 
         std::thread th(FaultLoggerDaemon::HandleRequesting, connectionFd);
         th.detach();
