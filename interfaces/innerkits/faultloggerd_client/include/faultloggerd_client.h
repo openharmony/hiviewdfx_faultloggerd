@@ -62,6 +62,7 @@ enum FaultLoggerSdkDumpResp {
     SDK_DUMP_PASS = 1,
     SDK_DUMP_REJECT,
     SDK_DUMP_REPEAT,
+    SDK_DUMP_NOPROC,
     SDK_DUMP_MAX
 };
 
