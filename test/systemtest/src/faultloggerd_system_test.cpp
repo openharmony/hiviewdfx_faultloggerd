@@ -197,12 +197,12 @@ std::string FaultLoggerdSystemTest::ForkAndRunCommands(const std::vector<std::st
 int FaultLoggerdSystemTest::CountLines(std::string FileName)
 {
     ifstream ReadFile;
-    int n = 0;
     std::string tmpuseValue;
     ReadFile.open(FileName.c_str(), ios::in);
     if (ReadFile.fail()) {
         return 0;
     } else {
+        int n = 0;
         while (getline(ReadFile, tmpuseValue, '\n')) {
             n++;
         }
@@ -454,9 +454,8 @@ std::string FaultLoggerdSystemTest::ForkAndCommands(const std::vector<std::strin
         }
         GTEST_LOG_(INFO) << "Root ID: " << FaultLoggerdSystemTest::loopRootPid;
     } else if (udid == BMS_UID) { // sys
-        std::string pidLog;
         while (fgets(resultBufShell, sizeof(resultBufShell), procFileInfo) != nullptr) {
-            pidLog = resultBufShell;
+            std::string pidLog = resultBufShell;
             loopSysPid = atoi(pidLog.c_str());
             GTEST_LOG_(INFO) << "System ID: " << loopSysPid;
         }
@@ -483,9 +482,6 @@ std::string FaultLoggerdSystemTest::ForkAndCommands(const std::vector<std::strin
 // create crasher loop for: 1. system; 2. root; 3.app; 4. root+cpp
 void FaultLoggerdSystemTest::StartCrasherLoop(int type)
 {
-    int rootTidCount = 0;
-    int appTidCount = 0;
-    int sysTidCount = 0;
     if (type == NUMBER_ONE) {
         int crasherType = 0;
         int uidSetting = BMS_UID;
@@ -505,6 +501,7 @@ void FaultLoggerdSystemTest::StartCrasherLoop(int type)
             perror("popen execute failed");
             exit(1);
         }
+        int sysTidCount = 0;
         while (fgets(resultBufShell, sizeof(resultBufShell), procFileInfo) != nullptr) {
             sysTid[sysTidCount] = resultBufShell;
             GTEST_LOG_(INFO) << "procFileInfo print info = " << resultBufShell;
@@ -532,6 +529,7 @@ void FaultLoggerdSystemTest::StartCrasherLoop(int type)
             perror("popen execute failed");
             exit(1);
         }
+        int rootTidCount = 0;
         while (fgets(resultBufShell, sizeof(resultBufShell), procFileInfo) != nullptr) {
             rootTid[rootTidCount] = resultBufShell;
             GTEST_LOG_(INFO) << "procFileInfo print info = " << resultBufShell;
@@ -559,6 +557,7 @@ void FaultLoggerdSystemTest::StartCrasherLoop(int type)
             perror("popen execute failed");
             exit(1);
         }
+        int appTidCount = 0;
         while (fgets(resultBufShell, sizeof(resultBufShell), procFileInfo) != nullptr) {
             appTid[appTidCount] = resultBufShell;
             GTEST_LOG_(INFO) << "procFileInfo print info = " << resultBufShell;
@@ -609,9 +608,8 @@ void FaultLoggerdSystemTest::StartCrasherLoopForUnsingPidAndTid(int crasherType)
         perror("popen execute failed");
         exit(1);
     }
-    std::string pidLog;
     while (fgets(resultBufShell, sizeof(resultBufShell), procFileInfoOne) != nullptr) {
-        pidLog = resultBufShell;
+        std::string pidLog = resultBufShell;
         unsigLoopSysPid = atoi(pidLog.c_str());
         GTEST_LOG_(INFO) << "System ID: " << unsigLoopSysPid;
     }

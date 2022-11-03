@@ -43,7 +43,7 @@ public:
     void SetWriteBufFd(int32_t fd);
     void SetWriteFunc(RingBufferWriteFunc func);
 
-    void AppendMsg(std::string msg);
+    void AppendMsg(const std::string& msg);
     int AppendBuf(const char *format, ...);
 private:
     static void LoopPrintRingBuffer();

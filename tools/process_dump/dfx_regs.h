@@ -37,7 +37,7 @@ public:
     virtual std::string GetSpecialRegisterName(uintptr_t val) const = 0;
     virtual uintptr_t GetPC() const = 0;
     virtual uintptr_t GetLR() const = 0;
-    void SetRegs(const std::vector<uintptr_t> regs)
+    void SetRegs(const std::vector<uintptr_t>& regs)
     {
         regsData_ = regs;
     }

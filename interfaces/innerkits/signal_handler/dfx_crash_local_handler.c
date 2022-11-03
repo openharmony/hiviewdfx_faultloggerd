@@ -137,7 +137,6 @@ __attribute__((noinline)) void CrashLocalUnwind(const int fd, const ucontext_t* 
     unw_word_t offset;
     unw_word_t sz;
     unw_word_t prevPc;
-    struct map_info* mapInfo;
     size_t index = 0;
     while (true) {
         if (index > MAX_FRAME) {
@@ -157,7 +156,7 @@ __attribute__((noinline)) void CrashLocalUnwind(const int fd, const ucontext_t* 
         prevPc = pc;
 
         relPc = unw_get_rel_pc(cursor);
-        mapInfo = unw_get_map(cursor);
+        struct map_info* mapInfo = unw_get_map(cursor);
         if (mapInfo == NULL && index > 1) {
             PrintLog(fd, "Invalid frame for pc(%p).\n", relPc);
         }

@@ -57,7 +57,7 @@ public:
     void SetTimeStamp(uint64_t timeStamp);
 
     siginfo_t GetSiginfo() const;
-    void SetSiginfo(siginfo_t &siginfo);
+    void SetSiginfo(const siginfo_t &siginfo);
 
     ucontext_t GetContext() const;
     void SetContext(ucontext_t const &context);

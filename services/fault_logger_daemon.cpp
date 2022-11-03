@@ -356,11 +356,10 @@ void FaultLoggerDaemon::HandleRequesting(int32_t connectionFd)
 
 void FaultLoggerDaemon::HandleRequest(int32_t connectionFd)
 {
-    ssize_t nread = -1;
     char buf[REQUEST_BUF_SIZE] = {0};
 
     do {
-        nread = read(connectionFd, buf, sizeof(buf));
+        ssize_t nread = read(connectionFd, buf, sizeof(buf));
         if (nread < 0) {
             DfxLogError("%s :: Failed to read message", FAULTLOGGERD_TAG.c_str());
             break;
@@ -488,11 +487,10 @@ void FaultLoggerDaemon::LoopAcceptRequestAndFork(int socketFd)
 {
     struct sockaddr_un clientAddr;
     socklen_t clientAddrSize = static_cast<socklen_t>(sizeof(clientAddr));
-    int connectionFd = -1;
     signal(SIGCHLD, SIG_IGN);
 
     while (true) {
-        connectionFd = accept(socketFd, reinterpret_cast<struct sockaddr *>(&clientAddr), &clientAddrSize);
+        int connectionFd = accept(socketFd, reinterpret_cast<struct sockaddr *>(&clientAddr), &clientAddrSize);
         if (connectionFd < 0) {
             DfxLogError("%s :: Failed to accept connection", FAULTLOGGERD_TAG.c_str());
             continue;
