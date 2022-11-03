@@ -108,5 +108,15 @@ std::string DfxRegsArm::PrintRegs() const
     regString = regString + std::string(buf);
     return regString;
 }
+
+uintptr_t DfxRegsArm::GetPC() const
+{
+    return regsData_[REG_ARM_R15];
+}
+
+uintptr_t DfxRegsArm::GetLR() const
+{
+    return regsData_[REG_ARM_R14];
+}
 } // namespace HiviewDFX
 } // namespace OHOS
