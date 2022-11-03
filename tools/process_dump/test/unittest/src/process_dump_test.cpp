@@ -585,7 +585,7 @@ HWTEST_F (ProcessDumpTest, ProcessDumpTest028, TestSize.Level2)
 
 /**
  * @tc.name: ProcessDumpTest029
- * @tc.desc: test if signal info is avaliable
+ * @tc.desc: test if signal info is available
  * @tc.type: FUNC
  */
 HWTEST_F (ProcessDumpTest, ProcessDumpTest029, TestSize.Level2)
@@ -595,7 +595,7 @@ HWTEST_F (ProcessDumpTest, ProcessDumpTest029, TestSize.Level2)
     std::shared_ptr<DfxSignal> signal = std::make_shared<DfxSignal>(input);
     bool ret = false;
     if (signal != nullptr) {
-        ret = signal->IsAvaliable();
+        ret = signal->IsAvailable();
     }
     EXPECT_EQ(true, ret != true) << "ProcessDumpTest029 Failed";
     GTEST_LOG_(INFO) << "ProcessDumpTest029: end.";
@@ -603,7 +603,7 @@ HWTEST_F (ProcessDumpTest, ProcessDumpTest029, TestSize.Level2)
 
 /**
  * @tc.name: ProcessDumpTest030
- * @tc.desc: test if addr is avaliable
+ * @tc.desc: test if addr is available
  * @tc.type: FUNC
  */
 HWTEST_F (ProcessDumpTest, ProcessDumpTest030, TestSize.Level2)
@@ -613,7 +613,7 @@ HWTEST_F (ProcessDumpTest, ProcessDumpTest030, TestSize.Level2)
     std::shared_ptr<DfxSignal> signal = std::make_shared<DfxSignal>(input);
     bool ret = false;
     if (signal != nullptr) {
-        ret = signal->IsAddrAvaliable();
+        ret = signal->IsAddrAvailable();
     }
     EXPECT_EQ(true, ret != true) << "ProcessDumpTest030 Failed";
     GTEST_LOG_(INFO) << "ProcessDumpTest030: end.";
@@ -621,7 +621,7 @@ HWTEST_F (ProcessDumpTest, ProcessDumpTest030, TestSize.Level2)
 
 /**
  * @tc.name: ProcessDumpTest031
- * @tc.desc: test if pid is avaliable
+ * @tc.desc: test if pid is available
  * @tc.type: FUNC
  */
 HWTEST_F (ProcessDumpTest, ProcessDumpTest031, TestSize.Level2)
@@ -631,7 +631,7 @@ HWTEST_F (ProcessDumpTest, ProcessDumpTest031, TestSize.Level2)
     std::shared_ptr<DfxSignal> signal = std::make_shared<DfxSignal>(input);
     bool ret = false;
     if (signal != nullptr) {
-        ret = signal->IsPidAvaliable();
+        ret = signal->IsPidAvailable();
     }
     EXPECT_EQ(true, ret != true) << "ProcessDumpTest031 Failed";
     GTEST_LOG_(INFO) << "ProcessDumpTest031: end.";
@@ -639,7 +639,7 @@ HWTEST_F (ProcessDumpTest, ProcessDumpTest031, TestSize.Level2)
 
 /**
  * @tc.name: ProcessDumpTest032
- * @tc.desc: test if pid is avaliable
+ * @tc.desc: test if pid is available
  * @tc.type: FUNC
  */
 HWTEST_F (ProcessDumpTest, ProcessDumpTest032, TestSize.Level2)
@@ -747,7 +747,7 @@ HWTEST_F (ProcessDumpTest, ProcessDumpTest038, TestSize.Level2)
     GTEST_LOG_(INFO) << "ProcessDumpTest038: start.";
     int32_t pid = 243, tid = 243;
     std::shared_ptr<DfxThread> thread = std::make_shared<DfxThread>(pid, tid, tid);
-    std::shared_ptr<DfxFrame> outputrefs= thread->GetAvaliableFrame();
+    std::shared_ptr<DfxFrame> outputrefs= thread->GetAvailableFrame();
     EXPECT_EQ(true, outputrefs != nullptr) << "ProcessDumpTest038 Failed";
     GTEST_LOG_(INFO) << "ProcessDumpTest038: end.";
 }

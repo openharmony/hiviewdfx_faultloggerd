@@ -26,9 +26,9 @@ public:
     explicit DfxSignal(const int32_t signal);
     ~DfxSignal() {}
 
-    bool IsAvaliable() const;
-    bool IsAddrAvaliable() const;
-    bool IsPidAvaliable() const;
+    bool IsAvailable() const;
+    bool IsAddrAvailable() const;
+    bool IsPidAvailable() const;
     int32_t GetSignal() const;
 private:
     int32_t signal_ = 0;

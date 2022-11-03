@@ -27,7 +27,7 @@ DfxSignal::DfxSignal(const int32_t signal)
     signal_ = signal;
 }
 
-bool DfxSignal::IsAvaliable() const
+bool DfxSignal::IsAvailable() const
 {
     struct sigaction previousAction;
     if (sigaction(signal_, nullptr, &previousAction) < 0) {
@@ -36,7 +36,7 @@ bool DfxSignal::IsAvaliable() const
     return static_cast<unsigned int>(previousAction.sa_flags) & SA_SIGINFO;
 }
 
-bool DfxSignal::IsAddrAvaliable() const
+bool DfxSignal::IsAddrAvailable() const
 {
     switch (signal_) {
         case SIGABRT:
@@ -50,7 +50,7 @@ bool DfxSignal::IsAddrAvaliable() const
     }
 }
 
-bool DfxSignal::IsPidAvaliable() const
+bool DfxSignal::IsPidAvailable() const
 {
     switch (signal_) {
         case SI_USER:
@@ -86,7 +86,7 @@ std::string PrintSignal(const siginfo_t &info)
     }
 
     DfxSignal signal(info.si_signo);
-    if (signal.IsAddrAvaliable()) {
+    if (signal.IsAddrAvailable()) {
 #if defined(__LP64__)
         ret = snprintf_s(buf, sizeof(buf), sizeof(buf) - 1, "@%018p ", (uint64_t)info.si_addr);
 #else
