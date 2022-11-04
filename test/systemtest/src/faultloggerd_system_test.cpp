@@ -452,16 +452,14 @@ std::string FaultLoggerdSystemTest::ForkAndCommands(const std::vector<std::strin
             }
             i++;
         }
-        pclose(procFileInfo);
         GTEST_LOG_(INFO) << "Root ID: " << FaultLoggerdSystemTest::loopRootPid;
     } else if (udid == BMS_UID) { // sys
         std::string pidLog;
-        while (fgets(resultBufShell, sizeof(resultBufShell), procFileInfo) != nullptr) { 
+        while (fgets(resultBufShell, sizeof(resultBufShell), procFileInfo) != nullptr) {
             pidLog = resultBufShell;
             loopSysPid = atoi(pidLog.c_str());
             GTEST_LOG_(INFO) << "System ID: " << loopSysPid;
         }
-        pclose(procFileInfo);
     } else { // app
         std::string pidList[20];
         int i = 0;
@@ -477,8 +475,8 @@ std::string FaultLoggerdSystemTest::ForkAndCommands(const std::vector<std::strin
             i++;
         }
         GTEST_LOG_(INFO) << "APP ID: " << loopAppPid;
-        pclose(procFileInfo);
     }
+    pclose(procFileInfo);
     return std::to_string(loopSysPid);
 }
 
@@ -593,22 +591,6 @@ void FaultLoggerdSystemTest::StartCrasherLoop(int type)
     }
 }
 
-void FaultLoggerdSystemTest::GetTestFaultLoggerdTid(int testPid)
-{
-    int testTidCount = 0;
-    std::string procCMD = "ls /proc/" + std::to_string(testPid) + "/task";
-    FILE *procFileInfo = nullptr;
-    procFileInfo = popen(procCMD.c_str(), "r");
-    if (procFileInfo == nullptr) {
-        perror("popen execute failed");
-        exit(1);
-    }
-    while (fgets(resultBufShell, sizeof(resultBufShell), procFileInfo) != nullptr) {
-        testTid[testTidCount] = resultBufShell;
-        GTEST_LOG_(INFO) << "procFileInfo print info = " << resultBufShell;
-        testTidCount = testTidCount + 1;
-    }
-}
 void FaultLoggerdSystemTest::StartCrasherLoopForUnsingPidAndTid(int crasherType)
 {
     int sysTidCount = 0;
@@ -654,48 +636,11 @@ void FaultLoggerdSystemTest::StartCrasherLoopForUnsingPidAndTid(int crasherType)
     pclose(procFileInfoTwo);
 }
 
-std::string FaultLoggerdSystemTest::GetFounationPid()
-{
-    std::string procCMD = "pgrep 'foundation'";
-    GTEST_LOG_(INFO) << "threadCMD = " << procCMD;
-    FILE *procFileInfo = nullptr;
-    procFileInfo = popen(procCMD.c_str(), "r");
-    if (procFileInfo == nullptr) {
-        perror("popen execute failed");
-        exit(1);
-    }
-    std::string foundationPid;
-    while (fgets(resultBufShell, sizeof(resultBufShell), procFileInfo) != nullptr) {
-        foundationPid = resultBufShell;
-        GTEST_LOG_(INFO) << "foundationPid: " << foundationPid;
-    }
-    pclose(procFileInfo);
-    return foundationPid;
-}
-
 void FaultLoggerdSystemTest::Trim(std::string & str)
 {
     std::string blanks("\f\v\r\t\n ");
     str.erase(0, str.find_first_not_of(blanks));
     str.erase(str.find_last_not_of(blanks) + 1);
-}
-
-std::string FaultLoggerdSystemTest::GetfileNameForFounation(std::string& pidFound)
-{
-    std::string filePath;
-    std::vector<std::string> files;
-    Trim(pidFound);
-    GTEST_LOG_(INFO) << "foundationpid :" << pidFound;
-    std::string pidFoundStr = "cppcrash-" + pidFound;
-    int sleepSecond = 20;
-    sleep(sleepSecond);
-    OHOS::GetDirFiles("/data/log/faultlog/temp/", files);
-    for (const auto& file : files) {
-        if (file.find(pidFoundStr) != std::string::npos) {
-            filePath = file;
-        }
-    }
-    return filePath + " " + pidFound;
 }
 
 int FaultLoggerdSystemTest::CheckCountNumKill11(std::string& filePath, std::string& pid)
@@ -4050,7 +3995,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest024, TestSize.Level2)
     std::string cmd = "OOM";
     int cppTest = 1;
     std::string filePathPid = FaultLoggerdSystemTest::GetfileNamePrefix(cmd, cppTest);
-    
+
     GTEST_LOG_(INFO) << "current filePath and pid = \n" << filePathPid;
     if (filePathPid.size() < NUMBER_TEN) {
         EXPECT_EQ(true, false) << "FaultLoggerdSystemTest024 Failed";
@@ -4083,7 +4028,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest012, TestSize.Level2)
     std::string cmd = "OOM";
     int cTest = 0;
     std::string filePathPid = FaultLoggerdSystemTest::GetfileNamePrefix(cmd, cTest);
-    
+
     GTEST_LOG_(INFO) << "current filePath and pid = \n" << filePathPid;
     if (filePathPid.size() < NUMBER_TEN) {
         EXPECT_EQ(true, false) << "FaultLoggerdSystemTest012 Failed";
@@ -4115,7 +4060,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0110, TestSize.Level2)
     std::string cmd = "PCZero";
     int cppTest = 1;
     std::string filePathPid = FaultLoggerdSystemTest::GetfileNamePrefix(cmd, cppTest);
-    
+
     GTEST_LOG_(INFO) << "current filePath and pid = \n" << filePathPid;
     if (filePathPid.size() < NUMBER_TEN) {
         EXPECT_EQ(true, false) << "FaultLoggerdSystemTest0110 Failed";
@@ -4148,7 +4093,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0111, TestSize.Level2)
     std::string cmd = "PCZero";
     int cTest = 0;
     std::string filePathPid = FaultLoggerdSystemTest::GetfileNamePrefix(cmd, cTest);
-    
+
     GTEST_LOG_(INFO) << "current filePath and pid = \n" << filePathPid;
     if (filePathPid.size() < NUMBER_TEN) {
         EXPECT_EQ(true, false) << "FaultLoggerdSystemTest0111 Failed";
@@ -4181,7 +4126,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0112, TestSize.Level2)
     std::string cmd = "MTCrash";
     int cTest = 0;
     std::string filePathPid = FaultLoggerdSystemTest::GetfileNamePrefix(cmd, cTest);
-    
+
     GTEST_LOG_(INFO) << "current filePath and pid = \n" << filePathPid;
     if (filePathPid.size() < NUMBER_TEN) {
         EXPECT_EQ(true, false) << "FaultLoggerdSystemTest0112 Failed";
@@ -4214,7 +4159,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0113, TestSize.Level2)
     std::string cmd = "MTCrash";
     int cppTest = 1;
     std::string filePathPid = FaultLoggerdSystemTest::GetfileNamePrefix(cmd, cppTest);
-    
+
     GTEST_LOG_(INFO) << "current filePath and pid = \n" << filePathPid;
     if (filePathPid.size() < NUMBER_TEN) {
         EXPECT_EQ(true, false) << "FaultLoggerdSystemTest0113 Failed";
@@ -4247,7 +4192,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0118, TestSize.Level2)
     std::string cmd = "StackOver64";
     int cppTest = 1;
     std::string filePathPid = FaultLoggerdSystemTest::GetfileNamePrefix(cmd, cppTest);
-    
+
     GTEST_LOG_(INFO) << "current filePath and pid = \n" << filePathPid;
     if (filePathPid.size() < NUMBER_TEN) {
         EXPECT_EQ(true, false) << "FaultLoggerdSystemTest0118 Failed";
@@ -4280,7 +4225,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0119, TestSize.Level2)
     std::string cmd = "StackOver64";
     int cTest = 0;
     std::string filePathPid = FaultLoggerdSystemTest::GetfileNamePrefix(cmd, cTest);
-    
+
     GTEST_LOG_(INFO) << "current filePath and pid = \n" << filePathPid;
     if (filePathPid.size() < NUMBER_TEN) {
         EXPECT_EQ(true, false) << "FaultLoggerdSystemTest0119 Failed";

@@ -73,10 +73,8 @@ public:
     static int CheckCountNumOverStack(std::string& filePath, std::string& pid);
     static int CheckCountNumStackTop(std::string& filePath, std::string& pid, std::string& ErrorCMD);
     static std::string GetStackTop();
-    static std::string GetfileNameForFounation(std::string& pidfound);
     static int CheckCountNumKill11(std::string& filePath, std::string& pid);
     static void Trim(std::string& str);
-    static std::string GetFounationPid();
 
     // 合并
     static void StartCrasherLoop(int type);     // 1. system; 2. root; 3.app; 4. root+cpp
@@ -88,7 +86,6 @@ public:
     static int GetServicePid(const std::string& serviceName);
     static int LaunchTestHap(const std::string& abilityName, const std::string& bundleName);
     static void dumpCatchThread(int threadID);
-    static void GetTestFaultLoggerdTid(int testPid);
 
     static std::string rootTid[ARRAY_SIZE_HUNDRED];
     static std::string appTid[ARRAY_SIZE_HUNDRED];

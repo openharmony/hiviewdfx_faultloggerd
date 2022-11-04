@@ -61,7 +61,7 @@ GEN_TEST_FUNCTION(7, 8)
 GEN_TEST_FUNCTION(8, 9)
 GEN_TEST_FUNCTION(9, 10)
 
-static bool ParseParamters(int argc, char *argv[], int32_t &pid, int32_t &tid)
+static bool ParseParameters(int argc, char *argv[], int32_t &pid, int32_t &tid)
 {
     switch (argc) {
         case 3:
@@ -97,11 +97,11 @@ int main(int argc, char *argv[])
 {
     int32_t pid = 0;
     int32_t tid = 0;
-    if (ParseParamters(argc, argv, pid, tid)) {
+    if (ParseParameters(argc, argv, pid, tid)) {
         TestFuncRemote(pid, tid);
     } else {
         TestFunc0();
     }
-    
+
     return 0;
 }
