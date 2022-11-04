@@ -67,7 +67,7 @@ void DfxRingBufferWrapper::LoopPrintRingBuffer()
     }
 }
 
-void DfxRingBufferWrapper::AppendMsg(std::string msg)
+void DfxRingBufferWrapper::AppendMsg(const std::string& msg)
 {
     DfxLogDebug("%s :: msg: %s", __func__, msg.c_str());
     if (writeFunc_ == nullptr) {

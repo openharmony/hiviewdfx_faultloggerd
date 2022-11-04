@@ -373,10 +373,10 @@ HWTEST_F (DfxMapsTest, DfxMapsRequestTest018, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "DfxMapsRequestTest018: start.";
     std::shared_ptr<DfxElfMaps> dfxmap = std::make_shared<DfxElfMaps>();
-    uintptr_t address = 1;
     std::shared_ptr<DfxElfMap> map = std::make_shared<DfxElfMap>();
     bool flag = false;
     if (dfxmap != nullptr && map != nullptr) {
+        uintptr_t address = 1;
         flag = dfxmap->FindMapByAddr(address, map);
     }
     EXPECT_EQ(true, flag != true);
@@ -392,10 +392,10 @@ HWTEST_F (DfxMapsTest, DfxMapsRequestTest019, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "DfxMapsRequestTest019: start.";
     std::shared_ptr<DfxElfMaps> dfxmap = std::make_shared<DfxElfMaps>();
-    uintptr_t address = 100;
     std::shared_ptr<DfxElfMap> map = std::make_shared<DfxElfMap>();
     bool flag = false;
     if (dfxmap != nullptr && map != nullptr) {
+        uintptr_t address = 100;
         flag = dfxmap->FindMapByAddr(address, map);
     }
     EXPECT_EQ(true, flag != true);
@@ -411,10 +411,10 @@ HWTEST_F (DfxMapsTest, DfxMapsRequestTest020, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "DfxMapsRequestTest020: start.";
     std::shared_ptr<DfxElfMaps> dfxmap = std::make_shared<DfxElfMaps>();
-    uintptr_t address = -1;
     std::shared_ptr<DfxElfMap> map = std::make_shared<DfxElfMap>();
     bool flag = false;
     if (dfxmap != nullptr && map != nullptr) {
+        uintptr_t address = -1;
         flag = dfxmap->FindMapByAddr(address, map);
     }
     EXPECT_EQ(true, flag != true);
