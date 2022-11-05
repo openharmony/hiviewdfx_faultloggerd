@@ -60,58 +60,62 @@ DfxUnwindRemote::DfxUnwindRemote()
 
 bool DfxUnwindRemote::UnwindProcess(std::shared_ptr<DfxProcess> process)
 {
+    bool ret = false;
     if (!process) {
-        return false;
+        DfxLogWarn("%s::can not unwind null process.", __func__);
+        return ret;
     }
 
     auto threads = process->GetThreads();
-    DfxLogDebug("%s :: threads(%d)", __func__, threads.size());
     if (threads.empty()) {
-        return false;
+        DfxLogWarn("%s::no thread under target process.", __func__);
+        return ret;
     }
 
     as_ = unw_create_addr_space(&_UPT_accessors, 0);
     if (!as_) {
-        return false;
+        DfxLogWarn("%s::failed to create address space.", __func__);
+        return ret;
     }
     unw_set_target_pid(as_, process->GetPid());
     unw_set_caching_policy(as_, UNW_CACHE_GLOBAL);
+    do {
+        // only need to unwind crash thread in crash scenario
+        if (!process->GetIsSignalDump() && !DfxConfig::GetInstance().GetDumpOtherThreads()) {
+            ret = UnwindThread(process, threads[0]);
+            if (!ret) {
+                UnwindThreadFallback(process, threads[0]);
+            }
 
-    // only need to unwind crash thread in crash scenario
-    if (!process->GetIsSignalDump() && \
-        !DfxConfig::GetInstance().GetDumpOtherThreads()) {
-        bool ret = UnwindThread(process, threads[0]);
-        if (threads[0]->GetIsCrashThread() && (process->GetIsSignalDump() == false)) {
-            process->PrintProcessMapsByConfig();
-        }
-        PrintBuildIds();
-        unw_destroy_addr_space(as_);
-        as_ = nullptr;
-        return ret;
-    }
-
-    size_t index = 0;
-    for (auto thread : threads) {
-        if (index == 1) {
-            process->PrintThreadsHeaderByConfig();
+            if (threads[0]->GetIsCrashThread() && (!process->GetIsSignalDump())) {
+                process->PrintProcessMapsByConfig();
+            }
+            break;
         }
 
-        if (thread->Attach()) {
-            UnwindThread(process, thread);
-            thread->Detach();
-        }
+        size_t index = 0;
+        for (auto thread : threads) {
+            if (index == 1) {
+                process->PrintThreadsHeaderByConfig();
+            }
 
-        if (thread->GetIsCrashThread() && (process->GetIsSignalDump() == false)) {
-            process->PrintProcessMapsByConfig();
+            if (thread->Attach()) {
+                UnwindThread(process, thread);
+                thread->Detach();
+            }
+
+            if (thread->GetIsCrashThread() && (!process->GetIsSignalDump())) {
+                process->PrintProcessMapsByConfig();
+            }
+            index++;
         }
-        index++;
-        DfxLogDebug("%s :: index(%d)", __func__, index);
-    }
+        ret = true;
+    } while (false);
 
     PrintBuildIds();
     unw_destroy_addr_space(as_);
     as_ = nullptr;
-    return true;
+    return ret;
 }
 
 uint64_t DfxUnwindRemote::DfxUnwindRemoteDoAdjustPc(unw_cursor_t & cursor, uint64_t pc)
@@ -127,6 +131,8 @@ uint64_t DfxUnwindRemote::DfxUnwindRemoteDoAdjustPc(unw_cursor_t & cursor, uint6
         ret = pc - unw_get_previous_instr_sz(&cursor);
 #elif defined(__aarch64__)
         ret = pc - ARM_EXEC_STEP_NORMAL;
+#elif defined(__x86_64__)
+        ret = pc - 1;
 #endif
     }
 
@@ -155,44 +161,46 @@ std::string DfxUnwindRemote::GetReadableBuildId(uint8_t* buildId, size_t length)
 bool DfxUnwindRemote::DfxUnwindRemoteDoUnwindStep(size_t const & index,
     std::shared_ptr<DfxThread> & thread, unw_cursor_t & cursor, std::shared_ptr<DfxProcess> process)
 {
-    std::shared_ptr<DfxFrame> frame = thread->GetAvaliableFrame();
-    if (!frame) {
-        DfxLogWarn("Fail to create Frame.");
-        return false;
-    }
-
-    frame->SetFrameIndex(index);
-    std::string strSym;
-    uint64_t framePc = frame->GetFramePc();
+    bool ret = false;
+    uint64_t framePc;
     static unw_word_t oldPc = 0;
     if (unw_get_reg(&cursor, UNW_REG_IP, (unw_word_t*)(&framePc))) {
         DfxLogWarn("Fail to get program counter.");
-        return false;
+        return ret;
     }
-    if (oldPc == framePc && index != 0) {
-        return false;
-    }
-    oldPc = framePc;
-    frame->SetFramePc(framePc);
 
-    uint64_t frameSp = frame->GetFrameSp();
+    uint64_t frameSp;
     if (unw_get_reg(&cursor, UNW_REG_SP, (unw_word_t*)(&frameSp))) {
         DfxLogWarn("Fail to get stack pointer.");
-        return false;
+        return ret;
     }
-    frame->SetFrameSp(frameSp);
+
+    if (oldPc == framePc && index != 0) {
+        return ret;
+    }
+    oldPc = framePc;
 
     uint64_t relPc = unw_get_rel_pc(&cursor);
+    if (index != 0) {
+        relPc = DfxUnwindRemoteDoAdjustPc(cursor, relPc);
+        framePc = DfxUnwindRemoteDoAdjustPc(cursor, framePc);
+    }
+
     if (relPc == 0) {
         relPc = framePc;
     }
 
-    if (index != 0) {
-        relPc = DfxUnwindRemoteDoAdjustPc(cursor, relPc);
-    }
+    auto frame = std::make_shared<DfxFrame>();
     frame->SetFrameRelativePc(relPc);
-    bool ret = UpdateAndPrintFrameInfo(cursor, thread, frame,
+    frame->SetFramePc(framePc);
+    frame->SetFrameSp(frameSp);
+    frame->SetFrameIndex(index);
+    ret = UpdateAndPrintFrameInfo(cursor, thread, frame,
         (thread->GetIsCrashThread() && !process->GetIsSignalDump()));
+    if (ret) {
+        thread->AddFrame(frame);
+    }
+
     DfxLogDebug("%s :: index(%d), framePc(0x%x), frameSp(0x%x).", __func__, index, framePc, frameSp);
     return ret;
 }
@@ -255,7 +263,7 @@ void DfxUnwindRemote::PrintBuildIds() const
 bool DfxUnwindRemote::UnwindThread(std::shared_ptr<DfxProcess> process, std::shared_ptr<DfxThread> thread)
 {
     if (!thread) {
-        DfxLogWarn("NULL thread needs unwind.");
+        DfxLogError("NULL thread needs unwind.");
         return false;
     }
 
@@ -269,20 +277,24 @@ bool DfxUnwindRemote::UnwindThread(std::shared_ptr<DfxProcess> process, std::sha
 
     void *context = _UPT_create(tid);
     if (!context) {
+        DfxRingBufferWrapper::GetInstance().AppendBuf("Failed to create unwind context for %d.\n", tid);
         return false;
     }
 
     if (!as_) {
         as_ = unw_create_addr_space(&_UPT_accessors, 0);
         if (!as_) {
+            DfxRingBufferWrapper::GetInstance().AppendBuf("Unwind address space is not exist for %d.\n", tid);
+            _UPT_destroy(context);
             return false;
         }
         unw_set_caching_policy(as_, UNW_CACHE_GLOBAL);
     }
 
     unw_cursor_t cursor;
-    if (as_ && unw_init_remote(&cursor, as_, context) != 0) {
-        DfxLogWarn("Fail to init cursor for remote unwind.");
+    int unwRet = unw_init_remote(&cursor, as_, context);
+    if (unwRet != 0) {
+        DfxRingBufferWrapper::GetInstance().AppendBuf("Failed to init cursor for thread:%d code:%d.\n", tid, unwRet);
         _UPT_destroy(context);
         return false;
     }
@@ -294,7 +306,6 @@ bool DfxUnwindRemote::UnwindThread(std::shared_ptr<DfxProcess> process, std::sha
     }
 
     size_t index = 0;
-    int unwRet = 0;
     do {
         // store current frame
         if (!DfxUnwindRemoteDoUnwindStep(index, thread, cursor, process)) {
@@ -315,6 +326,43 @@ bool DfxUnwindRemote::UnwindThread(std::shared_ptr<DfxProcess> process, std::sha
     }
     _UPT_destroy(context);
     return true;
+}
+
+void DfxUnwindRemote::UnwindThreadFallback(std::shared_ptr<DfxProcess> process, std::shared_ptr<DfxThread> thread)
+{
+    // As we failed to init libunwind, just print pc and lr for first two frames
+    std::shared_ptr<DfxRegs> regs = thread->GetThreadRegs();
+    if (regs == nullptr) {
+        DfxRingBufferWrapper::GetInstance().AppendMsg("RegisterInfo is not existed for crash process");
+        return;
+    }
+
+    std::shared_ptr<DfxElfMaps> maps = process->GetMaps();
+    if (maps == nullptr) {
+        DfxRingBufferWrapper::GetInstance().AppendMsg("MapsInfo is not existed for crash process");
+        return;
+    }
+
+    auto createFrame = [maps, thread] (int index, uintptr_t pc) {
+        std::shared_ptr<DfxElfMap> map;
+        auto frame = std::make_shared<DfxFrame>();
+        frame->SetFramePc(pc);
+        frame->SetFrameIndex(index);
+        thread->AddFrame(frame);
+        if (maps->FindMapByAddr(pc, map)) {
+            frame->SetFrameMap(map);
+            frame->CalculateRelativePc(map);
+            frame->SetFrameMapName(map->GetMapPath());
+        } else {
+            frame->SetFrameRelativePc(pc);
+            frame->SetFrameMapName(index == 0 ? "Not mapped pc" : "Not mapped lr");
+        }
+        DfxRingBufferWrapper::GetInstance().AppendMsg(frame->PrintFrame());
+    };
+
+    createFrame(0, regs->GetPC());
+    createFrame(1, regs->GetLR());
+    DfxRingBufferWrapper::GetInstance().AppendMsg(regs->PrintRegs());
 }
 } // namespace HiviewDFX
 } // namespace OHOS
