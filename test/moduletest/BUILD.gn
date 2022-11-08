@@ -32,7 +32,10 @@ if (defined(ohos_lite)) {
       output_dir = "$root_out_dir/test/unittest/faultloggerd"
       configs = [ ":module_private_config" ]
       sources = [ "faultloggerd_module_test.cpp" ]
-      deps = [ "$faultloggerd_path/interfaces/innerkits/faultloggerd_client:libfaultloggerd" ]
+      deps = [
+        "$faultloggerd_path/interfaces/innerkits/faultloggerd_client:libfaultloggerd",
+        "//base/hiviewdfx/hilog_lite/frameworks/featured:hilog_shared",
+      ]
     }
   }
 
