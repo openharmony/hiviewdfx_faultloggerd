@@ -34,6 +34,14 @@ public:
     void TearDown();
 };
 
+static const int THREAD_ALIVE_TIME = 2;
+
+static const int CREATE_THREAD_TIMEOUT = 300000;
+
+static pid_t g_threadId = 0;
+
+static pid_t g_processId = 0;
+
 void DumpCatcherInterfacesTest::SetUpTestCase()
 {}
 
@@ -45,6 +53,41 @@ void DumpCatcherInterfacesTest::SetUp()
 
 void DumpCatcherInterfacesTest::TearDown()
 {}
+
+static void* CreateThread(void *argv)
+{
+    g_threadId = gettid();
+    GTEST_LOG_(INFO) << "create MultiThread " << gettid();
+    sleep(THREAD_ALIVE_TIME);
+    GTEST_LOG_(INFO) << "create MultiThread thread sleep end.";
+    return nullptr;
+}
+
+static int MultiThreadConstructor(void)
+{
+    pthread_t thread;
+
+    pthread_create(&thread, nullptr, CreateThread, nullptr);
+    pthread_detach(thread);
+    usleep(CREATE_THREAD_TIMEOUT);
+    return 0;
+}
+
+static void ForkMultiThreadProcess(void)
+{
+    int pid = fork();
+    if (pid == 0) {
+        MultiThreadConstructor();
+        _exit(0);
+    } else if (pid < 0) {
+        GTEST_LOG_(INFO) << "ForkMultiThreadProcess fail. ";
+    } else {
+        g_processId = pid;
+        GTEST_LOG_(INFO) << "ForkMultiThreadProcess success, pid: " << pid;
+        usleep(CREATE_THREAD_TIMEOUT);
+        GTEST_LOG_(INFO) << "ForkMultiThreadProcess success, thread id: " << g_threadId;
+    }
+}
 
 static int GetProcessPid(std::string applyName)
 {
@@ -591,5 +634,178 @@ HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest018, TestSize.Level
     EXPECT_EQ(ret, true) << "DumpCatcherInterfacesTest018 Failed";
     GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest018: end.";
 }
+
+/**
+ * @tc.name: DumpCatcherInterfacesTest019
+ * @tc.desc: test DumpCatchFd API
+ * @tc.type: FUNC
+ */
+HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest019, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest019: start.";
+    DfxDumpCatcher dumplog;
+    std::string msg = "";
+    bool ret = dumplog.DumpCatchFd(getpid(), 0, msg, 1);
+    GTEST_LOG_(INFO) << ret;
+    GTEST_LOG_(INFO) << msg;
+    EXPECT_EQ(ret, true) << "DumpCatcherInterfacesTest019 Failed";
+    GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest019: end.";
+}
+
+/**
+ * @tc.name: DumpCatcherInterfacesTest020
+ * @tc.desc: test DumpCatchFd API
+ * @tc.type: FUNC
+ */
+HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest020, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest020: start.";
+    DfxDumpCatcher dumplog;
+    std::string msg = "";
+    bool ret = dumplog.DumpCatchFd(getpid(), -1, msg, 1);
+    GTEST_LOG_(INFO) << ret;
+    GTEST_LOG_(INFO) << msg;
+    EXPECT_EQ(ret, false) << "DumpCatcherInterfacesTest020 Failed";
+    GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest020: end.";
+}
+
+
+/**
+ * @tc.name: DumpCatcherInterfacesTest021
+ * @tc.desc: test DumpCatchFd API
+ * @tc.type: FUNC
+ */
+HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest021, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest021: start.";
+    std::string apply = "accountmgr";
+    int applyPid = GetProcessPid(apply);
+    GTEST_LOG_(INFO) << "apply:" << apply << ", pid:" << applyPid;
+    DfxDumpCatcher dumplog;
+    std::string msg = "";
+    bool ret = dumplog.DumpCatchFd(applyPid, 0, msg, 1);
+    GTEST_LOG_(INFO) << ret;
+    GTEST_LOG_(INFO) << msg;
+    EXPECT_EQ(ret, true) << "DumpCatcherInterfacesTest021 Failed";
+    GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest021: end.";
+}
+
+/**
+ * @tc.name: DumpCatcherInterfacesTest022
+ * @tc.desc: test DumpCatchFd API
+ * @tc.type: FUNC
+ */
+HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest022, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest022: start.";
+    std::string apply = "accountmgr";
+    int applyPid = GetProcessPid(apply);
+    GTEST_LOG_(INFO) << "apply:" << apply << ", pid:" << applyPid;
+    DfxDumpCatcher dumplog;
+    std::string msg = "";
+    bool ret = dumplog.DumpCatchFd(applyPid, applyPid, msg, 1);
+    GTEST_LOG_(INFO) << ret;
+    GTEST_LOG_(INFO) << msg;
+    EXPECT_EQ(ret, true) << "DumpCatcherInterfacesTest022 Failed";
+    GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest022: end.";
+}
+
+/**
+ * @tc.name: DumpCatcherInterfacesTest023
+ * @tc.desc: test DumpCatchFd API
+ * @tc.type: FUNC
+ */
+HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest023, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest023: start.";
+    std::string apply = "accountmgr";
+    int applyPid = GetProcessPid(apply);
+    GTEST_LOG_(INFO) << "apply:" << apply << ", pid:" << applyPid;
+    DfxDumpCatcher dumplog;
+    std::string msg = "";
+    bool ret = dumplog.DumpCatchFd(applyPid, -1, msg, 1);
+    GTEST_LOG_(INFO) << ret;
+    GTEST_LOG_(INFO) << msg;
+    EXPECT_EQ(ret, false) << "DumpCatcherInterfacesTest023 Failed";
+    GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest023: end.";
+}
+
+/**
+ * @tc.name: DumpCatcherInterfacesTest024
+ * @tc.desc: test DumpCatchFd API
+ * @tc.type: FUNC
+ */
+HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest024, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest024: start.";
+    std::string apply = "accountmgr";
+    int applyPid = GetProcessPid(apply);
+    GTEST_LOG_(INFO) << "apply:" << apply << ", pid:" << applyPid;
+    DfxDumpCatcher dumplog;
+    std::string msg = "";
+    bool ret = dumplog.DumpCatchFd(applyPid, 9999, msg, 1);
+    GTEST_LOG_(INFO) << ret;
+    GTEST_LOG_(INFO) << msg;
+    EXPECT_EQ(ret, true) << "DumpCatcherInterfacesTest024 Failed";
+    GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest024: end.";
+}
+
+/**
+ * @tc.name: DumpCatcherInterfacesTest025
+ * @tc.desc: test DumpCatchFd API
+ * @tc.type: FUNC
+ */
+HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest025, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest025: start.";
+    DfxDumpCatcher dumplog;
+    std::string msg = "";
+    bool ret = dumplog.DumpCatchFd(getpid(), 9999, msg, 1);
+    GTEST_LOG_(INFO) << ret;
+    GTEST_LOG_(INFO) << msg;
+    EXPECT_EQ(ret, true) << "DumpCatcherInterfacesTest025 Failed";
+    GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest025: end.";
+}
+
+/**
+ * @tc.name: DumpCatcherInterfacesTest026
+ * @tc.desc: test DumpCatchFd API
+ * @tc.type: FUNC
+ */
+HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest026, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest026: start.";
+    MultiThreadConstructor();
+
+    DfxDumpCatcher dumplog;
+    std::string msg = "";
+    GTEST_LOG_(INFO) << "dump local process, "  << " tid:" << g_threadId;
+    bool ret = dumplog.DumpCatchFd(getpid(), g_threadId, msg, 1);
+    GTEST_LOG_(INFO) << ret;
+    GTEST_LOG_(INFO) << msg;
+    EXPECT_EQ(ret, true) << "DumpCatcherInterfacesTest026 Failed";
+    GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest026: end.";
+}
+
+/**
+ * @tc.name: DumpCatcherInterfacesTest027
+ * @tc.desc: test DumpCatchFd API
+ * @tc.type: FUNC
+ */
+HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest027, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest027: start.";
+    ForkMultiThreadProcess();
+
+    GTEST_LOG_(INFO) << "dump remote process, "  << " pid:" << g_processId << ", tid:" << g_threadId;
+    DfxDumpCatcher dumplog;
+    std::string msg = "";
+    bool ret = dumplog.DumpCatchFd(g_processId, g_threadId, msg, 1);
+    GTEST_LOG_(INFO) << ret;
+    GTEST_LOG_(INFO) << msg;
+    EXPECT_EQ(ret, true) << "DumpCatcherInterfacesTest027 Failed";
+    GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest027: end.";
+}
+
 } // namespace HiviewDFX
 } // namepsace OHOS
