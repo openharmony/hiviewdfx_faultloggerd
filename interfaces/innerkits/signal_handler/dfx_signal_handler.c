@@ -316,7 +316,9 @@ static bool IsMainThread(void)
 static void PauseMainThreadHandler(int sig)
 {
     // only work when subthread crash and send SIGDUMP to mainthread.
-    sleep(2); // 2 : main thread sleep 2s
+    pthread_mutex_lock(&g_signalHandlerMutex);
+    pthread_mutex_unlock(&g_signalHandlerMutex);
+    DfxLogInfo("Crash in child thread(%d), exit main thread.", GetTid());
 }
 
 static void BlockMainThreadIfNeed(int sig)
