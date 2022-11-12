@@ -266,15 +266,16 @@ void ProcessDumper::Dump()
         }
     }
 
-    if (reporter_ != nullptr) {
-        reporter_->ReportToHiview();
-    }
-
     WriteDumpRes(resDump_);
     DfxRingBufferWrapper::GetInstance().StopThread();
     DfxLogInfo("Finish dump stacktrace for %s(%d:%d).",
         request->GetProcessNameString().c_str(), request->GetPid(), request->GetTid());
     CloseDebugLog();
+
+    if (reporter_ != nullptr) {
+        reporter_->ReportToHiview();
+    }
+
     _exit(0);
 }
 
