@@ -574,5 +574,22 @@ HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest017, TestSize.Level
     EXPECT_EQ(ret, false) << "DumpCatcherInterfacesTest017 Failed";
     GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest017: end.";
 }
+
+/**
+ * @tc.name: DumpCatcherInterfacesTest018
+ * @tc.desc: test DumpCatchFd API
+ * @tc.type: FUNC
+ */
+HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest018, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest018: start.";
+    DfxDumpCatcher dumplog;
+    std::string msg = "";
+    bool ret = dumplog.DumpCatchFd(getpid(), gettid(), msg, 1);
+    GTEST_LOG_(INFO) << ret;
+    GTEST_LOG_(INFO) << msg;
+    EXPECT_EQ(ret, true) << "DumpCatcherInterfacesTest018 Failed";
+    GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest018: end.";
+}
 } // namespace HiviewDFX
 } // namepsace OHOS

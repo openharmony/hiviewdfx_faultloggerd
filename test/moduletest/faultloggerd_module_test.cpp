@@ -15,6 +15,7 @@
 
 #include "faultloggerd_module_test.h"
 
+#include <securec.h>
 #include <sstream>
 #include <unistd.h>
 
@@ -67,6 +68,7 @@ void WaitForServiceReady(const std::string& serviceName)
         pid = GetServicePid(serviceName);
     }
     ASSERT_GT(pid, 0);
+    ASSERT_TRUE(CheckConnectStatus());
 }
 
 void CheckFdRequestFunction(FaultLoggerType type, bool isValidFd)
@@ -112,5 +114,49 @@ HWTEST_F(FaultloggerdModuleTest, FaultloggerdClientFdRquestTest001, TestSize.Lev
     CheckFdRequestFunction(FaultLoggerType::JS_STACKTRACE, true);
     CheckFdRequestFunction(FaultLoggerType::JS_HEAP_SNAPSHOT, true);
     CheckFdRequestFunction(FaultLoggerType::JAVA_STACKTRACE, false);
+}
+
+/**
+ * @tc.name: FaultloggerdClientFdRquestTest002
+ * @tc.desc: check faultloggerd RequestLogFileDescriptor function
+ * @tc.type: FUNC
+ */
+HWTEST_F(FaultloggerdModuleTest, FaultloggerdClientFdRquestTest002, TestSize.Level0)
+{
+    struct FaultLoggerdRequest testRequest;
+    if (memset_s(&testRequest, sizeof(testRequest), 0, sizeof(struct FaultLoggerdRequest)) != 0) {
+        return;
+    }
+    testRequest.type = (int)FaultLoggerType::CPP_CRASH;
+    testRequest.pid = getpid();
+    testRequest.tid = gettid();
+    testRequest.uid = getuid();
+    int32_t fd = RequestLogFileDescriptor(&testRequest);
+    ASSERT_TRUE(fd >= 0);
+    if (fd >= 0) {
+        close(fd);
+    }
+}
+
+/**
+ * @tc.name: FaultloggerdClientFdRquestTest003
+ * @tc.desc: check faultloggerd RequestPrintTHilog function
+ * @tc.type: FUNC
+ */
+HWTEST_F(FaultloggerdModuleTest, FaultloggerdClientFdRquestTest003, TestSize.Level0)
+{
+    char msg[] = "test log";
+    size_t len = strlen(msg);
+    RequestPrintTHilog(msg, len);
+}
+
+/**
+ * @tc.name: FaultloggerdPermissionCheckTest001
+ * @tc.desc: check faultloggerd RequestCheckPermission function
+ * @tc.type: FUNC
+ */
+HWTEST_F(FaultloggerdModuleTest, FaultloggerdPermissionCheckTest001, TestSize.Level0)
+{
+    ASSERT_TRUE(RequestCheckPermission(getpid()));
 }
 }
