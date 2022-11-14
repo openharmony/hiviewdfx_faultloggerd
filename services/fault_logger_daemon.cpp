@@ -260,7 +260,7 @@ void FaultLoggerDaemon::HandlePermissionRequest(int32_t connectionFd, FaultLogge
 void FaultLoggerDaemon::HandleSdkDumpRequest(int32_t connectionFd, FaultLoggerdRequest * request)
 {
     DfxLogInfo("Receive dump request for pid:%d tid:%d.", request->pid, request->tid);
-    FaultLoggerSdkDumpResp resSdkDump = FaultLoggerSdkDumpResp::SDK_DUMP_REJECT;
+    FaultLoggerSdkDumpResp resSdkDump = FaultLoggerSdkDumpResp::SDK_DUMP_PASS;
     FaultLoggerCheckPermissionResp resSecurityCheck = SecurityCheck(connectionFd, request);
 
     /*
@@ -289,12 +289,12 @@ void FaultLoggerDaemon::HandleSdkDumpRequest(int32_t connectionFd, FaultLoggerdR
      * in remote back trace, all unwind stack will save to file, and read in dump_catcher, then return.
      */
 
-    bool needSignalTarget = true;
     do {
         if ((request->pid <= 0) || (FaultLoggerCheckPermissionResp::CHECK_PERMISSION_REJECT == resSecurityCheck)) {
             DfxLogError("%s :: HandleSdkDumpRequest :: pid(%d) or resSecurityCheck(%d) fail.\n", \
                         FAULTLOGGERD_TAG.c_str(), request->pid, (int)resSecurityCheck);
-            needSignalTarget = false;
+            resSdkDump = FaultLoggerSdkDumpResp::SDK_DUMP_REJECT;
+            break;
         }
 
         if (faultLoggerPipeMap_->Find(request->pid)) {
@@ -304,10 +304,6 @@ void FaultLoggerDaemon::HandleSdkDumpRequest(int32_t connectionFd, FaultLoggerdR
         }
         faultLoggerPipeMap_->Set(request->pid);
 
-        if (!needSignalTarget) {
-            DfxLogError("Failed to check permission, if caller can signal target, we may still get result.");
-            break;
-        }
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Winitializer-overrides"
         // defined in out/hi3516dv300/obj/third_party/musl/intermidiates/linux/musl_src_ported/include/signal.h
@@ -324,26 +320,32 @@ void FaultLoggerDaemon::HandleSdkDumpRequest(int32_t connectionFd, FaultLoggerdR
         if (request->tid == 0) {
             if (syscall(SYS_rt_sigqueueinfo, request->pid, si.si_signo, &si) != 0) {
                 DfxLogError("Failed to SYS_rt_sigqueueinfo signal(%d), errno(%d).", si.si_signo, errno);
+                resSdkDump = FaultLoggerSdkDumpResp::SDK_DUMP_NOPROC;
                 break;
             }
         } else {
             // means we need dump a specified thread
             if (syscall(SYS_rt_tgsigqueueinfo, request->pid, request->tid, si.si_signo, &si) != 0) {
                 DfxLogError("Failed to SYS_rt_tgsigqueueinfo signal(%d), errno(%d).", si.si_signo, errno);
+                resSdkDump = FaultLoggerSdkDumpResp::SDK_DUMP_NOPROC;
                 break;
             }
         }
-        resSdkDump = FaultLoggerSdkDumpResp::SDK_DUMP_PASS;
     } while (false);
 
-    if (FaultLoggerSdkDumpResp::SDK_DUMP_PASS == resSdkDump) {
-        send(connectionFd, "1", strlen("1"), 0);
-    }
-    if (FaultLoggerSdkDumpResp::SDK_DUMP_REJECT == resSdkDump) {
-        send(connectionFd, "2", strlen("2"), 0);
-    }
-    if (FaultLoggerSdkDumpResp::SDK_DUMP_REPEAT == resSdkDump) {
-        send(connectionFd, "3", strlen("3"), 0);
+    switch (resSdkDump) {
+        case FaultLoggerSdkDumpResp::SDK_DUMP_REJECT:
+            send(connectionFd, "2", strlen("2"), 0);
+            break;
+        case FaultLoggerSdkDumpResp::SDK_DUMP_REPEAT:
+            send(connectionFd, "3", strlen("3"), 0);
+            break;
+        case FaultLoggerSdkDumpResp::SDK_DUMP_NOPROC:
+            send(connectionFd, "4", strlen("4"), 0);
+            break;
+        default:
+            send(connectionFd, "1", strlen("1"), 0);
+            break;
     }
 }
 
@@ -354,11 +356,10 @@ void FaultLoggerDaemon::HandleRequesting(int32_t connectionFd)
 
 void FaultLoggerDaemon::HandleRequest(int32_t connectionFd)
 {
-    ssize_t nread = -1;
     char buf[REQUEST_BUF_SIZE] = {0};
 
     do {
-        nread = read(connectionFd, buf, sizeof(buf));
+        ssize_t nread = read(connectionFd, buf, sizeof(buf));
         if (nread < 0) {
             DfxLogError("%s :: Failed to read message", FAULTLOGGERD_TAG.c_str());
             break;
@@ -486,11 +487,10 @@ void FaultLoggerDaemon::LoopAcceptRequestAndFork(int socketFd)
 {
     struct sockaddr_un clientAddr;
     socklen_t clientAddrSize = static_cast<socklen_t>(sizeof(clientAddr));
-    int connectionFd = -1;
     signal(SIGCHLD, SIG_IGN);
 
     while (true) {
-        connectionFd = accept(socketFd, reinterpret_cast<struct sockaddr *>(&clientAddr), &clientAddrSize);
+        int connectionFd = accept(socketFd, reinterpret_cast<struct sockaddr *>(&clientAddr), &clientAddrSize);
         if (connectionFd < 0) {
             DfxLogError("%s :: Failed to accept connection", FAULTLOGGERD_TAG.c_str());
             continue;

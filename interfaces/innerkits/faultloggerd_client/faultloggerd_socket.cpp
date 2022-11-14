@@ -56,15 +56,16 @@ bool StartConnect(int& sockfd, const char* path, const int timeout)
             break;
         }
         server.sun_family = AF_LOCAL;
-        if (strncpy_s(server.sun_path, sizeof(server.sun_path), path, sizeof(server.sun_path) - 1) != 0) {
-            DfxLogError("%s :: strncpy failed.", __func__);
+        err = strncpy_s(server.sun_path, sizeof(server.sun_path), path, sizeof(server.sun_path) - 1);
+        if (err != EOK) {
+            DfxLogError("%s :: strncpy failed, err = %d.", __func__, (int)err);
             break;
         }
 
         int len = static_cast<int>(offsetof(struct sockaddr_un, sun_path) + strlen(server.sun_path) + 1);
         int connected = connect(sockfd, reinterpret_cast<struct sockaddr *>(&server), len);
         if (connected < 0) {
-            DfxLogError("%s :: strncpy failed.", __func__);
+            DfxLogError("%s :: connect failed, errno = %d.", __func__, errno);
             break;
         }
 

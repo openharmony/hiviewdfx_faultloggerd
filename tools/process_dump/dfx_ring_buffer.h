@@ -60,7 +60,7 @@ public:
      * @brief     Appends a value the end of the
      *            buffer.
      */
-    void Append(T value)
+    void Append(T& value)
     {
         /*
          * If the next position is where the read cursor

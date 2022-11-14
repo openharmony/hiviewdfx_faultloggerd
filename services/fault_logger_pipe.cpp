@@ -97,10 +97,14 @@ void FaultLoggerPipe::Close(int fd) const
     syscall(SYS_close, fd);
 }
 
-FaultLoggerPipe2::FaultLoggerPipe2()
+FaultLoggerPipe2::FaultLoggerPipe2(std::unique_ptr<FaultLoggerPipe> pipeBuf, std::unique_ptr<FaultLoggerPipe> pipeRes)
+    : faultLoggerPipeBuf_(std::move(pipeBuf)), faultLoggerPipeRes_(std::move(pipeRes))
 {
-    faultLoggerPipeBuf_ = std::unique_ptr<FaultLoggerPipe>(new FaultLoggerPipe());
-    faultLoggerPipeRes_ = std::unique_ptr<FaultLoggerPipe>(new FaultLoggerPipe());
+}
+
+FaultLoggerPipe2::FaultLoggerPipe2(): FaultLoggerPipe2(std::unique_ptr<FaultLoggerPipe>(new FaultLoggerPipe()),
+    std::unique_ptr<FaultLoggerPipe>(new FaultLoggerPipe()))
+{
 }
 
 FaultLoggerPipe2::~FaultLoggerPipe2()

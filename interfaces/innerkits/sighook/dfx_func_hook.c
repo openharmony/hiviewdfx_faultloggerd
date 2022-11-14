@@ -85,14 +85,12 @@ void LogBacktrace()
     unw_init_local_with_as(as, &cursor, &context);
 
     int index = 0;
-    int ret;
     unw_word_t pc;
     unw_word_t relPc;
     unw_word_t prevPc;
     unw_word_t sz;
     uint64_t start;
     uint64_t end;
-    struct map_info* mapInfo;
     bool shouldContinue = true;
     while (true) {
         if (index > MAX_FRAME) {
@@ -109,7 +107,7 @@ void LogBacktrace()
         prevPc = pc;
 
         relPc = unw_get_rel_pc(&cursor);
-        mapInfo = unw_get_map(&cursor);
+        struct map_info* mapInfo = unw_get_map(&cursor);
         if (mapInfo == NULL && index > 1) {
             break;
         }
@@ -135,7 +133,7 @@ void LogBacktrace()
             break;
         }
 
-        ret = unw_step(&cursor);
+        int ret = unw_step(&cursor);
         if (ret == 0) {
             shouldContinue = false;
         } else if (ret < 0) {

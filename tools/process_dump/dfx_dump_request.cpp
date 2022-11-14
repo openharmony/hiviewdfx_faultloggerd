@@ -123,7 +123,7 @@ siginfo_t ProcessDumpRequest::GetSiginfo() const
     return siginfo_;
 }
 
-void ProcessDumpRequest::SetSiginfo(siginfo_t &siginfo)
+void ProcessDumpRequest::SetSiginfo(const siginfo_t &siginfo)
 {
     siginfo_ = siginfo;
 }

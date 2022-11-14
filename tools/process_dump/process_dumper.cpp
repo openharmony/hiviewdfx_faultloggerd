@@ -233,7 +233,6 @@ int ProcessDumper::DumpProcessWithSignalContext(std::shared_ptr<DfxProcess> &pro
         if (DfxUnwindRemote::GetInstance().UnwindProcess(process) == false) {
             DfxLogError("Failed to unwind process.");
             dumpRes = ProcessDumpRes::DUMP_ESTOPUNWIND;
-            break;
         }
 
         if (!isPidNsEnabled && (syscall(SYS_getppid) != request->GetPid())) {
@@ -266,15 +265,16 @@ void ProcessDumper::Dump()
         }
     }
 
+    WriteDumpRes(resDump_);
+    DfxRingBufferWrapper::GetInstance().StopThread();
+    DfxLogInfo("Finish dump stacktrace for %s(%d:%d).",
+        request->GetProcessNameString().c_str(), request->GetPid(), request->GetTid());
+    CloseDebugLog();
+
     if (reporter_ != nullptr) {
         reporter_->ReportToHiview();
     }
 
-    DfxRingBufferWrapper::GetInstance().StopThread();
-    WriteDumpRes(resDump_);
-    DfxLogInfo("Finish dump stacktrace for %s(%d:%d).",
-        request->GetProcessNameString().c_str(), request->GetPid(), request->GetTid());
-    CloseDebugLog();
     _exit(0);
 }
 
@@ -288,9 +288,6 @@ int ProcessDumper::WriteDumpBuf(int fd, const char* buf, const int len)
 
 void ProcessDumper::WriteDumpRes(int32_t res)
 {
-    if (resFd_ < 0) {
-        return;
-    }
     DfxLogDebug("%s :: res: %d", __func__, res);
     DumpResMsg dumpResMsg;
     dumpResMsg.res = res;
@@ -298,7 +295,14 @@ void ProcessDumper::WriteDumpRes(int32_t res)
     if (strncpy_s(dumpResMsg.strRes, sizeof(dumpResMsg.strRes), strRes, strlen(strRes)) != 0) {
         DfxLogError("%s :: strncpy failed.", __func__);
     }
-    write(resFd_, &dumpResMsg, sizeof(struct DumpResMsg));
+    if (resFd_ > 0) {
+        write(resFd_, &dumpResMsg, sizeof(struct DumpResMsg));
+    } else {
+        if (res != DUMP_ESUCCESS) {
+            DfxRingBufferWrapper::GetInstance().AppendMsg("Result:\n");
+            DfxRingBufferWrapper::GetInstance().AppendMsg(DfxDumpRes::GetInstance().ToString() + "\n");
+        }
+    }
 }
 
 } // namespace HiviewDFX

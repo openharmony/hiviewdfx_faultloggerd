@@ -285,9 +285,9 @@ void RequestPrintTHilog(const char *msg, int length)
         }
 
         char ControlBuffer[SOCKET_BUFFER_SIZE];
-        errno_t err = memset_s(&ControlBuffer, sizeof(ControlBuffer), 0, SOCKET_BUFFER_SIZE);
-        if (err != EOK) {
-            DfxLogError("memset_s failed, err = %d.", (int)err);
+        errno_t ret = memset_s(&ControlBuffer, sizeof(ControlBuffer), 0, SOCKET_BUFFER_SIZE);
+        if (ret != EOK) {
+            DfxLogError("memset_s failed, err = %d.", (int)ret);
             break;
         }
         if (read(sockfd, ControlBuffer, sizeof(ControlBuffer) - 1) != \
