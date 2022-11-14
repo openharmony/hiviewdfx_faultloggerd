@@ -233,7 +233,6 @@ int ProcessDumper::DumpProcessWithSignalContext(std::shared_ptr<DfxProcess> &pro
         if (DfxUnwindRemote::GetInstance().UnwindProcess(process) == false) {
             DfxLogError("Failed to unwind process.");
             dumpRes = ProcessDumpRes::DUMP_ESTOPUNWIND;
-            break;
         }
 
         if (!isPidNsEnabled && (syscall(SYS_getppid) != request->GetPid())) {
