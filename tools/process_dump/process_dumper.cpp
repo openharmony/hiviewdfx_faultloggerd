@@ -107,7 +107,7 @@ int ProcessDumper::InitPrintThread(bool fromSignalHandler, std::shared_ptr<Proce
             DfxLogError("memset_s error.");
             return fd;
         }
-        
+
         if (isCrash) {
             faultloggerdRequest.type = (int32_t)type;
             faultloggerdRequest.pid = request->GetPid();
@@ -243,7 +243,7 @@ int ProcessDumper::DumpProcessWithSignalContext(std::shared_ptr<DfxProcess> &pro
             break;
         }
     } while (false);
-    
+
     return dumpRes;
 }
 
@@ -304,6 +304,5 @@ void ProcessDumper::WriteDumpRes(int32_t res)
         }
     }
 }
-
 } // namespace HiviewDFX
 } // namespace OHOS
