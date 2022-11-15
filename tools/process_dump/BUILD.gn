@@ -235,6 +235,8 @@ if (defined(ohos_lite)) {
       cflags = [ "-D__x86_64__" ]
     }
 
+    cflags_cc = [ "-DDEBUG_CRASH_LOCAL_HANDLER" ]
+
     deps = [
       "$faultloggerd_path/common/dfxlog:static_common_log",
       "$faultloggerd_path/common/util:dfx_cutil",

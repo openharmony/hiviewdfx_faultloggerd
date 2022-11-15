@@ -76,7 +76,7 @@ void CppCrashReporter::ReportToHiview()
         return;
     }
 
-    void* handle = dlopen("libfaultlogger.z.so", RTLD_LAZY);
+    void* handle = dlopen("libfaultlogger.z.so", RTLD_LAZY | RTLD_NODELETE);
     if (handle == nullptr) {
         DfxLogWarn("Failed to dlopen libfaultlogger, %s\n", dlerror());
         return;
