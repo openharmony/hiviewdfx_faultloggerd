@@ -123,6 +123,8 @@ int ProcessDumper::InitPrintThread(bool fromSignalHandler, std::shared_ptr<Proce
 
             DfxRingBufferWrapper::GetInstance().SetWriteFunc(ProcessDumper::WriteDumpBuf);
             reporter_ = std::make_shared<CppCrashReporter>(request->GetTimeStamp(), signo, process);
+            // libunwind may print log to stderr, redirect it to log file
+            dup2(fd, STDERR_FILENO);
         } else {
             fd = RequestPipeFd(pid, FaultLoggerPipeType::PIPE_FD_WRITE_BUF);
             DfxLogDebug("write buf fd: %d", fd);
