@@ -41,7 +41,7 @@ NOINLINE int MultiThreadConstructor(const int threadNum)
         threadID[i] = i;
         pthread_create(&t[i], NULL, (void *(*)(void *))CreateThread, &threadID[i]);
         pthread_detach(t[i]);
-    } 
+    }
 
     while (1) {
         continue;
@@ -56,6 +56,7 @@ NOINLINE int TestFunc70(void)
     return 0;
 }
 
+#ifndef UNITTEST
 int main(int argc, char* argv[])
 {
     if (argc != ARGUMENT_LIMIT) {
@@ -65,6 +66,7 @@ int main(int argc, char* argv[])
     MultiThreadConstructor(atoi(argv[1]));
     return 0;
 }
+#endif
 
 // auto gen function
 GEN_TEST_FUNCTION(0, 1)

@@ -303,6 +303,5 @@ void ProcessDumper::WriteDumpRes(int32_t res)
         }
     }
 }
-
 } // namespace HiviewDFX
 } // namespace OHOS

@@ -151,6 +151,19 @@ HWTEST_F(FaultloggerdModuleTest, FaultloggerdClientFdRquestTest003, TestSize.Lev
 }
 
 /**
+ * @tc.name: FaultloggerdClientPipeFdRquestTest001
+ * @tc.desc: check faultloggerd RequestPipeFd function
+ * @tc.type: FUNC
+ */
+HWTEST_F(FaultloggerdModuleTest, FaultloggerdClientPipeFdRquestTest001, TestSize.Level0)
+{
+    int32_t pipeFd = RequestPipeFd(getpid(), FaultLoggerPipeType::PIPE_FD_READ_BUF);
+    ASSERT_EQ(pipeFd, -1);
+    int32_t ret = RequestDelPipeFd(getpid());
+    ASSERT_EQ(ret, 0);
+}
+
+/**
  * @tc.name: FaultloggerdPermissionCheckTest001
  * @tc.desc: check faultloggerd RequestCheckPermission function
  * @tc.type: FUNC
