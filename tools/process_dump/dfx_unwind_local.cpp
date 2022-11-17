@@ -325,7 +325,9 @@ bool DfxUnwindLocal::ExecLocalDumpUnwinding(unw_context_t *ctx, size_t skipFramN
 
         index++;
         if (!isValidFrame) {
-            curIndex_--;
+            if (curIndex_ > 0) {
+                curIndex_--;
+            }
             DfxLogError("%s :: get map error.", __func__);
             break;
         }
