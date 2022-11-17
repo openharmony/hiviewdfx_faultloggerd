@@ -200,7 +200,7 @@ void DfxUnwindLocal::CollectUnwindFrames(std::vector<std::shared_ptr<DfxFrame>>&
         return;
     }
 
-    for (uint32_t i = 0; i < curIndex_; ++i) {
+    for (uint32_t i = 0; i <= curIndex_; ++i) {
         ResolveFrameInfo(i, frames_[i]);
         frames.emplace_back(std::make_shared<DfxFrame>(frames_[i]));
     }
@@ -299,6 +299,7 @@ bool DfxUnwindLocal::ExecLocalDumpUnwinding(unw_context_t *ctx, size_t skipFramN
         unw_word_t sz = unw_get_previous_instr_sz(&cursor);
         if ((curIndex_ > 0) && (relPc > sz)) {
             relPc -= sz;
+            pc -= sz;
         }
 
         struct map_info* map = unw_get_map(&cursor);
@@ -324,6 +325,7 @@ bool DfxUnwindLocal::ExecLocalDumpUnwinding(unw_context_t *ctx, size_t skipFramN
 
         index++;
         if (!isValidFrame) {
+            curIndex_--;
             DfxLogError("%s :: get map error.", __func__);
             break;
         }
