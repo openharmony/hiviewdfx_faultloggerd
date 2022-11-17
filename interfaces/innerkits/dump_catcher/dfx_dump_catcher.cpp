@@ -38,15 +38,16 @@
 #include "dfx_log.h"
 #include "dfx_unwind_local.h"
 #include "faultloggerd_client.h"
-#include "file_ex.h"
 #include "iosfwd"
 #include "securec.h"
 #include "strings.h"
+#include "file_ex.h"
 
 static const int NUMBER_TEN = 10;
 static const int MAX_TEMP_FILE_LENGTH = 256;
 static const int DUMP_CATCHE_WORK_TIME_S = 60;
 static const int NUMBER_TWO_KB = 2048;
+static const int BACK_TRACE_DUMP_TIMEOUT_MS = 10000; //10ms
 
 namespace OHOS {
 namespace HiviewDFX {
@@ -230,7 +231,7 @@ bool DfxDumpCatcher::DumpCatchFd(int pid, int tid, std::string& msg, int fd)
     return ret;
 }
 
-static bool SignalTargetProcess(const int type, int pid, int tid)
+static int SignalTargetProcess(const int type, int pid, int tid)
 {
     DfxLogDebug("%s :: SignalTargetProcess :: type: %d", DFXDUMPCATCHER_TAG.c_str(), type);
 #pragma clang diagnostic push
@@ -246,31 +247,14 @@ static bool SignalTargetProcess(const int type, int pid, int tid)
 #pragma clang diagnostic pop
     if (tid == 0) {
         if (syscall(SYS_rt_sigqueueinfo, pid, si.si_signo, &si) != 0) {
-            return false;
+            return errno;
         }
     } else {
         if (syscall(SYS_rt_tgsigqueueinfo, pid, tid, si.si_signo, &si) != 0) {
-            return false;
+            return errno;
         }
     }
-    return true;
-}
-
-static bool IsPidUninterruptible(int pid)
-{
-    char path[NAME_LEN] = {0};
-    if (snprintf_s(path, sizeof(path), sizeof(path) - 1, "/proc/%d/wchan", pid) <= 0) {
-        return false;
-    }
-
-    std::string buf;
-    if (!ReadStringFromFile(path, buf, NAME_LEN)) {
-        return false;
-    }
-    if (buf.find(UNINTERRUPTIBLE) != std::string::npos) {
-        return true;
-    }
-    return false;
+    return 0;
 }
 
 static void LoadPathContent(const std::string& desc, const std::string& path, std::string& result)
@@ -316,12 +300,13 @@ bool DfxDumpCatcher::DoDumpCatchRemote(const int type, int pid, int tid, std::st
             msg.append("Result: pid(" + std::to_string(pid) + ") is dumping.\n");
             DfxLogWarn("%s :: %s :: %s", DFXDUMPCATCHER_TAG.c_str(), __func__, msg.c_str());
             return ret;
-        } else if (sdkdumpRet == (int)FaultLoggerSdkDumpResp::SDK_DUMP_REJECT) {
-            msg.append("Result: pid(" + std::to_string(pid) + ") check permission error.\n");
-            DfxLogWarn("%s :: %s :: %s", DFXDUMPCATCHER_TAG.c_str(), __func__, msg.c_str());
-
-            if (!SignalTargetProcess(type, pid, tid)) {
-                msg.append("Result: syscall SIGDUMP error.\n");
+        } else {
+            if (sdkdumpRet == (int)FaultLoggerSdkDumpResp::SDK_DUMP_REJECT) {
+                msg.append("Result: pid(" + std::to_string(pid) + ") check permission error.\n");
+            }
+            int err = SignalTargetProcess(type, pid, tid);
+            if (err != 0) {
+                msg.append("Result: syscall SIGDUMP error, errno(" + std::to_string(err) + ").\n");
                 DfxLogWarn("%s :: %s :: %s", DFXDUMPCATCHER_TAG.c_str(), __func__, msg.c_str());
                 RequestDelPipeFd(pid);
                 return ret;
@@ -357,17 +342,13 @@ bool DfxDumpCatcher::DoDumpRemotePid(int pid, std::string& msg)
             break;
         }
 
-        int pollRet = poll(readfds, fdsSize, BACK_TRACE_DUMP_TIMEOUT_S * 1000);
+        int pollRet = poll(readfds, fdsSize, BACK_TRACE_DUMP_TIMEOUT_MS);
         if (pollRet < 0) {
             resMsg.append("Result: poll error, errno(" + std::to_string(errno) + ")\n");
             DfxLogError("%s :: %s :: %s", DFXDUMPCATCHER_TAG.c_str(), __func__, resMsg.c_str());
             break;
         } else if (pollRet == 0) {
-            if (IsPidUninterruptible(pid)) {
-                resMsg.append("Result: pid(" + std::to_string(pid) + ") uninterruptible.\n");
-            } else {
-                resMsg.append("Result: poll timeout.\n");
-            }
+            resMsg.append("Result: pid(" + std::to_string(pid) + ") poll timeout.\n");
             LoadPidStat(pid, resMsg);
             DfxLogError("%s :: %s :: %s", DFXDUMPCATCHER_TAG.c_str(), __func__, resMsg.c_str());
             break;
