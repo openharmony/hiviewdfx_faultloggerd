@@ -51,6 +51,7 @@ static const int NUMBER_TEN = 10;
 static const int MAX_TEMP_FILE_LENGTH = 256;
 static const int DUMP_CATCHE_WORK_TIME_S = 60;
 static const int NUMBER_TWO_KB = 2048;
+static const int BACK_TRACE_DUMP_TIMEOUT_MS = 10000;
 
 namespace OHOS {
 namespace HiviewDFX {
@@ -344,7 +345,7 @@ bool DfxDumpCatcher::DoDumpRemotePid(int pid, std::string& msg)
             break;
         }
 
-        int pollRet = poll(readfds, fdsSize, BACK_TRACE_DUMP_TIMEOUT_S * 1000);
+        int pollRet = poll(readfds, fdsSize, BACK_TRACE_DUMP_TIMEOUT_MS);
         if (pollRet < 0) {
             resMsg.append("Result: poll error, errno(" + std::to_string(errno) + ")\n");
             DfxLogError("%s :: %s :: %s", DFXDUMPCATCHER_TAG.c_str(), __func__, resMsg.c_str());
