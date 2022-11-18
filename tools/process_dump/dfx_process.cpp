@@ -95,7 +95,7 @@ bool DfxProcess::InitProcessThreads(std::shared_ptr<DfxThread> keyThread)
     return true;
 }
 
-void DfxProcess::SetRecycleTid(uid_t nstid)
+void DfxProcess::SetRecycleTid(pid_t nstid)
 {
     recycleTid_ = nstid;
 }

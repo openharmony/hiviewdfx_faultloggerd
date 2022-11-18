@@ -51,7 +51,7 @@ public:
 
     void SetPid(pid_t pid);
     void SetUid(uid_t uid);
-    void SetRecycleTid(uid_t nstid);
+    void SetRecycleTid(pid_t nstid);
     void SetNs(bool ns);
     void SetProcessName(const std::string &processName);
     void SetMaps(std::shared_ptr<DfxElfMaps> maps);

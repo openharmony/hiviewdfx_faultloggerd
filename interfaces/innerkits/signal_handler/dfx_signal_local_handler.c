@@ -87,8 +87,14 @@ static void DFX_SignalHandler(int sig, siginfo_t * si, void * context)
     GetThreadName(g_request.threadName, sizeof(g_request.threadName));
     GetProcessName(g_request.processName, sizeof(g_request.processName));
 
-    memcpy_s(&(g_request.siginfo), sizeof(siginfo_t), si, sizeof(siginfo_t));
-    memcpy_s(&(g_request.context), sizeof(ucontext_t), context, sizeof(ucontext_t));
+    int ret = memcpy_s(&(g_request.siginfo), sizeof(siginfo_t), si, sizeof(siginfo_t));
+    if (ret < 0) {
+        DfxLogError("memcpy_s siginfo fail, ret=%d", ret);
+    }
+    ret = memcpy_s(&(g_request.context), sizeof(ucontext_t), context, sizeof(ucontext_t));
+    if (ret < 0) {
+        DfxLogError("memcpy_s context fail, ret=%d", ret);
+    }
 
     int pseudothreadTid = -1;
     pid_t childTid = clone(DoCrashHandler, g_reservedChildStack, \
