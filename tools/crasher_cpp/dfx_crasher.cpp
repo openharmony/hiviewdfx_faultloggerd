@@ -342,6 +342,23 @@ NOINLINE static uint64_t DoDumpCrash()
     return 0;
 }
 
+NOINLINE static uint64_t TestExitHook()
+{
+    exit(1);
+    return 0;
+}
+
+void SigHookHandler(int signo)
+{
+    printf("SigHookHandler:%d\n", signo);
+}
+
+NOINLINE static uint64_t TestSigHook()
+{
+    signal(SIGSEGV, SigHookHandler);
+    return 0;
+}
+
 void* DfxCrasher::DoCrashInThread(void * inputArg)
 {
     prctl(PR_SET_NAME, "SubTestThread");
@@ -458,6 +475,14 @@ uint64_t DfxCrasher::ParseAndDoCrash(const char *arg)
 
     if (!strcasecmp(arg, "CrashInLambda")) {
         return CrashInLambda();
+    }
+
+    if (!strcasecmp(arg, "ExitHook")) {
+        return TestExitHook();
+    }
+
+    if (!strcasecmp(arg, "SigHook")) {
+        return TestSigHook();
     }
 #ifdef HAS_HITRACE
     HiTraceChain::End(beginId);
