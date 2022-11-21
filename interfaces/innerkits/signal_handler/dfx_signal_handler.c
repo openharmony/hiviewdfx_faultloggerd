@@ -272,23 +272,6 @@ static int DFX_ExecDump(void *arg)
     return errno;
 }
 
-static void ResetSignalHandlerIfNeed(int sig)
-{
-    if (sig == SIGDUMP) {
-        return;
-    }
-
-    if (g_oldSigactionList[sig].sa_sigaction == NULL) {
-        signal(sig, SIG_DFL);
-        return;
-    }
-
-    if (sigaction(sig, &(g_oldSigactionList[sig]), NULL) != 0) {
-        DfxLogError("Failed to reset signal.");
-        signal(sig, SIG_DFL);
-    }
-}
-
 static pid_t GetPid(void)
 {
     return g_procInfo.pid;
@@ -311,6 +294,31 @@ static bool IsMainThread(void)
         }
     }
     return false;
+}
+
+
+static void ResetSignalHandlerIfNeed(int sig)
+{
+    if (sig == SIGDUMP) {
+        return;
+    }
+
+    if (g_oldSigactionList[sig].sa_sigaction == NULL) {
+        signal(sig, SIG_DFL);
+        // real init will not handle crash signal
+        // crash in pid namespace may not exit even if rethrow the signal
+        // use exit instead
+        if (GetPid() == 1) {
+            DfxLogError("Sandbox process is about to exit with signal %d.", sig);
+            _exit(sig);
+        }
+        return;
+    }
+
+    if (sigaction(sig, &(g_oldSigactionList[sig]), NULL) != 0) {
+        DfxLogError("Failed to reset signal.");
+        signal(sig, SIG_DFL);
+    }
 }
 
 static void PauseMainThreadHandler(int sig)
@@ -343,6 +351,30 @@ static pid_t ForkBySyscall(void)
 #endif
 }
 
+static bool SetDumpState(void)
+{
+    if (prctl(PR_SET_DUMPABLE, 1) != 0) {
+        DfxLogError("Failed to set dumpable.");
+        return false;
+    }
+
+    if (prctl(PR_SET_PTRACER, PR_SET_PTRACER_ANY) != 0) {
+        if (errno != EINVAL) {
+            DfxLogError("Failed to set ptracer.");
+            return false;
+        }
+    }
+    return true;
+}
+
+static void RestoreDumpState(int prevState, bool isTracerStatusModified)
+{
+    prctl(PR_SET_DUMPABLE, prevState);
+    if (isTracerStatusModified == true) {
+        prctl(PR_SET_PTRACER, 0);
+    }
+}
+
 static int DoProcessDump(void* arg)
 {
     (void)arg;
@@ -354,18 +386,9 @@ static int DoProcessDump(void* arg)
     g_request.recycleTid = syscall(SYS_gettid);
     // set privilege for dump ourself
     int prevDumpableStatus = prctl(PR_GET_DUMPABLE);
-    bool isTracerStatusModified = false;
-    if (prctl(PR_SET_DUMPABLE, 1) != 0) {
-        DfxLogError("Failed to set dumpable.");
+    bool isTracerStatusModified = SetDumpState();
+    if (!isTracerStatusModified) {
         goto out;
-    }
-    if (prctl(PR_SET_PTRACER, PR_SET_PTRACER_ANY) != 0) {
-        if (errno != EINVAL) {
-            DfxLogError("Failed to set ptracer.");
-            goto out;
-        }
-    } else {
-        isTracerStatusModified = true;
     }
 
     // fork a child process that could ptrace us
@@ -403,13 +426,35 @@ out:
         CrashLocalHandler(&g_request);
     }
 #endif
-    prctl(PR_SET_DUMPABLE, prevDumpableStatus);
-    if (isTracerStatusModified == true) {
-        prctl(PR_SET_PTRACER, 0);
-    }
     g_isDumping = FALSE;
+    RestoreDumpState(prevDumpableStatus, isTracerStatusModified);
     pthread_mutex_unlock(&g_signalHandlerMutex);
     return 0;
+}
+
+static void VforkAndDoProcessDump()
+{
+    int prevDumpableStatus = prctl(PR_GET_DUMPABLE);
+    bool isTracerStatusModified = SetDumpState();
+    int childPid = vfork();
+    if (childPid == 0) {
+        g_request.vmPid = syscall(SYS_getpid);
+        alarm(ALARM_TIME_S);
+        _exit(DoProcessDump(NULL));
+    } else if (childPid < 0) {
+        DfxLogError("Failed to vfork child process, errno(%d).", errno);
+        RestoreDumpState(prevDumpableStatus, isTracerStatusModified);
+        DoProcessDump(NULL);
+        return;
+    }
+
+    DfxLogInfo("Start wait for VmProcess(%d) exit.", childPid);
+    errno = 0;
+    int status;
+    int ret = waitpid(childPid, &status, 0);
+    RestoreDumpState(prevDumpableStatus, isTracerStatusModified);
+    DfxLogInfo("(%d) wait for VmProcess(%d) return with ret(%d) status(%d)",
+        getpid(), childPid, ret, status);
 }
 
 static void DFX_SignalHandler(int sig, siginfo_t *si, void *context)
@@ -456,9 +501,9 @@ static void DFX_SignalHandler(int sig, siginfo_t *si, void *context)
     // for protecting g_reservedChildStack
     // g_signalHandlerMutex will be unlocked in DoProcessDump function
     if (sig != SIGDUMP) {
-        DoProcessDump(NULL);
+        VforkAndDoProcessDump();
         ResetSignalHandlerIfNeed(sig);
-        if (syscall(SYS_rt_tgsigqueueinfo, GetPid(), syscall(SYS_gettid), si->si_signo, si) != 0) {
+        if (syscall(SYS_rt_tgsigqueueinfo, syscall(SYS_getpid), syscall(SYS_gettid), si->si_signo, si) != 0) {
             DfxLogError("Failed to resend signal(%d), errno(%d).", si->si_signo, errno);
         }
     } else {
