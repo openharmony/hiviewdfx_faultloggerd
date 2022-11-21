@@ -14,6 +14,9 @@
 import("//base/hiviewdfx/faultloggerd/faultloggerd.gni")
 
 if (!defined(ohos_lite)) {
+  import("//build/config/features.gni")
+  import("//build/test.gni")
+
   config("dfx_sighook_config") {
     visibility = [ "*:*" ]
 
@@ -32,7 +35,10 @@ if (!defined(ohos_lite)) {
       "-DDFX_LOG_USE_DMESG",
     ]
 
-    sources = [ "dfx_func_hook.c" ]
+    sources = [
+      "dfx_signal_hook.c",
+      "dfx_hook_utils.c"
+    ]
 
     deps = [
       "$faultloggerd_path/common/dfxlog:static_hilog_base_dmesg",
@@ -47,10 +53,57 @@ if (!defined(ohos_lite)) {
     part_name = "faultloggerd"
     subsystem_name = "hiviewdfx"
   }
+
+  ohos_shared_library("dfxexithook") {
+    public_configs = [ ":dfx_sighook_config" ]
+    install_enable = true
+
+    cflags = [ "-DDFX_LOG_USE_DMESG" ]
+
+    sources = [
+      "dfx_exit_hook.c",
+      "dfx_hook_utils.c"
+    ]
+
+    deps = [
+      "$faultloggerd_path/common/dfxlog:static_common_log",
+      "//third_party/libunwind:libunwind",
+    ]
+
+    external_deps = [
+      "c_utils:utils",
+      "hilog_native:libhilog",
+    ]
+
+    part_name = "faultloggerd"
+    subsystem_name = "hiviewdfx"
+  }
+
+  ohos_unittest("DfxFuncHookUnitTest") {
+    testonly = true
+    module_out_path = "faultloggerd/dfxfunchook"
+    sources = [ "dfx_func_hook_unittest.cpp" ]
+
+    configs = [ ":dfx_sighook_config" ]
+
+    deps = [
+      ":dfxexithook",
+      ":dfxsighook",
+      "//third_party/googletest:gtest_main",
+    ]
+
+    external_deps = [ "c_utils:utils" ]
+    resource_config_file =
+        "//base/hiviewdfx/faultloggerd/tools/funchook/ohos_test.xml"
+
+    part_name = "faultloggerd"
+    subsystem_name = "hiviewdfx"
+  }
 }
 
-group("dfxsighook_group") {
+group("dfxfunchook_uniitest") {
   if (!defined(ohos_lite)) {
-    deps = [ ":dfxsighook" ]
+    testonly = true
+    deps = [ ":DfxFuncHookUnitTest" ]
   }
 }

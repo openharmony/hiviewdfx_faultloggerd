@@ -167,7 +167,7 @@ bool DfxUnwindRemote::DfxUnwindRemoteDoUnwindStep(size_t const & index,
     uint64_t framePc;
     static unw_word_t oldPc = 0;
     if (unw_get_reg(&cursor, UNW_REG_IP, (unw_word_t*)(&framePc))) {
-        DfxLogWarn("Fail to get program counter.");
+        DfxLogWarn("Fail to get current pc.");
         return ret;
     }
 
@@ -178,6 +178,7 @@ bool DfxUnwindRemote::DfxUnwindRemoteDoUnwindStep(size_t const & index,
     }
 
     if (oldPc == framePc && index != 0) {
+        DfxLogWarn("%s :: repeated pc(0x%lx), stop.", __func__, framePc);
         return ret;
     }
     oldPc = framePc;

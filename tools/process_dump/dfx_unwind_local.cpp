@@ -290,7 +290,7 @@ bool DfxUnwindLocal::ExecLocalDumpUnwinding(unw_context_t *ctx, size_t skipFramN
         curIndex_ = static_cast<uint32_t>(index - skipFramNum);
         DfxLogDebug("%s :: curIndex_: %d", __func__, curIndex_);
         if (curIndex_ > 1 && prevPc == pc) {
-            DfxLogWarn("%s :: repeated pc, stop.", __func__);
+            DfxLogWarn("%s :: repeated pc(0x%lx), stop.", __func__, pc);
             break;
         }
         prevPc = pc;
