@@ -188,10 +188,10 @@ __attribute__((noinline)) void CrashLocalUnwind(const int fd, const ucontext_t* 
         }
     }
 out:
-    if(cursor != NULL) {
+    if (cursor != NULL) {
         munmap(cursor, sizeof(unw_cursor_t));
     }
-    if(context != NULL) {
+    if (context != NULL) {
         munmap(context, sizeof(unw_context_t));
     }
     if (fd >= 0) {
