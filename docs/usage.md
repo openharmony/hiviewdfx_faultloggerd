@@ -165,13 +165,18 @@ Q6.GDB的位置 \
 
 Q7.进程崩溃退出而没有日志可能原因? \
 如果进程使用了signal/sigaction/sigprocmask等函数屏蔽/拦截了信号的分发，也会导致进程由于信号退出时没有日志。 \
-这时可以使用sighook机制来定位,libdfxsighook已经预置到版本中，可以通过修改配置文件加载该so。\
+这时可以使用sighook机制来定位,可以通过修改配置文件加载该so。当前该so仅归档到测试用例的路径，需要手工push到/system/lib中 \
 配置文件的路径为:system/etc/init/faultloggerd.cfg
 ```
             "name" : "pre-init",
             "cmds" : [
-                "export LD_PRELOAD libdfxsighook.z.so:libdfx_signalhandler.z.so" // sighook需要放在sighandler之前
+                "export LD_PRELOAD libdfxsighook.z.so"
             ]
+```
+如果版本开启了selinux，需要手工关闭selinux：
+```
+hdc shell mount -o rw,remount /
+hdc shell "sed -i 's/enforcing/permissive/g' /etc/selinux/config"
 ```
 加载后会输出如下日志:
 ```
@@ -191,3 +196,12 @@ Q8.进程崩溃退出发现生成了CPPCRASH日志，但是日志内容为空可
 ```
 restorecon /data/log/faultlog/temp
 ```
+
+Q9.如何定位进程主动exit的原因? \
+当前编译单元测试用例时会同时编译sighook以及exithook库到faultloggerd的路径下 \
+例如rk3568的路径如下：
+```
+out\rk3568\tests\unittest\faultloggerd\dfxfunchook\resource\hiviewdfx\faultloggerd
+```
+可以通过Q7修改preload的方法hook相关函数，并打印调用栈到流水日志中。
+
