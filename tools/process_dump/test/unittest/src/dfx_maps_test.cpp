@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-/* This files is process dumo map module unittest. */
+/* This files is process dump map module unittest. */
 
 #include "dfx_maps_test.h"
 

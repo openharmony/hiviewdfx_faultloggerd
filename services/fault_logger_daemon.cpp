@@ -224,7 +224,7 @@ FaultLoggerCheckPermissionResp FaultLoggerDaemon::SecurityCheck(int32_t connecti
             DfxLogError("%s :: setsockopt SO_PASSCRED error.", FAULTLOGGERD_TAG.c_str());
             break;
         }
-        
+
         if (write(connectionFd, DAEMON_RESP.c_str(), DAEMON_RESP.length()) !=
             static_cast<ssize_t>(DAEMON_RESP.length())) {
             DfxLogError("%s :: Failed to write DAEMON_RESP.", FAULTLOGGERD_TAG.c_str());

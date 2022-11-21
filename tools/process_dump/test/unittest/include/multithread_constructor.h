@@ -28,7 +28,13 @@
 
 void CreateThread(int *argv);
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 int MultiThreadConstructor(const int threadNum);
+#ifdef __cplusplus
+}
+#endif
 
 // test functions for callstack depth test
 int TestFunc0(void);
