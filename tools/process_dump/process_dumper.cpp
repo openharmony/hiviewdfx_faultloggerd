@@ -107,7 +107,7 @@ int ProcessDumper::InitPrintThread(bool fromSignalHandler, std::shared_ptr<Proce
             DfxLogError("memset_s error.");
             return fd;
         }
-        
+
         if (isCrash) {
             faultloggerdRequest.type = (int32_t)type;
             faultloggerdRequest.pid = request->GetPid();
@@ -123,8 +123,6 @@ int ProcessDumper::InitPrintThread(bool fromSignalHandler, std::shared_ptr<Proce
 
             DfxRingBufferWrapper::GetInstance().SetWriteFunc(ProcessDumper::WriteDumpBuf);
             reporter_ = std::make_shared<CppCrashReporter>(request->GetTimeStamp(), signo, process);
-            // libunwind may print log to stderr, redirect it to log file
-            dup2(fd, STDERR_FILENO);
         } else {
             fd = RequestPipeFd(pid, FaultLoggerPipeType::PIPE_FD_WRITE_BUF);
             DfxLogDebug("write buf fd: %d", fd);
@@ -238,14 +236,13 @@ int ProcessDumper::DumpProcessWithSignalContext(std::shared_ptr<DfxProcess> &pro
         }
 
         if (!isPidNsEnabled && (syscall(SYS_getppid) != request->GetPid())) {
-            DfxRingBufferWrapper::GetInstance().AppendBuf("after unwind, check again: \
-                Target process(%s:%d) is not parent pid(%d)\n.", \
-                storeProcessName.c_str(), request->GetPid(), syscall(SYS_getppid));
+            DfxRingBufferWrapper::GetInstance().AppendBuf(
+                "Target process has been killed, the crash log may not be fully generated.");
             dumpRes = ProcessDumpRes::DUMP_EGETPPID;
             break;
         }
     } while (false);
-    
+
     return dumpRes;
 }
 
@@ -306,6 +303,5 @@ void ProcessDumper::WriteDumpRes(int32_t res)
         }
     }
 }
-
 } // namespace HiviewDFX
 } // namespace OHOS

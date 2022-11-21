@@ -84,18 +84,8 @@ if (defined(ohos_lite)) {
     ]
   }
 
-  ohos_executable("multithread_constructor") {
-    sources = [ "src/multithread_constructor.c" ]
-
-    configs = [ ":multithread_constructor_config" ]
-    external_deps = [ "c_utils:utils" ]
-  }
-
   group("performance") {
     testonly = true
-    deps = [
-      ":multithread_constructor",
-      ":test_performance",
-    ]
+    deps = [ ":test_performance" ]
   }
 }

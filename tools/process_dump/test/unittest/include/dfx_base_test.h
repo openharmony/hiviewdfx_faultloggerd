@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Huawei Device Co., Ltd.
+ * Copyright (c) 2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -15,14 +15,14 @@
 
 /* This files contains unit test module of maps module. */
 
-#ifndef DFX_MAPS_TEST_H
-#define DFX_MAPS_TEST_H
+#ifndef DFX_BASE_TEST_H
+#define DFX_BASE_TEST_H
 
 #include <gtest/gtest.h>
 
 namespace OHOS {
 namespace HiviewDFX {
-class DfxMapsTest : public testing::Test {
+class DfxBaseTest : public testing::Test {
 public:
     static void SetUpTestCase(void);
     static void TearDownTestCase(void);
@@ -31,4 +31,4 @@ public:
 };
 } // namespace HiviewDFX
 } // namespace OHOS
-#endif // DFX_MAPS_TEST_H
+#endif // DFX_BASE_TEST_H
