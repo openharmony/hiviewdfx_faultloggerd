@@ -47,9 +47,6 @@ public:
     int32_t GetPid() const;
     void SetPid(int32_t pid);
 
-    int32_t GetVmPid() const;
-    void SetVmPid(int32_t pid);
-
     uint32_t GetUid() const;
     void SetUid(uint32_t uid);
 
@@ -75,7 +72,6 @@ private:
     int32_t tid_ = 0;
     int32_t recycleTid_;
     int32_t pid_ = 0;
-    int32_t vmPid_ = 0;
     uint32_t uid_ = 0;
     uint64_t reserved_ = 0;
     uint64_t timeStamp_ = 0;

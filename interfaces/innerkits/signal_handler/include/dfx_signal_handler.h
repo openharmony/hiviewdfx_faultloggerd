@@ -28,7 +28,6 @@ struct ProcessDumpRequest {
     int32_t tid;
     int32_t recycleTid;
     int32_t pid;
-    int32_t vmPid;
     uint32_t uid;
     uint64_t reserved;
     uint64_t timeStamp;

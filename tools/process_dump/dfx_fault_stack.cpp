@@ -79,7 +79,6 @@ bool FaultStack::CollectStackInfo(std::shared_ptr<DfxRegs> reg, const std::vecto
     }
 
     size_t index = 1;
-    uintptr_t minAddr = 4096;
     uintptr_t size = 0;
     uintptr_t prevSp = 0;
     uintptr_t curSp = 0;
@@ -103,15 +102,13 @@ bool FaultStack::CollectStackInfo(std::shared_ptr<DfxRegs> reg, const std::vecto
         size = 0;
         if (curSp > prevSp) {
             size = std::min(highAddrLength, static_cast<uintptr_t>(((curSp - prevSp) / STEP) - 1));
-        } else {
-            break;
         }
 
         prevEndAddr = AdjustAndCreateMemoryBlock(index, prevSp, prevEndAddr, size);
         prevSp = curSp;
     }
 
-    if ((blocks_.size() < MAX_FAULT_STACK_SZ) && (prevSp > minAddr)) {
+    if (blocks_.size() < MAX_FAULT_STACK_SZ) {
         size = highAddrLength;
         AdjustAndCreateMemoryBlock(index, prevSp, prevEndAddr, size);
     }

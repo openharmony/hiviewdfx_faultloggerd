@@ -46,8 +46,10 @@ DfxThread::DfxThread(pid_t pid, pid_t tid, pid_t nsTid, const ucontext_t &contex
     reg = std::make_shared<DfxRegsX86_64>(context);
 #endif
     regs_ = reg;
-
-    ReadThreadName();
+    if (!InitThread()) {
+        DfxLogWarn("Fail to init thread(%d).", tid);
+        return;
+    }
     threadStatus_ = ThreadStatus::THREAD_STATUS_INIT;
 }
 
@@ -55,21 +57,25 @@ DfxThread::DfxThread(pid_t pid, pid_t tid, pid_t nsTid)
     :isCrashThread_(false), pid_(pid), tid_(tid), nsTid_(nsTid), unwStopReason_(-1)
 {
     regs_ = nullptr;
-    ReadThreadName();
+    if (!InitThread()) {
+        DfxLogWarn("Fail to init thread(%d).", tid);
+        return;
+    }
     threadStatus_ = ThreadStatus::THREAD_STATUS_INIT;
 }
 
-void DfxThread::ReadThreadName()
+bool DfxThread::InitThread()
 {
     char path[NAME_LEN] = {0};
     if (snprintf_s(path, sizeof(path), sizeof(path) - 1, "/proc/%d/comm", tid_) <= 0) {
-        return;
+        return false;
     }
 
     std::string pathName = path;
     std::string buf;
     ReadStringFromFile(pathName, buf, NAME_LEN);
     TrimAndDupStr(buf, threadName_);
+    return true;
 }
 
 bool DfxThread::IsThreadInitialized()
@@ -107,7 +113,7 @@ std::string DfxThread::GetThreadName() const
     return threadName_;
 }
 
-void DfxThread::SetThreadName(const std::string &threadName)
+void DfxThread::SetThreadName(std::string &threadName)
 {
     threadName_ = threadName;
 }
@@ -153,9 +159,9 @@ void DfxThread::SetThreadUnwStopReason(int reason)
     unwStopReason_ = reason;
 }
 
-void DfxThread::CreateFaultStack(int32_t vmPid)
+void DfxThread::CreateFaultStack()
 {
-    faultstack_ =  std::unique_ptr<FaultStack>(new FaultStack(vmPid));
+    faultstack_ =  std::unique_ptr<FaultStack>(new FaultStack(tid_));
     faultstack_->CollectStackInfo(regs_, dfxFrames_);
 }
 
@@ -173,11 +179,6 @@ pid_t DfxThread::GetRealTid() const
     return nsTid_;
 }
 
-void DfxThread::SetThreadId(pid_t tid)
-{
-    tid_ = tid;
-}
-
 bool DfxThread::Attach()
 {
     if (threadStatus_ == ThreadStatus::THREAD_STATUS_ATTACHED) {
@@ -185,12 +186,12 @@ bool DfxThread::Attach()
     }
 
     if (ptrace(PTRACE_SEIZE, nsTid_, 0, 0) != 0) {
-        DfxLogWarn("Failed to seize thread(%d:%d), errno=%d", tid_, nsTid_, errno);
+        DfxLogWarn("Failed to seize thread(%d), errno=%d", nsTid_, errno);
         return false;
     }
 
     if (ptrace(PTRACE_INTERRUPT, nsTid_, 0, 0) != 0) {
-        DfxLogWarn("Failed to interrupt thread(%d:%d), errno=%d", tid_, nsTid_, errno);
+        DfxLogWarn("Failed to interrupt thread(%d), errno=%d", nsTid_, errno);
         ptrace(PTRACE_DETACH, nsTid_, NULL, NULL);
         return false;
     }
@@ -199,7 +200,7 @@ bool DfxThread::Attach()
     while (waitpid(nsTid_, nullptr, __WALL) < 0) {
         if (EINTR != errno) {
             ptrace(PTRACE_DETACH, nsTid_, NULL, NULL);
-            DfxLogWarn("Failed to wait thread(%d:%d) attached, errno=%d.", tid_, nsTid_, errno);
+            DfxLogWarn("Failed to wait thread(%d) attached, errno=%d.", nsTid_, errno);
             return false;
         }
         errno = 0;
