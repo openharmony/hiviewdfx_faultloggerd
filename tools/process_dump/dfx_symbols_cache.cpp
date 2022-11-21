@@ -56,15 +56,13 @@ bool DfxSymbolsCache::GetNameAndOffsetByPc(struct unw_addr_space *as,
     }
 
     int status = 0;
-    std::size_t demangleBufferSize = LOG_BUF_LEN;
-    auto demangleBuffer = static_cast<char*>(std::malloc(demangleBufferSize));
-    auto funcName = abi::__cxa_demangle(buf, demangleBuffer, &demangleBufferSize, &status);
+    auto funcName = abi::__cxa_demangle(buf, nullptr, nullptr, &status);
     if (funcName != nullptr) {
         symbol.funcName = std::string(funcName);
+        std::free(funcName);
     } else {
         symbol.funcName = std::string(buf, strlen(buf));
     }
-    std::free(demangleBuffer);
     offset = pc - symbol.start;
     name = symbol.funcName;
     cachedSymbols_.push_back(symbol);
