@@ -35,7 +35,6 @@
 #include "dfx_util.h"
 #include "libunwind.h"
 #include "libunwind_i-ohos.h"
-#include "process_dumper.h"
 
 namespace OHOS {
 namespace HiviewDFX {
@@ -78,8 +77,7 @@ bool DfxUnwindRemote::UnwindProcess(std::shared_ptr<DfxProcess> process)
         DfxLogWarn("%s::failed to create address space.", __func__);
         return ret;
     }
-
-    unw_set_target_pid(as_, ProcessDumper::GetInstance().GetTargetPid());
+    unw_set_target_pid(as_, process->GetPid());
     unw_set_caching_policy(as_, UNW_CACHE_GLOBAL);
     do {
         // only need to unwind crash thread in crash scenario
@@ -269,8 +267,7 @@ bool DfxUnwindRemote::UnwindThread(std::shared_ptr<DfxProcess> process, std::sha
         return false;
     }
 
-    bool isCrash = thread->GetIsCrashThread() && (process->GetIsSignalDump() == false);
-    pid_t nsTid = isCrash ? ProcessDumper::GetInstance().GetTargetNsPid() : thread->GetRealTid();
+    pid_t nsTid = thread->GetRealTid();
     pid_t tid = thread->GetThreadId();
     char buf[LOG_BUF_LEN] = {0};
     int ret = snprintf_s(buf, sizeof(buf), sizeof(buf) - 1, "Tid:%d, Name:%s\n", tid, thread->GetThreadName().c_str());
@@ -278,6 +275,7 @@ bool DfxUnwindRemote::UnwindThread(std::shared_ptr<DfxProcess> process, std::sha
         DfxLogError("%s :: snprintf_s failed, line: %d.", __func__, __LINE__);
     }
     DfxRingBufferWrapper::GetInstance().AppendMsg(std::string(buf));
+
     void *context = _UPT_create(nsTid);
     if (!context) {
         DfxRingBufferWrapper::GetInstance().AppendBuf("Failed to create unwind context for %d.\n", nsTid);
@@ -320,10 +318,10 @@ bool DfxUnwindRemote::UnwindThread(std::shared_ptr<DfxProcess> process, std::sha
         unwRet = unw_step(&cursor);
     } while ((unwRet > 0) && (index < BACK_STACK_MAX_STEPS));
     thread->SetThreadUnwStopReason(unwRet);
-    if (isCrash) {
+    if (thread->GetIsCrashThread() && (process->GetIsSignalDump() == false)) {
         DfxRingBufferWrapper::GetInstance().AppendMsg(regs->PrintRegs());
         if (DfxConfig::GetInstance().GetDisplayFaultStack()) {
-            thread->CreateFaultStack(nsTid);
+            thread->CreateFaultStack();
             thread->PrintThreadFaultStackByConfig();
         }
     }

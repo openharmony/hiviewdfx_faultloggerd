@@ -18,7 +18,6 @@
 #include "faultloggerd_system_test.h"
 
 #include <cerrno>
-#include <csignal>
 #include <cstdio>
 #include <cstring>
 #include <ctime>
@@ -32,8 +31,6 @@
 #include <securec.h>
 #include <stdlib.h>
 #include <string>
-#include <sys/mman.h>
-#include <sys/prctl.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/wait.h>
@@ -226,28 +223,22 @@ bool FaultLoggerdSystemTest::IsDigit(std::string pid)
     return flag;
 }
 
-static std::string GetLogFileName(const std::string& prefix)
-{
-    std::string filePath;
-    std::vector<std::string> files;
-    OHOS::GetDirFiles("/data/log/faultlog/temp/", files);
-    for (const auto& file : files) {
-        if (file.find(prefix) != std::string::npos) {
-            filePath = file;
-        }
-    }
-    return filePath;
-}
-
 // commandStatus: 0 C    1 CPP
 std::string FaultLoggerdSystemTest::GetfileNamePrefix(std::string ErrorCMD, int commandStatus)
 {
     std::vector<std::string> cmds {"crasher_c", ErrorCMD};
+    std::string filePath;
+    std::vector<std::string> files;
     std::string pid = FaultLoggerdSystemTest::ForkAndRunCommands(cmds, commandStatus);
     int sleepSecond = 5;
     sleep(sleepSecond);
-    std::string prefix = "cppcrash-" + pid;
-    std::string filePath = GetLogFileName(prefix);
+    OHOS::GetDirFiles("/data/log/faultlog/temp/", files);
+    std::string fileNamePrefix = "cppcrash-" + pid;
+    for (const auto& file : files) {
+        if (file.find(fileNamePrefix) != std::string::npos) {
+            filePath = file;
+        }
+    }
     return filePath + " " + pid;
 }
 
@@ -255,11 +246,19 @@ std::string FaultLoggerdSystemTest::GetfileNamePrefix(std::string ErrorCMD, int 
 std::string FaultLoggerdSystemTest::GetstackfileNamePrefix(std::string ErrorCMD, int commandStatus)
 {
     std::vector<std::string> cmds { "crasher_c", ErrorCMD };
-    std::string pid = FaultLoggerdSystemTest::ForkAndRunCommands(cmds, commandStatus);
+    std::string pid;
+    std::string filePath;
+    std::vector<std::string> files;
+    pid = FaultLoggerdSystemTest::ForkAndRunCommands(cmds, commandStatus);
     int sleepSecond = 5;
     sleep(sleepSecond);
-    std::string prefix = "stacktrace-" + pid;
-    std::string filePath = GetLogFileName(prefix);
+    OHOS::GetDirFiles("/data/log/faultlog/temp/", files);
+    std::string fileNamePrefix = "stacktrace-" + pid;
+    for (const auto& file : files) {
+        if (file.find(fileNamePrefix) != std::string::npos) {
+            filePath = file;
+        }
+    }
     return filePath + " " + pid;
 }
 
@@ -4308,54 +4307,6 @@ HWTEST_F (FaultLoggerdSystemTest,  FaultLoggerdSystemTest0121, TestSize.Level2)
     EXPECT_EQ(count, 4) << "FaultLoggerdSystemTest0121 Failed";
     FaultLoggerdSystemTest::KillCrasherLoopForSomeCase(4);
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest0121: end.";
-}
-
-static void CrashInChildThread()
-{
-    printf("CrashInChildThread(): TID = %ld\n", (long) gettid());
-    raise(SIGSEGV);
-}
-
-static int RunInNewPidNs(void* arg)
-{
-    (void)arg;
-    printf("RunInNewPidNs(): PID = %ld\n", (long) getpid());
-    printf("RunInNewPidNs(): TID = %ld\n", (long) gettid());
-    printf("RunInNewPidNs(): PPID = %ld\n", (long) getppid());
-    std::thread childThread(CrashInChildThread);
-    childThread.join();
-    _exit(0);
-}
-
-/**
- * @tc.name: FaultLoggerdSystemTest0200
- * @tc.desc: test crash in process with pid namespace
- * @tc.type: FUNC
- */
-HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0200, TestSize.Level2)
-{
-    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest0200: start.";
-    const int stackSz = 1024 * 1024 * 1024; // 1M
-    void* cloneStack = mmap(NULL, stackSz,
-        PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_STACK, 1, 0);
-    if (cloneStack == nullptr) {
-        FAIL();
-    }
-    cloneStack = (void *)(((uint8_t *)cloneStack) + stackSz - 1);
-    int childPid = clone(RunInNewPidNs, cloneStack, CLONE_NEWPID | SIGCHLD, nullptr);
-    // wait for log generation
-    sleep(NUMBER_FOUR);
-    std::string prefix = "cppcrash-" + std::to_string(childPid);
-    std::string fileName = GetLogFileName(prefix);
-    EXPECT_NE(0, fileName.size());
-    printf("PidNs Crash File:%s\n", fileName.c_str());
-    string log[] = {
-        "Pid:", "Uid", "SIGSEGV", "Tid:", "#00",
-        "Registers:", "FaultStack:", "Maps:"
-    };
-    int minRegIdx = 6;
-    CheckKeywords(fileName, log, sizeof(log) / sizeof(log[0]), minRegIdx);
-    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest0200: end.";
 }
 #endif
 }

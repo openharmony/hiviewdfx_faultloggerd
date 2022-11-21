@@ -37,9 +37,8 @@ public:
     pid_t GetProcessId() const;
     pid_t GetThreadId() const;
     pid_t GetRealTid() const;
-    void SetThreadId(pid_t tid);
     std::string GetThreadName() const;
-    void SetThreadName(const std::string &threadName);
+    void SetThreadName(std::string &threadName);
     std::shared_ptr<DfxRegs> GetThreadRegs() const;
     std::vector<std::shared_ptr<DfxFrame>> GetThreadDfxFrames() const;
     void SetThreadRegs(const std::shared_ptr<DfxRegs> &regs);
@@ -49,14 +48,13 @@ public:
     std::string PrintThreadRegisterByConfig();
     void PrintThreadFaultStackByConfig();
     void SetThreadUnwStopReason(int reason);
-    void CreateFaultStack(int32_t vmPid = 0);
+    void CreateFaultStack();
     void Detach();
     bool Attach();
     std::string ToString() const;
     bool IsThreadInitialized();
     void ClearLastFrame();
     void AddFrame(std::shared_ptr<DfxFrame> frame);
-    void ReadThreadName();
 
 private:
     enum class ThreadStatus {
@@ -66,6 +64,7 @@ private:
         THREAD_STATUS_ATTACHED = 3
     };
 
+    bool InitThread();
     bool isCrashThread_;
     pid_t pid_;
     pid_t tid_;
