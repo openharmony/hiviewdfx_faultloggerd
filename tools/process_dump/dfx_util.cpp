@@ -34,22 +34,10 @@ namespace OHOS {
 namespace HiviewDFX {
 static const int ARGS_COUNT_ONE = 1;
 static const int ARGS_COUNT_TWO = 2;
-
-int GetRealTargetPid()
-{
-    ProcInfo procInfo;
-    (void)memset_s(&procInfo, sizeof(procInfo), 0, sizeof(struct ProcInfo));
-    if (GetProcStatus(procInfo) == -1) {
-        return -1;
-    }
-
-    return procInfo.ppid;
-}
-
-int GetProcStatus(struct ProcInfo& procInfo)
+static int GetProcStatusByPath(const std::string& path, struct ProcInfo& procInfo)
 {
     char buf[STATUS_LINE_SIZE];
-    FILE *fp = fopen(PROC_SELF_STATUS_PATH, "r");
+    FILE *fp = fopen(path.c_str(), "r");
     if (fp == nullptr) {
         return -1;
     }
@@ -97,6 +85,28 @@ int GetProcStatus(struct ProcInfo& procInfo)
     }
     (void)fclose(fp);
     return 0;
+}
+
+int GetRealTargetPid()
+{
+    ProcInfo procInfo;
+    (void)memset_s(&procInfo, sizeof(procInfo), 0, sizeof(struct ProcInfo));
+    if (GetProcStatus(procInfo) == -1) {
+        return -1;
+    }
+
+    return procInfo.ppid;
+}
+
+int GetProcStatusByPid(int realPid, struct ProcInfo& procInfo)
+{
+    std::string path = "/proc/" + std::to_string(realPid) + "/status";
+    return GetProcStatusByPath(path, procInfo);
+}
+
+int GetProcStatus(struct ProcInfo& procInfo)
+{
+    return GetProcStatusByPath(PROC_SELF_STATUS_PATH, procInfo);
 }
 
 bool ReadStringFromFile(const std::string &path, std::string &buf, size_t len)
