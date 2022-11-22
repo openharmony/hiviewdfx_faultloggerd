@@ -300,6 +300,7 @@ bool DfxUnwindLocal::ExecLocalDumpUnwinding(unw_context_t *ctx, size_t skipFramN
         if ((curIndex_ > 0) && (relPc > sz)) {
             relPc -= sz;
             pc -= sz;
+            unw_set_adjust_pc(&cursor, pc);
         }
 
         struct map_info* map = unw_get_map(&cursor);
