@@ -65,6 +65,8 @@ if (defined(ohos_lite)) {
       "//commonlibrary/c_utils/base/include",
       "$faultloggerd_path/interfaces/innerkits/dump_catcher/include/",
     ]
+
+    cflags_cc = [ "-fno-exceptions" ]
   }
 
   module_output_path = "faultloggerd/faultloggerd_native"

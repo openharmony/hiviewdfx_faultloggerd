@@ -38,23 +38,29 @@ public:
 
     void Dump();
     void WriteDumpRes(int32_t res);
+    int32_t GetTargetPid();
+    int32_t GetTargetNsPid();
 private:
     static int WriteDumpBuf(int fd, const char* buf, const int len);
-    int DumpProcessWithSignalContext(std::shared_ptr<DfxProcess> &process, \
-                                      std::shared_ptr<ProcessDumpRequest> request);
-    
-    int InitPrintThread(bool fromSignalHandler, std::shared_ptr<ProcessDumpRequest> request, \
-                         std::shared_ptr<DfxProcess> process);
-
-    void PrintDumpProcessWithSignalContextHeader(std::shared_ptr<DfxProcess> process,
-        std::shared_ptr<ProcessDumpRequest> request);
+    int DumpProcessWithSignalContext(std::shared_ptr<ProcessDumpRequest> request);
+    int InitPrintThread(bool fromSignalHandler, std::shared_ptr<ProcessDumpRequest> request);
+    void PrintDumpProcessWithSignalContextHeader(std::shared_ptr<ProcessDumpRequest> request);
+    void CreateVmProcessIfNeed(std::shared_ptr<ProcessDumpRequest> request, bool enableNs);
+    bool InitProcessNsInfo(std::shared_ptr<ProcessDumpRequest> request, bool isCrash);
+    int InitProcessInfo(std::shared_ptr<ProcessDumpRequest> request, bool isCrash, bool enableNs);
 
     ProcessDumper() = default;
     DISALLOW_COPY_AND_MOVE(ProcessDumper);
 
+    std::shared_ptr<DfxProcess> vmProcess_ = nullptr;
+    std::shared_ptr<DfxProcess> targetProcess_ = nullptr;
     std::shared_ptr<CppCrashReporter> reporter_ = nullptr;
     int32_t resFd_ = -1;
     int32_t resDump_ = 0;
+    int32_t targetPid_ = -1;
+    int32_t targetNsPid_ = -1;
+    int32_t targetVmPid_ = -1;
+    int32_t targetVmNsPid_ = -1;
 };
 } // namespace HiviewDFX
 } // namespace OHOS

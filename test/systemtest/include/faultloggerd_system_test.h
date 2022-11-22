@@ -50,14 +50,10 @@ public:
     static std::string GetPidMax();
     static std::string GetTidMax();
 
-    // 合并
     static std::string ForkAndRunCommands(const std::vector<std::string>& cmds, int commandStatus);
-
-    // jason update
-    static std::string ForkAndCommands(const std::vector<std::string>& cmds, int crasherType, int udid);
+    static std::string ForkAndCommands(int crasherType, int udid);
 
     static std::string ProcessDumpCommands(const std::string cmds);
-    // 合并
     static std::string GetfileNamePrefix(const std::string errorCMD, int commandStatus);
     static std::string GetstackfileNamePrefix(const std::string errorCMD, int commandStatus);
 
@@ -76,7 +72,6 @@ public:
     static int CheckCountNumKill11(std::string& filePath, std::string& pid);
     static void Trim(std::string& str);
 
-    // 合并
     static void StartCrasherLoop(int type);     // 1. system; 2. root; 3.app; 4. root+cpp
     static void KillCrasherLoopForSomeCase(int type);
     static void StartCrasherLoopForUnsingPidAndTid(int crasherType);    // 1.c 2.c++
@@ -92,7 +87,6 @@ public:
     static std::string sysTid[ARRAY_SIZE_HUNDRED];
     static std::string testTid[ARRAY_SIZE_HUNDRED];
 
-    // 更新为数组
     static int loopSysPid;
     static int loopRootPid;
     static int loopCppPid;
