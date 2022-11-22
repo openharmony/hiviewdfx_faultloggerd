@@ -184,6 +184,7 @@ bool DfxUnwindRemote::DfxUnwindRemoteDoUnwindStep(size_t const & index,
     if (index != 0) {
         relPc = DfxUnwindRemoteDoAdjustPc(cursor, relPc);
         framePc = DfxUnwindRemoteDoAdjustPc(cursor, framePc);
+        unw_set_adjust_pc(&cursor, framePc);
     }
 
     if (relPc == 0) {
