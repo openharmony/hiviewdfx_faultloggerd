@@ -18,6 +18,7 @@
 #include "faultloggerd_system_test.h"
 
 #include <cerrno>
+#include <csignal>
 #include <cstdio>
 #include <cstring>
 #include <ctime>
@@ -31,6 +32,8 @@
 #include <securec.h>
 #include <stdlib.h>
 #include <string>
+#include <sys/mman.h>
+#include <sys/prctl.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/wait.h>
@@ -223,22 +226,28 @@ bool FaultLoggerdSystemTest::IsDigit(std::string pid)
     return flag;
 }
 
+static std::string GetLogFileName(const std::string& prefix)
+{
+    std::string filePath;
+    std::vector<std::string> files;
+    OHOS::GetDirFiles("/data/log/faultlog/temp/", files);
+    for (const auto& file : files) {
+        if (file.find(prefix) != std::string::npos) {
+            filePath = file;
+        }
+    }
+    return filePath;
+}
+
 // commandStatus: 0 C    1 CPP
 std::string FaultLoggerdSystemTest::GetfileNamePrefix(std::string ErrorCMD, int commandStatus)
 {
     std::vector<std::string> cmds {"crasher_c", ErrorCMD};
-    std::string filePath;
-    std::vector<std::string> files;
     std::string pid = FaultLoggerdSystemTest::ForkAndRunCommands(cmds, commandStatus);
     int sleepSecond = 5;
     sleep(sleepSecond);
-    OHOS::GetDirFiles("/data/log/faultlog/temp/", files);
-    std::string fileNamePrefix = "cppcrash-" + pid;
-    for (const auto& file : files) {
-        if (file.find(fileNamePrefix) != std::string::npos) {
-            filePath = file;
-        }
-    }
+    std::string prefix = "cppcrash-" + pid;
+    std::string filePath = GetLogFileName(prefix);
     return filePath + " " + pid;
 }
 
@@ -246,19 +255,11 @@ std::string FaultLoggerdSystemTest::GetfileNamePrefix(std::string ErrorCMD, int 
 std::string FaultLoggerdSystemTest::GetstackfileNamePrefix(std::string ErrorCMD, int commandStatus)
 {
     std::vector<std::string> cmds { "crasher_c", ErrorCMD };
-    std::string pid;
-    std::string filePath;
-    std::vector<std::string> files;
-    pid = FaultLoggerdSystemTest::ForkAndRunCommands(cmds, commandStatus);
+    std::string pid = FaultLoggerdSystemTest::ForkAndRunCommands(cmds, commandStatus);
     int sleepSecond = 5;
     sleep(sleepSecond);
-    OHOS::GetDirFiles("/data/log/faultlog/temp/", files);
-    std::string fileNamePrefix = "stacktrace-" + pid;
-    for (const auto& file : files) {
-        if (file.find(fileNamePrefix) != std::string::npos) {
-            filePath = file;
-        }
-    }
+    std::string prefix = "stacktrace-" + pid;
+    std::string filePath = GetLogFileName(prefix);
     return filePath + " " + pid;
 }
 
@@ -416,7 +417,7 @@ int FaultLoggerdSystemTest::CheckStacktraceCountNum(std::string& filePath, std::
     return CheckKeywords(filePath, log, sizeof(log) / sizeof(log[0]), -1); // -1 : do not check register value
 }
 
-std::string FaultLoggerdSystemTest::ForkAndCommands(const std::vector<std::string>& cmds, int crasherType, int udid)
+std::string FaultLoggerdSystemTest::ForkAndCommands(int crasherType, int udid)
 {
     setuid(udid);
     if (crasherType == 0) {
@@ -433,24 +434,22 @@ std::string FaultLoggerdSystemTest::ForkAndCommands(const std::vector<std::strin
         exit(1);
     }
     if (udid == 0) { // root
-        std::string pidList[NUMBER_SIXTY] = {""};
         int i = 0;
         while ((fgets(resultBufShell, sizeof(resultBufShell), procFileInfo) != nullptr) && (i < NUMBER_SIXTY)) {
-            pidList[i] = resultBufShell;
-            GTEST_LOG_(INFO) << "pidList[" << i << "]" << pidList[i] << ".";
-            if (IsDigit(pidList[i]) == false) {
+            std::string pidLog = resultBufShell;
+            GTEST_LOG_(INFO) << "pidList[" << i << "]" << pidLog << ".";
+            if (IsDigit(pidLog) == false) {
                 continue;
             }
-            if (loopSysPid == atoi(pidList[i].c_str())) {
+            if (loopSysPid == atoi(pidLog.c_str())) {
                 GTEST_LOG_(INFO) << loopSysPid;
             } else {
                 if (crasherType == 1) {
-                    FaultLoggerdSystemTest::loopCppPid = atoi(pidList[i].c_str());
+                    FaultLoggerdSystemTest::loopCppPid = atoi(pidLog.c_str());
                 } else {
-                    FaultLoggerdSystemTest::loopRootPid = atoi(pidList[i].c_str());
+                    FaultLoggerdSystemTest::loopRootPid = atoi(pidLog.c_str());
                 }
             }
-            i++;
         }
         GTEST_LOG_(INFO) << "Root ID: " << FaultLoggerdSystemTest::loopRootPid;
     } else if (udid == BMS_UID) { // sys
@@ -460,18 +459,15 @@ std::string FaultLoggerdSystemTest::ForkAndCommands(const std::vector<std::strin
             GTEST_LOG_(INFO) << "System ID: " << loopSysPid;
         }
     } else { // app
-        std::string pidList[20];
-        int i = 0;
         while (fgets(resultBufShell, sizeof(resultBufShell), procFileInfo) != nullptr) {
-            pidList[i] = pidList[i] + resultBufShell;
-            if (loopSysPid == atoi(pidList[i].c_str())) {
+            std::string pidLog = resultBufShell;
+            if (loopSysPid == atoi(pidLog.c_str())) {
                 GTEST_LOG_(INFO) << loopSysPid;
-            } else if (loopRootPid == atoi(pidList[i].c_str())) {
+            } else if (loopRootPid == atoi(pidLog.c_str())) {
                 GTEST_LOG_(INFO) << loopRootPid;
             } else {
-                loopAppPid = atoi(pidList[i].c_str());
+                loopAppPid = atoi(pidLog.c_str());
             }
-            i++;
         }
         GTEST_LOG_(INFO) << "APP ID: " << loopAppPid;
     }
@@ -486,8 +482,7 @@ void FaultLoggerdSystemTest::StartCrasherLoop(int type)
         int crasherType = 0;
         int uidSetting = BMS_UID;
         setuid(uidSetting);
-        std::vector<std::string> cmds { "crasher", "thread-Loop" };
-        FaultLoggerdSystemTest::ForkAndCommands(cmds, crasherType, uidSetting);
+        FaultLoggerdSystemTest::ForkAndCommands(crasherType, uidSetting);
         if (loopSysPid == 0) {
             exit(0);
         }
@@ -514,8 +509,7 @@ void FaultLoggerdSystemTest::StartCrasherLoop(int type)
         int crasherType = 0;
         int rootuid = 0;
         setuid(rootuid);
-        std::vector<std::string> cmds { "crasher", "thread-Loop" };
-        FaultLoggerdSystemTest::ForkAndCommands(cmds, crasherType, rootuid);
+        FaultLoggerdSystemTest::ForkAndCommands(crasherType, rootuid);
         if (loopRootPid == 0) {
             exit(0);
         }
@@ -542,8 +536,7 @@ void FaultLoggerdSystemTest::StartCrasherLoop(int type)
         int crasherType = 0;
         int uidSetting = OTHER_UID;
         setuid(uidSetting);
-        std::vector<std::string> cmds { "crasher", "thread-Loop" };
-        FaultLoggerdSystemTest::ForkAndCommands(cmds, crasherType, uidSetting);
+        FaultLoggerdSystemTest::ForkAndCommands(crasherType, uidSetting);
         if (loopAppPid == 0) {
             exit(0);
         }
@@ -568,8 +561,7 @@ void FaultLoggerdSystemTest::StartCrasherLoop(int type)
         int crasherType = 1;
         int otheruid = OTHER_UID;
         setuid(otheruid);
-        std::vector<std::string> cmds { "crasher", "thread-Loop" };
-        FaultLoggerdSystemTest::ForkAndCommands(cmds, crasherType, otheruid);
+        FaultLoggerdSystemTest::ForkAndCommands(crasherType, otheruid);
         DfxDumpCatcher dumplog;
         std::string msg = "";
         dumplog.DumpCatch(loopAppPid, 0, msg);
@@ -4307,6 +4299,57 @@ HWTEST_F (FaultLoggerdSystemTest,  FaultLoggerdSystemTest0121, TestSize.Level2)
     EXPECT_EQ(count, 4) << "FaultLoggerdSystemTest0121 Failed";
     FaultLoggerdSystemTest::KillCrasherLoopForSomeCase(4);
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest0121: end.";
+}
+
+static void CrashInChildThread()
+{
+    printf("CrashInChildThread(): TID = %ld\n", (long) gettid());
+    raise(SIGSEGV);
+}
+
+static int RunInNewPidNs(void* arg)
+{
+    (void)arg;
+    printf("RunInNewPidNs(): PID = %ld\n", (long) getpid());
+    printf("RunInNewPidNs(): TID = %ld\n", (long) gettid());
+    printf("RunInNewPidNs(): PPID = %ld\n", (long) getppid());
+    std::thread childThread(CrashInChildThread);
+    childThread.join();
+    _exit(0);
+}
+
+/**
+ * @tc.name: FaultLoggerdSystemTest0200
+ * @tc.desc: test crash in process with pid namespace
+ * @tc.type: FUNC
+ */
+HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0200, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest0200: start.";
+    const int stackSz = 1024 * 1024 * 1024; // 1M
+    void* cloneStack = mmap(NULL, stackSz,
+        PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_STACK, 1, 0);
+    if (cloneStack == nullptr) {
+        FAIL();
+    }
+    cloneStack = (void *)(((uint8_t *)cloneStack) + stackSz - 1);
+    int childPid = clone(RunInNewPidNs, cloneStack, CLONE_NEWPID | SIGCHLD, nullptr);
+    if (childPid <= 0) {
+        GTEST_LOG_(INFO) << "FaultLoggerdSystemTest0200: Failed to clone new process. errno:" << errno;
+    }
+    // wait for log generation
+    sleep(NUMBER_FOUR);
+    std::string prefix = "cppcrash-" + std::to_string(childPid);
+    std::string fileName = GetLogFileName(prefix);
+    EXPECT_NE(0, fileName.size());
+    printf("PidNs Crash File:%s\n", fileName.c_str());
+    string log[] = {
+        "Pid:", "Uid", "SIGSEGV", "Tid:", "#00",
+        "Registers:", "FaultStack:", "Maps:"
+    };
+    int minRegIdx = 6;
+    CheckKeywords(fileName, log, sizeof(log) / sizeof(log[0]), minRegIdx);
+    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest0200: end.";
 }
 #endif
 }

@@ -88,6 +88,16 @@ void ProcessDumpRequest::SetPid(int32_t pid)
     pid_ = pid;
 }
 
+int32_t ProcessDumpRequest::GetVmPid() const
+{
+    return vmPid_;
+}
+
+void ProcessDumpRequest::SetVmPid(int32_t pid)
+{
+    vmPid_ = pid;
+}
+
 uint32_t ProcessDumpRequest::GetUid() const
 {
     return uid_;
