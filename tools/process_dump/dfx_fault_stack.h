@@ -19,6 +19,7 @@
 #include <vector>
 #include "dfx_frame.h"
 #include "dfx_regs.h"
+#include "dfx_maps.h"
 
 namespace OHOS {
 namespace HiviewDFX {
@@ -36,18 +37,21 @@ public:
     explicit FaultStack(int32_t tid) : tid_(tid) {};
     ~FaultStack() = default;
 
-    bool CollectStackInfo(std::shared_ptr<DfxRegs> reg, const std::vector<std::shared_ptr<DfxFrame>> &frames);
+    bool CollectStackInfo(const std::vector<std::shared_ptr<DfxFrame>> &frames);
+    void CollectRegistersBlock(std::shared_ptr<DfxRegs> regs, std::shared_ptr<DfxElfMaps> maps);
     void Print() const;
+    void PrintRegisterMemory() const;
 
 private:
     bool ReadTargetMemory(uintptr_t addr, uintptr_t &value) const;
     uintptr_t AdjustAndCreateMemoryBlock(size_t index, uintptr_t prevSp, uintptr_t prevEndAddr, uintptr_t size);
     uintptr_t PrintMemoryBlock(const MemoryBlockInfo& info) const;
-    void CreateMemoryBlock(uintptr_t addr, uintptr_t offset, uintptr_t size, std::string name);
+    MemoryBlockInfo CreateMemoryBlock(uintptr_t addr, uintptr_t offset, uintptr_t size, std::string name);
 
 private:
     int32_t tid_;
     std::vector<MemoryBlockInfo> blocks_;
+    std::vector<MemoryBlockInfo> registerBlocks_;
 };
 } // namespace HiviewDFX
 } // namespace OHOS

@@ -156,7 +156,12 @@ void DfxThread::SetThreadUnwStopReason(int reason)
 void DfxThread::CreateFaultStack(int32_t vmPid)
 {
     faultstack_ = std::unique_ptr<FaultStack>(new FaultStack(vmPid));
-    faultstack_->CollectStackInfo(regs_, dfxFrames_);
+}
+
+void DfxThread::CollectFaultMemorys(std::shared_ptr<DfxElfMaps> maps)
+{
+    faultstack_->CollectStackInfo(dfxFrames_);
+    faultstack_->CollectRegistersBlock(regs_, maps);
 }
 
 void DfxThread::Detach()

@@ -30,10 +30,13 @@ namespace {
 constexpr size_t MEM_BLOCK_BUF_SZ = 64;
 #if defined(__arm__)
 constexpr uint64_t STEP = 4;
+#define PRINT_FORMAT "%08x"
 #elif defined(__aarch64__)
 constexpr uint64_t STEP = 8;
+#define PRINT_FORMAT "%016llx"
 #else
 constexpr uint64_t STEP = 8;
+#define PRINT_FORMAT "%016llx"
 #endif
 }
 bool FaultStack::ReadTargetMemory(uintptr_t addr, uintptr_t &value) const
@@ -67,14 +70,15 @@ uintptr_t FaultStack::AdjustAndCreateMemoryBlock(size_t index, uintptr_t prevSp,
     }
 
     std::string name = "sp" + std::to_string(index - 1);
-    CreateMemoryBlock(startAddr, prevSp, size, name);
+    auto block = CreateMemoryBlock(startAddr, prevSp, size, name);
+    blocks_.push_back(block);
     return startAddr + size * STEP;
 }
 
-bool FaultStack::CollectStackInfo(std::shared_ptr<DfxRegs> reg, const std::vector<std::shared_ptr<DfxFrame>> &frames)
+bool FaultStack::CollectStackInfo(const std::vector<std::shared_ptr<DfxFrame>> &frames)
 {
-    if (reg == nullptr && frames.empty()) {
-        DfxLogWarn("null register or frames.");
+    if (frames.empty()) {
+        DfxLogWarn("null frames.");
         return false;
     }
 
@@ -120,13 +124,6 @@ bool FaultStack::CollectStackInfo(std::shared_ptr<DfxRegs> reg, const std::vecto
 
 uintptr_t FaultStack::PrintMemoryBlock(const MemoryBlockInfo& info) const
 {
-#if defined(__arm__)
-#define PRINT_FORMAT "%08x"
-#elif defined(__aarch64__)
-#define PRINT_FORMAT "%016llx"
-#else
-#define PRINT_FORMAT "%016llx"
-#endif
     uintptr_t targetAddr = info.startAddr;
     for (uint64_t i = 0; i < static_cast<uint64_t>(info.content.size()); i++) {
         if (targetAddr == info.nameAddr) {
@@ -146,6 +143,8 @@ uintptr_t FaultStack::PrintMemoryBlock(const MemoryBlockInfo& info) const
 
 void FaultStack::Print() const
 {
+    PrintRegisterMemory();
+
     if (blocks_.empty()) {
         return;
     }
@@ -160,7 +159,7 @@ void FaultStack::Print() const
     }
 }
 
-void FaultStack::CreateMemoryBlock(uintptr_t addr, uintptr_t offset, uintptr_t size, std::string name)
+MemoryBlockInfo FaultStack::CreateMemoryBlock(uintptr_t addr, uintptr_t offset, uintptr_t size, std::string name)
 {
     DfxLogDebug("CreateMemoryBlock %p %p %llu %s.", addr, offset, size, name.c_str());
     MemoryBlockInfo info;
@@ -178,7 +177,72 @@ void FaultStack::CreateMemoryBlock(uintptr_t addr, uintptr_t offset, uintptr_t s
         }
         targetAddr += STEP;
     }
-    blocks_.push_back(info);
+    return info;
+}
+
+void FaultStack::CollectRegistersBlock(std::shared_ptr<DfxRegs> regs, std::shared_ptr<DfxElfMaps> maps)
+{
+    if (regs == nullptr || maps == nullptr) {
+        return;
+    }
+
+    auto regData = regs->GetRegsData();
+    int index = 0;
+    for (auto data : regData) {
+        index++;
+        std::shared_ptr<DfxElfMap> map;
+        if (!maps->FindMapByAddr(data, map)) {
+            continue;
+        }
+
+        if (map->GetMapPerms().find("r") == std::string::npos) {
+            continue;
+        }
+
+        std::string name = regs->GetSpecialRegisterName(data);
+        if (name.empty()) {
+#if defined(__arm__)
+#define NAME_PREFIX "r"
+#elif defined(__aarch64__)
+#define NAME_PREFIX "x"
+#else
+#define NAME_PREFIX "x"
+#endif
+            name = NAME_PREFIX + std::to_string(index - 1);
+        }
+
+        constexpr size_t SIZE = sizeof(uintptr_t);
+        constexpr int COUNT = 32;
+        constexpr int FORWARD_SZ = 2;
+        auto mapName = map->GetMapPath();
+        if (!mapName.empty()) {
+            name.append("(" + mapName + ")");
+        }
+
+        data = data & ~(SIZE - 1);
+        data -= (FORWARD_SZ * SIZE);
+        auto block = CreateMemoryBlock(data, 0, COUNT, name);
+        registerBlocks_.push_back(block);
+    }
+}
+
+void FaultStack::PrintRegisterMemory() const
+{
+    if (registerBlocks_.empty()) {
+        return;
+    }
+
+    DfxRingBufferWrapper::GetInstance().AppendMsg("Memory near registers:\n");
+    for (const auto& block : registerBlocks_) {
+        uintptr_t targetAddr = block.startAddr;
+        DfxRingBufferWrapper::GetInstance().AppendMsg(block.name + ":\n");
+        for (size_t i = 0; i < block.content.size(); i++) {
+            DfxRingBufferWrapper::GetInstance().AppendBuf("    " PRINT_FORMAT " " PRINT_FORMAT "\n",
+                targetAddr,
+                block.content.at(i));
+            targetAddr += STEP;
+        }
+    }
 }
 } // namespace HiviewDFX
 } // namespace OHOS

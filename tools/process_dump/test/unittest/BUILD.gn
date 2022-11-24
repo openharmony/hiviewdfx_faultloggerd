@@ -107,8 +107,31 @@ if (defined(ohos_lite)) {
     external_deps = [ "c_utils:utils" ]
   }
 
+  ohos_unittest("FaultStackUnittest") {
+    testonly = true
+    module_out_path = module_output_path
+    sources = [ "src/fault_stack_unittest.cpp" ]
+
+    configs = [ ":module_private_config" ]
+
+    defines = [ "UNITTEST" ]
+
+    deps = [
+      "$faultloggerd_path/interfaces/innerkits/dump_catcher:lib_dfx_dump_catcher",
+      "$faultloggerd_path/tools/process_dump:process_info_src",
+      "//third_party/googletest:gmock_main",
+      "//third_party/googletest:gtest_main",
+      "//third_party/libunwind:libunwind",
+    ]
+
+    external_deps = [ "c_utils:utils" ]
+  }
+
   group("unittest") {
     testonly = true
-    deps = [ ":test_processdump" ]
+    deps = [
+      ":FaultStackUnittest",
+      ":test_processdump",
+    ]
   }
 }

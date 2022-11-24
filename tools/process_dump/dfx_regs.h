@@ -48,37 +48,34 @@ protected:
 class DfxRegsArm : public DfxRegs {
 public:
     explicit DfxRegsArm(const ucontext_t &context);
+    DfxRegsArm() = default;
     ~DfxRegsArm() override {};
     std::string PrintRegs() const override;
     std::string GetSpecialRegisterName(uintptr_t val) const override;
     uintptr_t GetPC() const override;
     uintptr_t GetLR() const override;
-private:
-    DfxRegsArm() = delete;
 };
 
 class DfxRegsArm64 : public DfxRegs {
 public:
     explicit DfxRegsArm64(const ucontext_t &context);
+    DfxRegsArm64() = default;
     ~DfxRegsArm64() override {};
     std::string PrintRegs() const override;
     std::string GetSpecialRegisterName(uintptr_t val) const override;
     uintptr_t GetPC() const override;
     uintptr_t GetLR() const override;
-private:
-    DfxRegsArm64() = delete;
 };
 
 class DfxRegsX86_64 : public DfxRegs {
 public:
     explicit DfxRegsX86_64(const ucontext_t &context);
+    DfxRegsX86_64() = default;
     ~DfxRegsX86_64() override {};
     std::string PrintRegs() const override;
     std::string GetSpecialRegisterName(uintptr_t val) const override;
     uintptr_t GetPC() const override;
     uintptr_t GetLR() const override;
-private:
-    DfxRegsX86_64() = delete;
 };
 } // namespace HiviewDFX
 } // namespace OHOS
