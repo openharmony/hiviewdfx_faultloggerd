@@ -273,6 +273,7 @@ bool DfxUnwindLocal::ExecLocalDumpUnwinding(unw_context_t *ctx, size_t skipFramN
     size_t index = 0;
     curIndex_ = 0;
     unw_word_t pc = 0;
+    unw_word_t sp = 0;
     unw_word_t prevPc = 0;
     char mapName[SYMBOL_BUF_SIZE] = {0};
     do {
@@ -284,6 +285,11 @@ bool DfxUnwindLocal::ExecLocalDumpUnwinding(unw_context_t *ctx, size_t skipFramN
 
         if (unw_get_reg(&cursor, UNW_REG_IP, (unw_word_t*)(&(pc)))) {
             DfxLogWarn("%s :: Failed to get current pc, stop.", __func__);
+            break;
+        }
+
+        if (unw_get_reg(&cursor, UNW_REG_SP, (unw_word_t*)(&(sp)))) {
+            DfxLogWarn("%s :: Failed to get current sp, stop.", __func__);
             break;
         }
 
@@ -321,6 +327,7 @@ bool DfxUnwindLocal::ExecLocalDumpUnwinding(unw_context_t *ctx, size_t skipFramN
         auto& curFrame = frames_[curIndex_];
         curFrame.SetFrameIndex((size_t)curIndex_);
         curFrame.SetFramePc((uint64_t)pc);
+        curFrame.SetFrameSp((uint64_t)sp);
         curFrame.SetFrameRelativePc((uint64_t)relPc);
         curFrame.SetFrameMapName(std::string(mapName));
 

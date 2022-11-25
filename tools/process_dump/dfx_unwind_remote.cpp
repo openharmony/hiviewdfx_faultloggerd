@@ -326,6 +326,7 @@ bool DfxUnwindRemote::UnwindThread(std::shared_ptr<DfxProcess> process, std::sha
         DfxRingBufferWrapper::GetInstance().AppendMsg(regs->PrintRegs());
         if (DfxConfig::GetInstance().GetDisplayFaultStack()) {
             thread->CreateFaultStack(nsTid);
+            thread->CollectFaultMemorys(process->GetMaps());
             thread->PrintThreadFaultStackByConfig();
         }
     }

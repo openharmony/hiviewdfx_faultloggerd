@@ -49,7 +49,8 @@ public:
     std::string PrintThreadRegisterByConfig();
     void PrintThreadFaultStackByConfig();
     void SetThreadUnwStopReason(int reason);
-    void CreateFaultStack(int32_t vmPid = 0);
+    void CreateFaultStack(int32_t vmPid);
+    void CollectFaultMemorys(std::shared_ptr<DfxElfMaps> maps);
     void Detach();
     bool Attach();
     std::string ToString() const;
