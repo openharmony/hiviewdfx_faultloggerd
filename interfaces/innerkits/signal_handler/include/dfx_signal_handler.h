@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -28,6 +28,7 @@ struct ProcessDumpRequest {
     int32_t tid;
     int32_t recycleTid;
     int32_t pid;
+    int32_t vmPid;
     uint32_t uid;
     uint64_t reserved;
     uint64_t timeStamp;

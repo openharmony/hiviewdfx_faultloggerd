@@ -35,6 +35,7 @@
 #include "dfx_util.h"
 #include "libunwind.h"
 #include "libunwind_i-ohos.h"
+#include "process_dumper.h"
 
 namespace OHOS {
 namespace HiviewDFX {
@@ -77,7 +78,8 @@ bool DfxUnwindRemote::UnwindProcess(std::shared_ptr<DfxProcess> process)
         DfxLogWarn("%s::failed to create address space.", __func__);
         return ret;
     }
-    unw_set_target_pid(as_, process->GetPid());
+
+    unw_set_target_pid(as_, ProcessDumper::GetInstance().GetTargetPid());
     unw_set_caching_policy(as_, UNW_CACHE_GLOBAL);
     do {
         // only need to unwind crash thread in crash scenario
@@ -165,7 +167,7 @@ bool DfxUnwindRemote::DfxUnwindRemoteDoUnwindStep(size_t const & index,
     uint64_t framePc;
     static unw_word_t oldPc = 0;
     if (unw_get_reg(&cursor, UNW_REG_IP, (unw_word_t*)(&framePc))) {
-        DfxLogWarn("Fail to get program counter.");
+        DfxLogWarn("Fail to get current pc.");
         return ret;
     }
 
@@ -176,6 +178,7 @@ bool DfxUnwindRemote::DfxUnwindRemoteDoUnwindStep(size_t const & index,
     }
 
     if (oldPc == framePc && index != 0) {
+        DfxLogWarn("%s :: repeated pc(0x%lx), stop.", __func__, framePc);
         return ret;
     }
     oldPc = framePc;
@@ -184,6 +187,7 @@ bool DfxUnwindRemote::DfxUnwindRemoteDoUnwindStep(size_t const & index,
     if (index != 0) {
         relPc = DfxUnwindRemoteDoAdjustPc(cursor, relPc);
         framePc = DfxUnwindRemoteDoAdjustPc(cursor, framePc);
+        unw_set_adjust_pc(&cursor, framePc);
     }
 
     if (relPc == 0) {
@@ -267,7 +271,8 @@ bool DfxUnwindRemote::UnwindThread(std::shared_ptr<DfxProcess> process, std::sha
         return false;
     }
 
-    pid_t nsTid = thread->GetRealTid();
+    bool isCrash = thread->GetIsCrashThread() && (process->GetIsSignalDump() == false);
+    pid_t nsTid = isCrash ? ProcessDumper::GetInstance().GetTargetNsPid() : thread->GetRealTid();
     pid_t tid = thread->GetThreadId();
     char buf[LOG_BUF_LEN] = {0};
     int ret = snprintf_s(buf, sizeof(buf), sizeof(buf) - 1, "Tid:%d, Name:%s\n", tid, thread->GetThreadName().c_str());
@@ -275,7 +280,6 @@ bool DfxUnwindRemote::UnwindThread(std::shared_ptr<DfxProcess> process, std::sha
         DfxLogError("%s :: snprintf_s failed, line: %d.", __func__, __LINE__);
     }
     DfxRingBufferWrapper::GetInstance().AppendMsg(std::string(buf));
-
     void *context = _UPT_create(nsTid);
     if (!context) {
         DfxRingBufferWrapper::GetInstance().AppendBuf("Failed to create unwind context for %d.\n", nsTid);
@@ -318,10 +322,10 @@ bool DfxUnwindRemote::UnwindThread(std::shared_ptr<DfxProcess> process, std::sha
         unwRet = unw_step(&cursor);
     } while ((unwRet > 0) && (index < BACK_STACK_MAX_STEPS));
     thread->SetThreadUnwStopReason(unwRet);
-    if (thread->GetIsCrashThread() && (process->GetIsSignalDump() == false)) {
+    if (isCrash) {
         DfxRingBufferWrapper::GetInstance().AppendMsg(regs->PrintRegs());
         if (DfxConfig::GetInstance().GetDisplayFaultStack()) {
-            thread->CreateFaultStack();
+            thread->CreateFaultStack(nsTid);
             thread->PrintThreadFaultStackByConfig();
         }
     }

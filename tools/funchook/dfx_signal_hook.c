@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-#include "dfx_func_hook.h"
+#include "dfx_signal_hook.h"
 
 #include <dlfcn.h>
 #include <libunwind_i-ohos.h>
@@ -31,6 +31,8 @@
 #include "stdbool.h"
 #include "stdlib.h"
 
+#include "dfx_hook_utils.h"
+
 #ifdef LOG_DOMAIN
 #undef LOG_DOMAIN
 #define LOG_DOMAIN 0xD002D11
@@ -38,7 +40,7 @@
 
 #ifdef LOG_TAG
 #undef LOG_TAG
-#define LOG_TAG "DfxFuncHook"
+#define LOG_TAG "DfxSigHook"
 #endif
 
 #ifndef SIGDUMP
@@ -56,93 +58,14 @@ void __attribute__((constructor)) InitHook(void)
     StartHookFunc();
 }
 
-typedef int (*KillFunc)(pid_t pid, int sig);
 typedef int (*SigactionFunc)(int sig, const struct sigaction *restrict act, struct sigaction *restrict oact);
 typedef int (*SigprocmaskFunc)(int how, const sigset_t *restrict set, sigset_t *restrict oldset);
 typedef int (*PthreadSigmaskFunc)(int how, const sigset_t *restrict set, sigset_t *restrict oldset);
 typedef sighandler_t (*SignalFunc)(int signum, sighandler_t handler);
-static KillFunc hookedKill = NULL;
 static SigactionFunc hookedSigaction = NULL;
 static SigprocmaskFunc hookedSigprocmask = NULL;
 static SignalFunc hookedSignal = NULL;
 static PthreadSigmaskFunc hookedPthreadSigmask = NULL;
-static pthread_mutex_t g_backtraceLock = PTHREAD_MUTEX_INITIALIZER;
-
-void LogBacktrace()
-{
-    pthread_mutex_lock(&g_backtraceLock);
-    unw_addr_space_t as = NULL;
-    unw_init_local_address_space(&as);
-    if (as == NULL) {
-        pthread_mutex_unlock(&g_backtraceLock);
-        return;
-    }
-
-    unw_context_t context;
-    unw_getcontext(&context);
-
-    unw_cursor_t cursor;
-    unw_init_local_with_as(as, &cursor, &context);
-
-    int index = 0;
-    unw_word_t pc;
-    unw_word_t relPc;
-    unw_word_t prevPc;
-    unw_word_t sz;
-    uint64_t start;
-    uint64_t end;
-    bool shouldContinue = true;
-    while (true) {
-        if (index > MAX_FRAME) {
-            break;
-        }
-
-        if (unw_get_reg(&cursor, UNW_REG_IP, (unw_word_t*)(&pc))) {
-            break;
-        }
-
-        if (index > MIN_FRAME && prevPc == pc) {
-            break;
-        }
-        prevPc = pc;
-
-        relPc = unw_get_rel_pc(&cursor);
-        struct map_info* mapInfo = unw_get_map(&cursor);
-        if (mapInfo == NULL && index > 1) {
-            break;
-        }
-
-        sz = unw_get_previous_instr_sz(&cursor);
-        if (index != 0 && relPc > sz) {
-            relPc -= sz;
-        }
-
-        char buf[BUF_SZ];
-        (void)memset_s(&buf, sizeof(buf), 0, sizeof(buf));
-        if (unw_get_symbol_info_by_pc(as, pc, BUF_SZ, buf, &start, &end) == 0) {
-            LOGI("#%02d %016p(%016p) %s(%s)\n", index, relPc, pc,
-                mapInfo == NULL ? "Unknown" : mapInfo->path,
-                buf);
-        } else {
-            LOGI("#%02d %016p(%016p) %s\n", index, relPc, pc,
-                mapInfo == NULL ? "Unknown" : mapInfo->path);
-        }
-        index++;
-
-        if (!shouldContinue) {
-            break;
-        }
-
-        int ret = unw_step(&cursor);
-        if (ret == 0) {
-            shouldContinue = false;
-        } else if (ret < 0) {
-            break;
-        }
-    }
-    unw_destroy_local_address_space(as);
-    pthread_mutex_unlock(&g_backtraceLock);
-}
 
 bool IsPlatformHandleSignal(int sig)
 {
@@ -155,22 +78,6 @@ bool IsPlatformHandleSignal(int sig)
         }
     }
     return false;
-}
-
-int kill(pid_t pid, int sig)
-{
-    LOGI("%d send signal(%d) to %d\n", getpid(), sig, pid);
-    if ((sig == SIGKILL) && (pid == getpid())) {
-        abort();
-    } else if (sig == SIGKILL) {
-        LogBacktrace();
-    }
-
-    if (hookedKill == NULL) {
-        LOGE("hooked kill is NULL?\n");
-        return -1;
-    }
-    return hookedKill(pid, sig);
 }
 
 int pthread_sigmask(int how, const sigset_t *restrict set, sigset_t *restrict oldset)
@@ -285,22 +192,6 @@ int sigaction(int sig, const struct sigaction *restrict act, struct sigaction *r
     return hookedSigaction(sig, act, oact);
 }
 
-#define GenHookFunc(StartHookFunction, RealHookFunc, FuncName, RealFuncName) \
-void StartHookFunction(void) \
-{ \
-    RealFuncName = (RealHookFunc)dlsym(RTLD_NEXT, FuncName); \
-    if (RealFuncName != NULL) { \
-        return; \
-    } \
-    LOGE("Failed to find hooked %s use RTLD_NEXT\n", FuncName); \
-    RealFuncName = (RealHookFunc)dlsym(RTLD_DEFAULT, FuncName); \
-    if (RealFuncName != NULL) { \
-        return; \
-    } \
-    LOGE("Failed to find hooked %s use RTLD_DEFAULT\n", FuncName); \
-}
-
-GenHookFunc(StartHookKillFunction, KillFunc, "kill", hookedKill)
 GenHookFunc(StartHookSigactionFunction, SigactionFunc, "sigaction", hookedSigaction)
 GenHookFunc(StartHookSignalFunction, SignalFunc, "signal", hookedSignal)
 GenHookFunc(StartHookSigprocmaskFunction, SigprocmaskFunc, "sigprocmask", hookedSigprocmask)
@@ -308,7 +199,6 @@ GenHookFunc(StartHookPthreadSigmaskFunction, PthreadSigmaskFunc, "pthread_sigmas
 
 void StartHookFunc(void)
 {
-    StartHookKillFunction();
     StartHookSigactionFunction();
     StartHookSignalFunction();
     StartHookSigprocmaskFunction();

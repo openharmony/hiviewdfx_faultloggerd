@@ -147,7 +147,9 @@ bool DfxProcess::InitOtherThreads(bool attach)
 void DfxProcess::InsertThreadNode(pid_t tid, pid_t nsTid, bool attach)
 {
     for (auto iter = threads_.begin(); iter != threads_.end(); iter++) {
-        if ((*iter)->GetThreadId() == tid) {
+        if ((*iter)->GetRealTid() == nsTid) {
+            (*iter)->SetThreadId(tid);
+            (*iter)->ReadThreadName();
             return;
         }
     }
@@ -184,7 +186,7 @@ int DfxProcess::TidToNstid(const int tid, int& nstid)
         // NSpid:  1892    1
         if (strncmp(buf, NSPID_STR_NAME, strlen(NSPID_STR_NAME)) == 0) {
             if (sscanf_s(buf, "%*[^0-9]%d%*[^0-9]%d", &p, &t) != ARGS_COUNT_TWO) {
-                DfxLogWarn("TidToNstid sscanf_s failed.");
+                DfxLogWarn("TidToNstid sscanf_s failed. pid:%d, tid:%d", pid_, tid);
             }
             nstid = t;
             break;
@@ -216,7 +218,7 @@ uid_t DfxProcess::GetUid() const
 
 bool DfxProcess::GetNs() const
 {
-    return ns_;
+    return pid_ != nsPid_;
 }
 
 std::string DfxProcess::GetProcessName() const
@@ -244,9 +246,17 @@ void DfxProcess::SetUid(uid_t uid)
     uid_ = uid;
 }
 
-void DfxProcess::SetNs(bool ns)
+void DfxProcess::SetNsPid(pid_t pid)
 {
-    ns_ = ns;
+    nsPid_ = pid;
+}
+
+pid_t DfxProcess::GetNsPid() const
+{
+    if (nsPid_ > 0) {
+        return nsPid_;
+    }
+    return pid_;
 }
 
 void DfxProcess::SetProcessName(const std::string &processName)
