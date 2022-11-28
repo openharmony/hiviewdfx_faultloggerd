@@ -227,7 +227,8 @@ int ProcessDumper::DumpProcessWithSignalContext(std::shared_ptr<ProcessDumpReque
             dumpRes = ProcessDumpRes::DUMP_ESTOPUNWIND;
         }
 
-        if (!isPidNsEnabled && (syscall(SYS_getppid) != request->GetPid())) {
+        if (!isPidNsEnabled && (syscall(SYS_getppid) != request->GetPid()) &&
+            (syscall(SYS_getppid) != request->GetVmPid())) {
             DfxRingBufferWrapper::GetInstance().AppendBuf(
                 "Target process has been killed, the crash log may not be fully generated.");
             dumpRes = ProcessDumpRes::DUMP_EGETPPID;
