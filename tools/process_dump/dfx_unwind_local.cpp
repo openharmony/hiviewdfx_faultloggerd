@@ -299,7 +299,6 @@ bool DfxUnwindLocal::ExecLocalDumpUnwinding(unw_context_t *ctx, size_t skipFramN
             DfxLogWarn("%s :: repeated pc(0x%lx), stop.", __func__, pc);
             break;
         }
-        prevPc = pc;
 
         unw_word_t relPc = unw_get_rel_pc(&cursor);
         unw_word_t sz = unw_get_previous_instr_sz(&cursor);
@@ -308,6 +307,7 @@ bool DfxUnwindLocal::ExecLocalDumpUnwinding(unw_context_t *ctx, size_t skipFramN
             pc -= sz;
             unw_set_adjust_pc(&cursor, pc);
         }
+        prevPc = pc;
 
         struct map_info* map = unw_get_map(&cursor);
         errno_t err = EOK;
