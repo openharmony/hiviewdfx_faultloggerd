@@ -17,9 +17,9 @@
 
 #include "dfx_func_hook_unittest.h"
 
-#include <unistd.h>
-#include <signal.h>
+#include <csignal>
 #include <sys/wait.h>
+#include <unistd.h>
 
 #include "dfx_exit_hook.h"
 
@@ -49,7 +49,7 @@ namespace {
  * @tc.desc: fork a child process and exit with calling _exit
  * @tc.type: FUNC
  */
-HWTEST_F (DfxFuncHookUnitTest, FuncHookTest001, TestSize.Level3)
+HWTEST_F(DfxFuncHookUnitTest, FuncHookTest001, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "FuncHookTest001: start.";
     const int retCode = 99;
@@ -78,7 +78,7 @@ HWTEST_F (DfxFuncHookUnitTest, FuncHookTest001, TestSize.Level3)
  * @tc.desc: fork a child process and kill it in parent process
  * @tc.type: FUNC
  */
-HWTEST_F (DfxFuncHookUnitTest, FuncHookTest002, TestSize.Level3)
+HWTEST_F(DfxFuncHookUnitTest, FuncHookTest002, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "FuncHookTest002: start.";
     pid_t pid = fork();

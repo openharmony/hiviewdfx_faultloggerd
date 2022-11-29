@@ -39,17 +39,17 @@
 
 typedef int (*KillFunc)(pid_t pid, int sig);
 typedef __attribute__((noreturn)) void (*ExitFunc)(int code);
-static KillFunc hookedKill = NULL;
-static ExitFunc hookedExit = NULL;
-static ExitFunc hookedExitEx = NULL;
-static bool abortWhenExit = false;
+static KillFunc g_hookedKill = NULL;
+static ExitFunc g_hookedExit = NULL;
+static ExitFunc g_hookedExitEx = NULL;
+static bool g_abortWhenExit = false;
 
 void __attribute__((constructor)) InitExitHook(void)
 {
     char* str = getenv("ABORT_EXIT");
     if (str != NULL && strlen(str) > 0) {
         printf("AbortExit:%s\n", str);
-        abortWhenExit = true;
+        g_abortWhenExit = true;
     }
 
     StartHookExitFunc();
@@ -64,23 +64,23 @@ int kill(pid_t pid, int sig)
         LogBacktrace();
     }
 
-    if (hookedKill == NULL) {
+    if (g_hookedKill == NULL) {
         LOGE("hooked kill is NULL?\n");
         return syscall(SYS_kill, pid, sig);
     }
-    return hookedKill(pid, sig);
+    return g_hookedKill(pid, sig);
 }
 
 void exit(int code)
 {
     LOGF("%d call exit with code %d", getpid(), code);
-    if (!abortWhenExit) {
+    if (!g_abortWhenExit) {
         LogBacktrace();
     }
 
-    if ((!abortWhenExit) && (hookedExit != NULL)) {
-        hookedExit(code);
-    } else if (abortWhenExit) {
+    if ((!g_abortWhenExit) && (g_hookedExit != NULL)) {
+        g_hookedExit(code);
+    } else if (g_abortWhenExit) {
         abort();
     }
 
@@ -90,22 +90,22 @@ void exit(int code)
 void _exit(int code)
 {
     LOGF("%d call exit with code %d", getpid(), code);
-    if (!abortWhenExit) {
+    if (!g_abortWhenExit) {
         LogBacktrace();
     }
 
-    if ((!abortWhenExit) && (hookedExitEx != NULL)) {
-        hookedExitEx(code);
-    } else if (abortWhenExit) {
+    if ((!g_abortWhenExit) && (g_hookedExitEx != NULL)) {
+        g_hookedExitEx(code);
+    } else if (g_abortWhenExit) {
         abort();
     }
 
     quick_exit(code);
 }
 
-GenHookFunc(StartHookKillFunction, KillFunc, "kill", hookedKill)
-GenHookFunc(StartHookExitFunction, ExitFunc, "exit", hookedExit)
-GenHookFunc(StartHookExitExFunction, ExitFunc, "_exit", hookedExitEx)
+GenHookFunc(StartHookKillFunction, KillFunc, "kill", g_hookedKill)
+GenHookFunc(StartHookExitFunction, ExitFunc, "exit", g_hookedExit)
+GenHookFunc(StartHookExitExFunction, ExitFunc, "_exit", g_hookedExitEx)
 
 void StartHookExitFunc(void)
 {

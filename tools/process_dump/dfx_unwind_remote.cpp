@@ -323,7 +323,9 @@ bool DfxUnwindRemote::UnwindThread(std::shared_ptr<DfxProcess> process, std::sha
     } while ((unwRet > 0) && (index < BACK_STACK_MAX_STEPS));
     thread->SetThreadUnwStopReason(unwRet);
     if (isCrash) {
-        DfxRingBufferWrapper::GetInstance().AppendMsg(regs->PrintRegs());
+        if (regs != nullptr) {
+            DfxRingBufferWrapper::GetInstance().AppendMsg(regs->PrintRegs());
+        }
         if (DfxConfig::GetInstance().GetDisplayFaultStack()) {
             thread->CreateFaultStack(nsTid);
             thread->PrintThreadFaultStackByConfig();
