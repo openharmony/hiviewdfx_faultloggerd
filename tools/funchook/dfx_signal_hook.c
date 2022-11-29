@@ -62,10 +62,10 @@ typedef int (*SigactionFunc)(int sig, const struct sigaction *restrict act, stru
 typedef int (*SigprocmaskFunc)(int how, const sigset_t *restrict set, sigset_t *restrict oldset);
 typedef int (*PthreadSigmaskFunc)(int how, const sigset_t *restrict set, sigset_t *restrict oldset);
 typedef sighandler_t (*SignalFunc)(int signum, sighandler_t handler);
-static SigactionFunc hookedSigaction = NULL;
-static SigprocmaskFunc hookedSigprocmask = NULL;
-static SignalFunc hookedSignal = NULL;
-static PthreadSigmaskFunc hookedPthreadSigmask = NULL;
+static SigactionFunc g_hookedSigaction = NULL;
+static SigprocmaskFunc g_hookedSigprocmask = NULL;
+static SignalFunc g_hookedSignal = NULL;
+static PthreadSigmaskFunc g_hookedPthreadSigmask = NULL;
 
 bool IsPlatformHandleSignal(int sig)
 {
@@ -92,11 +92,11 @@ int pthread_sigmask(int how, const sigset_t *restrict set, sigset_t *restrict ol
         }
     }
 
-    if (hookedPthreadSigmask == NULL) {
+    if (g_hookedPthreadSigmask == NULL) {
         LOGE("hooked procmask is NULL?\n");
         return -1;
     }
-    return hookedPthreadSigmask(how, set, oldset);
+    return g_hookedPthreadSigmask(how, set, oldset);
 }
 
 int sigprocmask(int how, const sigset_t *restrict set, sigset_t *restrict oldset)
@@ -110,11 +110,11 @@ int sigprocmask(int how, const sigset_t *restrict set, sigset_t *restrict oldset
             }
         }
     }
-    if (hookedSigprocmask == NULL) {
+    if (g_hookedSigprocmask == NULL) {
         LOGE("hooked procmask is NULL?\n");
         return -1;
     }
-    return hookedSigprocmask(how, set, oldset);
+    return g_hookedSigprocmask(how, set, oldset);
 }
 
 sighandler_t signal(int signum, sighandler_t handler)
@@ -124,11 +124,11 @@ sighandler_t signal(int signum, sighandler_t handler)
         LogBacktrace();
     }
 
-    if (hookedSignal == NULL) {
+    if (g_hookedSignal == NULL) {
         LOGE("hooked signal is NULL?\n");
         return NULL;
     }
-    return hookedSignal(signum, handler);
+    return g_hookedSignal(signum, handler);
 }
 
 static bool IsSigactionAddr(uintptr_t sigactionAddr)
@@ -178,7 +178,7 @@ static bool IsSigactionAddr(uintptr_t sigactionAddr)
 
 int sigaction(int sig, const struct sigaction *restrict act, struct sigaction *restrict oact)
 {
-    if (hookedSigaction == NULL) {
+    if (g_hookedSigaction == NULL) {
         LOGE("hooked sigaction is NULL?");
         return -1;
     }
@@ -189,13 +189,13 @@ int sigaction(int sig, const struct sigaction *restrict act, struct sigaction *r
         LogBacktrace();
     }
 
-    return hookedSigaction(sig, act, oact);
+    return g_hookedSigaction(sig, act, oact);
 }
 
-GenHookFunc(StartHookSigactionFunction, SigactionFunc, "sigaction", hookedSigaction)
-GenHookFunc(StartHookSignalFunction, SignalFunc, "signal", hookedSignal)
-GenHookFunc(StartHookSigprocmaskFunction, SigprocmaskFunc, "sigprocmask", hookedSigprocmask)
-GenHookFunc(StartHookPthreadSigmaskFunction, PthreadSigmaskFunc, "pthread_sigmask", hookedPthreadSigmask)
+GenHookFunc(StartHookSigactionFunction, SigactionFunc, "sigaction", g_hookedSigaction)
+GenHookFunc(StartHookSignalFunction, SignalFunc, "signal", g_hookedSignal)
+GenHookFunc(StartHookSigprocmaskFunction, SigprocmaskFunc, "sigprocmask", g_hookedSigprocmask)
+GenHookFunc(StartHookPthreadSigmaskFunction, PthreadSigmaskFunc, "pthread_sigmask", g_hookedPthreadSigmask)
 
 void StartHookFunc(void)
 {
