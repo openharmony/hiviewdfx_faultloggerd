@@ -93,7 +93,7 @@ int pthread_sigmask(int how, const sigset_t *restrict set, sigset_t *restrict ol
     }
 
     if (g_hookedPthreadSigmask == NULL) {
-        LOGE("g_hooked procmask is NULL?\n");
+        LOGE("hooked procmask is NULL?\n");
         return -1;
     }
     return g_hookedPthreadSigmask(how, set, oldset);
