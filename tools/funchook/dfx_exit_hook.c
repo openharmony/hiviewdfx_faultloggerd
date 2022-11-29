@@ -65,7 +65,7 @@ int kill(pid_t pid, int sig)
     }
 
     if (g_hookedKill == NULL) {
-        LOGE("g_hooked kill is NULL?\n");
+        LOGE("hooked kill is NULL?\n");
         return syscall(SYS_kill, pid, sig);
     }
     return g_hookedKill(pid, sig);

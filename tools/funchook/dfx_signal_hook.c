@@ -111,7 +111,7 @@ int sigprocmask(int how, const sigset_t *restrict set, sigset_t *restrict oldset
         }
     }
     if (g_hookedSigprocmask == NULL) {
-        LOGE("g_hooked procmask is NULL?\n");
+        LOGE("hooked procmask is NULL?\n");
         return -1;
     }
     return g_hookedSigprocmask(how, set, oldset);
@@ -125,7 +125,7 @@ sighandler_t signal(int signum, sighandler_t handler)
     }
 
     if (g_hookedSignal == NULL) {
-        LOGE("g_hooked signal is NULL?\n");
+        LOGE("hooked signal is NULL?\n");
         return NULL;
     }
     return g_hookedSignal(signum, handler);
@@ -179,7 +179,7 @@ static bool IsSigactionAddr(uintptr_t sigactionAddr)
 int sigaction(int sig, const struct sigaction *restrict act, struct sigaction *restrict oact)
 {
     if (g_hookedSigaction == NULL) {
-        LOGE("g_hooked sigaction is NULL?");
+        LOGE("hooked sigaction is NULL?");
         return -1;
     }
 
