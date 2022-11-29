@@ -181,14 +181,16 @@ bool DfxUnwindRemote::DfxUnwindRemoteDoUnwindStep(size_t const & index,
         DfxLogWarn("%s :: repeated pc(0x%lx), stop.", __func__, framePc);
         return ret;
     }
+    oldPc = framePc;
 
     uint64_t relPc = unw_get_rel_pc(&cursor);
     if (index != 0) {
         relPc = DfxUnwindRemoteDoAdjustPc(cursor, relPc);
         framePc = DfxUnwindRemoteDoAdjustPc(cursor, framePc);
+#if defined(__arm__)
         unw_set_adjust_pc(&cursor, framePc);
+#endif
     }
-    oldPc = framePc;
 
     if (relPc == 0) {
         relPc = framePc;
