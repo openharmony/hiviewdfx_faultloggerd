@@ -290,7 +290,6 @@ bool DfxUnwindLocal::ExecLocalDumpUnwinding(unw_context_t *ctx, size_t skipFramN
         curIndex_ = static_cast<uint32_t>(index - skipFramNum);
         DfxLogDebug("%s :: curIndex_: %d", __func__, curIndex_);
         if (curIndex_ > 1 && prevPc == pc) {
-            DfxLogWarn("%s :: repeated pc(0x%lx), stop.", __func__, pc);
             break;
         }
         prevPc = pc;
@@ -300,7 +299,9 @@ bool DfxUnwindLocal::ExecLocalDumpUnwinding(unw_context_t *ctx, size_t skipFramN
         if ((curIndex_ > 0) && (relPc > sz)) {
             relPc -= sz;
             pc -= sz;
+#if defined(__arm__)
             unw_set_adjust_pc(&cursor, pc);
+#endif
         }
 
         struct map_info* map = unw_get_map(&cursor);
