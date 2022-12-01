@@ -17,6 +17,7 @@
 
 #include "dfx_unwind_remote.h"
 
+#include <algorithm>
 #include <cstdio>
 #include <cstring>
 #include <elf.h>
@@ -42,8 +43,9 @@ namespace HiviewDFX {
 namespace {
 // we should have at least 2 frames, one is pc and the other is lr
 // if pc and lr are both invalid, just try fp
-static const int MIN_VALID_FRAME_COUNT = 3;
+static constexpr int MIN_VALID_FRAME_COUNT = 3;
 static constexpr size_t MAX_BUILD_ID_LENGTH = 32;
+static constexpr int ARK_JS_HEAD_LEN = 256;
 }
 
 DfxUnwindRemote &DfxUnwindRemote::GetInstance()
@@ -211,6 +213,39 @@ bool DfxUnwindRemote::DfxUnwindRemoteDoUnwindStep(size_t const & index,
     return ret;
 }
 
+bool DfxUnwindRemote::GetArkJsHeapFuncName(std::string& funcName, std::shared_ptr<DfxThread> thread)
+{
+    bool ret = false;
+#if defined(__aarch64__)
+    char buf[ARK_JS_HEAD_LEN] = {0};
+    do {
+        std::shared_ptr<DfxRegs> regs = thread->GetThreadRegs();
+        if (regs == nullptr) {
+            break;
+        }
+        std::vector<uintptr_t> regsVector = regs->GetRegsData();
+        if (regsVector.size() < (UNW_AARCH64_X29 + 1)) {
+            break;
+        }
+        uintptr_t x20 = regsVector[UNW_AARCH64_X20];
+        uintptr_t fp = regsVector[UNW_AARCH64_X29];
+        
+        DfxLogInfo("pid: %d, x20: %016lx, fp: %016lx", thread->GetThreadId(), x20, fp);
+        int result = unw_get_ark_js_heap_crash_info(thread->GetThreadId(),
+            (uintptr_t*)&x20, (uintptr_t*)&fp, false, buf, ARK_JS_HEAD_LEN);
+        if (result < 0) {
+            DfxLogWarn("Fail to unw_get_ark_js_heap_crash_info.");
+            break;
+        }
+        ret = true;
+
+        size_t len = std::min(strlen(buf), static_cast<size_t>(ARK_JS_HEAD_LEN - 1));
+        funcName = std::string(buf, len);
+    } while (false);
+#endif
+    return ret;
+}
+
 bool DfxUnwindRemote::UpdateAndPrintFrameInfo(unw_cursor_t& cursor, std::shared_ptr<DfxThread> thread,
     std::shared_ptr<DfxFrame> frame, bool enableBuildId)
 {
@@ -220,8 +255,17 @@ bool DfxUnwindRemote::UpdateAndPrintFrameInfo(unw_cursor_t& cursor, std::shared_
         std::string mapPath = std::string(mapInfo->path);
         frame->SetFrameMapName(mapPath);
         std::string funcName;
+        bool isGetFuncName = false;
+#if defined(__aarch64__)
+        if ((frame->GetFrameIndex() == 0) && ((mapPath.find("ArkJS Heap") != std::string::npos))) {
+            isGetFuncName = GetArkJsHeapFuncName(funcName, thread);
+            if (isGetFuncName) {
+                frame->SetFrameFuncName(funcName);
+            }
+        }
+#endif
         uint64_t funcOffset;
-        if (cache_->GetNameAndOffsetByPc(as_, frame->GetFramePc(), funcName, funcOffset)) {
+        if (!isGetFuncName && cache_->GetNameAndOffsetByPc(as_, frame->GetFramePc(), funcName, funcOffset)) {
             frame->SetFrameFuncName(funcName);
             frame->SetFrameFuncOffset(funcOffset);
         }
