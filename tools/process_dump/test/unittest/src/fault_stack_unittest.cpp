@@ -150,7 +150,7 @@ HWTEST_F(FaultStackUnittest, FaultStackUnittest001, TestSize.Level2)
         FAIL();
     }
 
-    if (result.find("pc(/data/FaultStackUnittest)") == std::string::npos) {
+    if (result.find("pc") == std::string::npos) {
         FAIL();
     }
 
