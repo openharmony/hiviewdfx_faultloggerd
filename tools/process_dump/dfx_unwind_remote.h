@@ -42,6 +42,7 @@ public:
     bool UnwindProcess(std::shared_ptr<DfxProcess> process);
     bool UnwindThread(std::shared_ptr<DfxProcess> process, std::shared_ptr<DfxThread> thread);
     void UnwindThreadFallback(std::shared_ptr<DfxProcess> process, std::shared_ptr<DfxThread> thread);
+    bool GetArkJsHeapFuncName(std::string& funcName, std::shared_ptr<DfxThread> thread);
 
 private:
     bool DfxUnwindRemoteDoUnwindStep(size_t const & index,

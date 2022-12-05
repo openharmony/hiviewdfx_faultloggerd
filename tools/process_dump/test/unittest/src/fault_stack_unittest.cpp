@@ -29,6 +29,7 @@
 #include "dfx_dump_catcher.h"
 #include "dfx_ring_buffer_wrapper.h"
 #include "dfx_thread.h"
+#include "dfx_unwind_remote.h"
 
 using namespace OHOS::HiviewDFX;
 using namespace testing::ext;
@@ -104,6 +105,16 @@ std::shared_ptr<DfxRegs> GetCurrentReg()
     return reg;
 }
 
+int unw_get_ark_js_heap_crash_info(int pid, uintptr_t* x20, uintptr_t* fp, int out_js_info, char* buf, size_t buf_sz)
+{
+    printf("unw_get_ark_js_heap_crash_info is called\n");
+    if ((*x20 == 0) || (*fp == 0)) {
+        return -1;
+    }
+    
+    return 0;
+}
+
 /**
  * @tc.name: FaultStackUnittest001
  * @tc.desc: check whether fault stack and register can be print out
@@ -160,4 +171,26 @@ HWTEST_F(FaultStackUnittest, FaultStackUnittest001, TestSize.Level2)
     GTEST_LOG_(INFO) << "Result Log length:" << result.length();
     ASSERT_GT(result.length(), 0);
     GTEST_LOG_(INFO) << "FaultStackUnittest001: end.";
+}
+
+/**
+ * @tc.name: FaultStackUnittest002
+ * @tc.desc: test Get Ark Js Func
+ * @tc.type: FUNC
+ */
+HWTEST_F(FaultStackUnittest, FaultStackUnittest002, TestSize.Level2)
+{
+#if defined(__aarch64__)
+    auto& unwindRemote = DfxUnwindRemote::GetInstance();
+    auto thread = std::make_shared<DfxThread>(getpid(), getpid(), getpid());
+    std::string funcName;
+    bool ret = unwindRemote.GetArkJsHeapFuncName(funcName, thread);
+    ASSERT_EQ(false, ret);
+    auto regs = GetCurrentReg();
+    thread->SetThreadRegs(regs);
+    ret = unwindRemote.GetArkJsHeapFuncName(funcName, thread);
+    ASSERT_EQ(true, ret);
+#else
+    printf("Get Ark Js Func Test is only support in aarch64\n");
+#endif
 }
