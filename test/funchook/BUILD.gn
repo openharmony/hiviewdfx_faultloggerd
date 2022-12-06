@@ -94,7 +94,7 @@ if (!defined(ohos_lite)) {
 
     external_deps = [ "c_utils:utils" ]
     resource_config_file =
-        "//base/hiviewdfx/faultloggerd/tools/funchook/ohos_test.xml"
+        "//base/hiviewdfx/faultloggerd/test/funchook/ohos_test.xml"
 
     part_name = "faultloggerd"
     subsystem_name = "hiviewdfx"
