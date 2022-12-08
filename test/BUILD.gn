@@ -28,7 +28,7 @@ group("faultloggerd_systemtest") {
 
 group("faultloggerd_funchook") {
   testonly = true
-  deps = [ "funchook:dfxfunchook_uniitest" ]
+  deps = [ "funchook:dfxfunchook_unitest" ]
 }
 
 group("faultloggerd_performancetest") {
