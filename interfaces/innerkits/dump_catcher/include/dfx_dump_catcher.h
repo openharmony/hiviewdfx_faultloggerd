@@ -58,7 +58,8 @@ private:
     bool DoDumpLocalLocked(int pid, int tid, std::string& msg);
     bool DoDumpRemoteLocked(int pid, int tid, std::string& msg);
     bool DoDumpCatchRemote(const int type, int pid, int tid, std::string& msg);
-    bool DoDumpRemotePid(int pid, std::string& msg);
+    int DoDumpRemotePid(const int type, int pid, std::string& msg);
+    int DoDumpRemotePoll(int bufFd, int resFd, int timeout, std::string& msg);
     bool DoReadBuf(int fd, std::string& msg);
     bool DoReadRes(int fd, bool &ret, std::string& msg);
 
