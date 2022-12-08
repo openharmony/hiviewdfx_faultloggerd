@@ -368,6 +368,7 @@ HWTEST_F(DfxProcessDumpTest, DfxProcessDumpTest005, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "DfxProcessDumpTest005: start.";
     pid_t testProcess = CreateMultiThreadProcess(10); // 10 : create a process with ten threads
+    sleep(1);
     kill(testProcess, SIGILL);
     sleep(3); // 3 : wait 3s to generate cpp crash file
     bool ret = CheckCppCrashKeyWords(GetCppCrashFileName(testProcess), testProcess, SIGILL);
@@ -384,6 +385,7 @@ HWTEST_F(DfxProcessDumpTest, DfxProcessDumpTest006, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "DfxProcessDumpTest006: start.";
     pid_t testProcess = CreateMultiThreadProcess(10); // 10 : create a process with ten threads
+    sleep(1);
     kill(testProcess, SIGTRAP);
     sleep(3); // 3 : wait 3s to generate cpp crash file
     bool ret = CheckCppCrashKeyWords(GetCppCrashFileName(testProcess), testProcess, SIGTRAP);
