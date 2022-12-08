@@ -48,26 +48,7 @@
 namespace OHOS {
 namespace HiviewDFX {
 namespace {
-#if defined(__arm__)
-typedef enum ARM_REG {
-    ARM_R0 = 0,
-    ARM_R1,
-    ARM_R2,
-    ARM_R3,
-    ARM_R4,
-    ARM_R5,
-    ARM_R6,
-    ARM_R7,
-    ARM_R8,
-    ARM_R9,
-    ARM_R10,
-    ARM_FP,
-    ARM_IP,
-    ARM_SP,
-    ARM_LR,
-    ARM_PC
-} ARM_REG;
-#endif
+static constexpr int MIN_VALID_FRAME_COUNT = 3;
 }
 DfxUnwindLocal &DfxUnwindLocal::GetInstance()
 {
@@ -325,21 +306,20 @@ bool DfxUnwindLocal::ExecLocalDumpUnwinding(unw_context_t *ctx, size_t skipFramN
             break;
         }
 
-        auto& curFrame = frames_[curIndex_];
-        curFrame.SetFrameIndex((size_t)curIndex_);
-        curFrame.SetFramePc((uint64_t)pc);
-        curFrame.SetFrameSp((uint64_t)sp);
-        curFrame.SetFrameRelativePc((uint64_t)relPc);
-        curFrame.SetFrameMapName(std::string(mapName));
-
-        index++;
-        if (!isValidFrame) {
-            if (curIndex_ > 0) {
-                curIndex_--;
-            }
-            DfxLogError("%s :: get map error.", __func__);
+        bool ret = (curIndex_ < MIN_VALID_FRAME_COUNT) || isValidFrame;
+        if (ret) {
+            auto& curFrame = frames_[curIndex_];
+            curFrame.SetFrameIndex((size_t)curIndex_);
+            curFrame.SetFramePc((uint64_t)pc);
+            curFrame.SetFrameSp((uint64_t)sp);
+            curFrame.SetFrameRelativePc((uint64_t)relPc);
+            curFrame.SetFrameMapName(std::string(mapName));
+        } else {
+            DfxLogError("%s :: unw_get_map failed.", __func__);
             break;
         }
+
+        index++;
     } while ((unw_step(&cursor) > 0) && (index < BACK_STACK_MAX_STEPS));
     return true;
 }
@@ -351,22 +331,22 @@ void DfxUnwindLocal::LocalDumper(int sig, siginfo_t *si, void *context)
 #if defined(__arm__)
     (void)memset_s(&context_, sizeof(context_), 0, sizeof(context_));
     ucontext_t *uc = (ucontext_t *)context;
-    context_.regs[ARM_R0] = uc->uc_mcontext.arm_r0;
-    context_.regs[ARM_R1] = uc->uc_mcontext.arm_r1;
-    context_.regs[ARM_R2] = uc->uc_mcontext.arm_r2;
-    context_.regs[ARM_R3] = uc->uc_mcontext.arm_r3;
-    context_.regs[ARM_R4] = uc->uc_mcontext.arm_r4;
-    context_.regs[ARM_R5] = uc->uc_mcontext.arm_r5;
-    context_.regs[ARM_R6] = uc->uc_mcontext.arm_r6;
-    context_.regs[ARM_R7] = uc->uc_mcontext.arm_r7;
-    context_.regs[ARM_R8] = uc->uc_mcontext.arm_r8;
-    context_.regs[ARM_R9] = uc->uc_mcontext.arm_r9;
-    context_.regs[ARM_R10] = uc->uc_mcontext.arm_r10;
-    context_.regs[ARM_FP] = uc->uc_mcontext.arm_fp;
-    context_.regs[ARM_IP] = uc->uc_mcontext.arm_ip;
-    context_.regs[ARM_SP] = uc->uc_mcontext.arm_sp;
-    context_.regs[ARM_LR] = uc->uc_mcontext.arm_lr;
-    context_.regs[ARM_PC] = uc->uc_mcontext.arm_pc;
+    context_.regs[UNW_ARM_R0] = uc->uc_mcontext.arm_r0;
+    context_.regs[UNW_ARM_R1] = uc->uc_mcontext.arm_r1;
+    context_.regs[UNW_ARM_R2] = uc->uc_mcontext.arm_r2;
+    context_.regs[UNW_ARM_R3] = uc->uc_mcontext.arm_r3;
+    context_.regs[UNW_ARM_R4] = uc->uc_mcontext.arm_r4;
+    context_.regs[UNW_ARM_R5] = uc->uc_mcontext.arm_r5;
+    context_.regs[UNW_ARM_R6] = uc->uc_mcontext.arm_r6;
+    context_.regs[UNW_ARM_R7] = uc->uc_mcontext.arm_r7;
+    context_.regs[UNW_ARM_R8] = uc->uc_mcontext.arm_r8;
+    context_.regs[UNW_ARM_R9] = uc->uc_mcontext.arm_r9;
+    context_.regs[UNW_ARM_R10] = uc->uc_mcontext.arm_r10;
+    context_.regs[UNW_ARM_R11] = uc->uc_mcontext.arm_fp;
+    context_.regs[UNW_ARM_R12] = uc->uc_mcontext.arm_ip;
+    context_.regs[UNW_ARM_R13] = uc->uc_mcontext.arm_sp;
+    context_.regs[UNW_ARM_R14] = uc->uc_mcontext.arm_lr;
+    context_.regs[UNW_ARM_R15] = uc->uc_mcontext.arm_pc;
 #else
     // the ucontext.uc_mcontext.__reserved of libunwind is simplified with the system's own in aarch64
     if (memcpy_s(&context_, sizeof(unw_context_t), context, sizeof(unw_context_t)) != 0) {

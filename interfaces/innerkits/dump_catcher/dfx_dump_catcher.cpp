@@ -51,18 +51,26 @@ static const int NUMBER_TEN = 10;
 static const int MAX_TEMP_FILE_LENGTH = 256;
 static const int DUMP_CATCHE_WORK_TIME_S = 60;
 static const int NUMBER_TWO_KB = 2048;
-static const int BACK_TRACE_DUMP_TIMEOUT_MS = 10000;
+static const int BACK_TRACE_DUMP_MIX_TIMEOUT_MS = 2000;
+static const int BACK_TRACE_DUMP_CPP_TIMEOUT_MS = 10000;
 
 namespace OHOS {
 namespace HiviewDFX {
 namespace {
 static const std::string DFXDUMPCATCHER_TAG = "DfxDumpCatcher";
-static const char UNINTERRUPTIBLE[] = "refrigerator";
 static bool IsThreadInCurPid(int32_t tid)
 {
     std::string path = "/proc/self/task/" + std::to_string(tid);
     return access(path.c_str(), F_OK) == 0;
 }
+enum DfxDumpPollRes : int32_t {
+    DUMP_POLL_INIT = -1,
+    DUMP_POLL_OK,
+    DUMP_POLL_FD,
+    DUMP_POLL_FAILED,
+    DUMP_POLL_TIMEOUT,
+    DUMP_POLL_RETURN,
+};
 }
 
 DfxDumpCatcher::DfxDumpCatcher()
@@ -309,7 +317,8 @@ bool DfxDumpCatcher::DoDumpCatchRemote(const int type, int pid, int tid, std::st
             }
             int err = SignalTargetProcess(type, pid, tid);
             if (err != 0) {
-                msg.append("Result: syscall SIGDUMP error, errno(" + std::to_string(err) + ").\n");
+                msg.append("Result: pid(" + std::to_string(pid) + ") syscall SIGDUMP error, \
+                    errno(" + std::to_string(err) + ").\n"); 
                 DfxLogWarn("%s :: %s :: %s", DFXDUMPCATCHER_TAG.c_str(), __func__, msg.c_str());
                 RequestDelPipeFd(pid);
                 return ret;
@@ -317,43 +326,84 @@ bool DfxDumpCatcher::DoDumpCatchRemote(const int type, int pid, int tid, std::st
         }
     }
 
-    return DoDumpRemotePid(pid, msg);
+    int pollRet = DoDumpRemotePid(type, pid, msg);
+    switch (pollRet) {
+        case DUMP_POLL_OK:
+            ret = true;
+            break;
+        case DUMP_POLL_TIMEOUT:
+            if (type == DUMP_TYPE_MIX) {
+                msg.append("Result: pid(" + std::to_string(pid) + ") dump mix timeout, try dump native frame.\n");
+                int type = static_cast<int>(DUMP_TYPE_NATIVE);
+                DoDumpCatchRemote(type, pid, tid, msg);
+            } else if (type == DUMP_TYPE_NATIVE){
+                LoadPidStat(pid, msg);
+            }
+            break;
+        default:
+            break;
+    }
+    DfxLogInfo("%s :: %s :: ret: %d", DFXDUMPCATCHER_TAG.c_str(), __func__, ret);
+    return ret;
 }
 
-bool DfxDumpCatcher::DoDumpRemotePid(int pid, std::string& msg)
+int DfxDumpCatcher::DoDumpRemotePid(const int type, int pid, std::string& msg)
 {
-    bool ret = false;
     int readBufFd = RequestPipeFd(pid, FaultLoggerPipeType::PIPE_FD_READ_BUF);
     DfxLogDebug("read buf fd: %d", readBufFd);
 
     int readResFd = RequestPipeFd(pid, FaultLoggerPipeType::PIPE_FD_READ_RES);
     DfxLogDebug("read res fd: %d", readResFd);
 
-    std::string bufMsg, resMsg;
+    int timeout = BACK_TRACE_DUMP_CPP_TIMEOUT_MS;
+    if (type == DUMP_TYPE_MIX) {
+        timeout = BACK_TRACE_DUMP_MIX_TIMEOUT_MS;
+    }
 
+    int ret = DoDumpRemotePoll(readBufFd, readResFd, timeout, msg);
+
+    // request close fds in faultloggerd
+    RequestDelPipeFd(pid);
+    if (readBufFd >= 0) {
+        close(readBufFd);
+        readBufFd = -1;
+    }
+    if (readResFd >= 0) {
+        close(readResFd);
+        readResFd = -1;
+    }
+    DfxLogInfo("%s :: %s :: ret: %d", DFXDUMPCATCHER_TAG.c_str(), __func__, ret);
+    return ret;
+}
+
+int DfxDumpCatcher::DoDumpRemotePoll(int bufFd, int resFd, int timeout, std::string& msg)
+{
+    int ret = DUMP_POLL_INIT;
+    bool res = false;
+    std::string bufMsg, resMsg;
     struct pollfd readfds[2];
     (void)memset_s(readfds, sizeof(readfds), 0, sizeof(readfds));
-    readfds[0].fd = readBufFd;
+    readfds[0].fd = bufFd;
     readfds[0].events = POLLIN;
-    readfds[1].fd = readResFd;
+    readfds[1].fd = resFd;
     readfds[1].events = POLLIN;
     int fdsSize = sizeof(readfds) / sizeof(readfds[0]);
     bool bPipeConnect = false;
     while (true) {
-        if (readBufFd < 0 || readResFd < 0) {
-            DfxLogError("%s :: %s :: Failed to get read fd", DFXDUMPCATCHER_TAG.c_str(), __func__);
+        if (bufFd < 0 || resFd < 0) {
+            ret = DUMP_POLL_FD;
+            resMsg.append("Result: bufFd or resFd  < 0.\n");
             break;
         }
 
-        int pollRet = poll(readfds, fdsSize, BACK_TRACE_DUMP_TIMEOUT_MS);
+        int pollRet = poll(readfds, fdsSize, timeout);
         if (pollRet < 0) {
+            ret = DUMP_POLL_FAILED;
             resMsg.append("Result: poll error, errno(" + std::to_string(errno) + ")\n");
-            DfxLogError("%s :: %s :: %s", DFXDUMPCATCHER_TAG.c_str(), __func__, resMsg.c_str());
             break;
         } else if (pollRet == 0) {
-            resMsg.append("Result: pid(" + std::to_string(pid) + ") poll timeout.\n");
-            LoadPidStat(pid, resMsg);
-            DfxLogError("%s :: %s :: %s", DFXDUMPCATCHER_TAG.c_str(), __func__, resMsg.c_str());
+            ret = DUMP_POLL_TIMEOUT;
+            resMsg.append("Result: poll timeout.\n");
             break;
         }
 
@@ -366,7 +416,6 @@ bool DfxDumpCatcher::DoDumpRemotePid(int pid, std::string& msg)
                 (((uint32_t)readfds[i].revents & POLLERR) || ((uint32_t)readfds[i].revents & POLLHUP))) {
                 eventRet = false;
                 resMsg.append("Result: poll events error.\n");
-                DfxLogWarn("%s :: %s :: %s", DFXDUMPCATCHER_TAG.c_str(), __func__, resMsg.c_str());
                 break;
             }
 
@@ -374,32 +423,26 @@ bool DfxDumpCatcher::DoDumpRemotePid(int pid, std::string& msg)
                 continue;
             }
             
-            if (readfds[i].fd == readBufFd) {
-                bufRet = DoReadBuf(readBufFd, bufMsg);
+            if (readfds[i].fd == bufFd) {
+                bufRet = DoReadBuf(bufFd, bufMsg);
             }
 
-            if (readfds[i].fd == readResFd) {
-                resRet = DoReadRes(readResFd, ret, resMsg);
+            if (readfds[i].fd == resFd) {
+                resRet = DoReadRes(resFd, res, resMsg);
             }
         }
 
         if ((eventRet == false) || (bufRet == false) || (resRet == true)) {
+            ret = DUMP_POLL_RETURN;
             break;
         }
     }
+
+    DfxLogWarn("%s :: %s :: %s", DFXDUMPCATCHER_TAG.c_str(), __func__, resMsg.c_str());
     msg = resMsg + bufMsg;
-
-    // request close fds in faultloggerd
-    RequestDelPipeFd(pid);
-    if (readBufFd >= 0) {
-        close(readBufFd);
+    if (res) {
+        ret = DUMP_POLL_OK;
     }
-
-    if (readResFd >= 0) {
-        close(readResFd);
-    }
-
-    DfxLogInfo("%s :: %s :: ret: %d", DFXDUMPCATCHER_TAG.c_str(), __func__, ret);
     return ret;
 }
 

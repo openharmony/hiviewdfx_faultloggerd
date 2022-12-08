@@ -18,7 +18,7 @@ if (defined(ohos_lite)) {
   import("//build/lite/config/test.gni")
 
   if (ohos_build_type == "debug") {
-    unittest("dumpcatcher_interfaces_unittest") {
+    unittest("test_dumpcatcher") {
       output_extension = "bin"
 
       output_dir = "$root_out_dir/test/unittest/faultloggerd"
@@ -41,15 +41,17 @@ if (defined(ohos_lite)) {
       ]
     }
   }
+
+  group("unittest") {
+    deps = [ ":test_dumpcatcher" ]
+  }
 } else {
   import("//build/config/features.gni")
   import("//build/test.gni")
 
   module_output_path = "faultloggerd/dump_catcher"
 
-  ohos_unittest("dumpcatcher_interfaces_unittest") {
-    testonly = true
-
+  ohos_unittest("test_dumpcatcher") {
     module_out_path = module_output_path
 
     visibility = [ "*:*" ]
@@ -70,5 +72,10 @@ if (defined(ohos_lite)) {
       "c_utils:utils",
       "hilog_native:libhilog",
     ]
+  }
+
+  group("unittest") {
+    testonly = true
+    deps = [ ":test_dumpcatcher" ]
   }
 }

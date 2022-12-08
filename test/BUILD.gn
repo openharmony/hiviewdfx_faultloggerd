@@ -33,14 +33,20 @@ group("faultloggerd_funchook") {
 
 group("faultloggerd_performancetest") {
   testonly = true
-  deps = []
-
-  deps += [ "performancetest:performance" ]
+  deps = [ "performancetest:performance" ]
 }
 
 group("faultloggerd_fuzzertest") {
   testonly = true
-  deps = []
+  deps = [ "fuzztest/faultloggerd_fuzzer:fuzztest" ]
+}
 
-  deps += [ "fuzztest/faultloggerd_fuzzer:fuzztest" ]
+group("faultloggerd_unittest") {
+  testonly = true
+  deps = [
+    "unittest/dump_catcher:unittest",
+    "unittest/process_dump:unittest",
+    "unittest/services:unittest",
+    "unittest/signal_handler:unittest",
+  ]
 }
