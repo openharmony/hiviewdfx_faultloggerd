@@ -77,7 +77,7 @@
         "//base/hiviewdfx/faultloggerd/test:faultloggerd_funchook",
         "//base/hiviewdfx/faultloggerd/tools/crasher_c:crasher_c",
         "//base/hiviewdfx/faultloggerd/tools/crasher_cpp:crasher_cpp",
-        "//base/hiviewdfx/faultloggerd/test:faultloggerd_unittest",
+        "//base/hiviewdfx/faultloggerd/test:faultloggerd_unittest"
       ]
     }
   }
