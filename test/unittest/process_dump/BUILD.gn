@@ -24,7 +24,6 @@ if (defined(ohos_lite)) {
 
       include_dirs = [
         "include/",
-        "../../",
         "mock/",
         "//commonlibrary/c_utils/base/include",
         "$faultloggerd_path/common",
@@ -41,7 +40,6 @@ if (defined(ohos_lite)) {
         "src/dfx_base_test.cpp",
         "src/dfx_maps_test.cpp",
         "src/dfx_processdump_test.cpp",
-        "src/mock_processdump_test.cpp",
         "src/multithread_constructor.c",
         "src/process_dfx_test.cpp",
         "src/process_dump_test.cpp",
@@ -49,6 +47,7 @@ if (defined(ohos_lite)) {
       ]
 
       deps = [
+        "$faultloggerd_path/common/util:dfx_cutil",
         "$faultloggerd_path/tools/process_dump:process_info_src",
         "//base/hiviewdfx/hilog_lite/frameworks/featured:hilog_shared",
         "//third_party/libunwind:libunwind",
@@ -68,7 +67,6 @@ if (defined(ohos_lite)) {
 
     include_dirs = [
       "include/",
-      "../../",
       "mock/",
       "//commonlibrary/c_utils/base/include",
       "$faultloggerd_path/common",
@@ -78,16 +76,14 @@ if (defined(ohos_lite)) {
     ]
   }
 
-  module_output_path = "faultloggerd/processdump_native"
+  module_output_path = "faultloggerd/process_dump"
 
   ohos_unittest("test_processdump") {
-    testonly = true
     module_out_path = module_output_path
     sources = [
       "src/dfx_base_test.cpp",
       "src/dfx_maps_test.cpp",
       "src/dfx_processdump_test.cpp",
-      "src/mock_processdump_test.cpp",
       "src/multithread_constructor.c",
       "src/process_dfx_test.cpp",
       "src/process_dump_test.cpp",
@@ -99,6 +95,7 @@ if (defined(ohos_lite)) {
     defines = [ "UNITTEST" ]
 
     deps = [
+      "$faultloggerd_path/common/util:dfx_cutil",
       "$faultloggerd_path/tools/process_dump:process_info_src",
       "//third_party/googletest:gmock_main",
       "//third_party/googletest:gtest_main",
@@ -108,7 +105,6 @@ if (defined(ohos_lite)) {
   }
 
   ohos_unittest("FaultStackUnittest") {
-    testonly = true
     module_out_path = module_output_path
     sources = [ "src/fault_stack_unittest.cpp" ]
 
