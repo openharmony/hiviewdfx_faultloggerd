@@ -15,6 +15,7 @@
 
 #include "dfx_base_test.h"
 
+#include <ctime>
 #include <securec.h>
 #include <string>
 #include <vector>
@@ -27,6 +28,7 @@
 #include "dfx_fault_stack.h"
 #include "dfx_elf.h"
 #include "dfx_signal.h"
+#include "dfx_util.h"
 
 using namespace OHOS::HiviewDFX;
 using namespace testing::ext;
@@ -236,4 +238,32 @@ HWTEST_F(DfxBaseTest, DfxSignalTest001, TestSize.Level2)
     si.si_signo = SIGSYS;
     GTEST_LOG_(INFO) << PrintSignal(si);
     GTEST_LOG_(INFO) << "DfxSignalTest001: end.";
+}
+
+/**
+ * @tc.name: DfxUtilTest001
+ * @tc.desc: test DfxUtil functions
+ * @tc.type: FUNC
+ */
+HWTEST_F(DfxBaseTest, DfxUtilTest001, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "DfxUtilTest001: start.";
+    time_t now = time(nullptr);
+    GTEST_LOG_(INFO) << GetCurrentTimeStr(static_cast<uint64_t>(now));
+    now += 100000; // 100000 : test time offset
+    GTEST_LOG_(INFO) << GetCurrentTimeStr(static_cast<uint64_t>(now));
+    GTEST_LOG_(INFO) << "DfxUtilTest001: end.";
+}
+
+/**
+ * @tc.name: DfxUtilTest002
+ * @tc.desc: test DfxUtil functions
+ * @tc.type: FUNC
+ */
+HWTEST_F(DfxBaseTest, DfxUtilTest002, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "DfxUtilTest002: start.";
+    pid_t pid = getppid();
+    ASSERT_EQ(pid, GetRealTargetPid());
+    GTEST_LOG_(INFO) << "DfxUtilTest002: end.";
 }

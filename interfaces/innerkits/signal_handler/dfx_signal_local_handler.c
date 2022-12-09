@@ -129,7 +129,7 @@ void DFX_InstallLocalSignalHandler(void)
     sigfillset(&action.sa_mask);
     action.sa_sigaction = DFX_SignalHandler;
     action.sa_flags = SA_RESTART | SA_SIGINFO | SA_ONSTACK;
-    
+
     for (size_t i = 0; i < sizeof(g_platformSignals) / sizeof(g_platformSignals[0]); i++) {
         int32_t sig = g_platformSignals[i];
         sigaddset(&set, sig);

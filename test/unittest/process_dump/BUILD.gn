@@ -18,43 +18,45 @@ if (defined(ohos_lite)) {
   import("//build/lite/config/test.gni")
 
   if (ohos_build_type == "debug") {
-    unittest("test_service") {
+    unittest("test_processdump") {
       output_extension = "bin"
       output_dir = "$root_out_dir/test/unittest/faultloggerd"
 
       include_dirs = [
-        "include",
+        "include/",
+        "mock/",
         "//commonlibrary/c_utils/base/include",
-        "$faultloggerd_path/services",
-        "$hilog_lite_include_path",
-        "$faultloggerd_path/tools/process_dump",
-        "$faultloggerd_path/interfaces/innerkits/faultloggerd_client/include",
         "$faultloggerd_path/common",
-        "$faultloggerd_path/common/dfxlog",
+        "$faultloggerd_path/tools/process_dump/test/mock/include/",
+        "$faultloggerd_path/tools/process_dump",
         "$faultloggerd_path/utils",
+        "//third_party/libunwind/include/",
+        "//third_party/googletest/googlemock/include",
+        "$hilog_lite_include_path",
       ]
 
       sources = [
-        "$faultloggerd_path/services/fault_logger_config.cpp",
-        "$faultloggerd_path/services/fault_logger_daemon.cpp",
-        "$faultloggerd_path/services/fault_logger_pipe.cpp",
-        "$faultloggerd_path/services/fault_logger_secure.cpp",
         "//base/hiviewdfx/faultloggerd/utils/directory_ex.cpp",
-        "src/faultlogger_config_test.cpp",
-        "src/faultlogger_daemon_test.cpp",
-        "src/faultlogger_secure_test.cpp",
+        "src/dfx_base_test.cpp",
+        "src/dfx_maps_test.cpp",
+        "src/dfx_processdump_test.cpp",
+        "src/multithread_constructor.c",
+        "src/process_dfx_test.cpp",
+        "src/process_dump_test.cpp",
+        "src/process_frames_test.cpp",
       ]
 
       deps = [
-        "$faultloggerd_path/common/dfxlog:static_common_log",
-        "$faultloggerd_path/interfaces/innerkits/faultloggerd_client:libfaultloggerd",
+        "$faultloggerd_path/common/util:dfx_cutil",
+        "$faultloggerd_path/tools/process_dump:process_info_src",
         "//base/hiviewdfx/hilog_lite/frameworks/featured:hilog_shared",
+        "//third_party/libunwind:libunwind",
       ]
     }
   }
 
   group("unittest") {
-    deps = [ ":test_service" ]
+    deps = [ ":test_processdump" ]
   }
 } else {
   import("//build/config/features.gni")
@@ -64,42 +66,46 @@ if (defined(ohos_lite)) {
     visibility = [ ":*" ]
 
     include_dirs = [
-      "include",
+      "include/",
+      "mock/",
       "//commonlibrary/c_utils/base/include",
-      "$faultloggerd_path/services",
-      "$faultloggerd_path/common/dfxlog",
+      "$faultloggerd_path/common",
+      "$faultloggerd_path/tools/process_dump/test/mock/include/",
+      "$faultloggerd_path/tools/process_dump",
+      "//third_party/libunwind/include/",
     ]
   }
 
-  ohos_unittest("test_service") {
-    module_out_path = "faultloggerd/service_native"
+  module_output_path = "faultloggerd/process_dump"
+
+  ohos_unittest("test_processdump") {
+    module_out_path = module_output_path
     sources = [
-      "$faultloggerd_path/services/fault_logger_config.cpp",
-      "$faultloggerd_path/services/fault_logger_daemon.cpp",
-      "$faultloggerd_path/services/fault_logger_pipe.cpp",
-      "$faultloggerd_path/services/fault_logger_secure.cpp",
-      "src/faultlogger_config_test.cpp",
-      "src/faultlogger_daemon_test.cpp",
-      "src/faultlogger_secure_test.cpp",
+      "src/dfx_base_test.cpp",
+      "src/dfx_maps_test.cpp",
+      "src/dfx_processdump_test.cpp",
+      "src/multithread_constructor.c",
+      "src/process_dfx_test.cpp",
+      "src/process_dump_test.cpp",
+      "src/process_frames_test.cpp",
     ]
 
     configs = [ ":module_private_config" ]
 
+    defines = [ "UNITTEST" ]
+
     deps = [
-      "$faultloggerd_path/common/dfxlog:static_common_log",
-      "$faultloggerd_path/interfaces/innerkits/faultloggerd_client:libfaultloggerd",
+      "$faultloggerd_path/common/util:dfx_cutil",
+      "$faultloggerd_path/tools/process_dump:process_info_src",
       "//third_party/googletest:gmock_main",
       "//third_party/googletest:gtest_main",
+      "//third_party/libunwind:libunwind",
     ]
-
-    external_deps = [
-      "c_utils:utils",
-      "hilog_native:libhilog",
-    ]
+    external_deps = [ "c_utils:utils" ]
   }
 
   group("unittest") {
     testonly = true
-    deps = [ ":test_service" ]
+    deps = [ ":test_processdump" ]
   }
 }
