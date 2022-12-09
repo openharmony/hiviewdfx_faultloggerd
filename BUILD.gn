@@ -23,6 +23,7 @@ lite_component("faultloggerd") {
     "tools/crasher_c:crasher_c",
     "tools/crasher_cpp:crasher_cpp",
     ":faultloggerd_test",
+    "test:faultloggerd_funchook",
   ]
 }
 
