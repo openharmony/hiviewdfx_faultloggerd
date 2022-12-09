@@ -74,10 +74,10 @@
         "//base/hiviewdfx/faultloggerd/test:faultloggerd_moduletest",
         "//base/hiviewdfx/faultloggerd/test:faultloggerd_systemtest",
         "//base/hiviewdfx/faultloggerd/test:faultloggerd_performancetest",
+        "//base/hiviewdfx/faultloggerd/test:faultloggerd_funchook",
         "//base/hiviewdfx/faultloggerd/test:faultloggerd_unittest",
         "//base/hiviewdfx/faultloggerd/tools/crasher_c:crasher_c",
-        "//base/hiviewdfx/faultloggerd/tools/crasher_cpp:crasher_cpp",
-        "//base/hiviewdfx/faultloggerd/tools/funchook:dfxfunchook_uniitest"
+        "//base/hiviewdfx/faultloggerd/tools/crasher_cpp:crasher_cpp"
       ]
     }
   }
