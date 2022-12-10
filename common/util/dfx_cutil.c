@@ -26,6 +26,7 @@
 #include "securec.h"
 #include "stdio.h"
 #include "string.h"
+
 int GetProcStatus(struct ProcInfo* procInfo)
 {
     procInfo->pid = syscall(SYS_getpid);

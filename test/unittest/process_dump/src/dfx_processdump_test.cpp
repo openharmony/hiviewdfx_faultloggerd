@@ -22,8 +22,13 @@
 #include <unistd.h>
 #include <vector>
 
+#include "dfx_config.h"
+#include "dfx_cutil.h"
+#include "dfx_define.h"
+#include "dfx_util.h"
 #include "directory_ex.h"
 #include "multithread_constructor.h"
+#include "process_dumper.h"
 
 using namespace OHOS::HiviewDFX;
 using namespace testing::ext;
@@ -350,6 +355,7 @@ HWTEST_F(DfxProcessDumpTest, DfxProcessDumpTest004, TestSize.Level2)
         }
     }
     ASSERT_EQ(count, len);
+    // kill(testPid, SIGKILL);
     GTEST_LOG_(INFO) << "DfxProcessDumpTest004: end.";
 }
 
@@ -479,4 +485,77 @@ HWTEST_F(DfxProcessDumpTest, DfxProcessDumpTest012, TestSize.Level2)
     bool ret = CheckCppCrashKeyWords(GetCppCrashFileName(testProcess), testProcess, SIGSYS);
     ASSERT_TRUE(ret);
     GTEST_LOG_(INFO) << "DfxProcessDumpTest012: end.";
+}
+
+/**
+ * @tc.name: DfxProcessDumpTest013
+ * @tc.desc: test dumpcatcher -p [namespace application process]
+ * @tc.type: FUNC
+ */
+HWTEST_F(DfxProcessDumpTest, DfxProcessDumpTest013, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "DfxProcessDumpTest013: start.";
+    string testBundleName = "ohos.samples.clock";
+    string testAbiltyName = testBundleName + ".MainAbility";
+    int testPid = LaunchTestHap(testAbiltyName, testBundleName);
+    if (testPid == 0) {
+        GTEST_LOG_(ERROR) << "Failed to launch target hap.";
+        return;
+    }
+    ProcInfo procinfo;
+    GTEST_LOG_(INFO) << "ppid = " << GetProcStatusByPid(testPid, procinfo);
+    string testCommand = "dumpcatcher -p " + to_string(testPid);
+    string dumpRes = ProcessDumpCommands(testCommand);
+    GTEST_LOG_(INFO) << dumpRes;
+    int count = 0;
+    string log[] = {"Pid:", "Name:", "#00", "#01", "#02"};
+    log[0] = log[0] + to_string(testPid);
+    log[1] = log[1] + "ohos.samples.cl";
+    string::size_type idx;
+    int len = sizeof(log) / sizeof(log[0]);
+    for (int i = 0; i < len; i++) {
+        idx = dumpRes.find(log[i]);
+        if (idx != string::npos) {
+            GTEST_LOG_(INFO) << log[i];
+            count++;
+        }
+    }
+    ASSERT_EQ(count, len);
+    GTEST_LOG_(INFO) << "DfxProcessDumpTest013: end.";
+}
+
+/**
+ * @tc.name: DfxProcessDumpTest014
+ * @tc.desc: test dumpcatcher -p -t [namespace application process]
+ * @tc.type: FUNC
+ */
+HWTEST_F(DfxProcessDumpTest, DfxProcessDumpTest014, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "DfxProcessDumpTest014: start.";
+    string testBundleName = "ohos.samples.clock";
+    string testAbiltyName = testBundleName + ".MainAbility";
+    int testPid = LaunchTestHap(testAbiltyName, testBundleName);
+    if (testPid == 0) {
+        GTEST_LOG_(ERROR) << "Failed to launch target hap.";
+        return;
+    }
+    string testCommand = "dumpcatcher -p " + to_string(testPid) + " -t " + to_string(testPid);
+    string dumpRes = ProcessDumpCommands(testCommand);
+    GTEST_LOG_(INFO) << dumpRes;
+    int count = 0;
+    string log[] = {"Pid:", "Name:", "#00", "#01", "#02"};
+    log[0] = log[0] + to_string(testPid);
+    log[1] = log[1] + "ohos.samples.cl";
+    string::size_type idx;
+    int len = sizeof(log) / sizeof(log[0]);
+    for (int i = 0; i < len; i++) {
+        idx = dumpRes.find(log[i]);
+        if (idx != string::npos) {
+            GTEST_LOG_(INFO) << log[i];
+            count++;
+        }
+    }
+    ASSERT_EQ(count, len);
+    kill(testPid, SIGKILL);
+    GTEST_LOG_(INFO) << "DfxProcessDumpTest014: end.";
 }
