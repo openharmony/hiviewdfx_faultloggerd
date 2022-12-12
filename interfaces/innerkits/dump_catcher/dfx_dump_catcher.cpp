@@ -318,7 +318,7 @@ bool DfxDumpCatcher::DoDumpCatchRemote(const int type, int pid, int tid, std::st
             int err = SignalTargetProcess(type, pid, tid);
             if (err != 0) {
                 msg.append("Result: pid(" + std::to_string(pid) + ") syscall SIGDUMP error, \
-                    errno(" + std::to_string(err) + ").\n"); 
+                    errno(" + std::to_string(err) + ").\n");
                 DfxLogWarn("%s :: %s :: %s", DFXDUMPCATCHER_TAG.c_str(), __func__, msg.c_str());
                 RequestDelPipeFd(pid);
                 return ret;
@@ -336,7 +336,7 @@ bool DfxDumpCatcher::DoDumpCatchRemote(const int type, int pid, int tid, std::st
                 msg.append("Result: pid(" + std::to_string(pid) + ") dump mix timeout, try dump native frame.\n");
                 int type = static_cast<int>(DUMP_TYPE_NATIVE);
                 DoDumpCatchRemote(type, pid, tid, msg);
-            } else if (type == DUMP_TYPE_NATIVE){
+            } else if (type == DUMP_TYPE_NATIVE) {
                 LoadPidStat(pid, msg);
             }
             break;
@@ -438,7 +438,7 @@ int DfxDumpCatcher::DoDumpRemotePoll(int bufFd, int resFd, int timeout, std::str
         }
     }
 
-    DfxLogWarn("%s :: %s :: %s", DFXDUMPCATCHER_TAG.c_str(), __func__, resMsg.c_str());
+    DfxLogInfo("%s :: %s :: %s", DFXDUMPCATCHER_TAG.c_str(), __func__, resMsg.c_str());
     msg = resMsg + bufMsg;
     if (res) {
         ret = DUMP_POLL_OK;
@@ -473,7 +473,6 @@ bool DfxDumpCatcher::DoReadRes(int fd, bool &ret, std::string& msg)
     }
     DfxDumpRes::GetInstance().SetRes(dumpRes.res);
     msg.append("Result: " + DfxDumpRes::GetInstance().ToString() + "\n");
-    DfxLogInfo("%s :: %s :: %s", DFXDUMPCATCHER_TAG.c_str(), __func__, msg.c_str());
     return true;
 }
 

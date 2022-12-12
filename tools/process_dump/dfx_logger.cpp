@@ -39,19 +39,20 @@ int WriteLog(int32_t fd, const char *format, ...)
         DfxLogWarn("WriteLog: vsnprintf_s fail");
     }
     va_end(args);
-    if (fd == -1) {
-        ret = DfxLogDebug(buf);
-    }
 
     if (g_DebugLogFilleDes != INVALID_FD) {
         fprintf(stderr, "%s", buf);
     }
 
-    if (fd != -1) {
+    if (fd >= 0) {
         ret = dprintf(fd, "%s", buf);
         if (ret < 0) {
             DfxLogError("WriteLog :: write msg(%s) to fd(%d) failed, ret(%d).", buf, fd, ret);
         }
+    } else if (fd == INVALID_FD) {
+        ret = DfxLogWarn(buf);
+    } else {
+        ret = DfxLogDebug(buf);
     }
 
     return ret;
