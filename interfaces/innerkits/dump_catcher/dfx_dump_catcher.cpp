@@ -546,6 +546,19 @@ bool DfxDumpCatcher::RequestCatchFrame(int tid)
     return DfxUnwindLocal::GetInstance().SendAndWaitRequest(tid);
 }
 
+bool DfxDumpCatcher::CatchFrame(std::vector<std::shared_ptr<DfxFrame>>& frames)
+{
+    std::unique_lock<std::mutex> lck(dumpCatcherMutex_);
+    int skipFrameNum = 2;
+    if (!DfxUnwindLocal::GetInstance().ExecLocalDumpUnwind(skipFrameNum)) {
+        DfxLogError("DfxDumpCatchFrame :: failed to unwind for current thread");
+        return false;
+    }
+
+    DfxUnwindLocal::GetInstance().CollectUnwindFrames(frames);
+    return true;
+}
+
 bool DfxDumpCatcher::CatchFrame(int tid, std::vector<std::shared_ptr<DfxFrame>>& frames)
 {
     if (tid <= 0 || frameCatcherPid_ != procInfo_.pid) {

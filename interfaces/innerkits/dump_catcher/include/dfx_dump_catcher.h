@@ -49,6 +49,7 @@ public:
     bool InitFrameCatcher();
     bool RequestCatchFrame(int tid);
     bool CatchFrame(int tid, std::vector<std::shared_ptr<DfxFrame>>& frames);
+    bool CatchFrame(std::vector<std::shared_ptr<DfxFrame>>& frames);
     void DestroyFrameCatcher();
 
 private:

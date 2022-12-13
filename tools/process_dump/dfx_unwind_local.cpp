@@ -350,7 +350,7 @@ void DfxUnwindLocal::LocalDumper(int sig, siginfo_t *si, void *context)
 #else
     // the ucontext.uc_mcontext.__reserved of libunwind is simplified with the system's own in aarch64
     if (memcpy_s(&context_, sizeof(unw_context_t), context, sizeof(unw_context_t)) != 0) {
-        DfxLogWarn("%s :: memcpy_s context error.", __func__);
+        DfxLogToSocket("Failed to copy local unwind context.");
     }
 #endif
 
@@ -372,7 +372,7 @@ void DfxUnwindLocal::InstallLocalDumper(int sig)
     action.sa_flags = SA_RESTART | SA_SIGINFO;
 
     if (sigaction(sig, &action, &oldSigaction_) != EOK) {
-        DfxLogToSocket("InstallLocalDumper :: Failed to register signal.");
+        DfxLogWarn("InstallLocalDumper :: Failed to register signal.");
     }
 }
 
@@ -384,7 +384,7 @@ void DfxUnwindLocal::UninstallLocalDumper(int sig)
     }
 
     if (sigaction(sig, &oldSigaction_, NULL) != EOK) {
-        DfxLogToSocket("UninstallLocalDumper :: Failed to reset signal.");
+        DfxLogWarn("UninstallLocalDumper :: Failed to reset signal.");
         signal(sig, SIG_DFL);
     }
 }
