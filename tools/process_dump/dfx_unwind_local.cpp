@@ -306,8 +306,7 @@ bool DfxUnwindLocal::ExecLocalDumpUnwinding(unw_context_t *ctx, size_t skipFramN
             break;
         }
 
-        bool ret = (curIndex_ < MIN_VALID_FRAME_COUNT) || isValidFrame;
-        if (ret) {
+        if (curIndex_ < MIN_VALID_FRAME_COUNT || isValidFrame) {
             auto& curFrame = frames_[curIndex_];
             curFrame.SetFrameIndex((size_t)curIndex_);
             curFrame.SetFramePc((uint64_t)pc);
@@ -315,6 +314,7 @@ bool DfxUnwindLocal::ExecLocalDumpUnwinding(unw_context_t *ctx, size_t skipFramN
             curFrame.SetFrameRelativePc((uint64_t)relPc);
             curFrame.SetFrameMapName(std::string(mapName));
         } else {
+            curIndex_--;
             DfxLogError("%s :: unw_get_map failed.", __func__);
             break;
         }
