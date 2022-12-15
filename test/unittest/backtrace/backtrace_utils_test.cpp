@@ -16,6 +16,7 @@
 #include <gtest/gtest.h>
 
 #include <cstdio>
+#include <fcntl.h>
 #include <thread>
 #include <unistd.h>
 
