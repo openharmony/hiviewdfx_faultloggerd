@@ -49,4 +49,7 @@ group("faultloggerd_unittest") {
     "unittest/services:unittest",
     "unittest/signal_handler:unittest",
   ]
+  if (!defined(ohos_lite)) {
+    deps += [ "unittest/backtrace:unittest" ]
+  }
 }
