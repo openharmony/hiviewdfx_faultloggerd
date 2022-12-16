@@ -17,6 +17,7 @@
 
 #include "dfx_unwind_remote.h"
 
+#include <algorithm>
 #include <cstdio>
 #include <cstring>
 #include <elf.h>
