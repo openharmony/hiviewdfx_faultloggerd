@@ -25,6 +25,8 @@
 
 namespace OHOS {
 namespace HiviewDFX {
+static const int32_t INVALID_FD = -1;
+static const int32_t UNUSED_FD = -2;
 std::condition_variable DfxRingBufferWrapper::printCV_;
 std::mutex DfxRingBufferWrapper::printMutex_;
 
@@ -69,7 +71,6 @@ void DfxRingBufferWrapper::LoopPrintRingBuffer()
 
 void DfxRingBufferWrapper::AppendMsg(const std::string& msg)
 {
-    DfxLogDebug("%s :: msg: %s", __func__, msg.c_str());
     if (writeFunc_ == nullptr) {
         writeFunc_ = DfxRingBufferWrapper::DefaultWrite;
     }
@@ -100,8 +101,10 @@ void DfxRingBufferWrapper::StartThread()
 
 void DfxRingBufferWrapper::StopThread()
 {
-    close(fd_);
-    fd_ = -1;
+    if (fd_ != INVALID_FD) {
+        close(fd_);
+    }
+    fd_ = INVALID_FD;
 }
 
 void DfxRingBufferWrapper::SetWriteBufFd(int32_t fd)
@@ -122,7 +125,7 @@ int DfxRingBufferWrapper::DefaultWrite(int32_t fd, const char *buf, const int le
     if (buf == nullptr) {
         return -1;
     }
-    WriteLog(-1, "%s", buf);
+    WriteLog(UNUSED_FD, "%s", buf);
     if (fd > 0) {
         return write(fd, buf, len);
     }

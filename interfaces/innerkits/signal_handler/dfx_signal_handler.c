@@ -343,7 +343,11 @@ static void BlockMainThreadIfNeed(int sig)
 
 static pid_t ForkBySyscall(void)
 {
+#ifdef SYS_fork
+    return syscall(SYS_fork);
+#else
     return syscall(SYS_clone, SIGCHLD, 0);
+#endif
 }
 
 static bool SetDumpState(void)

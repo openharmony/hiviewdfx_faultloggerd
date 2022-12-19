@@ -107,6 +107,10 @@ int ProcessDumper::InitPrintThread(bool fromSignalHandler, std::shared_ptr<Proce
         }
 
         if (isCrash) {
+            if (DfxConfig::GetInstance().GetLogPersist()) {
+                InitDebugLog((int)type, targetPid_, request->GetTid(), request->GetUid());
+            }
+
             faultloggerdRequest.type = (int32_t)type;
             faultloggerdRequest.pid = request->GetPid();
             faultloggerdRequest.tid = request->GetTid();
@@ -196,17 +200,12 @@ int ProcessDumper::DumpProcessWithSignalContext(std::shared_ptr<ProcessDumpReque
         }
 
         targetPid_ = request->GetPid();
-        FaultLoggerType type = isCrash ? FaultLoggerType::CPP_CRASH : FaultLoggerType::CPP_STACKTRACE;
         bool isPidNsEnabled = (targetPid_ == 1);
         if (isPidNsEnabled) {
             isPidNsEnabled = InitProcessNsInfo(request, isCrash);
         }
 
         CreateVmProcessIfNeed(request, isPidNsEnabled);
-        if (DfxConfig::GetInstance().GetLogPersist()) {
-            InitDebugLog((int)type, targetPid_, request->GetTid(), request->GetUid());
-        }
-
         DfxLogInfo("Processdump SigVal:%d, TargetPid:%d, TargetTid:%d.",
             request->GetSiginfo().si_value.sival_int, targetPid_, request->GetTid());
         if (InitProcessInfo(request, isCrash, isPidNsEnabled) < 0) {
@@ -221,7 +220,6 @@ int ProcessDumper::DumpProcessWithSignalContext(std::shared_ptr<ProcessDumpReque
         }
 
         PrintDumpProcessWithSignalContextHeader(request);
-
         if (DfxUnwindRemote::GetInstance().UnwindProcess(targetProcess_) == false) {
             DfxLogError("Failed to unwind process.");
             dumpRes = ProcessDumpRes::DUMP_ESTOPUNWIND;
