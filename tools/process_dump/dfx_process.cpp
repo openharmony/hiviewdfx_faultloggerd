@@ -50,11 +50,6 @@ void DfxProcess::FillProcessName()
     ReadStringFromFile(path, processName_, NAME_LEN);
 }
 
-void DfxProcess::UpdateProcessName(std::string processName)
-{
-    processName_ = processName;
-}
-
 std::shared_ptr<DfxProcess> DfxProcess::CreateProcessWithKeyThread(pid_t pid, std::shared_ptr<DfxThread> keyThread)
 {
     auto dfxProcess = std::make_shared<DfxProcess>();

@@ -17,7 +17,6 @@
 
 #include "dfx_unwind_remote.h"
 
-#include <algorithm>
 #include <cstdio>
 #include <cstring>
 #include <elf.h>
@@ -188,9 +187,6 @@ bool DfxUnwindRemote::DfxUnwindRemoteDoUnwindStep(size_t const & index,
     if (index != 0) {
         relPc = DfxUnwindRemoteDoAdjustPc(cursor, relPc);
         framePc = DfxUnwindRemoteDoAdjustPc(cursor, framePc);
-#if defined(__arm__)
-        unw_set_adjust_pc(&cursor, framePc);
-#endif
     }
 
     if (relPc == 0) {

@@ -77,11 +77,6 @@ bool DfxThread::IsThreadInitialized()
     return threadStatus_ == ThreadStatus::THREAD_STATUS_ATTACHED;
 }
 
-bool DfxThread::IsThreadInititalized()
-{
-    return threadStatus_ == ThreadStatus::THREAD_STATUS_ATTACHED;
-}
-
 DfxThread::~DfxThread()
 {
     threadStatus_ = ThreadStatus::THREAD_STATUS_INVALID;

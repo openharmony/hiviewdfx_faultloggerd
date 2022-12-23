@@ -46,7 +46,7 @@ if (!defined(ohos_lite)) {
     ]
 
     external_deps = [
-      "c_utils:utils",
+      "utils_base:utils",
       "hilog_native:libhilog_base",
     ]
 
@@ -71,7 +71,7 @@ if (!defined(ohos_lite)) {
     ]
 
     external_deps = [
-      "c_utils:utils",
+      "utils_base:utils",
       "hilog_native:libhilog",
     ]
 
@@ -92,7 +92,7 @@ if (!defined(ohos_lite)) {
       "//third_party/googletest:gtest_main",
     ]
 
-    external_deps = [ "c_utils:utils" ]
+    external_deps = [ "utils_base:utils" ]
     resource_config_file =
         "//base/hiviewdfx/faultloggerd/test/funchook/ohos_test.xml"
 

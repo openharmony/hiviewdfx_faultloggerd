@@ -19,8 +19,9 @@
 #define DFX_MAPS_H
 
 #include <string>
-#include "dfx_elf.h"
+#include <sys/types.h>
 #include "iosfwd"
+#include "dfx_elf.h"
 
 namespace OHOS {
 namespace HiviewDFX {

@@ -24,7 +24,7 @@ if (defined(ohos_lite)) {
 
       include_dirs = [
         "include",
-        "//commonlibrary/c_utils/base/include",
+        "//utils/native/base/include",
         "$faultloggerd_path/services",
         "$hilog_lite_include_path",
         "$faultloggerd_path/tools/process_dump",
@@ -65,7 +65,7 @@ if (defined(ohos_lite)) {
 
     include_dirs = [
       "include",
-      "//commonlibrary/c_utils/base/include",
+      "//utils/native/base/include",
       "$faultloggerd_path/services",
       "$faultloggerd_path/common/dfxlog",
     ]
@@ -93,7 +93,7 @@ if (defined(ohos_lite)) {
     ]
 
     external_deps = [
-      "c_utils:utils",
+      "utils_base:utils",
       "hilog_native:libhilog",
     ]
   }

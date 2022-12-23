@@ -38,6 +38,8 @@ public:
     uint64_t GetFrameSp() const;
     void SetFrameRelativePc(uint64_t relativePc);
     uint64_t GetFrameRelativePc() const;
+    void SetFrameFuncName(const std::string &funcName);
+    std::string GetFrameFuncName() const;
     void SetFrameMap(const std::shared_ptr<DfxElfMap> map);
     std::shared_ptr<DfxElfMap> GetFrameMap() const;
     void SetFrameMapName(const std::string &mapName);

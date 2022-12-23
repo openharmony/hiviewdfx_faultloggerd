@@ -21,7 +21,7 @@ if (defined(ohos_lite)) {
       "$faultloggerd_path/common",
       "$faultloggerd_path/common/dfxlog",
       "$faultloggerd_path/utils",
-      "//commonlibrary/c_utils/base/include",
+      "//utils/native/base/include",
       "$faultloggerd_path/tools/process_dump/",
       "$faultloggerd_path/interfaces/innerkits/dump_catcher/include",
       "$hilog_lite_include_path",
@@ -46,7 +46,7 @@ if (defined(ohos_lite)) {
       "//base/hiviewdfx/faultloggerd/common",
       "$faultloggerd_path/tools/process_dump/",
       "//base/hiviewdfx/faultloggerd/common/dfxlog",
-      "//commonlibrary/c_utils/base/include",
+      "//utils/native/base/include",
       "$faultloggerd_path/interfaces/innerkits/dump_catcher/include",
     ]
   }
@@ -69,7 +69,7 @@ if (defined(ohos_lite)) {
     ]
 
     external_deps = [
-      "c_utils:utils",
+      "utils_base:utils",
       "hilog_native:libhilog",
     ]
 

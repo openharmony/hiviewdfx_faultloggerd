@@ -157,10 +157,6 @@ void DfxConfig::ParserConfig(const std::string& key, const std::string& value)
             SetDumpOtherThreads(true);
             break;
         }
-        if ((key.compare("dumpOtherThreads") == 0) && (value.compare("true") == 0)) {
-            DfxConfig::GetInstance().SetDumpOtherThreads(true);
-            continue;
-        }
     } while (0);
 }
 

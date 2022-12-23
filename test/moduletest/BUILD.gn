@@ -17,7 +17,7 @@ config("module_private_config") {
   visibility = [ ":*" ]
   include_dirs = [
     "include",
-    "//commonlibrary/c_utils/base/include",
+    "//utils/native/base/include",
     "$faultloggerd_path/interfaces/innerkits/faultloggerd_client/include",
   ]
 }
@@ -56,7 +56,7 @@ if (defined(ohos_lite)) {
       "$faultloggerd_path/interfaces/innerkits/faultloggerd_client:libfaultloggerd",
       "//third_party/googletest:gtest_main",
     ]
-    external_deps = [ "c_utils:utils" ]
+    external_deps = [ "utils_base:utils" ]
   }
 
   group("moduletest") {

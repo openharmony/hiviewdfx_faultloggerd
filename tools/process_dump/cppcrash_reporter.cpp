@@ -90,7 +90,7 @@ void CppCrashReporter::ReportToHiview()
     }
 
     FaultLogInfoInner info;
-    info.time = time_;
+    info.time = time_ / 1000;
     info.id = uid_;
     info.pid = pid_;
     info.faultLogType = 2; // 2 : CPP_CRASH_TYPE
