@@ -82,12 +82,10 @@
 #define NUMBER_SIXTYFOUR 64
 #define INHERITABLE_OFFSET 32
 
-#ifndef __MUSL__
 void __attribute__((constructor)) InitHandler(void)
 {
     DFX_InstallSignalHandler();
 }
-#endif
 
 static struct ProcessDumpRequest g_request;
 static struct ProcInfo g_procInfo;
