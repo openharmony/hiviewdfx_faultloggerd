@@ -402,6 +402,7 @@ HWTEST_F(DfxProcessDumpTest, DfxProcessDumpTest007, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "DfxProcessDumpTest007: start.";
     pid_t testProcess = CreateMultiThreadProcess(10); // 10 : create a process with ten threads
+    sleep(1);
     kill(testProcess, SIGABRT);
     sleep(3); // 3 : wait 3s to generate cpp crash file
     bool ret = CheckCppCrashKeyWords(GetCppCrashFileName(testProcess), testProcess, SIGABRT);
@@ -418,6 +419,7 @@ HWTEST_F(DfxProcessDumpTest, DfxProcessDumpTest008, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "DfxProcessDumpTest008: start.";
     pid_t testProcess = CreateMultiThreadProcess(10); // 10 : create a process with ten threads
+    sleep(1);
     kill(testProcess, SIGBUS);
     sleep(3); // 3 : wait 3s to generate cpp crash file
     bool ret = CheckCppCrashKeyWords(GetCppCrashFileName(testProcess), testProcess, SIGBUS);
@@ -434,6 +436,7 @@ HWTEST_F(DfxProcessDumpTest, DfxProcessDumpTest009, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "DfxProcessDumpTest009: start.";
     pid_t testProcess = CreateMultiThreadProcess(10); // 10 : create a process with ten threads
+    sleep(1);
     kill(testProcess, SIGFPE);
     sleep(3); // 3 : wait 3s to generate cpp crash file
     bool ret = CheckCppCrashKeyWords(GetCppCrashFileName(testProcess), testProcess, SIGFPE);
@@ -450,6 +453,7 @@ HWTEST_F(DfxProcessDumpTest, DfxProcessDumpTest010, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "DfxProcessDumpTest010: start.";
     pid_t testProcess = CreateMultiThreadProcess(10); // 10 : create a process with ten threads
+    sleep(1);
     kill(testProcess, SIGSEGV);
     sleep(3); // 3 : wait 3s to generate cpp crash file
     bool ret = CheckCppCrashKeyWords(GetCppCrashFileName(testProcess), testProcess, SIGSEGV);
@@ -466,6 +470,7 @@ HWTEST_F(DfxProcessDumpTest, DfxProcessDumpTest011, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "DfxProcessDumpTest011: start.";
     pid_t testProcess = CreateMultiThreadProcess(10); // 10 : create a process with ten threads
+    sleep(1);
     kill(testProcess, SIGSTKFLT);
     sleep(3); // 3 : wait 3s to generate cpp crash file
     bool ret = CheckCppCrashKeyWords(GetCppCrashFileName(testProcess), testProcess, SIGSTKFLT);
@@ -482,6 +487,7 @@ HWTEST_F(DfxProcessDumpTest, DfxProcessDumpTest012, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "DfxProcessDumpTest012: start.";
     pid_t testProcess = CreateMultiThreadProcess(10); // 10 : create a process with ten threads
+    sleep(1);
     kill(testProcess, SIGSYS);
     sleep(3); // 3 : wait 3s to generate cpp crash file
     bool ret = CheckCppCrashKeyWords(GetCppCrashFileName(testProcess), testProcess, SIGSYS);
