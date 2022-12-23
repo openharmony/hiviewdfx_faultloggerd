@@ -15,24 +15,21 @@
 
 #include "dfx_crasher.h"
 
-#include <inttypes.h>
-#include <sys/mman.h>
 #include <pthread.h>
 #include <signal.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include <sys/prctl.h>
 #include <sys/resource.h>
 #include <unistd.h>
-#include <sys/prctl.h>
-
-#include <hilog/log_c.h>
-
-#include "dfx_signal_handler.h"
+#include "hilog/log.h"
+#include "inttypes.h"
+#include "stdio.h"
+#include "stdlib.h"
+#include "string.h"
+#include "strings.h"
 
 #ifdef LOG_DOMAIN
 #undef LOG_DOMAIN
-#define LOG_DOMAIN 0x2D11
+#define LOG_DOMAIN 0xD002D11
 #endif
 
 #ifdef LOG_TAG
@@ -52,6 +49,7 @@ NOINLINE int TriggerTrapException(void)
 
 NOINLINE int RaiseAbort(void)
 {
+    HILOG_FATAL(LOG_CORE, "Test Trigger ABORT!");
     int ret = raise(SIGABRT);
     if (ret != 0) {
         printf("raise failed!");
@@ -60,6 +58,7 @@ NOINLINE int RaiseAbort(void)
 }
 NOINLINE int Abort(void)
 {
+    HILOG_FATAL(LOG_CORE, "Test Trigger ABORT!");
     abort();
     return 0;
 }
@@ -158,7 +157,8 @@ NOINLINE int MaxMethodNameTest12345678901234567890123456789012345678901234567890
 
 NOINLINE int StackOverflow(void)
 {
-    printf("test stackoverflow enter\n");
+    printf("call StackOverflow\n");
+    
     // for stack overflow test
     char a[1024][1024][1024] = { { {'1'} } };
     char b[1024][1024][1024] = { { {'1'} } };
@@ -168,8 +168,6 @@ NOINLINE int StackOverflow(void)
     printf("b[0][0] is %s\n", b[0][0]);
     printf("c[0][0] is %s\n", c[0][0]);
     printf("d[0][0] is %s\n", d[0][0]);
-
-    printf("test stackoverflow exit\n");
 
     return 0;
 }
@@ -193,7 +191,7 @@ NOINLINE int Oom(void)
         printf("setrlimit failed\n");
         raise(SIGINT);
     }
-    char* bufferArray[ARG128] = { 0x00 };
+    char* bufferArray[ARG128];
     for (int i = 0; i < ARG128; i++) {
         char* buf = (char*)malloc(ARG1024 * ARG1024);
         if (!buf) {
@@ -216,11 +214,17 @@ NOINLINE int Oom(void)
 NOINLINE int ProgramCounterZero(void)
 {
     printf("test PCZero");
-
+#if defined(__arm__)
     __asm__ volatile (
         "mov r0, #0x00\n mov lr, pc\n bx r0\n"
     );
-
+#elif defined(__aarch64__)
+    __asm__ volatile (
+        "movz x0, #0x0\n"
+        "adr x30, .\n"
+        "br x0\n"
+    );
+#endif
     return 0;
 }
 
@@ -266,9 +270,17 @@ NOINLINE int StackTop(void)
 {
     printf("test StackTop");
 
+#if defined(__arm__)
     int stackTop;
     __asm__ volatile ("mov %0, sp":"=r"(stackTop)::);
     printf("crasher_c: stack top is = %08x", stackTop);
+#elif defined(__aarch64__)
+    uint64_t stackTop;
+    __asm__ volatile ("mov %0, sp":"=r"(stackTop)::);
+    printf("crasher_c: stack top is = %16llx", (unsigned long long)stackTop);
+#else
+    return 0;
+#endif
 
     FILE *fp = NULL;
     fp = fopen("sp", "w");
@@ -276,7 +288,12 @@ NOINLINE int StackTop(void)
         printf("open file error!");
         return 0;
     }
+
+#if defined(__arm__)
     int ret = fprintf(fp, "%08x", stackTop);
+#elif defined(__aarch64__)
+    int ret = fprintf(fp, "%16llx", (unsigned long long)stackTop);
+#endif
     if (ret == EOF) {
         printf("error!");
     }
@@ -397,7 +414,6 @@ uint64_t ParseAndDoCrash(const char *arg)
         int i = 0;
         while (1) {
             usleep(10000); // 10000:sleep 0.01 second
-            HILOG_INFO(LOG_CORE, "LogTest %{public}d ", i);
             i++;
         }
     }
@@ -463,7 +479,6 @@ NOINLINE int CrashTest(void)
 
 int main(int argc, char *argv[])
 {
-    DFX_InstallSignalHandler();
     PrintUsage();
     if (argc <= 1) {
         printf("wrong usage!");
@@ -471,7 +486,7 @@ int main(int argc, char *argv[])
         return 0;
     }
 
-    printf("ParseAndDoCrash done: %" PRIu64 "!", ParseAndDoCrash(argv[1]));
+    printf("ParseAndDoCrash done: %" PRIu64 "!\n", ParseAndDoCrash(argv[1]));
     return 0;
 }
 

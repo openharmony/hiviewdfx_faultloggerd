@@ -14,15 +14,13 @@
  */
 #ifndef DFX_ELF_IMAGE_H
 #define DFX_ELF_IMAGE_H
+#include <cstddef>
 #include <elf.h>
-#include <cinttypes>
 #include <link.h>
+#include <memory>
 #include <string>
 #include <vector>
-
-#include <sys/types.h>
-
-#include "dfx_define.h"
+#include "iosfwd"
 
 namespace OHOS {
 namespace HiviewDFX {

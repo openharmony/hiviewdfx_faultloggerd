@@ -13,12 +13,16 @@
  * limitations under the License.
  */
 
-/* This files contains config module. */
+#include "dfx_config.h"
 
+#include <cstdio>
+#include <cstdlib>
 #include <securec.h>
+#include <string>
 #include "dfx_define.h"
 #include "dfx_log.h"
-#include "dfx_config.h"
+
+static const char FAULTLOGGER_CONF_PATH[] = "/system/etc/faultlogger.conf";
 
 namespace OHOS {
 namespace HiviewDFX {
@@ -114,40 +118,44 @@ bool DfxConfig::GetDumpOtherThreads() const
     return dumpOtherThreads_;
 }
 
-void DfxConfig::ParserConfig(std::string key, std::string value)
+void DfxConfig::ParserConfig(const std::string& key, const std::string& value)
 {
-    unsigned int  lowAddressStep = 0;
-    unsigned int  highAddressStep = 0;
-        do {
+    unsigned int lowAddressStep = 0;
+    unsigned int highAddressStep = 0;
+    do {
         if ((key.compare("faultlogLogPersist") == 0) && (value.compare("true") == 0)) {
-            DfxConfig::GetInstance().SetLogPersist(true);
-            continue;
+            SetLogPersist(true);
+            break;
         }
         if ((key.compare("displayRigister") == 0) && (value.compare("false") == 0)) {
-            DfxConfig::GetInstance().SetDisplayRegister(false);
-            continue;
+            SetDisplayRegister(false);
+            break;
         }
         if ((key.compare("displayBacktrace") == 0) && (value.compare("false") == 0)) {
-            DfxConfig::GetInstance().SetDisplayBacktrace(false);
-            continue;
+            SetDisplayBacktrace(false);
+            break;
         }
         if ((key.compare("displayMaps") == 0) && (value.compare("false") == 0)) {
-            DfxConfig::GetInstance().SetDisplayMaps(false);
-            continue;
+            SetDisplayMaps(false);
+            break;
         }
         if ((key.compare("displayFaultStack.switch") == 0) && (value.compare("false") == 0)) {
-            DfxConfig::GetInstance().SetDisplayFaultStack(false);
-            continue;
+            SetDisplayFaultStack(false);
+            break;
         }
         if (key.compare("displayFaultStack.lowAddressStep") == 0) {
-            lowAddressStep = (unsigned int)atoi(value.data());
-            DfxConfig::GetInstance().SetFaultStackLowAddressStep(lowAddressStep);
-            continue;
+            lowAddressStep = static_cast<unsigned int>(atoi(value.data()));
+            SetFaultStackLowAddressStep(lowAddressStep);
+            break;
         }
         if (key.compare("displayFaultStack.highAddressStep") == 0) {
-            highAddressStep = (unsigned int)atoi(value.data());
-            DfxConfig::GetInstance().SetFaultStackHighAddressStep(highAddressStep);
-            continue;
+            highAddressStep = static_cast<unsigned int>(atoi(value.data()));
+            SetFaultStackHighAddressStep(highAddressStep);
+            break;
+        }
+        if ((key.compare("dumpOtherThreads") == 0) && (value.compare("true") == 0)) {
+            SetDumpOtherThreads(true);
+            break;
         }
         if ((key.compare("dumpOtherThreads") == 0) && (value.compare("true") == 0)) {
             DfxConfig::GetInstance().SetDumpOtherThreads(true);
@@ -158,23 +166,22 @@ void DfxConfig::ParserConfig(std::string key, std::string value)
 
 void DfxConfig::ReadConfig()
 {
-    DfxLogDebug("Enter %s.", __func__);
     do {
         FILE *fp = nullptr;
         char codeBuffer[CONF_LINE_SIZE] = {0};
-        fp = fopen("/system/etc/faultlogger.conf", "r");
+        fp = fopen(FAULTLOGGER_CONF_PATH, "r");
         if (fp == nullptr) {
             break;
         }
         while (!feof(fp)) {
             errno_t err = memset_s(codeBuffer, sizeof(codeBuffer), '\0', sizeof(codeBuffer));
             if (err != EOK) {
-                DfxLogError("%s :: msmset_s codeBuffer failed..", __func__);
+                DfxLogError("%s :: memset_s codeBuffer failed..", __func__);
             }
             if (fgets(codeBuffer, CONF_LINE_SIZE -1, fp) == nullptr) {
                 continue;
             }
-            std::string line(codeBuffer, sizeof(codeBuffer) -1);
+            std::string line(codeBuffer);
             std::string key, value;
             std::string::size_type newLinePos = line.find_first_of("\n");
             if (newLinePos != line.npos) {
@@ -184,24 +191,28 @@ void DfxConfig::ReadConfig()
             if (equalSignPos != line.npos) {
                 key = line.substr(0, equalSignPos);
                 value = line.substr(equalSignPos + 1);
-                DfxConfig::Trim(key);
-                DfxConfig::Trim(value);
-                DfxConfig::ParserConfig(key, value);
+                Trim(key);
+                Trim(value);
+                ParserConfig(key, value);
             }
         }
         (void)fclose(fp);
     } while (0);
-    DfxLogDebug("Exit %s.", __func__);
 }
 
-void DfxConfig::Trim(std::string &s)
+void DfxConfig::Trim(std::string& s)
 {
     if (s.empty()) {
-        return ;
+        return;
     }
-    s.erase(0, s.find_first_not_of(" "));
-    s.erase(s.find_last_not_of(" ") + 1);
-    return ;
+    size_t n = s.find_first_not_of(" \r\n\t");
+    if (n != std::string::npos) {
+        s.erase(0, n);
+    }
+    n = s.find_last_not_of(" \r\n\t");
+    if (n != std::string::npos) {
+        s.erase(n + 1, s.size() - n);
+    }
 }
 } // namespace HiviewDFX
 } // namespace OHOS

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -50,47 +50,43 @@ public:
     static std::string GetPidMax();
     static std::string GetTidMax();
 
-    // 合并
     static std::string ForkAndRunCommands(const std::vector<std::string>& cmds, int commandStatus);
-
-    // jason update
-    static std::string ForkAndCommands(const std::vector<std::string>& cmds, int cresherType, int udid);
+    static std::string ForkAndCommands(int crasherType, int udid);
 
     static std::string ProcessDumpCommands(const std::string cmds);
-    // 合并
     static std::string GetfileNamePrefix(const std::string errorCMD, int commandStatus);
     static std::string GetstackfileNamePrefix(const std::string errorCMD, int commandStatus);
 
     static int CountLines(std::string filename);
     static bool IsDigit(std::string pid);
 
-    static int CheckCountNum(std::string filePath, std::string pid, std::string errorCMD);
-    static int CheckCountNumPCZero(std::string filePath, std::string pid, std::string errorCMD);
-    static int CheckStacktraceCountNum(std::string filePath, std::string pid, std::string errorCMD);
-    static int CheckCountNumMultiThread(std::string filePath, std::string pid, std::string errorCMD);
-    static int CheckCountNumOverStack(std::string filePath, std::string pid, std::string ErrorCMD);
-    static int CheckCountNumStackTop(std::string filePath, std::string pid, std::string ErrorCMD);
+    static int CheckKeywords(std::string& filePath, std::string *keywords, int length, int minRegIdx);
+    static int CheckCountNum(std::string& filePath, std::string& pid, std::string& errorCMD);
+    static int CheckCountNumAbort(std::string& filePath, std::string& pid);
+    static int CheckCountNumPCZero(std::string& filePath, std::string& pid);
+    static int CheckStacktraceCountNum(std::string& filePath, std::string& pid);
+    static int CheckCountNumMultiThread(std::string& filePath, std::string& pid);
+    static int CheckCountNumOverStack(std::string& filePath, std::string& pid);
+    static int CheckCountNumStackTop(std::string& filePath, std::string& pid, std::string& ErrorCMD);
     static std::string GetStackTop();
-    static std::string GetfileNameForFounation(std::string pidfound);
-    static int CheckCountNumKill11(std::string filePath, std::string pid);
-    static void Trim(std::string & str);
-    static std::string GetFounationPid();
+    static int CheckCountNumKill11(std::string& filePath, std::string& pid);
+    static void Trim(std::string& str);
 
-    // 合并
     static void StartCrasherLoop(int type);     // 1. system; 2. root; 3.app; 4. root+cpp
     static void KillCrasherLoopForSomeCase(int type);
     static void StartCrasherLoopForUnsingPidAndTid(int crasherType);    // 1.c 2.c++
     static int crashThread(int threadID);
     static int getApplyPid(std::string applyName);
+    static std::string GetCmdResultFromPopen(const std::string& cmd);
+    static int GetServicePid(const std::string& serviceName);
+    static int LaunchTestHap(const std::string& abilityName, const std::string& bundleName);
     static void dumpCatchThread(int threadID);
-    static void GetTestFaultLoggerdTid(int testPid);
 
     static std::string rootTid[ARRAY_SIZE_HUNDRED];
     static std::string appTid[ARRAY_SIZE_HUNDRED];
     static std::string sysTid[ARRAY_SIZE_HUNDRED];
     static std::string testTid[ARRAY_SIZE_HUNDRED];
 
-    // 更新为数组
     static int loopSysPid;
     static int loopRootPid;
     static int loopCppPid;

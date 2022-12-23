@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -15,8 +15,8 @@
 
 #include "dfx_signal.h"
 
-#include <csignal>
-
+#include <securec.h>
+#include <string>
 #include "dfx_define.h"
 #include "dfx_log.h"
 
@@ -27,20 +27,17 @@ DfxSignal::DfxSignal(const int32_t signal)
     signal_ = signal;
 }
 
-bool DfxSignal::IsAvaliable() const
+bool DfxSignal::IsAvailable() const
 {
-    DfxLogDebug("Enter %s.", __func__);
     struct sigaction previousAction;
     if (sigaction(signal_, nullptr, &previousAction) < 0) {
         return 0;
     }
-    DfxLogDebug("Exit %s.", __func__);
     return static_cast<unsigned int>(previousAction.sa_flags) & SA_SIGINFO;
 }
 
-bool DfxSignal::IsAddrAvaliable() const
+bool DfxSignal::IsAddrAvailable() const
 {
-    DfxLogDebug("Enter %s.", __func__);
     switch (signal_) {
         case SIGABRT:
         case SIGBUS:
@@ -51,12 +48,10 @@ bool DfxSignal::IsAddrAvaliable() const
         default:
             return false;
     }
-    DfxLogDebug("Exit %s.", __func__);
 }
 
-bool DfxSignal::IsPidAvaliable() const
+bool DfxSignal::IsPidAvailable() const
 {
-    DfxLogDebug("Enter %s.", __func__);
     switch (signal_) {
         case SI_USER:
         case SI_QUEUE:
@@ -74,36 +69,53 @@ int32_t DfxSignal::GetSignal() const
     return signal_;
 }
 
-void PrintSignal(const siginfo_t &info, const int32_t fd)
+std::string PrintSignal(const siginfo_t &info)
 {
-    DfxLogDebug("Enter %s.", __func__);
-    WriteLog(fd, "Signal:%s(%s)", FormatSignalName(info.si_signo).c_str(),
+    std::string sigString = "";
+    char buf[LOG_BUF_LEN] = {0};
+
+    int ret = snprintf_s(buf, sizeof(buf), sizeof(buf) - 1, "Signal:%s(%s)", FormatSignalName(info.si_signo).c_str(), \
         FormatCodeName(info.si_signo, info.si_code).c_str());
+    if (ret <= 0) {
+        DfxLogError("%s :: snprintf_s failed, line: %d.", __func__, __LINE__);
+    }
+    sigString = sigString + std::string(buf);
+    ret = memset_s(buf, LOG_BUF_LEN, '\0', LOG_BUF_LEN);
+    if (ret != EOK) {
+        DfxLogError("%s :: memset_s failed, line: %d.", __func__, __LINE__);
+    }
 
     DfxSignal signal(info.si_signo);
-    if (signal.IsAddrAvaliable()) {
-#if defined(__aarch64__)
-        WriteLog(fd, "@0x%016lx ", (uint64_t)info.si_addr);
-#elif defined(__arm__)
-        WriteLog(fd, "@0x%08x ", (uint32_t)info.si_addr);
-#elif defined(__x86_64__)
-        WriteLog(fd, "@0x%016lx ", static_cast<uint64_t>(info.si_addr));
+    if (signal.IsAddrAvailable()) {
+#if defined(__LP64__)
+        ret = snprintf_s(buf, sizeof(buf), sizeof(buf) - 1, "@%018p ", (uint64_t)info.si_addr);
 #else
-#pragma message("Unsupport arch.")
+        ret = snprintf_s(buf, sizeof(buf), sizeof(buf) - 1, "@%010p ", (uint32_t)info.si_addr);
 #endif
+        if (ret <= 0) {
+            DfxLogError("%s :: snprintf_s failed, line: %d.", __func__, __LINE__);
+        }
+        sigString = sigString + std::string(buf);
+        ret = memset_s(buf, LOG_BUF_LEN, '\0', LOG_BUF_LEN);
+        if (ret != EOK) {
+            DfxLogError("%s :: memset_s failed, line: %d.", __func__, __LINE__);
+        }
     }
 
     if ((info.si_code <= 0) && (info.si_pid != 0)) {
-        WriteLog(fd, "from:%d:%d", info.si_pid, info.si_uid);
+        ret = snprintf_s(buf, sizeof(buf), sizeof(buf) - 1, "from:%d:%d", info.si_pid, info.si_uid);
+        if (ret <= 0) {
+            DfxLogError("%s :: snprintf_s failed, line: %d.", __func__, __LINE__);
+        }
+        sigString = sigString + std::string(buf);
     }
 
-    WriteLog(fd, "\n");
-    DfxLogDebug("Exit %s.", __func__);
+    sigString = sigString + "\n";
+    return sigString;
 }
 
 std::string FormatSignalName(const int32_t signal)
 {
-    DfxLogDebug("Enter %s.", __func__);
     switch (signal) {
         case SIGABRT:
             return "SIGABRT";
@@ -132,7 +144,6 @@ std::string FormatSignalName(const int32_t signal)
 
 std::string FormatCodeName(const int32_t signal, const int32_t signalCode)
 {
-    DfxLogDebug("Enter %s.", __func__);
     switch (signal) {
         case SIGILL:
             return FormatSIGILLCodeName(signalCode);
@@ -152,7 +163,6 @@ std::string FormatCodeName(const int32_t signal, const int32_t signalCode)
 
 std::string FormatSIGBUSCodeName(const int32_t signalCode)
 {
-    DfxLogDebug("Enter %s.", __func__);
     switch (signalCode) {
         case BUS_ADRALN:
             return "BUS_ADRALN";
@@ -171,7 +181,6 @@ std::string FormatSIGBUSCodeName(const int32_t signalCode)
 
 std::string FormatSIGILLCodeName(const int32_t signalCode)
 {
-    DfxLogDebug("Enter %s.", __func__);
     switch (signalCode) {
         case ILL_ILLOPC:
             return "ILL_ILLOPC";
@@ -196,7 +205,6 @@ std::string FormatSIGILLCodeName(const int32_t signalCode)
 
 std::string FormatSIGFPECodeName(const int32_t signalCode)
 {
-    DfxLogDebug("Enter %s.", __func__);
     switch (signalCode) {
         case FPE_INTDIV:
             return "FPE_INTDIV";
@@ -221,7 +229,6 @@ std::string FormatSIGFPECodeName(const int32_t signalCode)
 
 std::string FormatSIGSEGVCodeName(const int32_t signalCode)
 {
-    DfxLogDebug("Enter %s.", __func__);
     switch (signalCode) {
         case SEGV_MAPERR:
             return "SEGV_MAPERR";
@@ -234,7 +241,6 @@ std::string FormatSIGSEGVCodeName(const int32_t signalCode)
 
 std::string FormatSIGTRAPCodeName(const int32_t signalCode)
 {
-    DfxLogDebug("Enter %s.", __func__);
     switch (signalCode) {
         case TRAP_BRKPT:
             return "TRAP_BRKPT";
@@ -251,7 +257,6 @@ std::string FormatSIGTRAPCodeName(const int32_t signalCode)
 
 std::string FormatCommonSignalCodeName(const int32_t signalCode)
 {
-    DfxLogDebug("Enter %s.", __func__);
     switch (signalCode) {
         case SI_USER:
             return "SI_USER";

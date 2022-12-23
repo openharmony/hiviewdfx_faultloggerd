@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -18,7 +18,7 @@
 #ifndef _FAULT_LOGGER_SECURE_H
 #define _FAULT_LOGGER_SECURE_H
 
-#include <string>
+#include <cstdint>
 
 namespace OHOS {
 namespace HiviewDFX {
@@ -27,21 +27,6 @@ public:
     FaultLoggerSecure();
     ~FaultLoggerSecure();
     static bool CheckCallerUID(const int callingUid, const int32_t pid);
-
-public:
-    constexpr static int32_t INVALID_UID = -1;
-    constexpr static int32_t INVALID_GID = -1;
-    constexpr static int32_t ROOT_UID = 0;
-    constexpr static int32_t BMS_UID = 1000;
-    constexpr static int32_t BMS_GID = 1000;
-    constexpr static int32_t BASE_SYS_UID = 2100;
-    constexpr static int32_t MAX_SYS_UID = 2899;
-    constexpr static int32_t BASE_SYS_VEN_UID = 5000;
-    constexpr static int32_t MAX_SYS_VEN_UID = 5999;
-    constexpr static int32_t BASE_APP_UID = 10000;
-    constexpr static int32_t MAX_APP_UID = 65535;
-    constexpr static int32_t MAX_RESP_LEN = 128;
-    constexpr static int32_t MAX_CMD_LEN = 1024;
 
 private:
     static bool CheckUidAndPid(const int uid, const int32_t pid);

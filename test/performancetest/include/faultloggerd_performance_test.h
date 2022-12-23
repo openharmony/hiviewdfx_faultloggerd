@@ -18,7 +18,6 @@
 #ifndef FAULT_PERFORMANCE_TEST_H
 #define FAULT_PERFORMANCE_TEST_H
 
-#include <perf.h>
 #include <gtest/gtest.h>
 
 namespace OHOS {

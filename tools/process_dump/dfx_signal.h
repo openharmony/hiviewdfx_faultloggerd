@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -16,7 +16,8 @@
 #define DFX_SIGNAL_H
 
 #include <csignal>
-#include <string>
+#include <cstdint>
+#include "iosfwd"
 
 namespace OHOS {
 namespace HiviewDFX {
@@ -25,16 +26,16 @@ public:
     explicit DfxSignal(const int32_t signal);
     ~DfxSignal() {}
 
-    bool IsAvaliable() const;
-    bool IsAddrAvaliable() const;
-    bool IsPidAvaliable() const;
+    bool IsAvailable() const;
+    bool IsAddrAvailable() const;
+    bool IsPidAvailable() const;
     int32_t GetSignal() const;
 private:
     int32_t signal_ = 0;
     DfxSignal() = delete;
 };
 
-void PrintSignal(const siginfo_t &info, const int32_t fd);
+std::string PrintSignal(const siginfo_t &info);
 std::string FormatSignalName(const int32_t signal);
 std::string FormatCodeName(const int32_t signal, const int32_t signalCode);
 

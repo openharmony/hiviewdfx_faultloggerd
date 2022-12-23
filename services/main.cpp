@@ -13,10 +13,36 @@
  * limitations under the License.
  */
 
+#include <csignal>
+#include <cstdint>
+#include <unistd.h>
+#include "dfx_log.h"
 #include "fault_logger_daemon.h"
+#include "faultloggerd_client.h"
+#include "securec.h"
+
+#if defined(DEBUG_CRASH_LOCAL_HANDLER)
+#include "dfx_signal_local_handler.h"
+#include "dfx_cutil.h"
+
+static int DoGetCrashFd(void)
+{
+    OHOS::HiviewDFX::FaultLoggerDaemon daemon;
+    int32_t type = (int32_t)FaultLoggerType::CPP_CRASH;
+    int32_t pid = getpid();
+    uint64_t time = GetTimeMilliseconds();
+    int fd = daemon.CreateFileForRequest(type, pid, time, false);
+    return fd;
+}
+#endif
 
 int main(int argc, char *argv[])
 {
-    StartServer(argc, argv);
+#if defined(DEBUG_CRASH_LOCAL_HANDLER)
+    DFX_GetCrashFdFunc(DoGetCrashFd);
+    DFX_InstallLocalSignalHandler();
+#endif
+    OHOS::HiviewDFX::FaultLoggerDaemon daemon;
+    daemon.StartServer();
     return 0;
 }

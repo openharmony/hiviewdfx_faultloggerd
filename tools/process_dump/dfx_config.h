@@ -15,6 +15,8 @@
 #ifndef DFX_CONFIG_H
 #define DFX_CONFIG_H
 
+#include "iosfwd"
+
 namespace OHOS {
 namespace HiviewDFX {
 class DfxConfig final {
@@ -22,7 +24,7 @@ public:
     static DfxConfig &GetInstance();
 
     void ReadConfig();
-    void ParserConfig(std::string key, std::string value);
+    void ParserConfig(const std::string& key, const std::string& value);
     void SetDisplayBacktrace(bool displayBacktrace);
     bool GetDisplayBacktrace() const;
     void SetDisplayRegister(bool displayRegister);
@@ -40,6 +42,7 @@ public:
     void SetDumpOtherThreads(bool dumpOtherThreads);
     bool GetDumpOtherThreads() const;
     void Trim(std::string &s);
+
 private:
     DfxConfig() = default;
     ~DfxConfig() = default;
@@ -50,7 +53,7 @@ private:
     bool logPersist_ = false;
     bool dumpOtherThreads_ = false;
     unsigned int lowAddressStep_ = 16;
-    unsigned int highAddressStep_ = 4;
+    unsigned int highAddressStep_ = 64;
 };
 
 } // namespace HiviewDFX

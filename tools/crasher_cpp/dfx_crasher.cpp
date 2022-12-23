@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -18,24 +18,29 @@
 #include "dfx_crasher.h"
 
 #include <cinttypes>
-#include <pthread.h>
 #include <csignal>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <fstream>
+#include <hilog/log.h>
 #include <iostream>
+#include <pthread.h>
+#include <sys/prctl.h>
 #include <sys/resource.h>
+#include <thread>
 #include <unistd.h>
 #include <vector>
-#include <thread>
-#include <fstream>
-#include <sys/prctl.h>
 #include "securec.h"
-#include "dfx_signal_handler.h"
+
+#ifdef HAS_HITRACE
+#include <hitrace/hitracechain.h>
+using namespace OHOS::HiviewDFX;
+#endif
 
 #ifdef LOG_DOMAIN
 #undef LOG_DOMAIN
-#define LOG_DOMAIN 0x2D11
+#define LOG_DOMAIN 0xD002D11
 #endif
 
 #ifdef LOG_TAG
@@ -43,12 +48,13 @@
 #define LOG_TAG "Unwind"
 #endif
 
-static const int RAISE35 = 35;
 static const int ARG1024 = 1024;
 static const int ARG128 = 128;
 
 static const int NUMBER_TWO = 2;
 static const int NUMBER_ONE = 1;
+
+static const int SIGDUMP = 35;
 
 DfxCrasher::DfxCrasher() {}
 DfxCrasher::~DfxCrasher() {}
@@ -77,12 +83,14 @@ NOINLINE int DfxCrasher::TriggerSegmentFaultException() const
 
 NOINLINE int DfxCrasher::RaiseAbort() const
 {
+    HILOG_FATAL(LOG_CORE, "Test Trigger ABORT!");
     raise(SIGABRT);
     return 0;
 }
 
 NOINLINE int DfxCrasher::Abort(void) const
 {
+    HILOG_FATAL(LOG_CORE, "Test Trigger ABORT!");
     abort();
     return 0;
 }
@@ -95,7 +103,7 @@ NOINLINE int DfxCrasher::RaiseBusError() const
 
 NOINLINE int DfxCrasher::DumpStackTrace() const
 {
-    if (raise(RAISE35) != 0) {
+    if (raise(SIGDUMP) != 0) {
         std::cout << "raise error" << std::endl;
     }
     return 0;
@@ -158,7 +166,7 @@ NOINLINE int DfxCrasher::MaxMethodNameTest12345678901234567890123456789012345678
 
 NOINLINE int DfxCrasher::StackOverflow() const
 {
-    std::cout << "test stackoverflow enter" << std::endl;
+    std::cout << "call StackOverflow" << std::endl;
     // for stack overflow test
     char a[1024][1024][1024] = { { {'1'} } };
     char b[1024][1024][1024] = { { {'1'} } };
@@ -169,8 +177,6 @@ NOINLINE int DfxCrasher::StackOverflow() const
     std::cout << b[0][0] << std::endl;
     std::cout << c[0][0] << std::endl;
     std::cout << d[0][0] << std::endl;
-
-    std::cout << "test stackoverflow exit" << std::endl;
 
     return 0;
 }
@@ -219,11 +225,17 @@ NOINLINE int DfxCrasher::Oom() const
 NOINLINE int DfxCrasher::ProgramCounterZero() const
 {
     std::cout << "test PCZero" << std::endl;
-
+#if defined(__arm__)
     __asm__ volatile (
         "mov r0, #0x00\n mov lr, pc\n bx r0\n"
     );
-
+#elif defined(__aarch64__)
+    __asm__ volatile (
+        "movz x0, #0x0\n"
+        "adr x30, .\n"
+        "br x0\n"
+    );
+#endif
     return 0;
 }
 
@@ -260,9 +272,13 @@ int SleepThread(int threadID)
 NOINLINE int DfxCrasher::StackTop() const
 {
     std::cout << "test StackTop" << std::endl;
-
+#if defined(__arm__)
     unsigned int stackTop;
     __asm__ volatile ("mov %0, sp":"=r"(stackTop)::);
+#elif defined(__aarch64__)
+    uint64_t stackTop;
+    __asm__ volatile ("mov %0, sp":"=r"(stackTop)::);
+#endif
     std::cout << "crasher_c: stack top is = " << std::hex << stackTop << std::endl;
 
     std::ofstream fout;
@@ -311,11 +327,43 @@ void DfxCrasher::PrintUsage() const
     std::cout << std::endl;
 }
 
+NOINLINE static uint64_t CrashInLambda()
+{
+    std::function<void()> lambda = TestFunc50;
+    lambda();
+    return 0;
+}
+
+NOINLINE static uint64_t DoDumpCrash()
+{
+    std::thread t(TestFunc1);
+    raise(SIGDUMP);
+    t.join();
+    return 0;
+}
+
+NOINLINE static uint64_t TestExitHook()
+{
+    exit(1);
+    return 0;
+}
+
+void SigHookHandler(int signo)
+{
+    printf("SigHookHandler:%d\n", signo);
+}
+
+NOINLINE static uint64_t TestSigHook()
+{
+    signal(SIGSEGV, SigHookHandler);
+    return 0;
+}
+
 void* DfxCrasher::DoCrashInThread(void * inputArg)
 {
     prctl(PR_SET_NAME, "SubTestThread");
     const char* arg = (const char *)(inputArg);
-    return (void*)((uint64_t)(DfxCrasher::GetInstance().ParseAndDoCrash(arg)));
+    return (void*)(DfxCrasher::GetInstance().ParseAndDoCrash(arg));
 }
 
 uint64_t DfxCrasher::DoActionOnSubThread(const char *arg) const
@@ -333,7 +381,9 @@ uint64_t DfxCrasher::ParseAndDoCrash(const char *arg)
     if (!strncmp(arg, "thread-", strlen("thread-"))) {
         return DoActionOnSubThread(arg + strlen("thread-"));
     }
-
+#ifdef HAS_HITRACE
+    auto beginId = HiTraceChain::Begin("test", HITRACE_FLAG_NO_BE_INFO);
+#endif
     // Action
     if (!strcasecmp(arg, "SIGFPE")) {
         return RaiseFloatingPointException();
@@ -360,7 +410,7 @@ uint64_t DfxCrasher::ParseAndDoCrash(const char *arg)
     }
 
     if (!strcasecmp(arg, "triSIGABRT")) {
-            return Abort();
+        return Abort();
     }
 
     if (!strcasecmp(arg, "SIGBUS")) {
@@ -414,11 +464,29 @@ uint64_t DfxCrasher::ParseAndDoCrash(const char *arg)
     if (!strcasecmp(arg, "StackOver64")) {
         return StackOver64();
     }
-    
+
     if (!strcasecmp(arg, "StackTop")) {
         return StackTop();
     }
 
+    if (!strcasecmp(arg, "DumpCrash")) {
+        return DoDumpCrash();
+    }
+
+    if (!strcasecmp(arg, "CrashInLambda")) {
+        return CrashInLambda();
+    }
+
+    if (!strcasecmp(arg, "ExitHook")) {
+        return TestExitHook();
+    }
+
+    if (!strcasecmp(arg, "SigHook")) {
+        return TestSigHook();
+    }
+#ifdef HAS_HITRACE
+    HiTraceChain::End(beginId);
+#endif
     return 0;
 }
 
@@ -430,7 +498,6 @@ NOINLINE int TestFunc70()
 
 int main(int argc, char *argv[])
 {
-    DFX_InstallSignalHandler();
     DfxCrasher::GetInstance().PrintUsage();
     if (argc <= 1) {
         std::cout << "wrong usage!";
@@ -438,7 +505,7 @@ int main(int argc, char *argv[])
         return 0;
     }
 
-    std::cout << "ParseAndDoCrash done:" << DfxCrasher::GetInstance().ParseAndDoCrash(argv[1]) << "!";
+    std::cout << "ParseAndDoCrash done:" << DfxCrasher::GetInstance().ParseAndDoCrash(argv[1]) << "!\n";
     return 0;
 }
 

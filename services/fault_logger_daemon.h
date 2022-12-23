@@ -18,31 +18,31 @@
 #include <cinttypes>
 #include "faultloggerd_client.h"
 
-int32_t StartServer(int argc, char *argv[]);
-
 namespace OHOS {
 namespace HiviewDFX {
 class FaultLoggerDaemon {
 public:
-    FaultLoggerDaemon() {};
+    FaultLoggerDaemon();
     ~FaultLoggerDaemon() {};
+    int32_t StartServer();
     bool InitEnvironment();
     void LoopAcceptRequestAndFork(int socketFd);
+    int32_t CreateFileForRequest(int32_t type, int32_t pid, uint64_t time, bool debugFlag) const;
 
 private:
-    int32_t CreateFileForRequest(int32_t type, int32_t pid, bool debugFlag) const;
+    static void HandleRequesting(int32_t connectionFd);
     void RemoveTempFileIfNeed();
     void HandleRequest(int32_t connectionFd);
-    void HandleDefaultClientReqeust(int32_t connectionFd, const FaultLoggerdRequest* request);
-    void HandleLogFileDesClientReqeust(int32_t connectionFd, const FaultLoggerdRequest* request);
-    void HandlePrintTHilogClientReqeust(int32_t const connectionFd, FaultLoggerdRequest* request);
-    void GcZStatProcess(void);
+    void HandleDefaultClientRequest(int32_t connectionFd, const FaultLoggerdRequest* request);
+    void HandleLogFileDesClientRequest(int32_t connectionFd, const FaultLoggerdRequest* request);
+    void HandlePrintTHilogClientRequest(int32_t const connectionFd, FaultLoggerdRequest* request);
     FaultLoggerCheckPermissionResp SecurityCheck(int32_t connectionFd, FaultLoggerdRequest* request);
-    void HandlePermissionReqeust(int32_t connectionFd, FaultLoggerdRequest* request);
-    void HandleSdkDumpReqeust(int32_t connectionFd, FaultLoggerdRequest* request);
+    void HandlePermissionRequest(int32_t connectionFd, FaultLoggerdRequest* request);
+    void HandleSdkDumpRequest(int32_t connectionFd, FaultLoggerdRequest* request);
+    void HandlePipeFdClientRequest(int32_t connectionFd, const FaultLoggerdRequest* request);
 
 private:
-    int32_t currentLogCounts_ {0};
+    static FaultLoggerDaemon* faultLoggerDaemon_;
 };
 } // namespace HiviewDFX
 } // namespace OHOS

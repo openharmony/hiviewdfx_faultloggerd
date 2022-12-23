@@ -1,4 +1,4 @@
-# Copyright (c) 2021 Huawei Device Co., Ltd.
+# Copyright (c) 2021-2022 Huawei Device Co., Ltd.
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -12,65 +12,112 @@
 # limitations under the License.
 
 import("//base/hiviewdfx/faultloggerd/faultloggerd.gni")
-import("//build/test.gni")
 
-module_output_path = "faultloggerd/faultloggerd_native"
+if (defined(ohos_lite)) {
+  import("//build/lite/config/component/lite_component.gni")
+  import("//build/lite/config/test.gni")
 
-config("module_private_config") {
-  visibility = [ ":*" ]
+  if (ohos_build_type == "debug") {
+    unittest("test_faultloggerd") {
+      output_extension = "bin"
+      output_dir = "$root_out_dir/test/unittest/faultloggerd"
+      sources = [
+        "//base/hiviewdfx/faultloggerd/utils/directory_ex.cpp",
+        "src/faultloggerd_system_test.cpp",
+      ]
 
-  include_dirs = [
-    "include/",
-    "//utils/native/base/include",
-    "//base/hiviewdfx/faultloggerd/interfaces/innerkits/dump_catcher/include/",
-  ]
-}
+      include_dirs = [
+        "include/",
+        "//commonlibrary/c_utils/base/include",
+        "$faultloggerd_path/common",
+        "$faultloggerd_path/tools/process_dump",
+        "$faultloggerd_path/interfaces/innerkits/faultoggerd_client/include",
+        "$faultloggerd_path/interfaces/innerkits/dump_catcher/include",
+        "$faultloggerd_path/utils",
+        "$hilog_lite_include_path",
+      ]
 
-ohos_systemtest("test_faultloggerd") {
-  module_out_path = module_output_path
-  sources = [ "src/faultloggerd_system_test.cpp" ]
+      deps = [
+        "$faultloggerd_path/interfaces/innerkits/dump_catcher:lib_dfx_dump_catcher",
+        "//base/hiviewdfx/hilog_lite/frameworks/featured:hilog_shared",
+      ]
 
-  configs = [ ":module_private_config" ]
-
-  deps = [
-    "//base/hiviewdfx/faultloggerd/interfaces/innerkits/dump_catcher:lib_dfx_dump_catcher",
-    "//third_party/googletest:gtest_main",
-    "//utils/native/base:utils",
-  ]
-
-  external_deps = [
-    "hilog_native:libhilog",
-    "utils_base:utils",
-  ]
-
-  if (target_cpu == "arm") {
-    cflags = [ "-D__arm__" ]
-  } else if (target_cpu == "arm64") {
-    cflags = [ "-D__aarch64__" ]
+      if (target_cpu == "arm") {
+        cflags = [ "-D__arm__" ]
+      } else if (target_cpu == "arm64") {
+        cflags = [ "-D__aarch64__" ]
+      }
+    }
   }
-}
 
-ohos_systemtest("test_faultloggerd_pre") {
-  module_out_path = module_output_path
-  sources = [ "src/faultloggerd_system_test.cpp" ]
+  group("systemtest") {
+    deps = [ ":test_faultloggerd" ]
+  }
+} else {
+  import("//build/config/features.gni")
+  import("//build/test.gni")
 
-  configs = [ ":module_private_config" ]
+  config("module_private_config") {
+    visibility = [ ":*" ]
 
-  deps = [
-    "//base/hiviewdfx/faultloggerd/interfaces/innerkits/dump_catcher:lib_dfx_dump_catcher",
-    "//third_party/googletest:gtest_main",
-    "//utils/native/base:utils",
-  ]
+    include_dirs = [
+      "include/",
+      "//commonlibrary/c_utils/base/include",
+      "$faultloggerd_path/interfaces/innerkits/dump_catcher/include/",
+    ]
 
-  external_deps = [
-    "hilog_native:libhilog",
-    "utils_base:utils",
-  ]
+    cflags_cc = [ "-fno-exceptions" ]
+  }
 
-  cflags = [ "-D__pre__" ]
-}
+  module_output_path = "faultloggerd/faultloggerd_native"
 
-group("systemtest") {
-  testonly = true
-  deps = [ ":test_faultloggerd" ]
+  ohos_systemtest("test_faultloggerd") {
+    module_out_path = module_output_path
+    sources = [ "src/faultloggerd_system_test.cpp" ]
+
+    configs = [ ":module_private_config" ]
+
+    deps = [
+      "$faultloggerd_path/interfaces/innerkits/dump_catcher:lib_dfx_dump_catcher",
+      "//third_party/googletest:gtest_main",
+    ]
+
+    external_deps = [
+      "c_utils:utils",
+      "hilog_native:libhilog",
+    ]
+
+    if (target_cpu == "arm") {
+      cflags = [ "-D__arm__" ]
+    } else if (target_cpu == "arm64") {
+      cflags = [ "-D__aarch64__" ]
+    }
+  }
+
+  ohos_systemtest("test_faultloggerd_pre") {
+    module_out_path = module_output_path
+    sources = [ "src/faultloggerd_system_test.cpp" ]
+
+    configs = [ ":module_private_config" ]
+
+    deps = [
+      "$faultloggerd_path/interfaces/innerkits/dump_catcher:lib_dfx_dump_catcher",
+      "//third_party/googletest:gtest_main",
+    ]
+
+    external_deps = [
+      "c_utils:utils",
+      "hilog_native:libhilog",
+    ]
+
+    cflags = [ "-D__pre__" ]
+  }
+
+  group("systemtest") {
+    testonly = true
+    deps = [
+      ":test_faultloggerd",
+      ":test_faultloggerd_pre",
+    ]
+  }
 }

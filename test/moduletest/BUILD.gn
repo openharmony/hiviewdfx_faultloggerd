@@ -12,26 +12,55 @@
 # limitations under the License.
 
 import("//base/hiviewdfx/faultloggerd/faultloggerd.gni")
-import("//build/test.gni")
-
-module_output_path = "faultloggerd/faultloggerd_native"
 
 config("module_private_config") {
   visibility = [ ":*" ]
-  include_dirs = [ "include" ]
-}
-
-ohos_moduletest("FaultloggerdModuleTest") {
-  module_out_path = module_output_path
-  sources = [ "faultloggerd_module_test.cpp" ]
-  configs = [ ":module_private_config" ]
-  deps = [
-    "//third_party/googletest:gtest_main",
-    "//utils/native/base:utils",
+  include_dirs = [
+    "include",
+    "//commonlibrary/c_utils/base/include",
+    "$faultloggerd_path/interfaces/innerkits/faultloggerd_client/include",
   ]
 }
 
-group("moduletest") {
-  testonly = true
-  deps = [ ":FaultloggerdModuleTest" ]
+if (defined(ohos_lite)) {
+  import("//build/lite/config/component/lite_component.gni")
+  import("//build/lite/config/test.gni")
+
+  if (ohos_build_type == "debug") {
+    unittest("FaultloggerdModuleTest") {
+      output_extension = "bin"
+      output_dir = "$root_out_dir/test/unittest/faultloggerd"
+      configs = [ ":module_private_config" ]
+      sources = [ "faultloggerd_module_test.cpp" ]
+      deps = [
+        "$faultloggerd_path/interfaces/innerkits/faultloggerd_client:libfaultloggerd",
+        "//base/hiviewdfx/hilog_lite/frameworks/featured:hilog_shared",
+      ]
+    }
+  }
+
+  group("moduletest") {
+    deps = [ ":FaultloggerdModuleTest" ]
+  }
+} else {
+  import("//build/config/features.gni")
+  import("//build/test.gni")
+
+  module_output_path = "faultloggerd/faultloggerd_native"
+
+  ohos_moduletest("FaultloggerdModuleTest") {
+    module_out_path = module_output_path
+    sources = [ "faultloggerd_module_test.cpp" ]
+    configs = [ ":module_private_config" ]
+    deps = [
+      "$faultloggerd_path/interfaces/innerkits/faultloggerd_client:libfaultloggerd",
+      "//third_party/googletest:gtest_main",
+    ]
+    external_deps = [ "c_utils:utils" ]
+  }
+
+  group("moduletest") {
+    testonly = true
+    deps = [ ":FaultloggerdModuleTest" ]
+  }
 }
