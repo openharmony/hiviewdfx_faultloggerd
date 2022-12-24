@@ -11,27 +11,47 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import("//build/ohos.gni")
+import("//base/hiviewdfx/faultloggerd/faultloggerd.gni")
 
-config("crasher_config") {
-  visibility = [ ":*" ]
+if (defined(ohos_lite)) {
+  executable("crasher_cpp") {
+    cflags = [ "-funwind-tables" ]
+    visibility = [ "*:*" ]
+    include_dirs = [
+      ".",
+      "$faultloggerd_path/common",
+      "$faultloggerd_path/tools/process_dump/",
+      "//utils/native/base/include",
+      "$hilog_lite_include_path",
+    ]
+    sources = [ "dfx_crasher.cpp" ]
+    deps = [
+      "$hilog_lite_deps_path",
+      "//third_party/bounds_checking_function:libsec_shared",
+    ]
+  }
+} else {
+  config("crasher_config") {
+    visibility = [ ":*" ]
 
-  include_dirs = [
-    ".",
-    "//base/hiviewdfx/faultloggerd/tools/process_dump/",
-  ]
-}
+    include_dirs = [
+      ".",
+      "$faultloggerd_path/tools/process_dump/",
+      "//utils/native/base/include",
+    ]
 
-ohos_executable("crasher_cpp") {
-  configs = [ ":crasher_config" ]
-  sources = [ "dfx_crasher.cpp" ]
+  }
 
-  deps = [
-    "//base/hiviewdfx/faultloggerd/interfaces/innerkits/signal_handler:dfx_signalhandler",
-    "//developtools/bytrace_standard/bin:bytrace_inner",
-    "//utils/native/base:utils",
-  ]
+  ohos_executable("crasher_cpp") {
+    configs = [ ":crasher_config" ]
+    sources = [ "dfx_crasher.cpp" ]
 
-  part_name = "faultloggerd"
-  subsystem_name = "hiviewdfx"
+    external_deps = [
+      "utils_base:utils",
+      "hilog_native:libhilog",
+    ]
+
+    part_name = "faultloggerd"
+    subsystem_name = "hiviewdfx"
+  }
 }

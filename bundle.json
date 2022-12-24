@@ -12,14 +12,19 @@
     "subsystem": "hiviewdfx",
     "syscap": [],
     "features": [],
-    "adapted_system_type": [ "standard" ],
+    "adapted_system_type": [
+      "small",
+      "standard"
+    ],
     "rom": "1024KB",
     "ram": "~1024KB",
     "deps": {
       "components": [
-        "bytrace_standard",
+        "common",
+        "bounds_checking_function",
+        "init",
         "hilog_native",
-        "utils_base"
+        "c_utils"
       ],
       "third_party": [
         "libunwind"
@@ -30,6 +35,7 @@
         "//base/hiviewdfx/faultloggerd/interfaces/innerkits/signal_handler:dfx_signalhandler",
         "//base/hiviewdfx/faultloggerd/interfaces/innerkits/dump_catcher:lib_dfx_dump_catcher",
         "//base/hiviewdfx/faultloggerd/interfaces/innerkits/faultloggerd_client:libfaultloggerd",
+        "//base/hiviewdfx/faultloggerd/tools/dump_catcher:dumpcatcher",
         "//base/hiviewdfx/faultloggerd/tools/process_dump:processdump",
         "//base/hiviewdfx/faultloggerd/services:faultloggerd"
       ],
@@ -46,7 +52,7 @@
         {
           "name": "//base/hiviewdfx/faultloggerd/interfaces/innerkits/faultloggerd_client:libfaultloggerd",
           "header": {
-          "header_files": [
+            "header_files": [
               "faultloggerd_client.h"
             ],
             "header_base": "//base/hiviewdfx/faultloggerd/interfaces/innerkits/faultloggerd_client/include"
@@ -64,14 +70,14 @@
       ],
       "test": [
         "//base/hiviewdfx/faultloggerd/example:dumpcatcherdemo",
-        "//base/hiviewdfx/faultloggerd/interfaces/innerkits/dump_catcher/test:harmonystrace",
+        "//base/hiviewdfx/faultloggerd/test:faultloggerd_fuzzertest",
         "//base/hiviewdfx/faultloggerd/test:faultloggerd_moduletest",
         "//base/hiviewdfx/faultloggerd/test:faultloggerd_systemtest",
         "//base/hiviewdfx/faultloggerd/test:faultloggerd_performancetest",
+        "//base/hiviewdfx/faultloggerd/test:faultloggerd_funchook",
+        "//base/hiviewdfx/faultloggerd/test:faultloggerd_unittest",
         "//base/hiviewdfx/faultloggerd/tools/crasher_c:crasher_c",
-        "//base/hiviewdfx/faultloggerd/tools/crasher_cpp:crasher_cpp",
-        "//base/hiviewdfx/faultloggerd/tools/process_dump/test:processdump_unittest",
-        "//base/hiviewdfx/faultloggerd/services/test:service_unittest"
+        "//base/hiviewdfx/faultloggerd/tools/crasher_cpp:crasher_cpp"
       ]
     }
   }

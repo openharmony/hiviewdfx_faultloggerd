@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -18,11 +18,9 @@
 #ifndef DFX_MAPS_H
 #define DFX_MAPS_H
 
-#include <cinttypes>
-#include <memory>
 #include <string>
-#include <vector>
-
+#include <sys/types.h>
+#include "iosfwd"
 #include "dfx_elf.h"
 
 namespace OHOS {
@@ -32,8 +30,8 @@ public:
     DfxElfMap() = default;
     ~DfxElfMap() = default;
     static std::shared_ptr<DfxElfMap> Create(const std::string mapInfo, int size);
-    bool IsVaild();
-    void PrintMap(int32_t fd);
+    bool IsValid();
+    std::string PrintMap();
 
     uint64_t GetMapBegin() const;
     uint64_t GetMapEnd() const;

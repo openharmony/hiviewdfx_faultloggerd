@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,50 +17,41 @@
 
 #include "dfx_process.h"
 
-#include <dirent.h>
 #include <climits>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <dirent.h>
+#include <securec.h>
+#include <sys/types.h>
 #include <unistd.h>
 #include <vector>
-
-#include <sys/types.h>
-
-#include <securec.h>
-
+#include "dfx_config.h"
 #include "dfx_define.h"
-#include "dfx_log.h"
+#include "dfx_define.h"
+#include "dfx_logger.h"
 #include "dfx_maps.h"
+#include "dfx_ring_buffer_wrapper.h"
 #include "dfx_signal.h"
 #include "dfx_thread.h"
 #include "dfx_util.h"
-#include "dfx_config.h"
 
 namespace OHOS {
 namespace HiviewDFX {
-static const int SIG_NO = 35;
+static const int ARGS_COUNT_TWO = 2;
 
 void DfxProcess::FillProcessName()
 {
-    DfxLogDebug("Enter %s.", __func__);
     char path[NAME_LEN] = "\0";
     if (snprintf_s(path, sizeof(path), sizeof(path) - 1, "/proc/%d/cmdline", pid_) <= 0) {
         return;
     }
 
     ReadStringFromFile(path, processName_, NAME_LEN);
-    DfxLogDebug("Exit %s.", __func__);
-}
-
-void DfxProcess::UpdateProcessName(std::string processName)
-{
-    processName_ = processName;
 }
 
 std::shared_ptr<DfxProcess> DfxProcess::CreateProcessWithKeyThread(pid_t pid, std::shared_ptr<DfxThread> keyThread)
 {
-    DfxLogDebug("Enter %s.", __func__);
     auto dfxProcess = std::make_shared<DfxProcess>();
     if (dfxProcess != nullptr) {
         dfxProcess->SetPid(pid);
@@ -74,45 +65,43 @@ std::shared_ptr<DfxProcess> DfxProcess::CreateProcessWithKeyThread(pid_t pid, st
         DfxLogWarn("Fail to init threads.");
         return nullptr;
     }
-    DfxLogWarn("Init process dump with pid:%d.", dfxProcess->GetPid());
-    DfxLogDebug("Exit %s.", __func__);
+
+    DfxLogDebug("Init process dump with pid:%d.", dfxProcess->GetPid());
     return dfxProcess;
 }
 
 bool DfxProcess::InitProcessMaps()
 {
-    DfxLogDebug("Enter %s.", __func__);
     auto maps = DfxElfMaps::Create(pid_);
     if (!maps) {
         return false;
     }
 
     SetMaps(maps);
-    DfxLogDebug("Exit %s.", __func__);
     return true;
 }
 
 bool DfxProcess::InitProcessThreads(std::shared_ptr<DfxThread> keyThread)
 {
-    DfxLogDebug("Enter %s.", __func__);
-    if (keyThread) {
-        threads_.push_back(keyThread);
-        return true;
+    if (!keyThread) {
+        keyThread = std::make_shared<DfxThread>(pid_, pid_, pid_);
     }
 
-    keyThread = std::make_shared<DfxThread>(GetPid(), GetPid());
-    if (!keyThread) {
+    if (!keyThread->Attach()) {
+        DfxLogWarn("Fail to attach thread.");
         return false;
     }
-
     threads_.push_back(keyThread);
-    DfxLogDebug("Exit %s.", __func__);
     return true;
 }
 
-bool DfxProcess::InitOtherThreads()
+void DfxProcess::SetRecycleTid(pid_t nstid)
 {
-    DfxLogDebug("Enter %s.", __func__);
+    recycleTid_ = nstid;
+}
+
+bool DfxProcess::InitOtherThreads(bool attach)
+{
     char path[NAME_LEN] = {0};
     if (snprintf_s(path, sizeof(path), sizeof(path) - 1, "/proc/%d/task", GetPid()) <= 0) {
         return false;
@@ -130,11 +119,7 @@ bool DfxProcess::InitOtherThreads()
 
     struct dirent *ent;
     while ((ent = readdir(dir))) {
-        if (strcmp(ent->d_name, ".") == 0) {
-            continue;
-        }
-
-        if (strcmp(ent->d_name, "..") == 0) {
+        if ((strcmp(ent->d_name, ".") == 0) || (strcmp(ent->d_name, "..") == 0)) {
             continue;
         }
 
@@ -143,80 +128,72 @@ bool DfxProcess::InitOtherThreads()
             continue;
         }
 
-        InsertThreadNode(tid);
+        pid_t nstid = tid;
+        if (GetNs()) {
+            TidToNstid(tid, nstid);
+        }
+
+        if (isSignalDump_ && (nstid == recycleTid_)) {
+            DfxLogDebug("skip recycle tid:%d nstid:%d.", recycleTid_, nstid);
+            continue;
+        }
+
+        InsertThreadNode(tid, nstid, attach);
     }
     closedir(dir);
-    DfxLogDebug("Exit %s.", __func__);
     return true;
 }
 
-void DfxProcess::InsertThreadNode(pid_t tid)
+void DfxProcess::InsertThreadNode(pid_t tid, pid_t nsTid, bool attach)
 {
-    DfxLogDebug("Enter %s.", __func__);
     for (auto iter = threads_.begin(); iter != threads_.end(); iter++) {
-        if ((*iter)->GetThreadId() == tid) {
+        if ((*iter)->GetRealTid() == nsTid) {
+            (*iter)->SetThreadId(tid);
+            (*iter)->ReadThreadName();
             return;
         }
     }
 
-    auto thread = std::make_shared<DfxThread>(GetPid(), tid);
+    auto thread = std::make_shared<DfxThread>(pid_, tid, nsTid);
+    if (attach) {
+        thread->Attach();
+    }
     threads_.push_back(thread);
-    DfxLogDebug("Exit %s.", __func__);
 }
 
-void DfxProcess::PrintProcessWithSiginfo(const std::shared_ptr<siginfo_t> info, int32_t fd)
+int DfxProcess::TidToNstid(const int tid, int& nstid)
 {
-    DfxLogDebug("Enter %s.", __func__);
-    WriteLog(fd, "Pid:%d\n", GetPid());
-    WriteLog(fd, "Uid:%d\n", GetUid());
-    WriteLog(fd, "Process name:%s\n", GetProcessName().c_str());
-    if (info && info->si_signo != SIG_NO) {
-        WriteLog(fd, "Reason:");
-
-        PrintSignal(*(info.get()), fd);
-
-        if (threads_.size() != 0) {
-            WriteLog(fd, "Fault thread Info:\n");
-        }
+    char path[NAME_LEN];
+    (void)memset_s(path, sizeof(path), '\0', sizeof(path));
+    if (snprintf_s(path, sizeof(path), sizeof(path) - 1, "/proc/%d/task/%d/status", pid_, tid) <= 0) {
+        DfxLogWarn("snprintf_s error.");
+        return -1;
     }
 
-    PrintProcess(fd, true);
+    char buf[STATUS_LINE_SIZE];
+    FILE *fp = fopen(path, "r");
+    if (fp == nullptr) {
+        return -1;
+    }
 
-    DfxLogDebug("Exit %s.", __func__);
-}
-
-void DfxProcess::PrintProcess(int32_t fd, bool printMapFlag)
-{
-    DfxLogDebug("Enter %s.", __func__);
-    size_t index = 0;
-    for (auto iter = threads_.begin(); iter != threads_.end(); iter++) {
-        if (index == 1) {
-            PrintThreadsHeaderByConfig(fd);
+    int p = 0, t = 0;
+    while (!feof(fp)) {
+        if (fgets(buf, STATUS_LINE_SIZE, fp) == NULL) {
+            fclose(fp);
+            return -1;
         }
 
-        (*iter)->PrintThread(fd, isSignalDump_);
-        if (index == 0 && printMapFlag == true) {
-            PrintProcessMapsByConfig(fd);
-        }
-
-        if (GetIsSignalHdlr() && !GetIsSignalDump() && \
-            !DfxConfig::GetInstance().GetDumpOtherThreads()) {
-            DfxLogInfo("No need print other thread in crash scenario");
+        // NSpid:  1892    1
+        if (strncmp(buf, NSPID_STR_NAME, strlen(NSPID_STR_NAME)) == 0) {
+            if (sscanf_s(buf, "%*[^0-9]%d%*[^0-9]%d", &p, &t) != ARGS_COUNT_TWO) {
+                DfxLogWarn("TidToNstid sscanf_s failed. pid:%d, tid:%d", pid_, tid);
+            }
+            nstid = t;
             break;
         }
-        index++;
     }
-    DfxLogDebug("Exit %s.", __func__);
-}
-
-void DfxProcess::SetIsSignalHdlr(bool isSignalHdlr)
-{
-    isSignalHdlr_ = isSignalHdlr;
-}
-
-bool DfxProcess::GetIsSignalHdlr() const
-{
-    return isSignalHdlr_;
+    (void)fclose(fp);
+    return 0;
 }
 
 void DfxProcess::SetIsSignalDump(bool isSignalDump)
@@ -234,9 +211,14 @@ pid_t DfxProcess::GetPid() const
     return pid_;
 }
 
-pid_t DfxProcess::GetUid() const
+uid_t DfxProcess::GetUid() const
 {
     return uid_;
+}
+
+bool DfxProcess::GetNs() const
+{
+    return pid_ != nsPid_;
 }
 
 std::string DfxProcess::GetProcessName() const
@@ -259,9 +241,22 @@ void DfxProcess::SetPid(pid_t pid)
     pid_ = pid;
 }
 
-void DfxProcess::SetUid(pid_t uid)
+void DfxProcess::SetUid(uid_t uid)
 {
     uid_ = uid;
+}
+
+void DfxProcess::SetNsPid(pid_t pid)
+{
+    nsPid_ = pid;
+}
+
+pid_t DfxProcess::GetNsPid() const
+{
+    if (nsPid_ > 0) {
+        return nsPid_;
+    }
+    return pid_;
 }
 
 void DfxProcess::SetProcessName(const std::string &processName)
@@ -290,26 +285,26 @@ void DfxProcess::Detach()
     }
 }
 
-void DfxProcess::PrintProcessMapsByConfig(int32_t fd)
+void DfxProcess::PrintProcessMapsByConfig()
 {
     if (DfxConfig::GetInstance().GetDisplayMaps()) {
         if (GetMaps()) {
-            WriteLog(fd, "Maps:\n");
+            DfxRingBufferWrapper::GetInstance().AppendMsg("\nMaps:\n");
         }
         auto mapsVector = maps_->GetValues();
         for (auto iter = mapsVector.begin(); iter != mapsVector.end(); iter++) {
-            (*iter)->PrintMap(fd);
+            DfxRingBufferWrapper::GetInstance().AppendMsg((*iter)->PrintMap());
         }
     } else {
         DfxLogDebug("hidden Maps");
     }
 }
 
-void DfxProcess::PrintThreadsHeaderByConfig(int32_t fd)
+void DfxProcess::PrintThreadsHeaderByConfig()
 {
     if (DfxConfig::GetInstance().GetDisplayBacktrace()) {
         if (!isSignalDump_) {
-            WriteLog(fd, "Other thread info:\n");
+            DfxRingBufferWrapper::GetInstance().AppendMsg("Other thread info:\n");
         }
     } else {
         DfxLogDebug("hidden thread info.");

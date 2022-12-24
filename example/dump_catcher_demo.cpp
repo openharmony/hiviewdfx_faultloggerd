@@ -15,13 +15,19 @@
 
 #include "dump_catcher_demo.h"
 
+#include <cstdint>
+#include <cstdlib>
+#include <cstring>
 #include <iostream>
 #include <string>
 #include <unistd.h>
 #include "dfx_dump_catcher.h"
+#include "iosfwd"
+#include "ostream"
+
 using namespace std;
 
-NOINLINE int TestFunc10(void)
+static NOINLINE int TestFunc10(void)
 {
     OHOS::HiviewDFX::DfxDumpCatcher dumplog;
     string msg = "";
@@ -30,6 +36,17 @@ NOINLINE int TestFunc10(void)
         cout << msg << endl;
     }
     return 0;
+}
+
+static NOINLINE int TestFuncRemote(int32_t pid, int32_t tid)
+{
+    OHOS::HiviewDFX::DfxDumpCatcher dumplog;
+    string msg = "";
+    bool ret = dumplog.DumpCatch(pid, tid, msg);
+    if (ret) {
+        cout << msg << endl;
+    }
+    return ret;
 }
 
 // auto gen function
@@ -44,8 +61,47 @@ GEN_TEST_FUNCTION(7, 8)
 GEN_TEST_FUNCTION(8, 9)
 GEN_TEST_FUNCTION(9, 10)
 
+static bool ParseParameters(int argc, char *argv[], int32_t &pid, int32_t &tid)
+{
+    switch (argc) {
+        case 3:
+            if (!strcmp("-p", argv[1])) {
+                pid = atoi(argv[2]);
+                return true;
+            }
+            break;
+        case 5:
+            if (!strcmp("-p", argv[1])) {
+                pid = atoi(argv[2]);
+
+                if (!strcmp("-t", argv[3])) {
+                    tid = atoi(argv[4]);
+                    return true;
+                }
+            } else if (!strcmp("-t", argv[1])) {
+                tid = atoi(argv[2]);
+
+                if (!strcmp("-p", argv[3])) {
+                    pid = atoi(argv[4]);
+                    return true;
+                }
+            }
+            break;
+        default:
+            break;
+    }
+    return false;
+}
+
 int main(int argc, char *argv[])
 {
-    TestFunc0();
+    int32_t pid = 0;
+    int32_t tid = 0;
+    if (ParseParameters(argc, argv, pid, tid)) {
+        TestFuncRemote(pid, tid);
+    } else {
+        TestFunc0();
+    }
+
     return 0;
 }

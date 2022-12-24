@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -14,16 +14,18 @@
  */
 
 /* This files contains process dump dfx maps module. */
-
 #include "dfx_maps.h"
 
+#include <cinttypes>
 #include <climits>
+#include <cstdio>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
-
+#include <memory>
 #include <securec.h>
-
+#include <string>
+#include <vector>
 #include "dfx_define.h"
 #include "dfx_elf.h"
 #include "dfx_log.h"
@@ -35,7 +37,6 @@ static const int MAPINFO_SIZE = 256;
 
 std::shared_ptr<DfxElfMaps> DfxElfMaps::Create(pid_t pid)
 {
-    DfxLogDebug("Enter %s.", __func__);
     auto dfxElfMaps = std::make_shared<DfxElfMaps>();
 
     char path[NAME_LEN] = {0};
@@ -73,13 +74,11 @@ std::shared_ptr<DfxElfMaps> DfxElfMaps::Create(pid_t pid)
         DfxLogWarn("Fail to close maps info.");
         return nullptr;
     }
-    DfxLogDebug("Exit %s.", __func__);
     return dfxElfMaps;
 }
 
 std::shared_ptr<DfxElfMap> DfxElfMap::Create(const std::string mapInfo, int size)
 {
-    DfxLogDebug("Enter %s.", __func__);
     auto dfxElfMap = std::make_shared<DfxElfMap>();
 
     int pos = 0;
@@ -103,23 +102,19 @@ std::shared_ptr<DfxElfMap> DfxElfMap::Create(const std::string mapInfo, int size
         dfxElfMap->SetMapPerms(perms, sizeof(perms));
         TrimAndDupStr(mapInfo.substr(pos), path);
         dfxElfMap->SetMapPath(path);
-        DfxLogDebug("Exit %s.", __func__);
     }
     return dfxElfMap;
 }
 
 void DfxElfMaps::InsertMapToElfMaps(std::shared_ptr<DfxElfMap> map)
 {
-    DfxLogDebug("Enter %s.", __func__);
     maps_.push_back(map);
-
     return;
 }
 
 
 bool DfxElfMaps::FindMapByPath(const std::string path, std::shared_ptr<DfxElfMap>& map) const
 {
-    DfxLogDebug("Enter %s.", __func__);
     for (auto iter = maps_.begin(); iter != maps_.end(); iter++) {
         if ((*iter)->GetMapPath() == "") {
             continue;
@@ -130,26 +125,23 @@ bool DfxElfMaps::FindMapByPath(const std::string path, std::shared_ptr<DfxElfMap
             return true;
         }
     }
-    DfxLogDebug("Exit %s.", __func__);
     return false;
 }
 
 bool DfxElfMaps::FindMapByAddr(uintptr_t address, std::shared_ptr<DfxElfMap>& map) const
 {
-    DfxLogDebug("Enter %s.", __func__);
     for (auto iter = maps_.begin(); iter != maps_.end(); iter++) {
         if (((*iter)->GetMapBegin() < address) && ((*iter)->GetMapEnd() > address)) {
             map = *iter;
             return true;
         }
     }
-    DfxLogDebug("Exit %s.", __func__);
     return false;
 }
 
 bool DfxElfMaps::CheckPcIsValid(uint64_t pc) const
 {
-    DfxLogDebug("Enter %s :: pc(0x%x).", __func__, pc);
+    DfxLogDebug("%s :: pc(0x%x).", __func__, pc);
 
     bool ret = false;
 
@@ -174,13 +166,12 @@ bool DfxElfMaps::CheckPcIsValid(uint64_t pc) const
         }
     } while (false);
 
-    DfxLogDebug("Exit %s :: ret(%d).", __func__, ret);
+    DfxLogDebug("%s :: ret(%d).", __func__, ret);
     return ret;
 }
 
-bool DfxElfMap::IsVaild()
+bool DfxElfMap::IsValid()
 {
-    DfxLogDebug("Enter %s.", __func__);
     if (path_.length() == 0) {
         return false;
     }
@@ -196,14 +187,18 @@ bool DfxElfMap::IsVaild()
     if (strncmp(path_.c_str(), "/system/framework/", 18) == 0) { // 18:length of "/system/framework/"
         return false;
     }
-    DfxLogDebug("Exit %s.", __func__);
     return true;
 }
 
-void DfxElfMap::PrintMap(int32_t fd)
+std::string DfxElfMap::PrintMap()
 {
-    WriteLog(fd, "%" PRIx64 "-%" PRIx64 " %s %08" PRIx64 " %s\n",
+    char buf[LOG_BUF_LEN] = {0};
+    int ret = snprintf_s(buf, sizeof(buf), sizeof(buf) - 1, "%" PRIx64 "-%" PRIx64 " %s %08" PRIx64 " %s\n", \
         begin_, end_, perms_.c_str(), offset_, path_.c_str());
+    if (ret <= 0) {
+        DfxLogError("%s :: snprintf_s failed, line: %d.", __func__, __LINE__);
+    }
+    return std::string(buf);
 }
 
 uint64_t DfxElfMap::GetMapBegin() const

@@ -11,19 +11,37 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import("//build/ohos.gni")
+import("//base/hiviewdfx/faultloggerd/faultloggerd.gni")
 
-config("crasher_config") {
-  visibility = [ ":*" ]
+if (defined(ohos_lite)) {
+  executable("crasher_c") {
+    cflags = [ "-funwind-tables" ]
 
-  include_dirs = [ "." ]
-}
+    visibility = [ "*:*" ]
+    include_dirs = [
+      ".",
+      "$faultloggerd_path/common",
+      "//utils/native/base/include",
+      "$hilog_lite_include_path",
+    ]
+    sources = [ "dfx_crasher.c" ]
+    deps = [
+      "$hilog_lite_deps_path",
+      "//third_party/bounds_checking_function:libsec_shared",
+    ]
+  }
+} else {
+  config("crasher_config") {
+    visibility = [ ":*" ]
 
-ohos_executable("crasher_c") {
-  configs = [ ":crasher_config" ]
-  sources = [ "dfx_crasher.c" ]
-  deps = [ "//base/hiviewdfx/faultloggerd/interfaces/innerkits/signal_handler:dfx_signalhandler" ]
-  external_deps = [ "hilog_native:libhilog" ]
-  part_name = "faultloggerd"
-  subsystem_name = "hiviewdfx"
+    include_dirs = [ "." ]
+  }
+
+  ohos_executable("crasher_c") {
+    configs = [ ":crasher_config" ]
+    sources = [ "dfx_crasher.c" ]
+    external_deps = [ "hilog_native:libhilog" ]
+    part_name = "faultloggerd"
+    subsystem_name = "hiviewdfx"
+  }
 }

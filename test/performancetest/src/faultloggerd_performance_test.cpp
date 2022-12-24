@@ -17,9 +17,9 @@
 
 #include "faultloggerd_performance_test.h"
 
+#include <cerrno>
 #include <cstdio>
 #include <cstring>
-#include <cerrno>
 #include <ctime>
 #include <dirent.h>
 #include <fcntl.h>
@@ -27,26 +27,32 @@
 #include <iostream>
 #include <memory>
 #include <pthread.h>
-#include <sys/time.h>
-#include <string.h>
+#include <securec.h>
 #include <stdlib.h>
+#include <string.h>
+#include <string>
 #include <sys/stat.h>
+#include <sys/time.h>
 #include <sys/types.h>
 #include <sys/wait.h>
-#include <securec.h>
-#include <string>
 #include <time.h>
 #include <unistd.h>
 #include <vector>
-
-#include "syscall.h"
+#include "dfx_define.h"
+#include "dfx_dump_catcher.h"
 #include "directory_ex.h"
 #include "file_ex.h"
-#include "dfx_dump_catcher.h"
+#include "syscall.h"
+
 
 using namespace OHOS::HiviewDFX;
 using namespace testing::ext;
 using namespace std;
+
+namespace {
+static const int PERFORMANCE_TEST_NUMBER_ONE_HUNDRED = 100;
+static const double PERFORMANCE_TEST_MAX_UNWIND_TIME_S = 0.03;
+static const double PERFORMANCE_TEST_MAX_UNWIND_TIME_NEW_S = 0.04;
 
 clock_t GetStartTime ()
 {
@@ -57,6 +63,7 @@ double GetStopTime(clock_t befor)
 {
     clock_t StartTimer = clock();
     return  ((StartTimer - befor) / double(CLOCKS_PER_SEC));
+}
 }
 
 void FaultPerformanceTest::SetUpTestCase(void)
@@ -69,10 +76,14 @@ void FaultPerformanceTest::TearDownTestCase(void)
 
 void FaultPerformanceTest::SetUp(void)
 {
+    GTEST_LOG_(INFO) << "SetUp";
+    FaultPerformanceTest::StartRootCrasherLoop();
 }
 
 void FaultPerformanceTest::TearDown(void)
 {
+    GTEST_LOG_(INFO) << "TearDown";
+    FaultPerformanceTest::KillCrasherLoopForSomeCase();
 }
 
 int FaultPerformanceTest::looprootPid = 0;
@@ -86,7 +97,7 @@ std::string FaultPerformanceTest::ProcessDumpCommands(const std::string cmds)
         perror("popen execute failed");
         exit(1);
     }
-    char result_buf_shell[100] = { 0, };
+    char result_buf_shell[NAME_LEN] = {'\0'};
     while (fgets(result_buf_shell, sizeof(result_buf_shell), procFileInfo) != nullptr) {
         cmdLog = cmdLog + result_buf_shell;
     }
@@ -108,7 +119,7 @@ std::string FaultPerformanceTest::ForkAndRootCommands(const std::vector<std::str
         exit(1);
     }
     std::string pidLog;
-    char result_buf_shell[100] = { 0, };
+    char result_buf_shell[NAME_LEN] = { 0, };
     if (fgets(result_buf_shell, sizeof(result_buf_shell), procFileInfo) != nullptr) {
         pidLog = result_buf_shell;
         looprootPid = atoi(pidLog.c_str());
@@ -126,21 +137,6 @@ void FaultPerformanceTest::StartRootCrasherLoop()
     if (looprootPid == 0) {
         exit(0);
     }
-
-    DfxDumpCatcher dumplog;
-    std::string msg = "";
-    dumplog.DumpCatch(looprootPid, 0, msg);
-    int sleepSecond = 5;
-    usleep(sleepSecond);
-    std::string procCMD = "ls /proc/" + std::to_string(looprootPid) + "/task";
-    FILE *procFileInfo = nullptr;
-
-    procFileInfo = popen(procCMD.c_str(), "r");
-    if (procFileInfo == nullptr) {
-        perror("popen execute failed");
-        exit(1);
-    }
-    pclose(procFileInfo);
 }
 
 void FaultPerformanceTest::KillCrasherLoopForSomeCase()
@@ -172,6 +168,7 @@ int FaultPerformanceTest::getApplyPid(std::string applyName)
     return intApplyPid;
 }
 
+namespace {
 /**
  * @tc.name: FaultPerformanceTest001
  * @tc.desc: test DumpCatch API: PID(root), TID(root)
@@ -180,15 +177,17 @@ int FaultPerformanceTest::getApplyPid(std::string applyName)
 HWTEST_F (FaultPerformanceTest, FaultPerformanceTest001, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "FaultPerformanceTest001: start.";
-    FaultPerformanceTest::StartRootCrasherLoop();
     DfxDumpCatcher dumplog;
     std::string msg;
     clock_t befor = GetStartTime();
-    for (int i=0; i<1000; i++) {
+    for (int i = 0; i < PERFORMANCE_TEST_NUMBER_ONE_HUNDRED; i++) {
         dumplog.DumpCatch(FaultPerformanceTest::looprootPid, FaultPerformanceTest::looprootPid, msg);
     }
-    GTEST_LOG_(INFO) << "DumpCatch API Performance time(PID(root), TID(root)): " << GetStopTime(befor)/1000 << "s";
-    FaultPerformanceTest::KillCrasherLoopForSomeCase();
+    GTEST_LOG_(INFO) << "DumpCatch API Performance time(PID(root), TID(root)): " << \
+        GetStopTime(befor)/PERFORMANCE_TEST_NUMBER_ONE_HUNDRED << "s";    
+    double expectTime = PERFORMANCE_TEST_MAX_UNWIND_TIME_S;
+    double realTime = GetStopTime(befor)/PERFORMANCE_TEST_NUMBER_ONE_HUNDRED;
+    EXPECT_EQ(true, realTime < expectTime) << "FaultPerformanceTest001 Failed";
     GTEST_LOG_(INFO) << "FaultPerformanceTest001: end.";
 }
 
@@ -204,32 +203,37 @@ HWTEST_F (FaultPerformanceTest, FaultPerformanceTest002, TestSize.Level2)
     DfxDumpCatcher dumplog;
     std::string msg;
     clock_t befor = GetStartTime();
-    for (int i=0; i <1000; i++) {
+    for (int i = 0; i < PERFORMANCE_TEST_NUMBER_ONE_HUNDRED; i++) {
         dumplog.DumpCatch(FaultPerformanceTest::looprootPid, 0, msg);
+        usleep(200000);
     }
-    GTEST_LOG_(INFO) << "DumpCatch API Performance time(PID(root), TID(0)): " << GetStopTime(befor)/1000 << "s";
-    FaultPerformanceTest::KillCrasherLoopForSomeCase();
+    GTEST_LOG_(INFO) << "DumpCatch API Performance time(PID(root), TID(0)): " << \
+        GetStopTime(befor)/PERFORMANCE_TEST_NUMBER_ONE_HUNDRED << "s";
+    double expectTime = PERFORMANCE_TEST_MAX_UNWIND_TIME_S;
+    double realTime = GetStopTime(befor)/PERFORMANCE_TEST_NUMBER_ONE_HUNDRED - 0.2;
+    EXPECT_EQ(true, realTime < expectTime) << "FaultPerformanceTest002 Failed";
     GTEST_LOG_(INFO) << "FaultPerformanceTest002: end.";
 }
 
 /**
  * @tc.name: FaultPerformanceTest003
- * @tc.desc: test processdump command: PID(root), TID(root)
+ * @tc.desc: test dumpcatcher command: PID(root), TID(root)
  * @tc.type: FUNC
  */
 HWTEST_F (FaultPerformanceTest, FaultPerformanceTest003, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "FaultPerformanceTest003: start.";
-    FaultPerformanceTest::StartRootCrasherLoop();
-    std::string procCMD = "processdump -p " + std::to_string(FaultPerformanceTest::looprootPid) + " -t "+
+    std::string procCMD = "dumpcatcher -p " + std::to_string(FaultPerformanceTest::looprootPid) + " -t "+
         std::to_string(FaultPerformanceTest::looprootPid);
     clock_t befor = GetStartTime();
-    for (int i=0; i<1000; i++) {
+    for (int i = 0; i < PERFORMANCE_TEST_NUMBER_ONE_HUNDRED; i++) {
         FaultPerformanceTest::ProcessDumpCommands(procCMD);
     }
-    double timeInterval = GetStopTime(befor)/1000;
-    GTEST_LOG_(INFO) << "Processdump Command Performance time(PID(root), TID(root)): " << timeInterval << "s";
-    FaultPerformanceTest::KillCrasherLoopForSomeCase();
+    double timeInterval = GetStopTime(befor)/PERFORMANCE_TEST_NUMBER_ONE_HUNDRED;
+    GTEST_LOG_(INFO) << "dumpcatcher Command Performance time(PID(root), TID(root)): " << timeInterval << "s";
+    double expectTime = PERFORMANCE_TEST_MAX_UNWIND_TIME_S;
+    double realTime = GetStopTime(befor)/PERFORMANCE_TEST_NUMBER_ONE_HUNDRED;
+    EXPECT_EQ(true, realTime < expectTime) << "FaultPerformanceTest003 Failed";
     GTEST_LOG_(INFO) << "FaultPerformanceTest003: end.";
 }
 
@@ -241,14 +245,17 @@ HWTEST_F (FaultPerformanceTest, FaultPerformanceTest003, TestSize.Level2)
 HWTEST_F (FaultPerformanceTest, FaultPerformanceTest004, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "FaultPerformanceTest004: start.";
-    FaultPerformanceTest::StartRootCrasherLoop();
-    std::string procCMD = "processdump -p " + std::to_string(FaultPerformanceTest::looprootPid);
+    std::string procCMD = "dumpcatcher -p " + std::to_string(FaultPerformanceTest::looprootPid);
     clock_t befor = GetStartTime();
-    for (int i=0; i<1000; i++) {
+    for (int i = 0; i < PERFORMANCE_TEST_NUMBER_ONE_HUNDRED; i++) {
         FaultPerformanceTest::ProcessDumpCommands(procCMD);
     }
-    GTEST_LOG_(INFO) << "Processdump Command Performance time(PID(root)): " << GetStopTime(befor)/1000 << "s";
-    FaultPerformanceTest::KillCrasherLoopForSomeCase();
+    GTEST_LOG_(INFO) << "dumpcatcher Command Performance time(PID(root)): " << \
+        GetStopTime(befor)/PERFORMANCE_TEST_NUMBER_ONE_HUNDRED << "s";
+
+    double expectTime = PERFORMANCE_TEST_MAX_UNWIND_TIME_S;
+    double realTime = GetStopTime(befor)/PERFORMANCE_TEST_NUMBER_ONE_HUNDRED;
+    EXPECT_EQ(true, realTime < expectTime) << "FaultPerformanceTest004 Failed";
     GTEST_LOG_(INFO) << "FaultPerformanceTest004: end.";
 }
 
@@ -260,19 +267,20 @@ HWTEST_F (FaultPerformanceTest, FaultPerformanceTest004, TestSize.Level2)
 HWTEST_F (FaultPerformanceTest, FaultPerformanceTest005, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "FaultPerformanceTest005: start.";
-    FaultPerformanceTest::StartRootCrasherLoop();
     DfxDumpCatcher dumplog;
     std::string msg;
     std::string apply = "foundation";
     int applyPid = FaultPerformanceTest::getApplyPid(apply);
     std::vector<int> multiPid {applyPid, FaultPerformanceTest::looprootPid};
     clock_t befor = GetStartTime();
-    for (int i=0; i <1000; i++) {
+    for (int i = 0; i < PERFORMANCE_TEST_NUMBER_ONE_HUNDRED; i++) {
         dumplog.DumpCatchMultiPid(multiPid, msg);
     }
-    double timeInterval = GetStopTime(befor)/1000;
+    double timeInterval = GetStopTime(befor)/PERFORMANCE_TEST_NUMBER_ONE_HUNDRED;
     GTEST_LOG_(INFO) << "DumpCatchMultiPid API time(PID(root), PID(foundation)): " << timeInterval << "s";
-    FaultPerformanceTest::KillCrasherLoopForSomeCase();
+    double expectTime = PERFORMANCE_TEST_MAX_UNWIND_TIME_NEW_S;
+    double realTime = GetStopTime(befor)/PERFORMANCE_TEST_NUMBER_ONE_HUNDRED;
+    EXPECT_EQ(true, realTime < expectTime) << "FaultPerformanceTest005 Failed";
     GTEST_LOG_(INFO) << "FaultPerformanceTest005: end.";
 }
 
@@ -287,15 +295,21 @@ HWTEST_F (FaultPerformanceTest, FaultPerformanceTest006, TestSize.Level2)
     std::string apply = "test_perfor";
     int testPid = FaultPerformanceTest::getApplyPid(apply);
     GTEST_LOG_(INFO) << testPid;
-    DfxDumpCatcher dumplog;
-    std::string msg = "";
-    std::vector<std::shared_ptr<DfxDumpCatcherFrame>> frameV;
+    DfxDumpCatcher dumplog(testPid);
+    if (!dumplog.InitFrameCatcher()) {
+        GTEST_LOG_(ERROR) << "Failed to suspend thread(" << testPid << ").";
+    }
+    std::vector<std::shared_ptr<DfxFrame>> frameV;
     clock_t befor = GetStartTime();
-    for (int i=0; i<1000; i++) {
-        bool ret = dumplog.DumpCatchFrame(testPid, testPid, msg, frameV);
+    for (int i = 0; i < PERFORMANCE_TEST_NUMBER_ONE_HUNDRED; i++) {
+        bool ret = dumplog.CatchFrame(testPid, frameV);
         GTEST_LOG_(INFO) << ret;
     }
-    double timeInterval = GetStopTime(befor)/1000;
+    double timeInterval = GetStopTime(befor)/PERFORMANCE_TEST_NUMBER_ONE_HUNDRED;
     GTEST_LOG_(INFO) << "DumpCatchFrame API time(PID(test_per), PID(test_per)):" << timeInterval << "s";
+    double expectTime = PERFORMANCE_TEST_MAX_UNWIND_TIME_S;
+    double realTime = GetStopTime(befor)/PERFORMANCE_TEST_NUMBER_ONE_HUNDRED;
+    EXPECT_EQ(true, realTime < expectTime) << "FaultPerformanceTest006 Failed";
     GTEST_LOG_(INFO) << "FaultPerformanceTest006: end.";
+}
 }

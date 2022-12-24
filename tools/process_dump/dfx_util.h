@@ -18,16 +18,20 @@
 #ifndef DFX_UTIL_H
 #define DFX_UTIL_H
 
-#include <memory>
 #include <cstdio>
+#include <memory>
 #include <string>
-
 #include "dfx_define.h"
 
 namespace OHOS {
 namespace HiviewDFX {
+    int GetRealTargetPid();
+    int GetProcStatus(struct ProcInfo& procInfo);
+    int GetProcStatusByPid(int realPid, struct ProcInfo& procInfo);
     bool ReadStringFromFile(const std::string &path, std::string &buf, size_t len);
     bool TrimAndDupStr(const std::string &source, std::string &str);
+    std::string GetCurrentTimeStr(uint64_t current = 0);
+    int PrintFormat(char *buf, int size, const char *format, ...);
 } // nameapace HiviewDFX
 } // nameapace OHOS
 

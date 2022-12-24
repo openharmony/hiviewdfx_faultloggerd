@@ -12,52 +12,48 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 #include "dfx_signal_handler.h"
 
-#include <errno.h>
+#ifndef _GNU_SOURCE
+#define _GNU_SOURCE 1
+#endif
+
 #include <fcntl.h>
-#include <inttypes.h>
 #include <pthread.h>
 #include <sched.h>
 #include <signal.h>
+#include <stdint.h>
 #include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <time.h>
-#include <unistd.h>
-
 #include <sys/capability.h>
 #include <sys/mman.h>
 #include <sys/prctl.h>
 #include <sys/syscall.h>
+#include <sys/time.h>
 #include <sys/types.h>
 #include <sys/uio.h>
 #include <sys/wait.h>
-
+#include <time.h>
+#include <unistd.h>
+#include "dfx_define.h"
+#include "errno.h"
+#include "linux/capability.h"
+#include "stdbool.h"
+#include "string.h"
+#ifndef DFX_SIGNAL_LIBC
 #include <securec.h>
-#include "dfx_func_hook.h"
+#include "dfx_cutil.h"
 #include "dfx_log.h"
-
-#ifdef DFX_LOCAL_UNWIND
-#include <libunwind.h>
-
-#include "dfx_dump_writer.h"
-#include "dfx_process.h"
-#include "dfx_thread.h"
-#include "dfx_util.h"
+#else
+#include "musl_cutil.h"
+#include "musl_log.h"
 #endif
-
-
-#define RESERVED_CHILD_STACK_SIZE (16 * 1024)  // 16K
-
-#define BOOL int
-#define TRUE 1
-#define FALSE 0
+#if defined(CRASH_LOCAL_HANDLER)
+#include "dfx_crash_local_handler.h"
+#endif
 
 #ifdef LOG_DOMAIN
 #undef LOG_DOMAIN
-#define LOG_DOMAIN 0x2D11
+#define LOG_DOMAIN 0xD002D11
 #endif
 
 #ifdef LOG_TAG
@@ -65,29 +61,43 @@
 #define LOG_TAG "DfxSignalHandler"
 #endif
 
-#define SECONDS_TO_MILLSECONDS 1000000
-#define NANOSECONDS_TO_MILLSECONDS 1000
+#if defined (__LP64__)
+#define RESERVED_CHILD_STACK_SIZE (32 * 1024)  // 32K
+#else
+#define RESERVED_CHILD_STACK_SIZE (16 * 1024)  // 16K
+#endif
+
+#define BOOL int
+#define TRUE 1
+#define FALSE 0
+
 #ifndef NSIG
 #define NSIG 64
 #endif
 
+#ifndef F_SETPIPE_SZ
+#define F_SETPIPE_SZ 1031
+#endif
+
 #define NUMBER_SIXTYFOUR 64
 #define INHERITABLE_OFFSET 32
-void __attribute__((constructor)) Init()
+
+void __attribute__((constructor)) InitHandler(void)
 {
     DFX_InstallSignalHandler();
 }
 
 static struct ProcessDumpRequest g_request;
+static struct ProcInfo g_procInfo;
 static void *g_reservedChildStack;
 static pthread_mutex_t g_signalHandlerMutex = PTHREAD_MUTEX_INITIALIZER;
-static pthread_mutex_t g_dumpMutex = PTHREAD_MUTEX_INITIALIZER;
 static int g_pipefd[2] = {-1, -1};
 static BOOL g_hasInit = FALSE;
-static const int MAX_HANDLED_TID_NUMBER = 256;
-static int g_lastHandledTid[MAX_HANDLED_TID_NUMBER] = {0};
-static int g_lastHandledTidIndex = 0;
+static const int SIGNALHANDLER_TIMEOUT = 10000; // 10000 us
 static const int ALARM_TIME_S = 10;
+static int g_prevHandledSignal = SIGDUMP;
+static BOOL g_isDumping = FALSE;
+static struct sigaction g_oldSigactionList[NSIG] = {};
 
 enum DumpPreparationStage {
     CREATE_PIPE_FAIL = 1,
@@ -97,26 +107,61 @@ enum DumpPreparationStage {
     EXEC_FAIL,
 };
 
-static int32_t InheritCapabilities()
+TraceInfo HiTraceGetId(void) __attribute__((weak));
+static void FillTraceIdLocked(struct ProcessDumpRequest* request)
+{
+    if (HiTraceGetId == NULL || request == NULL) {
+        return;
+    }
+
+    TraceInfo id = HiTraceGetId();
+    memcpy(&(request->traceInfo), &id, sizeof(TraceInfo));
+}
+
+const char* GetLastFatalMessage(void) __attribute__((weak));
+static void FillLastFatalMessageLocked(int32_t sig)
+{
+    if (sig != SIGABRT) {
+        return;
+    }
+
+    if (GetLastFatalMessage == NULL) {
+        DfxLogError("Could not find GetLastFatalMessage func");
+        return;
+    }
+
+    const char* lastFatalMessage = GetLastFatalMessage();
+    if (lastFatalMessage == NULL) {
+        DfxLogError("Could not find last message");
+        return;
+    }
+
+    size_t len = strlen(lastFatalMessage);
+    if (len > MAX_FATAL_MSG_SIZE) {
+        DfxLogError("Last message is longer than MAX_FATAL_MSG_SIZE");
+        return;
+    }
+
+    (void)strncpy(g_request.lastFatalMessage, lastFatalMessage, sizeof(g_request.lastFatalMessage) - 1);
+}
+
+static int32_t InheritCapabilities(void)
 {
     struct __user_cap_header_struct capHeader;
-    if (memset_s(&capHeader, sizeof(capHeader), 0, sizeof(capHeader)) != EOK) {
-        HILOG_BASE_ERROR(LOG_CORE, "Failed to memset cap header.");
-        return -1;
-    }
+    memset(&capHeader, 0, sizeof(capHeader));
 
     capHeader.version = _LINUX_CAPABILITY_VERSION_3;
     capHeader.pid = 0;
     struct __user_cap_data_struct capData[2];
     if (capget(&capHeader, &capData[0]) == -1) {
-        HILOG_BASE_ERROR(LOG_CORE, "Failed to get origin cap data");
+        DfxLogError("Failed to get origin cap data");
         return -1;
     }
 
     capData[0].inheritable = capData[0].permitted;
     capData[1].inheritable = capData[1].permitted;
     if (capset(&capHeader, &capData[0]) == -1) {
-        HILOG_BASE_ERROR(LOG_CORE, "Failed to set cap data");
+        DfxLogError("Failed to set cap data");
         return -1;
     }
 
@@ -128,29 +173,18 @@ static int32_t InheritCapabilities()
         }
         ambCap = ambCap >> 1;
     }
-    HILOG_BASE_DEBUG(LOG_CORE, "InheritCapabilities done");
     return 0;
 }
 
-static int g_interestedSignalList[] = {
-    SIGABRT,
-    SIGBUS,
-    SIGDUMP,
-    SIGFPE,
-    SIGILL,
-    SIGSEGV,
-    SIGSTKFLT,
-    SIGSYS,
-    SIGTRAP,
+static const int g_interestedSignalList[] = {
+    SIGABRT, SIGBUS, SIGDUMP, SIGFPE, SIGILL,
+    SIGSEGV, SIGSTKFLT, SIGSYS, SIGTRAP,
 };
 
-static struct sigaction g_oldSigactionList[NSIG] = {};
-
-#ifndef DFX_LOCAL_UNWIND
 static void SetInterestedSignalMasks(int how)
 {
     sigset_t set;
-    sigemptyset (&set);
+    sigemptyset(&set);
     for (size_t i = 0; i < sizeof(g_interestedSignalList) / sizeof(g_interestedSignalList[0]); i++) {
         sigaddset(&set, g_interestedSignalList[i]);
     }
@@ -165,14 +199,14 @@ static void DFX_SetUpEnvironment()
         syscall(SYS_close, i);
     }
     // clear stdout and stderr
-    int devNull = TEMP_FAILURE_RETRY(open("/dev/null", O_RDWR));
+    int devNull = OHOS_TEMP_FAILURE_RETRY(open("/dev/null", O_RDWR));
     if (devNull < 0) {
-        HILOG_BASE_ERROR(LOG_CORE, "Failed to open dev/null.");
+        DfxLogError("Failed to open dev/null.");
         return;
     }
 
-    TEMP_FAILURE_RETRY(dup2(devNull, STDOUT_FILENO));
-    TEMP_FAILURE_RETRY(dup2(devNull, STDERR_FILENO));
+    OHOS_TEMP_FAILURE_RETRY(dup2(devNull, STDOUT_FILENO));
+    OHOS_TEMP_FAILURE_RETRY(dup2(devNull, STDERR_FILENO));
     syscall(SYS_close, devNull);
     SetInterestedSignalMasks(SIG_BLOCK);
 }
@@ -180,10 +214,10 @@ static void DFX_SetUpEnvironment()
 static void DFX_SetUpSigAlarmAction(void)
 {
     if (signal(SIGALRM, SIG_DFL) == SIG_ERR) {
-        HILOG_BASE_ERROR(LOG_CORE, "signal error!");
+        DfxLogError("signal error!");
     }
     sigset_t set;
-    sigemptyset (&set);
+    sigemptyset(&set);
     sigaddset(&set, SIGALRM);
     sigprocmask(SIG_UNBLOCK, &set, NULL);
 }
@@ -191,20 +225,17 @@ static void DFX_SetUpSigAlarmAction(void)
 static int DFX_ExecDump(void *arg)
 {
     (void)arg;
-    pthread_mutex_lock(&g_dumpMutex);
     DFX_SetUpEnvironment();
     DFX_SetUpSigAlarmAction();
     alarm(ALARM_TIME_S);
     // create pipe for passing request to processdump
     if (pipe(g_pipefd) != 0) {
-        HILOG_BASE_ERROR(LOG_CORE, "Failed to create pipe for transfering context.");
-        pthread_mutex_unlock(&g_dumpMutex);
+        DfxLogError("Failed to create pipe for transfering context.");
         return CREATE_PIPE_FAIL;
     }
     ssize_t writeLen = (long)(sizeof(struct ProcessDumpRequest));
     if (fcntl(g_pipefd[1], F_SETPIPE_SZ, writeLen) < writeLen) {
-        HILOG_BASE_ERROR(LOG_CORE, "Failed to set pipe buffer size.");
-        pthread_mutex_unlock(&g_dumpMutex);
+        DfxLogError("Failed to set pipe buffer size.");
         return SET_PIPE_LEN_FAIL;
     }
 
@@ -214,35 +245,54 @@ static int DFX_ExecDump(void *arg)
             .iov_len = sizeof(struct ProcessDumpRequest)
         },
     };
-    ssize_t realWriteSize = TEMP_FAILURE_RETRY(writev(g_pipefd[1], iovs, 1));
+    ssize_t realWriteSize = OHOS_TEMP_FAILURE_RETRY(writev(g_pipefd[1], iovs, 1));
     if ((ssize_t)writeLen != realWriteSize) {
-        HILOG_BASE_ERROR(LOG_CORE, "Failed to write pipe.");
-        pthread_mutex_unlock(&g_dumpMutex);
+        DfxLogError("Failed to write pipe.");
         return WRITE_PIPE_FAIL;
     }
-    TEMP_FAILURE_RETRY(dup2(g_pipefd[0], STDIN_FILENO));
+    OHOS_TEMP_FAILURE_RETRY(dup2(g_pipefd[0], STDIN_FILENO));
     if (g_pipefd[0] != STDIN_FILENO) {
         syscall(SYS_close, g_pipefd[0]);
     }
     syscall(SYS_close, g_pipefd[1]);
 
     if (InheritCapabilities() != 0) {
-        HILOG_BASE_ERROR(LOG_CORE, "Failed to inherit Capabilities from parent.");
-        pthread_mutex_unlock(&g_dumpMutex);
+        DfxLogError("Failed to inherit Capabilities from parent.");
         return INHERIT_CAP_FAIL;
     }
-
-    HILOG_BASE_INFO(LOG_CORE, "Start processdump.");
-    execle("/system/bin/processdump", "-signalhandler", NULL, NULL);
-    pthread_mutex_unlock(&g_dumpMutex);
+    DfxLogInfo("execl processdump.");
+#ifdef DFX_LOG_USE_HILOG_BASE
+    execl("/system/bin/processdump", "processdump", "-signalhandler", NULL);
+#else
+    execl("/bin/processdump", "processdump", "-signalhandler", NULL);
+#endif
+    DfxLogError("Failed to execl processdump, errno: %d(%s)", errno, strerror(errno));
     return errno;
 }
 
-static pid_t DFX_ForkAndDump()
+static pid_t GetPid(void)
 {
-    return clone(DFX_ExecDump, g_reservedChildStack, CLONE_VFORK | CLONE_FS | CLONE_UNTRACED, NULL);
+    return g_procInfo.pid;
 }
-#endif
+
+static pid_t GetTid(void)
+{
+    return g_procInfo.tid;
+}
+
+static bool IsMainThread(void)
+{
+    if (g_procInfo.ns) {
+        if (GetTid() == 1) {
+            return true;
+        }
+    } else {
+        if (GetPid() == GetTid()) {
+            return true;
+        }
+    }
+    return false;
+}
 
 static void ResetSignalHandlerIfNeed(int sig)
 {
@@ -252,274 +302,247 @@ static void ResetSignalHandlerIfNeed(int sig)
 
     if (g_oldSigactionList[sig].sa_sigaction == NULL) {
         signal(sig, SIG_DFL);
+        // real init will not handle crash signal
+        // crash in pid namespace may not exit even if rethrow the signal
+        // use exit instead
+        if (GetPid() == 1) {
+            DfxLogError("Sandbox process is about to exit with signal %d.", sig);
+            _exit(sig);
+        }
         return;
     }
 
     if (sigaction(sig, &(g_oldSigactionList[sig]), NULL) != 0) {
-        HILOG_BASE_ERROR(LOG_CORE, "Failed to reset signal.");
+        DfxLogError("Failed to reset signal.");
         signal(sig, SIG_DFL);
     }
 }
 
-#ifdef DFX_LOCAL_UNWIND
-static void DFX_UnwindLocal(int sig, siginfo_t *si, void *context)
+static void PauseMainThreadHandler(int sig)
 {
-    int32_t fromSignalHandler = 1;
-    DfxProcess *process = NULL;
-    DfxThread *keyThread = NULL;
-    if (!InitThreadByContext(&keyThread, g_request.pid, g_request.tid, &(g_request.context))) {
-        HILOG_BASE_WARN(LOG_CORE, "Fail to init key thread.");
-        DestroyThread(keyThread);
-        keyThread = NULL;
-        return;
-    }
-
-    if (!InitProcessWithKeyThread(&process, g_request.pid, keyThread)) {
-        HILOG_BASE_WARN(LOG_CORE, "Fail to init process with key thread.");
-        DestroyThread(keyThread);
-        keyThread = NULL;
-        return;
-    }
-
-    unw_cursor_t cursor;
-    unw_context_t unwContext = {};
-    unw_getcontext(&unwContext);
-    if (unw_init_local(&cursor, &unwContext) != 0) {
-        HILOG_BASE_WARN(LOG_CORE, "Fail to init local unwind context.");
-        DestroyProcess(process);
-        return;
-    }
-
-    size_t index = 0;
-    do {
-        DfxFrame *frame = GetAvaliableFrame(keyThread);
-        if (frame == NULL) {
-            HILOG_BASE_WARN(LOG_CORE, "Fail to create Frame.");
-            break;
-        }
-
-        frame->index = index;
-        char sym[1024] = {0}; // 1024 : symbol buffer size
-        if (unw_get_reg(&cursor, UNW_REG_IP, (unw_word_t*)(&(frame->pc)))) {
-            HILOG_BASE_WARN(LOG_CORE, "Fail to get program counter.");
-            break;
-        }
-
-        if (unw_get_reg(&cursor, UNW_REG_SP, (unw_word_t*)(&(frame->sp)))) {
-            HILOG_BASE_WARN(LOG_CORE, "Fail to get stack pointer.");
-            break;
-        }
-
-        if (FindMapByAddr(process->maps, frame->pc, &(frame->map))) {
-            frame->relativePc = GetRelativePc(frame, process->maps);
-        }
-
-        if (unw_get_proc_name(&cursor, sym, sizeof(sym), (unw_word_t*)(&(frame->funcOffset))) == 0) {
-            std::string funcName;
-            std::string strSym(sym, sym + strlen(sym));
-            TrimAndDupStr(strSym, funcName);
-            frame->funcName = funcName;
-        }
-        index++;
-    } while (unw_step(&cursor) > 0);
-    WriteProcessDump(process, &g_request, fromSignalHandler);
-    DestroyProcess(process);
+    // only work when subthread crash and send SIGDUMP to mainthread.
+    pthread_mutex_lock(&g_signalHandlerMutex);
+    pthread_mutex_unlock(&g_signalHandlerMutex);
+    DfxLogInfo("Crash in child thread(%d), exit main thread.", GetTid());
 }
+
+static void BlockMainThreadIfNeed(int sig)
+{
+    if (IsMainThread() || (sig == SIGDUMP)) {
+        return;
+    }
+
+    DfxLogInfo("Crash(%d) in child thread(%d), try stop main thread.", sig, GetTid());
+    (void)signal(SIGDUMP, PauseMainThreadHandler);
+    if (syscall(SYS_tgkill, GetPid(), GetPid(), SIGDUMP) != 0) {
+        DfxLogError("Failed to send SIGDUMP to main thread, errno(%d).", errno);
+    }
+}
+
+static pid_t ForkBySyscall(void)
+{
+#ifdef SYS_fork
+    return syscall(SYS_fork);
+#else
+    return syscall(SYS_clone, SIGCHLD, 0);
 #endif
+}
 
-void ReadStringFromFile(char* path, char* pDestStore)
+static bool SetDumpState(void)
 {
-    char name[NAME_LEN] = {0};
-    char nameFilter[NAME_LEN] = {0};
-
-    memset_s(name, sizeof(name), '\0', sizeof(name));
-    memset_s(nameFilter, sizeof(nameFilter), '\0', sizeof(nameFilter));
-
-    int fd = -1;
-    fd = open(path, O_RDONLY);
-    if (fd == -1) {
-        return;
+    if (prctl(PR_SET_DUMPABLE, 1) != 0) {
+        DfxLogError("Failed to set dumpable.");
+        return false;
     }
-    if (read(fd, name, NAME_LEN -1) == -1) {
-        close(fd);
-        return;
+
+    if (prctl(PR_SET_PTRACER, PR_SET_PTRACER_ANY) != 0) {
+        if (errno != EINVAL) {
+            DfxLogError("Failed to set ptracer.");
+            return false;
+        }
     }
-    char* p = name;
-    int i = 0;
-    while (*p != '\0') {
-        if ((*p == '\n') || (i == NAME_LEN)) {
+    return true;
+}
+
+static void RestoreDumpState(int prevState, bool isTracerStatusModified)
+{
+    prctl(PR_SET_DUMPABLE, prevState);
+    if (isTracerStatusModified == true) {
+        prctl(PR_SET_PTRACER, 0);
+    }
+}
+
+static int DoProcessDump(void* arg)
+{
+    (void)arg;
+    int status;
+    int ret = -1;
+    int childPid = -1;
+    int startTime = (int)time(NULL);
+    bool isTimeout = false;
+    g_request.recycleTid = syscall(SYS_gettid);
+    // set privilege for dump ourself
+    int prevDumpableStatus = prctl(PR_GET_DUMPABLE);
+    bool isTracerStatusModified = SetDumpState();
+    if (!isTracerStatusModified) {
+        goto out;
+    }
+
+    // fork a child process that could ptrace us
+    childPid = ForkBySyscall();
+    if (childPid == 0) {
+        _exit(DFX_ExecDump(NULL));
+    } else if (childPid < 0) {
+        DfxLogError("Failed to fork child process, errno(%d).", errno);
+        goto out;
+    }
+
+    do {
+        errno = 0;
+        ret = waitpid(childPid, &status, WNOHANG);
+        if (ret < 0) {
+            DfxLogError("Failed to wait child process terminated, errno(%d)", errno);
+            goto out;
+        }
+
+        if (ret == childPid) {
             break;
         }
-        nameFilter[i] = *p;
-        p++, i++;
+
+        if ((int)time(NULL) - startTime > PROCESSDUMP_TIMEOUT) {
+            isTimeout = true;
+            break;
+        }
+        usleep(SIGNALHANDLER_TIMEOUT); // sleep 10ms
+    } while (1);
+    DfxLogInfo("(%d) wait for process(%d) return with ret(%d) status(%d) timeout(%d)",
+        g_request.recycleTid, childPid, ret, status, isTimeout);
+out:
+#if defined(CRASH_LOCAL_HANDLER)
+    if ((g_prevHandledSignal != SIGDUMP) && ((isTimeout) || ((ret >= 0) && (status != 0)))) {
+        CrashLocalHandler(&g_request);
     }
-    if (memcpy_s(pDestStore, NAME_LEN, nameFilter, strlen(nameFilter) + 1) != 0) {
-        HILOG_BASE_ERROR(LOG_CORE, "Failed to copy name.");
-    }
-    int ret = close(fd);
-    if (ret == -1) {
-        HILOG_BASE_ERROR(LOG_CORE, "close failed!");
+#endif
+    g_isDumping = FALSE;
+    RestoreDumpState(prevDumpableStatus, isTracerStatusModified);
+    pthread_mutex_unlock(&g_signalHandlerMutex);
+    return 0;
+}
+
+static void UnlockSignalHandlerMutex()
+{
+    if (pthread_mutex_trylock(&g_signalHandlerMutex) == 0) {
+        pthread_mutex_unlock(&g_signalHandlerMutex);
+    } else {
+        pthread_mutex_unlock(&g_signalHandlerMutex);
     }
 }
 
-void GetThreadName(void)
+static void ForkAndDoProcessDump()
 {
-    char path[NAME_LEN] = {0};
-    memset_s(path, sizeof(path), '\0', sizeof(path));
-    if (snprintf_s(path, sizeof(path), sizeof(path) - 1, "/proc/%d/comm", getpid()) <= 0) {
-        return ;
-    }
-    ReadStringFromFile(path, g_request.threadName);
-}
-
-void GetProcessName(void)
-{
-    char path[NAME_LEN] = {0};
-    int ret = memset_s(path, sizeof(path), '\0', sizeof(path));
-    if (ret != EOK) {
-        printf("memset error!");
-    }
-    if (snprintf_s(path, sizeof(path), sizeof(path) - 1, "/proc/%d/cmdline", getpid()) <= 0) {
+    int prevDumpableStatus = prctl(PR_GET_DUMPABLE);
+    bool isTracerStatusModified = SetDumpState();
+    int childPid = ForkBySyscall();
+    if (childPid == 0) {
+        g_request.vmPid = syscall(SYS_getpid);
+        DfxLogInfo("Start DoProcessDump in VmProcess(%d).", g_request.vmPid);
+        alarm(ALARM_TIME_S);
+        _exit(DoProcessDump(NULL));
+    } else if (childPid < 0) {
+        DfxLogError("Failed to vfork child process, errno(%d).", errno);
+        RestoreDumpState(prevDumpableStatus, isTracerStatusModified);
+        DoProcessDump(NULL);
         return;
     }
-    ReadStringFromFile(path, g_request.processName);
-}
 
-static int CheckLastHandledTid(int sig, siginfo_t *si)
-{
-    for (int i = 0; i < g_lastHandledTidIndex && i < MAX_HANDLED_TID_NUMBER; i++) {
-        if (g_lastHandledTid[i] == gettid()) {
-            ResetSignalHandlerIfNeed(sig);
-            HILOG_BASE_INFO(LOG_CORE, "Just resend sig(%{public}d), pid(%{public}d), tid(%{public}d) to sys.", \
-                sig, getpid(), gettid());
-            if (syscall(SYS_rt_tgsigqueueinfo, getpid(), gettid(), si->si_signo, si) != 0) {
-                HILOG_BASE_ERROR(LOG_CORE, "Failed to resend signal.");
-            }
-            return TRUE;
-        }
-    }
-    return FALSE;
+    DfxLogInfo("Start wait for VmProcess(%d) exit.", childPid);
+    errno = 0;
+    int status;
+    int ret = waitpid(childPid, &status, 0);
+    RestoreDumpState(prevDumpableStatus, isTracerStatusModified);
+    DfxLogInfo("(%d) wait for VmProcess(%d) return with ret(%d) status(%d)",
+        getpid(), childPid, ret, status);
 }
 
 static void DFX_SignalHandler(int sig, siginfo_t *si, void *context)
 {
-    HILOG_BASE_INFO(LOG_CORE, "DFX_SignalHandler :: sig(%{public}d), pid(%{public}d), tid(%{public}d).",
-        sig, getpid(), gettid());
-    if (sig != SIGDUMP) {
-        if (CheckLastHandledTid(sig, si) == TRUE) {
-            return;
-        }
+    if (sig == SIGDUMP && g_isDumping) {
+        DfxLogInfo("Current Process is dumping stacktrace now.");
+        return;
     }
+
+    // crash signal should never be skipped
     pthread_mutex_lock(&g_signalHandlerMutex);
-
-    (void)memset_s(&g_request, sizeof(g_request), 0, sizeof(g_request));
+    memset(&g_procInfo, 0, sizeof(g_procInfo));
+    GetProcStatus(&g_procInfo);
+    BlockMainThreadIfNeed(sig);
+    if (g_prevHandledSignal != SIGDUMP) {
+        ResetSignalHandlerIfNeed(sig);
+        if (syscall(SYS_rt_tgsigqueueinfo, GetPid(), GetTid(), si->si_signo, si) != 0) {
+            DfxLogError("Failed to resend signal(%d), errno(%d).", si->si_signo, errno);
+        } else {
+            DfxLogInfo("Current process has encount a crash, rethrow sig(%d).", si->si_signo);
+        }
+        return;
+    }
+    g_prevHandledSignal = sig;
+    g_isDumping = TRUE;
+    memset(&g_request, 0, sizeof(g_request));
     g_request.type = sig;
-    g_request.tid = gettid();
-    g_request.pid = getpid();
-    g_request.uid = (int32_t)getuid();
+    g_request.pid = GetPid();
+    g_request.tid = syscall(SYS_gettid);
+    g_request.uid = getuid();
     g_request.reserved = 0;
-    g_request.timeStamp = (uint64_t)time(NULL);
-    HILOG_BASE_INFO(LOG_CORE, "DFX_SignalHandler :: sig(%{public}d), pid(%{public}d), tid(%{public}d).",
-        sig, g_request.pid, g_request.tid);
+    g_request.timeStamp = GetTimeMilliseconds();
+    DfxLogInfo("DFX_SignalHandler :: sig(%d), pid(%d), tid(%d).", sig, g_request.pid, g_request.tid);
 
-    GetThreadName();
-    GetProcessName();
+    GetThreadName(g_request.threadName, sizeof(g_request.threadName));
+    GetProcessName(g_request.processName, sizeof(g_request.processName));
 
-    if (sig != SIGDUMP && g_lastHandledTidIndex < MAX_HANDLED_TID_NUMBER) {
-        g_lastHandledTid[g_lastHandledTidIndex] = g_request.tid;
-        g_lastHandledTidIndex = g_lastHandledTidIndex + 1;
-    }
+    memcpy(&(g_request.siginfo), si, sizeof(siginfo_t));
+    memcpy(&(g_request.context), context, sizeof(ucontext_t));
 
-    if (memcpy_s(&(g_request.siginfo), sizeof(g_request.siginfo),
-        si, sizeof(siginfo_t)) != 0) {
-        HILOG_BASE_ERROR(LOG_CORE, "Failed to copy siginfo.");
-        pthread_mutex_unlock(&g_signalHandlerMutex);
-        return;
-    }
-    if (memcpy_s(&(g_request.context), sizeof(g_request.context),
-        context, sizeof(ucontext_t)) != 0) {
-        HILOG_BASE_ERROR(LOG_CORE, "Failed to copy ucontext.");
-        pthread_mutex_unlock(&g_signalHandlerMutex);
-        return;
-    }
-#ifdef DFX_LOCAL_UNWIND
-    DFX_UnwindLocal(sig, si, context);
-#else
-    pid_t childPid;
-    int status;
-    // set privilege for dump ourself
-    int prevDumpableStatus = prctl(PR_GET_DUMPABLE);
-    BOOL isTracerStatusModified = FALSE;
-    if (prctl(PR_SET_DUMPABLE, 1) != 0) {
-        HILOG_BASE_ERROR(LOG_CORE, "Failed to set dumpable.");
-        goto out;
-    }
-    if (prctl(PR_SET_PTRACER, PR_SET_PTRACER_ANY) != 0) {
-        if (errno != EINVAL) {
-            HILOG_BASE_ERROR(LOG_CORE, "Failed to set ptracer.");
-            goto out;
-        }
-    } else {
-        isTracerStatusModified = TRUE;
-    }
-    // fork a child process that could ptrace us
-    childPid = DFX_ForkAndDump();
-    if (childPid < 0) {
-        HILOG_BASE_ERROR(LOG_CORE, "Failed to fork child process, errno(%{public}d).", errno);
-        goto out;
-    }
-    // wait the child process terminated
-    if (TEMP_FAILURE_RETRY(waitpid(childPid, &status, __WALL)) == -1) {
-        HILOG_BASE_ERROR(LOG_CORE, "Failed to wait child process terminated, errno(%{public}d)", errno);
-        goto out;
-    }
+    FillTraceIdLocked(&g_request);
+    FillLastFatalMessageLocked(sig);
 
-    HILOG_BASE_INFO(LOG_CORE, "child process(%{public}d) terminated with status(%{public}d)", childPid, status);
-out:
-    ResetSignalHandlerIfNeed(sig);
-    prctl(PR_SET_DUMPABLE, prevDumpableStatus);
-    if (isTracerStatusModified == TRUE) {
-        prctl(PR_SET_PTRACER, 0);
-    }
-
+    // for protecting g_reservedChildStack
+    // g_signalHandlerMutex will be unlocked in DoProcessDump function
     if (sig != SIGDUMP) {
-        if (syscall(SYS_rt_tgsigqueueinfo, getpid(), gettid(), si->si_signo, si) != 0) {
-            HILOG_BASE_ERROR(LOG_CORE, "Failed to resend signal.");
+        ForkAndDoProcessDump();
+        ResetSignalHandlerIfNeed(sig);
+        if (syscall(SYS_rt_tgsigqueueinfo, syscall(SYS_getpid), syscall(SYS_gettid), si->si_signo, si) != 0) {
+            DfxLogError("Failed to resend signal(%d), errno(%d).", si->si_signo, errno);
+        }
+        UnlockSignalHandlerMutex();
+    } else {
+        int recycleTid = clone(DoProcessDump, g_reservedChildStack, CLONE_THREAD | CLONE_SIGHAND | CLONE_VM, NULL);
+        if (recycleTid == -1) {
+            DfxLogError("Failed to create thread for recycle dump process");
+            pthread_mutex_unlock(&g_signalHandlerMutex);
         }
     }
-#endif
-    HILOG_BASE_INFO(LOG_CORE, "Finish handle signal(%{public}d) in %{public}d:%{public}d",
-        sig, g_request.pid, g_request.tid);
-    pthread_mutex_unlock(&g_signalHandlerMutex);
+
+    DfxLogInfo("Finish handle signal(%d) in %d:%d", sig, g_request.pid, g_request.tid);
 }
 
-void DFX_InstallSignalHandler()
+void DFX_InstallSignalHandler(void)
 {
-    pthread_mutex_lock(&g_signalHandlerMutex);
     if (g_hasInit) {
-        pthread_mutex_unlock(&g_signalHandlerMutex);
         return;
     }
 
-#ifdef ENABLE_DEBUG_HOOK
-    StartHookFunc();
-#endif
-
-#ifndef DFX_LOCAL_UNWIND
     // reserve stack for fork
     g_reservedChildStack = mmap(NULL, RESERVED_CHILD_STACK_SIZE, \
         PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_STACK, 1, 0);
     if (g_reservedChildStack == NULL) {
-        HILOG_BASE_ERROR(LOG_CORE, "Failed to alloc memory for child stack.");
-        pthread_mutex_unlock(&g_signalHandlerMutex);
+        DfxLogError("Failed to alloc memory for child stack.");
         return;
     }
     g_reservedChildStack = (void *)(((uint8_t *)g_reservedChildStack) + RESERVED_CHILD_STACK_SIZE - 1);
-#endif
 
     struct sigaction action;
-    memset_s(&action, sizeof(action), 0, sizeof(action));
-    memset_s(&g_oldSigactionList, sizeof(g_oldSigactionList), 0, sizeof(g_oldSigactionList));
+    memset(&action, 0, sizeof(action));
+    memset(&g_oldSigactionList, 0, sizeof(g_oldSigactionList));
     sigfillset(&action.sa_mask);
     action.sa_sigaction = DFX_SignalHandler;
     action.sa_flags = SA_RESTART | SA_SIGINFO | SA_ONSTACK;
@@ -527,9 +550,9 @@ void DFX_InstallSignalHandler()
     for (size_t i = 0; i < sizeof(g_interestedSignalList) / sizeof(g_interestedSignalList[0]); i++) {
         int32_t sig = g_interestedSignalList[i];
         if (sigaction(sig, &action, &(g_oldSigactionList[sig])) != 0) {
-            HILOG_BASE_ERROR(LOG_CORE, "Failed to register signal.");
+            DfxLogError("Failed to register signal(%d)", sig);
         }
     }
+
     g_hasInit = TRUE;
-    pthread_mutex_unlock(&g_signalHandlerMutex);
 }

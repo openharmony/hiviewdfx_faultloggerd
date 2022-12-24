@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -19,34 +19,33 @@
 
 #include <cstdio>
 #include <cstdlib>
-
+#include <securec.h>
 #include "dfx_define.h"
-#include "dfx_log.h"
+#include "dfx_logger.h"
 
 namespace OHOS {
 namespace HiviewDFX {
 enum RegisterSeqNum {
-    REGISTER_ZERO = 0,
-    REGISTER_ONE,
-    REGISTER_TWO,
-    REGISTER_THREE,
-    REGISTER_FOUR,
-    REGISTER_FIVE,
-    REGISTER_SIX,
-    REGISTER_SEVEN,
-    REGISTER_EIGHT,
-    REGISTER_NINE,
-    REGISTER_TEN,
-    REGISTER_ELEVEN,
-    REGISTER_TWELVE,
-    REGISTER_THIRTEEN,
-    REGISTER_FOURTEEN,
-    REGISTER_FIFTEEN
+    REG_ARM_R0 = 0,
+    REG_ARM_R1,
+    REG_ARM_R2,
+    REG_ARM_R3,
+    REG_ARM_R4,
+    REG_ARM_R5,
+    REG_ARM_R6,
+    REG_ARM_R7,
+    REG_ARM_R8,
+    REG_ARM_R9,
+    REG_ARM_R10,
+    REG_ARM_R11,
+    REG_ARM_R12,
+    REG_ARM_R13,
+    REG_ARM_R14,
+    REG_ARM_R15
 };
 
 DfxRegsArm::DfxRegsArm(const ucontext_t& context)
 {
-    DfxLogDebug("Enter %s.", __func__);
     std::vector<uintptr_t> regs {};
 
     regs.push_back(uintptr_t(context.uc_mcontext.arm_r0));   // 0:r0
@@ -67,27 +66,57 @@ DfxRegsArm::DfxRegsArm(const ucontext_t& context)
     regs.push_back(uintptr_t(context.uc_mcontext.arm_pc));  // 15:pc
 
     SetRegs(regs);
-    DfxLogDebug("fp:%08x ip:%08x sp:%08x lr:%08x pc:%08x \n", regs[REGISTER_ELEVEN], regs[REGISTER_TWELVE],
-        regs[REGISTER_THIRTEEN], regs[REGISTER_FOURTEEN], regs[REGISTER_FIFTEEN]);
-    DfxLogDebug("Exit %s.", __func__);
+    DfxLogDebug("fp:%08x ip:%08x sp:%08x lr:%08x pc:%08x \n", regs[REG_ARM_R11], regs[REG_ARM_R12],
+        regs[REG_ARM_R13], regs[REG_ARM_R14], regs[REG_ARM_R15]);
 }
 
-void DfxRegsArm::PrintRegs(int32_t fd) const
+std::string DfxRegsArm::GetSpecialRegisterName(uintptr_t val) const
 {
-    DfxLogDebug("Enter %s.", __func__);
-    if (fd < 0) {
-        return;
+    if (val == regsData_[REG_ARM_R15]) {
+        return "pc";
+    } else if (val == regsData_[REG_ARM_R14]) {
+        return "lr";
+    } else if (val == regsData_[REG_ARM_R13]) {
+        return "sp";
+    } else if (val == regsData_[REG_ARM_R11]) {
+        return "fp";
     }
-    WriteLog(fd, "Registers:\n");
+    return "";
+}
+
+std::string DfxRegsArm::PrintRegs() const
+{
+    std::string regString = "";
+    char buf[REGS_PRINT_LEN_ARM] = {0};
+
+    regString = regString + "Registers:\n";
+
     std::vector<uintptr_t> regs = GetRegsData();
-    WriteLog(fd, "r0:%08x r1:%08x r2:%08x r3:%08x\n", regs[REGISTER_ZERO], regs[REGISTER_ONE], regs[REGISTER_TWO],
-        regs[REGISTER_THREE]);
-    WriteLog(fd, "r4:%08x r5:%08x r6:%08x r7:%08x\n", regs[REGISTER_FOUR], regs[REGISTER_FIVE], regs[REGISTER_SIX],
-        regs[REGISTER_SEVEN]);
-    WriteLog(fd, "r8:%08x r9:%08x r10:%08x\n", regs[REGISTER_EIGHT], regs[REGISTER_NINE], regs[REGISTER_TEN]);
-    WriteLog(fd, "fp:%08x ip:%08x sp:%08x lr:%08x pc:%08x \n", regs[REGISTER_ELEVEN], regs[REGISTER_TWELVE],
-        regs[REGISTER_THIRTEEN], regs[REGISTER_FOURTEEN], regs[REGISTER_FIFTEEN]);
-    DfxLogDebug("Exit %s.", __func__);
+
+    PrintFormat(buf, sizeof(buf), "r0:%08x r1:%08x r2:%08x r3:%08x\n", \
+                regs[REG_ARM_R0], regs[REG_ARM_R1], regs[REG_ARM_R2], regs[REG_ARM_R3]);
+
+    PrintFormat(buf + strlen(buf), sizeof(buf) - strlen(buf), "r4:%08x r5:%08x r6:%08x r7:%08x\n", \
+                regs[REG_ARM_R4], regs[REG_ARM_R5], regs[REG_ARM_R6], regs[REG_ARM_R7]);
+    
+    PrintFormat(buf + strlen(buf), sizeof(buf) - strlen(buf), "r8:%08x r9:%08x r10:%08x\n", \
+                regs[REG_ARM_R8], regs[REG_ARM_R9], regs[REG_ARM_R10]);
+
+    PrintFormat(buf + strlen(buf), sizeof(buf) - strlen(buf), "fp:%08x ip:%08x sp:%08x lr:%08x pc:%08x\n", \
+                regs[REG_ARM_R11], regs[REG_ARM_R12], regs[REG_ARM_R13], regs[REG_ARM_R14], regs[REG_ARM_R15]);
+
+    regString = regString + std::string(buf);
+    return regString;
+}
+
+uintptr_t DfxRegsArm::GetPC() const
+{
+    return regsData_[REG_ARM_R15];
+}
+
+uintptr_t DfxRegsArm::GetLR() const
+{
+    return regsData_[REG_ARM_R14];
 }
 } // namespace HiviewDFX
 } // namespace OHOS

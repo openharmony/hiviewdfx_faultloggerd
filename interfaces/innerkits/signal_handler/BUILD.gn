@@ -11,38 +11,164 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import("//build/ohos.gni")
+import("//base/hiviewdfx/faultloggerd/faultloggerd.gni")
 
-config("dfx_signal_handler_config") {
-  visibility = [ "*:*" ]
+if (defined(ohos_lite)) {
+  shared_library("dfx_signalhandler") {
+    visibility = [ "*:*" ]
+    include_dirs = [
+      "include",
+      "//utils/native/base/include",
+      "$faultloggerd_path/common",
+      "$faultloggerd_path/common/dfxlog",
+    ]
+    sources = [ "dfx_signal_handler.c" ]
 
-  include_dirs = [
-    "include",
-    "//base/hiviewdfx/faultloggerd/common",
-    "//base/hiviewdfx/faultloggerd/tools/process_dump",
-    "//utils/native/base/include",
-    "//developtools/bytrace_standard/interfaces/innerkits/native/include",
-    "//base/hiviewdfx/faultloggerd/interfaces/innerkits/faultloggerd_client/include",
+    deps = [
+      "$faultloggerd_path/common/util:dfx_cutil",
+      "//third_party/bounds_checking_function:libsec_shared",
+    ]
+
+    cflags = [
+      "-fPIC",
+      "-Wall",
+      "-fno-builtin",
+      "-DDFX_NO_PRINT_LOG",
+    ]
+  }
+} else {
+  inherited_configs = [
+    "//build/config/compiler:afdo",
+    "//build/config/compiler:afdo_optimize_size",
+    "//build/config/compiler:compiler",
+    "//build/config/compiler:compiler_arm_fpu",
+    "//build/config/compiler:compiler_arm_thumb",
+    "//build/config/compiler:chromium_code",
+    "//build/config/compiler:default_include_dirs",
+    "//build/config/compiler:default_optimization",
+    "//build/config/compiler:default_stack_frames",
+    "//build/config/compiler:default_symbols",
+    "//build/config/compiler:export_dynamic",
+    "//build/config/compiler:no_exceptions",
+    "//build/config/compiler:no_rtti",
+    "//build/config/compiler:runtime_library",
+    "//build/config/compiler:thin_archive",
+    "//build/config/sanitizers:default_sanitizer_flags",
   ]
-}
 
-ohos_shared_library("dfx_signalhandler") {
-  public_configs = [ ":dfx_signal_handler_config" ]
+  config("dfx_signal_handler_config") {
+    visibility = [ "*:*" ]
+    include_dirs = [
+      "include",
+      "//utils/native/base/include",
+      "$faultloggerd_path/common",
+      "$faultloggerd_path/common/dfxlog",
+      "$faultloggerd_path/tools/process_dump",
+      "$faultloggerd_path/interfaces/innerkits/faultloggerd_client/include",
+    ]
+  }
 
-  cflags = [ "-DDFX_LOG_USE_HILOG_BASE" ]
+  config("static_sighandler_config") {
+    include_dirs = [
+      "include",
+      "$faultloggerd_path/common",
+      "$faultloggerd_path/common/dfxlog",
+      "$faultloggerd_path/common/util",
+    ]
 
-  sources = [
-    "//base/hiviewdfx/faultloggerd/tools/process_dump/dfx_log.cpp",
-    "dfx_signal_handler.c",
-  ]
+    defines = []
+    configs = []
+    if (is_posix) {
+      configs += [ "//build/config/posix:runtime_library" ]
+    }
 
-  deps = [ "//base/hiviewdfx/faultloggerd/interfaces/innerkits/faultloggerd_client:libfaultloggerd" ]
+    cflags_cc = []
+    libs = []
 
-  external_deps = [
-    "hilog_native:libhilog_base",
-    "utils_base:utils",
-  ]
+    defines = [
+      "__GNU_SOURCE=1",  # Necessary for clone().
+      "CHROMIUM_CXX_TWEAK_INLINES",  # Saves binary size.
+    ]
 
-  part_name = "faultloggerd"
-  subsystem_name = "hiviewdfx"
+    defines += [
+      "__MUSL__",
+      "_LIBCPP_HAS_MUSL_LIBC",
+      "__BUILD_LINUX_WITH_CLANG",
+      "ENABLE_SIGHAND_MUSL_LOG",
+      "ENABLE_MUSL_CUTIL",
+    ]
+
+    ldflags = [ "-nostdlib" ]
+  }
+
+  ohos_static_library("dfx_local_handler") {
+    sources = [
+      "dfx_crash_local_handler.c",
+      "dfx_signal_local_handler.c",
+    ]
+    public_configs = [ ":dfx_signal_handler_config" ]
+
+    deps = [
+      "$faultloggerd_path/common/dfxlog:static_hilog_base",
+      "$faultloggerd_path/common/util:dfx_cutil",
+      "$faultloggerd_path/interfaces/innerkits/faultloggerd_client:libfaultloggerd",
+      "//third_party/libunwind:libunwind",
+    ]
+
+    external_deps = [
+      "utils_base:utils",
+      "hilog_native:libhilog_base",
+    ]
+
+    part_name = "faultloggerd"
+    subsystem_name = "hiviewdfx"
+  }
+
+  ohos_shared_library("dfx_signalhandler") {
+    public_configs = [ ":dfx_signal_handler_config" ]
+
+    cflags = [ "-DDFX_LOG_USE_HILOG_BASE" ]
+
+    sources = [ "dfx_signal_handler.c" ]
+
+    deps = [
+      ":dfx_local_handler",
+      "$faultloggerd_path/common/dfxlog:static_hilog_base",
+      "$faultloggerd_path/common/util:dfx_cutil",
+    ]
+
+    external_deps = [
+      "utils_base:utils",
+      "hilog_native:libhilog_base",
+    ]
+
+    install_images = [
+      "system",
+      "updater",
+    ]
+
+    part_name = "faultloggerd"
+    subsystem_name = "hiviewdfx"
+  }
+
+  source_set("dfxsignalhandler") {
+    cflags = [ "-DDFX_SIGNAL_LIBC" ]
+
+    sources = [ "dfx_signal_handler.c" ]
+    configs -= inherited_configs
+    configs += [
+      "//build/config/compiler:compiler",
+      ":static_sighandler_config",
+    ]
+
+    deps = [
+      "//third_party/musl:create_alltypes_h",
+      "//third_party/musl:create_porting_src",
+      "//third_party/musl:create_syscall_h",
+      "//third_party/musl:create_version_h",
+      "//third_party/musl:musl_copy_inc_bits",
+      "//third_party/musl:musl_copy_inc_root",
+      "//third_party/musl:musl_copy_inc_sys",
+    ]
+  }
 }

@@ -17,20 +17,19 @@
 
 #include "dfx_elf.h"
 
-#include <cerrno>
-#include <fcntl.h>
-#include <cinttypes>
-#include <climits>
 #include <cstdlib>
-#include <cstring>
-#include <unistd.h>
-
+#include <fcntl.h>
+#include <new>
+#include <string>
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <sys/types.h>
-
-#include "dfx_define.h"
+#include <unistd.h>
+#include <vector>
+#include "bits/fcntl.h"
 #include "dfx_log.h"
+#include "elf.h"
+#include "link.h"
 
 #ifndef PAGE_SIZE
 #define PAGE_SIZE 4096
@@ -42,7 +41,6 @@ static const int MAX_MAP_SIZE = 65536;
 
 std::shared_ptr<DfxElf> DfxElf::Create(const std::string path)
 {
-    DfxLogDebug("Enter %s.", __func__);
     char realPaths[PATH_MAX] = {0};
     if (!realpath(path.c_str(), realPaths)) {
         DfxLogWarn("Fail to do realpath(%s).", path.c_str());
@@ -83,25 +81,21 @@ std::shared_ptr<DfxElf> DfxElf::Create(const std::string path)
 
     close(dfxElf->GetFd());
     dfxElf->SetFd(-1);
-    DfxLogDebug("Exit %s.", __func__);
     return dfxElf;
 }
 
 bool DfxElf::ParseElfHeader()
 {
-    DfxLogDebug("Enter %s.", __func__);
     ssize_t nread = read(fd_, &(header_), sizeof(header_));
     if (nread < 0 || nread != static_cast<long>(sizeof(header_))) {
         DfxLogWarn("Failed to read elf header.");
         return false;
     }
-    DfxLogDebug("Exit %s.", __func__);
     return true;
 }
 
 bool DfxElf::ParseElfProgramHeader()
 {
-    DfxLogDebug("Enter %s.", __func__);
     size_t size = header_.e_phnum * sizeof(ElfW(Phdr));
     if (size > MAX_MAP_SIZE) {
         DfxLogWarn("Exceed max mmap size.");
@@ -130,7 +124,7 @@ bool DfxElf::ParseElfProgramHeader()
         return false;
     }
 
-    ElfW(Phdr) *phdrTable = (ElfW(Phdr) *)((uint8_t *)map + startOffset);
+    ElfW(Phdr) *phdrTable = (ElfW(Phdr) *)(static_cast<uint8_t*>(map) + startOffset);
     for (size_t i = 0; i < header_.e_phnum; i++) {
         ElfW(Phdr) * phdr = &(phdrTable[i]);
         if (phdr->p_type != PT_LOAD) {
@@ -139,26 +133,22 @@ bool DfxElf::ParseElfProgramHeader()
         CreateLoadInfo(phdr->p_vaddr, phdr->p_offset);
     }
     munmap(map, mapSize);
-    DfxLogDebug("Exit %s.", __func__);
     return true;
 }
 
 uint64_t DfxElf::FindRealLoadOffset(uint64_t offset) const
 {
-    DfxLogDebug("Enter %s.", __func__);
     for (auto iter = infos_.begin(); iter != infos_.end(); iter++) {
         if ((iter->offset & -PAGE_SIZE) == offset) {
             return offset + (iter->vaddr - iter->offset);
         }
     }
-    DfxLogDebug("Exit %s.", __func__);
     return offset;
 }
 
 void DfxElf::CreateLoadInfo(uint64_t vaddr, uint64_t offset)
 {
-    DfxLogDebug("Enter %s.", __func__);
-    std::unique_ptr<ElfLoadInfo> info = std::make_unique<ElfLoadInfo>();
+    std::unique_ptr<ElfLoadInfo> info(new ElfLoadInfo());
     if (info == nullptr) {
         return;
     }
@@ -166,8 +156,6 @@ void DfxElf::CreateLoadInfo(uint64_t vaddr, uint64_t offset)
     info->offset = offset;
 
     infos_.push_back(*info);
-
-    DfxLogDebug("Exit %s.", __func__);
 }
 
 std::string DfxElf::GetName() const

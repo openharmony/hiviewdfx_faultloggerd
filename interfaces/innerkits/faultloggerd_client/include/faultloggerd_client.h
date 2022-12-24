@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -15,7 +15,7 @@
 #ifndef DFX_FAULTLOGGERD_CLIENT_H
 #define DFX_FAULTLOGGERD_CLIENT_H
 
-#include <cstdint>
+#include <inttypes.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -23,54 +23,72 @@ extern "C" {
 
 #define FAULTLOGGER_DAEMON_RESP "RESP:COMPLETE"
 
-enum class FaultLoggerType {
+enum FaultLoggerType {
     JAVA_CRASH = 1,
     CPP_CRASH,
     JS_CRASH,
     APP_FREEZE,
     JAVA_STACKTRACE = 100, // unsupported yet
     CPP_STACKTRACE,
+    JS_STACKTRACE,
+    JS_HEAP_SNAPSHOT,
 };
 
-enum class FaultLoggerClientType {
+enum FaultLoggerClientType {
     DEFAULT_CLIENT = 0, // For original request crash info file
     LOG_FILE_DES_CLIENT, // For request a file to record nornal unwind and process dump logs.
     PRINT_T_HILOG_CLIENT, // For request a file to record nornal unwind and process dump logs.
     PERMISSION_CLIENT,
     SDK_DUMP_CLIENT,
+    PIPE_FD_CLIENT,
     MAX_CLIENT
 };
 
-enum class FaultLoggerCheckPermissionResp {
+enum FaultLoggerPipeType {
+    PIPE_FD_READ_BUF = 0,
+    PIPE_FD_WRITE_BUF,
+    PIPE_FD_READ_RES,
+    PIPE_FD_WRITE_RES,
+    PIPE_FD_DELETE,
+};
+
+enum FaultLoggerCheckPermissionResp {
     CHECK_PERMISSION_PASS = 1,
     CHECK_PERMISSION_REJECT,
     CHECK_PERMISSION_MAX
 };
 
-enum class FaultLoggerSdkDumpResp {
+enum FaultLoggerSdkDumpResp {
     SDK_DUMP_PASS = 1,
     SDK_DUMP_REJECT,
+    SDK_DUMP_REPEAT,
+    SDK_DUMP_NOPROC,
     SDK_DUMP_MAX
 };
 
 struct FaultLoggerdRequest {
     int32_t type;
     int32_t clientType;
+    int32_t pipeType;
+    int32_t sigCode;
     int32_t pid;
     int32_t tid;
-    int32_t uid;
+    uint32_t uid;
     int32_t callerPid; // only for sdk dump client
     int32_t callerTid; // only for sdk dump client
     char module[128];
     uint64_t time;
 } __attribute__((packed));
 
+bool CheckConnectStatus();
 int32_t RequestFileDescriptor(int32_t type);
 int32_t RequestLogFileDescriptor(struct FaultLoggerdRequest *request);
+int32_t RequestPipeFd(int32_t pid, int32_t pipeType);
+int32_t RequestDelPipeFd(int32_t pid);
 int RequestFileDescriptorEx(const struct FaultLoggerdRequest *request);
 bool RequestCheckPermission(int32_t pid);
 void RequestPrintTHilog(const char *msg, int length);
-bool RequestSdkDump(int32_t pid, int32_t tid);
+int RequestSdkDump(int32_t type, int32_t pid, int32_t tid);
 
 #ifdef __cplusplus
 }

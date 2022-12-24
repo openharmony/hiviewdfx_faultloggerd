@@ -35,6 +35,5 @@ int TestFunc6(void);
 int TestFunc7(void);
 int TestFunc8(void);
 int TestFunc9(void);
-int TestFunc10(void);
 
 #endif // DUMP_CATCHER_DEMO_H

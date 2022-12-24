@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -33,35 +33,37 @@ public:
     static std::shared_ptr<DfxProcess> CreateProcessWithKeyThread(pid_t pid, std::shared_ptr<DfxThread> keyThread);
     bool InitProcessMaps();
     bool InitProcessThreads(std::shared_ptr<DfxThread> keyThread);
-    bool InitOtherThreads();
+    bool InitOtherThreads(bool attach = true);
     void FillProcessName();
-    void UpdateProcessName(std::string processName);
-    void PrintProcessMapsByConfig(int32_t fd);
-    void PrintThreadsHeaderByConfig(int32_t fd);
-    void InsertThreadNode(pid_t tid);
-    virtual void PrintProcess(int32_t fd, bool printMapFlag);
-    virtual void PrintProcessWithSiginfo(const std::shared_ptr<siginfo_t> info, int32_t fd);
+    void PrintProcessMapsByConfig();
+    void PrintThreadsHeaderByConfig();
+    void InsertThreadNode(pid_t tid, pid_t nsTid, bool attach = true);
 
-    void SetIsSignalHdlr(bool isSignalHdlr);
-    bool GetIsSignalHdlr() const;
     void SetIsSignalDump(bool isSignalDump);
     bool GetIsSignalDump() const;
     pid_t GetPid() const;
-    pid_t GetUid() const;
+    uid_t GetUid() const;
+    pid_t GetNsPid() const;
+    bool GetNs() const;
+    int TidToNstid(const int tid, int& nstid);
     std::string GetProcessName() const;
     std::shared_ptr<DfxElfMaps> GetMaps() const;
     std::vector<std::shared_ptr<DfxThread>> GetThreads() const;
 
     void SetPid(pid_t pid);
-    void SetUid(pid_t uid);
+    void SetUid(uid_t uid);
+    void SetRecycleTid(pid_t nstid);
+    void SetNsPid(pid_t pid);
     void SetProcessName(const std::string &processName);
     void SetMaps(std::shared_ptr<DfxElfMaps> maps);
     void SetThreads(const std::vector<std::shared_ptr<DfxThread>> &threads);
     void Detach();
+
 private:
     pid_t pid_ = 0;
-    pid_t uid_ = 0;
-    bool isSignalHdlr_ = false;
+    pid_t nsPid_ = 0;
+    uid_t uid_ = 0;
+    pid_t recycleTid_ = 0;
     bool isSignalDump_ = false;
     std::string processName_;
     std::shared_ptr<DfxElfMaps> maps_;

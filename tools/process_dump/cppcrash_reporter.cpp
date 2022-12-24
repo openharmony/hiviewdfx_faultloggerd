@@ -18,19 +18,17 @@
 #include "cppcrash_reporter.h"
 
 #include <cinttypes>
+#include <dlfcn.h>
 #include <map>
 #include <string>
-
-#include <dlfcn.h>
-
-#include "dfx_log.h"
+#include "dfx_logger.h"
 #include "dfx_process.h"
 #include "dfx_signal.h"
 #include "dfx_thread.h"
 
 struct FaultLogInfoInner {
     uint64_t time {0};
-    int32_t id {-1};
+    uint32_t id {0};
     int32_t pid {-1};
     int32_t faultLogType {0};
     std::string module;
@@ -39,6 +37,7 @@ struct FaultLogInfoInner {
     std::string logPath;
     std::map<std::string, std::string> sectionMaps;
 };
+static const char HIVIEW_PROCESS_NAME[] = "/system/bin/hiview";
 
 using AddFaultLog = void (*)(FaultLogInfoInner* info);
 namespace OHOS {
@@ -55,13 +54,13 @@ bool CppCrashReporter::Format()
     uid_ = process_->GetUid();
     reason_ = FormatSignalName(signo_);
     auto threads = process_->GetThreads();
-    std::shared_ptr<DfxThread> crashTread = nullptr;
+    std::shared_ptr<DfxThread> crashThread = nullptr;
     if (!threads.empty()) {
-        crashTread = threads.front();
+        crashThread = threads.front();
     }
 
-    if (crashTread != nullptr) {
-        stack_ = crashTread->ToString();
+    if (crashThread != nullptr) {
+        stack_ = crashThread->ToString();
     }
     return true;
 }
@@ -72,8 +71,12 @@ void CppCrashReporter::ReportToHiview()
         DfxLogWarn("Failed to format crash report.");
         return;
     }
+    if (process_->GetProcessName().find(HIVIEW_PROCESS_NAME) != std::string::npos) {
+        DfxLogWarn("Failed to report, hiview is crashed.");
+        return;
+    }
 
-    void* handle = dlopen("libfaultlogger.z.so", RTLD_LAZY);
+    void* handle = dlopen("libfaultlogger.z.so", RTLD_LAZY | RTLD_NODELETE);
     if (handle == nullptr) {
         DfxLogWarn("Failed to dlopen libfaultlogger, %s\n", dlerror());
         return;
@@ -87,7 +90,7 @@ void CppCrashReporter::ReportToHiview()
     }
 
     FaultLogInfoInner info;
-    info.time = time_;
+    info.time = time_ / 1000;
     info.id = uid_;
     info.pid = pid_;
     info.faultLogType = 2; // 2 : CPP_CRASH_TYPE
