@@ -26,6 +26,7 @@
 #include <string_ex.h>
 
 #include "backtrace_utils.h"
+#include "test_utils.h"
 
 using namespace testing;
 using namespace testing::ext;
@@ -51,83 +52,6 @@ expected output log should be like this(aarch64):
     Backtrace: #10 pc 00000000000dcf74 /system/lib/ld-musl-aarch64.so.1
     Backtrace: #11 pc 000000000000c614 /data/test/backtrace_utils_test
 */
-static void CheckContent(const std::string& content, const std::string& keyContent, bool checkExist)
-{
-    bool findKeyContent = false;
-    if (content.find(keyContent) != std::string::npos) {
-        findKeyContent = true;
-    }
-
-    if (checkExist && !findKeyContent) {
-        GTEST_LOG_(INFO) << "Failed to find " << keyContent;
-        GTEST_LOG_(INFO) << " in " << content;
-        FAIL();
-    }
-
-    if (!checkExist && findKeyContent) {
-        GTEST_LOG_(INFO) << "Find " << keyContent;
-        GTEST_LOG_(INFO) << " in " << content;
-        FAIL();
-    }
-}
-
-static uint64_t GetSelfMemoryCount()
-{
-    std::string path = "/proc/self/smaps_rollup";
-    std::string content;
-    if (!OHOS::LoadStringFromFile(path, content)) {
-        GTEST_LOG_(INFO) << "Failed to load path content:" << path << "\n";
-        return 0;
-    }
-
-    std::vector<std::string> result;
-    OHOS::SplitStr(content, "\n", result);
-    std::string pss;
-    for (auto const& str : result) {
-        if (str.find("Pss:") != std::string::npos) {
-            GTEST_LOG_(INFO) << "Find:" << str << "\n";
-            pss = str;
-            break;
-        }
-    }
-
-    if (pss.empty()) {
-        GTEST_LOG_(INFO) << "Failed to find Pss.\n";
-        return 0;
-    }
-
-    uint64_t retVal = 0;
-    for (size_t i = 0; i < pss.size(); i++) {
-        if (isdigit(pss[i])) {
-            retVal = atoi(&pss[i]);
-            break;
-        }
-    }
-
-    return retVal;
-}
-
-static uint32_t GetSelfMapsCount()
-{
-    std::string path = "/proc/self/maps";
-    std::string content;
-    if (!OHOS::LoadStringFromFile(path, content)) {
-        return 0;
-    }
-
-    std::vector<std::string> result;
-    OHOS::SplitStr(content, "\n", result);
-    return result.size();
-}
-
-static uint32_t GetSelfFdCount()
-{
-    std::string path = "/proc/self/fd";
-    std::vector<std::string> content;
-    OHOS::GetDirFiles(path, content);
-    return content.size();
-}
-
 static void CheckResourceUsage(uint32_t fdCount, uint32_t mapsCount, uint64_t memCount)
 {
     // check memory/fd/maps

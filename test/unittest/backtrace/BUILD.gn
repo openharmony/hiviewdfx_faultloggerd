@@ -15,11 +15,27 @@ import("//base/hiviewdfx/faultloggerd/faultloggerd.gni")
 import("//build/config/features.gni")
 import("//build/test.gni")
 module_output_path = "faultloggerd/backtrace"
+ohos_source_set("test_utils") {
+  testonly = true
+  sources = [ "test_utils.cpp" ]
+
+  deps = [
+    "//third_party/bounds_checking_function:libsec_shared",
+    "//third_party/googletest:gtest_main",
+  ]
+
+  external_deps = [
+    "c_utils:utils",
+    "hilog_native:libhilog",
+  ]
+}
+
 ohos_unittest("backtrace_utils_test") {
   module_out_path = module_output_path
   visibility = [ "*:*" ]
   sources = [ "backtrace_utils_test.cpp" ]
   deps = [
+    ":test_utils",
     "$faultloggerd_path/interfaces/innerkits/backtrace:libbacktrace_utils",
     "//third_party/googletest:gtest_main",
   ]
@@ -30,7 +46,28 @@ ohos_unittest("backtrace_utils_test") {
   ]
 }
 
+ohos_unittest("backtrace_local_test") {
+  module_out_path = module_output_path
+  visibility = [ "*:*" ]
+  sources = [ "backtrace_local_test.cpp" ]
+  deps = [
+    ":test_utils",
+    "$faultloggerd_path/frameworks:libbacktrace_local",
+    "//third_party/bounds_checking_function:libsec_shared",
+    "//third_party/googletest:gtest_main",
+    "//third_party/libunwind:libunwind_local",
+  ]
+
+  external_deps = [
+    "c_utils:utils",
+    "hilog_native:libhilog",
+  ]
+}
+
 group("unittest") {
   testonly = true
-  deps = [ ":backtrace_utils_test" ]
+  deps = [
+    ":backtrace_local_test",
+    ":backtrace_utils_test",
+  ]
 }

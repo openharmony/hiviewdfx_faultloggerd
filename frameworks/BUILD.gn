@@ -1,0 +1,62 @@
+# Copyright (c) 2022 Huawei Device Co., Ltd.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import("//base/hiviewdfx/faultloggerd/faultloggerd.gni")
+
+config("dfx_backtrace_local_config") {
+  visibility = [ "*:*" ]
+
+  include_dirs = [
+    "//third_party/libunwind/include",
+    "//third_party/libunwind/src",
+    "$faultloggerd_path/tools/process_dump",
+    "include",
+  ]
+
+  defines = [
+    "HAVE_CONFIG_H",
+    "HAVE_ELF_H",
+    "HAVE_LINK_H",
+  ]
+}
+
+ohos_static_library("libbacktrace_local") {
+  public_configs = [ ":dfx_backtrace_local_config" ]
+
+  include_dirs = [
+    "//commonlibrary/c_utils/base/include",
+    "$faultloggerd_path/common",
+    "$faultloggerd_path/common/dfxlog",
+    "$faultloggerd_path/common/util",
+  ]
+
+  sources = [
+    "$faultloggerd_path/tools/process_dump/dfx_symbols_cache.cpp",
+    "local/backtrace_local_static.cpp",
+    "local/backtrace_local_thread.cpp",
+  ]
+
+  external_deps = [
+    "c_utils:utils",
+    "hilog_native:libhilog",
+  ]
+
+  deps = [
+    "$faultloggerd_path/common/dfxlog:static_common_log",
+    "//third_party/bounds_checking_function:libsec_shared",
+    "//third_party/libunwind:libunwind_local",
+  ]
+
+  part_name = "faultloggerd"
+  subsystem_name = "hiviewdfx"
+}
