@@ -4336,6 +4336,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0200, TestSize.Level2)
     int childPid = clone(RunInNewPidNs, cloneStack, CLONE_NEWPID | SIGCHLD, nullptr);
     if (childPid <= 0) {
         GTEST_LOG_(INFO) << "FaultLoggerdSystemTest0200: Failed to clone new process. errno:" << errno;
+        return;
     }
     // wait for log generation
     sleep(NUMBER_FOUR);

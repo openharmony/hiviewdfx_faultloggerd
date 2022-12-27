@@ -200,7 +200,7 @@ void BacktraceUtilsTest::TearDown()
 
 static void CheckBacktraceContent(const std::string& content)
 {
-    CheckContent(content, "#10", true);
+    CheckContent(content, "#09", true);
     CheckContent(content, "backtrace_utils_test", true);
     CheckContent(content, "system", true);
 #if defined(__aarch64__)
