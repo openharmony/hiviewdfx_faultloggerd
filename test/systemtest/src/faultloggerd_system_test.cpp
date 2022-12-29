@@ -1077,12 +1077,12 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0020, TestSize.Level2)
     GTEST_LOG_(INFO) << testPid;
     DfxDumpCatcher dumplog(getpid());
     std::string msg = "";
-    std::vector<std::shared_ptr<DfxFrame>> frameV;
+    std::vector<NativeFrame> frameV;
     bool ret = dumplog.InitFrameCatcher();
     EXPECT_EQ(ret, true);
-    ret = dumplog.RequestCatchFrame(gettid());
+    ret = dumplog.ReleaseThread(gettid());
     EXPECT_EQ(ret, true);
-    ret = dumplog.CatchFrame(gettid(), frameV);
+    ret = dumplog.CatchFrame(gettid(), frameV, true);
     EXPECT_EQ(ret, true);
     dumplog.DestroyFrameCatcher();
     EXPECT_GT(frameV.size(), 0) << "FaultLoggerdSystemTest0020 Failed";
@@ -1101,8 +1101,8 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0021, TestSize.Level2)
     int testPid = FaultLoggerdSystemTest::getApplyPid(apply);
     GTEST_LOG_(INFO) << testPid;
     DfxDumpCatcher dumplog;
-    std::vector<std::shared_ptr<DfxFrame>> frameV;
-    bool ret = dumplog.CatchFrame(testPid, frameV);
+    std::vector<NativeFrame> frameV;
+    bool ret = dumplog.CatchFrame(testPid, frameV, true);
     GTEST_LOG_(INFO) << ret;
     EXPECT_EQ(ret, false) << "FaultLoggerdSystemTest0021 Failed";
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest0021: end.";
@@ -1121,7 +1121,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0024, TestSize.Level2)
     GTEST_LOG_(INFO) << testPid;
     DfxDumpCatcher dumplog;
     std::string msg = "";
-    std::vector<std::shared_ptr<DfxFrame>> frameV;
+    std::vector<NativeFrame> frameV;
     bool ret = dumplog.CatchFrame(-99, frameV);
     GTEST_LOG_(INFO) << ret;
     GTEST_LOG_(INFO) << msg;
@@ -1142,7 +1142,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0025, TestSize.Level2)
     GTEST_LOG_(INFO) << testPid;
     DfxDumpCatcher dumplog;
     std::string msg = "";
-    std::vector<std::shared_ptr<DfxFrame>> frameV;
+    std::vector<NativeFrame> frameV;
     bool ret = dumplog.CatchFrame(-1, frameV);
     GTEST_LOG_(INFO) << ret;
     GTEST_LOG_(INFO) << msg;
@@ -1160,8 +1160,8 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0026, TestSize.Level2)
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest0026: start.";
     DfxDumpCatcher dumplog;
     std::string msg = "";
-    std::vector<std::shared_ptr<DfxFrame>> frameV;
-    bool ret = dumplog.CatchFrame(-11, frameV);
+    std::vector<NativeFrame> frameV;
+    bool ret = dumplog.CatchFrame(-11, frameV, true);
     GTEST_LOG_(INFO) << ret;
     GTEST_LOG_(INFO) << msg;
     EXPECT_EQ(ret, false) << "FaultLoggerdSystemTest0026 Failed";

@@ -15,6 +15,7 @@
 
 #include "backtrace_local_thread.h"
 
+#include <sstream>
 
 #include <libunwind.h>
 #include <libunwind_i-ohos.h>
@@ -38,7 +39,15 @@ BacktraceLocalThread::BacktraceLocalThread(int32_t tid) : tid_(tid)
 {
 }
 
-void BacktraceLocalThread::DoUnwind(unw_addr_space_t as, unw_context_t& context, std::unique_ptr<DfxSymbolsCache>& cache,
+void BacktraceLocalThread::UpdateFrameFuncName(unw_addr_space_t as,
+    std::shared_ptr<DfxSymbolsCache> cache, NativeFrame& frame)
+{
+    if (cache != nullptr) {
+        cache->GetNameAndOffsetByPc(as, frame.pc, frame.funcName, frame.funcOffset);
+    }
+}
+
+void BacktraceLocalThread::DoUnwind(unw_addr_space_t as, unw_context_t& context, std::shared_ptr<DfxSymbolsCache> cache,
     size_t skipFrameNum)
 {
     unw_cursor_t cursor;
@@ -83,7 +92,7 @@ void BacktraceLocalThread::DoUnwind(unw_addr_space_t as, unw_context_t& context,
         bool isValidFrame = true;
         if ((map != NULL) && (strlen(map->path) < SYMBOL_BUF_SIZE - 1)) {
             frame.binaryName = std::string(map->path);
-            cache->GetNameAndOffsetByPc(as, frame.pc, frame.funcName, frame.funcOffset);
+            UpdateFrameFuncName(as, cache, frame);
         } else {
             isValidFrame = false;
         }
@@ -98,16 +107,17 @@ void BacktraceLocalThread::DoUnwind(unw_addr_space_t as, unw_context_t& context,
     } while ((unw_step(&cursor) > 0) && (index < BACK_STACK_MAX_STEPS));
 }
 
-void BacktraceLocalThread::DoUnwindCurrent(unw_addr_space_t as, std::unique_ptr<DfxSymbolsCache>& cache, size_t skipFrameNum)
+void BacktraceLocalThread::DoUnwindCurrent(unw_addr_space_t as, std::shared_ptr<DfxSymbolsCache> cache, size_t skipFrameNum)
 {
     unw_context_t context;
+    (void)memset_s(&context, sizeof(unw_context_t), 0, sizeof(unw_context_t));
     unw_getcontext(&context);
     DoUnwind(as, context, cache, skipFrameNum + 1);
 }
 
-bool BacktraceLocalThread::Unwind(unw_addr_space_t as, std::unique_ptr<DfxSymbolsCache>& cache, size_t skipFrameNum)
+bool BacktraceLocalThread::Unwind(unw_addr_space_t as, std::shared_ptr<DfxSymbolsCache> cache,
+    size_t skipFrameNum, bool releaseThread)
 {
-    
     if (tid_ == BACKTRACE_CURRENT_THREAD) {
         DoUnwindCurrent(as, cache, skipFrameNum + 1);
         return true;
@@ -116,13 +126,14 @@ bool BacktraceLocalThread::Unwind(unw_addr_space_t as, std::unique_ptr<DfxSymbol
     }
 
     unw_context_t context;
+    (void)memset_s(&context, sizeof(unw_context_t), 0, sizeof(unw_context_t));
     if (!BacktraceLocalStatic::GetInstance().GetThreadContext(tid_, context)) {
         return false;
     }
 
-    DoUnwind(as, context, cache, skipFrameNum + 1);
+    DoUnwind(as, context, cache, skipFrameNum);
 
-    if (tid_ > BACKTRACE_CURRENT_THREAD) {
+    if (releaseThread && (tid_ > BACKTRACE_CURRENT_THREAD)) {
         BacktraceLocalStatic::GetInstance().ReleaseThread(tid_);
     }
     return true;
@@ -131,6 +142,49 @@ bool BacktraceLocalThread::Unwind(unw_addr_space_t as, std::unique_ptr<DfxSymbol
 const std::vector<NativeFrame>& BacktraceLocalThread::GetFrames() const
 {
     return frames_;
+}
+
+std::string BacktraceLocalThread::GetNativeFrameStr(const NativeFrame& frame)
+{
+    char buf[1024] = "\0"; // 1024 buffer length
+#ifdef __LP64__
+    char format[] = "#%02zu pc %016" PRIx64 " %s";
+#else
+    char format[] = "#%02zu pc %08" PRIx64 " %s";
+#endif
+    if (snprintf_s(buf, sizeof(buf), sizeof(buf) - 1, format,
+        frame.index,
+        frame.relativePc,
+        frame.binaryName.empty() ? "Unknown" : frame.binaryName.c_str()) <= 0) {
+        return "[Unknown]";
+    }
+
+    std::ostringstream ss;
+    ss << std::string(buf, strlen(buf));
+    if (frame.funcName.empty()) {
+        ss << std::endl;
+    } else {
+        ss << "(";
+        ss << frame.funcName.c_str();
+        ss << "+" << frame.funcOffset << ")" << std::endl;
+    }
+    return ss.str();
+}
+
+std::string BacktraceLocalThread::GetFramesStr()
+{
+    std::ostringstream ss;
+    for (const auto& frame : frames_) {
+        ss << GetNativeFrameStr(frame) << "\n";
+    }
+    return ss.str();
+}
+
+void BacktraceLocalThread::ReleaseThread()
+{
+    if (tid_ > BACKTRACE_CURRENT_THREAD) {
+        BacktraceLocalStatic::GetInstance().ReleaseThread(tid_);
+    }
 }
 } // namespace HiviewDFX
 } // namespace OHOS

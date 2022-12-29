@@ -24,6 +24,7 @@
 #include <hilog/log.h>
 
 #include "dfx_dump_catcher.h"
+#include "backtrace_local_thread.h"
 
 namespace OHOS {
 namespace HiviewDFX {
@@ -32,9 +33,9 @@ namespace {
 #undef LOG_TAG
 #define LOG_TAG "DfxBacktrace"
 #define LOG_DOMAIN 0xD002D11
-bool GetBacktraceFrames(std::vector<std::shared_ptr<DfxFrame>>& frames)
+bool GetBacktraceFrames(std::vector<NativeFrame>& frames)
 {
-    auto catcher = std::make_unique<OHOS::HiviewDFX::DfxDumpCatcher>();
+    auto catcher = std::make_shared<OHOS::HiviewDFX::DfxDumpCatcher>();
     static std::mutex mutex;
     std::unique_lock<std::mutex> lock(mutex);
     if (!catcher->InitFrameCatcher()) {
@@ -63,13 +64,13 @@ void PrintStr(int32_t fd, const std::string& line)
 
 bool PrintBacktrace(int32_t fd)
 {
-    std::vector<std::shared_ptr<DfxFrame>> frames;
+    std::vector<NativeFrame> frames;
     if (!GetBacktraceFrames(frames)) {
         return false;
     }
 
     for (auto const& frame : frames) {
-        auto line = frame->ToString();
+        auto line = BacktraceLocalThread::GetNativeFrameStr(frame);
         PrintStr(fd, line);
     }
     return true;
@@ -77,14 +78,14 @@ bool PrintBacktrace(int32_t fd)
 
 bool GetBacktrace(std::string& out)
 {
-    std::vector<std::shared_ptr<DfxFrame>> frames;
+    std::vector<NativeFrame> frames;
     if (!GetBacktraceFrames(frames)) {
         return false;
     }
 
     std::stringstream ss;
     for (auto const& frame : frames) {
-        ss << frame->ToString() << "\n";
+        ss << BacktraceLocalThread::GetNativeFrameStr(frame) << "\n";
     }
     out = ss.str();
     return true;

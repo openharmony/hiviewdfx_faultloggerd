@@ -20,7 +20,7 @@ config("dfx_backtrace_local_config") {
     "//third_party/libunwind/include",
     "//third_party/libunwind/src",
     "$faultloggerd_path/tools/process_dump",
-    "include",
+    "$faultloggerd_path/interfaces/innerkits/dump_catcher/include",
   ]
 
   defines = [
