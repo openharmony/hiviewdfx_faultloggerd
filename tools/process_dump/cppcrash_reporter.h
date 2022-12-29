@@ -19,6 +19,7 @@
 #define CPP_CRASH_REPORTER_H
 
 #include <cinttypes>
+#include <csignal>
 #include <map>
 #include <memory>
 #include <string>
@@ -28,8 +29,8 @@ namespace OHOS {
 namespace HiviewDFX {
 class CppCrashReporter {
 public:
-    CppCrashReporter(uint64_t time, int32_t signo, std::shared_ptr<DfxProcess> process) \
-        : time_(time), signo_(signo), process_(process)
+    CppCrashReporter(uint64_t time, siginfo_t siginfo, std::shared_ptr<DfxProcess> process) \
+        : time_(time), siginfo_(siginfo), process_(process)
     {
         pid_ = 0;
         uid_ = 0;
@@ -63,7 +64,7 @@ private:
 
 private:
     uint64_t time_;
-    int32_t signo_;
+    siginfo_t siginfo_;
     int32_t pid_;
     uint32_t uid_;
     std::string cmdline_;
@@ -74,4 +75,4 @@ private:
 };
 } // namespace HiviewDFX
 } // namespace OHOS
-#endif 
+#endif

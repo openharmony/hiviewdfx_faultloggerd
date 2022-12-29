@@ -47,6 +47,7 @@ public:
     bool GetNs() const;
     int TidToNstid(const int tid, int& nstid);
     std::string GetProcessName() const;
+    std::string GetFatalMessage() const;
     std::shared_ptr<DfxElfMaps> GetMaps() const;
     std::vector<std::shared_ptr<DfxThread>> GetThreads() const;
 
@@ -55,6 +56,7 @@ public:
     void SetRecycleTid(pid_t nstid);
     void SetNsPid(pid_t pid);
     void SetProcessName(const std::string &processName);
+    void SetFatalMessage(const std::string &msg);
     void SetMaps(std::shared_ptr<DfxElfMaps> maps);
     void SetThreads(const std::vector<std::shared_ptr<DfxThread>> &threads);
     void Detach();
@@ -65,7 +67,8 @@ private:
     uid_t uid_ = 0;
     pid_t recycleTid_ = 0;
     bool isSignalDump_ = false;
-    std::string processName_;
+    std::string processName_ = "";
+    std::string fatalMsg_ = "";
     std::shared_ptr<DfxElfMaps> maps_;
     std::vector<std::shared_ptr<DfxThread>> threads_;
 };
