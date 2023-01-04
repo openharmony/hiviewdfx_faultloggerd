@@ -116,10 +116,8 @@ static int CheckKeyWords(const string& filePath, string *keywords, int length)
         idx = t.at(i).find(keywords[j]);
         if (idx != string::npos) {
             GTEST_LOG_(INFO) << t.at(i);
-            if (j > minRegIdx && j < maxRegIdx) {
-                if (t.at(i).size() < REGISTERS_LENGTH) {
-                    count--;
-                }
+            if (j > minRegIdx && j < maxRegIdx && t.at(i).size() < REGISTERS_LENGTH) {
+                count--;
             }
             count++;
             j++;
