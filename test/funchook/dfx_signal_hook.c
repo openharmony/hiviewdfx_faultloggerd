@@ -183,8 +183,8 @@ int sigaction(int sig, const struct sigaction *restrict act, struct sigaction *r
         return -1;
     }
 
-    if (IsPlatformHandleSignal(sig) && ((act == NULL) ||
-        ((act != NULL) && (IsSigactionAddr((uintptr_t)(act->sa_sigaction)))))) {
+    if (IsPlatformHandleSignal(sig) && (act == NULL ||
+        (act != NULL && !IsSigactionAddr((uintptr_t)(act->sa_sigaction))))) {
         LOGI("%d call sigaction and signo is %d\n", getpid(), sig);
         LogBacktrace();
     }
