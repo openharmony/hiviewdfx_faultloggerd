@@ -42,8 +42,9 @@ static const int ARG128 = 128;
 
 NOINLINE int TriggerTrapException(void)
 {
+#ifndef __x86_64__
     __asm__ volatile(".inst 0xde01");
-
+#endif
     return 0;
 }
 
@@ -289,10 +290,11 @@ NOINLINE int StackTop(void)
         return 0;
     }
 
+    int ret = 0; // for fixing compile error on x64
 #if defined(__arm__)
-    int ret = fprintf(fp, "%08x", stackTop);
+    ret = fprintf(fp, "%08x", stackTop);
 #elif defined(__aarch64__)
-    int ret = fprintf(fp, "%16llx", (unsigned long long)stackTop);
+    ret = fprintf(fp, "%16llx", (unsigned long long)stackTop);
 #endif
     if (ret == EOF) {
         printf("error!");

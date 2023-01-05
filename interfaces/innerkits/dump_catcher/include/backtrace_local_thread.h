@@ -31,14 +31,19 @@ public:
     BacktraceLocalThread(int32_t tid);
     ~BacktraceLocalThread() = default;
 
-    bool Unwind(unw_addr_space_t as, std::unique_ptr<DfxSymbolsCache>& cache, size_t skipFrameNum);
+    bool Unwind(unw_addr_space_t as, std::shared_ptr<DfxSymbolsCache> cache, size_t skipFrameNum,
+        bool releaseThread = true);
+    void ReleaseThread();
     const std::vector<NativeFrame>& GetFrames() const;
+    std::string GetFramesStr();
+    static std::string GetNativeFrameStr(const NativeFrame& frame);
 
 private:
     bool GetUnwindContext(unw_context_t& context);
-    void DoUnwind(unw_addr_space_t as, unw_context_t& context, std::unique_ptr<DfxSymbolsCache>& cache,
+    void DoUnwind(unw_addr_space_t as, unw_context_t& context, std::shared_ptr<DfxSymbolsCache> cache,
         size_t skipFrameNum);
-    void DoUnwindCurrent(unw_addr_space_t as, std::unique_ptr<DfxSymbolsCache>& cache, size_t skipFrameNum);
+    void DoUnwindCurrent(unw_addr_space_t as, std::shared_ptr<DfxSymbolsCache> cache, size_t skipFrameNum);
+    void UpdateFrameFuncName(unw_addr_space_t as, std::shared_ptr<DfxSymbolsCache> cache, NativeFrame& frame);
 
 private:
     int32_t tid_;

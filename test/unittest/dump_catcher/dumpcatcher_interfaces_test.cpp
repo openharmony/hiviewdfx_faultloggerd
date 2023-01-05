@@ -423,10 +423,8 @@ HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest009, TestSize.Level
 {
     GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest009: start.";
     DfxDumpCatcher dumplog(getpid());
-    std::vector<std::shared_ptr<DfxFrame>> frameV;
+    std::vector<NativeFrame> frameV;
     bool ret = dumplog.InitFrameCatcher();
-    EXPECT_EQ(ret, true);
-    ret = dumplog.RequestCatchFrame(gettid());
     EXPECT_EQ(ret, true);
     ret = dumplog.CatchFrame(gettid(), frameV);
     EXPECT_EQ(ret, true);
@@ -447,11 +445,9 @@ HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest010, TestSize.Level
     std::string calcAbiltyName = calcBundleName + ".MainAbility";
     int calcPid = LaunchTestHap(calcAbiltyName, calcBundleName);
     DfxDumpCatcher dumplog(calcPid);
-    std::vector<std::shared_ptr<DfxFrame>> frameV;
+    std::vector<NativeFrame> frameV;
     bool ret = dumplog.InitFrameCatcher();
     EXPECT_EQ(ret, true);
-    ret = dumplog.RequestCatchFrame(calcPid);
-    EXPECT_EQ(ret, false);
     ret = dumplog.CatchFrame(calcPid, frameV);
     EXPECT_EQ(ret, false);
     dumplog.DestroyFrameCatcher();
@@ -468,7 +464,7 @@ HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest011, TestSize.Level
 {
     GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest011: start.";
     DfxDumpCatcher dumplog;
-    std::vector<std::shared_ptr<DfxFrame>> frameV;
+    std::vector<NativeFrame> frameV;
     bool ret = dumplog.CatchFrame(gettid(), frameV);
     GTEST_LOG_(INFO) << ret;
     EXPECT_EQ(ret, false) << "DumpCatcherInterfacesTest011 Failed";
@@ -484,7 +480,7 @@ HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest012, TestSize.Level
 {
     GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest012: start.";
     DfxDumpCatcher dumplog;
-    std::vector<std::shared_ptr<DfxFrame>> frameV;
+    std::vector<NativeFrame> frameV;
     bool ret = dumplog.CatchFrame(-11, frameV);
     GTEST_LOG_(INFO) << ret;
     EXPECT_EQ(ret, false) << "DumpCatcherInterfacesTest012 Failed";
@@ -500,7 +496,7 @@ HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest013, TestSize.Level
 {
     GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest013: start.";
     DfxDumpCatcher dumplog;
-    std::vector<std::shared_ptr<DfxFrame>> frameV;
+    std::vector<NativeFrame> frameV;
     bool ret = dumplog.CatchFrame(-1, frameV);
     GTEST_LOG_(INFO) << ret;
     EXPECT_EQ(ret, false) << "DumpCatcherInterfacesTest013 Failed";

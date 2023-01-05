@@ -298,10 +298,10 @@ HWTEST_F (FaultPerformanceTest, FaultPerformanceTest006, TestSize.Level2)
     if (!dumplog.InitFrameCatcher()) {
         GTEST_LOG_(ERROR) << "Failed to suspend thread(" << testPid << ").";
     }
-    std::vector<std::shared_ptr<DfxFrame>> frameV;
+    std::vector<NativeFrame> frameV;
     clock_t befor = GetStartTime();
     for (int i = 0; i < PERFORMANCE_TEST_NUMBER_ONE_HUNDRED; i++) {
-        bool ret = dumplog.CatchFrame(testPid, frameV);
+        bool ret = dumplog.CatchFrame(testPid, frameV, true);
         GTEST_LOG_(INFO) << ret;
     }
     double timeInterval = GetStopTime(befor)/PERFORMANCE_TEST_NUMBER_ONE_HUNDRED;

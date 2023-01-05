@@ -29,7 +29,6 @@
 #include "dfx_log.h"
 #include "dfx_maps.h"
 
-static const int FAULT_STACK_SHOW_FLOOR = 4;
 namespace OHOS {
 namespace HiviewDFX {
 void DfxFrame::SetFrameIndex(size_t index)

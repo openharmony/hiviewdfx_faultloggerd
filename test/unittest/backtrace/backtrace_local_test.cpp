@@ -160,7 +160,7 @@ HWTEST_F(BacktraceLocalTest, BacktraceLocalTest001, TestSize.Level2)
         return;
     }
 
-    std::unique_ptr<DfxSymbolsCache> cache = std::make_unique<DfxSymbolsCache>();
+    auto cache = std::make_shared<DfxSymbolsCache>();
     BacktraceLocalThread thread(BACKTRACE_CURRENT_THREAD);
     ASSERT_EQ(true, thread.Unwind(as, cache, 0));
     const auto& frames = thread.GetFrames();
@@ -210,7 +210,7 @@ HWTEST_F(BacktraceLocalTest, BacktraceLocalTest003, TestSize.Level2)
         FAIL() << "Failed to create child thread.\n";
     }
 
-    std::unique_ptr<DfxSymbolsCache> cache = std::make_unique<DfxSymbolsCache>();
+    auto cache = std::make_shared<DfxSymbolsCache>();
     BacktraceLocalThread thread(g_tid);
     ASSERT_EQ(true, thread.Unwind(as, cache, 0));
     const auto& frames = thread.GetFrames();
