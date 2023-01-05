@@ -47,9 +47,6 @@
 #include "musl_cutil.h"
 #include "musl_log.h"
 #endif
-#if defined(CRASH_LOCAL_HANDLER)
-#include "dfx_crash_local_handler.h"
-#endif
 
 #ifdef LOG_DOMAIN
 #undef LOG_DOMAIN
@@ -420,11 +417,6 @@ static int DoProcessDump(void* arg)
     DfxLogInfo("(%d) wait for process(%d) return with ret(%d) status(%d) timeout(%d)",
         g_request.recycleTid, childPid, ret, status, isTimeout);
 out:
-#if defined(CRASH_LOCAL_HANDLER)
-    if ((g_prevHandledSignal != SIGDUMP) && ((isTimeout) || ((ret >= 0) && (status != 0)))) {
-        CrashLocalHandler(&g_request);
-    }
-#endif
     g_isDumping = FALSE;
     RestoreDumpState(prevDumpableStatus, isTracerStatusModified);
     pthread_mutex_unlock(&g_signalHandlerMutex);

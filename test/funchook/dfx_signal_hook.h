@@ -19,8 +19,6 @@
 extern "C" {
 #endif
 void StartHookFunc(void);
-
-void SetPlatformSignalHandler(uintptr_t handler);
 #ifdef __cplusplus
 }
 #endif
