@@ -67,7 +67,7 @@ static SigprocmaskFunc g_hookedSigprocmask = NULL;
 static SignalFunc g_hookedSignal = NULL;
 static PthreadSigmaskFunc g_hookedPthreadSigmask = NULL;
 
-bool IsPlatformHandleSignal(int sig)
+static bool IsPlatformHandleSignal(int sig)
 {
     int platformSignals[] = {
         SIGABRT, SIGBUS, SIGILL, SIGSEGV, SIGDUMP
