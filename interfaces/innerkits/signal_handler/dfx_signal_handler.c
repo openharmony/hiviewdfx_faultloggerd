@@ -431,7 +431,7 @@ out:
     return 0;
 }
 
-static void UnlockSignalHandlerMutex()
+static void UnlockSignalHandlerMutex(void)
 {
     if (pthread_mutex_trylock(&g_signalHandlerMutex) == 0) {
         pthread_mutex_unlock(&g_signalHandlerMutex);
@@ -440,7 +440,7 @@ static void UnlockSignalHandlerMutex()
     }
 }
 
-static void ForkAndDoProcessDump()
+static void ForkAndDoProcessDump(void)
 {
     int prevDumpableStatus = prctl(PR_GET_DUMPABLE);
     bool isTracerStatusModified = SetDumpState();

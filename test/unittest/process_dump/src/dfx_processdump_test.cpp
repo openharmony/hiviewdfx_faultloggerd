@@ -355,7 +355,6 @@ HWTEST_F(DfxProcessDumpTest, DfxProcessDumpTest004, TestSize.Level2)
         }
     }
     ASSERT_EQ(count, len);
-    // kill(testPid, SIGKILL);
     GTEST_LOG_(INFO) << "DfxProcessDumpTest004: end.";
 }
 
