@@ -215,8 +215,7 @@ std::string DfxThread::ToString() const
     }
 
     std::stringstream threadInfoStream;
-    threadInfoStream << "Tid:" << tid_ << " ";
-    threadInfoStream << "Name:" << threadName_ << "" << std::endl;
+    threadInfoStream << "Thread name:" << threadName_ << std::endl;
     for (size_t i = 0; i < dfxFrames_.size(); i++) {
         if (dfxFrames_[i] == nullptr) {
             continue;

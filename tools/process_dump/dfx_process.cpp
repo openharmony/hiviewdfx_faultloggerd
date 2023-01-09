@@ -226,6 +226,11 @@ std::string DfxProcess::GetProcessName() const
     return processName_;
 }
 
+std::string DfxProcess::GetFatalMessage() const
+{
+    return fatalMsg_;
+}
+
 std::shared_ptr<DfxElfMaps> DfxProcess::GetMaps() const
 {
     return maps_;
@@ -262,6 +267,11 @@ pid_t DfxProcess::GetNsPid() const
 void DfxProcess::SetProcessName(const std::string &processName)
 {
     processName_ = processName;
+}
+
+void DfxProcess::SetFatalMessage(const std::string &msg)
+{
+    fatalMsg_ = msg;
 }
 
 void DfxProcess::SetMaps(std::shared_ptr<DfxElfMaps> maps)
