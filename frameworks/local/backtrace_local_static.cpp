@@ -37,7 +37,6 @@ namespace {
 #define LOG_DOMAIN 0xD002D11
 #define LOG_TAG "DfxBacktraceLocal"
 constexpr int32_t timeout = 2000;
-static std::atomic<bool> g_hasSignaled = false;
 static std::atomic<int32_t> g_tid = -1;
 static std::condition_variable g_localCv;
 static std::mutex g_localMutex;
@@ -60,15 +59,18 @@ bool BacktraceLocalStatic::GetThreadContext(int32_t tid, unw_context_t& ctx)
         return false;
     }
 
+    std::unique_lock<std::mutex> lock(g_localMutex);
     if (!InstallSigHandler()) {
+        DfxLogWarn("Failed to install local handler for %d.", tid);
         return false;
     }
 
     if (!SignalRequestThread(tid, ctx)) {
+        DfxLogWarn("Failed to signal target thread:%d.", tid);
         return false;
     }
 
-    std::unique_lock<std::mutex> lock(g_localMutex);
+    g_localCv.wait_for(lock, std::chrono::milliseconds(timeout));
     UninstallSigHandler();
     return true;
 }
@@ -86,14 +88,14 @@ void BacktraceLocalStatic::ReleaseThread(int32_t tid)
 void BacktraceLocalStatic::CopyContextAndWaitTimeout(int sig, siginfo_t *si, void *context)
 {
     std::unique_lock<std::mutex> lock(g_localMutex);
+    g_localCv.notify_one();
+
     unw_context_t* ctxPtr = (unw_context_t*)(si->si_value.sival_ptr);
     if (ctxPtr == nullptr) {
         return;
     }
 
-    g_hasSignaled = true;
 #if defined(__arm__)
-    (void)memset_s(ctxPtr, sizeof(unw_context_t), 0, sizeof(unw_context_t));
     ucontext_t *uc = (ucontext_t *)context;
     ctxPtr->regs[UNW_ARM_R0] = uc->uc_mcontext.arm_r0;
     ctxPtr->regs[UNW_ARM_R1] = uc->uc_mcontext.arm_r1;
@@ -165,26 +167,10 @@ bool BacktraceLocalStatic::SignalRequestThread(int32_t tid, unw_context_t& ctx)
     g_tid = tid;
     if (syscall(SYS_rt_tgsigqueueinfo, getpid(), tid, si.si_signo, &si) != 0) {
         DfxLogError("Failed to queue signal(%d) to %d, errno(%d).", si.si_signo, tid, errno);
-        g_tid = 0;
+        g_tid = -1;
         return false;
     }
 
-    int left = 1000; // 1000 : 1000us
-    constexpr int pollTime = 10; // 10 : 10us
-    while (!g_hasSignaled) {
-        int ret = usleep(pollTime);
-        if (ret == 0) {
-            left -= pollTime;
-        } else {
-            left -= ret;
-        }
-        if (left <= 0) {
-            g_tid = 0;
-            return false;
-        }
-    }
-
-    g_hasSignaled = false;
     return true;
 }
 } // namespace HiviewDFX

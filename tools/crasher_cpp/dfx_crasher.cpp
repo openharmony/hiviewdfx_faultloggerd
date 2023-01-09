@@ -67,8 +67,9 @@ DfxCrasher &DfxCrasher::GetInstance()
 
 NOINLINE int DfxCrasher::TriggerTrapException() const
 {
+#ifndef __x86_64__
     __asm__ volatile(".inst 0xde01");
-
+#endif
     return 0;
 }
 
@@ -278,6 +279,8 @@ NOINLINE int DfxCrasher::StackTop() const
 #elif defined(__aarch64__)
     uint64_t stackTop;
     __asm__ volatile ("mov %0, sp":"=r"(stackTop)::);
+#else
+    uint64_t stackTop = 0; // for fixing compile error on x64
 #endif
     std::cout << "crasher_c: stack top is = " << std::hex << stackTop << std::endl;
 

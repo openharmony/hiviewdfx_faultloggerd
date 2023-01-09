@@ -48,7 +48,7 @@ static const int PIPE_WRITE = 1;
 
 FaultLoggerPipe::FaultLoggerPipe()
 {
-    bInit_ = false;
+    init_ = false;
     Init();
 }
 
@@ -59,37 +59,37 @@ FaultLoggerPipe::~FaultLoggerPipe()
 
 int FaultLoggerPipe::GetReadFd(void)
 {
-    DfxLogDebug("%s :: pipe read fd: %d", __func__, pfds_[PIPE_READ]);
-    return pfds_[PIPE_READ];
+    DfxLogDebug("%s :: pipe read fd: %d", __func__, fds_[PIPE_READ]);
+    return fds_[PIPE_READ];
 }
 
 int FaultLoggerPipe::GetWriteFd(void)
 {
-    DfxLogDebug("%s :: pipe write fd: %d", __func__, pfds_[PIPE_WRITE]);
-    return pfds_[PIPE_WRITE];
+    DfxLogDebug("%s :: pipe write fd: %d", __func__, fds_[PIPE_WRITE]);
+    return fds_[PIPE_WRITE];
 }
 
 bool FaultLoggerPipe::Init(void)
 {
-    if (!bInit_) {
-        if (pipe(pfds_) != 0) {
+    if (!init_) {
+        if (pipe(fds_) != 0) {
             DfxLogError("%s :: Failed to create pipe.", __func__);
             return false;
         }
         DfxLogDebug("%s :: create pipe.", __func__);
     }
-    bInit_ = true;
+    init_ = true;
     return true;
 }
 
 void FaultLoggerPipe::Destroy(void)
 {
-    if (bInit_) {
+    if (init_) {
         DfxLogDebug("%s :: close pipe.", __func__);
-        Close(pfds_[PIPE_READ]);
-        Close(pfds_[PIPE_WRITE]);
+        Close(fds_[PIPE_READ]);
+        Close(fds_[PIPE_WRITE]);
     }
-    bInit_ = false;
+    init_ = false;
 }
 
 void FaultLoggerPipe::Close(int fd) const

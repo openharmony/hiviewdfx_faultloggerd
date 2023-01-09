@@ -116,7 +116,6 @@ bool DfxUnwindRemote::UnwindProcess(std::shared_ptr<DfxProcess> process)
         ret = true;
     } while (false);
 
-    PrintBuildIds();
     unw_destroy_addr_space(as_);
     as_ = nullptr;
     return ret;
@@ -228,7 +227,7 @@ bool DfxUnwindRemote::GetArkJsHeapFuncName(std::string& funcName, std::shared_pt
         }
         uintptr_t x20 = regsVector[UNW_AARCH64_X20];
         uintptr_t fp = regsVector[UNW_AARCH64_X29];
-        
+
         DfxLogInfo("pid: %d, x20: %016lx, fp: %016lx", thread->GetThreadId(), x20, fp);
         int result = unw_get_ark_js_heap_crash_info(thread->GetThreadId(),
             (uintptr_t*)&x20, (uintptr_t*)&fp, false, buf, ARK_JS_HEAD_LEN);
@@ -268,15 +267,18 @@ bool DfxUnwindRemote::UpdateAndPrintFrameInfo(unw_cursor_t& cursor, std::shared_
             frame->SetFrameFuncName(funcName);
             frame->SetFrameFuncOffset(funcOffset);
         }
-
-        if (enableBuildId && (buildIds_.find(mapPath) == buildIds_.end())) {
+        if (enableBuildId && buildIds_.find(mapPath) != buildIds_.end()) {
+            frame->SetBuildId(buildIds_[mapPath]);
+        } else if (enableBuildId && buildIds_.find(mapPath) == buildIds_.end()) {
             uint8_t* buildId = nullptr;
             size_t length = 0;
+            std::string buildIdStr = "";
             if (unw_get_build_id(mapInfo, &buildId, &length)) {
-                buildIds_.insert(std::pair<std::string, std::string>(std::string(mapPath),
-                    GetReadableBuildId(buildId, length)));
-            } else {
-                buildIds_.insert(std::pair<std::string, std::string>(std::string(mapPath), "No GNU BuildId"));
+                buildIdStr = GetReadableBuildId(buildId, length);
+            }
+            if (!buildIdStr.empty()) {
+                buildIds_.insert(std::pair<std::string, std::string>(std::string(mapPath), buildIdStr));
+                frame->SetBuildId(buildIdStr);
             }
         }
     } else {
@@ -294,19 +296,6 @@ bool DfxUnwindRemote::UpdateAndPrintFrameInfo(unw_cursor_t& cursor, std::shared_
         DfxRingBufferWrapper::GetInstance().AppendMsg(frame->PrintFrame());
     }
     return ret;
-}
-
-void DfxUnwindRemote::PrintBuildIds() const
-{
-    if (buildIds_.size() == 0) {
-        return;
-    }
-
-    DfxRingBufferWrapper::GetInstance().AppendMsg("Related elf build-id:\n");
-    for (auto const& buildId : buildIds_) {
-        std::string line = buildId.first + ":" + buildId.second + "\n";
-        DfxRingBufferWrapper::GetInstance().AppendMsg(line);
-    }
 }
 
 bool DfxUnwindRemote::UnwindThread(std::shared_ptr<DfxProcess> process, std::shared_ptr<DfxThread> thread)

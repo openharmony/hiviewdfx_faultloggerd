@@ -115,6 +115,23 @@ int unw_get_ark_js_heap_crash_info(int pid, uintptr_t* x20, uintptr_t* fp, int o
     return 0;
 }
 
+static std::vector<std::shared_ptr<DfxFrame>> GetDfxFrames(const std::vector<NativeFrame>& frames)
+{
+    std::vector<std::shared_ptr<DfxFrame>> dfxFrames;
+    for (const auto& frame : frames) {
+        std::shared_ptr<DfxFrame> dfxFrame = std::make_shared<DfxFrame>();
+        dfxFrame->SetFrameIndex(frame.index);
+        dfxFrame->SetFramePc(frame.pc);
+        dfxFrame->SetFrameSp(frame.sp);
+        dfxFrame->SetFrameRelativePc(frame.relativePc);
+        dfxFrame->SetFrameMapName(frame.binaryName);
+        dfxFrame->SetFrameFuncName(frame.funcName);
+        dfxFrame->SetFrameFuncOffset(frame.funcOffset);
+        dfxFrames.push_back(dfxFrame);
+    }
+    return dfxFrames;
+}
+
 /**
  * @tc.name: FaultStackUnittest001
  * @tc.desc: check whether fault stack and register can be print out
@@ -123,10 +140,9 @@ int unw_get_ark_js_heap_crash_info(int pid, uintptr_t* x20, uintptr_t* fp, int o
 HWTEST_F(FaultStackUnittest, FaultStackUnittest001, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "FaultStackUnittest001: start.";
-    std::vector<std::shared_ptr<DfxFrame>> frames;
+    std::vector<NativeFrame> frames;
     DfxDumpCatcher catcher(getpid());
     ASSERT_EQ(true, catcher.InitFrameCatcher());
-    ASSERT_EQ(true, catcher.RequestCatchFrame(getpid()));
     ASSERT_EQ(true, catcher.CatchFrame(getpid(), frames));
     ASSERT_GT(frames.size(), 0);
     GTEST_LOG_(INFO) << "frame size:" << frames.size();
@@ -147,7 +163,7 @@ HWTEST_F(FaultStackUnittest, FaultStackUnittest001, TestSize.Level2)
     auto maps = DfxElfMaps::Create(childPid);
     auto reg = GetCurrentReg();
     std::unique_ptr<FaultStack> stack = std::make_unique<FaultStack>(childPid);
-    stack->CollectStackInfo(frames);
+    stack->CollectStackInfo(GetDfxFrames(frames));
     stack->CollectRegistersBlock(reg, maps);
     stack->Print();
     catcher.DestroyFrameCatcher();

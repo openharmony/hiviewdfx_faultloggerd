@@ -35,22 +35,25 @@
 #include <sys/syscall.h>
 #include <sys/types.h>
 
-#include "dfx_util.h"
 #include "dfx_define.h"
 #include "dfx_dump_res.h"
 #include "dfx_frame.h"
 #include "dfx_log.h"
-#include "dfx_unwind_local.h"
+#include "dfx_util.h"
 #include "faultloggerd_client.h"
+#include "file_ex.h"
 #include "iosfwd"
 #include "securec.h"
 #include "strings.h"
-#include "file_ex.h"
 
-static const int NUMBER_TEN = 10;
-static const int MAX_TEMP_FILE_LENGTH = 256;
+#include <libunwind.h>
+#include <libunwind_i-ohos.h>
+
+#include "backtrace.h"
+#include "backtrace_local_static.h"
+#include "backtrace_local_thread.h"
+
 static const int DUMP_CATCHE_WORK_TIME_S = 60;
-static const int NUMBER_TWO_KB = 2048;
 static const int BACK_TRACE_DUMP_MIX_TIMEOUT_MS = 2000;
 static const int BACK_TRACE_DUMP_CPP_TIMEOUT_MS = 10000;
 
@@ -88,17 +91,25 @@ DfxDumpCatcher::~DfxDumpCatcher()
 {
 }
 
-bool DfxDumpCatcher::DoDumpCurrTid(const size_t skipFramNum, std::string& msg)
+bool DfxDumpCatcher::DoDumpCurrTid(const size_t skipFrameNum, std::string& msg)
 {
     bool ret = false;
     int currTid = syscall(SYS_gettid);
-    size_t tmpSkipFramNum = skipFramNum + 1;
-    ret = DfxUnwindLocal::GetInstance().ExecLocalDumpUnwind(tmpSkipFramNum);
+    unw_addr_space_t as;
+    unw_init_local_address_space(&as);
+    if (as == nullptr) {
+        return false;
+    }
+
+    auto cache = std::make_shared<DfxSymbolsCache>();
+    BacktraceLocalThread thread(BACKTRACE_CURRENT_THREAD);
+    ret = thread.Unwind(as, cache, skipFrameNum + 1);
     if (ret) {
-        msg.append(DfxUnwindLocal::GetInstance().CollectUnwindResult(currTid));
+        msg.append(thread.GetFramesStr());
     } else {
         msg.append("Failed to dump curr thread:" + std::to_string(currTid) + ".\n");
     }
+    unw_destroy_local_address_space(as);
     DfxLogDebug("%s :: DoDumpCurrTid :: return %d.", DFXDUMPCATCHER_TAG.c_str(), ret);
     return ret;
 }
@@ -111,15 +122,22 @@ bool DfxDumpCatcher::DoDumpLocalTid(const int tid, std::string& msg)
         return ret;
     }
 
-    if (DfxUnwindLocal::GetInstance().SendAndWaitRequest(tid)) {
-        ret = DfxUnwindLocal::GetInstance().ExecLocalDumpUnwindByWait();
+    unw_addr_space_t as;
+    unw_init_local_address_space(&as);
+    if (as == nullptr) {
+        DfxLogError("Failed to init address space.");
+        return ret;
     }
 
+    auto cache = std::make_shared<DfxSymbolsCache>();
+    BacktraceLocalThread thread(tid);
+    ret = thread.Unwind(as, cache, 0);
     if (ret) {
-        msg.append(DfxUnwindLocal::GetInstance().CollectUnwindResult(tid));
+        msg.append(thread.GetFramesStr());
     } else {
         msg.append("Failed to dump thread:" + std::to_string(tid) + ".\n");
     }
+    unw_destroy_local_address_space(as);
     DfxLogDebug("%s :: DoDumpLocalTid :: return %d.", DFXDUMPCATCHER_TAG.c_str(), ret);
     return ret;
 }
@@ -180,13 +198,7 @@ bool DfxDumpCatcher::DoDumpRemoteLocked(int pid, int tid, std::string& msg)
 
 bool DfxDumpCatcher::DoDumpLocalLocked(int pid, int tid, std::string& msg)
 {
-    bool ret = DfxUnwindLocal::GetInstance().Init();
-    if (!ret) {
-        DfxLogError("%s :: DoDumpLocal :: Init error.", DFXDUMPCATCHER_TAG.c_str());
-        DfxUnwindLocal::GetInstance().Destroy();
-        return ret;
-    }
-
+    bool ret = false;
     size_t skipFramNum = DUMP_CATCHER_NUMBER_TWO;
     if (tid == syscall(SYS_gettid)) {
         ret = DoDumpCurrTid(skipFramNum, msg);
@@ -199,7 +211,7 @@ bool DfxDumpCatcher::DoDumpLocalLocked(int pid, int tid, std::string& msg)
             ret = DoDumpLocalTid(tid, msg);
         }
     }
-    DfxUnwindLocal::GetInstance().Destroy();
+
     DfxLogDebug("%s :: DoDumpLocal :: ret(%d).", DFXDUMPCATCHER_TAG.c_str(), ret);
     return ret;
 }
@@ -525,42 +537,60 @@ bool DfxDumpCatcher::DumpCatchMultiPid(const std::vector<int> pidV, std::string&
 bool DfxDumpCatcher::InitFrameCatcher()
 {
     std::unique_lock<std::mutex> lck(dumpCatcherMutex_);
-    bool ret = DfxUnwindLocal::GetInstance().Init();
-    if (!ret) {
-        DfxUnwindLocal::GetInstance().Destroy();
+    if (as_ != nullptr) {
+        return true;
     }
-    return ret;
+
+    unw_init_local_address_space(&as_);
+    if (as_ == nullptr) {
+        return false;
+    }
+
+    cache_ = std::make_shared<DfxSymbolsCache>();
+    return true;
 }
 
 void DfxDumpCatcher::DestroyFrameCatcher()
 {
     std::unique_lock<std::mutex> lck(dumpCatcherMutex_);
-    DfxUnwindLocal::GetInstance().Destroy();
-}
-
-bool DfxDumpCatcher::RequestCatchFrame(int tid)
-{
-    if (tid == procInfo_.tid) {
-        return true;
-    }
-    return DfxUnwindLocal::GetInstance().SendAndWaitRequest(tid);
-}
-
-bool DfxDumpCatcher::CatchFrame(std::vector<std::shared_ptr<DfxFrame>>& frames)
-{
-    std::unique_lock<std::mutex> lck(dumpCatcherMutex_);
-    int skipFrameNum = 2;
-    if (!DfxUnwindLocal::GetInstance().ExecLocalDumpUnwind(skipFrameNum)) {
-        DfxLogError("DfxDumpCatchFrame :: failed to unwind for current thread");
-        return false;
+    if (as_ != nullptr) {
+        unw_destroy_local_address_space(as_);
+        as_ = nullptr;
     }
 
-    DfxUnwindLocal::GetInstance().CollectUnwindFrames(frames);
+    cache_ = nullptr;
+}
+
+bool DfxDumpCatcher::ReleaseThread(int tid)
+{
+    BacktraceLocalStatic::GetInstance().ReleaseThread(tid);
     return true;
 }
 
-bool DfxDumpCatcher::CatchFrame(int tid, std::vector<std::shared_ptr<DfxFrame>>& frames)
+bool DfxDumpCatcher::CatchFrame(std::vector<NativeFrame>& frames)
 {
+    std::unique_lock<std::mutex> lck(dumpCatcherMutex_);
+    if (as_ == nullptr || cache_ == nullptr) {
+        return false;
+    }
+
+    int skipFrameNum = 1; // skip current frame
+    BacktraceLocalThread thread(BACKTRACE_CURRENT_THREAD);
+    if (!thread.Unwind(as_, cache_, skipFrameNum)) {
+        return false;
+    }
+
+    frames.clear();
+    frames = thread.GetFrames();
+    return true;
+}
+
+bool DfxDumpCatcher::CatchFrame(int tid, std::vector<NativeFrame>& frames, bool releaseThread)
+{
+    if (as_ == nullptr || cache_ == nullptr) {
+        return false;
+    }
+
     if (tid <= 0 || frameCatcherPid_ != procInfo_.pid) {
         DfxLogError("DfxDumpCatchFrame :: only support localDump.");
         return false;
@@ -570,20 +600,19 @@ bool DfxDumpCatcher::CatchFrame(int tid, std::vector<std::shared_ptr<DfxFrame>>&
         DfxLogError("DfxDumpCatchFrame :: target tid is not in our task.");
         return false;
     }
-    size_t skipFramNum = DUMP_CATCHER_NUMBER_ONE;
+
+    if (tid == procInfo_.tid) {
+        return CatchFrame(frames);
+    }
 
     std::unique_lock<std::mutex> lck(dumpCatcherMutex_);
-    if (tid == procInfo_.tid) {
-        if (!DfxUnwindLocal::GetInstance().ExecLocalDumpUnwind(skipFramNum)) {
-            DfxLogError("DfxDumpCatchFrame :: failed to unwind for current thread(%d).", tid);
-            return false;
-        }
-    } else if (!DfxUnwindLocal::GetInstance().ExecLocalDumpUnwindByWait()) {
-        DfxLogError("DfxDumpCatchFrame :: failed to unwind for thread(%d).", tid);
+    BacktraceLocalThread thread(tid);
+    if (!thread.Unwind(as_, cache_, 0, releaseThread)) {
         return false;
     }
 
-    DfxUnwindLocal::GetInstance().CollectUnwindFrames(frames);
+    frames.clear();
+    frames = thread.GetFrames();
     return true;
 }
 } // namespace HiviewDFX

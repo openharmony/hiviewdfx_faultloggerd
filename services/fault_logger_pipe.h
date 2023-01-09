@@ -37,8 +37,8 @@ private:
     bool Init(void);
     void Destroy(void);
 
-    int pfds_[2] = {-1, -1};
-    bool bInit_;
+    int fds_[2] = {-1, -1};
+    bool init_;
 };
 
 class FaultLoggerPipe2 {

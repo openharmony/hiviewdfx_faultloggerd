@@ -21,12 +21,10 @@
 namespace OHOS {
 namespace HiviewDFX {
 constexpr int32_t BACKTRACE_CURRENT_THREAD = -1;
-struct NativeFrame
-{
+struct NativeFrame {
     size_t index {0};
     uint64_t pc {0};
     uint64_t relativePc {0};
-    uint64_t lr {0};
     uint64_t sp {0};
     uint64_t fp {0};
     uint64_t funcOffset {0};

@@ -52,15 +52,18 @@ bool CppCrashReporter::Format()
     cmdline_ = process_->GetProcessName();
     pid_ = process_->GetPid();
     uid_ = process_->GetUid();
-    reason_ = FormatSignalName(signo_);
+    reason_ = PrintSignal(siginfo_);
+    auto msg =  "LastFatalMessage:" + process_->GetFatalMessage();
+    if (siginfo_.si_signo == SIGABRT && !msg.empty()) {
+        stack_ = msg + "\n";
+    }
     auto threads = process_->GetThreads();
     std::shared_ptr<DfxThread> crashThread = nullptr;
     if (!threads.empty()) {
         crashThread = threads.front();
     }
-
     if (crashThread != nullptr) {
-        stack_ = crashThread->ToString();
+        stack_ += crashThread->ToString();
     }
     return true;
 }
