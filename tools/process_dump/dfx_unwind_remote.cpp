@@ -180,7 +180,6 @@ bool DfxUnwindRemote::DfxUnwindRemoteDoUnwindStep(size_t const & index,
     }
 
     if (oldPc == framePc && index != 0) {
-        DfxLogWarn("%s :: repeated pc(0x%lx), stop.", __func__, framePc);
         return ret;
     }
     oldPc = framePc;

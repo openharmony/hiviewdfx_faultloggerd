@@ -57,19 +57,19 @@ FaultLoggerPipe::~FaultLoggerPipe()
     Destroy();
 }
 
-int FaultLoggerPipe::GetReadFd()
+int FaultLoggerPipe::GetReadFd(void)
 {
     DfxLogDebug("%s :: pipe read fd: %d", __func__, pfds_[PIPE_READ]);
     return pfds_[PIPE_READ];
 }
 
-int FaultLoggerPipe::GetWriteFd()
+int FaultLoggerPipe::GetWriteFd(void)
 {
     DfxLogDebug("%s :: pipe write fd: %d", __func__, pfds_[PIPE_WRITE]);
     return pfds_[PIPE_WRITE];
 }
 
-bool FaultLoggerPipe::Init()
+bool FaultLoggerPipe::Init(void)
 {
     if (!bInit_) {
         if (pipe(pfds_) != 0) {
@@ -82,7 +82,7 @@ bool FaultLoggerPipe::Init()
     return true;
 }
 
-void FaultLoggerPipe::Destroy()
+void FaultLoggerPipe::Destroy(void)
 {
     if (bInit_) {
         DfxLogDebug("%s :: close pipe.", __func__);

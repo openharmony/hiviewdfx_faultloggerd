@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-/* This files contains header of secure module. */
+/* This files contains header of pipe module. */
 
 #ifndef _FAULT_LOGGER_PIPE_H
 #define _FAULT_LOGGER_PIPE_H
@@ -29,13 +29,13 @@ public:
     FaultLoggerPipe();
     ~FaultLoggerPipe();
 
-    int GetReadFd();
-    int GetWriteFd();
+    int GetReadFd(void);
+    int GetWriteFd(void);
 
     void Close(int fd) const;
 private:
-    bool Init();
-    void Destroy();
+    bool Init(void);
+    void Destroy(void);
 
     int pfds_[2] = {-1, -1};
     bool bInit_;
