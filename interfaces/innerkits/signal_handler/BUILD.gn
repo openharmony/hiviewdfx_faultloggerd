@@ -63,7 +63,6 @@ if (defined(ohos_lite)) {
       "//utils/native/base/include",
       "$faultloggerd_path/common",
       "$faultloggerd_path/common/dfxlog",
-      "$faultloggerd_path/tools/process_dump",
       "$faultloggerd_path/interfaces/innerkits/faultloggerd_client/include",
     ]
   }
@@ -132,7 +131,6 @@ if (defined(ohos_lite)) {
     sources = [ "dfx_signal_handler.c" ]
 
     deps = [
-      ":dfx_local_handler",
       "$faultloggerd_path/common/dfxlog:static_hilog_base",
       "$faultloggerd_path/common/util:dfx_cutil",
     ]
