@@ -53,7 +53,7 @@ bool CppCrashReporter::Format()
     pid_ = process_->GetPid();
     uid_ = process_->GetUid();
     reason_ = PrintSignal(siginfo_);
-    auto msg =  "LastFatalMessage:" + process_->GetFatalMessage();
+    auto msg = "LastFatalMessage:" + process_->GetFatalMessage();
     if (siginfo_.si_signo == SIGABRT && !msg.empty()) {
         stack_ = msg + "\n";
     }
