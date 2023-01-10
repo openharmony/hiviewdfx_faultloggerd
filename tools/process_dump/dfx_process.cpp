@@ -53,10 +53,9 @@ void DfxProcess::FillProcessName()
 std::shared_ptr<DfxProcess> DfxProcess::CreateProcessWithKeyThread(pid_t pid, std::shared_ptr<DfxThread> keyThread)
 {
     auto dfxProcess = std::make_shared<DfxProcess>();
-    if (dfxProcess != nullptr) {
-        dfxProcess->SetPid(pid);
-        dfxProcess->FillProcessName();
-    }
+    dfxProcess->SetPid(pid);
+    dfxProcess->FillProcessName();
+
     if (!dfxProcess->InitProcessMaps()) {
         DfxLogWarn("Fail to init process maps.");
         return nullptr;
