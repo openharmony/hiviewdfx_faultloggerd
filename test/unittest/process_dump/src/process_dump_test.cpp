@@ -81,9 +81,7 @@ HWTEST_F (ProcessDumpTest, ProcessDumpTest001, TestSize.Level2)
     GTEST_LOG_(INFO) << "ProcessDumpTest001: start.";
     std::shared_ptr<ProcessDumpRequest> processDump = std::make_shared<ProcessDumpRequest>();
     int32_t inputType = 1;
-    if (processDump != nullptr) {
-        processDump->SetType(static_cast<ProcessDumpType>(inputType));
-    }
+    processDump->SetType(static_cast<ProcessDumpType>(inputType));
     ProcessDumpType outputType = processDump->GetType();
     EXPECT_EQ(true, inputType == outputType) << "ProcessDumpTest001 Failed";
     GTEST_LOG_(INFO) << "ProcessDumpTest001: end.";
@@ -99,9 +97,7 @@ HWTEST_F (ProcessDumpTest, ProcessDumpTest002, TestSize.Level2)
     GTEST_LOG_(INFO) << "ProcessDumpTest002: start.";
     std::shared_ptr<ProcessDumpRequest> processDump = std::make_shared<ProcessDumpRequest>();
     int32_t inputType = 164;
-    if (processDump != nullptr) {
-        processDump->SetType(static_cast<ProcessDumpType>(inputType));
-    }
+    processDump->SetType(static_cast<ProcessDumpType>(inputType));
     ProcessDumpType outputType = processDump->GetType();
     EXPECT_EQ(true, inputType == outputType) << "ProcessDumpTest002 Failed";
     GTEST_LOG_(INFO) << "ProcessDumpTest002: end.";
@@ -117,9 +113,7 @@ HWTEST_F (ProcessDumpTest, ProcessDumpTest003, TestSize.Level2)
     GTEST_LOG_(INFO) << "ProcessDumpTest003: start.";
     std::shared_ptr<ProcessDumpRequest> processDump = std::make_shared<ProcessDumpRequest>();
     int32_t inputType = 3;
-    if (processDump != nullptr) {
-        processDump->SetType(static_cast<ProcessDumpType>(inputType));
-    }
+    processDump->SetType(static_cast<ProcessDumpType>(inputType));
     ProcessDumpType outputType = processDump->GetType();
     EXPECT_EQ(true, inputType == outputType) << "ProcessDumpTest003 Failed";
     GTEST_LOG_(INFO) << "ProcessDumpTest003: end.";
@@ -135,9 +129,7 @@ HWTEST_F (ProcessDumpTest, ProcessDumpTest004, TestSize.Level2)
     GTEST_LOG_(INFO) << "ProcessDumpTest004: start.";
     std::shared_ptr<ProcessDumpRequest> processDump = std::make_shared<ProcessDumpRequest>();
     int32_t inputTid = 1;
-    if (processDump != nullptr) {
-        processDump->SetTid(inputTid);
-    }
+    processDump->SetTid(inputTid);
     int32_t outputTid = processDump->GetTid();
     EXPECT_EQ(true, inputTid == outputTid) << "ProcessDumpTest004 Failed";
     GTEST_LOG_(INFO) << "ProcessDumpTest004: end.";
@@ -153,9 +145,7 @@ HWTEST_F (ProcessDumpTest, ProcessDumpTest005, TestSize.Level2)
     GTEST_LOG_(INFO) << "ProcessDumpTest005: start.";
     std::shared_ptr<ProcessDumpRequest> processDump = std::make_shared<ProcessDumpRequest>();
     int32_t inputTid = 164;
-    if (processDump != nullptr) {
-        processDump->SetTid(inputTid);
-    }
+    processDump->SetTid(inputTid);
     int32_t outputTid = processDump->GetTid();
     EXPECT_EQ(true, inputTid == outputTid) << "ProcessDumpTest005 Failed";
     GTEST_LOG_(INFO) << "ProcessDumpTest005: end.";
@@ -171,9 +161,7 @@ HWTEST_F (ProcessDumpTest, ProcessDumpTest006, TestSize.Level2)
     GTEST_LOG_(INFO) << "ProcessDumpTest006: start.";
     std::shared_ptr<ProcessDumpRequest> processDump = std::make_shared<ProcessDumpRequest>();
     int32_t inputTid = 3;
-    if (processDump != nullptr) {
-        processDump->SetTid(inputTid);
-    }
+    processDump->SetTid(inputTid);
     int32_t outputTid = processDump->GetTid();
     EXPECT_EQ(true, inputTid == outputTid) << "ProcessDumpTest006 Failed";
     GTEST_LOG_(INFO) << "ProcessDumpTest006: end.";
@@ -189,9 +177,7 @@ HWTEST_F (ProcessDumpTest, ProcessDumpTest007, TestSize.Level2)
     GTEST_LOG_(INFO) << "ProcessDumpTest007: start.";
     std::shared_ptr<ProcessDumpRequest> processDump = std::make_shared<ProcessDumpRequest>();
     int32_t inputPid = 1;
-    if (processDump != nullptr) {
-        processDump->SetPid(inputPid);
-    }
+    processDump->SetPid(inputPid);
     int32_t outputPid = processDump->GetPid();
     EXPECT_EQ(true, inputPid == outputPid) << "ProcessDumpTest007 Failed";
     GTEST_LOG_(INFO) << "ProcessDumpTest007: end.";
@@ -207,9 +193,7 @@ HWTEST_F (ProcessDumpTest, ProcessDumpTest008, TestSize.Level2)
     GTEST_LOG_(INFO) << "ProcessDumpTest008: start.";
     std::shared_ptr<ProcessDumpRequest> processDump = std::make_shared<ProcessDumpRequest>();
     int32_t inputPid = 164;
-    if (processDump != nullptr) {
-        processDump->SetPid(inputPid);
-    }
+    processDump->SetPid(inputPid);
     int32_t outputPid = processDump->GetPid();
     EXPECT_EQ(true, inputPid == outputPid) << "ProcessDumpTest008 Failed";
     GTEST_LOG_(INFO) << "ProcessDumpTest008: end.";
@@ -225,9 +209,7 @@ HWTEST_F (ProcessDumpTest, ProcessDumpTest009, TestSize.Level2)
     GTEST_LOG_(INFO) << "ProcessDumpTest009: start.";
     std::shared_ptr<ProcessDumpRequest> processDump = std::make_shared<ProcessDumpRequest>();
     int32_t inputPid = 3;
-    if (processDump != nullptr) {
-        processDump->SetPid(inputPid);
-    }
+    processDump->SetPid(inputPid);
     int32_t outputPid = processDump->GetPid();
     EXPECT_EQ(true, inputPid == outputPid) << "ProcessDumpTest009 Failed";
     GTEST_LOG_(INFO) << "ProcessDumpTest009: end.";
@@ -243,9 +225,7 @@ HWTEST_F (ProcessDumpTest, ProcessDumpTest010, TestSize.Level2)
     GTEST_LOG_(INFO) << "ProcessDumpTest010: start.";
     std::shared_ptr<ProcessDumpRequest> processDump = std::make_shared<ProcessDumpRequest>();
     uint32_t inputUid = 1;
-    if (processDump != nullptr) {
-        processDump->SetUid(inputUid);
-    }
+    processDump->SetUid(inputUid);
     uint32_t outputUid = processDump->GetUid();
     EXPECT_EQ(true, inputUid == outputUid) << "ProcessDumpTest010 Failed";
     GTEST_LOG_(INFO) << "ProcessDumpTest010: end.";
@@ -261,9 +241,7 @@ HWTEST_F (ProcessDumpTest, ProcessDumpTest011, TestSize.Level2)
     GTEST_LOG_(INFO) << "ProcessDumpTest011: start.";
     std::shared_ptr<ProcessDumpRequest> processDump = std::make_shared<ProcessDumpRequest>();
     uint32_t inputUid = 164;
-    if (processDump != nullptr) {
-        processDump->SetUid(inputUid);
-    }
+    processDump->SetUid(inputUid);
     uint32_t outputUid = processDump->GetUid();
     EXPECT_EQ(true, inputUid == outputUid) << "ProcessDumpTest011 Failed";
     GTEST_LOG_(INFO) << "ProcessDumpTest011: end.";
@@ -279,9 +257,7 @@ HWTEST_F (ProcessDumpTest, ProcessDumpTest012, TestSize.Level2)
     GTEST_LOG_(INFO) << "ProcessDumpTest012: start.";
     std::shared_ptr<ProcessDumpRequest> processDump = std::make_shared<ProcessDumpRequest>();
     uint32_t inputUid = 3;
-    if (processDump != nullptr) {
-        processDump->SetUid(inputUid);
-    }
+    processDump->SetUid(inputUid);
     uint32_t outputUid = processDump->GetUid();
     EXPECT_EQ(true, inputUid == outputUid) << "ProcessDumpTest012 Failed";
     GTEST_LOG_(INFO) << "ProcessDumpTest012: end.";
@@ -297,9 +273,7 @@ HWTEST_F (ProcessDumpTest, ProcessDumpTest013, TestSize.Level2)
     GTEST_LOG_(INFO) << "ProcessDumpTest013: start.";
     std::shared_ptr<ProcessDumpRequest> processDump = std::make_shared<ProcessDumpRequest>();
     int32_t inputReserved = 1;
-    if (processDump != nullptr) {
-        processDump->SetReserved(inputReserved);
-    }
+    processDump->SetReserved(inputReserved);
     int32_t outputReserved = processDump->GetReserved();
     EXPECT_EQ(true, inputReserved == outputReserved) << "ProcessDumpTest013 Failed";
     GTEST_LOG_(INFO) << "ProcessDumpTest013: end.";
@@ -315,9 +289,7 @@ HWTEST_F (ProcessDumpTest, ProcessDumpTest014, TestSize.Level2)
     GTEST_LOG_(INFO) << "ProcessDumpTest014: start.";
     std::shared_ptr<ProcessDumpRequest> processDump = std::make_shared<ProcessDumpRequest>();
     int32_t inputReserved = 164;
-    if (processDump != nullptr) {
-        processDump->SetReserved(inputReserved);
-    }
+    processDump->SetReserved(inputReserved);
     int32_t outputReserved = processDump->GetReserved();
     EXPECT_EQ(true, inputReserved == outputReserved) << "ProcessDumpTest014 Failed";
     GTEST_LOG_(INFO) << "ProcessDumpTest014: end.";
@@ -333,9 +305,7 @@ HWTEST_F (ProcessDumpTest, ProcessDumpTest015, TestSize.Level2)
     GTEST_LOG_(INFO) << "ProcessDumpTest015: start.";
     std::shared_ptr<ProcessDumpRequest> processDump = std::make_shared<ProcessDumpRequest>();
     int32_t inputReserved = 3;
-    if (processDump != nullptr) {
-        processDump->SetReserved(inputReserved);
-    }
+    processDump->SetReserved(inputReserved);
     int32_t outputReserved = processDump->GetReserved();
     EXPECT_EQ(true, inputReserved == outputReserved) << "ProcessDumpTest015 Failed";
     GTEST_LOG_(INFO) << "ProcessDumpTest015: end.";
@@ -351,9 +321,7 @@ HWTEST_F (ProcessDumpTest, ProcessDumpTest016, TestSize.Level2)
     GTEST_LOG_(INFO) << "ProcessDumpTest016: start.";
     std::shared_ptr<ProcessDumpRequest> processDump = std::make_shared<ProcessDumpRequest>();
     uint64_t inputTimeStamp= 1;
-    if (processDump != nullptr) {
-        processDump->SetTimeStamp(inputTimeStamp);
-    }
+    processDump->SetTimeStamp(inputTimeStamp);
     uint64_t outputTimeStamp = processDump->GetTimeStamp();
     EXPECT_EQ(true, inputTimeStamp == outputTimeStamp) << "ProcessDumpTest016 Failed";
     GTEST_LOG_(INFO) << "ProcessDumpTest016: end.";
@@ -369,9 +337,7 @@ HWTEST_F (ProcessDumpTest, ProcessDumpTest017, TestSize.Level2)
     GTEST_LOG_(INFO) << "ProcessDumpTest017: start.";
     std::shared_ptr<ProcessDumpRequest> processDump = std::make_shared<ProcessDumpRequest>();
     uint64_t inputTimeStamp = 164;
-    if (processDump != nullptr) {
-        processDump->SetTimeStamp(inputTimeStamp);
-    }
+    processDump->SetTimeStamp(inputTimeStamp);
     uint64_t outputTimeStamp = processDump->GetTimeStamp();
     EXPECT_EQ(true, inputTimeStamp == outputTimeStamp) << "ProcessDumpTest017 Failed";
     GTEST_LOG_(INFO) << "ProcessDumpTest017: end.";
@@ -387,9 +353,7 @@ HWTEST_F (ProcessDumpTest, ProcessDumpTest018, TestSize.Level2)
     GTEST_LOG_(INFO) << "ProcessDumpTest018: start.";
     std::shared_ptr<ProcessDumpRequest> processDump = std::make_shared<ProcessDumpRequest>();
     uint64_t inputTimeStamp= 3;
-    if (processDump != nullptr) {
-        processDump->SetTimeStamp(inputTimeStamp);
-    }
+    processDump->SetTimeStamp(inputTimeStamp);
     uint64_t outputTimeStamp = processDump->GetTimeStamp();
     EXPECT_EQ(true, inputTimeStamp == outputTimeStamp) << "ProcessDumpTest018 Failed";
     GTEST_LOG_(INFO) << "ProcessDumpTest018: end.";
@@ -405,9 +369,7 @@ HWTEST_F (ProcessDumpTest, ProcessDumpTest019, TestSize.Level2)
     GTEST_LOG_(INFO) << "ProcessDumpTest019: start.";
     std::shared_ptr<ProcessDumpRequest> processDump = std::make_shared<ProcessDumpRequest>();
     uint64_t inputTimeStamp= 4;
-    if (processDump != nullptr) {
-        processDump->SetTimeStamp(inputTimeStamp);
-    }
+    processDump->SetTimeStamp(inputTimeStamp);
     uint64_t outputTimeStamp = processDump->GetTimeStamp();
     EXPECT_EQ(true, inputTimeStamp == outputTimeStamp) << "ProcessDumpTest019 Failed";
     GTEST_LOG_(INFO) << "ProcessDumpTest019: end.";
@@ -423,9 +385,7 @@ HWTEST_F (ProcessDumpTest, ProcessDumpTest020, TestSize.Level2)
     GTEST_LOG_(INFO) << "ProcessDumpTest020: start.";
     std::shared_ptr<ProcessDumpRequest> processDump = std::make_shared<ProcessDumpRequest>();
     uint64_t inputTimeStamp= 5;
-    if (processDump != nullptr) {
-        processDump->SetTimeStamp(inputTimeStamp);
-    }
+    processDump->SetTimeStamp(inputTimeStamp);
     uint64_t outputTimeStamp = processDump->GetTimeStamp();
     EXPECT_EQ(true, inputTimeStamp == outputTimeStamp) << "ProcessDumpTest020 Failed";
     GTEST_LOG_(INFO) << "ProcessDumpTest020: end.";
@@ -442,9 +402,7 @@ HWTEST_F (ProcessDumpTest, ProcessDumpTest021, TestSize.Level2)
     std::shared_ptr<ProcessDumpRequest> processDump = std::make_shared<ProcessDumpRequest>();
     siginfo_t inputSigInfo;
     inputSigInfo.si_pid = 1;
-    if (processDump != nullptr) {
-        processDump->SetSiginfo(inputSigInfo);
-    }
+    processDump->SetSiginfo(inputSigInfo);
     siginfo_t outputSigInfo = processDump->GetSiginfo();
     EXPECT_EQ(true, outputSigInfo.si_pid == inputSigInfo.si_pid) << "ProcessDumpTest021 Failed";
     GTEST_LOG_(INFO) << "ProcessDumpTest021: end.";
@@ -461,9 +419,7 @@ HWTEST_F (ProcessDumpTest, ProcessDumpTest022, TestSize.Level2)
     std::shared_ptr<ProcessDumpRequest> processDump = std::make_shared<ProcessDumpRequest>();
     siginfo_t inputSigInfo;
     inputSigInfo.si_pid = 1;
-    if (processDump != nullptr) {
-        processDump->SetSiginfo(inputSigInfo);
-    }
+    processDump->SetSiginfo(inputSigInfo);
     siginfo_t outputSigInfo = processDump->GetSiginfo();
     EXPECT_EQ(true, outputSigInfo.si_pid == inputSigInfo.si_pid) << "ProcessDumpTest022 Failed";
     GTEST_LOG_(INFO) << "ProcessDumpTest022: end.";
@@ -480,9 +436,7 @@ HWTEST_F (ProcessDumpTest, ProcessDumpTest023, TestSize.Level2)
     std::shared_ptr<ProcessDumpRequest> processDump = std::make_shared<ProcessDumpRequest>();
     siginfo_t inputSigInfo;
     inputSigInfo.si_pid = 1;
-    if (processDump != nullptr) {
-        processDump->SetSiginfo(inputSigInfo);
-    }
+    processDump->SetSiginfo(inputSigInfo);
     siginfo_t outputSigInfo = processDump->GetSiginfo();
     EXPECT_EQ(true, outputSigInfo.si_pid == inputSigInfo.si_pid) << "ProcessDumpTest023 Failed";
     GTEST_LOG_(INFO) << "ProcessDumpTest023: end.";
@@ -499,9 +453,7 @@ HWTEST_F (ProcessDumpTest, ProcessDumpTest024, TestSize.Level2)
     std::shared_ptr<ProcessDumpRequest> processDump = std::make_shared<ProcessDumpRequest>();
     siginfo_t inputSigInfo;
     inputSigInfo.si_pid = 1;
-    if (processDump != nullptr) {
-        processDump->SetSiginfo(inputSigInfo);
-    }
+    processDump->SetSiginfo(inputSigInfo);
     siginfo_t outputSigInfo = processDump->GetSiginfo();
     EXPECT_EQ(true, outputSigInfo.si_pid == inputSigInfo.si_pid) << "ProcessDumpTest024 Failed";
     GTEST_LOG_(INFO) << "ProcessDumpTest024: end.";
@@ -518,9 +470,7 @@ HWTEST_F (ProcessDumpTest, ProcessDumpTest025, TestSize.Level2)
     std::shared_ptr<ProcessDumpRequest> processDump = std::make_shared<ProcessDumpRequest>();
     siginfo_t inputSigInfo;
     inputSigInfo.si_pid = 1;
-    if (processDump != nullptr) {
-        processDump->SetSiginfo(inputSigInfo);
-    }
+    processDump->SetSiginfo(inputSigInfo);
     siginfo_t outputSigInfo = processDump->GetSiginfo();
     EXPECT_EQ(true, outputSigInfo.si_pid == inputSigInfo.si_pid) << "ProcessDumpTest025 Failed";
     GTEST_LOG_(INFO) << "ProcessDumpTest025: end.";
@@ -537,9 +487,7 @@ HWTEST_F (ProcessDumpTest, ProcessDumpTest026, TestSize.Level2)
     std::shared_ptr<ProcessDumpRequest> processDump = std::make_shared<ProcessDumpRequest>();
     ucontext_t inputContext;
     inputContext.uc_flags = 1.0;
-    if (processDump != nullptr) {
-        processDump->SetContext(inputContext);
-    }
+    processDump->SetContext(inputContext);
     ucontext_t outputContext = processDump->GetContext();
     EXPECT_EQ(true, outputContext.uc_flags == inputContext.uc_flags) << "GetContext Failed";
     GTEST_LOG_(INFO) << "ProcessDumpTest026: end.";
@@ -556,9 +504,7 @@ HWTEST_F (ProcessDumpTest, ProcessDumpTest027, TestSize.Level2)
     std::shared_ptr<ProcessDumpRequest> processDump = std::make_shared<ProcessDumpRequest>();
     ucontext_t inputContext;
     inputContext.uc_flags = 164.0;
-    if (processDump != nullptr) {
-        processDump->SetContext(inputContext);
-    }
+    processDump->SetContext(inputContext);
     ucontext_t outputContext = processDump->GetContext();
     EXPECT_EQ(true, outputContext.uc_flags == inputContext.uc_flags) << "ProcessDumpTest027 Failed";
     GTEST_LOG_(INFO) << "ProcessDumpTest027: end.";
@@ -575,9 +521,7 @@ HWTEST_F (ProcessDumpTest, ProcessDumpTest028, TestSize.Level2)
     std::shared_ptr<ProcessDumpRequest> processDump = std::make_shared<ProcessDumpRequest>();
     ucontext_t inputContext;
     inputContext.uc_flags = 3.0;
-    if (processDump != nullptr) {
-        processDump->SetContext(inputContext);
-    }
+    processDump->SetContext(inputContext);
     ucontext_t outputContext = processDump->GetContext();
     EXPECT_EQ(true, outputContext.uc_flags == inputContext.uc_flags) << "ProcessDumpTest028 Failed";
     GTEST_LOG_(INFO) << "ProcessDumpTest028: end.";
@@ -593,10 +537,7 @@ HWTEST_F (ProcessDumpTest, ProcessDumpTest029, TestSize.Level2)
     GTEST_LOG_(INFO) << "ProcessDumpTest029: start.";
     int32_t input = 1;
     std::shared_ptr<DfxSignal> signal = std::make_shared<DfxSignal>(input);
-    bool ret = false;
-    if (signal != nullptr) {
-        ret = signal->IsAvailable();
-    }
+    bool ret = signal->IsAvailable();
     EXPECT_EQ(true, ret != true) << "ProcessDumpTest029 Failed";
     GTEST_LOG_(INFO) << "ProcessDumpTest029: end.";
 }
@@ -611,10 +552,7 @@ HWTEST_F (ProcessDumpTest, ProcessDumpTest030, TestSize.Level2)
     GTEST_LOG_(INFO) << "ProcessDumpTest030: start.";
     int32_t input = -100;
     std::shared_ptr<DfxSignal> signal = std::make_shared<DfxSignal>(input);
-    bool ret = false;
-    if (signal != nullptr) {
-        ret = signal->IsAddrAvailable();
-    }
+    bool ret = signal->IsAddrAvailable();
     EXPECT_EQ(true, ret != true) << "ProcessDumpTest030 Failed";
     GTEST_LOG_(INFO) << "ProcessDumpTest030: end.";
 }
@@ -629,10 +567,7 @@ HWTEST_F (ProcessDumpTest, ProcessDumpTest031, TestSize.Level2)
     int32_t input = 100;
     GTEST_LOG_(INFO) << "ProcessDumpTest031: start.";
     std::shared_ptr<DfxSignal> signal = std::make_shared<DfxSignal>(input);
-    bool ret = false;
-    if (signal != nullptr) {
-        ret = signal->IsPidAvailable();
-    }
+    bool ret = signal->IsPidAvailable();
     EXPECT_EQ(true, ret != true) << "ProcessDumpTest031 Failed";
     GTEST_LOG_(INFO) << "ProcessDumpTest031: end.";
 }
@@ -647,10 +582,7 @@ HWTEST_F (ProcessDumpTest, ProcessDumpTest032, TestSize.Level2)
     GTEST_LOG_(INFO) << "ProcessDumpTest032: start.";
     int32_t input = 1;
     std::shared_ptr<DfxSignal> signal = std::make_shared<DfxSignal>(input);
-    int32_t output = 0;
-    if (signal != nullptr) {
-        output = signal->GetSignal();
-    }
+    int32_t output = signal->GetSignal();
     EXPECT_EQ(true, output == input) << "ProcessDumpTest032 Failed";
     GTEST_LOG_(INFO) << "ProcessDumpTest032: end.";
 }

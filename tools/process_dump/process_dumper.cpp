@@ -351,11 +351,6 @@ int32_t ProcessDumper::GetTargetNsPid()
 void ProcessDumper::Dump()
 {
     std::shared_ptr<ProcessDumpRequest> request = std::make_shared<ProcessDumpRequest>();
-    if (!request) {
-        DfxLogError("Failed to create dump request.");
-        return;
-    }
-
     resDump_ = DumpProcessWithSignalContext(request);
     if (targetProcess_ == nullptr) {
         DfxLogError("Dump process failed, please check permission and whether pid is valid.");

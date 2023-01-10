@@ -53,11 +53,8 @@ HWTEST_F (ProcessFramesTest, ProcessFrameTest001, TestSize.Level2)
     GTEST_LOG_(INFO) << "ProcessFrameTest001: start.";
     std::shared_ptr<DfxFrame> frames = std::make_shared<DfxFrame>();
     size_t index = 1;
-    size_t frameIndex = 0;
-    if (frames != nullptr) {
-        frames->SetFrameIndex(index);
-        frameIndex = frames->GetFrameIndex();
-    }
+    frames->SetFrameIndex(index);
+    auto frameIndex = frames->GetFrameIndex();
     EXPECT_EQ(true, index == frameIndex) << "ProcessFrameTest001 Failed";
     GTEST_LOG_(INFO) << "ProcessFrameTest001: end.";
 }
@@ -72,11 +69,8 @@ HWTEST_F (ProcessFramesTest, ProcessFrameTest002, TestSize.Level2)
     GTEST_LOG_(INFO) << "ProcessFrameTest002: start.";
     std::shared_ptr<DfxFrame> frames = std::make_shared<DfxFrame>();
     size_t index = 164;
-    size_t frameIndex = 0;
-    if (frames != nullptr) {
-        frames->SetFrameIndex(index);
-        frameIndex = frames->GetFrameIndex();
-    }
+    frames->SetFrameIndex(index);
+    auto frameIndex = frames->GetFrameIndex();
     EXPECT_EQ(true, index == frameIndex) << "ProcessFrameTest002 Failed";
     GTEST_LOG_(INFO) << "ProcessFrameTest002: end.";
 }
@@ -155,11 +149,8 @@ HWTEST_F (ProcessFramesTest, ProcessFrameTest007, TestSize.Level2)
     GTEST_LOG_(INFO) << "ProcessFrameTest007: start.";
     std::shared_ptr<DfxFrame> frames = std::make_shared<DfxFrame>();
     uint64_t pc = 1;
-    uint64_t framePc = 0;
-    if (frames != nullptr) {
-        frames->SetFramePc(pc);
-        framePc = frames->GetFramePc();
-    }
+    frames->SetFramePc(pc);
+    auto framePc = frames->GetFramePc();
     EXPECT_EQ(true, pc == framePc) << "ProcessFrameTest007 Failed";
     GTEST_LOG_(INFO) << "ProcessFrameTest007: end.";
 }
@@ -222,11 +213,8 @@ HWTEST_F (ProcessFramesTest, ProcessFrameTest011, TestSize.Level2)
     GTEST_LOG_(INFO) << "ProcessFrameTest011: start.";
     std::shared_ptr<DfxFrame> frames = std::make_shared<DfxFrame>();
     uint64_t sp = 164;
-    uint64_t frameSp = 0;
-    if (frames != nullptr) {
-        frames->SetFrameSp(sp);
-        frameSp = frames->GetFrameSp();
-    }
+    frames->SetFrameSp(sp);
+    auto frameSp = frames->GetFrameSp();
     EXPECT_EQ(true, sp == frameSp) << "ProcessFrameTest011 Failed";
     GTEST_LOG_(INFO) << "ProcessFrameTest011: end.";
 }
@@ -257,11 +245,8 @@ HWTEST_F (ProcessFramesTest, ProcessFrameTest013, TestSize.Level2)
     GTEST_LOG_(INFO) << "ProcessFrameTest013: start.";
     std::shared_ptr<DfxFrame> frames = std::make_shared<DfxFrame>();
     uint64_t relativePc = 1;
-    uint64_t frameRelativePc = 0;
-    if (frames != nullptr) {
-        frames->SetFrameRelativePc(relativePc);
-        frameRelativePc = frames->GetFrameRelativePc();
-    }
+    frames->SetFrameRelativePc(relativePc);
+    auto frameRelativePc = frames->GetFrameRelativePc();
     EXPECT_EQ(true, relativePc == frameRelativePc) << "ProcessFrameTest013 Failed";
     GTEST_LOG_(INFO) << "ProcessFrameTest013: end.";
 }
@@ -308,11 +293,8 @@ HWTEST_F (ProcessFramesTest, ProcessFrameTest016, TestSize.Level2)
     GTEST_LOG_(INFO) << "ProcessFrameTest016: start.";
     std::shared_ptr<DfxFrame> frames = std::make_shared<DfxFrame>();
     std::string name = "zhangsan";
-    std::string frameName = "";
-    if (frames != nullptr) {
-        frames->SetFrameFuncName(name);
-        frameName = frames->GetFrameFuncName();
-    }
+    frames->SetFrameFuncName(name);
+    auto frameName = frames->GetFrameFuncName();
     EXPECT_EQ(true, name == frameName) << "ProcessFrameTest016 Failed";
     GTEST_LOG_(INFO) << "ProcessFrameTest016: end.";
 }
@@ -327,11 +309,8 @@ HWTEST_F (ProcessFramesTest, ProcessFrameTest017, TestSize.Level2)
     GTEST_LOG_(INFO) << "ProcessFrameTest017: start.";
     std::shared_ptr<DfxFrame> frames = std::make_shared<DfxFrame>();
     std::string name = "lisi";
-    std::string frameName = "";
-    if (frames != nullptr) {
-        frames->SetFrameFuncName(name);
-        frameName = frames->GetFrameFuncName();
-    }
+    frames->SetFrameFuncName(name);
+    auto frameName = frames->GetFrameFuncName();
     EXPECT_EQ(true, name == frameName) << "ProcessFrameTest017 Failed";
     GTEST_LOG_(INFO) << "ProcessFrameTest017: end.";
 }
@@ -378,11 +357,8 @@ HWTEST_F (ProcessFramesTest, ProcessFrameTest020, TestSize.Level2)
     GTEST_LOG_(INFO) << "ProcessFrameTest020: start.";
     std::shared_ptr<DfxFrame> frames = std::make_shared<DfxFrame>();
     std::string name = "liuqi";
-    std::string frameName = " ";
-    if (frames != nullptr) {
-        frames->SetFrameFuncName(name);
-        frameName = frames->GetFrameFuncName();
-    }
+    frames->SetFrameFuncName(name);
+    auto frameName = frames->GetFrameFuncName();
     EXPECT_EQ(true, name == frameName) << "ProcessFrameTest020 Failed";
     GTEST_LOG_(INFO) << "ProcessFrameTest020: end.";
 }
