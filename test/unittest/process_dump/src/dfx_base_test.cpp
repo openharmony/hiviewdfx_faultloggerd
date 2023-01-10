@@ -100,13 +100,13 @@ HWTEST_F(DfxBaseTest, DfxElfTest001, TestSize.Level2)
     GTEST_LOG_(INFO) << "DfxElfTest001: start.";
     auto dfxElf = DfxElf::Create(DUMPCATCHER_ELF_FILE);
     dfxElf->SetName("dumpcatcher");
-    string name = dfxElf->GetName();
+    ASSERT_EQ(dfxElf->GetName(), "dumpcatcher");
     dfxElf->SetPath(DUMPCATCHER_ELF_FILE);
-    string path = dfxElf->GetPath();
-    int32_t fd = dfxElf->GetFd();
-    uint64_t size = dfxElf->GetSize();
+    ASSERT_EQ(dfxElf->GetPath(), DUMPCATCHER_ELF_FILE);
+    GTEST_LOG_(INFO) << dfxElf->GetFd();
+    GTEST_LOG_(INFO) << dfxElf->GetSize();
     dfxElf->SetLoadBias(0);
-    size_t loadBias = dfxElf->GetLoadBias();
+    ASSERT_EQ(dfxElf->GetLoadBias(), 0);
     dfxElf->SetHeader(ElfW(Ehdr)());
     ElfW(Ehdr) header = dfxElf->GetHeader();
     struct ElfLoadInfo info;
@@ -116,6 +116,8 @@ HWTEST_F(DfxBaseTest, DfxElfTest001, TestSize.Level2)
     infos.emplace_back(info);
     dfxElf->SetInfos(infos);
     auto infos_bak = dfxElf->GetInfos();
+    ASSERT_EQ(infos_bak.at(0).offset, 0);
+    ASSERT_EQ(infos_bak.at(0).vaddr, 1);
     GTEST_LOG_(INFO) << "DfxElfTest001: end.";
 }
 
@@ -128,8 +130,8 @@ HWTEST_F(DfxBaseTest, DfxElfTest002, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "DfxElfTest002: start.";
     auto dfxElf = DfxElf::Create(DUMPCATCHER_ELF_FILE);
-    uint64_t offset0 = dfxElf->FindRealLoadOffset(0);
-    uint64_t offset1 = dfxElf->FindRealLoadOffset(1);
+    GTEST_LOG_(INFO) << dfxElf->FindRealLoadOffset(0);
+    GTEST_LOG_(INFO) << dfxElf->FindRealLoadOffset(1);
     GTEST_LOG_(INFO) << "DfxElfTest002: end.";
 }
 
@@ -150,7 +152,6 @@ HWTEST_F(DfxBaseTest, DfxDumpResquestTest001, TestSize.Level2)
     char threadname[] = "testThread";
     char processname[] = "testProcess";
     char fatalmsg[] = "test fatal message";
-    errno_t err = EOK;
     if (strcpy_s(request->threadName_, NAME_LEN, threadname) != EOK) {
         GTEST_LOG_(ERROR) << "strcpy_s failed.";
     }

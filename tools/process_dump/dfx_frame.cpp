@@ -200,11 +200,11 @@ std::string DfxFrame::PrintFrame() const
     int ret = 0;
     if (funcName_.empty()) {
         ret = snprintf_s(buf, sizeof(buf), sizeof(buf) - 1, frameFormatWithMapName, \
-            index_, relativePc_, mapName.c_str(), buildId_.c_str());
+            index_, relativePc_, mapName.c_str());
     } else {
         ret = snprintf_s(buf, sizeof(buf), sizeof(buf) - 1, \
             frameFormatWithFuncName, index_, relativePc_, \
-            mapName.c_str(), funcName_.c_str(), funcOffset_, buildId_.c_str());
+            mapName.c_str(), funcName_.c_str(), funcOffset_);
     }
     if (ret <= 0) {
         DfxLogError("%s :: snprintf_s failed, line: %d.", __func__, __LINE__);

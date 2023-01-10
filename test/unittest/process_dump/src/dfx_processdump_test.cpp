@@ -82,12 +82,12 @@ static string GetCppCrashFileName(pid_t pid)
 static int CountLines(const string& filename)
 {
     ifstream readStream;
-    string tempData;
     readStream.open(filename.c_str(), ios::in);
     if (readStream.fail()) {
         return 0;
     } else {
         int n = 0;
+        string tempData;
         while (getline(readStream, tempData, '\n')) {
             n++;
         }
@@ -181,7 +181,7 @@ static string GetCmdResultFromPopen(const string& cmd)
     return result;
 }
 
-static int GetProcessPid(string applyName)
+static int GetProcessPid(const string& applyName)
 {
     string procCMD = "pgrep '" + applyName + "'";
     GTEST_LOG_(INFO) << "threadCMD = " << procCMD;
@@ -201,22 +201,22 @@ static int GetProcessPid(string applyName)
     return atoi(applyPid.c_str());
 }
 
-static int GetServicePid(const std::string& serviceName)
+static int GetServicePid(const string& serviceName)
 {
     string cmd = "pidof " + serviceName;
     string pidStr = GetCmdResultFromPopen(cmd);
     int32_t pid = 0;
-    std::stringstream pidStream(pidStr);
+    stringstream pidStream(pidStr);
     pidStream >> pid;
     printf("the pid of service(%s) is %s \n", serviceName.c_str(), pidStr.c_str());
     return pid;
 }
 
-static string ProcessDumpCommands(const std::string cmds)
+static string ProcessDumpCommands(const string& cmds)
 {
     GTEST_LOG_(INFO) << "threadCMD = " << cmds;
     FILE *procFileInfo = nullptr;
-    std::string cmdLog = "";
+    string cmdLog = "";
     procFileInfo = popen(cmds.c_str(), "r");
     if (procFileInfo == nullptr) {
         perror("popen execute failed");

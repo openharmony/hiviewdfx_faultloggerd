@@ -73,11 +73,8 @@ HWTEST_F (ProcessDfxTest, ProcessDfxRequestTest001, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "ProcessDfxRequestTest001: start.";
     std::shared_ptr<DfxProcess> processDfx = std::make_shared<DfxProcess>();
-    auto dfx = false;
-    if (processDfx != nullptr) {
-        dfx = processDfx->InitProcessMaps();
-    }
-    EXPECT_EQ(true, dfx != true) << "ProcessDfxRequestTest001 Failed";
+    auto dfx = processDfx->InitProcessMaps();
+    EXPECT_EQ(false, dfx) << "ProcessDfxRequestTest001 Failed";
     GTEST_LOG_(INFO) << "ProcessDfxRequestTest001: end.";
 }
 
@@ -98,11 +95,8 @@ HWTEST_F (ProcessDfxTest, ProcessDfxRequestTest002, TestSize.Level2)
     pid_t pid = accountmgrPid;
     pid_t tid = accountmgrPid;
     std::shared_ptr<DfxThread> keyThread = std::make_shared<DfxThread>(pid, tid, tid);
-    auto dfx = false;
-    if (processDfx != nullptr && keyThread != nullptr) {
-        dfx = processDfx->InitProcessThreads(keyThread);
-    }
-    EXPECT_EQ(true, dfx == true) << "ProcessDfxRequestTest002 Failed";
+    auto dfx = processDfx->InitProcessThreads(keyThread);
+    EXPECT_EQ(true, dfx) << "ProcessDfxRequestTest002 Failed";
     GTEST_LOG_(INFO) << "ProcessDfxRequestTest002: end.";
 }
 
@@ -115,11 +109,8 @@ HWTEST_F (ProcessDfxTest, ProcessDfxRequestTest003, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "ProcessDfxRequestTest003: start.";
     std::shared_ptr<DfxProcess> processDfx = std::make_shared<DfxProcess>();
-    auto dfx = false;
-    if (processDfx != nullptr) {
-        dfx = processDfx->InitOtherThreads();
-    }
-    EXPECT_EQ(true, dfx != true) << "ProcessDfxRequestTest003 Failed";
+    auto dfx = processDfx->InitOtherThreads();
+    EXPECT_EQ(false, dfx) << "ProcessDfxRequestTest003 Failed";
     GTEST_LOG_(INFO) << "ProcessDfxRequestTest003: end.";
 }
 
@@ -133,12 +124,9 @@ HWTEST_F (ProcessDfxTest, ProcessDfxRequestTest004, TestSize.Level2)
     GTEST_LOG_(INFO) << "ProcessDfxRequestTest004: start.";
     std::shared_ptr<DfxProcess> processDfx = std::make_shared<DfxProcess>();
     pid_t pid = 1;
-    auto getpid = 0;
-    if (processDfx != nullptr) {
-        processDfx->SetPid(pid);
-        sleep(1);
-        getpid = processDfx->GetPid();
-    }
+    processDfx->SetPid(pid);
+    sleep(1);
+    auto getpid = processDfx->GetPid();
     EXPECT_EQ(true, getpid == pid) << "ProcessDfxRequestTest004 Failed";
     GTEST_LOG_(INFO) << "ProcessDfxRequestTest004: end.";
 }
@@ -153,12 +141,9 @@ HWTEST_F (ProcessDfxTest, ProcessDfxRequestTest005, TestSize.Level2)
     GTEST_LOG_(INFO) << "ProcessDfxRequestTest005: start.";
     std::shared_ptr<DfxProcess> processDfx = std::make_shared<DfxProcess>();
     pid_t pid = 164;
-    auto getpid = 0;
-    if (processDfx != nullptr) {
-        processDfx->SetPid(pid);
-        sleep(1);
-        getpid = processDfx->GetPid();
-    }
+    processDfx->SetPid(pid);
+    sleep(1);
+    auto getpid = processDfx->GetPid();
     EXPECT_EQ(true, getpid == pid) << "ProcessDfxRequestTest005 Failed";
     GTEST_LOG_(INFO) << "ProcessDfxRequestTest005: end.";
 }
@@ -173,11 +158,8 @@ HWTEST_F (ProcessDfxTest, ProcessDfxRequestTest006, TestSize.Level2)
     GTEST_LOG_(INFO) << "ProcessDfxRequestTest006: start.";
     std::shared_ptr<DfxProcess> processDfx = std::make_shared<DfxProcess>();
     pid_t pid = 10000;
-    auto getpid = 0;
-    if (processDfx != nullptr) {
-        processDfx->SetPid(pid);
-        getpid = processDfx->GetPid();
-    }
+    processDfx->SetPid(pid);
+    auto getpid = processDfx->GetPid();
     EXPECT_EQ(true, getpid == pid) << "ProcessDfxRequestTest006 Failed";
     GTEST_LOG_(INFO) << "ProcessDfxRequestTest006: end.";
 }
@@ -192,11 +174,8 @@ HWTEST_F (ProcessDfxTest, ProcessDfxRequestTest007, TestSize.Level2)
     GTEST_LOG_(INFO) << "ProcessDfxRequestTest007: start.";
     std::shared_ptr<DfxProcess> processDfx = std::make_shared<DfxProcess>();
     uid_t uid = 1;
-    uid_t getuid = 0;
-    if (processDfx != nullptr) {
-        processDfx->SetUid(uid);
-        getuid = processDfx->GetUid();
-    }
+    processDfx->SetUid(uid);
+    auto getuid = processDfx->GetUid();
     EXPECT_EQ(true, getuid == uid) << "ProcessDfxRequestTest007 Failed";
     GTEST_LOG_(INFO) << "ProcessDfxRequestTest007: end.";
 }
@@ -211,11 +190,8 @@ HWTEST_F (ProcessDfxTest, ProcessDfxRequestTest008, TestSize.Level2)
     GTEST_LOG_(INFO) << "ProcessDfxRequestTest008: start.";
     std::shared_ptr<DfxProcess> processDfx = std::make_shared<DfxProcess>();
     uid_t uid = 164;
-    uid_t getuid = 0;
-    if (processDfx != nullptr) {
-        processDfx->SetUid(uid);
-        getuid = processDfx->GetUid();
-    }
+    processDfx->SetUid(uid);
+    auto getuid = processDfx->GetUid();
     EXPECT_EQ(true, getuid == uid) << "ProcessDfxRequestTest008 Failed";
     GTEST_LOG_(INFO) << "ProcessDfxRequestTest008: end.";
 }
@@ -230,11 +206,8 @@ HWTEST_F (ProcessDfxTest, ProcessDfxRequestTest009, TestSize.Level2)
     GTEST_LOG_(INFO) << "ProcessDfxRequestTest009: start.";
     std::shared_ptr<DfxProcess> processDfx = std::make_shared<DfxProcess>();
     uid_t uid = -1;
-    uid_t getuid = 0;
-    if (processDfx != nullptr) {
-        processDfx->SetUid(uid);
-        getuid = processDfx->GetUid();
-    }
+    processDfx->SetUid(uid);
+    auto getuid = processDfx->GetUid();
     EXPECT_EQ(true, getuid == uid) << "ProcessDfxRequestTest009 Failed";
     GTEST_LOG_(INFO) << "ProcessDfxRequestTest009: end.";
 }
@@ -249,11 +222,8 @@ HWTEST_F (ProcessDfxTest, ProcessDfxRequestTest010, TestSize.Level2)
     GTEST_LOG_(INFO) << "ProcessDfxRequestTest010: start.";
     std::shared_ptr<DfxProcess> processDfx = std::make_shared<DfxProcess>();
     std::string input = "processName";
-    std::string output = "";
-    if (processDfx != nullptr) {
-        processDfx->SetProcessName(input);
-        output =  processDfx->GetProcessName();
-    }
+    processDfx->SetProcessName(input);
+    auto output = processDfx->GetProcessName();
     EXPECT_EQ(true, input == output) << "ProcessDfxRequestTest010 Failed";
     GTEST_LOG_(INFO) << "ProcessDfxRequestTest010: end.";
 }
@@ -268,11 +238,8 @@ HWTEST_F (ProcessDfxTest, ProcessDfxRequestTest011, TestSize.Level2)
     GTEST_LOG_(INFO) << "ProcessDfxRequestTest011: start.";
     std::shared_ptr<DfxProcess> processDfx = std::make_shared<DfxProcess>();
     std::shared_ptr<DfxElfMaps> maps = std::make_shared<DfxElfMaps>();
-    std::shared_ptr<DfxElfMaps> output = std::make_shared<DfxElfMaps>();
-    if (processDfx != nullptr && maps != nullptr) {
-        processDfx->SetMaps(maps);
-        output = processDfx->GetMaps();
-    }
+    processDfx->SetMaps(maps);
+    auto output = processDfx->GetMaps();
     EXPECT_EQ(true, output == maps) << "ProcessDfxRequestTest011 Failed";
     GTEST_LOG_(INFO) << "ProcessDfxRequestTest011: end.";
 }
@@ -290,12 +257,9 @@ HWTEST_F (ProcessDfxTest, ProcessDfxRequestTest012, TestSize.Level2)
     pid_t tid = 100;
     std::shared_ptr<DfxThread> thread = std::make_shared<DfxThread>(pid, tid, tid);
     std::vector<std::shared_ptr<DfxThread>> input;
-    std::vector<std::shared_ptr<DfxThread>> output;
-    if (processDfx != nullptr && thread != nullptr) {
-        processDfx->SetThreads(input);
-        input.push_back(thread);
-        output = processDfx->GetThreads();
-    }
+    processDfx->SetThreads(input);
+    input.push_back(thread);
+    auto output = processDfx->GetThreads();
     EXPECT_EQ(false, input.size() == output.size()) << "ProcessDfxRequestTest012 Failed";
     GTEST_LOG_(INFO) << "ProcessDfxRequestTest012: end.";
 }
