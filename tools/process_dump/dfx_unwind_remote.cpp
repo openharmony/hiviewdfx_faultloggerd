@@ -101,6 +101,9 @@ bool DfxUnwindRemote::UnwindProcess(std::shared_ptr<DfxProcess> process)
             if (index == 1) {
                 process->PrintThreadsHeaderByConfig();
             }
+            if (index != 0) {
+                DfxRingBufferWrapper::GetInstance().AppendMsg("\n");
+            }
 
             if (thread->Attach()) {
                 UnwindThread(process, thread);
