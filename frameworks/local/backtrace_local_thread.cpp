@@ -125,13 +125,18 @@ bool BacktraceLocalThread::Unwind(unw_addr_space_t as, std::shared_ptr<DfxSymbol
         return false;
     }
 
-    unw_context_t context;
-    (void)memset_s(&context, sizeof(unw_context_t), 0, sizeof(unw_context_t));
-    if (!BacktraceLocalStatic::GetInstance().GetThreadContext(tid_, context)) {
+    auto threadContext = BacktraceLocalStatic::GetInstance().GetThreadContext(tid_);
+    if (threadContext == nullptr) {
         return false;
     }
 
-    DoUnwind(as, context, cache, skipFrameNum);
+    if (threadContext->ctx == nullptr) {
+        // should never happen
+        BacktraceLocalStatic::GetInstance().ReleaseThread(tid_);
+        return false;
+    }
+
+    DoUnwind(as, *(threadContext->ctx), cache, skipFrameNum);
 
     if (releaseThread && (tid_ > BACKTRACE_CURRENT_THREAD)) {
         BacktraceLocalStatic::GetInstance().ReleaseThread(tid_);
