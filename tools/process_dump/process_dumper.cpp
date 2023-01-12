@@ -124,7 +124,8 @@ int ProcessDumper::InitPrintThread(bool fromSignalHandler, std::shared_ptr<Proce
             fd = RequestFileDescriptorEx(&faultloggerdRequest);
 
             DfxRingBufferWrapper::GetInstance().SetWriteFunc(ProcessDumper::WriteDumpBuf);
-            reporter_ = std::make_shared<CppCrashReporter>(request->GetTimeStamp(), signo, targetProcess_);
+            reporter_ = std::make_shared<CppCrashReporter>(request->GetTimeStamp(), request->GetSiginfo(),
+                targetProcess_);
         } else {
             fd = RequestPipeFd(pid, FaultLoggerPipeType::PIPE_FD_WRITE_BUF);
             DfxLogDebug("write buf fd: %d", fd);
@@ -315,6 +316,7 @@ int ProcessDumper::InitProcessInfo(std::shared_ptr<ProcessDumpRequest> request, 
     targetProcess_->SetIsSignalDump(!isCrash);
     targetProcess_->SetUid(request->GetUid());
     targetProcess_->SetRecycleTid(request->GetRecycleTid());
+    targetProcess_->SetFatalMessage(request->GetLastFatalMessage());
     if (tid == 0) {
         targetProcess_->InitOtherThreads(isCrash);
     }

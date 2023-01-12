@@ -122,6 +122,16 @@ std::string DfxFrame::GetFrameMapName() const
     return frameMapName_;
 }
 
+void DfxFrame::SetBuildId(const std::string &buildId)
+{
+    buildId_ = buildId;
+}
+
+std::string DfxFrame::GetBuildId() const
+{
+    return buildId_;
+}
+
 uint64_t DfxFrame::GetRelativePc(const std::shared_ptr<DfxElfMaps> head)
 {
     if (head == nullptr) {
@@ -181,29 +191,32 @@ std::string DfxFrame::PrintFrame() const
     }
 
 #ifdef __LP64__
-    char frameFormatWithMapName[] = "#%02zu pc %016" PRIx64 " %s\n";
-    char frameFormatWithFuncName[] = "#%02zu pc %016" PRIx64 " %s(%s+%" PRIu64 ")\n";
+    char frameFormatWithMapName[] = "#%02zu pc %016" PRIx64 " %s";
+    char frameFormatWithFuncName[] = "#%02zu pc %016" PRIx64 " %s(%s+%" PRIu64 ")";
 #else
-    char frameFormatWithMapName[] = "#%02zu pc %08" PRIx64 " %s\n";
-    char frameFormatWithFuncName[] = "#%02zu pc %08" PRIx64 " %s(%s+%" PRIu64 ")\n";
+    char frameFormatWithMapName[] = "#%02zu pc %08" PRIx64 " %s";
+    char frameFormatWithFuncName[] = "#%02zu pc %08" PRIx64 " %s(%s+%" PRIu64 ")";
 #endif
 
+    int ret = 0;
     if (funcName_.empty()) {
-        int ret = snprintf_s(buf, sizeof(buf), sizeof(buf) - 1, frameFormatWithMapName, \
+        ret = snprintf_s(buf, sizeof(buf), sizeof(buf) - 1, frameFormatWithMapName, \
             index_, relativePc_, mapName.c_str());
-        if (ret <= 0) {
-            DfxLogError("%s :: snprintf_s failed, line: %d.", __func__, __LINE__);
-        }
-        return std::string(buf);
+    } else {
+        ret = snprintf_s(buf, sizeof(buf), sizeof(buf) - 1, \
+            frameFormatWithFuncName, index_, relativePc_, \
+            mapName.c_str(), funcName_.c_str(), funcOffset_);
     }
-
-    int ret = snprintf_s(buf, sizeof(buf), sizeof(buf) - 1, \
-        frameFormatWithFuncName, index_, relativePc_, \
-        mapName.c_str(), funcName_.c_str(), funcOffset_);
     if (ret <= 0) {
         DfxLogError("%s :: snprintf_s failed, line: %d.", __func__, __LINE__);
     }
-    return std::string(buf);
+    std::ostringstream ss;
+    ss << std::string(buf, strlen(buf));
+    if (!buildId_.empty()) {
+        ss << " (" << buildId_ << ")";
+    }
+    ss << std::endl;
+    return ss.str();
 }
 
 std::string DfxFrame::ToString() const
@@ -223,13 +236,15 @@ std::string DfxFrame::ToString() const
 
     std::ostringstream ss;
     ss << std::string(buf, strlen(buf));
-    if (funcName_.empty()) {
-        ss << std::endl;
-    } else {
+    if (!funcName_.empty()) {
         ss << "(";
         ss << funcName_;
-        ss << "+" << funcOffset_ << ")" << std::endl;
+        ss << "+" << funcOffset_ << ")";
     }
+    if (!buildId_.empty()) {
+        ss << " (" << buildId_ << ")";
+    }
+    ss << std::endl;
     return ss.str();
 }
 

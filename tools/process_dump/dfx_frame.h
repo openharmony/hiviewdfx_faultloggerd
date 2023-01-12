@@ -44,6 +44,8 @@ public:
     std::shared_ptr<DfxElfMap> GetFrameMap() const;
     void SetFrameMapName(const std::string &mapName);
     std::string GetFrameMapName() const;
+    void SetBuildId(const std::string &buildId);
+    std::string GetBuildId() const;
 
     std::string ToString() const;
     uint64_t GetRelativePc(const std::shared_ptr<DfxElfMaps> head);
@@ -59,6 +61,7 @@ private:
     uint64_t relativePc_ = 0;
     std::string funcName_;
     std::string frameMapName_ = "";
+    std::string buildId_ = "";
     std::shared_ptr<DfxElfMap> map_ = nullptr; // managed in DfxProcess class
 };
 
