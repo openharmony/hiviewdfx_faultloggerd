@@ -89,6 +89,7 @@ DfxDumpCatcher::DfxDumpCatcher(int32_t pid) : frameCatcherPid_(pid)
 
 DfxDumpCatcher::~DfxDumpCatcher()
 {
+    BacktraceLocalStatic::GetInstance().CleanUp();
 }
 
 bool DfxDumpCatcher::DoDumpCurrTid(const size_t skipFrameNum, std::string& msg)

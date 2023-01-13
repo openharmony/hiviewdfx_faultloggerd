@@ -17,27 +17,50 @@
 
 #include <cinttypes>
 #include <csignal>
+#include <mutex>
 
 #include <libunwind.h>
 #include <nocopyable.h>
 
 namespace OHOS {
 namespace HiviewDFX {
+enum ThreadContextStatus {
+    ContextUnused = -1,
+    ContextReady = -2,
+};
+using ThreadContext = struct ThreadContext {
+    std::atomic<int32_t> tid {ThreadContextStatus::ContextUnused};
+    // for protecting ctx, shared between threads
+    std::mutex lock;
+    // the thread should be suspended while unwinding
+    // we are blocked in the signal handler of target thread
+    std::condition_variable cv;
+    // store unwind context
+    unw_context_t* ctx {nullptr};
+    ~ThreadContext()
+    {
+        std::unique_lock<std::mutex> mlock(lock);
+        if (ctx != nullptr) {
+            delete ctx;
+            ctx = nullptr;
+        }
+    };
+};
 class BacktraceLocalStatic {
 public:
     static BacktraceLocalStatic& GetInstance();
     ~BacktraceLocalStatic() = default;
-    // should be protected by lock
-    static bool GetThreadContext(int32_t tid, unw_context_t& ctx);
+    // ThreadContext is released after calling ReleaseThread 
+    static std::shared_ptr<ThreadContext> GetThreadContext(int32_t tid);
     static void ReleaseThread(int32_t tid);
-
+    static void CleanUp();
 private:
     BacktraceLocalStatic();
     DISALLOW_COPY_AND_MOVE(BacktraceLocalStatic);
     static void CopyContextAndWaitTimeout(int sig, siginfo_t *si, void *context);
     static bool InstallSigHandler();
     static void UninstallSigHandler();
-    static bool SignalRequestThread(int32_t tid, unw_context_t& ctx);
+    static bool SignalRequestThread(int32_t tid, ThreadContext* ctx);
 };
 } // namespace HiviewDFX
 } // namespace OHOS

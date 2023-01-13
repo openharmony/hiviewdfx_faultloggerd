@@ -18,6 +18,7 @@
 #include <cinttypes>
 #include <condition_variable>
 #include <csignal>
+#include <map>
 #include <mutex>
 
 #include <sys/syscall.h>      /* Definition of SYS_* constants */
@@ -36,12 +37,55 @@ namespace {
 #undef LOG_TAG
 #define LOG_DOMAIN 0xD002D11
 #define LOG_TAG "DfxBacktraceLocal"
-constexpr int32_t timeout = 2000;
-static std::atomic<int32_t> g_tid = -1;
-static std::condition_variable g_localCv;
-static std::mutex g_localMutex;
 static struct sigaction g_sigaction;
+static std::mutex g_localMutex;
+static std::map<int32_t, std::shared_ptr<ThreadContext>> g_contextMap;
+static std::chrono::seconds TIME_OUT = std::chrono::seconds(2); // 2 : 2 seconds
+static std::shared_ptr<ThreadContext> CreateContext(int32_t tid)
+{
+    auto threadContext = std::make_shared<ThreadContext>();
+    threadContext->tid = tid;
+    threadContext->ctx = new unw_context_t;
+    (void)memset_s(threadContext->ctx, sizeof(unw_context_t), 0, sizeof(unw_context_t));
+    return threadContext;
 }
+
+static std::shared_ptr<ThreadContext> GetContextLocked(int32_t tid)
+{
+    auto it = g_contextMap.find(tid);
+    if (it == g_contextMap.end()) {
+        auto threadContext = CreateContext(tid);
+        g_contextMap[tid] = threadContext;
+        return threadContext;
+    }
+
+    if (it->second->tid == ThreadContextStatus::ContextUnused) {
+        it->second->tid = tid;
+        (void)memset_s(it->second->ctx, sizeof(unw_context_t), 0, sizeof(unw_context_t));
+        return it->second;
+    }
+
+    return nullptr;
+}
+
+static bool RemoveContextLocked(int32_t tid)
+{
+    auto it = g_contextMap.find(tid);
+    if (it == g_contextMap.end()) {
+        DfxLogWarn("Context of %d is already removed.", tid);
+        return true;
+    }
+
+    if (it->second->tid == ThreadContextStatus::ContextUnused) {
+        g_contextMap.erase(it);
+        return true;
+    }
+
+    DfxLogWarn("Failed to remove context of %d, still using?.", tid);
+    return false;
+}
+}
+
 BacktraceLocalStatic& BacktraceLocalStatic::GetInstance()
 {
     static BacktraceLocalStatic instance;
@@ -52,76 +96,93 @@ BacktraceLocalStatic::BacktraceLocalStatic()
 {
 }
 
-bool BacktraceLocalStatic::GetThreadContext(int32_t tid, unw_context_t& ctx)
+std::shared_ptr<ThreadContext> BacktraceLocalStatic::GetThreadContext(int32_t tid)
 {
-    if (g_tid != -1) {
-        DfxLogWarn("Failed to getcontext for %d, %d is unwind now.", tid, g_tid.load());
-        return false;
-    }
-
     std::unique_lock<std::mutex> lock(g_localMutex);
+    auto context = GetContextLocked(tid);
+    if (context == nullptr) {
+        DfxLogWarn("Failed to get context of %d, still using?", tid);
+        return nullptr;
+    }
+
     if (!InstallSigHandler()) {
-        DfxLogWarn("Failed to install local handler for %d.", tid);
-        return false;
+        RemoveContextLocked(tid);
+        return nullptr;
     }
 
-    if (!SignalRequestThread(tid, ctx)) {
-        DfxLogWarn("Failed to signal target thread:%d.", tid);
-        return false;
+    if (!SignalRequestThread(tid, context.get())) {
+        UninstallSigHandler();
+        return nullptr;
     }
-
-    g_localCv.wait_for(lock, std::chrono::milliseconds(timeout));
     UninstallSigHandler();
-    return true;
+    return context;
 }
 
 void BacktraceLocalStatic::ReleaseThread(int32_t tid)
 {
-    if (tid != g_tid) {
+    std::unique_lock<std::mutex> lock(g_localMutex);
+    auto it = g_contextMap.find(tid);
+    if (it == g_contextMap.end()) {
         return;
     }
 
-    g_localCv.notify_one();
-    g_tid = -1;
+    it->second->cv.notify_one();
+    it->second->tid = ThreadContextStatus::ContextUnused;
+}
+
+void BacktraceLocalStatic::CleanUp()
+{
+    std::unique_lock<std::mutex> lock(g_localMutex);
+    auto it = g_contextMap.begin();
+    while (it != g_contextMap.end()) {
+        if (it->second == nullptr) {
+            it = g_contextMap.erase(it);
+        } else if (it->second->tid == ThreadContextStatus::ContextUnused) {
+            it = g_contextMap.erase(it);
+        } else {
+            DfxLogWarn("Failed to remove context for %d.", it->second->tid.load());
+            it++;
+        }
+    }
 }
 
 void BacktraceLocalStatic::CopyContextAndWaitTimeout(int sig, siginfo_t *si, void *context)
 {
-    std::unique_lock<std::mutex> lock(g_localMutex);
-    g_localCv.notify_one();
-
-    unw_context_t* ctxPtr = (unw_context_t*)(si->si_value.sival_ptr);
+    auto ctxPtr = static_cast<ThreadContext*>(si->si_value.sival_ptr);
     if (ctxPtr == nullptr) {
+        // should never happen
         return;
     }
-
+    std::unique_lock<std::mutex> lock(ctxPtr->lock);
 #if defined(__arm__)
     ucontext_t *uc = (ucontext_t *)context;
-    ctxPtr->regs[UNW_ARM_R0] = uc->uc_mcontext.arm_r0;
-    ctxPtr->regs[UNW_ARM_R1] = uc->uc_mcontext.arm_r1;
-    ctxPtr->regs[UNW_ARM_R2] = uc->uc_mcontext.arm_r2;
-    ctxPtr->regs[UNW_ARM_R3] = uc->uc_mcontext.arm_r3;
-    ctxPtr->regs[UNW_ARM_R4] = uc->uc_mcontext.arm_r4;
-    ctxPtr->regs[UNW_ARM_R5] = uc->uc_mcontext.arm_r5;
-    ctxPtr->regs[UNW_ARM_R6] = uc->uc_mcontext.arm_r6;
-    ctxPtr->regs[UNW_ARM_R7] = uc->uc_mcontext.arm_r7;
-    ctxPtr->regs[UNW_ARM_R8] = uc->uc_mcontext.arm_r8;   
-    ctxPtr->regs[UNW_ARM_R9] = uc->uc_mcontext.arm_r9;
-    ctxPtr->regs[UNW_ARM_R10] = uc->uc_mcontext.arm_r10;
-    ctxPtr->regs[UNW_ARM_R11] = uc->uc_mcontext.arm_fp;
-    ctxPtr->regs[UNW_ARM_R12] = uc->uc_mcontext.arm_ip;
-    ctxPtr->regs[UNW_ARM_R13] = uc->uc_mcontext.arm_sp;
-    ctxPtr->regs[UNW_ARM_R14] = uc->uc_mcontext.arm_lr;
-    ctxPtr->regs[UNW_ARM_R15] = uc->uc_mcontext.arm_pc;
+    ctxPtr->ctx->regs[UNW_ARM_R0] = uc->uc_mcontext.arm_r0;
+    ctxPtr->ctx->regs[UNW_ARM_R1] = uc->uc_mcontext.arm_r1;
+    ctxPtr->ctx->regs[UNW_ARM_R2] = uc->uc_mcontext.arm_r2;
+    ctxPtr->ctx->regs[UNW_ARM_R3] = uc->uc_mcontext.arm_r3;
+    ctxPtr->ctx->regs[UNW_ARM_R4] = uc->uc_mcontext.arm_r4;
+    ctxPtr->ctx->regs[UNW_ARM_R5] = uc->uc_mcontext.arm_r5;
+    ctxPtr->ctx->regs[UNW_ARM_R6] = uc->uc_mcontext.arm_r6;
+    ctxPtr->ctx->regs[UNW_ARM_R7] = uc->uc_mcontext.arm_r7;
+    ctxPtr->ctx->regs[UNW_ARM_R8] = uc->uc_mcontext.arm_r8;   
+    ctxPtr->ctx->regs[UNW_ARM_R9] = uc->uc_mcontext.arm_r9;
+    ctxPtr->ctx->regs[UNW_ARM_R10] = uc->uc_mcontext.arm_r10;
+    ctxPtr->ctx->regs[UNW_ARM_R11] = uc->uc_mcontext.arm_fp;
+    ctxPtr->ctx->regs[UNW_ARM_R12] = uc->uc_mcontext.arm_ip;
+    ctxPtr->ctx->regs[UNW_ARM_R13] = uc->uc_mcontext.arm_sp;
+    ctxPtr->ctx->regs[UNW_ARM_R14] = uc->uc_mcontext.arm_lr;
+    ctxPtr->ctx->regs[UNW_ARM_R15] = uc->uc_mcontext.arm_pc;
 #else
     // the ucontext.uc_mcontext.__reserved of libunwind is simplified with the system's own in aarch64
-    if (memcpy_s(ctxPtr, sizeof(unw_context_t), context, sizeof(unw_context_t)) != 0) {
+    if (memcpy_s(ctxPtr->ctx, sizeof(unw_context_t), context, sizeof(unw_context_t)) != 0) {
         DfxLogWarn("Failed to copy local unwind context.");
     }
 #endif
-    g_localCv.wait_for(lock, std::chrono::milliseconds(timeout));
-    // if timeout or force release, reset g_tid
-    g_tid = -1;
+    int32_t tid = syscall(SYS_gettid);
+    if (ctxPtr->tid.compare_exchange_strong(tid, 
+        static_cast<int32_t>(ThreadContextStatus::ContextReady))) {
+        ctxPtr->cv.wait_for(lock, TIME_OUT);
+    }
 }
 
 bool BacktraceLocalStatic::InstallSigHandler()
@@ -138,7 +199,7 @@ bool BacktraceLocalStatic::InstallSigHandler()
     action.sa_sigaction = BacktraceLocalStatic::CopyContextAndWaitTimeout;
     action.sa_flags = SA_RESTART | SA_SIGINFO;
     if (sigaction(SIGLOCAL_DUMP, &action, &g_sigaction) != EOK) {
-        DfxLogWarn("InstallSigHandler for local backtrace(%d).", errno);
+        DfxLogWarn("Failed to install SigHandler for local backtrace(%d).", errno);
         return false;
     }
     return true;
@@ -157,20 +218,36 @@ void BacktraceLocalStatic::UninstallSigHandler()
     }
 }
 
-bool BacktraceLocalStatic::SignalRequestThread(int32_t tid, unw_context_t& ctx)
+bool BacktraceLocalStatic::SignalRequestThread(int32_t tid, ThreadContext* ctx)
 {
     siginfo_t si {0};
     si.si_signo = SIGLOCAL_DUMP;
-    si.si_value.sival_ptr = &ctx;
+    si.si_value.sival_ptr = ctx;
     si.si_errno = 0;
     si.si_code = -SIGLOCAL_DUMP;
-    g_tid = tid;
     if (syscall(SYS_rt_tgsigqueueinfo, getpid(), tid, si.si_signo, &si) != 0) {
-        DfxLogError("Failed to queue signal(%d) to %d, errno(%d).", si.si_signo, tid, errno);
-        g_tid = -1;
+        DfxLogWarn("Failed to queue signal(%d) to %d, errno(%d).", si.si_signo, tid, errno);
+        ctx->tid = static_cast<int32_t>(ThreadContextStatus::ContextUnused);
         return false;
     }
 
+    int left = 10000; // 10000 : max wait 10ms for single thread
+    constexpr int pollTime = 10; // 10 : 10us
+    while (ctx->tid.load() != ThreadContextStatus::ContextReady) {
+        int ret = usleep(pollTime);
+        if (ret == 0) {
+            left -= pollTime;
+        } else {
+            left -= ret;
+        }
+
+        if (left <= 0 &&
+            ctx->tid.compare_exchange_strong(tid,
+            static_cast<int32_t>(ThreadContextStatus::ContextUnused))) {
+            DfxLogWarn("Failed to wait for %d to write context.", tid);
+            return false;
+        }
+    }
     return true;
 }
 } // namespace HiviewDFX
