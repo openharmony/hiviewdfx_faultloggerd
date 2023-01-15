@@ -19,6 +19,9 @@
 #include <memory>
 #include <vector>
 
+#include <link.h>
+#include <unistd.h>
+
 #include <libunwind.h>
 
 #include "backtrace.h"
@@ -29,25 +32,41 @@ namespace HiviewDFX {
 class BacktraceLocalThread {
 public:
     BacktraceLocalThread(int32_t tid);
-    ~BacktraceLocalThread() = default;
+    ~BacktraceLocalThread();
 
     bool Unwind(unw_addr_space_t as, std::shared_ptr<DfxSymbolsCache> cache, size_t skipFrameNum,
         bool releaseThread = true);
     void ReleaseThread();
-    const std::vector<NativeFrame>& GetFrames() const;
+
+    bool UnwindWithContext(unw_addr_space_t as, unw_context_t& context, std::shared_ptr<DfxSymbolsCache> cache,
+        size_t skipFrameNum);
+
+#ifdef __aarch64__
+    bool UnwindWithContextByFramePointer(unw_context_t& context, size_t skipFrameNum);
+    void UpdateFrameInfo();
+#endif
+
     std::string GetFramesStr();
+    const std::vector<NativeFrame>& GetFrames() const;
+
     static std::string GetNativeFrameStr(const NativeFrame& frame);
 
 private:
     bool GetUnwindContext(unw_context_t& context);
-    void DoUnwind(unw_addr_space_t as, unw_context_t& context, std::shared_ptr<DfxSymbolsCache> cache,
-        size_t skipFrameNum);
-    void DoUnwindCurrent(unw_addr_space_t as, std::shared_ptr<DfxSymbolsCache> cache, size_t skipFrameNum);
+    bool UnwindCurrentThread(unw_addr_space_t as, std::shared_ptr<DfxSymbolsCache> cache, size_t skipFrameNum);
     void UpdateFrameFuncName(unw_addr_space_t as, std::shared_ptr<DfxSymbolsCache> cache, NativeFrame& frame);
+#ifdef __aarch64__
+    bool Step(uintptr_t& fp, uintptr_t& pc);
+    bool IsAddressReadable(uintptr_t address);
+    static int DlIteratePhdrCallback(struct dl_phdr_info *info, size_t size, void *data);
+#endif
 
 private:
     int32_t tid_;
     std::vector<NativeFrame> frames_;
+#ifdef __aarch64__
+    int32_t pipefd_[2];
+#endif
 };
 } // namespace HiviewDFX
 } // namespace OHOS

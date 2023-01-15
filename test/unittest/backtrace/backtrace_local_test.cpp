@@ -16,19 +16,26 @@
 #include <gtest/gtest.h>
 
 #include <cstdio>
-#include <fcntl.h>
+#include <cstdlib>
 #include <memory>
 #include <mutex>
 #include <thread>
+
+#include <dlfcn.h>
+#include <fcntl.h>
+#include <sys/wait.h>
 #include <unistd.h>
 
-#include <libunwind.h>
+#include <file_ex.h>
 #include <libunwind_i-ohos.h>
+#include <libunwind.h>
 #include <securec.h>
 
 #include "backtrace.h"
+#include "backtrace_local_static.h"
 #include "backtrace_local_thread.h"
 #include "dfx_symbols_cache.h"
+#include "elapsed_time_counter.h"
 #include "test_utils.h"
 
 using namespace testing;
@@ -161,8 +168,12 @@ HWTEST_F(BacktraceLocalTest, BacktraceLocalTest001, TestSize.Level2)
     }
 
     auto cache = std::make_shared<DfxSymbolsCache>();
+    ElapsedTimeCounter counter;
     BacktraceLocalThread thread(BACKTRACE_CURRENT_THREAD);
     ASSERT_EQ(true, thread.Unwind(as, cache, 0));
+    counter.Stop();
+
+    GTEST_LOG_(INFO) << "UnwindCurrentCost:" << counter.CountInNanoseconds() << "\n";
     const auto& frames = thread.GetFrames();
     ASSERT_GT(frames.size(), 0);
     for (const auto& frame : frames) {
@@ -211,8 +222,12 @@ HWTEST_F(BacktraceLocalTest, BacktraceLocalTest003, TestSize.Level2)
     }
 
     auto cache = std::make_shared<DfxSymbolsCache>();
+    ElapsedTimeCounter counter;
     BacktraceLocalThread thread(g_tid);
     ASSERT_EQ(true, thread.Unwind(as, cache, 0));
+    counter.Stop();
+    GTEST_LOG_(INFO) << "UnwindCurrentCost:" << counter.CountInNanoseconds() << "\n";
+    BacktraceLocalStatic::GetInstance().CleanUp();
     const auto& frames = thread.GetFrames();
     ASSERT_GT(frames.size(), 0);
     for (const auto& frame : frames) {
@@ -225,6 +240,135 @@ HWTEST_F(BacktraceLocalTest, BacktraceLocalTest003, TestSize.Level2)
         backtraceThread.join();
     }
     GTEST_LOG_(INFO) << "BacktraceLocalTest003: end.";
+}
+
+/**
+ * @tc.name: BacktraceLocalTest004
+ * @tc.desc: getcontext in caller thread and unwind in forked process (~0.7ms@rk3568)
+ * @tc.type: FUNC
+ */
+HWTEST_F(BacktraceLocalTest, BacktraceLocalTest004, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "BacktraceLocalTest004: start.";
+    ElapsedTimeCounter counter;
+    unw_context_t context;
+    (void)memset_s(&context, sizeof(unw_context_t), 0, sizeof(unw_context_t));
+    unw_getcontext(&context);
+    pid_t child = fork();
+    if (child == 0) {
+        unw_addr_space_t as;
+        unw_init_local_address_space(&as);
+        if (as == nullptr) {
+            FAIL() << "Failed to init address space.\n";
+            return;
+        }
+
+        auto cache = std::make_shared<DfxSymbolsCache>();
+        ElapsedTimeCounter counter2;
+        BacktraceLocalThread thread(BACKTRACE_CURRENT_THREAD);
+        ASSERT_EQ(true, thread.UnwindWithContext(as, context, cache, 0));
+        counter2.Stop();
+        GTEST_LOG_(INFO) << "ChildProcessElapse:" << counter2.CountInNanoseconds() << "\n";
+        const auto& frames = thread.GetFrames();
+        ASSERT_GT(frames.size(), 0);
+        for (const auto& frame : frames) {
+            GTEST_LOG_(INFO) << GetNativeFrameStr(frame) << "\n";
+        }
+        unw_destroy_local_address_space(as);
+        _exit(0);
+    }
+    counter.Stop();
+    GTEST_LOG_(INFO) << "CurrentThreadElapse:" << counter.CountInNanoseconds() << "\n";
+
+    int status;
+    int ret = wait(&status);
+    GTEST_LOG_(INFO) << "Status:" << status << " Result:" << ret << "\n";
+    GTEST_LOG_(INFO) << "BacktraceLocalTest004: end.";
+}
+
+#ifdef __aarch64__
+/**
+ * @tc.name: BacktraceLocalTest005
+ * @tc.desc: getcontext in caller thread and unwind by frame pointer, parse binary info asynchronously
+ * @tc.type: FUNC
+ */
+HWTEST_F(BacktraceLocalTest, BacktraceLocalTest005, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "BacktraceLocalTest005: start.";
+    ElapsedTimeCounter counter;
+    unw_context_t context;
+    (void)memset_s(&context, sizeof(unw_context_t), 0, sizeof(unw_context_t));
+    unw_getcontext(&context);
+    counter.Stop();
+    GTEST_LOG_(INFO) << "GetContext Elapse:" << counter.CountInNanoseconds() << "\n";
+
+    counter.Reset();
+    BacktraceLocalThread thread(BACKTRACE_CURRENT_THREAD);
+    bool ret = thread.UnwindWithContextByFramePointer(context, 0);
+    counter.Stop();
+    GTEST_LOG_(INFO) << "Unwind Elapse:" << counter.CountInNanoseconds() << "\n";
+
+    counter.Reset();
+    thread.UpdateFrameInfo();
+    counter.Stop();
+    GTEST_LOG_(INFO) << "UpdateFrameInfo Elapse:" << counter.CountInNanoseconds() << "\n";
+    ASSERT_EQ(true, ret);
+
+    const auto& frames = thread.GetFrames();
+    ASSERT_GT(frames.size(), 0);
+    for (const auto& frame : frames) {
+        GTEST_LOG_(INFO) << GetNativeFrameStr(frame) << "\n";
+    }
+    GTEST_LOG_(INFO) << "BacktraceLocalTest005: end.";
+}
+#endif
+
+using GetMap = void (*)(void);
+/**
+ * @tc.name: BacktraceLocalTest006
+ * @tc.desc: test whether crash log is generated if we call a dlsym func after dlclose
+ * @tc.type: FUNC
+ */
+HWTEST_F(BacktraceLocalTest, BacktraceLocalTest006, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "BacktraceLocalTest006: start.";
+    pid_t child = fork();
+    if (child == 0) {
+        void* handle = dlopen("libunwind.z.so", RTLD_LAZY);
+        if (handle == nullptr) {
+            FAIL();
+        }
+
+        auto getMap = reinterpret_cast<GetMap>(dlsym(handle, "unw_get_map"));
+        if (getMap == nullptr) {
+            dlclose(handle);
+            FAIL();
+        }
+        // close before call functrion
+        dlclose(handle);
+        getMap();
+        _exit(0);
+    }
+
+    int status;
+    int ret = wait(&status);
+    std::string path;
+    sleep(1);
+    ASSERT_EQ(true, CheckLogFileExist(child, path));
+    GTEST_LOG_(INFO) << "LogFile: " << path << "\n";
+
+    std::string content;
+    if (!OHOS::LoadStringFromFile(path, content)) {
+        FAIL();
+    }
+
+    // both dlclose debug enabled and disabled cases
+    if (content.find("Not mapped pc") == std::string::npos &&
+        content.find("libunwind") == std::string::npos) {
+        FAIL();
+    }
+
+    GTEST_LOG_(INFO) << "BacktraceLocalTest006: end.";
 }
 } // namespace HiviewDFX
 } // namepsace OHOS

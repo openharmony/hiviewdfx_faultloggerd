@@ -82,6 +82,20 @@ uint32_t GetSelfFdCount()
     return content.size();
 }
 
+bool CheckLogFileExist(int32_t pid, std::string& fileName)
+{
+    std::string path = "/data/log/faultlog/temp";
+    std::vector<std::string> content;
+    OHOS::GetDirFiles(path, content);
+    for (auto const& file : content) {
+        if (file.find(std::to_string(pid)) != std::string::npos) {
+            fileName = file;
+            return true;
+        }
+    }
+    return false;
+}
+
 void CheckContent(const std::string& content, const std::string& keyContent, bool checkExist)
 {
     bool findKeyContent = false;
