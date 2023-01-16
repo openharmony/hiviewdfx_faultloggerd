@@ -17,6 +17,9 @@
 
 #include <sstream>
 
+#include <link.h>
+#include <unistd.h>
+
 #include <libunwind.h>
 #include <libunwind_i-ohos.h>
 #include <securec.h>
@@ -37,6 +40,27 @@ constexpr int32_t MIN_VALID_FRAME_COUNT = 3;
 
 BacktraceLocalThread::BacktraceLocalThread(int32_t tid) : tid_(tid)
 {
+#ifdef __aarch64__
+    (void)pipe(pipefd_);
+#endif
+}
+
+BacktraceLocalThread::~BacktraceLocalThread()
+{
+#ifdef __aarch64__
+    if (pipefd_[0] >= 0) {
+        close(pipefd_[0]);
+        pipefd_[0] = -1;
+    }
+
+    if (pipefd_[1] >= 0) {
+        close(pipefd_[1]);
+        pipefd_[1] = -1;
+    }
+#endif
+    if (tid_ != BACKTRACE_CURRENT_THREAD) {
+        BacktraceLocalStatic::GetInstance().CleanUp();
+    }
 }
 
 void BacktraceLocalThread::UpdateFrameFuncName(unw_addr_space_t as,
@@ -47,8 +71,8 @@ void BacktraceLocalThread::UpdateFrameFuncName(unw_addr_space_t as,
     }
 }
 
-void BacktraceLocalThread::DoUnwind(unw_addr_space_t as, unw_context_t& context, std::shared_ptr<DfxSymbolsCache> cache,
-    size_t skipFrameNum)
+bool BacktraceLocalThread::UnwindWithContext(unw_addr_space_t as, unw_context_t& context,
+    std::shared_ptr<DfxSymbolsCache> cache, size_t skipFrameNum)
 {
     unw_cursor_t cursor;
     unw_init_local_with_as(as, &cursor, &context);
@@ -105,22 +129,22 @@ void BacktraceLocalThread::DoUnwind(unw_addr_space_t as, unw_context_t& context,
 
         index++;
     } while ((unw_step(&cursor) > 0) && (index < BACK_STACK_MAX_STEPS));
+    return frames_.size() > 0;
 }
-
-void BacktraceLocalThread::DoUnwindCurrent(unw_addr_space_t as, std::shared_ptr<DfxSymbolsCache> cache, size_t skipFrameNum)
+ 
+bool BacktraceLocalThread::UnwindCurrentThread(unw_addr_space_t as, std::shared_ptr<DfxSymbolsCache> cache, size_t skipFrameNum)
 {
     unw_context_t context;
     (void)memset_s(&context, sizeof(unw_context_t), 0, sizeof(unw_context_t));
     unw_getcontext(&context);
-    DoUnwind(as, context, cache, skipFrameNum + 1);
+    return UnwindWithContext(as, context, cache, skipFrameNum + 1);
 }
 
 bool BacktraceLocalThread::Unwind(unw_addr_space_t as, std::shared_ptr<DfxSymbolsCache> cache,
     size_t skipFrameNum, bool releaseThread)
 {
     if (tid_ == BACKTRACE_CURRENT_THREAD) {
-        DoUnwindCurrent(as, cache, skipFrameNum + 1);
-        return true;
+        return UnwindCurrentThread(as, cache, skipFrameNum + 1);
     } else if (tid_ < BACKTRACE_CURRENT_THREAD) {
         return false;
     }
@@ -136,12 +160,12 @@ bool BacktraceLocalThread::Unwind(unw_addr_space_t as, std::shared_ptr<DfxSymbol
         return false;
     }
 
-    DoUnwind(as, *(threadContext->ctx), cache, skipFrameNum);
+    bool ret = UnwindWithContext(as, *(threadContext->ctx), cache, skipFrameNum);
 
     if (releaseThread && (tid_ > BACKTRACE_CURRENT_THREAD)) {
         BacktraceLocalStatic::GetInstance().ReleaseThread(tid_);
     }
-    return true;
+    return ret;
 }
 
 const std::vector<NativeFrame>& BacktraceLocalThread::GetFrames() const
@@ -191,5 +215,83 @@ void BacktraceLocalThread::ReleaseThread()
         BacktraceLocalStatic::GetInstance().ReleaseThread(tid_);
     }
 }
+
+#ifdef __aarch64__
+bool BacktraceLocalThread::Step(uintptr_t& fp, uintptr_t& pc)
+{
+    uintptr_t prevFp = fp;
+    if (IsAddressReadable(prevFp) && IsAddressReadable(prevFp + sizeof(uintptr_t))) {
+        fp = *reinterpret_cast<uintptr_t*>(prevFp);
+        pc = *reinterpret_cast<uintptr_t*>(prevFp + sizeof(uintptr_t));
+        return true;
+    }
+
+    return false;
+}
+
+int BacktraceLocalThread::DlIteratePhdrCallback(struct dl_phdr_info *info, size_t size, void *data)
+{
+    auto frame = static_cast<NativeFrame*>(data);
+    const Elf_W(Phdr) *phdr = info->dlpi_phdr;
+    for (int n = info->dlpi_phnum; --n >= 0; phdr++) {
+        if (phdr->p_type == PT_LOAD) {
+            Elf_W(Addr) vaddr = phdr->p_vaddr + info->dlpi_addr;
+            if (frame->pc >= vaddr && frame->pc < vaddr + phdr->p_memsz) {
+                frame->relativePc = frame->pc - info->dlpi_addr;
+                frame->binaryName = std::string(info->dlpi_name);
+                return 1; // let dl_iterate_phdr break
+            }
+        }
+    }
+    return 0;
+}
+
+bool BacktraceLocalThread::UnwindWithContextByFramePointer(unw_context_t& context, size_t skipFrameNum)
+{
+    uintptr_t fp = context.uc_mcontext.regs[29]; // 29 : fp location
+    uintptr_t pc = context.uc_mcontext.pc;
+
+    int index = 0;
+    do {
+        if (index < skipFrameNum) {
+            index++;
+            continue;
+        }
+
+        NativeFrame frame;
+        frame.index = index - skipFrameNum;
+        frame.pc = index == 0 ? pc : pc - 4; // 4 : aarch64 instruction size
+        frame.fp = fp;
+        frames_.push_back(frame);
+        index++;
+    } while (Step(fp, pc) && (index < BACK_STACK_MAX_STEPS));
+    return frames_.size() > 0;
+}
+
+void BacktraceLocalThread::UpdateFrameInfo()
+{
+    auto it = frames_.begin();
+    while (it != frames_.end()) {
+        if (dl_iterate_phdr(BacktraceLocalThread::DlIteratePhdrCallback, &(*it)) != 1) {
+            // clean up frames after first invalid frame
+            frames_.erase(it, frames_.end());
+            break;
+        }
+        it++;
+    }
+}
+
+bool BacktraceLocalThread::IsAddressReadable(uintptr_t address)
+{
+    if (pipefd_[1] < 0) {
+        return false;
+    }
+
+    if (write(pipefd_[1], reinterpret_cast<const void*>(address), 1) < 0) {
+        return false;
+    }
+    return true;
+}
+#endif
 } // namespace HiviewDFX
 } // namespace OHOS

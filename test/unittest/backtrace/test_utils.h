@@ -27,6 +27,7 @@ uint32_t GetSelfFdCount();
 uint32_t GetSelfMapsCount();
 uint64_t GetSelfMemoryCount();
 void CheckContent(const std::string& content, const std::string& keyContent, bool checkExist);
+bool CheckLogFileExist(int32_t pid, std::string& fileName);
 }
 }
 #endif // DFX_TEST_UTILS_H
