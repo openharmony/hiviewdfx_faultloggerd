@@ -31,7 +31,6 @@ if (defined(ohos_lite)) {
 
     cflags = [
       "-fPIC",
-      "-Wall",
       "-fno-builtin",
       "-DDFX_NO_PRINT_LOG",
     ]
