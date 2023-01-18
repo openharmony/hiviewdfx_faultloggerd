@@ -20,10 +20,7 @@
 extern "C" {
 #endif
 
-// For size_t
-#include <stddef.h>
-
-char *rustc_demangle(const char *mangled, char *out, size_t *len, int *status);
+char *rustc_demangle(const char *mangled);
 
 #ifdef __cplusplus
 }

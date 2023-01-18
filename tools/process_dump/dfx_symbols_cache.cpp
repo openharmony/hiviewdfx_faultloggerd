@@ -63,8 +63,8 @@ bool DfxSymbolsCache::GetNameAndOffsetByPc(struct unw_addr_space *as,
     auto funcName = abi::__cxa_demangle(buf, nullptr, nullptr, &status);
 #ifdef RUSTC_DEMANGLE
     if (funcName == nullptr) {
-        DfxLogDebug("Fail to __cxa_demangle, will rustc_demangle.");
-        funcName = rustc_demangle(buf, nullptr, nullptr, nullptr);
+        DfxLogDebug("Fail to __cxa_demangle(%s), will rustc_demangle.", buf);
+        funcName = rustc_demangle(buf);
     }
 #endif
     if (funcName != nullptr) {

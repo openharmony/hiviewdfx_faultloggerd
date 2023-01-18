@@ -47,9 +47,7 @@ if (defined(ohos_lite)) {
     ]
 
     sources = faultloggerd_source
-    sources += [
-      "//base/hiviewdfx/faultloggerd/utils/directory_ex.cpp",
-    ]
+    sources += [ "//base/hiviewdfx/faultloggerd/utils/directory_ex.cpp" ]
 
     deps = [
       ":faultlogger.conf",

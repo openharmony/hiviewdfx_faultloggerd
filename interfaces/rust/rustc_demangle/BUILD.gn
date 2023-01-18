@@ -17,19 +17,23 @@ ohos_rust_static_ffi("rustc_demangle_static") {
   include_dirs = [ "." ]
   sources = [ "lib.rs" ]
   if (current_cpu == "arm64" || current_cpu == "arm") {
-    externs = [{
-      crate_name = "rustc_demangle"
-      path = "//prebuilts/rustc/linux-x86_64/current/lib/rustlib/aarch64-linux-ohos/lib/librustc_demangle-7093163c24b92e64.rlib"
-    }]
+    externs = [
+      {
+        crate_name = "rustc_demangle"
+        path = "//prebuilts/rustc/linux-x86_64/current/lib/rustlib/aarch64-linux-ohos/lib/librustc_demangle-7093163c24b92e64.rlib"
+      },
+    ]
   } else if (current_cpu == "x86_64" || current_cpu == "x64") {
-    externs = [{
-      crate_name = "rustc_demangle"
-      path = "//prebuilts/rustc/linux-x86_64/current/lib/rustlib/x86_64-unknown-linux-gnu/lib/librustc_demangle-46c8c3eb5be77633.rlib"
-    }]
+    externs = [
+      {
+        crate_name = "rustc_demangle"
+        path = "//prebuilts/rustc/linux-x86_64/current/lib/rustlib/x86_64-unknown-linux-gnu/lib/librustc_demangle-46c8c3eb5be77633.rlib"
+      },
+    ]
   } else {
     externs = []
   }
-  
+
   crate_name = "rustc_demangle"
   crate_type = "staticlib"
   part_name = "faultloggerd"
