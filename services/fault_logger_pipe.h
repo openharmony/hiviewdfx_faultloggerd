@@ -59,7 +59,10 @@ public:
     void Set(int pid);
     FaultLoggerPipe2* Get(int pid);
     void Del(int pid);
+
+private:
     bool Find(int pid) const;
+
 private:
     std::map<int, std::unique_ptr<FaultLoggerPipe2> > faultLoggerPipes_;
 };
