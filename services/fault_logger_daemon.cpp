@@ -297,7 +297,7 @@ void FaultLoggerDaemon::HandleSdkDumpRequest(int32_t connectionFd, FaultLoggerdR
             isNeedSignalTarget = false;
         }
 
-        if (faultLoggerPipeMap_->Find(request->pid)) {
+        if (faultLoggerPipeMap_->Get(request->pid) != nullptr) {
             resSdkDump = FaultLoggerSdkDumpResp::SDK_DUMP_REPEAT;
             DfxLogError("%s :: pid(%d) is dumping, break.\n", FAULTLOGGERD_TAG.c_str(), request->pid);
             break;
