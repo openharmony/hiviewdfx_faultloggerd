@@ -46,6 +46,7 @@ group("faultloggerd_unittest") {
   deps = [
     "unittest/dump_catcher:unittest",
     "unittest/process_dump:unittest",
+    "unittest/rustc_demangle:unittest",
     "unittest/services:unittest",
     "unittest/signal_handler:unittest",
   ]
