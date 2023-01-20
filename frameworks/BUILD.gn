@@ -21,10 +21,7 @@ config("dfx_backtrace_local_config") {
     "//third_party/libunwind/src",
     "$faultloggerd_path/tools/process_dump",
     "$faultloggerd_path/interfaces/innerkits/dump_catcher/include",
-    "$faultloggerd_path/interfaces/rust/rustc_demangle",
   ]
-
-  cflags_cc = [ "-DRUSTC_DEMANGLE" ]
 
   defines = [
     "HAVE_CONFIG_H",
@@ -40,6 +37,7 @@ ohos_static_library("libbacktrace_local") {
     "//commonlibrary/c_utils/base/include",
     "$faultloggerd_path/common",
     "$faultloggerd_path/common/dfxlog",
+    "$faultloggerd_path/common/util",
   ]
 
   sources = [
@@ -48,16 +46,15 @@ ohos_static_library("libbacktrace_local") {
     "local/backtrace_local_thread.cpp",
   ]
 
-  deps = [
-    "$faultloggerd_path/common/dfxlog:static_common_log",
-    "$faultloggerd_path/interfaces/rust/rustc_demangle:rustc_demangle_static",
-    "//third_party/bounds_checking_function:libsec_shared",
-    "//third_party/libunwind:libunwind_local",
-  ]
-
   external_deps = [
     "c_utils:utils",
     "hilog_native:libhilog",
+  ]
+
+  deps = [
+    "$faultloggerd_path/common/dfxlog:static_common_log",
+    "//third_party/bounds_checking_function:libsec_shared",
+    "//third_party/libunwind:libunwind_local",
   ]
 
   part_name = "faultloggerd"

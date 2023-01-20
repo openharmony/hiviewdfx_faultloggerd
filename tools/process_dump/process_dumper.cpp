@@ -70,7 +70,7 @@ void ProcessDumper::PrintDumpProcessWithSignalContextHeader(std::shared_ptr<Proc
     DfxRingBufferWrapper::GetInstance().AppendBuf("Process name:%s\n", targetProcess_->GetProcessName().c_str());
 
     if (info.si_signo != SIGDUMP) {
-        DfxRingBufferWrapper::GetInstance().AppendMsg("Reason:");
+        DfxRingBufferWrapper::GetInstance().AppendBuf("Reason:");
         DfxRingBufferWrapper::GetInstance().AppendMsg(PrintSignal(info));
         if (info.si_signo == SIGABRT && !msg.empty()) {
             DfxRingBufferWrapper::GetInstance().AppendBuf("LastFatalMessage:%s\n", msg.c_str());
@@ -83,7 +83,7 @@ void ProcessDumper::PrintDumpProcessWithSignalContextHeader(std::shared_ptr<Proc
         }
 
         if (targetProcess_->GetThreads().size() != 0) {
-            DfxRingBufferWrapper::GetInstance().AppendMsg("Fault thread Info:\n");
+            DfxRingBufferWrapper::GetInstance().AppendBuf("Fault thread Info:\n");
         }
     }
 }

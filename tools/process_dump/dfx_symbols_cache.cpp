@@ -23,11 +23,7 @@
 #include <string>
 #include <vector>
 #include "dfx_define.h"
-#include "dfx_log.h"
 #include "libunwind_i-ohos.h"
-#ifdef RUSTC_DEMANGLE
-#include "rustc_demangle.h"
-#endif
 
 #ifdef __cplusplus
 extern "C" {
@@ -61,12 +57,6 @@ bool DfxSymbolsCache::GetNameAndOffsetByPc(struct unw_addr_space *as,
 
     int status = 0;
     auto funcName = abi::__cxa_demangle(buf, nullptr, nullptr, &status);
-#ifdef RUSTC_DEMANGLE
-    if (funcName == nullptr) {
-        DfxLogDebug("Fail to __cxa_demangle(%s), will rustc_demangle.", buf);
-        funcName = rustc_demangle(buf);
-    }
-#endif
     if (funcName != nullptr) {
         symbol.funcName = std::string(funcName);
         std::free(funcName);
