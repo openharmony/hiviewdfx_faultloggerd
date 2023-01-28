@@ -13,27 +13,6 @@
 
 import("//base/hiviewdfx/faultloggerd/faultloggerd.gni")
 
-processdump_sources = [
-  "dfx_config.cpp",
-  "dfx_dump_request.cpp",
-  "dfx_dump_res.cpp",
-  "dfx_dump_writer.cpp",
-  "dfx_elf.cpp",
-  "dfx_fault_stack.cpp",
-  "dfx_frame.cpp",
-  "dfx_logger.cpp",
-  "dfx_maps.cpp",
-  "dfx_process.cpp",
-  "dfx_ring_buffer_wrapper.cpp",
-  "dfx_signal.cpp",
-  "dfx_symbols_cache.cpp",
-  "dfx_thread.cpp",
-  "dfx_unwind_local.cpp",
-  "dfx_unwind_remote.cpp",
-  "dfx_util.cpp",
-  "process_dumper.cpp",
-]
-
 if (defined(ohos_lite)) {
   source_set("process_info_src") {
     cflags = []
@@ -55,7 +34,26 @@ if (defined(ohos_lite)) {
       "$hilog_lite_include_path",
     ]
 
-    sources = processdump_sources
+    sources = [
+      "dfx_config.cpp",
+      "dfx_dump_request.cpp",
+      "dfx_dump_res.cpp",
+      "dfx_dump_writer.cpp",
+      "dfx_elf.cpp",
+      "dfx_fault_stack.cpp",
+      "dfx_frame.cpp",
+      "dfx_logger.cpp",
+      "dfx_maps.cpp",
+      "dfx_process.cpp",
+      "dfx_ring_buffer_wrapper.cpp",
+      "dfx_signal.cpp",
+      "dfx_symbols_cache.cpp",
+      "dfx_thread.cpp",
+      "dfx_unwind_local.cpp",
+      "dfx_unwind_remote.cpp",
+      "dfx_util.cpp",
+      "process_dumper.cpp",
+    ]
 
     if (target_cpu == "arm") {
       sources += [ "dfx_regs_arm.cpp" ]
@@ -95,11 +93,28 @@ if (defined(ohos_lite)) {
       "HAVE_LINK_H",
     ]
 
-    sources = processdump_sources
-    sources += [
+    sources = [
       "//base/hiviewdfx/faultloggerd/utils/directory_ex.cpp",
       "cppcrash_reporter.cpp",
+      "dfx_config.cpp",
+      "dfx_dump_request.cpp",
+      "dfx_dump_res.cpp",
+      "dfx_dump_writer.cpp",
+      "dfx_elf.cpp",
+      "dfx_fault_stack.cpp",
+      "dfx_frame.cpp",
+      "dfx_logger.cpp",
+      "dfx_maps.cpp",
+      "dfx_process.cpp",
+      "dfx_ring_buffer_wrapper.cpp",
+      "dfx_signal.cpp",
+      "dfx_symbols_cache.cpp",
+      "dfx_thread.cpp",
+      "dfx_unwind_local.cpp",
+      "dfx_unwind_remote.cpp",
+      "dfx_util.cpp",
       "main.cpp",
+      "process_dumper.cpp",
     ]
 
     if (target_cpu == "arm") {
@@ -126,20 +141,36 @@ if (defined(ohos_lite)) {
 
     include_dirs = [
       ".",
-      "$faultloggerd_path/common",
-      "$faultloggerd_path/common/dfxlog",
-      "$faultloggerd_path/interfaces/rust/rustc_demangle",
+      "//base/hiviewdfx/faultloggerd/common",
+      "//base/hiviewdfx/faultloggerd/common/dfxlog",
       "//commonlibrary/c_utils/base/include",
     ]
-
-    cflags_cc = [ "-DRUSTC_DEMANGLE" ]
   }
 
   ohos_source_set("process_info_src") {
     cflags = []
 
     configs = [ ":processdump_config" ]
-    sources = processdump_sources
+    sources = [
+      "dfx_config.cpp",
+      "dfx_dump_request.cpp",
+      "dfx_dump_res.cpp",
+      "dfx_dump_writer.cpp",
+      "dfx_elf.cpp",
+      "dfx_fault_stack.cpp",
+      "dfx_frame.cpp",
+      "dfx_logger.cpp",
+      "dfx_maps.cpp",
+      "dfx_process.cpp",
+      "dfx_ring_buffer_wrapper.cpp",
+      "dfx_signal.cpp",
+      "dfx_symbols_cache.cpp",
+      "dfx_thread.cpp",
+      "dfx_unwind_local.cpp",
+      "dfx_unwind_remote.cpp",
+      "dfx_util.cpp",
+      "process_dumper.cpp",
+    ]
 
     if (target_cpu == "arm") {
       sources += [ "dfx_regs_arm.cpp" ]
@@ -155,7 +186,6 @@ if (defined(ohos_lite)) {
     deps = [
       "$faultloggerd_path/common/dfxlog:static_common_log",
       "$faultloggerd_path/interfaces/innerkits/faultloggerd_client:libfaultloggerd",
-      "$faultloggerd_path/interfaces/rust/rustc_demangle:rustc_demangle_static",
       "//third_party/libunwind:libunwind",
     ]
 
@@ -171,10 +201,27 @@ if (defined(ohos_lite)) {
   ohos_executable("processdump") {
     install_enable = true
     configs = [ ":processdump_config" ]
-    sources = processdump_sources
-    sources += [
+    sources = [
       "cppcrash_reporter.cpp",
+      "dfx_config.cpp",
+      "dfx_dump_request.cpp",
+      "dfx_dump_res.cpp",
+      "dfx_dump_writer.cpp",
+      "dfx_elf.cpp",
+      "dfx_fault_stack.cpp",
+      "dfx_frame.cpp",
+      "dfx_logger.cpp",
+      "dfx_maps.cpp",
+      "dfx_process.cpp",
+      "dfx_ring_buffer_wrapper.cpp",
+      "dfx_signal.cpp",
+      "dfx_symbols_cache.cpp",
+      "dfx_thread.cpp",
+      "dfx_unwind_local.cpp",
+      "dfx_unwind_remote.cpp",
+      "dfx_util.cpp",
       "main.cpp",
+      "process_dumper.cpp",
     ]
 
     if (target_cpu == "arm") {
@@ -195,7 +242,6 @@ if (defined(ohos_lite)) {
       "$faultloggerd_path/common/util:dfx_cutil",
       "$faultloggerd_path/interfaces/innerkits/faultloggerd_client:libfaultloggerd",
       "$faultloggerd_path/interfaces/innerkits/signal_handler:dfx_local_handler",
-      "$faultloggerd_path/interfaces/rust/rustc_demangle:rustc_demangle_static",
       "//third_party/libunwind:libunwind",
     ]
 
