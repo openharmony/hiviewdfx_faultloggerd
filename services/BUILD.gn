@@ -13,14 +13,6 @@
 
 import("//base/hiviewdfx/faultloggerd/faultloggerd.gni")
 
-faultloggerd_source = [
-  "fault_logger_config.cpp",
-  "fault_logger_daemon.cpp",
-  "fault_logger_pipe.cpp",
-  "fault_logger_secure.cpp",
-  "main.cpp",
-]
-
 if (defined(ohos_lite)) {
   copy("faultlogger.cfg") {
     sources = [ "$faultloggerd_path/services/config/faultloggerd.cfg" ]
@@ -46,8 +38,14 @@ if (defined(ohos_lite)) {
       "$faultloggerd_path/interfaces/innerkits/faultloggerd_client/include",
     ]
 
-    sources = faultloggerd_source
-    sources += [ "//base/hiviewdfx/faultloggerd/utils/directory_ex.cpp" ]
+    sources = [
+      "//base/hiviewdfx/faultloggerd/utils/directory_ex.cpp",
+      "fault_logger_config.cpp",
+      "fault_logger_daemon.cpp",
+      "fault_logger_pipe.cpp",
+      "fault_logger_secure.cpp",
+      "main.cpp",
+    ]
 
     deps = [
       ":faultlogger.conf",
@@ -86,7 +84,13 @@ if (defined(ohos_lite)) {
   ohos_executable("faultloggerd") {
     install_enable = true
     configs = [ ":faultloggerd_config" ]
-    sources = faultloggerd_source
+    sources = [
+      "fault_logger_config.cpp",
+      "fault_logger_daemon.cpp",
+      "fault_logger_pipe.cpp",
+      "fault_logger_secure.cpp",
+      "main.cpp",
+    ]
 
     cflags_cc = [ "-DDEBUG_CRASH_LOCAL_HANDLER" ]
 
