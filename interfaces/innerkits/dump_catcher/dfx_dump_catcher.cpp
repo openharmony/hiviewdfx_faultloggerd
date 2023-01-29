@@ -255,32 +255,6 @@ bool DfxDumpCatcher::DumpCatchFd(int pid, int tid, std::string& msg, int fd)
     return ret;
 }
 
-static int SignalTargetProcess(const int type, int pid, int tid)
-{
-    DfxLogDebug("%s :: SignalTargetProcess :: type: %d", DFXDUMPCATCHER_TAG.c_str(), type);
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Winitializer-overrides"
-    siginfo_t si = {
-        .si_signo = SIGDUMP,
-        .si_errno = 0,
-        .si_code = type,
-        .si_value.sival_int = tid,
-        .si_pid = getpid(),
-        .si_uid = static_cast<uid_t>(syscall(SYS_gettid))
-    };
-#pragma clang diagnostic pop
-    if (tid == 0) {
-        if (syscall(SYS_rt_sigqueueinfo, pid, si.si_signo, &si) != 0) {
-            return errno;
-        }
-    } else {
-        if (syscall(SYS_rt_tgsigqueueinfo, pid, tid, si.si_signo, &si) != 0) {
-            return errno;
-        }
-    }
-    return 0;
-}
-
 static void LoadPathContent(const std::string& desc, const std::string& path, std::string& result)
 {
     if (access(path.c_str(), F_OK) != 0) {
@@ -319,24 +293,17 @@ bool DfxDumpCatcher::DoDumpCatchRemote(const int type, int pid, int tid, std::st
     }
 
     int sdkdumpRet = RequestSdkDump(type, pid, tid);
-    if (sdkdumpRet != (int)FaultLoggerSdkDumpResp::SDK_DUMP_PASS) {
-        if (sdkdumpRet == (int)FaultLoggerSdkDumpResp::SDK_DUMP_REPEAT) {
+    if (sdkdumpRet != static_cast<int>(FaultLoggerSdkDumpResp::SDK_DUMP_PASS)) {
+        if (sdkdumpRet == static_cast<int>(FaultLoggerSdkDumpResp::SDK_DUMP_REPEAT)) {
             msg.append("Result: pid(" + std::to_string(pid) + ") is dumping.\n");
-            DfxLogWarn("%s :: %s :: %s", DFXDUMPCATCHER_TAG.c_str(), __func__, msg.c_str());
-            return ret;
-        } else {
-            if (sdkdumpRet == (int)FaultLoggerSdkDumpResp::SDK_DUMP_REJECT) {
-                msg.append("Result: pid(" + std::to_string(pid) + ") check permission error.\n");
-            }
-            int err = SignalTargetProcess(type, pid, tid);
-            if (err != 0) {
-                msg.append("Result: pid(" + std::to_string(pid) + ") syscall SIGDUMP error, \
-                    errno(" + std::to_string(err) + ").\n");
-                DfxLogWarn("%s :: %s :: %s", DFXDUMPCATCHER_TAG.c_str(), __func__, msg.c_str());
-                RequestDelPipeFd(pid);
-                return ret;
-            }
+        } else if (sdkdumpRet == static_cast<int>(FaultLoggerSdkDumpResp::SDK_DUMP_REJECT)) {
+            msg.append("Result: pid(" + std::to_string(pid) + ") check permission error.\n");
+        } else if (sdkdumpRet == static_cast<int>(FaultLoggerSdkDumpResp::SDK_DUMP_NOPROC)) {
+            msg.append("Result: pid(" + std::to_string(pid) + ") syscall SIGDUMP error.\n");
         }
+        DfxLogWarn("%s :: %s :: %s", DFXDUMPCATCHER_TAG.c_str(), __func__, msg.c_str());
+        RequestDelPipeFd(pid);
+        return ret;
     }
 
     int pollRet = DoDumpRemotePid(type, pid, msg);

@@ -39,6 +39,7 @@ private:
 
     int fds_[2] = {-1, -1};
     bool init_;
+    bool write_;
 };
 
 class FaultLoggerPipe2 {

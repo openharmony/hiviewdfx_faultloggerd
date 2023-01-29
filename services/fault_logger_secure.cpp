@@ -133,9 +133,8 @@ bool FaultLoggerSecure::CheckCallerUID(const int callingUid, const int32_t pid)
         ret = true;
     } else {
         ret = false;
+        DfxLogWarn("%s :: CheckCallerUID :: callingUid(%d).\n", FAULTLOGGERSECURE_TAG.c_str(), callingUid);
     }
-
-    DfxLogInfo("%s :: CheckCallerUID :: ret(%d).\n", FAULTLOGGERSECURE_TAG.c_str(), ret);
     return ret;
 }
 } // namespace HiviewDfx
