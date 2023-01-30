@@ -50,6 +50,7 @@ static std::mutex g_pipeMapsMutex;
 FaultLoggerPipe::FaultLoggerPipe()
 {
     init_ = false;
+    write_ = false;
     Init();
 }
 
@@ -67,7 +68,11 @@ int FaultLoggerPipe::GetReadFd(void)
 int FaultLoggerPipe::GetWriteFd(void)
 {
     DfxLogDebug("%s :: pipe write fd: %d", __func__, fds_[PIPE_WRITE]);
-    return fds_[PIPE_WRITE];
+    if (!write_) {
+        write_ = true;
+        return fds_[PIPE_WRITE];
+    }
+    return -1;
 }
 
 bool FaultLoggerPipe::Init(void)
@@ -95,7 +100,9 @@ void FaultLoggerPipe::Destroy(void)
 
 void FaultLoggerPipe::Close(int fd) const
 {
-    syscall(SYS_close, fd);
+    if (fd > 0) {
+        syscall(SYS_close, fd);
+    }
 }
 
 FaultLoggerPipe2::FaultLoggerPipe2(std::unique_ptr<FaultLoggerPipe> pipeBuf, std::unique_ptr<FaultLoggerPipe> pipeRes)

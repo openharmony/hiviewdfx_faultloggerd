@@ -39,7 +39,7 @@ private:
     FaultLoggerCheckPermissionResp SecurityCheck(int32_t connectionFd, FaultLoggerdRequest* request);
     void HandlePermissionRequest(int32_t connectionFd, FaultLoggerdRequest* request);
     void HandleSdkDumpRequest(int32_t connectionFd, FaultLoggerdRequest* request);
-    void HandlePipeFdClientRequest(int32_t connectionFd, const FaultLoggerdRequest* request);
+    void HandlePipeFdClientRequest(int32_t connectionFd, FaultLoggerdRequest* request);
 
 private:
     static FaultLoggerDaemon* faultLoggerDaemon_;

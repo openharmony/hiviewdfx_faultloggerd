@@ -156,7 +156,7 @@ void FaultLoggerDaemon::HandleLogFileDesClientRequest(int32_t connectionFd, cons
     close(fd);
 }
 
-void FaultLoggerDaemon::HandlePipeFdClientRequest(int32_t connectionFd, const FaultLoggerdRequest * request)
+void FaultLoggerDaemon::HandlePipeFdClientRequest(int32_t connectionFd, FaultLoggerdRequest * request)
 {
     DfxLogDebug("%s :: pid(%d), pipeType(%d).\n", FAULTLOGGERD_TAG.c_str(), request->pid, request->pipeType);
     int fd = -1;
@@ -168,21 +168,34 @@ void FaultLoggerDaemon::HandlePipeFdClientRequest(int32_t connectionFd, const Fa
     }
 
     switch (request->pipeType) {
-        case (int32_t)FaultLoggerPipeType::PIPE_FD_READ_BUF:
+        case (int32_t)FaultLoggerPipeType::PIPE_FD_READ_BUF: {
+            FaultLoggerCheckPermissionResp resSecurityCheck = SecurityCheck(connectionFd, request);
+            if (FaultLoggerCheckPermissionResp::CHECK_PERMISSION_PASS != resSecurityCheck) {
+                return;
+            }
             fd = faultLoggerPipe->faultLoggerPipeBuf_->GetReadFd();
             break;
-        case (int32_t)FaultLoggerPipeType::PIPE_FD_WRITE_BUF:
+        }
+        case (int32_t)FaultLoggerPipeType::PIPE_FD_WRITE_BUF: {
             fd = faultLoggerPipe->faultLoggerPipeBuf_->GetWriteFd();
             break;
-        case (int32_t)FaultLoggerPipeType::PIPE_FD_READ_RES:
+        }
+        case (int32_t)FaultLoggerPipeType::PIPE_FD_READ_RES: {
+            FaultLoggerCheckPermissionResp resSecurityCheck = SecurityCheck(connectionFd, request);
+            if (FaultLoggerCheckPermissionResp::CHECK_PERMISSION_PASS != resSecurityCheck) {
+                return;
+            }
             fd = faultLoggerPipe->faultLoggerPipeRes_->GetReadFd();
             break;
-        case (int32_t)FaultLoggerPipeType::PIPE_FD_WRITE_RES:
+        }
+        case (int32_t)FaultLoggerPipeType::PIPE_FD_WRITE_RES: {
             fd = faultLoggerPipe->faultLoggerPipeRes_->GetWriteFd();
             break;
-        case (int32_t)FaultLoggerPipeType::PIPE_FD_DELETE:
+        }
+        case (int32_t)FaultLoggerPipeType::PIPE_FD_DELETE: {
             faultLoggerPipeMap_->Del(request->pid);
             return;
+        }
         default:
             DfxLogError("%s :: unknown pipeType(%d).\n", FAULTLOGGERD_TAG.c_str(), request->pipeType);
             return;
@@ -289,12 +302,12 @@ void FaultLoggerDaemon::HandleSdkDumpRequest(int32_t connectionFd, FaultLoggerdR
      * in remote back trace, all unwind stack will save to file, and read in dump_catcher, then return.
      */
 
-    bool isNeedSignalTarget = true;
     do {
         if ((request->pid <= 0) || (FaultLoggerCheckPermissionResp::CHECK_PERMISSION_REJECT == resSecurityCheck)) {
             DfxLogError("%s :: HandleSdkDumpRequest :: pid(%d) or resSecurityCheck(%d) fail.\n", \
                         FAULTLOGGERD_TAG.c_str(), request->pid, (int)resSecurityCheck);
-            isNeedSignalTarget = false;
+            resSdkDump = FaultLoggerSdkDumpResp::SDK_DUMP_REJECT;
+            break;
         }
 
         if (faultLoggerPipeMap_->Get(request->pid) != nullptr) {
@@ -303,12 +316,6 @@ void FaultLoggerDaemon::HandleSdkDumpRequest(int32_t connectionFd, FaultLoggerdR
             break;
         }
         faultLoggerPipeMap_->Set(request->pid);
-
-        if (!isNeedSignalTarget) {
-            resSdkDump = FaultLoggerSdkDumpResp::SDK_DUMP_REJECT;
-            DfxLogError("%s :: Failed to check permission.\n", FAULTLOGGERD_TAG.c_str());
-            break;
-        }
 
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Winitializer-overrides"
@@ -380,22 +387,22 @@ void FaultLoggerDaemon::HandleRequest(int32_t connectionFd)
         auto request = reinterpret_cast<FaultLoggerdRequest *>(buf);
         DfxLogDebug("%s :: clientType(%d).\n", FAULTLOGGERD_TAG.c_str(), request->clientType);
         switch (request->clientType) {
-            case (int32_t)FaultLoggerClientType::DEFAULT_CLIENT:
+            case static_cast<int32_t>(FaultLoggerClientType::DEFAULT_CLIENT):
                 HandleDefaultClientRequest(connectionFd, request);
                 break;
-            case (int32_t)FaultLoggerClientType::LOG_FILE_DES_CLIENT:
+            case static_cast<int32_t>(FaultLoggerClientType::LOG_FILE_DES_CLIENT):
                 HandleLogFileDesClientRequest(connectionFd, request);
                 break;
-            case (int32_t)FaultLoggerClientType::PRINT_T_HILOG_CLIENT:
+            case static_cast<int32_t>(FaultLoggerClientType::PRINT_T_HILOG_CLIENT):
                 HandlePrintTHilogClientRequest(connectionFd, request);
                 break;
-            case (int32_t)FaultLoggerClientType::PERMISSION_CLIENT:
+            case static_cast<int32_t>(FaultLoggerClientType::PERMISSION_CLIENT):
                 HandlePermissionRequest(connectionFd, request);
                 break;
-            case (int32_t)FaultLoggerClientType::SDK_DUMP_CLIENT:
+            case static_cast<int32_t>(FaultLoggerClientType::SDK_DUMP_CLIENT):
                 HandleSdkDumpRequest(connectionFd, request);
                 break;
-            case (int32_t)FaultLoggerClientType::PIPE_FD_CLIENT:
+            case static_cast<int32_t>(FaultLoggerClientType::PIPE_FD_CLIENT):
                 HandlePipeFdClientRequest(connectionFd, request);
                 break;
             default:
