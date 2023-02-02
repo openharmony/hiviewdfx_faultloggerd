@@ -51,6 +51,7 @@ typedef enum {
 #endif
 
 #ifdef ENABLE_SIGHAND_MUSL_LOG
+#define BUF_LENGTH 1024
 extern int HiLogAdapterPrintArgs(
     const LogType type, const LogLevel level, const unsigned int domain, const char *tag, const char *fmt, va_list ap);
 extern int vsnprintfp_s(char *strDest, size_t destMax, size_t count, int priv, const char *format, va_list arglist);
@@ -70,7 +71,7 @@ __attribute__ ((visibility("hidden"))) int DfxLog(
     const LogLevel logLevel, const unsigned int domain, const char* tag, const char *fmt, ...)
 {
     int ret;
-    char buf[LOG_BUF_LEN] = {0};
+    char buf[BUF_LENGTH] = {0};
     va_list args;
     va_start(args, fmt);
     ret = vsnprintfp_s(buf, sizeof(buf), sizeof(buf) - 1, false, fmt, args);

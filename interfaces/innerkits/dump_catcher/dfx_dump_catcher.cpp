@@ -167,7 +167,7 @@ bool DfxDumpCatcher::DoDumpLocalPid(int pid, std::string& msg)
     if (closedir(dir) == -1) {
         DfxLogError("closedir failed.");
     }
-    
+
     DfxLogDebug("%s :: DoDumpLocalPid :: return %d.", DFXDUMPCATCHER_TAG.c_str(), ret);
     return ret;
 }
@@ -380,7 +380,8 @@ int DfxDumpCatcher::DoDumpRemotePoll(int bufFd, int resFd, int timeout, std::str
 {
     int ret = DUMP_POLL_INIT;
     bool res = false;
-    std::string bufMsg, resMsg;
+    std::string bufMsg;
+    std::string resMsg;
     struct pollfd readfds[2];
     (void)memset_s(readfds, sizeof(readfds), 0, sizeof(readfds));
     readfds[0].fd = bufFd;
@@ -407,7 +408,9 @@ int DfxDumpCatcher::DoDumpRemotePoll(int bufFd, int resFd, int timeout, std::str
             break;
         }
 
-        bool bufRet = true, resRet = false, eventRet = true;
+        bool bufRet = true;
+        bool resRet = false;
+        bool eventRet = true;
         for (int i = 0; i < fdsSize; ++i) {
             if (!bPipeConnect && ((uint32_t)readfds[i].revents & POLLIN)) {
                 bPipeConnect = true;
@@ -422,7 +425,7 @@ int DfxDumpCatcher::DoDumpRemotePoll(int bufFd, int resFd, int timeout, std::str
             if (((uint32_t)readfds[i].revents & POLLIN) != POLLIN) {
                 continue;
             }
-            
+
             if (readfds[i].fd == bufFd) {
                 bufRet = DoReadBuf(bufFd, bufMsg);
             }

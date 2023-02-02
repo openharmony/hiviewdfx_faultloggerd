@@ -175,7 +175,8 @@ int DfxProcess::TidToNstid(const int tid, int& nstid)
         return -1;
     }
 
-    int p = 0, t = 0;
+    int p = 0;
+    int t = 0;
     while (!feof(fp)) {
         if (fgets(buf, STATUS_LINE_SIZE, fp) == NULL) {
             fclose(fp);
