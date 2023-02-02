@@ -178,7 +178,8 @@ void DfxConfig::ReadConfig()
                 continue;
             }
             std::string line(codeBuffer);
-            std::string key, value;
+            std::string key;
+            std::string value;
             std::string::size_type newLinePos = line.find_first_of("\n");
             if (newLinePos != line.npos) {
                 line = line.substr(0, newLinePos);
