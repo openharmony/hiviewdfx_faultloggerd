@@ -42,7 +42,9 @@ static int GetProcStatusByPath(const std::string& path, struct ProcInfo& procInf
         return -1;
     }
 
-    int p = 0, pp = 0, t = 0;
+    int pid = 0;
+    int ppid = 0;
+    int tid = 0;
     while (!feof(fp)) {
         if (fgets(buf, STATUS_LINE_SIZE, fp) == nullptr) {
             fclose(fp);
@@ -51,10 +53,10 @@ static int GetProcStatusByPath(const std::string& path, struct ProcInfo& procInf
 
         if (strncmp(buf, PID_STR_NAME, strlen(PID_STR_NAME)) == 0) {
             // Pid:    1892
-            if (sscanf_s(buf, "%*[^0-9]%d", &p) != ARGS_COUNT_ONE) {
+            if (sscanf_s(buf, "%*[^0-9]%d", &pid) != ARGS_COUNT_ONE) {
                 DfxLogError("sscanf_s failed.");
             }
-            procInfo.pid = p;
+            procInfo.pid = pid;
             if (procInfo.pid == getpid()) {
                 procInfo.ns = false;
                 procInfo.tid = gettid();
@@ -67,19 +69,19 @@ static int GetProcStatusByPath(const std::string& path, struct ProcInfo& procInf
 
         if (strncmp(buf, PPID_STR_NAME, strlen(PPID_STR_NAME)) == 0) {
             // PPid:   240
-            if (sscanf_s(buf, "%*[^0-9]%d", &pp) != ARGS_COUNT_ONE) {
+            if (sscanf_s(buf, "%*[^0-9]%d", &ppid) != ARGS_COUNT_ONE) {
                 DfxLogError("sscanf_s failed.");
             }
-            procInfo.ppid = pp;
+            procInfo.ppid = ppid;
             continue;
         }
 
         // NSpid:  1892    1
         if (strncmp(buf, NSPID_STR_NAME, strlen(NSPID_STR_NAME)) == 0) {
-            if (sscanf_s(buf, "%*[^0-9]%d%*[^0-9]%d", &p, &t) != ARGS_COUNT_TWO) {
+            if (sscanf_s(buf, "%*[^0-9]%d%*[^0-9]%d", &pid, &tid) != ARGS_COUNT_TWO) {
                 DfxLogError("sscanf_s failed.");
             }
-            procInfo.tid = t;
+            procInfo.tid = tid;
             break;
         }
     }
@@ -126,7 +128,8 @@ bool ReadStringFromFile(const std::string &path, std::string &buf, size_t len)
         return false;
     }
 
-    std::istreambuf_iterator<char> start(file), end;
+    std::istreambuf_iterator<char> start(file);
+    std::istreambuf_iterator<char> end;
     std::string str(start, end);
     buf = str.substr(0, len);
     file.close();
