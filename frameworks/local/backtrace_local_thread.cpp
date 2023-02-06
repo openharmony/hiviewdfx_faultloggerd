@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 Huawei Device Co., Ltd.
+ * Copyright (c) 2022-2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -131,8 +131,9 @@ bool BacktraceLocalThread::UnwindWithContext(unw_addr_space_t as, unw_context_t&
     } while ((unw_step(&cursor) > 0) && (index < BACK_STACK_MAX_STEPS));
     return frames_.size() > 0;
 }
- 
-bool BacktraceLocalThread::UnwindCurrentThread(unw_addr_space_t as, std::shared_ptr<DfxSymbolsCache> cache, size_t skipFrameNum)
+
+bool BacktraceLocalThread::UnwindCurrentThread(unw_addr_space_t as, std::shared_ptr<DfxSymbolsCache> cache,
+    size_t skipFrameNum)
 {
     unw_context_t context;
     (void)memset_s(&context, sizeof(unw_context_t), 0, sizeof(unw_context_t));
