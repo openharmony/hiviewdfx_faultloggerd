@@ -24,6 +24,7 @@
 #include <file_ex.h>
 #include <hilog/log.h>
 #include <string_ex.h>
+#include <malloc.h>
 
 #include "backtrace_utils.h"
 #include "test_utils.h"
@@ -118,6 +119,9 @@ void BacktraceUtilsTest::SetUp()
 
 void BacktraceUtilsTest::TearDown()
 {
+#ifdef USE_JEMALLOC_DFX_INTF
+    mallopt(M_FLUSH_THREAD_CACHE, 0);
+#endif
     // check memory/fd/maps
     CheckResourceUsage(fdCount, mapsCount, memCount);
 }
