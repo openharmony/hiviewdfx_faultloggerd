@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 Huawei Device Co., Ltd.
+ * Copyright (c) 2022-2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -26,7 +26,8 @@ namespace OHOS {
 namespace HiviewDFX {
 enum ThreadContextStatus {
     ContextUnused = -1,
-    ContextReady = -2,
+    ContextUsing = -2,
+    ContextReady = -3,
 };
 using ThreadContext = struct ThreadContext {
     std::atomic<int32_t> tid {ThreadContextStatus::ContextUnused};
@@ -50,7 +51,7 @@ class BacktraceLocalStatic {
 public:
     static BacktraceLocalStatic& GetInstance();
     ~BacktraceLocalStatic() = default;
-    // ThreadContext is released after calling ReleaseThread 
+    // ThreadContext is released after calling ReleaseThread
     static std::shared_ptr<ThreadContext> GetThreadContext(int32_t tid);
     static void ReleaseThread(int32_t tid);
     static void CleanUp();

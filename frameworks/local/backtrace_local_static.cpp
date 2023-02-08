@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 Huawei Device Co., Ltd.
+ * Copyright (c) 2022-2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -127,7 +127,11 @@ void BacktraceLocalStatic::ReleaseThread(int32_t tid)
     }
 
     it->second->cv.notify_one();
-    it->second->tid = ThreadContextStatus::ContextUnused;
+    int32_t expect = static_cast<int32_t>(ThreadContextStatus::ContextReady);
+    if (!it->second->tid.compare_exchange_strong(expect,
+        static_cast<int32_t>(ThreadContextStatus::ContextUnused))) {
+        DfxLogWarn("thread(%d) context is still being initialized or used?", tid);
+    }
 }
 
 void BacktraceLocalStatic::CleanUp()
@@ -154,6 +158,11 @@ void BacktraceLocalStatic::CopyContextAndWaitTimeout(int sig, siginfo_t *si, voi
         return;
     }
     std::unique_lock<std::mutex> lock(ctxPtr->lock);
+    int32_t tid = syscall(SYS_gettid);
+    if (!ctxPtr->tid.compare_exchange_strong(tid,
+        static_cast<int32_t>(ThreadContextStatus::ContextUsing))) {
+        return;
+    }
 #if defined(__arm__)
     ucontext_t *uc = (ucontext_t *)context;
     ctxPtr->ctx->regs[UNW_ARM_R0] = uc->uc_mcontext.arm_r0;
@@ -164,7 +173,7 @@ void BacktraceLocalStatic::CopyContextAndWaitTimeout(int sig, siginfo_t *si, voi
     ctxPtr->ctx->regs[UNW_ARM_R5] = uc->uc_mcontext.arm_r5;
     ctxPtr->ctx->regs[UNW_ARM_R6] = uc->uc_mcontext.arm_r6;
     ctxPtr->ctx->regs[UNW_ARM_R7] = uc->uc_mcontext.arm_r7;
-    ctxPtr->ctx->regs[UNW_ARM_R8] = uc->uc_mcontext.arm_r8;   
+    ctxPtr->ctx->regs[UNW_ARM_R8] = uc->uc_mcontext.arm_r8;
     ctxPtr->ctx->regs[UNW_ARM_R9] = uc->uc_mcontext.arm_r9;
     ctxPtr->ctx->regs[UNW_ARM_R10] = uc->uc_mcontext.arm_r10;
     ctxPtr->ctx->regs[UNW_ARM_R11] = uc->uc_mcontext.arm_fp;
@@ -178,11 +187,9 @@ void BacktraceLocalStatic::CopyContextAndWaitTimeout(int sig, siginfo_t *si, voi
         DfxLogWarn("Failed to copy local unwind context.");
     }
 #endif
-    int32_t tid = syscall(SYS_gettid);
-    if (ctxPtr->tid.compare_exchange_strong(tid, 
-        static_cast<int32_t>(ThreadContextStatus::ContextReady))) {
-        ctxPtr->cv.wait_for(lock, TIME_OUT);
-    }
+    ctxPtr->tid = static_cast<int32_t>(ThreadContextStatus::ContextReady);
+    ctxPtr->cv.wait_for(lock, TIME_OUT);
+    ctxPtr->tid = static_cast<int32_t>(ThreadContextStatus::ContextUnused);
 }
 
 bool BacktraceLocalStatic::InstallSigHandler()
@@ -222,7 +229,7 @@ bool BacktraceLocalStatic::SignalRequestThread(int32_t tid, ThreadContext* ctx)
 {
     siginfo_t si {0};
     si.si_signo = SIGLOCAL_DUMP;
-    si.si_value.sival_ptr = ctx;
+    si.si_value.sival_ptr = ctx; // pass context pointer by sival_ptr
     si.si_errno = 0;
     si.si_code = -SIGLOCAL_DUMP;
     if (syscall(SYS_rt_tgsigqueueinfo, getpid(), tid, si.si_signo, &si) != 0) {
