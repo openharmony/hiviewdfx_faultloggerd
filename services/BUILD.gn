@@ -70,7 +70,11 @@ if (defined(ohos_lite)) {
   }
 
   ohos_prebuilt_etc("faultloggerd.cfg") {
-    source = "config/faultloggerd.cfg"
+    if (use_musl) {
+      source = "config/faultloggerd.cfg"
+    } else {
+      source = "config/bionic/faultloggerd.cfg"
+    }
 
     relative_install_dir = "init"
     part_name = "faultloggerd"

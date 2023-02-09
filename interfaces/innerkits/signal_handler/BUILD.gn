@@ -122,6 +122,39 @@ if (defined(ohos_lite)) {
     subsystem_name = "hiviewdfx"
   }
 
+  ohos_shared_library("dfx_signalhandler") {
+    public_configs = [ ":dfx_signal_handler_config" ]
+
+    cflags = [ "-DDFX_LOG_USE_HILOG_BASE" ]
+
+    sources = [ "dfx_signal_handler.c" ]
+
+    deps = [
+      ":dfx_local_handler",
+      "$faultloggerd_path/common/dfxlog:static_hilog_base",
+      "$faultloggerd_path/common/util:dfx_cutil",
+    ]
+
+    external_deps = [
+      "c_utils:utils",
+      "hilog_native:libhilog_base",
+    ]
+
+    if (use_musl) {
+      install_enable = false
+    } else {
+      install_enable = true
+    }
+
+    install_images = [
+      "system",
+      "updater",
+    ]
+
+    part_name = "faultloggerd"
+    subsystem_name = "hiviewdfx"
+  }
+
   source_set("dfxsignalhandler") {
     cflags = [ "-DDFX_SIGNAL_LIBC" ]
 
