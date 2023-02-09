@@ -13,6 +13,8 @@
  * limitations under the License.
  */
 
+#include "file_ex.h"
+
 #include <algorithm>
 #include <cstdio>
 #include <cstring>
@@ -20,32 +22,27 @@
 #include <fstream>
 #include <iostream>
 #include <iterator>
-#include <securec.h>
 #include <sys/stat.h>
 #include <unistd.h>
-#include "directory_ex.h"
-#include "file_ex.h"
-using namespace std;
-
-const int MAX_FILE_LENGTH = 32 * 1024 * 1024;
 
 namespace OHOS {
-bool LoadStringFromFile(const string& filePath, string& content)
+static const int MAX_FILE_LENGTH = 32 * 1024 * 1024;
+bool LoadStringFromFile(const std::string& filePath, std::string& content)
 {
-    ifstream file(filePath.c_str());
+    std::ifstream file(filePath.c_str());
     if (!file.is_open()) {
         return false;
     }
 
-    file.seekg(0, ios::end);
+    file.seekg(0, std::ios::end);
     const long fileLength = file.tellg();
     if (fileLength > MAX_FILE_LENGTH) {
         return false;
     }
 
     content.clear();
-    file.seekg(0, ios::beg);
-    copy(istreambuf_iterator<char>(file), istreambuf_iterator<char>(), back_inserter(content));
+    file.seekg(0, std::ios::beg);
+    std::copy(std::istreambuf_iterator<char>(file), std::istreambuf_iterator<char>(), back_inserter(content));
     return true;
 }
 } // OHOS

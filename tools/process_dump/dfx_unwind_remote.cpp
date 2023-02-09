@@ -44,6 +44,7 @@ namespace {
 // we should have at least 2 frames, one is pc and the other is lr
 // if pc and lr are both invalid, just try fp
 static constexpr int MIN_VALID_FRAME_COUNT = 3;
+static constexpr int ARM_EXEC_STEP_NORMAL = 4;
 static constexpr size_t MAX_BUILD_ID_LENGTH = 32;
 static constexpr int ARK_JS_HEAD_LEN = 256;
 }

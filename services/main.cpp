@@ -23,14 +23,14 @@
 
 #if defined(DEBUG_CRASH_LOCAL_HANDLER)
 #include "dfx_signal_local_handler.h"
-#include "dfx_cutil.h"
+#include "dfx_util.h"
 
 static int DoGetCrashFd(void)
 {
     OHOS::HiviewDFX::FaultLoggerDaemon daemon;
     int32_t type = (int32_t)FaultLoggerType::CPP_CRASH;
     int32_t pid = getpid();
-    uint64_t time = GetTimeMilliseconds();
+    uint64_t time = OHOS::HiviewDFX::GetTimeMilliSeconds();
     int fd = daemon.CreateFileForRequest(type, pid, time, false);
     return fd;
 }

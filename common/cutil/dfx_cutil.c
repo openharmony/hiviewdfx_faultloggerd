@@ -12,21 +12,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef DFX_MUSL_CUTIL_H
-#define DFX_MUSL_CUTIL_H
 
-#include <stdbool.h>
-#include <stddef.h>
-#include <stdint.h>
+#include "dfx_cutil.h"
+
+#include <fcntl.h>
+#include <stdio.h>
 #include <syscall.h>
+#include <unistd.h>
+
+#include <sys/time.h>
 
 #include "dfx_define.h"
+#include "securec.h"
+#include "stdio.h"
+#include "string.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-#ifdef ENABLE_MUSL_CUTIL
 int GetProcStatus(struct ProcInfo* procInfo)
 {
     procInfo->pid = syscall(SYS_getpid);
@@ -38,10 +38,13 @@ int GetProcStatus(struct ProcInfo* procInfo)
 
 bool ReadStringFromFile(const char* path, char* dst, size_t dstSz)
 {
+    if ((dst == NULL) || (path == NULL)) {
+        return false;
+    }
     char name[NAME_LEN];
     char nameFilter[NAME_LEN];
-    memset(name, 0, sizeof(name));
-    memset(nameFilter, 0, sizeof(nameFilter));
+    (void)memset_s(name, sizeof(name), '\0', sizeof(name));
+    (void)memset_s(nameFilter, sizeof(nameFilter), '\0', sizeof(nameFilter));
 
     int fd = -1;
     fd = open(path, O_RDONLY);
@@ -65,11 +68,12 @@ bool ReadStringFromFile(const char* path, char* dst, size_t dstSz)
     }
     nameFilter[NAME_LEN - 1] = '\0';
 
-    size_t cpyLen = strlen(nameFilter) + 1;
-    if (cpyLen > dstSz) {
-        cpyLen = dstSz;
+    if (memcpy_s(dst, dstSz, nameFilter, strlen(nameFilter) + 1) != 0) {
+        perror("Failed to copy name.");
+        close(fd);
+        return false;
     }
-    memcpy(dst, nameFilter, cpyLen);
+
     close(fd);
     return true;
 }
@@ -77,8 +81,8 @@ bool ReadStringFromFile(const char* path, char* dst, size_t dstSz)
 bool GetThreadName(char* buffer, size_t bufferSz)
 {
     char path[NAME_LEN];
-    memset(path, '\0', sizeof(path));
-    if (snprintf(path, sizeof(path) - 1, "/proc/%d/comm", getpid()) <= 0) {
+    (void)memset_s(path, sizeof(path), '\0', sizeof(path));
+    if (snprintf_s(path, sizeof(path), sizeof(path) - 1, "/proc/%d/comm", getpid()) <= 0) {
         return false;
     }
     return ReadStringFromFile(path, buffer, bufferSz);
@@ -87,8 +91,8 @@ bool GetThreadName(char* buffer, size_t bufferSz)
 bool GetProcessName(char* buffer, size_t bufferSz)
 {
     char path[NAME_LEN];
-    memset(path, '\0', sizeof(path));
-    if (snprintf(path, sizeof(path) - 1, "/proc/%d/cmdline", getpid()) <= 0) {
+    (void)memset_s(path, sizeof(path), '\0', sizeof(path));
+    if (snprintf_s(path, sizeof(path), sizeof(path) - 1, "/proc/%d/cmdline", getpid()) <= 0) {
         return false;
     }
     return ReadStringFromFile(path, buffer, bufferSz);
@@ -98,12 +102,6 @@ uint64_t GetTimeMilliseconds(void)
 {
     struct timeval time;
     gettimeofday(&time, NULL);
-    return ((uint64_t)time.tv_sec * 1000) + // 1000 : second to millisecond convert ratio
-        (((uint64_t)time.tv_usec) / 1000); // 1000 : microsecond to millisecond convert ratio
+    return ((uint64_t)time.tv_sec * NUMBER_ONE_THOUSAND) + // 1000 : second to millisecond convert ratio
+        (((uint64_t)time.tv_usec) / NUMBER_ONE_THOUSAND); // 1000 : microsecond to millisecond convert ratio
 }
-
-#endif
-#ifdef __cplusplus
-}
-#endif
-#endif

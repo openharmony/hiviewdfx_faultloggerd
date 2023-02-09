@@ -78,8 +78,6 @@ bool BacktraceLocalThread::UnwindWithContext(unw_addr_space_t as, unw_context_t&
     unw_init_local_with_as(as, &cursor, &context);
     size_t index = 0;
     unw_word_t prevPc = 0;
-    uint64_t offset = 0;
-    std::string name;
     do {
         // skip 0 stack, as this is dump catcher. Caller don't need it.
         if (index < skipFrameNum) {
@@ -205,7 +203,7 @@ std::string BacktraceLocalThread::GetFramesStr()
 {
     std::ostringstream ss;
     for (const auto& frame : frames_) {
-        ss << GetNativeFrameStr(frame) << "\n";
+        ss << GetNativeFrameStr(frame);
     }
     return ss.str();
 }

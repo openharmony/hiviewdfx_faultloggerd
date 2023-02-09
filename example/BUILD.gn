@@ -16,6 +16,13 @@ import("//base/hiviewdfx/faultloggerd/faultloggerd.gni")
 if (defined(ohos_lite)) {
   executable("dumpcatcherdemo") {
     sources = [ "dump_catcher_demo.cpp" ]
+    sources += [
+      "$faultloggerd_path/common/dfxutil/directory_ex.cpp",
+      "$faultloggerd_path/common/dfxutil/file_ex.cpp",
+      "$faultloggerd_path/frameworks/local/backtrace_local_static.cpp",
+      "$faultloggerd_path/frameworks/local/backtrace_local_thread.cpp",
+      "$faultloggerd_path/tools/process_dump/dfx_symbols_cache.cpp",
+    ]
 
     visibility = [ "*:*" ]
 
@@ -25,14 +32,37 @@ if (defined(ohos_lite)) {
       "$faultloggerd_path/interfaces/innerkits/dump_catcher/include/",
       "$faultloggerd_path/common",
       "$faultloggerd_path/common/dfxlog",
+      "$faultloggerd_path/common/dfxutil",
       "$faultloggerd_path/tools/process_dump",
       "$hilog_lite_include_path",
+      "//third_party/libunwind/include",
+      "//third_party/libunwind/src",
+    ]
+
+    if (target_cpu == "arm") {
+      include_dirs += [ "//third_party/libunwind/include/tdep-arm" ]
+    } else if (target_cpu == "arm64") {
+      include_dirs += [ "//third_party/libunwind/include/tdep-aarch64" ]
+    } else if (target_cpu == "x64" || target_cpu == "x86_64") {
+      include_dirs += [ "//third_party/libunwind/include/tdep-x86_64" ]
+    } else if (target_cpu == "mipsel") {
+      include_dirs += [ "//third_party/libunwind/include/tdep-mips" ]
+    }
+
+    defines = [
+      "HAVE_CONFIG_H",
+      "HAVE_ELF_H",
+      "HAVE_LINK_H",
     ]
 
     deps = [
       "$faultloggerd_path/common/dfxlog:static_common_log",
+      "$faultloggerd_path/common/dfxutil:dfx_util",
+      "$faultloggerd_path/frameworks:libbacktrace_local",
       "$faultloggerd_path/interfaces/innerkits/dump_catcher:lib_dfx_dump_catcher",
+      "$faultloggerd_path/interfaces/innerkits/faultloggerd_client:libfaultloggerd",
       "$hilog_lite_deps_path",
+      "//third_party/libunwind:libunwind_local",
     ]
   }
 } else {

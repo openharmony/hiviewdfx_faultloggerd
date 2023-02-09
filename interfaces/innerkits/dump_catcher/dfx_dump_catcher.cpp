@@ -45,22 +45,21 @@
 #include "iosfwd"
 #include "securec.h"
 #include "strings.h"
-
-#include <libunwind.h>
-#include <libunwind_i-ohos.h>
+#include "libunwind.h"
+#include "libunwind_i-ohos.h"
 
 #include "backtrace.h"
 #include "backtrace_local_static.h"
 #include "backtrace_local_thread.h"
 
-static const int DUMP_CATCHE_WORK_TIME_S = 60;
-static const int BACK_TRACE_DUMP_MIX_TIMEOUT_MS = 2000;
-static const int BACK_TRACE_DUMP_CPP_TIMEOUT_MS = 10000;
-
 namespace OHOS {
 namespace HiviewDFX {
 namespace {
+static const int DUMP_CATCHE_WORK_TIME_S = 60;
+static const int BACK_TRACE_DUMP_MIX_TIMEOUT_MS = 2000;
+static const int BACK_TRACE_DUMP_CPP_TIMEOUT_MS = 10000;
 static const std::string DFXDUMPCATCHER_TAG = "DfxDumpCatcher";
+
 static bool IsThreadInCurPid(int32_t tid)
 {
     std::string path = "/proc/self/task/" + std::to_string(tid);
@@ -267,7 +266,7 @@ static void LoadPathContent(const std::string& desc, const std::string& path, st
     }
 
     std::string content;
-    LoadStringFromFile(path, content);
+    OHOS::LoadStringFromFile(path, content);
     if (!content.empty()) {
         std::string str = desc + ":\n" + content + "\n";
         result.append(str);
@@ -315,7 +314,7 @@ bool DfxDumpCatcher::DoDumpCatchRemote(const int type, int pid, int tid, std::st
             if (type == DUMP_TYPE_MIX) {
                 msg.append("Result: pid(" + std::to_string(pid) + ") dump mix timeout, try dump native frame.\n");
                 int type = static_cast<int>(DUMP_TYPE_NATIVE);
-                DoDumpCatchRemote(type, pid, tid, msg);
+                return DoDumpCatchRemote(type, pid, tid, msg);
             } else if (type == DUMP_TYPE_NATIVE) {
                 LoadPidStat(pid, msg);
             }

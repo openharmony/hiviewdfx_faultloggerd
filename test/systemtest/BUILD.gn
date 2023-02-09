@@ -21,10 +21,7 @@ if (defined(ohos_lite)) {
     unittest("test_faultloggerd") {
       output_extension = "bin"
       output_dir = "$root_out_dir/test/unittest/faultloggerd"
-      sources = [
-        "//base/hiviewdfx/faultloggerd/utils/directory_ex.cpp",
-        "src/faultloggerd_system_test.cpp",
-      ]
+      sources = [ "src/faultloggerd_system_test.cpp" ]
 
       include_dirs = [
         "include/",

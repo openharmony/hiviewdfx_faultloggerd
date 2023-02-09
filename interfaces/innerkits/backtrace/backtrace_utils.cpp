@@ -58,7 +58,7 @@ void PrintStr(int32_t fd, const std::string& line)
         return;
     }
 
-    dprintf(fd, LOG_TAG ": %s\n", line.c_str());
+    dprintf(fd, "    %s", line.c_str());
 }
 }
 
@@ -85,7 +85,7 @@ bool GetBacktrace(std::string& out)
 
     std::stringstream ss;
     for (auto const& frame : frames) {
-        ss << BacktraceLocalThread::GetNativeFrameStr(frame) << "\n";
+        ss << BacktraceLocalThread::GetNativeFrameStr(frame);
     }
     out = ss.str();
     return true;

@@ -66,10 +66,9 @@ void DfxThread::ReadThreadName()
         return;
     }
 
-    std::string pathName = path;
-    std::string buf;
-    ReadStringFromFile(pathName, buf, NAME_LEN);
-    TrimAndDupStr(buf, threadName_);
+    char buf[NAME_LEN];
+    ReadStringFromFile(path, buf, NAME_LEN);
+    threadName_ = std::string(buf);
 }
 
 bool DfxThread::IsThreadInitialized()

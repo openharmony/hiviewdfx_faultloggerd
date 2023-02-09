@@ -26,7 +26,7 @@
 #include "dfx_config.h"
 #include "dfx_define.h"
 #include "dfx_dump_writer.h"
-#include "dfx_logger.h"
+#include "dfx_log.h"
 #include "directory_ex.h"
 #include "faultloggerd_client.h"
 #include "file_ex.h"
@@ -34,7 +34,6 @@
 
 #if defined(DEBUG_CRASH_LOCAL_HANDLER)
 #include "dfx_signal_local_handler.h"
-#include "dfx_cutil.h"
 #endif
 
 static const int DUMP_ARG_ONE = 1;

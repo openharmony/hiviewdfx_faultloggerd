@@ -28,7 +28,6 @@
 #include <vector>
 #include "dfx_config.h"
 #include "dfx_define.h"
-#include "dfx_define.h"
 #include "dfx_logger.h"
 #include "dfx_maps.h"
 #include "dfx_ring_buffer_wrapper.h"
@@ -38,7 +37,6 @@
 
 namespace OHOS {
 namespace HiviewDFX {
-static const int ARGS_COUNT_TWO = 2;
 
 void DfxProcess::FillProcessName()
 {
@@ -47,7 +45,9 @@ void DfxProcess::FillProcessName()
         return;
     }
 
-    ReadStringFromFile(path, processName_, NAME_LEN);
+    char buf[NAME_LEN];
+    ReadStringFromFile(path, buf, NAME_LEN);
+    processName_ = std::string(buf);
 }
 
 std::shared_ptr<DfxProcess> DfxProcess::CreateProcessWithKeyThread(pid_t pid, std::shared_ptr<DfxThread> keyThread)
@@ -129,7 +129,7 @@ bool DfxProcess::InitOtherThreads(bool attach)
 
         pid_t nstid = tid;
         if (GetNs()) {
-            TidToNstid(tid, nstid);
+            TidToNstid(pid_, tid, nstid);
         }
 
         if (isSignalDump_ && (nstid == recycleTid_)) {
@@ -158,42 +158,6 @@ void DfxProcess::InsertThreadNode(pid_t tid, pid_t nsTid, bool attach)
         thread->Attach();
     }
     threads_.push_back(thread);
-}
-
-int DfxProcess::TidToNstid(const int tid, int& nstid)
-{
-    char path[NAME_LEN];
-    (void)memset_s(path, sizeof(path), '\0', sizeof(path));
-    if (snprintf_s(path, sizeof(path), sizeof(path) - 1, "/proc/%d/task/%d/status", pid_, tid) <= 0) {
-        DfxLogWarn("snprintf_s error.");
-        return -1;
-    }
-
-    char buf[STATUS_LINE_SIZE];
-    FILE *fp = fopen(path, "r");
-    if (fp == nullptr) {
-        return -1;
-    }
-
-    int p = 0;
-    int t = 0;
-    while (!feof(fp)) {
-        if (fgets(buf, STATUS_LINE_SIZE, fp) == NULL) {
-            fclose(fp);
-            return -1;
-        }
-
-        // NSpid:  1892    1
-        if (strncmp(buf, NSPID_STR_NAME, strlen(NSPID_STR_NAME)) == 0) {
-            if (sscanf_s(buf, "%*[^0-9]%d%*[^0-9]%d", &p, &t) != ARGS_COUNT_TWO) {
-                DfxLogWarn("TidToNstid sscanf_s failed. pid:%d, tid:%d", pid_, tid);
-            }
-            nstid = t;
-            break;
-        }
-    }
-    (void)fclose(fp);
-    return 0;
 }
 
 void DfxProcess::SetIsSignalDump(bool isSignalDump)

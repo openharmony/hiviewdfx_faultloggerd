@@ -26,6 +26,8 @@ static const char FAULTLOGGER_CONF_PATH[] = "/system/etc/faultlogger.conf";
 
 namespace OHOS {
 namespace HiviewDFX {
+static const int CONF_LINE_SIZE = 1024;
+
 DfxConfig &DfxConfig::GetInstance()
 {
     static DfxConfig instance;

@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef DIRECTORY_EX_H
-#define DIRECTORY_EX_H
+#ifndef UTILS_DIRECTORY_EX_H
+#define UTILS_DIRECTORY_EX_H
 
 #include <string>
 #include <sys/stat.h>

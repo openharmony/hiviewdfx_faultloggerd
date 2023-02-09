@@ -13,6 +13,15 @@
 
 import("//base/hiviewdfx/faultloggerd/faultloggerd.gni")
 
+dumpcatcher_sources = [
+  "$faultloggerd_path/tools/process_dump/dfx_dump_request.cpp",
+  "$faultloggerd_path/tools/process_dump/dfx_dump_res.cpp",
+  "$faultloggerd_path/tools/process_dump/dfx_elf.cpp",
+  "$faultloggerd_path/tools/process_dump/dfx_frame.cpp",
+  "$faultloggerd_path/tools/process_dump/dfx_maps.cpp",
+  "dfx_dump_catcher.cpp",
+]
+
 if (defined(ohos_lite)) {
   shared_library("lib_dfx_dump_catcher") {
     visibility = [ "*:*" ]
@@ -22,7 +31,7 @@ if (defined(ohos_lite)) {
       "//commonlibrary/c_utils/base/include",
       "$faultloggerd_path/common",
       "$faultloggerd_path/common/dfxlog",
-      "$faultloggerd_path/common/util",
+      "$faultloggerd_path/common/dfxutil",
       "//third_party/libunwind/include",
       "$faultloggerd_path/interfaces/innerkits/faultloggerd_client/include",
       "$faultloggerd_path/tools/process_dump",
@@ -39,33 +48,29 @@ if (defined(ohos_lite)) {
       include_dirs += [ "//third_party/libunwind/include/tdep-mips" ]
     }
 
+    sources = dumpcatcher_sources
+    sources += [
+      "$faultloggerd_path/common/dfxutil/directory_ex.cpp",
+      "$faultloggerd_path/common/dfxutil/file_ex.cpp",
+      "$faultloggerd_path/frameworks/local/backtrace_local_static.cpp",
+      "$faultloggerd_path/frameworks/local/backtrace_local_thread.cpp",
+      "$faultloggerd_path/tools/process_dump/dfx_symbols_cache.cpp",
+    ]
+
     defines = [
       "HAVE_CONFIG_H",
       "HAVE_ELF_H",
       "HAVE_LINK_H",
     ]
 
-    sources = [
-      "$faultloggerd_path/tools/process_dump/dfx_dump_request.cpp",
-      "$faultloggerd_path/tools/process_dump/dfx_dump_res.cpp",
-      "$faultloggerd_path/tools/process_dump/dfx_elf.cpp",
-      "$faultloggerd_path/tools/process_dump/dfx_frame.cpp",
-      "$faultloggerd_path/tools/process_dump/dfx_logger.cpp",
-      "$faultloggerd_path/tools/process_dump/dfx_maps.cpp",
-      "$faultloggerd_path/tools/process_dump/dfx_symbols_cache.cpp",
-      "$faultloggerd_path/tools/process_dump/dfx_unwind_local.cpp",
-      "$faultloggerd_path/tools/process_dump/dfx_util.cpp",
-      "$faultloggerd_path/utils/directory_ex.cpp",
-      "$faultloggerd_path/utils/file_ex.cpp",
-      "dfx_dump_catcher.cpp",
-    ]
-
     deps = [
       "$faultloggerd_path/common/dfxlog:static_common_log",
-      "$faultloggerd_path/common/util:dfx_cutil",
+      "$faultloggerd_path/common/dfxutil:dfx_util",
+      "$faultloggerd_path/frameworks:libbacktrace_local",
       "$faultloggerd_path/interfaces/innerkits/faultloggerd_client:libfaultloggerd",
       "//base/hiviewdfx/hilog_lite/frameworks/featured:hilog_shared",
-      "//third_party/libunwind:libunwind",
+      "//third_party/bounds_checking_function:libsec_shared",
+      "//third_party/libunwind:libunwind_local",
     ]
   }
 } else {
@@ -77,9 +82,10 @@ if (defined(ohos_lite)) {
       "//commonlibrary/c_utils/base/include",
       "$faultloggerd_path/common",
       "$faultloggerd_path/common/dfxlog",
-      "//third_party/libunwind/include",
+      "$faultloggerd_path/common/dfxutil",
       "$faultloggerd_path/interfaces/innerkits/faultloggerd_client/include",
       "$faultloggerd_path/tools/process_dump",
+      "//third_party/libunwind/include",
     ]
 
     if (target_cpu == "arm") {
@@ -96,20 +102,11 @@ if (defined(ohos_lite)) {
   ohos_shared_library("lib_dfx_dump_catcher") {
     public_configs = [ ":dfx_dump_catcher_config" ]
 
-    sources = [
-      "$faultloggerd_path/tools/process_dump/dfx_dump_request.cpp",
-      "$faultloggerd_path/tools/process_dump/dfx_dump_res.cpp",
-      "$faultloggerd_path/tools/process_dump/dfx_elf.cpp",
-      "$faultloggerd_path/tools/process_dump/dfx_frame.cpp",
-      "$faultloggerd_path/tools/process_dump/dfx_logger.cpp",
-      "$faultloggerd_path/tools/process_dump/dfx_maps.cpp",
-      "$faultloggerd_path/tools/process_dump/dfx_util.cpp",
-      "dfx_dump_catcher.cpp",
-    ]
+    sources = dumpcatcher_sources
 
     deps = [
       "$faultloggerd_path/common/dfxlog:static_common_log",
-      "$faultloggerd_path/common/util:dfx_cutil",
+      "$faultloggerd_path/common/dfxutil:dfx_util",
       "$faultloggerd_path/frameworks:libbacktrace_local",
       "$faultloggerd_path/interfaces/innerkits/faultloggerd_client:libfaultloggerd",
     ]

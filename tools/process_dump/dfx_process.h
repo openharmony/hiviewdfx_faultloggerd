@@ -19,7 +19,6 @@
 #include <memory>
 #include <string>
 
-#include "dfx_define.h"
 #include "dfx_elf.h"
 #include "dfx_maps.h"
 #include "dfx_thread.h"
@@ -45,7 +44,6 @@ public:
     uid_t GetUid() const;
     pid_t GetNsPid() const;
     bool GetNs() const;
-    int TidToNstid(const int tid, int& nstid);
     std::string GetProcessName() const;
     std::string GetFatalMessage() const;
     std::shared_ptr<DfxElfMaps> GetMaps() const;
