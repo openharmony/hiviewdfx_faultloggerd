@@ -90,6 +90,20 @@ HWTEST_F(FaultloggerdModuleTest, FaultloggerdServiceTest001, TestSize.Level0)
     WaitForServiceReady("faultloggerd");
 }
 
+#if defined(__BIONIC__)
+/**
+ * @tc.name: FaultloggerdDfxHandlerPreloadTest001
+ * @tc.desc: check whether libdfx_signalhandler.z.so is preloaded.
+ * @tc.type: FUNC
+ */
+HWTEST_F(FaultloggerdModuleTest, FaultloggerdDfxHandlerPreloadTest001, TestSize.Level0)
+{
+    std::string cmd = "cat /proc/" + std::to_string(getpid()) + "/maps";
+    std::string result = GetCmdResultFromPopen(cmd);
+    ASSERT_EQ(result.find("libdfx_signalhandler.z.so") != std::string::npos, true);
+}
+#endif
+
 /**
  * @tc.name: FaultloggerdClientFdRquestTest001
  * @tc.desc: check faultloggerd logging function
