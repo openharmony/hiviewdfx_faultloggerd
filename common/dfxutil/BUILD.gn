@@ -1,9 +1,9 @@
-# Copyright (c) 2021 Huawei Device Co., Ltd.
+# Copyright (c) 2022 Huawei Device Co., Ltd.
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
 #
-#     http://www.apache.org/licenses/LICENSE-2.0
+# http://www.apache.org/licenses/LICENSE-2.0
 #
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,45 +13,45 @@
 
 import("//base/hiviewdfx/faultloggerd/faultloggerd.gni")
 
+dfx_util_sources = [
+  "dfx_util.cpp",
+  "directory_ex.cpp",
+  "file_ex.cpp",
+]
+
 if (defined(ohos_lite)) {
-  executable("crasher_cpp") {
-    cflags = [ "-funwind-tables" ]
+  static_library("dfx_util") {
     visibility = [ "*:*" ]
     include_dirs = [
       ".",
       "$faultloggerd_path/common",
-      "$faultloggerd_path/tools/process_dump/",
-      "//commonlibrary/c_utils/base/include",
       "$hilog_lite_include_path",
     ]
-    sources = [ "dfx_crasher.cpp" ]
+    sources = dfx_util_sources
     deps = [
+      "$faultloggerd_path/common/dfxlog:static_common_log",
       "$hilog_lite_deps_path",
       "//third_party/bounds_checking_function:libsec_shared",
     ]
   }
 } else {
-  config("crasher_config") {
+  config("dfx_util_config") {
     visibility = [ ":*" ]
-
     include_dirs = [
       ".",
-      "//commonlibrary/c_utils/base/include",
+      "$faultloggerd_path/common",
+      "$faultloggerd_path/common/dfxlog",
     ]
-
-    cflags = [ "-DHAS_HITRACE" ]
   }
 
-  ohos_executable("crasher_cpp") {
-    configs = [ ":crasher_config" ]
-    sources = [ "dfx_crasher.cpp" ]
-
+  ohos_static_library("dfx_util") {
+    sources = dfx_util_sources
+    public_configs = [ ":dfx_util_config" ]
+    deps = [ "$faultloggerd_path/common/dfxlog:static_common_log" ]
     external_deps = [
       "c_utils:utils",
       "hilog_native:libhilog",
-      "hitrace_native:libhitracechain",
     ]
-
     part_name = "faultloggerd"
     subsystem_name = "hiviewdfx"
   }

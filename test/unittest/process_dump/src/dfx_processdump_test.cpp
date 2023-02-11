@@ -23,7 +23,6 @@
 #include <vector>
 
 #include "dfx_config.h"
-#include "dfx_cutil.h"
 #include "dfx_define.h"
 #include "dfx_util.h"
 #include "directory_ex.h"

@@ -144,7 +144,6 @@ void BacktraceLocalStatic::CleanUp()
         } else if (it->second->tid == ThreadContextStatus::ContextUnused) {
             it = g_contextMap.erase(it);
         } else {
-            DfxLogWarn("Failed to remove context for %d.", it->second->tid.load());
             it++;
         }
     }

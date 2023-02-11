@@ -28,27 +28,6 @@
 #define MAX_FRAME 64
 #define BUF_SZ 512
 
-#if defined(__arm__)
-typedef enum ARM_REG {
-    ARM_R0 = 0,
-    ARM_R1,
-    ARM_R2,
-    ARM_R3,
-    ARM_R4,
-    ARM_R5,
-    ARM_R6,
-    ARM_R7,
-    ARM_R8,
-    ARM_R9,
-    ARM_R10,
-    ARM_FP,
-    ARM_IP,
-    ARM_SP,
-    ARM_LR,
-    ARM_PC
-} ARM_REG;
-#endif
-
 __attribute__((noinline)) int RequestOutputLogFile(const struct ProcessDumpRequest* request)
 {
     struct FaultLoggerdRequest faultloggerdRequest;
@@ -102,22 +81,22 @@ __attribute__((noinline)) void CrashLocalUnwind(const int fd, const ucontext_t* 
     }
 
 #if defined(__arm__)
-    context->regs[ARM_R0] = uc->uc_mcontext.arm_r0;
-    context->regs[ARM_R1] = uc->uc_mcontext.arm_r1;
-    context->regs[ARM_R2] = uc->uc_mcontext.arm_r2;
-    context->regs[ARM_R3] = uc->uc_mcontext.arm_r3;
-    context->regs[ARM_R4] = uc->uc_mcontext.arm_r4;
-    context->regs[ARM_R5] = uc->uc_mcontext.arm_r5;
-    context->regs[ARM_R6] = uc->uc_mcontext.arm_r6;
-    context->regs[ARM_R7] = uc->uc_mcontext.arm_r7;
-    context->regs[ARM_R8] = uc->uc_mcontext.arm_r8;
-    context->regs[ARM_R9] = uc->uc_mcontext.arm_r9;
-    context->regs[ARM_R10] = uc->uc_mcontext.arm_r10;
-    context->regs[ARM_FP] = uc->uc_mcontext.arm_fp;
-    context->regs[ARM_IP] = uc->uc_mcontext.arm_ip;
-    context->regs[ARM_SP] = uc->uc_mcontext.arm_sp;
-    context->regs[ARM_LR] = uc->uc_mcontext.arm_lr;
-    context->regs[ARM_PC] = uc->uc_mcontext.arm_pc;
+    context->regs[UNW_ARM_R0] = uc->uc_mcontext.arm_r0;
+    context->regs[UNW_ARM_R1] = uc->uc_mcontext.arm_r1;
+    context->regs[UNW_ARM_R2] = uc->uc_mcontext.arm_r2;
+    context->regs[UNW_ARM_R3] = uc->uc_mcontext.arm_r3;
+    context->regs[UNW_ARM_R4] = uc->uc_mcontext.arm_r4;
+    context->regs[UNW_ARM_R5] = uc->uc_mcontext.arm_r5;
+    context->regs[UNW_ARM_R6] = uc->uc_mcontext.arm_r6;
+    context->regs[UNW_ARM_R7] = uc->uc_mcontext.arm_r7;
+    context->regs[UNW_ARM_R8] = uc->uc_mcontext.arm_r8;
+    context->regs[UNW_ARM_R9] = uc->uc_mcontext.arm_r9;
+    context->regs[UNW_ARM_R10] = uc->uc_mcontext.arm_r10;
+    context->regs[UNW_ARM_R11] = uc->uc_mcontext.arm_fp;
+    context->regs[UNW_ARM_R12] = uc->uc_mcontext.arm_ip;
+    context->regs[UNW_ARM_R13] = uc->uc_mcontext.arm_sp;
+    context->regs[UNW_ARM_R14] = uc->uc_mcontext.arm_lr;
+    context->regs[UNW_ARM_R15] = uc->uc_mcontext.arm_pc;
 #else
     // the ucontext.uc_mcontext.__reserved of libunwind is simplified with the system's own in aarch64
     if (memcpy_s(context, sizeof(unw_context_t), uc, sizeof(unw_context_t)) != 0) {

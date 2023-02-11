@@ -13,7 +13,7 @@
 
 import("//base/hiviewdfx/faultloggerd/faultloggerd.gni")
 
-faultloggerd_source = [
+faultloggerd_sources = [
   "fault_logger_config.cpp",
   "fault_logger_daemon.cpp",
   "fault_logger_pipe.cpp",
@@ -37,21 +37,21 @@ if (defined(ohos_lite)) {
 
     include_dirs = [
       ".",
-      "$faultloggerd_path/utils",
       "//commonlibrary/c_utils/base/include",
       "$faultloggerd_path/common",
       "$faultloggerd_path/common/dfxlog",
+      "$faultloggerd_path/common/dfxutil",
       "$faultloggerd_path/tools/process_dump",
       "$hilog_lite_include_path",
       "$faultloggerd_path/interfaces/innerkits/faultloggerd_client/include",
     ]
 
-    sources = faultloggerd_source
-    sources += [ "//base/hiviewdfx/faultloggerd/utils/directory_ex.cpp" ]
+    sources = faultloggerd_sources
 
     deps = [
       ":faultlogger.conf",
       "$faultloggerd_path/common/dfxlog:static_common_log",
+      "$faultloggerd_path/common/dfxutil:dfx_util",
       "$faultloggerd_path/interfaces/innerkits/faultloggerd_client:libfaultloggerd",
       "//base/hiviewdfx/hilog_lite/frameworks/featured:hilog_shared",
     ]
@@ -65,6 +65,7 @@ if (defined(ohos_lite)) {
       "//commonlibrary/c_utils/base/include",
       "$faultloggerd_path/common",
       "$faultloggerd_path/common/dfxlog",
+      "$faultloggerd_path/common/dfxutil",
       "$faultloggerd_path/tools/process_dump",
     ]
   }
@@ -90,14 +91,14 @@ if (defined(ohos_lite)) {
   ohos_executable("faultloggerd") {
     install_enable = true
     configs = [ ":faultloggerd_config" ]
-    sources = faultloggerd_source
+    sources = faultloggerd_sources
 
     cflags_cc = [ "-DDEBUG_CRASH_LOCAL_HANDLER" ]
 
     deps = [
       ":faultlogger.conf",
       "$faultloggerd_path/common/dfxlog:static_common_log",
-      "$faultloggerd_path/common/util:dfx_cutil",
+      "$faultloggerd_path/common/dfxutil:dfx_util",
       "$faultloggerd_path/interfaces/innerkits/faultloggerd_client:libfaultloggerd",
       "$faultloggerd_path/interfaces/innerkits/signal_handler:dfx_local_handler",
     ]

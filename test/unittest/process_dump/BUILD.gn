@@ -27,16 +27,15 @@ if (defined(ohos_lite)) {
         "mock/",
         "//commonlibrary/c_utils/base/include",
         "$faultloggerd_path/common",
+        "$faultloggerd_path/common/dfxutil",
         "$faultloggerd_path/tools/process_dump/test/mock/include/",
         "$faultloggerd_path/tools/process_dump",
-        "$faultloggerd_path/utils",
         "//third_party/libunwind/include/",
         "//third_party/googletest/googlemock/include",
         "$hilog_lite_include_path",
       ]
 
       sources = [
-        "//base/hiviewdfx/faultloggerd/utils/directory_ex.cpp",
         "src/dfx_base_test.cpp",
         "src/dfx_maps_test.cpp",
         "src/dfx_processdump_test.cpp",
@@ -47,7 +46,6 @@ if (defined(ohos_lite)) {
       ]
 
       deps = [
-        "$faultloggerd_path/common/util:dfx_cutil",
         "$faultloggerd_path/tools/process_dump:process_info_src",
         "//base/hiviewdfx/hilog_lite/frameworks/featured:hilog_shared",
         "//third_party/libunwind:libunwind",
@@ -70,6 +68,7 @@ if (defined(ohos_lite)) {
       "mock/",
       "//commonlibrary/c_utils/base/include",
       "$faultloggerd_path/common",
+      "$faultloggerd_path/common/dfxutil",
       "$faultloggerd_path/tools/process_dump/test/mock/include/",
       "$faultloggerd_path/tools/process_dump",
       "//third_party/libunwind/include/",
@@ -95,7 +94,6 @@ if (defined(ohos_lite)) {
     defines = [ "UNITTEST" ]
 
     deps = [
-      "$faultloggerd_path/common/util:dfx_cutil",
       "$faultloggerd_path/tools/process_dump:process_info_src",
       "//third_party/googletest:gmock_main",
       "//third_party/googletest:gtest_main",

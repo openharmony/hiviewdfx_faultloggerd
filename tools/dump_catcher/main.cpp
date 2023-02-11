@@ -25,14 +25,13 @@
 #include <unistd.h>
 #include <getopt.h>
 #include "dfx_define.h"
-#include "dfx_logger.h"
+#include "dfx_log.h"
 #include "directory_ex.h"
 #include "dump_catcher.h"
 #include "dfx_dump_catcher.h"
 
 #if defined(DEBUG_CRASH_LOCAL_HANDLER)
 #include "dfx_signal_local_handler.h"
-#include "dfx_cutil.h"
 #endif
 
 static const std::string DUMP_STACK_TAG_USAGE = "Usage:";

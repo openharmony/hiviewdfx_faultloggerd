@@ -21,7 +21,6 @@
 #include <cstdint>
 #include <string>
 #include <vector>
-#include "iosfwd"
 
 #ifdef __cplusplus
 extern "C" {

@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef UTILS_BASE_FILE_EX_H
-#define UTILS_BASE_FILE_EX_H
+#ifndef UTILS_FILE_EX_H
+#define UTILS_FILE_EX_H
 
 #include <string>
 

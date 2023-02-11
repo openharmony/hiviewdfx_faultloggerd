@@ -13,53 +13,86 @@
 
 import("//base/hiviewdfx/faultloggerd/faultloggerd.gni")
 
-config("dfx_backtrace_local_config") {
-  visibility = [ "*:*" ]
+backtrace_local_sources = [
+  "$faultloggerd_path/tools/process_dump/dfx_symbols_cache.cpp",
+  "local/backtrace_local_static.cpp",
+  "local/backtrace_local_thread.cpp",
+]
 
-  include_dirs = [
-    "//third_party/libunwind/include",
-    "//third_party/libunwind/src",
-    "$faultloggerd_path/tools/process_dump",
-    "$faultloggerd_path/interfaces/innerkits/dump_catcher/include",
-    "$faultloggerd_path/interfaces/rust/rustc_demangle",
-  ]
+if (defined(ohos_lite)) {
+  static_library("libbacktrace_local") {
+    visibility = [ "*:*" ]
 
-  cflags_cc = [ "-DRUSTC_DEMANGLE" ]
+    include_dirs = [
+      "//commonlibrary/c_utils/base/include",
+      "$faultloggerd_path/common",
+      "$faultloggerd_path/common/dfxlog",
+      "$faultloggerd_path/tools/process_dump",
+      "$faultloggerd_path/interfaces/innerkits/dump_catcher/include",
+      "//third_party/libunwind/include",
+      "//third_party/libunwind/src",
+      "$hilog_lite_include_path",
+    ]
 
-  defines = [
-    "HAVE_CONFIG_H",
-    "HAVE_ELF_H",
-    "HAVE_LINK_H",
-  ]
-}
+    sources = backtrace_local_sources
 
-ohos_static_library("libbacktrace_local") {
-  public_configs = [ ":dfx_backtrace_local_config" ]
+    defines = [
+      "HAVE_CONFIG_H",
+      "HAVE_ELF_H",
+      "HAVE_LINK_H",
+    ]
 
-  include_dirs = [
-    "//commonlibrary/c_utils/base/include",
-    "$faultloggerd_path/common",
-    "$faultloggerd_path/common/dfxlog",
-  ]
+    deps = [
+      "$faultloggerd_path/common/dfxlog:static_common_log",
+      "//base/hiviewdfx/hilog_lite/frameworks/featured:hilog_shared",
+      "//third_party/bounds_checking_function:libsec_shared",
+      "//third_party/libunwind:libunwind_local",
+    ]
+  }
+} else {
+  config("dfx_backtrace_local_config") {
+    visibility = [ "*:*" ]
 
-  sources = [
-    "$faultloggerd_path/tools/process_dump/dfx_symbols_cache.cpp",
-    "local/backtrace_local_static.cpp",
-    "local/backtrace_local_thread.cpp",
-  ]
+    include_dirs = [
+      "$faultloggerd_path/tools/process_dump",
+      "$faultloggerd_path/interfaces/innerkits/dump_catcher/include",
+      "$faultloggerd_path/interfaces/rust/rustc_demangle",
+      "//third_party/libunwind/include",
+      "//third_party/libunwind/src",
+    ]
 
-  deps = [
-    "$faultloggerd_path/common/dfxlog:static_common_log",
-    "$faultloggerd_path/interfaces/rust/rustc_demangle:rustc_demangle_static",
-    "//third_party/bounds_checking_function:libsec_shared",
-    "//third_party/libunwind:libunwind_local",
-  ]
+    cflags_cc = [ "-DRUSTC_DEMANGLE" ]
 
-  external_deps = [
-    "c_utils:utils",
-    "hilog_native:libhilog",
-  ]
+    defines = [
+      "HAVE_CONFIG_H",
+      "HAVE_ELF_H",
+      "HAVE_LINK_H",
+    ]
+  }
 
-  part_name = "faultloggerd"
-  subsystem_name = "hiviewdfx"
+  ohos_static_library("libbacktrace_local") {
+    public_configs = [ ":dfx_backtrace_local_config" ]
+
+    include_dirs = [
+      "//commonlibrary/c_utils/base/include",
+      "$faultloggerd_path/common",
+      "$faultloggerd_path/common/dfxlog",
+    ]
+
+    sources = backtrace_local_sources
+
+    deps = [
+      "$faultloggerd_path/common/dfxlog:static_common_log",
+      "$faultloggerd_path/interfaces/rust/rustc_demangle:rustc_demangle_static",
+      "//third_party/bounds_checking_function:libsec_shared",
+      "//third_party/libunwind:libunwind_local",
+    ]
+
+    external_deps = [
+      "c_utils:utils",
+      "hilog_native:libhilog",
+    ]
+    part_name = "faultloggerd"
+    subsystem_name = "hiviewdfx"
+  }
 }

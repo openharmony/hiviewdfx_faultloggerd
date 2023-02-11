@@ -29,8 +29,6 @@
 #include <ctime>
 #include <fcntl.h>
 #include <iostream>
-#include <libunwind.h>
-#include <libunwind_i-ohos.h>
 #include <pthread.h>
 #include <sched.h>
 #include <securec.h>
@@ -42,8 +40,12 @@
 #include <sys/uio.h>
 #include <sys/wait.h>
 #include <unistd.h>
+#include "dfx_logger.h"
 #include "dfx_symbols_cache.h"
 #include "file_ex.h"
+
+#include "libunwind.h"
+#include "libunwind_i-ohos.h"
 
 namespace OHOS {
 namespace HiviewDFX {
@@ -250,7 +252,6 @@ bool DfxUnwindLocal::ExecLocalDumpUnwinding(unw_context_t *ctx, size_t skipFramN
     unw_cursor_t cursor;
     unw_init_local_with_as(as_, &cursor, ctx);
 
-    int ret = 0;
     size_t index = 0;
     curIndex_ = 0;
     unw_word_t pc = 0;

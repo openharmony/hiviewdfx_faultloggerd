@@ -42,8 +42,6 @@
 #include "faultloggerd_socket.h"
 #include "file_ex.h"
 
-using namespace std::chrono;
-
 namespace OHOS {
 namespace HiviewDFX {
 using FaultLoggerdRequest = struct FaultLoggerdRequest;
@@ -430,7 +428,8 @@ int32_t FaultLoggerDaemon::CreateFileForRequest(int32_t type, int32_t pid, uint6
     }
 
     if (time == 0) {
-        time = static_cast<uint64_t>(duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count());
+        time = static_cast<uint64_t>(std::chrono::duration_cast<std::chrono::milliseconds>\
+            (std::chrono::system_clock::now().time_since_epoch()).count());
     }
 
     std::stringstream crashTime;

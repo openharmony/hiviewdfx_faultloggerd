@@ -24,12 +24,10 @@
 #include "dfx_define.h"
 #include "dfx_dump_request.h"
 #include "dfx_frame.h"
-#include "dfx_logger.h"
 #include "dfx_maps.h"
 #include "dfx_process.h"
 #include "dfx_symbols_cache.h"
 #include "dfx_thread.h"
-#include "dfx_util.h"
 #include "nocopyable.h"
 
 namespace OHOS {

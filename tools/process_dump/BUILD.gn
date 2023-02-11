@@ -30,7 +30,6 @@ processdump_sources = [
   "dfx_thread.cpp",
   "dfx_unwind_local.cpp",
   "dfx_unwind_remote.cpp",
-  "dfx_util.cpp",
   "process_dumper.cpp",
 ]
 
@@ -50,6 +49,7 @@ if (defined(ohos_lite)) {
       ".",
       "$faultloggerd_path/common",
       "$faultloggerd_path/common/dfxlog",
+      "$faultloggerd_path/common/dfxutil",
       "//commonlibrary/c_utils/base/include",
       "$faultloggerd_path/interfaces/innerkits/faultloggerd_client/include",
       "$hilog_lite_include_path",
@@ -70,6 +70,7 @@ if (defined(ohos_lite)) {
 
     deps = [
       "$faultloggerd_path/common/dfxlog:static_common_log",
+      "$faultloggerd_path/common/dfxutil:dfx_util",
       "$faultloggerd_path/interfaces/innerkits/faultloggerd_client:libfaultloggerd",
       "//base/hiviewdfx/hilog_lite/frameworks/featured:hilog_shared",
       "//third_party/libunwind:libunwind",
@@ -83,6 +84,7 @@ if (defined(ohos_lite)) {
       ".",
       "$faultloggerd_path/common",
       "$faultloggerd_path/common/dfxlog",
+      "$faultloggerd_path/common/dfxutil",
       "$faultloggerd_path/utils",
       "//commonlibrary/c_utils/base/include",
       "$faultloggerd_path/interfaces/innerkits/faultloggerd_client/include",
@@ -97,7 +99,6 @@ if (defined(ohos_lite)) {
 
     sources = processdump_sources
     sources += [
-      "//base/hiviewdfx/faultloggerd/utils/directory_ex.cpp",
       "cppcrash_reporter.cpp",
       "main.cpp",
     ]
@@ -115,6 +116,7 @@ if (defined(ohos_lite)) {
 
     deps = [
       "$faultloggerd_path/common/dfxlog:static_common_log",
+      "$faultloggerd_path/common/dfxutil:dfx_util",
       "$faultloggerd_path/interfaces/innerkits/faultloggerd_client:libfaultloggerd",
       "//base/hiviewdfx/hilog_lite/frameworks/featured:hilog_shared",
       "//third_party/libunwind:libunwind",
@@ -128,6 +130,7 @@ if (defined(ohos_lite)) {
       ".",
       "$faultloggerd_path/common",
       "$faultloggerd_path/common/dfxlog",
+      "$faultloggerd_path/common/dfxutil",
       "$faultloggerd_path/interfaces/rust/rustc_demangle",
       "//commonlibrary/c_utils/base/include",
     ]
@@ -154,6 +157,7 @@ if (defined(ohos_lite)) {
 
     deps = [
       "$faultloggerd_path/common/dfxlog:static_common_log",
+      "$faultloggerd_path/common/dfxutil:dfx_util",
       "$faultloggerd_path/interfaces/innerkits/faultloggerd_client:libfaultloggerd",
       "$faultloggerd_path/interfaces/rust/rustc_demangle:rustc_demangle_static",
       "//third_party/libunwind:libunwind",
@@ -192,7 +196,7 @@ if (defined(ohos_lite)) {
 
     deps = [
       "$faultloggerd_path/common/dfxlog:static_common_log",
-      "$faultloggerd_path/common/util:dfx_cutil",
+      "$faultloggerd_path/common/dfxutil:dfx_util",
       "$faultloggerd_path/interfaces/innerkits/faultloggerd_client:libfaultloggerd",
       "$faultloggerd_path/interfaces/innerkits/signal_handler:dfx_local_handler",
       "$faultloggerd_path/interfaces/rust/rustc_demangle:rustc_demangle_static",

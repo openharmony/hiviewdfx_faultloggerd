@@ -21,63 +21,28 @@
 #include <securec.h>
 #include <sys/socket.h>
 #include <sys/syscall.h>
-#include <sys/time.h>
 #include <sys/un.h>
 #include <unistd.h>
 #include "dfx_define.h"
 #include "dfx_log.h"
+#include "dfx_util.h"
 #include "faultloggerd_socket.h"
 
 static const int32_t SOCKET_TIMEOUT = 5;
 
-bool ReadStringFromFile(const char *path, char *buf, size_t len)
-{
-    if ((len <= 1) || (buf == nullptr) || (path == nullptr)) {
-        return false;
-    }
-
-    char realPath[PATH_MAX];
-    if (realpath(path, realPath) == nullptr) {
-        return false;
-    }
-
-    FILE *fp = fopen(realPath, "r");
-    if (fp == nullptr) {
-        // log failure
-        return false;
-    }
-
-    char *ptr = buf;
-    for (size_t i = 0; i < len; i++) {
-        int c = getc(fp);
-        if (c == EOF) {
-            *ptr++ = 0x00;
-            break;
-        } else {
-            *ptr++ = c;
-        }
-    }
-    fclose(fp);
-    return false;
-}
-
-void FillRequest(int32_t type, FaultLoggerdRequest *request)
+static void FillRequest(int32_t type, FaultLoggerdRequest *request)
 {
     if (request == nullptr) {
         DfxLogError("nullptr request");
         return;
     }
 
-    struct timeval time;
-    (void)gettimeofday(&time, nullptr);
-
     request->type = type;
     request->pid = getpid();
     request->tid = gettid();
     request->uid = getuid();
-    request->time = (static_cast<uint64_t>(time.tv_sec) * 1000) + // 1000 : second to millsecond convert ratio
-        (static_cast<uint64_t>(time.tv_usec) / 1000); // 1000 : microsecond to millsecond convert ratio
-    ReadStringFromFile("/proc/self/cmdline", request->module, sizeof(request->module));
+    request->time = OHOS::HiviewDFX::GetTimeMilliSeconds();
+    OHOS::HiviewDFX::ReadStringFromFile("/proc/self/cmdline", request->module, sizeof(request->module));
 }
 
 int32_t RequestFileDescriptor(int32_t type)

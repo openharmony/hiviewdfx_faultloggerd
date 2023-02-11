@@ -37,7 +37,7 @@ if (defined(ohos_lite)) {
     sources = [ "signal_handler_test.cpp" ]
 
     deps = [
-      "$faultloggerd_path/common/util:dfx_cutil",
+      "$faultloggerd_path/common/cutil:dfx_cutil",
       "$faultloggerd_path/interfaces/innerkits/signal_handler:dfx_local_handler",
       "//third_party/googletest:gtest_main",
     ]

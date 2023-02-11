@@ -399,6 +399,7 @@ void ProcessDumper::WriteDumpRes(int32_t res)
     }
     if (resFd_ > 0) {
         write(resFd_, &dumpResMsg, sizeof(struct DumpResMsg));
+        close(resFd_);
     } else {
         if (res != DUMP_ESUCCESS) {
             DfxRingBufferWrapper::GetInstance().AppendMsg("Result:\n");

@@ -25,17 +25,18 @@ if (defined(ohos_lite)) {
       "$faultloggerd_path/tools/process_dump/",
       "$faultloggerd_path/common",
       "$faultloggerd_path/common/dfxlog",
+      "$faultloggerd_path/common/dfxutil",
       "$hilog_lite_include_path",
     ]
 
     sources = [
-      "//base/hiviewdfx/faultloggerd/tools/process_dump/dfx_logger.cpp",
       "faultloggerd_client.cpp",
       "faultloggerd_socket.cpp",
     ]
 
     deps = [
       "$faultloggerd_path/common/dfxlog:static_common_log",
+      "$faultloggerd_path/common/dfxutil:dfx_util",
       "//base/hiviewdfx/hilog_lite/frameworks/featured:hilog_shared",
       "//base/startup/init/interfaces/innerkits:libbegetutil",
     ]
@@ -50,20 +51,22 @@ if (defined(ohos_lite)) {
       "//base/startup/init/interfaces/innerkits/include",
       "$faultloggerd_path/common",
       "$faultloggerd_path/common/dfxlog",
+      "$faultloggerd_path/common/dfxutil",
       "$faultloggerd_path/tools/process_dump/",
     ]
   }
 
   ohos_shared_library("libfaultloggerd") {
     public_configs = [ ":faultloggerd_client_config" ]
-
-    deps = [ "$faultloggerd_path/common/dfxlog:static_common_log" ]
     sources = [
-      "//base/hiviewdfx/faultloggerd/tools/process_dump/dfx_logger.cpp",
       "faultloggerd_client.cpp",
       "faultloggerd_socket.cpp",
     ]
 
+    deps = [
+      "$faultloggerd_path/common/dfxlog:static_common_log",
+      "$faultloggerd_path/common/dfxutil:dfx_util",
+    ]
     external_deps = [
       "c_utils:utils",
       "hilog_native:libhilog",

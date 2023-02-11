@@ -21,7 +21,6 @@
 #include <ucontext.h>
 #include <vector>
 #include "dfx_define.h"
-#include "dfx_util.h"
 
 namespace OHOS {
 namespace HiviewDFX {
