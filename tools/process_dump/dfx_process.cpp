@@ -47,7 +47,7 @@ void DfxProcess::FillProcessName()
 
     char buf[NAME_LEN];
     ReadStringFromFile(path, buf, NAME_LEN);
-    processName_ = std::string(buf);
+    TrimAndDupStr(std::string(buf), processName_);
 }
 
 std::shared_ptr<DfxProcess> DfxProcess::CreateProcessWithKeyThread(pid_t pid, std::shared_ptr<DfxThread> keyThread)
