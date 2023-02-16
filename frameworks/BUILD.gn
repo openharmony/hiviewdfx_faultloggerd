@@ -74,7 +74,6 @@ if (defined(ohos_lite)) {
     public_configs = [ ":dfx_backtrace_local_config" ]
 
     include_dirs = [
-      "//commonlibrary/c_utils/base/include",
       "$faultloggerd_path/common",
       "$faultloggerd_path/common/dfxlog",
     ]

@@ -57,7 +57,6 @@ public:
     bool IsThreadInitialized();
     void ClearLastFrame();
     void AddFrame(std::shared_ptr<DfxFrame> frame);
-    void ReadThreadName();
 
 private:
     enum class ThreadStatus {

@@ -16,19 +16,21 @@ import("//base/hiviewdfx/faultloggerd/faultloggerd.gni")
 config("dfx_backtrace_config") {
   visibility = [ "*:*" ]
 
-  include_dirs = [ "include" ]
+  include_dirs = [
+    "include",
+    "$faultloggerd_path/interfaces/innerkits/dump_catcher/include",
+  ]
 }
 
 ohos_static_library("libbacktrace_utils") {
   public_configs = [ ":dfx_backtrace_config" ]
 
-  include_dirs = [ "include" ]
-
   sources = [ "backtrace_utils.cpp" ]
+
+  deps = [ "$faultloggerd_path/frameworks:libbacktrace_local" ]
 
   external_deps = [
     "c_utils:utils",
-    "faultloggerd:lib_dfx_dump_catcher",
     "hilog_native:libhilog",
   ]
 

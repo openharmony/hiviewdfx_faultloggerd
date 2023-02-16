@@ -52,16 +52,16 @@ public:
     static BacktraceLocalStatic& GetInstance();
     ~BacktraceLocalStatic() = default;
     // ThreadContext is released after calling ReleaseThread
-    static std::shared_ptr<ThreadContext> GetThreadContext(int32_t tid);
-    static void ReleaseThread(int32_t tid);
-    static void CleanUp();
+    std::shared_ptr<ThreadContext> GetThreadContext(int32_t tid);
+    void ReleaseThread(int32_t tid);
+    void CleanUp();
 private:
-    BacktraceLocalStatic();
+    BacktraceLocalStatic() = default;
     DISALLOW_COPY_AND_MOVE(BacktraceLocalStatic);
     static void CopyContextAndWaitTimeout(int sig, siginfo_t *si, void *context);
-    static bool InstallSigHandler();
-    static void UninstallSigHandler();
-    static bool SignalRequestThread(int32_t tid, ThreadContext* ctx);
+    bool InstallSigHandler();
+    void UninstallSigHandler();
+    bool SignalRequestThread(int32_t tid, ThreadContext* ctx);
 };
 } // namespace HiviewDFX
 } // namespace OHOS

@@ -92,10 +92,6 @@ BacktraceLocalStatic& BacktraceLocalStatic::GetInstance()
     return instance;
 }
 
-BacktraceLocalStatic::BacktraceLocalStatic()
-{
-}
-
 std::shared_ptr<ThreadContext> BacktraceLocalStatic::GetThreadContext(int32_t tid)
 {
     std::unique_lock<std::mutex> lock(g_localMutex);

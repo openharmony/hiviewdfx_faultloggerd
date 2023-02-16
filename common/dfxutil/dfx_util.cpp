@@ -216,6 +216,30 @@ bool TrimAndDupStr(const std::string &source, std::string &str)
     return true;
 }
 
+void ReadThreadName(const int tid, std::string& str)
+{
+    char path[NAME_LEN] = {0};
+    if (snprintf_s(path, sizeof(path), sizeof(path) - 1, "/proc/%d/comm", tid) <= 0) {
+        return;
+    }
+
+    char buf[NAME_LEN];
+    ReadStringFromFile(path, buf, NAME_LEN);
+    TrimAndDupStr(std::string(buf), str);
+}
+
+void ReadProcessName(const int pid, std::string& str)
+{
+    char path[NAME_LEN] = "\0";
+    if (snprintf_s(path, sizeof(path), sizeof(path) - 1, "/proc/%d/cmdline", pid) <= 0) {
+        return;
+    }
+
+    char buf[NAME_LEN];
+    ReadStringFromFile(path, buf, NAME_LEN);
+    TrimAndDupStr(std::string(buf), str);
+}
+
 uint64_t GetTimeMilliSeconds(void)
 {
     struct timeval timev;

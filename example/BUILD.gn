@@ -21,6 +21,7 @@ if (defined(ohos_lite)) {
       "$faultloggerd_path/common/dfxutil/file_ex.cpp",
       "$faultloggerd_path/frameworks/local/backtrace_local_static.cpp",
       "$faultloggerd_path/frameworks/local/backtrace_local_thread.cpp",
+      "$faultloggerd_path/interfaces/innerkits/dump_catcher/dfx_dump_catcher.cpp",
       "$faultloggerd_path/tools/process_dump/dfx_symbols_cache.cpp",
     ]
 
@@ -33,6 +34,7 @@ if (defined(ohos_lite)) {
       "$faultloggerd_path/common",
       "$faultloggerd_path/common/dfxlog",
       "$faultloggerd_path/common/dfxutil",
+      "$faultloggerd_path/interfaces/innerkits/faultloggerd_client/include",
       "$faultloggerd_path/tools/process_dump",
       "$hilog_lite_include_path",
       "//third_party/libunwind/include",
