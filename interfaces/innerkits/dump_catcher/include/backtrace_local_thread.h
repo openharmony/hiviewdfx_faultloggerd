@@ -50,7 +50,8 @@ public:
     const std::vector<NativeFrame>& GetFrames() const;
 
     static std::string GetNativeFrameStr(const NativeFrame& frame);
-
+    static bool GetBacktraceFrames(int32_t tid, size_t skipFrameNum, std::vector<NativeFrame>& frames);
+    static bool GetBacktraceString(int32_t tid, size_t skipFrameNum, std::string& out);
 private:
     bool GetUnwindContext(unw_context_t& context);
     bool UnwindCurrentThread(unw_addr_space_t as, std::shared_ptr<DfxSymbolsCache> cache, size_t skipFrameNum);

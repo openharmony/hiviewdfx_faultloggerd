@@ -31,6 +31,8 @@ namespace HiviewDFX {
     bool TidToNstid(const int pid, const int tid, int& nstid);
     bool ReadStringFromFile(const char *path, char *buf, size_t len);
     bool TrimAndDupStr(const std::string &source, std::string &str);
+    void ReadThreadName(const int tid, std::string& str);
+    void ReadProcessName(const int pid, std::string& str);
     uint64_t GetTimeMilliSeconds(void);
     std::string GetCurrentTimeStr(uint64_t current = 0);
     int PrintFormat(char *buf, int size, const char *format, ...);

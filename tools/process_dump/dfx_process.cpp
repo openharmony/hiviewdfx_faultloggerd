@@ -38,23 +38,13 @@
 namespace OHOS {
 namespace HiviewDFX {
 
-void DfxProcess::FillProcessName()
-{
-    char path[NAME_LEN] = "\0";
-    if (snprintf_s(path, sizeof(path), sizeof(path) - 1, "/proc/%d/cmdline", pid_) <= 0) {
-        return;
-    }
-
-    char buf[NAME_LEN];
-    ReadStringFromFile(path, buf, NAME_LEN);
-    TrimAndDupStr(std::string(buf), processName_);
-}
-
 std::shared_ptr<DfxProcess> DfxProcess::CreateProcessWithKeyThread(pid_t pid, std::shared_ptr<DfxThread> keyThread)
 {
     auto dfxProcess = std::make_shared<DfxProcess>();
     dfxProcess->SetPid(pid);
-    dfxProcess->FillProcessName();
+    std::string processName;
+    ReadProcessName(pid, processName);
+    dfxProcess->SetProcessName(processName);
 
     if (!dfxProcess->InitProcessMaps()) {
         DfxLogWarn("Fail to init process maps.");
@@ -148,7 +138,9 @@ void DfxProcess::InsertThreadNode(pid_t tid, pid_t nsTid, bool attach)
     for (auto iter = threads_.begin(); iter != threads_.end(); iter++) {
         if ((*iter)->GetRealTid() == nsTid) {
             (*iter)->SetThreadId(tid);
-            (*iter)->ReadThreadName();
+            std::string threadName;
+            ReadThreadName(tid, threadName);
+            (*iter)->SetThreadName(threadName);
             return;
         }
     }

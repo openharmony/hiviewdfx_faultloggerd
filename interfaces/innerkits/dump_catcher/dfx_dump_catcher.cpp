@@ -95,21 +95,10 @@ bool DfxDumpCatcher::DoDumpCurrTid(const size_t skipFrameNum, std::string& msg)
 {
     bool ret = false;
     int currTid = syscall(SYS_gettid);
-    unw_addr_space_t as;
-    unw_init_local_address_space(&as);
-    if (as == nullptr) {
-        return false;
-    }
-
-    auto cache = std::make_shared<DfxSymbolsCache>();
-    BacktraceLocalThread thread(BACKTRACE_CURRENT_THREAD);
-    ret = thread.Unwind(as, cache, skipFrameNum + 1);
-    if (ret) {
-        msg.append(thread.GetFramesStr());
-    } else {
+    ret = BacktraceLocalThread::GetBacktraceString(BACKTRACE_CURRENT_THREAD, skipFrameNum + 1, msg);
+    if (!ret) {
         msg.append("Failed to dump curr thread:" + std::to_string(currTid) + ".\n");
     }
-    unw_destroy_local_address_space(as);
     DfxLogDebug("%s :: DoDumpCurrTid :: return %d.", DFXDUMPCATCHER_TAG.c_str(), ret);
     return ret;
 }
@@ -122,22 +111,10 @@ bool DfxDumpCatcher::DoDumpLocalTid(const int tid, std::string& msg)
         return ret;
     }
 
-    unw_addr_space_t as;
-    unw_init_local_address_space(&as);
-    if (as == nullptr) {
-        DfxLogError("Failed to init address space.");
-        return ret;
-    }
-
-    auto cache = std::make_shared<DfxSymbolsCache>();
-    BacktraceLocalThread thread(tid);
-    ret = thread.Unwind(as, cache, 0);
-    if (ret) {
-        msg.append(thread.GetFramesStr());
-    } else {
+    ret = BacktraceLocalThread::GetBacktraceString(tid, 0, msg);
+    if (!ret) {
         msg.append("Failed to dump thread:" + std::to_string(tid) + ".\n");
     }
-    unw_destroy_local_address_space(as);
     DfxLogDebug("%s :: DoDumpLocalTid :: return %d.", DFXDUMPCATCHER_TAG.c_str(), ret);
     return ret;
 }

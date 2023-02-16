@@ -47,7 +47,7 @@ DfxThread::DfxThread(pid_t pid, pid_t tid, pid_t nsTid, const ucontext_t &contex
 #endif
     regs_ = reg;
 
-    ReadThreadName();
+    ReadThreadName(tid_, threadName_);
     threadStatus_ = ThreadStatus::THREAD_STATUS_INIT;
 }
 
@@ -55,20 +55,8 @@ DfxThread::DfxThread(pid_t pid, pid_t tid, pid_t nsTid)
     :isCrashThread_(false), pid_(pid), tid_(tid), nsTid_(nsTid), unwStopReason_(-1)
 {
     regs_ = nullptr;
-    ReadThreadName();
+    ReadThreadName(tid_, threadName_);
     threadStatus_ = ThreadStatus::THREAD_STATUS_INIT;
-}
-
-void DfxThread::ReadThreadName()
-{
-    char path[NAME_LEN] = {0};
-    if (snprintf_s(path, sizeof(path), sizeof(path) - 1, "/proc/%d/comm", tid_) <= 0) {
-        return;
-    }
-
-    char buf[NAME_LEN];
-    ReadStringFromFile(path, buf, NAME_LEN);
-    TrimAndDupStr(std::string(buf), threadName_);
 }
 
 bool DfxThread::IsThreadInitialized()

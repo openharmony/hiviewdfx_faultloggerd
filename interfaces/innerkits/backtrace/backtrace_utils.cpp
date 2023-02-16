@@ -23,7 +23,6 @@
 
 #include <hilog/log.h>
 
-#include "dfx_dump_catcher.h"
 #include "backtrace_local_thread.h"
 
 namespace OHOS {
@@ -33,62 +32,33 @@ namespace {
 #undef LOG_TAG
 #define LOG_TAG "DfxBacktrace"
 #define LOG_DOMAIN 0xD002D11
-bool GetBacktraceFrames(std::vector<NativeFrame>& frames)
-{
-    auto catcher = std::make_shared<OHOS::HiviewDFX::DfxDumpCatcher>();
-    static std::mutex mutex;
-    std::unique_lock<std::mutex> lock(mutex);
-    if (!catcher->InitFrameCatcher()) {
-        return false;
-    }
 
-    if (catcher->CatchFrame(frames) == false) {
-        return false;
-    }
-
-    catcher->DestroyFrameCatcher();
-    return true;
-}
-
-void PrintStr(int32_t fd, const std::string& line)
-{
-    if (fd < 0) {
-        // print to hilog
-        HILOG_INFO(LOG_CORE, " %{public}s", line.c_str());
-        return;
-    }
-
-    dprintf(fd, "    %s", line.c_str());
-}
+constexpr int SKIP_ONE_FRAME = 1; // skip current frame
 }
 
 bool PrintBacktrace(int32_t fd)
 {
     std::vector<NativeFrame> frames;
-    if (!GetBacktraceFrames(frames)) {
+    bool ret = BacktraceLocalThread::GetBacktraceFrames(BACKTRACE_CURRENT_THREAD, SKIP_ONE_FRAME, frames);
+    if (!ret) {
         return false;
     }
 
     for (auto const& frame : frames) {
         auto line = BacktraceLocalThread::GetNativeFrameStr(frame);
-        PrintStr(fd, line);
+        if (fd < 0) {
+            // print to hilog
+            HILOG_INFO(LOG_CORE, " %{public}s", line.c_str());
+        } else {
+            dprintf(fd, "    %s", line.c_str());
+        }
     }
-    return true;
+    return ret;
 }
 
 bool GetBacktrace(std::string& out)
 {
-    std::vector<NativeFrame> frames;
-    if (!GetBacktraceFrames(frames)) {
-        return false;
-    }
-
-    std::stringstream ss;
-    for (auto const& frame : frames) {
-        ss << BacktraceLocalThread::GetNativeFrameStr(frame);
-    }
-    out = ss.str();
-    return true;
+    return BacktraceLocalThread::GetBacktraceString(BACKTRACE_CURRENT_THREAD, SKIP_ONE_FRAME, out);
 }
 } // namespace HiviewDFX
 } // namespace OHOS
