@@ -94,9 +94,9 @@ DfxDumpCatcher::~DfxDumpCatcher()
 bool DfxDumpCatcher::DoDumpCurrTid(const size_t skipFrameNum, std::string& msg)
 {
     bool ret = false;
-    int currTid = syscall(SYS_gettid);
-    ret = BacktraceLocalThread::GetBacktraceString(BACKTRACE_CURRENT_THREAD, skipFrameNum + 1, msg);
+    ret = BacktraceLocalThread::GetBacktraceString(msg, BACKTRACE_CURRENT_THREAD, skipFrameNum + 1, false);
     if (!ret) {
+        int currTid = syscall(SYS_gettid);
         msg.append("Failed to dump curr thread:" + std::to_string(currTid) + ".\n");
     }
     DfxLogDebug("%s :: DoDumpCurrTid :: return %d.", DFXDUMPCATCHER_TAG.c_str(), ret);
@@ -111,7 +111,7 @@ bool DfxDumpCatcher::DoDumpLocalTid(const int tid, std::string& msg)
         return ret;
     }
 
-    ret = BacktraceLocalThread::GetBacktraceString(tid, 0, msg);
+    ret = BacktraceLocalThread::GetBacktraceString(msg, tid, 0, false);
     if (!ret) {
         msg.append("Failed to dump thread:" + std::to_string(tid) + ".\n");
     }
@@ -554,7 +554,7 @@ bool DfxDumpCatcher::CatchFrame(int tid, std::vector<NativeFrame>& frames, bool 
 
     std::unique_lock<std::mutex> lck(dumpCatcherMutex_);
     BacktraceLocalThread thread(tid);
-    if (!thread.Unwind(as_, cache_, 0, releaseThread)) {
+    if (!thread.Unwind(as_, cache_, 0, false, releaseThread)) {
         return false;
     }
 
