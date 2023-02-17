@@ -31,11 +31,11 @@ namespace OHOS {
 namespace HiviewDFX {
 class BacktraceLocalThread {
 public:
-    BacktraceLocalThread(int32_t tid);
+    explicit BacktraceLocalThread(int32_t tid);
     ~BacktraceLocalThread();
 
     bool Unwind(unw_addr_space_t as, std::shared_ptr<DfxSymbolsCache> cache, size_t skipFrameNum,
-        bool releaseThread = true);
+        bool fast = false, bool releaseThread = true);
     void ReleaseThread();
 
     bool UnwindWithContext(unw_addr_space_t as, unw_context_t& context, std::shared_ptr<DfxSymbolsCache> cache,
@@ -50,11 +50,12 @@ public:
     const std::vector<NativeFrame>& GetFrames() const;
 
     static std::string GetNativeFrameStr(const NativeFrame& frame);
-    static bool GetBacktraceFrames(int32_t tid, size_t skipFrameNum, std::vector<NativeFrame>& frames);
-    static bool GetBacktraceString(int32_t tid, size_t skipFrameNum, std::string& out);
+    static bool GetBacktraceFrames(std::vector<NativeFrame>& frames, int32_t tid, size_t skipFrameNum, bool fast);
+    static bool GetBacktraceString(std::string& out, int32_t tid, size_t skipFrameNum, bool fast);
 private:
     bool GetUnwindContext(unw_context_t& context);
-    bool UnwindCurrentThread(unw_addr_space_t as, std::shared_ptr<DfxSymbolsCache> cache, size_t skipFrameNum);
+    bool UnwindCurrentThread(unw_addr_space_t as, std::shared_ptr<DfxSymbolsCache> cache, 
+        size_t skipFrameNum, bool fast = false);
     void UpdateFrameFuncName(unw_addr_space_t as, std::shared_ptr<DfxSymbolsCache> cache, NativeFrame& frame);
 #ifdef __aarch64__
     bool Step(uintptr_t& fp, uintptr_t& pc);

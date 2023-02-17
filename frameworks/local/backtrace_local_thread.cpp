@@ -19,7 +19,7 @@
 
 #include <link.h>
 #include <unistd.h>
-
+#include <mutex>
 #include <libunwind.h>
 #include <libunwind_i-ohos.h>
 #include <securec.h>
@@ -131,39 +131,63 @@ bool BacktraceLocalThread::UnwindWithContext(unw_addr_space_t as, unw_context_t&
 }
 
 bool BacktraceLocalThread::UnwindCurrentThread(unw_addr_space_t as, std::shared_ptr<DfxSymbolsCache> cache,
-    size_t skipFrameNum)
+    size_t skipFrameNum, bool fast)
 {
+    bool ret = false;
     unw_context_t context;
     (void)memset_s(&context, sizeof(unw_context_t), 0, sizeof(unw_context_t));
     unw_getcontext(&context);
-    return UnwindWithContext(as, context, cache, skipFrameNum + 1);
+
+    if (fast) {
+#ifdef __aarch64__
+        ret = UnwindWithContextByFramePointer(context, skipFrameNum + 1);
+        UpdateFrameInfo();
+#endif
+    }
+    if (!ret) {
+        ret = UnwindWithContext(as, context, cache, skipFrameNum + 1);
+    }
+    return ret;
 }
 
 bool BacktraceLocalThread::Unwind(unw_addr_space_t as, std::shared_ptr<DfxSymbolsCache> cache,
-    size_t skipFrameNum, bool releaseThread)
+    size_t skipFrameNum, bool fast, bool releaseThread)
 {
-    if (as == nullptr) {
+    if (!fast && as == nullptr) {
         return false;
     }
 
+    static std::mutex mutex;
+    std::unique_lock<std::mutex> lock(mutex);
+    bool ret = false;
+
     if (tid_ == BACKTRACE_CURRENT_THREAD) {
-        return UnwindCurrentThread(as, cache, skipFrameNum + 1);
+        return UnwindCurrentThread(as, cache, skipFrameNum + 1, fast);
     } else if (tid_ < BACKTRACE_CURRENT_THREAD) {
-        return false;
+        return ret;
     }
 
     auto threadContext = BacktraceLocalStatic::GetInstance().GetThreadContext(tid_);
     if (threadContext == nullptr) {
-        return false;
+        return ret;
     }
 
     if (threadContext->ctx == nullptr) {
         // should never happen
-        BacktraceLocalStatic::GetInstance().ReleaseThread(tid_);
-        return false;
+        ReleaseThread();
+        return ret;
     }
 
-    bool ret = UnwindWithContext(as, *(threadContext->ctx), cache, skipFrameNum);
+    if (fast) {
+#ifdef __aarch64__
+        ret = UnwindWithContextByFramePointer(*(threadContext->ctx), skipFrameNum);
+        UpdateFrameInfo();
+#endif
+    }
+
+    if (!ret) {
+        ret = UnwindWithContext(as, *(threadContext->ctx), cache, skipFrameNum);
+    }
 
     if (releaseThread) {
         ReleaseThread();
@@ -212,11 +236,9 @@ std::string BacktraceLocalThread::GetNativeFrameStr(const NativeFrame& frame)
     return ss.str();
 }
 
-bool BacktraceLocalThread::GetBacktraceFrames(int32_t tid, size_t skipFrameNum, std::vector<NativeFrame>& frames)
+bool BacktraceLocalThread::GetBacktraceFrames(std::vector<NativeFrame>& frames, 
+    int32_t tid, size_t skipFrameNum, bool fast)
 {
-    static std::mutex mutex;
-    std::unique_lock<std::mutex> lock(mutex);
-
     unw_addr_space_t as;
     unw_init_local_address_space(&as);
     if (as == nullptr) {
@@ -225,7 +247,7 @@ bool BacktraceLocalThread::GetBacktraceFrames(int32_t tid, size_t skipFrameNum, 
     auto cache = std::make_shared<DfxSymbolsCache>();
 
     BacktraceLocalThread thread(tid);
-    if (!thread.Unwind(as, cache, skipFrameNum)) {
+    if (!thread.Unwind(as, cache, skipFrameNum, fast)) {
         return false;
     }
 
@@ -236,23 +258,25 @@ bool BacktraceLocalThread::GetBacktraceFrames(int32_t tid, size_t skipFrameNum, 
     return true;
 }
 
-bool BacktraceLocalThread::GetBacktraceString(int32_t tid, size_t skipFrameNum, std::string& out)
+bool BacktraceLocalThread::GetBacktraceString(std::string& out, 
+    int32_t tid, size_t skipFrameNum, bool fast)
 {
-    std::vector<NativeFrame> frames;
-    if (tid == BACKTRACE_CURRENT_THREAD) {
-        skipFrameNum += 1;
+    unw_addr_space_t as;
+    unw_init_local_address_space(&as);
+    if (as == nullptr) {
+        return false;
     }
-    bool ret = GetBacktraceFrames(tid, skipFrameNum, frames);
-    if (!ret) {
+    auto cache = std::make_shared<DfxSymbolsCache>();
+
+    BacktraceLocalThread thread(tid);
+    if (!thread.Unwind(as, cache, skipFrameNum, fast)) {
         return false;
     }
 
-    std::stringstream ss;
-    for (auto const& frame : frames) {
-        ss << GetNativeFrameStr(frame);
-    }
-    out = ss.str();
-    return ret;
+    out = thread.GetFramesStr();
+
+    unw_destroy_local_address_space(as);
+    return true;
 }
 
 void BacktraceLocalThread::ReleaseThread()

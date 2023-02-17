@@ -170,7 +170,7 @@ std::string DfxUnwindLocal::CollectUnwindResult(int32_t tid)
 
     for (uint32_t i = 0; i < curIndex_; ++i) {
         ResolveFrameInfo(i, frames_[i]);
-        result << frames_[i].PrintFrame();
+        result << frames_[i].ToString();
     }
 
     result << std::endl;

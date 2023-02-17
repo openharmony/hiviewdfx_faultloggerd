@@ -22,9 +22,9 @@
 namespace OHOS {
 namespace HiviewDFX {
 
-bool PrintBacktrace(int32_t fd = -1);
+bool PrintBacktrace(int32_t fd = -1, bool fast = false);
 
-bool GetBacktrace(std::string& out);
+bool GetBacktrace(std::string& out, bool fast = false);
 
 } // namespace HiviewDFX
 } // namespace OHOS

@@ -297,7 +297,7 @@ bool DfxUnwindRemote::UpdateAndPrintFrameInfo(unw_cursor_t& cursor, std::shared_
 
     bool ret = frame->GetFrameIndex() < MIN_VALID_FRAME_COUNT || isValidFrame;
     if (ret) {
-        DfxRingBufferWrapper::GetInstance().AppendMsg(frame->PrintFrame());
+        DfxRingBufferWrapper::GetInstance().AppendMsg(frame->ToString());
     }
     return ret;
 }
@@ -403,7 +403,7 @@ void DfxUnwindRemote::UnwindThreadFallback(std::shared_ptr<DfxProcess> process, 
             frame->SetFrameRelativePc(pc);
             frame->SetFrameMapName(index == 0 ? "Not mapped pc" : "Not mapped lr");
         }
-        DfxRingBufferWrapper::GetInstance().AppendMsg(frame->PrintFrame());
+        DfxRingBufferWrapper::GetInstance().AppendMsg(frame->ToString());
     };
 
     createFrame(0, regs->GetPC());

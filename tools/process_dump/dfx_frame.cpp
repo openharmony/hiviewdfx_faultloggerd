@@ -180,57 +180,24 @@ uint64_t DfxFrame::CalculateRelativePc(std::shared_ptr<DfxElfMap> elfMap)
     return relativePc_;
 }
 
-std::string DfxFrame::PrintFrame() const
-{
-    char buf[LOG_BUF_LEN] = {0};
-
-    std::string mapName = frameMapName_;
-    if (mapName.empty()) {
-        mapName = "Unknown";
-    }
-
-#ifdef __LP64__
-    char frameFormatWithMapName[] = "#%02zu pc %016" PRIx64 " %s";
-    char frameFormatWithFuncName[] = "#%02zu pc %016" PRIx64 " %s(%s+%" PRIu64 ")";
-#else
-    char frameFormatWithMapName[] = "#%02zu pc %08" PRIx64 " %s";
-    char frameFormatWithFuncName[] = "#%02zu pc %08" PRIx64 " %s(%s+%" PRIu64 ")";
-#endif
-
-    int ret = 0;
-    if (funcName_.empty()) {
-        ret = snprintf_s(buf, sizeof(buf), sizeof(buf) - 1, frameFormatWithMapName, \
-            index_, relativePc_, mapName.c_str());
-    } else {
-        ret = snprintf_s(buf, sizeof(buf), sizeof(buf) - 1, \
-            frameFormatWithFuncName, index_, relativePc_, \
-            mapName.c_str(), funcName_.c_str(), funcOffset_);
-    }
-    if (ret <= 0) {
-        DfxLogError("%s :: snprintf_s failed, line: %d.", __func__, __LINE__);
-    }
-    std::ostringstream ss;
-    ss << std::string(buf, strlen(buf));
-    if (!buildId_.empty()) {
-        ss << " (" << buildId_ << ")";
-    }
-    ss << std::endl;
-    return ss.str();
-}
-
 std::string DfxFrame::ToString() const
 {
-    char buf[1024] = "\0"; // 1024 buffer length
+    char buf[LOG_BUF_LEN] = {0}; // 1024 buffer length
 #ifdef __LP64__
     char format[] = "#%02zu pc %016" PRIx64 " %s";
 #else
     char format[] = "#%02zu pc %08" PRIx64 " %s";
 #endif
+    std::string mapName = frameMapName_;
+    if (mapName.empty()) {
+        mapName = "Unknown";
+    }
+
     if (snprintf_s(buf, sizeof(buf), sizeof(buf) - 1, format,
         index_,
         relativePc_,
-        frameMapName_.c_str()) <= 0) {
-        return "Unknown";
+        mapName.c_str()) <= 0) {
+        DfxLogError("%s :: snprintf_s failed, mapName: %s", __func__, mapName.c_str());
     }
 
     std::ostringstream ss;
@@ -250,7 +217,7 @@ std::string DfxFrame::ToString() const
 void PrintFrames(std::vector<std::shared_ptr<DfxFrame>> frames)
 {
     for (size_t i = 0; i < frames.size(); i++) {
-        frames[i]->PrintFrame();
+        frames[i]->ToString();
     }
 }
 } // namespace HiviewDFX

@@ -36,10 +36,10 @@ namespace {
 constexpr int SKIP_ONE_FRAME = 1; // skip current frame
 }
 
-bool PrintBacktrace(int32_t fd)
+bool PrintBacktrace(int32_t fd, bool fast)
 {
     std::vector<NativeFrame> frames;
-    bool ret = BacktraceLocalThread::GetBacktraceFrames(BACKTRACE_CURRENT_THREAD, SKIP_ONE_FRAME, frames);
+    bool ret = BacktraceLocalThread::GetBacktraceFrames(frames, BACKTRACE_CURRENT_THREAD, SKIP_ONE_FRAME, fast);
     if (!ret) {
         return false;
     }
@@ -56,9 +56,9 @@ bool PrintBacktrace(int32_t fd)
     return ret;
 }
 
-bool GetBacktrace(std::string& out)
+bool GetBacktrace(std::string& out, bool fast)
 {
-    return BacktraceLocalThread::GetBacktraceString(BACKTRACE_CURRENT_THREAD, SKIP_ONE_FRAME, out);
+    return BacktraceLocalThread::GetBacktraceString(out, BACKTRACE_CURRENT_THREAD, SKIP_ONE_FRAME, fast);
 }
 } // namespace HiviewDFX
 } // namespace OHOS
