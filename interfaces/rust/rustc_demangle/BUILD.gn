@@ -13,7 +13,7 @@
 
 import("//base/hiviewdfx/faultloggerd/faultloggerd.gni")
 
-ohos_rust_static_ffi("rustc_demangle_static") {
+ohos_rust_shared_ffi("rustc_demangle") {
   include_dirs = [ "." ]
   sources = [ "lib.rs" ]
   if (current_cpu == "arm64") {
@@ -42,7 +42,11 @@ ohos_rust_static_ffi("rustc_demangle_static") {
   }
 
   crate_name = "rustc_demangle"
-  crate_type = "staticlib"
+  crate_type = "cdylib"
+  install_images = [
+    "system",
+    "updater",
+  ]
   part_name = "faultloggerd"
   subsystem_name = "hiviewdfx"
 }

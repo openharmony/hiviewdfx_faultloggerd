@@ -159,7 +159,7 @@ if (defined(ohos_lite)) {
       "$faultloggerd_path/common/dfxlog:static_common_log",
       "$faultloggerd_path/common/dfxutil:dfx_util",
       "$faultloggerd_path/interfaces/innerkits/faultloggerd_client:libfaultloggerd",
-      "$faultloggerd_path/interfaces/rust/rustc_demangle:rustc_demangle_static",
+      "$faultloggerd_path/interfaces/rust/rustc_demangle:rustc_demangle",
       "//third_party/libunwind:libunwind",
     ]
 
@@ -199,7 +199,7 @@ if (defined(ohos_lite)) {
       "$faultloggerd_path/common/dfxutil:dfx_util",
       "$faultloggerd_path/interfaces/innerkits/faultloggerd_client:libfaultloggerd",
       "$faultloggerd_path/interfaces/innerkits/signal_handler:dfx_local_handler",
-      "$faultloggerd_path/interfaces/rust/rustc_demangle:rustc_demangle_static",
+      "$faultloggerd_path/interfaces/rust/rustc_demangle:rustc_demangle",
       "//third_party/libunwind:libunwind",
     ]
 

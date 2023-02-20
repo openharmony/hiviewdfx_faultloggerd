@@ -42,7 +42,7 @@ if (defined(ohos_lite)) {
     sources = [ "rustc_demangle_test.cpp" ]
 
     deps = [
-      "$faultloggerd_path/interfaces/rust/rustc_demangle:rustc_demangle_static",
+      "$faultloggerd_path/interfaces/rust/rustc_demangle:rustc_demangle",
       "//third_party/googletest:gtest_main",
     ]
 
