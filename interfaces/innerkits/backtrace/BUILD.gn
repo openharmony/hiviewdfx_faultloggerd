@@ -22,12 +22,12 @@ config("dfx_backtrace_config") {
   ]
 }
 
-ohos_shared_library("libbacktrace_utils") {
+ohos_static_library("libbacktrace_utils") {
   public_configs = [ ":dfx_backtrace_config" ]
 
   sources = [ "backtrace_utils.cpp" ]
 
-  deps = [ "$faultloggerd_path/frameworks:backtrace_local_src" ]
+  deps = [ "$faultloggerd_path/frameworks:libbacktrace_local" ]
 
   external_deps = [
     "c_utils:utils",

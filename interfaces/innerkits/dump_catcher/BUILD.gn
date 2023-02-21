@@ -66,6 +66,7 @@ if (defined(ohos_lite)) {
     deps = [
       "$faultloggerd_path/common/dfxlog:static_common_log",
       "$faultloggerd_path/common/dfxutil:dfx_util",
+      "$faultloggerd_path/frameworks:libbacktrace_local",
       "$faultloggerd_path/interfaces/innerkits/faultloggerd_client:libfaultloggerd",
       "//base/hiviewdfx/hilog_lite/frameworks/featured:hilog_shared",
       "//third_party/bounds_checking_function:libsec_shared",
@@ -106,7 +107,7 @@ if (defined(ohos_lite)) {
     deps = [
       "$faultloggerd_path/common/dfxlog:static_common_log",
       "$faultloggerd_path/common/dfxutil:dfx_util",
-      "$faultloggerd_path/frameworks:backtrace_local_src",
+      "$faultloggerd_path/frameworks:libbacktrace_local",
       "$faultloggerd_path/interfaces/innerkits/faultloggerd_client:libfaultloggerd",
     ]
 
