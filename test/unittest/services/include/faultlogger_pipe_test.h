@@ -1,10 +1,10 @@
 /*
- * Copyright (c) 2021-2022 Huawei Device Co., Ltd.
+ * Copyright (c) 2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,24 +13,22 @@
  * limitations under the License.
  */
 
-/* This files contains header of secure module. */
+/* This files contains headers of faultlog pipe module. */
 
-#ifndef _FAULT_LOGGER_SECURE_H
-#define _FAULT_LOGGER_SECURE_H
+#ifndef FAULT_LOGGER_PIPE_TEST_H
+#define FAULT_LOGGER_PIPE_TEST_H
 
-#include <cstdint>
+#include <gtest/gtest.h>
 
 namespace OHOS {
 namespace HiviewDFX {
-class FaultLoggerSecure {
+class FaultLoggerPipeTest : public testing::Test {
 public:
-    FaultLoggerSecure();
-    ~FaultLoggerSecure();
-    bool CheckCallerUID(const int callingUid, const int32_t pid);
-
-private:
-    bool CheckUidAndPid(const int uid, const int32_t pid);
+    static void SetUpTestCase(void);
+    static void TearDownTestCase(void);
+    void SetUp();
+    void TearDown();
 };
 } // namespace HiviewDFX
 } // namespace OHOS
-#endif
+#endif // FAULT_LOGGER_PIPE_TEST_H

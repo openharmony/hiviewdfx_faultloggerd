@@ -159,10 +159,27 @@ HWTEST_F(FaultloggerdModuleTest, FaultloggerdClientFdRquestTest003, TestSize.Lev
  */
 HWTEST_F(FaultloggerdModuleTest, FaultloggerdClientPipeFdRquestTest001, TestSize.Level0)
 {
+    RequestSdkDump(-1, getpid(), getpid());
     int32_t pipeFd = RequestPipeFd(getpid(), FaultLoggerPipeType::PIPE_FD_READ_BUF);
-    ASSERT_EQ(pipeFd, -1);
+    ASSERT_NE(pipeFd, -1);
     int32_t ret = RequestDelPipeFd(getpid());
     ASSERT_EQ(ret, 0);
+    pipeFd = RequestPipeFd(getpid(), FaultLoggerPipeType::PIPE_FD_READ_BUF);
+    ASSERT_EQ(pipeFd, -1);
+}
+
+/**
+ * @tc.name: FaultloggerdClientPipeFdRquestTest002
+ * @tc.desc: check faultloggerd RequestPipeFd function by param error
+ * @tc.type: FUNC
+ */
+HWTEST_F(FaultloggerdModuleTest, FaultloggerdClientPipeFdRquestTest002, TestSize.Level0)
+{
+    RequestSdkDump(-1, getpid(), getpid());
+    int32_t pipeFd = RequestPipeFd(getpid(), -1);
+    ASSERT_EQ(pipeFd, -1);
+    pipeFd = RequestPipeFd(getpid(), FaultLoggerPipeType::PIPE_FD_DELETE);
+    ASSERT_EQ(pipeFd, -1);
 }
 
 /**
