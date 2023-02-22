@@ -32,6 +32,7 @@
     },
     "build": {
       "sub_component": [
+        "//base/hiviewdfx/faultloggerd/interfaces/innerkits/backtrace:libbacktrace_local",
         "//base/hiviewdfx/faultloggerd/interfaces/innerkits/signal_handler:dfx_signalhandler",
         "//base/hiviewdfx/faultloggerd/interfaces/innerkits/dump_catcher:lib_dfx_dump_catcher",
         "//base/hiviewdfx/faultloggerd/interfaces/innerkits/faultloggerd_client:libfaultloggerd",
@@ -40,6 +41,15 @@
         "//base/hiviewdfx/faultloggerd/services:faultloggerd"
       ],
       "inner_kits": [
+        {
+          "name": "//base/hiviewdfx/faultloggerd/interfaces/innerkits/backtrace:libbacktrace_local",
+          "header": {
+            "header_files": [
+              "backtrace_local.h"
+            ],
+            "header_base": "//base/hiviewdfx/faultloggerd/interfaces/innerkits/backtrace/include"
+          }
+        },
         {
           "name": "//base/hiviewdfx/faultloggerd/interfaces/innerkits/dump_catcher:lib_dfx_dump_catcher",
           "header": {

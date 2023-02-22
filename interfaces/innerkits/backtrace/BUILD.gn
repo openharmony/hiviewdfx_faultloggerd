@@ -13,27 +13,84 @@
 
 import("//base/hiviewdfx/faultloggerd/faultloggerd.gni")
 
-config("dfx_backtrace_config") {
-  visibility = [ "*:*" ]
+if (defined(ohos_lite)) {
+  shared_library("libbacktrace_local") {
+    visibility = [ "*:*" ]
 
-  include_dirs = [
-    "include",
-    "$faultloggerd_path/interfaces/innerkits/dump_catcher/include",
-  ]
-}
+    include_dirs = [
+      "include",
+      "//commonlibrary/c_utils/base/include",
+      "$faultloggerd_path/common",
+      "$faultloggerd_path/common/dfxlog",
+      "$faultloggerd_path/interfaces/innerkits/dump_catcher/include",
+      "$faultloggerd_path/tools/process_dump",
+      "//third_party/libunwind/include",
+      "//third_party/libunwind/src",
+    ]
 
-ohos_static_library("libbacktrace_utils") {
-  public_configs = [ ":dfx_backtrace_config" ]
+    if (target_cpu == "arm") {
+      include_dirs += [ "//third_party/libunwind/include/tdep-arm" ]
+    } else if (target_cpu == "arm64") {
+      include_dirs += [ "//third_party/libunwind/include/tdep-aarch64" ]
+    } else if (target_cpu == "x64" || target_cpu == "x86_64") {
+      include_dirs += [ "//third_party/libunwind/include/tdep-x86_64" ]
+    } else if (target_cpu == "mipsel") {
+      include_dirs += [ "//third_party/libunwind/include/tdep-mips" ]
+    }
 
-  sources = [ "backtrace_utils.cpp" ]
+    sources = [ "backtrace_local.cpp" ]
+    sources += [
+      "$faultloggerd_path/frameworks/local/backtrace_local_static.cpp",
+      "$faultloggerd_path/frameworks/local/backtrace_local_thread.cpp",
+      "$faultloggerd_path/tools/process_dump/dfx_symbols_cache.cpp",
+    ]
 
-  deps = [ "$faultloggerd_path/frameworks:libbacktrace_local" ]
+    defines = [
+      "HAVE_CONFIG_H",
+      "HAVE_ELF_H",
+      "HAVE_LINK_H",
+    ]
 
-  external_deps = [
-    "c_utils:utils",
-    "hilog_native:libhilog",
-  ]
+    deps = [
+      "$faultloggerd_path/common/dfxlog:static_common_log",
+      "$faultloggerd_path/common/dfxutil:dfx_util",
+      "//base/hiviewdfx/hilog_lite/frameworks/featured:hilog_shared",
+      "//third_party/bounds_checking_function:libsec_shared",
+      "//third_party/libunwind:libunwind_local",
+    ]
+  }
+} else {
+  config("dfx_backtrace_config") {
+    visibility = [ "*:*" ]
 
-  part_name = "faultloggerd"
-  subsystem_name = "hiviewdfx"
+    include_dirs = [
+      "include",
+      "$faultloggerd_path/interfaces/innerkits/dump_catcher/include",
+    ]
+
+    defines = [
+      "HAVE_CONFIG_H",
+      "HAVE_ELF_H",
+      "HAVE_LINK_H",
+    ]
+  }
+
+  ohos_shared_library("libbacktrace_local") {
+    public_configs = [ ":dfx_backtrace_config" ]
+
+    sources = [ "backtrace_local.cpp" ]
+
+    deps = [ "$faultloggerd_path/frameworks:backtrace_local_src" ]
+
+    external_deps = [
+      "c_utils:utils",
+      "hilog_native:libhilog",
+    ]
+    install_images = [
+      "system",
+      "updater",
+    ]
+    part_name = "faultloggerd"
+    subsystem_name = "hiviewdfx"
+  }
 }

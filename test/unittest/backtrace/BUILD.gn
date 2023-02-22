@@ -37,8 +37,7 @@ ohos_unittest("backtrace_utils_test") {
   deps = [
     ":test_utils",
     "$faultloggerd_path/common/dfxutil:dfx_util",
-    "$faultloggerd_path/frameworks:libbacktrace_local",
-    "$faultloggerd_path/interfaces/innerkits/backtrace:libbacktrace_utils",
+    "$faultloggerd_path/interfaces/innerkits/backtrace:libbacktrace_local",
     "//third_party/googletest:gtest_main",
     "//third_party/libunwind:libunwind_local",
   ]
@@ -58,7 +57,7 @@ ohos_unittest("backtrace_local_test") {
   deps = [
     ":test_utils",
     "$faultloggerd_path/common/dfxutil:dfx_util",
-    "$faultloggerd_path/frameworks:libbacktrace_local",
+    "$faultloggerd_path/frameworks:backtrace_local_src",
     "//third_party/bounds_checking_function:libsec_shared",
     "//third_party/googletest:gtest_main",
     "//third_party/libunwind:libunwind_local",

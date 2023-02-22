@@ -211,7 +211,7 @@ std::string BacktraceLocalThread::GetFramesStr()
 
 std::string BacktraceLocalThread::GetNativeFrameStr(const NativeFrame& frame)
 {
-    char buf[1024] = "\0"; // 1024 buffer length
+    char buf[LOG_BUF_LEN] = {0}; // 1024 buffer length
 #ifdef __LP64__
     char format[] = "#%02zu pc %016" PRIx64 " %s";
 #else
