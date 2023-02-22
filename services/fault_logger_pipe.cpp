@@ -24,7 +24,6 @@
 #include <cstring>
 #include <ctime>
 #include <fcntl.h>
-#include <mutex>
 #include <securec.h>
 #include <string>
 #include <sys/socket.h>
@@ -37,14 +36,12 @@
 #include "dfx_define.h"
 #include "dfx_log.h"
 
-
 namespace OHOS {
 namespace HiviewDFX {
 namespace {
 static const std::string FAULTLOGGER_PIPE_TAG = "FaultLoggerPipe";
 static const int PIPE_READ = 0;
 static const int PIPE_WRITE = 1;
-static std::mutex g_pipeMapsMutex;
 }
 
 FaultLoggerPipe::FaultLoggerPipe()
@@ -123,13 +120,13 @@ FaultLoggerPipe2::~FaultLoggerPipe2()
 
 FaultLoggerPipeMap::FaultLoggerPipeMap()
 {
-    std::lock_guard<std::mutex> lck(g_pipeMapsMutex);
+    std::lock_guard<std::mutex> lck(pipeMapsMutex_);
     faultLoggerPipes_.clear();
 }
 
 FaultLoggerPipeMap::~FaultLoggerPipeMap()
 {
-    std::lock_guard<std::mutex> lck(g_pipeMapsMutex);
+    std::lock_guard<std::mutex> lck(pipeMapsMutex_);
     std::map<int, std::unique_ptr<FaultLoggerPipe2> >::iterator iter = faultLoggerPipes_.begin();
     while (iter != faultLoggerPipes_.end()) {
         faultLoggerPipes_.erase(iter++);
@@ -138,7 +135,7 @@ FaultLoggerPipeMap::~FaultLoggerPipeMap()
 
 void FaultLoggerPipeMap::Set(int pid)
 {
-    std::lock_guard<std::mutex> lck(g_pipeMapsMutex);
+    std::lock_guard<std::mutex> lck(pipeMapsMutex_);
     if (!Find(pid)) {
         std::unique_ptr<FaultLoggerPipe2> ptr = std::unique_ptr<FaultLoggerPipe2>(new FaultLoggerPipe2());
         faultLoggerPipes_.insert(make_pair(pid, std::move(ptr)));
@@ -147,7 +144,7 @@ void FaultLoggerPipeMap::Set(int pid)
 
 FaultLoggerPipe2* FaultLoggerPipeMap::Get(int pid)
 {
-    std::lock_guard<std::mutex> lck(g_pipeMapsMutex);
+    std::lock_guard<std::mutex> lck(pipeMapsMutex_);
     if (!Find(pid)) {
         return nullptr;
     }
@@ -156,7 +153,7 @@ FaultLoggerPipe2* FaultLoggerPipeMap::Get(int pid)
 
 void FaultLoggerPipeMap::Del(int pid)
 {
-    std::lock_guard<std::mutex> lck(g_pipeMapsMutex);
+    std::lock_guard<std::mutex> lck(pipeMapsMutex_);
     std::map<int, std::unique_ptr<FaultLoggerPipe2> >::const_iterator iter = faultLoggerPipes_.find(pid);
     if (iter != faultLoggerPipes_.end()) {
         faultLoggerPipes_.erase(iter);

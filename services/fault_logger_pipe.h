@@ -20,6 +20,7 @@
 
 #include <map>
 #include <memory>
+#include <mutex>
 #include <string>
 
 namespace OHOS {
@@ -66,6 +67,7 @@ private:
 
 private:
     std::map<int, std::unique_ptr<FaultLoggerPipe2> > faultLoggerPipes_;
+    std::mutex pipeMapsMutex_;
 };
 } // namespace HiviewDFX
 } // namespace OHOS

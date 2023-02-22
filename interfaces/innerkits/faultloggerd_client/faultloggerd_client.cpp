@@ -82,6 +82,23 @@ int32_t RequestFileDescriptorEx(const struct FaultLoggerdRequest *request)
     return fd;
 }
 
+static bool CheckReadResp(int sockfd)
+{
+    char ControlBuffer[SOCKET_BUFFER_SIZE] = {0};
+    errno_t err = memset_s(&ControlBuffer, sizeof(ControlBuffer), 0, SOCKET_BUFFER_SIZE);
+    if (err != EOK) {
+        DfxLogError("memset_s failed, err = %d.", (int)err);
+        return false;
+    }
+    
+    ssize_t nread = read(sockfd, ControlBuffer, sizeof(ControlBuffer) - 1);
+    if (nread != static_cast<ssize_t>(strlen(FAULTLOGGER_DAEMON_RESP))) {
+        DfxLogError("nread: %d.", nread);
+        return false;
+    }
+    return true;
+}
+
 static int32_t RequestFileDescriptorByCheck(const struct FaultLoggerdRequest *request)
 {
     int32_t fd = -1;
@@ -99,16 +116,7 @@ static int32_t RequestFileDescriptorByCheck(const struct FaultLoggerdRequest *re
 
         write(sockfd, request, sizeof(struct FaultLoggerdRequest));
 
-        char ControlBuffer[SOCKET_BUFFER_SIZE];
-        errno_t err = memset_s(&ControlBuffer, sizeof(ControlBuffer), 0, SOCKET_BUFFER_SIZE);
-        if (err != EOK) {
-            DfxLogError("memset_s failed, err = %d.", (int)err);
-            break;
-        }
-        
-        int nread = read(sockfd, ControlBuffer, sizeof(ControlBuffer) - 1);
-        if (nread != (ssize_t)strlen(FAULTLOGGER_DAEMON_RESP)) {
-            DfxLogError("nread: %d.", nread);
+        if (!CheckReadResp(sockfd)) {
             break;
         }
 
@@ -171,16 +179,7 @@ static int SendRequestToServer(const FaultLoggerdRequest &request)
             break;
         }
 
-        char ControlBuffer[SOCKET_BUFFER_SIZE];
-        errno_t err = memset_s(&ControlBuffer, sizeof(ControlBuffer), 0, SOCKET_BUFFER_SIZE);
-        if (err != EOK) {
-            DfxLogError("memset_s failed, err = %d.", (int)err);
-            break;
-        }
-		
-        int nread = read(sockfd, ControlBuffer, sizeof(ControlBuffer) - 1);
-        if (nread != (ssize_t)strlen(FAULTLOGGER_DAEMON_RESP)) {
-            DfxLogError("nread: %d.", nread);
+        if (!CheckReadResp(sockfd)) {
             break;
         }
         resRsp = SendUidToServer(sockfd);
@@ -260,14 +259,7 @@ void RequestPrintTHilog(const char *msg, int length)
             break;
         }
 
-        char ControlBuffer[SOCKET_BUFFER_SIZE];
-        errno_t ret = memset_s(&ControlBuffer, sizeof(ControlBuffer), 0, SOCKET_BUFFER_SIZE);
-        if (ret != EOK) {
-            DfxLogError("memset_s failed, err = %d.", (int)ret);
-            break;
-        }
-        if (read(sockfd, ControlBuffer, sizeof(ControlBuffer) - 1) != \
-            static_cast<long>(strlen(FAULTLOGGER_DAEMON_RESP))) {
+        if (!CheckReadResp(sockfd)) {
             break;
         }
 		
@@ -282,6 +274,11 @@ void RequestPrintTHilog(const char *msg, int length)
 
 int32_t RequestPipeFd(int32_t pid, int32_t pipeType)
 {
+    if (pipeType < static_cast<int32_t>(FaultLoggerPipeType::PIPE_FD_READ_BUF) ||
+        pipeType > static_cast<int32_t>(FaultLoggerPipeType::PIPE_FD_WRITE_RES)) {
+        DfxLogError("%s :: pipeType(%d) failed.", __func__, pipeType);
+        return -1;
+    }
     struct FaultLoggerdRequest request;
     if (memset_s(&request, sizeof(request), 0, sizeof(struct FaultLoggerdRequest)) != 0) {
         DfxLogError("%s :: memset_s request failed..", __func__);
