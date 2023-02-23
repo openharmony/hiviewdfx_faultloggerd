@@ -208,7 +208,7 @@ std::string DfxFrame::ToString() const
         ss << "+" << funcOffset_ << ")";
     }
     if (!buildId_.empty()) {
-        ss << " (" << buildId_ << ")";
+        ss << "(" << buildId_ << ")";
     }
     ss << std::endl;
     return ss.str();
