@@ -20,7 +20,7 @@ backtrace_local_sources = [
 ]
 
 if (defined(ohos_lite)) {
-  static_library("libbacktrace_local") {
+  source_set("backtrace_local_src") {
     visibility = [ "*:*" ]
 
     include_dirs = [
@@ -56,12 +56,9 @@ if (defined(ohos_lite)) {
     include_dirs = [
       "$faultloggerd_path/tools/process_dump",
       "$faultloggerd_path/interfaces/innerkits/dump_catcher/include",
-      "$faultloggerd_path/interfaces/rust/rustc_demangle",
       "//third_party/libunwind/include",
       "//third_party/libunwind/src",
     ]
-
-    cflags_cc = [ "-DRUSTC_DEMANGLE" ]
 
     defines = [
       "HAVE_CONFIG_H",
@@ -70,7 +67,7 @@ if (defined(ohos_lite)) {
     ]
   }
 
-  ohos_static_library("libbacktrace_local") {
+  ohos_source_set("backtrace_local_src") {
     public_configs = [ ":dfx_backtrace_local_config" ]
 
     include_dirs = [
@@ -82,7 +79,6 @@ if (defined(ohos_lite)) {
 
     deps = [
       "$faultloggerd_path/common/dfxlog:static_common_log",
-      "$faultloggerd_path/interfaces/rust/rustc_demangle:rustc_demangle_static",
       "//third_party/bounds_checking_function:libsec_shared",
       "//third_party/libunwind:libunwind_local",
     ]

@@ -26,10 +26,10 @@ public:
     ~FaultLoggerDaemon() {};
     int32_t StartServer();
     bool InitEnvironment();
-    void LoopAcceptRequestAndFork(int socketFd);
     int32_t CreateFileForRequest(int32_t type, int32_t pid, uint64_t time, bool debugFlag) const;
 
 private:
+    void LoopAcceptRequestAndFork(int socketFd);
     static void HandleRequesting(int32_t connectionFd);
     void RemoveTempFileIfNeed();
     void HandleRequest(int32_t connectionFd);

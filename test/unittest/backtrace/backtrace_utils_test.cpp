@@ -26,7 +26,7 @@
 #include <string_ex.h>
 #include <malloc.h>
 
-#include "backtrace_utils.h"
+#include "backtrace_local.h"
 #include "test_utils.h"
 
 using namespace testing;

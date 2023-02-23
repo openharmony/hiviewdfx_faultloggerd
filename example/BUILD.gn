@@ -19,10 +19,7 @@ if (defined(ohos_lite)) {
     sources += [
       "$faultloggerd_path/common/dfxutil/directory_ex.cpp",
       "$faultloggerd_path/common/dfxutil/file_ex.cpp",
-      "$faultloggerd_path/frameworks/local/backtrace_local_static.cpp",
-      "$faultloggerd_path/frameworks/local/backtrace_local_thread.cpp",
       "$faultloggerd_path/interfaces/innerkits/dump_catcher/dfx_dump_catcher.cpp",
-      "$faultloggerd_path/tools/process_dump/dfx_symbols_cache.cpp",
     ]
 
     visibility = [ "*:*" ]
@@ -60,7 +57,6 @@ if (defined(ohos_lite)) {
     deps = [
       "$faultloggerd_path/common/dfxlog:static_common_log",
       "$faultloggerd_path/common/dfxutil:dfx_util",
-      "$faultloggerd_path/frameworks:libbacktrace_local",
       "$faultloggerd_path/interfaces/innerkits/dump_catcher:lib_dfx_dump_catcher",
       "$faultloggerd_path/interfaces/innerkits/faultloggerd_client:libfaultloggerd",
       "$hilog_lite_deps_path",

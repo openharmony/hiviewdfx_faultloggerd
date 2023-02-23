@@ -33,6 +33,7 @@ if (defined(ohos_lite)) {
       "$faultloggerd_path/common/dfxlog",
       "$faultloggerd_path/common/dfxutil",
       "//third_party/libunwind/include",
+      "//third_party/libunwind/src",
       "$faultloggerd_path/interfaces/innerkits/faultloggerd_client/include",
       "$faultloggerd_path/tools/process_dump",
       "$hilog_lite_include_path",
@@ -66,7 +67,7 @@ if (defined(ohos_lite)) {
     deps = [
       "$faultloggerd_path/common/dfxlog:static_common_log",
       "$faultloggerd_path/common/dfxutil:dfx_util",
-      "$faultloggerd_path/frameworks:libbacktrace_local",
+      "$faultloggerd_path/interfaces/innerkits/backtrace:libbacktrace_local",
       "$faultloggerd_path/interfaces/innerkits/faultloggerd_client:libfaultloggerd",
       "//base/hiviewdfx/hilog_lite/frameworks/featured:hilog_shared",
       "//third_party/bounds_checking_function:libsec_shared",
@@ -86,6 +87,7 @@ if (defined(ohos_lite)) {
       "$faultloggerd_path/interfaces/innerkits/faultloggerd_client/include",
       "$faultloggerd_path/tools/process_dump",
       "//third_party/libunwind/include",
+      "//third_party/libunwind/src",
     ]
 
     if (target_cpu == "arm") {
@@ -97,6 +99,12 @@ if (defined(ohos_lite)) {
     } else if (target_cpu == "mipsel") {
       include_dirs += [ "//third_party/libunwind/include/tdep-mips" ]
     }
+
+    defines = [
+      "HAVE_CONFIG_H",
+      "HAVE_ELF_H",
+      "HAVE_LINK_H",
+    ]
   }
 
   ohos_shared_library("lib_dfx_dump_catcher") {
@@ -107,7 +115,7 @@ if (defined(ohos_lite)) {
     deps = [
       "$faultloggerd_path/common/dfxlog:static_common_log",
       "$faultloggerd_path/common/dfxutil:dfx_util",
-      "$faultloggerd_path/frameworks:libbacktrace_local",
+      "$faultloggerd_path/interfaces/innerkits/backtrace:libbacktrace_local",
       "$faultloggerd_path/interfaces/innerkits/faultloggerd_client:libfaultloggerd",
     ]
 

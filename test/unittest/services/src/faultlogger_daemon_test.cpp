@@ -19,6 +19,7 @@
 
 #include <securec.h>
 #include <unistd.h>
+#include "dfx_util.h"
 
 #define private public
 #include "fault_logger_daemon.h"
@@ -135,4 +136,21 @@ HWTEST_F (FaultLoggerDaemonTest, FaultLoggerDaemonTest003, TestSize.Level2)
     faultloggerdRequest.tid = 0;
     daemon->HandleSdkDumpRequest(-1, &faultloggerdRequest);
     GTEST_LOG_(INFO) << "FaultLoggerDaemonTest003: end.";
+}
+
+/**
+ * @tc.name: FaultLoggerDaemonTest004
+ * @tc.desc: test CreateFileForRequest func
+ * @tc.type: FUNC
+ */
+HWTEST_F (FaultLoggerDaemonTest, FaultLoggerDaemonTest004, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "FaultLoggerDaemonTest004: start.";
+    std::shared_ptr<FaultLoggerDaemon> daemon = std::make_shared<FaultLoggerDaemon>();
+    int32_t type = (int32_t)FaultLoggerType::CPP_CRASH;
+    int32_t pid = getpid();
+    uint64_t time = GetTimeMilliSeconds();
+    int fd = daemon->CreateFileForRequest(type, pid, time, false);
+    ASSERT_NE(fd, -1);
+    GTEST_LOG_(INFO) << "FaultLoggerDaemonTest004: end.";
 }

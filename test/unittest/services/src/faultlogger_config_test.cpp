@@ -96,3 +96,22 @@ HWTEST_F (FaultLoggerConfigTest, FaultLoggerConfigTest003, TestSize.Level2)
     }
     GTEST_LOG_(INFO) << "FaultLoggerConfigTest003: end.";
 }
+
+/**
+ * @tc.name: FaultLoggerConfigTest004
+ * @tc.desc: test get debug file path
+ * @tc.type: FUNC
+ */
+HWTEST_F (FaultLoggerConfigTest, FaultLoggerConfigTest004, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "FaultLoggerConfigTest004: start.";
+    std::shared_ptr<FaultLoggerConfig> config = std::make_shared<FaultLoggerConfig>(LOG_FILE_NUMBER, LOG_FILE_SIZE,
+        LOG_FILE_PATH, DEBUG_LOG_FILE_PATH);
+    std::string input = "/data/debug/log.txt";
+    bool ret = config->SetDebugLogFilePath(input);
+    if (ret) {
+        std::string output = config->GetDebugLogFilePath();
+        EXPECT_EQ(true, input == output);
+    }
+    GTEST_LOG_(INFO) << "FaultLoggerConfigTest004: end.";
+}
