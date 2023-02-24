@@ -1,35 +1,33 @@
 # FaultLoggerd组件
 
--   简介
--   架构
--   目录
--   使用说明
-    -   DumpCatcher
-    -   ProcessDump
--   处理流程
-    -   DumpCatcher SDK接口处理流程
-    -   ProcessDump命令行处理流程
-    -   进程崩溃处理流程
--   相关仓
-
 ## 简介
 
-Faultloggerd部件是OpenHarmony中C/C++运行时崩溃临时日志的生成及管理模块。系统开发者可以在预设的路径下找到崩溃日志，定位相关问题。
+Faultloggerd部件是OpenHarmony中C/C++运行时崩溃临时日志的生成及管理模块。面向基于 Rust 开发的部件，Faultloggerd 提供了Rust Panic故障日志生成能力。系统开发者可以在预设的路径下找到故障日志，定位相关问题。
 
 ## 架构
 
-![架构](figures/faultloggerd架构图.png)
+![架构](figures/faultloggerd-architecture.png)
 
-* SignalHandler：信号处理器，接收系统异常信号，触发抓取进程异常时的现场信息。
-* DumpCatcher：堆栈信息抓取工具库，提供了抓取指定进程和线程的堆栈栈信息的能力。
-* FaultloggerdClient：崩溃临时日志管理客户端，接收申请文件描述符、堆栈导出等请求。
-* ProcessDump：进程信息抓取二进制工具，通过命令行方式提供抓取指定进程、线程堆栈信息的能力。
-* crasher：崩溃构造器，提供了崩溃构造和模拟能力。
-* FaultloggerdServer：核心服务处理模块，接收并处理客户端的请求。
-* FaultloggerdSecure：权限校验模块，对运行时崩溃日志生成和抓取提供权限管理和校验能力。
-* FaultloggerdConfig：崩溃临时日志管理模块。
+* Native InnerKits 接口
+  * SignalHandler：信号处理器，接收系统异常信号，触发抓取进程异常时的现场信息。
+  * BackTrace：本地回栈库，提供进程内本地回栈能力。
+  * DumpCatcher：堆栈信息抓取工具库，提供了抓取指定进程和线程的堆栈栈信息的能力。
+  * FaultloggerdClient：崩溃临时日志管理客户端，接收申请文件描述符、堆栈导出等请求。
+* Rust 接口
+  * PanicHandler：Rust PANIC故障处理器，封装faultloggerd回栈能力支持rust模块PANIC故障回栈。
+  * Rustc Demangle：Rust 符号demangle库，支持Rust模块mangled符号解析。
+* Faultlogger Daemon 服务
+  * FaultloggerdServer：核心服务处理模块，接收并处理客户端的请求。
+  * FaultloggerdSecure：权限校验模块，对运行时崩溃日志生成和抓取提供权限管理和校验能力。
+  * FaultloggerdConfig：崩溃临时日志管理模块。
+  * FaultloggerdPipe：数据管道传输管理模块，提供数据传输管道申请和管理能力。
+* 工具
+  * DumpCatcher Command Tool：提供命令行形式的主动抓栈工具，仅在Debug版本提供。
+  * ProcessDump：进程信息抓取二进制工具，通过命令行方式提供抓取指定进程、线程堆栈信息的能力。
+  * crasher：崩溃构造器，提供了崩溃构造和模拟能力。
+  * Rust Panic Maker：Rust PANIC 故障构造器，提供了构造Rust模块的故障构造能力。
 
-目前主要支持对以下异常信号的处理：
+目前主要支持对以下C/C++运行时崩溃异常信号的处理：
 
 | 信号值 | 信号      | 解释            | 触发原因                                                     |
 | ------ | --------- | --------------- | ------------------------------------------------------------ |
@@ -47,58 +45,68 @@ Faultloggerd部件是OpenHarmony中C/C++运行时崩溃临时日志的生成及�
 ```txt
 faultloggerd/
 ├── OAT.xml
-├── common                                 # 公共定义
-├── faultloggerd.gni
-├── interfaces                             # 接口存放目录
-│   └── innerkits
-│       ├── dump_catcher                   # 抓取调用栈基础库
-│       ├── faultloggerd_client            # 崩溃临时日志管理服务客户端接口
-│       └── signal_handler                 # 异常信号处理器
-├── ohos.build
-├── services                               # 崩溃临时日志管理服务
-│   ├── BUILD.gn
-│   ├── config                             # 启动配置
-│   ├── fault_logger_config.cpp            # 日志文件管理
-│   ├── fault_logger_config.h              # 日志文件管理
-│   ├── fault_logger_daemon.cpp            # Faultloggerd 服务提供
-│   ├── fault_logger_daemon.h              # Faultloggerd 服务提供
-│   ├── fault_logger_secure.cpp            # 权限管理与校验
-│   ├── fault_logger_secure.h              # 权限管理与校验
-│   ├── main.cpp
-│   └── test
-├── test                                   # 测试目录
-│   ├── BUILD.gn
-│   ├── fuzztest                           # 模糊测试
-│   ├── performancetest                    # 性能测试
-│   └── systemtest                         # 系统功能测试
-└── tools                                  # 工具
-    ├── crasher_c                          # 崩溃构造工具（C） 
-    ├── crasher_cpp                        # 崩溃构造工具（C++）
-    └── process_dump                       # 进程信息抓取工具
+├── common                                 # 工具库和公共定义
+├── docs                                   # 文档
+├── example                                # 样例代码
+├── frameworks                             # 主动抓栈实现
+├── interfaces
+│   ├── innerkits
+│   │   ├── backtrace                      # 本地回栈库
+│   │   ├── dump_catcher                   # 抓取调用栈基础库
+│   │   ├── faultloggerd_client            # 崩溃临时日志管理服务客户端接口
+│   │   └── signal_handler                 # 异常信号处理器
+│   └── rust
+│       ├── panic_handler                  # Rust Panic 处理器
+│       ├── panic_report                   # Rust Panic 故障上报库
+│       └── rustc_demangle                 # Rust demangle 库
+├── services                               # faultloggerd 常驻服务
+├── test
+│   ├── funchook                           # hook 工具测试用例
+│   ├── fuzztest                           # 模糊测试用例
+│   ├── moduletest                         # 模块测试用例
+│   ├── performancetest                    # 性能测试用例
+│   ├── systemtest                         # 系统测试用例
+│   └── unittest                           # 单元测试用例
+└── tools
+    ├── crasher_c                          # 崩溃构造器（C）
+    ├── crasher_cpp                        # 崩溃构造器（C++）
+    ├── dump_catcher                       # DumpCatcher 命令行工具
+    ├── panic_maker                        # Rust Panic 故障构造器
+    └── process_dump                       # 崩溃抓栈实现
 ```
 
 ## 使用说明
 
-### DumpCatcher
+### 进程崩溃日志生成
 
-DumpCatcher是指提供给第三方应用使用的抓取调用栈基础库，其中包含了打印指定进程（或线程）的栈信息的接口函数。
+目前已默认开启，进程因上述异常信号崩溃将会在设备 `/data/log/faultlog/temp` 目录下生成完整的崩溃日志，可基于该崩溃日志进行问题定位可分析。
+
+> 崩溃日志介绍和和常见问题指南参看：[faultloggerd FAQ](docs/usage.md)
+
+### DumpCatcher 接口
+
+DumpCatcher是提供给第三方模块使用的抓取调用栈基础库，其中包含了打印指定进程（或线程）的栈信息的接口函数。目前支持CPP调用栈和CPP-JS混合栈。
 
 接口类名：`DfxDumpCatcher`
 
-接口方法名：`bool DumpCatch(const int pid, const int tid, std::string& msg);`
+接口定义：
+* 默认：`bool DumpCatch(int pid, int tid, std::string& msg);`
+* 支持混合栈：`bool DumpCatchMix(int pid, int tid, std::string& msg);`
+* 支持输出到指定文件：`bool DumpCatchFd(int pid, int tid, std::string& msg, int fd);`
+* 支持批量抓栈：`bool DumpCatchMultiPid(const std::vector<int> pidV, std::string& msg);`
 
 接口参数说明：
-
 * 接口返回值：
   * `true`：回栈成功，回栈信息存储在`msg`字符串对象中；
   * `false`：回栈失败。
 * 输入参数：
   * `pid`：希望回栈的进程号，如果需要回栈进程中的所有线程，则`tid`设定为`0`；
   * `tid`：希望回栈的线程号；
+  * `fd`：指定写入回栈信息的文件句柄；
 * 输出参数：
   * `msg`：如果回栈成功，则通过`msg`输出回栈后的信息。
 
-> 注意：此接口需要调用者是管理员（system，root）用户，或者只抓取自己用户拥有的进程信息。抓取非本用户组进程调用栈时还需具备读取对方`/proc/pid/maps`及ptrace到对方进程的权限。
+> 注意：此接口需要调用者是管理员（system，root）用户，或者只抓取自己用户拥有的进程信息。
 
 样例代码：
 
@@ -137,7 +145,7 @@ int TestFunc10(void);
   * dump_catcher_demo.cpp
 
 ```c++
-#include "dump_catcher_dump.h"
+#include "dump_catcher_demo.h"
 
 #include <iostream>
 #include <string>
@@ -196,7 +204,7 @@ ohos_executable("dumpcatcherdemo") {
 
   configs = [ ":dumpcatcherdemo_config" ]
 
-  deps = [ 
+  deps = [
     "//base/hiviewdfx/faultloggerd/interfaces/innerkits/dump_catcher:lib_dfx_dump_catcher",
     "//utils/native/base:utils",
   ]
@@ -230,11 +238,11 @@ ohos_executable("dumpcatcherdemo") {
 #14 pc 00000000000008c4(00000000004a88c4) /data/test/dumpcatcherdemo
 ```
 
-### ProcessDump
+### DumpCatcher 命令行工具
 
-ProcessDump是指提供给用户的一个抓取调用栈命令行工具，该工具通过`-p`、`-t`参数指定进程和线程，命令执行后在命令行窗口打印指定的进程的线程栈信息。
+DumpCatcher 是指提供给用户的一个抓取调用栈命令行工具，由 DumpCatcher innerkits 接口封装实现，该工具通过 `-p`、`-t` 参数指定进程和线程，以及 `[-c -m -k]` 可选参数指定抓栈的类型，命令执行后在命令行窗口打印指定的进程的线程栈信息。
 
-工具名称：`processdump`
+工具名称：`dumpcatcher`
 
 位置：`/system/bin`
 
@@ -242,58 +250,41 @@ ProcessDump是指提供给用户的一个抓取调用栈命令行工具，该工
 
 * `-p [pid]`：打印指定进程下面的所有线程栈信息；
 * `-p [pid] -t [tid]`：打印指定进程下面的指定线程信息。
+* `[-c -m -k]`：可选参数, 指定打印 `-c(pp)`C++调用栈、`-m(ix)`C++ JS混合调用栈、`-k(ernel)`调用栈类型。
 
 返回打印说明：如果栈信息解析成功，则将信息显示到标准输出。
 
 > 注意：使用此接口需要调用者是管理员（system，root）用户。
 
-范例：查询hiview主线程当前调用栈
+### Rust Panic 故障处理器
 
-```txt
-# ps -A | grep hiview
-  114 ?        00:00:00 hiview
-# processdump -p 114 -t 114
-Tid:114, Name:hiview
-#00 pc 0000000000089824(00000000b6f44824) /system/lib/ld-musl-arm.so.1(ioctl+68)
-#01 pc 000000000002a709(00000000b6c56709) /system/lib/libipc_core.z.so(_ZN4OHOS15BinderConnector11WriteBinderEmPv+16)
-#02 pc 000000000002ba75(00000000b6c57a75) /system/lib/libipc_core.z.so(_ZN4OHOS13BinderInvoker18TransactWithDriverEb+224)
-#03 pc 000000000002bb37(00000000b6c57b37) /system/lib/libipc_core.z.so(_ZN4OHOS13BinderInvoker13StartWorkLoopEv+22)
-#04 pc 000000000002c211(00000000b6c58211) /system/lib/libipc_core.z.so(_ZN4OHOS13BinderInvoker10JoinThreadEb+36)
-#05 pc 0000000000038d07(00000000004bcd07) /system/bin/hiview(_ZNSt3__h6vectorINS_9sub_matchINS_11__wrap_iterIPKcEEEENS_9allocatorIS6_EEE8__appendEj+596)
-#06 pc 0000000000028655(00000000004ac655) /system/bin/hiview
-#07 pc 00000000000c2b08(00000000b6f7db08) /system/lib/ld-musl-arm.so.1(__libc_start_main+116)
-#08 pc 00000000000285f4(00000000004ac5f4) /system/bin/hiview
-#09 pc 0000000000028580(00000000004ac580) /system/bin/hiview
-```
+> TODO
 
 ## 处理流程
 
-### DumpCatcher SDK接口处理流程
+### 进程崩溃抓栈处理流程
 
-![DumpCatcher调用流程图](figures/dumpcatcher调用流程.png)
+![进程崩溃抓栈处理流程](figures/crash-process.png)
 
-1. 进程A调用`DumpCatcher`库提供的`DumpCatch()`接口，申请dump指定进程和线程的堆栈信息；
-2. `DumpCatcher`接收到进程A的dump请求后，运行`ProcessDump`程序开始准备dump堆栈信息；
-3. 在dump堆栈信息之前先通过`Faultloggerd`校验用户权限；
-4. 返回权限校验结果，满足权限则返回文件描述符，将回栈结果返回给`DumpCatcher`。
+1. 进程运行时异常崩溃后会收到来自 `Kernel` 发送的崩溃信号，由进程在启动加载的 `SignalHandler` 模块进行信号处理；
+2. 进程接收到崩溃信号后，保存当前进程上下文，fork 出子进程执行 `ProcessDump` 二进制进行抓栈；
+3. `ProcessDump` 向 `Faultloggerd` 申请文件句柄用于存储收集到的崩溃日志数据；
+4. `ProcesDump` 将完整崩溃日志数据写入到 `/data/log/faultlog/temp` 目录下进行临时存储；
+5. `ProcessDump` 收集完崩溃日志后，上报给 `Hiview` 进行后续处理；
+4. `Hiview` 接收到新增进程崩溃故障数据后，提取简易的崩溃日志存储到 `/data/log/faultlog/faultlogger` 目录下，并生成 `HiSysevent` 故障事件。
 
-### ProcessDump命令行处理流程
+### DumpCatcher 接口/命令行工具 主动抓栈处理流程
 
-![ProcessDump调用流程图](figures/processdump调用流程.png)
+![DumpCatcher主动抓栈处理流程图](figures/dumpcatcher-process.png)
 
-1. Shell通过命令行指令`processdump -p [pid] -t [tid]`申请dump指定进程和线程的堆栈信息；
-2. 在dump堆栈信息之前先通过`Faultloggerd`校验用户权限；
-3. 返回权限校验结果，满足权限则返回文件描述符，将回栈结果写入标准输出。
+1. 进程A调用`DumpCatcher`库提供的系列接口（1B），或通过 `DumpCatcher` 命令行工具(1A)，申请dump指定进程和线程的堆栈信息；
+2. 如果目前进程是当前进程，则直接调用 `BackTrace Local` 提供的能力进行本地回栈输出（2B）；如果不是，则向 `Faultloggerd` 服务发送抓栈请求（2A）；
+3. `Faultloggerd` 接收到抓栈请求，鉴通过权和管道申请等操作后，向目标进程发送 `SIGDUMP(35)` 信号触发主动抓栈（3）；
+4. 目前进程接收到 `SIGDUMP(35)` 抓栈信号后，保存当前进程上下文，fork出子进程执行 `ProcessDump` 二进制进行抓栈，通过 `Faultloggerd` 申请到的管道返回调用栈数据（4）。
 
-### 进程崩溃处理流程
+### Rust Panic 故障日志收集流程
 
-![进程崩溃faultloggerd处理流程](figures/crash调用流程.png)
-
-1. 进程B通过安装信号处理器，通过`DFX_SignalHandler`函数检测进程崩溃异常信号；
-2. `SignalHandler`检测到异常信号后Fork出子进程，并运行`ProcessDump`程序开始dump崩溃进程和线程的堆栈信息；
-3. `ProcessDump`程序在读取异常堆栈信息后将日志写入到`Faultloggerd`中的临时存储目录；
-4. `Faultloggerd`根据需要将故障通过`hiview`提供的`AddFaultLog()`接口上报给`hiview`进行后续处理。
-
+// TODO
 
 ## 相关仓
 

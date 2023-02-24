@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 Huawei Device Co., Ltd.
+ * Copyright (c) 2022-2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -15,13 +15,10 @@
 
 #include "backtrace_local.h"
 
-#include <cstdio>
-#include <memory>
-#include <mutex>
-#include <sstream>
-#include <vector>
-
+#include <cstring>
 #include <hilog/log.h>
+#include <unistd.h>
+#include <vector>
 
 #include "backtrace_local_thread.h"
 
