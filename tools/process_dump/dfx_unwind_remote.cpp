@@ -259,7 +259,7 @@ bool DfxUnwindRemote::UpdateAndPrintFrameInfo(unw_cursor_t& cursor, std::shared_
         std::string funcName;
         bool isGetFuncName = false;
 #if defined(__aarch64__)
-        if ((frame->GetFrameIndex() == 0) && ((mapPath.find("ArkJS Heap") != std::string::npos))) {
+        if ((frame->GetFrameIndex() == 0) && ((mapPath.find("ArkTS Code") != std::string::npos))) {
             isGetFuncName = GetArkJsHeapFuncName(funcName, thread);
             if (isGetFuncName) {
                 frame->SetFrameFuncName(funcName);
