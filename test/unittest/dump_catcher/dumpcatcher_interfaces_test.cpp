@@ -441,14 +441,14 @@ HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest009, TestSize.Level
 HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest010, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest010: start.";
-    std::string calcBundleName = "ohos.samples.distributedcalc";
-    std::string calcAbiltyName = calcBundleName + ".MainAbility";
-    int calcPid = LaunchTestHap(calcAbiltyName, calcBundleName);
-    DfxDumpCatcher dumplog(calcPid);
+    std::string testBundleName = "com.ohos.camera";
+    std::string testAbiltyName = testBundleName + ".MainAbility";
+    int testPid = LaunchTestHap(testAbiltyName, testBundleName);
+    DfxDumpCatcher dumplog(testPid);
     std::vector<NativeFrame> frameV;
     bool ret = dumplog.InitFrameCatcher();
     EXPECT_EQ(ret, true);
-    ret = dumplog.CatchFrame(calcPid, frameV);
+    ret = dumplog.CatchFrame(testPid, frameV);
     EXPECT_EQ(ret, false);
     dumplog.DestroyFrameCatcher();
     EXPECT_EQ(frameV.size(), 0) << "DumpCatcherInterfacesTest010 Failed";
@@ -512,17 +512,17 @@ HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest013, TestSize.Level
 HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest014, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest014: start.";
-    std::string calcBundleName = "ohos.samples.distributedcalc";
-    std::string calcAbiltyName = calcBundleName + ".MainAbility";
-    int calcPid = LaunchTestHap(calcAbiltyName, calcBundleName);
+    std::string testBundleName = "com.ohos.camera";
+    std::string testAbiltyName = testBundleName + ".MainAbility";
+    int testPid = LaunchTestHap(testAbiltyName, testBundleName);
     DfxDumpCatcher dumplog;
     std::string msg = "";
-    bool ret = dumplog.DumpCatchMix(calcPid, 0, msg);
+    bool ret = dumplog.DumpCatchMix(testPid, 0, msg);
     GTEST_LOG_(INFO) << ret;
     GTEST_LOG_(INFO) << msg;
-    string log[] = { "Tid:", "comm:ohos.samples.di", "#00", "/system/bin/appspawn",
-        "comm:jsThread-", "comm:GC_WorkerThread", "comm:ace.bg.1"};
-    log[0] += std::to_string(calcPid);
+    string log[] = { "Tid:", "comm:com.ohos.camera", "#00", "/system/bin/appspawn",
+        "comm:EventRunner", "comm:GC_WorkerThread", "comm:ace.bg.1"};
+    log[0] += std::to_string(testPid);
     string::size_type idx;
     int j = 0;
     int count = 0;
@@ -549,16 +549,16 @@ HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest014, TestSize.Level
 HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest015, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest015: start.";
-    std::string calcBundleName = "ohos.samples.distributedcalc";
-    std::string calcAbiltyName = calcBundleName + ".MainAbility";
-    int calcPid = LaunchTestHap(calcAbiltyName, calcBundleName);
+    std::string testBundleName = "com.ohos.camera";
+    std::string testAbiltyName = testBundleName + ".MainAbility";
+    int testPid = LaunchTestHap(testAbiltyName, testBundleName);
     DfxDumpCatcher dumplog;
     std::string msg = "";
-    bool ret = dumplog.DumpCatchMix(calcPid, calcPid, msg);
+    bool ret = dumplog.DumpCatchMix(testPid, testPid, msg);
     GTEST_LOG_(INFO) << ret;
     GTEST_LOG_(INFO) << msg;
-    string log[] = { "Tid:", "comm:ohos.samples.di", "#00", "/system/bin/appspawn"};
-    log[0] += std::to_string(calcPid);
+    string log[] = { "Tid:", "comm:com.ohos.camera", "#00", "/system/bin/appspawn"};
+    log[0] += std::to_string(testPid);
     int expectNum = sizeof(log) / sizeof(log[0]);
     string::size_type idx;
     int j = 0;
@@ -584,12 +584,12 @@ HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest015, TestSize.Level
 HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest016, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest016: start.";
-    std::string calcBundleName = "ohos.samples.distributedcalc";
-    std::string calcAbiltyName = calcBundleName + ".MainAbility";
-    int calcPid = LaunchTestHap(calcAbiltyName, calcBundleName);
+    std::string testBundleName = "com.ohos.camera";
+    std::string testAbiltyName = testBundleName + ".MainAbility";
+    int testPid = LaunchTestHap(testAbiltyName, testBundleName);
     DfxDumpCatcher dumplog;
     std::string msg = "";
-    bool ret = dumplog.DumpCatchMix(calcPid, -1, msg);
+    bool ret = dumplog.DumpCatchMix(testPid, -1, msg);
     GTEST_LOG_(INFO) << ret;
     GTEST_LOG_(INFO) << msg;
     EXPECT_EQ(ret, false) << "DumpCatcherInterfacesTest016 Failed";
