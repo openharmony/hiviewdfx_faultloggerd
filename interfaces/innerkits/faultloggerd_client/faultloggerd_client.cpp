@@ -48,10 +48,7 @@ static void FillRequest(int32_t type, FaultLoggerdRequest *request)
 int32_t RequestFileDescriptor(int32_t type)
 {
     struct FaultLoggerdRequest request;
-    errno_t err = memset_s(&request, sizeof(request), 0, sizeof(request));
-    if (err != EOK) {
-        DfxLogError("%s :: memset_s request failed..", __func__);
-    }
+    (void)memset_s(&request, sizeof(request), 0, sizeof(request));
     FillRequest(type, &request);
     return RequestFileDescriptorEx(&request);
 }
@@ -85,11 +82,7 @@ int32_t RequestFileDescriptorEx(const struct FaultLoggerdRequest *request)
 static bool CheckReadResp(int sockfd)
 {
     char ControlBuffer[SOCKET_BUFFER_SIZE] = {0};
-    errno_t err = memset_s(&ControlBuffer, sizeof(ControlBuffer), 0, SOCKET_BUFFER_SIZE);
-    if (err != EOK) {
-        DfxLogError("memset_s failed, err = %d.", (int)err);
-        return false;
-    }
+    (void)memset_s(&ControlBuffer, sizeof(ControlBuffer), 0, SOCKET_BUFFER_SIZE);
     
     ssize_t nread = read(sockfd, ControlBuffer, sizeof(ControlBuffer) - 1);
     if (nread != static_cast<ssize_t>(strlen(FAULTLOGGER_DAEMON_RESP))) {
@@ -198,10 +191,7 @@ bool RequestCheckPermission(int32_t pid)
     }
 
     struct FaultLoggerdRequest request;
-    errno_t err = memset_s(&request, sizeof(request), 0, sizeof(request));
-    if (err != EOK) {
-        DfxLogError("%s :: memset_s request failed..", __func__);
-    }
+    (void)memset_s(&request, sizeof(request), 0, sizeof(request));
 
     request.pid = pid;
     request.clientType = (int32_t)FaultLoggerClientType::PERMISSION_CLIENT;
@@ -217,14 +207,11 @@ int RequestSdkDump(int32_t type, int32_t pid, int32_t tid)
 {
     DfxLogInfo("RequestSdkDump :: type(%d), pid(%d), tid(%d).", type, pid, tid);
     if (pid <= 0 || tid < 0) {
-        return false;
+        return -1;
     }
 
     struct FaultLoggerdRequest request;
-    errno_t err = memset_s(&request, sizeof(request), 0, sizeof(request));
-    if (err != EOK) {
-        DfxLogError("%s :: memset_s request failed..", __func__);
-    }
+    (void)memset_s(&request, sizeof(request), 0, sizeof(request));
     request.sigCode = type;
     request.pid = pid;
     request.tid = tid;
@@ -242,10 +229,7 @@ void RequestPrintTHilog(const char *msg, int length)
     }
 
     struct FaultLoggerdRequest request;
-    errno_t err = memset_s(&request, sizeof(request), 0, sizeof(request));
-    if (err != EOK) {
-        DfxLogError("%s :: memset_s request failed..", __func__);
-    }
+    (void)memset_s(&request, sizeof(request), 0, sizeof(request));
     request.clientType = (int32_t)FaultLoggerClientType::PRINT_T_HILOG_CLIENT;
 
     int sockfd = -1;
@@ -280,9 +264,7 @@ int32_t RequestPipeFd(int32_t pid, int32_t pipeType)
         return -1;
     }
     struct FaultLoggerdRequest request;
-    if (memset_s(&request, sizeof(request), 0, sizeof(struct FaultLoggerdRequest)) != 0) {
-        DfxLogError("%s :: memset_s request failed..", __func__);
-    }
+    (void)memset_s(&request, sizeof(request), 0, sizeof(struct FaultLoggerdRequest));
     request.pipeType = pipeType;
     request.pid = pid;
     request.callerPid = getpid();
@@ -298,9 +280,7 @@ int32_t RequestPipeFd(int32_t pid, int32_t pipeType)
 int32_t RequestDelPipeFd(int32_t pid)
 {
     struct FaultLoggerdRequest request;
-    if (memset_s(&request, sizeof(request), 0, sizeof(struct FaultLoggerdRequest)) != 0) {
-        DfxLogError("%s :: memset_s request failed..", __func__);
-    }
+    (void)memset_s(&request, sizeof(request), 0, sizeof(struct FaultLoggerdRequest));
     request.pipeType = FaultLoggerPipeType::PIPE_FD_DELETE;
     request.pid = pid;
     request.clientType = (int32_t)FaultLoggerClientType::PIPE_FD_CLIENT;

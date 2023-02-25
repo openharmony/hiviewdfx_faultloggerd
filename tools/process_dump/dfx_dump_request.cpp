@@ -25,26 +25,11 @@ namespace OHOS {
 namespace HiviewDFX {
 ProcessDumpRequest::ProcessDumpRequest()
 {
-    errno_t err = memset_s(&siginfo_, sizeof(siginfo_), 0, sizeof(siginfo_));
-    if (err != EOK) {
-        DfxLogError("%s :: memset_s siginfo_ failed.", __func__);
-    }
-    err = memset_s(&context_, sizeof(context_), 0, sizeof(context_));
-    if (err != EOK) {
-        DfxLogError("%s :: memset_s context_ failed.", __func__);
-    }
-    err = memset_s(&threadName_, sizeof(threadName_), 0, sizeof(threadName_));
-    if (err != EOK) {
-        DfxLogError("%s :: memset_s threadName_ failed.", __func__);
-    }
-    err = memset_s(&processName_, sizeof(processName_), 0, sizeof(processName_));
-    if (err != EOK) {
-        DfxLogError("%s :: memset_s processName_ failed.", __func__);
-    }
-    err = memset_s(&lastFatalMessage_, sizeof(lastFatalMessage_), 0, sizeof(lastFatalMessage_));
-    if (err != EOK) {
-        DfxLogError("%s :: memset_s lastFatalMessage_ failed.", __func__);
-    }
+    (void)memset_s(&siginfo_, sizeof(siginfo_), 0, sizeof(siginfo_));
+    (void)memset_s(&context_, sizeof(context_), 0, sizeof(context_));
+    (void)memset_s(&threadName_, sizeof(threadName_), 0, sizeof(threadName_));
+    (void)memset_s(&processName_, sizeof(processName_), 0, sizeof(processName_));
+    (void)memset_s(&lastFatalMessage_, sizeof(lastFatalMessage_), 0, sizeof(lastFatalMessage_));
     type_ = DUMP_TYPE_PROCESS;
 }
 

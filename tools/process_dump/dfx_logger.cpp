@@ -79,9 +79,7 @@ void InitDebugLog(int type, int pid, int tid, unsigned int uid)
     }
 
     struct FaultLoggerdRequest faultloggerdRequest;
-    if (memset_s(&faultloggerdRequest, sizeof(faultloggerdRequest), 0, sizeof(struct FaultLoggerdRequest)) != 0) {
-        return;
-    }
+    (void)memset_s(&faultloggerdRequest, sizeof(faultloggerdRequest), 0, sizeof(struct FaultLoggerdRequest));
     faultloggerdRequest.type = (int)type;
     faultloggerdRequest.pid = pid;
     faultloggerdRequest.tid = tid;

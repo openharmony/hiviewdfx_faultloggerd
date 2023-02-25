@@ -215,9 +215,7 @@ NOINLINE int DfxCrasher::Oom() const
             abort();
         }
 
-        if (memset_s(buf, ARG1024 * ARG1024, 0xff, ARG1024 * ARG1024)) {
-            std::cout << "oom memset_s failed." << std::endl;
-        }
+        (void)memset_s(buf, ARG1024 * ARG1024, 0xff, ARG1024 * ARG1024);
         vec.push_back(buf);
     }
     return 0;

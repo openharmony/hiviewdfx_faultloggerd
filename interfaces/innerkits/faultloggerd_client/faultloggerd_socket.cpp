@@ -50,13 +50,9 @@ bool StartConnect(int& sockfd, const char* path, const int timeout)
         }
 
         struct sockaddr_un server;
-        errno_t err = memset_s(&server, sizeof(server), 0, sizeof(server));
-        if (err != EOK) {
-            DfxLogError("%s :: memset_s failed, err = %d.", __func__, (int)err);
-            break;
-        }
+        (void)memset_s(&server, sizeof(server), 0, sizeof(server));
         server.sun_family = AF_LOCAL;
-        err = strncpy_s(server.sun_path, sizeof(server.sun_path), path, sizeof(server.sun_path) - 1);
+        errno_t err = strncpy_s(server.sun_path, sizeof(server.sun_path), path, sizeof(server.sun_path) - 1);
         if (err != EOK) {
             DfxLogError("%s :: strncpy failed, err = %d.", __func__, (int)err);
             break;
@@ -87,11 +83,7 @@ static bool GetServerSocket(int& sockfd, const char* path)
     }
     
     struct sockaddr_un server;
-    errno_t err = memset_s(&server, sizeof(server), 0, sizeof(server));
-    if (err != EOK) {
-        DfxLogError("%s :: memset_s failed, err = %d.", __func__, (int)err);
-        return false;
-    }
+    (void)memset_s(&server, sizeof(server), 0, sizeof(server));
     server.sun_family = AF_LOCAL;
     if (strncpy_s(server.sun_path, sizeof(server.sun_path), path, sizeof(server.sun_path) - 1) != 0) {
         DfxLogError("%s :: strncpy failed.", __func__);

@@ -101,10 +101,7 @@ int ProcessDumper::InitPrintThread(bool fromSignalHandler, std::shared_ptr<Proce
         FaultLoggerType type = isCrash ? FaultLoggerType::CPP_CRASH : FaultLoggerType::CPP_STACKTRACE;
 
         struct FaultLoggerdRequest faultloggerdRequest;
-        if (memset_s(&faultloggerdRequest, sizeof(faultloggerdRequest), 0, sizeof(struct FaultLoggerdRequest)) != 0) {
-            DfxLogError("memset_s error.");
-            return fd;
-        }
+        (void)memset_s(&faultloggerdRequest, sizeof(faultloggerdRequest), 0, sizeof(struct FaultLoggerdRequest));
 
         if (isCrash) {
             if (DfxConfig::GetInstance().GetLogPersist()) {

@@ -80,10 +80,7 @@ std::string PrintSignal(const siginfo_t &info)
         DfxLogError("%s :: snprintf_s failed, line: %d.", __func__, __LINE__);
     }
     sigString = sigString + std::string(buf);
-    ret = memset_s(buf, LOG_BUF_LEN, '\0', LOG_BUF_LEN);
-    if (ret != EOK) {
-        DfxLogError("%s :: memset_s failed, line: %d.", __func__, __LINE__);
-    }
+    (void)memset_s(buf, LOG_BUF_LEN, '\0', LOG_BUF_LEN);
 
     DfxSignal signal(info.si_signo);
     if (signal.IsAddrAvailable()) {
@@ -96,10 +93,7 @@ std::string PrintSignal(const siginfo_t &info)
             DfxLogError("%s :: snprintf_s failed, line: %d.", __func__, __LINE__);
         }
         sigString = sigString + std::string(buf);
-        ret = memset_s(buf, LOG_BUF_LEN, '\0', LOG_BUF_LEN);
-        if (ret != EOK) {
-            DfxLogError("%s :: memset_s failed, line: %d.", __func__, __LINE__);
-        }
+        (void)memset_s(buf, LOG_BUF_LEN, '\0', LOG_BUF_LEN);
     }
 
     if ((info.si_code <= 0) && (info.si_pid != 0)) {
