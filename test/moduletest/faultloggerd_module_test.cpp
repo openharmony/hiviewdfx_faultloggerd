@@ -153,6 +153,28 @@ HWTEST_F(FaultloggerdModuleTest, FaultloggerdClientFdRquestTest003, TestSize.Lev
 }
 
 /**
+ * @tc.name: FaultloggerdClientFdRquestTest004
+ * @tc.desc: check faultloggerd RequestFileDescriptorEx function
+ * @tc.type: FUNC
+ */
+HWTEST_F(FaultloggerdModuleTest, FaultloggerdClientFdRquestTest004, TestSize.Level0)
+{
+    struct FaultLoggerdRequest testRequest;
+    if (memset_s(&testRequest, sizeof(testRequest), 0, sizeof(struct FaultLoggerdRequest)) != 0) {
+        return;
+    }
+    testRequest.type = (int)FaultLoggerType::CPP_CRASH;
+    testRequest.pid = getpid();
+    testRequest.tid = gettid();
+    testRequest.uid = getuid();
+    int32_t fd = RequestFileDescriptorEx(&testRequest);
+    ASSERT_TRUE(fd >= 0);
+    if (fd >= 0) {
+        close(fd);
+    }
+}
+
+/**
  * @tc.name: FaultloggerdClientPipeFdRquestTest001
  * @tc.desc: check faultloggerd RequestPipeFd function
  * @tc.type: FUNC

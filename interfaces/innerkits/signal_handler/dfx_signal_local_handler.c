@@ -125,7 +125,7 @@ void DFX_InstallLocalSignalHandler(void)
     sigset_t set;
     sigemptyset(&set);
     struct sigaction action;
-    memset_s(&action, sizeof(action), 0, sizeof(action));
+    (void)memset_s(&action, sizeof(action), 0, sizeof(action));
     sigfillset(&action.sa_mask);
     action.sa_sigaction = DFX_SignalHandler;
     action.sa_flags = SA_RESTART | SA_SIGINFO | SA_ONSTACK;

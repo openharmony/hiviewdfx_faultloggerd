@@ -70,14 +70,8 @@ bool FaultLoggerSecure::CheckUidAndPid(const int uid, const int32_t pid)
     DfxLogInfo("%s :: CheckUidAndPid :: uid(%d), pid(%d).\n",
         FAULTLOGGERSECURE_TAG.c_str(), uid, pid);
 
-    errno_t err = memset_s(resp, sizeof(resp), '\0', sizeof(resp));
-    if (err != EOK) {
-        DfxLogError("%s :: memset_s resp failed..", __func__);
-    }
-    err = memset_s(cmd, sizeof(cmd), '\0', sizeof(cmd));
-    if (err != EOK) {
-        DfxLogError("%s :: memset_s cmd failed..", __func__);
-    }
+    (void)memset_s(resp, sizeof(resp), '\0', sizeof(resp));
+    (void)memset_s(cmd, sizeof(cmd), '\0', sizeof(cmd));
     auto pms = sprintf_s(cmd, sizeof(cmd), "/bin/ps -u %d -o PID", uid);
     if (pms <= 0) {
         return ret;

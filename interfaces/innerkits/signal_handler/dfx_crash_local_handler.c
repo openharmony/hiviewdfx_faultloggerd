@@ -31,9 +31,7 @@
 __attribute__((noinline)) int RequestOutputLogFile(const struct ProcessDumpRequest* request)
 {
     struct FaultLoggerdRequest faultloggerdRequest;
-    if (memset_s(&faultloggerdRequest, sizeof(faultloggerdRequest), 0, sizeof(struct FaultLoggerdRequest)) != 0) {
-        return -1;
-    }
+    (void)memset_s(&faultloggerdRequest, sizeof(faultloggerdRequest), 0, sizeof(struct FaultLoggerdRequest));
 
     faultloggerdRequest.type = (int32_t)CPP_CRASH;
     faultloggerdRequest.pid = request->pid;
@@ -146,7 +144,7 @@ __attribute__((noinline)) void CrashLocalUnwind(const int fd, const ucontext_t* 
         }
 
         char symbol[BUF_SZ] = {0};
-        memset_s(&symbol, sizeof(symbol), 0, sizeof(symbol));
+        (void)memset_s(&symbol, sizeof(symbol), 0, sizeof(symbol));
         if (unw_get_proc_name(cursor, symbol, sizeof(symbol), (unw_word_t*)(&offset)) == 0) {
             PrintLog(fd, "#%02d %016p %s(%s+%lu)\n", index, relPc,
                 mapInfo == NULL ? "Unknown" : mapInfo->path,

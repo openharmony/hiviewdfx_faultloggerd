@@ -366,8 +366,8 @@ void DfxUnwindLocal::LocalDumpering(int sig, siginfo_t *si, void *context)
 void DfxUnwindLocal::InstallLocalDumper(int sig)
 {
     struct sigaction action;
-    memset_s(&action, sizeof(action), 0, sizeof(action));
-    memset_s(&oldSigaction_, sizeof(oldSigaction_), 0, sizeof(oldSigaction_));
+    (void)memset_s(&action, sizeof(action), 0, sizeof(action));
+    (void)memset_s(&oldSigaction_, sizeof(oldSigaction_), 0, sizeof(oldSigaction_));
     sigfillset(&action.sa_mask);
     action.sa_sigaction = DfxUnwindLocal::LocalDumpering;
     action.sa_flags = SA_RESTART | SA_SIGINFO;
