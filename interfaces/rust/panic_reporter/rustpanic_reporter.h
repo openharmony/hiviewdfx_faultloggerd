@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -13,19 +13,30 @@
  * limitations under the License.
  */
 
-#ifndef DFX_BACKTRACE_LOCAL_H
-#define DFX_BACKTRACE_LOCAL_H
+#ifndef RUST_PANIC_REPORTER
+#define RUST_PANIC_REPORTER
 
-#include <cinttypes>
 #include <string>
 
 namespace OHOS {
 namespace HiviewDFX {
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-bool PrintBacktrace(int32_t fd = -1, bool fast = false);
+typedef struct RustPanicInfo {
+    const char *filename;
+    unsigned int line;
+    const char *msg;
+} RustPanicInfo;
 
-bool GetBacktrace(std::string& out, bool fast = false);
+bool ReportTraceInfo(RustPanicInfo *info);
 
+bool PrintTraceInfo();
+
+#ifdef __cplusplus
+}
+#endif
 } // namespace HiviewDFX
 } // namespace OHOS
 #endif
