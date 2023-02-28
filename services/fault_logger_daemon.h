@@ -29,10 +29,12 @@ public:
     int32_t CreateFileForRequest(int32_t type, int32_t pid, uint64_t time, bool debugFlag) const;
 
 private:
-    void LoopAcceptRequestAndFork(int socketFd);
-    static void HandleRequesting(int32_t connectionFd);
+    void AddEvent(int32_t epollFd, int32_t addFd, int32_t event);
+    void DelEvent(int32_t epollFd, int32_t delFd, int32_t event);
+    void HandleAccept(int32_t epollFd, int32_t socketFd);
+    void HandleRequest(int32_t epollFd, int32_t connectionFd);
+
     void RemoveTempFileIfNeed();
-    void HandleRequest(int32_t connectionFd);
     void HandleDefaultClientRequest(int32_t connectionFd, const FaultLoggerdRequest* request);
     void HandleLogFileDesClientRequest(int32_t connectionFd, const FaultLoggerdRequest* request);
     void HandlePrintTHilogClientRequest(int32_t const connectionFd, FaultLoggerdRequest* request);
@@ -40,9 +42,6 @@ private:
     void HandlePermissionRequest(int32_t connectionFd, FaultLoggerdRequest* request);
     void HandleSdkDumpRequest(int32_t connectionFd, FaultLoggerdRequest* request);
     void HandlePipeFdClientRequest(int32_t connectionFd, FaultLoggerdRequest* request);
-
-private:
-    static FaultLoggerDaemon* faultLoggerDaemon_;
 };
 } // namespace HiviewDFX
 } // namespace OHOS

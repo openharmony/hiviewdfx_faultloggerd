@@ -138,7 +138,7 @@ void FaultLoggerPipeMap::Set(int pid)
     std::lock_guard<std::mutex> lck(pipeMapsMutex_);
     if (!Find(pid)) {
         std::unique_ptr<FaultLoggerPipe2> ptr = std::unique_ptr<FaultLoggerPipe2>(new FaultLoggerPipe2());
-        faultLoggerPipes_.insert(make_pair(pid, std::move(ptr)));
+        faultLoggerPipes_.emplace(pid, std::move(ptr));
     }
 }
 

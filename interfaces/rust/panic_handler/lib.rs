@@ -32,7 +32,7 @@ pub struct RustPanicInfo {
     pub msg: *const c_char,
 }
 
-#[link(name = "panic_reporter.z")]
+#[link(name = "panic_reporter")]
 extern "C" {
     fn ReportTraceInfo(info: *mut RustPanicInfo) -> bool;
     fn PrintTraceInfo() -> bool;
