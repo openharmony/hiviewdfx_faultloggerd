@@ -40,6 +40,8 @@ ohos_shared_library("panic_reporter") {
     "hisysevent_native:libhisysevent",
   ]
 
+  output_extension = "so"
+
   part_name = "faultloggerd"
   subsystem_name = "hiviewdfx"
 }

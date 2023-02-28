@@ -24,6 +24,7 @@
 #include <fcntl.h>
 #include <securec.h>
 #include <sstream>
+#include <sys/epoll.h>
 #include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/syscall.h>
@@ -48,12 +49,11 @@ using FaultLoggerdRequest = struct FaultLoggerdRequest;
 std::shared_ptr<FaultLoggerConfig> faultLoggerConfig_;
 std::shared_ptr<FaultLoggerSecure> faultLoggerSecure_;
 std::shared_ptr<FaultLoggerPipeMap> faultLoggerPipeMap_;
-FaultLoggerDaemon* FaultLoggerDaemon::faultLoggerDaemon_ = nullptr;
 
 namespace {
 constexpr int32_t MAX_CONNECTION = 30;
 constexpr int32_t REQUEST_BUF_SIZE = 1024;
-
+constexpr int32_t MAX_EPOLL_EVENT = 1024;
 const int32_t FAULTLOG_FILE_PROP = 0640;
 
 static const std::string FAULTLOGGERD_TAG = "FaultLoggerd";
@@ -81,7 +81,6 @@ static std::string GetRequestTypeName(int32_t type)
 
 FaultLoggerDaemon::FaultLoggerDaemon()
 {
-    faultLoggerDaemon_ = this;
 }
 
 int32_t FaultLoggerDaemon::StartServer()
@@ -98,11 +97,102 @@ int32_t FaultLoggerDaemon::StartServer()
         return -1;
     }
 
-    DfxLogDebug("%s :: %s: start loop accept.", FAULTLOGGERD_TAG.c_str(), __func__);
-    LoopAcceptRequestAndFork(socketFd);
+    int epollFd = epoll_create(MAX_EPOLL_EVENT);
+    if(epollFd < 0) {
+        DfxLogError("%s :: %s: epoll_create failed.", FAULTLOGGERD_TAG.c_str(), __func__);
+        close(socketFd);
+        return -1;
+    }
+    signal(SIGCHLD, SIG_IGN);
+    AddEvent(epollFd, socketFd, EPOLLIN);
 
-    close(socketFd);
+    epoll_event events[MAX_CONNECTION];
+    DfxLogDebug("%s :: %s: start epoll wait.", FAULTLOGGERD_TAG.c_str(), __func__);
+    while (true) {
+        size_t epollNum = epoll_wait(epollFd, events, MAX_CONNECTION, -1);
+        for (size_t i = 0; i < epollNum; i++) {
+            if ((events[i].events & EPOLLIN) != EPOLLIN) {
+                continue;
+            }
+            int fd = events[i].data.fd;
+
+            if (fd == socketFd)
+                HandleAccept(epollFd, socketFd);
+            else {
+                HandleRequest(epollFd, events[i].data.fd);
+            }
+        }
+    }
+
+    if (socketFd > 0) {
+        close(socketFd);
+    }
+    if (epollFd > 0) {
+        close(epollFd);
+    }
     return 0;
+}
+
+void FaultLoggerDaemon::HandleAccept(int32_t epollFd, int32_t socketFd)
+{
+    struct sockaddr_un clientAddr;
+    socklen_t clientAddrSize = static_cast<socklen_t>(sizeof(clientAddr));
+
+    int connectionFd = accept(socketFd, reinterpret_cast<struct sockaddr *>(&clientAddr), &clientAddrSize);
+    if (connectionFd < 0) {
+        DfxLogError("%s :: Failed to accept connection", FAULTLOGGERD_TAG.c_str());
+        return;
+    }
+    DfxLogDebug("%s :: %s: accept: %d.", FAULTLOGGERD_TAG.c_str(), __func__, connectionFd);
+    AddEvent(epollFd, connectionFd, EPOLLIN);
+}
+
+void FaultLoggerDaemon::HandleRequest(int32_t epollFd, int32_t connectionFd)
+{
+    char buf[REQUEST_BUF_SIZE] = {0};
+
+    do {
+        ssize_t nread = read(connectionFd, buf, sizeof(buf));
+        if (nread < 0) {
+            DfxLogError("%s :: Failed to read message", FAULTLOGGERD_TAG.c_str());
+            break;
+        } else if (nread == 0) {
+            DfxLogError("%s :: HandleRequest :: Read null from request socket", FAULTLOGGERD_TAG.c_str());
+            break;
+        } else if (nread != static_cast<long>(sizeof(FaultLoggerdRequest))) {
+            DfxLogError("%s :: Unmatched request length", FAULTLOGGERD_TAG.c_str());
+            break;
+        }
+
+        auto request = reinterpret_cast<FaultLoggerdRequest *>(buf);
+        DfxLogDebug("%s :: clientType(%d).\n", FAULTLOGGERD_TAG.c_str(), request->clientType);
+        switch (request->clientType) {
+            case static_cast<int32_t>(FaultLoggerClientType::DEFAULT_CLIENT):
+                HandleDefaultClientRequest(connectionFd, request);
+                break;
+            case static_cast<int32_t>(FaultLoggerClientType::LOG_FILE_DES_CLIENT):
+                HandleLogFileDesClientRequest(connectionFd, request);
+                break;
+            case static_cast<int32_t>(FaultLoggerClientType::PRINT_T_HILOG_CLIENT):
+                HandlePrintTHilogClientRequest(connectionFd, request);
+                break;
+            case static_cast<int32_t>(FaultLoggerClientType::PERMISSION_CLIENT):
+                HandlePermissionRequest(connectionFd, request);
+                break;
+            case static_cast<int32_t>(FaultLoggerClientType::SDK_DUMP_CLIENT):
+                HandleSdkDumpRequest(connectionFd, request);
+                break;
+            case static_cast<int32_t>(FaultLoggerClientType::PIPE_FD_CLIENT):
+                HandlePipeFdClientRequest(connectionFd, request);
+                break;
+            default:
+                DfxLogError("%s :: unknown clientType(%d).\n", FAULTLOGGERD_TAG.c_str(), request->clientType);
+                break;
+        }
+    } while (false);
+
+    close(connectionFd);
+    DelEvent(epollFd, connectionFd, EPOLLIN);
 }
 
 bool FaultLoggerDaemon::InitEnvironment()
@@ -360,58 +450,6 @@ void FaultLoggerDaemon::HandleSdkDumpRequest(int32_t connectionFd, FaultLoggerdR
     }
 }
 
-void FaultLoggerDaemon::HandleRequesting(int32_t connectionFd)
-{
-    faultLoggerDaemon_->HandleRequest(connectionFd);
-}
-
-void FaultLoggerDaemon::HandleRequest(int32_t connectionFd)
-{
-    char buf[REQUEST_BUF_SIZE] = {0};
-
-    do {
-        ssize_t nread = read(connectionFd, buf, sizeof(buf));
-        if (nread < 0) {
-            DfxLogError("%s :: Failed to read message", FAULTLOGGERD_TAG.c_str());
-            break;
-        } else if (nread == 0) {
-            DfxLogError("%s :: HandleRequest :: Read null from request socket", FAULTLOGGERD_TAG.c_str());
-            break;
-        } else if (nread != static_cast<long>(sizeof(FaultLoggerdRequest))) {
-            DfxLogError("%s :: Unmatched request length", FAULTLOGGERD_TAG.c_str());
-            break;
-        }
-
-        auto request = reinterpret_cast<FaultLoggerdRequest *>(buf);
-        DfxLogDebug("%s :: clientType(%d).\n", FAULTLOGGERD_TAG.c_str(), request->clientType);
-        switch (request->clientType) {
-            case static_cast<int32_t>(FaultLoggerClientType::DEFAULT_CLIENT):
-                HandleDefaultClientRequest(connectionFd, request);
-                break;
-            case static_cast<int32_t>(FaultLoggerClientType::LOG_FILE_DES_CLIENT):
-                HandleLogFileDesClientRequest(connectionFd, request);
-                break;
-            case static_cast<int32_t>(FaultLoggerClientType::PRINT_T_HILOG_CLIENT):
-                HandlePrintTHilogClientRequest(connectionFd, request);
-                break;
-            case static_cast<int32_t>(FaultLoggerClientType::PERMISSION_CLIENT):
-                HandlePermissionRequest(connectionFd, request);
-                break;
-            case static_cast<int32_t>(FaultLoggerClientType::SDK_DUMP_CLIENT):
-                HandleSdkDumpRequest(connectionFd, request);
-                break;
-            case static_cast<int32_t>(FaultLoggerClientType::PIPE_FD_CLIENT):
-                HandlePipeFdClientRequest(connectionFd, request);
-                break;
-            default:
-                DfxLogError("%s :: unknown clientType(%d).\n", FAULTLOGGERD_TAG.c_str(), request->clientType);
-                break;
-        }
-    } while (false);
-
-    close(connectionFd);
-}
-
 int32_t FaultLoggerDaemon::CreateFileForRequest(int32_t type, int32_t pid, uint64_t time, bool debugFlag) const
 {
     std::string typeStr = GetRequestTypeName(type);
@@ -495,23 +533,18 @@ void FaultLoggerDaemon::RemoveTempFileIfNeed()
     }
 }
 
-void FaultLoggerDaemon::LoopAcceptRequestAndFork(int socketFd)
-{
-    struct sockaddr_un clientAddr;
-    socklen_t clientAddrSize = static_cast<socklen_t>(sizeof(clientAddr));
-    signal(SIGCHLD, SIG_IGN);
+void FaultLoggerDaemon::AddEvent(int32_t epollFd, int32_t addFd, int32_t event) {
+    epoll_event ev;
+    ev.events = event;
+    ev.data.fd = addFd;
+    epoll_ctl(epollFd, EPOLL_CTL_ADD, addFd, &ev);
+}
 
-    while (true) {
-        int connectionFd = accept(socketFd, reinterpret_cast<struct sockaddr *>(&clientAddr), &clientAddrSize);
-        if (connectionFd < 0) {
-            DfxLogError("%s :: Failed to accept connection", FAULTLOGGERD_TAG.c_str());
-            continue;
-        }
-        DfxLogDebug("%s :: %s: accept: %d.", FAULTLOGGERD_TAG.c_str(), __func__, connectionFd);
-
-        std::thread th(FaultLoggerDaemon::HandleRequesting, connectionFd);
-        th.detach();
-    }
+void FaultLoggerDaemon::DelEvent(int32_t epollFd, int32_t delFd, int32_t event) {
+    epoll_event ev;
+    ev.events = event;
+    ev.data.fd = delFd;
+    epoll_ctl(epollFd, EPOLL_CTL_DEL, delFd, &ev);
 }
 } // namespace HiviewDFX
 } // namespace OHOS
