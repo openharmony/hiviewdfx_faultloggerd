@@ -38,6 +38,7 @@
         "//base/hiviewdfx/faultloggerd/interfaces/innerkits/faultloggerd_client:libfaultloggerd",
         "//base/hiviewdfx/faultloggerd/interfaces/rust:libpanic_handler",
         "//base/hiviewdfx/faultloggerd/interfaces/rust:libpanic_reporter",
+        "//base/hiviewdfx/faultloggerd/interfaces/rust:libstacktrace_rust",
         "//base/hiviewdfx/faultloggerd/tools/dump_catcher:dumpcatcher",
         "//base/hiviewdfx/faultloggerd/tools/process_dump:processdump",
         "//base/hiviewdfx/faultloggerd/services:faultloggerd"

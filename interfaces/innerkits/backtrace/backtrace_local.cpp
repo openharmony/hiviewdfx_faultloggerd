@@ -17,6 +17,7 @@
 
 #include <cstring>
 #include <hilog/log.h>
+#include <mutex>
 #include <unistd.h>
 #include <vector>
 
@@ -56,6 +57,20 @@ bool PrintBacktrace(int32_t fd, bool fast)
 bool GetBacktrace(std::string& out, bool fast)
 {
     return BacktraceLocalThread::GetBacktraceString(out, BACKTRACE_CURRENT_THREAD, SKIP_ONE_FRAME, fast);
+}
+
+bool PrintTrace(int32_t fd)
+{
+    return PrintBacktrace(fd, false);
+}
+
+const char* GetTrace()
+{
+    static std::string trace;
+    if (!GetBacktrace(trace, false)) {
+        HILOG_ERROR(LOG_CORE, "Failed to get trace string");
+    }
+    return trace.c_str();
 }
 } // namespace HiviewDFX
 } // namespace OHOS

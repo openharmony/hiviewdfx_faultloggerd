@@ -13,20 +13,25 @@
 
 import("//base/hiviewdfx/faultloggerd/faultloggerd.gni")
 
-group("libpanic_handler") {
-  if (!defined(ohos_lite)) {
-    deps = [ "panic_handler:panic_handler" ]
-  }
-}
+if (defined(ohos_lite)) {
+  import("//build/lite/config/component/lite_component.gni")
+  import("//build/lite/config/test.gni")
 
-group("libpanic_reporter") {
-  if (!defined(ohos_lite)) {
-    deps = [ "panic_reporter:panic_reporter" ]
+  group("unittest") {
+    deps = []
   }
-}
+} else {
+  import("//build/config/features.gni")
+  import("//build/test.gni")
 
-group("libstacktrace_rust") {
-  if (!defined(ohos_lite)) {
-    deps = [ "stacktrace:stacktrace_rust" ]
+  ohos_rust_unittest("test_stacktrace_rust") {
+    module_out_path = "faultloggerd/stacktrace_rust"
+    sources = [ "main.rs" ]
+    deps = [ "$faultloggerd_path/interfaces/rust/stacktrace:stacktrace_rust" ]
+  }
+
+  group("unittest") {
+    testonly = true
+    deps = [ ":test_stacktrace_rust" ]
   }
 }

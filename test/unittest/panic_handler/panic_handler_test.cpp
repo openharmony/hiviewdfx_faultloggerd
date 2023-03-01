@@ -45,7 +45,7 @@ void PanicHandlerTest::TearDownTestCase()
 
 void PanicHandlerTest::SetUp()
 {
-    chmod("/system/bin/rustpanic_maker", 0755); // 0755 : -rwxr-xr-x
+    chmod("/data/rustpanic_maker", 0755); // 0755 : -rwxr-xr-x
 }
 
 void PanicHandlerTest::TearDown()
@@ -61,9 +61,9 @@ static void ForkAndTriggerRustPanic(bool ismain)
         return;
     } else if (pid == 0) {
         if (ismain) {
-            execl("/system/bin/rustpanic_maker", "rustpanic_maker", "main", nullptr);
+            execl("/data/rustpanic_maker", "rustpanic_maker", "main", nullptr);
         } else {
-            execl("/system/bin/rustpanic_maker", "rustpanic_maker", "child", nullptr);
+            execl("/data/rustpanic_maker", "rustpanic_maker", "child", nullptr);
         }
     }
 }

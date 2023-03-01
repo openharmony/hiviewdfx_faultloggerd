@@ -16,6 +16,7 @@
 //! Panic trigger for Rust.
 
 extern crate panic_handler;
+extern crate stacktrace_rust;
 
 use std::{panic, thread};
 
@@ -35,6 +36,13 @@ fn test_panic(pt: &String) {
         panic_main();
     } else if pt == "child" {
         panic_child();
+    } else if pt == "multi" {
+        get_trace_in_multi_thread();
+    }else if pt == "print_trace" {
+        stacktrace_rust::print_trace(1);
+    } else if pt == "get_trace" {
+        let ret = stacktrace_rust::get_trace();
+        println!("{}", ret);
     }
 }
 
@@ -43,8 +51,22 @@ fn panic_main() {
 }
 
 fn panic_child() {
-    let r = thread::spawn(move || {
+    let ret = thread::spawn(move || {
         panic!("panic in child thread");
     }).join();
-    println!("{:?}", r);
+    println!("{:?}", ret);
+}
+
+fn get_trace_in_multi_thread() {
+    let mut handles = vec![];
+    for _ in 0..50 {
+        let handle = thread::spawn(move || {
+            let trace = stacktrace_rust::get_trace();
+            println!("{}", trace);
+        });
+        handles.push(handle);
+    }
+    for handle in handles {
+        handle.join().unwrap();
+    }
 }
