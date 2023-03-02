@@ -236,7 +236,7 @@ std::string BacktraceLocalThread::GetNativeFrameStr(const NativeFrame& frame)
     return ss.str();
 }
 
-bool BacktraceLocalThread::GetBacktraceFrames(std::vector<NativeFrame>& frames, 
+bool BacktraceLocalThread::GetBacktraceFrames(std::vector<NativeFrame>& frames,
     int32_t tid, size_t skipFrameNum, bool fast)
 {
     unw_addr_space_t as;
@@ -258,7 +258,7 @@ bool BacktraceLocalThread::GetBacktraceFrames(std::vector<NativeFrame>& frames,
     return true;
 }
 
-bool BacktraceLocalThread::GetBacktraceString(std::string& out, 
+bool BacktraceLocalThread::GetBacktraceString(std::string& out,
     int32_t tid, size_t skipFrameNum, bool fast)
 {
     unw_addr_space_t as;

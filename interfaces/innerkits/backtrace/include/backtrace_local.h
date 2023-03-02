@@ -26,6 +26,10 @@ bool PrintBacktrace(int32_t fd = -1, bool fast = false);
 
 bool GetBacktrace(std::string& out, bool fast = false);
 
+extern "C" bool PrintTrace(int32_t fd = -1);
+
+extern "C" const char* GetTrace();
+
 } // namespace HiviewDFX
 } // namespace OHOS
 #endif

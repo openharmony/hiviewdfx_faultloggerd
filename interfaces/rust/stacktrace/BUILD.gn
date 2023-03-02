@@ -13,20 +13,12 @@
 
 import("//base/hiviewdfx/faultloggerd/faultloggerd.gni")
 
-group("libpanic_handler") {
-  if (!defined(ohos_lite)) {
-    deps = [ "panic_handler:panic_handler" ]
-  }
-}
-
-group("libpanic_reporter") {
-  if (!defined(ohos_lite)) {
-    deps = [ "panic_reporter:panic_reporter" ]
-  }
-}
-
-group("libstacktrace_rust") {
-  if (!defined(ohos_lite)) {
-    deps = [ "stacktrace:stacktrace_rust" ]
-  }
+ohos_rust_shared_library("stacktrace_rust") {
+  sources = [ "lib.rs" ]
+  deps =
+      [ "$faultloggerd_path/interfaces/innerkits/backtrace:libbacktrace_local" ]
+  crate_name = "stacktrace_rust"
+  crate_type = "dylib"
+  part_name = "faultloggerd"
+  subsystem_name = "hiviewdfx"
 }

@@ -15,7 +15,7 @@
 <configuration ver="2.0">
     <target name="test_panic_handler">
         <preparer>
-            <option name="push" value="hiviewdfx/faultloggerd/rustpanic_maker -> /system/bin/" src="out"/>
+            <option name="push" value="hiviewdfx/faultloggerd/rustpanic_maker -> /data/" src="out"/>
         </preparer>
     </target>
 </configuration>
