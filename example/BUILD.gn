@@ -57,7 +57,7 @@ if (defined(ohos_lite)) {
     deps = [
       "$faultloggerd_path/common/dfxlog:static_common_log",
       "$faultloggerd_path/common/dfxutil:dfx_util",
-      "$faultloggerd_path/interfaces/innerkits/dump_catcher:lib_dfx_dump_catcher",
+      "$faultloggerd_path/interfaces/innerkits/dump_catcher:libdfx_dumpcatcher",
       "$faultloggerd_path/interfaces/innerkits/faultloggerd_client:libfaultloggerd",
       "$hilog_lite_deps_path",
       "//third_party/libunwind:libunwind_local",
@@ -83,7 +83,7 @@ if (defined(ohos_lite)) {
 
     deps = [
       "$faultloggerd_path/common/dfxlog:static_common_log",
-      "$faultloggerd_path/interfaces/innerkits/dump_catcher:lib_dfx_dump_catcher",
+      "$faultloggerd_path/interfaces/innerkits/dump_catcher:libdfx_dumpcatcher",
     ]
 
     external_deps = [

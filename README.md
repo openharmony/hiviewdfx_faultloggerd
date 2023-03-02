@@ -197,7 +197,7 @@ ohos_executable("dumpcatcherdemo") {
   configs = [ ":dumpcatcherdemo_config" ]
 
   deps = [ 
-    "//base/hiviewdfx/faultloggerd/interfaces/innerkits/dump_catcher:lib_dfx_dump_catcher",
+    "//base/hiviewdfx/faultloggerd/interfaces/innerkits/dump_catcher:libdfx_dumpcatcher",
     "//utils/native/base:utils",
   ]
 

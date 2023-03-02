@@ -36,7 +36,7 @@ if (defined(ohos_lite)) {
       ]
 
       deps = [
-        "$faultloggerd_path/interfaces/innerkits/dump_catcher:lib_dfx_dump_catcher",
+        "$faultloggerd_path/interfaces/innerkits/dump_catcher:libdfx_dumpcatcher",
         "//base/hiviewdfx/hilog_lite/frameworks/featured:hilog_shared",
       ]
     }
@@ -64,7 +64,7 @@ if (defined(ohos_lite)) {
     sources = [ "dumpcatcher_interfaces_test.cpp" ]
 
     deps = [
-      "$faultloggerd_path/interfaces/innerkits/dump_catcher:lib_dfx_dump_catcher",
+      "$faultloggerd_path/interfaces/innerkits/dump_catcher:libdfx_dumpcatcher",
       "//third_party/googletest:gtest_main",
     ]
 

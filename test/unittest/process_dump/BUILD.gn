@@ -111,7 +111,7 @@ if (defined(ohos_lite)) {
     defines = [ "UNITTEST" ]
 
     deps = [
-      "$faultloggerd_path/interfaces/innerkits/dump_catcher:lib_dfx_dump_catcher",
+      "$faultloggerd_path/interfaces/innerkits/dump_catcher:libdfx_dumpcatcher",
       "$faultloggerd_path/tools/process_dump:process_info_src",
       "//third_party/googletest:gmock_main",
       "//third_party/googletest:gtest_main",
