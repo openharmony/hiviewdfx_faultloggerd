@@ -35,6 +35,7 @@
         "//base/hiviewdfx/faultloggerd/interfaces/innerkits/backtrace:libbacktrace_local",
         "//base/hiviewdfx/faultloggerd/interfaces/innerkits/signal_handler:dfx_signalhandler",
         "//base/hiviewdfx/faultloggerd/interfaces/innerkits/dump_catcher:lib_dfx_dump_catcher",
+        "//base/hiviewdfx/faultloggerd/interfaces/innerkits/dump_catcher:libdfx_dumpcatcher",
         "//base/hiviewdfx/faultloggerd/interfaces/innerkits/faultloggerd_client:libfaultloggerd",
         "//base/hiviewdfx/faultloggerd/interfaces/rust:libpanic_handler",
         "//base/hiviewdfx/faultloggerd/interfaces/rust:libpanic_reporter",
@@ -54,6 +55,15 @@
         },
         {
           "name": "//base/hiviewdfx/faultloggerd/interfaces/innerkits/dump_catcher:lib_dfx_dump_catcher",
+          "header": {
+            "header_files": [
+              "dfx_dump_catcher.h"
+            ],
+            "header_base": "//base/hiviewdfx/faultloggerd/interfaces/innerkits/dump_catcher/include"
+          }
+        },
+        {
+          "name": "//base/hiviewdfx/faultloggerd/interfaces/innerkits/dump_catcher:libdfx_dumpcatcher",
           "header": {
             "header_files": [
               "dfx_dump_catcher.h"

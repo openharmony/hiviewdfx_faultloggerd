@@ -74,6 +74,58 @@ if (defined(ohos_lite)) {
       "//third_party/libunwind:libunwind_local",
     ]
   }
+
+  shared_library("libdfx_dumpcatcher") {
+    visibility = [ "*:*" ]
+
+    include_dirs = [
+      "include",
+      "//commonlibrary/c_utils/base/include",
+      "$faultloggerd_path/common",
+      "$faultloggerd_path/common/dfxlog",
+      "$faultloggerd_path/common/dfxutil",
+      "//third_party/libunwind/include",
+      "//third_party/libunwind/src",
+      "$faultloggerd_path/interfaces/innerkits/faultloggerd_client/include",
+      "$faultloggerd_path/tools/process_dump",
+      "$hilog_lite_include_path",
+    ]
+
+    if (target_cpu == "arm") {
+      include_dirs += [ "//third_party/libunwind/include/tdep-arm" ]
+    } else if (target_cpu == "arm64") {
+      include_dirs += [ "//third_party/libunwind/include/tdep-aarch64" ]
+    } else if (target_cpu == "x64" || target_cpu == "x86_64") {
+      include_dirs += [ "//third_party/libunwind/include/tdep-x86_64" ]
+    } else if (target_cpu == "mipsel") {
+      include_dirs += [ "//third_party/libunwind/include/tdep-mips" ]
+    }
+
+    sources = dumpcatcher_sources
+    sources += [
+      "$faultloggerd_path/common/dfxutil/directory_ex.cpp",
+      "$faultloggerd_path/common/dfxutil/file_ex.cpp",
+      "$faultloggerd_path/frameworks/local/backtrace_local_static.cpp",
+      "$faultloggerd_path/frameworks/local/backtrace_local_thread.cpp",
+      "$faultloggerd_path/tools/process_dump/dfx_symbols_cache.cpp",
+    ]
+
+    defines = [
+      "HAVE_CONFIG_H",
+      "HAVE_ELF_H",
+      "HAVE_LINK_H",
+    ]
+
+    deps = [
+      "$faultloggerd_path/common/dfxlog:static_common_log",
+      "$faultloggerd_path/common/dfxutil:dfx_util",
+      "$faultloggerd_path/interfaces/innerkits/backtrace:libbacktrace_local",
+      "$faultloggerd_path/interfaces/innerkits/faultloggerd_client:libfaultloggerd",
+      "//base/hiviewdfx/hilog_lite/frameworks/featured:hilog_shared",
+      "//third_party/bounds_checking_function:libsec_shared",
+      "//third_party/libunwind:libunwind_local",
+    ]
+  }
 } else {
   config("dfx_dump_catcher_config") {
     visibility = [ "*:*" ]
@@ -108,6 +160,30 @@ if (defined(ohos_lite)) {
   }
 
   ohos_shared_library("lib_dfx_dump_catcher") {
+    public_configs = [ ":dfx_dump_catcher_config" ]
+
+    sources = dumpcatcher_sources
+
+    deps = [
+      "$faultloggerd_path/common/dfxlog:static_common_log",
+      "$faultloggerd_path/common/dfxutil:dfx_util",
+      "$faultloggerd_path/interfaces/innerkits/backtrace:libbacktrace_local",
+      "$faultloggerd_path/interfaces/innerkits/faultloggerd_client:libfaultloggerd",
+    ]
+
+    external_deps = [
+      "c_utils:utils",
+      "hilog_native:libhilog",
+    ]
+    install_images = [
+      "system",
+      "updater",
+    ]
+    part_name = "faultloggerd"
+    subsystem_name = "hiviewdfx"
+  }
+
+  ohos_shared_library("libdfx_dumpcatcher") {
     public_configs = [ ":dfx_dump_catcher_config" ]
 
     sources = dumpcatcher_sources
