@@ -98,7 +98,7 @@ int32_t FaultLoggerDaemon::StartServer()
     }
 
     int epollFd = epoll_create(MAX_EPOLL_EVENT);
-    if(epollFd < 0) {
+    if (epollFd < 0) {
         DfxLogError("%s :: %s: epoll_create failed.", FAULTLOGGERD_TAG.c_str(), __func__);
         close(socketFd);
         return -1;
@@ -116,9 +116,9 @@ int32_t FaultLoggerDaemon::StartServer()
             }
             int fd = events[i].data.fd;
 
-            if (fd == socketFd)
+            if (fd == socketFd) {
                 HandleAccept(epollFd, socketFd);
-            else {
+            } else {
                 HandleRequest(epollFd, events[i].data.fd);
             }
         }
@@ -533,14 +533,16 @@ void FaultLoggerDaemon::RemoveTempFileIfNeed()
     }
 }
 
-void FaultLoggerDaemon::AddEvent(int32_t epollFd, int32_t addFd, int32_t event) {
+void FaultLoggerDaemon::AddEvent(int32_t epollFd, int32_t addFd, int32_t event)
+{
     epoll_event ev;
     ev.events = event;
     ev.data.fd = addFd;
     epoll_ctl(epollFd, EPOLL_CTL_ADD, addFd, &ev);
 }
 
-void FaultLoggerDaemon::DelEvent(int32_t epollFd, int32_t delFd, int32_t event) {
+void FaultLoggerDaemon::DelEvent(int32_t epollFd, int32_t delFd, int32_t event)
+{
     epoll_event ev;
     ev.events = event;
     ev.data.fd = delFd;

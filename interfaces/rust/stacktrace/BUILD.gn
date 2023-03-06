@@ -15,6 +15,7 @@ import("//base/hiviewdfx/faultloggerd/faultloggerd.gni")
 
 ohos_rust_shared_library("stacktrace_rust") {
   sources = [ "lib.rs" ]
+  cflags_cc = [ "-DRUSTC_DEMANGLE" ]
   deps =
       [ "$faultloggerd_path/interfaces/innerkits/backtrace:libbacktrace_local" ]
   crate_name = "stacktrace_rust"

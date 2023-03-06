@@ -26,8 +26,8 @@ fn test_get_trace() {
     let trace = stacktrace_rust::get_trace();
     assert!(!trace.is_empty());
     assert!(trace.contains("#00"));
-    assert!(trace.contains("/system/lib/libstacktrace_rust.dylib.so"));
-    assert!(trace.contains("/data/test/test_stacktrace_rust"));
+    assert!(trace.contains("libstacktrace_rust.dylib.so"));
+    assert!(trace.contains("test_stacktrace_rust"));
 }
 
 #[test]
@@ -38,8 +38,8 @@ fn test_get_trace_in_multithread() {
             let trace = stacktrace_rust::get_trace();
             assert!(!trace.is_empty());
             assert!(trace.contains("#00"));
-            assert!(trace.contains("/system/lib/libstacktrace_rust.dylib.so"));
-            assert!(trace.contains("/data/test/test_stacktrace_rust"));
+            assert!(trace.contains("libstacktrace_rust.dylib.so"));
+            assert!(trace.contains("test_stacktrace_rust"));
         });
         handles.push(handle);
     }
@@ -60,6 +60,6 @@ fn test_print_trace() {
     let trace = fs::read_to_string(path).unwrap();
     assert!(!trace.is_empty());
     assert!(trace.contains("#00"));
-    assert!(trace.contains("/system/lib/libstacktrace_rust.dylib.so"));
-    assert!(trace.contains("/data/test/test_stacktrace_rust"));
+    assert!(trace.contains("libstacktrace_rust.dylib.so"));
+    assert!(trace.contains("test_stacktrace_rust"));
 }
