@@ -53,9 +53,9 @@ bool CppCrashReporter::Format()
     pid_ = process_->GetPid();
     uid_ = process_->GetUid();
     reason_ = PrintSignal(siginfo_);
-    auto msg = "LastFatalMessage:" + process_->GetFatalMessage();
+    auto msg = process_->GetFatalMessage();
     if (siginfo_.si_signo == SIGABRT && !msg.empty()) {
-        stack_ = msg + "\n";
+        stack_ = "LastFatalMessage:" + msg + "\n";
     }
     auto threads = process_->GetThreads();
     std::shared_ptr<DfxThread> crashThread = nullptr;
