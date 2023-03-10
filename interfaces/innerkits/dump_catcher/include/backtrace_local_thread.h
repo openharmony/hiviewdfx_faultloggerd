@@ -59,7 +59,6 @@ private:
     void UpdateFrameFuncName(unw_addr_space_t as, std::shared_ptr<DfxSymbolsCache> cache, NativeFrame& frame);
 #ifdef __aarch64__
     bool Step(uintptr_t& fp, uintptr_t& pc);
-    bool IsAddressReadable(uintptr_t address);
     static int DlIteratePhdrCallback(struct dl_phdr_info *info, size_t size, void *data);
 #endif
 
@@ -67,7 +66,8 @@ private:
     int32_t tid_;
     std::vector<NativeFrame> frames_;
 #ifdef __aarch64__
-    int32_t pipefd_[2];
+    uintptr_t stackBottom_;
+    uintptr_t stackTop_;
 #endif
 };
 } // namespace HiviewDFX

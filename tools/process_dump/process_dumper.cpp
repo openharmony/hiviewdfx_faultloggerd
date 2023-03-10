@@ -59,7 +59,6 @@ ProcessDumper &ProcessDumper::GetInstance()
 void ProcessDumper::PrintDumpProcessWithSignalContextHeader(std::shared_ptr<ProcessDumpRequest> request)
 {
     auto info = request->GetSiginfo();
-    auto msg = request->GetLastFatalMessage();
     if (info.si_signo != SIGDUMP) {
         DfxRingBufferWrapper::GetInstance().AppendMsg("Timestamp:" + GetCurrentTimeStr(request->GetTimeStamp()));
     } else {
@@ -72,6 +71,7 @@ void ProcessDumper::PrintDumpProcessWithSignalContextHeader(std::shared_ptr<Proc
     if (info.si_signo != SIGDUMP) {
         DfxRingBufferWrapper::GetInstance().AppendMsg("Reason:");
         DfxRingBufferWrapper::GetInstance().AppendMsg(PrintSignal(info));
+        auto msg = request->GetLastFatalMessage();
         if (info.si_signo == SIGABRT && !msg.empty()) {
             DfxRingBufferWrapper::GetInstance().AppendBuf("LastFatalMessage:%s\n", msg.c_str());
         }
