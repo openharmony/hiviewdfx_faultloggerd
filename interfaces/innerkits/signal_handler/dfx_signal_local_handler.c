@@ -35,7 +35,7 @@
 #define LOCAL_HANDLER_STACK_SIZE (64 * 1024) // 64K
 
 static CrashFdFunc g_crashFdFn = NULL;
-static void *g_reservedChildStack;
+static void *g_reservedChildStack = NULL;
 static struct ProcessDumpRequest g_request;
 static pthread_mutex_t g_signalHandlerMutex = PTHREAD_MUTEX_INITIALIZER;
 
@@ -74,7 +74,7 @@ static int DoCrashHandler(void* arg)
     return 0;
 }
 
-static void DFX_SignalHandler(int sig, siginfo_t * si, void * context)
+static void DFX_SignalLocalHandler(int sig, siginfo_t * si, void * context)
 {
     pthread_mutex_lock(&g_signalHandlerMutex);
     (void)memset_s(&g_request, sizeof(g_request), 0, sizeof(g_request));
@@ -82,7 +82,7 @@ static void DFX_SignalHandler(int sig, siginfo_t * si, void * context)
     g_request.tid = gettid();
     g_request.pid = getpid();
     g_request.timeStamp = GetTimeMilliseconds();
-    DfxLogInfo("CrashHandler :: sig(%d), pid(%d), tid(%d).", sig, g_request.pid, g_request.tid);
+    DfxLogInfo("DFX_SignalLocalHandler :: sig(%d), pid(%d), tid(%d).", sig, g_request.pid, g_request.tid);
 
     GetThreadName(g_request.threadName, sizeof(g_request.threadName));
     GetProcessName(g_request.processName, sizeof(g_request.processName));
@@ -127,7 +127,7 @@ void DFX_InstallLocalSignalHandler(void)
     struct sigaction action;
     (void)memset_s(&action, sizeof(action), 0, sizeof(action));
     sigfillset(&action.sa_mask);
-    action.sa_sigaction = DFX_SignalHandler;
+    action.sa_sigaction = DFX_SignalLocalHandler;
     action.sa_flags = SA_RESTART | SA_SIGINFO | SA_ONSTACK;
 
     for (size_t i = 0; i < sizeof(g_platformSignals) / sizeof(g_platformSignals[0]); i++) {

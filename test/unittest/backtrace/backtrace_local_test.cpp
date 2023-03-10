@@ -35,7 +35,7 @@
 #include "backtrace_local_static.h"
 #include "backtrace_local_thread.h"
 #include "dfx_symbols_cache.h"
-#include "elapsed_time_counter.h"
+#include "elapsed_time.h"
 #include "test_utils.h"
 
 using namespace testing;
@@ -168,12 +168,11 @@ HWTEST_F(BacktraceLocalTest, BacktraceLocalTest001, TestSize.Level2)
     }
 
     auto cache = std::make_shared<DfxSymbolsCache>();
-    ElapsedTimeCounter counter;
+    ElapsedTime counter;
     BacktraceLocalThread thread(BACKTRACE_CURRENT_THREAD);
     ASSERT_EQ(true, thread.Unwind(as, cache, 0));
-    counter.Stop();
 
-    GTEST_LOG_(INFO) << "UnwindCurrentCost:" << counter.CountInNanoseconds() << "\n";
+    GTEST_LOG_(INFO) << "UnwindCurrentCost:" << counter.Elapsed() << "\n";
     const auto& frames = thread.GetFrames();
     ASSERT_GT(frames.size(), 0);
     for (const auto& frame : frames) {
@@ -222,11 +221,10 @@ HWTEST_F(BacktraceLocalTest, BacktraceLocalTest003, TestSize.Level2)
     }
 
     auto cache = std::make_shared<DfxSymbolsCache>();
-    ElapsedTimeCounter counter;
+    ElapsedTime counter;
     BacktraceLocalThread thread(g_tid);
     ASSERT_EQ(true, thread.Unwind(as, cache, 0));
-    counter.Stop();
-    GTEST_LOG_(INFO) << "UnwindCurrentCost:" << counter.CountInNanoseconds() << "\n";
+    GTEST_LOG_(INFO) << "UnwindCurrentCost:" << counter.Elapsed() << "\n";
     BacktraceLocalStatic::GetInstance().CleanUp();
     const auto& frames = thread.GetFrames();
     ASSERT_GT(frames.size(), 0);
@@ -250,7 +248,7 @@ HWTEST_F(BacktraceLocalTest, BacktraceLocalTest003, TestSize.Level2)
 HWTEST_F(BacktraceLocalTest, BacktraceLocalTest004, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "BacktraceLocalTest004: start.";
-    ElapsedTimeCounter counter;
+    ElapsedTime counter;
     unw_context_t context;
     (void)memset_s(&context, sizeof(unw_context_t), 0, sizeof(unw_context_t));
     unw_getcontext(&context);
@@ -264,11 +262,10 @@ HWTEST_F(BacktraceLocalTest, BacktraceLocalTest004, TestSize.Level2)
         }
 
         auto cache = std::make_shared<DfxSymbolsCache>();
-        ElapsedTimeCounter counter2;
+        ElapsedTime counter2;
         BacktraceLocalThread thread(BACKTRACE_CURRENT_THREAD);
         ASSERT_EQ(true, thread.UnwindWithContext(as, context, cache, 0));
-        counter2.Stop();
-        GTEST_LOG_(INFO) << "ChildProcessElapse:" << counter2.CountInNanoseconds() << "\n";
+        GTEST_LOG_(INFO) << "ChildProcessElapse:" << counter2.Elapsed() << "\n";
         const auto& frames = thread.GetFrames();
         ASSERT_GT(frames.size(), 0);
         for (const auto& frame : frames) {
@@ -277,8 +274,7 @@ HWTEST_F(BacktraceLocalTest, BacktraceLocalTest004, TestSize.Level2)
         unw_destroy_local_address_space(as);
         _exit(0);
     }
-    counter.Stop();
-    GTEST_LOG_(INFO) << "CurrentThreadElapse:" << counter.CountInNanoseconds() << "\n";
+    GTEST_LOG_(INFO) << "CurrentThreadElapse:" << counter.Elapsed() << "\n";
 
     int status;
     int ret = wait(&status);
@@ -295,23 +291,20 @@ HWTEST_F(BacktraceLocalTest, BacktraceLocalTest004, TestSize.Level2)
 HWTEST_F(BacktraceLocalTest, BacktraceLocalTest005, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "BacktraceLocalTest005: start.";
-    ElapsedTimeCounter counter;
+    ElapsedTime counter;
     unw_context_t context;
     (void)memset_s(&context, sizeof(unw_context_t), 0, sizeof(unw_context_t));
     unw_getcontext(&context);
-    counter.Stop();
-    GTEST_LOG_(INFO) << "GetContext Elapse:" << counter.CountInNanoseconds() << "\n";
+    GTEST_LOG_(INFO) << "GetContext Elapse:" << counter.Elapsed() << "\n";
 
     counter.Reset();
     BacktraceLocalThread thread(BACKTRACE_CURRENT_THREAD);
     bool ret = thread.UnwindWithContextByFramePointer(context, 0);
-    counter.Stop();
-    GTEST_LOG_(INFO) << "Unwind Elapse:" << counter.CountInNanoseconds() << "\n";
+    GTEST_LOG_(INFO) << "Unwind Elapse:" << counter.Elapsed() << "\n";
 
     counter.Reset();
     thread.UpdateFrameInfo();
-    counter.Stop();
-    GTEST_LOG_(INFO) << "UpdateFrameInfo Elapse:" << counter.CountInNanoseconds() << "\n";
+    GTEST_LOG_(INFO) << "UpdateFrameInfo Elapse:" << counter.Elapsed() << "\n";
     ASSERT_EQ(true, ret);
 
     const auto& frames = thread.GetFrames();

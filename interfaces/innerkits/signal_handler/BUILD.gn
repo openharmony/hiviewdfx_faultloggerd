@@ -132,7 +132,6 @@ if (defined(ohos_lite)) {
     sources = [ "dfx_signal_handler.c" ]
 
     deps = [
-      ":dfx_local_handler",
       "$faultloggerd_path/common/cutil:dfx_cutil",
       "$faultloggerd_path/common/dfxlog:static_hilog_base",
     ]
