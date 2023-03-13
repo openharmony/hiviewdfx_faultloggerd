@@ -13,36 +13,15 @@
 
 import("//base/hiviewdfx/faultloggerd/faultloggerd.gni")
 
-ohos_rust_static_ffi("rustc_demangle_static") {
+ohos_rust_shared_ffi("rustc_demangle") {
   include_dirs = [ "." ]
   sources = [ "lib.rs" ]
-  if (current_cpu == "arm64") {
-    externs = [
-      {
-        crate_name = "rustc_demangle"
-        path = "//prebuilts/rustc/linux-x86_64/current/lib/rustlib/aarch64-linux-ohos/lib/librustc_demangle-7093163c24b92e64.rlib"
-      },
-    ]
-  } else if (current_cpu == "arm") {
-    externs = [
-      {
-        crate_name = "rustc_demangle"
-        path = "//prebuilts/rustc/linux-x86_64/current/lib/rustlib/arm-linux-ohos/lib/librustc_demangle-aff4ef91724960ce.rlib"
-      },
-    ]
-  } else if (current_cpu == "x86_64" || current_cpu == "x64") {
-    externs = [
-      {
-        crate_name = "rustc_demangle"
-        path = "//prebuilts/rustc/linux-x86_64/current/lib/rustlib/x86_64-unknown-linux-gnu/lib/librustc_demangle-46c8c3eb5be77633.rlib"
-      },
-    ]
-  } else {
-    externs = []
-  }
-
   crate_name = "rustc_demangle"
-  crate_type = "staticlib"
+  crate_type = "cdylib"
+  install_images = [
+    "system",
+    "updater",
+  ]
   part_name = "faultloggerd"
   subsystem_name = "hiviewdfx"
 }
