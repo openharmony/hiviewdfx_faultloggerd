@@ -123,11 +123,6 @@ void BacktraceLocalStatic::ReleaseThread(int32_t tid)
     }
 
     it->second->cv.notify_one();
-    int32_t expect = static_cast<int32_t>(ThreadContextStatus::ContextReady);
-    if (!it->second->tid.compare_exchange_strong(expect,
-        static_cast<int32_t>(ThreadContextStatus::ContextUnused))) {
-        DfxLogWarn("thread(%d) context is still being initialized or used?", tid);
-    }
 }
 
 void BacktraceLocalStatic::CleanUp()
@@ -158,30 +153,35 @@ void BacktraceLocalStatic::CopyContextAndWaitTimeout(int sig, siginfo_t *si, voi
         static_cast<int32_t>(ThreadContextStatus::ContextUsing))) {
         return;
     }
+    if (ctxPtr->ctx != nullptr) {
 #if defined(__arm__)
-    ucontext_t *uc = (ucontext_t *)context;
-    ctxPtr->ctx->regs[UNW_ARM_R0] = uc->uc_mcontext.arm_r0;
-    ctxPtr->ctx->regs[UNW_ARM_R1] = uc->uc_mcontext.arm_r1;
-    ctxPtr->ctx->regs[UNW_ARM_R2] = uc->uc_mcontext.arm_r2;
-    ctxPtr->ctx->regs[UNW_ARM_R3] = uc->uc_mcontext.arm_r3;
-    ctxPtr->ctx->regs[UNW_ARM_R4] = uc->uc_mcontext.arm_r4;
-    ctxPtr->ctx->regs[UNW_ARM_R5] = uc->uc_mcontext.arm_r5;
-    ctxPtr->ctx->regs[UNW_ARM_R6] = uc->uc_mcontext.arm_r6;
-    ctxPtr->ctx->regs[UNW_ARM_R7] = uc->uc_mcontext.arm_r7;
-    ctxPtr->ctx->regs[UNW_ARM_R8] = uc->uc_mcontext.arm_r8;
-    ctxPtr->ctx->regs[UNW_ARM_R9] = uc->uc_mcontext.arm_r9;
-    ctxPtr->ctx->regs[UNW_ARM_R10] = uc->uc_mcontext.arm_r10;
-    ctxPtr->ctx->regs[UNW_ARM_R11] = uc->uc_mcontext.arm_fp;
-    ctxPtr->ctx->regs[UNW_ARM_R12] = uc->uc_mcontext.arm_ip;
-    ctxPtr->ctx->regs[UNW_ARM_R13] = uc->uc_mcontext.arm_sp;
-    ctxPtr->ctx->regs[UNW_ARM_R14] = uc->uc_mcontext.arm_lr;
-    ctxPtr->ctx->regs[UNW_ARM_R15] = uc->uc_mcontext.arm_pc;
+        ucontext_t *uc = (ucontext_t *)context;
+        ctxPtr->ctx->regs[UNW_ARM_R0] = uc->uc_mcontext.arm_r0;
+        ctxPtr->ctx->regs[UNW_ARM_R1] = uc->uc_mcontext.arm_r1;
+        ctxPtr->ctx->regs[UNW_ARM_R2] = uc->uc_mcontext.arm_r2;
+        ctxPtr->ctx->regs[UNW_ARM_R3] = uc->uc_mcontext.arm_r3;
+        ctxPtr->ctx->regs[UNW_ARM_R4] = uc->uc_mcontext.arm_r4;
+        ctxPtr->ctx->regs[UNW_ARM_R5] = uc->uc_mcontext.arm_r5;
+        ctxPtr->ctx->regs[UNW_ARM_R6] = uc->uc_mcontext.arm_r6;
+        ctxPtr->ctx->regs[UNW_ARM_R7] = uc->uc_mcontext.arm_r7;
+        ctxPtr->ctx->regs[UNW_ARM_R8] = uc->uc_mcontext.arm_r8;
+        ctxPtr->ctx->regs[UNW_ARM_R9] = uc->uc_mcontext.arm_r9;
+        ctxPtr->ctx->regs[UNW_ARM_R10] = uc->uc_mcontext.arm_r10;
+        ctxPtr->ctx->regs[UNW_ARM_R11] = uc->uc_mcontext.arm_fp;
+        ctxPtr->ctx->regs[UNW_ARM_R12] = uc->uc_mcontext.arm_ip;
+        ctxPtr->ctx->regs[UNW_ARM_R13] = uc->uc_mcontext.arm_sp;
+        ctxPtr->ctx->regs[UNW_ARM_R14] = uc->uc_mcontext.arm_lr;
+        ctxPtr->ctx->regs[UNW_ARM_R15] = uc->uc_mcontext.arm_pc;
 #else
-    // the ucontext.uc_mcontext.__reserved of libunwind is simplified with the system's own in aarch64
-    if (memcpy_s(ctxPtr->ctx, sizeof(unw_context_t), context, sizeof(unw_context_t)) != 0) {
-        DfxLogWarn("Failed to copy local unwind context.");
-    }
+        // the ucontext.uc_mcontext.__reserved of libunwind is simplified with the system's own in aarch64
+        if (memcpy_s(ctxPtr->ctx, sizeof(unw_context_t), context, sizeof(unw_context_t)) != 0) {
+            DfxLogWarn("Failed to copy local unwind context.");
+        }
 #endif
+    } else {
+        ctxPtr->tid = static_cast<int32_t>(ThreadContextStatus::ContextUnused);
+        return;
+    }
     ctxPtr->tid = static_cast<int32_t>(ThreadContextStatus::ContextReady);
     ctxPtr->cv.wait_for(lock, TIME_OUT);
     ctxPtr->tid = static_cast<int32_t>(ThreadContextStatus::ContextUnused);
