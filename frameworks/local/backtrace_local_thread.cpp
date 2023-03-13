@@ -42,17 +42,15 @@ constexpr int32_t MIN_VALID_FRAME_COUNT = 3;
 BacktraceLocalThread::BacktraceLocalThread(int32_t tid) : tid_(tid)
 {
 #ifdef __aarch64__
-    pthread_attr_t tattr;
-    void *base;
-    size_t size;
     if (tid_ == BACKTRACE_CURRENT_THREAD) {
+        pthread_attr_t tattr;
+        void *base;
+        size_t size;
         pthread_getattr_np(pthread_self(), &tattr);
-    } else {
-        pthread_getattr_np(tid_, &tattr);
+        pthread_attr_getstack(&tattr, &base, &size);
+        stackBottom_ = reinterpret_cast<uintptr_t>(base);
+        stackTop_ = reinterpret_cast<uintptr_t>(base) + size;
     }
-    pthread_attr_getstack(&tattr, &base, &size);
-    stackBottom_ = reinterpret_cast<uintptr_t>(base);
-    stackTop_ = reinterpret_cast<uintptr_t>(base) + size;
 #endif
 }
 
@@ -177,13 +175,6 @@ bool BacktraceLocalThread::Unwind(unw_addr_space_t as, std::shared_ptr<DfxSymbol
         return ret;
     }
 
-    if (fast) {
-#ifdef __aarch64__
-        ret = UnwindWithContextByFramePointer(*(threadContext->ctx), skipFrameNum);
-        UpdateFrameInfo();
-#endif
-    }
-
     if (!ret) {
         ret = UnwindWithContext(as, *(threadContext->ctx), cache, skipFrameNum);
     }
@@ -284,7 +275,7 @@ bool BacktraceLocalThread::GetBacktraceString(std::string& out,
 
         unw_destroy_local_address_space(as);
     }
-    out = thread.GetFramesStr();   
+    out = thread.GetFramesStr();
     return ret;
 }
 

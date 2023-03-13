@@ -117,26 +117,19 @@ int32_t FaultLoggerDaemon::StartServer()
             continue;
         }
         for (int i = 0; i < epollNum; i++) {
-            int fd = events[i].data.fd;
-            if ((events[i].events & EPOLLERR) ||
-                (events[i].events & EPOLLHUP) ||
-                (!(events[i].events & EPOLLIN))) {
-                // An error has occured on this fd, or the socket is not ready for reading.
-                DfxLogError("%s :: %s: epoll event error.", FAULTLOGGERD_TAG.c_str(), __func__);
-                if (fd > 0) {
-                    close(fd);
-                    DelEvent(epollFd, fd, EPOLLIN);
-                }
+            if (!(events[i].events & EPOLLIN)) {
+                DfxLogWarn("%s :: %s: epoll event(%d) error.", FAULTLOGGERD_TAG.c_str(), __func__, events[i].events);
                 continue;
             }
 
+            int fd = events[i].data.fd;
             if (fd == socketFd) {
                 HandleAccept(epollFd, socketFd);
             } else {
                 HandleRequest(epollFd, events[i].data.fd);
             }
         }
-    } while(true);
+    } while (true);
 
     if (socketFd > 0) {
         close(socketFd);
@@ -205,7 +198,6 @@ void FaultLoggerDaemon::HandleRequest(int32_t epollFd, int32_t connectionFd)
         }
     } while (false);
 
-    close(connectionFd);
     DelEvent(epollFd, connectionFd, EPOLLIN);
 }
 
@@ -554,7 +546,7 @@ void FaultLoggerDaemon::AddEvent(int32_t epollFd, int32_t addFd, int32_t event)
     ev.data.fd = addFd;
     int ret = epoll_ctl(epollFd, EPOLL_CTL_ADD, addFd, &ev);
     if (ret < 0) {
-        DfxLogError("%s :: Failed to epoll ctl add Fd(%d)", FAULTLOGGERD_TAG.c_str(), addFd);
+        DfxLogWarn("%s :: Failed to epoll ctl add Fd(%d)", FAULTLOGGERD_TAG.c_str(), addFd);
     }
 }
 
@@ -565,8 +557,9 @@ void FaultLoggerDaemon::DelEvent(int32_t epollFd, int32_t delFd, int32_t event)
     ev.data.fd = delFd;
     int ret = epoll_ctl(epollFd, EPOLL_CTL_DEL, delFd, &ev);
     if (ret < 0) {
-        DfxLogError("%s :: Failed to epoll ctl del Fd(%d)", FAULTLOGGERD_TAG.c_str(), addFd);
+        DfxLogWarn("%s :: Failed to epoll ctl del Fd(%d)", FAULTLOGGERD_TAG.c_str(), delFd);
     }
+    close(delFd);
 }
 } // namespace HiviewDFX
 } // namespace OHOS
