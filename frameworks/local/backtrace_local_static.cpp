@@ -22,13 +22,11 @@
 #include <mutex>
 
 #include <sys/syscall.h>      /* Definition of SYS_* constants */
-#include <unistd.h>
-
-#include <libunwind.h>
 #include <securec.h>
-
-#include "dfx_define.h"
+#include <unistd.h>
 #include "dfx_log.h"
+#include "dfx_define.h"
+#include "libunwind.h"
 
 namespace OHOS {
 namespace HiviewDFX {

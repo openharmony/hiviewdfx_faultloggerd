@@ -34,7 +34,10 @@ if (defined(ohos_lite)) {
   config("crasher_config") {
     visibility = [ ":*" ]
 
-    include_dirs = [ "." ]
+    include_dirs = [
+      ".",
+      "$faultloggerd_path/common",
+    ]
   }
 
   ohos_executable("crasher_c") {

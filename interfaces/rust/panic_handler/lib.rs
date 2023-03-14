@@ -92,6 +92,7 @@ impl HookBuilder {
         let panic_info = Box::into_raw(Box::new(info));
         unsafe {
             ReportTraceInfo(panic_info);
+            let _ = Box::from_raw(panic_info);
         }
     }
 }

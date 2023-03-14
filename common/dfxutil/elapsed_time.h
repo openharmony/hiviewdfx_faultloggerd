@@ -45,4 +45,4 @@ private:
 };
 }
 }
-#endif // ELAPSED_TIME_COUNTER_H
+#endif

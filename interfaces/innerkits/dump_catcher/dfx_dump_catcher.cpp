@@ -407,8 +407,7 @@ int DfxDumpCatcher::DoDumpRemotePoll(int bufFd, int resFd, int timeout, std::str
 
 bool DfxDumpCatcher::DoReadBuf(int fd, std::string& msg)
 {
-    char buffer[LOG_BUF_LEN];
-    bzero(buffer, sizeof(buffer));
+    char buffer[LOG_BUF_LEN] = {0};
     ssize_t nread = read(fd, buffer, sizeof(buffer) - 1);
     if (nread <= 0) {
         DfxLogWarn("%s :: %s :: read error", DFXDUMPCATCHER_TAG.c_str(), __func__);

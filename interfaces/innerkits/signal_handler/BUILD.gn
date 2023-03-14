@@ -60,7 +60,6 @@ if (defined(ohos_lite)) {
     visibility = [ "*:*" ]
     include_dirs = [
       "include",
-      "//commonlibrary/c_utils/base/include",
       "$faultloggerd_path/common",
       "$faultloggerd_path/common/cutil",
       "$faultloggerd_path/common/dfxlog",
@@ -102,11 +101,12 @@ if (defined(ohos_lite)) {
   }
 
   ohos_static_library("dfx_local_handler") {
+    public_configs = [ ":dfx_signal_handler_config" ]
+
     sources = [
       "dfx_crash_local_handler.c",
       "dfx_signal_local_handler.c",
     ]
-    public_configs = [ ":dfx_signal_handler_config" ]
 
     deps = [
       "$faultloggerd_path/common/cutil:dfx_cutil",

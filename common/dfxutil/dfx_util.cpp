@@ -242,10 +242,10 @@ void ReadProcessName(const int pid, std::string& str)
 
 uint64_t GetTimeMilliSeconds(void)
 {
-    struct timeval timev;
-    (void)gettimeofday(&timev, nullptr);
-    return (static_cast<uint64_t>(timev.tv_sec) * NUMBER_ONE_THOUSAND) + // 1000 : second to millisecond convert ratio
-        (static_cast<uint64_t>(timev.tv_usec) / NUMBER_ONE_THOUSAND); // 1000 : microsecond to millisecond convert ratio
+    struct timespec ts;
+    (void)clock_gettime(CLOCK_MONOTONIC, &ts);
+    return ((uint64_t)ts.tv_sec * NUMBER_ONE_THOUSAND) + // 1000 : second to millisecond convert ratio
+        (((uint64_t)ts.tv_nsec) / NUMBER_ONE_MILLION); // 1000000 : nanosecond to millisecond convert ratio
 }
 
 std::string GetCurrentTimeStr(uint64_t current)
