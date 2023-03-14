@@ -253,9 +253,9 @@ static void LoadPathContent(const std::string& desc, const std::string& path, st
 
 static void LoadPidStat(const int pid, std::string& msg)
 {
-    std::string statPath = "/proc/" + std::to_string(pid) + "/stat";
+    std::string statusPath = "/proc/" + std::to_string(pid) + "/status";
     std::string wchanPath = "/proc/" + std::to_string(pid) + "/wchan";
-    LoadPathContent("stat", statPath, msg);
+    LoadPathContent("status", statusPath, msg);
     LoadPathContent("wchan", wchanPath, msg);
 }
 
