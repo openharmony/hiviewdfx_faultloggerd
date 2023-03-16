@@ -49,7 +49,7 @@ bool DfxSymbolsCache::GetNameAndOffsetByPc(struct unw_addr_space *as,
         return true;
     }
 
-    char buf[LOG_BUF_LEN] { 0 };
+    char buf[LOG_BUF_LEN] = {0};
     DfxSymbol symbol;
     if (unw_get_symbol_info_by_pc(as, pc, LOG_BUF_LEN, buf, &symbol.start, &symbol.end) != 0) {
         return false;

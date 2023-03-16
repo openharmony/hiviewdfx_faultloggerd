@@ -44,8 +44,8 @@ BacktraceLocalThread::BacktraceLocalThread(int32_t tid) : tid_(tid)
 #ifdef __aarch64__
     if (tid_ == BACKTRACE_CURRENT_THREAD) {
         pthread_attr_t tattr;
-        void *base;
-        size_t size;
+        void *base = nullptr;
+        size_t size = 0;
         pthread_getattr_np(pthread_self(), &tattr);
         pthread_attr_getstack(&tattr, &base, &size);
         stackBottom_ = reinterpret_cast<uintptr_t>(base);
@@ -201,7 +201,7 @@ std::string BacktraceLocalThread::GetFramesStr()
 
 std::string BacktraceLocalThread::GetNativeFrameStr(const NativeFrame& frame)
 {
-    char buf[LOG_BUF_LEN] = {0}; // 1024 buffer length
+    char buf[LOG_BUF_LEN] = {0};
 #ifdef __LP64__
     char format[] = "#%02zu pc %016" PRIx64 " %s";
 #else
@@ -321,7 +321,7 @@ bool BacktraceLocalThread::UnwindWithContextByFramePointer(unw_context_t& contex
     uintptr_t fp = context.uc_mcontext.regs[29]; // 29 : fp location
     uintptr_t pc = context.uc_mcontext.pc;
 
-    int index = 0;
+    size_t index = 0;
     do {
         if (index < skipFrameNum) {
             index++;

@@ -19,6 +19,7 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <syscall.h>
+#include <time.h>
 
 #include "dfx_define.h"
 
@@ -96,10 +97,10 @@ bool GetProcessName(char* buffer, size_t bufferSz)
 
 uint64_t GetTimeMilliseconds(void)
 {
-    struct timeval time;
-    gettimeofday(&time, NULL);
-    return ((uint64_t)time.tv_sec * NUMBER_ONE_THOUSAND) + // 1000 : second to millisecond convert ratio
-        (((uint64_t)time.tv_usec) / NUMBER_ONE_THOUSAND); // 1000 : microsecond to millisecond convert ratio
+    struct timespec ts;
+    (void)clock_gettime(CLOCK_MONOTONIC, &ts);
+    return ((uint64_t)ts.tv_sec * NUMBER_ONE_THOUSAND) + // 1000 : second to millisecond convert ratio
+        (((uint64_t)ts.tv_nsec) / NUMBER_ONE_MILLION); // 1000000 : nanosecond to millisecond convert ratio
 }
 
 #endif

@@ -32,6 +32,16 @@
 #include "dfx_log.h"
 #include "dfx_signal_handler.h"
 
+#ifdef LOG_DOMAIN
+#undef LOG_DOMAIN
+#define LOG_DOMAIN 0xD002D11
+#endif
+
+#ifdef LOG_TAG
+#undef LOG_TAG
+#define LOG_TAG "DfxSignalLocalHandler"
+#endif
+
 #define LOCAL_HANDLER_STACK_SIZE (64 * 1024) // 64K
 
 static CrashFdFunc g_crashFdFn = NULL;
@@ -55,7 +65,7 @@ static void ReserveChildThreadSignalStack(void)
     g_reservedChildStack = (void *)(((uint8_t *)g_reservedChildStack) + LOCAL_HANDLER_STACK_SIZE - 1);
 }
 
-static void FutexWait(volatile void* ftx, int value)
+__attribute__((unused)) static void FutexWait(volatile void* ftx, int value)
 {
     syscall(__NR_futex, ftx, FUTEX_WAIT, value, NULL, NULL, 0);
 }
@@ -95,7 +105,9 @@ static void DFX_SignalLocalHandler(int sig, siginfo_t * si, void * context)
     if (ret < 0) {
         DfxLogError("memcpy_s context fail, ret=%d", ret);
     }
-
+#ifdef __aarch64__
+    DoCrashHandler(NULL);
+#else
     int pseudothreadTid = -1;
     pid_t childTid = clone(DoCrashHandler, g_reservedChildStack, \
         CLONE_THREAD | CLONE_SIGHAND | CLONE_VM | CLONE_CHILD_SETTID | CLONE_CHILD_CLEARTID, \
@@ -111,6 +123,7 @@ static void DFX_SignalLocalHandler(int sig, siginfo_t * si, void * context)
 
     DfxLogInfo("child thread(%d) exit.", childTid);
     syscall(__NR_exit, 0);
+#endif
 }
 
 void DFX_GetCrashFdFunc(CrashFdFunc fn)

@@ -37,17 +37,20 @@ static const int MAPINFO_SIZE = 256;
 
 std::shared_ptr<DfxElfMaps> DfxElfMaps::Create(pid_t pid)
 {
-    auto dfxElfMaps = std::make_shared<DfxElfMaps>();
-
     char path[NAME_LEN] = {0};
     if (snprintf_s(path, sizeof(path), sizeof(path) - 1, "/proc/%d/maps", pid) <= 0) {
         DfxLogWarn("Fail to print path.");
         return nullptr;
     }
 
+    return Create(path);
+}
+
+std::shared_ptr<DfxElfMaps> DfxElfMaps::Create(const std::string path)
+{
     char realPath[PATH_MAX] = {0};
-    if (realpath(path, realPath) == nullptr) {
-        DfxLogWarn("Maps path(%s) is not exist.", path);
+    if (realpath(path.c_str(), realPath) == nullptr) {
+        DfxLogWarn("Maps path(%s) is not exist.", path.c_str());
         return nullptr;
     }
 
@@ -57,6 +60,7 @@ std::shared_ptr<DfxElfMaps> DfxElfMaps::Create(pid_t pid)
         return nullptr;
     }
 
+    auto dfxElfMaps = std::make_shared<DfxElfMaps>();
     char mapInfo[MAPINFO_SIZE] = {0};
     while (fgets(mapInfo, sizeof(mapInfo), fp) != nullptr) {
         std::shared_ptr<DfxElfMap> map = DfxElfMap::Create(mapInfo, sizeof(mapInfo));

@@ -21,7 +21,7 @@
 #include <unistd.h>
 
 #include <sys/time.h>
-
+#include <time.h>
 #include "dfx_define.h"
 #include "securec.h"
 #include "stdio.h"
@@ -100,8 +100,31 @@ bool GetProcessName(char* buffer, size_t bufferSz)
 
 uint64_t GetTimeMilliseconds(void)
 {
-    struct timeval time;
-    gettimeofday(&time, NULL);
-    return ((uint64_t)time.tv_sec * NUMBER_ONE_THOUSAND) + // 1000 : second to millisecond convert ratio
-        (((uint64_t)time.tv_usec) / NUMBER_ONE_THOUSAND); // 1000 : microsecond to millisecond convert ratio
+    struct timespec ts;
+    (void)clock_gettime(CLOCK_MONOTONIC, &ts);
+    return ((uint64_t)ts.tv_sec * NUMBER_ONE_THOUSAND) + // 1000 : second to millisecond convert ratio
+        (((uint64_t)ts.tv_nsec) / NUMBER_ONE_MILLION); // 1000000 : nanosecond to millisecond convert ratio
+}
+
+bool TrimAndDupStr(const char* src, char* dst)
+{
+    if ((src == NULL) || (dst == NULL)) {
+        return false;
+    }
+
+    int i = 0, j = 0;
+    for (; i < strlen(src); ++i) {
+        if (src[i] != ' ') {
+            dst[j++] = src[i];
+        }
+    }
+    for (; j <= i; j++) {
+        dst[j] = '\0';
+    }
+
+    dst = strchr(dst, '\n');
+    if (dst != NULL) {
+        *dst = '\0';
+    }
+    return true;
 }

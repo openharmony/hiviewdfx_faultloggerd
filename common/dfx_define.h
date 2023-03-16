@@ -54,6 +54,7 @@ static const int DUMP_CATCHER_NUMBER_ONE = 1;
 static const int DUMP_CATCHER_NUMBER_TWO = 2;
 static const int DUMP_CATCHER_NUMBER_THREE = 3;
 static const int NUMBER_ONE_THOUSAND = 1000;
+static const int NUMBER_ONE_MILLION = 1000000;
 
 static const int FAULTSTACK_ITEM_BUFFER_LENGTH = 2048;
 static const int FAULTSTACK_SP_REVERSE = 3;

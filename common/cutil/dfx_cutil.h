@@ -37,6 +37,8 @@ AT_SYMBOL_HIDDEN bool GetProcessName(char* buffer, size_t bufferSz);
 
 AT_SYMBOL_HIDDEN uint64_t GetTimeMilliseconds(void);
 
+AT_SYMBOL_HIDDEN bool TrimAndDupStr(const char* src, char* dst);
+
 #ifdef __cplusplus
 }
 #endif

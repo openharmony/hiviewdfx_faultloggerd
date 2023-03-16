@@ -67,6 +67,7 @@ bool PrintTrace(int32_t fd)
 const char* GetTrace()
 {
     static std::string trace;
+    trace.clear();
     if (!GetBacktrace(trace, false)) {
         HILOG_ERROR(LOG_CORE, "Failed to get trace string");
     }

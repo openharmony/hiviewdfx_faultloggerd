@@ -26,6 +26,7 @@
 #include "stdlib.h"
 #include "string.h"
 #include "strings.h"
+#include "dfx_define.h"
 
 #ifdef LOG_DOMAIN
 #undef LOG_DOMAIN
@@ -75,7 +76,7 @@ NOINLINE int RaiseBusError(void)
 
 NOINLINE int DumpStackTrace(void)
 {
-    int ret = raise(35); // 35:SIGDUMP
+    int ret = raise(SIGDUMP);
     if (ret != 0) {
         printf("remove failed!");
     }

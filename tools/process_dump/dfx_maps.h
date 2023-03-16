@@ -60,8 +60,8 @@ public:
     DfxElfMaps() = default;
     ~DfxElfMaps() = default;
     static std::shared_ptr<DfxElfMaps> Create(pid_t pid);
+    static std::shared_ptr<DfxElfMaps> Create(const std::string path);
     void InsertMapToElfMaps(std::shared_ptr<DfxElfMap> map);
-    std::shared_ptr<DfxElf> GetMapElf(std::shared_ptr<DfxElfMap> map);
     bool FindMapByPath(const std::string path, std::shared_ptr<DfxElfMap>& map) const;
     bool FindMapByAddr(uintptr_t address, std::shared_ptr<DfxElfMap>& map) const;
 

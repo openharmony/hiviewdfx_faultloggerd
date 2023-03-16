@@ -32,6 +32,7 @@
 #include <unistd.h>
 #include <vector>
 #include "securec.h"
+#include "dfx_define.h"
 
 #ifdef HAS_HITRACE
 #include <hitrace/hitracechain.h>
@@ -53,8 +54,6 @@ static const int ARG128 = 128;
 
 static const int NUMBER_TWO = 2;
 static const int NUMBER_ONE = 1;
-
-static const int SIGDUMP = 35;
 
 DfxCrasher::DfxCrasher() {}
 DfxCrasher::~DfxCrasher() {}

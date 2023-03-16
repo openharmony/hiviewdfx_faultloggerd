@@ -160,7 +160,7 @@ bool CheckConnectStatus()
 static int SendRequestToServer(const FaultLoggerdRequest &request)
 {
     int sockfd = -1;
-    int resRsp = (int)FaultLoggerCheckPermissionResp::CHECK_PERMISSION_PASS;
+    int resRsp = (int)FaultLoggerCheckPermissionResp::CHECK_PERMISSION_REJECT;
     do {
         if (!StartConnect(sockfd, FAULTLOGGERD_SOCK_PATH, -1)) {
             DfxLogError("StartConnect failed.");
