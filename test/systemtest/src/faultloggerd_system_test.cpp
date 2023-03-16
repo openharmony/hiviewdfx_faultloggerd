@@ -1185,7 +1185,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0026, TestSize.Level2)
 HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0027, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest0027: start.";
-    std::string testBundleName = "com.ohos.camera";
+    std::string testBundleName = "com.ohos.photos";
     std::string testAbiltyName = testBundleName + ".MainAbility";
     int testPid = LaunchTestHap(testAbiltyName, testBundleName);
     DfxDumpCatcher dumplog;
@@ -1193,7 +1193,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0027, TestSize.Level2)
     bool ret = dumplog.DumpCatchMix(testPid, 0, msg);
     GTEST_LOG_(INFO) << ret;
     GTEST_LOG_(INFO) << msg;
-    string log[] = { "Tid:", "comm:com.ohos.camera", "#00", "/system/bin/appspawn",
+    string log[] = { "Tid:", "comm:com.ohos.photos", "#00", "/system/bin/appspawn",
         "comm:DfxWatchdog", "comm:GC_WorkerThread", "comm:ace.bg.1"};
     log[0] += std::to_string(testPid);
     string::size_type idx;
@@ -1222,7 +1222,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0027, TestSize.Level2)
 HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0028, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest0028: start.";
-    std::string testBundleName = "com.ohos.camera";
+    std::string testBundleName = "com.ohos.photos";
     std::string testAbiltyName = testBundleName + ".MainAbility";
     int testPid = LaunchTestHap(testAbiltyName, testBundleName);
     DfxDumpCatcher dumplog;
@@ -1230,7 +1230,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0028, TestSize.Level2)
     bool ret = dumplog.DumpCatchMix(testPid, testPid, msg);
     GTEST_LOG_(INFO) << ret;
     GTEST_LOG_(INFO) << msg;
-    string log[] = { "Tid:", "comm:com.ohos.camera", "#00", "/system/bin/appspawn"};
+    string log[] = { "Tid:", "comm:com.ohos.photos", "#00", "/system/bin/appspawn"};
     log[0] += std::to_string(testPid);
     string::size_type idx;
     int j = 0;
@@ -1257,7 +1257,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0028, TestSize.Level2)
 HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0029, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest0029: start.";
-    std::string testBundleName = "com.ohos.camera";
+    std::string testBundleName = "com.ohos.photos";
     std::string testAbiltyName = testBundleName + ".MainAbility";
     int testPid = LaunchTestHap(testAbiltyName, testBundleName);
     DfxDumpCatcher dumplog;
@@ -1298,14 +1298,14 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0030, TestSize.Level2)
 HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0031, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest0031: start.";
-    std::string testBundleName = "com.ohos.camera";
+    std::string testBundleName = "com.ohos.photos";
     std::string testAbiltyName = testBundleName + ".MainAbility";
     int testPid = LaunchTestHap(testAbiltyName, testBundleName);
     std::string procCMD = "dumpcatcher -m -p " + std::to_string(testPid);
     string procDumpLog = FaultLoggerdSystemTest::ProcessDumpCommands(procCMD);
     GTEST_LOG_(INFO) << "procDumpLog: " << procDumpLog;
     int count = 0;
-    string log[] = { "Tid:", "comm:com.ohos.camera", "#00", "/system/bin/appspawn",
+    string log[] = { "Tid:", "comm:com.ohos.photos", "#00", "/system/bin/appspawn",
         "comm:DfxWatchdog", "comm:GC_WorkerThread", "comm:ace.bg.1"};
     log[0] += std::to_string(testPid);
     string::size_type idx;
@@ -1330,7 +1330,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0031, TestSize.Level2)
 HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0032, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest0032: start.";
-    std::string testBundleName = "com.ohos.camera";
+    std::string testBundleName = "com.ohos.photos";
     std::string testAbiltyName = testBundleName + ".MainAbility";
     int testPid = LaunchTestHap(testAbiltyName, testBundleName);
     std::string procCMD = "dumpcatcher -m -p " + std::to_string(testPid) +
@@ -1338,7 +1338,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0032, TestSize.Level2)
     string procDumpLog = FaultLoggerdSystemTest::ProcessDumpCommands(procCMD);
     GTEST_LOG_(INFO) << "procDumpLog: " << procDumpLog;
     int count = 0;
-    string log[] = { "Tid:", "comm:com.ohos.camera", "#00", "/system/bin/appspawn"};
+    string log[] = { "Tid:", "comm:com.ohos.photos", "#00", "/system/bin/appspawn"};
     log[0] += std::to_string(testPid);
     string::size_type idx;
     int expectNum = sizeof(log) / sizeof(log[0]);

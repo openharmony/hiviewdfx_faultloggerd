@@ -303,7 +303,7 @@ HWTEST_F(DfxProcessDumpTest, DfxProcessDumpTest002, TestSize.Level2)
 HWTEST_F(DfxProcessDumpTest, DfxProcessDumpTest003, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "DfxProcessDumpTest003: start.";
-    string testBundleName = "com.ohos.camera";
+    string testBundleName = "com.ohos.photos";
     string testAbiltyName = testBundleName + ".MainAbility";
     int testPid = LaunchTestHap(testAbiltyName, testBundleName);
     string testCommand = "dumpcatcher -p " + to_string(testPid);
@@ -312,7 +312,7 @@ HWTEST_F(DfxProcessDumpTest, DfxProcessDumpTest003, TestSize.Level2)
     int count = 0;
     string log[] = {"Pid:", "Name:", "#00", "#01", "#02"};
     log[0] = log[0] + to_string(testPid);
-    log[1] = log[1] + "com.ohos.camera";
+    log[1] = log[1] + "com.ohos.photos";
     string::size_type idx;
     int len = sizeof(log) / sizeof(log[0]);
     for (int i = 0; i < len; i++) {
@@ -334,7 +334,7 @@ HWTEST_F(DfxProcessDumpTest, DfxProcessDumpTest003, TestSize.Level2)
 HWTEST_F(DfxProcessDumpTest, DfxProcessDumpTest004, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "DfxProcessDumpTest004: start.";
-    string testBundleName = "com.ohos.camera";
+    string testBundleName = "com.ohos.photos";
     string testAbiltyName = testBundleName + ".MainAbility";
     int testPid = LaunchTestHap(testAbiltyName, testBundleName);
     string testCommand = "dumpcatcher -p " + to_string(testPid) + " -t " + to_string(testPid);
@@ -343,7 +343,7 @@ HWTEST_F(DfxProcessDumpTest, DfxProcessDumpTest004, TestSize.Level2)
     int count = 0;
     string log[] = {"Pid:", "Name:", "#00", "#01", "#02"};
     log[0] = log[0] + to_string(testPid);
-    log[1] = log[1] + "com.ohos.camera";
+    log[1] = log[1] + "com.ohos.photos";
     string::size_type idx;
     int len = sizeof(log) / sizeof(log[0]);
     for (int i = 0; i < len; i++) {
