@@ -14,6 +14,11 @@
  */
 #include "dfx_log.h"
 
+#ifdef DFX_LOG_USE_HILOG_BASE
+#include <hilog_base/log_base.h>
+#else
+#include <hilog/log.h>
+#endif
 #include <cstdarg>
 #include <cstdio>
 #include <securec.h>
@@ -24,22 +29,16 @@
 #define UNLIKELY(x)    __builtin_expect(!!(x), 0)
 #endif
 
-#ifdef DFX_LOG_USE_HILOG_BASE
-static LogLevel g_LOG_LEVEL[] = { LOG_DEBUG, LOG_INFO, LOG_WARN, LOG_ERROR, LOG_FATAL };
-#else
-static const OHOS::HiviewDFX::HiLogLabel LOG_LABEL = {LOG_CORE, LOG_DOMAIN, LOG_TAG};
-#endif
-static const int32_t INVALID_FD = -1;
-static int32_t g_DebugFd = INVALID_FD;
+static const int INVALID_FD = -1;
+static int g_DebugFd = INVALID_FD;
 static const Level g_LogLevel = Level::INFO;
 static const int LOG_BUF_LEN = 1024;
 #ifdef DFX_LOG_USE_DMESG
-static const int MAX_LOG_SIZE = 1024;
-static int g_Fd = -1;
+static int g_Fd = INVALID_FD;
 #endif
 
 #ifdef DFX_LOG_USE_DMESG
-void LogToDmesg(Level logLevel, const char *tag, const char *info)
+static void LogToDmesg(Level logLevel, const char *tag, const char *info)
 {
     static const char *LOG_LEVEL_STR[] = { "DEBUG", "INFO", "WARNING", "ERROR", "FATAL" };
     static const char *LOG_KLEVEL_STR[] = { "<7>", "<6>", "<4>", "<3>", "<3>" };
@@ -47,21 +46,21 @@ void LogToDmesg(Level logLevel, const char *tag, const char *info)
     if (UNLIKELY(g_Fd < 0)) {
         g_Fd = open("/dev/kmsg", O_WRONLY, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP);
     }
-    char logInfo[MAX_LOG_SIZE];
-    if (snprintf_s(logInfo, sizeof(logInfo), sizeof(logInfo) - 1, "%s[pid=%d %d][%s][%s]%s",
+    char buf[LOG_BUF_LEN] = {0};
+    if (snprintf_s(buf, sizeof(buf), sizeof(buf) - 1, "%s[pid=%d %d][%s][%s]%s",
         LOG_KLEVEL_STR[logLevel], getpid(), getppid(), tag, LOG_LEVEL_STR[logLevel], info) == -1) {
         close(g_Fd);
         g_Fd = -1;
         return;
     }
-    if (write(g_Fd, logInfo, strlen(logInfo)) < 0) {
+    if (write(g_Fd, buf, strlen(buf)) < 0) {
         close(g_Fd);
         g_Fd = -1;
     }
 }
 #endif
 
-void InitDebugFd(int32_t fd)
+void InitDebugFd(int fd)
 {
     g_DebugFd = fd;
 }
@@ -84,11 +83,13 @@ int DfxLog(const Level logLevel, const unsigned int domain, const char* tag, con
     ret = vsnprintf_s(buf, sizeof(buf), sizeof(buf) - 1, fmt, args);
     va_end(args);
 #ifdef DFX_LOG_USE_HILOG_BASE
+    static const LogLevel LOG_LEVEL[] = { LOG_DEBUG, LOG_INFO, LOG_WARN, LOG_ERROR, LOG_FATAL };
     if ((logLevel < Level::DEBUG) || (logLevel > Level::FATAL)) {
         return -1;
     }
-    HiLogBasePrint(LOG_CORE, g_LOG_LEVEL[logLevel], domain, tag, "%{public}s", buf);
+    HiLogBasePrint(LOG_CORE, LOG_LEVEL[logLevel], domain, tag, "%{public}s", buf);
 #else
+    OHOS::HiviewDFX::HiLogLabel LOG_LABEL = {LOG_CORE, domain, tag};
     switch (static_cast<int>(logLevel)) {
         case static_cast<int>(DEBUG):
             OHOS::HiviewDFX::HiLog::Debug(LOG_LABEL, "%{public}s", buf);

@@ -15,15 +15,6 @@
 #ifndef DFX_LOG_H
 #define DFX_LOG_H
 
-#ifndef DFX_NO_PRINT_LOG
-#include <sys/types.h>
-#ifdef DFX_LOG_USE_HILOG_BASE
-#include <hilog_base/log_base.h>
-#else
-#include <hilog/log.h>
-#endif
-#endif
-
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -45,13 +36,11 @@ extern "C" {
 
 #define FILE_NAME   (strrchr((__FILE__), '/') ? strrchr((__FILE__), '/') + 1 : (__FILE__))
 
-#ifdef LOG_DOMAIN
-#undef LOG_DOMAIN
+#ifndef LOG_DOMAIN
 #define LOG_DOMAIN 0xD002D11
 #endif
 
-#ifdef LOG_TAG
-#undef LOG_TAG
+#ifndef LOG_TAG
 #define LOG_TAG "DfxFaultLogger"
 #endif
 
@@ -64,7 +53,7 @@ typedef enum Level {
 } Level;
 
 bool CheckDebugLevel(void);
-void InitDebugFd(int32_t fd);
+void InitDebugFd(int fd);
 int DfxLog(const Level logLevel, const unsigned int domain, const char* tag, const char *fmt, ...);
 
 #define DfxLogDebug(fmt, ...)   DfxLog(DEBUG, LOG_DOMAIN, LOG_TAG, fmt, ##__VA_ARGS__)
