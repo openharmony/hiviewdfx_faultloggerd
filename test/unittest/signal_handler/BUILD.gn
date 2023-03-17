@@ -32,6 +32,7 @@ if (defined(ohos_lite)) {
     include_dirs = [
       "//commonlibrary/c_utils/base/include",
       "$faultloggerd_path/common",
+      "$faultloggerd_path/interfaces/innerkits/signal_handler/include/",
     ]
 
     sources = [ "signal_handler_test.cpp" ]

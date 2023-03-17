@@ -14,17 +14,20 @@
  */
 
 #include <gtest/gtest.h>
-
+#include <csignal>
 #include <fstream>
 #include <map>
-#include <csignal>
+#include <securec.h>
 #include <string>
+#include <thread>
 #include <unistd.h>
 #include <vector>
-
+#include <sys/prctl.h>
 #include "dfx_define.h"
 #include "dfx_signal_local_handler.h"
+#include "dfx_signal_handler.h"
 #include "directory_ex.h"
+
 
 #if defined(__arm__)
     #define REGISTERS           "r0:","r1:","r2:","r3:","r4:","r5:","r6:",\
@@ -99,7 +102,7 @@ static string GetCppCrashFileName(pid_t pid)
     return "";
 }
 
-static int CheckKeyWords(const string& filePath, string *keywords, int length)
+static int CheckKeyWords(const string& filePath, string *keywords, int length, int minRegIdx)
 {
     ifstream file;
     file.open(filePath.c_str(), ios::in);
@@ -109,14 +112,14 @@ static int CheckKeyWords(const string& filePath, string *keywords, int length)
     int j = 0;
     string::size_type idx;
     int count = 0;
-    int minRegIdx = 6; // 6 : index of REGISTERS
     int maxRegIdx = minRegIdx + REGISTERS_NUM + 1;
     while (!file.eof()) {
         file >> t.at(i);
         idx = t.at(i).find(keywords[j]);
         if (idx != string::npos) {
             GTEST_LOG_(INFO) << t.at(i);
-            if (j > minRegIdx && j < maxRegIdx && t.at(i).size() < REGISTERS_LENGTH) {
+            if (minRegIdx != -1 && j > minRegIdx &&
+                j < maxRegIdx && t.at(i).size() < REGISTERS_LENGTH) {
                 count--;
             }
             count++;
@@ -153,7 +156,50 @@ static bool CheckLocalCrashKeyWords(const string& filePath, pid_t pid, int sig)
         "Pid:" + to_string(pid), "Uid:", "name:./test_signalhandler", sigKeyword, "Tid:", "#00", "test_signalhandler"
     };
     int length = sizeof(keywords) / sizeof(keywords[0]);
-    return CheckKeyWords(filePath, keywords, length) == length;
+    int minRegIdx = -1;
+    return CheckKeyWords(filePath, keywords, length, minRegIdx) == length;
+}
+static bool CheckThreadCrashKeyWords(const string& filePath, pid_t pid, int sig)
+{
+    if (filePath.empty() || pid <= 0) {
+        return false;
+    }
+    map<int, string> sigKey = {
+        { SIGILL, string("SIGILL") },
+        { SIGBUS, string("SIGBUS") },
+        { SIGSEGV, string("SIGSEGV") },
+    };
+    string sigKeyword = "";
+    map<int, string>::iterator iter = sigKey.find(sig);
+    if (iter != sigKey.end()) {
+        sigKeyword = iter->second;
+    }
+    string keywords[] = {
+        "Pid:" + to_string(pid), "Uid:", "name:./test_signalhandler", sigKeyword, "LastFatalMessage:",
+        "Tid:", "#00", "Registers:", "FaultStack:", "Maps:", "test_signalhandler"
+    };
+    int length = sizeof(keywords) / sizeof(keywords[0]);
+    int minRegIdx = -1;
+    return CheckKeyWords(filePath, keywords, length, minRegIdx) == length;
+}
+
+void ThreadInfo(char* buf, size_t len)
+{
+    char mes[] = "this is cash information of test thread";
+    (void)memcpy_s(buf, len, mes, sizeof(mes));
+}
+
+int TestThread(int threadId, int sig)
+{
+    std::string subThreadName = "SubTestThread" + to_string(threadId);
+    prctl(PR_SET_NAME, subThreadName.c_str());
+    SetThreadInfoCallback(ThreadInfo);
+    int cashThreadId = 2;
+    if (threadId == cashThreadId) {
+        GTEST_LOG_(INFO) << subThreadName << " is ready to raise signo(" << sig <<")";
+        raise(sig);
+    }
+    return 0;
 }
 
 /**
@@ -254,6 +300,147 @@ HWTEST_F(SignalHandlerTest, LocalHandlerTest004, TestSize.Level2)
         ASSERT_TRUE(ret);
     }
     GTEST_LOG_(INFO) << "LocalHandlerTest004: end.";
+}
+
+/**
+ * @tc.name: SignalHandlerTest001
+ * @tc.desc: test thread cash SignalHandler signo(SIGILL)
+ * @tc.type: FUNC
+ */
+HWTEST_F(SignalHandlerTest, SignalHandlerTest001, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "SignalHandlerTest001: start.";
+    pid_t pid = fork();
+    if (pid < 0) {
+        GTEST_LOG_(ERROR) << "Failed to fork new test process.";
+    } else if (pid == 0) {
+        SetThreadInfoCallback(ThreadInfo);
+        sleep(1);
+    } else {
+        usleep(10000); // 10000 : sleep 10ms
+        GTEST_LOG_(INFO) << "process(" << getpid() << ") is ready to kill process(" << pid << ")";
+        kill(pid, SIGILL);
+        sleep(2); // 2 : wait for cppcrash generating
+        bool ret = CheckThreadCrashKeyWords(GetCppCrashFileName(pid), pid, SIGILL);
+        ASSERT_TRUE(ret);
+    }
+    GTEST_LOG_(INFO) << "SignalHandlerTest001: end.";
+}
+
+/**
+ * @tc.name: SignalHandlerTest002
+ * @tc.desc: test thread cash SignalHandler signo(SIGBUS)
+ * @tc.type: FUNC
+ */
+HWTEST_F(SignalHandlerTest, SignalHandlerTest002, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "SignalHandlerTest002: start.";
+    pid_t pid = fork();
+    if (pid < 0) {
+        GTEST_LOG_(ERROR) << "Failed to fork new test process.";
+    } else if (pid == 0) {
+        SetThreadInfoCallback(ThreadInfo);
+        sleep(1);
+    } else {
+        usleep(10000); // 10000 : sleep 10ms
+        GTEST_LOG_(INFO) << "process(" << getpid() << ") is ready to kill process(" << pid << ")";
+        kill(pid, SIGBUS);
+        sleep(2); // 2 : wait for cppcrash generating
+        bool ret = CheckThreadCrashKeyWords(GetCppCrashFileName(pid), pid, SIGBUS);
+        ASSERT_TRUE(ret);
+    }
+    GTEST_LOG_(INFO) << "SignalHandlerTest002: end.";
+}
+
+/**
+ * @tc.name: SignalHandlerTest003
+ * @tc.desc: test thread cash SignalHandler signo(SIGSEGV)
+ * @tc.type: FUNC
+ */
+HWTEST_F(SignalHandlerTest, SignalHandlerTest003, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "SignalHandlerTest003: start.";
+    pid_t pid = fork();
+    if (pid < 0) {
+        GTEST_LOG_(ERROR) << "Failed to fork new test process.";
+    } else if (pid == 0) {
+        SetThreadInfoCallback(ThreadInfo);
+        sleep(1);
+    } else {
+        usleep(10000); // 10000 : sleep 10ms
+        GTEST_LOG_(INFO) << "process(" << getpid() << ") is ready to kill process(" << pid << ")";
+        kill(pid, SIGSEGV);
+        sleep(2); // 2 : wait for cppcrash generating
+        bool ret = CheckThreadCrashKeyWords(GetCppCrashFileName(pid), pid, SIGSEGV);
+        ASSERT_TRUE(ret);
+    }
+    GTEST_LOG_(INFO) << "SignalHandlerTest003: end.";
+}
+
+/**
+ * @tc.name: SignalHandlerTest004
+ * @tc.desc: test thread crash SignalHandler in multi-thread situation signo(SIGILL)
+ * @tc.type: FUNC
+ */
+HWTEST_F(SignalHandlerTest, SignalHandlerTest004, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "SignalHandlerTest004: start.";
+    pid_t pid = fork();
+    if (pid < 0) {
+        GTEST_LOG_(ERROR) << "Failed to fork new test process.";
+    } else if (pid == 0) {
+        std::thread (TestThread, 1, SIGILL).detach(); // 1 : first thread
+        std::thread (TestThread, 2, SIGILL).detach(); // 2 : second thread
+    } else {
+        sleep(2); // 2 : wait for cppcrash generating
+        bool ret = CheckThreadCrashKeyWords(GetCppCrashFileName(pid), pid, SIGILL);
+        ASSERT_TRUE(ret);
+    }
+    GTEST_LOG_(INFO) << "SignalHandlerTest004: end.";
+}
+
+/**
+ * @tc.name: SignalHandlerTest005
+ * @tc.desc: test thread crash SignalHandler in multi-thread situation signo(SIGBUS)
+ * @tc.type: FUNC
+ */
+HWTEST_F(SignalHandlerTest, SignalHandlerTest005, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "SignalHandlerTest005: start.";
+    pid_t pid = fork();
+    if (pid < 0) {
+        GTEST_LOG_(ERROR) << "Failed to fork new test process.";
+    } else if (pid == 0) {
+        std::thread (TestThread, 1, SIGBUS).detach(); // 1 : first thread
+        std::thread (TestThread, 2, SIGBUS).detach(); // 2 : second thread
+    } else {
+        sleep(2); // 2 : wait for cppcrash generating
+        bool ret = CheckThreadCrashKeyWords(GetCppCrashFileName(pid), pid, SIGBUS);
+        ASSERT_TRUE(ret);
+    }
+    GTEST_LOG_(INFO) << "SignalHandlerTest005: end.";
+}
+
+/**
+ * @tc.name: SignalHandlerTest006
+ * @tc.desc: test thread crash SignalHandler in multi-thread situation signo(SIGSEGV)
+ * @tc.type: FUNC
+ */
+HWTEST_F(SignalHandlerTest, SignalHandlerTest006, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "SignalHandlerTest006: start.";
+    pid_t pid = fork();
+    if (pid < 0) {
+        GTEST_LOG_(ERROR) << "Failed to fork new test process.";
+    } else if (pid == 0) {
+        std::thread (TestThread, 1, SIGSEGV).detach(); // 1 : first thread
+        std::thread (TestThread, 2, SIGSEGV).detach(); // 2 : second thread
+    } else {
+        sleep(2); // 2 : wait for cppcrash generating
+        bool ret = CheckThreadCrashKeyWords(GetCppCrashFileName(pid), pid, SIGSEGV);
+        ASSERT_TRUE(ret);
+    }
+    GTEST_LOG_(INFO) << "SignalHandlerTest006: end.";
 }
 } // namespace HiviewDFX
 } // namepsace OHOS

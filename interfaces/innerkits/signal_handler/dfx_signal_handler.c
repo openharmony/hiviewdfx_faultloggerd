@@ -118,9 +118,14 @@ static void FillTraceIdLocked(struct ProcessDumpRequest* request)
 }
 
 const char* GetLastFatalMessage(void) __attribute__((weak));
+void SetThreadInfoCallback(ThreadInfoCallBack func)
+{
+    threadInfoCallBack = func;
+}
 static void FillLastFatalMessageLocked(int32_t sig)
 {
-    if (sig != SIGABRT) {
+    if (sig != SIGABRT && threadInfoCallBack != NULL) {
+        threadInfoCallBack(g_request.lastFatalMessage, sizeof(g_request.lastFatalMessage));
         return;
     }
 
