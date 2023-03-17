@@ -153,7 +153,7 @@ void BacktraceLocalStatic::CopyContextAndWaitTimeout(int sig, siginfo_t *si, voi
     }
     if (ctxPtr->ctx != nullptr) {
 #if defined(__arm__)
-        ucontext_t *uc = (ucontext_t *)context;
+        ucontext_t *uc = static_cast<ucontext_t *>(context);
         ctxPtr->ctx->regs[UNW_ARM_R0] = uc->uc_mcontext.arm_r0;
         ctxPtr->ctx->regs[UNW_ARM_R1] = uc->uc_mcontext.arm_r1;
         ctxPtr->ctx->regs[UNW_ARM_R2] = uc->uc_mcontext.arm_r2;

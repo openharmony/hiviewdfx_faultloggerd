@@ -154,12 +154,12 @@ std::string DfxUnwindRemote::GetReadableBuildId(uint8_t* buildId, size_t length)
         return ret;
     }
 
-    static const char hexTable[] = "0123456789abcdef";
+    static const char HEXTABLE[] = "0123456789abcdef";
     uint8_t* buildIdPtr = buildId;
     std::string buildIdStr;
     for (size_t i = 0; i < length; i++) {
-        buildIdStr.push_back(hexTable[*buildIdPtr >> 4]); // 4 : higher 4 bit of uint8
-        buildIdStr.push_back(hexTable[*buildIdPtr & 0xf]);
+        buildIdStr.push_back(HEXTABLE[*buildIdPtr >> 4]); // 4 : higher 4 bit of uint8
+        buildIdStr.push_back(HEXTABLE[*buildIdPtr & 0xf]);
         buildIdPtr++;
     }
     return buildIdStr;

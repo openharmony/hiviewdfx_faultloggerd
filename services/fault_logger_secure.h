@@ -27,9 +27,6 @@ public:
     FaultLoggerSecure();
     ~FaultLoggerSecure();
     bool CheckCallerUID(const int callingUid, const int32_t pid);
-
-private:
-    bool CheckUidAndPid(const int uid, const int32_t pid);
 };
 } // namespace HiviewDFX
 } // namespace OHOS

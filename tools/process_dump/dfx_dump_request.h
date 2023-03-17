@@ -73,7 +73,7 @@ public:
 private:
     ProcessDumpType type_;
     int32_t tid_ = 0;
-    int32_t recycleTid_;
+    int32_t recycleTid_ = 0;
     int32_t pid_ = 0;
     int32_t vmPid_ = 0;
     uint32_t uid_ = 0;

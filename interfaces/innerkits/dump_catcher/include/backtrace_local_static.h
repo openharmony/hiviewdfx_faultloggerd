@@ -29,7 +29,7 @@ enum ThreadContextStatus {
     ContextUsing = -2,
     ContextReady = -3,
 };
-using ThreadContext = struct ThreadContext {
+struct ThreadContext {
     std::atomic<int32_t> tid {ThreadContextStatus::ContextUnused};
     // for protecting ctx, shared between threads
     std::mutex lock;

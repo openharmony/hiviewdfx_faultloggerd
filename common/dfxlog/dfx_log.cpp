@@ -31,7 +31,7 @@
 
 static const int INVALID_FD = -1;
 static int g_DebugFd = INVALID_FD;
-static const Level g_LogLevel = Level::INFO;
+static const Level CURRENT_LOG_LEVEL = Level::INFO;
 static const int LOG_BUF_LEN = 1024;
 #ifdef DFX_LOG_USE_DMESG
 static int g_Fd = INVALID_FD;
@@ -67,12 +67,12 @@ void InitDebugFd(int fd)
 
 bool CheckDebugLevel(void)
 {
-    return Level::DEBUG >= g_LogLevel ? true : false;
+    return Level::DEBUG >= CURRENT_LOG_LEVEL ? true : false;
 }
 
 int DfxLog(const Level logLevel, const unsigned int domain, const char* tag, const char *fmt, ...)
 {
-    if (logLevel < g_LogLevel) {
+    if (logLevel < CURRENT_LOG_LEVEL) {
         return -1;
     }
 
