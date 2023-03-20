@@ -149,9 +149,18 @@ static bool CheckLocalCrashKeyWords(const string& filePath, pid_t pid, int sig)
     if (iter != sigKey.end()) {
         sigKeyword = iter->second;
     }
+#ifdef __aarch64__
     string keywords[] = {
-        "Pid:" + to_string(pid), "Uid:", "name:./test_signalhandler", sigKeyword, "Tid:", "#00", "test_signalhandler"
+        "Pid:" + to_string(pid), "Uid:", "name:./test_signalhandler",
+        sigKeyword, "Tid:", "fp", "x0:", "test_signalhandler"
     };
+#else
+    string keywords[] = {
+        "Pid:" + to_string(pid), "Uid:", "name:./test_signalhandler",
+        sigKeyword, "Tid:", "#00", "test_signalhandler"
+    };
+#endif
+
     int length = sizeof(keywords) / sizeof(keywords[0]);
     return CheckKeyWords(filePath, keywords, length) == length;
 }
