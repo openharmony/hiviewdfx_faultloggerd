@@ -45,7 +45,6 @@
 
 namespace OHOS {
 namespace HiviewDFX {
-using FaultLoggerdRequest = struct FaultLoggerdRequest;
 std::shared_ptr<FaultLoggerConfig> faultLoggerConfig_;
 std::shared_ptr<FaultLoggerSecure> faultLoggerSecure_;
 std::shared_ptr<FaultLoggerPipeMap> faultLoggerPipeMap_;

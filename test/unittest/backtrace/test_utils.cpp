@@ -36,20 +36,16 @@ uint64_t GetSelfMemoryCount()
 
     std::vector<std::string> result;
     OHOS::SplitStr(content, "\n", result);
-    std::string pss;
-    for (auto const& str : result) {
-        if (str.find("Pss:") != std::string::npos) {
-            GTEST_LOG_(INFO) << "Find:" << str << "\n";
-            pss = str;
-            break;
-        }
-    }
-
-    if (pss.empty()) {
+    auto iter = std::find_if(result.begin(), result.end(),
+        [] (std::string str) {
+            return str.find("Pss:") != std::string::npos;
+        });
+    if (iter == result.end()) {
         GTEST_LOG_(INFO) << "Failed to find Pss.\n";
         return 0;
     }
 
+    std::string pss = *iter;
     uint64_t retVal = 0;
     for (size_t i = 0; i < pss.size(); i++) {
         if (isdigit(pss[i])) {
@@ -87,13 +83,15 @@ bool CheckLogFileExist(int32_t pid, std::string& fileName)
     std::string path = "/data/log/faultlog/temp";
     std::vector<std::string> content;
     OHOS::GetDirFiles(path, content);
-    for (auto const& file : content) {
-        if (file.find(std::to_string(pid)) != std::string::npos) {
-            fileName = file;
-            return true;
-        }
+    auto iter = std::find_if(content.begin(), content.end(),
+        [pid] (std::string str) {
+            return str.find(std::to_string(pid)) != std::string::npos;
+        });
+    if (iter == content.end()) {
+        return false;
     }
-    return false;
+    fileName = *iter;
+    return true;
 }
 
 void CheckContent(const std::string& content, const std::string& keyContent, bool checkExist)
