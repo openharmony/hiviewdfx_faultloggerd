@@ -243,7 +243,7 @@ void ReadProcessName(const int pid, std::string& str)
 uint64_t GetTimeMilliSeconds(void)
 {
     struct timespec ts;
-    (void)clock_gettime(CLOCK_MONOTONIC, &ts);
+    (void)clock_gettime(CLOCK_REALTIME, &ts);
     return ((uint64_t)ts.tv_sec * NUMBER_ONE_THOUSAND) + // 1000 : second to millisecond convert ratio
         (((uint64_t)ts.tv_nsec) / NUMBER_ONE_MILLION); // 1000000 : nanosecond to millisecond convert ratio
 }

@@ -251,12 +251,57 @@ static void LoadPathContent(const std::string& desc, const std::string& path, st
     return;
 }
 
+static void LoadThreadWchan(const int pid, std::string& result)
+{
+    std::string taskPath = "/proc/" + std::to_string(pid) + "/task";
+    char realPath[PATH_MAX] = {'\0'};
+    if (realpath(taskPath.c_str(), realPath) == nullptr) {
+        DfxLogError("%s :: LoadThreadWchan :: realpath failed, errno(%d)", DFXDUMPCATCHER_TAG.c_str(), errno);
+        return;
+    }
+
+    DIR *dir = opendir(realPath);
+    if (dir == nullptr) {
+        DfxLogError("%s :: LoadThreadWchan :: opendir failed, errno(%d)", DFXDUMPCATCHER_TAG.c_str(), errno);
+        return;
+    }
+
+    result.append("\nThread wchan:\n=======================================\n");
+    bool flag = false;
+    struct dirent *ent;
+    while ((ent = readdir(dir)) != nullptr) {
+        if (strcmp(ent->d_name, ".") == 0 || strcmp(ent->d_name, "..") == 0) {
+            continue;
+        }
+        std::string comm;
+        std::string wchan;
+        std::string tid(ent->d_name);
+        std::string commPath = taskPath + "/" + tid + "/comm";
+        std::string wchanPath = taskPath + "/" + tid + "/wchan";
+        OHOS::LoadStringFromFile(commPath, comm);
+        OHOS::LoadStringFromFile(wchanPath, wchan);
+        if (!comm.empty() && !wchan.empty()) {
+            flag = true;
+            result.append("Tid:" + tid + " Name:" + comm + "wchan:" + wchan + "\n");
+        }
+    }
+
+    if (!flag) {
+        result.append("Load thread wchan failed.\n");
+    }
+    result.append("=======================================\n");
+    if (closedir(dir) == -1) {
+        DfxLogError("%s :: LoadThreadWchan :: closedir failed, errno(%d)", DFXDUMPCATCHER_TAG.c_str(), errno);
+    }
+}
+
 static void LoadPidStat(const int pid, std::string& msg)
 {
     std::string statusPath = "/proc/" + std::to_string(pid) + "/status";
     std::string wchanPath = "/proc/" + std::to_string(pid) + "/wchan";
-    LoadPathContent("status", statusPath, msg);
-    LoadPathContent("wchan", wchanPath, msg);
+    LoadPathContent("Process status", statusPath, msg);
+    LoadPathContent("Process wchan", wchanPath, msg);
+    LoadThreadWchan(pid, msg);
 }
 
 bool DfxDumpCatcher::DoDumpCatchRemote(const int type, int pid, int tid, std::string& msg)
