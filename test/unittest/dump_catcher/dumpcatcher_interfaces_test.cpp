@@ -16,8 +16,10 @@
 #include <gtest/gtest.h>
 
 #include <string>
-#include <unistd.h>
+#include <thread>
 #include <vector>
+
+#include <unistd.h>
 
 #include "dfx_dump_catcher.h"
 
@@ -803,5 +805,64 @@ HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest027, TestSize.Level
     GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest027: end.";
 }
 
+int32_t g_tid = 0;
+std::mutex g_mutex;
+__attribute__((noinline)) void Test002()
+{
+    printf("Test002\n");
+    g_mutex.lock();
+    g_mutex.unlock(); 
+}
+
+__attribute__((noinline)) void Test001()
+{
+    g_tid = gettid();
+    printf("Test001:%d\n", g_tid);
+    Test002();
+}
+
+/**
+ * @tc.name: DumpCatcherInterfacesTest028
+ * @tc.desc: test unwind in newly create threads
+ * @tc.type: FUNC
+ */
+HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest028, TestSize.Level2)
+{
+    DfxDumpCatcher dumplog(getpid());
+    std::vector<NativeFrame> frames;
+    bool result = dumplog.InitFrameCatcher();
+    EXPECT_EQ(result, true);
+
+    g_mutex.lock();
+    std::thread worker(Test001);
+    sleep(1);
+    if (g_tid <= 0) {
+        result = false;
+    }
+
+    bool hasEmptyBinaryName = false;
+    if (result) {
+        result = dumplog.CatchFrame(g_tid, frames);
+        for (auto& frame : frames) {
+            printf("name:%s\n", frame.binaryName.c_str());
+            if (frame.binaryName.empty()) {
+                hasEmptyBinaryName = true;
+            }
+        }
+    }
+
+    g_mutex.unlock();
+    g_tid = 0;
+    if (worker.joinable()) {
+        worker.join();
+    }
+
+    dumplog.DestroyFrameCatcher();
+    if (hasEmptyBinaryName) {
+        FAIL() << "BinaryName should not be empty.\n";
+    }
+    EXPECT_EQ(result, true);
+    EXPECT_GT(frames.size(), 0) << "DumpCatcherInterfacesTest028 Failed";
+}
 } // namespace HiviewDFX
 } // namepsace OHOS
