@@ -22,7 +22,6 @@
 #include "faultloggerd_client.h"
 
 static const int WRITE_LOG_BUF_LEN = 2048;
-static const int32_t INVALID_FD = -1;
 static int32_t g_DebugLogFilleDes = INVALID_FD;
 #ifndef DFX_LOG_USE_HILOG_BASE
 static int32_t g_StdErrFilleDes = INVALID_FD;

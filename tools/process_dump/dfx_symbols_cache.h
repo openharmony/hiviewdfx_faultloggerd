@@ -38,7 +38,7 @@ namespace OHOS {
 namespace HiviewDFX {
 class DfxSymbolsCache final {
 public:
-    DfxSymbolsCache() {};
+    DfxSymbolsCache();
     ~DfxSymbolsCache() {};
     bool GetNameAndOffsetByPc(struct unw_addr_space *as, uint64_t pc, std::string& name, uint64_t& offset);
 

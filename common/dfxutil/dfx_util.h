@@ -21,21 +21,23 @@
 #include <cstdio>
 #include <memory>
 #include <string>
+#include <vector>
 #include "dfx_define.h"
 
 namespace OHOS {
 namespace HiviewDFX {
-    int GetProcStatus(struct ProcInfo& procInfo);
-    int GetProcStatusByPid(int realPid, struct ProcInfo& procInfo);
-    int GetRealTargetPid();
-    bool TidToNstid(const int pid, const int tid, int& nstid);
-    bool ReadStringFromFile(const char *path, char *buf, size_t len);
-    bool TrimAndDupStr(const std::string &source, std::string &str);
-    void ReadThreadName(const int tid, std::string& str);
-    void ReadProcessName(const int pid, std::string& str);
-    uint64_t GetTimeMilliSeconds(void);
-    std::string GetCurrentTimeStr(uint64_t current = 0);
-    int PrintFormat(char *buf, int size, const char *format, ...);
+    AT_SYMBOL_HIDDEN int GetProcStatus(struct ProcInfo& procInfo);
+    AT_SYMBOL_HIDDEN int GetProcStatusByPid(int realPid, struct ProcInfo& procInfo);
+    AT_SYMBOL_HIDDEN int GetRealTargetPid();
+    AT_SYMBOL_HIDDEN bool TidToNstid(const int pid, const int tid, int& nstid);
+    AT_SYMBOL_HIDDEN bool ReadStringFromFile(const char *path, char *buf, size_t len);
+    AT_SYMBOL_HIDDEN bool TrimAndDupStr(const std::string &source, std::string &str);
+    AT_SYMBOL_HIDDEN void ReadThreadName(const int tid, std::string& str);
+    AT_SYMBOL_HIDDEN void ReadProcessName(const int pid, std::string& str);
+    AT_SYMBOL_HIDDEN uint64_t GetTimeMilliSeconds(void);
+    AT_SYMBOL_HIDDEN std::string GetCurrentTimeStr(uint64_t current = 0);
+    AT_SYMBOL_HIDDEN bool ReadDirFiles(const std::string& path, std::vector<std::string>& files);
+    AT_SYMBOL_HIDDEN bool ReadDirFilesByPid(const int& pid, std::vector<std::string>& files);
 } // nameapace HiviewDFX
 } // nameapace OHOS
 

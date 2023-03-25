@@ -26,6 +26,8 @@
 #define PATH_LEN 1024
 #define MAX_FATAL_MSG_SIZE 1024
 
+static const int INVALID_FD = -1;
+
 static const int SOCKET_BUFFER_SIZE = 256;
 static const char FAULTLOGGERD_SOCK_PATH[] = "/dev/unix/socket/faultloggerd.server";
 static const char SERVER_SOCKET_NAME[] = "faultloggerd.server";
@@ -75,6 +77,15 @@ static const int FILE_WRITE_BUF_LEN = 4096;
 static const int REGS_PRINT_LEN_ARM = 256;
 static const int REGS_PRINT_LEN_ARM64 = 1024;
 static const int REGS_PRINT_LEN_X86 = 512;
+
+#define LIKELY(exp)       (__builtin_expect( !!(exp), true  ))
+#define UNLIKELY(exp)     (__builtin_expect( !!(exp), false ))
+
+#define AT_SYMBOL_VISIBLE       __attribute__ ((visibility("default")))
+#define AT_SYMBOL_HIDDEN        __attribute__ ((visibility("hidden")))
+#define AT_ALWAYS_INLINE        __attribute__((__always_inline__))
+#define ATTRIBUTE_WARN_UNUSED __attribute__((warn_unused_result))
+#define ATTRIBUTE_UNUSED    __attribute__((__unused__))
 
 #define OHOS_TEMP_FAILURE_RETRY(exp)            \
     ({                                          \

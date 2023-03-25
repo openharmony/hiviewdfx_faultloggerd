@@ -158,9 +158,9 @@ static void TestGetBacktraceInterface()
  */
 HWTEST_F(BacktraceUtilsTest, BacktraceUtilsTest000, TestSize.Level2)
 {
-    GTEST_LOG_(INFO) << "BacktraceUtilsTest001: start.";
+    GTEST_LOG_(INFO) << "BacktraceUtilsTest000: start.";
     // Do Nothing and collect resource usage
-    GTEST_LOG_(INFO) << "BacktraceUtilsTest001: end.";
+    GTEST_LOG_(INFO) << "BacktraceUtilsTest000: end.";
 }
 
 /**

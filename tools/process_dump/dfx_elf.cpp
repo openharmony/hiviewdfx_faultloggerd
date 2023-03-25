@@ -27,6 +27,7 @@
 #include <unistd.h>
 #include <vector>
 #include "bits/fcntl.h"
+#include "dfx_define.h"
 #include "dfx_log.h"
 #include "elf.h"
 #include "link.h"
@@ -49,7 +50,7 @@ std::shared_ptr<DfxElf> DfxElf::Create(const std::string path)
 
     auto dfxElf = std::make_shared<DfxElf>();
 
-    dfxElf->SetFd(open(realPaths, O_RDONLY | O_CLOEXEC));
+    dfxElf->SetFd(OHOS_TEMP_FAILURE_RETRY(open(realPaths, O_RDONLY | O_CLOEXEC)));
 
     if (dfxElf->fd_ < 0) {
         DfxLogWarn("Fail to open elf file(%s).", realPaths);

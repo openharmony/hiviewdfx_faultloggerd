@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 Huawei Device Co., Ltd.
+ * Copyright (c) 2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -12,26 +12,30 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef DFX_BACKTRACE_H
-#define DFX_BACKTRACE_H
+#ifndef DWARF_UNWINDER_H
+#define DWARF_UNWINDER_H
 
-#include <cinttypes>
-#include <string>
+#include <vector>
+#include <libunwind.h>
+#include "backtrace.h"
+#include "dfx_symbols_cache.h"
 
 namespace OHOS {
 namespace HiviewDFX {
-constexpr int32_t BACKTRACE_CURRENT_THREAD = -1;
-struct NativeFrame {
-    size_t index {0};
-    uint64_t pc {0};
-    uint64_t relativePc {0};
-    uint64_t sp {0};
-    uint64_t fp {0};
-    uint64_t funcOffset {0};
-    std::string binaryName {""};
-    std::string funcName {""};
-    std::string buildId {""};
+class DwarfUnwinder {
+public:
+    DwarfUnwinder();
+    ~DwarfUnwinder();
+
+    bool UnwindWithContext(unw_addr_space_t as, unw_context_t& context, std::shared_ptr<DfxSymbolsCache> cache,
+        size_t skipFrameNum);
+    const std::vector<NativeFrame>& GetFrames() const;
+private:
+    void UpdateFrameFuncName(unw_addr_space_t as, std::shared_ptr<DfxSymbolsCache> cache, NativeFrame& frame);
+
+private:
+    std::vector<NativeFrame> frames_;
 };
 } // namespace HiviewDFX
 } // namespace OHOS
-#endif // DFX_BACKTRACE_H
+#endif

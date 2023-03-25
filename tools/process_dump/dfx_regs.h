@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2022 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,6 +17,7 @@
 
 #include <cstdint>
 #include <string>
+#include <securec.h>
 #include <sys/types.h>
 #include <ucontext.h>
 #include <vector>
@@ -24,6 +25,8 @@
 
 namespace OHOS {
 namespace HiviewDFX {
+#define FP_MINI_REGS_SIZE 4
+
 class DfxRegs {
 public:
     DfxRegs() = default;
@@ -34,11 +37,22 @@ public:
     }
     virtual std::string PrintRegs() const = 0;
     virtual std::string GetSpecialRegisterName(uintptr_t val) const = 0;
+    virtual void GetFramePointerMiniRegs(void *regs) = 0;
     virtual uintptr_t GetPC() const = 0;
     virtual uintptr_t GetLR() const = 0;
     void SetRegs(const std::vector<uintptr_t>& regs)
     {
         regsData_ = regs;
+    }
+
+    int PrintFormat(char *buf, int size, const char *format, ...) const
+    {
+        int ret = -1;
+        va_list args;
+        va_start(args, format);
+        ret = vsnprintf_s(buf, size, size - 1, format, args);
+        va_end(args);
+        return ret;
     }
 protected:
     std::vector<uintptr_t> regsData_ {};
@@ -51,6 +65,7 @@ public:
     ~DfxRegsArm() override {};
     std::string PrintRegs() const override;
     std::string GetSpecialRegisterName(uintptr_t val) const override;
+    void GetFramePointerMiniRegs(void *regs) override;
     uintptr_t GetPC() const override;
     uintptr_t GetLR() const override;
 };
@@ -62,6 +77,7 @@ public:
     ~DfxRegsArm64() override {};
     std::string PrintRegs() const override;
     std::string GetSpecialRegisterName(uintptr_t val) const override;
+    void GetFramePointerMiniRegs(void *regs) override;
     uintptr_t GetPC() const override;
     uintptr_t GetLR() const override;
 };
@@ -73,6 +89,7 @@ public:
     ~DfxRegsX86_64() override {};
     std::string PrintRegs() const override;
     std::string GetSpecialRegisterName(uintptr_t val) const override;
+    void GetFramePointerMiniRegs(void *regs) override;
     uintptr_t GetPC() const override;
     uintptr_t GetLR() const override;
 };
