@@ -24,15 +24,10 @@
 #include <securec.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include "dfx_define.h"
 
-#ifndef UNLIKELY
-#define UNLIKELY(x)    __builtin_expect(!!(x), 0)
-#endif
-
-static const int INVALID_FD = -1;
 static int g_DebugFd = INVALID_FD;
 static const Level CURRENT_LOG_LEVEL = Level::INFO;
-static const int LOG_BUF_LEN = 1024;
 #ifdef DFX_LOG_USE_DMESG
 static int g_Fd = INVALID_FD;
 #endif

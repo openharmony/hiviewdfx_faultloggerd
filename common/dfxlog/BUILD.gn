@@ -18,6 +18,7 @@ if (defined(ohos_lite)) {
     visibility = [ ":*" ]
     include_dirs = [
       ".",
+      "$faultloggerd_path/common",
       "$hilog_lite_include_path",
     ]
   }
@@ -40,7 +41,7 @@ if (defined(ohos_lite)) {
     visibility = [ ":*" ]
     include_dirs = [
       ".",
-      "//commonlibrary/c_utils/base/include",
+      "$faultloggerd_path/common",
     ]
   }
   ohos_static_library("static_common_log") {

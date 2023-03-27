@@ -24,9 +24,14 @@
 #include <cstring>
 #include <ctime>
 #include <iostream>
+#include <fstream>
 #include <securec.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 #include <sys/time.h>
+#include <fcntl.h>
 #include <unistd.h>
+#include <dirent.h>
 #include "dfx_define.h"
 #include "dfx_log.h"
 
@@ -273,17 +278,37 @@ std::string GetCurrentTimeStr(uint64_t current)
     return std::string(millBuf, strlen(millBuf));
 }
 
-int PrintFormat(char *buf, int size, const char *format, ...)
+bool ReadDirFiles(const std::string& path, std::vector<std::string>& files)
 {
-    int ret = -1;
-    va_list args;
-    va_start(args, format);
-    ret = vsnprintf_s(buf, size, size - 1, format, args);
-    va_end(args);
-    if (ret <= 0) {
-        DfxLogError("snprintf_s failed.");
+    DIR *dir = opendir(path.c_str());
+    if (dir == nullptr) {
+        return false;
     }
-    return ret;
+
+    struct dirent *ent;
+    while ((ent = readdir(dir)) != nullptr) {
+        // current dir OR parent dir
+        if ((strcmp(ent->d_name, ".") == 0) || (strcmp(ent->d_name, "..") == 0)) {
+            continue;
+        }
+        files.emplace_back(std::string(ent->d_name));
+    }
+    (void)closedir(dir);
+    return true;
+}
+
+bool ReadDirFilesByPid(const int& pid, std::vector<std::string>& files)
+{
+    char path[PATH_LEN] = {0};
+    if (snprintf_s(path, sizeof(path), sizeof(path) - 1, "/proc/%d/task", pid) <= 0) {
+        return false;
+    }
+
+    char realPath[PATH_MAX];
+    if (!realpath(path, realPath)) {
+        return false;
+    }
+    return ReadDirFiles(realPath, files);
 }
 }   // namespace HiviewDFX
 }   // namespace OHOS

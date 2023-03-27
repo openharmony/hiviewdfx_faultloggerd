@@ -1,4 +1,4 @@
-# Copyright (c) 2022-2023 Huawei Device Co., Ltd.
+# Copyright (c) 2022 Huawei Device Co., Ltd.
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -13,36 +13,29 @@
 
 import("//base/hiviewdfx/faultloggerd/faultloggerd.gni")
 
+backtrace_local_sources = [
+  "backtrace_local_static.cpp",
+  "backtrace_local_thread.cpp",
+]
+
 if (defined(ohos_lite)) {
-  shared_library("libbacktrace_local") {
+  source_set("backtrace_local_src") {
     visibility = [ "*:*" ]
 
     include_dirs = [
-      "include",
       "//commonlibrary/c_utils/base/include",
       "$faultloggerd_path/common",
       "$faultloggerd_path/common/dfxlog",
       "$faultloggerd_path/frameworks/unwinder",
-      "$faultloggerd_path/interfaces/innerkits/dump_catcher/include",
       "$faultloggerd_path/tools/process_dump",
+      "$faultloggerd_path/interfaces/innerkits/dump_catcher/include",
       "//third_party/libunwind/include",
       "//third_party/libunwind/src",
+      "$hilog_lite_include_path",
     ]
 
-    if (target_cpu == "arm") {
-      include_dirs += [ "//third_party/libunwind/include/tdep-arm" ]
-    } else if (target_cpu == "arm64") {
-      include_dirs += [ "//third_party/libunwind/include/tdep-aarch64" ]
-    } else if (target_cpu == "x64" || target_cpu == "x86_64") {
-      include_dirs += [ "//third_party/libunwind/include/tdep-x86_64" ]
-    } else if (target_cpu == "mipsel") {
-      include_dirs += [ "//third_party/libunwind/include/tdep-mips" ]
-    }
-
-    sources = [ "backtrace_local.cpp" ]
+    sources = backtrace_local_sources
     sources += [
-      "$faultloggerd_path/frameworks/local/backtrace_local_static.cpp",
-      "$faultloggerd_path/frameworks/local/backtrace_local_thread.cpp",
       "$faultloggerd_path/frameworks/unwinder/dwarf_unwinder.cpp",
       "$faultloggerd_path/frameworks/unwinder/fp_unwinder.cpp",
       "$faultloggerd_path/tools/process_dump/dfx_symbols_cache.cpp",
@@ -63,19 +56,23 @@ if (defined(ohos_lite)) {
 
     deps = [
       "$faultloggerd_path/common/dfxlog:static_common_log",
-      "$faultloggerd_path/common/dfxutil:dfx_util",
       "//base/hiviewdfx/hilog_lite/frameworks/featured:hilog_shared",
       "//third_party/bounds_checking_function:libsec_shared",
       "//third_party/libunwind:libunwind_local",
     ]
   }
 } else {
-  config("dfx_backtrace_config") {
+  config("dfx_backtrace_local_config") {
     visibility = [ "*:*" ]
 
     include_dirs = [
-      "include",
+      "$faultloggerd_path/common",
+      "$faultloggerd_path/common/dfxlog",
+      "$faultloggerd_path/frameworks/unwinder",
+      "$faultloggerd_path/tools/process_dump",
       "$faultloggerd_path/interfaces/innerkits/dump_catcher/include",
+      "//third_party/libunwind/include",
+      "//third_party/libunwind/src",
     ]
 
     defines = [
@@ -85,25 +82,22 @@ if (defined(ohos_lite)) {
     ]
   }
 
-  ohos_shared_library("libbacktrace_local") {
-    public_configs = [ ":dfx_backtrace_config" ]
+  ohos_source_set("backtrace_local_src") {
+    public_configs = [ ":dfx_backtrace_local_config" ]
 
-    sources = [ "backtrace_local.cpp" ]
+    sources = backtrace_local_sources
 
-    deps = [ "$faultloggerd_path/frameworks/local:backtrace_local_src" ]
+    deps = [
+      "$faultloggerd_path/common/dfxlog:static_common_log",
+      "$faultloggerd_path/frameworks/unwinder:dfx_unwinder_src",
+      "//third_party/bounds_checking_function:libsec_shared",
+      "//third_party/libunwind:libunwind_local",
+    ]
 
     external_deps = [
       "c_utils:utils",
       "hilog_native:libhilog",
     ]
-
-    install_images = [
-      "system",
-      "updater",
-    ]
-
-    output_extension = "so"
-
     part_name = "faultloggerd"
     subsystem_name = "hiviewdfx"
   }

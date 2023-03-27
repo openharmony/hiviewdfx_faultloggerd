@@ -45,12 +45,13 @@ bool ReadStringFromFile(const char* path, char* dst, size_t dstSz)
     memset(nameFilter, 0, sizeof(nameFilter));
 
     int fd = -1;
-    fd = open(path, O_RDONLY);
+    fd = OHOS_TEMP_FAILURE_RETRY(open(path, O_RDONLY));
     if (fd < 0) {
         return false;
     }
 
-    if (read(fd, name, NAME_LEN -1) == -1) {
+    int nRead = OHOS_TEMP_FAILURE_RETRY(read(fd, name, NAME_LEN -1));
+    if (nRead == -1) {
         close(fd);
         return false;
     }

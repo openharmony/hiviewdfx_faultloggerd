@@ -20,9 +20,6 @@
 #include "stdbool.h"
 #include "dfx_define.h"
 
-#define AT_SYMBOL_VISIBLE       __attribute__ ((visibility("default")))
-#define AT_SYMBOL_HIDDEN        __attribute__ ((visibility("hidden")))
-
 #ifdef __cplusplus
 extern "C" {
 #endif

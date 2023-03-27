@@ -91,28 +91,13 @@ void DfxProcess::SetRecycleTid(pid_t nstid)
 
 bool DfxProcess::InitOtherThreads(bool attach)
 {
-    char path[NAME_LEN] = {0};
-    if (snprintf_s(path, sizeof(path), sizeof(path) - 1, "/proc/%d/task", GetPid()) <= 0) {
+    std::vector<std::string> files;
+    if (ReadDirFilesByPid(GetPid(), files) == false) {
         return false;
     }
 
-    char realPath[PATH_MAX];
-    if (!realpath(path, realPath)) {
-        return false;
-    }
-
-    DIR *dir = opendir(realPath);
-    if (!dir) {
-        return false;
-    }
-
-    struct dirent *ent;
-    while ((ent = readdir(dir))) {
-        if ((strcmp(ent->d_name, ".") == 0) || (strcmp(ent->d_name, "..") == 0)) {
-            continue;
-        }
-
-        pid_t tid = atoi(ent->d_name);
+    for (size_t i = 0; i < files.size(); ++i) {
+        pid_t tid = atoi(files[i].c_str());
         if (tid == 0) {
             continue;
         }
@@ -129,7 +114,6 @@ bool DfxProcess::InitOtherThreads(bool attach)
 
         InsertThreadNode(tid, nstid, attach);
     }
-    closedir(dir);
     return true;
 }
 

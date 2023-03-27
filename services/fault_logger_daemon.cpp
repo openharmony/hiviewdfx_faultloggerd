@@ -480,7 +480,7 @@ int32_t FaultLoggerDaemon::CreateFileForRequest(int32_t type, int32_t pid, uint6
     std::string path = filePath + "/" + typeStr + "-" + std::to_string(pid) + crashTime.str();
 
     DfxLogInfo("%s :: file path(%s).\n", FAULTLOGGERD_TAG.c_str(), path.c_str());
-    int32_t fd = open(path.c_str(), O_RDWR | O_CREAT, FAULTLOG_FILE_PROP);
+    int32_t fd = OHOS_TEMP_FAILURE_RETRY(open(path.c_str(), O_RDWR | O_CREAT, FAULTLOG_FILE_PROP));
     if (fd != -1) {
         if (!ChangeModeFile(path, FAULTLOG_FILE_PROP)) {
             DfxLogError("%s :: Failed to ChangeMode CreateFileForRequest", FAULTLOGGERD_TAG.c_str());

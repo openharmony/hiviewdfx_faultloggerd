@@ -32,11 +32,12 @@ if (defined(ohos_lite)) {
       "$faultloggerd_path/common",
       "$faultloggerd_path/common/dfxlog",
       "$faultloggerd_path/common/dfxutil",
-      "//third_party/libunwind/include",
-      "//third_party/libunwind/src",
+      "$faultloggerd_path/frameworks/unwinder",
       "$faultloggerd_path/interfaces/innerkits/faultloggerd_client/include",
       "$faultloggerd_path/tools/process_dump",
       "$hilog_lite_include_path",
+      "//third_party/libunwind/include",
+      "//third_party/libunwind/src",
     ]
 
     if (target_cpu == "arm") {
@@ -55,8 +56,17 @@ if (defined(ohos_lite)) {
       "$faultloggerd_path/common/dfxutil/file_ex.cpp",
       "$faultloggerd_path/frameworks/local/backtrace_local_static.cpp",
       "$faultloggerd_path/frameworks/local/backtrace_local_thread.cpp",
+      "$faultloggerd_path/frameworks/unwinder/dwarf_unwinder.cpp",
+      "$faultloggerd_path/frameworks/unwinder/fp_unwinder.cpp",
       "$faultloggerd_path/tools/process_dump/dfx_symbols_cache.cpp",
     ]
+    if (target_cpu == "arm") {
+      sources += [ "$faultloggerd_path/tools/process_dump/dfx_regs_arm.cpp" ]
+    } else if (target_cpu == "arm64") {
+      sources += [ "$faultloggerd_path/tools/process_dump/dfx_regs_arm64.cpp" ]
+    } else if (target_cpu == "x86_64") {
+      sources += [ "$faultloggerd_path/tools/process_dump/dfx_regs_x86_64.cpp" ]
+    }
 
     defines = [
       "HAVE_CONFIG_H",
@@ -84,11 +94,12 @@ if (defined(ohos_lite)) {
       "$faultloggerd_path/common",
       "$faultloggerd_path/common/dfxlog",
       "$faultloggerd_path/common/dfxutil",
-      "//third_party/libunwind/include",
-      "//third_party/libunwind/src",
+      "$faultloggerd_path/frameworks/unwinder",
       "$faultloggerd_path/interfaces/innerkits/faultloggerd_client/include",
       "$faultloggerd_path/tools/process_dump",
       "$hilog_lite_include_path",
+      "//third_party/libunwind/include",
+      "//third_party/libunwind/src",
     ]
 
     if (target_cpu == "arm") {
@@ -107,8 +118,17 @@ if (defined(ohos_lite)) {
       "$faultloggerd_path/common/dfxutil/file_ex.cpp",
       "$faultloggerd_path/frameworks/local/backtrace_local_static.cpp",
       "$faultloggerd_path/frameworks/local/backtrace_local_thread.cpp",
+      "$faultloggerd_path/frameworks/unwinder/dwarf_unwinder.cpp",
+      "$faultloggerd_path/frameworks/unwinder/fp_unwinder.cpp",
       "$faultloggerd_path/tools/process_dump/dfx_symbols_cache.cpp",
     ]
+    if (target_cpu == "arm") {
+      sources += [ "$faultloggerd_path/tools/process_dump/dfx_regs_arm.cpp" ]
+    } else if (target_cpu == "arm64") {
+      sources += [ "$faultloggerd_path/tools/process_dump/dfx_regs_arm64.cpp" ]
+    } else if (target_cpu == "x86_64") {
+      sources += [ "$faultloggerd_path/tools/process_dump/dfx_regs_x86_64.cpp" ]
+    }
 
     defines = [
       "HAVE_CONFIG_H",

@@ -19,9 +19,6 @@
 #include <memory>
 #include <vector>
 
-#include <link.h>
-#include <unistd.h>
-
 #include <libunwind.h>
 
 #include "backtrace.h"
@@ -38,14 +35,6 @@ public:
         bool fast = false, bool releaseThread = true);
     void ReleaseThread();
 
-    bool UnwindWithContext(unw_addr_space_t as, unw_context_t& context, std::shared_ptr<DfxSymbolsCache> cache,
-        size_t skipFrameNum);
-
-#ifdef __aarch64__
-    bool UnwindWithContextByFramePointer(unw_context_t& context, size_t skipFrameNum);
-    void UpdateFrameInfo();
-#endif
-
     std::string GetFramesStr();
     const std::vector<NativeFrame>& GetFrames() const;
 
@@ -53,22 +42,12 @@ public:
     static bool GetBacktraceFrames(std::vector<NativeFrame>& frames, int32_t tid, size_t skipFrameNum, bool fast);
     static bool GetBacktraceString(std::string& out, int32_t tid, size_t skipFrameNum, bool fast);
 private:
-    bool GetUnwindContext(unw_context_t& context);
     bool UnwindCurrentThread(unw_addr_space_t as, std::shared_ptr<DfxSymbolsCache> cache, 
         size_t skipFrameNum, bool fast = false);
-    void UpdateFrameFuncName(unw_addr_space_t as, std::shared_ptr<DfxSymbolsCache> cache, NativeFrame& frame);
-#ifdef __aarch64__
-    bool Step(uintptr_t& fp, uintptr_t& pc);
-    static int DlIteratePhdrCallback(struct dl_phdr_info *info, size_t size, void *data);
-#endif
 
 private:
     int32_t tid_;
     std::vector<NativeFrame> frames_;
-#ifdef __aarch64__
-    uintptr_t stackBottom_;
-    uintptr_t stackTop_;
-#endif
 };
 } // namespace HiviewDFX
 } // namespace OHOS

@@ -134,19 +134,14 @@ bool DfxDumpCatcher::DoDumpLocalPid(int pid, std::string& msg)
         return ret;
     }
 
-    DIR *dir = opendir(realPath);
-    if (dir == nullptr) {
+    std::vector<std::string> files;
+    if (ReadDirFiles(realPath, files) == false) {
         DfxLogError("%s :: DoDumpLocalPid :: return false as opendir failed.", DFXDUMPCATCHER_TAG.c_str());
         return ret;
     }
 
-    struct dirent *ent;
-    while ((ent = readdir(dir)) != nullptr) {
-        if (strcmp(ent->d_name, ".") == 0 || strcmp(ent->d_name, "..") == 0) {
-            continue;
-        }
-
-        pid_t tid = atoi(ent->d_name);
+    for (size_t i = 0; i < files.size(); ++i) {
+        pid_t tid = atoi(files[i].c_str());
         if (tid == 0) {
             continue;
         }
@@ -158,11 +153,6 @@ bool DfxDumpCatcher::DoDumpLocalPid(int pid, std::string& msg)
             ret = DoDumpLocalTid(tid, msg);
         }
     }
-
-    if (closedir(dir) == -1) {
-        DfxLogError("closedir failed.");
-    }
-
     DfxLogDebug("%s :: DoDumpLocalPid :: return %d.", DFXDUMPCATCHER_TAG.c_str(), ret);
     return ret;
 }

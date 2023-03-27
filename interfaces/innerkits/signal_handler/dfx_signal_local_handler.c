@@ -65,7 +65,7 @@ static void ReserveChildThreadSignalStack(void)
     g_reservedChildStack = (void *)(((uint8_t *)g_reservedChildStack) + LOCAL_HANDLER_STACK_SIZE - 1);
 }
 
-__attribute__((unused)) static void FutexWait(volatile void* ftx, int value)
+ATTRIBUTE_UNUSED static void FutexWait(volatile void* ftx, int value)
 {
     syscall(__NR_futex, ftx, FUTEX_WAIT, value, NULL, NULL, 0);
 }

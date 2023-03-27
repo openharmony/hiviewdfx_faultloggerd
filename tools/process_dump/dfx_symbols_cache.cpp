@@ -42,6 +42,12 @@ bool SymbolComparator(DfxSymbol s1, DfxSymbol s2)
 
 namespace OHOS {
 namespace HiviewDFX {
+
+DfxSymbolsCache::DfxSymbolsCache()
+{
+    cachedSymbols_.clear();
+}
+
 bool DfxSymbolsCache::GetNameAndOffsetByPc(struct unw_addr_space *as,
     uint64_t pc, std::string& name, uint64_t& offset)
 {

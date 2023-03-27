@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2022 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -21,8 +21,7 @@
 #include <cstdlib>
 #include <securec.h>
 #include "dfx_define.h"
-#include "dfx_logger.h"
-#include "dfx_util.h"
+#include "dfx_log.h"
 
 namespace OHOS {
 namespace HiviewDFX {
@@ -108,6 +107,25 @@ std::string DfxRegsArm::PrintRegs() const
 
     regString = regString + std::string(buf);
     return regString;
+}
+
+void DfxRegsArm::GetFramePointerMiniRegs(void *regs)
+{
+    asm volatile(
+    ".align 2\n"
+    "bx pc\n"
+    "nop\n"
+    ".code 32\n"
+    "stmia %[base], {r7, r11}\n"
+    "add %[base], #8\n"
+    "mov r1, r13\n"
+    "mov r2, r15\n"
+    "stmia %[base], {r1, r2}\n"
+    "orr %[base], pc, #1\n"
+    "bx %[base]\n"
+    : [base] "+r"(regs)
+    :
+    : "r1", "r2", "memory");
 }
 
 uintptr_t DfxRegsArm::GetPC() const
