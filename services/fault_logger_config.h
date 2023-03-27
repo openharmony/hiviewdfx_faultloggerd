@@ -15,8 +15,8 @@
 
 /* This files contains header of faultlog config module. */
 
-#ifndef _FAULT_LOGGER_CONFIG_H
-#define _FAULT_LOGGER_CONFIG_H
+#ifndef FAULT_LOGGER_CONFIG_H
+#define FAULT_LOGGER_CONFIG_H
 
 #include <string>
 

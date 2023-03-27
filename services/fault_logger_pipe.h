@@ -15,8 +15,8 @@
 
 /* This files contains header of pipe module. */
 
-#ifndef _FAULT_LOGGER_PIPE_H
-#define _FAULT_LOGGER_PIPE_H
+#ifndef FAULT_LOGGER_PIPE_H
+#define FAULT_LOGGER_PIPE_H
 
 #include <map>
 #include <memory>
