@@ -15,8 +15,8 @@
 
 /* This files contains header of secure module. */
 
-#ifndef _FAULT_LOGGER_SECURE_H
-#define _FAULT_LOGGER_SECURE_H
+#ifndef FAULT_LOGGER_SECURE_H
+#define FAULT_LOGGER_SECURE_H
 
 #include <cstdint>
 
