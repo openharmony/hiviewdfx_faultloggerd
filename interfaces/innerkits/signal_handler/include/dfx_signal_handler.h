@@ -16,6 +16,7 @@
 #define DFX_SIGNAL_HANDLER_H
 
 #include <inttypes.h>
+#include <threads.h>
 #include <signal.h>
 #include <ucontext.h>
 #include "dfx_define.h"
@@ -40,6 +41,9 @@ struct ProcessDumpRequest {
     TraceInfo traceInfo;
 };
 
+typedef void(*ThreadInfoCallBack)(char* buf, size_t len);
+static thread_local ThreadInfoCallBack threadInfoCallBack = NULL;
+void SetThreadInfoCallback(ThreadInfoCallBack func);
 void DFX_InstallSignalHandler(void);
 
 #ifdef __cplusplus
