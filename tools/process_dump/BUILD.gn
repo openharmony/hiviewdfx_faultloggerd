@@ -24,6 +24,7 @@ processdump_sources = [
   "dfx_logger.cpp",
   "dfx_maps.cpp",
   "dfx_process.cpp",
+  "dfx_regs.cpp",
   "dfx_ring_buffer_wrapper.cpp",
   "dfx_signal.cpp",
   "dfx_symbols_cache.cpp",

@@ -95,16 +95,10 @@ bool FpUnwinder::UnwindWithContext(unw_context_t& context, size_t skipFrameNum)
 
 bool FpUnwinder::UnwindWithRegs(size_t skipFrameNum)
 {
+#ifdef __aarch64__
     uintptr_t regs[FP_MINI_REGS_SIZE] = {0};
-    std::shared_ptr<DfxRegs> dfxreg;
-#if defined(__arm__)
-    dfxreg = std::make_shared<DfxRegsArm>();
-#elif defined(__aarch64__)
-    dfxreg = std::make_shared<DfxRegsArm64>();
-#elif defined(__x86_64__)
-    return false;
-#endif
-    dfxreg->GetFramePointerMiniRegs(regs);
+    std::shared_ptr<DfxRegs> dfxregs = DfxRegs::Create();
+    dfxregs->GetFramePointerMiniRegs(regs);
     uintptr_t fp = regs[0]; // x29
     uintptr_t pc = regs[3]; // x32
 
@@ -125,6 +119,7 @@ bool FpUnwinder::UnwindWithRegs(size_t skipFrameNum)
         frames_.emplace_back(frame);
         index++;
     } while (Step(fp, pc) && ((index - skipFrameNum) < BACK_STACK_MAX_STEPS));
+#endif
     return (frames_.size() > 0);
 }
 

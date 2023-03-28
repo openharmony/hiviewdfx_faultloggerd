@@ -20,45 +20,10 @@
 #include <securec.h>
 #include "dfx_define.h"
 #include "dfx_log.h"
+#include "dfx_regs_define.h"
 
 namespace OHOS {
 namespace HiviewDFX {
-enum RegisterSeqNum {
-    REG_AARCH64_X0 = 0,
-    REG_AARCH64_X1,
-    REG_AARCH64_X2,
-    REG_AARCH64_X3,
-    REG_AARCH64_X4,
-    REG_AARCH64_X5,
-    REG_AARCH64_X6,
-    REG_AARCH64_X7,
-    REG_AARCH64_X8,
-    REG_AARCH64_X9,
-    REG_AARCH64_X10,
-    REG_AARCH64_X11,
-    REG_AARCH64_X12,
-    REG_AARCH64_X13,
-    REG_AARCH64_X14,
-    REG_AARCH64_X15,
-    REG_AARCH64_X16,
-    REG_AARCH64_X17,
-    REG_AARCH64_X18,
-    REG_AARCH64_X19,
-    REG_AARCH64_X20,
-    REG_AARCH64_X21,
-    REG_AARCH64_X22,
-    REG_AARCH64_X23,
-    REG_AARCH64_X24,
-    REG_AARCH64_X25,
-    REG_AARCH64_X26,
-    REG_AARCH64_X27,
-    REG_AARCH64_X28,
-    REG_AARCH64_X29,
-    REG_AARCH64_X30,
-    REG_AARCH64_SP = 31,
-    REG_AARCH64_PC
-};
-
 DfxRegsArm64::DfxRegsArm64(const ucontext_t &context)
 {
     std::vector<uintptr_t> regs {};
@@ -96,7 +61,7 @@ DfxRegsArm64::DfxRegsArm64(const ucontext_t &context)
     regs.push_back(uintptr_t(context.uc_mcontext.sp));       // 31:sp
     regs.push_back(uintptr_t(context.uc_mcontext.pc));       // 32:pc
 
-    SetRegs(regs);
+    SetRegsData(regs);
     DfxLogDebug("lr:%016lx sp:%016lx pc:%016lx\n", regs[REG_AARCH64_X30], regs[REG_AARCH64_SP], regs[REG_AARCH64_PC]);
 }
 

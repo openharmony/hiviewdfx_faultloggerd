@@ -47,6 +47,7 @@ if (defined(ohos_lite)) {
       "$faultloggerd_path/frameworks/unwinder/fp_unwinder.cpp",
       "$faultloggerd_path/tools/process_dump/dfx_symbols_cache.cpp",
     ]
+    sources += [ "$faultloggerd_path/tools/process_dump/dfx_regs.cpp" ]
     if (target_cpu == "arm") {
       sources += [ "$faultloggerd_path/tools/process_dump/dfx_regs_arm.cpp" ]
     } else if (target_cpu == "arm64") {

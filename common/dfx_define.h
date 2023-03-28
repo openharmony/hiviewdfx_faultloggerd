@@ -74,10 +74,6 @@ static const int SYMBOL_BUF_SIZE = 1024;
 static const int LOG_BUF_LEN = 1024;
 static const int FILE_WRITE_BUF_LEN = 4096;
 
-static const int REGS_PRINT_LEN_ARM = 256;
-static const int REGS_PRINT_LEN_ARM64 = 1024;
-static const int REGS_PRINT_LEN_X86 = 512;
-
 #define LIKELY(exp)       (__builtin_expect( !!(exp), true  ))
 #define UNLIKELY(exp)     (__builtin_expect( !!(exp), false ))
 
