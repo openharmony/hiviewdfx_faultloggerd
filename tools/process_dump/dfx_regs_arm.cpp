@@ -22,28 +22,10 @@
 #include <securec.h>
 #include "dfx_define.h"
 #include "dfx_log.h"
+#include "dfx_regs_define.h"
 
 namespace OHOS {
 namespace HiviewDFX {
-enum RegisterSeqNum {
-    REG_ARM_R0 = 0,
-    REG_ARM_R1,
-    REG_ARM_R2,
-    REG_ARM_R3,
-    REG_ARM_R4,
-    REG_ARM_R5,
-    REG_ARM_R6,
-    REG_ARM_R7,
-    REG_ARM_R8,
-    REG_ARM_R9,
-    REG_ARM_R10,
-    REG_ARM_R11,
-    REG_ARM_R12,
-    REG_ARM_R13,
-    REG_ARM_R14,
-    REG_ARM_R15
-};
-
 DfxRegsArm::DfxRegsArm(const ucontext_t& context)
 {
     std::vector<uintptr_t> regs {};
@@ -65,7 +47,7 @@ DfxRegsArm::DfxRegsArm(const ucontext_t& context)
     regs.push_back(uintptr_t(context.uc_mcontext.arm_lr));  // 14:lr
     regs.push_back(uintptr_t(context.uc_mcontext.arm_pc));  // 15:pc
 
-    SetRegs(regs);
+    SetRegsData(regs);
     DfxLogDebug("fp:%08x ip:%08x sp:%08x lr:%08x pc:%08x \n", regs[REG_ARM_R11], regs[REG_ARM_R12],
         regs[REG_ARM_R13], regs[REG_ARM_R14], regs[REG_ARM_R15]);
 }

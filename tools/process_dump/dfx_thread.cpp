@@ -37,15 +37,8 @@ DfxThread::DfxThread(pid_t pid, pid_t tid, pid_t nsTid, const ucontext_t &contex
     :isCrashThread_(false), pid_(pid), tid_(tid), nsTid_(nsTid), unwStopReason_(-1)
 {
     threadStatus_ = ThreadStatus::THREAD_STATUS_INVALID;
-    std::shared_ptr<DfxRegs> reg;
-#if defined(__arm__)
-    reg = std::make_shared<DfxRegsArm>(context);
-#elif defined(__aarch64__)
-    reg = std::make_shared<DfxRegsArm64>(context);
-#elif defined(__x86_64__)
-    reg = std::make_shared<DfxRegsX86_64>(context);
-#endif
-    regs_ = reg;
+    std::shared_ptr<DfxRegs> regs = DfxRegs::CreateFromContext(context);
+    regs_ = regs;
 
     ReadThreadName(tid_, threadName_);
     threadStatus_ = ThreadStatus::THREAD_STATUS_INIT;

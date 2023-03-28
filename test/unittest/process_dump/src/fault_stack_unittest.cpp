@@ -93,11 +93,11 @@ std::shared_ptr<DfxRegs> GetCurrentReg()
 #if defined(__arm__)
     std::shared_ptr<DfxRegsArm> reg = std::make_shared<DfxRegsArm>();
     std::vector<uintptr_t> regVec = GetCurrentRegs(ctx);
-    reg->SetRegs(regVec);
+    reg->SetRegsData(regVec);
 #elif defined(__aarch64__)
     std::shared_ptr<DfxRegsArm64> reg = std::make_shared<DfxRegsArm64>();
     std::vector<uintptr_t> regVec = GetCurrentRegs(ctx);
-    reg->SetRegs(regVec);
+    reg->SetRegsData(regVec);
 #else
     std::shared_ptr<DfxRegs> reg = nullptr;
 #endif

@@ -17,7 +17,7 @@
 
 #include <cstdint>
 #include <string>
-#include <securec.h>
+#include <memory>
 #include <sys/types.h>
 #include <ucontext.h>
 #include <vector>
@@ -31,29 +31,19 @@ class DfxRegs {
 public:
     DfxRegs() = default;
     virtual ~DfxRegs() {};
-    std::vector<uintptr_t> GetRegsData() const
-    {
-        return regsData_;
-    }
+    static std::shared_ptr<DfxRegs> Create();
+    static std::shared_ptr<DfxRegs> CreateFromContext(const ucontext_t &context);
+
+    std::vector<uintptr_t> GetRegsData() const;
+    void SetRegsData(const std::vector<uintptr_t>& regs);
+
     virtual std::string PrintRegs() const = 0;
     virtual std::string GetSpecialRegisterName(uintptr_t val) const = 0;
     virtual void GetFramePointerMiniRegs(void *regs) = 0;
     virtual uintptr_t GetPC() const = 0;
     virtual uintptr_t GetLR() const = 0;
-    void SetRegs(const std::vector<uintptr_t>& regs)
-    {
-        regsData_ = regs;
-    }
 
-    int PrintFormat(char *buf, int size, const char *format, ...) const
-    {
-        int ret = -1;
-        va_list args;
-        va_start(args, format);
-        ret = vsnprintf_s(buf, size, size - 1, format, args);
-        va_end(args);
-        return ret;
-    }
+    int PrintFormat(char *buf, int size, const char *format, ...) const;
 protected:
     std::vector<uintptr_t> regsData_ {};
 };

@@ -136,6 +136,26 @@ HWTEST_F(DfxBaseTest, DfxElfTest002, TestSize.Level2)
 }
 
 /**
+ * @tc.name: DfxRegsTest001
+ * @tc.desc: test DfxRegs SetRegsData & GetRegsData functions
+ * @tc.type: FUNC
+ */
+HWTEST_F(DfxBaseTest, DfxRegsTest001, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "DfxRegsTest001: start.";
+    auto dfxRegs = DfxRegs::Create();
+    ASSERT_NE(dfxRegs, nullptr);
+    std::vector<uintptr_t> setRegs {};
+    for (size_t i = 0; i < 10; i++) { // test 10 regs
+        setRegs.push_back(i);
+    }
+    dfxRegs->SetRegsData(setRegs);
+    auto getRegs = dfxRegs->GetRegsData();
+    ASSERT_EQ(setRegs, getRegs);
+    GTEST_LOG_(INFO) << "DfxRegsTest001: end.";
+}
+
+/**
  * @tc.name: DfxDumpResquestTest001
  * @tc.desc: test DfxDumpResquest functions
  * @tc.type: FUNC
