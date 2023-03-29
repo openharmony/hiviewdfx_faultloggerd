@@ -522,8 +522,8 @@ HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest014, TestSize.Level
     bool ret = dumplog.DumpCatchMix(testPid, 0, msg);
     GTEST_LOG_(INFO) << ret;
     GTEST_LOG_(INFO) << msg;
-    string log[] = { "Tid:", "comm:com.ohos.photos", "#00", "/system/bin/appspawn",
-        "comm:DfxWatchdog", "comm:GC_WorkerThread", "comm:ace.bg.1"};
+    string log[] = { "Tid:", "Name:com.ohos.photos", "#00", "/system/bin/appspawn",
+        "Name:DfxWatchdog", "Name:GC_WorkerThread", "Name:ace.bg.1"};
     log[0] += std::to_string(testPid);
     string::size_type idx;
     int j = 0;
@@ -559,7 +559,7 @@ HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest015, TestSize.Level
     bool ret = dumplog.DumpCatchMix(testPid, testPid, msg);
     GTEST_LOG_(INFO) << ret;
     GTEST_LOG_(INFO) << msg;
-    string log[] = { "Tid:", "comm:com.ohos.photos", "#00", "/system/bin/appspawn"};
+    string log[] = { "Tid:", "Name:com.ohos.photos", "#00", "/system/bin/appspawn"};
     log[0] += std::to_string(testPid);
     int expectNum = sizeof(log) / sizeof(log[0]);
     string::size_type idx;

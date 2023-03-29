@@ -158,7 +158,7 @@ std::string DfxUnwindLocal::CollectUnwindResult(int32_t tid)
     std::string path = "/proc/self/task/" + std::to_string(tid) + "/comm";
     std::string threadComm;
     if (OHOS::LoadStringFromFile(path, threadComm)) {
-        result << " comm:" << threadComm;
+        result << " Name:" << threadComm;
     } else {
         result << std::endl;
     }
