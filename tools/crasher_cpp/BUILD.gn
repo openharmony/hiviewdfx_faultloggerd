@@ -15,7 +15,10 @@ import("//base/hiviewdfx/faultloggerd/faultloggerd.gni")
 
 if (defined(ohos_lite)) {
   executable("crasher_cpp") {
-    cflags = [ "-funwind-tables" ]
+    cflags = [
+      "-funwind-tables",
+      "-Wno-frame-larger-than",
+    ]
     visibility = [ "*:*" ]
     include_dirs = [
       ".",
@@ -39,7 +42,10 @@ if (defined(ohos_lite)) {
       "$faultloggerd_path/common",
     ]
 
-    cflags = [ "-DHAS_HITRACE" ]
+    cflags = [
+      "-DHAS_HITRACE",
+      "-Wno-frame-larger-than",
+    ]
   }
 
   ohos_executable("crasher_cpp") {
