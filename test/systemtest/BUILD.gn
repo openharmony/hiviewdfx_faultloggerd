@@ -76,8 +76,11 @@ if (defined(ohos_lite)) {
 
     deps = [
       "$faultloggerd_path/interfaces/innerkits/dump_catcher:libdfx_dumpcatcher",
+      "$faultloggerd_path/tools/crasher_c:crasher_c",
+      "$faultloggerd_path/tools/crasher_cpp:crasher_cpp",
       "//third_party/googletest:gtest_main",
     ]
+    resource_config_file = "$faultloggerd_path/test/systemtest/ohos_test.xml"
 
     external_deps = [
       "c_utils:utils",

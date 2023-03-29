@@ -67,6 +67,9 @@ static mutex g_mutex;
 
 void FaultLoggerdSystemTest::SetUpTestCase(void)
 {
+    chmod("/data/crasher_c", 0755); // 0755 : -rwxr-xr-x
+    chmod("/data/crasher_cpp", 0755); // 0755 : -rwxr-xr-x
+    chmod("/data/test_faultloggerd_pre", 0755); // 0755 : -rwxr-xr-x
 }
 
 void FaultLoggerdSystemTest::TearDownTestCase(void)
@@ -1193,8 +1196,8 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0027, TestSize.Level2)
     bool ret = dumplog.DumpCatchMix(testPid, 0, msg);
     GTEST_LOG_(INFO) << ret;
     GTEST_LOG_(INFO) << msg;
-    string log[] = { "Tid:", "comm:com.ohos.photos", "#00", "/system/bin/appspawn",
-        "comm:DfxWatchdog", "comm:GC_WorkerThread", "comm:ace.bg.1"};
+    string log[] = { "Tid:", "Name:com.ohos.photos", "#00", "/system/bin/appspawn",
+        "Name:DfxWatchdog", "Name:GC_WorkerThread", "Name:ace.bg.1"};
     log[0] += std::to_string(testPid);
     string::size_type idx;
     int j = 0;
@@ -1230,7 +1233,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0028, TestSize.Level2)
     bool ret = dumplog.DumpCatchMix(testPid, testPid, msg);
     GTEST_LOG_(INFO) << ret;
     GTEST_LOG_(INFO) << msg;
-    string log[] = { "Tid:", "comm:com.ohos.photos", "#00", "/system/bin/appspawn"};
+    string log[] = { "Tid:", "Name:com.ohos.photos", "#00", "/system/bin/appspawn"};
     log[0] += std::to_string(testPid);
     string::size_type idx;
     int j = 0;
@@ -1305,8 +1308,8 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0031, TestSize.Level2)
     string procDumpLog = FaultLoggerdSystemTest::ProcessDumpCommands(procCMD);
     GTEST_LOG_(INFO) << "procDumpLog: " << procDumpLog;
     int count = 0;
-    string log[] = { "Tid:", "comm:com.ohos.photos", "#00", "/system/bin/appspawn",
-        "comm:DfxWatchdog", "comm:GC_WorkerThread", "comm:ace.bg.1"};
+    string log[] = { "Tid:", "Name:com.ohos.photos", "#00", "/system/bin/appspawn",
+        "Name:DfxWatchdog", "Name:GC_WorkerThread", "Name:ace.bg.1"};
     log[0] += std::to_string(testPid);
     string::size_type idx;
     int expectNum = sizeof(log) / sizeof(log[0]);
@@ -1338,7 +1341,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0032, TestSize.Level2)
     string procDumpLog = FaultLoggerdSystemTest::ProcessDumpCommands(procCMD);
     GTEST_LOG_(INFO) << "procDumpLog: " << procDumpLog;
     int count = 0;
-    string log[] = { "Tid:", "comm:com.ohos.photos", "#00", "/system/bin/appspawn"};
+    string log[] = { "Tid:", "Name:com.ohos.photos", "#00", "/system/bin/appspawn"};
     log[0] += std::to_string(testPid);
     string::size_type idx;
     int expectNum = sizeof(log) / sizeof(log[0]);
