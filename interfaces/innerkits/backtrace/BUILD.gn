@@ -108,4 +108,20 @@ if (defined(ohos_lite)) {
     part_name = "faultloggerd"
     subsystem_name = "hiviewdfx"
   }
+
+  ohos_static_library("backtrace_local") {
+    public_configs = [ ":dfx_backtrace_config" ]
+
+    sources = [ "backtrace_local.cpp" ]
+
+    deps = [ "$faultloggerd_path/frameworks/local:backtrace_local_src" ]
+
+    external_deps = [
+      "c_utils:utils",
+      "hilog_native:libhilog",
+    ]
+
+    part_name = "faultloggerd"
+    subsystem_name = "hiviewdfx"
+  }
 }
