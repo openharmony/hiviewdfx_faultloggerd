@@ -54,7 +54,7 @@ bool CppCrashReporter::Format()
     uid_ = process_->GetUid();
     reason_ = PrintSignal(siginfo_);
     auto msg = process_->GetFatalMessage();
-    if (siginfo_.si_signo == SIGABRT && !msg.empty()) {
+    if (!msg.empty()) {
         stack_ = "LastFatalMessage:" + msg + "\n";
     }
     auto threads = process_->GetThreads();
@@ -63,7 +63,16 @@ bool CppCrashReporter::Format()
         crashThread = threads.front();
     }
     if (crashThread != nullptr) {
-        stack_ += crashThread->ToString();
+        std::string crashThreadInfo = crashThread->ToString();
+        auto iterator = crashThreadInfo.begin();
+        while (*iterator != '\n') {
+            if (isdigit(*iterator)) {
+                iterator = crashThreadInfo.erase(iterator);
+            } else {
+                iterator++;
+            }
+        }
+        stack_ += crashThreadInfo;
     }
     return true;
 }
