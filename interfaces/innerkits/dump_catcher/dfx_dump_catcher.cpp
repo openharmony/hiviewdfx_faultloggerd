@@ -311,9 +311,9 @@ bool DfxDumpCatcher::DoDumpCatchRemote(const int type, int pid, int tid, std::st
             msg.append("Result: pid(" + std::to_string(pid) + ") check permission error.\n");
         } else if (sdkdumpRet == static_cast<int>(FaultLoggerSdkDumpResp::SDK_DUMP_NOPROC)) {
             msg.append("Result: pid(" + std::to_string(pid) + ") syscall SIGDUMP error.\n");
+            RequestDelPipeFd(pid);
         }
         DfxLogWarn("%s :: %s :: %s", DFXDUMPCATCHER_TAG.c_str(), __func__, msg.c_str());
-        RequestDelPipeFd(pid);
         return ret;
     }
 
