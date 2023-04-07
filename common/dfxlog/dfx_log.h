@@ -20,11 +20,11 @@ extern "C" {
 #endif
 
 #ifdef DFX_NO_PRINT_LOG
-#define DfxLogDebug(fmt, ...)
-#define DfxLogInfo(fmt, ...)
-#define DfxLogWarn(fmt, ...)
-#define DfxLogError(fmt, ...)
-#define DfxLogFatal(fmt, ...)
+#define DFXLOG_DEBUG(fmt, ...)
+#define DFXLOG_INFO(fmt, ...)
+#define DFXLOG_WARN(fmt, ...)
+#define DFXLOG_ERROR(fmt, ...)
+#define DFXLOG_FATAL(fmt, ...)
 
 #define LOGD(fmt, ...)
 #define LOGI(fmt, ...)
@@ -56,11 +56,11 @@ bool CheckDebugLevel(void);
 void InitDebugFd(int fd);
 int DfxLog(const Level logLevel, const unsigned int domain, const char* tag, const char *fmt, ...);
 
-#define DfxLogDebug(fmt, ...)   DfxLog(DEBUG, LOG_DOMAIN, LOG_TAG, fmt, ##__VA_ARGS__)
-#define DfxLogInfo(fmt, ...)    DfxLog(INFO, LOG_DOMAIN, LOG_TAG, fmt, ##__VA_ARGS__)
-#define DfxLogWarn(fmt, ...)    DfxLog(WARN, LOG_DOMAIN, LOG_TAG, fmt, ##__VA_ARGS__)
-#define DfxLogError(fmt, ...)   DfxLog(ERROR, LOG_DOMAIN, LOG_TAG, fmt, ##__VA_ARGS__)
-#define DfxLogFatal(fmt, ...)   DfxLog(FATAL, LOG_DOMAIN, LOG_TAG, fmt, ##__VA_ARGS__)
+#define DFXLOG_DEBUG(fmt, ...)   DfxLog(DEBUG, LOG_DOMAIN, LOG_TAG, fmt, ##__VA_ARGS__)
+#define DFXLOG_INFO(fmt, ...)    DfxLog(INFO, LOG_DOMAIN, LOG_TAG, fmt, ##__VA_ARGS__)
+#define DFXLOG_WARN(fmt, ...)    DfxLog(WARN, LOG_DOMAIN, LOG_TAG, fmt, ##__VA_ARGS__)
+#define DFXLOG_ERROR(fmt, ...)   DfxLog(ERROR, LOG_DOMAIN, LOG_TAG, fmt, ##__VA_ARGS__)
+#define DFXLOG_FATAL(fmt, ...)   DfxLog(FATAL, LOG_DOMAIN, LOG_TAG, fmt, ##__VA_ARGS__)
 
 #define LOGD(fmt, ...) DfxLog(DEBUG, LOG_DOMAIN, LOG_TAG, "[%s:%d]" fmt, (FILE_NAME), (__LINE__), ##__VA_ARGS__)
 #define LOGI(fmt, ...) DfxLog(INFO, LOG_DOMAIN, LOG_TAG, "[%s:%d]" fmt, (FILE_NAME), (__LINE__), ##__VA_ARGS__)

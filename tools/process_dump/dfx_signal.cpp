@@ -77,7 +77,7 @@ std::string PrintSignal(const siginfo_t &info)
     int ret = snprintf_s(buf, sizeof(buf), sizeof(buf) - 1, "Signal:%s(%s)", FormatSignalName(info.si_signo).c_str(), \
         FormatCodeName(info.si_signo, info.si_code).c_str());
     if (ret <= 0) {
-        DfxLogError("%s :: snprintf_s failed, line: %d.", __func__, __LINE__);
+        DFXLOG_ERROR("%s :: snprintf_s failed, line: %d.", __func__, __LINE__);
     }
     sigString = sigString + std::string(buf);
     (void)memset_s(buf, LOG_BUF_LEN, '\0', LOG_BUF_LEN);
@@ -90,7 +90,7 @@ std::string PrintSignal(const siginfo_t &info)
         ret = snprintf_s(buf, sizeof(buf), sizeof(buf) - 1, "@%010p ", (uint32_t)info.si_addr);
 #endif
         if (ret <= 0) {
-            DfxLogError("%s :: snprintf_s failed, line: %d.", __func__, __LINE__);
+            DFXLOG_ERROR("%s :: snprintf_s failed, line: %d.", __func__, __LINE__);
         }
         sigString = sigString + std::string(buf);
         (void)memset_s(buf, LOG_BUF_LEN, '\0', LOG_BUF_LEN);
@@ -99,7 +99,7 @@ std::string PrintSignal(const siginfo_t &info)
     if ((info.si_code <= 0) && (info.si_pid != 0)) {
         ret = snprintf_s(buf, sizeof(buf), sizeof(buf) - 1, "from:%d:%d", info.si_pid, info.si_uid);
         if (ret <= 0) {
-            DfxLogError("%s :: snprintf_s failed, line: %d.", __func__, __LINE__);
+            DFXLOG_ERROR("%s :: snprintf_s failed, line: %d.", __func__, __LINE__);
         }
         sigString = sigString + std::string(buf);
     }

@@ -76,7 +76,7 @@ __attribute__((noinline)) void PrintLog(int fd, const char *format, ...)
         }
         return;
     }
-    DfxLogError(buf);
+    DFXLOG_ERROR(buf);
     if (fd > 0) {
         (void)write(fd, buf, strlen(buf));
     }
@@ -155,7 +155,7 @@ __attribute__((noinline)) bool UnwindWithContext(const int fd, unw_context_t* co
             PrintLog(fd, "Unwind step stop, reason:%d\n", ret);
             break;
         } else if (stepRet == 0) {
-            DfxLogInfo("Unwind step finish");
+            DFXLOG_INFO("Unwind step finish");
             ret = true;
             break;
         }
@@ -171,7 +171,7 @@ __attribute__((noinline)) bool PrintMaps(const int fd)
     bool ret = false;
     FILE *file = fopen("/proc/self/maps", "r");
     if (file == NULL) {
-        DfxLogWarn("Fail to open maps info.");
+        DFXLOG_WARN("Fail to open maps info.");
         return ret;
     }
 
@@ -189,19 +189,19 @@ __attribute__((noinline)) bool PrintMaps(const int fd)
         (void)memset_s(&perms, sizeof(perms), 0, sizeof(perms));
         if (sscanf_s(mapInfo, "%" SCNxPTR "-%" SCNxPTR " %4s %" SCNxPTR " %*x:%*x %*d%n", &begin, &end,
             &perms, sizeof(perms), &offset, &pos) != 4) { // 4:scan size
-            DfxLogWarn("Fail to parse maps info.");
+            DFXLOG_WARN("Fail to parse maps info.");
             break;
         }
         (void)memset_s(&path, sizeof(path), 0, sizeof(path));
         if (!TrimAndDupStr(&mapInfo[pos], path)) {
-            DfxLogError("TrimAndDupStr failed, line: %d.", __LINE__);
+            DFXLOG_ERROR("TrimAndDupStr failed, line: %d.", __LINE__);
             break;
         }
 
         (void)memset_s(&buf, sizeof(buf), 0, sizeof(buf));
         if (snprintf_s(buf, sizeof(buf), sizeof(buf) - 1, "%" PRIx64 "-%" PRIx64 " %s %08" PRIx64 " %s", \
             begin, end, perms, offset, path) <= 0) {
-            DfxLogError("snprintf_s failed, line: %d.", __LINE__);
+            DFXLOG_ERROR("snprintf_s failed, line: %d.", __LINE__);
             break;
         }
         PrintLog(fd, "%s\n", buf);
@@ -218,7 +218,7 @@ __attribute__((noinline)) void PrintRegs(const int fd, unw_context_t* context)
     for (int i = UNW_AARCH64_X0; i < UNW_AARCH64_PSTATE; ++i) {
         if (snprintf_s(buf, sizeof(buf), sizeof(buf) - 1, "x%d:%016lx", \
             i, context->uc_mcontext.regs[i]) <= 0) {
-            DfxLogError("snprintf_s failed, line: %d.", __LINE__);
+            DFXLOG_ERROR("snprintf_s failed, line: %d.", __LINE__);
             break;
         }
         if (i % 4 == 0) { // per 4 will new line
@@ -257,7 +257,7 @@ __attribute__((noinline)) bool UnwindWithContextByFramePointer(const int fd, unw
             fp = *(uintptr_t*)prevFp;
             pc = *(uintptr_t*)(prevFp + sizeof(uintptr_t));
         } else {
-            DfxLogInfo("Unwind step finish");
+            DFXLOG_INFO("Unwind step finish");
             break;
         }
         index++;
@@ -336,6 +336,6 @@ void CrashLocalHandlerFd(const int fd, const struct ProcessDumpRequest* request)
     PrintLog(fd, "Reason:Signal(%d)@%010p\n", request->siginfo.si_signo, request->siginfo.si_addr);
 #endif
     PrintLog(fd, "Tid:%d, Name:%s\n", request->tid, request->threadName);
-    
+
     CrashLocalUnwind(fd, &(request->context));
 }

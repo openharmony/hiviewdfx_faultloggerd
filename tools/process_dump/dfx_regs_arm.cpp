@@ -48,7 +48,7 @@ DfxRegsArm::DfxRegsArm(const ucontext_t& context)
     regs.push_back(uintptr_t(context.uc_mcontext.arm_pc));  // 15:pc
 
     SetRegsData(regs);
-    DfxLogDebug("fp:%08x ip:%08x sp:%08x lr:%08x pc:%08x \n", regs[REG_ARM_R11], regs[REG_ARM_R12],
+    DFXLOG_DEBUG("fp:%08x ip:%08x sp:%08x lr:%08x pc:%08x \n", regs[REG_ARM_R11], regs[REG_ARM_R12],
         regs[REG_ARM_R13], regs[REG_ARM_R14], regs[REG_ARM_R15]);
 }
 
@@ -80,7 +80,7 @@ std::string DfxRegsArm::PrintRegs() const
 
     PrintFormat(buf + strlen(buf), sizeof(buf) - strlen(buf), "r4:%08x r5:%08x r6:%08x r7:%08x\n", \
                 regs[REG_ARM_R4], regs[REG_ARM_R5], regs[REG_ARM_R6], regs[REG_ARM_R7]);
-    
+
     PrintFormat(buf + strlen(buf), sizeof(buf) - strlen(buf), "r8:%08x r9:%08x r10:%08x\n", \
                 regs[REG_ARM_R8], regs[REG_ARM_R9], regs[REG_ARM_R10]);
 

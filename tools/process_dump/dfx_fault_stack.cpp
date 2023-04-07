@@ -78,7 +78,7 @@ uintptr_t FaultStack::AdjustAndCreateMemoryBlock(size_t index, uintptr_t prevSp,
 bool FaultStack::CollectStackInfo(const std::vector<std::shared_ptr<DfxFrame>> &frames)
 {
     if (frames.empty()) {
-        DfxLogWarn("null frames.");
+        DFXLOG_WARN("null frames.");
         return false;
     }
 
@@ -161,7 +161,6 @@ void FaultStack::Print() const
 
 MemoryBlockInfo FaultStack::CreateMemoryBlock(uintptr_t addr, uintptr_t offset, uintptr_t size, std::string name)
 {
-    DfxLogDebug("CreateMemoryBlock %p %p %llu %s.", addr, offset, size, name.c_str());
     MemoryBlockInfo info;
     info.startAddr = addr;
     info.nameAddr = offset;

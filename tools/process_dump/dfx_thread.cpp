@@ -117,7 +117,7 @@ std::shared_ptr<DfxFrame> DfxThread::GetAvailableFrame()
 void DfxThread::PrintThread(const int32_t fd, bool isSignalDump)
 {
     if (dfxFrames_.size() == 0) {
-        DfxLogWarn("No frame print for tid %d.", tid_);
+        DFXLOG_WARN("No frame print for tid %d.", tid_);
         return;
     }
 
@@ -170,12 +170,12 @@ bool DfxThread::Attach()
     }
 
     if (ptrace(PTRACE_SEIZE, nsTid_, 0, 0) != 0) {
-        DfxLogWarn("Failed to seize thread(%d:%d), errno=%d", tid_, nsTid_, errno);
+        DFXLOG_WARN("Failed to seize thread(%d:%d), errno=%d", tid_, nsTid_, errno);
         return false;
     }
 
     if (ptrace(PTRACE_INTERRUPT, nsTid_, 0, 0) != 0) {
-        DfxLogWarn("Failed to interrupt thread(%d:%d), errno=%d", tid_, nsTid_, errno);
+        DFXLOG_WARN("Failed to interrupt thread(%d:%d), errno=%d", tid_, nsTid_, errno);
         ptrace(PTRACE_DETACH, nsTid_, NULL, NULL);
         return false;
     }
@@ -184,7 +184,7 @@ bool DfxThread::Attach()
     while (waitpid(nsTid_, nullptr, __WALL) < 0) {
         if (EINTR != errno) {
             ptrace(PTRACE_DETACH, nsTid_, NULL, NULL);
-            DfxLogWarn("Failed to wait thread(%d:%d) attached, errno=%d.", tid_, nsTid_, errno);
+            DFXLOG_WARN("Failed to wait thread(%d:%d) attached, errno=%d.", tid_, nsTid_, errno);
             return false;
         }
         errno = 0;
@@ -217,7 +217,7 @@ void DfxThread::PrintThreadBacktraceByConfig(const int32_t fd)
         WriteLog(fd, "Tid:%d, Name:%s\n", tid_, threadName_.c_str());
         PrintFrames(dfxFrames_);
     } else {
-        DfxLogDebug("hidden backtrace");
+        DFXLOG_DEBUG("hidden backtrace");
     }
 }
 
@@ -228,7 +228,7 @@ std::string DfxThread::PrintThreadRegisterByConfig()
             return regs_->PrintRegs();
         }
     } else {
-        DfxLogDebug("hidden register");
+        DFXLOG_DEBUG("hidden register");
     }
     return "";
 }
@@ -240,7 +240,7 @@ void DfxThread::PrintThreadFaultStackByConfig()
             faultstack_->Print();
         }
     } else {
-        DfxLogDebug("hidden faultStack");
+        DFXLOG_DEBUG("hidden faultStack");
     }
 }
 

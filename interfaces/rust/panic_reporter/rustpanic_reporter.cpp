@@ -40,7 +40,7 @@ bool ReportTraceInfo(RustPanicInfo *info)
     char panicReason[REASON_BUF] = {0};
     if (snprintf_s(panicReason, REASON_BUF, REASON_BUF - 1,
         "file:%s line:%d message:%s", info->filename, info->line, info->msg) <= 0) {
-        DfxLogError("snprintf_s failed to format panic reason string");
+        DFXLOG_ERROR("snprintf_s failed to format panic reason string");
     }
 
     std::string module;
@@ -51,7 +51,7 @@ bool ReportTraceInfo(RustPanicInfo *info)
     std::string threadLabel = "Thread name:" + threadName + "\n";
     std::string trace;
     if (!GetBacktrace(trace)) {
-        DfxLogError("Failed to get rust panic thread backtrace.");
+        DFXLOG_ERROR("Failed to get rust panic thread backtrace.");
         trace = "Failed to unwind rust panic thread.";
     }
 
@@ -67,7 +67,7 @@ bool PrintTraceInfo()
     bool ret = false;
     const int fd = STDOUT_FILENO;
     ret = PrintBacktrace(fd);
-    DfxLogInfo("ret: %d", ret);
+    DFXLOG_INFO("ret: %d", ret);
     return ret;
 }
 } // namespace HiviewDFX

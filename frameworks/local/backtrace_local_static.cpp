@@ -70,7 +70,7 @@ static bool RemoveContextLocked(int32_t tid)
 {
     auto it = g_contextMap.find(tid);
     if (it == g_contextMap.end()) {
-        DfxLogWarn("Context of %d is already removed.", tid);
+        DFXLOG_WARN("Context of %d is already removed.", tid);
         return true;
     }
 
@@ -79,7 +79,7 @@ static bool RemoveContextLocked(int32_t tid)
         return true;
     }
 
-    DfxLogWarn("Failed to remove context of %d, still using?.", tid);
+    DFXLOG_WARN("Failed to remove context of %d, still using?.", tid);
     return false;
 }
 }
@@ -95,7 +95,7 @@ std::shared_ptr<ThreadContext> BacktraceLocalStatic::GetThreadContext(int32_t ti
     std::unique_lock<std::mutex> lock(g_localMutex);
     auto context = GetContextLocked(tid);
     if (context == nullptr) {
-        DfxLogWarn("Failed to get context of %d, still using?", tid);
+        DFXLOG_WARN("Failed to get context of %d, still using?", tid);
         return nullptr;
     }
 
@@ -173,7 +173,7 @@ void BacktraceLocalStatic::CopyContextAndWaitTimeout(int sig, siginfo_t *si, voi
 #else
         // the ucontext.uc_mcontext.__reserved of libunwind is simplified with the system's own in aarch64
         if (memcpy_s(ctxPtr->ctx, sizeof(unw_context_t), context, sizeof(unw_context_t)) != 0) {
-            DfxLogWarn("Failed to copy local unwind context.");
+            DFXLOG_WARN("Failed to copy local unwind context.");
         }
 #endif
     } else {
@@ -199,7 +199,7 @@ bool BacktraceLocalStatic::InstallSigHandler()
     action.sa_sigaction = BacktraceLocalStatic::CopyContextAndWaitTimeout;
     action.sa_flags = SA_RESTART | SA_SIGINFO;
     if (sigaction(SIGLOCAL_DUMP, &action, &g_sigaction) != EOK) {
-        DfxLogWarn("Failed to install SigHandler for local backtrace(%d).", errno);
+        DFXLOG_WARN("Failed to install SigHandler for local backtrace(%d).", errno);
         return false;
     }
     return true;
@@ -213,7 +213,7 @@ void BacktraceLocalStatic::UninstallSigHandler()
     }
 
     if (sigaction(SIGLOCAL_DUMP, &g_sigaction, nullptr) != EOK) {
-        DfxLogWarn("UninstallSigHandler :: Failed to reset signal(%d).", errno);
+        DFXLOG_WARN("UninstallSigHandler :: Failed to reset signal(%d).", errno);
         signal(SIGLOCAL_DUMP, SIG_DFL);
     }
 }
@@ -226,7 +226,7 @@ bool BacktraceLocalStatic::SignalRequestThread(int32_t tid, ThreadContext* ctx)
     si.si_errno = 0;
     si.si_code = -SIGLOCAL_DUMP;
     if (syscall(SYS_rt_tgsigqueueinfo, getpid(), tid, si.si_signo, &si) != 0) {
-        DfxLogWarn("Failed to queue signal(%d) to %d, errno(%d).", si.si_signo, tid, errno);
+        DFXLOG_WARN("Failed to queue signal(%d) to %d, errno(%d).", si.si_signo, tid, errno);
         ctx->tid = static_cast<int32_t>(ThreadContextStatus::ContextUnused);
         return false;
     }
@@ -244,7 +244,7 @@ bool BacktraceLocalStatic::SignalRequestThread(int32_t tid, ThreadContext* ctx)
         if (left <= 0 &&
             ctx->tid.compare_exchange_strong(tid,
             static_cast<int32_t>(ThreadContextStatus::ContextUnused))) {
-            DfxLogWarn("Failed to wait for %d to write context.", tid);
+            DFXLOG_WARN("Failed to wait for %d to write context.", tid);
             return false;
         }
     }

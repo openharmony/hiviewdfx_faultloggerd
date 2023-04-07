@@ -57,7 +57,7 @@ bool FaultLoggerSecure::CheckCallerUID(const int callingUid, const int32_t pid)
         ret = true;
     } else {
         ret = false;
-        DfxLogWarn("%s :: CheckCallerUID :: callingUid(%d).\n", FAULTLOGGERSECURE_TAG.c_str(), callingUid);
+        DFXLOG_WARN("%s :: CheckCallerUID :: callingUid(%d).\n", FAULTLOGGERSECURE_TAG.c_str(), callingUid);
     }
     return ret;
 }

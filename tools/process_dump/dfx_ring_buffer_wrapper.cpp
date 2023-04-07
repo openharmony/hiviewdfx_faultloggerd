@@ -46,7 +46,7 @@ void DfxRingBufferWrapper::LoopPrintRingBuffer()
     while (true) {
         auto available = DfxRingBufferWrapper::GetInstance().ringBuffer_.Available();
         auto item = DfxRingBufferWrapper::GetInstance().ringBuffer_.Read(available);
-        
+
         if (available != 0) {
             if (item.At(0).empty()) {
                 DfxRingBufferWrapper::GetInstance().ringBuffer_.Skip(item.Length());
@@ -60,7 +60,7 @@ void DfxRingBufferWrapper::LoopPrintRingBuffer()
             DfxRingBufferWrapper::GetInstance().ringBuffer_.Skip(item.Length());
         } else {
             if (DfxRingBufferWrapper::GetInstance().hasFinished_) {
-                DfxLogDebug("%s :: print finished, exit loop.\n", __func__);
+                DFXLOG_DEBUG("%s :: print finished, exit loop.\n", __func__);
                 break;
             }
 
@@ -87,7 +87,7 @@ int DfxRingBufferWrapper::AppendBuf(const char *format, ...)
     ret = vsnprintf_s(buf, sizeof(buf), sizeof(buf) - 1, format, args);
     va_end(args);
     if (ret <= 0) {
-        DfxLogError("snprintf_s failed.");
+        DFXLOG_ERROR("snprintf_s failed.");
     }
 
     AppendMsg(std::string(buf));
@@ -111,7 +111,7 @@ void DfxRingBufferWrapper::SetWriteBufFd(int32_t fd)
 {
     fd_ = fd;
     if (fd_ < 0) {
-        DfxLogWarn("%s :: Failed to set fd.\n", __func__);
+        DFXLOG_WARN("%s :: Failed to set fd.\n", __func__);
     }
 }
 

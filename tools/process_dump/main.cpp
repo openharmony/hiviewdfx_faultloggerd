@@ -51,7 +51,7 @@ static bool ParseParameters(int argc, char *argv[], bool &isSignalHdlr)
     if (argc <= DUMP_ARG_ONE) {
         return false;
     }
-    DfxLogDebug("argc: %d, argv1: %s", argc, argv[1]);
+    DFXLOG_DEBUG("argc: %d, argv1: %s", argc, argv[1]);
 
     if (!strcmp("-signalhandler", argv[DUMP_ARG_ONE])) {
         isSignalHdlr = true;
@@ -66,7 +66,7 @@ int main(int argc, char *argv[])
     DFX_InstallLocalSignalHandler();
 #endif
     if (signal(SIGCHLD, SIG_IGN) == SIG_ERR) {
-        DfxLogError("Processdump ignore SIGCHLD failed.");
+        DFXLOG_ERROR("Processdump ignore SIGCHLD failed.");
     }
 
     bool isSignalHdlr = false;
