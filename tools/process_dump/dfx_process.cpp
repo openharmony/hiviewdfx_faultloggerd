@@ -47,15 +47,15 @@ std::shared_ptr<DfxProcess> DfxProcess::CreateProcessWithKeyThread(pid_t pid, st
     dfxProcess->SetProcessName(processName);
 
     if (!dfxProcess->InitProcessMaps()) {
-        DfxLogWarn("Fail to init process maps.");
+        DFXLOG_WARN("Fail to init process maps.");
         return nullptr;
     }
     if (!dfxProcess->InitProcessThreads(keyThread)) {
-        DfxLogWarn("Fail to init threads.");
+        DFXLOG_WARN("Fail to init threads.");
         return nullptr;
     }
 
-    DfxLogDebug("Init process dump with pid:%d.", dfxProcess->GetPid());
+    DFXLOG_DEBUG("Init process dump with pid:%d.", dfxProcess->GetPid());
     return dfxProcess;
 }
 
@@ -77,7 +77,7 @@ bool DfxProcess::InitProcessThreads(std::shared_ptr<DfxThread> keyThread)
     }
 
     if (!keyThread->Attach()) {
-        DfxLogWarn("Fail to attach thread.");
+        DFXLOG_WARN("Fail to attach thread.");
         return false;
     }
     threads_.push_back(keyThread);
@@ -108,7 +108,7 @@ bool DfxProcess::InitOtherThreads(bool attach)
         }
 
         if (isSignalDump_ && (nstid == recycleTid_)) {
-            DfxLogDebug("skip recycle tid:%d nstid:%d.", recycleTid_, nstid);
+            DFXLOG_DEBUG("skip recycle tid:%d nstid:%d.", recycleTid_, nstid);
             continue;
         }
 
@@ -246,7 +246,7 @@ void DfxProcess::PrintProcessMapsByConfig()
             DfxRingBufferWrapper::GetInstance().AppendMsg((*iter)->PrintMap());
         }
     } else {
-        DfxLogDebug("hidden Maps");
+        DFXLOG_DEBUG("hidden Maps");
     }
 }
 
@@ -257,7 +257,7 @@ void DfxProcess::PrintThreadsHeaderByConfig()
             DfxRingBufferWrapper::GetInstance().AppendMsg("Other thread info:\n");
         }
     } else {
-        DfxLogDebug("hidden thread info.");
+        DFXLOG_DEBUG("hidden thread info.");
     }
 }
 } // namespace HiviewDFX

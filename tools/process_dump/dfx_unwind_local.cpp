@@ -74,13 +74,13 @@ bool DfxUnwindLocal::Init()
     initTimes_++;
 
     if (isInited_) {
-        DfxLogError("local handler has been inited.");
+        DFXLOG_ERROR("local handler has been inited.");
         return isInited_;
     }
 
     unw_init_local_address_space(&as_);
     if (as_ == nullptr) {
-        DfxLogError("Failed to init local address aspace.");
+        DFXLOG_ERROR("Failed to init local address aspace.");
         return false;
     }
 
@@ -107,7 +107,7 @@ void DfxUnwindLocal::Destroy()
     if (initTimes_ >= 0) {
         initTimes_--;
     } else {
-        DfxLogError("%s :: Init must be called before Destroy.", __func__);
+        DFXLOG_ERROR("%s :: Init must be called before Destroy.", __func__);
     }
 
     if (!isInited_) {
@@ -213,7 +213,7 @@ bool DfxUnwindLocal::ExecLocalDumpUnwindByWait()
 {
     bool ret = false;
     if (!insideSignalHandler_) {
-        DfxLogError("%s :: must be send request first.", __func__);
+        DFXLOG_ERROR("%s :: must be send request first.", __func__);
         return ret;
     }
     std::unique_lock<std::mutex> lck(localDumperMutex_);
@@ -266,17 +266,17 @@ bool DfxUnwindLocal::ExecLocalDumpUnwinding(unw_context_t *ctx, size_t skipFramN
         }
 
         if (unw_get_reg(&cursor, UNW_REG_IP, (unw_word_t*)(&(pc)))) {
-            DfxLogWarn("%s :: Failed to get current pc, stop.", __func__);
+            DFXLOG_WARN("%s :: Failed to get current pc, stop.", __func__);
             break;
         }
 
         if (unw_get_reg(&cursor, UNW_REG_SP, (unw_word_t*)(&(sp)))) {
-            DfxLogWarn("%s :: Failed to get current sp, stop.", __func__);
+            DFXLOG_WARN("%s :: Failed to get current sp, stop.", __func__);
             break;
         }
 
         curIndex_ = static_cast<uint32_t>(index - skipFramNum);
-        DfxLogDebug("%s :: curIndex_: %d", __func__, curIndex_);
+        DFXLOG_DEBUG("%s :: curIndex_: %d", __func__, curIndex_);
         if (curIndex_ > 1 && prevPc == pc) {
             break;
         }
@@ -303,7 +303,7 @@ bool DfxUnwindLocal::ExecLocalDumpUnwinding(unw_context_t *ctx, size_t skipFramN
             err = strcpy_s(mapName, SYMBOL_BUF_SIZE, "Unknown");
         }
         if (err != EOK) {
-            DfxLogError("%s :: strcpy_s failed.", __func__);
+            DFXLOG_ERROR("%s :: strcpy_s failed.", __func__);
             break;
         }
 
@@ -316,7 +316,7 @@ bool DfxUnwindLocal::ExecLocalDumpUnwinding(unw_context_t *ctx, size_t skipFramN
             curFrame.SetFrameMapName(std::string(mapName));
         } else {
             curIndex_--;
-            DfxLogError("%s :: unw_get_map failed.", __func__);
+            DFXLOG_ERROR("%s :: unw_get_map failed.", __func__);
             break;
         }
 
@@ -373,7 +373,7 @@ void DfxUnwindLocal::InstallLocalDumper(int sig)
     action.sa_flags = SA_RESTART | SA_SIGINFO;
 
     if (sigaction(sig, &action, &oldSigaction_) != EOK) {
-        DfxLogWarn("InstallLocalDumper :: Failed to register signal.");
+        DFXLOG_WARN("InstallLocalDumper :: Failed to register signal.");
     }
 }
 
@@ -385,7 +385,7 @@ void DfxUnwindLocal::UninstallLocalDumper(int sig)
     }
 
     if (sigaction(sig, &oldSigaction_, NULL) != EOK) {
-        DfxLogWarn("UninstallLocalDumper :: Failed to reset signal.");
+        DFXLOG_WARN("UninstallLocalDumper :: Failed to reset signal.");
         signal(sig, SIG_DFL);
     }
 }

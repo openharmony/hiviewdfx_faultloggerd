@@ -66,19 +66,19 @@ bool DfxUnwindRemote::UnwindProcess(std::shared_ptr<DfxProcess> process)
 {
     bool ret = false;
     if (!process) {
-        DfxLogWarn("%s::can not unwind null process.", __func__);
+        DFXLOG_WARN("%s::can not unwind null process.", __func__);
         return ret;
     }
 
     auto threads = process->GetThreads();
     if (threads.empty()) {
-        DfxLogWarn("%s::no thread under target process.", __func__);
+        DFXLOG_WARN("%s::no thread under target process.", __func__);
         return ret;
     }
 
     as_ = unw_create_addr_space(&_UPT_accessors, 0);
     if (!as_) {
-        DfxLogWarn("%s::failed to create address space.", __func__);
+        DFXLOG_WARN("%s::failed to create address space.", __func__);
         return ret;
     }
 
@@ -127,7 +127,7 @@ bool DfxUnwindRemote::UnwindProcess(std::shared_ptr<DfxProcess> process)
 
 uint64_t DfxUnwindRemote::DfxUnwindRemoteDoAdjustPc(unw_cursor_t & cursor, uint64_t pc)
 {
-    DfxLogDebug("%s :: pc(0x%x).", __func__, pc);
+    DFXLOG_DEBUG("%s :: pc(0x%x).", __func__, pc);
 
     uint64_t ret = 0;
 
@@ -143,7 +143,7 @@ uint64_t DfxUnwindRemote::DfxUnwindRemoteDoAdjustPc(unw_cursor_t & cursor, uint6
 #endif
     }
 
-    DfxLogDebug("%s :: ret(0x%x).", __func__, ret);
+    DFXLOG_DEBUG("%s :: ret(0x%x).", __func__, ret);
     return ret;
 }
 
@@ -172,13 +172,13 @@ bool DfxUnwindRemote::DfxUnwindRemoteDoUnwindStep(size_t const & index,
     uint64_t framePc;
     static unw_word_t oldPc = 0;
     if (unw_get_reg(&cursor, UNW_REG_IP, (unw_word_t*)(&framePc))) {
-        DfxLogWarn("Fail to get current pc.");
+        DFXLOG_WARN("Fail to get current pc.");
         return ret;
     }
 
     uint64_t frameSp;
     if (unw_get_reg(&cursor, UNW_REG_SP, (unw_word_t*)(&frameSp))) {
-        DfxLogWarn("Fail to get stack pointer.");
+        DFXLOG_WARN("Fail to get stack pointer.");
         return ret;
     }
 
@@ -211,7 +211,7 @@ bool DfxUnwindRemote::DfxUnwindRemoteDoUnwindStep(size_t const & index,
         thread->AddFrame(frame);
     }
 
-    DfxLogDebug("%s :: index(%d), framePc(0x%x), frameSp(0x%x).", __func__, index, framePc, frameSp);
+    DFXLOG_DEBUG("%s :: index(%d), framePc(0x%x), frameSp(0x%x).", __func__, index, framePc, frameSp);
     return ret;
 }
 
@@ -232,11 +232,11 @@ bool DfxUnwindRemote::GetArkJsHeapFuncName(std::string& funcName, std::shared_pt
         uintptr_t x20 = regsVector[UNW_AARCH64_X20];
         uintptr_t fp = regsVector[UNW_AARCH64_X29];
 
-        DfxLogInfo("pid: %d, x20: %016lx, fp: %016lx", thread->GetThreadId(), x20, fp);
+        DFXLOG_INFO("pid: %d, x20: %016lx, fp: %016lx", thread->GetThreadId(), x20, fp);
         int result = unw_get_ark_js_heap_crash_info(thread->GetThreadId(),
             (uintptr_t*)&x20, (uintptr_t*)&fp, false, buf, ARK_JS_HEAD_LEN);
         if (result < 0) {
-            DfxLogWarn("Fail to unw_get_ark_js_heap_crash_info.");
+            DFXLOG_WARN("Fail to unw_get_ark_js_heap_crash_info.");
             break;
         }
         ret = true;
@@ -305,7 +305,7 @@ bool DfxUnwindRemote::UpdateAndPrintFrameInfo(unw_cursor_t& cursor, std::shared_
 bool DfxUnwindRemote::UnwindThread(std::shared_ptr<DfxProcess> process, std::shared_ptr<DfxThread> thread)
 {
     if (!thread) {
-        DfxLogError("NULL thread needs unwind.");
+        DFXLOG_ERROR("NULL thread needs unwind.");
         return false;
     }
 
@@ -315,7 +315,7 @@ bool DfxUnwindRemote::UnwindThread(std::shared_ptr<DfxProcess> process, std::sha
     char buf[LOG_BUF_LEN] = {0};
     int ret = snprintf_s(buf, sizeof(buf), sizeof(buf) - 1, "Tid:%d, Name:%s\n", tid, thread->GetThreadName().c_str());
     if (ret <= 0) {
-        DfxLogError("%s :: snprintf_s failed, line: %d.", __func__, __LINE__);
+        DFXLOG_ERROR("%s :: snprintf_s failed, line: %d.", __func__, __LINE__);
     }
     DfxRingBufferWrapper::GetInstance().AppendMsg(std::string(buf));
     void *context = _UPT_create(nsTid);

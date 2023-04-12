@@ -80,17 +80,17 @@ __attribute__ ((visibility("hidden"))) int DfxLog(
     return ret;
 }
 
-#define DfxLogDebug(...) DfxLog(LOG_DEBUG, LOG_DOMAIN, LOG_TAG, __VA_ARGS__)
-#define DfxLogInfo(...) DfxLog(LOG_INFO, LOG_DOMAIN, LOG_TAG, __VA_ARGS__)
-#define DfxLogWarn(...) DfxLog(LOG_WARN, LOG_DOMAIN, LOG_TAG, __VA_ARGS__)
-#define DfxLogError(...) DfxLog(LOG_ERROR, LOG_DOMAIN, LOG_TAG, __VA_ARGS__)
-#define DfxLogFatal(...) DfxLog(LOG_FATAL, LOG_DOMAIN, LOG_TAG, __VA_ARGS__)
+#define DFXLOG_DEBUG(...) DfxLog(LOG_DEBUG, LOG_DOMAIN, LOG_TAG, __VA_ARGS__)
+#define DFXLOG_INFO(...) DfxLog(LOG_INFO, LOG_DOMAIN, LOG_TAG, __VA_ARGS__)
+#define DFXLOG_WARN(...) DfxLog(LOG_WARN, LOG_DOMAIN, LOG_TAG, __VA_ARGS__)
+#define DFXLOG_ERROR(...) DfxLog(LOG_ERROR, LOG_DOMAIN, LOG_TAG, __VA_ARGS__)
+#define DFXLOG_FATAL(...) DfxLog(LOG_FATAL, LOG_DOMAIN, LOG_TAG, __VA_ARGS__)
 #else
-#define DfxLogDebug(...)
-#define DfxLogInfo(...)
-#define DfxLogWarn(...)
-#define DfxLogError(...)
-#define DfxLogFatal(...)
+#define DFXLOG_DEBUG(...)
+#define DFXLOG_INFO(...)
+#define DFXLOG_WARN(...)
+#define DFXLOG_ERROR(...)
+#define DFXLOG_FATAL(...)
 #endif
 
 #ifdef __cplusplus

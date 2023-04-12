@@ -33,7 +33,7 @@ static const int32_t SOCKET_TIMEOUT = 5;
 static void FillRequest(int32_t type, FaultLoggerdRequest *request)
 {
     if (request == nullptr) {
-        DfxLogError("nullptr request");
+        DFXLOG_ERROR("nullptr request");
         return;
     }
 
@@ -62,19 +62,19 @@ int32_t RequestLogFileDescriptor(struct FaultLoggerdRequest *request)
 int32_t RequestFileDescriptorEx(const struct FaultLoggerdRequest *request)
 {
     if (request == nullptr) {
-        DfxLogError("nullptr request");
+        DFXLOG_ERROR("nullptr request");
         return -1;
     }
 
     int sockfd;
     if (!StartConnect(sockfd, FAULTLOGGERD_SOCK_PATH, SOCKET_TIMEOUT)) {
-        DfxLogError("StartConnect failed");
+        DFXLOG_ERROR("StartConnect failed");
         return -1;
     }
 
     write(sockfd, request, sizeof(struct FaultLoggerdRequest));
     int fd = ReadFileDescriptorFromSocket(sockfd);
-    DfxLogDebug("RequestFileDescriptorEx(%d).\n", fd);
+    DFXLOG_DEBUG("RequestFileDescriptorEx(%d).\n", fd);
     close(sockfd);
     return fd;
 }
@@ -83,10 +83,10 @@ static bool CheckReadResp(int sockfd)
 {
     char ControlBuffer[SOCKET_BUFFER_SIZE] = {0};
     (void)memset_s(&ControlBuffer, sizeof(ControlBuffer), 0, SOCKET_BUFFER_SIZE);
-    
+
     ssize_t nread = read(sockfd, ControlBuffer, sizeof(ControlBuffer) - 1);
     if (nread != static_cast<ssize_t>(strlen(FAULTLOGGER_DAEMON_RESP))) {
-        DfxLogError("nread: %d.", nread);
+        DFXLOG_ERROR("nread: %d.", nread);
         return false;
     }
     return true;
@@ -96,14 +96,14 @@ static int32_t RequestFileDescriptorByCheck(const struct FaultLoggerdRequest *re
 {
     int32_t fd = -1;
     if (request == nullptr) {
-        DfxLogError("nullptr request");
+        DFXLOG_ERROR("nullptr request");
         return -1;
     }
 
     int sockfd = -1;
     do {
         if (!StartConnect(sockfd, FAULTLOGGERD_SOCK_PATH, SOCKET_TIMEOUT)) {
-            DfxLogError("StartConnect failed");
+            DFXLOG_ERROR("StartConnect failed");
             break;
         }
 
@@ -115,12 +115,12 @@ static int32_t RequestFileDescriptorByCheck(const struct FaultLoggerdRequest *re
 
         int data = 12345;
         if (!SendMsgIovToSocket(sockfd, reinterpret_cast<void *>(&data), sizeof(data))) {
-            DfxLogError("%s :: Failed to sendmsg.", __func__);
+            DFXLOG_ERROR("%s :: Failed to sendmsg.", __func__);
             break;
         }
 
         fd = ReadFileDescriptorFromSocket(sockfd);
-        DfxLogDebug("RequestFileDescriptorByCheck(%d).\n", fd);
+        DFXLOG_DEBUG("RequestFileDescriptorByCheck(%d).\n", fd);
     } while (false);
     close(sockfd);
     return fd;
@@ -132,17 +132,17 @@ static int SendUidToServer(int sockfd)
 
     int data = 12345;
     if (!SendMsgIovToSocket(sockfd, reinterpret_cast<void *>(&data), sizeof(data))) {
-        DfxLogError("%s :: Failed to sendmsg.", __func__);
+        DFXLOG_ERROR("%s :: Failed to sendmsg.", __func__);
         return mRsp;
     }
 
     char recvbuf[SOCKET_BUFFER_SIZE] = {'\0'};
     ssize_t count = recv(sockfd, recvbuf, sizeof(recvbuf), 0);
     if (count < 0) {
-        DfxLogError("%s :: Failed to recv.", __func__);
+        DFXLOG_ERROR("%s :: Failed to recv.", __func__);
         return mRsp;
     }
-    
+
     mRsp = atoi(recvbuf);
     return mRsp;
 }
@@ -163,12 +163,12 @@ static int SendRequestToServer(const FaultLoggerdRequest &request)
     int resRsp = (int)FaultLoggerCheckPermissionResp::CHECK_PERMISSION_REJECT;
     do {
         if (!StartConnect(sockfd, FAULTLOGGERD_SOCK_PATH, -1)) {
-            DfxLogError("StartConnect failed.");
+            DFXLOG_ERROR("StartConnect failed.");
             break;
         }
 
         if (write(sockfd, &request, sizeof(struct FaultLoggerdRequest)) != static_cast<long>(sizeof(request))) {
-            DfxLogError("write failed.");
+            DFXLOG_ERROR("write failed.");
             break;
         }
 
@@ -179,13 +179,13 @@ static int SendRequestToServer(const FaultLoggerdRequest &request)
     } while (false);
 
     close(sockfd);
-    DfxLogInfo("SendRequestToServer :: resRsp(%d).", resRsp);
+    DFXLOG_INFO("SendRequestToServer :: resRsp(%d).", resRsp);
     return resRsp;
 }
 
 bool RequestCheckPermission(int32_t pid)
 {
-    DfxLogInfo("RequestCheckPermission :: %d.", pid);
+    DFXLOG_INFO("RequestCheckPermission :: %d.", pid);
     if (pid <= 0) {
         return false;
     }
@@ -205,7 +205,7 @@ bool RequestCheckPermission(int32_t pid)
 
 int RequestSdkDump(int32_t type, int32_t pid, int32_t tid)
 {
-    DfxLogInfo("RequestSdkDump :: type(%d), pid(%d), tid(%d).", type, pid, tid);
+    DFXLOG_INFO("RequestSdkDump :: type(%d), pid(%d), tid(%d).", type, pid, tid);
     if (pid <= 0 || tid < 0) {
         return -1;
     }
@@ -235,7 +235,7 @@ void RequestPrintTHilog(const char *msg, int length)
     int sockfd = -1;
     do {
         if (!StartConnect(sockfd, FAULTLOGGERD_SOCK_PATH, -1)) {
-            DfxLogError("StartConnect failed");
+            DFXLOG_ERROR("StartConnect failed");
             break;
         }
 
@@ -246,10 +246,10 @@ void RequestPrintTHilog(const char *msg, int length)
         if (!CheckReadResp(sockfd)) {
             break;
         }
-		
+
         int nwrite = write(sockfd, msg, strlen(msg));
         if (nwrite != static_cast<long>(strlen(msg))) {
-            DfxLogError("nwrite: %d.", nwrite);
+            DFXLOG_ERROR("nwrite: %d.", nwrite);
             break;
         }
     } while (false);
@@ -260,7 +260,7 @@ int32_t RequestPipeFd(int32_t pid, int32_t pipeType)
 {
     if (pipeType < static_cast<int32_t>(FaultLoggerPipeType::PIPE_FD_READ_BUF) ||
         pipeType > static_cast<int32_t>(FaultLoggerPipeType::PIPE_FD_WRITE_RES)) {
-        DfxLogError("%s :: pipeType(%d) failed.", __func__, pipeType);
+        DFXLOG_ERROR("%s :: pipeType(%d) failed.", __func__, pipeType);
         return -1;
     }
     struct FaultLoggerdRequest request;
@@ -270,7 +270,7 @@ int32_t RequestPipeFd(int32_t pid, int32_t pipeType)
     request.callerPid = getpid();
     request.callerTid = syscall(SYS_gettid);
     request.clientType = (int32_t)FaultLoggerClientType::PIPE_FD_CLIENT;
-    if ((pipeType == static_cast<int32_t>(FaultLoggerPipeType::PIPE_FD_READ_BUF)) || 
+    if ((pipeType == static_cast<int32_t>(FaultLoggerPipeType::PIPE_FD_READ_BUF)) ||
         (pipeType == static_cast<int32_t>(FaultLoggerPipeType::PIPE_FD_READ_RES))) {
         return RequestFileDescriptorByCheck(&request);
     }
@@ -287,7 +287,7 @@ int32_t RequestDelPipeFd(int32_t pid)
 
     int sockfd;
     if (!StartConnect(sockfd, FAULTLOGGERD_SOCK_PATH, SOCKET_TIMEOUT)) {
-        DfxLogError("StartConnect failed");
+        DFXLOG_ERROR("StartConnect failed");
         return -1;
     }
 

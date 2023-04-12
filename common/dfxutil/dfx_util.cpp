@@ -61,7 +61,7 @@ static int GetProcStatusByPath(const std::string& path, struct ProcInfo& procInf
         if (strncmp(buf, PID_STR_NAME, strlen(PID_STR_NAME)) == 0) {
             // Pid:    1892
             if (sscanf_s(buf, "%*[^0-9]%d", &pid) != ARGS_COUNT_ONE) {
-                DfxLogError("sscanf_s failed.");
+                DFXLOG_ERROR("sscanf_s failed.");
             }
             procInfo.pid = pid;
             if (procInfo.pid == getpid()) {
@@ -77,7 +77,7 @@ static int GetProcStatusByPath(const std::string& path, struct ProcInfo& procInf
         if (strncmp(buf, PPID_STR_NAME, strlen(PPID_STR_NAME)) == 0) {
             // PPid:   240
             if (sscanf_s(buf, "%*[^0-9]%d", &ppid) != ARGS_COUNT_ONE) {
-                DfxLogError("sscanf_s failed.");
+                DFXLOG_ERROR("sscanf_s failed.");
             }
             procInfo.ppid = ppid;
             continue;
@@ -86,7 +86,7 @@ static int GetProcStatusByPath(const std::string& path, struct ProcInfo& procInf
         // NSpid:  1892    1
         if (strncmp(buf, NSPID_STR_NAME, strlen(NSPID_STR_NAME)) == 0) {
             if (sscanf_s(buf, "%*[^0-9]%d%*[^0-9]%d", &pid, &tid) != ARGS_COUNT_TWO) {
-                DfxLogError("sscanf_s failed.");
+                DFXLOG_ERROR("sscanf_s failed.");
             }
             procInfo.tid = tid;
             break;
@@ -102,7 +102,7 @@ bool TidToNstid(const int pid, const int tid, int& nstid)
     char path[NAME_LEN];
     (void)memset_s(path, sizeof(path), '\0', sizeof(path));
     if (snprintf_s(path, sizeof(path), sizeof(path) - 1, "/proc/%d/task/%d/status", pid, tid) <= 0) {
-        DfxLogWarn("snprintf_s error.");
+        DFXLOG_WARN("snprintf_s error.");
         return ret;
     }
 
@@ -123,7 +123,7 @@ bool TidToNstid(const int pid, const int tid, int& nstid)
         // NSpid:  1892    1
         if (strncmp(buf, NSPID_STR_NAME, strlen(NSPID_STR_NAME)) == 0) {
             if (sscanf_s(buf, "%*[^0-9]%d%*[^0-9]%d", &p, &t) != ARGS_COUNT_TWO) {
-                DfxLogWarn("TidToNstid sscanf_s failed. pid:%d, tid:%d", p, t);
+                DFXLOG_WARN("TidToNstid sscanf_s failed. pid:%d, tid:%d", p, t);
             }
             nstid = t;
             ret = true;
@@ -168,7 +168,7 @@ bool ReadStringFromFile(const char *path, char *buf, size_t len)
 
     FILE *fp = fopen(realPath, "r");
     if (fp == nullptr) {
-        DfxLogError("Failed to open %s", realPath);
+        DFXLOG_ERROR("Failed to open %s", realPath);
         return false;
     }
 
@@ -195,7 +195,7 @@ bool TrimAndDupStr(const std::string &source, std::string &str)
     const char *begin = source.data();
     const char *end = begin + source.size();
     if (begin == end) {
-        DfxLogError("Source is empty");
+        DFXLOG_ERROR("Source is empty");
         return false;
     }
 

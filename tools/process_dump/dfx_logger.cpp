@@ -35,7 +35,7 @@ int WriteLog(int32_t fd, const char *format, ...)
     va_start(args, format);
     ret = vsnprintf_s(buf, sizeof(buf), sizeof(buf) - 1, format, args);
     if (ret == -1) {
-        DfxLogWarn("WriteLog: vsnprintf_s fail");
+        DFXLOG_WARN("WriteLog: vsnprintf_s fail");
     }
     va_end(args);
 
@@ -46,12 +46,12 @@ int WriteLog(int32_t fd, const char *format, ...)
     if (fd >= 0) {
         ret = dprintf(fd, "%s", buf);
         if (ret < 0) {
-            DfxLogError("WriteLog :: write msg(%s) to fd(%d) failed, ret(%d).", buf, fd, ret);
+            DFXLOG_ERROR("WriteLog :: write msg(%s) to fd(%d) failed, ret(%d).", buf, fd, ret);
         }
     } else if (fd == INVALID_FD) {
-        ret = DfxLogWarn(buf);
+        ret = DFXLOG_WARN(buf);
     } else {
-        ret = DfxLogDebug(buf);
+        ret = DFXLOG_DEBUG(buf);
     }
 
     return ret;
@@ -72,7 +72,7 @@ void DfxLogToSocket(const char *msg)
 
 void InitDebugLog(int type, int pid, int tid, unsigned int uid)
 {
-    DfxLogInfo("InitDebugLog :: type(%d), pid(%d), tid(%d), uid(%d).", type, pid, tid, uid);
+    DFXLOG_INFO("InitDebugLog :: type(%d), pid(%d), tid(%d), uid(%d).", type, pid, tid, uid);
     if (g_DebugLogFilleDes != INVALID_FD) {
         return;
     }
@@ -86,13 +86,13 @@ void InitDebugLog(int type, int pid, int tid, unsigned int uid)
 
     g_DebugLogFilleDes = RequestLogFileDescriptor(&faultloggerdRequest);
     if (g_DebugLogFilleDes <= 0) {
-        DfxLogError("InitDebugLog :: RequestLogFileDescriptor failed.");
+        DFXLOG_ERROR("InitDebugLog :: RequestLogFileDescriptor failed.");
         g_DebugLogFilleDes = INVALID_FD;
     } else {
         g_StdErrFilleDes = dup(STDERR_FILENO);
 
         if (dup2(g_DebugLogFilleDes, STDERR_FILENO) == -1) {
-            DfxLogError("InitDebugLog :: dup2 failed.");
+            DFXLOG_ERROR("InitDebugLog :: dup2 failed.");
             close(g_DebugLogFilleDes);
             g_DebugLogFilleDes = INVALID_FD;
             g_StdErrFilleDes = INVALID_FD;

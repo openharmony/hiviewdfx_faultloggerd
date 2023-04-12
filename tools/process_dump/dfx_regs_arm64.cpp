@@ -62,7 +62,7 @@ DfxRegsArm64::DfxRegsArm64(const ucontext_t &context)
     regs.push_back(uintptr_t(context.uc_mcontext.pc));       // 32:pc
 
     SetRegsData(regs);
-    DfxLogDebug("lr:%016lx sp:%016lx pc:%016lx\n", regs[REG_AARCH64_X30], regs[REG_AARCH64_SP], regs[REG_AARCH64_PC]);
+    DFXLOG_DEBUG("lr:%016lx sp:%016lx pc:%016lx\n", regs[REG_AARCH64_X30], regs[REG_AARCH64_SP], regs[REG_AARCH64_PC]);
 }
 
 std::string DfxRegsArm64::GetSpecialRegisterName(uintptr_t val) const
@@ -102,7 +102,7 @@ std::string DfxRegsArm64::PrintRegs() const
 
     PrintFormat(buf + strlen(buf), sizeof(buf) - strlen(buf), "x16:%016lx x17:%016lx x18:%016lx x19:%016lx\n", \
                 regs[REG_AARCH64_X16], regs[REG_AARCH64_X17], regs[REG_AARCH64_X18], regs[REG_AARCH64_X19]);
-    
+
     PrintFormat(buf + strlen(buf), sizeof(buf) - strlen(buf), "x20:%016lx x21:%016lx x22:%016lx x23:%016lx\n", \
                 regs[REG_AARCH64_X20], regs[REG_AARCH64_X21], regs[REG_AARCH64_X22], regs[REG_AARCH64_X23]);
 

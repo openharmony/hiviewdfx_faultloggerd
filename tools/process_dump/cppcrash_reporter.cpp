@@ -80,23 +80,23 @@ bool CppCrashReporter::Format()
 void CppCrashReporter::ReportToHiview()
 {
     if (!Format()) {
-        DfxLogWarn("Failed to format crash report.");
+        DFXLOG_WARN("Failed to format crash report.");
         return;
     }
     if (process_->GetProcessName().find(HIVIEW_PROCESS_NAME) != std::string::npos) {
-        DfxLogWarn("Failed to report, hiview is crashed.");
+        DFXLOG_WARN("Failed to report, hiview is crashed.");
         return;
     }
 
     void* handle = dlopen("libfaultlogger.z.so", RTLD_LAZY | RTLD_NODELETE);
     if (handle == nullptr) {
-        DfxLogWarn("Failed to dlopen libfaultlogger, %s\n", dlerror());
+        DFXLOG_WARN("Failed to dlopen libfaultlogger, %s\n", dlerror());
         return;
     }
 
     AddFaultLog addFaultLog = (AddFaultLog)dlsym(handle, "AddFaultLog");
     if (addFaultLog == nullptr) {
-        DfxLogWarn("Failed to dlsym AddFaultLog, %s\n", dlerror());
+        DFXLOG_WARN("Failed to dlsym AddFaultLog, %s\n", dlerror());
         dlclose(handle);
         return;
     }
@@ -111,7 +111,7 @@ void CppCrashReporter::ReportToHiview()
     info.summary = stack_;
     info.sectionMaps = kvPairs_;
     addFaultLog(&info);
-    DfxLogInfo("Finish report fault to FaultLogger %s(%d,%d)", cmdline_.c_str(), pid_, uid_);
+    DFXLOG_INFO("Finish report fault to FaultLogger %s(%d,%d)", cmdline_.c_str(), pid_, uid_);
     dlclose(handle);
 }
 } // namespace HiviewDFX

@@ -44,7 +44,7 @@ std::shared_ptr<DfxElf> DfxElf::Create(const std::string path)
 {
     char realPaths[PATH_MAX] = {0};
     if (!realpath(path.c_str(), realPaths)) {
-        DfxLogWarn("Fail to do realpath(%s).", path.c_str());
+        DFXLOG_WARN("Fail to do realpath(%s).", path.c_str());
         return nullptr;
     }
 
@@ -53,13 +53,13 @@ std::shared_ptr<DfxElf> DfxElf::Create(const std::string path)
     dfxElf->SetFd(OHOS_TEMP_FAILURE_RETRY(open(realPaths, O_RDONLY | O_CLOEXEC)));
 
     if (dfxElf->fd_ < 0) {
-        DfxLogWarn("Fail to open elf file(%s).", realPaths);
+        DFXLOG_WARN("Fail to open elf file(%s).", realPaths);
         return nullptr;
     }
 
     struct stat elfStat;
     if (fstat(dfxElf->fd_, &elfStat) != 0) {
-        DfxLogWarn("Fail to get elf size.");
+        DFXLOG_WARN("Fail to get elf size.");
         close(dfxElf->fd_);
         dfxElf->SetFd(-1);
         return nullptr;
@@ -67,14 +67,14 @@ std::shared_ptr<DfxElf> DfxElf::Create(const std::string path)
 
     dfxElf->SetSize((uint64_t)elfStat.st_size);
     if (!dfxElf->ParseElfHeader()) {
-        DfxLogWarn("Fail to parse elf header.");
+        DFXLOG_WARN("Fail to parse elf header.");
         close(dfxElf->fd_);
         dfxElf->SetFd(-1);
         return nullptr;
     }
 
     if (!dfxElf->ParseElfProgramHeader()) {
-        DfxLogWarn("Fail to parse elf program header.");
+        DFXLOG_WARN("Fail to parse elf program header.");
         close(dfxElf->GetFd());
         dfxElf->SetFd(-1);
         return nullptr;
@@ -89,7 +89,7 @@ bool DfxElf::ParseElfHeader()
 {
     ssize_t nread = read(fd_, &(header_), sizeof(header_));
     if (nread < 0 || nread != static_cast<long>(sizeof(header_))) {
-        DfxLogWarn("Failed to read elf header.");
+        DFXLOG_WARN("Failed to read elf header.");
         return false;
     }
     return true;
@@ -99,7 +99,7 @@ bool DfxElf::ParseElfProgramHeader()
 {
     size_t size = header_.e_phnum * sizeof(ElfW(Phdr));
     if (size > MAX_MAP_SIZE) {
-        DfxLogWarn("Exceed max mmap size.");
+        DFXLOG_WARN("Exceed max mmap size.");
         return false;
     }
 
@@ -109,19 +109,19 @@ bool DfxElf::ParseElfProgramHeader()
     uint64_t endOffset;
     if (__builtin_add_overflow(static_cast<uint64_t>(size), static_cast<uint64_t>(offset), &endOffset) ||
         __builtin_add_overflow(static_cast<uint64_t>(endOffset), static_cast<uint64_t>(startOffset), &endOffset)) {
-        DfxLogWarn("Offset calculate error.");
+        DFXLOG_WARN("Offset calculate error.");
         return false;
     }
 
     size_t mapSize = static_cast<size_t>(endOffset - offset);
     if (mapSize > MAX_MAP_SIZE) {
-        DfxLogWarn("Exceed max mmap size.");
+        DFXLOG_WARN("Exceed max mmap size.");
         return false;
     }
 
     void *map = mmap(nullptr, mapSize, PROT_READ, MAP_PRIVATE, fd_, static_cast<off_t>(alignedOffset));
     if (map == static_cast<void *>MAP_FAILED) {
-        DfxLogWarn("Failed to mmap elf.");
+        DFXLOG_WARN("Failed to mmap elf.");
         return false;
     }
 

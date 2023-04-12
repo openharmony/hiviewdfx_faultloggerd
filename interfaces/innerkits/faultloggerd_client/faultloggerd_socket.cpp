@@ -32,7 +32,7 @@ bool StartConnect(int& sockfd, const char* path, const int timeout)
 {
     bool ret = false;
     if ((sockfd = socket(AF_LOCAL, SOCK_STREAM, 0)) < 0) {
-        DfxLogError("%s :: Failed to socket\n", __func__);
+        DFXLOG_ERROR("%s :: Failed to socket\n", __func__);
         return ret;
     }
 
@@ -45,7 +45,7 @@ bool StartConnect(int& sockfd, const char* path, const int timeout)
             void* pTimev = &timev;
             if (setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, \
                 static_cast<const char*>(pTimev), sizeof(timev)) != 0) {
-                    DfxLogError("setsockopt SO_RCVTIMEO error");
+                    DFXLOG_ERROR("setsockopt SO_RCVTIMEO error");
             }
         }
 
@@ -54,14 +54,14 @@ bool StartConnect(int& sockfd, const char* path, const int timeout)
         server.sun_family = AF_LOCAL;
         errno_t err = strncpy_s(server.sun_path, sizeof(server.sun_path), path, sizeof(server.sun_path) - 1);
         if (err != EOK) {
-            DfxLogError("%s :: strncpy failed, err = %d.", __func__, (int)err);
+            DFXLOG_ERROR("%s :: strncpy failed, err = %d.", __func__, (int)err);
             break;
         }
 
         int len = static_cast<int>(offsetof(struct sockaddr_un, sun_path) + strlen(server.sun_path) + 1);
         int connected = connect(sockfd, reinterpret_cast<struct sockaddr *>(&server), len);
         if (connected < 0) {
-            DfxLogError("%s :: connect failed, errno = %d.", __func__, errno);
+            DFXLOG_ERROR("%s :: connect failed, errno = %d.", __func__, errno);
             break;
         }
 
@@ -78,15 +78,15 @@ static bool GetServerSocket(int& sockfd, const char* path)
 {
     sockfd = OHOS_TEMP_FAILURE_RETRY(socket(AF_LOCAL, SOCK_STREAM, 0));
     if (sockfd < 0) {
-        DfxLogError("%s :: Failed to create socket", __func__);
+        DFXLOG_ERROR("%s :: Failed to create socket", __func__);
         return false;
     }
-    
+
     struct sockaddr_un server;
     (void)memset_s(&server, sizeof(server), 0, sizeof(server));
     server.sun_family = AF_LOCAL;
     if (strncpy_s(server.sun_path, sizeof(server.sun_path), path, sizeof(server.sun_path) - 1) != 0) {
-        DfxLogError("%s :: strncpy failed.", __func__);
+        DFXLOG_ERROR("%s :: strncpy failed.", __func__);
         return false;
     }
 
@@ -100,10 +100,10 @@ static bool GetServerSocket(int& sockfd, const char* path)
 
     if (bind(sockfd, (struct sockaddr *)&server,
         offsetof(struct sockaddr_un, sun_path) + strlen(server.sun_path)) < 0) {
-        DfxLogError("%s :: Failed to bind socket", __func__);
+        DFXLOG_ERROR("%s :: Failed to bind socket", __func__);
         return false;
     }
-    
+
     return true;
 }
 
@@ -114,21 +114,21 @@ bool StartListen(int& sockfd, const char* name, const int listenCnt)
     }
     sockfd = GetControlSocket(name);
     if (sockfd < 0) {
-        DfxLogWarn("%s :: Failed to get socket fd by cfg", __func__);
+        DFXLOG_WARN("%s :: Failed to get socket fd by cfg", __func__);
 
         if (GetServerSocket(sockfd, FAULTLOGGERD_SOCK_PATH) == false) {
-            DfxLogError("%s :: Failed to get socket fd by path", __func__);
+            DFXLOG_ERROR("%s :: Failed to get socket fd by path", __func__);
             return false;
         }
     }
 
     if (listen(sockfd, listenCnt) < 0) {
-        DfxLogError("%s :: Failed to listen socket", __func__);
+        DFXLOG_ERROR("%s :: Failed to listen socket", __func__);
         close(sockfd);
         sockfd = -1;
         return false;
     }
-    DfxLogInfo("%s :: success to listen socket", __func__);
+    DFXLOG_INFO("%s :: success to listen socket", __func__);
     return true;
 }
 
@@ -154,19 +154,19 @@ static bool RecvMsgFromSocket(int sockfd, unsigned char* data, size_t& len)
         msgh.msg_controllen = sizeof(ctlBuffer);
 
         if (recvmsg(sockfd, &msgh, 0) < 0) {
-            DfxLogError("%s :: Failed to recv message\n", __func__);
+            DFXLOG_ERROR("%s :: Failed to recv message\n", __func__);
             break;
         }
 
         struct cmsghdr *cmsg = CMSG_FIRSTHDR(&msgh);
         if (cmsg == nullptr) {
-            DfxLogError("%s :: Invalid message\n", __func__);
+            DFXLOG_ERROR("%s :: Invalid message\n", __func__);
             break;
         }
 
         len = cmsg->cmsg_len - sizeof(struct cmsghdr);
         if (memcpy_s(data, len, CMSG_DATA(cmsg), len) != 0) {
-            DfxLogError("%s :: memcpy error\n", __func__);
+            DFXLOG_ERROR("%s :: memcpy error\n", __func__);
             break;
         }
 
@@ -206,18 +206,18 @@ bool RecvMsgCredFromSocket(int sockfd, struct ucred* pucred)
         msgh.msg_controllen = sizeof(controlMsg.buf);
 
         if (recvmsg(sockfd, &msgh, 0) < 0) {
-            DfxLogError("%s :: Failed to recv message\n", __func__);
+            DFXLOG_ERROR("%s :: Failed to recv message\n", __func__);
             break;
         }
 
         struct cmsghdr *cmsg = CMSG_FIRSTHDR(&msgh);
         if (cmsg == nullptr) {
-            DfxLogError("%s :: Invalid message\n", __func__);
+            DFXLOG_ERROR("%s :: Invalid message\n", __func__);
             break;
         }
 
         if (memcpy_s(pucred, sizeof(struct ucred), CMSG_DATA(cmsg), sizeof(struct ucred)) != 0) {
-            DfxLogError("%s :: memcpy error\n", __func__);
+            DFXLOG_ERROR("%s :: memcpy error\n", __func__);
             break;
         }
 
@@ -231,7 +231,7 @@ bool SendMsgIovToSocket(int sockfd, void *iovBase, const int iovLen)
     if ((sockfd < 0) || (iovBase == nullptr) || (iovLen == 0)) {
         return false;
     }
-    
+
     struct msghdr msgh = { 0 };
     msgh.msg_name = nullptr;
     msgh.msg_namelen = 0;
@@ -246,7 +246,7 @@ bool SendMsgIovToSocket(int sockfd, void *iovBase, const int iovLen)
     msgh.msg_controllen = 0;
 
     if (sendmsg(sockfd, &msgh, 0) < 0) {
-        DfxLogError("%s :: Failed to send message.", __func__);
+        DFXLOG_ERROR("%s :: Failed to send message.", __func__);
         return false;
     }
     return true;
@@ -279,11 +279,11 @@ static bool SendMsgCtlToSocket(int sockfd, const void *cmsg, const int cmsgLen)
         cmsgh->cmsg_len = CMSG_LEN(cmsgLen);
     }
     if (memcpy_s(CMSG_DATA(cmsgh), cmsgLen, cmsg, cmsgLen) != 0) {
-        DfxLogError("%s :: memcpy error\n", __func__);
+        DFXLOG_ERROR("%s :: memcpy error\n", __func__);
     }
 
     if (sendmsg(sockfd, &msgh, 0) < 0) {
-        DfxLogError("%s :: Failed to send message", __func__);
+        DFXLOG_ERROR("%s :: Failed to send message", __func__);
         return false;
     }
     return true;
@@ -299,15 +299,15 @@ int ReadFileDescriptorFromSocket(int sockfd)
     size_t len = sizeof(int);
     unsigned char data[len + 1];
     if (!RecvMsgFromSocket(sockfd, data, len)) {
-        DfxLogError("%s :: Failed to recv message", __func__);
+        DFXLOG_ERROR("%s :: Failed to recv message", __func__);
         return -1;
     }
 
     if (len != sizeof(int)) {
-        DfxLogError("%s :: data is null or len is %d", __func__, len);
+        DFXLOG_ERROR("%s :: data is null or len is %d", __func__, len);
         return -1;
     }
     int fd = *(reinterpret_cast<int *>(data));
-    DfxLogDebug("%s :: fd: %d", __func__, fd);
+    DFXLOG_DEBUG("%s :: fd: %d", __func__, fd);
     return fd;
 }

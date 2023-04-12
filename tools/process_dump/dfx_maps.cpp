@@ -39,7 +39,7 @@ std::shared_ptr<DfxElfMaps> DfxElfMaps::Create(pid_t pid)
 {
     char path[NAME_LEN] = {0};
     if (snprintf_s(path, sizeof(path), sizeof(path) - 1, "/proc/%d/maps", pid) <= 0) {
-        DfxLogWarn("Fail to print path.");
+        DFXLOG_WARN("Fail to print path.");
         return nullptr;
     }
 
@@ -50,13 +50,13 @@ std::shared_ptr<DfxElfMaps> DfxElfMaps::Create(const std::string path)
 {
     char realPath[PATH_MAX] = {0};
     if (realpath(path.c_str(), realPath) == nullptr) {
-        DfxLogWarn("Maps path(%s) is not exist.", path.c_str());
+        DFXLOG_WARN("Maps path(%s) is not exist.", path.c_str());
         return nullptr;
     }
 
     FILE *fp = fopen(realPath, "r");
     if (fp == nullptr) {
-        DfxLogWarn("Fail to open maps info.");
+        DFXLOG_WARN("Fail to open maps info.");
         return nullptr;
     }
 
@@ -65,7 +65,7 @@ std::shared_ptr<DfxElfMaps> DfxElfMaps::Create(const std::string path)
     while (fgets(mapInfo, sizeof(mapInfo), fp) != nullptr) {
         std::shared_ptr<DfxElfMap> map = DfxElfMap::Create(mapInfo, sizeof(mapInfo));
         if (!map) {
-            DfxLogWarn("Fail to init map info:%s.", mapInfo);
+            DFXLOG_WARN("Fail to init map info:%s.", mapInfo);
             continue;
         } else {
             dfxElfMaps->InsertMapToElfMaps(map);
@@ -73,7 +73,7 @@ std::shared_ptr<DfxElfMaps> DfxElfMaps::Create(const std::string path)
     }
     int ret = fclose(fp);
     if (ret < 0) {
-        DfxLogWarn("Fail to close maps info.");
+        DFXLOG_WARN("Fail to close maps info.");
         return nullptr;
     }
     return dfxElfMaps;
@@ -94,7 +94,7 @@ std::shared_ptr<DfxElfMap> DfxElfMap::Create(const std::string mapInfo, int size
     if (sscanf_s(mapInfo.c_str(), "%" SCNxPTR "-%" SCNxPTR " %4s %" SCNxPTR " %*x:%*x %*d%n", &begin, &end,
         &perms, sizeof(perms), &offset,
         &pos) != 4) { // 4:scan size
-        DfxLogWarn("Fail to parse maps info.");
+        DFXLOG_WARN("Fail to parse maps info.");
         return nullptr;
     }
 
@@ -142,7 +142,7 @@ bool DfxElfMaps::FindMapByAddr(uintptr_t address, std::shared_ptr<DfxElfMap>& ma
 
 bool DfxElfMaps::CheckPcIsValid(uint64_t pc) const
 {
-    DfxLogDebug("%s :: pc(0x%x).", __func__, pc);
+    DFXLOG_DEBUG("%s :: pc(0x%x).", __func__, pc);
 
     bool ret = false;
 
@@ -167,7 +167,7 @@ bool DfxElfMaps::CheckPcIsValid(uint64_t pc) const
         }
     } while (false);
 
-    DfxLogDebug("%s :: ret(%d).", __func__, ret);
+    DFXLOG_DEBUG("%s :: ret(%d).", __func__, ret);
     return ret;
 }
 
@@ -197,7 +197,7 @@ std::string DfxElfMap::PrintMap()
     int ret = snprintf_s(buf, sizeof(buf), sizeof(buf) - 1, "%" PRIx64 "-%" PRIx64 " %s %08" PRIx64 " %s\n", \
         begin_, end_, perms_.c_str(), offset_, path_.c_str());
     if (ret <= 0) {
-        DfxLogError("%s :: snprintf_s failed, line: %d.", __func__, __LINE__);
+        DFXLOG_ERROR("%s :: snprintf_s failed, line: %d.", __func__, __LINE__);
     }
     return std::string(buf);
 }

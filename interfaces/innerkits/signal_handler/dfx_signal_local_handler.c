@@ -59,7 +59,7 @@ static void ReserveChildThreadSignalStack(void)
     g_reservedChildStack = mmap(NULL, LOCAL_HANDLER_STACK_SIZE, \
         PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_STACK, 1, 0);
     if (g_reservedChildStack == NULL) {
-        DfxLogError("Failed to alloc memory for child stack.");
+        DFXLOG_ERROR("Failed to alloc memory for child stack.");
         return;
     }
     g_reservedChildStack = (void *)(((uint8_t *)g_reservedChildStack) + LOCAL_HANDLER_STACK_SIZE - 1);
@@ -92,18 +92,18 @@ static void DFX_SignalLocalHandler(int sig, siginfo_t * si, void * context)
     g_request.tid = gettid();
     g_request.pid = getpid();
     g_request.timeStamp = GetTimeMilliseconds();
-    DfxLogInfo("DFX_SignalLocalHandler :: sig(%d), pid(%d), tid(%d).", sig, g_request.pid, g_request.tid);
+    DFXLOG_INFO("DFX_SignalLocalHandler :: sig(%d), pid(%d), tid(%d).", sig, g_request.pid, g_request.tid);
 
     GetThreadName(g_request.threadName, sizeof(g_request.threadName));
     GetProcessName(g_request.processName, sizeof(g_request.processName));
 
     int ret = memcpy_s(&(g_request.siginfo), sizeof(siginfo_t), si, sizeof(siginfo_t));
     if (ret < 0) {
-        DfxLogError("memcpy_s siginfo fail, ret=%d", ret);
+        DFXLOG_ERROR("memcpy_s siginfo fail, ret=%d", ret);
     }
     ret = memcpy_s(&(g_request.context), sizeof(ucontext_t), context, sizeof(ucontext_t));
     if (ret < 0) {
-        DfxLogError("memcpy_s context fail, ret=%d", ret);
+        DFXLOG_ERROR("memcpy_s context fail, ret=%d", ret);
     }
 #ifdef __aarch64__
     DoCrashHandler(NULL);
@@ -113,7 +113,7 @@ static void DFX_SignalLocalHandler(int sig, siginfo_t * si, void * context)
         CLONE_THREAD | CLONE_SIGHAND | CLONE_VM | CLONE_CHILD_SETTID | CLONE_CHILD_CLEARTID, \
         &pseudothreadTid, NULL, NULL, &pseudothreadTid);
     if (childTid == -1) {
-        DfxLogError("Failed to create thread for crash local handler");
+        DFXLOG_ERROR("Failed to create thread for crash local handler");
         pthread_mutex_unlock(&g_signalHandlerMutex);
         return;
     }
@@ -121,7 +121,7 @@ static void DFX_SignalLocalHandler(int sig, siginfo_t * si, void * context)
     FutexWait(&pseudothreadTid, -1);
     FutexWait(&pseudothreadTid, childTid);
 
-    DfxLogInfo("child thread(%d) exit.", childTid);
+    DFXLOG_INFO("child thread(%d) exit.", childTid);
     syscall(__NR_exit, 0);
 #endif
 }
@@ -147,7 +147,7 @@ void DFX_InstallLocalSignalHandler(void)
         int32_t sig = g_platformSignals[i];
         sigaddset(&set, sig);
         if (sigaction(sig, &action, NULL) != 0) {
-            DfxLogError("Failed to register signal(%d)", sig);
+            DFXLOG_ERROR("Failed to register signal(%d)", sig);
         }
     }
     sigprocmask(SIG_UNBLOCK, &set, NULL);

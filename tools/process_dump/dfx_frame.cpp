@@ -144,13 +144,13 @@ uint64_t DfxFrame::GetRelativePc(const std::shared_ptr<DfxElfMaps> head)
     }
 
     if (!map_->IsValid()) {
-        DfxLogWarn("No elf map:%s.", map_->GetMapPath().c_str());
+        DFXLOG_WARN("No elf map:%s.", map_->GetMapPath().c_str());
         return 0;
     }
 
     std::shared_ptr<DfxElfMap> map = nullptr;
     if (!head->FindMapByPath(map_->GetMapPath(), map)) {
-        DfxLogWarn("Fail to find Map:%s.", map_->GetMapPath().c_str());
+        DFXLOG_WARN("Fail to find Map:%s.", map_->GetMapPath().c_str());
         return 0;
     }
     return CalculateRelativePc(map);
@@ -197,7 +197,7 @@ std::string DfxFrame::ToString() const
         index_,
         relativePc_,
         mapName.c_str()) <= 0) {
-        DfxLogError("%s :: snprintf_s failed, mapName: %s", __func__, mapName.c_str());
+        DFXLOG_ERROR("%s :: snprintf_s failed, mapName: %s", __func__, mapName.c_str());
     }
 
     std::ostringstream ss;
