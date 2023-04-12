@@ -303,7 +303,7 @@ HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest005, TestSize.Level
     log[2] = log[2] + std::to_string(testPid2);
     log[3] = log[3] + testProcess2;
     log[4] = log[4] + std::to_string(testPid3);
-    log[5] = log[5] + "com.ohos.system";
+    log[5] = log[5] + "m.ohos.systemui";
     string::size_type idx;
     int expectNum = sizeof(log) / sizeof(log[0]);
     int j = 0;
