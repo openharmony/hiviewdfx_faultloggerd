@@ -57,7 +57,7 @@ bool ReportTraceInfo(RustPanicInfo *info)
 
     HiSysEventWrite(HiSysEvent::Domain::RELIABILITY, KEY_RUST_PANIC, HiSysEvent::EventType::FAULT,
         "MODULE", module, "REASON", panicReason, "PID", getpid(), "TID", gettid(), "UID", getuid(),
-        "SUMMARY", threadLabel + trace, "HAPPEN_TIME", std::to_string(GetTimeMilliSeconds()));
+        "SUMMARY", threadLabel + trace, "HAPPEN_TIME", GetTimeMilliSeconds());
 
     return true;
 }
