@@ -385,6 +385,10 @@ static int DoProcessDump(void* arg)
     int startTime = (int)time(NULL);
     bool isTimeout = false;
     g_request.recycleTid = syscall(SYS_gettid);
+    pthread_setname_np(pthread_self(), "dump_tmp_thread");
+    struct sched_param schedParam;
+    schedParam.sched_priority = 0;
+    pthread_setschedparam(pthread_self(), SCHED_FIFO, &schedParam);
     // set privilege for dump ourself
     int prevDumpableStatus = prctl(PR_GET_DUMPABLE);
     bool isTracerStatusModified = SetDumpState();
