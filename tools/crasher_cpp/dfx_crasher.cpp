@@ -123,11 +123,15 @@ NOINLINE int DfxCrasher::RaiseIllegalInstructionException() const
 
 NOINLINE int DfxCrasher::IllegalInstructionException(void) const
 {
-    char mes[] = "ABCDEFGHIJ";
-    char* ptr = mes;
-    ptr = nullptr;
-    *ptr = 0;
-
+#if defined(__aarch64__)
+    __asm__ volatile(".word 0\n");
+#elif defined(__arm__)
+    __asm__ volatile(".word 0xe7f0def0\n");
+#elif defined(__x86_64__)
+    __asm__ volatile("ud2\n");
+#else
+#error
+#endif
     return 0;
 }
 
