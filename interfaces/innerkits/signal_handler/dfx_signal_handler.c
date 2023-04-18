@@ -88,7 +88,7 @@ void __attribute__((constructor)) InitHandler(void)
 
 static struct ProcessDumpRequest g_request;
 static struct ProcInfo g_procInfo;
-static void *g_reservedChildStack;
+static void *g_reservedChildStack = NULL;
 static pthread_mutex_t g_signalHandlerMutex = PTHREAD_MUTEX_INITIALIZER;
 static int g_pipefd[2] = {-1, -1};
 static BOOL g_hasInit = FALSE;
@@ -324,6 +324,7 @@ static void ResetSignalHandlerIfNeed(int sig)
 
 static void PauseMainThreadHandler(int sig)
 {
+    DFXLOG_INFO("Crash(%d) in child thread(%d), lock main thread.", sig, GetTid());
     // only work when subthread crash and send SIGDUMP to mainthread.
     pthread_mutex_lock(&g_signalHandlerMutex);
     pthread_mutex_unlock(&g_signalHandlerMutex);
@@ -466,7 +467,7 @@ static void ForkAndDoProcessDump(void)
 static void DFX_SignalHandler(int sig, siginfo_t *si, void *context)
 {
     if (sig == SIGDUMP && g_isDumping) {
-        DFXLOG_INFO("Current Process is dumping stacktrace now.");
+        DFXLOG_WARN("Current Process is dumping stacktrace now.");
         return;
     }
 

@@ -20,6 +20,7 @@
 #include <libunwind_i-ohos.h>
 #include "dfx_define.h"
 #include "dfx_regs.h"
+#include "dfx_regs_define.h"
 
 namespace OHOS {
 namespace HiviewDFX {
@@ -71,55 +72,63 @@ int FpUnwinder::DlIteratePhdrCallback(struct dl_phdr_info *info, size_t size, vo
 
 bool FpUnwinder::UnwindWithContext(unw_context_t& context, size_t skipFrameNum)
 {
-#ifdef __aarch64__
-    uintptr_t fp = context.uc_mcontext.regs[29]; // 29 : fp location
-    uintptr_t pc = context.uc_mcontext.pc;
+    std::shared_ptr<DfxRegs> dfxregs = DfxRegs::Create();
+#if defined(__arm__)
+    dfxregs->SetFP(context.regs[REG_ARM_R11]);
+    dfxregs->SetPC(context.regs[REG_ARM_R15]);
+#elif defined(__aarch64__)
+    dfxregs->SetFP(context.uc_mcontext.regs[REG_AARCH64_X29]);
+    dfxregs->SetPC(context.uc_mcontext.pc);
+#else
+#program message("Unsupported architecture")
+#endif
+    uintptr_t fp = dfxregs->GetFP();
+    uintptr_t pc = dfxregs->GetPC();
 
     size_t index = 0;
+    size_t curIndex = 0;
     do {
         if (index < skipFrameNum) {
             index++;
             continue;
         }
+        curIndex = index - skipFrameNum;
 
         NativeFrame frame;
-        frame.index = index - skipFrameNum;
+        frame.index = curIndex;
         frame.pc = index == 0 ? pc : pc - 4; // 4 : aarch64 instruction size
         frame.fp = fp;
         frames_.emplace_back(frame);
         index++;
-    } while (Step(fp, pc) && (index < BACK_STACK_MAX_STEPS));
-#endif
+    } while (Step(fp, pc) && (curIndex < BACK_STACK_MAX_STEPS));
     return (frames_.size() > 0);
 }
 
-bool FpUnwinder::UnwindWithRegs(size_t skipFrameNum)
+bool FpUnwinder::Unwind(size_t skipFrameNum)
 {
-#ifdef __aarch64__
-    uintptr_t regs[FP_MINI_REGS_SIZE] = {0};
-    std::shared_ptr<DfxRegs> dfxregs = DfxRegs::Create();
-    dfxregs->GetFramePointerMiniRegs(regs);
-    uintptr_t fp = regs[0]; // x29
-    uintptr_t pc = regs[3]; // x32
+    std::shared_ptr<DfxRegs> dfxregs = DfxRegs::Create(FP_UNWIND);
+    uintptr_t fp = dfxregs->GetFP();
+    uintptr_t pc = dfxregs->GetPC();
 
-    // skip get mini regs function
-    skipFrameNum += 1;
+    // skip GetFramePointerMiniRegs and Create function
+    skipFrameNum += 2;
 
     size_t index = 0;
+    size_t curIndex = 0;
     do {
         if (index < skipFrameNum) {
             index++;
             continue;
         }
+        curIndex = index - skipFrameNum;
 
         NativeFrame frame;
-        frame.index = index - skipFrameNum;
+        frame.index = curIndex;
         frame.pc = index == 0 ? pc : pc - 4; // 4 : aarch64 instruction size
         frame.fp = fp;
         frames_.emplace_back(frame);
         index++;
-    } while (Step(fp, pc) && ((index - skipFrameNum) < BACK_STACK_MAX_STEPS));
-#endif
+    } while (Step(fp, pc) && (curIndex < BACK_STACK_MAX_STEPS));
     return (frames_.size() > 0);
 }
 

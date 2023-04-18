@@ -22,6 +22,7 @@
 #include <cstdlib>
 #include <securec.h>
 #include "dfx_define.h"
+#include "dfx_regs_define.h"
 
 namespace OHOS {
 namespace HiviewDFX {
@@ -70,30 +71,47 @@ std::string DfxRegsX86_64::PrintRegs() const
     std::vector<uintptr_t> regs = GetRegsData();
 
     PrintFormat(buf, sizeof(buf), "  rax:%016lx rdx:%016lx rcx:%016lx rbx:%016lx\n", \
-                regs[REG_RAX], regs[REG_RDX], regs[REG_RCX], regs[REG_RBX]);
+        regs[REG_X86_64_RAX], regs[REG_X86_64_RDX], regs[REG_X86_64_RCX], regs[REG_X86_64_RBX]);
 
     PrintFormat(buf + strlen(buf), sizeof(buf) - strlen(buf), "  rsi:%016lx rdi:%016lx rbp:%016lx rsp:%016lx\n", \
-                regs[REG_RSI], regs[REG_RDI], regs[REG_RBP], regs[REG_RSP]);
+        regs[REG_X86_64_RSI], regs[REG_X86_64_RDI], regs[REG_X86_64_RBP], regs[REG_X86_64_RSP]);
 
     PrintFormat(buf + strlen(buf), sizeof(buf) - strlen(buf), "  r8:%016lx r9:%016lx r10:%016lx r11:%016lx\n", \
-                regs[REG_R8], regs[REG_R9], regs[REG_R10], regs[REG_R11]);
+        regs[REG_X86_64_R8], regs[REG_X86_64_R9], regs[REG_X86_64_R10], regs[REG_X86_64_R11]);
 
     PrintFormat(buf + strlen(buf), sizeof(buf) - strlen(buf), \
-                "  r12:%016lx r13:%016lx r14:%016lx r15:%016lx rip:%016lx\n", \
-                regs[REG_R12], regs[REG_R13], regs[REG_R14], regs[REG_R15], regs[REG_RIP]);
+        "  r12:%016lx r13:%016lx r14:%016lx r15:%016lx rip:%016lx\n", \
+        regs[REG_X86_64_R12], regs[REG_X86_64_R13], regs[REG_X86_64_R14], regs[REG_X86_64_R15], regs[REG_X86_64_RIP]);
     
     regString = regString + std::string(buf);
     return regString;
 }
 
+uintptr_t DfxRegsX86_64::GetFP() const
+{
+    return 0;
+}
+
 uintptr_t DfxRegsX86_64::GetPC() const
 {
-    return regsData_[REG_RIP];
+    return regsData_[REG_X86_64_RIP];
 }
 
 uintptr_t DfxRegsX86_64::GetLR() const
 {
     return 0;
+}
+
+void DfxRegsX86_64::SetFP(uintptr_t reg)
+{
+}
+
+void DfxRegsX86_64::SetPC(uintptr_t reg)
+{
+    if (regsData_.size() < REG_X86_64_LAST) {
+        regsData_.resize(REG_X86_64_LAST);
+    }
+    regsData_[REG_X86_64_RIP] = reg;
 }
 } // namespace HiviewDFX
 } // namespace OHOS

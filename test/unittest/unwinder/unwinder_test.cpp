@@ -135,7 +135,7 @@ HWTEST_F(UnwinderTest, UnwinderTest001, TestSize.Level2)
 
 /**
  * @tc.name: UnwinderTest002
- * @tc.desc: test fp unwinder UnwindWithRegs
+ * @tc.desc: test fp unwinder Unwind
  * @tc.type: FUNC
  */
 HWTEST_F(UnwinderTest, UnwinderTest002, TestSize.Level2)
@@ -147,7 +147,7 @@ HWTEST_F(UnwinderTest, UnwinderTest002, TestSize.Level2)
     if (child == 0) {
         ElapsedTime counter2;
         FpUnwinder unwinder;
-        ASSERT_EQ(true, unwinder.UnwindWithRegs(0));
+        ASSERT_EQ(true, unwinder.Unwind(0));
         GTEST_LOG_(INFO) << "ChildProcessElapse:" << counter2.Elapsed();
         const auto& frames = unwinder.GetFrames();
         ASSERT_GT(frames.size(), 0);

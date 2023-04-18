@@ -218,7 +218,7 @@ int TestThread(int threadId, int sig)
  */
 HWTEST_F(SignalHandlerTest, LocalHandlerTest001, TestSize.Level2)
 {
-    GTEST_LOG_(INFO) << "DfxProcessDumpTest020: start.";
+    GTEST_LOG_(INFO) << "LocalHandlerTest001: start.";
     pid_t pid = fork();
     if (pid < 0) {
         GTEST_LOG_(ERROR) << "Failed to fork new test process.";
@@ -233,7 +233,7 @@ HWTEST_F(SignalHandlerTest, LocalHandlerTest001, TestSize.Level2)
         bool ret = CheckLocalCrashKeyWords(GetCppCrashFileName(pid), pid, SIGILL);
         ASSERT_TRUE(ret);
     }
-    GTEST_LOG_(INFO) << "DfxProcessDumpTest020: end.";
+    GTEST_LOG_(INFO) << "LocalHandlerTest001: end.";
 }
 
 /**
