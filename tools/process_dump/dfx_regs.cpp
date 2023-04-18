@@ -25,34 +25,40 @@
 
 namespace OHOS {
 namespace HiviewDFX {
-std::shared_ptr<DfxRegs> DfxRegs::Create()
+std::shared_ptr<DfxRegs> DfxRegs::Create(int mode)
 {
-    std::shared_ptr<DfxRegs> regs;
+    std::shared_ptr<DfxRegs> dfxregs;
 #if defined(__arm__)
-    regs = std::make_shared<DfxRegsArm>();
+    dfxregs = std::make_shared<DfxRegsArm>();
 #elif defined(__aarch64__)
-    regs = std::make_shared<DfxRegsArm64>();
+    dfxregs = std::make_shared<DfxRegsArm64>();
 #elif defined(__x86_64__)
-    regs = std::make_shared<DfxRegsX86_64>();
+    dfxregs = std::make_shared<DfxRegsX86_64>();
 #else
 #error "Unsupported architecture"
 #endif
-    return regs;
+    if (mode == FP_UNWIND) {
+        uintptr_t regs[FP_MINI_REGS_SIZE] = {0};
+        dfxregs->GetFramePointerMiniRegs(regs);
+        dfxregs->SetFP(regs[0]); // x29 or r11
+        dfxregs->SetPC(regs[3]); // x32 or r15
+    }
+    return dfxregs;
 }
 
 std::shared_ptr<DfxRegs> DfxRegs::CreateFromContext(const ucontext_t &context)
 {
-    std::shared_ptr<DfxRegs> regs;
+    std::shared_ptr<DfxRegs> dfxregs;
 #if defined(__arm__)
-    regs = std::make_shared<DfxRegsArm>(context);
+    dfxregs = std::make_shared<DfxRegsArm>(context);
 #elif defined(__aarch64__)
-    regs = std::make_shared<DfxRegsArm64>(context);
+    dfxregs = std::make_shared<DfxRegsArm64>(context);
 #elif defined(__x86_64__)
-    regs = std::make_shared<DfxRegsX86_64>(context);
+    dfxregs = std::make_shared<DfxRegsX86_64>(context);
 #else
 #error "Unsupported architecture"
 #endif
-    return regs;
+    return dfxregs;
 }
 
 std::vector<uintptr_t> DfxRegs::GetRegsData() const

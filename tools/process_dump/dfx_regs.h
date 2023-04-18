@@ -25,13 +25,19 @@
 
 namespace OHOS {
 namespace HiviewDFX {
+enum UnwindMode {
+    DWARF_UNWIND = 0,                   // Dwarf
+    FP_UNWIND,                          // FP
+    QUICKEN_UNWIND,                     // Quicken
+};
+
 #define FP_MINI_REGS_SIZE 4
 
 class DfxRegs {
 public:
     DfxRegs() = default;
     virtual ~DfxRegs() {};
-    static std::shared_ptr<DfxRegs> Create();
+    static std::shared_ptr<DfxRegs> Create(int mode = 0);
     static std::shared_ptr<DfxRegs> CreateFromContext(const ucontext_t &context);
 
     std::vector<uintptr_t> GetRegsData() const;
@@ -40,8 +46,11 @@ public:
     virtual std::string PrintRegs() const = 0;
     virtual std::string GetSpecialRegisterName(uintptr_t val) const = 0;
     virtual void GetFramePointerMiniRegs(void *regs) = 0;
+    virtual uintptr_t GetFP() const = 0;
     virtual uintptr_t GetPC() const = 0;
     virtual uintptr_t GetLR() const = 0;
+    virtual void SetFP(uintptr_t reg) = 0;
+    virtual void SetPC(uintptr_t reg) = 0;
 
     int PrintFormat(char *buf, int size, const char *format, ...) const;
 protected:
@@ -56,8 +65,11 @@ public:
     std::string PrintRegs() const override;
     std::string GetSpecialRegisterName(uintptr_t val) const override;
     void GetFramePointerMiniRegs(void *regs) override;
+    uintptr_t GetFP() const override;
     uintptr_t GetPC() const override;
     uintptr_t GetLR() const override;
+    void SetFP(uintptr_t reg) override;
+    void SetPC(uintptr_t reg) override;
 };
 
 class DfxRegsArm64 : public DfxRegs {
@@ -68,8 +80,11 @@ public:
     std::string PrintRegs() const override;
     std::string GetSpecialRegisterName(uintptr_t val) const override;
     void GetFramePointerMiniRegs(void *regs) override;
+    uintptr_t GetFP() const override;
     uintptr_t GetPC() const override;
     uintptr_t GetLR() const override;
+    void SetFP(uintptr_t reg) override;
+    void SetPC(uintptr_t reg) override;
 };
 
 class DfxRegsX86_64 : public DfxRegs {
@@ -80,8 +95,11 @@ public:
     std::string PrintRegs() const override;
     std::string GetSpecialRegisterName(uintptr_t val) const override;
     void GetFramePointerMiniRegs(void *regs) override;
+    uintptr_t GetFP() const override;
     uintptr_t GetPC() const override;
     uintptr_t GetLR() const override;
+    void SetFP(uintptr_t reg) override;
+    void SetPC(uintptr_t reg) override;
 };
 } // namespace HiviewDFX
 } // namespace OHOS

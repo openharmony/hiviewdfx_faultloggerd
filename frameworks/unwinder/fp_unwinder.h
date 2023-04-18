@@ -29,7 +29,7 @@ public:
     ~FpUnwinder();
 
     bool UnwindWithContext(unw_context_t& context, size_t skipFrameNum);
-    bool UnwindWithRegs(size_t skipFrameNum);
+    bool Unwind(size_t skipFrameNum);
     void UpdateFrameInfo();
     const std::vector<NativeFrame>& GetFrames() const;
 private:

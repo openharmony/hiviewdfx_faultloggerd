@@ -89,31 +89,31 @@ std::string DfxRegsArm64::PrintRegs() const
     std::vector<uintptr_t> regs = GetRegsData();
 
     PrintFormat(buf, sizeof(buf), "x0:%016lx x1:%016lx x2:%016lx x3:%016lx\n", \
-                regs[REG_AARCH64_X0], regs[REG_AARCH64_X1], regs[REG_AARCH64_X2], regs[REG_AARCH64_X3]);
+        regs[REG_AARCH64_X0], regs[REG_AARCH64_X1], regs[REG_AARCH64_X2], regs[REG_AARCH64_X3]);
 
     PrintFormat(buf + strlen(buf), sizeof(buf) - strlen(buf), "x4:%016lx x5:%016lx x6:%016lx x7:%016lx\n", \
-                regs[REG_AARCH64_X4], regs[REG_AARCH64_X5], regs[REG_AARCH64_X6], regs[REG_AARCH64_X7]);
+        regs[REG_AARCH64_X4], regs[REG_AARCH64_X5], regs[REG_AARCH64_X6], regs[REG_AARCH64_X7]);
 
     PrintFormat(buf + strlen(buf), sizeof(buf) - strlen(buf), "x8:%016lx x9:%016lx x10:%016lx x11:%016lx\n", \
-                regs[REG_AARCH64_X8], regs[REG_AARCH64_X9], regs[REG_AARCH64_X10], regs[REG_AARCH64_X11]);
+        regs[REG_AARCH64_X8], regs[REG_AARCH64_X9], regs[REG_AARCH64_X10], regs[REG_AARCH64_X11]);
 
     PrintFormat(buf + strlen(buf), sizeof(buf) - strlen(buf), "x12:%016lx x13:%016lx x14:%016lx x15:%016lx\n", \
-                regs[REG_AARCH64_X12], regs[REG_AARCH64_X13], regs[REG_AARCH64_X14], regs[REG_AARCH64_X15]);
+        regs[REG_AARCH64_X12], regs[REG_AARCH64_X13], regs[REG_AARCH64_X14], regs[REG_AARCH64_X15]);
 
     PrintFormat(buf + strlen(buf), sizeof(buf) - strlen(buf), "x16:%016lx x17:%016lx x18:%016lx x19:%016lx\n", \
-                regs[REG_AARCH64_X16], regs[REG_AARCH64_X17], regs[REG_AARCH64_X18], regs[REG_AARCH64_X19]);
+        regs[REG_AARCH64_X16], regs[REG_AARCH64_X17], regs[REG_AARCH64_X18], regs[REG_AARCH64_X19]);
 
     PrintFormat(buf + strlen(buf), sizeof(buf) - strlen(buf), "x20:%016lx x21:%016lx x22:%016lx x23:%016lx\n", \
-                regs[REG_AARCH64_X20], regs[REG_AARCH64_X21], regs[REG_AARCH64_X22], regs[REG_AARCH64_X23]);
+        regs[REG_AARCH64_X20], regs[REG_AARCH64_X21], regs[REG_AARCH64_X22], regs[REG_AARCH64_X23]);
 
     PrintFormat(buf + strlen(buf), sizeof(buf) - strlen(buf), "x24:%016lx x25:%016lx x26:%016lx x27:%016lx\n", \
-                regs[REG_AARCH64_X24], regs[REG_AARCH64_X25], regs[REG_AARCH64_X26], regs[REG_AARCH64_X27]);
+        regs[REG_AARCH64_X24], regs[REG_AARCH64_X25], regs[REG_AARCH64_X26], regs[REG_AARCH64_X27]);
 
     PrintFormat(buf + strlen(buf), sizeof(buf) - strlen(buf), "x28:%016lx x29:%016lx\n", \
-                regs[REG_AARCH64_X28], regs[REG_AARCH64_X29]);
+        regs[REG_AARCH64_X28], regs[REG_AARCH64_X29]);
 
     PrintFormat(buf + strlen(buf), sizeof(buf) - strlen(buf), "lr:%016lx sp:%016lx pc:%016lx\n", \
-                regs[REG_AARCH64_X30], regs[REG_AARCH64_SP], regs[REG_AARCH64_PC]);
+        regs[REG_AARCH64_X30], regs[REG_AARCH64_SP], regs[REG_AARCH64_PC]);
 
     regString = regString + std::string(buf);
     return regString;
@@ -132,6 +132,11 @@ void DfxRegsArm64::GetFramePointerMiniRegs(void *regs)
     : "x12", "x13", "memory");
 }
 
+uintptr_t DfxRegsArm64::GetFP() const
+{
+    return regsData_[REG_AARCH64_FP];
+}
+
 uintptr_t DfxRegsArm64::GetPC() const
 {
     return regsData_[REG_AARCH64_PC];
@@ -140,6 +145,22 @@ uintptr_t DfxRegsArm64::GetPC() const
 uintptr_t DfxRegsArm64::GetLR() const
 {
     return regsData_[REG_AARCH64_X30];
+}
+
+void DfxRegsArm64::SetFP(uintptr_t reg)
+{
+    if (regsData_.size() < REG_AARCH64_LAST) {
+        regsData_.resize(REG_AARCH64_LAST);
+    }
+    regsData_[REG_AARCH64_FP] = reg;
+}
+
+void DfxRegsArm64::SetPC(uintptr_t reg)
+{
+    if (regsData_.size() < REG_AARCH64_LAST) {
+        regsData_.resize(REG_AARCH64_LAST);
+    }
+    regsData_[REG_AARCH64_PC] = reg;
 }
 } // namespace HiviewDFX
 } // namespace OHOS

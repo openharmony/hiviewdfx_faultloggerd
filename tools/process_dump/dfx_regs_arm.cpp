@@ -76,16 +76,16 @@ std::string DfxRegsArm::PrintRegs() const
     std::vector<uintptr_t> regs = GetRegsData();
 
     PrintFormat(buf, sizeof(buf), "r0:%08x r1:%08x r2:%08x r3:%08x\n", \
-                regs[REG_ARM_R0], regs[REG_ARM_R1], regs[REG_ARM_R2], regs[REG_ARM_R3]);
+        regs[REG_ARM_R0], regs[REG_ARM_R1], regs[REG_ARM_R2], regs[REG_ARM_R3]);
 
     PrintFormat(buf + strlen(buf), sizeof(buf) - strlen(buf), "r4:%08x r5:%08x r6:%08x r7:%08x\n", \
-                regs[REG_ARM_R4], regs[REG_ARM_R5], regs[REG_ARM_R6], regs[REG_ARM_R7]);
+        regs[REG_ARM_R4], regs[REG_ARM_R5], regs[REG_ARM_R6], regs[REG_ARM_R7]);
 
     PrintFormat(buf + strlen(buf), sizeof(buf) - strlen(buf), "r8:%08x r9:%08x r10:%08x\n", \
-                regs[REG_ARM_R8], regs[REG_ARM_R9], regs[REG_ARM_R10]);
+        regs[REG_ARM_R8], regs[REG_ARM_R9], regs[REG_ARM_R10]);
 
     PrintFormat(buf + strlen(buf), sizeof(buf) - strlen(buf), "fp:%08x ip:%08x sp:%08x lr:%08x pc:%08x\n", \
-                regs[REG_ARM_R11], regs[REG_ARM_R12], regs[REG_ARM_R13], regs[REG_ARM_R14], regs[REG_ARM_R15]);
+        regs[REG_ARM_R11], regs[REG_ARM_R12], regs[REG_ARM_R13], regs[REG_ARM_R14], regs[REG_ARM_R15]);
 
     regString = regString + std::string(buf);
     return regString;
@@ -110,6 +110,11 @@ void DfxRegsArm::GetFramePointerMiniRegs(void *regs)
     : "r1", "r2", "memory");
 }
 
+uintptr_t DfxRegsArm::GetFP() const
+{
+    return regsData_[REG_ARM_R11];
+}
+
 uintptr_t DfxRegsArm::GetPC() const
 {
     return regsData_[REG_ARM_R15];
@@ -118,6 +123,22 @@ uintptr_t DfxRegsArm::GetPC() const
 uintptr_t DfxRegsArm::GetLR() const
 {
     return regsData_[REG_ARM_R14];
+}
+
+void DfxRegsArm::SetFP(uintptr_t reg)
+{
+    if (regsData_.size() < REG_ARM_LAST) {
+        regsData_.resize(REG_ARM_LAST);
+    }
+    regsData_[REG_ARM_R11] = reg;
+}
+
+void DfxRegsArm::SetPC(uintptr_t reg)
+{
+    if (regsData_.size() < REG_ARM_LAST) {
+        regsData_.resize(REG_ARM_LAST);
+    }
+    regsData_[REG_ARM_R15] = reg;
 }
 } // namespace HiviewDFX
 } // namespace OHOS
