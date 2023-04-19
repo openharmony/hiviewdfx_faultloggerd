@@ -399,6 +399,14 @@ static void RestoreDumpState(int prevState, bool isTracerStatusModified)
     }
 }
 
+static void SetSelfThreadParam(const char* name, int priority)
+{
+    pthread_setname_np(pthread_self(), name);
+    struct sched_param schedParam;
+    schedParam.sched_priority = priority;
+    pthread_setschedparam(pthread_self(), SCHED_FIFO, &schedParam);
+}
+
 static bool WaitChildPidExit(int childPid)
 {
     int ret = -1;
@@ -433,9 +441,11 @@ static int DoProcessDump(void* arg)
     (void)arg;
     int childPid = -1;
     g_request.recycleTid = syscall(SYS_gettid);
+    SetSelfThreadParam("dump_tmp_thread", 0);
     if (g_isDumping) {
         DFXLOG_INFO("Start DoProcessDump in tid(%d).", g_request.recycleTid);
     }
+
     // set privilege for dump ourself
     int prevDumpableStatus = prctl(PR_GET_DUMPABLE);
     bool isTracerStatusModified = SetDumpState();
