@@ -74,6 +74,9 @@ static const int SYMBOL_BUF_SIZE = 1024;
 static const int LOG_BUF_LEN = 1024;
 static const int FILE_WRITE_BUF_LEN = 4096;
 
+static const char TEST_BUNDLE_NAME[] = "com.example.myapplication";
+static const char TRUNCATE_TEST_BUNDLE_NAME[] = "e.myapplication";
+
 #define LIKELY(exp)       (__builtin_expect( !!(exp), true  ))
 #define UNLIKELY(exp)     (__builtin_expect( !!(exp), false ))
 

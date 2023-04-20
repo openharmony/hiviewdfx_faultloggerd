@@ -34,13 +34,65 @@ using namespace testing::ext;
 using namespace std;
 
 static const int BUF_LEN = 100;
+int g_testPid = 0;
+static std::string GetCmdResultFromPopen(const std::string& cmd)
+{
+    if (cmd.empty()) {
+        return "";
+    }
+    FILE* fp = popen(cmd.c_str(), "r");
+    if (fp == nullptr) {
+        return "";
+    }
+    const int bufSize = 128;
+    char buffer[bufSize];
+    std::string result = "";
+    while (!feof(fp)) {
+        if (fgets(buffer, bufSize - 1, fp) != nullptr) {
+            result += buffer;
+        }
+    }
+    pclose(fp);
+    return result;
+}
+
+static int GetServicePid(const std::string& serviceName)
+{
+    std::string cmd = "pidof " + serviceName;
+    std::string pidStr = GetCmdResultFromPopen(cmd);
+    int32_t pid = 0;
+    std::stringstream pidStream(pidStr);
+    pidStream >> pid;
+    printf("the pid of service(%s) is %s \n", serviceName.c_str(), pidStr.c_str());
+    return pid;
+}
+
+static int LaunchTestHap(const std::string& abilityName, const std::string& bundleName)
+{
+    std::string launchCmd = "/system/bin/aa start -a " + abilityName + " -b " + bundleName;
+    (void)GetCmdResultFromPopen(launchCmd);
+    sleep(2); // 2 : sleep 2s
+    return GetServicePid(bundleName);
+}
 
 void DfxProcessDumpTest::SetUpTestCase(void)
 {
+    std::string installCmd = "bm install -p /data/FaultloggerdJsTest.hap";
+    (void)GetCmdResultFromPopen(installCmd);
+    std::string testBundleName = TEST_BUNDLE_NAME;
+    std::string testAbiltyName = testBundleName + ".MainAbility";
+    g_testPid = LaunchTestHap(testAbiltyName, testBundleName);
 }
 
 void DfxProcessDumpTest::TearDownTestCase(void)
 {
+    std::string stopCmd = "/system/bin/aa force-stop ";
+    stopCmd += TEST_BUNDLE_NAME;
+    (void)GetCmdResultFromPopen(stopCmd);
+
+    std::string uninstallCmd = "bm uninstall -n ";
+    uninstallCmd += TEST_BUNDLE_NAME;
+    (void)GetCmdResultFromPopen(uninstallCmd);
 }
 
 void DfxProcessDumpTest::SetUp(void)
@@ -159,27 +211,6 @@ static bool CheckCppCrashKeyWords(const string& filePath, pid_t pid, int sig)
     return CheckKeyWords(filePath, keywords, length) == length;
 }
 
-static string GetCmdResultFromPopen(const string& cmd)
-{
-    if (cmd.empty()) {
-        return "";
-    }
-    FILE* fp = popen(cmd.c_str(), "r");
-    if (fp == nullptr) {
-        return "";
-    }
-    const int bufSize = 128;
-    char buffer[bufSize];
-    string result = "";
-    while (!feof(fp)) {
-        if (fgets(buffer, bufSize - 1, fp) != nullptr) {
-            result += buffer;
-        }
-    }
-    pclose(fp);
-    return result;
-}
-
 static int GetProcessPid(const string& applyName)
 {
     string procCMD = "pgrep '" + applyName + "'";
@@ -200,17 +231,6 @@ static int GetProcessPid(const string& applyName)
     return atoi(applyPid.c_str());
 }
 
-static int GetServicePid(const string& serviceName)
-{
-    string cmd = "pidof " + serviceName;
-    string pidStr = GetCmdResultFromPopen(cmd);
-    int32_t pid = 0;
-    stringstream pidStream(pidStr);
-    pidStream >> pid;
-    printf("the pid of service(%s) is %s \n", serviceName.c_str(), pidStr.c_str());
-    return pid;
-}
-
 static string ProcessDumpCommands(const string& cmds)
 {
     GTEST_LOG_(INFO) << "threadCMD = " << cmds;
@@ -229,14 +249,19 @@ static string ProcessDumpCommands(const string& cmds)
     return cmdLog;
 }
 
-static int LaunchTestHap(const string& abilityName, const string& bundleName)
+static bool CheckProcessComm(int pid)
 {
-    string launchCmd = "/system/bin/aa start -a " + abilityName + " -b " + bundleName;
-    (void)GetCmdResultFromPopen(launchCmd);
-    sleep(2); // 2 : sleep 2s
-    return GetServicePid(bundleName);
+    std::string cmd = "cat /proc/" + std::to_string(pid) + "/comm";
+    std::string comm = GetCmdResultFromPopen(cmd);
+    size_t pos = comm.find('\n');
+    if (pos != std::string::npos) {
+        comm.erase(pos, 1);
+    }
+    if (!strcmp(comm.c_str(), TRUNCATE_TEST_BUNDLE_NAME)) {
+        return true;
+    }
+    return false;
 }
-
 /**
  * @tc.name: DfxProcessDumpTest001
  * @tc.desc: test dumpcatcher -p [native process]
@@ -248,7 +273,6 @@ HWTEST_F(DfxProcessDumpTest, DfxProcessDumpTest001, TestSize.Level2)
     int testPid = GetProcessPid("accountmgr");
     string testCommand = "dumpcatcher -p " + to_string(testPid);
     string dumpRes = ProcessDumpCommands(testCommand);
-    GTEST_LOG_(INFO) << dumpRes;
     int count = 0;
     string log[] = {"Pid:", "Name:", "#00", "#01", "#02"};
     log[0] = log[0] + to_string(testPid);
@@ -258,11 +282,12 @@ HWTEST_F(DfxProcessDumpTest, DfxProcessDumpTest001, TestSize.Level2)
     for (int i = 0; i < len; i++) {
         idx = dumpRes.find(log[i]);
         if (idx != string::npos) {
-            GTEST_LOG_(INFO) << log[i];
             count++;
+        } else {
+            GTEST_LOG_(INFO) << "Can not find " << log[i];
         }
     }
-    ASSERT_EQ(count, len);
+    EXPECT_EQ(count, len) << dumpRes << "DfxProcessDumpTest001 Failed";
     GTEST_LOG_(INFO) << "DfxProcessDumpTest001: end.";
 }
 
@@ -277,7 +302,6 @@ HWTEST_F(DfxProcessDumpTest, DfxProcessDumpTest002, TestSize.Level2)
     int testPid = GetProcessPid("accountmgr");
     string testCommand = "dumpcatcher -p " + to_string(testPid) + " -t " + to_string(testPid);
     string dumpRes = ProcessDumpCommands(testCommand);
-    GTEST_LOG_(INFO) << dumpRes;
     int count = 0;
     string log[] = {"Pid:", "Name:", "#00", "#01", "#02"};
     log[0] = log[0] + to_string(testPid);
@@ -287,11 +311,12 @@ HWTEST_F(DfxProcessDumpTest, DfxProcessDumpTest002, TestSize.Level2)
     for (int i = 0; i < len; i++) {
         idx = dumpRes.find(log[i]);
         if (idx != string::npos) {
-            GTEST_LOG_(INFO) << log[i];
             count++;
+        } else {
+            GTEST_LOG_(INFO) << "Can not find " << log[i];
         }
     }
-    ASSERT_EQ(count, len);
+    EXPECT_EQ(count, len) << dumpRes << "DfxProcessDumpTest002 Failed";
     GTEST_LOG_(INFO) << "DfxProcessDumpTest002: end.";
 }
 
@@ -303,26 +328,31 @@ HWTEST_F(DfxProcessDumpTest, DfxProcessDumpTest002, TestSize.Level2)
 HWTEST_F(DfxProcessDumpTest, DfxProcessDumpTest003, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "DfxProcessDumpTest003: start.";
-    string testBundleName = "com.ohos.photos";
-    string testAbiltyName = testBundleName + ".MainAbility";
-    int testPid = LaunchTestHap(testAbiltyName, testBundleName);
-    string testCommand = "dumpcatcher -p " + to_string(testPid);
+    if (g_testPid == 0) {
+        GTEST_LOG_(ERROR) << "Failed to launch target hap.";
+        return;
+    }
+    if (!CheckProcessComm(g_testPid)) {
+        GTEST_LOG_(ERROR) << "Error process comm";
+        return;
+    }
+    string testCommand = "dumpcatcher -p " + to_string(g_testPid);
     string dumpRes = ProcessDumpCommands(testCommand);
-    GTEST_LOG_(INFO) << dumpRes;
     int count = 0;
     string log[] = {"Pid:", "Name:", "#00", "#01", "#02"};
-    log[0] = log[0] + to_string(testPid);
-    log[1] = log[1] + "com.ohos.photos";
+    log[0] = log[0] + to_string(g_testPid);
+    log[1] = log[1] + TRUNCATE_TEST_BUNDLE_NAME;
     string::size_type idx;
     int len = sizeof(log) / sizeof(log[0]);
     for (int i = 0; i < len; i++) {
         idx = dumpRes.find(log[i]);
         if (idx != string::npos) {
-            GTEST_LOG_(INFO) << log[i];
             count++;
+        } else {
+            GTEST_LOG_(INFO) << "Can not find " << log[i];
         }
     }
-    ASSERT_EQ(count, len);
+    EXPECT_EQ(count, len) << dumpRes << "DfxProcessDumpTest003 Failed";
     GTEST_LOG_(INFO) << "DfxProcessDumpTest003: end.";
 }
 
@@ -334,26 +364,31 @@ HWTEST_F(DfxProcessDumpTest, DfxProcessDumpTest003, TestSize.Level2)
 HWTEST_F(DfxProcessDumpTest, DfxProcessDumpTest004, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "DfxProcessDumpTest004: start.";
-    string testBundleName = "com.ohos.photos";
-    string testAbiltyName = testBundleName + ".MainAbility";
-    int testPid = LaunchTestHap(testAbiltyName, testBundleName);
-    string testCommand = "dumpcatcher -p " + to_string(testPid) + " -t " + to_string(testPid);
+    if (g_testPid == 0) {
+        GTEST_LOG_(ERROR) << "Failed to launch target hap.";
+        return;
+    }
+    if (!CheckProcessComm(g_testPid)) {
+        GTEST_LOG_(ERROR) << "Error process comm";
+        return;
+    }
+    string testCommand = "dumpcatcher -p " + to_string(g_testPid) + " -t " + to_string(g_testPid);
     string dumpRes = ProcessDumpCommands(testCommand);
-    GTEST_LOG_(INFO) << dumpRes;
     int count = 0;
     string log[] = {"Pid:", "Name:", "#00", "#01", "#02"};
-    log[0] = log[0] + to_string(testPid);
-    log[1] = log[1] + "com.ohos.photos";
+    log[0] = log[0] + to_string(g_testPid);
+    log[1] = log[1] + TRUNCATE_TEST_BUNDLE_NAME;
     string::size_type idx;
     int len = sizeof(log) / sizeof(log[0]);
     for (int i = 0; i < len; i++) {
         idx = dumpRes.find(log[i]);
         if (idx != string::npos) {
-            GTEST_LOG_(INFO) << log[i];
             count++;
+        } else {
+            GTEST_LOG_(INFO) << "Can not find " << log[i];
         }
     }
-    ASSERT_EQ(count, len);
+    EXPECT_EQ(count, len) << dumpRes << "DfxProcessDumpTest004 Failed";
     GTEST_LOG_(INFO) << "DfxProcessDumpTest004: end.";
 }
 
@@ -517,32 +552,35 @@ HWTEST_F(DfxProcessDumpTest, DfxProcessDumpTest012, TestSize.Level2)
 HWTEST_F(DfxProcessDumpTest, DfxProcessDumpTest013, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "DfxProcessDumpTest013: start.";
-    string testBundleName = "ohos.samples.clock";
-    string testAbiltyName = testBundleName + ".MainAbility";
-    int testPid = LaunchTestHap(testAbiltyName, testBundleName);
-    if (testPid == 0) {
+
+ 
+    if (g_testPid == 0) {
         GTEST_LOG_(ERROR) << "Failed to launch target hap.";
         return;
     }
+    if (!CheckProcessComm(g_testPid)) {
+        GTEST_LOG_(ERROR) << "Error process comm";
+        return;
+    }
     ProcInfo procinfo;
-    GTEST_LOG_(INFO) << "ppid = " << GetProcStatusByPid(testPid, procinfo);
-    string testCommand = "dumpcatcher -p " + to_string(testPid);
+    GTEST_LOG_(INFO) << "ppid = " << GetProcStatusByPid(g_testPid, procinfo);
+    string testCommand = "dumpcatcher -p " + to_string(g_testPid);
     string dumpRes = ProcessDumpCommands(testCommand);
-    GTEST_LOG_(INFO) << dumpRes;
     int count = 0;
     string log[] = {"Pid:", "Name:", "#00", "#01", "#02"};
-    log[0] = log[0] + to_string(testPid);
-    log[1] = log[1] + "ohos.samples.cl";
+    log[0] = log[0] + to_string(g_testPid);
+    log[1] = log[1] + TRUNCATE_TEST_BUNDLE_NAME;
     string::size_type idx;
     int len = sizeof(log) / sizeof(log[0]);
     for (int i = 0; i < len; i++) {
         idx = dumpRes.find(log[i]);
         if (idx != string::npos) {
-            GTEST_LOG_(INFO) << log[i];
             count++;
+        } else {
+            GTEST_LOG_(INFO) << "Can not find " << log[i];
         }
     }
-    ASSERT_EQ(count, len);
+    EXPECT_EQ(count, len) << dumpRes << "DfxProcessDumpTest013 Failed";
     GTEST_LOG_(INFO) << "DfxProcessDumpTest013: end.";
 }
 
@@ -554,30 +592,30 @@ HWTEST_F(DfxProcessDumpTest, DfxProcessDumpTest013, TestSize.Level2)
 HWTEST_F(DfxProcessDumpTest, DfxProcessDumpTest014, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "DfxProcessDumpTest014: start.";
-    string testBundleName = "ohos.samples.clock";
-    string testAbiltyName = testBundleName + ".MainAbility";
-    int testPid = LaunchTestHap(testAbiltyName, testBundleName);
-    if (testPid == 0) {
+    if (g_testPid == 0) {
         GTEST_LOG_(ERROR) << "Failed to launch target hap.";
         return;
     }
-    string testCommand = "dumpcatcher -p " + to_string(testPid) + " -t " + to_string(testPid);
+    if (!CheckProcessComm(g_testPid)) {
+        GTEST_LOG_(ERROR) << "Error process comm";
+        return;
+    }
+    string testCommand = "dumpcatcher -p " + to_string(g_testPid) + " -t " + to_string(g_testPid);
     string dumpRes = ProcessDumpCommands(testCommand);
-    GTEST_LOG_(INFO) << dumpRes;
     int count = 0;
     string log[] = {"Pid:", "Name:", "#00", "#01", "#02"};
-    log[0] = log[0] + to_string(testPid);
-    log[1] = log[1] + "ohos.samples.cl";
+    log[0] = log[0] + to_string(g_testPid);
+    log[1] = log[1] + TRUNCATE_TEST_BUNDLE_NAME;
     string::size_type idx;
     int len = sizeof(log) / sizeof(log[0]);
     for (int i = 0; i < len; i++) {
         idx = dumpRes.find(log[i]);
         if (idx != string::npos) {
-            GTEST_LOG_(INFO) << log[i];
             count++;
+        } else {
+            GTEST_LOG_(INFO) << "Can not find " << log[i];
         }
     }
-    ASSERT_EQ(count, len);
-    kill(testPid, SIGKILL);
+    EXPECT_EQ(count, len) << dumpRes << "DfxProcessDumpTest014 Failed";
     GTEST_LOG_(INFO) << "DfxProcessDumpTest014: end.";
 }

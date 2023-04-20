@@ -81,6 +81,7 @@ public:
     static int GetServicePid(const std::string& serviceName);
     static int LaunchTestHap(const std::string& abilityName, const std::string& bundleName);
     static void dumpCatchThread(int threadID);
+    static bool CheckProcessComm(int pid);
 
     static std::string rootTid[ARRAY_SIZE_HUNDRED];
     static std::string appTid[ARRAY_SIZE_HUNDRED];
