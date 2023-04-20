@@ -79,9 +79,9 @@ static const int FILE_WRITE_BUF_LEN = 4096;
 
 #define AT_SYMBOL_VISIBLE       __attribute__ ((visibility("default")))
 #define AT_SYMBOL_HIDDEN        __attribute__ ((visibility("hidden")))
-#define AT_ALWAYS_INLINE        __attribute__((__always_inline__))
+#define AT_ALWAYS_INLINE        __attribute__((always_inline))
 #define ATTRIBUTE_WARN_UNUSED __attribute__((warn_unused_result))
-#define ATTRIBUTE_UNUSED    __attribute__((__unused__))
+#define ATTRIBUTE_UNUSED    __attribute__((unused))
 
 #define OHOS_TEMP_FAILURE_RETRY(exp)            \
     ({                                          \

@@ -106,6 +106,16 @@ enum DumpPreparationStage {
     EXEC_FAIL,
 };
 
+static pid_t GetPid(void)
+{
+    return g_procInfo.pid;
+}
+
+static pid_t GetTid(void)
+{
+    return g_procInfo.tid;
+}
+
 TraceInfo HiTraceGetId(void) __attribute__((weak));
 static void FillTraceIdLocked(struct ProcessDumpRequest* request)
 {
@@ -147,6 +157,26 @@ static void FillLastFatalMessageLocked(int32_t sig)
     }
 
     (void)strncpy(g_request.lastFatalMessage, lastFatalMessage, sizeof(g_request.lastFatalMessage) - 1);
+}
+
+static void FillDumpRequest(int sig, siginfo_t *si, void *context)
+{
+    memset(&g_request, 0, sizeof(g_request));
+    g_request.type = sig;
+    g_request.pid = GetPid();
+    g_request.tid = syscall(SYS_gettid);
+    g_request.uid = getuid();
+    g_request.reserved = 0;
+    g_request.timeStamp = GetTimeMilliseconds();
+
+    GetThreadName(g_request.threadName, sizeof(g_request.threadName));
+    GetProcessName(g_request.processName, sizeof(g_request.processName));
+
+    memcpy(&(g_request.siginfo), si, sizeof(siginfo_t));
+    memcpy(&(g_request.context), context, sizeof(ucontext_t));
+
+    FillTraceIdLocked(&g_request);
+    FillLastFatalMessageLocked(sig);
 }
 
 static int32_t InheritCapabilities(void)
@@ -274,16 +304,6 @@ static int DFX_ExecDump(void *arg)
     return errno;
 }
 
-static pid_t GetPid(void)
-{
-    return g_procInfo.pid;
-}
-
-static pid_t GetTid(void)
-{
-    return g_procInfo.tid;
-}
-
 static bool IsMainThread(void)
 {
     if (g_procInfo.ns) {
@@ -298,7 +318,7 @@ static bool IsMainThread(void)
     return false;
 }
 
-static void ResetSignalHandlerIfNeed(int sig)
+static void ResetAndRethrowSignalIfNeed(int sig, siginfo_t *si)
 {
     if (sig == SIGDUMP) {
         return;
@@ -307,18 +327,20 @@ static void ResetSignalHandlerIfNeed(int sig)
     if (g_oldSigactionList[sig].sa_sigaction == NULL) {
         signal(sig, SIG_DFL);
         // real init will not handle crash signal
-        // crash in pid namespace may not exit even if rethrow the signal
-        // use exit instead
+        // crash in pid namespace may not exit even if rethrow the signal, use exit instead
         if (GetPid() == 1) {
             DFXLOG_ERROR("Sandbox process is about to exit with signal %d.", sig);
             _exit(sig);
         }
-        return;
-    }
-
-    if (sigaction(sig, &(g_oldSigactionList[sig]), NULL) != 0) {
+    } else if (sigaction(sig, &(g_oldSigactionList[sig]), NULL) != 0) {
         DFXLOG_ERROR("Failed to reset signal.");
         signal(sig, SIG_DFL);
+    }
+
+    if (syscall(SYS_rt_tgsigqueueinfo, GetPid(), syscall(SYS_gettid), si->si_signo, si) != 0) {
+        DFXLOG_ERROR("Failed to rethrow sig(%d), errno(%d).", si->si_signo, errno);
+    } else {
+        DFXLOG_INFO("Current process(%d) rethrow sig(%d).", GetPid(), si->si_signo);
     }
 }
 
@@ -377,19 +399,53 @@ static void RestoreDumpState(int prevState, bool isTracerStatusModified)
     }
 }
 
+static void SetSelfThreadParam(const char* name, int priority)
+{
+    pthread_setname_np(pthread_self(), name);
+    struct sched_param schedParam;
+    schedParam.sched_priority = priority;
+    pthread_setschedparam(pthread_self(), SCHED_FIFO, &schedParam);
+}
+
+static bool WaitChildPidExit(int childPid)
+{
+    int ret = -1;
+    int status = 0;
+    int startTime = (int)time(NULL);
+    DFXLOG_INFO("Start wait for child process(%d) exit.", childPid);
+    do {
+        errno = 0;
+        ret = waitpid(childPid, &status, WNOHANG);
+        if (ret < 0) {
+            DFXLOG_ERROR("Failed to wait child process terminated, errno(%d)", errno);
+            return false;
+        }
+
+        if (ret == childPid) {
+            break;
+        }
+
+        if ((int)time(NULL) - startTime > PROCESSDUMP_TIMEOUT) {
+            DFXLOG_INFO("(%d) wait for child process(%d) timeout", g_request.recycleTid, childPid);
+            break;
+        }
+        usleep(SIGNALHANDLER_TIMEOUT); // sleep 10ms
+    } while (1);
+    DFXLOG_INFO("(%d) wait for child process(%d) return with ret(%d) status(%d)",
+        g_request.recycleTid, childPid, ret, status);
+    return true;
+}
+
 static int DoProcessDump(void* arg)
 {
     (void)arg;
-    int status;
-    int ret = -1;
     int childPid = -1;
-    int startTime = (int)time(NULL);
-    bool isTimeout = false;
     g_request.recycleTid = syscall(SYS_gettid);
-    pthread_setname_np(pthread_self(), "dump_tmp_thread");
-    struct sched_param schedParam;
-    schedParam.sched_priority = 0;
-    pthread_setschedparam(pthread_self(), SCHED_FIFO, &schedParam);
+    SetSelfThreadParam("dump_tmp_thread", 0);
+    if (g_isDumping) {
+        DFXLOG_INFO("Start DoProcessDump in tid(%d).", g_request.recycleTid);
+    }
+
     // set privilege for dump ourself
     int prevDumpableStatus = prctl(PR_GET_DUMPABLE);
     bool isTracerStatusModified = SetDumpState();
@@ -405,41 +461,12 @@ static int DoProcessDump(void* arg)
         DFXLOG_ERROR("Failed to fork child process, errno(%d).", errno);
         goto out;
     }
-
-    do {
-        errno = 0;
-        ret = waitpid(childPid, &status, WNOHANG);
-        if (ret < 0) {
-            DFXLOG_ERROR("Failed to wait child process terminated, errno(%d)", errno);
-            goto out;
-        }
-
-        if (ret == childPid) {
-            break;
-        }
-
-        if ((int)time(NULL) - startTime > PROCESSDUMP_TIMEOUT) {
-            isTimeout = true;
-            break;
-        }
-        usleep(SIGNALHANDLER_TIMEOUT); // sleep 10ms
-    } while (1);
-    DFXLOG_INFO("(%d) wait for process(%d) return with ret(%d) status(%d) timeout(%d)",
-        g_request.recycleTid, childPid, ret, status, isTimeout);
+    WaitChildPidExit(childPid);
 out:
     g_isDumping = FALSE;
     RestoreDumpState(prevDumpableStatus, isTracerStatusModified);
     pthread_mutex_unlock(&g_signalHandlerMutex);
     return 0;
-}
-
-static void UnlockSignalHandlerMutex(void)
-{
-    if (pthread_mutex_trylock(&g_signalHandlerMutex) == 0) {
-        pthread_mutex_unlock(&g_signalHandlerMutex);
-    } else {
-        pthread_mutex_unlock(&g_signalHandlerMutex);
-    }
 }
 
 static void ForkAndDoProcessDump(void)
@@ -450,6 +477,7 @@ static void ForkAndDoProcessDump(void)
     if (childPid == 0) {
         g_request.vmPid = syscall(SYS_getpid);
         DFXLOG_INFO("Start DoProcessDump in VmProcess(%d).", g_request.vmPid);
+        DFX_SetUpSigAlarmAction();
         alarm(ALARM_TIME_S);
         _exit(DoProcessDump(NULL));
     } else if (childPid < 0) {
@@ -464,6 +492,7 @@ static void ForkAndDoProcessDump(void)
     int status;
     int ret = waitpid(childPid, &status, 0);
     RestoreDumpState(prevDumpableStatus, isTracerStatusModified);
+    pthread_mutex_unlock(&g_signalHandlerMutex);
     DFXLOG_INFO("(%d) wait for VmProcess(%d) return with ret(%d) status(%d)",
         getpid(), childPid, ret, status);
 }
@@ -481,47 +510,26 @@ static void DFX_SignalHandler(int sig, siginfo_t *si, void *context)
     GetProcStatus(&g_procInfo);
     BlockMainThreadIfNeed(sig);
     if (g_prevHandledSignal != SIGDUMP) {
-        ResetSignalHandlerIfNeed(sig);
-        if (syscall(SYS_rt_tgsigqueueinfo, GetPid(), GetTid(), si->si_signo, si) != 0) {
-            DFXLOG_ERROR("Failed to resend signal(%d), errno(%d).", si->si_signo, errno);
-        } else {
-            DFXLOG_INFO("Current process has encount a crash, rethrow sig(%d).", si->si_signo);
-        }
+        pthread_mutex_unlock(&g_signalHandlerMutex);
+        ResetAndRethrowSignalIfNeed(sig, si);
         return;
     }
     g_prevHandledSignal = sig;
     g_isDumping = TRUE;
-    memset(&g_request, 0, sizeof(g_request));
-    g_request.type = sig;
-    g_request.pid = GetPid();
-    g_request.tid = syscall(SYS_gettid);
-    g_request.uid = getuid();
-    g_request.reserved = 0;
-    g_request.timeStamp = GetTimeMilliseconds();
+
+    FillDumpRequest(sig, si, context);
     DFXLOG_INFO("DFX_SignalHandler :: sig(%d), pid(%d), tid(%d).", sig, g_request.pid, g_request.tid);
-
-    GetThreadName(g_request.threadName, sizeof(g_request.threadName));
-    GetProcessName(g_request.processName, sizeof(g_request.processName));
-
-    memcpy(&(g_request.siginfo), si, sizeof(siginfo_t));
-    memcpy(&(g_request.context), context, sizeof(ucontext_t));
-
-    FillTraceIdLocked(&g_request);
-    FillLastFatalMessageLocked(sig);
 
     // for protecting g_reservedChildStack
     // g_signalHandlerMutex will be unlocked in DoProcessDump function
     if (sig != SIGDUMP) {
         ForkAndDoProcessDump();
-        ResetSignalHandlerIfNeed(sig);
-        if (syscall(SYS_rt_tgsigqueueinfo, syscall(SYS_getpid), syscall(SYS_gettid), si->si_signo, si) != 0) {
-            DFXLOG_ERROR("Failed to resend signal(%d), errno(%d).", si->si_signo, errno);
-        }
-        UnlockSignalHandlerMutex();
+        ResetAndRethrowSignalIfNeed(sig, si);
     } else {
         int recycleTid = clone(DoProcessDump, g_reservedChildStack, CLONE_THREAD | CLONE_SIGHAND | CLONE_VM, NULL);
         if (recycleTid == -1) {
-            DFXLOG_ERROR("Failed to create thread for recycle dump process");
+            DFXLOG_ERROR("Failed to clone thread for recycle dump process, errno(%d)", errno);
+            g_isDumping = FALSE;
             pthread_mutex_unlock(&g_signalHandlerMutex);
         }
     }
