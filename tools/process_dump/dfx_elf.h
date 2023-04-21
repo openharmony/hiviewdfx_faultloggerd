@@ -33,7 +33,7 @@ using ElfLoadInfo = struct ElfLoadInfo;
 class DfxElf {
 public:
     DfxElf() = default;
-    ~DfxElf() = default;
+    ~DfxElf() { Close(); };
 
     static std::shared_ptr<DfxElf> Create(const std::string path);
     bool ParseElfHeader();
@@ -56,12 +56,14 @@ public:
     std::vector<ElfLoadInfo> GetInfos() const;
     void SetInfos(const std::vector<ElfLoadInfo> &infos);
 
+    void Close();
+
 private:
-    std::string name_;
-    std::string path_;
-    int32_t fd_;
-    size_t loadBias_;
-    uint64_t size_;
+    std::string name_ {""};
+    std::string path_{""};
+    int32_t fd_ {-1};
+    size_t loadBias_ {0};
+    uint64_t size_ {0};
     ElfW(Ehdr)header_;
     std::vector<ElfLoadInfo> infos_;
 };

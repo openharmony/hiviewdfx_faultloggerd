@@ -29,17 +29,6 @@
 #include "rustc_demangle.h"
 #endif
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-bool SymbolComparator(DfxSymbol s1, DfxSymbol s2)
-{
-    return (s1.start < s2.start);
-};
-#ifdef __cplusplus
-};
-#endif
-
 namespace OHOS {
 namespace HiviewDFX {
 
@@ -82,7 +71,9 @@ bool DfxSymbolsCache::GetNameAndOffsetByPc(struct unw_addr_space *as,
     offset = pc - symbol.start;
     name = symbol.funcName;
     cachedSymbols_.push_back(symbol);
-    std::sort(cachedSymbols_.begin(), cachedSymbols_.end(), SymbolComparator);
+    std::sort(cachedSymbols_.begin(), cachedSymbols_.end(), [](const DfxSymbol& a, const DfxSymbol& b) {
+        return a.start < b.start;
+    });
     return true;
 }
 

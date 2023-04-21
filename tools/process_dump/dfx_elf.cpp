@@ -60,29 +60,33 @@ std::shared_ptr<DfxElf> DfxElf::Create(const std::string path)
     struct stat elfStat;
     if (fstat(dfxElf->fd_, &elfStat) != 0) {
         DFXLOG_WARN("Fail to get elf size.");
-        close(dfxElf->fd_);
-        dfxElf->SetFd(-1);
+        dfxElf->Close();
         return nullptr;
     }
 
     dfxElf->SetSize((uint64_t)elfStat.st_size);
     if (!dfxElf->ParseElfHeader()) {
         DFXLOG_WARN("Fail to parse elf header.");
-        close(dfxElf->fd_);
-        dfxElf->SetFd(-1);
+        dfxElf->Close();
         return nullptr;
     }
 
     if (!dfxElf->ParseElfProgramHeader()) {
         DFXLOG_WARN("Fail to parse elf program header.");
-        close(dfxElf->GetFd());
-        dfxElf->SetFd(-1);
+        dfxElf->Close();
         return nullptr;
     }
 
-    close(dfxElf->GetFd());
-    dfxElf->SetFd(-1);
+    dfxElf->Close();
     return dfxElf;
+}
+
+void DfxElf::Close()
+{
+    if (fd_ > 0) {
+        close(fd_);
+        fd_ = -1;
+    }
 }
 
 bool DfxElf::ParseElfHeader()
