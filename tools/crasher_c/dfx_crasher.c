@@ -275,16 +275,14 @@ void *SleepThread(void *argv)
 
 NOINLINE int StackTop(void)
 {
-    printf("test StackTop");
-
+    printf("test StackTop\n");
+    register void* stackTop;
 #if defined(__arm__)
-    int stackTop;
     __asm__ volatile ("mov %0, sp":"=r"(stackTop)::);
-    printf("crasher_c: stack top is = %08x", stackTop);
+    printf("crasher_c: stack top is = %08x\n", (unsigned int)stackTop);
 #elif defined(__aarch64__)
-    uint64_t stackTop;
     __asm__ volatile ("mov %0, sp":"=r"(stackTop)::);
-    printf("crasher_c: stack top is = %16llx", (unsigned long long)stackTop);
+    printf("crasher_c: stack top is = %16llx\n", (unsigned long long)stackTop);
 #else
     return 0;
 #endif
@@ -298,7 +296,7 @@ NOINLINE int StackTop(void)
 
     int ret = 0; // for fixing compile error on x64
 #if defined(__arm__)
-    ret = fprintf(fp, "%08x", stackTop);
+    ret = fprintf(fp, "%08x", (unsigned int)stackTop);
 #elif defined(__aarch64__)
     ret = fprintf(fp, "%16llx", (unsigned long long)stackTop);
 #endif
@@ -309,13 +307,13 @@ NOINLINE int StackTop(void)
     if (ret == EOF) {
         printf("close error!");
     }
-    // trigger an error to crash
-    int a = 1;
-    int *b = &a;
-    b = NULL;
-    *b = 1;
 
-    return 0;
+#if defined(__arm__)
+    __asm__ volatile ("mov r1, #0\nldr r2, [r1]\n");
+#elif defined(__aarch64__)
+    __asm__ volatile ("mov x1, #0\nldr x2, [x1]\n");
+#endif
+    return ret;
 }
 
 void PrintUsage(void)

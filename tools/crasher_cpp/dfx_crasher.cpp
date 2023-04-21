@@ -290,11 +290,11 @@ NOINLINE int DfxCrasher::StackTop() const
     fout << std::hex << stackTop << std::endl;
     fout.close();
 
-    // trigger an error to crash
-    int a = 1;
-    int *b = &a;
-    b = nullptr;
-    *b = 1;
+#if defined(__arm__)
+    __asm__ volatile ("mov r1, #0\nldr r2, [r1]\n");
+#elif defined(__aarch64__)
+    __asm__ volatile ("mov x1, #0\nldr x2, [x1]\n");
+#endif
 
     return 0;
 }
@@ -302,7 +302,7 @@ NOINLINE int DfxCrasher::StackTop() const
 void DfxCrasher::PrintUsage() const
 {
     std::cout << "  usage: crasher CMD" << std::endl;
-    std::cout << "" << std::endl;
+    std::cout << "\n";
     std::cout << "  where CMD support:" << std::endl;
     std::cout << "  SIGFPE                raise a SIGFPE" << std::endl;
     std::cout << "  SIGILL                raise a SIGILL" << std::endl;
@@ -312,10 +312,10 @@ void DfxCrasher::PrintUsage() const
     std::cout << "  SIGBUS                raise a SIGBUS" << std::endl;
     std::cout << "  STACKTRACE            raise a SIGDUMP" << std::endl;
 
-    std::cout << "  triSIGILL             trigger a SIGILL\n" << std::endl;
-    std::cout << "  triSIGSEGV            trigger a SIGSEGV\n" << std::endl;
-    std::cout << "  triSIGTRAP            trigger a SIGTRAP\n" << std::endl;
-    std::cout << "  triSIGABRT            trigger a SIGABRT\n" << std::endl;
+    std::cout << "  triSIGILL             trigger a SIGILL" << std::endl;
+    std::cout << "  triSIGSEGV            trigger a SIGSEGV" << std::endl;
+    std::cout << "  triSIGTRAP            trigger a SIGTRAP" << std::endl;
+    std::cout << "  triSIGABRT            trigger a SIGABRT" << std::endl;
 
     std::cout << "  Loop                  trigger a ForeverLoop" << std::endl;
     std::cout << "  MaxStack              trigger SIGSEGV after 64 function call" << std::endl;
@@ -328,7 +328,7 @@ void DfxCrasher::PrintUsage() const
     std::cout << "  StackTop              trigger SIGSEGV to make sure stack top" << std::endl;
     std::cout << "  if you want the command execute in a sub thread" << std::endl;
     std::cout << "  add thread Prefix, e.g crasher thread-SIGFPE" << std::endl;
-    std::cout << std::endl;
+    std::cout << "\n";
 }
 
 NOINLINE static uint64_t CrashInLambda()
