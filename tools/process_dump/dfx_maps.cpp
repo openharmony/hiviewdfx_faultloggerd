@@ -16,6 +16,7 @@
 /* This files contains process dump dfx maps module. */
 #include "dfx_maps.h"
 
+#include <algorithm>
 #include <cinttypes>
 #include <climits>
 #include <cstdio>
@@ -46,6 +47,11 @@ std::shared_ptr<DfxElfMaps> DfxElfMaps::Create(pid_t pid)
     return Create(path);
 }
 
+std::shared_ptr<DfxElfMaps> DfxElfMaps::CreateFromLocal()
+{
+    return Create(std::string("/proc/self/maps"));
+}
+
 std::shared_ptr<DfxElfMaps> DfxElfMaps::Create(const std::string path)
 {
     char realPath[PATH_MAX] = {0};
@@ -74,8 +80,8 @@ std::shared_ptr<DfxElfMaps> DfxElfMaps::Create(const std::string path)
     int ret = fclose(fp);
     if (ret < 0) {
         DFXLOG_WARN("Fail to close maps info.");
-        return nullptr;
     }
+    dfxElfMaps->Sort();
     return dfxElfMaps;
 }
 
@@ -131,44 +137,50 @@ bool DfxElfMaps::FindMapByPath(const std::string path, std::shared_ptr<DfxElfMap
 
 bool DfxElfMaps::FindMapByAddr(uintptr_t address, std::shared_ptr<DfxElfMap>& map) const
 {
-    for (auto iter = maps_.begin(); iter != maps_.end(); iter++) {
-        if (((*iter)->GetMapBegin() < address) && ((*iter)->GetMapEnd() > address)) {
-            map = *iter;
+    if ((maps_.size() == 0) || (address == 0x0)) {
+        return false;
+    }
+
+    size_t first = 0;
+    size_t last = maps_.size();
+    while (first < last) {
+        size_t index = (first + last) / 2;
+        const auto& cur = maps_[index];
+        if (address >= cur->GetMapBegin() && address < cur->GetMapEnd()) {
+            map = cur;
             return true;
+        } else if (address < cur->GetMapBegin()) {
+            last = index;
+        } else {
+            first = index + 1;
         }
     }
     return false;
+}
+
+void DfxElfMaps::Sort(void) {
+    std::sort(maps_.begin(), maps_.end(), 
+        [](const std::shared_ptr<DfxElfMap>& a, const std::shared_ptr<DfxElfMap>& b) {
+        return a->GetMapBegin() < b->GetMapBegin();
+    });
 }
 
 bool DfxElfMaps::CheckPcIsValid(uint64_t pc) const
 {
     DFXLOG_DEBUG("%s :: pc(0x%x).", __func__, pc);
 
-    bool ret = false;
+    std::shared_ptr<DfxElfMap> map = nullptr;
+    if (FindMapByAddr(pc, map) == false) {
+        return false;
+    }
 
-    do {
-        if (pc == 0x0) {
-            break;
+    if (map != nullptr) {
+        std::string perms = map->GetMapPerms();
+        if (perms.find("x") != std::string::npos) {
+            return true;
         }
-
-        std::shared_ptr<DfxElfMap> map = nullptr;
-        for (auto iter = maps_.begin(); iter != maps_.end(); iter++) {
-            if (((*iter)->GetMapBegin() < pc) && ((*iter)->GetMapEnd() > pc)) {
-                map = *iter;
-                break;
-            }
-        }
-
-        if (map != nullptr) {
-            std::string perms = map->GetMapPerms();
-            if (perms.find("x") != std::string::npos) {
-                ret = true;
-            }
-        }
-    } while (false);
-
-    DFXLOG_DEBUG("%s :: ret(%d).", __func__, ret);
-    return ret;
+    }
+    return false;
 }
 
 bool DfxElfMap::IsValid()

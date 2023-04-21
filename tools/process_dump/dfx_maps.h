@@ -60,6 +60,7 @@ public:
     DfxElfMaps() = default;
     ~DfxElfMaps() = default;
     static std::shared_ptr<DfxElfMaps> Create(pid_t pid);
+    static std::shared_ptr<DfxElfMaps> CreateFromLocal();
     static std::shared_ptr<DfxElfMaps> Create(const std::string path);
     void InsertMapToElfMaps(std::shared_ptr<DfxElfMap> map);
     bool FindMapByPath(const std::string path, std::shared_ptr<DfxElfMap>& map) const;
@@ -68,6 +69,7 @@ public:
     std::vector<std::shared_ptr<DfxElfMap>> GetValues() const;
     bool CheckPcIsValid(uint64_t pc) const;
 
+    void Sort(void);
 private:
     std::vector<std::shared_ptr<DfxElfMap>> maps_;
 };

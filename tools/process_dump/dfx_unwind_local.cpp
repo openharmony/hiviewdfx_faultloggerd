@@ -321,7 +321,7 @@ bool DfxUnwindLocal::ExecLocalDumpUnwinding(unw_context_t *ctx, size_t skipFramN
         }
 
         index++;
-    } while ((unw_step(&cursor) > 0) && (index < BACK_STACK_MAX_STEPS));
+    } while ((unw_step(&cursor) > 0) && (curIndex_ < BACK_STACK_MAX_STEPS));
     return true;
 }
 
