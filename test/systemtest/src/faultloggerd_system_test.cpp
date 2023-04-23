@@ -309,12 +309,11 @@ int FaultLoggerdSystemTest::CheckCountNum(std::string& filePath, std::string& pi
 {
     std::map<std::string, std::string> CmdKey = {
 #if defined(__LP64__)
-        { std::string("triSIGILL"),  std::string("SIGTRAP") },
         { std::string("triSIGTRAP"), std::string("SIGILL") },
 #else
-        { std::string("triSIGILL"),  std::string("SIGILL") },
         { std::string("triSIGTRAP"), std::string("SIGTRAP") },
 #endif
+        { std::string("triSIGILL"),  std::string("SIGILL") },
         { std::string("triSIGSEGV"), std::string("SIGSEGV") },
         { std::string("MaxStack"), std::string("SIGSEGV") },
         { std::string("MaxMethod"), std::string("SIGSEGV") },
@@ -397,11 +396,7 @@ int FaultLoggerdSystemTest::CheckCountNumStackTop(std::string& filePath, std::st
 {
     std::string sp = FaultLoggerdSystemTest::GetStackTop();
     std::map<std::string, std::string> CmdKey = {
-#if defined(__LP64__)
-        { std::string("StackTop"), std::string("SIGTRAP") },
-#else
-        { std::string("StackTop"), std::string("SIGILL") },
-#endif
+        { std::string("StackTop"), std::string("SIGSEGV") }
     };
     std::map<std::string, std::string>::iterator key;
     key = CmdKey.find(ErrorCMD);
