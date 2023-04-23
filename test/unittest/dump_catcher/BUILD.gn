@@ -67,7 +67,7 @@ if (defined(ohos_lite)) {
       "$faultloggerd_path/interfaces/innerkits/dump_catcher:libdfx_dumpcatcher",
       "//third_party/googletest:gtest_main",
     ]
-    if (product_name != "qemu-arm-linux-min") {
+    if (support_jsapi) {
       deps += [ "$faultloggerd_path/test/resource:FaultloggerdJsTest" ]
     }
     resource_config_file = "$faultloggerd_path/test/resource/ohos_test.xml"
