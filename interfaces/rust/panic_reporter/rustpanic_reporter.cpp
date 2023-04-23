@@ -43,10 +43,14 @@ bool ReportTraceInfo(RustPanicInfo *info)
         DFXLOG_ERROR("snprintf_s failed to format panic reason string");
     }
 
-    std::string module;
+    std::string processName;
     std::string threadName;
-    ReadProcessName(getpid(), module);
+    ReadProcessName(getpid(), processName);
     ReadThreadName(getpid(), threadName);
+    std::string module = processName;
+    if (module.find("/") != std::string::npos) {
+        module = processName.substr(processName.find_last_of("/") + 1);
+    }
 
     std::string threadLabel = "Thread name:" + threadName + "\n";
     std::string trace;
