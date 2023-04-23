@@ -70,10 +70,15 @@ void FaultLoggerdSystemTest::SetUpTestCase(void)
     chmod("/data/crasher_c", 0755); // 0755 : -rwxr-xr-x
     chmod("/data/crasher_cpp", 0755); // 0755 : -rwxr-xr-x
     chmod("/data/test_faultloggerd_pre", 0755); // 0755 : -rwxr-xr-x
+    std::string installCmd = "bm install -p /data/FaultloggerdJsTest.hap";
+    (void)GetCmdResultFromPopen(installCmd);
 }
 
 void FaultLoggerdSystemTest::TearDownTestCase(void)
 {
+    std::string uninstallCmd = "bm uninstall -n ";
+    uninstallCmd += TEST_BUNDLE_NAME;
+    (void)GetCmdResultFromPopen(uninstallCmd);
 }
 
 void FaultLoggerdSystemTest::SetUp(void)
@@ -732,6 +737,19 @@ void FaultLoggerdSystemTest::dumpCatchThread(int threadID)
     }
 }
 
+bool FaultLoggerdSystemTest::CheckProcessComm(int pid)
+{
+    std::string cmd = "cat /proc/" + std::to_string(pid) + "/comm";
+    std::string comm = GetCmdResultFromPopen(cmd);
+    size_t pos = comm.find('\n');
+    if (pos != std::string::npos) {
+        comm.erase(pos, 1);
+    }
+    if (!strcmp(comm.c_str(), TRUNCATE_TEST_BUNDLE_NAME)) {
+        return true;
+    }
+    return false;
+}
 namespace {
 #ifdef __pre__
 /**
@@ -1188,17 +1206,26 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0026, TestSize.Level2)
 HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0027, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest0027: start.";
-    std::string testBundleName = "com.ohos.photos";
+    std::string testBundleName = TEST_BUNDLE_NAME;
     std::string testAbiltyName = testBundleName + ".MainAbility";
     int testPid = LaunchTestHap(testAbiltyName, testBundleName);
+    if (testPid == 0) {
+        GTEST_LOG_(ERROR) << "Failed to launch target hap.";
+        return;
+    }
+    if (!CheckProcessComm(testPid)) {
+        GTEST_LOG_(ERROR) << "Error process comm";
+        return;
+    }
     DfxDumpCatcher dumplog;
     std::string msg = "";
     bool ret = dumplog.DumpCatchMix(testPid, 0, msg);
     GTEST_LOG_(INFO) << ret;
     GTEST_LOG_(INFO) << msg;
-    string log[] = { "Tid:", "Name:com.ohos.photos", "#00", "/system/bin/appspawn",
+    string log[] = { "Tid:", "Name:", "#00", "/system/bin/appspawn",
         "Name:DfxWatchdog", "Name:GC_WorkerThread", "Name:ace.bg.1"};
     log[0] += std::to_string(testPid);
+    log[1] += TRUNCATE_TEST_BUNDLE_NAME;
     string::size_type idx;
     int j = 0;
     int count = 0;
@@ -1225,16 +1252,25 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0027, TestSize.Level2)
 HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0028, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest0028: start.";
-    std::string testBundleName = "com.ohos.photos";
+    std::string testBundleName = TEST_BUNDLE_NAME;
     std::string testAbiltyName = testBundleName + ".MainAbility";
     int testPid = LaunchTestHap(testAbiltyName, testBundleName);
+    if (testPid == 0) {
+        GTEST_LOG_(ERROR) << "Failed to launch target hap.";
+        return;
+    }
+    if (!CheckProcessComm(testPid)) {
+        GTEST_LOG_(ERROR) << "Error process comm";
+        return;
+    }
     DfxDumpCatcher dumplog;
     std::string msg = "";
     bool ret = dumplog.DumpCatchMix(testPid, testPid, msg);
     GTEST_LOG_(INFO) << ret;
     GTEST_LOG_(INFO) << msg;
-    string log[] = { "Tid:", "Name:com.ohos.photos", "#00", "/system/bin/appspawn"};
+    string log[] = { "Tid:", "Name:", "#00", "/system/bin/appspawn"};
     log[0] += std::to_string(testPid);
+    log[1] += TRUNCATE_TEST_BUNDLE_NAME;
     string::size_type idx;
     int j = 0;
     int count = 0;
@@ -1260,9 +1296,17 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0028, TestSize.Level2)
 HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0029, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest0029: start.";
-    std::string testBundleName = "com.ohos.photos";
+    std::string testBundleName = TEST_BUNDLE_NAME;
     std::string testAbiltyName = testBundleName + ".MainAbility";
     int testPid = LaunchTestHap(testAbiltyName, testBundleName);
+    if (testPid == 0) {
+        GTEST_LOG_(ERROR) << "Failed to launch target hap.";
+        return;
+    }
+    if (!CheckProcessComm(testPid)) {
+        GTEST_LOG_(ERROR) << "Error process comm";
+        return;
+    }
     DfxDumpCatcher dumplog;
     std::string msg = "";
     bool ret = dumplog.DumpCatchMix(testPid, -1, msg);
@@ -1301,16 +1345,25 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0030, TestSize.Level2)
 HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0031, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest0031: start.";
-    std::string testBundleName = "com.ohos.photos";
+    std::string testBundleName = TEST_BUNDLE_NAME;
     std::string testAbiltyName = testBundleName + ".MainAbility";
     int testPid = LaunchTestHap(testAbiltyName, testBundleName);
+    if (testPid == 0) {
+        GTEST_LOG_(ERROR) << "Failed to launch target hap.";
+        return;
+    }
+    if (!CheckProcessComm(testPid)) {
+        GTEST_LOG_(ERROR) << "Error process comm";
+        return;
+    }
     std::string procCMD = "dumpcatcher -m -p " + std::to_string(testPid);
     string procDumpLog = FaultLoggerdSystemTest::ProcessDumpCommands(procCMD);
     GTEST_LOG_(INFO) << "procDumpLog: " << procDumpLog;
     int count = 0;
-    string log[] = { "Tid:", "Name:com.ohos.photos", "#00", "/system/bin/appspawn",
+    string log[] = { "Tid:", "Name:", "#00", "/system/bin/appspawn",
         "Name:DfxWatchdog", "Name:GC_WorkerThread", "Name:ace.bg.1"};
     log[0] += std::to_string(testPid);
+    log[1] += TRUNCATE_TEST_BUNDLE_NAME;
     string::size_type idx;
     int expectNum = sizeof(log) / sizeof(log[0]);
     for (int i = 0; i < expectNum; i++) {
@@ -1333,16 +1386,25 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0031, TestSize.Level2)
 HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0032, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest0032: start.";
-    std::string testBundleName = "com.ohos.photos";
+    std::string testBundleName = TEST_BUNDLE_NAME;
     std::string testAbiltyName = testBundleName + ".MainAbility";
     int testPid = LaunchTestHap(testAbiltyName, testBundleName);
+    if (testPid == 0) {
+        GTEST_LOG_(ERROR) << "Failed to launch target hap.";
+        return;
+    }
+    if (!CheckProcessComm(testPid)) {
+        GTEST_LOG_(ERROR) << "Error process comm";
+        return;
+    }
     std::string procCMD = "dumpcatcher -m -p " + std::to_string(testPid) +
         " -t " + std::to_string(testPid);
     string procDumpLog = FaultLoggerdSystemTest::ProcessDumpCommands(procCMD);
     GTEST_LOG_(INFO) << "procDumpLog: " << procDumpLog;
     int count = 0;
-    string log[] = { "Tid:", "Name:com.ohos.photos", "#00", "/system/bin/appspawn"};
+    string log[] = { "Tid:", "Name:", "#00", "/system/bin/appspawn"};
     log[0] += std::to_string(testPid);
+    log[1] += TRUNCATE_TEST_BUNDLE_NAME;
     string::size_type idx;
     int expectNum = sizeof(log) / sizeof(log[0]);
     for (int i = 0; i < 4; i++) {

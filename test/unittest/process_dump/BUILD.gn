@@ -100,6 +100,10 @@ if (defined(ohos_lite)) {
       "//third_party/libunwind:libunwind",
     ]
     external_deps = [ "c_utils:utils" ]
+    if (product_name != "qemu-arm-linux-min") {
+      deps += [ "$faultloggerd_path/test/resource:FaultloggerdJsTest" ]
+    }
+    resource_config_file = "$faultloggerd_path/test/resource/ohos_test.xml"
   }
 
   ohos_unittest("FaultStackUnittest") {
