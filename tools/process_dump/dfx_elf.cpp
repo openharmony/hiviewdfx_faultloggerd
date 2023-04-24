@@ -129,6 +129,7 @@ bool DfxElf::ParseElfProgramHeader()
         return false;
     }
 
+    bool firstExecLoadHeader = true;
     ElfW(Phdr) *phdrTable = (ElfW(Phdr) *)(static_cast<uint8_t*>(map) + startOffset);
     for (size_t i = 0; i < header_.e_phnum; i++) {
         ElfW(Phdr) * phdr = &(phdrTable[i]);
@@ -136,6 +137,11 @@ bool DfxElf::ParseElfProgramHeader()
             continue;
         }
         CreateLoadInfo(phdr->p_vaddr, phdr->p_offset);
+        // Only set the load bias from the first executable load header.
+        if (firstExecLoadHeader) {
+            loadBias_ = static_cast<uint64_t>(phdr->p_vaddr) - phdr->p_offset;
+        }
+        firstExecLoadHeader = false;
     }
     munmap(map, mapSize);
     return true;

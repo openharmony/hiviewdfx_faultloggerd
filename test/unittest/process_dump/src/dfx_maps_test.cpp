@@ -323,8 +323,8 @@ HWTEST_F (DfxMapsTest, DfxMapsRequestTest017, TestSize.Level2)
     GTEST_LOG_(INFO) << "DfxMapsRequestTest017: start.";
     std::shared_ptr<DfxElfMaps> dfxmap = std::make_shared<DfxElfMaps>();
     const std::string path = "/data";
-    std::shared_ptr<DfxElfMap> map = std::make_shared<DfxElfMap>();
-    bool flag = dfxmap->FindMapByPath(path, map);
+    std::vector<std::shared_ptr<DfxElfMap>> maps;
+    bool flag = dfxmap->FindMapByPath(path, maps);
     EXPECT_EQ(false, flag);
     GTEST_LOG_(INFO) << "DfxMapsRequestTest017: end.";
 }

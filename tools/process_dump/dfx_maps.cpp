@@ -35,6 +35,9 @@
 namespace OHOS {
 namespace HiviewDFX {
 static const int MAPINFO_SIZE = 256;
+ATTRIBUTE_UNUSED static constexpr int X86_ONE_STEP_NORMAL = 1;
+static constexpr int ARM_TWO_STEP_NORMAL = 2;
+static constexpr int ARM_FOUR_STEP_NORMAL = 4;
 
 std::shared_ptr<DfxElfMaps> DfxElfMaps::Create(pid_t pid)
 {
@@ -120,19 +123,20 @@ void DfxElfMaps::InsertMapToElfMaps(std::shared_ptr<DfxElfMap> map)
 }
 
 
-bool DfxElfMaps::FindMapByPath(const std::string path, std::shared_ptr<DfxElfMap>& map) const
+bool DfxElfMaps::FindMapByPath(const std::string path, std::vector<std::shared_ptr<DfxElfMap>>& maps) const
 {
+    bool ret = false;
     for (auto iter = maps_.begin(); iter != maps_.end(); iter++) {
         if ((*iter)->GetMapPath() == "") {
             continue;
         }
 
         if (strcmp(path.c_str(), (*iter)->GetMapPath().c_str()) == 0) {
-            map = *iter;
-            return true;
+            maps.push_back(*iter);
+            ret = true;
         }
     }
-    return false;
+    return ret;
 }
 
 bool DfxElfMaps::FindMapByAddr(uintptr_t address, std::shared_ptr<DfxElfMap>& map) const
@@ -158,8 +162,9 @@ bool DfxElfMaps::FindMapByAddr(uintptr_t address, std::shared_ptr<DfxElfMap>& ma
     return false;
 }
 
-void DfxElfMaps::Sort(void) {
-    std::sort(maps_.begin(), maps_.end(), 
+void DfxElfMaps::Sort(void)
+{
+    std::sort(maps_.begin(), maps_.end(),
         [](const std::shared_ptr<DfxElfMap>& a, const std::shared_ptr<DfxElfMap>& b) {
         return a->GetMapBegin() < b->GetMapBegin();
     });
@@ -212,6 +217,54 @@ std::string DfxElfMap::PrintMap()
         DFXLOG_ERROR("%s :: snprintf_s failed, line: %d.", __func__, __LINE__);
     }
     return std::string(buf);
+}
+
+uint64_t DfxElfMap::GetRelPc(uint64_t pc)
+{
+    uint64_t relPc = 0;
+    if (GetMapImage() == nullptr) {
+        SetMapImage(DfxElf::Create(GetMapPath().c_str()));
+    }
+
+    if (GetMapImage() == nullptr) {
+        relPc = pc - (GetMapBegin() - GetMapOffset());
+    } else {
+        relPc = (pc - GetMapBegin()) + GetMapImage()->FindRealLoadOffset(GetMapOffset());
+    }
+
+#ifdef __aarch64__
+    relPc = relPc - 4; // 4 : instr offset
+#elif defined(__x86_64__)
+    relPc = relPc - 1; // 1 : instr offset
+#endif
+    return relPc;
+}
+
+uint32_t DfxElfMap::GetPcAdjustment(uint64_t pc)
+{
+    if (pc <= ARM_FOUR_STEP_NORMAL) { // pc zero is abnormal case, so we don't adjust pc.
+        return 0;
+    }
+    uint32_t sz = ARM_FOUR_STEP_NORMAL;
+#if defined(__arm__)
+    if (pc & 1) {
+        // This is a thumb instruction, it could be 2 or 4 bytes.
+        uint32_t value;
+        uint64_t adjustedPc = pc - 5;
+        if ((GetMapPerms().find("r") == std::string::npos) ||
+            adjustedPc < GetMapBegin() ||
+            (adjustedPc + sizeof(value)) >= GetMapEnd() ||
+            memcpy_s(&value, sizeof(value), reinterpret_cast<const void *>(adjustedPc), sizeof(value)) ||
+            (value & 0xe000f000) != 0xe000f000) {
+            sz = ARM_TWO_STEP_NORMAL;
+        }
+    }
+#elif defined(__aarch64__)
+    sz = ARM_FOUR_STEP_NORMAL;
+#elif defined(__x86_64__)
+    sz = X86_ONE_STEP_NORMAL;
+#endif
+    return sz;
 }
 
 uint64_t DfxElfMap::GetMapBegin() const
