@@ -106,6 +106,10 @@ bool DwarfUnwinder::UnwindWithContext(unw_addr_space_t as, unw_context_t& contex
             isValidFrame = false;
         }
 
+        if (isValidFrame && (frame.relativePc == 0) && (frame.binaryName.find("Ark") == std::string::npos)) {
+            isValidFrame = false;
+        }
+
         if (frame.index < MIN_VALID_FRAME_COUNT || isValidFrame) {
             frames_.emplace_back(frame);
         } else {
