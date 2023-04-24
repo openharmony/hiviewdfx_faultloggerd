@@ -295,6 +295,11 @@ bool DfxUnwindRemote::UpdateAndPrintFrameInfo(unw_cursor_t& cursor, std::shared_
         isValidFrame = false;
     }
 
+    if (isValidFrame && (frame->GetFramePc() == frame->GetFrameRelativePc()) &&
+        (frame->GetFrameMapName().find("Ark") == std::string::npos)) {
+        isValidFrame = false;
+    }
+
     bool ret = frame->GetFrameIndex() < MIN_VALID_FRAME_COUNT || isValidFrame;
     if (ret) {
         DfxRingBufferWrapper::GetInstance().AppendMsg(frame->ToString());
