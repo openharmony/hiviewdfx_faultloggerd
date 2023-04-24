@@ -243,21 +243,24 @@ HWTEST_F(DfxBaseTest, DfxSignalTest001, TestSize.Level2)
         .si_code = -1,
         .si_value.sival_int = gettid()
     };
-    GTEST_LOG_(INFO) << PrintSignal(si);
-    si.si_signo = SIGABRT;
-    GTEST_LOG_(INFO) << PrintSignal(si);
-    si.si_signo = SIGBUS;
-    GTEST_LOG_(INFO) << PrintSignal(si);
-    si.si_signo = SIGILL;
-    GTEST_LOG_(INFO) << PrintSignal(si);
-    si.si_signo = SIGTRAP;
-    GTEST_LOG_(INFO) << PrintSignal(si);
-    si.si_signo = SIGFPE;
-    GTEST_LOG_(INFO) << PrintSignal(si);
-    si.si_signo = SIGSTKFLT;
-    GTEST_LOG_(INFO) << PrintSignal(si);
-    si.si_signo = SIGSYS;
-    GTEST_LOG_(INFO) << PrintSignal(si);
+    map<int, string> sigKeys = {
+        { SIGILL, string("SIGILL") },
+        { SIGTRAP, string("SIGTRAP") },
+        { SIGABRT, string("SIGABRT") },
+        { SIGBUS, string("SIGBUS") },
+        { SIGFPE, string("SIGFPE") },
+        { SIGSEGV, string("SIGSEGV") },
+        { SIGSTKFLT, string("SIGSTKFLT") },
+        { SIGSYS, string("SIGSYS") },
+    };
+    for (auto sigKey : sigKeys) {
+        std::string sigKeyword = "Signal:";
+        si.si_signo = sigKey.first;
+        sigKeyword += sigKey.second;
+        std::string sigStr = PrintSignal(si);
+        GTEST_LOG_(INFO) << sigStr;
+        ASSERT_TRUE(sigStr.find(sigKeyword) != std::string::npos);
+    }
     GTEST_LOG_(INFO) << "DfxSignalTest001: end.";
 }
 
@@ -270,9 +273,13 @@ HWTEST_F(DfxBaseTest, DfxUtilTest001, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "DfxUtilTest001: start.";
     time_t now = time(nullptr);
-    GTEST_LOG_(INFO) << GetCurrentTimeStr(static_cast<uint64_t>(now));
+    std::string timeStr = GetCurrentTimeStr(static_cast<uint64_t>(now));
+    GTEST_LOG_(INFO) << timeStr;
+    ASSERT_NE(timeStr, "invalid timestamp\n");
     now += 100000; // 100000 : test time offset
-    GTEST_LOG_(INFO) << GetCurrentTimeStr(static_cast<uint64_t>(now));
+    timeStr = GetCurrentTimeStr(static_cast<uint64_t>(now));
+    GTEST_LOG_(INFO) << timeStr;
+    ASSERT_NE(timeStr, "invalid timestamp\n");
     GTEST_LOG_(INFO) << "DfxUtilTest001: end.";
 }
 

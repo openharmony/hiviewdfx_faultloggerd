@@ -67,18 +67,22 @@ static mutex g_mutex;
 
 void FaultLoggerdSystemTest::SetUpTestCase(void)
 {
+#ifndef __pre__
     chmod("/data/crasher_c", 0755); // 0755 : -rwxr-xr-x
     chmod("/data/crasher_cpp", 0755); // 0755 : -rwxr-xr-x
     chmod("/data/test_faultloggerd_pre", 0755); // 0755 : -rwxr-xr-x
     std::string installCmd = "bm install -p /data/FaultloggerdJsTest.hap";
     (void)GetCmdResultFromPopen(installCmd);
+#endif
 }
 
 void FaultLoggerdSystemTest::TearDownTestCase(void)
 {
+#ifndef __pre__
     std::string uninstallCmd = "bm uninstall -n ";
     uninstallCmd += TEST_BUNDLE_NAME;
     (void)GetCmdResultFromPopen(uninstallCmd);
+#endif
 }
 
 void FaultLoggerdSystemTest::SetUp(void)
@@ -259,18 +263,6 @@ std::string FaultLoggerdSystemTest::GetfileNamePrefix(std::string ErrorCMD, int 
     return filePath + " " + pid;
 }
 
-// commandStatus: 0 C    1 CPP
-std::string FaultLoggerdSystemTest::GetstackfileNamePrefix(std::string ErrorCMD, int commandStatus)
-{
-    std::vector<std::string> cmds { "crasher_c", ErrorCMD };
-    std::string pid = FaultLoggerdSystemTest::ForkAndRunCommands(cmds, commandStatus);
-    int sleepSecond = 5;
-    sleep(sleepSecond);
-    std::string prefix = "stacktrace-" + pid;
-    std::string filePath = GetLogFileName(prefix);
-    return filePath + " " + pid;
-}
-
 int FaultLoggerdSystemTest::CheckKeywords(std::string& filePath, std::string *keywords, int length, int minRegIdx)
 {
     ifstream file;
@@ -318,7 +310,6 @@ int FaultLoggerdSystemTest::CheckCountNum(std::string& filePath, std::string& pi
         { std::string("triSIGSEGV"), std::string("SIGSEGV") },
         { std::string("MaxStack"), std::string("SIGSEGV") },
         { std::string("MaxMethod"), std::string("SIGSEGV") },
-        { std::string("STACKTRACE"), std::string("Tid") },
         { std::string("STACKOF"), std::string("SIGSEGV") },
     };
 
@@ -414,15 +405,6 @@ int FaultLoggerdSystemTest::CheckCountNumStackTop(std::string& filePath, std::st
     log[0] = log[0] + pid;
     int minRegIdx = 6;
     return CheckKeywords(filePath, log, sizeof(log) / sizeof(log[0]), minRegIdx);
-}
-
-int FaultLoggerdSystemTest::CheckStacktraceCountNum(std::string& filePath, std::string& pid)
-{
-    string log[] = {
-        "Tid:", ":crasher", "#00",
-    };
-    log[0] = log[0] + pid;
-    return CheckKeywords(filePath, log, sizeof(log) / sizeof(log[0]), -1); // -1 : do not check register value
 }
 
 std::string FaultLoggerdSystemTest::ForkAndCommands(int crasherType, int udid)
@@ -2076,18 +2058,6 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest006, TestSize.Level2)
 }
 
 /**
-* @tc.name: FaultLoggerdSystemTest007
-* @tc.desc: test C crasher application: STACKTRACE
-* @tc.type: FUNC
-*/
-HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest007, TestSize.Level2)
-{
-    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest007: start.";
-    std::string cmd = "STACKTRACE";
-    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest007: end.";
-}
-
-/**
 * @tc.name: FaultLoggerdSystemTest008
 * @tc.desc: test C crasher application: triSIGTRAP
 * @tc.type: FUNC
@@ -2421,18 +2391,6 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest018, TestSize.Level2)
         EXPECT_EQ(ret, 0) << "ProcessDfxRequestTest018 Failed";
         GTEST_LOG_(INFO) << "FaultLoggerdSystemTest018: end.";
     }
-}
-
-/**
-* @tc.name: FaultLoggerdSystemTest019
-* @tc.desc: test CPP crasher application: STACKTRACE
-* @tc.type: FUNC
-*/
-HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest019, TestSize.Level2)
-{
-    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest019: start.";
-    std::string cmd = "STACKTRACE";
-    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest019: end.";
 }
 
 /**

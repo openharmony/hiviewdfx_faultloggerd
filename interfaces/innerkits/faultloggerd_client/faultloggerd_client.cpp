@@ -222,10 +222,10 @@ int RequestSdkDump(int32_t type, int32_t pid, int32_t tid)
     return SendRequestToServer(request);
 }
 
-void RequestPrintTHilog(const char *msg, int length)
+int RequestPrintTHilog(const char *msg, int length)
 {
     if (length >= LOG_BUF_LEN) {
-        return;
+        return -1;
     }
 
     struct FaultLoggerdRequest request;
@@ -252,8 +252,11 @@ void RequestPrintTHilog(const char *msg, int length)
             DFXLOG_ERROR("nwrite: %d.", nwrite);
             break;
         }
+        close(sockfd);
+        return 0;
     } while (false);
     close(sockfd);
+    return -1;
 }
 
 int32_t RequestPipeFd(int32_t pid, int32_t pipeType)

@@ -123,32 +123,46 @@ void BacktraceUtilsTest::TearDown()
     CheckResourceUsage(fdCount, mapsCount, memCount);
 }
 
-static void CheckBacktraceContent(const std::string& content)
+static bool CheckBacktraceContent(const std::string& content)
 {
-    CheckContent(content, "#09", true);
-    CheckContent(content, "backtrace_utils_test", true);
-    CheckContent(content, "system", true);
+    std::string existKeyWords[] = { "#09", "backtrace_utils_test", "system" };
+    std::string notExistkeyWords[] = {
 #if defined(__aarch64__)
-    CheckContent(content, "0000000000000000", false);
+        "0000000000000000"
 #elif defined(__arm__)
-    CheckContent(content, "00000000", false);
+        "00000000"
 #endif
+    };
+    for (std::string keyWord : existKeyWords) {
+        if (!CheckContent(content, keyWord, true)) {
+            return false;
+        }
+    }
+    for (std::string keyWord : notExistkeyWords) {
+        if (!CheckContent(content, keyWord, false)) {
+            return false;
+        }
+    }
+    return true;
 }
 
-static void TestGetBacktraceInterface()
+static bool TestGetBacktraceInterface()
 {
     std::string content;
     if (!GetBacktrace(content)) {
-        FAIL();
+        return false;
     }
 
     GTEST_LOG_(INFO) << content;
 
     if (content.empty()) {
-        FAIL();
+        return false;
     }
 
-    CheckBacktraceContent(content);
+    if (!CheckBacktraceContent(content)) {
+        return false;
+    }
+    return true;
 }
 
 /**
@@ -187,7 +201,7 @@ HWTEST_F(BacktraceUtilsTest, BacktraceUtilsTest001, TestSize.Level2)
         FAIL();
     }
 
-    CheckBacktraceContent(content);
+    ASSERT_EQ(CheckBacktraceContent(content), true);
     GTEST_LOG_(INFO) << "BacktraceUtilsTest001: end.";
 }
 
@@ -199,7 +213,7 @@ HWTEST_F(BacktraceUtilsTest, BacktraceUtilsTest001, TestSize.Level2)
 HWTEST_F(BacktraceUtilsTest, BacktraceUtilsTest002, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "BacktraceUtilsTest002: start.";
-    TestGetBacktraceInterface();
+    ASSERT_EQ(TestGetBacktraceInterface(), true);
     GTEST_LOG_(INFO) << "BacktraceUtilsTest002: end.";
 }
 
@@ -213,7 +227,7 @@ HWTEST_F(BacktraceUtilsTest, BacktraceUtilsTest003, TestSize.Level2)
     GTEST_LOG_(INFO) << "BacktraceUtilsTest003: start.";
     int32_t loopCount = 100;
     for (int32_t i = 0; i < loopCount; i++) {
-        TestGetBacktraceInterface();
+        ASSERT_EQ(TestGetBacktraceInterface(), true);
     }
     GTEST_LOG_(INFO) << "BacktraceUtilsTest003: end.";
 }
@@ -221,14 +235,11 @@ HWTEST_F(BacktraceUtilsTest, BacktraceUtilsTest003, TestSize.Level2)
 void DoCheckBacktraceInMultiThread()
 {
     std::string content;
-    if (!GetBacktrace(content)) {
-        FAIL();
-    }
-
-    if (content.empty()) {
-        FAIL();
-    }
+   
+    ASSERT_TRUE(GetBacktrace(content));
+    ASSERT_FALSE(content.empty());
 }
+
 
 /**
  * @tc.name: BacktraceUtilsTest004
