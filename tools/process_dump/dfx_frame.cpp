@@ -148,35 +148,15 @@ uint64_t DfxFrame::GetRelativePc(const std::shared_ptr<DfxElfMaps> head)
         return 0;
     }
 
-    std::shared_ptr<DfxElfMap> map = nullptr;
-    if (!head->FindMapByPath(map_->GetMapPath(), map)) {
-        DFXLOG_WARN("Fail to find Map:%s.", map_->GetMapPath().c_str());
-        return 0;
-    }
-    return CalculateRelativePc(map);
+    return CalcRelativePc(map_);
 }
 
-uint64_t DfxFrame::CalculateRelativePc(std::shared_ptr<DfxElfMap> elfMap)
+uint64_t DfxFrame::CalcRelativePc(std::shared_ptr<DfxElfMap> elfMap)
 {
-    if (elfMap == nullptr || map_ == nullptr) {
+    if (elfMap == nullptr) {
         return 0;
     }
-
-    if (elfMap->GetMapImage() == nullptr) {
-        elfMap->SetMapImage(DfxElf::Create(elfMap->GetMapPath().c_str()));
-    }
-
-    if (elfMap->GetMapImage() == nullptr) {
-        relativePc_ = pc_ - (map_->GetMapBegin() - map_->GetMapOffset());
-    } else {
-        relativePc_ = (pc_ - map_->GetMapBegin()) + elfMap->GetMapImage()->FindRealLoadOffset(map_->GetMapOffset());
-    }
-
-#ifdef __aarch64__
-    relativePc_ = relativePc_ - 4; // 4 : instr offset
-#elif defined(__x86_64__)
-    relativePc_ = relativePc_ - 1; // 1 : instr offset
-#endif
+    relativePc_ = elfMap->GetRelPc(pc_);
     return relativePc_;
 }
 

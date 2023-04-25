@@ -49,7 +49,7 @@ public:
 
     std::string ToString() const;
     uint64_t GetRelativePc(const std::shared_ptr<DfxElfMaps> head);
-    uint64_t CalculateRelativePc(std::shared_ptr<DfxElfMap> elfMap);
+    uint64_t CalcRelativePc(std::shared_ptr<DfxElfMap> elfMap);
 
 private:
     size_t index_ = 0;

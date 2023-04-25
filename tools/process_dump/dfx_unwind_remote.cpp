@@ -402,7 +402,7 @@ void DfxUnwindRemote::UnwindThreadFallback(std::shared_ptr<DfxProcess> process, 
         thread->AddFrame(frame);
         if (maps->FindMapByAddr(pc, map)) {
             frame->SetFrameMap(map);
-            frame->CalculateRelativePc(map);
+            frame->CalcRelativePc(map);
             frame->SetFrameMapName(map->GetMapPath());
         } else {
             frame->SetFrameRelativePc(pc);

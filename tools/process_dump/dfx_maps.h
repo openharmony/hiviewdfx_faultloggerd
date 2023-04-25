@@ -19,6 +19,7 @@
 #define DFX_MAPS_H
 
 #include <string>
+#include <mutex>
 #include "dfx_elf.h"
 #include "iosfwd"
 
@@ -31,6 +32,8 @@ public:
     static std::shared_ptr<DfxElfMap> Create(const std::string mapInfo, int size);
     bool IsValid();
     std::string PrintMap();
+    uint64_t GetRelPc(uint64_t pc);
+    uint32_t GetPcAdjustment(uint64_t pc);
 
     uint64_t GetMapBegin() const;
     uint64_t GetMapEnd() const;
@@ -62,8 +65,9 @@ public:
     static std::shared_ptr<DfxElfMaps> Create(pid_t pid);
     static std::shared_ptr<DfxElfMaps> CreateFromLocal();
     static std::shared_ptr<DfxElfMaps> Create(const std::string path);
+
     void InsertMapToElfMaps(std::shared_ptr<DfxElfMap> map);
-    bool FindMapByPath(const std::string path, std::shared_ptr<DfxElfMap>& map) const;
+    bool FindMapByPath(const std::string path, std::vector<std::shared_ptr<DfxElfMap>>& maps) const;
     bool FindMapByAddr(uintptr_t address, std::shared_ptr<DfxElfMap>& map) const;
 
     std::vector<std::shared_ptr<DfxElfMap>> GetValues() const;
