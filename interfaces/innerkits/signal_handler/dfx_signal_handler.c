@@ -97,7 +97,7 @@ static const int ALARM_TIME_S = 10;
 static int g_prevHandledSignal = SIGDUMP;
 static BOOL g_isDumping = FALSE;
 static struct sigaction g_oldSigactionList[NSIG] = {};
-
+static thread_local ThreadInfoCallBack threadInfoCallBack = NULL;
 enum DumpPreparationStage {
     CREATE_PIPE_FAIL = 1,
     SET_PIPE_LEN_FAIL,
@@ -132,10 +132,10 @@ void SetThreadInfoCallback(ThreadInfoCallBack func)
 {
     threadInfoCallBack = func;
 }
-static void FillLastFatalMessageLocked(int32_t sig)
+static void FillLastFatalMessageLocked(int32_t sig, void *context)
 {
     if (sig != SIGABRT && threadInfoCallBack != NULL) {
-        threadInfoCallBack(g_request.lastFatalMessage, sizeof(g_request.lastFatalMessage));
+        threadInfoCallBack(g_request.lastFatalMessage, sizeof(g_request.lastFatalMessage), context);
         return;
     }
 
@@ -176,7 +176,7 @@ static void FillDumpRequest(int sig, siginfo_t *si, void *context)
     memcpy(&(g_request.context), context, sizeof(ucontext_t));
 
     FillTraceIdLocked(&g_request);
-    FillLastFatalMessageLocked(sig);
+    FillLastFatalMessageLocked(sig, context);
 }
 
 static int32_t InheritCapabilities(void)

@@ -41,8 +41,7 @@ struct ProcessDumpRequest {
     TraceInfo traceInfo;
 };
 
-typedef void(*ThreadInfoCallBack)(char* buf, size_t len);
-static thread_local ThreadInfoCallBack threadInfoCallBack = NULL;
+typedef void(*ThreadInfoCallBack)(char* buf, size_t len, void* ucontext);
 void SetThreadInfoCallback(ThreadInfoCallBack func);
 void DFX_InstallSignalHandler(void);
 

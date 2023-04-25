@@ -192,7 +192,7 @@ static bool CheckThreadCrashKeyWords(const string& filePath, pid_t pid, int sig)
     return CheckKeyWords(filePath, keywords, length, minRegIdx) == length;
 }
 
-void ThreadInfo(char* buf, size_t len)
+void ThreadInfo(char* buf, size_t len, void* context __attribute__((unused)))
 {
     char mes[] = "this is cash information of test thread";
     (void)memcpy_s(buf, len, mes, sizeof(mes));
