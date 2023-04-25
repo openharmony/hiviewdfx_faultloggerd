@@ -44,7 +44,6 @@ public:
     int SegmentFaultException(void) const;
     int Abort(void) const;
 
-    int DumpStackTrace() const;
     void PrintUsage() const;
 
     static void* DoCrashInThread(void * inputArg);

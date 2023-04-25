@@ -67,7 +67,10 @@ void DfxLogToSocket(const char *msg)
     if (length >= LOG_BUF_LEN) {
         return;
     }
-    RequestPrintTHilog(msg, length);
+    int ret = RequestPrintTHilog(msg, length);
+    if (ret < 0) {
+        DFXLOG_ERROR("DfxLogToSocket :: request print msg(%s) failed, ret(%d).", msg, ret);
+    }
 }
 
 void InitDebugLog(int type, int pid, int tid, unsigned int uid)

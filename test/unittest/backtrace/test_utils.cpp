@@ -94,7 +94,7 @@ bool CheckLogFileExist(int32_t pid, std::string& fileName)
     return true;
 }
 
-void CheckContent(const std::string& content, const std::string& keyContent, bool checkExist)
+bool CheckContent(const std::string& content, const std::string& keyContent, bool checkExist)
 {
     bool findKeyContent = false;
     if (content.find(keyContent) != std::string::npos) {
@@ -104,14 +104,15 @@ void CheckContent(const std::string& content, const std::string& keyContent, boo
     if (checkExist && !findKeyContent) {
         GTEST_LOG_(INFO) << "Failed to find " << keyContent;
         GTEST_LOG_(INFO) << " in " << content;
-        FAIL();
+        return false;
     }
 
     if (!checkExist && findKeyContent) {
         GTEST_LOG_(INFO) << "Find " << keyContent;
         GTEST_LOG_(INFO) << " in " << content;
-        FAIL();
+        return false;
     }
+    return true;
 }
 } // namespace HiviewDFX
 } // namespace OHOS

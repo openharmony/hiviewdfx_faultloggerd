@@ -101,14 +101,6 @@ NOINLINE int DfxCrasher::RaiseBusError() const
     return 0;
 }
 
-NOINLINE int DfxCrasher::DumpStackTrace() const
-{
-    if (raise(SIGDUMP) != 0) {
-        std::cout << "raise error" << std::endl;
-    }
-    return 0;
-}
-
 NOINLINE int DfxCrasher::RaiseFloatingPointException() const
 {
     raise(SIGFPE);
@@ -310,7 +302,6 @@ void DfxCrasher::PrintUsage() const
     std::cout << "  SIGTRAP               raise a SIGTRAP" << std::endl;
     std::cout << "  SIGABRT               raise a SIGABRT" << std::endl;
     std::cout << "  SIGBUS                raise a SIGBUS" << std::endl;
-    std::cout << "  STACKTRACE            raise a SIGDUMP" << std::endl;
 
     std::cout << "  triSIGILL             trigger a SIGILL" << std::endl;
     std::cout << "  triSIGSEGV            trigger a SIGSEGV" << std::endl;
@@ -419,10 +410,6 @@ uint64_t DfxCrasher::ParseAndDoCrash(const char *arg)
 
     if (!strcasecmp(arg, "SIGBUS")) {
         return RaiseBusError();
-    }
-
-    if (!strcasecmp(arg, "STACKTRACE")) {
-        return DumpStackTrace();
     }
 
     if (!strcasecmp(arg, "triSIGTRAP")) {

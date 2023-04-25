@@ -87,7 +87,7 @@ int32_t RequestPipeFd(int32_t pid, int32_t pipeType);
 int32_t RequestDelPipeFd(int32_t pid);
 int RequestFileDescriptorEx(const struct FaultLoggerdRequest *request);
 bool RequestCheckPermission(int32_t pid);
-void RequestPrintTHilog(const char *msg, int length);
+int RequestPrintTHilog(const char *msg, int length);
 int RequestSdkDump(int32_t type, int32_t pid, int32_t tid);
 
 #ifdef __cplusplus

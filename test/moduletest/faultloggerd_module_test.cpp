@@ -149,7 +149,7 @@ HWTEST_F(FaultloggerdModuleTest, FaultloggerdClientFdRquestTest003, TestSize.Lev
 {
     char msg[] = "test log";
     size_t len = strlen(msg);
-    RequestPrintTHilog(msg, len);
+    ASSERT_EQ(RequestPrintTHilog(msg, len), 0);
 }
 
 /**

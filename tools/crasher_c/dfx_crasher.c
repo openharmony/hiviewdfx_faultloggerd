@@ -74,15 +74,6 @@ NOINLINE int RaiseBusError(void)
     return 0;
 }
 
-NOINLINE int DumpStackTrace(void)
-{
-    int ret = raise(SIGDUMP);
-    if (ret != 0) {
-        printf("remove failed!");
-    }
-    return 0;
-}
-
 NOINLINE int RaiseFloatingPointException(void)
 {
     int ret = raise(SIGFPE);
@@ -327,7 +318,6 @@ void PrintUsage(void)
     printf("  SIGTRAP               raise a SIGTRAP\n");
     printf("  SIGABRT               raise a SIGABRT\n");
     printf("  SIGBUS                raise a SIGBUS\n");
-    printf("  STACKTRACE            raise a SIGDUMP\n");
 
     printf("  triSIGILL             trigger a SIGILL\n");
     printf("  triSIGSEGV            trigger a SIGSEGV\n");
@@ -410,10 +400,6 @@ uint64_t ParseAndDoCrash(const char *arg)
 
     if (!strcasecmp(arg, "triSIGTRAP")) {
         return TriggerTrapException();
-    }
-
-    if (!strcasecmp(arg, "STACKTRACE")) {
-        return DumpStackTrace();
     }
 
     if (!strcasecmp(arg, "Loop")) {
