@@ -36,8 +36,8 @@ namespace OHOS {
 namespace HiviewDFX {
 static const int MAPINFO_SIZE = 256;
 ATTRIBUTE_UNUSED static constexpr int X86_ONE_STEP_NORMAL = 1;
-static constexpr int ARM_TWO_STEP_NORMAL = 2;
-static constexpr int ARM_FOUR_STEP_NORMAL = 4;
+ATTRIBUTE_UNUSED static constexpr int ARM_TWO_STEP_NORMAL = 2;
+ATTRIBUTE_UNUSED static constexpr int ARM_FOUR_STEP_NORMAL = 4;
 
 std::shared_ptr<DfxElfMaps> DfxElfMaps::Create(pid_t pid)
 {

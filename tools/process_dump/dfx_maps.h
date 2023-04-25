@@ -18,8 +18,8 @@
 #ifndef DFX_MAPS_H
 #define DFX_MAPS_H
 
-#include <string>
 #include <mutex>
+#include <string>
 #include "dfx_elf.h"
 #include "iosfwd"
 
