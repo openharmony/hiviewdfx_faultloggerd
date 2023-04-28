@@ -82,7 +82,7 @@ std::string DfxRegsX86_64::PrintRegs() const
     PrintFormat(buf + strlen(buf), sizeof(buf) - strlen(buf), \
         "  r12:%016lx r13:%016lx r14:%016lx r15:%016lx rip:%016lx\n", \
         regs[REG_X86_64_R12], regs[REG_X86_64_R13], regs[REG_X86_64_R14], regs[REG_X86_64_R15], regs[REG_X86_64_RIP]);
-    
+
     regString = regString + std::string(buf);
     return regString;
 }

@@ -111,7 +111,7 @@ int unw_get_ark_js_heap_crash_info(int pid, uintptr_t* x20, uintptr_t* fp, int o
     if ((*x20 == 0) || (*fp == 0)) {
         return -1;
     }
-    
+
     return 0;
 }
 

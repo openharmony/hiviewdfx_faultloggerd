@@ -159,7 +159,7 @@ __attribute__((noinline)) void Test002()
 {
     printf("Test002\n");
     g_mutex.lock();
-    g_mutex.unlock(); 
+    g_mutex.unlock();
 }
 
 __attribute__((noinline)) void Test001()

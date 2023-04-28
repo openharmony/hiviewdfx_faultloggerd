@@ -77,8 +77,8 @@ static const int FILE_WRITE_BUF_LEN = 4096;
 static const char TEST_BUNDLE_NAME[] = "com.example.myapplication";
 static const char TRUNCATE_TEST_BUNDLE_NAME[] = "e.myapplication";
 
-#define LIKELY(exp)       (__builtin_expect( !!(exp), true  ))
-#define UNLIKELY(exp)     (__builtin_expect( !!(exp), false ))
+#define LIKELY(exp)       (__builtin_expect(!!(exp), true))
+#define UNLIKELY(exp)     (__builtin_expect(!!(exp), false))
 
 #define AT_SYMBOL_VISIBLE       __attribute__ ((visibility("default")))
 #define AT_SYMBOL_HIDDEN        __attribute__ ((visibility("hidden")))

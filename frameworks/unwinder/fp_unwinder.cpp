@@ -110,8 +110,7 @@ bool FpUnwinder::Unwind(size_t skipFrameNum)
     uintptr_t fp = dfxregs->GetFP();
     uintptr_t pc = dfxregs->GetPC();
 
-    // skip GetFramePointerMiniRegs and Create function
-    skipFrameNum += 2;
+    skipFrameNum += 2; // 2 : skip GetFramePointerMiniRegs and Create function
 
     size_t index = 0;
     size_t curIndex = 0;
