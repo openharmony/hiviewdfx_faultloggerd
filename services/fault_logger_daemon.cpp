@@ -398,7 +398,7 @@ void FaultLoggerDaemon::HandleSdkDumpRequest(int32_t connectionFd, FaultLoggerdR
     do {
         if ((request->pid <= 0) || (FaultLoggerCheckPermissionResp::CHECK_PERMISSION_REJECT == resSecurityCheck)) {
             DFXLOG_ERROR("%s :: HandleSdkDumpRequest :: pid(%d) or resSecurityCheck(%d) fail.\n", \
-                        FAULTLOGGERD_TAG.c_str(), request->pid, (int)resSecurityCheck);
+                FAULTLOGGERD_TAG.c_str(), request->pid, (int)resSecurityCheck);
             resSdkDump = FaultLoggerSdkDumpResp::SDK_DUMP_REJECT;
             break;
         }
@@ -534,7 +534,7 @@ void FaultLoggerDaemon::RemoveTempFileIfNeed()
 
         OHOS::RemoveFile(files[index]);
         DFXLOG_DEBUG("%s :: Now we rm file(%s) as max log number exceeded.", \
-                    FAULTLOGGERD_TAG.c_str(), files[index].c_str());
+            FAULTLOGGERD_TAG.c_str(), files[index].c_str());
     }
 }
 

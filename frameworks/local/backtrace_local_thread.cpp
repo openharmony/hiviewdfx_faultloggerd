@@ -197,7 +197,7 @@ bool BacktraceLocalThread::GetBacktraceString(std::string& out,
             return ret;
         }
         auto cache = std::make_shared<DfxSymbolsCache>();
-        
+
         ret = thread.Unwind(as, cache, skipFrameNum, fast);
 
         unw_destroy_local_address_space(as);

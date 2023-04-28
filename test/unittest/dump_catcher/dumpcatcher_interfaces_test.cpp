@@ -201,7 +201,6 @@ HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest001, TestSize.Level
     std::string msg = "";
     bool ret = dumplog.DumpCatchMultiPid(multiPid, msg);
     GTEST_LOG_(INFO) << ret;
-    
     string log[] = {"Tid:", "Name:", "Tid:", "Name:"};
     log[0] = log[0] + std::to_string(testPid1);
     log[1] = log[1] + testProcess1;
@@ -241,7 +240,6 @@ HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest002, TestSize.Level
     std::string msg = "";
     bool ret = dumplog.DumpCatchMultiPid(multiPid, msg);
     GTEST_LOG_(INFO) << ret;
-    
     EXPECT_EQ(ret, false) << "DumpCatcherInterfacesTest002 Failed";
     GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest002: end.";
 }
@@ -263,7 +261,6 @@ HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest003, TestSize.Level
     std::string msg = "";
     bool ret = dumplog.DumpCatchMultiPid(multiPid, msg);
     GTEST_LOG_(INFO) << ret;
-    
     EXPECT_EQ(ret, false) << "DumpCatcherInterfacesTest003 Failed";
     GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest003: end.";
 }
@@ -286,7 +283,6 @@ HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest004, TestSize.Level
     std::string msg = "";
     bool ret = dumplog.DumpCatchMultiPid(multiPid, msg);
     GTEST_LOG_(INFO) << ret;
-    
     string log[] = { "Tid:", "Name:", "Failed" };
     log[0] = log[0] + std::to_string(applyPid1);
     log[1] = log[1] + "accountmgr";
@@ -329,7 +325,6 @@ HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest005, TestSize.Level
     std::string msg = "";
     bool ret = dumplog.DumpCatchMultiPid(multiPid, msg);
     GTEST_LOG_(INFO) << ret;
-    
     string log[] = { "Tid:", "Name:", "Tid:", "Name:", "Tid:", "Name:" };
     log[0] = log[0] + std::to_string(testPid1);
     log[1] = log[1] + testProcess1;
@@ -372,7 +367,6 @@ HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest006, TestSize.Level
     std::string msg = "";
     bool ret = dumplog.DumpCatchMultiPid(multiPid, msg);
     GTEST_LOG_(INFO) << ret;
-    
     string log[] = { "Tid:", "Name:", "Failed"};
     log[0] = log[0] + std::to_string(testPid1);
     log[1] = log[1] + "accountmgr";
@@ -408,7 +402,6 @@ HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest007, TestSize.Level
     std::string msg = "";
     bool ret = dumplog.DumpCatchMultiPid(multiPid, msg);
     GTEST_LOG_(INFO) << ret;
-    
     EXPECT_EQ(ret, false) << "DumpCatcherInterfacesTest007 Failed";
     GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest007: end.";
 }
@@ -431,7 +424,6 @@ HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest008, TestSize.Level
     std::string msg = "";
     bool ret = dumplog.DumpCatchMultiPid(multiPid, msg);
     GTEST_LOG_(INFO) << ret;
-    
     string log[] = { "Tid:", "Name:", "Failed"};
     log[0] = log[0] + std::to_string(applyPid1);
     log[1] = log[1] + apply;
@@ -567,7 +559,6 @@ HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest014, TestSize.Level
     std::string msg = "";
     bool ret = dumplog.DumpCatchMix(g_testPid, 0, msg);
     GTEST_LOG_(INFO) << ret;
-    
     string log[] = { "Tid:", "Name:", "#00", "/system/bin/appspawn",
         "Name:DfxWatchdog", "Name:GC_WorkerThread", "Name:ace.bg.1"};
     log[0] += std::to_string(g_testPid);
@@ -611,7 +602,6 @@ HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest015, TestSize.Level
     std::string msg = "";
     bool ret = dumplog.DumpCatchMix(g_testPid, g_testPid, msg);
     GTEST_LOG_(INFO) << ret;
-    
     string log[] = { "Tid:", "Name:", "#00", "/system/bin/appspawn"};
     log[0] += std::to_string(g_testPid);
     log[1] += TRUNCATE_TEST_BUNDLE_NAME;
@@ -653,7 +643,6 @@ HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest016, TestSize.Level
     std::string msg = "";
     bool ret = dumplog.DumpCatchMix(g_testPid, -1, msg);
     GTEST_LOG_(INFO) << ret;
-    
     EXPECT_EQ(ret, false) << "DumpCatcherInterfacesTest016 Failed";
     GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest016: end.";
 }
@@ -671,7 +660,6 @@ HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest017, TestSize.Level
     std::string msg = "";
     bool ret = dumplog.DumpCatchMix(-1, -1, msg);
     GTEST_LOG_(INFO) << ret;
-    
     EXPECT_EQ(ret, false) << "DumpCatcherInterfacesTest017 Failed";
     GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest017: end.";
 }
@@ -688,7 +676,7 @@ HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest018, TestSize.Level
     std::string msg = "";
     bool ret = dumplog.DumpCatchFd(getpid(), gettid(), msg, 1);
     GTEST_LOG_(INFO) << ret;
-    
+
     EXPECT_EQ(ret, true) << "DumpCatcherInterfacesTest018 Failed";
     GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest018: end.";
 }
@@ -705,7 +693,6 @@ HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest019, TestSize.Level
     std::string msg = "";
     bool ret = dumplog.DumpCatchFd(getpid(), 0, msg, 1);
     GTEST_LOG_(INFO) << ret;
-    
     EXPECT_EQ(ret, true) << "DumpCatcherInterfacesTest019 Failed";
     GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest019: end.";
 }
@@ -722,7 +709,6 @@ HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest020, TestSize.Level
     std::string msg = "";
     bool ret = dumplog.DumpCatchFd(getpid(), -1, msg, 1);
     GTEST_LOG_(INFO) << ret;
-    
     EXPECT_EQ(ret, false) << "DumpCatcherInterfacesTest020 Failed";
     GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest020: end.";
 }
@@ -743,7 +729,6 @@ HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest021, TestSize.Level
     std::string msg = "";
     bool ret = dumplog.DumpCatchFd(applyPid, 0, msg, 1);
     GTEST_LOG_(INFO) << ret;
-    
     EXPECT_EQ(ret, true) << "DumpCatcherInterfacesTest021 Failed";
     GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest021: end.";
 }
@@ -763,7 +748,6 @@ HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest022, TestSize.Level
     std::string msg = "";
     bool ret = dumplog.DumpCatchFd(applyPid, applyPid, msg, 1);
     GTEST_LOG_(INFO) << ret;
-    
     EXPECT_EQ(ret, true) << "DumpCatcherInterfacesTest022 Failed";
     GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest022: end.";
 }
@@ -783,7 +767,6 @@ HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest023, TestSize.Level
     std::string msg = "";
     bool ret = dumplog.DumpCatchFd(applyPid, -1, msg, 1);
     GTEST_LOG_(INFO) << ret;
-    
     EXPECT_EQ(ret, false) << "DumpCatcherInterfacesTest023 Failed";
     GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest023: end.";
 }
@@ -803,7 +786,6 @@ HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest024, TestSize.Level
     std::string msg = "";
     bool ret = dumplog.DumpCatchFd(applyPid, 9999, msg, 1);
     GTEST_LOG_(INFO) << ret;
-    
     EXPECT_EQ(ret, true) << "DumpCatcherInterfacesTest024 Failed";
     GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest024: end.";
 }
@@ -820,7 +802,6 @@ HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest025, TestSize.Level
     std::string msg = "";
     bool ret = dumplog.DumpCatchFd(getpid(), 9999, msg, 1);
     GTEST_LOG_(INFO) << ret;
-    
     EXPECT_EQ(ret, true) << "DumpCatcherInterfacesTest025 Failed";
     GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest025: end.";
 }
@@ -840,7 +821,6 @@ HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest026, TestSize.Level
     GTEST_LOG_(INFO) << "dump local process, "  << " tid:" << g_threadId;
     bool ret = dumplog.DumpCatchFd(getpid(), g_threadId, msg, 1);
     GTEST_LOG_(INFO) << ret;
-    
     EXPECT_EQ(ret, true) << "DumpCatcherInterfacesTest026 Failed";
     GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest026: end.";
 }
@@ -860,7 +840,6 @@ HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest027, TestSize.Level
     std::string msg = "";
     bool ret = dumplog.DumpCatchFd(g_processId, g_threadId, msg, 1);
     GTEST_LOG_(INFO) << ret;
-    
     EXPECT_EQ(ret, true) << "DumpCatcherInterfacesTest027 Failed";
     GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest027: end.";
 }
@@ -871,7 +850,7 @@ __attribute__((noinline)) void Test002()
 {
     printf("Test002\n");
     g_mutex.lock();
-    g_mutex.unlock(); 
+    g_mutex.unlock();
 }
 
 __attribute__((noinline)) void Test001()

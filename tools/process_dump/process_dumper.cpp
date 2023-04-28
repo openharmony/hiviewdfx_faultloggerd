@@ -387,7 +387,7 @@ int ProcessDumper::WriteDumpBuf(int fd, const char* buf, const int len)
 
 void ProcessDumper::WriteDumpRes(int32_t res)
 {
-    DFXLOG_ERROR("%s :: res: %d", __func__, res);
+    DFXLOG_DEBUG("%s :: res: %d", __func__, res);
     DumpResMsg dumpResMsg;
     dumpResMsg.res = res;
     const char* strRes = DfxDumpRes::GetInstance().GetResStr(res);

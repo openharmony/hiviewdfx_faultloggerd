@@ -552,8 +552,6 @@ HWTEST_F(DfxProcessDumpTest, DfxProcessDumpTest012, TestSize.Level2)
 HWTEST_F(DfxProcessDumpTest, DfxProcessDumpTest013, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "DfxProcessDumpTest013: start.";
-
- 
     if (g_testPid == 0) {
         GTEST_LOG_(ERROR) << "Failed to launch target hap.";
         return;

@@ -65,7 +65,7 @@ bool CppCrashReporter::Format()
     if (crashThread != nullptr) {
         std::string crashThreadInfo = crashThread->ToString();
         auto iterator = crashThreadInfo.begin();
-        while (*iterator != '\n') {
+        while (iterator != crashThreadInfo.end() && *iterator != '\n') {
             if (isdigit(*iterator)) {
                 iterator = crashThreadInfo.erase(iterator);
             } else {
