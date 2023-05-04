@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 Huawei Device Co., Ltd.
+ * Copyright (c) 2022-2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -24,6 +24,7 @@
 
 #include "dfx_config.h"
 #include "dfx_define.h"
+#include "dfx_test_util.h"
 #include "dfx_util.h"
 #include "directory_ex.h"
 #include "multithread_constructor.h"
@@ -33,66 +34,12 @@ using namespace OHOS::HiviewDFX;
 using namespace testing::ext;
 using namespace std;
 
-static const int BUF_LEN = 100;
-int g_testPid = 0;
-static std::string GetCmdResultFromPopen(const std::string& cmd)
-{
-    if (cmd.empty()) {
-        return "";
-    }
-    FILE* fp = popen(cmd.c_str(), "r");
-    if (fp == nullptr) {
-        return "";
-    }
-    const int bufSize = 128;
-    char buffer[bufSize];
-    std::string result = "";
-    while (!feof(fp)) {
-        if (fgets(buffer, bufSize - 1, fp) != nullptr) {
-            result += buffer;
-        }
-    }
-    pclose(fp);
-    return result;
-}
-
-static int GetServicePid(const std::string& serviceName)
-{
-    std::string cmd = "pidof " + serviceName;
-    std::string pidStr = GetCmdResultFromPopen(cmd);
-    int32_t pid = 0;
-    std::stringstream pidStream(pidStr);
-    pidStream >> pid;
-    printf("the pid of service(%s) is %s \n", serviceName.c_str(), pidStr.c_str());
-    return pid;
-}
-
-static int LaunchTestHap(const std::string& abilityName, const std::string& bundleName)
-{
-    std::string launchCmd = "/system/bin/aa start -a " + abilityName + " -b " + bundleName;
-    (void)GetCmdResultFromPopen(launchCmd);
-    sleep(2); // 2 : sleep 2s
-    return GetServicePid(bundleName);
-}
-
 void DfxProcessDumpTest::SetUpTestCase(void)
 {
-    std::string installCmd = "bm install -p /data/FaultloggerdJsTest.hap";
-    (void)GetCmdResultFromPopen(installCmd);
-    std::string testBundleName = TEST_BUNDLE_NAME;
-    std::string testAbiltyName = testBundleName + ".MainAbility";
-    g_testPid = LaunchTestHap(testAbiltyName, testBundleName);
 }
 
 void DfxProcessDumpTest::TearDownTestCase(void)
 {
-    std::string stopCmd = "/system/bin/aa force-stop ";
-    stopCmd += TEST_BUNDLE_NAME;
-    (void)GetCmdResultFromPopen(stopCmd);
-
-    std::string uninstallCmd = "bm uninstall -n ";
-    uninstallCmd += TEST_BUNDLE_NAME;
-    (void)GetCmdResultFromPopen(uninstallCmd);
 }
 
 void DfxProcessDumpTest::SetUp(void)
@@ -128,23 +75,6 @@ static string GetCppCrashFileName(pid_t pid)
         }
     }
     return "";
-}
-
-static int CountLines(const string& filename)
-{
-    ifstream readStream;
-    readStream.open(filename.c_str(), ios::in);
-    if (readStream.fail()) {
-        return 0;
-    } else {
-        int n = 0;
-        string tempData;
-        while (getline(readStream, tempData, '\n')) {
-            n++;
-        }
-        readStream.close();
-        return n;
-    }
 }
 
 static int CheckKeyWords(const string& filePath, string *keywords, int length)
@@ -211,195 +141,14 @@ static bool CheckCppCrashKeyWords(const string& filePath, pid_t pid, int sig)
     return CheckKeyWords(filePath, keywords, length) == length;
 }
 
-static int GetProcessPid(const string& applyName)
-{
-    string procCMD = "pgrep '" + applyName + "'";
-    GTEST_LOG_(INFO) << "threadCMD = " << procCMD;
-    FILE *procFileInfo = nullptr;
-    procFileInfo = popen(procCMD.c_str(), "r");
-    if (procFileInfo == nullptr) {
-        perror("popen execute failed");
-        return -1;
-    }
-    string applyPid;
-    char resultBuf[BUF_LEN] = { 0, };
-    while (fgets(resultBuf, sizeof(resultBuf), procFileInfo) != nullptr) {
-        applyPid = resultBuf;
-        GTEST_LOG_(INFO) << "applyPid: " << applyPid;
-    }
-    pclose(procFileInfo);
-    return atoi(applyPid.c_str());
-}
-
-static string ProcessDumpCommands(const string& cmds)
-{
-    GTEST_LOG_(INFO) << "threadCMD = " << cmds;
-    FILE *procFileInfo = nullptr;
-    string cmdLog = "";
-    procFileInfo = popen(cmds.c_str(), "r");
-    if (procFileInfo == nullptr) {
-        perror("popen execute failed");
-        return cmdLog;
-    }
-    char resultBuf[BUF_LEN] = { 0, };
-    while (fgets(resultBuf, sizeof(resultBuf), procFileInfo) != nullptr) {
-        cmdLog += resultBuf;
-    }
-    pclose(procFileInfo);
-    return cmdLog;
-}
-
-static bool CheckProcessComm(int pid)
-{
-    std::string cmd = "cat /proc/" + std::to_string(pid) + "/comm";
-    std::string comm = GetCmdResultFromPopen(cmd);
-    size_t pos = comm.find('\n');
-    if (pos != std::string::npos) {
-        comm.erase(pos, 1);
-    }
-    if (!strcmp(comm.c_str(), TRUNCATE_TEST_BUNDLE_NAME)) {
-        return true;
-    }
-    return false;
-}
 /**
  * @tc.name: DfxProcessDumpTest001
- * @tc.desc: test dumpcatcher -p [native process]
+ * @tc.desc: test SIGILL crash
  * @tc.type: FUNC
  */
 HWTEST_F(DfxProcessDumpTest, DfxProcessDumpTest001, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "DfxProcessDumpTest001: start.";
-    int testPid = GetProcessPid("accountmgr");
-    string testCommand = "dumpcatcher -p " + to_string(testPid);
-    string dumpRes = ProcessDumpCommands(testCommand);
-    int count = 0;
-    string log[] = {"Pid:", "Name:", "#00", "#01", "#02"};
-    log[0] = log[0] + to_string(testPid);
-    log[1] = log[1] + "accountmgr";
-    string::size_type idx;
-    int len = sizeof(log) / sizeof(log[0]);
-    for (int i = 0; i < len; i++) {
-        idx = dumpRes.find(log[i]);
-        if (idx != string::npos) {
-            count++;
-        } else {
-            GTEST_LOG_(INFO) << "Can not find " << log[i];
-        }
-    }
-    EXPECT_EQ(count, len) << dumpRes << "DfxProcessDumpTest001 Failed";
-    GTEST_LOG_(INFO) << "DfxProcessDumpTest001: end.";
-}
-
-/**
- * @tc.name: DfxProcessDumpTest002
- * @tc.desc: test dumpcatcher -p -t [native process]
- * @tc.type: FUNC
- */
-HWTEST_F(DfxProcessDumpTest, DfxProcessDumpTest002, TestSize.Level2)
-{
-    GTEST_LOG_(INFO) << "DfxProcessDumpTest002: start.";
-    int testPid = GetProcessPid("accountmgr");
-    string testCommand = "dumpcatcher -p " + to_string(testPid) + " -t " + to_string(testPid);
-    string dumpRes = ProcessDumpCommands(testCommand);
-    int count = 0;
-    string log[] = {"Pid:", "Name:", "#00", "#01", "#02"};
-    log[0] = log[0] + to_string(testPid);
-    log[1] = log[1] + "accountmgr";
-    string::size_type idx;
-    int len = sizeof(log) / sizeof(log[0]);
-    for (int i = 0; i < len; i++) {
-        idx = dumpRes.find(log[i]);
-        if (idx != string::npos) {
-            count++;
-        } else {
-            GTEST_LOG_(INFO) << "Can not find " << log[i];
-        }
-    }
-    EXPECT_EQ(count, len) << dumpRes << "DfxProcessDumpTest002 Failed";
-    GTEST_LOG_(INFO) << "DfxProcessDumpTest002: end.";
-}
-
-/**
- * @tc.name: DfxProcessDumpTest003
- * @tc.desc: test dumpcatcher -p [application process]
- * @tc.type: FUNC
- */
-HWTEST_F(DfxProcessDumpTest, DfxProcessDumpTest003, TestSize.Level2)
-{
-    GTEST_LOG_(INFO) << "DfxProcessDumpTest003: start.";
-    if (g_testPid == 0) {
-        GTEST_LOG_(ERROR) << "Failed to launch target hap.";
-        return;
-    }
-    if (!CheckProcessComm(g_testPid)) {
-        GTEST_LOG_(ERROR) << "Error process comm";
-        return;
-    }
-    string testCommand = "dumpcatcher -p " + to_string(g_testPid);
-    string dumpRes = ProcessDumpCommands(testCommand);
-    int count = 0;
-    string log[] = {"Pid:", "Name:", "#00", "#01", "#02"};
-    log[0] = log[0] + to_string(g_testPid);
-    log[1] = log[1] + TRUNCATE_TEST_BUNDLE_NAME;
-    string::size_type idx;
-    int len = sizeof(log) / sizeof(log[0]);
-    for (int i = 0; i < len; i++) {
-        idx = dumpRes.find(log[i]);
-        if (idx != string::npos) {
-            count++;
-        } else {
-            GTEST_LOG_(INFO) << "Can not find " << log[i];
-        }
-    }
-    EXPECT_EQ(count, len) << dumpRes << "DfxProcessDumpTest003 Failed";
-    GTEST_LOG_(INFO) << "DfxProcessDumpTest003: end.";
-}
-
-/**
- * @tc.name: DfxProcessDumpTest004
- * @tc.desc: test dumpcatcher -p -t [application process]
- * @tc.type: FUNC
- */
-HWTEST_F(DfxProcessDumpTest, DfxProcessDumpTest004, TestSize.Level2)
-{
-    GTEST_LOG_(INFO) << "DfxProcessDumpTest004: start.";
-    if (g_testPid == 0) {
-        GTEST_LOG_(ERROR) << "Failed to launch target hap.";
-        return;
-    }
-    if (!CheckProcessComm(g_testPid)) {
-        GTEST_LOG_(ERROR) << "Error process comm";
-        return;
-    }
-    string testCommand = "dumpcatcher -p " + to_string(g_testPid) + " -t " + to_string(g_testPid);
-    string dumpRes = ProcessDumpCommands(testCommand);
-    int count = 0;
-    string log[] = {"Pid:", "Name:", "#00", "#01", "#02"};
-    log[0] = log[0] + to_string(g_testPid);
-    log[1] = log[1] + TRUNCATE_TEST_BUNDLE_NAME;
-    string::size_type idx;
-    int len = sizeof(log) / sizeof(log[0]);
-    for (int i = 0; i < len; i++) {
-        idx = dumpRes.find(log[i]);
-        if (idx != string::npos) {
-            count++;
-        } else {
-            GTEST_LOG_(INFO) << "Can not find " << log[i];
-        }
-    }
-    EXPECT_EQ(count, len) << dumpRes << "DfxProcessDumpTest004 Failed";
-    GTEST_LOG_(INFO) << "DfxProcessDumpTest004: end.";
-}
-
-/**
- * @tc.name: DfxProcessDumpTest005
- * @tc.desc: test SIGILL crash
- * @tc.type: FUNC
- */
-HWTEST_F(DfxProcessDumpTest, DfxProcessDumpTest005, TestSize.Level2)
-{
-    GTEST_LOG_(INFO) << "DfxProcessDumpTest005: start.";
     pid_t testProcess = CreateMultiThreadProcess(10); // 10 : create a process with ten threads
     sleep(1);
     auto curTime = GetTimeMilliSeconds();
@@ -408,17 +157,17 @@ HWTEST_F(DfxProcessDumpTest, DfxProcessDumpTest005, TestSize.Level2)
     auto filename = GetCppCrashFileName(testProcess);
     ASSERT_EQ(std::to_string(curTime).length(), filename.length() - filename.find_last_of('-') - 1);
     ASSERT_TRUE(CheckCppCrashKeyWords(filename, testProcess, SIGILL));
-    GTEST_LOG_(INFO) << "DfxProcessDumpTest005: end.";
+    GTEST_LOG_(INFO) << "DfxProcessDumpTest001: end.";
 }
 
 /**
- * @tc.name: DfxProcessDumpTest006
+ * @tc.name: DfxProcessDumpTest002
  * @tc.desc: test SIGTRAP crash
  * @tc.type: FUNC
  */
-HWTEST_F(DfxProcessDumpTest, DfxProcessDumpTest006, TestSize.Level2)
+HWTEST_F(DfxProcessDumpTest, DfxProcessDumpTest002, TestSize.Level2)
 {
-    GTEST_LOG_(INFO) << "DfxProcessDumpTest006: start.";
+    GTEST_LOG_(INFO) << "DfxProcessDumpTest002: start.";
     pid_t testProcess = CreateMultiThreadProcess(10); // 10 : create a process with ten threads
     sleep(1);
     auto curTime = GetTimeMilliSeconds();
@@ -427,17 +176,17 @@ HWTEST_F(DfxProcessDumpTest, DfxProcessDumpTest006, TestSize.Level2)
     auto filename = GetCppCrashFileName(testProcess);
     ASSERT_EQ(std::to_string(curTime).length(), filename.length() - filename.find_last_of('-') - 1);
     ASSERT_TRUE(CheckCppCrashKeyWords(filename, testProcess, SIGTRAP));
-    GTEST_LOG_(INFO) << "DfxProcessDumpTest006: end.";
+    GTEST_LOG_(INFO) << "DfxProcessDumpTest002: end.";
 }
 
 /**
- * @tc.name: DfxProcessDumpTest007
+ * @tc.name: DfxProcessDumpTest003
  * @tc.desc: test SIGABRT crash
  * @tc.type: FUNC
  */
-HWTEST_F(DfxProcessDumpTest, DfxProcessDumpTest007, TestSize.Level2)
+HWTEST_F(DfxProcessDumpTest, DfxProcessDumpTest003, TestSize.Level2)
 {
-    GTEST_LOG_(INFO) << "DfxProcessDumpTest007: start.";
+    GTEST_LOG_(INFO) << "DfxProcessDumpTest003: start.";
     pid_t testProcess = CreateMultiThreadProcess(10); // 10 : create a process with ten threads
     sleep(1);
     auto curTime = GetTimeMilliSeconds();
@@ -446,17 +195,17 @@ HWTEST_F(DfxProcessDumpTest, DfxProcessDumpTest007, TestSize.Level2)
     auto filename = GetCppCrashFileName(testProcess);
     ASSERT_EQ(std::to_string(curTime).length(), filename.length() - filename.find_last_of('-') - 1);
     ASSERT_TRUE(CheckCppCrashKeyWords(filename, testProcess, SIGABRT));
-    GTEST_LOG_(INFO) << "DfxProcessDumpTest007: end.";
+    GTEST_LOG_(INFO) << "DfxProcessDumpTest003: end.";
 }
 
 /**
- * @tc.name: DfxProcessDumpTest008
+ * @tc.name: DfxProcessDumpTest004
  * @tc.desc: test SIGBUS crash
  * @tc.type: FUNC
  */
-HWTEST_F(DfxProcessDumpTest, DfxProcessDumpTest008, TestSize.Level2)
+HWTEST_F(DfxProcessDumpTest, DfxProcessDumpTest004, TestSize.Level2)
 {
-    GTEST_LOG_(INFO) << "DfxProcessDumpTest008: start.";
+    GTEST_LOG_(INFO) << "DfxProcessDumpTest004: start.";
     pid_t testProcess = CreateMultiThreadProcess(10); // 10 : create a process with ten threads
     sleep(1);
     auto curTime = GetTimeMilliSeconds();
@@ -465,17 +214,17 @@ HWTEST_F(DfxProcessDumpTest, DfxProcessDumpTest008, TestSize.Level2)
     auto filename = GetCppCrashFileName(testProcess);
     ASSERT_EQ(std::to_string(curTime).length(), filename.length() - filename.find_last_of('-') - 1);
     ASSERT_TRUE(CheckCppCrashKeyWords(filename, testProcess, SIGBUS));
-    GTEST_LOG_(INFO) << "DfxProcessDumpTest008: end.";
+    GTEST_LOG_(INFO) << "DfxProcessDumpTest004: end.";
 }
 
 /**
- * @tc.name: DfxProcessDumpTest009
+ * @tc.name: DfxProcessDumpTest005
  * @tc.desc: test SIGFPE crash
  * @tc.type: FUNC
  */
-HWTEST_F(DfxProcessDumpTest, DfxProcessDumpTest009, TestSize.Level2)
+HWTEST_F(DfxProcessDumpTest, DfxProcessDumpTest005, TestSize.Level2)
 {
-    GTEST_LOG_(INFO) << "DfxProcessDumpTest009: start.";
+    GTEST_LOG_(INFO) << "DfxProcessDumpTest005: start.";
     pid_t testProcess = CreateMultiThreadProcess(10); // 10 : create a process with ten threads
     sleep(1);
     auto curTime = GetTimeMilliSeconds();
@@ -484,17 +233,17 @@ HWTEST_F(DfxProcessDumpTest, DfxProcessDumpTest009, TestSize.Level2)
     auto filename = GetCppCrashFileName(testProcess);
     ASSERT_EQ(std::to_string(curTime).length(), filename.length() - filename.find_last_of('-') - 1);
     ASSERT_TRUE(CheckCppCrashKeyWords(filename, testProcess, SIGFPE));
-    GTEST_LOG_(INFO) << "DfxProcessDumpTest009: end.";
+    GTEST_LOG_(INFO) << "DfxProcessDumpTest005: end.";
 }
 
 /**
- * @tc.name: DfxProcessDumpTest010
+ * @tc.name: DfxProcessDumpTest006
  * @tc.desc: test SIGSEGV crash
  * @tc.type: FUNC
  */
-HWTEST_F(DfxProcessDumpTest, DfxProcessDumpTest010, TestSize.Level2)
+HWTEST_F(DfxProcessDumpTest, DfxProcessDumpTest006, TestSize.Level2)
 {
-    GTEST_LOG_(INFO) << "DfxProcessDumpTest010: start.";
+    GTEST_LOG_(INFO) << "DfxProcessDumpTest006: start.";
     pid_t testProcess = CreateMultiThreadProcess(10); // 10 : create a process with ten threads
     sleep(1);
     auto curTime = GetTimeMilliSeconds();
@@ -503,17 +252,17 @@ HWTEST_F(DfxProcessDumpTest, DfxProcessDumpTest010, TestSize.Level2)
     auto filename = GetCppCrashFileName(testProcess);
     ASSERT_EQ(std::to_string(curTime).length(), filename.length() - filename.find_last_of('-') - 1);
     ASSERT_TRUE(CheckCppCrashKeyWords(filename, testProcess, SIGSEGV));
-    GTEST_LOG_(INFO) << "DfxProcessDumpTest010: end.";
+    GTEST_LOG_(INFO) << "DfxProcessDumpTest006: end.";
 }
 
 /**
- * @tc.name: DfxProcessDumpTest011
+ * @tc.name: DfxProcessDumpTest007
  * @tc.desc: test SIGSTKFLT crash
  * @tc.type: FUNC
  */
-HWTEST_F(DfxProcessDumpTest, DfxProcessDumpTest011, TestSize.Level2)
+HWTEST_F(DfxProcessDumpTest, DfxProcessDumpTest007, TestSize.Level2)
 {
-    GTEST_LOG_(INFO) << "DfxProcessDumpTest011: start.";
+    GTEST_LOG_(INFO) << "DfxProcessDumpTest007: start.";
     pid_t testProcess = CreateMultiThreadProcess(10); // 10 : create a process with ten threads
     sleep(1);
     auto curTime = GetTimeMilliSeconds();
@@ -522,17 +271,17 @@ HWTEST_F(DfxProcessDumpTest, DfxProcessDumpTest011, TestSize.Level2)
     auto filename = GetCppCrashFileName(testProcess);
     ASSERT_EQ(std::to_string(curTime).length(), filename.length() - filename.find_last_of('-') - 1);
     ASSERT_TRUE(CheckCppCrashKeyWords(filename, testProcess, SIGSTKFLT));
-    GTEST_LOG_(INFO) << "DfxProcessDumpTest011: end.";
+    GTEST_LOG_(INFO) << "DfxProcessDumpTest007: end.";
 }
 
 /**
- * @tc.name: DfxProcessDumpTest012
+ * @tc.name: DfxProcessDumpTest008
  * @tc.desc: test SIGSYS crash
  * @tc.type: FUNC
  */
-HWTEST_F(DfxProcessDumpTest, DfxProcessDumpTest012, TestSize.Level2)
+HWTEST_F(DfxProcessDumpTest, DfxProcessDumpTest008, TestSize.Level2)
 {
-    GTEST_LOG_(INFO) << "DfxProcessDumpTest012: start.";
+    GTEST_LOG_(INFO) << "DfxProcessDumpTest008: start.";
     pid_t testProcess = CreateMultiThreadProcess(10); // 10 : create a process with ten threads
     sleep(1);
     auto curTime = GetTimeMilliSeconds();
@@ -541,79 +290,5 @@ HWTEST_F(DfxProcessDumpTest, DfxProcessDumpTest012, TestSize.Level2)
     auto filename = GetCppCrashFileName(testProcess);
     ASSERT_EQ(std::to_string(curTime).length(), filename.length() - filename.find_last_of('-') - 1);
     ASSERT_TRUE(CheckCppCrashKeyWords(filename, testProcess, SIGSYS));
-    GTEST_LOG_(INFO) << "DfxProcessDumpTest012: end.";
-}
-
-/**
- * @tc.name: DfxProcessDumpTest013
- * @tc.desc: test dumpcatcher -p [namespace application process]
- * @tc.type: FUNC
- */
-HWTEST_F(DfxProcessDumpTest, DfxProcessDumpTest013, TestSize.Level2)
-{
-    GTEST_LOG_(INFO) << "DfxProcessDumpTest013: start.";
-    if (g_testPid == 0) {
-        GTEST_LOG_(ERROR) << "Failed to launch target hap.";
-        return;
-    }
-    if (!CheckProcessComm(g_testPid)) {
-        GTEST_LOG_(ERROR) << "Error process comm";
-        return;
-    }
-    ProcInfo procinfo;
-    GTEST_LOG_(INFO) << "ppid = " << GetProcStatusByPid(g_testPid, procinfo);
-    string testCommand = "dumpcatcher -p " + to_string(g_testPid);
-    string dumpRes = ProcessDumpCommands(testCommand);
-    int count = 0;
-    string log[] = {"Pid:", "Name:", "#00", "#01", "#02"};
-    log[0] = log[0] + to_string(g_testPid);
-    log[1] = log[1] + TRUNCATE_TEST_BUNDLE_NAME;
-    string::size_type idx;
-    int len = sizeof(log) / sizeof(log[0]);
-    for (int i = 0; i < len; i++) {
-        idx = dumpRes.find(log[i]);
-        if (idx != string::npos) {
-            count++;
-        } else {
-            GTEST_LOG_(INFO) << "Can not find " << log[i];
-        }
-    }
-    EXPECT_EQ(count, len) << dumpRes << "DfxProcessDumpTest013 Failed";
-    GTEST_LOG_(INFO) << "DfxProcessDumpTest013: end.";
-}
-
-/**
- * @tc.name: DfxProcessDumpTest014
- * @tc.desc: test dumpcatcher -p -t [namespace application process]
- * @tc.type: FUNC
- */
-HWTEST_F(DfxProcessDumpTest, DfxProcessDumpTest014, TestSize.Level2)
-{
-    GTEST_LOG_(INFO) << "DfxProcessDumpTest014: start.";
-    if (g_testPid == 0) {
-        GTEST_LOG_(ERROR) << "Failed to launch target hap.";
-        return;
-    }
-    if (!CheckProcessComm(g_testPid)) {
-        GTEST_LOG_(ERROR) << "Error process comm";
-        return;
-    }
-    string testCommand = "dumpcatcher -p " + to_string(g_testPid) + " -t " + to_string(g_testPid);
-    string dumpRes = ProcessDumpCommands(testCommand);
-    int count = 0;
-    string log[] = {"Pid:", "Name:", "#00", "#01", "#02"};
-    log[0] = log[0] + to_string(g_testPid);
-    log[1] = log[1] + TRUNCATE_TEST_BUNDLE_NAME;
-    string::size_type idx;
-    int len = sizeof(log) / sizeof(log[0]);
-    for (int i = 0; i < len; i++) {
-        idx = dumpRes.find(log[i]);
-        if (idx != string::npos) {
-            count++;
-        } else {
-            GTEST_LOG_(INFO) << "Can not find " << log[i];
-        }
-    }
-    EXPECT_EQ(count, len) << dumpRes << "DfxProcessDumpTest014 Failed";
-    GTEST_LOG_(INFO) << "DfxProcessDumpTest014: end.";
+    GTEST_LOG_(INFO) << "DfxProcessDumpTest008: end.";
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 Huawei Device Co., Ltd.
+ * Copyright (c) 2022-2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -23,6 +23,7 @@
 
 #include "dfx_define.h"
 #include "dfx_dump_catcher.h"
+#include "dfx_test_util.h"
 
 using namespace testing;
 using namespace testing::ext;
@@ -47,50 +48,18 @@ static pid_t g_processId = 0;
 
 int g_testPid = 0;
 
-static std::string GetCmdResultFromPopen(const std::string& cmd)
-{
-    if (cmd.empty()) {
-        return "";
-    }
-    FILE* fp = popen(cmd.c_str(), "r");
-    if (fp == nullptr) {
-        return "";
-    }
-    const int bufSize = 128;
-    char buffer[bufSize];
-    std::string result = "";
-    while (!feof(fp)) {
-        if (fgets(buffer, bufSize - 1, fp) != nullptr) {
-            result += buffer;
-        }
-    }
-    pclose(fp);
-    return result;
-}
-
-static int GetServicePid(const std::string& serviceName)
-{
-    std::string cmd = "pidof " + serviceName;
-    std::string pidStr = GetCmdResultFromPopen(cmd);
-    int32_t pid = 0;
-    std::stringstream pidStream(pidStr);
-    pidStream >> pid;
-    printf("the pid of service(%s) is %s \n", serviceName.c_str(), pidStr.c_str());
-    return pid;
-}
-
 static int LaunchTestHap(const std::string& abilityName, const std::string& bundleName)
 {
     std::string launchCmd = "/system/bin/aa start -a " + abilityName + " -b " + bundleName;
-    (void)GetCmdResultFromPopen(launchCmd);
+    (void)ExecuteCommands(launchCmd);
     sleep(2); // 2 : sleep 2s
-    return GetServicePid(bundleName);
+    return GetProcessPid(bundleName);
 }
 
 void DumpCatcherInterfacesTest::SetUpTestCase()
 {
     std::string installCmd = "bm install -p /data/FaultloggerdJsTest.hap";
-    (void)GetCmdResultFromPopen(installCmd);
+    (void)ExecuteCommands(installCmd);
     std::string testBundleName = TEST_BUNDLE_NAME;
     std::string testAbiltyName = testBundleName + ".MainAbility";
     g_testPid = LaunchTestHap(testAbiltyName, testBundleName);
@@ -100,11 +69,11 @@ void DumpCatcherInterfacesTest::TearDownTestCase()
 {
     std::string stopCmd = "/system/bin/aa force-stop ";
     stopCmd += TEST_BUNDLE_NAME;
-    (void)GetCmdResultFromPopen(stopCmd);
+    (void)ExecuteCommands(stopCmd);
 
     std::string uninstallCmd = "bm uninstall -n ";
     uninstallCmd += TEST_BUNDLE_NAME;
-    (void)GetCmdResultFromPopen(uninstallCmd);
+    (void)ExecuteCommands(uninstallCmd);
 }
 
 void DumpCatcherInterfacesTest::SetUp()
@@ -125,7 +94,6 @@ static void* CreateThread(void *argv)
 static int MultiThreadConstructor(void)
 {
     pthread_t thread;
-
     pthread_create(&thread, nullptr, CreateThread, nullptr);
     pthread_detach(thread);
     usleep(CREATE_THREAD_TIMEOUT);
@@ -148,30 +116,10 @@ static void ForkMultiThreadProcess(void)
     }
 }
 
-static int GetProcessPid(std::string applyName)
-{
-    std::string procCMD = "pgrep '" + applyName + "'";
-    GTEST_LOG_(INFO) << "threadCMD = " << procCMD;
-    FILE *procFileInfo = nullptr;
-    procFileInfo = popen(procCMD.c_str(), "r");
-    if (procFileInfo == nullptr) {
-        perror("popen execute failed");
-        exit(1);
-    }
-    std::string applyPid;
-    char resultBufShell[100] = { 0, };
-    while (fgets(resultBufShell, sizeof(resultBufShell), procFileInfo) != nullptr) {
-        applyPid = resultBufShell;
-        GTEST_LOG_(INFO) << "applyPid: " << applyPid;
-    }
-    pclose(procFileInfo);
-    return std::atoi(applyPid.c_str());
-}
-
 static bool CheckProcessComm(int pid)
 {
     std::string cmd = "cat /proc/" + std::to_string(pid) + "/comm";
-    std::string comm = GetCmdResultFromPopen(cmd);
+    std::string comm = ExecuteCommands(cmd);
     size_t pos = comm.find('\n');
     if (pos != std::string::npos) {
         comm.erase(pos, 1);
@@ -184,7 +132,7 @@ static bool CheckProcessComm(int pid)
 
 /**
  * @tc.name: DumpCatcherInterfacesTest001
- * @tc.desc: test DumpCatchMultiPid API: multiPid{PID(app), PID(accountmgr)}
+ * @tc.desc: test DumpCatchMultiPid API: multiPid{PID(accountmgr), PID(foundation)}
  * @tc.type: FUNC
  */
 HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest001, TestSize.Level2)
@@ -206,18 +154,14 @@ HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest001, TestSize.Level
     log[1] = log[1] + testProcess1;
     log[2] = log[2] + std::to_string(testPid2);
     log[3] = log[3] + testProcess2;
-    string::size_type idx;
     int expectNum = sizeof(log) / sizeof(log[0]);
-    int j = 0;
     int count = 0;
     for (int i = 0; i < expectNum; i++) {
-        idx = msg.find(log[j]);
-        if (idx != string::npos) {
+        if (msg.find(log[i]) != string::npos) {
             count++;
         } else {
-            GTEST_LOG_(INFO) << "Can not find "+ log[j];
+            GTEST_LOG_(INFO) << "Can not find "+ log[i];
         }
-        j++;
     }
     EXPECT_EQ(count, expectNum) << msg << "DumpCatcherInterfacesTest001 Failed";
     GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest001: end.";
@@ -286,18 +230,14 @@ HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest004, TestSize.Level
     string log[] = { "Tid:", "Name:", "Failed" };
     log[0] = log[0] + std::to_string(applyPid1);
     log[1] = log[1] + "accountmgr";
-    string::size_type idx;
     int expectNum = sizeof(log) / sizeof(log[0]);
-    int j = 0;
     int count = 0;
     for (int i = 0; i < expectNum; i++) {
-        idx = msg.find(log[j]);
-        if (idx != string::npos) {
+        if (msg.find(log[i]) != string::npos) {
             count++;
         } else {
-            GTEST_LOG_(INFO) << "Can not find "+ log[j];
+            GTEST_LOG_(INFO) << "Can not find "+ log[i];
         }
-        j++;
     }
     EXPECT_EQ(count, expectNum) << msg << "DumpCatcherInterfacesTest004 Failed";
     GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest004: end.";
@@ -305,7 +245,7 @@ HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest004, TestSize.Level
 
 /**
  * @tc.name: DumpCatcherInterfacesTest005
- * @tc.desc: test DumpCatchMultiPid API: multiPid{PID(accountmgr),PID(app),PID(foundation)}
+ * @tc.desc: test DumpCatchMultiPid API: multiPid{PID(accountmgr),PID(foundation),PID(systemui)}
  * @tc.type: FUNC
  */
 HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest005, TestSize.Level2)
@@ -318,7 +258,7 @@ HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest005, TestSize.Level
     int testPid2 = GetProcessPid(testProcess2);
     GTEST_LOG_(INFO) << "testPid2:" << testPid2;
     std::string testProcess3 = "com.ohos.systemui";
-    int testPid3 = GetServicePid(testProcess3);
+    int testPid3 = GetProcessPid(testProcess3);
     GTEST_LOG_(INFO) << "testPid3:" << testPid3;
     std::vector<int> multiPid {testPid1, testPid2, testPid3};
     DfxDumpCatcher dumplog;
@@ -332,18 +272,14 @@ HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest005, TestSize.Level
     log[3] = log[3] + testProcess2;
     log[4] = log[4] + std::to_string(testPid3);
     log[5] = log[5] + "m.ohos.systemui";
-    string::size_type idx;
     int expectNum = sizeof(log) / sizeof(log[0]);
-    int j = 0;
     int count = 0;
     for (int i = 0; i < expectNum; i++) {
-        idx = msg.find(log[j]);
-        if (idx != string::npos) {
+        if (msg.find(log[i]) != string::npos) {
             count++;
         } else {
-            GTEST_LOG_(INFO) << "Can not find "+ log[j];
+            GTEST_LOG_(INFO) << "Can not find "+ log[i];
         }
-        j++;
     }
     EXPECT_EQ(count, expectNum) << msg << "DumpCatcherInterfacesTest005 Failed";
     GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest005: end.";
@@ -370,18 +306,14 @@ HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest006, TestSize.Level
     string log[] = { "Tid:", "Name:", "Failed"};
     log[0] = log[0] + std::to_string(testPid1);
     log[1] = log[1] + "accountmgr";
-    string::size_type idx;
     int expectNum = sizeof(log) / sizeof(log[0]);
-    int j = 0;
     int count = 0;
     for (int i = 0; i < expectNum; i++) {
-        idx = msg.find(log[j]);
-        if (idx != string::npos) {
+        if (msg.find(log[i]) != string::npos) {
             count++;
         } else {
-            GTEST_LOG_(INFO) << "Can not find "+ log[j];
+            GTEST_LOG_(INFO) << "Can not find "+ log[i];
         }
-        j++;
     }
     EXPECT_EQ(count, expectNum) << msg << "DumpCatcherInterfacesTest006 Failed";
     GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest006: end.";
@@ -428,17 +360,13 @@ HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest008, TestSize.Level
     log[0] = log[0] + std::to_string(applyPid1);
     log[1] = log[1] + apply;
     int expectNum = sizeof(log) / sizeof(log[0]);
-    string::size_type idx;
-    int j = 0;
     int count = 0;
     for (int i = 0; i < expectNum; i++) {
-        idx = msg.find(log[j]);
-        if (idx != string::npos) {
+        if (msg.find(log[i]) != string::npos) {
             count++;
         } else {
-            GTEST_LOG_(INFO) << "Can not find "+ log[j];
+            GTEST_LOG_(INFO) << "Can not find "+ log[i];
         }
-        j++;
     }
     EXPECT_EQ(count, expectNum) << msg << "DumpCatcherInterfacesTest008 Failed";
     GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest008: end.";
@@ -465,7 +393,7 @@ HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest009, TestSize.Level
 
 /**
  * @tc.name: DumpCatcherInterfacesTest010
- * @tc.desc: test CatchFrame API: PID(com.ohos.systemui), TID(com.ohos.systemui)
+ * @tc.desc: test CatchFrame API: PID(test hap), TID(test hap main thread)
  * @tc.type: FUNC
  */
 HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest010, TestSize.Level2)
@@ -500,7 +428,7 @@ HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest011, TestSize.Level
     GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest011: start.";
     DfxDumpCatcher dumplog;
     std::vector<NativeFrame> frameV;
-    bool ret = dumplog.CatchFrame(gettid(), frameV);
+    bool ret = dumplog.CatchFrame(gettid(), frameV, true);
     GTEST_LOG_(INFO) << ret;
     EXPECT_EQ(ret, false) << "DumpCatcherInterfacesTest011 Failed";
     GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest011: end.";
@@ -516,7 +444,7 @@ HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest012, TestSize.Level
     GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest012: start.";
     DfxDumpCatcher dumplog;
     std::vector<NativeFrame> frameV;
-    bool ret = dumplog.CatchFrame(-11, frameV);
+    bool ret = dumplog.CatchFrame(-11, frameV, true);
     GTEST_LOG_(INFO) << ret;
     EXPECT_EQ(ret, false) << "DumpCatcherInterfacesTest012 Failed";
     GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest012: end.";
@@ -540,7 +468,7 @@ HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest013, TestSize.Level
 
 /**
  * @tc.name: DumpCatcherInterfacesTest014
- * @tc.desc: test DumpCatchMix API: PID(systemui pid), TID(0)
+ * @tc.desc: test DumpCatchMix API: PID(test hap), TID(0)
  * @tc.type: FUNC
  * @tc.require: issueI5PJ9O
  */
@@ -563,18 +491,14 @@ HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest014, TestSize.Level
         "Name:DfxWatchdog", "Name:GC_WorkerThread", "Name:ace.bg.1"};
     log[0] += std::to_string(g_testPid);
     log[1] += TRUNCATE_TEST_BUNDLE_NAME;
-    string::size_type idx;
-    int j = 0;
     int count = 0;
     int expectNum = sizeof(log) / sizeof(log[0]);
     for (int i = 0; i < expectNum; i++) {
-        idx = msg.find(log[j]);
-        if (idx != string::npos) {
+        if (msg.find(log[i]) != string::npos) {
             count++;
         } else {
-            GTEST_LOG_(INFO) << "Can not find "+ log[j];
+            GTEST_LOG_(INFO) << "Can not find "+ log[i];
         }
-        j++;
     }
 
     EXPECT_EQ(count, expectNum) << msg << "DumpCatcherInterfacesTest014 Failed";
@@ -583,7 +507,7 @@ HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest014, TestSize.Level
 
 /**
  * @tc.name: DumpCatcherInterfacesTest015
- * @tc.desc: test DumpCatchMix API: PID(systemui pid), TID(systemui pid)
+ * @tc.desc: test DumpCatchMix API: PID(test hap), TID(test hap main thread)
  * @tc.type: FUNC
  * @tc.require: issueI5PJ9O
  */
@@ -606,17 +530,13 @@ HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest015, TestSize.Level
     log[0] += std::to_string(g_testPid);
     log[1] += TRUNCATE_TEST_BUNDLE_NAME;
     int expectNum = sizeof(log) / sizeof(log[0]);
-    string::size_type idx;
-    int j = 0;
     int count = 0;
     for (int i = 0; i < expectNum; i++) {
-        idx = msg.find(log[j]);
-        if (idx != string::npos) {
+        if (msg.find(log[i]) != string::npos) {
             count++;
         } else {
-            GTEST_LOG_(INFO) << "Can not find "+ log[j];
+            GTEST_LOG_(INFO) << "Can not find "+ log[i];
         }
-        j++;
     }
     EXPECT_EQ(count, expectNum) << msg << "DumpCatcherInterfacesTest015 Failed";
     GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest015: end.";
@@ -624,7 +544,7 @@ HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest015, TestSize.Level
 
 /**
  * @tc.name: DumpCatcherInterfacesTest016
- * @tc.desc: test DumpCatchMix API: PID(systemui pid), TID(-1)
+ * @tc.desc: test DumpCatchMix API: PID(test hap), TID(-1)
  * @tc.type: FUNC
  * @tc.require: issueI5PJ9O
  */
@@ -666,7 +586,7 @@ HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest017, TestSize.Level
 
 /**
  * @tc.name: DumpCatcherInterfacesTest018
- * @tc.desc: test DumpCatchFd API
+ * @tc.desc: test DumpCatchFd API: PID(getpid()), TID(gettid())
  * @tc.type: FUNC
  */
 HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest018, TestSize.Level2)
@@ -676,14 +596,13 @@ HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest018, TestSize.Level
     std::string msg = "";
     bool ret = dumplog.DumpCatchFd(getpid(), gettid(), msg, 1);
     GTEST_LOG_(INFO) << ret;
-
     EXPECT_EQ(ret, true) << "DumpCatcherInterfacesTest018 Failed";
     GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest018: end.";
 }
 
 /**
  * @tc.name: DumpCatcherInterfacesTest019
- * @tc.desc: test DumpCatchFd API
+ * @tc.desc: test DumpCatchFd API: PID(getpid()), TID(0)
  * @tc.type: FUNC
  */
 HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest019, TestSize.Level2)
@@ -699,7 +618,7 @@ HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest019, TestSize.Level
 
 /**
  * @tc.name: DumpCatcherInterfacesTest020
- * @tc.desc: test DumpCatchFd API
+ * @tc.desc: test DumpCatchFd API: PID(getpid()), TID(-1)
  * @tc.type: FUNC
  */
 HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest020, TestSize.Level2)
@@ -716,7 +635,7 @@ HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest020, TestSize.Level
 
 /**
  * @tc.name: DumpCatcherInterfacesTest021
- * @tc.desc: test DumpCatchFd API
+ * @tc.desc: test DumpCatchFd API: PID(accountmgr), TID(0)
  * @tc.type: FUNC
  */
 HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest021, TestSize.Level2)
@@ -735,7 +654,7 @@ HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest021, TestSize.Level
 
 /**
  * @tc.name: DumpCatcherInterfacesTest022
- * @tc.desc: test DumpCatchFd API
+ * @tc.desc: test DumpCatchFd API: PID(accountmgr), TID(accountmgr main thread)
  * @tc.type: FUNC
  */
 HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest022, TestSize.Level2)
@@ -754,7 +673,7 @@ HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest022, TestSize.Level
 
 /**
  * @tc.name: DumpCatcherInterfacesTest023
- * @tc.desc: test DumpCatchFd API
+ * @tc.desc: test DumpCatchFd API: PID(accountmgr), TID(-1)
  * @tc.type: FUNC
  */
 HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest023, TestSize.Level2)
@@ -773,7 +692,7 @@ HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest023, TestSize.Level
 
 /**
  * @tc.name: DumpCatcherInterfacesTest024
- * @tc.desc: test DumpCatchFd API
+ * @tc.desc: test DumpCatchFd API: PID(accountmgr), TID(9999)
  * @tc.type: FUNC
  */
 HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest024, TestSize.Level2)
@@ -792,7 +711,7 @@ HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest024, TestSize.Level
 
 /**
  * @tc.name: DumpCatcherInterfacesTest025
- * @tc.desc: test DumpCatchFd API
+ * @tc.desc: test DumpCatchFd API: PID(getpid()), TID(9999)
  * @tc.type: FUNC
  */
 HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest025, TestSize.Level2)
@@ -808,14 +727,13 @@ HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest025, TestSize.Level
 
 /**
  * @tc.name: DumpCatcherInterfacesTest026
- * @tc.desc: test DumpCatchFd API
+ * @tc.desc: test DumpCatchFd API: PID(getpid()), TID(child thread)
  * @tc.type: FUNC
  */
 HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest026, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest026: start.";
     MultiThreadConstructor();
-
     DfxDumpCatcher dumplog;
     std::string msg = "";
     GTEST_LOG_(INFO) << "dump local process, "  << " tid:" << g_threadId;
@@ -827,14 +745,13 @@ HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest026, TestSize.Level
 
 /**
  * @tc.name: DumpCatcherInterfacesTest027
- * @tc.desc: test DumpCatchFd API
+ * @tc.desc: test DumpCatchFd API: PID(child process), TID(child thread of child process)
  * @tc.type: FUNC
  */
 HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest027, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest027: start.";
     ForkMultiThreadProcess();
-
     GTEST_LOG_(INFO) << "dump remote process, "  << " pid:" << g_processId << ", tid:" << g_threadId;
     DfxDumpCatcher dumplog;
     std::string msg = "";

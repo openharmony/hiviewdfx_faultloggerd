@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2022 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -18,28 +18,12 @@
 #ifndef FAULTLOGGERD_SYSTEM_TEST_H
 #define FAULTLOGGERD_SYSTEM_TEST_H
 
-#if defined(__arm__)
-    #define REGISTERS           "r0:","r1:","r2:","r3:","r4:","r5:","r6:",\
-                                "r7:","r8:","r9:","r10:","fp:","ip:","sp:","lr:","pc:"
-    #define REGISTERS_NUM       16
-    #define REGISTERS_LENGTH    10
-#elif defined(__aarch64__)
-    #define REGISTERS           "x0:","x1:","x2:","x3:","x4:","x5:","x6:","x7:","x8:",\
-                                "x9:","x10:","x11:","x12:","x13:","x14:","x15:","x16:",\
-                                "x17:","x18:","x19:","x20:","x21:","x22:","x23:","x24:",\
-                                "x25:","x26:","x27:","x28:","x29:","lr:","sp:","pc:"
-    #define REGISTERS_NUM       33
-    #define REGISTERS_LENGTH    18
-#endif
-
 #include <gtest/gtest.h>
 #include <map>
 
 namespace OHOS {
 namespace HiviewDFX {
-
 static const int ARRAY_SIZE_HUNDRED = 100;
-
 class FaultLoggerdSystemTest : public testing::Test {
 public:
     static void SetUpTestCase(void);
@@ -53,40 +37,26 @@ public:
     static std::string ForkAndRunCommands(const std::vector<std::string>& cmds, int commandStatus);
     static std::string ForkAndCommands(int crasherType, int udid);
 
-    static std::string ProcessDumpCommands(const std::string cmds);
     static std::string GetfileNamePrefix(const std::string errorCMD, int commandStatus);
     static std::string GetstackfileNamePrefix(const std::string errorCMD, int commandStatus);
-
-    static int CountLines(std::string filename);
-    static bool IsDigit(std::string pid);
 
     static int CheckKeywords(std::string& filePath, std::string *keywords, int length, int minRegIdx);
     static int CheckCountNum(std::string& filePath, std::string& pid, std::string& errorCMD);
     static int CheckCountNumAbort(std::string& filePath, std::string& pid);
     static int CheckCountNumPCZero(std::string& filePath, std::string& pid);
-    static int CheckStacktraceCountNum(std::string& filePath, std::string& pid);
     static int CheckCountNumMultiThread(std::string& filePath, std::string& pid);
     static int CheckCountNumOverStack(std::string& filePath, std::string& pid);
     static int CheckCountNumStackTop(std::string& filePath, std::string& pid, std::string& ErrorCMD);
     static std::string GetStackTop();
-    static int CheckCountNumKill11(std::string& filePath, std::string& pid);
-    static void Trim(std::string& str);
 
     static void StartCrasherLoop(int type);     // 1. system; 2. root; 3.app; 4. root+cpp
     static void KillCrasherLoopForSomeCase(int type);
     static void StartCrasherLoopForUnsingPidAndTid(int crasherType);    // 1.c 2.c++
-    static int crashThread(int threadID);
-    static int getApplyPid(std::string applyName);
-    static std::string GetCmdResultFromPopen(const std::string& cmd);
-    static int GetServicePid(const std::string& serviceName);
-    static int LaunchTestHap(const std::string& abilityName, const std::string& bundleName);
-    static void dumpCatchThread(int threadID);
-    static bool CheckProcessComm(int pid);
+    static void TestDumpCatch(const int targetPid, const std::string processName, const int threadIdx);
 
     static std::string rootTid[ARRAY_SIZE_HUNDRED];
     static std::string appTid[ARRAY_SIZE_HUNDRED];
     static std::string sysTid[ARRAY_SIZE_HUNDRED];
-    static std::string testTid[ARRAY_SIZE_HUNDRED];
 
     static int loopSysPid;
     static int loopRootPid;
@@ -98,7 +68,7 @@ public:
     static int rootTidCount;
     static int sysTidCount;
     static unsigned int unsigLoopSysPid;
-    static int count;
+    static int checkCnt;
 };
 } // namespace HiviewDFX
 } // namespace OHOS

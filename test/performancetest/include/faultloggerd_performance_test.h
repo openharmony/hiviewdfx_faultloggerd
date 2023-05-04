@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -29,7 +29,6 @@ public:
     void SetUp();
     void TearDown();
     static std::string ForkAndRootCommands(const std::vector<std::string>& cmds);
-    static std::string ProcessDumpCommands(const std::string cmds);
     static void StartRootCrasherLoop();
     static void KillCrasherLoopForSomeCase();
     static int getApplyPid(std::string applyName);
