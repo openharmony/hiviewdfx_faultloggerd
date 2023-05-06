@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,33 +17,13 @@
 
 #include "faultloggerd_performance_test.h"
 
-#include <cerrno>
-#include <cstdio>
-#include <cstring>
-#include <ctime>
-#include <dirent.h>
-#include <fcntl.h>
-#include <fstream>
-#include <iostream>
-#include <memory>
-#include <pthread.h>
-#include <securec.h>
-#include <stdlib.h>
-#include <string.h>
 #include <string>
-#include <sys/stat.h>
-#include <sys/time.h>
-#include <sys/types.h>
-#include <sys/wait.h>
-#include <time.h>
 #include <unistd.h>
 #include <vector>
+
 #include "dfx_define.h"
 #include "dfx_dump_catcher.h"
-#include "directory_ex.h"
-#include "file_ex.h"
-#include "syscall.h"
-
+#include "dfx_test_util.h"
 
 using namespace OHOS::HiviewDFX;
 using namespace testing::ext;
@@ -87,23 +67,6 @@ void FaultPerformanceTest::TearDown(void)
 }
 
 int FaultPerformanceTest::looprootPid = 0;
-std::string FaultPerformanceTest::ProcessDumpCommands(const std::string cmds)
-{
-    GTEST_LOG_(INFO) << "threadCMD = " << cmds;
-    FILE *procFileInfo = nullptr;
-    std::string cmdLog;
-    procFileInfo = popen(cmds.c_str(), "r");
-    if (procFileInfo == nullptr) {
-        perror("popen execute failed");
-        exit(1);
-    }
-    char result_buf_shell[NAME_LEN] = {'\0'};
-    while (fgets(result_buf_shell, sizeof(result_buf_shell), procFileInfo) != nullptr) {
-        cmdLog = cmdLog + result_buf_shell;
-    }
-    pclose(procFileInfo);
-    return cmdLog;
-}
 
 std::string FaultPerformanceTest::ForkAndRootCommands(const std::vector<std::string>& cmds)
 {
@@ -146,33 +109,11 @@ void FaultPerformanceTest::KillCrasherLoopForSomeCase()
     system(("kill -9 " + std::to_string(FaultPerformanceTest::looprootPid)).c_str());
 }
 
-int FaultPerformanceTest::getApplyPid(std::string applyName)
-{
-    std::string procCMD = "pgrep '" + applyName + "'";
-    GTEST_LOG_(INFO) << "threadCMD = " << procCMD;
-    FILE *procFileInfo = nullptr;
-    procFileInfo = popen(procCMD.c_str(), "r");
-    if (procFileInfo == nullptr) {
-        perror("popen execute failed");
-        exit(1);
-    }
-    std::string applyPid;
-    char result_buf_shell[100] = { 0, };
-    while (fgets(result_buf_shell, sizeof(result_buf_shell), procFileInfo) != nullptr) {
-        applyPid = result_buf_shell;
-        GTEST_LOG_(INFO) << "applyPid: " << applyPid;
-    }
-    pclose(procFileInfo);
-    GTEST_LOG_(INFO) << applyPid;
-    int intApplyPid = std::atoi(applyPid.c_str());
-    return intApplyPid;
-}
-
 namespace {
 /**
  * @tc.name: FaultPerformanceTest001
  * @tc.desc: test DumpCatch API: PID(root), TID(root)
- * @tc.type: FUNC
+ * @tc.type: PERF
  */
 HWTEST_F (FaultPerformanceTest, FaultPerformanceTest001, TestSize.Level2)
 {
@@ -183,10 +124,10 @@ HWTEST_F (FaultPerformanceTest, FaultPerformanceTest001, TestSize.Level2)
     for (int i = 0; i < PERFORMANCE_TEST_NUMBER_ONE_HUNDRED; i++) {
         dumplog.DumpCatch(FaultPerformanceTest::looprootPid, FaultPerformanceTest::looprootPid, msg);
     }
-    GTEST_LOG_(INFO) << "DumpCatch API Performance time(PID(root), TID(root)): " << \
-        GetStopTime(befor)/PERFORMANCE_TEST_NUMBER_ONE_HUNDRED << "s";    
+    GTEST_LOG_(INFO) << "DumpCatch API Performance time(PID(root), TID(root)): " <<
+        GetStopTime(befor) / PERFORMANCE_TEST_NUMBER_ONE_HUNDRED << "s";
     double expectTime = PERFORMANCE_TEST_MAX_UNWIND_TIME_S;
-    double realTime = GetStopTime(befor)/PERFORMANCE_TEST_NUMBER_ONE_HUNDRED;
+    double realTime = GetStopTime(befor) / PERFORMANCE_TEST_NUMBER_ONE_HUNDRED;
     EXPECT_EQ(true, realTime < expectTime) << "FaultPerformanceTest001 Failed";
     GTEST_LOG_(INFO) << "FaultPerformanceTest001: end.";
 }
@@ -194,7 +135,7 @@ HWTEST_F (FaultPerformanceTest, FaultPerformanceTest001, TestSize.Level2)
 /**
  * @tc.name: FaultPerformanceTest002
  * @tc.desc: test DumpCatch API: PID(root), TID(0)
- * @tc.type: FUNC
+ * @tc.type: PERF
  */
 HWTEST_F (FaultPerformanceTest, FaultPerformanceTest002, TestSize.Level2)
 {
@@ -204,12 +145,12 @@ HWTEST_F (FaultPerformanceTest, FaultPerformanceTest002, TestSize.Level2)
     clock_t befor = GetStartTime();
     for (int i = 0; i < PERFORMANCE_TEST_NUMBER_ONE_HUNDRED; i++) {
         dumplog.DumpCatch(FaultPerformanceTest::looprootPid, 0, msg);
-        usleep(200000);
+        usleep(200000); // 200000 : sleep 200ms
     }
-    GTEST_LOG_(INFO) << "DumpCatch API Performance time(PID(root), TID(0)): " << \
-        GetStopTime(befor)/PERFORMANCE_TEST_NUMBER_ONE_HUNDRED << "s";
+    GTEST_LOG_(INFO) << "DumpCatch API Performance time(PID(root), TID(0)): " <<
+        (GetStopTime(befor) / PERFORMANCE_TEST_NUMBER_ONE_HUNDRED) << "s";
     double expectTime = PERFORMANCE_TEST_MAX_UNWIND_TIME_S;
-    double realTime = GetStopTime(befor)/PERFORMANCE_TEST_NUMBER_ONE_HUNDRED - 0.2;
+    double realTime = (GetStopTime(befor) / PERFORMANCE_TEST_NUMBER_ONE_HUNDRED) - 0.2; // 0.2 : 200ms
     EXPECT_EQ(true, realTime < expectTime) << "FaultPerformanceTest002 Failed";
     GTEST_LOG_(INFO) << "FaultPerformanceTest002: end.";
 }
@@ -217,7 +158,7 @@ HWTEST_F (FaultPerformanceTest, FaultPerformanceTest002, TestSize.Level2)
 /**
  * @tc.name: FaultPerformanceTest003
  * @tc.desc: test dumpcatcher command: PID(root), TID(root)
- * @tc.type: FUNC
+ * @tc.type: PERF
  */
 HWTEST_F (FaultPerformanceTest, FaultPerformanceTest003, TestSize.Level2)
 {
@@ -226,12 +167,12 @@ HWTEST_F (FaultPerformanceTest, FaultPerformanceTest003, TestSize.Level2)
         std::to_string(FaultPerformanceTest::looprootPid);
     clock_t befor = GetStartTime();
     for (int i = 0; i < PERFORMANCE_TEST_NUMBER_ONE_HUNDRED; i++) {
-        FaultPerformanceTest::ProcessDumpCommands(procCMD);
+        ExecuteCommands(procCMD);
     }
     double timeInterval = GetStopTime(befor)/PERFORMANCE_TEST_NUMBER_ONE_HUNDRED;
     GTEST_LOG_(INFO) << "dumpcatcher Command Performance time(PID(root), TID(root)): " << timeInterval << "s";
     double expectTime = PERFORMANCE_TEST_MAX_UNWIND_TIME_S;
-    double realTime = GetStopTime(befor)/PERFORMANCE_TEST_NUMBER_ONE_HUNDRED;
+    double realTime = GetStopTime(befor) / PERFORMANCE_TEST_NUMBER_ONE_HUNDRED;
     EXPECT_EQ(true, realTime < expectTime) << "FaultPerformanceTest003 Failed";
     GTEST_LOG_(INFO) << "FaultPerformanceTest003: end.";
 }
@@ -239,7 +180,7 @@ HWTEST_F (FaultPerformanceTest, FaultPerformanceTest003, TestSize.Level2)
 /**
  * @tc.name: FaultPerformanceTest004
  * @tc.desc: test DumpCatch API: PID(root)
- * @tc.type: FUNC
+ * @tc.type: PERF
  */
 HWTEST_F (FaultPerformanceTest, FaultPerformanceTest004, TestSize.Level2)
 {
@@ -247,13 +188,13 @@ HWTEST_F (FaultPerformanceTest, FaultPerformanceTest004, TestSize.Level2)
     std::string procCMD = "dumpcatcher -p " + std::to_string(FaultPerformanceTest::looprootPid);
     clock_t befor = GetStartTime();
     for (int i = 0; i < PERFORMANCE_TEST_NUMBER_ONE_HUNDRED; i++) {
-        FaultPerformanceTest::ProcessDumpCommands(procCMD);
+        ExecuteCommands(procCMD);
     }
-    GTEST_LOG_(INFO) << "dumpcatcher Command Performance time(PID(root)): " << \
-        GetStopTime(befor)/PERFORMANCE_TEST_NUMBER_ONE_HUNDRED << "s";
+    GTEST_LOG_(INFO) << "dumpcatcher Command Performance time(PID(root)): " <<
+        (GetStopTime(befor) / PERFORMANCE_TEST_NUMBER_ONE_HUNDRED) << "s";
 
     double expectTime = PERFORMANCE_TEST_MAX_UNWIND_TIME_S;
-    double realTime = GetStopTime(befor)/PERFORMANCE_TEST_NUMBER_ONE_HUNDRED;
+    double realTime = GetStopTime(befor) / PERFORMANCE_TEST_NUMBER_ONE_HUNDRED;
     EXPECT_EQ(true, realTime < expectTime) << "FaultPerformanceTest004 Failed";
     GTEST_LOG_(INFO) << "FaultPerformanceTest004: end.";
 }
@@ -261,24 +202,24 @@ HWTEST_F (FaultPerformanceTest, FaultPerformanceTest004, TestSize.Level2)
 /**
  * @tc.name: FaultPerformanceTest005
  * @tc.desc: test DumpCatchMultiPid API: PID(root), TID(0)
- * @tc.type: FUNC
+ * @tc.type: PERF
  */
 HWTEST_F (FaultPerformanceTest, FaultPerformanceTest005, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "FaultPerformanceTest005: start.";
     DfxDumpCatcher dumplog;
     std::string msg;
-    std::string apply = "foundation";
-    int applyPid = FaultPerformanceTest::getApplyPid(apply);
-    std::vector<int> multiPid {applyPid, FaultPerformanceTest::looprootPid};
+    std::string name = "foundation";
+    int pid = GetProcessPid(name);
+    std::vector<int> multiPid {pid, FaultPerformanceTest::looprootPid};
     clock_t befor = GetStartTime();
     for (int i = 0; i < PERFORMANCE_TEST_NUMBER_ONE_HUNDRED; i++) {
         dumplog.DumpCatchMultiPid(multiPid, msg);
     }
-    double timeInterval = GetStopTime(befor)/PERFORMANCE_TEST_NUMBER_ONE_HUNDRED;
+    double timeInterval = GetStopTime(befor) / PERFORMANCE_TEST_NUMBER_ONE_HUNDRED;
     GTEST_LOG_(INFO) << "DumpCatchMultiPid API time(PID(root), PID(foundation)): " << timeInterval << "s";
     double expectTime = PERFORMANCE_TEST_MAX_UNWIND_TIME_NEW_S;
-    double realTime = GetStopTime(befor)/PERFORMANCE_TEST_NUMBER_ONE_HUNDRED;
+    double realTime = GetStopTime(befor) / PERFORMANCE_TEST_NUMBER_ONE_HUNDRED;
     EXPECT_EQ(true, realTime < expectTime) << "FaultPerformanceTest005 Failed";
     GTEST_LOG_(INFO) << "FaultPerformanceTest005: end.";
 }
@@ -286,13 +227,13 @@ HWTEST_F (FaultPerformanceTest, FaultPerformanceTest005, TestSize.Level2)
 /**
  * @tc.name: FaultPerformanceTest006
  * @tc.desc: test DumpCatchFrame API: app PID(app), TID(0)
- * @tc.type: FUNC
+ * @tc.type: PERF
  */
 HWTEST_F (FaultPerformanceTest, FaultPerformanceTest006, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "FaultPerformanceTest006: start.";
-    std::string apply = "test_perfor";
-    int testPid = FaultPerformanceTest::getApplyPid(apply);
+    std::string name = "test_perfor";
+    int testPid = GetProcessPid(name);
     GTEST_LOG_(INFO) << testPid;
     DfxDumpCatcher dumplog(testPid);
     if (!dumplog.InitFrameCatcher()) {
@@ -304,10 +245,10 @@ HWTEST_F (FaultPerformanceTest, FaultPerformanceTest006, TestSize.Level2)
         bool ret = dumplog.CatchFrame(testPid, frameV, true);
         GTEST_LOG_(INFO) << ret;
     }
-    double timeInterval = GetStopTime(befor)/PERFORMANCE_TEST_NUMBER_ONE_HUNDRED;
+    double timeInterval = GetStopTime(befor) / PERFORMANCE_TEST_NUMBER_ONE_HUNDRED;
     GTEST_LOG_(INFO) << "DumpCatchFrame API time(PID(test_per), PID(test_per)):" << timeInterval << "s";
     double expectTime = PERFORMANCE_TEST_MAX_UNWIND_TIME_S;
-    double realTime = GetStopTime(befor)/PERFORMANCE_TEST_NUMBER_ONE_HUNDRED;
+    double realTime = GetStopTime(befor) / PERFORMANCE_TEST_NUMBER_ONE_HUNDRED;
     EXPECT_EQ(true, realTime < expectTime) << "FaultPerformanceTest006 Failed";
     GTEST_LOG_(INFO) << "FaultPerformanceTest006: end.";
 }

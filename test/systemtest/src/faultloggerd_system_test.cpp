@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2022 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -13,39 +13,21 @@
  * limitations under the License.
  */
 
-/* This file contains faultlog daemon system test cases. */
-
 #include "faultloggerd_system_test.h"
 
 #include <cerrno>
 #include <csignal>
-#include <cstdio>
-#include <cstring>
-#include <ctime>
-#include <dirent.h>
-#include <fcntl.h>
 #include <fstream>
-#include <iostream>
-#include <memory>
-#include <mutex>
-#include <pthread.h>
 #include <securec.h>
-#include <stdlib.h>
 #include <string>
 #include <sys/mman.h>
-#include <sys/prctl.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <sys/wait.h>
 #include <thread>
 #include <unistd.h>
 #include <vector>
-#include "dfx_dump_catcher.h"
-#include "directory_ex.h"
-#include "file_ex.h"
-#include "syscall.h"
 
-/* This files contains faultlog st test case modules. */
+#include "dfx_dump_catcher.h"
+#include "dfx_test_util.h"
+#include "directory_ex.h"
 
 using namespace OHOS::HiviewDFX;
 using namespace testing::ext;
@@ -58,31 +40,24 @@ static const int NUMBER_ONE = 1;
 static const int NUMBER_TWO = 2;
 static const int NUMBER_THREE = 3;
 static const int NUMBER_FOUR = 4;
-static const int NUMBER_SIXTY = 60;
+static const int NUMBER_TEN = 10;
 static const int NUMBER_FIFTY = 50;
+static const int NUMBER_SIXTY = 60;
 static const string DEFAULT_PID_MAX = "32768";
 static const string DEFAULT_TID_MAX = "8825";
-static mutex g_mutex;
+static const string ACCOUNTMGR_NAME = "accountmgr";
+static const string FOUNDATION_NAME = "foundation";
+static const string APPSPAWN_NAME = "appspawn";
 }
 
 void FaultLoggerdSystemTest::SetUpTestCase(void)
 {
-#ifndef __pre__
     chmod("/data/crasher_c", 0755); // 0755 : -rwxr-xr-x
     chmod("/data/crasher_cpp", 0755); // 0755 : -rwxr-xr-x
-    chmod("/data/test_faultloggerd_pre", 0755); // 0755 : -rwxr-xr-x
-    std::string installCmd = "bm install -p /data/FaultloggerdJsTest.hap";
-    (void)GetCmdResultFromPopen(installCmd);
-#endif
 }
 
 void FaultLoggerdSystemTest::TearDownTestCase(void)
 {
-#ifndef __pre__
-    std::string uninstallCmd = "bm uninstall -n ";
-    uninstallCmd += TEST_BUNDLE_NAME;
-    (void)GetCmdResultFromPopen(uninstallCmd);
-#endif
 }
 
 void FaultLoggerdSystemTest::SetUp(void)
@@ -115,12 +90,11 @@ void FaultLoggerdSystemTest::KillCrasherLoopForSomeCase(int type)
 std::string FaultLoggerdSystemTest::rootTid[ARRAY_SIZE_HUNDRED] = { "", };
 std::string FaultLoggerdSystemTest::appTid[ARRAY_SIZE_HUNDRED] = { "", };
 std::string FaultLoggerdSystemTest::sysTid[ARRAY_SIZE_HUNDRED] = { "", };
-std::string FaultLoggerdSystemTest::testTid[ARRAY_SIZE_HUNDRED] = { "", };
 int FaultLoggerdSystemTest::loopSysPid = 0;
 int FaultLoggerdSystemTest::loopRootPid = 0;
 int FaultLoggerdSystemTest::loopCppPid = 0;
 int FaultLoggerdSystemTest::loopAppPid = 0;
-int FaultLoggerdSystemTest::count = 0;
+int FaultLoggerdSystemTest::checkCnt = 0;
 char FaultLoggerdSystemTest::resultBufShell[ARRAY_SIZE_HUNDRED] = { 0, };
 unsigned int FaultLoggerdSystemTest::unsigLoopSysPid = 0;
 
@@ -152,23 +126,6 @@ std::string FaultLoggerdSystemTest::GetTidMax()
         return tidMax;
     }
     return DEFAULT_TID_MAX;
-}
-
-std::string FaultLoggerdSystemTest::ProcessDumpCommands(const std::string cmds)
-{
-    GTEST_LOG_(INFO) << "threadCMD = " << cmds;
-    FILE *procFileInfo = nullptr;
-    std::string cmdLog = "";
-    procFileInfo = popen(cmds.c_str(), "r");
-    if (procFileInfo == nullptr) {
-        perror("popen execute failed");
-        return cmdLog;
-    }
-    while (fgets(resultBufShell, sizeof(resultBufShell), procFileInfo) != nullptr) {
-        cmdLog = cmdLog + resultBufShell;
-    }
-    pclose(procFileInfo);
-    return cmdLog;
 }
 
 // commandStatus: 0 C    1 CPP
@@ -209,24 +166,7 @@ std::string FaultLoggerdSystemTest::ForkAndRunCommands(const std::vector<std::st
     return std::to_string(pid);
 }
 
-int FaultLoggerdSystemTest::CountLines(std::string FileName)
-{
-    ifstream ReadFile;
-    std::string tmpuseValue;
-    ReadFile.open(FileName.c_str(), ios::in);
-    if (ReadFile.fail()) {
-        return 0;
-    } else {
-        int n = 0;
-        while (getline(ReadFile, tmpuseValue, '\n')) {
-            n++;
-        }
-        ReadFile.close();
-        return n;
-    }
-}
-
-bool FaultLoggerdSystemTest::IsDigit(std::string pid)
+static bool IsDigit(const std::string& pid)
 {
     bool flag = true;
     for (unsigned int j = 0; j < pid.length() - 1; j++) {
@@ -267,7 +207,7 @@ int FaultLoggerdSystemTest::CheckKeywords(std::string& filePath, std::string *ke
 {
     ifstream file;
     file.open(filePath.c_str(), ios::in);
-    long lines = FaultLoggerdSystemTest::CountLines(filePath);
+    long lines = CountLines(filePath);
     std::vector<string> t(lines * NUMBER_FOUR);
     int i = 0;
     int j = 0;
@@ -318,9 +258,9 @@ int FaultLoggerdSystemTest::CheckCountNum(std::string& filePath, std::string& pi
         ErrorCMD = key->second;
     }
     string log[] = {
-        "Pid:", "Uid", ":crasher", ErrorCMD, "Tid:", "#00", "Registers:", REGISTERS, "FaultStack:", "Maps:", "/crasher"
+        "Pid:" + pid, "Uid", ":crasher", ErrorCMD, "Tid:", "#00", "Registers:", REGISTERS, "FaultStack:",
+        "Maps:", "/crasher"
     };
-    log[0] = log[0] + pid;
     int minRegIdx = 6;
     return CheckKeywords(filePath, log, sizeof(log) / sizeof(log[0]), minRegIdx);
 }
@@ -328,10 +268,9 @@ int FaultLoggerdSystemTest::CheckCountNum(std::string& filePath, std::string& pi
 int FaultLoggerdSystemTest::CheckCountNumAbort(std::string& filePath, std::string& pid)
 {
     string log[] = {
-        "Pid:", "Uid", ":crasher", "SIGABRT", "LastFatalMessage:", "ABORT!", "Tid:", "#00", "Registers:",
+        "Pid:" + pid, "Uid", ":crasher", "SIGABRT", "LastFatalMessage:", "ABORT!", "Tid:", "#00", "Registers:",
         REGISTERS, "FaultStack:", "Maps:", "/crasher"
     };
-    log[0] = log[0] + pid;
     int minRegIdx = 8;
     return CheckKeywords(filePath, log, sizeof(log) / sizeof(log[0]), minRegIdx);
 }
@@ -339,9 +278,9 @@ int FaultLoggerdSystemTest::CheckCountNumAbort(std::string& filePath, std::strin
 int FaultLoggerdSystemTest::CheckCountNumPCZero(std::string& filePath, std::string& pid)
 {
     string log[] = {
-        "Pid:", "Uid", ":crasher", "SIGSEGV", "Tid:", "#00", "Registers:", REGISTERS, "FaultStack:", "Maps:", "/crasher"
+        "Pid:" + pid, "Uid", ":crasher", "SIGSEGV", "Tid:", "#00", "Registers:", REGISTERS, "FaultStack:",
+        "Maps:", "/crasher"
     };
-    log[0] = log[0] + pid;
     int minRegIdx = 6;
     return CheckKeywords(filePath, log, sizeof(log) / sizeof(log[0]), minRegIdx);
 }
@@ -349,9 +288,9 @@ int FaultLoggerdSystemTest::CheckCountNumPCZero(std::string& filePath, std::stri
 int FaultLoggerdSystemTest::CheckCountNumOverStack(std::string& filePath, std::string& pid)
 {
     string log[] = {
-        "Pid:", "Uid", ":crasher", "SIGSEGV", "Tid:", "#56", "Registers:", REGISTERS, "FaultStack:", "Maps:", "/crasher"
+        "Pid:" + pid, "Uid", ":crasher", "SIGSEGV", "Tid:", "#56", "Registers:", REGISTERS, "FaultStack:",
+        "Maps:", "/crasher"
     };
-    log[0] = log[0] + pid;
     int minRegIdx = 6;
     return CheckKeywords(filePath, log, sizeof(log) / sizeof(log[0]), minRegIdx);
 }
@@ -359,11 +298,10 @@ int FaultLoggerdSystemTest::CheckCountNumOverStack(std::string& filePath, std::s
 int FaultLoggerdSystemTest::CheckCountNumMultiThread(std::string& filePath, std::string& pid)
 {
     string log[] = {
-        "Pid:", "Uid", ":crasher", "SIGSEGV", "Tid:", "#00",
+        "Pid:" + pid, "Uid", ":crasher", "SIGSEGV", "Tid:", "#00",
         "Registers:", REGISTERS, "FaultStack:", "Maps:",
         "/crasher"
     };
-    log[0] = log[0] + pid;
     int minRegIdx = 6;
     return CheckKeywords(filePath, log, sizeof(log) / sizeof(log[0]), minRegIdx);
 }
@@ -395,9 +333,9 @@ int FaultLoggerdSystemTest::CheckCountNumStackTop(std::string& filePath, std::st
         ErrorCMD = key->second;
     }
     string log[] = {
-        "Pid:", "Uid", ":crasher", ErrorCMD, "Tid:", "#00", "Registers:", REGISTERS, "FaultStack:", "Maps:", "/crasher"
+        "Pid:" + pid, "Uid", ":crasher", ErrorCMD, "Tid:", "#00", "Registers:", REGISTERS, "FaultStack:",
+        "Maps:", "/crasher"
     };
-    log[0] = log[0] + pid;
     int minRegIdx = 6;
     return CheckKeywords(filePath, log, sizeof(log) / sizeof(log[0]), minRegIdx);
 }
@@ -611,845 +549,75 @@ void FaultLoggerdSystemTest::StartCrasherLoopForUnsingPidAndTid(int crasherType)
     pclose(procFileInfoTwo);
 }
 
-void FaultLoggerdSystemTest::Trim(std::string & str)
+void FaultLoggerdSystemTest::TestDumpCatch(const int targetPid, const std::string processName, const int threadIdx)
 {
-    std::string blanks("\f\v\r\t\n ");
-    str.erase(0, str.find_first_not_of(blanks));
-    str.erase(str.find_last_not_of(blanks) + 1);
-}
-
-int FaultLoggerdSystemTest::CheckCountNumKill11(std::string& filePath, std::string& pid)
-{
-    string log[] = {
-        "Pid:", "Uid", ":foundation", "SIGSEGV", "Tid:", "#00", "Registers:", REGISTERS,
-        "FaultStack:","Maps:"
-    };
-    log[0] = log[0] + pid;
-    int minRegIdx = 6;
-    return CheckKeywords(filePath, log, sizeof(log) / sizeof(log[0]), minRegIdx);
-}
-
-int FaultLoggerdSystemTest::crashThread(int threadID)
-{
-    GTEST_LOG_(INFO) << "threadID :" << threadID;
-    int i;
-    for (i = 0; i < NUMBER_FIFTY; i++) {
-        system("./crasher_c CrashTest &");
-    }
-    sleep(1);
-    return 0;
-}
-
-int FaultLoggerdSystemTest::getApplyPid(std::string applyName)
-{
-    std::string procCMD = "pgrep '" + applyName + "'";
-    GTEST_LOG_(INFO) << "threadCMD = " << procCMD;
-    FILE *procFileInfo = nullptr;
-    procFileInfo = popen(procCMD.c_str(), "r");
-    if (procFileInfo == nullptr) {
-        perror("popen execute failed");
-        exit(1);
-    }
-    std::string applyPid;
-    while (fgets(resultBufShell, sizeof(resultBufShell), procFileInfo) != nullptr) {
-        applyPid = resultBufShell;
-        GTEST_LOG_(INFO) << "applyPid: " << applyPid;
-    }
-    pclose(procFileInfo);
-    int intApplyPid = std::atoi(applyPid.c_str());
-    return intApplyPid;
-}
-
-std::string FaultLoggerdSystemTest::GetCmdResultFromPopen(const std::string& cmd)
-{
-    if (cmd.empty()) {
-        return "";
-    }
-
-    FILE* fp = popen(cmd.c_str(), "r");
-    if (fp == nullptr) {
-        return "";
-    }
-    const int bufSize = 128;
-    char buffer[bufSize];
-    std::string result = "";
-    while (!feof(fp)) {
-        if (fgets(buffer, bufSize - 1, fp) != nullptr) {
-            result += buffer;
-        }
-    }
-    pclose(fp);
-    return result;
-}
-
-int FaultLoggerdSystemTest::GetServicePid(const std::string& serviceName)
-{
-    std::string cmd = "pidof " + serviceName;
-    std::string pidStr = GetCmdResultFromPopen(cmd);
-    int32_t pid = 0;
-    std::stringstream pidStream(pidStr);
-    pidStream >> pid;
-    printf("the pid of service(%s) is %s \n", serviceName.c_str(), pidStr.c_str());
-    return pid;
-}
-
-int FaultLoggerdSystemTest::LaunchTestHap(const std::string& abilityName, const std::string& bundleName)
-{
-    std::string launchCmd = "/system/bin/aa start -a " + abilityName + " -b " + bundleName;
-    (void)GetCmdResultFromPopen(launchCmd);
-    sleep(2); // 2 : sleep 2s
-    return GetServicePid(bundleName);
-}
-
-void FaultLoggerdSystemTest::dumpCatchThread(int threadID)
-{
-    std::string accountmgr = "accountmgr";
-    int accountmgrPid = FaultLoggerdSystemTest::getApplyPid(accountmgr);
     DfxDumpCatcher dumplog;
     std::string msg = "";
-    bool ret = dumplog.DumpCatch(accountmgrPid, 0, msg);
-    GTEST_LOG_(INFO) << "ret:" << ret;
-    if (ret == true) {
-        FaultLoggerdSystemTest::count++;
+    if (dumplog.DumpCatch(targetPid, 0, msg)) {
+        GTEST_LOG_(INFO) << "threadIdx(" << threadIdx << ") dump sucessfully.";
+        string log[] = {"Pid:" + to_string(targetPid), "Tid:" + to_string(targetPid), "Name:" + processName,
+                        "#00", "#01", "#02"};
+        int cnt = 0;
+        int expectNum = sizeof(log) / sizeof(log[0]);
+        for (int i = 0; i < expectNum; i++) {
+            if (msg.find(log[i]) != string::npos) {
+                cnt++;
+            } else {
+                GTEST_LOG_(ERROR) << "not found (" << log[i] << ")";
+            }
+        }
+        EXPECT_EQ(cnt, expectNum) << "Check stack trace key words failed.";
+        if (cnt == expectNum) {
+            checkCnt++;
+        }
+    } else {
+        GTEST_LOG_(INFO) << "threadIdx(" << threadIdx << ") dump failed.";
+        if (msg.find("Result: pid(" + std::to_string(targetPid) + ") is dumping.") == string::npos) {
+            GTEST_LOG_(ERROR) << "threadIdx(" << threadIdx << ") dump error message is unexpectly.";
+            FAIL();
+        }
     }
 }
-
-bool FaultLoggerdSystemTest::CheckProcessComm(int pid)
-{
-    std::string cmd = "cat /proc/" + std::to_string(pid) + "/comm";
-    std::string comm = GetCmdResultFromPopen(cmd);
-    size_t pos = comm.find('\n');
-    if (pos != std::string::npos) {
-        comm.erase(pos, 1);
-    }
-    if (!strcmp(comm.c_str(), TRUNCATE_TEST_BUNDLE_NAME)) {
-        return true;
-    }
-    return false;
-}
-namespace {
-#ifdef __pre__
-/**
-* @tc.name: FaultLoggerdSystemTest0010_pre
-* @tc.desc: test CPP crasher application: Multithreading
-* @tc.type:
-*/
-HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0010_pre, TestSize.Level2)
-{
-    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest0010_pre: start.";
-    for (int i = 0; i < 10; i++) {
-        g_mutex.lock();
-        std::thread (FaultLoggerdSystemTest::dumpCatchThread, i).join();
-        sleep(NUMBER_TWO);
-        g_mutex.unlock();
-    }
-    EXPECT_EQ(FaultLoggerdSystemTest::count, 10) << "FaultLoggerdSystemTest0010_pre Failed";
-    if (count == 10) {
-        std::ofstream fout;
-        fout.open("result", ios::app);
-        fout << "sucess!" << std::endl;
-        fout.close();
-    }
-    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest0010_pre: end.";
-
-}
-#endif
-
-#ifndef __pre__
-static const int NUMBER_TEN = 10;
 
 /**
 * @tc.name: FaultLoggerdSystemTest0010
-* @tc.desc: test CPP crasher application: Multi process and Multithreading
-* @tc.type:
+* @tc.desc: Calling DumpCatch Func for same process in multiple threads at same time
+* @tc.type: FUNC
 */
 HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0010, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest0010: start.";
-    for (int i = 0; i < 10; i++) {
-        pid_t pid = fork();
-        if (pid < 0) {
-            exit(-1);
-        } else if (pid == 0) {
-            execl("/data/test_faultloggerd_pre", "test_faultloggerd_pre", \
-                "--gtest_filter=FaultLoggerdSystemTest.FaultLoggerdSystemTest0010_pre", NULL);
-        } else {
-            wait(NULL);
-        }
+    int accountmgrPid = GetProcessPid(ACCOUNTMGR_NAME);
+    FaultLoggerdSystemTest::checkCnt = 0;
+    for (int threadIdx = 0; threadIdx < NUMBER_FIFTY; threadIdx++) {
+        std::thread(FaultLoggerdSystemTest::TestDumpCatch, accountmgrPid, ACCOUNTMGR_NAME, threadIdx).detach();
     }
-    std::string filePath = "result";
-    int lines = FaultLoggerdSystemTest::CountLines(filePath);
-    GTEST_LOG_(INFO) << lines;
-    int ret = remove("result");
-    if (ret != 0) {
-        printf("remove failed!");
-    }
-    EXPECT_EQ(lines, 10) << "FaultLoggerdSystemTest0010_pre Failed";
+    sleep(2); // 2 : sleep 2 seconds
+    EXPECT_GT(FaultLoggerdSystemTest::checkCnt, 0) << "FaultLoggerdSystemTest0010 failed";
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest0010: end.";
 }
 
 /**
- * @tc.name: FaultLoggerdSystemTest0012
- * @tc.desc: test DumpCatchMultiPid API: multiPid{PID(app),PID(accountmgr)}
- * @tc.type: FUNC
- */
-HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0012, TestSize.Level2)
+* @tc.name: FaultLoggerdSystemTest0011
+* @tc.desc: Calling DumpCatch Func for different process in multiple threads at same time
+* @tc.type: FUNC
+*/
+HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0011, TestSize.Level2)
 {
-    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest0012: start.";
-    FaultLoggerdSystemTest::StartCrasherLoop(3);
-    int uidSetting = 0;
-    setuid(uidSetting);
-    std::string apply = "accountmgr";
-    int applyPid1 = FaultLoggerdSystemTest::getApplyPid(apply);
-    GTEST_LOG_(INFO) << "applyPid1:" << applyPid1;
-    int applyPid2 = FaultLoggerdSystemTest::loopAppPid;
-    GTEST_LOG_(INFO) << "applyPid2:" << applyPid2;
-    std::vector<int> multiPid {applyPid1, applyPid2};
-    DfxDumpCatcher dumplog;
-    std::string msg = "";
-    bool ret = dumplog.DumpCatchMultiPid(multiPid, msg);
-    GTEST_LOG_(INFO) << ret;
-    GTEST_LOG_(INFO) << msg;
-    string log[] = {"Tid:", "Name:", "Tid:", "Name:crasher_c"};
-    log[0] = log[0] + std::to_string(applyPid1);
-    log[1] = log[1] + apply;
-    log[2] = log[2] + std::to_string(FaultLoggerdSystemTest::loopAppPid);
-    string::size_type idx;
-    int j = 0;
-    int count = 0;
-    for (int i = 0; i < 4; i++) {
-        idx = msg.find(log[j]);
-        GTEST_LOG_(INFO) << log[j];
-        if (idx != string::npos) {
-            count++;
-        }
-        j++;
+    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest0011: start.";
+    vector<string> testProcessNameVecs = {ACCOUNTMGR_NAME, FOUNDATION_NAME, APPSPAWN_NAME};
+    vector<int> testPidVecs;
+    for (auto processName : testProcessNameVecs) {
+        testPidVecs.emplace_back(GetProcessPid(processName));
     }
-    int expectNum = sizeof(log) / sizeof(log[0]);
-    EXPECT_EQ(count, expectNum) << "FaultLoggerdSystemTest0012 Failed";
-    FaultLoggerdSystemTest::KillCrasherLoopForSomeCase(3);
-    sleep(NUMBER_TWO);
-    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest0012: end.";
-}
-
-/**
- * @tc.name: FaultLoggerdSystemTest0013
- * @tc.desc: test DumpCatchMultiPid API: multiPid{0,0}
- * @tc.type: FUNC
- */
-HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0013, TestSize.Level2)
-{
-    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest0013: start.";
-    int applyPid1 = 0;
-    GTEST_LOG_(INFO) << "applyPid1:" << applyPid1;
-    int applyPid2 = 0;
-    GTEST_LOG_(INFO) << "applyPid2:" << applyPid2;
-    std::vector<int> multiPid {applyPid1, applyPid2};
-    DfxDumpCatcher dumplog;
-    std::string msg = "";
-    bool ret = dumplog.DumpCatchMultiPid(multiPid, msg);
-    GTEST_LOG_(INFO) << ret;
-    GTEST_LOG_(INFO) << msg;
-    EXPECT_EQ(ret, false) << "FaultLoggerdSystemTest0013 Failed";
-    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest0013: end.";
-}
-
-/**
- * @tc.name: FaultLoggerdSystemTest0014
- * @tc.desc: test DumpCatchMultiPid API: multiPid{-11,-11}
- * @tc.type: FUNC
- */
-HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0014, TestSize.Level2)
-{
-    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest0014: start.";
-    int applyPid1 = -11;
-    GTEST_LOG_(INFO) << "applyPid1:" << applyPid1;
-    int applyPid2 = -11;
-    GTEST_LOG_(INFO) << "applyPid2:" << applyPid2;
-    std::vector<int> multiPid {applyPid1, applyPid2};
-    DfxDumpCatcher dumplog;
-    std::string msg = "";
-    bool ret = dumplog.DumpCatchMultiPid(multiPid, msg);
-    GTEST_LOG_(INFO) << ret;
-    GTEST_LOG_(INFO) << msg;
-    EXPECT_EQ(ret, false) << "FaultLoggerdSystemTest0013 Failed";
-    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest0014: end.";
-}
-
-/**
- * @tc.name: FaultLoggerdSystemTest0015
- * @tc.desc: test DumpCatchMultiPid API: multiPid{PID(accountmgr),0}
- * @tc.type: FUNC
- */
-HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0015, TestSize.Level2)
-{
-    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest0015: start.";
-    FaultLoggerdSystemTest::StartCrasherLoop(3);
-    int uidSetting = 0;
-    setuid(uidSetting);
-    std::string apply = "accountmgr";
-    int applyPid1 = FaultLoggerdSystemTest::getApplyPid(apply);
-    GTEST_LOG_(INFO) << "applyPid1:" << applyPid1;
-    int applyPid2 = 0;
-    GTEST_LOG_(INFO) << "applyPid2:" << applyPid2;
-    std::vector<int> multiPid {applyPid1, applyPid2};
-    DfxDumpCatcher dumplog;
-    std::string msg = "";
-    bool ret = dumplog.DumpCatchMultiPid(multiPid, msg);
-    GTEST_LOG_(INFO) << ret;
-    GTEST_LOG_(INFO) << msg;
-    string log[] = { "Tid:", "Name:", "Failed" };
-    log[0] = log[0] + std::to_string(applyPid1);
-    log[1] = log[1] + apply;
-    string::size_type idx;
-    int j = 0;
-    int count = 0;
-    for (int i = 0; i < 3; i++) {
-        idx = msg.find(log[j]);
-        GTEST_LOG_(INFO) << log[j];
-        if (idx != string::npos) {
-            count++;
-        }
-        j++;
+    FaultLoggerdSystemTest::checkCnt = 0;
+    auto testProcessListSize = testProcessNameVecs.size();
+    for (auto idx = 0; idx < testProcessListSize; idx++) {
+        std::thread(FaultLoggerdSystemTest::TestDumpCatch, testPidVecs[idx], testProcessNameVecs[idx], idx).detach();
     }
-    int expectNum = sizeof(log) / sizeof(log[0]);
-    EXPECT_EQ(count, expectNum) << "FaultLoggerdSystemTest0015 Failed";
-    FaultLoggerdSystemTest::KillCrasherLoopForSomeCase(3);
-    sleep(NUMBER_TWO);
-    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest0015: end.";
-}
-
-/**
- * @tc.name: FaultLoggerdSystemTest0016
- * @tc.desc: test DumpCatchMultiPid API: multiPid{PID(accountmgr),PID(app),PID(foundation)}
- * @tc.type: FUNC
- */
-HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0016, TestSize.Level2)
-{
-    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest0016: start.";
-    FaultLoggerdSystemTest::StartCrasherLoop(3);
-    int uidSetting = 0;
-    setuid(uidSetting);
-    std::string apply1 = "accountmgr";
-    int applyPid1 = FaultLoggerdSystemTest::getApplyPid(apply1);
-    GTEST_LOG_(INFO) << "applyPid1:" << applyPid1;
-    int applyPid2 = FaultLoggerdSystemTest::loopAppPid;
-    GTEST_LOG_(INFO) << "applyPid2:" << applyPid2;
-    std::string apply3 = "foundation";
-    int applyPid3 = FaultLoggerdSystemTest::getApplyPid(apply3);
-    GTEST_LOG_(INFO) << "applyPid3:" << applyPid3;
-    std::vector<int> multiPid {applyPid1, applyPid2, applyPid3};
-    DfxDumpCatcher dumplog;
-    std::string msg = "";
-    bool ret = dumplog.DumpCatchMultiPid(multiPid, msg);
-    GTEST_LOG_(INFO) << ret;
-    GTEST_LOG_(INFO) << msg;
-    string log[] = { "Tid:", "Name:", "Tid:", "Name:crasher_c", "Tid:", "Name:" };
-    log[0] = log[0] + std::to_string(applyPid1);
-    log[1] = log[1] + apply1;
-    log[2] = log[2] + std::to_string(FaultLoggerdSystemTest::loopAppPid);
-    log[4] = log[4] + std::to_string(applyPid3);
-    log[5] = log[5] + apply3;
-    string::size_type idx;
-    int j = 0;
-    int count = 0;
-    for (int i = 0; i < 6; i++) {
-        idx = msg.find(log[j]);
-        GTEST_LOG_(INFO) << log[j];
-        if (idx != string::npos) {
-            count++;
-        }
-        j++;
-    }
-    int expectNum = sizeof(log) / sizeof(log[0]);
-    EXPECT_EQ(count, expectNum) << "FaultLoggerdSystemTest0016 Failed";
-    FaultLoggerdSystemTest::KillCrasherLoopForSomeCase(3);
-    sleep(NUMBER_TWO);
-    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest0016: end.";
-}
-
-/**
- * @tc.name: FaultLoggerdSystemTest0017
- * @tc.desc: test DumpCatchMultiPid API: multiPid{PID(accountmgr),-11}
- * @tc.type: FUNC
- */
-HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0017, TestSize.Level2)
-{
-    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest0017: start.";
-    std::string apply = "accountmgr";
-    int applyPid1 = FaultLoggerdSystemTest::getApplyPid(apply);
-    GTEST_LOG_(INFO) << "applyPid1:" << applyPid1;
-    int applyPid2 = -11;
-    GTEST_LOG_(INFO) << "applyPid2:" << applyPid2;
-    std::vector<int> multiPid {applyPid1, applyPid2};
-    DfxDumpCatcher dumplog;
-    std::string msg = "";
-    bool ret = dumplog.DumpCatchMultiPid(multiPid, msg);
-    GTEST_LOG_(INFO) << ret;
-    GTEST_LOG_(INFO) << msg;
-    string log[] = { "Tid:", "Name:", "Failed"};
-    log[0] = log[0] + std::to_string(applyPid1);
-    log[1] = log[1] + apply;
-    string::size_type idx;
-    int j = 0;
-    int count = 0;
-    for (int i = 0; i < 3; i++) {
-        idx = msg.find(log[j]);
-        GTEST_LOG_(INFO) << log[j];
-        if (idx != string::npos) {
-            count++;
-        }
-        j++;
-    }
-    int expectNum = sizeof(log) / sizeof(log[0]);
-    EXPECT_EQ(count, expectNum) << "FaultLoggerdSystemTest0017 Failed";
-    sleep(NUMBER_TWO);
-    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest0017: end.";
-}
-
-/**
- * @tc.name: FaultLoggerdSystemTest0018
- * @tc.desc: test DumpCatchMultiPid API: multiPid{9999,9999}
- * @tc.type: FUNC
- */
-HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0018, TestSize.Level2)
-{
-    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest0018: start.";
-    int uidSetting = 0;
-    setuid(uidSetting);
-    int applyPid1 = 9999;
-    GTEST_LOG_(INFO) << "applyPid1:" << applyPid1;
-    int applyPid2 = 9999;
-    GTEST_LOG_(INFO) << "applyPid2:" << applyPid2;
-    std::vector<int> multiPid {applyPid1, applyPid2};
-    DfxDumpCatcher dumplog;
-    std::string msg = "";
-    bool ret = dumplog.DumpCatchMultiPid(multiPid, msg);
-    GTEST_LOG_(INFO) << ret;
-    GTEST_LOG_(INFO) << msg;
-    EXPECT_EQ(ret, false) << "FaultLoggerdSystemTest0018 Failed";
-    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest0018: end.";
-}
-
-/**
- * @tc.name: FaultLoggerdSystemTest0019
- * @tc.desc: test DumpCatchMultiPid API: multiPid{PID(accountmgr),9999}
- * @tc.type: FUNC
- */
-HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0019, TestSize.Level2)
-{
-    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest0019: start.";
-    std::string apply = "accountmgr";
-    int applyPid1 = FaultLoggerdSystemTest::getApplyPid(apply);
-    GTEST_LOG_(INFO) << "applyPid1:" << applyPid1;
-    int applyPid2 = 9999;
-    GTEST_LOG_(INFO) << "applyPid2:" << applyPid2;
-    std::vector<int> multiPid {applyPid1, applyPid2};
-    DfxDumpCatcher dumplog;
-    std::string msg = "";
-    bool ret = dumplog.DumpCatchMultiPid(multiPid, msg);
-    GTEST_LOG_(INFO) << ret;
-    GTEST_LOG_(INFO) << msg;
-    string log[] = { "Tid:", "Name:", "Failed"};
-    log[0] = log[0] + std::to_string(applyPid1);
-    log[1] = log[1] + apply;
-    string::size_type idx;
-    int j = 0;
-    int count = 0;
-    for (int i = 0; i < 3; i++) {
-        idx = msg.find(log[j]);
-        GTEST_LOG_(INFO) << log[j];
-        if (idx != string::npos) {
-            count++;
-        }
-        j++;
-    }
-    int expectNum = sizeof(log) / sizeof(log[0]);
-    EXPECT_EQ(count, expectNum) << "FaultLoggerdSystemTest0019 Failed";
-    sleep(NUMBER_TWO);
-    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest0019: end.";
-}
-
-/**
- * @tc.name: FaultLoggerdSystemTest0020
- * @tc.desc: test DumpCatchFrame API: PID(test_faul), TID(test_faul)
- * @tc.type: FUNC
- */
-HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0020, TestSize.Level2)
-{
-    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest0020: start.";
-    std::string apply = "test_faul";
-    int testPid = FaultLoggerdSystemTest::getApplyPid(apply);
-    GTEST_LOG_(INFO) << testPid;
-    DfxDumpCatcher dumplog(getpid());
-    std::string msg = "";
-    std::vector<NativeFrame> frameV;
-    bool ret = dumplog.InitFrameCatcher();
-    EXPECT_EQ(ret, true);
-    ret = dumplog.ReleaseThread(gettid());
-    EXPECT_EQ(ret, true);
-    ret = dumplog.CatchFrame(gettid(), frameV, true);
-    EXPECT_EQ(ret, true);
-    dumplog.DestroyFrameCatcher();
-    EXPECT_GT(frameV.size(), 0) << "FaultLoggerdSystemTest0020 Failed";
-    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest0020: end.";
-}
-
-/**
- * @tc.name: FaultLoggerdSystemTest0021
- * @tc.desc: test DumpCatchFrame API: PID(test_faul), TID(0)
- * @tc.type: FUNC
- */
-HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0021, TestSize.Level2)
-{
-    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest0021: start.";
-    std::string apply = "test_faul";
-    int testPid = FaultLoggerdSystemTest::getApplyPid(apply);
-    GTEST_LOG_(INFO) << testPid;
-    DfxDumpCatcher dumplog;
-    std::vector<NativeFrame> frameV;
-    bool ret = dumplog.CatchFrame(testPid, frameV, true);
-    GTEST_LOG_(INFO) << ret;
-    EXPECT_EQ(ret, false) << "FaultLoggerdSystemTest0021 Failed";
-    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest0021: end.";
-}
-
-/**
- * @tc.name: FaultLoggerdSystemTest0024
- * @tc.desc: test DumpCatchFrame API: app PID(-11), TID(test_faul)
- * @tc.type: FUNC
- */
-HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0024, TestSize.Level2)
-{
-    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest0024: start.";
-    std::string apply = "test_faul";
-    int testPid = FaultLoggerdSystemTest::getApplyPid(apply);
-    GTEST_LOG_(INFO) << testPid;
-    DfxDumpCatcher dumplog;
-    std::string msg = "";
-    std::vector<NativeFrame> frameV;
-    bool ret = dumplog.CatchFrame(-99, frameV);
-    GTEST_LOG_(INFO) << ret;
-    GTEST_LOG_(INFO) << msg;
-    EXPECT_EQ(ret, false) << "FaultLoggerdSystemTest0024 Failed";
-    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest0024: end.";
-}
-
-/**
- * @tc.name: FaultLoggerdSystemTest0025
- * @tc.desc: test DumpCatchFrame API: app PID(test_faul), TID(-11)
- * @tc.type: FUNC
- */
-HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0025, TestSize.Level2)
-{
-    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest0025: start.";
-    std::string apply = "test_faul";
-    int testPid = FaultLoggerdSystemTest::getApplyPid(apply);
-    GTEST_LOG_(INFO) << testPid;
-    DfxDumpCatcher dumplog;
-    std::string msg = "";
-    std::vector<NativeFrame> frameV;
-    bool ret = dumplog.CatchFrame(-1, frameV);
-    GTEST_LOG_(INFO) << ret;
-    GTEST_LOG_(INFO) << msg;
-    EXPECT_EQ(ret, false) << "FaultLoggerdSystemTest0025 Failed";
-    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest0025: end.";
-}
-
-/**
- * @tc.name: FaultLoggerdSystemTest0026
- * @tc.desc: test DumpCatchFrame API: app PID(-11), TID(-11)
- * @tc.type: FUNC
- */
-HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0026, TestSize.Level2)
-{
-    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest0026: start.";
-    DfxDumpCatcher dumplog;
-    std::string msg = "";
-    std::vector<NativeFrame> frameV;
-    bool ret = dumplog.CatchFrame(-11, frameV, true);
-    GTEST_LOG_(INFO) << ret;
-    GTEST_LOG_(INFO) << msg;
-    EXPECT_EQ(ret, false) << "FaultLoggerdSystemTest0026 Failed";
-    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest0026: end.";
-}
-
-/**
- * @tc.name: FaultLoggerdSystemTest0027
- * @tc.desc: test DumpCatchMix API: PID(systemui pid), TID(0)
- * @tc.type: FUNC
- * @tc.require: issueI5PJ9O
- */
-HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0027, TestSize.Level2)
-{
-    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest0027: start.";
-    std::string testBundleName = TEST_BUNDLE_NAME;
-    std::string testAbiltyName = testBundleName + ".MainAbility";
-    int testPid = LaunchTestHap(testAbiltyName, testBundleName);
-    if (testPid == 0) {
-        GTEST_LOG_(ERROR) << "Failed to launch target hap.";
-        return;
-    }
-    if (!CheckProcessComm(testPid)) {
-        GTEST_LOG_(ERROR) << "Error process comm";
-        return;
-    }
-    DfxDumpCatcher dumplog;
-    std::string msg = "";
-    bool ret = dumplog.DumpCatchMix(testPid, 0, msg);
-    GTEST_LOG_(INFO) << ret;
-    GTEST_LOG_(INFO) << msg;
-    string log[] = { "Tid:", "Name:", "#00", "/system/bin/appspawn",
-        "Name:DfxWatchdog", "Name:GC_WorkerThread", "Name:ace.bg.1"};
-    log[0] += std::to_string(testPid);
-    log[1] += TRUNCATE_TEST_BUNDLE_NAME;
-    string::size_type idx;
-    int j = 0;
-    int count = 0;
-    int expectNum = sizeof(log) / sizeof(log[0]);
-    for (int i = 0; i < expectNum; i++) {
-        idx = msg.find(log[j]);
-        GTEST_LOG_(INFO) << log[j];
-        if (idx != string::npos) {
-            count++;
-        }
-        j++;
-    }
-
-    EXPECT_EQ(count, expectNum) << "FaultLoggerdSystemTest0027 Failed";
-    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest0027: end.";
-}
-
-/**
- * @tc.name: FaultLoggerdSystemTest0028
- * @tc.desc: test DumpCatchMix API: PID(systemui pid), TID(systemui pid)
- * @tc.type: FUNC
- * @tc.require: issueI5PJ9O
- */
-HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0028, TestSize.Level2)
-{
-    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest0028: start.";
-    std::string testBundleName = TEST_BUNDLE_NAME;
-    std::string testAbiltyName = testBundleName + ".MainAbility";
-    int testPid = LaunchTestHap(testAbiltyName, testBundleName);
-    if (testPid == 0) {
-        GTEST_LOG_(ERROR) << "Failed to launch target hap.";
-        return;
-    }
-    if (!CheckProcessComm(testPid)) {
-        GTEST_LOG_(ERROR) << "Error process comm";
-        return;
-    }
-    DfxDumpCatcher dumplog;
-    std::string msg = "";
-    bool ret = dumplog.DumpCatchMix(testPid, testPid, msg);
-    GTEST_LOG_(INFO) << ret;
-    GTEST_LOG_(INFO) << msg;
-    string log[] = { "Tid:", "Name:", "#00", "/system/bin/appspawn"};
-    log[0] += std::to_string(testPid);
-    log[1] += TRUNCATE_TEST_BUNDLE_NAME;
-    string::size_type idx;
-    int j = 0;
-    int count = 0;
-    for (int i = 0; i < 4; i++) {
-        idx = msg.find(log[j]);
-        GTEST_LOG_(INFO) << log[j];
-        if (idx != string::npos) {
-            count++;
-        }
-        j++;
-    }
-    int expectNum = sizeof(log) / sizeof(log[0]);
-    EXPECT_EQ(count, expectNum) << "FaultLoggerdSystemTest0028 Failed";
-    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest0028: end.";
-}
-
-/**
- * @tc.name: FaultLoggerdSystemTest0029
- * @tc.desc: test DumpCatchMix API: PID(hap pid), TID(-1)
- * @tc.type: FUNC
- * @tc.require: issueI5PJ9O
- */
-HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0029, TestSize.Level2)
-{
-    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest0029: start.";
-    std::string testBundleName = TEST_BUNDLE_NAME;
-    std::string testAbiltyName = testBundleName + ".MainAbility";
-    int testPid = LaunchTestHap(testAbiltyName, testBundleName);
-    if (testPid == 0) {
-        GTEST_LOG_(ERROR) << "Failed to launch target hap.";
-        return;
-    }
-    if (!CheckProcessComm(testPid)) {
-        GTEST_LOG_(ERROR) << "Error process comm";
-        return;
-    }
-    DfxDumpCatcher dumplog;
-    std::string msg = "";
-    bool ret = dumplog.DumpCatchMix(testPid, -1, msg);
-    sleep(2);
-    GTEST_LOG_(INFO) << ret;
-    GTEST_LOG_(INFO) << msg;
-    EXPECT_EQ(ret, false) << "FaultLoggerdSystemTest0029 Failed";
-    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest0029: end.";
-}
-
-/**
- * @tc.name: FaultLoggerdSystemTest0030
- * @tc.desc: test DumpCatchMix API: PID(-1), TID(-1)
- * @tc.type: FUNC
- * @tc.require: issueI5PJ9O
- */
-HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0030, TestSize.Level2)
-{
-    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest0030: start.";
-    DfxDumpCatcher dumplog;
-    std::string msg = "";
-    bool ret = dumplog.DumpCatchMix(-1, -1, msg);
-    sleep(2);
-    GTEST_LOG_(INFO) << ret;
-    GTEST_LOG_(INFO) << msg;
-    EXPECT_EQ(ret, false) << "FaultLoggerdSystemTest0030 Failed";
-    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest0030: end.";
-}
-
-/**
- * @tc.name: FaultLoggerdSystemTest0031
- * @tc.desc: test dumpcatcher command: -m -p systemui
- * @tc.type: FUNC
- * @tc.require: issueI5PJ9O
- */
-HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0031, TestSize.Level2)
-{
-    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest0031: start.";
-    std::string testBundleName = TEST_BUNDLE_NAME;
-    std::string testAbiltyName = testBundleName + ".MainAbility";
-    int testPid = LaunchTestHap(testAbiltyName, testBundleName);
-    if (testPid == 0) {
-        GTEST_LOG_(ERROR) << "Failed to launch target hap.";
-        return;
-    }
-    if (!CheckProcessComm(testPid)) {
-        GTEST_LOG_(ERROR) << "Error process comm";
-        return;
-    }
-    std::string procCMD = "dumpcatcher -m -p " + std::to_string(testPid);
-    string procDumpLog = FaultLoggerdSystemTest::ProcessDumpCommands(procCMD);
-    GTEST_LOG_(INFO) << "procDumpLog: " << procDumpLog;
-    int count = 0;
-    string log[] = { "Tid:", "Name:", "#00", "/system/bin/appspawn",
-        "Name:DfxWatchdog", "Name:GC_WorkerThread", "Name:ace.bg.1"};
-    log[0] += std::to_string(testPid);
-    log[1] += TRUNCATE_TEST_BUNDLE_NAME;
-    string::size_type idx;
-    int expectNum = sizeof(log) / sizeof(log[0]);
-    for (int i = 0; i < expectNum; i++) {
-        idx = procDumpLog.find(log[i]);
-        if (idx != string::npos) {
-            GTEST_LOG_(INFO) << log[i];
-            count++;
-        }
-    }
-    EXPECT_EQ(count, expectNum) << "FaultLoggerdSystemTest0031 Failed";
-    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest0031: end.";
-}
-
-/**
- * @tc.name: FaultLoggerdSystemTest0032
- * @tc.desc: test dumpcatcher command: -m -p systemui tid mainthread
- * @tc.type: FUNC
- * @tc.require: issueI5PJ9O
- */
-HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0032, TestSize.Level2)
-{
-    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest0032: start.";
-    std::string testBundleName = TEST_BUNDLE_NAME;
-    std::string testAbiltyName = testBundleName + ".MainAbility";
-    int testPid = LaunchTestHap(testAbiltyName, testBundleName);
-    if (testPid == 0) {
-        GTEST_LOG_(ERROR) << "Failed to launch target hap.";
-        return;
-    }
-    if (!CheckProcessComm(testPid)) {
-        GTEST_LOG_(ERROR) << "Error process comm";
-        return;
-    }
-    std::string procCMD = "dumpcatcher -m -p " + std::to_string(testPid) +
-        " -t " + std::to_string(testPid);
-    string procDumpLog = FaultLoggerdSystemTest::ProcessDumpCommands(procCMD);
-    GTEST_LOG_(INFO) << "procDumpLog: " << procDumpLog;
-    int count = 0;
-    string log[] = { "Tid:", "Name:", "#00", "/system/bin/appspawn"};
-    log[0] += std::to_string(testPid);
-    log[1] += TRUNCATE_TEST_BUNDLE_NAME;
-    string::size_type idx;
-    int expectNum = sizeof(log) / sizeof(log[0]);
-    for (int i = 0; i < 4; i++) {
-        idx = procDumpLog.find(log[i]);
-        if (idx != string::npos) {
-            GTEST_LOG_(INFO) << log[i];
-            count++;
-        }
-    }
-    EXPECT_EQ(count, expectNum) << "FaultLoggerdSystemTest0032 Failed";
-    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest0032: end.";
-}
-
-/**
- * @tc.name: FaultLoggerdSystemTest0033
- * @tc.desc: test dumpcatcher command: -m -p systemui tid -1
- * @tc.type: FUNC
- * @tc.require: issueI5PJ9O
- */
-HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0033, TestSize.Level2)
-{
-    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest0033: start.";
-    std::string systemui = "com.ohos.systemui";
-    int systemuiPid = FaultLoggerdSystemTest::GetServicePid(systemui);
-    std::string procCMD = "dumpcatcher -m -p " + std::to_string(systemuiPid) + " -t -1";
-    string procDumpLog = FaultLoggerdSystemTest::ProcessDumpCommands(procCMD);
-    GTEST_LOG_(INFO) << "procDumpLog: " << procDumpLog;
-    int count = 0;
-    string log[] = {"Failed"};
-    string::size_type idx;
-    for (int i = 0; i < 1; i++) {
-        idx = procDumpLog.find(log[i]);
-        if (idx != string::npos) {
-            GTEST_LOG_(INFO) << count;
-            GTEST_LOG_(INFO) << log[i];
-            count++;
-        }
-    }
-    EXPECT_EQ(count, 1) << "FaultLoggerdSystemTest0033 Failed";
-    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest0033: end.";
-}
-
-/**
- * @tc.name: FaultLoggerdSystemTest0034
- * @tc.desc: test dumpcatcher command: -m -p -1 tid -1
- * @tc.type: FUNC
- * @tc.require: issueI5PJ9O
- */
-HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0034, TestSize.Level2)
-{
-    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest0034: start.";
-    std::string systemui = "com.ohos.systemui";
-    std::string procCMD = "dumpcatcher -m -p -1 -t -1";
-    string procDumpLog = FaultLoggerdSystemTest::ProcessDumpCommands(procCMD);
-    GTEST_LOG_(INFO) << "procDumpLog: " << procDumpLog;
-    int count = 0;
-    string log[] = {"Failed"};
-    string::size_type idx;
-    for (int i = 0; i < 1; i++) {
-        idx = procDumpLog.find(log[i]);
-        if (idx != string::npos) {
-            GTEST_LOG_(INFO) << count;
-            GTEST_LOG_(INFO) << log[i];
-            count++;
-        }
-    }
-    EXPECT_EQ(count, 1) << "FaultLoggerdSystemTest0034 Failed";
-    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest0034: end.";
+    sleep(2); // 2 : sleep 2 seconds
+    EXPECT_EQ(FaultLoggerdSystemTest::checkCnt, 3) << "FaultLoggerdSystemTest0011 failed";
+    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest0011: end.";
 }
 
 /**
@@ -3045,7 +2213,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest040, TestSize.Level2)
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest040: start uid:" << getuid();
     FaultLoggerdSystemTest::StartCrasherLoop(3);
     std::string procCMD = "dumpcatcher -p " + std::to_string(FaultLoggerdSystemTest::loopAppPid);
-    string procDumpLog = FaultLoggerdSystemTest::ProcessDumpCommands(procCMD);
+    string procDumpLog = ExecuteCommands(procCMD);
     GTEST_LOG_(INFO) << "procDumpLog: " << procDumpLog;
     int count = 0;
     string log[] = {"Failed"};
@@ -3073,7 +2241,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest040_level0, TestSize.Lev
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest040_level0: start uid:" << getuid();
     FaultLoggerdSystemTest::StartCrasherLoop(3);
     std::string procCMD = "dumpcatcher -p " + std::to_string(FaultLoggerdSystemTest::loopAppPid);
-    string procDumpLog = FaultLoggerdSystemTest::ProcessDumpCommands(procCMD);
+    string procDumpLog = ExecuteCommands(procCMD);
     GTEST_LOG_(INFO) << "procDumpLog: " << procDumpLog;
     int count = 0;
     string log[] = {"Failed"};
@@ -3102,7 +2270,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest041, TestSize.Level2)
     FaultLoggerdSystemTest::StartCrasherLoop(3);
     std::string procCMD = "dumpcatcher -p " + std::to_string(FaultLoggerdSystemTest::loopAppPid) + " -t "+
         std::to_string(FaultLoggerdSystemTest::loopAppPid);
-    string procDumpLog = FaultLoggerdSystemTest::ProcessDumpCommands(procCMD);
+    string procDumpLog = ExecuteCommands(procCMD);
     GTEST_LOG_(INFO) << "procDumpLog: " << procDumpLog;
     int count = 0;
     string log[] = {"Failed"};
@@ -3135,7 +2303,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest042, TestSize.Level2)
     }
     std::string procCMD = "dumpcatcher -p " + std::to_string(FaultLoggerdSystemTest::loopAppPid) + " -t "+
         std::to_string(tid);
-    string procDumpLog = FaultLoggerdSystemTest::ProcessDumpCommands(procCMD);
+    string procDumpLog = ExecuteCommands(procCMD);
     GTEST_LOG_(INFO) << "procDumpLog: " << procDumpLog;
     int count = 0;
     string log[] = {"Failed"};
@@ -3165,7 +2333,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest043, TestSize.Level2)
     FaultLoggerdSystemTest::StartCrasherLoop(3);
     std::string procCMD = "dumpcatcher -p " + std::to_string(FaultLoggerdSystemTest::loopSysPid) + " -t "
         + std::to_string(FaultLoggerdSystemTest::loopSysPid);
-    string procDumpLog = FaultLoggerdSystemTest::ProcessDumpCommands(procCMD);
+    string procDumpLog = ExecuteCommands(procCMD);
     GTEST_LOG_(INFO) << "procDumpLog: " << procDumpLog;
     int count = 0;
     string log[] = {"Failed"};
@@ -3196,7 +2364,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0109, TestSize.Level2)
     FaultLoggerdSystemTest::StartCrasherLoop(3);
     std::string procCMD = "dumpcatcher -p " + std::to_string(FaultLoggerdSystemTest::loopRootPid) + " -t "
         + std::to_string(FaultLoggerdSystemTest::loopRootPid);
-    string procDumpLog = FaultLoggerdSystemTest::ProcessDumpCommands(procCMD);
+    string procDumpLog = ExecuteCommands(procCMD);
     GTEST_LOG_(INFO) << "procDumpLog: " << procDumpLog;
     int count = 0;
     string log[] = {"Failed"};
@@ -3225,7 +2393,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest044, TestSize.Level2)
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest044: start.";
     FaultLoggerdSystemTest::StartCrasherLoop(3);
     std::string procCMD = "dumpcatcher -p 9999 -t "+ std::to_string(FaultLoggerdSystemTest::loopAppPid);
-    string procDumpLog = FaultLoggerdSystemTest::ProcessDumpCommands(procCMD);
+    string procDumpLog = ExecuteCommands(procCMD);
     GTEST_LOG_(INFO) << "procDumpLog: " << procDumpLog;
     int count = 0;
     string log[] = {"Failed"};
@@ -3253,7 +2421,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest045, TestSize.Level2)
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest045: start.";
     FaultLoggerdSystemTest::StartCrasherLoop(3);
     std::string procCMD = "dumpcatcher -p " + std::to_string(FaultLoggerdSystemTest::loopAppPid) + " -t 9999";
-    string procDumpLog = FaultLoggerdSystemTest::ProcessDumpCommands(procCMD);
+    string procDumpLog = ExecuteCommands(procCMD);
     GTEST_LOG_(INFO) << "procDumpLog: " << procDumpLog;
     int count = 0;
     string log[] = {"Failed"};
@@ -3283,7 +2451,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest046, TestSize.Level2)
     FaultLoggerdSystemTest::StartCrasherLoop(3);
     std::string procCMD = "dumpcatcher -p " + std::to_string(FaultLoggerdSystemTest::loopAppPid) + " -t "
         + std::to_string(FaultLoggerdSystemTest::loopSysPid);
-    string procDumpLog = FaultLoggerdSystemTest::ProcessDumpCommands(procCMD);
+    string procDumpLog = ExecuteCommands(procCMD);
     GTEST_LOG_(INFO) << "procDumpLog: " << procDumpLog;
     int count = 0;
     string log[] = {"Failed"};
@@ -3314,7 +2482,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest047, TestSize.Level2)
     FaultLoggerdSystemTest::StartCrasherLoop(3);
     std::string procCMD = "dumpcatcher -p " + std::to_string(FaultLoggerdSystemTest::loopSysPid) + " -t "
         + std::to_string(FaultLoggerdSystemTest::loopAppPid);
-    string procDumpLog = FaultLoggerdSystemTest::ProcessDumpCommands(procCMD);
+    string procDumpLog = ExecuteCommands(procCMD);
     GTEST_LOG_(INFO) << "procDumpLog: " << procDumpLog;
     int count = 0;
     string log[] = {"Failed"};
@@ -3343,7 +2511,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest048, TestSize.Level2)
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest048: start.";
     FaultLoggerdSystemTest::StartCrasherLoop(3);
     std::string procCMD = "dumpcatcher -p  -t " + std::to_string(FaultLoggerdSystemTest::loopAppPid);
-    string procDumpLog = FaultLoggerdSystemTest::ProcessDumpCommands(procCMD);
+    string procDumpLog = ExecuteCommands(procCMD);
     GTEST_LOG_(INFO) << "procDumpLog: " << procDumpLog;
     int count = 0;
     string log[] = {"Failed"};
@@ -3371,7 +2539,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest049, TestSize.Level2)
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest049: start.";
     FaultLoggerdSystemTest::StartCrasherLoop(3);
     std::string procCMD = "dumpcatcher -p " + std::to_string(FaultLoggerdSystemTest::loopAppPid) + " -t ";
-    string procDumpLog = FaultLoggerdSystemTest::ProcessDumpCommands(procCMD);
+    string procDumpLog = ExecuteCommands(procCMD);
     GTEST_LOG_(INFO) << "procDumpLog: " << procDumpLog;
     int count = 0;
     string log[] = {"Usage:", "dump the stacktrace"};
@@ -3399,7 +2567,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest050, TestSize.Level2)
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest050: start.";
     FaultLoggerdSystemTest::StartCrasherLoop(3);
     std::string procCMD = "dumpcatcher -p -11 -t " + std::to_string(FaultLoggerdSystemTest::loopAppPid);
-    string procDumpLog = FaultLoggerdSystemTest::ProcessDumpCommands(procCMD);
+    string procDumpLog = ExecuteCommands(procCMD);
     GTEST_LOG_(INFO) << "procDumpLog: " << procDumpLog;
     int count = 0;
     string log[] = {"Failed"};
@@ -3427,7 +2595,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest051, TestSize.Level2)
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest051: start.";
     FaultLoggerdSystemTest::StartCrasherLoop(3);
     std::string procCMD = "dumpcatcher -p " + std::to_string(FaultLoggerdSystemTest::loopAppPid) + " -t -11";
-    string procDumpLog = FaultLoggerdSystemTest::ProcessDumpCommands(procCMD);
+    string procDumpLog = ExecuteCommands(procCMD);
     GTEST_LOG_(INFO) << "procDumpLog: " << procDumpLog;
     int count = 0;
     string log[] = {"Failed"};
@@ -3457,7 +2625,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest052, TestSize.Level2)
     int uidSetting = BMS_UID;
     setuid(uidSetting);
     std::string procCMD = "dumpcatcher -p " + std::to_string(FaultLoggerdSystemTest::loopSysPid);
-    string procDumpLog = FaultLoggerdSystemTest::ProcessDumpCommands(procCMD);
+    string procDumpLog = ExecuteCommands(procCMD);
     GTEST_LOG_(INFO) << "procDumpLog: " << procDumpLog;
     int count = 0;
     string log[] = {"", "Name:crasher", "Name:SubTestThread", "#00", "/data/crasher"};
@@ -3489,7 +2657,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0105, TestSize.Level2)
     int uidSetting = 0;
     setuid(uidSetting);
     std::string procCMD = "dumpcatcher -p " + std::to_string(FaultLoggerdSystemTest::loopRootPid);
-    string procDumpLog = FaultLoggerdSystemTest::ProcessDumpCommands(procCMD);
+    string procDumpLog = ExecuteCommands(procCMD);
     GTEST_LOG_(INFO) << "procDumpLog: " << procDumpLog;
     int count = 0;
     string log[] = {"", "Name:crasher", "Name:SubTestThread", "#00", "/data/crasher"};
@@ -3522,7 +2690,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest053, TestSize.Level2)
     int uidSetting = BMS_UID;
     setuid(uidSetting);
     std::string procCMD = "dumpcatcher -p " + std::to_string(FaultLoggerdSystemTest::loopAppPid);
-    string procDumpLog = FaultLoggerdSystemTest::ProcessDumpCommands(procCMD);
+    string procDumpLog = ExecuteCommands(procCMD);
     GTEST_LOG_(INFO) << "procDumpLog: " << procDumpLog;
     int count = 0;
     string log[] = {"", "Name:crasher", "Name:SubTestThread", "#00", "/data/crasher"};
@@ -3554,7 +2722,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0106, TestSize.Level2)
     int uidSetting = BMS_UID;
     setuid(uidSetting);
     std::string procCMD = "dumpcatcher -p " + std::to_string(FaultLoggerdSystemTest::loopRootPid);
-    string procDumpLog = FaultLoggerdSystemTest::ProcessDumpCommands(procCMD);
+    string procDumpLog = ExecuteCommands(procCMD);
     GTEST_LOG_(INFO) << "procDumpLog: " << procDumpLog;
     int count = 0;
     string log[] = {"", "Name:crasher", "Name:SubTestThread", "#00", "/data/crasher"};
@@ -3586,7 +2754,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0107, TestSize.Level2)
     int uidSetting = 0;
     setuid(uidSetting);
     std::string procCMD = "dumpcatcher -p " + std::to_string(FaultLoggerdSystemTest::loopAppPid);
-    string procDumpLog = FaultLoggerdSystemTest::ProcessDumpCommands(procCMD);
+    string procDumpLog = ExecuteCommands(procCMD);
     GTEST_LOG_(INFO) << "procDumpLog: " << procDumpLog;
     int count = 0;
     int apptid1 = std::stoi(appTid[0]);
@@ -3621,7 +2789,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0108, TestSize.Level2)
     int uidSetting = 0;
     setuid(uidSetting);
     std::string procCMD = "dumpcatcher -p " + std::to_string(FaultLoggerdSystemTest::loopSysPid);
-    string procDumpLog = FaultLoggerdSystemTest::ProcessDumpCommands(procCMD);
+    string procDumpLog = ExecuteCommands(procCMD);
     GTEST_LOG_(INFO) << "procDumpLog: " << procDumpLog;
     int count = 0;
     int systid1 = std::stoi(sysTid[0]);
@@ -3657,7 +2825,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest054, TestSize.Level2)
     FaultLoggerdSystemTest::StartCrasherLoop(3);
     std::string procCMD = "dumpcatcher -p " + std::to_string(FaultLoggerdSystemTest::loopAppPid) + " -t " +
         std::to_string(FaultLoggerdSystemTest::loopRootPid);
-    string procDumpLog = FaultLoggerdSystemTest::ProcessDumpCommands(procCMD);
+    string procDumpLog = ExecuteCommands(procCMD);
     GTEST_LOG_(INFO) << "procDumpLog: " << procDumpLog;
     int count = 0;
     string log[] = {"Failed"};
@@ -3688,7 +2856,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest055, TestSize.Level2)
     FaultLoggerdSystemTest::StartCrasherLoop(3);
     std::string procCMD = "dumpcatcher -p " + std::to_string(FaultLoggerdSystemTest::loopRootPid) + " -t " +
         std::to_string(FaultLoggerdSystemTest::loopAppPid);
-    string procDumpLog = FaultLoggerdSystemTest::ProcessDumpCommands(procCMD);
+    string procDumpLog = ExecuteCommands(procCMD);
     GTEST_LOG_(INFO) << "procDumpLog: " << procDumpLog;
     int count = 0;
     string log[] = {"Failed"};
@@ -3717,7 +2885,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0114, TestSize.Level2)
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest0114: start.";
     FaultLoggerdSystemTest::StartCrasherLoop(3);
     std::string procCMD = "dumpcatcher -p " + GetPidMax() + " -t " + GetTidMax();
-    string procDumpLog = FaultLoggerdSystemTest::ProcessDumpCommands(procCMD);
+    string procDumpLog = ExecuteCommands(procCMD);
     GTEST_LOG_(INFO) << "procDumpLog: " << procDumpLog;
     int count = 0;
     string log[] = {"Failed"};
@@ -3745,7 +2913,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0115, TestSize.Level2)
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest0115: start.";
     FaultLoggerdSystemTest::StartCrasherLoop(3);
     std::string procCMD = "dumpcatcher -p 65535 -t 65535";
-    string procDumpLog = FaultLoggerdSystemTest::ProcessDumpCommands(procCMD);
+    string procDumpLog = ExecuteCommands(procCMD);
     GTEST_LOG_(INFO) << "procDumpLog: " << procDumpLog;
     int count = 0;
     string log[] = {"Failed"};
@@ -3773,7 +2941,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0116, TestSize.Level2)
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest0116: start.";
     FaultLoggerdSystemTest::StartCrasherLoop(3);
     std::string procCMD = "dumpcatcher -p 65536 -t 65536";
-    string procDumpLog = FaultLoggerdSystemTest::ProcessDumpCommands(procCMD);
+    string procDumpLog = ExecuteCommands(procCMD);
     GTEST_LOG_(INFO) << "procDumpLog: " << procDumpLog;
     int count = 0;
     string log[] = {"Failed"};
@@ -3801,7 +2969,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0117, TestSize.Level2)
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest117: start.";
     FaultLoggerdSystemTest::StartCrasherLoop(3);
     std::string procCMD = "dumpcatcher -p 65534 -t 65534";
-    string procDumpLog = FaultLoggerdSystemTest::ProcessDumpCommands(procCMD);
+    string procDumpLog = ExecuteCommands(procCMD);
     GTEST_LOG_(INFO) << "procDumpLog: " << procDumpLog;
     int count = 0;
     string log[] = {"Failed"};
@@ -3848,7 +3016,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest057, TestSize.Level2)
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest057: start uid:" << getuid();
     FaultLoggerdSystemTest::StartCrasherLoop(4);
     std::string procCMD = "dumpcatcher -p " + std::to_string(FaultLoggerdSystemTest::loopAppPid);
-    string procDumpLog = FaultLoggerdSystemTest::ProcessDumpCommands(procCMD);
+    string procDumpLog = ExecuteCommands(procCMD);
     GTEST_LOG_(INFO) << "procDumpLog: " << procDumpLog;
     int count = 0;
     string log[] = {"Failed"};
@@ -4306,6 +3474,4 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0200, TestSize.Level2)
     int minRegIdx = 6;
     CheckKeywords(fileName, log, sizeof(log) / sizeof(log[0]), minRegIdx);
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest0200: end.";
-}
-#endif
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2022 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -18,12 +18,14 @@
 #include "dfx_thread.h"
 
 #include <cerrno>
+#include <chrono>
 #include <climits>
 #include <cstring>
 #include <securec.h>
 #include <sstream>
 #include <sys/ptrace.h>
 #include <sys/wait.h>
+#include <unistd.h>
 #include "dfx_config.h"
 #include "dfx_define.h"
 #include "dfx_fault_stack.h"
@@ -180,15 +182,21 @@ bool DfxThread::Attach()
         return false;
     }
 
-    errno = 0;
-    while (waitpid(nsTid_, nullptr, __WALL) < 0) {
-        if (EINTR != errno) {
+    int64_t startTime = std::chrono::duration_cast<std::chrono::milliseconds>(
+        std::chrono::system_clock::now().time_since_epoch()).count();
+    do {
+        if (waitpid(nsTid_, nullptr, WNOHANG) >= 0) {
+            break;
+        }
+        int64_t curTime = std::chrono::duration_cast<std::chrono::milliseconds>(
+            std::chrono::system_clock::now().time_since_epoch()).count();
+        if (curTime - startTime > 10) { // 10 : 10ms timeout
             ptrace(PTRACE_DETACH, nsTid_, NULL, NULL);
-            DFXLOG_WARN("Failed to wait thread(%d:%d) attached, errno=%d.", tid_, nsTid_, errno);
+            DFXLOG_WARN("Failed to wait thread(%d:%d) attached.", tid_, nsTid_);
             return false;
         }
-        errno = 0;
-    }
+        usleep(5); // 5 : sleep 5us
+    } while (true);
     threadStatus_ = ThreadStatus::THREAD_STATUS_ATTACHED;
     return true;
 }

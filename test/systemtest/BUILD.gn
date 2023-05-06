@@ -1,4 +1,4 @@
-# Copyright (c) 2021-2022 Huawei Device Co., Ltd.
+# Copyright (c) 2021-2023 Huawei Device Co., Ltd.
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -30,12 +30,14 @@ if (defined(ohos_lite)) {
         "$faultloggerd_path/tools/process_dump",
         "$faultloggerd_path/interfaces/innerkits/faultoggerd_client/include",
         "$faultloggerd_path/interfaces/innerkits/dump_catcher/include",
+        "$faultloggerd_path/test/utils",
         "$faultloggerd_path/utils",
         "$hilog_lite_include_path",
       ]
 
       deps = [
         "$faultloggerd_path/interfaces/innerkits/dump_catcher:libdfx_dumpcatcher",
+        "$faultloggerd_path/test/utils:dfx_test_util",
         "//base/hiviewdfx/hilog_lite/frameworks/featured:hilog_shared",
       ]
 
@@ -61,6 +63,7 @@ if (defined(ohos_lite)) {
       "include/",
       "//commonlibrary/c_utils/base/include",
       "$faultloggerd_path/interfaces/innerkits/dump_catcher/include/",
+      "$faultloggerd_path/test/utils",
     ]
 
     cflags_cc = [ "-fno-exceptions" ]
@@ -76,14 +79,11 @@ if (defined(ohos_lite)) {
 
     deps = [
       "$faultloggerd_path/interfaces/innerkits/dump_catcher:libdfx_dumpcatcher",
-      "$faultloggerd_path/test/systemtest:test_faultloggerd_pre",
+      "$faultloggerd_path/test/utils:dfx_test_util",
       "$faultloggerd_path/tools/crasher_c:crasher_c",
       "$faultloggerd_path/tools/crasher_cpp:crasher_cpp",
       "//third_party/googletest:gtest_main",
     ]
-    if (support_jsapi) {
-      deps += [ "$faultloggerd_path/test/resource:FaultloggerdJsTest" ]
-    }
     resource_config_file = "$faultloggerd_path/test/resource/ohos_test.xml"
 
     external_deps = [
@@ -96,25 +96,6 @@ if (defined(ohos_lite)) {
     } else if (target_cpu == "arm64") {
       cflags = [ "-D__aarch64__" ]
     }
-  }
-
-  ohos_systemtest("test_faultloggerd_pre") {
-    module_out_path = module_output_path
-    sources = [ "src/faultloggerd_system_test.cpp" ]
-
-    configs = [ ":module_private_config" ]
-
-    deps = [
-      "$faultloggerd_path/interfaces/innerkits/dump_catcher:libdfx_dumpcatcher",
-      "//third_party/googletest:gtest_main",
-    ]
-
-    external_deps = [
-      "c_utils:utils",
-      "hilog_native:libhilog",
-    ]
-
-    cflags = [ "-D__pre__" ]
   }
 
   group("systemtest") {

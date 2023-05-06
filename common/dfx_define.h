@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2022 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -21,7 +21,7 @@
 
 #define SIGDUMP 35
 #define SIGLOCAL_DUMP 36
-#define PROCESSDUMP_TIMEOUT 30
+#define PROCESSDUMP_TIMEOUT 8
 #define NAME_LEN 128
 #define PATH_LEN 1024
 #define MAX_FATAL_MSG_SIZE 1024
