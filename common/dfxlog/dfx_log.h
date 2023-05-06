@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -12,6 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 #ifndef DFX_LOG_H
 #define DFX_LOG_H
 
@@ -68,8 +69,20 @@ int DfxLog(const Level logLevel, const unsigned int domain, const char* tag, con
 #define LOGE(fmt, ...) DfxLog(ERROR, LOG_DOMAIN, LOG_TAG, "[%s:%d]" fmt, (FILE_NAME), (__LINE__), ##__VA_ARGS__)
 #define LOGF(fmt, ...) DfxLog(FATAL, LOG_DOMAIN, LOG_TAG, "[%s:%d]" fmt, (FILE_NAME), (__LINE__), ##__VA_ARGS__)
 
+#ifndef LOG_ASSERT_MESSAGE
+#define LOG_ASSERT_MESSAGE(condition, fmt, ...)                                                         \
+    if (!(condition)) {                                                                                 \
+        DfxLog(FATAL, LOG_DOMAIN, LOG_TAG, " assert failed: '%s' ", fmt, #condition, ##__VA_ARGS__);     \
+    }
 #endif
+
+#ifndef LOG_ASSERT
+#define LOG_ASSERT(condition) LOG_ASSERT_MESSAGE(condition, "")
+#endif
+
+#endif
+
 #ifdef __cplusplus
 }
 #endif
-#endif
+#endif // DFX_LOG_H

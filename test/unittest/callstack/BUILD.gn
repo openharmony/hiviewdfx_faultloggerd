@@ -1,0 +1,70 @@
+# Copyright (c) 2023 Huawei Device Co., Ltd.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import("//base/hiviewdfx/faultloggerd/faultloggerd.gni")
+
+if (!defined(ohos_lite)) {
+  import("//build/config/features.gni")
+  import("//build/test.gni")
+
+  config("callstack_test_config") {
+    visibility = [ ":*" ]
+    include_dirs = [
+      "include",
+      "$faultloggerd_path/interfaces/innerkits/callstack/include",
+    ]
+  }
+
+  module_output_path = "faultloggerd/callstack"
+
+  ohos_unittest("test_callstack") {
+    module_out_path = module_output_path
+    sources = [
+      "$faultloggerd_path/interfaces/innerkits/callstack/src/dfx_utilities.cpp",
+      "$faultloggerd_path/interfaces/innerkits/callstack/src/register.cpp",
+      "hashlist_test.cpp",
+      "register_test.cpp",
+    ]
+
+    defines = [ "HAVE_LIBUNWIND=1" ]
+
+    configs = [ ":callstack_test_config" ]
+
+    deps = [
+      "$faultloggerd_path/common/dfxlog:static_common_log",
+      "//third_party/googletest:gmock_main",
+      "//third_party/googletest:gtest_main",
+    ]
+
+    external_deps = [ "c_utils:utils" ]
+
+    if (is_ohos) {
+      public_deps = [ "//third_party/bounds_checking_function:libsec_shared" ]
+      if (target_cpu == "arm64") {
+        public_deps += [ "//third_party/libunwind:unwind_source_arm64_opt" ]
+      } else {
+        public_deps += [ "//third_party/libunwind:unwind_source_${target_cpu}" ]
+      }
+    } else {
+      public_deps = [
+        "//third_party/bounds_checking_function:libsec_static",
+        "//third_party/libunwind:unwind_source_${host_cpu}",
+      ]
+    }
+  }
+
+  group("unittest") {
+    testonly = true
+    deps = [ ":test_callstack" ]
+  }
+}

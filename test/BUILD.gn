@@ -10,12 +10,15 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 import("//base/hiviewdfx/faultloggerd/faultloggerd.gni")
+
 if (defined(ohos_lite)) {
   import("//build/lite/config/test.gni")
 } else {
   import("//build/test.gni")
 }
+
 group("faultloggerd_moduletest") {
   testonly = true
   deps = [ "moduletest:moduletest" ]
@@ -52,6 +55,7 @@ group("faultloggerd_unittest") {
   if (!defined(ohos_lite)) {
     deps += [
       "unittest/backtrace:unittest",
+      "unittest/callstack:unittest",
       "unittest/panic_handler:unittest",
       "unittest/rustc_demangle:unittest",
       "unittest/stacktrace_rust:unittest",
