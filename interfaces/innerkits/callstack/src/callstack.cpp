@@ -115,7 +115,6 @@ bool CallStack::fillUDI(unw_dyn_info_t &di, SymbolsFile &symbolsFile, std::pair<
 
         */
         const int32_t ehFrameMmapIndex = thread.FindMapByOffset(curMemMaps, ehFrameHdrElfOffset);
-
         if (ehFrameMmapIndex == -1) {
             DFXLOG_ERROR("no ehframe mmap found.");
             return false;
