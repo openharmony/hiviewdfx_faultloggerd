@@ -52,6 +52,7 @@ namespace Developtools {
 namespace NativeDaemon {
 class SymbolsFile;
 class VirtualThread;
+class MemMaps;
 class MemMapItem;
 struct CallFrame;
 } // namespace NativeDaemon
@@ -114,8 +115,19 @@ private:
                                         unw_word_t *data);
     static const std::string GetUnwErrorName(int error);
     static void dumpUDI(unw_dyn_info_t &di);
+#ifdef NATIVEDAEMON_USE_CALLSTACK
+    static bool fillUDI(unw_dyn_info_t &di, SymbolsFile &symbolsFile, std::pair<MemMaps*, uint32_t> curMemMapsPair,
+                        const VirtualThread &thread);
+    static int FindUnwindTable(SymbolsFile *symbolsFile, std::pair<MemMaps*, uint32_t> curMemMapsPair,
+                               UnwindInfo *unwindInfoPtr, unw_addr_space_t as, unw_word_t ip,
+                               unw_proc_info_t *pi, int need_unwind_info, void *arg);
+#else
     static bool fillUDI(unw_dyn_info_t &di, SymbolsFile &symbolsFile, const MemMapItem &mmap,
                         const VirtualThread &thread);
+    static int FindUnwindTable(SymbolsFile *symbolsFile, const MemMapItem &mmap,
+                               UnwindInfo *unwindInfoPtr, unw_addr_space_t as, unw_word_t ip,
+                               unw_proc_info_t *pi, int need_unwind_info, void *arg);
+#endif // NATIVEDAEMON_USE_CALLSTACK
     static int FindProcInfo(unw_addr_space_t as, unw_word_t ip, unw_proc_info_t *pi,
                             int need_unwind_info, void *arg);
     static int AccessMem(unw_addr_space_t as, unw_word_t addr, unw_word_t *valuePoint,
@@ -129,9 +141,6 @@ private:
     static int Resume(unw_addr_space_t as, unw_cursor_t *cu, void *arg);
     static int getProcName(unw_addr_space_t as, unw_word_t addr, char *bufp, size_t buf_len,
                            unw_word_t *offp, void *arg);
-    static int FindUnwindTable(SymbolsFile *symbolsFile, const MemMapItem &mmap,
-                               UnwindInfo *unwindInfoPtr, unw_addr_space_t as, unw_word_t ip,
-                               unw_proc_info_t *pi, int need_unwind_info, void *arg);
     void UnwindStep(unw_cursor_t &c, std::vector<CallFrame> &callFrames, size_t maxStackLevel);
     std::unordered_map<pid_t, unw_addr_space_t> unwindAddrSpaceMap_;
 
