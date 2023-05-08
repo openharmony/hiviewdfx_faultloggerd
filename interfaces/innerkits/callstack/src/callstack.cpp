@@ -348,7 +348,7 @@ int CallStack::FindProcInfo(unw_addr_space_t as, unw_word_t ip, unw_proc_info_t 
         SymbolsFile *symbolsFile = unwindInfoPtr->thread.FindSymbolsFileByName(curMemMaps->name_);
         if (symbolsFile != nullptr) {
             return FindUnwindTable(symbolsFile, curMemMapsPair, unwindInfoPtr, as, ip, pi,
-                                    need_unwind_info, arg);
+                                   need_unwind_info, arg);
 #else
     const MemMapItem *mmap = unwindInfoPtr->thread.FindMapByAddr(ip);
     if (mmap != nullptr) {
