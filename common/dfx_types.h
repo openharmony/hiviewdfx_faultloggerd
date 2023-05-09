@@ -12,14 +12,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#ifndef DFX_TYPES_H
+#define DFX_TYPES_H
 
-#include "dfx_utilities.h"
+#include <linux/types.h>
 
-namespace OHOS {
-namespace HiviewDFX {
-bool StringStartsWith(const std::string &string, const std::string &with)
-{
-    return string.find(with) == 0;
-}
-} // namespace HiviewDFX
-} // namespace OHOS
+using s8 = __s8;
+using u8 = __u8;
+using s16 = __s16;
+using u16 = __u16;
+using s32 = __s32;
+using u32 = __u32;
+using s64 = __s64;
+using u64 = __u64;
+
+#endif // DFX_TYPES_H

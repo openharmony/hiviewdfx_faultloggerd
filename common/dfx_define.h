@@ -32,6 +32,7 @@ static const int SOCKET_BUFFER_SIZE = 256;
 static const char FAULTLOGGERD_SOCK_PATH[] = "/dev/unix/socket/faultloggerd.server";
 static const char SERVER_SOCKET_NAME[] = "faultloggerd.server";
 static const char PROC_SELF_STATUS_PATH[] = "/proc/self/status";
+static const char PROC_SELF_TASK_PATH[] = "/proc/self/task";
 
 #if defined(__arm__)
 static const int USER_REG_NUM = 16;
@@ -77,10 +78,14 @@ static const int FILE_WRITE_BUF_LEN = 4096;
 static const char TEST_BUNDLE_NAME[] = "com.example.myapplication";
 static const char TRUNCATE_TEST_BUNDLE_NAME[] = "e.myapplication";
 
+static const int DUMP_TYPE_NATIVE = -1;
+static const int DUMP_TYPE_MIX = -2;
+static const int DUMP_TYPE_KERNEL = -3;
+
 #define LIKELY(exp)       (__builtin_expect(!!(exp), true))
 #define UNLIKELY(exp)     (__builtin_expect(!!(exp), false))
 
-#define AT_SYMBOL_VISIBLE       __attribute__ ((visibility("default")))
+#define AT_SYMBOL_DEFAULT       __attribute__ ((visibility("default")))
 #define AT_SYMBOL_HIDDEN        __attribute__ ((visibility("hidden")))
 #define AT_ALWAYS_INLINE        __attribute__((always_inline))
 #define ATTRIBUTE_WARN_UNUSED __attribute__((warn_unused_result))

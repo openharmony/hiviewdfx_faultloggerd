@@ -16,7 +16,6 @@ import("//base/hiviewdfx/faultloggerd/faultloggerd.gni")
 if (!defined(ohos_lite)) {
   callstack_sources = [
     "src/callstack.cpp",
-    "src/dfx_utilities.cpp",
     "src/register.cpp",
   ]
 
@@ -26,6 +25,7 @@ if (!defined(ohos_lite)) {
       "include",
       "$faultloggerd_path/common",
       "$faultloggerd_path/common/dfxlog",
+      "$faultloggerd_path/common/dfxutil",
     ]
     defines = [ "HAVE_LIBUNWIND=1" ]
 
