@@ -74,6 +74,94 @@ void CallStack::dumpUDI(unw_dyn_info_t &di)
     DFXLOG_DEBUG(" di.u.rti.table_len:     0x%016" UNW_WORD_PFLAG "", di.u.rti.table_len);
 }
 
+#ifdef NATIVEDAEMON_USE_CALLSTACK
+bool CallStack::fillUDI(unw_dyn_info_t &di, SymbolsFile &symbolsFile, std::pair<MemMaps*, uint32_t> curMemMapsPair,
+                        const VirtualThread &thread)
+{
+    uint64_t fdeTableElfOffset = 0;
+    uint64_t fdeTableSize = 0;
+    uint64_t ehFrameHdrElfOffset = 0;
+    uint64_t SectionVaddr = 0;
+    uint64_t SectionSize = 0;
+    uint64_t SectionFileOffset = 0;
+    auto [curMemMaps, itemIndex] = curMemMapsPair;
+    di.start_ip = curMemMaps->maps_[itemIndex].begin_;
+    di.end_ip = curMemMaps->maps_[itemIndex].end_;
+#ifndef __arm__
+    if ((UNW_INFO_FORMAT_REMOTE_TABLE == di.format) &&
+        symbolsFile.GetHDRSectionInfo(ehFrameHdrElfOffset, fdeTableElfOffset, fdeTableSize)) {
+        /*
+            unw_word_t name_ptr;        // addr. of table name (e.g., library name)
+            unw_word_t segbase;         // segment base
+            unw_word_t table_len;       // must be a multiple of sizeof(unw_word_t)!
+            unw_word_t table_data;
+        */
+        /*
+            all the rti addr is offset of the elf file
+            begin - page offset = elf file base addr in vaddr user space
+            begin - page offset + elf offset = vaddr in real word.(for this thread)
+        */
+
+        // segbase is file offset .
+        /*
+            00200000-00344000 r--p 00000000 08:02 46404365
+            00344000-005c4000 r-xp 00143000 08:02 46404365
+
+            LOAD           0x00000000001439c0 0x00000000003449c0 0x00000000003449c0
+                            0x000000000027f3c0 0x000000000027f3c0  R E    0x1000
+
+            GNU_EH_FRAME   0x00000000000f3248 0x00000000002f3248 0x00000000002f3248
+                            0x000000000000bb04 0x000000000000bb04  R      0x4
+
+        */
+        const int32_t ehFrameMmapIndex = thread.FindMapByOffset(curMemMaps, ehFrameHdrElfOffset);
+        if (ehFrameMmapIndex == -1) {
+            DFXLOG_ERROR("no ehframe mmap found.");
+            return false;
+        }
+
+        const auto& ehFrameMmap = curMemMaps->maps_[ehFrameMmapIndex];
+
+        di.u.rti.segbase = ehFrameMmap.begin_ + ehFrameHdrElfOffset - ehFrameMmap.pageoffset_;
+        di.u.rti.table_data = ehFrameMmap.begin_ + fdeTableElfOffset - ehFrameMmap.pageoffset_;
+        di.u.rti.table_len = fdeTableSize / sizeof(unw_word_t);
+
+        DFXLOG_DEBUG(" map pageoffset:         0x%016" PRIx64 "", curMemMaps->maps_[itemIndex].pageoffset_);
+        DFXLOG_DEBUG(" ehFrameHdrElfOffset:    0x%016" PRIx64 "", ehFrameHdrElfOffset);
+        DFXLOG_DEBUG(" fdeTableElfOffset:      0x%016" PRIx64 "", fdeTableElfOffset);
+        DFXLOG_DEBUG(" fdeTableSize:           0x%016" PRIx64 "", fdeTableSize);
+        return true;
+    } else {
+        DFXLOG_DEBUG("SymbolsFile::GetHDRSectionInfo() failed");
+    }
+#else
+    if ((UNW_INFO_FORMAT_ARM_EXIDX == di.format) &&
+        symbolsFile.GetSectionInfo(ARM_EXIDX, SectionVaddr, SectionSize, SectionFileOffset)) {
+        const int32_t targetIndex = thread.FindMapByOffset(curMemMaps, SectionFileOffset);
+        if (targetIndex == -1) {
+            DFXLOG_ERROR("no debug mmap found.");
+            return false;
+        }
+        const auto& targetMmap = curMemMaps->maps_[targetIndex];
+        DFXLOG_DEBUG(" begin: %" PRIx64 " offset:%" PRIx64 "", targetMmap.begin_, targetMmap.pageoffset_);
+
+        di.u.rti.table_data = targetMmap.begin_ + SectionFileOffset - targetMmap.pageoffset_;
+        di.u.rti.table_len = SectionSize;
+        DFXLOG_DEBUG(" SectionName:           %s", std::string(ARM_EXIDX).c_str());
+        DFXLOG_DEBUG(" SectionVaddrt:         0x%016" PRIx64 "", SectionVaddr);
+        DFXLOG_DEBUG(" SectionFileOffset      0x%016" PRIx64 "", SectionFileOffset);
+        DFXLOG_DEBUG(" SectionSize:           0x%016" PRIx64 "", SectionSize);
+
+        // GetSectionInfo return true, but SectionVaddr || SectionSize is 0 ???
+        LOG_ASSERT(SectionVaddr != 0 && SectionSize != 0);
+        return true;
+    } else {
+        DFXLOG_DEBUG("SymbolsFile::GetSectionInfo() failed");
+    }
+#endif
+    return false;
+}
+#else
 bool CallStack::fillUDI(unw_dyn_info_t &di, SymbolsFile &symbolsFile, const MemMapItem &mmap,
                         const VirtualThread &thread)
 {
@@ -157,13 +245,20 @@ bool CallStack::fillUDI(unw_dyn_info_t &di, SymbolsFile &symbolsFile, const MemM
 #endif
     return false;
 }
+#endif // NATIVEDAEMON_USE_CALLSTACK
 
 /*
     https://www.nongnu.org/libunwind/man/libunwind-dynamic(3).html
 */
+#ifdef NATIVEDAEMON_USE_CALLSTACK
+int CallStack::FindUnwindTable(SymbolsFile *symbolsFile, std::pair<MemMaps*, uint32_t> curMemMapsPair,
+                               UnwindInfo *unwindInfoPtr, unw_addr_space_t as, unw_word_t ip,
+                               unw_proc_info_t *pi, int need_unwind_info, void *arg)
+#else
 int CallStack::FindUnwindTable(SymbolsFile *symbolsFile, const MemMapItem &mmap,
                                UnwindInfo *unwindInfoPtr, unw_addr_space_t as, unw_word_t ip,
                                unw_proc_info_t *pi, int need_unwind_info, void *arg)
+#endif // NATIVEDAEMON_USE_CALLSTACK
 {
     DFXLOG_DEBUG("try search debug info at %s", symbolsFile->filePath_.c_str());
     auto &dynInfoProcessMap = unwindInfoPtr->callStack.unwindDynInfoMap_;
@@ -189,7 +284,11 @@ int CallStack::FindUnwindTable(SymbolsFile *symbolsFile, const MemMapItem &mmap,
         // otherwise we use EH FRAME
         newdi.format = UNW_INFO_FORMAT_REMOTE_TABLE;
 #endif
+#ifdef NATIVEDAEMON_USE_CALLSTACK
+        if (fillUDI(newdi, *symbolsFile, curMemMapsPair, unwindInfoPtr->thread)) {
+#else
         if (fillUDI(newdi, *symbolsFile, mmap, unwindInfoPtr->thread)) {
+#endif // NATIVEDAEMON_USE_CALLSTACK
             dumpUDI(newdi);
             odi = newdi;
         } else {
@@ -242,11 +341,21 @@ int CallStack::FindProcInfo(unw_addr_space_t as, unw_word_t ip, unw_proc_info_t 
     UnwindInfo *unwindInfoPtr = static_cast<UnwindInfo *>(arg);
 
     DFXLOG_DEBUG("need_unwind_info ret %d ip %" UNW_WORD_PFLAG "", need_unwind_info, ip);
+#ifdef NATIVEDAEMON_USE_CALLSTACK
+    auto curMemMapsPair = unwindInfoPtr->thread.FindMemMapsByAddr(ip);
+    auto [curMemMaps, itemIndex] = curMemMapsPair;
+    if (curMemMaps != nullptr) {
+        SymbolsFile *symbolsFile = unwindInfoPtr->thread.FindSymbolsFileByName(curMemMaps->name_);
+        if (symbolsFile != nullptr) {
+            return FindUnwindTable(symbolsFile, curMemMapsPair, unwindInfoPtr, as, ip, pi,
+                                   need_unwind_info, arg);
+#else
     const MemMapItem *mmap = unwindInfoPtr->thread.FindMapByAddr(ip);
     if (mmap != nullptr) {
         SymbolsFile *symbolsFile = unwindInfoPtr->thread.FindSymbolsFileByMap(*mmap);
         if (symbolsFile != nullptr) {
             return FindUnwindTable(symbolsFile, *mmap, unwindInfoPtr, as, ip, pi, need_unwind_info, arg);
+#endif // NATIVEDAEMON_USE_CALLSTACK
         } else {
             DFXLOG_WARN("no symbols file found for thread %d:%s", unwindInfoPtr->thread.tid_,
                 unwindInfoPtr->thread.name_.c_str());
