@@ -36,17 +36,12 @@ typedef struct unw_addr_space *unw_addr_space_t;
 
 namespace OHOS {
 namespace HiviewDFX {
-enum DfxDumpType : int32_t {
-    DUMP_TYPE_NATIVE = -1,
-    DUMP_TYPE_MIX = -2,
-    DUMP_TYPE_KERNEL = -3,
-};
 class DfxDumpCatcher {
 public:
     DfxDumpCatcher();
     explicit DfxDumpCatcher(int32_t pid);
     ~DfxDumpCatcher();
-    
+
     bool DumpCatch(int pid, int tid, std::string& msg);
     bool DumpCatchMix(int pid, int tid, std::string& msg);
     bool DumpCatchFd(int pid, int tid, std::string& msg, int fd);

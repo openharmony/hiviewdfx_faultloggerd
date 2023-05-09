@@ -38,13 +38,10 @@ public:
     static std::shared_ptr<DfxElf> Create(const std::string path);
     bool ParseElfHeader();
     bool ParseElfProgramHeader();
+
     uint64_t FindRealLoadOffset(uint64_t offset) const;
     void CreateLoadInfo(uint64_t vaddr, uint64_t offset);
 
-    std::string GetName() const;
-    void SetName(const std::string &name);
-    std::string GetPath() const;
-    void SetPath(const std::string &path);
     int32_t GetFd() const;
     void SetFd(int32_t fdValue);
     size_t GetLoadBias() const;
@@ -59,12 +56,10 @@ public:
     void Close();
 
 private:
-    std::string name_ {""};
-    std::string path_{""};
     int32_t fd_ {-1};
     size_t loadBias_ {0};
     uint64_t size_ {0};
-    ElfW(Ehdr)header_;
+    ElfW(Ehdr) header_;
     std::vector<ElfLoadInfo> infos_;
 };
 } // namespace HiviewDFX

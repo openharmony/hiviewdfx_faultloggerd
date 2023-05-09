@@ -75,6 +75,7 @@ void DfxLogToSocket(const char *msg)
 
 void InitDebugLog(int type, int pid, int tid, unsigned int uid)
 {
+#ifndef DFX_LOG_USE_HILOG_BASE
     DFXLOG_INFO("InitDebugLog :: type(%d), pid(%d), tid(%d), uid(%d).", type, pid, tid, uid);
     if (g_DebugLogFilleDes != INVALID_FD) {
         return;
@@ -103,10 +104,12 @@ void InitDebugLog(int type, int pid, int tid, unsigned int uid)
     }
 
     InitDebugFd(g_DebugLogFilleDes);
+#endif
 }
 
 void CloseDebugLog()
 {
+#ifndef DFX_LOG_USE_HILOG_BASE
     if (g_DebugLogFilleDes == INVALID_FD) {
         return;
     }
@@ -119,4 +122,5 @@ void CloseDebugLog()
     g_StdErrFilleDes = INVALID_FD;
 
     InitDebugFd(g_DebugLogFilleDes);
+#endif
 }

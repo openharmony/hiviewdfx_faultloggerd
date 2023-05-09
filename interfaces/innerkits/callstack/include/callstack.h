@@ -33,7 +33,7 @@
 
 #include "hashlist.hpp"
 #include "register.h"
-#include "dfx_utilities.h"
+#include "dfx_types.h"
 
 namespace OHOS {
 #ifdef HIPERF_USE_CALLSTACK

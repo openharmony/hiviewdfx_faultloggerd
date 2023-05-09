@@ -294,7 +294,7 @@ bool ReadDirFiles(const std::string& path, std::vector<std::string>& files)
         files.emplace_back(std::string(ent->d_name));
     }
     (void)closedir(dir);
-    return true;
+    return (files.size() > 0);
 }
 
 bool ReadDirFilesByPid(const int& pid, std::vector<std::string>& files)
@@ -309,6 +309,18 @@ bool ReadDirFilesByPid(const int& pid, std::vector<std::string>& files)
         return false;
     }
     return ReadDirFiles(realPath, files);
+}
+
+size_t GetFileSize(const int& fd)
+{
+    size_t fileSize = 0;
+    if (fd >= 0) {
+        struct stat fileStat;
+        if (fstat(fd, &fileStat) == 0) {
+            fileSize = fileStat.st_size;
+        }
+    }
+    return fileSize;
 }
 }   // namespace HiviewDFX
 }   // namespace OHOS

@@ -99,10 +99,6 @@ HWTEST_F(DfxBaseTest, DfxElfTest001, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "DfxElfTest001: start.";
     auto dfxElf = DfxElf::Create(DUMPCATCHER_ELF_FILE);
-    dfxElf->SetName("dumpcatcher");
-    ASSERT_EQ(dfxElf->GetName(), "dumpcatcher");
-    dfxElf->SetPath(DUMPCATCHER_ELF_FILE);
-    ASSERT_EQ(dfxElf->GetPath(), DUMPCATCHER_ELF_FILE);
     GTEST_LOG_(INFO) << dfxElf->GetFd();
     GTEST_LOG_(INFO) << dfxElf->GetSize();
     dfxElf->SetLoadBias(0);
