@@ -40,7 +40,7 @@ void FaultLoggerPipeTest::TearDown(void)
 {
 }
 
-
+namespace {
 /**
  * @tc.name: FaultLoggerPipeTest001
  * @tc.desc: test FaultLoggerPipeMap Set Get func
@@ -79,4 +79,5 @@ HWTEST_F (FaultLoggerPipeTest, FaultLoggerPipeTest002, TestSize.Level2)
     ret = ptr->Get(pid);
     EXPECT_EQ(true, ret == nullptr) << "FaultLoggerPipeTest002 Del failed";
     GTEST_LOG_(INFO) << "FaultLoggerPipeTest002: end.";
+}
 }

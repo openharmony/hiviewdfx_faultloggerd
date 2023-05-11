@@ -39,10 +39,10 @@ bool ReportTraceInfo(RustPanicInfo *info)
 {
     char panicReason[REASON_BUF] = {0};
     if (snprintf_s(panicReason, REASON_BUF, REASON_BUF - 1,
-        "file:%s line:%d message:%s", info->filename, info->line, info->msg) <= 0) {
+        "file:%s line:%u message:%s", info->filename, info->line, info->msg) <= 0) {
         DFXLOG_ERROR("snprintf_s failed to format panic reason string");
     }
-
+    std::string panicReasonStr(panicReason);
     std::string processName;
     std::string threadName;
     ReadProcessName(getpid(), processName);
@@ -58,9 +58,8 @@ bool ReportTraceInfo(RustPanicInfo *info)
         DFXLOG_ERROR("Failed to get rust panic thread backtrace.");
         trace = "Failed to unwind rust panic thread.";
     }
-
     HiSysEventWrite(HiSysEvent::Domain::RELIABILITY, KEY_RUST_PANIC, HiSysEvent::EventType::FAULT,
-        "MODULE", module, "REASON", panicReason, "PID", getpid(), "TID", gettid(), "UID", getuid(),
+        "MODULE", module, "REASON", panicReasonStr, "PID", getpid(), "TID", gettid(), "UID", getuid(),
         "SUMMARY", threadLabel + trace, "HAPPEN_TIME", GetTimeMilliSeconds());
 
     return true;

@@ -429,11 +429,9 @@ int CallStack::AccessMem([[maybe_unused]] unw_addr_space_t as, unw_word_t addr,
     if (addr < unwindInfoPtr->callStack.stackPoint_ or
         addr + sizeof(unw_word_t) >= unwindInfoPtr->callStack.stackEnd_) {
         if (ReadVirtualThreadMemory(*unwindInfoPtr, addr, valuePoint)) {
-            DFXLOG_DEBUG("access_mem addr %p get val 0x%" UNW_WORD_PFLAG ", from mmap",
-                reinterpret_cast<void *>(addr), *valuePoint);
+            DFXLOG_DEBUG("access_mem addr get val 0x%" UNW_WORD_PFLAG ", from mmap", *valuePoint);
         } else {
-            DFXLOG_WARN("access_mem addr %p failed, from mmap, STACK RANGE 0x%" PRIx64 "- 0x%" PRIx64 "(0x%" PRIx64 ")",
-                  reinterpret_cast<void *>(addr),
+            DFXLOG_WARN("access_mem addr failed, from mmap, STACK RANGE 0x%" PRIx64 "- 0x%" PRIx64 "(0x%" PRIx64 ")",
                   unwindInfoPtr->callStack.stackPoint_, unwindInfoPtr->callStack.stackEnd_,
                   unwindInfoPtr->callStack.stackEnd_ - unwindInfoPtr->callStack.stackPoint_);
             return -UNW_EUNSPEC;
@@ -441,8 +439,7 @@ int CallStack::AccessMem([[maybe_unused]] unw_addr_space_t as, unw_word_t addr,
     } else {
         stackOffset = addr - unwindInfoPtr->callStack.stackPoint_;
         *valuePoint = *(unw_word_t *)&unwindInfoPtr->callStack.stack_[stackOffset];
-        DFXLOG_DEBUG("access_mem addr %p val %" UNW_WORD_PFLAG ", from stack offset %zu",
-            reinterpret_cast<void *>(addr), *valuePoint, stackOffset);
+        DFXLOG_DEBUG("access_mem addr val %" UNW_WORD_PFLAG ", from stack offset %zu", *valuePoint, stackOffset);
     }
 
     return UNW_ESUCCESS;
@@ -453,7 +450,7 @@ int CallStack::AccessReg([[maybe_unused]] unw_addr_space_t as, unw_regnum_t regn
 {
     UnwindInfo *unwindInfoPtr = static_cast<UnwindInfo *>(arg);
     uint64_t val;
-    size_t perfRegIndex = LibunwindRegIdToPerfReg(regnum);
+    int perfRegIndex = LibunwindRegIdToPerfReg(regnum);
 #if defined(HIPERF_USE_CALLSTACK)
     if (perfRegIndex < 0) {
         DFXLOG_ERROR("can't read reg %d", perfRegIndex);

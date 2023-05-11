@@ -19,13 +19,14 @@
 #define FAULT_LOGGER_CONFIG_H
 
 #include <string>
-
+#include <vector>
 namespace OHOS {
 namespace HiviewDFX {
 constexpr int LOG_FILE_NUMBER = 50;
 constexpr long LOG_FILE_SIZE = 1 * 1024 * 1024;
 const std::string LOG_FILE_PATH = "/data/log/faultlog/temp";
 const std::string DEBUG_LOG_FILE_PATH = "/data/log/faultlog/debug";
+const std::vector<const std::string> VALID_FILE_PATH = { LOG_FILE_PATH, DEBUG_LOG_FILE_PATH };
 
 class FaultLoggerConfig {
 public:

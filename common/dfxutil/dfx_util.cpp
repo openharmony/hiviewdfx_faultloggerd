@@ -310,5 +310,19 @@ bool ReadDirFilesByPid(const int& pid, std::vector<std::string>& files)
     }
     return ReadDirFiles(realPath, files);
 }
+
+bool VerifyFilePath(const std::string& filePath, const std::vector<const std::string>& validPaths)
+{
+    if (validPaths.size() == 0) {
+        return true;
+    }
+
+    for (auto validPath : validPaths) {
+        if (filePath.find(validPath) == 0) {
+            return true;
+        }
+    }
+    return false;
+}
 }   // namespace HiviewDFX
 }   // namespace OHOS

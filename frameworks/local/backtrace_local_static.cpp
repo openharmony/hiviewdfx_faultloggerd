@@ -38,7 +38,7 @@ namespace {
 static struct sigaction g_sigaction;
 static std::mutex g_localMutex;
 static std::map<int32_t, std::shared_ptr<ThreadContext>> g_contextMap;
-static std::chrono::seconds TIME_OUT = std::chrono::seconds(2); // 2 : 2 seconds
+static std::chrono::seconds g_timeOut = std::chrono::seconds(2); // 2 : 2 seconds
 static std::shared_ptr<ThreadContext> CreateContext(int32_t tid)
 {
     auto threadContext = std::make_shared<ThreadContext>();
@@ -181,7 +181,7 @@ void BacktraceLocalStatic::CopyContextAndWaitTimeout(int sig, siginfo_t *si, voi
         return;
     }
     ctxPtr->tid = static_cast<int32_t>(ThreadContextStatus::ContextReady);
-    ctxPtr->cv.wait_for(lock, TIME_OUT);
+    ctxPtr->cv.wait_for(lock, g_timeOut);
     ctxPtr->tid = static_cast<int32_t>(ThreadContextStatus::ContextUnused);
 }
 
