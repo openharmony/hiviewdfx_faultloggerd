@@ -28,7 +28,7 @@ if (defined(ohos_lite)) {
 
     include_dirs = [
       "include",
-      "//commonlibrary/c_utils/base/include",
+      "$c_utils_include_path",
       "$faultloggerd_path/common",
       "$faultloggerd_path/common/dfxlog",
       "$faultloggerd_path/common/dfxutil",
@@ -52,8 +52,6 @@ if (defined(ohos_lite)) {
 
     sources = dumpcatcher_sources
     sources += [
-      "$faultloggerd_path/common/dfxutil/directory_ex.cpp",
-      "$faultloggerd_path/common/dfxutil/file_ex.cpp",
       "$faultloggerd_path/frameworks/local/backtrace_local_static.cpp",
       "$faultloggerd_path/frameworks/local/backtrace_local_thread.cpp",
       "$faultloggerd_path/frameworks/unwinder/dwarf_unwinder.cpp",
@@ -91,7 +89,6 @@ if (defined(ohos_lite)) {
 
     include_dirs = [
       "include",
-      "//commonlibrary/c_utils/base/include",
       "$faultloggerd_path/common",
       "$faultloggerd_path/common/dfxlog",
       "$faultloggerd_path/common/dfxutil",

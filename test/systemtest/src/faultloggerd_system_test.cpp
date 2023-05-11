@@ -19,6 +19,7 @@
 #include <csignal>
 #include <fstream>
 #include <securec.h>
+#include <stdlib.h>
 #include <string>
 #include <sys/mman.h>
 #include <thread>
@@ -178,19 +179,6 @@ static bool IsDigit(const std::string& pid)
     return flag;
 }
 
-static std::string GetLogFileName(const std::string& prefix)
-{
-    std::string filePath;
-    std::vector<std::string> files;
-    OHOS::GetDirFiles("/data/log/faultlog/temp/", files);
-    for (const auto& file : files) {
-        if (file.find(prefix) != std::string::npos) {
-            filePath = file;
-        }
-    }
-    return filePath;
-}
-
 // commandStatus: 0 C    1 CPP
 std::string FaultLoggerdSystemTest::GetfileNamePrefix(std::string ErrorCMD, int commandStatus)
 {
@@ -198,43 +186,8 @@ std::string FaultLoggerdSystemTest::GetfileNamePrefix(std::string ErrorCMD, int 
     std::string pid = FaultLoggerdSystemTest::ForkAndRunCommands(cmds, commandStatus);
     int sleepSecond = 5;
     sleep(sleepSecond);
-    std::string prefix = "cppcrash-" + pid;
-    std::string filePath = GetLogFileName(prefix);
+    std::string filePath = GetCppCrashFileName(atoi(pid.c_str()));
     return filePath + " " + pid;
-}
-
-int FaultLoggerdSystemTest::CheckKeywords(std::string& filePath, std::string *keywords, int length, int minRegIdx)
-{
-    ifstream file;
-    file.open(filePath.c_str(), ios::in);
-    long lines = CountLines(filePath);
-    std::vector<string> t(lines * NUMBER_FOUR);
-    int i = 0;
-    int j = 0;
-    string::size_type idx;
-    int count = 0;
-    int maxRegIdx = minRegIdx + REGISTERS_NUM + 1;
-    while (!file.eof()) {
-        file >> t.at(i);
-        idx = t.at(i).find(keywords[j]);
-        if (idx != string::npos) {
-            GTEST_LOG_(INFO) << t.at(i);
-            if (minRegIdx != -1 && j > minRegIdx && j < maxRegIdx) { // -1 : do not check register value
-                if (t.at(i).size() < REGISTERS_LENGTH) {
-                    count--;
-                }
-            }
-            count++;
-            j++;
-            if (j == length) {
-                break;
-            }
-            continue;
-        }
-        i++;
-    }
-    file.close();
-    return count == length ? 0 : 1;
 }
 
 int FaultLoggerdSystemTest::CheckCountNum(std::string& filePath, std::string& pid, std::string& ErrorCMD)
@@ -262,7 +215,11 @@ int FaultLoggerdSystemTest::CheckCountNum(std::string& filePath, std::string& pi
         "Maps:", "/crasher"
     };
     int minRegIdx = 6;
-    return CheckKeywords(filePath, log, sizeof(log) / sizeof(log[0]), minRegIdx);
+    int expectNum = sizeof(log) / sizeof(log[0]);
+    if (CheckKeyWords(filePath, log, expectNum, minRegIdx) == expectNum) {
+        return 0;
+    }
+    return 1;
 }
 
 int FaultLoggerdSystemTest::CheckCountNumAbort(std::string& filePath, std::string& pid)
@@ -272,7 +229,11 @@ int FaultLoggerdSystemTest::CheckCountNumAbort(std::string& filePath, std::strin
         REGISTERS, "FaultStack:", "Maps:", "/crasher"
     };
     int minRegIdx = 8;
-    return CheckKeywords(filePath, log, sizeof(log) / sizeof(log[0]), minRegIdx);
+    int expectNum = sizeof(log) / sizeof(log[0]);
+    if (CheckKeyWords(filePath, log, expectNum, minRegIdx) == expectNum) {
+        return 0;
+    }
+    return 1;
 }
 
 int FaultLoggerdSystemTest::CheckCountNumPCZero(std::string& filePath, std::string& pid)
@@ -282,7 +243,11 @@ int FaultLoggerdSystemTest::CheckCountNumPCZero(std::string& filePath, std::stri
         "Maps:", "/crasher"
     };
     int minRegIdx = 6;
-    return CheckKeywords(filePath, log, sizeof(log) / sizeof(log[0]), minRegIdx);
+    int expectNum = sizeof(log) / sizeof(log[0]);
+    if (CheckKeyWords(filePath, log, expectNum, minRegIdx) == expectNum) {
+        return 0;
+    }
+    return 1;
 }
 
 int FaultLoggerdSystemTest::CheckCountNumOverStack(std::string& filePath, std::string& pid)
@@ -292,7 +257,11 @@ int FaultLoggerdSystemTest::CheckCountNumOverStack(std::string& filePath, std::s
         "Maps:", "/crasher"
     };
     int minRegIdx = 6;
-    return CheckKeywords(filePath, log, sizeof(log) / sizeof(log[0]), minRegIdx);
+    int expectNum = sizeof(log) / sizeof(log[0]);
+    if (CheckKeyWords(filePath, log, expectNum, minRegIdx) == expectNum) {
+        return 0;
+    }
+    return 1;
 }
 
 int FaultLoggerdSystemTest::CheckCountNumMultiThread(std::string& filePath, std::string& pid)
@@ -303,7 +272,11 @@ int FaultLoggerdSystemTest::CheckCountNumMultiThread(std::string& filePath, std:
         "/crasher"
     };
     int minRegIdx = 6;
-    return CheckKeywords(filePath, log, sizeof(log) / sizeof(log[0]), minRegIdx);
+    int expectNum = sizeof(log) / sizeof(log[0]);
+    if (CheckKeyWords(filePath, log, expectNum, minRegIdx) == expectNum) {
+        return 0;
+    }
+    return 1;
 }
 
 std::string FaultLoggerdSystemTest::GetStackTop(void)
@@ -337,7 +310,11 @@ int FaultLoggerdSystemTest::CheckCountNumStackTop(std::string& filePath, std::st
         "Maps:", "/crasher"
     };
     int minRegIdx = 6;
-    return CheckKeywords(filePath, log, sizeof(log) / sizeof(log[0]), minRegIdx);
+    int expectNum = sizeof(log) / sizeof(log[0]);
+    if (CheckKeyWords(filePath, log, expectNum, minRegIdx) == expectNum) {
+        return 0;
+    }
+    return 1;
 }
 
 std::string FaultLoggerdSystemTest::ForkAndCommands(int crasherType, int udid)
@@ -557,15 +534,8 @@ void FaultLoggerdSystemTest::TestDumpCatch(const int targetPid, const std::strin
         GTEST_LOG_(INFO) << "threadIdx(" << threadIdx << ") dump sucessfully.";
         string log[] = {"Pid:" + to_string(targetPid), "Tid:" + to_string(targetPid), "Name:" + processName,
                         "#00", "#01", "#02"};
-        int cnt = 0;
         int expectNum = sizeof(log) / sizeof(log[0]);
-        for (int i = 0; i < expectNum; i++) {
-            if (msg.find(log[i]) != string::npos) {
-                cnt++;
-            } else {
-                GTEST_LOG_(ERROR) << "not found (" << log[i] << ")";
-            }
-        }
+        int cnt = GetKeywordsNum(msg, log, sizeof(log) / sizeof(log[0]));
         EXPECT_EQ(cnt, expectNum) << "Check stack trace key words failed.";
         if (cnt == expectNum) {
             checkCnt++;
@@ -1945,17 +1915,7 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest036, TestSize.Level2)
     log[0] = log[0] +std::to_string(FaultLoggerdSystemTest::loopSysPid) + ", Name:crasher";
     GTEST_LOG_(INFO) << "ret : \n" << ret;
     GTEST_LOG_(INFO) << "dump log : \n" << msg;
-    string::size_type idx;
-    int j = 0;
-    int count = 0;
-    for (int x = 0; x < 5; x = x + 1) {
-        idx = msg.find(log[j]);
-        GTEST_LOG_(INFO) << log[j];
-        if (idx != string::npos) {
-            count++;
-        }
-        j++;
-    }
+    int count = GetKeywordsNum(msg, log, sizeof(log) / sizeof(log[0]));
     int otheruid = OTHER_UID;
     setuid(otheruid);
     EXPECT_EQ(count, 5) << "FaultLoggerdSystemTest036 Failed";
@@ -1979,20 +1939,10 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0100, TestSize.Level2)
     bool ret = dumplog.DumpCatch(FaultLoggerdSystemTest::loopRootPid, 0, msg);
     GTEST_LOG_(INFO) << "loopRootPid : \n" << FaultLoggerdSystemTest::loopRootPid;
     string log[] = { "Tid:", "#00", "/data/crasher", "Name:SubTestThread", "usleep"};
-    log[0] = log[0] +std::to_string(FaultLoggerdSystemTest::loopRootPid) + ", Name:crasher";
+    log[0] = log[0] + std::to_string(FaultLoggerdSystemTest::loopRootPid) + ", Name:crasher";
     GTEST_LOG_(INFO) << "ret : \n" << ret;
     GTEST_LOG_(INFO) << "dump log : \n" << msg;
-    string::size_type idx;
-    int j = 0;
-    int count = 0;
-    for (int x = 0; x < 5; x = x + 1) {
-        idx = msg.find(log[j]);
-        GTEST_LOG_(INFO) << log[j];
-        if (idx != string::npos) {
-            count++;
-        }
-        j++;
-    }
+    int count = GetKeywordsNum(msg, log, sizeof(log) / sizeof(log[0]));
     int otheruid = OTHER_UID;
     setuid(otheruid);
     EXPECT_EQ(count, 5) << "FaultLoggerdSystemTest0100 Failed";
@@ -2019,20 +1969,10 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest037, TestSize.Level2)
     GTEST_LOG_(INFO) << "dump log : \n" << msg;
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest::loopAppPid : \n" << FaultLoggerdSystemTest::loopAppPid;
     string log[] = { "Tid:", "#00", "/data/crasher", "Name:SubTestThread", "usleep"};
-    log[0] = log[0] +std::to_string(FaultLoggerdSystemTest::loopAppPid) + ", Name:crasher";
+    log[0] = log[0] + std::to_string(FaultLoggerdSystemTest::loopAppPid) + ", Name:crasher";
     GTEST_LOG_(INFO) << "ret : \n" << ret;
     GTEST_LOG_(INFO) << "dump log : \n" << msg;
-    string::size_type idx;
-    int j = 0;
-    int count = 0;
-    for (int x = 0; x < 5; x = x + 1) {
-        idx = msg.find(log[j]);
-        GTEST_LOG_(INFO) << log[j];
-        if (idx != string::npos) {
-            count++;
-        }
-        j++;
-    }
+    int count = GetKeywordsNum(msg, log, sizeof(log) / sizeof(log[0]));
     int otheruid = OTHER_UID;
     setuid(otheruid);
     EXPECT_EQ(count, 5) << "FaultLoggerdSystemTest037 Failed";
@@ -2060,20 +2000,10 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0101, TestSize.Level2)
     GTEST_LOG_(INFO) << "dump log : \n" << msg;
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest::loopRootPid : \n" << FaultLoggerdSystemTest::loopRootPid;
     string log[] = { "Tid:", "#00", "/data/crasher", "Name:SubTestThread", "usleep"};
-    log[0] = log[0] +std::to_string(FaultLoggerdSystemTest::loopRootPid) + ", Name:crasher";
+    log[0] = log[0] + std::to_string(FaultLoggerdSystemTest::loopRootPid) + ", Name:crasher";
     GTEST_LOG_(INFO) << "ret : \n" << ret;
     GTEST_LOG_(INFO) << "dump log : \n" << msg;
-    string::size_type idx;
-    int j = 0;
-    int count = 0;
-    for (int x = 0; x < 5; x = x + 1) {
-        idx = msg.find(log[j]);
-        GTEST_LOG_(INFO) << log[j];
-        if (idx != string::npos) {
-            count++;
-        }
-        j++;
-    }
+    int count = GetKeywordsNum(msg, log, sizeof(log) / sizeof(log[0]));
     int otheruid = OTHER_UID;
     setuid(otheruid);
     EXPECT_EQ(count, 5) << "FaultLoggerdSystemTest0101 Failed";
@@ -2101,20 +2031,10 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0102, TestSize.Level2)
     GTEST_LOG_(INFO) << "dump log : \n" << msg;
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest::loopSysPid : \n" << FaultLoggerdSystemTest::loopSysPid;
     string log[] = { "Tid:", "#00", "/data/crasher", "Name:SubTestThread", "usleep"};
-    log[0] = log[0] +std::to_string(FaultLoggerdSystemTest::loopSysPid) + ", Name:crasher";
+    log[0] = log[0] + std::to_string(FaultLoggerdSystemTest::loopSysPid) + ", Name:crasher";
     GTEST_LOG_(INFO) << "ret : \n" << ret;
     GTEST_LOG_(INFO) << "dump log : \n" << msg;
-    string::size_type idx;
-    int j = 0;
-    int count = 0;
-    for (int x = 0; x < 5; x = x + 1) {
-        idx = msg.find(log[j]);
-        GTEST_LOG_(INFO) << log[j];
-        if (idx != string::npos) {
-            count++;
-        }
-        j++;
-    }
+    int count = GetKeywordsNum(msg, log, sizeof(log) / sizeof(log[0]));
     int otheruid = OTHER_UID;
     setuid(otheruid);
     EXPECT_EQ(count, 5) << "FaultLoggerdSystemTest0102 Failed";
@@ -2142,20 +2062,10 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0103, TestSize.Level2)
     GTEST_LOG_(INFO) << "dump log : \n" << msg;
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest::loopAppPid : \n" << FaultLoggerdSystemTest::loopAppPid;
     string log[] = { "Tid:", "#00", "/data/crasher", "Name:SubTestThread", "usleep"};
-    log[0] = log[0] +std::to_string(FaultLoggerdSystemTest::loopAppPid) + ", Name:crasher";
+    log[0] = log[0] + std::to_string(FaultLoggerdSystemTest::loopAppPid) + ", Name:crasher";
     GTEST_LOG_(INFO) << "ret : \n" << ret;
     GTEST_LOG_(INFO) << "dump log : \n" << msg;
-    string::size_type idx;
-    int j = 0;
-    int count = 0;
-    for (int x = 0; x < 5; x = x + 1) {
-        idx = msg.find(log[j]);
-        GTEST_LOG_(INFO) << log[j];
-        if (idx != string::npos) {
-            count++;
-        }
-        j++;
-    }
+    int count = GetKeywordsNum(msg, log, sizeof(log) / sizeof(log[0]));
     int otheruid = OTHER_UID;
     setuid(otheruid);
     EXPECT_EQ(count, 5) << "FaultLoggerdSystemTest0103 Failed";
@@ -2215,17 +2125,9 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest040, TestSize.Level2)
     std::string procCMD = "dumpcatcher -p " + std::to_string(FaultLoggerdSystemTest::loopAppPid);
     string procDumpLog = ExecuteCommands(procCMD);
     GTEST_LOG_(INFO) << "procDumpLog: " << procDumpLog;
-    int count = 0;
     string log[] = {"Failed"};
-    string::size_type idx;
-    for (int i = 0; i < 1; i++) {
-        idx = procDumpLog.find(log[i]);
-        if (idx != string::npos) {
-            GTEST_LOG_(INFO) << count;
-            GTEST_LOG_(INFO) << log[i];
-            count++;
-        }
-    }
+    int count = GetKeywordsNum(procDumpLog, log, sizeof(log) / sizeof(log[0]));
+    GTEST_LOG_(INFO) << count;
     EXPECT_EQ(count, 1) << "FaultLoggerdSystemTest040 Failed";
     FaultLoggerdSystemTest::KillCrasherLoopForSomeCase(3);
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest040: end.";
@@ -2243,17 +2145,9 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest040_level0, TestSize.Lev
     std::string procCMD = "dumpcatcher -p " + std::to_string(FaultLoggerdSystemTest::loopAppPid);
     string procDumpLog = ExecuteCommands(procCMD);
     GTEST_LOG_(INFO) << "procDumpLog: " << procDumpLog;
-    int count = 0;
     string log[] = {"Failed"};
-    string::size_type idx;
-    for (int i = 0; i < 1; i++) {
-        idx = procDumpLog.find(log[i]);
-        if (idx != string::npos) {
-            GTEST_LOG_(INFO) << count;
-            GTEST_LOG_(INFO) << log[i];
-            count++;
-        }
-    }
+    int count = GetKeywordsNum(procDumpLog, log, sizeof(log) / sizeof(log[0]));
+    GTEST_LOG_(INFO) << count;
     EXPECT_EQ(count, 1) << "FaultLoggerdSystemTest040_level0 Failed";
     FaultLoggerdSystemTest::KillCrasherLoopForSomeCase(3);
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest040_level0: end.";
@@ -2272,17 +2166,9 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest041, TestSize.Level2)
         std::to_string(FaultLoggerdSystemTest::loopAppPid);
     string procDumpLog = ExecuteCommands(procCMD);
     GTEST_LOG_(INFO) << "procDumpLog: " << procDumpLog;
-    int count = 0;
     string log[] = {"Failed"};
-    string::size_type idx;
-    for (int i = 0; i < 1; i++) {
-        idx = procDumpLog.find(log[i]);
-        if (idx != string::npos) {
-            GTEST_LOG_(INFO) << count;
-            GTEST_LOG_(INFO) << log[i];
-            count++;
-        }
-    }
+    int count = GetKeywordsNum(procDumpLog, log, sizeof(log) / sizeof(log[0]));
+    GTEST_LOG_(INFO) << count;
     EXPECT_EQ(count, 1) << "FaultLoggerdSystemTest041 Failed";
     FaultLoggerdSystemTest::KillCrasherLoopForSomeCase(3);
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest041: end.";
@@ -2305,17 +2191,9 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest042, TestSize.Level2)
         std::to_string(tid);
     string procDumpLog = ExecuteCommands(procCMD);
     GTEST_LOG_(INFO) << "procDumpLog: " << procDumpLog;
-    int count = 0;
     string log[] = {"Failed"};
-    string::size_type idx;
-    for (int i = 0; i < 1; i++) {
-        idx = procDumpLog.find(log[i]);
-        if (idx != string::npos) {
-            GTEST_LOG_(INFO) << count;
-            GTEST_LOG_(INFO) << log[i];
-            count++;
-        }
-    }
+    int count = GetKeywordsNum(procDumpLog, log, sizeof(log) / sizeof(log[0]));
+    GTEST_LOG_(INFO) << count;
     EXPECT_EQ(count, 1) << "FaultLoggerdSystemTest042 Failed";
     FaultLoggerdSystemTest::KillCrasherLoopForSomeCase(3);
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest042: end.";
@@ -2335,17 +2213,9 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest043, TestSize.Level2)
         + std::to_string(FaultLoggerdSystemTest::loopSysPid);
     string procDumpLog = ExecuteCommands(procCMD);
     GTEST_LOG_(INFO) << "procDumpLog: " << procDumpLog;
-    int count = 0;
     string log[] = {"Failed"};
-    string::size_type idx;
-    for (int i = 0; i < 1; i++) {
-        idx = procDumpLog.find(log[i]);
-        if (idx != string::npos) {
-            GTEST_LOG_(INFO) << count;
-            GTEST_LOG_(INFO) << log[i];
-            count++;
-        }
-    }
+    int count = GetKeywordsNum(procDumpLog, log, sizeof(log) / sizeof(log[0]));
+    GTEST_LOG_(INFO) << count;
     EXPECT_EQ(count, 1) << "FaultLoggerdSystemTest043 Failed";
     FaultLoggerdSystemTest::KillCrasherLoopForSomeCase(1);
     FaultLoggerdSystemTest::KillCrasherLoopForSomeCase(3);
@@ -2366,17 +2236,9 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0109, TestSize.Level2)
         + std::to_string(FaultLoggerdSystemTest::loopRootPid);
     string procDumpLog = ExecuteCommands(procCMD);
     GTEST_LOG_(INFO) << "procDumpLog: " << procDumpLog;
-    int count = 0;
     string log[] = {"Failed"};
-    string::size_type idx;
-    for (int i = 0; i < 1; i++) {
-        idx = procDumpLog.find(log[i]);
-        if (idx != string::npos) {
-            GTEST_LOG_(INFO) << count;
-            GTEST_LOG_(INFO) << log[i];
-            count++;
-        }
-    }
+    int count = GetKeywordsNum(procDumpLog, log, sizeof(log) / sizeof(log[0]));
+    GTEST_LOG_(INFO) << count;
     EXPECT_EQ(count, 1) << "FaultLoggerdSystemTest0109 Failed";
     FaultLoggerdSystemTest::KillCrasherLoopForSomeCase(2);
     FaultLoggerdSystemTest::KillCrasherLoopForSomeCase(3);
@@ -2395,17 +2257,9 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest044, TestSize.Level2)
     std::string procCMD = "dumpcatcher -p 9999 -t "+ std::to_string(FaultLoggerdSystemTest::loopAppPid);
     string procDumpLog = ExecuteCommands(procCMD);
     GTEST_LOG_(INFO) << "procDumpLog: " << procDumpLog;
-    int count = 0;
     string log[] = {"Failed"};
-    string::size_type idx;
-    for (int i = 0; i < 1; i++) {
-        idx = procDumpLog.find(log[i]);
-        if (idx != string::npos) {
-            GTEST_LOG_(INFO) << count;
-            GTEST_LOG_(INFO) << log[i];
-            count++;
-        }
-    }
+    int count = GetKeywordsNum(procDumpLog, log, sizeof(log) / sizeof(log[0]));
+    GTEST_LOG_(INFO) << count;
     EXPECT_EQ(count, 1) << "FaultLoggerdSystemTest044 Failed";
     FaultLoggerdSystemTest::KillCrasherLoopForSomeCase(3);
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest044: end.";
@@ -2423,17 +2277,9 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest045, TestSize.Level2)
     std::string procCMD = "dumpcatcher -p " + std::to_string(FaultLoggerdSystemTest::loopAppPid) + " -t 9999";
     string procDumpLog = ExecuteCommands(procCMD);
     GTEST_LOG_(INFO) << "procDumpLog: " << procDumpLog;
-    int count = 0;
     string log[] = {"Failed"};
-    string::size_type idx;
-    for (int i = 0; i < 1; i++) {
-        idx = procDumpLog.find(log[i]);
-        if (idx != string::npos) {
-            GTEST_LOG_(INFO) << count;
-            GTEST_LOG_(INFO) << log[i];
-            count++;
-        }
-    }
+    int count = GetKeywordsNum(procDumpLog, log, sizeof(log) / sizeof(log[0]));
+    GTEST_LOG_(INFO) << count;
     EXPECT_EQ(count, 1) << "FaultLoggerdSystemTest045 Failed";
     FaultLoggerdSystemTest::KillCrasherLoopForSomeCase(3);
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest045: end.";
@@ -2453,17 +2299,9 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest046, TestSize.Level2)
         + std::to_string(FaultLoggerdSystemTest::loopSysPid);
     string procDumpLog = ExecuteCommands(procCMD);
     GTEST_LOG_(INFO) << "procDumpLog: " << procDumpLog;
-    int count = 0;
     string log[] = {"Failed"};
-    string::size_type idx;
-    for (int i = 0; i < 1; i++) {
-        idx = procDumpLog.find(log[i]);
-        if (idx != string::npos) {
-            GTEST_LOG_(INFO) << count;
-            GTEST_LOG_(INFO) << log[i];
-            count++;
-        }
-    }
+    int count = GetKeywordsNum(procDumpLog, log, sizeof(log) / sizeof(log[0]));
+    GTEST_LOG_(INFO) << count;
     EXPECT_EQ(count, 1) << "FaultLoggerdSystemTest046 Failed";
     FaultLoggerdSystemTest::KillCrasherLoopForSomeCase(1);
     FaultLoggerdSystemTest::KillCrasherLoopForSomeCase(3);
@@ -2484,17 +2322,9 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest047, TestSize.Level2)
         + std::to_string(FaultLoggerdSystemTest::loopAppPid);
     string procDumpLog = ExecuteCommands(procCMD);
     GTEST_LOG_(INFO) << "procDumpLog: " << procDumpLog;
-    int count = 0;
     string log[] = {"Failed"};
-    string::size_type idx;
-    for (int i = 0; i < 1; i++) {
-        idx = procDumpLog.find(log[i]);
-        if (idx != string::npos) {
-            GTEST_LOG_(INFO) << count;
-            GTEST_LOG_(INFO) << log[i];
-            count++;
-        }
-    }
+    int count = GetKeywordsNum(procDumpLog, log, sizeof(log) / sizeof(log[0]));
+    GTEST_LOG_(INFO) << count;
     EXPECT_EQ(count, 1) << "FaultLoggerdSystemTest047 Failed";
     FaultLoggerdSystemTest::KillCrasherLoopForSomeCase(1);
     FaultLoggerdSystemTest::KillCrasherLoopForSomeCase(3);
@@ -2513,17 +2343,9 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest048, TestSize.Level2)
     std::string procCMD = "dumpcatcher -p  -t " + std::to_string(FaultLoggerdSystemTest::loopAppPid);
     string procDumpLog = ExecuteCommands(procCMD);
     GTEST_LOG_(INFO) << "procDumpLog: " << procDumpLog;
-    int count = 0;
     string log[] = {"Failed"};
-    string::size_type idx;
-    for (int i = 0; i < 1; i++) {
-        idx = procDumpLog.find(log[i]);
-        if (idx != string::npos) {
-            GTEST_LOG_(INFO) << count;
-            GTEST_LOG_(INFO) << log[i];
-            count++;
-        }
-    }
+    int count = GetKeywordsNum(procDumpLog, log, sizeof(log) / sizeof(log[0]));
+    GTEST_LOG_(INFO) << count;
     EXPECT_EQ(count, 1) << "FaultLoggerdSystemTest048 Failed";
     FaultLoggerdSystemTest::KillCrasherLoopForSomeCase(3);
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest048: end.";
@@ -2541,17 +2363,9 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest049, TestSize.Level2)
     std::string procCMD = "dumpcatcher -p " + std::to_string(FaultLoggerdSystemTest::loopAppPid) + " -t ";
     string procDumpLog = ExecuteCommands(procCMD);
     GTEST_LOG_(INFO) << "procDumpLog: " << procDumpLog;
-    int count = 0;
     string log[] = {"Usage:", "dump the stacktrace"};
-    string::size_type idx;
-    for (int i = 0; i < 2; i++) {
-        idx = procDumpLog.find(log[i]);
-        if (idx != string::npos) {
-            GTEST_LOG_(INFO) << count;
-            GTEST_LOG_(INFO) << log[i];
-            count++;
-        }
-    }
+    int count = GetKeywordsNum(procDumpLog, log, sizeof(log) / sizeof(log[0]));
+    GTEST_LOG_(INFO) << count;
     EXPECT_EQ(count, 2) << "FaultLoggerdSystemTest049 Failed";
     FaultLoggerdSystemTest::KillCrasherLoopForSomeCase(3);
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest049: end.";
@@ -2569,17 +2383,9 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest050, TestSize.Level2)
     std::string procCMD = "dumpcatcher -p -11 -t " + std::to_string(FaultLoggerdSystemTest::loopAppPid);
     string procDumpLog = ExecuteCommands(procCMD);
     GTEST_LOG_(INFO) << "procDumpLog: " << procDumpLog;
-    int count = 0;
     string log[] = {"Failed"};
-    string::size_type idx;
-    for (int i = 0; i < 1; i++) {
-        idx = procDumpLog.find(log[i]);
-        if (idx != string::npos) {
-            GTEST_LOG_(INFO) << count;
-            GTEST_LOG_(INFO) << log[i];
-            count++;
-        }
-    }
+    int count = GetKeywordsNum(procDumpLog, log, sizeof(log) / sizeof(log[0]));
+    GTEST_LOG_(INFO) << count;
     EXPECT_EQ(count, 1) << "FaultLoggerdSystemTest050 Failed";
     FaultLoggerdSystemTest::KillCrasherLoopForSomeCase(3);
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest050: end.";
@@ -2597,17 +2403,9 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest051, TestSize.Level2)
     std::string procCMD = "dumpcatcher -p " + std::to_string(FaultLoggerdSystemTest::loopAppPid) + " -t -11";
     string procDumpLog = ExecuteCommands(procCMD);
     GTEST_LOG_(INFO) << "procDumpLog: " << procDumpLog;
-    int count = 0;
     string log[] = {"Failed"};
-    string::size_type idx;
-    for (int i = 0; i < 1; i++) {
-        idx = procDumpLog.find(log[i]);
-        if (idx != string::npos) {
-            GTEST_LOG_(INFO) << count;
-            GTEST_LOG_(INFO) << log[i];
-            count++;
-        }
-    }
+    int count = GetKeywordsNum(procDumpLog, log, sizeof(log) / sizeof(log[0]));
+    GTEST_LOG_(INFO) << count;
     EXPECT_EQ(count, 1) << "FaultLoggerdSystemTest051 Failed";
     FaultLoggerdSystemTest::KillCrasherLoopForSomeCase(3);
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest051: end.";
@@ -2627,18 +2425,11 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest052, TestSize.Level2)
     std::string procCMD = "dumpcatcher -p " + std::to_string(FaultLoggerdSystemTest::loopSysPid);
     string procDumpLog = ExecuteCommands(procCMD);
     GTEST_LOG_(INFO) << "procDumpLog: " << procDumpLog;
-    int count = 0;
     string log[] = {"", "Name:crasher", "Name:SubTestThread", "#00", "/data/crasher"};
     log[0] = log[0] + std::to_string(FaultLoggerdSystemTest::loopSysPid);
-    string::size_type idx;
-    for (int i = 0; i < 5; i++) {
-        idx = procDumpLog.find(log[i]);
-        if (idx != string::npos) {
-            GTEST_LOG_(INFO) << log[i];
-            count++;
-        }
-    }
-    int otheruid =OTHER_UID;
+    int count = GetKeywordsNum(procDumpLog, log, sizeof(log) / sizeof(log[0]));
+    GTEST_LOG_(INFO) << count;
+    int otheruid = OTHER_UID;
     setuid(otheruid);
     EXPECT_EQ(count, 5) << "FaultLoggerdSystemTest052 Failed";
     FaultLoggerdSystemTest::KillCrasherLoopForSomeCase(1);
@@ -2659,18 +2450,11 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0105, TestSize.Level2)
     std::string procCMD = "dumpcatcher -p " + std::to_string(FaultLoggerdSystemTest::loopRootPid);
     string procDumpLog = ExecuteCommands(procCMD);
     GTEST_LOG_(INFO) << "procDumpLog: " << procDumpLog;
-    int count = 0;
     string log[] = {"", "Name:crasher", "Name:SubTestThread", "#00", "/data/crasher"};
     log[0] = log[0] + std::to_string(FaultLoggerdSystemTest::loopRootPid);
-    string::size_type idx;
-    for (int i = 0; i < 5; i++) {
-        idx = procDumpLog.find(log[i]);
-        if (idx != string::npos) {
-            GTEST_LOG_(INFO) << log[i];
-            count++;
-        }
-    }
-    int otheruid =OTHER_UID;
+    int count = GetKeywordsNum(procDumpLog, log, sizeof(log) / sizeof(log[0]));
+    GTEST_LOG_(INFO) << count;
+    int otheruid = OTHER_UID;
     setuid(otheruid);
     EXPECT_EQ(count, 5) << "FaultLoggerdSystemTest0105 Failed";
     FaultLoggerdSystemTest::KillCrasherLoopForSomeCase(2);
@@ -2692,17 +2476,10 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest053, TestSize.Level2)
     std::string procCMD = "dumpcatcher -p " + std::to_string(FaultLoggerdSystemTest::loopAppPid);
     string procDumpLog = ExecuteCommands(procCMD);
     GTEST_LOG_(INFO) << "procDumpLog: " << procDumpLog;
-    int count = 0;
     string log[] = {"", "Name:crasher", "Name:SubTestThread", "#00", "/data/crasher"};
     log[0] = log[0] + std::to_string(FaultLoggerdSystemTest::loopAppPid);
-    string::size_type idx;
-    for (int i = 0; i < 5; i++) {
-        idx = procDumpLog.find(log[i]);
-        if (idx != string::npos) {
-            GTEST_LOG_(INFO) << log[i];
-            count++;
-        }
-    }
+    int count = GetKeywordsNum(procDumpLog, log, sizeof(log) / sizeof(log[0]));
+    GTEST_LOG_(INFO) << count;
     EXPECT_EQ(count, 5) << "FaultLoggerdSystemTest053 Failed";
     FaultLoggerdSystemTest::KillCrasherLoopForSomeCase(3);
     FaultLoggerdSystemTest::KillCrasherLoopForSomeCase(1);
@@ -2724,17 +2501,10 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0106, TestSize.Level2)
     std::string procCMD = "dumpcatcher -p " + std::to_string(FaultLoggerdSystemTest::loopRootPid);
     string procDumpLog = ExecuteCommands(procCMD);
     GTEST_LOG_(INFO) << "procDumpLog: " << procDumpLog;
-    int count = 0;
     string log[] = {"", "Name:crasher", "Name:SubTestThread", "#00", "/data/crasher"};
     log[0] = log[0] + std::to_string(FaultLoggerdSystemTest::loopRootPid);
-    string::size_type idx;
-    for (int i = 0; i < 5; i++) {
-        idx = procDumpLog.find(log[i]);
-        if (idx != string::npos) {
-            GTEST_LOG_(INFO) << log[i];
-            count++;
-        }
-    }
+    int count = GetKeywordsNum(procDumpLog, log, sizeof(log) / sizeof(log[0]));
+    GTEST_LOG_(INFO) << count;
     EXPECT_EQ(count, 5) << "FaultLoggerdSystemTest0106 Failed";
     FaultLoggerdSystemTest::KillCrasherLoopForSomeCase(2);
     FaultLoggerdSystemTest::KillCrasherLoopForSomeCase(1);
@@ -2756,20 +2526,13 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0107, TestSize.Level2)
     std::string procCMD = "dumpcatcher -p " + std::to_string(FaultLoggerdSystemTest::loopAppPid);
     string procDumpLog = ExecuteCommands(procCMD);
     GTEST_LOG_(INFO) << "procDumpLog: " << procDumpLog;
-    int count = 0;
     int apptid1 = std::stoi(appTid[0]);
     int apptid2 = std::stoi(appTid[1]);
     string log[] = {"", "Name:crasher", "Name:SubTestThread", "#00", "/data/crasher", ""};
     log[0] = log[0] + std::to_string(apptid1);
     log[5] = log[5] + std::to_string(apptid2);
-    string::size_type idx;
-    for (int i = 0; i < 6; i++) {
-        idx = procDumpLog.find(log[i]);
-        if (idx != string::npos) {
-            GTEST_LOG_(INFO) << log[i];
-            count++;
-        }
-    }
+    int count = GetKeywordsNum(procDumpLog, log, sizeof(log) / sizeof(log[0]));
+    GTEST_LOG_(INFO) << count;
     EXPECT_EQ(count, 6) << "FaultLoggerdSystemTest0107 Failed";
     FaultLoggerdSystemTest::KillCrasherLoopForSomeCase(3);
     FaultLoggerdSystemTest::KillCrasherLoopForSomeCase(2);
@@ -2791,20 +2554,13 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0108, TestSize.Level2)
     std::string procCMD = "dumpcatcher -p " + std::to_string(FaultLoggerdSystemTest::loopSysPid);
     string procDumpLog = ExecuteCommands(procCMD);
     GTEST_LOG_(INFO) << "procDumpLog: " << procDumpLog;
-    int count = 0;
     int systid1 = std::stoi(sysTid[0]);
     int systid2 = std::stoi(sysTid[1]);
     string log[] = {"", "Name:crasher", "Name:SubTestThread", "#00", "/data/crasher", ""};
     log[0] = log[0] + std::to_string(systid1);
     log[5] = log[5] + std::to_string(systid2);
-    string::size_type idx;
-    for (int i = 0; i < 6; i++) {
-        idx = procDumpLog.find(log[i]);
-        if (idx != string::npos) {
-            GTEST_LOG_(INFO) << log[i];
-            count++;
-        }
-    }
+    int count = GetKeywordsNum(procDumpLog, log, sizeof(log) / sizeof(log[0]));
+    GTEST_LOG_(INFO) << count;
     int otheruid = OTHER_UID;
     setuid(otheruid);
     EXPECT_EQ(count, 6) << "FaultLoggerdSystemTest0108 Failed";
@@ -2827,17 +2583,9 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest054, TestSize.Level2)
         std::to_string(FaultLoggerdSystemTest::loopRootPid);
     string procDumpLog = ExecuteCommands(procCMD);
     GTEST_LOG_(INFO) << "procDumpLog: " << procDumpLog;
-    int count = 0;
     string log[] = {"Failed"};
-    string::size_type idx;
-    for (int i = 0; i < 1; i++) {
-        idx = procDumpLog.find(log[i]);
-        if (idx != string::npos) {
-            GTEST_LOG_(INFO) << count;
-            GTEST_LOG_(INFO) << log[i];
-            count++;
-        }
-    }
+    int count = GetKeywordsNum(procDumpLog, log, sizeof(log) / sizeof(log[0]));
+    GTEST_LOG_(INFO) << count;
     EXPECT_EQ(count, 1) << "FaultLoggerdSystemTest054 Failed";
     FaultLoggerdSystemTest::KillCrasherLoopForSomeCase(2);
     FaultLoggerdSystemTest::KillCrasherLoopForSomeCase(3);
@@ -2858,17 +2606,8 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest055, TestSize.Level2)
         std::to_string(FaultLoggerdSystemTest::loopAppPid);
     string procDumpLog = ExecuteCommands(procCMD);
     GTEST_LOG_(INFO) << "procDumpLog: " << procDumpLog;
-    int count = 0;
     string log[] = {"Failed"};
-    string::size_type idx;
-    for (int i = 0; i < 1; i++) {
-        idx = procDumpLog.find(log[i]);
-        if (idx != string::npos) {
-            GTEST_LOG_(INFO) << count;
-            GTEST_LOG_(INFO) << log[i];
-            count++;
-        }
-    }
+    int count = GetKeywordsNum(procDumpLog, log, sizeof(log) / sizeof(log[0]));
     EXPECT_EQ(count, 1) << "FaultLoggerdSystemTest055 Failed";
     FaultLoggerdSystemTest::KillCrasherLoopForSomeCase(2);
     FaultLoggerdSystemTest::KillCrasherLoopForSomeCase(3);
@@ -2887,17 +2626,9 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0114, TestSize.Level2)
     std::string procCMD = "dumpcatcher -p " + GetPidMax() + " -t " + GetTidMax();
     string procDumpLog = ExecuteCommands(procCMD);
     GTEST_LOG_(INFO) << "procDumpLog: " << procDumpLog;
-    int count = 0;
     string log[] = {"Failed"};
-    string::size_type idx;
-    for (int i = 0; i < 1; i++) {
-        idx = procDumpLog.find(log[i]);
-        if (idx != string::npos) {
-            GTEST_LOG_(INFO) << count;
-            GTEST_LOG_(INFO) << log[i];
-            count++;
-        }
-    }
+    int count = GetKeywordsNum(procDumpLog, log, sizeof(log) / sizeof(log[0]));
+    GTEST_LOG_(INFO) << count;
     EXPECT_EQ(count, 1) << "FaultLoggerdSystemTest0114 Failed";
     FaultLoggerdSystemTest::KillCrasherLoopForSomeCase(3);
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest0114: end.";
@@ -2915,17 +2646,9 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0115, TestSize.Level2)
     std::string procCMD = "dumpcatcher -p 65535 -t 65535";
     string procDumpLog = ExecuteCommands(procCMD);
     GTEST_LOG_(INFO) << "procDumpLog: " << procDumpLog;
-    int count = 0;
     string log[] = {"Failed"};
-    string::size_type idx;
-    for (int i = 0; i < 1; i++) {
-        idx = procDumpLog.find(log[i]);
-        if (idx != string::npos) {
-            GTEST_LOG_(INFO) << count;
-            GTEST_LOG_(INFO) << log[i];
-            count++;
-        }
-    }
+    int count = GetKeywordsNum(procDumpLog, log, sizeof(log) / sizeof(log[0]));
+    GTEST_LOG_(INFO) << count;
     EXPECT_EQ(count, 1) << "FaultLoggerdSystemTest0115 Failed";
     FaultLoggerdSystemTest::KillCrasherLoopForSomeCase(3);
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest0115: end.";
@@ -2943,17 +2666,9 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0116, TestSize.Level2)
     std::string procCMD = "dumpcatcher -p 65536 -t 65536";
     string procDumpLog = ExecuteCommands(procCMD);
     GTEST_LOG_(INFO) << "procDumpLog: " << procDumpLog;
-    int count = 0;
     string log[] = {"Failed"};
-    string::size_type idx;
-    for (int i = 0; i < 1; i++) {
-        idx = procDumpLog.find(log[i]);
-        if (idx != string::npos) {
-            GTEST_LOG_(INFO) << count;
-            GTEST_LOG_(INFO) << log[i];
-            count++;
-        }
-    }
+    int count = GetKeywordsNum(procDumpLog, log, sizeof(log) / sizeof(log[0]));
+    GTEST_LOG_(INFO) << count;
     EXPECT_EQ(count, 1) << "FaultLoggerdSystemTest0116 Failed";
     FaultLoggerdSystemTest::KillCrasherLoopForSomeCase(3);
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest0116: end.";
@@ -2971,17 +2686,8 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0117, TestSize.Level2)
     std::string procCMD = "dumpcatcher -p 65534 -t 65534";
     string procDumpLog = ExecuteCommands(procCMD);
     GTEST_LOG_(INFO) << "procDumpLog: " << procDumpLog;
-    int count = 0;
     string log[] = {"Failed"};
-    string::size_type idx;
-    for (int i = 0; i < 1; i++) {
-        idx = procDumpLog.find(log[i]);
-        if (idx != string::npos) {
-            GTEST_LOG_(INFO) << count;
-            GTEST_LOG_(INFO) << log[i];
-            count++;
-        }
-    }
+    int count = GetKeywordsNum(procDumpLog, log, sizeof(log) / sizeof(log[0]));
     EXPECT_EQ(count, 1) << "FaultLoggerdSystemTest0117 Failed";
     FaultLoggerdSystemTest::KillCrasherLoopForSomeCase(3);
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest0117: end.";
@@ -3018,17 +2724,8 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest057, TestSize.Level2)
     std::string procCMD = "dumpcatcher -p " + std::to_string(FaultLoggerdSystemTest::loopAppPid);
     string procDumpLog = ExecuteCommands(procCMD);
     GTEST_LOG_(INFO) << "procDumpLog: " << procDumpLog;
-    int count = 0;
     string log[] = {"Failed"};
-    string::size_type idx;
-    for (int i = 0; i < 1; i++) {
-        idx = procDumpLog.find(log[i]);
-        if (idx != string::npos) {
-            GTEST_LOG_(INFO) << count;
-            GTEST_LOG_(INFO) << log[i];
-            count++;
-        }
-    }
+    int count = GetKeywordsNum(procDumpLog, log, sizeof(log) / sizeof(log[0]));
     EXPECT_EQ(count, 1) << "FaultLoggerdSystemTest057 Failed";
     FaultLoggerdSystemTest::KillCrasherLoopForSomeCase(3);
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest057: end.";
@@ -3374,18 +3071,9 @@ HWTEST_F (FaultLoggerdSystemTest,  FaultLoggerdSystemTest0120, TestSize.Level2)
     bool ret = dumplog.DumpCatch(FaultLoggerdSystemTest::unsigLoopSysPid, FaultLoggerdSystemTest::unsigLoopSysPid, msg);
     GTEST_LOG_(INFO) << ret;
     GTEST_LOG_(INFO) << msg;
-    int count = 0;
     string log[] = {"Tid:", "Name:crasher", "#00", "/data/crasher"};
     log[0] = log[0] +std::to_string(FaultLoggerdSystemTest::unsigLoopSysPid);
-    string::size_type idx;
-    int j = 0;
-    for (int x = 0; x < 4; x = x + 1) {
-        idx = msg.find(log[j]);
-        if (idx != string::npos) {
-            count++;
-        }
-        j++;
-    }
+    int count = GetKeywordsNum(msg, log, sizeof(log) / sizeof(log[0]));
     GTEST_LOG_(INFO) << count;
     EXPECT_EQ(count, 4) << "FaultLoggerdSystemTest0120 Failed";
     FaultLoggerdSystemTest::KillCrasherLoopForSomeCase(4);
@@ -3406,18 +3094,9 @@ HWTEST_F (FaultLoggerdSystemTest,  FaultLoggerdSystemTest0121, TestSize.Level2)
     bool ret = dumplog.DumpCatch(FaultLoggerdSystemTest::unsigLoopSysPid, FaultLoggerdSystemTest::unsigLoopSysPid, msg);
     GTEST_LOG_(INFO) << ret;
     GTEST_LOG_(INFO) << msg;
-    int count = 0;
     string log[] = {"Tid:", "Name:crasher", "#00", "/data/crasher"};
     log[0] = log[0] +std::to_string(FaultLoggerdSystemTest::unsigLoopSysPid);
-    string::size_type idx;
-    int j = 0;
-    for (int x = 0; x < 4; x = x + 1) {
-        idx = msg.find(log[j]);
-        if (idx != string::npos) {
-            count++;
-        }
-        j++;
-    }
+    int count = GetKeywordsNum(msg, log, sizeof(log) / sizeof(log[0]));
     GTEST_LOG_(INFO) << count;
     EXPECT_EQ(count, 4) << "FaultLoggerdSystemTest0121 Failed";
     FaultLoggerdSystemTest::KillCrasherLoopForSomeCase(4);
@@ -3463,15 +3142,16 @@ HWTEST_F (FaultLoggerdSystemTest, FaultLoggerdSystemTest0200, TestSize.Level2)
     }
     // wait for log generation
     sleep(NUMBER_FOUR);
-    std::string prefix = "cppcrash-" + std::to_string(childPid);
-    std::string fileName = GetLogFileName(prefix);
+    std::string fileName = GetCppCrashFileName(childPid);
     EXPECT_NE(0, fileName.size());
     printf("PidNs Crash File:%s\n", fileName.c_str());
     string log[] = {
         "Pid:", "Uid", "SIGSEGV", "Tid:", "#00",
-        "Registers:", "FaultStack:", "Maps:"
+        "Registers:", REGISTERS, "FaultStack:", "Maps:"
     };
     int minRegIdx = 6;
-    CheckKeywords(fileName, log, sizeof(log) / sizeof(log[0]), minRegIdx);
+    int expectNum = sizeof(log) / sizeof(log[0]);
+    int count = CheckKeyWords(fileName, log, expectNum, minRegIdx);
+    EXPECT_EQ(count, expectNum);
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest0200: end.";
 }

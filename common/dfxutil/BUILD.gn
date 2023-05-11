@@ -13,11 +13,7 @@
 
 import("//base/hiviewdfx/faultloggerd/faultloggerd.gni")
 
-dfx_util_sources = [
-  "dfx_util.cpp",
-  "directory_ex.cpp",
-  "file_ex.cpp",
-]
+dfx_util_sources = [ "dfx_util.cpp" ]
 
 if (defined(ohos_lite)) {
   static_library("dfx_util") {

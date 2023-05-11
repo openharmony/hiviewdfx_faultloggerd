@@ -36,7 +36,7 @@
 #include "backtrace_local_thread.h"
 #include "dfx_symbols_cache.h"
 #include "elapsed_time.h"
-#include "test_utils.h"
+#include "dfx_test_util.h"
 
 using namespace testing;
 using namespace testing::ext;
@@ -219,8 +219,8 @@ using GetMap = void (*)(void);
 HWTEST_F(BacktraceLocalTest, BacktraceLocalTest004, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "BacktraceLocalTest004: start.";
-    pid_t child = fork();
-    if (child == 0) {
+    pid_t childPid = fork();
+    if (childPid == 0) {
         void* handle = dlopen("libunwind.z.so", RTLD_LAZY);
         if (handle == nullptr) {
             FAIL();
@@ -239,9 +239,11 @@ HWTEST_F(BacktraceLocalTest, BacktraceLocalTest004, TestSize.Level2)
 
     int status;
     int ret = wait(&status);
-    std::string path;
     sleep(1);
-    ASSERT_EQ(true, CheckLogFileExist(child, path));
+    std::string path = GetCppCrashFileName(childPid);
+    if (path.empty()) {
+        FAIL();
+    }
     GTEST_LOG_(INFO) << "LogFile: " << path;
 
     std::string content;
