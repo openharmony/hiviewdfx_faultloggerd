@@ -47,10 +47,10 @@ if (defined(ohos_lite)) {
 
     include_dirs = [
       ".",
+      "$c_utils_include_path",
       "$faultloggerd_path/common",
       "$faultloggerd_path/common/dfxlog",
       "$faultloggerd_path/common/dfxutil",
-      "//commonlibrary/c_utils/base/include",
       "$faultloggerd_path/interfaces/innerkits/faultloggerd_client/include",
       "$hilog_lite_include_path",
     ]
@@ -82,11 +82,11 @@ if (defined(ohos_lite)) {
 
     include_dirs = [
       ".",
+      "$c_utils_include_path",
       "$faultloggerd_path/common",
       "$faultloggerd_path/common/dfxlog",
       "$faultloggerd_path/common/dfxutil",
       "$faultloggerd_path/utils",
-      "//commonlibrary/c_utils/base/include",
       "$faultloggerd_path/interfaces/innerkits/faultloggerd_client/include",
       "$hilog_lite_include_path",
     ]

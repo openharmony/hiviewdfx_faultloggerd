@@ -61,58 +61,6 @@ static pid_t CreateMultiThreadProcess(int threadNum)
     return pid;
 }
 
-static string GetCppCrashFileName(pid_t pid)
-{
-    if (pid <= 0) {
-        return "";
-    }
-    vector<string> files;
-    OHOS::GetDirFiles("/data/log/faultlog/temp", files);
-    string fileNamePrefix = "cppcrash-" + to_string(pid);
-    for (const auto& file : files) {
-        if (file.find(fileNamePrefix) != string::npos) {
-            return file;
-        }
-    }
-    return "";
-}
-
-static int CheckKeyWords(const string& filePath, string *keywords, int length)
-{
-    ifstream file;
-    file.open(filePath.c_str(), ios::in);
-    long lines = CountLines(filePath);
-    vector<string> t(lines * 4); // 4 : max string blocks of one line
-    int i = 0;
-    int j = 0;
-    string::size_type idx;
-    int count = 0;
-    int minRegIdx = 6; // 6 : index of REGISTERS
-    int maxRegIdx = minRegIdx + REGISTERS_NUM + 1;
-    while (!file.eof()) {
-        file >> t.at(i);
-        idx = t.at(i).find(keywords[j]);
-        if (idx != string::npos) {
-            GTEST_LOG_(INFO) << t.at(i);
-            if (j > minRegIdx && j < maxRegIdx) {
-                if (t.at(i).size() < REGISTERS_LENGTH) {
-                    count--;
-                }
-            }
-            count++;
-            j++;
-            if (j == length) {
-                break;
-            }
-            continue;
-        }
-        i++;
-    }
-    file.close();
-    GTEST_LOG_(INFO) << count << " keys matched.";
-    return count;
-}
-
 static bool CheckCppCrashKeyWords(const string& filePath, pid_t pid, int sig)
 {
     if (filePath.empty() || pid <= 0) {
@@ -138,7 +86,9 @@ static bool CheckCppCrashKeyWords(const string& filePath, pid_t pid, int sig)
         "FaultStack:", "Maps:", "test_processdump"
     };
     int length = sizeof(keywords) / sizeof(keywords[0]);
-    return CheckKeyWords(filePath, keywords, length) == length;
+    int minRegIdx = 6; // 6 : index of REGISTERS
+    int count = CheckKeyWords(filePath, keywords, length, minRegIdx);
+    return count == length;
 }
 
 /**

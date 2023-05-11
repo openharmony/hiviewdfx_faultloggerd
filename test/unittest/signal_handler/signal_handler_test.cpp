@@ -15,7 +15,6 @@
 
 #include <gtest/gtest.h>
 #include <csignal>
-#include <fstream>
 #include <map>
 #include <securec.h>
 #include <string>
@@ -28,7 +27,6 @@
 #include "dfx_signal_local_handler.h"
 #include "dfx_signal_handler.h"
 #include "dfx_test_util.h"
-#include "directory_ex.h"
 
 using namespace testing;
 using namespace testing::ext;
@@ -55,56 +53,6 @@ void SignalHandlerTest::SetUp()
 
 void SignalHandlerTest::TearDown()
 {}
-
-static string GetCppCrashFileName(pid_t pid)
-{
-    if (pid <= 0) {
-        return "";
-    }
-    vector<string> files;
-    OHOS::GetDirFiles("/data/log/faultlog/temp", files);
-    string fileNamePrefix = "cppcrash-" + to_string(pid);
-    for (const auto& file : files) {
-        if (file.find(fileNamePrefix) != string::npos) {
-            return file;
-        }
-    }
-    return "";
-}
-
-static int CheckKeyWords(const string& filePath, string *keywords, int length, int minRegIdx)
-{
-    ifstream file;
-    file.open(filePath.c_str(), ios::in);
-    long lines = CountLines(filePath);
-    vector<string> t(lines * 4); // 4 : max string blocks of one line
-    int i = 0;
-    int j = 0;
-    string::size_type idx;
-    int count = 0;
-    int maxRegIdx = minRegIdx + REGISTERS_NUM + 1;
-    while (!file.eof()) {
-        file >> t.at(i);
-        idx = t.at(i).find(keywords[j]);
-        if (idx != string::npos) {
-            GTEST_LOG_(INFO) << t.at(i);
-            if (minRegIdx != -1 && j > minRegIdx &&
-                j < maxRegIdx && t.at(i).size() < REGISTERS_LENGTH) {
-                count--;
-            }
-            count++;
-            j++;
-            if (j == length) {
-                break;
-            }
-            continue;
-        }
-        i++;
-    }
-    file.close();
-    GTEST_LOG_(INFO) << count << " keys matched.";
-    return count;
-}
 
 static bool CheckLocalCrashKeyWords(const string& filePath, pid_t pid, int sig)
 {

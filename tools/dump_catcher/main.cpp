@@ -26,7 +26,6 @@
 #include <getopt.h>
 #include "dfx_define.h"
 #include "dfx_log.h"
-#include "directory_ex.h"
 #include "dump_catcher.h"
 #include "dfx_dump_catcher.h"
 

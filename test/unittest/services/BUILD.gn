@@ -24,7 +24,7 @@ if (defined(ohos_lite)) {
 
       include_dirs = [
         "include",
-        "//commonlibrary/c_utils/base/include",
+        "$c_utils_include_path",
         "$faultloggerd_path/services",
         "$hilog_lite_include_path",
         "$faultloggerd_path/tools/process_dump",
@@ -45,6 +45,7 @@ if (defined(ohos_lite)) {
         "src/faultlogger_pipe_test.cpp",
         "src/faultlogger_secure_test.cpp",
       ]
+      sources += [ "$c_utils_src_path/directory_ex.cpp" ]
 
       deps = [
         "$faultloggerd_path/common/dfxlog:static_common_log",
@@ -67,7 +68,6 @@ if (defined(ohos_lite)) {
 
     include_dirs = [
       "include",
-      "//commonlibrary/c_utils/base/include",
       "$faultloggerd_path/services",
       "$faultloggerd_path/common/dfxlog",
       "$faultloggerd_path/common/dfxutil",

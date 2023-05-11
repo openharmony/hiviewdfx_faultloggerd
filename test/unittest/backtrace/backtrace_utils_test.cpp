@@ -27,7 +27,7 @@
 #include <malloc.h>
 
 #include "backtrace_local.h"
-#include "test_utils.h"
+#include "dfx_test_util.h"
 
 using namespace testing;
 using namespace testing::ext;
@@ -235,7 +235,7 @@ HWTEST_F(BacktraceUtilsTest, BacktraceUtilsTest003, TestSize.Level2)
 void DoCheckBacktraceInMultiThread()
 {
     std::string content;
-   
+
     ASSERT_TRUE(GetBacktrace(content));
     ASSERT_FALSE(content.empty());
 }
