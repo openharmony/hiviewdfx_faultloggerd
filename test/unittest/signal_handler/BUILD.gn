@@ -24,17 +24,21 @@ if (defined(ohos_lite)) {
   import("//build/config/features.gni")
   import("//build/test.gni")
 
-  ohos_unittest("test_signalhandler") {
-    module_out_path = "faultloggerd/signal_handler"
+  module_output_path = "faultloggerd/signal_handler"
 
+  config("module_test_signal_config") {
     visibility = [ "*:*" ]
 
     include_dirs = [
-      "//commonlibrary/c_utils/base/include",
       "$faultloggerd_path/common",
       "$faultloggerd_path/interfaces/innerkits/signal_handler/include/",
       "$faultloggerd_path/test/utils",
     ]
+  }
+
+  ohos_unittest("test_signalhandler") {
+    module_out_path = module_output_path
+    configs = [ ":module_test_signal_config" ]
 
     sources = [ "signal_handler_test.cpp" ]
 
@@ -48,8 +52,27 @@ if (defined(ohos_lite)) {
     external_deps = [ "c_utils:utils" ]
   }
 
+  ohos_unittest("test_signalchain") {
+    module_out_path = module_output_path
+
+    configs = [ ":module_test_signal_config" ]
+
+    sources = [ "signal_chain_test.cpp" ]
+
+    deps = [
+      "$faultloggerd_path/common/cutil:dfx_cutil",
+      "$faultloggerd_path/test/utils:dfx_test_util",
+      "//third_party/googletest:gtest_main",
+    ]
+
+    external_deps = [ "c_utils:utils" ]
+  }
+
   group("unittest") {
     testonly = true
-    deps = [ ":test_signalhandler" ]
+    deps = [
+      ":test_signalchain",
+      ":test_signalhandler",
+    ]
   }
 }

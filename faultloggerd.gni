@@ -17,6 +17,7 @@ faultloggerd_path = "//base/hiviewdfx/faultloggerd"
 if (defined(ohos_lite)) {
   import("//build/lite/config/component/lite_component.gni")
   c_utils_include_path = "//commonlibrary/c_utils/base/include"
+  c_utils_src_path = "//commonlibrary/c_utils/base/src"
   if (ohos_kernel_type == "liteos_m") {
     hilog_lite_include_path =
         "//base/hiviewdfx/hilog_lite/interfaces/native/kits/hilog_lite"

@@ -20,6 +20,9 @@
 #include <unistd.h>
 
 #include "dfx_define.h"
+#include <directory_ex.h>
+#include <file_ex.h>
+#include <string_ex.h>
 
 namespace OHOS {
 namespace HiviewDFX {
@@ -33,11 +36,11 @@ std::string ExecuteCommands(const std::string& cmds)
         return "";
     }
     FILE *procFileInfo = nullptr;
-    std::string cmdLog;
+    std::string cmdLog = "";
     procFileInfo = popen(cmds.c_str(), "r");
     if (procFileInfo == nullptr) {
         perror("popen execute failed");
-        return "Execute failed.";
+        return cmdLog;
     }
     char res[BUF_LEN] = { '\0' };
     while (fgets(res, sizeof(res), procFileInfo) != nullptr) {
@@ -58,6 +61,32 @@ int GetProcessPid(const std::string& serviceName)
     return pid;
 }
 
+int LaunchTestHap(const std::string& abilityName, const std::string& bundleName)
+{
+    std::string launchCmd = "/system/bin/aa start -a " + abilityName + " -b " + bundleName;
+    (void)ExecuteCommands(launchCmd);
+    sleep(2); // 2 : sleep 2s
+    return GetProcessPid(bundleName);
+}
+
+void StopTestHap(const std::string& bundleName)
+{
+    std::string stopCmd = "/system/bin/aa force-stop " + bundleName;
+    (void)ExecuteCommands(stopCmd);
+}
+
+void InstallTestHap(const std::string& hapName)
+{
+    std::string installCmd = "bm install -p " + hapName;
+    (void)ExecuteCommands(installCmd);
+}
+
+void UninstallTestHap(const std::string& bundleName)
+{
+    std::string uninstallCmd = "bm uninstall -n " + bundleName;
+    (void)ExecuteCommands(uninstallCmd);
+}
+
 int CountLines(const std::string& fileName)
 {
     std::ifstream readFile;
@@ -73,6 +102,155 @@ int CountLines(const std::string& fileName)
         readFile.close();
         return n;
     }
+}
+
+bool CheckProcessComm(int pid, const std::string& name)
+{
+    std::string cmd = "cat /proc/" + std::to_string(pid) + "/comm";
+    std::string comm = ExecuteCommands(cmd);
+    size_t pos = comm.find('\n');
+    if (pos != std::string::npos) {
+        comm.erase(pos, 1);
+    }
+    if (!strcmp(comm.c_str(), name.c_str())) {
+        return true;
+    }
+    return false;
+}
+
+int CheckKeyWords(const std::string& filePath, std::string *keywords, int length, int minRegIdx)
+{
+    std::ifstream file;
+    file.open(filePath.c_str(), std::ios::in);
+    long lines = CountLines(filePath);
+    std::vector<std::string> t(lines * 4); // 4 : max string blocks of one line
+    int i = 0;
+    int j = 0;
+    std::string::size_type idx;
+    int count = 0;
+    int maxRegIdx = minRegIdx + REGISTERS_NUM + 1;
+    while (!file.eof()) {
+        file >> t.at(i);
+        idx = t.at(i).find(keywords[j]);
+        if (idx != std::string::npos) {
+            if (minRegIdx != -1 && j > minRegIdx && // -1 : do not check register value
+                j < maxRegIdx && t.at(i).size() < REGISTERS_LENGTH) {
+                count--;
+            }
+            count++;
+            j++;
+            if (j == length) {
+                break;
+            }
+            continue;
+        }
+        i++;
+    }
+    file.close();
+    return count;
+}
+
+bool CheckContent(const std::string& content, const std::string& keyContent, bool checkExist)
+{
+    bool findKeyContent = false;
+    if (content.find(keyContent) != std::string::npos) {
+        findKeyContent = true;
+    }
+
+    if (checkExist && !findKeyContent) {
+        printf("Failed to find: %s in %s\n", keyContent.c_str(), content.c_str());
+        return false;
+    }
+
+    if (!checkExist && findKeyContent) {
+        printf("Find: %s in %s\n", keyContent.c_str(), content.c_str());
+        return false;
+    }
+    return true;
+}
+
+int GetKeywordsNum(const std::string& msg, std::string *keywords, int length)
+{
+    int count = 0;
+    std::string::size_type idx;
+    for (int i = 0; i < length; i++) {
+        idx = msg.find(keywords[i]);
+        if (idx != std::string::npos) {
+            count++;
+        }
+    }
+    return count;
+}
+
+std::string GetCppCrashFileName(int pid)
+{
+    std::string filePath = "";
+    if (pid <= 0) {
+        return filePath;
+    }
+    std::string fileNamePrefix = "cppcrash-" + std::to_string(pid);
+    std::vector<std::string> files;
+    OHOS::GetDirFiles("/data/log/faultlog/temp/", files);
+    for (const auto& file : files) {
+        if (file.find(fileNamePrefix) != std::string::npos) {
+            filePath = file;
+            break;
+        }
+    }
+    return filePath;
+}
+
+uint64_t GetSelfMemoryCount()
+{
+    std::string path = "/proc/self/smaps_rollup";
+    std::string content;
+    if (!OHOS::LoadStringFromFile(path, content)) {
+        printf("Failed to load path content: %s\n", path.c_str());
+        return 0;
+    }
+
+    std::vector<std::string> result;
+    OHOS::SplitStr(content, "\n", result);
+    auto iter = std::find_if(result.begin(), result.end(),
+        [] (std::string str) {
+            return str.find("Pss:") != std::string::npos;
+        });
+    if (iter == result.end()) {
+        perror("Failed to find Pss.\n");
+        return 0;
+    }
+
+    std::string pss = *iter;
+    uint64_t retVal = 0;
+    for (size_t i = 0; i < pss.size(); i++) {
+        if (isdigit(pss[i])) {
+            retVal = atoi(&pss[i]);
+            break;
+        }
+    }
+    return retVal;
+}
+
+uint32_t GetSelfMapsCount()
+{
+    std::string path = "/proc/self/maps";
+    std::string content;
+    if (!OHOS::LoadStringFromFile(path, content)) {
+        printf("Failed to load path content: %s\n", path.c_str());
+        return 0;
+    }
+
+    std::vector<std::string> result;
+    OHOS::SplitStr(content, "\n", result);
+    return result.size();
+}
+
+uint32_t GetSelfFdCount()
+{
+    std::string path = "/proc/self/fd";
+    std::vector<std::string> content;
+    OHOS::GetDirFiles(path, content);
+    return content.size();
 }
 } // namespace HiviewDFX
 } // namespace OHOS

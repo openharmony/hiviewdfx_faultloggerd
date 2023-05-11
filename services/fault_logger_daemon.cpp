@@ -41,7 +41,6 @@
 #include "fault_logger_pipe.h"
 #include "fault_logger_secure.h"
 #include "faultloggerd_socket.h"
-#include "file_ex.h"
 
 namespace OHOS {
 namespace HiviewDFX {

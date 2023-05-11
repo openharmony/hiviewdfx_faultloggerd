@@ -27,9 +27,7 @@
 #include "dfx_define.h"
 #include "dfx_dump_writer.h"
 #include "dfx_log.h"
-#include "directory_ex.h"
 #include "faultloggerd_client.h"
-#include "file_ex.h"
 #include "process_dumper.h"
 
 #if defined(DEBUG_CRASH_LOCAL_HANDLER)

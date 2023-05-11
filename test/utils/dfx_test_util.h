@@ -36,7 +36,19 @@ namespace OHOS {
 namespace HiviewDFX {
 std::string ExecuteCommands(const std::string& cmds);
 int GetProcessPid(const std::string& processName);
+int LaunchTestHap(const std::string& abilityName, const std::string& bundleName);
+void StopTestHap(const std::string& bundleName);
+void InstallTestHap(const std::string& hapName);
+void UninstallTestHap(const std::string& bundleName);
 int CountLines(const std::string& fileName);
+bool CheckProcessComm(int pid, const std::string& name);
+int CheckKeyWords(const std::string& filePath, std::string *keywords, int length, int minRegIdx);
+bool CheckContent(const std::string& content, const std::string& keyContent, bool checkExist);
+int GetKeywordsNum(const std::string& msg, std::string *keywords, int length);
+std::string GetCppCrashFileName(int pid);
+uint32_t GetSelfFdCount();
+uint32_t GetSelfMapsCount();
+uint64_t GetSelfMemoryCount();
 } // namespace HiviewDFX
 } // namespace OHOS
 #endif // DFX_TEST_UTIL

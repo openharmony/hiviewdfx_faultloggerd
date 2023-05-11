@@ -22,6 +22,7 @@
 #include <pthread.h>
 #include <sched.h>
 #include <signal.h>
+#include <sigchain.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <sys/capability.h>
@@ -68,10 +69,6 @@
 #define TRUE 1
 #define FALSE 0
 
-#ifndef NSIG
-#define NSIG 64
-#endif
-
 #ifndef F_SETPIPE_SZ
 #define F_SETPIPE_SZ 1031
 #endif
@@ -96,7 +93,6 @@ static const int SIGNALHANDLER_TIMEOUT = 10000; // 10000 us
 static const int ALARM_TIME_S = 10;
 static int g_prevHandledSignal = SIGDUMP;
 static BOOL g_isDumping = FALSE;
-static struct sigaction g_oldSigactionList[NSIG] = {};
 static thread_local ThreadInfoCallBack threadInfoCallBack = NULL;
 enum DumpPreparationStage {
     CREATE_PIPE_FAIL = 1,
@@ -248,7 +244,7 @@ static void DFX_SetUpEnvironment()
 static void DFX_SetUpSigAlarmAction(void)
 {
     if (signal(SIGALRM, SIG_DFL) == SIG_ERR) {
-        DFXLOG_ERROR("signal error!");
+        DFXLOG_WARN("Default signal alarm error!");
     }
     sigset_t set;
     sigemptyset(&set);
@@ -318,29 +314,13 @@ static bool IsMainThread(void)
     return false;
 }
 
-static void ResetAndRethrowSignalIfNeed(int sig, siginfo_t *si)
+static void ExitIfSandboxPid(int sig)
 {
-    if (sig == SIGDUMP) {
-        return;
-    }
-
-    if (g_oldSigactionList[sig].sa_sigaction == NULL) {
-        signal(sig, SIG_DFL);
-        // real init will not handle crash signal
-        // crash in pid namespace may not exit even if rethrow the signal, use exit instead
-        if (GetPid() == 1) {
-            DFXLOG_ERROR("Sandbox process is about to exit with signal %d.", sig);
-            _exit(sig);
-        }
-    } else if (sigaction(sig, &(g_oldSigactionList[sig]), NULL) != 0) {
-        DFXLOG_ERROR("Failed to reset signal.");
-        signal(sig, SIG_DFL);
-    }
-
-    if (syscall(SYS_rt_tgsigqueueinfo, GetPid(), syscall(SYS_gettid), si->si_signo, si) != 0) {
-        DFXLOG_ERROR("Failed to rethrow sig(%d), errno(%d).", si->si_signo, errno);
-    } else {
-        DFXLOG_INFO("Current process(%d) rethrow sig(%d).", GetPid(), si->si_signo);
+    // real init will not handle crash signal,
+    // crash in pid namespace may not exit even if rethrow the signal, use exit instead
+    if (GetPid() == 1) {
+        DFXLOG_ERROR("Sandbox process is about to exit with signal %d.", sig);
+        _exit(sig);
     }
 }
 
@@ -360,9 +340,9 @@ static void BlockMainThreadIfNeed(int sig)
     }
 
     DFXLOG_INFO("Crash(%d) in child thread(%d), try stop main thread.", sig, GetTid());
-    (void)signal(SIGDUMP, PauseMainThreadHandler);
-    if (syscall(SYS_tgkill, GetPid(), GetPid(), SIGDUMP) != 0) {
-        DFXLOG_ERROR("Failed to send SIGDUMP to main thread, errno(%d).", errno);
+    (void)signal(SIGQUIT, PauseMainThreadHandler);
+    if (syscall(SYS_tgkill, GetPid(), GetPid(), SIGQUIT) != 0) {
+        DFXLOG_ERROR("Failed to send SIGQUIT to main thread, errno(%d).", errno);
     }
 }
 
@@ -497,11 +477,18 @@ static void ForkAndDoProcessDump(void)
         getpid(), childPid, ret, status);
 }
 
-static void DFX_SignalHandler(int sig, siginfo_t *si, void *context)
+static bool DFX_SigchainHandler(int sig, siginfo_t *si, void *context)
 {
-    if (sig == SIGDUMP && g_isDumping) {
-        DFXLOG_WARN("Current Process is dumping stacktrace now.");
-        return;
+    bool ret = false;
+    if (sig == SIGDUMP) {
+        ret = true;
+        if (si->si_code != DUMP_TYPE_NATIVE) {
+            return ret;
+        }
+        if (g_isDumping) {
+            DFXLOG_WARN("Current Process(%d) is dumping stacktrace now.", GetPid());
+            return ret;
+        }
     }
 
     // crash signal should never be skipped
@@ -511,21 +498,22 @@ static void DFX_SignalHandler(int sig, siginfo_t *si, void *context)
     BlockMainThreadIfNeed(sig);
     if (g_prevHandledSignal != SIGDUMP) {
         pthread_mutex_unlock(&g_signalHandlerMutex);
-        ResetAndRethrowSignalIfNeed(sig, si);
-        return;
+        ExitIfSandboxPid(sig);
+        return ret;
     }
     g_prevHandledSignal = sig;
     g_isDumping = TRUE;
 
     FillDumpRequest(sig, si, context);
-    DFXLOG_INFO("DFX_SignalHandler :: sig(%d), pid(%d), tid(%d).", sig, g_request.pid, g_request.tid);
+    DFXLOG_INFO("DFX_SigchainHandler :: sig(%d), pid(%d), tid(%d).", sig, g_request.pid, g_request.tid);
 
     // for protecting g_reservedChildStack
     // g_signalHandlerMutex will be unlocked in DoProcessDump function
     if (sig != SIGDUMP) {
         ForkAndDoProcessDump();
-        ResetAndRethrowSignalIfNeed(sig, si);
+        ExitIfSandboxPid(sig);
     } else {
+        ret = true;
         int recycleTid = clone(DoProcessDump, g_reservedChildStack, CLONE_THREAD | CLONE_SIGHAND | CLONE_VM, NULL);
         if (recycleTid == -1) {
             DFXLOG_ERROR("Failed to clone thread for recycle dump process, errno(%d)", errno);
@@ -535,6 +523,7 @@ static void DFX_SignalHandler(int sig, siginfo_t *si, void *context)
     }
 
     DFXLOG_INFO("Finish handle signal(%d) in %d:%d", sig, g_request.pid, g_request.tid);
+    return ret;
 }
 
 void DFX_InstallSignalHandler(void)
@@ -552,18 +541,15 @@ void DFX_InstallSignalHandler(void)
     }
     g_reservedChildStack = (void *)(((uint8_t *)g_reservedChildStack) + RESERVED_CHILD_STACK_SIZE - 1);
 
-    struct sigaction action;
-    memset(&action, 0, sizeof(action));
-    memset(&g_oldSigactionList, 0, sizeof(g_oldSigactionList));
-    sigfillset(&action.sa_mask);
-    action.sa_sigaction = DFX_SignalHandler;
-    action.sa_flags = SA_RESTART | SA_SIGINFO | SA_ONSTACK;
+    struct signal_chain_action sigchain = {
+        .sca_sigaction = DFX_SigchainHandler,
+        .sca_mask = {},
+        .sca_flags = 0,
+    };
 
     for (size_t i = 0; i < sizeof(g_interestedSignalList) / sizeof(g_interestedSignalList[0]); i++) {
         int32_t sig = g_interestedSignalList[i];
-        if (sigaction(sig, &action, &(g_oldSigactionList[sig])) != 0) {
-            DFXLOG_ERROR("Failed to register signal(%d)", sig);
-        }
+        add_special_handler_at_last(sig, &sigchain);
     }
 
     g_hasInit = TRUE;
