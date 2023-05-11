@@ -13,20 +13,17 @@
 
 import("//base/hiviewdfx/faultloggerd/faultloggerd.gni")
 
+dumpcatcherdemo_sources = [ "dump_catcher_demo.cpp" ]
+
 if (defined(ohos_lite)) {
   executable("dumpcatcherdemo") {
-    sources = [ "dump_catcher_demo.cpp" ]
-    sources += [
-      "$faultloggerd_path/common/dfxutil/directory_ex.cpp",
-      "$faultloggerd_path/common/dfxutil/file_ex.cpp",
-      "$faultloggerd_path/interfaces/innerkits/dump_catcher/dfx_dump_catcher.cpp",
-    ]
+    sources = dumpcatcherdemo_sources
 
     visibility = [ "*:*" ]
 
     include_dirs = [
       ".",
-      "//commonlibrary/c_utils/base/include",
+      "$c_utils_include_path",
       "$faultloggerd_path/interfaces/innerkits/dump_catcher/include/",
       "$faultloggerd_path/common",
       "$faultloggerd_path/common/dfxlog",
@@ -69,7 +66,6 @@ if (defined(ohos_lite)) {
 
     include_dirs = [
       ".",
-      "//commonlibrary/c_utils/base/include",
       "$faultloggerd_path/common",
       "$faultloggerd_path/common/dfxlog",
       "$faultloggerd_path/interfaces/innerkits/dump_catcher/include/",
@@ -77,7 +73,7 @@ if (defined(ohos_lite)) {
   }
 
   ohos_executable("dumpcatcherdemo") {
-    sources = [ "dump_catcher_demo.cpp" ]
+    sources = dumpcatcherdemo_sources
 
     configs = [ ":dumpcatcherdemo_config" ]
 

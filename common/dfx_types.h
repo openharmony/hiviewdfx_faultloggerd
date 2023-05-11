@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Huawei Device Co., Ltd.
+ * Copyright (c) 2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -12,13 +12,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#ifndef DFX_TYPES_H
+#define DFX_TYPES_H
 
-#ifndef UTILS_FILE_EX_H
-#define UTILS_FILE_EX_H
+#include <linux/types.h>
 
-#include <string>
+using s8 = __s8;
+using u8 = __u8;
+using s16 = __s16;
+using u16 = __u16;
+using s32 = __s32;
+using u32 = __u32;
+using s64 = __s64;
+using u64 = __u64;
 
-namespace OHOS {
-bool LoadStringFromFile(const std::string& filePath, std::string& content);
-}
-#endif
+#endif // DFX_TYPES_H

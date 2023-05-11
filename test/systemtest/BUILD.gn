@@ -22,10 +22,11 @@ if (defined(ohos_lite)) {
       output_extension = "bin"
       output_dir = "$root_out_dir/test/unittest/faultloggerd"
       sources = [ "src/faultloggerd_system_test.cpp" ]
+      sources += [ "$c_utils_src_path/directory_ex.cpp" ]
 
       include_dirs = [
         "include/",
-        "//commonlibrary/c_utils/base/include",
+        "$c_utils_include_path",
         "$faultloggerd_path/common",
         "$faultloggerd_path/tools/process_dump",
         "$faultloggerd_path/interfaces/innerkits/faultoggerd_client/include",
@@ -61,7 +62,6 @@ if (defined(ohos_lite)) {
 
     include_dirs = [
       "include/",
-      "//commonlibrary/c_utils/base/include",
       "$faultloggerd_path/interfaces/innerkits/dump_catcher/include/",
       "$faultloggerd_path/test/utils",
     ]

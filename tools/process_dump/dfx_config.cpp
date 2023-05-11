@@ -21,6 +21,7 @@
 #include <string>
 #include "dfx_define.h"
 #include "dfx_log.h"
+#include "string_util.h"
 
 static const char FAULTLOGGER_CONF_PATH[] = "/system/etc/faultlogger.conf";
 
@@ -194,21 +195,6 @@ void DfxConfig::ReadConfig()
         }
         (void)fclose(fp);
     } while (0);
-}
-
-void DfxConfig::Trim(std::string& s)
-{
-    if (s.empty()) {
-        return;
-    }
-    size_t n = s.find_first_not_of(" \r\n\t");
-    if (n != std::string::npos) {
-        s.erase(0, n);
-    }
-    n = s.find_last_not_of(" \r\n\t");
-    if (n != std::string::npos) {
-        s.erase(n + 1, s.size() - n);
-    }
 }
 } // namespace HiviewDFX
 } // namespace OHOS

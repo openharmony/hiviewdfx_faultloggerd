@@ -21,6 +21,6 @@
 
 #include "register.h"
 #include "dfx_log.h"
-#include "dfx_utilities.h"
+#include "dfx_types.h"
 
 #endif // OHOS_HIVIEWDFX_REGISTER_TEST

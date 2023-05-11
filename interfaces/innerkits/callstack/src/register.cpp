@@ -23,6 +23,7 @@
 #include <libunwind.h>
 #endif
 #include "callstack_log.h"
+#include "string_util.h"
 
 namespace OHOS {
 namespace HiviewDFX {
@@ -191,7 +192,7 @@ bool RegisterGetValue(uint64_t &value, const u64 registers[], const size_t regis
 
 ArchType GetArchTypeFromUname(const std::string &machine)
 {
-    if (StringStartsWith(machine, "arm")) {
+    if (StartsWith(machine, "arm")) {
         if (machine == "armv8l") {
             // 32 bit elf run in 64 bit cpu
             return ArchType::ARM64;

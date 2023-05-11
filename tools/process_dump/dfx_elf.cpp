@@ -29,6 +29,7 @@
 #include "bits/fcntl.h"
 #include "dfx_define.h"
 #include "dfx_log.h"
+#include "dfx_util.h"
 #include "elf.h"
 #include "link.h"
 
@@ -57,14 +58,14 @@ std::shared_ptr<DfxElf> DfxElf::Create(const std::string path)
         return nullptr;
     }
 
-    struct stat elfStat;
-    if (fstat(dfxElf->fd_, &elfStat) != 0) {
+    uint64_t fileSize = static_cast<uint64_t>(GetFileSize(dfxElf->fd_));
+    if (fileSize == 0) {
         DFXLOG_WARN("Fail to get elf size.");
         dfxElf->Close();
         return nullptr;
     }
 
-    dfxElf->SetSize((uint64_t)elfStat.st_size);
+    dfxElf->SetSize(fileSize);
     if (!dfxElf->ParseElfHeader()) {
         DFXLOG_WARN("Fail to parse elf header.");
         dfxElf->Close();
@@ -137,6 +138,7 @@ bool DfxElf::ParseElfProgramHeader()
             continue;
         }
         CreateLoadInfo(phdr->p_vaddr, phdr->p_offset);
+
         // Only set the load bias from the first executable load header.
         if (firstExecLoadHeader) {
             loadBias_ = static_cast<uint64_t>(phdr->p_vaddr) - phdr->p_offset;
@@ -167,26 +169,6 @@ void DfxElf::CreateLoadInfo(uint64_t vaddr, uint64_t offset)
     info->offset = offset;
 
     infos_.push_back(*info);
-}
-
-std::string DfxElf::GetName() const
-{
-    return name_;
-}
-
-void DfxElf::SetName(const std::string &name)
-{
-    name_ = name;
-}
-
-std::string DfxElf::GetPath() const
-{
-    return path_;
-}
-
-void DfxElf::SetPath(const std::string &path)
-{
-    path_ = path;
 }
 
 ElfW(Ehdr) DfxElf::GetHeader() const

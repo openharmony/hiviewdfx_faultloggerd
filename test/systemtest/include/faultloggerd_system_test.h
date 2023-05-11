@@ -40,7 +40,6 @@ public:
     static std::string GetfileNamePrefix(const std::string errorCMD, int commandStatus);
     static std::string GetstackfileNamePrefix(const std::string errorCMD, int commandStatus);
 
-    static int CheckKeywords(std::string& filePath, std::string *keywords, int length, int minRegIdx);
     static int CheckCountNum(std::string& filePath, std::string& pid, std::string& errorCMD);
     static int CheckCountNumAbort(std::string& filePath, std::string& pid);
     static int CheckCountNumPCZero(std::string& filePath, std::string& pid);

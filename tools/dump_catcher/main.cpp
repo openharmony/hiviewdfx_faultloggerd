@@ -26,7 +26,6 @@
 #include <getopt.h>
 #include "dfx_define.h"
 #include "dfx_log.h"
-#include "directory_ex.h"
 #include "dump_catcher.h"
 #include "dfx_dump_catcher.h"
 
@@ -64,17 +63,17 @@ static int ParseParamters(int argc, char *argv[], int &type, int32_t &pid, int32
     while ((optRet = getopt(argc, argv, optString)) != -1) {
         switch (optRet) {
             case 'c':
-                if ((type != OHOS::HiviewDFX::DUMP_TYPE_KERNEL) && (type != OHOS::HiviewDFX::DUMP_TYPE_MIX)) {
-                    type = OHOS::HiviewDFX::DUMP_TYPE_NATIVE;
+                if ((type != DUMP_TYPE_KERNEL) && (type != DUMP_TYPE_MIX)) {
+                    type = DUMP_TYPE_NATIVE;
                 }
                 break;
             case 'm':
-                if (type != OHOS::HiviewDFX::DUMP_TYPE_KERNEL) {
-                    type = OHOS::HiviewDFX::DUMP_TYPE_MIX;
+                if (type != DUMP_TYPE_KERNEL) {
+                    type = DUMP_TYPE_MIX;
                 }
                 break;
             case 'k':
-                type = OHOS::HiviewDFX::DUMP_TYPE_KERNEL;
+                type = DUMP_TYPE_KERNEL;
                 break;
             case 'p':
                 ret = 0;
@@ -116,7 +115,7 @@ int main(int argc, char *argv[])
     DFX_InstallLocalSignalHandler();
 #endif
 
-    int32_t type = OHOS::HiviewDFX::DUMP_TYPE_NATIVE;
+    int32_t type = DUMP_TYPE_NATIVE;
     int32_t pid = 0;
     int32_t tid = 0;
 

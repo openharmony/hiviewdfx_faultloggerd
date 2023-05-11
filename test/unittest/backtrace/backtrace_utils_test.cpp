@@ -27,7 +27,7 @@
 #include <malloc.h>
 
 #include "backtrace_local.h"
-#include "test_utils.h"
+#include "dfx_test_util.h"
 
 using namespace testing;
 using namespace testing::ext;

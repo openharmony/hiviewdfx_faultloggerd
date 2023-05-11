@@ -37,18 +37,9 @@ public:
     void TearDown();
 };
 
-static int LaunchTestHap(const string& abilityName, const string& bundleName)
-{
-    string launchCmd = "/system/bin/aa start -a " + abilityName + " -b " + bundleName;
-    (void)ExecuteCommands(launchCmd);
-    sleep(2); // 2 : sleep 2s
-    return GetProcessPid(bundleName);
-}
-
 void DumpCatcherCommandTest::SetUpTestCase()
 {
-    string installCmd = "bm install -p /data/FaultloggerdJsTest.hap";
-    (void)ExecuteCommands(installCmd);
+    InstallTestHap("/data/FaultloggerdJsTest.hap");
     string testBundleName = TEST_BUNDLE_NAME;
     string testAbiltyName = testBundleName + ".MainAbility";
     g_testPid = LaunchTestHap(testAbiltyName, testBundleName);
@@ -56,12 +47,8 @@ void DumpCatcherCommandTest::SetUpTestCase()
 
 void DumpCatcherCommandTest::TearDownTestCase()
 {
-    string stopCmd = "/system/bin/aa force-stop ";
-    stopCmd += TEST_BUNDLE_NAME;
-    (void)ExecuteCommands(stopCmd);
-    string uninstallCmd = "bm uninstall -n ";
-    uninstallCmd += TEST_BUNDLE_NAME;
-    (void)ExecuteCommands(uninstallCmd);
+    StopTestHap(TEST_BUNDLE_NAME);
+    UninstallTestHap(TEST_BUNDLE_NAME);
 }
 
 void DumpCatcherCommandTest::SetUp()
@@ -69,20 +56,6 @@ void DumpCatcherCommandTest::SetUp()
 
 void DumpCatcherCommandTest::TearDown()
 {}
-
-static bool CheckProcessComm(int pid)
-{
-    string cmd = "cat /proc/" + to_string(pid) + "/comm";
-    string comm = ExecuteCommands(cmd);
-    size_t pos = comm.find('\n');
-    if (pos != string::npos) {
-        comm.erase(pos, 1);
-    }
-    if (!strcmp(comm.c_str(), TRUNCATE_TEST_BUNDLE_NAME)) {
-        return true;
-    }
-    return false;
-}
 
 /**
  * @tc.name: DumpCatcherCommandTest001
@@ -96,18 +69,11 @@ HWTEST_F(DumpCatcherCommandTest, DumpCatcherCommandTest001, TestSize.Level2)
     string testCommand = "dumpcatcher -p " + to_string(testPid);
     string dumpRes = ExecuteCommands(testCommand);
     GTEST_LOG_(INFO) << dumpRes;
-    int count = 0;
     string log[] = {"Pid:", "Name:", "#00", "#01", "#02"};
     log[0] = log[0] + to_string(testPid);
     log[1] = log[1] + "accountmgr";
     int len = sizeof(log) / sizeof(log[0]);
-    for (int i = 0; i < len; i++) {
-        if (dumpRes.find(log[i]) != string::npos) {
-            count++;
-        } else {
-            GTEST_LOG_(INFO) << "Can not find " << log[i];
-        }
-    }
+    int count = GetKeywordsNum(dumpRes, log, len);
     EXPECT_EQ(count, len) << "DumpCatcherCommandTest001 Failed";
     GTEST_LOG_(INFO) << "DumpCatcherCommandTest001: end.";
 }
@@ -124,18 +90,11 @@ HWTEST_F(DumpCatcherCommandTest, DumpCatcherCommandTest002, TestSize.Level2)
     string testCommand = "dumpcatcher -p " + to_string(testPid) + " -t " + to_string(testPid);
     string dumpRes = ExecuteCommands(testCommand);
     GTEST_LOG_(INFO) << dumpRes;
-    int count = 0;
     string log[] = {"Pid:", "Name:", "#00", "#01", "#02"};
     log[0] = log[0] + to_string(testPid);
     log[1] = log[1] + "accountmgr";
     int len = sizeof(log) / sizeof(log[0]);
-    for (int i = 0; i < len; i++) {
-        if (dumpRes.find(log[i]) != string::npos) {
-            count++;
-        } else {
-            GTEST_LOG_(INFO) << "Can not find " << log[i];
-        }
-    }
+    int count = GetKeywordsNum(dumpRes, log, len);
     EXPECT_EQ(count, len) << "DumpCatcherCommandTest002 Failed";
     GTEST_LOG_(INFO) << "DumpCatcherCommandTest002: end.";
 }
@@ -152,25 +111,18 @@ HWTEST_F(DumpCatcherCommandTest, DumpCatcherCommandTest003, TestSize.Level2)
         GTEST_LOG_(ERROR) << "Failed to launch target hap.";
         return;
     }
-    if (!CheckProcessComm(g_testPid)) {
+    if (!CheckProcessComm(g_testPid, TRUNCATE_TEST_BUNDLE_NAME)) {
         GTEST_LOG_(ERROR) << "Error process comm";
         return;
     }
     string testCommand = "dumpcatcher -p " + to_string(g_testPid);
     string dumpRes = ExecuteCommands(testCommand);
     GTEST_LOG_(INFO) << dumpRes;
-    int count = 0;
     string log[] = {"Pid:", "Name:", "#00", "#01", "#02"};
     log[0] = log[0] + to_string(g_testPid);
     log[1] = log[1] + TRUNCATE_TEST_BUNDLE_NAME;
     int len = sizeof(log) / sizeof(log[0]);
-    for (int i = 0; i < len; i++) {
-        if (dumpRes.find(log[i]) != string::npos) {
-            count++;
-        } else {
-            GTEST_LOG_(INFO) << "Can not find " << log[i];
-        }
-    }
+    int count = GetKeywordsNum(dumpRes, log, len);
     EXPECT_EQ(count, len) << "DumpCatcherCommandTest003 Failed";
     GTEST_LOG_(INFO) << "DumpCatcherCommandTest003: end.";
 }
@@ -187,25 +139,18 @@ HWTEST_F(DumpCatcherCommandTest, DumpCatcherCommandTest004, TestSize.Level2)
         GTEST_LOG_(ERROR) << "Failed to launch target hap.";
         return;
     }
-    if (!CheckProcessComm(g_testPid)) {
+    if (!CheckProcessComm(g_testPid, TRUNCATE_TEST_BUNDLE_NAME)) {
         GTEST_LOG_(ERROR) << "Error process comm";
         return;
     }
     string testCommand = "dumpcatcher -p " + to_string(g_testPid) + " -t " + to_string(g_testPid);
     string dumpRes = ExecuteCommands(testCommand);
     GTEST_LOG_(INFO) << dumpRes;
-    int count = 0;
     string log[] = {"Pid:", "Name:", "#00", "#01", "#02"};
     log[0] = log[0] + to_string(g_testPid);
     log[1] = log[1] + TRUNCATE_TEST_BUNDLE_NAME;
     int len = sizeof(log) / sizeof(log[0]);
-    for (int i = 0; i < len; i++) {
-        if (dumpRes.find(log[i]) != string::npos) {
-            count++;
-        } else {
-            GTEST_LOG_(INFO) << "Can not find " << log[i];
-        }
-    }
+    int count = GetKeywordsNum(dumpRes, log, len);
     EXPECT_EQ(count, len) << "DumpCatcherCommandTest004 Failed";
     GTEST_LOG_(INFO) << "DumpCatcherCommandTest004: end.";
 }
@@ -222,25 +167,18 @@ HWTEST_F(DumpCatcherCommandTest, DumpCatcherCommandTest005, TestSize.Level2)
         GTEST_LOG_(ERROR) << "Failed to launch target hap.";
         return;
     }
-    if (!CheckProcessComm(g_testPid)) {
+    if (!CheckProcessComm(g_testPid, TRUNCATE_TEST_BUNDLE_NAME)) {
         GTEST_LOG_(ERROR) << "Error process comm";
         return;
     }
     string testCommand = "dumpcatcher -p " + to_string(g_testPid);
     string dumpRes = ExecuteCommands(testCommand);
     GTEST_LOG_(INFO) << dumpRes;
-    int count = 0;
     string log[] = {"Pid:", "Name:", "#00", "#01", "#02"};
     log[0] = log[0] + to_string(g_testPid);
     log[1] = log[1] + TRUNCATE_TEST_BUNDLE_NAME;
     int len = sizeof(log) / sizeof(log[0]);
-    for (int i = 0; i < len; i++) {
-        if (dumpRes.find(log[i]) != string::npos) {
-            count++;
-        } else {
-            GTEST_LOG_(INFO) << "Can not find " << log[i];
-        }
-    }
+    int count = GetKeywordsNum(dumpRes, log, len);
     EXPECT_EQ(count, len) << "DumpCatcherCommandTest005 Failed";
     GTEST_LOG_(INFO) << "DumpCatcherCommandTest005: end.";
 }
@@ -261,26 +199,19 @@ HWTEST_F(DumpCatcherCommandTest, DumpCatcherCommandTest006, TestSize.Level2)
         GTEST_LOG_(ERROR) << "Failed to launch target hap.";
         return;
     }
-    if (!CheckProcessComm(testPid)) {
+    if (!CheckProcessComm(testPid, TRUNCATE_TEST_BUNDLE_NAME)) {
         GTEST_LOG_(ERROR) << "Error process comm";
         return;
     }
     string procCMD = "dumpcatcher -m -p " + to_string(testPid);
     string procDumpLog = ExecuteCommands(procCMD);
     GTEST_LOG_(INFO) << "procDumpLog: " << procDumpLog;
-    int count = 0;
     string log[] = { "Tid:", "Name:", "#00", "/system/bin/appspawn", "Name:DfxWatchdog",
         "Name:GC_WorkerThread", "Name:ace.bg.1" };
     log[0] += to_string(testPid);
     log[1] += TRUNCATE_TEST_BUNDLE_NAME;
     int expectNum = sizeof(log) / sizeof(log[0]);
-    for (int i = 0; i < expectNum; i++) {
-        if (procDumpLog.find(log[i]) != string::npos) {
-            count++;
-        } else {
-            GTEST_LOG_(ERROR) << "not found (" << log[i] << ")";
-        }
-    }
+    int count = GetKeywordsNum(procDumpLog, log, expectNum);
     EXPECT_EQ(count, expectNum) << "DumpCatcherCommandTest006 Failed";
     GTEST_LOG_(INFO) << "DumpCatcherCommandTest006: end.";
 }
@@ -301,7 +232,7 @@ HWTEST_F(DumpCatcherCommandTest, DumpCatcherCommandTest007, TestSize.Level2)
         GTEST_LOG_(ERROR) << "Failed to launch target hap.";
         return;
     }
-    if (!CheckProcessComm(testPid)) {
+    if (!CheckProcessComm(testPid, TRUNCATE_TEST_BUNDLE_NAME)) {
         GTEST_LOG_(ERROR) << "Error process comm";
         return;
     }
@@ -309,18 +240,11 @@ HWTEST_F(DumpCatcherCommandTest, DumpCatcherCommandTest007, TestSize.Level2)
         " -t " + to_string(testPid);
     string procDumpLog = ExecuteCommands(procCMD);
     GTEST_LOG_(INFO) << "procDumpLog: " << procDumpLog;
-    int count = 0;
     string log[] = { "Tid:", "Name:", "#00", "/system/bin/appspawn" };
     log[0] += to_string(testPid);
     log[1] += TRUNCATE_TEST_BUNDLE_NAME;
     int expectNum = sizeof(log) / sizeof(log[0]);
-    for (int i = 0; i < expectNum; i++) {
-        if (procDumpLog.find(log[i]) != string::npos) {
-            count++;
-        } else {
-            GTEST_LOG_(ERROR) << "not found (" << log[i] << ")";
-        }
-    }
+    int count = GetKeywordsNum(procDumpLog, log, expectNum);
     EXPECT_EQ(count, expectNum) << "DumpCatcherCommandTest007 Failed";
     GTEST_LOG_(INFO) << "DumpCatcherCommandTest007: end.";
 }
@@ -339,16 +263,10 @@ HWTEST_F(DumpCatcherCommandTest, DumpCatcherCommandTest008, TestSize.Level2)
     string procCMD = "dumpcatcher -m -p " + to_string(systemuiPid) + " -t -1";
     string procDumpLog = ExecuteCommands(procCMD);
     GTEST_LOG_(INFO) << "procDumpLog: " << procDumpLog;
-    int count = 0;
     string log[] = {"Failed"};
-    for (int i = 0; i < 1; i++) {
-        if (procDumpLog.find(log[i]) != string::npos) {
-            count++;
-        } else {
-            GTEST_LOG_(ERROR) << "not found (" << log[i] << ")";
-        }
-    }
-    EXPECT_EQ(count, 1) << "DumpCatcherCommandTest008 Failed";
+    int expectNum = sizeof(log) / sizeof(log[0]);
+    int count = GetKeywordsNum(procDumpLog, log, expectNum);
+    EXPECT_EQ(count, expectNum) << "DumpCatcherCommandTest008 Failed";
     GTEST_LOG_(INFO) << "DumpCatcherCommandTest008: end.";
 }
 
@@ -365,16 +283,10 @@ HWTEST_F(DumpCatcherCommandTest, DumpCatcherCommandTest009, TestSize.Level2)
     string procCMD = "dumpcatcher -m -p -1 -t -1";
     string procDumpLog = ExecuteCommands(procCMD);
     GTEST_LOG_(INFO) << "procDumpLog: " << procDumpLog;
-    int count = 0;
     string log[] = {"Failed"};
-    for (int i = 0; i < 1; i++) {
-        if (procDumpLog.find(log[i]) != string::npos) {
-            count++;
-        } else {
-            GTEST_LOG_(ERROR) << "not found (" << log[i] << ")";
-        }
-    }
-    EXPECT_EQ(count, 1) << "DumpCatcherCommandTest009 Failed";
+    int len = sizeof(log) / sizeof(log[0]);
+    int count = GetKeywordsNum(procDumpLog, log, len);
+    EXPECT_EQ(count, len) << "DumpCatcherCommandTest009 Failed";
     GTEST_LOG_(INFO) << "DumpCatcherCommandTest009: end.";
 }
 } // namespace HiviewDFX

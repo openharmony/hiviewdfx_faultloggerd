@@ -40,6 +40,7 @@
 #include <sys/uio.h>
 #include <sys/wait.h>
 #include <unistd.h>
+#include "dfx_define.h"
 #include "dfx_logger.h"
 #include "dfx_symbols_cache.h"
 #include "file_ex.h"
@@ -155,7 +156,7 @@ std::string DfxUnwindLocal::CollectUnwindResult(int32_t tid)
 
     std::ostringstream result;
     result << "Tid:" << tid;
-    std::string path = "/proc/self/task/" + std::to_string(tid) + "/comm";
+    std::string path = PROC_SELF_TASK_PATH + "/" + std::to_string(tid) + "/comm";
     std::string threadComm;
     if (OHOS::LoadStringFromFile(path, threadComm)) {
         result << " Name:" << threadComm;

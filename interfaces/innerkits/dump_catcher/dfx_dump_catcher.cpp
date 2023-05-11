@@ -62,7 +62,7 @@ static const std::string DFXDUMPCATCHER_TAG = "DfxDumpCatcher";
 
 static bool IsThreadInCurPid(int32_t tid)
 {
-    std::string path = "/proc/self/task/" + std::to_string(tid);
+    std::string path = std::string(PROC_SELF_TASK_PATH) + "/" + std::to_string(tid);
     return access(path.c_str(), F_OK) == 0;
 }
 enum DfxDumpPollRes : int32_t {
@@ -129,7 +129,7 @@ bool DfxDumpCatcher::DoDumpLocalPid(int pid, std::string& msg)
     size_t skipFramNum = DUMP_CATCHER_NUMBER_THREE;
 
     char realPath[PATH_MAX] = {'\0'};
-    if (realpath("/proc/self/task", realPath) == nullptr) {
+    if (realpath(PROC_SELF_TASK_PATH, realPath) == nullptr) {
         DFXLOG_ERROR("%s :: DoDumpLocalPid :: return false as realpath failed.", DFXDUMPCATCHER_TAG.c_str());
         return ret;
     }
@@ -159,7 +159,7 @@ bool DfxDumpCatcher::DoDumpLocalPid(int pid, std::string& msg)
 
 bool DfxDumpCatcher::DoDumpRemoteLocked(int pid, int tid, std::string& msg)
 {
-    int type = static_cast<int>(DUMP_TYPE_NATIVE);
+    int type = DUMP_TYPE_NATIVE;
     return DoDumpCatchRemote(type, pid, tid, msg);
 }
 
@@ -185,7 +185,7 @@ bool DfxDumpCatcher::DoDumpLocalLocked(int pid, int tid, std::string& msg)
 
 bool DfxDumpCatcher::DumpCatchMix(int pid, int tid, std::string& msg)
 {
-    int type = static_cast<int>(DUMP_TYPE_MIX);
+    int type = DUMP_TYPE_MIX;
     return DoDumpCatchRemote(type, pid, tid, msg);
 }
 
@@ -243,36 +243,22 @@ static void LoadPathContent(const std::string& desc, const std::string& path, st
 
 static void LoadThreadWchan(const int pid, std::string& result)
 {
-    std::string taskPath = "/proc/" + std::to_string(pid) + "/task";
-    char realPath[PATH_MAX] = {'\0'};
-    if (realpath(taskPath.c_str(), realPath) == nullptr) {
-        DFXLOG_ERROR("%s :: LoadThreadWchan :: realpath failed, errno(%d)", DFXDUMPCATCHER_TAG.c_str(), errno);
-        return;
-    }
-
-    DIR *dir = opendir(realPath);
-    if (dir == nullptr) {
-        DFXLOG_ERROR("%s :: LoadThreadWchan :: opendir failed, errno(%d)", DFXDUMPCATCHER_TAG.c_str(), errno);
-        return;
-    }
-
     result.append("\nThread wchan:\n=======================================\n");
     bool flag = false;
-    struct dirent *ent;
-    while ((ent = readdir(dir)) != nullptr) {
-        if (strcmp(ent->d_name, ".") == 0 || strcmp(ent->d_name, "..") == 0) {
-            continue;
-        }
+    std::string taskPath = "/proc/" + std::to_string(pid) + "/task";
+    std::vector<std::string> files;
+    flag = ReadDirFilesByPid(pid, files);
+    for (size_t i = 0; i < files.size(); ++i) {
         std::string comm;
         std::string wchan;
-        std::string tid(ent->d_name);
-        std::string commPath = taskPath + "/" + tid + "/comm";
-        std::string wchanPath = taskPath + "/" + tid + "/wchan";
+        std::string tidStr = files[i];
+        std::string commPath = taskPath + "/" + tidStr + "/comm";
+        std::string wchanPath = taskPath + "/" + tidStr + "/wchan";
         OHOS::LoadStringFromFile(commPath, comm);
         OHOS::LoadStringFromFile(wchanPath, wchan);
         if (!comm.empty() && !wchan.empty()) {
             flag = true;
-            result.append("Tid:" + tid + " Name:" + comm + "wchan:" + wchan + "\n");
+            result.append("Tid:" + tidStr + " Name:" + comm + "wchan:" + wchan + "\n");
         }
     }
 
@@ -280,9 +266,6 @@ static void LoadThreadWchan(const int pid, std::string& result)
         result.append("Load thread wchan failed.\n");
     }
     result.append("=======================================\n");
-    if (closedir(dir) == -1) {
-        DFXLOG_ERROR("%s :: LoadThreadWchan :: closedir failed, errno(%d)", DFXDUMPCATCHER_TAG.c_str(), errno);
-    }
 }
 
 static void LoadPidStat(const int pid, std::string& msg)
@@ -325,7 +308,7 @@ bool DfxDumpCatcher::DoDumpCatchRemote(const int type, int pid, int tid, std::st
         case DUMP_POLL_TIMEOUT:
             if (type == DUMP_TYPE_MIX) {
                 msg.append("Result: pid(" + std::to_string(pid) + ") dump mix timeout, try dump native frame.\n");
-                int type = static_cast<int>(DUMP_TYPE_NATIVE);
+                int type = DUMP_TYPE_NATIVE;
                 return DoDumpCatchRemote(type, pid, tid, msg);
             } else if (type == DUMP_TYPE_NATIVE) {
                 LoadPidStat(pid, msg);
@@ -334,7 +317,7 @@ bool DfxDumpCatcher::DoDumpCatchRemote(const int type, int pid, int tid, std::st
         default:
             break;
     }
-    DFXLOG_INFO("%s :: %s :: ret: %d", DFXDUMPCATCHER_TAG.c_str(), __func__, ret);
+    DFXLOG_INFO("%s :: %s :: pid(%d) ret: %d", DFXDUMPCATCHER_TAG.c_str(), __func__, pid, ret);
     return ret;
 }
 
@@ -363,7 +346,7 @@ int DfxDumpCatcher::DoDumpRemotePid(const int type, int pid, std::string& msg)
         close(readResFd);
         readResFd = -1;
     }
-    DFXLOG_INFO("%s :: %s :: ret: %d", DFXDUMPCATCHER_TAG.c_str(), __func__, ret);
+    DFXLOG_INFO("%s :: %s :: pid(%d) poll ret: %d", DFXDUMPCATCHER_TAG.c_str(), __func__, pid, ret);
     return ret;
 }
 

@@ -19,9 +19,9 @@
 #include <limits>
 #include <linux/perf_event.h>
 #include <map>
+#include <string>
 #include <unistd.h>
-
-#include "dfx_utilities.h"
+#include "dfx_types.h"
 
 namespace OHOS {
 namespace HiviewDFX {
