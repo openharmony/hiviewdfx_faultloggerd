@@ -185,7 +185,7 @@ bool DfxThread::Attach()
     int64_t startTime = std::chrono::duration_cast<std::chrono::milliseconds>(
         std::chrono::system_clock::now().time_since_epoch()).count();
     do {
-        if (waitpid(nsTid_, nullptr, WNOHANG) >= 0) {
+        if (waitpid(nsTid_, nullptr, WNOHANG) > 0) {
             break;
         }
         int64_t curTime = std::chrono::duration_cast<std::chrono::milliseconds>(
