@@ -21,11 +21,13 @@ if (defined(ohos_lite)) {
     unittest("test_faultloggerd") {
       output_extension = "bin"
       output_dir = "$root_out_dir/test/unittest/faultloggerd"
-      sources = [ "src/faultloggerd_system_test.cpp" ]
+      sources = [
+        "dumpcatcher_system_test.cpp",
+        "faultloggerd_system_test.cpp",
+      ]
       sources += [ "$c_utils_src_path/directory_ex.cpp" ]
 
       include_dirs = [
-        "include/",
         "$c_utils_include_path",
         "$faultloggerd_path/common",
         "$faultloggerd_path/tools/process_dump",
@@ -61,7 +63,6 @@ if (defined(ohos_lite)) {
     visibility = [ ":*" ]
 
     include_dirs = [
-      "include/",
       "$faultloggerd_path/interfaces/innerkits/dump_catcher/include/",
       "$faultloggerd_path/test/utils",
     ]
@@ -73,7 +74,10 @@ if (defined(ohos_lite)) {
 
   ohos_systemtest("test_faultloggerd") {
     module_out_path = module_output_path
-    sources = [ "src/faultloggerd_system_test.cpp" ]
+    sources = [
+      "dumpcatcher_system_test.cpp",
+      "faultloggerd_system_test.cpp",
+    ]
 
     configs = [ ":module_private_config" ]
 

@@ -34,6 +34,10 @@
 
 namespace OHOS {
 namespace HiviewDFX {
+enum CrasherType {
+    CRASHER_C,
+    CRASHER_CPP
+};
 std::string ExecuteCommands(const std::string& cmds);
 int GetProcessPid(const std::string& processName);
 int LaunchTestHap(const std::string& abilityName, const std::string& bundleName);
@@ -45,7 +49,7 @@ bool CheckProcessComm(int pid, const std::string& name);
 int CheckKeyWords(const std::string& filePath, std::string *keywords, int length, int minRegIdx);
 bool CheckContent(const std::string& content, const std::string& keyContent, bool checkExist);
 int GetKeywordsNum(const std::string& msg, std::string *keywords, int length);
-std::string GetCppCrashFileName(int pid);
+std::string GetCppCrashFileName(const pid_t pid);
 uint32_t GetSelfFdCount();
 uint32_t GetSelfMapsCount();
 uint64_t GetSelfMemoryCount();
