@@ -15,7 +15,7 @@
 #ifndef DFX_LOG_BACKTRACE_H
 #define DFX_LOG_BACKTRACE_H
 
-#define GenHookFunc(GenFuncName, RealHookFunc, FuncName, RealFuncName) \
+#define GEN_HOOK_FUNC(GenFuncName, RealHookFunc, FuncName, RealFuncName) \
 static void GenFuncName(void) \
 { \
     RealFuncName = (RealHookFunc)dlsym(RTLD_NEXT, FuncName); \
