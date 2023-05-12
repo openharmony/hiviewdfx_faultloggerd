@@ -40,8 +40,8 @@ namespace OHOS {
 namespace HiviewDFX {
 namespace {
 static const std::string FAULTLOGGER_PIPE_TAG = "FaultLoggerPipe";
-static const int PIPE_READ = 0;
-static const int PIPE_WRITE = 1;
+const int PIPE_READ = 0;
+const int PIPE_WRITE = 1;
 }
 
 FaultLoggerPipe::FaultLoggerPipe()

@@ -38,6 +38,8 @@ namespace HiviewDFX {
     AT_SYMBOL_HIDDEN std::string GetCurrentTimeStr(uint64_t current = 0);
     AT_SYMBOL_HIDDEN bool ReadDirFiles(const std::string& path, std::vector<std::string>& files);
     AT_SYMBOL_HIDDEN bool ReadDirFilesByPid(const int& pid, std::vector<std::string>& files);
+    AT_SYMBOL_HIDDEN bool VerifyFilePath(const std::string& filePath,
+                                         const std::vector<const std::string>& validPaths);
     AT_SYMBOL_HIDDEN size_t GetFileSize(const int& fd);
 } // nameapace HiviewDFX
 } // nameapace OHOS

@@ -166,18 +166,6 @@ static bool TestGetBacktraceInterface()
 }
 
 /**
- * @tc.name: BacktraceUtilsTest000
- * @tc.desc: collect resource usage without perform any test
- * @tc.type: FUNC
- */
-HWTEST_F(BacktraceUtilsTest, BacktraceUtilsTest000, TestSize.Level2)
-{
-    GTEST_LOG_(INFO) << "BacktraceUtilsTest000: start.";
-    // Do Nothing and collect resource usage
-    GTEST_LOG_(INFO) << "BacktraceUtilsTest000: end.";
-}
-
-/**
  * @tc.name: BacktraceUtilsTest001
  * @tc.desc: test log backtrace to hilog, stdout and file
  * @tc.type: FUNC

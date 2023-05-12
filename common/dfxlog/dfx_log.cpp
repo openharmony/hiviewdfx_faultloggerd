@@ -27,7 +27,7 @@
 #include <fcntl.h>
 #include "dfx_define.h"
 
-static int g_DebugFd = INVALID_FD;
+static int g_debugFd = INVALID_FD;
 static const Level CURRENT_LOG_LEVEL = Level::INFO;
 #ifdef DFX_LOG_USE_DMESG
 static int g_Fd = INVALID_FD;
@@ -58,7 +58,7 @@ static void LogToDmesg(Level logLevel, const char *tag, const char *info)
 
 void InitDebugFd(int fd)
 {
-    g_DebugFd = fd;
+    g_debugFd = fd;
 }
 
 bool CheckDebugLevel(void)
@@ -110,7 +110,7 @@ int DfxLog(const Level logLevel, const unsigned int domain, const char* tag, con
 #ifdef DFX_LOG_USE_DMESG
     LogToDmesg(logLevel, tag, buf);
 #endif
-    if (g_DebugFd != INVALID_FD) {
+    if (g_debugFd != INVALID_FD) {
         fprintf(stderr, "%s\n", buf);
     }
     return ret;

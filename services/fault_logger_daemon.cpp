@@ -36,6 +36,7 @@
 #include <vector>
 #include "dfx_define.h"
 #include "dfx_log.h"
+#include "dfx_util.h"
 #include "directory_ex.h"
 #include "fault_logger_config.h"
 #include "fault_logger_pipe.h"
@@ -476,9 +477,12 @@ int32_t FaultLoggerDaemon::CreateFileForRequest(int32_t type, int32_t pid, uint6
 
     std::stringstream crashTime;
     crashTime << "-" << time;
-    std::string path = filePath + "/" + typeStr + "-" + std::to_string(pid) + crashTime.str();
-
+    const std::string path = filePath + "/" + typeStr + "-" + std::to_string(pid) + crashTime.str();
     DFXLOG_INFO("%s :: file path(%s).\n", FAULTLOGGERD_TAG.c_str(), path.c_str());
+    if (!VerifyFilePath(path, VALID_FILE_PATH)) {
+        DFXLOG_ERROR("%s :: Open %s fail, please check it under valid path.\n", FAULTLOGGERD_TAG.c_str(), path.c_str());
+        return -1;
+    }
     int32_t fd = OHOS_TEMP_FAILURE_RETRY(open(path.c_str(), O_RDWR | O_CREAT, FAULTLOG_FILE_PROP));
     if (fd != -1) {
         if (!ChangeModeFile(path, FAULTLOG_FILE_PROP)) {
@@ -537,7 +541,7 @@ void FaultLoggerDaemon::RemoveTempFileIfNeed()
     }
 }
 
-void FaultLoggerDaemon::AddEvent(int32_t epollFd, int32_t addFd, int32_t event)
+void FaultLoggerDaemon::AddEvent(int32_t epollFd, int32_t addFd, uint32_t event)
 {
     epoll_event ev;
     ev.events = event;
@@ -548,7 +552,7 @@ void FaultLoggerDaemon::AddEvent(int32_t epollFd, int32_t addFd, int32_t event)
     }
 }
 
-void FaultLoggerDaemon::DelEvent(int32_t epollFd, int32_t delFd, int32_t event)
+void FaultLoggerDaemon::DelEvent(int32_t epollFd, int32_t delFd, uint32_t event)
 {
     epoll_event ev;
     ev.events = event;

@@ -35,12 +35,15 @@ using namespace OHOS::HiviewDFX;
 using namespace testing::ext;
 using namespace std;
 std::string FaultStackUnittest::result {""};
+namespace {
 int WriteLogFunc(int32_t fd, const char *buf, int len)
 {
     printf("%d:%d:%s\n", fd, len, buf);
     FaultStackUnittest::result.append(std::string(buf, len));
     return 0;
 }
+}
+
 
 void FaultStackUnittest::SetUpTestCase(void)
 {
@@ -59,6 +62,7 @@ void FaultStackUnittest::SetUp(void)
 void FaultStackUnittest::TearDown(void)
 {
 }
+namespace {
 #if defined(__arm__)
 std::vector<uintptr_t> GetCurrentRegs(unw_context_t ctx)
 {
@@ -103,16 +107,6 @@ std::shared_ptr<DfxRegs> GetCurrentReg()
 #endif
     printf("GetCurrentReg end\n");
     return reg;
-}
-
-int unw_get_ark_js_heap_crash_info(int pid, uintptr_t* x20, uintptr_t* fp, int out_js_info, char* buf, size_t buf_sz)
-{
-    printf("unw_get_ark_js_heap_crash_info is called\n");
-    if ((*x20 == 0) || (*fp == 0)) {
-        return -1;
-    }
-
-    return 0;
 }
 
 static std::vector<std::shared_ptr<DfxFrame>> GetDfxFrames(const std::vector<NativeFrame>& frames)
@@ -209,4 +203,5 @@ HWTEST_F(FaultStackUnittest, FaultStackUnittest002, TestSize.Level2)
 #else
     printf("Get Ark Js Func Test is only support in aarch64\n");
 #endif
+}
 }

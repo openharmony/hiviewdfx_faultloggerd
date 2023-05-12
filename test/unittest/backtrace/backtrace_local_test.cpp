@@ -111,18 +111,6 @@ void BacktraceLocalTest::TearDown()
 }
 
 /**
- * @tc.name: BacktraceLocalTest000
- * @tc.desc: collect resource usage without perform any test
- * @tc.type: FUNC
- */
-HWTEST_F(BacktraceLocalTest, BacktraceLocalTest000, TestSize.Level2)
-{
-    GTEST_LOG_(INFO) << "BacktraceLocalTest000: start.";
-    // Do Nothing and collect resource usage
-    GTEST_LOG_(INFO) << "BacktraceLocalTest000: end.";
-}
-
-/**
  * @tc.name: BacktraceLocalTest001
  * @tc.desc: test get backtrace of current thread
  * @tc.type: FUNC

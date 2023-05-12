@@ -174,7 +174,7 @@ void DfxConfig::ReadConfig()
         }
         while (!feof(fp)) {
             (void)memset_s(codeBuffer, sizeof(codeBuffer), '\0', sizeof(codeBuffer));
-            if (fgets(codeBuffer, CONF_LINE_SIZE -1, fp) == nullptr) {
+            if (fgets(codeBuffer, CONF_LINE_SIZE - 1, fp) == nullptr) {
                 continue;
             }
             std::string line(codeBuffer);

@@ -232,7 +232,6 @@ bool DfxUnwindRemote::GetArkJsHeapFuncName(std::string& funcName, std::shared_pt
         uintptr_t x20 = regsVector[UNW_AARCH64_X20];
         uintptr_t fp = regsVector[UNW_AARCH64_X29];
 
-        DFXLOG_INFO("pid: %d, x20: %016lx, fp: %016lx", thread->GetThreadId(), x20, fp);
         int result = unw_get_ark_js_heap_crash_info(thread->GetThreadId(),
             (uintptr_t*)&x20, (uintptr_t*)&fp, false, buf, ARK_JS_HEAD_LEN);
         if (result < 0) {
