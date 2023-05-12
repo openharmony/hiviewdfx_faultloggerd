@@ -19,9 +19,9 @@
 
 namespace OHOS {
 namespace HiviewDFX {
-static const int REGS_PRINT_LEN_ARM = 256;
-static const int REGS_PRINT_LEN_ARM64 = 1024;
-static const int REGS_PRINT_LEN_X86 = 512;
+const int REGS_PRINT_LEN_ARM = 256;
+const int REGS_PRINT_LEN_ARM64 = 1024;
+const int REGS_PRINT_LEN_X86 = 512;
 
 enum RegisterArm : uint16_t {
     REG_ARM_R0 = 0,

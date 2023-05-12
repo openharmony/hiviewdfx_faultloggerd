@@ -191,10 +191,10 @@ int sigaction(int sig, const struct sigaction *restrict act, struct sigaction *r
     return g_hookedSigaction(sig, act, oact);
 }
 
-GenHookFunc(StartHookSigactionFunction, SigactionFunc, "sigaction", g_hookedSigaction)
-GenHookFunc(StartHookSignalFunction, SignalFunc, "signal", g_hookedSignal)
-GenHookFunc(StartHookSigprocmaskFunction, SigprocmaskFunc, "sigprocmask", g_hookedSigprocmask)
-GenHookFunc(StartHookPthreadSigmaskFunction, PthreadSigmaskFunc, "pthread_sigmask", g_hookedPthreadSigmask)
+GEN_HOOK_FUNC(StartHookSigactionFunction, SigactionFunc, "sigaction", g_hookedSigaction)
+GEN_HOOK_FUNC(StartHookSignalFunction, SignalFunc, "signal", g_hookedSignal)
+GEN_HOOK_FUNC(StartHookSigprocmaskFunction, SigprocmaskFunc, "sigprocmask", g_hookedSigprocmask)
+GEN_HOOK_FUNC(StartHookPthreadSigmaskFunction, PthreadSigmaskFunc, "pthread_sigmask", g_hookedPthreadSigmask)
 
 void StartHookFunc(void)
 {

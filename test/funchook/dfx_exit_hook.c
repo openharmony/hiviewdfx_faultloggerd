@@ -103,9 +103,9 @@ void _exit(int code)
     quick_exit(code);
 }
 
-GenHookFunc(StartHookKillFunction, KillFunc, "kill", g_hookedKill)
-GenHookFunc(StartHookExitFunction, ExitFunc, "exit", g_hookedExit)
-GenHookFunc(StartHookExitExFunction, ExitFunc, "_exit", g_hookedExitEx)
+GEN_HOOK_FUNC(StartHookKillFunction, KillFunc, "kill", g_hookedKill)
+GEN_HOOK_FUNC(StartHookExitFunction, ExitFunc, "exit", g_hookedExit)
+GEN_HOOK_FUNC(StartHookExitExFunction, ExitFunc, "_exit", g_hookedExitEx)
 
 void StartHookExitFunc(void)
 {

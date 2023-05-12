@@ -48,7 +48,7 @@
 template<unsigned int LENGTH, class T>
 class DfxRingBuffer {
 public:
-    DfxRingBuffer() : read_position(0), write_position(0), data{{T()}}, overrun_flag(false)
+    DfxRingBuffer() : readPosition(0), writePosition(0), data{{T()}}, overrunFlag(false)
     {
     }
 
@@ -66,36 +66,36 @@ public:
          * If the next position is where the read cursor
          * is then we have a full buffer.
          */
-        bool buffer_full;
+        bool bufferFull;
 
-        buffer_full = ((write_position + 1U) % LENGTH) == read_position;
+        bufferFull = ((writePosition + 1U) % LENGTH) == readPosition;
 
-        if (buffer_full) {
+        if (bufferFull) {
             /*
              * Tried to append a value while the buffer is full.
              */
-            overrun_flag = true;
+            overrunFlag = true;
         } else {
             /*
              * Buffer isn't full yet, write to the curr write position
              * and increment it by 1.
              */
-            overrun_flag         = false;
-            data[write_position] = value;
-            write_position       = (write_position + 1U) % LENGTH;
+            overrunFlag         = false;
+            data[writePosition] = value;
+            writePosition       = (writePosition + 1U) % LENGTH;
         }
     }
 
     /**
      * @brief                        Retrieve a continuous block of
      *                               valid buffered data.
-     * @param num_reads_requested    How many reads are required.
+     * @param numReadsRequested    How many reads are required.
      * @return                       A block of items containing the maximum
      *                               number the buffer can provide at this time.
      */
-    DfxRingBufferBlock<T> Read(unsigned int num_reads_requested)
+    DfxRingBufferBlock<T> Read(unsigned int numReadsRequested)
     {
-        bool bridges_zero;
+        bool bridgesZero;
         DfxRingBufferBlock<T> block;
 
         /*
@@ -103,29 +103,29 @@ public:
           * This is because we can only provide 1 contiguous block at
           * a time.
           */
-        bridges_zero = (read_position > write_position);
+        bridgesZero = (readPosition > writePosition);
 
-        if (bridges_zero) {
-            unsigned int reads_to_end;
-            bool req_surpasses_buffer_end;
+        if (bridgesZero) {
+            unsigned int readsToEnd;
+            bool reqSurpassesBufferEnd;
 
-            reads_to_end             = LENGTH - read_position;
-            req_surpasses_buffer_end = num_reads_requested > reads_to_end;
+            readsToEnd = LENGTH - readPosition;
+            reqSurpassesBufferEnd = numReadsRequested > readsToEnd;
 
-            if (req_surpasses_buffer_end) {
+            if (reqSurpassesBufferEnd) {
                 /*
                  * If the block requested exceeds the buffer end. Then
                  * return a block that reaches the end and no more.
                  */
-                block.SetStart(&(data[read_position]));
-                block.SetLength(reads_to_end);
+                block.SetStart(&(data[readPosition]));
+                block.SetLength(readsToEnd);
             } else {
                 /*
                  * If the block requested does not exceed 0
                  * then return a block that reaches the number of reads required.
                  */
-                block.SetStart(&(data[read_position]));
-                block.SetLength(num_reads_requested);
+                block.SetStart(&(data[readPosition]));
+                block.SetLength(numReadsRequested);
             }
         } else {
             /*
@@ -133,29 +133,29 @@ public:
              * return the maximum number of reads to the write
              * cursor.
              */
-            unsigned int max_num_reads;
-            unsigned int num_reads_to_write_position;
+            unsigned int maxNumReads;
+            unsigned int numReadsToWritePosition;
 
-            num_reads_to_write_position = (write_position - read_position);
+            numReadsToWritePosition = (writePosition - readPosition);
 
-            if (num_reads_requested > num_reads_to_write_position) {
+            if (numReadsRequested > numReadsToWritePosition) {
                 /*
                  * If the block length requested exceeds the
                  * number of items available, then restrict
                  * the block length to the distance to the write position.
                  */
-                max_num_reads = num_reads_to_write_position;
+                maxNumReads = numReadsToWritePosition;
             } else {
                 /*
                  * If the block length requested does not exceed the
                  * number of items available then the entire
                  * block is valid.
                  */
-                max_num_reads = num_reads_requested;
+                maxNumReads = numReadsRequested;
             }
 
-            block.SetStart(&(data[read_position]));
-            block.SetLength(max_num_reads);
+            block.SetStart(&(data[readPosition]));
+            block.SetLength(maxNumReads);
         }
 
         return block;
@@ -167,12 +167,12 @@ public:
      */
     void Skip(unsigned int num_reads)
     {
-        read_position = (read_position + num_reads) % LENGTH;
+        readPosition = (readPosition + num_reads) % LENGTH;
     }
 
     bool Overrun()
     {
-        return overrun_flag;
+        return overrunFlag;
     }
 
     /**
@@ -190,36 +190,36 @@ public:
      */
     unsigned int Available()
     {
-        bool bridges_zero;
-        unsigned available_reads;
+        bool bridgesZero;
+        unsigned availableReads;
 
-        bridges_zero = read_position > write_position;
-        available_reads = 0;
+        bridgesZero = readPosition > writePosition;
+        availableReads = 0;
 
-        if (bridges_zero) {
+        if (bridgesZero) {
             /* Add the number of reads to zero, and number of reads from 0 to the write cursor */
-            unsigned int num_reads_to_zero;
-            unsigned int num_reads_to_write_position;
+            unsigned int numReadsToZero;
+            unsigned int numReadsToWritePosition;
 
-            num_reads_to_zero = LENGTH - read_position;
-            num_reads_to_write_position = write_position;
+            numReadsToZero = LENGTH - readPosition;
+            numReadsToWritePosition = writePosition;
 
-            available_reads = num_reads_to_zero + num_reads_to_write_position;
+            availableReads = numReadsToZero + numReadsToWritePosition;
         } else {
             /* The number of available reads is between the write position and the read position. */
-            available_reads = write_position - read_position;
+            availableReads = writePosition - readPosition;
         }
 
-        return available_reads;
+        return availableReads;
     }
 
 private:
-    volatile unsigned int read_position;
-    volatile unsigned int write_position;
+    volatile unsigned int readPosition;
+    volatile unsigned int writePosition;
 
     T data[LENGTH] = {T()};
 
-    bool overrun_flag = false;
+    bool overrunFlag = false;
 };
 
 #endif
