@@ -80,7 +80,7 @@ bool FpUnwinder::UnwindWithContext(unw_context_t& context, size_t skipFrameNum)
     dfxregs->SetFP(context.uc_mcontext.regs[REG_AARCH64_X29]);
     dfxregs->SetPC(context.uc_mcontext.pc);
 #else
-#program message("Unsupported architecture")
+#pragma message("Unsupported architecture")
 #endif
     uintptr_t fp = dfxregs->GetFP();
     uintptr_t pc = dfxregs->GetPC();
