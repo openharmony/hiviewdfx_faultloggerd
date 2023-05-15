@@ -86,7 +86,7 @@ NOINLINE int RaiseFloatingPointException(void)
 NOINLINE int RaiseIllegalInstructionException(void)
 {
     int ret = raise(SIGILL);
-    if (ret !=0) {
+    if (ret != 0) {
         printf("ramove failed!");
     }
     return 0;
@@ -156,7 +156,7 @@ NOINLINE int MaxMethodNameTest12345678901234567890123456789012345678901234567890
 NOINLINE int StackOverflow(void)
 {
     printf("call StackOverflow\n");
-    
+
     // for stack overflow test
     char a[1024][1024][1024] = { { {'1'} } };
     char b[1024][1024][1024] = { { {'1'} } };
@@ -205,7 +205,7 @@ NOINLINE int Oom(void)
     for (int i = 0; i < ARG128; i++) {
         printf("0x%x", *(bufferArray[i] + 1));
     }
-    
+
     return 0;
 }
 
@@ -377,11 +377,11 @@ uint64_t ParseAndDoCrash(const char *arg)
     if (!strcasecmp(arg, "SIGSEGV")) {
         return RaiseSegmentFaultException();
     }
-    
+
     if (!strcasecmp(arg, "SIGTRAP")) {
         return RaiseTrapException();
     }
-    
+
     if (!strcasecmp(arg, "SIGABRT")) {
         return RaiseAbort();
     }

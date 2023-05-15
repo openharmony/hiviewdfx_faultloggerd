@@ -29,8 +29,8 @@ public:
     int32_t CreateFileForRequest(int32_t type, int32_t pid, uint64_t time, bool debugFlag) const;
 
 private:
-    void AddEvent(int32_t epollFd, int32_t addFd, int32_t event);
-    void DelEvent(int32_t epollFd, int32_t delFd, int32_t event);
+    void AddEvent(int32_t epollFd, int32_t addFd, uint32_t event);
+    void DelEvent(int32_t epollFd, int32_t delFd, uint32_t event);
     void HandleAccept(int32_t epollFd, int32_t socketFd);
     void HandleRequest(int32_t epollFd, int32_t connectionFd);
 

@@ -17,6 +17,7 @@
 
 #include <securec.h>
 #include <signal.h>
+#include <sigchain.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <unistd.h>
@@ -145,6 +146,8 @@ void DFX_InstallLocalSignalHandler(void)
 
     for (size_t i = 0; i < sizeof(g_platformSignals) / sizeof(g_platformSignals[0]); i++) {
         int32_t sig = g_platformSignals[i];
+        remove_all_special_handler(sig);
+
         sigaddset(&set, sig);
         if (sigaction(sig, &action, NULL) != 0) {
             DFXLOG_ERROR("Failed to register signal(%d)", sig);

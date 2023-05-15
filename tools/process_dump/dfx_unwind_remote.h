@@ -45,9 +45,9 @@ public:
     bool GetArkJsHeapFuncName(std::string& funcName, std::shared_ptr<DfxThread> thread);
 
 private:
-    bool DfxUnwindRemoteDoUnwindStep(size_t const & index,
-        std::shared_ptr<DfxThread> & thread, unw_cursor_t & cursor, std::shared_ptr<DfxProcess> process);
-    uint64_t DfxUnwindRemoteDoAdjustPc(unw_cursor_t & cursor, uint64_t pc);
+    bool DfxUnwindRemoteDoUnwindStep(size_t const &index,
+        std::shared_ptr<DfxThread> &thread, unw_cursor_t &cursor, std::shared_ptr<DfxProcess> process);
+    uint64_t DfxUnwindRemoteDoAdjustPc(unw_cursor_t &cursor, uint64_t pc);
     bool UpdateAndPrintFrameInfo(unw_cursor_t& cursor, std::shared_ptr<DfxThread> thread,
         std::shared_ptr<DfxFrame> frame, bool enableBuildId);
     std::string GetReadableBuildId(uint8_t* buildId, size_t length);
