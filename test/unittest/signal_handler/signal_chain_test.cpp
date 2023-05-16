@@ -24,7 +24,7 @@ using namespace std;
 
 namespace OHOS {
 namespace HiviewDFX {
-class SignalHandlerTest : public testing::Test {
+class SignalChainTest : public testing::Test {
 public:
     static void SetUpTestCase();
     static void TearDownTestCase();
@@ -32,16 +32,16 @@ public:
     void TearDown();
 };
 
-void SignalHandlerTest::SetUpTestCase()
+void SignalChainTest::SetUpTestCase()
 {}
 
-void SignalHandlerTest::TearDownTestCase()
+void SignalChainTest::TearDownTestCase()
 {}
 
-void SignalHandlerTest::SetUp()
+void SignalChainTest::SetUp()
 {}
 
-void SignalHandlerTest::TearDown()
+void SignalChainTest::TearDown()
 {}
 
 #define SIGCHIAN_TEST_SIGNAL_NUM_1 1
@@ -58,6 +58,7 @@ static bool g_signalDumpFlag = false;
 static bool g_signalSegvFlag = false;
 static bool g_sigactionDumpFlag = false;
 static bool g_sigactionSegvFlag = false;
+static bool g_sigactionIllFlag = false;
 static bool g_sigchainDumpFlag = false;
 static bool g_sigchainDump1Flag = false;
 static bool g_sigchainDump2Flag = false;
@@ -78,6 +79,7 @@ static void SignalInit()
     g_signalSegvFlag = false;
     g_sigactionDumpFlag = false;
     g_sigactionSegvFlag = false;
+    g_sigactionIllFlag = false;
     g_sigchainDumpFlag = false;
     g_sigchainDump1Flag = false;
     g_sigchainDump2Flag = false;
@@ -112,6 +114,13 @@ ATTRIBUTE_UNUSED static void SignalSegvSigaction(int signo)
     GTEST_LOG_(INFO) << "SignalSegvSigaction";
     g_sigactionSegvFlag = true;
     EXPECT_EQ(signo, SIGSEGV) << "SignalSegvSigaction Failed";
+}
+
+ATTRIBUTE_UNUSED static void SignalIllSigaction(int signo)
+{
+    GTEST_LOG_(INFO) << "SignalIllSigaction";
+    g_sigactionIllFlag = true;
+    EXPECT_EQ(signo, SIGILL) << "SignalIllSigaction Failed";
 }
 
 ATTRIBUTE_UNUSED static bool SigchainSpecialHandlerDumpTrue(int signo, siginfo_t *si, void *ucontext)
@@ -222,72 +231,72 @@ static int KillAndWaitPid(int pid)
 }
 
 /**
- * @tc.name: SignalHandlerTest001
+ * @tc.name: SignalChainTest001
  * @tc.desc: test SignalHandler signal
  * @tc.type: FUNC
  */
-HWTEST_F(SignalHandlerTest, SignalHandlerTest001, TestSize.Level2)
+HWTEST_F(SignalChainTest, SignalChainTest001, TestSize.Level2)
 {
-    GTEST_LOG_(INFO) << "SignalHandlerTest001: start.";
+    GTEST_LOG_(INFO) << "SignalChainTest001: start.";
     SignalInit();
     pid_t pid = fork();
     if (pid < 0) {
         GTEST_LOG_(ERROR) << "Failed to fork new test process.";
     } else if (pid == 0) {
-        GTEST_LOG_(INFO) << "SignalHandlerTest001: pid:" << getpid();
+        GTEST_LOG_(INFO) << "SignalChainTest001: pid:" << getpid();
         signal(SIGSEGV, SignalSegvHandler);
         usleep(SLEEP_1000_MS);
         usleep(SLEEP_1000_MS);
-        ASSERT_EQ(g_signalSegvFlag, true) << "SignalHandlerTest001: g_signalSegvFlag.";
+        ASSERT_EQ(g_signalSegvFlag, true) << "SignalChainTest001: g_signalSegvFlag.";
         _exit(0);
     } else {
         KillAndWaitPid(pid);
     }
-    GTEST_LOG_(INFO) << "SignalHandlerTest001: end.";
+    GTEST_LOG_(INFO) << "SignalChainTest001: end.";
 }
 
 /**
- * @tc.name: SignalHandlerTest002
+ * @tc.name: SignalChainTest002
  * @tc.desc: test SignalHandler sigaction
  * @tc.type: FUNC
  */
-HWTEST_F(SignalHandlerTest, SignalHandlerTest002, TestSize.Level2)
+HWTEST_F(SignalChainTest, SignalChainTest002, TestSize.Level2)
 {
-    GTEST_LOG_(INFO) << "SignalHandlerTest002: start.";
+    GTEST_LOG_(INFO) << "SignalChainTest002: start.";
     SignalInit();
     pid_t pid = fork();
     if (pid < 0) {
         GTEST_LOG_(ERROR) << "Failed to fork new test process.";
     } else if (pid == 0) {
-        GTEST_LOG_(INFO) << "SignalHandlerTest002: pid:" << getpid();
+        GTEST_LOG_(INFO) << "SignalChainTest002: pid:" << getpid();
         struct sigaction sigsegv = {
             .sa_handler = SignalSegvSigaction,
         };
         sigaction(SIGSEGV, &sigsegv, NULL);
         usleep(SLEEP_1000_MS);
         usleep(SLEEP_1000_MS);
-        ASSERT_EQ(g_sigactionSegvFlag, true) << "SignalHandlerTest002: g_sigactionSegvFlag.";
+        ASSERT_EQ(g_sigactionSegvFlag, true) << "SignalChainTest002: g_sigactionSegvFlag.";
         _exit(0);
     } else {
         KillAndWaitPid(pid);
     }
-    GTEST_LOG_(INFO) << "SignalHandlerTest002: end.";
+    GTEST_LOG_(INFO) << "SignalChainTest002: end.";
 }
 
 /**
- * @tc.name: SignalHandlerTest003
+ * @tc.name: SignalChainTest003
  * @tc.desc: test SignalHandler add sigchain no else signal or sigaction
  * @tc.type: FUNC
  */
-HWTEST_F(SignalHandlerTest, SignalHandlerTest003, TestSize.Level2)
+HWTEST_F(SignalChainTest, SignalChainTest003, TestSize.Level2)
 {
-    GTEST_LOG_(INFO) << "SignalHandlerTest003: start.";
+    GTEST_LOG_(INFO) << "SignalChainTest003: start.";
     SignalInit();
     pid_t pid = fork();
     if (pid < 0) {
         GTEST_LOG_(ERROR) << "Failed to fork new test process.";
     } else if (pid == 0) {
-        GTEST_LOG_(INFO) << "SignalHandlerTest003: pid:" << getpid();
+        GTEST_LOG_(INFO) << "SignalChainTest003: pid:" << getpid();
         struct signal_chain_action sigchain1 = {
             .sca_sigaction = SigchainSpecialHandlerDumpTrue,
             .sca_mask = {},
@@ -302,30 +311,30 @@ HWTEST_F(SignalHandlerTest, SignalHandlerTest003, TestSize.Level2)
         add_special_signal_handler(SIGSEGV, &sigsegv1);
 
         usleep(SLEEP_1000_MS);
-        ASSERT_EQ(g_sigchainDumpFlag, true) << "SignalHandlerTest003: g_sigchainDumpFlag.";
+        ASSERT_EQ(g_sigchainDumpFlag, true) << "SignalChainTest003: g_sigchainDumpFlag.";
         usleep(SLEEP_1000_MS);
-        ASSERT_EQ(g_sigchainSegvFlag, true) << "SignalHandlerTest003: g_sigchainSegvFlag.";
+        ASSERT_EQ(g_sigchainSegvFlag, true) << "SignalChainTest003: g_sigchainSegvFlag.";
         _exit(0);
     } else {
         KillAndWaitPid(pid);
     }
-    GTEST_LOG_(INFO) << "SignalHandlerTest003: end.";
+    GTEST_LOG_(INFO) << "SignalChainTest003: end.";
 }
 
 /**
- * @tc.name: SignalHandlerTest004
+ * @tc.name: SignalChainTest004
  * @tc.desc: test SignalHandler add sigchain and have signal handler
  * @tc.type: FUNC
  */
-HWTEST_F(SignalHandlerTest, SignalHandlerTest004, TestSize.Level2)
+HWTEST_F(SignalChainTest, SignalChainTest004, TestSize.Level2)
 {
-    GTEST_LOG_(INFO) << "SignalHandlerTest004: start.";
+    GTEST_LOG_(INFO) << "SignalChainTest004: start.";
     SignalInit();
     pid_t pid = fork();
     if (pid < 0) {
         GTEST_LOG_(ERROR) << "Failed to fork new test process.";
     } else if (pid == 0) {
-        GTEST_LOG_(INFO) << "SignalHandlerTest004: pid:" << getpid();
+        GTEST_LOG_(INFO) << "SignalChainTest004: pid:" << getpid();
         signal(SIGSEGV, SignalSegvHandler);
 
         struct signal_chain_action sigchain1 = {
@@ -342,31 +351,31 @@ HWTEST_F(SignalHandlerTest, SignalHandlerTest004, TestSize.Level2)
         add_special_signal_handler(SIGSEGV, &sigsegv1);
 
         usleep(SLEEP_1000_MS);
-        ASSERT_EQ(g_sigchainDump1Flag, true) << "SignalHandlerTest004: g_sigchainDump1Flag.";
+        ASSERT_EQ(g_sigchainDump1Flag, true) << "SignalChainTest004: g_sigchainDump1Flag.";
         usleep(SLEEP_1000_MS);
-        ASSERT_EQ(g_signalSegvFlag, true) << "SignalHandlerTest004: g_signalSegvFlag.";
-        ASSERT_EQ(g_sigchainSegv1Flag, true) << "SignalHandlerTest004: g_sigchainSegv1Flag.";
+        ASSERT_EQ(g_signalSegvFlag, true) << "SignalChainTest004: g_signalSegvFlag.";
+        ASSERT_EQ(g_sigchainSegv1Flag, true) << "SignalChainTest004: g_sigchainSegv1Flag.";
         _exit(0);
     } else {
         KillAndWaitPid(pid);
     }
-    GTEST_LOG_(INFO) << "SignalHandlerTest004: end.";
+    GTEST_LOG_(INFO) << "SignalChainTest004: end.";
 }
 
 /**
- * @tc.name: SignalHandlerTest005
+ * @tc.name: SignalChainTest005
  * @tc.desc: test SignalHandler remove sigchain
  * @tc.type: FUNC
  */
-HWTEST_F(SignalHandlerTest, SignalHandlerTest005, TestSize.Level2)
+HWTEST_F(SignalChainTest, SignalChainTest005, TestSize.Level2)
 {
-    GTEST_LOG_(INFO) << "SignalHandlerTest005: start.";
+    GTEST_LOG_(INFO) << "SignalChainTest005: start.";
     SignalInit();
     pid_t pid = fork();
     if (pid < 0) {
         GTEST_LOG_(ERROR) << "Failed to fork new test process.";
     } else if (pid == 0) {
-        GTEST_LOG_(INFO) << "SignalHandlerTest005: pid:" << getpid();
+        GTEST_LOG_(INFO) << "SignalChainTest005: pid:" << getpid();
         struct signal_chain_action sigchain1 = {
             .sca_sigaction = SigchainSpecialHandlerDump1,
             .sca_mask = {},
@@ -397,32 +406,32 @@ HWTEST_F(SignalHandlerTest, SignalHandlerTest005, TestSize.Level2)
         add_special_signal_handler(SIGSEGV, &sigsegv2);
 
         usleep(SLEEP_1000_MS);
-        ASSERT_NE(g_sigchainDump1Flag, true) << "SignalHandlerTest005: g_sigchainDump1Flag.";
-        ASSERT_EQ(g_sigchainDumpFlag, true) << "SignalHandlerTest005: g_sigchainDumpFlag.";
+        ASSERT_NE(g_sigchainDump1Flag, true) << "SignalChainTest005: g_sigchainDump1Flag.";
+        ASSERT_EQ(g_sigchainDumpFlag, true) << "SignalChainTest005: g_sigchainDumpFlag.";
         usleep(SLEEP_1000_MS);
-        ASSERT_NE(g_sigchainSegv1Flag, true) << "SignalHandlerTest005: g_sigchainSegv1Flag.";
-        ASSERT_EQ(g_sigchainSegvFlag, true) << "SignalHandlerTest005: g_sigchainSegvFlag.";
+        ASSERT_NE(g_sigchainSegv1Flag, true) << "SignalChainTest005: g_sigchainSegv1Flag.";
+        ASSERT_EQ(g_sigchainSegvFlag, true) << "SignalChainTest005: g_sigchainSegvFlag.";
         _exit(0);
     } else {
         KillAndWaitPid(pid);
     }
-    GTEST_LOG_(INFO) << "SignalHandlerTest005: end.";
+    GTEST_LOG_(INFO) << "SignalChainTest005: end.";
 }
 
 /**
- * @tc.name: SignalHandlerTest006
+ * @tc.name: SignalChainTest006
  * @tc.desc: test SignalHandler remove all sigchain
  * @tc.type: FUNC
  */
-HWTEST_F(SignalHandlerTest, SignalHandlerTest006, TestSize.Level2)
+HWTEST_F(SignalChainTest, SignalChainTest006, TestSize.Level2)
 {
-    GTEST_LOG_(INFO) << "SignalHandlerTest006: start.";
+    GTEST_LOG_(INFO) << "SignalChainTest006: start.";
     SignalInit();
     pid_t pid = fork();
     if (pid < 0) {
         GTEST_LOG_(ERROR) << "Failed to fork new test process.";
     } else if (pid == 0) {
-        GTEST_LOG_(INFO) << "SignalHandlerTest006: pid:" << getpid();
+        GTEST_LOG_(INFO) << "SignalChainTest006: pid:" << getpid();
         signal(SIGDUMP, SignalDumpHandler);
         signal(SIGSEGV, SignalSegvHandler);
 
@@ -444,34 +453,34 @@ HWTEST_F(SignalHandlerTest, SignalHandlerTest006, TestSize.Level2)
         remove_all_special_handler(SIGSEGV);
 
         usleep(SLEEP_1000_MS);
-        ASSERT_NE(g_sigchainDump1Flag, true) << "SignalHandlerTest006: g_sigchainDump1Flag.";
-        ASSERT_NE(g_sigchainDump2Flag, true) << "SignalHandlerTest006: g_sigchainDump2Flag.";
-        ASSERT_EQ(g_signalDumpFlag, true) << "SignalHandlerTest006: g_signalDumpFlag.";
+        ASSERT_NE(g_sigchainDump1Flag, true) << "SignalChainTest006: g_sigchainDump1Flag.";
+        ASSERT_NE(g_sigchainDump2Flag, true) << "SignalChainTest006: g_sigchainDump2Flag.";
+        ASSERT_EQ(g_signalDumpFlag, true) << "SignalChainTest006: g_signalDumpFlag.";
         usleep(SLEEP_1000_MS);
-        ASSERT_NE(g_sigchainSegv1Flag, true) << "SignalHandlerTest006: g_sigchainSegv1Flag.";
-        ASSERT_NE(g_sigchainSegv2Flag, true) << "SignalHandlerTest006: g_sigchainSegv2Flag.";
-        ASSERT_EQ(g_signalSegvFlag, true) << "SignalHandlerTest006: g_signalSegvFlag.";
+        ASSERT_NE(g_sigchainSegv1Flag, true) << "SignalChainTest006: g_sigchainSegv1Flag.";
+        ASSERT_NE(g_sigchainSegv2Flag, true) << "SignalChainTest006: g_sigchainSegv2Flag.";
+        ASSERT_EQ(g_signalSegvFlag, true) << "SignalChainTest006: g_signalSegvFlag.";
         _exit(0);
     } else {
         KillAndWaitPid(pid);
     }
-    GTEST_LOG_(INFO) << "SignalHandlerTest006: end.";
+    GTEST_LOG_(INFO) << "SignalChainTest006: end.";
 }
 
 /**
- * @tc.name: SignalHandlerTest007
+ * @tc.name: SignalChainTest007
  * @tc.desc: test SignalHandler run C++ code in sigchain handler
  * @tc.type: FUNC
  */
-HWTEST_F(SignalHandlerTest, SignalHandlerTest007, TestSize.Level2)
+HWTEST_F(SignalChainTest, SignalChainTest007, TestSize.Level2)
 {
-    GTEST_LOG_(INFO) << "SignalHandlerTest007: start.";
+    GTEST_LOG_(INFO) << "SignalChainTest007: start.";
     SignalInit();
     pid_t pid = fork();
     if (pid < 0) {
         GTEST_LOG_(ERROR) << "Failed to fork new test process.";
     } else if (pid == 0) {
-        GTEST_LOG_(INFO) << "SignalHandlerTest007: pid:" << getpid();
+        GTEST_LOG_(INFO) << "SignalChainTest007: pid:" << getpid();
         remove_all_special_handler(SIGDUMP);
         remove_all_special_handler(SIGSEGV);
 
@@ -502,32 +511,32 @@ HWTEST_F(SignalHandlerTest, SignalHandlerTest007, TestSize.Level2)
         add_special_signal_handler(SIGSEGV, &sigsegv2);
 
         usleep(SLEEP_1000_MS);
-        ASSERT_EQ(g_sigchainDump1Flag, true) << "SignalHandlerTest007: g_sigchainDump1Flag.";
-        ASSERT_EQ(g_sigchainDump2Flag, true) << "SignalHandlerTest007: g_sigchainDump2Flag.";
+        ASSERT_EQ(g_sigchainDump1Flag, true) << "SignalChainTest007: g_sigchainDump1Flag.";
+        ASSERT_EQ(g_sigchainDump2Flag, true) << "SignalChainTest007: g_sigchainDump2Flag.";
         usleep(SLEEP_1000_MS);
-        ASSERT_EQ(g_sigchainSegv1Flag, true) << "SignalHandlerTest007: g_sigchainSegv1Flag.";
-        ASSERT_EQ(g_sigchainSegv2Flag, true) << "SignalHandlerTest007: g_sigchainSegv2Flag.";
+        ASSERT_EQ(g_sigchainSegv1Flag, true) << "SignalChainTest007: g_sigchainSegv1Flag.";
+        ASSERT_EQ(g_sigchainSegv2Flag, true) << "SignalChainTest007: g_sigchainSegv2Flag.";
         _exit(0);
     } else {
         KillAndWaitPid(pid);
     }
-    GTEST_LOG_(INFO) << "SignalHandlerTest007: end.";
+    GTEST_LOG_(INFO) << "SignalChainTest007: end.";
 }
 
 /**
- * @tc.name: SignalHandlerTest008
+ * @tc.name: SignalChainTest008
  * @tc.desc: test SignalHandler add_special_handler_at_last
  * @tc.type: FUNC
  */
-HWTEST_F(SignalHandlerTest, SignalHandlerTest008, TestSize.Level2)
+HWTEST_F(SignalChainTest, SignalChainTest008, TestSize.Level2)
 {
-    GTEST_LOG_(INFO) << "SignalHandlerTest008: start.";
+    GTEST_LOG_(INFO) << "SignalChainTest008: start.";
     SignalInit();
     pid_t pid = fork();
     if (pid < 0) {
         GTEST_LOG_(ERROR) << "Failed to fork new test process.";
     } else if (pid == 0) {
-        GTEST_LOG_(INFO) << "SignalHandlerTest008: pid:" << getpid();
+        GTEST_LOG_(INFO) << "SignalChainTest008: pid:" << getpid();
         remove_all_special_handler(SIGDUMP);
         remove_all_special_handler(SIGSEGV);
 
@@ -560,19 +569,50 @@ HWTEST_F(SignalHandlerTest, SignalHandlerTest008, TestSize.Level2)
 
         ResetCount();
         usleep(SLEEP_1000_MS);
-        ASSERT_EQ(g_sigchainDump1Flag, true) << "SignalHandlerTest008: g_sigchainDump1Flag.";
-        ASSERT_EQ(g_sigchainDumpFlag, true) << "SignalHandlerTest008: g_sigchainDumpFlag.";
-        ASSERT_EQ(g_count, SIGCHIAN_TEST_SIGNAL_NUM_2) << "SignalHandlerTest008: dump g_count.";
+        ASSERT_EQ(g_sigchainDump1Flag, true) << "SignalChainTest008: g_sigchainDump1Flag.";
+        ASSERT_EQ(g_sigchainDumpFlag, true) << "SignalChainTest008: g_sigchainDumpFlag.";
+        ASSERT_EQ(g_count, SIGCHIAN_TEST_SIGNAL_NUM_2) << "SignalChainTest008: dump g_count.";
         ResetCount();
         usleep(SLEEP_1000_MS);
-        ASSERT_EQ(g_sigchainSegv1Flag, true) << "SignalHandlerTest008: g_sigchainSegv1Flag.";
-        ASSERT_EQ(g_sigchainSegvFlag, true) << "SignalHandlerTest008: g_sigchainSegvFlag.";
-        ASSERT_EQ(g_count, SIGCHIAN_TEST_SIGNAL_NUM_2) << "SignalHandlerTest008: segv g_count.";
+        ASSERT_EQ(g_sigchainSegv1Flag, true) << "SignalChainTest008: g_sigchainSegv1Flag.";
+        ASSERT_EQ(g_sigchainSegvFlag, true) << "SignalChainTest008: g_sigchainSegvFlag.";
+        ASSERT_EQ(g_count, SIGCHIAN_TEST_SIGNAL_NUM_2) << "SignalChainTest008: segv g_count.";
         _exit(0);
     } else {
         KillAndWaitPid(pid);
     }
-    GTEST_LOG_(INFO) << "SignalHandlerTest008: end.";
+    GTEST_LOG_(INFO) << "SignalChainTest008: end.";
+}
+
+/**
+ * @tc.name: SignalChainTest009
+ * @tc.desc: test SignalHandler special signal(SIGILL)
+ * @tc.type: FUNC
+ */
+HWTEST_F(SignalChainTest, SignalChainTest009, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "SignalChainTest009: start.";
+    SignalInit();
+    pid_t pid = fork();
+    if (pid < 0) {
+        GTEST_LOG_(ERROR) << "Failed to fork new test process.";
+    } else if (pid == 0) {
+        GTEST_LOG_(INFO) << "SignalChainTest009: pid:" << getpid();
+        struct sigaction sigill = {
+            .sa_handler = SignalIllSigaction,
+        };
+        sigaction(SIGILL, &sigill, NULL);
+        usleep(SLEEP_1000_MS);
+        ASSERT_EQ(g_sigactionIllFlag, true) << "SignalChainTest009: g_sigactionIllFlag.";
+        _exit(0);
+    } else {
+        usleep(SLEEP_10_MS);
+        kill(pid, SIGILL);
+        usleep(SLEEP_1000_MS);
+        int status;
+        waitpid(pid, &status, 0);
+    }
+    GTEST_LOG_(INFO) << "SignalChainTest009: end.";
 }
 } // namespace HiviewDFX
 } // namepsace OHOS
