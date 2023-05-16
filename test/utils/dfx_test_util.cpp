@@ -16,6 +16,7 @@
 #include "dfx_test_util.h"
 
 #include <fstream>
+#include <iostream>
 #include <sstream>
 #include <unistd.h>
 
@@ -147,6 +148,10 @@ int CheckKeyWords(const std::string& filePath, std::string *keywords, int length
         i++;
     }
     file.close();
+    std::cout << "Matched keywords count: " << count << std::endl;
+    if (j < length) {
+        std::cout << "Not found keyword: " << keywords[j] << std::endl;
+    }
     return count;
 }
 
@@ -182,7 +187,7 @@ int GetKeywordsNum(const std::string& msg, std::string *keywords, int length)
     return count;
 }
 
-std::string GetCppCrashFileName(int pid)
+std::string GetCppCrashFileName(const pid_t pid)
 {
     std::string filePath = "";
     if (pid <= 0) {
