@@ -104,7 +104,10 @@ if (defined(ohos_lite)) {
     ]
 
     output_extension = "so"
-
+    innerapi_tags = [
+      "chipsetsdk_indirect",
+      "platformsdk_indirect",
+    ]
     part_name = "faultloggerd"
     subsystem_name = "hiviewdfx"
   }
