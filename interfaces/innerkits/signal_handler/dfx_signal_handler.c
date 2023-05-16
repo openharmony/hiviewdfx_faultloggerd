@@ -69,6 +69,10 @@
 #define TRUE 1
 #define FALSE 0
 
+#ifndef NSIG
+#define NSIG 64
+#endif
+
 #ifndef F_SETPIPE_SZ
 #define F_SETPIPE_SZ 1031
 #endif
@@ -93,6 +97,7 @@ static const int SIGNALHANDLER_TIMEOUT = 10000; // 10000 us
 static const int ALARM_TIME_S = 10;
 static int g_prevHandledSignal = SIGDUMP;
 static BOOL g_isDumping = FALSE;
+static struct sigaction g_oldSigactionList[NSIG] = {};
 static thread_local ThreadInfoCallBack threadInfoCallBack = NULL;
 enum DumpPreparationStage {
     CREATE_PIPE_FAIL = 1,
@@ -207,8 +212,11 @@ static int32_t InheritCapabilities(void)
 }
 
 static const int g_interestedSignalList[] = {
-    SIGABRT, SIGBUS, SIGDUMP, SIGFPE, SIGILL,
+    SIGABRT, SIGBUS, SIGDUMP, SIGFPE,
     SIGSEGV, SIGSTKFLT, SIGSYS, SIGTRAP,
+};
+static const int g_specialSignalList[] = {
+    SIGILL,
 };
 
 static void SetInterestedSignalMasks(int how)
@@ -321,6 +329,26 @@ static void ExitIfSandboxPid(int sig)
     if (GetPid() == 1) {
         DFXLOG_ERROR("Sandbox process is about to exit with signal %d.", sig);
         _exit(sig);
+    }
+}
+
+static void ResetAndRethrowSignalIfNeed(int sig, siginfo_t *si)
+{
+    if (sig == SIGDUMP) {
+        return;
+    }
+
+    if (g_oldSigactionList[sig].sa_sigaction == NULL) {
+        signal(sig, SIG_DFL);
+    } else if (sigaction(sig, &(g_oldSigactionList[sig]), NULL) != 0) {
+        DFXLOG_ERROR("Failed to reset sig(%d).", sig);
+        signal(sig, SIG_DFL);
+    }
+
+    if (syscall(SYS_rt_tgsigqueueinfo, GetPid(), syscall(SYS_gettid), sig, si) != 0) {
+        DFXLOG_ERROR("Failed to rethrow sig(%d), errno(%d).", sig, errno);
+    } else {
+        DFXLOG_INFO("Current process(%d) rethrow sig(%d).", GetPid(), sig);
     }
 }
 
@@ -526,6 +554,12 @@ static bool DFX_SigchainHandler(int sig, siginfo_t *si, void *context)
     return ret;
 }
 
+static void DFX_SignalHandler(int sig, siginfo_t *si, void *context)
+{
+    DFX_SigchainHandler(sig, si, context);
+    ResetAndRethrowSignalIfNeed(sig, si);
+}
+
 void DFX_InstallSignalHandler(void)
 {
     if (g_hasInit) {
@@ -550,6 +584,19 @@ void DFX_InstallSignalHandler(void)
     for (size_t i = 0; i < sizeof(g_interestedSignalList) / sizeof(g_interestedSignalList[0]); i++) {
         int32_t sig = g_interestedSignalList[i];
         add_special_handler_at_last(sig, &sigchain);
+    }
+
+    struct sigaction action;
+    memset(&action, 0, sizeof(action));
+    memset(&g_oldSigactionList, 0, sizeof(g_oldSigactionList));
+    sigfillset(&action.sa_mask);
+    action.sa_sigaction = DFX_SignalHandler;
+    action.sa_flags = SA_RESTART | SA_SIGINFO | SA_ONSTACK;
+    for (size_t i = 0; i < sizeof(g_specialSignalList) / sizeof(g_specialSignalList[0]); i++) {
+        int32_t sig = g_specialSignalList[i];
+        if (sigaction(sig, &action, &(g_oldSigactionList[sig])) != 0) {
+            DFXLOG_ERROR("Failed to register signal(%d)", sig);
+        }
     }
 
     g_hasInit = TRUE;
