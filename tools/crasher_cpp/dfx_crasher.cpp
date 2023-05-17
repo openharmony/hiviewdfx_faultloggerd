@@ -278,7 +278,7 @@ NOINLINE int DfxCrasher::StackTop() const
     std::cout << "crasher_c: stack top is = " << std::hex << stackTop << std::endl;
 
     std::ofstream fout;
-    fout.open("sp");
+    fout.open("/data/sp");
     fout << std::hex << stackTop << std::endl;
     fout.close();
 

@@ -135,7 +135,7 @@ int CheckKeyWords(const std::string& filePath, std::string *keywords, int length
         idx = t.at(i).find(keywords[j]);
         if (idx != std::string::npos) {
             if (minRegIdx != -1 && j > minRegIdx && // -1 : do not check register value
-                j < maxRegIdx && t.at(i).size() < REGISTERS_LENGTH) {
+                j < maxRegIdx && t.at(i).size() < (REGISTER_FORMAT_LENGTH + 3)) { // 3 : register label length
                 count--;
             }
             count++;
