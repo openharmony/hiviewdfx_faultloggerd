@@ -62,6 +62,17 @@ void FaultStackUnittest::SetUp(void)
 void FaultStackUnittest::TearDown(void)
 {
 }
+
+int unw_get_ark_js_heap_crash_info(int pid, uintptr_t* x20, uintptr_t* fp, int out_js_info, char* buf, size_t buf_sz)
+{
+    printf("unw_get_ark_js_heap_crash_info is called\n");
+    if ((*x20 == 0) || (*fp == 0)) {
+        return -1;
+    }
+
+    return 0;
+}
+
 namespace {
 #if defined(__arm__)
 std::vector<uintptr_t> GetCurrentRegs(unw_context_t ctx)
