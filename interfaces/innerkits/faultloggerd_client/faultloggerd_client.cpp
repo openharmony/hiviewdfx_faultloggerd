@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2022 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -19,14 +19,18 @@
 #include <cstdio>
 #include <cstdlib>
 #include <securec.h>
+#include <unistd.h>
+
 #include <sys/socket.h>
 #include <sys/syscall.h>
 #include <sys/un.h>
-#include <unistd.h>
+#include <sys/stat.h>
+
 #include "dfx_define.h"
 #include "dfx_log.h"
 #include "dfx_util.h"
 #include "faultloggerd_socket.h"
+#include "file_ex.h"
 
 static const int32_t SOCKET_TIMEOUT = 5;
 
@@ -43,6 +47,16 @@ static void FillRequest(int32_t type, FaultLoggerdRequest *request)
     request->uid = getuid();
     request->time = OHOS::HiviewDFX::GetTimeMilliSeconds();
     OHOS::HiviewDFX::ReadStringFromFile("/proc/self/cmdline", request->module, sizeof(request->module));
+}
+
+static std::string GetSocketConnectionName()
+{
+    std::string content;
+    OHOS::LoadStringFromFile("/proc/self/cmdline", content);
+    if (content.find("processdump") != std::string::npos) {
+        return std::string(SERVER_CRASH_SOCKET_NAME);
+    }
+    return std::string(SERVER_SOCKET_NAME);
 }
 
 int32_t RequestFileDescriptor(int32_t type)
@@ -67,7 +81,8 @@ int32_t RequestFileDescriptorEx(const struct FaultLoggerdRequest *request)
     }
 
     int sockfd;
-    if (!StartConnect(sockfd, FAULTLOGGERD_SOCK_PATH, SOCKET_TIMEOUT)) {
+    std::string name = GetSocketConnectionName();
+    if (!StartConnect(sockfd, name.c_str(), SOCKET_TIMEOUT)) {
         DFXLOG_ERROR("StartConnect failed");
         return -1;
     }
@@ -102,7 +117,8 @@ static int32_t RequestFileDescriptorByCheck(const struct FaultLoggerdRequest *re
 
     int sockfd = -1;
     do {
-        if (!StartConnect(sockfd, FAULTLOGGERD_SOCK_PATH, SOCKET_TIMEOUT)) {
+        std::string name = GetSocketConnectionName();
+        if (!StartConnect(sockfd, name.c_str(), SOCKET_TIMEOUT)) {
             DFXLOG_ERROR("StartConnect failed");
             break;
         }
@@ -150,7 +166,8 @@ static int SendUidToServer(int sockfd)
 bool CheckConnectStatus()
 {
     int sockfd = -1;
-    if (StartConnect(sockfd, FAULTLOGGERD_SOCK_PATH, -1)) {
+    std::string name = GetSocketConnectionName();
+    if (StartConnect(sockfd, name.c_str(), -1)) {
         close(sockfd);
         return true;
     }
@@ -162,7 +179,8 @@ static int SendRequestToServer(const FaultLoggerdRequest &request)
     int sockfd = -1;
     int resRsp = (int)FaultLoggerCheckPermissionResp::CHECK_PERMISSION_REJECT;
     do {
-        if (!StartConnect(sockfd, FAULTLOGGERD_SOCK_PATH, -1)) {
+        std::string name = GetSocketConnectionName();
+        if (!StartConnect(sockfd, name.c_str(), -1)) {
             DFXLOG_ERROR("StartConnect failed.");
             break;
         }
@@ -234,7 +252,8 @@ int RequestPrintTHilog(const char *msg, int length)
 
     int sockfd = -1;
     do {
-        if (!StartConnect(sockfd, FAULTLOGGERD_SOCK_PATH, -1)) {
+        std::string name = GetSocketConnectionName();
+        if (!StartConnect(sockfd, name.c_str(), -1)) {
             DFXLOG_ERROR("StartConnect failed");
             break;
         }
@@ -289,7 +308,8 @@ int32_t RequestDelPipeFd(int32_t pid)
     request.clientType = (int32_t)FaultLoggerClientType::PIPE_FD_CLIENT;
 
     int sockfd;
-    if (!StartConnect(sockfd, FAULTLOGGERD_SOCK_PATH, SOCKET_TIMEOUT)) {
+    std::string name = GetSocketConnectionName();
+    if (!StartConnect(sockfd, name.c_str(), SOCKET_TIMEOUT)) {
         DFXLOG_ERROR("StartConnect failed");
         return -1;
     }

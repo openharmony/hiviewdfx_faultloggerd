@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -16,6 +16,8 @@
 #define DFX_FAULTLOGGERD_H
 
 #include <cinttypes>
+#include <map>
+
 #include "faultloggerd_client.h"
 
 namespace OHOS {
@@ -42,6 +44,18 @@ private:
     void HandlePermissionRequest(int32_t connectionFd, FaultLoggerdRequest* request);
     void HandleSdkDumpRequest(int32_t connectionFd, FaultLoggerdRequest* request);
     void HandlePipeFdClientRequest(int32_t connectionFd, FaultLoggerdRequest* request);
+    bool CheckRequestCredential(int32_t connectionFd, FaultLoggerdRequest* request);
+    bool CreateSockets();
+    bool CreateEventFd();
+    void CleanupSockets();
+    void WaitForRequest();
+    void CleanupEventFd();
+
+private:
+    int32_t defaultSocketFd_ = -1;
+    int32_t crashSocketFd_ = -1;
+    int32_t eventFd_ = -1;
+    std::map<int32_t, int32_t> connectionMap_;
 };
 } // namespace HiviewDFX
 } // namespace OHOS
