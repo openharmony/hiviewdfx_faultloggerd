@@ -21,8 +21,8 @@
 #include <cstdlib>
 #include <securec.h>
 #include <string>
+
 #include "dfx_log.h"
-#include "iosfwd"
 
 namespace OHOS {
 namespace HiviewDFX {

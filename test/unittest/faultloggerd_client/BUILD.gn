@@ -1,0 +1,49 @@
+# Copyright (c) 2023 Huawei Device Co., Ltd.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import("//base/hiviewdfx/faultloggerd/faultloggerd.gni")
+import("//build/config/features.gni")
+import("//build/test.gni")
+
+module_output_path = "faultloggerd/faultloggerd_client"
+
+ohos_unittest("test_faultloggerd_client") {
+  module_out_path = module_output_path
+  visibility = [ "*:*" ]
+  include_dirs = [
+    "$faultloggerd_path/common",
+    "$faultloggerd_path/test/utils",
+  ]
+  sources = [ "faultloggerd_client_test.cpp" ]
+
+  deps = [
+    "$faultloggerd_path/common/dfxutil:dfx_util",
+    "$faultloggerd_path/interfaces/innerkits/faultloggerd_client:libfaultloggerd",
+    "$faultloggerd_path/test/utils:dfx_test_util",
+  ]
+
+  if (build_selinux) {
+    deps += [ "//third_party/selinux:libselinux" ]
+    cflags_cc = [ "-DHAS_LIB_SELINUX" ]
+  }
+
+  external_deps = [
+    "c_utils:utils",
+    "hilog_native:libhilog",
+  ]
+}
+
+group("unittest") {
+  testonly = true
+  deps = [ ":test_faultloggerd_client" ]
+}

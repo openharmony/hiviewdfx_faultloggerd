@@ -56,6 +56,7 @@ group("faultloggerd_unittest") {
     deps += [
       "unittest/backtrace:unittest",
       "unittest/callstack:unittest",
+      "unittest/faultloggerd_client:unittest",
       "unittest/panic_handler:unittest",
       "unittest/rustc_demangle:unittest",
       "unittest/stacktrace_rust:unittest",
