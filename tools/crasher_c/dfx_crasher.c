@@ -20,6 +20,7 @@
 #include <sys/prctl.h>
 #include <sys/resource.h>
 #include <unistd.h>
+#include "errno.h"
 #include "hilog/log.h"
 #include "inttypes.h"
 #include "stdio.h"
@@ -279,9 +280,9 @@ NOINLINE int StackTop(void)
 #endif
 
     FILE *fp = NULL;
-    fp = fopen("sp", "w");
+    fp = fopen("/data/sp", "w");
     if (fp == NULL) {
-        printf("open file error!");
+        printf("Open /data/sp failed, errno(%d)\n", errno);
         return 0;
     }
 
