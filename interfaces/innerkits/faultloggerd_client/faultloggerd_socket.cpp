@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2022 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -20,10 +20,14 @@
 #include <cstddef>
 #include <cstdio>
 #include <securec.h>
+#include <string>
+#include <unistd.h>
+
 #include <sys/socket.h>
+#include <sys/stat.h>
 #include <sys/time.h>
 #include <sys/un.h>
-#include <unistd.h>
+
 #include "dfx_define.h"
 #include "dfx_log.h"
 #include "init_socket.h"
@@ -49,10 +53,12 @@ bool StartConnect(int& sockfd, const char* path, const int timeout)
             }
         }
 
+        std::string fullPath = std::string(FAULTLOGGERD_SOCK_BASE_PATH) + std::string(path);
         struct sockaddr_un server;
         (void)memset_s(&server, sizeof(server), 0, sizeof(server));
         server.sun_family = AF_LOCAL;
-        errno_t err = strncpy_s(server.sun_path, sizeof(server.sun_path), path, sizeof(server.sun_path) - 1);
+        errno_t err = strncpy_s(server.sun_path, sizeof(server.sun_path), fullPath.c_str(),
+            sizeof(server.sun_path) - 1);
         if (err != EOK) {
             DFXLOG_ERROR("%s :: strncpy failed, err = %d.", __func__, (int)err);
             break;
@@ -74,7 +80,7 @@ bool StartConnect(int& sockfd, const char* path, const int timeout)
     return ret;
 }
 
-static bool GetServerSocket(int& sockfd, const char* path)
+static bool GetServerSocket(int& sockfd, const char* name)
 {
     sockfd = OHOS_TEMP_FAILURE_RETRY(socket(AF_LOCAL, SOCK_STREAM, 0));
     if (sockfd < 0) {
@@ -82,15 +88,17 @@ static bool GetServerSocket(int& sockfd, const char* path)
         return false;
     }
 
+    std::string path = std::string(FAULTLOGGERD_SOCK_BASE_PATH) + std::string(name);
     struct sockaddr_un server;
     (void)memset_s(&server, sizeof(server), 0, sizeof(server));
     server.sun_family = AF_LOCAL;
-    if (strncpy_s(server.sun_path, sizeof(server.sun_path), path, sizeof(server.sun_path) - 1) != 0) {
+    if (strncpy_s(server.sun_path, sizeof(server.sun_path), path.c_str(), sizeof(server.sun_path) - 1) != 0) {
         DFXLOG_ERROR("%s :: strncpy failed.", __func__);
         return false;
     }
 
-    unlink(path);
+    chmod(path.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IWOTH);
+    unlink(path.c_str());
 
     int optval = 1;
     int ret = setsockopt(sockfd, SOL_SOCKET, SO_PASSCRED, &optval, sizeof(optval));
@@ -115,8 +123,7 @@ bool StartListen(int& sockfd, const char* name, const int listenCnt)
     sockfd = GetControlSocket(name);
     if (sockfd < 0) {
         DFXLOG_WARN("%s :: Failed to get socket fd by cfg", __func__);
-
-        if (GetServerSocket(sockfd, FAULTLOGGERD_SOCK_PATH) == false) {
+        if (GetServerSocket(sockfd, name) == false) {
             DFXLOG_ERROR("%s :: Failed to get socket fd by path", __func__);
             return false;
         }
@@ -128,6 +135,7 @@ bool StartListen(int& sockfd, const char* name, const int listenCnt)
         sockfd = -1;
         return false;
     }
+
     DFXLOG_INFO("%s :: success to listen socket", __func__);
     return true;
 }

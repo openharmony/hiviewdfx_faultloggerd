@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2022 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -24,6 +24,9 @@
 #include <fcntl.h>
 #include <securec.h>
 #include <sstream>
+#include <unistd.h>
+#include <vector>
+
 #include <sys/epoll.h>
 #include <sys/socket.h>
 #include <sys/stat.h>
@@ -31,9 +34,7 @@
 #include <sys/types.h>
 #include <sys/un.h>
 #include <sys/wait.h>
-#include <thread>
-#include <unistd.h>
-#include <vector>
+
 #include "dfx_define.h"
 #include "dfx_log.h"
 #include "dfx_util.h"
@@ -84,58 +85,29 @@ FaultLoggerDaemon::FaultLoggerDaemon()
 
 int32_t FaultLoggerDaemon::StartServer()
 {
-    int socketFd = -1;
-    if (!StartListen(socketFd, SERVER_SOCKET_NAME, MAX_CONNECTION)) {
-        DFXLOG_ERROR("%s :: Failed to start listen", FAULTLOGGERD_TAG.c_str());
+    if (!CreateSockets()) {
+        DFXLOG_ERROR("%s :: Failed to create faultloggerd sockets.", FAULTLOGGERD_TAG.c_str());
+        CleanupSockets();
         return -1;
     }
 
     if (!InitEnvironment()) {
-        DFXLOG_ERROR("%s :: Failed to init environment", FAULTLOGGERD_TAG.c_str());
-        close(socketFd);
+        DFXLOG_ERROR("%s :: Failed to init environment.", FAULTLOGGERD_TAG.c_str());
+        CleanupSockets();
+        return -1;
+    }
+    
+    if (!CreateEventFd()) {
+        DFXLOG_ERROR("%s :: Failed to create eventFd.", FAULTLOGGERD_TAG.c_str());
+        CleanupSockets();
         return -1;
     }
 
-    int epollFd = epoll_create(MAX_EPOLL_EVENT);
-    if (epollFd < 0) {
-        DFXLOG_ERROR("%s :: %s: epoll_create failed.", FAULTLOGGERD_TAG.c_str(), __func__);
-        close(socketFd);
-        return -1;
-    }
-    signal(SIGCHLD, SIG_IGN);
-    AddEvent(epollFd, socketFd, EPOLLIN);
+    // loop in WaitForRequest
+    WaitForRequest();
 
-    epoll_event events[MAX_CONNECTION];
-    DFXLOG_DEBUG("%s :: %s: start epoll wait.", FAULTLOGGERD_TAG.c_str(), __func__);
-    do {
-        int epollNum = epoll_wait(epollFd, events, MAX_CONNECTION, -1);
-        if (epollNum < 0) {
-            if (errno != EINTR) {
-                DFXLOG_ERROR("%s :: %s: epoll wait error, errno(%d).", FAULTLOGGERD_TAG.c_str(), __func__, errno);
-            }
-            continue;
-        }
-        for (int i = 0; i < epollNum; i++) {
-            if (!(events[i].events & EPOLLIN)) {
-                DFXLOG_WARN("%s :: %s: epoll event(%d) error.", FAULTLOGGERD_TAG.c_str(), __func__, events[i].events);
-                continue;
-            }
-
-            int fd = events[i].data.fd;
-            if (fd == socketFd) {
-                HandleAccept(epollFd, socketFd);
-            } else {
-                HandleRequest(epollFd, events[i].data.fd);
-            }
-        }
-    } while (true);
-
-    if (socketFd > 0) {
-        close(socketFd);
-    }
-    if (epollFd > 0) {
-        close(epollFd);
-    }
+    CleanupEventFd();
+    CleanupSockets();
     return 0;
 }
 
@@ -146,11 +118,12 @@ void FaultLoggerDaemon::HandleAccept(int32_t epollFd, int32_t socketFd)
 
     int connectionFd = accept(socketFd, reinterpret_cast<struct sockaddr *>(&clientAddr), &clientAddrSize);
     if (connectionFd < 0) {
-        DFXLOG_ERROR("%s :: Failed to accept connection", FAULTLOGGERD_TAG.c_str());
+        DFXLOG_WARN("%s :: Failed to accept connection", FAULTLOGGERD_TAG.c_str());
         return;
     }
-    DFXLOG_DEBUG("%s :: %s: accept: %d.", FAULTLOGGERD_TAG.c_str(), __func__, connectionFd);
-    AddEvent(epollFd, connectionFd, EPOLLIN);
+
+    AddEvent(eventFd_, connectionFd, EPOLLIN);
+    connectionMap_.insert(std::pair<int32_t, int32_t>(connectionFd, socketFd));
 }
 
 void FaultLoggerDaemon::HandleRequest(int32_t epollFd, int32_t connectionFd)
@@ -171,6 +144,10 @@ void FaultLoggerDaemon::HandleRequest(int32_t epollFd, int32_t connectionFd)
         }
 
         auto request = reinterpret_cast<FaultLoggerdRequest *>(buf);
+        if (!CheckRequestCredential(connectionFd, request)) {
+            break;
+        }
+
         DFXLOG_DEBUG("%s :: clientType(%d).\n", FAULTLOGGERD_TAG.c_str(), request->clientType);
         switch (request->clientType) {
             case static_cast<int32_t>(FaultLoggerClientType::DEFAULT_CLIENT):
@@ -197,7 +174,8 @@ void FaultLoggerDaemon::HandleRequest(int32_t epollFd, int32_t connectionFd)
         }
     } while (false);
 
-    DelEvent(epollFd, connectionFd, EPOLLIN);
+    DelEvent(eventFd_, connectionFd, EPOLLIN);
+    connectionMap_.erase(connectionFd);
 }
 
 bool FaultLoggerDaemon::InitEnvironment()
@@ -217,9 +195,8 @@ bool FaultLoggerDaemon::InitEnvironment()
         return false;
     }
 
-    if (chmod(FAULTLOGGERD_SOCK_PATH, S_IRWXU | S_IRWXG | S_IROTH | S_IWOTH) < 0) {
-        DFXLOG_ERROR("%s :: Failed to chmod, %d", FAULTLOGGERD_TAG.c_str(), errno);
-    }
+    signal(SIGCHLD, SIG_IGN);
+    signal(SIGPIPE, SIG_IGN);
     return true;
 }
 
@@ -562,6 +539,120 @@ void FaultLoggerDaemon::DelEvent(int32_t epollFd, int32_t delFd, uint32_t event)
         DFXLOG_WARN("%s :: Failed to epoll ctl del Fd(%d)", FAULTLOGGERD_TAG.c_str(), delFd);
     }
     close(delFd);
+}
+
+bool FaultLoggerDaemon::CheckRequestCredential(int32_t connectionFd, FaultLoggerdRequest* request)
+{
+    if (request == nullptr) {
+        return false;
+    }
+
+    auto it = connectionMap_.find(connectionFd);
+    if (it == connectionMap_.end()) {
+        return false;
+    }
+
+    if (it->second == crashSocketFd_) {
+        // only processdump use this socket
+        return true;
+    }
+
+    struct ucred creds = {};
+    socklen_t credSize = sizeof(creds);
+    int err = getsockopt(connectionFd, SOL_SOCKET, SO_PEERCRED, &creds, &credSize);
+    if (err != 0) {
+        DFXLOG_ERROR("%s :: Failed to CheckRequestCredential", FAULTLOGGERD_TAG.c_str());
+        return false;
+    }
+
+    if (faultLoggerSecure_->CheckCallerUID(creds.uid, request->pid)) {
+        return true;
+    }
+
+    bool isCredentialMatched = (creds.pid == request->pid);
+    if (!isCredentialMatched) {
+        DFXLOG_WARN("Failed to check request credential request:%d:%d cred:%d:%d",
+            request->pid, request->uid, creds.pid, creds.uid);
+    }
+    return isCredentialMatched;
+}
+
+bool FaultLoggerDaemon::CreateSockets()
+{
+    if (!StartListen(defaultSocketFd_, SERVER_SOCKET_NAME, MAX_CONNECTION)) {
+        return false;
+    }
+
+    if (!StartListen(crashSocketFd_, SERVER_CRASH_SOCKET_NAME, MAX_CONNECTION)) {
+        close(defaultSocketFd_);
+        defaultSocketFd_ = -1;
+        return false;
+    }
+
+    return true;
+}
+
+void FaultLoggerDaemon::CleanupSockets()
+{
+    if (defaultSocketFd_ >= 0) {
+        close(defaultSocketFd_);
+        defaultSocketFd_ = -1;
+    }
+
+    if (crashSocketFd_ >= 0) {
+        close(crashSocketFd_);
+        crashSocketFd_ = -1;
+    }
+}
+
+bool FaultLoggerDaemon::CreateEventFd()
+{
+    eventFd_ = epoll_create(MAX_EPOLL_EVENT);
+    if (eventFd_ < 0) {
+        return false;
+    }
+    return true;
+}
+
+void FaultLoggerDaemon::WaitForRequest()
+{
+    AddEvent(eventFd_, defaultSocketFd_, EPOLLIN);
+    AddEvent(eventFd_, crashSocketFd_, EPOLLIN);
+    epoll_event events[MAX_CONNECTION];
+    DFXLOG_DEBUG("%s :: %s: start epoll wait.", FAULTLOGGERD_TAG.c_str(), __func__);
+    do {
+        int epollNum = epoll_wait(eventFd_, events, MAX_CONNECTION, -1);
+        if (epollNum < 0) {
+            if (errno != EINTR) {
+                DFXLOG_ERROR("%s :: %s: epoll wait error, errno(%d).", FAULTLOGGERD_TAG.c_str(), __func__, errno);
+            }
+            continue;
+        }
+        for (int i = 0; i < epollNum; i++) {
+            if (!(events[i].events & EPOLLIN)) {
+                DFXLOG_WARN("%s :: %s: epoll event(%d) error.", FAULTLOGGERD_TAG.c_str(), __func__, events[i].events);
+                continue;
+            }
+
+            int fd = events[i].data.fd;
+            if (fd == defaultSocketFd_ || fd == crashSocketFd_) {
+                HandleAccept(eventFd_, fd);
+            } else {
+                HandleRequest(eventFd_, fd);
+            }
+        }
+    } while (true);
+}
+
+void FaultLoggerDaemon::CleanupEventFd()
+{
+    DelEvent(eventFd_, defaultSocketFd_, EPOLLIN);
+    DelEvent(eventFd_, crashSocketFd_, EPOLLIN);
+
+    if (eventFd_ > 0) {
+        close(eventFd_);
+        eventFd_ = -1;
+    }
 }
 } // namespace HiviewDFX
 } // namespace OHOS
