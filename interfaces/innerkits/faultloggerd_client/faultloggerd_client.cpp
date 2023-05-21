@@ -249,7 +249,8 @@ int RequestPrintTHilog(const char *msg, int length)
     struct FaultLoggerdRequest request;
     (void)memset_s(&request, sizeof(request), 0, sizeof(request));
     request.clientType = (int32_t)FaultLoggerClientType::PRINT_T_HILOG_CLIENT;
-
+    request.pid = getpid();
+    request.uid = getuid();
     int sockfd = -1;
     do {
         std::string name = GetSocketConnectionName();
