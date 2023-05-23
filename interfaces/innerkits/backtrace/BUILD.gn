@@ -114,11 +114,11 @@ if (defined(ohos_lite)) {
 
     sources = [ "backtrace_local.cpp" ]
 
-    deps = [ "$faultloggerd_path/frameworks/local:backtrace_local_src" ]
+    deps = [ "$faultloggerd_path/frameworks/local:backtrace_local_static_src" ]
 
     external_deps = [
       "c_utils:utils",
-      "hilog_native:libhilog",
+      "hilog_native:libhilog_base",
     ]
 
     part_name = "faultloggerd"

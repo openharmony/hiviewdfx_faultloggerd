@@ -102,4 +102,30 @@ if (defined(ohos_lite)) {
     part_name = "faultloggerd"
     subsystem_name = "hiviewdfx"
   }
+
+  ohos_source_set("dfx_unwinder_static_src") {
+    public_configs = [ ":dfx_unwinder_config" ]
+
+    sources = dfx_unwinder_sources
+    if (target_cpu == "arm") {
+      sources += [ "$faultloggerd_path/tools/process_dump/dfx_regs_arm.cpp" ]
+    } else if (target_cpu == "arm64") {
+      sources += [ "$faultloggerd_path/tools/process_dump/dfx_regs_arm64.cpp" ]
+    } else if (target_cpu == "x86_64") {
+      sources += [ "$faultloggerd_path/tools/process_dump/dfx_regs_x86_64.cpp" ]
+    }
+
+    deps = [
+      "$faultloggerd_path/common/dfxlog:static_hilog_base",
+      "//third_party/bounds_checking_function:libsec_shared",
+      "//third_party/libunwind:libunwind_local",
+    ]
+
+    external_deps = [
+      "c_utils:utils",
+      "hilog_native:libhilog_base",
+    ]
+    part_name = "faultloggerd"
+    subsystem_name = "hiviewdfx"
+  }
 }

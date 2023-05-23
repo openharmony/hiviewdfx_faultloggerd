@@ -102,4 +102,24 @@ if (defined(ohos_lite)) {
     part_name = "faultloggerd"
     subsystem_name = "hiviewdfx"
   }
+
+  ohos_source_set("backtrace_local_static_src") {
+    public_configs = [ ":dfx_backtrace_local_config" ]
+
+    sources = backtrace_local_sources
+
+    deps = [
+      "$faultloggerd_path/common/dfxlog:static_hilog_base",
+      "$faultloggerd_path/frameworks/unwinder:dfx_unwinder_static_src",
+      "//third_party/bounds_checking_function:libsec_shared",
+      "//third_party/libunwind:libunwind_local",
+    ]
+
+    external_deps = [
+      "c_utils:utils",
+      "hilog_native:libhilog_base",
+    ]
+    part_name = "faultloggerd"
+    subsystem_name = "hiviewdfx"
+  }
 }
