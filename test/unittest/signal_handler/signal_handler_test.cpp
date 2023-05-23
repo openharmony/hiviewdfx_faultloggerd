@@ -109,6 +109,34 @@ static bool CheckThreadCrashKeyWords(const string& filePath, pid_t pid, int sig)
     int minRegIdx = -1;
     return CheckKeyWords(filePath, keywords, length, minRegIdx) == length;
 }
+static bool CheckCrashKeyWords(const string& filePath, pid_t pid, int sig)
+{
+    if (filePath.empty() || pid <= 0) {
+        return false;
+    }
+    map<int, string> sigKey = {
+        { SIGILL, string("SIGILL") },
+        { SIGBUS, string("SIGBUS") },
+        { SIGSEGV, string("SIGSEGV") },
+        { SIGABRT, string("SIGABRT") },
+        { SIGFPE, string("SIGFPE") },
+        { SIGSTKFLT, string("SIGSTKFLT") },
+        { SIGSYS, string("SIGSYS") },
+        { SIGTRAP, string("SIGTRAP") },
+    };
+    string sigKeyword = "";
+    map<int, string>::iterator iter = sigKey.find(sig);
+    if (iter != sigKey.end()) {
+        sigKeyword = iter->second;
+    }
+    string keywords[] = {
+        "Pid:" + to_string(pid), "Uid:", "name:./test_signalhandler", sigKeyword,
+        "Tid:", "#00", "Registers:", "FaultStack:", "Maps:", "test_signalhandler"
+    };
+    int length = sizeof(keywords) / sizeof(keywords[0]);
+    int minRegIdx = -1;
+    return CheckKeyWords(filePath, keywords, length, minRegIdx) == length;
+}
 
 void ThreadInfo(char* buf, size_t len, void* context __attribute__((unused)))
 {
@@ -368,6 +396,37 @@ HWTEST_F(SignalHandlerTest, SignalHandlerTest006, TestSize.Level2)
         ASSERT_TRUE(ret);
     }
     GTEST_LOG_(INFO) << "SignalHandlerTest006: end.";
+}
+/**
+ * @tc.name: SignalHandlerTest007
+ * @tc.desc: test DFX_InstallSignalHandler interface
+ * @tc.type: FUNC
+ */
+HWTEST_F(SignalHandlerTest, SignalHandlerTest007, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "SignalHandlerTest007: start.";
+    int interestedSignalList[] = {
+        SIGABRT, SIGBUS, SIGFPE,
+        SIGSEGV, SIGSTKFLT, SIGSYS, SIGTRAP
+    };
+    for (int sig : interestedSignalList) {
+        pid_t pid = fork();
+        if (pid < 0) {
+            GTEST_LOG_(ERROR) << "Failed to fork new test process.";
+        } else if (pid == 0) {
+            DFX_InstallSignalHandler();
+            sleep(1);
+        } else {
+            usleep(10000); // 10000 : sleep 10ms
+            GTEST_LOG_(INFO) << "process(" << getpid() << ") is ready to kill << process(" << pid << ")";
+            GTEST_LOG_(INFO) << "signal:" << sig;
+            kill(pid, sig);
+            sleep(2); // 2 : wait for cppcrash generating
+            bool ret = CheckCrashKeyWords(GetCppCrashFileName(pid), pid, sig);
+            ASSERT_TRUE(ret);
+        }
+    }
+    GTEST_LOG_(INFO) << "SignalHandlerTest007: end.";
 }
 } // namespace HiviewDFX
 } // namepsace OHOS
