@@ -41,13 +41,11 @@
 #include "directory_ex.h"
 #include "fault_logger_config.h"
 #include "fault_logger_pipe.h"
-#include "fault_logger_secure.h"
 #include "faultloggerd_socket.h"
 
 namespace OHOS {
 namespace HiviewDFX {
 std::shared_ptr<FaultLoggerConfig> faultLoggerConfig_;
-std::shared_ptr<FaultLoggerSecure> faultLoggerSecure_;
 std::shared_ptr<FaultLoggerPipeMap> faultLoggerPipeMap_;
 
 namespace {
@@ -56,10 +54,12 @@ constexpr int32_t REQUEST_BUF_SIZE = 1024;
 constexpr int32_t MAX_EPOLL_EVENT = 1024;
 const int32_t FAULTLOG_FILE_PROP = 0640;
 
+static constexpr uint32_t ROOT_UID = 0;
+static constexpr uint32_t BMS_UID = 1000;
+static constexpr uint32_t HIVIEW_UID = 1201;
+static constexpr uint32_t HIDUMPER_SERVICE_UID = 1212;
 static const std::string FAULTLOGGERD_TAG = "FaultLoggerd";
-
 static const std::string DAEMON_RESP = "RESP:COMPLETE";
-
 static const int DAEMON_REMOVE_FILE_TIME_S = 60;
 
 static std::string GetRequestTypeName(int32_t type)
@@ -76,6 +76,19 @@ static std::string GetRequestTypeName(int32_t type)
         default:
             return "unsupported";
     }
+}
+
+static bool CheckCallerUID(uint32_t callerUid)
+{
+    // If caller's is BMS / root or caller's uid/pid is validate, just return true
+    if ((callerUid == BMS_UID) ||
+        (callerUid == ROOT_UID) ||
+        (callerUid == HIVIEW_UID) ||
+        (callerUid == HIDUMPER_SERVICE_UID)) {
+        return true;
+    }
+    DFXLOG_WARN("%s :: CheckCallerUID :: Caller Uid(%d) is unexpectly.\n", FAULTLOGGERD_TAG.c_str(), callerUid);
+    return false;
 }
 }
 
@@ -96,7 +109,7 @@ int32_t FaultLoggerDaemon::StartServer()
         CleanupSockets();
         return -1;
     }
-    
+
     if (!CreateEventFd()) {
         DFXLOG_ERROR("%s :: Failed to create eventFd.", FAULTLOGGERD_TAG.c_str());
         CleanupSockets();
@@ -182,7 +195,6 @@ bool FaultLoggerDaemon::InitEnvironment()
 {
     faultLoggerConfig_ = std::make_shared<FaultLoggerConfig>(LOG_FILE_NUMBER, LOG_FILE_SIZE,
         LOG_FILE_PATH, DEBUG_LOG_FILE_PATH);
-    faultLoggerSecure_ = std::make_shared<FaultLoggerSecure>();
     faultLoggerPipeMap_ = std::make_shared<FaultLoggerPipeMap>();
 
     if (!OHOS::ForceCreateDirectory(faultLoggerConfig_->GetLogFilePath())) {
@@ -320,7 +332,7 @@ FaultLoggerCheckPermissionResp FaultLoggerDaemon::SecurityCheck(int32_t connecti
 
         request->uid = rcred.uid;
         request->callerPid = static_cast<int32_t>(rcred.pid);
-        bool res = faultLoggerSecure_->CheckCallerUID(static_cast<int>(request->uid), request->pid);
+        bool res = CheckCallerUID(request->uid);
         if (res) {
             resCheckPermission = FaultLoggerCheckPermissionResp::CHECK_PERMISSION_PASS;
         }
@@ -565,7 +577,7 @@ bool FaultLoggerDaemon::CheckRequestCredential(int32_t connectionFd, FaultLogger
         return false;
     }
 
-    if (faultLoggerSecure_->CheckCallerUID(creds.uid, request->pid)) {
+    if (CheckCallerUID(creds.uid)) {
         return true;
     }
 

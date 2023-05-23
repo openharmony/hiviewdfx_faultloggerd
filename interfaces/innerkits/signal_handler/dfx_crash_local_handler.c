@@ -249,9 +249,8 @@ __attribute__((noinline)) bool UnwindWithContextByFramePointer(const int fd, unw
     uintptr_t stackTop = (uintptr_t)base + size;
 
     int index = 0;
-    uintptr_t prevFp = 0;
     do {
-        prevFp = fp;
+        uintptr_t prevFp = fp;
         if (stackBottom < prevFp && (prevFp + sizeof(uintptr_t)) < stackTop) {
             PrintLog(fd, "#%02d fp(%lx) pc(%lx)\n", index, fp, pc);
             fp = *(uintptr_t*)prevFp;
