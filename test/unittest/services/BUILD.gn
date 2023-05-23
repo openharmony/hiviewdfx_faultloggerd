@@ -39,11 +39,9 @@ if (defined(ohos_lite)) {
         "$faultloggerd_path/services/fault_logger_config.cpp",
         "$faultloggerd_path/services/fault_logger_daemon.cpp",
         "$faultloggerd_path/services/fault_logger_pipe.cpp",
-        "$faultloggerd_path/services/fault_logger_secure.cpp",
         "src/faultlogger_config_test.cpp",
         "src/faultlogger_daemon_test.cpp",
         "src/faultlogger_pipe_test.cpp",
-        "src/faultlogger_secure_test.cpp",
       ]
       sources += [ "$c_utils_src_path/directory_ex.cpp" ]
 
@@ -80,11 +78,9 @@ if (defined(ohos_lite)) {
       "$faultloggerd_path/services/fault_logger_config.cpp",
       "$faultloggerd_path/services/fault_logger_daemon.cpp",
       "$faultloggerd_path/services/fault_logger_pipe.cpp",
-      "$faultloggerd_path/services/fault_logger_secure.cpp",
       "src/faultlogger_config_test.cpp",
       "src/faultlogger_daemon_test.cpp",
       "src/faultlogger_pipe_test.cpp",
-      "src/faultlogger_secure_test.cpp",
     ]
 
     configs = [ ":module_private_config" ]

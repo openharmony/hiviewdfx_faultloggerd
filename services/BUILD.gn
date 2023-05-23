@@ -17,7 +17,6 @@ faultloggerd_sources = [
   "fault_logger_config.cpp",
   "fault_logger_daemon.cpp",
   "fault_logger_pipe.cpp",
-  "fault_logger_secure.cpp",
   "main.cpp",
 ]
 
