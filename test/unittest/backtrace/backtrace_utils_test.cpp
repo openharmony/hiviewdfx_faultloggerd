@@ -248,5 +248,33 @@ HWTEST_F(BacktraceUtilsTest, BacktraceUtilsTest004, TestSize.Level2)
     }
     GTEST_LOG_(INFO) << "BacktraceUtilsTest004: end.";
 }
+
+/**
+ * @tc.name: BacktraceUtilsTest005
+ * @tc.desc: test PrintTrace to hilog, stdout and file
+ * @tc.type: FUNC
+ */
+HWTEST_F(BacktraceUtilsTest, BacktraceUtilsTest005, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "BacktraceUtilsTest005: start.";
+    ASSERT_EQ(true, PrintTrace(STDIN_FILENO));
+    ASSERT_EQ(true, PrintTrace(STDOUT_FILENO));
+    ASSERT_EQ(true, PrintTrace(STDERR_FILENO));
+    ASSERT_EQ(true, PrintTrace());
+    int fd = open("/data/test/testfile", O_CREAT | O_WRONLY, S_IRUSR | S_IWUSR);
+    if (fd < 0) {
+        FAIL();
+        return;
+    }
+    ASSERT_EQ(true, PrintTrace(fd));
+    close(fd);
+    std::string content;
+    if (!OHOS::LoadStringFromFile("/data/test/testfile", content)) {
+        FAIL();
+    }
+
+    ASSERT_EQ(CheckBacktraceContent(content), true);
+    GTEST_LOG_(INFO) << "BacktraceUtilsTest005: end.";
+}
 } // namespace HiviewDFX
 } // namepsace OHOS
