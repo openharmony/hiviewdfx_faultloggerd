@@ -50,7 +50,7 @@ fn test_get_trace_in_multithread() {
 
 #[test]
 fn test_print_trace() {
-    let path = Path::new("/data/test/stacktrace_test_file001");
+    let path = Path::new("/data/stacktrace_test_file001");
     let display = path.display();
     let output = match File::create(path) {
         Err(why) => panic!("couldn't create {}: {:?}", display, why),
