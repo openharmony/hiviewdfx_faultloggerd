@@ -20,7 +20,6 @@
 #include <stdint.h>
 #include <syscall.h>
 #include <time.h>
-
 #include "dfx_define.h"
 
 #ifdef __cplusplus
@@ -28,15 +27,6 @@ extern "C" {
 #endif
 
 #ifdef ENABLE_MUSL_CUTIL
-int GetProcStatus(struct ProcInfo* procInfo)
-{
-    procInfo->pid = syscall(SYS_getpid);
-    procInfo->tid = syscall(SYS_gettid);
-    procInfo->ppid = syscall(SYS_getppid);
-    procInfo->ns = (syscall(SYS_getpid) == 1);
-    return 0;
-}
-
 bool ReadStringFromFile(const char* path, char* dst, size_t dstSz)
 {
     char name[NAME_LEN];
