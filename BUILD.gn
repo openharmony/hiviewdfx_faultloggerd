@@ -23,7 +23,6 @@ lite_component("faultloggerd") {
     "tools/crasher_c:crasher_c",
     "tools/crasher_cpp:crasher_cpp",
     ":faultloggerd_test",
-    "test:faultloggerd_funchook",
   ]
 }
 
@@ -34,10 +33,10 @@ lite_component("faultloggerd_test") {
     features = []
     if (ohos_build_type == "debug") {
       features += [
-        "services/test/unittest:test_service",
         "test/moduletest:FaultloggerdModuleTest",
         "test/systemtest:test_faultloggerd",
-        "tools/process_dump/test/unittest:test_processdump",
+        "test/unittest:test_processdump",
+        "test/unittest:test_service",
       ]
     }
   }
