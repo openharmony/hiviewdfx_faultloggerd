@@ -19,8 +19,9 @@
 #include <libunwind.h>
 #include <libunwind_i-ohos.h>
 #include "dfx_define.h"
-#include "dfx_regs.h"
 #include "dfx_regs_define.h"
+#include "unwinder_define.h"
+#include "dfx_config.h"
 
 namespace OHOS {
 namespace HiviewDFX {
@@ -48,21 +49,21 @@ FpUnwinder::~FpUnwinder()
     frames_.clear();
 }
 
-const std::vector<NativeFrame>& FpUnwinder::GetFrames() const
+const std::vector<DfxFrame>& FpUnwinder::GetFrames() const
 {
     return frames_;
 }
 
 int FpUnwinder::DlIteratePhdrCallback(struct dl_phdr_info *info, size_t size, void *data)
 {
-    auto frame = static_cast<NativeFrame*>(data);
+    auto frame = static_cast<DfxFrame*>(data);
     const Elf_W(Phdr) *phdr = info->dlpi_phdr;
     for (int n = info->dlpi_phnum; --n >= 0; phdr++) {
         if (phdr->p_type == PT_LOAD) {
             Elf_W(Addr) vaddr = phdr->p_vaddr + info->dlpi_addr;
             if (frame->pc >= vaddr && frame->pc < vaddr + phdr->p_memsz) {
-                frame->relativePc = frame->pc - info->dlpi_addr;
-                frame->binaryName = std::string(info->dlpi_name);
+                frame->relPc = frame->pc - info->dlpi_addr;
+                frame->mapName = std::string(info->dlpi_name);
                 return 1; // let dl_iterate_phdr break
             }
         }
@@ -74,43 +75,30 @@ bool FpUnwinder::UnwindWithContext(unw_context_t& context, size_t skipFrameNum)
 {
     std::shared_ptr<DfxRegs> dfxregs = DfxRegs::Create();
 #if defined(__arm__)
-    dfxregs->SetFP(context.regs[REG_ARM_R11]);
-    dfxregs->SetPC(context.regs[REG_ARM_R15]);
+    dfxregs->fp_ = context.regs[REG_ARM_R11];
+    dfxregs->pc_ = context.regs[REG_ARM_R15];
 #elif defined(__aarch64__)
-    dfxregs->SetFP(context.uc_mcontext.regs[REG_AARCH64_X29]);
-    dfxregs->SetPC(context.uc_mcontext.pc);
+    dfxregs->fp_ = context.uc_mcontext.regs[REG_AARCH64_X29];
+    dfxregs->pc_ = context.uc_mcontext.pc;
 #else
 #pragma message("Unsupported architecture")
 #endif
-    uintptr_t fp = dfxregs->GetFP();
-    uintptr_t pc = dfxregs->GetPC();
 
-    size_t index = 0;
-    size_t curIndex = 0;
-    do {
-        if (index < skipFrameNum) {
-            index++;
-            continue;
-        }
-        curIndex = index - skipFrameNum;
-
-        NativeFrame frame;
-        frame.index = curIndex;
-        frame.pc = index == 0 ? pc : pc - 4; // 4 : aarch64 instruction size
-        frame.fp = fp;
-        frames_.emplace_back(frame);
-        index++;
-    } while (Step(fp, pc) && (curIndex < BACK_STACK_MAX_STEPS));
-    return (frames_.size() > 0);
+    return Unwind(dfxregs, skipFrameNum);
 }
 
 bool FpUnwinder::Unwind(size_t skipFrameNum)
 {
-    std::shared_ptr<DfxRegs> dfxregs = DfxRegs::Create(FP_UNWIND);
-    uintptr_t fp = dfxregs->GetFP();
-    uintptr_t pc = dfxregs->GetPC();
+    std::shared_ptr<DfxRegs> dfxregs = DfxRegs::Create(FRAMEPOINTER_UNWIND);
+    skipFrameNum += 2; // skip GetFramePointerMiniRegs and Create function
 
-    skipFrameNum += 2; // 2 : skip GetFramePointerMiniRegs and Create function
+    return Unwind(dfxregs, skipFrameNum);
+}
+
+bool FpUnwinder::Unwind(const std::shared_ptr<DfxRegs> &dfxregs, size_t skipFrameNum)
+{
+    uintptr_t fp = dfxregs->fp_;
+    uintptr_t pc = dfxregs->pc_;
 
     size_t index = 0;
     size_t curIndex = 0;
@@ -121,13 +109,12 @@ bool FpUnwinder::Unwind(size_t skipFrameNum)
         }
         curIndex = index - skipFrameNum;
 
-        NativeFrame frame;
+        DfxFrame frame;
         frame.index = curIndex;
         frame.pc = index == 0 ? pc : pc - 4; // 4 : aarch64 instruction size
-        frame.fp = fp;
         frames_.emplace_back(frame);
         index++;
-    } while (Step(fp, pc) && (curIndex < BACK_STACK_MAX_STEPS));
+    } while (Step(fp, pc) && (curIndex < DfxConfig::GetConfig().maxFrameNums));
     return (frames_.size() > 0);
 }
 
@@ -151,7 +138,7 @@ void FpUnwinder::UpdateFrameInfo()
 bool FpUnwinder::Step(uintptr_t& fp, uintptr_t& pc)
 {
     uintptr_t prevFp = fp;
-    if ((prevFp > stackBottom_) && (prevFp + sizeof(uintptr_t) < stackTop_)) {
+    if (IsValidFrame(prevFp, stackTop_, stackBottom_)) {
         fp = *reinterpret_cast<uintptr_t*>(prevFp);
         pc = *reinterpret_cast<uintptr_t*>(prevFp + sizeof(uintptr_t));
         return true;

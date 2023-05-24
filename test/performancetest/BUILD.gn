@@ -25,9 +25,11 @@ if (defined(ohos_lite)) {
 
       include_dirs = [
         "include/",
-        "//commonlibrary/c_utils/base/include",
+        "$c_utils_include_path",
+        "$faultloggerd_interfaces_path/common",
         "$faultloggerd_path/common",
         "$faultloggerd_path/tools/process_dump",
+        "$faultloggerd_path/interfaces/innerkits/backtrace/include/",
         "$faultloggerd_path/interfaces/innerkits/faultloggerd_client/include",
         "$faultloggerd_path/interfaces/innerkits/dump_catcher/include/",
         "$faultloggerd_path/test/utils",
@@ -35,6 +37,7 @@ if (defined(ohos_lite)) {
       ]
 
       deps = [
+        "$faultloggerd_path/interfaces/innerkits/backtrace:libbacktrace_local",
         "$faultloggerd_path/interfaces/innerkits/dump_catcher:libdfx_dumpcatcher",
         "$faultloggerd_path/test/utils:dfx_test_util",
         "//base/hiviewdfx/hilog_lite/frameworks/featured:hilog_shared",
@@ -54,8 +57,9 @@ if (defined(ohos_lite)) {
 
     include_dirs = [
       "include/",
-      "//commonlibrary/c_utils/base/include",
-      "$faultloggerd_path/interfaces/innerkits/dump_catcher/include/",
+      "$faultloggerd_interfaces_path/common",
+      "$faultloggerd_interfaces_path/innerkits/backtrace/include/",
+      "$faultloggerd_interfaces_path/innerkits/dump_catcher/include/",
       "$faultloggerd_path/test/utils",
     ]
   }
@@ -69,6 +73,7 @@ if (defined(ohos_lite)) {
     configs = [ ":module_private_config" ]
 
     deps = [
+      "$faultloggerd_path/interfaces/innerkits/backtrace:libbacktrace_local",
       "$faultloggerd_path/interfaces/innerkits/dump_catcher:libdfx_dumpcatcher",
       "$faultloggerd_path/test/utils:dfx_test_util",
       "//third_party/googletest:gtest_main",
@@ -76,15 +81,6 @@ if (defined(ohos_lite)) {
     external_deps = [
       "c_utils:utils",
       "hilog_native:libhilog",
-    ]
-  }
-
-  config("multithread_constructor_config") {
-    visibility = [ ":*" ]
-
-    include_dirs = [
-      "include/",
-      "//commonlibrary/c_utils/base/include",
     ]
   }
 

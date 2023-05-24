@@ -20,6 +20,7 @@
 #include <memory>
 
 #include "dfx_process.h"
+#include "dfx_test_util.h"
 
 using namespace OHOS::HiviewDFX;
 using namespace testing::ext;
@@ -40,27 +41,6 @@ void ProcessDfxTest::SetUp(void)
 
 void ProcessDfxTest::TearDown(void)
 {
-}
-
-pid_t ProcessDfxTest::GetAccountmgrPid()
-{
-    std::string procCMD = "pgrep 'accountmgr'";
-    GTEST_LOG_(INFO) << "threadCMD = " << procCMD;
-    FILE *procFileInfo = nullptr;
-    procFileInfo = popen(procCMD.c_str(), "r");
-    if (procFileInfo == nullptr) {
-        perror("popen execute failed");
-        return 0;
-    }
-    std::string pidLog;
-    pid_t accountmgrPid = 0;
-    char result_buf_shell[NAME_LEN] = { 0, };
-    if (fgets(result_buf_shell, sizeof(result_buf_shell), procFileInfo) != nullptr) {
-        pidLog = result_buf_shell;
-        accountmgrPid = atoi(pidLog.c_str());
-    }
-    pclose(procFileInfo);
-    return accountmgrPid;
 }
 
 namespace {
@@ -86,7 +66,7 @@ HWTEST_F (ProcessDfxTest, ProcessDfxRequestTest001, TestSize.Level2)
 HWTEST_F (ProcessDfxTest, ProcessDfxRequestTest002, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "ProcessDfxRequestTest002: start.";
-    pid_t accountmgrPid = ProcessDfxTest::GetAccountmgrPid();
+    pid_t accountmgrPid = GetProcessPid(ACCOUNTMGR_NAME);
     if (accountmgrPid == 0) {
         GTEST_LOG_(INFO) << "ProcessDfxRequestTest002: get pid failed.";
         return;

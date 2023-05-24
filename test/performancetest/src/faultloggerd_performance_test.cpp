@@ -23,6 +23,7 @@
 
 #include "dfx_define.h"
 #include "dfx_dump_catcher.h"
+#include "catchframe_local.h"
 #include "dfx_test_util.h"
 
 using namespace OHOS::HiviewDFX;
@@ -235,11 +236,11 @@ HWTEST_F (FaultPerformanceTest, FaultPerformanceTest006, TestSize.Level2)
     std::string name = "test_perfor";
     int testPid = GetProcessPid(name);
     GTEST_LOG_(INFO) << testPid;
-    DfxDumpCatcher dumplog(testPid);
+    DfxCatchFrameLocal dumplog(testPid);
     if (!dumplog.InitFrameCatcher()) {
         GTEST_LOG_(ERROR) << "Failed to suspend thread(" << testPid << ").";
     }
-    std::vector<NativeFrame> frameV;
+    std::vector<DfxFrame> frameV;
     clock_t befor = GetStartTime();
     for (int i = 0; i < PERFORMANCE_TEST_NUMBER_ONE_HUNDRED; i++) {
         bool ret = dumplog.CatchFrame(testPid, frameV, true);

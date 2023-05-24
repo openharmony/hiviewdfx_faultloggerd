@@ -20,7 +20,7 @@
 #include <mutex>
 #include <unistd.h>
 #include <vector>
-
+#include "dfx_frame_format.h"
 #include "backtrace_local_thread.h"
 
 namespace OHOS {
@@ -36,14 +36,14 @@ constexpr int SKIP_ONE_FRAME = 1; // skip current frame
 
 bool PrintBacktrace(int32_t fd, bool fast)
 {
-    std::vector<NativeFrame> frames;
+    std::vector<DfxFrame> frames;
     bool ret = BacktraceLocalThread::GetBacktraceFrames(frames, BACKTRACE_CURRENT_THREAD, SKIP_ONE_FRAME, fast);
     if (!ret) {
         return false;
     }
 
     for (auto const& frame : frames) {
-        auto line = BacktraceLocalThread::GetNativeFrameStr(frame);
+        auto line = DfxFrameFormat::GetFrameStr(frame);
         if (fd < 0) {
             // print to hilog
             HILOG_INFO(LOG_CORE, " %{public}s", line.c_str());

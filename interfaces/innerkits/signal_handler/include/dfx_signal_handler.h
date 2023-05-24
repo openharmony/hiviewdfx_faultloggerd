@@ -20,26 +20,11 @@
 #include <signal.h>
 #include <ucontext.h>
 #include "dfx_define.h"
+#include "dfx_dump_request.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
-struct ProcessDumpRequest {
-    int32_t type;
-    int32_t tid;
-    int32_t recycleTid;
-    int32_t pid;
-    int32_t vmPid;
-    uint32_t uid;
-    uint64_t reserved;
-    uint64_t timeStamp;
-    siginfo_t siginfo;
-    ucontext_t context;
-    char threadName[NAME_LEN];
-    char processName[NAME_LEN];
-    char lastFatalMessage[MAX_FATAL_MSG_SIZE];
-    TraceInfo traceInfo;
-};
 
 typedef void(*ThreadInfoCallBack)(char* buf, size_t len, void* ucontext);
 void SetThreadInfoCallback(ThreadInfoCallBack func);

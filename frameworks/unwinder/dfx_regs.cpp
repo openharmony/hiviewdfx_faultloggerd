@@ -22,6 +22,8 @@
 #include <securec.h>
 #include "dfx_define.h"
 #include "dfx_log.h"
+#include "dfx_regs_define.h"
+#include "unwinder_define.h"
 
 namespace OHOS {
 namespace HiviewDFX {
@@ -37,11 +39,18 @@ std::shared_ptr<DfxRegs> DfxRegs::Create(int mode)
 #else
 #error "Unsupported architecture"
 #endif
-    if (mode == FP_UNWIND) {
+    if (mode == UnwinderMode::FRAMEPOINTER_UNWIND) {
         uintptr_t regs[FP_MINI_REGS_SIZE] = {0};
         dfxregs->GetFramePointerMiniRegs(regs);
-        dfxregs->SetFP(regs[0]); // x29 or r11
-        dfxregs->SetPC(regs[3]); // x32 or r15
+        dfxregs->fp_ = regs[0]; // x29 or r11
+        dfxregs->pc_ = regs[3]; // x32 or r15
+    } else if (mode == UnwinderMode::QUICKEN_UNWIND) {
+        uintptr_t regs[QUT_MINI_REGS_SIZE] = {0};
+        dfxregs->GetQuickenMiniRegs(regs);
+        dfxregs->fp_ = regs[3]; // x29 or r11
+        dfxregs->sp_ = regs[4]; // x31 or r13
+        dfxregs->pc_ = regs[5]; // x32 or r15
+        dfxregs->lr_ = regs[6]; // x30 or r14
     }
     return dfxregs;
 }
@@ -79,6 +88,32 @@ int DfxRegs::PrintFormat(char *buf, int size, const char *format, ...) const
     ret = vsnprintf_s(buf, size, size - 1, format, args);
     va_end(args);
     return ret;
+}
+
+std::string DfxRegs::GetSpecialRegisterName(uintptr_t val) const
+{
+    if (val == pc_) {
+        return "pc";
+    } else if (val == lr_) {
+        return "lr";
+    } else if (val == sp_) {
+        return "sp";
+    } else if (val == fp_) {
+        return "fp";
+    }
+    return "";
+}
+
+std::string DfxRegs::PrintSpecialRegs() const
+{
+    char buf[REGS_PRINT_LEN_SPECIAL] = {0};
+#ifdef __LP64__
+    PrintFormat(buf, sizeof(buf), "fp:%016lx sp:%016lx lr:%016lx pc:%016lx\n", fp_, sp_, lr_, pc_);
+#else
+    PrintFormat(buf, sizeof(buf), "fp:%08x sp:%08x lr:%08x pc:%08x\n", fp_, sp_, lr_, pc_);
+#endif
+    std::string regString = std::string(buf);
+    return regString;
 }
 } // namespace HiviewDFX
 } // namespace OHOS

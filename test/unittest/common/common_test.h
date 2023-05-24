@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Huawei Device Co., Ltd.
+ * Copyright (c) 2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -13,21 +13,22 @@
  * limitations under the License.
  */
 
-/* This files contains process dump writer log module. */
+/* This files contains unit test module of maps module. */
 
-#ifndef MOCK_DFX_THREAD_H
-#define MOCK_DFX_THREAD_H
+#ifndef COMMON_TEST_H
+#define COMMON_TEST_H
 
-#include <gmock/gmock.h>
-#include "dfx_dump_writer.h"
+#include <gtest/gtest.h>
 
 namespace OHOS {
 namespace HiviewDFX {
-class MockDfxWriter : public DfxDumpWriter {
+class CommonTest : public testing::Test {
 public:
-    MockDfxWriter() = default;
-    virtual ~MockDfxWriter() = default;
+    static void SetUpTestCase(void);
+    static void TearDownTestCase(void);
+    void SetUp();
+    void TearDown();
 };
 } // namespace HiviewDFX
 } // namespace OHOS
-#endif // MOCK_DFX_THREAD_H
+#endif

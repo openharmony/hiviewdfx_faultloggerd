@@ -14,8 +14,14 @@
 import("//base/hiviewdfx/faultloggerd/faultloggerd.gni")
 
 dfx_unwinder_sources = [
-  "$faultloggerd_path/tools/process_dump/dfx_regs.cpp",
   "$faultloggerd_path/tools/process_dump/dfx_symbols_cache.cpp",
+  "arch_util.cpp",
+  "dfx_config.cpp",
+  "dfx_frame_format.cpp",
+  "dfx_regs.cpp",
+  "dfx_regs_arm.cpp",
+  "dfx_regs_arm64.cpp",
+  "dfx_regs_x86_64.cpp",
   "dwarf_unwinder.cpp",
   "fp_unwinder.cpp",
 ]
@@ -25,10 +31,13 @@ if (defined(ohos_lite)) {
     visibility = [ "*:*" ]
 
     include_dirs = [
+      "include",
       "$c_utils_include_path",
+      "$faultloggerd_interfaces_path/common",
       "$faultloggerd_path/common",
       "$faultloggerd_path/common/dfxlog",
-      "$faultloggerd_path/interfaces/innerkits/dump_catcher/include",
+      "$faultloggerd_path/common/dfxutil",
+      "$faultloggerd_path/interfaces/innerkits/backtrace/include",
       "$faultloggerd_path/tools/process_dump",
       "//third_party/libunwind/include",
       "//third_party/libunwind/src",
@@ -36,13 +45,7 @@ if (defined(ohos_lite)) {
     ]
 
     sources = dfx_unwinder_sources
-    if (target_cpu == "arm") {
-      sources += [ "$faultloggerd_path/tools/process_dump/dfx_regs_arm.cpp" ]
-    } else if (target_cpu == "arm64") {
-      sources += [ "$faultloggerd_path/tools/process_dump/dfx_regs_arm64.cpp" ]
-    } else if (target_cpu == "x86_64") {
-      sources += [ "$faultloggerd_path/tools/process_dump/dfx_regs_x86_64.cpp" ]
-    }
+    sources += [ "$c_utils_src_path/directory_ex.cpp" ]
 
     defines = [
       "HAVE_CONFIG_H",
@@ -62,9 +65,12 @@ if (defined(ohos_lite)) {
     visibility = [ "*:*" ]
 
     include_dirs = [
+      "include",
+      "$faultloggerd_interfaces_path/common",
       "$faultloggerd_path/common",
       "$faultloggerd_path/common/dfxlog",
-      "$faultloggerd_path/interfaces/innerkits/dump_catcher/include",
+      "$faultloggerd_path/common/dfxutil",
+      "$faultloggerd_path/interfaces/innerkits/backtrace/include",
       "$faultloggerd_path/tools/process_dump",
       "//third_party/libunwind/include",
       "//third_party/libunwind/src",
@@ -81,16 +87,10 @@ if (defined(ohos_lite)) {
     public_configs = [ ":dfx_unwinder_config" ]
 
     sources = dfx_unwinder_sources
-    if (target_cpu == "arm") {
-      sources += [ "$faultloggerd_path/tools/process_dump/dfx_regs_arm.cpp" ]
-    } else if (target_cpu == "arm64") {
-      sources += [ "$faultloggerd_path/tools/process_dump/dfx_regs_arm64.cpp" ]
-    } else if (target_cpu == "x86_64") {
-      sources += [ "$faultloggerd_path/tools/process_dump/dfx_regs_x86_64.cpp" ]
-    }
 
     deps = [
       "$faultloggerd_path/common/dfxlog:static_common_log",
+      "$faultloggerd_path/common/dfxutil:dfx_util",
       "//third_party/bounds_checking_function:libsec_shared",
       "//third_party/libunwind:libunwind_local",
     ]

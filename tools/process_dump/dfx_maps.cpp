@@ -35,9 +35,9 @@
 namespace OHOS {
 namespace HiviewDFX {
 static const int MAPINFO_SIZE = 256;
-ATTRIBUTE_UNUSED static constexpr int X86_ONE_STEP_NORMAL = 1;
-ATTRIBUTE_UNUSED static constexpr int ARM_TWO_STEP_NORMAL = 2;
-ATTRIBUTE_UNUSED static constexpr int ARM_FOUR_STEP_NORMAL = 4;
+MAYBE_UNUSED static constexpr int X86_ONE_STEP_NORMAL = 1;
+MAYBE_UNUSED static constexpr int ARM_TWO_STEP_NORMAL = 2;
+MAYBE_UNUSED static constexpr int ARM_FOUR_STEP_NORMAL = 4;
 
 std::shared_ptr<DfxElfMaps> DfxElfMaps::Create(pid_t pid)
 {
@@ -294,7 +294,7 @@ std::string DfxElfMap::GetMapPath() const
 
 std::shared_ptr<DfxElf> DfxElfMap::GetMapImage() const
 {
-    return image_;
+    return elf_;
 }
 
 void DfxElfMap::SetMapBegin(uint64_t begin)
@@ -322,9 +322,9 @@ void DfxElfMap::SetMapPath(const std::string path)
     path_ = path;
 }
 
-void DfxElfMap::SetMapImage(std::shared_ptr<DfxElf> image)
+void DfxElfMap::SetMapImage(std::shared_ptr<DfxElf> elf)
 {
-    image_ = image;
+    elf_ = elf;
 }
 
 std::vector<std::shared_ptr<DfxElfMap>> DfxElfMaps::GetValues() const

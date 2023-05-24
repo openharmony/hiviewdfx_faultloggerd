@@ -23,9 +23,7 @@
 #include <sys/socket.h>
 #include <sys/un.h>
 #include <unistd.h>
-#include "dfx_config.h"
 #include "dfx_define.h"
-#include "dfx_dump_writer.h"
 #include "dfx_log.h"
 #include "faultloggerd_client.h"
 #include "process_dumper.h"
@@ -78,7 +76,6 @@ int main(int argc, char *argv[])
     }
 
     if (isSignalHdlr) {
-        OHOS::HiviewDFX::DfxConfig::GetInstance().ReadConfig();
         OHOS::HiviewDFX::ProcessDumper::GetInstance().Dump();
     }
     return 0;

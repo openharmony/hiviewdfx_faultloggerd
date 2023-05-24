@@ -42,6 +42,7 @@
 #define MAX_FRAME 64
 #define BUF_SZ 512
 #define MAPINFO_SIZE 256
+static const int BACK_STACK_MAX_STEPS = 64; // max unwind 64 steps.
 
 __attribute__((noinline)) int RequestOutputLogFile(const struct ProcessDumpRequest* request)
 {

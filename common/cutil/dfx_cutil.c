@@ -19,22 +19,12 @@
 #include <stdio.h>
 #include <syscall.h>
 #include <unistd.h>
-
 #include <sys/time.h>
 #include <time.h>
+#include <securec.h>
+#include <stdio.h>
+#include <string.h>
 #include "dfx_define.h"
-#include "securec.h"
-#include "stdio.h"
-#include "string.h"
-
-int GetProcStatus(struct ProcInfo* procInfo)
-{
-    procInfo->pid = syscall(SYS_getpid);
-    procInfo->tid = syscall(SYS_gettid);
-    procInfo->ppid = syscall(SYS_getppid);
-    procInfo->ns = (syscall(SYS_getpid) == 1);
-    return 0;
-}
 
 bool ReadStringFromFile(const char* path, char* dst, size_t dstSz)
 {

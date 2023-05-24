@@ -23,10 +23,10 @@
 #include <unistd.h>
 
 #include "dfx_fault_stack.h"
-#include "dfx_frame.h"
+#include "dfx_frame_format.h"
 #include "dfx_regs.h"
 #include "dfx_maps.h"
-#include "dfx_dump_catcher.h"
+#include "catchframe_local.h"
 #include "dfx_ring_buffer_wrapper.h"
 #include "dfx_thread.h"
 #include "dfx_unwind_remote.h"
@@ -120,23 +120,6 @@ std::shared_ptr<DfxRegs> GetCurrentReg()
     return reg;
 }
 
-static std::vector<std::shared_ptr<DfxFrame>> GetDfxFrames(const std::vector<NativeFrame>& frames)
-{
-    std::vector<std::shared_ptr<DfxFrame>> dfxFrames;
-    for (const auto& frame : frames) {
-        std::shared_ptr<DfxFrame> dfxFrame = std::make_shared<DfxFrame>();
-        dfxFrame->SetFrameIndex(frame.index);
-        dfxFrame->SetFramePc(frame.pc);
-        dfxFrame->SetFrameSp(frame.sp);
-        dfxFrame->SetFrameRelativePc(frame.relativePc);
-        dfxFrame->SetFrameMapName(frame.binaryName);
-        dfxFrame->SetFrameFuncName(frame.funcName);
-        dfxFrame->SetFrameFuncOffset(frame.funcOffset);
-        dfxFrames.push_back(dfxFrame);
-    }
-    return dfxFrames;
-}
-
 /**
  * @tc.name: FaultStackUnittest001
  * @tc.desc: check whether fault stack and register can be print out
@@ -145,8 +128,8 @@ static std::vector<std::shared_ptr<DfxFrame>> GetDfxFrames(const std::vector<Nat
 HWTEST_F(FaultStackUnittest, FaultStackUnittest001, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "FaultStackUnittest001: start.";
-    std::vector<NativeFrame> frames;
-    DfxDumpCatcher catcher(getpid());
+    std::vector<DfxFrame> frames;
+    DfxCatchFrameLocal catcher(getpid());
     ASSERT_EQ(true, catcher.InitFrameCatcher());
     ASSERT_EQ(true, catcher.CatchFrame(getpid(), frames));
     ASSERT_GT(frames.size(), 0);
@@ -168,7 +151,7 @@ HWTEST_F(FaultStackUnittest, FaultStackUnittest001, TestSize.Level2)
     auto maps = DfxElfMaps::Create(childPid);
     auto reg = GetCurrentReg();
     std::unique_ptr<FaultStack> stack = std::make_unique<FaultStack>(childPid);
-    stack->CollectStackInfo(GetDfxFrames(frames));
+    stack->CollectStackInfo(DfxFrameFormat::ConvertFrames(frames));
     stack->CollectRegistersBlock(reg, maps);
     stack->Print();
     catcher.DestroyFrameCatcher();
