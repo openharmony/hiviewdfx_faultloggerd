@@ -322,7 +322,7 @@ int CallStack::FindUnwindTable(SymbolsFile *symbolsFile, const MemMapItem &mmap,
 
         if (UNW_ESUCCESS != ret) {
             if (UNW_ENOINFO != ret) {
-                DFXLOG_WARN("search_unwind_table ret error %d:%s", ret, GetUnwErrorName(ret).c_str());
+                DFXLOG_DEBUG("search_unwind_table ret error %d:%s", ret, GetUnwErrorName(ret).c_str());
             }
             return -UNW_EUNSPEC;
         } else {
@@ -422,7 +422,7 @@ int CallStack::AccessMem([[maybe_unused]] unw_addr_space_t as, unw_word_t addr,
 
     /* Check overflow. */
     if (addr + sizeof(unw_word_t) < addr) {
-        DFXLOG_ERROR("address overfolw at 0x%" UNW_WORD_PFLAG " increase 0x%zu", addr, sizeof(unw_word_t));
+        DFXLOG_DEBUG("address overfolw at 0x%" UNW_WORD_PFLAG " increase 0x%zu", addr, sizeof(unw_word_t));
         return -UNW_EUNSPEC;
     }
 
@@ -431,7 +431,7 @@ int CallStack::AccessMem([[maybe_unused]] unw_addr_space_t as, unw_word_t addr,
         if (ReadVirtualThreadMemory(*unwindInfoPtr, addr, valuePoint)) {
             DFXLOG_DEBUG("access_mem addr get val 0x%" UNW_WORD_PFLAG ", from mmap", *valuePoint);
         } else {
-            DFXLOG_WARN("access_mem addr failed, from mmap, STACK RANGE 0x%" PRIx64 "- 0x%" PRIx64 "(0x%" PRIx64 ")",
+            DFXLOG_DEBUG("access_mem addr failed, from mmap, STACK RANGE 0x%" PRIx64 "- 0x%" PRIx64 "(0x%" PRIx64 ")",
                   unwindInfoPtr->callStack.stackPoint_, unwindInfoPtr->callStack.stackEnd_,
                   unwindInfoPtr->callStack.stackEnd_ - unwindInfoPtr->callStack.stackPoint_);
             return -UNW_EUNSPEC;
@@ -453,13 +453,13 @@ int CallStack::AccessReg([[maybe_unused]] unw_addr_space_t as, unw_regnum_t regn
     int perfRegIndex = LibunwindRegIdToPerfReg(regnum);
 #if defined(HIPERF_USE_CALLSTACK)
     if (perfRegIndex < 0) {
-        DFXLOG_ERROR("can't read reg %d", perfRegIndex);
+        DFXLOG_DEBUG("can't read reg %d", perfRegIndex);
         return perfRegIndex;
     }
 #elif defined(NATIVEDAEMON_USE_CALLSTACK)
     if (perfRegIndex < PERF_REG_ARM64_X29) {
         // libunwind not access other regs
-        DFXLOG_ERROR("access_reg not expected %d", regnum);
+        DFXLOG_DEBUG("access_reg not expected %d", regnum);
     }
 #else
 #error
@@ -467,7 +467,7 @@ int CallStack::AccessReg([[maybe_unused]] unw_addr_space_t as, unw_regnum_t regn
 
     /* Don't support write, I suspect we don't need it. */
     if (writeOperation) {
-        DFXLOG_ERROR("access_reg %d", regnum);
+        DFXLOG_DEBUG("access_reg %d", regnum);
         return -UNW_EINVAL;
     }
 
@@ -476,7 +476,7 @@ int CallStack::AccessReg([[maybe_unused]] unw_addr_space_t as, unw_regnum_t regn
     }
 
     if (!RegisterGetValue(val, unwindInfoPtr->callStack.regs_, perfRegIndex, unwindInfoPtr->callStack.regsNum_)) {
-        DFXLOG_ERROR("can't read reg %zu", perfRegIndex);
+        DFXLOG_DEBUG("can't read reg %zu", perfRegIndex);
         return -UNW_EUNSPEC;
     }
 
@@ -545,7 +545,7 @@ void CallStack::UnwindStep(unw_cursor_t &c, std::vector<CallFrame> &callStack, s
             }
             DFXLOG_DEBUG("unwind:%zu: ip 0x%" UNW_WORD_PFLAG " sp 0x%" UNW_WORD_PFLAG "", callStack.size(), ip, sp);
             if (callStack.back().ip_ == ip && callStack.back().sp_ == sp) {
-                DFXLOG_WARN("we found a same frame, stop here");
+                DFXLOG_DEBUG("we found a same frame, stop here");
                 break;
             }
             callStack.emplace_back(ip, sp);
@@ -701,7 +701,7 @@ void CallStack::LogFrame(const std::string msg, const std::vector<CallFrame> &fr
     DFXLOG_DEBUG("%s", msg.c_str());
     int level = 0;
     for (auto frame : frames) {
-        DFXLOG_INFO("%d:%s", level++, frame.ToString().c_str());
+        DFXLOG_DEBUG("%d:%s", level++, frame.ToString().c_str());
     }
 }
 
@@ -729,7 +729,7 @@ size_t CallStack::DoExpandCallStack(std::vector<CallFrame> &newCallFrames,
 
     if (expandLimit == 0 or newCallFrames.size() < expandLimit or
         cachedCallFrames.size() < expandLimit) {
-        DFXLOG_INFO("expandLimit %zu not match new %zu cache %zu", expandLimit, newCallFrames.size(),
+        DFXLOG_DEBUG("expandLimit %zu not match new %zu cache %zu", expandLimit, newCallFrames.size(),
             cachedCallFrames.size());
         return 0; // size not enough
     }
@@ -739,14 +739,14 @@ size_t CallStack::DoExpandCallStack(std::vector<CallFrame> &newCallFrames,
     // in case2 newIt -> B
     const auto newIt = newCallFrames.end() - expandLimit;
 
-    DFXLOG_INFO("try find new call chain bottom %s for limit %zu", newIt->ToString().c_str(), expandLimit);
+    DFXLOG_DEBUG("try find new call chain bottom %s for limit %zu", newIt->ToString().c_str(), expandLimit);
 
     // first frame search, from called - > caller
     // for case 2 it should found B
     size_t distances = expandLimit - 1;
     auto cachedIt = find(cachedCallFrames.begin(), cachedCallFrames.end(), *newIt);
     if (cachedIt == cachedCallFrames.end()) {
-        DFXLOG_INFO("not found in first search");
+        DFXLOG_DEBUG("not found in first search");
     }
 
     // cache frame found
@@ -755,7 +755,7 @@ size_t CallStack::DoExpandCallStack(std::vector<CallFrame> &newCallFrames,
                            MAX_CALL_FRAME_EXPAND_CYCLE);
 
         if (std::equal(newIt, newIt + expandLimit, cachedIt)) {
-            DFXLOG_INFO("match %s + %zu", newIt->ToString().c_str(), expandLimit);
+            DFXLOG_DEBUG("match %s + %zu", newIt->ToString().c_str(), expandLimit);
             cachedIt += expandLimit; // in while we check the boundary safe
             if (cachedIt == cachedCallFrames.end()) {
                 // same but no more need expand
@@ -768,19 +768,19 @@ size_t CallStack::DoExpandCallStack(std::vector<CallFrame> &newCallFrames,
 
             newCallFrames.insert(newCallFrames.end(), cachedIt, cachedCallFrames.end());
             auto expands = std::distance(cachedIt, cachedCallFrames.end());
-            DFXLOG_INFO("merge callstack increse to %zu (+%zd) ", newCallFrames.size(), expands);
+            DFXLOG_DEBUG("merge callstack increse to %zu (+%zd) ", newCallFrames.size(), expands);
             // we done the deal
             return expands;
         } else {
             // quick search next same farme again
             cachedIt++;
             if (cachedIt != cachedCallFrames.end()) {
-                DFXLOG_INFO("search next");
+                DFXLOG_DEBUG("search next");
                 cachedIt = find(cachedIt, cachedCallFrames.end(), *newIt);
             }
         }
     }
-    DFXLOG_INFO("cachedIt distance %zd , need %zd", std::distance(cachedCallFrames.begin(), cachedIt), distances);
+    DFXLOG_DEBUG("cachedIt distance %zd , need %zd", std::distance(cachedCallFrames.begin(), cachedIt), distances);
     return 0u; // nothing expand
 }
 
@@ -799,7 +799,7 @@ size_t CallStack::ExpandCallStack(pid_t tid, std::vector<CallFrame> &callFrames,
     if (callFrames.size() >= 1u) {
         // get top  (Earliest caller)
         HashList<uint64_t, std::vector<CallFrame>> &cachedCallFrames = cachedCallFramesMap_[tid];
-        DFXLOG_INFO("find call stack frames in cache size %zu", cachedCallFrames.size());
+        DFXLOG_DEBUG("find call stack frames in cache size %zu", cachedCallFrames.size());
         // compare
         using namespace std::rel_ops; // enable complement comparing operators
         for (auto itr = cachedCallFrames.begin(); itr < cachedCallFrames.end(); ++itr) {
@@ -829,7 +829,7 @@ size_t CallStack::ExpandCallStack(pid_t tid, std::vector<CallFrame> &callFrames,
         // vector
         cachedCallFrames[callFrames[0].ip_] = callFrames;
     }
-    DFXLOG_INFO("expand %zu", expand);
+    DFXLOG_DEBUG("expand %zu", expand);
     return expand;
 }
 
