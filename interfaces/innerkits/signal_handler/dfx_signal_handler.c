@@ -491,6 +491,7 @@ static void ForkAndDoProcessDump(void)
 
 static bool DFX_SigchainHandler(int sig, siginfo_t *si, void *context)
 {
+    DFXLOG_INFO("DFX_SigchainHandler :: sig(%d), pid(%d), tid(%d).", sig, syscall(SYS_getpid), syscall(SYS_gettid));
     bool ret = false;
     if (sig == SIGDUMP) {
         ret = true;
@@ -510,7 +511,8 @@ static bool DFX_SigchainHandler(int sig, siginfo_t *si, void *context)
     g_prevHandledSignal = sig;
 
     FillDumpRequest(sig, si, context);
-    DFXLOG_INFO("DFX_SigchainHandler :: sig(%d), pid(%d), tid(%d).", sig, g_request.pid, g_request.tid);
+    DFXLOG_INFO("DFX_SigchainHandler :: sig(%d), processName(%s), threadName(%s).",
+        sig, g_request.processName, g_request.threadName);
 
     // for protecting g_reservedChildStack
     // g_signalHandlerMutex will be unlocked in DoProcessDump function

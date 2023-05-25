@@ -37,19 +37,15 @@
 
 #include "dfx_define.h"
 #include "dfx_dump_res.h"
-#include "dfx_frame.h"
 #include "dfx_log.h"
 #include "dfx_util.h"
 #include "faultloggerd_client.h"
 #include "file_ex.h"
-#include "iosfwd"
 #include "securec.h"
 #include "strings.h"
 #include "libunwind.h"
 #include "libunwind_i-ohos.h"
 
-#include "backtrace.h"
-#include "backtrace_local_static.h"
 #include "backtrace_local_thread.h"
 
 namespace OHOS {
@@ -60,11 +56,6 @@ static const int BACK_TRACE_DUMP_MIX_TIMEOUT_MS = 2000;
 static const int BACK_TRACE_DUMP_CPP_TIMEOUT_MS = 10000;
 static const std::string DFXDUMPCATCHER_TAG = "DfxDumpCatcher";
 
-static bool IsThreadInCurPid(int32_t tid)
-{
-    std::string path = std::string(PROC_SELF_TASK_PATH) + "/" + std::to_string(tid);
-    return access(path.c_str(), F_OK) == 0;
-}
 enum DfxDumpPollRes : int32_t {
     DUMP_POLL_INIT = -1,
     DUMP_POLL_OK,
@@ -73,22 +64,6 @@ enum DfxDumpPollRes : int32_t {
     DUMP_POLL_TIMEOUT,
     DUMP_POLL_RETURN,
 };
-}
-
-DfxDumpCatcher::DfxDumpCatcher()
-{
-    frameCatcherPid_ = 0;
-    (void)GetProcStatus(procInfo_);
-}
-
-DfxDumpCatcher::DfxDumpCatcher(int32_t pid) : frameCatcherPid_(pid)
-{
-    (void)GetProcStatus(procInfo_);
-}
-
-DfxDumpCatcher::~DfxDumpCatcher()
-{
-    BacktraceLocalStatic::GetInstance().CleanUp();
 }
 
 bool DfxDumpCatcher::DoDumpCurrTid(const size_t skipFrameNum, std::string& msg)
@@ -136,7 +111,7 @@ bool DfxDumpCatcher::DoDumpLocalPid(int pid, std::string& msg)
 
     std::vector<std::string> files;
     if (ReadDirFiles(realPath, files) == false) {
-        DFXLOG_ERROR("%s :: DoDumpLocalPid :: return false as opendir failed.", DFXDUMPCATCHER_TAG.c_str());
+        DFXLOG_ERROR("%s :: DoDumpLocalPid :: return false as readdir failed.", DFXDUMPCATCHER_TAG.c_str());
         return ret;
     }
 
@@ -197,7 +172,7 @@ bool DfxDumpCatcher::DumpCatch(int pid, int tid, std::string& msg)
         return ret;
     }
 
-    std::unique_lock<std::mutex> lck(dumpCatcherMutex_);
+    std::unique_lock<std::mutex> lck(mutex_);
     int currentPid = getpid();
     DFXLOG_DEBUG("%s :: dump_catch :: cPid(%d), pid(%d), tid(%d).",
         DFXDUMPCATCHER_TAG.c_str(), currentPid, pid, tid);
@@ -437,18 +412,17 @@ bool DfxDumpCatcher::DoReadBuf(int fd, std::string& msg)
 
 bool DfxDumpCatcher::DoReadRes(int fd, bool &ret, std::string& msg)
 {
-    DumpResMsg dumpRes;
-    ssize_t nread = read(fd, &dumpRes, sizeof(struct DumpResMsg));
-    if (nread != sizeof(struct DumpResMsg)) {
+    int32_t res = DumpErrorCode::DUMP_ESUCCESS;
+    ssize_t nread = read(fd, &res, sizeof(res));
+    if (nread != sizeof(res)) {
         DFXLOG_WARN("%s :: %s :: read error", DFXDUMPCATCHER_TAG.c_str(), __func__);
         return false;
     }
 
-    if (dumpRes.res == ProcessDumpRes::DUMP_ESUCCESS) {
+    if (res == DumpErrorCode::DUMP_ESUCCESS) {
         ret = true;
     }
-    DfxDumpRes::GetInstance().SetRes(dumpRes.res);
-    msg.append("Result: " + DfxDumpRes::GetInstance().ToString() + "\n");
+    msg.append("Result: " + DfxDumpRes::ToString(res) + "\n");
     return true;
 }
 
@@ -461,7 +435,7 @@ bool DfxDumpCatcher::DumpCatchMultiPid(const std::vector<int> pidV, std::string&
         return ret;
     }
 
-    std::unique_lock<std::mutex> lck(dumpCatcherMutex_);
+    std::unique_lock<std::mutex> lck(mutex_);
     int currentPid = getpid();
     int currentTid = syscall(SYS_gettid);
     DFXLOG_DEBUG("%s :: %s :: cPid(%d), cTid(%d), pidSize(%d).", DFXDUMPCATCHER_TAG.c_str(), \
@@ -496,88 +470,6 @@ bool DfxDumpCatcher::DumpCatchMultiPid(const std::vector<int> pidV, std::string&
         ret = true;
     }
     return ret;
-}
-
-bool DfxDumpCatcher::InitFrameCatcher()
-{
-    std::unique_lock<std::mutex> lck(dumpCatcherMutex_);
-    if (as_ != nullptr) {
-        return true;
-    }
-
-    unw_init_local_address_space(&as_);
-    if (as_ == nullptr) {
-        return false;
-    }
-
-    cache_ = std::make_shared<DfxSymbolsCache>();
-    return true;
-}
-
-void DfxDumpCatcher::DestroyFrameCatcher()
-{
-    std::unique_lock<std::mutex> lck(dumpCatcherMutex_);
-    if (as_ != nullptr) {
-        unw_destroy_local_address_space(as_);
-        as_ = nullptr;
-    }
-
-    cache_ = nullptr;
-}
-
-bool DfxDumpCatcher::ReleaseThread(int tid)
-{
-    BacktraceLocalStatic::GetInstance().ReleaseThread(tid);
-    return true;
-}
-
-bool DfxDumpCatcher::CatchFrame(std::vector<NativeFrame>& frames)
-{
-    std::unique_lock<std::mutex> lck(dumpCatcherMutex_);
-    if (as_ == nullptr || cache_ == nullptr) {
-        return false;
-    }
-
-    int skipFrameNum = 1; // skip current frame
-    BacktraceLocalThread thread(BACKTRACE_CURRENT_THREAD);
-    if (!thread.Unwind(as_, cache_, skipFrameNum)) {
-        return false;
-    }
-
-    frames.clear();
-    frames = thread.GetFrames();
-    return true;
-}
-
-bool DfxDumpCatcher::CatchFrame(int tid, std::vector<NativeFrame>& frames, bool releaseThread)
-{
-    if (as_ == nullptr || cache_ == nullptr) {
-        return false;
-    }
-
-    if (tid <= 0 || frameCatcherPid_ != procInfo_.pid) {
-        DFXLOG_ERROR("DfxDumpCatchFrame :: only support localDump.");
-        return false;
-    }
-
-    if (!IsThreadInCurPid(tid) && !procInfo_.ns) {
-        DFXLOG_ERROR("DfxDumpCatchFrame :: target tid is not in our task.");
-        return false;
-    }
-
-    if (tid == procInfo_.tid) {
-        return CatchFrame(frames);
-    }
-
-    std::unique_lock<std::mutex> lck(dumpCatcherMutex_);
-    BacktraceLocalThread thread(tid);
-    if (!thread.Unwind(as_, cache_, 0, false, releaseThread)) {
-        return false;
-    }
-
-    frames.clear();
-    frames = thread.GetFrames();
-    return true;
 }
 } // namespace HiviewDFX
 } // namespace OHOS

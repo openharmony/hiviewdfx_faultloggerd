@@ -28,7 +28,6 @@
 #include "dfx_fault_stack.h"
 #include "dfx_elf.h"
 #include "dfx_signal.h"
-#include "dfx_util.h"
 
 using namespace OHOS::HiviewDFX;
 using namespace testing::ext;
@@ -60,33 +59,15 @@ static const char DUMPCATCHER_ELF_FILE[] = "/system/bin/dumpcatcher";
 HWTEST_F(DfxBaseTest, DfxConfigTest001, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "DfxConfigTest001: start.";
-    DfxConfig::GetInstance().ReadConfig();
-    ASSERT_EQ(DfxConfig::GetInstance().GetLogPersist(), false);
-    DfxConfig::GetInstance().SetLogPersist(true);
-    ASSERT_EQ(DfxConfig::GetInstance().GetLogPersist(), true);
-
-    ASSERT_EQ(DfxConfig::GetInstance().GetDisplayRegister(), true);
-    DfxConfig::GetInstance().SetDisplayRegister(false);
-    ASSERT_EQ(DfxConfig::GetInstance().GetDisplayRegister(), false);
-
-    ASSERT_EQ(DfxConfig::GetInstance().GetDisplayBacktrace(), true);
-    DfxConfig::GetInstance().SetDisplayBacktrace(false);
-    ASSERT_EQ(DfxConfig::GetInstance().GetDisplayBacktrace(), false);
-
-    ASSERT_EQ(DfxConfig::GetInstance().GetDisplayMaps(), true);
-    DfxConfig::GetInstance().SetDisplayMaps(false);
-    ASSERT_EQ(DfxConfig::GetInstance().GetDisplayMaps(), false);
-
-    ASSERT_EQ(DfxConfig::GetInstance().GetDisplayFaultStack(), true);
-    DfxConfig::GetInstance().SetDisplayFaultStack(false);
-    ASSERT_EQ(DfxConfig::GetInstance().GetDisplayFaultStack(), false);
-
-    ASSERT_EQ(DfxConfig::GetInstance().GetDumpOtherThreads(), false);
-    DfxConfig::GetInstance().SetDumpOtherThreads(true);
-    ASSERT_EQ(DfxConfig::GetInstance().GetDumpOtherThreads(), true);
-
-    ASSERT_EQ(DfxConfig::GetInstance().GetFaultStackHighAddressStep(), 512);
-    ASSERT_EQ(DfxConfig::GetInstance().GetFaultStackLowAddressStep(), 16);
+    ASSERT_EQ(DfxConfig::GetConfig().logPersist, false);
+    ASSERT_EQ(DfxConfig::GetConfig().displayRegister, true);
+    ASSERT_EQ(DfxConfig::GetConfig().displayBacktrace, true);
+    ASSERT_EQ(DfxConfig::GetConfig().displayMaps, true);
+    ASSERT_EQ(DfxConfig::GetConfig().displayFaultStack, true);
+    ASSERT_EQ(DfxConfig::GetConfig().dumpOtherThreads, false);
+    ASSERT_EQ(DfxConfig::GetConfig().highAddressStep, 512);
+    ASSERT_EQ(DfxConfig::GetConfig().lowAddressStep, 16);
+    ASSERT_EQ(DfxConfig::GetConfig().maxFrameNums, 64);
     GTEST_LOG_(INFO) << "DfxConfigTest001: end.";
 }
 
@@ -152,38 +133,6 @@ HWTEST_F(DfxBaseTest, DfxRegsTest001, TestSize.Level2)
 }
 
 /**
- * @tc.name: DfxDumpResquestTest001
- * @tc.desc: test DfxDumpResquest functions
- * @tc.type: FUNC
- */
-HWTEST_F(DfxBaseTest, DfxDumpResquestTest001, TestSize.Level2)
-{
-    GTEST_LOG_(INFO) << "DfxDumpResquestTest001: start.";
-    auto request = make_shared<ProcessDumpRequest>();
-    request->SetRecycleTid(-1);
-    ASSERT_EQ(request->GetRecycleTid(), -1);
-    struct TraceInfo traceinfo;
-    request->traceInfo = traceinfo;
-    auto info = request->GetTraceInfo();
-    char threadname[] = "testThread";
-    char processname[] = "testProcess";
-    char fatalmsg[] = "test fatal message";
-    if (strcpy_s(request->threadName_, NAME_LEN, threadname) != EOK) {
-        GTEST_LOG_(ERROR) << "strcpy_s failed.";
-    }
-    if (strcpy_s(request->processName_, NAME_LEN, processname) != EOK) {
-        GTEST_LOG_(ERROR) << "strcpy_s failed.";
-    }
-    if (strcpy_s(request->lastFatalMessage_, NAME_LEN, fatalmsg) != EOK) {
-        GTEST_LOG_(ERROR) << "strcpy_s failed.";
-    }
-    GTEST_LOG_(INFO) << "threadName_ = " << request->GetThreadNameString();
-    GTEST_LOG_(INFO) << "processName_ = " << request->GetProcessNameString();
-    GTEST_LOG_(INFO) << "lastFatalMessage_ = " << request->GetLastFatalMessage();
-    GTEST_LOG_(INFO) << "DfxDumpResquestTest001: end.";
-}
-
-/**
  * @tc.name: DfxDumpResTest001
  * @tc.desc: test DfxDumpRes functions
  * @tc.type: FUNC
@@ -191,37 +140,8 @@ HWTEST_F(DfxBaseTest, DfxDumpResquestTest001, TestSize.Level2)
 HWTEST_F(DfxBaseTest, DfxDumpResTest001, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "DfxDumpResTest001: start.";
-    DfxDumpRes::GetInstance().SetRes(ProcessDumpRes::DUMP_ESUCCESS);
-    GTEST_LOG_(INFO) << DfxDumpRes::GetInstance().ToString();
-    DfxDumpRes::GetInstance().SetRes(ProcessDumpRes::DUMP_EREADREQUEST);
-    GTEST_LOG_(INFO) << DfxDumpRes::GetInstance().ToString();
-    DfxDumpRes::GetInstance().SetRes(ProcessDumpRes::DUMP_EGETPPID);
-    GTEST_LOG_(INFO) << DfxDumpRes::GetInstance().ToString();
-    DfxDumpRes::GetInstance().SetRes(ProcessDumpRes::DUMP_EATTACH);
-    GTEST_LOG_(INFO) << DfxDumpRes::GetInstance().ToString();
-    DfxDumpRes::GetInstance().SetRes(ProcessDumpRes::DUMP_EGETFD);
-    GTEST_LOG_(INFO) << DfxDumpRes::GetInstance().ToString();
-    DfxDumpRes::GetInstance().SetRes(ProcessDumpRes::DUMP_ENOMEM);
-    GTEST_LOG_(INFO) << DfxDumpRes::GetInstance().ToString();
-    DfxDumpRes::GetInstance().SetRes(ProcessDumpRes::DUMP_EBADREG);
-    GTEST_LOG_(INFO) << DfxDumpRes::GetInstance().ToString();
-    DfxDumpRes::GetInstance().SetRes(ProcessDumpRes::DUMP_EREADONLYREG);
-    GTEST_LOG_(INFO) << DfxDumpRes::GetInstance().ToString();
-    DfxDumpRes::GetInstance().SetRes(ProcessDumpRes::DUMP_ESTOPUNWIND);
-    GTEST_LOG_(INFO) << DfxDumpRes::GetInstance().ToString();
-    DfxDumpRes::GetInstance().SetRes(ProcessDumpRes::DUMP_EINVALIDIP);
-    GTEST_LOG_(INFO) << DfxDumpRes::GetInstance().ToString();
-    DfxDumpRes::GetInstance().SetRes(ProcessDumpRes::DUMP_EBADFRAME);
-    GTEST_LOG_(INFO) << DfxDumpRes::GetInstance().ToString();
-    DfxDumpRes::GetInstance().SetRes(ProcessDumpRes::DUMP_EINVAL);
-    GTEST_LOG_(INFO) << DfxDumpRes::GetInstance().ToString();
-    DfxDumpRes::GetInstance().SetRes(ProcessDumpRes::DUMP_EBADVERSION);
-    GTEST_LOG_(INFO) << DfxDumpRes::GetInstance().ToString();
-    DfxDumpRes::GetInstance().SetRes(ProcessDumpRes::DUMP_ENOINFO);
-    ASSERT_EQ(DfxDumpRes::GetInstance().GetRes(), ProcessDumpRes::DUMP_ENOINFO);
-    GTEST_LOG_(INFO) << DfxDumpRes::GetInstance().ToString();
-    DfxDumpRes::GetInstance().SetRes(-1); // -1 : invalid status
-    GTEST_LOG_(INFO) << DfxDumpRes::GetInstance().ToString();
+    int32_t res = DUMP_ESUCCESS;
+    GTEST_LOG_(INFO) << DfxDumpRes::ToString(res);
     GTEST_LOG_(INFO) << "DfxDumpResTest001: end.";
 }
 
@@ -258,36 +178,4 @@ HWTEST_F(DfxBaseTest, DfxSignalTest001, TestSize.Level2)
         ASSERT_TRUE(sigStr.find(sigKeyword) != std::string::npos);
     }
     GTEST_LOG_(INFO) << "DfxSignalTest001: end.";
-}
-
-/**
- * @tc.name: DfxUtilTest001
- * @tc.desc: test DfxUtil functions
- * @tc.type: FUNC
- */
-HWTEST_F(DfxBaseTest, DfxUtilTest001, TestSize.Level2)
-{
-    GTEST_LOG_(INFO) << "DfxUtilTest001: start.";
-    time_t now = time(nullptr);
-    std::string timeStr = GetCurrentTimeStr(static_cast<uint64_t>(now));
-    GTEST_LOG_(INFO) << timeStr;
-    ASSERT_NE(timeStr, "invalid timestamp\n");
-    now += 100000; // 100000 : test time offset
-    timeStr = GetCurrentTimeStr(static_cast<uint64_t>(now));
-    GTEST_LOG_(INFO) << timeStr;
-    ASSERT_NE(timeStr, "invalid timestamp\n");
-    GTEST_LOG_(INFO) << "DfxUtilTest001: end.";
-}
-
-/**
- * @tc.name: DfxUtilTest002
- * @tc.desc: test DfxUtil functions
- * @tc.type: FUNC
- */
-HWTEST_F(DfxBaseTest, DfxUtilTest002, TestSize.Level2)
-{
-    GTEST_LOG_(INFO) << "DfxUtilTest002: start.";
-    pid_t pid = getppid();
-    ASSERT_EQ(pid, GetRealTargetPid());
-    GTEST_LOG_(INFO) << "DfxUtilTest002: end.";
 }

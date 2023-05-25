@@ -50,10 +50,6 @@ static const int USER_REG_NUM = 27;
 static const int REG_PC_NUM = 16;
 #endif
 
-static const char PID_STR_NAME[] = "Pid:";
-static const char PPID_STR_NAME[] = "PPid:";
-static const char NSPID_STR_NAME[] = "NSpid:";
-
 static const int DUMP_CATCHER_NUMBER_ONE = 1;
 static const int DUMP_CATCHER_NUMBER_TWO = 2;
 static const int DUMP_CATCHER_NUMBER_THREE = 3;
@@ -64,8 +60,6 @@ static const int FAULTSTACK_ITEM_BUFFER_LENGTH = 2048;
 static const int FAULTSTACK_SP_REVERSE = 3;
 static const int FAULTSTACK_FIRST_FRAME_SEARCH_LENGTH = 64;
 
-// max unwind 64 steps.
-static const int BACK_STACK_MAX_STEPS = 64;
 // 128K back trace stack size
 static const int BACK_STACK_INFO_SIZE = 128 * 1024;
 
@@ -89,8 +83,9 @@ static const int DUMP_TYPE_KERNEL = -3;
 #define AT_SYMBOL_DEFAULT       __attribute__ ((visibility("default")))
 #define AT_SYMBOL_HIDDEN        __attribute__ ((visibility("hidden")))
 #define AT_ALWAYS_INLINE        __attribute__((always_inline))
-#define ATTRIBUTE_WARN_UNUSED __attribute__((warn_unused_result))
-#define ATTRIBUTE_UNUSED    __attribute__((unused))
+#define AT_WARN_UNUSED          __attribute__((warn_unused_result))
+#define AT_UNUSED               __attribute__((unused))
+#define MAYBE_UNUSED            [[maybe_unused]]
 
 #define OHOS_TEMP_FAILURE_RETRY(exp)            \
     ({                                          \
@@ -100,6 +95,17 @@ static const int DUMP_TYPE_KERNEL = -3;
     } while ((_rc == -1) && (errno == EINTR));  \
     _rc;                                        \
     })
+
+#define BYTE_TO_BINARY_PATTERN "%c%c%c%c%c%c%c%c"
+#define BYTE_TO_BINARY(byte) \
+    (byte & 0x80 ? '1' : '0'), \
+    (byte & 0x40 ? '1' : '0'), \
+    (byte & 0x20 ? '1' : '0'), \
+    (byte & 0x10 ? '1' : '0'), \
+    (byte & 0x08 ? '1' : '0'), \
+    (byte & 0x04 ? '1' : '0'), \
+    (byte & 0x02 ? '1' : '0'), \
+    (byte & 0x01 ? '1' : '0')
 
 // keep sync with the definition in hitracec.h
 typedef struct TraceInfo {
@@ -125,9 +131,9 @@ typedef struct TraceInfo {
 } TraceInfo;
 
 typedef struct ProcInfo {
-    int tid;
     int pid;
     int ppid;
+    int nsPid;
     bool ns;
 } ProcInfo;
 

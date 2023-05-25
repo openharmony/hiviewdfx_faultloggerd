@@ -31,8 +31,8 @@
 #include <libunwind.h>
 #include <securec.h>
 
-#include "backtrace.h"
-#include "backtrace_local_static.h"
+#include "dfx_frame_format.h"
+#include "backtrace_local_context.h"
 #include "backtrace_local_thread.h"
 #include "dfx_symbols_cache.h"
 #include "elapsed_time.h"
@@ -134,7 +134,7 @@ HWTEST_F(BacktraceLocalTest, BacktraceLocalTest001, TestSize.Level2)
     const auto& frames = thread.GetFrames();
     ASSERT_GT(frames.size(), 0);
     for (const auto& frame : frames) {
-        GTEST_LOG_(INFO) << BacktraceLocalThread::GetNativeFrameStr(frame);
+        GTEST_LOG_(INFO) << DfxFrameFormat::GetFrameStr(frame);
     }
 
     unw_destroy_local_address_space(as);
@@ -183,11 +183,11 @@ HWTEST_F(BacktraceLocalTest, BacktraceLocalTest003, TestSize.Level2)
     BacktraceLocalThread thread(g_tid);
     ASSERT_EQ(true, thread.Unwind(as, cache, 0));
     GTEST_LOG_(INFO) << "UnwindCurrentCost:" << counter.Elapsed();
-    BacktraceLocalStatic::GetInstance().CleanUp();
+    BacktraceLocalContext::GetInstance().CleanUp();
     const auto& frames = thread.GetFrames();
     ASSERT_GT(frames.size(), 0);
     for (const auto& frame : frames) {
-        GTEST_LOG_(INFO) << BacktraceLocalThread::GetNativeFrameStr(frame);
+        GTEST_LOG_(INFO) << DfxFrameFormat::GetFrameStr(frame);
     }
     g_mutex.unlock();
     unw_destroy_local_address_space(as);

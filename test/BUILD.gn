@@ -47,6 +47,7 @@ group("faultloggerd_fuzzertest") {
 group("faultloggerd_unittest") {
   testonly = true
   deps = [
+    "unittest/common:unittest",
     "unittest/dump_catcher:unittest",
     "unittest/process_dump:unittest",
     "unittest/services:unittest",

@@ -43,18 +43,18 @@ static const int MAX_MAP_SIZE = 65536;
 
 std::shared_ptr<DfxElf> DfxElf::Create(const std::string path)
 {
-    char realPaths[PATH_MAX] = {0};
-    if (!realpath(path.c_str(), realPaths)) {
+    char realPath[PATH_MAX] = {0};
+    if (!realpath(path.c_str(), realPath)) {
         DFXLOG_WARN("Fail to do realpath(%s).", path.c_str());
         return nullptr;
     }
 
     auto dfxElf = std::make_shared<DfxElf>();
 
-    dfxElf->SetFd(OHOS_TEMP_FAILURE_RETRY(open(realPaths, O_RDONLY | O_CLOEXEC)));
+    dfxElf->SetFd(OHOS_TEMP_FAILURE_RETRY(open(realPath, O_RDONLY | O_CLOEXEC)));
 
     if (dfxElf->fd_ < 0) {
-        DFXLOG_WARN("Fail to open elf file(%s).", realPaths);
+        DFXLOG_WARN("Fail to open elf file(%s).", realPath);
         return nullptr;
     }
 

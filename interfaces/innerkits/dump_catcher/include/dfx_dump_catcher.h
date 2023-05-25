@@ -26,32 +26,17 @@
 #include <unistd.h>
 #include <vector>
 
-#include "backtrace.h"
-#include "dfx_define.h"
-#include "dfx_symbols_cache.h"
-
-// forward declaration
-struct unw_addr_space;
-typedef struct unw_addr_space *unw_addr_space_t;
-
 namespace OHOS {
 namespace HiviewDFX {
 class DfxDumpCatcher {
 public:
-    DfxDumpCatcher();
-    explicit DfxDumpCatcher(int32_t pid);
-    ~DfxDumpCatcher();
+    DfxDumpCatcher() {}
+    ~DfxDumpCatcher() {}
 
     bool DumpCatch(int pid, int tid, std::string& msg);
     bool DumpCatchMix(int pid, int tid, std::string& msg);
     bool DumpCatchFd(int pid, int tid, std::string& msg, int fd);
     bool DumpCatchMultiPid(const std::vector<int> pidV, std::string& msg);
-
-    bool InitFrameCatcher();
-    bool ReleaseThread(int tid);
-    bool CatchFrame(int tid, std::vector<NativeFrame>& frames, bool releaseThread = false);
-    bool CatchFrame(std::vector<NativeFrame>& frames);
-    void DestroyFrameCatcher();
 
 private:
     bool DoDumpCurrTid(const size_t skipFrameNum, std::string& msg);
@@ -66,11 +51,7 @@ private:
     bool DoReadRes(int fd, bool &ret, std::string& msg);
 
 private:
-    std::mutex dumpCatcherMutex_;
-    int32_t frameCatcherPid_;
-    struct ProcInfo procInfo_;
-    unw_addr_space_t as_ {nullptr};
-    std::shared_ptr<DfxSymbolsCache> cache_ {nullptr};
+    std::mutex mutex_;
 };
 } // namespace HiviewDFX
 } // namespace OHOS

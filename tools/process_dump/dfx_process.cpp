@@ -91,28 +91,19 @@ void DfxProcess::SetRecycleTid(pid_t nstid)
 
 bool DfxProcess::InitOtherThreads(bool attach)
 {
-    std::vector<std::string> files;
-    if (ReadDirFilesByPid(GetPid(), files) == false) {
+    std::vector<int> tids;
+    std::vector<int> nstids;
+    if (!GetTidsByPid(GetPid(), tids, nstids)) {
         return false;
     }
 
-    for (size_t i = 0; i < files.size(); ++i) {
-        pid_t tid = atoi(files[i].c_str());
-        if (tid == 0) {
+    for (size_t i = 0; i < nstids.size(); ++i) {
+        if (isSignalDump_ && (nstids[i] == recycleTid_)) {
+            DFXLOG_DEBUG("skip recycle tid:%d nstid:%d.", recycleTid_, nstids[i]);
             continue;
         }
 
-        pid_t nstid = tid;
-        if (GetNs()) {
-            TidToNstid(pid_, tid, nstid);
-        }
-
-        if (isSignalDump_ && (nstid == recycleTid_)) {
-            DFXLOG_DEBUG("skip recycle tid:%d nstid:%d.", recycleTid_, nstid);
-            continue;
-        }
-
-        InsertThreadNode(tid, nstid, attach);
+        InsertThreadNode(tids[i], nstids[i], attach);
     }
     return true;
 }
@@ -237,7 +228,7 @@ void DfxProcess::Detach()
 
 void DfxProcess::PrintProcessMapsByConfig()
 {
-    if (DfxConfig::GetInstance().GetDisplayMaps()) {
+    if (DfxConfig::GetConfig().displayMaps) {
         if (GetMaps()) {
             DfxRingBufferWrapper::GetInstance().AppendMsg("\nMaps:\n");
         }
@@ -252,7 +243,7 @@ void DfxProcess::PrintProcessMapsByConfig()
 
 void DfxProcess::PrintThreadsHeaderByConfig()
 {
-    if (DfxConfig::GetInstance().GetDisplayBacktrace()) {
+    if (DfxConfig::GetConfig().displayBacktrace) {
         if (!isSignalDump_) {
             DfxRingBufferWrapper::GetInstance().AppendMsg("Other thread info:\n");
         }

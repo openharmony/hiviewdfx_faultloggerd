@@ -29,12 +29,12 @@ if (defined(ohos_lite)) {
 
       include_dirs = [
         "$c_utils_include_path",
+        "$faultloggerd_interfaces_path/innerkits/backtrace/include",
         "$faultloggerd_path/common",
         "$faultloggerd_path/tools/process_dump",
         "$faultloggerd_path/interfaces/innerkits/faultoggerd_client/include",
         "$faultloggerd_path/interfaces/innerkits/dump_catcher/include",
         "$faultloggerd_path/test/utils",
-        "$faultloggerd_path/utils",
         "$hilog_lite_include_path",
       ]
 
@@ -43,12 +43,6 @@ if (defined(ohos_lite)) {
         "$faultloggerd_path/test/utils:dfx_test_util",
         "//base/hiviewdfx/hilog_lite/frameworks/featured:hilog_shared",
       ]
-
-      if (target_cpu == "arm") {
-        cflags = [ "-D__arm__" ]
-      } else if (target_cpu == "arm64") {
-        cflags = [ "-D__aarch64__" ]
-      }
     }
   }
 
@@ -94,12 +88,6 @@ if (defined(ohos_lite)) {
       "c_utils:utils",
       "hilog_native:libhilog",
     ]
-
-    if (target_cpu == "arm") {
-      cflags = [ "-D__arm__" ]
-    } else if (target_cpu == "arm64") {
-      cflags = [ "-D__aarch64__" ]
-    }
   }
 
   group("systemtest") {

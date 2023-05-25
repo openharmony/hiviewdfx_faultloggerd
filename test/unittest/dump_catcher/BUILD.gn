@@ -29,6 +29,7 @@ if (defined(ohos_lite)) {
         "include/",
         "//commonlibrary/c_utils/base/include",
         "$faultloggerd_path/common",
+        "$faultloggerd_path/interfaces/innerkits/backtrace/include",
         "$faultloggerd_path/interfaces/innerkits/dump_catcher/include",
         "$faultloggerd_path/test/utils",
         "$faultloggerd_path/tools/process_dump",
@@ -60,6 +61,7 @@ if (defined(ohos_lite)) {
 
     include_dirs = [
       "$faultloggerd_path/common",
+      "$faultloggerd_path/interfaces/innerkits/backtrace/include",
       "$faultloggerd_path/interfaces/innerkits/dump_catcher/include",
       "$faultloggerd_path/test/utils",
     ]

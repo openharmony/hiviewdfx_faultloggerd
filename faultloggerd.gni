@@ -13,6 +13,8 @@
 
 # hiview path definitions
 faultloggerd_path = "//base/hiviewdfx/faultloggerd"
+faultloggerd_frameworks_path = "$faultloggerd_path/frameworks"
+faultloggerd_interfaces_path = "$faultloggerd_path/interfaces"
 
 if (defined(ohos_lite)) {
   import("//build/lite/config/component/lite_component.gni")

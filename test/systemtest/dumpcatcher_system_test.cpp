@@ -65,9 +65,6 @@ static const int ARRAY_SIZE = 100;
 
 static const string DEFAULT_PID_MAX = "32768";
 static const string DEFAULT_TID_MAX = "8825";
-static const string ACCOUNTMGR_NAME = "accountmgr";
-static const string FOUNDATION_NAME = "foundation";
-static const string APPSPAWN_NAME = "appspawn";
 
 static pid_t g_rootTid[ARRAY_SIZE] = { -1 };
 static pid_t g_appTid[ARRAY_SIZE] = { -1 };
