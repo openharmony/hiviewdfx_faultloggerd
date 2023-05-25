@@ -172,12 +172,14 @@ bool DfxThread::Attach()
     }
 
     if (ptrace(PTRACE_SEIZE, nsTid_, 0, 0) != 0) {
-        DFXLOG_WARN("Failed to seize thread(%d:%d), errno=%d", tid_, nsTid_, errno);
+        DFXLOG_WARN("Failed to seize thread(%d:%d) from (%d:%d), errno=%d",
+            tid_, nsTid_, getuid(), getgid(), errno);
         return false;
     }
 
     if (ptrace(PTRACE_INTERRUPT, nsTid_, 0, 0) != 0) {
-        DFXLOG_WARN("Failed to interrupt thread(%d:%d), errno=%d", tid_, nsTid_, errno);
+        DFXLOG_WARN("Failed to interrupt thread(%d:%d) from (%d:%d), errno=%d",
+            tid_, nsTid_, getuid(), getgid(), errno);
         ptrace(PTRACE_DETACH, nsTid_, NULL, NULL);
         return false;
     }
