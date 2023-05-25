@@ -45,12 +45,12 @@ private:
 
 class FaultLoggerPipe2 {
 public:
-    FaultLoggerPipe2(std::unique_ptr<FaultLoggerPipe> pipeBuf, std::unique_ptr<FaultLoggerPipe> pipeRes);
-    FaultLoggerPipe2();
+    explicit FaultLoggerPipe2(uint64_t time);
     ~FaultLoggerPipe2();
 
     std::unique_ptr<FaultLoggerPipe> faultLoggerPipeBuf_;
     std::unique_ptr<FaultLoggerPipe> faultLoggerPipeRes_;
+    uint64_t time_;
 };
 
 class FaultLoggerPipeMap {
@@ -58,7 +58,8 @@ public:
     FaultLoggerPipeMap();
     ~FaultLoggerPipeMap();
 
-    void Set(int pid);
+    bool Check(int pid, uint64_t time);
+    void Set(int pid, uint64_t time);
     FaultLoggerPipe2* Get(int pid);
     void Del(int pid);
 

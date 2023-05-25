@@ -18,6 +18,7 @@
 #include "faultlogger_pipe_test.h"
 
 #include <string>
+#include "dfx_util.h"
 #include "fault_logger_pipe.h"
 
 using namespace OHOS::HiviewDFX;
@@ -43,22 +44,27 @@ void FaultLoggerPipeTest::TearDown(void)
 namespace {
 /**
  * @tc.name: FaultLoggerPipeTest001
- * @tc.desc: test FaultLoggerPipeMap Set Get func
+ * @tc.desc: test FaultLoggerPipeMap Check Set Get func
  * @tc.type: FUNC
  */
 HWTEST_F (FaultLoggerPipeTest, FaultLoggerPipeTest001, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "FaultLoggerPipeTest001: start.";
     std::shared_ptr<FaultLoggerPipeMap> ptr = std::make_shared<FaultLoggerPipeMap>();
+    uint64_t time = OHOS::HiviewDFX::GetTimeMilliSeconds();
     int pid = 100;
+    bool check = ptr->Check(pid, time);
+    EXPECT_EQ(check, false) << "FaultLoggerPipeTest001 Check failed";
+
+    ptr->Set(pid, time);
     auto ret = ptr->Get(pid);
-    if (ret != nullptr) {
-        GTEST_LOG_(ERROR) << "FaultLoggerPipeTest001 Get failed";
-        ASSERT_TRUE(false);
-    }
-    ptr->Set(pid);
-    ret = ptr->Get(pid);
     EXPECT_EQ(true, ret != nullptr) << "FaultLoggerPipeTest001 Get failed";
+
+    sleep(10);
+    time = OHOS::HiviewDFX::GetTimeMilliSeconds();
+    check = ptr->Check(pid, time);
+    EXPECT_EQ(check, false) << "FaultLoggerPipeTest001 Check failed";
+
     GTEST_LOG_(INFO) << "FaultLoggerPipeTest001: end.";
 }
 
@@ -71,8 +77,9 @@ HWTEST_F (FaultLoggerPipeTest, FaultLoggerPipeTest002, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "FaultLoggerPipeTest002: start.";
     std::shared_ptr<FaultLoggerPipeMap> ptr = std::make_shared<FaultLoggerPipeMap>();
+    uint64_t time = OHOS::HiviewDFX::GetTimeMilliSeconds();
     int pid = 100;
-    ptr->Set(pid);
+    ptr->Set(pid, time);
     auto ret = ptr->Get(pid);
     EXPECT_EQ(true, ret != nullptr) << "FaultLoggerPipeTest002 Get failed";
     ptr->Del(pid);

@@ -262,8 +262,8 @@ bool ProcessDumper::InitProcessNsInfo(std::shared_ptr<ProcessDumpRequest> reques
         targetVmNsPid_ = getppid();
         DFXLOG_INFO("Crash in vmPid:%d nsVmPid:%d.", targetVmPid_, targetVmNsPid_);
         (void)memset_s(&procInfo, sizeof(procInfo), 0, sizeof(struct ProcInfo));
-        (void)GetProcStatusByPid(targetVmPid_, procInfo);
-        if (procInfo.ns) {
+        if (GetProcStatusByPid(targetVmPid_, procInfo) < 0) {
+            // This should not be happen!
             targetPid_ = targetVmPid_;
             targetNsPid_ = targetVmNsPid_;
         } else {

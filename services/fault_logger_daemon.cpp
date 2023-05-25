@@ -392,12 +392,12 @@ void FaultLoggerDaemon::HandleSdkDumpRequest(int32_t connectionFd, FaultLoggerdR
             break;
         }
 
-        if (faultLoggerPipeMap_->Get(request->pid) != nullptr) {
+        if (faultLoggerPipeMap_->Check(request->pid, request->time)) {
             resSdkDump = FaultLoggerSdkDumpResp::SDK_DUMP_REPEAT;
             DFXLOG_ERROR("%s :: pid(%d) is dumping, break.\n", FAULTLOGGERD_TAG.c_str(), request->pid);
             break;
         }
-        faultLoggerPipeMap_->Set(request->pid);
+        faultLoggerPipeMap_->Set(request->pid, request->time);
 
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Winitializer-overrides"
