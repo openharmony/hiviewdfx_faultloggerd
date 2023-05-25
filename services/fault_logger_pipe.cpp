@@ -103,16 +103,9 @@ void FaultLoggerPipe::Close(int fd) const
     }
 }
 
-FaultLoggerPipe2::FaultLoggerPipe2(std::unique_ptr<FaultLoggerPipe> pipeBuf, std::unique_ptr<FaultLoggerPipe> pipeRes)
-    : faultLoggerPipeBuf_(std::move(pipeBuf)), faultLoggerPipeRes_(std::move(pipeRes))
-{
-    time_ = static_cast<uint64_t>(std::chrono::duration_cast<std::chrono::milliseconds>\
-            (std::chrono::system_clock::now().time_since_epoch()).count());
-}
-
 FaultLoggerPipe2::FaultLoggerPipe2(uint64_t time)
-    : FaultLoggerPipe2(std::unique_ptr<FaultLoggerPipe>(new FaultLoggerPipe())
-    , std::unique_ptr<FaultLoggerPipe>(new FaultLoggerPipe()))
+    : faultLoggerPipeBuf_(std::unique_ptr<FaultLoggerPipe>(new FaultLoggerPipe()))
+    , faultLoggerPipeRes_(std::unique_ptr<FaultLoggerPipe>(new FaultLoggerPipe()))
 {
     time_ = time;
 }
@@ -121,6 +114,7 @@ FaultLoggerPipe2::~FaultLoggerPipe2()
 {
     faultLoggerPipeBuf_.reset();
     faultLoggerPipeRes_.reset();
+    time_ = 0;
 }
 
 FaultLoggerPipeMap::FaultLoggerPipeMap()

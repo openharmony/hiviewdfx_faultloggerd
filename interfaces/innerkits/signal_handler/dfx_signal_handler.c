@@ -355,7 +355,7 @@ static void BlockMainThreadIfNeed(int sig)
         return;
     }
 
-    DFXLOG_INFO("Crash(%d) in child thread(%d), try stop main thread.", sig, syscall(SYS_gettid));
+    DFXLOG_INFO("Try block main thread.");
     (void)signal(SIGQUIT, PauseMainThreadHandler);
     if (syscall(SYS_tgkill, syscall(SYS_getpid), syscall(SYS_getpid), SIGQUIT) != 0) {
         DFXLOG_ERROR("Failed to send SIGQUIT to main thread, errno(%d).", errno);
@@ -374,13 +374,13 @@ static pid_t ForkBySyscall(void)
 static bool SetDumpState(void)
 {
     if (prctl(PR_SET_DUMPABLE, 1) != 0) {
-        DFXLOG_ERROR("Failed to set dumpable.");
+        DFXLOG_ERROR("Failed to set dumpable, errno(%d).", errno);
         return false;
     }
 
     if (prctl(PR_SET_PTRACER, PR_SET_PTRACER_ANY) != 0) {
         if (errno != EINVAL) {
-            DFXLOG_ERROR("Failed to set ptracer.");
+            DFXLOG_ERROR("Failed to set ptracer, errno(%d).", errno);
             return false;
         }
     }

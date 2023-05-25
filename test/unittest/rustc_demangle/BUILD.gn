@@ -33,7 +33,7 @@ if (defined(ohos_lite)) {
     ]
   }
 
-  ohos_unittest("test_rustc_demangle") {
+  ohos_unittest("test_demangle") {
     module_out_path = "faultloggerd/rustc_demangle"
 
     configs = [ ":module_private_config" ]
@@ -51,6 +51,6 @@ if (defined(ohos_lite)) {
 
   group("unittest") {
     testonly = true
-    deps = [ ":test_rustc_demangle" ]
+    deps = [ ":test_demangle" ]
   }
 }

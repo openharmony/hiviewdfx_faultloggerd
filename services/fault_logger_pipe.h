@@ -45,8 +45,7 @@ private:
 
 class FaultLoggerPipe2 {
 public:
-    FaultLoggerPipe2(std::unique_ptr<FaultLoggerPipe> pipeBuf, std::unique_ptr<FaultLoggerPipe> pipeRes);
-    FaultLoggerPipe2(uint64_t time);
+    explicit FaultLoggerPipe2(uint64_t time);
     ~FaultLoggerPipe2();
 
     std::unique_ptr<FaultLoggerPipe> faultLoggerPipeBuf_;

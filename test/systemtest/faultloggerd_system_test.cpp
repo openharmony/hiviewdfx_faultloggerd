@@ -26,9 +26,13 @@
 
 #include "dfx_test_util.h"
 #include "directory_ex.h"
+#include "dfx_define.h"
+#include "dfx_util.h"
 
 using namespace testing::ext;
 using namespace std;
+
+#define NSPID_PATH "/data/nspid"
 
 namespace OHOS {
 namespace HiviewDFX {
@@ -196,6 +200,30 @@ static string GetStackTop(void)
     }
     GTEST_LOG_(INFO) << "sp:" << sp;
     return sp;
+}
+
+static void WriteRealPid(int realPid)
+{
+    ofstream file;
+    file.open(NSPID_PATH);
+    file << std::to_string(realPid);
+    file.close();
+}
+
+static int ReadRealPid(void)
+{
+    ifstream file;
+    file.open(NSPID_PATH);
+    string pid;
+    file >> pid;
+    file.close();
+    int ret = remove(NSPID_PATH);
+    if (ret != 0) {
+        printf("remove failed!");
+    }
+    int realPid = atoi(pid.c_str());
+    GTEST_LOG_(INFO) << "real pid:" << realPid;
+    return realPid;
 }
 
 static bool CheckCountNumStackTop(const string& filePath, const pid_t& pid)
@@ -966,9 +994,12 @@ static void CrashInChildThread()
 static int RunInNewPidNs(void* arg)
 {
     (void)arg;
+    struct ProcInfo g_nsProcInfo;
+    GetProcStatus(g_nsProcInfo);
+    WriteRealPid(g_nsProcInfo.pid);
+    GTEST_LOG_(INFO) << "RunInNewPidNs(): real pid = " << g_nsProcInfo.pid;
     GTEST_LOG_(INFO) << "RunInNewPidNs(): PID = " << getpid();
     GTEST_LOG_(INFO) << "RunInNewPidNs(): TID = " << gettid();
-    GTEST_LOG_(INFO) << "RunInNewPidNs(): PPID = " << getppid();
     thread childThread(CrashInChildThread);
     childThread.join();
     _exit(0);
@@ -996,7 +1027,8 @@ HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest102, TestSize.Level2)
     }
     // wait for log generation
     sleep(4); // 4 : sleep 4s
-    string fileName = GetCppCrashFileName(childPid);
+    int readPid = ReadRealPid();
+    string fileName = GetCppCrashFileName(readPid);
     EXPECT_NE(0, fileName.size());
     printf("PidNs Crash File:%s\n", fileName.c_str());
     string log[] = {
