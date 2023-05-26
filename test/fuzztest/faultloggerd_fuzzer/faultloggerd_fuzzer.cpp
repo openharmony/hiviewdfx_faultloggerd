@@ -21,6 +21,7 @@
 #include <cstdint>
 #include <iostream>
 #include "dfx_dump_catcher.h"
+#include "faultloggerd_client.h"
 #include "securec.h"
 
 using namespace OHOS::HiviewDFX;
@@ -67,6 +68,39 @@ bool DumpStackTraceTest(const uint8_t* data, size_t size)
 
     return true;
 }
+
+bool FaultloggerdClientTest(const uint8_t* data, size_t size)
+{
+    if (size < sizeof(int32_t) * 3) { //3: 3 parameters
+        return true;
+    }
+    int32_t type[1];
+    int32_t pid[1];
+    int32_t tid[1];
+    errno_t err = memcpy_s(type, sizeof(type), data, sizeof(int32_t));
+    if (err != EOK) {
+        cout << "FaultloggerdClientTest :: memcpy_s type failed" << endl;
+    }
+    data += sizeof(int32_t);
+    err = memcpy_s(tid, sizeof(tid), data, sizeof(int32_t));
+    if (err != EOK) {
+        cout << "FaultloggerdClientTest :: memcpy_s tid failed" << endl;
+    }
+    data += sizeof(int32_t);
+    err = memcpy_s(pid, sizeof(pid), data, sizeof(int32_t));
+    if (err != EOK) {
+        cout << "FaultloggerdClientTest :: memcpy_s pid failed" << endl;
+    }
+    cout << "pid = " << pid[0] << " tid = " << tid[0] << " type = " << type[0] << endl;
+
+    RequestFileDescriptor(type[0]);
+    RequestPipeFd(pid[0], type[0]);
+    RequestDelPipeFd(pid[0]);
+    RequestCheckPermission(pid[0]);
+    RequestSdkDump(type[0], pid[0], tid[0]);
+
+    return true;
+}
 } // namespace OHOS
 
 /* Fuzzer entry point */
@@ -74,5 +108,6 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size)
 {
     /* Run your code on data */
     OHOS::DumpStackTraceTest(data, size);
+    OHOS::FaultloggerdClientTest(data, size);
     return 0;
 }
