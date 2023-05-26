@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2022 Huawei Device Co., Ltd.
+ * Copyright (c) 2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -13,21 +13,30 @@
  * limitations under the License.
  */
 
-/* This files contains header of secure module. */
+/* This files contains feader file of maps module. */
 
-#ifndef FAULT_LOGGER_SECURE_H
-#define FAULT_LOGGER_SECURE_H
+#ifndef DFX_LOCAL_MAPS_CACHE_H
+#define DFX_LOCAL_MAPS_CACHE_H
 
-#include <cstdint>
+#include <string>
+#include <mutex>
+#include "dfx_maps.h"
 
 namespace OHOS {
 namespace HiviewDFX {
-class FaultLoggerSecure {
+class DfxLocalMapsCache {
 public:
-    FaultLoggerSecure();
-    ~FaultLoggerSecure();
-    bool CheckCallerUID(const int callingUid, const int32_t pid);
+    DfxLocalMapsCache() = default;
+    ~DfxLocalMapsCache() = default;
+    static void UpdateLocalMaps();
+    static void ReleaseLocalMaps();
+    static std::shared_ptr<DfxElfMaps> &GetMapsCache();
+    static bool FindMapByAddrAsUpdate(uintptr_t address, std::shared_ptr<DfxElfMap>& map);
+private:
+    static std::shared_ptr<DfxElfMaps> currentMaps_;
+    static std::mutex mutex_;
 };
 } // namespace HiviewDFX
 } // namespace OHOS
+
 #endif

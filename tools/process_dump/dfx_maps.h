@@ -47,7 +47,7 @@ public:
     void SetMapOffset(uint64_t offset);
     void SetMapPerms(const std::string perms, int size);
     void SetMapPath(const std::string path);
-    void SetMapImage(std::shared_ptr<DfxElf> image);
+    void SetMapImage(std::shared_ptr<DfxElf> elf);
 
 private:
     uint64_t begin_ = 0;
@@ -55,7 +55,7 @@ private:
     uint64_t offset_ = 0;
     std::string perms_; // 5:rwxp
     std::string path_;
-    std::shared_ptr<DfxElf> image_;
+    std::shared_ptr<DfxElf> elf_;
 };
 
 class DfxElfMaps {

@@ -236,6 +236,7 @@ int RequestSdkDump(int32_t type, int32_t pid, int32_t tid)
     request.callerPid = getpid();
     request.callerTid = syscall(SYS_gettid);
     request.clientType = (int32_t)FaultLoggerClientType::SDK_DUMP_CLIENT;
+    request.time = OHOS::HiviewDFX::GetTimeMilliSeconds();
 
     return SendRequestToServer(request);
 }

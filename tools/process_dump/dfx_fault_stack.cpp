@@ -57,7 +57,7 @@ bool FaultStack::ReadTargetMemory(uintptr_t addr, uintptr_t &value) const
 
 uintptr_t FaultStack::AdjustAndCreateMemoryBlock(size_t index, uintptr_t prevSp, uintptr_t prevEndAddr, uintptr_t size)
 {
-    uintptr_t lowAddrLength = DfxConfig::GetInstance().GetFaultStackLowAddressStep();
+    uintptr_t lowAddrLength = DfxConfig::GetConfig().lowAddressStep;
     uintptr_t startAddr = prevSp - lowAddrLength * STEP;
     if (prevEndAddr != 0 && startAddr <= prevEndAddr) {
         startAddr = prevEndAddr;
@@ -88,10 +88,10 @@ bool FaultStack::CollectStackInfo(const std::vector<std::shared_ptr<DfxFrame>> &
     uintptr_t prevSp = 0;
     uintptr_t curSp = 0;
     uintptr_t prevEndAddr = 0;
-    uintptr_t highAddrLength = DfxConfig::GetInstance().GetFaultStackHighAddressStep();
+    uintptr_t highAddrLength = DfxConfig::GetConfig().highAddressStep;
     auto firstFrame = frames.at(0);
     if (firstFrame != nullptr) {
-        prevSp = static_cast<uintptr_t>(firstFrame->GetFrameSp());
+        prevSp = static_cast<uintptr_t>(firstFrame->sp);
     }
     constexpr size_t MAX_FAULT_STACK_SZ = 4;
     for (index = 1; index < frames.size(); index++) {
@@ -101,7 +101,7 @@ bool FaultStack::CollectStackInfo(const std::vector<std::shared_ptr<DfxFrame>> &
 
         auto frame = frames.at(index);
         if (frame != nullptr) {
-            curSp = static_cast<uintptr_t>(frame->GetFrameSp());
+            curSp = static_cast<uintptr_t>(frame->sp);
         }
 
         size = 0;

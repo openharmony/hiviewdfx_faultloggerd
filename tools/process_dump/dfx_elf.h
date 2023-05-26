@@ -20,7 +20,7 @@
 #include <memory>
 #include <string>
 #include <vector>
-#include "iosfwd"
+#include "unwinder_define.h"
 
 namespace OHOS {
 namespace HiviewDFX {

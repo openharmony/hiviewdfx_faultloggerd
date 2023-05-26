@@ -29,6 +29,7 @@
 #include "dfx_config.h"
 #include "dfx_define.h"
 #include "dfx_fault_stack.h"
+#include "dfx_frame_format.h"
 #include "dfx_logger.h"
 #include "dfx_regs.h"
 #include "dfx_util.h"
@@ -172,12 +173,14 @@ bool DfxThread::Attach()
     }
 
     if (ptrace(PTRACE_SEIZE, nsTid_, 0, 0) != 0) {
-        DFXLOG_WARN("Failed to seize thread(%d:%d), errno=%d", tid_, nsTid_, errno);
+        DFXLOG_WARN("Failed to seize thread(%d:%d) from (%d:%d), errno=%d",
+            tid_, nsTid_, getuid(), getgid(), errno);
         return false;
     }
 
     if (ptrace(PTRACE_INTERRUPT, nsTid_, 0, 0) != 0) {
-        DFXLOG_WARN("Failed to interrupt thread(%d:%d), errno=%d", tid_, nsTid_, errno);
+        DFXLOG_WARN("Failed to interrupt thread(%d:%d) from (%d:%d), errno=%d",
+            tid_, nsTid_, getuid(), getgid(), errno);
         ptrace(PTRACE_DETACH, nsTid_, NULL, NULL);
         return false;
     }
@@ -213,7 +216,7 @@ std::string DfxThread::ToString() const
         if (dfxFrames_[i] == nullptr) {
             continue;
         }
-        threadInfoStream << dfxFrames_[i]->ToString();
+        threadInfoStream << DfxFrameFormat::GetFrameStr(dfxFrames_[i]);
     }
 
     return threadInfoStream.str();
@@ -221,17 +224,17 @@ std::string DfxThread::ToString() const
 
 void DfxThread::PrintThreadBacktraceByConfig(const int32_t fd)
 {
-    if (DfxConfig::GetInstance().GetDisplayBacktrace()) {
+    if (DfxConfig::GetConfig().displayBacktrace) {
         WriteLog(fd, "Tid:%d, Name:%s\n", tid_, threadName_.c_str());
-        PrintFrames(dfxFrames_);
+        WriteLog(fd, "%s", DfxFrameFormat::GetFramesStr(dfxFrames_).c_str());
     } else {
-        DFXLOG_DEBUG("hidden backtrace");
+        DFXLOG_DEBUG("Hidden backtrace");
     }
 }
 
 std::string DfxThread::PrintThreadRegisterByConfig()
 {
-    if (DfxConfig::GetInstance().GetDisplayRegister()) {
+    if (DfxConfig::GetConfig().displayRegister) {
         if (regs_) {
             return regs_->PrintRegs();
         }
@@ -243,7 +246,7 @@ std::string DfxThread::PrintThreadRegisterByConfig()
 
 void DfxThread::PrintThreadFaultStackByConfig()
 {
-    if (DfxConfig::GetInstance().GetDisplayFaultStack() && isCrashThread_) {
+    if (DfxConfig::GetConfig().displayFaultStack && isCrashThread_) {
         if (faultstack_ != nullptr) {
             faultstack_->Print();
         }

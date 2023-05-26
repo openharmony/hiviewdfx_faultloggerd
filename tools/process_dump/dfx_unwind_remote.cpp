@@ -27,6 +27,7 @@
 #include "dfx_config.h"
 #include "dfx_define.h"
 #include "dfx_logger.h"
+#include "dfx_frame_format.h"
 #include "dfx_maps.h"
 #include "dfx_process.h"
 #include "dfx_regs.h"
@@ -86,7 +87,7 @@ bool DfxUnwindRemote::UnwindProcess(std::shared_ptr<DfxProcess> process)
     unw_set_caching_policy(as_, UNW_CACHE_GLOBAL);
     do {
         // only need to unwind crash thread in crash scenario
-        if (!process->GetIsSignalDump() && !DfxConfig::GetInstance().GetDumpOtherThreads()) {
+        if (!process->GetIsSignalDump() && !DfxConfig::GetConfig().dumpOtherThreads) {
             ret = UnwindThread(process, threads[0]);
             if (!ret) {
                 UnwindThreadFallback(process, threads[0]);
@@ -201,10 +202,10 @@ bool DfxUnwindRemote::DfxUnwindRemoteDoUnwindStep(size_t const & index,
     }
 
     auto frame = std::make_shared<DfxFrame>();
-    frame->SetFrameRelativePc(relPc);
-    frame->SetFramePc(framePc);
-    frame->SetFrameSp(frameSp);
-    frame->SetFrameIndex(index);
+    frame->relPc = relPc;
+    frame->pc = framePc;
+    frame->sp = frameSp;
+    frame->index = index;
     ret = UpdateAndPrintFrameInfo(cursor, thread, frame,
         (thread->GetIsCrashThread() && !process->GetIsSignalDump()));
     if (ret) {
@@ -254,24 +255,24 @@ bool DfxUnwindRemote::UpdateAndPrintFrameInfo(unw_cursor_t& cursor, std::shared_
     bool isValidFrame = true;
     if (mapInfo != nullptr) {
         std::string mapPath = std::string(mapInfo->path);
-        frame->SetFrameMapName(mapPath);
+        frame->mapName = mapPath;
         std::string funcName;
         bool isGetFuncName = false;
 #if defined(__aarch64__)
-        if ((frame->GetFrameIndex() == 0) && ((mapPath.find("ArkTS Code") != std::string::npos))) {
+        if ((frame->index == 0) && ((mapPath.find("ArkTS Code") != std::string::npos))) {
             isGetFuncName = GetArkJsHeapFuncName(funcName, thread);
             if (isGetFuncName) {
-                frame->SetFrameFuncName(funcName);
+                frame->funcName = funcName;
             }
         }
 #endif
         uint64_t funcOffset;
-        if (!isGetFuncName && cache_->GetNameAndOffsetByPc(as_, frame->GetFramePc(), funcName, funcOffset)) {
-            frame->SetFrameFuncName(funcName);
-            frame->SetFrameFuncOffset(funcOffset);
+        if (!isGetFuncName && cache_->GetNameAndOffsetByPc(as_, frame->pc, funcName, funcOffset)) {
+            frame->funcName = funcName;
+            frame->funcOffset = funcOffset;
         }
         if (enableBuildId && buildIds_.find(mapPath) != buildIds_.end()) {
-            frame->SetBuildId(buildIds_[mapPath]);
+            frame->buildId = buildIds_[mapPath];
         } else if (enableBuildId && buildIds_.find(mapPath) == buildIds_.end()) {
             uint8_t* buildId = nullptr;
             size_t length = 0;
@@ -281,27 +282,27 @@ bool DfxUnwindRemote::UpdateAndPrintFrameInfo(unw_cursor_t& cursor, std::shared_
             }
             if (!buildIdStr.empty()) {
                 buildIds_.insert(std::pair<std::string, std::string>(std::string(mapPath), buildIdStr));
-                frame->SetBuildId(buildIdStr);
+                frame->buildId = buildIdStr;
             }
         }
     } else {
         std::string tips = "Not mapped ";
         std::shared_ptr<DfxRegs> regs = thread->GetThreadRegs();
         if (regs != nullptr) {
-            tips.append(regs->GetSpecialRegisterName(frame->GetFramePc()));
+            tips.append(regs->GetSpecialRegisterName(frame->pc));
         }
-        frame->SetFrameMapName(tips);
+        frame->mapName = tips;
         isValidFrame = false;
     }
 
-    if (isValidFrame && (frame->GetFramePc() == frame->GetFrameRelativePc()) &&
-        (frame->GetFrameMapName().find("Ark") == std::string::npos)) {
+    if (isValidFrame && (frame->pc == frame->relPc) &&
+        (frame->mapName.find("Ark") == std::string::npos)) {
         isValidFrame = false;
     }
 
-    bool ret = frame->GetFrameIndex() < MIN_VALID_FRAME_COUNT || isValidFrame;
+    bool ret = frame->index < MIN_VALID_FRAME_COUNT || isValidFrame;
     if (ret) {
-        DfxRingBufferWrapper::GetInstance().AppendMsg(frame->ToString());
+        DfxRingBufferWrapper::GetInstance().AppendMsg(DfxFrameFormat::GetFrameStr(frame));
     }
     return ret;
 }
@@ -362,13 +363,13 @@ bool DfxUnwindRemote::UnwindThread(std::shared_ptr<DfxProcess> process, std::sha
 
         // find next frame
         unwRet = unw_step(&cursor);
-    } while ((unwRet > 0) && (index < BACK_STACK_MAX_STEPS));
+    } while ((unwRet > 0) && (index < DfxConfig::GetConfig().maxFrameNums));
     thread->SetThreadUnwStopReason(unwRet);
     if (isCrash) {
         if (regs != nullptr) {
             DfxRingBufferWrapper::GetInstance().AppendMsg(regs->PrintRegs());
         }
-        if (DfxConfig::GetInstance().GetDisplayFaultStack()) {
+        if (DfxConfig::GetConfig().displayFaultStack) {
             thread->CreateFaultStack(nsTid);
             thread->CollectFaultMemorys(process->GetMaps());
             thread->PrintThreadFaultStackByConfig();
@@ -396,22 +397,21 @@ void DfxUnwindRemote::UnwindThreadFallback(std::shared_ptr<DfxProcess> process, 
     auto createFrame = [maps, thread] (int index, uintptr_t pc) {
         std::shared_ptr<DfxElfMap> map;
         auto frame = std::make_shared<DfxFrame>();
-        frame->SetFramePc(pc);
-        frame->SetFrameIndex(index);
-        thread->AddFrame(frame);
+        frame->pc = pc;
+        frame->index = index;
         if (maps->FindMapByAddr(pc, map)) {
-            frame->SetFrameMap(map);
-            frame->CalcRelativePc(map);
-            frame->SetFrameMapName(map->GetMapPath());
+            frame->relPc = map->GetRelPc(pc);
+            frame->mapName = map->GetMapPath();
         } else {
-            frame->SetFrameRelativePc(pc);
-            frame->SetFrameMapName(index == 0 ? "Not mapped pc" : "Not mapped lr");
+            frame->relPc = pc;
+            frame->mapName = (index == 0 ? "Not mapped pc" : "Not mapped lr");
         }
-        DfxRingBufferWrapper::GetInstance().AppendMsg(frame->ToString());
+        thread->AddFrame(frame);
+        DfxRingBufferWrapper::GetInstance().AppendMsg(DfxFrameFormat::GetFrameStr(frame));
     };
 
-    createFrame(0, regs->GetPC());
-    createFrame(1, regs->GetLR());
+    createFrame(0, regs->pc_);
+    createFrame(1, regs->lr_);
     DfxRingBufferWrapper::GetInstance().AppendMsg(regs->PrintRegs());
 }
 } // namespace HiviewDFX

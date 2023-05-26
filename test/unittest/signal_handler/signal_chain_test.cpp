@@ -88,42 +88,42 @@ static void SignalInit()
     g_sigchainSegv2Flag = false;
 }
 
-ATTRIBUTE_UNUSED static void SignalDumpHandler(int signo)
+AT_UNUSED static void SignalDumpHandler(int signo)
 {
     GTEST_LOG_(INFO) << "SignalDumpHandler";
     g_signalDumpFlag = true;
     EXPECT_EQ(signo, SIGDUMP) << "SignalDumpHandler Failed";
 }
 
-ATTRIBUTE_UNUSED static void SignalSegvHandler(int signo)
+AT_UNUSED static void SignalSegvHandler(int signo)
 {
     GTEST_LOG_(INFO) << "SignalSegvHandler";
     g_signalSegvFlag = true;
     EXPECT_EQ(signo, SIGSEGV) << "SignalSegvHandler Failed";
 }
 
-ATTRIBUTE_UNUSED static void SignalDumpSigaction(int signo)
+AT_UNUSED static void SignalDumpSigaction(int signo)
 {
     GTEST_LOG_(INFO) << "SignalDumpSigaction";
     g_sigactionDumpFlag = true;
     EXPECT_EQ(signo, SIGDUMP) << "SignalDumpSigaction Failed";
 }
 
-ATTRIBUTE_UNUSED static void SignalSegvSigaction(int signo)
+AT_UNUSED static void SignalSegvSigaction(int signo)
 {
     GTEST_LOG_(INFO) << "SignalSegvSigaction";
     g_sigactionSegvFlag = true;
     EXPECT_EQ(signo, SIGSEGV) << "SignalSegvSigaction Failed";
 }
 
-ATTRIBUTE_UNUSED static void SignalIllSigaction(int signo)
+AT_UNUSED static void SignalIllSigaction(int signo)
 {
     GTEST_LOG_(INFO) << "SignalIllSigaction";
     g_sigactionIllFlag = true;
     EXPECT_EQ(signo, SIGILL) << "SignalIllSigaction Failed";
 }
 
-ATTRIBUTE_UNUSED static bool SigchainSpecialHandlerDumpTrue(int signo, siginfo_t *si, void *ucontext)
+AT_UNUSED static bool SigchainSpecialHandlerDumpTrue(int signo, siginfo_t *si, void *ucontext)
 {
     GTEST_LOG_(INFO) << "SigchainSpecialHandlerDumpTrue";
     g_sigchainDumpFlag = true;
@@ -135,7 +135,7 @@ ATTRIBUTE_UNUSED static bool SigchainSpecialHandlerDumpTrue(int signo, siginfo_t
     return true;
 }
 
-ATTRIBUTE_UNUSED static bool SigchainSpecialHandlerDump1(int signo, siginfo_t *si, void *ucontext)
+AT_UNUSED static bool SigchainSpecialHandlerDump1(int signo, siginfo_t *si, void *ucontext)
 {
     GTEST_LOG_(INFO) << "SigchainSpecialHandlerDump1";
     g_sigchainDump1Flag = true;
@@ -147,7 +147,7 @@ ATTRIBUTE_UNUSED static bool SigchainSpecialHandlerDump1(int signo, siginfo_t *s
     return false;
 }
 
-ATTRIBUTE_UNUSED static bool SigchainSpecialHandlerDump2(int signo, siginfo_t *si, void *ucontext)
+AT_UNUSED static bool SigchainSpecialHandlerDump2(int signo, siginfo_t *si, void *ucontext)
 {
     GTEST_LOG_(INFO) << "SigchainSpecialHandlerDump2";
     g_sigchainDump2Flag = true;
@@ -159,7 +159,7 @@ ATTRIBUTE_UNUSED static bool SigchainSpecialHandlerDump2(int signo, siginfo_t *s
     return false;
 }
 
-ATTRIBUTE_UNUSED static bool SigchainSpecialHandlerSegvTrue(int signo, siginfo_t *si, void *ucontext)
+AT_UNUSED static bool SigchainSpecialHandlerSegvTrue(int signo, siginfo_t *si, void *ucontext)
 {
     GTEST_LOG_(INFO) << "SigchainSpecialHandlerSegvTrue";
     g_sigchainSegvFlag = true;
@@ -171,7 +171,7 @@ ATTRIBUTE_UNUSED static bool SigchainSpecialHandlerSegvTrue(int signo, siginfo_t
     return true;
 }
 
-ATTRIBUTE_UNUSED static bool SigchainSpecialHandlerSegv1(int signo, siginfo_t *si, void *ucontext)
+AT_UNUSED static bool SigchainSpecialHandlerSegv1(int signo, siginfo_t *si, void *ucontext)
 {
     GTEST_LOG_(INFO) << "SigchainSpecialHandlerSegv1";
     g_sigchainSegv1Flag = true;
@@ -183,7 +183,7 @@ ATTRIBUTE_UNUSED static bool SigchainSpecialHandlerSegv1(int signo, siginfo_t *s
     return false;
 }
 
-ATTRIBUTE_UNUSED static bool SigchainSpecialHandlerSegv2(int signo, siginfo_t *si, void *ucontext)
+AT_UNUSED static bool SigchainSpecialHandlerSegv2(int signo, siginfo_t *si, void *ucontext)
 {
     GTEST_LOG_(INFO) << "SigchainSpecialHandlerSegv2";
     g_sigchainSegv2Flag = true;
@@ -199,7 +199,7 @@ class MixStackDumper {
 public:
     MixStackDumper() = default;
     ~MixStackDumper() = default;
-    ATTRIBUTE_UNUSED static bool DumpSignalHandler(int signo, siginfo_t *si, void *ucontext)
+    AT_UNUSED static bool DumpSignalHandler(int signo, siginfo_t *si, void *ucontext)
     {
         std::shared_ptr<int> ptr = std::make_shared<int>(TEST_PTR_VALUE);
         GTEST_LOG_(INFO) << "DumpSignalHandler: " << ptr.use_count();
@@ -208,7 +208,7 @@ public:
         return true;
     }
 
-    ATTRIBUTE_UNUSED static bool SegvSignalHandler(int signo, siginfo_t *si, void *ucontext)
+    AT_UNUSED static bool SegvSignalHandler(int signo, siginfo_t *si, void *ucontext)
     {
         std::shared_ptr<int> ptr = std::make_shared<int>(TEST_PTR_VALUE);
         GTEST_LOG_(INFO) << "SegvSignalHandler: " << ptr.use_count();

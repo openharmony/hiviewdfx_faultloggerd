@@ -15,9 +15,11 @@
 
 #include "dwarf_unwinder.h"
 
+#include <securec.h>
 #include <libunwind.h>
 #include <libunwind_i-ohos.h>
 #include "dfx_define.h"
+#include "dfx_config.h"
 
 namespace OHOS {
 namespace HiviewDFX {
@@ -39,17 +41,35 @@ DwarfUnwinder::~DwarfUnwinder()
     frames_.clear();
 }
 
-const std::vector<NativeFrame>& DwarfUnwinder::GetFrames() const
+const std::vector<DfxFrame>& DwarfUnwinder::GetFrames() const
 {
     return frames_;
 }
 
 void DwarfUnwinder::UpdateFrameFuncName(unw_addr_space_t as,
-    std::shared_ptr<DfxSymbolsCache> cache, NativeFrame& frame)
+    std::shared_ptr<DfxSymbolsCache> cache, DfxFrame& frame)
 {
     if (cache != nullptr) {
         cache->GetNameAndOffsetByPc(as, frame.pc, frame.funcName, frame.funcOffset);
     }
+}
+
+bool DwarfUnwinder::Unwind(size_t skipFrameNum)
+{
+    unw_addr_space_t as;
+    unw_init_local_address_space(&as);
+    if (as == nullptr) {
+        return false;
+    }
+    auto cache = std::make_shared<DfxSymbolsCache>();
+
+    unw_context_t context;
+    (void)memset_s(&context, sizeof(unw_context_t), 0, sizeof(unw_context_t));
+    unw_getcontext(&context);
+
+    bool ret = UnwindWithContext(as, context, cache, skipFrameNum + 1);
+    unw_destroy_local_address_space(as);
+    return ret;
 }
 
 bool DwarfUnwinder::UnwindWithContext(unw_addr_space_t as, unw_context_t& context,
@@ -72,7 +92,7 @@ bool DwarfUnwinder::UnwindWithContext(unw_addr_space_t as, unw_context_t& contex
         }
         curIndex = index - skipFrameNum;
 
-        NativeFrame frame;
+        DfxFrame frame;
         frame.index = curIndex;
         if (unw_get_reg(&cursor, UNW_REG_IP, (unw_word_t*)(&(frame.pc)))) {
             break;
@@ -87,10 +107,10 @@ bool DwarfUnwinder::UnwindWithContext(unw_addr_space_t as, unw_context_t& contex
         }
         prevPc = frame.pc;
 
-        frame.relativePc = unw_get_rel_pc(&cursor);
+        frame.relPc = unw_get_rel_pc(&cursor);
         unw_word_t sz = unw_get_previous_instr_sz(&cursor);
-        if ((frame.index > 0) && (frame.relativePc > sz)) {
-            frame.relativePc -= sz;
+        if ((frame.index > 0) && (frame.relPc > sz)) {
+            frame.relPc -= sz;
             frame.pc -= sz;
 #if defined(__arm__)
             unw_set_adjust_pc(&cursor, frame.pc);
@@ -100,13 +120,13 @@ bool DwarfUnwinder::UnwindWithContext(unw_addr_space_t as, unw_context_t& contex
         struct map_info* map = unw_get_map(&cursor);
         bool isValidFrame = true;
         if ((map != nullptr) && (strlen(map->path) < SYMBOL_BUF_SIZE - 1)) {
-            frame.binaryName = std::string(map->path);
+            frame.mapName = std::string(map->path);
             UpdateFrameFuncName(as, cache, frame);
         } else {
             isValidFrame = false;
         }
 
-        if (isValidFrame && (frame.relativePc == 0) && (frame.binaryName.find("Ark") == std::string::npos)) {
+        if (isValidFrame && (frame.relPc == 0) && (frame.mapName.find("Ark") == std::string::npos)) {
             isValidFrame = false;
         }
 
@@ -117,7 +137,7 @@ bool DwarfUnwinder::UnwindWithContext(unw_addr_space_t as, unw_context_t& contex
         }
 
         index++;
-    } while ((unw_step(&cursor) > 0) && (curIndex < BACK_STACK_MAX_STEPS));
+    } while ((unw_step(&cursor) > 0) && (curIndex < DfxConfig::GetConfig().maxFrameNums));
     return (frames_.size() > 0);
 }
 } // namespace HiviewDFX

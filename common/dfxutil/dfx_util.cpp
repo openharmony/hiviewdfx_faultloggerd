@@ -35,49 +35,46 @@
 #include "dfx_define.h"
 #include "dfx_log.h"
 
+#ifdef LOG_DOMAIN
+#undef LOG_DOMAIN
+#define LOG_DOMAIN 0xD002D11
+#endif
+
+#ifdef LOG_TAG
+#undef LOG_TAG
+#define LOG_TAG "DfxUtil"
+#endif
+
 namespace OHOS {
 namespace HiviewDFX {
+static const char PPID_STR_NAME[] = "PPid:";
+static const char NSPID_STR_NAME[] = "NSpid:";
 static const int ARGS_COUNT_ONE = 1;
 static const int ARGS_COUNT_TWO = 2;
 static const int STATUS_LINE_SIZE = 1024;
 
-static int GetProcStatusByPath(const std::string& path, struct ProcInfo& procInfo)
+static int GetProcStatusByPath(struct ProcInfo& procInfo, const std::string& path)
 {
     char buf[STATUS_LINE_SIZE];
     FILE *fp = fopen(path.c_str(), "r");
     if (fp == nullptr) {
+        LOGE("%s fopen %s failed", __func__, path.c_str());
         return -1;
     }
 
     int pid = 0;
     int ppid = 0;
-    int tid = 0;
+    int nsPid = 0;
     while (!feof(fp)) {
         if (fgets(buf, STATUS_LINE_SIZE, fp) == nullptr) {
             fclose(fp);
             return -1;
         }
 
-        if (strncmp(buf, PID_STR_NAME, strlen(PID_STR_NAME)) == 0) {
-            // Pid:    1892
-            if (sscanf_s(buf, "%*[^0-9]%d", &pid) != ARGS_COUNT_ONE) {
-                DFXLOG_ERROR("sscanf_s failed.");
-            }
-            procInfo.pid = pid;
-            if (procInfo.pid == getpid()) {
-                procInfo.ns = false;
-                procInfo.tid = gettid();
-                procInfo.ppid = getppid();
-                break;
-            }
-            procInfo.ns = true;
-            continue;
-        }
-
         if (strncmp(buf, PPID_STR_NAME, strlen(PPID_STR_NAME)) == 0) {
             // PPid:   240
             if (sscanf_s(buf, "%*[^0-9]%d", &ppid) != ARGS_COUNT_ONE) {
-                DFXLOG_ERROR("sscanf_s failed.");
+                LOGW("%s sscanf_s failed", __func__);
             }
             procInfo.ppid = ppid;
             continue;
@@ -85,10 +82,14 @@ static int GetProcStatusByPath(const std::string& path, struct ProcInfo& procInf
 
         // NSpid:  1892    1
         if (strncmp(buf, NSPID_STR_NAME, strlen(NSPID_STR_NAME)) == 0) {
-            if (sscanf_s(buf, "%*[^0-9]%d%*[^0-9]%d", &pid, &tid) != ARGS_COUNT_TWO) {
-                DFXLOG_ERROR("sscanf_s failed.");
+            if (sscanf_s(buf, "%*[^0-9]%d%*[^0-9]%d", &pid, &nsPid) != ARGS_COUNT_TWO) {
+                procInfo.ns = false;
+                procInfo.nsPid = pid;
+            } else {
+                procInfo.ns = true;
+                procInfo.nsPid = nsPid;
             }
-            procInfo.tid = tid;
+            procInfo.pid = pid;
             break;
         }
     }
@@ -98,51 +99,30 @@ static int GetProcStatusByPath(const std::string& path, struct ProcInfo& procInf
 
 bool TidToNstid(const int pid, const int tid, int& nstid)
 {
-    bool ret = false;
     char path[NAME_LEN];
     (void)memset_s(path, sizeof(path), '\0', sizeof(path));
     if (snprintf_s(path, sizeof(path), sizeof(path) - 1, "/proc/%d/task/%d/status", pid, tid) <= 0) {
-        DFXLOG_WARN("snprintf_s error.");
-        return ret;
+        LOGW("%s snprintf_s failed", __func__);
+        return false;
     }
 
-    char buf[STATUS_LINE_SIZE];
-    FILE *fp = fopen(path, "r");
-    if (fp == nullptr) {
-        return ret;
+    struct ProcInfo procInfo;
+    if (GetProcStatusByPath(procInfo, path) < 0) {
+        return false;
     }
-
-    int p = 0;
-    int t = 0;
-    while (!feof(fp)) {
-        if (fgets(buf, STATUS_LINE_SIZE, fp) == nullptr) {
-            fclose(fp);
-            return ret;
-        }
-
-        // NSpid:  1892    1
-        if (strncmp(buf, NSPID_STR_NAME, strlen(NSPID_STR_NAME)) == 0) {
-            if (sscanf_s(buf, "%*[^0-9]%d%*[^0-9]%d", &p, &t) != ARGS_COUNT_TWO) {
-                DFXLOG_WARN("TidToNstid sscanf_s failed. pid:%d, tid:%d", p, t);
-            }
-            nstid = t;
-            ret = true;
-            break;
-        }
-    }
-    (void)fclose(fp);
-    return ret;
+    nstid = procInfo.nsPid;
+    return true;
 }
 
 int GetProcStatusByPid(int realPid, struct ProcInfo& procInfo)
 {
     std::string path = "/proc/" + std::to_string(realPid) + "/status";
-    return GetProcStatusByPath(path, procInfo);
+    return GetProcStatusByPath(procInfo, path);
 }
 
 int GetProcStatus(struct ProcInfo& procInfo)
 {
-    return GetProcStatusByPath(PROC_SELF_STATUS_PATH, procInfo);
+    return GetProcStatusByPath(procInfo, PROC_SELF_STATUS_PATH);
 }
 
 int GetRealTargetPid()
@@ -153,6 +133,40 @@ int GetRealTargetPid()
         return -1;
     }
     return procInfo.ppid;
+}
+
+bool IsThreadInCurPid(int32_t tid)
+{
+    std::string path = std::string(PROC_SELF_TASK_PATH) + "/" + std::to_string(tid);
+    return access(path.c_str(), F_OK) == 0;
+}
+
+bool GetTidsByPid(const int pid, std::vector<int>& tids, std::vector<int>& nstids)
+{
+    struct ProcInfo procInfo;
+    (void)GetProcStatusByPid(pid, procInfo);
+
+    std::vector<std::string> files;
+    if (ReadDirFilesByPid(pid, files)) {
+        for (size_t i = 0; i < files.size(); ++i) {
+            pid_t tid = atoi(files[i].c_str());
+            if (tid == 0) {
+                continue;
+            }
+
+            tids.push_back(tid);
+
+            pid_t nstid = tid;
+            if (procInfo.ns) {
+                TidToNstid(pid, tid, nstid);
+                nstids.push_back(nstid);
+            }
+        }
+    }
+    if (!procInfo.ns) {
+        nstids = tids;
+    }
+    return (tids.size() > 0);
 }
 
 bool ReadStringFromFile(const char *path, char *buf, size_t len)
@@ -168,7 +182,7 @@ bool ReadStringFromFile(const char *path, char *buf, size_t len)
 
     FILE *fp = fopen(realPath, "r");
     if (fp == nullptr) {
-        DFXLOG_ERROR("Failed to open %s", realPath);
+        LOGE("%s fopen %s failed", __func__, realPath);
         return false;
     }
 

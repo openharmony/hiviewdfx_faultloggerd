@@ -1,10 +1,10 @@
 /*
- * Copyright (c) 2021 Huawei Device Co., Ltd.
+ * Copyright (c) 2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,22 +13,22 @@
  * limitations under the License.
  */
 
-/* This files containe processdump frame module unit test. */
+/* This files contains header of util module. */
 
-#ifndef PROCESS_FRAMES_TEST_H
-#define PROCESS_FRAMES_TEST_H
+#ifndef ARCH_UTIL_H
+#define ARCH_UTIL_H
 
-#include <gtest/gtest.h>
+#include <cstdio>
+#include <cstdint>
+#include <string>
+#include "dfx_define.h"
+#include "unwinder_define.h"
 
 namespace OHOS {
 namespace HiviewDFX {
-class ProcessFramesTest : public testing::Test {
-public:
-    static void SetUpTestCase(void);
-    static void TearDownTestCase(void);
-    void SetUp();
-    void TearDown();
-};
-} // namespace HiviewDFX
-} // namespace OHOS
-#endif // PROCESS_FRAMES_TEST_H
+AT_SYMBOL_HIDDEN ArchType GetCurrentArch();
+AT_SYMBOL_HIDDEN ArchType GetArchFromUname(const std::string& machine);
+AT_SYMBOL_HIDDEN const std::string GetArchName(ArchType arch);
+} // nameapace HiviewDFX
+} // nameapace OHOS
+#endif

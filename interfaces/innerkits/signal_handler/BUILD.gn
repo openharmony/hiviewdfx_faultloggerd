@@ -19,6 +19,7 @@ if (defined(ohos_lite)) {
     include_dirs = [
       "include",
       "//commonlibrary/c_utils/base/include",
+      "$faultloggerd_interfaces_path/common",
       "$faultloggerd_path/common",
       "$faultloggerd_path/common/cutil",
       "$faultloggerd_path/common/dfxlog",
@@ -60,6 +61,7 @@ if (defined(ohos_lite)) {
     visibility = [ "*:*" ]
     include_dirs = [
       "include",
+      "$faultloggerd_interfaces_path/common",
       "$faultloggerd_path/common",
       "$faultloggerd_path/common/cutil",
       "$faultloggerd_path/common/dfxlog",
@@ -70,6 +72,7 @@ if (defined(ohos_lite)) {
   config("static_sighandler_config") {
     include_dirs = [
       "include",
+      "$faultloggerd_interfaces_path/common",
       "$faultloggerd_path/common",
       "$faultloggerd_path/common/cutil",
       "$faultloggerd_path/common/dfxlog",

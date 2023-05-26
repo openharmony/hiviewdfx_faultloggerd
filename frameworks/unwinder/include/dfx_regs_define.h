@@ -19,6 +19,7 @@
 
 namespace OHOS {
 namespace HiviewDFX {
+const int REGS_PRINT_LEN_SPECIAL = 128;
 const int REGS_PRINT_LEN_ARM = 256;
 const int REGS_PRINT_LEN_ARM64 = 1024;
 const int REGS_PRINT_LEN_X86 = 512;
@@ -42,6 +43,8 @@ enum RegisterArm : uint16_t {
     REG_ARM_R15,
     REG_ARM_LAST,
 
+    REG_ARM_FP = REG_ARM_R11,
+    REG_ARM_IP = REG_ARM_R12,
     REG_ARM_SP = REG_ARM_R13,
     REG_ARM_LR = REG_ARM_R14,
     REG_ARM_PC = REG_ARM_R15,
@@ -87,6 +90,22 @@ enum RegisterArm64 : uint16_t {
     REG_AARCH64_SP = REG_AARCH64_X31,
     REG_AARCH64_LR = REG_AARCH64_X30,
     REG_AARCH64_FP = REG_AARCH64_X29,
+};
+
+enum RegisterX86 : uint16_t {
+    REG_X86_EAX = 0,
+    REG_X86_EDX = 1,
+    REG_X86_ECX = 2,
+    REG_X86_EBX = 3,
+    REG_X86_ESI = 4,
+    REG_X86_EDI = 5,
+    REG_X86_EBP = 6,
+    REG_X86_ESP = 7,
+    REG_X86_EIP = 8,
+    REG_X86_LAST,
+
+    REG_X86_SP = REG_X86_ESP,
+    REG_X86_PC = REG_X86_EIP,
 };
 
 enum RegisterX86_64 : uint16_t {

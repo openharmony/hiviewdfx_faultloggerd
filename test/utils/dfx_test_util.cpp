@@ -51,14 +51,14 @@ std::string ExecuteCommands(const std::string& cmds)
     return cmdLog;
 }
 
-int GetProcessPid(const std::string& serviceName)
+int GetProcessPid(const std::string& processName)
 {
-    std::string cmd = "pidof " + serviceName;
+    std::string cmd = "pidof " + processName;
     std::string pidStr = ExecuteCommands(cmd);
     int32_t pid = 0;
     std::stringstream pidStream(pidStr);
     pidStream >> pid;
-    printf("the pid of process(%s) is %s \n", serviceName.c_str(), pidStr.c_str());
+    printf("the pid of process(%s) is %s \n", processName.c_str(), pidStr.c_str());
     return pid;
 }
 
@@ -91,12 +91,12 @@ void UninstallTestHap(const std::string& bundleName)
 int CountLines(const std::string& fileName)
 {
     std::ifstream readFile;
-    std::string tmpuseValue;
     readFile.open(fileName.c_str(), std::ios::in);
     if (readFile.fail()) {
         return 0;
     } else {
         int n = 0;
+        std::string tmpuseValue;
         while (getline(readFile, tmpuseValue, '\n')) {
             n++;
         }
@@ -217,7 +217,7 @@ uint64_t GetSelfMemoryCount()
     std::vector<std::string> result;
     OHOS::SplitStr(content, "\n", result);
     auto iter = std::find_if(result.begin(), result.end(),
-        [] (std::string str) {
+        [] (const std::string str) {
             return str.find("Pss:") != std::string::npos;
         });
     if (iter == result.end()) {

@@ -42,6 +42,7 @@
 #define MAX_FRAME 64
 #define BUF_SZ 512
 #define MAPINFO_SIZE 256
+static const int BACK_STACK_MAX_STEPS = 64; // max unwind 64 steps.
 
 __attribute__((noinline)) int RequestOutputLogFile(const struct ProcessDumpRequest* request)
 {
@@ -249,9 +250,8 @@ __attribute__((noinline)) bool UnwindWithContextByFramePointer(const int fd, unw
     uintptr_t stackTop = (uintptr_t)base + size;
 
     int index = 0;
-    uintptr_t prevFp = 0;
     do {
-        prevFp = fp;
+        uintptr_t prevFp = fp;
         if (stackBottom < prevFp && (prevFp + sizeof(uintptr_t)) < stackTop) {
             PrintLog(fd, "#%02d fp(%lx) pc(%lx)\n", index, fp, pc);
             fp = *(uintptr_t*)prevFp;

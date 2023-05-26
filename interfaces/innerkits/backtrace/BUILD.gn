@@ -13,17 +13,25 @@
 
 import("//base/hiviewdfx/faultloggerd/faultloggerd.gni")
 
+backtrace_local_sources = [
+  "backtrace_local.cpp",
+  "backtrace_local_context.cpp",
+  "backtrace_local_thread.cpp",
+  "catchframe_local.cpp",
+]
+
 if (defined(ohos_lite)) {
   shared_library("libbacktrace_local") {
     visibility = [ "*:*" ]
 
     include_dirs = [
       "include",
-      "//commonlibrary/c_utils/base/include",
+      "$c_utils_include_path",
+      "$faultloggerd_frameworks_path/unwinder/include",
+      "$faultloggerd_interfaces_path/common",
       "$faultloggerd_path/common",
       "$faultloggerd_path/common/dfxlog",
-      "$faultloggerd_path/frameworks/unwinder",
-      "$faultloggerd_path/interfaces/innerkits/dump_catcher/include",
+      "$faultloggerd_path/common/dfxutil",
       "$faultloggerd_path/tools/process_dump",
       "//third_party/libunwind/include",
       "//third_party/libunwind/src",
@@ -39,22 +47,21 @@ if (defined(ohos_lite)) {
       include_dirs += [ "//third_party/libunwind/include/tdep-mips" ]
     }
 
-    sources = [ "backtrace_local.cpp" ]
+    sources = backtrace_local_sources
     sources += [
-      "$faultloggerd_path/frameworks/local/backtrace_local_static.cpp",
-      "$faultloggerd_path/frameworks/local/backtrace_local_thread.cpp",
-      "$faultloggerd_path/frameworks/unwinder/dwarf_unwinder.cpp",
-      "$faultloggerd_path/frameworks/unwinder/fp_unwinder.cpp",
+      "$faultloggerd_frameworks_path/unwinder/arch_util.cpp",
+      "$faultloggerd_frameworks_path/unwinder/dfx_config.cpp",
+      "$faultloggerd_frameworks_path/unwinder/dfx_frame_format.cpp",
+      "$faultloggerd_frameworks_path/unwinder/dwarf_unwinder.cpp",
+      "$faultloggerd_frameworks_path/unwinder/fp_unwinder.cpp",
       "$faultloggerd_path/tools/process_dump/dfx_symbols_cache.cpp",
     ]
-    sources += [ "$faultloggerd_path/tools/process_dump/dfx_regs.cpp" ]
-    if (target_cpu == "arm") {
-      sources += [ "$faultloggerd_path/tools/process_dump/dfx_regs_arm.cpp" ]
-    } else if (target_cpu == "arm64") {
-      sources += [ "$faultloggerd_path/tools/process_dump/dfx_regs_arm64.cpp" ]
-    } else if (target_cpu == "x86_64") {
-      sources += [ "$faultloggerd_path/tools/process_dump/dfx_regs_x86_64.cpp" ]
-    }
+    sources += [
+      "$faultloggerd_frameworks_path/unwinder/dfx_regs.cpp",
+      "$faultloggerd_frameworks_path/unwinder/dfx_regs_arm.cpp",
+      "$faultloggerd_frameworks_path/unwinder/dfx_regs_arm64.cpp",
+      "$faultloggerd_frameworks_path/unwinder/dfx_regs_x86_64.cpp",
+    ]
 
     defines = [
       "HAVE_CONFIG_H",
@@ -76,7 +83,13 @@ if (defined(ohos_lite)) {
 
     include_dirs = [
       "include",
-      "$faultloggerd_path/interfaces/innerkits/dump_catcher/include",
+      "$faultloggerd_frameworks_path/unwinder/include",
+      "$faultloggerd_interfaces_path/common",
+      "$faultloggerd_path/common",
+      "$faultloggerd_path/common/dfxlog",
+      "$faultloggerd_path/tools/process_dump",
+      "//third_party/libunwind/include",
+      "//third_party/libunwind/src",
     ]
 
     defines = [
@@ -89,9 +102,14 @@ if (defined(ohos_lite)) {
   ohos_shared_library("libbacktrace_local") {
     public_configs = [ ":dfx_backtrace_config" ]
 
-    sources = [ "backtrace_local.cpp" ]
+    sources = backtrace_local_sources
 
-    deps = [ "$faultloggerd_path/frameworks/local:backtrace_local_src" ]
+    deps = [
+      "$faultloggerd_frameworks_path/unwinder:dfx_unwinder_src",
+      "$faultloggerd_path/common/dfxlog:static_common_log",
+      "//third_party/bounds_checking_function:libsec_shared",
+      "//third_party/libunwind:libunwind_local",
+    ]
 
     external_deps = [
       "c_utils:utils",
@@ -112,9 +130,14 @@ if (defined(ohos_lite)) {
   ohos_static_library("backtrace_local") {
     public_configs = [ ":dfx_backtrace_config" ]
 
-    sources = [ "backtrace_local.cpp" ]
+    sources = backtrace_local_sources
 
-    deps = [ "$faultloggerd_path/frameworks/local:backtrace_local_static_src" ]
+    deps = [
+      "$faultloggerd_path/common/dfxlog:static_hilog_base",
+      "$faultloggerd_path/frameworks/unwinder:dfx_unwinder_static_src",
+      "//third_party/bounds_checking_function:libsec_static",
+      "//third_party/libunwind:libunwind_local",
+    ]
 
     external_deps = [
       "c_utils:utils",

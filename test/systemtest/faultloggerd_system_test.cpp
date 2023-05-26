@@ -26,9 +26,13 @@
 
 #include "dfx_test_util.h"
 #include "directory_ex.h"
+#include "dfx_define.h"
+#include "dfx_util.h"
 
 using namespace testing::ext;
 using namespace std;
+
+#define NSPID_PATH "/data/nspid"
 
 namespace OHOS {
 namespace HiviewDFX {
@@ -196,6 +200,30 @@ static string GetStackTop(void)
     }
     GTEST_LOG_(INFO) << "sp:" << sp;
     return sp;
+}
+
+static void WriteRealPid(int realPid)
+{
+    ofstream file;
+    file.open(NSPID_PATH);
+    file << std::to_string(realPid);
+    file.close();
+}
+
+static int ReadRealPid(void)
+{
+    ifstream file;
+    file.open(NSPID_PATH);
+    string pid;
+    file >> pid;
+    file.close();
+    int ret = remove(NSPID_PATH);
+    if (ret != 0) {
+        printf("remove failed!");
+    }
+    int realPid = atoi(pid.c_str());
+    GTEST_LOG_(INFO) << "real pid:" << realPid;
+    return realPid;
 }
 
 static bool CheckCountNumStackTop(const string& filePath, const pid_t& pid)
@@ -966,9 +994,12 @@ static void CrashInChildThread()
 static int RunInNewPidNs(void* arg)
 {
     (void)arg;
+    struct ProcInfo g_nsProcInfo;
+    GetProcStatus(g_nsProcInfo);
+    WriteRealPid(g_nsProcInfo.pid);
+    GTEST_LOG_(INFO) << "RunInNewPidNs(): real pid = " << g_nsProcInfo.pid;
     GTEST_LOG_(INFO) << "RunInNewPidNs(): PID = " << getpid();
     GTEST_LOG_(INFO) << "RunInNewPidNs(): TID = " << gettid();
-    GTEST_LOG_(INFO) << "RunInNewPidNs(): PPID = " << getppid();
     thread childThread(CrashInChildThread);
     childThread.join();
     _exit(0);
@@ -996,7 +1027,8 @@ HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest102, TestSize.Level2)
     }
     // wait for log generation
     sleep(4); // 4 : sleep 4s
-    string fileName = GetCppCrashFileName(childPid);
+    int readPid = ReadRealPid();
+    string fileName = GetCppCrashFileName(readPid);
     EXPECT_NE(0, fileName.size());
     printf("PidNs Crash File:%s\n", fileName.c_str());
     string log[] = {
@@ -1008,6 +1040,71 @@ HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest102, TestSize.Level2)
     int count = CheckKeyWords(fileName, log, expectNum, minRegIdx);
     EXPECT_EQ(count, expectNum);
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest102: end.";
+}
+
+/**
+ * @tc.name: FaultLoggerdSystemTest103
+ * @tc.desc: test the aging mechanism of the temp directory
+ * @tc.type: FUNC
+ */
+HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest103, TestSize.Level2)
+{
+    string clearTempFilesCmd = "rm -rf /data/log/faultlog/temp/*";
+    system(clearTempFilesCmd.c_str());
+    for (int i = 0; i < 25; i++) { // 25 : the count of crash file
+        system("/data/crasher_c SIGSEGV");
+    }
+    for (int i = 0; i < 25; i++) { // 25 : the count of crash file
+        sleep(3); //3 : sleep for 3 seconds
+        system("/data/crasher_c SIGSEGV");
+    }
+    vector<string> files;
+    OHOS::GetDirFiles("/data/log/faultlog/temp/", files);
+    int fileCount = files.size();
+    GTEST_LOG_(INFO) << fileCount;
+    system("/data/crasher_c SIGSEGV"); // trigger aging mechanism
+    sleep(1); // 1 : sleep for 1 seconds
+    files.clear();
+    OHOS::GetDirFiles("/data/log/faultlog/temp/", files);
+    GTEST_LOG_(INFO) << files.size();
+    EXPECT_GT(fileCount, files.size()) << "FaultLoggerdSystemTest103 Failed";
+}
+
+/**
+ * @tc.name: FaultLoggerdSystemTest0104
+ * @tc.desc: test crash log build-id
+ * @tc.type: FUNC
+ */
+HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest104, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest104: start.";
+    string cmd = "SIGSEGV";
+    string fileName;
+    pid_t pid = TriggerCrasherAndGetFileName(cmd, CRASHER_C, fileName);
+    GTEST_LOG_(INFO) << "test pid(" << pid << ")"  << " cppcrash file name : " << fileName;
+    if (pid < 0 || fileName.size() < CPPCRASH_FILENAME_MIN_LENGTH) {
+        GTEST_LOG_(ERROR) << "Trigger Crash Failed.";
+        FAIL();
+    }
+    std::ifstream file;
+    file.open(fileName.c_str(), std::ios::in);
+    while (!file.eof()) {
+        string s;
+        file >> s;
+        if (s.find("/data/crasher_c") != string::npos) {
+            string buildId;
+            size_t leftBraceIdx = s.find('(');
+            size_t rightBraceIdx = s.find(')');
+            if (leftBraceIdx != string::npos && rightBraceIdx != string::npos) {
+                buildId = s.substr(leftBraceIdx + 1, rightBraceIdx - leftBraceIdx - 1);
+                GTEST_LOG_(INFO) << "build-id = " << buildId;
+            }
+            EXPECT_FALSE(buildId.empty()) << "FaultLoggerdSystemTest104 Failed";
+            break;
+        }
+
+    }
+    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest104: end.";
 }
 } // namespace HiviewDFX
 } // namespace OHOS

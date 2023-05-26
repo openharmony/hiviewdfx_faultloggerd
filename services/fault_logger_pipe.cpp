@@ -42,6 +42,7 @@ namespace {
 static const std::string FAULTLOGGER_PIPE_TAG = "FaultLoggerPipe";
 const int PIPE_READ = 0;
 const int PIPE_WRITE = 1;
+const int PIPE_TIMEOUT = 10000; //10s
 }
 
 FaultLoggerPipe::FaultLoggerPipe()
@@ -102,20 +103,18 @@ void FaultLoggerPipe::Close(int fd) const
     }
 }
 
-FaultLoggerPipe2::FaultLoggerPipe2(std::unique_ptr<FaultLoggerPipe> pipeBuf, std::unique_ptr<FaultLoggerPipe> pipeRes)
-    : faultLoggerPipeBuf_(std::move(pipeBuf)), faultLoggerPipeRes_(std::move(pipeRes))
+FaultLoggerPipe2::FaultLoggerPipe2(uint64_t time)
+    : faultLoggerPipeBuf_(std::unique_ptr<FaultLoggerPipe>(new FaultLoggerPipe()))
+    , faultLoggerPipeRes_(std::unique_ptr<FaultLoggerPipe>(new FaultLoggerPipe()))
 {
-}
-
-FaultLoggerPipe2::FaultLoggerPipe2(): FaultLoggerPipe2(std::unique_ptr<FaultLoggerPipe>(new FaultLoggerPipe()),
-    std::unique_ptr<FaultLoggerPipe>(new FaultLoggerPipe()))
-{
+    time_ = time;
 }
 
 FaultLoggerPipe2::~FaultLoggerPipe2()
 {
     faultLoggerPipeBuf_.reset();
     faultLoggerPipeRes_.reset();
+    time_ = 0;
 }
 
 FaultLoggerPipeMap::FaultLoggerPipeMap()
@@ -133,13 +132,27 @@ FaultLoggerPipeMap::~FaultLoggerPipeMap()
     }
 }
 
-void FaultLoggerPipeMap::Set(int pid)
+void FaultLoggerPipeMap::Set(int pid, uint64_t time)
 {
     std::lock_guard<std::mutex> lck(pipeMapsMutex_);
     if (!Find(pid)) {
-        std::unique_ptr<FaultLoggerPipe2> ptr = std::unique_ptr<FaultLoggerPipe2>(new FaultLoggerPipe2());
+        std::unique_ptr<FaultLoggerPipe2> ptr = std::unique_ptr<FaultLoggerPipe2>(new FaultLoggerPipe2(time));
         faultLoggerPipes_.emplace(pid, std::move(ptr));
     }
+}
+
+bool FaultLoggerPipeMap::Check(int pid, uint64_t time)
+{
+    std::lock_guard<std::mutex> lck(pipeMapsMutex_);
+    std::map<int, std::unique_ptr<FaultLoggerPipe2> >::const_iterator iter = faultLoggerPipes_.find(pid);
+    if (iter != faultLoggerPipes_.end()) {
+        if ((time > faultLoggerPipes_[pid]->time_) && (time - faultLoggerPipes_[pid]->time_) > PIPE_TIMEOUT) {
+            faultLoggerPipes_.erase(iter);
+            return false;
+        }
+        return true;
+    }
+    return false;
 }
 
 FaultLoggerPipe2* FaultLoggerPipeMap::Get(int pid)
