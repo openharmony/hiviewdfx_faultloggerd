@@ -119,7 +119,7 @@ int main(int argc, char *argv[])
     int32_t pid = 0;
     int32_t tid = 0;
 
-    alarm(PROCESSDUMP_TIMEOUT); // wait 30s for process dump done
+    alarm(15); // 15 : wait 15s for process dump done
     setsid();
 
     if (ParseParamters(argc, argv, type, pid, tid) <= 0) {

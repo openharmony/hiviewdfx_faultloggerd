@@ -51,4 +51,16 @@ if (defined(ohos_lite)) {
     part_name = "faultloggerd"
     subsystem_name = "hiviewdfx"
   }
+
+  ohos_static_library("dfx_util_static") {
+    sources = dfx_util_sources
+    public_configs = [ ":dfx_util_config" ]
+    deps = [ "$faultloggerd_path/common/dfxlog:static_hilog_base" ]
+    external_deps = [
+      "c_utils:utils",
+      "hilog_native:libhilog_base",
+    ]
+    part_name = "faultloggerd"
+    subsystem_name = "hiviewdfx"
+  }
 }

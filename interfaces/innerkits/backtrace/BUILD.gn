@@ -133,8 +133,8 @@ if (defined(ohos_lite)) {
     sources = backtrace_local_sources
 
     deps = [
+      "$faultloggerd_frameworks_path/unwinder:dfx_unwinder_static_src",
       "$faultloggerd_path/common/dfxlog:static_hilog_base",
-      "$faultloggerd_path/frameworks/unwinder:dfx_unwinder_static_src",
       "//third_party/bounds_checking_function:libsec_static",
       "//third_party/libunwind:libunwind_local",
     ]
