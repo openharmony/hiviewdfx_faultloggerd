@@ -22,7 +22,7 @@
 #include <libunwind.h>
 
 #include "dfx_frame.h"
-#include "dfx_symbols_cache.h"
+#include "dfx_symbols.h"
 
 namespace OHOS {
 namespace HiviewDFX {
@@ -33,7 +33,7 @@ public:
     explicit BacktraceLocalThread(int32_t tid);
     ~BacktraceLocalThread();
 
-    bool Unwind(unw_addr_space_t as, std::shared_ptr<DfxSymbolsCache> cache, size_t skipFrameNum,
+    bool Unwind(unw_addr_space_t as, std::shared_ptr<DfxSymbols> symbol, size_t skipFrameNum,
         bool fast = false, bool releaseThread = true);
     void ReleaseThread();
 
@@ -42,7 +42,7 @@ public:
     static bool GetBacktraceFrames(std::vector<DfxFrame>& frames, int32_t tid, size_t skipFrameNum, bool fast);
     static bool GetBacktraceString(std::string& out, int32_t tid, size_t skipFrameNum, bool fast);
 private:
-    bool UnwindCurrentThread(unw_addr_space_t as, std::shared_ptr<DfxSymbolsCache> cache,
+    bool UnwindCurrentThread(unw_addr_space_t as, std::shared_ptr<DfxSymbols> symbol,
         size_t skipFrameNum, bool fast = false);
 
 private:

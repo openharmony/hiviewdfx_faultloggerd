@@ -24,6 +24,7 @@
 #include <libunwind.h>
 #include <securec.h>
 
+#include "dfx_config.h"
 #include "elapsed_time.h"
 #include "dwarf_unwinder.h"
 #include "fp_unwinder.h"
@@ -63,6 +64,26 @@ void UnwinderTest::TearDown()
 }
 
 /**
+ * @tc.name: DfxConfigTest001
+ * @tc.desc: test DfxConfig class functions
+ * @tc.type: FUNC
+ */
+HWTEST_F(UnwinderTest, DfxConfigTest001, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "DfxConfigTest001: start.";
+    ASSERT_EQ(DfxConfig::GetConfig().logPersist, false);
+    ASSERT_EQ(DfxConfig::GetConfig().displayRegister, true);
+    ASSERT_EQ(DfxConfig::GetConfig().displayBacktrace, true);
+    ASSERT_EQ(DfxConfig::GetConfig().displayMaps, true);
+    ASSERT_EQ(DfxConfig::GetConfig().displayFaultStack, true);
+    ASSERT_EQ(DfxConfig::GetConfig().dumpOtherThreads, false);
+    ASSERT_EQ(DfxConfig::GetConfig().highAddressStep, 512);
+    ASSERT_EQ(DfxConfig::GetConfig().lowAddressStep, 16);
+    ASSERT_EQ(DfxConfig::GetConfig().maxFrameNums, 64);
+    GTEST_LOG_(INFO) << "DfxConfigTest001: end.";
+}
+
+/**
  * @tc.name: UnwinderTest000
  * @tc.desc: test dwarf unwinder UnwindWithContext
  * @tc.type: FUNC
@@ -83,10 +104,10 @@ HWTEST_F(UnwinderTest, UnwinderTest000, TestSize.Level2)
             return;
         }
 
-        auto cache = std::make_shared<DfxSymbolsCache>();
+        auto symbol = std::make_shared<DfxSymbols>();
         ElapsedTime counter2;
         DwarfUnwinder unwinder;
-        ASSERT_EQ(true, unwinder.UnwindWithContext(as, context, cache, 0));
+        ASSERT_EQ(true, unwinder.UnwindWithContext(as, context, symbol, 0));
         GTEST_LOG_(INFO) << "ChildProcessElapse:" << counter2.Elapsed();
         const auto& frames = unwinder.GetFrames();
         ASSERT_GT(frames.size(), 0);

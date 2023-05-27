@@ -73,7 +73,7 @@ bool DfxCatchFrameLocal::InitFrameCatcher()
         return false;
     }
 
-    cache_ = std::make_shared<DfxSymbolsCache>();
+    symbol_ = std::make_shared<DfxSymbols>();
     return true;
 }
 
@@ -84,7 +84,7 @@ void DfxCatchFrameLocal::DestroyFrameCatcher()
         unw_destroy_local_address_space(as_);
         as_ = nullptr;
     }
-    cache_ = nullptr;
+    symbol_ = nullptr;
 }
 
 bool DfxCatchFrameLocal::ReleaseThread(int tid)
@@ -95,7 +95,7 @@ bool DfxCatchFrameLocal::ReleaseThread(int tid)
 
 bool DfxCatchFrameLocal::CatchFrame(std::map<int, std::vector<DfxFrame>>& mapFrames, bool releaseThread)
 {
-    if (as_ == nullptr || cache_ == nullptr) {
+    if (as_ == nullptr || symbol_ == nullptr) {
         return false;
     }
 
@@ -124,7 +124,7 @@ bool DfxCatchFrameLocal::CatchFrame(std::map<int, std::vector<DfxFrame>>& mapFra
 
 bool DfxCatchFrameLocal::CatchFrame(int tid, std::vector<DfxFrame>& frames, bool releaseThread)
 {
-    if (as_ == nullptr || cache_ == nullptr) {
+    if (as_ == nullptr || symbol_ == nullptr) {
         return false;
     }
 
@@ -155,7 +155,7 @@ bool DfxCatchFrameLocal::CatchFrameCurrTid(std::vector<DfxFrame>& frames, bool r
 
     int skipFrameNum = 1; // skip current frame
     BacktraceLocalThread thread(BACKTRACE_CURRENT_THREAD);
-    if (!thread.Unwind(as_, cache_, skipFrameNum, false, releaseThread)) {
+    if (!thread.Unwind(as_, symbol_, skipFrameNum, false, releaseThread)) {
         return false;
     }
 
@@ -170,7 +170,7 @@ bool DfxCatchFrameLocal::CatchFrameLocalTid(int tid, std::vector<DfxFrame>& fram
 
     int skipFrameNum = 1; // skip current frame
     BacktraceLocalThread thread(tid);
-    if (!thread.Unwind(as_, cache_, skipFrameNum, false, releaseThread)) {
+    if (!thread.Unwind(as_, symbol_, skipFrameNum, false, releaseThread)) {
         return false;
     }
 

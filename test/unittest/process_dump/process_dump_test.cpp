@@ -15,8 +15,7 @@
 
 /* This files contains process dump module unittest. */
 
-#include "process_dump_test.h"
-
+#include <gtest/gtest.h>
 #include <memory>
 #include <string>
 
@@ -32,6 +31,18 @@
 using namespace OHOS::HiviewDFX;
 using namespace testing::ext;
 using namespace std;
+
+namespace OHOS {
+namespace HiviewDFX {
+class ProcessDumpTest : public testing::Test {
+public:
+    static void SetUpTestCase(void);
+    static void TearDownTestCase(void);
+    void SetUp();
+    void TearDown();
+};
+} // namespace HiviewDFX
+} // namespace OHOS
 
 void ProcessDumpTest::SetUpTestCase(void)
 {

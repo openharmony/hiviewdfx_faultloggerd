@@ -29,6 +29,7 @@
 #include <vector>
 #include "dfx_define.h"
 #include "dfx_elf.h"
+#include "dfx_memory_file.h"
 #include "dfx_log.h"
 #include "dfx_util.h"
 
@@ -122,23 +123,6 @@ void DfxElfMaps::InsertMapToElfMaps(std::shared_ptr<DfxElfMap> map)
     return;
 }
 
-
-bool DfxElfMaps::FindMapByPath(const std::string path, std::vector<std::shared_ptr<DfxElfMap>>& maps) const
-{
-    bool ret = false;
-    for (auto iter = maps_.begin(); iter != maps_.end(); iter++) {
-        if ((*iter)->GetMapPath() == "") {
-            continue;
-        }
-
-        if (strcmp(path.c_str(), (*iter)->GetMapPath().c_str()) == 0) {
-            maps.push_back(*iter);
-            ret = true;
-        }
-    }
-    return ret;
-}
-
 bool DfxElfMaps::FindMapByAddr(uintptr_t address, std::shared_ptr<DfxElfMap>& map) const
 {
     if ((maps_.size() == 0) || (address == 0x0)) {
@@ -223,13 +207,17 @@ uint64_t DfxElfMap::GetRelPc(uint64_t pc)
 {
     uint64_t relPc = 0;
     if (GetMapImage() == nullptr) {
-        SetMapImage(DfxElf::Create(GetMapPath().c_str()));
+        auto memory = DfxMemoryFile::CreateFileMemory(GetMapPath(), 0);
+        if (memory != nullptr) {
+            auto elf = std::make_shared<DfxElf>(memory);
+            SetMapImage(elf);
+        }
     }
 
     if (GetMapImage() == nullptr) {
         relPc = pc - (GetMapBegin() - GetMapOffset());
     } else {
-        relPc = (pc - GetMapBegin()) + GetMapImage()->FindRealLoadOffset(GetMapOffset());
+        relPc = (pc - GetMapBegin()) + GetMapImage()->GetRealLoadOffset(GetMapOffset());
     }
 
 #ifdef __aarch64__

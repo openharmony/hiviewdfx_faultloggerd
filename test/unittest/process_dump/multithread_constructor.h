@@ -26,8 +26,6 @@
         return TestFunc##FuncNumB();                   \
     }
 
-void CreateThread(int *argv);
-
 #ifdef __cplusplus
 extern "C" {
 #endif

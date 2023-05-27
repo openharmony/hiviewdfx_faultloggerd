@@ -34,7 +34,7 @@
 #include "dfx_frame_format.h"
 #include "backtrace_local_context.h"
 #include "backtrace_local_thread.h"
-#include "dfx_symbols_cache.h"
+#include "dfx_symbols.h"
 #include "elapsed_time.h"
 #include "dfx_test_util.h"
 
@@ -125,10 +125,10 @@ HWTEST_F(BacktraceLocalTest, BacktraceLocalTest001, TestSize.Level2)
         return;
     }
 
-    auto cache = std::make_shared<DfxSymbolsCache>();
+    auto symbol = std::make_shared<DfxSymbols>();
     ElapsedTime counter;
     BacktraceLocalThread thread(BACKTRACE_CURRENT_THREAD);
-    ASSERT_EQ(true, thread.Unwind(as, cache, 0));
+    ASSERT_EQ(true, thread.Unwind(as, symbol, 0));
 
     GTEST_LOG_(INFO) << "UnwindCurrentCost:" << counter.Elapsed();
     const auto& frames = thread.GetFrames();
@@ -178,10 +178,10 @@ HWTEST_F(BacktraceLocalTest, BacktraceLocalTest003, TestSize.Level2)
         FAIL() << "Failed to create child thread.\n";
     }
 
-    auto cache = std::make_shared<DfxSymbolsCache>();
+    auto symbol = std::make_shared<DfxSymbols>();
     ElapsedTime counter;
     BacktraceLocalThread thread(g_tid);
-    ASSERT_EQ(true, thread.Unwind(as, cache, 0));
+    ASSERT_EQ(true, thread.Unwind(as, symbol, 0));
     GTEST_LOG_(INFO) << "UnwindCurrentCost:" << counter.Elapsed();
     BacktraceLocalContext::GetInstance().CleanUp();
     const auto& frames = thread.GetFrames();

@@ -28,7 +28,7 @@
 
 #include "dfx_define.h"
 #include "dfx_process.h"
-#include "dfx_symbols_cache.h"
+#include "dfx_symbols.h"
 #include "dfx_thread.h"
 #include "nocopyable.h"
 
@@ -58,7 +58,7 @@ private:
 
 private:
     unw_addr_space_t as_;
-    std::unique_ptr<DfxSymbolsCache> cache_;
+    std::unique_ptr<DfxSymbols> symbols_;
     std::map<std::string, std::string> buildIds_;
 };
 }   // namespace HiviewDFX

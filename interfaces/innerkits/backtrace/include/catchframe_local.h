@@ -27,7 +27,7 @@
 
 #include "dfx_define.h"
 #include "dfx_frame.h"
-#include "dfx_symbols_cache.h"
+#include "dfx_symbols.h"
 
 // forward declaration
 struct unw_addr_space;
@@ -57,7 +57,7 @@ private:
     int32_t pid_;
     struct ProcInfo procInfo_;
     unw_addr_space_t as_ {nullptr};
-    std::shared_ptr<DfxSymbolsCache> cache_ {nullptr};
+    std::shared_ptr<DfxSymbols> symbol_ {nullptr};
 };
 } // namespace HiviewDFX
 } // namespace OHOS

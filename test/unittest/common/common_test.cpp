@@ -13,33 +13,29 @@
  * limitations under the License.
  */
 
-#include "common_test.h"
-
+#include <gtest/gtest.h>
 #include <ctime>
 #include <securec.h>
 #include <string>
 #include <vector>
 #include "dfx_util.h"
+#include "dfx_dump_res.h"
 
 using namespace OHOS::HiviewDFX;
 using namespace testing::ext;
 using namespace std;
 
-void CommonTest::SetUpTestCase(void)
-{
-}
-
-void CommonTest::TearDownTestCase(void)
-{
-}
-
-void CommonTest::SetUp(void)
-{
-}
-
-void CommonTest::TearDown(void)
-{
-}
+namespace OHOS {
+namespace HiviewDFX {
+class CommonTest : public testing::Test {
+public:
+    static void SetUpTestCase(void) {}
+    static void TearDownTestCase(void) {}
+    void SetUp() {}
+    void TearDown() {}
+};
+} // namespace HiviewDFX
+} // namespace OHOS
 
 /**
  * @tc.name: DfxUtilTest001
@@ -101,4 +97,17 @@ HWTEST_F(CommonTest, DfxUtilTest003, TestSize.Level2)
     }
 
     GTEST_LOG_(INFO) << "DfxUtilTest003: end.";
+}
+
+/**
+ * @tc.name: DfxDumpResTest001
+ * @tc.desc: test DfxDumpRes functions
+ * @tc.type: FUNC
+ */
+HWTEST_F(CommonTest, DfxDumpResTest001, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "DfxDumpResTest001: start.";
+    int32_t res = DUMP_ESUCCESS;
+    GTEST_LOG_(INFO) << DfxDumpRes::ToString(res);
+    GTEST_LOG_(INFO) << "DfxDumpResTest001: end.";
 }

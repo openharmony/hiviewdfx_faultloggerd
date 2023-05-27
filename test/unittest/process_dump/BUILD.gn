@@ -23,15 +23,12 @@ if (defined(ohos_lite)) {
       output_dir = "$root_out_dir/test/unittest/faultloggerd"
 
       include_dirs = [
-        "include/",
-        "mock/",
         "$c_utils_include_path",
         "$faultloggerd_frameworks_path/unwinder/include",
         "$faultloggerd_interfaces_path/common",
         "$faultloggerd_path/common",
         "$faultloggerd_path/common/dfxutil",
         "$faultloggerd_path/test/utils",
-        "$faultloggerd_path/tools/process_dump/test/mock/include/",
         "$faultloggerd_path/tools/process_dump",
         "//third_party/libunwind/include/",
         "//third_party/googletest/googlemock/include",
@@ -39,12 +36,11 @@ if (defined(ohos_lite)) {
       ]
 
       sources = [
-        "src/dfx_base_test.cpp",
-        "src/dfx_maps_test.cpp",
-        "src/dfx_processdump_test.cpp",
-        "src/multithread_constructor.c",
-        "src/process_dfx_test.cpp",
-        "src/process_dump_test.cpp",
+        "dfx_maps_test.cpp",
+        "dfx_processdump_test.cpp",
+        "multithread_constructor.c",
+        "process_dfx_test.cpp",
+        "process_dump_test.cpp",
       ]
       sources += [ "$c_utils_src_path/directory_ex.cpp" ]
 
@@ -68,8 +64,6 @@ if (defined(ohos_lite)) {
     visibility = [ ":*" ]
 
     include_dirs = [
-      "include/",
-      "mock/",
       "$faultloggerd_frameworks_path/unwinder/include",
       "$faultloggerd_interfaces_path/common",
       "$faultloggerd_path/common",
@@ -85,12 +79,11 @@ if (defined(ohos_lite)) {
   ohos_unittest("test_processdump") {
     module_out_path = module_output_path
     sources = [
-      "src/dfx_base_test.cpp",
-      "src/dfx_maps_test.cpp",
-      "src/dfx_processdump_test.cpp",
-      "src/multithread_constructor.c",
-      "src/process_dfx_test.cpp",
-      "src/process_dump_test.cpp",
+      "dfx_maps_test.cpp",
+      "dfx_processdump_test.cpp",
+      "multithread_constructor.c",
+      "process_dfx_test.cpp",
+      "process_dump_test.cpp",
     ]
 
     configs = [ ":module_private_config" ]
@@ -113,7 +106,7 @@ if (defined(ohos_lite)) {
 
   ohos_unittest("FaultStackUnittest") {
     module_out_path = module_output_path
-    sources = [ "src/fault_stack_unittest.cpp" ]
+    sources = [ "fault_stack_unittest.cpp" ]
 
     configs = [ ":module_private_config" ]
 

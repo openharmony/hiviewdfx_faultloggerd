@@ -15,8 +15,7 @@
 
 /* This files is process dump map module unittest. */
 
-#include "dfx_maps_test.h"
-
+#include <gtest/gtest.h>
 #include <memory>
 #include <sys/types.h>
 #include "dfx_maps.h"
@@ -24,6 +23,18 @@
 using namespace OHOS::HiviewDFX;
 using namespace testing::ext;
 using namespace std;
+
+namespace OHOS {
+namespace HiviewDFX {
+class DfxMapsTest : public testing::Test {
+public:
+    static void SetUpTestCase(void);
+    static void TearDownTestCase(void);
+    void SetUp();
+    void TearDown();
+};
+} // namespace HiviewDFX
+} // namespace OHOS
 
 void DfxMapsTest::SetUpTestCase(void)
 {
@@ -311,22 +322,6 @@ HWTEST_F (DfxMapsTest, DfxMapsRequestTest016, TestSize.Level2)
     output = dfxmap->GetMapImage();
     EXPECT_EQ(true, input == output) << "DfxMapsRequestTest016 Failed";
     GTEST_LOG_(INFO) << "DfxMapsRequestTest016: end.";
-}
-
-/**
- * @tc.name: DfxMapsRequestTest017
- * @tc.desc: test find map by path
- * @tc.type: FUNC
- */
-HWTEST_F (DfxMapsTest, DfxMapsRequestTest017, TestSize.Level2)
-{
-    GTEST_LOG_(INFO) << "DfxMapsRequestTest017: start.";
-    std::shared_ptr<DfxElfMaps> dfxmap = std::make_shared<DfxElfMaps>();
-    const std::string path = "/data";
-    std::vector<std::shared_ptr<DfxElfMap>> maps;
-    bool flag = dfxmap->FindMapByPath(path, maps);
-    EXPECT_EQ(false, flag);
-    GTEST_LOG_(INFO) << "DfxMapsRequestTest017: end.";
 }
 
 /**

@@ -47,10 +47,10 @@ const std::vector<DfxFrame>& DwarfUnwinder::GetFrames() const
 }
 
 void DwarfUnwinder::UpdateFrameFuncName(unw_addr_space_t as,
-    std::shared_ptr<DfxSymbolsCache> cache, DfxFrame& frame)
+    std::shared_ptr<DfxSymbols> symbol, DfxFrame& frame)
 {
-    if (cache != nullptr) {
-        cache->GetNameAndOffsetByPc(as, frame.pc, frame.funcName, frame.funcOffset);
+    if (symbol != nullptr) {
+        symbol->GetNameAndOffsetByPc(as, frame.pc, frame.funcName, frame.funcOffset);
     }
 }
 
@@ -61,19 +61,19 @@ bool DwarfUnwinder::Unwind(size_t skipFrameNum)
     if (as == nullptr) {
         return false;
     }
-    auto cache = std::make_shared<DfxSymbolsCache>();
+    auto symbol = std::make_shared<DfxSymbols>();
 
     unw_context_t context;
     (void)memset_s(&context, sizeof(unw_context_t), 0, sizeof(unw_context_t));
     unw_getcontext(&context);
 
-    bool ret = UnwindWithContext(as, context, cache, skipFrameNum + 1);
+    bool ret = UnwindWithContext(as, context, symbol, skipFrameNum + 1);
     unw_destroy_local_address_space(as);
     return ret;
 }
 
 bool DwarfUnwinder::UnwindWithContext(unw_addr_space_t as, unw_context_t& context,
-    std::shared_ptr<DfxSymbolsCache> cache, size_t skipFrameNum)
+    std::shared_ptr<DfxSymbols> symbol, size_t skipFrameNum)
 {
     if (as == nullptr) {
         return false;
@@ -121,7 +121,7 @@ bool DwarfUnwinder::UnwindWithContext(unw_addr_space_t as, unw_context_t& contex
         bool isValidFrame = true;
         if ((map != nullptr) && (strlen(map->path) < SYMBOL_BUF_SIZE - 1)) {
             frame.mapName = std::string(map->path);
-            UpdateFrameFuncName(as, cache, frame);
+            UpdateFrameFuncName(as, symbol, frame);
         } else {
             isValidFrame = false;
         }

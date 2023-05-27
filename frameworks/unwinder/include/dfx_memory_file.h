@@ -12,30 +12,32 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef DWARF_UNWINDER_H
-#define DWARF_UNWINDER_H
 
-#include <vector>
-#include <libunwind.h>
-#include "dfx_frame.h"
-#include "dfx_symbols.h"
+#ifndef DFX_MEMORY_FILE_H
+#define DFX_MEMORY_FILE_H
+
+#include "dfx_memory.h"
 
 namespace OHOS {
 namespace HiviewDFX {
-class DwarfUnwinder {
+class DfxMemoryFile : public DfxMemory {
 public:
-    DwarfUnwinder();
-    ~DwarfUnwinder();
+    static std::shared_ptr<DfxMemoryFile> CreateFileMemory(const std::string& path, uint64_t offset);
 
-    bool UnwindWithContext(unw_addr_space_t as, unw_context_t& context, std::shared_ptr<DfxSymbols> symbol,
-        size_t skipFrameNum);
-    bool Unwind(size_t skipFrameNum);
-    const std::vector<DfxFrame>& GetFrames() const;
-private:
-    void UpdateFrameFuncName(unw_addr_space_t as, std::shared_ptr<DfxSymbols> symbol, DfxFrame& frame);
+    DfxMemoryFile() = default;
+    virtual ~DfxMemoryFile() { Clear(); }
 
-private:
-    std::vector<DfxFrame> frames_;
+    bool Init(const std::string& file, uint64_t offset, uint64_t size = UINT64_MAX);
+
+    size_t Read(uint64_t addr, void* dst, size_t size) override;
+
+    size_t Size() { return size_; }
+
+    void Clear() override;
+protected:
+    size_t size_ = 0;
+    size_t offset_ = 0;
+    uint8_t* data_ = nullptr;
 };
 } // namespace HiviewDFX
 } // namespace OHOS

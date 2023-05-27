@@ -24,7 +24,7 @@
 const static int ARGUMENT_LIMIT = 2;
 const static unsigned int SLEEP_TIMEOUT = 360000;
 
-void CreateThread(int *argv)
+static void CreateThread(int *argv)
 {
     int threadID = *argv;
     printf("create MultiThread %d\n", threadID);

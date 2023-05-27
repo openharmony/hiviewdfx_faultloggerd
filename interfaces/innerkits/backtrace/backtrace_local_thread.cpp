@@ -53,7 +53,7 @@ BacktraceLocalThread::~BacktraceLocalThread()
     frames_.clear();
 }
 
-bool BacktraceLocalThread::UnwindCurrentThread(unw_addr_space_t as, std::shared_ptr<DfxSymbolsCache> cache,
+bool BacktraceLocalThread::UnwindCurrentThread(unw_addr_space_t as, std::shared_ptr<DfxSymbols> symbol,
     size_t skipFrameNum, bool fast)
 {
     bool ret = false;
@@ -71,13 +71,13 @@ bool BacktraceLocalThread::UnwindCurrentThread(unw_addr_space_t as, std::shared_
     }
     if (!ret) {
         DwarfUnwinder unwinder;
-        ret = unwinder.UnwindWithContext(as, context, cache, skipFrameNum + 1);
+        ret = unwinder.UnwindWithContext(as, context, symbol, skipFrameNum + 1);
         frames_ = unwinder.GetFrames();
     }
     return ret;
 }
 
-bool BacktraceLocalThread::Unwind(unw_addr_space_t as, std::shared_ptr<DfxSymbolsCache> cache,
+bool BacktraceLocalThread::Unwind(unw_addr_space_t as, std::shared_ptr<DfxSymbols> symbol,
     size_t skipFrameNum, bool fast, bool releaseThread)
 {
     static std::mutex mutex;
@@ -85,7 +85,7 @@ bool BacktraceLocalThread::Unwind(unw_addr_space_t as, std::shared_ptr<DfxSymbol
     bool ret = false;
 
     if (tid_ == BACKTRACE_CURRENT_THREAD) {
-        return UnwindCurrentThread(as, cache, skipFrameNum + 1, fast);
+        return UnwindCurrentThread(as, symbol, skipFrameNum + 1, fast);
     } else if (tid_ < BACKTRACE_CURRENT_THREAD) {
         return ret;
     }
@@ -103,7 +103,7 @@ bool BacktraceLocalThread::Unwind(unw_addr_space_t as, std::shared_ptr<DfxSymbol
 
     if (!ret) {
         DwarfUnwinder unwinder;
-        ret = unwinder.UnwindWithContext(as, *(threadContext->ctx), cache, skipFrameNum);
+        ret = unwinder.UnwindWithContext(as, *(threadContext->ctx), symbol, skipFrameNum);
         frames_ = unwinder.GetFrames();
     }
 
@@ -134,9 +134,9 @@ bool BacktraceLocalThread::GetBacktraceFrames(std::vector<DfxFrame>& frames,
         if (as == nullptr) {
             return ret;
         }
-        auto cache = std::make_shared<DfxSymbolsCache>();
+        auto symbol = std::make_shared<DfxSymbols>();
 
-        ret = thread.Unwind(as, cache, skipFrameNum, fast);
+        ret = thread.Unwind(as, symbol, skipFrameNum, fast);
 
         unw_destroy_local_address_space(as);
     }
@@ -161,9 +161,9 @@ bool BacktraceLocalThread::GetBacktraceString(std::string& out,
         if (as == nullptr) {
             return ret;
         }
-        auto cache = std::make_shared<DfxSymbolsCache>();
+        auto symbol = std::make_shared<DfxSymbols>();
 
-        ret = thread.Unwind(as, cache, skipFrameNum, fast);
+        ret = thread.Unwind(as, symbol, skipFrameNum, fast);
 
         unw_destroy_local_address_space(as);
     }

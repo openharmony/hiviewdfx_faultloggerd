@@ -32,7 +32,7 @@
 #include "dfx_process.h"
 #include "dfx_regs.h"
 #include "dfx_ring_buffer_wrapper.h"
-#include "dfx_symbols_cache.h"
+#include "dfx_symbols.h"
 #include "dfx_thread.h"
 #include "dfx_util.h"
 #include "libunwind.h"
@@ -59,8 +59,8 @@ DfxUnwindRemote &DfxUnwindRemote::GetInstance()
 DfxUnwindRemote::DfxUnwindRemote()
 {
     as_ = nullptr;
-    std::unique_ptr<DfxSymbolsCache> cache(new DfxSymbolsCache());
-    cache_ = std::move(cache);
+    std::unique_ptr<DfxSymbols> symbols(new DfxSymbols());
+    symbols_ = std::move(symbols);
 }
 
 bool DfxUnwindRemote::UnwindProcess(std::shared_ptr<DfxProcess> process)
@@ -267,7 +267,7 @@ bool DfxUnwindRemote::UpdateAndPrintFrameInfo(unw_cursor_t& cursor, std::shared_
         }
 #endif
         uint64_t funcOffset;
-        if (!isGetFuncName && cache_->GetNameAndOffsetByPc(as_, frame->pc, funcName, funcOffset)) {
+        if (!isGetFuncName && symbols_->GetNameAndOffsetByPc(as_, frame->pc, funcName, funcOffset)) {
             frame->funcName = funcName;
             frame->funcOffset = funcOffset;
         }
