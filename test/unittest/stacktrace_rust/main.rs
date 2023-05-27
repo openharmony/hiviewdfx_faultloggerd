@@ -27,7 +27,7 @@ fn test_get_trace() {
     assert!(!trace.is_empty());
     assert!(trace.contains("#00"));
     assert!(trace.contains("libstacktrace_rust.dylib.so"));
-    assert!(trace.contains("test_stacktrace_rust"));
+    assert!(trace.contains("rust_stacktrace_test"));
 }
 
 #[test]
@@ -39,7 +39,7 @@ fn test_get_trace_in_multithread() {
             assert!(!trace.is_empty());
             assert!(trace.contains("#00"));
             assert!(trace.contains("libstacktrace_rust.dylib.so"));
-            assert!(trace.contains("test_stacktrace_rust"));
+            assert!(trace.contains("rust_stacktrace_test"));
         });
         handles.push(handle);
     }
@@ -61,5 +61,5 @@ fn test_print_trace() {
     assert!(!trace.is_empty());
     assert!(trace.contains("#00"));
     assert!(trace.contains("libstacktrace_rust.dylib.so"));
-    assert!(trace.contains("test_stacktrace_rust"));
+    assert!(trace.contains("rust_stacktrace_test"));
 }

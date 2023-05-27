@@ -32,6 +32,7 @@ if (defined(ohos_lite)) {
     sources = [ "faultloggerd_fuzzer.cpp" ]
     deps = [
       "$faultloggerd_path/interfaces/innerkits/dump_catcher:libdfx_dumpcatcher",
+      "$faultloggerd_path/interfaces/innerkits/faultloggerd_client:libfaultloggerd",
     ]
 
     external_deps = [
