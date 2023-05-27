@@ -90,7 +90,7 @@ static bool CheckCppCrashKeyWords(const string& filePath, pid_t pid, int sig)
     int count = CheckKeyWords(filePath, keywords, length, minRegIdx);
     return count == length;
 }
-
+namespace {
 /**
  * @tc.name: DfxProcessDumpTest001
  * @tc.desc: test SIGILL crash
@@ -241,4 +241,5 @@ HWTEST_F(DfxProcessDumpTest, DfxProcessDumpTest008, TestSize.Level2)
     ASSERT_EQ(std::to_string(curTime).length(), filename.length() - filename.find_last_of('-') - 1);
     ASSERT_TRUE(CheckCppCrashKeyWords(filename, testProcess, SIGSYS));
     GTEST_LOG_(INFO) << "DfxProcessDumpTest008: end.";
+}
 }

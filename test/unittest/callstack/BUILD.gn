@@ -37,7 +37,7 @@ if (!defined(ohos_lite)) {
       "register_test.cpp",
     ]
 
-    defines = [ "HAVE_LIBUNWIND=1" ]
+    defines = [ "HAVE_LIBUNWIND" ]
 
     configs = [ ":callstack_test_config" ]
 
