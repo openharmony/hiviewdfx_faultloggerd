@@ -206,7 +206,7 @@ public:
 private:
     void MoveToHead(LinkNode<Key, Val> *&pnode);
     void MoveToTail(LinkNode<Key, Val> *&pnode);
-    bool MoveNode(const Iterator &pos, LinkNode<Key, Val> *&pnode);
+    bool MoveNode(const Iterator &pos, LinkNode<Key, Val> *&pnode) const;
     LinkNode<Key, Val> *AllocateNode(const Key &key);
     LinkNode<Key, Val> *AllocateNode(const Key &key, const Val &val);
     LinkNode<Key, Val> *AllocateNode(const Key &key, Val &&val);

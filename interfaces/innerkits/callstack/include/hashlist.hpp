@@ -497,7 +497,7 @@ HashList<Key, Val>::HashList(const std::size_t numItem) : numItem_ {numItem}
 {
     dataHead_.next_ = &dataHead_;
     dataHead_.prev_ = &dataHead_;
-    if (numItem_) {
+    if (numItem_ != 0) {
         valueTab_.reserve(numItem_);
         pData_ = new(std::nothrow) LinkNode<Key, Val>[numItem_];
         if (pData_) {
@@ -522,7 +522,7 @@ int HashList<Key, Val>::reserve(const std::size_t numItem)
     if (numItem_ != 0) {
         return -1;
     }
-    if (numItem) {
+    if (numItem != 0) {
         numItem_ = numItem;
         valueTab_.reserve(numItem_);
         pData_ = new(std::nothrow) LinkNode<Key, Val>[numItem_];
@@ -827,7 +827,7 @@ auto HashList<Key, Val>::erase(const Iterator first, const Iterator last)
 }
 
 template<typename Key, typename Val>
-bool HashList<Key, Val>::MoveNode(const Iterator& pos, LinkNode<Key, Val> *&pnode)
+bool HashList<Key, Val>::MoveNode(const Iterator& pos, LinkNode<Key, Val> *&pnode) const
 {
     LinkNode<Key, Val> *curNode = pos.GetNode();
     if (curNode == pnode) {

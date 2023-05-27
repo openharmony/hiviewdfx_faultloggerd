@@ -19,7 +19,7 @@
 #if !is_mingw
 #include <sys/utsname.h>
 #endif
-#if HAVE_LIBUNWIND
+#ifdef HAVE_LIBUNWIND
 #include <libunwind.h>
 #endif
 #include "callstack_log.h"
@@ -56,7 +56,7 @@ uint64_t GetSupportedRegMask(ArchType arch)
     return result;
 }
 
-#if HAVE_LIBUNWIND
+#ifdef HAVE_LIBUNWIND
 const std::map<int, int> LibUnwindRegMap = {
 #if defined(__x86_64__)
     {UNW_X86_64_RAX, PERF_REG_X86_AX},  {UNW_X86_64_RDX, PERF_REG_X86_DX},
