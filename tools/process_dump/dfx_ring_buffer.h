@@ -165,9 +165,9 @@ public:
      * @brief    Advances the read position.
      *
      */
-    void Skip(unsigned int num_reads)
+    void Skip(unsigned int numReads)
     {
-        readPosition = (readPosition + num_reads) % LENGTH;
+        readPosition = (readPosition + numReads) % LENGTH;
     }
 
     bool Overrun()

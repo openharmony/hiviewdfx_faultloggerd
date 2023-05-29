@@ -27,7 +27,7 @@ if (!defined(ohos_lite)) {
       "$faultloggerd_path/common/dfxlog",
       "$faultloggerd_path/common/dfxutil",
     ]
-    defines = [ "HAVE_LIBUNWIND=1" ]
+    defines = [ "HAVE_LIBUNWIND" ]
 
     cflags = [ "-Wno-unused-private-field" ]
 
