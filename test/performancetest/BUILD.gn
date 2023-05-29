@@ -26,6 +26,7 @@ if (defined(ohos_lite)) {
       include_dirs = [
         "include/",
         "$c_utils_include_path",
+        "$faultloggerd_frameworks_path/unwinder/include",
         "$faultloggerd_interfaces_path/common",
         "$faultloggerd_path/common",
         "$faultloggerd_path/tools/process_dump",

@@ -51,10 +51,13 @@ if (defined(ohos_lite)) {
     sources += [
       "$faultloggerd_frameworks_path/unwinder/arch_util.cpp",
       "$faultloggerd_frameworks_path/unwinder/dfx_config.cpp",
+      "$faultloggerd_frameworks_path/unwinder/dfx_elf.cpp",
       "$faultloggerd_frameworks_path/unwinder/dfx_frame_format.cpp",
+      "$faultloggerd_frameworks_path/unwinder/dfx_memory.cpp",
+      "$faultloggerd_frameworks_path/unwinder/dfx_memory_file.cpp",
+      "$faultloggerd_frameworks_path/unwinder/dfx_symbols.cpp",
       "$faultloggerd_frameworks_path/unwinder/dwarf_unwinder.cpp",
       "$faultloggerd_frameworks_path/unwinder/fp_unwinder.cpp",
-      "$faultloggerd_path/tools/process_dump/dfx_symbols_cache.cpp",
     ]
     sources += [
       "$faultloggerd_frameworks_path/unwinder/dfx_regs.cpp",

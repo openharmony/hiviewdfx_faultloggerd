@@ -25,6 +25,7 @@ if (defined(ohos_lite)) {
       include_dirs = [
         "$c_utils_include_path",
         "$hilog_lite_include_path",
+        "$faultloggerd_interfaces_path/common",
         "$faultloggerd_path/common",
         "$faultloggerd_path/common/dfxlog",
         "$faultloggerd_path/common/dfxutil",
@@ -52,6 +53,7 @@ if (defined(ohos_lite)) {
     visibility = [ ":*" ]
 
     include_dirs = [
+      "$faultloggerd_interfaces_path/common",
       "$faultloggerd_path/common",
       "$faultloggerd_path/common/dfxlog",
       "$faultloggerd_path/common/dfxutil",

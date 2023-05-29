@@ -13,8 +13,7 @@
  * limitations under the License.
  */
 
-#include "dfx_processdump_test.h"
-
+#include <gtest/gtest.h>
 #include <fstream>
 #include <map>
 #include <csignal>
@@ -33,6 +32,18 @@
 using namespace OHOS::HiviewDFX;
 using namespace testing::ext;
 using namespace std;
+
+namespace OHOS {
+namespace HiviewDFX {
+class DfxProcessDumpTest : public testing::Test {
+public:
+    static void SetUpTestCase(void);
+    static void TearDownTestCase(void);
+    void SetUp();
+    void TearDown();
+};
+} // namespace HiviewDFX
+} // namespace OHOS
 
 void DfxProcessDumpTest::SetUpTestCase(void)
 {

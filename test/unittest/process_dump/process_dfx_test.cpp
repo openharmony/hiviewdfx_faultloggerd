@@ -15,16 +15,29 @@
 
 /* This files contains unit test of process module. */
 
-#include "process_dfx_test.h"
-
+#include <gtest/gtest.h>
 #include <memory>
 
 #include "dfx_process.h"
+#include "dfx_signal.h"
 #include "dfx_test_util.h"
 
 using namespace OHOS::HiviewDFX;
 using namespace testing::ext;
 using namespace std;
+
+namespace OHOS {
+namespace HiviewDFX {
+class ProcessDfxTest : public testing::Test {
+public:
+    static void SetUpTestCase(void);
+    static void TearDownTestCase(void);
+    void SetUp();
+    void TearDown();
+    static pid_t GetAccountmgrPid();
+};
+} // namespace HiviewDFX
+} // namespace OHOS
 
 void ProcessDfxTest::SetUpTestCase(void)
 {
@@ -44,6 +57,41 @@ void ProcessDfxTest::TearDown(void)
 }
 
 namespace {
+/**
+ * @tc.name: DfxSignalTest001
+ * @tc.desc: test DfxSignal functions
+ * @tc.type: FUNC
+ */
+HWTEST_F(ProcessDfxTest, DfxSignalTest001, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "DfxSignalTest001: start.";
+    siginfo_t si = {
+        .si_signo = SIGSEGV,
+        .si_errno = 0,
+        .si_code = -1,
+        .si_value.sival_int = gettid()
+    };
+    map<int, string> sigKeys = {
+        { SIGILL, string("SIGILL") },
+        { SIGTRAP, string("SIGTRAP") },
+        { SIGABRT, string("SIGABRT") },
+        { SIGBUS, string("SIGBUS") },
+        { SIGFPE, string("SIGFPE") },
+        { SIGSEGV, string("SIGSEGV") },
+        { SIGSTKFLT, string("SIGSTKFLT") },
+        { SIGSYS, string("SIGSYS") },
+    };
+    for (auto sigKey : sigKeys) {
+        std::string sigKeyword = "Signal:";
+        si.si_signo = sigKey.first;
+        sigKeyword += sigKey.second;
+        std::string sigStr = PrintSignal(si);
+        GTEST_LOG_(INFO) << sigStr;
+        ASSERT_TRUE(sigStr.find(sigKeyword) != std::string::npos);
+    }
+    GTEST_LOG_(INFO) << "DfxSignalTest001: end.";
+}
+
 /**
  * @tc.name: ProcessDfxRequestTest001
  * @tc.desc: test cinit process maps node

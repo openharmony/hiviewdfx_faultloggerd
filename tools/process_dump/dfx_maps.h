@@ -67,7 +67,6 @@ public:
     static std::shared_ptr<DfxElfMaps> Create(const std::string path);
 
     void InsertMapToElfMaps(std::shared_ptr<DfxElfMap> map);
-    bool FindMapByPath(const std::string path, std::vector<std::shared_ptr<DfxElfMap>>& maps) const;
     bool FindMapByAddr(uintptr_t address, std::shared_ptr<DfxElfMap>& map) const;
 
     std::vector<std::shared_ptr<DfxElfMap>> GetValues() const;

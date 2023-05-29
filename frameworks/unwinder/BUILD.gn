@@ -14,14 +14,17 @@
 import("//base/hiviewdfx/faultloggerd/faultloggerd.gni")
 
 dfx_unwinder_sources = [
-  "$faultloggerd_path/tools/process_dump/dfx_symbols_cache.cpp",
   "arch_util.cpp",
   "dfx_config.cpp",
+  "dfx_elf.cpp",
   "dfx_frame_format.cpp",
+  "dfx_memory.cpp",
+  "dfx_memory_file.cpp",
   "dfx_regs.cpp",
   "dfx_regs_arm.cpp",
   "dfx_regs_arm64.cpp",
   "dfx_regs_x86_64.cpp",
+  "dfx_symbols.cpp",
   "dwarf_unwinder.cpp",
   "fp_unwinder.cpp",
 ]

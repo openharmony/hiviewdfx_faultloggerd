@@ -13,8 +13,7 @@
  * limitations under the License.
  */
 
-#include "fault_stack_unittest.h"
-
+#include <gtest/gtest.h>
 #include <cerrno>
 
 #include <libunwind_i-ohos.h>
@@ -34,16 +33,23 @@
 using namespace OHOS::HiviewDFX;
 using namespace testing::ext;
 using namespace std;
-std::string FaultStackUnittest::result {""};
-namespace {
-int WriteLogFunc(int32_t fd, const char *buf, int len)
-{
-    printf("%d:%d:%s\n", fd, len, buf);
-    FaultStackUnittest::result.append(std::string(buf, len));
-    return 0;
-}
-}
 
+namespace OHOS {
+namespace HiviewDFX {
+class FaultStackUnittest : public testing::Test {
+public:
+    static void SetUpTestCase(void);
+    static void TearDownTestCase(void);
+    void SetUp();
+    void TearDown();
+
+    static int WriteLogFunc(int32_t fd, const char *buf, int len);
+    static std::string result;
+};
+} // namespace HiviewDFX
+} // namespace OHOS
+
+std::string FaultStackUnittest::result = "";
 
 void FaultStackUnittest::SetUpTestCase(void)
 {
@@ -56,11 +62,18 @@ void FaultStackUnittest::TearDownTestCase(void)
 
 void FaultStackUnittest::SetUp(void)
 {
-    DfxRingBufferWrapper::GetInstance().SetWriteFunc(WriteLogFunc);
+    DfxRingBufferWrapper::GetInstance().SetWriteFunc(FaultStackUnittest::WriteLogFunc);
 }
 
 void FaultStackUnittest::TearDown(void)
 {
+}
+
+int FaultStackUnittest::WriteLogFunc(int32_t fd, const char *buf, int len)
+{
+    printf("%d: %d: %s\n", fd, len, buf);
+    FaultStackUnittest::result.append(std::string(buf, len));
+    return 0;
 }
 
 int unw_get_ark_js_heap_crash_info(int pid, uintptr_t* x20, uintptr_t* fp, int out_js_info, char* buf, size_t buf_sz)
