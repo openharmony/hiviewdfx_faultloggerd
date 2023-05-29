@@ -46,7 +46,7 @@ public:
 
     void PrintUsage() const;
 
-    static void* DoCrashInThread(void * inputArg);
+    static void* DoCrashInThread(void* inputArg);
     uint64_t DoActionOnSubThread(const char* arg) const;
     uint64_t ParseAndDoCrash(const char* arg);
     int MaxStackDepth() const;

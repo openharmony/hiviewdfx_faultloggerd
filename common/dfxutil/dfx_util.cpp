@@ -325,9 +325,9 @@ bool VerifyFilePath(const std::string& filePath, const std::vector<const std::st
     return false;
 }
 
-size_t GetFileSize(const int& fd)
+off_t GetFileSize(const int& fd)
 {
-    size_t fileSize = 0;
+    off_t fileSize = 0;
     if (fd >= 0) {
         struct stat fileStat;
         if (fstat(fd, &fileStat) == 0) {

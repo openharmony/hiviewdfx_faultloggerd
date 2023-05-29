@@ -343,7 +343,7 @@ NOINLINE static uint64_t TestExitHook()
     return 0;
 }
 
-void SigHookHandler(int signo)
+static void SigHookHandler(int signo)
 {
     printf("SigHookHandler:%d\n", signo);
 }

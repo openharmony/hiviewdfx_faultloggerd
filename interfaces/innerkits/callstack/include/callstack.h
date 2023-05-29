@@ -15,8 +15,7 @@
 
 #ifndef OHOS_HIVIEWDFX_CALLSTACK_H
 #define OHOS_HIVIEWDFX_CALLSTACK_H
-
-#if HAVE_LIBUNWIND
+#ifdef HAVE_LIBUNWIND
 // for libunwind.h empty struct has size 0 in c, size 1 in c++
 #define UNW_EMPTY_STRUCT uint8_t unused;
 #include <libunwind.h>
@@ -73,7 +72,7 @@ const size_t MAX_CALL_FRAME_UNWIND_SIZE = 102;
 const int MAX_CALL_FRAME_EXPAND_CYCLE = 10;
 const size_t MAX_CALL_FRAME_EXPAND_CACHE_SIZE = 10;
 
-#if HAVE_LIBUNWIND
+#ifdef HAVE_LIBUNWIND
 struct UnwindInfo;
 #endif
 
@@ -110,7 +109,7 @@ private:
     std::map<pid_t, HashList<uint64_t, std::vector<CallFrame>>> cachedCallFramesMap_;
     bool GetIpSP(uint64_t &ip, uint64_t &sp, const u64 *regs, size_t regNum) const;
     ArchType arch_ = ArchType::UNSUPPORT;
-#if HAVE_LIBUNWIND
+#ifdef HAVE_LIBUNWIND
     static bool ReadVirtualThreadMemory(UnwindInfo &unwindInfoPtr, unw_word_t addr,
                                         unw_word_t *data);
     static const std::string GetUnwErrorName(int error);
@@ -165,7 +164,7 @@ private:
 #endif
 };
 
-#if HAVE_LIBUNWIND
+#ifdef HAVE_LIBUNWIND
 struct UnwindInfo {
     const VirtualThread &thread;
     const u64 *regs;
