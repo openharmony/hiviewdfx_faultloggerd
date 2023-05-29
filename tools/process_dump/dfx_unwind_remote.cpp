@@ -401,7 +401,7 @@ void DfxUnwindRemote::UnwindThreadFallback(std::shared_ptr<DfxProcess> process, 
         frame->index = index;
         if (maps->FindMapByAddr(pc, map)) {
             frame->relPc = map->GetRelPc(pc);
-            frame->mapName = map->GetMapPath();
+            frame->mapName = map->path;
         } else {
             frame->relPc = pc;
             frame->mapName = (index == 0 ? "Not mapped pc" : "Not mapped lr");

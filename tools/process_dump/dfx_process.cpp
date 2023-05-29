@@ -232,7 +232,7 @@ void DfxProcess::PrintProcessMapsByConfig()
         if (GetMaps()) {
             DfxRingBufferWrapper::GetInstance().AppendMsg("\nMaps:\n");
         }
-        auto mapsVector = maps_->GetValues();
+        auto mapsVector = maps_->GetMaps();
         for (auto iter = mapsVector.begin(); iter != mapsVector.end(); iter++) {
             DfxRingBufferWrapper::GetInstance().AppendMsg((*iter)->PrintMap());
         }

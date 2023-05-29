@@ -36,7 +36,6 @@ if (defined(ohos_lite)) {
       ]
 
       sources = [
-        "dfx_maps_test.cpp",
         "dfx_processdump_test.cpp",
         "multithread_constructor.c",
         "process_dfx_test.cpp",
@@ -79,7 +78,6 @@ if (defined(ohos_lite)) {
   ohos_unittest("test_processdump") {
     module_out_path = module_output_path
     sources = [
-      "dfx_maps_test.cpp",
       "dfx_processdump_test.cpp",
       "multithread_constructor.c",
       "process_dfx_test.cpp",

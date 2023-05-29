@@ -194,7 +194,7 @@ void FaultStack::CollectRegistersBlock(std::shared_ptr<DfxRegs> regs, std::share
             continue;
         }
 
-        if (map->GetMapPerms().find("r") == std::string::npos) {
+        if (map->perms.find("r") == std::string::npos) {
             continue;
         }
 
@@ -213,7 +213,7 @@ void FaultStack::CollectRegistersBlock(std::shared_ptr<DfxRegs> regs, std::share
         constexpr size_t SIZE = sizeof(uintptr_t);
         constexpr int COUNT = 32;
         constexpr int FORWARD_SZ = 2;
-        auto mapName = map->GetMapPath();
+        auto mapName = map->path;
         if (!mapName.empty()) {
             name.append("(" + mapName + ")");
         }

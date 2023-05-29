@@ -79,6 +79,19 @@ uint64_t DfxElfImpl::GetRealLoadOffset(uint64_t offset) const
     return offset;
 }
 
+void DfxElfImpl::GetMaxSize(uint64_t* size)
+{
+    ElfW(Ehdr) ehdr;
+    if (!ReadElfHeaders(ehdr)) {
+        return;
+    }
+
+    if (ehdr.e_shnum == 0) {
+        return;
+    }
+    *size = ehdr.e_shoff + ehdr.e_shentsize * ehdr.e_shnum;
+}
+
 bool DfxElfImpl::Init()
 {
     return ReadAllHeaders();
@@ -483,6 +496,21 @@ bool DfxElf::IsValidElf(std::shared_ptr<DfxMemory> memory)
         return false;
     }
     return true;
+}
+
+uint64_t DfxElf::GetMaxSize(std::shared_ptr<DfxMemory> memory)
+{
+    if (memory == nullptr) {
+        return 0;
+    }
+
+    uint64_t size = 0;
+    auto elfImpl = std::make_shared<DfxElfImpl>(memory);
+    if (!elfImpl) {
+        return 0;
+    }
+    elfImpl->GetMaxSize(&size);
+    return size;
 }
 
 std::string DfxElf::GetReadableBuildID(const std::string &buildIdHex)
