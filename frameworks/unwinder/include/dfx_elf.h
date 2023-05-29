@@ -54,6 +54,7 @@ public:
     virtual bool Init();
 
     virtual bool IsValidPc(uint64_t pc);
+    virtual void GetMaxSize(uint64_t* size);
     virtual uint64_t GetRealLoadOffset(uint64_t offset) const;
 
     virtual int64_t GetLoadBias();
@@ -98,6 +99,7 @@ public:
     ArchType GetArch() { return arch_; }
 
     static bool IsValidElf(std::shared_ptr<DfxMemory> memory);
+    static uint64_t GetMaxSize(std::shared_ptr<DfxMemory> memory);
     static std::string GetReadableBuildID(const std::string &buildIdHex);
 private:
     bool ReadElfInfo();

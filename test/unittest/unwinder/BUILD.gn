@@ -25,6 +25,7 @@ ohos_unittest("test_unwinder") {
   ]
   sources = [
     "elf_test.cpp",
+    "maps_test.cpp",
     "memory_test.cpp",
     "regs_test.cpp",
     "unwinder_test.cpp",
