@@ -49,12 +49,6 @@ DfxRegsArm::DfxRegsArm(const ucontext_t& context)
     regs.push_back(uintptr_t(context.uc_mcontext.arm_pc));  // 15:pc
 
     SetRegsData(regs);
-
-    fp_ = regs[REG_ARM_R11];
-    sp_ = regs[REG_ARM_R13];
-    lr_ = regs[REG_ARM_R14];
-    pc_ = regs[REG_ARM_R15];
-    DFXLOG_DEBUG("%s", PrintSpecialRegs().c_str());
 }
 
 std::string DfxRegsArm::PrintRegs() const

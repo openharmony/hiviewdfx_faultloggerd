@@ -15,7 +15,7 @@
 
 /* This files contains unit test of daemon module. */
 
-#include "faultlogger_daemon_test.h"
+#include <gtest/gtest.h>
 
 #include <securec.h>
 #include <unistd.h>
@@ -29,21 +29,17 @@ using namespace OHOS::HiviewDFX;
 using namespace testing::ext;
 using namespace std;
 
-void FaultLoggerDaemonTest::SetUpTestCase(void)
-{
-}
-
-void FaultLoggerDaemonTest::TearDownTestCase(void)
-{
-}
-
-void FaultLoggerDaemonTest::SetUp(void)
-{
-}
-
-void FaultLoggerDaemonTest::TearDown(void)
-{
-}
+namespace OHOS {
+namespace HiviewDFX {
+class FaultLoggerDaemonTest : public testing::Test {
+public:
+    static void SetUpTestCase(void) {}
+    static void TearDownTestCase(void) {}
+    void SetUp() {}
+    void TearDown() {}
+};
+} // namespace HiviewDFX
+} // namespace OHOS
 
 /**
  * @tc.name: FaultLoggerDaemonTest001

@@ -43,6 +43,7 @@ namespace HiviewDFX {
     AT_SYMBOL_HIDDEN bool VerifyFilePath(const std::string& filePath,
                                          const std::vector<const std::string>& validPaths);
     AT_SYMBOL_HIDDEN off_t GetFileSize(const int& fd);
+    AT_SYMBOL_HIDDEN int GetStackRange(uintptr_t& stackBottom, uintptr_t& stackTop);
 } // nameapace HiviewDFX
 } // nameapace OHOS
 

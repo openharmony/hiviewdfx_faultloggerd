@@ -24,7 +24,6 @@
 #include <mutex>
 #include <string>
 #include <thread>
-#include "dfx_define.h"
 #include "dfx_ring_buffer.h"
 #include "nocopyable.h"
 
@@ -32,6 +31,11 @@ typedef int (*RingBufferWriteFunc) (int32_t fd, const char *buf, const int len);
 
 namespace OHOS {
 namespace HiviewDFX {
+namespace {
+const int BACK_TRACE_RING_BUFFER_SIZE = 32 * 1024;
+const int BACK_TRACE_RING_BUFFER_PRINT_WAIT_TIME_MS = 10;
+}
+
 class DfxRingBufferWrapper final {
 public:
     static DfxRingBufferWrapper &GetInstance();

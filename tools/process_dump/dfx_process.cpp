@@ -229,9 +229,11 @@ void DfxProcess::Detach()
 void DfxProcess::PrintProcessMapsByConfig()
 {
     if (DfxConfig::GetConfig().displayMaps) {
-        if (GetMaps()) {
-            DfxRingBufferWrapper::GetInstance().AppendMsg("\nMaps:\n");
+        if (!GetMaps()) {
+            DFXLOG_WARN("Maps is null");
+            return;
         }
+        DfxRingBufferWrapper::GetInstance().AppendMsg("\nMaps:\n");
         auto mapsVector = maps_->GetMaps();
         for (auto iter = mapsVector.begin(); iter != mapsVector.end(); iter++) {
             DfxRingBufferWrapper::GetInstance().AppendMsg((*iter)->PrintMap());

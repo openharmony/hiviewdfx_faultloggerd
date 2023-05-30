@@ -15,7 +15,8 @@
 
 /* This files contains unit test for config module. */
 
-#include "faultlogger_config_test.h"
+#include <gtest/gtest.h>
+#include "fault_logger_config.h"
 
 #include <memory>
 #include <string>
@@ -24,21 +25,17 @@ using namespace OHOS::HiviewDFX;
 using namespace testing::ext;
 using namespace std;
 
-void FaultLoggerConfigTest::SetUpTestCase(void)
-{
-}
-
-void FaultLoggerConfigTest::TearDownTestCase(void)
-{
-}
-
-void FaultLoggerConfigTest::SetUp(void)
-{
-}
-
-void FaultLoggerConfigTest::TearDown(void)
-{
-}
+namespace OHOS {
+namespace HiviewDFX {
+class FaultLoggerConfigTest : public testing::Test {
+public:
+    static void SetUpTestCase(void) {}
+    static void TearDownTestCase(void) {}
+    void SetUp() {}
+    void TearDown() {}
+};
+} // namespace HiviewDFX
+} // namespace OHOS
 
 /** FaultLoggerConfigTest001
  * @tc.name: DfxMapsRequestTest033

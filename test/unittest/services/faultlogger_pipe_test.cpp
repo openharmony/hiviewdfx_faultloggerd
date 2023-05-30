@@ -15,7 +15,7 @@
 
 /* This files contains faultlog pipe module unittest. */
 
-#include "faultlogger_pipe_test.h"
+#include <gtest/gtest.h>
 
 #include <string>
 #include "dfx_util.h"
@@ -25,21 +25,17 @@ using namespace OHOS::HiviewDFX;
 using namespace testing::ext;
 using namespace std;
 
-void FaultLoggerPipeTest::SetUpTestCase(void)
-{
-}
-
-void FaultLoggerPipeTest::TearDownTestCase(void)
-{
-}
-
-void FaultLoggerPipeTest::SetUp(void)
-{
-}
-
-void FaultLoggerPipeTest::TearDown(void)
-{
-}
+namespace OHOS {
+namespace HiviewDFX {
+class FaultLoggerPipeTest : public testing::Test {
+public:
+    static void SetUpTestCase(void) {}
+    static void TearDownTestCase(void) {}
+    void SetUp() {}
+    void TearDown() {}
+};
+} // namespace HiviewDFX
+} // namespace OHOS
 
 namespace {
 /**
@@ -60,7 +56,7 @@ HWTEST_F (FaultLoggerPipeTest, FaultLoggerPipeTest001, TestSize.Level2)
     auto ret = ptr->Get(pid);
     EXPECT_EQ(true, ret != nullptr) << "FaultLoggerPipeTest001 Get failed";
 
-    sleep(10);
+    sleep(11); // sleep 11 seconds
     time = OHOS::HiviewDFX::GetTimeMilliSeconds();
     check = ptr->Check(pid, time);
     EXPECT_EQ(check, false) << "FaultLoggerPipeTest001 Check failed";

@@ -63,12 +63,6 @@ DfxRegsArm64::DfxRegsArm64(const ucontext_t &context)
     regs.push_back(uintptr_t(context.uc_mcontext.pc));       // 32:pc
 
     SetRegsData(regs);
-
-    fp_ = regs[REG_AARCH64_FP];
-    sp_ = regs[REG_AARCH64_SP];
-    lr_ = regs[REG_AARCH64_X30];
-    pc_ = regs[REG_AARCH64_PC];
-    DFXLOG_DEBUG("%s", PrintSpecialRegs().c_str());
 }
 
 std::string DfxRegsArm64::PrintRegs() const
