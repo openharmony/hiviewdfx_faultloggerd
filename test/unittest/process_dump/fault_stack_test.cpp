@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 Huawei Device Co., Ltd.
+ * Copyright (c) 2022-2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -71,7 +71,7 @@ void FaultStackUnittest::TearDown(void)
 
 int FaultStackUnittest::WriteLogFunc(int32_t fd, const char *buf, int len)
 {
-    printf("%d: %d: %s\n", fd, len, buf);
+    printf("%d: %s", fd, buf);
     FaultStackUnittest::result.append(std::string(buf, len));
     return 0;
 }
@@ -92,7 +92,7 @@ std::vector<uintptr_t> GetCurrentRegs(unw_context_t ctx)
 {
     std::vector<uintptr_t> regs {};
     auto sz = sizeof(ctx.regs) / sizeof(ctx.regs[0]);
-    printf("ctx.regs:%zu\n", sz);
+    printf("ctx.regs size:%zu\n", sz);
     for (size_t i = 0; i < sz; i++) {
         regs.push_back(ctx.regs[i]);
     }
@@ -103,7 +103,7 @@ std::vector<uintptr_t> GetCurrentRegs(unw_context_t ctx)
 {
     std::vector<uintptr_t> regs {};
     auto sz = sizeof(ctx.uc_mcontext.regs) / sizeof(ctx.uc_mcontext.regs[0]);
-    printf("uc_mcontext.regs:%zu\n", sz);
+    printf("uc_mcontext.regs size:%zu\n", sz);
     for (size_t i = 0; i < sz; i++) {
         regs.push_back(ctx.uc_mcontext.regs[i]);
     }

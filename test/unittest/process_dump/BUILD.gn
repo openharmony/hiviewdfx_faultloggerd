@@ -102,9 +102,9 @@ if (defined(ohos_lite)) {
     resource_config_file = "$faultloggerd_path/test/resource/ohos_test.xml"
   }
 
-  ohos_unittest("FaultStackUnittest") {
+  ohos_unittest("test_faultstack") {
     module_out_path = module_output_path
-    sources = [ "fault_stack_unittest.cpp" ]
+    sources = [ "fault_stack_test.cpp" ]
 
     configs = [ ":module_private_config" ]
 
@@ -124,7 +124,7 @@ if (defined(ohos_lite)) {
   group("unittest") {
     testonly = true
     deps = [
-      ":FaultStackUnittest",
+      ":test_faultstack",
       ":test_processdump",
     ]
   }

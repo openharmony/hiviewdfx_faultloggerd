@@ -129,7 +129,7 @@ HWTEST_F(CatchFrameLocalTest, CatchFrameLocalTest003, TestSize.Level2)
     bool ret = dumplog.CatchFrame(gettid(), frameV, true);
     dumplog.DestroyFrameCatcher();
     GTEST_LOG_(INFO) << ret;
-    EXPECT_EQ(ret, false) << "CatchFrameLocalTest003 Failed";
+    EXPECT_EQ(ret, true) << "CatchFrameLocalTest003 Failed";
     GTEST_LOG_(INFO) << "CatchFrameLocalTest003: end.";
 }
 

@@ -15,10 +15,10 @@
 
 #include "fp_unwinder.h"
 
-#include <pthread.h>
 #include <libunwind.h>
 #include <libunwind_i-ohos.h>
 #include "dfx_define.h"
+#include "dfx_util.h"
 #include "dfx_regs_define.h"
 #include "unwinder_define.h"
 #include "dfx_config.h"
@@ -35,13 +35,7 @@ namespace {
 FpUnwinder::FpUnwinder()
 {
     frames_.clear();
-    pthread_attr_t tattr;
-    void *base = nullptr;
-    size_t size = 0;
-    pthread_getattr_np(pthread_self(), &tattr);
-    pthread_attr_getstack(&tattr, &base, &size);
-    stackBottom_ = reinterpret_cast<uintptr_t>(base);
-    stackTop_ = reinterpret_cast<uintptr_t>(base) + size;
+    GetStackRange(stackBottom_, stackTop_);
 }
 
 FpUnwinder::~FpUnwinder()

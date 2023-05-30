@@ -50,10 +50,6 @@ DfxRegsX86_64::DfxRegsX86_64(const ucontext_t &context)
     regs.push_back((uintptr_t)(context.uc_mcontext.gregs[REG_RIP]));
 
     SetRegsData(regs);
-
-    sp_ = regs[REG_X86_64_SP];
-    pc_ = regs[REG_X86_64_PC];
-    DFXLOG_DEBUG("%s", PrintSpecialRegs().c_str());
 }
 
 std::string DfxRegsX86_64::PrintRegs() const

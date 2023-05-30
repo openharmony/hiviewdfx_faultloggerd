@@ -26,7 +26,7 @@ namespace OHOS {
 namespace HiviewDFX {
 struct DfxElfMap {
     static std::shared_ptr<DfxElfMap> Create(const std::string mapBuf, int size);
-    static void PermsToFlags(const std::string perms, uint64_t& flags);
+    static void PermsToProts(const std::string perms, uint64_t& flags);
 
     bool IsValidPath();
     std::string PrintMap();
@@ -36,7 +36,7 @@ struct DfxElfMap {
     uint64_t begin = 0;
     uint64_t end = 0;
     uint64_t offset = 0;
-    uint64_t flags = 0;
+    uint64_t prots = 0;
     std::string perms; // 5:rwxp
     std::string path;
     std::shared_ptr<DfxElf> elf;
@@ -52,11 +52,9 @@ public:
 
     void AddMap(std::shared_ptr<DfxElfMap> map);
     bool FindMapByAddr(uintptr_t address, std::shared_ptr<DfxElfMap>& map) const;
-
     std::vector<std::shared_ptr<DfxElfMap>> GetMaps() const;
-    bool CheckPcIsValid(uint64_t pc) const;
 
-    void Sort(void);
+    void Sort(bool less = true);
 private:
     std::vector<std::shared_ptr<DfxElfMap>> maps_;
 };

@@ -40,7 +40,7 @@ static const int MAPINFO_SIZE = 256;
 MAYBE_UNUSED static constexpr int X86_ONE_STEP_NORMAL = 1;
 MAYBE_UNUSED static constexpr int ARM_TWO_STEP_NORMAL = 2;
 MAYBE_UNUSED static constexpr int ARM_FOUR_STEP_NORMAL = 4;
-MAYBE_UNUSED static constexpr int MAPS_FLAGS_DEVICE_MAP = 0x8000;
+MAYBE_UNUSED static constexpr int PROT_DEVICE_MAP = 0x8000;
 
 std::shared_ptr<DfxElfMap> DfxElfMap::Create(const std::string mapBuf, int size)
 {
@@ -64,10 +64,10 @@ std::shared_ptr<DfxElfMap> DfxElfMap::Create(const std::string mapBuf, int size)
     elfMap->end = end;
     elfMap->offset = offset;
     elfMap->perms = std::string(perms, sizeof(perms));
-    PermsToFlags(elfMap->perms, elfMap->flags);
+    PermsToProts(elfMap->perms, elfMap->prots);
     TrimAndDupStr(mapBuf.substr(pos), elfMap->path);
-    if ((elfMap->path.length() != 0) && strncmp(elfMap->path.c_str(), "/dev/", 5) == 0) { // 5:length of "/dev/"
-        elfMap->flags |= MAPS_FLAGS_DEVICE_MAP;
+    if (!elfMap->IsValidPath()) {
+        elfMap->prots |= PROT_DEVICE_MAP;
     }
     return elfMap;
 }
@@ -150,29 +150,20 @@ bool DfxElfMaps::FindMapByAddr(uintptr_t address, std::shared_ptr<DfxElfMap>& ma
     return false;
 }
 
-void DfxElfMaps::Sort(void)
+void DfxElfMaps::Sort(bool less)
 {
-    std::sort(maps_.begin(), maps_.end(),
-        [](const std::shared_ptr<DfxElfMap>& a, const std::shared_ptr<DfxElfMap>& b) {
-        return a->begin < b->begin;
-    });
-}
-
-bool DfxElfMaps::CheckPcIsValid(uint64_t pc) const
-{
-    DFXLOG_DEBUG("%s :: pc(0x%x).", __func__, pc);
-
-    std::shared_ptr<DfxElfMap> map = nullptr;
-    if (FindMapByAddr(pc, map) == false) {
-        return false;
+    if (less) {
+        std::sort(maps_.begin(), maps_.end(),
+            [](const std::shared_ptr<DfxElfMap>& a, const std::shared_ptr<DfxElfMap>& b) {
+            return a->begin < b->begin;
+        });
+    } else {
+        std::sort(maps_.begin(), maps_.end(),
+            [](const std::shared_ptr<DfxElfMap>& a, const std::shared_ptr<DfxElfMap>& b) {
+            return a->begin > b->begin;
+        });
     }
 
-    if (map != nullptr) {
-        if (map->perms.find("x") != std::string::npos) {
-            return true;
-        }
-    }
-    return false;
 }
 
 bool DfxElfMap::IsValidPath()
@@ -182,14 +173,6 @@ bool DfxElfMap::IsValidPath()
     }
 
     if (strncmp(path.c_str(), "/dev/", 5) == 0) { // 5:length of "/dev/"
-        return false;
-    }
-
-    if (strncmp(path.c_str(), "[anon:", 6) == 0) { // 6:length of "[anon:"
-        return false;
-    }
-
-    if (strncmp(path.c_str(), "/system/framework/", 18) == 0) { // 18:length of "/system/framework/"
         return false;
     }
     return true;
@@ -206,24 +189,20 @@ std::string DfxElfMap::PrintMap()
     return std::string(buf);
 }
 
-void DfxElfMap::PermsToFlags(const std::string perms, uint64_t& flags)
+void DfxElfMap::PermsToProts(const std::string perms, uint64_t& prots)
 {
-    flags = PROT_NONE;
+    prots = PROT_NONE;
     // rwxp
     if (perms.find("r") != std::string::npos) {
-        flags |= PROT_READ;
+        prots |= PROT_READ;
     }
 
     if (perms.find("w") != std::string::npos) {
-        flags |= PROT_WRITE;
+        prots |= PROT_WRITE;
     }
 
     if (perms.find("x") != std::string::npos) {
-        flags |= PROT_EXEC;
-    }
-
-    if (perms.find("p") != std::string::npos) {
-        flags |= MAP_PRIVATE;
+        prots |= PROT_EXEC;
     }
 }
 
