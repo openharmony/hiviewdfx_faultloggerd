@@ -193,7 +193,7 @@ bool DfxThread::Attach()
         }
         int64_t curTime = std::chrono::duration_cast<std::chrono::milliseconds>(
             std::chrono::system_clock::now().time_since_epoch()).count();
-        if (curTime - startTime > 10) { // 10 : 10ms timeout
+        if (curTime - startTime > 1000) { // 1000 : 1s timeout
             ptrace(PTRACE_DETACH, nsTid_, NULL, NULL);
             DFXLOG_WARN("Failed to wait thread(%d:%d) attached.", tid_, nsTid_);
             return false;
