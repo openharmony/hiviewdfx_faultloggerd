@@ -144,4 +144,10 @@ if (!defined(ohos_lite)) {
     part_name = "faultloggerd"
     subsystem_name = "hiviewdfx"
   }
+} else {
+  static_library("callstack_perf") {
+  }
+
+  static_library("callstack_nativedaemon") {
+  }
 }
