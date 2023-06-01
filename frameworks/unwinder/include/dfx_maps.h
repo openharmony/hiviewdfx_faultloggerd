@@ -37,9 +37,9 @@ struct DfxElfMap {
     uint64_t end = 0;
     uint64_t offset = 0;
     uint64_t prots = 0;
-    std::string perms; // 5:rwxp
-    std::string path;
-    std::shared_ptr<DfxElf> elf;
+    std::string perms = ""; // 5:rwxp
+    std::string path = "";
+    std::shared_ptr<DfxElf> elf = nullptr;
 };
 
 class DfxElfMaps {
@@ -52,7 +52,7 @@ public:
 
     void AddMap(std::shared_ptr<DfxElfMap> map);
     bool FindMapByAddr(uintptr_t address, std::shared_ptr<DfxElfMap>& map) const;
-    std::vector<std::shared_ptr<DfxElfMap>> GetMaps() const;
+    const std::vector<std::shared_ptr<DfxElfMap>>& GetMaps() const;
 
     void Sort(bool less = true);
 private:

@@ -23,7 +23,6 @@
 #include <memory>
 #include <mutex>
 #include <string>
-#include <thread>
 #include "dfx_ring_buffer.h"
 #include "nocopyable.h"
 
@@ -58,7 +57,6 @@ private:
 
     RingBufferWriteFunc writeFunc_ = nullptr;
 
-    std::thread thread_;
     DfxRingBuffer<BACK_TRACE_RING_BUFFER_SIZE, std::string> ringBuffer_;
     int32_t fd_ = -1;
     volatile bool hasFinished_ = false;

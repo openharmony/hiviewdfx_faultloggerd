@@ -62,199 +62,251 @@ void ProcessDumpTest::TearDown(void)
 
 namespace {
 /**
- * @tc.name: ProcessDumpTest029
+ * @tc.name: DfxSignalTest001
+ * @tc.desc: test DfxSignal functions
+ * @tc.type: FUNC
+ */
+HWTEST_F(ProcessDumpTest, DfxSignalTest001, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "DfxSignalTest001: start.";
+    siginfo_t si = {
+        .si_signo = SIGSEGV,
+        .si_errno = 0,
+        .si_code = -1,
+        .si_value.sival_int = static_cast<int>(gettid())
+    };
+    std::map<int, std::string> sigKey = {
+        { SIGILL, string("SIGILL") },
+        { SIGTRAP, string("SIGTRAP") },
+        { SIGABRT, string("SIGABRT") },
+        { SIGBUS, string("SIGBUS") },
+        { SIGFPE, string("SIGFPE") },
+        { SIGSEGV, string("SIGSEGV") },
+        { SIGSTKFLT, string("SIGSTKFLT") },
+        { SIGSYS, string("SIGSYS") },
+    };
+    for (auto sigKey : sigKey) {
+        std::string sigKeyword = "Signal:";
+        si.si_signo = sigKey.first;
+        sigKeyword += sigKey.second;
+        std::string sigStr = PrintSignal(si);
+        GTEST_LOG_(INFO) << sigStr;
+        ASSERT_TRUE(sigStr.find(sigKeyword) != std::string::npos);
+    }
+    GTEST_LOG_(INFO) << "DfxSignalTest001: end.";
+}
+
+/**
+ * @tc.name: DfxSignalTest002
  * @tc.desc: test if signal info is available
  * @tc.type: FUNC
  */
-HWTEST_F (ProcessDumpTest, ProcessDumpTest029, TestSize.Level2)
+HWTEST_F (ProcessDumpTest, DfxSignalTest002, TestSize.Level2)
 {
-    GTEST_LOG_(INFO) << "ProcessDumpTest029: start.";
+    GTEST_LOG_(INFO) << "DfxSignalTest002: start.";
     int32_t input = 1;
     std::shared_ptr<DfxSignal> signal = std::make_shared<DfxSignal>(input);
     bool ret = signal->IsAvailable();
-    EXPECT_EQ(true, ret != true) << "ProcessDumpTest029 Failed";
-    GTEST_LOG_(INFO) << "ProcessDumpTest029: end.";
+    EXPECT_EQ(true, ret != true) << "DfxSignalTest002 Failed";
+    GTEST_LOG_(INFO) << "DfxSignalTest002: end.";
 }
 
 /**
- * @tc.name: ProcessDumpTest030
+ * @tc.name: DfxSignalTest003
  * @tc.desc: test if addr is available
  * @tc.type: FUNC
  */
-HWTEST_F (ProcessDumpTest, ProcessDumpTest030, TestSize.Level2)
+HWTEST_F (ProcessDumpTest, DfxSignalTest003, TestSize.Level2)
 {
-    GTEST_LOG_(INFO) << "ProcessDumpTest030: start.";
+    GTEST_LOG_(INFO) << "DfxSignalTest003: start.";
     int32_t input = -100;
     std::shared_ptr<DfxSignal> signal = std::make_shared<DfxSignal>(input);
     bool ret = signal->IsAddrAvailable();
-    EXPECT_EQ(true, ret != true) << "ProcessDumpTest030 Failed";
-    GTEST_LOG_(INFO) << "ProcessDumpTest030: end.";
+    EXPECT_EQ(true, ret != true) << "DfxSignalTest003 Failed";
+    GTEST_LOG_(INFO) << "DfxSignalTest003: end.";
 }
 
 /**
- * @tc.name: ProcessDumpTest031
+ * @tc.name: DfxSignalTest004
  * @tc.desc: test if pid is available
  * @tc.type: FUNC
  */
-HWTEST_F (ProcessDumpTest, ProcessDumpTest031, TestSize.Level2)
+HWTEST_F (ProcessDumpTest, DfxSignalTest004, TestSize.Level2)
 {
     int32_t input = 100;
-    GTEST_LOG_(INFO) << "ProcessDumpTest031: start.";
+    GTEST_LOG_(INFO) << "DfxSignalTest004: start.";
     std::shared_ptr<DfxSignal> signal = std::make_shared<DfxSignal>(input);
     bool ret = signal->IsPidAvailable();
-    EXPECT_EQ(true, ret != true) << "ProcessDumpTest031 Failed";
-    GTEST_LOG_(INFO) << "ProcessDumpTest031: end.";
+    EXPECT_EQ(true, ret != true) << "DfxSignalTest004 Failed";
+    GTEST_LOG_(INFO) << "DfxSignalTest004: end.";
 }
 
 /**
- * @tc.name: ProcessDumpTest032
- * @tc.desc: test if pid is available
+ * @tc.name: DfxSignalTest005
+ * @tc.desc: test if GetSignal
  * @tc.type: FUNC
  */
-HWTEST_F (ProcessDumpTest, ProcessDumpTest032, TestSize.Level2)
+HWTEST_F (ProcessDumpTest, DfxSignalTest005, TestSize.Level2)
 {
-    GTEST_LOG_(INFO) << "ProcessDumpTest032: start.";
+    GTEST_LOG_(INFO) << "DfxSignalTest005: start.";
     int32_t input = 1;
     std::shared_ptr<DfxSignal> signal = std::make_shared<DfxSignal>(input);
     int32_t output = signal->GetSignal();
-    EXPECT_EQ(true, output == input) << "ProcessDumpTest032 Failed";
-    GTEST_LOG_(INFO) << "ProcessDumpTest032: end.";
+    EXPECT_EQ(true, output == input) << "DfxSignalTest005 Failed";
+    GTEST_LOG_(INFO) << "DfxSignalTest005: end.";
 }
 
 /**
- * @tc.name: ProcessDumpTest033
- * @tc.desc: test get process id
+ * @tc.name: DfxProcessTest001
+ * @tc.desc: test DfxProcess InitProcessMaps
  * @tc.type: FUNC
  */
-HWTEST_F (ProcessDumpTest, ProcessDumpTest033, TestSize.Level2)
+HWTEST_F (ProcessDumpTest, DfxProcessTest001, TestSize.Level2)
 {
-    GTEST_LOG_(INFO) << "ProcessDumpTest033: start.";
+    GTEST_LOG_(INFO) << "DfxProcessTest001: start.";
+    std::shared_ptr<DfxProcess> process = std::make_shared<DfxProcess>();
+    auto ret = process->InitProcessMaps();
+    EXPECT_EQ(false, ret) << "DfxProcessTest001 Failed";
+    GTEST_LOG_(INFO) << "DfxProcessTest001: end.";
+}
+
+/**
+ * @tc.name: DfxProcessTest002
+ * @tc.desc: test init process threads
+ * @tc.type: FUNC
+ */
+HWTEST_F (ProcessDumpTest, DfxProcessTest002, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "DfxProcessTest002: start.";
+    pid_t accountmgrPid = GetProcessPid(ACCOUNTMGR_NAME);
+    if (accountmgrPid == 0) {
+        GTEST_LOG_(INFO) << "DfxProcessTest002: get pid failed.";
+        return;
+    }
+    pid_t pid = accountmgrPid;
+    pid_t tid = accountmgrPid;
+    std::shared_ptr<DfxThread> keyThread = std::make_shared<DfxThread>(pid, tid, tid);
+    auto process = DfxProcess::CreateProcessWithKeyThread(pid, pid, keyThread);
+    EXPECT_EQ(true, process != nullptr) << "DfxProcessTest002 Failed";
+    GTEST_LOG_(INFO) << "DfxProcessTest002: end.";
+}
+
+/**
+ * @tc.name: DfxProcessTest003
+ * @tc.desc: test init other threads
+ * @tc.type: FUNC
+ */
+HWTEST_F (ProcessDumpTest, DfxProcessTest003, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "DfxProcessTest003: start.";
+    std::shared_ptr<DfxProcess> process = std::make_shared<DfxProcess>();
+    auto ret = process->InitOtherThreads();
+    EXPECT_EQ(false, ret) << "DfxProcessTest003 Failed";
+    GTEST_LOG_(INFO) << "DfxProcessTest003: end.";
+}
+
+/**
+ * @tc.name: DfxProcessTest004
+ * @tc.desc: test get map
+ * @tc.type: FUNC
+ */
+HWTEST_F (ProcessDumpTest, DfxProcessTest004, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "DfxProcessTest004: start.";
+    std::shared_ptr<DfxProcess> process = std::make_shared<DfxProcess>();
+    std::shared_ptr<DfxElfMaps> maps = std::make_shared<DfxElfMaps>();
+    process->SetMaps(maps);
+    auto output = process->GetMaps();
+    EXPECT_EQ(true, output == maps) << "DfxProcessTest004 Failed";
+    GTEST_LOG_(INFO) << "DfxProcessTest004: end.";
+}
+
+/**
+ * @tc.name: DfxProcessTest005
+ * @tc.desc: test get threads
+ * @tc.type: FUNC
+ */
+HWTEST_F (ProcessDumpTest, DfxProcessTest005, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "DfxProcessTest005: start.";
+    pid_t pid = 100;
+    pid_t tid = 100;
+    std::shared_ptr<DfxThread> thread = std::make_shared<DfxThread>(pid, tid, tid);
+    std::shared_ptr<DfxProcess> process = DfxProcess::CreateProcessWithKeyThread(pid, pid, thread);
+    auto output = process->GetThreads();
+    EXPECT_EQ(true, output.size() > 0) << "DfxProcessTest005 Failed";
+    auto keyThread = process->GetKeyThread();
+    EXPECT_EQ(true, keyThread != nullptr) << "DfxProcessTest005 Failed";
+    GTEST_LOG_(INFO) << "DfxProcessTest005: end.";
+}
+
+/**
+ * @tc.name: DfxThreadTest001
+ * @tc.desc: test DfxThread InitThreadInfo
+ * @tc.type: FUNC
+ */
+HWTEST_F (ProcessDumpTest, DfxThreadTest001, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "DfxThreadTest001: start.";
     int32_t pid = 1, tid = 1;
     ucontext_t context;
     std::shared_ptr<DfxThread> thread = std::make_shared<DfxThread>(pid, tid, tid, context);
-    pid_t processID = thread->GetProcessId();
-    GTEST_LOG_(INFO) << "ProcessDumpTest033: result = " << processID;
-    EXPECT_EQ(true, pid == processID) << "ProcessDumpTest033 failed";
-    GTEST_LOG_(INFO) << "ProcessDumpTest033: end.";
+    EXPECT_EQ(true, thread != nullptr) << "DfxThreadTest001 failed";
+    thread = DfxThread::Create(pid, tid, tid);
+    EXPECT_EQ(true, thread != nullptr) << "DfxThreadTest001 failed";
+    GTEST_LOG_(INFO) << "DfxThreadTest001: end.";
 }
 
 /**
- * @tc.name: ProcessDumpTest034
- * @tc.desc: test get thread id
+ * @tc.name: DfxThreadTest002
+ * @tc.desc: test DfxThread GetThreadRegs
  * @tc.type: FUNC
  */
-HWTEST_F (ProcessDumpTest, ProcessDumpTest034, TestSize.Level2)
+HWTEST_F (ProcessDumpTest, DfxThreadTest002, TestSize.Level2)
 {
-    GTEST_LOG_(INFO) << "ProcessDumpTest034: start.";
-    int32_t pid = 243, tid = 243;
-    ucontext_t context;
-    std::shared_ptr<DfxThread> thread = std::make_shared<DfxThread>(pid, tid, tid, context);
-    pid_t threadId = thread->GetThreadId();
-    GTEST_LOG_(INFO) << "ProcessDumpTest034: result = " << threadId;
-    EXPECT_EQ(true, tid == threadId) << "ProcessDumpTest034 failed";
-    GTEST_LOG_(INFO) << "ProcessDumpTest034: end.";
-}
-
-/**
- * @tc.name: ProcessDumpTest035
- * @tc.desc: test get thread name
- * @tc.type: FUNC
- */
-HWTEST_F (ProcessDumpTest, ProcessDumpTest035, TestSize.Level2)
-{
-    GTEST_LOG_(INFO) << "ProcessDumpTest035: start.";
-    int32_t pid = 243, tid = 243;
-    std::shared_ptr<DfxThread> thread = std::make_shared<DfxThread>(pid, tid, tid);
-    pid_t threadId = thread->GetThreadId();
-    EXPECT_EQ(true, threadId == tid) << "ProcessDumpTest035 failed";
-    GTEST_LOG_(INFO) << "ProcessDumpTest035: end.";
-}
-
-/**
- * @tc.name: ProcessDumpTest036
- * @tc.desc: test get thread name
- * @tc.type: FUNC
- */
-HWTEST_F (ProcessDumpTest, ProcessDumpTest036, TestSize.Level2)
-{
-    GTEST_LOG_(INFO) << "ProcessDumpTest036: start.";
-    int32_t pid = 1, tid = 1;
-    std::shared_ptr<DfxThread> thread = std::make_shared<DfxThread>(pid, tid, tid);
-    std::string threadName = thread->GetThreadName();
-    EXPECT_EQ(true, threadName != "");
-    GTEST_LOG_(INFO) << "ProcessDumpTest036: result = " << threadName;
-    GTEST_LOG_(INFO) << "ProcessDumpTest036: end.";
-}
-
-/**
- * @tc.name: ProcessDumpTest037
- * @tc.desc: test get DfxRegs
- * @tc.type: FUNC
- */
-HWTEST_F (ProcessDumpTest, ProcessDumpTest037, TestSize.Level2)
-{
-    GTEST_LOG_(INFO) << "ProcessDumpTest037: start.";
+    GTEST_LOG_(INFO) << "DfxThreadTest002: start.";
     int32_t pid = 243, tid = 243;
     std::shared_ptr<DfxThread> thread = std::make_shared<DfxThread>(pid, tid, tid);
     std::shared_ptr<DfxRegs> inputrefs;
     thread->SetThreadRegs(inputrefs);
     std::shared_ptr<DfxRegs> outputrefs = thread->GetThreadRegs();
-    EXPECT_EQ(true, inputrefs == outputrefs) << "ProcessDumpTest037 Failed";
-    GTEST_LOG_(INFO) << "ProcessDumpTest037: end.";
+    EXPECT_EQ(true, inputrefs == outputrefs) << "DfxThreadTest002 Failed";
+    GTEST_LOG_(INFO) << "DfxThreadTest002: end.";
 }
 
 /**
- * @tc.name: ProcessDumpTest038
- * @tc.desc: test get DfxFrame
+ * @tc.name: DfxUnwindRemoteTest001
+ * @tc.desc: test DfxUnwindRemote UnwindProcess
  * @tc.type: FUNC
  */
-HWTEST_F (ProcessDumpTest, ProcessDumpTest038, TestSize.Level2)
+HWTEST_F (ProcessDumpTest, DfxUnwindRemoteTest001, TestSize.Level2)
 {
-    GTEST_LOG_(INFO) << "ProcessDumpTest038: start.";
-    int32_t pid = 243, tid = 243;
-    std::shared_ptr<DfxThread> thread = std::make_shared<DfxThread>(pid, tid, tid);
-    std::shared_ptr<DfxFrame> outputrefs = thread->GetAvailableFrame();
-    EXPECT_EQ(true, outputrefs != nullptr) << "ProcessDumpTest038 Failed";
-    GTEST_LOG_(INFO) << "ProcessDumpTest038: end.";
-}
-
-/**
- * @tc.name: ProcessDumpTest039
- * @tc.desc: test UnwindProcess
- * @tc.type: FUNC
- */
-HWTEST_F (ProcessDumpTest, ProcessDumpTest039, TestSize.Level2)
-{
-    GTEST_LOG_(INFO) << "ProcessDumpTest039: start.";
-    std::shared_ptr<DfxProcess> process = std::make_shared<DfxProcess>();
+    GTEST_LOG_(INFO) << "DfxUnwindRemoteTest001: start.";
     pid_t pid = GetProcessPid(ACCOUNTMGR_NAME);
     pid_t tid = pid;
     std::shared_ptr<DfxThread> thread = std::make_shared<DfxThread>(pid, tid, tid);
-    const std::vector<std::shared_ptr<DfxThread>> threads = { thread };
-    process->SetThreads(threads);
-    thread->Attach();
+    std::shared_ptr<DfxProcess> process = DfxProcess::CreateProcessWithKeyThread(pid, pid, thread);
     bool ret = DfxUnwindRemote::GetInstance().UnwindProcess(process);
-    thread->Detach();
-    EXPECT_EQ(true, ret) << "ProcessDumpTest039 Failed";
-    GTEST_LOG_(INFO) << "ProcessDumpTest039: end.";
+    EXPECT_EQ(true, ret) << "DfxUnwindRemoteTest001 Failed";
+    GTEST_LOG_(INFO) << "DfxUnwindRemoteTest001: end.";
 }
 
 /**
- * @tc.name: ProcessDumpTest040
+ * @tc.name: DfxUnwindRemoteTest002
  * @tc.desc: test UnwindThread
  * @tc.type: FUNC
  */
-HWTEST_F (ProcessDumpTest, ProcessDumpTest040, TestSize.Level2)
+HWTEST_F (ProcessDumpTest, DfxUnwindRemoteTest002, TestSize.Level2)
 {
-    GTEST_LOG_(INFO) << "ProcessDumpTest040: start.";
-    std::shared_ptr<DfxProcess> process = std::make_shared<DfxProcess>();
+    GTEST_LOG_(INFO) << "DfxUnwindRemoteTest002: start.";
     pid_t pid = GetProcessPid(ACCOUNTMGR_NAME);
     pid_t tid = pid;
     std::shared_ptr<DfxThread> thread = std::make_shared<DfxThread>(pid, tid, tid);
+    std::shared_ptr<DfxProcess> process = DfxProcess::CreateProcessWithKeyThread(pid, pid, thread);
     thread->Attach();
     bool ret = DfxUnwindRemote::GetInstance().UnwindThread(process, thread);
     thread->Detach();
-    EXPECT_EQ(true, ret) << "ProcessDumpTest040 Failed";
-    GTEST_LOG_(INFO) << "ProcessDumpTest040: end.";
+    EXPECT_EQ(true, ret) << "DfxUnwindRemoteTest002 Failed";
+    GTEST_LOG_(INFO) << "DfxUnwindRemoteTest002: end.";
 }
 }

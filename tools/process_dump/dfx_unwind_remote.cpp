@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2022 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -13,8 +13,6 @@
  * limitations under the License.
  */
 
-/* This files real do unwind. */
-
 #include "dfx_unwind_remote.h"
 
 #include <algorithm>
@@ -27,7 +25,6 @@
 #include "dfx_config.h"
 #include "dfx_define.h"
 #include "dfx_logger.h"
-#include "dfx_frame_format.h"
 #include "dfx_maps.h"
 #include "dfx_process.h"
 #include "dfx_regs.h"
@@ -38,11 +35,12 @@
 #include "libunwind.h"
 #include "libunwind_i-ohos.h"
 #include "process_dumper.h"
+#include "printer.h"
 
 namespace OHOS {
 namespace HiviewDFX {
 namespace {
-// we should have at least 2 frames, one is pc and the other is lr
+// we should have at least 2 frames, is pc and lr
 // if pc and lr are both invalid, just try fp
 static constexpr int MIN_VALID_FRAME_COUNT = 3;
 static constexpr int ARM_EXEC_STEP_NORMAL = 4;
@@ -87,14 +85,14 @@ bool DfxUnwindRemote::UnwindProcess(std::shared_ptr<DfxProcess> process)
     unw_set_caching_policy(as_, UNW_CACHE_GLOBAL);
     do {
         // only need to unwind crash thread in crash scenario
-        if (!process->GetIsSignalDump() && !DfxConfig::GetConfig().dumpOtherThreads) {
+        if (ProcessDumper::GetInstance().IsCrash() && !DfxConfig::GetConfig().dumpOtherThreads) {
             ret = UnwindThread(process, threads[0]);
             if (!ret) {
                 UnwindThreadFallback(process, threads[0]);
             }
 
-            if (threads[0]->GetIsCrashThread() && (!process->GetIsSignalDump())) {
-                process->PrintProcessMapsByConfig();
+            if (threads[0]->threadInfo_.isKeyThread && ProcessDumper::GetInstance().IsCrash()) {
+                Printer::GetInstance().PrintProcessMapsByConfig(process);
             }
             break;
         }
@@ -102,7 +100,7 @@ bool DfxUnwindRemote::UnwindProcess(std::shared_ptr<DfxProcess> process)
         size_t index = 0;
         for (auto thread : threads) {
             if (index == 1) {
-                process->PrintThreadsHeaderByConfig();
+                Printer::GetInstance().PrintThreadsHeaderByConfig();
             }
             if (index != 0) {
                 DfxRingBufferWrapper::GetInstance().AppendMsg("\n");
@@ -113,8 +111,8 @@ bool DfxUnwindRemote::UnwindProcess(std::shared_ptr<DfxProcess> process)
                 thread->Detach();
             }
 
-            if (thread->GetIsCrashThread() && (!process->GetIsSignalDump())) {
-                process->PrintProcessMapsByConfig();
+            if (thread->threadInfo_.isKeyThread && ProcessDumper::GetInstance().IsCrash()) {
+                Printer::GetInstance().PrintProcessMapsByConfig(process);
             }
             index++;
         }
@@ -126,10 +124,9 @@ bool DfxUnwindRemote::UnwindProcess(std::shared_ptr<DfxProcess> process)
     return ret;
 }
 
-uint64_t DfxUnwindRemote::DfxUnwindRemoteDoAdjustPc(unw_cursor_t & cursor, uint64_t pc)
+uint64_t DfxUnwindRemote::DoAdjustPc(unw_cursor_t & cursor, uint64_t pc)
 {
     DFXLOG_DEBUG("%s :: pc(0x%x).", __func__, pc);
-
     uint64_t ret = 0;
 
     if (pc <= ARM_EXEC_STEP_NORMAL) {
@@ -143,7 +140,6 @@ uint64_t DfxUnwindRemote::DfxUnwindRemoteDoAdjustPc(unw_cursor_t & cursor, uint6
         ret = pc - 1;
 #endif
     }
-
     DFXLOG_DEBUG("%s :: ret(0x%x).", __func__, ret);
     return ret;
 }
@@ -166,8 +162,8 @@ std::string DfxUnwindRemote::GetReadableBuildId(uint8_t* buildId, size_t length)
     return buildIdStr;
 }
 
-bool DfxUnwindRemote::DfxUnwindRemoteDoUnwindStep(size_t const & index,
-    std::shared_ptr<DfxThread> & thread, unw_cursor_t & cursor, std::shared_ptr<DfxProcess> process)
+bool DfxUnwindRemote::DoUnwindStep(size_t const & index,
+    std::shared_ptr<DfxThread>& thread, unw_cursor_t& cursor, std::shared_ptr<DfxProcess> process)
 {
     bool ret = false;
     uint64_t framePc;
@@ -190,8 +186,8 @@ bool DfxUnwindRemote::DfxUnwindRemoteDoUnwindStep(size_t const & index,
 
     uint64_t relPc = unw_get_rel_pc(&cursor);
     if (index != 0) {
-        relPc = DfxUnwindRemoteDoAdjustPc(cursor, relPc);
-        framePc = DfxUnwindRemoteDoAdjustPc(cursor, framePc);
+        relPc = DoAdjustPc(cursor, relPc);
+        framePc = DoAdjustPc(cursor, framePc);
 #if defined(__arm__)
         unw_set_adjust_pc(&cursor, framePc);
 #endif
@@ -206,8 +202,8 @@ bool DfxUnwindRemote::DfxUnwindRemoteDoUnwindStep(size_t const & index,
     frame->pc = framePc;
     frame->sp = frameSp;
     frame->index = index;
-    ret = UpdateAndPrintFrameInfo(cursor, thread, frame,
-        (thread->GetIsCrashThread() && !process->GetIsSignalDump()));
+    ret = UpdateAndPrintFrameInfo(cursor, frame, thread,
+        (thread->threadInfo_.isKeyThread && ProcessDumper::GetInstance().IsCrash()));
     if (ret) {
         thread->AddFrame(frame);
     }
@@ -216,40 +212,8 @@ bool DfxUnwindRemote::DfxUnwindRemoteDoUnwindStep(size_t const & index,
     return ret;
 }
 
-bool DfxUnwindRemote::GetArkJsHeapFuncName(std::string& funcName, std::shared_ptr<DfxThread> thread)
-{
-    bool ret = false;
-#if defined(__aarch64__)
-    char buf[ARK_JS_HEAD_LEN] = {0};
-    do {
-        std::shared_ptr<DfxRegs> regs = thread->GetThreadRegs();
-        if (regs == nullptr) {
-            break;
-        }
-        std::vector<uintptr_t> regsVector = regs->GetRegsData();
-        if (regsVector.size() < (UNW_AARCH64_X29 + 1)) {
-            break;
-        }
-        uintptr_t x20 = regsVector[UNW_AARCH64_X20];
-        uintptr_t fp = regsVector[UNW_AARCH64_X29];
-
-        int result = unw_get_ark_js_heap_crash_info(thread->GetThreadId(),
-            (uintptr_t*)&x20, (uintptr_t*)&fp, false, buf, ARK_JS_HEAD_LEN);
-        if (result < 0) {
-            DFXLOG_WARN("Fail to unw_get_ark_js_heap_crash_info.");
-            break;
-        }
-        ret = true;
-
-        size_t len = std::min(strlen(buf), static_cast<size_t>(ARK_JS_HEAD_LEN - 1));
-        funcName = std::string(buf, len);
-    } while (false);
-#endif
-    return ret;
-}
-
-bool DfxUnwindRemote::UpdateAndPrintFrameInfo(unw_cursor_t& cursor, std::shared_ptr<DfxThread> thread,
-    std::shared_ptr<DfxFrame> frame, bool enableBuildId)
+bool DfxUnwindRemote::UpdateAndPrintFrameInfo(unw_cursor_t& cursor, std::shared_ptr<DfxFrame> frame,
+    std::shared_ptr<DfxThread> thread, bool enableBuildId)
 {
     struct map_info* mapInfo = unw_get_map(&cursor);
     bool isValidFrame = true;
@@ -301,9 +265,38 @@ bool DfxUnwindRemote::UpdateAndPrintFrameInfo(unw_cursor_t& cursor, std::shared_
     }
 
     bool ret = frame->index < MIN_VALID_FRAME_COUNT || isValidFrame;
-    if (ret) {
-        DfxRingBufferWrapper::GetInstance().AppendMsg(DfxFrameFormat::GetFrameStr(frame));
-    }
+    return ret;
+}
+
+bool DfxUnwindRemote::GetArkJsHeapFuncName(std::string& funcName, std::shared_ptr<DfxThread> thread)
+{
+    bool ret = false;
+#if defined(__aarch64__)
+    char buf[ARK_JS_HEAD_LEN] = {0};
+    do {
+        std::shared_ptr<DfxRegs> regs = thread->GetThreadRegs();
+        if (regs == nullptr) {
+            break;
+        }
+        std::vector<uintptr_t> regsData = regs->GetRegsData();
+        if (regsData.size() < (UNW_AARCH64_X29 + 1)) {
+            break;
+        }
+        uintptr_t x20 = regsData[UNW_AARCH64_X20];
+        uintptr_t fp = regsData[UNW_AARCH64_X29];
+
+        int result = unw_get_ark_js_heap_crash_info(thread->GetThreadId(),
+            (uintptr_t*)&x20, (uintptr_t*)&fp, false, buf, ARK_JS_HEAD_LEN);
+        if (result < 0) {
+            DFXLOG_WARN("Fail to unw_get_ark_js_heap_crash_info.");
+            break;
+        }
+        ret = true;
+
+        size_t len = std::min(strlen(buf), static_cast<size_t>(ARK_JS_HEAD_LEN - 1));
+        funcName = std::string(buf, len);
+    } while (false);
+#endif
     return ret;
 }
 
@@ -314,15 +307,10 @@ bool DfxUnwindRemote::UnwindThread(std::shared_ptr<DfxProcess> process, std::sha
         return false;
     }
 
-    bool isCrash = thread->GetIsCrashThread() && (process->GetIsSignalDump() == false);
-    pid_t nsTid = isCrash ? ProcessDumper::GetInstance().GetTargetNsPid() : thread->GetRealTid();
-    pid_t tid = thread->GetThreadId();
-    char buf[LOG_BUF_LEN] = {0};
-    int ret = snprintf_s(buf, sizeof(buf), sizeof(buf) - 1, "Tid:%d, Name:%s\n", tid, thread->GetThreadName().c_str());
-    if (ret <= 0) {
-        DFXLOG_ERROR("%s :: snprintf_s failed, line: %d.", __func__, __LINE__);
+    if (thread->threadInfo_.isKeyThread && ProcessDumper::GetInstance().IsCrash()) {
+        thread->threadInfo_.nsTid = ProcessDumper::GetInstance().GetTargetNsPid();
     }
-    DfxRingBufferWrapper::GetInstance().AppendMsg(std::string(buf));
+    pid_t nsTid = thread->threadInfo_.nsTid;
     void *context = _UPT_create(nsTid);
     if (!context) {
         DfxRingBufferWrapper::GetInstance().AppendBuf("Failed to create unwind context for %d.\n", nsTid);
@@ -342,21 +330,21 @@ bool DfxUnwindRemote::UnwindThread(std::shared_ptr<DfxProcess> process, std::sha
     unw_cursor_t cursor;
     int unwRet = unw_init_remote(&cursor, as_, context);
     if (unwRet != 0) {
-        DfxRingBufferWrapper::GetInstance().AppendBuf("Failed to init cursor for thread:%d code:%d.\n", nsTid, unwRet);
+        DfxRingBufferWrapper::GetInstance().AppendBuf("Failed to init cursor for thread:%d ret:%d.\n", nsTid, unwRet);
         _UPT_destroy(context);
         return false;
     }
 
     std::shared_ptr<DfxRegs> regs = thread->GetThreadRegs();
     if (regs != nullptr) {
-        std::vector<uintptr_t> regsVector = regs->GetRegsData();
-        unw_set_context(&cursor, regsVector.data(), regsVector.size());
+        std::vector<uintptr_t> regsData = regs->GetRegsData();
+        unw_set_context(&cursor, regsData.data(), regsData.size());
     }
 
     size_t index = 0;
     do {
         // store current frame
-        if (!DfxUnwindRemoteDoUnwindStep(index, thread, cursor, process)) {
+        if (!DoUnwindStep(index, thread, cursor, process)) {
             break;
         }
         index++;
@@ -364,16 +352,12 @@ bool DfxUnwindRemote::UnwindThread(std::shared_ptr<DfxProcess> process, std::sha
         // find next frame
         unwRet = unw_step(&cursor);
     } while ((unwRet > 0) && (index < DfxConfig::GetConfig().maxFrameNums));
-    thread->SetThreadUnwStopReason(unwRet);
-    if (isCrash) {
-        if (regs != nullptr) {
-            DfxRingBufferWrapper::GetInstance().AppendMsg(regs->PrintRegs());
-        }
-        if (DfxConfig::GetConfig().displayFaultStack) {
-            thread->CreateFaultStack(nsTid);
-            thread->CollectFaultMemorys(process->GetMaps());
-            thread->PrintThreadFaultStackByConfig();
-        }
+
+    Printer::GetInstance().PrintThreadBacktraceByConfig(thread);
+
+    if (thread->threadInfo_.isKeyThread && ProcessDumper::GetInstance().IsCrash()) {
+        Printer::GetInstance().PrintThreadRegsByConfig(thread);
+        Printer::GetInstance().PrintThreadFaultStackByConfig(process, thread);
     }
     _UPT_destroy(context);
     return true;
@@ -407,12 +391,12 @@ void DfxUnwindRemote::UnwindThreadFallback(std::shared_ptr<DfxProcess> process, 
             frame->mapName = (index == 0 ? "Not mapped pc" : "Not mapped lr");
         }
         thread->AddFrame(frame);
-        DfxRingBufferWrapper::GetInstance().AppendMsg(DfxFrameFormat::GetFrameStr(frame));
     };
 
     createFrame(0, regs->pc_);
     createFrame(1, regs->lr_);
-    DfxRingBufferWrapper::GetInstance().AppendMsg(regs->PrintRegs());
+    Printer::GetInstance().PrintThreadBacktraceByConfig(thread);
+    Printer::GetInstance().PrintThreadRegsByConfig(thread);
 }
 } // namespace HiviewDFX
 } // namespace OHOS

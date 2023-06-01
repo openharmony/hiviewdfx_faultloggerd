@@ -163,7 +163,11 @@ void DfxElfMaps::Sort(bool less)
             return a->begin > b->begin;
         });
     }
+}
 
+const std::vector<std::shared_ptr<DfxElfMap>>& DfxElfMaps::GetMaps() const
+{
+    return maps_;
 }
 
 bool DfxElfMap::IsValidPath()
@@ -254,11 +258,6 @@ uint32_t DfxElfMap::GetPcAdjustment(uint64_t pc)
     sz = X86_ONE_STEP_NORMAL;
 #endif
     return sz;
-}
-
-std::vector<std::shared_ptr<DfxElfMap>> DfxElfMaps::GetMaps() const
-{
-    return maps_;
 }
 } // namespace HiviewDFX
 } // namespace OHOS

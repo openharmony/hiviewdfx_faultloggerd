@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2022 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -45,11 +45,11 @@ public:
     bool GetArkJsHeapFuncName(std::string& funcName, std::shared_ptr<DfxThread> thread);
 
 private:
-    bool DfxUnwindRemoteDoUnwindStep(size_t const &index,
+    bool DoUnwindStep(size_t const &index,
         std::shared_ptr<DfxThread> &thread, unw_cursor_t &cursor, std::shared_ptr<DfxProcess> process);
-    uint64_t DfxUnwindRemoteDoAdjustPc(unw_cursor_t &cursor, uint64_t pc);
-    bool UpdateAndPrintFrameInfo(unw_cursor_t& cursor, std::shared_ptr<DfxThread> thread,
-        std::shared_ptr<DfxFrame> frame, bool enableBuildId);
+    uint64_t DoAdjustPc(unw_cursor_t &cursor, uint64_t pc);
+    bool UpdateAndPrintFrameInfo(unw_cursor_t& cursor, std::shared_ptr<DfxFrame> frame,
+        std::shared_ptr<DfxThread> thread, bool enableBuildId);
     std::string GetReadableBuildId(uint8_t* buildId, size_t length);
 
 private:

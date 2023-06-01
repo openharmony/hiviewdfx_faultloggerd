@@ -103,6 +103,9 @@ int DfxRegs::PrintFormat(char *buf, int size, const char *format, ...) const
     va_list args;
     va_start(args, format);
     ret = vsnprintf_s(buf, size, size - 1, format, args);
+    if (ret < 0) {
+        DFXLOG_ERROR("%s :: vsnprintf_s failed, line: %d.", __func__, __LINE__);
+    }
     va_end(args);
     return ret;
 }
