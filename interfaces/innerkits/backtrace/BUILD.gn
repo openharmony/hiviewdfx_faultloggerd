@@ -92,6 +92,7 @@ if (defined(ohos_lite)) {
       "$faultloggerd_path/common/dfxlog",
       "$faultloggerd_path/tools/process_dump",
       "//third_party/libunwind/include",
+      "//third_party/libunwind/include/tdep/",
       "//third_party/libunwind/src",
     ]
 
@@ -110,6 +111,7 @@ if (defined(ohos_lite)) {
     deps = [
       "$faultloggerd_frameworks_path/unwinder:dfx_unwinder_src",
       "$faultloggerd_path/common/dfxlog:static_common_log",
+      "$faultloggerd_path/common/dfxutil:dfx_util",
       "//third_party/bounds_checking_function:libsec_shared",
       "//third_party/libunwind:libunwind_local",
     ]

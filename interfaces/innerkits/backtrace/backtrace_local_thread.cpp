@@ -27,6 +27,7 @@
 
 #include "backtrace_local_context.h"
 #include "dfx_define.h"
+#include "dfx_util.h"
 #include "fp_unwinder.h"
 #include "dwarf_unwinder.h"
 #include "dfx_frame_format.h"
@@ -176,6 +177,24 @@ void BacktraceLocalThread::ReleaseThread()
     if (tid_ > BACKTRACE_CURRENT_THREAD) {
         BacktraceLocalContext::GetInstance().ReleaseThread(tid_);
     }
+}
+
+std::string BacktraceLocalThread::GetFormatedStr(bool withThreadName)
+{
+    if (frames_.empty()) {
+        return "";
+    }
+
+    std::ostringstream ss;
+    if (withThreadName) {
+        std::string threadName;
+        // Tid:1676, Name:IPC_3_1676
+        ReadThreadName(tid_, threadName);
+        ss << "Tid:" << tid_ << ", Name:" << threadName << std::endl;
+    }
+
+    ss << DfxFrameFormat::GetFramesStr(frames_);
+    return ss.str();
 }
 } // namespace HiviewDFX
 } // namespace OHOS

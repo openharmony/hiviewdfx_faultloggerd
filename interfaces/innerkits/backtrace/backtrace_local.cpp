@@ -16,12 +16,20 @@
 #include "backtrace_local.h"
 
 #include <cstring>
-#include <hilog/log.h>
 #include <mutex>
-#include <unistd.h>
+#include <sstream>
 #include <vector>
+
 #include "dfx_frame_format.h"
+#include "dfx_util.h"
+#include "directory_ex.h"
 #include "backtrace_local_thread.h"
+
+#include <dirent.h>
+#include <hilog/log.h>
+#include <unistd.h>
+
+#include <libunwind_i-ohos.h>
 
 namespace OHOS {
 namespace HiviewDFX {
@@ -72,6 +80,58 @@ const char* GetTrace()
         HILOG_ERROR(LOG_CORE, "Failed to get trace string");
     }
     return trace.c_str();
+}
+
+static std::string GetStacktraceHeader()
+{
+    pid_t pid = getpid();
+    std::ostringstream ss;
+    ss << "" << std::endl << "Timestamp:" << GetCurrentTimeStr();
+    ss << "Pid:" << pid << std::endl;
+    ss << "Uid:" << getuid() << std::endl;
+    std::string processName;
+    ReadProcessName(pid, processName);
+    ss << "Process name::" << processName << std::endl;
+    return ss.str();
+}
+
+std::string GetProcessStacktrace()
+{
+    unw_addr_space_t as;
+    unw_init_local_address_space(&as);
+    if (as == nullptr) {
+        return "";
+    }
+
+    DIR *dir = opendir("/proc/self/task");
+    if (dir == nullptr) {
+        return "";
+    }
+
+    std::ostringstream ss;
+    ss << std::endl << GetStacktraceHeader();
+    auto symbol = std::make_shared<DfxSymbols>();
+    auto curTid = gettid();
+    struct dirent *ent;
+    while ((ent = readdir(dir)) != nullptr) {
+        if (strcmp(ent->d_name, ".") == 0 || strcmp(ent->d_name, "..") == 0) {
+            continue;
+        }
+
+        pid_t tid = atoi(ent->d_name);
+        if (tid <= 0 || tid == curTid) {
+            continue;
+        }
+
+        BacktraceLocalThread thread(tid);
+        if (thread.Unwind(as, symbol, 0)) {
+            ss << thread.GetFormatedStr(true) << std::endl;
+        }
+    }
+
+    closedir(dir);
+    unw_destroy_local_address_space(as);
+    return ss.str();
 }
 } // namespace HiviewDFX
 } // namespace OHOS
