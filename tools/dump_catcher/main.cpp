@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2022 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -20,14 +20,11 @@
 #include <cstring>
 #include <iostream>
 #include <securec.h>
-#include <sys/socket.h>
-#include <sys/un.h>
 #include <unistd.h>
 #include <getopt.h>
 #include "dfx_define.h"
 #include "dfx_log.h"
 #include "dump_catcher.h"
-#include "dfx_dump_catcher.h"
 
 #if defined(DEBUG_CRASH_LOCAL_HANDLER)
 #include "dfx_signal_local_handler.h"

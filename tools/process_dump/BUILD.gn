@@ -116,8 +116,6 @@ if (defined(ohos_lite)) {
       "$faultloggerd_frameworks_path/unwinder/include",
       "$faultloggerd_interfaces_path/common",
       "$faultloggerd_path/common",
-      "$faultloggerd_path/common/dfxlog",
-      "$faultloggerd_path/common/dfxutil",
       "$faultloggerd_path/interfaces/rust/rustc_demangle",
     ]
 
