@@ -32,6 +32,7 @@
 #include <securec.h>
 
 #include "dfx_frame_format.h"
+#include "backtrace_local.h"
 #include "backtrace_local_context.h"
 #include "backtrace_local_thread.h"
 #include "dfx_symbols.h"
@@ -186,9 +187,9 @@ HWTEST_F(BacktraceLocalTest, BacktraceLocalTest003, TestSize.Level2)
     BacktraceLocalContext::GetInstance().CleanUp();
     const auto& frames = thread.GetFrames();
     ASSERT_GT(frames.size(), 0);
-    for (const auto& frame : frames) {
-        GTEST_LOG_(INFO) << DfxFrameFormat::GetFrameStr(frame);
-    }
+    auto backtraceStr = thread.GetFormatedStr(false);
+    ASSERT_GT(backtraceStr.size(), 0);
+    GTEST_LOG_(INFO) << backtraceStr;
     g_mutex.unlock();
     unw_destroy_local_address_space(as);
     g_tid = 0;
@@ -246,6 +247,37 @@ HWTEST_F(BacktraceLocalTest, BacktraceLocalTest004, TestSize.Level2)
     }
 
     GTEST_LOG_(INFO) << "BacktraceLocalTest004: end.";
+}
+
+/**
+ * @tc.name: BacktraceLocalTest005
+ * @tc.desc: test get backtrace of current process
+ * @tc.type: FUNC
+ */
+HWTEST_F(BacktraceLocalTest, BacktraceLocalTest005, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "BacktraceLocalTest005: start.";
+    g_mutex.lock();
+    std::thread backtraceThread(Test001);
+    sleep(1);
+    if (g_tid <= 0) {
+        FAIL() << "Failed to create child thread.\n";
+    }
+
+    std::string stacktrace = GetProcessStacktrace();
+    ASSERT_GT(stacktrace.size(), 0);
+    GTEST_LOG_(INFO) << stacktrace;
+
+    if (stacktrace.find("backtrace_local_test") == std::string::npos) {
+        FAIL() << "Failed to find pid key word.\n";
+    }
+
+    g_mutex.unlock();
+    g_tid = 0;
+    if (backtraceThread.joinable()) {
+        backtraceThread.join();
+    }
+    GTEST_LOG_(INFO) << "BacktraceLocalTest005: end.";
 }
 } // namespace HiviewDFX
 } // namepsace OHOS

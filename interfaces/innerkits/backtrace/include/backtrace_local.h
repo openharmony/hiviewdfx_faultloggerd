@@ -26,6 +26,8 @@ bool PrintBacktrace(int32_t fd = -1, bool fast = false);
 
 bool GetBacktrace(std::string& out, bool fast = false);
 
+std::string GetProcessStacktrace();
+
 extern "C" bool PrintTrace(int32_t fd = -1);
 
 extern "C" const char* GetTrace();
