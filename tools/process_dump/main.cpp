@@ -20,12 +20,9 @@
 #include <cstring>
 #include <iostream>
 #include <securec.h>
-#include <sys/socket.h>
-#include <sys/un.h>
 #include <unistd.h>
 #include "dfx_define.h"
 #include "dfx_log.h"
-#include "faultloggerd_client.h"
 #include "process_dumper.h"
 
 #if defined(DEBUG_CRASH_LOCAL_HANDLER)

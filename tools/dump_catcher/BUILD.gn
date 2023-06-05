@@ -45,11 +45,6 @@ if (defined(ohos_lite)) {
     include_dirs = [
       ".",
       "$faultloggerd_path/common",
-      "$faultloggerd_path/tools/process_dump/",
-      "$faultloggerd_path/common/dfxlog",
-      "$faultloggerd_path/common/dfxutil",
-      "//commonlibrary/c_utils/base/include",
-      "$faultloggerd_path/interfaces/innerkits/dump_catcher/include",
     ]
   }
 
