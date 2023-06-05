@@ -54,5 +54,19 @@ HWTEST_F(DfxElfTest, DfxElfTest001, TestSize.Level2)
     }
     auto elf = std::make_shared<DfxElf>(memory);
     EXPECT_EQ(true, elf != nullptr) << "DfxElfTest001: failed";
+    if (!elf->Init() || !elf->IsValid()) {
+        GTEST_LOG_(INFO) << "DfxElfTest001: not a valid elf file.";
+        FAIL();
+    }
+    std::string buildIdHex = elf->GetBuildID();
+    if (!buildIdHex.empty()) {
+        printf("Build ID hex: ");
+        for (size_t i = 0; i < buildIdHex.size(); ++i) {
+            printf("%02hhx", buildIdHex[i]);
+        }
+        printf("\n");
+        std::string buildId = DfxElf::GetReadableBuildID(buildIdHex);
+        printf("Build ID: %s\n", buildId.c_str());
+    }
     GTEST_LOG_(INFO) << "DfxElfTest001: end.";
 }

@@ -86,8 +86,8 @@ int DfxRingBufferWrapper::AppendBuf(const char *format, ...)
     va_start(args, format);
     ret = vsnprintf_s(buf, sizeof(buf), sizeof(buf) - 1, format, args);
     va_end(args);
-    if (ret <= 0) {
-        DFXLOG_ERROR("snprintf_s failed.");
+    if (ret < 0) {
+        DFXLOG_ERROR("%s :: vsnprintf_s failed, line: %d.", __func__, __LINE__);
     }
 
     AppendMsg(std::string(buf));

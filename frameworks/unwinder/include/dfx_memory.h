@@ -25,9 +25,9 @@
 
 namespace OHOS {
 namespace HiviewDFX {
-#define ALIGN(val, align) (((val) + (align) - 1) & ~((align) - 1))
-const uint64_t pagesizeMask = static_cast<uint64_t>(getpagesize() - 1UL);
-const uint64_t pagesizeAlignMask = ~((static_cast<uint64_t>(getpagesize())) - 1UL);
+#define ALIGN_BYTES(align) ((align) - 1)
+#define ALIGN_MASK(align) (~((align) - 1))
+#define ALIGN_VALUE(val, align) (((val) + ALIGN_BYTES(align)) & ALIGN_MASK(align))
 
 class DfxMemory {
 public:

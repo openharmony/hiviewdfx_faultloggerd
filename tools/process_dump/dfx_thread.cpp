@@ -13,8 +13,6 @@
  * limitations under the License.
  */
 
-/* This files contains process dump thread module. */
-
 #include "dfx_thread.h"
 
 #include <cerrno>
@@ -28,71 +26,44 @@
 #include <unistd.h>
 #include "dfx_config.h"
 #include "dfx_define.h"
-#include "dfx_fault_stack.h"
 #include "dfx_frame_format.h"
-#include "dfx_logger.h"
-#include "dfx_regs.h"
+#include "dfx_log.h"
 #include "dfx_util.h"
 
 namespace OHOS {
 namespace HiviewDFX {
-DfxThread::DfxThread(pid_t pid, pid_t tid, pid_t nsTid, const ucontext_t &context)
-    :isCrashThread_(false), pid_(pid), tid_(tid), nsTid_(nsTid), unwStopReason_(-1)
+std::shared_ptr<DfxThread> DfxThread::Create(pid_t pid, pid_t tid, pid_t nsTid)
 {
-    threadStatus_ = ThreadStatus::THREAD_STATUS_INVALID;
-    std::shared_ptr<DfxRegs> regs = DfxRegs::CreateFromContext(context);
-    regs_ = regs;
+    auto thread = std::make_shared<DfxThread>(pid, tid, nsTid);
+    return thread;
+}
 
-    ReadThreadName(tid_, threadName_);
-    threadStatus_ = ThreadStatus::THREAD_STATUS_INIT;
+DfxThread::DfxThread(pid_t pid, pid_t tid, pid_t nsTid, const ucontext_t &context)
+{
+    std::shared_ptr<DfxRegs> regs = DfxRegs::CreateFromContext(context);
+    SetThreadRegs(regs);
+
+    InitThreadInfo(pid, tid, nsTid);
 }
 
 DfxThread::DfxThread(pid_t pid, pid_t tid, pid_t nsTid)
-    :isCrashThread_(false), pid_(pid), tid_(tid), nsTid_(nsTid), unwStopReason_(-1)
 {
     regs_ = nullptr;
-    ReadThreadName(tid_, threadName_);
-    threadStatus_ = ThreadStatus::THREAD_STATUS_INIT;
+    InitThreadInfo(pid, tid, nsTid);
 }
 
-bool DfxThread::IsThreadInitialized()
+void DfxThread::InitThreadInfo(pid_t pid, pid_t tid, pid_t nsTid)
 {
-    return threadStatus_ == ThreadStatus::THREAD_STATUS_ATTACHED;
+    threadInfo_.pid = pid;
+    threadInfo_.tid = tid;
+    threadInfo_.nsTid = nsTid;
+    ReadThreadName(threadInfo_.tid, threadInfo_.threadName);
+    threadInfo_.threadStatus = ThreadStatus::THREAD_STATUS_INIT;
 }
 
 DfxThread::~DfxThread()
 {
-    threadStatus_ = ThreadStatus::THREAD_STATUS_INVALID;
-}
-
-bool DfxThread::GetIsCrashThread() const
-{
-    return isCrashThread_;
-}
-
-void DfxThread::SetIsCrashThread(bool isCrashThread)
-{
-    isCrashThread_ = isCrashThread;
-}
-
-pid_t DfxThread::GetProcessId() const
-{
-    return pid_;
-}
-
-pid_t DfxThread::GetThreadId() const
-{
-    return tid_;
-}
-
-std::string DfxThread::GetThreadName() const
-{
-    return threadName_;
-}
-
-void DfxThread::SetThreadName(const std::string &threadName)
-{
-    threadName_ = threadName;
+    threadInfo_.threadStatus = ThreadStatus::THREAD_STATUS_INVALID;
 }
 
 std::shared_ptr<DfxRegs> DfxThread::GetThreadRegs() const
@@ -100,169 +71,83 @@ std::shared_ptr<DfxRegs> DfxThread::GetThreadRegs() const
     return regs_;
 }
 
-std::vector<std::shared_ptr<DfxFrame>> DfxThread::GetThreadDfxFrames() const
-{
-    return dfxFrames_;
-}
-
 void DfxThread::SetThreadRegs(const std::shared_ptr<DfxRegs> &regs)
 {
     regs_ = regs;
 }
 
-std::shared_ptr<DfxFrame> DfxThread::GetAvailableFrame()
+void DfxThread::AddFrame(std::shared_ptr<DfxFrame> frame)
 {
-    std::shared_ptr<DfxFrame> frame = std::make_shared<DfxFrame>();
-    dfxFrames_.push_back(frame);
-    return frame;
+    frames_.push_back(frame);
 }
 
-void DfxThread::PrintThread(const int32_t fd, bool isSignalDump)
+const std::vector<std::shared_ptr<DfxFrame>>& DfxThread::GetFrames() const
 {
-    if (dfxFrames_.size() == 0) {
-        DFXLOG_WARN("No frame print for tid %d.", tid_);
-        return;
+    return frames_;
+}
+
+std::string DfxThread::ToString() const
+{
+    if (frames_.size() == 0) {
+        return "No frame info";
     }
 
-    PrintThreadBacktraceByConfig(fd);
-    if (isSignalDump == false) {
-        PrintThreadRegisterByConfig();
-        PrintThreadFaultStackByConfig();
+    std::stringstream ss;
+    ss << "Thread name:" << threadInfo_.threadName << "" << std::endl;
+    for (size_t i = 0; i < frames_.size(); i++) {
+        if (frames_[i] == nullptr) {
+            continue;
+        }
+        ss << DfxFrameFormat::GetFrameStr(frames_[i]);
     }
-}
-
-void DfxThread::SetThreadUnwStopReason(int reason)
-{
-    unwStopReason_ = reason;
-}
-
-void DfxThread::CreateFaultStack(int32_t vmPid)
-{
-    faultstack_ = std::unique_ptr<FaultStack>(new FaultStack(vmPid));
-}
-
-void DfxThread::CollectFaultMemorys(std::shared_ptr<DfxElfMaps> maps)
-{
-    faultstack_->CollectStackInfo(dfxFrames_);
-    faultstack_->CollectRegistersBlock(regs_, maps);
+    return ss.str();
 }
 
 void DfxThread::Detach()
 {
-    if (threadStatus_ == ThreadStatus::THREAD_STATUS_ATTACHED) {
-        ptrace(PTRACE_CONT, nsTid_, 0, 0);
-        ptrace(PTRACE_DETACH, nsTid_, NULL, NULL);
-        threadStatus_ = ThreadStatus::THREAD_STATUS_DETACHED;
+    if (threadInfo_.threadStatus == ThreadStatus::THREAD_STATUS_ATTACHED) {
+        ptrace(PTRACE_CONT, threadInfo_.nsTid, 0, 0);
+        ptrace(PTRACE_DETACH, threadInfo_.nsTid, NULL, NULL);
+        threadInfo_.threadStatus = ThreadStatus::THREAD_STATUS_INIT;
     }
-}
-
-pid_t DfxThread::GetRealTid() const
-{
-    return nsTid_;
-}
-
-void DfxThread::SetThreadId(pid_t tid)
-{
-    tid_ = tid;
 }
 
 bool DfxThread::Attach()
 {
-    if (threadStatus_ == ThreadStatus::THREAD_STATUS_ATTACHED) {
+    if (threadInfo_.threadStatus == ThreadStatus::THREAD_STATUS_ATTACHED) {
         return true;
     }
 
-    if (ptrace(PTRACE_SEIZE, nsTid_, 0, 0) != 0) {
+    if (ptrace(PTRACE_SEIZE, threadInfo_.nsTid, 0, 0) != 0) {
         DFXLOG_WARN("Failed to seize thread(%d:%d) from (%d:%d), errno=%d",
-            tid_, nsTid_, getuid(), getgid(), errno);
+            threadInfo_.tid, threadInfo_.nsTid, getuid(), getgid(), errno);
         return false;
     }
 
-    if (ptrace(PTRACE_INTERRUPT, nsTid_, 0, 0) != 0) {
+    if (ptrace(PTRACE_INTERRUPT, threadInfo_.nsTid, 0, 0) != 0) {
         DFXLOG_WARN("Failed to interrupt thread(%d:%d) from (%d:%d), errno=%d",
-            tid_, nsTid_, getuid(), getgid(), errno);
-        ptrace(PTRACE_DETACH, nsTid_, NULL, NULL);
+            threadInfo_.tid, threadInfo_.nsTid, getuid(), getgid(), errno);
+        ptrace(PTRACE_DETACH, threadInfo_.nsTid, NULL, NULL);
         return false;
     }
 
     int64_t startTime = std::chrono::duration_cast<std::chrono::milliseconds>(
         std::chrono::system_clock::now().time_since_epoch()).count();
     do {
-        if (waitpid(nsTid_, nullptr, WNOHANG) > 0) {
+        if (waitpid(threadInfo_.nsTid, nullptr, WNOHANG) > 0) {
             break;
         }
         int64_t curTime = std::chrono::duration_cast<std::chrono::milliseconds>(
             std::chrono::system_clock::now().time_since_epoch()).count();
         if (curTime - startTime > 1000) { // 1000 : 1s timeout
-            ptrace(PTRACE_DETACH, nsTid_, NULL, NULL);
-            DFXLOG_WARN("Failed to wait thread(%d:%d) attached.", tid_, nsTid_);
+            ptrace(PTRACE_DETACH, threadInfo_.nsTid, NULL, NULL);
+            DFXLOG_WARN("Failed to wait thread(%d:%d) attached.", threadInfo_.tid, threadInfo_.nsTid);
             return false;
         }
         usleep(5); // 5 : sleep 5us
     } while (true);
-    threadStatus_ = ThreadStatus::THREAD_STATUS_ATTACHED;
+    threadInfo_.threadStatus = ThreadStatus::THREAD_STATUS_ATTACHED;
     return true;
-}
-
-std::string DfxThread::ToString() const
-{
-    if (dfxFrames_.size() == 0) {
-        return "No frame info";
-    }
-
-    std::stringstream threadInfoStream;
-    threadInfoStream << "Thread name:" << threadName_ << "" << std::endl;
-    for (size_t i = 0; i < dfxFrames_.size(); i++) {
-        if (dfxFrames_[i] == nullptr) {
-            continue;
-        }
-        threadInfoStream << DfxFrameFormat::GetFrameStr(dfxFrames_[i]);
-    }
-
-    return threadInfoStream.str();
-}
-
-void DfxThread::PrintThreadBacktraceByConfig(const int32_t fd)
-{
-    if (DfxConfig::GetConfig().displayBacktrace) {
-        WriteLog(fd, "Tid:%d, Name:%s\n", tid_, threadName_.c_str());
-        WriteLog(fd, "%s", DfxFrameFormat::GetFramesStr(dfxFrames_).c_str());
-    } else {
-        DFXLOG_DEBUG("Hidden backtrace");
-    }
-}
-
-std::string DfxThread::PrintThreadRegisterByConfig()
-{
-    if (DfxConfig::GetConfig().displayRegister) {
-        if (regs_) {
-            return regs_->PrintRegs();
-        }
-    } else {
-        DFXLOG_DEBUG("hidden register");
-    }
-    return "";
-}
-
-void DfxThread::PrintThreadFaultStackByConfig()
-{
-    if (DfxConfig::GetConfig().displayFaultStack && isCrashThread_) {
-        if (faultstack_ != nullptr) {
-            faultstack_->Print();
-        }
-    } else {
-        DFXLOG_DEBUG("hidden faultStack");
-    }
-}
-
-void DfxThread::ClearLastFrame()
-{
-    dfxFrames_.pop_back();
-}
-
-void DfxThread::AddFrame(std::shared_ptr<DfxFrame> frame)
-{
-    dfxFrames_.push_back(frame);
 }
 } // namespace HiviewDFX
 } // nampespace OHOS

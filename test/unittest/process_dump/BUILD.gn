@@ -38,7 +38,6 @@ if (defined(ohos_lite)) {
       sources = [
         "dfx_processdump_test.cpp",
         "multithread_constructor.c",
-        "process_dfx_test.cpp",
         "process_dump_test.cpp",
       ]
       sources += [ "$c_utils_src_path/directory_ex.cpp" ]
@@ -80,7 +79,6 @@ if (defined(ohos_lite)) {
     sources = [
       "dfx_processdump_test.cpp",
       "multithread_constructor.c",
-      "process_dfx_test.cpp",
       "process_dump_test.cpp",
     ]
 

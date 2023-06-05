@@ -64,6 +64,9 @@ std::string DfxFrameFormat::GetFrameStr(const std::shared_ptr<DfxFrame>& frame)
 
 std::string DfxFrameFormat::GetFramesStr(const std::vector<DfxFrame>& frames)
 {
+    if (frames.size() == 0) {
+        return "";
+    }
     std::ostringstream ss;
     for (const auto& frame : frames) {
         ss << GetFrameStr(frame);
@@ -73,6 +76,9 @@ std::string DfxFrameFormat::GetFramesStr(const std::vector<DfxFrame>& frames)
 
 std::string DfxFrameFormat::GetFramesStr(const std::vector<std::shared_ptr<DfxFrame>>& frames)
 {
+    if (frames.size() == 0) {
+        return "";
+    }
     std::ostringstream ss;
     for (const auto& frame : frames) {
         ss << GetFrameStr(frame);

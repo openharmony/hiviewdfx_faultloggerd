@@ -32,6 +32,7 @@ processdump_sources = [
   "dfx_signal.cpp",
   "dfx_thread.cpp",
   "dfx_unwind_remote.cpp",
+  "printer.cpp",
   "process_dumper.cpp",
 ]
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2022 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -12,6 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 #ifndef DFX_THREAD_H
 #define DFX_THREAD_H
 
@@ -27,55 +28,43 @@
 
 namespace OHOS {
 namespace HiviewDFX {
+enum class ThreadStatus {
+    THREAD_STATUS_INVALID = -1,
+    THREAD_STATUS_INIT = 0,
+    THREAD_STATUS_ATTACHED = 1
+};
+
+struct DfxThreadInfo {
+    pid_t pid = 0;
+    pid_t tid = 0;
+    pid_t nsTid = 0;
+    bool isKeyThread = false;
+    ThreadStatus threadStatus = ThreadStatus::THREAD_STATUS_INVALID;
+    std::string threadName = "";
+};
+
 class DfxThread {
 public:
+    static std::shared_ptr<DfxThread> Create(pid_t pid, pid_t tid, pid_t nsTid);
     DfxThread(pid_t pid, pid_t tid, pid_t nsTid, const ucontext_t &context);
     DfxThread(pid_t pid, pid_t tid, pid_t nsTid);
     ~DfxThread();
-    void SetIsCrashThread(bool isCrashThread);
-    bool GetIsCrashThread() const;
-    pid_t GetProcessId() const;
-    pid_t GetThreadId() const;
-    pid_t GetRealTid() const;
-    void SetThreadId(pid_t tid);
-    std::string GetThreadName() const;
-    void SetThreadName(const std::string &threadName);
+
     std::shared_ptr<DfxRegs> GetThreadRegs() const;
-    std::vector<std::shared_ptr<DfxFrame>> GetThreadDfxFrames() const;
     void SetThreadRegs(const std::shared_ptr<DfxRegs> &regs);
-    std::shared_ptr<DfxFrame> GetAvailableFrame();
-    void PrintThread(const int32_t fd, bool isSignalDump);
-    void PrintThreadBacktraceByConfig(const int32_t fd);
-    std::string PrintThreadRegisterByConfig();
-    void PrintThreadFaultStackByConfig();
-    void SetThreadUnwStopReason(int reason);
-    void CreateFaultStack(int32_t vmPid);
-    void CollectFaultMemorys(std::shared_ptr<DfxElfMaps> maps);
+    void AddFrame(std::shared_ptr<DfxFrame> frame);
+    const std::vector<std::shared_ptr<DfxFrame>>& GetFrames() const;
+    std::string ToString() const;
+
     void Detach();
     bool Attach();
-    std::string ToString() const;
-    bool IsThreadInitialized();
-    void ClearLastFrame();
-    void AddFrame(std::shared_ptr<DfxFrame> frame);
 
+    DfxThreadInfo threadInfo_;
 private:
-    enum class ThreadStatus {
-        THREAD_STATUS_INVALID =  0,
-        THREAD_STATUS_INIT = 1,
-        THREAD_STATUS_DETACHED = 2,
-        THREAD_STATUS_ATTACHED = 3
-    };
+    void InitThreadInfo(pid_t pid, pid_t tid, pid_t nsTid);
 
-    bool isCrashThread_;
-    pid_t pid_;
-    pid_t tid_;
-    pid_t nsTid_;
-    int unwStopReason_;
-    ThreadStatus threadStatus_;
-    std::string threadName_;
     std::shared_ptr<DfxRegs> regs_;
-    std::vector<std::shared_ptr<DfxFrame>> dfxFrames_;
-    std::unique_ptr<FaultStack> faultstack_ {nullptr};
+    std::vector<std::shared_ptr<DfxFrame>> frames_;
 };
 } // namespace HiviewDFX
 } // namespace OHOS

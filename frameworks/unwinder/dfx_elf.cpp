@@ -332,7 +332,7 @@ std::string DfxElfImpl::GetBuildID()
                 name.resize(name.size() - 1);
             }
 
-            offset += ALIGN(nhdr.n_namesz, 4); // Align hdr.n_namesz to next power multiple of 4. See man 5 elf.
+            offset += ALIGN_VALUE(nhdr.n_namesz, 4); // Align hdr.n_namesz to next power multiple of 4. See man 5 elf.
             if (name == "GNU" && nhdr.n_type == NT_GNU_BUILD_ID) {
                 if (buildIdSize_ - offset < nhdr.n_descsz || nhdr.n_descsz == 0) {
                     return "";
@@ -344,7 +344,7 @@ std::string DfxElfImpl::GetBuildID()
                 return "";
             }
         }
-        offset += ALIGN(nhdr.n_descsz, 4); // Align hdr.n_descsz to next power multiple of 4. See man 5 elf.
+        offset += ALIGN_VALUE(nhdr.n_descsz, 4); // Align hdr.n_descsz to next power multiple of 4. See man 5 elf.
     }
     return "";
 }

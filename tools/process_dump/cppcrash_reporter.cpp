@@ -49,30 +49,26 @@ bool CppCrashReporter::Format()
         return false;
     }
 
-    cmdline_ = process_->GetProcessName();
-    pid_ = process_->GetPid();
-    uid_ = process_->GetUid();
+    cmdline_ = process_->processInfo_.processName;
+    pid_ = process_->processInfo_.pid;
+    uid_ = process_->processInfo_.uid;
     reason_ = PrintSignal(siginfo_);
     auto msg = process_->GetFatalMessage();
     if (!msg.empty()) {
         stack_ = "LastFatalMessage:" + msg + "\n";
     }
-    auto threads = process_->GetThreads();
-    std::shared_ptr<DfxThread> crashThread = nullptr;
-    if (!threads.empty()) {
-        crashThread = threads.front();
-    }
-    if (crashThread != nullptr) {
-        std::string crashThreadInfo = crashThread->ToString();
-        auto iterator = crashThreadInfo.begin();
-        while (iterator != crashThreadInfo.end() && *iterator != '\n') {
+    auto keyThread = process_->GetKeyThread();
+    if (keyThread != nullptr) {
+        std::string threadInfo = keyThread->ToString();
+        auto iterator = threadInfo.begin();
+        while (iterator != threadInfo.end() && *iterator != '\n') {
             if (isdigit(*iterator)) {
-                iterator = crashThreadInfo.erase(iterator);
+                iterator = threadInfo.erase(iterator);
             } else {
                 iterator++;
             }
         }
-        stack_ += crashThreadInfo;
+        stack_ += threadInfo;
     }
     return true;
 }
@@ -83,7 +79,7 @@ void CppCrashReporter::ReportToHiview()
         DFXLOG_WARN("Failed to format crash report.");
         return;
     }
-    if (process_->GetProcessName().find(HIVIEW_PROCESS_NAME) != std::string::npos) {
+    if (process_->processInfo_.processName.find(HIVIEW_PROCESS_NAME) != std::string::npos) {
         DFXLOG_WARN("Failed to report, hiview is crashed.");
         return;
     }

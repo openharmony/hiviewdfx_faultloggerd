@@ -27,7 +27,6 @@
 namespace OHOS {
 namespace HiviewDFX {
 namespace {
-constexpr size_t MEM_BLOCK_BUF_SZ = 64;
 #if defined(__arm__)
 constexpr uint64_t STEP = 4;
 #define PRINT_FORMAT "%08x"

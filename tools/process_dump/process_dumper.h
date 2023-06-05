@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2022 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -40,14 +40,14 @@ public:
     void WriteDumpRes(int32_t res);
     int32_t GetTargetPid();
     int32_t GetTargetNsPid();
+    bool IsCrash();
 private:
     static int WriteDumpBuf(int fd, const char* buf, const int len);
-    int DumpProcessWithSignalContext(std::shared_ptr<ProcessDumpRequest> request);
-    int InitPrintThread(bool fromSignalHandler, std::shared_ptr<ProcessDumpRequest> request);
-    void PrintDumpProcessWithSignalContextHeader(std::shared_ptr<ProcessDumpRequest> request);
-    void CreateVmProcessIfNeed(std::shared_ptr<ProcessDumpRequest> request, bool enableNs);
-    bool InitProcessNsInfo(std::shared_ptr<ProcessDumpRequest> request, bool isCrash);
-    int InitProcessInfo(std::shared_ptr<ProcessDumpRequest> request, bool isCrash, bool enableNs);
+    int DumpProcess(std::shared_ptr<ProcessDumpRequest> request);
+    void CreateVmProcessIfNeed();
+    int InitPrintThread(std::shared_ptr<ProcessDumpRequest> request);
+    bool InitNsInfo(std::shared_ptr<ProcessDumpRequest> request);
+    int InitProcessInfo(std::shared_ptr<ProcessDumpRequest> request);
 
     ProcessDumper() = default;
     DISALLOW_COPY_AND_MOVE(ProcessDumper);
@@ -55,6 +55,7 @@ private:
     std::shared_ptr<DfxProcess> vmProcess_ = nullptr;
     std::shared_ptr<DfxProcess> targetProcess_ = nullptr;
     std::shared_ptr<CppCrashReporter> reporter_ = nullptr;
+    bool isCrash_ = false;
     int32_t resFd_ = -1;
     int32_t resDump_ = 0;
     int32_t targetPid_ = -1;
