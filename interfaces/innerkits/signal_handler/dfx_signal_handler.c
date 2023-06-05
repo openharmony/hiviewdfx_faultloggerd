@@ -434,6 +434,7 @@ static bool WaitChildPidExit(int childPid)
 
 static int DoProcessDump(void* arg)
 {
+    DFXLOG_INFO("The asynchronous thread(%d) was successfully created.", syscall(SYS_gettid));
     (void)arg;
     int childPid = -1;
     g_request.recycleTid = syscall(SYS_gettid);
@@ -445,6 +446,7 @@ static int DoProcessDump(void* arg)
     if (!isTracerStatusModified) {
         goto out;
     }
+    DFXLOG_INFO("The asynchronous thread(%d) is ready.", syscall(SYS_gettid));
 
     // fork a child process that could ptrace us
     childPid = ForkBySyscall();
