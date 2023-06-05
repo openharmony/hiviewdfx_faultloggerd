@@ -46,7 +46,7 @@
 #include "libunwind.h"
 #include "libunwind_i-ohos.h"
 
-#include "backtrace_local_thread.h"
+#include "backtrace_local.h"
 
 namespace OHOS {
 namespace HiviewDFX {
@@ -69,7 +69,7 @@ enum DfxDumpPollRes : int32_t {
 bool DfxDumpCatcher::DoDumpCurrTid(const size_t skipFrameNum, std::string& msg)
 {
     bool ret = false;
-    ret = BacktraceLocalThread::GetBacktraceString(msg, BACKTRACE_CURRENT_THREAD, skipFrameNum + 1, false);
+    ret = GetBacktrace(msg, skipFrameNum + 1, false);
     if (!ret) {
         int currTid = syscall(SYS_gettid);
         msg.append("Failed to dump curr thread:" + std::to_string(currTid) + ".\n");
@@ -86,7 +86,7 @@ bool DfxDumpCatcher::DoDumpLocalTid(const int tid, std::string& msg)
         return ret;
     }
 
-    ret = BacktraceLocalThread::GetBacktraceString(msg, tid, 0, false);
+    ret = GetBacktraceStringByTid(msg, tid, 0, false);
     if (!ret) {
         msg.append("Failed to dump thread:" + std::to_string(tid) + ".\n");
     }

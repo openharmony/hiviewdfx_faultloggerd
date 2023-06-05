@@ -20,7 +20,6 @@
 #include <signal.h>
 #include <ucontext.h>
 #include "dfx_define.h"
-#include "dfx_dump_request.h"
 
 #ifdef __cplusplus
 extern "C" {

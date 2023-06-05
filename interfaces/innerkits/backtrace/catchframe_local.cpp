@@ -111,7 +111,7 @@ bool DfxCatchFrameLocal::CatchFrame(std::map<int, std::vector<DfxFrame>>& mapFra
     }
 
     std::vector<DfxFrame> frames;
-    for (int i = 0; i < tids.size(); ++i) {
+    for (int i = 0; i < nstids.size(); ++i) {
         if (tids[i] == gettid()) {
             CatchFrameCurrTid(frames, releaseThread);
         } else {

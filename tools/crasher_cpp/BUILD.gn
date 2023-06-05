@@ -23,7 +23,6 @@ if (defined(ohos_lite)) {
     include_dirs = [
       ".",
       "$faultloggerd_path/common",
-      "$faultloggerd_path/tools/process_dump/",
       "//commonlibrary/c_utils/base/include",
       "$hilog_lite_include_path",
     ]

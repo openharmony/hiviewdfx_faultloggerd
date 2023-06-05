@@ -65,7 +65,6 @@ if (defined(ohos_lite)) {
       "$faultloggerd_path/common",
       "$faultloggerd_path/common/cutil",
       "$faultloggerd_path/common/dfxlog",
-      "$faultloggerd_path/interfaces/innerkits/faultloggerd_client/include",
     ]
   }
 

@@ -39,9 +39,6 @@ public:
 
     const std::vector<DfxFrame>& GetFrames() const;
     std::string GetFormatedStr(bool withThreadName = false);
-
-    static bool GetBacktraceFrames(std::vector<DfxFrame>& frames, int32_t tid, size_t skipFrameNum, bool fast);
-    static bool GetBacktraceString(std::string& out, int32_t tid, size_t skipFrameNum, bool fast);
 private:
     bool UnwindCurrentThread(unw_addr_space_t as, std::shared_ptr<DfxSymbols> symbol,
         size_t skipFrameNum, bool fast = false);

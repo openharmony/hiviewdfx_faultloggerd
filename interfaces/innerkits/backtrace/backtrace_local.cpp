@@ -42,10 +42,62 @@ namespace {
 constexpr int SKIP_ONE_FRAME = 1; // skip current frame
 }
 
+bool GetBacktraceFramesByTid(std::vector<DfxFrame>& frames, int32_t tid, size_t skipFrameNum, bool fast)
+{
+    bool ret = false;
+    BacktraceLocalThread thread(tid);
+    if (fast) {
+#ifdef __aarch64__
+        ret = thread.Unwind(nullptr, nullptr, skipFrameNum, fast);
+#endif
+    }
+    if (!ret) {
+        unw_addr_space_t as;
+        unw_init_local_address_space(&as);
+        if (as == nullptr) {
+            return ret;
+        }
+        auto symbol = std::make_shared<DfxSymbols>();
+
+        ret = thread.Unwind(as, symbol, skipFrameNum, fast);
+
+        unw_destroy_local_address_space(as);
+    }
+    frames.clear();
+    frames = thread.GetFrames();
+    return ret;
+}
+
+bool GetBacktraceStringByTid(std::string& out, int32_t tid, size_t skipFrameNum, bool fast)
+{
+    bool ret = false;
+    BacktraceLocalThread thread(tid);
+    if (fast) {
+#ifdef __aarch64__
+        ret = thread.Unwind(nullptr, nullptr, skipFrameNum, fast);
+#endif
+    }
+    if (!ret) {
+        unw_addr_space_t as;
+        unw_init_local_address_space(&as);
+        if (as == nullptr) {
+            return ret;
+        }
+        auto symbol = std::make_shared<DfxSymbols>();
+
+        ret = thread.Unwind(as, symbol, skipFrameNum, fast);
+
+        unw_destroy_local_address_space(as);
+    }
+    out.clear();
+    out = thread.GetFormatedStr();
+    return ret;
+}
+
 bool PrintBacktrace(int32_t fd, bool fast)
 {
     std::vector<DfxFrame> frames;
-    bool ret = BacktraceLocalThread::GetBacktraceFrames(frames, BACKTRACE_CURRENT_THREAD, SKIP_ONE_FRAME, fast);
+    bool ret = GetBacktraceFramesByTid(frames, BACKTRACE_CURRENT_THREAD, SKIP_ONE_FRAME, fast);
     if (!ret) {
         return false;
     }
@@ -64,7 +116,12 @@ bool PrintBacktrace(int32_t fd, bool fast)
 
 bool GetBacktrace(std::string& out, bool fast)
 {
-    return BacktraceLocalThread::GetBacktraceString(out, BACKTRACE_CURRENT_THREAD, SKIP_ONE_FRAME, fast);
+    return GetBacktraceStringByTid(out, BACKTRACE_CURRENT_THREAD, SKIP_ONE_FRAME, fast);
+}
+
+bool GetBacktrace(std::string& out, size_t skipFrameNum, bool fast)
+{
+    return GetBacktraceStringByTid(out, BACKTRACE_CURRENT_THREAD, skipFrameNum + 1, fast);
 }
 
 bool PrintTrace(int32_t fd)
@@ -76,7 +133,7 @@ const char* GetTrace()
 {
     static std::string trace;
     trace.clear();
-    if (!GetBacktrace(trace, false)) {
+    if (!GetBacktrace(trace)) {
         HILOG_ERROR(LOG_CORE, "Failed to get trace string");
     }
     return trace.c_str();
@@ -103,7 +160,7 @@ std::string GetProcessStacktrace()
         return "";
     }
 
-    DIR *dir = opendir("/proc/self/task");
+    DIR *dir = opendir(PROC_SELF_TASK_PATH);
     if (dir == nullptr) {
         return "";
     }
