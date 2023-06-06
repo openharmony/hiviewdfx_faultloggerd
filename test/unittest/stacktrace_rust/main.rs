@@ -23,7 +23,7 @@ use std::thread;
 
 #[test]
 fn test_get_trace() {
-    let trace = stacktrace_rust::get_trace();
+    let trace = stacktrace_rust::get_trace(false);
     assert!(!trace.is_empty());
     assert!(trace.contains("#00"));
     assert!(trace.contains("libstacktrace_rust.dylib.so"));
@@ -35,7 +35,7 @@ fn test_get_trace_in_multithread() {
     let mut handles = vec![];
     for _ in 0..50 {
         let handle = thread::spawn(move || {
-            let trace = stacktrace_rust::get_trace();
+            let trace = stacktrace_rust::get_trace(false);
             assert!(!trace.is_empty());
             assert!(trace.contains("#00"));
             assert!(trace.contains("libstacktrace_rust.dylib.so"));
