@@ -22,6 +22,7 @@ extern "C" {
 #endif
 
 #define FAULTLOGGER_DAEMON_RESP "RESP:COMPLETE"
+#define MODULE_NAME_LEN 128
 
 enum FaultLoggerType {
     JAVA_CRASH = 1,
@@ -76,7 +77,7 @@ struct FaultLoggerdRequest {
     uint32_t uid;
     int32_t callerPid; // only for sdk dump client
     int32_t callerTid; // only for sdk dump client
-    char module[128];
+    char module[MODULE_NAME_LEN];
     uint64_t time;
 } __attribute__((packed));
 

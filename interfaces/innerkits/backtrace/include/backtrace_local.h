@@ -18,20 +18,23 @@
 
 #include <cinttypes>
 #include <string>
+#include <vector>
+#include "dfx_frame.h"
 
 namespace OHOS {
 namespace HiviewDFX {
 
-bool PrintBacktrace(int32_t fd = -1, bool fast = false);
+bool GetBacktraceFramesByTid(std::vector<DfxFrame>& frames, int32_t tid, size_t skipFrameNum, bool fast);
+bool GetBacktraceStringByTid(std::string& out, int32_t tid, size_t skipFrameNum, bool fast);
 
+bool PrintBacktrace(int32_t fd = -1, bool fast = false);
 bool GetBacktrace(std::string& out, bool fast = false);
+bool GetBacktrace(std::string& out, size_t skipFrameNum, bool fast);
 
 std::string GetProcessStacktrace();
 
 extern "C" bool PrintTrace(int32_t fd = -1);
-
 extern "C" const char* GetTrace();
-
 } // namespace HiviewDFX
 } // namespace OHOS
 #endif

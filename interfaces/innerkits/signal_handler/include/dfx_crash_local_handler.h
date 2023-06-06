@@ -17,6 +17,7 @@
 
 #include <signal.h>
 #include <sys/ucontext.h>
+#include "dfx_dump_request.h"
 #include "dfx_signal_handler.h"
 
 #ifdef __cplusplus

@@ -119,59 +119,6 @@ const std::vector<DfxFrame>& BacktraceLocalThread::GetFrames() const
     return frames_;
 }
 
-bool BacktraceLocalThread::GetBacktraceFrames(std::vector<DfxFrame>& frames,
-    int32_t tid, size_t skipFrameNum, bool fast)
-{
-    bool ret = false;
-    BacktraceLocalThread thread(tid);
-    if (fast) {
-#ifdef __aarch64__
-        ret = thread.Unwind(nullptr, nullptr, skipFrameNum, fast);
-#endif
-    }
-    if (!ret) {
-        unw_addr_space_t as;
-        unw_init_local_address_space(&as);
-        if (as == nullptr) {
-            return ret;
-        }
-        auto symbol = std::make_shared<DfxSymbols>();
-
-        ret = thread.Unwind(as, symbol, skipFrameNum, fast);
-
-        unw_destroy_local_address_space(as);
-    }
-    frames.clear();
-    frames = thread.GetFrames();
-    return ret;
-}
-
-bool BacktraceLocalThread::GetBacktraceString(std::string& out,
-    int32_t tid, size_t skipFrameNum, bool fast)
-{
-    bool ret = false;
-    BacktraceLocalThread thread(tid);
-    if (fast) {
-#ifdef __aarch64__
-        ret = thread.Unwind(nullptr, nullptr, skipFrameNum, fast);
-#endif
-    }
-    if (!ret) {
-        unw_addr_space_t as;
-        unw_init_local_address_space(&as);
-        if (as == nullptr) {
-            return ret;
-        }
-        auto symbol = std::make_shared<DfxSymbols>();
-
-        ret = thread.Unwind(as, symbol, skipFrameNum, fast);
-
-        unw_destroy_local_address_space(as);
-    }
-    out = DfxFrameFormat::GetFramesStr(thread.GetFrames());
-    return ret;
-}
-
 void BacktraceLocalThread::ReleaseThread()
 {
     if (tid_ > BACKTRACE_CURRENT_THREAD) {
@@ -186,7 +133,7 @@ std::string BacktraceLocalThread::GetFormatedStr(bool withThreadName)
     }
 
     std::ostringstream ss;
-    if (withThreadName) {
+    if (withThreadName && (tid_ > 0)) {
         std::string threadName;
         // Tid:1676, Name:IPC_3_1676
         ReadThreadName(tid_, threadName);

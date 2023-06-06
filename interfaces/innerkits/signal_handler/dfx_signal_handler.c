@@ -36,6 +36,7 @@
 #include <time.h>
 #include <unistd.h>
 #include "dfx_define.h"
+#include "dfx_dump_request.h"
 #include "errno.h"
 #include "linux/capability.h"
 #include "stdbool.h"
