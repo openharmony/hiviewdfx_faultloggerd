@@ -30,29 +30,14 @@
 #include "dfx_log.h"
 #include "dfx_util.h"
 #include "faultloggerd_socket.h"
-#include "file_ex.h"
+#include "file_util.h"
 
 static const int32_t SOCKET_TIMEOUT = 5;
-
-static void FillRequest(int32_t type, FaultLoggerdRequest *request)
-{
-    if (request == nullptr) {
-        DFXLOG_ERROR("nullptr request");
-        return;
-    }
-
-    request->type = type;
-    request->pid = getpid();
-    request->tid = gettid();
-    request->uid = getuid();
-    request->time = OHOS::HiviewDFX::GetTimeMilliSeconds();
-    OHOS::HiviewDFX::ReadStringFromFile("/proc/self/cmdline", request->module, sizeof(request->module));
-}
 
 static std::string GetSocketConnectionName()
 {
     std::string content;
-    OHOS::LoadStringFromFile("/proc/self/cmdline", content);
+    OHOS::HiviewDFX::LoadStringFromFile(PROC_SELF_CMDLINE_PATH, content);
     if (content.find("processdump") != std::string::npos) {
         return std::string(SERVER_CRASH_SOCKET_NAME);
     }
@@ -63,7 +48,11 @@ int32_t RequestFileDescriptor(int32_t type)
 {
     struct FaultLoggerdRequest request;
     (void)memset_s(&request, sizeof(request), 0, sizeof(request));
-    FillRequest(type, &request);
+    request.type = type;
+    request.pid = getpid();
+    request.tid = gettid();
+    request.uid = getuid();
+    request.time = OHOS::HiviewDFX::GetTimeMilliSeconds();
     return RequestFileDescriptorEx(&request);
 }
 

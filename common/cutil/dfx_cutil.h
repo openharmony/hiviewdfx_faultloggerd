@@ -24,8 +24,6 @@
 extern "C" {
 #endif
 
-AT_SYMBOL_HIDDEN bool ReadStringFromFile(const char* path, char* dst, size_t dstSz);
-
 AT_SYMBOL_HIDDEN bool GetThreadName(char* buffer, size_t bufferSz);
 
 AT_SYMBOL_HIDDEN bool GetProcessName(char* buffer, size_t bufferSz);

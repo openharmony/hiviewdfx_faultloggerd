@@ -58,45 +58,18 @@ HWTEST_F(CommonTest, DfxUtilTest001, TestSize.Level2)
 
 /**
  * @tc.name: DfxUtilTest002
- * @tc.desc: test DfxUtil GetRealTargetPid
+ * @tc.desc: test DfxUtil TrimAndDupStr
  * @tc.type: FUNC
  */
 HWTEST_F(CommonTest, DfxUtilTest002, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "DfxUtilTest002: start.";
-    pid_t pid = getppid();
-    ASSERT_EQ(pid, GetRealTargetPid());
-    GTEST_LOG_(INFO) << "DfxUtilTest002: end.";
-}
-
-/**
- * @tc.name: DfxUtilTest003
- * @tc.desc: test DfxUtil GetTidsByPid
- * @tc.type: FUNC
- */
-HWTEST_F(CommonTest, DfxUtilTest003, TestSize.Level2)
-{
-    GTEST_LOG_(INFO) << "DfxUtilTest003: start.";
-    struct ProcInfo procInfo;
-    int result = GetProcStatusByPid(getpid(), procInfo);
-    ASSERT_EQ(result, 0);
-    std::vector<int> tids;
-    std::vector<int> nstids;
-    bool ret = false;
-    ret = GetTidsByPid(getpid(), tids, nstids);
+    std::string testStr = " abcd  ";
+    std::string resStr;
+    bool ret = TrimAndDupStr(testStr, resStr);
     ASSERT_EQ(ret, true);
-    for (size_t i = 0; i < nstids.size(); ++i) {
-        ret = IsThreadInCurPid(nstids[i]);
-        ASSERT_EQ(ret, true);
-
-        if (procInfo.ns) {
-            int nstid = tids[i];
-            TidToNstid(getpid(), tids[i], nstid);
-            ASSERT_EQ(nstid, nstids[i]);
-        }
-    }
-
-    GTEST_LOG_(INFO) << "DfxUtilTest003: end.";
+    ASSERT_EQ(resStr, "abcd\n");
+    GTEST_LOG_(INFO) << "DfxUtilTest002: end.";
 }
 
 /**

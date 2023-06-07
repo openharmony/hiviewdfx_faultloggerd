@@ -28,8 +28,8 @@
 #include <dirent.h>
 #include <hilog/log.h>
 #include <unistd.h>
-
 #include <libunwind_i-ohos.h>
+#include "procinfo.h"
 
 namespace OHOS {
 namespace HiviewDFX {
@@ -159,34 +159,28 @@ std::string GetProcessStacktrace()
     if (as == nullptr) {
         return "";
     }
-
-    DIR *dir = opendir(PROC_SELF_TASK_PATH);
-    if (dir == nullptr) {
+    auto symbol = std::make_shared<DfxSymbols>();
+    if (symbol == nullptr) {
         return "";
     }
 
     std::ostringstream ss;
     ss << std::endl << GetStacktraceHeader();
-    auto symbol = std::make_shared<DfxSymbols>();
-    auto curTid = gettid();
-    struct dirent *ent;
-    while ((ent = readdir(dir)) != nullptr) {
-        if (strcmp(ent->d_name, ".") == 0 || strcmp(ent->d_name, "..") == 0) {
-            continue;
-        }
 
-        pid_t tid = atoi(ent->d_name);
-        if (tid <= 0 || tid == curTid) {
-            continue;
+    std::function<bool(int)> func = [&](int tid) {
+        if (tid <= 0 || tid == gettid()) {
+            return false;
         }
-
         BacktraceLocalThread thread(tid);
         if (thread.Unwind(as, symbol, 0)) {
             ss << thread.GetFormatedStr(true) << std::endl;
         }
-    }
+        return true;
+    };
 
-    closedir(dir);
+    std::vector<int> tids;
+    GetTidsByPidWithFunc(getpid(), tids, func);
+
     unw_destroy_local_address_space(as);
     return ss.str();
 }

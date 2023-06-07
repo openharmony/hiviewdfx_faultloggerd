@@ -29,6 +29,7 @@
 #include "dfx_frame_format.h"
 #include "dfx_log.h"
 #include "dfx_util.h"
+#include "procinfo.h"
 
 namespace OHOS {
 namespace HiviewDFX {

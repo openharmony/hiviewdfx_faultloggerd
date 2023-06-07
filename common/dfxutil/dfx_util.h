@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -26,25 +26,14 @@
 
 namespace OHOS {
 namespace HiviewDFX {
-    AT_SYMBOL_DEFAULT int GetProcStatus(struct ProcInfo& procInfo);
-    AT_SYMBOL_HIDDEN int GetProcStatusByPid(int realPid, struct ProcInfo& procInfo);
-    AT_SYMBOL_HIDDEN int GetRealTargetPid();
-    AT_SYMBOL_DEFAULT bool TidToNstid(const int pid, const int tid, int& nstid);
-    AT_SYMBOL_HIDDEN bool IsThreadInCurPid(int32_t tid);
-    AT_SYMBOL_HIDDEN bool GetTidsByPid(const int pid, std::vector<int>& tids, std::vector<int>& nstids);
-    AT_SYMBOL_HIDDEN bool ReadStringFromFile(const char *path, char *buf, size_t len);
-    AT_SYMBOL_HIDDEN bool TrimAndDupStr(const std::string &source, std::string &str);
-    AT_SYMBOL_HIDDEN void ReadThreadName(const int tid, std::string& str);
-    AT_SYMBOL_HIDDEN void ReadProcessName(const int pid, std::string& str);
-    AT_SYMBOL_HIDDEN uint64_t GetTimeMilliSeconds(void);
-    AT_SYMBOL_DEFAULT std::string GetCurrentTimeStr(uint64_t current = 0);
-    AT_SYMBOL_HIDDEN bool ReadDirFiles(const std::string& path, std::vector<std::string>& files);
-    AT_SYMBOL_HIDDEN bool ReadDirFilesByPid(const int& pid, std::vector<std::string>& files);
-    AT_SYMBOL_HIDDEN bool VerifyFilePath(const std::string& filePath,
-                                         const std::vector<const std::string>& validPaths);
-    AT_SYMBOL_HIDDEN off_t GetFileSize(const int& fd);
-    AT_SYMBOL_HIDDEN int GetStackRange(uintptr_t& stackBottom, uintptr_t& stackTop);
+AT_SYMBOL_HIDDEN bool TrimAndDupStr(const std::string &source, std::string &str);
+AT_SYMBOL_HIDDEN uint64_t GetTimeMilliSeconds(void);
+AT_SYMBOL_DEFAULT std::string GetCurrentTimeStr(uint64_t current = 0);
+AT_SYMBOL_HIDDEN bool ReadDirFiles(const std::string& path, std::vector<std::string>& files);
+AT_SYMBOL_HIDDEN bool ReadDirFilesByPid(const int& pid, std::vector<std::string>& files);
+AT_SYMBOL_HIDDEN bool VerifyFilePath(const std::string& filePath, const std::vector<const std::string>& validPaths);
+AT_SYMBOL_HIDDEN off_t GetFileSize(const int& fd);
+AT_SYMBOL_HIDDEN int GetStackRange(uintptr_t& stackBottom, uintptr_t& stackTop);
 } // nameapace HiviewDFX
 } // nameapace OHOS
-
-#endif // DFX_UTIL_H
+#endif

@@ -35,6 +35,7 @@ static const char SERVER_SOCKET_NAME[] = "faultloggerd.server";
 static const char SERVER_CRASH_SOCKET_NAME[] = "faultloggerd.crash.server";
 static const char PROC_SELF_STATUS_PATH[] = "/proc/self/status";
 static const char PROC_SELF_TASK_PATH[] = "/proc/self/task";
+static const char PROC_SELF_CMDLINE_PATH[] = "/proc/self/cmdline";
 
 #if defined(__arm__)
 static const int USER_REG_NUM = 16;
@@ -104,29 +105,6 @@ static const int DUMP_TYPE_KERNEL = -3;
     ((byte) & 0x04 ? '1' : '0'), \
     ((byte) & 0x02 ? '1' : '0'), \
     ((byte) & 0x01 ? '1' : '0')
-
-// keep sync with the definition in hitracec.h
-typedef struct TraceInfo {
-#if __BYTE_ORDER == __LITTLE_ENDIAN
-    uint64_t valid : 1;
-    uint64_t ver : 3;
-    uint64_t chainId : 60;
-
-    uint64_t flags : 12;
-    uint64_t spanId : 26;
-    uint64_t parentSpanId : 26;
-#elif __BYTE_ORDER == __BIG_ENDIAN
-    uint64_t chainId : 60;
-    uint64_t ver : 3;
-    uint64_t valid : 1;
-
-    uint64_t parentSpanId : 26;
-    uint64_t spanId : 26;
-    uint64_t flags : 12;
-#else
-#error "ERROR: No BIG_LITTLE_ENDIAN defines."
-#endif
-} TraceInfo;
 
 typedef struct ProcInfo {
     int pid;

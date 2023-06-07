@@ -74,6 +74,15 @@
           }
         },
         {
+          "name": "//base/hiviewdfx/faultloggerd/interfaces/innerkits/procinfo:libdfx_procinfo",
+          "header": {
+            "header_files": [
+              "procinfo.h"
+            ],
+            "header_base": "//base/hiviewdfx/faultloggerd/interfaces/innerkits/procinfo/include"
+          }
+        },
+        {
           "name": "//base/hiviewdfx/faultloggerd/interfaces/innerkits/signal_handler:dfx_signalhandler",
           "header": {
             "header_files": [

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2022 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -22,7 +22,6 @@ extern "C" {
 #endif
 
 #define FAULTLOGGER_DAEMON_RESP "RESP:COMPLETE"
-#define MODULE_NAME_LEN 128
 
 enum FaultLoggerType {
     JAVA_CRASH = 1,
@@ -77,7 +76,6 @@ struct FaultLoggerdRequest {
     uint32_t uid;
     int32_t callerPid; // only for sdk dump client
     int32_t callerTid; // only for sdk dump client
-    char module[MODULE_NAME_LEN];
     uint64_t time;
 } __attribute__((packed));
 
@@ -94,5 +92,4 @@ int RequestSdkDump(int32_t type, int32_t pid, int32_t tid);
 #ifdef __cplusplus
 }
 #endif
-
 #endif

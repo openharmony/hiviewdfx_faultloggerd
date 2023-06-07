@@ -26,7 +26,7 @@
 #include <string.h>
 #include "dfx_define.h"
 
-bool ReadStringFromFile(const char* path, char* dst, size_t dstSz)
+static bool ReadStringFromFile(const char* path, char* dst, size_t dstSz)
 {
     if ((dst == NULL) || (path == NULL)) {
         return false;

@@ -32,6 +32,7 @@
 #include "dfx_ring_buffer_wrapper.h"
 #include "dfx_signal.h"
 #include "dfx_util.h"
+#include "procinfo.h"
 
 namespace OHOS {
 namespace HiviewDFX {

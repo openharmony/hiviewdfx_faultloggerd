@@ -54,11 +54,6 @@ __attribute__((noinline)) int RequestOutputLogFile(const struct ProcessDumpReque
     faultloggerdRequest.tid = request->tid;
     faultloggerdRequest.uid = request->uid;
     faultloggerdRequest.time = request->timeStamp + 1;
-    if (strncpy_s(faultloggerdRequest.module, sizeof(faultloggerdRequest.module),
-        request->processName, sizeof(faultloggerdRequest.module) - 1) != 0) {
-        return -1;
-    }
-
     return RequestFileDescriptorEx(&faultloggerdRequest);
 }
 

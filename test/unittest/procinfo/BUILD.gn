@@ -1,4 +1,4 @@
-# Copyright (c) 2021-2023 Huawei Device Co., Ltd.
+# Copyright (c) 2023 Huawei Device Co., Ltd.
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -18,39 +18,33 @@ if (defined(ohos_lite)) {
   import("//build/lite/config/test.gni")
 
   if (ohos_build_type == "debug") {
-    unittest("test_faultloggerd") {
+    unittest("test_procinfo") {
       output_extension = "bin"
       output_dir = "$root_out_dir/test/unittest/faultloggerd"
-      sources = [
-        "dumpcatcher_system_test.cpp",
-        "faultloggerd_system_test.cpp",
-      ]
-      sources += [ "$c_utils_src_path/directory_ex.cpp" ]
 
       include_dirs = [
         "$c_utils_include_path",
-        "$faultloggerd_frameworks_path/unwinder/include",
-        "$faultloggerd_interfaces_path/innerkits/backtrace/include",
+        "$faultloggerd_interfaces_path/common",
         "$faultloggerd_path/common",
+        "$faultloggerd_path/common/dfxlog",
         "$faultloggerd_path/common/dfxutil",
-        "$faultloggerd_path/interfaces/innerkits/dump_catcher/include",
         "$faultloggerd_path/interfaces/innerkits/procinfo/include",
-        "$faultloggerd_path/test/utils",
         "$hilog_lite_include_path",
       ]
 
+      sources = [ "procinfo_test.cpp" ]
+
       deps = [
+        "$faultloggerd_path/common/dfxlog:static_common_log",
         "$faultloggerd_path/common/dfxutil:dfx_util",
-        "$faultloggerd_path/interfaces/innerkits/dump_catcher:libdfx_dumpcatcher",
         "$faultloggerd_path/interfaces/innerkits/procinfo:libdfx_procinfo",
-        "$faultloggerd_path/test/utils:dfx_test_util",
-        "//base/hiviewdfx/hilog_lite/frameworks/featured:hilog_shared",
+        "$hilog_lite_deps_path",
       ]
     }
   }
 
-  group("systemtest") {
-    deps = [ ":test_faultloggerd" ]
+  group("unittest") {
+    deps = [ ":test_procinfo" ]
   }
 } else {
   import("//build/config/features.gni")
@@ -60,34 +54,24 @@ if (defined(ohos_lite)) {
     visibility = [ ":*" ]
 
     include_dirs = [
-      "$faultloggerd_path/interfaces/innerkits/dump_catcher/include/",
-      "$faultloggerd_path/test/utils",
+      "$faultloggerd_interfaces_path/common",
+      "$faultloggerd_path/common",
     ]
-
-    cflags_cc = [ "-fno-exceptions" ]
   }
 
-  module_output_path = "faultloggerd/faultloggerd_native"
-
-  ohos_systemtest("test_faultloggerd") {
-    module_out_path = module_output_path
-    sources = [
-      "dumpcatcher_system_test.cpp",
-      "faultloggerd_system_test.cpp",
-    ]
+  ohos_unittest("test_procinfo") {
+    module_out_path = "faultloggerd/common"
+    sources = [ "procinfo_test.cpp" ]
 
     configs = [ ":module_private_config" ]
 
     deps = [
+      "$faultloggerd_path/common/dfxlog:static_common_log",
       "$faultloggerd_path/common/dfxutil:dfx_util",
-      "$faultloggerd_path/interfaces/innerkits/dump_catcher:libdfx_dumpcatcher",
       "$faultloggerd_path/interfaces/innerkits/procinfo:libdfx_procinfo",
-      "$faultloggerd_path/test/utils:dfx_test_util",
-      "$faultloggerd_path/tools/crasher_c:crasher_c",
-      "$faultloggerd_path/tools/crasher_cpp:crasher_cpp",
+      "//third_party/googletest:gmock_main",
       "//third_party/googletest:gtest_main",
     ]
-    resource_config_file = "$faultloggerd_path/test/resource/ohos_test.xml"
 
     external_deps = [
       "c_utils:utils",
@@ -95,8 +79,8 @@ if (defined(ohos_lite)) {
     ]
   }
 
-  group("systemtest") {
+  group("unittest") {
     testonly = true
-    deps = [ ":test_faultloggerd" ]
+    deps = [ ":test_procinfo" ]
   }
 }

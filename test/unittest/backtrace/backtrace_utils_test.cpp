@@ -21,7 +21,7 @@
 #include <unistd.h>
 
 #include <directory_ex.h>
-#include <file_ex.h>
+#include "file_util.h"
 #include <hilog/log.h>
 #include <string_ex.h>
 #include <malloc.h>
@@ -38,6 +38,8 @@ namespace HiviewDFX {
 #undef LOG_TAG
 #define LOG_TAG "BacktraceTest"
 #define LOG_DOMAIN 0xD002D11
+
+#define TEST_TEMP_FILE "/data/test/testfile"
 namespace {
 /*
 expected output log should be like this(aarch64):
@@ -177,7 +179,7 @@ HWTEST_F(BacktraceUtilsTest, BacktraceUtilsTest001, TestSize.Level2)
     ASSERT_EQ(true, PrintBacktrace(STDOUT_FILENO));
     ASSERT_EQ(true, PrintBacktrace(STDERR_FILENO));
     ASSERT_EQ(true, PrintBacktrace());
-    int fd = open("/data/test/testfile", O_CREAT | O_WRONLY, S_IRUSR | S_IWUSR);
+    int fd = open(TEST_TEMP_FILE, O_CREAT | O_WRONLY, S_IRUSR | S_IWUSR);
     if (fd < 0) {
         FAIL();
         return;
@@ -185,7 +187,7 @@ HWTEST_F(BacktraceUtilsTest, BacktraceUtilsTest001, TestSize.Level2)
     ASSERT_EQ(true, PrintBacktrace(fd));
     close(fd);
     std::string content;
-    if (!OHOS::LoadStringFromFile("/data/test/testfile", content)) {
+    if (!OHOS::HiviewDFX::LoadStringFromFile(TEST_TEMP_FILE, content)) {
         FAIL();
     }
 
@@ -261,7 +263,7 @@ HWTEST_F(BacktraceUtilsTest, BacktraceUtilsTest005, TestSize.Level2)
     ASSERT_EQ(true, PrintTrace(STDOUT_FILENO));
     ASSERT_EQ(true, PrintTrace(STDERR_FILENO));
     ASSERT_EQ(true, PrintTrace());
-    int fd = open("/data/test/testfile", O_CREAT | O_WRONLY, S_IRUSR | S_IWUSR);
+    int fd = open(TEST_TEMP_FILE, O_CREAT | O_WRONLY, S_IRUSR | S_IWUSR);
     if (fd < 0) {
         FAIL();
         return;
@@ -269,7 +271,7 @@ HWTEST_F(BacktraceUtilsTest, BacktraceUtilsTest005, TestSize.Level2)
     ASSERT_EQ(true, PrintTrace(fd));
     close(fd);
     std::string content;
-    if (!OHOS::LoadStringFromFile("/data/test/testfile", content)) {
+    if (!OHOS::HiviewDFX::LoadStringFromFile(TEST_TEMP_FILE, content)) {
         FAIL();
     }
 

@@ -28,6 +28,7 @@
 #include "backtrace_local_context.h"
 #include "dfx_define.h"
 #include "dfx_util.h"
+#include "procinfo.h"
 #include "fp_unwinder.h"
 #include "dwarf_unwinder.h"
 #include "dfx_frame_format.h"

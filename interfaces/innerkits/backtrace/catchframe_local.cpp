@@ -39,6 +39,7 @@
 #include "libunwind_i-ohos.h"
 
 #include "dfx_frame.h"
+#include "procinfo.h"
 #include "backtrace_local_context.h"
 #include "backtrace_local_thread.h"
 
@@ -111,7 +112,7 @@ bool DfxCatchFrameLocal::CatchFrame(std::map<int, std::vector<DfxFrame>>& mapFra
     }
 
     std::vector<DfxFrame> frames;
-    for (int i = 0; i < nstids.size(); ++i) {
+    for (size_t i = 0; i < nstids.size(); ++i) {
         if (tids[i] == gettid()) {
             CatchFrameCurrTid(frames, releaseThread);
         } else {

@@ -26,7 +26,7 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
-#include <file_ex.h>
+#include "file_util.h"
 #include <libunwind_i-ohos.h>
 #include <libunwind.h>
 #include <securec.h>
@@ -236,7 +236,7 @@ HWTEST_F(BacktraceLocalTest, BacktraceLocalTest004, TestSize.Level2)
     GTEST_LOG_(INFO) << "LogFile: " << path;
 
     std::string content;
-    if (!OHOS::LoadStringFromFile(path, content)) {
+    if (!OHOS::HiviewDFX::LoadStringFromFile(path, content)) {
         FAIL();
     }
 

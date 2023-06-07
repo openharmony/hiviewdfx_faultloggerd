@@ -22,7 +22,7 @@
 
 #include "dfx_define.h"
 #include <directory_ex.h>
-#include <file_ex.h>
+#include "file_util.h"
 #include <string_ex.h>
 
 namespace OHOS {
@@ -209,7 +209,7 @@ uint64_t GetSelfMemoryCount()
 {
     std::string path = "/proc/self/smaps_rollup";
     std::string content;
-    if (!OHOS::LoadStringFromFile(path, content)) {
+    if (!OHOS::HiviewDFX::LoadStringFromFile(path, content)) {
         printf("Failed to load path content: %s\n", path.c_str());
         return 0;
     }
@@ -240,7 +240,7 @@ uint32_t GetSelfMapsCount()
 {
     std::string path = "/proc/self/maps";
     std::string content;
-    if (!OHOS::LoadStringFromFile(path, content)) {
+    if (!OHOS::HiviewDFX::LoadStringFromFile(path, content)) {
         printf("Failed to load path content: %s\n", path.c_str());
         return 0;
     }
