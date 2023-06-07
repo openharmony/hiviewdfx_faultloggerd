@@ -173,8 +173,8 @@ void CrashValidator::HandleCppCrashEvent(std::shared_ptr<HiviewDFX::HiSysEventRe
     sysEvent->GetParamValue(KEY_PID, crashEvent.pid);
     sysEvent->GetParamValue(KEY_LOG_PATH, crashEvent.path);
     sysEvent->GetParamValue(KEY_MODULE, crashEvent.name);
-    printf("CPPCRASH:[Pid:%" PRIu64 " Uid:%" PRIu64 " Module:%s]\n",
-        crashEvent.pid, crashEvent.pid, crashEvent.name.c_str());
+    printf("CPPCRASH:[Pid:%" PRIi64 " Uid:%" PRIi64 " Module:%s]\n",
+        crashEvent.pid, crashEvent.uid, crashEvent.name.c_str());
     if (!RemoveSimilarEvent(crashEvent)) {
         totalEventCount_++;
         pendingEvents_.push_back(crashEvent);
@@ -217,7 +217,7 @@ void CrashValidator::HandleProcessExitEvent(std::shared_ptr<HiviewDFX::HiSysEven
         return;
     }
 
-    printf("Process Exit Name:%s Time:%llu [Pid:%" PRIu64 " Uid:%" PRIu64 "] status:%d\n",
+    printf("Process Exit Name:%s Time:%llu [Pid:%" PRIi64 " Uid:%" PRIi64 "] status:%d\n",
         crashEvent.name.c_str(),
         static_cast<unsigned long long>(crashEvent.time),
         crashEvent.pid,
