@@ -29,12 +29,13 @@ bool GetBacktraceStringByTid(std::string& out, int32_t tid, size_t skipFrameNum,
 
 bool PrintBacktrace(int32_t fd = -1, bool fast = false);
 bool GetBacktrace(std::string& out, bool fast = false);
-bool GetBacktrace(std::string& out, size_t skipFrameNum, bool fast);
+bool GetBacktrace(std::string& out, size_t skipFrameNum, bool fast = false);
 
 std::string GetProcessStacktrace();
 
 extern "C" bool PrintTrace(int32_t fd = -1);
-extern "C" const char* GetTrace();
+extern "C" const char* GetTrace(size_t skipFrameNum = 0);
+
 } // namespace HiviewDFX
 } // namespace OHOS
 #endif

@@ -41,7 +41,7 @@ fn test_panic(pt: &String) {
     }else if pt == "print_trace" {
         stacktrace_rust::print_trace(1);
     } else if pt == "get_trace" {
-        let ret = stacktrace_rust::get_trace();
+        let ret = stacktrace_rust::get_trace(false);
         println!("{}", ret);
     }
 }
@@ -61,7 +61,7 @@ fn get_trace_in_multi_thread() {
     let mut handles = vec![];
     for _ in 0..50 {
         let handle = thread::spawn(move || {
-            let trace = stacktrace_rust::get_trace();
+            let trace = stacktrace_rust::get_trace(false);
             println!("{}", trace);
         });
         handles.push(handle);

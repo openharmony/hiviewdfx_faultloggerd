@@ -129,11 +129,11 @@ bool PrintTrace(int32_t fd)
     return PrintBacktrace(fd, false);
 }
 
-const char* GetTrace()
+const char* GetTrace(size_t skipFrameNum)
 {
     static std::string trace;
     trace.clear();
-    if (!GetBacktrace(trace)) {
+    if (!GetBacktrace(trace, skipFrameNum)) {
         HILOG_ERROR(LOG_CORE, "Failed to get trace string");
     }
     return trace.c_str();
