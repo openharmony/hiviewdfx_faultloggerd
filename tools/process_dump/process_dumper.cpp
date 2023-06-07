@@ -36,6 +36,7 @@
 #include "faultloggerd_client.h"
 #include "cppcrash_reporter.h"
 #include "printer.h"
+#include "procinfo.h"
 #include "dfx_config.h"
 #include "dfx_define.h"
 #include "dfx_dump_request.h"
@@ -130,7 +131,7 @@ bool ProcessDumper::InitNsInfo(std::shared_ptr<ProcessDumpRequest> request)
 
     ProcInfo procInfo;
     (void)memset_s(&procInfo, sizeof(procInfo), 0, sizeof(struct ProcInfo));
-    if (GetProcStatus(procInfo) == -1) {
+    if (!GetProcStatus(procInfo)) {
         return ret;
     }
 
@@ -150,7 +151,7 @@ bool ProcessDumper::InitNsInfo(std::shared_ptr<ProcessDumpRequest> request)
         targetVmNsPid_ = getppid();
         DFXLOG_INFO("Crash in vmPid:%d nsVmPid:%d.", targetVmPid_, targetVmNsPid_);
         (void)memset_s(&procInfo, sizeof(procInfo), 0, sizeof(struct ProcInfo));
-        if (GetProcStatusByPid(targetVmPid_, procInfo) < 0) {
+        if (!GetProcStatusByPid(targetVmPid_, procInfo)) {
             DFXLOG_ERROR("Get targetVmPid:%d status failed.", targetVmPid_);
             return ret;
         }

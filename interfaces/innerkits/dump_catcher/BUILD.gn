@@ -29,6 +29,7 @@ if (defined(ohos_lite)) {
       "$faultloggerd_path/common/dfxutil",
       "$faultloggerd_path/frameworks/unwinder/include",
       "$faultloggerd_path/interfaces/innerkits/faultloggerd_client/include",
+      "$faultloggerd_path/interfaces/innerkits/procinfo/include",
       "$hilog_lite_include_path",
       "//third_party/libunwind/include",
       "//third_party/libunwind/src",
@@ -57,6 +58,7 @@ if (defined(ohos_lite)) {
       "$faultloggerd_path/common/dfxutil:dfx_util",
       "$faultloggerd_path/interfaces/innerkits/backtrace:libbacktrace_local",
       "$faultloggerd_path/interfaces/innerkits/faultloggerd_client:libfaultloggerd",
+      "$faultloggerd_path/interfaces/innerkits/procinfo:libdfx_procinfo",
       "//base/hiviewdfx/hilog_lite/frameworks/featured:hilog_shared",
       "//third_party/bounds_checking_function:libsec_shared",
       "//third_party/libunwind:libunwind_local",
@@ -101,6 +103,7 @@ if (defined(ohos_lite)) {
       "$faultloggerd_path/common/dfxutil:dfx_util",
       "$faultloggerd_path/interfaces/innerkits/backtrace:libbacktrace_local",
       "$faultloggerd_path/interfaces/innerkits/faultloggerd_client:libfaultloggerd",
+      "$faultloggerd_path/interfaces/innerkits/procinfo:libdfx_procinfo",
     ]
 
     external_deps = [
@@ -110,6 +113,10 @@ if (defined(ohos_lite)) {
     install_images = [
       "system",
       "updater",
+    ]
+    innerapi_tags = [
+      "chipsetsdk_indirect",
+      "platformsdk_indirect",
     ]
     part_name = "faultloggerd"
     subsystem_name = "hiviewdfx"

@@ -28,6 +28,7 @@
 #include "directory_ex.h"
 #include "dfx_define.h"
 #include "dfx_util.h"
+#include "procinfo.h"
 
 using namespace testing::ext;
 using namespace std;

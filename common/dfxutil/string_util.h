@@ -24,8 +24,10 @@
 
 namespace OHOS {
 namespace HiviewDFX {
-static const int DFX_STRING_BUF_LEN = 4096;
-static const std::string EMPTY_STRING = "";
+namespace {
+const int DFX_STRING_BUF_LEN = 4096;
+const std::string EMPTY_STRING = "";
+}
 
 inline bool StartsWith(const std::string& s, const std::string& prefix)
 {

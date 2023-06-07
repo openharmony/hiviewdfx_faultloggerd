@@ -40,13 +40,14 @@
 #include "dfx_log.h"
 #include "dfx_util.h"
 #include "faultloggerd_client.h"
-#include "file_ex.h"
+#include "file_util.h"
 #include "securec.h"
 #include "strings.h"
 #include "libunwind.h"
 #include "libunwind_i-ohos.h"
 
 #include "backtrace_local.h"
+#include "procinfo.h"
 
 namespace OHOS {
 namespace HiviewDFX {
@@ -103,31 +104,19 @@ bool DfxDumpCatcher::DoDumpLocalPid(int pid, std::string& msg)
     }
     size_t skipFramNum = DUMP_CATCHER_NUMBER_THREE;
 
-    char realPath[PATH_MAX] = {'\0'};
-    if (realpath(PROC_SELF_TASK_PATH, realPath) == nullptr) {
-        DFXLOG_ERROR("%s :: DoDumpLocalPid :: return false as realpath failed.", DFXDUMPCATCHER_TAG.c_str());
-        return ret;
-    }
-
-    std::vector<std::string> files;
-    if (ReadDirFiles(realPath, files) == false) {
-        DFXLOG_ERROR("%s :: DoDumpLocalPid :: return false as readdir failed.", DFXDUMPCATCHER_TAG.c_str());
-        return ret;
-    }
-
-    for (size_t i = 0; i < files.size(); ++i) {
-        pid_t tid = atoi(files[i].c_str());
-        if (tid == 0) {
-            continue;
+    std::function<bool(int)> func = [&](int tid) {
+        if (tid <= 0) {
+            return false;
         }
 
-        int currentTid = syscall(SYS_gettid);
-        if (tid == currentTid) {
-            ret = DoDumpCurrTid(skipFramNum, msg);
-        } else {
-            ret = DoDumpLocalTid(tid, msg);
+        if (tid == gettid()) {
+            return DoDumpCurrTid(skipFramNum, msg);
         }
-    }
+        return DoDumpLocalTid(tid, msg);
+    };
+    std::vector<int> tids;
+    ret = GetTidsByPidWithFunc(getpid(), tids, func);
+
     DFXLOG_DEBUG("%s :: DoDumpLocalPid :: return %d.", DFXDUMPCATCHER_TAG.c_str(), ret);
     return ret;
 }
@@ -208,39 +197,12 @@ static void LoadPathContent(const std::string& desc, const std::string& path, st
     }
 
     std::string content;
-    OHOS::LoadStringFromFile(path, content);
+    OHOS::HiviewDFX::LoadStringFromFile(path, content);
     if (!content.empty()) {
         std::string str = desc + ":\n" + content + "\n";
         result.append(str);
     }
     return;
-}
-
-static void LoadThreadWchan(const int pid, std::string& result)
-{
-    result.append("\nThread wchan:\n=======================================\n");
-    bool flag = false;
-    std::string taskPath = "/proc/" + std::to_string(pid) + "/task";
-    std::vector<std::string> files;
-    flag = ReadDirFilesByPid(pid, files);
-    for (size_t i = 0; i < files.size(); ++i) {
-        std::string comm;
-        std::string wchan;
-        std::string tidStr = files[i];
-        std::string commPath = taskPath + "/" + tidStr + "/comm";
-        std::string wchanPath = taskPath + "/" + tidStr + "/wchan";
-        OHOS::LoadStringFromFile(commPath, comm);
-        OHOS::LoadStringFromFile(wchanPath, wchan);
-        if (!comm.empty() && !wchan.empty()) {
-            flag = true;
-            result.append("Tid:" + tidStr + " Name:" + comm + "wchan:" + wchan + "\n");
-        }
-    }
-
-    if (!flag) {
-        result.append("Load thread wchan failed.\n");
-    }
-    result.append("=======================================\n");
 }
 
 static void LoadPidStat(const int pid, std::string& msg)
@@ -249,7 +211,9 @@ static void LoadPidStat(const int pid, std::string& msg)
     std::string wchanPath = "/proc/" + std::to_string(pid) + "/wchan";
     LoadPathContent("Process status", statusPath, msg);
     LoadPathContent("Process wchan", wchanPath, msg);
-    LoadThreadWchan(pid, msg);
+    msg.append("\nProcess wchan:\n=======================================\n");
+    ReadProcessWchan(msg, pid, true);
+    msg.append("=======================================\n");
 }
 
 bool DfxDumpCatcher::DoDumpCatchRemote(const int type, int pid, int tid, std::string& msg)

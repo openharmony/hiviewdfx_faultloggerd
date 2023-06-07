@@ -27,7 +27,7 @@ extern "C" {
 #endif
 
 #ifdef ENABLE_MUSL_CUTIL
-bool ReadStringFromFile(const char* path, char* dst, size_t dstSz)
+static bool ReadStringFromFile(const char* path, char* dst, size_t dstSz)
 {
     char name[NAME_LEN];
     char nameFilter[NAME_LEN];
