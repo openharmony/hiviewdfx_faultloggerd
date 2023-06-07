@@ -1,4 +1,4 @@
-# Copyright (c) 2022 Huawei Device Co., Ltd.
+# Copyright (c) 2022-2023 Huawei Device Co., Ltd.
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -30,7 +30,7 @@ ohos_unittest("backtrace_utils_test") {
     "$faultloggerd_path/interfaces/innerkits/backtrace:libbacktrace_local",
     "$faultloggerd_path/test/utils:dfx_test_util",
     "//third_party/googletest:gtest_main",
-    "//third_party/libunwind:libunwind_local",
+    "//third_party/libunwind:libunwind",
   ]
   if (use_musl && use_jemalloc && use_jemalloc_dfx_intf) {
     defines = [ "USE_JEMALLOC_DFX_INTF" ]
@@ -55,7 +55,7 @@ ohos_unittest("backtrace_local_test") {
     "$faultloggerd_path/test/utils:dfx_test_util",
     "//third_party/bounds_checking_function:libsec_shared",
     "//third_party/googletest:gtest_main",
-    "//third_party/libunwind:libunwind_local",
+    "//third_party/libunwind:libunwind",
   ]
 
   external_deps = [
@@ -78,7 +78,7 @@ ohos_unittest("catchframe_local_test") {
     "$faultloggerd_path/test/utils:dfx_test_util",
     "//third_party/bounds_checking_function:libsec_shared",
     "//third_party/googletest:gtest_main",
-    "//third_party/libunwind:libunwind_local",
+    "//third_party/libunwind:libunwind",
   ]
 
   external_deps = [

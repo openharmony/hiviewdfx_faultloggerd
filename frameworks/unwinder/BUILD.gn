@@ -60,7 +60,7 @@ if (defined(ohos_lite)) {
       "$faultloggerd_path/common/dfxlog:static_common_log",
       "$hilog_lite_deps_path",
       "//third_party/bounds_checking_function:libsec_shared",
-      "//third_party/libunwind:libunwind_local",
+      "//third_party/libunwind:libunwind",
     ]
   }
 } else {
@@ -92,7 +92,7 @@ if (defined(ohos_lite)) {
       "$faultloggerd_path/common/dfxlog:static_common_log",
       "$faultloggerd_path/common/dfxutil:dfx_util",
       "//third_party/bounds_checking_function:libsec_shared",
-      "//third_party/libunwind:libunwind_local",
+      "//third_party/libunwind:libunwind",
     ]
 
     external_deps = [
