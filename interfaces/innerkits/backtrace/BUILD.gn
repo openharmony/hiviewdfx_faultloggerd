@@ -78,7 +78,7 @@ if (defined(ohos_lite)) {
       "$faultloggerd_path/interfaces/innerkits/procinfo:libdfx_procinfo",
       "//base/hiviewdfx/hilog_lite/frameworks/featured:hilog_shared",
       "//third_party/bounds_checking_function:libsec_shared",
-      "//third_party/libunwind:libunwind_local",
+      "//third_party/libunwind:libunwind",
     ]
   }
 } else {
@@ -115,7 +115,7 @@ if (defined(ohos_lite)) {
       "$faultloggerd_path/common/dfxutil:dfx_util",
       "$faultloggerd_path/interfaces/innerkits/procinfo:libdfx_procinfo",
       "//third_party/bounds_checking_function:libsec_shared",
-      "//third_party/libunwind:libunwind_local",
+      "//third_party/libunwind:libunwind",
     ]
 
     external_deps = [
