@@ -1,0 +1,12 @@
+{
+  global:
+    extern "C" {
+      ProcInfo*;
+      Get*;
+      Read*;
+      TidToNstid*;
+      IsThreadInCurPid*;
+    };
+  local:
+    *;
+};

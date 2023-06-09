@@ -33,9 +33,43 @@ public:
     DfxDumpCatcher() {}
     ~DfxDumpCatcher() {}
 
+    /**
+     * @brief Dump native stack by specify pid and tid
+     *
+     * @param pid  process id
+     * @param tid  thread id
+     * @param msg  message of native stack
+     * @return if succeed return true, otherwise return false
+    */
     bool DumpCatch(int pid, int tid, std::string& msg);
+
+    /**
+     * @brief Dump native and js mixed-stack by specify pid and tid
+     *
+     * @param pid  process id
+     * @param tid  thread id
+     * @param msg  message of native and js mixed-stack
+     * @return if succeed return true, otherwise return false
+    */
     bool DumpCatchMix(int pid, int tid, std::string& msg);
+
+    /**
+     * @brief Dump native stack by specify pid and tid to file
+     *
+     * @param pid  process id
+     * @param tid  thread id
+     * @param fd  file descriptor
+     * @return if succeed return true, otherwise return false
+    */
     bool DumpCatchFd(int pid, int tid, std::string& msg, int fd);
+    /**
+     * @brief Dump native stack by multi-pid
+     *
+     * @param pid  process id
+     * @param tid  thread id
+     * @param msg  message of native stack
+     * @return if succeed return true, otherwise return false
+    */
     bool DumpCatchMultiPid(const std::vector<int> pidV, std::string& msg);
 
 private:

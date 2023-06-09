@@ -24,14 +24,8 @@
 #include <string>
 #include <unistd.h>
 #include <vector>
-
-#include "dfx_define.h"
+#include "procinfo.h"
 #include "dfx_frame.h"
-#include "dfx_symbols.h"
-
-// forward declaration
-struct unw_addr_space;
-typedef struct unw_addr_space *unw_addr_space_t;
 
 namespace OHOS {
 namespace HiviewDFX {
@@ -42,10 +36,43 @@ public:
     explicit DfxCatchFrameLocal(int32_t pid);
     ~DfxCatchFrameLocal();
 
+    /**
+     * @brief  initialize catch frame
+     *
+     * @return if succeed return true, otherwise return false
+    */
     bool InitFrameCatcher();
+
+    /**
+     * @brief release thread by thread id
+     *
+     * @param tid  thread id
+     * @return if succeed return true, otherwise return false
+    */
     bool ReleaseThread(int tid);
+
+    /**
+     * @brief catch thread backtrace frame by thread id
+     *
+     * @param frames  backtrace frames(output parameter)
+     * @param releaseThread flag for whether to release thread after completing frames catching
+     * @return if succeed return true, otherwise return false
+    */
     bool CatchFrame(int tid, std::vector<DfxFrame>& frames, bool releaseThread = false);
+
+    /**
+     * @brief catch thread backtrace frame by thread id
+     *
+     * @param mapFrames  namespace tid and backtrace frames(output parameter)
+     * @param releaseThread flag for whether to release thread after completing frames catching
+     * @return if succeed return true, otherwise return false
+    */
     bool CatchFrame(std::map<int, std::vector<DfxFrame>>& mapFrames, bool releaseThread = false);
+
+    /**
+     * @brief release the resource of frame catcher
+     *
+    */
     void DestroyFrameCatcher();
 
 private:
@@ -56,8 +83,6 @@ private:
     std::mutex mutex_;
     int32_t pid_;
     struct ProcInfo procInfo_;
-    unw_addr_space_t as_ {nullptr};
-    std::shared_ptr<DfxSymbols> symbol_ {nullptr};
 };
 } // namespace HiviewDFX
 } // namespace OHOS
