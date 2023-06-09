@@ -62,7 +62,7 @@ void Printer::PrintDumpHeader(std::shared_ptr<ProcessDumpRequest> request, std::
                 static_cast<unsigned long long>(traceId.chainId));
         }
 
-        if (process->GetThreads().size() != 0) {
+        if (!process->vmThread_) {
             DfxRingBufferWrapper::GetInstance().AppendMsg("Fault thread Info:\n");
         }
     }
@@ -71,6 +71,7 @@ void Printer::PrintDumpHeader(std::shared_ptr<ProcessDumpRequest> request, std::
 void Printer::PrintProcessMapsByConfig(std::shared_ptr<DfxProcess> process)
 {
     if (DfxConfig::GetConfig().displayMaps) {
+        process->InitProcessMaps();
         if (!process->GetMaps()) {
             DFXLOG_WARN("Pid:%d maps is null", process->processInfo_.pid);
             return;
@@ -124,6 +125,7 @@ void Printer::PrintThreadFaultStackByConfig(std::shared_ptr<DfxProcess> process,
             return;
         }
         faultstack->CollectStackInfo(thread->GetFrames());
+        process->InitProcessMaps();
         faultstack->CollectRegistersBlock(thread->GetThreadRegs(), process->GetMaps());
         faultstack->Print();
     }

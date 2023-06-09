@@ -24,6 +24,7 @@
 #include "dfx_define.h"
 #include "dfx_log.h"
 #include "dfx_regs_define.h"
+#include "string_util.h"
 
 namespace OHOS {
 namespace HiviewDFX {
@@ -53,26 +54,22 @@ DfxRegsArm::DfxRegsArm(const ucontext_t& context)
 
 std::string DfxRegsArm::PrintRegs() const
 {
-    std::string regString = "";
     char buf[REGS_PRINT_LEN_ARM] = {0};
-
-    regString = regString + "Registers:\n";
-
     std::vector<uintptr_t> regs = GetRegsData();
 
-    PrintFormat(buf, sizeof(buf), "r0:%08x r1:%08x r2:%08x r3:%08x\n", \
+    BufferPrintf(buf, sizeof(buf), "r0:%08x r1:%08x r2:%08x r3:%08x\n", \
         regs[REG_ARM_R0], regs[REG_ARM_R1], regs[REG_ARM_R2], regs[REG_ARM_R3]);
 
-    PrintFormat(buf + strlen(buf), sizeof(buf) - strlen(buf), "r4:%08x r5:%08x r6:%08x r7:%08x\n", \
+    BufferPrintf(buf + strlen(buf), sizeof(buf) - strlen(buf), "r4:%08x r5:%08x r6:%08x r7:%08x\n", \
         regs[REG_ARM_R4], regs[REG_ARM_R5], regs[REG_ARM_R6], regs[REG_ARM_R7]);
 
-    PrintFormat(buf + strlen(buf), sizeof(buf) - strlen(buf), "r8:%08x r9:%08x r10:%08x\n", \
+    BufferPrintf(buf + strlen(buf), sizeof(buf) - strlen(buf), "r8:%08x r9:%08x r10:%08x\n", \
         regs[REG_ARM_R8], regs[REG_ARM_R9], regs[REG_ARM_R10]);
 
-    PrintFormat(buf + strlen(buf), sizeof(buf) - strlen(buf), "fp:%08x ip:%08x sp:%08x lr:%08x pc:%08x\n", \
+    BufferPrintf(buf + strlen(buf), sizeof(buf) - strlen(buf), "fp:%08x ip:%08x sp:%08x lr:%08x pc:%08x\n", \
         regs[REG_ARM_R11], regs[REG_ARM_R12], regs[REG_ARM_R13], regs[REG_ARM_R14], regs[REG_ARM_R15]);
 
-    regString = regString + std::string(buf);
+    std::string regString = StringPrintf("Registers:\n%s", buf);
     return regString;
 }
 

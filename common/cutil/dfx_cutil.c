@@ -26,6 +26,9 @@
 #include <string.h>
 #include "dfx_define.h"
 
+static const char PID_STR_NAME[] = "Pid:";
+static const int ARGS_COUNT_ONE = 1;
+
 static bool ReadStringFromFile(const char* path, char* dst, size_t dstSz)
 {
     if ((dst == NULL) || (path == NULL)) {
@@ -39,11 +42,13 @@ static bool ReadStringFromFile(const char* path, char* dst, size_t dstSz)
     int fd = -1;
     fd = OHOS_TEMP_FAILURE_RETRY(open(path, O_RDONLY));
     if (fd < 0) {
+        perror("Failed to open path.");
         return false;
     }
 
-    int nRead = OHOS_TEMP_FAILURE_RETRY(read(fd, name, NAME_LEN -1));
-    if (nRead == -1) {
+    ssize_t nRead = OHOS_TEMP_FAILURE_RETRY(read(fd, name, NAME_LEN - 1));
+    if (nRead <= 0) {
+        perror("Failed to read.");
         close(fd);
         return false;
     }
@@ -60,7 +65,7 @@ static bool ReadStringFromFile(const char* path, char* dst, size_t dstSz)
     nameFilter[NAME_LEN - 1] = '\0';
 
     if (memcpy_s(dst, dstSz, nameFilter, strlen(nameFilter) + 1) != 0) {
-        perror("Failed to copy name.");
+        perror("Failed to memcpy name.");
         close(fd);
         return false;
     }
@@ -71,22 +76,50 @@ static bool ReadStringFromFile(const char* path, char* dst, size_t dstSz)
 
 bool GetThreadName(char* buffer, size_t bufferSz)
 {
-    char path[NAME_LEN];
-    (void)memset_s(path, sizeof(path), '\0', sizeof(path));
-    if (snprintf_s(path, sizeof(path), sizeof(path) - 1, "/proc/%d/comm", getpid()) <= 0) {
-        return false;
-    }
-    return ReadStringFromFile(path, buffer, bufferSz);
+    return ReadStringFromFile(PROC_SELF_COMM_PATH, buffer, bufferSz);
 }
 
 bool GetProcessName(char* buffer, size_t bufferSz)
 {
-    char path[NAME_LEN];
-    (void)memset_s(path, sizeof(path), '\0', sizeof(path));
-    if (snprintf_s(path, sizeof(path), sizeof(path) - 1, "/proc/%d/cmdline", getpid()) <= 0) {
-        return false;
+    return ReadStringFromFile(PROC_SELF_CMDLINE_PATH, buffer, bufferSz);
+}
+
+pid_t GetRealPid(void)
+{
+    pid_t pid = syscall(SYS_getpid);
+    int fd = OHOS_TEMP_FAILURE_RETRY(open(PROC_SELF_STATUS_PATH, O_RDONLY));
+    if (fd < 0) {
+        perror("Failed to open status.");
+        return pid;
     }
-    return ReadStringFromFile(path, buffer, bufferSz);
+
+    char buf[LOG_BUF_LEN];
+    int i = 0;
+    char b;
+    ssize_t nRead = 0;
+    while (1) {
+        nRead = OHOS_TEMP_FAILURE_RETRY(read(fd, &b, sizeof(char)));
+        if (nRead <= 0 || b == '\0') {
+            perror("Failed to read.");
+            break;
+        }
+
+        if (b == '\n' || i == LOG_BUF_LEN) {
+            if (strncmp(buf, PID_STR_NAME, strlen(PID_STR_NAME)) == 0) {
+                if (sscanf_s(buf, "%*[^0-9]%d", &pid) != ARGS_COUNT_ONE) {
+                    perror("Failed to sscanf.");
+                }
+                break;
+            }
+            i = 0;
+            (void)memset_s(buf, sizeof(buf), '\0', sizeof(buf));
+            continue;
+        }
+        buf[i] = b;
+        i++;
+    }
+    close(fd);
+    return pid;
 }
 
 uint64_t GetTimeMilliseconds(void)

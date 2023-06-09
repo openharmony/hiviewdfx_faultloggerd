@@ -28,27 +28,19 @@
 
 namespace OHOS {
 namespace HiviewDFX {
-enum class ThreadStatus {
-    THREAD_STATUS_INVALID = -1,
-    THREAD_STATUS_INIT = 0,
-    THREAD_STATUS_ATTACHED = 1
-};
 
 struct DfxThreadInfo {
     pid_t pid = 0;
     pid_t tid = 0;
     pid_t nsTid = 0;
-    bool isKeyThread = false;
-    ThreadStatus threadStatus = ThreadStatus::THREAD_STATUS_INVALID;
     std::string threadName = "";
 };
 
 class DfxThread {
 public:
     static std::shared_ptr<DfxThread> Create(pid_t pid, pid_t tid, pid_t nsTid);
-    DfxThread(pid_t pid, pid_t tid, pid_t nsTid, const ucontext_t &context);
     DfxThread(pid_t pid, pid_t tid, pid_t nsTid);
-    ~DfxThread();
+    virtual ~DfxThread();
 
     std::shared_ptr<DfxRegs> GetThreadRegs() const;
     void SetThreadRegs(const std::shared_ptr<DfxRegs> &regs);
@@ -61,8 +53,16 @@ public:
 
     DfxThreadInfo threadInfo_;
 private:
+    enum class ThreadStatus {
+        THREAD_STATUS_INVALID = -1,
+        THREAD_STATUS_INIT = 0,
+        THREAD_STATUS_ATTACHED = 1
+    };
+
+    DfxThread() = default;
     void InitThreadInfo(pid_t pid, pid_t tid, pid_t nsTid);
 
+    ThreadStatus threadStatus = ThreadStatus::THREAD_STATUS_INVALID;
     std::shared_ptr<DfxRegs> regs_;
     std::vector<std::shared_ptr<DfxFrame>> frames_;
 };

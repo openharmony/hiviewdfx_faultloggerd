@@ -19,10 +19,10 @@
 
 #include <cstdio>
 #include <cstdlib>
-#include <securec.h>
 #include "dfx_define.h"
 #include "dfx_log.h"
 #include "dfx_regs_define.h"
+#include "string_util.h"
 #include "unwinder_define.h"
 
 namespace OHOS {
@@ -97,19 +97,6 @@ void DfxRegs::SetRegsData(const std::vector<uintptr_t>& regs)
     DFXLOG_INFO("%s", PrintSpecialRegs().c_str());
 }
 
-int DfxRegs::PrintFormat(char *buf, int size, const char *format, ...) const
-{
-    int ret = -1;
-    va_list args;
-    va_start(args, format);
-    ret = vsnprintf_s(buf, size, size - 1, format, args);
-    if (ret < 0) {
-        DFXLOG_ERROR("%s :: vsnprintf_s failed, line: %d.", __func__, __LINE__);
-    }
-    va_end(args);
-    return ret;
-}
-
 std::string DfxRegs::GetSpecialRegisterName(uintptr_t val) const
 {
     if (val == pc_) {
@@ -128,12 +115,11 @@ std::string DfxRegs::PrintSpecialRegs() const
 {
     char buf[REGS_PRINT_LEN_SPECIAL] = {0};
 #ifdef __LP64__
-    PrintFormat(buf, sizeof(buf), "fp:%016lx sp:%016lx lr:%016lx pc:%016lx\n", fp_, sp_, lr_, pc_);
+    BufferPrintf(buf, sizeof(buf), "fp:%016lx sp:%016lx lr:%016lx pc:%016lx\n", fp_, sp_, lr_, pc_);
 #else
-    PrintFormat(buf, sizeof(buf), "fp:%08x sp:%08x lr:%08x pc:%08x\n", fp_, sp_, lr_, pc_);
+    BufferPrintf(buf, sizeof(buf), "fp:%08x sp:%08x lr:%08x pc:%08x\n", fp_, sp_, lr_, pc_);
 #endif
-    std::string regString = std::string(buf);
-    return regString;
+    return std::string(buf);
 }
 } // namespace HiviewDFX
 } // namespace OHOS

@@ -49,7 +49,6 @@ public:
     std::string GetSpecialRegisterName(uintptr_t val) const;
 protected:
     std::string PrintSpecialRegs() const;
-    int PrintFormat(char *buf, int size, const char *format, ...) const;
 public:
     uintptr_t fp_ {0};
     uintptr_t pc_ {0};

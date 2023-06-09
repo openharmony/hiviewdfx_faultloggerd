@@ -19,6 +19,7 @@
 #define STRING_UTIL_H
 
 #include <cstdint>
+#include <cstdio>
 #include <string>
 #include <securec.h>
 
@@ -45,6 +46,19 @@ inline void Trim(std::string& str)
     std::string blanks("\f\v\r\t\n ");
     str.erase(0, str.find_first_not_of(blanks));
     str.erase(str.find_last_not_of(blanks) + sizeof(char));
+}
+
+inline int BufferPrintf(char *buf, size_t size, const char *fmt, ...)
+{
+    int ret = -1;
+    if (buf == nullptr || size == 0) {
+        return ret;
+    }
+    va_list args;
+    va_start(args, fmt);
+    ret = vsnprintf_s(buf, size, size - 1, fmt, args);
+    va_end(args);
+    return ret;
 }
 
 template<typename... VA>

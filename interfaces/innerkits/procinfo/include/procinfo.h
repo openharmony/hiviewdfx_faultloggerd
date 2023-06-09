@@ -32,7 +32,7 @@ namespace HiviewDFX {
 bool GetProcStatus(struct ProcInfo& procInfo);
 bool GetProcStatusByPid(int realPid, struct ProcInfo& procInfo);
 bool TidToNstid(const int pid, const int tid, int& nstid);
-bool IsThreadInCurPid(int32_t tid);
+bool IsThreadInPid(int32_t pid, int32_t tid);
 bool GetTidsByPidWithFunc(const int pid, std::vector<int>& tids, std::function<bool(int)> const& func);
 bool GetTidsByPid(const int pid, std::vector<int>& tids, std::vector<int>& nstids);
 void ReadThreadName(const int tid, std::string& str);

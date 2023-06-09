@@ -69,31 +69,40 @@ bool DfxUnwindRemote::UnwindProcess(std::shared_ptr<DfxProcess> process)
         return ret;
     }
 
-    auto threads = process->GetThreads();
-    if (threads.empty()) {
-        DFXLOG_WARN("%s::no thread under target process.", __func__);
-        return ret;
-    }
-
     as_ = unw_create_addr_space(&_UPT_accessors, 0);
     if (!as_) {
         DFXLOG_WARN("%s::failed to create address space.", __func__);
         return ret;
     }
-
-    unw_set_target_pid(as_, ProcessDumper::GetInstance().GetTargetPid());
     unw_set_caching_policy(as_, UNW_CACHE_GLOBAL);
-    do {
-        // only need to unwind crash thread in crash scenario
-        if (ProcessDumper::GetInstance().IsCrash() && !DfxConfig::GetConfig().dumpOtherThreads) {
-            ret = UnwindThread(process, threads[0]);
-            if (!ret) {
-                UnwindThreadFallback(process, threads[0]);
-            }
 
-            if (threads[0]->threadInfo_.isKeyThread && ProcessDumper::GetInstance().IsCrash()) {
-                Printer::GetInstance().PrintProcessMapsByConfig(process);
+    std::shared_ptr<DfxThread> unwThread = process->keyThread_;
+    if (ProcessDumper::GetInstance().IsCrash()) {
+        unw_set_target_pid(as_, process->vmThread_->threadInfo_.tid);
+        unwThread = process->vmThread_;
+    } else {
+        unw_set_target_pid(as_, process->processInfo_.pid);
+    }
+
+    do {
+        if (!unwThread) {
+            break;
+        }
+
+        ret = UnwindThread(process, unwThread);
+        if (!ret) {
+            UnwindThreadFallback(process, unwThread);
+        }
+
+        if (ProcessDumper::GetInstance().IsCrash()) {
+            if (!DfxConfig::GetConfig().dumpOtherThreads) {
+                break;
             }
+        }
+
+        unw_set_target_pid(as_, process->processInfo_.pid);
+        auto threads = process->GetOtherThreads();
+        if (threads.empty()) {
             break;
         }
 
@@ -110,14 +119,16 @@ bool DfxUnwindRemote::UnwindProcess(std::shared_ptr<DfxProcess> process)
                 UnwindThread(process, thread);
                 thread->Detach();
             }
-
-            if (thread->threadInfo_.isKeyThread && ProcessDumper::GetInstance().IsCrash()) {
-                Printer::GetInstance().PrintProcessMapsByConfig(process);
-            }
             index++;
         }
         ret = true;
     } while (false);
+
+    if (ProcessDumper::GetInstance().IsCrash()) {
+        Printer::GetInstance().PrintThreadRegsByConfig(unwThread);
+        Printer::GetInstance().PrintThreadFaultStackByConfig(process, unwThread);
+        Printer::GetInstance().PrintProcessMapsByConfig(process);
+    }
 
     unw_destroy_addr_space(as_);
     as_ = nullptr;
@@ -202,8 +213,7 @@ bool DfxUnwindRemote::DoUnwindStep(size_t const & index,
     frame->pc = framePc;
     frame->sp = frameSp;
     frame->index = index;
-    ret = UpdateAndPrintFrameInfo(cursor, frame, thread,
-        (thread->threadInfo_.isKeyThread && ProcessDumper::GetInstance().IsCrash()));
+    ret = UpdateAndPrintFrameInfo(cursor, frame, thread, ProcessDumper::GetInstance().IsCrash());
     if (ret) {
         thread->AddFrame(frame);
     }
@@ -307,9 +317,6 @@ bool DfxUnwindRemote::UnwindThread(std::shared_ptr<DfxProcess> process, std::sha
         return false;
     }
 
-    if (thread->threadInfo_.isKeyThread && ProcessDumper::GetInstance().IsCrash()) {
-        thread->threadInfo_.nsTid = ProcessDumper::GetInstance().GetTargetNsPid();
-    }
     pid_t nsTid = thread->threadInfo_.nsTid;
     void *context = _UPT_create(nsTid);
     if (!context) {
@@ -354,11 +361,6 @@ bool DfxUnwindRemote::UnwindThread(std::shared_ptr<DfxProcess> process, std::sha
     } while ((unwRet > 0) && (index < DfxConfig::GetConfig().maxFrameNums));
 
     Printer::GetInstance().PrintThreadBacktraceByConfig(thread);
-
-    if (thread->threadInfo_.isKeyThread && ProcessDumper::GetInstance().IsCrash()) {
-        Printer::GetInstance().PrintThreadRegsByConfig(thread);
-        Printer::GetInstance().PrintThreadFaultStackByConfig(process, thread);
-    }
     _UPT_destroy(context);
     return true;
 }
@@ -372,6 +374,7 @@ void DfxUnwindRemote::UnwindThreadFallback(std::shared_ptr<DfxProcess> process, 
         return;
     }
 
+    process->InitProcessMaps();
     std::shared_ptr<DfxElfMaps> maps = process->GetMaps();
     if (maps == nullptr) {
         DfxRingBufferWrapper::GetInstance().AppendMsg("MapsInfo is not existed for crash process");
@@ -396,7 +399,6 @@ void DfxUnwindRemote::UnwindThreadFallback(std::shared_ptr<DfxProcess> process, 
     createFrame(0, regs->pc_);
     createFrame(1, regs->lr_);
     Printer::GetInstance().PrintThreadBacktraceByConfig(thread);
-    Printer::GetInstance().PrintThreadRegsByConfig(thread);
 }
 } // namespace HiviewDFX
 } // namespace OHOS

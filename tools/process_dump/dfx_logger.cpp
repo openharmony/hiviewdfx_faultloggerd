@@ -22,9 +22,9 @@
 #include "faultloggerd_client.h"
 
 static const int WRITE_LOG_BUF_LEN = 2048;
-static int32_t g_DebugLogFilleDes = INVALID_FD;
+static int32_t g_DebugLogFd = INVALID_FD;
 #ifndef DFX_LOG_USE_HILOG_BASE
-static int32_t g_StdErrFilleDes = INVALID_FD;
+static int32_t g_StdErrFd = INVALID_FD;
 #endif
 
 int WriteLog(int32_t fd, const char *format, ...)
@@ -39,7 +39,7 @@ int WriteLog(int32_t fd, const char *format, ...)
     }
     va_end(args);
 
-    if (g_DebugLogFilleDes != INVALID_FD) {
+    if (g_DebugLogFd != INVALID_FD) {
         fprintf(stderr, "%s", buf);
     }
 
@@ -77,7 +77,7 @@ void InitDebugLog(int type, int pid, int tid, unsigned int uid)
 {
 #ifndef DFX_LOG_USE_HILOG_BASE
     DFXLOG_INFO("InitDebugLog :: type(%d), pid(%d), tid(%d), uid(%d).", type, pid, tid, uid);
-    if (g_DebugLogFilleDes != INVALID_FD) {
+    if (g_DebugLogFd != INVALID_FD) {
         return;
     }
 
@@ -88,39 +88,39 @@ void InitDebugLog(int type, int pid, int tid, unsigned int uid)
     faultloggerdRequest.tid = tid;
     faultloggerdRequest.uid = uid;
 
-    g_DebugLogFilleDes = RequestLogFileDescriptor(&faultloggerdRequest);
-    if (g_DebugLogFilleDes <= 0) {
+    g_DebugLogFd = RequestLogFileDescriptor(&faultloggerdRequest);
+    if (g_DebugLogFd <= 0) {
         DFXLOG_ERROR("InitDebugLog :: RequestLogFileDescriptor failed.");
-        g_DebugLogFilleDes = INVALID_FD;
+        g_DebugLogFd = INVALID_FD;
     } else {
-        g_StdErrFilleDes = dup(STDERR_FILENO);
+        g_StdErrFd = dup(STDERR_FILENO);
 
-        if (dup2(g_DebugLogFilleDes, STDERR_FILENO) == -1) {
+        if (dup2(g_DebugLogFd, STDERR_FILENO) == -1) {
             DFXLOG_ERROR("InitDebugLog :: dup2 failed.");
-            close(g_DebugLogFilleDes);
-            g_DebugLogFilleDes = INVALID_FD;
-            g_StdErrFilleDes = INVALID_FD;
+            close(g_DebugLogFd);
+            g_DebugLogFd = INVALID_FD;
+            g_StdErrFd = INVALID_FD;
         }
     }
 
-    InitDebugFd(g_DebugLogFilleDes);
+    InitDebugFd(g_DebugLogFd);
 #endif
 }
 
 void CloseDebugLog()
 {
 #ifndef DFX_LOG_USE_HILOG_BASE
-    if (g_DebugLogFilleDes == INVALID_FD) {
+    if (g_DebugLogFd == INVALID_FD) {
         return;
     }
 
-    if (g_StdErrFilleDes != INVALID_FD) {
-        dup2(g_StdErrFilleDes, STDERR_FILENO);
+    if (g_StdErrFd != INVALID_FD) {
+        dup2(g_StdErrFd, STDERR_FILENO);
     }
-    close(g_DebugLogFilleDes);
-    g_DebugLogFilleDes = INVALID_FD;
-    g_StdErrFilleDes = INVALID_FD;
+    close(g_DebugLogFd);
+    g_DebugLogFd = INVALID_FD;
+    g_StdErrFd = INVALID_FD;
 
-    InitDebugFd(g_DebugLogFilleDes);
+    InitDebugFd(g_DebugLogFd);
 #endif
 }

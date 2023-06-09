@@ -24,6 +24,7 @@
 #include <securec.h>
 #include "dfx_define.h"
 #include "dfx_regs_define.h"
+#include "string_util.h"
 
 namespace OHOS {
 namespace HiviewDFX {
@@ -54,27 +55,23 @@ DfxRegsX86_64::DfxRegsX86_64(const ucontext_t &context)
 
 std::string DfxRegsX86_64::PrintRegs() const
 {
-    std::string regString = "";
     char buf[REGS_PRINT_LEN_X86] = {0};
-
-    regString = regString + "Registers:\n";
-
     std::vector<uintptr_t> regs = GetRegsData();
 
-    PrintFormat(buf, sizeof(buf), "  rax:%016lx rdx:%016lx rcx:%016lx rbx:%016lx\n", \
+    BufferPrintf(buf, sizeof(buf), "  rax:%016lx rdx:%016lx rcx:%016lx rbx:%016lx\n", \
         regs[REG_X86_64_RAX], regs[REG_X86_64_RDX], regs[REG_X86_64_RCX], regs[REG_X86_64_RBX]);
 
-    PrintFormat(buf + strlen(buf), sizeof(buf) - strlen(buf), "  rsi:%016lx rdi:%016lx rbp:%016lx rsp:%016lx\n", \
+    BufferPrintf(buf + strlen(buf), sizeof(buf) - strlen(buf), "  rsi:%016lx rdi:%016lx rbp:%016lx rsp:%016lx\n", \
         regs[REG_X86_64_RSI], regs[REG_X86_64_RDI], regs[REG_X86_64_RBP], regs[REG_X86_64_RSP]);
 
-    PrintFormat(buf + strlen(buf), sizeof(buf) - strlen(buf), "  r8:%016lx r9:%016lx r10:%016lx r11:%016lx\n", \
+    BufferPrintf(buf + strlen(buf), sizeof(buf) - strlen(buf), "  r8:%016lx r9:%016lx r10:%016lx r11:%016lx\n", \
         regs[REG_X86_64_R8], regs[REG_X86_64_R9], regs[REG_X86_64_R10], regs[REG_X86_64_R11]);
 
-    PrintFormat(buf + strlen(buf), sizeof(buf) - strlen(buf), \
+    BufferPrintf(buf + strlen(buf), sizeof(buf) - strlen(buf), \
         "  r12:%016lx r13:%016lx r14:%016lx r15:%016lx rip:%016lx\n", \
         regs[REG_X86_64_R12], regs[REG_X86_64_R13], regs[REG_X86_64_R14], regs[REG_X86_64_R15], regs[REG_X86_64_RIP]);
 
-    regString = regString + std::string(buf);
+    std::string regString = StringPrintf("Registers:\n%s", buf);
     return regString;
 }
 

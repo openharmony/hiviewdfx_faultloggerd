@@ -26,6 +26,7 @@
 #include <unistd.h>
 #include "dfx_util.h"
 #include "file_util.h"
+#include "string_util.h"
 
 namespace OHOS {
 namespace HiviewDFX {
@@ -83,9 +84,8 @@ static bool GetProcStatusByPath(struct ProcInfo& procInfo, const std::string& pa
 
 bool TidToNstid(const int pid, const int tid, int& nstid)
 {
-    char path[NAME_LEN];
-    (void)memset_s(path, sizeof(path), '\0', sizeof(path));
-    if (snprintf_s(path, sizeof(path), sizeof(path) - 1, "/proc/%d/task/%d/status", pid, tid) <= 0) {
+    std::string path = StringPrintf("/proc/%d/task/%d/status", pid, tid);
+    if (path.empty()) {
         return false;
     }
 
@@ -102,7 +102,7 @@ bool GetProcStatusByPid(int realPid, struct ProcInfo& procInfo)
     if (realPid == getpid()) {
         return GetProcStatus(procInfo);
     }
-    std::string path = "/proc/" + std::to_string(realPid) + "/status";
+    std::string path = StringPrintf("/proc/%d/status", realPid);
     return GetProcStatusByPath(procInfo, path);
 }
 
@@ -111,9 +111,14 @@ bool GetProcStatus(struct ProcInfo& procInfo)
     return GetProcStatusByPath(procInfo, PROC_SELF_STATUS_PATH);
 }
 
-bool IsThreadInCurPid(int32_t tid)
+bool IsThreadInPid(int32_t pid, int32_t tid)
 {
-    std::string path = std::string(PROC_SELF_TASK_PATH) + "/" + std::to_string(tid);
+    std::string path;
+    if (pid == getpid()) {
+        path = StringPrintf("%s/%d", PROC_SELF_TASK_PATH, tid);
+    } else {
+        path = StringPrintf("/proc/%d/task/%d", pid, tid);
+    }
     return access(path.c_str(), F_OK) == 0;
 }
 
@@ -159,7 +164,7 @@ bool GetTidsByPid(const int pid, std::vector<int>& tids, std::vector<int>& nstid
 
 void ReadThreadName(const int tid, std::string& str)
 {
-    std::string path = "/proc/" + std::to_string(tid) + "/comm";
+    std::string path = StringPrintf("/proc/%d/comm", tid);
     std::string name;
     OHOS::HiviewDFX::LoadStringFromFile(path, name);
     TrimAndDupStr(name, str);
@@ -171,7 +176,7 @@ void ReadProcessName(const int pid, std::string& str)
     if (pid == getpid()) {
         path = std::string(PROC_SELF_CMDLINE_PATH);
     } else {
-        path = "/proc/" + std::to_string(pid) + "/cmdline";
+        path = StringPrintf("/proc/%d/cmdline", pid);
     }
     std::string name;
     OHOS::HiviewDFX::LoadStringFromFile(path, name);
@@ -182,15 +187,15 @@ void ReadProcessWchan(std::string& result, const int pid, bool withThreadName)
 {
     bool flag = false;
     std::ostringstream ss;
-    std::string taskPath = "/proc/" + std::to_string(pid) + "/task";
+    std::string comm;
+    std::string wchan;
+    std::string taskPath = StringPrintf("/proc/%d/task", pid);
     std::vector<std::string> files;
     flag = ReadDirFiles(taskPath, files);
     for (size_t i = 0; i < files.size(); ++i) {
-        std::string comm;
-        std::string wchan;
         std::string tidStr = files[i];
-        std::string commPath = taskPath + "/" + tidStr + "/comm";
-        std::string wchanPath = taskPath + "/" + tidStr + "/wchan";
+        std::string commPath = StringPrintf("%s/%s/comm", taskPath.c_str(), tidStr.c_str());
+        std::string wchanPath = StringPrintf("%s/%s/wchan", taskPath.c_str(), tidStr.c_str());
         OHOS::HiviewDFX::LoadStringFromFile(commPath, comm);
         OHOS::HiviewDFX::LoadStringFromFile(wchanPath, wchan);
         if (!comm.empty() && !wchan.empty()) {
@@ -216,7 +221,7 @@ void ReadThreadWchan(std::string& result, const int tid, bool withThreadName)
         ReadThreadName(tid, threadName);
         ss << "Tid:" << tid << ", Name:" << threadName << std::endl;
     }
-    std::string wchanPath = "/proc/self/task/" + std::to_string(tid) + "/wchan";
+    std::string wchanPath = StringPrintf("%s/%d/wchan", PROC_SELF_TASK_PATH, tid);
     std::string wchan;
     if (OHOS::HiviewDFX::LoadStringFromFile(wchanPath, wchan)) {
         ss << "wchan:" << wchan << std::endl;

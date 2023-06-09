@@ -17,6 +17,7 @@
 #define DFX_PROCESS_H
 
 #include <cinttypes>
+#include <map>
 #include <memory>
 #include <string>
 
@@ -35,32 +36,34 @@ struct DfxProcessInfo {
 
 class DfxProcess {
 public:
-    static std::shared_ptr<DfxProcess> CreateProcessWithKeyThread(pid_t pid, pid_t nsPid, std::shared_ptr<DfxThread> keyThread);
-    DfxProcess() = default;
+    static std::shared_ptr<DfxProcess> Create(pid_t pid, pid_t nsPid);
+    DfxProcess(pid_t pid, pid_t nsPid);
     virtual ~DfxProcess() = default;
+    void Attach(bool isKey = false);
     void Detach();
 
-    bool InitProcessMaps();
-    bool InitOtherThreads(bool attach = true);
+    bool InitOtherThreads(bool attach = false);
+    std::vector<std::shared_ptr<DfxThread>> GetOtherThreads() const;
+    void ClearOtherThreads();
+    pid_t ChangeTid(pid_t tid, bool ns);
 
     void SetFatalMessage(const std::string &msg);
     std::string GetFatalMessage() const;
+    void InitProcessMaps();
     void SetMaps(std::shared_ptr<DfxElfMaps> maps);
     std::shared_ptr<DfxElfMaps> GetMaps() const;
-    void SetThreads(const std::vector<std::shared_ptr<DfxThread>> &threads);
-    std::vector<std::shared_ptr<DfxThread>> GetThreads() const;
-    std::shared_ptr<DfxThread> GetKeyThread() const;
 
     DfxProcessInfo processInfo_;
+    std::shared_ptr<DfxThread> keyThread_ = nullptr;
+    std::shared_ptr<DfxThread> vmThread_ = nullptr;
 private:
-    bool InitProcessThreads(std::shared_ptr<DfxThread> keyThread);
-    void InsertThreadNode(pid_t tid, pid_t nsTid, bool attach = true);
+    DfxProcess() = default;
+    void InitProcessInfo(pid_t pid, pid_t nsPid);
 
-private:
     std::string fatalMsg_ = "";
     std::shared_ptr<DfxElfMaps> maps_;
-    std::shared_ptr<DfxThread> keyThread_ = nullptr;
-    std::vector<std::shared_ptr<DfxThread>> threads_;
+    std::vector<std::shared_ptr<DfxThread>> otherThreads_;
+    std::map<int, int> kvThreads_;
 };
 } // namespace HiviewDFX
 } // namespace OHOS
