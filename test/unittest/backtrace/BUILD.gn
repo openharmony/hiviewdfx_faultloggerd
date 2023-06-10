@@ -47,6 +47,8 @@ ohos_unittest("backtrace_local_test") {
   include_dirs = [
     "$faultloggerd_path/common",
     "$faultloggerd_path/test/utils",
+    "$faultloggerd_path/frameworks/unwinder/include",
+    "$faultloggerd_path/interfaces/innerkits/backtrace",
   ]
   sources = [ "backtrace_local_test.cpp" ]
   deps = [

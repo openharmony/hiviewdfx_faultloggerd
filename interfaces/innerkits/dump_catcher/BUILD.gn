@@ -68,24 +68,7 @@ if (defined(ohos_lite)) {
   config("dfx_dump_catcher_config") {
     visibility = [ "*:*" ]
 
-    include_dirs = [
-      "include",
-      "$faultloggerd_interfaces_path/common",
-      "$faultloggerd_path/common",
-      "//third_party/libunwind/include",
-      "//third_party/libunwind/src",
-    ]
-
-    if (target_cpu == "arm") {
-      include_dirs += [ "//third_party/libunwind/include/tdep-arm" ]
-    } else if (target_cpu == "arm64") {
-      include_dirs += [ "//third_party/libunwind/include/tdep-aarch64" ]
-    } else if (target_cpu == "x64" || target_cpu == "x86_64") {
-      include_dirs += [ "//third_party/libunwind/include/tdep-x86_64" ]
-    } else if (target_cpu == "mipsel") {
-      include_dirs += [ "//third_party/libunwind/include/tdep-mips" ]
-    }
-
+    include_dirs = [ "include" ]
     defines = [
       "HAVE_CONFIG_H",
       "HAVE_ELF_H",
@@ -97,7 +80,22 @@ if (defined(ohos_lite)) {
     public_configs = [ ":dfx_dump_catcher_config" ]
 
     sources = dumpcatcher_sources
-
+    include_dirs = [
+      "$faultloggerd_interfaces_path/common",
+      "$faultloggerd_path/common",
+      "//third_party/libunwind/include",
+      "//third_party/libunwind/src",
+    ]
+    if (target_cpu == "arm") {
+      include_dirs += [ "//third_party/libunwind/include/tdep-arm" ]
+    } else if (target_cpu == "arm64") {
+      include_dirs += [ "//third_party/libunwind/include/tdep-aarch64" ]
+    } else if (target_cpu == "x64" || target_cpu == "x86_64") {
+      include_dirs += [ "//third_party/libunwind/include/tdep-x86_64" ]
+    } else if (target_cpu == "mipsel") {
+      include_dirs += [ "//third_party/libunwind/include/tdep-mips" ]
+    }
+    version_script = "libdfx_dumpcatcher.map"
     deps = [
       "$faultloggerd_path/common/dfxlog:static_common_log",
       "$faultloggerd_path/common/dfxutil:dfx_util",

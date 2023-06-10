@@ -105,12 +105,4 @@ static const int DUMP_TYPE_KERNEL = -3;
     ((byte) & 0x04 ? '1' : '0'), \
     ((byte) & 0x02 ? '1' : '0'), \
     ((byte) & 0x01 ? '1' : '0')
-
-typedef struct ProcInfo {
-    int pid;
-    int ppid;
-    int nsPid;
-    bool ns;
-} ProcInfo;
-
 #endif // DFX_DEFINE_H

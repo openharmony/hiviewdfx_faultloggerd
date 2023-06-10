@@ -23,10 +23,22 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-// we may fail to unwind in processdump in some circumstances, such as processdump crash or execve timeout
-// in such cases, we should try unwind in signal handler rather than lost a crash event
-// only use for collecting crash signal
+
+/**
+ * @brief handle processdump crash
+ *   we may fail to unwind in processdump in some circumstances, such as processdump crash or execve timeout
+ *   in such cases, we should try unwind in signal handler rather than lost a crash event
+ *   only use for collecting crash signal
+ * @param request info about process dump request
+*/
 void CrashLocalHandler(const struct ProcessDumpRequest* request);
+
+/**
+ * @brief handle processdump crash and print log to file
+ *
+ * @param fd file descriptor
+ * @param request info about process dump request
+*/
 void CrashLocalHandlerFd(const int fd, const struct ProcessDumpRequest* request);
 #ifdef __cplusplus
 }

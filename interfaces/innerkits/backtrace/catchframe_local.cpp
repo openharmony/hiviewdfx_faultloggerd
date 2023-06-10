@@ -37,14 +37,16 @@
 #include "strings.h"
 #include "libunwind.h"
 #include "libunwind_i-ohos.h"
-
-#include "dfx_frame.h"
-#include "procinfo.h"
+#include "dfx_symbols.h"
 #include "backtrace_local_context.h"
 #include "backtrace_local_thread.h"
-
+// forward declaration
+struct unw_addr_space;
+typedef struct unw_addr_space *unw_addr_space_t;
 namespace OHOS {
 namespace HiviewDFX {
+unw_addr_space_t as_ {nullptr};
+std::shared_ptr<DfxSymbols> symbol_ {nullptr};
 
 DfxCatchFrameLocal::DfxCatchFrameLocal()
 {

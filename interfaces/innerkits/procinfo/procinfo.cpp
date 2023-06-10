@@ -24,6 +24,7 @@
 #include <securec.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include "dfx_define.h"
 #include "dfx_util.h"
 #include "file_util.h"
 

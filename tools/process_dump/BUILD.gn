@@ -120,6 +120,7 @@ if (defined(ohos_lite)) {
       "$faultloggerd_interfaces_path/common",
       "$faultloggerd_path/common",
       "$faultloggerd_path/interfaces/rust/rustc_demangle",
+      "$faultloggerd_path/interfaces/innerkits/signal_handler",
     ]
 
     cflags_cc = [ "-DRUSTC_DEMANGLE" ]

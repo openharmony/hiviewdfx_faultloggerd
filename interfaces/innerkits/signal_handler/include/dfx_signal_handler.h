@@ -19,14 +19,28 @@
 #include <threads.h>
 #include <signal.h>
 #include <ucontext.h>
-#include "dfx_define.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
-
+/**
+ * @brief callback function of thread infomation when thread crash
+ *
+ * @param buf buffer for writing thread infomation
+ * @param len length of buffer
+ * @param ucontext userlevel context
+*/
 typedef void(*ThreadInfoCallBack)(char* buf, size_t len, void* ucontext);
+/**
+ * @brief set callback function of thread infomation
+ *
+ * @param func  callback function of thread infomation
+*/
 void SetThreadInfoCallback(ThreadInfoCallBack func);
+
+/**
+ * @brief install signal handler
+*/
 void DFX_InstallSignalHandler(void);
 
 #ifdef __cplusplus
