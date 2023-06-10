@@ -24,12 +24,20 @@
 extern "C" {
 #endif
 
+/**
+ * @brief ProcessDump type
+ */
 enum ProcessDumpType : int32_t {
+    /** dump process stack */
     DUMP_TYPE_PROCESS,
+    /** dump thread stack */
     DUMP_TYPE_THREAD,
 };
 
-// keep sync with the definition in hitracec.h
+/**
+ * @brief Process trace information
+ * keep sync with the definition in hitracec.h
+ */
 typedef struct TraceInfo {
 #if __BYTE_ORDER == __LITTLE_ENDIAN
     uint64_t valid : 1;
@@ -52,20 +60,39 @@ typedef struct TraceInfo {
 #endif
 } TraceInfo;
 
+/**
+ * @brief ProcessDump request information
+ * It is used to save and transfer the current process context from signalhandler to processdump,
+ * and also contains some other information of the process.
+ */
 struct ProcessDumpRequest {
+    /** processdump type */
     enum ProcessDumpType type;
+    /** thread id */
     int32_t tid;
+    /** asynchronous thread id */
     int32_t recycleTid;
+    /** process id */
     int32_t pid;
+    /** virtual process id */
     int32_t vmPid;
+    /** process user id */
     uint32_t uid;
+    /** reserved field */
     uint64_t reserved;
+    /** timestamp */
     uint64_t timeStamp;
+    /** current process signal context */
     siginfo_t siginfo;
+    /** current process context */
     ucontext_t context;
+    /** thread name */
     char threadName[NAME_LEN];
+    /** process name */
     char processName[NAME_LEN];
+    /** hilog last fatal log message */
     char lastFatalMessage[MAX_FATAL_MSG_SIZE];
+    /** process trace info */
     TraceInfo traceInfo;
 };
 #ifdef __cplusplus

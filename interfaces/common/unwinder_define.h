@@ -20,6 +20,9 @@
 
 namespace OHOS {
 namespace HiviewDFX {
+/**
+ * @brief chip architecture
+ */
 enum ArchType : uint8_t {
     ARCH_UNKNOWN = 0,
     ARCH_ARM,
@@ -28,10 +31,16 @@ enum ArchType : uint8_t {
     ARCH_X86_64,
 };
 
+/**
+ * @brief Unwind mode
+ */
 enum UnwinderMode {
-    DWARF_UNWIND = 0,                   // Dwarf
-    FRAMEPOINTER_UNWIND,                // FramePointer
-    QUICKEN_UNWIND,                     // Quicken
+    /** Dwarf unwind */
+    DWARF_UNWIND = 0,
+    /** Frame pointer unwind */
+    FRAMEPOINTER_UNWIND,
+    /** Quick unwind table */
+    QUICKEN_UNWIND,
 };
 } // namespace HiviewDFX
 } // namespace OHOS

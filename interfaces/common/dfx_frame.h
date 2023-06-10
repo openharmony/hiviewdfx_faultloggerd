@@ -20,14 +20,26 @@
 
 namespace OHOS {
 namespace HiviewDFX {
+/**
+ * @brief Native Frame struct
+ * It serves as the public definition of the native stack frame.
+ */
 struct DfxFrame {
+    /** frame index */
     size_t index {0};
+    /** program counter register value */
     uint64_t pc {0};
+    /** relative program counter value */
     uint64_t relPc {0};
+    /** stack pointer value */
     uint64_t sp {0};
+    /** function byte offset */
     uint64_t funcOffset {0};
+    /** elf file name */
     std::string mapName {""};
+    /** function name */
     std::string funcName {""};
+    /** elf file build id */
     std::string buildId {""};
 };
 } // namespace HiviewDFX
