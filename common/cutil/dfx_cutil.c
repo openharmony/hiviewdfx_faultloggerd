@@ -27,7 +27,6 @@
 #include "dfx_define.h"
 
 static const char PID_STR_NAME[] = "Pid:";
-static const int ARGS_COUNT_ONE = 1;
 
 static bool ReadStringFromFile(const char* path, char* dst, size_t dstSz)
 {
@@ -42,13 +41,11 @@ static bool ReadStringFromFile(const char* path, char* dst, size_t dstSz)
     int fd = -1;
     fd = OHOS_TEMP_FAILURE_RETRY(open(path, O_RDONLY));
     if (fd < 0) {
-        perror("Failed to open path.");
         return false;
     }
 
     ssize_t nRead = OHOS_TEMP_FAILURE_RETRY(read(fd, name, NAME_LEN - 1));
     if (nRead <= 0) {
-        perror("Failed to read.");
         close(fd);
         return false;
     }
@@ -65,7 +62,6 @@ static bool ReadStringFromFile(const char* path, char* dst, size_t dstSz)
     nameFilter[NAME_LEN - 1] = '\0';
 
     if (memcpy_s(dst, dstSz, nameFilter, strlen(nameFilter) + 1) != 0) {
-        perror("Failed to memcpy name.");
         close(fd);
         return false;
     }
@@ -89,7 +85,6 @@ pid_t GetRealPid(void)
     pid_t pid = syscall(SYS_getpid);
     int fd = OHOS_TEMP_FAILURE_RETRY(open(PROC_SELF_STATUS_PATH, O_RDONLY));
     if (fd < 0) {
-        perror("Failed to open status.");
         return pid;
     }
 
@@ -100,15 +95,12 @@ pid_t GetRealPid(void)
     while (1) {
         nRead = OHOS_TEMP_FAILURE_RETRY(read(fd, &b, sizeof(char)));
         if (nRead <= 0 || b == '\0') {
-            perror("Failed to read.");
             break;
         }
 
         if (b == '\n' || i == LOG_BUF_LEN) {
             if (strncmp(buf, PID_STR_NAME, strlen(PID_STR_NAME)) == 0) {
-                if (sscanf_s(buf, "%*[^0-9]%d", &pid) != ARGS_COUNT_ONE) {
-                    perror("Failed to sscanf.");
-                }
+                (void)sscanf_s(buf, "%*[^0-9]%d", &pid);
                 break;
             }
             i = 0;
@@ -136,7 +128,7 @@ bool TrimAndDupStr(const char* src, char* dst)
         return false;
     }
 
-    int i = 0, j = 0;
+    size_t i = 0, j = 0;
     for (; i < strlen(src); ++i) {
         if (src[i] != ' ') {
             dst[j++] = src[i];

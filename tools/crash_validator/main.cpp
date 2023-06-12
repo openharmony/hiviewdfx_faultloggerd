@@ -25,46 +25,35 @@
 #include "crash_validator.h"
 #include "ipc_skeleton.h"
 
-static bool g_needExit = false;
-static std::condition_variable g_cv;
-static std::mutex g_printLock;
 static std::shared_ptr<OHOS::HiviewDFX::CrashValidator> g_validator = nullptr;
-static void SigIntHandler(int sig)
+static void SigIntHandler()
 {
     constexpr time_t breakTime = 5;
     static time_t lastHandleTime = 0;
     auto now = time(nullptr);
     if (now - lastHandleTime < breakTime) {
-        g_needExit = true;
-        g_cv.notify_one();
-    }
-
-    lastHandleTime = now;
-    g_cv.notify_one();
-}
-
-static void PrinterThread()
-{
-    do {
-        std::unique_lock<std::mutex> lk(g_printLock);
-        g_cv.wait(lk);
-        if (g_needExit) {
-            raise(SIGTERM);
-            break;
-        }
-
+        raise(SIGTERM);
+    } else {
         if (g_validator != nullptr) {
             g_validator->Dump(1);
         }
-    } while (!g_needExit);
+    }
+    lastHandleTime = now;
 }
 
 int main(int argc, char *argv[])
 {
     g_validator = std::make_shared<OHOS::HiviewDFX::CrashValidator>();
     g_validator->InitSysEventListener();
-    signal(SIGINT, SigIntHandler);
-    std::thread thread(PrinterThread);
-    OHOS::IPCSkeleton::GetInstance().JoinWorkThread();
+    sigset_t waitMask;
+    sigemptyset(&waitMask);
+    sigaddset(&waitMask, SIGINT);
+    pthread_sigmask(SIG_SETMASK, &waitMask, nullptr);
+    int sig = 0;
+    int ret = -1;
+    do {
+        ret = sigwait(&waitMask, &sig);
+        SigIntHandler();
+    } while (ret == 0);
     return 0;
 }

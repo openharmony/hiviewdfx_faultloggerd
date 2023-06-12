@@ -217,10 +217,7 @@ HWTEST_F (ProcessDumpTest, DfxProcessTest003, TestSize.Level2)
 HWTEST_F (ProcessDumpTest, DfxProcessTest004, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "DfxProcessTest004: start.";
-    pid_t pid = 100;
-    pid_t tid = 100;
-    std::shared_ptr<DfxThread> thread = DfxThread::Create(pid, tid, tid);
-    std::shared_ptr<DfxProcess> process = DfxProcess::Create(pid, pid);
+    std::shared_ptr<DfxProcess> process = DfxProcess::Create(getpid(), getpid());
     auto ret = process->InitOtherThreads();
     EXPECT_EQ(true, ret) << "DfxProcessTest004 Failed";
     process->Attach();
@@ -291,7 +288,9 @@ HWTEST_F (ProcessDumpTest, DfxUnwindRemoteTest001, TestSize.Level2)
     std::shared_ptr<DfxThread> thread = DfxThread::Create(pid, tid, tid);
     std::shared_ptr<DfxProcess> process = DfxProcess::Create(pid, pid);
     process->keyThread_ = thread;
+    thread->Attach();
     bool ret = DfxUnwindRemote::GetInstance().UnwindProcess(process);
+    thread->Detach();
     EXPECT_EQ(true, ret) << "DfxUnwindRemoteTest001 Failed";
     GTEST_LOG_(INFO) << "DfxUnwindRemoteTest001: end.";
 }
@@ -304,7 +303,7 @@ HWTEST_F (ProcessDumpTest, DfxUnwindRemoteTest001, TestSize.Level2)
 HWTEST_F (ProcessDumpTest, DfxUnwindRemoteTest002, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "DfxUnwindRemoteTest002: start.";
-    pid_t pid = GetProcessPid(ACCOUNTMGR_NAME);
+    pid_t pid = GetProcessPid(FOUNDATION_NAME);
     pid_t tid = pid;
     std::shared_ptr<DfxThread> thread = DfxThread::Create(pid, tid, tid);
     std::shared_ptr<DfxProcess> process = DfxProcess::Create(pid, pid);

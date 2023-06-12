@@ -409,7 +409,7 @@ static bool WaitProcessdumpExit(int childPid)
     int ret = -1;
     int status = 0;
     int startTime = (int)time(NULL);
-    DFXLOG_INFO("Start wait for processdump(%d) exit.", childPid);
+    DFXLOG_INFO("(%d) wait processdump(%d) exit.", syscall(SYS_gettid), childPid);
     do {
         errno = 0;
         ret = waitpid(childPid, &status, WNOHANG);
@@ -530,7 +530,8 @@ static bool DFX_SigchainHandler(int sig, siginfo_t *si, void *context)
         ExitIfSandboxPid(sig);
     } else {
         ret = true;
-        int recycleTid = clone(CloneAndDoProcessDump, g_reservedChildStack, CLONE_THREAD | CLONE_SIGHAND | CLONE_VM, NULL);
+        int recycleTid = clone(CloneAndDoProcessDump, g_reservedChildStack,\
+            CLONE_THREAD | CLONE_SIGHAND | CLONE_VM, NULL);
         if (recycleTid == -1) {
             DFXLOG_ERROR("Failed to clone thread for recycle dump process, errno(%d)", errno);
             pthread_mutex_unlock(&g_signalHandlerMutex);

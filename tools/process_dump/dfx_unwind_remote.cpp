@@ -76,22 +76,20 @@ bool DfxUnwindRemote::UnwindProcess(std::shared_ptr<DfxProcess> process)
     }
     unw_set_caching_policy(as_, UNW_CACHE_GLOBAL);
 
-    std::shared_ptr<DfxThread> unwThread = process->keyThread_;
-    if (ProcessDumper::GetInstance().IsCrash()) {
+    if (ProcessDumper::GetInstance().IsCrash() && process->vmThread_) {
         unw_set_target_pid(as_, process->vmThread_->threadInfo_.tid);
-        unwThread = process->vmThread_;
     } else {
         unw_set_target_pid(as_, process->processInfo_.pid);
     }
 
     do {
-        if (!unwThread) {
+        if (!process->keyThread_) {
             break;
         }
 
-        ret = UnwindThread(process, unwThread);
+        ret = UnwindThread(process, process->keyThread_);
         if (!ret) {
-            UnwindThreadFallback(process, unwThread);
+            UnwindThreadFallback(process, process->keyThread_);
         }
 
         if (ProcessDumper::GetInstance().IsCrash()) {
@@ -100,17 +98,18 @@ bool DfxUnwindRemote::UnwindProcess(std::shared_ptr<DfxProcess> process)
             }
         }
 
-        unw_set_target_pid(as_, process->processInfo_.pid);
         auto threads = process->GetOtherThreads();
         if (threads.empty()) {
             break;
         }
+        unw_set_target_pid(as_, process->processInfo_.pid);
 
         size_t index = 0;
         for (auto thread : threads) {
-            if (index == 1) {
+            if ((index == 1) && ProcessDumper::GetInstance().IsCrash()) {
                 Printer::GetInstance().PrintThreadsHeaderByConfig();
             }
+
             if (index != 0) {
                 DfxRingBufferWrapper::GetInstance().AppendMsg("\n");
             }
@@ -125,8 +124,8 @@ bool DfxUnwindRemote::UnwindProcess(std::shared_ptr<DfxProcess> process)
     } while (false);
 
     if (ProcessDumper::GetInstance().IsCrash()) {
-        Printer::GetInstance().PrintThreadRegsByConfig(unwThread);
-        Printer::GetInstance().PrintThreadFaultStackByConfig(process, unwThread);
+        Printer::GetInstance().PrintThreadRegsByConfig(process->keyThread_);
+        Printer::GetInstance().PrintThreadFaultStackByConfig(process, process->keyThread_);
         Printer::GetInstance().PrintProcessMapsByConfig(process);
     }
 

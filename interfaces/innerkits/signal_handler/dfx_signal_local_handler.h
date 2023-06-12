@@ -24,9 +24,23 @@
 extern "C" {
 #endif
 
+/**
+ * @brief get file descriptor when crash
+ *
+ * @return file descriptor
+*/
 typedef int (*CrashFdFunc) (void);
-void DFX_GetCrashFdFunc(CrashFdFunc fn);
 
+/**
+ * @brief get CrashFdFunc
+ * @param fn function name of CrashFdFunc
+ *
+*/
+void DFX_GetCrashFdFunc(CrashFdFunc fn);
+/**
+ * @brief install local signal handler
+ *
+*/
 void DFX_InstallLocalSignalHandler(void);
 
 #ifdef __cplusplus

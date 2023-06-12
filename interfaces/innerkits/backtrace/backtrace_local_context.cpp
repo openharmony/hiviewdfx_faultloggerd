@@ -57,7 +57,7 @@ static std::shared_ptr<ThreadContext> GetContextLocked(int32_t tid)
         return threadContext;
     }
 
-    if (it->second->tid == ThreadContextStatus::ContextUnused) {
+    if (it->second->tid == ThreadContextStatus::CONTEXT_UNUSED) {
         it->second->tid = tid;
         (void)memset_s(it->second->ctx, sizeof(unw_context_t), 0, sizeof(unw_context_t));
         return it->second;
@@ -74,7 +74,7 @@ static bool RemoveContextLocked(int32_t tid)
         return true;
     }
 
-    if (it->second->tid == ThreadContextStatus::ContextUnused) {
+    if (it->second->tid == ThreadContextStatus::CONTEXT_UNUSED) {
         g_contextMap.erase(it);
         return true;
     }
@@ -130,7 +130,7 @@ void BacktraceLocalContext::CleanUp()
     while (it != g_contextMap.end()) {
         if (it->second == nullptr) {
             it = g_contextMap.erase(it);
-        } else if (it->second->tid == ThreadContextStatus::ContextUnused) {
+        } else if (it->second->tid == ThreadContextStatus::CONTEXT_UNUSED) {
             it = g_contextMap.erase(it);
         } else {
             it++;
@@ -148,7 +148,7 @@ void BacktraceLocalContext::CopyContextAndWaitTimeout(int sig, siginfo_t *si, vo
     std::unique_lock<std::mutex> lock(ctxPtr->lock);
     int32_t tid = syscall(SYS_gettid);
     if (!ctxPtr->tid.compare_exchange_strong(tid,
-        static_cast<int32_t>(ThreadContextStatus::ContextUsing))) {
+        static_cast<int32_t>(ThreadContextStatus::CONTEXT_USING))) {
         return;
     }
     if (ctxPtr->ctx != nullptr) {
@@ -177,12 +177,12 @@ void BacktraceLocalContext::CopyContextAndWaitTimeout(int sig, siginfo_t *si, vo
         }
 #endif
     } else {
-        ctxPtr->tid = static_cast<int32_t>(ThreadContextStatus::ContextUnused);
+        ctxPtr->tid = static_cast<int32_t>(ThreadContextStatus::CONTEXT_UNUSED);
         return;
     }
-    ctxPtr->tid = static_cast<int32_t>(ThreadContextStatus::ContextReady);
+    ctxPtr->tid = static_cast<int32_t>(ThreadContextStatus::CONTEXT_READY);
     ctxPtr->cv.wait_for(lock, g_timeOut);
-    ctxPtr->tid = static_cast<int32_t>(ThreadContextStatus::ContextUnused);
+    ctxPtr->tid = static_cast<int32_t>(ThreadContextStatus::CONTEXT_UNUSED);
 }
 
 bool BacktraceLocalContext::InstallSigHandler()
@@ -227,13 +227,13 @@ bool BacktraceLocalContext::SignalRequestThread(int32_t tid, ThreadContext* ctx)
     si.si_code = -SIGLOCAL_DUMP;
     if (syscall(SYS_rt_tgsigqueueinfo, getpid(), tid, si.si_signo, &si) != 0) {
         DFXLOG_WARN("Failed to queue signal(%d) to %d, errno(%d).", si.si_signo, tid, errno);
-        ctx->tid = static_cast<int32_t>(ThreadContextStatus::ContextUnused);
+        ctx->tid = static_cast<int32_t>(ThreadContextStatus::CONTEXT_UNUSED);
         return false;
     }
 
     int left = 10000; // 10000 : max wait 10ms for single thread
     constexpr int pollTime = 10; // 10 : 10us
-    while (ctx->tid.load() != ThreadContextStatus::ContextReady) {
+    while (ctx->tid.load() != ThreadContextStatus::CONTEXT_READY) {
         int ret = usleep(pollTime);
         if (ret == 0) {
             left -= pollTime;
@@ -243,7 +243,7 @@ bool BacktraceLocalContext::SignalRequestThread(int32_t tid, ThreadContext* ctx)
 
         if (left <= 0 &&
             ctx->tid.compare_exchange_strong(tid,
-            static_cast<int32_t>(ThreadContextStatus::ContextUnused))) {
+            static_cast<int32_t>(ThreadContextStatus::CONTEXT_UNUSED))) {
             DFXLOG_WARN("Failed to wait for %d to write context.", tid);
             return false;
         }

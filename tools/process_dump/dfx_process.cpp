@@ -67,7 +67,6 @@ bool DfxProcess::InitOtherThreads(bool attach)
     }
 
     for (size_t i = 0; i < nstids.size(); ++i) {
-        kvThreads_[nstids[i]] = tids[i];
         if (nstids[i] == processInfo_.recycleTid) {
             DFXLOG_DEBUG("skip recycle thread:%d.", nstids[i]);
             continue;
@@ -89,8 +88,19 @@ bool DfxProcess::InitOtherThreads(bool attach)
 
 pid_t DfxProcess::ChangeTid(pid_t tid, bool ns)
 {
-    if ((processInfo_.pid == processInfo_.nsPid) || kvThreads_.empty()) {
+    if (processInfo_.pid == processInfo_.nsPid) {
         return tid;
+    }
+
+    std::vector<int> tids;
+    std::vector<int> nstids;
+    if (kvThreads_.empty()) {
+        if (!GetTidsByPid(processInfo_.pid, tids, nstids)) {
+            return tid;
+        }
+        for (size_t i = 0; i < nstids.size(); ++i) {
+            kvThreads_[nstids[i]] = tids[i];
+        }
     }
 
     for (auto iter = kvThreads_.begin(); iter != kvThreads_.end(); iter++) {
@@ -114,16 +124,16 @@ void DfxProcess::ClearOtherThreads()
     otherThreads_.clear();
 }
 
-void DfxProcess::Attach(bool isKey)
+void DfxProcess::Attach(bool hasKey)
 {
+    if (hasKey && keyThread_) {
+        keyThread_->Attach();
+    }
+
     if (otherThreads_.empty()) {
         return;
     }
-
     for (auto thread : otherThreads_) {
-        if (!isKey && keyThread_ && (thread->threadInfo_.nsTid == keyThread_->threadInfo_.nsTid)) {
-            continue;
-        }
         thread->Attach();
     }
 }

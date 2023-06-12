@@ -28,6 +28,7 @@ if (defined(ohos_lite)) {
         "$c_utils_include_path",
         "$faultloggerd_frameworks_path/unwinder/include",
         "$faultloggerd_interfaces_path/common",
+        "$faultloggerd_interfaces_path/innerkits/procinfo/include",
         "$faultloggerd_path/common",
         "$faultloggerd_path/tools/process_dump",
         "$faultloggerd_path/interfaces/innerkits/backtrace/include/",
@@ -61,6 +62,7 @@ if (defined(ohos_lite)) {
       "$faultloggerd_interfaces_path/common",
       "$faultloggerd_interfaces_path/innerkits/backtrace/include/",
       "$faultloggerd_interfaces_path/innerkits/dump_catcher/include/",
+      "$faultloggerd_path/common",
       "$faultloggerd_path/test/utils",
     ]
   }

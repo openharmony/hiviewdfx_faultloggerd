@@ -87,7 +87,7 @@ void Printer::PrintProcessMapsByConfig(std::shared_ptr<DfxProcess> process)
 void Printer::PrintThreadsHeaderByConfig()
 {
     if (DfxConfig::GetConfig().displayBacktrace) {
-        DfxRingBufferWrapper::GetInstance().AppendMsg("Other thread info:\n");
+        DfxRingBufferWrapper::GetInstance().AppendMsg("\nOther thread info:\n");
     }
 }
 

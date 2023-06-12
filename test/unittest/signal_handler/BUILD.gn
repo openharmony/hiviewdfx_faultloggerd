@@ -32,6 +32,7 @@ if (defined(ohos_lite)) {
     include_dirs = [
       "$faultloggerd_path/common",
       "$faultloggerd_path/interfaces/innerkits/signal_handler/include/",
+      "$faultloggerd_path/interfaces/innerkits/signal_handler/",
       "$faultloggerd_path/test/utils",
     ]
   }

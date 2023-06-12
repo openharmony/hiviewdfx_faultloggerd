@@ -43,6 +43,7 @@ if (defined(ohos_lite)) {
       "$faultloggerd_path/tools/process_dump",
       "$hilog_lite_include_path",
       "$faultloggerd_path/interfaces/innerkits/faultloggerd_client/include",
+      "$faultloggerd_path/interfaces/innerkits/faultloggerd_client",
     ]
 
     sources = faultloggerd_sources
@@ -67,6 +68,8 @@ if (defined(ohos_lite)) {
       "$faultloggerd_path/common/dfxlog",
       "$faultloggerd_path/common/dfxutil",
       "$faultloggerd_path/tools/process_dump",
+      "$faultloggerd_path/interfaces/innerkits/faultloggerd_client",
+      "$faultloggerd_path/interfaces/innerkits/signal_handler",
     ]
   }
 

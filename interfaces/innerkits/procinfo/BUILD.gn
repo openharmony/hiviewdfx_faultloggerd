@@ -50,7 +50,7 @@ if (defined(ohos_lite)) {
       "$faultloggerd_path/common/dfxutil:dfx_util",
       "//third_party/bounds_checking_function:libsec_shared",
     ]
-
+    version_script = "libprocinfo.map"
     external_deps = [
       "c_utils:utils",
       "hilog_native:libhilog",

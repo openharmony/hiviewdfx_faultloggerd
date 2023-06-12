@@ -29,7 +29,6 @@ extern "C" {
 
 #ifdef ENABLE_MUSL_CUTIL
 static const char PID_STR_NAME[] = "Pid:";
-static const int ARGS_COUNT_ONE = 1;
 
 static bool ReadStringFromFile(const char* path, char* dst, size_t dstSz)
 {
@@ -100,7 +99,7 @@ pid_t GetRealPid(void)
 
         if (b == '\n' || i == LOG_BUF_LEN) {
             if (strncmp(buf, PID_STR_NAME, strlen(PID_STR_NAME)) == 0) {
-                sscanf(buf, "%*[^0-9]%d", &pid);
+                (void)sscanf(buf, "%*[^0-9]%d", &pid);
                 break;
             }
             i = 0;

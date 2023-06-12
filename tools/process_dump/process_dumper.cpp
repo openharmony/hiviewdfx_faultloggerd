@@ -168,8 +168,6 @@ int ProcessDumper::InitProcessInfo(std::shared_ptr<ProcessDumpRequest> request)
         }
     }
 
-    process_->InitOtherThreads();
-
     pid_t dumpTid = request->siginfo.si_value.sival_int;
     pid_t nsTid = request->tid;
     pid_t tid = process_->ChangeTid(nsTid, true);
@@ -195,10 +193,11 @@ int ProcessDumper::InitProcessInfo(std::shared_ptr<ProcessDumpRequest> request)
     }
 
     if (isCrash_) {
+        process_->InitOtherThreads();
         process_->Attach();
     } else {
-        if (dumpTid != 0) {
-            process_->ClearOtherThreads();
+        if (dumpTid == 0) {
+            process_->InitOtherThreads();
         }
     }
     return 0;
