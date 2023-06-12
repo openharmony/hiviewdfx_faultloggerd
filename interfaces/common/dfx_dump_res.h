@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -23,21 +23,39 @@ namespace OHOS {
 namespace HiviewDFX {
 const int MAX_DUMP_RES_MSG_LEN = 128;
 
+/**
+ * @brief Processdump error code
+ * It describes the status of dumping.
+ */
 enum DumpErrorCode : int32_t {
-    DUMP_ESUCCESS = 0,  /* no error */
-    DUMP_EREADREQUEST,  /* read request error */
-    DUMP_EGETPPID,      /* ppid is crash */
-    DUMP_EATTACH,       /* ptrace attach thread failed */
-    DUMP_EGETFD,        /* get fd error */
-    DUMP_ENOMEM,        /* out of memory */
-    DUMP_EBADREG,       /* bad register number */
-    DUMP_EREADONLYREG,  /* attempt to write read-only register */
-    DUMP_ESTOPUNWIND,   /* stop unwinding */
-    DUMP_EINVALIDIP,    /* invalid IP */
-    DUMP_EBADFRAME,     /* bad frame */
-    DUMP_EINVAL,        /* unsupported operation or bad value */
-    DUMP_EBADVERSION,   /* unwind info has unsupported version */
-    DUMP_ENOINFO,       /* no unwind info found */
+    /** no error */
+    DUMP_ESUCCESS = 0,
+    /** read request error */
+    DUMP_EREADREQUEST,
+    /** ppid is crash */
+    DUMP_EGETPPID,
+    /** ptrace attach thread failed */
+    DUMP_EATTACH,
+    /** get fd error */
+    DUMP_EGETFD,
+    /** out of memory */
+    DUMP_ENOMEM,
+    /** bad register number */
+    DUMP_EBADREG,
+    /** attempt to write read-only register */
+    DUMP_EREADONLYREG,
+    /** stop unwinding */
+    DUMP_ESTOPUNWIND,
+    /** invalid IP */
+    DUMP_EINVALIDIP,
+    /** bad frame */
+    DUMP_EBADFRAME,
+    /** unsupported operation or bad value */
+    DUMP_EINVAL,
+    /** unwind info has unsupported version */
+    DUMP_EBADVERSION,
+    /** no unwind info found */
+    DUMP_ENOINFO,
 };
 
 class DfxDumpRes {

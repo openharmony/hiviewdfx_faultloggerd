@@ -24,8 +24,6 @@ if (!defined(ohos_lite)) {
     include_dirs = [
       "include",
       "$faultloggerd_path/common",
-      "$faultloggerd_path/common/dfxlog",
-      "$faultloggerd_path/common/dfxutil",
     ]
     defines = [ "HAVE_LIBUNWIND" ]
 
@@ -79,6 +77,8 @@ if (!defined(ohos_lite)) {
     include_dirs = [ "../../../../../../developtools/profiler/device/plugins/native_daemon/include" ]
   }
 
+  # callstack_perf static library only support for hiperf currently.
+  # some configs have to be exposed.
   ohos_static_library("callstack_perf") {
     public_configs = [
       ":common_callstack_config",
@@ -88,30 +88,38 @@ if (!defined(ohos_lite)) {
       "//third_party/googletest:gtest_config",
     ]
 
+    include_dirs = [
+      "$faultloggerd_path/common/dfxlog",
+      "$faultloggerd_path/common/dfxutil",
+    ]
+
     sources = callstack_sources
 
+    deps = []
     public_deps = []
 
     if (is_ohos) {
-      deps = [ "$faultloggerd_path/common/dfxlog:static_common_log" ]
-      external_deps = [ "c_utils:utils" ]
-      public_deps += [ "//third_party/bounds_checking_function:libsec_shared" ]
+      deps += [
+        "$faultloggerd_path/common/dfxlog:static_common_log",
+        "//third_party/bounds_checking_function:libsec_shared",
+      ]
       if (target_cpu == "arm64") {
         public_deps += [ "//third_party/libunwind:unwind_source_arm64_opt" ]
       } else {
         public_deps += [ "//third_party/libunwind:unwind_source_${target_cpu}" ]
       }
+      external_deps = [ "c_utils:utils" ]
     } else {
-      public_deps += [
-        "//third_party/bounds_checking_function:libsec_static",
-        "//third_party/libunwind:unwind_source_${host_cpu}",
-      ]
+      deps += [ "//third_party/bounds_checking_function:libsec_static" ]
+      public_deps += [ "//third_party/libunwind:unwind_source_${host_cpu}" ]
     }
 
     part_name = "faultloggerd"
     subsystem_name = "hiviewdfx"
   }
 
+  # callstack_nativedaemon static library only support for profiler nativedaemon plugin currently.
+  # some configs have to be exposed.
   ohos_static_library("callstack_nativedaemon") {
     public_configs = [
       ":common_callstack_config",
@@ -121,24 +129,29 @@ if (!defined(ohos_lite)) {
       "//third_party/googletest:gtest_config",
     ]
 
-    sources = callstack_sources
+    include_dirs = [
+      "$faultloggerd_path/common/dfxlog",
+      "$faultloggerd_path/common/dfxutil",
+    ]
 
+    sources = callstack_sources
+    deps = []
     public_deps = []
 
     if (is_ohos) {
-      deps = [ "$faultloggerd_path/common/dfxlog:static_common_log" ]
-      external_deps = [ "c_utils:utils" ]
-      public_deps += [ "//third_party/bounds_checking_function:libsec_shared" ]
+      deps += [
+        "$faultloggerd_path/common/dfxlog:static_common_log",
+        "//third_party/bounds_checking_function:libsec_shared",
+      ]
       if (target_cpu == "arm64") {
         public_deps += [ "//third_party/libunwind:unwind_source_arm64_opt" ]
       } else {
         public_deps += [ "//third_party/libunwind:unwind_source_${target_cpu}" ]
       }
+      external_deps = [ "c_utils:utils" ]
     } else {
-      public_deps += [
-        "//third_party/bounds_checking_function:libsec_static",
-        "//third_party/libunwind:unwind_source_${host_cpu}",
-      ]
+      deps += [ "//third_party/bounds_checking_function:libsec_static" ]
+      public_deps += [ "//third_party/libunwind:unwind_source_${host_cpu}" ]
     }
 
     part_name = "faultloggerd"

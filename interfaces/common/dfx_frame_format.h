@@ -27,11 +27,44 @@ public:
     DfxFrameFormat() = default;
     ~DfxFrameFormat() = default;
 
+    /**
+     * @brief Get the Frame Str object
+     *
+     * @param frame native frame object
+     * @return std::string native frame string
+     */
     static std::string GetFrameStr(const DfxFrame& frame);
+
+    /**
+     * @brief Get the Frame Str object
+     *
+     * @param frame native frame pointer object
+     * @return std::string native frame string
+     */
     static std::string GetFrameStr(const std::shared_ptr<DfxFrame>& frame);
+
+    /**
+     * @brief Get the Frames Str object
+     *
+     * @param frames native frame object list
+     * @return std::string native frames string
+     */
     static std::string GetFramesStr(const std::vector<DfxFrame>& frames);
+
+    /**
+     * @brief Get the Frames Str object
+     *
+     * @param frames native frame pointer list
+     * @return std::string native frames string
+     */
     static std::string GetFramesStr(const std::vector<std::shared_ptr<DfxFrame>>& frames);
 
+    /**
+     * @brief Convert native frame object lists to native frame pointer list
+     *
+     * @param frames native frame object list
+     * @return std::vector<std::shared_ptr<DfxFrame>> native frame pointer list
+     */
     static std::vector<std::shared_ptr<DfxFrame>> ConvertFrames(const std::vector<DfxFrame>& frames);
 };
 } // namespace HiviewDFX

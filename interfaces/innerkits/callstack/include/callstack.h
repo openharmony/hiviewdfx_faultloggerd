@@ -30,9 +30,9 @@
 #include <sys/mman.h>
 #endif
 
+#include "dfx_types.h"
 #include "hashlist.hpp"
 #include "register.h"
-#include "dfx_types.h"
 
 namespace OHOS {
 #ifdef HIPERF_USE_CALLSTACK
@@ -80,12 +80,54 @@ class CallStack {
 public:
     CallStack();
     ~CallStack();
+
+    /**
+     * @brief unwind stack trace by thread context
+     *
+     * The current interface is currently in an intermediate state and is only available for hiperf and profiler.
+     *
+     * @param thread         Virtualthraed pointer
+     * @param abi32          Whether to get architecture type by abi32
+     * @param regs           Register address
+     * @param regsNum        Register number
+     * @param stack          Thread stack address
+     * @param stackSize      Thread stack size
+     * @param maxStackLevel  Max unwind stack trace size
+     * @return true          Unwind successfully
+     * @return false         Failed to unwind
+     */
     bool UnwindCallStack(const VirtualThread &thread, bool abi32, u64 *regs, u64 regsNum,
-                         const u8 *stack, u64 stackSize, std::vector<CallFrame> &,
+                         const u8 *stack, u64 stackSize, std::vector<CallFrame> &callStack,
                          size_t maxStackLevel = MAX_CALL_FRAME_UNWIND_SIZE);
+
+    /**
+     * @brief unwind stack trace by thread context
+     *
+     * The current interface is currently in an intermediate state and is only available for hiperf and profiler.
+     *
+     * @param thread         Virtualthraed pointer
+     * @param regs           Register address
+     * @param regsNum        Register number
+     * @param stack          Thread stack address
+     * @param stackSize      Thread stack size
+     * @param maxStackLevel  Max unwind stack trace size
+     * @return true          Unwind successfully
+     * @return false         Failed to unwind
+     */
     bool UnwindCallStack(const VirtualThread &thread, u64 *regs, u64 regsNum,
-                         const u8 *stack, u64 stackSize, std::vector<CallFrame> &,
+                         const u8 *stack, u64 stackSize, std::vector<CallFrame> &callStack,
                          size_t maxStackLevel = MAX_CALL_FRAME_UNWIND_SIZE);
+
+    /**
+     * @brief Expand stack trace by input calling frames.
+     *
+     * The current interface is currently in an intermediate state and is only available for hiperf and profiler.
+     *
+     * @param tid           thread id
+     * @param callFrames    input callFrames
+     * @param expandLimit   expand stack trace limit
+     * @return * size_t     return the size of expanding stack trace
+     */
     size_t ExpandCallStack(pid_t tid, std::vector<CallFrame> &callFrames, size_t expandLimit = 1u);
 
 private:
