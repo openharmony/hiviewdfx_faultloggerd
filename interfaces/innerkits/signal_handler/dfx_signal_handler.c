@@ -153,7 +153,8 @@ static void FillDumpRequest(int sig, siginfo_t *si, void *context)
 {
     memset(&g_request, 0, sizeof(g_request));
     g_request.type = sig;
-    g_request.pid = syscall(SYS_getpid);
+    g_request.pid = GetRealPid();
+    g_request.nsPid = syscall(SYS_getpid);
     g_request.tid = syscall(SYS_gettid);
     g_request.uid = getuid();
     g_request.reserved = 0;
@@ -249,9 +250,8 @@ static void DFX_SetUpSigAlarmAction(void)
     sigprocmask(SIG_UNBLOCK, &set, NULL);
 }
 
-static int DFX_ExecDump(void *arg)
+static int DFX_ExecDump(void)
 {
-    (void)arg;
     DFX_SetUpEnvironment();
     DFX_SetUpSigAlarmAction();
     alarm(ALARM_TIME_S);
@@ -404,12 +404,12 @@ static void SetSelfThreadParam(const char* name, int priority)
     pthread_setschedparam(pthread_self(), SCHED_FIFO, &schedParam);
 }
 
-static bool WaitChildPidExit(int childPid)
+static bool WaitProcessdumpExit(int childPid)
 {
     int ret = -1;
     int status = 0;
     int startTime = (int)time(NULL);
-    DFXLOG_INFO("Start wait for child process(%d) exit.", childPid);
+    DFXLOG_INFO("(%d) wait processdump(%d) exit.", syscall(SYS_gettid), childPid);
     do {
         errno = 0;
         ret = waitpid(childPid, &status, WNOHANG);
@@ -423,22 +423,19 @@ static bool WaitChildPidExit(int childPid)
         }
 
         if ((int)time(NULL) - startTime > PROCESSDUMP_TIMEOUT) {
-            DFXLOG_INFO("(%d) wait for child process(%d) timeout", g_request.recycleTid, childPid);
+            DFXLOG_INFO("(%d) wait for processdump(%d) timeout", syscall(SYS_gettid), childPid);
             break;
         }
         usleep(SIGNALHANDLER_TIMEOUT); // sleep 10ms
     } while (1);
-    DFXLOG_INFO("(%d) wait for child process(%d) return with ret(%d) status(%d)",
-        g_request.recycleTid, childPid, ret, status);
+    DFXLOG_INFO("(%d) wait for processdump(%d) return with ret(%d) status(%d)",
+        syscall(SYS_gettid), childPid, ret, status);
     return true;
 }
 
-static int DoProcessDump(void* arg)
+static int ForkAndExecProcessDump(void)
 {
-    DFXLOG_INFO("The asynchronous thread(%d) was successfully created.", syscall(SYS_gettid));
-    (void)arg;
     int childPid = -1;
-    g_request.recycleTid = syscall(SYS_gettid);
     SetSelfThreadParam("dump_tmp_thread", 0);
 
     // set privilege for dump ourself
@@ -447,21 +444,29 @@ static int DoProcessDump(void* arg)
     if (!isTracerStatusModified) {
         goto out;
     }
-    DFXLOG_INFO("The asynchronous thread(%d) is ready.", syscall(SYS_gettid));
 
     // fork a child process that could ptrace us
     childPid = ForkBySyscall();
     if (childPid == 0) {
-        _exit(DFX_ExecDump(NULL));
+        DFXLOG_INFO("The exec processdump pid(%d).", syscall(SYS_getpid));
+        _exit(DFX_ExecDump());
     } else if (childPid < 0) {
         DFXLOG_ERROR("Failed to fork child process, errno(%d).", errno);
         goto out;
     }
-    WaitChildPidExit(childPid);
+    WaitProcessdumpExit(childPid);
 out:
     RestoreDumpState(prevDumpableStatus, isTracerStatusModified);
     pthread_mutex_unlock(&g_signalHandlerMutex);
     return 0;
+}
+
+static int CloneAndDoProcessDump(void* arg)
+{
+    (void)arg;
+    DFXLOG_INFO("The clone thread(%d).", syscall(SYS_gettid));
+    g_request.recycleTid = syscall(SYS_gettid);
+    return ForkAndExecProcessDump();
 }
 
 static void ForkAndDoProcessDump(void)
@@ -470,15 +475,16 @@ static void ForkAndDoProcessDump(void)
     bool isTracerStatusModified = SetDumpState();
     int childPid = ForkBySyscall();
     if (childPid == 0) {
-        g_request.vmPid = syscall(SYS_getpid);
-        DFXLOG_INFO("Start DoProcessDump in VmProcess(%d).", g_request.vmPid);
+        g_request.vmNsPid = syscall(SYS_getpid);
+        g_request.vmPid = GetRealPid();
+        DFXLOG_INFO("The vm pid(%d:%d).", g_request.vmPid, g_request.vmNsPid);
         DFX_SetUpSigAlarmAction();
         alarm(ALARM_TIME_S);
-        _exit(DoProcessDump(NULL));
+        _exit(ForkAndExecProcessDump());
     } else if (childPid < 0) {
-        DFXLOG_ERROR("Failed to vfork child process, errno(%d).", errno);
+        DFXLOG_ERROR("Failed to fork child process, errno(%d).", errno);
         RestoreDumpState(prevDumpableStatus, isTracerStatusModified);
-        DoProcessDump(NULL);
+        ForkAndExecProcessDump();
         return;
     }
 
@@ -514,17 +520,18 @@ static bool DFX_SigchainHandler(int sig, siginfo_t *si, void *context)
     g_prevHandledSignal = sig;
 
     FillDumpRequest(sig, si, context);
-    DFXLOG_INFO("DFX_SigchainHandler :: sig(%d), processName(%s), threadName(%s).",
-        sig, g_request.processName, g_request.threadName);
+    DFXLOG_INFO("DFX_SigchainHandler :: sig(%d), pid(%d), processName(%s), threadName(%s).",
+        sig, g_request.pid, g_request.processName, g_request.threadName);
 
     // for protecting g_reservedChildStack
-    // g_signalHandlerMutex will be unlocked in DoProcessDump function
+    // g_signalHandlerMutex will be unlocked in ForkAndExecProcessDump function
     if (sig != SIGDUMP) {
         ForkAndDoProcessDump();
         ExitIfSandboxPid(sig);
     } else {
         ret = true;
-        int recycleTid = clone(DoProcessDump, g_reservedChildStack, CLONE_THREAD | CLONE_SIGHAND | CLONE_VM, NULL);
+        int recycleTid = clone(CloneAndDoProcessDump, g_reservedChildStack,\
+            CLONE_THREAD | CLONE_SIGHAND | CLONE_VM, NULL);
         if (recycleTid == -1) {
             DFXLOG_ERROR("Failed to clone thread for recycle dump process, errno(%d)", errno);
             pthread_mutex_unlock(&g_signalHandlerMutex);

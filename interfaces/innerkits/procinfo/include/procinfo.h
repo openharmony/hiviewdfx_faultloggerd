@@ -22,22 +22,103 @@
 #include <memory>
 #include <string>
 #include <vector>
-#include "dfx_define.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 namespace OHOS {
 namespace HiviewDFX {
+/**
+ * @brief  process information
+*/
+typedef struct ProcInfo {
+    /** process id */
+    int pid;
+    /** parent process id */
+    int ppid;
+    /** namespace process id */
+    int nsPid;
+    /** namespace is enabled or not */
+    bool ns;
+} ProcInfo;
+
+/**
+ * @brief Get process status
+ *
+ * @param procInfo structure containing information about process(output parameter)
+ * @return if succeed return true, otherwise return false
+*/
 bool GetProcStatus(struct ProcInfo& procInfo);
+/**
+ * @brief Get process status by specified process id
+ *
+ * @param realPid real process id
+ * @param procInfo structure containing information about process(output parameter)
+ * @return if succeed return true, otherwise return false
+*/
 bool GetProcStatusByPid(int realPid, struct ProcInfo& procInfo);
+/**
+ * @brief convert real tid to namespace tid
+ *
+ * @param pid process id
+ * @param tid thread id
+ * @param nsTid namespace tid(output parameter)
+ * @return if succeed return true, otherwise return false
+*/
 bool TidToNstid(const int pid, const int tid, int& nstid);
-bool IsThreadInCurPid(int32_t tid);
+/**
+ * @brief convert real tid to namespace tid
+ *
+ * @param pid process id
+ * @param tid thread id
+ * @return if succeed return true, otherwise return false
+*/
+bool IsThreadInPid(int32_t pid, int32_t tid);
+/**
+ * @brief Get thread id by process id and function
+ *
+ * @param pid process id
+ * @param tids thread ids(output parameter)
+ * @param func function
+ * @return if succeed return true, otherwise return false
+*/
 bool GetTidsByPidWithFunc(const int pid, std::vector<int>& tids, std::function<bool(int)> const& func);
+/**
+ * @brief Get thread ids and namespace thread ids by process id
+ *
+ * @param pid process id
+ * @param tids thread ids(output parameter)
+ * @param nsTid namespace tids(output parameter)
+ * @return if succeed return true, otherwise return false
+*/
 bool GetTidsByPid(const int pid, std::vector<int>& tids, std::vector<int>& nstids);
+/**
+ * @brief read thread name by id
+ * @param tid thread id
+ * @param str thread name
+*/
 void ReadThreadName(const int tid, std::string& str);
+/**
+ * @brief read prcess name by id
+ * @param pid process id
+ * @param str process name
+*/
 void ReadProcessName(const int pid, std::string& str);
+
+/**
+ * @brief read prcess wchan by id
+ * @param result content of wchan
+ * @param pid process id
+ * @param withThreadName whether output thread name or not
+*/
 void ReadProcessWchan(std::string& result, const int pid, bool withThreadName = false);
+
+/**
+ * @brief read thread wchan by id
+ * @param result content of wchan
+ * @param tid thread id
+ * @param withThreadName whether output thread name or not
+*/
 void ReadThreadWchan(std::string& result, const int tid, bool withThreadName = false);
 } // nameapace HiviewDFX
 } // nameapace OHOS

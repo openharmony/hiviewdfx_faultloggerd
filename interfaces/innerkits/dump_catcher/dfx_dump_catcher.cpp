@@ -136,7 +136,7 @@ bool DfxDumpCatcher::DoDumpLocalLocked(int pid, int tid, std::string& msg)
     } else if (tid == 0) {
         ret = DoDumpLocalPid(pid, msg);
     } else {
-        if (!IsThreadInCurPid(tid)) {
+        if (!IsThreadInPid(pid, tid)) {
             msg.append("tid(" + std::to_string(tid) + ") is not in pid(" + std::to_string(pid) + ").\n");
         } else {
             ret = DoDumpLocalTid(tid, msg);

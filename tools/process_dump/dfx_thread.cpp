@@ -39,14 +39,6 @@ std::shared_ptr<DfxThread> DfxThread::Create(pid_t pid, pid_t tid, pid_t nsTid)
     return thread;
 }
 
-DfxThread::DfxThread(pid_t pid, pid_t tid, pid_t nsTid, const ucontext_t &context)
-{
-    std::shared_ptr<DfxRegs> regs = DfxRegs::CreateFromContext(context);
-    SetThreadRegs(regs);
-
-    InitThreadInfo(pid, tid, nsTid);
-}
-
 DfxThread::DfxThread(pid_t pid, pid_t tid, pid_t nsTid)
 {
     regs_ = nullptr;
@@ -59,12 +51,12 @@ void DfxThread::InitThreadInfo(pid_t pid, pid_t tid, pid_t nsTid)
     threadInfo_.tid = tid;
     threadInfo_.nsTid = nsTid;
     ReadThreadName(threadInfo_.tid, threadInfo_.threadName);
-    threadInfo_.threadStatus = ThreadStatus::THREAD_STATUS_INIT;
+    threadStatus = ThreadStatus::THREAD_STATUS_INIT;
 }
 
 DfxThread::~DfxThread()
 {
-    threadInfo_.threadStatus = ThreadStatus::THREAD_STATUS_INVALID;
+    threadStatus = ThreadStatus::THREAD_STATUS_INVALID;
 }
 
 std::shared_ptr<DfxRegs> DfxThread::GetThreadRegs() const
@@ -106,16 +98,16 @@ std::string DfxThread::ToString() const
 
 void DfxThread::Detach()
 {
-    if (threadInfo_.threadStatus == ThreadStatus::THREAD_STATUS_ATTACHED) {
+    if (threadStatus == ThreadStatus::THREAD_STATUS_ATTACHED) {
         ptrace(PTRACE_CONT, threadInfo_.nsTid, 0, 0);
         ptrace(PTRACE_DETACH, threadInfo_.nsTid, NULL, NULL);
-        threadInfo_.threadStatus = ThreadStatus::THREAD_STATUS_INIT;
+        threadStatus = ThreadStatus::THREAD_STATUS_INIT;
     }
 }
 
 bool DfxThread::Attach()
 {
-    if (threadInfo_.threadStatus == ThreadStatus::THREAD_STATUS_ATTACHED) {
+    if (threadStatus == ThreadStatus::THREAD_STATUS_ATTACHED) {
         return true;
     }
 
@@ -147,7 +139,7 @@ bool DfxThread::Attach()
         }
         usleep(5); // 5 : sleep 5us
     } while (true);
-    threadInfo_.threadStatus = ThreadStatus::THREAD_STATUS_ATTACHED;
+    threadStatus = ThreadStatus::THREAD_STATUS_ATTACHED;
     return true;
 }
 } // namespace HiviewDFX

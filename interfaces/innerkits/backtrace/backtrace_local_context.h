@@ -25,12 +25,12 @@
 namespace OHOS {
 namespace HiviewDFX {
 enum ThreadContextStatus {
-    ContextUnused = -1,
-    ContextUsing = -2,
-    ContextReady = -3,
+    CONTEXT_UNUSED = -1,
+    CONTEXT_USING = -2,
+    CONTEXT_READY = -3,
 };
 struct ThreadContext {
-    std::atomic<int32_t> tid {ThreadContextStatus::ContextUnused};
+    std::atomic<int32_t> tid {ThreadContextStatus::CONTEXT_UNUSED};
     // for protecting ctx, shared between threads
     std::mutex lock;
     // the thread should be suspended while unwinding

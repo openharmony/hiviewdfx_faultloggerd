@@ -57,9 +57,9 @@ bool CppCrashReporter::Format()
     if (!msg.empty()) {
         stack_ = "LastFatalMessage:" + msg + "\n";
     }
-    auto keyThread = process_->GetKeyThread();
-    if (keyThread != nullptr) {
-        std::string threadInfo = keyThread->ToString();
+
+    if (process_->keyThread_ != nullptr) {
+        std::string threadInfo = process_->keyThread_->ToString();
         auto iterator = threadInfo.begin();
         while (iterator != threadInfo.end() && *iterator != '\n') {
             if (isdigit(*iterator)) {
