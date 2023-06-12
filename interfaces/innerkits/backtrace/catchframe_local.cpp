@@ -144,7 +144,7 @@ bool DfxCatchFrameLocal::CatchFrame(int tid, std::vector<DfxFrame>& frames, bool
     if (procInfo_.ns) {
         TidToNstid(pid_, tid, nstid);
     } else {
-        if (!IsThreadInCurPid(nstid)) {
+        if (!IsThreadInPid(pid_, nstid)) {
             DFXLOG_ERROR("CatchFrame :: target tid is not in our task.");
             return false;
         }

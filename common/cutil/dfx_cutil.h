@@ -15,14 +15,17 @@
 #ifndef DFX_COMMON_CUTIL_H
 #define DFX_COMMON_CUTIL_H
 
+#include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
-#include "stdbool.h"
+#include <unistd.h>
 #include "dfx_define.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+AT_SYMBOL_HIDDEN pid_t GetRealPid(void);
 
 AT_SYMBOL_HIDDEN bool GetThreadName(char* buffer, size_t bufferSz);
 

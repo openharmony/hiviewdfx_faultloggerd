@@ -20,6 +20,7 @@
 #include <stdint.h>
 #include <syscall.h>
 #include <time.h>
+#include <unistd.h>
 #include "dfx_define.h"
 
 #ifdef __cplusplus
@@ -27,6 +28,8 @@ extern "C" {
 #endif
 
 #ifdef ENABLE_MUSL_CUTIL
+static const char PID_STR_NAME[] = "Pid:";
+
 static bool ReadStringFromFile(const char* path, char* dst, size_t dstSz)
 {
     char name[NAME_LEN];
@@ -68,22 +71,46 @@ static bool ReadStringFromFile(const char* path, char* dst, size_t dstSz)
 
 bool GetThreadName(char* buffer, size_t bufferSz)
 {
-    char path[NAME_LEN];
-    memset(path, '\0', sizeof(path));
-    if (snprintf(path, sizeof(path) - 1, "/proc/%d/comm", getpid()) <= 0) {
-        return false;
-    }
-    return ReadStringFromFile(path, buffer, bufferSz);
+    return ReadStringFromFile(PROC_SELF_COMM_PATH, buffer, bufferSz);
 }
 
 bool GetProcessName(char* buffer, size_t bufferSz)
 {
-    char path[NAME_LEN];
-    memset(path, '\0', sizeof(path));
-    if (snprintf(path, sizeof(path) - 1, "/proc/%d/cmdline", getpid()) <= 0) {
-        return false;
+    return ReadStringFromFile(PROC_SELF_CMDLINE_PATH, buffer, bufferSz);
+}
+
+pid_t GetRealPid(void)
+{
+    pid_t pid = syscall(SYS_getpid);
+    int fd = OHOS_TEMP_FAILURE_RETRY(open(PROC_SELF_STATUS_PATH, O_RDONLY));
+    if (fd < 0) {
+        return pid;
     }
-    return ReadStringFromFile(path, buffer, bufferSz);
+
+    char buf[LOG_BUF_LEN];
+    int i = 0;
+    char b;
+    ssize_t nRead = 0;
+    while (1) {
+        nRead = OHOS_TEMP_FAILURE_RETRY(read(fd, &b, sizeof(char)));
+        if (nRead <= 0 || b == '\0') {
+            break;
+        }
+
+        if (b == '\n' || i == LOG_BUF_LEN) {
+            if (strncmp(buf, PID_STR_NAME, strlen(PID_STR_NAME)) == 0) {
+                (void)sscanf(buf, "%*[^0-9]%d", &pid);
+                break;
+            }
+            i = 0;
+            (void)memset(buf, '\0', sizeof(buf));
+            continue;
+        }
+        buf[i] = b;
+        i++;
+    }
+    close(fd);
+    return pid;
 }
 
 uint64_t GetTimeMilliseconds(void)

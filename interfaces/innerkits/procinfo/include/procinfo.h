@@ -71,10 +71,9 @@ bool TidToNstid(const int pid, const int tid, int& nstid);
  *
  * @param pid process id
  * @param tid thread id
- * @param nsTid namespace tid(output parameter)
  * @return if succeed return true, otherwise return false
 */
-bool IsThreadInCurPid(int32_t tid);
+bool IsThreadInPid(int32_t pid, int32_t tid);
 /**
  * @brief Get thread id by process id and function
  *

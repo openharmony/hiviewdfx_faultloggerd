@@ -37,49 +37,25 @@
 namespace OHOS {
 namespace HiviewDFX {
 
-std::shared_ptr<DfxProcess> DfxProcess::CreateProcessWithKeyThread(pid_t pid, pid_t nsPid, std::shared_ptr<DfxThread> keyThread)
+std::shared_ptr<DfxProcess> DfxProcess::Create(pid_t pid, pid_t nsPid)
 {
-    auto dfxProcess = std::make_shared<DfxProcess>();
-    dfxProcess->processInfo_.pid = pid;
-    dfxProcess->processInfo_.nsPid = nsPid;
-    ReadProcessName(pid, dfxProcess->processInfo_.processName);
-
-    if (!dfxProcess->InitProcessThreads(keyThread)) {
-        DFXLOG_WARN("Fail to init threads.");
+    auto process = std::make_shared<DfxProcess>(pid, nsPid);
+    if (!process) {
         return nullptr;
     }
-
-    DFXLOG_DEBUG("Init process dump with pid:%d.", pid);
-    return dfxProcess;
+    return process;
 }
 
-bool DfxProcess::InitProcessMaps()
+DfxProcess::DfxProcess(pid_t pid, pid_t nsPid)
 {
-    if (processInfo_.pid <= 0) {
-        return false;
-    }
-
-    auto maps = DfxElfMaps::Create(processInfo_.pid);
-    if (!maps) {
-        return false;
-    }
-    SetMaps(maps);
-    return true;
+    InitProcessInfo(pid, nsPid);
 }
 
-bool DfxProcess::InitProcessThreads(std::shared_ptr<DfxThread> keyThread)
+void DfxProcess::InitProcessInfo(pid_t pid, pid_t nsPid)
 {
-    if (!keyThread) {
-        keyThread = DfxThread::Create(processInfo_.pid, processInfo_.pid, processInfo_.pid);
-    }
-
-    if (!keyThread->Attach()) {
-        DFXLOG_WARN("Fail to attach thread.");
-        return false;
-    }
-    keyThread_ = keyThread;
-    threads_.push_back(keyThread);
-    return true;
+    processInfo_.pid = pid;
+    processInfo_.nsPid = nsPid;
+    ReadProcessName(processInfo_.pid, processInfo_.processName);
 }
 
 bool DfxProcess::InitOtherThreads(bool attach)
@@ -92,29 +68,85 @@ bool DfxProcess::InitOtherThreads(bool attach)
 
     for (size_t i = 0; i < nstids.size(); ++i) {
         if (nstids[i] == processInfo_.recycleTid) {
-            DFXLOG_DEBUG("skip recycle tid:%d.", processInfo_.recycleTid);
+            DFXLOG_DEBUG("skip recycle thread:%d.", nstids[i]);
             continue;
         }
 
-        if (nstids[i] == keyThread_->threadInfo_.nsTid) {
-            DFXLOG_DEBUG("skip key thread tid:%d.", keyThread_->threadInfo_.nsTid);
-            keyThread_->threadInfo_.tid = tids[i];
-            ReadThreadName(keyThread_->threadInfo_.tid, keyThread_->threadInfo_.threadName);
+        if (keyThread_ && nstids[i] == keyThread_->threadInfo_.nsTid) {
+            DFXLOG_DEBUG("skip key thread:%d.", nstids[i]);
             continue;
         }
 
-        for (auto iter = threads_.begin(); iter != threads_.end(); iter++) {
-            if ((*iter)->threadInfo_.nsTid == nstids[i]) {
-                continue;
-            }
-        }
         auto thread = DfxThread::Create(processInfo_.pid, tids[i], nstids[i]);
         if (attach) {
             thread->Attach();
         }
-        threads_.push_back(thread);
+        otherThreads_.push_back(thread);
     }
     return true;
+}
+
+pid_t DfxProcess::ChangeTid(pid_t tid, bool ns)
+{
+    if (processInfo_.pid == processInfo_.nsPid) {
+        return tid;
+    }
+
+    std::vector<int> tids;
+    std::vector<int> nstids;
+    if (kvThreads_.empty()) {
+        if (!GetTidsByPid(processInfo_.pid, tids, nstids)) {
+            return tid;
+        }
+        for (size_t i = 0; i < nstids.size(); ++i) {
+            kvThreads_[nstids[i]] = tids[i];
+        }
+    }
+
+    for (auto iter = kvThreads_.begin(); iter != kvThreads_.end(); iter++) {
+        if (ns && (iter->first == tid)) {
+            return iter->second;
+        }
+        if (!ns && (iter->second == tid)) {
+            return iter->first;
+        }
+    }
+    return tid;
+}
+
+std::vector<std::shared_ptr<DfxThread>> DfxProcess::GetOtherThreads() const
+{
+    return otherThreads_;
+}
+
+void DfxProcess::ClearOtherThreads()
+{
+    otherThreads_.clear();
+}
+
+void DfxProcess::Attach(bool hasKey)
+{
+    if (hasKey && keyThread_) {
+        keyThread_->Attach();
+    }
+
+    if (otherThreads_.empty()) {
+        return;
+    }
+    for (auto thread : otherThreads_) {
+        thread->Attach();
+    }
+}
+
+void DfxProcess::Detach()
+{
+    if (otherThreads_.empty()) {
+        return;
+    }
+
+    for (auto thread : otherThreads_) {
+        thread->Detach();
+    }
 }
 
 void DfxProcess::SetFatalMessage(const std::string &msg)
@@ -132,35 +164,19 @@ void DfxProcess::SetMaps(std::shared_ptr<DfxElfMaps> maps)
     maps_ = maps;
 }
 
+void DfxProcess::InitProcessMaps()
+{
+    if (!maps_) {
+        if (processInfo_.pid <= 0) {
+            return;
+        }
+        maps_ = DfxElfMaps::Create(processInfo_.pid);
+    }
+}
+
 std::shared_ptr<DfxElfMaps> DfxProcess::GetMaps() const
 {
     return maps_;
-}
-
-void DfxProcess::SetThreads(const std::vector<std::shared_ptr<DfxThread>> &threads)
-{
-    threads_ = threads;
-}
-
-std::vector<std::shared_ptr<DfxThread>> DfxProcess::GetThreads() const
-{
-    return threads_;
-}
-
-std::shared_ptr<DfxThread> DfxProcess::GetKeyThread() const
-{
-    return keyThread_;
-}
-
-void DfxProcess::Detach()
-{
-    if (threads_.empty()) {
-        return;
-    }
-
-    for (auto iter = threads_.begin(); iter != threads_.end(); iter++) {
-        (*iter)->Detach();
-    }
 }
 } // namespace HiviewDFX
 } // namespace OHOS

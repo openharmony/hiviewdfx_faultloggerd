@@ -82,7 +82,7 @@ HWTEST_F(ProcinfoTest, ProcinfoTest003, TestSize.Level2)
     ret = GetTidsByPid(getpid(), tids, nstids);
     ASSERT_EQ(ret, true);
     for (size_t i = 0; i < nstids.size(); ++i) {
-        ret = IsThreadInCurPid(nstids[i]);
+        ret = IsThreadInPid(getpid(), nstids[i]);
         ASSERT_EQ(ret, true);
 
         if (procInfo.ns) {

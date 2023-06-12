@@ -36,6 +36,7 @@ static const char SERVER_CRASH_SOCKET_NAME[] = "faultloggerd.crash.server";
 static const char PROC_SELF_STATUS_PATH[] = "/proc/self/status";
 static const char PROC_SELF_TASK_PATH[] = "/proc/self/task";
 static const char PROC_SELF_CMDLINE_PATH[] = "/proc/self/cmdline";
+static const char PROC_SELF_COMM_PATH[] = "/proc/self/comm";
 
 #if defined(__arm__)
 static const int USER_REG_NUM = 16;
