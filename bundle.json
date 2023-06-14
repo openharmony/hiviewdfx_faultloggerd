@@ -90,26 +90,6 @@
             ],
             "header_base": "//base/hiviewdfx/faultloggerd/interfaces/innerkits/signal_handler/include"
           }
-        },
-        {
-          "name": "//base/hiviewdfx/faultloggerd/interfaces/innerkits/callstack:callstack_perf",
-          "header": {
-            "header_files": [
-              "callstack.h",
-              "register.h"
-            ],
-            "header_base": "//base/hiviewdfx/faultloggerd/interfaces/innerkits/callstack/include"
-          }
-        },
-        {
-          "name": "//base/hiviewdfx/faultloggerd/interfaces/innerkits/callstack:callstack_nativedaemon",
-          "header": {
-            "header_files": [
-              "callstack.h",
-              "register.h"
-            ],
-            "header_base": "//base/hiviewdfx/faultloggerd/interfaces/innerkits/callstack/include"
-          }
         }
       ],
       "test": [
