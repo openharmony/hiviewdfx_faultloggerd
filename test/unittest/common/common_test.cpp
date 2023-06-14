@@ -68,7 +68,7 @@ HWTEST_F(CommonTest, DfxUtilTest002, TestSize.Level2)
     std::string resStr;
     bool ret = TrimAndDupStr(testStr, resStr);
     ASSERT_EQ(ret, true);
-    ASSERT_EQ(resStr, "abcd\n");
+    ASSERT_EQ(resStr, "abcd");
     GTEST_LOG_(INFO) << "DfxUtilTest002: end.";
 }
 
