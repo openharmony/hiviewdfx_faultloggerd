@@ -23,6 +23,8 @@
 
 #include "dfx_dump_catcher.h"
 #include "dfx_test_util.h"
+#include "file_util.h"
+#include "procinfo.h"
 
 using namespace testing::ext;
 using namespace std;
@@ -62,14 +64,9 @@ static const int OTHER_UID = 10000;
 
 static const int MULTITHREAD_TEST_COUNT = 50;
 static const int ARRAY_SIZE = 100;
-
-static const string DEFAULT_PID_MAX = "32768";
-static const string DEFAULT_TID_MAX = "8825";
-
 static pid_t g_rootTid[ARRAY_SIZE] = { -1 };
 static pid_t g_appTid[ARRAY_SIZE] = { -1 };
 static pid_t g_sysTid[ARRAY_SIZE] = { -1 };
-static char g_shellBuf[ARRAY_SIZE] = { 0 };
 
 static pid_t g_loopSysPid = 0;
 static pid_t g_loopRootPid = 0;
@@ -88,62 +85,46 @@ enum CrasherRunType {
 
 static string GetPidMax()
 {
+    const string defaultPidMax = "32768"; // 32768 pid max
     const string path = "/proc/sys/kernel/pid_max";
-    ifstream file(path);
-    if (!file) {
-        GTEST_LOG_(INFO) << "file not exists";
-        return DEFAULT_PID_MAX;
-    } else {
-        string pidMax;
-        file >> pidMax;
-        return pidMax;
-    }
-    return DEFAULT_PID_MAX;
+    string pidMax = defaultPidMax;
+    OHOS::HiviewDFX::LoadStringFromFile(path, pidMax);
+    return pidMax;
 }
 
 static string GetTidMax()
 {
+    const string defaultTidMax = "8825"; // 8825 tid max
     const string path = "/proc/sys/kernel/threads-max";
-    ifstream file(path);
-    if (!file) {
-        GTEST_LOG_(ERROR) << "file not exists";
-        return DEFAULT_TID_MAX;
-    } else {
-        string tidMax;
-        file >> tidMax;
-        return tidMax;
-    }
-    return DEFAULT_TID_MAX;
+    string tidMax = defaultTidMax;
+    OHOS::HiviewDFX::LoadStringFromFile(path, tidMax);
+    return tidMax;
 }
 
-static bool IsDigit(const string& pid)
+static void GetCrasherThreads(const int pid, const int uid)
 {
-    bool flag = true;
-    for (unsigned int j = 0; j < pid.length() - 1; j++) {
-        if (!isdigit(pid[j])) {
-            flag = false;
-            break;
+    if (pid <= 0) {
+        return;
+    }
+
+    usleep(5); // 5 : sleep 5us
+    std::vector<int> tids;
+    if (!GetTidsByPidWithFunc(pid, tids, nullptr)) {
+        return;
+    }
+    for (size_t i = 0; i < tids.size(); ++i) {
+        if (uid == ROOT_UID) {
+            g_rootTid[i] = tids[i];
+        } else if (uid == BMS_UID) {
+            g_sysTid[i] = tids[i];
+        } else {
+            g_appTid[i] = tids[i];
         }
     }
-    return flag;
-}
-
-static pid_t ToPid(const string& pidStr)
-{
-    if (!IsDigit(pidStr)) {
-        return -1;
-    }
-    pid_t pid;
-    if (sscanf_s(pidStr.c_str(), "%d", &pid) != 1) {
-        GTEST_LOG_(ERROR) << "sscanf_s pid failed";
-        return -1;
-    }
-    return pid;
 }
 
 static void StartCrasherLoopForUnsignedPidAndTid(const CrasherType type)
 {
-    int sysTidCount = 0;
     setuid(BMS_UID);
     if (type == CRASHER_C) {
         system("/data/crasher_c thread-Loop &");
@@ -151,38 +132,19 @@ static void StartCrasherLoopForUnsignedPidAndTid(const CrasherType type)
         system("/data/crasher_cpp thread-Loop &");
     }
     string procCmd = "pgrep 'crasher'";
-    FILE *procFileInfo = nullptr;
-    procFileInfo = popen(procCmd.c_str(), "r");
-    if (procFileInfo == nullptr) {
-        perror("popen execute failed");
+    std::string shellRes = ExecuteCommands(procCmd);
+    if (shellRes.empty()) {
         exit(1);
     }
-    while (fgets(g_shellBuf, sizeof(g_shellBuf), procFileInfo) != nullptr) {
-        g_unsignedLoopSysPid = ToPid(g_shellBuf);
-        GTEST_LOG_(INFO) << "System ID: " << g_unsignedLoopSysPid;
-    }
-    pclose(procFileInfo);
+    g_unsignedLoopSysPid = atoi(shellRes.c_str());
     if (g_unsignedLoopSysPid == 0) {
         exit(0);
     }
 
-    usleep(5); // 5 : sleep 5us
-    procCmd = "ls /proc/" + to_string(g_unsignedLoopSysPid) + "/task";
-    FILE *procFileInfo2 = nullptr;
-    procFileInfo2 = popen(procCmd.c_str(), "r");
-    if (procFileInfo2 == nullptr) {
-        perror("popen execute failed");
-        exit(1);
-    }
-    while (fgets(g_shellBuf, sizeof(g_shellBuf), procFileInfo2) != nullptr) {
-        GTEST_LOG_(INFO) << "procFileInfo2 print info = " << g_shellBuf;
-        g_sysTid[sysTidCount] = ToPid(g_shellBuf);
-        sysTidCount++;
-    }
-    pclose(procFileInfo2);
+    GetCrasherThreads(g_unsignedLoopSysPid, BMS_UID);
 }
 
-static string LaunchCrasher(const CrasherType type, const int uid)
+static void LaunchCrasher(const CrasherType type, const int uid)
 {
     setuid(uid);
     if (type == CRASHER_C) {
@@ -192,148 +154,66 @@ static string LaunchCrasher(const CrasherType type, const int uid)
     }
 
     string procCmd = "pgrep 'crasher'";
-    FILE *procFileInfo = nullptr;
-    procFileInfo = popen(procCmd.c_str(), "r");
-    if (procFileInfo == nullptr) {
-        perror("popen execute failed");
-        exit(1);
+    std::vector<std::string> ress;
+    ExecuteCommands(procCmd, ress);
+    if (ress.empty()) {
+        exit(0);
     }
-    if (uid == ROOT_UID) {
-        int i = 0;
-        while ((fgets(g_shellBuf, sizeof(g_shellBuf), procFileInfo) != nullptr) && (i < 60)) { // 60 : max buf line
-            pid_t pid = ToPid(g_shellBuf);
-            if (pid < 0) {
+
+    pid_t curPid = 0;
+    for (size_t i = 0; i < ress.size(); ++i) {
+        pid_t pid = atoi(ress[i].c_str());
+        if (pid <= 0) {
+            continue;
+        }
+
+        if (uid == ROOT_UID) {
+            if (g_loopSysPid == pid) {
                 continue;
             }
-            if (g_loopSysPid == pid) {
-                GTEST_LOG_(INFO) << g_loopSysPid;
+            if (type == CRASHER_CPP) {
+                g_loopCppPid = pid;
             } else {
-                if (type == CRASHER_CPP) {
-                    g_loopCppPid = pid;
-                } else {
-                    g_loopRootPid = pid;
-                }
+                g_loopRootPid = pid;
             }
-            i++;
-        }
-        GTEST_LOG_(INFO) << "Root ID: " << g_loopRootPid;
-    } else if (uid == BMS_UID) {
-        while (fgets(g_shellBuf, sizeof(g_shellBuf), procFileInfo) != nullptr) {
-            g_loopSysPid = ToPid(g_shellBuf);
+            curPid = g_loopRootPid;
+            GTEST_LOG_(INFO) << "Root ID: " << g_loopRootPid;
+        } else if (uid == BMS_UID) {
+            g_loopSysPid = pid;
+            curPid = g_loopSysPid;
             GTEST_LOG_(INFO) << "System ID: " << g_loopSysPid;
-        }
-    } else {
-        while (fgets(g_shellBuf, sizeof(g_shellBuf), procFileInfo) != nullptr) {
-            pid_t pid = ToPid(g_shellBuf);
-            if (g_loopSysPid == pid) {
-                GTEST_LOG_(INFO) << g_loopSysPid;
-            } else if (g_loopRootPid == pid) {
-                GTEST_LOG_(INFO) << g_loopRootPid;
+        } else {
+            if ((g_loopSysPid == pid) || (g_loopRootPid == pid)) {
+                continue;
             } else {
                 g_loopAppPid = pid;
             }
+            curPid = g_loopAppPid;
+            GTEST_LOG_(INFO) << "APP ID: " << g_loopAppPid;
         }
-        GTEST_LOG_(INFO) << "APP ID: " << g_loopAppPid;
     }
-    pclose(procFileInfo);
-    return to_string(g_loopSysPid);
-}
-
-static void StartRootCrasherLoop()
-{
-    setuid(ROOT_UID);
-    LaunchCrasher(CRASHER_C, ROOT_UID);
-    if (g_loopRootPid == 0) {
-        exit(0);
-    }
-
-    usleep(5); // 5 : sleep 5us
-    string procCmd = "ls /proc/" + to_string(g_loopRootPid) + "/task";
-    FILE *procFileInfo = nullptr;
-    procFileInfo = popen(procCmd.c_str(), "r");
-    if (procFileInfo == nullptr) {
-        perror("popen execute failed");
-        exit(1);
-    }
-    int rootTidCount = 0;
-    while (fgets(g_shellBuf, sizeof(g_shellBuf), procFileInfo) != nullptr) {
-        GTEST_LOG_(INFO) << "procFileInfo print info = " << g_shellBuf;
-        g_rootTid[rootTidCount] = ToPid(g_shellBuf);
-        rootTidCount++;
-    }
-    setuid(OTHER_UID);
-    pclose(procFileInfo);
-}
-
-static void StartSystemCrasherLoop()
-{
-    setuid(BMS_UID);
-    LaunchCrasher(CRASHER_C, BMS_UID);
-    if (g_loopSysPid == 0) {
-        exit(0);
-    }
-
-    usleep(5); // 5 : sleep 5us
-    string procCmd = "ls /proc/" + to_string(g_loopSysPid) + "/task";
-    FILE *procFileInfo = nullptr;
-    procFileInfo = popen(procCmd.c_str(), "r");
-    if (procFileInfo == nullptr) {
-        perror("popen execute failed");
-        exit(1);
-    }
-    int sysTidCount = 0;
-    while (fgets(g_shellBuf, sizeof(g_shellBuf), procFileInfo) != nullptr) {
-        GTEST_LOG_(INFO) << "procFileInfo print info = " << g_shellBuf;
-        g_sysTid[sysTidCount] = ToPid(g_shellBuf);
-        sysTidCount++;
-    }
-    setuid(OTHER_UID);
-    pclose(procFileInfo);
-}
-
-static void StartCommonCrasherLoop(const CrasherType type)
-{
-    setuid(OTHER_UID);
-    LaunchCrasher(type, OTHER_UID);
-    if (g_loopAppPid == 0) {
-        exit(0);
-    }
-
-    usleep(5); // 5 : sleep 5us
-    string procCmd = "ls /proc/" + to_string(g_loopAppPid) + "/task";
-    FILE *procFileInfo = nullptr;
-    procFileInfo = popen(procCmd.c_str(), "r");
-    if (procFileInfo == nullptr) {
-        perror("popen execute failed");
-        exit(1);
-    }
-    int appTidCount = 0;
-    while (fgets(g_shellBuf, sizeof(g_shellBuf), procFileInfo) != nullptr) {
-        GTEST_LOG_(INFO) << "procFileInfo print info = " << g_shellBuf;
-        g_appTid[appTidCount] = ToPid(g_shellBuf);
-        appTidCount++;
-    }
-    pclose(procFileInfo);
+    GetCrasherThreads(curPid, uid);
 }
 
 static void StartCrasherLoop(const CrasherRunType type)
 {
     switch (type) {
         case ROOT:
-            StartRootCrasherLoop();
+            LaunchCrasher(CRASHER_C, ROOT_UID);
             break;
         case SYSTEM:
-            StartSystemCrasherLoop();
+            LaunchCrasher(CRASHER_C, BMS_UID);
             break;
         case APP_CRASHER_C:
-            StartCommonCrasherLoop(CRASHER_C);
+            LaunchCrasher(CRASHER_C, OTHER_UID);
             break;
         case APP_CRASHER_CPP:
-            StartCommonCrasherLoop(CRASHER_CPP);
+            LaunchCrasher(CRASHER_CPP, OTHER_UID);
             break;
         default:
-            break;
+            return;
     }
+    setuid(OTHER_UID);
 }
 
 static void StopCrasherLoop(const CrasherRunType type)
@@ -594,7 +474,7 @@ HWTEST_F(DumpCatcherSystemTest, DumpCatcherSystemTest012, TestSize.Level2)
     bool ret = dumplog.DumpCatch(g_loopSysPid, 0, msg);
     GTEST_LOG_(INFO) << "g_loopSysPid : \n" << g_loopSysPid;
     string log[] = { "Tid:", "#00", "/data/crasher", "Name:SubTestThread", "usleep"};
-    log[0] = log[0] +to_string(g_loopSysPid) + ", Name:crasher";
+    log[0] = log[0] + to_string(g_loopSysPid) + ", Name:crasher";
     GTEST_LOG_(INFO) << "ret : \n" << ret;
     GTEST_LOG_(INFO) << "dump log : \n" << msg;
     int count = GetKeywordsNum(msg, log, sizeof(log) / sizeof(log[0]));
@@ -782,7 +662,6 @@ HWTEST_F(DumpCatcherSystemTest, DumpCatcherSystemTest019, TestSize.Level2)
     StopCrasherLoop(APP_CRASHER_C);
     GTEST_LOG_(INFO) << "DumpCatcherSystemTest019: end.";
 }
-
 
 /**
  * @tc.name: DumpCatcherSystemTest020

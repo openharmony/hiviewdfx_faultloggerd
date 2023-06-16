@@ -17,6 +17,7 @@
 #define DFX_TEST_UTIL
 
 #include <string>
+#include <vector>
 
 static const std::string ACCOUNTMGR_NAME = "accountmgr";
 static const std::string FOUNDATION_NAME = "foundation";
@@ -43,6 +44,7 @@ enum CrasherType {
     CRASHER_CPP
 };
 std::string ExecuteCommands(const std::string& cmds);
+bool ExecuteCommands(const std::string& cmds, std::vector<std::string>& ress);
 int GetProcessPid(const std::string& processName);
 int LaunchTestHap(const std::string& abilityName, const std::string& bundleName);
 void StopTestHap(const std::string& bundleName);

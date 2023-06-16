@@ -28,7 +28,7 @@
 namespace OHOS {
 namespace HiviewDFX {
 namespace {
-static const int BUF_LEN = 128;
+const int BUF_LEN = 128;
 }
 
 std::string ExecuteCommands(const std::string& cmds)
@@ -40,7 +40,7 @@ std::string ExecuteCommands(const std::string& cmds)
     std::string cmdLog = "";
     procFileInfo = popen(cmds.c_str(), "r");
     if (procFileInfo == nullptr) {
-        perror("popen execute failed");
+        perror("popen execute failed\n");
         return cmdLog;
     }
     char res[BUF_LEN] = { '\0' };
@@ -49,6 +49,28 @@ std::string ExecuteCommands(const std::string& cmds)
     }
     pclose(procFileInfo);
     return cmdLog;
+}
+
+bool ExecuteCommands(const std::string& cmds, std::vector<std::string>& ress)
+{
+    if (cmds.empty()) {
+        return false;
+    }
+
+    ress.clear();
+    FILE *fp = nullptr;
+    fp = popen(cmds.c_str(), "r");
+    if (fp == nullptr) {
+        perror("popen execute failed\n");
+        return false;
+    }
+
+    char res[BUF_LEN] = { '\0' };
+    while (fgets(res, sizeof(res), fp) != nullptr) {
+        ress.push_back(std::string(res));
+    }
+    pclose(fp);
+    return true;
 }
 
 int GetProcessPid(const std::string& processName)

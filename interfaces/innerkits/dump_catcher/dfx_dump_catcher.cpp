@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2022 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -13,27 +13,17 @@
  * limitations under the License.
  */
 
-/* This files contains faultlog sdk interface functions. */
-
 #include "dfx_dump_catcher.h"
 
 #include <cerrno>
-#include <climits>
-#include <csignal>
-#include <cstdlib>
-#include <cstring>
-#include <ctime>
 #include <memory>
-#include <mutex>
-#include <string>
 #include <vector>
 
-#include <dirent.h>
 #include <poll.h>
-#include <unistd.h>
-
 #include <sys/syscall.h>
 #include <sys/types.h>
+#include <securec.h>
+#include <strings.h>
 
 #include "dfx_define.h"
 #include "dfx_dump_res.h"
@@ -41,8 +31,7 @@
 #include "dfx_util.h"
 #include "faultloggerd_client.h"
 #include "file_util.h"
-#include "securec.h"
-#include "strings.h"
+
 #include "libunwind.h"
 #include "libunwind_i-ohos.h"
 
@@ -185,37 +174,6 @@ bool DfxDumpCatcher::DumpCatchFd(int pid, int tid, std::string& msg, int fd)
     return ret;
 }
 
-static void LoadPathContent(const std::string& desc, const std::string& path, std::string& result)
-{
-    if (access(path.c_str(), F_OK) != 0) {
-        result.append("Target path(");
-        result.append(path);
-        result.append(") is not exist. errno(");
-        result.append(std::to_string(errno));
-        result.append(").\n");
-        return;
-    }
-
-    std::string content;
-    OHOS::HiviewDFX::LoadStringFromFile(path, content);
-    if (!content.empty()) {
-        std::string str = desc + ":\n" + content + "\n";
-        result.append(str);
-    }
-    return;
-}
-
-static void LoadPidStat(const int pid, std::string& msg)
-{
-    std::string statusPath = "/proc/" + std::to_string(pid) + "/status";
-    std::string wchanPath = "/proc/" + std::to_string(pid) + "/wchan";
-    LoadPathContent("Process status", statusPath, msg);
-    LoadPathContent("Process wchan", wchanPath, msg);
-    msg.append("\nProcess wchan:\n=======================================\n");
-    ReadProcessWchan(msg, pid, true);
-    msg.append("=======================================\n");
-}
-
 bool DfxDumpCatcher::DoDumpCatchRemote(const int type, int pid, int tid, std::string& msg)
 {
     bool ret = false;
@@ -250,7 +208,8 @@ bool DfxDumpCatcher::DoDumpCatchRemote(const int type, int pid, int tid, std::st
                 int type = DUMP_TYPE_NATIVE;
                 return DoDumpCatchRemote(type, pid, tid, msg);
             } else if (type == DUMP_TYPE_NATIVE) {
-                LoadPidStat(pid, msg);
+                ReadProcessStatus(msg, pid);
+                ReadProcessWchan(msg, pid, false, true);
             }
             break;
         default:

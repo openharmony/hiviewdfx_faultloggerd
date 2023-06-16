@@ -16,6 +16,7 @@
 #include "procinfo.h"
 
 #include <cctype>
+#include <cerrno>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -184,10 +185,42 @@ void ReadProcessName(const int pid, std::string& str)
     TrimAndDupStr(name, str);
 }
 
-void ReadProcessWchan(std::string& result, const int pid, bool withThreadName)
+void ReadProcessStatus(std::string& result, const int pid)
 {
-    bool flag = false;
+    std::string path = StringPrintf("/proc/%d/status", pid);
+    if (access(path.c_str(), F_OK) != 0) {
+        result = StringPrintf("Failed to access path(%s), errno(%d).\n", path.c_str(), errno);
+        return;
+    }
+    std::string content;
+    OHOS::HiviewDFX::LoadStringFromFile(path, content);
+    if (!content.empty()) {
+        std::string str = StringPrintf("Process status:\n%s\n", content.c_str());
+        result.append(str);
+    }
+}
+
+void ReadProcessWchan(std::string& result, const int pid, bool onlyPid, bool withThreadName)
+{
+    std::string path = StringPrintf("/proc/%d/wchan", pid);
+    if (access(path.c_str(), F_OK) != 0) {
+        result = StringPrintf("Failed to access path(%s), errno(%d).\n", path.c_str(), errno);
+        return;
+    }
     std::ostringstream ss;
+    std::string content;
+    OHOS::HiviewDFX::LoadStringFromFile(path, content);
+    if (!content.empty()) {
+        ss << "Process wchan:\n";
+        ss << StringPrintf("%s\n", content.c_str());
+    }
+    if (onlyPid) {
+        result = ss.str();
+        return;
+    }
+    ss << "\nProcess threads wchan:\n";
+    ss << "=======================================\n";
+    bool flag = false;
     std::string comm;
     std::string wchan;
     std::string taskPath = StringPrintf("/proc/%d/task", pid);
@@ -211,6 +244,7 @@ void ReadProcessWchan(std::string& result, const int pid, bool withThreadName)
     if (!flag) {
         ss << "Load process wchan failed." << std::endl;
     }
+    ss << "=======================================\n";
     result = ss.str();
 }
 
