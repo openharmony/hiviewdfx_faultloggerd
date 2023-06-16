@@ -81,6 +81,10 @@ if (defined(ohos_lite)) {
       "//third_party/libunwind:libunwind",
     ]
   }
+
+  static_library("backtrace_local") {
+    # current static library is unuseful in ohos_lite type
+  }
 } else {
   config("dfx_backtrace_config") {
     visibility = [ "*:*" ]

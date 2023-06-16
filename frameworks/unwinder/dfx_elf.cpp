@@ -520,13 +520,14 @@ std::string DfxElf::GetReadableBuildID(const std::string &buildIdHex)
     }
     static const char HEXTABLE[] = "0123456789ABCDEF";
     static const int HEXLENGTH = 16;
+    static const int HEX_EXPAND_PARAM = 2;
     const size_t len = buildIdHex.length();
-    std::string buildId(len * 2, '\0');
+    std::string buildId(len * HEX_EXPAND_PARAM, '\0');
 
     for (size_t i = 0; i < len; i++) {
         unsigned int n = buildIdHex[i];
-        buildId[i * 2] = HEXTABLE[(n >> 4) % HEXLENGTH]; // 4 : higher 4 bit of uint8
-        buildId[i * 2 + 1] = HEXTABLE[n % HEXLENGTH];
+        buildId[i * HEX_EXPAND_PARAM] = HEXTABLE[(n >> 4) % HEXLENGTH]; // 4 : higher 4 bit of uint8
+        buildId[i * HEX_EXPAND_PARAM + 1] = HEXTABLE[n % HEXLENGTH];
     }
     return buildId;
 }

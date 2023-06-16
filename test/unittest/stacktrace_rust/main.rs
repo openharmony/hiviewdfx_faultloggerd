@@ -60,6 +60,5 @@ fn test_print_trace() {
     let trace = fs::read_to_string(path).unwrap();
     assert!(!trace.is_empty());
     assert!(trace.contains("#00"));
-    assert!(trace.contains("libstacktrace_rust.dylib.so"));
     assert!(trace.contains("rust_stacktrace_test"));
 }

@@ -56,6 +56,16 @@
           }
         },
         {
+          "name": "//base/hiviewdfx/faultloggerd/interfaces/innerkits/backtrace:backtrace_local",
+          "header": {
+            "header_files": [
+              "backtrace_local.h",
+              "catchframe_local.h"
+            ],
+            "header_base": "//base/hiviewdfx/faultloggerd/interfaces/innerkits/backtrace/include"
+          }
+        },
+        {
           "name": "//base/hiviewdfx/faultloggerd/interfaces/innerkits/dump_catcher:libdfx_dumpcatcher",
           "header": {
             "header_files": [
