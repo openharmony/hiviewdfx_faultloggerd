@@ -56,5 +56,4 @@ private:
 };
 } // namespace HiviewDFX
 } // namespace OHOS
-
-#endif  // DFX_SYMBOL_CACHE_H
+#endif

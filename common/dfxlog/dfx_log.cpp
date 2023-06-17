@@ -30,7 +30,7 @@
 static int g_debugFd = INVALID_FD;
 static const Level CURRENT_LOG_LEVEL = Level::INFO;
 #ifdef DFX_LOG_USE_DMESG
-static int g_Fd = INVALID_FD;
+static int g_dmesgFd = INVALID_FD;
 #endif
 
 #ifdef DFX_LOG_USE_DMESG
@@ -39,19 +39,19 @@ static void LogToDmesg(Level logLevel, const char *tag, const char *info)
     static const char *LOG_LEVEL_STR[] = { "DEBUG", "INFO", "WARNING", "ERROR", "FATAL" };
     static const char *LOG_KLEVEL_STR[] = { "<7>", "<6>", "<4>", "<3>", "<3>" };
 
-    if (UNLIKELY(g_Fd < 0)) {
-        g_Fd = open("/dev/kmsg", O_WRONLY, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP);
+    if (UNLIKELY(g_dmesgFd < 0)) {
+        g_dmesgFd = open("/dev/kmsg", O_WRONLY, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP);
     }
     char buf[LOG_BUF_LEN] = {0};
     if (snprintf_s(buf, sizeof(buf), sizeof(buf) - 1, "%s[pid=%d %d][%s][%s]%s",
         LOG_KLEVEL_STR[logLevel], getpid(), getppid(), tag, LOG_LEVEL_STR[logLevel], info) == -1) {
-        close(g_Fd);
-        g_Fd = -1;
+        close(g_dmesgFd);
+        g_dmesgFd = -1;
         return;
     }
-    if (write(g_Fd, buf, strlen(buf)) < 0) {
-        close(g_Fd);
-        g_Fd = -1;
+    if (write(g_dmesgFd, buf, strlen(buf)) < 0) {
+        close(g_dmesgFd);
+        g_dmesgFd = -1;
     }
 }
 #endif

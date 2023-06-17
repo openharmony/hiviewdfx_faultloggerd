@@ -92,9 +92,9 @@ pid_t DfxProcess::ChangeTid(pid_t tid, bool ns)
         return tid;
     }
 
-    std::vector<int> tids;
-    std::vector<int> nstids;
     if (kvThreads_.empty()) {
+        std::vector<int> tids;
+        std::vector<int> nstids;
         if (!GetTidsByPid(processInfo_.pid, tids, nstids)) {
             return tid;
         }

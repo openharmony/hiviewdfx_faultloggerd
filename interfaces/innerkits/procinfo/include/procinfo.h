@@ -99,19 +99,28 @@ bool GetTidsByPid(const int pid, std::vector<int>& tids, std::vector<int>& nstid
 */
 void ReadThreadName(const int tid, std::string& str);
 /**
- * @brief read prcess name by id
+ * @brief read process name by id
  * @param pid process id
  * @param str process name
 */
 void ReadProcessName(const int pid, std::string& str);
 
 /**
- * @brief read prcess wchan by id
- * @param result content of wchan
+ * @brief read process status by id
+ * @param result content of status
  * @param pid process id
  * @param withThreadName whether output thread name or not
 */
-void ReadProcessWchan(std::string& result, const int pid, bool withThreadName = false);
+void ReadProcessStatus(std::string& result, const int pid);
+
+/**
+ * @brief read process wchan by id
+ * @param result content of wchan
+ * @param pid process id
+ * @param onlyPid if only print process wchan
+ * @param withThreadName whether output thread name or not
+*/
+void ReadProcessWchan(std::string& result, const int pid, bool onlyPid = false, bool withThreadName = false);
 
 /**
  * @brief read thread wchan by id

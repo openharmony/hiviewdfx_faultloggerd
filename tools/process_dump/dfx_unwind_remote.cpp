@@ -212,7 +212,7 @@ bool DfxUnwindRemote::DoUnwindStep(size_t const & index,
     frame->pc = framePc;
     frame->sp = frameSp;
     frame->index = index;
-    ret = UpdateAndPrintFrameInfo(cursor, frame, thread, ProcessDumper::GetInstance().IsCrash());
+    ret = UpdateAndFillFrame(cursor, frame, thread, ProcessDumper::GetInstance().IsCrash());
     if (ret) {
         thread->AddFrame(frame);
     }
@@ -221,7 +221,7 @@ bool DfxUnwindRemote::DoUnwindStep(size_t const & index,
     return ret;
 }
 
-bool DfxUnwindRemote::UpdateAndPrintFrameInfo(unw_cursor_t& cursor, std::shared_ptr<DfxFrame> frame,
+bool DfxUnwindRemote::UpdateAndFillFrame(unw_cursor_t& cursor, std::shared_ptr<DfxFrame> frame,
     std::shared_ptr<DfxThread> thread, bool enableBuildId)
 {
     struct map_info* mapInfo = unw_get_map(&cursor);

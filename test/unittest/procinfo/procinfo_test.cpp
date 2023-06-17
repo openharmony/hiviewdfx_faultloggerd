@@ -93,3 +93,21 @@ HWTEST_F(ProcinfoTest, ProcinfoTest003, TestSize.Level2)
     }
     GTEST_LOG_(INFO) << "ProcinfoTest003: end.";
 }
+
+/**
+ * @tc.name: ProcinfoTest004
+ * @tc.desc: test ReadProcessStatus, ReadProcessWchan, ReadThreadWchan
+ * @tc.type: FUNC
+ */
+HWTEST_F(ProcinfoTest, ProcinfoTest004, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "ProcinfoTest004: start.";
+    std::string result;
+    ReadProcessStatus(result, getpid());
+    GTEST_LOG_(INFO) << result;
+    ReadProcessWchan(result, getpid(), false, true);
+    GTEST_LOG_(INFO) << result;
+    ReadThreadWchan(result, gettid(), true);
+    GTEST_LOG_(INFO) << result;
+    GTEST_LOG_(INFO) << "ProcinfoTest004: end.";
+}
