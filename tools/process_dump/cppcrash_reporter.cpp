@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -40,6 +40,8 @@ struct FaultLogInfoInner {
 static const char HIVIEW_PROCESS_NAME[] = "/system/bin/hiview";
 
 using AddFaultLog = void (*)(FaultLogInfoInner* info);
+using RecordAppExitReason = int (*)(int reason);
+
 namespace OHOS {
 namespace HiviewDFX {
 
@@ -108,6 +110,27 @@ void CppCrashReporter::ReportToHiview()
     info.sectionMaps = kvPairs_;
     addFaultLog(&info);
     DFXLOG_INFO("Finish report fault to FaultLogger %s(%d,%d)", cmdline_.c_str(), pid_, uid_);
+    dlclose(handle);
+}
+
+void CppCrashReporter::ReportToAbilityManagerService()
+{
+    void* handle = dlopen("libability_manager_c.z.so", RTLD_LAZY | RTLD_NODELETE);
+    if (handle == nullptr) {
+        DFXLOG_WARN("Failed to dlopen libabilityms, %s\n", dlerror());
+        return;
+    }
+
+    RecordAppExitReason recordAppExitReason = (RecordAppExitReason)dlsym(handle, "RecordAppExitReason");
+    if (recordAppExitReason == nullptr) {
+        DFXLOG_WARN("Failed to dlsym RecordAppExitReason, %s\n", dlerror());
+        dlclose(handle);
+        return;
+    }
+
+    // defined in interfaces/inner_api/ability_manager/include/ability_state.h
+    const int cppCrashExitReason = 2;
+    recordAppExitReason(cppCrashExitReason);
     dlclose(handle);
 }
 } // namespace HiviewDFX
