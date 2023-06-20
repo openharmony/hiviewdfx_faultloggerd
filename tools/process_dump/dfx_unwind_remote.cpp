@@ -76,20 +76,22 @@ bool DfxUnwindRemote::UnwindProcess(std::shared_ptr<DfxProcess> process)
     }
     unw_set_caching_policy(as_, UNW_CACHE_GLOBAL);
 
+    std::shared_ptr<DfxThread> unwThread = process->keyThread_;
     if (ProcessDumper::GetInstance().IsCrash() && process->vmThread_) {
         unw_set_target_pid(as_, process->vmThread_->threadInfo_.tid);
+        unwThread = process->vmThread_;
     } else {
         unw_set_target_pid(as_, process->processInfo_.pid);
     }
 
     do {
-        if (!process->keyThread_) {
+        if (!unwThread) {
             break;
         }
 
-        ret = UnwindThread(process, process->keyThread_);
+        ret = UnwindThread(process, unwThread);
         if (!ret) {
-            UnwindThreadFallback(process, process->keyThread_);
+            UnwindThreadFallback(process, unwThread);
         }
 
         if (ProcessDumper::GetInstance().IsCrash()) {
@@ -124,8 +126,8 @@ bool DfxUnwindRemote::UnwindProcess(std::shared_ptr<DfxProcess> process)
     } while (false);
 
     if (ProcessDumper::GetInstance().IsCrash()) {
-        Printer::GetInstance().PrintThreadRegsByConfig(process->keyThread_);
-        Printer::GetInstance().PrintThreadFaultStackByConfig(process, process->keyThread_);
+        Printer::GetInstance().PrintThreadRegsByConfig(unwThread);
+        Printer::GetInstance().PrintThreadFaultStackByConfig(process, unwThread);
         Printer::GetInstance().PrintProcessMapsByConfig(process);
     }
 
