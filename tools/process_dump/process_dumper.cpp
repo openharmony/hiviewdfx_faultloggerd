@@ -166,6 +166,9 @@ int ProcessDumper::InitProcessInfo(std::shared_ptr<ProcessDumpRequest> request)
             DFXLOG_ERROR("Fail to attach vm thread(%d).", request->vmNsPid);
             return -1;
         }
+
+        std::shared_ptr<DfxRegs> regs = DfxRegs::CreateFromContext(request->context);
+        process_->vmThread_->SetThreadRegs(regs);
     }
 
     pid_t dumpTid = request->siginfo.si_value.sival_int;
@@ -183,10 +186,6 @@ int ProcessDumper::InitProcessInfo(std::shared_ptr<ProcessDumpRequest> request)
         if (!isCrash_) {
             return -1;
         }
-    }
-    if (isCrash_) {
-        std::shared_ptr<DfxRegs> regs = DfxRegs::CreateFromContext(request->context);
-        process_->keyThread_->SetThreadRegs(regs);
     }
     if (process_->keyThread_->threadInfo_.threadName.empty()) {
         process_->keyThread_->threadInfo_.threadName = std::string(request->threadName);
