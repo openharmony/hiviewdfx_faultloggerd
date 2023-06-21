@@ -153,7 +153,7 @@ int ProcessDumper::InitProcessInfo(std::shared_ptr<ProcessDumpRequest> request)
         process_->processInfo_.processName = std::string(request->processName);
     }
     process_->processInfo_.uid = request->uid;
-    process_->processInfo_.recycleTid = request->recycleTid;
+    process_->recycleTid_ = request->recycleTid;
     process_->SetFatalMessage(request->lastFatalMessage);
 
     if (isCrash_ && request->vmPid != 0) {
