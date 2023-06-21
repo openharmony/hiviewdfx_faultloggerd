@@ -76,6 +76,7 @@ void ProcessDumper::Dump()
 
     // check dump result ?
     if (reporter_ != nullptr) {
+        reporter_->ReportToAbilityManagerService();
         reporter_->ReportToHiview();
     }
 
