@@ -84,18 +84,24 @@ void Printer::PrintProcessMapsByConfig(std::shared_ptr<DfxProcess> process)
     }
 }
 
-void Printer::PrintThreadsHeaderByConfig()
+void Printer::PrintOtherThreadHeaderByConfig()
 {
     if (DfxConfig::GetConfig().displayBacktrace) {
         DfxRingBufferWrapper::GetInstance().AppendMsg("\nOther thread info:\n");
     }
 }
 
-void Printer::PrintThreadBacktraceByConfig(std::shared_ptr<DfxThread> thread)
+void Printer::PrintThreadHeaderByConfig(std::shared_ptr<DfxThread> thread)
 {
     if (DfxConfig::GetConfig().displayBacktrace) {
         DfxRingBufferWrapper::GetInstance().AppendBuf("Tid:%d, Name:%s\n",\
             thread->threadInfo_.tid, thread->threadInfo_.threadName.c_str());
+    }
+}
+
+void Printer::PrintThreadBacktraceByConfig(std::shared_ptr<DfxThread> thread)
+{
+    if (DfxConfig::GetConfig().displayBacktrace) {
         const auto& frames = thread->GetFrames();
         if (frames.size() == 0) {
             DFXLOG_WARN("Tid:%d frame is null", thread->threadInfo_.tid);

@@ -30,7 +30,6 @@ struct DfxProcessInfo {
     pid_t pid = 0;
     pid_t nsPid = 0;
     uid_t uid = 0;
-    pid_t recycleTid = 0;
     std::string processName = "";
 };
 
@@ -54,6 +53,7 @@ public:
     std::shared_ptr<DfxElfMaps> GetMaps() const;
 
     DfxProcessInfo processInfo_;
+    pid_t recycleTid_ = 0;
     std::shared_ptr<DfxThread> keyThread_ = nullptr;
     std::shared_ptr<DfxThread> vmThread_ = nullptr;
 private:
