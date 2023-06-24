@@ -168,8 +168,8 @@ int ProcessDumper::InitProcessInfo(std::shared_ptr<ProcessDumpRequest> request)
             return -1;
         }
 
-        std::shared_ptr<DfxRegs> regs = DfxRegs::CreateFromContext(request->context);
-        process_->vmThread_->SetThreadRegs(regs);
+        process_->vmThread_->SetThreadRegs(DfxRegs::CreateFromContext(request->context));
+        process_->vmThread_->threadInfo_.threadName = std::string(request->threadName);
     }
 
     pid_t dumpTid = request->siginfo.si_value.sival_int;

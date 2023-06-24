@@ -60,8 +60,8 @@ bool CppCrashReporter::Format()
         stack_ = "LastFatalMessage:" + msg + "\n";
     }
 
-    if (process_->keyThread_ != nullptr) {
-        std::string threadInfo = process_->keyThread_->ToString();
+    if (process_->vmThread_ != nullptr) {
+        std::string threadInfo = process_->vmThread_->ToString();
         auto iterator = threadInfo.begin();
         while (iterator != threadInfo.end() && *iterator != '\n') {
             if (isdigit(*iterator)) {
