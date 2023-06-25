@@ -13,8 +13,6 @@
  * limitations under the License.
  */
 
-/* This files contains arm64 reg module. */
-
 #if defined(__aarch64__)
 #include "dfx_regs.h"
 

@@ -13,8 +13,6 @@
  * limitations under the License.
  */
 
-/* This files contains memory header. */
-
 #include "dfx_memory.h"
 #include <algorithm>
 #include <securec.h>

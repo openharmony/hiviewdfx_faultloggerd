@@ -13,8 +13,6 @@
  * limitations under the License.
  */
 
-/* This files contains header of util module. */
-
 #ifndef DFX_UTIL_H
 #define DFX_UTIL_H
 

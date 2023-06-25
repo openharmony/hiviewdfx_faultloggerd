@@ -13,8 +13,6 @@
  * limitations under the License.
  */
 
-/* This files contains faultlog performance st test case. */
-
 #include "faultloggerd_performance_test.h"
 
 #include <string>

@@ -13,8 +13,6 @@
  * limitations under the License.
  */
 
-/* This files contains process dump arm reg module. */
-
 #include "dfx_regs.h"
 
 #include <cstdio>

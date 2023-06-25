@@ -13,8 +13,6 @@
  * limitations under the License.
  */
 
-/* This files contains process dump common tool functions. */
-
 #include "arch_util.h"
 
 #include <securec.h>

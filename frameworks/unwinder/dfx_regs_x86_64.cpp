@@ -13,8 +13,6 @@
  * limitations under the License.
  */
 
-/* This files contains process dump x86 64 regs module. */
-
 #if defined(__x86_64__)
 #include "dfx_regs.h"
 

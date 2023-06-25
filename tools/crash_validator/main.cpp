@@ -13,8 +13,6 @@
  * limitations under the License.
  */
 
-/* This files contains process dump entry function. */
-
 #include <condition_variable>
 #include <csignal>
 #include <cstdlib>

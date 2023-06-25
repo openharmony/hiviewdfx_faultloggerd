@@ -13,8 +13,6 @@
  * limitations under the License.
  */
 
-/* This files contains processdump frame module. */
-
 #include "dfx_frame_format.h"
 #include <ostream>
 #include <securec.h>

@@ -21,7 +21,7 @@
 #include <map>
 #include <mutex>
 
-#include <sys/syscall.h>      /* Definition of SYS_* constants */
+#include <sys/syscall.h>
 #include <securec.h>
 #include <unistd.h>
 #include "dfx_log.h"

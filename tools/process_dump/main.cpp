@@ -13,8 +13,6 @@
  * limitations under the License.
  */
 
-/* This files contains process dump entry function. */
-
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>

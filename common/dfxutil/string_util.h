@@ -13,8 +13,6 @@
  * limitations under the License.
  */
 
-/* This files contains header of util module. */
-
 #ifndef STRING_UTIL_H
 #define STRING_UTIL_H
 

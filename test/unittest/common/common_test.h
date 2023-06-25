@@ -13,8 +13,6 @@
  * limitations under the License.
  */
 
-/* This files contains unit test module of maps module. */
-
 #ifndef COMMON_TEST_H
 #define COMMON_TEST_H
 

@@ -13,8 +13,6 @@
  * limitations under the License.
  */
 
-/* This files contains faultlog sdk interface functions. */
-
 #include "catchframe_local.h"
 
 #include <cerrno>

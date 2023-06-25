@@ -13,8 +13,6 @@
  * limitations under the License.
  */
 
-/* This files contains header of util module. */
-
 #ifndef ARCH_UTIL_H
 #define ARCH_UTIL_H
 

@@ -279,5 +279,22 @@ HWTEST_F(BacktraceLocalTest, BacktraceLocalTest005, TestSize.Level2)
     }
     GTEST_LOG_(INFO) << "BacktraceLocalTest005: end.";
 }
+
+/**
+ * @tc.name: BacktraceLocalTest006
+ * @tc.desc: test GetTrace C interface
+ * @tc.type: FUNC
+ */
+HWTEST_F(BacktraceLocalTest, BacktraceLocalTest006, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "BacktraceLocalTest006: start.";
+    const char* trace = GetTrace();
+    std::string stacktrace(trace);
+    GTEST_LOG_(INFO) << stacktrace;
+    ASSERT_TRUE(stacktrace.find("#00") != std::string::npos);
+    ASSERT_TRUE(stacktrace.find("pc") != std::string::npos);
+    ASSERT_TRUE(stacktrace.find("backtrace_local_test") != std::string::npos);
+    GTEST_LOG_(INFO) << "BacktraceLocalTest006: end.";
+}
 } // namespace HiviewDFX
 } // namepsace OHOS
