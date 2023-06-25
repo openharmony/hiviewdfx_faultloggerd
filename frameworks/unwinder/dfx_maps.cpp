@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2022 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -13,7 +13,6 @@
  * limitations under the License.
  */
 
-/* This files contains process dump dfx maps module. */
 #include "dfx_maps.h"
 
 #include <algorithm>
@@ -27,6 +26,7 @@
 #include <securec.h>
 #include <sys/mman.h>
 #include <string>
+#include <sstream>
 #include <vector>
 #include "dfx_define.h"
 #include "dfx_elf.h"
@@ -116,6 +116,27 @@ std::shared_ptr<DfxElfMaps> DfxElfMaps::Create(const std::string path)
     int ret = fclose(fp);
     if (ret < 0) {
         DFXLOG_WARN("Fail to close maps info.");
+    }
+    dfxElfMaps->Sort();
+    return dfxElfMaps;
+}
+
+std::shared_ptr<DfxElfMaps> DfxElfMaps::Create(const char* buffer)
+{
+    if (buffer == nullptr) {
+        return nullptr;
+    }
+    std::istringstream iss(buffer);
+    std::string temp;
+    auto dfxElfMaps = std::make_shared<DfxElfMaps>();
+    while (std::getline(iss, temp)) {
+        std::shared_ptr<DfxElfMap> map = DfxElfMap::Create(temp, temp.length());
+        if (!map) {
+            DFXLOG_WARN("Fail to init map info:%s.", temp.c_str());
+            continue;
+        } else {
+            dfxElfMaps->AddMap(map);
+        }
     }
     dfxElfMaps->Sort();
     return dfxElfMaps;

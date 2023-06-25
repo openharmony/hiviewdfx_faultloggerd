@@ -50,7 +50,7 @@ void Printer::PrintDumpHeader(std::shared_ptr<ProcessDumpRequest> request, std::
 
     if (isCrash) {
         DfxRingBufferWrapper::GetInstance().AppendMsg("Reason:");
-        DfxRingBufferWrapper::GetInstance().AppendMsg(PrintSignal(request->siginfo));
+        DfxRingBufferWrapper::GetInstance().AppendMsg(DfxSignal::PrintSignal(request->siginfo));
         auto msg = process->GetFatalMessage();
         if (!msg.empty()) {
             DfxRingBufferWrapper::GetInstance().AppendBuf("LastFatalMessage:%s\n", msg.c_str());

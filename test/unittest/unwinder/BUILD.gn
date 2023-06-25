@@ -28,6 +28,7 @@ ohos_unittest("test_unwinder") {
     "maps_test.cpp",
     "memory_test.cpp",
     "regs_test.cpp",
+    "signal_test.cpp",
     "unwinder_test.cpp",
   ]
   deps = [

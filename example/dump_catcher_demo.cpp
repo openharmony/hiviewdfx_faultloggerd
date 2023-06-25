@@ -69,6 +69,11 @@ static bool ParseParameters(int argc, char *argv[], int32_t &pid, int32_t &tid)
                 pid = atoi(argv[2]);
                 return true;
             }
+            if (!strcmp("-t", argv[1])) {
+                pid = getpid();
+                tid = atoi(argv[2]);
+                return true;
+            }
             break;
         case 5:
             if (!strcmp("-p", argv[1])) {

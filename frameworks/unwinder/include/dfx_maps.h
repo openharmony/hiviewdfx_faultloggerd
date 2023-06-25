@@ -49,6 +49,7 @@ public:
     static std::shared_ptr<DfxElfMaps> Create(pid_t pid);
     static std::shared_ptr<DfxElfMaps> CreateFromLocal();
     static std::shared_ptr<DfxElfMaps> Create(const std::string path);
+    static std::shared_ptr<DfxElfMaps> Create(const char* buffer);
 
     void AddMap(std::shared_ptr<DfxElfMap> map);
     bool FindMapByAddr(uintptr_t address, std::shared_ptr<DfxElfMap>& map) const;
