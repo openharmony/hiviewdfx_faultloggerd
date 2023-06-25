@@ -60,7 +60,7 @@ bool DfxMemory::ReadString(uint64_t addr, std::string* dst, size_t maxRead)
                 return true;
             } else {
                 dst->assign(nRead + length, '\0');
-                return ReadFully(addr, (void*)dst->data(), dst->size());
+                return ReadFully(addr, (void*)(dst->data()), dst->size());
             }
         }
     }

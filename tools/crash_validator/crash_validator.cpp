@@ -110,7 +110,7 @@ void CrashValidator::PrintEvents(int fd, const std::vector<CrashEvent>& events, 
                 static_cast<uint64_t>(it->uid),
                 it->isCppCrash);
         }
-        it++;
+        ++it;
     }
 }
 
@@ -143,7 +143,7 @@ void CrashValidator::Dump(int fd)
 
 bool CrashValidator::RemoveSimilarEvent(const CrashEvent& event)
 {
-    for (auto& matchedEvent : matchedEvents_) {
+    for (const auto& matchedEvent : matchedEvents_) {
         if (matchedEvent.pid == event.pid && matchedEvent.uid == event.uid) {
             return true;
         }
@@ -240,7 +240,7 @@ void CrashValidator::CheckOutOfDateEvents()
         }
 
         if (now > eventTime && now - eventTime < MAX_LOG_GENERATE_TIME) {
-            it++;
+            ++it;
             continue;
         }
 

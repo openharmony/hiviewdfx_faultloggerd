@@ -130,17 +130,17 @@ void DfxConfig::ReadConfig(DfxConfigInfo& config)
         if (fp == nullptr) {
             break;
         }
+        std::string key;
+        std::string value;
         while (!feof(fp)) {
             (void)memset_s(codeBuffer, sizeof(codeBuffer), '\0', sizeof(codeBuffer));
             if (fgets(codeBuffer, CONF_LINE_SIZE - 1, fp) == nullptr) {
                 continue;
             }
             std::string line(codeBuffer);
-            std::string key;
-            std::string value;
             std::string::size_type newLinePos = line.find_first_of("\n");
             if (newLinePos != line.npos) {
-                line = line.substr(0, newLinePos);
+                line.resize(newLinePos);
             }
             std::string::size_type equalSignPos = line.find_first_of("=");
             if (equalSignPos != line.npos) {

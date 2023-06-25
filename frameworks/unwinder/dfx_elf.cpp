@@ -55,7 +55,7 @@ std::string ElfFileInfo::GetNameFromPath(const std::string &path)
 bool DfxElfImpl::IsValidPc(uint64_t pc)
 {
     if (!ptLoads_.empty()) {
-        for (auto& iter : ptLoads_) {
+        for (const auto& iter : ptLoads_) {
             uint64_t start = iter.second.tableVaddr;
             uint64_t end = start + iter.second.tableSize;
             if (pc >= start && pc < end) {
@@ -187,9 +187,9 @@ void DfxElfImpl::ReadSectionHeaders(const ElfW(Ehdr)& ehdr)
                 continue;
             }
             uint32_t shCount = static_cast<uint32_t>(shdr.sh_size / shdr.sh_entsize);
-            for (uint32_t i = 0; i < shCount; i++) {
+            for (uint32_t j = 0; j < shCount; j++) {
                 ElfW(Sym) sym;
-                if (!memory_->ReadFully(shdr.sh_offset + i * shdr.sh_entsize, &sym, sizeof(sym))) {
+                if (!memory_->ReadFully(shdr.sh_offset + j * shdr.sh_entsize, &sym, sizeof(sym))) {
                     continue;
                 }
 
@@ -221,7 +221,7 @@ bool DfxElfImpl::GetFuncNameAndOffset(uint64_t addr, std::string* funcName, uint
     }
 
     std::vector<SymbolInfo>::iterator it;
-    for (it = symbols_.begin(); it != symbols_.end(); it++) {
+    for (it = symbols_.begin(); it != symbols_.end(); ++it) {
         SymbolInfo& symbol = *it;
         if (symbol.ndx == SHN_UNDEF || ELF32_ST_TYPE(symbol.type) != STT_FUNC) {
             continue;
@@ -247,7 +247,7 @@ bool DfxElfImpl::GetFuncNameAndOffset(uint64_t addr, std::string* funcName, uint
     }
 
     std::vector<SymbolInfo>::iterator it;
-    for (it = symbols_.begin(); it != symbols_.end(); it++) {
+    for (it = symbols_.begin(); it != symbols_.end(); ++it) {
         SymbolInfo& symbol = *it;
         if (symbol.ndx == SHN_UNDEF || ELF32_ST_TYPE(symbol.type) != STT_FUNC) {
             continue;
@@ -272,7 +272,7 @@ bool DfxElfImpl::GetGlobalVariableOffset(const std::string& name, uint64_t* offs
     }
 
     std::vector<SymbolInfo>::iterator it;
-    for (it = symbols_.begin(); it != symbols_.end(); it++) {
+    for (it = symbols_.begin(); it != symbols_.end(); ++it) {
         SymbolInfo& symbol = *it;
         if (symbol.ndx == SHN_UNDEF || ELF32_ST_TYPE(symbol.type) != STT_OBJECT ||
             ELF32_ST_BIND(symbol.type) != STB_GLOBAL) {
@@ -506,7 +506,7 @@ uint64_t DfxElf::GetMaxSize(std::shared_ptr<DfxMemory> memory)
 
     uint64_t size = 0;
     auto elfImpl = std::make_shared<DfxElfImpl>(memory);
-    if (!elfImpl) {
+    if (elfImpl == nullptr) {
         return 0;
     }
     elfImpl->GetMaxSize(&size);

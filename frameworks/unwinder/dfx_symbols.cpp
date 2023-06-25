@@ -92,7 +92,7 @@ bool DfxSymbols::GetNameAndOffsetByPc(uint64_t pc, std::string& name, uint64_t& 
     size_t end = symbols_.size();
     while (begin < end) {
         size_t mid = begin + (end - begin) / 2;
-        SymbolInfo& symbol = symbols_[mid];
+        const SymbolInfo& symbol = symbols_[mid];
         if (pc < symbol.start) {
             end = mid;
         } else if (pc <= symbol.end) {

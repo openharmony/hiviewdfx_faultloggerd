@@ -39,9 +39,8 @@ std::shared_ptr<DfxThread> DfxThread::Create(pid_t pid, pid_t tid, pid_t nsTid)
     return thread;
 }
 
-DfxThread::DfxThread(pid_t pid, pid_t tid, pid_t nsTid)
+DfxThread::DfxThread(pid_t pid, pid_t tid, pid_t nsTid) : regs_(nullptr)
 {
-    regs_ = nullptr;
     InitThreadInfo(pid, tid, nsTid);
 }
 
