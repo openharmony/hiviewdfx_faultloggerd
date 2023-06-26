@@ -13,8 +13,6 @@
  * limitations under the License.
  */
 
-/* This files contains process dump hrader. */
-
 #ifndef DFX_PROCESSDUMP_H
 #define DFX_PROCESSDUMP_H
 

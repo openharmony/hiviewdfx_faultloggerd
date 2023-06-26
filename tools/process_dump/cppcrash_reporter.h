@@ -13,8 +13,6 @@
  * limitations under the License.
  */
 
-/* This files contains process dump write log to file module. */
-
 #ifndef CPP_CRASH_REPORTER_H
 #define CPP_CRASH_REPORTER_H
 

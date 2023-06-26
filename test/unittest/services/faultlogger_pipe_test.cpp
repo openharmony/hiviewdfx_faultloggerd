@@ -13,8 +13,6 @@
  * limitations under the License.
  */
 
-/* This files contains faultlog pipe module unittest. */
-
 #include <gtest/gtest.h>
 
 #include <string>

@@ -13,8 +13,6 @@
  * limitations under the License.
  */
 
-/* This files is writer log to file module on process dump module. */
-
 #include "cppcrash_reporter.h"
 
 #include <cinttypes>

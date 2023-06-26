@@ -397,6 +397,7 @@ HWTEST_F(SignalHandlerTest, SignalHandlerTest006, TestSize.Level2)
     }
     GTEST_LOG_(INFO) << "SignalHandlerTest006: end.";
 }
+
 /**
  * @tc.name: SignalHandlerTest007
  * @tc.desc: test DFX_InstallSignalHandler interface

@@ -70,9 +70,9 @@ protected:
     void ReadSectionHeaders(const ElfW(Ehdr)& ehdr);
 
 private:
-    int64_t loadBias_;
-    uint64_t buildIdOffset_;
-    uint64_t buildIdSize_;
+    int64_t loadBias_ = 0;
+    uint64_t buildIdOffset_ = 0;
+    uint64_t buildIdSize_ = 0;
     std::unordered_map<uint64_t, ElfLoadInfo> ptLoads_;
     std::vector<SymbolInfo> symbols_;
     std::shared_ptr<DfxMemory> memory_;
@@ -105,8 +105,8 @@ private:
     bool ReadElfInfo();
 private:
     bool valid_ = false;
-    uint16_t machine_;
-    uint8_t class_;
+    uint16_t machine_ = 0;
+    uint8_t class_ = 0;
     ArchType arch_;
     std::mutex lock_;
     std::unique_ptr<DfxElfImpl> elfImpl_;

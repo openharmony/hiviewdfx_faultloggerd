@@ -13,8 +13,6 @@
  * limitations under the License.
  */
 
-/* This files contains process module. */
-
 #include "dfx_process.h"
 
 #include <climits>

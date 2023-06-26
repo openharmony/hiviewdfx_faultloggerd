@@ -13,8 +13,6 @@
  * limitations under the License.
  */
 
-/* This files contains faultlog performance test modules. */
-
 #ifndef FAULT_PERFORMANCE_TEST_H
 #define FAULT_PERFORMANCE_TEST_H
 

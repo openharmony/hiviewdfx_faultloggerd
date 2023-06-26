@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -12,8 +12,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-/* This files contains faultlog secure module. */
 
 #include "fault_logger_pipe.h"
 
@@ -42,7 +40,7 @@ namespace {
 static const std::string FAULTLOGGER_PIPE_TAG = "FaultLoggerPipe";
 const int PIPE_READ = 0;
 const int PIPE_WRITE = 1;
-const int PIPE_TIMEOUT = 10000; //10s
+const int PIPE_TIMEOUT = 10000; // 10 seconds
 }
 
 FaultLoggerPipe::FaultLoggerPipe()
@@ -104,8 +102,8 @@ void FaultLoggerPipe::Close(int fd) const
 }
 
 FaultLoggerPipe2::FaultLoggerPipe2(uint64_t time)
-    : faultLoggerPipeBuf_(std::unique_ptr<FaultLoggerPipe>(new FaultLoggerPipe()))
-    , faultLoggerPipeRes_(std::unique_ptr<FaultLoggerPipe>(new FaultLoggerPipe()))
+    : faultLoggerPipeBuf_(std::unique_ptr<FaultLoggerPipe>(new FaultLoggerPipe())),
+    faultLoggerPipeRes_(std::unique_ptr<FaultLoggerPipe>(new FaultLoggerPipe()))
 {
     time_ = time;
 }

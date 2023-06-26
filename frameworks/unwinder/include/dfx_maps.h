@@ -13,8 +13,6 @@
  * limitations under the License.
  */
 
-/* This files contains feader file of maps module. */
-
 #ifndef DFX_MAPS_H
 #define DFX_MAPS_H
 
