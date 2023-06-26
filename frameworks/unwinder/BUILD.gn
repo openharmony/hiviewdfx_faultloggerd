@@ -25,6 +25,7 @@ dfx_unwinder_sources = [
   "dfx_regs_arm.cpp",
   "dfx_regs_arm64.cpp",
   "dfx_regs_x86_64.cpp",
+  "dfx_signal.cpp",
   "dfx_symbols.cpp",
   "dwarf_unwinder.cpp",
   "fp_unwinder.cpp",
@@ -70,8 +71,8 @@ if (defined(ohos_lite)) {
     include_dirs = [
       "include",
       "$faultloggerd_interfaces_path/common",
+      "$faultloggerd_interfaces_path/innerkits/backtrace/include",
       "$faultloggerd_path/common",
-      "$faultloggerd_path/interfaces/innerkits/backtrace/include",
       "//third_party/libunwind/include",
       "//third_party/libunwind/src",
     ]

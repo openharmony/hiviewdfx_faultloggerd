@@ -59,9 +59,19 @@ HWTEST_F (DfxMapsTest, DfxMapsTest001, TestSize.Level2)
 HWTEST_F (DfxMapsTest, DfxMapsTest002, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "DfxMapsTest002: start.";
-    std::shared_ptr<DfxElfMaps> elfMaps = DfxElfMaps::CreateFromLocal();
+    char testBuffer[] = "1000-2000 ---s 00000000 00:00 0\n\
+        2000-3000 r--s 00000000 00:00 0\n\
+        3000-4000 -w-s 00000000 00:00 0\n\
+        4000-5000 --xp 00000000 00:00 0\n\
+        5000-6000 rwxp 00000000 00:00 0\n";
+    std::shared_ptr<DfxElfMaps> elfMaps = DfxElfMaps::Create(testBuffer);
     EXPECT_EQ(true, elfMaps != nullptr);
     auto maps = elfMaps->GetMaps();
+    EXPECT_EQ(true, maps.size() == 5);
+
+    elfMaps = DfxElfMaps::CreateFromLocal();
+    EXPECT_EQ(true, elfMaps != nullptr);
+    maps = elfMaps->GetMaps();
     EXPECT_EQ(true, maps.size() > 0);
     GTEST_LOG_(INFO) << "DfxMapsTest002: end.";
 }

@@ -26,6 +26,7 @@
 #include <securec.h>
 #include <sys/mman.h>
 #include <string>
+#include <sstream>
 #include <vector>
 #include "dfx_define.h"
 #include "dfx_elf.h"
@@ -115,6 +116,27 @@ std::shared_ptr<DfxElfMaps> DfxElfMaps::Create(const std::string path)
     int ret = fclose(fp);
     if (ret < 0) {
         DFXLOG_WARN("Fail to close maps info.");
+    }
+    dfxElfMaps->Sort();
+    return dfxElfMaps;
+}
+
+std::shared_ptr<DfxElfMaps> DfxElfMaps::Create(const char* buffer)
+{
+    if (buffer == nullptr) {
+        return nullptr;
+    }
+    std::istringstream iss(buffer);
+    std::string temp;
+    auto dfxElfMaps = std::make_shared<DfxElfMaps>();
+    while (std::getline(iss, temp)) {
+        std::shared_ptr<DfxElfMap> map = DfxElfMap::Create(temp, temp.length());
+        if (!map) {
+            DFXLOG_WARN("Fail to init map info:%s.", temp.c_str());
+            continue;
+        } else {
+            dfxElfMaps->AddMap(map);
+        }
     }
     dfxElfMaps->Sort();
     return dfxElfMaps;

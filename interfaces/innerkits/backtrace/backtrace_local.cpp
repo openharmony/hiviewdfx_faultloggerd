@@ -70,27 +70,11 @@ bool GetBacktraceFramesByTid(std::vector<DfxFrame>& frames, int32_t tid, size_t 
 
 bool GetBacktraceStringByTid(std::string& out, int32_t tid, size_t skipFrameNum, bool fast)
 {
-    bool ret = false;
-    BacktraceLocalThread thread(tid);
-    if (fast) {
-#ifdef __aarch64__
-        ret = thread.Unwind(nullptr, nullptr, skipFrameNum, fast);
-#endif
-    }
-    if (!ret) {
-        unw_addr_space_t as;
-        unw_init_local_address_space(&as);
-        if (as == nullptr) {
-            return ret;
-        }
-        auto symbol = std::make_shared<DfxSymbols>();
+    std::vector<DfxFrame> frames;
+    bool ret = GetBacktraceFramesByTid(frames, tid, skipFrameNum + 1, fast);
 
-        ret = thread.Unwind(as, symbol, skipFrameNum, fast);
-
-        unw_destroy_local_address_space(as);
-    }
     out.clear();
-    out = thread.GetFormatedStr();
+    out = DfxFrameFormat::GetFramesStr(frames);
     return ret;
 }
 

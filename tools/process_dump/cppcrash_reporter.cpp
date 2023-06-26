@@ -52,7 +52,7 @@ bool CppCrashReporter::Format()
     cmdline_ = process_->processInfo_.processName;
     pid_ = process_->processInfo_.pid;
     uid_ = process_->processInfo_.uid;
-    reason_ = PrintSignal(siginfo_);
+    reason_ = DfxSignal::PrintSignal(siginfo_);
     auto msg = process_->GetFatalMessage();
     if (!msg.empty()) {
         stack_ = "LastFatalMessage:" + msg + "\n";

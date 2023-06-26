@@ -21,7 +21,6 @@
 
 namespace OHOS {
 namespace HiviewDFX {
-const int MAX_DUMP_RES_MSG_LEN = 128;
 
 /**
  * @brief Processdump error code
