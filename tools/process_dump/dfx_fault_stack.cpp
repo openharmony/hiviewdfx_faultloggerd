@@ -156,7 +156,11 @@ void FaultStack::Print() const
     }
 }
 
-MemoryBlockInfo FaultStack::CreateMemoryBlock(uintptr_t addr, uintptr_t offset, uintptr_t size, std::string name)
+MemoryBlockInfo FaultStack::CreateMemoryBlock(
+    uintptr_t addr,
+    uintptr_t offset,
+    uintptr_t size,
+    const std::string name) const
 {
     MemoryBlockInfo info;
     info.startAddr = addr;

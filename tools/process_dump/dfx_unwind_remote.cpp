@@ -54,9 +54,8 @@ DfxUnwindRemote &DfxUnwindRemote::GetInstance()
     return ins;
 }
 
-DfxUnwindRemote::DfxUnwindRemote()
+DfxUnwindRemote::DfxUnwindRemote() : as_(nullptr)
 {
-    as_ = nullptr;
     std::unique_ptr<DfxSymbols> symbols(new DfxSymbols());
     symbols_ = std::move(symbols);
 }

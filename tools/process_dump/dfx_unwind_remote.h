@@ -50,7 +50,7 @@ private:
     uint64_t DoAdjustPc(unw_cursor_t &cursor, uint64_t pc);
     bool UpdateAndFillFrame(unw_cursor_t& cursor, std::shared_ptr<DfxFrame> frame,
         std::shared_ptr<DfxThread> thread, bool enableBuildId);
-    std::string GetReadableBuildId(uint8_t* buildId, size_t length);
+    static std::string GetReadableBuildId(uint8_t* buildId, size_t length);
 
 private:
     DfxUnwindRemote();
