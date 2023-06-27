@@ -37,7 +37,7 @@ ohos_unittest("backtrace_utils_test") {
   }
   external_deps = [
     "c_utils:utils",
-    "hilog_native:libhilog",
+    "hilog:libhilog",
   ]
 }
 
@@ -62,7 +62,7 @@ ohos_unittest("backtrace_local_test") {
 
   external_deps = [
     "c_utils:utils",
-    "hilog_native:libhilog",
+    "hilog:libhilog",
   ]
 }
 
@@ -85,7 +85,7 @@ ohos_unittest("catchframe_local_test") {
 
   external_deps = [
     "c_utils:utils",
-    "hilog_native:libhilog",
+    "hilog:libhilog",
   ]
 }
 

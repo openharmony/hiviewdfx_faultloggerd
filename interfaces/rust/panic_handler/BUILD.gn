@@ -18,8 +18,8 @@ ohos_rust_shared_library("panic_handler") {
   cflags_cc = [ "-DRUSTC_DEMANGLE" ]
   deps = [ "$faultloggerd_path/interfaces/rust/stacktrace:stacktrace_rust" ]
   external_deps = [
-    "hilog_native:hilog_rust",
-    "hisysevent_native:hisysevent_rust",
+    "hilog:hilog_rust",
+    "hisysevent:hisysevent_rust",
   ]
   crate_name = "panic_handler"
   crate_type = "dylib"

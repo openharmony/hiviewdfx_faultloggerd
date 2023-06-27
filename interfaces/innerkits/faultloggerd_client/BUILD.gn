@@ -62,7 +62,7 @@ if (defined(ohos_lite)) {
     ]
     external_deps = [
       "c_utils:utils",
-      "hilog_native:libhilog",
+      "hilog:libhilog",
       "init:libbegetutil",
     ]
     install_images = [

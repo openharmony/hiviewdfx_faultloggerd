@@ -21,14 +21,14 @@
     "deps": {
       "components": [
         "common",
-        "init",
-        "hilog_native",
         "c_utils",
-        "hisysevent_native"
+        "hilog",
+        "hisysevent",
+        "init"
       ],
       "third_party": [
-        "libunwind",
-        "bounds_checking_function"
+        "bounds_checking_function",
+        "libunwind"
       ]
     },
     "build": {

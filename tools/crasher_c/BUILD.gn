@@ -47,7 +47,7 @@ if (defined(ohos_lite)) {
   ohos_executable("crasher_c") {
     configs = [ ":crasher_config" ]
     sources = [ "dfx_crasher.c" ]
-    external_deps = [ "hilog_native:libhilog" ]
+    external_deps = [ "hilog:libhilog" ]
     part_name = "faultloggerd"
     subsystem_name = "hiviewdfx"
   }

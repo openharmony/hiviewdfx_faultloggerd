@@ -121,7 +121,7 @@ if (defined(ohos_lite)) {
 
     external_deps = [
       "c_utils:utils",
-      "hilog_native:libhilog_base",
+      "hilog:libhilog_base",
     ]
 
     part_name = "faultloggerd"
@@ -146,7 +146,7 @@ if (defined(ohos_lite)) {
 
     external_deps = [
       "c_utils:utils",
-      "hilog_native:libhilog_base",
+      "hilog:libhilog_base",
     ]
 
     innerapi_tags = [

@@ -209,7 +209,7 @@ ohos_executable("dumpcatcherdemo") {
     "//utils/native/base:utils",
   ]
 
-  external_deps = [ "hilog_native:libhilog" ]
+  external_deps = [ "hilog:libhilog" ]
 
   install_enable = true
   part_name = "faultloggerd"
