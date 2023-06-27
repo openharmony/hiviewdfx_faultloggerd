@@ -16,9 +16,8 @@
 #include "dfx_elf.h"
 
 #include <cstdlib>
-#include <fcntl.h>
-#include <new>
 #include <elf.h>
+#include <fcntl.h>
 #include <link.h>
 #include <securec.h>
 #include <string>

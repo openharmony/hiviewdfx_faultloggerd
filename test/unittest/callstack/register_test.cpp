@@ -13,9 +13,11 @@
  * limitations under the License.
  */
 
-#include "register_test.h"
-
 #include <bitset>
+#include <gtest/gtest.h>
+
+#include "dfx_types.h"
+#include "register.h"
 
 using namespace testing::ext;
 using namespace std;
