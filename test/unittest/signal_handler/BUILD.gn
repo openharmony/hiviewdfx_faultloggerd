@@ -39,7 +39,10 @@ if (defined(ohos_lite)) {
 
   ohos_unittest("test_signalhandler") {
     module_out_path = module_output_path
-    configs = [ ":module_test_signal_config" ]
+    configs = [
+      ":module_test_signal_config",
+      "$faultloggerd_path/common/build:coverage_flags",
+    ]
 
     sources = [ "signal_handler_test.cpp" ]
 
@@ -56,7 +59,10 @@ if (defined(ohos_lite)) {
   ohos_unittest("test_signalchain") {
     module_out_path = module_output_path
 
-    configs = [ ":module_test_signal_config" ]
+    configs = [
+      ":module_test_signal_config",
+      "$faultloggerd_path/common/build:coverage_flags",
+    ]
 
     sources = [ "signal_chain_test.cpp" ]
 

@@ -23,6 +23,7 @@ ohos_unittest("test_unwinder") {
     "$faultloggerd_path/common",
     "$faultloggerd_frameworks_path/unwinder/include",
   ]
+  configs = [ "$faultloggerd_path/common/build:coverage_flags" ]
   sources = [
     "elf_test.cpp",
     "maps_test.cpp",

@@ -11,7 +11,7 @@
     "name": "faultloggerd",
     "subsystem": "hiviewdfx",
     "syscap": [],
-    "features": [],
+    "features": [ "faultloggerd_feature_coverage = false" ],
     "adapted_system_type": [
       "small",
       "standard"
@@ -33,16 +33,7 @@
     },
     "build": {
       "sub_component": [
-        "//base/hiviewdfx/faultloggerd/interfaces/innerkits/backtrace:libbacktrace_local",
-        "//base/hiviewdfx/faultloggerd/interfaces/innerkits/signal_handler:dfx_signalhandler",
-        "//base/hiviewdfx/faultloggerd/interfaces/innerkits/dump_catcher:libdfx_dumpcatcher",
-        "//base/hiviewdfx/faultloggerd/interfaces/innerkits/faultloggerd_client:libfaultloggerd",
-        "//base/hiviewdfx/faultloggerd/interfaces/rust:libpanic_handler",
-        "//base/hiviewdfx/faultloggerd/interfaces/rust:libstacktrace_rust",
-        "//base/hiviewdfx/faultloggerd/tools/crash_validator:crash_validator",
-        "//base/hiviewdfx/faultloggerd/tools/dump_catcher:dumpcatcher",
-        "//base/hiviewdfx/faultloggerd/tools/process_dump:processdump",
-        "//base/hiviewdfx/faultloggerd/services:faultloggerd"
+        "//base/hiviewdfx/faultloggerd:faultloggerd_targets"
       ],
       "inner_kits": [
         {
@@ -103,16 +94,7 @@
         }
       ],
       "test": [
-        "//base/hiviewdfx/faultloggerd/example:dumpcatcherdemo",
-        "//base/hiviewdfx/faultloggerd/test:faultloggerd_fuzzertest",
-        "//base/hiviewdfx/faultloggerd/test:faultloggerd_moduletest",
-        "//base/hiviewdfx/faultloggerd/test:faultloggerd_systemtest",
-        "//base/hiviewdfx/faultloggerd/test:faultloggerd_performancetest",
-        "//base/hiviewdfx/faultloggerd/test:faultloggerd_funchook",
-        "//base/hiviewdfx/faultloggerd/test:faultloggerd_unittest",
-        "//base/hiviewdfx/faultloggerd/tools/crasher_c:crasher_c",
-        "//base/hiviewdfx/faultloggerd/tools/crasher_cpp:crasher_cpp",
-        "//base/hiviewdfx/faultloggerd/tools/panic_maker:panic_maker"
+        "//base/hiviewdfx/faultloggerd:faultloggerd_tests"
       ]
     }
   }

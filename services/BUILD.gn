@@ -93,7 +93,10 @@ if (defined(ohos_lite)) {
 
   ohos_executable("faultloggerd") {
     install_enable = true
-    configs = [ ":faultloggerd_config" ]
+    configs = [
+      ":faultloggerd_config",
+      "$faultloggerd_path/common/build:coverage_flags",
+    ]
     sources = faultloggerd_sources
 
     cflags_cc = [ "-DDEBUG_CRASH_LOCAL_HANDLER" ]

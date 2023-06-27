@@ -12,32 +12,54 @@
 # limitations under the License.
 
 import("//base/hiviewdfx/faultloggerd/faultloggerd.gni")
-
-lite_component("faultloggerd") {
-  features = [
-    "interfaces/innerkits/signal_handler:dfx_signalhandler",
-    "interfaces/innerkits/dump_catcher:libdfx_dumpcatcher",
-    "interfaces/innerkits/faultloggerd_client:libfaultloggerd",
-    "services:faultloggerd",
-    "tools/process_dump:processdump",
-    "tools/crasher_c:crasher_c",
-    "tools/crasher_cpp:crasher_cpp",
-    ":faultloggerd_test",
-  ]
+group("faultloggerd_targets") {
+  if (defined(ohos_lite)) {
+    deps = [
+      "interfaces/innerkits/dump_catcher:libdfx_dumpcatcher",
+      "interfaces/innerkits/faultloggerd_client:libfaultloggerd",
+      "interfaces/innerkits/signal_handler:dfx_signalhandler",
+      "services:faultloggerd",
+      "tools/crasher_c:crasher_c",
+      "tools/crasher_cpp:crasher_cpp",
+      "tools/process_dump:processdump",
+    ]
+  } else {
+    deps = [
+      "interfaces/innerkits/backtrace:libbacktrace_local",
+      "interfaces/innerkits/dump_catcher:libdfx_dumpcatcher",
+      "interfaces/innerkits/faultloggerd_client:libfaultloggerd",
+      "interfaces/innerkits/signal_handler:dfx_signalhandler",
+      "interfaces/rust:libpanic_handler",
+      "interfaces/rust:libstacktrace_rust",
+      "services:faultloggerd",
+      "tools/crash_validator:crash_validator",
+      "tools/dump_catcher:dumpcatcher",
+      "tools/process_dump:processdump",
+    ]
+  }
 }
 
-lite_component("faultloggerd_test") {
-  if (ohos_kernel_type == "liteos_m") {
-    features = []
+group("faultloggerd_tests") {
+  if (defined(ohos_lite)) {
+    deps = [
+      "test/moduletest:FaultloggerdModuleTest",
+      "test/systemtest:test_faultloggerd",
+      "test/unittest/process_dump:test_processdump",
+      "test/unittest/services:test_service",
+    ]
   } else {
-    features = []
-    if (ohos_build_type == "debug") {
-      features += [
-        "test/moduletest:FaultloggerdModuleTest",
-        "test/systemtest:test_faultloggerd",
-        "test/unittest:test_processdump",
-        "test/unittest:test_service",
-      ]
-    }
+    testonly = true
+    deps = [
+      "//base/hiviewdfx/faultloggerd/example:dumpcatcherdemo",
+      "//base/hiviewdfx/faultloggerd/test:faultloggerd_funchook",
+      "//base/hiviewdfx/faultloggerd/test:faultloggerd_fuzzertest",
+      "//base/hiviewdfx/faultloggerd/test:faultloggerd_moduletest",
+      "//base/hiviewdfx/faultloggerd/test:faultloggerd_performancetest",
+      "//base/hiviewdfx/faultloggerd/test:faultloggerd_systemtest",
+      "//base/hiviewdfx/faultloggerd/test:faultloggerd_unittest",
+      "//base/hiviewdfx/faultloggerd/tools/crasher_c:crasher_c",
+      "//base/hiviewdfx/faultloggerd/tools/crasher_cpp:crasher_cpp",
+      "//base/hiviewdfx/faultloggerd/tools/panic_maker:panic_maker",
+    ]
   }
 }

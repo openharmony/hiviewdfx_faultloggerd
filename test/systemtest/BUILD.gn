@@ -76,7 +76,10 @@ if (defined(ohos_lite)) {
       "faultloggerd_system_test.cpp",
     ]
 
-    configs = [ ":module_private_config" ]
+    configs = [
+      ":module_private_config",
+      "$faultloggerd_path/common/build:coverage_flags",
+    ]
 
     deps = [
       "$faultloggerd_path/common/dfxutil:dfx_util",

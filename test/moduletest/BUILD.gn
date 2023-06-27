@@ -53,7 +53,10 @@ if (defined(ohos_lite)) {
   ohos_moduletest("FaultloggerdModuleTest") {
     module_out_path = module_output_path
     sources = [ "faultloggerd_module_test.cpp" ]
-    configs = [ ":module_private_config" ]
+    configs = [
+      ":module_private_config",
+      "$faultloggerd_path/common/build:coverage_flags",
+    ]
     deps = [
       "$faultloggerd_path/interfaces/innerkits/faultloggerd_client:libfaultloggerd",
       "$faultloggerd_path/test/utils:dfx_test_util",

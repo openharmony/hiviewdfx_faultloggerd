@@ -77,8 +77,10 @@ if (defined(ohos_lite)) {
   }
 
   ohos_shared_library("libdfx_dumpcatcher") {
-    public_configs = [ ":dfx_dump_catcher_config" ]
-
+    public_configs = [
+      ":dfx_dump_catcher_config",
+      "$faultloggerd_path/common/build:coverage_flags",
+    ]
     sources = dumpcatcher_sources
     include_dirs = [
       "$faultloggerd_interfaces_path/common",

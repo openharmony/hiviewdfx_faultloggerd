@@ -43,7 +43,10 @@ if (defined(ohos_lite)) {
   }
 
   ohos_shared_library("libdfx_procinfo") {
-    public_configs = [ ":dfx_procinfo_config" ]
+    public_configs = [
+      ":dfx_procinfo_config",
+      "$faultloggerd_path/common/build:coverage_flags",
+    ]
     sources = [ "procinfo.cpp" ]
 
     deps = [

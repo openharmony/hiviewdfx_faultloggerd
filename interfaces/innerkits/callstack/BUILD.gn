@@ -86,6 +86,7 @@ if (!defined(ohos_lite)) {
       "../../../../../../commonlibrary/c_utils/base:utils_config",
       "//third_party/bounds_checking_function:libsec_public_config",
       "//third_party/googletest:gtest_config",
+      "$faultloggerd_path/common/build:coverage_flags",
     ]
 
     include_dirs = [
@@ -127,6 +128,7 @@ if (!defined(ohos_lite)) {
       "../../../../../../commonlibrary/c_utils/base:utils_config",
       "//third_party/bounds_checking_function:libsec_public_config",
       "//third_party/googletest:gtest_config",
+      "$faultloggerd_path/common/build:coverage_flags",
     ]
 
     include_dirs = [
