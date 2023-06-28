@@ -79,8 +79,7 @@ std::shared_ptr<DfxElfMaps> DfxElfMaps::Create(pid_t pid)
         DFXLOG_WARN("Fail to print path.");
         return nullptr;
     }
-
-    return Create(path);
+    return Create(std::string(path));
 }
 
 std::shared_ptr<DfxElfMaps> DfxElfMaps::CreateFromLocal()
