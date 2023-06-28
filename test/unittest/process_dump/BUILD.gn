@@ -82,7 +82,10 @@ if (defined(ohos_lite)) {
       "process_dump_test.cpp",
     ]
 
-    configs = [ ":module_private_config" ]
+    configs = [
+      ":module_private_config",
+      "$faultloggerd_path/common/build:coverage_flags",
+    ]
 
     defines = [ "UNITTEST" ]
 
@@ -104,7 +107,10 @@ if (defined(ohos_lite)) {
     module_out_path = module_output_path
     sources = [ "fault_stack_test.cpp" ]
 
-    configs = [ ":module_private_config" ]
+    configs = [
+      ":module_private_config",
+      "$faultloggerd_path/common/build:coverage_flags",
+    ]
 
     defines = [ "UNITTEST" ]
 

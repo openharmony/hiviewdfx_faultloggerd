@@ -85,7 +85,10 @@ if (defined(ohos_lite)) {
   }
 
   ohos_source_set("dfx_unwinder_src") {
-    public_configs = [ ":dfx_unwinder_config" ]
+    public_configs = [
+      ":dfx_unwinder_config",
+      "$faultloggerd_path/common/build:coverage_flags",
+    ]
 
     sources = dfx_unwinder_sources
 

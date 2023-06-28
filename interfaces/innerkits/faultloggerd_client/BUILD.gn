@@ -49,7 +49,11 @@ if (defined(ohos_lite)) {
   }
 
   ohos_shared_library("libfaultloggerd") {
-    public_configs = [ ":faultloggerd_client_config" ]
+    public_configs = [
+      ":faultloggerd_client_config",
+      "$faultloggerd_path/common/build:coverage_flags",
+    ]
+
     sources = [
       "faultloggerd_client.cpp",
       "faultloggerd_socket.cpp",

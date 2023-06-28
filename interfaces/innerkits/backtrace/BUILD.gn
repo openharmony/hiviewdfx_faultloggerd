@@ -105,7 +105,10 @@ if (defined(ohos_lite)) {
   }
 
   ohos_shared_library("libbacktrace_local") {
-    public_configs = [ ":dfx_backtrace_config" ]
+    public_configs = [
+      ":dfx_backtrace_config",
+      "$faultloggerd_path/common/build:coverage_flags",
+    ]
 
     sources = backtrace_local_sources
 

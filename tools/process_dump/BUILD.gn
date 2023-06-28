@@ -129,7 +129,10 @@ if (defined(ohos_lite)) {
   ohos_source_set("process_info_src") {
     cflags = []
 
-    configs = [ ":processdump_config" ]
+    configs = [
+      ":processdump_config",
+      "$faultloggerd_path/common/build:coverage_flags",
+    ]
     sources = processdump_sources
 
     deps = [
@@ -152,7 +155,10 @@ if (defined(ohos_lite)) {
 
   ohos_executable("processdump") {
     install_enable = true
-    configs = [ ":processdump_config" ]
+    configs = [
+      ":processdump_config",
+      "$faultloggerd_path/common/build:coverage_flags",
+    ]
     sources = processdump_sources
     sources += [
       "cppcrash_reporter.cpp",

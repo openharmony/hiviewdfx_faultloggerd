@@ -100,7 +100,10 @@ if (defined(ohos_lite)) {
   }
 
   ohos_static_library("dfx_local_handler") {
-    public_configs = [ ":dfx_signal_handler_config" ]
+    public_configs = [
+      ":dfx_signal_handler_config",
+      "$faultloggerd_path/common/build:coverage_flags",
+    ]
     include_dirs = [
       ".",
       "$faultloggerd_path/common",
@@ -129,7 +132,10 @@ if (defined(ohos_lite)) {
   }
 
   ohos_shared_library("dfx_signalhandler") {
-    public_configs = [ ":dfx_signal_handler_config" ]
+    public_configs = [
+      ":dfx_signal_handler_config",
+      "$faultloggerd_path/common/build:coverage_flags",
+    ]
     include_dirs = [
       "$faultloggerd_path/common",
       "$faultloggerd_path/common/cutil",

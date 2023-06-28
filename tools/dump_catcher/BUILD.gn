@@ -50,7 +50,10 @@ if (defined(ohos_lite)) {
 
   ohos_executable("dumpcatcher") {
     install_enable = true
-    configs = [ ":dumpcatcher_config" ]
+    configs = [
+      ":dumpcatcher_config",
+      "$faultloggerd_path/common/build:coverage_flags",
+    ]
     sources = [
       "dump_catcher.cpp",
       "main.cpp",

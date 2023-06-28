@@ -39,7 +39,10 @@ if (!defined(ohos_lite)) {
 
     defines = [ "HAVE_LIBUNWIND" ]
 
-    configs = [ ":callstack_test_config" ]
+    configs = [
+      ":callstack_test_config",
+      "$faultloggerd_path/common/build:coverage_flags",
+    ]
 
     deps = [
       "$faultloggerd_path/common/dfxlog:static_common_log",

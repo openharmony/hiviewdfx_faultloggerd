@@ -48,7 +48,10 @@ if (defined(ohos_lite)) {
   }
 
   ohos_executable("crasher_cpp") {
-    configs = [ ":crasher_config" ]
+    configs = [
+      ":crasher_config",
+      "$faultloggerd_path/common/build:coverage_flags",
+    ]
     sources = [ "dfx_crasher.cpp" ]
 
     external_deps = [

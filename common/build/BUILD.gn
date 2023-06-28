@@ -11,26 +11,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import("//base/hiviewdfx/faultloggerd/faultloggerd.gni")
+declare_args() {
+  faultloggerd_feature_coverage = false
+}
 
-if (defined(ohos_lite)) {
-  group("panic_maker") {
-    deps = []
-  }
-} else {
-  ohos_rust_executable("rustpanic_maker") {
-    sources = [ "main.rs" ]
-    configs = [ "$faultloggerd_path/common/build:coverage_flags" ]
-    deps = [
-      "$faultloggerd_path/interfaces/rust/panic_handler:panic_handler",
-      "$faultloggerd_path/interfaces/rust/stacktrace:stacktrace_rust",
-    ]
-    part_name = "faultloggerd"
-    subsystem_name = "hiviewdfx"
-  }
-
-  group("panic_maker") {
-    testonly = true
-    deps = [ ":rustpanic_maker" ]
+config("coverage_flags") {
+  if (faultloggerd_feature_coverage) {
+    cflags = [ "--coverage" ]
+    ldflags = [ "--coverage" ]
   }
 }

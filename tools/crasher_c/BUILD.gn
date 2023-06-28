@@ -45,7 +45,10 @@ if (defined(ohos_lite)) {
   }
 
   ohos_executable("crasher_c") {
-    configs = [ ":crasher_config" ]
+    configs = [
+      ":crasher_config",
+      "$faultloggerd_path/common/build:coverage_flags",
+    ]
     sources = [ "dfx_crasher.c" ]
     external_deps = [ "hilog_native:libhilog" ]
     part_name = "faultloggerd"

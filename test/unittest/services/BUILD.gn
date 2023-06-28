@@ -82,7 +82,10 @@ if (defined(ohos_lite)) {
       "faultlogger_pipe_test.cpp",
     ]
 
-    configs = [ ":module_private_config" ]
+    configs = [
+      ":module_private_config",
+      "$faultloggerd_path/common/build:coverage_flags",
+    ]
 
     deps = [
       "$faultloggerd_path/common/dfxlog:static_common_log",
