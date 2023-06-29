@@ -101,7 +101,7 @@ if (defined(ohos_lite)) {
 
     external_deps = [
       "c_utils:utils",
-      "hilog_native:libhilog",
+      "hilog:libhilog",
     ]
     part_name = "faultloggerd"
     subsystem_name = "hiviewdfx"
@@ -121,7 +121,7 @@ if (defined(ohos_lite)) {
 
     external_deps = [
       "c_utils:utils",
-      "hilog_native:libhilog_base",
+      "hilog:libhilog_base",
     ]
     part_name = "faultloggerd"
     subsystem_name = "hiviewdfx"

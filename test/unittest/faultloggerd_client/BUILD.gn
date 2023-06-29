@@ -39,7 +39,7 @@ ohos_unittest("test_faultloggerd_client") {
 
   external_deps = [
     "c_utils:utils",
-    "hilog_native:libhilog",
+    "hilog:libhilog",
   ]
 }
 

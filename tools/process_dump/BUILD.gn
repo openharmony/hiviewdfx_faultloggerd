@@ -146,7 +146,7 @@ if (defined(ohos_lite)) {
 
     external_deps = [
       "c_utils:utils",
-      "hilog_native:libhilog",
+      "hilog:libhilog",
     ]
 
     part_name = "faultloggerd"
@@ -179,7 +179,7 @@ if (defined(ohos_lite)) {
 
     external_deps = [
       "c_utils:utils",
-      "hilog_native:libhilog",
+      "hilog:libhilog",
     ]
 
     install_images = [

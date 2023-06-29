@@ -50,7 +50,7 @@ if (defined(ohos_lite)) {
       "$faultloggerd_path/common/build:coverage_flags",
     ]
     sources = [ "dfx_crasher.c" ]
-    external_deps = [ "hilog_native:libhilog" ]
+    external_deps = [ "hilog:libhilog" ]
     part_name = "faultloggerd"
     subsystem_name = "hiviewdfx"
   }

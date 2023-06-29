@@ -132,7 +132,7 @@ if (defined(ohos_lite)) {
     version_script = "libbacktrace_local.map"
     external_deps = [
       "c_utils:utils",
-      "hilog_native:libhilog",
+      "hilog:libhilog",
     ]
 
     install_images = [
@@ -173,7 +173,7 @@ if (defined(ohos_lite)) {
 
     external_deps = [
       "c_utils:utils",
-      "hilog_native:libhilog_base",
+      "hilog:libhilog_base",
     ]
 
     part_name = "faultloggerd"

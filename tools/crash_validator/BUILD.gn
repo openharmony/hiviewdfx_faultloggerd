@@ -30,8 +30,8 @@ if (!defined(ohos_lite)) {
     deps = [ "//third_party/bounds_checking_function:libsec_shared" ]
 
     external_deps = [
-      "hisysevent_native:libhisysevent",
-      "hisysevent_native:libhisyseventmanager",
+      "hisysevent:libhisysevent",
+      "hisysevent:libhisyseventmanager",
       "ipc:ipc_core",
     ]
 
