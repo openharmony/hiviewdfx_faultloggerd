@@ -130,8 +130,6 @@ void DfxConfig::ReadConfig(DfxConfigInfo& config)
         if (fp == nullptr) {
             break;
         }
-        std::string key;
-        std::string value;
         while (!feof(fp)) {
             (void)memset_s(codeBuffer, sizeof(codeBuffer), '\0', sizeof(codeBuffer));
             if (fgets(codeBuffer, CONF_LINE_SIZE - 1, fp) == nullptr) {
@@ -144,8 +142,8 @@ void DfxConfig::ReadConfig(DfxConfigInfo& config)
             }
             std::string::size_type equalSignPos = line.find_first_of("=");
             if (equalSignPos != line.npos) {
-                key = line.substr(0, equalSignPos);
-                value = line.substr(equalSignPos + 1);
+                std::string key = line.substr(0, equalSignPos);
+                std::string value = line.substr(equalSignPos + 1);
                 Trim(key);
                 Trim(value);
                 ParserConfig(config, key, value);

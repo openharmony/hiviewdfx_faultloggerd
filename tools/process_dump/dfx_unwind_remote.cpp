@@ -88,7 +88,7 @@ bool DfxUnwindRemote::UnwindProcess(std::shared_ptr<DfxProcess> process)
             break;
         }
 
-        Printer::GetInstance().PrintThreadHeaderByConfig(process->keyThread_);
+        Printer::PrintThreadHeaderByConfig(process->keyThread_);
         ret = UnwindThread(process, unwThread);
         if (!ret) {
             UnwindThreadFallback(process, unwThread);
@@ -109,7 +109,7 @@ bool DfxUnwindRemote::UnwindProcess(std::shared_ptr<DfxProcess> process)
         size_t index = 0;
         for (auto thread : threads) {
             if ((index == 1) && ProcessDumper::GetInstance().IsCrash()) {
-                Printer::GetInstance().PrintOtherThreadHeaderByConfig();
+                Printer::PrintOtherThreadHeaderByConfig();
             }
 
             if (index != 0) {
@@ -117,7 +117,7 @@ bool DfxUnwindRemote::UnwindProcess(std::shared_ptr<DfxProcess> process)
             }
 
             if (thread->Attach()) {
-                Printer::GetInstance().PrintThreadHeaderByConfig(thread);
+                Printer::PrintThreadHeaderByConfig(thread);
                 UnwindThread(process, thread);
                 thread->Detach();
             }
@@ -127,9 +127,9 @@ bool DfxUnwindRemote::UnwindProcess(std::shared_ptr<DfxProcess> process)
     } while (false);
 
     if (ProcessDumper::GetInstance().IsCrash()) {
-        Printer::GetInstance().PrintThreadRegsByConfig(unwThread);
-        Printer::GetInstance().PrintThreadFaultStackByConfig(process, unwThread);
-        Printer::GetInstance().PrintProcessMapsByConfig(process);
+        Printer::PrintThreadRegsByConfig(unwThread);
+        Printer::PrintThreadFaultStackByConfig(process, unwThread);
+        Printer::PrintProcessMapsByConfig(process);
     }
 
     unw_destroy_addr_space(as_);
@@ -362,7 +362,7 @@ bool DfxUnwindRemote::UnwindThread(std::shared_ptr<DfxProcess> process, std::sha
         unwRet = unw_step(&cursor);
     } while ((unwRet > 0) && (index < DfxConfig::GetConfig().maxFrameNums));
 
-    Printer::GetInstance().PrintThreadBacktraceByConfig(thread);
+    Printer::PrintThreadBacktraceByConfig(thread);
     _UPT_destroy(context);
     return true;
 }
@@ -383,7 +383,7 @@ void DfxUnwindRemote::UnwindThreadFallback(std::shared_ptr<DfxProcess> process, 
         return;
     }
 
-    auto createFrame = [maps, thread] (int index, uintptr_t pc) {
+    auto createFrame = [maps, thread] (size_t index, uintptr_t pc) {
         std::shared_ptr<DfxElfMap> map;
         auto frame = std::make_shared<DfxFrame>();
         frame->pc = pc;
@@ -400,7 +400,7 @@ void DfxUnwindRemote::UnwindThreadFallback(std::shared_ptr<DfxProcess> process, 
 
     createFrame(0, regs->pc_);
     createFrame(1, regs->lr_);
-    Printer::GetInstance().PrintThreadBacktraceByConfig(thread);
+    Printer::PrintThreadBacktraceByConfig(thread);
 }
 } // namespace HiviewDFX
 } // namespace OHOS

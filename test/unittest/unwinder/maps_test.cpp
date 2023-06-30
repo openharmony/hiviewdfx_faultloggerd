@@ -31,9 +31,8 @@ public:
     void SetUp() {}
     void TearDown() {}
 };
-} // namespace HiviewDFX
-} // namespace OHOS
 
+namespace {
 /**
  * @tc.name: DfxMapsTest001
  * @tc.desc: test map Create
@@ -94,3 +93,6 @@ HWTEST_F (DfxMapsTest, DfxMapsTest003, TestSize.Level2)
     EXPECT_EQ(false, flag);
     GTEST_LOG_(INFO) << "DfxMapsTest003: end.";
 }
+}
+} // namespace HiviewDFX
+} // namespace OHOS

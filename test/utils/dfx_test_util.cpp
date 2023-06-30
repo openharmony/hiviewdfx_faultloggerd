@@ -239,7 +239,7 @@ uint64_t GetSelfMemoryCount()
     std::vector<std::string> result;
     OHOS::SplitStr(content, "\n", result);
     auto iter = std::find_if(result.begin(), result.end(),
-        [] (const std::string str) {
+        [] (const std::string& str) {
             return str.find("Pss:") != std::string::npos;
         });
     if (iter == result.end()) {
