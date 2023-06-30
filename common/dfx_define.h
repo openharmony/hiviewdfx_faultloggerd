@@ -38,21 +38,6 @@ static const char PROC_SELF_TASK_PATH[] = "/proc/self/task";
 static const char PROC_SELF_CMDLINE_PATH[] = "/proc/self/cmdline";
 static const char PROC_SELF_COMM_PATH[] = "/proc/self/comm";
 
-#if defined(__arm__)
-static const int USER_REG_NUM = 16;
-static const int REG_PC_NUM = 15;
-static const int REG_LR_NUM = 14;
-static const int REG_SP_NUM = 13;
-#elif defined(__aarch64__)
-static const int USER_REG_NUM = 34;
-static const int REG_PC_NUM = 32;
-static const int REG_LR_NUM = 30;
-static const int REG_SP_NUM = 31;
-#elif defined(__x86_64__)
-static const int USER_REG_NUM = 27;
-static const int REG_PC_NUM = 16;
-#endif
-
 static const int DUMP_CATCHER_NUMBER_ONE = 1;
 static const int DUMP_CATCHER_NUMBER_TWO = 2;
 static const int DUMP_CATCHER_NUMBER_THREE = 3;
@@ -62,9 +47,6 @@ static const int NUMBER_ONE_MILLION = 1000000;
 static const int FAULTSTACK_ITEM_BUFFER_LENGTH = 2048;
 static const int FAULTSTACK_SP_REVERSE = 3;
 static const int FAULTSTACK_FIRST_FRAME_SEARCH_LENGTH = 64;
-
-// 128K back trace stack size
-static const int BACK_STACK_INFO_SIZE = 128 * 1024;
 
 static const int SYMBOL_BUF_SIZE = 1024;
 static const int LOG_BUF_LEN = 1024;
