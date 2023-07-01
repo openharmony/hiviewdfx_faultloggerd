@@ -182,5 +182,32 @@ HWTEST_F(UnwinderTest, UnwinderTest002, TestSize.Level2)
 #endif
     GTEST_LOG_(INFO) << "UnwinderTest002: end.";
 }
+
+/**
+ * @tc.name: UnwinderTest003
+ * @tc.desc: test dwarf unwinder Unwind
+ * @tc.type: FUNC
+ */
+HWTEST_F(UnwinderTest, UnwinderTest003, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "UnwinderTest003: start.";
+    ElapsedTime counter;
+    pid_t child = fork();
+    if (child == 0) {
+        ElapsedTime counter2;
+        DwarfUnwinder unwinder;
+        ASSERT_EQ(true, unwinder.Unwind(0));
+        GTEST_LOG_(INFO) << "ChildProcessElapse:" << counter2.Elapsed();
+        const auto& frames = unwinder.GetFrames();
+        ASSERT_GT(frames.size(), 0);
+        _exit(0);
+    }
+    GTEST_LOG_(INFO) << "CurrentThreadElapse:" << counter.Elapsed();
+
+    int status;
+    int ret = wait(&status);
+    GTEST_LOG_(INFO) << "Status:" << status << " Result:" << ret;
+    GTEST_LOG_(INFO) << "UnwinderTest003: end.";
+}
 } // namespace HiviewDFX
 } // namepsace OHOS

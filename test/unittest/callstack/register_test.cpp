@@ -90,13 +90,10 @@ HWTEST_F(RegisterTest, GetSupportedRegMask, TestSize.Level1)
  */
 HWTEST_F(RegisterTest, RegisterGetIP, TestSize.Level1)
 {
-#if defined(__x86_64__)
     EXPECT_EQ(RegisterGetIP(ArchType::X86_64), PERF_REG_X86_IP);
-#elif defined(__arm__)
     EXPECT_EQ(RegisterGetIP(ArchType::ARM), PERF_REG_ARM_PC);
-#elif defined(__aarch64__)
     EXPECT_EQ(RegisterGetIP(ArchType::ARM64), PERF_REG_ARM64_PC);
-#endif
+    EXPECT_EQ(RegisterGetSP(ArchType::UNSUPPORT), std::numeric_limits<size_t>::max());
 }
 
 /**
@@ -106,13 +103,10 @@ HWTEST_F(RegisterTest, RegisterGetIP, TestSize.Level1)
  */
 HWTEST_F(RegisterTest, RegisterGetSP, TestSize.Level1)
 {
-#if defined(__x86_64__)
-    EXPECT_EQ(RegisterGetSP(ArchType::X86_64), PERF_REG_X86_IP);
-#elif defined(__arm__)
+    EXPECT_EQ(RegisterGetSP(ArchType::X86_64), PERF_REG_X86_SP);
     EXPECT_EQ(RegisterGetSP(ArchType::ARM), PERF_REG_ARM_SP);
-#elif defined(__aarch64__)
     EXPECT_EQ(RegisterGetSP(ArchType::ARM64), PERF_REG_ARM64_SP);
-#endif
+    EXPECT_EQ(RegisterGetSP(ArchType::UNSUPPORT), std::numeric_limits<size_t>::max());
 }
 
 /**
@@ -204,6 +198,57 @@ HWTEST_F(RegisterTest, LibunwindRegIdToPerfReg, TestSize.Level1)
     }
     EXPECT_EQ(LibunwindRegIdToPerfReg(max + 1) < 0, true);
     EXPECT_EQ(LibunwindRegIdToPerfReg(-1) < 0, true);
+}
+
+/**
+ * @tc.name: GetArchTypeFromABI
+ * @tc.desc: test GetArchTypeFromABI function
+ * @tc.type: FUNC
+ */
+HWTEST_F(RegisterTest, GetArchTypeFromABI, TestSize.Level1)
+{
+#if defined(__x86_64__)
+    EXPECT_EQ(GetArchTypeFromABI(false), ArchType::X86_64);
+    EXPECT_EQ(GetArchTypeFromABI(true), ArchType::X86_32);
+#elif defined(__aarch64__)
+    EXPECT_EQ(GetArchTypeFromABI(false), ArchType::ARM64);
+    EXPECT_EQ(GetArchTypeFromABI(true), ArchType::ARM);
+#elif defined(__arm__)
+    EXPECT_EQ(GetArchTypeFromABI(false), ArchType::ARM64);
+#else
+    EXPECT_EQ(GetArchTypeFromABI(false), ArchType::UNSUPPORT);
+#endif
+}
+
+/**
+ * @tc.name: GetDeviceArch
+ * @tc.desc: test GetDeviceArch function
+ * @tc.type: FUNC
+ */
+HWTEST_F(RegisterTest, GetDeviceArch, TestSize.Level1)
+{
+#if defined(__x86_64__)
+    EXPECT_EQ(GetDeviceArch(), ArchType::X86_64);
+#elif defined(__aarch64__)
+    EXPECT_EQ(GetDeviceArch(), ArchType::ARM64);
+#elif defined(__arm__)
+    EXPECT_EQ(GetDeviceArch(), ArchType::ARM64);
+#else
+    EXPECT_EQ(GetDeviceArch(), ArchType::UNSUPPORT);
+#endif
+}
+
+/**
+ * @tc.name: SetDeviceArch
+ * @tc.desc: test SetDeviceArch function
+ * @tc.type: FUNC
+ */
+HWTEST_F(RegisterTest, SetDeviceArch, TestSize.Level1)
+{
+    EXPECT_EQ(SetDeviceArch(ArchType::ARM64), ArchType::ARM64);
+    EXPECT_EQ(SetDeviceArch(ArchType::ARM), ArchType::ARM);
+    EXPECT_EQ(SetDeviceArch(ArchType::X86_64), ArchType::X86_64);
+    EXPECT_EQ(SetDeviceArch(ArchType::X86_32), ArchType::X86_32);
 }
 } // namespace HiviewDFX
 } // namespace OHOS

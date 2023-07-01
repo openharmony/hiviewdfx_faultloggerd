@@ -39,6 +39,7 @@ public:
 } // namespace HiviewDFX
 } // namespace OHOS
 
+namespace {
 /**
  * @tc.name: FaultLoggerDaemonTest001
  * @tc.desc: test HandleDefaultClientRequest/HandleLogFileDesClientRequest func
@@ -147,4 +148,5 @@ HWTEST_F (FaultLoggerDaemonTest, FaultLoggerDaemonTest004, TestSize.Level2)
     int fd = daemon->CreateFileForRequest(type, pid, time, false);
     ASSERT_NE(fd, -1);
     GTEST_LOG_(INFO) << "FaultLoggerDaemonTest004: end.";
+}
 }
