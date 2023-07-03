@@ -84,7 +84,7 @@ bool FpUnwinder::UnwindWithContext(unw_context_t& context, size_t skipFrameNum)
 bool FpUnwinder::Unwind(size_t skipFrameNum)
 {
     std::shared_ptr<DfxRegs> dfxregs = DfxRegs::Create(FRAMEPOINTER_UNWIND);
-    skipFrameNum += 2; // skip GetFramePointerMiniRegs and Create function
+    skipFrameNum += 2; // 2 : skip GetFramePointerMiniRegs and Create function
 
     return Unwind(dfxregs, skipFrameNum);
 }

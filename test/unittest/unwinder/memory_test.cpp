@@ -36,9 +36,8 @@ public:
     void SetUp() {}
     void TearDown() {}
 };
-} // namespace HiviewDFX
-} // namespace OHOS
 
+namespace {
 /**
  * @tc.name: DfxMemoryTest001
  * @tc.desc: test DfxMemory class CreateFileMemory
@@ -57,3 +56,6 @@ HWTEST_F(DfxMemoryTest, DfxMemoryTest001, TestSize.Level2)
     EXPECT_EQ(true, ret) << "DfxMemoryTest001: failed";
     GTEST_LOG_(INFO) << "DfxMemoryTest001: end.";
 }
+}
+} // namespace HiviewDFX
+} // namespace OHOS

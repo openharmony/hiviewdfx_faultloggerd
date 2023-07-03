@@ -37,9 +37,8 @@ public:
     void SetUp() {}
     void TearDown() {}
 };
-} // namespace HiviewDFX
-} // namespace OHOS
 
+namespace {
 /**
  * @tc.name: DfxElfTest001
  * @tc.desc: test DfxElf class functions
@@ -70,3 +69,7 @@ HWTEST_F(DfxElfTest, DfxElfTest001, TestSize.Level2)
     }
     GTEST_LOG_(INFO) << "DfxElfTest001: end.";
 }
+}
+} // namespace HiviewDFX
+} // namespace OHOS
+

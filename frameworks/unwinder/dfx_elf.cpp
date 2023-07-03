@@ -136,7 +136,7 @@ void DfxElfImpl::ReadProgramHeaders(const ElfW(Ehdr)& ehdr)
             ptLoads_[phdr.p_offset] = elfLoadInfo;
 
             if (firstExecLoadHeader) {
-                loadBias_ = static_cast<int64_t>(phdr.p_vaddr) - phdr.p_offset;
+                loadBias_ = static_cast<int64_t>(phdr.p_vaddr) - static_cast<int64_t>(phdr.p_offset);
             }
             firstExecLoadHeader = false;
             break;
@@ -386,7 +386,6 @@ bool DfxElf::ReadElfInfo()
     }
     machine_ = machine;
 
-    arch_ = ARCH_UNKNOWN;
     if (class_ == ELFCLASS32) {
         if (machine == EM_ARM) {
             arch_ = ARCH_ARM;
@@ -503,9 +502,6 @@ uint64_t DfxElf::GetMaxSize(std::shared_ptr<DfxMemory> memory)
 
     uint64_t size = 0;
     auto elfImpl = std::make_shared<DfxElfImpl>(memory);
-    if (elfImpl == nullptr) {
-        return 0;
-    }
     elfImpl->GetMaxSize(&size);
     return size;
 }

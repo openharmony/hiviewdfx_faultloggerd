@@ -20,7 +20,6 @@
 #include <csignal>
 #include <memory>
 #include <string>
-#include "nocopyable.h"
 #include "dfx_dump_request.h"
 #include "dfx_process.h"
 #include "dfx_thread.h"
@@ -29,20 +28,13 @@ namespace OHOS {
 namespace HiviewDFX {
 class Printer {
 public:
-    static Printer &GetInstance();
-    virtual ~Printer() {};
-
-    void PrintDumpHeader(std::shared_ptr<ProcessDumpRequest> request, std::shared_ptr<DfxProcess> process);
-    void PrintProcessMapsByConfig(std::shared_ptr<DfxProcess> process);
-    void PrintOtherThreadHeaderByConfig();
-    void PrintThreadHeaderByConfig(std::shared_ptr<DfxThread> thread);
-    void PrintThreadBacktraceByConfig(std::shared_ptr<DfxThread> thread);
-    void PrintThreadRegsByConfig(std::shared_ptr<DfxThread> thread);
-    void PrintThreadFaultStackByConfig(std::shared_ptr<DfxProcess> process, std::shared_ptr<DfxThread> thread);
-
-private:
-    Printer() = default;
-    DISALLOW_COPY_AND_MOVE(Printer);
+    static void PrintDumpHeader(std::shared_ptr<ProcessDumpRequest> request, std::shared_ptr<DfxProcess> process);
+    static void PrintProcessMapsByConfig(std::shared_ptr<DfxProcess> process);
+    static void PrintOtherThreadHeaderByConfig();
+    static void PrintThreadHeaderByConfig(std::shared_ptr<DfxThread> thread);
+    static void PrintThreadBacktraceByConfig(std::shared_ptr<DfxThread> thread);
+    static void PrintThreadRegsByConfig(std::shared_ptr<DfxThread> thread);
+    static void PrintThreadFaultStackByConfig(std::shared_ptr<DfxProcess> process, std::shared_ptr<DfxThread> thread);
 };
 } // namespace HiviewDFX
 } // namespace OHOS
