@@ -201,11 +201,11 @@ static int32_t InheritCapabilities(void)
     return 0;
 }
 
-static const int g_interestedSignalList[] = {
+static const int SIGCHAIN_SIGNAL_LIST[] = {
     SIGABRT, SIGBUS, SIGDUMP, SIGFPE,
     SIGSEGV, SIGSTKFLT, SIGSYS, SIGTRAP,
 };
-static const int g_specialSignalList[] = {
+static const int SIGACTION_SIGNAL_LIST[] = {
     SIGILL,
 };
 
@@ -213,8 +213,8 @@ static void SetInterestedSignalMasks(int how)
 {
     sigset_t set;
     sigemptyset(&set);
-    for (size_t i = 0; i < sizeof(g_interestedSignalList) / sizeof(g_interestedSignalList[0]); i++) {
-        sigaddset(&set, g_interestedSignalList[i]);
+    for (size_t i = 0; i < sizeof(SIGCHAIN_SIGNAL_LIST) / sizeof(SIGCHAIN_SIGNAL_LIST[0]); i++) {
+        sigaddset(&set, SIGCHAIN_SIGNAL_LIST[i]);
     }
     sigprocmask(how, &set, NULL);
 }
@@ -569,8 +569,8 @@ void DFX_InstallSignalHandler(void)
         .sca_flags = 0,
     };
 
-    for (size_t i = 0; i < sizeof(g_interestedSignalList) / sizeof(g_interestedSignalList[0]); i++) {
-        int32_t sig = g_interestedSignalList[i];
+    for (size_t i = 0; i < sizeof(SIGCHAIN_SIGNAL_LIST) / sizeof(SIGCHAIN_SIGNAL_LIST[0]); i++) {
+        int32_t sig = SIGCHAIN_SIGNAL_LIST[i];
         add_special_handler_at_last(sig, &sigchain);
     }
 
@@ -580,8 +580,8 @@ void DFX_InstallSignalHandler(void)
     sigfillset(&action.sa_mask);
     action.sa_sigaction = DFX_SignalHandler;
     action.sa_flags = SA_RESTART | SA_SIGINFO | SA_ONSTACK;
-    for (size_t i = 0; i < sizeof(g_specialSignalList) / sizeof(g_specialSignalList[0]); i++) {
-        int32_t sig = g_specialSignalList[i];
+    for (size_t i = 0; i < sizeof(SIGACTION_SIGNAL_LIST) / sizeof(SIGACTION_SIGNAL_LIST[0]); i++) {
+        int32_t sig = SIGACTION_SIGNAL_LIST[i];
         if (sigaction(sig, &action, &(g_oldSigactionList[sig])) != 0) {
             DFXLOG_ERROR("Failed to register signal(%d)", sig);
         }
