@@ -511,12 +511,12 @@ static bool DFX_SigchainHandler(int sig, siginfo_t *si, void *context)
 
     // crash signal should never be skipped
     pthread_mutex_lock(&g_signalHandlerMutex);
-    BlockMainThreadIfNeed(sig);
     if (g_prevHandledSignal != SIGDUMP) {
         pthread_mutex_unlock(&g_signalHandlerMutex);
         ExitIfSandboxPid(sig);
         return ret;
     }
+    BlockMainThreadIfNeed(sig);
     g_prevHandledSignal = sig;
 
     FillDumpRequest(sig, si, context);

@@ -1289,6 +1289,59 @@ HWTEST_F(DumpCatcherSystemTest,  DumpCatcherSystemTest048, TestSize.Level2)
     GTEST_LOG_(INFO) << "DumpCatcherSystemTest048: end.";
 }
 
+/**
+ * @tc.name: DumpCatcherSystemTest101
+ * @tc.desc: test using dumpcatcher command tools to dump the signal stop process
+ * @tc.type: FUNC
+ */
+HWTEST_F(DumpCatcherSystemTest, DumpCatcherSystemTest101, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "DumpCatcherSystemTest101: start uid:" << getuid();
+    pid_t pid = fork();
+    if (pid < 0) {
+        FAIL() << "DumpCatcherSystemTest101: Failed to fork a test process";
+    } else if (pid == 0) {
+        sleep(3); // 3 : sleep 3 seconds
+    }
+    kill(pid, SIGSTOP);
+    string procCMD = "dumpcatcher -p " + to_string(pid);
+    string procDumpLog = ExecuteCommands(procCMD);
+    GTEST_LOG_(INFO) << "procDumpLog: " << procDumpLog;
+    string log[] = { "Failed", "status:", "Name:", "nonvoluntary_ctxt_switches:", "wchan:", "Tid:" };
+    int count = GetKeywordsNum(procDumpLog, log, sizeof(log) / sizeof(log[0]));
+    kill(pid, SIGKILL);
+    EXPECT_EQ(count, sizeof(log) / sizeof(log[0])) << "DumpCatcherSystemTest101 Failed";
+    GTEST_LOG_(INFO) << "DumpCatcherSystemTest101: end.";
+}
+
+/**
+ * @tc.name: DumpCatcherSystemTest102
+ * @tc.desc: test calling dumpcatcher interfaces to dump the signal stop process
+ * @tc.type: FUNC
+ */
+HWTEST_F(DumpCatcherSystemTest, DumpCatcherSystemTest102, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "DumpCatcherSystemTest102: start uid:" << getuid();
+    pid_t pid = fork();
+    if (pid < 0) {
+        FAIL() << "DumpCatcherSystemTest102: Failed to fork a test process";
+    } else if (pid == 0) {
+        sleep(3); // 3 : sleep 3 seconds
+    }
+    kill(pid, SIGSTOP);
+    DfxDumpCatcher dumplog;
+    string msg = "";
+    if (!dumplog.DumpCatch(pid, 0, msg)) {
+        GTEST_LOG_(ERROR) << "DumpCatcherSystemTest102: Failed to dump target process.";
+    }
+    GTEST_LOG_(INFO) << msg;
+    string log[] = { "timeout", "status:", "Name:", "nonvoluntary_ctxt_switches:", "wchan:", "Tid:" };
+    int count = GetKeywordsNum(msg, log, sizeof(log) / sizeof(log[0]));
+    kill(pid, SIGKILL);
+    EXPECT_EQ(count, sizeof(log) / sizeof(log[0])) << "DumpCatcherSystemTest102 Failed";
+    GTEST_LOG_(INFO) << "DumpCatcherSystemTest102: end.";
+}
+
 static void TestDumpCatch(const int targetPid, const string& processName, const int threadIdx)
 {
     DfxDumpCatcher dumplog;

@@ -189,7 +189,7 @@ void ReadProcessStatus(std::string& result, const int pid)
 {
     std::string path = StringPrintf("/proc/%d/status", pid);
     if (access(path.c_str(), F_OK) != 0) {
-        result = StringPrintf("Failed to access path(%s), errno(%d).\n", path.c_str(), errno);
+        result.append(StringPrintf("Failed to access path(%s), errno(%d).\n", path.c_str(), errno));
         return;
     }
     std::string content;
@@ -204,7 +204,7 @@ void ReadProcessWchan(std::string& result, const int pid, bool onlyPid, bool wit
 {
     std::string path = StringPrintf("/proc/%d/wchan", pid);
     if (access(path.c_str(), F_OK) != 0) {
-        result = StringPrintf("Failed to access path(%s), errno(%d).\n", path.c_str(), errno);
+        result.append(StringPrintf("Failed to access path(%s), errno(%d).\n", path.c_str(), errno));
         return;
     }
     std::ostringstream ss;
@@ -215,7 +215,7 @@ void ReadProcessWchan(std::string& result, const int pid, bool onlyPid, bool wit
         ss << StringPrintf("%s\n", content.c_str());
     }
     if (onlyPid) {
-        result = ss.str();
+        result.append(ss.str());
         return;
     }
     ss << "\nProcess threads wchan:\n";
@@ -245,7 +245,7 @@ void ReadProcessWchan(std::string& result, const int pid, bool onlyPid, bool wit
         ss << "Load process wchan failed." << std::endl;
     }
     ss << "=======================================\n";
-    result = ss.str();
+    result.append(ss.str());
 }
 
 void ReadThreadWchan(std::string& result, const int tid, bool withThreadName)
