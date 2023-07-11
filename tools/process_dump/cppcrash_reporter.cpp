@@ -35,6 +35,7 @@ struct FaultLogInfoInner {
     std::string logPath;
     std::map<std::string, std::string> sectionMaps;
 };
+static const char FOUNDATION_PROCESS_NAME[] = "foundation";
 static const char HIVIEW_PROCESS_NAME[] = "/system/bin/hiview";
 
 using AddFaultLog = void (*)(FaultLogInfoInner* info);
@@ -113,6 +114,11 @@ void CppCrashReporter::ReportToHiview()
 
 void CppCrashReporter::ReportToAbilityManagerService()
 {
+    if (process_->processInfo_.processName.find(FOUNDATION_PROCESS_NAME) != std::string::npos) {
+        DFXLOG_WARN("Do not to report to AbilityManagerService, foundation is crashed.");
+        return;
+    }
+
     void* handle = dlopen("libability_manager_c.z.so", RTLD_LAZY | RTLD_NODELETE);
     if (handle == nullptr) {
         DFXLOG_WARN("Failed to dlopen libabilityms, %s\n", dlerror());
