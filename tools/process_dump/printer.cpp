@@ -30,12 +30,6 @@
 
 namespace OHOS {
 namespace HiviewDFX {
-Printer &Printer::GetInstance()
-{
-    static Printer ins;
-    return ins;
-}
-
 void Printer::PrintDumpHeader(std::shared_ptr<ProcessDumpRequest> request, std::shared_ptr<DfxProcess> process)
 {
     bool isCrash = (request->siginfo.si_signo != SIGDUMP);

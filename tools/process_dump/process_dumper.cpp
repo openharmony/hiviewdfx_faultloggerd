@@ -76,8 +76,8 @@ void ProcessDumper::Dump()
 
     // check dump result ?
     if (reporter_ != nullptr) {
-        reporter_->ReportToAbilityManagerService();
         reporter_->ReportToHiview();
+        reporter_->ReportToAbilityManagerService();
     }
 
     _exit(0);
@@ -124,7 +124,7 @@ int ProcessDumper::DumpProcess(std::shared_ptr<ProcessDumpRequest> request)
             reporter_ = std::make_shared<CppCrashReporter>(request->timeStamp, request->siginfo, process_);
         }
 
-        Printer::GetInstance().PrintDumpHeader(request, process_);
+        Printer::PrintDumpHeader(request, process_);
         if (DfxUnwindRemote::GetInstance().UnwindProcess(process_) == false) {
             DFXLOG_ERROR("Failed to unwind process.");
             dumpRes = DumpErrorCode::DUMP_ESTOPUNWIND;
@@ -263,7 +263,7 @@ void ProcessDumper::WriteDumpRes(int32_t res)
     }
 }
 
-bool ProcessDumper::IsCrash()
+bool ProcessDumper::IsCrash() const
 {
     return isCrash_;
 }

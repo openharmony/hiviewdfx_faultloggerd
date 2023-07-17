@@ -35,9 +35,8 @@ public:
     void SetUp() {}
     void TearDown() {}
 };
-} // namespace HiviewDFX
-} // namespace OHOS
 
+namespace {
 /**
  * @tc.name: DfxRegsTest001
  * @tc.desc: test DfxRegs SetRegsData & GetRegsData functions
@@ -73,3 +72,6 @@ HWTEST_F(DfxRegsTest, DfxRegsTest002, TestSize.Level2)
     ASSERT_EQ(name, "pc");
     GTEST_LOG_(INFO) << "DfxRegsTest002: end.";
 }
+}
+} // namespace HiviewDFX
+} // namespace OHOS

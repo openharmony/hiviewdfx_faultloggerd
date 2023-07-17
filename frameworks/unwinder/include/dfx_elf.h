@@ -48,7 +48,7 @@ struct ElfLoadInfo {
 
 class DfxElfImpl {
 public:
-    DfxElfImpl(std::shared_ptr<DfxMemory> memory) : memory_(memory) {}
+    DfxElfImpl(std::shared_ptr<DfxMemory> memory) : loadBias_(0), buildIdOffset_(0), buildIdSize_(0), memory_(memory) {}
     virtual ~DfxElfImpl() = default;
 
     virtual bool Init();
@@ -70,9 +70,9 @@ protected:
     void ReadSectionHeaders(const ElfW(Ehdr)& ehdr);
 
 private:
-    int64_t loadBias_ = 0;
-    uint64_t buildIdOffset_ = 0;
-    uint64_t buildIdSize_ = 0;
+    int64_t loadBias_;
+    uint64_t buildIdOffset_;
+    uint64_t buildIdSize_;
     std::unordered_map<uint64_t, ElfLoadInfo> ptLoads_;
     std::vector<SymbolInfo> symbols_;
     std::shared_ptr<DfxMemory> memory_;
@@ -80,7 +80,7 @@ private:
 
 class DfxElf {
 public:
-    DfxElf(std::shared_ptr<DfxMemory> memory) : memory_(memory) {}
+    DfxElf(std::shared_ptr<DfxMemory> memory) : machine_(0), class_(0), arch_(ARCH_UNKNOWN), memory_(memory) {}
     virtual ~DfxElf() = default;
 
     bool Init();
@@ -105,8 +105,8 @@ private:
     bool ReadElfInfo();
 private:
     bool valid_ = false;
-    uint16_t machine_ = 0;
-    uint8_t class_ = 0;
+    uint16_t machine_;
+    uint8_t class_;
     ArchType arch_;
     std::mutex lock_;
     std::unique_ptr<DfxElfImpl> elfImpl_;

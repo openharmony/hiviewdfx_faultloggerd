@@ -37,9 +37,8 @@ public:
     void SetUp() {}
     void TearDown() {}
 };
-} // namespace HiviewDFX
-} // namespace OHOS
 
+namespace {
 /**
  * @tc.name: DfxUtilTest001
  * @tc.desc: test DfxUtil GetCurrentTimeStr
@@ -121,3 +120,6 @@ HWTEST_F(CommonTest, DfxLogTest001, TestSize.Level2)
     EXPECT_NE(DFXLOG_FATAL("%s", "test message"), -1);
     GTEST_LOG_(INFO) << "DfxLogTest001: end.";
 }
+}
+} // namespace HiviewDFX
+} // namespace OHOS

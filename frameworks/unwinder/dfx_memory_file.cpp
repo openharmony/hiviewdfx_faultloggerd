@@ -56,7 +56,7 @@ bool DfxMemoryFile::Init(const std::string& file, uint64_t offset, uint64_t size
         return false;
     }
 
-    size_t fileSize = GetFileSize(fd);
+    size_t fileSize = static_cast<size_t>(GetFileSize(fd));
     if ((fileSize == 0) || (offset >= static_cast<uint64_t>(fileSize))) {
         return false;
     }

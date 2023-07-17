@@ -160,7 +160,7 @@ MemoryBlockInfo FaultStack::CreateMemoryBlock(
     uintptr_t addr,
     uintptr_t offset,
     uintptr_t size,
-    const std::string name) const
+    const std::string& name) const
 {
     MemoryBlockInfo info;
     info.startAddr = addr;

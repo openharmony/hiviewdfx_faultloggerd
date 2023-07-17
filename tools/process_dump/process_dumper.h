@@ -36,7 +36,7 @@ public:
 
     void Dump();
     void WriteDumpRes(int32_t res);
-    bool IsCrash();
+    bool IsCrash() const;
 private:
     ProcessDumper() = default;
     DISALLOW_COPY_AND_MOVE(ProcessDumper);
