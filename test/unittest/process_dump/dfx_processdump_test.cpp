@@ -253,4 +253,40 @@ HWTEST_F(DfxProcessDumpTest, DfxProcessDumpTest008, TestSize.Level2)
     ASSERT_TRUE(CheckCppCrashKeyWords(filename, testProcess, SIGSYS));
     GTEST_LOG_(INFO) << "DfxProcessDumpTest008: end.";
 }
+
+/**
+ * @tc.name: DfxProcessDumpTest009
+ * @tc.desc: test processdump command
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(DfxProcessDumpTest, DfxProcessDumpTest009, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "DfxProcessDumpTest009: start.";
+    string procCMD = "processdump";
+    string procDumpLog = ExecuteCommands(procCMD);
+    string log[] = {"please use dumpcatcher"};
+    int expectNum = sizeof(log) / sizeof(log[0]);
+    int count = GetKeywordsNum(procDumpLog, log, expectNum);
+    EXPECT_EQ(count, expectNum) << "DfxProcessDumpTest009 Failed";
+    GTEST_LOG_(INFO) << "DfxProcessDumpTest009: end.";
+}
+
+/**
+ * @tc.name: DfxProcessDumpTest010
+ * @tc.desc: test processdump command: -p 1
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(DfxProcessDumpTest, DfxProcessDumpTest010, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "DfxProcessDumpTest010: start.";
+    string procCMD = "processdump -p 1";
+    string procDumpLog = ExecuteCommands(procCMD);
+    string log[] = {"please use dumpcatcher"};
+    int expectNum = sizeof(log) / sizeof(log[0]);
+    int count = GetKeywordsNum(procDumpLog, log, expectNum);
+    EXPECT_EQ(count, expectNum) << "DfxProcessDumpTest010 Failed";
+    GTEST_LOG_(INFO) << "DfxProcessDumpTest010: end.";
+}
 }

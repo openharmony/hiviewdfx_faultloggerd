@@ -131,4 +131,102 @@ HWTEST_F (DfxSignalTest, DfxSignalTest005, TestSize.Level2)
     EXPECT_EQ(true, output == input) << "DfxSignalTest005 Failed";
     GTEST_LOG_(INFO) << "DfxSignalTest005: end.";
 }
+
+std::map<int32_t, std::string> sigKeys = {
+    { SIGILL, std::string("SIGILL") },
+    { SIGTRAP, std::string("SIGTRAP") },
+    { SIGBUS, std::string("SIGBUS") },
+    { SIGFPE, std::string("SIGFPE") },
+    { SIGSEGV, std::string("SIGSEGV") },
+};
+std::map<int, std::string> segvCode = {
+    { SEGV_MAPERR, string("SEGV_MAPERR") },
+    { SEGV_ACCERR, string("SEGV_ACCERR") },
+    { SI_USER, string("SI_USER") },
+};
+std::map<int, std::string> trapCode = {
+    { TRAP_BRKPT, string("TRAP_BRKPT") },
+    { TRAP_TRACE, string("TRAP_TRACE") },
+    { TRAP_BRANCH, string("TRAP_BRANCH") },
+    { TRAP_HWBKPT, string("TRAP_HWBKPT") },
+    { SI_USER, string("SI_USER") },
+};
+std::map<int, std::string> illCode = {
+    { ILL_ILLOPC, string("ILL_ILLOPC") },
+    { ILL_ILLOPN, string("ILL_ILLOPN") },
+    { ILL_ILLADR, string("ILL_ILLADR") },
+    { ILL_ILLTRP, string("ILL_ILLTRP") },
+    { ILL_PRVOPC, string("ILL_PRVOPC") },
+    { ILL_PRVREG, string("ILL_PRVREG") },
+    { ILL_COPROC, string("ILL_COPROC") },
+    { ILL_BADSTK, string("ILL_BADSTK") },
+    { SI_USER, string("SI_USER") },
+};
+std::map<int, std::string> fpeCode = {
+    { FPE_INTDIV, string("FPE_INTDIV") },
+    { FPE_INTOVF, string("FPE_INTOVF") },
+    { FPE_FLTDIV, string("FPE_FLTDIV") },
+    { FPE_FLTOVF, string("FPE_FLTOVF") },
+    { FPE_FLTUND, string("FPE_FLTUND") },
+    { FPE_FLTRES, string("FPE_FLTRES") },
+    { FPE_FLTINV, string("FPE_FLTINV") },
+    { FPE_FLTSUB, string("FPE_FLTSUB") },
+    { SI_USER, string("SI_USER") },
+};
+std::map<int, std::string> busCode = {
+    { BUS_ADRALN, string("BUS_ADRALN") },
+    { BUS_ADRERR, string("BUS_ADRERR") },
+    { BUS_OBJERR, string("BUS_OBJERR") },
+    { BUS_MCEERR_AR, string("BUS_MCEERR_AR") },
+    { BUS_MCEERR_AO, string("BUS_MCEERR_AO") },
+    { SI_USER, string("SI_USER") },
+};
+/**
+ * @tc.name: DfxSignalTest006
+ * @tc.desc: test DfxSignal functions
+ * @tc.type: FUNC
+ */
+HWTEST_F(DfxSignalTest, DfxSignalTest006, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "DfxSignalTest006: start.";
+    siginfo_t si = {
+        .si_signo = SIGSEGV,
+        .si_errno = 0,
+        .si_code = -1,
+        .si_value.sival_int = static_cast<int>(gettid())
+    };
+    for (auto sigKey : sigKeys) {
+        si.si_signo = sigKey.first;
+        std::map<int, std::string> codeMap;
+        switch (si.si_signo) {
+            case SIGILL:
+                codeMap = illCode;
+                break;
+            case SIGTRAP:
+                codeMap = trapCode;
+                break;
+            case SIGBUS:
+                codeMap = busCode;
+                break;
+            case SIGFPE:
+                codeMap = fpeCode;
+                break;
+            case SIGSEGV:
+                codeMap = segvCode;
+                break;
+            default:
+                break;
+        }
+        for (auto& code : codeMap) {
+            std::string sigKeyword = "Signal:";
+            sigKeyword += sigKey.second;
+            si.si_code = code.first;
+            sigKeyword = sigKeyword + "(" + code.second + ")";
+            std::string sigStr = DfxSignal::PrintSignal(si);
+            GTEST_LOG_(INFO) << sigStr;
+            ASSERT_TRUE(sigStr.find(sigKeyword) != std::string::npos);
+        }
+    }
+    GTEST_LOG_(INFO) << "DfxSignalTest006: end.";
+}
 }

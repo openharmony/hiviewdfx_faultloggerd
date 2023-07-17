@@ -18,8 +18,11 @@
 #include <securec.h>
 #include <string>
 #include <vector>
+#include "dfx_cutil.h"
+#include "dfx_define.h"
 #include "dfx_util.h"
 #include "dfx_dump_res.h"
+#include "dfx_log.h"
 
 using namespace OHOS::HiviewDFX;
 using namespace testing::ext;
@@ -82,6 +85,40 @@ HWTEST_F(CommonTest, DfxDumpResTest001, TestSize.Level2)
     int32_t res = DUMP_ESUCCESS;
     GTEST_LOG_(INFO) << DfxDumpRes::ToString(res);
     GTEST_LOG_(INFO) << "DfxDumpResTest001: end.";
+}
+
+/**
+ * @tc.name: DfxCutilTest001
+ * @tc.desc: test cutil functions
+ * @tc.type: FUNC
+ */
+HWTEST_F(CommonTest, DfxCutilTest001, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "DfxCutilTest001: start.";
+    char threadName[NAME_LEN];
+    char processName[NAME_LEN];
+    ASSERT_TRUE(GetThreadName(threadName, sizeof(threadName)));
+    ASSERT_TRUE(GetProcessName(processName, sizeof(processName)));
+    ASSERT_GT(GetRealPid(), 0);
+    GTEST_LOG_(INFO) << "DfxCutilTest001: end.";
+}
+
+/**
+ * @tc.name: DfxLogTest001
+ * @tc.desc: test DfxLog functions
+ * @tc.type: FUNC
+ */
+HWTEST_F(CommonTest, DfxLogTest001, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "DfxLogTest001: start.";
+    InitDebugFd(STDERR_FILENO);
+    EXPECT_FALSE(CheckDebugLevel());
+    EXPECT_EQ(DFXLOG_DEBUG("%s", "test message"), -1);
+    EXPECT_NE(DFXLOG_INFO("%s", "test message"), -1);
+    EXPECT_NE(DFXLOG_WARN("%s", "test message"), -1);
+    EXPECT_NE(DFXLOG_ERROR("%s", "test message"), -1);
+    EXPECT_NE(DFXLOG_FATAL("%s", "test message"), -1);
+    GTEST_LOG_(INFO) << "DfxLogTest001: end.";
 }
 }
 } // namespace HiviewDFX

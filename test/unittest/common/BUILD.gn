@@ -55,6 +55,7 @@ if (defined(ohos_lite)) {
     include_dirs = [
       "$faultloggerd_interfaces_path/common",
       "$faultloggerd_path/common",
+      "$faultloggerd_path/common/cutil",
       "$faultloggerd_path/common/dfxlog",
       "$faultloggerd_path/common/dfxutil",
     ]
@@ -67,6 +68,7 @@ if (defined(ohos_lite)) {
     configs = [ ":module_private_config" ]
 
     deps = [
+      "$faultloggerd_path/common/cutil:dfx_cutil",
       "$faultloggerd_path/common/dfxlog:static_common_log",
       "$faultloggerd_path/common/dfxutil:dfx_util",
       "//third_party/googletest:gmock_main",

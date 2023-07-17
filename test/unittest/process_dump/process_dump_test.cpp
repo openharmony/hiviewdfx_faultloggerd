@@ -200,4 +200,25 @@ HWTEST_F (ProcessDumpTest, DfxUnwindRemoteTest002, TestSize.Level2)
     EXPECT_EQ(true, ret) << "DfxUnwindRemoteTest002 Failed";
     GTEST_LOG_(INFO) << "DfxUnwindRemoteTest002: end.";
 }
+
+/**
+ * @tc.name: DfxUnwindRemoteTest003
+ * @tc.desc: test UnwindThreadFallback
+ * @tc.type: FUNC
+ */
+HWTEST_F (ProcessDumpTest, DfxUnwindRemoteTest003, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "DfxUnwindRemoteTest003: start.";
+    pid_t pid = GetProcessPid(FOUNDATION_NAME);
+    pid_t tid = pid;
+    std::shared_ptr<DfxThread> thread = DfxThread::Create(pid, tid, tid);
+    std::shared_ptr<DfxProcess> process = DfxProcess::Create(pid, pid);
+    thread->SetThreadRegs(DfxRegs::Create(UnwinderMode::FRAMEPOINTER_UNWIND));
+    process->keyThread_ = thread;
+    thread->Attach();
+    DfxUnwindRemote::GetInstance().UnwindThreadFallback(process, thread);
+    thread->Detach();
+    EXPECT_EQ(thread->GetFrames().size(), 2) << "DfxUnwindRemoteTest003 Failed";
+    GTEST_LOG_(INFO) << "DfxUnwindRemoteTest003: end.";
+}
 }

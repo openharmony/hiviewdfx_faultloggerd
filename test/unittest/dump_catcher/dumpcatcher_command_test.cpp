@@ -289,5 +289,94 @@ HWTEST_F(DumpCatcherCommandTest, DumpCatcherCommandTest009, TestSize.Level2)
     EXPECT_EQ(count, len) << "DumpCatcherCommandTest009 Failed";
     GTEST_LOG_(INFO) << "DumpCatcherCommandTest009: end.";
 }
+
+/**
+ * @tc.name: DumpCatcherCommandTest010
+ * @tc.desc: test dumpcatcher command: -c -p pid
+ * @tc.type: FUNC
+ */
+HWTEST_F(DumpCatcherCommandTest, DumpCatcherCommandTest010, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "DumpCatcherCommandTest010: start.";
+    string testBundleName = TEST_BUNDLE_NAME;
+    string testAbiltyName = testBundleName + ".MainAbility";
+    int testPid = LaunchTestHap(testAbiltyName, testBundleName);
+    if (testPid == 0) {
+        GTEST_LOG_(ERROR) << "Failed to launch target hap.";
+        return;
+    }
+    if (!CheckProcessComm(testPid, TRUNCATE_TEST_BUNDLE_NAME)) {
+        GTEST_LOG_(ERROR) << "Error process comm";
+        return;
+    }
+    string procCMD = "dumpcatcher -c -p " + to_string(testPid);
+    string procDumpLog = ExecuteCommands(procCMD);
+    GTEST_LOG_(INFO) << "procDumpLog: " << procDumpLog;
+    string log[] = {"Pid:", "Name:", "#00", "#01", "#02"};
+    int expectNum = sizeof(log) / sizeof(log[0]);
+    int count = GetKeywordsNum(procDumpLog, log, expectNum);
+    EXPECT_EQ(count, expectNum) << "DumpCatcherCommandTest010 Failed";
+    GTEST_LOG_(INFO) << "DumpCatcherCommandTest010: end.";
+}
+
+/**
+ * @tc.name: DumpCatcherCommandTest011
+ * @tc.desc: test dumpcatcher command: -k -p pid
+ * @tc.type: FUNC
+ */
+HWTEST_F(DumpCatcherCommandTest, DumpCatcherCommandTest011, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "DumpCatcherCommandTest011: start.";
+    string testBundleName = TEST_BUNDLE_NAME;
+    string testAbiltyName = testBundleName + ".MainAbility";
+    int testPid = LaunchTestHap(testAbiltyName, testBundleName);
+    if (testPid == 0) {
+        GTEST_LOG_(ERROR) << "Failed to launch target hap.";
+        return;
+    }
+    if (!CheckProcessComm(testPid, TRUNCATE_TEST_BUNDLE_NAME)) {
+        GTEST_LOG_(ERROR) << "Error process comm";
+        return;
+    }
+    string procCMD = "dumpcatcher -k -p " + to_string(testPid);
+    string procDumpLog = ExecuteCommands(procCMD);
+    GTEST_LOG_(INFO) << "procDumpLog: " << procDumpLog;
+    string log[] = {"Failed"};
+    int expectNum = sizeof(log) / sizeof(log[0]);
+    int count = GetKeywordsNum(procDumpLog, log, expectNum);
+    EXPECT_EQ(count, expectNum) << "DumpCatcherCommandTest011 Failed";
+    GTEST_LOG_(INFO) << "DumpCatcherCommandTest011: end.";
+}
+
+/**
+ * @tc.name: DumpCatcherCommandTest012
+ * @tc.desc: test dumpcatcher command:
+ * @tc.type: FUNC
+ */
+HWTEST_F(DumpCatcherCommandTest, DumpCatcherCommandTest012, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "DumpCatcherCommandTest012: start.";
+    string procCMD = "dumpcatcher";
+    string procDumpLog = ExecuteCommands(procCMD);
+    EXPECT_EQ(procDumpLog, "") << "DumpCatcherCommandTest012 Failed";
+    GTEST_LOG_(INFO) << "DumpCatcherCommandTest012: end.";
+}
+
+/**
+ * @tc.name: DumpCatcherCommandTest013
+ * @tc.desc: test dumpcatcher command: -i
+ * @tc.type: FUNC
+ */
+HWTEST_F(DumpCatcherCommandTest, DumpCatcherCommandTest013, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "DumpCatcherCommandTest013: start.";
+    string procCMD = "dumpcatcher -i";
+    string procDumpLog = ExecuteCommands(procCMD);
+    string log[] = {"Usage:"};
+    int expectNum = sizeof(log) / sizeof(log[0]);
+    int count = GetKeywordsNum(procDumpLog, log, expectNum);
+    EXPECT_EQ(count, expectNum) << "DumpCatcherCommandTest013 Failed";
+    GTEST_LOG_(INFO) << "DumpCatcherCommandTest013: end.";
+}
 } // namespace HiviewDFX
 } // namepsace OHOS
