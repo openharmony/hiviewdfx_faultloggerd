@@ -58,6 +58,7 @@ static constexpr uint32_t ROOT_UID = 0;
 static constexpr uint32_t BMS_UID = 1000;
 static constexpr uint32_t HIVIEW_UID = 1201;
 static constexpr uint32_t HIDUMPER_SERVICE_UID = 1212;
+static constexpr uint32_t FOUNDATION_UID = 5523;
 static const std::string FAULTLOGGERD_TAG = "FaultLoggerd";
 static const std::string DAEMON_RESP = "RESP:COMPLETE";
 static const int DAEMON_REMOVE_FILE_TIME_S = 60;
@@ -84,7 +85,8 @@ static bool CheckCallerUID(uint32_t callerUid)
     if ((callerUid == BMS_UID) ||
         (callerUid == ROOT_UID) ||
         (callerUid == HIVIEW_UID) ||
-        (callerUid == HIDUMPER_SERVICE_UID)) {
+        (callerUid == HIDUMPER_SERVICE_UID) ||
+        (callerUid == FOUNDATION_UID)) {
         return true;
     }
     DFXLOG_WARN("%s :: CheckCallerUID :: Caller Uid(%d) is unexpectly.\n", FAULTLOGGERD_TAG.c_str(), callerUid);
