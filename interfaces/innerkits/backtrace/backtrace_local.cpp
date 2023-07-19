@@ -144,10 +144,6 @@ std::string GetProcessStacktrace()
         return "";
     }
     auto symbol = std::make_shared<DfxSymbols>();
-    if (symbol == nullptr) {
-        return "";
-    }
-
     std::ostringstream ss;
     ss << std::endl << GetStacktraceHeader();
 

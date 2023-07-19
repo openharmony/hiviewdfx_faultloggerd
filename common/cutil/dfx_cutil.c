@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 Huawei Device Co., Ltd.
+ * Copyright (c) 2022-2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -91,9 +91,8 @@ pid_t GetRealPid(void)
     char buf[LOG_BUF_LEN];
     int i = 0;
     char b;
-    ssize_t nRead = 0;
     while (1) {
-        nRead = OHOS_TEMP_FAILURE_RETRY(read(fd, &b, sizeof(char)));
+        ssize_t nRead = OHOS_TEMP_FAILURE_RETRY(read(fd, &b, sizeof(char)));
         if (nRead <= 0 || b == '\0') {
             break;
         }

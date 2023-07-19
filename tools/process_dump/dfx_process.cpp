@@ -34,13 +34,9 @@
 
 namespace OHOS {
 namespace HiviewDFX {
-
 std::shared_ptr<DfxProcess> DfxProcess::Create(pid_t pid, pid_t nsPid)
 {
     auto process = std::make_shared<DfxProcess>(pid, nsPid);
-    if (!process) {
-        return nullptr;
-    }
     return process;
 }
 

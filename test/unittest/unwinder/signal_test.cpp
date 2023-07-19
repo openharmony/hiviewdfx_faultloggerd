@@ -77,7 +77,7 @@ HWTEST_F(DfxSignalTest, DfxSignalTest001, TestSize.Level2)
  * @tc.desc: test if signal info is available
  * @tc.type: FUNC
  */
-HWTEST_F (DfxSignalTest, DfxSignalTest002, TestSize.Level2)
+HWTEST_F(DfxSignalTest, DfxSignalTest002, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "DfxSignalTest002: start.";
     int32_t input = 1;
@@ -92,7 +92,7 @@ HWTEST_F (DfxSignalTest, DfxSignalTest002, TestSize.Level2)
  * @tc.desc: test if addr is available
  * @tc.type: FUNC
  */
-HWTEST_F (DfxSignalTest, DfxSignalTest003, TestSize.Level2)
+HWTEST_F(DfxSignalTest, DfxSignalTest003, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "DfxSignalTest003: start.";
     int32_t input = -100;
@@ -107,7 +107,7 @@ HWTEST_F (DfxSignalTest, DfxSignalTest003, TestSize.Level2)
  * @tc.desc: test if pid is available
  * @tc.type: FUNC
  */
-HWTEST_F (DfxSignalTest, DfxSignalTest004, TestSize.Level2)
+HWTEST_F(DfxSignalTest, DfxSignalTest004, TestSize.Level2)
 {
     int32_t input = 100;
     GTEST_LOG_(INFO) << "DfxSignalTest004: start.";
@@ -122,7 +122,7 @@ HWTEST_F (DfxSignalTest, DfxSignalTest004, TestSize.Level2)
  * @tc.desc: test if GetSignal
  * @tc.type: FUNC
  */
-HWTEST_F (DfxSignalTest, DfxSignalTest005, TestSize.Level2)
+HWTEST_F(DfxSignalTest, DfxSignalTest005, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "DfxSignalTest005: start.";
     int32_t input = 1;
