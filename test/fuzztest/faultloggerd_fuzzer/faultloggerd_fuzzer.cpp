@@ -20,6 +20,7 @@
 #include <iostream>
 #include "dfx_dump_catcher.h"
 #include "faultloggerd_client.h"
+#include "fault_logger_daemon.h"
 #include "securec.h"
 
 using namespace OHOS::HiviewDFX;
@@ -69,7 +70,9 @@ bool DumpStackTraceTest(const uint8_t* data, size_t size)
 
 bool FaultloggerdClientTest(const uint8_t* data, size_t size)
 {
+    cout << "enter FaultloggerdClientTest, size:" << size << endl;
     if (size < sizeof(int32_t) * 3) { //3: 3 parameters
+        cout << "size is not correct, return" << endl;
         return true;
     }
     int32_t type[1];
@@ -97,6 +100,8 @@ bool FaultloggerdClientTest(const uint8_t* data, size_t size)
     RequestCheckPermission(pid[0]);
     RequestSdkDump(type[0], pid[0], tid[0]);
 
+    std::shared_ptr<FaultLoggerDaemon> daemon = std::make_shared<FaultLoggerDaemon>();
+    daemon->HandleRequest(pid[0], type[0]);
     return true;
 }
 } // namespace OHOS

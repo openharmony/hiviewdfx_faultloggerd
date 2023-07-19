@@ -50,16 +50,16 @@ group("faultloggerd_tests") {
   } else {
     testonly = true
     deps = [
-      "//base/hiviewdfx/faultloggerd/example:dumpcatcherdemo",
-      "//base/hiviewdfx/faultloggerd/test:faultloggerd_funchook",
-      "//base/hiviewdfx/faultloggerd/test:faultloggerd_fuzzertest",
-      "//base/hiviewdfx/faultloggerd/test:faultloggerd_moduletest",
-      "//base/hiviewdfx/faultloggerd/test:faultloggerd_performancetest",
-      "//base/hiviewdfx/faultloggerd/test:faultloggerd_systemtest",
-      "//base/hiviewdfx/faultloggerd/test:faultloggerd_unittest",
-      "//base/hiviewdfx/faultloggerd/tools/crasher_c:crasher_c",
-      "//base/hiviewdfx/faultloggerd/tools/crasher_cpp:crasher_cpp",
-      "//base/hiviewdfx/faultloggerd/tools/panic_maker:panic_maker",
+      "example:dumpcatcherdemo",
+      "test:faultloggerd_funchook",
+      "test:faultloggerd_fuzzertest",
+      "test:faultloggerd_moduletest",
+      "test:faultloggerd_performancetest",
+      "test:faultloggerd_systemtest",
+      "test:faultloggerd_unittest",
+      "tools/crasher_c:crasher_c",
+      "tools/crasher_cpp:crasher_cpp",
+      "tools/panic_maker:panic_maker",
     ]
   }
 }

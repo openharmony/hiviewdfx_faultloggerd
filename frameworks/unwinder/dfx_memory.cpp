@@ -30,7 +30,6 @@ size_t DfxMemory::MemoryCopy(void *dst, uint8_t *data, size_t copySize, size_t o
     size_t bytesLeft = dataSize - static_cast<size_t>(offset);
     const unsigned char *actualBase = static_cast<const unsigned char *>(data) + offset;
     size_t actualLen = std::min(bytesLeft, copySize);
-
     if (memcpy_s(dst, actualLen, actualBase, actualLen) != 0) {
         DFXLOG_ERROR("%s :: memcpy error\n", __func__);
     }
