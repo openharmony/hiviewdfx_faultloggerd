@@ -209,30 +209,42 @@ HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest004, TestSize.Level
 HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest005, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest005: start.";
-    std::string testProcess1 = "accountmgr";
-    int testPid1 = GetProcessPid(testProcess1);
-    GTEST_LOG_(INFO) << "testPid1:" << testPid1;
-    std::string testProcess2 = "foundation";
-    int testPid2 = GetProcessPid(testProcess2);
-    GTEST_LOG_(INFO) << "testPid2:" << testPid2;
-    std::string testProcess3 = "com.ohos.systemui";
-    int testPid3 = GetProcessPid(testProcess3);
-    GTEST_LOG_(INFO) << "testPid3:" << testPid3;
-    std::vector<int> multiPid {testPid1, testPid2, testPid3};
+    std::vector<string> testProcessName = { "accountmgr", "foundation", "com.ohos.systemui" };
+    string matchProcessName[] = { "accountmgr", "foundation", "m.ohos.systemui" };
+    std::vector<int> multiPid;
+    std::vector<string> matchLog;
+    int index = 0;
+    for (string oneProcessName : testProcessName) {
+        int testPid = GetProcessPid(oneProcessName);
+        if (testPid == 0) {
+            GTEST_LOG_(INFO) << "process:" << oneProcessName << " pid is empty, skip";
+            index++;
+            continue;
+        }
+        multiPid.emplace_back(testPid);
+        matchLog.emplace_back("Tid:" + std::to_string(testPid));
+        matchLog.emplace_back("Name:" + matchProcessName[index]);
+        index++;
+    }
+
+    // It is recommended that the number of effective pids be greater than 1,
+    // otherwise the testing purpose will not be achieved
+    EXPECT_GT(multiPid.size(), 1) << "DumpCatcherInterfacesTest005 Failed";
+
     DfxDumpCatcher dumplog;
     std::string msg = "";
     bool ret = dumplog.DumpCatchMultiPid(multiPid, msg);
-    GTEST_LOG_(INFO) << ret;
-    string log[] = { "Tid:", "Name:", "Tid:", "Name:", "Tid:", "Name:" };
-    log[0] = log[0] + std::to_string(testPid1);
-    log[1] = log[1] + testProcess1;
-    log[2] = log[2] + std::to_string(testPid2);
-    log[3] = log[3] + testProcess2;
-    log[4] = log[4] + std::to_string(testPid3);
-    log[5] = log[5] + "m.ohos.systemui";
-    int len = sizeof(log) / sizeof(log[0]);
-    int count = GetKeywordsNum(msg, log, len);
-    EXPECT_EQ(count, len) << msg << "DumpCatcherInterfacesTest005 Failed";
+    GTEST_LOG_(INFO) << "ret:" << ret;
+
+    int matchLogCount = matchLog.size();
+    auto matchLogArray = std::make_unique<string[]>(matchLogCount);
+    index = 0;
+    for (string info : matchLog) {
+        matchLogArray[index] = info;
+        index++;
+    }
+    int count = GetKeywordsNum(msg, matchLogArray.get(), matchLogCount);
+    EXPECT_EQ(count, matchLogCount) << msg << "DumpCatcherInterfacesTest005 Failed";
     GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest005: end.";
 }
 

@@ -38,7 +38,7 @@ namespace {
  * @tc.desc: test map Create
  * @tc.type: FUNC
  */
-HWTEST_F (DfxMapsTest, DfxMapsTest001, TestSize.Level2)
+HWTEST_F(DfxMapsTest, DfxMapsTest001, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "DfxMapsTest001: start.";
     char mapBuf[] = "7658d38000-7658d40000 rw-p 00000000 00:00 0 /system/lib/libdfx_dumpcatcher.z.so";
@@ -55,7 +55,7 @@ HWTEST_F (DfxMapsTest, DfxMapsTest001, TestSize.Level2)
  * @tc.desc: test maps Create
  * @tc.type: FUNC
  */
-HWTEST_F (DfxMapsTest, DfxMapsTest002, TestSize.Level2)
+HWTEST_F(DfxMapsTest, DfxMapsTest002, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "DfxMapsTest002: start.";
     char testBuffer[] = "1000-2000 ---s 00000000 00:00 0\n\
@@ -80,7 +80,7 @@ HWTEST_F (DfxMapsTest, DfxMapsTest002, TestSize.Level2)
  * @tc.desc: test find map by addr
  * @tc.type: FUNC
  */
-HWTEST_F (DfxMapsTest, DfxMapsTest003, TestSize.Level2)
+HWTEST_F(DfxMapsTest, DfxMapsTest003, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "DfxMapsTest003: start.";
     std::shared_ptr<DfxElfMaps> maps = DfxElfMaps::CreateFromLocal();
