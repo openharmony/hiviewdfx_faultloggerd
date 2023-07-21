@@ -79,8 +79,6 @@ void ProcessDumper::Dump()
         reporter_->ReportToHiview();
         reporter_->ReportToAbilityManagerService();
     }
-
-    _exit(0);
 }
 
 int ProcessDumper::DumpProcess(std::shared_ptr<ProcessDumpRequest> request)
