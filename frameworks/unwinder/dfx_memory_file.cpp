@@ -40,7 +40,7 @@ std::shared_ptr<DfxMemoryFile> DfxMemoryFile::CreateFileMemory(const std::string
 
 void DfxMemoryFile::Clear()
 {
-    if (data_) {
+    if (data_ != nullptr) {
         munmap(&data_[-offset_], size_ + offset_);
         data_ = nullptr;
     }

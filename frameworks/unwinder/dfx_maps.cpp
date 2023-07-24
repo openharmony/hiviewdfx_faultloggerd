@@ -105,7 +105,7 @@ std::shared_ptr<DfxElfMaps> DfxElfMaps::Create(const std::string path)
     char mapBuf[MAPINFO_SIZE] = {0};
     while (fgets(mapBuf, sizeof(mapBuf), fp) != nullptr) {
         std::shared_ptr<DfxElfMap> map = DfxElfMap::Create(mapBuf, sizeof(mapBuf));
-        if (!map) {
+        if (map == nullptr) {
             DFXLOG_WARN("Fail to init map info:%s.", mapBuf);
             continue;
         } else {
@@ -130,7 +130,7 @@ std::shared_ptr<DfxElfMaps> DfxElfMaps::Create(const char* buffer)
     auto dfxElfMaps = std::make_shared<DfxElfMaps>();
     while (std::getline(iss, temp)) {
         std::shared_ptr<DfxElfMap> map = DfxElfMap::Create(temp, temp.length());
-        if (!map) {
+        if (map == nullptr) {
             DFXLOG_WARN("Fail to init map info:%s.", temp.c_str());
             continue;
         } else {
