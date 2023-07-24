@@ -160,7 +160,7 @@ void DfxProcess::SetMaps(std::shared_ptr<DfxElfMaps> maps)
 
 void DfxProcess::InitProcessMaps()
 {
-    if (!maps_) {
+    if (maps_ == nullptr) {
         if (processInfo_.pid <= 0) {
             return;
         }

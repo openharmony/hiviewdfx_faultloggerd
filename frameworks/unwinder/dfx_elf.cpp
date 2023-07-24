@@ -348,7 +348,7 @@ std::string DfxElfImpl::GetBuildID()
 
 bool DfxElf::Init()
 {
-    if (!memory_) {
+    if (memory_ == nullptr) {
         return false;
     }
 
@@ -357,7 +357,7 @@ bool DfxElf::Init()
     }
 
     elfImpl_ = std::unique_ptr<DfxElfImpl>(new DfxElfImpl(memory_));
-    if (!elfImpl_) {
+    if (elfImpl_ == nullptr) {
         return false;
     }
     valid_ = elfImpl_->Init();
@@ -366,7 +366,7 @@ bool DfxElf::Init()
 
 bool DfxElf::ReadElfInfo()
 {
-    if (!memory_) {
+    if (memory_ == nullptr) {
         return false;
     }
 

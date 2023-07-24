@@ -244,6 +244,18 @@ static bool CheckCountNumStackTop(const string& filePath, const pid_t& pid)
     return CheckKeyWords(filePath, log, expectNum, minRegIdx) == expectNum;
 }
 
+static bool CheckCppCrashAllLabelKeywords(const string& filePath, const pid_t& pid)
+{
+    string log[] = {
+        "Timestamp:", "Pid:" + to_string(pid), "Uid:", "Process", "Reason:", "LastFatalMessage:", "Fault", "thread",
+        "Info:", "Tid:", "#00", "Registers:", REGISTERS, "Memory", "near", "registers:", "FaultStack:", "Maps:",
+        "/crasher"
+    };
+    int minRegIdx = 11; // 11 : index of first REGISTERS - 1
+    int expectNum = sizeof(log) / sizeof(log[0]);
+    return CheckKeyWords(filePath, log, expectNum, minRegIdx) == expectNum;
+}
+
 /**
  * @tc.name: FaultLoggerdSystemTest001
  * @tc.desc: test C crasher application: SIGFPE
@@ -1106,6 +1118,26 @@ HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest104, TestSize.Level2)
 
     }
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest104: end.";
+}
+
+/**
+ * @tc.name: FaultLoggerdSystemTest105
+ * @tc.desc: test C crasher application: SIGABRT, and check all label keywords
+ * @tc.type: FUNC
+ */
+HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest105, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest105: start.";
+    string cmd = "SIGABRT";
+    string fileName;
+    pid_t pid = TriggerCrasherAndGetFileName(cmd, CRASHER_C, fileName);
+    GTEST_LOG_(INFO) << "test pid(" << pid << ")"  << " cppcrash file name : " << fileName;
+    if (pid < 0 || fileName.size() < CPPCRASH_FILENAME_MIN_LENGTH) {
+        GTEST_LOG_(ERROR) << "Trigger Crash Failed.";
+        FAIL();
+    }
+    EXPECT_TRUE(CheckCppCrashAllLabelKeywords(fileName, pid)) << "FaultLoggerdSystemTest105 Failed";
+    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest105: end.";
 }
 } // namespace HiviewDFX
 } // namespace OHOS

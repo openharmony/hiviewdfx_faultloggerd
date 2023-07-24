@@ -135,7 +135,7 @@ bool GetTidsByPidWithFunc(const int pid, std::vector<int>& tids, std::function<b
             }
             tids.push_back(tid);
 
-            if (func) {
+            if (func != nullptr) {
                 func(tid);
             }
         }
