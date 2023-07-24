@@ -79,8 +79,6 @@ void ProcessDumper::Dump()
         reporter_->ReportToHiview();
         reporter_->ReportToAbilityManagerService();
     }
-
-    _exit(0);
 }
 
 int ProcessDumper::DumpProcess(std::shared_ptr<ProcessDumpRequest> request)
@@ -147,7 +145,7 @@ int ProcessDumper::InitProcessInfo(std::shared_ptr<ProcessDumpRequest> request)
         return -1;
     }
     process_ = DfxProcess::Create(request->pid, request->nsPid);
-    if (!process_) {
+    if (process_ == nullptr) {
         return -1;
     }
     if (process_->processInfo_.processName.empty()) {

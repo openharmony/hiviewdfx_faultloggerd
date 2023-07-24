@@ -193,7 +193,7 @@ NOINLINE int Oom(void)
     char* bufferArray[ARG128];
     for (int i = 0; i < ARG128; i++) {
         char* buf = (char*)malloc(ARG1024 * ARG1024);
-        if (!buf) {
+        if (buf == NULL) {
             printf("malloc return null\n");
             if (setrlimit(RLIMIT_AS, &oldRlimit) != 0) {
                 printf("restore rlimit failed\n");
