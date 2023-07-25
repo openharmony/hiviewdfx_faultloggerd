@@ -120,8 +120,14 @@ bool DwarfUnwinder::UnwindWithContext(unw_addr_space_t as, unw_context_t& contex
         struct map_info* map = unw_get_map(&cursor);
         bool isValidFrame = true;
         if ((map != nullptr) && (strlen(map->path) < SYMBOL_BUF_SIZE - 1)) {
-            frame.mapName = std::string(map->path);
             UpdateFrameFuncName(as, symbol, frame);
+            frame.mapName = std::string(map->path);
+            if (frame.mapName.find(".hap") != std::string::npos) {
+                char libraryName[PATH_LEN] = { 0 };
+                if (unw_get_library_name_by_map(map, libraryName, PATH_LEN - 1) == 0) {
+                    frame.mapName = frame.mapName + "!" + std::string(libraryName);
+                }
+            }
         } else {
             isValidFrame = false;
         }
