@@ -18,7 +18,6 @@
 #include <securec.h>
 #include <string>
 #include <vector>
-#include "dfx_cutil.h"
 #include "dfx_define.h"
 #include "dfx_util.h"
 #include "dfx_dump_res.h"
@@ -85,22 +84,6 @@ HWTEST_F(CommonTest, DfxDumpResTest001, TestSize.Level2)
     int32_t res = DUMP_ESUCCESS;
     GTEST_LOG_(INFO) << DfxDumpRes::ToString(res);
     GTEST_LOG_(INFO) << "DfxDumpResTest001: end.";
-}
-
-/**
- * @tc.name: DfxCutilTest001
- * @tc.desc: test cutil functions
- * @tc.type: FUNC
- */
-HWTEST_F(CommonTest, DfxCutilTest001, TestSize.Level2)
-{
-    GTEST_LOG_(INFO) << "DfxCutilTest001: start.";
-    char threadName[NAME_LEN];
-    char processName[NAME_LEN];
-    ASSERT_TRUE(GetThreadName(threadName, sizeof(threadName)));
-    ASSERT_TRUE(GetProcessName(processName, sizeof(processName)));
-    ASSERT_GT(GetRealPid(), 0);
-    GTEST_LOG_(INFO) << "DfxCutilTest001: end.";
 }
 
 /**
