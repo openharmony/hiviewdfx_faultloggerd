@@ -26,7 +26,7 @@
 namespace OHOS {
 namespace HiviewDFX {
 #define ALIGN_BYTES(align) ((align) - 1)
-#define ALIGN_MASK(align) (~((align) - 1))
+#define ALIGN_MASK(align) (~(static_cast<uint64_t>((align) - 1)))
 #define ALIGN_VALUE(val, align) (((val) + ALIGN_BYTES(align)) & ALIGN_MASK(align))
 
 class DfxMemory {
