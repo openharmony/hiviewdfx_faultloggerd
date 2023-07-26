@@ -63,13 +63,16 @@ if (defined(ohos_lite)) {
 
   ohos_unittest("test_common") {
     module_out_path = "faultloggerd/common"
-    sources = [ "common_test.cpp" ]
-
+    sources = [
+      "$faultloggerd_path/common/dfxlog/dfx_log.cpp",
+      "common_cutil_test.cpp",
+      "common_test.cpp",
+    ]
+    defines = [ "DFX_LOG_USE_DMESG" ]
     configs = [ ":module_private_config" ]
 
     deps = [
       "$faultloggerd_path/common/cutil:dfx_cutil",
-      "$faultloggerd_path/common/dfxlog:static_common_log",
       "$faultloggerd_path/common/dfxutil:dfx_util",
       "//third_party/googletest:gmock_main",
       "//third_party/googletest:gtest_main",
