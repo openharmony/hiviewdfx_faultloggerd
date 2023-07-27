@@ -79,6 +79,8 @@ void ProcessDumper::Dump()
         reporter_->ReportToHiview();
         reporter_->ReportToAbilityManagerService();
     }
+
+    _exit(0);
 }
 
 int ProcessDumper::DumpProcess(std::shared_ptr<ProcessDumpRequest> request)
@@ -104,8 +106,8 @@ int ProcessDumper::DumpProcess(std::shared_ptr<ProcessDumpRequest> request)
             dumpRes = DumpErrorCode::DUMP_EGETPPID;
             break;
         }
-        DFXLOG_INFO("Processdump SigVal(%d), TargetPid(%d:%d), TargetTid(%d).",
-            request->siginfo.si_value.sival_int, request->pid, request->nsPid, request->tid);
+        DFXLOG_INFO("Processdump SigVal(%d), TargetPid(%d:%d), TargetTid(%d), threadname(%s).",
+            request->siginfo.si_value.sival_int, request->pid, request->nsPid, request->tid, request->threadName);
 
         if (InitProcessInfo(request) < 0) {
             DFXLOG_ERROR("Failed to init crash process info.");
