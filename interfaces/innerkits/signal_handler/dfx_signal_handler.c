@@ -160,7 +160,7 @@ static void FillDumpRequest(int sig, siginfo_t *si, void *context)
     g_request.reserved = 0;
     g_request.timeStamp = GetTimeMilliseconds();
 
-    GetThreadName(g_request.threadName, sizeof(g_request.threadName));
+    GetThreadNameByTid(g_request.tid, g_request.threadName, sizeof(g_request.threadName));
     GetProcessName(g_request.processName, sizeof(g_request.processName));
 
     memcpy(&(g_request.siginfo), si, sizeof(siginfo_t));
