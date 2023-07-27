@@ -45,6 +45,7 @@ HWTEST_F(CommonCutilTest, DfxCutilTest001, TestSize.Level2)
     char threadName[NAME_LEN];
     char processName[NAME_LEN];
     ASSERT_TRUE(GetThreadName(threadName, sizeof(threadName)));
+    ASSERT_TRUE(GetThreadNameByTid(gettid(), threadName, sizeof(threadName)));
     ASSERT_TRUE(GetProcessName(processName, sizeof(processName)));
     ASSERT_GT(GetRealPid(), 0);
     GTEST_LOG_(INFO) << "DfxCutilTest001: end.";
