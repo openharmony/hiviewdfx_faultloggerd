@@ -34,9 +34,4 @@
             <option name="push" value="hiviewdfx/faultloggerd/rustpanic_maker -> /data/" src="out"/>
         </preparer>
     </target>
-    <target name="test_signalhandler">
-        <preparer>
-            <option name="push" value="hiviewdfx/faultloggerd/crasher_c -> /data/" src="out"/>
-        </preparer>
-    </target>
 </configuration>
