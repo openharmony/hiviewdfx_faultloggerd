@@ -43,9 +43,7 @@ public:
 };
 
 void SignalHandlerTest::SetUpTestCase()
-{
-    chmod("/data/crasher_c", 0755); // 0755 : -rwxr-xr-x
-}
+{}
 
 void SignalHandlerTest::TearDownTestCase()
 {}
@@ -87,59 +85,6 @@ static bool CheckLocalCrashKeyWords(const string& filePath, pid_t pid, int sig)
     int length = sizeof(keywords) / sizeof(keywords[0]);
     int minRegIdx = -1;
     return CheckKeyWords(filePath, keywords, length, minRegIdx) == length;
-}
-
-static bool CheckCrashcKeyWords(const string& filePath, pid_t pid, int sig)
-{
-    if (filePath.empty() || pid <= 0) {
-        return false;
-    }
-    map<int, string> sigKey = {
-        { SIGILL, string("Signal(4)") },
-        { SIGABRT, string("Signal(6)") },
-        { SIGBUS, string("Signal(7)") },
-        { SIGSEGV, string("SIGSEGV") },
-    };
-    string sigKeyword = "";
-    map<int, string>::iterator iter = sigKey.find(sig);
-    if (iter != sigKey.end()) {
-        sigKeyword = iter->second;
-    }
-#ifdef __aarch64__
-    string keywords[] = {
-        "Pid:" + to_string(pid), "Uid:", "name:crasher_c",
-        sigKeyword, "Tid:", "fp", "x0:", "crasher_c"
-    };
-#else
-    string keywords[] = {
-        "Pid:" + to_string(pid), "Uid:", "name:crasher_c",
-        sigKeyword, "Tid:", "#00", "crasher_c"
-    };
-#endif
-
-    int length = sizeof(keywords) / sizeof(keywords[0]);
-    int minRegIdx = -1;
-    return CheckKeyWords(filePath, keywords, length, minRegIdx) == length;
-}
-
-static void WaitPidWithTimeout(pid_t pid)
-{
-    GTEST_LOG_(INFO) << "start wait exit, pid:" << pid;
-    constexpr time_t maxWaitingTime = 60; // 60 : 60s timeout
-    time_t remainedTime = maxWaitingTime;
-    while (remainedTime > 0) {
-        time_t startTime = time(nullptr);
-        int status = 0;
-        waitpid(pid, &status, WNOHANG);
-        if (WIFEXITED(status)) {
-            GTEST_LOG_(INFO) << "wait pid exit ok, pid:" << pid;
-            return;
-        }
-        sleep(1);
-        time_t duration = time(nullptr) - startTime;
-        remainedTime = (remainedTime > duration) ? (remainedTime - duration) : 0;
-    }
-    GTEST_LOG_(INFO) << "wait pid exit timeout, pid:" << pid;
 }
 
 static bool CheckThreadCrashKeyWords(const string& filePath, pid_t pid, int sig)
@@ -327,13 +272,12 @@ HWTEST_F(SignalHandlerTest, LocalHandlerTest005, TestSize.Level2)
     } else if (pid == 0) {
         DFX_InstallLocalSignalHandler();
         sleep(1);
-        execl("/data/crasher_c", "crasher_c", "SIGSEGV", nullptr);
+        raise(SIGSEGV);
     } else {
         usleep(10000); // 10000 : sleep 10ms
-        GTEST_LOG_(INFO) << "process(" << getpid() << ") is waitting process(" << pid << ") exit";
-        WaitPidWithTimeout(pid);
+        GTEST_LOG_(INFO) << "process(" << getpid() << ") is ready to wait process(" << pid << ")";
         sleep(2); // 2 : wait for cppcrash generating
-        bool ret = CheckCrashcKeyWords(GetCppCrashFileName(pid), pid, SIGSEGV);
+        bool ret = CheckLocalCrashKeyWords(GetCppCrashFileName(pid), pid, SIGSEGV);
         ASSERT_TRUE(ret);
     }
     GTEST_LOG_(INFO) << "LocalHandlerTest005: end.";
