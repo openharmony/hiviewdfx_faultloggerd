@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 Huawei Device Co., Ltd.
+ * Copyright (c) 2022-2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -72,6 +72,15 @@ static bool ReadStringFromFile(const char* path, char* dst, size_t dstSz)
 bool GetThreadName(char* buffer, size_t bufferSz)
 {
     return ReadStringFromFile(PROC_SELF_COMM_PATH, buffer, bufferSz);
+}
+
+bool GetThreadNameByTid(int32_t tid, char* buffer, size_t bufferSz)
+{
+    char threadNamePath[NAME_LEN] = { 0 };
+    if (snprintf(threadNamePath, sizeof(threadNamePath), "/proc/%d/comm", tid) <= 0) {
+        return false;
+    }
+    return ReadStringFromFile(threadNamePath, buffer, bufferSz);
 }
 
 bool GetProcessName(char* buffer, size_t bufferSz)

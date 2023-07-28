@@ -106,8 +106,8 @@ int ProcessDumper::DumpProcess(std::shared_ptr<ProcessDumpRequest> request)
             dumpRes = DumpErrorCode::DUMP_EGETPPID;
             break;
         }
-        DFXLOG_INFO("Processdump SigVal(%d), TargetPid(%d:%d), TargetTid(%d).",
-            request->siginfo.si_value.sival_int, request->pid, request->nsPid, request->tid);
+        DFXLOG_INFO("Processdump SigVal(%d), TargetPid(%d:%d), TargetTid(%d), threadname(%s).",
+            request->siginfo.si_value.sival_int, request->pid, request->nsPid, request->tid, request->threadName);
 
         if (InitProcessInfo(request) < 0) {
             DFXLOG_ERROR("Failed to init crash process info.");
@@ -147,7 +147,7 @@ int ProcessDumper::InitProcessInfo(std::shared_ptr<ProcessDumpRequest> request)
         return -1;
     }
     process_ = DfxProcess::Create(request->pid, request->nsPid);
-    if (!process_) {
+    if (process_ == nullptr) {
         return -1;
     }
     if (process_->processInfo_.processName.empty()) {

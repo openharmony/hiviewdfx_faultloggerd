@@ -63,13 +63,13 @@ DfxUnwindRemote::DfxUnwindRemote() : as_(nullptr)
 bool DfxUnwindRemote::UnwindProcess(std::shared_ptr<DfxProcess> process)
 {
     bool ret = false;
-    if (!process) {
+    if (process == nullptr) {
         DFXLOG_WARN("%s::can not unwind null process.", __func__);
         return ret;
     }
 
     as_ = unw_create_addr_space(&_UPT_accessors, 0);
-    if (!as_) {
+    if (as_ == nullptr) {
         DFXLOG_WARN("%s::failed to create address space.", __func__);
         return ret;
     }
@@ -314,21 +314,21 @@ bool DfxUnwindRemote::GetArkJsHeapFuncName(std::string& funcName, std::shared_pt
 
 bool DfxUnwindRemote::UnwindThread(std::shared_ptr<DfxProcess> process, std::shared_ptr<DfxThread> thread)
 {
-    if (!thread) {
+    if (thread == nullptr) {
         DFXLOG_ERROR("NULL thread needs unwind.");
         return false;
     }
 
     pid_t nsTid = thread->threadInfo_.nsTid;
     void *context = _UPT_create(nsTid);
-    if (!context) {
+    if (context == nullptr) {
         DfxRingBufferWrapper::GetInstance().AppendBuf("Failed to create unwind context for %d.\n", nsTid);
         return false;
     }
 
-    if (!as_) {
+    if (as_ == nullptr) {
         as_ = unw_create_addr_space(&_UPT_accessors, 0);
-        if (!as_) {
+        if (as_ == nullptr) {
             DfxRingBufferWrapper::GetInstance().AppendBuf("Unwind address space is not exist for %d.\n", nsTid);
             _UPT_destroy(context);
             return false;

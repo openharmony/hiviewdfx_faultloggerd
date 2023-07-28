@@ -95,7 +95,7 @@ static void DFX_SignalLocalHandler(int sig, siginfo_t * si, void * context)
     g_request.timeStamp = GetTimeMilliseconds();
     DFXLOG_INFO("DFX_SignalLocalHandler :: sig(%d), pid(%d), tid(%d).", sig, g_request.pid, g_request.tid);
 
-    GetThreadName(g_request.threadName, sizeof(g_request.threadName));
+    GetThreadNameByTid(g_request.tid, g_request.threadName, sizeof(g_request.threadName));
     GetProcessName(g_request.processName, sizeof(g_request.processName));
 
     int ret = memcpy_s(&(g_request.siginfo), sizeof(siginfo_t), si, sizeof(siginfo_t));

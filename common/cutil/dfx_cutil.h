@@ -29,6 +29,8 @@ AT_SYMBOL_HIDDEN pid_t GetRealPid(void);
 
 AT_SYMBOL_HIDDEN bool GetThreadName(char* buffer, size_t bufferSz);
 
+AT_SYMBOL_HIDDEN bool GetThreadNameByTid(int32_t tid, char* buffer, size_t bufferSz);
+
 AT_SYMBOL_HIDDEN bool GetProcessName(char* buffer, size_t bufferSz);
 
 AT_SYMBOL_HIDDEN uint64_t GetTimeMilliseconds(void);
