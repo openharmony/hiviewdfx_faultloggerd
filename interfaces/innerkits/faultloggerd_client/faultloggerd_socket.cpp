@@ -82,7 +82,7 @@ static bool GetServerSocket(int& sockfd, const char* name)
 {
     sockfd = OHOS_TEMP_FAILURE_RETRY(socket(AF_LOCAL, SOCK_STREAM, 0));
     if (sockfd < 0) {
-        DFXLOG_ERROR("%s :: Failed to create socket", __func__);
+        DFXLOG_ERROR("%s :: Failed to create socket, errno(%d)", __func__, errno);
         return false;
     }
 
@@ -101,12 +101,13 @@ static bool GetServerSocket(int& sockfd, const char* name)
     int optval = 1;
     int ret = setsockopt(sockfd, SOL_SOCKET, SO_PASSCRED, &optval, sizeof(optval));
     if (ret < 0) {
+        DFXLOG_ERROR("%s :: Failed to set socket option, errno(%d)", __func__, errno);
         return false;
     }
 
     if (bind(sockfd, (struct sockaddr *)&server,
         offsetof(struct sockaddr_un, sun_path) + strlen(server.sun_path)) < 0) {
-        DFXLOG_ERROR("%s :: Failed to bind socket", __func__);
+        DFXLOG_ERROR("%s :: Failed to bind socket, errno(%d)", __func__, errno);
         return false;
     }
 
@@ -128,7 +129,7 @@ bool StartListen(int& sockfd, const char* name, const int listenCnt)
     }
 
     if (listen(sockfd, listenCnt) < 0) {
-        DFXLOG_ERROR("%s :: Failed to listen socket", __func__);
+        DFXLOG_ERROR("%s :: Failed to listen socket, errno(%d)", __func__, errno);
         close(sockfd);
         sockfd = -1;
         return false;
@@ -160,7 +161,7 @@ static bool RecvMsgFromSocket(int sockfd, unsigned char* data, size_t& len)
         msgh.msg_controllen = sizeof(ctlBuffer);
 
         if (recvmsg(sockfd, &msgh, 0) < 0) {
-            DFXLOG_ERROR("%s :: Failed to recv message\n", __func__);
+            DFXLOG_ERROR("%s :: Failed to recv message, errno(%d)\n", __func__, errno);
             break;
         }
 
@@ -212,7 +213,7 @@ bool RecvMsgCredFromSocket(int sockfd, struct ucred* pucred)
         msgh.msg_controllen = sizeof(controlMsg.buf);
 
         if (recvmsg(sockfd, &msgh, 0) < 0) {
-            DFXLOG_ERROR("%s :: Failed to recv message\n", __func__);
+            DFXLOG_ERROR("%s :: Failed to recv message, errno(%d)\n", __func__, errno);
             break;
         }
 
@@ -252,7 +253,7 @@ bool SendMsgIovToSocket(int sockfd, void *iovBase, const int iovLen)
     msgh.msg_controllen = 0;
 
     if (sendmsg(sockfd, &msgh, 0) < 0) {
-        DFXLOG_ERROR("%s :: Failed to send message.", __func__);
+        DFXLOG_ERROR("%s :: Failed to send message, errno(%d).", __func__, errno);
         return false;
     }
     return true;
@@ -289,7 +290,7 @@ static bool SendMsgCtlToSocket(int sockfd, const void *cmsg, const int cmsgLen)
     }
 
     if (sendmsg(sockfd, &msgh, 0) < 0) {
-        DFXLOG_ERROR("%s :: Failed to send message", __func__);
+        DFXLOG_ERROR("%s :: Failed to send message, errno(%d)", __func__, errno);
         return false;
     }
     return true;

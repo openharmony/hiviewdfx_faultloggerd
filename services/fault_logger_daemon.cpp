@@ -220,7 +220,7 @@ void FaultLoggerDaemon::HandleDefaultClientRequest(int32_t connectionFd, const F
 
     int fd = CreateFileForRequest(request->type, request->pid, request->time, false);
     if (fd < 0) {
-        DFXLOG_ERROR("%s :: Failed to create log file", FAULTLOGGERD_TAG.c_str());
+        DFXLOG_ERROR("%s :: Failed to create log file, errno(%d)", FAULTLOGGERD_TAG.c_str(), errno);
         return;
     }
     SendFileDescriptorToSocket(connectionFd, fd);
@@ -232,7 +232,7 @@ void FaultLoggerDaemon::HandleLogFileDesClientRequest(int32_t connectionFd, cons
 {
     int fd = CreateFileForRequest(request->type, request->pid, request->time, true);
     if (fd < 0) {
-        DFXLOG_ERROR("%s :: Failed to create log file", FAULTLOGGERD_TAG.c_str());
+        DFXLOG_ERROR("%s :: Failed to create log file, errno(%d)", FAULTLOGGERD_TAG.c_str(), errno);
         return;
     }
     SendFileDescriptorToSocket(connectionFd, fd);
@@ -302,7 +302,7 @@ void FaultLoggerDaemon::HandlePrintTHilogClientRequest(int32_t const connectionF
 
     int nread = read(connectionFd, buf, sizeof(buf) - 1);
     if (nread < 0) {
-        DFXLOG_ERROR("%s :: Failed to read message", FAULTLOGGERD_TAG.c_str());
+        DFXLOG_ERROR("%s :: Failed to read message, errno(%d)", FAULTLOGGERD_TAG.c_str(), errno);
     } else if (nread == 0) {
         DFXLOG_ERROR("%s :: HandlePrintTHilogClientRequest :: Read null from request socket", FAULTLOGGERD_TAG.c_str());
     } else {
@@ -318,13 +318,13 @@ FaultLoggerCheckPermissionResp FaultLoggerDaemon::SecurityCheck(int32_t connecti
     do {
         int optval = 1;
         if (setsockopt(connectionFd, SOL_SOCKET, SO_PASSCRED, &optval, sizeof(optval)) == -1) {
-            DFXLOG_ERROR("%s :: setsockopt SO_PASSCRED error.", FAULTLOGGERD_TAG.c_str());
+            DFXLOG_ERROR("%s :: setsockopt SO_PASSCRED error, errno(%d)", FAULTLOGGERD_TAG.c_str(), errno);
             break;
         }
 
         if (write(connectionFd, DAEMON_RESP.c_str(), DAEMON_RESP.length()) !=
             static_cast<ssize_t>(DAEMON_RESP.length())) {
-            DFXLOG_ERROR("%s :: Failed to write DAEMON_RESP.", FAULTLOGGERD_TAG.c_str());
+            DFXLOG_ERROR("%s :: Failed to write DAEMON_RESP, errno(%d)", FAULTLOGGERD_TAG.c_str(), errno);
         }
 
         if (!RecvMsgCredFromSocket(connectionFd, &rcred)) {
@@ -519,7 +519,7 @@ void FaultLoggerDaemon::RemoveTempFileIfNeed()
         struct stat st;
         int err = stat(files[index].c_str(), &st);
         if (err != 0) {
-            DFXLOG_ERROR("%s :: Get log stat failed.", FAULTLOGGERD_TAG.c_str());
+            DFXLOG_ERROR("%s :: Get log stat failed, errno(%d).", FAULTLOGGERD_TAG.c_str(), errno);
         } else {
             if ((currentTime - st.st_mtime) <= DAEMON_REMOVE_FILE_TIME_S) {
                 continue;
@@ -539,7 +539,7 @@ void FaultLoggerDaemon::AddEvent(int32_t epollFd, int32_t addFd, uint32_t event)
     ev.data.fd = addFd;
     int ret = epoll_ctl(epollFd, EPOLL_CTL_ADD, addFd, &ev);
     if (ret < 0) {
-        DFXLOG_WARN("%s :: Failed to epoll ctl add Fd(%d)", FAULTLOGGERD_TAG.c_str(), addFd);
+        DFXLOG_WARN("%s :: Failed to epoll ctl add Fd(%d), errno(%d)", FAULTLOGGERD_TAG.c_str(), addFd, errno);
     }
 }
 
@@ -550,7 +550,7 @@ void FaultLoggerDaemon::DelEvent(int32_t epollFd, int32_t delFd, uint32_t event)
     ev.data.fd = delFd;
     int ret = epoll_ctl(epollFd, EPOLL_CTL_DEL, delFd, &ev);
     if (ret < 0) {
-        DFXLOG_WARN("%s :: Failed to epoll ctl del Fd(%d)", FAULTLOGGERD_TAG.c_str(), delFd);
+        DFXLOG_WARN("%s :: Failed to epoll ctl del Fd(%d), errno(%d)", FAULTLOGGERD_TAG.c_str(), delFd, errno);
     }
     close(delFd);
 }
@@ -575,7 +575,7 @@ bool FaultLoggerDaemon::CheckRequestCredential(int32_t connectionFd, FaultLogger
     socklen_t credSize = sizeof(creds);
     int err = getsockopt(connectionFd, SOL_SOCKET, SO_PEERCRED, &creds, &credSize);
     if (err != 0) {
-        DFXLOG_ERROR("%s :: Failed to CheckRequestCredential", FAULTLOGGERD_TAG.c_str());
+        DFXLOG_ERROR("%s :: Failed to CheckRequestCredential, errno(%d)", FAULTLOGGERD_TAG.c_str(), errno);
         return false;
     }
 

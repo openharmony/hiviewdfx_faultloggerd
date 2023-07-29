@@ -61,7 +61,7 @@ bool DfxMemoryFile::Init(const std::string& file, uint64_t offset, uint64_t size
         return false;
     }
 
-    offset_ = offset & ALIGN_BYTES(getpagesize());
+    offset_ = offset & static_cast<uint64_t>ALIGN_BYTES(getpagesize());
     uint64_t alignedOffset = offset & ALIGN_MASK(getpagesize());
     if (alignedOffset > static_cast<uint64_t>(fileSize) ||
         offset > static_cast<uint64_t>(fileSize)) {
