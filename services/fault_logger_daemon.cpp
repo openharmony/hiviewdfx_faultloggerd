@@ -143,6 +143,10 @@ void FaultLoggerDaemon::HandleAccept(int32_t epollFd, int32_t socketFd)
 
 void FaultLoggerDaemon::HandleRequest(int32_t epollFd, int32_t connectionFd)
 {
+    if (epollFd < 0 || connectionFd < 0) {
+        DFXLOG_ERROR("%s :: HandleRequest recieved invalid fd parmeters.", FAULTLOGGERD_TAG.c_str());
+        return;
+    }
     char buf[REQUEST_BUF_SIZE] = {0};
 
     do {

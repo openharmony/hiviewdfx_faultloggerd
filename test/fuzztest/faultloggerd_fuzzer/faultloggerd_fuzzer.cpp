@@ -71,7 +71,7 @@ bool DumpStackTraceTest(const uint8_t* data, size_t size)
 bool FaultloggerdClientTest(const uint8_t* data, size_t size)
 {
     cout << "enter FaultloggerdClientTest, size:" << size << endl;
-    if (size < sizeof(int32_t) * 3) { //3: 3 parameters
+    if (size < sizeof(int32_t) * 3) { // 3 : construct three int32_t parameters
         cout << "size is not correct, return" << endl;
         return true;
     }
@@ -99,9 +99,31 @@ bool FaultloggerdClientTest(const uint8_t* data, size_t size)
     RequestDelPipeFd(pid[0]);
     RequestCheckPermission(pid[0]);
     RequestSdkDump(type[0], pid[0], tid[0]);
+    return true;
+}
+
+bool FaultloggerdServerTest(const uint8_t* data, size_t size)
+{
+    cout << "enter FaultloggerdServerTest, size:" << size << endl;
+    if (size < sizeof(int32_t) * 2) { // 2 : construct two int32_t parameters
+        cout << "size is not correct, return" << endl;
+        return true;
+    }
+    int32_t epollFd[1];
+    int32_t connectionFd[1];
+    errno_t err = memcpy_s(epollFd, sizeof(epollFd), data, sizeof(int32_t));
+    if (err != EOK) {
+        cout << "FaultloggerdServerTest :: memcpy_s type failed" << endl;
+    }
+    data += sizeof(int32_t);
+    err = memcpy_s(connectionFd, sizeof(connectionFd), data, sizeof(int32_t));
+    if (err != EOK) {
+        cout << "FaultloggerdServerTest :: memcpy_s tid failed" << endl;
+    }
+    cout << "epollFd = " << epollFd[0] << " connectionFd = " << connectionFd[0] << endl;
 
     std::shared_ptr<FaultLoggerDaemon> daemon = std::make_shared<FaultLoggerDaemon>();
-    daemon->HandleRequest(pid[0], type[0]);
+    daemon->HandleRequest(epollFd[0], connectionFd[0]);
     return true;
 }
 } // namespace OHOS
@@ -112,5 +134,6 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size)
     /* Run your code on data */
     OHOS::DumpStackTraceTest(data, size);
     OHOS::FaultloggerdClientTest(data, size);
+    OHOS::FaultloggerdServerTest(data, size);
     return 0;
 }
