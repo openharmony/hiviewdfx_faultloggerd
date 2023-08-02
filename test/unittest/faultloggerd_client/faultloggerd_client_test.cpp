@@ -15,6 +15,7 @@
 
 #include <gtest/gtest.h>
 
+#include "dfx_test_util.h"
 #include "faultloggerd_client.h"
 
 #if defined(HAS_LIB_SELINUX)
@@ -48,6 +49,14 @@ void FaultloggerdClientTest::SetUp()
 
 void FaultloggerdClientTest::TearDown()
 {
+}
+
+bool IsSelinuxEnforced()
+{
+    std::string cmd = "getenforce";
+    std::string selinuxStatus = ExecuteCommands(cmd);
+    GTEST_LOG_(INFO) << "getenforce return:" << selinuxStatus;
+    return (selinuxStatus.find("Enforcing") != std::string::npos) ? true : false;
 }
 
 /**
@@ -155,6 +164,12 @@ HWTEST_F(FaultloggerdClientTest, FaultloggerdClientTest003, TestSize.Level2)
 HWTEST_F(FaultloggerdClientTest, FaultloggerdClientTest004, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "FaultloggerdClientTest004: start.";
+
+    // If selinux is not opened, skip this test item
+    if (!IsSelinuxEnforced()) {
+        GTEST_LOG_(INFO) << "Selinux is not opened, skip FaultloggerdClientTest004";
+        return;
+    }
     int32_t pid = fork();
     if (pid == 0) {
         int ret = 1;
