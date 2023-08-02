@@ -33,6 +33,7 @@
 namespace OHOS {
 namespace HiviewDFX {
 namespace {
+const char PID_STR_NAME[] = "Pid:";
 const char PPID_STR_NAME[] = "PPid:";
 const char NSPID_STR_NAME[] = "NSpid:";
 const int ARGS_COUNT_ONE = 1;
@@ -57,6 +58,17 @@ static bool GetProcStatusByPath(struct ProcInfo& procInfo, const std::string& pa
             return false;
         }
 
+        if (strncmp(buf, PID_STR_NAME, strlen(PID_STR_NAME)) == 0) {
+            // Pid:   1892
+            if (sscanf_s(buf, "%*[^0-9]%d", &pid) != ARGS_COUNT_ONE) {
+                procInfo.pid = getpid();
+            } else {
+                procInfo.pid = pid;
+            }
+            procInfo.nsPid = pid;
+            continue;
+        }
+
         if (strncmp(buf, PPID_STR_NAME, strlen(PPID_STR_NAME)) == 0) {
             // PPid:   240
             if (sscanf_s(buf, "%*[^0-9]%d", &ppid) != ARGS_COUNT_ONE) {
@@ -67,8 +79,8 @@ static bool GetProcStatusByPath(struct ProcInfo& procInfo, const std::string& pa
             continue;
         }
 
-        // NSpid:  1892    1
         if (strncmp(buf, NSPID_STR_NAME, strlen(NSPID_STR_NAME)) == 0) {
+            // NSpid:  1892    1
             if (sscanf_s(buf, "%*[^0-9]%d%*[^0-9]%d", &pid, &nsPid) != ARGS_COUNT_TWO) {
                 procInfo.ns = false;
                 procInfo.nsPid = pid;
