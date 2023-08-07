@@ -25,7 +25,7 @@
 
 namespace OHOS {
 namespace HiviewDFX {
-std::shared_ptr<DfxRegs> DfxRegs::Create(int mode)
+std::shared_ptr<DfxRegs> DfxRegs::Create()
 {
     std::shared_ptr<DfxRegs> dfxregs;
 #if defined(__arm__)
@@ -37,19 +37,6 @@ std::shared_ptr<DfxRegs> DfxRegs::Create(int mode)
 #else
 #error "Unsupported architecture"
 #endif
-    if (mode == UnwinderMode::FRAMEPOINTER_UNWIND) {
-        uintptr_t regs[FP_MINI_REGS_SIZE] = {0};
-        dfxregs->GetFramePointerMiniRegs(regs);
-        dfxregs->fp_ = regs[0]; // 0 : index of x29 or r11 register
-        dfxregs->pc_ = regs[3]; // 3 : index of x32 or r15 register
-    } else if (mode == UnwinderMode::QUICKEN_UNWIND) {
-        uintptr_t regs[QUT_MINI_REGS_SIZE] = {0};
-        dfxregs->GetQuickenMiniRegs(regs);
-        dfxregs->fp_ = regs[3]; // 3 : index of x29 or r11 register
-        dfxregs->sp_ = regs[4]; // 4 : index of x31 or r13 register
-        dfxregs->pc_ = regs[5]; // 5 : index of x32 or r15 register
-        dfxregs->lr_ = regs[6]; // 6 : index of x30 or r14 register
-    }
     return dfxregs;
 }
 

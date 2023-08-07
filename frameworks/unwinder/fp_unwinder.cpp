@@ -83,9 +83,11 @@ bool FpUnwinder::UnwindWithContext(unw_context_t& context, size_t skipFrameNum)
 
 bool FpUnwinder::Unwind(size_t skipFrameNum)
 {
-    std::shared_ptr<DfxRegs> dfxregs = DfxRegs::Create(FRAMEPOINTER_UNWIND);
-    skipFrameNum += 2; // 2 : skip GetFramePointerMiniRegs and Create function
-
+    std::shared_ptr<DfxRegs> dfxregs = DfxRegs::Create();
+    uintptr_t regs[FP_MINI_REGS_SIZE] = {0};
+    dfxregs->GetFramePointerMiniRegs(regs);
+    dfxregs->fp_ = regs[0]; // 0 : index of x29 or r11 register
+    dfxregs->pc_ = regs[3]; // 3 : index of x32 or r15 register
     return Unwind(dfxregs, skipFrameNum);
 }
 

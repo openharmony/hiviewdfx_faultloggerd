@@ -100,33 +100,6 @@ std::string DfxRegsArm64::PrintRegs() const
     return regString;
 }
 
-// Get 4 registers from x29 to x32.
-inline AT_ALWAYS_INLINE void DfxRegsArm64::GetFramePointerMiniRegs(void *regs)
-{
-    asm volatile(
-    "1:\n"
-    "stp x29, x30, [%[base], #0]\n"
-    "mov x12, sp\n"
-    "adr x13, 1b\n"
-    "stp x12, x13, [%[base], #16]\n"
-    : [base] "+r"(regs)
-    :
-    : "x12", "x13", "memory");
-}
-
-// Get 7 registers with [unuse, unset, x28, x29, sp, pc, unset].
-inline AT_ALWAYS_INLINE void DfxRegsArm64::GetQuickenMiniRegs(void *regs)
-{
-    asm volatile(
-    "1:\n"
-    "stp x28, x29, [%[base], #16]\n"
-    "mov x12, sp\n"
-    "adr x13, 1b\n"
-    "stp x12, x13, [%[base], #32]\n"
-    : [base] "+r"(regs)
-    :
-    : "x12", "x13", "memory");
-}
 } // namespace HiviewDFX
 } // namespace OHOS
 #endif

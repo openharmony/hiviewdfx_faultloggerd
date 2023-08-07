@@ -71,45 +71,6 @@ std::string DfxRegsArm::PrintRegs() const
     return regString;
 }
 
-// Get 4 registers(r7/r11/sp/pc)
-inline AT_ALWAYS_INLINE void DfxRegsArm::GetFramePointerMiniRegs(void *regs)
-{
-    asm volatile(
-    ".align 2\n"
-    "bx pc\n"
-    "nop\n"
-    ".code 32\n"
-    "stmia %[base], {r7, r11}\n"
-    "add %[base], #8\n"
-    "mov r1, r13\n"
-    "mov r2, r15\n"
-    "stmia %[base], {r1, r2}\n"
-    "orr %[base], pc, #1\n"
-    "bx %[base]\n"
-    : [base] "+r"(regs)
-    :
-    : "r1", "r2", "memory");
-}
-
-// Get 7 registers [r4, r7, r10, r11, sp, pc, unset].
-inline AT_ALWAYS_INLINE void DfxRegsArm::GetQuickenMiniRegs(void *regs)
-{
-    asm volatile(
-    ".align 2\n"
-    "bx pc\n"
-    "nop\n"
-    ".code 32\n"
-    "stmia %[base], {r4, r7, r10, r11}\n"
-    "add %[base], #16\n"
-    "mov r1, r13\n"
-    "mov r2, r15\n"
-    "stmia %[base], {r1, r2}\n"
-    "orr %[base], pc, #1\n"
-    "bx %[base]\n"
-    : [base] "+r"(regs)
-    :
-    : "r1", "r2", "memory");
-}
 } // namespace HiviewDFX
 } // namespace OHOS
 #endif
