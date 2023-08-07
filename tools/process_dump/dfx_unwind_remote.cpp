@@ -231,7 +231,6 @@ bool DfxUnwindRemote::UpdateAndFillFrame(unw_cursor_t& cursor, std::shared_ptr<D
     bool isValidFrame = true;
     if (mapInfo != nullptr) {
         std::string mapPath = std::string(mapInfo->path);
-        frame->mapName = mapPath;
         std::string funcName;
         bool isGetFuncName = false;
 #if defined(__aarch64__)
@@ -247,6 +246,15 @@ bool DfxUnwindRemote::UpdateAndFillFrame(unw_cursor_t& cursor, std::shared_ptr<D
             frame->funcName = funcName;
             frame->funcOffset = funcOffset;
         }
+
+        if (mapPath.find(".hap") != std::string::npos) {
+            char libraryName[PATH_LEN] = { 0 };
+            if (unw_get_library_name_by_map(mapInfo, libraryName, PATH_LEN - 1) == 0) {
+                mapPath = mapPath + "!" + std::string(libraryName);
+            }
+        }
+        frame->mapName = mapPath;
+
         if (enableBuildId && buildIds_.find(mapPath) != buildIds_.end()) {
             frame->buildId = buildIds_[mapPath];
         } else if (enableBuildId && buildIds_.find(mapPath) == buildIds_.end()) {
