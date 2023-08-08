@@ -73,15 +73,6 @@ std::string DfxRegsX86_64::PrintRegs() const
     return regString;
 }
 
-inline void DfxRegsX86_64::GetFramePointerMiniRegs(void *regs)
-{
-    return;
-}
-
-inline void DfxRegsX86_64::GetQuickenMiniRegs(void *regs)
-{
-    return;
-}
 } // namespace HiviewDFX
 } // namespace OHOS
 #endif

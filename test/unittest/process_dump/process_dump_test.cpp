@@ -213,7 +213,12 @@ HWTEST_F (ProcessDumpTest, DfxUnwindRemoteTest003, TestSize.Level2)
     pid_t tid = pid;
     std::shared_ptr<DfxThread> thread = DfxThread::Create(pid, tid, tid);
     std::shared_ptr<DfxProcess> process = DfxProcess::Create(pid, pid);
-    thread->SetThreadRegs(DfxRegs::Create(UnwinderMode::FRAMEPOINTER_UNWIND));
+    auto dfxregs = DfxRegs::Create();
+    uintptr_t regs[FP_MINI_REGS_SIZE] = {0};
+    dfxregs->GetFramePointerMiniRegs(regs);
+    dfxregs->fp_ = regs[0]; // 0 : index of x29 or r11 register
+    dfxregs->pc_ = regs[3]; // 3 : index of x32 or r15 register
+    thread->SetThreadRegs(dfxregs);
     process->keyThread_ = thread;
     thread->Attach();
     DfxUnwindRemote::GetInstance().UnwindThreadFallback(process, thread);
