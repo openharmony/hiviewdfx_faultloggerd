@@ -20,7 +20,7 @@
     "ram": "~1024KB",
     "deps": {
       "components": [
-        "common",
+        "build_framework",
         "c_utils",
         "hilog",
         "hisysevent",
