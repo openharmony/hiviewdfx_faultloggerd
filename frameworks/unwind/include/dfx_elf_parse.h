@@ -56,6 +56,9 @@ public:
 
     bool InitHeaders();
     bool IsValid();
+    uint8_t GetClassType();
+    ArchType GetArchType();
+
     virtual std::string GetElfName();
     virtual int64_t GetLoadBias();
     virtual std::string GetBuildId();
@@ -88,6 +91,15 @@ private:
     std::unordered_map<uint32_t, ElfSymbol> symbols_;
     std::unordered_map<uint64_t, ElfLoadInfo> ptLoads_;
 };
+
+class ElfParse32 : public ElfParse {
+public:
+};
+
+class ElfParse64 : public ElfParse {
+public:
+};
+
 } // namespace HiviewDFX
 } // namespace OHOS
 #endif

@@ -91,7 +91,11 @@ __attribute__ ((visibility("hidden"))) int DfxLogPrint(
 #define DFXLOG_WARN(...) DFXLOG_PRINT(LOG_WARN, LOG_DOMAIN, LOG_TAG, ##__VA_ARGS__)
 #define DFXLOG_ERROR(...) DFXLOG_PRINT(LOG_ERROR, LOG_DOMAIN, LOG_TAG, ##__VA_ARGS__)
 #define DFXLOG_FATAL(...) DFXLOG_PRINT(LOG_FATAL, LOG_DOMAIN, LOG_TAG, ##__VA_ARGS__)
+
 #else
+
+#define DFXLOG_PRINT(prio, domain, tag, ...)
+
 #define DFXLOG_DEBUG(...)
 #define DFXLOG_INFO(...)
 #define DFXLOG_WARN(...)
