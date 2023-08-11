@@ -16,70 +16,79 @@
 #define DFX_ERRORS_H
 
 #include <cinttypes>
-#include <stdint.h>
 
 namespace OHOS {
 namespace HiviewDFX {
 /**
- * @brief Dwarf unwind error code
+ * @brief Unwind error data
  */
-enum DwarfErrorCode : uint8_t {
-    /** No error */
-    DWARF_ERROR_NONE,
-    /** Memory invalid */
-    DWARF_ERROR_MEMORY_INVALID,
-    /** Illegal value */
-    DWARF_ERROR_ILLEGAL_VALUE,
-    /** Illegal state */
-    DWARF_ERROR_ILLEGAL_STATE,
-    /** Stack index invalid */
-    DWARF_ERROR_STACK_INDEX_NOT_VALID,
-    /** Not implemented */
-    DWARF_ERROR_NOT_IMPLEMENTED,
-    /** Too many iterations */
-    DWARF_ERROR_TOO_MANY_ITERATIONS,
-    /** Cfa not defined */
-    DWARF_ERROR_CFA_NOT_DEFINED,
-    /** Unsupported version */
-    DWARF_ERROR_UNSUPPORTED_VERSION,
-    /** No FDEs */
-    DWARF_ERROR_NO_FDES,
-    /** Not support */
-    DWARF_ERROR_NOT_SUPPORT,
+struct UnwindErrorData {
+    uint16_t code;
+    uint64_t addr;
 };
 
 /**
- * @brief Quick unwind table error code
+ * @brief Unwind error code
  */
-enum QutErrorCode : uint16_t {
+enum UnwindErrorCode : uint16_t {
     /** No error */
-    QUT_ERROR_NONE = 0,
-    /** Unable to use unwind information to unwind */
-    QUT_ERROR_UNWIND_INFO,
-    /** Unwind in an invalid map */
-    QUT_ERROR_INVALID_MAP,
+    UNW_ERROR_NONE = 0,
+    /** Invalid unwind mode */
+    UNW_ERROR_INVALID_MODE,
+    /** Invalid unwind context */
+    UNW_ERROR_INVALID_CONTEXT,
+    /** Invalid unwind regs */
+    UNW_ERROR_INVALID_REGS,
+    /** Invalid unwind map */
+    UNW_ERROR_INVALID_MAP,
+    /** Invalid unwind elf */
+    UNW_ERROR_INVALID_ELF,
+    /** Invalid unwind pid */
+    UNW_ERROR_INVALID_PID,
+    /** Invalid unwind stack index */
+    UNW_ERROR_INVALID_STACK_INDEX,
+    /** Reserved value */
+    UNW_ERROR_RESERVED_VALUE,
+    /** Illegal value */
+    UNW_ERROR_ILLEGAL_VALUE,
+    /** Illegal state */
+    UNW_ERROR_ILLEGAL_STATE,
+    /** The last frame has the same pc/sp as the next frame */
+    UNW_ERROR_REPEATED_FRAME,
     /** The number of frames exceed the total allowed */
-    QUT_ERROR_MAX_FRAMES_EXCEEDED,
-    /** The last frame has the same pc/sp as the next */
-    QUT_ERROR_REPEATED_FRAME,
-    /** Unwind in an invalid elf */
-    QUT_ERROR_INVALID_ELF,
-    /** Quicken unwind table is invalid */
-    QUT_ERROR_QUT_SECTION_INVALID,
+    UNW_ERROR_MAX_FRAMES_EXCEEDED,
+    /** arm exidx invalid alignment */
+    UNW_ERROR_INVALID_ALIGNMENT,
+    /** arm exidx invalid personality */
+    UNW_ERROR_INVALID_PERSONALITY,
+    /** arm exidx cant unwind */
+    UNW_ERROR_CANT_UNWIND,
+    /** arm exidx spare */
+    UNW_ERROR_ARM_EXIDX_SPARE,
+    /** arm exidx finish */
+    UNW_ERROR_ARM_EXIDX_FINISH,
+    /** Quicken unwind section is invalid */
+    UNW_ERROR_INVALID_QUT_SECTION,
     /** Met a invalid quicken instruction */
-    QUT_ERROR_INVALID_QUT_INSTR,
-    /** Could not get maps */
-    QUT_ERROR_MAPS_IS_NULL,
-    /** Could not get context */
-    QUT_ERROR_CONTEXT_IS_NULL,
+    UNW_ERROR_INVALID_QUT_INSTRUCTION,
     /** Request QUT file failed */
-    QUT_ERROR_REQUEST_QUT_FILE_FAILED,
+    UNW_ERROR_REQUEST_QUT_FILE_FAILED,
     /** Request QUT in memory failed */
-    QUT_ERROR_REQUEST_QUT_INMEM_FAILED,
+    UNW_ERROR_REQUEST_QUT_INMEM_FAILED,
     /** Read memory from stack failed */
-    QUT_ERROR_READ_STACK_FAILED,
+    UNW_ERROR_READ_STACK_FAILED,
     /** Index overflow */
-    QUT_ERROR_TABLE_INDEX_OVERFLOW,
+    UNW_ERROR_TABLE_INDEX_OVERFLOW,
+    /** Too many iterations */
+    UNW_ERROR_TOO_MANY_ITERATIONS,
+    /** Cfa not defined */
+    UNW_ERROR_DWARF_CFA_NOT_DEFINED,
+    /** No FDEs */
+    UNW_ERROR_DWARF_NO_FDES,
+    /** Unsupported version */
+    UNW_ERROR_UNSUPPORTED_VERSION,
+    /** Not support */
+    UNW_ERROR_NOT_SUPPORT,
 };
 
 /**

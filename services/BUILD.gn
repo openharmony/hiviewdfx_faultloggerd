@@ -51,7 +51,7 @@ if (defined(ohos_lite)) {
 
     deps = [
       ":faultlogger.conf",
-      "$faultloggerd_path/common/dfxlog:static_common_log",
+      "$faultloggerd_path/common/dfxlog:dfx_hilog",
       "$faultloggerd_path/common/dfxutil:dfx_util",
       "$faultloggerd_path/interfaces/innerkits/faultloggerd_client:libfaultloggerd",
       "//base/hiviewdfx/hilog_lite/frameworks/featured:hilog_shared",
@@ -103,7 +103,7 @@ if (defined(ohos_lite)) {
 
     deps = [
       ":faultlogger.conf",
-      "$faultloggerd_path/common/dfxlog:static_common_log",
+      "$faultloggerd_path/common/dfxlog:dfx_hilog",
       "$faultloggerd_path/common/dfxutil:dfx_util",
       "$faultloggerd_path/interfaces/innerkits/faultloggerd_client:libfaultloggerd",
       "$faultloggerd_path/interfaces/innerkits/signal_handler:dfx_local_handler",

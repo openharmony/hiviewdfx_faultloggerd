@@ -101,7 +101,7 @@ if (!defined(ohos_lite)) {
 
     if (is_ohos) {
       deps += [
-        "$faultloggerd_path/common/dfxlog:static_common_log",
+        "$faultloggerd_path/common/dfxlog:dfx_hilog",
         "//third_party/bounds_checking_function:libsec_shared",
       ]
       if (target_cpu == "arm64") {
@@ -142,7 +142,7 @@ if (!defined(ohos_lite)) {
 
     if (is_ohos) {
       deps += [
-        "$faultloggerd_path/common/dfxlog:static_common_log",
+        "$faultloggerd_path/common/dfxlog:dfx_hilog",
         "//third_party/bounds_checking_function:libsec_shared",
       ]
       if (target_cpu == "arm64") {

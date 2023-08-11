@@ -34,7 +34,7 @@ if (defined(ohos_lite)) {
       sources = [ "common_test.cpp" ]
 
       deps = [
-        "$faultloggerd_path/common/dfxlog:static_common_log",
+        "$faultloggerd_path/common/dfxlog:dfx_hilog",
         "$faultloggerd_path/common/dfxutil:dfx_util",
         "$faultloggerd_path/interfaces/innerkits/faultloggerd_client:libfaultloggerd",
         "$hilog_lite_deps_path",

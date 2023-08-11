@@ -1,0 +1,129 @@
+# Copyright (c) 2023 Huawei Device Co., Ltd.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import("//base/hiviewdfx/faultloggerd/faultloggerd.gni")
+
+dfx_unwind_sources = [
+  "arch_util.cpp",
+  "dfx_accessors.cpp",
+  "dfx_ark.cpp",
+  "dfx_config.cpp",
+  "dfx_demangle.cpp",
+  "dfx_elf.cpp",
+  "dfx_elf_parse.cpp",
+  "dfx_map.cpp",
+  "dfx_maps.cpp",
+  "dfx_mmap.cpp",
+  "dfx_memory.cpp",
+  "dfx_memory_dwarf.cpp",
+  "dfx_regs.cpp",
+  "dfx_regs_arm.cpp",
+  "dfx_regs_arm64.cpp",
+  "dfx_regs_x86_64.cpp",
+  "dfx_signal.cpp",
+  "dfx_symbols.cpp",
+  "dfx_symbols_file.cpp",
+]
+
+if (defined(ohos_lite)) {
+  source_set("dfx_unwind_src") {
+    visibility = [ "*:*" ]
+
+    include_dirs = [
+      "include",
+      "$c_utils_include_path",
+      "$faultloggerd_common_path/dfxlog",
+      "$faultloggerd_common_path/dfxutil",
+      "$faultloggerd_interfaces_path/common",
+      "$faultloggerd_interfaces_path/innerkits/backtrace/include",
+      "//third_party/libunwind/include",
+      "//third_party/libunwind/src",
+      "$hilog_lite_include_path",
+    ]
+
+    sources = dfx_unwind_sources
+    sources += [ "$c_utils_src_path/directory_ex.cpp" ]
+
+    defines = [
+      "HAVE_CONFIG_H",
+      "HAVE_ELF_H",
+      "HAVE_LINK_H",
+    ]
+
+    deps = [
+      "$faultloggerd_common_path/dfxlog:dfx_hilog",
+      "$faultloggerd_common_path/dfxutil:dfx_util",
+      "$hilog_lite_deps_path",
+      "//third_party/bounds_checking_function:libsec_shared",
+      "//third_party/libunwind:libunwind",
+    ]
+  }
+} else {
+  config("dfx_unwind_config") {
+    visibility = [ "*:*" ]
+
+    include_dirs = [
+      "include",
+      "$faultloggerd_interfaces_path/common",
+      "//third_party/libunwind/include",
+      "//third_party/libunwind/src",
+    ]
+
+    defines = [
+      "HAVE_CONFIG_H",
+      "HAVE_ELF_H",
+      "HAVE_LINK_H",
+    ]
+  }
+
+  ohos_source_set("dfx_unwind_src") {
+    public_configs = [
+      ":dfx_unwind_config",
+      "$faultloggerd_common_path/build:coverage_flags",
+    ]
+    sources = dfx_unwind_sources
+
+    deps = [
+      "$faultloggerd_common_path/dfxlog:dfx_hilog",
+      "$faultloggerd_common_path/dfxutil:dfx_util",
+      "//third_party/bounds_checking_function:libsec_shared",
+      "//third_party/libunwind:libunwind",
+    ]
+
+    external_deps = [
+      "c_utils:utils",
+      "hilog:libhilog",
+    ]
+    part_name = "faultloggerd"
+    subsystem_name = "hiviewdfx"
+  }
+
+  ohos_source_set("dfx_unwind_static_src") {
+    public_configs = [ ":dfx_unwind_config" ]
+    sources = dfx_unwind_sources
+
+    deps = [
+      "$faultloggerd_common_path/dfxlog:dfx_hilog_base",
+      "$faultloggerd_common_path/dfxutil:dfx_util_static",
+      "//third_party/bounds_checking_function:libsec_static",
+      "//third_party/libunwind:libunwind_local",
+    ]
+
+    external_deps = [
+      "c_utils:utils",
+      "hilog:libhilog_base",
+    ]
+    part_name = "faultloggerd"
+    subsystem_name = "hiviewdfx"
+  }
+}

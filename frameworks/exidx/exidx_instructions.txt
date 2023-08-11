@@ -1,0 +1,28 @@
+Instruction         Explanation
+00xxxxxx	        vsp = vsp + (xxxxxx << 2) + 4. Covers range 0x04-0x100 inclusive
+01xxxxxx	        vsp = vsp – (xxxxxx << 2) - 4. Covers range 0x04-0x100 inclusive
+10000000 00000000	Refuse to unwind (for example, out of a cleanup) (see remark a)
+1000iiii iiiiiiii   (i not a ll 0)	Pop up to 12 integer registers under masks {r15-r12}, {r11-r4} (see remark b)
+1001nnnn            ( nnnn != 13,15)	Set vsp = r[nnnn]
+10011101	        Reserved as prefix for ARM register to register moves
+10011111	        Reserved as prefix for Intel Wireless MMX register to register moves
+10100nnn	        Pop r4-r[4+nnn]
+10101nnn	        Pop r4-r[4+nnn], r14
+10110000	        Finish (see remark c)
+10110001 00000000	Spare (see remark f)
+10110001 0000iiii   ( i not all 0)	Pop integer registers under mask {r3, r2, r1, r0}
+10110001 xxxxyyyy	Spare (xxxx != 0000)
+10110010 uleb128	vsp = vsp + 0x204+ (uleb128 << 2) (for vsp increments of 0x104-0x200, use 00xxxxxx twice)
+10110011 sssscccc	Pop VFP double-precision registers D[ssss]-D[ssss+cccc] saved (as if) by FSTMFDX (see remark d)
+101101nn	        Spare (was Pop FPA)
+10111nnn	        Pop VFP double-precision registers D[8]-D[8+nnn] saved (as if) by FSTMFDX (seeremark d)
+11000nnn            (nnn != 6,7)	Intel Wireless MMX pop wR[10]-wR[10+nnn]
+11000110 sssscccc	Intel Wireless MMX pop wR[ssss]-wR[ssss+cccc] (see remark e)
+11000111 00000000	Spare
+11000111 0000iiii	Intel Wireless MMX pop wCGR registers under mask {wCGR3,2,1,0}
+11000111 xxxxyyyy	Spare (xxxx != 0000)
+11001000 sssscccc	Pop VFP double precision registers D[16+ssss]-D[16+ssss+cccc] saved (as if) by VPUSH (see remarks d,e)
+11001001 sssscccc	Pop VFP double precision registers D[ssss]-D[ssss+cccc] saved (as if) by VPUSH (see remark d)
+11001yyy	        Spare (yyy != 000, 001)
+11010nnn	        Pop VFP double-precision registers D[8]-D[8+nnn] saved (as if) by VPUSH (seeremark d)
+11xxxyyy	        Spare (xxx != 000, 001, 010)

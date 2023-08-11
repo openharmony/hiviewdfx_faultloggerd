@@ -18,7 +18,7 @@ if (defined(ohos_lite)) {
     visibility = [ "*:*" ]
     include_dirs = [
       ".",
-      "$faultloggerd_path/common",
+      "$faultloggerd_interfaces_path/common",
     ]
     sources = [ "dfx_cutil.c" ]
     deps = [ "//third_party/bounds_checking_function:libsec_static" ]
@@ -28,7 +28,7 @@ if (defined(ohos_lite)) {
     visibility = [ ":*" ]
     include_dirs = [
       ".",
-      "$faultloggerd_path/common",
+      "$faultloggerd_interfaces_path/common",
     ]
   }
 

@@ -59,23 +59,6 @@ bool BacktraceLocalThread::UnwindCurrentThread(unw_addr_space_t as, std::shared_
     size_t skipFrameNum, bool fast)
 {
     bool ret = false;
-    unw_context_t context;
-    (void)memset_s(&context, sizeof(unw_context_t), 0, sizeof(unw_context_t));
-    unw_getcontext(&context);
-
-    if (fast) {
-#ifdef __aarch64__
-        FpUnwinder unwinder;
-        ret = unwinder.UnwindWithContext(context, skipFrameNum + 1);
-        unwinder.UpdateFrameInfo();
-        frames_ = unwinder.GetFrames();
-#endif
-    }
-    if (!ret) {
-        DwarfUnwinder unwinder;
-        ret = unwinder.UnwindWithContext(as, context, symbol, skipFrameNum + 1);
-        frames_ = unwinder.GetFrames();
-    }
     return ret;
 }
 
@@ -85,33 +68,6 @@ bool BacktraceLocalThread::Unwind(unw_addr_space_t as, std::shared_ptr<DfxSymbol
     static std::mutex mutex;
     std::unique_lock<std::mutex> lock(mutex);
     bool ret = false;
-
-    if (tid_ == BACKTRACE_CURRENT_THREAD) {
-        return UnwindCurrentThread(as, symbol, skipFrameNum + 1, fast);
-    } else if (tid_ < BACKTRACE_CURRENT_THREAD) {
-        return ret;
-    }
-
-    auto threadContext = BacktraceLocalContext::GetInstance().GetThreadContext(tid_);
-    if (threadContext == nullptr) {
-        return ret;
-    }
-
-    if (threadContext->ctx == nullptr) {
-        // should never happen
-        ReleaseThread();
-        return ret;
-    }
-
-    if (!ret) {
-        DwarfUnwinder unwinder;
-        ret = unwinder.UnwindWithContext(as, *(threadContext->ctx), symbol, skipFrameNum);
-        frames_ = unwinder.GetFrames();
-    }
-
-    if (releaseThread) {
-        ReleaseThread();
-    }
     return ret;
 }
 

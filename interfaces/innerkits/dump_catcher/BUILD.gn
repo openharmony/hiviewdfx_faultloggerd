@@ -22,14 +22,13 @@ if (defined(ohos_lite)) {
     include_dirs = [
       "include",
       "$c_utils_include_path",
+      "$faultloggerd_common_path/dfxlog",
+      "$faultloggerd_common_path/dfxutil",
+      "$faultloggerd_frameworks_path/unwind/include",
       "$faultloggerd_interfaces_path/common",
       "$faultloggerd_interfaces_path/innerkits/backtrace/include",
-      "$faultloggerd_path/common",
-      "$faultloggerd_path/common/dfxlog",
-      "$faultloggerd_path/common/dfxutil",
-      "$faultloggerd_path/frameworks/unwinder/include",
-      "$faultloggerd_path/interfaces/innerkits/faultloggerd_client/include",
-      "$faultloggerd_path/interfaces/innerkits/procinfo/include",
+      "$faultloggerd_interfaces_path/innerkits/faultloggerd_client/include",
+      "$faultloggerd_interfaces_path/innerkits/procinfo/include",
       "$hilog_lite_include_path",
       "//third_party/libunwind/include",
       "//third_party/libunwind/src",
@@ -54,11 +53,11 @@ if (defined(ohos_lite)) {
     ]
 
     deps = [
-      "$faultloggerd_path/common/dfxlog:static_common_log",
+      "$faultloggerd_path/common/dfxlog:dfx_hilog",
       "$faultloggerd_path/common/dfxutil:dfx_util",
-      "$faultloggerd_path/interfaces/innerkits/backtrace:libbacktrace_local",
-      "$faultloggerd_path/interfaces/innerkits/faultloggerd_client:libfaultloggerd",
-      "$faultloggerd_path/interfaces/innerkits/procinfo:libdfx_procinfo",
+      "$faultloggerd_interfaces_path/innerkits/backtrace:libbacktrace_local",
+      "$faultloggerd_interfaces_path/innerkits/faultloggerd_client:libfaultloggerd",
+      "$faultloggerd_interfaces_path/innerkits/procinfo:libdfx_procinfo",
       "//base/hiviewdfx/hilog_lite/frameworks/featured:hilog_shared",
       "//third_party/bounds_checking_function:libsec_shared",
       "//third_party/libunwind:libunwind",
@@ -84,7 +83,6 @@ if (defined(ohos_lite)) {
     sources = dumpcatcher_sources
     include_dirs = [
       "$faultloggerd_interfaces_path/common",
-      "$faultloggerd_path/common",
       "//third_party/libunwind/include",
       "//third_party/libunwind/src",
     ]
@@ -99,11 +97,11 @@ if (defined(ohos_lite)) {
     }
     version_script = "libdfx_dumpcatcher.map"
     deps = [
-      "$faultloggerd_path/common/dfxlog:static_common_log",
-      "$faultloggerd_path/common/dfxutil:dfx_util",
-      "$faultloggerd_path/interfaces/innerkits/backtrace:libbacktrace_local",
-      "$faultloggerd_path/interfaces/innerkits/faultloggerd_client:libfaultloggerd",
-      "$faultloggerd_path/interfaces/innerkits/procinfo:libdfx_procinfo",
+      "$faultloggerd_common_path/dfxlog:dfx_hilog",
+      "$faultloggerd_common_path/dfxutil:dfx_util",
+      "$faultloggerd_interfaces_path/innerkits/backtrace:libbacktrace_local",
+      "$faultloggerd_interfaces_path/innerkits/faultloggerd_client:libfaultloggerd",
+      "$faultloggerd_interfaces_path/innerkits/procinfo:libdfx_procinfo",
     ]
 
     external_deps = [

@@ -165,7 +165,7 @@ __attribute__((noinline)) bool UnwindWithContext(const int fd, unw_context_t* co
 __attribute__((noinline)) bool PrintMaps(const int fd)
 {
     bool ret = false;
-    FILE *file = fopen("/proc/self/maps", "r");
+    FILE *file = fopen(PROC_SELF_MAPS_PATH, "r");
     if (file == NULL) {
         DFXLOG_WARN("Fail to open maps info.");
         return ret;

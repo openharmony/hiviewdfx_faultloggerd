@@ -39,6 +39,12 @@ extern "C" {
 #endif
 namespace OHOS {
 namespace HiviewDFX {
+namespace {
+#undef LOG_DOMAIN
+#undef LOG_TAG
+#define LOG_DOMAIN 0xD002D11
+#define LOG_TAG "DfxCallStack"
+}
 const std::string ARM_EXIDX = ".ARM.exidx";
 
 #ifdef HAVE_LIBUNWIND
@@ -153,7 +159,7 @@ bool CallStack::fillUDI(unw_dyn_info_t &di, SymbolsFile &symbolsFile, std::pair<
         DFXLOG_DEBUG(" SectionSize:           0x%016" PRIx64 "", SectionSize);
 
         // GetSectionInfo return true, but SectionVaddr || SectionSize is 0 ???
-        LOG_ASSERT(SectionVaddr != 0 && SectionSize != 0);
+        LOG_CHECK(SectionVaddr != 0 && SectionSize != 0);
         return true;
     } else {
         DFXLOG_DEBUG("SymbolsFile::GetSectionInfo() failed");
@@ -237,7 +243,7 @@ bool CallStack::fillUDI(unw_dyn_info_t &di, SymbolsFile &symbolsFile, const MemM
         DFXLOG_DEBUG(" SectionSize:           0x%016" PRIx64 "", SectionSize);
 
         // GetSectionInfo return true, but SectionVaddr || SectionSize is 0 ???
-        LOG_ASSERT(SectionVaddr != 0 && SectionSize != 0);
+        LOG_CHECK(SectionVaddr != 0 && SectionSize != 0);
         return true;
     } else {
         DFXLOG_DEBUG("SymbolsFile::GetSectionInfo() failed");
@@ -297,8 +303,8 @@ int CallStack::FindUnwindTable(SymbolsFile *symbolsFile, const MemMapItem &mmap,
         }
     }
 
-    LOG_ASSERT(dynInfoProcessMap.find(unwindInfoPtr->thread.pid_) != dynInfoProcessMap.end());
-    LOG_ASSERT_MESSAGE(dynFileMap.find(symbolsFile->filePath_) != dynFileMap.end(), "%s",
+    LOG_CHECK(dynInfoProcessMap.find(unwindInfoPtr->thread.pid_) != dynInfoProcessMap.end());
+    LOG_CHECK_MSG(dynFileMap.find(symbolsFile->filePath_) != dynFileMap.end(), "%s",
         symbolsFile->filePath_.c_str());
     std::optional<unw_dyn_info_t> &odi =
         dynInfoProcessMap.at(unwindInfoPtr->thread.pid_).at(symbolsFile->filePath_);
@@ -417,7 +423,7 @@ int CallStack::AccessMem([[maybe_unused]] unw_addr_space_t as, unw_word_t addr,
     *valuePoint = 0;
 #ifdef NATIVEDAEMON_USE_CALLSTACK
     DFXLOG_DEBUG("try access addr 0x%" UNW_WORD_PFLAG " ", addr);
-    LOG_ASSERT(writeOperation == 0);
+    LOG_CHECK(writeOperation == 0);
 #endif
 
     /* Check overflow. */
@@ -751,7 +757,7 @@ size_t CallStack::DoExpandCallStack(std::vector<CallFrame> &newCallFrames,
 
     // cache frame found
     while (std::distance(cachedIt, cachedCallFrames.end()) >= signed(expandLimit)) {
-        LOG_ASSERT_MESSAGE(maxCycle++ < MAX_CALL_FRAME_EXPAND_CYCLE, "MAX_UNWIND_CYCLE = %d reach",
+        LOG_CHECK_MSG(maxCycle++ < MAX_CALL_FRAME_EXPAND_CYCLE, "MAX_UNWIND_CYCLE = %d reach",
                            MAX_CALL_FRAME_EXPAND_CYCLE);
 
         if (std::equal(newIt, newIt + expandLimit, cachedIt)) {

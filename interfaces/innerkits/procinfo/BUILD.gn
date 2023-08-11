@@ -76,7 +76,6 @@ if (defined(ohos_lite)) {
     sources = [ "procinfo.cpp" ]
 
     deps = [
-      "$faultloggerd_path/common/dfxlog:static_hilog_base",
       "$faultloggerd_path/common/dfxutil:dfx_util_static",
       "//third_party/bounds_checking_function:libsec_static",
     ]

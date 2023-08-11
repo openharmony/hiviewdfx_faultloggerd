@@ -294,7 +294,7 @@ void FaultLoggerDaemon::HandlePipeFdClientRequest(int32_t connectionFd, FaultLog
 
 void FaultLoggerDaemon::HandlePrintTHilogClientRequest(int32_t const connectionFd, FaultLoggerdRequest * request)
 {
-    char buf[LOG_BUF_LEN] = {0};
+    char buf[LINE_BUF_SIZE] = {0};
 
     if (write(connectionFd, DAEMON_RESP.c_str(), DAEMON_RESP.length()) != static_cast<ssize_t>(DAEMON_RESP.length())) {
         DFXLOG_ERROR("%s :: Failed to write DAEMON_RESP.", FAULTLOGGERD_TAG.c_str());

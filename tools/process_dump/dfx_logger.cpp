@@ -23,7 +23,7 @@
 
 static const int WRITE_LOG_BUF_LEN = 2048;
 static int32_t g_DebugLogFd = INVALID_FD;
-#ifndef DFX_LOG_USE_HILOG_BASE
+#ifndef DFX_LOG_HILOG_BASE
 static int32_t g_StdErrFd = INVALID_FD;
 #endif
 
@@ -75,7 +75,7 @@ void DfxLogToSocket(const char *msg)
 
 void InitDebugLog(int type, int pid, int tid, unsigned int uid)
 {
-#ifndef DFX_LOG_USE_HILOG_BASE
+#ifndef DFX_LOG_HILOG_BASE
     DFXLOG_INFO("InitDebugLog :: type(%d), pid(%d), tid(%d), uid(%d).", type, pid, tid, uid);
     if (g_DebugLogFd != INVALID_FD) {
         return;
@@ -109,7 +109,7 @@ void InitDebugLog(int type, int pid, int tid, unsigned int uid)
 
 void CloseDebugLog()
 {
-#ifndef DFX_LOG_USE_HILOG_BASE
+#ifndef DFX_LOG_HILOG_BASE
     if (g_DebugLogFd == INVALID_FD) {
         return;
     }

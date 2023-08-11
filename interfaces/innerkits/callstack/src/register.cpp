@@ -23,10 +23,17 @@
 #include <libunwind.h>
 #endif
 #include "callstack_log.h"
+#include "string_printf.h"
 #include "string_util.h"
 
 namespace OHOS {
 namespace HiviewDFX {
+namespace {
+#undef LOG_DOMAIN
+#undef LOG_TAG
+#define LOG_DOMAIN 0xD002D11
+#define LOG_TAG "DfxCallStack"
+}
 static ArchType deviceArchType = ArchType::UNSUPPORT;
 
 // these copy from kerne uapi perf_regs.h

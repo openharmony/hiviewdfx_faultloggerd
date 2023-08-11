@@ -20,12 +20,12 @@ if (defined(ohos_lite)) {
     visibility = [ "*:*" ]
     include_dirs = [
       ".",
-      "$faultloggerd_path/common",
+      "$faultloggerd_interfaces_path/common",
       "$hilog_lite_include_path",
     ]
     sources = dfx_util_sources
     deps = [
-      "$faultloggerd_path/common/dfxlog:static_common_log",
+      "$faultloggerd_path/common/dfxlog:dfx_hilog",
       "$hilog_lite_deps_path",
       "//third_party/bounds_checking_function:libsec_shared",
     ]
@@ -35,14 +35,14 @@ if (defined(ohos_lite)) {
     visibility = [ ":*" ]
     include_dirs = [
       ".",
-      "$faultloggerd_path/common",
+      "$faultloggerd_interfaces_path/common",
     ]
   }
 
   ohos_static_library("dfx_util") {
     sources = dfx_util_sources
     public_configs = [ ":dfx_util_config" ]
-    deps = [ "$faultloggerd_path/common/dfxlog:static_common_log" ]
+    deps = [ "$faultloggerd_path/common/dfxlog:dfx_hilog" ]
     external_deps = [
       "c_utils:utils",
       "hilog:libhilog",
@@ -54,7 +54,7 @@ if (defined(ohos_lite)) {
   ohos_static_library("dfx_util_static") {
     sources = dfx_util_sources
     public_configs = [ ":dfx_util_config" ]
-    deps = [ "$faultloggerd_path/common/dfxlog:static_hilog_base" ]
+    deps = [ "$faultloggerd_path/common/dfxlog:dfx_hilog_base" ]
     external_deps = [
       "c_utils:utils",
       "hilog:libhilog_base",

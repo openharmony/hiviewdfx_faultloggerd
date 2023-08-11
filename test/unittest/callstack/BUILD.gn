@@ -45,7 +45,7 @@ if (!defined(ohos_lite)) {
     ]
 
     deps = [
-      "$faultloggerd_path/common/dfxlog:static_common_log",
+      "$faultloggerd_path/common/dfxlog:dfx_hilog",
       "//third_party/googletest:gmock_main",
       "//third_party/googletest:gtest_main",
     ]

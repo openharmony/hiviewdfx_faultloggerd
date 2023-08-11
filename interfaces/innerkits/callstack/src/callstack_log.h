@@ -13,24 +13,8 @@
  * limitations under the License.
  */
 
-#ifdef CALLSTACK_PRINT_LOG
+#ifndef CALLSTACK_PRINT_LOG
+#define DFX_NO_PRINT_LOG
+#endif
+
 #include "dfx_log.h"
-
-#ifdef LOG_DOMAIN
-#undef LOG_DOMAIN
-#define LOG_DOMAIN 0xD002D11
-#endif
-
-#ifdef LOG_TAG
-#undef LOG_TAG
-#define LOG_TAG "DfxCallStack"
-#endif
-#else
-#define DFXLOG_DEBUG(fmt, ...)
-#define DFXLOG_INFO(fmt, ...)
-#define DFXLOG_WARN(fmt, ...)
-#define DFXLOG_ERROR(fmt, ...)
-#define DFXLOG_FATAL(fmt, ...)
-#define LOG_ASSERT_MESSAGE(condition, fmt, ...)
-#define LOG_ASSERT(condition) LOG_ASSERT_MESSAGE(condition, "")
-#endif

@@ -18,7 +18,7 @@ if (defined(ohos_lite)) {
     visibility = [ "*:*" ]
     include_dirs = [
       "include",
-      "//commonlibrary/c_utils/base/include",
+      "$c_utils_include_path",
       "$faultloggerd_interfaces_path/common",
       "$faultloggerd_path/common",
       "$faultloggerd_path/common/cutil",
@@ -68,10 +68,9 @@ if (defined(ohos_lite)) {
   config("static_sighandler_config") {
     include_dirs = [
       "include",
+      "$faultloggerd_common_path/cutil",
+      "$faultloggerd_common_path/dfxlog",
       "$faultloggerd_interfaces_path/common",
-      "$faultloggerd_path/common",
-      "$faultloggerd_path/common/cutil",
-      "$faultloggerd_path/common/dfxlog",
     ]
 
     defines = []
@@ -102,13 +101,12 @@ if (defined(ohos_lite)) {
   ohos_static_library("dfx_local_handler") {
     public_configs = [
       ":dfx_signal_handler_config",
-      "$faultloggerd_path/common/build:coverage_flags",
+      "$faultloggerd_common_path/build:coverage_flags",
     ]
     include_dirs = [
       ".",
-      "$faultloggerd_path/common",
-      "$faultloggerd_path/common/cutil",
-      "$faultloggerd_path/common/dfxlog",
+      "$faultloggerd_common_path/cutil",
+      "$faultloggerd_common_path/dfxlog",
     ]
     sources = [
       "dfx_crash_local_handler.c",
@@ -116,9 +114,9 @@ if (defined(ohos_lite)) {
     ]
 
     deps = [
-      "$faultloggerd_path/common/cutil:dfx_cutil",
-      "$faultloggerd_path/common/dfxlog:static_hilog_base",
-      "$faultloggerd_path/interfaces/innerkits/faultloggerd_client:libfaultloggerd",
+      "$faultloggerd_common_path/cutil:dfx_cutil",
+      "$faultloggerd_common_path/dfxlog:dfx_hilog_base",
+      "$faultloggerd_interfaces_path/innerkits/faultloggerd_client:libfaultloggerd",
       "//third_party/libunwind:libunwind",
     ]
 
@@ -134,22 +132,20 @@ if (defined(ohos_lite)) {
   ohos_shared_library("dfx_signalhandler") {
     public_configs = [
       ":dfx_signal_handler_config",
-      "$faultloggerd_path/common/build:coverage_flags",
+      "$faultloggerd_common_path/build:coverage_flags",
     ]
     include_dirs = [
-      "$faultloggerd_path/common",
-      "$faultloggerd_path/common/cutil",
-      "$faultloggerd_path/common/dfxlog",
+      "$faultloggerd_common_path/cutil",
+      "$faultloggerd_common_path/dfxlog",
     ]
-    cflags = [ "-DDFX_LOG_USE_HILOG_BASE" ]
+    cflags = [ "-DDFX_LOG_HILOG_BASE" ]
     version_script = "libdfx_signalhandler.map"
     sources = [ "dfx_signal_handler.c" ]
 
     deps = [
-      "$faultloggerd_path/common/cutil:dfx_cutil",
-      "$faultloggerd_path/common/dfxlog:static_hilog_base",
+      "$faultloggerd_common_path/cutil:dfx_cutil",
+      "$faultloggerd_common_path/dfxlog:dfx_hilog_base",
     ]
-
     external_deps = [
       "c_utils:utils",
       "hilog:libhilog_base",

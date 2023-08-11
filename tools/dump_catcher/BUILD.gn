@@ -30,7 +30,7 @@ if (defined(ohos_lite)) {
       "main.cpp",
     ]
     deps = [
-      "$faultloggerd_path/common/dfxlog:static_common_log",
+      "$faultloggerd_path/common/dfxlog:dfx_hilog",
       "$faultloggerd_path/common/dfxutil:dfx_util",
       "$faultloggerd_path/interfaces/innerkits/dump_catcher:libdfx_dumpcatcher",
       "//base/hiviewdfx/hilog_lite/frameworks/featured:hilog_shared",
@@ -62,7 +62,7 @@ if (defined(ohos_lite)) {
     cflags_cc = [ "-DDEBUG_CRASH_LOCAL_HANDLER" ]
 
     deps = [
-      "$faultloggerd_path/common/dfxlog:static_common_log",
+      "$faultloggerd_path/common/dfxlog:dfx_hilog",
       "$faultloggerd_path/common/dfxutil:dfx_util",
       "$faultloggerd_path/interfaces/innerkits/dump_catcher:libdfx_dumpcatcher",
       "$faultloggerd_path/interfaces/innerkits/signal_handler:dfx_local_handler",
