@@ -24,7 +24,8 @@
         "c_utils",
         "hilog",
         "hisysevent",
-        "init"
+        "init",
+        "ipc"
       ],
       "third_party": [
         "bounds_checking_function",
