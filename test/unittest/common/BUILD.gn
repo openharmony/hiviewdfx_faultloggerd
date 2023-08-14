@@ -68,7 +68,7 @@ if (defined(ohos_lite)) {
       "common_cutil_test.cpp",
       "common_test.cpp",
     ]
-    defines = [ "DFX_LOG_USE_DMESG" ]
+    defines = [ "DFX_LOG_DMESG" ]
     configs = [ ":module_private_config" ]
 
     deps = [

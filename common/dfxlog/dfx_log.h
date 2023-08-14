@@ -70,6 +70,9 @@ int DfxLogPrintV(const LogLevel logLevel, const unsigned int domain, const char*
 #endif
 
 #else
+#define DFXLOG_PRINT(prio, domain, tag, ...)
+#define DFXLOG_PRINTV(prio, domain, tag, fmt, args)
+
 #define DFXLOG_DEBUG(...)
 #define DFXLOG_INFO(...)
 #define DFXLOG_WARN(...)
@@ -85,6 +88,12 @@ int DfxLogPrintV(const LogLevel logLevel, const unsigned int domain, const char*
 #define LOG_CHECK_MSG(condition, ...)
 #define LOG_CHECK(condition)
 #define LOG_CHECK_ABORT(condition)
+#endif
+
+#ifdef DFX_LOG_UNWIND
+#define LOGU(...) DFXLOG_PRINT(LOG_FATAL, LOG_DOMAIN, LOG_TAG, "[%s:%d]" , (__FILENAME__), (__LINE__), ##__VA_ARGS__)
+#else
+#define LOGU(...)
 #endif
 
 #ifdef __cplusplus

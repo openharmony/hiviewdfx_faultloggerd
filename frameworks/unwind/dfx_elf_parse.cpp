@@ -95,9 +95,25 @@ bool ElfParse::IsValid()
     return valid_;
 }
 
+uint8_t ElfParse::GetClassType()
+{
+    if (IsValid()) {
+        return classType_;
+    }
+    return ELFCLASSNONE;
+}
+
+ArchType ElfParse::GetArchType()
+{
+    if (IsValid()) {
+        return archType_;
+    }
+    return ARCH_UNKNOWN;
+}
+
 bool ElfParse::ParseElfIdent()
 {
-    // 前4个字节是ELF的Magic Number，固定为7f 45 4c 46
+    // ELF Magic Number，7f 45 4c 46
     uint8_t ident[SELFMAG + 1];
     if (!Read(0, ident, SELFMAG)) {
         return false;
@@ -200,6 +216,16 @@ bool ElfParse::ParseProgramHeaders(const EhdrType& ehdr)
             break;
         }
 
+        case PT_GNU_EH_FRAME: {
+            break;
+        }
+
+        if (classType_ == ELFCLASS32) {
+            case PT_ARM_EXIDX: {
+                break;
+            }
+        }
+
         default:
             LOGW("Failed parse phdr.p_type = %u", phdr.p_type);
             return false;
@@ -241,7 +267,7 @@ bool ElfParse::ParseSectionHeaders(const EhdrType& ehdr)
 }
 
 template <typename ShdrType>
-bool FindSection(ShdrType& shdr, const std::string secname)
+bool FindSection(ShdrType& shdr, const std::string secName)
 {
     return true;
 }

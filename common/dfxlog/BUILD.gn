@@ -38,7 +38,7 @@ if (defined(ohos_lite)) {
   static_library("dfx_hilog_dmesg") {
     sources = dfx_log_dmesg_sources
     public_configs = [ ":dfx_log_config" ]
-    defines = [ "DFX_LOG_USE_DMESG" ]
+    defines = [ "DFX_LOG_DMESG" ]
     deps = [ "$hilog_lite_deps_path" ]
   }
 
@@ -81,7 +81,7 @@ if (defined(ohos_lite)) {
   ohos_static_library("dfx_hilog_dmesg") {
     sources = dfx_log_dmesg_sources
     public_configs = [ ":dfx_log_config" ]
-    defines = [ "DFX_LOG_USE_DMESG" ]
+    defines = [ "DFX_LOG_DMESG" ]
     external_deps = [
       "c_utils:utils",
       "hilog:libhilog",
