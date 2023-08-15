@@ -38,7 +38,7 @@ void ArmExidx::LogRawData()
     for (const uint8_t data : data_) {
         logStr += StringPrintf(" 0x%02x", data);
     }
-    LOGI(logStr.c_str());
+    LOGU(logStr.c_str());
 }
 
 bool ArmExidx::ExtractEntryData(uint32_t entryOffset)

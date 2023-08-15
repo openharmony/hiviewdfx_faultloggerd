@@ -21,13 +21,22 @@ ohos_unittest("test_unwinder") {
   module_out_path = module_output_path
   visibility = [ "*:*" ]
   include_dirs = [
-    "$faultloggerd_interfaces_path/common",
+    "$faultloggerd_path/common",
+    "$faultloggerd_frameworks_path/unwinder/include",
   ]
-  configs = [ "$faultloggerd_common_path/build:coverage_flags" ]
-  sources = [ "fp_unwinder_test.cpp" ]
+  configs = [ "$faultloggerd_path/common/build:coverage_flags" ]
+  sources = [
+    "arch_util_test.cpp",
+    "elf_test.cpp",
+    "maps_test.cpp",
+    "memory_test.cpp",
+    "regs_test.cpp",
+    "signal_test.cpp",
+    "unwinder_test.cpp",
+  ]
   deps = [
-    "$faultloggerd_common_path/dfxutil:dfx_util",
-    "$faultloggerd_interfaces_path/innerkits/unwinder:libunwinder",
+    "$faultloggerd_path/common/dfxutil:dfx_util",
+    "$faultloggerd_path/frameworks/unwinder:dfx_unwinder_src",
     "//third_party/bounds_checking_function:libsec_shared",
     "//third_party/googletest:gtest_main",
     "//third_party/libunwind:libunwind",

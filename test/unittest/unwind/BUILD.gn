@@ -25,7 +25,6 @@ ohos_unittest("test_unwind") {
   ]
   configs = [ "$faultloggerd_common_path/build:coverage_flags" ]
   sources = [
-    "arch_util_test.cpp",
     "elf_test.cpp",
     "maps_test.cpp",
     "regs_test.cpp",
