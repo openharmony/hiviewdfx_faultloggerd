@@ -36,9 +36,7 @@ public:
     void SetUp() {}
     void TearDown() {}
 };
-} // namespace HiviewDFX
-} // namespace OHOS
-namespace {
+
 /**
  * @tc.name: ArchUtilTest001
  * @tc.desc: test ArchUtil functions
@@ -81,5 +79,5 @@ HWTEST_F(ArchUtilTest, ArchUtilTest001, TestSize.Level2)
     ASSERT_EQ(GetArchName(ArchType::ARCH_UNKNOWN), "Unsupport");
     GTEST_LOG_(INFO) << "ArchUtilTest001: end.";
 }
-
-}
+} // namespace HiviewDFX
+} // namespace OHOS

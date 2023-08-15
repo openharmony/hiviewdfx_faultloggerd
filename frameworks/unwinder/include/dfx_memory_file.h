@@ -12,30 +12,32 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef DFX_MMAP_H
-#define DFX_MMAP_H
 
-#include <atomic>
-#include <cstdint>
-#include <string>
-#include <sys/mman.h>
+#ifndef DFX_MEMORY_FILE_H
+#define DFX_MEMORY_FILE_H
+
+#include "dfx_memory.h"
 
 namespace OHOS {
 namespace HiviewDFX {
-class DfxMmap {
+class DfxMemoryFile : public DfxMemory {
 public:
-    DfxMmap() = default;
-    virtual ~DfxMmap() { Clear(); }
+    static std::shared_ptr<DfxMemoryFile> CreateFileMemory(const std::string& path, uint64_t offset);
 
-    virtual bool Init(const std::string &file);
-    virtual void Clear();
-    virtual void* Get();
-    virtual size_t Read(uint64_t* pos, void *buf, size_t size);
-    virtual bool ReadString(uint64_t* pos, std::string* str, size_t size);
-    virtual size_t Size() {return size_;}
-private:
-    void *mmap_ = MAP_FAILED;
+    DfxMemoryFile() = default;
+    virtual ~DfxMemoryFile() { Clear(); }
+
+    bool Init(const std::string& file, uint64_t offset, uint64_t size = UINT64_MAX);
+
+    size_t Read(uint64_t addr, void* dst, size_t size) override;
+
+    size_t Size() { return size_; }
+
+    void Clear() override;
+protected:
     size_t size_ = 0;
+    size_t offset_ = 0;
+    uint8_t* data_ = nullptr;
 };
 } // namespace HiviewDFX
 } // namespace OHOS

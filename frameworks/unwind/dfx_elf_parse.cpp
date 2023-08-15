@@ -56,14 +56,9 @@ size_t ElfParse::Size()
     return mmap_->Size();
 }
 
-std::string ElfParse::GetElfName()
-{
-    return "";
-}
-
 int64_t ElfParse::GetLoadBias()
 {
-    return 0;
+    return loadBias_;
 }
 
 template <typename EhdrType, typename PhdrType, typename ShdrType>
@@ -88,7 +83,6 @@ bool ElfParse::ParseAllHeaders()
         DFXLOG_WARN("ReadSectionHeaders failed");
         return false;
     }
-
     return true;
 }
 
@@ -121,21 +115,25 @@ bool ElfParse::ParseProgramHeaders(const EhdrType& ehdr)
         if (!Read(offset, &phdr, sizeof(phdr))) {
             return false;
         }
+
         switch (phdr.p_type) {
-            case PT_LOAD:
-                if ((phdr.p_flags & PF_X) == 0) {
-                    break;
-                }
-                ptLoads_[phdr.p_offset] = ElfLoadInfo{phdr.p_offset, phdr.p_vaddr, static_cast<size_t>(phdr.p_memsz)};
-                // Only set the load bias from the first executable load header.
-                if (firstLoadHeader) {
-                    loadBias_ = static_cast<int64_t>(static_cast<uint64_t>(phdr.p_vaddr) - phdr.p_offset);
-                }
-                firstLoadHeader = false;
-                break;
-            default:
-                LOGW("Failed parse phdr.p_type = %u", phdr.p_type);
-                break;
+        case PT_LOAD: {
+            if ((phdr.p_flags & PF_X) == 0) {
+                continue;
+            }
+            LOGU("phdr.p_offset: %llx, phdr.p_vaddr: %llx", phdr.p_offset, phdr.p_vaddr);
+            ptLoads_[phdr.p_offset] = ElfLoadInfo{phdr.p_offset, phdr.p_vaddr, static_cast<size_t>(phdr.p_memsz)};
+            // Only set the load bias from the first executable load header.
+            if (firstLoadHeader) {
+                loadBias_ = static_cast<int64_t>(static_cast<uint64_t>(phdr.p_vaddr) - phdr.p_offset);
+            }
+            firstLoadHeader = false;
+            break;
+        }
+
+        default:
+            DFXLOG_WARN("Failed parse phdr.p_type: %llx", phdr.p_type);
+            break;
         }
     }
     return true;
@@ -149,7 +147,7 @@ bool ElfParse::ParseSectionHeaders(const EhdrType& ehdr)
     uint64_t secSize = 0;
 
     ShdrType shdr;
-    //section header string table index. 包含了section header table 中 section name string table。
+    //section header string table index. include section header table with section name string table.
     if (ehdr.e_shstrndx < ehdr.e_shnum) {
         uint64_t shNdxOffset = offset + ehdr.e_shstrndx * ehdr.e_shentsize;
         if (!Read(shNdxOffset, &shdr, sizeof(shdr))) {
@@ -158,26 +156,12 @@ bool ElfParse::ParseSectionHeaders(const EhdrType& ehdr)
         }
         secOffset = shdr.sh_offset;
         secSize = shdr.sh_size;
-        if (secSize > Size()) {
-            LOGW("secSize(%" PRIu64 ") is too large.", secSize);
+        if (!ParseStrTab(sectionNames_, secOffset, secSize)) {
             return false;
         }
-        char *secNamesBuf = new char[secSize];
-        if (secNamesBuf == nullptr) {
-            LOGE("Error in ElfFile::ParseSecNamesStr(): new secNamesBuf failed");
-            return false;
-        }
-        (void)memset_s(secNamesBuf, secSize, '\0', secSize);
-        if (!Read(secOffset, secNamesBuf, secSize)) {
-            delete[] secNamesBuf;
-            secNamesBuf = nullptr;
-            return false;
-        }
-        sectionNames_ = std::string(secNamesBuf, secNamesBuf + secSize);
-        delete[] secNamesBuf;
-        secNamesBuf = nullptr;
     } else {
-        LOGE("e_shstrndx(%u) cannot greater than or equal  e_shnum(%u)", ehdr.e_shstrndx, ehdr.e_shnum);
+        LOGE("e_shstrndx(%u) cannot greater than or equal e_shnum(%u)", ehdr.e_shstrndx, ehdr.e_shnum);
+		return false;
     }
 
     // Skip the first header, it's always going to be NULL.
@@ -189,20 +173,30 @@ bool ElfParse::ParseSectionHeaders(const EhdrType& ehdr)
         if (!Read(offset, &shdr, sizeof(shdr))) {
             return false;
         }
-        std::string shdrName = GetSectionNameByIndex(shdr.sh_name);
-        if (shdrName.empty()) {
+
+        std::string secName;
+        if (!GetSectionNameByIndex(secName, shdr.sh_name)) {
             LOGE("Failed to get section name");
             continue;
         }
+        LOGU("ParseSectionHeaders secName: %s", secName.c_str());
+        elfShdrIndexs_[i] = secName;
+
+        ShdrInfo shdrInfo;
+        shdrInfo.vaddr = static_cast<uint64_t>(shdr.sh_addr);
+        shdrInfo.size = static_cast<uint64_t>(shdr.sh_size);
+        shdrInfo.offset = static_cast<uint64_t>(shdr.sh_offset);
+        shdrInfos_.emplace(secName, shdrInfo);
+
         ElfShdr elfShdr;
-        elfShdr.name = shdr.sh_name;
-        elfShdr.type = shdr.sh_type;
+        elfShdr.name = static_cast<uint32_t>(shdr.sh_name);
+        elfShdr.type = static_cast<uint32_t>(shdr.sh_type);
         elfShdr.flags = static_cast<uint64_t>(shdr.sh_flags);
         elfShdr.addr = static_cast<uint64_t>(shdr.sh_addr);
         elfShdr.offset = static_cast<uint64_t>(shdr.sh_offset);
         elfShdr.size = static_cast<uint64_t>(shdr.sh_size);
-        elfShdr.link = shdr.sh_link;
-        elfShdr.info = shdr.sh_info;
+        elfShdr.link = static_cast<uint32_t>(shdr.sh_link);
+        elfShdr.info = static_cast<uint32_t>(shdr.sh_info);
         elfShdr.addrAlign = static_cast<uint64_t>(shdr.sh_addralign);
         elfShdr.entSize = static_cast<uint64_t>(shdr.sh_entsize);
         if (shdr.sh_type == SHT_SYMTAB ||
@@ -210,16 +204,16 @@ bool ElfParse::ParseSectionHeaders(const EhdrType& ehdr)
             shdr.sh_type == SHT_PROGBITS ||
             shdr.sh_type == SHT_ARM_EXIDX ||
             shdr.sh_type == SHT_STRTAB) {
-            elfShdrs_.emplace(shdrName, elfShdr);
-        } else if (shdr.sh_type == SHT_NOTE  && shdrName == ".note.gnu.build-id") {
-            elfShdrs_.emplace(shdrName, elfShdr);
+            elfShdrs_.emplace(secName, elfShdr);
+        } else if (shdr.sh_type == SHT_NOTE && secName == NOTE_GNU_BUILD_ID) {
+            elfShdrs_.emplace(secName, elfShdr);
         }
     }
     return true;
 }
 
 template <typename NhdrType>
-std::string ElfParse::ReadBuildId(uint64_t buildIdOffset, uint64_t buildIdSz)
+std::string ElfParse::ParseBuildId(uint64_t buildIdOffset, uint64_t buildIdSz)
 {
     uint64_t offset = 0;
     while (offset < buildIdSz) {
@@ -262,32 +256,118 @@ std::string ElfParse::ReadBuildId(uint64_t buildIdOffset, uint64_t buildIdSz)
     return "";
 }
 
-
-bool ElfParse::ParseElfSymbols()
+template <typename DynType>
+std::string ElfParse::ParseElfName()
 {
-    return true;
-
-}
-
-bool ElfParse::ParseSymbols()
-{
-    return true;
-}
-
-std::string ElfParse::GetSectionNameByIndex(const uint32_t nameIndex)
-{
-    if (nameIndex >= sectionNames_.size()) {
-        LOGE("section index(%u) out of range, endIndex %d ", nameIndex, sectionNames_.size() - 1 );
-        return "";
-    }
-    size_t endIndex = sectionNames_.find('\0', nameIndex);
-    if (endIndex != std::string::npos) {
-        return sectionNames_.substr(nameIndex, endIndex - nameIndex);
-    }
     return "";
 }
 
-bool ElfParse::FindSection(ElfShdr& shdr, const std::string& secName)
+template <typename SymType>
+bool ElfParse::ParseElfSymbols(std::vector<ElfSymbol>& elfSymbols)
+{
+    if (elfShdrs_.empty()) {
+        return false;
+    }
+
+    for (const auto &iter : elfShdrs_) {
+        const auto &shdr = iter.second;
+        LOGU("shdr.type: %d", shdr.type);
+        if (shdr.type == SHT_SYMTAB || shdr.type == SHT_DYNSYM) {
+            SymType sym;
+            LOGU("shdr.offset: %llx, size: %llx, entSize: %llx, link: %d",
+                shdr.offset, shdr.size, shdr.entSize, shdr.link);
+            uint64_t offset = shdr.offset;
+            for (; offset < shdr.size; offset += shdr.entSize) {
+                if (!Read(offset, &sym, sizeof(sym))) {
+                    continue;
+                }
+
+                ElfSymbol elfSymbol;
+                elfSymbol.name = static_cast<uint32_t>(sym.st_name);
+                if (GetSymbolNameByIndex(elfSymbol.nameStr, shdr.link, elfSymbol.name)) {
+                    LOGU("elfSymbol.nameStr: %s", elfSymbol.nameStr.c_str());
+                }
+                elfSymbol.info = sym.st_info;
+                elfSymbol.other = sym.st_other;
+                elfSymbol.shndx = static_cast<uint16_t>(sym.st_shndx);
+                elfSymbol.value = static_cast<uint64_t>(sym.st_value);
+                elfSymbol.size = static_cast<uint64_t>(sym.st_size);
+                elfSymbols.push_back(elfSymbol);
+            }
+        }
+    }
+    LOGU("elfSymbols.size: %d", elfSymbols.size());
+    return (elfSymbols.size() > 0);
+}
+
+bool ElfParse::GetSectionNameByIndex(std::string& nameStr, const uint32_t name)
+{
+    if (sectionNames_.empty() || name >= sectionNames_.size()) {
+        LOGE("name index(%u) out of range, size: %d", name, sectionNames_.size());
+        return false;
+    }
+
+    size_t endIndex = sectionNames_.find('\0', name);
+    if (endIndex != std::string::npos) {
+        nameStr = sectionNames_.substr(name, endIndex - name);
+        return true;
+    }
+    return false;
+}
+
+bool ElfParse::GetSymbolNameByIndex(std::string& nameStr, const uint32_t link, const uint32_t name)
+{
+    if (elfShdrIndexs_.find(link) == elfShdrIndexs_.end()) {
+        return false;
+    }
+    // TODO: only run once?
+    auto secName = elfShdrIndexs_[link];
+    ElfShdr shdr;
+    if (!FindSection(shdr, secName)) {
+        return false;
+    }
+
+    LOGU("secName: %s, shdr.offset: %llx, size: %llx, name: %u",
+        secName.c_str(), shdr.offset, shdr.size, name);
+
+    nameStr = std::string((char *)mmap_->Get() + shdr.offset + name);
+    return true;
+}
+
+bool ElfParse::ParseStrTab(std::string& nameStr, const uint64_t offset, const uint64_t size)
+{
+    if (size > Size()) {
+        LOGE("size(%" PRIu64 ") is too large.", size);
+        return false;
+    }
+    char *namesBuf = new char[size];
+    if (namesBuf == nullptr) {
+        LOGE("New failed");
+        return false;
+    }
+    (void)memset_s(namesBuf, size, '\0', size);
+    if (!Read(offset, namesBuf, size)) {
+        LOGE("Read failed");
+        delete[] namesBuf;
+        namesBuf = nullptr;
+        return false;
+    }
+    nameStr = std::string(namesBuf, namesBuf + size);
+    delete[] namesBuf;
+    namesBuf = nullptr;
+    return true;
+}
+
+bool ElfParse::GetSectionInfo(ShdrInfo& shdr, const std::string secName)
+{
+    if (shdrInfos_.find(secName) != shdrInfos_.end()) {
+        shdr = shdrInfos_[secName];
+        return true;
+    }
+    return false;
+}
+
+bool ElfParse::FindSection(ElfShdr& shdr, const std::string secName)
 {
     if (elfShdrs_.find(secName) != elfShdrs_.end()) {
         shdr = elfShdrs_[secName];
@@ -304,11 +384,22 @@ bool ElfParse32::InitHeaders()
 std::string ElfParse32::GetBuildId()
 {
     ElfShdr shdr;
-    if (FindSection(shdr, ".note.gnu.build-id")){
-        return ReadBuildId<Elf32_Nhdr>(shdr.offset, shdr.size);
+    if (FindSection(shdr, NOTE_GNU_BUILD_ID)){
+        return ParseBuildId<Elf32_Nhdr>(shdr.offset, shdr.size);
     }
-    return " ";
+    return "";
 }
+
+std::string ElfParse32::GetElfName()
+{
+    return ParseElfName<Elf32_Dyn>();
+}
+
+bool ElfParse32::GetElfSymbols(std::vector<ElfSymbol>& elfSymbols)
+{
+    return ParseElfSymbols<Elf32_Sym>(elfSymbols);
+}
+
 bool ElfParse64::InitHeaders()
 {
     return ParseAllHeaders<Elf64_Ehdr, Elf64_Phdr, Elf64_Shdr>();
@@ -317,13 +408,20 @@ bool ElfParse64::InitHeaders()
 std::string ElfParse64::GetBuildId()
 {
     ElfShdr shdr;
-    if (FindSection(shdr, ".note.gnu.build-id")){
-        return ReadBuildId<Elf64_Nhdr>(shdr.offset, shdr.size);
+    if (FindSection(shdr, NOTE_GNU_BUILD_ID)){
+        return ParseBuildId<Elf64_Nhdr>(shdr.offset, shdr.size);
     }
-    return " ";
+    return "";
 }
 
+std::string ElfParse64::GetElfName()
+{
+    return ParseElfName<Elf64_Dyn>();
+}
 
-
+bool ElfParse64::GetElfSymbols(std::vector<ElfSymbol>& elfSymbols)
+{
+    return ParseElfSymbols<Elf64_Sym>(elfSymbols);
+}
 } // namespace HiviewDFX
 } // namespace OHOS

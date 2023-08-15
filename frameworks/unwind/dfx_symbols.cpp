@@ -19,10 +19,59 @@
 #include <cstdlib>
 #include "dfx_define.h"
 #include "dfx_log.h"
+#include "dfx_demangle.h"
 
 namespace OHOS {
 namespace HiviewDFX {
-bool DfxSymbols::GetNameAndOffsetByPc(uint64_t pc, std::string& name, uint64_t& offset)
+namespace {
+#undef LOG_DOMAIN
+#undef LOG_TAG
+#define LOG_DOMAIN 0xD002D11
+#define LOG_TAG "DfxSymbols"
+}
+
+bool DfxSymbols::ParseSymbols(std::vector<DfxSymbol>& symbols,
+    const std::shared_ptr<DfxElf> elf, const std::string& filePath)
+{
+    if (elf == nullptr) {
+        return false;
+    }
+    std::vector<ElfSymbol> elfSymbols;
+    if (!elf->GetElfSymbols(elfSymbols)) {
+        return false;
+    }
+    for (auto elfSymbol : elfSymbols) {
+        if (ELF64_ST_TYPE(elfSymbol.info) == STT_FUNC ||
+            ELF64_ST_TYPE(elfSymbol.info) == STT_GNU_IFUNC) {
+            DfxSymbol symbol;
+            symbol.SetVaddr(elfSymbol.value, elfSymbol.value, elfSymbol.size);
+            std::string demangleName = DfxDemangle::Demangle(elfSymbol.nameStr);
+            symbol.SetName(elfSymbol.nameStr, demangleName, filePath);
+            symbols.emplace_back(symbol);
+        } else {
+            continue;
+        }
+    }
+    return true;
+}
+
+bool DfxSymbols::AddSymbolsByPlt(std::vector<DfxSymbol>& symbols,
+    const std::shared_ptr<DfxElf> elf, const std::string& filePath)
+{
+    if (elf == nullptr) {
+        return false;
+    }
+    DfxSymbol symbol;
+    ElfShdr shdr;
+    elf->FindSection(shdr, PLT);
+    symbol.SetVaddr(shdr.addr, shdr.addr, shdr.size);
+    symbol.SetName(PLT, PLT, filePath);
+    symbols.emplace_back(symbol);
+    return true;
+}
+
+bool DfxSymbols::GetFuncNameAndOffset(uint64_t pc, const std::shared_ptr<DfxElf> elf,
+    std::string* funcName, uint64_t* start, uint64_t* end)
 {
     return true;
 }

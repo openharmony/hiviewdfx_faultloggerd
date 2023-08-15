@@ -12,31 +12,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef DFX_MMAP_H
-#define DFX_MMAP_H
 
-#include <atomic>
+#ifndef ARCH_UTIL_H
+#define ARCH_UTIL_H
+
+#include <cstdio>
 #include <cstdint>
 #include <string>
-#include <sys/mman.h>
+#include "dfx_define.h"
+#include "unwinder_define.h"
 
 namespace OHOS {
 namespace HiviewDFX {
-class DfxMmap {
-public:
-    DfxMmap() = default;
-    virtual ~DfxMmap() { Clear(); }
-
-    virtual bool Init(const std::string &file);
-    virtual void Clear();
-    virtual void* Get();
-    virtual size_t Read(uint64_t* pos, void *buf, size_t size);
-    virtual bool ReadString(uint64_t* pos, std::string* str, size_t size);
-    virtual size_t Size() {return size_;}
-private:
-    void *mmap_ = MAP_FAILED;
-    size_t size_ = 0;
-};
-} // namespace HiviewDFX
-} // namespace OHOS
+AT_SYMBOL_HIDDEN ArchType GetCurrentArch();
+AT_SYMBOL_HIDDEN ArchType GetArchFromUname(const std::string& machine);
+AT_SYMBOL_HIDDEN const std::string GetArchName(ArchType arch);
+} // nameapace HiviewDFX
+} // nameapace OHOS
 #endif

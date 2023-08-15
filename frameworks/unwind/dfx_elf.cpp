@@ -39,11 +39,11 @@ namespace {
 #define LOG_TAG "DfxElf"
 }
 
-bool DfxElf::Init(const std::string &file)
+bool DfxElf::Init()
 {
     if (mmap_ == nullptr) {
         mmap_ = std::make_shared<DfxMmap>();
-        return mmap_->Init(file);
+        return mmap_->Init(file_);
     }
     return true;
 }
@@ -108,7 +108,6 @@ bool DfxElf::InitHeaders()
 
 bool DfxElf::IsValid()
 {
-    std::lock_guard<std::mutex> lock(mutex_);
     if (valid_ == false) {
         valid_ = InitHeaders();
     }
@@ -133,24 +132,6 @@ ArchType DfxElf::GetArchType()
     return ARCH_UNKNOWN;
 }
 
-std::string DfxElf::GetElfName()
-{
-    std::lock_guard<std::mutex> lock(mutex_);
-    if (!IsValid()) {
-        return "";
-    }
-    return "";
-}
-
-std::string DfxElf::GetBuildId()
-{
-    std::lock_guard<std::mutex> lock(mutex_);
-    if (!IsValid()) {
-        return "";
-    }
-    return elfParse_->GetBuildId();
-}
-
 int64_t DfxElf::GetLoadBias()
 {
     std::lock_guard<std::mutex> lock(mutex_);
@@ -159,13 +140,32 @@ int64_t DfxElf::GetLoadBias()
     }
     return elfParse_->GetLoadBias();
 }
-std::string DfxElf::GetReadableBuildId()
+
+std::string DfxElf::GetElfName()
 {
-    std::string buildIdHex = elfParse_->GetBuildId();
-    return ParseToReadableBuildId(buildIdHex);
+    std::lock_guard<std::mutex> lock(mutex_);
+    if (!IsValid()) {
+        return "";
+    }
+    return elfParse_->GetElfName();
 }
 
-std::string DfxElf::ParseToReadableBuildId(const std::string& buildIdHex)
+std::string DfxElf::GetBuildId()
+{
+    std::lock_guard<std::mutex> lock(mutex_);
+    if (!buildId_.empty()) {
+        return buildId_;
+    }
+
+    if (!IsValid()) {
+        return "";
+    }
+    std::string buildIdHex = elfParse_->GetBuildId();
+	buildId_ = ToReadableBuildId(buildIdHex);
+    return buildId_;
+}
+
+std::string DfxElf::ToReadableBuildId(const std::string& buildIdHex)
 {
     if (buildIdHex.empty()) {
         return "";
@@ -184,14 +184,34 @@ std::string DfxElf::ParseToReadableBuildId(const std::string& buildIdHex)
     return buildId;
 }
 
-
 bool DfxElf::FindSection(ElfShdr& shdr, const std::string& secName)
 {
     std::lock_guard<std::mutex> lock(mutex_);
-    // if (!IsValid()) {
-    //     return false;
-    // }
-    return elfParse_ ->FindSection(shdr, secName);
+    if (!IsValid()) {
+         return false;
+    }
+    return elfParse_->FindSection(shdr, secName);
+}
+
+bool DfxElf::GetSectionInfo(ShdrInfo& shdr, const std::string secName)
+{
+    std::lock_guard<std::mutex> lock(mutex_);
+    if (!IsValid()) {
+         return false;
+    }
+    return elfParse_->GetSectionInfo(shdr, secName);
+}
+
+bool DfxElf::GetElfSymbols(std::vector<ElfSymbol>& elfSymbols)
+{
+    std::lock_guard<std::mutex> lock(mutex_);
+    return elfParse_->GetElfSymbols(elfSymbols);
+}
+
+const std::unordered_map<uint64_t, ElfLoadInfo>& DfxElf::GetPtLoads()
+{
+    std::lock_guard<std::mutex> lock(mutex_);
+    return elfParse_->GetPtLoads();
 }
 } // namespace HiviewDFX
 } // namespace OHOS

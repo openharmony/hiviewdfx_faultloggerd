@@ -36,33 +36,37 @@ struct ElfFileInfo {
 
 class DfxElf final {
 public:
-    explicit DfxElf(const std::string& file) { Init(file); }
+    explicit DfxElf(const std::string& file) : file_(file) { Init(); }
     ~DfxElf() { Clear(); }
 
-    bool Init(const std::string &file);
-    void Clear();
-
-    bool InitHeaders();
+    std::string GetFilePath() {return file_;}
     bool IsValid();
     uint8_t GetClassType();
     ArchType GetArchType();
-    bool FindSection(ElfShdr& shdr, const std::string& secName);
     std::string GetElfName();
     std::string GetBuildId();
+    bool GetElfSymbols(std::vector<ElfSymbol>& elfSymbols);
     int64_t GetLoadBias();
-    std::string GetReadableBuildId();
+    bool FindSection(ElfShdr& shdr, const std::string& secName);
+    bool GetSectionInfo(ShdrInfo& shdr, const std::string secName);
+    const std::unordered_map<uint64_t, ElfLoadInfo>& GetPtLoads();
+
+	static std::string ToReadableBuildId(const std::string& buildIdHex);
 
 protected:
+    bool InitHeaders();
+    bool Init();
+    void Clear();
     bool ParseElfIdent();
-    std::string ParseToReadableBuildId(const std::string& buildIdHex);
 
 private:
     std::mutex mutex_;
+    std::string file_;
     bool valid_ = false;
     uint8_t classType_;
+    std::string buildId_;
     std::shared_ptr<DfxMmap> mmap_;
     std::unique_ptr<ElfParse> elfParse_;
-    MAYBE_UNUSED std::string buildId_;
 };
 } // namespace HiviewDFX
 } // namespace OHOS

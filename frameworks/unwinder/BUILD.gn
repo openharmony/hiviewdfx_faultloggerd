@@ -13,44 +13,42 @@
 
 import("//base/hiviewdfx/faultloggerd/faultloggerd.gni")
 
-dfx_unwind_sources = [
+dfx_unwinder_sources = [
   "arch_util.cpp",
-  "dfx_accessors.cpp",
-  "dfx_ark.cpp",
   "dfx_config.cpp",
-  "dfx_demangle.cpp",
   "dfx_elf.cpp",
-  "dfx_elf_parse.cpp",
-  "dfx_map.cpp",
+  "dfx_frame_format.cpp",
   "dfx_maps.cpp",
-  "dfx_mmap.cpp",
   "dfx_memory.cpp",
-  "dfx_memory_dwarf.cpp",
+  "dfx_memory_file.cpp",
   "dfx_regs.cpp",
   "dfx_regs_arm.cpp",
   "dfx_regs_arm64.cpp",
   "dfx_regs_x86_64.cpp",
   "dfx_signal.cpp",
   "dfx_symbols.cpp",
+  "dwarf_unwinder.cpp",
+  "fp_unwinder.cpp",
 ]
 
 if (defined(ohos_lite)) {
-  source_set("dfx_unwind_src") {
+  source_set("dfx_unwinder_src") {
     visibility = [ "*:*" ]
 
     include_dirs = [
       "include",
       "$c_utils_include_path",
-      "$faultloggerd_common_path/dfxlog",
-      "$faultloggerd_common_path/dfxutil",
       "$faultloggerd_interfaces_path/common",
-      "$faultloggerd_interfaces_path/innerkits/backtrace/include",
+      "$faultloggerd_path/common",
+      "$faultloggerd_path/common/dfxlog",
+      "$faultloggerd_path/common/dfxutil",
+      "$faultloggerd_path/interfaces/innerkits/backtrace/include",
       "//third_party/libunwind/include",
       "//third_party/libunwind/src",
       "$hilog_lite_include_path",
     ]
 
-    sources = dfx_unwind_sources
+    sources = dfx_unwinder_sources
     sources += [ "$c_utils_src_path/directory_ex.cpp" ]
 
     defines = [
@@ -60,20 +58,21 @@ if (defined(ohos_lite)) {
     ]
 
     deps = [
-      "$faultloggerd_common_path/dfxlog:dfx_hilog",
-      "$faultloggerd_common_path/dfxutil:dfx_util",
+      "$faultloggerd_path/common/dfxlog:dfx_hilog",
       "$hilog_lite_deps_path",
       "//third_party/bounds_checking_function:libsec_shared",
       "//third_party/libunwind:libunwind",
     ]
   }
 } else {
-  config("dfx_unwind_config") {
+  config("dfx_unwinder_config") {
     visibility = [ "*:*" ]
 
     include_dirs = [
       "include",
       "$faultloggerd_interfaces_path/common",
+      "$faultloggerd_interfaces_path/innerkits/backtrace/include",
+      "$faultloggerd_path/common",
       "//third_party/libunwind/include",
       "//third_party/libunwind/src",
     ]
@@ -82,20 +81,20 @@ if (defined(ohos_lite)) {
       "HAVE_CONFIG_H",
       "HAVE_ELF_H",
       "HAVE_LINK_H",
-      "DFX_LOG_UNWIND",
     ]
   }
 
-  ohos_source_set("dfx_unwind_src") {
+  ohos_source_set("dfx_unwinder_src") {
     public_configs = [
-      ":dfx_unwind_config",
-      "$faultloggerd_common_path/build:coverage_flags",
+      ":dfx_unwinder_config",
+      "$faultloggerd_path/common/build:coverage_flags",
     ]
-    sources = dfx_unwind_sources
+
+    sources = dfx_unwinder_sources
 
     deps = [
-      "$faultloggerd_common_path/dfxlog:dfx_hilog",
-      "$faultloggerd_common_path/dfxutil:dfx_util",
+      "$faultloggerd_path/common/dfxlog:dfx_hilog",
+      "$faultloggerd_path/common/dfxutil:dfx_util",
       "//third_party/bounds_checking_function:libsec_shared",
       "//third_party/libunwind:libunwind",
     ]
@@ -108,13 +107,14 @@ if (defined(ohos_lite)) {
     subsystem_name = "hiviewdfx"
   }
 
-  ohos_source_set("dfx_unwind_static_src") {
-    public_configs = [ ":dfx_unwind_config" ]
-    sources = dfx_unwind_sources
+  ohos_source_set("dfx_unwinder_static_src") {
+    public_configs = [ ":dfx_unwinder_config" ]
+
+    sources = dfx_unwinder_sources
 
     deps = [
-      "$faultloggerd_common_path/dfxlog:dfx_hilog_base",
-      "$faultloggerd_common_path/dfxutil:dfx_util_static",
+      "$faultloggerd_path/common/dfxlog:dfx_hilog_base",
+      "$faultloggerd_path/common/dfxutil:dfx_util_static",
       "//third_party/bounds_checking_function:libsec_static",
       "//third_party/libunwind:libunwind_local",
     ]
