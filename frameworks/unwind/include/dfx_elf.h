@@ -36,17 +36,33 @@ struct ElfFileInfo {
 
 class DfxElf final {
 public:
-    explicit DfxElf(const std::string& file, uint64_t offset);
-    ~DfxElf();
+    explicit DfxElf(const std::string& file) { Init(file); }
+    ~DfxElf() { Clear(); }
 
+    bool Init(const std::string &file);
+    void Clear();
+
+    bool InitHeaders();
     bool IsValid();
+    uint8_t GetClassType();
+    ArchType GetArchType();
+    bool FindSection(ElfShdr& shdr, const std::string& secName);
     std::string GetElfName();
     std::string GetBuildId();
     int64_t GetLoadBias();
-    bool GetFuncNameAndOffset(uint64_t pc, std::string* funcName, uint64_t* start, uint64_t* end);
+    std::string GetReadableBuildId();
+
+protected:
+    bool ParseElfIdent();
+    std::string ParseToReadableBuildId(const std::string& buildIdHex);
+
 private:
     std::mutex mutex_;
+    bool valid_ = false;
+    uint8_t classType_;
+    std::shared_ptr<DfxMmap> mmap_;
     std::unique_ptr<ElfParse> elfParse_;
+    MAYBE_UNUSED std::string buildId_;
 };
 } // namespace HiviewDFX
 } // namespace OHOS

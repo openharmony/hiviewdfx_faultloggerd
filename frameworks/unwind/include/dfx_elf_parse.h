@@ -28,6 +28,7 @@
 #include <vector>
 #include "dfx_define.h"
 #include "dfx_mmap.h"
+#include "dfx_symbol.h"
 #include "elf_define.h"
 #include "unwind_define.h"
 
@@ -40,37 +41,44 @@ struct ElfLoadInfo {
 };
 
 struct ElfSymbol {
-    uint16_t secIndex_;
-    uint32_t nameIndex_;
-    uint64_t symValue_;
-    uint64_t symSize_;
+    uint16_t secIndex;
+    uint32_t nameIndex;
+    uint64_t symValue;
+    uint64_t symSize;
+};
+
+struct ElfShdr
+{
+    uint32_t	name;		/* Section name (string tbl index) */
+    uint32_t	type;		/* Section type */
+    uint64_t	flags;		/* Section flags */
+    uint64_t	addr;		/* Section virtual addr at execution */
+    uint64_t	offset;		/* Section file offset */
+    uint64_t	size;		/* Section size in bytes */
+    uint32_t	link;		/* Link to another section */
+    uint32_t	info;		/* Additional section information */
+    uint64_t	addrAlign;		/* Section alignment */
+    uint64_t	entSize;		/* Entry size if section holds table */
 };
 
 class ElfParse {
 public:
-    ElfParse() = default;
-    virtual ~ElfParse() { Clear(); }
+    ElfParse(const std::shared_ptr<DfxMmap>& mmap) : mmap_(mmap) {}
+    virtual ~ElfParse() = default;
 
-    bool Init(const std::string &file);
-    void Clear();
-
-    bool InitHeaders();
-    bool IsValid();
-    uint8_t GetClassType();
-    ArchType GetArchType();
-
+    virtual bool InitHeaders() = 0;
+    virtual ArchType GetArchType() { return archType_; }
     virtual std::string GetElfName();
     virtual int64_t GetLoadBias();
-    virtual std::string GetBuildId();
-    virtual bool GetFuncNameAndOffset(uint64_t pc, std::string* funcName, uint64_t* start, uint64_t* end);
-    template <typename ShdrType>
-    bool FindSection(ShdrType& shdr, const std::string secname);
+    virtual std::string GetBuildId() = 0;
+
+    bool FindSection(ElfShdr& shdr, const std::string& secName);
+    const std::vector<DfxSymbol> &GetSymbols();
 
 protected:
     bool Read(uint64_t pos, void *buf, size_t size);
     size_t Size();
 
-    bool ParseElfIdent();
     template <typename EhdrType, typename PhdrType, typename ShdrType>
     bool ParseAllHeaders();
     template <typename EhdrType>
@@ -79,25 +87,37 @@ protected:
     bool ParseProgramHeaders(const EhdrType& ehdr);
     template <typename EhdrType, typename ShdrType>
     bool ParseSectionHeaders(const EhdrType& ehdr);
+    std::string GetSectionNameByIndex(const uint32_t nameIndex);
+    template <typename NhdrType>
+    std::string  ReadBuildId(uint64_t buildIdOffset, uint64_t buildIdSz);
+    bool ParseElfSymbols();
+    bool ParseSymbols();
 
 private:
     std::shared_ptr<DfxMmap> mmap_;
-    bool valid_ = false;
-    uint8_t classType_;
     ArchType archType_;
     int64_t loadBias_ = 0;
     MAYBE_UNUSED std::string buildIdHex_;
     MAYBE_UNUSED std::string buildId_;
-    std::unordered_map<uint32_t, ElfSymbol> symbols_;
+    std::vector<ElfSymbol> elfSymbols_;
+    std::vector<DfxSymbol> symbols_;
+    std::unordered_map<std::string, ElfShdr> elfShdrs_;
     std::unordered_map<uint64_t, ElfLoadInfo> ptLoads_;
+    std::string sectionNames_;
 };
 
 class ElfParse32 : public ElfParse {
 public:
+    ElfParse32(const std::shared_ptr<DfxMmap>& mmap) : ElfParse(mmap) {}
+    bool InitHeaders() override;
+    std::string GetBuildId() override;
 };
 
 class ElfParse64 : public ElfParse {
 public:
+    ElfParse64(const std::shared_ptr<DfxMmap>& mmap) : ElfParse(mmap) {}
+    bool InitHeaders() override;
+    std::string GetBuildId() override;
 };
 
 } // namespace HiviewDFX

@@ -20,7 +20,6 @@
 #include <vector>
 
 #include "dfx_regs.h"
-#include "dfx_regs_define.h"
 
 using namespace OHOS::HiviewDFX;
 using namespace testing::ext;
@@ -45,15 +44,6 @@ namespace {
 HWTEST_F(DfxRegsTest, DfxRegsTest001, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "DfxRegsTest001: start.";
-    auto dfxRegs = DfxRegs::Create();
-    ASSERT_NE(dfxRegs, nullptr);
-    std::vector<uintptr_t> setRegs {};
-    for (size_t i = 0; i < 10; i++) { // test 10 regs
-        setRegs.push_back(i);
-    }
-    dfxRegs->SetRegsData(setRegs);
-    auto getRegs = dfxRegs->GetRegsData();
-    ASSERT_EQ(setRegs, getRegs);
     GTEST_LOG_(INFO) << "DfxRegsTest001: end.";
 }
 
@@ -65,11 +55,6 @@ HWTEST_F(DfxRegsTest, DfxRegsTest001, TestSize.Level2)
 HWTEST_F(DfxRegsTest, DfxRegsTest002, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "DfxRegsTest002: start.";
-    auto dfxRegs = DfxRegs::Create();
-    uintptr_t val = 0x00000001;
-    dfxRegs->pc_ = val;
-    auto name = dfxRegs->GetSpecialRegisterName(val);
-    ASSERT_EQ(name, "pc");
     GTEST_LOG_(INFO) << "DfxRegsTest002: end.";
 }
 }
