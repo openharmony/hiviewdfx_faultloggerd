@@ -18,7 +18,7 @@
 #include <securec.h>
 #include <string>
 #include <vector>
-
+#include <iostream>
 #include "dfx_elf.h"
 
 using namespace OHOS::HiviewDFX;
@@ -44,7 +44,27 @@ namespace {
 HWTEST_F(DfxElfTest, DfxElfTest001, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "DfxElfTest001: start.";
-
+    //64
+    DfxElf elf("/data/dumpcatcher");
+    ASSERT_TRUE(elf.IsValid());
+    ElfShdr shdr;
+    elf.FindSection(shdr, ".eh_frame");
+    printf(".eh_frame %x %x %llx\n",shdr.name, shdr.type, shdr.offset);
+    elf.FindSection(shdr, ".eh_frame_hdr");
+    printf(".eh_frame_hdr %x %x %llx\n",shdr.name, shdr.type, shdr.offset);
+    elf.FindSection(shdr, ".dynsym");
+    printf(".dynsym %x %x %llx\n",shdr.name, shdr.type, shdr.offset);
+    elf.FindSection(shdr, ".symtab");
+    printf(".symtab %x %x %llx\n",shdr.name, shdr.type, shdr.offset);
+    GTEST_LOG_(INFO) << elf.GetReadableBuildId();
+    //32
+    DfxElf elf32("/data/processdump");
+    ASSERT_TRUE(elf32.IsValid());
+    elf32.FindSection(shdr, ".dynsym");
+    printf(".dynsym %x %x %llx\n",shdr.name, shdr.type, shdr.offset);
+    elf32.FindSection(shdr, ".ARM.extab");
+    printf(".ARM.extab %x %x %llx\n",shdr.name, shdr.type, shdr.offset);
+    GTEST_LOG_(INFO) << elf.GetReadableBuildId();
     GTEST_LOG_(INFO) << "DfxElfTest001: end.";
 }
 }
