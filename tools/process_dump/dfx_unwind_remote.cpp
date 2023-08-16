@@ -215,7 +215,7 @@ bool DfxUnwindRemote::DoUnwindStep(size_t const & index,
     frame->pc = framePc;
     frame->sp = frameSp;
     frame->index = index;
-    ret = UpdateAndFillFrame(cursor, frame, thread, ProcessDumper::GetInstance().IsCrash());
+    ret = UpdateAndFillFrame(cursor, frame, process, thread, ProcessDumper::GetInstance().IsCrash());
     if (ret) {
         thread->AddFrame(frame);
     }
@@ -225,7 +225,7 @@ bool DfxUnwindRemote::DoUnwindStep(size_t const & index,
 }
 
 bool DfxUnwindRemote::UpdateAndFillFrame(unw_cursor_t& cursor, std::shared_ptr<DfxFrame> frame,
-    std::shared_ptr<DfxThread> thread, bool enableBuildId)
+    std::shared_ptr<DfxProcess> process, std::shared_ptr<DfxThread> thread, bool enableBuildId)
 {
     struct map_info* mapInfo = unw_get_map(&cursor);
     bool isValidFrame = true;
@@ -270,13 +270,22 @@ bool DfxUnwindRemote::UpdateAndFillFrame(unw_cursor_t& cursor, std::shared_ptr<D
             }
         }
     } else {
-        std::string tips = "Not mapped ";
-        std::shared_ptr<DfxRegs> regs = thread->GetThreadRegs();
-        if (regs != nullptr) {
-            tips.append(regs->GetSpecialRegisterName(frame->pc));
+        process->InitProcessMaps();
+        std::shared_ptr<DfxElfMaps> maps = process->GetMaps();
+        std::shared_ptr<DfxElfMap> map;
+        if (maps != nullptr && maps->FindMapByAddr(frame->pc, map)) {
+            frame->relPc = map->GetRelPc(frame->pc);
+            frame->mapName = map->path;
+        } else {
+            std::string tips = "Not mapped ";
+            std::shared_ptr<DfxRegs> regs = thread->GetThreadRegs();
+            if (regs != nullptr) {
+                tips.append(regs->GetSpecialRegisterName(frame->pc));
+            }
+            frame->mapName = tips;
+            isValidFrame = false;
         }
-        frame->mapName = tips;
-        isValidFrame = false;
+
     }
 
     if (isValidFrame && (frame->pc == frame->relPc) &&
