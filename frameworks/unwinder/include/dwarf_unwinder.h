@@ -12,19 +12,31 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#ifndef DWARF_UNWINDER_H
+#define DWARF_UNWINDER_H
 
-#include "dfx_symbols_file.h"
-
-#include <cstdlib>
-#include <cstring>
-#include <string>
-#include <unistd.h>
-#include "dfx_define.h"
-#include "dfx_log.h"
-#include "string_util.h"
+#include <vector>
+#include <libunwind.h>
+#include "dfx_frame.h"
+#include "dfx_symbols.h"
 
 namespace OHOS {
 namespace HiviewDFX {
+class DwarfUnwinder {
+public:
+    DwarfUnwinder();
+    ~DwarfUnwinder();
 
+    bool UnwindWithContext(unw_addr_space_t as, unw_context_t& context, std::shared_ptr<DfxSymbols> symbol,
+        size_t skipFrameNum);
+    bool Unwind(size_t skipFrameNum);
+    const std::vector<DfxFrame>& GetFrames() const;
+private:
+    void UpdateFrameFuncName(unw_addr_space_t as, std::shared_ptr<DfxSymbols> symbol, DfxFrame& frame);
+
+private:
+    std::vector<DfxFrame> frames_;
+};
 } // namespace HiviewDFX
 } // namespace OHOS
+#endif

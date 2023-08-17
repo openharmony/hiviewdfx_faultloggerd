@@ -12,6 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 #ifndef DFX_SYMBOLS_H
 #define DFX_SYMBOLS_H
 
@@ -19,26 +20,39 @@
 #include <string>
 #include <vector>
 #include <unordered_map>
-#include "dfx_elf.h"
-#include "dfx_symbol.h"
+#include "dfx_memory.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+typedef struct SymbolInfo {
+    uint64_t start;
+    uint64_t end;
+    uint32_t name;
+    uint16_t ndx;
+    uint8_t type;
+    std::string funcName;
+} SymbolInfo;
+#ifdef __cplusplus
+};
+#endif
+struct unw_addr_space;
 
 namespace OHOS {
 namespace HiviewDFX {
 class DfxSymbols final {
 public:
-    DfxSymbols() = default;
+    DfxSymbols();
     ~DfxSymbols() = default;
-
-    static bool ParseSymbols(std::vector<DfxSymbol>& symbols,
-        const std::shared_ptr<DfxElf> elf, const std::string& filePath);
-    static bool AddSymbolsByPlt(std::vector<DfxSymbol>& symbols,
-        const std::shared_ptr<DfxElf> elf, const std::string& filePath);
-
-    static bool GetFuncNameAndOffset(uint64_t pc, const std::shared_ptr<DfxElf> elf,
-        std::string* funcName, uint64_t* start, uint64_t* end);
+    bool GetNameAndOffsetByPc(struct unw_addr_space *as, uint64_t pc, std::string& name, uint64_t& offset);
+    bool GetNameAndOffsetByPc(std::shared_ptr<DfxMemory> memory, uint64_t pc, std::string& name, uint64_t& offset);
 
 private:
-    std::vector<DfxSymbol> symbols_;
+    bool GetNameAndOffsetByPc(uint64_t pc, std::string& name, uint64_t& offset);
+    bool Demangle(const char* buf, const int len, std::string& funcName);
+
+private:
+    std::vector<SymbolInfo> symbols_;
 };
 } // namespace HiviewDFX
 } // namespace OHOS

@@ -24,13 +24,6 @@
 
 namespace OHOS {
 namespace HiviewDFX {
-namespace {
-#undef LOG_DOMAIN
-#undef LOG_TAG
-#define LOG_DOMAIN 0xD002D11
-#define LOG_TAG "DfxSignal"
-}
-
 DfxSignal::DfxSignal(const int32_t signal)
 {
     signal_ = signal;

@@ -20,31 +20,47 @@
 #include <cxxabi.h>
 #include "dfx_define.h"
 #include "dfx_log.h"
+#include "string_util.h"
 #ifdef RUSTC_DEMANGLE
 #include "rustc_demangle.h"
 #endif
 
 namespace OHOS {
 namespace HiviewDFX {
+static const std::string LINKER_PREFIX = "__dl_";
+static const std::string LINKER_PREFIX_NAME = "[linker]";
+
 std::string DfxDemangle::Demangle(const std::string buf)
 {
-    std::string funcName = buf;
     if (buf.empty()) {
-        return funcName;
+        return "";
+    }
+
+    std::string funcName;
+    const char *bufStr = buf.c_str();
+    bool isLinkerName = false;
+    if (StartsWith(buf, LINKER_PREFIX)) {
+        bufStr += LINKER_PREFIX.size();
+        isLinkerName = true;
+        funcName += LINKER_PREFIX_NAME;
     }
 
     int status = 0;
-    auto name = abi::__cxa_demangle(buf.c_str(), nullptr, nullptr, &status);
+    auto name = abi::__cxa_demangle(bufStr, nullptr, nullptr, &status);
 #ifdef RUSTC_DEMANGLE
     if (name == nullptr) {
-        DFXLOG_DEBUG("Fail to __cxa_demangle(%s), will rustc_demangle.", buf.c_str());
-        name = rustc_demangle(buf.c_str());
+        DFXLOG_DEBUG("Fail to __cxa_demangle(%s), will rustc_demangle.", bufStr);
+        name = rustc_demangle(bufStr);
     }
 #endif
+    std::string demangleName;
     if (name != nullptr) {
-        funcName = std::string(name);
+        demangleName = std::string(name);
         std::free(name);
+    } else {
+        demangleName = std::string(bufStr);
     }
+    funcName += demangleName;
     return funcName;
 }
 } // namespace HiviewDFX

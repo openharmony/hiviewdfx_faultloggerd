@@ -70,7 +70,7 @@ struct DfxSymbol {
     uint64_t offsetToVaddr_ = 0;
     uint64_t fileVaddr_ = 0;
     uint64_t taskVaddr_ = 0;
-    uint64_t len_ = 0;
+    uint64_t size_ = 0;
     int32_t symbolFileIndex_ = -1; // symbols file index, used to report protobuf file
     int32_t index_ = -1;
     STRING_VIEW name_ = "";
@@ -80,6 +80,20 @@ struct DfxSymbol {
     mutable STRING_VIEW unknow_ = "";
     mutable bool matched_ = false; // if some callstack match this
     int32_t hit_ = 0;
+
+    void SetVaddr(uint64_t funcVaddr, uint64_t fileVaddr, uint64_t size)
+    {
+        funcVaddr_ = funcVaddr;
+        fileVaddr_ = fileVaddr;
+        size_ = size;
+    }
+
+    void SetName(const std::string &name, const std::string &demangle, const std::string& module)
+    {
+        name_ = name;
+        demangle_ = demangle;
+        module_ = module;
+    }
 
     STRING_VIEW GetName() const
     {
@@ -101,62 +115,26 @@ struct DfxSymbol {
         return unknow_;
     }
 
-    // elf use this
-    DfxSymbol(uint64_t vaddr, uint64_t len, const std::string &name, const std::string &demangle,
-           const std::string module)
-        : funcVaddr_(vaddr),
-          fileVaddr_(vaddr),
-          len_(len),
-          name_(name),
-          demangle_(demangle),
-          module_(module) {}
-    DfxSymbol(uint64_t vaddr, uint64_t len, const std::string &name, const std::string &module)
-        : DfxSymbol(vaddr, len, name, name, module) {}
-
-    // kernel use this
-    DfxSymbol(uint64_t vaddr, const std::string &name, const std::string &module)
-        : DfxSymbol(vaddr, 0, name, name, module) {}
-
-    // Symbolic use this
-    DfxSymbol(uint64_t taskVaddr = 0, const std::string &comm = "")
-        : taskVaddr_(taskVaddr), comm_(comm) {}
-
-    // copy
-    DfxSymbol(const DfxSymbol &other) = default;
-
-    DfxSymbol& operator=(const DfxSymbol& other) = default;
-
     static bool SameVaddr(const DfxSymbol &a, const DfxSymbol &b)
     {
         return (a.funcVaddr_ == b.funcVaddr_);
     }
     bool Same(const DfxSymbol &b) const
     {
-        return (funcVaddr_ == b.funcVaddr_ and demangle_ == b.demangle_);
+        return ((funcVaddr_ == b.funcVaddr_) && (demangle_ == b.demangle_));
     }
     bool operator==(const DfxSymbol &b) const
     {
         return Same(b);
     }
-
     bool operator!=(const DfxSymbol &b) const
     {
         return !Same(b);
     }
 
-    bool isValid() const
+    bool IsValid() const
     {
         return !module_.empty();
-    }
-
-    void SetMatchFlag() const
-    {
-        matched_ = true;
-    }
-
-    inline bool HasMatched() const
-    {
-        return matched_;
     }
 
     std::string ToString() const
@@ -171,15 +149,15 @@ struct DfxSymbol {
 
     bool Contain(uint64_t addr) const
     {
-        if (len_ == 0) {
+        if (size_ == 0) {
             return funcVaddr_ <= addr;
         } else {
-            return (funcVaddr_ <= addr) and ((funcVaddr_ + len_) > addr);
+            return (funcVaddr_ <= addr) && ((funcVaddr_ + size_) > addr);
         }
     }
 
-    // The range [first, last) must be partitioned with respect to the expression !(value < element)
-    // or !comp(value, element)
+    // The range [first, last) must be partitioned with respect to the expression
+    // !(value < element) or !comp(value, element)
     static bool ValueLessThen(uint64_t vaddr, const DfxSymbol &a)
     {
         return vaddr < a.funcVaddr_;
