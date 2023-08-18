@@ -19,8 +19,7 @@
 #include <libunwind_i-ohos.h>
 #include "dfx_define.h"
 #include "dfx_util.h"
-#include "dfx_regs_define.h"
-#include "unwinder_define.h"
+#include "unwind_define.h"
 #include "dfx_config.h"
 
 namespace OHOS {

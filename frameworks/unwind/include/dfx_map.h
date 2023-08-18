@@ -27,7 +27,6 @@ namespace {
 const int PROT_DEVICE_MAP = 0x8000;
 }
 class DfxElf;
-class DfxSymbolsFile;
 
 class DfxMap {
 public:
@@ -53,7 +52,6 @@ public:
     std::string perms = ""; // 5:rwxp
     std::string name = "";
     std::shared_ptr<DfxElf> elf;
-    std::shared_ptr<DfxSymbolsFile> symFile;
     uint64_t elfOffset = 0;
     uint64_t elfStartOffset = 0;
     DfxMap* prevMap;

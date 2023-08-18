@@ -76,7 +76,7 @@ size_t DfxMmap::Read(uint64_t* pos, void *buf, size_t size)
     }
 
     size_t left = size_ - addr;
-    const unsigned char* actualBase = static_cast<const unsigned char*>(mmap_) + addr;
+    const uint8_t* actualBase = static_cast<const uint8_t*>(mmap_) + addr;
     size_t actualLen = std::min(left, size);
     memcpy_s(buf, actualLen, actualBase, actualLen);
     return actualLen;

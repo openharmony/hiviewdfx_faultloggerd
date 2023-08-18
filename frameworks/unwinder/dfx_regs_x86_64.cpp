@@ -21,7 +21,6 @@
 #include <cstdlib>
 #include <securec.h>
 #include "dfx_define.h"
-#include "dfx_regs_define.h"
 #include "string_printf.h"
 
 namespace OHOS {
@@ -53,7 +52,7 @@ DfxRegsX86_64::DfxRegsX86_64(const ucontext_t &context)
 
 std::string DfxRegsX86_64::PrintRegs() const
 {
-    char buf[REGS_PRINT_LEN_X86] = {0};
+    char buf[REGS_PRINT_LEN] = {0};
     std::vector<uintptr_t> regs = GetRegsData();
 
     BufferPrintf(buf, sizeof(buf), "  rax:%016lx rdx:%016lx rcx:%016lx rbx:%016lx\n", \

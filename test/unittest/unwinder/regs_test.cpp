@@ -20,7 +20,6 @@
 #include <vector>
 
 #include "dfx_regs.h"
-#include "dfx_regs_define.h"
 
 using namespace OHOS::HiviewDFX;
 using namespace testing::ext;

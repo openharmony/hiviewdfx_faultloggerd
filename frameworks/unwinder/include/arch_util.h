@@ -20,7 +20,7 @@
 #include <cstdint>
 #include <string>
 #include "dfx_define.h"
-#include "unwinder_define.h"
+#include "unwind_define.h"
 
 namespace OHOS {
 namespace HiviewDFX {

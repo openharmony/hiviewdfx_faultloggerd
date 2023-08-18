@@ -26,8 +26,8 @@ public:
     Unwinder() = default;
     ~Unwinder();
 
-    UnwindMode GetUnwinderMode() { return mode_; }
-    void SetUnwinderMode(UnwindMode mode) { mode_ = mode; }
+    UnwindMode GetUnwindMode() { return mode_; }
+    void SetUnwindMode(UnwindMode mode) { mode_ = mode; }
 
     void SetTargetPid(int pid);
     uintptr_t GetPcAdjustment();
