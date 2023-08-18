@@ -45,11 +45,15 @@ public:
     ArchType GetArchType();
     std::string GetElfName();
     std::string GetBuildId();
-    bool GetElfSymbols(std::vector<ElfSymbol>& elfSymbols);
     int64_t GetLoadBias();
-    bool FindSection(ElfShdr& shdr, const std::string& secName);
-    bool GetSectionInfo(ShdrInfo& shdr, const std::string secName);
+    uint64_t GetMaxSize();
     const std::unordered_map<uint64_t, ElfLoadInfo>& GetPtLoads();
+    const std::vector<ElfSymbol>& GetElfSymbols();
+    bool GetSectionInfo(ShdrInfo& shdr, const std::string secName);
+    bool GetArmExdixInfo(ShdrInfo& shdr);
+    bool GetEhFrameHdrInfo(ShdrInfo& shdr);
+    const uint8_t* GetMmap();
+    bool Read(uint64_t pos, void *buf, size_t size);
 
 	static std::string ToReadableBuildId(const std::string& buildIdHex);
 

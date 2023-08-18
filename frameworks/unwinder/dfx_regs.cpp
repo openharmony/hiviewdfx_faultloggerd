@@ -19,9 +19,8 @@
 #include <cstdlib>
 #include "dfx_define.h"
 #include "dfx_log.h"
-#include "dfx_regs_define.h"
 #include "string_printf.h"
-#include "unwinder_define.h"
+#include "unwind_define.h"
 
 namespace OHOS {
 namespace HiviewDFX {
@@ -37,12 +36,12 @@ std::shared_ptr<DfxRegs> DfxRegs::Create(int mode)
 #else
 #error "Unsupported architecture"
 #endif
-    if (mode == UnwinderMode::FRAMEPOINTER_UNWIND) {
+    if (mode == UnwindMode::FRAMEPOINTER_UNWIND) {
         uintptr_t regs[FP_MINI_REGS_SIZE] = {0};
         dfxregs->GetFramePointerMiniRegs(regs);
         dfxregs->fp_ = regs[0]; // 0 : index of x29 or r11 register
         dfxregs->pc_ = regs[3]; // 3 : index of x32 or r15 register
-    } else if (mode == UnwinderMode::QUICKEN_UNWIND) {
+    } else if (mode == UnwindMode::QUICKEN_UNWIND) {
         uintptr_t regs[QUT_MINI_REGS_SIZE] = {0};
         dfxregs->GetQuickenMiniRegs(regs);
         dfxregs->fp_ = regs[3]; // 3 : index of x29 or r11 register
@@ -111,13 +110,13 @@ std::string DfxRegs::GetSpecialRegisterName(uintptr_t val) const
 
 std::string DfxRegs::PrintSpecialRegs() const
 {
-    char buf[REGS_PRINT_LEN_SPECIAL] = {0};
+    std::string regsStr;
 #ifdef __LP64__
-    BufferPrintf(buf, sizeof(buf), "fp:%016lx sp:%016lx lr:%016lx pc:%016lx\n", fp_, sp_, lr_, pc_);
+    regsStr = StringPrintf("fp:%016lx sp:%016lx lr:%016lx pc:%016lx\n", fp_, sp_, lr_, pc_);
 #else
-    BufferPrintf(buf, sizeof(buf), "fp:%08x sp:%08x lr:%08x pc:%08x\n", fp_, sp_, lr_, pc_);
+    regsStr = StringPrintf("fp:%08x sp:%08x lr:%08x pc:%08x\n", fp_, sp_, lr_, pc_);
 #endif
-    return std::string(buf);
+    return regsStr;
 }
 } // namespace HiviewDFX
 } // namespace OHOS

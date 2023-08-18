@@ -101,15 +101,16 @@ bool DfxElf::InitHeaders()
         return false;
     }
     if (elfParse_ != nullptr) {
+        valid_ = true;
         elfParse_->InitHeaders();
     }
-    return (elfParse_ != nullptr);
+    return valid_;
 }
 
 bool DfxElf::IsValid()
 {
     if (valid_ == false) {
-        valid_ = InitHeaders();
+        InitHeaders();
     }
     return valid_;
 }
@@ -139,6 +140,15 @@ int64_t DfxElf::GetLoadBias()
         return 0;
     }
     return elfParse_->GetLoadBias();
+}
+
+uint64_t DfxElf::GetMaxSize()
+{
+    std::lock_guard<std::mutex> lock(mutex_);
+    if (!IsValid()) {
+        return 0;
+    }
+    return elfParse_->GetMaxSize();
 }
 
 std::string DfxElf::GetElfName()
@@ -184,15 +194,6 @@ std::string DfxElf::ToReadableBuildId(const std::string& buildIdHex)
     return buildId;
 }
 
-bool DfxElf::FindSection(ElfShdr& shdr, const std::string& secName)
-{
-    std::lock_guard<std::mutex> lock(mutex_);
-    if (!IsValid()) {
-         return false;
-    }
-    return elfParse_->FindSection(shdr, secName);
-}
-
 bool DfxElf::GetSectionInfo(ShdrInfo& shdr, const std::string secName)
 {
     std::lock_guard<std::mutex> lock(mutex_);
@@ -202,16 +203,29 @@ bool DfxElf::GetSectionInfo(ShdrInfo& shdr, const std::string secName)
     return elfParse_->GetSectionInfo(shdr, secName);
 }
 
-bool DfxElf::GetElfSymbols(std::vector<ElfSymbol>& elfSymbols)
+const std::vector<ElfSymbol>& DfxElf::GetElfSymbols()
 {
     std::lock_guard<std::mutex> lock(mutex_);
-    return elfParse_->GetElfSymbols(elfSymbols);
+    return elfParse_->GetElfSymbols();
 }
 
 const std::unordered_map<uint64_t, ElfLoadInfo>& DfxElf::GetPtLoads()
 {
     std::lock_guard<std::mutex> lock(mutex_);
     return elfParse_->GetPtLoads();
+}
+
+bool DfxElf::Read(uint64_t pos, void *buf, size_t size)
+{
+    return elfParse_->Read(pos, buf, size);
+}
+
+const uint8_t* DfxElf::GetMmap()
+{
+    if (mmap_ == nullptr) {
+        return nullptr;
+    }
+    return static_cast<uint8_t *>(mmap_->Get());
 }
 } // namespace HiviewDFX
 } // namespace OHOS

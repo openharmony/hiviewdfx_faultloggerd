@@ -51,9 +51,14 @@ bool ElfParse::Read(uint64_t pos, void *buf, size_t size)
     return false;
 }
 
-size_t ElfParse::Size()
+size_t ElfParse::MmapSize()
 {
     return mmap_->Size();
+}
+
+uint64_t ElfParse::GetMaxSize()
+{
+    return maxSize_;
 }
 
 int64_t ElfParse::GetLoadBias()
@@ -89,6 +94,10 @@ bool ElfParse::ParseAllHeaders()
 template <typename EhdrType>
 bool ElfParse::ParseElfHeaders(const EhdrType& ehdr)
 {
+    if (ehdr.e_shnum == 0) {
+        return false;
+    }
+
     auto machine = ehdr.e_machine;
     if (machine == EM_ARM) {
         archType_ = ARCH_ARM;
@@ -100,8 +109,8 @@ bool ElfParse::ParseElfHeaders(const EhdrType& ehdr)
         archType_ = ARCH_X86_64;
     } else {
         LOGW("Failed the machine = %d", machine);
-        return false;
     }
+    maxSize_ = ehdr.e_shoff + ehdr.e_shentsize * ehdr.e_shnum;
     return true;
 }
 
@@ -123,11 +132,34 @@ bool ElfParse::ParseProgramHeaders(const EhdrType& ehdr)
             }
             LOGU("phdr.p_offset: %llx, phdr.p_vaddr: %llx", phdr.p_offset, phdr.p_vaddr);
             ptLoads_[phdr.p_offset] = ElfLoadInfo{phdr.p_offset, phdr.p_vaddr, static_cast<size_t>(phdr.p_memsz)};
+            if (phdr.p_vaddr < startExecVaddr_) {
+                startExecVaddr_ = phdr.p_vaddr;
+            }
+            if (phdr.p_vaddr + phdr.p_memsz > endExecVaddr_) {
+                endExecVaddr_ = phdr.p_vaddr + phdr.p_memsz;
+            }
+
             // Only set the load bias from the first executable load header.
             if (firstLoadHeader) {
                 loadBias_ = static_cast<int64_t>(static_cast<uint64_t>(phdr.p_vaddr) - phdr.p_offset);
             }
             firstLoadHeader = false;
+            break;
+        }
+
+        case PT_ARM_EXIDX: {
+            armExdixInfo_.addr = static_cast<uint64_t>(phdr.p_vaddr);
+            armExdixInfo_.offset = static_cast<uint64_t>(phdr.p_offset);
+            // Always use filesz instead of memsz. In most cases they are the same,
+            // but some shared libraries wind up setting one correctly and not the other.
+            armExdixInfo_.size = static_cast<uint64_t>(phdr.p_filesz);
+            break;
+        }
+
+        case PT_GNU_EH_FRAME: {
+            ehFrameHdrInfo_.addr = static_cast<uint64_t>(phdr.p_vaddr);
+            ehFrameHdrInfo_.offset = static_cast<uint64_t>(phdr.p_offset);
+            ehFrameHdrInfo_.size = static_cast<uint64_t>(phdr.p_memsz);
             break;
         }
 
@@ -180,57 +212,58 @@ bool ElfParse::ParseSectionHeaders(const EhdrType& ehdr)
             continue;
         }
         LOGU("ParseSectionHeaders secName: %s", secName.c_str());
-        elfShdrIndexs_[i] = secName;
 
         ShdrInfo shdrInfo;
-        shdrInfo.vaddr = static_cast<uint64_t>(shdr.sh_addr);
+        shdrInfo.addr = static_cast<uint64_t>(shdr.sh_addr);
         shdrInfo.size = static_cast<uint64_t>(shdr.sh_size);
         shdrInfo.offset = static_cast<uint64_t>(shdr.sh_offset);
         shdrInfos_.emplace(secName, shdrInfo);
 
-        ElfShdr elfShdr;
-        elfShdr.name = static_cast<uint32_t>(shdr.sh_name);
-        elfShdr.type = static_cast<uint32_t>(shdr.sh_type);
-        elfShdr.flags = static_cast<uint64_t>(shdr.sh_flags);
-        elfShdr.addr = static_cast<uint64_t>(shdr.sh_addr);
-        elfShdr.offset = static_cast<uint64_t>(shdr.sh_offset);
-        elfShdr.size = static_cast<uint64_t>(shdr.sh_size);
-        elfShdr.link = static_cast<uint32_t>(shdr.sh_link);
-        elfShdr.info = static_cast<uint32_t>(shdr.sh_info);
-        elfShdr.addrAlign = static_cast<uint64_t>(shdr.sh_addralign);
-        elfShdr.entSize = static_cast<uint64_t>(shdr.sh_entsize);
+        elfSecInfos_[i] = ElfSecInfo{secName, shdrInfo};
+
         if (shdr.sh_type == SHT_SYMTAB ||
-            shdr.sh_type == SHT_DYNSYM ||
-            shdr.sh_type == SHT_PROGBITS ||
-            shdr.sh_type == SHT_ARM_EXIDX ||
-            shdr.sh_type == SHT_STRTAB) {
-            elfShdrs_.emplace(secName, elfShdr);
-        } else if (shdr.sh_type == SHT_NOTE && secName == NOTE_GNU_BUILD_ID) {
-            elfShdrs_.emplace(secName, elfShdr);
+            shdr.sh_type == SHT_DYNSYM) {
+            ElfShdr elfShdr;
+            elfShdr.name = static_cast<uint32_t>(shdr.sh_name);
+            elfShdr.type = static_cast<uint32_t>(shdr.sh_type);
+            elfShdr.flags = static_cast<uint64_t>(shdr.sh_flags);
+            elfShdr.addr = static_cast<uint64_t>(shdr.sh_addr);
+            elfShdr.offset = static_cast<uint64_t>(shdr.sh_offset);
+            elfShdr.size = static_cast<uint64_t>(shdr.sh_size);
+            elfShdr.link = static_cast<uint32_t>(shdr.sh_link);
+            elfShdr.info = static_cast<uint32_t>(shdr.sh_info);
+            elfShdr.addrAlign = static_cast<uint64_t>(shdr.sh_addralign);
+            elfShdr.entSize = static_cast<uint64_t>(shdr.sh_entsize);
+            symShdrs_.emplace(secName, elfShdr);
         }
     }
     return true;
 }
 
 template <typename NhdrType>
-std::string ElfParse::ParseBuildId(uint64_t buildIdOffset, uint64_t buildIdSz)
+std::string ElfParse::ParseBuildId(uint64_t noteOffset, uint64_t noteSize)
 {
+    uint64_t tmp;
+    if (__builtin_add_overflow(noteOffset, noteSize, &tmp)) {
+        return "";
+    }
+
     uint64_t offset = 0;
-    while (offset < buildIdSz) {
-        if (buildIdSz - offset < sizeof(NhdrType)) {
+    while (offset < noteSize) {
+        if (noteSize - offset < sizeof(NhdrType)) {
             return "";
         }
         NhdrType hdr;
-        if (!Read(buildIdOffset + offset, &hdr, sizeof(hdr))) {
+        if (!Read(noteOffset + offset, &hdr, sizeof(hdr))) {
             return "";
         }
         offset += sizeof(hdr);
-        if (buildIdSz - offset < hdr.n_namesz) {
+        if (noteSize - offset < hdr.n_namesz) {
             return "";
         }
         if (hdr.n_namesz > 0) {
             std::string name(hdr.n_namesz, '\0');
-            if (!Read(buildIdOffset + offset, &(name[0]), hdr.n_namesz)) {
+            if (!Read(noteOffset + offset, &(name[0]), hdr.n_namesz)) {
                 return "";
             }
             // Trim trailing \0 as GNU is stored as a C string in the ELF file.
@@ -241,11 +274,11 @@ std::string ElfParse::ParseBuildId(uint64_t buildIdOffset, uint64_t buildIdSz)
             // Align hdr.n_namesz to next power multiple of 4. See man 5 elf.
             offset += (hdr.n_namesz + 3) & ~3;
             if (name == "GNU" && hdr.n_type == NT_GNU_BUILD_ID) {
-                if (buildIdSz - offset < hdr.n_descsz || hdr.n_descsz == 0) {
+                if (noteSize - offset < hdr.n_descsz || hdr.n_descsz == 0) {
                     return "";
                 }
                 std::string buildIdRaw(hdr.n_descsz, '\0');
-                if (Read(buildIdOffset + offset, &buildIdRaw[0], hdr.n_descsz)) {
+                if (Read(noteOffset + offset, &buildIdRaw[0], hdr.n_descsz)) {
                     return buildIdRaw;
                 }
             }
@@ -263,41 +296,45 @@ std::string ElfParse::ParseElfName()
 }
 
 template <typename SymType>
-bool ElfParse::ParseElfSymbols(std::vector<ElfSymbol>& elfSymbols)
+bool ElfParse::ParseElfSymbols()
 {
-    if (elfShdrs_.empty()) {
+    if (symShdrs_.empty()) {
         return false;
     }
 
-    for (const auto &iter : elfShdrs_) {
+    for (const auto &iter : symShdrs_) {
         const auto &shdr = iter.second;
-        LOGU("shdr.type: %d", shdr.type);
-        if (shdr.type == SHT_SYMTAB || shdr.type == SHT_DYNSYM) {
-            SymType sym;
-            LOGU("shdr.offset: %llx, size: %llx, entSize: %llx, link: %d",
-                shdr.offset, shdr.size, shdr.entSize, shdr.link);
-            uint64_t offset = shdr.offset;
-            for (; offset < shdr.size; offset += shdr.entSize) {
-                if (!Read(offset, &sym, sizeof(sym))) {
-                    continue;
-                }
+        if (shdr.type != SHT_SYMTAB && shdr.type != SHT_DYNSYM) {
+            LOGE("shdr.type: %d", shdr.type);
+            continue;
+        }
 
-                ElfSymbol elfSymbol;
-                elfSymbol.name = static_cast<uint32_t>(sym.st_name);
-                if (GetSymbolNameByIndex(elfSymbol.nameStr, shdr.link, elfSymbol.name)) {
-                    LOGU("elfSymbol.nameStr: %s", elfSymbol.nameStr.c_str());
-                }
-                elfSymbol.info = sym.st_info;
-                elfSymbol.other = sym.st_other;
-                elfSymbol.shndx = static_cast<uint16_t>(sym.st_shndx);
-                elfSymbol.value = static_cast<uint64_t>(sym.st_value);
-                elfSymbol.size = static_cast<uint64_t>(sym.st_size);
-                elfSymbols.push_back(elfSymbol);
+        SymType sym;
+        LOGU("shdr.offset: %llx, size: %llx, entSize: %llx, link: %d",
+            shdr.offset, shdr.size, shdr.entSize, shdr.link);
+        uint64_t offset = shdr.offset;
+        const char* strtabPtr = GetStrTabPtr(shdr.link);
+        for (; offset < shdr.size; offset += shdr.entSize) {
+            if (!Read(offset, &sym, sizeof(sym))) {
+                continue;
             }
+
+            ElfSymbol elfSymbol;
+            elfSymbol.name = static_cast<uint32_t>(sym.st_name);
+            if (strtabPtr != nullptr) {
+                elfSymbol.nameStr = std::string(strtabPtr + elfSymbol.name);
+                LOGU("elfSymbol.nameStr: %s", elfSymbol.nameStr.c_str());
+            }
+            elfSymbol.info = sym.st_info;
+            elfSymbol.other = sym.st_other;
+            elfSymbol.shndx = static_cast<uint16_t>(sym.st_shndx);
+            elfSymbol.value = static_cast<uint64_t>(sym.st_value);
+            elfSymbol.size = static_cast<uint64_t>(sym.st_size);
+            elfSymbols_.push_back(elfSymbol);
         }
     }
-    LOGU("elfSymbols.size: %d", elfSymbols.size());
-    return (elfSymbols.size() > 0);
+    LOGU("elfSymbols.size: %d", elfSymbols_.size());
+    return (elfSymbols_.size() > 0);
 }
 
 bool ElfParse::GetSectionNameByIndex(std::string& nameStr, const uint32_t name)
@@ -315,28 +352,18 @@ bool ElfParse::GetSectionNameByIndex(std::string& nameStr, const uint32_t name)
     return false;
 }
 
-bool ElfParse::GetSymbolNameByIndex(std::string& nameStr, const uint32_t link, const uint32_t name)
+const char* ElfParse::GetStrTabPtr(const uint32_t link)
 {
-    if (elfShdrIndexs_.find(link) == elfShdrIndexs_.end()) {
-        return false;
+    if (elfSecInfos_.find(link) == elfSecInfos_.end()) {
+        return nullptr;
     }
-    // TODO: only run once?
-    auto secName = elfShdrIndexs_[link];
-    ElfShdr shdr;
-    if (!FindSection(shdr, secName)) {
-        return false;
-    }
-
-    LOGU("secName: %s, shdr.offset: %llx, size: %llx, name: %u",
-        secName.c_str(), shdr.offset, shdr.size, name);
-
-    nameStr = std::string((char *)mmap_->Get() + shdr.offset + name);
-    return true;
+    auto secInfo = elfSecInfos_[link];
+    return ((char *)mmap_->Get() + secInfo.shdrInfo.offset);
 }
 
 bool ElfParse::ParseStrTab(std::string& nameStr, const uint64_t offset, const uint64_t size)
 {
-    if (size > Size()) {
+    if (size > MmapSize()) {
         LOGE("size(%" PRIu64 ") is too large.", size);
         return false;
     }
@@ -367,10 +394,42 @@ bool ElfParse::GetSectionInfo(ShdrInfo& shdr, const std::string secName)
     return false;
 }
 
-bool ElfParse::FindSection(ElfShdr& shdr, const std::string secName)
+bool ElfParse::GetSymSection(ElfShdr& shdr, const std::string secName)
 {
-    if (elfShdrs_.find(secName) != elfShdrs_.end()) {
-        shdr = elfShdrs_[secName];
+    if (symShdrs_.find(secName) != symShdrs_.end()) {
+        shdr = symShdrs_[secName];
+        return true;
+    }
+    return false;
+}
+
+bool ElfParse::GetArmExdixInfo(ShdrInfo& shdr)
+{
+    if (armExdixInfo_.offset != 0) {
+        shdr = armExdixInfo_;
+        return true;
+    }
+
+    if (GetSectionInfo(shdr, ARM_EXIDX)) {
+        armExdixInfo_.addr = shdr.addr;
+        armExdixInfo_.offset = shdr.offset;
+        armExdixInfo_.size = shdr.size;
+        return true;
+    }
+    return false;
+}
+
+bool ElfParse::GetEhFrameHdrInfo(ShdrInfo& shdr)
+{
+    if (ehFrameHdrInfo_.offset != 0) {
+        shdr = ehFrameHdrInfo_;
+        return true;
+    }
+
+    if (GetSectionInfo(shdr, EH_FRAME_HDR)) {
+        ehFrameHdrInfo_.addr = shdr.addr;
+        ehFrameHdrInfo_.offset = shdr.offset;
+        ehFrameHdrInfo_.size = shdr.size;
         return true;
     }
     return false;
@@ -381,11 +440,25 @@ bool ElfParse32::InitHeaders()
     return ParseAllHeaders<Elf32_Ehdr, Elf32_Phdr, Elf32_Shdr>();
 }
 
+bool ElfParse64::InitHeaders()
+{
+    return ParseAllHeaders<Elf64_Ehdr, Elf64_Phdr, Elf64_Shdr>();
+}
+
 std::string ElfParse32::GetBuildId()
 {
-    ElfShdr shdr;
-    if (FindSection(shdr, NOTE_GNU_BUILD_ID)){
+    ShdrInfo shdr;
+    if (GetSectionInfo(shdr, NOTE_GNU_BUILD_ID)){
         return ParseBuildId<Elf32_Nhdr>(shdr.offset, shdr.size);
+    }
+    return "";
+}
+
+std::string ElfParse64::GetBuildId()
+{
+    ShdrInfo shdr;
+    if (GetSectionInfo(shdr, NOTE_GNU_BUILD_ID)){
+        return ParseBuildId<Elf64_Nhdr>(shdr.offset, shdr.size);
     }
     return "";
 }
@@ -395,33 +468,25 @@ std::string ElfParse32::GetElfName()
     return ParseElfName<Elf32_Dyn>();
 }
 
-bool ElfParse32::GetElfSymbols(std::vector<ElfSymbol>& elfSymbols)
-{
-    return ParseElfSymbols<Elf32_Sym>(elfSymbols);
-}
-
-bool ElfParse64::InitHeaders()
-{
-    return ParseAllHeaders<Elf64_Ehdr, Elf64_Phdr, Elf64_Shdr>();
-}
-
-std::string ElfParse64::GetBuildId()
-{
-    ElfShdr shdr;
-    if (FindSection(shdr, NOTE_GNU_BUILD_ID)){
-        return ParseBuildId<Elf64_Nhdr>(shdr.offset, shdr.size);
-    }
-    return "";
-}
-
 std::string ElfParse64::GetElfName()
 {
     return ParseElfName<Elf64_Dyn>();
 }
 
-bool ElfParse64::GetElfSymbols(std::vector<ElfSymbol>& elfSymbols)
+const std::vector<ElfSymbol>& ElfParse32::GetElfSymbols()
 {
-    return ParseElfSymbols<Elf64_Sym>(elfSymbols);
+    if (elfSymbols_.empty()) {
+        ParseElfSymbols<Elf32_Sym>();
+    }
+    return elfSymbols_;
+}
+
+const std::vector<ElfSymbol>& ElfParse64::GetElfSymbols()
+{
+    if (elfSymbols_.empty()) {
+        ParseElfSymbols<Elf64_Sym>();
+    }
+    return elfSymbols_;
 }
 } // namespace HiviewDFX
 } // namespace OHOS

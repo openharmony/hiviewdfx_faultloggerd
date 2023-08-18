@@ -21,7 +21,7 @@
 #include <vector>
 
 #include "arch_util.h"
-#include "unwinder_define.h"
+#include "unwind_define.h"
 
 using namespace OHOS::HiviewDFX;
 using namespace testing::ext;

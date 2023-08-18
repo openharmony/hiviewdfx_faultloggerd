@@ -22,7 +22,7 @@
 #include <ucontext.h>
 #include <vector>
 #include "dfx_define.h"
-#include "unwinder_define.h"
+#include "unwind_define.h"
 
 namespace OHOS {
 namespace HiviewDFX {
@@ -33,7 +33,7 @@ class DfxRegs {
 public:
     DfxRegs() = default;
     virtual ~DfxRegs() {};
-    static std::shared_ptr<DfxRegs> Create(int mode = UnwinderMode::DWARF_UNWIND);
+    static std::shared_ptr<DfxRegs> Create(int mode = UnwindMode::DWARF_UNWIND);
     static std::shared_ptr<DfxRegs> CreateFromContext(const ucontext_t &context);
 
     inline uintptr_t& operator[](size_t reg) { return regsData_[reg]; }

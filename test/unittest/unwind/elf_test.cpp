@@ -51,25 +51,25 @@ HWTEST_F(DfxElfTest, DfxElfTest001, TestSize.Level2)
     bool valid = elf.IsValid();
     printf("valid: %d\n", valid);
     ASSERT_TRUE(valid);
-    ElfShdr shdr;
-    bool ret = elf.FindSection(shdr, ".eh_frame");
+    ShdrInfo shdr;
+    bool ret = elf.GetSectionInfo(shdr, ".eh_frame");
     if (ret) {
-        printf(".eh_frame %x %x %llx\n", shdr.name, shdr.type, shdr.offset);
+        printf(".eh_frame %llx %llx %llx\n", shdr.addr, shdr.offset, shdr.size);
     }
 
-    ret = elf.FindSection(shdr, ".eh_frame_hdr");
+    ret = elf.GetSectionInfo(shdr, ".eh_frame_hdr");
     if (ret) {
-        printf(".eh_frame_hdr %x %x %llx\n", shdr.name, shdr.type, shdr.offset);
+        printf(".eh_frame_hdr %llx %llx %llx\n", shdr.addr, shdr.offset, shdr.size);
     }
 
-    ret = elf.FindSection(shdr, ".dynsym");
+    ret = elf.GetSectionInfo(shdr, ".dynsym");
     if (ret) {
-        printf(".dynsym %x %x %llx\n", shdr.name, shdr.type, shdr.offset);
+        printf(".dynsym %llx %llx %llx\n", shdr.addr, shdr.offset, shdr.size);
     }
 
-    ret = elf.FindSection(shdr, ".symtab");
+    ret = elf.GetSectionInfo(shdr, ".symtab");
     if (ret) {
-        printf(".symtab %x %x %llx\n", shdr.name, shdr.type, shdr.offset);
+        printf(".symtab %llx %llx %llx\n", shdr.addr, shdr.offset, shdr.size);
     }
     GTEST_LOG_(INFO) << elf.GetBuildId();
     //32
@@ -77,13 +77,13 @@ HWTEST_F(DfxElfTest, DfxElfTest001, TestSize.Level2)
     valid = elf32.IsValid();
     printf("valid: %d\n", valid);
     ASSERT_TRUE(valid);
-    ret = elf32.FindSection(shdr, ".dynsym");
+    ret = elf32.GetSectionInfo(shdr, ".dynsym");
     if (ret) {
-        printf(".dynsym %x %x %llx\n", shdr.name, shdr.type, shdr.offset);
+        printf(".dynsym %llx %llx %llx\n", shdr.addr, shdr.offset, shdr.size);
     }
-    ret = elf32.FindSection(shdr, ".ARM.extab");
+    ret = elf32.GetSectionInfo(shdr, ".ARM.extab");
     if (ret) {
-        printf(".ARM.extab %x %x %llx\n", shdr.name, shdr.type, shdr.offset);
+        printf(".ARM.extab %llx %llx %llx\n", shdr.addr, shdr.offset, shdr.size);
     }
     GTEST_LOG_(INFO) << elf32.GetBuildId();
     GTEST_LOG_(INFO) << "DfxElfTest001: end.";
@@ -101,9 +101,8 @@ HWTEST_F(DfxElfTest, DfxElfTest002, TestSize.Level2)
     DfxElf elf(ELF64_FILE);
     bool valid = elf.IsValid();
     ASSERT_TRUE(valid);
-    std::vector<ElfSymbol> elfSymbols;
-    bool ret = elf.GetElfSymbols(elfSymbols);
-    ASSERT_TRUE(ret);
+    std::vector<ElfSymbol> elfSymbols = elf.GetElfSymbols();
+    ASSERT_TRUE(elfSymbols.size() > 0);
     printf("Value   Size    Type    Bind    Vis     Ndx     Name\n");
     for (auto sym : elfSymbols) {
         printf("%llx %llx %d %d %d %s\n", sym.value, sym.size, sym.info, sym.other, sym.shndx, sym.nameStr.c_str());
@@ -115,8 +114,8 @@ HWTEST_F(DfxElfTest, DfxElfTest002, TestSize.Level2)
     valid = elf32.IsValid();
     ASSERT_TRUE(valid);
     elfSymbols.clear();
-    ret = elf32.GetElfSymbols(elfSymbols);
-    ASSERT_TRUE(ret);
+    elfSymbols = elf32.GetElfSymbols();
+    ASSERT_TRUE(elfSymbols.size() > 0);
     printf("Value   Size    Type    Bind    Vis     Ndx     Name\n");
     for (auto sym : elfSymbols) {
         printf("%llx %llx %d %d %d %s\n", sym.value, sym.size, sym.info, sym.other, sym.shndx, sym.nameStr.c_str());
