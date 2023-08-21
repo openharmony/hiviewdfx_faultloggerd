@@ -43,6 +43,7 @@ static std::shared_ptr<ThreadContext> CreateContext(int32_t tid)
 {
     auto threadContext = std::make_shared<ThreadContext>();
     threadContext->tid = tid;
+    std::unique_lock<std::mutex> mlock(threadContext->lock);
     threadContext->ctx = new unw_context_t;
     (void)memset_s(threadContext->ctx, sizeof(unw_context_t), 0, sizeof(unw_context_t));
     return threadContext;
@@ -51,7 +52,7 @@ static std::shared_ptr<ThreadContext> CreateContext(int32_t tid)
 static std::shared_ptr<ThreadContext> GetContextLocked(int32_t tid)
 {
     auto it = g_contextMap.find(tid);
-    if (it == g_contextMap.end()) {
+    if (it == g_contextMap.end() || it->second == nullptr) {
         auto threadContext = CreateContext(tid);
         g_contextMap[tid] = threadContext;
         return threadContext;
@@ -59,11 +60,24 @@ static std::shared_ptr<ThreadContext> GetContextLocked(int32_t tid)
 
     if (it->second->tid == ThreadContextStatus::CONTEXT_UNUSED) {
         it->second->tid = tid;
+        std::unique_lock<std::mutex> mlock(it->second->lock);
+        if (it->second->ctx == nullptr) {
+            it->second->ctx = new unw_context_t;
+        }
         (void)memset_s(it->second->ctx, sizeof(unw_context_t), 0, sizeof(unw_context_t));
         return it->second;
     }
 
     return nullptr;
+}
+
+static void ReleaseUnwindContext(std::shared_ptr<ThreadContext> context)
+{
+    std::unique_lock<std::mutex> mlock(context->lock);
+    if (context->ctx != nullptr) {
+        delete context->ctx;
+        context->ctx = nullptr;
+    }
 }
 
 static bool RemoveContextLocked(int32_t tid)
@@ -73,13 +87,18 @@ static bool RemoveContextLocked(int32_t tid)
         DFXLOG_WARN("Context of %d is already removed.", tid);
         return true;
     }
-
-    if (it->second->tid == ThreadContextStatus::CONTEXT_UNUSED) {
+    if (it->second == nullptr) {
         g_contextMap.erase(it);
         return true;
     }
 
-    DFXLOG_WARN("Failed to remove context of %d, still using?.", tid);
+    // only release unw_context_t object
+    if (it->second->tid == ThreadContextStatus::CONTEXT_UNUSED) {
+        ReleaseUnwindContext(it->second);
+        return true;
+    }
+
+    DFXLOG_WARN("Failed to release unwind context of %d, still using?.", tid);
     return false;
 }
 }
@@ -116,7 +135,7 @@ void BacktraceLocalContext::ReleaseThread(int32_t tid)
 {
     std::unique_lock<std::mutex> lock(g_localMutex);
     auto it = g_contextMap.find(tid);
-    if (it == g_contextMap.end()) {
+    if (it == g_contextMap.end() || it->second == nullptr) {
         return;
     }
 
@@ -130,11 +149,12 @@ void BacktraceLocalContext::CleanUp()
     while (it != g_contextMap.end()) {
         if (it->second == nullptr) {
             it = g_contextMap.erase(it);
-        } else if (it->second->tid == ThreadContextStatus::CONTEXT_UNUSED) {
-            it = g_contextMap.erase(it);
-        } else {
-            it++;
+            continue;
         }
+        if (it->second->tid == ThreadContextStatus::CONTEXT_UNUSED) {
+            ReleaseUnwindContext(it->second);
+        }
+        it++;
     }
 }
 
@@ -146,11 +166,6 @@ void BacktraceLocalContext::CopyContextAndWaitTimeout(int sig, siginfo_t *si, vo
         return;
     }
     std::unique_lock<std::mutex> lock(ctxPtr->lock);
-    int32_t tid = syscall(SYS_gettid);
-    if (!ctxPtr->tid.compare_exchange_strong(tid,
-        static_cast<int32_t>(ThreadContextStatus::CONTEXT_USING))) {
-        return;
-    }
     if (ctxPtr->ctx != nullptr) {
 #if defined(__arm__)
         ucontext_t *uc = static_cast<ucontext_t *>(context);
@@ -242,8 +257,7 @@ bool BacktraceLocalContext::SignalRequestThread(int32_t tid, ThreadContext* ctx)
         }
 
         if (left <= 0 &&
-            ctx->tid.compare_exchange_strong(tid,
-            static_cast<int32_t>(ThreadContextStatus::CONTEXT_UNUSED))) {
+            ctx->tid.compare_exchange_strong(tid, static_cast<int32_t>(ThreadContextStatus::CONTEXT_UNUSED))) {
             DFXLOG_WARN("Failed to wait for %d to write context.", tid);
             return false;
         }

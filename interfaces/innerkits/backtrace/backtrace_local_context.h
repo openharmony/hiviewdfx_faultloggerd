@@ -26,9 +26,9 @@ namespace OHOS {
 namespace HiviewDFX {
 enum ThreadContextStatus {
     CONTEXT_UNUSED = -1,
-    CONTEXT_USING = -2,
-    CONTEXT_READY = -3,
+    CONTEXT_READY = -2,
 };
+
 struct ThreadContext {
     std::atomic<int32_t> tid {ThreadContextStatus::CONTEXT_UNUSED};
     // for protecting ctx, shared between threads
@@ -47,6 +47,7 @@ struct ThreadContext {
         }
     };
 };
+
 class BacktraceLocalContext {
 public:
     static BacktraceLocalContext& GetInstance();
