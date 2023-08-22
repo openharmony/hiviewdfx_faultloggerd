@@ -68,11 +68,6 @@ void DfxRegsArm64::SetFromUcontext(const ucontext_t &context)
     SetRegsData(regs);
 }
 
-void DfxRegsArm64::GetLocalRegs()
-{
-    GetLocalRegsAsm(RawData());
-}
-
 void DfxRegsArm64::SetFromFpMiniRegs(const uintptr_t* regs)
 {
     regsData_[REG_AARCH64_X29] = regs[0];
@@ -123,6 +118,33 @@ std::string DfxRegsArm64::PrintRegs() const
 
     std::string regString = StringPrintf("Registers:\n%s", buf);
     return regString;
+}
+
+bool DfxRegsArm64::StepIfSignalHandler(uint64_t relPc, DfxElf* elf, DfxMemory* memory)
+{
+    if (elf == nullptr || !elf->IsValid() || (relPc < static_cast<uint64_t>(elf->GetLoadBias()))) {
+        return false;
+    }
+    uint64_t elfOffset = relPc - elf->GetLoadBias();
+    uint64_t data;
+    if (!elf->Read(elfOffset, &data, sizeof(data))) {
+        return false;
+    }
+
+    // Look for the kernel sigreturn function.
+    // __kernel_rt_sigreturn:
+    // 0xd2801168     mov x8, #0x8b
+    // 0xd4000001     svc #0x0
+    if (data != 0xd4000001d2801168ULL) {
+        return false;
+    }
+
+    // SP + sizeof(siginfo_t) + uc_mcontext offset + X0 offset.
+    uint64_t offset = regsData_[REG_SP] + 0x80 + 0xb0 + 0x08;
+    if (!memory->Read(&offset, regsData_.data(), sizeof(uint64_t) * REG_LAST)) {
+        return false;
+    }
+    return true;
 }
 } // namespace HiviewDFX
 } // namespace OHOS

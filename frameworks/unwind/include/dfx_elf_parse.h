@@ -50,6 +50,8 @@ public:
     virtual bool GetSymSection(ElfShdr& shdr, const std::string secName);
     virtual bool GetSectionInfo(ShdrInfo& shdr, const std::string secName);
     const std::unordered_map<uint64_t, ElfLoadInfo>& GetPtLoads() {return ptLoads_;}
+    bool GetArmExdixInfo(ShdrInfo& shdr);
+    bool GetEhFrameHdrInfo(ShdrInfo& shdr);
     bool Read(uint64_t pos, void *buf, size_t size);
 
 protected:
@@ -72,8 +74,6 @@ protected:
     bool ParseStrTab(std::string& nameStr, const uint64_t offset, const uint64_t size);
     bool GetSectionNameByIndex(std::string& nameStr, const uint32_t name);
     const char* GetStrTabPtr(const uint32_t link);
-    bool GetArmExdixInfo(ShdrInfo& shdr);
-    bool GetEhFrameHdrInfo(ShdrInfo& shdr);
 
 protected:
     std::vector<ElfSymbol> elfSymbols_;
@@ -82,8 +82,6 @@ private:
     std::shared_ptr<DfxMmap> mmap_;
     ArchType archType_ = ARCH_UNKNOWN;
     uint64_t maxSize_ = 0;
-    uint64_t startExecVaddr_ = 0;
-    uint64_t endExecVaddr_ = 0;
     int64_t loadBias_ = 0;
     std::unordered_map<std::string, ElfShdr> symShdrs_;
     std::map<const std::string, ShdrInfo> shdrInfos_;

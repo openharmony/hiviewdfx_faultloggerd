@@ -30,7 +30,7 @@ namespace {
 
 uintptr_t DfxDwarfMemory::ReadUintptr(uintptr_t* addr)
 {
-    return Read<uintptr_t>(addr, true);
+    return memory_->Read<uintptr_t>(addr, true);
 }
 
 uint64_t DfxDwarfMemory::ReadUleb128(uintptr_t* addr)
@@ -39,7 +39,7 @@ uint64_t DfxDwarfMemory::ReadUleb128(uintptr_t* addr)
     uint64_t shift = 0;
     uint8_t byte;
     do {
-        byte = Read<uint8_t>(addr, true);
+        byte = memory_->Read<uint8_t>(addr, true);
 
         val |= static_cast<uint64_t>(byte & 0x7f) << shift;
         shift += 7;
@@ -53,7 +53,7 @@ int64_t DfxDwarfMemory::ReadSleb128(uintptr_t* addr)
     uint64_t shift = 0;
     uint8_t byte;
     do {
-        byte = Read<uint8_t>(addr, true);
+        byte = memory_->Read<uint8_t>(addr, true);
 
         val |= static_cast<uint64_t>(byte & 0x7f) << shift;
         shift += 7;
@@ -114,35 +114,35 @@ bool DfxDwarfMemory::ReadEncodedValue(uintptr_t* addr, uintptr_t* val, uint8_t e
             *val = static_cast<uintptr_t>(ReadSleb128(addr));
             break;
         case DW_EH_PE_udata1: {
-            *val = static_cast<uintptr_t>(Read<uint8_t>(addr, true));
+            *val = static_cast<uintptr_t>(memory_->Read<uint8_t>(addr, true));
         }
             break;
         case DW_EH_PE_sdata1: {
-            *val = static_cast<uintptr_t>(Read<int8_t>(addr, true));
+            *val = static_cast<uintptr_t>(memory_->Read<int8_t>(addr, true));
         }
             break;
         case DW_EH_PE_udata2: {
-            *val = static_cast<uintptr_t>(Read<uint16_t>(addr, true));
+            *val = static_cast<uintptr_t>(memory_->Read<uint16_t>(addr, true));
         }
             break;
         case DW_EH_PE_sdata2: {
-            *val = static_cast<uintptr_t>(Read<int16_t>(addr, true));
+            *val = static_cast<uintptr_t>(memory_->Read<int16_t>(addr, true));
         }
             break;
         case DW_EH_PE_udata4: {
-            *val = static_cast<uintptr_t>(Read<uint32_t>(addr, true));
+            *val = static_cast<uintptr_t>(memory_->Read<uint32_t>(addr, true));
         }
             break;
         case DW_EH_PE_sdata4: {
-            *val = static_cast<uintptr_t>(Read<int32_t>(addr, true));
+            *val = static_cast<uintptr_t>(memory_->Read<int32_t>(addr, true));
         }
             break;
         case DW_EH_PE_udata8: {
-            *val = static_cast<uintptr_t>(Read<uint64_t>(addr, true));
+            *val = static_cast<uintptr_t>(memory_->Read<uint64_t>(addr, true));
         }
             break;
         case DW_EH_PE_sdata8: {
-            *val = static_cast<uintptr_t>(Read<int64_t>(addr, true));
+            *val = static_cast<uintptr_t>(memory_->Read<int64_t>(addr, true));
         }
             break;
         default:

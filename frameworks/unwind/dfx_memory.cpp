@@ -38,35 +38,86 @@ int DfxMemory::ReadMem(uintptr_t addr, uintptr_t *val)
     return acc_->AccessMem(addr, val, 0, ctx_);
 }
 
-int DfxMemory::Read(uintptr_t* addr, void* val, size_t size)
+int DfxMemory::Read(uintptr_t* addr, void* val, size_t size, bool incre)
 {
-    int ret = UNW_ERROR_NONE;
-    switch (size) {
-        case 1: {
-            uint8_t* valp = reinterpret_cast<uint8_t *>(val);
-            ret = acc_->ReadU8(addr, valp, ctx_);
-        }
-            break;
-        case 2: {
-            uint16_t* valp = reinterpret_cast<uint16_t *>(val);
-            ret = acc_->ReadU16(addr, valp, ctx_);
-        }
-            break;
-        case 4: {
-            uint32_t* valp = reinterpret_cast<uint32_t *>(val);
-            ret = acc_->ReadU32(addr, valp, ctx_);
-        }
-            break;
-        case 8: {
-            uint64_t* valp = reinterpret_cast<uint64_t *>(val);
-            ret = acc_->ReadU64(addr, valp, ctx_);
-        }
-            break;
-        default:
-            ret = UNW_ERROR_ILLEGAL_VALUE;
-            break;
+    uintptr_t tmpAddr = *addr;
+    LOGU("addr: %llx", static_cast<uint64_t>(tmpAddr));
+    uint64_t maxSize;
+    if (__builtin_add_overflow(tmpAddr, size, &maxSize)) {
+        return 0;
     }
-    return ret;
+
+    size_t bytesRead = 0;
+    uintptr_t tmpVal;
+    size_t alignBytes = tmpAddr & (sizeof(uintptr_t) - 1);
+    if (alignBytes != 0) {
+        uintptr_t alignedAddr = tmpAddr & (~sizeof(uintptr_t) - 1);
+        LOGU("alignBytes: %d, alignedAddr: %llx", alignBytes, static_cast<uint64_t>(alignedAddr));
+        if (ReadMem(alignedAddr, &tmpVal) != UNW_ERROR_NONE) {
+            return bytesRead;
+        }
+        LOGU("tmpVal: %llx", static_cast<uint64_t>(tmpVal));
+        size_t copyBytes = std::min(sizeof(uintptr_t) - alignBytes, size);
+        LOGU("copyBytes: %d", copyBytes);
+        memcpy_s(val, copyBytes, reinterpret_cast<uint8_t*>(&tmpVal) + alignBytes, copyBytes);
+        tmpAddr += copyBytes;
+        val = reinterpret_cast<void*>(reinterpret_cast<uintptr_t>(val) + copyBytes);
+        size -= copyBytes;
+        bytesRead += copyBytes;
+    }
+
+    for (size_t i = 0; i < size / sizeof(uintptr_t); i++) {
+        if (ReadMem(tmpAddr, &tmpVal) != UNW_ERROR_NONE) {
+            return bytesRead;
+        }
+        LOGU("tmpVal: %llx", static_cast<uint64_t>(tmpVal));
+        memcpy_s(val, sizeof(uintptr_t), &tmpVal, sizeof(uintptr_t));
+        val = reinterpret_cast<void*>(reinterpret_cast<uintptr_t>(val) + sizeof(uintptr_t));
+        tmpAddr += sizeof(uintptr_t);
+        bytesRead += sizeof(uintptr_t);
+    }
+
+    size_t leftOver = size & (sizeof(uintptr_t) - 1);
+    LOGU("leftOver: %d", leftOver);
+    if (leftOver) {
+        if (ReadMem(tmpAddr, &tmpVal) != UNW_ERROR_NONE) {
+            return bytesRead;
+        }
+        LOGU("tmpVal: %llx", static_cast<uint64_t>(tmpVal));
+        memcpy_s(val, leftOver, &tmpVal, leftOver);
+        tmpAddr += leftOver;
+        bytesRead += leftOver;
+    }
+
+    if (incre) {
+        *addr = tmpAddr;
+    }
+    return bytesRead;
+}
+
+int DfxMemory::ReadU8(uintptr_t* addr, uint8_t *val, bool incre)
+{
+    return Read(addr, val, sizeof(uint8_t), incre);
+}
+
+int DfxMemory::ReadU16(uintptr_t* addr, uint16_t *val, bool incre)
+{
+    return Read(addr, val, sizeof(uint16_t), incre);
+}
+
+int DfxMemory::ReadU32(uintptr_t* addr, uint32_t *val, bool incre)
+{
+    return Read(addr, val, sizeof(uint32_t), incre);
+}
+
+int DfxMemory::ReadU64(uintptr_t* addr, uint64_t *val, bool incre)
+{
+    return Read(addr, val, sizeof(uint64_t), incre);
+}
+
+int DfxMemory::ReadUptr(uintptr_t* addr, uintptr_t *val, bool incre)
+{
+    return Read(addr, val, sizeof(uintptr_t), incre);
 }
 } // namespace HiviewDFX
 } // namespace OHOS

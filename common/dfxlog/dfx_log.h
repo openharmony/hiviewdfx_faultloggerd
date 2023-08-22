@@ -50,25 +50,6 @@ int DfxLogPrintV(const LogLevel logLevel, const unsigned int domain, const char*
 #define LOGE(fmt, ...) DFXLOG_PRINT(LOG_ERROR, LOG_DOMAIN, LOG_TAG, "[%s:%d]" fmt, (__FILENAME__), (__LINE__), ##__VA_ARGS__)
 #define LOGF(fmt, ...) DFXLOG_PRINT(LOG_FATAL, LOG_DOMAIN, LOG_TAG, "[%s:%d]" fmt, (__FILENAME__), (__LINE__), ##__VA_ARGS__)
 
-#ifndef LOG_CHECK_MSG
-#define LOG_CHECK_MSG(condition, ...) \
-    if (!(condition)) { \
-        LOGE(" check failed: %s ", #condition, ##__VA_ARGS__); \
-    }
-#endif
-
-#ifndef LOG_CHECK
-#define LOG_CHECK(condition) LOG_CHECK_MSG(condition, "")
-#endif
-
-#ifndef LOG_CHECK_ABORT
-#define LOG_CHECK_ABORT(condition) \
-    if (!(condition)) { \
-        LOGF(" check abort: %s", #condition); \
-        abort(); \
-    }
-#endif
-
 #else
 #define DFXLOG_PRINT(prio, domain, tag, ...)
 #define DFXLOG_PRINTV(prio, domain, tag, fmt, args)
@@ -84,10 +65,25 @@ int DfxLogPrintV(const LogLevel logLevel, const unsigned int domain, const char*
 #define LOGW(fmt, ...)
 #define LOGE(fmt, ...)
 #define LOGF(fmt, ...)
+#endif
 
-#define LOG_CHECK_MSG(condition, ...)
-#define LOG_CHECK(condition)
-#define LOG_CHECK_ABORT(condition)
+#ifndef LOG_CHECK_MSG
+#define LOG_CHECK_MSG(condition, ...) \
+    if (__builtin_expect(!(condition), false)) { \
+        LOGE(" check failed: %s ", #condition, ##__VA_ARGS__); \
+    }
+#endif
+
+#ifndef LOG_CHECK
+#define LOG_CHECK(condition) LOG_CHECK_MSG(condition, "")
+#endif
+
+#ifndef LOG_CHECK_ABORT
+#define LOG_CHECK_ABORT(condition) \
+    if (__builtin_expect(!(condition), false)) { \
+        LOGF(" check abort: %s", #condition); \
+        abort(); \
+    }
 #endif
 
 #ifdef DFX_LOG_UNWIND

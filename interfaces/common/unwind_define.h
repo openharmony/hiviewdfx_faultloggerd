@@ -37,14 +37,6 @@ namespace HiviewDFX {
 static const int FRAME_MAX_SIZE = 64;
 static const int REGS_MAX_SIZE = 64;
 
-typedef union __attribute__ ((packed)) {
-    uint8_t u8;
-    uint16_t u16;
-    uint32_t u32;
-    uint64_t u64;
-    void *ptr;
-} UnwindAlignedValue;
-
 /**
  * @brief chip architecture
  */

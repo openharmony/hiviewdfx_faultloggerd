@@ -132,12 +132,6 @@ bool ElfParse::ParseProgramHeaders(const EhdrType& ehdr)
             }
             LOGU("phdr.p_offset: %llx, phdr.p_vaddr: %llx", phdr.p_offset, phdr.p_vaddr);
             ptLoads_[phdr.p_offset] = ElfLoadInfo{phdr.p_offset, phdr.p_vaddr, static_cast<size_t>(phdr.p_memsz)};
-            if (phdr.p_vaddr < startExecVaddr_) {
-                startExecVaddr_ = phdr.p_vaddr;
-            }
-            if (phdr.p_vaddr + phdr.p_memsz > endExecVaddr_) {
-                endExecVaddr_ = phdr.p_vaddr + phdr.p_memsz;
-            }
 
             // Only set the load bias from the first executable load header.
             if (firstLoadHeader) {

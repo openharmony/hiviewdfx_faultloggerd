@@ -20,51 +20,10 @@
 #include <sstream>
 #include <string>
 #include <vector>
-#include "cpp_define.h"
+#include "string_view_util.h"
 
 namespace OHOS {
 namespace HiviewDFX {
-class StringViewHold {
-public:
-    static StringViewHold &Get()
-    {
-        static StringViewHold instance;
-        return instance;
-    }
-
-    ~StringViewHold()
-    {
-        Clean();
-    }
-
-    const char* Hold(STRING_VIEW view)
-    {
-        if (view.size() == 0) {
-            return "";
-        }
-
-        char *p = new (std::nothrow) char[view.size() + 1];
-        if (p == nullptr) {
-            return "";
-        }
-        p[view.size()] = '\0';
-        std::copy(view.data(), view.data() + view.size(), p);
-        views_.emplace_back(p);
-        return p;
-    }
-
-    // only use in UT
-    void Clean()
-    {
-        for (auto &p : views_) {
-            delete[] p;
-        }
-        views_.clear();
-    }
-private:
-    std::vector<char *> views_;
-};
-
 struct DfxSymbol {
     uint64_t funcVaddr_ = 0;
     uint64_t offsetToVaddr_ = 0;
@@ -88,11 +47,25 @@ struct DfxSymbol {
         size_ = size;
     }
 
-    void SetName(const std::string &name, const std::string &demangle, const std::string& module)
+    void SetName(const std::string &name, const std::string &demangle)
     {
-        name_ = name;
-        demangle_ = demangle;
-        module_ = module;
+        name_ = StringViewHold::Get().Hold(name);
+        demangle_ = StringViewHold::Get().Hold(demangle);
+    }
+
+    void SetTask(uint64_t taskVaddr, const std::string &comm)
+    {
+        taskVaddr_ = taskVaddr;
+        comm_ = StringViewHold::Get().Hold(comm);
+    }
+
+    void SetModule(const std::string &module)
+    {
+        module_ = StringViewHold::Get().Hold(module);
+    }
+    bool IsValid() const
+    {
+        return !module_.empty();
     }
 
     STRING_VIEW GetName() const
@@ -115,36 +88,34 @@ struct DfxSymbol {
         return unknow_;
     }
 
-    static bool SameVaddr(const DfxSymbol &a, const DfxSymbol &b)
-    {
-        return (a.funcVaddr_ == b.funcVaddr_);
-    }
-    bool Same(const DfxSymbol &b) const
-    {
-        return ((funcVaddr_ == b.funcVaddr_) && (demangle_ == b.demangle_));
-    }
-    bool operator==(const DfxSymbol &b) const
-    {
-        return Same(b);
-    }
-    bool operator!=(const DfxSymbol &b) const
-    {
-        return !Same(b);
-    }
-
-    bool IsValid() const
-    {
-        return !module_.empty();
-    }
-
     std::string ToString() const
     {
-        return "";
+        std::stringstream ss;
+        if (fileVaddr_ != 0) {
+            ss << "0x" << std::hex << fileVaddr_;
+        } else {
+            ss << "0x" << std::hex << taskVaddr_;
+        }
+        ss << " " << GetName();
+        return ss.str();
     };
 
     std::string ToDebugString() const
     {
-        return "";
+        std::stringstream ss;
+        ss << "0x" << std::setfill('0') << std::setw(sizeof(funcVaddr_) * 2) << std::hex << funcVaddr_;
+        ss << "|";
+        ss << std::setfill('0') << std::setw(sizeof(size_)) << size_;
+        ss << "|";
+        ss << demangle_ << "|";
+        ss << name_ << "|";
+        ss << (matched_ ? "matched" : "");
+        ss << " unknowname:" << unknow_.size();
+        ss << " task:" << (comm_.size() > 0 ? comm_ : "");
+        ss << "@" << taskVaddr_;
+        ss << " file:" << (module_.size() > 0 ? module_ : "");
+        ss << "@" << fileVaddr_;
+        return ss.str();
     };
 
     bool Contain(uint64_t addr) const
@@ -154,6 +125,19 @@ struct DfxSymbol {
         } else {
             return (funcVaddr_ <= addr) && ((funcVaddr_ + size_) > addr);
         }
+    }
+
+    bool Equal(const DfxSymbol &b) const
+    {
+        return ((funcVaddr_ == b.funcVaddr_) && (demangle_ == b.demangle_));
+    }
+    bool operator==(const DfxSymbol &b) const
+    {
+        return Equal(b);
+    }
+    bool operator!=(const DfxSymbol &b) const
+    {
+        return !Equal(b);
     }
 
     // The range [first, last) must be partitioned with respect to the expression
@@ -166,14 +150,6 @@ struct DfxSymbol {
     {
         return vaddr <= a.funcVaddr_;
     }
-    static bool CompareLessThen(const DfxSymbol &a, const DfxSymbol &b)
-    {
-        return a.funcVaddr_ < b.funcVaddr_; // we should use vaddr to sort
-    };
-    static bool CompareByPointer(const DfxSymbol *a, const DfxSymbol *b)
-    {
-        return a->funcVaddr_ < b->funcVaddr_; // we should use vaddr to sort
-    };
 };
 } // namespace HiviewDFX
 } // namespace OHOS

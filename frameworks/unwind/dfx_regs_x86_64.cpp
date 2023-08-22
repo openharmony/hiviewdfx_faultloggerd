@@ -83,6 +83,44 @@ std::string DfxRegsX86_64::PrintRegs() const
     std::string regString = StringPrintf("Registers:\n%s", buf);
     return regString;
 }
+
+bool DfxRegsX86_64::StepIfSignalHandler(uint64_t relPc, DfxElf* elf, DfxMemory* memory)
+{
+    if (elf == nullptr || !elf->IsValid() || (relPc < static_cast<uint64_t>(elf->GetLoadBias()))) {
+        return false;
+    }
+    uint64_t elfOffset = relPc - elf->GetLoadBias();
+    uint64_t data;
+    if (!elf->Read(elfOffset, &data, sizeof(data))) {
+        return false;
+    }
+
+    // __restore_rt:
+    // 0x48 0xc7 0xc0 0x0f 0x00 0x00 0x00   mov $0xf,%rax
+    // 0x0f 0x05                            syscall
+    // 0x0f                                 nopl 0x0($rax)
+    if (data != 0x0f0000000fc0c748) {
+        return false;
+    }
+
+    uint16_t data2;
+    if (!elf->Read(elfOffset + sizeof(uint64_t), &data2, sizeof(data2))) {
+        return false;
+    }
+    if (data2 != 0x0f05) {
+        return false;
+    }
+
+    // Read the mcontext data from the stack.
+    // sp points to the ucontext data structure, read only the mcontext part.
+    ucontext_t ucontext;
+    uint64_t offset = regsData_[REG_SP] + 0x28;
+    if (!memory->Read(&offset, &ucontext.uc_mcontext, sizeof(ucontext))) {
+        return false;
+    }
+    SetFromUcontext(ucontext);
+    return true;
+}
 } // namespace HiviewDFX
 } // namespace OHOS
 #endif

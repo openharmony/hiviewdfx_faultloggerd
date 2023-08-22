@@ -26,16 +26,14 @@ namespace HiviewDFX {
 class DfxAccessors
 {
 public:
-    DfxAccessors() = default;
+    DfxAccessors(int bigEndian = UNWIND_BYTE_ORDER) : bigEndian_(bigEndian) {}
     virtual ~DfxAccessors() = default;
 
-    virtual int ReadU8(uintptr_t* addr, uint8_t *val, void *arg) = 0;
-    virtual int ReadU16(uintptr_t* addr, uint16_t *val, void *arg) = 0;
-    virtual int ReadU32(uintptr_t* addr, uint32_t *val, void *arg) = 0;
-    virtual int ReadU64(uintptr_t* addr, uint64_t *val, void *arg) = 0;
     virtual int AccessMem(uintptr_t addr, uintptr_t *val, int write, void *arg) = 0;
     virtual int AccessReg(int reg, uintptr_t *val, int write, void *arg) = 0;
     virtual int FindProcInfo(uintptr_t pc, UnwindProcInfo *procInfo, int needUnwindInfo, void *arg) = 0;
+
+    int bigEndian_ = UNWIND_BYTE_ORDER;
 };
 
 class DfxAccessorsLocal : public DfxAccessors
@@ -44,10 +42,6 @@ public:
     DfxAccessorsLocal() = default;
     virtual ~DfxAccessorsLocal() = default;
 
-    int ReadU8(uintptr_t* addr, uint8_t *val, void *arg) override;
-    int ReadU16(uintptr_t* addr, uint16_t *val, void *arg) override;
-    int ReadU32(uintptr_t* addr, uint32_t *val, void *arg) override;
-    int ReadU64(uintptr_t* addr, uint64_t *val, void *arg) override;
     int AccessMem(uintptr_t addr, uintptr_t *val, int write, void *arg) override;
     int AccessReg(int reg, uintptr_t *val, int write, void *arg) override;
     int FindProcInfo(uintptr_t pc, UnwindProcInfo *procInfo, int needUnwindInfo, void *arg) override;
@@ -56,19 +50,12 @@ public:
 class DfxAccessorsRemote : public DfxAccessors
 {
 public:
-    DfxAccessorsRemote(pid_t pid, int bigEndian = UNWIND_BYTE_ORDER) : pid_(pid), bigEndian_(bigEndian) {}
+    DfxAccessorsRemote() = default;
     virtual ~DfxAccessorsRemote() = default;
 
-    int ReadU8(uintptr_t* addr, uint8_t *val, void *arg) override;
-    int ReadU16(uintptr_t* addr, uint16_t *val, void *arg) override;
-    int ReadU32(uintptr_t* addr, uint32_t *val, void *arg) override;
-    int ReadU64(uintptr_t* addr, uint64_t *val, void *arg) override;
     int AccessMem(uintptr_t addr, uintptr_t *val, int write, void *arg) override;
     int AccessReg(int reg, uintptr_t *val, int write, void *arg) override;
     int FindProcInfo(uintptr_t pc, UnwindProcInfo *procInfo, int needUnwindInfo, void *arg) override;
-private:
-    MAYBE_UNUSED pid_t pid_ = -1;
-    MAYBE_UNUSED int bigEndian_ = UNWIND_BYTE_ORDER;
 };
 } // namespace HiviewDFX
 } // namespace OHOS

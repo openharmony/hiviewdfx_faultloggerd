@@ -20,6 +20,7 @@
 #include <memory>
 #include <mutex>
 #include <string>
+#include <sys/stat.h>
 
 namespace OHOS {
 namespace HiviewDFX {
@@ -36,25 +37,44 @@ public:
     DfxMap() = default;
     DfxMap(DfxMap* prevMap, uint64_t begin, uint64_t end, uint64_t offset,
         const std::string& perms, const std::string& name)
-        : begin(begin), end(end), offset(offset), perms(perms), name(name), prevMap(prevMap) {}
+        : prevMap(prevMap), begin(begin), end(end), offset(offset), perms(perms), name(name) {}
 
     bool Parse(const std::string buf, int size);
     bool IsValidName();
     bool IsArkName();
-    const std::shared_ptr<DfxElf>& GetElf() const;
+    const std::shared_ptr<DfxElf>& GetElf();
     uint64_t GetRelPc(uint64_t pc);
     std::string ToString();
 
+    DfxMap* prevMap;
     uint64_t begin = 0;
     uint64_t end = 0;
     uint64_t offset = 0;
     uint64_t prots = 0;
+    uint64_t major = 0;
+    uint64_t minor = 0;
+    ino_t inode = 0;
     std::string perms = ""; // 5:rwxp
     std::string name = "";
     std::shared_ptr<DfxElf> elf;
     uint64_t elfOffset = 0;
     uint64_t elfStartOffset = 0;
-    DfxMap* prevMap;
+
+    bool Contain(uint64_t pc) const
+    {
+        return (pc >= begin && pc < end);
+    }
+
+    // The range [first, last) must be partitioned with respect to the expression
+    // !(value < element) or !comp(value, element)
+    static bool ValueLessThen(uint64_t vaddr, const DfxMap &a)
+    {
+        return vaddr < a.begin;
+    }
+    static bool ValueLessEqual(uint64_t vaddr, const DfxMap &a)
+    {
+        return vaddr <= a.begin;
+    }
 };
 } // namespace HiviewDFX
 } // namespace OHOS

@@ -38,11 +38,11 @@ namespace {
 
 std::shared_ptr<DfxMap> DfxMap::Create(const std::string buf, int size)
 {
-    auto elfMap = std::make_shared<DfxMap>();
-    if (elfMap->Parse(buf, size) == false) {
+    auto map = std::make_shared<DfxMap>();
+    if (map->Parse(buf, size) == false) {
         return nullptr;
     }
-    return elfMap;
+    return map;
 }
 
 bool DfxMap::Parse(const std::string buf, int size)
@@ -51,11 +51,14 @@ bool DfxMap::Parse(const std::string buf, int size)
     uint64_t begin = 0;
     uint64_t end = 0;
     uint64_t offset = 0;
+    uint64_t major = 0;
+    uint64_t minor = 0;
+    ino_t inode = 0;
     char perms[5] = {0}; // 5:rwxp
 
     // 7658d38000-7658d40000 rw-p 00000000 00:00 0                              [anon:thread signal stack]
-    if (sscanf_s(buf.c_str(), "%" SCNxPTR "-%" SCNxPTR " %4s %" SCNxPTR " %*x:%*x %*d%n",
-        &begin, &end, &perms, sizeof(perms), &offset, &pos) != 4) { // 4:scan size
+    if (sscanf_s(buf.c_str(), "%" SCNxPTR "-%" SCNxPTR " %4s %" SCNxPTR " %x:%x %" SCNxPTR " %*d%n",
+        &begin, &end, &perms, sizeof(perms), &offset, &major, &minor, &inode, &pos) != 7) { // 7:scan size
         DFXLOG_WARN("Fail to parse maps info.");
         return false;
     }
@@ -63,6 +66,9 @@ bool DfxMap::Parse(const std::string buf, int size)
     this->begin = begin;
     this->end = end;
     this->offset = offset;
+    this->major = major;
+    this->minor = minor;
+    this->inode = inode;
     this->perms = std::string(perms, sizeof(perms));
     PermsToProts(this->perms, this->prots);
     TrimAndDupStr(buf.substr(pos), this->name);
@@ -103,7 +109,10 @@ bool DfxMap::IsArkName()
 
 uint64_t DfxMap::GetRelPc(uint64_t pc)
 {
-    return pc - begin + offset + elf->GetLoadBias();
+    if (GetElf() != nullptr) {
+        return GetElf()->GetRelPc(pc, begin, offset);
+    }
+    return (pc - begin + offset);
 }
 
 std::string DfxMap::ToString()
@@ -133,8 +142,13 @@ void DfxMap::PermsToProts(const std::string perms, uint64_t& prots)
     }
 }
 
-const std::shared_ptr<DfxElf>& DfxMap::GetElf() const
+const std::shared_ptr<DfxElf>& DfxMap::GetElf()
 {
+    if (elf == nullptr) {
+        if (!name.empty()) {
+            elf = DfxElf::Create(name);
+        }
+    }
     return elf;
 }
 } // namespace HiviewDFX

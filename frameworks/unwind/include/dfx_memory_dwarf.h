@@ -27,20 +27,6 @@ public:
     DfxDwarfMemory(DfxMemory* memory) : memory_(memory) {}
     virtual ~DfxDwarfMemory() = default;
 
-    template <typename T>
-    T Read(uintptr_t* addr, bool advanceAddr = false)
-    {
-        T val = 0;
-        memory_->Read(addr, (void *)val, sizeof(T));
-
-        if (advanceAddr) {
-            const uint8_t* p = (uint8_t*)addr;
-            p += sizeof(T);
-            *addr = (uintptr_t)p;
-        }
-        return val;
-    }
-
     uintptr_t ReadUintptr(uintptr_t* addr);
     uint64_t ReadUleb128(uintptr_t* addr);
     int64_t ReadSleb128(uintptr_t* addr);
