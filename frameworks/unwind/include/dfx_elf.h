@@ -36,6 +36,7 @@ struct ElfFileInfo {
 
 class DfxElf final {
 public:
+    static std::shared_ptr<DfxElf> Create(const std::string& file);
     explicit DfxElf(const std::string& file) : file_(file) { Init(); }
     ~DfxElf() { Clear(); }
 
@@ -47,6 +48,7 @@ public:
     std::string GetBuildId();
     int64_t GetLoadBias();
     uint64_t GetMaxSize();
+    uint64_t GetRelPc(uint64_t pc, uint64_t mapStart, uint64_t mapOffset);
     const std::unordered_map<uint64_t, ElfLoadInfo>& GetPtLoads();
     const std::vector<ElfSymbol>& GetElfSymbols();
     bool GetSectionInfo(ShdrInfo& shdr, const std::string secName);
@@ -68,7 +70,8 @@ private:
     std::string file_;
     bool valid_ = false;
     uint8_t classType_;
-    std::string buildId_;
+    int64_t loadBias_ = 0;
+    std::string buildId_ = "";
     std::shared_ptr<DfxMmap> mmap_;
     std::unique_ptr<ElfParse> elfParse_;
 };

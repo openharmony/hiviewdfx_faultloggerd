@@ -15,7 +15,10 @@
 
 #include "dfx_accessors.h"
 #include <algorithm>
+#include <elf.h>
 #include <securec.h>
+#include <sys/ptrace.h>
+#include <sys/uio.h>
 #include "dfx_define.h"
 #include "dfx_log.h"
 
@@ -31,9 +34,11 @@ namespace {
 int DfxAccessorsLocal::AccessMem(uintptr_t addr, uintptr_t *val, int write, void *arg)
 {
     if (write) {
+        LOGD("val: %llx", *val);
         *(uintptr_t *) addr = *val;
     } else {
         *val = *(uintptr_t *) addr;
+        LOGD("val: %llx", *val);
     }
     return UNW_ERROR_NONE;
 }
@@ -41,13 +46,19 @@ int DfxAccessorsLocal::AccessMem(uintptr_t addr, uintptr_t *val, int write, void
 int DfxAccessorsLocal::AccessReg(int reg, uintptr_t *val, int write, void *arg)
 {
     UnwindLocalContext* ctx = reinterpret_cast<UnwindLocalContext *>(arg);
-    if (reg > ctx->regsSize) {
+    if (ctx == nullptr || ctx->regs == nullptr) {
+        LOGE("ctx is null");
+        return UNW_ERROR_INVALID_CONTEXT;
+    }
+    if (reg < REG_EH || reg >= REG_LAST) {
+        LOGE("Error reg: %d", reg);
         return UNW_ERROR_INVALID_REGS;
     }
+    int idx = reg - REG_EH;
     if (write) {
-        *(uintptr_t *) ctx->regs[reg] = *val;
+        ctx->regs[idx] = *val;
     } else {
-        *val = *(uintptr_t *) ctx->regs[reg];
+        *val = ctx->regs[idx];
     }
     return UNW_ERROR_NONE;
 }
@@ -57,114 +68,89 @@ int DfxAccessorsLocal::FindProcInfo(uintptr_t pc, UnwindProcInfo *procInfo, int 
     return UNW_ERROR_NONE;
 }
 
-int DfxAccessorsLocal::ReadU8(uintptr_t* addr, uint8_t *val, void *arg)
-{
-    UnwindAlignedValue* ual = reinterpret_cast<UnwindAlignedValue *>(*addr);
-    *val = ual->u8;
-    *addr += sizeof(ual->u8);
-    return UNW_ERROR_NONE;
-}
-
-int DfxAccessorsLocal::ReadU16(uintptr_t* addr, uint16_t *val, void *arg)
-{
-    UnwindAlignedValue* ual = reinterpret_cast<UnwindAlignedValue *>(*addr);
-    *val = ual->u16;
-    *addr += sizeof(ual->u16);
-    return UNW_ERROR_NONE;
-}
-
-int DfxAccessorsLocal::ReadU32(uintptr_t* addr, uint32_t *val, void *arg)
-{
-    UnwindAlignedValue* ual = reinterpret_cast<UnwindAlignedValue *>(*addr);
-    *val = ual->u32;
-    *addr += sizeof(ual->u32);
-    return UNW_ERROR_NONE;
-}
-
-int DfxAccessorsLocal::ReadU64(uintptr_t* addr, uint64_t *val, void *arg)
-{
-    UnwindAlignedValue* ual = reinterpret_cast<UnwindAlignedValue *>(*addr);
-    *val = ual->u64;
-    *addr += sizeof(ual->u64);
-    return UNW_ERROR_NONE;
-}
-
 int DfxAccessorsRemote::AccessMem(uintptr_t addr, uintptr_t *val, int write, void *arg)
 {
+    UnwindPtraceContext *ctx = reinterpret_cast<UnwindPtraceContext *>(arg);
+    if (ctx == nullptr) {
+        return UNW_ERROR_INVALID_CONTEXT;
+    }
+    pid_t pid = ctx->pid;
+    int i, end;
+    if (sizeof(long) == 4 && sizeof(uintptr_t) == 8) {
+        end = 2;
+    } else {
+        end = 1;
+    }
+
+    uintptr_t tmpVal;
+    for (i = 0; i < end; i++) {
+        uintptr_t tmpAddr = ((i == 0) ? addr : addr + 4);
+        errno = 0;
+        if (write) {
+#if __BYTE_ORDER == __LITTLE_ENDIAN
+            tmpVal = (i == 0 ? *val : *val >> 32);
+#else
+            tmpVal = (i == 0 && end == 2 ? *val >> 32 : *val);
+#endif
+            LOGU("mem[%lx] <- %lx\n", (long) tmpAddr, (long) tmpVal);
+            ptrace(PTRACE_POKEDATA, pid, tmpAddr, tmpVal);
+            if (errno) {
+                return UNW_ERROR_ILLEGAL_VALUE;
+            }
+        } else {
+            tmpVal = (unsigned long) ptrace(PTRACE_PEEKDATA, pid, tmpAddr, nullptr);
+            if (i == 0) {
+                *val = 0;
+            }
+
+#if __BYTE_ORDER == __LITTLE_ENDIAN
+            *val |= tmpVal << (i * 32);
+#else
+            *val |= (i == 0 && end == 2 ? tmpVal << 32 : tmpVal);
+#endif
+            if (errno) {
+                return UNW_ERROR_ILLEGAL_VALUE;
+            }
+            LOGU("mem[%lx] -> %lx\n", (long) tmpAddr, (long) tmpVal);
+        }
+    }
     return UNW_ERROR_NONE;
 }
 
 int DfxAccessorsRemote::AccessReg(int reg, uintptr_t *val, int write, void *arg)
 {
+    UnwindPtraceContext *ctx = reinterpret_cast<UnwindPtraceContext *>(arg);
+    if (ctx == nullptr) {
+        return UNW_ERROR_INVALID_CONTEXT;
+    }
+    if (reg >= REG_LAST) {
+        return UNW_ERROR_INVALID_REGS;
+    }
+
+    pid_t pid = ctx->pid;
+    gregset_t regs;
+    struct iovec iov;
+    iov.iov_base = &regs;
+    iov.iov_len = sizeof(regs);
+    if (ptrace(PTRACE_GETREGSET, pid, NT_PRSTATUS, &iov) == -1) {
+        return UNW_ERROR_ILLEGAL_VALUE;
+    }
+
+    char *r = (char *)&regs + (reg * sizeof(uintptr_t));
+    if (write) {
+        memcpy_s(r, sizeof(uintptr_t), val, sizeof(uintptr_t));
+        if (ptrace(PTRACE_SETREGSET, pid, NT_PRSTATUS, &iov) == -1) {
+            return UNW_ERROR_ILLEGAL_VALUE;
+        }
+    } else {
+        memcpy_s(val, sizeof(uintptr_t), r, sizeof(uintptr_t));
+    }
     return UNW_ERROR_NONE;
 }
 
 int DfxAccessorsRemote::FindProcInfo(uintptr_t pc, UnwindProcInfo *procInfo, int needUnwindInfo, void *arg)
 {
     return UNW_ERROR_NONE;
-}
-
-int DfxAccessorsRemote::ReadU8(uintptr_t* addr, uint8_t *val, void *arg)
-{
-    uintptr_t valp, alignedAddr = *addr & (~sizeof(uintptr_t) + 1);
-    uintptr_t off = *addr - alignedAddr;
-    *addr += sizeof(uint8_t);
-    int ret = AccessMem(alignedAddr, &valp, 0, arg);
-#if UNWIND_BYTE_ORDER == UNWIND_LITTLE_ENDIAN
-    valp >>= 8 * off;
-#else
-    valp >>= 8 * (sizeof(uintptr_t) - 1 - off);
-#endif
-    *val = static_cast<uint8_t>(valp);
-    return ret;
-}
-
-int DfxAccessorsRemote::ReadU16(uintptr_t* addr, uint16_t *val, void *arg)
-{
-    int ret = UNW_ERROR_NONE;
-    uint8_t v0, v1;
-    if ((ret = ReadU8(addr, &v0, arg)) != UNW_ERROR_NONE
-        || (ret = ReadU8(addr, &v1, arg)) != UNW_ERROR_NONE) {
-        return ret;
-    }
-    if (bigEndian_ == UNWIND_LITTLE_ENDIAN) {
-        *val = static_cast<uint16_t>(v1 << 8 | v0);
-    } else {
-        *val = static_cast<uint16_t>(v0 << 8 | v1);
-    }
-    return ret;
-}
-
-int DfxAccessorsRemote::ReadU32(uintptr_t* addr, uint32_t *val, void *arg)
-{
-    int ret = UNW_ERROR_NONE;
-    uint16_t v0, v1;
-    if ((ret = ReadU16(addr, &v0, arg)) != UNW_ERROR_NONE
-        || (ret = ReadU16(addr, &v1, arg)) != UNW_ERROR_NONE) {
-        return ret;
-    }
-    if (bigEndian_ == UNWIND_LITTLE_ENDIAN) {
-        *val = static_cast<uint16_t>(v1 << 16 | v0);
-    } else {
-        *val = static_cast<uint16_t>(v0 << 16 | v1);
-    }
-    return ret;
-}
-
-int DfxAccessorsRemote::ReadU64(uintptr_t* addr, uint64_t *val, void *arg)
-{
-    int ret = UNW_ERROR_NONE;
-    uint32_t v0, v1;
-    if ((ret = ReadU32(addr, &v0, arg)) != UNW_ERROR_NONE
-        || (ret = ReadU32(addr, &v1, arg)) != UNW_ERROR_NONE) {
-        return ret;
-    }
-    if (bigEndian_ == UNWIND_LITTLE_ENDIAN) {
-        *val = static_cast<uint16_t>(v1 << 32 | v0);
-    } else {
-        *val = static_cast<uint16_t>(v0 << 32 | v1);
-    }
-    return ret;
 }
 } // namespace HiviewDFX
 } // namespace OHOS

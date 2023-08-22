@@ -22,6 +22,26 @@
 #include "dfx_elf.h"
 #include "string_printf.h"
 
+#define ARM_NR_sigreturn 119
+#define ARM_NR_rt_sigreturn 173
+#define ARM_NR_OABI_SYSCALL_BASE 0x900000
+
+/* ARM EABI sigreturn (the syscall number is loaded into r7) */
+#define MOV_R7_SIGRETURN (0xe3a07000UL | ARM_NR_sigreturn)
+#define MOV_R7_RT_SIGRETURN (0xe3a07000UL | ARM_NR_rt_sigreturn)
+
+/* ARM OABI sigreturn (using SWI) */
+#define ARM_SIGRETURN (0xef000000UL | ARM_NR_sigreturn | ARM_NR_OABI_SYSCALL_BASE)
+#define ARM_RT_SIGRETURN (0xef000000UL | ARM_NR_rt_sigreturn | ARM_NR_OABI_SYSCALL_BASE)
+
+/* Thumb sigreturn (two insns, syscall number is loaded into r7) */
+#define THUMB_SIGRETURN (0xdf00UL << 16 | 0x2700 | ARM_NR_sigreturn)
+#define THUMB_RT_SIGRETURN (0xdf00UL << 16 | 0x2700 | ARM_NR_rt_sigreturn)
+
+/* Thumb2 sigreturn (mov.w r7, $SYS_ify(rt_sigreturn/sigreturn)) */
+#define THUMB2_SIGRETURN (((0x0700 | ARM_NR_sigreturn) << 16) | 0xf04f)
+#define THUMB2_RT_SIGRETURN (((0x0700 | ARM_NR_rt_sigreturn) << 16) | 0xf04f)
+
 namespace OHOS {
 namespace HiviewDFX {
 void DfxRegsArm::SetFromUcontext(const ucontext_t& context)
@@ -84,6 +104,80 @@ std::string DfxRegsArm::PrintRegs() const
 
     std::string regString = StringPrintf("Registers:\n%s", buf);
     return regString;
+}
+
+bool DfxRegsArm::StepIfSignalHandler(uint64_t relPc, DfxElf* elf, DfxMemory* memory)
+{
+    if (elf == nullptr || !elf->IsValid() || (relPc < static_cast<uint64_t>(elf->GetLoadBias()))) {
+        return false;
+    }
+    uint64_t elfOffset = relPc - elf->GetLoadBias();
+    uint32_t data;
+    if (!elf->Read(elfOffset, &data, sizeof(data))) {
+        return false;
+    }
+
+    uintptr_t offset = 0;
+    if (data == MOV_R7_SIGRETURN || data == ARM_SIGRETURN
+        || data == THUMB_SIGRETURN || data == THUMB2_SIGRETURN) {
+        uintptr_t sp = regsData_[REG_SP];
+        // non-RT sigreturn call.
+        // __restore:
+        //
+        // Form 1 (arm):
+        // 0x77 0x70              mov r7, #0x77
+        // 0xa0 0xe3              svc 0x00000000
+        //
+        // Form 2 (arm):
+        // 0x77 0x00 0x90 0xef    svc 0x00900077
+        //
+        // Form 3 (thumb):
+        // 0x77 0x27              movs r7, #77
+        // 0x00 0xdf              svc 0
+        if (!memory->Read(&sp, &data, sizeof(data))) {
+            return false;
+        }
+        if (data == 0x5ac3c35a) {
+            // SP + uc_mcontext offset + r0 offset.
+            offset = sp + 0x14 + 0xc;
+        } else {
+            // SP + r0 offset
+            offset = sp + 0xc;
+        }
+    } else if (data == MOV_R7_RT_SIGRETURN || data == ARM_RT_SIGRETURN
+        || data == THUMB_RT_SIGRETURN || data == THUMB2_RT_SIGRETURN) {
+        uintptr_t sp = regsData_[REG_SP];
+        // RT sigreturn call.
+        // __restore_rt:
+        //
+        // Form 1 (arm):
+        // 0xad 0x70      mov r7, #0xad
+        // 0xa0 0xe3      svc 0x00000000
+        //
+        // Form 2 (arm):
+        // 0xad 0x00 0x90 0xef    svc 0x009000ad
+        //
+        // Form 3 (thumb):
+        // 0xad 0x27              movs r7, #ad
+        // 0x00 0xdf              svc 0
+        if (!memory->Read(&sp, &data, sizeof(data))) {
+            return false;
+        }
+        if (data == sp + 8) {
+            // SP + 8 + sizeof(siginfo_t) + uc_mcontext_offset + r0 offset
+            offset = sp + 8 + 0x80 + 0x14 + 0xc;
+        } else {
+            // SP + sizeof(siginfo_t) + uc_mcontext_offset + r0 offset
+            offset = sp + 0x80 + 0x14 + 0xc;
+        }
+    }
+    if (offset == 0) {
+        return false;
+    }
+    if (!memory->Read(&offset, regsData_.data(), sizeof(uint32_t) * REG_LAST)) {
+        return false;
+    }
+    return true;
 }
 } // namespace HiviewDFX
 } // namespace OHOS

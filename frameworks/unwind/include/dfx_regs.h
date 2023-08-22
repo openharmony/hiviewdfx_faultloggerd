@@ -22,12 +22,12 @@
 #include <ucontext.h>
 #include <vector>
 #include "dfx_define.h"
+#include "dfx_elf.h"
+#include "dfx_memory.h"
 #include "unwind_define.h"
 
 namespace OHOS {
 namespace HiviewDFX {
-class DfxElf;
-
 class DfxRegs {
 public:
     DfxRegs() : regsData_(REG_LAST) {}
@@ -40,6 +40,7 @@ public:
     virtual void SetFromFpMiniRegs(const uintptr_t* regs) = 0;
     virtual void SetFromQutMiniRegs(const uintptr_t* regs) = 0;
     virtual std::string PrintRegs() const = 0;
+    virtual bool StepIfSignalHandler(uint64_t relPc, DfxElf* elf, DfxMemory* memory) = 0;
 
     uint16_t TotalRegsSize() const { return regsSize_; }
     inline uintptr_t& operator[](size_t idx) { return regsData_[idx]; }
@@ -74,6 +75,7 @@ public:
     void SetFromFpMiniRegs(const uintptr_t* regs) override;
     void SetFromQutMiniRegs(const uintptr_t* regs) override;
     std::string PrintRegs() const override;
+    bool StepIfSignalHandler(uint64_t relPc, DfxElf* elf, DfxMemory* memory) override;
 };
 
 class DfxRegsArm64 : public DfxRegs {
@@ -81,9 +83,10 @@ public:
     DfxRegsArm64() = default;
     ~DfxRegsArm64() = default;
     void SetFromUcontext(const ucontext_t& context) override;
-    std::string PrintRegs() const override;
     void SetFromFpMiniRegs(const uintptr_t* regs) override;
     void SetFromQutMiniRegs(const uintptr_t* regs) override;
+    std::string PrintRegs() const override;
+    bool StepIfSignalHandler(uint64_t relPc, DfxElf* elf, DfxMemory* memory) override;
 };
 
 class DfxRegsX86_64 : public DfxRegs {
@@ -91,9 +94,10 @@ public:
     DfxRegsX86_64() = default;
     ~DfxRegsX86_64() = default;
     void SetFromUcontext(const ucontext_t& context) override;
-    std::string PrintRegs() const override;
     void SetFromFpMiniRegs(const uintptr_t* regs) override;
     void SetFromQutMiniRegs(const uintptr_t* regs) override;
+    std::string PrintRegs() const override;
+    bool StepIfSignalHandler(uint64_t relPc, DfxElf* elf, DfxMemory* memory) override;
 };
 } // namespace HiviewDFX
 } // namespace OHOS

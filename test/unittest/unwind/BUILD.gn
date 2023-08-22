@@ -28,6 +28,7 @@ ohos_unittest("test_unwind") {
   sources = [
     "arch_util_test.cpp",
     "elf_test.cpp",
+    "memory_test.cpp",
   ]
   deps = [
     "$faultloggerd_common_path/dfxutil:dfx_util",

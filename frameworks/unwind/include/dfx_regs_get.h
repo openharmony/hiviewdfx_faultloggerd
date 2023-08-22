@@ -144,7 +144,7 @@ inline AT_ALWAYS_INLINE void GetQuickenMiniRegsAsm(void *regs)
     : "x12", "x13", "memory");
 }
 
-#if defined(__x86_64__)
+#elif defined(__x86_64__)
 
 inline AT_ALWAYS_INLINE void GetLocalRegs(void* regs)
 {

@@ -39,6 +39,15 @@ namespace {
 #define LOG_TAG "DfxElf"
 }
 
+std::shared_ptr<DfxElf> DfxElf::Create(const std::string& path)
+{
+    auto elf = std::make_shared<DfxElf>(path);
+    if (elf->IsValid()) {
+        return elf;
+    }
+    return nullptr;
+}
+
 bool DfxElf::Init()
 {
     if (mmap_ == nullptr) {
@@ -135,11 +144,19 @@ ArchType DfxElf::GetArchType()
 
 int64_t DfxElf::GetLoadBias()
 {
-    std::lock_guard<std::mutex> lock(mutex_);
-    if (!IsValid()) {
-        return 0;
+    if (loadBias_ == 0) {
+        std::lock_guard<std::mutex> lock(mutex_);
+        if (!IsValid()) {
+            return 0;
+        }
+        loadBias_ = elfParse_->GetLoadBias();
     }
-    return elfParse_->GetLoadBias();
+    return loadBias_;
+}
+
+uint64_t DfxElf::GetRelPc(uint64_t pc, uint64_t mapStart, uint64_t mapOffset)
+{
+    return (pc - mapStart + mapOffset + GetLoadBias());
 }
 
 uint64_t DfxElf::GetMaxSize()
@@ -162,16 +179,14 @@ std::string DfxElf::GetElfName()
 
 std::string DfxElf::GetBuildId()
 {
-    std::lock_guard<std::mutex> lock(mutex_);
-    if (!buildId_.empty()) {
-        return buildId_;
+    if (buildId_.empty()) {
+        std::lock_guard<std::mutex> lock(mutex_);
+        if (!IsValid()) {
+            return "";
+        }
+        std::string buildIdHex = elfParse_->GetBuildId();
+        buildId_ = ToReadableBuildId(buildIdHex);
     }
-
-    if (!IsValid()) {
-        return "";
-    }
-    std::string buildIdHex = elfParse_->GetBuildId();
-	buildId_ = ToReadableBuildId(buildIdHex);
     return buildId_;
 }
 
@@ -201,6 +216,24 @@ bool DfxElf::GetSectionInfo(ShdrInfo& shdr, const std::string secName)
          return false;
     }
     return elfParse_->GetSectionInfo(shdr, secName);
+}
+
+bool DfxElf::GetArmExdixInfo(ShdrInfo& shdr)
+{
+    std::lock_guard<std::mutex> lock(mutex_);
+    if (!IsValid()) {
+         return false;
+    }
+    return elfParse_->GetArmExdixInfo(shdr);
+}
+
+bool DfxElf::GetEhFrameHdrInfo(ShdrInfo& shdr)
+{
+    std::lock_guard<std::mutex> lock(mutex_);
+    if (!IsValid()) {
+         return false;
+    }
+    return elfParse_->GetEhFrameHdrInfo(shdr);
 }
 
 const std::vector<ElfSymbol>& DfxElf::GetElfSymbols()

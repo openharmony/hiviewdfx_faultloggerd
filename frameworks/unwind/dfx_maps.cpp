@@ -112,6 +112,18 @@ bool DfxMaps::FindMapByAddr(std::shared_ptr<DfxMap>& map, uintptr_t addr) const
 
 bool DfxMaps::FindMapByFileInfo(std::shared_ptr<DfxMap>& map, std::string name, uint64_t offset) const
 {
+    for (auto &iter : maps_) {
+        if (name != iter->name) {
+            continue;
+        }
+
+        if (offset >= iter->offset && (offset - iter->offset) < (iter->end - iter->begin)) {
+            LOGI("found name: %s, offset 0x%" PRIx64 " in map (%" PRIx64 "-%" PRIx64 " offset 0x%" PRIx64 ")",
+                name.c_str(), offset, iter->begin, iter->end, iter->offset);
+            map = iter;
+            return true;
+        }
+    }
     return false;
 }
 
