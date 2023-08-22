@@ -126,7 +126,7 @@ HWTEST_F(CatchFrameLocalTest, CatchFrameLocalTest003, TestSize.Level2)
     bool result = dumplog.InitFrameCatcher();
     EXPECT_EQ(result, true);
     std::vector<DfxFrame> frameV;
-    bool ret = dumplog.CatchFrame(gettid(), frameV, true);
+    bool ret = dumplog.CatchFrame(gettid(), frameV, 0, true);
     dumplog.DestroyFrameCatcher();
     GTEST_LOG_(INFO) << ret;
     EXPECT_EQ(ret, true) << "CatchFrameLocalTest003 Failed";
@@ -145,7 +145,7 @@ HWTEST_F(CatchFrameLocalTest, CatchFrameLocalTest004, TestSize.Level2)
     bool result = dumplog.InitFrameCatcher();
     EXPECT_EQ(result, true);
     std::vector<DfxFrame> frameV;
-    bool ret = dumplog.CatchFrame(-11, frameV, true);
+    bool ret = dumplog.CatchFrame(-11, frameV, 0, true);
     dumplog.DestroyFrameCatcher();
     GTEST_LOG_(INFO) << ret;
     EXPECT_EQ(ret, false) << "CatchFrameLocalTest004 Failed";

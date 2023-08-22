@@ -114,16 +114,16 @@ bool DfxCatchFrameLocal::CatchFrame(std::map<int, std::vector<DfxFrame>>& mapFra
     std::vector<DfxFrame> frames;
     for (size_t i = 0; i < nstids.size(); ++i) {
         if (tids[i] == gettid()) {
-            CatchFrameCurrTid(frames, releaseThread);
+            CatchFrameCurrTid(frames, 0, releaseThread);
         } else {
-            CatchFrameLocalTid(nstids[i], frames, releaseThread);
+            CatchFrameLocalTid(nstids[i], frames, 0, releaseThread);
         }
         mapFrames[nstids[i]] = frames;
     }
     return (mapFrames.size() > 0);
 }
 
-bool DfxCatchFrameLocal::CatchFrame(int tid, std::vector<DfxFrame>& frames, bool releaseThread)
+bool DfxCatchFrameLocal::CatchFrame(int tid, std::vector<DfxFrame>& frames, int skipFrames, bool releaseThread)
 {
     if (as_ == nullptr || symbol_ == nullptr) {
         return false;
@@ -135,7 +135,7 @@ bool DfxCatchFrameLocal::CatchFrame(int tid, std::vector<DfxFrame>& frames, bool
     }
 
     if (tid == gettid()) {
-        return CatchFrameCurrTid(frames, releaseThread);
+        return CatchFrameCurrTid(frames, skipFrames, releaseThread);
     }
 
     int nstid = tid;
@@ -147,16 +147,16 @@ bool DfxCatchFrameLocal::CatchFrame(int tid, std::vector<DfxFrame>& frames, bool
             return false;
         }
     }
-    return CatchFrameLocalTid(nstid, frames, releaseThread);
+    return CatchFrameLocalTid(nstid, frames, skipFrames, releaseThread);
 }
 
-bool DfxCatchFrameLocal::CatchFrameCurrTid(std::vector<DfxFrame>& frames, bool releaseThread)
+bool DfxCatchFrameLocal::CatchFrameCurrTid(std::vector<DfxFrame>& frames, int skipFrames, bool releaseThread)
 {
     std::unique_lock<std::mutex> lck(mutex_);
 
     int skipFrameNum = 1; // skip current frame
     BacktraceLocalThread thread(BACKTRACE_CURRENT_THREAD);
-    if (!thread.Unwind(as_, symbol_, skipFrameNum, false, releaseThread)) {
+    if (!thread.Unwind(as_, symbol_, skipFrameNum + skipFrames, false, releaseThread)) {
         return false;
     }
 
@@ -165,13 +165,13 @@ bool DfxCatchFrameLocal::CatchFrameCurrTid(std::vector<DfxFrame>& frames, bool r
     return true;
 }
 
-bool DfxCatchFrameLocal::CatchFrameLocalTid(int tid, std::vector<DfxFrame>& frames, bool releaseThread)
+bool DfxCatchFrameLocal::CatchFrameLocalTid(int tid, std::vector<DfxFrame>& frames, int skipFrames, bool releaseThread)
 {
     std::unique_lock<std::mutex> lck(mutex_);
 
     int skipFrameNum = 1; // skip current frame
     BacktraceLocalThread thread(tid);
-    if (!thread.Unwind(as_, symbol_, skipFrameNum, false, releaseThread)) {
+    if (!thread.Unwind(as_, symbol_, skipFrameNum + skipFrames, false, releaseThread)) {
         return false;
     }
 

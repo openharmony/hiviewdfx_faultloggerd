@@ -55,10 +55,11 @@ public:
      * @brief catch thread backtrace frame by thread id
      *
      * @param frames  backtrace frames(output parameter)
+     * @param skipFrames skip frames number
      * @param releaseThread flag for whether to release thread after completing frames catching
      * @return if succeed return true, otherwise return false
     */
-    bool CatchFrame(int tid, std::vector<DfxFrame>& frames, bool releaseThread = false);
+    bool CatchFrame(int tid, std::vector<DfxFrame>& frames, int skipFrames = 0, bool releaseThread = false);
 
     /**
      * @brief catch thread backtrace frame by thread id
@@ -76,8 +77,8 @@ public:
     void DestroyFrameCatcher();
 
 private:
-    bool CatchFrameCurrTid(std::vector<DfxFrame>& frames, bool releaseThread = false);
-    bool CatchFrameLocalTid(int tid, std::vector<DfxFrame>& frames, bool releaseThread = false);
+    bool CatchFrameCurrTid(std::vector<DfxFrame>& frames, int skipFrames = 0, bool releaseThread = false);
+    bool CatchFrameLocalTid(int tid, std::vector<DfxFrame>& frames, int skipFrames = 0, bool releaseThread = false);
 
 private:
     std::mutex mutex_;

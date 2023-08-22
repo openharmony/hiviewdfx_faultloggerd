@@ -241,7 +241,7 @@ HWTEST_F (FaultPerformanceTest, FaultPerformanceTest006, TestSize.Level2)
     std::vector<DfxFrame> frameV;
     clock_t befor = GetStartTime();
     for (int i = 0; i < PERFORMANCE_TEST_NUMBER_ONE_HUNDRED; i++) {
-        bool ret = dumplog.CatchFrame(testPid, frameV, true);
+        bool ret = dumplog.CatchFrame(testPid, frameV, 0, true);
         GTEST_LOG_(INFO) << ret;
     }
     double timeInterval = GetStopTime(befor) / PERFORMANCE_TEST_NUMBER_ONE_HUNDRED;
