@@ -49,6 +49,7 @@ public:
     int64_t GetLoadBias();
     uint64_t GetMaxSize();
     uint64_t GetRelPc(uint64_t pc, uint64_t mapStart, uint64_t mapOffset);
+    uint64_t GetPcAdjustment(uint64_t pc);
     const std::unordered_map<uint64_t, ElfLoadInfo>& GetPtLoads();
     const std::vector<ElfSymbol>& GetElfSymbols();
     bool GetSectionInfo(ShdrInfo& shdr, const std::string secName);

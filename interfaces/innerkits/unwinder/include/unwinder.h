@@ -16,35 +16,71 @@
 #define UNWINDER_H
 
 #include <memory>
-#include "base_unwinder.h"
+#include <vector>
+#include "dfx_accessors.h"
+#include "dfx_frame.h"
+#include "dfx_memory.h"
+#include "dfx_maps.h"
+#include "dfx_regs.h"
 #include "unwind_context.h"
 
 namespace OHOS {
 namespace HiviewDFX {
 class Unwinder {
 public:
-    Unwinder() = default;
-    ~Unwinder();
+    // for local
+    Unwinder() : pid_(UWNIND_TYPE_LOCAL)
+    {
+        Init();
+        acc_ = new DfxAccessorsLocal();
+    };
+    // for remote
+    Unwinder(int pid) : pid_(pid)
+    {
+        Init();
+        acc_ = new DfxAccessorsRemote();
+    };
+    // for customized
+    Unwinder(UnwindAccessors* accessors) : pid_(UWNIND_TYPE_CUSTOMIZE)
+    {
+        Init();
+        acc_ = new DfxAccessorsCustomize(accessors);
+    };
+    ~Unwinder() { Destroy(); }
 
-    UnwindMode GetUnwindMode() { return mode_; }
-    void SetUnwindMode(UnwindMode mode) { mode_ = mode; }
+    inline UnwindMode GetUnwindMode() { return mode_; }
+    inline void SetUnwindMode(UnwindMode mode) { mode_ = mode; }
 
-    void SetTargetPid(int pid);
-    uintptr_t GetPcAdjustment();
+    inline void SetTargetPid(int pid) { pid_ = pid; }
+    inline int32_t GetTargetPid() { return pid_; }
 
-    int UnwindInitLocal(UnwindContext* context);
-    int UnwindInitRemote(UnwindContext* context);
+    const std::vector<uintptr_t>& GetPcs() { return pcs_; }
+    const std::vector<DfxFrame>& GetFrames() { return frames_; }
+    const uint16_t& GetLastErrorCode() const { return lastErrorData_.code; }
+    const uint64_t& GetLastErrorAddr() const { return lastErrorData_.addr; }
 
-    int Unwind(std::vector<DfxFrame> &frames);
+    bool Unwind(void *ctx, size_t maxFrameNum = 64, size_t skipFrameNum = 0);
 
-    int SearchUnwindTable(uintptr_t pc, UnwindDynInfo *di, UnwindProcInfo *pi, int needUnwindInfo, void *arg);
-    bool GetSymbolInfo(uint64_t pc, std::string* funcName, uint64_t* symStart, uint64_t* symEnd);
 private:
-    bool Init();
+    void Init();
     void Destroy();
+    bool IsValidFrame(uintptr_t frame, uintptr_t stackTop, uintptr_t stackBottom);
 
+    bool FindExidxEntry(uintptr_t pc, uintptr_t& entryOffset);
+
+    int Step(uintptr_t pc);
+
+private:
+    int32_t pid_;
     UnwindMode mode_ = DWARF_UNWIND;
-    std::shared_ptr<BaseUnwinder> unwinder_;
+    DfxAccessors* acc_;
+    DfxMemory* memory_;
+    std::shared_ptr<DfxRegs> regs_;
+    std::shared_ptr<DfxMaps> maps_;
+    std::shared_ptr<DfxElf> elf_;
+    std::vector<uintptr_t> pcs_;
+    std::vector<DfxFrame> frames_;
+    UnwindErrorData lastErrorData_;
 };
 } // namespace HiviewDFX
 } // namespace OHOS

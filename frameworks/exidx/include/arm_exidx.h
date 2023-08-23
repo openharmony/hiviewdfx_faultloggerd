@@ -40,7 +40,6 @@ public:
     UnwindErrorData lastErrorData_;
 
 private:
-    bool ReadPrel31(uintptr_t* addr, uintptr_t* val);
     void LogRawData();
 
 protected:

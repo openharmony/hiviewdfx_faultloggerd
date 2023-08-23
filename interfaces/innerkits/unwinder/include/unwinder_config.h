@@ -4,7 +4,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -12,29 +12,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#ifndef UNWINDER_CONFIG_H
+#define UNWINDER_CONFIG_H
 
-#include "dwarf_unwinder.h"
-
-#include <cstdint>
-#include <cstdlib>
-#include "dfx_errors.h"
+#include <memory>
+#include "unwind_context.h"
 
 namespace OHOS {
 namespace HiviewDFX {
-namespace {
-#undef LOG_DOMAIN
-#undef LOG_TAG
-#define LOG_DOMAIN 0xD002D11
-#define LOG_TAG "DfxDwarfUnwinder"
-}
+class UnwinderConfig final {
+public:
+    static inline void SetByteOrder(int bigEndian) { bigEndian_ = bigEndian; }
+    static inline int GetByteOrder() { return bigEndian_; }
 
-void DwarfUnwinder::UnwindInit(UnwindContext* context)
-{
-}
+    static inline void SetCachePolicy(UnwindCachePolicy policy) { cachingPolicy_ = policy; }
+    static inline UnwindCachePolicy GetCachePolicy() { return cachingPolicy_; }
 
-bool DwarfUnwinder::Unwind()
-{
-    return true;
-}
+private:
+    static int bigEndian_ = UNWIND_BYTE_ORDER;
+    static UnwindCachingPolicy cachingPolicy_ = UNWIND_CACHE_NONE;
+};
 } // namespace HiviewDFX
 } // namespace OHOS
+#endif

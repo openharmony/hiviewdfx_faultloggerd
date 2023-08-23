@@ -38,7 +38,7 @@ void ArmExidx::LogRawData()
     for (const uint8_t data : data_) {
         logStr += StringPrintf(" 0x%02x", data);
     }
-    LOGU(logStr.c_str());
+    LOGU("%s", logStr.c_str());
 }
 
 bool ArmExidx::ExtractEntryData(uint32_t entryOffset)
@@ -61,19 +61,6 @@ bool ArmExidx::Decode()
 int ArmExidx::SearchUnwindTable(uintptr_t pc, UnwindDynInfo *di, UnwindProcInfo *pi, int needUnwindInfo)
 {
     return UNW_ERROR_NONE;
-}
-
-bool ArmExidx::ReadPrel31(uintptr_t* addr, uintptr_t* val)
-{
-    uintptr_t offset;
-    if (memory_->Read(addr, &offset, sizeof(uintptr_t)) != UNW_ERROR_NONE) {
-        return false;
-    }
-    // int32_t signedData = static_cast<int32_t>(data << 1) >> 1;
-    // uint32_t addr = offset + signedData;
-    offset = static_cast<uintptr_t>(static_cast<int32_t>(offset << 1) >> 1);
-    *val = *addr + offset;
-    return true;
 }
 } // namespace HiviewDFX
 } // namespace OHOS

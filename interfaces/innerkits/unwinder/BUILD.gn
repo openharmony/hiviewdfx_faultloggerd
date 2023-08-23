@@ -14,11 +14,7 @@
 import("//base/hiviewdfx/faultloggerd/faultloggerd.gni")
 
 dfx_unwinder_sources = [
-  "base_unwinder.cpp",
   "dfx_frame_format.cpp",
-  "dwarf_unwinder.cpp",
-  "fp_unwinder.cpp",
-  "qut_unwinder.cpp",
   "unwinder.cpp",
 ]
 

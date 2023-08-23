@@ -48,14 +48,38 @@ enum ArchType : uint8_t {
     ARCH_X86_64,
 };
 
-enum UnwindFrameType
-{
+enum RegLocationType : uint8_t {
+    REG_LOC_UNUSED,
+    REG_LOC_UNDEFINED,
+    REG_LOC_CFA_OFFSET,      // register stored in the offset from cfa
+    REG_LOC_REGISTER,        // register stored in register
+    REG_LOC_VAL_OFFSET,      // register value is offset from cfa
+    REG_LOC_CFA_EXPRESSION,  // register stored in expression result
+    REG_LOC_VAL_EXPRESSION,  // register value is expression result
+};
+
+enum UnwindType : int8_t {
+    UWNIND_TYPE_CUSTOMIZE = -2,
+    UWNIND_TYPE_LOCAL = -1,
+    UWNIND_TYPE_REMOTE,
+};
+
+enum UnwindFrameType {
     UNWIND_FRAME_ALIGNED = -3,       /* x86_64: frame stack pointer aligned */
     UNWIND_FRAME_SYSCALL = -3,      /* arm32: r7 saved in r12, sp offset zero */
     UNWIND_FRAME_STANDARD = -2,     /* regular r7, sp +/- offset */
     UNWIND_FRAME_SIGRETURN = -1,    /* special sigreturn frame */
     UNWIND_FRAME_OTHER = 0,         /* not cacheable (special or unrecognised) */
     UNWIND_FRAME_GUESSED = 1        /* guessed it was regular, but not known */
+};
+
+enum UnwindDynInfoFormatType {
+    UNW_INFO_FORMAT_DYNAMIC,            /* unw_dyn_proc_info_t */
+    UNW_INFO_FORMAT_TABLE,              /* unw_dyn_table_t */
+    UNW_INFO_FORMAT_REMOTE_TABLE,       /* unw_dyn_remote_table_t */
+    UNW_INFO_FORMAT_ARM_EXIDX,          /* ARM specific unwind info */
+    UNW_INFO_FORMAT_IP_OFFSET           /* Like UNW_INFO_FORMAT_REMOTE_TABLE, but table entries are
+                                            considered relative to di->start_ip, rather than di->segbase */
 };
 
 /**
@@ -67,7 +91,9 @@ enum UnwindMode {
     /** Frame pointer unwind */
     FRAMEPOINTER_UNWIND,
     /** Quick unwind table */
-    QUICKEN_UNWIND,
+    MINIMAL_UNWIND,
+    /** Mix unwind table */
+    MIX_UNWIND,
 };
 
 /**
