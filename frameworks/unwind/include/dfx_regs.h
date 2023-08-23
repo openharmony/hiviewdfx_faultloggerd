@@ -42,11 +42,10 @@ public:
     virtual std::string PrintRegs() const = 0;
     virtual bool StepIfSignalHandler(uint64_t relPc, DfxElf* elf, DfxMemory* memory) = 0;
 
-    uint16_t TotalRegsSize() const { return regsSize_; }
     inline uintptr_t& operator[](size_t idx) { return regsData_[idx]; }
 
     void* RawData() { return regsData_.data(); }
-    size_t GetRegsSize() const { return regsData_.size(); }
+    size_t RegsSize() const { return regsData_.size(); }
     std::vector<uintptr_t> GetRegsData() const;
     void SetRegsData(const std::vector<uintptr_t>& regsData);
     void SetRegsData(const uintptr_t* regs);
@@ -63,7 +62,6 @@ public:
 
 protected:
     std::string PrintSpecialRegs() const;
-    const int regsSize_ = REG_LAST;
     std::vector<uintptr_t> regsData_ {};
 };
 

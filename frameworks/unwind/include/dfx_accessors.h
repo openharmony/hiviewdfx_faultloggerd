@@ -57,6 +57,19 @@ public:
     int AccessReg(int reg, uintptr_t *val, int write, void *arg) override;
     int FindProcInfo(uintptr_t pc, UnwindProcInfo *procInfo, int needUnwindInfo, void *arg) override;
 };
+
+class DfxAccessorsCustomize : public DfxAccessors
+{
+public:
+    DfxAccessorsCustomize(UnwindAccessors* accessors) : accessors_(accessors) {}
+    virtual ~DfxAccessorsCustomize() = default;
+
+    int AccessMem(uintptr_t addr, uintptr_t *val, int write, void *arg) override;
+    int AccessReg(int reg, uintptr_t *val, int write, void *arg) override;
+    int FindProcInfo(uintptr_t pc, UnwindProcInfo *procInfo, int needUnwindInfo, void *arg) override;
+private:
+    UnwindAccessors* accessors_;
+};
 } // namespace HiviewDFX
 } // namespace OHOS
 #endif

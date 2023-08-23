@@ -50,15 +50,14 @@ int DfxAccessorsLocal::AccessReg(int reg, uintptr_t *val, int write, void *arg)
         LOGE("ctx is null");
         return UNW_ERROR_INVALID_CONTEXT;
     }
-    if (reg < REG_EH || reg >= REG_LAST) {
+    if (reg >= ctx->regsSize) {
         LOGE("Error reg: %d", reg);
         return UNW_ERROR_INVALID_REGS;
     }
-    int idx = reg - REG_EH;
     if (write) {
-        ctx->regs[idx] = *val;
+        ctx->regs[reg] = *val;
     } else {
-        *val = ctx->regs[idx];
+        *val = ctx->regs[reg];
     }
     return UNW_ERROR_NONE;
 }
@@ -70,7 +69,7 @@ int DfxAccessorsLocal::FindProcInfo(uintptr_t pc, UnwindProcInfo *procInfo, int 
 
 int DfxAccessorsRemote::AccessMem(uintptr_t addr, uintptr_t *val, int write, void *arg)
 {
-    UnwindPtraceContext *ctx = reinterpret_cast<UnwindPtraceContext *>(arg);
+    UnwindRemoteContext *ctx = reinterpret_cast<UnwindRemoteContext *>(arg);
     if (ctx == nullptr) {
         return UNW_ERROR_INVALID_CONTEXT;
     }
@@ -119,7 +118,7 @@ int DfxAccessorsRemote::AccessMem(uintptr_t addr, uintptr_t *val, int write, voi
 
 int DfxAccessorsRemote::AccessReg(int reg, uintptr_t *val, int write, void *arg)
 {
-    UnwindPtraceContext *ctx = reinterpret_cast<UnwindPtraceContext *>(arg);
+    UnwindRemoteContext *ctx = reinterpret_cast<UnwindRemoteContext *>(arg);
     if (ctx == nullptr) {
         return UNW_ERROR_INVALID_CONTEXT;
     }
@@ -151,6 +150,21 @@ int DfxAccessorsRemote::AccessReg(int reg, uintptr_t *val, int write, void *arg)
 int DfxAccessorsRemote::FindProcInfo(uintptr_t pc, UnwindProcInfo *procInfo, int needUnwindInfo, void *arg)
 {
     return UNW_ERROR_NONE;
+}
+
+int DfxAccessorsCustomize::AccessMem(uintptr_t addr, uintptr_t *val, int write, void *arg)
+{
+    return accessors_->AccessMem(addr, val, write, arg);
+}
+
+int DfxAccessorsCustomize::AccessReg(int reg, uintptr_t *val, int write, void *arg)
+{
+    return accessors_->AccessReg(reg, val, write, arg);
+}
+
+int DfxAccessorsCustomize::FindProcInfo(uintptr_t pc, UnwindProcInfo *procInfo, int needUnwindInfo, void *arg)
+{
+    return accessors_->FindProcInfo(pc, procInfo, needUnwindInfo, arg);
 }
 } // namespace HiviewDFX
 } // namespace OHOS

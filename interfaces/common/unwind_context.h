@@ -23,28 +23,14 @@
 
 namespace OHOS {
 namespace HiviewDFX {
-struct UnwindConfig {
-    size_t frameMaxSize {FRAME_MAX_SIZE};
-    size_t frameSkipSize {0};
-    int bigEndian = UNWIND_BYTE_ORDER;
-    UnwindCachingPolicy cachingPolicy {UNWIND_CACHE_NONE};
-};
-
-struct UnwindCursor
-{
-    uintptr_t opaque[UNWIND_CURSOR_LEN];
-};
-
-struct UnwindDynTableInfo
-{
+struct UnwindDynTableInfo {
     uintptr_t namePtr;
     uintptr_t segbase;
     uintptr_t tableLen;
     uintptr_t* tableData;
 };
 
-struct UnwindDynRemoteTableInfo
-{
+struct UnwindDynRemoteTableInfo {
     uintptr_t namePtr;
     uintptr_t segbase;
     uintptr_t tableLen;
@@ -56,18 +42,16 @@ struct UnwindDynInfo {
     UnwindDynInfo *prev;
     uintptr_t startPc;
     uintptr_t endPc;
-    uintptr_t gp;
-    int format;
+    uintptr_t gp; /* global-pointer in effect for this entry */
+    int format; // UnwindDynInfoFormatType
     union
     {
         UnwindDynTableInfo ti;
         UnwindDynRemoteTableInfo rti;
     } u;
-
 };
 
-struct ElfDynInfo
-{
+struct ElfDynInfo {
     uintptr_t startPc;
     uintptr_t endPc;
     UnwindDynInfo diCache;
@@ -94,27 +78,20 @@ struct UnwindAccessors {
     int (*AccessReg)(int, uintptr_t *, int, void *);
 };
 
-struct UnwindAddrSpace {
-    UnwindAccessors acc;
-    UnwindConfig* config;
-    UnwindCursor* cursor;
-    int pid;
-};
-
-struct UnwindContext {
-    UnwindAddrSpace* as;
-    void* context;
-};
-
 struct UnwindLocalContext {
-    int regsSize;
+    size_t regsSize;
     uintptr_t *regs;
 };
 
-struct UnwindPtraceContext
-{
-    pid_t pid;
+struct UnwindRemoteContext {
+    int pid;
     struct ElfDynInfo edi;
+};
+
+struct UnwindRegLocation
+{
+    RegLocationType type;
+    uintptr_t value;
 };
 } // namespace HiviewDFX
 } // namespace OHOS

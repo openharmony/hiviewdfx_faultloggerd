@@ -48,7 +48,6 @@ HWTEST_F(DfxMemoryTest, DfxMemoryTest001, TestSize.Level2)
     uintptr_t regs[] = {0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xa};
     UnwindLocalContext ctx;
     ctx.regs = regs;
-    ctx.regsSize = sizeof(regs);
     DfxAccessorsLocal acc;
     std::shared_ptr<DfxMemory> memory = std::make_shared<DfxMemory>(&acc, &ctx);
     uintptr_t value;
@@ -74,22 +73,22 @@ HWTEST_F(DfxMemoryTest, DfxMemoryTest002, TestSize.Level2)
     //acc.AccessMem(addr, &val, 1, nullptr);
     std::shared_ptr<DfxMemory> memory = std::make_shared<DfxMemory>(&acc, nullptr);
     uintptr_t value;
-    int ret = memory->ReadMem(addr, &value);
-    EXPECT_EQ(UNW_ERROR_NONE, ret) << "DfxMemoryTest002: ret" << ret;
+    bool ret = memory->ReadMem(addr, &value);
+    EXPECT_EQ(true, ret) << "DfxMemoryTest002: ret" << ret;
     printf("addr: %llx, value: %llx \n", static_cast<uint64_t>(addr), static_cast<uint64_t>(value));
     //EXPECT_EQ(val, value) << "DfxMemoryTest002: value" << value;
     uint64_t tmp;
     uintptr_t cur = addr;
-    ret = memory->Read(&cur, &tmp, sizeof(uint8_t));
+    ret = memory->ReadFully(&cur, &tmp, sizeof(uint8_t));
     printf("addr: %llx, u8: %llx \n", static_cast<uint64_t>(cur), tmp);
     cur = addr;
-    ret = memory->Read(&cur, &tmp, sizeof(uint16_t));
+    ret = memory->ReadFully(&cur, &tmp, sizeof(uint16_t));
     printf("addr: %llx, u16: %llx \n", static_cast<uint64_t>(cur), tmp);
     cur = addr;
-    ret = memory->Read(&cur, &tmp, sizeof(uint32_t));
+    ret = memory->ReadFully(&cur, &tmp, sizeof(uint32_t));
     printf("addr: %llx, u32: %llx \n", static_cast<uint64_t>(cur), tmp);
     cur = addr;
-    ret = memory->Read(&cur, &tmp, sizeof(uint64_t));
+    ret = memory->ReadFully(&cur, &tmp, sizeof(uint64_t));
     printf("addr: %llx, u64: %llx \n", static_cast<uint64_t>(cur), tmp);
     GTEST_LOG_(INFO) << "DfxMemoryTest002: end.";
 }

@@ -41,7 +41,7 @@ std::shared_ptr<DfxRegs> DfxRegs::Create(int mode)
         dfxregs->GetFramePointerMiniRegs(regs);
         dfxregs->fp_ = regs[0]; // 0 : index of x29 or r11 register
         dfxregs->pc_ = regs[3]; // 3 : index of x32 or r15 register
-    } else if (mode == UnwindMode::QUICKEN_UNWIND) {
+    } else if (mode == UnwindMode::MINIMAL_UNWIND) {
         uintptr_t regs[QUT_MINI_REGS_SIZE] = {0};
         dfxregs->GetQuickenMiniRegs(regs);
         dfxregs->fp_ = regs[3]; // 3 : index of x29 or r11 register

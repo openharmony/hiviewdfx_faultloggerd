@@ -60,7 +60,7 @@ std::shared_ptr<DfxRegs> CreateFromRegs(const UnwindMode mode, const uintptr_t* 
         dfxregs->SetRegsData(regs);
     } else if (mode == UnwindMode::FRAMEPOINTER_UNWIND) {
         dfxregs->SetFromFpMiniRegs(regs);
-    } else if (mode == UnwindMode::QUICKEN_UNWIND) {
+    } else if (mode == UnwindMode::MINIMAL_UNWIND) {
         dfxregs->SetFromQutMiniRegs(regs);
     }
     return dfxregs;

@@ -28,17 +28,23 @@ namespace {
 #define LOG_TAG "DfxMemory"
 }
 
-int DfxMemory::ReadReg(int reg, uintptr_t *val)
+bool DfxMemory::ReadReg(int reg, uintptr_t *val)
 {
-    return acc_->AccessReg(reg, val, 0, ctx_);
+    if (acc_->AccessReg(reg, val, 0, ctx_) == UNW_ERROR_NONE) {
+        return true;
+    }
+    return false;
 }
 
-int DfxMemory::ReadMem(uintptr_t addr, uintptr_t *val)
+bool DfxMemory::ReadMem(uintptr_t addr, uintptr_t *val)
 {
-    return acc_->AccessMem(addr, val, 0, ctx_);
+    if (acc_->AccessMem(addr, val, 0, ctx_) == UNW_ERROR_NONE) {
+        return true;
+    }
+    return false;
 }
 
-int DfxMemory::Read(uintptr_t* addr, void* val, size_t size, bool incre)
+size_t DfxMemory::Read(uintptr_t* addr, void* val, size_t size, bool incre)
 {
     uintptr_t tmpAddr = *addr;
     LOGU("addr: %llx", static_cast<uint64_t>(tmpAddr));
@@ -53,7 +59,7 @@ int DfxMemory::Read(uintptr_t* addr, void* val, size_t size, bool incre)
     if (alignBytes != 0) {
         uintptr_t alignedAddr = tmpAddr & (~sizeof(uintptr_t) - 1);
         LOGU("alignBytes: %d, alignedAddr: %llx", alignBytes, static_cast<uint64_t>(alignedAddr));
-        if (ReadMem(alignedAddr, &tmpVal) != UNW_ERROR_NONE) {
+        if (!ReadMem(alignedAddr, &tmpVal)) {
             return bytesRead;
         }
         LOGU("tmpVal: %llx", static_cast<uint64_t>(tmpVal));
@@ -67,7 +73,7 @@ int DfxMemory::Read(uintptr_t* addr, void* val, size_t size, bool incre)
     }
 
     for (size_t i = 0; i < size / sizeof(uintptr_t); i++) {
-        if (ReadMem(tmpAddr, &tmpVal) != UNW_ERROR_NONE) {
+        if (!ReadMem(tmpAddr, &tmpVal)) {
             return bytesRead;
         }
         LOGU("tmpVal: %llx", static_cast<uint64_t>(tmpVal));
@@ -80,7 +86,7 @@ int DfxMemory::Read(uintptr_t* addr, void* val, size_t size, bool incre)
     size_t leftOver = size & (sizeof(uintptr_t) - 1);
     LOGU("leftOver: %d", leftOver);
     if (leftOver) {
-        if (ReadMem(tmpAddr, &tmpVal) != UNW_ERROR_NONE) {
+        if (!ReadMem(tmpAddr, &tmpVal)) {
             return bytesRead;
         }
         LOGU("tmpVal: %llx", static_cast<uint64_t>(tmpVal));
@@ -95,29 +101,51 @@ int DfxMemory::Read(uintptr_t* addr, void* val, size_t size, bool incre)
     return bytesRead;
 }
 
-int DfxMemory::ReadU8(uintptr_t* addr, uint8_t *val, bool incre)
+bool DfxMemory::ReadFully(uintptr_t* addr, void* val, size_t size, bool incre)
 {
-    return Read(addr, val, sizeof(uint8_t), incre);
+    size_t rc = Read(addr, val, size, incre);
+    if (rc == size) {
+        return true;
+    }
+    return false;
 }
 
-int DfxMemory::ReadU16(uintptr_t* addr, uint16_t *val, bool incre)
+bool DfxMemory::ReadU8(uintptr_t* addr, uint8_t *val, bool incre)
 {
-    return Read(addr, val, sizeof(uint16_t), incre);
+    return ReadFully(addr, val, sizeof(uint8_t), incre);
 }
 
-int DfxMemory::ReadU32(uintptr_t* addr, uint32_t *val, bool incre)
+bool DfxMemory::ReadU16(uintptr_t* addr, uint16_t *val, bool incre)
 {
-    return Read(addr, val, sizeof(uint32_t), incre);
+    return ReadFully(addr, val, sizeof(uint16_t), incre);
 }
 
-int DfxMemory::ReadU64(uintptr_t* addr, uint64_t *val, bool incre)
+bool DfxMemory::ReadU32(uintptr_t* addr, uint32_t *val, bool incre)
 {
-    return Read(addr, val, sizeof(uint64_t), incre);
+    return ReadFully(addr, val, sizeof(uint32_t), incre);
 }
 
-int DfxMemory::ReadUptr(uintptr_t* addr, uintptr_t *val, bool incre)
+bool DfxMemory::ReadU64(uintptr_t* addr, uint64_t *val, bool incre)
 {
-    return Read(addr, val, sizeof(uintptr_t), incre);
+    return ReadFully(addr, val, sizeof(uint64_t), incre);
+}
+
+bool DfxMemory::ReadUptr(uintptr_t* addr, uintptr_t *val, bool incre)
+{
+    return ReadFully(addr, val, sizeof(uintptr_t), incre);
+}
+
+bool DfxMemory::ReadPrel31(uintptr_t* addr, uintptr_t *val)
+{
+    uintptr_t offset;
+    if (!ReadFully(addr, &offset, sizeof(uintptr_t), false)) {
+        return false;
+    }
+    // int32_t signedData = static_cast<int32_t>(data << 1) >> 1;
+    // uint32_t addr = offset + signedData;
+    offset = static_cast<uintptr_t>(static_cast<int32_t>(offset << 1) >> 1);
+    *val = *addr + offset;
+    return true;
 }
 } // namespace HiviewDFX
 } // namespace OHOS

@@ -53,7 +53,7 @@ public:
     }
 
     inline uint16_t TotalSize() {
-        return regs_->TotalRegsSize();
+        return regs_->RegsSize();
     }
 protected:
     std::shared_ptr<DfxRegs> regs_ = nullptr;
