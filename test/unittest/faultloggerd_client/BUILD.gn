@@ -22,13 +22,20 @@ ohos_unittest("test_faultloggerd_client") {
   visibility = [ "*:*" ]
   include_dirs = [
     "$faultloggerd_path/common",
+    "$faultloggerd_path/common/dfxlog",
+    "$faultloggerd_path/interfaces/innerkits/faultloggerd_client",
+    "$faultloggerd_path/interfaces/innerkits/faultloggerd_client/include",
     "$faultloggerd_path/test/utils",
   ]
-  sources = [ "faultloggerd_client_test.cpp" ]
+  sources = [
+    "$faultloggerd_path/interfaces/innerkits/faultloggerd_client/faultloggerd_client.cpp",
+    "$faultloggerd_path/interfaces/innerkits/faultloggerd_client/faultloggerd_socket.cpp",
+    "faultloggerd_client_test.cpp",
+  ]
 
   deps = [
+    "$faultloggerd_path/common/dfxlog:static_common_log",
     "$faultloggerd_path/common/dfxutil:dfx_util",
-    "$faultloggerd_path/interfaces/innerkits/faultloggerd_client:libfaultloggerd",
     "$faultloggerd_path/test/utils:dfx_test_util",
   ]
 
@@ -40,6 +47,7 @@ ohos_unittest("test_faultloggerd_client") {
   external_deps = [
     "c_utils:utils",
     "hilog:libhilog",
+    "init:libbegetutil",
   ]
 }
 

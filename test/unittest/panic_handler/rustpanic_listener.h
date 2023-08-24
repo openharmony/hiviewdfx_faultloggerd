@@ -18,8 +18,6 @@
 
 #include "hisysevent_listener.h"
 
-#include <unordered_set>
-
 namespace OHOS {
 namespace HiviewDFX {
 class RustPanicListener : public HiSysEventListener {
@@ -28,14 +26,16 @@ public:
     virtual ~RustPanicListener() {}
 
 public:
+    void SetKeyWord(const std::string& keyWord);
+    bool CheckKeywordInReasons();
     void OnEvent(std::shared_ptr<HiSysEventRecord> sysEvent);
     void OnServiceDied();
 
-public:
-    bool CheckKeywordInReasons(const std::string& reason);
-
 private:
-    std::unordered_set<std::string> reasons;
+    std::string keyWord;
+    bool allFindFlag = false;
+    std::mutex setFlagMutex;
+    std::condition_variable keyWordCheckCondition;
 };
 } // namespace HiviewDFX
 } // namespace OHOS
