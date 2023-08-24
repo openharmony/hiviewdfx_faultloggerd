@@ -66,9 +66,7 @@ private:
     void Destroy();
     bool IsValidFrame(uintptr_t frame, uintptr_t stackTop, uintptr_t stackBottom);
 
-    bool FindExidxEntry(uintptr_t pc, uintptr_t& entryOffset);
-
-    int Step(uintptr_t pc);
+    int Step(uintptr_t pc, void *ctx);
 
 private:
     int32_t pid_;

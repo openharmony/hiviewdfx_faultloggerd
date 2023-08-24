@@ -32,6 +32,7 @@ dfx_unwind_sources = [
   "dfx_regs_x86_64.cpp",
   "dfx_signal.cpp",
   "dfx_symbols.cpp",
+  "dfx_unwind_table.cpp",
 ]
 
 if (defined(ohos_lite)) {

@@ -20,6 +20,7 @@
 #include "dfx_errors.h"
 #include "dfx_regs_get.h"
 #include "dfx_log.h"
+#include "dfx_unwind_table.h"
 #include "string_printf.h"
 
 namespace OHOS {
@@ -89,9 +90,12 @@ bool Unwinder::Unwind(void *ctx, size_t maxFrameNum, size_t skipFrameNum)
             if (pid_ <= 0) {
                 return false;
             }
-            UnwindRemoteContext context;
-            context.pid = pid_;
-            memory_ = new DfxMemory(acc_, &context);
+            if (ctx == nullptr) {
+                UnwindRemoteContext context;
+                context.pid = pid_;
+                ctx = &context;
+            }
+            memory_ = new DfxMemory(acc_, ctx);
             maps_ = DfxMaps::Create(pid_);
         }
     }
@@ -134,6 +138,11 @@ bool Unwinder::Unwind(void *ctx, size_t maxFrameNum, size_t skipFrameNum)
             LOGE("elf is null");
             break;
         }
+
+        if (pid_ > 0) {
+            UnwindRemoteContext* context = reinterpret_cast<UnwindRemoteContext *>(ctx);
+            context->elf = elf_;
+        }
         uint64_t relPc = elf_->GetRelPc(pc, map->begin, map->end);
         uint64_t stepPc = relPc;
         uint64_t pcAdjustment = elf_->GetPcAdjustment(relPc);
@@ -141,7 +150,7 @@ bool Unwinder::Unwind(void *ctx, size_t maxFrameNum, size_t skipFrameNum)
 
         if (regs_->StepIfSignalHandler(relPc, elf_.get(), memory_)) {
             stepPc = relPc;
-        } else if (Step(stepPc) <= 0) {
+        } else if (Step(stepPc, ctx) <= 0) {
             break;
         }
 
@@ -150,52 +159,19 @@ bool Unwinder::Unwind(void *ctx, size_t maxFrameNum, size_t skipFrameNum)
     return (curIndex > 0);
 }
 
-int Unwinder::Step(uintptr_t pc)
+int Unwinder::Step(uintptr_t pc, void *ctx)
 {
-    return 0;
-}
-
-bool Unwinder::FindExidxEntry(uintptr_t pc, uintptr_t& entryOffset)
-{
-    ShdrInfo shdr;
-    if (elf_ == nullptr || !elf_->GetArmExdixInfo(shdr)) {
-        return false;
+    int ret = UNW_ERROR_NONE;
+    UnwindDynInfo di;
+    if ((ret = acc_->FindProcInfo(pc, &di, true, ctx)) != UNW_ERROR_NONE) {
+        return ret;
     }
 
-    static std::unordered_map<size_t, uintptr_t> addrs;
-    uintptr_t exidxOffset = static_cast<uintptr_t>(shdr.offset);
-    size_t exidxTotalEntries = static_cast<size_t>(shdr.size / 8);
-    size_t first = 0;
-    size_t last = exidxTotalEntries;
-    while (first < last) {
-        size_t current = (first + last) / 2;
-        uintptr_t addr = addrs[current];
-        if (addr == 0) {
-            uintptr_t curOffset = exidxOffset + current * 8;
-            if (!memory_->ReadPrel31(&curOffset, &addr)) {
-                lastErrorData_.addr = curOffset;
-                return false;
-            }
-            addrs[current] = addr;
-        }
-
-        if (pc == addr) {
-            entryOffset = exidxOffset + current * 8;
-            return true;
-        }
-        if (pc < addr) {
-            last = current;
-        } else {
-            first = current + 1;
-        }
+    struct UnwindProcInfo pi;
+    if ((ret = DfxUnwindTable::SearchUnwindTable(&pi, &di, pc, memory_, true)) != UNW_ERROR_NONE) {
+        return ret;
     }
-    if (last != 0) {
-        entryOffset = exidxOffset + (last - 1) * 8;
-        return true;
-    }
-    lastErrorData_.addr = pc;
-    lastErrorData_.code = UNW_ERROR_ILLEGAL_VALUE;
-    return false;
+    return ret;
 }
 } // namespace HiviewDFX
 } // namespace OHOS

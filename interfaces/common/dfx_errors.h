@@ -61,6 +61,8 @@ enum UnwindErrorCode : uint16_t {
     UNW_ERROR_INVALID_ALIGNMENT,
     /** arm exidx invalid personality */
     UNW_ERROR_INVALID_PERSONALITY,
+    /** No unwind info */
+    UNW_ERROR_NO_UNWIND_INFO,
     /** arm exidx cant unwind */
     UNW_ERROR_CANT_UNWIND,
     /** arm exidx spare */

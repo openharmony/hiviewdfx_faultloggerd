@@ -48,15 +48,18 @@ public:
     std::string GetBuildId();
     int64_t GetLoadBias();
     uint64_t GetMaxSize();
+    uint64_t GetStartVaddr();
+    uint64_t GetEndVaddr();
     uint64_t GetRelPc(uint64_t pc, uint64_t mapStart, uint64_t mapOffset);
     uint64_t GetPcAdjustment(uint64_t pc);
+    const uint8_t* GetMmap();
+    bool Read(uint64_t pos, void *buf, size_t size);
     const std::unordered_map<uint64_t, ElfLoadInfo>& GetPtLoads();
     const std::vector<ElfSymbol>& GetElfSymbols();
     bool GetSectionInfo(ShdrInfo& shdr, const std::string secName);
     bool GetArmExdixInfo(ShdrInfo& shdr);
     bool GetEhFrameHdrInfo(ShdrInfo& shdr);
-    const uint8_t* GetMmap();
-    bool Read(uint64_t pos, void *buf, size_t size);
+    bool GetElfDynInfo(uintptr_t pc, struct ElfDynInfo* edi);
 
 	static std::string ToReadableBuildId(const std::string& buildIdHex);
 
@@ -74,6 +77,8 @@ private:
     int64_t loadBias_ = 0;
     std::string buildId_ = "";
     std::shared_ptr<DfxMmap> mmap_;
+    bool hasDynInfo_ = false;
+    struct ElfDynInfo elfDynInfo_;
     std::unique_ptr<ElfParse> elfParse_;
 };
 } // namespace HiviewDFX

@@ -81,17 +81,7 @@ struct RegsUserX86_64 {
     uint64_t gs;
 };
 
-typedef ucontext_t UContext_t;
-
-struct UnwindFrameInfo {
-    uint64_t virtualAddress;
-    int64_t frameType     : 3;
-    int64_t lastFrame     : 1;  /* non-zero if last frame in chain */
-    int64_t cfaRegSp      : 1;  /* cfa dwarf base register is sp vs. fp */
-    int64_t cfaRegOffset : 29; /* cfa is at this offset from base register value */
-    int64_t rbpCfaOffset  : 15; /* rbp saved at this offset from cfa (-1 = not saved) */
-    int64_t rspCfaOffset  : 15; /* rsp saved at this offset from cfa (-1 = not saved) */
-};
+typedef ucontext_t UnwindUContext_t;
 } // namespace HiviewDFX
 } // namespace OHOS
 #endif

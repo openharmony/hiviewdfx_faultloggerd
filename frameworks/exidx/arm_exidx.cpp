@@ -57,10 +57,5 @@ bool ArmExidx::Decode()
 {
     return true;
 }
-
-int ArmExidx::SearchUnwindTable(uintptr_t pc, UnwindDynInfo *di, UnwindProcInfo *pi, int needUnwindInfo)
-{
-    return UNW_ERROR_NONE;
-}
 } // namespace HiviewDFX
 } // namespace OHOS

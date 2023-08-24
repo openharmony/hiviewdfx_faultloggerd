@@ -21,6 +21,7 @@
 #include <sys/uio.h>
 #include "dfx_define.h"
 #include "dfx_log.h"
+#include "dfx_unwind_table.h"
 
 namespace OHOS {
 namespace HiviewDFX {
@@ -62,7 +63,7 @@ int DfxAccessorsLocal::AccessReg(int reg, uintptr_t *val, int write, void *arg)
     return UNW_ERROR_NONE;
 }
 
-int DfxAccessorsLocal::FindProcInfo(uintptr_t pc, UnwindProcInfo *procInfo, int needUnwindInfo, void *arg)
+int DfxAccessorsLocal::FindProcInfo(uintptr_t pc, UnwindDynInfo *info, int needUnwindInfo, void *arg)
 {
     return UNW_ERROR_NONE;
 }
@@ -147,9 +148,32 @@ int DfxAccessorsRemote::AccessReg(int reg, uintptr_t *val, int write, void *arg)
     return UNW_ERROR_NONE;
 }
 
-int DfxAccessorsRemote::FindProcInfo(uintptr_t pc, UnwindProcInfo *procInfo, int needUnwindInfo, void *arg)
+int DfxAccessorsRemote::FindProcInfo(uintptr_t pc, UnwindDynInfo *info, int needUnwindInfo, void *arg)
 {
-    return UNW_ERROR_NONE;
+    UnwindRemoteContext *ctx = reinterpret_cast<UnwindRemoteContext *>(arg);
+    if (ctx == nullptr) {
+        return UNW_ERROR_INVALID_CONTEXT;
+    }
+
+    int ret = UNW_ERROR_NONE;
+    if ((ret = DfxUnwindTable::FindUnwindTable(&(ctx->edi), pc, ctx->elf)) != UNW_ERROR_NONE) {
+        return ret;
+    }
+
+    if(ctx->edi.diCache.format != -1) {
+        *info = ctx->edi.diCache;
+    }
+#if defined(__arm__)
+    else if(ctx->edi.diArm.format == -1) {
+        *info = ctx->edi.diArm;
+    }
+#endif
+    else if(ctx->edi.diDebug.format == -1) {
+        *info = ctx->edi.diDebug;
+    } else {
+        return UNW_ERROR_NO_UNWIND_INFO;
+    }
+    return ret;
 }
 
 int DfxAccessorsCustomize::AccessMem(uintptr_t addr, uintptr_t *val, int write, void *arg)
@@ -162,9 +186,9 @@ int DfxAccessorsCustomize::AccessReg(int reg, uintptr_t *val, int write, void *a
     return accessors_->AccessReg(reg, val, write, arg);
 }
 
-int DfxAccessorsCustomize::FindProcInfo(uintptr_t pc, UnwindProcInfo *procInfo, int needUnwindInfo, void *arg)
+int DfxAccessorsCustomize::FindProcInfo(uintptr_t pc, UnwindDynInfo *info, int needUnwindInfo, void *arg)
 {
-    return accessors_->FindProcInfo(pc, procInfo, needUnwindInfo, arg);
+    return accessors_->FindProcInfo(pc, info, needUnwindInfo, arg);
 }
 } // namespace HiviewDFX
 } // namespace OHOS

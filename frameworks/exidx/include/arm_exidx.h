@@ -33,7 +33,6 @@ public:
     bool ExtractEntryData(uint32_t entryOffset);
     bool Decode();
     bool Eval();
-    int SearchUnwindTable(uintptr_t pc, UnwindDynInfo *di, UnwindProcInfo *pi, int needUnwindInfo);
 
     std::deque<uint8_t> GetData() { return data_; }
     void SetData(std::deque<uint8_t> &data) { data_ = data ; }

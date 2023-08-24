@@ -70,11 +70,7 @@ struct RegsUserX86 {
     uint32_t xss;
 };
 
-typedef ucontext_t UContext_t;
-
-struct UnwindFrameInfo {
-    /* no x86-specific fast trace */
-};
+typedef ucontext_t UnwindUContext_t;
 } // namespace HiviewDFX
 } // namespace OHOS
 #endif
