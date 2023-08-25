@@ -59,9 +59,7 @@ struct ElfDynInfo {
     uintptr_t endPc;
     UnwindDynInfo diCache;
     UnwindDynInfo diDebug;    /* additional table info for .debug_frame */
-#if defined(__arm__)
     UnwindDynInfo diArm;      /* additional table info for .ARM.exidx */
-#endif
 };
 
 struct UnwindProcInfo {
@@ -84,12 +82,13 @@ struct UnwindAccessors {
 struct UnwindLocalContext {
     int regsSize;
     uintptr_t *regs;
+    struct ElfDynInfo edi;
 };
 
 struct UnwindRemoteContext {
     int pid;
-    struct ElfDynInfo edi;
     std::shared_ptr<DfxElf> elf;
+    struct ElfDynInfo edi;
 };
 
 struct UnwindRegLocation

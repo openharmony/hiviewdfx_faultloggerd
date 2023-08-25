@@ -157,7 +157,6 @@ bool ElfParse::ParseProgramHeaders(const EhdrType& ehdr)
             }
             break;
         }
-
         case PT_ARM_EXIDX: {
             armExdixInfo_.addr = static_cast<uint64_t>(phdr.p_vaddr);
             armExdixInfo_.offset = static_cast<uint64_t>(phdr.p_offset);
@@ -166,16 +165,13 @@ bool ElfParse::ParseProgramHeaders(const EhdrType& ehdr)
             armExdixInfo_.size = static_cast<uint64_t>(phdr.p_filesz);
             break;
         }
-
         case PT_GNU_EH_FRAME: {
             ehFrameHdrInfo_.addr = static_cast<uint64_t>(phdr.p_vaddr);
             ehFrameHdrInfo_.offset = static_cast<uint64_t>(phdr.p_offset);
             ehFrameHdrInfo_.size = static_cast<uint64_t>(phdr.p_memsz);
             break;
         }
-
         default:
-            DFXLOG_WARN("Failed parse phdr.p_type: %llx", phdr.p_type);
             break;
         }
     }

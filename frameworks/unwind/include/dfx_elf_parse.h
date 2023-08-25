@@ -58,7 +58,6 @@ public:
 
 protected:
     size_t MmapSize();
-
     template <typename EhdrType, typename PhdrType, typename ShdrType>
     bool ParseAllHeaders();
     template <typename EhdrType>

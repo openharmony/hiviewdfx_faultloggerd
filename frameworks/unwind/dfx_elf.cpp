@@ -278,6 +278,56 @@ bool DfxElf::GetSectionInfo(ShdrInfo& shdr, const std::string secName)
     return elfParse_->GetSectionInfo(shdr, secName);
 }
 
+int DfxElf::DlPhdrCb(struct dl_phdr_info *info, size_t size, void *data)
+{
+    struct DlCbData *cbData = (struct DlCbData *)data;
+    const ElfW(Phdr) *pText = nullptr;
+    const ElfW(Phdr) *pArmExidx = nullptr;
+    const ElfW(Phdr) *pEhFrameHdr = nullptr;
+    const ElfW(Phdr) *phdr = info->dlpi_phdr;
+    for (size_t i = 0; i < info->dlpi_phnum; i++, phdr++) {
+        switch (phdr->p_type) {
+        case PT_LOAD: {
+            if (cbData->pc >= phdr->p_vaddr + info->dlpi_addr &&
+                cbData->pc < phdr->p_vaddr + info->dlpi_addr + phdr->p_memsz) {
+                pText = phdr;
+            }
+        }
+        case PT_ARM_EXIDX: {
+            pArmExidx = phdr;
+            break;
+        }
+        case PT_GNU_EH_FRAME: {
+            pEhFrameHdr = phdr;
+            break;
+        }
+        default:
+            break;
+        }
+    }
+    if (pText == nullptr) {
+        return UNW_ERROR_NO_UNWIND_INFO;
+    }
+
+    bool hasDynInfo = false;
+    if (pArmExidx) {
+        cbData->edi.diArm.format = UNW_INFO_FORMAT_ARM_EXIDX;
+        cbData->edi.diArm.startPc = pText->p_vaddr + info->dlpi_addr;
+        cbData->edi.diArm.endPc = cbData->edi.diArm.startPc + pText->p_memsz;
+        cbData->edi.diArm.u.rti.namePtr = (uintptr_t) info->dlpi_name;
+        cbData->edi.diArm.u.rti.tableData = pArmExidx->p_vaddr + info->dlpi_addr;
+        cbData->edi.diArm.u.rti.tableLen = pArmExidx->p_memsz;
+        hasDynInfo = true;
+    }
+
+    if (hasDynInfo) {
+        cbData->edi.startPc = pText->p_vaddr + info->dlpi_addr;
+        cbData->edi.endPc = cbData->edi.startPc + pText->p_memsz;
+        return UNW_ERROR_NONE;
+    }
+    return UNW_ERROR_NO_UNWIND_INFO;
+}
+
 bool DfxElf::GetElfDynInfo(uintptr_t pc, struct ElfDynInfo* edi)
 {
     if (!IsValid()) {
@@ -293,9 +343,7 @@ bool DfxElf::GetElfDynInfo(uintptr_t pc, struct ElfDynInfo* edi)
     memset_s(&elfDynInfo_, sizeof(ElfDynInfo), 0, sizeof(ElfDynInfo));
     elfDynInfo_.diCache.format = -1;
     elfDynInfo_.diDebug.format = -1;
-#if defined(__arm__)
     elfDynInfo_.diArm.format = -1;
-#endif
 
     ShdrInfo shdr;
     if (GetEhFrameHdrInfo(shdr)) {
@@ -307,7 +355,7 @@ bool DfxElf::GetElfDynInfo(uintptr_t pc, struct ElfDynInfo* edi)
         //elfDynInfo_.diCache.u.rti.tableLen = shdr.size;
         hasDynInfo_ = true;
     }
-#if defined(__arm__)
+
     if (GetArmExdixInfo(shdr)) {
         elfDynInfo_.diArm.format = UNW_INFO_FORMAT_ARM_EXIDX;
         elfDynInfo_.diArm.startPc = GetStartVaddr();
@@ -317,7 +365,6 @@ bool DfxElf::GetElfDynInfo(uintptr_t pc, struct ElfDynInfo* edi)
         elfDynInfo_.diArm.u.rti.tableLen = shdr.size;
         hasDynInfo_ = true;
     }
-#endif
 
     if (hasDynInfo_) {
         elfDynInfo_.startPc = GetStartVaddr();

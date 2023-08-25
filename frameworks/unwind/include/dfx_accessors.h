@@ -31,7 +31,7 @@ public:
 
     virtual int AccessMem(uintptr_t addr, uintptr_t *val, int write, void *arg) = 0;
     virtual int AccessReg(int reg, uintptr_t *val, int write, void *arg) = 0;
-    virtual int FindProcInfo(uintptr_t pc, UnwindDynInfo *info, int needUnwindInfo, void *arg) = 0;
+    virtual int FindProcInfo(uintptr_t pc, UnwindDynInfo *di, int needUnwindInfo, void *arg) = 0;
 
     int bigEndian_ = UNWIND_BYTE_ORDER;
 };
@@ -44,7 +44,7 @@ public:
 
     int AccessMem(uintptr_t addr, uintptr_t *val, int write, void *arg) override;
     int AccessReg(int reg, uintptr_t *val, int write, void *arg) override;
-    int FindProcInfo(uintptr_t pc, UnwindDynInfo *info, int needUnwindInfo, void *arg) override;
+    int FindProcInfo(uintptr_t pc, UnwindDynInfo *di, int needUnwindInfo, void *arg) override;
 };
 
 class DfxAccessorsRemote : public DfxAccessors
@@ -55,7 +55,7 @@ public:
 
     int AccessMem(uintptr_t addr, uintptr_t *val, int write, void *arg) override;
     int AccessReg(int reg, uintptr_t *val, int write, void *arg) override;
-    int FindProcInfo(uintptr_t pc, UnwindDynInfo *info, int needUnwindInfo, void *arg) override;
+    int FindProcInfo(uintptr_t pc, UnwindDynInfo *di, int needUnwindInfo, void *arg) override;
 };
 
 class DfxAccessorsCustomize : public DfxAccessors
@@ -66,7 +66,7 @@ public:
 
     int AccessMem(uintptr_t addr, uintptr_t *val, int write, void *arg) override;
     int AccessReg(int reg, uintptr_t *val, int write, void *arg) override;
-    int FindProcInfo(uintptr_t pc, UnwindDynInfo *info, int needUnwindInfo, void *arg) override;
+    int FindProcInfo(uintptr_t pc, UnwindDynInfo *di, int needUnwindInfo, void *arg) override;
 private:
     UnwindAccessors* accessors_;
 };

@@ -63,9 +63,29 @@ int DfxAccessorsLocal::AccessReg(int reg, uintptr_t *val, int write, void *arg)
     return UNW_ERROR_NONE;
 }
 
-int DfxAccessorsLocal::FindProcInfo(uintptr_t pc, UnwindDynInfo *info, int needUnwindInfo, void *arg)
+int DfxAccessorsLocal::FindProcInfo(uintptr_t pc, UnwindDynInfo *di, int needUnwindInfo, void *arg)
 {
-    return UNW_ERROR_NONE;
+    UnwindLocalContext *ctx = reinterpret_cast<UnwindLocalContext *>(arg);
+    if (ctx == nullptr) {
+        LOGE("ctx is null");
+        return UNW_ERROR_INVALID_CONTEXT;
+    }
+
+    int ret = UNW_ERROR_NONE;
+    if ((ret = DfxUnwindTable::FindUnwindTable2(&(ctx->edi), pc)) != UNW_ERROR_NONE) {
+        return ret;
+    }
+
+    if(ctx->edi.diCache.format != -1) {
+        *di = ctx->edi.diCache;
+    } else if(ctx->edi.diArm.format == -1) {
+        *di = ctx->edi.diArm;
+    } else if(ctx->edi.diDebug.format == -1) {
+        *di = ctx->edi.diDebug;
+    } else {
+        return UNW_ERROR_NO_UNWIND_INFO;
+    }
+    return ret;
 }
 
 int DfxAccessorsRemote::AccessMem(uintptr_t addr, uintptr_t *val, int write, void *arg)
@@ -148,7 +168,7 @@ int DfxAccessorsRemote::AccessReg(int reg, uintptr_t *val, int write, void *arg)
     return UNW_ERROR_NONE;
 }
 
-int DfxAccessorsRemote::FindProcInfo(uintptr_t pc, UnwindDynInfo *info, int needUnwindInfo, void *arg)
+int DfxAccessorsRemote::FindProcInfo(uintptr_t pc, UnwindDynInfo *di, int needUnwindInfo, void *arg)
 {
     UnwindRemoteContext *ctx = reinterpret_cast<UnwindRemoteContext *>(arg);
     if (ctx == nullptr) {
@@ -161,15 +181,11 @@ int DfxAccessorsRemote::FindProcInfo(uintptr_t pc, UnwindDynInfo *info, int need
     }
 
     if(ctx->edi.diCache.format != -1) {
-        *info = ctx->edi.diCache;
-    }
-#if defined(__arm__)
-    else if(ctx->edi.diArm.format == -1) {
-        *info = ctx->edi.diArm;
-    }
-#endif
-    else if(ctx->edi.diDebug.format == -1) {
-        *info = ctx->edi.diDebug;
+        *di = ctx->edi.diCache;
+    } else if(ctx->edi.diArm.format == -1) {
+        *di = ctx->edi.diArm;
+    } else if(ctx->edi.diDebug.format == -1) {
+        *di = ctx->edi.diDebug;
     } else {
         return UNW_ERROR_NO_UNWIND_INFO;
     }
@@ -186,9 +202,9 @@ int DfxAccessorsCustomize::AccessReg(int reg, uintptr_t *val, int write, void *a
     return accessors_->AccessReg(reg, val, write, arg);
 }
 
-int DfxAccessorsCustomize::FindProcInfo(uintptr_t pc, UnwindDynInfo *info, int needUnwindInfo, void *arg)
+int DfxAccessorsCustomize::FindProcInfo(uintptr_t pc, UnwindDynInfo *di, int needUnwindInfo, void *arg)
 {
-    return accessors_->FindProcInfo(pc, info, needUnwindInfo, arg);
+    return accessors_->FindProcInfo(pc, di, needUnwindInfo, arg);
 }
 } // namespace HiviewDFX
 } // namespace OHOS

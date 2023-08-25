@@ -36,6 +36,12 @@ struct ElfFileInfo {
 
 class DfxElf final {
 public:
+    struct DlCbData {
+        uintptr_t pc;
+        ElfDynInfo edi;
+    };
+
+    static int DlPhdrCb(struct dl_phdr_info *info, size_t size, void *data);
     static std::shared_ptr<DfxElf> Create(const std::string& file);
     explicit DfxElf(const std::string& file) : file_(file) { Init(); }
     ~DfxElf() { Clear(); }
