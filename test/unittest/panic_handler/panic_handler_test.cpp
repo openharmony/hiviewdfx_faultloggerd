@@ -87,11 +87,11 @@ HWTEST_F(PanicHandlerTest, PanicHandlerTest001, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "PanicHandlerTest001: start.";
     ListenAndCheckHiSysevent();
+    panicListener->SetKeyWord("panic in main thread");
     ForkAndTriggerRustPanic(true);
-    sleep(2); // 2 : sleep 2 seconds
     if (panicListener != nullptr) {
         GTEST_LOG_(INFO) << "PanicHandlerTest001: ready to check hisysevent reason keyword.";
-        ASSERT_TRUE(panicListener->CheckKeywordInReasons("panic in main thread"));
+        ASSERT_TRUE(panicListener->CheckKeywordInReasons());
     }
     GTEST_LOG_(INFO) << "PanicHandlerTest001: end.";
 }
@@ -106,11 +106,11 @@ HWTEST_F(PanicHandlerTest, PanicHandlerTest002, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "PanicHandlerTest002: start.";
     ListenAndCheckHiSysevent();
+    panicListener->SetKeyWord("panic in child thread");
     ForkAndTriggerRustPanic(false);
-    sleep(2); // 2 : sleep 2 seconds
     if (panicListener != nullptr) {
         GTEST_LOG_(INFO) << "PanicHandlerTest002: ready to check hisysevent reason keyword.";
-        ASSERT_TRUE(panicListener->CheckKeywordInReasons("panic in child thread"));
+        ASSERT_TRUE(panicListener->CheckKeywordInReasons());
     }
     GTEST_LOG_(INFO) << "PanicHandlerTest002: end.";
 }

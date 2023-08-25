@@ -13,10 +13,16 @@
  * limitations under the License.
  */
 
+#include <fcntl.h>
 #include <gtest/gtest.h>
+#include <sys/socket.h>
+#include <sys/un.h>
+#include <unistd.h>
 
+#include "dfx_define.h"
 #include "dfx_test_util.h"
 #include "faultloggerd_client.h"
+#include "faultloggerd_socket.h"
 
 #if defined(HAS_LIB_SELINUX)
 #include <selinux/selinux.h>
@@ -201,5 +207,110 @@ HWTEST_F(FaultloggerdClientTest, FaultloggerdClientTest004, TestSize.Level2)
     GTEST_LOG_(INFO) << "FaultloggerdClientTest004: end.";
 }
 #endif
+
+void DoClientProcess(const std::string& socketFileName)
+{
+    // wait 2 seconds, waiting for the service to be ready
+    sleep(2);
+    int clientSocketFd = -1;
+
+    // socket connect time out 10 second
+    bool retBool = StartConnect(clientSocketFd, socketFileName.c_str(), 10);
+    ASSERT_TRUE(retBool);
+    ASSERT_NE(clientSocketFd, -1);
+    GTEST_LOG_(INFO) << "child connect finished, client fd:" << clientSocketFd;
+
+    int data = 12345; // 12345 is for server Cred test
+    retBool = SendMsgIovToSocket(clientSocketFd, reinterpret_cast<void *>(&data), sizeof(data));
+    ASSERT_TRUE(retBool);
+
+    GTEST_LOG_(INFO) << "Start read file desc";
+    int testFd = ReadFileDescriptorFromSocket(clientSocketFd);
+    GTEST_LOG_(INFO) << "recv testFd:" << testFd;
+    ASSERT_NE(testFd, -1);
+    close(clientSocketFd);
+    close(testFd);
+}
+
+void DoServerProcess(const std::string& socketFileName)
+{
+    GTEST_LOG_(INFO) << "server prepare listen";
+    int32_t serverSocketFd = -1;
+    std::string testFileName = "/data/test.txt";
+
+    // 5: means max connection count is 5
+    bool ret = StartListen(serverSocketFd, socketFileName.c_str(), 5);
+    ASSERT_TRUE(ret);
+    ASSERT_NE(serverSocketFd, -1);
+    GTEST_LOG_(INFO) << "server start listen fd:" << serverSocketFd;
+
+    struct timeval timev = {
+        20, // recv timeout 20 seconds
+        0
+    };
+    void* pTimev = &timev;
+    int retOpt = setsockopt(serverSocketFd, SOL_SOCKET, SO_RCVTIMEO, static_cast<const char*>(pTimev),
+        sizeof(struct timeval));
+    ASSERT_NE(retOpt, -1);
+
+    struct sockaddr_un clientAddr;
+    socklen_t clientAddrSize = static_cast<socklen_t>(sizeof(clientAddr));
+    int32_t connectionFd = accept(serverSocketFd, reinterpret_cast<struct sockaddr *>(&clientAddr),
+        &clientAddrSize);
+    ASSERT_GT(connectionFd, 0);
+    GTEST_LOG_(INFO) << "server accept fd:" << connectionFd;
+
+    int optval = 1;
+    retOpt = setsockopt(connectionFd, SOL_SOCKET, SO_PASSCRED, &optval, sizeof(optval));
+    ASSERT_NE(retOpt, -1);
+
+    struct ucred rcred;
+    bool retCred = RecvMsgCredFromSocket(connectionFd, &rcred);
+    ASSERT_TRUE(retCred);
+    GTEST_LOG_(INFO) << "uid:" << rcred.uid;
+
+    // 0666 for file read and write
+    int testFdServer = open(testFileName.c_str(), O_RDWR | O_CREAT, 0666);
+    GTEST_LOG_(INFO) << "Start SendFileDescriptorToSocket";
+    SendFileDescriptorToSocket(connectionFd, testFdServer);
+    GTEST_LOG_(INFO) << "Close server connect fd";
+    close(connectionFd);
+    close(testFdServer);
+    close(serverSocketFd);
+    unlink(testFileName.c_str());
+}
+
+/**
+ * @tc.name: FaultloggerdSocketTest001
+ * @tc.desc: test StartListen, RecvMsgCredFromSocket and SendMsgCtlToSocket
+ * @tc.type: FUNC
+ */
+HWTEST_F(FaultloggerdClientTest, FaultloggerdSocketTest001, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "FaultloggerdSocketTest001: start.";
+    std::string testSocketName = "faultloggerd.server.test";
+
+    int32_t pid = fork();
+    if (pid == 0) {
+        DoClientProcess(testSocketName);
+        GTEST_LOG_(INFO) << "client exit";
+        exit(0);
+    } else if (pid > 0) {
+        DoServerProcess(testSocketName);
+
+        int status;
+        if (waitpid(pid, &status, 0) == -1) {
+            return;
+        }
+
+        int exitCode = -1;
+        if (WIFEXITED(status)) {
+            exitCode = WEXITSTATUS(status);
+            GTEST_LOG_(INFO) << "Exit status was " << exitCode;
+        }
+        ASSERT_EQ(exitCode, 0);
+    }
+    GTEST_LOG_(INFO) << "FaultloggerdSocketTest001: end.";
+}
 } // namespace HiviewDFX
 } // namepsace OHOS
