@@ -23,6 +23,8 @@
 
 namespace OHOS {
 namespace HiviewDFX {
+class DfxElf;
+
 struct UnwindDynTableInfo {
     uintptr_t namePtr;
     uintptr_t segbase;
@@ -43,7 +45,8 @@ struct UnwindDynInfo {
     uintptr_t startPc;
     uintptr_t endPc;
     uintptr_t gp; /* global-pointer in effect for this entry */
-    int format; // UnwindDynInfoFormatType
+    int format = -1; // UnwindDynInfoFormatType
+    uintptr_t hint;
     union
     {
         UnwindDynTableInfo ti;
@@ -67,25 +70,26 @@ struct UnwindProcInfo {
     uintptr_t lsda;
     uintptr_t handler;
     uintptr_t gp;
-    int format;
+    int format = -1;
     int unwindInfoSize;
     void *unwindInfo;
 };
 
 struct UnwindAccessors {
-    int (*FindProcInfo)(uintptr_t, UnwindProcInfo *, int, void *);
+    int (*FindProcInfo)(uintptr_t, UnwindDynInfo *, int, void *);
     int (*AccessMem)(uintptr_t, uintptr_t *, int, void *);
     int (*AccessReg)(int, uintptr_t *, int, void *);
 };
 
 struct UnwindLocalContext {
-    size_t regsSize;
+    int regsSize;
     uintptr_t *regs;
 };
 
 struct UnwindRemoteContext {
     int pid;
     struct ElfDynInfo edi;
+    std::shared_ptr<DfxElf> elf;
 };
 
 struct UnwindRegLocation

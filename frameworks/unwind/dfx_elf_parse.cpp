@@ -66,6 +66,16 @@ int64_t ElfParse::GetLoadBias()
     return loadBias_;
 }
 
+uint64_t ElfParse::GetStartVaddr()
+{
+    return startExecVaddr_;
+}
+
+uint64_t ElfParse::GetEndVaddr()
+{
+    return endExecVaddr_;
+}
+
 template <typename EhdrType, typename PhdrType, typename ShdrType>
 bool ElfParse::ParseAllHeaders()
 {
@@ -138,6 +148,13 @@ bool ElfParse::ParseProgramHeaders(const EhdrType& ehdr)
                 loadBias_ = static_cast<int64_t>(static_cast<uint64_t>(phdr.p_vaddr) - phdr.p_offset);
             }
             firstLoadHeader = false;
+
+            if (phdr.p_vaddr < startExecVaddr_) {
+                startExecVaddr_ = phdr.p_vaddr;
+            }
+            if (phdr.p_vaddr + phdr.p_memsz > endExecVaddr_) {
+                endExecVaddr_ = phdr.p_vaddr + phdr.p_memsz;
+            }
             break;
         }
 

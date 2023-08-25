@@ -31,7 +31,7 @@
 #include "dfx_mmap.h"
 #include "dfx_symbol.h"
 #include "elf_define.h"
-#include "unwind_define.h"
+#include "unwind_context.h"
 
 namespace OHOS {
 namespace HiviewDFX {
@@ -44,6 +44,8 @@ public:
     virtual ArchType GetArchType() { return archType_; }
     virtual uint64_t GetMaxSize();
     virtual int64_t GetLoadBias();
+    virtual uint64_t GetStartVaddr();
+    virtual uint64_t GetEndVaddr();
     virtual std::string GetElfName() = 0;
     virtual std::string GetBuildId() = 0;
     virtual const std::vector<ElfSymbol>& GetElfSymbols() = 0;
@@ -83,6 +85,8 @@ private:
     ArchType archType_ = ARCH_UNKNOWN;
     uint64_t maxSize_ = 0;
     int64_t loadBias_ = 0;
+    uint64_t startExecVaddr_ = static_cast<uint64_t>(-1);
+    uint64_t endExecVaddr_ = 0;
     std::unordered_map<std::string, ElfShdr> symShdrs_;
     std::map<const std::string, ShdrInfo> shdrInfos_;
     std::unordered_map<uint32_t, ElfSecInfo> elfSecInfos_;

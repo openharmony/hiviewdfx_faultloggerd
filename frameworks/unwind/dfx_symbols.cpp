@@ -84,6 +84,7 @@ bool DfxSymbols::GetFuncNameAndOffset(uint64_t pc, DfxElf* elf,
         return false;
     }
 
+    // TODO: use binary search ?
     for (const auto& symbol : symbols) {
         if (symbol.Contain(pc)) {
             *funcName = symbol.demangle_;

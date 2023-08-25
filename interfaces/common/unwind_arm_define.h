@@ -55,20 +55,9 @@ struct RegsUserArm {
     uint32_t regs[16]; // 16
 };
 
-typedef struct UContext {
+typedef struct UnwindUContext {
     RegsUserArm userRegs;
-} UContext_t;
-
-struct UnwindFrameInfo {
-    uint32_t virtualAddress;
-    int32_t frameType     : 3;
-    int32_t lastFrame     : 1;  /* non-zero if last frame in chain */
-    int32_t cfaRegSp      : 1;  /* cfa dwarf base register is sp vs. r7 */
-    int32_t cfaRegOffset : 30; /* cfa is at this offset from base register value */
-    int32_t r7CfaOffset  : 30; /* r7 saved at this offset from cfa (-1 = not saved) */
-    int32_t lrCfaOffset  : 30; /* lr saved at this offset from cfa (-1 = not saved) */
-    int32_t spCfaOffset  : 30; /* sp saved at this offset from cfa (-1 = not saved) */
-};
+} UnwindUContext_t;
 } // namespace HiviewDFX
 } // namespace OHOS
 #endif
