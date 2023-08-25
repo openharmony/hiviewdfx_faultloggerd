@@ -155,7 +155,7 @@ bool Unwinder::Unwind(void *ctx, size_t maxFrameNum, size_t skipFrameNum)
             context->elf = elf_;
         }
         uint64_t relPc = elf_->GetRelPc(pc, map->begin, map->end);
-        uint64_t stepPc = relPc;
+        uintptr_t stepPc = relPc;
         uint64_t pcAdjustment = elf_->GetPcAdjustment(relPc);
         stepPc -= pcAdjustment;
 

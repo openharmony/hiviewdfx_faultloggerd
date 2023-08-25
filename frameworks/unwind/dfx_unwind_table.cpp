@@ -29,39 +29,69 @@ namespace {
 #define LOG_TAG "DfxUnwindTable"
 }
 
-int DfxUnwindTable::FindUnwindTable(struct ElfDynInfo* edi, uintptr_t pc, std::shared_ptr<DfxElf> elf)
+int DfxUnwindTable::ResetElfDynInfo(struct ElfDynInfo* edi)
 {
-    if ((edi->diCache.format != -1 && pc >= edi->diCache.startPc && pc < edi->diCache.endPc) ||
-#if defined(__arm__)
-        (edi->diArm.format != -1 && pc >= edi->diArm.startPc && pc < edi->diArm.endPc) ||
-#endif
-        (edi->diDebug.format != -1 && pc >= edi->diDebug.startPc && pc < edi->diDebug.endPc)) {
+    int ret = memset_s(edi, sizeof(ElfDynInfo), 0, sizeof(ElfDynInfo));
+    edi->diCache.format = -1;
+    edi->diDebug.format = -1;
+    edi->diArm.format = -1;
+    return ret;
+}
+
+bool DfxUnwindTable::IsPcInUnwindInfo(struct UnwindDynInfo di, uintptr_t pc)
+{
+    if (di.format != -1 && pc >= di.startPc && pc < di.endPc) {
+        return true;
+    }
+    return false;
+}
+
+int DfxUnwindTable::FindUnwindTable2(struct ElfDynInfo* edi, uintptr_t pc)
+{
+    if (IsPcInUnwindInfo(edi->diCache, pc) ||
+        IsPcInUnwindInfo(edi->diArm, pc) ||
+        IsPcInUnwindInfo(edi->diDebug, pc)) {
         return UNW_ERROR_NONE;
     }
 
-    memset_s(edi, sizeof(ElfDynInfo), 0, sizeof(ElfDynInfo));
-    edi->diCache.format = -1;
-    edi->diDebug.format = -1;
-#if UNW_TARGET_ARM
-    edi->diArm.format = -1;
-#endif
+    DfxElf::DlCbData cbData;
+    memset_s(&cbData, sizeof(cbData), 0, sizeof(cbData));
+    cbData.pc = pc;
+    ResetElfDynInfo(&cbData.edi);
+    int ret = dl_iterate_phdr(DfxElf::DlPhdrCb, &cbData);
+    if (ret == UNW_ERROR_NONE) {
+        *edi = cbData.edi;
+    }
+    return ret;
+}
 
+int DfxUnwindTable::FindUnwindTable(struct ElfDynInfo* edi, uintptr_t pc, std::shared_ptr<DfxElf> elf)
+{
+    if (IsPcInUnwindInfo(edi->diCache, pc) ||
+        IsPcInUnwindInfo(edi->diArm, pc) ||
+        IsPcInUnwindInfo(edi->diDebug, pc)) {
+        return UNW_ERROR_NONE;
+    }
+
+    ResetElfDynInfo(edi);
     if (elf == nullptr || !elf->GetElfDynInfo(pc, edi)) {
         return UNW_ERROR_NO_UNWIND_INFO;
     }
 
+    // format != 1, but pc is not in elf
     if (edi->diCache.format != -1 && (pc < edi->diCache.startPc || pc >= edi->diCache.endPc)) {
         edi->diCache.format = -1;
+    }
+    if (edi->diArm.format != -1 && (pc < edi->diArm.startPc || pc >= edi->diArm.endPc)) {
+        edi->diArm.format = -1;
     }
     if (edi->diDebug.format != -1 && (pc < edi->diDebug.startPc || pc >= edi->diDebug.endPc)) {
         edi->diDebug.format = -1;
     }
 
     if (edi->diCache.format == -1 &&
-#if defined(__arm__)
         edi->diArm.format == -1 &&
-#endif
-        edi->diDebug.format != -1) {
+        edi->diDebug.format == -1) {
         return UNW_ERROR_NO_UNWIND_INFO;
     }
     return UNW_ERROR_NONE;
@@ -85,14 +115,14 @@ int DfxUnwindTable::ExdixSearchUnwindTable(struct UnwindProcInfo* pi, struct Unw
     uintptr_t last = di->u.rti.tableData + di->u.rti.tableLen - 8;
     uintptr_t entry, val;
 
-    if(!memory->ReadPrel31(&first, &val) || pc < val) {
+    if (!memory->ReadPrel31(&first, &val) || pc < val) {
         return UNW_ERROR_NO_UNWIND_INFO;
     }
-    if(!memory->ReadPrel31(&last, &val)) {
+    if (!memory->ReadPrel31(&last, &val)) {
         return UNW_ERROR_NO_UNWIND_INFO;
     }
 
-    if(pc >= val) {
+    if (pc >= val) {
         entry = last;
         if (!memory->ReadPrel31(&last, &pi->startPc)) {
             return UNW_ERROR_ILLEGAL_VALUE;

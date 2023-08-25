@@ -27,10 +27,14 @@ namespace HiviewDFX {
 class DfxUnwindTable final {
 public:
     static int FindUnwindTable(struct ElfDynInfo* edi, uintptr_t pc, std::shared_ptr<DfxElf> elf);
+    static int FindUnwindTable2(struct ElfDynInfo* edi, uintptr_t pc);
+
     static int SearchUnwindTable(struct UnwindProcInfo* pi, struct UnwindDynInfo* di,\
         uintptr_t pc, DfxMemory* memory, bool needUnwindInfo = false);
 
 private:
+    static int ResetElfDynInfo(struct ElfDynInfo* edi);
+    static bool IsPcInUnwindInfo(struct UnwindDynInfo di, uintptr_t pc);
     static int ExdixSearchUnwindTable(struct UnwindProcInfo* pi, struct UnwindDynInfo* di,\
         uintptr_t pc, DfxMemory* memory, bool needUnwindInfo = false);
     static int DwarfSearchUnwindTable(struct UnwindProcInfo* pi, struct UnwindDynInfo* di,\
