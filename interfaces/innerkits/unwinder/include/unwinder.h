@@ -54,19 +54,22 @@ public:
     inline void SetTargetPid(int pid) { pid_ = pid; }
     inline int32_t GetTargetPid() { return pid_; }
 
+    inline void SetRegs(std::shared_ptr<DfxRegs> regs) { regs_ = regs; }
+    inline const std::shared_ptr<DfxRegs>& GetRegs() { return regs_; }
+
     const std::vector<uintptr_t>& GetPcs() { return pcs_; }
     const std::vector<DfxFrame>& GetFrames() { return frames_; }
     const uint16_t& GetLastErrorCode() const { return lastErrorData_.code; }
     const uint64_t& GetLastErrorAddr() const { return lastErrorData_.addr; }
 
     bool Unwind(void *ctx, size_t maxFrameNum = 64, size_t skipFrameNum = 0);
+    bool Step(uintptr_t& pc, uintptr_t& sp, void *ctx);
 
 private:
     void Init();
     void Destroy();
-    bool IsValidFrame(uintptr_t frame, uintptr_t stackTop, uintptr_t stackBottom);
-
-    int Step(uintptr_t pc, void *ctx);
+    bool InitMemory(void *ctx);
+    bool IsValidFrame(uintptr_t addr, uintptr_t stackTop, uintptr_t stackBottom);
 
 private:
     int32_t pid_;

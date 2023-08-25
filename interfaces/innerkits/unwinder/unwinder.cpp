@@ -53,54 +53,60 @@ void Unwinder::Destroy()
 }
 
 
-bool Unwinder::IsValidFrame(uintptr_t frame, uintptr_t stackTop, uintptr_t stackBottom)
+bool Unwinder::IsValidFrame(uintptr_t addr, uintptr_t stackTop, uintptr_t stackBottom)
 {
     if (UNLIKELY(stackTop < stackBottom)) {
         return false;
     }
-    return ((frame >= stackBottom) && (frame < stackTop - sizeof(uintptr_t)));
+    return ((addr >= stackBottom) && (addr < stackTop - sizeof(uintptr_t)));
+}
+
+bool Unwinder::InitMemory(void *ctx)
+{
+    if (memory_ != nullptr) {
+        return true;
+    }
+
+    if (pid_ == UWNIND_TYPE_CUSTOMIZE) {
+        if (ctx == nullptr) {
+            return false;
+        }
+        memory_ = new DfxMemory(acc_, ctx);
+    } else if (pid_ == UWNIND_TYPE_LOCAL) {
+        if (regs_ == nullptr) {
+            regs_ = DfxRegs::Create();
+        }
+        if (ctx == nullptr) {
+            UnwindLocalContext context;
+            GetLocalRegs(regs_->RawData());
+            context.regs = static_cast<uintptr_t *>(regs_->RawData());
+            context.regsSize = regs_->RegsSize();
+            memory_ = new DfxMemory(acc_, &context);
+            maps_ = DfxMaps::Create(getpid());
+        } else {
+            UnwindLocalContext* context = reinterpret_cast<UnwindLocalContext *>(ctx);
+            regs_->SetRegsData(context->regs);
+            memory_ = new DfxMemory(acc_, ctx);
+        }
+    } else {
+        if (pid_ <= 0) {
+            return false;
+        }
+        if (ctx == nullptr) {
+            UnwindRemoteContext context;
+            context.pid = pid_;
+            ctx = &context;
+        }
+        memory_ = new DfxMemory(acc_, ctx);
+        maps_ = DfxMaps::Create(pid_);
+    }
+    return true;
 }
 
 bool Unwinder::Unwind(void *ctx, size_t maxFrameNum, size_t skipFrameNum)
 {
-    if (regs_ == nullptr) {
-        regs_ = DfxRegs::Create();
-    }
-
-    if (memory_ == nullptr) {
-        if (pid_ == UWNIND_TYPE_CUSTOMIZE) {
-            if (ctx == nullptr) {
-                return false;
-            }
-            memory_ = new DfxMemory(acc_, ctx);
-        } else if (pid_ == UWNIND_TYPE_LOCAL) {
-            if (ctx == nullptr) {
-                UnwindLocalContext context;
-                GetLocalRegs(regs_->RawData());
-                context.regs = static_cast<uintptr_t *>(regs_->RawData());
-                context.regsSize = regs_->RegsSize();
-                memory_ = new DfxMemory(acc_, &context);
-                maps_ = DfxMaps::Create(getpid());
-            } else {
-                UnwindLocalContext* context = reinterpret_cast<UnwindLocalContext *>(ctx);
-                regs_->SetRegsData(context->regs);
-                memory_ = new DfxMemory(acc_, ctx);
-            }
-        } else {
-            if (pid_ <= 0) {
-                return false;
-            }
-            if (ctx == nullptr) {
-                UnwindRemoteContext context;
-                context.pid = pid_;
-                ctx = &context;
-            }
-            memory_ = new DfxMemory(acc_, ctx);
-            maps_ = DfxMaps::Create(pid_);
-        }
-    }
-
-    if (memory_ == nullptr) {
+    if (!InitMemory(ctx)) {
+        lastErrorData_.code = UNW_ERROR_INVALID_MEMORY;
         return false;
     }
 
@@ -114,28 +120,33 @@ bool Unwinder::Unwind(void *ctx, size_t maxFrameNum, size_t skipFrameNum)
             continue;
         }
         curIndex = index - skipFrameNum;
-        if (curIndex < maxFrameNum) {
+        if (curIndex >= maxFrameNum) {
+            lastErrorData_.code = UNW_ERROR_MAX_FRAMES_EXCEEDED;
             break;
         }
 
         if (!memory_->ReadReg(REG_PC, &pc)) {
             LOGE("Read pc failed");
+            lastErrorData_.code = UNW_ERROR_INVALID_REGS;
             break;
         }
         if (!memory_->ReadReg(REG_SP, &sp)) {
             LOGE("Read sp failed");
+            lastErrorData_.code = UNW_ERROR_INVALID_REGS;
             break;
         }
 
         std::shared_ptr<DfxMap> map = nullptr;
         if (!maps_->FindMapByAddr(map, pc) || (map == nullptr)) {
             LOGE("map is null");
+            lastErrorData_.code = UNW_ERROR_INVALID_MAP;
             break;
         }
 
         elf_ = map->GetElf();
         if (elf_ == nullptr) {
             LOGE("elf is null");
+            lastErrorData_.code = UNW_ERROR_INVALID_ELF;
             break;
         }
 
@@ -150,7 +161,7 @@ bool Unwinder::Unwind(void *ctx, size_t maxFrameNum, size_t skipFrameNum)
 
         if (regs_->StepIfSignalHandler(relPc, elf_.get(), memory_)) {
             stepPc = relPc;
-        } else if (Step(stepPc, ctx) <= 0) {
+        } else if (Step(stepPc, sp, ctx) <= 0) {
             break;
         }
 
@@ -159,19 +170,27 @@ bool Unwinder::Unwind(void *ctx, size_t maxFrameNum, size_t skipFrameNum)
     return (curIndex > 0);
 }
 
-int Unwinder::Step(uintptr_t pc, void *ctx)
+bool Unwinder::Step(uintptr_t& pc, uintptr_t& sp, void *ctx)
 {
-    int ret = UNW_ERROR_NONE;
+    int errorCode = UNW_ERROR_NONE;
+    if (!InitMemory(ctx)) {
+        lastErrorData_.code = UNW_ERROR_INVALID_MEMORY;
+        return false;
+    }
+
     UnwindDynInfo di;
-    if ((ret = acc_->FindProcInfo(pc, &di, true, ctx)) != UNW_ERROR_NONE) {
-        return ret;
+    if ((errorCode = acc_->FindProcInfo(pc, &di, true, ctx)) != UNW_ERROR_NONE) {
+        lastErrorData_.code = static_cast<uint16_t>(errorCode);
+        return false;
     }
 
     struct UnwindProcInfo pi;
-    if ((ret = DfxUnwindTable::SearchUnwindTable(&pi, &di, pc, memory_, true)) != UNW_ERROR_NONE) {
-        return ret;
+    if ((errorCode = DfxUnwindTable::SearchUnwindTable(&pi, &di, pc, memory_, true)) != UNW_ERROR_NONE) {
+        lastErrorData_.code = static_cast<uint16_t>(errorCode);
+        return false;
     }
-    return ret;
+
+    return true;
 }
 } // namespace HiviewDFX
 } // namespace OHOS
