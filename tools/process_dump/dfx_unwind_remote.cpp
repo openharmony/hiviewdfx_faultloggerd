@@ -180,7 +180,7 @@ bool DfxUnwindRemote::DoUnwindStep(size_t const & index,
 {
     bool ret = false;
     uint64_t framePc;
-    static unw_word_t oldPc = 0;
+    static unw_word_t prevFrameSp = 0;
     if (unw_get_reg(&cursor, UNW_REG_IP, (unw_word_t*)(&framePc))) {
         DFXLOG_WARN("Fail to get current pc.");
         return ret;
@@ -192,10 +192,10 @@ bool DfxUnwindRemote::DoUnwindStep(size_t const & index,
         return ret;
     }
 
-    if (oldPc == framePc && index != 0) {
+    if (prevFrameSp == frameSp && index != 0) {
         return ret;
     }
-    oldPc = framePc;
+    prevFrameSp = frameSp;
 
     uint64_t relPc = unw_get_rel_pc(&cursor);
     if (index != 0) {

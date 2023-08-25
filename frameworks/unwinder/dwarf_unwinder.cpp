@@ -83,7 +83,7 @@ bool DwarfUnwinder::UnwindWithContext(unw_addr_space_t as, unw_context_t& contex
     unw_init_local_with_as(as, &cursor, &context);
     size_t index = 0;
     size_t curIndex = 0;
-    unw_word_t prevPc = 0;
+    unw_word_t prevFrameSp = 0;
     do {
         // skip 0 stack, as this is dump catcher. Caller don't need it.
         if (index < skipFrameNum) {
@@ -102,10 +102,10 @@ bool DwarfUnwinder::UnwindWithContext(unw_addr_space_t as, unw_context_t& contex
             break;
         }
 
-        if (frame.index > 1 && prevPc == frame.pc) {
+        if (frame.index > 1 && prevFrameSp == frame.sp) {
             break;
         }
-        prevPc = frame.pc;
+        prevFrameSp = frame.sp;
 
         frame.relPc = unw_get_rel_pc(&cursor);
         unw_word_t sz = unw_get_previous_instr_sz(&cursor);
