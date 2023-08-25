@@ -33,10 +33,12 @@ struct UnwindErrorData {
 enum UnwindErrorCode : uint16_t {
     /** No error */
     UNW_ERROR_NONE = 0,
-    /** Invalid unwind mode */
-    UNW_ERROR_INVALID_MODE,
+    /** No unwind info */
+    UNW_ERROR_NO_UNWIND_INFO,
     /** Invalid unwind context */
     UNW_ERROR_INVALID_CONTEXT,
+    /** Invalid unwind memory */
+    UNW_ERROR_INVALID_MEMORY,
     /** Invalid unwind regs */
     UNW_ERROR_INVALID_REGS,
     /** Invalid unwind map */
@@ -45,8 +47,6 @@ enum UnwindErrorCode : uint16_t {
     UNW_ERROR_INVALID_ELF,
     /** Invalid unwind pid */
     UNW_ERROR_INVALID_PID,
-    /** Invalid unwind stack index */
-    UNW_ERROR_INVALID_STACK_INDEX,
     /** Reserved value */
     UNW_ERROR_RESERVED_VALUE,
     /** Illegal value */
@@ -61,8 +61,6 @@ enum UnwindErrorCode : uint16_t {
     UNW_ERROR_INVALID_ALIGNMENT,
     /** arm exidx invalid personality */
     UNW_ERROR_INVALID_PERSONALITY,
-    /** No unwind info */
-    UNW_ERROR_NO_UNWIND_INFO,
     /** arm exidx cant unwind */
     UNW_ERROR_CANT_UNWIND,
     /** arm exidx spare */
