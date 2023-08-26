@@ -32,7 +32,7 @@ class DfxElf;
 class DfxMap {
 public:
     static std::shared_ptr<DfxMap> Create(const std::string buf, int size);
-    static void PermsToProts(const std::string perms, uint64_t& prots);
+    static void PermsToProts(const std::string perms, uint32_t& prots, uint32_t& flag);
 
     DfxMap() = default;
     DfxMap(DfxMap* prevMap, uint64_t begin, uint64_t end, uint64_t offset,
@@ -50,7 +50,8 @@ public:
     uint64_t begin = 0;
     uint64_t end = 0;
     uint64_t offset = 0;
-    uint64_t prots = 0;
+    uint32_t prots = 0;
+    uint32_t flag = 0;
     uint64_t major = 0;
     uint64_t minor = 0;
     ino_t inode = 0;

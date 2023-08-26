@@ -70,7 +70,7 @@ bool DfxMap::Parse(const std::string buf, int size)
     this->minor = minor;
     this->inode = inode;
     this->perms = std::string(perms, sizeof(perms));
-    PermsToProts(this->perms, this->prots);
+    PermsToProts(this->perms, this->prots, this->flag);
     TrimAndDupStr(buf.substr(pos), this->name);
     if (!IsValidName()) {
         this->prots |= PROT_DEVICE_MAP;
@@ -126,7 +126,7 @@ std::string DfxMap::ToString()
     return std::string(buf);
 }
 
-void DfxMap::PermsToProts(const std::string perms, uint64_t& prots)
+void DfxMap::PermsToProts(const std::string perms, uint32_t& prots, uint32_t& flag)
 {
     // rwxp
     if (perms.find("r") != std::string::npos) {
@@ -139,6 +139,13 @@ void DfxMap::PermsToProts(const std::string perms, uint64_t& prots)
 
     if (perms.find("x") != std::string::npos) {
         prots |= PROT_EXEC;
+    }
+
+    if (perms.find("p") != std::string::npos) {
+        flag = MAP_PRIVATE;
+    }
+    if (perms.find("s") != std::string::npos) {
+        flag = MAP_SHARED;
     }
 }
 
