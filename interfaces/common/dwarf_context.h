@@ -22,12 +22,6 @@ namespace OHOS {
 namespace HiviewDFX {
 class DfxMap;
 
-struct DwarfLoc
-{
-    uintptr_t val;
-    uintptr_t type;            /* see DWARF_LOC_TYPE_* macros.  */
-};
-
 struct DwarfCursor {
     void *asArg;               /* argument to address-space callbacks */
     UnwindAddrSpace as;        /* reference to per-address-space info */

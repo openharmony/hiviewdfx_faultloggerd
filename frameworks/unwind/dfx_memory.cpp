@@ -147,5 +147,54 @@ bool DfxMemory::ReadPrel31(uintptr_t* addr, uintptr_t *val)
     *val = *addr + offset;
     return true;
 }
+
+int DfxMemory::DwarfInit(DwarfLoc* loc, int size)
+{
+    if (loc == nullptr || loc_ == nullptr) {
+        return -1;
+    }
+
+    int locSize = 0;
+    int leftSize = 0;
+    if (size <= REG_LAST) {
+        locSize = size;
+    } else {
+        locSize = REG_LAST;
+        leftSize = size - REG_LAST;
+    }
+
+    for (int i = 0; i < locSize; ++i) {
+        loc_->SetReg(loc[i], i, ctx_);
+    }
+
+    if (leftSize > 0) {
+        for (int j = locSize; j < size; ++j) {
+            loc_->Clear(loc[j]);
+        }
+    }
+    return 0;
+}
+
+int DfxMemory::DwarfGet(DwarfLoc loc, uintptr_t *val)
+{
+    if (loc_ == nullptr || loc_->IsNull(loc)) {
+        return -1;
+    }
+    if (loc_->IsReg(loc)) {
+        return acc_->AccessReg(loc.val, val, 0, ctx_);
+    }
+    return acc_->AccessMem(loc.val, val, 0, ctx_);
+}
+
+int DfxMemory::DwarfSet(DwarfLoc loc, uintptr_t val)
+{
+    if (loc_ == nullptr) {
+        return -1;
+    }
+    if (loc_->IsReg(loc)) {
+        return acc_->AccessReg(loc.val, &val, 1, ctx_);
+    }
+    return acc_->AccessMem(loc.val, &val, 1, ctx_);
+}
 } // namespace HiviewDFX
 } // namespace OHOS

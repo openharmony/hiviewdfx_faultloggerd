@@ -12,8 +12,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef UNWINDER_DEFINE_H
-#define UNWINDER_DEFINE_H
+#ifndef UNWIND_DEFINE_H
+#define UNWIND_DEFINE_H
 
 #include <cinttypes>
 #include <string>

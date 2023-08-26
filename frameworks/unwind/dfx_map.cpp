@@ -143,8 +143,7 @@ void DfxMap::PermsToProts(const std::string perms, uint32_t& prots, uint32_t& fl
 
     if (perms.find("p") != std::string::npos) {
         flag = MAP_PRIVATE;
-    }
-    if (perms.find("s") != std::string::npos) {
+    } else if (perms.find("s") != std::string::npos) {
         flag = MAP_SHARED;
     }
 }
