@@ -19,6 +19,8 @@
 #include <memory>
 #include <string>
 
+#include "string_printf.h"
+
 namespace OHOS {
 namespace HiviewDFX {
 class DfxMap;
@@ -56,6 +58,28 @@ struct CallFrame {
     uint64_t vaddrInFile = 0; // vaddr of symbol in file
     uint64_t offsetToVaddr = 0; // offset of ip to vaddr
     int32_t symbolIndex = -1; // symbols index , should update after sort
+
+    // add for constructor function
+    CallFrame(uint64_t pc, uint64_t sp)
+    {
+        frame.pc = pc;
+        frame.sp = sp;
+    }
+
+    // add for sort function
+    bool operator==(const CallFrame &b) const
+    {
+        return (frame.pc == b.frame.pc) && (frame.sp == b.frame.sp);
+    }
+    bool operator!=(const CallFrame &b) const
+    {
+        return (frame.pc != b.frame.pc) || (frame.sp != b.frame.sp);
+    }
+
+    std::string ToString() const
+    {
+        return StringPrintf("ip: 0x%016llx sp: 0x%016llx", frame.pc, frame.sp);
+    }
 };
 } // namespace HiviewDFX
 } // namespace OHOS

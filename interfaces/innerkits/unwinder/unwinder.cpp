@@ -16,6 +16,7 @@
 #include "unwinder.h"
 
 #include <pthread.h>
+#include "arm_exidx.h"
 #include "dfx_define.h"
 #include "dfx_errors.h"
 #include "dfx_regs_get.h"
@@ -112,7 +113,7 @@ bool Unwinder::Unwind(void *ctx, size_t maxFrameNum, size_t skipFrameNum)
 
     size_t index = 0;
     size_t curIndex = 0;
-    uintptr_t pc, sp;
+    uintptr_t pc, sp, stepPc;
     do {
         // skip 0 stack, as this is dump catcher. Caller don't need it.
         if (index < skipFrameNum) {
@@ -155,7 +156,7 @@ bool Unwinder::Unwind(void *ctx, size_t maxFrameNum, size_t skipFrameNum)
             context->elf = elf_;
         }
         uint64_t relPc = elf_->GetRelPc(pc, map->begin, map->end);
-        uintptr_t stepPc = relPc;
+        stepPc = relPc;
         uint64_t pcAdjustment = elf_->GetPcAdjustment(relPc);
         stepPc -= pcAdjustment;
 
@@ -187,6 +188,21 @@ bool Unwinder::Step(uintptr_t& pc, uintptr_t& sp, void *ctx)
     struct UnwindProcInfo pi;
     if ((errorCode = DfxUnwindTable::SearchUnwindTable(&pi, &di, pc, memory_, true)) != UNW_ERROR_NONE) {
         lastErrorData_.code = static_cast<uint16_t>(errorCode);
+        return false;
+    }
+
+    // we have get unwind info, then parser the exidx entry or ehframe fde
+    if (pi.format == UNW_INFO_FORMAT_ARM_EXIDX) {
+        ArmExidx armIdx(memory_, static_cast<DfxRegsArm*>(regs_.get()));
+        if (armIdx.ExtractEntryData((uintptr_t)pi.unwindInfo) && armIdx.Eval()) {
+            // get new pc and sp to assign to output param
+            pc = regs_->GetPc();
+            sp = regs_->GetSp();
+        } else {
+            return false;
+        }
+    } else if (pi.format == UNW_INFO_FORMAT_REMOTE_TABLE) {
+        // TODO: arm64 UNW_INFO_FORMAT_REMOTE_TABLE
         return false;
     }
 
