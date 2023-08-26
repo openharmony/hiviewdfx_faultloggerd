@@ -22,6 +22,7 @@
 #include "dfx_regs_get.h"
 #include "dfx_log.h"
 #include "dfx_unwind_table.h"
+#include "stack_util.h"
 #include "string_printf.h"
 
 namespace OHOS {
@@ -38,6 +39,7 @@ void Unwinder::Init()
     lastErrorData_.code = UNW_ERROR_NONE;
     lastErrorData_.addr = 0;
     frames_.clear();
+    GetSelfStackRange(stackBottom_, stackTop_);
 }
 
 void Unwinder::Destroy()
@@ -49,6 +51,10 @@ void Unwinder::Destroy()
     if (acc_ != nullptr) {
         delete acc_;
         acc_ = nullptr;
+    }
+    if (loc_ != nullptr) {
+        delete loc_;
+        loc_ = nullptr;
     }
     frames_.clear();
 }
@@ -72,7 +78,7 @@ bool Unwinder::InitMemory(void *ctx)
         if (ctx == nullptr) {
             return false;
         }
-        memory_ = new DfxMemory(acc_, ctx);
+        memory_ = new DfxMemory(acc_, loc_, ctx);
     } else if (pid_ == UWNIND_TYPE_LOCAL) {
         if (regs_ == nullptr) {
             regs_ = DfxRegs::Create();
@@ -82,12 +88,12 @@ bool Unwinder::InitMemory(void *ctx)
             GetLocalRegs(regs_->RawData());
             context.regs = static_cast<uintptr_t *>(regs_->RawData());
             context.regsSize = regs_->RegsSize();
-            memory_ = new DfxMemory(acc_, &context);
+            memory_ = new DfxMemory(acc_, loc_, &context);
             maps_ = DfxMaps::Create(getpid());
         } else {
             UnwindLocalContext* context = reinterpret_cast<UnwindLocalContext *>(ctx);
             regs_->SetRegsData(context->regs);
-            memory_ = new DfxMemory(acc_, ctx);
+            memory_ = new DfxMemory(acc_, loc_, ctx);
         }
     } else {
         if (pid_ <= 0) {
@@ -98,7 +104,7 @@ bool Unwinder::InitMemory(void *ctx)
             context.pid = pid_;
             ctx = &context;
         }
-        memory_ = new DfxMemory(acc_, ctx);
+        memory_ = new DfxMemory(acc_, loc_, ctx);
         maps_ = DfxMaps::Create(pid_);
     }
     return true;

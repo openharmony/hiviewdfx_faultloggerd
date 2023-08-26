@@ -12,14 +12,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef UNWINDER_CONTEXT_H
-#define UNWINDER_CONTEXT_H
+#ifndef UNWIND_CONTEXT_H
+#define UNWIND_CONTEXT_H
 
 #include <memory>
 #include <ucontext.h>
 #include "byte_order.h"
 #include "dfx_errors.h"
 #include "unwind_define.h"
+#include "unwind_loc.h"
 
 namespace OHOS {
 namespace HiviewDFX {

@@ -19,6 +19,7 @@
 #include <vector>
 #include "dfx_accessors.h"
 #include "dfx_frame.h"
+#include "dfx_loc.h"
 #include "dfx_memory.h"
 #include "dfx_maps.h"
 #include "dfx_regs.h"
@@ -33,18 +34,21 @@ public:
     {
         Init();
         acc_ = new DfxAccessorsLocal();
+        loc_ = new DfxLocLocal();
     };
     // for remote
     Unwinder(int pid) : pid_(pid)
     {
         Init();
         acc_ = new DfxAccessorsRemote();
+        loc_ = new DfxLocRemote();
     };
     // for customized
     Unwinder(UnwindAccessors* accessors) : pid_(UWNIND_TYPE_CUSTOMIZE)
     {
         Init();
         acc_ = new DfxAccessorsCustomize(accessors);
+        loc_ = new DfxLocRemote();
     };
     ~Unwinder() { Destroy(); }
 
@@ -74,7 +78,10 @@ private:
 private:
     int32_t pid_;
     UnwindMode mode_ = DWARF_UNWIND;
+    uintptr_t stackBottom_;
+    uintptr_t stackTop_;
     DfxAccessors* acc_;
+    DfxLoc* loc_;
     DfxMemory* memory_;
     std::shared_ptr<DfxRegs> regs_;
     std::shared_ptr<DfxMaps> maps_;
