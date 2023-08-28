@@ -19,7 +19,6 @@
 #include <vector>
 #include "dfx_accessors.h"
 #include "dfx_frame.h"
-#include "dfx_loc.h"
 #include "dfx_memory.h"
 #include "dfx_maps.h"
 #include "dfx_regs.h"
@@ -32,23 +31,23 @@ public:
     // for local
     Unwinder() : pid_(UWNIND_TYPE_LOCAL)
     {
-        Init();
         acc_ = new DfxAccessorsLocal();
-        loc_ = new DfxLocLocal();
+        memory_ = new DfxMemory(acc_);
+        Init();
     };
     // for remote
     Unwinder(int pid) : pid_(pid)
     {
-        Init();
         acc_ = new DfxAccessorsRemote();
-        loc_ = new DfxLocRemote();
+        memory_ = new DfxMemory(acc_);
+        Init();
     };
     // for customized
     Unwinder(UnwindAccessors* accessors) : pid_(UWNIND_TYPE_CUSTOMIZE)
     {
-        Init();
         acc_ = new DfxAccessorsCustomize(accessors);
-        loc_ = new DfxLocRemote();
+        memory_ = new DfxMemory(acc_);
+        Init();
     };
     ~Unwinder() { Destroy(); }
 
@@ -69,10 +68,12 @@ public:
     bool Unwind(void *ctx, size_t maxFrameNum = 64, size_t skipFrameNum = 0);
     bool Step(uintptr_t& pc, uintptr_t& sp, void *ctx);
 
+    bool UnwindLocal(size_t maxFrameNum, size_t skipFrameNum);
+    bool UnwindRemote(size_t maxFrameNum, size_t skipFrameNum);
+
 private:
     void Init();
     void Destroy();
-    bool InitMemory(void *ctx);
     bool IsValidFrame(uintptr_t addr, uintptr_t stackTop, uintptr_t stackBottom);
 
 private:
@@ -81,7 +82,6 @@ private:
     uintptr_t stackBottom_;
     uintptr_t stackTop_;
     DfxAccessors* acc_;
-    DfxLoc* loc_;
     DfxMemory* memory_;
     std::shared_ptr<DfxRegs> regs_;
     std::shared_ptr<DfxMaps> maps_;

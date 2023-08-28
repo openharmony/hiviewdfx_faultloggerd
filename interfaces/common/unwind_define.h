@@ -48,16 +48,6 @@ enum ArchType : uint8_t {
     ARCH_X86_64,
 };
 
-enum RegLocationType : uint8_t {
-    REG_LOC_UNUSED,
-    REG_LOC_UNDEFINED,
-    REG_LOC_CFA_OFFSET,      // register stored in the offset from cfa
-    REG_LOC_REGISTER,        // register stored in register
-    REG_LOC_VAL_OFFSET,      // register value is offset from cfa
-    REG_LOC_CFA_EXPRESSION,  // register stored in expression result
-    REG_LOC_VAL_EXPRESSION,  // register value is expression result
-};
-
 enum UnwindType : int8_t {
     UWNIND_TYPE_CUSTOMIZE = -2,
     UWNIND_TYPE_LOCAL = -1,

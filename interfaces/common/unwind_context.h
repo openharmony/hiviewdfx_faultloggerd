@@ -91,12 +91,6 @@ struct UnwindRemoteContext {
     std::shared_ptr<DfxElf> elf;
     struct ElfDynInfo edi;
 };
-
-struct UnwindRegLocation
-{
-    RegLocationType type;
-    uintptr_t value;
-};
 } // namespace HiviewDFX
 } // namespace OHOS
 #endif

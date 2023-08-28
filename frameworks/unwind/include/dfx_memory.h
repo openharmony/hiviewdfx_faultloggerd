@@ -20,15 +20,16 @@
 #include <string>
 #include <unordered_map>
 #include "dfx_accessors.h"
-#include "dfx_loc.h"
 #include "unwind_context.h"
 
 namespace OHOS {
 namespace HiviewDFX {
 class DfxMemory {
 public:
-    DfxMemory(DfxAccessors* acc, DfxLoc* loc, void* ctx) : acc_(acc), loc_(loc), ctx_(ctx) {}
+    DfxMemory(DfxAccessors* acc) : acc_(acc) {}
     virtual ~DfxMemory() = default;
+
+    virtual void SetCtx(void* ctx) { ctx_ = ctx; }
 
     virtual bool ReadReg(int reg, uintptr_t *val);
     virtual bool ReadMem(uintptr_t addr, uintptr_t *val);
@@ -49,13 +50,8 @@ public:
         return val;
     }
 
-    int DwarfInit(DwarfLoc* loc, int size);
-    int DwarfGet(DwarfLoc loc, uintptr_t *val);
-    int DwarfSet(DwarfLoc loc, uintptr_t val);
-
 private:
     DfxAccessors* acc_;
-    DfxLoc* loc_;
     void* ctx_;
 };
 } // namespace HiviewDFX

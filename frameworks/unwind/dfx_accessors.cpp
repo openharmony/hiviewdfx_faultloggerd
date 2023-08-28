@@ -21,7 +21,6 @@
 #include <sys/uio.h>
 #include "dfx_define.h"
 #include "dfx_log.h"
-#include "dfx_loc.h"
 #include "dfx_unwind_table.h"
 
 namespace OHOS {
@@ -47,10 +46,14 @@ int DfxAccessorsLocal::AccessMem(uintptr_t addr, uintptr_t *val, int write, void
 
 int DfxAccessorsLocal::AccessReg(int reg, uintptr_t *val, int write, void *arg)
 {
-    uintptr_t *addr = (uintptr_t *) DfxLocLocal::RegToAddr(reg, arg);
-    if (addr == nullptr) {
+    UnwindLocalContext* ctx = reinterpret_cast<UnwindLocalContext *>(arg);
+    if (ctx == nullptr || ctx->regs == nullptr) {
         return UNW_ERROR_INVALID_CONTEXT;
     }
+    if (reg < 0 || reg >= ctx->regsSize) {
+        return UNW_ERROR_INVALID_REGS;
+    }
+    uintptr_t *addr = &(ctx->regs[reg]);
 
     if (write) {
         LOGD("val: %llx", *val);

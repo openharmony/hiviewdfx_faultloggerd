@@ -41,7 +41,7 @@ private:
         uintptr_t pc, DfxMemory* memory, bool needUnwindInfo = false);
 
 private:
-    static std::unordered_map<size_t, uintptr_t> exdixAddrs_;
+    static std::unordered_map<size_t, uintptr_t> exidxAddrs_;
 };
 } // namespace HiviewDFX
 } // namespace OHOS

@@ -21,7 +21,6 @@ dfx_unwind_sources = [
   "dfx_demangle.cpp",
   "dfx_elf.cpp",
   "dfx_elf_parse.cpp",
-  "dfx_loc.cpp",
   "dfx_map.cpp",
   "dfx_maps.cpp",
   "dfx_mmap.cpp",
