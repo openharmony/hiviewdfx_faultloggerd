@@ -17,20 +17,35 @@
 
 #include <cinttypes>
 #include <string>
+#include "unwind_define.h"
 
 namespace OHOS {
 namespace HiviewDFX {
-struct DwarfLoc {
-    uintptr_t val = 0;
-    uintptr_t type = 0;            /* see DWARF_LOC_TYPE_* macros.  */
+enum RegLocEnum : uint8_t {
+    REG_LOC_UNUSED = 0,
+    REG_LOC_UNDEFINED,
+    REG_LOC_CFA_OFFSET,      // register stored in the offset from cfa
+    REG_LOC_REGISTER,        // register stored in register
+    REG_LOC_VAL_OFFSET,      // register value is offset from cfa
+    REG_LOC_CFA_EXPRESSION,  // register stored in expression result
+    REG_LOC_VAL_EXPRESSION,  // register value is expression result
 };
 
-#define DWARF_GET_LOC(l)       ((l).val)
-#define DWARF_LOC_TYPE_MEM     (0 << 0)
-#define DWARF_LOC_TYPE_FP      (1 << 0)
-#define DWARF_LOC_TYPE_REG     (1 << 1)
-#define DWARF_LOC_TYPE_VAL     (1 << 2)
+struct RegLoc {
+    RegLocEnum type;            /* see DWARF_LOC_* macros.  */
+    uintptr_t val;
+};
 
+// saved register status after running call frame instructions
+// it should describe how register saved
+struct RegLocState {
+    uint32_t cfaRegister;
+    int32_t cfaRegisterOffset;
+    uintptr_t cfaExpressionPtr;
+    int32_t pcOffset; // pc offset of this register state
+    RegLocEnum type; // by what mean to get this register state,
+    RegLoc loc[DWARF_PRESERVED_REGS_NUM];
+};
 } // namespace HiviewDFX
 } // namespace OHOS
 #endif

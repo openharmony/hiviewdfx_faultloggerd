@@ -22,7 +22,6 @@
 namespace OHOS {
 namespace HiviewDFX {
 #define REGS_PRINT_LEN 512
-#define UNWIND_CURSOR_LEN 127
 #define DWARF_PRESERVED_REGS_NUM 17
 
 enum RegsEnumX86 : uint16_t {

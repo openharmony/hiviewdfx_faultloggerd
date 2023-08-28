@@ -127,7 +127,7 @@ int DfxUnwindTable::ExdixSearchUnwindTable(struct UnwindProcInfo* pi, struct Unw
         if (!memory->ReadPrel31(&last, &pi->startPc)) {
             return UNW_ERROR_ILLEGAL_VALUE;
         }
-        pi->endPc = di->endPc -1;
+        pi->endPc = di->endPc - 1;
     } else {
         while (first < last - 8) {
             entry = first + (((last - first) / 8 + 1) >> 1) * 8;
