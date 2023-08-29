@@ -17,6 +17,7 @@
 
 #include <atomic>
 #include <cstdint>
+#include <memory>
 #include <string>
 #include "dfx_define.h"
 #include "unwind_context.h"
@@ -61,14 +62,14 @@ public:
 class DfxAccessorsCustomize : public DfxAccessors
 {
 public:
-    DfxAccessorsCustomize(UnwindAccessors* accessors) : accessors_(accessors) {}
+    DfxAccessorsCustomize(std::shared_ptr<UnwindAccessors> accessors) : accessors_(accessors) {}
     virtual ~DfxAccessorsCustomize() = default;
 
     int AccessMem(uintptr_t addr, uintptr_t *val, int write, void *arg) override;
     int AccessReg(int reg, uintptr_t *val, int write, void *arg) override;
     int FindProcInfo(uintptr_t pc, UnwindDynInfo *di, int needUnwindInfo, void *arg) override;
 private:
-    UnwindAccessors* accessors_;
+    std::shared_ptr<UnwindAccessors> accessors_;
 };
 } // namespace HiviewDFX
 } // namespace OHOS

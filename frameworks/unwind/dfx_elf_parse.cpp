@@ -56,9 +56,9 @@ size_t ElfParse::MmapSize()
     return mmap_->Size();
 }
 
-uint64_t ElfParse::GetMaxSize()
+uint64_t ElfParse::GetElfSize()
 {
-    return maxSize_;
+    return elfSize_;
 }
 
 int64_t ElfParse::GetLoadBias()
@@ -120,7 +120,7 @@ bool ElfParse::ParseElfHeaders(const EhdrType& ehdr)
     } else {
         LOGW("Failed the machine = %d", machine);
     }
-    maxSize_ = ehdr.e_shoff + ehdr.e_shentsize * ehdr.e_shnum;
+    elfSize_ = ehdr.e_shoff + ehdr.e_shentsize * ehdr.e_shnum;
     return true;
 }
 

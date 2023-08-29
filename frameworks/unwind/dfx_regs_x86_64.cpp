@@ -115,7 +115,7 @@ bool DfxRegsX86_64::StepIfSignalHandler(uint64_t relPc, DfxElf* elf, DfxMemory* 
     // sp points to the ucontext data structure, read only the mcontext part.
     ucontext_t ucontext;
     uint64_t offset = regsData_[REG_SP] + 0x28;
-    if (!memory->Read(&offset, &ucontext.uc_mcontext, sizeof(ucontext))) {
+    if (!memory->Read(offset, &ucontext.uc_mcontext, sizeof(ucontext), false)) {
         return false;
     }
     SetFromUcontext(ucontext);

@@ -57,7 +57,7 @@ bool DfxMap::Parse(const std::string buf, int size)
     char perms[5] = {0}; // 5:rwxp
 
     // 7658d38000-7658d40000 rw-p 00000000 00:00 0                              [anon:thread signal stack]
-    if (sscanf_s(buf.c_str(), "%" SCNxPTR "-%" SCNxPTR " %4s %" SCNxPTR " %x:%x %" SCNxPTR " %*d%n",
+    if (sscanf_s(buf.c_str(), "%" SCNxPTR "-%" SCNxPTR " %4s %" SCNxPTR " %x:%x %" SCNxPTR " %n",
         &begin, &end, &perms, sizeof(perms), &offset, &major, &minor, &inode, &pos) != 7) { // 7:scan size
         DFXLOG_WARN("Fail to parse maps info.");
         return false;
