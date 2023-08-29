@@ -17,6 +17,7 @@
 
 #include <cinttypes>
 #include <string>
+#include <vector>
 #include "unwind_define.h"
 
 namespace OHOS {
@@ -24,27 +25,28 @@ namespace HiviewDFX {
 enum RegLocEnum : uint8_t {
     REG_LOC_UNUSED = 0,
     REG_LOC_UNDEFINED,
-    REG_LOC_CFA_OFFSET,      // register stored in the offset from cfa
-    REG_LOC_REGISTER,        // register stored in register
-    REG_LOC_VAL_OFFSET,      // register value is offset from cfa
-    REG_LOC_CFA_EXPRESSION,  // register stored in expression result
-    REG_LOC_VAL_EXPRESSION,  // register value is expression result
+    REG_LOC_VAL_OFFSET,      // register value is offset from cfa, cfa = cfa + off
+    REG_LOC_MEM_OFFSET,      // register stored in the offset from cfa, cfa = [r14 + off], r14 = [cfa + off]
+    REG_LOC_REGISTER,        // register stored in register, cfa = [r14], pc = [lr]
+    REG_LOC_VAL_EXPRESSION,  // register value is expression result, r11 = cfa + expr_result
+    REG_LOC_MEM_EXPRESSION,  // register stored in expression result, r11 = [cfa + expr_result]
 };
 
 struct RegLoc {
     RegLocEnum type;            /* see DWARF_LOC_* macros.  */
-    uintptr_t val;
+    intptr_t val;
 };
 
 // saved register status after running call frame instructions
 // it should describe how register saved
 struct RegLocState {
-    uint32_t cfaRegister;
-    int32_t cfaRegisterOffset;
-    uintptr_t cfaExpressionPtr;
+    uint32_t cfaReg; // cfa = [r14]
+    union {
+        int32_t cfaRegOffset; // cfa = cfa + offset
+        uintptr_t cfaExprPtr; // cfa = expr
+    };
     int32_t pcOffset; // pc offset of this register state
-    RegLocEnum type; // by what mean to get this register state,
-    RegLoc loc[DWARF_PRESERVED_REGS_NUM];
+    std::vector<RegLoc> locs;
 };
 } // namespace HiviewDFX
 } // namespace OHOS

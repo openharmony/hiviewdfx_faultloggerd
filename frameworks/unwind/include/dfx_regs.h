@@ -49,8 +49,8 @@ public:
     std::vector<uintptr_t> GetRegsData() const;
     void SetRegsData(const std::vector<uintptr_t>& regsData);
     void SetRegsData(const uintptr_t* regs);
-    inline uintptr_t* GetReg(size_t idx);
-    inline void SetReg(const int idx, const uintptr_t* val);
+    uintptr_t* GetReg(size_t idx);
+    void SetReg(const int idx, const uintptr_t* val);
 
     uintptr_t GetSp() const;
     void SetSp(uintptr_t sp);

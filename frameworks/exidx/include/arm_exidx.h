@@ -15,7 +15,7 @@
 #ifndef ARM_EXIDX_H
 #define ARM_EXIDX_H
 
-#include <queue>
+#include <deque>
 #include <memory>
 #include <vector>
 #include "dfx_errors.h"
@@ -25,33 +25,51 @@
 
 namespace OHOS {
 namespace HiviewDFX {
+struct ExidxContext {
+public:
+    int32_t vsp = 0;
+    uint32_t transformedBits = 0;
+    std::vector<int32_t> regs;
+
+    void reset();
+    void Transform(uint32_t reg);
+    bool IsTransformed(uint32_t reg);
+    void AddUpTransformed(uint32_t reg, int32_t imm);
+    void AddUpVsp(int32_t imm);
+};
 
 class ArmExidx {
 public:
-    ArmExidx(DfxMemory* memory, DfxRegsArm* regs) : memory_(memory), regs_(regs)  {}
+    ArmExidx(std::shared_ptr<DfxRegs> regs, DfxMemory* memory)
+        : regs_(regs), memory_(memory) {}
     virtual ~ArmExidx() = default;
+
+    bool Eval(uintptr_t entryOffset);
+    const std::shared_ptr<DfxRegs>& GetRegs() const { return regs_; }
+
+    RegLocState rsState_;
+    std::shared_ptr<DfxRegs> regs_ = nullptr;
+    UnwindErrorData lastErrorData_;
+
+private:
     struct DecodeTable {
         uint8_t mask;
         uint8_t result;
         bool (ArmExidx::*decoder)();
     };
 
+    void FlushInstr();
+    void ApplyInstr();
+
+    void LogRawData();
     bool ExtractEntryData(uintptr_t entryOffset);
+    bool StepOpCode();
     bool Decode(DecodeTable decodeTable[], size_t size);
-    bool Eval();
-    std::queue<uint8_t> GetData() { return opCode; }
-    void SetData(std::queue<uint8_t> &data) { opCode = data ; }
-    UnwindErrorData lastErrorData_;
-private:
-    bool StepOperateCode();
     bool Decode00xxxxxx();
     bool Decode01xxxxxx();
     bool Decode1000iiiiiiiiiiii();
-    bool Decode10011101();
-    bool Decode10011111();
     bool Decode1001nnnn();
-    bool Decode10100nnn();
-    bool Decode10101nnn();
+    bool Decode1010nnnn();
     bool Decode10110000();
     bool Decode101100010000iiii();
     bool Decode10110010uleb128();
@@ -60,24 +78,19 @@ private:
     bool Decode10111nnn();
     bool Decode11000110sssscccc();
     bool Decode110001110000iiii();
-    bool Decode11001000sssscccc();
-    bool Decode11001001sssscccc();
+    bool Decode1100100nsssscccc();
     bool Decode11001yyy();
     bool Decode11000nnn();
     bool Decode11010nnn();
     bool Decode11xxxyyy();
-    bool Spare();
-    bool PopRegsUnderMask(uint16_t mask);
-
-    uint8_t curCode;
-
-    bool pcSet = false;
+    bool DecodeSpare();
 
 protected:
     DfxMemory* memory_;
-    std::queue<uint8_t> opCode;
-    uintptr_t cfa_ = 0;
-    DfxRegsArm* regs_;
+    ExidxContext context_;
+    std::deque<uint8_t> ops_;
+    uint8_t curOp_ = 0;
+    bool isPcSet_ = false;
 };
 } // namespace HiviewDFX
 } // namespace OHOS

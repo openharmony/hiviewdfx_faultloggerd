@@ -181,12 +181,10 @@ bool Unwinder::Step(uintptr_t& pc, uintptr_t& sp, void *ctx)
 
     // we have get unwind info, then parser the exidx entry or ehframe fde
     if (pi.format == UNW_INFO_FORMAT_ARM_EXIDX) {
-        ArmExidx armIdx(memory_, static_cast<DfxRegsArm*>(regs_.get()));
-        if (armIdx.ExtractEntryData((uintptr_t)pi.unwindInfo) && armIdx.Eval()) {
-            // get new pc and sp to assign to output param
+        ArmExidx armExidx(regs_, memory_);
+        if (!armExidx.Eval((uintptr_t)pi.unwindInfo)) {
             pc = regs_->GetPc();
             sp = regs_->GetSp();
-        } else {
             return false;
         }
     } else if (pi.format == UNW_INFO_FORMAT_REMOTE_TABLE) {

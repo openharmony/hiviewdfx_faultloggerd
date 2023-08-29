@@ -48,8 +48,7 @@ struct UnwindDynInfo {
     uintptr_t gp; /* global-pointer in effect for this entry */
     int format = -1; // UnwindDynInfoFormatType
     uintptr_t hint;
-    union
-    {
+    union {
         UnwindDynTableInfo ti;
         UnwindDynRemoteTableInfo rti;
     } u;

@@ -43,7 +43,7 @@ public:
         Init();
     };
     // for customized
-    Unwinder(UnwindAccessors* accessors) : pid_(UWNIND_TYPE_CUSTOMIZE)
+    Unwinder(std::shared_ptr<UnwindAccessors> accessors) : pid_(UWNIND_TYPE_CUSTOMIZE)
     {
         acc_ = new DfxAccessorsCustomize(accessors);
         memory_ = new DfxMemory(acc_);

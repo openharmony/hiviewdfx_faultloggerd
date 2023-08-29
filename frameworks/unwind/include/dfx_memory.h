@@ -34,16 +34,16 @@ public:
     virtual bool ReadReg(int reg, uintptr_t *val);
     virtual bool ReadMem(uintptr_t addr, uintptr_t *val);
 
-    virtual size_t Read(uintptr_t* addr, void* val, size_t size, bool incre = true);
-    virtual bool ReadFully(uintptr_t* addr, void* val, size_t size, bool incre = true);
-    virtual bool ReadU8(uintptr_t* addr, uint8_t *val, bool incre = true);
-    virtual bool ReadU16(uintptr_t* addr, uint16_t *val, bool incre = true);
-    virtual bool ReadU32(uintptr_t* addr, uint32_t *val, bool incre = true);
-    virtual bool ReadU64(uintptr_t* addr, uint64_t *val, bool incre = true);
-    virtual bool ReadUptr(uintptr_t* addr, uintptr_t *val, bool incre = true);
-    virtual bool ReadPrel31(uintptr_t* addr, uintptr_t *val);
+    virtual size_t Read(uintptr_t& addr, void* val, size_t size, bool incre = true);
+    virtual bool ReadFully(uintptr_t& addr, void* val, size_t size, bool incre = true);
+    virtual bool ReadU8(uintptr_t& addr, uint8_t *val, bool incre = true);
+    virtual bool ReadU16(uintptr_t& addr, uint16_t *val, bool incre = true);
+    virtual bool ReadU32(uintptr_t& addr, uint32_t *val, bool incre = true);
+    virtual bool ReadU64(uintptr_t& addr, uint64_t *val, bool incre = true);
+    virtual bool ReadUptr(uintptr_t& addr, uintptr_t *val, bool incre = true);
+    virtual bool ReadPrel31(uintptr_t& addr, uintptr_t *val);
     template <typename T>
-    T Read(uintptr_t* addr, bool incre = false)
+    T Read(uintptr_t& addr, bool incre = false)
     {
         T val = 0;
         Read(addr, (void *)val, sizeof(T), incre);

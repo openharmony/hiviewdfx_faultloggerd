@@ -67,6 +67,7 @@ void DfxElf::Clear()
     if (mmap_ != nullptr) {
         mmap_->Clear();
         mmap_.reset();
+        mmap_ = nullptr;
     }
 }
 
@@ -204,12 +205,12 @@ uint64_t DfxElf::GetPcAdjustment(uint64_t relPc)
 #endif
 }
 
-uint64_t DfxElf::GetMaxSize()
+uint64_t DfxElf::GetElfSize()
 {
     if (!IsValid()) {
         return 0;
     }
-    return elfParse_->GetMaxSize();
+    return elfParse_->GetElfSize();
 }
 
 uint64_t DfxElf::GetStartVaddr()

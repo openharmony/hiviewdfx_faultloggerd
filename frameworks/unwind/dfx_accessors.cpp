@@ -196,16 +196,25 @@ int DfxAccessorsRemote::FindProcInfo(uintptr_t pc, UnwindDynInfo *di, int needUn
 
 int DfxAccessorsCustomize::AccessMem(uintptr_t addr, uintptr_t *val, int write, void *arg)
 {
+    if (accessors_ == nullptr) {
+        return -1;
+    }
     return accessors_->AccessMem(addr, val, write, arg);
 }
 
 int DfxAccessorsCustomize::AccessReg(int reg, uintptr_t *val, int write, void *arg)
 {
+    if (accessors_ == nullptr) {
+        return -1;
+    }
     return accessors_->AccessReg(reg, val, write, arg);
 }
 
 int DfxAccessorsCustomize::FindProcInfo(uintptr_t pc, UnwindDynInfo *di, int needUnwindInfo, void *arg)
 {
+    if (accessors_ == nullptr) {
+        return -1;
+    }
     return accessors_->FindProcInfo(pc, di, needUnwindInfo, arg);
 }
 } // namespace HiviewDFX

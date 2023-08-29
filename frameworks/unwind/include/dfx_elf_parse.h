@@ -42,7 +42,7 @@ public:
 
     virtual bool InitHeaders() = 0;
     virtual ArchType GetArchType() { return archType_; }
-    virtual uint64_t GetMaxSize();
+    virtual uint64_t GetElfSize();
     virtual int64_t GetLoadBias();
     virtual uint64_t GetStartVaddr();
     virtual uint64_t GetEndVaddr();
@@ -82,7 +82,7 @@ protected:
 private:
     std::shared_ptr<DfxMmap> mmap_;
     ArchType archType_ = ARCH_UNKNOWN;
-    uint64_t maxSize_ = 0;
+    uint64_t elfSize_ = 0;
     int64_t loadBias_ = 0;
     uint64_t startExecVaddr_ = static_cast<uint64_t>(-1);
     uint64_t endExecVaddr_ = 0;

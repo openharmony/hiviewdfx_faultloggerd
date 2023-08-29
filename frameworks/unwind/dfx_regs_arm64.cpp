@@ -141,7 +141,7 @@ bool DfxRegsArm64::StepIfSignalHandler(uint64_t relPc, DfxElf* elf, DfxMemory* m
 
     // SP + sizeof(siginfo_t) + uc_mcontext offset + X0 offset.
     uint64_t offset = regsData_[REG_SP] + 0x80 + 0xb0 + 0x08;
-    if (!memory->Read(&offset, regsData_.data(), sizeof(uint64_t) * REG_LAST)) {
+    if (!memory->Read(offset, regsData_.data(), sizeof(uint64_t) * REG_LAST, false)) {
         return false;
     }
     return true;
