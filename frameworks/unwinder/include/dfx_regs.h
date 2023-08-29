@@ -26,9 +26,6 @@
 
 namespace OHOS {
 namespace HiviewDFX {
-#define FP_MINI_REGS_SIZE 4
-#define QUT_MINI_REGS_SIZE 7
-
 class DfxRegs {
 public:
     DfxRegs() = default;

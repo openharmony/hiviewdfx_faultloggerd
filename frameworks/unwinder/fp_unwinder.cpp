@@ -19,6 +19,7 @@
 #include <libunwind_i-ohos.h>
 #include "dfx_define.h"
 #include "dfx_util.h"
+#include "stack_util.h"
 #include "unwind_define.h"
 #include "dfx_config.h"
 
@@ -34,7 +35,7 @@ namespace {
 FpUnwinder::FpUnwinder()
 {
     frames_.clear();
-    GetStackRange(stackBottom_, stackTop_);
+    GetSelfStackRange(stackBottom_, stackTop_);
 }
 
 FpUnwinder::~FpUnwinder()
