@@ -115,7 +115,7 @@ public:
     DfxRegsX86_64() = default;
     ~DfxRegsX86_64() override {};
     std::string PrintRegs() const override;
-    inline AT_ALWAYS_INLINE void GetFramePointerMiniRegs(void *regs) override;
+    inline AT_ALWAYS_INLINE void GetFramePointerMiniRegs(void *regs) override {};
 };
 } // namespace HiviewDFX
 } // namespace OHOS
