@@ -31,7 +31,7 @@ public:
 
     bool Apply(std::shared_ptr<DfxRegs> dfxRegs, RegLocState &rsState);
 private:
-    uintptr_t SaveReg(uintptr_t cfa, struct RegLoc loc);
+    uintptr_t SaveReg(uintptr_t cfa, struct RegLoc loc, std::vector<uintptr_t> regs);
 
 protected:
     DfxMemory* memory_;

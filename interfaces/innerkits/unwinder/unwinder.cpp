@@ -162,7 +162,7 @@ bool Unwinder::Unwind(void *ctx, size_t maxFrameNum, size_t skipFrameNum)
     return (curIndex > 0);
 }
 
-bool Unwinder::Step(uintptr_t pc, uintptr_t sp, void *ctx)
+bool Unwinder::Step(uintptr_t& pc, uintptr_t& sp, void *ctx)
 {
     int errorCode = UNW_ERROR_NONE;
     memory_->SetCtx(ctx);
@@ -183,7 +183,8 @@ bool Unwinder::Step(uintptr_t pc, uintptr_t sp, void *ctx)
     if (pi.format == UNW_INFO_FORMAT_ARM_EXIDX) {
         ArmExidx armExidx(regs_, memory_);
         if (!armExidx.Eval((uintptr_t)pi.unwindInfo)) {
-            //armExidx.GetRegs();
+            pc = regs_->GetPc();
+            sp = regs_->GetSp();
             return false;
         }
     } else if (pi.format == UNW_INFO_FORMAT_REMOTE_TABLE) {

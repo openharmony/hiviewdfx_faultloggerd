@@ -66,7 +66,7 @@ public:
     const uint64_t& GetLastErrorAddr() const { return lastErrorData_.addr; }
 
     bool Unwind(void *ctx, size_t maxFrameNum = 64, size_t skipFrameNum = 0);
-    bool Step(uintptr_t pc, uintptr_t sp, void *ctx);
+    bool Step(uintptr_t& pc, uintptr_t& sp, void *ctx);
 
     bool UnwindLocal(size_t maxFrameNum, size_t skipFrameNum);
     bool UnwindRemote(size_t maxFrameNum, size_t skipFrameNum);
