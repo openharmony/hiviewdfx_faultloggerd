@@ -130,7 +130,7 @@ static void FillLastFatalMessageLocked(int32_t sig, void *context)
     }
 
     if (GetLastFatalMessage == NULL) {
-        DFXLOG_ERROR("Could not find GetLastFatalMessage func");
+        DFXLOG_INFO("Could not find GetLastFatalMessage func");
         return;
     }
 
