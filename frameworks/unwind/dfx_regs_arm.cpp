@@ -134,7 +134,7 @@ bool DfxRegsArm::StepIfSignalHandler(uint64_t relPc, DfxElf* elf, DfxMemory* mem
         // Form 3 (thumb):
         // 0x77 0x27              movs r7, #77
         // 0x00 0xdf              svc 0
-        if (!memory->Read(&sp, &data, sizeof(data))) {
+        if (!memory->Read(sp, &data, sizeof(data), false)) {
             return false;
         }
         if (data == 0x5ac3c35a) {
@@ -160,7 +160,7 @@ bool DfxRegsArm::StepIfSignalHandler(uint64_t relPc, DfxElf* elf, DfxMemory* mem
         // Form 3 (thumb):
         // 0xad 0x27              movs r7, #ad
         // 0x00 0xdf              svc 0
-        if (!memory->Read(&sp, &data, sizeof(data))) {
+        if (!memory->Read(sp, &data, sizeof(data), false)) {
             return false;
         }
         if (data == sp + 8) {
@@ -174,7 +174,7 @@ bool DfxRegsArm::StepIfSignalHandler(uint64_t relPc, DfxElf* elf, DfxMemory* mem
     if (offset == 0) {
         return false;
     }
-    if (!memory->Read(&offset, regsData_.data(), sizeof(uint32_t) * REG_LAST)) {
+    if (!memory->Read(offset, regsData_.data(), sizeof(uint32_t) * REG_LAST, false)) {
         return false;
     }
     return true;

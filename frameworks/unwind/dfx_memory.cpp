@@ -44,9 +44,9 @@ bool DfxMemory::ReadMem(uintptr_t addr, uintptr_t *val)
     return false;
 }
 
-size_t DfxMemory::Read(uintptr_t* addr, void* val, size_t size, bool incre)
+size_t DfxMemory::Read(uintptr_t& addr, void* val, size_t size, bool incre)
 {
-    uintptr_t tmpAddr = *addr;
+    uintptr_t tmpAddr = addr;
     LOGU("addr: %llx", static_cast<uint64_t>(tmpAddr));
     uint64_t maxSize;
     if (__builtin_add_overflow(tmpAddr, size, &maxSize)) {
@@ -96,12 +96,12 @@ size_t DfxMemory::Read(uintptr_t* addr, void* val, size_t size, bool incre)
     }
 
     if (incre) {
-        *addr = tmpAddr;
+        addr = tmpAddr;
     }
     return bytesRead;
 }
 
-bool DfxMemory::ReadFully(uintptr_t* addr, void* val, size_t size, bool incre)
+bool DfxMemory::ReadFully(uintptr_t& addr, void* val, size_t size, bool incre)
 {
     size_t rc = Read(addr, val, size, incre);
     if (rc == size) {
@@ -110,32 +110,32 @@ bool DfxMemory::ReadFully(uintptr_t* addr, void* val, size_t size, bool incre)
     return false;
 }
 
-bool DfxMemory::ReadU8(uintptr_t* addr, uint8_t *val, bool incre)
+bool DfxMemory::ReadU8(uintptr_t& addr, uint8_t *val, bool incre)
 {
     return ReadFully(addr, val, sizeof(uint8_t), incre);
 }
 
-bool DfxMemory::ReadU16(uintptr_t* addr, uint16_t *val, bool incre)
+bool DfxMemory::ReadU16(uintptr_t& addr, uint16_t *val, bool incre)
 {
     return ReadFully(addr, val, sizeof(uint16_t), incre);
 }
 
-bool DfxMemory::ReadU32(uintptr_t* addr, uint32_t *val, bool incre)
+bool DfxMemory::ReadU32(uintptr_t& addr, uint32_t *val, bool incre)
 {
     return ReadFully(addr, val, sizeof(uint32_t), incre);
 }
 
-bool DfxMemory::ReadU64(uintptr_t* addr, uint64_t *val, bool incre)
+bool DfxMemory::ReadU64(uintptr_t& addr, uint64_t *val, bool incre)
 {
     return ReadFully(addr, val, sizeof(uint64_t), incre);
 }
 
-bool DfxMemory::ReadUptr(uintptr_t* addr, uintptr_t *val, bool incre)
+bool DfxMemory::ReadUptr(uintptr_t& addr, uintptr_t *val, bool incre)
 {
     return ReadFully(addr, val, sizeof(uintptr_t), incre);
 }
 
-bool DfxMemory::ReadPrel31(uintptr_t* addr, uintptr_t *val)
+bool DfxMemory::ReadPrel31(uintptr_t& addr, uintptr_t *val)
 {
     uintptr_t offset;
     if (!ReadFully(addr, &offset, sizeof(uintptr_t), false)) {
@@ -144,7 +144,7 @@ bool DfxMemory::ReadPrel31(uintptr_t* addr, uintptr_t *val)
     // int32_t signedData = static_cast<int32_t>(data << 1) >> 1;
     // uint32_t addr = offset + signedData;
     offset = static_cast<uintptr_t>(static_cast<int32_t>(offset << 1) >> 1);
-    *val = *addr + offset;
+    *val = addr + offset;
     return true;
 }
 } // namespace HiviewDFX

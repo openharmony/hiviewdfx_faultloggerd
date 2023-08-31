@@ -28,12 +28,12 @@ namespace {
 #define LOG_TAG "DfxDwarfMemory"
 }
 
-uintptr_t DfxDwarfMemory::ReadUintptr(uintptr_t* addr)
+uintptr_t DfxDwarfMemory::ReadUintptr(uintptr_t& addr)
 {
     return memory_->Read<uintptr_t>(addr, true);
 }
 
-uint64_t DfxDwarfMemory::ReadUleb128(uintptr_t* addr)
+uint64_t DfxDwarfMemory::ReadUleb128(uintptr_t& addr)
 {
     uint64_t val = 0;
     uint64_t shift = 0;
@@ -47,7 +47,7 @@ uint64_t DfxDwarfMemory::ReadUleb128(uintptr_t* addr)
     return val;
 }
 
-int64_t DfxDwarfMemory::ReadSleb128(uintptr_t* addr)
+int64_t DfxDwarfMemory::ReadSleb128(uintptr_t& addr)
 {
     uint64_t val = 0;
     uint64_t shift = 0;
@@ -91,14 +91,14 @@ size_t DfxDwarfMemory::GetEncodedSize(uint8_t encoding)
 }
 
 template <typename AddressType>
-bool DfxDwarfMemory::ReadEncodedValue(uintptr_t* addr, uintptr_t* val, uint8_t encoding)
+bool DfxDwarfMemory::ReadEncodedValue(uintptr_t& addr, uintptr_t* val, uint8_t encoding)
 {
     if (encoding == DW_EH_PE_omit) {
         *val = 0;
         return true;
     }
 
-    uintptr_t startAddr = *addr;
+    uintptr_t startAddr = addr;
     switch (encoding & 0x0f) {
         case DW_EH_PE_absptr:
             if (sizeof(AddressType) != sizeof(uint64_t)) {
@@ -106,7 +106,7 @@ bool DfxDwarfMemory::ReadEncodedValue(uintptr_t* addr, uintptr_t* val, uint8_t e
                 return false;
             }
             *val = ReadUintptr(addr);
-            break;
+            return true;
         case DW_EH_PE_uleb128:
             *val = static_cast<uintptr_t>(ReadUleb128(addr));
             break;
@@ -150,8 +150,6 @@ bool DfxDwarfMemory::ReadEncodedValue(uintptr_t* addr, uintptr_t* val, uint8_t e
     }
 
     switch (encoding) {
-        case DW_EH_PE_absptr:
-            break;
         case DW_EH_PE_pcrel:
             if (pcOffset_ != INT64_MAX) {
                 *val += pcOffset_;

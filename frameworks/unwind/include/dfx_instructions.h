@@ -12,39 +12,31 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef DFX_DWARF_MEMORY_H
-#define DFX_DWARF_MEMORY_H
 
-#include <atomic>
+#ifndef DFX_INSTRUCTIONS_H
+#define DFX_INSTRUCTIONS_H
+
 #include <cstdint>
 #include <string>
 #include "dfx_memory.h"
+#include "dfx_regs.h"
+#include "unwind_context.h"
 
 namespace OHOS {
 namespace HiviewDFX {
-class DfxDwarfMemory {
+class DfxInstructions {
 public:
-    DfxDwarfMemory(DfxMemory* memory) : memory_(memory) {}
-    virtual ~DfxDwarfMemory() = default;
+    DfxInstructions(DfxMemory* memory) : memory_(memory) {}
+    virtual ~DfxInstructions() = default;
 
-    uintptr_t ReadUintptr(uintptr_t& addr);
-    uint64_t ReadUleb128(uintptr_t& addr);
-    int64_t ReadSleb128(uintptr_t& addr);
+    bool Apply(std::shared_ptr<DfxRegs> dfxRegs, RegLocState &rsState);
+private:
+    uintptr_t SaveReg(uintptr_t cfa, struct RegLoc loc);
 
-    template <typename AddressType>
-    size_t GetEncodedSize(uint8_t encoding);
-
-    template <typename AddressType>
-    bool ReadEncodedValue(uintptr_t& addr, uintptr_t* val, uint8_t encoding);
-
-    void ClearOffset(uint64_t& offset) { offset = UINT64_MAX; }
-    int64_t pcOffset_ = INT64_MAX;
-    uint64_t dataOffset_ = UINT64_MAX;
-    uint64_t funcOffset_ = UINT64_MAX;
-    uint64_t textOffset_ = UINT64_MAX;
 protected:
     DfxMemory* memory_;
 };
 } // namespace HiviewDFX
 } // namespace OHOS
+
 #endif

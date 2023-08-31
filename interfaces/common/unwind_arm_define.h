@@ -16,6 +16,7 @@
 #define UNWIND_ARM_DEFINE_H
 
 #include <cinttypes>
+#include <map>
 #include <string>
 
 namespace OHOS {
@@ -48,6 +49,24 @@ enum RegsEnumArm : uint16_t {
     REG_PC = REG_ARM_R15,
     REG_EH = REG_ARM_R0,
     REG_LAST = REG_ARM_LAST,
+};
+
+enum QutRegsEnum {
+    QUT_REG_R4 = 0,
+    QUT_REG_R7,
+    QUT_REG_R11,
+    QUT_REG_SP,
+    QUT_REG_PC,
+    QUT_REG_LR,
+};
+
+static std::map<int, int> REGS_MAP = {
+    { QUT_REG_R4, REG_ARM_R4 },
+    { QUT_REG_R7, REG_ARM_R7 },
+    { QUT_REG_R11, REG_ARM_R11 },
+    { QUT_REG_SP, REG_SP },
+    { QUT_REG_PC, REG_PC },
+    { QUT_REG_LR, REG_LR },
 };
 
 struct RegsUserArm {

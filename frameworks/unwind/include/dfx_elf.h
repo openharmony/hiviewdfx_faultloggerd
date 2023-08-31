@@ -53,7 +53,7 @@ public:
     std::string GetElfName();
     std::string GetBuildId();
     int64_t GetLoadBias();
-    uint64_t GetMaxSize();
+    uint64_t GetElfSize();
     uint64_t GetStartVaddr();
     uint64_t GetEndVaddr();
     uint64_t GetRelPc(uint64_t pc, uint64_t mapStart, uint64_t mapOffset);

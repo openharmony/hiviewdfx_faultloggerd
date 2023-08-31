@@ -115,23 +115,23 @@ int DfxUnwindTable::ExdixSearchUnwindTable(struct UnwindProcInfo* pi, struct Unw
     uintptr_t last = di->u.rti.tableData + di->u.rti.tableLen - 8;
     uintptr_t entry, val;
 
-    if (!memory->ReadPrel31(&first, &val) || pc < val) {
+    if (!memory->ReadPrel31(first, &val) || pc < val) {
         return UNW_ERROR_NO_UNWIND_INFO;
     }
-    if (!memory->ReadPrel31(&last, &val)) {
+    if (!memory->ReadPrel31(last, &val)) {
         return UNW_ERROR_NO_UNWIND_INFO;
     }
 
     if (pc >= val) {
         entry = last;
-        if (!memory->ReadPrel31(&last, &pi->startPc)) {
+        if (!memory->ReadPrel31(last, &pi->startPc)) {
             return UNW_ERROR_ILLEGAL_VALUE;
         }
         pi->endPc = di->endPc - 1;
     } else {
         while (first < last - 8) {
             entry = first + (((last - first) / 8 + 1) >> 1) * 8;
-            if (!memory->ReadPrel31(&entry, &val)) {
+            if (!memory->ReadPrel31(entry, &val)) {
                 return UNW_ERROR_ILLEGAL_VALUE;
             }
             if (pc < val) {
@@ -143,12 +143,12 @@ int DfxUnwindTable::ExdixSearchUnwindTable(struct UnwindProcInfo* pi, struct Unw
         entry = first;
 
         uintptr_t cur = entry;
-        if (!memory->ReadPrel31(&cur, &pi->startPc)) {
+        if (!memory->ReadPrel31(cur, &pi->startPc)) {
             return UNW_ERROR_ILLEGAL_VALUE;
         }
 
         cur = entry + 8;
-        if (!memory->ReadPrel31(&cur, &pi->endPc)) {
+        if (!memory->ReadPrel31(cur, &pi->endPc)) {
             return UNW_ERROR_ILLEGAL_VALUE;
         }
 

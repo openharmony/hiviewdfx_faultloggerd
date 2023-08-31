@@ -43,7 +43,7 @@ public:
         Init();
     };
     // for customized
-    Unwinder(UnwindAccessors* accessors) : pid_(UWNIND_TYPE_CUSTOMIZE)
+    Unwinder(std::shared_ptr<UnwindAccessors> accessors) : pid_(UWNIND_TYPE_CUSTOMIZE)
     {
         acc_ = new DfxAccessorsCustomize(accessors);
         memory_ = new DfxMemory(acc_);
@@ -66,7 +66,7 @@ public:
     const uint64_t& GetLastErrorAddr() const { return lastErrorData_.addr; }
 
     bool Unwind(void *ctx, size_t maxFrameNum = 64, size_t skipFrameNum = 0);
-    bool Step(uintptr_t& pc, uintptr_t& sp, void *ctx);
+    bool Step(uintptr_t pc, uintptr_t sp, void *ctx);
 
     bool UnwindLocal(size_t maxFrameNum, size_t skipFrameNum);
     bool UnwindRemote(size_t maxFrameNum, size_t skipFrameNum);
