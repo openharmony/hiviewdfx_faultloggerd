@@ -139,6 +139,7 @@ inline void ArmExidx::LogRawData()
 
 bool ArmExidx::ExtractEntryData(uintptr_t entryOffset)
 {
+    LOGU("Exidx entryOffset: %llx", (uint64_t)entryOffset);
     ops_.clear();
     uint32_t data = 0;
     lastErrorData_.code = UNW_ERROR_NONE;

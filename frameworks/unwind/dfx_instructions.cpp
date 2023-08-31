@@ -30,7 +30,7 @@ namespace {
 #define LOG_TAG "DfxInstructions"
 }
 
-uintptr_t DfxInstructions::SaveReg(uintptr_t cfa, struct RegLoc loc)
+uintptr_t DfxInstructions::SaveReg(uintptr_t cfa, struct RegLoc loc, std::vector<uintptr_t> regs)
 {
     uintptr_t result = 0;
     uintptr_t location;
@@ -67,12 +67,13 @@ bool DfxInstructions::Apply(std::shared_ptr<DfxRegs> dfxRegs, RegLocState &rsSta
         LOGE("no cfa info exist ?\n");
         return false;
     }
-    LOGU("new cfa : %llx \n", (uint64_t)cfa);
+    LOGU("Update cfa : %llx \n", (uint64_t)cfa);
 
+    std::vector<uintptr_t> oldRegs = regs;
     for (size_t i = 0; i < QUT_MINI_REGS_SIZE; i++) {
         if (rsState.locs[i].type != REG_LOC_UNUSED) {
-            regs[i] = SaveReg(cfa, rsState.locs[i]);
-            LOGU("update reg[%d] : %llx \n", REGS_MAP[i], (uint64_t)regs[i]);
+            regs[i] = SaveReg(cfa, rsState.locs[i], oldRegs);
+            LOGU("Update reg[%d] : %llx \n", REGS_MAP[i], (uint64_t)regs[i]);
         }
     }
 
