@@ -59,6 +59,7 @@ public:
     uint64_t GetRelPc(uint64_t pc, uint64_t mapStart, uint64_t mapOffset);
     uint64_t GetPcAdjustment(uint64_t pc);
     const uint8_t* GetMmap();
+    size_t GetMmapSize();
     bool Read(uint64_t pos, void *buf, size_t size);
     const std::unordered_map<uint64_t, ElfLoadInfo>& GetPtLoads();
     const std::vector<ElfSymbol>& GetElfSymbols();

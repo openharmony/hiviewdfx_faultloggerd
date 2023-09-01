@@ -32,22 +32,22 @@ public:
     // for local
     Unwinder() : pid_(UWNIND_TYPE_LOCAL)
     {
-        acc_ = new DfxAccessorsLocal();
-        memory_ = new DfxMemory(acc_);
+        acc_ = std::make_shared<DfxAccessorsLocal>();
+        memory_ = std::make_shared<DfxMemory>(acc_);
         Init();
     };
     // for remote
     Unwinder(int pid) : pid_(pid)
     {
-        acc_ = new DfxAccessorsRemote();
-        memory_ = new DfxMemory(acc_);
+        acc_ = std::make_shared<DfxAccessorsRemote>();
+        memory_ = std::make_shared<DfxMemory>(acc_);
         Init();
     };
     // for customized
     Unwinder(std::shared_ptr<UnwindAccessors> accessors) : pid_(UWNIND_TYPE_CUSTOMIZE)
     {
-        acc_ = new DfxAccessorsCustomize(accessors);
-        memory_ = new DfxMemory(acc_);
+        acc_ = std::make_shared<DfxAccessorsCustomize>(accessors);
+        memory_ = std::make_shared<DfxMemory>(acc_);
         Init();
     };
     ~Unwinder() { Destroy(); }
@@ -76,14 +76,15 @@ private:
     void Init();
     void Destroy();
     bool IsValidFrame(uintptr_t addr, uintptr_t stackTop, uintptr_t stackBottom);
+    void DoPcAdjust(uintptr_t& pc);
 
 private:
     int32_t pid_;
     UnwindMode mode_ = DWARF_UNWIND;
     uintptr_t stackBottom_;
     uintptr_t stackTop_;
-    DfxAccessors* acc_;
-    DfxMemory* memory_;
+    std::shared_ptr<DfxAccessors> acc_;
+    std::shared_ptr<DfxMemory> memory_;
     std::map<uintptr_t, std::shared_ptr<RegLocState>> rsCache_;
     std::shared_ptr<DfxRegs> regs_;
     std::shared_ptr<DfxMaps> maps_;

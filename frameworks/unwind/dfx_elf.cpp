@@ -418,5 +418,13 @@ const uint8_t* DfxElf::GetMmap()
     }
     return static_cast<uint8_t *>(mmap_->Get());
 }
+
+size_t DfxElf::GetMmapSize()
+{
+    if (mmap_ == nullptr) {
+        return 0;
+    }
+    return mmap_->Size();
+}
 } // namespace HiviewDFX
 } // namespace OHOS

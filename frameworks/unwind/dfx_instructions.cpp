@@ -64,16 +64,16 @@ bool DfxInstructions::Apply(std::shared_ptr<DfxRegs> dfxRegs, std::shared_ptr<Re
     if (rsState->cfaReg != 0) {
         cfa = regs[rsState->cfaReg] + rsState->cfaRegOffset;
     } else {
-        LOGE("no cfa info exist ?\n");
+        LOGE("no cfa info exist?");
         return false;
     }
-    LOGU("Update cfa : %llx \n", (uint64_t)cfa);
+    LOGU("Update cfa : %llx", (uint64_t)cfa);
 
     std::vector<uintptr_t> oldRegs = regs;
     for (size_t i = 0; i < QUT_MINI_REGS_SIZE; i++) {
         if (rsState->locs[i].type != REG_LOC_UNUSED) {
-            regs[i] = SaveReg(cfa, rsState->locs[i], oldRegs);
-            LOGU("Update reg[%d] : %llx \n", REGS_MAP[i], (uint64_t)regs[i]);
+            regs[REGS_MAP[i]] = SaveReg(cfa, rsState->locs[i], oldRegs);
+            LOGU("Update reg[%d] : %llx", REGS_MAP[i], (uint64_t)regs[REGS_MAP[i]]);
         }
     }
 
