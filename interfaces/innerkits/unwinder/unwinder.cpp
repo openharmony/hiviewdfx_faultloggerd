@@ -93,9 +93,12 @@ bool Unwinder::UnwindRemote(size_t maxFrameNum, size_t skipFrameNum)
     if (regs_ == nullptr) {
         regs_ = DfxRegs::Create();
     }
-
+    if (!regs_->GetRemoteRegs(pid_)) {
+        return false;
+    }
     UnwindRemoteContext context;
     context.pid = pid_;
+    context.regs = regs_;
     return Unwind(&context, maxFrameNum, skipFrameNum);
 }
 

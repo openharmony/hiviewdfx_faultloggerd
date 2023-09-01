@@ -25,7 +25,7 @@
 namespace OHOS {
 namespace HiviewDFX {
 class DfxElf;
-
+class DfxRegs;
 struct UnwindDynTableInfo {
     uintptr_t namePtr;
     uintptr_t segbase;
@@ -88,6 +88,7 @@ struct UnwindLocalContext {
 struct UnwindRemoteContext {
     int pid;
     std::shared_ptr<DfxElf> elf;
+    std::shared_ptr<DfxRegs> regs;
     struct ElfDynInfo edi;
 };
 } // namespace HiviewDFX
