@@ -52,17 +52,19 @@ size_t DfxMemory::Read(uintptr_t& addr, void* val, size_t size, bool incre)
         return 0;
     }
 
+    // must be align 4 bytes
     size_t bytesRead = 0;
     uintptr_t tmpVal;
-    size_t alignBytes = tmpAddr & (sizeof(uintptr_t) - 1);
+    size_t alignBytes = tmpAddr & (sizeof(uint32_t) - 1);
     if (alignBytes != 0) {
-        uintptr_t alignedAddr = tmpAddr & (~sizeof(uintptr_t) - 1);
+        uintptr_t alignedAddr = tmpAddr & (~sizeof(uint32_t) - 1);
         LOGU("alignBytes: %d, alignedAddr: %llx", alignBytes, static_cast<uint64_t>(alignedAddr));
         if (!ReadMem(alignedAddr, &tmpVal)) {
             return bytesRead;
         }
-        size_t copyBytes = std::min(sizeof(uintptr_t) - alignBytes, size);
-        memcpy_s(val, copyBytes, reinterpret_cast<uint8_t*>(&tmpVal) + alignBytes, copyBytes);
+        uint32_t valp = static_cast<uint32_t>(tmpVal);
+        size_t copyBytes = std::min(sizeof(uint32_t) - alignBytes, size);
+        memcpy_s(val, copyBytes, reinterpret_cast<uint8_t*>(&valp) + alignBytes, copyBytes);
         tmpAddr += copyBytes;
         val = reinterpret_cast<void*>(reinterpret_cast<uintptr_t>(val) + copyBytes);
         size -= copyBytes;
