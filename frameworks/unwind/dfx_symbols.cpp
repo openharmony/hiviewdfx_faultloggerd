@@ -52,7 +52,7 @@ bool DfxSymbols::ParseSymbols(std::vector<DfxSymbol>& symbols, DfxElf* elf, cons
             std::string demangleName = DfxDemangle::Demangle(elfSymbol.nameStr);
             symbol.SetName(elfSymbol.nameStr, demangleName);
             symbol.SetModule(filePath);
-            LOGU("%016" PRIx64 "|%4" PRIu64 "|%s", elfSymbol.value, elfSymbol.size, demangleName.c_str());
+            //LOGU("%016" PRIx64 "|%4" PRIu64 "|%s", elfSymbol.value, elfSymbol.size, demangleName.c_str());
             symbols.emplace_back(symbol);
         } else {
             continue;

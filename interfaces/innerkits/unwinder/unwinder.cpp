@@ -21,6 +21,7 @@
 #include "dfx_errors.h"
 #include "dfx_regs_get.h"
 #include "dfx_log.h"
+#include "dfx_instructions.h"
 #include "dfx_unwind_table.h"
 #include "stack_util.h"
 #include "string_printf.h"
@@ -131,6 +132,7 @@ bool Unwinder::Unwind(void *ctx, size_t maxFrameNum, size_t skipFrameNum)
         std::shared_ptr<DfxMap> map = nullptr;
         if (!maps_->FindMapByAddr(map, pc) || (map == nullptr)) {
             LOGE("map is null");
+            lastErrorData_.code = pc;
             lastErrorData_.code = UNW_ERROR_INVALID_MAP;
             break;
         }
@@ -164,34 +166,50 @@ bool Unwinder::Unwind(void *ctx, size_t maxFrameNum, size_t skipFrameNum)
 
 bool Unwinder::Step(uintptr_t& pc, uintptr_t& sp, void *ctx)
 {
-    int errorCode = UNW_ERROR_NONE;
+    LOGU("pc: llx, sp: llx", (uint64_t)pc, (uint64_t)sp);
+    bool ret = false;
+    lastErrorData_.addr = pc;
     memory_->SetCtx(ctx);
-
-    UnwindDynInfo di;
-    if ((errorCode = acc_->FindProcInfo(pc, &di, true, ctx)) != UNW_ERROR_NONE) {
-        lastErrorData_.code = static_cast<uint16_t>(errorCode);
-        return false;
+    auto iter = rsCache_.find(pc);
+    if (iter != rsCache_.end()) {
+        auto rs = iter->second;
+        DfxInstructions instructions(memory_);
+        ret = instructions.Apply(regs_, rs);
     }
 
-    struct UnwindProcInfo pi;
-    if ((errorCode = DfxUnwindTable::SearchUnwindTable(&pi, &di, pc, memory_, true)) != UNW_ERROR_NONE) {
-        lastErrorData_.code = static_cast<uint16_t>(errorCode);
-        return false;
-    }
-
-    // we have get unwind info, then parser the exidx entry or ehframe fde
-    if (pi.format == UNW_INFO_FORMAT_ARM_EXIDX) {
-        ArmExidx armExidx(regs_, memory_);
-        if (!armExidx.Eval((uintptr_t)pi.unwindInfo)) {
-            pc = regs_->GetPc();
-            sp = regs_->GetSp();
+    if (ret == false) {
+        int errorCode = UNW_ERROR_NONE;
+        UnwindDynInfo di;
+        if ((errorCode = acc_->FindProcInfo(pc, &di, true, ctx)) != UNW_ERROR_NONE) {
+            lastErrorData_.code = static_cast<uint16_t>(errorCode);
             return false;
         }
-    } else if (pi.format == UNW_INFO_FORMAT_REMOTE_TABLE) {
-        // TODO: arm64 UNW_INFO_FORMAT_REMOTE_TABLE
-        return false;
+
+        struct UnwindProcInfo pi;
+        if ((errorCode = DfxUnwindTable::SearchUnwindTable(&pi, &di, pc, memory_, true)) != UNW_ERROR_NONE) {
+            lastErrorData_.code = static_cast<uint16_t>(errorCode);
+            return false;
+        }
+
+        auto rs = std::make_shared<RegLocState>();
+        // we have get unwind info, then parser the exidx entry or ehframe fde
+        if (pi.format == UNW_INFO_FORMAT_ARM_EXIDX) {
+            ArmExidx armExidx(memory_);
+            if (!armExidx.Eval((uintptr_t)pi.unwindInfo, regs_, rs)) {
+                lastErrorData_.code = armExidx.GetLastErrorCode();
+                lastErrorData_.addr = armExidx.GetLastErrorAddr();
+                return false;
+            }
+        } else if (pi.format == UNW_INFO_FORMAT_REMOTE_TABLE) {
+            // TODO: arm64 UNW_INFO_FORMAT_REMOTE_TABLE
+            return false;
+        }
+        rsCache_.emplace(pc, rs);
     }
 
+    pc = regs_->GetPc();
+    sp = regs_->GetSp();
+    LOGU("pc: llx, sp: llx", (uint64_t)pc, (uint64_t)sp);
     return true;
 }
 } // namespace HiviewDFX

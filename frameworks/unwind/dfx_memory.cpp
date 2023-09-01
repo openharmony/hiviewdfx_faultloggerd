@@ -47,7 +47,6 @@ bool DfxMemory::ReadMem(uintptr_t addr, uintptr_t *val)
 size_t DfxMemory::Read(uintptr_t& addr, void* val, size_t size, bool incre)
 {
     uintptr_t tmpAddr = addr;
-    LOGU("addr: %llx", static_cast<uint64_t>(tmpAddr));
     uint64_t maxSize;
     if (__builtin_add_overflow(tmpAddr, size, &maxSize)) {
         return 0;
@@ -62,9 +61,7 @@ size_t DfxMemory::Read(uintptr_t& addr, void* val, size_t size, bool incre)
         if (!ReadMem(alignedAddr, &tmpVal)) {
             return bytesRead;
         }
-        LOGU("tmpVal: %llx", static_cast<uint64_t>(tmpVal));
         size_t copyBytes = std::min(sizeof(uintptr_t) - alignBytes, size);
-        LOGU("copyBytes: %d", copyBytes);
         memcpy_s(val, copyBytes, reinterpret_cast<uint8_t*>(&tmpVal) + alignBytes, copyBytes);
         tmpAddr += copyBytes;
         val = reinterpret_cast<void*>(reinterpret_cast<uintptr_t>(val) + copyBytes);
@@ -76,7 +73,6 @@ size_t DfxMemory::Read(uintptr_t& addr, void* val, size_t size, bool incre)
         if (!ReadMem(tmpAddr, &tmpVal)) {
             return bytesRead;
         }
-        LOGU("tmpVal: %llx", static_cast<uint64_t>(tmpVal));
         memcpy_s(val, sizeof(uintptr_t), &tmpVal, sizeof(uintptr_t));
         val = reinterpret_cast<void*>(reinterpret_cast<uintptr_t>(val) + sizeof(uintptr_t));
         tmpAddr += sizeof(uintptr_t);
@@ -84,12 +80,10 @@ size_t DfxMemory::Read(uintptr_t& addr, void* val, size_t size, bool incre)
     }
 
     size_t leftOver = size & (sizeof(uintptr_t) - 1);
-    LOGU("leftOver: %d", leftOver);
     if (leftOver) {
         if (!ReadMem(tmpAddr, &tmpVal)) {
             return bytesRead;
         }
-        LOGU("tmpVal: %llx", static_cast<uint64_t>(tmpVal));
         memcpy_s(val, leftOver, &tmpVal, leftOver);
         tmpAddr += leftOver;
         bytesRead += leftOver;

@@ -29,7 +29,7 @@ public:
     DfxInstructions(DfxMemory* memory) : memory_(memory) {}
     virtual ~DfxInstructions() = default;
 
-    bool Apply(std::shared_ptr<DfxRegs> dfxRegs, RegLocState &rsState);
+    bool Apply(std::shared_ptr<DfxRegs> dfxRegs, std::shared_ptr<RegLocState> rsState);
 private:
     uintptr_t SaveReg(uintptr_t cfa, struct RegLoc loc, std::vector<uintptr_t> regs);
 
