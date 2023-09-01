@@ -79,9 +79,9 @@ inline void ArmExidx::FlushInstr()
 {
     if (context_.vsp != 0) {
         LOG_CHECK((context_.vsp & 0x3) == 0);
-        rsState_.cfaReg = REG_SP;
-        rsState_.cfaRegOffset = context_.vsp;
-        LOGU("rsState_.cfaRegOffset: %d", rsState_.cfaRegOffset);
+        rsState_->cfaReg = REG_SP;
+        rsState_->cfaRegOffset = context_.vsp;
+        LOGU("rsState cfaRegOffset: %d", rsState_->cfaRegOffset);
     }
 
     // Sort by vsp offset ascend, convenient for search prologue later.
@@ -107,25 +107,26 @@ inline void ArmExidx::FlushInstr()
         if (context_.IsTransformed(reg)) {
             LOG_CHECK((context_.regs[reg] & 0x3) == 0);
 
-            rsState_.locs[reg].type = REG_LOC_MEM_OFFSET;
-            rsState_.locs[reg].val = -context_.regs[reg];
-            LOGU("rsState_.locs[%d].type: %d, val: %d", reg, rsState_.locs[reg].type, rsState_.locs[reg].val);
+            rsState_->locs[reg].type = REG_LOC_MEM_OFFSET;
+            rsState_->locs[reg].val = -context_.regs[reg];
+            LOGU("rsState locs[%d].type: %d, val: %d", reg, rsState_->locs[reg].type, rsState_->locs[reg].val);
         }
     }
 
     context_.reset();
 }
 
-inline void ArmExidx::ApplyInstr()
+inline bool ArmExidx::ApplyInstr()
 {
     FlushInstr();
 
     DfxInstructions instructions(memory_);
-    instructions.Apply(regs_, rsState_);
+    bool ret = instructions.Apply(regs_, rsState_);
 
     if (!isPcSet_) {
         regs_->SetReg(REG_PC, regs_->GetReg(REG_LR));
     }
+    return ret;
 }
 
 inline void ArmExidx::LogRawData()
@@ -261,9 +262,10 @@ inline bool ArmExidx::StepOpCode()
     return true;
 }
 
-bool ArmExidx::Eval(uintptr_t entryOffset)
+bool ArmExidx::Eval(uintptr_t entryOffset, std::shared_ptr<DfxRegs> regs, std::shared_ptr<RegLocState> rs)
 {
-    context_.reset();
+    regs_ = regs;
+    rsState_ = rs;
     if (!ExtractEntryData(entryOffset)) {
         return false;
     }
@@ -288,10 +290,10 @@ bool ArmExidx::Eval(uintptr_t entryOffset)
         {0xf8, 0xd0, &ArmExidx::Decode11010nnn},
         {0xc0, 0xc0, &ArmExidx::Decode11xxxyyy}
     };
+    context_.reset();
     while (Decode(decodeTable, sizeof(decodeTable)));
 
-    ApplyInstr();
-    return (lastErrorData_.code == UNW_ERROR_ARM_EXIDX_FINISH);
+    return ApplyInstr();
 }
 
 inline bool ArmExidx::DecodeSpare()
@@ -381,8 +383,8 @@ inline bool ArmExidx::Decode1001nnnn()
             // No register transformed, ignore vsp offset.
             context_.reset();
         }
-        rsState_.cfaReg = bits;
-        rsState_.cfaRegOffset = 0;
+        rsState_->cfaReg = bits;
+        rsState_->cfaRegOffset = 0;
     } else {
         LOGE("1001nnnn: Failed to set vsp = %d", bits);
         return false;

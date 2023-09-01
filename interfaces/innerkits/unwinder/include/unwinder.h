@@ -15,6 +15,7 @@
 #ifndef UNWINDER_H
 #define UNWINDER_H
 
+#include <map>
 #include <memory>
 #include <vector>
 #include "dfx_accessors.h"
@@ -83,6 +84,7 @@ private:
     uintptr_t stackTop_;
     DfxAccessors* acc_;
     DfxMemory* memory_;
+    std::map<uintptr_t, std::shared_ptr<RegLocState>> rsCache_;
     std::shared_ptr<DfxRegs> regs_;
     std::shared_ptr<DfxMaps> maps_;
     std::shared_ptr<DfxElf> elf_;

@@ -40,16 +40,13 @@ public:
 
 class ArmExidx {
 public:
-    ArmExidx(std::shared_ptr<DfxRegs> regs, DfxMemory* memory)
-        : regs_(regs), memory_(memory) {}
+    ArmExidx(DfxMemory* memory) : memory_(memory) {}
     virtual ~ArmExidx() = default;
 
-    bool Eval(uintptr_t entryOffset);
+    bool Eval(uintptr_t entryOffset, std::shared_ptr<DfxRegs> regs, std::shared_ptr<RegLocState> rs);
     const std::shared_ptr<DfxRegs>& GetRegs() const { return regs_; }
-
-    RegLocState rsState_;
-    std::shared_ptr<DfxRegs> regs_ = nullptr;
-    UnwindErrorData lastErrorData_;
+    const uint16_t& GetLastErrorCode() const { return lastErrorData_.code; }
+    const uint64_t& GetLastErrorAddr() const { return lastErrorData_.addr; }
 
 private:
     struct DecodeTable {
@@ -59,7 +56,7 @@ private:
     };
 
     void FlushInstr();
-    void ApplyInstr();
+    bool ApplyInstr();
 
     void LogRawData();
     bool ExtractEntryData(uintptr_t entryOffset);
@@ -86,6 +83,9 @@ private:
     bool DecodeSpare();
 
 protected:
+    std::shared_ptr<RegLocState> rsState_;
+    std::shared_ptr<DfxRegs> regs_;
+    UnwindErrorData lastErrorData_;
     DfxMemory* memory_;
     ExidxContext context_;
     std::deque<uint8_t> ops_;

@@ -46,7 +46,8 @@ public:
     uint64_t GetRelPc(uint64_t pc);
     std::string ToString();
 
-    DfxMap* prevMap;
+    DfxMap* prevMap = nullptr;
+    DfxMap* prevRealMap = nullptr;
     uint64_t begin = 0;
     uint64_t end = 0;
     uint64_t offset = 0;
