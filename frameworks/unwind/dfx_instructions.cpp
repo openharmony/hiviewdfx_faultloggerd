@@ -57,12 +57,12 @@ uintptr_t DfxInstructions::SaveReg(uintptr_t cfa, struct RegLoc loc, std::vector
     return result;
 }
 
-bool DfxInstructions::Apply(std::shared_ptr<DfxRegs> dfxRegs, RegLocState &rsState)
+bool DfxInstructions::Apply(std::shared_ptr<DfxRegs> dfxRegs, std::shared_ptr<RegLocState> rsState)
 {
     uintptr_t cfa = 0;
     std::vector<uintptr_t> regs = dfxRegs->GetRegsData();
-    if (rsState.cfaReg != 0) {
-        cfa = regs[rsState.cfaReg] + rsState.cfaRegOffset;
+    if (rsState->cfaReg != 0) {
+        cfa = regs[rsState->cfaReg] + rsState->cfaRegOffset;
     } else {
         LOGE("no cfa info exist ?\n");
         return false;
@@ -71,8 +71,8 @@ bool DfxInstructions::Apply(std::shared_ptr<DfxRegs> dfxRegs, RegLocState &rsSta
 
     std::vector<uintptr_t> oldRegs = regs;
     for (size_t i = 0; i < QUT_MINI_REGS_SIZE; i++) {
-        if (rsState.locs[i].type != REG_LOC_UNUSED) {
-            regs[i] = SaveReg(cfa, rsState.locs[i], oldRegs);
+        if (rsState->locs[i].type != REG_LOC_UNUSED) {
+            regs[i] = SaveReg(cfa, rsState->locs[i], oldRegs);
             LOGU("Update reg[%d] : %llx \n", REGS_MAP[i], (uint64_t)regs[i]);
         }
     }
