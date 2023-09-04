@@ -26,7 +26,7 @@ namespace OHOS {
 namespace HiviewDFX {
 class DfxMemory {
 public:
-    DfxMemory(DfxAccessors* acc) : acc_(acc) {}
+    DfxMemory(std::shared_ptr<DfxAccessors> acc) : acc_(acc) {}
     virtual ~DfxMemory() = default;
 
     virtual void SetCtx(void* ctx) { ctx_ = ctx; }
@@ -46,12 +46,12 @@ public:
     T Read(uintptr_t& addr, bool incre = false)
     {
         T val = 0;
-        Read(addr, (void *)val, sizeof(T), incre);
+        Read(addr, (void *)&val, sizeof(T), incre);
         return val;
     }
 
 private:
-    DfxAccessors* acc_;
+    std::shared_ptr<DfxAccessors> acc_;
     void* ctx_;
 };
 } // namespace HiviewDFX

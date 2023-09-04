@@ -54,17 +54,8 @@ void Unwinder::Init()
 
 void Unwinder::Destroy()
 {
-    if (memory_ != nullptr) {
-        delete memory_;
-        memory_ = nullptr;
-    }
-    if (acc_ != nullptr) {
-        delete acc_;
-        acc_ = nullptr;
-    }
     frames_.clear();
 }
-
 
 bool Unwinder::IsValidFrame(uintptr_t addr, uintptr_t stackTop, uintptr_t stackBottom)
 {
@@ -150,10 +141,8 @@ bool Unwinder::Unwind(void *ctx, size_t maxFrameNum, size_t skipFrameNum)
         }
         uint64_t relPc = elf_->GetRelPc(pc, map->begin, map->end);
         stepPc = relPc;
-        uint64_t pcAdjustment = elf_->GetPcAdjustment(relPc);
-        stepPc -= pcAdjustment;
 
-        if (regs_->StepIfSignalHandler(relPc, elf_.get(), memory_)) {
+        if (regs_->StepIfSignalHandler(relPc, elf_.get(), memory_.get())) {
             stepPc = relPc;
         } else if (Step(stepPc, sp, ctx) <= 0) {
             break;
@@ -166,8 +155,10 @@ bool Unwinder::Unwind(void *ctx, size_t maxFrameNum, size_t skipFrameNum)
 
 bool Unwinder::Step(uintptr_t& pc, uintptr_t& sp, void *ctx)
 {
+    LOGU("++++++pc: %llx, sp: %llx", (uint64_t)pc, (uint64_t)sp);
     bool ret = false;
     lastErrorData_.addr = pc;
+    DoPcAdjust(pc);
     memory_->SetCtx(ctx);
     auto iter = rsCache_.find(pc);
     if (iter != rsCache_.end()) {
@@ -185,7 +176,7 @@ bool Unwinder::Step(uintptr_t& pc, uintptr_t& sp, void *ctx)
         }
 
         struct UnwindProcInfo pi;
-        if ((errorCode = DfxUnwindTable::SearchUnwindTable(&pi, &di, pc, memory_, true)) != UNW_ERROR_NONE) {
+        if ((errorCode = DfxUnwindTable::SearchUnwindTable(&pi, &di, pc, memory_.get(), true)) != UNW_ERROR_NONE) {
             lastErrorData_.code = static_cast<uint16_t>(errorCode);
             return false;
         }
@@ -208,7 +199,28 @@ bool Unwinder::Step(uintptr_t& pc, uintptr_t& sp, void *ctx)
 
     pc = regs_->GetPc();
     sp = regs_->GetSp();
+    LOGU("------pc: %llx, sp: %llx", (uint64_t)pc, (uint64_t)sp);
     return true;
+}
+
+void Unwinder::DoPcAdjust(uintptr_t& pc)
+{
+    if (pc <= 4) {
+        return;
+    }
+    uintptr_t sz = 4;
+#if defined(__arm__)
+    if (pc & 1) {
+        uintptr_t val;
+        if (pc < 5 || !(memory_->ReadMem(pc - 5, &val)) ||
+            (val & 0xe000f000) != 0xe000f000) {
+            sz = 2;
+        }
+    }
+#elif defined(__x86_64__)
+    sz = 1;
+#endif
+    pc -= sz;
 }
 } // namespace HiviewDFX
 } // namespace OHOS

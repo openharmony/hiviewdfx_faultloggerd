@@ -31,7 +31,7 @@ public:
     uint32_t transformedBits = 0;
     std::vector<int32_t> regs;
 
-    void reset();
+    void Reset();
     void Transform(uint32_t reg);
     bool IsTransformed(uint32_t reg);
     void AddUpTransformed(uint32_t reg, int32_t imm);
@@ -40,7 +40,7 @@ public:
 
 class ArmExidx {
 public:
-    ArmExidx(DfxMemory* memory) : memory_(memory) {}
+    ArmExidx(std::shared_ptr<DfxMemory> memory) : memory_(memory) {}
     virtual ~ArmExidx() = default;
 
     bool Eval(uintptr_t entryOffset, std::shared_ptr<DfxRegs> regs, std::shared_ptr<RegLocState> rs);
@@ -86,7 +86,7 @@ protected:
     std::shared_ptr<RegLocState> rsState_;
     std::shared_ptr<DfxRegs> regs_;
     UnwindErrorData lastErrorData_;
-    DfxMemory* memory_;
+    std::shared_ptr<DfxMemory> memory_;
     ExidxContext context_;
     std::deque<uint8_t> ops_;
     uint8_t curOp_ = 0;

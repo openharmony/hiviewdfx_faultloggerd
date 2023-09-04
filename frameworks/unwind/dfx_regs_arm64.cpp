@@ -70,18 +70,18 @@ void DfxRegsArm64::SetFromUcontext(const ucontext_t &context)
 
 void DfxRegsArm64::SetFromFpMiniRegs(const uintptr_t* regs)
 {
-    regsData_[REG_AARCH64_X29] = regs[0];
-    regsData_[REG_AARCH64_X30] = regs[1];
-    regsData_[REG_AARCH64_X31] = regs[2]; // 2 : REG_AARCH64_X31 offset
-    regsData_[REG_AARCH64_X32] = regs[3]; // 3 : REG_AARCH64_X32 offset
+    regsData_[REG_FP] = regs[0]; // 0 : fp offset
+    regsData_[REG_LR] = regs[1]; // 1 : lr offset
+    regsData_[REG_SP] = regs[2]; // 2 : sp offset
+    regsData_[REG_PC] = regs[3]; // 3 : pc offset
 }
 
 void DfxRegsArm64::SetFromQutMiniRegs(const uintptr_t* regs)
 {
     regsData_[REG_AARCH64_X28] = regs[2]; // 2 : REG_AARCH64_X28 offset
-    regsData_[REG_AARCH64_X29] = regs[3]; // 3 : REG_AARCH64_X29 offset
-    regsData_[REG_AARCH64_SP] = regs[4];  // 4 : REG_AARCH64_SP offset
-    regsData_[REG_AARCH64_PC] = regs[5];  // 5 : REG_AARCH64_PC offset
+    regsData_[REG_FP] = regs[3]; // 3 : fp offset
+    regsData_[REG_SP] = regs[4];  // 4 : sp offset
+    regsData_[REG_PC] = regs[5];  // 5 : pc offset
 }
 
 std::string DfxRegsArm64::PrintRegs() const

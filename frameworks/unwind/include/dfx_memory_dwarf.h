@@ -24,7 +24,7 @@ namespace OHOS {
 namespace HiviewDFX {
 class DfxDwarfMemory {
 public:
-    DfxDwarfMemory(DfxMemory* memory) : memory_(memory) {}
+    DfxDwarfMemory(std::shared_ptr<DfxMemory> memory) : memory_(memory) {}
     virtual ~DfxDwarfMemory() = default;
 
     uintptr_t ReadUintptr(uintptr_t& addr);
@@ -43,7 +43,7 @@ public:
     uint64_t funcOffset_ = UINT64_MAX;
     uint64_t textOffset_ = UINT64_MAX;
 protected:
-    DfxMemory* memory_;
+    std::shared_ptr<DfxMemory> memory_;
 };
 } // namespace HiviewDFX
 } // namespace OHOS

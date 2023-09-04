@@ -140,7 +140,7 @@ bool ElfParse::ParseProgramHeaders(const EhdrType& ehdr)
             if ((phdr.p_flags & PF_X) == 0) {
                 continue;
             }
-            LOGU("phdr.p_offset: %llx, phdr.p_vaddr: %llx", phdr.p_offset, phdr.p_vaddr);
+            //LOGU("phdr.p_offset: %llx, phdr.p_vaddr: %llx", phdr.p_offset, phdr.p_vaddr);
             ptLoads_[phdr.p_offset] = ElfLoadInfo{phdr.p_offset, phdr.p_vaddr, static_cast<size_t>(phdr.p_memsz)};
 
             // Only set the load bias from the first executable load header.
@@ -218,7 +218,7 @@ bool ElfParse::ParseSectionHeaders(const EhdrType& ehdr)
             LOGE("Failed to get section name");
             continue;
         }
-        LOGU("ParseSectionHeaders secName: %s", secName.c_str());
+        //LOGU("ParseSectionHeaders secName: %s", secName.c_str());
 
         ShdrInfo shdrInfo;
         shdrInfo.addr = static_cast<uint64_t>(shdr.sh_addr);
@@ -317,8 +317,8 @@ bool ElfParse::ParseElfSymbols()
         }
 
         SymType sym;
-        LOGU("shdr.offset: %llx, size: %llx, entSize: %llx, link: %d",
-            shdr.offset, shdr.size, shdr.entSize, shdr.link);
+        //LOGU("shdr.offset: %llx, size: %llx, entSize: %llx, link: %d",
+        //    shdr.offset, shdr.size, shdr.entSize, shdr.link);
         uint64_t offset = shdr.offset;
         const char* strtabPtr = GetStrTabPtr(shdr.link);
         for (; offset < shdr.size; offset += shdr.entSize) {
@@ -330,7 +330,7 @@ bool ElfParse::ParseElfSymbols()
             elfSymbol.name = static_cast<uint32_t>(sym.st_name);
             if (strtabPtr != nullptr) {
                 elfSymbol.nameStr = std::string(strtabPtr + elfSymbol.name);
-                LOGU("elfSymbol.nameStr: %s", elfSymbol.nameStr.c_str());
+                //LOGU("elfSymbol.nameStr: %s", elfSymbol.nameStr.c_str());
             }
             elfSymbol.info = sym.st_info;
             elfSymbol.other = sym.st_other;

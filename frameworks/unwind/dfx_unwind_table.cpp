@@ -113,6 +113,7 @@ int DfxUnwindTable::ExdixSearchUnwindTable(struct UnwindProcInfo* pi, struct Unw
 {
     uintptr_t first = di->u.rti.tableData;
     uintptr_t last = di->u.rti.tableData + di->u.rti.tableLen - 8;
+    LOGU("ExdixSearchUnwindTable first: %llx", (uint64_t)first);
     uintptr_t entry, val;
 
     if (!memory->ReadPrel31(first, &val) || pc < val) {

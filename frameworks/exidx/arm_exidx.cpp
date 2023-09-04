@@ -32,7 +32,7 @@ namespace {
 #define ARM_EXTBL_OP_FINISH     0xb0
 }
 
-void ExidxContext::reset()
+void ExidxContext::Reset()
 {
     vsp = 0;
     transformedBits = 0;
@@ -77,9 +77,12 @@ void ExidxContext::AddUpVsp(int32_t imm)
 
 inline void ArmExidx::FlushInstr()
 {
+    if (rsState_->cfaReg == 0) {
+        rsState_->cfaReg = REG_SP;
+    }
+    rsState_->cfaRegOffset = 0;
     if (context_.vsp != 0) {
         LOG_CHECK((context_.vsp & 0x3) == 0);
-        rsState_->cfaReg = REG_SP;
         rsState_->cfaRegOffset = context_.vsp;
         LOGU("rsState cfaRegOffset: %d", rsState_->cfaRegOffset);
     }
@@ -113,7 +116,7 @@ inline void ArmExidx::FlushInstr()
         }
     }
 
-    context_.reset();
+    context_.Reset();
 }
 
 inline bool ArmExidx::ApplyInstr()
@@ -259,13 +262,18 @@ inline bool ArmExidx::StepOpCode()
     }
     curOp_ = ops_.front();
     ops_.pop_front();
+    LOGU("curOp: %llx", (uint64_t)curOp_);
     return true;
 }
 
 bool ArmExidx::Eval(uintptr_t entryOffset, std::shared_ptr<DfxRegs> regs, std::shared_ptr<RegLocState> rs)
 {
+    if (regs == nullptr || rs == nullptr) {
+        return false;
+    }
     regs_ = regs;
     rsState_ = rs;
+    rsState_->locs.resize(QUT_MINI_REGS_SIZE);
     if (!ExtractEntryData(entryOffset)) {
         return false;
     }
@@ -275,7 +283,7 @@ bool ArmExidx::Eval(uintptr_t entryOffset, std::shared_ptr<DfxRegs> regs, std::s
         {0xc0, 0x40, &ArmExidx::Decode01xxxxxx},
         {0xf0, 0x80, &ArmExidx::Decode1000iiiiiiiiiiii},
         {0xf0, 0x90, &ArmExidx::Decode1001nnnn},
-        {0xf0, 0x0a, &ArmExidx::Decode1010nnnn},
+        {0xf0, 0xa0, &ArmExidx::Decode1010nnnn},
         {0xff, 0xb0, &ArmExidx::Decode10110000},
         {0xff, 0xb1, &ArmExidx::Decode101100010000iiii},
         {0xff, 0xb2, &ArmExidx::Decode10110010uleb128},
@@ -290,8 +298,8 @@ bool ArmExidx::Eval(uintptr_t entryOffset, std::shared_ptr<DfxRegs> regs, std::s
         {0xf8, 0xd0, &ArmExidx::Decode11010nnn},
         {0xc0, 0xc0, &ArmExidx::Decode11xxxyyy}
     };
-    context_.reset();
-    while (Decode(decodeTable, sizeof(decodeTable)));
+    context_.Reset();
+    while (Decode(decodeTable, sizeof(decodeTable) / sizeof(decodeTable[0])));
 
     return ApplyInstr();
 }
@@ -309,14 +317,16 @@ inline bool ArmExidx::Decode(DecodeTable decodeTable[], size_t size)
         return false;
     }
 
+    bool ret = false;
     for (size_t i = 0 ; i < size ; ++i) {
         if ((curOp_ & decodeTable[i].mask) == decodeTable[i].result) {
-            if (!decodeTable[i].decoder) {
-                return false;
+            if (decodeTable[i].decoder != nullptr) {
+                LOGU("decodeTable[%d].mask: %02x", i, decodeTable[i].mask);
+                ret = (this->*(decodeTable[i].decoder))();
             }
         }
     }
-    return true;
+    return ret;
 }
 
 inline bool ArmExidx::Decode00xxxxxx()
@@ -381,7 +391,7 @@ inline bool ArmExidx::Decode1001nnnn()
         LOGU("1001nnnn: Set vsp = %d", bits);
         if (context_.transformedBits == 0) {
             // No register transformed, ignore vsp offset.
-            context_.reset();
+            context_.Reset();
         }
         rsState_->cfaReg = bits;
         rsState_->cfaRegOffset = 0;
