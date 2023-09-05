@@ -75,12 +75,14 @@ void DfxRegs::SetRegsData(const std::vector<uintptr_t>& regs)
 {
     regsData_ = regs;
     PrintRegs();
+    haveRegsData_ = true;
 }
 
 void DfxRegs::SetRegsData(const uintptr_t* regs)
 {
     memcpy_s(RawData(), REG_LAST * sizeof(uintptr_t), regs, REG_LAST * sizeof(uintptr_t));
     PrintRegs();
+    haveRegsData_ = true;
 }
 
 uintptr_t* DfxRegs::GetReg(size_t idx)
@@ -166,6 +168,20 @@ std::string DfxRegs::PrintSpecialRegs() const
     regsStr = StringPrintf("fp:%08x sp:%08x lr:%08x pc:%08x\n", fp, sp, lr, pc);
 #endif
     return regsStr;
+}
+
+bool DfxRegs::GetRemoteRegs(pid_t pid)
+{
+    gregset_t regs;
+    struct iovec iov;
+    iov.iov_base = &regs;
+    iov.iov_len = sizeof(regs);
+    if (ptrace(PTRACE_GETREGSET, pid, NT_PRSTATUS, &iov) == -1) {
+        return false;
+    }
+    memcpy_s(regsData_.data(), REG_LAST * sizeof(uintptr_t), &regs, REG_LAST * sizeof(uintptr_t));
+    haveRegsData_ = true;
+    return true;
 }
 } // namespace HiviewDFX
 } // namespace OHOS

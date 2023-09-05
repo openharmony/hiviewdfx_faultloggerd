@@ -20,6 +20,7 @@
 #include <sys/ptrace.h>
 #include <sys/uio.h>
 #include "dfx_define.h"
+#include "dfx_regs.h"
 #include "dfx_log.h"
 #include "dfx_unwind_table.h"
 
@@ -149,23 +150,27 @@ int DfxAccessorsRemote::AccessReg(int reg, uintptr_t *val, int write, void *arg)
         return UNW_ERROR_INVALID_REGS;
     }
 
-    pid_t pid = ctx->pid;
-    gregset_t regs;
-    struct iovec iov;
-    iov.iov_base = &regs;
-    iov.iov_len = sizeof(regs);
-    if (ptrace(PTRACE_GETREGSET, pid, NT_PRSTATUS, &iov) == -1) {
-        return UNW_ERROR_ILLEGAL_VALUE;
+    if (ctx->regs == nullptr ) {
+        ctx->regs = DfxRegs::Create();
+    }
+    if (!ctx->regs->HaveRegsData()) {
+        if (!ctx->regs->GetRemoteRegs(ctx->pid)) {
+            return UNW_ERROR_ILLEGAL_VALUE;
+        }
     }
 
-    char *r = (char *)&regs + (reg * sizeof(uintptr_t));
     if (write) {
-        memcpy_s(r, sizeof(uintptr_t), val, sizeof(uintptr_t));
-        if (ptrace(PTRACE_SETREGSET, pid, NT_PRSTATUS, &iov) == -1) {
+        auto regData = (*(ctx->regs))[reg];
+        (*(ctx->regs))[reg] = *val;
+        struct iovec iov;
+        iov.iov_base = ctx->regs->RawData();
+        iov.iov_len = ctx->regs->RegsSize() * sizeof(uintptr_t);
+        if (ptrace(PTRACE_SETREGSET, ctx->pid, NT_PRSTATUS, &iov) == -1) {
+            (*(ctx->regs))[reg] = regData;
             return UNW_ERROR_ILLEGAL_VALUE;
         }
     } else {
-        memcpy_s(val, sizeof(uintptr_t), r, sizeof(uintptr_t));
+        *val = (*(ctx->regs))[reg];
     }
     return UNW_ERROR_NONE;
 }

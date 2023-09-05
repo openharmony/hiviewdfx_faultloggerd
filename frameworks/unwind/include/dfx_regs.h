@@ -30,7 +30,7 @@ namespace OHOS {
 namespace HiviewDFX {
 class DfxRegs {
 public:
-    DfxRegs() : regsData_(REG_LAST) {}
+    DfxRegs() : regsData_(REG_LAST), haveRegsData_(false) {}
     virtual ~DfxRegs() = default;
 
     static std::shared_ptr<DfxRegs> Create();
@@ -59,10 +59,14 @@ public:
     void GetSpecialRegs(uintptr_t& fp, uintptr_t& lr, uintptr_t& sp, uintptr_t& pc) const;
     void SetSpecialRegs(uintptr_t fp, uintptr_t lr, uintptr_t sp, uintptr_t pc);
     std::string GetSpecialRegsName(uintptr_t val) const;
+    bool GetRemoteRegs(pid_t pid);
+    bool HaveRegsData() { return haveRegsData_; }
+
 
 protected:
     std::string PrintSpecialRegs() const;
     std::vector<uintptr_t> regsData_ {};
+    bool haveRegsData_;
 };
 
 class DfxRegsArm : public DfxRegs {
