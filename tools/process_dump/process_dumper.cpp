@@ -63,10 +63,14 @@ void ProcessDumper::Dump()
         DFXLOG_ERROR("Dump process failed, please check permission and whether pid is valid.");
     } else {
         if (isCrash_) {
-            process_->vmThread_->Detach();
+            if (process_->vmThread_ != nullptr) {
+                process_->vmThread_->Detach();
+            }
             process_->Detach();
         }
-        process_->keyThread_->Detach();
+        if (process_->keyThread_ != nullptr) {
+            process_->keyThread_->Detach();
+        }
     }
 
     WriteDumpRes(resDump_);

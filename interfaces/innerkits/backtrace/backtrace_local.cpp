@@ -154,6 +154,8 @@ std::string GetProcessStacktrace()
         BacktraceLocalThread thread(tid);
         if (thread.Unwind(as, symbol, 0)) {
             ss << thread.GetFormatedStr(true) << std::endl;
+        } else {
+            HILOG_ERROR(LOG_CORE, "Failed to dump stack trace of thread %d.", tid);
         }
         return true;
     };

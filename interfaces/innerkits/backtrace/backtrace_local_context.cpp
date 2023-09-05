@@ -120,6 +120,7 @@ std::shared_ptr<ThreadContext> BacktraceLocalContext::GetThreadContext(int32_t t
 
     if (!InstallSigHandler()) {
         RemoveContextLocked(tid);
+        DFXLOG_WARN("Failed to install local dump signal handler.");
         return nullptr;
     }
 
