@@ -37,6 +37,7 @@ namespace {
 
 void Unwinder::Init()
 {
+    memory_ = std::make_shared<DfxMemory>(acc_);
     lastErrorData_.code = UNW_ERROR_NONE;
     lastErrorData_.addr = 0;
     frames_.clear();
@@ -164,7 +165,7 @@ bool Unwinder::Step(uintptr_t& pc, uintptr_t& sp, void *ctx)
     if (iter != rsCache_.end()) {
         auto rs = iter->second;
         DfxInstructions instructions(memory_);
-        ret = instructions.Apply(regs_, rs);
+        ret = instructions.Apply(*(regs_.get()), *(rs.get()));
     }
 
     if (ret == false) {
@@ -191,8 +192,12 @@ bool Unwinder::Step(uintptr_t& pc, uintptr_t& sp, void *ctx)
                 return false;
             }
         } else if (pi.format == UNW_INFO_FORMAT_REMOTE_TABLE) {
-            // TODO: arm64 UNW_INFO_FORMAT_REMOTE_TABLE
-            return false;
+            DwarfUnwindInfo dwarfUnwindInfo(memory_);
+            if (!dwarfUnwindInfo.Eval((uintptr_t)pi.unwindInfo, di.u.rti.segbase, regs_, rs)) {
+                lastErrorData_.code = dwarfUnwindInfo.GetLastErrorCode();
+                lastErrorData_.addr = dwarfUnwindInfo.GetLastErrorAddr();
+                return false;
+            }
         }
         rsCache_.emplace(pc, rs);
     }
