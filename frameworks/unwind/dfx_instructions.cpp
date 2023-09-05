@@ -20,6 +20,7 @@
 #include <cstdlib>
 #include "dfx_define.h"
 #include "dfx_log.h"
+#include "dwarf_expression.h"
 
 namespace OHOS {
 namespace HiviewDFX {
@@ -30,7 +31,7 @@ namespace {
 #define LOG_TAG "DfxInstructions"
 }
 
-uintptr_t DfxInstructions::SaveReg(uintptr_t cfa, struct RegLoc loc, std::vector<uintptr_t> regs)
+uintptr_t DfxInstructions::SaveReg(DfxRegs& regs, uintptr_t cfa, RegLoc loc)
 {
     uintptr_t result = 0;
     uintptr_t location;
@@ -46,9 +47,16 @@ uintptr_t DfxInstructions::SaveReg(uintptr_t cfa, struct RegLoc loc, std::vector
             location = loc.val;
             result = memory_->Read<uintptr_t>(location);
             break;
-        case REG_LOC_MEM_EXPRESSION:
+        case REG_LOC_MEM_EXPRESSION: {
+            DwarfExpression<uintptr_t> dwarfExpr(memory_);
+            location = dwarfExpr.Eval(regs, cfa, loc.val);
+            result = memory_->Read<uintptr_t>(location);
+        }
             break;
-        case REG_LOC_VAL_EXPRESSION:
+        case REG_LOC_VAL_EXPRESSION: {
+            DwarfExpression<uintptr_t> dwarfExpr(memory_);
+            result = dwarfExpr.Eval(regs, cfa, loc.val);
+        }
             break;
         default:
             LOGE("Failed to save register.");
@@ -57,28 +65,30 @@ uintptr_t DfxInstructions::SaveReg(uintptr_t cfa, struct RegLoc loc, std::vector
     return result;
 }
 
-bool DfxInstructions::Apply(std::shared_ptr<DfxRegs> dfxRegs, std::shared_ptr<RegLocState> rsState)
+bool DfxInstructions::Apply(DfxRegs& regs, RegLocState& rsState)
 {
     uintptr_t cfa = 0;
-    std::vector<uintptr_t> regs = dfxRegs->GetRegsData();
-    if (rsState->cfaReg != 0) {
-        cfa = regs[rsState->cfaReg] + rsState->cfaRegOffset;
+    if (rsState.cfaReg != 0) {
+        cfa = regs[rsState.cfaReg] + rsState.cfaRegOffset;
+    } else if (rsState.cfaExprPtr != 0) {
+        DwarfExpression<uintptr_t> dwarfExpr(memory_);
+        cfa = dwarfExpr.Eval(regs, 0, rsState.cfaExprPtr);
     } else {
         LOGE("no cfa info exist?");
         return false;
     }
     LOGU("Update cfa : %llx", (uint64_t)cfa);
 
-    std::vector<uintptr_t> oldRegs = regs;
-    for (size_t i = 0; i < QUT_MINI_REGS_SIZE; i++) {
-        if (rsState->locs[i].type != REG_LOC_UNUSED) {
-            regs[REGS_MAP[i]] = SaveReg(cfa, rsState->locs[i], oldRegs);
-            LOGU("Update reg[%d] : %llx", REGS_MAP[i], (uint64_t)regs[REGS_MAP[i]]);
+    auto qutRegs = DfxRegs::GetQutRegs();
+    for (size_t i = 0; i < qutRegs.size(); i++) {
+        size_t reg = qutRegs[i];
+        if (rsState.locs[reg].type != REG_LOC_UNUSED) {
+            regs[reg] = SaveReg(regs, cfa, rsState.locs[reg]);
+            LOGU("Update reg[%d] : %llx", reg, (uint64_t)regs[reg]);
         }
     }
 
-    regs[REG_SP] = cfa;
-    dfxRegs->SetRegsData(regs);
+    regs.SetSp(cfa);
     return true;
 }
 } // namespace HiviewDFX

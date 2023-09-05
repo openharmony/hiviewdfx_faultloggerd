@@ -36,6 +36,15 @@ public:
     static std::shared_ptr<DfxRegs> Create();
     static std::shared_ptr<DfxRegs> CreateFromUcontext(const ucontext_t& context);
     static std::shared_ptr<DfxRegs> CreateFromRegs(const UnwindMode mode, const uintptr_t* regs);
+    static std::shared_ptr<DfxRegs> CreateRemoteRegs(pid_t pid);
+    static void SetQutRegs(std::vector<int> qutRegs) { qutRegs_ = qutRegs; }
+    static const std::vector<int>& GetQutRegs()
+    {
+        if (!qutRegs_.empty()) {
+            return qutRegs_;
+        }
+        return QUT_REGS;
+    };
     virtual void SetFromUcontext(const ucontext_t& context) = 0;
     virtual void SetFromFpMiniRegs(const uintptr_t* regs) = 0;
     virtual void SetFromQutMiniRegs(const uintptr_t* regs) = 0;
@@ -59,10 +68,10 @@ public:
     void GetSpecialRegs(uintptr_t& fp, uintptr_t& lr, uintptr_t& sp, uintptr_t& pc) const;
     void SetSpecialRegs(uintptr_t fp, uintptr_t lr, uintptr_t sp, uintptr_t pc);
     std::string GetSpecialRegsName(uintptr_t val) const;
-
-protected:
     std::string PrintSpecialRegs() const;
+protected:
     std::vector<uintptr_t> regsData_ {};
+    static std::vector<int> qutRegs_;
 };
 
 class DfxRegsArm : public DfxRegs {

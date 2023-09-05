@@ -18,6 +18,7 @@
 #include <securec.h>
 #include "dfx_define.h"
 #include "dfx_log.h"
+#include "dwarf_define.h"
 
 namespace OHOS {
 namespace HiviewDFX {
@@ -134,7 +135,7 @@ bool DfxMemory::ReadUptr(uintptr_t& addr, uintptr_t *val, bool incre)
 bool DfxMemory::ReadPrel31(uintptr_t& addr, uintptr_t *val)
 {
     uintptr_t offset;
-    if (!ReadFully(addr, &offset, sizeof(uintptr_t), false)) {
+    if (!ReadUptr(addr, &offset, false)) {
         return false;
     }
     // int32_t signedData = static_cast<int32_t>(data << 1) >> 1;
@@ -142,6 +143,136 @@ bool DfxMemory::ReadPrel31(uintptr_t& addr, uintptr_t *val)
     offset = static_cast<uintptr_t>(static_cast<int32_t>(offset << 1) >> 1);
     *val = addr + offset;
     return true;
+}
+
+uint64_t DfxMemory::ReadUleb128(uintptr_t& addr)
+{
+    uint64_t val = 0;
+    uint64_t shift = 0;
+    uint8_t byte;
+    do {
+        byte = Read<uint8_t>(addr, true);
+
+        val |= static_cast<uint64_t>(byte & 0x7f) << shift;
+        shift += 7;
+    } while (byte & 0x80);
+    return val;
+}
+
+int64_t DfxMemory::ReadSleb128(uintptr_t& addr)
+{
+    uint64_t val = 0;
+    uint64_t shift = 0;
+    uint8_t byte;
+    do {
+        byte = Read<uint8_t>(addr, true);
+
+        val |= static_cast<uint64_t>(byte & 0x7f) << shift;
+        shift += 7;
+    } while (byte & 0x80);
+
+    if ((byte & 0x40) != 0) {
+        val |= (-1ULL) << shift;
+    }
+    return static_cast<int64_t>(val);
+}
+
+size_t DfxMemory::GetEncodedSize(uint8_t encoding)
+{
+    switch (encoding & 0x0f) {
+        case DW_EH_PE_absptr:
+            return sizeof(uintptr_t);
+        case DW_EH_PE_udata1:
+        case DW_EH_PE_sdata1:
+            return 1;
+        case DW_EH_PE_udata2:
+        case DW_EH_PE_sdata2:
+            return 2;
+        case DW_EH_PE_udata4:
+        case DW_EH_PE_sdata4:
+            return 4;
+        case DW_EH_PE_udata8:
+        case DW_EH_PE_sdata8:
+            return 8;
+        case DW_EH_PE_uleb128:
+        case DW_EH_PE_sleb128:
+        default:
+            return 0;
+    }
+}
+
+uintptr_t DfxMemory::ReadEncodedValue(uintptr_t& addr, uint8_t encoding,
+    uintptr_t dataOffset, uintptr_t textOffset, uintptr_t funcOffset)
+{
+    uintptr_t val = 0;
+    if (encoding == DW_EH_PE_omit) {
+        return val;
+    }
+
+    uintptr_t startAddr = addr;
+    switch (encoding & 0x0f) {
+        case DW_EH_PE_absptr:
+            val = Read<uintptr_t>(addr, true);
+            return val;
+        case DW_EH_PE_uleb128:
+            val = static_cast<uintptr_t>(ReadUleb128(addr));
+            break;
+        case DW_EH_PE_sleb128:
+            val = static_cast<uintptr_t>(ReadSleb128(addr));
+            break;
+        case DW_EH_PE_udata1: {
+            val = static_cast<uintptr_t>(Read<uint8_t>(addr, true));
+        }
+            break;
+        case DW_EH_PE_sdata1: {
+            val = static_cast<uintptr_t>(Read<int8_t>(addr, true));
+        }
+            break;
+        case DW_EH_PE_udata2: {
+            val = static_cast<uintptr_t>(Read<uint16_t>(addr, true));
+        }
+            break;
+        case DW_EH_PE_sdata2: {
+            val = static_cast<uintptr_t>(Read<int16_t>(addr, true));
+        }
+            break;
+        case DW_EH_PE_udata4: {
+            val = static_cast<uintptr_t>(Read<uint32_t>(addr, true));
+        }
+            break;
+        case DW_EH_PE_sdata4: {
+            val = static_cast<uintptr_t>(Read<int32_t>(addr, true));
+        }
+            break;
+        case DW_EH_PE_udata8: {
+            val = static_cast<uintptr_t>(Read<uint64_t>(addr, true));
+        }
+            break;
+        case DW_EH_PE_sdata8: {
+            val = static_cast<uintptr_t>(Read<int64_t>(addr, true));
+        }
+            break;
+        default:
+            break;
+    }
+
+    switch (encoding & 0x70) {
+        case DW_EH_PE_pcrel:
+            val += startAddr;
+            break;
+        case DW_EH_PE_textrel:
+            val += textOffset;
+            break;
+        case DW_EH_PE_datarel:
+            val += dataOffset;
+            break;
+        case DW_EH_PE_funcrel:
+            val += funcOffset;
+            break;
+        default:
+            break;
+    }
+    return val;
 }
 } // namespace HiviewDFX
 } // namespace OHOS

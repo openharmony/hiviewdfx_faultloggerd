@@ -283,7 +283,9 @@ int DfxElf::DlPhdrCb(struct dl_phdr_info *info, size_t size, void *data)
 {
     struct DlCbData *cbData = (struct DlCbData *)data;
     const ElfW(Phdr) *pText = nullptr;
+#if defined(__arm__)
     const ElfW(Phdr) *pArmExidx = nullptr;
+#endif
     const ElfW(Phdr) *pEhFrameHdr = nullptr;
     const ElfW(Phdr) *phdr = info->dlpi_phdr;
     for (size_t i = 0; i < info->dlpi_phnum; i++, phdr++) {
@@ -293,11 +295,14 @@ int DfxElf::DlPhdrCb(struct dl_phdr_info *info, size_t size, void *data)
                 cbData->pc < phdr->p_vaddr + info->dlpi_addr + phdr->p_memsz) {
                 pText = phdr;
             }
+            break;
         }
+#if defined(__arm__)
         case PT_ARM_EXIDX: {
             pArmExidx = phdr;
             break;
         }
+#endif
         case PT_GNU_EH_FRAME: {
             pEhFrameHdr = phdr;
             break;
@@ -311,6 +316,7 @@ int DfxElf::DlPhdrCb(struct dl_phdr_info *info, size_t size, void *data)
     }
 
     bool hasDynInfo = false;
+#if defined(__arm__)
     if (pArmExidx) {
         cbData->edi.diArm.format = UNW_INFO_FORMAT_ARM_EXIDX;
         cbData->edi.diArm.startPc = pText->p_vaddr + info->dlpi_addr;
@@ -320,6 +326,7 @@ int DfxElf::DlPhdrCb(struct dl_phdr_info *info, size_t size, void *data)
         cbData->edi.diArm.u.rti.tableLen = pArmExidx->p_memsz;
         hasDynInfo = true;
     }
+#endif
 
     if (hasDynInfo) {
         cbData->edi.startPc = pText->p_vaddr + info->dlpi_addr;
@@ -344,7 +351,9 @@ bool DfxElf::GetElfDynInfo(uintptr_t pc, struct ElfDynInfo* edi)
     memset_s(&elfDynInfo_, sizeof(ElfDynInfo), 0, sizeof(ElfDynInfo));
     elfDynInfo_.diCache.format = -1;
     elfDynInfo_.diDebug.format = -1;
+#if defined(__arm__)
     elfDynInfo_.diArm.format = -1;
+#endif
 
     ShdrInfo shdr;
     if (GetEhFrameHdrInfo(shdr)) {
@@ -357,6 +366,7 @@ bool DfxElf::GetElfDynInfo(uintptr_t pc, struct ElfDynInfo* edi)
         hasDynInfo_ = true;
     }
 
+#if defined(__arm__)
     if (GetArmExdixInfo(shdr)) {
         elfDynInfo_.diArm.format = UNW_INFO_FORMAT_ARM_EXIDX;
         elfDynInfo_.diArm.startPc = GetStartVaddr();
@@ -366,6 +376,7 @@ bool DfxElf::GetElfDynInfo(uintptr_t pc, struct ElfDynInfo* edi)
         elfDynInfo_.diArm.u.rti.tableLen = shdr.size;
         hasDynInfo_ = true;
     }
+#endif
 
     if (hasDynInfo_) {
         elfDynInfo_.startPc = GetStartVaddr();

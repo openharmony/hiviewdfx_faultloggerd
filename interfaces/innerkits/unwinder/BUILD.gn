@@ -27,7 +27,6 @@ if (defined(ohos_lite)) {
       "$c_utils_include_path",
       "$faultloggerd_common_path/dfxlog",
       "$faultloggerd_common_path/dfxutil",
-      "$faultloggerd_frameworks_path/exidx/include",
       "$faultloggerd_frameworks_path/unwind/include",
       "$faultloggerd_interfaces_path/common",
       "$hilog_lite_include_path",
@@ -38,7 +37,6 @@ if (defined(ohos_lite)) {
     deps = [
       "$faultloggerd_common_path/dfxlog:dfx_hilog",
       "$faultloggerd_common_path/dfxutil:dfx_util",
-      "$faultloggerd_frameworks_path/exidx:dfx_exidx_src",
       "$faultloggerd_frameworks_path/unwind:dfx_unwind_src",
       "//base/hiviewdfx/hilog_lite/frameworks/featured:hilog_shared",
       "//third_party/bounds_checking_function:libsec_shared",
@@ -63,7 +61,6 @@ if (defined(ohos_lite)) {
     deps = [
       "$faultloggerd_common_path/dfxlog:dfx_hilog",
       "$faultloggerd_common_path/dfxutil:dfx_util",
-      "$faultloggerd_frameworks_path/exidx:dfx_exidx_src",
       "$faultloggerd_frameworks_path/unwind:dfx_unwind_src",
     ]
 

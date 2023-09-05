@@ -67,24 +67,12 @@ enum UnwindErrorCode : uint16_t {
     UNW_ERROR_ARM_EXIDX_SPARE,
     /** arm exidx finish */
     UNW_ERROR_ARM_EXIDX_FINISH,
-    /** Quicken unwind section is invalid */
-    UNW_ERROR_INVALID_QUT_SECTION,
-    /** Met a invalid quicken instruction */
-    UNW_ERROR_INVALID_QUT_INSTRUCTION,
-    /** Request QUT file failed */
-    UNW_ERROR_REQUEST_QUT_FILE_FAILED,
-    /** Request QUT in memory failed */
-    UNW_ERROR_REQUEST_QUT_INMEM_FAILED,
-    /** Read memory from stack failed */
-    UNW_ERROR_READ_STACK_FAILED,
-    /** Index overflow */
-    UNW_ERROR_TABLE_INDEX_OVERFLOW,
-    /** Too many iterations */
-    UNW_ERROR_TOO_MANY_ITERATIONS,
-    /** Cfa not defined */
-    UNW_ERROR_DWARF_CFA_NOT_DEFINED,
-    /** No FDEs */
-    UNW_ERROR_DWARF_NO_FDES,
+    /** Dwarf cfa invalid */
+    UNW_ERROR_DWARF_INVALID_CFA,
+    /** Dwarf fde invalid */
+    UNW_ERROR_DWARF_INVALID_FDE,
+    /** Dwarf instr invalid */
+    UNW_ERROR_DWARF_INVALID_INSTR,
     /** Unsupported version */
     UNW_ERROR_UNSUPPORTED_VERSION,
     /** Not support */

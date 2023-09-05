@@ -34,21 +34,29 @@ public:
     virtual bool ReadReg(int reg, uintptr_t *val);
     virtual bool ReadMem(uintptr_t addr, uintptr_t *val);
 
-    virtual size_t Read(uintptr_t& addr, void* val, size_t size, bool incre = true);
-    virtual bool ReadFully(uintptr_t& addr, void* val, size_t size, bool incre = true);
-    virtual bool ReadU8(uintptr_t& addr, uint8_t *val, bool incre = true);
-    virtual bool ReadU16(uintptr_t& addr, uint16_t *val, bool incre = true);
-    virtual bool ReadU32(uintptr_t& addr, uint32_t *val, bool incre = true);
-    virtual bool ReadU64(uintptr_t& addr, uint64_t *val, bool incre = true);
-    virtual bool ReadUptr(uintptr_t& addr, uintptr_t *val, bool incre = true);
-    virtual bool ReadPrel31(uintptr_t& addr, uintptr_t *val);
+    virtual size_t Read(uintptr_t& addr, void* val, size_t size, bool incre = false);
+    virtual bool ReadFully(uintptr_t& addr, void* val, size_t size, bool incre = false);
+    virtual bool ReadU8(uintptr_t& addr, uint8_t *val, bool incre = false);
+    virtual bool ReadU16(uintptr_t& addr, uint16_t *val, bool incre = false);
+    virtual bool ReadU32(uintptr_t& addr, uint32_t *val, bool incre = false);
+    virtual bool ReadU64(uintptr_t& addr, uint64_t *val, bool incre = false);
+    virtual bool ReadUptr(uintptr_t& addr, uintptr_t *val, bool incre = false);
+
     template <typename T>
-    T Read(uintptr_t& addr, bool incre = false)
+    T Read(uintptr_t& addr, bool incre = true)
     {
         T val = 0;
         Read(addr, (void *)&val, sizeof(T), incre);
         return val;
     }
+
+    virtual bool ReadPrel31(uintptr_t& addr, uintptr_t *val);
+
+    virtual uint64_t ReadUleb128(uintptr_t& addr);
+    virtual int64_t ReadSleb128(uintptr_t& addr);
+    virtual size_t GetEncodedSize(uint8_t encoding);
+    virtual uintptr_t ReadEncodedValue(uintptr_t& addr, uint8_t encoding,
+        uintptr_t dataOffset = 0, uintptr_t textOffset = 0, uintptr_t funcOffset = 0);
 
 private:
     std::shared_ptr<DfxAccessors> acc_;
