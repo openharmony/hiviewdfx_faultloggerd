@@ -103,8 +103,19 @@ static pid_t TriggerCrasherAndGetFileName(const string& option, const CrasherTyp
                                           int waitSec = 1)
 {
     auto pid = ForkAndExecuteCrasher(option, type);
-    sleep(waitSec); // sleep for log generation
-    crashFileName = GetCppCrashFileName(pid);
+    int recheckCount = 0;
+
+    // 6: means recheck times
+    while (recheckCount < 6) {
+        sleep(waitSec);
+        crashFileName = GetCppCrashFileName(pid);
+        if (crashFileName.size() > 0) {
+            GTEST_LOG_(INFO) << "get crash file:" << crashFileName;
+            break;
+        }
+        GTEST_LOG_(INFO) << "recheck crash file, pid" << pid;
+        recheckCount++;
+    }
     return pid;
 }
 
