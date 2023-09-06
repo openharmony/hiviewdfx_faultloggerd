@@ -40,23 +40,11 @@ bool DumpStackTraceTest(const uint8_t* data, size_t size)
     int pid[1];
     int tid[1];
     errno_t err = memcpy_s(pid, sizeof(pid), data, PID_SIZE);
-    if (err != EOK) {
-        cout << "DumpStackTraceTest :: memcpy_s pid failed" << endl;
-    }
     data += PID_SIZE;
     err = memcpy_s(tid, sizeof(tid), data, PID_SIZE);
-    if (err != EOK) {
-        cout << "DumpStackTraceTest :: memcpy_s tid failed" << endl;
-    }
     data += PID_SIZE;
     char invalidOption = *data;
-    cout << "pid = " << pid[0] << " tid = " << tid[0] << " invalidOpt = " << invalidOption << endl;
-
-    if (catcher->DumpCatch(pid[0], tid[0], msg)) {
-        cout << msg << endl;
-    } else {
-        cout << "DumpStackTraceTest :: dumpcatch failed." << endl;
-    }
+    catcher->DumpCatch(pid[0], tid[0], msg);
 
     string processdumpCmd = "dumpcatcher -p " + to_string(pid[0]) + " -t " + to_string(tid[0]);
     system(processdumpCmd.c_str());
@@ -64,7 +52,6 @@ bool DumpStackTraceTest(const uint8_t* data, size_t size)
     string processdumpInvalidCmd = "dumpcatcher -" + to_string(invalidOption) + " -p " +
         to_string(pid[0]) + " -t " + to_string(tid[0]);
     system(processdumpInvalidCmd.c_str());
-
     return true;
 }
 
@@ -72,27 +59,16 @@ bool FaultloggerdClientTest(const uint8_t* data, size_t size)
 {
     cout << "enter FaultloggerdClientTest, size:" << size << endl;
     if (size < sizeof(int32_t) * 3) { // 3 : construct three int32_t parameters
-        cout << "size is not correct, return" << endl;
         return true;
     }
     int32_t type[1];
     int32_t pid[1];
     int32_t tid[1];
     errno_t err = memcpy_s(type, sizeof(type), data, sizeof(int32_t));
-    if (err != EOK) {
-        cout << "FaultloggerdClientTest :: memcpy_s type failed" << endl;
-    }
     data += sizeof(int32_t);
     err = memcpy_s(tid, sizeof(tid), data, sizeof(int32_t));
-    if (err != EOK) {
-        cout << "FaultloggerdClientTest :: memcpy_s tid failed" << endl;
-    }
     data += sizeof(int32_t);
     err = memcpy_s(pid, sizeof(pid), data, sizeof(int32_t));
-    if (err != EOK) {
-        cout << "FaultloggerdClientTest :: memcpy_s pid failed" << endl;
-    }
-    cout << "pid = " << pid[0] << " tid = " << tid[0] << " type = " << type[0] << endl;
 
     RequestFileDescriptor(type[0]);
     RequestPipeFd(pid[0], type[0]);
@@ -106,21 +82,13 @@ bool FaultloggerdServerTest(const uint8_t* data, size_t size)
 {
     cout << "enter FaultloggerdServerTest, size:" << size << endl;
     if (size < sizeof(int32_t) * 2) { // 2 : construct two int32_t parameters
-        cout << "size is not correct, return" << endl;
         return true;
     }
     int32_t epollFd[1];
     int32_t connectionFd[1];
     errno_t err = memcpy_s(epollFd, sizeof(epollFd), data, sizeof(int32_t));
-    if (err != EOK) {
-        cout << "FaultloggerdServerTest :: memcpy_s type failed" << endl;
-    }
     data += sizeof(int32_t);
     err = memcpy_s(connectionFd, sizeof(connectionFd), data, sizeof(int32_t));
-    if (err != EOK) {
-        cout << "FaultloggerdServerTest :: memcpy_s tid failed" << endl;
-    }
-    cout << "epollFd = " << epollFd[0] << " connectionFd = " << connectionFd[0] << endl;
 
     std::shared_ptr<FaultLoggerDaemon> daemon = std::make_shared<FaultLoggerDaemon>();
     daemon->HandleRequest(epollFd[0], connectionFd[0]);
