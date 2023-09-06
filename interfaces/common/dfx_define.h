@@ -82,6 +82,10 @@ static const char TRUNCATE_TEST_BUNDLE_NAME[] = "e.myapplication";
 #define AT_UNUSED               __attribute__((unused))
 #define MAYBE_UNUSED            [[maybe_unused]]
 
+#ifndef FALLTHROUGH_INTENDED
+#define FALLTHROUGH_INTENDED [[clang::fallthrough]]  // NOLINT
+#endif
+
 #define OHOS_TEMP_FAILURE_RETRY(exp)            \
     ({                                          \
     long int _rc;                               \

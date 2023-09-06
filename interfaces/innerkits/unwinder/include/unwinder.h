@@ -33,21 +33,18 @@ public:
     Unwinder() : pid_(UWNIND_TYPE_LOCAL)
     {
         acc_ = std::make_shared<DfxAccessorsLocal>();
-        memory_ = std::make_shared<DfxMemory>(acc_);
         Init();
     };
     // for remote
     Unwinder(int pid) : pid_(pid)
     {
         acc_ = std::make_shared<DfxAccessorsRemote>();
-        memory_ = std::make_shared<DfxMemory>(acc_);
         Init();
     };
     // for customized
     Unwinder(std::shared_ptr<UnwindAccessors> accessors) : pid_(UWNIND_TYPE_CUSTOMIZE)
     {
         acc_ = std::make_shared<DfxAccessorsCustomize>(accessors);
-        memory_ = std::make_shared<DfxMemory>(acc_);
         Init();
     };
     ~Unwinder() { Destroy(); }

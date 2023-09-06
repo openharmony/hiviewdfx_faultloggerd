@@ -16,8 +16,8 @@
 #define UNWIND_ARM64_DEFINE_H
 
 #include <cinttypes>
-#include <map>
 #include <string>
+#include <vector>
 
 namespace OHOS {
 namespace HiviewDFX {
@@ -69,22 +69,12 @@ enum RegsEnumArm64 : uint16_t {
     REG_LAST = REG_AARCH64_LAST,
 };
 
-enum QutRegsEnum {
-    QUT_REG_R20 = 0,
-    QUT_REG_R28,
-    QUT_REG_R29,
-    QUT_REG_SP,
-    QUT_REG_PC,
-    QUT_REG_LR,
-};
-
-static std::map<int, int> REGS_MAP = {
-    { QUT_REG_R20, REG_AARCH64_X20 },
-    { QUT_REG_R28, REG_AARCH64_X28 },
-    { QUT_REG_R29, REG_AARCH64_X29 },
-    { QUT_REG_SP, REG_SP },
-    { QUT_REG_PC, REG_PC },
-    { QUT_REG_LR, REG_LR },
+static const std::vector<int> QUT_REGS {
+    REG_AARCH64_X28,
+    REG_AARCH64_X29,
+    REG_SP,
+    REG_PC,
+    REG_LR,
 };
 
 struct RegsUserArm64 {

@@ -31,6 +31,7 @@ namespace {
 #define LOG_DOMAIN 0xD002D11
 #define LOG_TAG "DfxRegs"
 }
+std::vector<int> DfxRegs::qutRegs_ = {};
 
 std::shared_ptr<DfxRegs> DfxRegs::Create()
 {
@@ -66,6 +67,20 @@ std::shared_ptr<DfxRegs> CreateFromRegs(const UnwindMode mode, const uintptr_t* 
     return dfxregs;
 }
 
+std::shared_ptr<DfxRegs> DfxRegs::CreateRemoteRegs(pid_t pid)
+{
+    auto dfxregs = DfxRegs::Create();
+    gregset_t regs;
+    struct iovec iov;
+    iov.iov_base = &regs;
+    iov.iov_len = sizeof(regs);
+    if (ptrace(PTRACE_GETREGSET, pid, NT_PRSTATUS, &iov) == -1) {
+        return nullptr;
+    }
+    memcpy_s(dfxregs->regsData_.data(), REG_LAST * sizeof(uintptr_t), &regs, REG_LAST * sizeof(uintptr_t));
+    return dfxregs;
+}
+
 std::vector<uintptr_t> DfxRegs::GetRegsData() const
 {
     return regsData_;
@@ -75,14 +90,12 @@ void DfxRegs::SetRegsData(const std::vector<uintptr_t>& regs)
 {
     regsData_ = regs;
     PrintRegs();
-    haveRegsData_ = true;
 }
 
 void DfxRegs::SetRegsData(const uintptr_t* regs)
 {
     memcpy_s(RawData(), REG_LAST * sizeof(uintptr_t), regs, REG_LAST * sizeof(uintptr_t));
     PrintRegs();
-    haveRegsData_ = true;
 }
 
 uintptr_t* DfxRegs::GetReg(size_t idx)
@@ -168,20 +181,6 @@ std::string DfxRegs::PrintSpecialRegs() const
     regsStr = StringPrintf("fp:%08x sp:%08x lr:%08x pc:%08x\n", fp, sp, lr, pc);
 #endif
     return regsStr;
-}
-
-bool DfxRegs::GetRemoteRegs(pid_t pid)
-{
-    gregset_t regs;
-    struct iovec iov;
-    iov.iov_base = &regs;
-    iov.iov_len = sizeof(regs);
-    if (ptrace(PTRACE_GETREGSET, pid, NT_PRSTATUS, &iov) == -1) {
-        return false;
-    }
-    memcpy_s(regsData_.data(), REG_LAST * sizeof(uintptr_t), &regs, REG_LAST * sizeof(uintptr_t));
-    haveRegsData_ = true;
-    return true;
 }
 } // namespace HiviewDFX
 } // namespace OHOS

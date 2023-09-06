@@ -20,8 +20,8 @@
 #include <sys/ptrace.h>
 #include <sys/uio.h>
 #include "dfx_define.h"
-#include "dfx_regs.h"
 #include "dfx_log.h"
+#include "dfx_regs.h"
 #include "dfx_unwind_table.h"
 
 namespace OHOS {
@@ -81,9 +81,11 @@ int DfxAccessorsLocal::FindProcInfo(uintptr_t pc, UnwindDynInfo *di, int needUnw
 
     if(ctx->edi.diCache.format != -1) {
         *di = ctx->edi.diCache;
-    } else if(ctx->edi.diArm.format == -1) {
+#if defined(__arm__)
+    } else if(ctx->edi.diArm.format != -1) {
         *di = ctx->edi.diArm;
-    } else if(ctx->edi.diDebug.format == -1) {
+#endif
+    } else if(ctx->edi.diDebug.format != -1) {
         *di = ctx->edi.diDebug;
     } else {
         return UNW_ERROR_NO_UNWIND_INFO;
@@ -108,12 +110,13 @@ int DfxAccessorsRemote::AccessMem(uintptr_t addr, uintptr_t *val, int write, voi
     uintptr_t tmpVal;
     for (i = 0; i < end; i++) {
         uintptr_t tmpAddr = ((i == 0) ? addr : addr + 4);
+        uint64_t valp = static_cast<uint64_t>(*val);
         errno = 0;
         if (write) {
 #if __BYTE_ORDER == __LITTLE_ENDIAN
-            tmpVal = (i == 0 ? *val : *val >> 32);
+            tmpVal = (uintptr_t)(i == 0 ? valp : valp >> 32);
 #else
-            tmpVal = (i == 0 && end == 2 ? *val >> 32 : *val);
+            tmpVal = (uintptr_t)(i == 0 && end == 2 ? valp >> 32 : valp);
 #endif
             LOGU("mem[%lx] <- %lx\n", (long) tmpAddr, (long) tmpVal);
             ptrace(PTRACE_POKEDATA, pid, tmpAddr, tmpVal);
@@ -150,23 +153,20 @@ int DfxAccessorsRemote::AccessReg(int reg, uintptr_t *val, int write, void *arg)
         return UNW_ERROR_INVALID_REGS;
     }
 
+    pid_t pid = ctx->pid;
     if (ctx->regs == nullptr ) {
-        ctx->regs = DfxRegs::Create();
-    }
-    if (!ctx->regs->HaveRegsData()) {
-        if (!ctx->regs->GetRemoteRegs(ctx->pid)) {
-            return UNW_ERROR_ILLEGAL_VALUE;
+        ctx->regs = DfxRegs::CreateRemoteRegs(pid);
+        if (ctx->regs == nullptr ) {
+            return UNW_ERROR_INVALID_REGS;
         }
     }
 
     if (write) {
-        auto regData = (*(ctx->regs))[reg];
         (*(ctx->regs))[reg] = *val;
         struct iovec iov;
         iov.iov_base = ctx->regs->RawData();
         iov.iov_len = ctx->regs->RegsSize() * sizeof(uintptr_t);
-        if (ptrace(PTRACE_SETREGSET, ctx->pid, NT_PRSTATUS, &iov) == -1) {
-            (*(ctx->regs))[reg] = regData;
+        if (ptrace(PTRACE_SETREGSET, pid, NT_PRSTATUS, &iov) == -1) {
             return UNW_ERROR_ILLEGAL_VALUE;
         }
     } else {
@@ -189,9 +189,11 @@ int DfxAccessorsRemote::FindProcInfo(uintptr_t pc, UnwindDynInfo *di, int needUn
 
     if(ctx->edi.diCache.format != -1) {
         *di = ctx->edi.diCache;
-    } else if(ctx->edi.diArm.format == -1) {
+#if defined(__arm__)
+    } else if(ctx->edi.diArm.format != -1) {
         *di = ctx->edi.diArm;
-    } else if(ctx->edi.diDebug.format == -1) {
+#endif
+    } else if(ctx->edi.diDebug.format != -1) {
         *di = ctx->edi.diDebug;
     } else {
         return UNW_ERROR_NO_UNWIND_INFO;

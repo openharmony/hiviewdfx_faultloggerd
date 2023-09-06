@@ -34,7 +34,9 @@ int DfxUnwindTable::ResetElfDynInfo(struct ElfDynInfo* edi)
     int ret = memset_s(edi, sizeof(ElfDynInfo), 0, sizeof(ElfDynInfo));
     edi->diCache.format = -1;
     edi->diDebug.format = -1;
+#if defined(__arm__)
     edi->diArm.format = -1;
+#endif
     return ret;
 }
 
@@ -49,7 +51,9 @@ bool DfxUnwindTable::IsPcInUnwindInfo(struct UnwindDynInfo di, uintptr_t pc)
 int DfxUnwindTable::FindUnwindTable2(struct ElfDynInfo* edi, uintptr_t pc)
 {
     if (IsPcInUnwindInfo(edi->diCache, pc) ||
+#if defined(__arm__)
         IsPcInUnwindInfo(edi->diArm, pc) ||
+#endif
         IsPcInUnwindInfo(edi->diDebug, pc)) {
         return UNW_ERROR_NONE;
     }
@@ -68,7 +72,9 @@ int DfxUnwindTable::FindUnwindTable2(struct ElfDynInfo* edi, uintptr_t pc)
 int DfxUnwindTable::FindUnwindTable(struct ElfDynInfo* edi, uintptr_t pc, std::shared_ptr<DfxElf> elf)
 {
     if (IsPcInUnwindInfo(edi->diCache, pc) ||
+#if defined(__arm__)
         IsPcInUnwindInfo(edi->diArm, pc) ||
+#endif
         IsPcInUnwindInfo(edi->diDebug, pc)) {
         return UNW_ERROR_NONE;
     }
@@ -82,15 +88,19 @@ int DfxUnwindTable::FindUnwindTable(struct ElfDynInfo* edi, uintptr_t pc, std::s
     if (edi->diCache.format != -1 && (pc < edi->diCache.startPc || pc >= edi->diCache.endPc)) {
         edi->diCache.format = -1;
     }
+#if defined(__arm__)
     if (edi->diArm.format != -1 && (pc < edi->diArm.startPc || pc >= edi->diArm.endPc)) {
         edi->diArm.format = -1;
     }
+#endif
     if (edi->diDebug.format != -1 && (pc < edi->diDebug.startPc || pc >= edi->diDebug.endPc)) {
         edi->diDebug.format = -1;
     }
 
     if (edi->diCache.format == -1 &&
+#if defined(__arm__)
         edi->diArm.format == -1 &&
+#endif
         edi->diDebug.format == -1) {
         return UNW_ERROR_NO_UNWIND_INFO;
     }
@@ -113,7 +123,7 @@ int DfxUnwindTable::ExdixSearchUnwindTable(struct UnwindProcInfo* pi, struct Unw
 {
     uintptr_t first = di->u.rti.tableData;
     uintptr_t last = di->u.rti.tableData + di->u.rti.tableLen - 8;
-    LOGU("ExdixSearchUnwindTable first: %llx", (uint64_t)first);
+    LOGU("ExdixSearchUnwindTable pc:%p, tableData: %llx", (void*)pc, (uint64_t)first);
     uintptr_t entry, val;
 
     if (!memory->ReadPrel31(first, &val) || pc < val) {
@@ -167,6 +177,41 @@ int DfxUnwindTable::ExdixSearchUnwindTable(struct UnwindProcInfo* pi, struct Unw
 int DfxUnwindTable::DwarfSearchUnwindTable(struct UnwindProcInfo* pi, struct UnwindDynInfo* di,\
     uintptr_t pc, DfxMemory* memory, bool needUnwindInfo)
 {
+    auto segbase = di->u.rti.segbase;
+    auto fdeCount = di->u.rti.tableLen;
+    uintptr_t eh_frame_hdr_table = di->u.rti.tableData;
+    uintptr_t eh_frame_hdr = eh_frame_hdr_table - 12;
+    LOGU("DwarfSearchUnwindTable pc:%p segbase:%p eh_frame_hdr_table:%p", (void*)pc, (void*)segbase, (void*)eh_frame_hdr_table);
+    // do binary search, encode is stored in symbol file, we have no means to find?
+    // hard code for 1b DwarfEncoding
+    uintptr_t entry;
+    uintptr_t low = 0;
+    LOGU("target pc: %p, target relPc:%p, fdeCount:%d", (void *)pc , (void *)(pc - segbase), (int)fdeCount);
+    for (uintptr_t len = fdeCount; len > 1;) {
+        uintptr_t mid = low + (len / 2);
+        entry = (uintptr_t) eh_frame_hdr_table + mid * 8;
+        uintptr_t val = (uintptr_t)(memory->Read<int32_t>(entry, true));
+        uintptr_t start = val + eh_frame_hdr; // todo read encode size from hdr?
+        LOGU("target RelPc:%p, curRelPc:%p, idx:%d, val:%lx",
+            (void *)(pc - segbase) , (void *)(start - segbase), (int)mid, (int64_t)val);
+        if (start == pc) {
+            low = mid;
+            break;
+        } else if (start < pc) {
+            low = mid;
+            len -= (len / 2);
+        } else {
+            len /= 2;
+        }
+    }
+
+    entry = eh_frame_hdr_table + low * sizeof(uintptr_t);
+    uintptr_t startPc = memory->Read<int32_t>(entry, true) + eh_frame_hdr;
+    LOGU("target fde entry: %llx, startPc: %llx, targetPc: %llx",
+        (long long)entry, (long long)(startPc - segbase), (long long)(pc - segbase));
+    pi->unwindInfo = (void *) (memory->Read<int32_t>(entry, true) + eh_frame_hdr);
+    LOGU("entry: %llx, real fde entry: %llx", (long long)entry, (long long)pi->unwindInfo);
+    pi->format = UNW_INFO_FORMAT_REMOTE_TABLE;
     return UNW_ERROR_NONE;
 }
 } // namespace HiviewDFX

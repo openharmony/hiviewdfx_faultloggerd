@@ -46,7 +46,7 @@ struct RegLocState {
         uintptr_t cfaExprPtr; // cfa = expr
     };
     int32_t pcOffset; // pc offset of this register state
-    std::vector<RegLoc> locs;
+    RegLoc locs[REGS_MAX_SIZE];
 };
 } // namespace HiviewDFX
 } // namespace OHOS

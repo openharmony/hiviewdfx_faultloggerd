@@ -26,6 +26,7 @@ namespace OHOS {
 namespace HiviewDFX {
 class DfxElf;
 class DfxRegs;
+
 struct UnwindDynTableInfo {
     uintptr_t namePtr;
     uintptr_t segbase;
@@ -59,7 +60,9 @@ struct ElfDynInfo {
     uintptr_t endPc;
     UnwindDynInfo diCache;
     UnwindDynInfo diDebug;    /* additional table info for .debug_frame */
+#if defined(__arm__)
     UnwindDynInfo diArm;      /* additional table info for .ARM.exidx */
+#endif
 };
 
 struct UnwindProcInfo {

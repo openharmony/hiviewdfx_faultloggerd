@@ -19,6 +19,8 @@
 #include "dfx_instructions.h"
 #include "string_printf.h"
 
+#if defined(__arm__)
+
 namespace OHOS {
 namespace HiviewDFX {
 namespace {
@@ -36,7 +38,6 @@ void ExidxContext::Reset()
 {
     vsp = 0;
     transformedBits = 0;
-    regs.resize(QUT_MINI_REGS_SIZE);
 }
 
 void ExidxContext::Transform(uint32_t reg)
@@ -68,11 +69,10 @@ void ExidxContext::AddUpVsp(int32_t imm)
 
     vsp += imm;
 
-    AddUpTransformed(QUT_REG_R7, imm);
-    AddUpTransformed(QUT_REG_R11, imm);
-    AddUpTransformed(QUT_REG_SP, imm);
-    AddUpTransformed(QUT_REG_LR, imm);
-    AddUpTransformed(QUT_REG_PC, imm);
+    auto qutRegs = DfxRegs::GetQutRegs();
+    for (size_t i = 0; i < qutRegs.size(); i++) {
+        AddUpTransformed(qutRegs[i], imm);
+    }
 }
 
 inline void ArmExidx::FlushInstr()
@@ -84,32 +84,14 @@ inline void ArmExidx::FlushInstr()
     if (context_.vsp != 0) {
         LOG_CHECK((context_.vsp & 0x3) == 0);
         rsState_->cfaRegOffset = context_.vsp;
-        LOGU("rsState cfaRegOffset: %d", rsState_->cfaRegOffset);
     }
+    LOGU("rsState cfaReg: %d, cfaRegOffset: %d", rsState_->cfaReg, rsState_->cfaRegOffset);
 
-    // Sort by vsp offset ascend, convenient for search prologue later.
-    std::vector<std::pair<size_t, int32_t>> sortedRegs;
-    for (size_t i = 0; i < QUT_MINI_REGS_SIZE; i++) {
-        if (!(context_.IsTransformed(i))) {
-            continue;
-        }
-        int32_t vspOffset = context_.regs[i];
-        size_t insertPos = 0;
-        for (size_t j = 0; j < sortedRegs.size(); j++) {
-            if (vspOffset >= 0 &&
-                (sortedRegs.at(j).second > vspOffset || sortedRegs.at(j).second < 0)) {
-                break;
-            }
-            insertPos = j + 1;
-        }
-        sortedRegs.insert(sortedRegs.begin() + insertPos, std::make_pair(i, vspOffset));
-        LOGU("[%d], i: %d, vspOffset: %d", insertPos, i, vspOffset);
-    }
-    for (size_t j = 0; j < sortedRegs.size(); j++) {
-        uint32_t reg = (sortedRegs.at(j).first);
+    auto qutRegs = DfxRegs::GetQutRegs();
+    for (size_t i = 0; i < qutRegs.size(); i++) {
+        size_t reg = qutRegs[i];
         if (context_.IsTransformed(reg)) {
             LOG_CHECK((context_.regs[reg] & 0x3) == 0);
-
             rsState_->locs[reg].type = REG_LOC_MEM_OFFSET;
             rsState_->locs[reg].val = -context_.regs[reg];
             LOGU("rsState locs[%d].type: %d, val: %d", reg, rsState_->locs[reg].type, rsState_->locs[reg].val);
@@ -117,19 +99,6 @@ inline void ArmExidx::FlushInstr()
     }
 
     context_.Reset();
-}
-
-inline bool ArmExidx::ApplyInstr()
-{
-    FlushInstr();
-
-    DfxInstructions instructions(memory_);
-    bool ret = instructions.Apply(regs_, rsState_);
-
-    if (!isPcSet_) {
-        regs_->SetReg(REG_PC, regs_->GetReg(REG_LR));
-    }
-    return ret;
 }
 
 inline void ArmExidx::LogRawData()
@@ -268,12 +237,10 @@ inline bool ArmExidx::StepOpCode()
 
 bool ArmExidx::Eval(uintptr_t entryOffset, std::shared_ptr<DfxRegs> regs, std::shared_ptr<RegLocState> rs)
 {
-    if (regs == nullptr || rs == nullptr) {
+    if (rs == nullptr) {
         return false;
     }
-    regs_ = regs;
     rsState_ = rs;
-    rsState_->locs.resize(QUT_MINI_REGS_SIZE);
     if (!ExtractEntryData(entryOffset)) {
         return false;
     }
@@ -301,7 +268,16 @@ bool ArmExidx::Eval(uintptr_t entryOffset, std::shared_ptr<DfxRegs> regs, std::s
     context_.Reset();
     while (Decode(decodeTable, sizeof(decodeTable) / sizeof(decodeTable[0])));
 
-    return ApplyInstr();
+    FlushInstr();
+
+    // 5. update regs and regs state
+    DfxInstructions instructions(memory_);
+    bool ret = instructions.Apply(*(regs.get()), *(rsState_.get()));
+
+    if (!IsPcSet()) {
+        regs->SetReg(REG_PC, regs->GetReg(REG_LR));
+    }
+    return ret;
 }
 
 inline bool ArmExidx::DecodeSpare()
@@ -357,21 +333,13 @@ inline bool ArmExidx::Decode1000iiiiiiiiiiii()
     }
 
     registers <<= 4;
-    LOGU("1000iiii iiiiiiii: registers: %x)", registers);
+    LOGU("1000iiii iiiiiiii: registers: %02x)", registers);
     for (size_t reg = REG_ARM_R4; reg < REG_ARM_LAST; reg++) {
         if ((registers & (1 << reg))) {
-            if (REG_ARM_R7 == reg) {
-                context_.Transform(QUT_REG_R7);
-            } else if (REG_ARM_R11 == reg) {
-                context_.Transform(QUT_REG_R11);
-            } else if (REG_SP == reg) {
-                context_.Transform(QUT_REG_SP);
-            } else if (REG_LR == reg) {
-                context_.Transform(QUT_REG_LR);
-            } else if (REG_PC == reg) {
+            if (REG_PC == reg) {
                 isPcSet_ = true;
-                context_.Transform(QUT_REG_PC);
             }
+            context_.Transform(reg);
             context_.AddUpVsp(4);
         }
     }
@@ -388,17 +356,14 @@ inline bool ArmExidx::Decode1001nnnn()
     }
     // 1001nnnn: Set vsp = r[nnnn]
     if ((bits == REG_ARM_R7) || (bits == REG_ARM_R11)) {
-        LOGU("1001nnnn: Set vsp = %d", bits);
+        LOGU("1001nnnn: Set vsp = R%d", bits);
         if (context_.transformedBits == 0) {
             // No register transformed, ignore vsp offset.
             context_.Reset();
         }
-        rsState_->cfaReg = bits;
-        rsState_->cfaRegOffset = 0;
-    } else {
-        LOGE("1001nnnn: Failed to set vsp = %d", bits);
-        return false;
     }
+    rsState_->cfaReg = bits;
+    rsState_->cfaRegOffset = 0;
     return true;
 }
 
@@ -418,16 +383,12 @@ inline bool ArmExidx::Decode1010nnnn()
     LOGU("%s", msg.c_str());
 
     for (size_t reg = startReg; reg <= endReg; reg++) {
-        if (reg == REG_ARM_R7) {
-            context_.Transform(QUT_REG_R7);
-        } else if (reg == REG_ARM_R11) {
-            context_.Transform(QUT_REG_R11);
-        }
+        context_.Transform(reg);
         context_.AddUpVsp(4);
     }
 
     if (curOp_ & 0x8) {
-        context_.Transform(QUT_REG_LR);
+        context_.Transform(REG_LR);
         context_.AddUpVsp(4);
     }
     return true;
@@ -453,6 +414,7 @@ inline bool ArmExidx::Decode101100010000iiii()
 
     // 10110001 0000iiii(i not all 0) Pop integer registers under mask{r3, r2, r1, r0}
     uint8_t registers = curOp_ & 0x0f;
+    LOGU("10110001 0000iiii, registers: %02x", registers);
     for (size_t reg = 0; reg < 4; reg++) {
         if ((registers & (1 << reg))) {
             context_.AddUpVsp(4);
@@ -579,3 +541,4 @@ inline bool ArmExidx::Decode11xxxyyy()
 }
 } // namespace HiviewDFX
 } // namespace OHOS
+#endif

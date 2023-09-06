@@ -16,7 +16,10 @@
 #include "unwinder.h"
 
 #include <pthread.h>
+#if defined(__arm__)
 #include "arm_exidx.h"
+#endif
+#include "dwarf_unwind_info.h"
 #include "dfx_define.h"
 #include "dfx_errors.h"
 #include "dfx_regs_get.h"
@@ -37,6 +40,7 @@ namespace {
 
 void Unwinder::Init()
 {
+    memory_ = std::make_shared<DfxMemory>(acc_);
     lastErrorData_.code = UNW_ERROR_NONE;
     lastErrorData_.addr = 0;
     frames_.clear();
@@ -82,11 +86,9 @@ bool Unwinder::UnwindLocal(size_t maxFrameNum, size_t skipFrameNum)
 bool Unwinder::UnwindRemote(size_t maxFrameNum, size_t skipFrameNum)
 {
     if (regs_ == nullptr) {
-        regs_ = DfxRegs::Create();
+        regs_ = DfxRegs::CreateRemoteRegs(pid_);
     }
-    if (!regs_->GetRemoteRegs(pid_)) {
-        return false;
-    }
+
     UnwindRemoteContext context;
     context.pid = pid_;
     context.regs = regs_;
@@ -158,8 +160,7 @@ bool Unwinder::Unwind(void *ctx, size_t maxFrameNum, size_t skipFrameNum)
 
 bool Unwinder::Step(uintptr_t& pc, uintptr_t& sp, void *ctx)
 {
-    LOGU("++++++pc: %llx, sp: %llx", (uint64_t)pc, (uint64_t)sp);
-    bool ret = false;
+    LOGU("pc: %llx, sp: %llx", (uint64_t)pc, (uint64_t)sp);
     lastErrorData_.addr = pc;
     DoPcAdjust(pc);
     memory_->SetCtx(ctx);
@@ -167,43 +168,56 @@ bool Unwinder::Step(uintptr_t& pc, uintptr_t& sp, void *ctx)
     if (iter != rsCache_.end()) {
         auto rs = iter->second;
         DfxInstructions instructions(memory_);
-        ret = instructions.Apply(regs_, rs);
+        if (instructions.Apply(*(regs_.get()), *(rs.get()))) {
+            return true;
+        }
     }
 
-    if (ret == false) {
-        int errorCode = UNW_ERROR_NONE;
-        UnwindDynInfo di;
-        if ((errorCode = acc_->FindProcInfo(pc, &di, true, ctx)) != UNW_ERROR_NONE) {
-            lastErrorData_.code = static_cast<uint16_t>(errorCode);
-            return false;
-        }
+    int errorCode = UNW_ERROR_NONE;
+    UnwindDynInfo di;
+    if ((errorCode = acc_->FindProcInfo(pc, &di, true, ctx)) != UNW_ERROR_NONE) {
+        lastErrorData_.code = static_cast<uint16_t>(errorCode);
+        return false;
+    }
 
-        struct UnwindProcInfo pi;
-        if ((errorCode = DfxUnwindTable::SearchUnwindTable(&pi, &di, pc, memory_.get(), true)) != UNW_ERROR_NONE) {
-            lastErrorData_.code = static_cast<uint16_t>(errorCode);
-            return false;
-        }
+    struct UnwindProcInfo pi;
+    if ((errorCode = DfxUnwindTable::SearchUnwindTable(&pi, &di, pc, memory_.get(), true)) != UNW_ERROR_NONE) {
+        lastErrorData_.code = static_cast<uint16_t>(errorCode);
+        return false;
+    }
 
-        auto rs = std::make_shared<RegLocState>();
-        // we have get unwind info, then parser the exidx entry or ehframe fde
-        if (pi.format == UNW_INFO_FORMAT_ARM_EXIDX) {
-            ArmExidx armExidx(memory_);
-            if (!armExidx.Eval((uintptr_t)pi.unwindInfo, regs_, rs)) {
-                lastErrorData_.code = armExidx.GetLastErrorCode();
-                lastErrorData_.addr = armExidx.GetLastErrorAddr();
-                return false;
-            }
-        } else if (pi.format == UNW_INFO_FORMAT_REMOTE_TABLE) {
-            // TODO: arm64 UNW_INFO_FORMAT_REMOTE_TABLE
-            return false;
+    auto rs = std::make_shared<RegLocState>();
+    bool ret = false;
+    LOGU("++++++regs: %s", regs_->PrintSpecialRegs().c_str());
+#if defined(__arm__)
+    if (!ret && pi.format == UNW_INFO_FORMAT_ARM_EXIDX) {
+        ArmExidx armExidx(memory_);
+        if (!armExidx.Eval((uintptr_t)pi.unwindInfo, regs_, rs)) {
+            lastErrorData_.code = armExidx.GetLastErrorCode();
+            lastErrorData_.addr = armExidx.GetLastErrorAddr();
+        } else {
+            ret = true;
         }
+    }
+#endif
+    if (!ret && pi.format == UNW_INFO_FORMAT_REMOTE_TABLE) {
+        DwarfUnwindInfo dwarfUnwindInfo(memory_);
+        if (!dwarfUnwindInfo.Eval((uintptr_t)pi.unwindInfo, di.u.rti.segbase, regs_, rs)) {
+            lastErrorData_.code = dwarfUnwindInfo.GetLastErrorCode();
+            lastErrorData_.addr = dwarfUnwindInfo.GetLastErrorAddr();
+        } else {
+            ret = true;
+        }
+    }
+
+    if (ret) {
         rsCache_.emplace(pc, rs);
-    }
 
-    pc = regs_->GetPc();
-    sp = regs_->GetSp();
-    LOGU("------pc: %llx, sp: %llx", (uint64_t)pc, (uint64_t)sp);
-    return true;
+        pc = regs_->GetPc();
+        sp = regs_->GetSp();
+    }
+    LOGU("------regs: %s", regs_->PrintSpecialRegs().c_str());
+    return ret;
 }
 
 void Unwinder::DoPcAdjust(uintptr_t& pc)

@@ -29,7 +29,7 @@ struct ExidxContext {
 public:
     int32_t vsp = 0;
     uint32_t transformedBits = 0;
-    std::vector<int32_t> regs;
+    int32_t regs[REG_LAST] = {0};
 
     void Reset();
     void Transform(uint32_t reg);
@@ -44,7 +44,8 @@ public:
     virtual ~ArmExidx() = default;
 
     bool Eval(uintptr_t entryOffset, std::shared_ptr<DfxRegs> regs, std::shared_ptr<RegLocState> rs);
-    const std::shared_ptr<DfxRegs>& GetRegs() const { return regs_; }
+
+    bool IsPcSet() { return isPcSet_; }
     const uint16_t& GetLastErrorCode() const { return lastErrorData_.code; }
     const uint64_t& GetLastErrorAddr() const { return lastErrorData_.addr; }
 
@@ -56,7 +57,6 @@ private:
     };
 
     void FlushInstr();
-    bool ApplyInstr();
 
     void LogRawData();
     bool ExtractEntryData(uintptr_t entryOffset);
@@ -83,9 +83,8 @@ private:
     bool DecodeSpare();
 
 protected:
-    std::shared_ptr<RegLocState> rsState_;
-    std::shared_ptr<DfxRegs> regs_;
     UnwindErrorData lastErrorData_;
+    std::shared_ptr<RegLocState> rsState_;
     std::shared_ptr<DfxMemory> memory_;
     ExidxContext context_;
     std::deque<uint8_t> ops_;

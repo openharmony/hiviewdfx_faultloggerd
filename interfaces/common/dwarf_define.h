@@ -260,7 +260,6 @@ enum DwarfEncoding : uint8_t {
     DW_EH_PE_datarel = 0x30,
     DW_EH_PE_funcrel = 0x40,
     DW_EH_PE_aligned = 0x50,
-    DW_EH_PE_indirect = 0x80,
 
     DW_EH_PE_udata1 = 0x0d,
     DW_EH_PE_sdata1 = 0x0e,
@@ -274,7 +273,7 @@ typedef struct {
     uintptr_t cieStart;
     uintptr_t cieEnd;
     uint32_t codeAlignFactor;
-    int dataAlignFactor;
+    int32_t dataAlignFactor;
     uintptr_t returnAddressRegister;
     bool hasAugmentationData;
     uintptr_t instructions;  // need instruction end ?

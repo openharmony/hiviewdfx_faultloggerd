@@ -73,6 +73,16 @@ enum UnwindDynInfoFormatType {
 };
 
 /**
+ * @brief Unwind regs type
+ */
+enum UnwindRegsType {
+    /** Dwarf */
+    REGS_TYPE_DWARF = 0,
+    /** Qut */
+    REGS_TYPE_QUT,
+};
+
+/**
  * @brief Unwind mode
  */
 enum UnwindMode {
