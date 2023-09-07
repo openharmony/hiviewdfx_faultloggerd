@@ -33,8 +33,8 @@ enum RegLocEnum : uint8_t {
 };
 
 struct RegLoc {
-    RegLocEnum type;            /* see DWARF_LOC_* macros.  */
-    intptr_t val;
+    RegLocEnum type = REG_LOC_UNUSED; /* see DWARF_LOC_* macros. */
+    intptr_t val = 0;
 };
 
 // saved register status after running call frame instructions

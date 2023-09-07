@@ -18,7 +18,7 @@
 
 #include <cinttypes>
 #include <memory>
-
+#include <stack>
 #include "dwarf_define.h"
 #include "dfx_memory.h"
 #include "dfx_regs.h"
@@ -34,11 +34,12 @@ public:
     bool Parse(uintptr_t pc, CommonInfoEntry& cie, FrameDescEntry& fde, RegLocState& rsState);
 
 private:
-    bool Iterate(CommonInfoEntry &cie, uintptr_t instStart, uintptr_t instEnd, uintptr_t pc, uintptr_t pcStart,
-        RegLocState &rsState);
+    bool Iterate(CommonInfoEntry &cie, uintptr_t instStart, uintptr_t instEnd,
+        uintptr_t pc, uintptr_t pcStart, RegLocState &rsState);
 
 private:
     std::shared_ptr<DfxMemory> memory_;
+    std::stack<RegLocState> saveRsStates_;
 };
 } // nameapace HiviewDFX
 } // nameapace OHOS
