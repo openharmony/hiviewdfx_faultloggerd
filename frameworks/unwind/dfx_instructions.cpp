@@ -20,7 +20,7 @@
 #include <cstdlib>
 #include "dfx_define.h"
 #include "dfx_log.h"
-#include "dwarf_expression.h"
+#include "dwarf_op.h"
 
 namespace OHOS {
 namespace HiviewDFX {
@@ -48,14 +48,14 @@ uintptr_t DfxInstructions::SaveReg(DfxRegs& regs, uintptr_t cfa, RegLoc loc)
             result = regs[location];
             break;
         case REG_LOC_MEM_EXPRESSION: {
-            DwarfExpression<uintptr_t> dwarfExpr(memory_);
-            location = dwarfExpr.Eval(regs, cfa, loc.val);
+            DwarfOp<uintptr_t> dwarfOp(memory_);
+            location = dwarfOp.Eval(regs, cfa, loc.val);
             result = memory_->Read<uintptr_t>(location);
             break;
         }
         case REG_LOC_VAL_EXPRESSION: {
-            DwarfExpression<uintptr_t> dwarfExpr(memory_);
-            result = dwarfExpr.Eval(regs, cfa, loc.val);
+            DwarfOp<uintptr_t> dwarfOp(memory_);
+            result = dwarfOp.Eval(regs, cfa, loc.val);
             break;
         }
         default:

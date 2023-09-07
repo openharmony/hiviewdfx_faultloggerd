@@ -18,7 +18,6 @@
 #include <string.h>
 #include "dfx_log.h"
 #include "dwarf_define.h"
-#include "dwarf_expression.h"
 
 namespace OHOS {
 namespace HiviewDFX {
@@ -124,19 +123,19 @@ bool DwarfCfaInstructions::Iterate(CommonInfoEntry &cieInfo, uintptr_t instStart
                 break;
             case DW_CFA_offset_extended_sf:
                 reg = memory_->ReadUleb128(instPtr);
-                offset = (int64_t)memory_->ReadSleb128(instPtr) * cieInfo.dataAlignFactor;
+                offset = (int64_t)(memory_->ReadSleb128(instPtr)) * cieInfo.dataAlignFactor;
                 rsState.locs[reg].type = REG_LOC_MEM_OFFSET;
                 rsState.locs[reg].val = offset;
                 break;
             case DW_CFA_def_cfa_sf:
                 reg = memory_->ReadUleb128(instPtr);
-                offset = (int64_t)memory_->ReadSleb128(instPtr) * cieInfo.dataAlignFactor;
+                offset = (int64_t)(memory_->ReadSleb128(instPtr)) * cieInfo.dataAlignFactor;
                 rsState.cfaReg = (uint32_t)reg;
                 rsState.cfaRegOffset = (int32_t)offset;
                 LOGU("DW_CFA_def_cfa_sf: reg=%d, offset=%d", rsState.cfaReg, rsState.cfaRegOffset);
                 break;
             case DW_CFA_def_cfa_offset_sf:
-                offset = (int64_t)memory_->ReadSleb128(instPtr) * cieInfo.dataAlignFactor;
+                offset = (int64_t)(memory_->ReadSleb128(instPtr)) * cieInfo.dataAlignFactor;
                 rsState.cfaRegOffset = (int32_t)offset;
                 LOGU("DW_CFA_def_cfa_offset_sf: offset=%d", rsState.cfaRegOffset);
                 break;

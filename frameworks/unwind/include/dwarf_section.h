@@ -12,13 +12,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-#ifndef DFX_DWARF_UNWIND_INFO_H
-#define DFX_DWARF_UNWIND_INFO_H
+#ifndef DFX_DWARF_SECTION_H
+#define DFX_DWARF_SECTION_H
 
 #include <cinttypes>
 #include <memory>
-
 #include "dwarf_define.h"
 #include "dfx_errors.h"
 #include "dfx_memory.h"
@@ -27,19 +25,26 @@
 
 namespace OHOS {
 namespace HiviewDFX {
-class DwarfUnwindInfo {
+class DwarfSection {
 public:
-    DwarfUnwindInfo(std::shared_ptr<DfxMemory> memory) : memory_(memory) {};
-    virtual ~DwarfUnwindInfo() = default;
+    DwarfSection(std::shared_ptr<DfxMemory> memory) : memory_(memory) {};
+    virtual ~DwarfSection() = default;
 
-    bool Eval(uintptr_t fdeAddr, uintptr_t segbase, std::shared_ptr<DfxRegs> regs, std::shared_ptr<RegLocState> rs);
-    bool IsPcSet() { return false; }
+    bool Step(uintptr_t fdeAddr, std::shared_ptr<DfxRegs> regs, std::shared_ptr<RegLocState> rs);
 
     const uint16_t& GetLastErrorCode() const { return lastErrorData_.code; }
     const uint64_t& GetLastErrorAddr() const { return lastErrorData_.addr; }
+
+    void SetDataOffset(uintptr_t dataOffset) { dataOffset_ = dataOffset; }
+
 protected:
-    UnwindErrorData lastErrorData_;
+    bool ParseCIE(uintptr_t cieAddr, CommonInfoEntry &cieInfo);
+    bool ParseFDE(uintptr_t addr, FrameDescEntry &fde, CommonInfoEntry &cie);
+
+private:
     std::shared_ptr<DfxMemory> memory_;
+    UnwindErrorData lastErrorData_;
+    uintptr_t dataOffset_;
 };
 } // nameapace HiviewDFX
 } // nameapace OHOS

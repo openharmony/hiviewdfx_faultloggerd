@@ -45,7 +45,6 @@ struct RegLocState {
         int32_t cfaRegOffset; // cfa = cfa + offset
         uintptr_t cfaExprPtr; // cfa = expr
     };
-    int32_t pcOffset; // pc offset of this register state
     RegLoc locs[REGS_MAX_SIZE];
 };
 } // namespace HiviewDFX

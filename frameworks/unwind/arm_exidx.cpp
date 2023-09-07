@@ -224,7 +224,7 @@ bool ArmExidx::ExtractEntryData(uintptr_t entryOffset)
     return true;
 }
 
-inline bool ArmExidx::StepOpCode()
+inline bool ArmExidx::GetOpCode()
 {
     if (ops_.empty()) {
         return false;
@@ -235,12 +235,8 @@ inline bool ArmExidx::StepOpCode()
     return true;
 }
 
-bool ArmExidx::Eval(uintptr_t entryOffset, std::shared_ptr<DfxRegs> regs, std::shared_ptr<RegLocState> rs)
+bool ArmExidx::Eval(uintptr_t entryOffset)
 {
-    if (rs == nullptr) {
-        return false;
-    }
-    rsState_ = rs;
     if (!ExtractEntryData(entryOffset)) {
         return false;
     }
@@ -267,6 +263,19 @@ bool ArmExidx::Eval(uintptr_t entryOffset, std::shared_ptr<DfxRegs> regs, std::s
     };
     context_.Reset();
     while (Decode(decodeTable, sizeof(decodeTable) / sizeof(decodeTable[0])));
+    return true;
+}
+
+bool ArmExidx::Step(uintptr_t entryOffset, std::shared_ptr<DfxRegs> regs, std::shared_ptr<RegLocState> rs)
+{
+    if (rs == nullptr) {
+        return false;
+    }
+    rsState_ = rs;
+
+    if (!Eval(entryOffset)) {
+        return false;
+    }
 
     FlushInstr();
 
@@ -289,7 +298,7 @@ inline bool ArmExidx::DecodeSpare()
 
 inline bool ArmExidx::Decode(DecodeTable decodeTable[], size_t size)
 {
-    if (!StepOpCode()) {
+    if (!GetOpCode()) {
         return false;
     }
 
@@ -322,7 +331,7 @@ inline bool ArmExidx::Decode01xxxxxx()
 inline bool ArmExidx::Decode1000iiiiiiiiiiii()
 {
     uint16_t registers = ((curOp_ & 0x0f) << 8);
-    if (!StepOpCode()) {
+    if (!GetOpCode()) {
         return false;
     }
     registers |= curOp_;
@@ -403,7 +412,7 @@ inline bool ArmExidx::Decode10110000()
 
 inline bool ArmExidx::Decode101100010000iiii()
 {
-    if (!StepOpCode()) {
+    if (!GetOpCode()) {
         return false;
     }
     // 10110001 00000000: spare
@@ -429,7 +438,7 @@ inline bool ArmExidx::Decode10110010uleb128()
     uint8_t shift = 0;
     uint32_t uleb128 = 0;
     do {
-        if (!StepOpCode()) {
+        if (!GetOpCode()) {
             return false;
         }
         uleb128 |= (curOp_ & 0x7f) << shift;
@@ -444,7 +453,7 @@ inline bool ArmExidx::Decode10110010uleb128()
 inline bool ArmExidx::Decode10110011sssscccc()
 {
     // Pop VFP double precision registers D[ssss]-D[ssss+cccc] by FSTMFDX
-    if (!StepOpCode()) {
+    if (!GetOpCode()) {
         return false;
     }
     uint8_t popRegCount = (curOp_ & 0x0f) + 1;
@@ -470,7 +479,7 @@ inline bool ArmExidx::Decode10111nnn()
 inline bool ArmExidx::Decode11000110sssscccc()
 {
     // 11000110 sssscccc: Intel Wireless MMX pop wR[ssss]-wR[ssss+cccc] (see remark e)
-    if (!StepOpCode()) {
+    if (!GetOpCode()) {
         return false;
     }
     return Decode11000nnn();
@@ -479,7 +488,7 @@ inline bool ArmExidx::Decode11000110sssscccc()
 inline bool ArmExidx::Decode110001110000iiii()
 {
     // Intel Wireless MMX pop wCGR registers under mask {wCGR3,2,1,0}
-    if (!StepOpCode()) {
+    if (!GetOpCode()) {
         return false;
     }
     // 11000111 00000000: Spare
@@ -501,7 +510,7 @@ inline bool ArmExidx::Decode1100100nsssscccc()
 {
     // 11001000 sssscccc: Pop VFP double precision registers D[16+ssss]-D[16+ssss+cccc] by VPUSH
     // 11001001 sssscccc: Pop VFP double precision registers D[ssss]-D[ssss+cccc] by VPUSH
-    if (!StepOpCode()) {
+    if (!GetOpCode()) {
         return false;
     }
     uint8_t popRegCount = (curOp_ & 0x0f) + 1;

@@ -39,9 +39,8 @@ dfx_exidx_sources = [ "arm_exidx.cpp" ]
 
 dfx_dwarf_sources = [
   "dwarf_cfa_instructions.cpp",
-  "dwarf_expression.cpp",
-  "dwarf_parser.cpp",
-  "dwarf_unwind_info.cpp",
+  "dwarf_op.cpp",
+  "dwarf_section.cpp",
 ]
 
 if (defined(ohos_lite)) {
