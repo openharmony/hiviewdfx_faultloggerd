@@ -35,9 +35,9 @@ public:
     static void PermsToProts(const std::string perms, uint32_t& prots, uint32_t& flag);
 
     DfxMap() = default;
-    DfxMap(DfxMap* prevMap, uint64_t begin, uint64_t end, uint64_t offset,
+    DfxMap(std::shared_ptr<DfxMap> elfBaseMap, uint64_t begin, uint64_t end, uint64_t offset,
         const std::string& perms, const std::string& name)
-        : prevMap(prevMap), begin(begin), end(end), offset(offset), perms(perms), name(name) {}
+        : elfBaseMap(elfBaseMap), begin(begin), end(end), offset(offset), perms(perms), name(name) {}
 
     bool Parse(const std::string buf, int size);
     bool IsValidName();
@@ -45,9 +45,9 @@ public:
     const std::shared_ptr<DfxElf>& GetElf();
     uint64_t GetRelPc(uint64_t pc);
     std::string ToString();
+    uint64_t GetLoadBase();
 
-    DfxMap* prevMap = nullptr;
-    DfxMap* prevRealMap = nullptr;
+    std::shared_ptr<DfxMap> elfBaseMap = nullptr;
     uint64_t begin = 0;
     uint64_t end = 0;
     uint64_t offset = 0;
