@@ -30,13 +30,13 @@ namespace HiviewDFX {
 // DWARF expressions describe how to compute a value or specify a location.
 // They 2 are expressed in terms of DWARF operations that operate on a stack of values
 template <typename AddressType>
-class DwarfExpression {
+class DwarfOp {
     using SignedType = typename std::make_signed<AddressType>::type;
     using UnsignedType = typename std::make_unsigned<AddressType>::type;
 
 public:
-    DwarfExpression(std::shared_ptr<DfxMemory> memory) : memory_(memory) {};
-    virtual ~DwarfExpression() = default;
+    DwarfOp(std::shared_ptr<DfxMemory> memory) : memory_(memory) {};
+    virtual ~DwarfOp() = default;
 
     AddressType Eval(DfxRegs& regs, AddressType initStackValue, AddressType start);
 

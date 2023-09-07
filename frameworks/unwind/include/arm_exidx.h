@@ -43,7 +43,7 @@ public:
     ArmExidx(std::shared_ptr<DfxMemory> memory) : memory_(memory) {}
     virtual ~ArmExidx() = default;
 
-    bool Eval(uintptr_t entryOffset, std::shared_ptr<DfxRegs> regs, std::shared_ptr<RegLocState> rs);
+    bool Step(uintptr_t entryOffset, std::shared_ptr<DfxRegs> regs, std::shared_ptr<RegLocState> rs);
 
     bool IsPcSet() { return isPcSet_; }
     const uint16_t& GetLastErrorCode() const { return lastErrorData_.code; }
@@ -56,11 +56,12 @@ private:
         bool (ArmExidx::*decoder)();
     };
 
+    bool Eval(uintptr_t entryOffset);
     void FlushInstr();
 
     void LogRawData();
     bool ExtractEntryData(uintptr_t entryOffset);
-    bool StepOpCode();
+    bool GetOpCode();
     bool Decode(DecodeTable decodeTable[], size_t size);
     bool Decode00xxxxxx();
     bool Decode01xxxxxx();

@@ -13,20 +13,21 @@
  * limitations under the License.
  */
 
-#include "dwarf_expression.h"
+#include "dwarf_op.h"
 #include <string.h>
 #include "dfx_log.h"
+
 namespace OHOS {
 namespace HiviewDFX {
 namespace {
 #undef LOG_DOMAIN
 #undef LOG_TAG
 #define LOG_DOMAIN 0xD002D11
-#define LOG_TAG "DfxDwarfExpression"
+#define LOG_TAG "DfxDwarfOp"
 }
 
 template <typename AddressType>
-AddressType DwarfExpression<AddressType>::Eval(DfxRegs& regs, AddressType initStackValue, AddressType startPtr)
+AddressType DwarfOp<AddressType>::Eval(DfxRegs& regs, AddressType initStackValue, AddressType startPtr)
 {
     StackReset(initStackValue);
 
@@ -292,9 +293,9 @@ AddressType DwarfExpression<AddressType>::Eval(DfxRegs& regs, AddressType initSt
 }
 
 // offline unwind should support both dwarf32 and dwarf64 ?
-// template class DwarfExpression<uint32_t>;
-// template class DwarfExpression<uint64_t>;
-template class DwarfExpression<uintptr_t>;
+// template class DwarfOp<uint32_t>;
+// template class DwarfOp<uint64_t>;
+template class DwarfOp<uintptr_t>;
 
 }   // namespace HiviewDFX
 }   // namespace OHOS

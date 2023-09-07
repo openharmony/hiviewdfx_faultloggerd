@@ -19,7 +19,7 @@
 #if defined(__arm__)
 #include "arm_exidx.h"
 #endif
-#include "dwarf_unwind_info.h"
+#include "dwarf_section.h"
 #include "dfx_define.h"
 #include "dfx_errors.h"
 #include "dfx_regs_get.h"
@@ -192,7 +192,7 @@ bool Unwinder::Step(uintptr_t& pc, uintptr_t& sp, void *ctx)
 #if defined(__arm__)
     if (!ret && pi.format == UNW_INFO_FORMAT_ARM_EXIDX) {
         ArmExidx armExidx(memory_);
-        if (!armExidx.Eval((uintptr_t)pi.unwindInfo, regs_, rs)) {
+        if (!armExidx.Step((uintptr_t)pi.unwindInfo, regs_, rs)) {
             lastErrorData_.code = armExidx.GetLastErrorCode();
             lastErrorData_.addr = armExidx.GetLastErrorAddr();
         } else {
@@ -201,10 +201,11 @@ bool Unwinder::Step(uintptr_t& pc, uintptr_t& sp, void *ctx)
     }
 #endif
     if (!ret && pi.format == UNW_INFO_FORMAT_REMOTE_TABLE) {
-        DwarfUnwindInfo dwarfUnwindInfo(memory_);
-        if (!dwarfUnwindInfo.Eval((uintptr_t)pi.unwindInfo, di.u.rti.segbase, regs_, rs)) {
-            lastErrorData_.code = dwarfUnwindInfo.GetLastErrorCode();
-            lastErrorData_.addr = dwarfUnwindInfo.GetLastErrorAddr();
+        DwarfSection dwarfSection(memory_);
+        dwarfSection.SetDataOffset(di.u.rti.segbase);
+        if (!dwarfSection.Step((uintptr_t)pi.unwindInfo, regs_, rs)) {
+            lastErrorData_.code = dwarfSection.GetLastErrorCode();
+            lastErrorData_.addr = dwarfSection.GetLastErrorAddr();
         } else {
             ret = true;
         }

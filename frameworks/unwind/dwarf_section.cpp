@@ -13,8 +13,10 @@
  * limitations under the License.
  */
 
-#include "dwarf_parser.h"
+#include "dwarf_section.h"
 #include "dfx_log.h"
+#include "dwarf_cfa_instructions.h"
+#include "dfx_instructions.h"
 
 namespace OHOS {
 namespace HiviewDFX {
@@ -22,15 +24,47 @@ namespace {
 #undef LOG_DOMAIN
 #undef LOG_TAG
 #define LOG_DOMAIN 0xD002D11
-#define LOG_TAG "DfxDwarfParser"
+#define LOG_TAG "DfxDwarfSection"
 }
 
-bool DwarfParser::ParseCIE(uintptr_t cieAddr, CommonInfoEntry &cieInfo, uintptr_t sectionStart)
+bool DwarfSection::Step(uintptr_t fdeAddr, std::shared_ptr<DfxRegs> regs, std::shared_ptr<RegLocState> rs)
+{
+    LOGU("Step: fdeAddr=%p", (void*)fdeAddr);
+    lastErrorData_.code = UNW_ERROR_NONE;
+    lastErrorData_.addr = fdeAddr;
+    // 3.parse cie and fde
+    CommonInfoEntry cieInfo;
+    FrameDescEntry fdeInfo;
+    if (!ParseFDE(fdeAddr, fdeInfo, cieInfo)) {
+        LOGE("Failed to parse fde?");
+        lastErrorData_.code = UNW_ERROR_DWARF_INVALID_FDE;
+        return false;
+    }
+
+    LOGU("pc: %p, FDE start: %p", (void*) regs->GetPc(), (void*) (fdeInfo.pcStart) );
+    // 4. parse dwarf instructions and get cache rs
+    DwarfCfaInstructions dwarfInstructions(memory_);
+    if (!dwarfInstructions.Parse(regs->GetPc(), cieInfo, fdeInfo, *(rs.get()))) {
+        LOGE("Failed to parse dwarf instructions?");
+        lastErrorData_.code = UNW_ERROR_DWARF_INVALID_INSTR;
+        return false;
+    }
+
+    // 5. update regs and regs state
+    DfxInstructions instructions(memory_);
+    bool ret = instructions.Apply(*(regs.get()), *(rs.get()));
+
+    regs->SetReg(REG_PC, regs->GetReg(REG_LR));
+    return ret;
+}
+
+bool DwarfSection::ParseCIE(uintptr_t cieAddr, CommonInfoEntry &cieInfo)
 {
     LOGU("cieAddr: %p", (void *)cieAddr);
     cieInfo.cieStart = cieAddr;
     uintptr_t ptr = cieAddr;
     uint32_t cieLen = (uintptr_t)memory_->Read<uint32_t>(ptr, true);
+    // 64 bit entry.
     if (cieLen == 0xffffffff) {
         cieLen = (uintptr_t)memory_->Read<uint64_t>(ptr, true);
         LOGU("cieLen: %lld", (uint64_t)cieLen);
@@ -89,7 +123,7 @@ bool DwarfParser::ParseCIE(uintptr_t cieAddr, CommonInfoEntry &cieInfo, uintptr_
                 case 'P':
                     cieInfo.personalityEncoding = memory_->Read<uint8_t>(ptr, true);
                     cieInfo.personality = memory_->ReadEncodedValue(
-                        ptr, (DwarfEncoding)cieInfo.personalityEncoding, (uintptr_t)sectionStart);
+                        ptr, (DwarfEncoding)cieInfo.personalityEncoding, dataOffset_);
                     break;
                 case 'L':
                     cieInfo.lsdaEncoding = memory_->Read<uint8_t>(ptr, true);
@@ -107,8 +141,7 @@ bool DwarfParser::ParseCIE(uintptr_t cieAddr, CommonInfoEntry &cieInfo, uintptr_
     return true;
 }
 
-bool DwarfParser::ParseFDE(uintptr_t fdeAddr, FrameDescEntry &fdeInfo,
-    CommonInfoEntry &cieInfo, uintptr_t sectionStart)
+bool DwarfSection::ParseFDE(uintptr_t fdeAddr, FrameDescEntry &fdeInfo, CommonInfoEntry &cieInfo)
 {
     LOGU("fdeAddr: %llx", (uint64_t)fdeAddr);
     uintptr_t ptr = fdeAddr;
@@ -134,7 +167,7 @@ bool DwarfParser::ParseFDE(uintptr_t fdeAddr, FrameDescEntry &fdeInfo,
     // cie is relative to the location of fde
     uintptr_t ciePtr = ptr - ciePtrOff;
     LOGU("ciePtr: %llx", (uint64_t)ciePtr);
-    if (!ParseCIE(ciePtr, cieInfo, sectionStart)) {
+    if (!ParseCIE(ciePtr, cieInfo)) {
         LOGE("Failed to parse CIE?");
         return false;
     }
