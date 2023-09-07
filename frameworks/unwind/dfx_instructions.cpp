@@ -45,19 +45,19 @@ uintptr_t DfxInstructions::SaveReg(DfxRegs& regs, uintptr_t cfa, RegLoc loc)
             break;
         case REG_LOC_REGISTER:
             location = loc.val;
-            result = memory_->Read<uintptr_t>(location);
+            result = regs[location];
             break;
         case REG_LOC_MEM_EXPRESSION: {
             DwarfExpression<uintptr_t> dwarfExpr(memory_);
             location = dwarfExpr.Eval(regs, cfa, loc.val);
             result = memory_->Read<uintptr_t>(location);
-        }
             break;
+        }
         case REG_LOC_VAL_EXPRESSION: {
             DwarfExpression<uintptr_t> dwarfExpr(memory_);
             result = dwarfExpr.Eval(regs, cfa, loc.val);
-        }
             break;
+        }
         default:
             LOGE("Failed to save register.");
             break;
@@ -68,11 +68,15 @@ uintptr_t DfxInstructions::SaveReg(DfxRegs& regs, uintptr_t cfa, RegLoc loc)
 bool DfxInstructions::Apply(DfxRegs& regs, RegLocState& rsState)
 {
     uintptr_t cfa = 0;
+    RegLoc cfaLoc;
     if (rsState.cfaReg != 0) {
-        cfa = regs[rsState.cfaReg] + rsState.cfaRegOffset;
+        cfaLoc.type = REG_LOC_VAL_OFFSET;
+        cfaLoc.val = rsState.cfaRegOffset;
+        cfa = SaveReg(regs, regs[rsState.cfaReg], cfaLoc);
     } else if (rsState.cfaExprPtr != 0) {
-        DwarfExpression<uintptr_t> dwarfExpr(memory_);
-        cfa = dwarfExpr.Eval(regs, 0, rsState.cfaExprPtr);
+        cfaLoc.type = REG_LOC_VAL_EXPRESSION;
+        cfaLoc.val = rsState.cfaExprPtr;
+        cfa = SaveReg(regs, 0, cfaLoc);
     } else {
         LOGE("no cfa info exist?");
         return false;
