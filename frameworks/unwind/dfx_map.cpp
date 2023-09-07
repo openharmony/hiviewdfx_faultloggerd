@@ -157,5 +157,14 @@ const std::shared_ptr<DfxElf>& DfxMap::GetElf()
     }
     return elf;
 }
+
+uint64_t DfxMap::GetLoadBase()
+{
+    if (elfBaseMap == nullptr) {
+        return begin;
+    }
+    return elfBaseMap->begin;
+}
+
 } // namespace HiviewDFX
 } // namespace OHOS

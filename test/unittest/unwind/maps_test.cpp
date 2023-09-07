@@ -41,6 +41,16 @@ namespace {
 HWTEST_F(DfxMapsTest, DfxMapsTest001, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "DfxMapsTest001: start.";
+    pid_t pid = 1;
+    auto dfxMaps = DfxMaps::Create(pid);
+    std::vector<std::shared_ptr<DfxMap>> maps;
+    std::string elfName = "libc++.so";
+    ASSERT_TRUE(dfxMaps->FindMapsByName(maps, elfName));
+    auto elfBaseMap = maps[0];
+    for (const auto& map : maps) {
+        ASSERT_EQ(map->elfBaseMap->name, elfBaseMap->name);
+    }
+
     GTEST_LOG_(INFO) << "DfxMapsTest001: end.";
 }
 }

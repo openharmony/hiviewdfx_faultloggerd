@@ -164,10 +164,12 @@ void DfxMaps::Sort(bool less)
         });
     }
 
-    DfxMap* prevMap = nullptr;
+    std::shared_ptr<DfxMap> elfBaseMap = nullptr;
     for (const auto& map : maps_) {
-        map->prevMap = prevMap;
-        prevMap = map.get();
+        if (elfBaseMap == nullptr || map->name != elfBaseMap->name) {
+            elfBaseMap = map;
+        }
+        map->elfBaseMap = elfBaseMap;
     }
 }
 } // namespace HiviewDFX
