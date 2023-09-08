@@ -20,6 +20,10 @@
 
 namespace OHOS {
 namespace HiviewDFX {
+#define DW_EH_VERSION           1
+#define DW_EH_PE_FORMAT_MASK    0x0f    /* format of the encoded value */
+#define DW_EH_PE_APPL_MASK      0x70    /* how the value is to be applied */
+
 // https://dwarfstd.org/doc/DWARF5.pdf
 // 7.7.1 DWARF Expressions
 // Each operation is a 1-byte code that identifies that operation, followed by zero or more bytes of additional data
@@ -260,6 +264,7 @@ enum DwarfEncoding : uint8_t {
     DW_EH_PE_datarel = 0x30,
     DW_EH_PE_funcrel = 0x40,
     DW_EH_PE_aligned = 0x50,
+    DW_EH_PE_indirect = 0x80,
 
     DW_EH_PE_udata1 = 0x0d,
     DW_EH_PE_sdata1 = 0x0e,
@@ -284,6 +289,7 @@ typedef struct {
     uint8_t lsdaEncoding;
     // R
     uint8_t pointerEncoding;
+    uint8_t segmentSize;
 } CommonInfoEntry;
 
 // Parsed Frame Description Entry
@@ -295,6 +301,7 @@ typedef struct {
     uintptr_t pcEnd;
     uintptr_t lsda;
     uintptr_t instructions;  // need instruction end ?
+    uintptr_t cieAddr;
 } FrameDescEntry;
 
 } // namespace HiviewDFX

@@ -68,6 +68,7 @@ static const char PROC_SELF_TASK_PATH[] = "/proc/self/task";
 static const char PROC_SELF_CMDLINE_PATH[] = "/proc/self/cmdline";
 static const char PROC_SELF_COMM_PATH[] = "/proc/self/comm";
 static const char PROC_SELF_MAPS_PATH[] = "/proc/self/maps";
+static const char PROC_SELF_EXE_PATH[] = "/proc/self/exe";
 
 static const char TEST_BUNDLE_NAME[] = "com.example.myapplication";
 static const char TRUNCATE_TEST_BUNDLE_NAME[] = "e.myapplication";

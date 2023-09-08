@@ -52,8 +52,6 @@ public:
     virtual bool GetSymSection(ElfShdr& shdr, const std::string secName);
     virtual bool GetSectionInfo(ShdrInfo& shdr, const std::string secName);
     const std::unordered_map<uint64_t, ElfLoadInfo>& GetPtLoads() {return ptLoads_;}
-    bool GetArmExdixInfo(ShdrInfo& shdr);
-    bool GetEhFrameHdrInfo(ShdrInfo& shdr);
     bool Read(uint64_t pos, void *buf, size_t size);
 
 protected:

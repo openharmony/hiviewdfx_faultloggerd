@@ -32,18 +32,26 @@ public:
 
     bool Step(uintptr_t fdeAddr, std::shared_ptr<DfxRegs> regs, std::shared_ptr<RegLocState> rs);
 
+    uintptr_t GetCieAddrFromFde32(uintptr_t curPtr, uint32_t ciePtr);
+    uintptr_t GetCieAddrFromFde64(uintptr_t curPtr, uint64_t ciePtr);
+
     const uint16_t& GetLastErrorCode() const { return lastErrorData_.code; }
     const uint64_t& GetLastErrorAddr() const { return lastErrorData_.addr; }
 
     void SetDataOffset(uintptr_t dataOffset) { dataOffset_ = dataOffset; }
 
 protected:
-    bool ParseCIE(uintptr_t cieAddr, CommonInfoEntry &cieInfo);
-    bool ParseFDE(uintptr_t addr, FrameDescEntry &fde, CommonInfoEntry &cie);
+    bool ParseFde(uintptr_t addr, FrameDescEntry &fde, CommonInfoEntry &cie);
+    bool FillInFde(uintptr_t& addr, FrameDescEntry &fdeInfo, CommonInfoEntry &cieInfo);
+    bool ParseCie(uintptr_t cieAddr, CommonInfoEntry &cieInfo);
+    bool FillInCieHeader(uintptr_t& addr, CommonInfoEntry &cieInfo);
+    bool FillInCie(uintptr_t& addr, CommonInfoEntry &cieInfo);
 
 private:
     std::shared_ptr<DfxMemory> memory_;
     UnwindErrorData lastErrorData_;
+    uint32_t cie32Value_ = 0;
+    uint64_t cie64Value_ = 0;
     uintptr_t dataOffset_;
 };
 } // nameapace HiviewDFX

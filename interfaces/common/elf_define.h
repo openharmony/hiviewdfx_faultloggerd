@@ -17,6 +17,8 @@
 
 #include <cinttypes>
 #include <string>
+#include <elf.h>
+#include <link.h>
 
 namespace OHOS {
 namespace HiviewDFX {
@@ -73,13 +75,13 @@ struct ElfSecInfo {
     ShdrInfo shdrInfo;
 };
 
-struct __attribute__((packed)) EhFrameHdr
+struct __attribute__((packed)) DwarfEhFrameHdr
 {
     unsigned char version;
     unsigned char ehFramePtrEnc;
     unsigned char fdeCountEnc;
     unsigned char tableEnc;
-    unsigned char encodeData[0];
+    ElfW(Addr) ehFrame;
 };
 } // namespace HiviewDFX
 } // namespace OHOS

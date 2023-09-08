@@ -35,6 +35,7 @@ public:
 private:
     static int ResetElfDynInfo(struct ElfDynInfo* edi);
     static bool IsPcInUnwindInfo(struct UnwindDynInfo di, uintptr_t pc);
+
     static int ExdixSearchUnwindTable(struct UnwindProcInfo* pi, struct UnwindDynInfo* di,\
         uintptr_t pc, DfxMemory* memory, bool needUnwindInfo = false);
     static int DwarfSearchUnwindTable(struct UnwindProcInfo* pi, struct UnwindDynInfo* di,\

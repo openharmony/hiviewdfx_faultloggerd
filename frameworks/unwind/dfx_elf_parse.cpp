@@ -410,38 +410,6 @@ bool ElfParse::GetSymSection(ElfShdr& shdr, const std::string secName)
     return false;
 }
 
-bool ElfParse::GetArmExdixInfo(ShdrInfo& shdr)
-{
-    if (armExdixInfo_.offset != 0) {
-        shdr = armExdixInfo_;
-        return true;
-    }
-
-    if (GetSectionInfo(shdr, ARM_EXIDX)) {
-        armExdixInfo_.addr = shdr.addr;
-        armExdixInfo_.offset = shdr.offset;
-        armExdixInfo_.size = shdr.size;
-        return true;
-    }
-    return false;
-}
-
-bool ElfParse::GetEhFrameHdrInfo(ShdrInfo& shdr)
-{
-    if (ehFrameHdrInfo_.offset != 0) {
-        shdr = ehFrameHdrInfo_;
-        return true;
-    }
-
-    if (GetSectionInfo(shdr, EH_FRAME_HDR)) {
-        ehFrameHdrInfo_.addr = shdr.addr;
-        ehFrameHdrInfo_.offset = shdr.offset;
-        ehFrameHdrInfo_.size = shdr.size;
-        return true;
-    }
-    return false;
-}
-
 bool ElfParse32::InitHeaders()
 {
     return ParseAllHeaders<Elf32_Ehdr, Elf32_Phdr, Elf32_Shdr>();
