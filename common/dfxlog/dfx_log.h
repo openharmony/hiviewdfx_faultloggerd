@@ -87,7 +87,7 @@ int DfxLogPrintV(const LogLevel logLevel, const unsigned int domain, const char*
 #endif
 
 #ifdef DFX_LOG_UNWIND
-#define LOGU(fmt, ...) DFXLOG_PRINT(LOG_ERROR, LOG_DOMAIN, LOG_TAG, "[%s:%d]" fmt, (__FILENAME__), (__LINE__), ##__VA_ARGS__)
+#define LOGU(fmt, ...) DFXLOG_PRINT(LOG_DEBUG, LOG_DOMAIN, LOG_TAG, "[%s:%d]" fmt, (__FILENAME__), (__LINE__), ##__VA_ARGS__)
 #else
 #define LOGU(fmt, ...)
 #endif

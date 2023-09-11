@@ -160,64 +160,71 @@ bool Unwinder::Unwind(void *ctx, size_t maxFrameNum, size_t skipFrameNum)
 
 bool Unwinder::Step(uintptr_t& pc, uintptr_t& sp, void *ctx)
 {
-    LOGU("pc: %llx, sp: %llx", (uint64_t)pc, (uint64_t)sp);
+    LOGU("++++++pc: %llx, sp: %llx", (uint64_t)pc, (uint64_t)sp);
     lastErrorData_.addr = pc;
+    int errorCode = UNW_ERROR_NONE;
     DoPcAdjust(pc);
     memory_->SetCtx(ctx);
-    auto iter = rsCache_.find(pc);
-    if (iter != rsCache_.end()) {
-        auto rs = iter->second;
-        DfxInstructions instructions(memory_);
-        if (instructions.Apply(*(regs_.get()), *(rs.get()))) {
-            return true;
-        }
-    }
-
-    int errorCode = UNW_ERROR_NONE;
-    UnwindDynInfo di;
-    if ((errorCode = acc_->FindProcInfo(pc, &di, true, ctx)) != UNW_ERROR_NONE) {
-        lastErrorData_.code = static_cast<uint16_t>(errorCode);
-        return false;
-    }
-
-    struct UnwindProcInfo pi;
-    if ((errorCode = DfxUnwindTable::SearchUnwindTable(&pi, &di, pc, memory_.get(), true)) != UNW_ERROR_NONE) {
-        lastErrorData_.code = static_cast<uint16_t>(errorCode);
-        return false;
-    }
-
-    auto rs = std::make_shared<RegLocState>();
     bool ret = false;
-    LOGU("++++++regs: %s", regs_->PrintSpecialRegs().c_str());
+    do {
+        auto iter = rsCache_.find(pc);
+        if (iter != rsCache_.end()) {
+            auto rs = iter->second;
+            DfxInstructions instructions(memory_);
+            if (instructions.Apply(*(regs_.get()), *(rs.get()))) {
+                regs_->SetReg(REG_PC, regs_->GetReg(REG_LR));
+                ret = true;
+                break;
+            }
+        }
+
+        UnwindDynInfo di;
+        if ((errorCode = acc_->FindProcInfo(pc, &di, true, ctx)) != UNW_ERROR_NONE) {
+            LOGE("Failed to find proc info?");
+            lastErrorData_.code = static_cast<uint16_t>(errorCode);
+            break;
+        }
+
+        struct UnwindProcInfo pi;
+        if ((errorCode = DfxUnwindTable::SearchUnwindTable(&pi, &di, pc, memory_.get(), true)) != UNW_ERROR_NONE) {
+            LOGE("Failed to search proc info?");
+            lastErrorData_.code = static_cast<uint16_t>(errorCode);
+            break;
+        }
+
+        auto rs = std::make_shared<RegLocState>();
 #if defined(__arm__)
-    if (!ret && pi.format == UNW_INFO_FORMAT_ARM_EXIDX) {
-        ArmExidx armExidx(memory_);
-        if (!armExidx.Step((uintptr_t)pi.unwindInfo, regs_, rs)) {
-            lastErrorData_.code = armExidx.GetLastErrorCode();
-            lastErrorData_.addr = armExidx.GetLastErrorAddr();
-        } else {
-            ret = true;
+        if (!ret && pi.format == UNW_INFO_FORMAT_ARM_EXIDX) {
+            ArmExidx armExidx(memory_);
+            if (!armExidx.Step((uintptr_t)pi.unwindInfo, regs_, rs)) {
+                lastErrorData_.code = armExidx.GetLastErrorCode();
+                lastErrorData_.addr = armExidx.GetLastErrorAddr();
+            } else {
+                ret = true;
+            }
         }
-    }
 #endif
-    if (!ret && pi.format == UNW_INFO_FORMAT_REMOTE_TABLE) {
-        DwarfSection dwarfSection(memory_);
-        dwarfSection.SetDataOffset(di.u.rti.segbase);
-        if (!dwarfSection.Step((uintptr_t)pi.unwindInfo, regs_, rs)) {
-            lastErrorData_.code = dwarfSection.GetLastErrorCode();
-            lastErrorData_.addr = dwarfSection.GetLastErrorAddr();
-        } else {
-            ret = true;
+        if (!ret && pi.format == UNW_INFO_FORMAT_REMOTE_TABLE) {
+            DwarfSection dwarfSection(memory_);
+            dwarfSection.SetDataOffset(di.u.rti.segbase);
+            if (!dwarfSection.Step((uintptr_t)pi.unwindInfo, regs_, rs)) {
+                lastErrorData_.code = dwarfSection.GetLastErrorCode();
+                lastErrorData_.addr = dwarfSection.GetLastErrorAddr();
+            } else {
+                ret = true;
+            }
         }
-    }
 
-    if (ret) {
-        rsCache_.emplace(pc, rs);
+        if (ret) {
+            rsCache_.emplace(pc, rs);
+        } else {
+            regs_->SetReg(REG_PC, regs_->GetReg(REG_LR));
+        }
+    } while (false);
 
-        pc = regs_->GetPc();
-        sp = regs_->GetSp();
-    }
-    LOGU("------regs: %s", regs_->PrintSpecialRegs().c_str());
+    pc = regs_->GetPc();
+    sp = regs_->GetSp();
+    LOGU("------pc: %llx, sp: %llx", (uint64_t)pc, (uint64_t)sp);
     return ret;
 }
 

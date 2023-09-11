@@ -34,7 +34,7 @@ bool DwarfCfaInstructions::Iterate(CommonInfoEntry &cieInfo, uintptr_t instStart
     uintptr_t instPtr = instStart;
     uintptr_t codeOffset = 0;
     RegLocState prevRs = rsState;
-    while ((instPtr < instEnd) && (codeOffset < pc - pcStart)) {
+    while ((instPtr < instEnd) && (codeOffset <= pc - pcStart)) {
         LOGU("instPtr:%p instEnd:%p codeOffset:%d relPc:%p\n",
             (void*)instPtr , (void*)instEnd , (int)codeOffset, (void*)(pc - pcStart));
         uintptr_t value = 0;
