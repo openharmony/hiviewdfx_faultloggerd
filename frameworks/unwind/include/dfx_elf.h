@@ -41,7 +41,6 @@ public:
         ElfDynInfo edi;
     };
 
-    static int DlPhdrCb(struct dl_phdr_info *info, size_t size, void *data);
     static std::shared_ptr<DfxElf> Create(const std::string& file);
     explicit DfxElf(const std::string& file) : file_(file) { Init(); }
     ~DfxElf() { Clear(); }
@@ -64,11 +63,11 @@ public:
     const std::unordered_map<uint64_t, ElfLoadInfo>& GetPtLoads();
     const std::vector<ElfSymbol>& GetElfSymbols();
     bool GetSectionInfo(ShdrInfo& shdr, const std::string secName);
-    bool GetArmExdixInfo(ShdrInfo& shdr);
-    bool GetEhFrameHdrInfo(ShdrInfo& shdr);
     bool GetElfDynInfo(uintptr_t pc, struct ElfDynInfo* edi);
 
 	static std::string ToReadableBuildId(const std::string& buildIdHex);
+    static int DlPhdrCb(struct dl_phdr_info *info, size_t size, void *data);
+    static ElfW(Addr) FindSection(struct dl_phdr_info *info, const std::string secName);
 
 protected:
     bool InitHeaders();

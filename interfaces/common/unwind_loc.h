@@ -23,13 +23,13 @@
 namespace OHOS {
 namespace HiviewDFX {
 enum RegLocEnum : uint8_t {
-    REG_LOC_UNUSED = 0,
-    REG_LOC_UNDEFINED,
-    REG_LOC_VAL_OFFSET,      // register value is offset from cfa, cfa = cfa + off
-    REG_LOC_MEM_OFFSET,      // register stored in the offset from cfa, cfa = [r14 + off], r14 = [cfa + off]
-    REG_LOC_REGISTER,        // register stored in register, cfa = [r14], pc = [lr]
-    REG_LOC_VAL_EXPRESSION,  // register value is expression result, r11 = cfa + expr_result
-    REG_LOC_MEM_EXPRESSION,  // register stored in expression result, r11 = [cfa + expr_result]
+    REG_LOC_UNUSED = 0,     // register has same value as in prev. frame
+    REG_LOC_UNDEFINED,      // register isn't saved at all
+    REG_LOC_VAL_OFFSET,     // register that is the value, cfa = cfa + off
+    REG_LOC_MEM_OFFSET,     // register saved at CFA-relative address, cfa = [r14 + off], r14 = [cfa + off]
+    REG_LOC_REGISTER,       // register saved in another register, cfa = [r14], pc = [lr]
+    REG_LOC_VAL_EXPRESSION, // register value is expression result, r11 = cfa + expr_result
+    REG_LOC_MEM_EXPRESSION, // register stored in expression result, r11 = [cfa + expr_result]
 };
 
 struct RegLoc {

@@ -56,7 +56,7 @@ public:
     virtual int64_t ReadSleb128(uintptr_t& addr);
     virtual size_t GetEncodedSize(uint8_t encoding);
     virtual uintptr_t ReadEncodedValue(uintptr_t& addr, uint8_t encoding,
-        uintptr_t dataOffset = 0, uintptr_t textOffset = 0, uintptr_t funcOffset = 0);
+        uintptr_t dataRel = 0, uintptr_t funcRel = 0);
 
 private:
     std::shared_ptr<DfxAccessors> acc_;

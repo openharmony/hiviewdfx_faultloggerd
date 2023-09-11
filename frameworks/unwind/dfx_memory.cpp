@@ -201,16 +201,21 @@ size_t DfxMemory::GetEncodedSize(uint8_t encoding)
     }
 }
 
-uintptr_t DfxMemory::ReadEncodedValue(uintptr_t& addr, uint8_t encoding,
-    uintptr_t dataOffset, uintptr_t textOffset, uintptr_t funcOffset)
+uintptr_t DfxMemory::ReadEncodedValue(uintptr_t& addr, uint8_t encoding, uintptr_t dataRel, uintptr_t funcRel)
 {
     uintptr_t val = 0;
+    uintptr_t startAddr = addr;
     if (encoding == DW_EH_PE_omit) {
         return val;
+    } else if (encoding == DW_EH_PE_aligned) {
+        if (__builtin_add_overflow(addr, sizeof(uintptr_t) - 1, &addr)) {
+            return val;
+        }
+        addr &= -sizeof(uintptr_t);
+        return val = Read<uintptr_t>(addr, true);
     }
 
-    uintptr_t startAddr = addr;
-    switch (encoding & 0x0f) {
+    switch (encoding & DW_EH_PE_FORMAT_MASK) {
         case DW_EH_PE_absptr:
             val = Read<uintptr_t>(addr, true);
             return val;
@@ -256,18 +261,18 @@ uintptr_t DfxMemory::ReadEncodedValue(uintptr_t& addr, uint8_t encoding,
             break;
     }
 
-    switch (encoding & 0x70) {
+    switch (encoding & DW_EH_PE_APPL_MASK) {
         case DW_EH_PE_pcrel:
             val += startAddr;
             break;
         case DW_EH_PE_textrel:
-            val += textOffset;
+            LOGE("XXX For now we don't support text-rel values");
             break;
         case DW_EH_PE_datarel:
-            val += dataOffset;
+            val += dataRel;
             break;
         case DW_EH_PE_funcrel:
-            val += funcOffset;
+            val += funcRel;
             break;
         default:
             break;

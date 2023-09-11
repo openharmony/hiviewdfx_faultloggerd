@@ -29,6 +29,7 @@
 #include "dfx_define.h"
 #include "dfx_log.h"
 #include "dfx_util.h"
+#include "dwarf_define.h"
 
 namespace OHOS {
 namespace HiviewDFX {
@@ -279,21 +280,50 @@ bool DfxElf::GetSectionInfo(ShdrInfo& shdr, const std::string secName)
     return elfParse_->GetSectionInfo(shdr, secName);
 }
 
+ElfW(Addr) DfxElf::FindSection(struct dl_phdr_info *info, const std::string secName)
+{
+    const char *file = info->dlpi_name;
+    if (strlen(file) == 0) {
+        file = PROC_SELF_EXE_PATH;
+    }
+
+    auto elf = Create(file);
+    if (elf == nullptr) {
+        return 0;
+    }
+
+    ElfW(Addr) addr = 0;
+    ShdrInfo shdr;
+    if (!elf->GetSectionInfo(shdr, secName)) {
+        return 0;
+    }
+    addr = shdr.addr + info->dlpi_addr;
+    return addr;
+}
+
 int DfxElf::DlPhdrCb(struct dl_phdr_info *info, size_t size, void *data)
 {
     struct DlCbData *cbData = (struct DlCbData *)data;
     const ElfW(Phdr) *pText = nullptr;
+    const ElfW(Phdr) *pDynamic = nullptr;
 #if defined(__arm__)
     const ElfW(Phdr) *pArmExidx = nullptr;
 #endif
-    const ElfW(Phdr) *pEhFrameHdr = nullptr;
+    const ElfW(Phdr) *pEhHdr = nullptr;
+    struct DwarfEhFrameHdr *hdr = nullptr;
+    struct DwarfEhFrameHdr synthHdr;
     const ElfW(Phdr) *phdr = info->dlpi_phdr;
+    ElfW(Addr) loadBase = info->dlpi_addr, maxLoadAddr = 0;
     for (size_t i = 0; i < info->dlpi_phnum; i++, phdr++) {
         switch (phdr->p_type) {
         case PT_LOAD: {
-            if (cbData->pc >= phdr->p_vaddr + info->dlpi_addr &&
-                cbData->pc < phdr->p_vaddr + info->dlpi_addr + phdr->p_memsz) {
+            ElfW(Addr) vaddr = phdr->p_vaddr + loadBase;
+            if (cbData->pc >= vaddr && cbData->pc < vaddr + phdr->p_memsz) {
                 pText = phdr;
+            }
+
+            if (vaddr + phdr->p_filesz > maxLoadAddr) {
+                maxLoadAddr = vaddr + phdr->p_filesz;
             }
             break;
         }
@@ -304,7 +334,11 @@ int DfxElf::DlPhdrCb(struct dl_phdr_info *info, size_t size, void *data)
         }
 #endif
         case PT_GNU_EH_FRAME: {
-            pEhFrameHdr = phdr;
+            pEhHdr = phdr;
+            break;
+        }
+        case PT_DYNAMIC: {
+            pDynamic = phdr;
             break;
         }
         default:
@@ -319,14 +353,33 @@ int DfxElf::DlPhdrCb(struct dl_phdr_info *info, size_t size, void *data)
 #if defined(__arm__)
     if (pArmExidx) {
         cbData->edi.diArm.format = UNW_INFO_FORMAT_ARM_EXIDX;
-        cbData->edi.diArm.startPc = pText->p_vaddr + info->dlpi_addr;
+        cbData->edi.diArm.startPc = pText->p_vaddr + loadBase;
         cbData->edi.diArm.endPc = cbData->edi.diArm.startPc + pText->p_memsz;
         cbData->edi.diArm.u.rti.namePtr = (uintptr_t) info->dlpi_name;
-        cbData->edi.diArm.u.rti.tableData = pArmExidx->p_vaddr + info->dlpi_addr;
+        cbData->edi.diArm.u.rti.tableData = pArmExidx->p_vaddr + loadBase;
         cbData->edi.diArm.u.rti.tableLen = pArmExidx->p_memsz;
         hasDynInfo = true;
     }
 #endif
+
+    if (pEhHdr) {
+        hdr = (struct DwarfEhFrameHdr *) (pEhHdr->p_vaddr + loadBase);
+    } else {
+        LOGW("No .eh_frame_hdr section found");
+        ElfW(Addr) ehFrame = DfxElf::FindSection(info, EH_FRAME);
+        if (ehFrame != 0) {
+            LOGD("using synthetic .eh_frame_hdr section for %s", info->dlpi_name);
+            synthHdr.version = DW_EH_VERSION;
+            synthHdr.ehFramePtrEnc = DW_EH_PE_absptr | ((sizeof(ElfW(Addr)) == 4) ? DW_EH_PE_udata4 : DW_EH_PE_udata8);
+            synthHdr.fdeCountEnc = DW_EH_PE_omit;
+            synthHdr.tableEnc = DW_EH_PE_omit;
+            synthHdr.ehFrame = ehFrame;
+            hdr = &synthHdr;
+        }
+    }
+    if (hdr != nullptr) {
+
+    }
 
     if (hasDynInfo) {
         cbData->edi.startPc = pText->p_vaddr + info->dlpi_addr;
@@ -356,7 +409,7 @@ bool DfxElf::GetElfDynInfo(uintptr_t pc, struct ElfDynInfo* edi)
 #endif
 
     ShdrInfo shdr;
-    if (GetEhFrameHdrInfo(shdr)) {
+    if (GetSectionInfo(shdr, EH_FRAME_HDR)) {
         elfDynInfo_.diCache.format = UNW_INFO_FORMAT_REMOTE_TABLE;
         elfDynInfo_.diCache.startPc = GetStartVaddr();
         elfDynInfo_.diCache.endPc = GetEndVaddr();
@@ -367,7 +420,7 @@ bool DfxElf::GetElfDynInfo(uintptr_t pc, struct ElfDynInfo* edi)
     }
 
 #if defined(__arm__)
-    if (GetArmExdixInfo(shdr)) {
+    if (GetSectionInfo(shdr, ARM_EXIDX)) {
         elfDynInfo_.diArm.format = UNW_INFO_FORMAT_ARM_EXIDX;
         elfDynInfo_.diArm.startPc = GetStartVaddr();
         elfDynInfo_.diArm.endPc = GetEndVaddr();
@@ -385,24 +438,6 @@ bool DfxElf::GetElfDynInfo(uintptr_t pc, struct ElfDynInfo* edi)
         return true;
     }
     return false;
-}
-
-bool DfxElf::GetArmExdixInfo(ShdrInfo& shdr)
-{
-    std::lock_guard<std::mutex> lock(mutex_);
-    if (!IsValid()) {
-         return false;
-    }
-    return elfParse_->GetArmExdixInfo(shdr);
-}
-
-bool DfxElf::GetEhFrameHdrInfo(ShdrInfo& shdr)
-{
-    std::lock_guard<std::mutex> lock(mutex_);
-    if (!IsValid()) {
-         return false;
-    }
-    return elfParse_->GetEhFrameHdrInfo(shdr);
 }
 
 const std::vector<ElfSymbol>& DfxElf::GetElfSymbols()
