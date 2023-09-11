@@ -17,13 +17,12 @@
 #define DFX_DWARF_EXPRESSION_H
 
 #include <cinttypes>
+#include <deque>
 #include <type_traits>
 #include <memory>
 #include "dfx_memory.h"
 #include "dfx_regs.h"
 #include "dwarf_cfa_instructions.h"
-
-#define MAX_DWARF_STACK_SZ 100
 
 namespace OHOS {
 namespace HiviewDFX {
@@ -38,279 +37,280 @@ public:
     DwarfOp(std::shared_ptr<DfxMemory> memory) : memory_(memory) {};
     virtual ~DwarfOp() = default;
 
-    AddressType Eval(DfxRegs& regs, AddressType initStackValue, AddressType start);
-
-    bool StackTop(AddressType& value) {
-        if (dwarfStackIndex_ > 0 && dwarfStackIndex_ < MAX_DWARF_STACK_SZ) {
-            value = dwarfStack_[dwarfStackIndex_];
-            return true;
-        }
-        return false;
-    };
+    AddressType Eval(DfxRegs& regs, AddressType initStackValue, AddressType startPtr);
 
 private:
-    void StackReset(AddressType initialStackValue) {
-        memset(dwarfStack_, 0, MAX_DWARF_STACK_SZ);
-        dwarfStackIndex_ = 0;
-        dwarfStack_[++dwarfStackIndex_] = initialStackValue;
-    };
+    bool Decode(DfxRegs& regs, uintptr_t& addr);
 
-    // DW_OP_addr
-    void OpAddr(AddressType& exprPtr) {
-        auto value = memory_->Read<uintptr_t>(exprPtr, true);
-        dwarfStack_[++dwarfStackIndex_] = value;
+    inline void StackReset(AddressType initialStackValue)
+    {
+        stack_.clear();
+        stack_.push_front(initialStackValue);
+    };
+    inline void StackPush(AddressType value)
+    {
+        stack_.push_front(value);
+    }
+    inline AddressType StackPop()
+    {
+        AddressType value = stack_.front();
+        stack_.pop_front();
+        return value;
+    }
+    inline AddressType StackAt(size_t index) { return stack_[index]; }
+    inline size_t StackSize() { return stack_.size(); }
+
+    // DW_OP_addr DW_OP_constXs DW_OP_constXu
+    template <typename T>
+    inline void OpPush(T value) {
+        StackPush(static_cast<AddressType>(value));
     };
 
     // DW_OP_deref
-    void OpDeref() {
-        // pop stack, dereference, push result
-        auto addr = dwarfStack_[dwarfStackIndex_--];
-        dwarfStack_[++dwarfStackIndex_] = memory_->Read<uintptr_t>(addr, true);;
+    inline void OpDeref() {
+        AddressType addr = StackPop();
+        AddressType value = memory_->Read<uintptr_t>(addr);
+        StackPush(value);
     };
 
-    // DW_OP_constXs DW_OP_constXu
-    template <typename T>
-    void OpPush(T value) {
-        // push immediate sizeof(T）byte value
-        dwarfStack_[++dwarfStackIndex_] = static_cast<AddressType>(value);
+    // DW_OP_deref_size
+    inline void OpDerefSize(AddressType& exprPtr) {
+        AddressType addr = StackPop();
+        AddressType value = 0;
+        uint8_t operand = memory_->Read<uint8_t>(exprPtr, true);
+        switch (operand) {
+            case 1:  // 1 Byte
+                value = memory_->Read<uint8_t>(addr);
+                break;
+            case 2:  // 2 Byte
+                value = memory_->Read<uint16_t>(addr);
+                break;
+            case 4:  // 4 Byte
+                value = memory_->Read<uint32_t>(addr);
+                break;
+            case 8:  // 8 Byte
+                value = static_cast<UnsignedType>(memory_->Read<uint64_t>(addr));
+                break;
+        }
+        StackPush(static_cast<UnsignedType>(value));
     };
 
     // DW_OP_dup
-    void OpDup() {
-        // push top of stack
-        auto value = dwarfStack_[dwarfStackIndex_];
-        dwarfStack_[++dwarfStackIndex_] = value;
+    inline void OpDup() {
+        AddressType value = StackAt(0);
+        StackPush(value);
     };
 
     // DW_OP_drop
-    void OpDrop() {
-        // pop
-        dwarfStackIndex_--;
+    inline void OpDrop() {
+        StackPop();
     };
 
     // DW_OP_over
-    void OpOver() {
-        auto value = dwarfStack_[dwarfStackIndex_ - 1];
-        dwarfStack_[++dwarfStackIndex_] = value;
+    inline void OpOver() {
+        AddressType value = StackAt(1);
+        StackPush(value);
     };
 
     // DW_OP_pick
-    void OpPick(AddressType& exprPtr) {
+    inline void OpPick(AddressType& exprPtr) {
         uint32_t reg = memory_->Read<uint8_t>(exprPtr, true);
-        auto value = dwarfStack_[-reg];
-        dwarfStack_[++dwarfStackIndex_] = value;
+        if (reg > StackSize()) {
+            return;
+        }
+        AddressType value = StackAt(reg);
+        StackPush(value);
     };
 
     // DW_OP_swap
-    void OpSwap() {
-        auto value = dwarfStack_[dwarfStackIndex_];
-        dwarfStack_[dwarfStackIndex_] = dwarfStack_[dwarfStackIndex_ - 1];
-        dwarfStack_[dwarfStackIndex_ - 1] = value;
+    inline void OpSwap() {
+        AddressType oldValue = stack_[0];
+        stack_[0] = stack_[1];
+        stack_[1] = oldValue;
     }
 
     // DW_OP_rot
-    void OpRot() {
-        auto value = dwarfStack_[dwarfStackIndex_];
-        dwarfStack_[dwarfStackIndex_] = dwarfStack_[dwarfStackIndex_ - 1];
-        dwarfStack_[dwarfStackIndex_ - 1] = dwarfStack_[dwarfStackIndex_ - 2];
-        dwarfStack_[dwarfStackIndex_ - 2] = value;
+    inline void OpRot() {
+        AddressType top = stack_[0];
+        stack_[0] = stack_[1];
+        stack_[1] = stack_[2];
+        stack_[2] = top;
     }
 
-    // DW_OP_xderef
-    void OpXderef() {
-        auto addr = dwarfStack_[dwarfStackIndex_--];
-        dwarfStack_[dwarfStackIndex_] = memory_->Read<UnsignedType>(addr);
-    };
-
     // DW_OP_abs
-    void OpAbs() {
-        auto value = static_cast<SignedType>(dwarfStack_[dwarfStackIndex_]);
-        if (value < 0) {
-            dwarfStack_[dwarfStackIndex_] = static_cast<UnsignedType>(-value);
+    inline void OpAbs() {
+        SignedType signedValue = static_cast<SignedType>(stack_[0]);
+        if (signedValue < 0) {
+            signedValue = -signedValue;
         }
+        stack_[0] = static_cast<AddressType>(signedValue);
     };
 
     // DW_OP_and
-    void OpAnd() {
-        auto value = dwarfStack_[dwarfStackIndex_--];
-        dwarfStack_[dwarfStackIndex_] &= value;
+    inline void OpAnd() {
+        AddressType top = StackPop();
+        stack_[0] &= top;
     };
 
     // DW_OP_div
-    void OpDiv() {
-        auto value1 = static_cast<SignedType>(dwarfStack_[dwarfStackIndex_--]);
-        auto value2 = static_cast<SignedType>(dwarfStack_[dwarfStackIndex_]);
-        dwarfStack_[dwarfStackIndex_] = value2 / value1;
+    inline void OpDiv() {
+        AddressType top = StackPop();
+        if (top == 0) {
+            return;
+        }
+        SignedType signedDivisor = static_cast<SignedType>(top);
+        SignedType signedDividend = static_cast<SignedType>(stack_[0]);
+        stack_[0] = static_cast<AddressType>(signedDividend / signedDivisor);
     };
 
     // DW_OP_minus
-    void OpMinus() {
-        auto value = dwarfStack_[dwarfStackIndex_--];
-        dwarfStack_[dwarfStackIndex_] = dwarfStack_[dwarfStackIndex_] - value;
+    inline void OpMinus() {
+        AddressType top = StackPop();
+        stack_[0] -= top;
     };
 
     // DW_OP_mod
-    void OpMod() {
-        auto value1 = static_cast<SignedType>(dwarfStack_[dwarfStackIndex_--]);
-        auto value2 = static_cast<SignedType>(dwarfStack_[dwarfStackIndex_]);
-        dwarfStack_[dwarfStackIndex_] = static_cast<AddressType>(value2 % value1);
+    inline void OpMod() {
+        AddressType top = StackPop();
+        if (top == 0) {
+            return;
+        }
+        stack_[0] %= top;
     };
 
-    void OpMul() {
-        auto value1 = static_cast<SignedType>(dwarfStack_[dwarfStackIndex_--]);
-        auto value2 = static_cast<SignedType>(dwarfStack_[dwarfStackIndex_]);
-        dwarfStack_[dwarfStackIndex_] = static_cast<AddressType>(value2 * value1);
+    inline void OpMul() {
+        AddressType top = StackPop();
+        stack_[0] *= top;
     };
 
-    void OpNeg() {
-        dwarfStack_[dwarfStackIndex_] = 0 - dwarfStack_[dwarfStackIndex_];
+    inline void OpNeg() {
+        SignedType signedValue = static_cast<SignedType>(stack_[0]);
+        stack_[0] = static_cast<AddressType>(-signedValue);
     };
 
-    void OpNot() {
-        auto value1 = static_cast<SignedType>(dwarfStack_[dwarfStackIndex_]);
-        dwarfStack_[dwarfStackIndex_] = static_cast<AddressType>(~value1);
+    inline void OpNot() {
+        stack_[0] = ~stack_[0];
     };
 
-    void OpOr() {
-        auto value = dwarfStack_[dwarfStackIndex_--];
-        dwarfStack_[dwarfStackIndex_] |= value;
+    inline void OpOr() {
+        AddressType top = StackPop();
+        stack_[0] |= top;
     };
 
-    void OpPlus() {
-        auto value = dwarfStack_[dwarfStackIndex_--];
-        dwarfStack_[dwarfStackIndex_] += value;
+    inline void OpPlus() {
+        AddressType top = StackPop();
+        stack_[0] += top;
     };
 
-    void OpPlusULEBConst(AddressType& exprPtr) {
-        dwarfStack_[dwarfStackIndex_] += memory_->ReadUleb128(exprPtr);
+    inline void OpPlusULEBConst(AddressType& exprPtr) {
+        stack_[0] += memory_->ReadUleb128(exprPtr);
     };
 
-    void OpShl() {
-        auto value = dwarfStack_[dwarfStackIndex_--];
-        dwarfStack_[dwarfStackIndex_] = dwarfStack_[dwarfStackIndex_] << value;
+    inline void OpShl() {
+        AddressType top = StackPop();
+        stack_[0] <<= top;
     };
 
-    void OpShr() {
-        auto value = dwarfStack_[dwarfStackIndex_--];
-        dwarfStack_[dwarfStackIndex_] = dwarfStack_[dwarfStackIndex_] >> value;
+    inline void OpShr() {
+        AddressType top = StackPop();
+        stack_[0] >>= top;
     };
 
-    void OpShra() {
-        auto value1 = dwarfStack_[dwarfStackIndex_--];
-        auto value2 = static_cast<SignedType>(dwarfStack_[dwarfStackIndex_]);
-        dwarfStack_[dwarfStackIndex_] = static_cast<UnsignedType>(value2 >> value1);
+    inline void OpShra() {
+        AddressType top = StackPop();
+        SignedType signedValue = static_cast<SignedType>(stack_[0]) >> top;
+        stack_[0] = static_cast<AddressType>(signedValue);
     };
 
-    void OpXor() {
-        auto value = dwarfStack_[dwarfStackIndex_--];
-        dwarfStack_[dwarfStackIndex_] ^= value;
+    inline void OpXor() {
+        AddressType top = StackPop();
+        stack_[0] ^= top;
     };
 
-    void OpSkip(AddressType& exprPtr) {
-        auto value1 = memory_->Read<int16_t>(exprPtr, true);
-        exprPtr = static_cast<AddressType>(static_cast<SignedType>(exprPtr) + value1);
+    inline void OpSkip(AddressType& exprPtr) {
+        auto offset = memory_->Read<int16_t>(exprPtr, true);
+        exprPtr = static_cast<AddressType>(exprPtr + offset);
     };
 
     // DW_OP_bra
-    void OpBra(AddressType& exprPtr) {
-        auto value = memory_->Read<int16_t>(exprPtr, true);
-        if (dwarfStack_[dwarfStackIndex_--] != 0) {
-            exprPtr = static_cast<UnsignedType>(static_cast<SignedType>(exprPtr) + value);
+    inline void OpBra(AddressType& exprPtr) {
+        AddressType top = StackPop();
+        int16_t offset = memory_->Read<int16_t>(exprPtr, true);
+        if (top != 0) {
+            exprPtr =exprPtr + offset;
+        } else {
+            exprPtr = exprPtr - offset;
         }
     };
 
-    void OpEQ() {
-        auto value = dwarfStack_[dwarfStackIndex_--];
-        dwarfStack_[dwarfStackIndex_] = (dwarfStack_[dwarfStackIndex_] == value);
+    inline void OpEQ() {
+        AddressType top = StackPop();
+        stack_[0] = ((stack_[0] == top) ? 1 : 0);
     };
 
-    void OpGE() {
-        auto value = dwarfStack_[dwarfStackIndex_--];
-        dwarfStack_[dwarfStackIndex_] = (dwarfStack_[dwarfStackIndex_] >= value);
+    inline void OpGE() {
+        AddressType top = StackPop();
+        stack_[0] = ((stack_[0] >= top) ? 1 : 0);
     };
 
-    void OpGT() {
-        auto value = dwarfStack_[dwarfStackIndex_--];
-        dwarfStack_[dwarfStackIndex_] = (dwarfStack_[dwarfStackIndex_] > value);
+    inline void OpGT() {
+        AddressType top = StackPop();
+        stack_[0] = ((stack_[0] > top) ? 1 : 0);
     };
 
-    void OpLE() {
-        auto value = dwarfStack_[dwarfStackIndex_--];
-        dwarfStack_[dwarfStackIndex_] = (dwarfStack_[dwarfStackIndex_] <= value);
+    inline void OpLE() {
+        AddressType top = StackPop();
+        stack_[0] = ((stack_[0] <= top) ? 1 : 0);
     };
 
-    void OpLT() {
-        auto value = dwarfStack_[dwarfStackIndex_--];
-        dwarfStack_[dwarfStackIndex_] = (dwarfStack_[dwarfStackIndex_] < value);
+    inline void OpLT() {
+        AddressType top = StackPop();
+        stack_[0] = ((stack_[0] < top) ? 1 : 0);
     };
 
-    void OpNE() {
-        auto value = dwarfStack_[dwarfStackIndex_--];
-        dwarfStack_[dwarfStackIndex_] = (dwarfStack_[dwarfStackIndex_] != value);
+    inline void OpNE() {
+        AddressType top = StackPop();
+        stack_[0] = ((stack_[0] != top) ? 1 : 0);
     };
 
     // DW_OP_litXX
-    void OpLit(uint8_t opcode) {
-        auto value = static_cast<UnsignedType>(opcode - DW_OP_lit0);
-        dwarfStack_[++dwarfStackIndex_] = value;
+    inline void OpLit(uint8_t opcode) {
+        stack_.push_front(opcode - DW_OP_lit0);
     };
 
     // DW_OP_regXX
-    void Opreg(uint8_t opcode, DfxRegs& regs) {
-        auto regValue = static_cast<UnsignedType>(opcode - DW_OP_reg0);
-        dwarfStack_[++dwarfStackIndex_] = regs[regValue];  // todo, reg wrapper
+    inline void OpReg(uint8_t opcode, DfxRegs& regs) {
+        auto reg = static_cast<UnsignedType>(opcode - DW_OP_reg0);
+        stack_.push_front(regs[reg]);
     };
 
     // DW_OP_regx
-    void OpRegx(AddressType& exprPtr, DfxRegs& regs) {
-        auto regValue = static_cast<uint32_t>(memory_->ReadUleb128(exprPtr));
-        dwarfStack_[++dwarfStackIndex_] = regs[regValue];  // todo, reg wrapper
+    inline void OpRegx(AddressType& exprPtr, DfxRegs& regs) {
+        auto reg = static_cast<uint32_t>(memory_->ReadUleb128(exprPtr));
+        stack_.push_front(regs[reg]);
     };
 
-    void OpBReg(uint8_t opcode, AddressType& exprPtr, DfxRegs& regs) {
-        auto regValue = static_cast<uint32_t>(opcode - DW_OP_breg0);
+    inline void OpBReg(uint8_t opcode, AddressType& exprPtr, DfxRegs& regs) {
+        auto reg = static_cast<uint32_t>(opcode - DW_OP_breg0);
         auto value = static_cast<SignedType>(memory_->ReadSleb128(exprPtr));
-        value += static_cast<SignedType>(regs[regValue]);  // todo, reg wrapper
-        dwarfStack_[++dwarfStackIndex_] = static_cast<UnsignedType>(value);
+        value += static_cast<SignedType>(regs[reg]);
+        stack_.push_front(value);
     };
 
-    void OpBRegx(AddressType& exprPtr, DfxRegs& regs) {
-        auto regValue = static_cast<uint32_t>(memory_->ReadUleb128(exprPtr));
+    inline void OpBRegx(AddressType& exprPtr, DfxRegs& regs) {
+        auto reg = static_cast<uint32_t>(memory_->ReadUleb128(exprPtr));
         auto value = static_cast<SignedType>(memory_->ReadSleb128(exprPtr));
-        value += static_cast<SignedType>(regs[regValue]);  // todo, reg wrapper
-        dwarfStack_[++dwarfStackIndex_] = static_cast<UnsignedType>(value);
+        value += static_cast<SignedType>(regs[reg]);
+        stack_.push_front(value);
     };
 
-    void OpDerefSize(AddressType& exprPtr) {
-        auto value = dwarfStack_[dwarfStackIndex_--];
-        uint8_t operand = memory_->Read<uint8_t>(value);
-        switch (operand) {
-            case 1:  // 1 Byte
-                value = memory_->Read<uint8_t>(value);
-                break;
-            case 2:  // 2 Byte
-                value = memory_->Read<uint16_t>(value);
-                break;
-            case 4:  // 4 Byte
-                value = memory_->Read<uint32_t>(value);
-                break;
-            case 8:  // 8 Byte
-                value = static_cast<UnsignedType>(memory_->Read<uint64_t>(value));
-                break;
-        }
-        dwarfStack_[++dwarfStackIndex_] = static_cast<UnsignedType>(value);
-    };
-
-    void OpNop(uint8_t opcode){
+    inline void OpNop(uint8_t opcode) {
         // log un-implemmented operate codes
     };
 
 private:
     std::shared_ptr<DfxMemory> memory_;
-    AddressType exprStart_;
-    AddressType exprEnd_;
-    AddressType dwarfStack_[MAX_DWARF_STACK_SZ];
-    uint32_t dwarfStackIndex_;
+    std::deque<AddressType> stack_;
 };
 } // nameapace HiviewDFX
 } // nameapace OHOS

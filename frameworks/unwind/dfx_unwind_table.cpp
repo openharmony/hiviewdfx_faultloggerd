@@ -180,7 +180,7 @@ int DfxUnwindTable::ExdixSearchUnwindTable(struct UnwindProcInfo* pi, struct Unw
 int DfxUnwindTable::DwarfSearchUnwindTable(struct UnwindProcInfo* pi, struct UnwindDynInfo* di,\
     uintptr_t pc, DfxMemory* memory, bool needUnwindInfo)
 {
-    auto segbase = di->u.rti.segbase;
+    MAYBE_UNUSED auto segbase = di->u.rti.segbase;
     auto fdeCount = di->u.rti.tableLen;
     uintptr_t eh_frame_hdr_table = di->u.rti.tableData;
     uintptr_t eh_frame_hdr = eh_frame_hdr_table - 12;
@@ -212,7 +212,7 @@ int DfxUnwindTable::DwarfSearchUnwindTable(struct UnwindProcInfo* pi, struct Unw
     }
 
     entry = eh_frame_hdr_table + low * sizeof(uintptr_t);
-    uintptr_t startPc = memory->Read<int32_t>(entry, true) + eh_frame_hdr;
+    MAYBE_UNUSED uintptr_t startPc = memory->Read<int32_t>(entry, true) + eh_frame_hdr;
     LOGU("entry: %llx, rel startPc: %llx, target relPc: %llx",
         (uint64_t)entry, (uint64_t)(startPc - segbase), (uint64_t)(pc - segbase));
     pi->unwindInfo = (void *) (memory->Read<int32_t>(entry, true) + eh_frame_hdr);

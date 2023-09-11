@@ -47,9 +47,11 @@ LogLevel GetLogLevel(void)
 
 int DfxLogPrint(const LogLevel logLevel, const unsigned int domain, const char* tag, const char *fmt, ...)
 {
+#ifndef DFX_LOG_UNWIND
     if (logLevel < g_logLevel) {
         return -1;
     }
+#endif
 
     va_list args;
     va_start(args, fmt);

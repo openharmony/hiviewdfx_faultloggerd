@@ -158,7 +158,7 @@ bool DwarfSection::FillInCie(uintptr_t& addr, CommonInfoEntry &cieInfo)
         cieInfo.hasAugmentationData = true;
 
         // parse augmentation data length
-        uintptr_t dataLen = memory_->ReadUleb128(ptr);
+        MAYBE_UNUSED uintptr_t dataLen = memory_->ReadUleb128(ptr);
         LOGU("dataLen: %x", dataLen);
         for (; strLen > 0; strLen--) {
             uint8_t augment = memory_->Read<uint8_t>(strPtr, true);
