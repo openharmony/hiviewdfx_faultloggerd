@@ -50,26 +50,28 @@ size_t DfxMemory::Read(uintptr_t& addr, void* val, size_t size, bool incre)
     uintptr_t tmpAddr = addr;
     uint64_t maxSize;
     if (__builtin_add_overflow(tmpAddr, size, &maxSize)) {
+        LOGE("size: %d", size);
         return 0;
     }
 
-    // must be align 4 bytes
     size_t bytesRead = 0;
     uintptr_t tmpVal;
-    size_t alignBytes = tmpAddr & (sizeof(uint32_t) - 1);
-    if (alignBytes != 0) {
-        uintptr_t alignedAddr = tmpAddr & (~sizeof(uint32_t) - 1);
-        LOGU("alignBytes: %d, alignedAddr: %llx", alignBytes, static_cast<uint64_t>(alignedAddr));
-        if (!ReadMem(alignedAddr, &tmpVal)) {
-            return bytesRead;
+    if (alignAddr_ && (alignBytes_ != 0)) {
+        size_t alignBytes = tmpAddr & (alignBytes_ - 1);
+        if (alignBytes != 0) {
+            uintptr_t alignedAddr = tmpAddr & (~alignBytes_ - 1);
+            LOGU("alignBytes: %d, alignedAddr: %llx", alignBytes, static_cast<uint64_t>(alignedAddr));
+            if (!ReadMem(alignedAddr, &tmpVal)) {
+                return bytesRead;
+            }
+            uintptr_t valp = static_cast<uintptr_t>(tmpVal);
+            size_t copyBytes = std::min(alignBytes_ - alignBytes, size);
+            memcpy_s(val, copyBytes, reinterpret_cast<uint8_t*>(&valp) + alignBytes, copyBytes);
+            tmpAddr += copyBytes;
+            val = reinterpret_cast<void*>(reinterpret_cast<uintptr_t>(val) + copyBytes);
+            size -= copyBytes;
+            bytesRead += copyBytes;
         }
-        uint32_t valp = static_cast<uint32_t>(tmpVal);
-        size_t copyBytes = std::min(sizeof(uint32_t) - alignBytes, size);
-        memcpy_s(val, copyBytes, reinterpret_cast<uint8_t*>(&valp) + alignBytes, copyBytes);
-        tmpAddr += copyBytes;
-        val = reinterpret_cast<void*>(reinterpret_cast<uintptr_t>(val) + copyBytes);
-        size -= copyBytes;
-        bytesRead += copyBytes;
     }
 
     for (size_t i = 0; i < size / sizeof(uintptr_t); i++) {

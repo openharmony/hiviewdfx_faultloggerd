@@ -289,7 +289,6 @@ typedef struct {
     uint8_t lsdaEncoding;
     // R
     uint8_t pointerEncoding;
-    uint8_t segmentSize;
 } CommonInfoEntry;
 
 // Parsed Frame Description Entry

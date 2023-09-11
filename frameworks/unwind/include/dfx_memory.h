@@ -30,6 +30,11 @@ public:
     virtual ~DfxMemory() = default;
 
     virtual void SetCtx(void* ctx) { ctx_ = ctx; }
+    virtual void SetAlign(bool alignAddr, int alignBytes)
+    {
+        alignAddr_ = alignAddr;
+        alignBytes_ = alignBytes;
+    }
 
     virtual bool ReadReg(int reg, uintptr_t *val);
     virtual bool ReadMem(uintptr_t addr, uintptr_t *val);
@@ -61,6 +66,9 @@ public:
 private:
     std::shared_ptr<DfxAccessors> acc_;
     void* ctx_;
+    bool alignAddr_ = false;
+    int alignBytes_ = 0;
+
 };
 } // namespace HiviewDFX
 } // namespace OHOS
