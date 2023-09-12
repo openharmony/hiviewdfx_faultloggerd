@@ -26,7 +26,7 @@ ohos_unittest("backtrace_utils_test") {
   ]
   sources = [ "backtrace_utils_test.cpp" ]
   deps = [
-    "$faultloggerd_path/common/dfxutil:dfx_util",
+    "$faultloggerd_common_path/dfxutil:dfx_util",
     "$faultloggerd_interfaces_path/innerkits/backtrace:libbacktrace_local",
     "$faultloggerd_path/test/utils:dfx_test_util",
     "//third_party/googletest:gtest_main",

@@ -35,6 +35,8 @@ enum UnwindErrorCode : uint16_t {
     UNW_ERROR_NONE = 0,
     /** No unwind info */
     UNW_ERROR_NO_UNWIND_INFO,
+    /** Pc Not in unwind info */
+    UNW_ERROR_PC_NOT_IN_UNWIND_INFO,
     /** Invalid unwind context */
     UNW_ERROR_INVALID_CONTEXT,
     /** Invalid unwind memory */

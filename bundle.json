@@ -100,6 +100,15 @@
             ],
             "header_base": "//base/hiviewdfx/faultloggerd/interfaces/innerkits/unwinder/include"
           }
+        },
+        {
+          "name": "//base/hiviewdfx/faultloggerd/interfaces/innerkits/unwinder:libunwinder_static",
+          "header": {
+            "header_files": [
+              "unwinder.h"
+            ],
+            "header_base": "//base/hiviewdfx/faultloggerd/interfaces/innerkits/unwinder/include"
+          }
         }
       ],
       "test": [
