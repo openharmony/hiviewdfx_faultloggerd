@@ -165,34 +165,33 @@ bool Unwinder::Step(uintptr_t& pc, uintptr_t& sp, void *ctx)
     int errorCode = UNW_ERROR_NONE;
     DoPcAdjust(pc);
     memory_->SetCtx(ctx);
+    std::shared_ptr<RegLocState> rs = nullptr;
     bool ret = false;
     do {
+        // 1. find cache rs
         auto iter = rsCache_.find(pc);
         if (iter != rsCache_.end()) {
-            auto rs = iter->second;
-            DfxInstructions instructions(memory_);
-            if (instructions.Apply(*(regs_.get()), *(rs.get()))) {
-                regs_->SetReg(REG_PC, regs_->GetReg(REG_LR));
-                ret = true;
-                break;
-            }
+            rs = iter->second;
+            break;
         }
 
-        UnwindDynInfo di;
-        if ((errorCode = acc_->FindProcInfo(pc, &di, true, ctx)) != UNW_ERROR_NONE) {
-            LOGE("Failed to find proc info?");
+        // 2. find unwind table and entry
+        UnwindTableInfo di;
+        if ((errorCode = acc_->FindUnwindTable(pc, di, ctx)) != UNW_ERROR_NONE) {
+            LOGE("Failed to find unwind table?");
             lastErrorData_.code = static_cast<uint16_t>(errorCode);
             break;
         }
 
-        struct UnwindProcInfo pi;
-        if ((errorCode = DfxUnwindTable::SearchUnwindTable(&pi, &di, pc, memory_.get(), true)) != UNW_ERROR_NONE) {
-            LOGE("Failed to search proc info?");
+        struct UnwindEntryInfo pi;
+        if ((errorCode = DfxUnwindTable::SearchUnwindEntry(pi, di, pc, memory_)) != UNW_ERROR_NONE) {
+            LOGE("Failed to search unwind entry?");
             lastErrorData_.code = static_cast<uint16_t>(errorCode);
             break;
         }
 
-        auto rs = std::make_shared<RegLocState>();
+        // 3. parse instructions and get cache rs
+        rs = std::make_shared<RegLocState>();
 #if defined(__arm__)
         if (!ret && pi.format == UNW_INFO_FORMAT_ARM_EXIDX) {
             ArmExidx armExidx(memory_);
@@ -206,7 +205,7 @@ bool Unwinder::Step(uintptr_t& pc, uintptr_t& sp, void *ctx)
 #endif
         if (!ret && pi.format == UNW_INFO_FORMAT_REMOTE_TABLE) {
             DwarfSection dwarfSection(memory_);
-            dwarfSection.SetDataOffset(di.u.rti.segbase);
+            dwarfSection.SetDataOffset(di.segbase);
             if (!dwarfSection.Step((uintptr_t)pi.unwindInfo, regs_, rs)) {
                 lastErrorData_.code = dwarfSection.GetLastErrorCode();
                 lastErrorData_.addr = dwarfSection.GetLastErrorAddr();
@@ -216,16 +215,35 @@ bool Unwinder::Step(uintptr_t& pc, uintptr_t& sp, void *ctx)
         }
 
         if (ret) {
+            // 4. update rs cache
             rsCache_.emplace(pc, rs);
-        } else {
-            regs_->SetReg(REG_PC, regs_->GetReg(REG_LR));
+            break;
         }
     } while (false);
+
+    // 5. update regs and regs state
+    if (!Apply(regs_, rs)) {
+        LOGE("Failed to Apply");
+    }
 
     pc = regs_->GetPc();
     sp = regs_->GetSp();
     LOGU("------pc: %llx, sp: %llx", (uint64_t)pc, (uint64_t)sp);
     return ret;
+}
+
+bool Unwinder::Apply(std::shared_ptr<DfxRegs> regs, std::shared_ptr<RegLocState> rs)
+{
+    if (rs == nullptr || regs == nullptr) {
+        return false;
+    }
+    if (DfxInstructions::Apply(*(regs.get()), memory_, *(rs.get()))) {
+        if (!rs->isPcSet) {
+            regs->SetReg(REG_PC, regs->GetReg(REG_LR));
+        }
+        return true;
+    }
+    return false;
 }
 
 void Unwinder::DoPcAdjust(uintptr_t& pc)

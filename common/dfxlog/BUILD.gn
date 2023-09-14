@@ -15,8 +15,8 @@ import("//base/hiviewdfx/faultloggerd/faultloggerd.gni")
 
 dfx_log_sources = [ "dfx_log.cpp" ]
 dfx_log_dmesg_sources = [
-  "dfx_log.cpp",
   "dfx_dmesg.cpp",
+  "dfx_log.cpp",
 ]
 
 if (defined(ohos_lite)) {

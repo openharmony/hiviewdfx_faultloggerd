@@ -70,6 +70,9 @@ public:
     bool UnwindRemote(size_t maxFrameNum, size_t skipFrameNum);
 
 private:
+    bool Apply(std::shared_ptr<DfxRegs> regs, std::shared_ptr<RegLocState> rs);
+
+private:
     void Init();
     void Destroy();
     bool IsValidFrame(uintptr_t addr, uintptr_t stackTop, uintptr_t stackBottom);

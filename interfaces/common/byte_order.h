@@ -46,24 +46,4 @@
 #else
 #error Target has unknown byte ordering.
 #endif
-
-namespace OHOS {
-namespace HiviewDFX {
-inline int ByteOrderIsValid(int byteOrder)
-{
-    return byteOrder != UNWIND_BIG_ENDIAN
-        && byteOrder != UNWIND_LITTLE_ENDIAN;
-}
-
-inline bool ByteOrderIsBigEndian(int byteOrder)
-{
-    return (byteOrder == UNWIND_BIG_ENDIAN);
-}
-
-inline bool TargetIsBigEndian(void)
-{
-    return ByteOrderIsBigEndian(UNWIND_BYTE_ORDER);
-}
-} // namespace HiviewDFX
-} // namespace OHOS
 #endif
