@@ -30,6 +30,8 @@ public:
     DfxAccessors(int bigEndian = UNWIND_BYTE_ORDER) : bigEndian_(bigEndian) {}
     virtual ~DfxAccessors() = default;
 
+    static bool IsValidFrame(uintptr_t addr, uintptr_t stackTop, uintptr_t stackBottom);
+
     virtual int AccessMem(uintptr_t addr, uintptr_t *val, void *arg) = 0;
     virtual int AccessReg(int regIdx, uintptr_t *val, void *arg) = 0;
     virtual int FindUnwindTable(uintptr_t pc, UnwindTableInfo& uti, void *arg) = 0;
@@ -40,12 +42,17 @@ public:
 class DfxAccessorsLocal : public DfxAccessors
 {
 public:
-    DfxAccessorsLocal() = default;
+    DfxAccessorsLocal(bool checkStack = true);
     virtual ~DfxAccessorsLocal() = default;
 
     int AccessMem(uintptr_t addr, uintptr_t *val, void *arg) override;
     int AccessReg(int regIdx, uintptr_t *val, void *arg) override;
     int FindUnwindTable(uintptr_t pc, UnwindTableInfo& uti, void *arg) override;
+
+private:
+    bool checkStack_;
+    uintptr_t stackBottom_;
+    uintptr_t stackTop_;
 };
 
 class DfxAccessorsRemote : public DfxAccessors

@@ -26,7 +26,8 @@ namespace OHOS {
 namespace HiviewDFX {
 class DfxMemory {
 public:
-    DfxMemory(std::shared_ptr<DfxAccessors> acc) : acc_(acc) {}
+    DfxMemory() = default;
+    explicit DfxMemory(std::shared_ptr<DfxAccessors> acc) : acc_(acc) {}
     virtual ~DfxMemory() = default;
 
     void SetCtx(void* ctx) { ctx_ = ctx; }
@@ -39,12 +40,13 @@ public:
     bool ReadReg(int regIdx, uintptr_t *val);
     bool ReadMem(uintptr_t addr, uintptr_t *val);
 
-    size_t Read(uintptr_t& addr, void* val, size_t size, bool incre = false);
-    bool ReadU8(uintptr_t& addr, uint8_t *val, bool incre = false);
-    bool ReadU16(uintptr_t& addr, uint16_t *val, bool incre = false);
-    bool ReadU32(uintptr_t& addr, uint32_t *val, bool incre = false);
-    bool ReadU64(uintptr_t& addr, uint64_t *val, bool incre = false);
-    bool ReadUptr(uintptr_t& addr, uintptr_t *val, bool incre = false);
+    virtual size_t Read(uintptr_t& addr, void* val, size_t size, bool incre = false);
+    virtual bool ReadU8(uintptr_t& addr, uint8_t *val, bool incre = false);
+    virtual bool ReadU16(uintptr_t& addr, uint16_t *val, bool incre = false);
+    virtual bool ReadU32(uintptr_t& addr, uint32_t *val, bool incre = false);
+    virtual bool ReadU64(uintptr_t& addr, uint64_t *val, bool incre = false);
+    virtual bool ReadUptr(uintptr_t& addr, uintptr_t *val, bool incre = false);
+    virtual bool ReadString(uintptr_t& addr, std::string* str, size_t maxSize, bool incre = false);
 
     template <typename T>
     T Read(uintptr_t& addr, bool incre = true)
@@ -58,16 +60,18 @@ public:
 
     uint64_t ReadUleb128(uintptr_t& addr);
     int64_t ReadSleb128(uintptr_t& addr);
+    void SetDataOffset(uintptr_t offset) { dataOffset_ = offset; }
+    void SetFuncOffset(uintptr_t offset) { funcOffset_ = offset; }
     size_t GetEncodedSize(uint8_t encoding);
-    uintptr_t ReadEncodedValue(uintptr_t& addr, uint8_t encoding,
-        uintptr_t dataRel = 0, uintptr_t funcRel = 0);
+    uintptr_t ReadEncodedValue(uintptr_t& addr, uint8_t encoding);
 
 private:
     std::shared_ptr<DfxAccessors> acc_;
-    void* ctx_;
+    void* ctx_ = nullptr;
     bool alignAddr_ = false;
     int alignBytes_ = 0;
-
+    uintptr_t dataOffset_ = 0;
+    uintptr_t funcOffset_ = 0;
 };
 } // namespace HiviewDFX
 } // namespace OHOS

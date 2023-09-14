@@ -56,57 +56,26 @@ void DfxMmap::Clear()
     }
 }
 
-void* DfxMmap::Get()
+size_t DfxMmap::Read(uintptr_t& addr, void* val, size_t size, bool incre)
 {
-    if (mmap_ != MAP_FAILED) {
-        return mmap_;
-    }
-    return nullptr;
-}
-
-size_t DfxMmap::Read(uint64_t* pos, void *buf, size_t size)
-{
-    if (mmap_ == MAP_FAILED) {
+    if ((mmap_ == MAP_FAILED) || (val == nullptr)) {
         return 0;
     }
 
-    size_t addr = static_cast<size_t>(*pos);
-    if (addr >= size_) {
+    size_t ptr = static_cast<size_t>(addr);
+    if (ptr >= size_) {
+        LOGE("pos: %d, size: %d", ptr, size_);
         return 0;
     }
 
-    size_t left = size_ - addr;
-    const uint8_t* actualBase = static_cast<const uint8_t*>(mmap_) + addr;
+    size_t left = size_ - ptr;
+    const uint8_t* actualBase = static_cast<const uint8_t*>(mmap_) + ptr;
     size_t actualLen = std::min(left, size);
-    memcpy_s(buf, actualLen, actualBase, actualLen);
-    return actualLen;
-}
-
-bool DfxMmap::ReadString(uint64_t* pos, std::string* str, size_t maxSize)
-{
-    char buf[NAME_LEN];
-    size_t size = 0;
-    uint64_t curPos;
-    for (size_t offset = 0; offset < maxSize; offset += size) {
-        size_t read = std::min(sizeof(buf), maxSize - offset);
-        curPos = *pos + offset;
-        size = Read(&curPos, buf, read);
-        if (size == 0) {
-            return false;
-        }
-        size_t length = strnlen(buf, size);
-        if (length < size) {
-            if (offset == 0) {
-                str->assign(buf, length);
-                return true;
-            } else {
-                str->assign(offset + length, '\0');
-                Read(pos, (void *)str->data(), str->size());
-                return true;
-            }
-        }
+    memcpy_s(val, actualLen, actualBase, actualLen);
+    if (incre) {
+        addr += actualLen;
     }
-    return false;
+    return actualLen;
 }
 } // namespace HiviewDFX
 } // namespace OHOS
