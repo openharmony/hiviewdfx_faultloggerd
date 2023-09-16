@@ -19,10 +19,15 @@
 #include <memory>
 #include <vector>
 #include "dfx_accessors.h"
+#include "dfx_errors.h"
 #include "dfx_frame.h"
 #include "dfx_memory.h"
 #include "dfx_maps.h"
 #include "dfx_regs.h"
+#if defined(__arm__)
+#include "arm_exidx.h"
+#endif
+#include "dwarf_section.h"
 #include "unwind_context.h"
 
 namespace OHOS {
@@ -75,14 +80,11 @@ private:
 private:
     void Init();
     void Destroy();
-    bool IsValidFrame(uintptr_t addr, uintptr_t stackTop, uintptr_t stackBottom);
     void DoPcAdjust(uintptr_t& pc);
 
 private:
     int32_t pid_;
     UnwindMode mode_ = DWARF_UNWIND;
-    uintptr_t stackBottom_;
-    uintptr_t stackTop_;
     std::shared_ptr<DfxAccessors> acc_;
     std::shared_ptr<DfxMemory> memory_;
     std::map<uintptr_t, std::shared_ptr<RegLocState>> rsCache_;
@@ -92,6 +94,10 @@ private:
     std::vector<uintptr_t> pcs_;
     std::vector<DfxFrame> frames_;
     UnwindErrorData lastErrorData_;
+#if defined(__arm__)
+    std::shared_ptr<ArmExidx> armExidx_;
+#endif
+    std::shared_ptr<DwarfSection> dwarfSection_;
 };
 } // namespace HiviewDFX
 } // namespace OHOS

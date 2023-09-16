@@ -19,20 +19,28 @@
 #include <cstdint>
 #include <string>
 #include <sys/mman.h>
+#include "dfx_memory.h"
 
 namespace OHOS {
 namespace HiviewDFX {
-class DfxMmap {
+class DfxMmap : public DfxMemory {
 public:
     DfxMmap() = default;
     virtual ~DfxMmap() { Clear(); }
 
     bool Init(const std::string &file);
     void Clear();
-    void* Get();
-    size_t Read(uint64_t* pos, void *buf, size_t size);
-    bool ReadString(uint64_t* pos, std::string* str, size_t size);
-    inline size_t Size() {return size_;}
+
+    inline void* Get()
+    {
+        if (mmap_ != MAP_FAILED) {
+            return mmap_;
+        }
+        return nullptr;
+    }
+    inline size_t Size() { return size_; }
+
+    size_t Read(uintptr_t& addr, void* val, size_t size, bool incre = false) override;
 
 private:
     void *mmap_ = MAP_FAILED;

@@ -30,7 +30,7 @@ namespace OHOS {
 namespace HiviewDFX {
 class DfxRegs {
 public:
-    DfxRegs() : regsData_(REG_LAST) {}
+    explicit DfxRegs() : regsData_(REG_LAST) {}
     virtual ~DfxRegs() = default;
 
     static std::shared_ptr<DfxRegs> Create();

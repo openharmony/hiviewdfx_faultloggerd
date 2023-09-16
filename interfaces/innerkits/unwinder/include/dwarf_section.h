@@ -17,6 +17,7 @@
 
 #include <cinttypes>
 #include <memory>
+#include <unordered_map>
 #include "dwarf_define.h"
 #include "dfx_errors.h"
 #include "dfx_memory.h"
@@ -27,7 +28,11 @@ namespace OHOS {
 namespace HiviewDFX {
 class DwarfSection {
 public:
-    DwarfSection(std::shared_ptr<DfxMemory> memory) : memory_(memory) {};
+    DwarfSection(std::shared_ptr<DfxMemory> memory) : memory_(memory)
+    {
+        lastErrorData_.code = UNW_ERROR_NONE;
+        lastErrorData_.addr = 0;
+    };
     virtual ~DwarfSection() = default;
 
     bool Step(uintptr_t fdeAddr, std::shared_ptr<DfxRegs> regs, std::shared_ptr<RegLocState> rs);
@@ -35,20 +40,21 @@ public:
     const uint16_t& GetLastErrorCode() const { return lastErrorData_.code; }
     const uint64_t& GetLastErrorAddr() const { return lastErrorData_.addr; }
 
-    void SetDataOffset(uintptr_t dataOffset) { dataOffset_ = dataOffset; }
-
 protected:
-    bool ParseFde(uintptr_t addr, FrameDescEntry &fde, CommonInfoEntry &cie);
-    bool FillInFde(uintptr_t& addr, FrameDescEntry &fdeInfo, CommonInfoEntry &cieInfo);
+    bool ParseFde(uintptr_t addr, FrameDescEntry &fde);
+    bool FillInFdeHeader(uintptr_t& ptr, FrameDescEntry &fdeInfo);
+    bool FillInFde(uintptr_t& ptr, FrameDescEntry &fdeInfo);
     bool ParseCie(uintptr_t cieAddr, CommonInfoEntry &cieInfo);
-    bool FillInCieHeader(uintptr_t& addr, CommonInfoEntry &cieInfo);
-    bool FillInCie(uintptr_t& addr, CommonInfoEntry &cieInfo);
+    bool FillInCieHeader(uintptr_t& ptr, CommonInfoEntry &cieInfo);
+    bool FillInCie(uintptr_t& ptr, CommonInfoEntry &cieInfo);
 
 private:
     std::shared_ptr<DfxMemory> memory_;
     UnwindErrorData lastErrorData_;
-    uint32_t cieIdValue_ = 0;
-    uintptr_t dataOffset_;
+    std::unordered_map<uintptr_t, FrameDescEntry> fdeEntries_;
+    std::unordered_map<uintptr_t, CommonInfoEntry> cieEntries_;
+    uint32_t cie32Value_ = 0;
+    uint64_t cie64Value_ = 0;
 };
 } // nameapace HiviewDFX
 } // nameapace OHOS

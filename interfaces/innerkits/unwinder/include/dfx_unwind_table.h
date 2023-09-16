@@ -20,7 +20,9 @@
 #include <vector>
 #include <unordered_map>
 #include "dfx_elf.h"
+#include "dfx_map.h"
 #include "dfx_memory.h"
+#include "unwind_context.h"
 
 namespace OHOS {
 namespace HiviewDFX {
@@ -30,10 +32,19 @@ enum UnwindTableError : uint8_t {
     TABLE_ERROR_PC_NOT_IN,
 };
 
+struct DlCbData {
+    uintptr_t pc;
+    ElfTableInfo edi;
+};
+
 class DfxUnwindTable final {
 public:
-    static int FindUnwindTable(struct ElfTableInfo& eti, uintptr_t pc, std::shared_ptr<DfxElf> elf);
-    static int FindUnwindTable2(struct ElfTableInfo& eti, uintptr_t pc);
+    static bool GetElfTableInfo(struct ElfTableInfo& eti, uintptr_t pc,
+        std::shared_ptr<DfxMap> map, std::shared_ptr<DfxElf> elf);
+
+    static int FindUnwindTable(struct ElfTableInfo& eti, uintptr_t pc,
+        std::shared_ptr<DfxMap> map, std::shared_ptr<DfxElf> elf);
+    static int FindUnwindTableLocal(struct ElfTableInfo& eti, uintptr_t pc);
 
     static int SearchUnwindEntry(struct UnwindEntryInfo& pi, struct UnwindTableInfo uti,\
         uintptr_t pc, std::shared_ptr<DfxMemory> memory);
@@ -41,6 +52,15 @@ public:
 private:
     static int IsPcInUnwindTable(struct UnwindTableInfo uti, uintptr_t pc);
     static int IsPcInElfTable(struct ElfTableInfo eti, uintptr_t pc);
+    static int ResetElfTableInfo(struct ElfTableInfo& edi);
+
+    static int DlPhdrCb(struct dl_phdr_info *info, size_t size, void *data);
+    static ElfW(Addr) FindSection(struct dl_phdr_info *info, const std::string secName);
+
+    static bool GetExidxTableInfo(struct UnwindTableInfo& ti,
+        std::shared_ptr<DfxMap> map, std::shared_ptr<DfxElf> elf);
+    static bool GetEhHdrTableInfo(struct UnwindTableInfo& ti,
+        std::shared_ptr<DfxMap> map, std::shared_ptr<DfxElf> elf);
 
     static int ExdixSearchUnwindEntry(struct UnwindEntryInfo& pi, struct UnwindTableInfo uti,\
         uintptr_t pc, std::shared_ptr<DfxMemory> memory);

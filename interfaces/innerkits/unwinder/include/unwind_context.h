@@ -25,6 +25,7 @@
 namespace OHOS {
 namespace HiviewDFX {
 class DfxElf;
+class DfxMap;
 class DfxRegs;
 
 struct UnwindTableInfo {
@@ -44,10 +45,10 @@ struct UnwindTableInfo {
 struct ElfTableInfo {
     uintptr_t startPc;
     uintptr_t endPc;
-    UnwindTableInfo diCache;
+    UnwindTableInfo diEhHdr;
     UnwindTableInfo diDebug;    /* additional table info for .debug_frame */
 #if defined(__arm__)
-    UnwindTableInfo diArm;      /* additional table info for .ARM.exidx */
+    UnwindTableInfo diExidx;      /* additional table info for .ARM.exidx */
 #endif
 };
 
@@ -69,13 +70,13 @@ struct UnwindAccessors {
 };
 
 struct UnwindLocalContext {
-    int regsSize;
-    uintptr_t *regs;
+    std::shared_ptr<DfxRegs> regs;
     struct ElfTableInfo edi;
 };
 
 struct UnwindRemoteContext {
     int pid;
+    std::shared_ptr<DfxMap> map;
     std::shared_ptr<DfxElf> elf;
     std::shared_ptr<DfxRegs> regs;
     struct ElfTableInfo edi;

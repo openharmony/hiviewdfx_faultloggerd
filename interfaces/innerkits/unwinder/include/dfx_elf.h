@@ -36,11 +36,6 @@ struct ElfFileInfo {
 
 class DfxElf final {
 public:
-    struct DlCbData {
-        uintptr_t pc;
-        ElfTableInfo edi;
-    };
-
     static std::shared_ptr<DfxElf> Create(const std::string& file);
     explicit DfxElf(const std::string& file) { Init(file); }
     ~DfxElf() { Clear(); }
@@ -51,24 +46,22 @@ public:
     uint64_t GetElfSize();
     std::string GetElfName();
     std::string GetBuildId();
+    static std::string GetBuildId(uint64_t noteAddr, uint64_t noteSize);
+    uintptr_t GetGlobalPointer();
     int64_t GetLoadBias();
     uint64_t GetLoadBase(uint64_t mapStart, uint64_t mapOffset);
     uint64_t GetStartPc();
     uint64_t GetEndPc();
     uint64_t GetRelPc(uint64_t pc, uint64_t mapStart, uint64_t mapOffset);
     uint64_t GetPcAdjustment(uint64_t pc);
-    const uint8_t* GetMmap();
+    const uint8_t* GetMmapPtr();
     size_t GetMmapSize();
-    bool Read(uint64_t pos, void *buf, size_t size);
+    bool Read(uintptr_t pos, void *buf, size_t size);
     const std::unordered_map<uint64_t, ElfLoadInfo>& GetPtLoads();
     const std::vector<ElfSymbol>& GetElfSymbols();
     bool GetSectionInfo(ShdrInfo& shdr, const std::string secName);
-    bool GetElfTableInfo(uintptr_t pc, struct ElfTableInfo& edi);
-    static int ResetElfTableInfo(struct ElfTableInfo& edi);
 
 	static std::string ToReadableBuildId(const std::string& buildIdHex);
-    static int DlPhdrCb(struct dl_phdr_info *info, size_t size, void *data);
-    static ElfW(Addr) FindSection(struct dl_phdr_info *info, const std::string secName);
 
 protected:
     bool InitHeaders();
@@ -85,8 +78,6 @@ private:
     uint64_t endPc_ = static_cast<uint64_t>(-1);
     std::string buildId_ = "";
     std::shared_ptr<DfxMmap> mmap_;
-    bool hasTableInfo_ = false;
-    struct ElfTableInfo elfTableInfo_;
     std::unique_ptr<ElfParser> elfParse_;
 };
 } // namespace HiviewDFX

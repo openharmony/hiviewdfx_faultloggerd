@@ -23,6 +23,7 @@
 #include "dfx_log.h"
 #include "dfx_regs.h"
 #include "dfx_unwind_table.h"
+#include "stack_util.h"
 
 namespace OHOS {
 namespace HiviewDFX {
@@ -33,8 +34,28 @@ namespace {
 #define LOG_TAG "DfxAccessors"
 }
 
+bool DfxAccessors::IsValidFrame(uintptr_t addr, uintptr_t stackTop, uintptr_t stackBottom)
+{
+    if (UNLIKELY(stackTop < stackBottom)) {
+        return false;
+    }
+    return ((addr >= stackBottom) && (addr < stackTop - sizeof(uintptr_t)));
+}
+
+DfxAccessorsLocal::DfxAccessorsLocal(bool checkStack)
+    : checkStack_(checkStack)
+{
+    if (checkStack_) {
+        GetSelfStackRange(stackBottom_, stackTop_);
+    }
+}
+
 int DfxAccessorsLocal::AccessMem(uintptr_t addr, uintptr_t *val, void *arg)
 {
+    if (checkStack_ && !DfxAccessors::IsValidFrame(addr, stackTop_, stackBottom_)) {
+        LOGE("Failed to access addr: %llx", (uint64_t)addr);
+        return UNW_ERROR_INVALID_MEMORY;
+    }
     *val = *(uintptr_t *) addr;
     LOGD("val: %llx", *val);
     return UNW_ERROR_NONE;
@@ -43,14 +64,14 @@ int DfxAccessorsLocal::AccessMem(uintptr_t addr, uintptr_t *val, void *arg)
 int DfxAccessorsLocal::AccessReg(int reg, uintptr_t *val, void *arg)
 {
     UnwindLocalContext* ctx = reinterpret_cast<UnwindLocalContext *>(arg);
-    if (ctx == nullptr || ctx->regs == nullptr) {
+    if (ctx == nullptr) {
         return UNW_ERROR_INVALID_CONTEXT;
     }
-    if (reg < 0 || reg >= ctx->regsSize) {
+    if (ctx->regs == nullptr || reg < 0 || reg >= (int)ctx->regs->RegsSize()) {
         return UNW_ERROR_INVALID_REGS;
     }
 
-    *val = static_cast<uintptr_t>(ctx->regs[reg]);
+    *val = static_cast<uintptr_t>((*(ctx->regs))[reg]);
     LOGD("val: %llx", *val);
     return UNW_ERROR_NONE;
 }
@@ -64,15 +85,15 @@ int DfxAccessorsLocal::FindUnwindTable(uintptr_t pc, UnwindTableInfo& uti, void 
     }
 
     int ret = UNW_ERROR_NONE;
-    if ((ret = DfxUnwindTable::FindUnwindTable2(ctx->edi, pc)) != UNW_ERROR_NONE) {
+    if ((ret = DfxUnwindTable::FindUnwindTableLocal(ctx->edi, pc)) != UNW_ERROR_NONE) {
         return ret;
     }
 
-    if(ctx->edi.diCache.format != -1) {
-        uti = ctx->edi.diCache;
+    if(ctx->edi.diEhHdr.format != -1) {
+        uti = ctx->edi.diEhHdr;
 #if defined(__arm__)
-    } else if(ctx->edi.diArm.format != -1) {
-        uti = ctx->edi.diArm;
+    } else if(ctx->edi.diExidx.format != -1) {
+        uti = ctx->edi.diExidx;
 #endif
     } else if(ctx->edi.diDebug.format != -1) {
         uti = ctx->edi.diDebug;
@@ -84,6 +105,12 @@ int DfxAccessorsLocal::FindUnwindTable(uintptr_t pc, UnwindTableInfo& uti, void 
 
 int DfxAccessorsRemote::AccessMem(uintptr_t addr, uintptr_t *val, void *arg)
 {
+#if !defined(__LP64__)
+    // Cannot read an address greater than 32 bits in a 32 bit context.
+    if (addr > UINT32_MAX) {
+        return UNW_ERROR_ILLEGAL_VALUE;
+    }
+#endif
     UnwindRemoteContext *ctx = reinterpret_cast<UnwindRemoteContext *>(arg);
     if (ctx == nullptr) {
         return UNW_ERROR_INVALID_CONTEXT;
@@ -126,18 +153,16 @@ int DfxAccessorsRemote::AccessReg(int reg, uintptr_t *val, void *arg)
     if (ctx == nullptr) {
         return UNW_ERROR_INVALID_CONTEXT;
     }
-    if (reg >= REG_LAST) {
-        return UNW_ERROR_INVALID_REGS;
-    }
 
     pid_t pid = ctx->pid;
     if (ctx->regs == nullptr ) {
         ctx->regs = DfxRegs::CreateRemoteRegs(pid);
-        if (ctx->regs == nullptr ) {
-            return UNW_ERROR_INVALID_REGS;
-        }
     }
-    *val = (*(ctx->regs))[reg];
+    if (ctx->regs == nullptr || reg < 0 || reg >= (int)ctx->regs->RegsSize()) {
+        return UNW_ERROR_INVALID_REGS;
+    }
+
+    *val = static_cast<uintptr_t>((*(ctx->regs))[reg]);
     return UNW_ERROR_NONE;
 }
 
@@ -149,15 +174,15 @@ int DfxAccessorsRemote::FindUnwindTable(uintptr_t pc, UnwindTableInfo& uti, void
     }
 
     int ret = UNW_ERROR_NONE;
-    if ((ret = DfxUnwindTable::FindUnwindTable(ctx->edi, pc, ctx->elf)) != UNW_ERROR_NONE) {
+    if ((ret = DfxUnwindTable::FindUnwindTable(ctx->edi, pc, ctx->map, ctx->elf)) != UNW_ERROR_NONE) {
         return ret;
     }
 
-    if(ctx->edi.diCache.format != -1) {
-        uti = ctx->edi.diCache;
+    if(ctx->edi.diEhHdr.format != -1) {
+        uti = ctx->edi.diEhHdr;
 #if defined(__arm__)
-    } else if(ctx->edi.diArm.format != -1) {
-        uti = ctx->edi.diArm;
+    } else if(ctx->edi.diExidx.format != -1) {
+        uti = ctx->edi.diExidx;
 #endif
     } else if(ctx->edi.diDebug.format != -1) {
         uti = ctx->edi.diDebug;
