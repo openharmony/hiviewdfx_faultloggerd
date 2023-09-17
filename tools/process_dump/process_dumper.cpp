@@ -96,13 +96,14 @@ int ProcessDumper::DumpProcess(std::shared_ptr<ProcessDumpRequest> request)
             break;
         }
 
-        isCrash_ = (request->siginfo.si_signo != SIGDUMP);
+        isCrash_ = request->siginfo.si_signo != SIGDUMP;
+        bool isLeakDump = request->siginfo.si_signo == SIGLEAK_STACK;
         // We need check pid is same with getppid().
         // As in signal handler, current process is a child process, and target pid is our parent process.
         // If pid namespace is enalbed, both ppid and pid are equal one.
         // In this case, we have to parse /proc/self/status
-        if ((!isCrash_ && (syscall(SYS_getppid) != request->nsPid)) ||
-            (isCrash_ && (syscall(SYS_getppid) != request->vmNsPid))) {
+        if (((!isCrash_) && (syscall(SYS_getppid) != request->nsPid)) ||
+            ((isCrash_ || isLeakDump) && (syscall(SYS_getppid) != request->vmNsPid))) {
             DFXLOG_ERROR("Target process(%s:%d) is not parent pid(%d), exit processdump for signal(%d).",
                 request->processName, request->nsPid, syscall(SYS_getppid), request->siginfo.si_signo);
             dumpRes = DumpErrorCode::DUMP_EGETPPID;
@@ -122,7 +123,7 @@ int ProcessDumper::DumpProcess(std::shared_ptr<ProcessDumpRequest> request)
             dumpRes = DumpErrorCode::DUMP_EGETFD;
         }
 
-        if (isCrash_) {
+        if (isCrash_ && !isLeakDump) {
             reporter_ = std::make_shared<CppCrashReporter>(request->timeStamp, request->siginfo, process_);
         }
 
@@ -205,31 +206,37 @@ int ProcessDumper::InitProcessInfo(std::shared_ptr<ProcessDumpRequest> request)
     return 0;
 }
 
+int ProcessDumper::GetLogTypeBySignal(int sig)
+{
+    switch (sig) {
+        case SIGLEAK_STACK:
+            return FaultLoggerType::LEAK_STACKTRACE;
+        case SIGDUMP:
+            return FaultLoggerType::CPP_STACKTRACE;
+        default:
+            return FaultLoggerType::CPP_CRASH;
+    }
+}
+
 int ProcessDumper::InitPrintThread(std::shared_ptr<ProcessDumpRequest> request)
 {
     int fd = -1;
-    FaultLoggerType type = isCrash_ ? FaultLoggerType::CPP_CRASH : FaultLoggerType::CPP_STACKTRACE;
-
     struct FaultLoggerdRequest faultloggerdRequest;
     (void)memset_s(&faultloggerdRequest, sizeof(faultloggerdRequest), 0, sizeof(struct FaultLoggerdRequest));
-
-    if (isCrash_) {
+    faultloggerdRequest.type = GetLogTypeBySignal(request->siginfo.si_signo);
+    faultloggerdRequest.pid = request->pid;
+    faultloggerdRequest.tid = request->tid;
+    faultloggerdRequest.uid = request->uid;
+    faultloggerdRequest.time = request->timeStamp;
+    if (isCrash_ || faultloggerdRequest.type == FaultLoggerType::LEAK_STACKTRACE) {
         if (DfxConfig::GetConfig().logPersist) {
-            InitDebugLog((int)type, request->pid, request->tid, request->uid);
+            InitDebugLog((int)faultloggerdRequest.type, request->pid, request->tid, request->uid);
         }
-
-        faultloggerdRequest.type = (int32_t)type;
-        faultloggerdRequest.pid = request->pid;
-        faultloggerdRequest.tid = request->tid;
-        faultloggerdRequest.uid = request->uid;
-        faultloggerdRequest.time = request->timeStamp;
         fd = RequestFileDescriptorEx(&faultloggerdRequest);
-
         DfxRingBufferWrapper::GetInstance().SetWriteFunc(ProcessDumper::WriteDumpBuf);
     } else {
         fd = RequestPipeFd(request->pid, FaultLoggerPipeType::PIPE_FD_WRITE_BUF);
         DFXLOG_DEBUG("write buf fd: %d", fd);
-
         resFd_ = RequestPipeFd(request->pid, FaultLoggerPipeType::PIPE_FD_WRITE_RES);
         DFXLOG_DEBUG("write res fd: %d", resFd_);
     }

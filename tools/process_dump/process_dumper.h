@@ -44,6 +44,7 @@ private:
     int DumpProcess(std::shared_ptr<ProcessDumpRequest> request);
     int InitPrintThread(std::shared_ptr<ProcessDumpRequest> request);
     int InitProcessInfo(std::shared_ptr<ProcessDumpRequest> request);
+    int GetLogTypeBySignal(int sig);
 
     std::shared_ptr<DfxProcess> process_ = nullptr;
     std::shared_ptr<CppCrashReporter> reporter_ = nullptr;

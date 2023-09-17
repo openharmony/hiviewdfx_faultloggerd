@@ -41,6 +41,8 @@ enum FaultLoggerType {
     JS_STACKTRACE,
     /** js heap */
     JS_HEAP_SNAPSHOT,
+    /** leak stacktrace */
+    LEAK_STACKTRACE,
 };
 
 /**
