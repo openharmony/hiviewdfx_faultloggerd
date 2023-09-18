@@ -36,8 +36,12 @@ public:
 
     static bool ParseSymbols(std::vector<DfxSymbol>& symbols, std::shared_ptr<DfxElf> elf, const std::string& filePath);
     static bool AddSymbolsByPlt(std::vector<DfxSymbol>& symbols, std::shared_ptr<DfxElf> elf, const std::string& filePath);
-    static bool GetFuncNameAndOffset(uint64_t pc, std::shared_ptr<DfxElf> elf,
+
+    static bool GetFuncNameAndOffset(uint64_t relPc, std::shared_ptr<DfxElf> elf,
+        std::string& funcName, uint64_t& funcOffset);
+    static bool GetFuncNameAndOffset(uint64_t relPc, std::shared_ptr<DfxElf> elf,
         std::string& funcName, uint64_t& start, uint64_t& end);
+
     static std::string Demangle(const std::string buf);
 
 private:

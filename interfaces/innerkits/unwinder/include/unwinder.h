@@ -91,7 +91,6 @@ private:
     std::map<uintptr_t, std::shared_ptr<RegLocState>> rsCache_;
     std::shared_ptr<DfxRegs> regs_;
     std::shared_ptr<DfxMaps> maps_;
-    std::shared_ptr<DfxElf> elf_;
     std::vector<uintptr_t> pcs_;
     std::vector<DfxFrame> frames_;
     UnwindErrorData lastErrorData_;

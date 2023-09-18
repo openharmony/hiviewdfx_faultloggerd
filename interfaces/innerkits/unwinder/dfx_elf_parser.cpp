@@ -287,7 +287,7 @@ bool ElfParser::ParseElfSymbols()
         //    shdr.offset, shdr.size, shdr.entSize, shdr.link);
         uint64_t offset = shdr.offset;
         const char* strtabPtr = GetStrTabPtr(shdr.link);
-        for (; offset < shdr.size; offset += shdr.entSize) {
+        for (; offset < shdr.offset + shdr.size; offset += shdr.entSize) {
             if (!Read((uintptr_t)offset, &sym, sizeof(sym))) {
                 continue;
             }

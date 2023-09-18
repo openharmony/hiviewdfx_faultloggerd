@@ -83,7 +83,17 @@ bool DfxSymbols::AddSymbolsByPlt(std::vector<DfxSymbol>& symbols, std::shared_pt
     return true;
 }
 
-bool DfxSymbols::GetFuncNameAndOffset(uint64_t pc, std::shared_ptr<DfxElf> elf,
+bool DfxSymbols::GetFuncNameAndOffset(uint64_t relPc, std::shared_ptr<DfxElf> elf,
+    std::string& funcName, uint64_t& funcOffset)
+{
+    uint64_t start = 0;
+    uint64_t end = 0;
+    bool ret = GetFuncNameAndOffset(relPc, elf, funcName, start, end);
+    funcOffset = relPc - start;
+    return ret;
+}
+
+bool DfxSymbols::GetFuncNameAndOffset(uint64_t relPc, std::shared_ptr<DfxElf> elf,
     std::string& funcName, uint64_t& start, uint64_t& end)
 {
     std::vector<DfxSymbol> symbols;
@@ -93,7 +103,7 @@ bool DfxSymbols::GetFuncNameAndOffset(uint64_t pc, std::shared_ptr<DfxElf> elf,
 
     // TODO: use binary search ?
     for (const auto& symbol : symbols) {
-        if (symbol.Contain(pc)) {
+        if (symbol.Contain(relPc)) {
             funcName = symbol.demangle_;
             start = symbol.funcVaddr_;
             end = symbol.funcVaddr_ + symbol.size_;
