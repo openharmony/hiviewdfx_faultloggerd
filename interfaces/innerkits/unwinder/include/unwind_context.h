@@ -70,6 +70,8 @@ struct UnwindAccessors {
 };
 
 struct UnwindLocalContext {
+    uintptr_t stackBottom;
+    uintptr_t stackTop;
     std::shared_ptr<DfxRegs> regs;
     struct ElfTableInfo edi;
 };

@@ -29,7 +29,6 @@ namespace {
 
 bool DwarfSection::Step(uintptr_t fdeAddr, std::shared_ptr<DfxRegs> regs, std::shared_ptr<RegLocState> rs)
 {
-    LOGU("Step: fdeAddr=%p", (void*)fdeAddr);
     lastErrorData_.code = static_cast<uint16_t>(UNW_ERROR_NONE);
     lastErrorData_.addr = static_cast<uint64_t>(fdeAddr);
     FrameDescEntry fdeInfo;
@@ -39,9 +38,9 @@ bool DwarfSection::Step(uintptr_t fdeAddr, std::shared_ptr<DfxRegs> regs, std::s
         return false;
     }
 
-    LOGU("pc: %p, FDE start: %p", (void*) regs->GetPc(), (void*) (fdeInfo.pcStart) );
+    LOGU("pc: %p, FDE start: %p", (void*)regs->GetPc(), (void*)fdeInfo.pcStart);
     DwarfCfaInstructions dwarfInstructions(memory_);
-    if (!dwarfInstructions.Parse(regs->GetPc(), fdeInfo.cie, fdeInfo, *(rs.get()))) {
+    if (!dwarfInstructions.Parse(regs->GetPc(), fdeInfo, *(rs.get()))) {
         LOGE("Failed to parse dwarf instructions?");
         lastErrorData_.code = UNW_ERROR_DWARF_INVALID_INSTR;
         return false;
@@ -111,9 +110,7 @@ bool DwarfSection::FillInFde(uintptr_t& ptr, FrameDescEntry &fdeInfo)
     // Parse pc begin and range.
     LOGU("pointerEncoding: %02x", fdeInfo.cie.pointerEncoding);
     uintptr_t pcStart = memory_->ReadEncodedValue(ptr, (DwarfEncoding)fdeInfo.cie.pointerEncoding);
-    LOGU("pcStart: %p", (void *)pcStart);
     uintptr_t pcRange = memory_->ReadEncodedValue(ptr, (DwarfEncoding)(fdeInfo.cie.pointerEncoding & 0x0F));
-    LOGU("pcRange: %p", (void *)pcRange);
 
     fdeInfo.lsda = 0;
     // Check for augmentation length.
@@ -132,13 +129,13 @@ bool DwarfSection::FillInFde(uintptr_t& ptr, FrameDescEntry &fdeInfo)
     fdeInfo.instructions = ptr;
     fdeInfo.pcStart = pcStart;
     fdeInfo.pcEnd = pcStart + pcRange;
-    LOGU("FDE pcStart: %p, pcEnd: %p",(void*)(fdeInfo.pcStart), (void*)(fdeInfo.pcEnd));
+    LOGU("FDE pcStart: %p, pcEnd: %p", (void*)(fdeInfo.pcStart), (void*)(fdeInfo.pcEnd));
     return true;
 }
 
 bool DwarfSection::ParseCie(uintptr_t cieAddr, CommonInfoEntry &cieInfo)
 {
-    LOGU("cieAddr: %p", (void *)cieAddr);
+    LOGU("cieAddr: %llx", (uint64_t)cieAddr);
     if (!cieEntries_.empty()) {
         auto iter = cieEntries_.find(cieAddr);
         if (iter != cieEntries_.end()) {

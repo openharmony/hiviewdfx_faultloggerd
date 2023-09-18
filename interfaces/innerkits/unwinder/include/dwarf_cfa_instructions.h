@@ -31,11 +31,11 @@ public:
     DwarfCfaInstructions(std::shared_ptr<DfxMemory> memory) : memory_(memory) {};
     virtual ~DwarfCfaInstructions() = default;
 
-    bool Parse(uintptr_t pc, CommonInfoEntry& cie, FrameDescEntry& fde, RegLocState& rsState);
+    bool Parse(uintptr_t pc, FrameDescEntry& fde, RegLocState& rsState);
 
 private:
-    bool Iterate(CommonInfoEntry &cie, uintptr_t instStart, uintptr_t instEnd,
-        uintptr_t pc, uintptr_t pcStart, RegLocState &rsState);
+    bool Iterate(uintptr_t pc, FrameDescEntry& fde, uintptr_t instStart, uintptr_t instEnd,
+        uintptr_t pcStart, RegLocState &rsState);
 
 private:
     std::shared_ptr<DfxMemory> memory_;

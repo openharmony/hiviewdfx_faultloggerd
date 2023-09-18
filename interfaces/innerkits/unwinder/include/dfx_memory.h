@@ -56,14 +56,14 @@ public:
         return val;
     }
 
-    bool ReadPrel31(uintptr_t& addr, uintptr_t *val);
+    virtual bool ReadPrel31(uintptr_t& addr, uintptr_t *val);
 
-    uint64_t ReadUleb128(uintptr_t& addr);
-    int64_t ReadSleb128(uintptr_t& addr);
-    void SetDataOffset(uintptr_t offset) { dataOffset_ = offset; }
-    void SetFuncOffset(uintptr_t offset) { funcOffset_ = offset; }
-    size_t GetEncodedSize(uint8_t encoding);
-    uintptr_t ReadEncodedValue(uintptr_t& addr, uint8_t encoding);
+    virtual uint64_t ReadUleb128(uintptr_t& addr);
+    virtual int64_t ReadSleb128(uintptr_t& addr);
+    virtual void SetDataOffset(uintptr_t offset) { dataOffset_ = offset; }
+    virtual void SetFuncOffset(uintptr_t offset) { funcOffset_ = offset; }
+    virtual size_t GetEncodedSize(uint8_t encoding);
+    virtual uintptr_t ReadEncodedValue(uintptr_t& addr, uint8_t encoding);
 
 private:
     std::shared_ptr<DfxAccessors> acc_;
@@ -72,6 +72,14 @@ private:
     int alignBytes_ = 0;
     uintptr_t dataOffset_ = 0;
     uintptr_t funcOffset_ = 0;
+};
+
+class DfxMemoryCpy : public DfxMemory {
+public:
+    DfxMemoryCpy() = default;
+    virtual ~DfxMemoryCpy() = default;
+
+    size_t Read(uintptr_t& addr, void* val, size_t size, bool incre = false) override;
 };
 } // namespace HiviewDFX
 } // namespace OHOS

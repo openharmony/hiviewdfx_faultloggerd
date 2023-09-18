@@ -299,11 +299,12 @@ inline bool ArmExidx::Decode(DecodeTable decodeTable[], size_t size)
     }
 
     bool ret = false;
-    for (size_t i = 0 ; i < size ; ++i) {
+    for (size_t i = 0; i < size; ++i) {
         if ((curOp_ & decodeTable[i].mask) == decodeTable[i].result) {
             if (decodeTable[i].decoder != nullptr) {
                 LOGU("decodeTable[%d].mask: %02x", i, decodeTable[i].mask);
                 ret = (this->*(decodeTable[i].decoder))();
+                break;
             }
         }
     }
