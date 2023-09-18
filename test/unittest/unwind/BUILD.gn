@@ -27,6 +27,7 @@ ohos_unittest("test_unwind") {
     "elf_test.cpp",
     "maps_test.cpp",
     "memory_test.cpp",
+    "unwinder_test.cpp",
   ]
   deps = [
     "$faultloggerd_common_path/dfxutil:dfx_util",

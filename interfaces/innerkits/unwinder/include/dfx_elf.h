@@ -75,7 +75,7 @@ private:
     int64_t loadBias_ = 0;
     uint64_t loadBase_ = static_cast<uint64_t>(-1);
     uint64_t startPc_ = static_cast<uint64_t>(-1);
-    uint64_t endPc_ = static_cast<uint64_t>(-1);
+    uint64_t endPc_ = 0;
     std::string buildId_ = "";
     std::shared_ptr<DfxMmap> mmap_;
     std::unique_ptr<ElfParser> elfParse_;

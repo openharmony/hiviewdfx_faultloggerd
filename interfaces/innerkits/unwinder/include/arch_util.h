@@ -24,9 +24,9 @@
 
 namespace OHOS {
 namespace HiviewDFX {
-AT_SYMBOL_HIDDEN ArchType GetCurrentArch();
-AT_SYMBOL_HIDDEN ArchType GetArchFromUname(const std::string& machine);
-AT_SYMBOL_HIDDEN const std::string GetArchName(ArchType arch);
+ArchType GetCurrentArch();
+ArchType GetArchFromUname(const std::string& machine);
+const std::string GetArchName(ArchType arch);
 } // nameapace HiviewDFX
 } // nameapace OHOS
 #endif

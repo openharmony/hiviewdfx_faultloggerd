@@ -54,7 +54,7 @@ std::shared_ptr<DfxRegs> DfxRegs::CreateFromUcontext(const ucontext_t& context)
     return dfxregs;
 }
 
-std::shared_ptr<DfxRegs> CreateFromRegs(const UnwindMode mode, const uintptr_t* regs)
+std::shared_ptr<DfxRegs> DfxRegs::CreateFromRegs(const UnwindMode mode, const uintptr_t* regs)
 {
     auto dfxregs = DfxRegs::Create();
     if (mode == UnwindMode::DWARF_UNWIND) {

@@ -166,10 +166,9 @@ uint64_t DfxElf::GetStartPc()
     if (startPc_ == static_cast<uint64_t>(-1)) {
         if (IsValid()) {
             auto startVaddr = elfParse_->GetStartVaddr();
-            if (loadBase_ == static_cast<uint64_t>(-1) || startVaddr == static_cast<uint64_t>(-1)) {
-                return static_cast<uint64_t>(-1);
+            if (loadBase_ != static_cast<uint64_t>(-1) && startVaddr != static_cast<uint64_t>(-1)) {
+                startPc_ = startVaddr + loadBase_;
             }
-            startPc_ = startVaddr + loadBase_;
         }
     }
     return startPc_;
@@ -177,13 +176,12 @@ uint64_t DfxElf::GetStartPc()
 
 uint64_t DfxElf::GetEndPc()
 {
-    if (endPc_ == static_cast<uint64_t>(-1)) {
+    if (endPc_ == 0) {
         if (IsValid()) {
             auto endVaddr = elfParse_->GetEndVaddr();
-            if (loadBase_ == static_cast<uint64_t>(-1) || endVaddr == static_cast<uint64_t>(-1)) {
-                return static_cast<uint64_t>(-1);
+            if (loadBase_ != static_cast<uint64_t>(-1) && endVaddr != 0) {
+                endPc_ = endVaddr + loadBase_;
             }
-            endPc_ = endVaddr + loadBase_;
         }
     }
     return endPc_;

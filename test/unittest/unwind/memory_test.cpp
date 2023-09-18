@@ -20,6 +20,7 @@
 #include <vector>
 
 #include "dfx_memory.h"
+#include "dfx_regs.h"
 #include "dfx_regs_get.h"
 
 using namespace OHOS::HiviewDFX;
@@ -47,7 +48,7 @@ HWTEST_F(DfxMemoryTest, DfxMemoryTest001, TestSize.Level2)
     GTEST_LOG_(INFO) << "DfxMemoryTest001: start.";
     uintptr_t regs[] = {0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xa};
     UnwindLocalContext ctx;
-    ctx.regs = regs;
+    ctx.regs = DfxRegs::CreateFromRegs(UnwindMode::DWARF_UNWIND, regs);
     auto acc = std::make_shared<DfxAccessorsLocal>();
     auto memory = std::make_shared<DfxMemory>(acc);
     memory->SetCtx(&ctx);
@@ -69,7 +70,6 @@ HWTEST_F(DfxMemoryTest, DfxMemoryTest002, TestSize.Level2)
     uintptr_t regs[4];
     GetFramePointerMiniRegs(regs);
     uintptr_t addr = regs[3];
-    uintptr_t val = 0x1000;
     auto acc = std::make_shared<DfxAccessorsLocal>();
     auto memory = std::make_shared<DfxMemory>(acc);
     memory->SetCtx(nullptr);
