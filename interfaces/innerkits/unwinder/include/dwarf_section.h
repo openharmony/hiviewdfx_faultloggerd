@@ -48,13 +48,14 @@ protected:
     bool FillInCieHeader(uintptr_t& ptr, CommonInfoEntry &cieInfo);
     bool FillInCie(uintptr_t& ptr, CommonInfoEntry &cieInfo);
 
-private:
+protected:
     std::shared_ptr<DfxMemory> memory_;
     UnwindErrorData lastErrorData_;
-    std::unordered_map<uintptr_t, FrameDescEntry> fdeEntries_;
-    std::unordered_map<uintptr_t, CommonInfoEntry> cieEntries_;
     uint32_t cie32Value_ = 0;
     uint64_t cie64Value_ = 0;
+private:
+    std::unordered_map<uintptr_t, FrameDescEntry> fdeEntries_;
+    std::unordered_map<uintptr_t, CommonInfoEntry> cieEntries_;
 };
 } // nameapace HiviewDFX
 } // nameapace OHOS

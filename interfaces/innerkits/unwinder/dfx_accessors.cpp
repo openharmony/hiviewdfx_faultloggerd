@@ -23,7 +23,6 @@
 #include "dfx_log.h"
 #include "dfx_regs.h"
 #include "dfx_unwind_table.h"
-#include "stack_util.h"
 
 namespace OHOS {
 namespace HiviewDFX {
@@ -34,7 +33,7 @@ namespace {
 #define LOG_TAG "DfxAccessors"
 }
 
-bool DfxAccessors::IsValidFrame(uintptr_t addr, uintptr_t stackTop, uintptr_t stackBottom)
+bool DfxAccessorsLocal::IsValidFrame(uintptr_t addr, uintptr_t stackBottom, uintptr_t stackTop)
 {
     if (UNLIKELY(stackTop < stackBottom)) {
         return false;
@@ -42,17 +41,13 @@ bool DfxAccessors::IsValidFrame(uintptr_t addr, uintptr_t stackTop, uintptr_t st
     return ((addr >= stackBottom) && (addr < stackTop - sizeof(uintptr_t)));
 }
 
-DfxAccessorsLocal::DfxAccessorsLocal(bool checkStack)
-    : checkStack_(checkStack)
-{
-    if (checkStack_) {
-        GetSelfStackRange(stackBottom_, stackTop_);
-    }
-}
-
 int DfxAccessorsLocal::AccessMem(uintptr_t addr, uintptr_t *val, void *arg)
 {
-    if (checkStack_ && !DfxAccessors::IsValidFrame(addr, stackTop_, stackBottom_)) {
+    UnwindLocalContext* ctx = reinterpret_cast<UnwindLocalContext *>(arg);
+    if (ctx == nullptr) {
+        return UNW_ERROR_INVALID_CONTEXT;
+    }
+    if (!IsValidFrame(addr, ctx->stackBottom, ctx->stackTop)) {
         LOGE("Failed to access addr: %llx", (uint64_t)addr);
         return UNW_ERROR_INVALID_MEMORY;
     }
