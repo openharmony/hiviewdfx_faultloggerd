@@ -65,6 +65,7 @@ public:
     void SetSp(uintptr_t sp);
     uintptr_t GetPc() const;
     void SetPc(uintptr_t pc);
+    uintptr_t GetFp() const;
     void GetSpecialRegs(uintptr_t& fp, uintptr_t& lr, uintptr_t& sp, uintptr_t& pc) const;
     void SetSpecialRegs(uintptr_t fp, uintptr_t lr, uintptr_t sp, uintptr_t pc);
     std::string GetSpecialRegsName(uintptr_t val) const;

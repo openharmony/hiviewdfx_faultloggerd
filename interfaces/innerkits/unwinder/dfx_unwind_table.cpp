@@ -119,26 +119,18 @@ bool DfxUnwindTable::GetEhHdrTableInfo(struct UnwindTableInfo& ti,
             return false;
         }
 
-        auto acc = std::make_shared<DfxAccessorsLocal>(false);
-        auto memory = std::make_shared<DfxMemory>(acc);
-        size_t tableEntrySize = memory->GetEncodedSize(hdr->tableEnc);
-        if (tableEntrySize == 0) {
-            LOGE("Hdr get table encode size error, hdr->tableEnc: %x", hdr->tableEnc);
-            return false;
-        }
-        memory->SetDataOffset(ti.gp);
-        LOGU("Eh hdr gp: %llx, offset: %llx", (uint64_t)ti.gp, (uint64_t)shdr.offset);
-
+        auto memory = std::make_shared<DfxMemoryCpy>();
         uintptr_t ptr = (uintptr_t)(&(hdr->ehFrame));
         LOGU("hdr: %llx, ehFrame: %llx", (uint64_t)hdr, (uint64_t)ptr);
-        LOGU("ehFramePtrEnc: %x, fdeCountEnc: %x", hdr->ehFramePtrEnc, hdr->fdeCountEnc);
+        LOGU("gp: %llx, ehFramePtrEnc: %x, fdeCountEnc: %x", (uint64_t)ti.gp, hdr->ehFramePtrEnc, hdr->fdeCountEnc);
+        memory->SetDataOffset(ti.gp);
         MAYBE_UNUSED uintptr_t ehFrameStart = memory->ReadEncodedValue(ptr, hdr->ehFramePtrEnc);
         uintptr_t fdeCount = memory->ReadEncodedValue(ptr, hdr->fdeCountEnc);
         if (fdeCount == 0) {
             LOGE("Hdr no FDEs?");
             return false;
         }
-        LOGU("ehFrameStart: %llx, fdeCount: %llx", (uint64_t)ehFrameStart, (uint64_t)fdeCount);
+        LOGU("ehFrameStart: %llx, fdeCount: %d", (uint64_t)ehFrameStart, (int)fdeCount);
 
         ti.format = UNW_INFO_FORMAT_REMOTE_TABLE;
         ti.namePtr = 0;
@@ -276,15 +268,16 @@ int DfxUnwindTable::DlPhdrCb(struct dl_phdr_info *info, size_t size, void *data)
             return false;
         }
 
-        auto acc = std::make_shared<DfxAccessorsLocal>();
-        auto memory = std::make_shared<DfxMemory>(acc);
-
+        auto memory = std::make_shared<DfxMemoryCpy>();
         uintptr_t ptr = (uintptr_t)(&(hdr->ehFrame));
         LOGU("hdr: %llx, ehFrame: %llx", (uint64_t)hdr, (uint64_t)ptr);
+
+        LOGU("gp: %llx, ehFramePtrEnc: %x, fdeCountEnc: %x",
+            (uint64_t)edi->diEhHdr.gp, hdr->ehFramePtrEnc, hdr->fdeCountEnc);
         memory->SetDataOffset(edi->diEhHdr.gp);
         MAYBE_UNUSED uintptr_t ehFrameStart = memory->ReadEncodedValue(ptr, hdr->ehFramePtrEnc);
         uintptr_t fdeCount = memory->ReadEncodedValue(ptr, hdr->fdeCountEnc);
-        LOGU("ehFrameStart: %llx, fdeCount: %llx", (uint64_t)ehFrameStart, (uint64_t)fdeCount);
+        LOGU("ehFrameStart: %llx, fdeCount: %d", (uint64_t)ehFrameStart, (int)fdeCount);
 
         edi->diEhHdr.startPc = startPc;
         edi->diEhHdr.endPc = endPc;

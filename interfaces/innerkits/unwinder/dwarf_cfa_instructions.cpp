@@ -28,12 +28,13 @@ namespace {
 #define LOG_TAG "DfxDwarfCfaInstructions"
 }
 
-bool DwarfCfaInstructions::Iterate(CommonInfoEntry &cieInfo, uintptr_t instStart, uintptr_t instEnd,
-    uintptr_t pc, uintptr_t pcStart, RegLocState &rsState)
+bool DwarfCfaInstructions::Iterate(uintptr_t pc, FrameDescEntry &fde, uintptr_t instStart, uintptr_t instEnd,
+    uintptr_t pcStart, RegLocState &rsState)
 {
     uintptr_t instPtr = instStart;
     uintptr_t codeOffset = 0;
     RegLocState prevRs = rsState;
+    auto cie = fde.cie;
     while ((instPtr < instEnd) && (codeOffset <= pc - pcStart)) {
         LOGU("instPtr:%p instEnd:%p codeOffset:%d relPc:%p\n",
             (void*)instPtr , (void*)instEnd , (int)codeOffset, (void*)(pc - pcStart));
@@ -48,28 +49,28 @@ bool DwarfCfaInstructions::Iterate(CommonInfoEntry &cieInfo, uintptr_t instStart
                 LOGU("DW_CFA_nop");
                 break;
             case DW_CFA_set_loc:
-                value = memory_->ReadEncodedValue(instPtr, (DwarfEncoding)cieInfo.pointerEncoding);
+                value = memory_->ReadEncodedValue(instPtr, (DwarfEncoding)cie.pointerEncoding);
                 codeOffset = value;
                 LOGU("DW_CFA_set_loc: new offset=%" PRIu64 "", static_cast<uint64_t>(codeOffset));
                 break;
             case DW_CFA_advance_loc1:
                 value = memory_->ReadEncodedValue(instPtr, (DwarfEncoding)DW_EH_PE_udata1);
-                codeOffset += (value * cieInfo.codeAlignFactor);
+                codeOffset += (value * cie.codeAlignFactor);
                 LOGU("DW_CFA_advance_loc1: new offset=%" PRIu64 "", static_cast<uint64_t>(codeOffset));
                 break;
             case DW_CFA_advance_loc2:
                 value = memory_->ReadEncodedValue(instPtr, (DwarfEncoding)DW_EH_PE_udata2);
-                codeOffset += (value * cieInfo.codeAlignFactor);
+                codeOffset += (value * cie.codeAlignFactor);
                 LOGU("DW_CFA_advance_loc2: new offset=%" PRIu64 "", static_cast<uint64_t>(codeOffset));
                 break;
             case DW_CFA_advance_loc4:
                 value = memory_->ReadEncodedValue(instPtr, (DwarfEncoding)DW_EH_PE_udata4);
-                codeOffset += (value * cieInfo.codeAlignFactor);
+                codeOffset += (value * cie.codeAlignFactor);
                 LOGU("DW_CFA_advance_loc4: new offset=%" PRIu64 "", static_cast<uint64_t>(codeOffset));
                 break;
             case DW_CFA_offset_extended:
                 reg = memory_->ReadUleb128(instPtr);
-                offset = (int64_t)memory_->ReadUleb128(instPtr) * cieInfo.codeAlignFactor;
+                offset = (int64_t)memory_->ReadUleb128(instPtr) * cie.codeAlignFactor;
                 rsState.locs[reg].type = REG_LOC_MEM_OFFSET;
                 rsState.locs[reg].val = offset;
                 break;
@@ -123,32 +124,32 @@ bool DwarfCfaInstructions::Iterate(CommonInfoEntry &cieInfo, uintptr_t instStart
                 break;
             case DW_CFA_offset_extended_sf:
                 reg = memory_->ReadUleb128(instPtr);
-                offset = (int64_t)(memory_->ReadSleb128(instPtr)) * cieInfo.dataAlignFactor;
+                offset = (int64_t)(memory_->ReadSleb128(instPtr)) * cie.dataAlignFactor;
                 rsState.locs[reg].type = REG_LOC_MEM_OFFSET;
                 rsState.locs[reg].val = offset;
                 break;
             case DW_CFA_def_cfa_sf:
                 reg = memory_->ReadUleb128(instPtr);
-                offset = (int64_t)(memory_->ReadSleb128(instPtr)) * cieInfo.dataAlignFactor;
+                offset = (int64_t)(memory_->ReadSleb128(instPtr)) * cie.dataAlignFactor;
                 rsState.cfaReg = (uint32_t)reg;
                 rsState.cfaRegOffset = (int32_t)offset;
                 LOGU("DW_CFA_def_cfa_sf: reg=%d, offset=%d", rsState.cfaReg, rsState.cfaRegOffset);
                 break;
             case DW_CFA_def_cfa_offset_sf:
-                offset = (int64_t)(memory_->ReadSleb128(instPtr)) * cieInfo.dataAlignFactor;
+                offset = (int64_t)(memory_->ReadSleb128(instPtr)) * cie.dataAlignFactor;
                 rsState.cfaRegOffset = (int32_t)offset;
                 LOGU("DW_CFA_def_cfa_offset_sf: offset=%d", rsState.cfaRegOffset);
                 break;
             case DW_CFA_val_offset:
                 reg = memory_->ReadUleb128(instPtr);
-                offset = (int64_t)memory_->ReadUleb128(instPtr) * cieInfo.codeAlignFactor;
+                offset = (int64_t)memory_->ReadUleb128(instPtr) * cie.codeAlignFactor;
                 rsState.locs[reg].type = REG_LOC_VAL_OFFSET;
                 rsState.locs[reg].val = offset;
                 LOGU("DW_CFA_val_offset: reg=%d, offset=%" PRIu64 "", (int)reg, offset);
                 break;
             case DW_CFA_val_offset_sf:
                 reg = memory_->ReadUleb128(instPtr);
-                offset = (int64_t)memory_->ReadSleb128(instPtr) * cieInfo.codeAlignFactor;
+                offset = (int64_t)memory_->ReadSleb128(instPtr) * cie.codeAlignFactor;
                 rsState.locs[reg].type = REG_LOC_VAL_OFFSET;
                 rsState.locs[reg].val = offset;
                 LOGU("DW_CFA_val_offset_sf: reg=%d, offset=%" PRIu64 "", (int)reg, offset);
@@ -183,12 +184,12 @@ bool DwarfCfaInstructions::Iterate(CommonInfoEntry &cieInfo, uintptr_t instStart
                 // Check the 2 high bits.
                 switch (opCode & 0xC0) {
                     case DW_CFA_advance_loc:
-                        codeOffset += operand * cieInfo.codeAlignFactor;
+                        codeOffset += operand * cie.codeAlignFactor;
                         LOGU("DW_CFA_advance_loc: codeOffset=%" PRIu64 "", static_cast<uint64_t>(codeOffset));
                         break;
                     case DW_CFA_offset:
                         reg = operand;
-                        offset = (int64_t)memory_->ReadUleb128(instPtr) * cieInfo.dataAlignFactor;
+                        offset = (int64_t)memory_->ReadUleb128(instPtr) * cie.dataAlignFactor;
                         rsState.locs[reg].type = REG_LOC_MEM_OFFSET;
                         rsState.locs[reg].val = offset;
                         LOGU("DW_CFA_offset: reg=%d, offset=%" PRId64 "", (int)reg, offset);
@@ -207,16 +208,16 @@ bool DwarfCfaInstructions::Iterate(CommonInfoEntry &cieInfo, uintptr_t instStart
     return true;
 }
 
-bool DwarfCfaInstructions::Parse(uintptr_t pc, CommonInfoEntry &cie, FrameDescEntry &fde, RegLocState &rsState)
+bool DwarfCfaInstructions::Parse(uintptr_t pc, FrameDescEntry &fde, RegLocState &rsState)
 {
     LOGU("Iterate cie operations");
-    if (!Iterate(cie, cie.instructions, cie.cieEnd, pc, fde.pcStart, rsState)) {
+    if (!Iterate(pc, fde, fde.cie.instructions, fde.cie.cieEnd, fde.pcStart, rsState)) {
         LOGE("Failed to run cie inst");
         return false;
     }
 
     LOGU("Iterate fde operations");
-    if (!Iterate(cie, fde.instructions, fde.fdeEnd, pc, fde.pcStart, rsState)) {
+    if (!Iterate(pc, fde, fde.instructions, fde.fdeEnd, fde.pcStart, rsState)) {
         LOGE("Failed to run fde inst");
         return false;
     }

@@ -154,6 +154,11 @@ void DfxRegs::SetPc(uintptr_t pc)
     regsData_[REG_PC] = pc;
 }
 
+uintptr_t DfxRegs::GetFp() const
+{
+    return regsData_[REG_FP];
+}
+
 std::string DfxRegs::GetSpecialRegsName(uintptr_t val) const
 {
     uintptr_t fp = 0, lr = 0, sp = 0, pc = 0;

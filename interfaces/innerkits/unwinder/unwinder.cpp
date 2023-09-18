@@ -21,6 +21,7 @@
 #include "dfx_log.h"
 #include "dfx_instructions.h"
 #include "dfx_unwind_table.h"
+#include "stack_util.h"
 #include "string_printf.h"
 
 namespace OHOS {
@@ -63,10 +64,14 @@ bool Unwinder::UnwindLocal(size_t maxFrameNum, size_t skipFrameNum)
     if (regs_ == nullptr) {
         regs_ = DfxRegs::Create();
     }
+    uintptr_t stackBottom, stackTop;
+    GetSelfStackRange(stackBottom, stackTop);
 
     UnwindLocalContext context;
     GetLocalRegs(regs_->RawData());
     context.regs = regs_;
+    context.stackBottom = stackBottom;
+    context.stackTop = stackTop;
     return Unwind(&context, maxFrameNum, skipFrameNum);
 }
 
@@ -101,16 +106,8 @@ bool Unwinder::Unwind(void *ctx, size_t maxFrameNum, size_t skipFrameNum)
             break;
         }
 
-        if (!memory_->ReadReg(REG_PC, &pc)) {
-            LOGE("Read pc failed");
-            lastErrorData_.code = UNW_ERROR_INVALID_REGS;
-            break;
-        }
-        if (!memory_->ReadReg(REG_SP, &sp)) {
-            LOGE("Read sp failed");
-            lastErrorData_.code = UNW_ERROR_INVALID_REGS;
-            break;
-        }
+        pc = regs_->GetPc();
+        sp = regs_->GetSp();
 
         std::shared_ptr<DfxMap> map = nullptr;
         if (!maps_->FindMapByAddr(map, pc) || (map == nullptr)) {
@@ -161,6 +158,7 @@ bool Unwinder::Step(uintptr_t& pc, uintptr_t& sp, void *ctx)
         if (iter != rsCache_.end()) {
             LOGU("Find rs cache");
             rs = iter->second;
+            ret = true;
             break;
         }
 
@@ -209,14 +207,26 @@ bool Unwinder::Step(uintptr_t& pc, uintptr_t& sp, void *ctx)
     } while (false);
 
     // 5. update regs and regs state
-    if (!Apply(regs_, rs)) {
-        LOGE("Failed to Apply");
+    if (ret && !Apply(regs_, rs)) {
+        LOGE("Failed to apply rs");
     }
 
     pc = regs_->GetPc();
     sp = regs_->GetSp();
     LOGU("------pc: %llx, sp: %llx", (uint64_t)pc, (uint64_t)sp);
     return ret;
+}
+
+bool Unwinder::FpStep(uintptr_t& fp, uintptr_t& pc, void *ctx)
+{
+    UnwindLocalContext* context = reinterpret_cast<UnwindLocalContext *>(ctx);
+    uintptr_t prevFp = fp;
+    if (DfxAccessorsLocal::IsValidFrame(prevFp, context->stackBottom, context->stackTop)) {
+        fp = *reinterpret_cast<uintptr_t*>(prevFp);
+        pc = *reinterpret_cast<uintptr_t*>(prevFp + sizeof(uintptr_t));
+        return true;
+    }
+    return false;
 }
 
 bool Unwinder::Apply(std::shared_ptr<DfxRegs> regs, std::shared_ptr<RegLocState> rs)
@@ -234,7 +244,7 @@ bool Unwinder::Apply(std::shared_ptr<DfxRegs> regs, std::shared_ptr<RegLocState>
     return ret;
 }
 
-void Unwinder::DoPcAdjust(uintptr_t& pc)
+void Unwinder::DoPcAdjust(uint64_t& pc)
 {
     if (pc <= 4) {
         return;
@@ -243,7 +253,7 @@ void Unwinder::DoPcAdjust(uintptr_t& pc)
 #if defined(__arm__)
     if (pc & 1) {
         uintptr_t val;
-        if (pc < 5 || !(memory_->ReadMem(pc - 5, &val)) ||
+        if (pc < 5 || !(memory_->ReadMem((uintptr_t)pc - 5, &val)) ||
             (val & 0xe000f000) != 0xe000f000) {
             sz = 2;
         }
