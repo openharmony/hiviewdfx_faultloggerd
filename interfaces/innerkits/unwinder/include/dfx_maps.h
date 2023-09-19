@@ -29,17 +29,23 @@ public:
     DfxMaps() = default;
     ~DfxMaps() = default;
     static std::shared_ptr<DfxMaps> Create(pid_t pid = 0);
-    static std::shared_ptr<DfxMaps> Create(const std::string path);
+    static bool Create(pid_t pid, std::vector<std::shared_ptr<DfxMap>>& maps, std::vector<int>& mapIndex);
+    static std::shared_ptr<DfxMaps> Create(const std::string path, bool enableMapIndex = false);
 
-    void AddMap(std::shared_ptr<DfxMap> map);
+    void AddMap(std::shared_ptr<DfxMap> map, bool enableMapIndex = false);
     void Sort(bool less = true);
     bool FindMapByAddr(std::shared_ptr<DfxMap>& map, uintptr_t addr) const;
     bool FindMapByFileInfo(std::shared_ptr<DfxMap>& map, std::string name, uint64_t offset) const;
     bool FindMapsByName(std::vector<std::shared_ptr<DfxMap>>& maps, std::string name) const;
-    const std::vector<std::shared_ptr<DfxMap>>& GetMaps() const {return maps_;}
-    size_t GetMapsSize() const {return maps_.size();}
+    const std::vector<std::shared_ptr<DfxMap>>& GetMaps() const { return maps_; }
+    const std::vector<int>& GetMapIndexVec() const { return mapIndex_; }
+    size_t GetMapsSize() const { return maps_.size(); }
+
+    bool IsArkExecutedMap(uintptr_t addr);
+
 private:
     std::vector<std::shared_ptr<DfxMap>> maps_;
+    std::vector<int> mapIndex_;
 };
 } // namespace HiviewDFX
 } // namespace OHOS

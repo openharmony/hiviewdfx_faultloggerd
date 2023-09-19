@@ -60,6 +60,17 @@ public:
     uint64_t elfOffset = 0;
     uint64_t elfStartOffset = 0;
 
+    // use for find
+    inline bool operator==(const std::string &name) const
+    {
+        return this->name == name;
+    }
+
+    inline bool operator<(const DfxMap &other) const
+    {
+        return this->end < other.end;
+    }
+
     bool Contain(uint64_t pc) const
     {
         return (pc >= begin && pc < end);

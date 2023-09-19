@@ -40,29 +40,52 @@ struct DfxSymbol {
     mutable bool matched_ = false; // if some callstack match this
     int32_t hit_ = 0;
 
-    inline void SetVaddr(uint64_t funcVaddr, uint64_t fileVaddr, uint64_t size)
+    // elf use this
+    DfxSymbol(uint64_t vaddr, uint64_t size, const std::string &name, const std::string &demangle,
+           const std::string module)
+        : funcVaddr_(vaddr),
+          fileVaddr_(vaddr),
+          size_(size),
+          name_(StringViewHold::Get().Hold(name)),
+          demangle_(StringViewHold::Get().Hold(demangle)),
+          module_(StringViewHold::Get().Hold(module)) {}
+    DfxSymbol(uint64_t vaddr, uint64_t size, const std::string &name, const std::string &module)
+        : DfxSymbol(vaddr, size, name, name, module) {}
+
+    // kernel use this
+    DfxSymbol(uint64_t vaddr, const std::string &name, const std::string &module)
+        : DfxSymbol(vaddr, 0, name, name, module) {}
+
+    // Symbolic use this
+    DfxSymbol(uint64_t taskVaddr = 0, const std::string &comm = "")
+        : taskVaddr_(taskVaddr), comm_(comm)
     {
-        funcVaddr_ = funcVaddr;
-        fileVaddr_ = fileVaddr;
-        size_ = size;
     }
 
-    inline void SetName(const std::string &name, const std::string &demangle)
+    DfxSymbol(const DfxSymbol &other) = default;
+
+    DfxSymbol& operator=(const DfxSymbol& other) = default;
+
+    static bool SameVaddr(const DfxSymbol &a, const DfxSymbol &b)
     {
-        name_ = StringViewHold::Get().Hold(name);
-        demangle_ = StringViewHold::Get().Hold(demangle);
+        return (a.funcVaddr_ == b.funcVaddr_);
     }
 
-    inline void SetTask(uint64_t taskVaddr, const std::string &comm)
+    inline bool Equal(const DfxSymbol &b) const
     {
-        taskVaddr_ = taskVaddr;
-        comm_ = StringViewHold::Get().Hold(comm);
+        return ((funcVaddr_ == b.funcVaddr_) && (demangle_ == b.demangle_));
     }
 
-    inline void SetModule(const std::string &module)
+    inline bool operator==(const DfxSymbol &b) const
     {
-        module_ = StringViewHold::Get().Hold(module);
+        return Equal(b);
     }
+
+    inline bool operator!=(const DfxSymbol &b) const
+    {
+        return !Equal(b);
+    }
+
     inline bool IsValid() const
     {
         return !module_.empty();
@@ -127,29 +150,27 @@ struct DfxSymbol {
         }
     }
 
-    inline bool Equal(const DfxSymbol &b) const
-    {
-        return ((funcVaddr_ == b.funcVaddr_) && (demangle_ == b.demangle_));
-    }
-    inline bool operator==(const DfxSymbol &b) const
-    {
-        return Equal(b);
-    }
-    inline bool operator!=(const DfxSymbol &b) const
-    {
-        return !Equal(b);
-    }
-
     // The range [first, last) must be partitioned with respect to the expression
     // !(value < element) or !comp(value, element)
     static bool ValueLessThen(uint64_t vaddr, const DfxSymbol &a)
     {
         return vaddr < a.funcVaddr_;
     }
+
     static bool ValueLessEqual(uint64_t vaddr, const DfxSymbol &a)
     {
         return vaddr <= a.funcVaddr_;
     }
+
+    static bool CompareLessThen(const DfxSymbol &a, const DfxSymbol &b)
+    {
+        return a.funcVaddr_ < b.funcVaddr_; // we should use vaddr to sort
+    };
+
+    static bool CompareByPointer(const DfxSymbol *a, const DfxSymbol *b)
+    {
+        return a->funcVaddr_ < b->funcVaddr_; // we should use vaddr to sort
+    };
 };
 } // namespace HiviewDFX
 } // namespace OHOS

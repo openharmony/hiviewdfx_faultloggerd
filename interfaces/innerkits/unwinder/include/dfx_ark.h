@@ -24,11 +24,9 @@ namespace OHOS {
 namespace HiviewDFX {
 class DfxArk {
 public:
-    static int StepArkManagedNativeFrame(int pid, uintptr_t* pc, uintptr_t* fp, uintptr_t* sp, char* buf, size_t bufSize);
-    static int GetArkJsHeapCrashInfo(int pid, uintptr_t* x20, uintptr_t* fp, int outJsInfo, char* buf, size_t bufSize);
-private:
-    static void* handle_;
-    static std::mutex mutex_;
+    static int StepArkManagedNativeFrame(int pid, uintptr_t& pc, uintptr_t& fp, uintptr_t& sp,
+                                         char* buf, size_t bufSize);
+    static int GetArkJsHeapCrashInfo(int pid, uintptr_t& x20, uintptr_t& fp, int outJsInfo, char* buf, size_t bufSize);
 };
 } // namespace HiviewDFX
 } // namespace OHOS
