@@ -89,7 +89,7 @@ private:
     uint64_t elfSize_ = 0;
     int64_t loadBias_ = 0;
     uint64_t startVaddr_ = static_cast<uint64_t>(-1);
-    uint64_t endVaddr_ = static_cast<uint64_t>(-1);
+    uint64_t endVaddr_ = 0;
     std::unordered_map<std::string, ElfShdr> symShdrs_;
     std::map<const std::string, ShdrInfo> shdrInfos_;
     std::unordered_map<uint32_t, ElfSecInfo> elfSecInfos_;

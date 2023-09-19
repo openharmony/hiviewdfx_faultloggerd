@@ -29,7 +29,6 @@ namespace {
 #define LOG_TAG "DfxFrameFormatter"
 }
 
-
 std::string DfxFrameFormatter::GetFrameStr(const DfxFrame& frame)
 {
     return GetFrameStr(std::make_shared<DfxFrame>(frame));
@@ -88,11 +87,11 @@ std::string DfxFrameFormatter::GetFramesStr(const std::vector<std::shared_ptr<Df
 
 std::vector<std::shared_ptr<DfxFrame>> DfxFrameFormatter::ConvertFrames(const std::vector<DfxFrame>& frames)
 {
-    std::vector<std::shared_ptr<DfxFrame>> ptrFrames;
+    std::vector<std::shared_ptr<DfxFrame>> pFrames;
     for (const auto& frame : frames) {
-        ptrFrames.push_back(std::make_shared<DfxFrame>(frame));
+        pFrames.push_back(std::make_shared<DfxFrame>(frame));
     }
-    return ptrFrames;
+    return pFrames;
 }
 } // namespace HiviewDFX
 } // namespace OHOS

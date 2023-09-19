@@ -34,7 +34,7 @@ bool DwarfCfaInstructions::Iterate(uintptr_t pc, FrameDescEntry &fde, uintptr_t 
     uintptr_t instPtr = instStart;
     uintptr_t codeOffset = 0;
     RegLocState prevRs = rsState;
-    auto cie = fde.cie;
+    auto& cie = fde.cie;
     while ((instPtr < instEnd) && (codeOffset <= pc - pcStart)) {
         LOGU("instPtr:%p instEnd:%p codeOffset:%d relPc:%p\n",
             (void*)instPtr , (void*)instEnd , (int)codeOffset, (void*)(pc - pcStart));

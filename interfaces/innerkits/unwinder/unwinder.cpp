@@ -21,6 +21,7 @@
 #include "dfx_log.h"
 #include "dfx_instructions.h"
 #include "dfx_unwind_table.h"
+#include "dfx_symbols.h"
 #include "stack_util.h"
 #include "string_printf.h"
 
@@ -39,6 +40,7 @@ void Unwinder::Init()
     rsCache_.clear();
     lastErrorData_.code = UNW_ERROR_NONE;
     lastErrorData_.addr = 0;
+    pcs_.clear();
     frames_.clear();
 #if defined(__arm__)
     armExidx_ = std::make_shared<ArmExidx>(memory_);
@@ -56,6 +58,7 @@ void Unwinder::Init()
 
 void Unwinder::Destroy()
 {
+    pcs_.clear();
     frames_.clear();
 }
 
@@ -89,8 +92,13 @@ bool Unwinder::UnwindRemote(size_t maxFrameNum, size_t skipFrameNum)
 
 bool Unwinder::Unwind(void *ctx, size_t maxFrameNum, size_t skipFrameNum)
 {
+    if ((ctx == nullptr) || (regs_ == nullptr) || (maps_ == nullptr)) {
+        LOGE("params is nullptr?");
+        return false;
+    }
     memory_->SetCtx(ctx);
 
+    bool needAdjustPc = false;
     size_t index = 0;
     size_t curIndex = 0;
     uintptr_t pc, sp, stepPc;
@@ -108,6 +116,7 @@ bool Unwinder::Unwind(void *ctx, size_t maxFrameNum, size_t skipFrameNum)
 
         pc = regs_->GetPc();
         sp = regs_->GetSp();
+        pcs_.push_back(pc);
 
         std::shared_ptr<DfxMap> map = nullptr;
         if (!maps_->FindMapByAddr(map, pc) || (map == nullptr)) {
@@ -117,8 +126,8 @@ bool Unwinder::Unwind(void *ctx, size_t maxFrameNum, size_t skipFrameNum)
             break;
         }
 
-        elf_ = map->GetElf();
-        if (elf_ == nullptr) {
+        auto elf = map->GetElf();
+        if (elf == nullptr) {
             LOGE("elf is null");
             lastErrorData_.code = UNW_ERROR_INVALID_ELF;
             break;
@@ -127,15 +136,27 @@ bool Unwinder::Unwind(void *ctx, size_t maxFrameNum, size_t skipFrameNum)
         if (pid_ > 0) {
             UnwindRemoteContext* context = reinterpret_cast<UnwindRemoteContext *>(ctx);
             context->map = map;
-            context->elf = elf_;
+            context->elf = elf;
         }
-        uint64_t relPc = elf_->GetRelPc(pc, map->begin, map->end);
-        DoPcAdjust(relPc);
-        stepPc = relPc;
 
-        if (regs_->StepIfSignalHandler(relPc, elf_.get(), memory_.get())) {
+        uintptr_t relPc = static_cast<uintptr_t>(elf->GetRelPc(pc, map->begin, map->end));
+        DfxFrame frame;
+        frame.index = curIndex;
+        frame.relPc = relPc;
+        frame.mapName = map->name;
+        DfxSymbols::GetFuncNameAndOffset((uint64_t)relPc, elf, frame.funcName, frame.funcOffset);
+        frame.buildId = elf->GetBuildId();
+        frames_.push_back(frame);
+
+        stepPc = relPc;
+        if (needAdjustPc) {
+            DoPcAdjust(stepPc);
+        }
+        needAdjustPc = true;
+
+        if (regs_->StepIfSignalHandler(relPc, elf.get(), memory_.get())) {
             stepPc = relPc;
-        } else if (Step(stepPc, sp, ctx) <= 0) {
+        } else if (!Step(stepPc, sp, ctx)) {
             break;
         }
 
@@ -207,8 +228,8 @@ bool Unwinder::Step(uintptr_t& pc, uintptr_t& sp, void *ctx)
     } while (false);
 
     // 5. update regs and regs state
-    if (ret && !Apply(regs_, rs)) {
-        LOGE("Failed to apply rs");
+    if (ret) {
+        ret = Apply(regs_, rs);
     }
 
     pc = regs_->GetPc();
@@ -235,8 +256,9 @@ bool Unwinder::Apply(std::shared_ptr<DfxRegs> regs, std::shared_ptr<RegLocState>
     if (rs == nullptr || regs == nullptr) {
         return false;
     }
-    if (DfxInstructions::Apply(*(regs.get()), memory_, *(rs.get()))) {
-        ret = true;
+    ret = DfxInstructions::Apply(*(regs.get()), memory_, *(rs.get()));
+    if (!ret) {
+        LOGE("Failed to apply rs");
     }
     if (!rs->isPcSet) {
         regs->SetReg(REG_PC, regs->GetReg(REG_LR));
@@ -244,7 +266,7 @@ bool Unwinder::Apply(std::shared_ptr<DfxRegs> regs, std::shared_ptr<RegLocState>
     return ret;
 }
 
-void Unwinder::DoPcAdjust(uint64_t& pc)
+void Unwinder::DoPcAdjust(uintptr_t& pc)
 {
     if (pc <= 4) {
         return;
@@ -253,7 +275,7 @@ void Unwinder::DoPcAdjust(uint64_t& pc)
 #if defined(__arm__)
     if (pc & 1) {
         uintptr_t val;
-        if (pc < 5 || !(memory_->ReadMem((uintptr_t)pc - 5, &val)) ||
+        if (pc < 5 || !(memory_->ReadMem(pc - 5, &val)) ||
             (val & 0xe000f000) != 0xe000f000) {
             sz = 2;
         }
