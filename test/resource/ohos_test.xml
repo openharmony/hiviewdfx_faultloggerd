@@ -34,4 +34,19 @@
             <option name="push" value="hiviewdfx/faultloggerd/rustpanic_maker -> /data/" src="out"/>
         </preparer>
     </target>
+    <target name="test_unwind">
+        <preparer>
+            <option name="push" value="testdata/elf_test -> /data/test/resource/testdata/" src="res"/>
+            <option name="push" value="testdata/elf32_test -> /data/test/resource/testdata/" src="res"/>
+            <option name="push" value="testdata/source/elf_test_source_code.cpp -> /data/testresource/testdata/" src="res"/>
+            <option name="push" value="testdata/ehdr_from_readelf_32 -> /data/test/resource/testdata/" src="res"/>
+            <option name="push" value="testdata/ehdr_from_readelf_64 -> /data/test/resource/testdata/" src="res"/>
+            <option name="push" value="testdata/shdrs_from_readelf_32 -> /data/test/resource/testdata/" src="res"/>
+            <option name="push" value="testdata/shdrs_from_readelf_64 -> /data/test/resource/testdata/" src="res"/>
+            <option name="push" value="testdata/phdrs_from_readelf_32 -> /data/test/resource/testdata/" src="res"/>
+            <option name="push" value="testdata/phdrs_from_readelf_64 -> /data/test/resource/testdata/" src="res"/>
+            <option name="push" value="testdata/syms_from_readelf_32 -> /data/test/resource/testdata/" src="res"/>
+            <option name="push" value="testdata/syms_from_readelf_64 -> /data/test/resource/testdata/" src="res"/>
+        </preparer>
+    </target>
 </configuration>

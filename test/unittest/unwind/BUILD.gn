@@ -19,22 +19,29 @@ module_output_path = "faultloggerd/unwind"
 ohos_unittest("test_unwind") {
   module_out_path = module_output_path
   visibility = [ "*:*" ]
-  include_dirs = [ "$faultloggerd_interfaces_path/common" ]
+  include_dirs = [
+    "$faultloggerd_interfaces_path/common",
+    "$faultloggerd_path/test/unittest/unwind/include",
+  ]
   configs = [ "$faultloggerd_common_path/build:coverage_flags" ]
   defines = [ "DFX_LOG_UNWIND" ]
   sources = [
-    "arch_util_test.cpp",
     "elf_test.cpp",
     "maps_test.cpp",
     "memory_test.cpp",
+    "elf_imitate.cpp",
+    "regs_test.cpp",
+    "symbols_test.cpp",
     "unwinder_test.cpp",
   ]
   deps = [
     "$faultloggerd_common_path/dfxutil:dfx_util",
     "$faultloggerd_interfaces_path/innerkits/unwinder:libunwinder",
+    "$faultloggerd_common_path/dfxlog:dfx_hilog",
     "//third_party/bounds_checking_function:libsec_shared",
     "//third_party/googletest:gtest_main",
   ]
+  resource_config_file = "$faultloggerd_path/test/resource/ohos_test.xml"
 
   external_deps = [
     "c_utils:utils",
