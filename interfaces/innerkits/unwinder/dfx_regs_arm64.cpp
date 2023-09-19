@@ -30,7 +30,7 @@ namespace OHOS {
 namespace HiviewDFX {
 void DfxRegsArm64::SetFromUcontext(const ucontext_t &context)
 {
-    std::vector<uintptr_t> regs(REG_LAST);
+    std::vector<uintptr_t> regs;
     regs.push_back(uintptr_t(context.uc_mcontext.regs[REG_AARCH64_X0]));   // 0:x0
     regs.push_back(uintptr_t(context.uc_mcontext.regs[REG_AARCH64_X1]));   // 1:x1
     regs.push_back(uintptr_t(context.uc_mcontext.regs[REG_AARCH64_X2]));   // 2:x2

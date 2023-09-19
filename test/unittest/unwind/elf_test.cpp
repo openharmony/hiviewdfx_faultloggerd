@@ -20,14 +20,16 @@
 #include <vector>
 #include <iostream>
 #include "dfx_elf.h"
+#include "elf_imitate.h"
 
 using namespace OHOS::HiviewDFX;
 using namespace testing::ext;
 using namespace std;
 
-#define ELF32_FILE "/data/processdump"
-#define ELF64_FILE "/data/dumpcatcher"
-
+#define ELF32_FILE "/data/test/resource/testdata/elf32_test"
+#define ELF64_FILE "/data/test/resource/testdata/elf_test"
+#define PT_LOAD_OFFSET 0x001000
+#define PT_LOAD_OFFSET64 0x0000000000002000
 namespace OHOS {
 namespace HiviewDFX {
 class DfxElfTest : public testing::Test {
@@ -38,91 +40,89 @@ public:
     void TearDown() {}
 };
 
-/**
+std::vector<std::string> interestedSections = { ".dynsym", ".eh_frame_hdr", ".eh_frame", ".symtab" };
+ /**
  * @tc.name: DfxElfTest001
- * @tc.desc: test DfxElf functions
+ * @tc.desc: test DfxElf functions with 32 bit ELF
  * @tc.type: FUNC
  */
 HWTEST_F(DfxElfTest, DfxElfTest001, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "DfxElfTest001: start.";
-    //64
-    DfxElf elf(ELF64_FILE);
-    bool valid = elf.IsValid();
-    printf("valid: %d\n", valid);
-    ASSERT_TRUE(valid);
+    DfxElf elf(ELF32_FILE);
+    ASSERT_TRUE(elf.IsValid());
+    ElfImitate elfImitate;
     ShdrInfo shdr;
-    bool ret = elf.GetSectionInfo(shdr, ".eh_frame");
-    if (ret) {
-        printf(".eh_frame %llx %llx %llx\n", shdr.addr, shdr.offset, shdr.size);
+    ShdrInfo shdrImitate;
+    elfImitate.ParseAllHeaders(ElfImitate::ElfFileType::ELF32);
+    for (size_t i = 0; i < interestedSections.size(); i++) {
+        elf.GetSectionInfo(shdr, interestedSections[i]);
+        elfImitate.GetSectionInfo(shdrImitate, interestedSections[i]);
+        GTEST_LOG_(INFO) << interestedSections[i];
+        ASSERT_EQ(shdr.addr, shdrImitate.addr);
+        ASSERT_EQ(shdr.offset, shdrImitate.offset);
+        ASSERT_EQ(shdr.size, shdrImitate.size);
     }
+    ASSERT_EQ(elf.GetArchType(), elfImitate.GetArchType());
+    ASSERT_EQ(elf.GetElfSize(), elfImitate.GetElfSize());
+    ASSERT_EQ(elf.GetLoadBias(), elfImitate.GetLoadBias());
 
-    ret = elf.GetSectionInfo(shdr, ".eh_frame_hdr");
-    if (ret) {
-        printf(".eh_frame_hdr %llx %llx %llx\n", shdr.addr, shdr.offset, shdr.size);
-    }
+    auto load = elf.GetPtLoads();
+    auto loadImitate = elfImitate.GetPtLoads();
+    ASSERT_EQ(load[PT_LOAD_OFFSET].offset, loadImitate[PT_LOAD_OFFSET].offset);
+    ASSERT_EQ(load[PT_LOAD_OFFSET].tableSize, loadImitate[PT_LOAD_OFFSET].tableSize);
+    ASSERT_EQ(load[PT_LOAD_OFFSET].tableVaddr, loadImitate[PT_LOAD_OFFSET].tableVaddr);
 
-    ret = elf.GetSectionInfo(shdr, ".dynsym");
-    if (ret) {
-        printf(".dynsym %llx %llx %llx\n", shdr.addr, shdr.offset, shdr.size);
-    }
-
-    ret = elf.GetSectionInfo(shdr, ".symtab");
-    if (ret) {
-        printf(".symtab %llx %llx %llx\n", shdr.addr, shdr.offset, shdr.size);
-    }
-    GTEST_LOG_(INFO) << elf.GetBuildId();
-    //32
-    DfxElf elf32(ELF32_FILE);
-    valid = elf32.IsValid();
-    printf("valid: %d\n", valid);
-    ASSERT_TRUE(valid);
-    ret = elf32.GetSectionInfo(shdr, ".dynsym");
-    if (ret) {
-        printf(".dynsym %llx %llx %llx\n", shdr.addr, shdr.offset, shdr.size);
-    }
-    ret = elf32.GetSectionInfo(shdr, ".ARM.extab");
-    if (ret) {
-        printf(".ARM.extab %llx %llx %llx\n", shdr.addr, shdr.offset, shdr.size);
-    }
-    GTEST_LOG_(INFO) << elf32.GetBuildId();
+    ASSERT_EQ(elf.GetClassType(), elfImitate.GetClassType());
+    ASSERT_EQ(elf.GetLoadBase(0xf78c0000, 0), elfImitate.GetLoadBase(0xf78c0000, 0));
+    ASSERT_EQ(elf.GetStartPc(), elfImitate.GetStartPc());
+    ASSERT_EQ(elf.GetEndPc(), elfImitate.GetEndPc());
+    ASSERT_EQ(elf.GetRelPc(0xf78c00f0, 0xf78c0000, 0), elfImitate.GetRelPc(0xf78c00f0, 0xf78c0000, 0));
+    ASSERT_EQ(elf.GetBuildId(), "8E5A30338BE326934FF93C998DCD0D22FE345870");
     GTEST_LOG_(INFO) << "DfxElfTest001: end.";
 }
 
 /**
  * @tc.name: DfxElfTest002
- * @tc.desc: test DfxElf functions
+ * @tc.desc: test DfxElf functions with 64 bit ELF
  * @tc.type: FUNC
  */
 HWTEST_F(DfxElfTest, DfxElfTest002, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "DfxElfTest002: start.";
-    //64
     DfxElf elf(ELF64_FILE);
-    bool valid = elf.IsValid();
-    ASSERT_TRUE(valid);
-    std::vector<ElfSymbol> elfSymbols = elf.GetElfSymbols();
-    ASSERT_TRUE(elfSymbols.size() > 0);
-    printf("Value   Size    Type    Bind    Vis     Ndx     Name\n");
-    for (auto sym : elfSymbols) {
-        printf("%llx %llx %d %d %d %s\n", sym.value, sym.size, sym.info, sym.other, sym.shndx, sym.nameStr.c_str());
+    ASSERT_TRUE(elf.IsValid());
+    ElfImitate elfImitate;
+    ShdrInfo shdr;
+    ShdrInfo shdrImitate;
+    elfImitate.ParseAllHeaders(ElfImitate::ElfFileType::ELF64);
+    for (size_t i = 0; i < interestedSections.size(); i++) {
+        GTEST_LOG_(INFO) << interestedSections[i];
+        elf.GetSectionInfo(shdr, interestedSections[i]);
+        elfImitate.GetSectionInfo(shdrImitate, interestedSections[i]);
+        ASSERT_EQ(shdr.addr, shdrImitate.addr);
+        ASSERT_EQ(shdr.offset, shdrImitate.offset);
+        ASSERT_EQ(shdr.size, shdrImitate.size);
     }
-    printf("\n");
+    ASSERT_EQ(elf.GetArchType(), elfImitate.GetArchType());
+    ASSERT_EQ(elf.GetElfSize(), elfImitate.GetElfSize());
+    ASSERT_EQ(elf.GetLoadBias(), elfImitate.GetLoadBias());
 
-    //32
-    DfxElf elf32(ELF32_FILE);
-    valid = elf32.IsValid();
-    ASSERT_TRUE(valid);
-    elfSymbols.clear();
-    elfSymbols = elf32.GetElfSymbols();
-    ASSERT_TRUE(elfSymbols.size() > 0);
-    printf("Value   Size    Type    Bind    Vis     Ndx     Name\n");
-    for (auto sym : elfSymbols) {
-        printf("%llx %llx %d %d %d %s\n", sym.value, sym.size, sym.info, sym.other, sym.shndx, sym.nameStr.c_str());
-    }
-    printf("\n");
+    auto load = elf.GetPtLoads();
+    auto loadImitate = elfImitate.GetPtLoads();
+    ASSERT_EQ(load[PT_LOAD_OFFSET64].offset, loadImitate[PT_LOAD_OFFSET64].offset);
+    ASSERT_EQ(load[PT_LOAD_OFFSET64].tableSize, loadImitate[PT_LOAD_OFFSET64].tableSize);
+    ASSERT_EQ(load[PT_LOAD_OFFSET64].tableVaddr, loadImitate[PT_LOAD_OFFSET64].tableVaddr);
+
+    ASSERT_EQ(elf.GetClassType(), elfImitate.GetClassType());
+    ASSERT_EQ(elf.GetLoadBase(0xf78c0000, 0), elfImitate.GetLoadBase(0xf78c0000, 0));
+    ASSERT_EQ(elf.GetStartPc(), elfImitate.GetStartPc());
+    ASSERT_EQ(elf.GetEndPc(), elfImitate.GetEndPc());
+    ASSERT_EQ(elf.GetRelPc(0xf78c00f0, 0xf78c0000, 0), elfImitate.GetRelPc(0xf78c00f0, 0xf78c0000, 0));
+    ASSERT_EQ(elf.GetBuildId(), "24C55DCCC5BAAAA140DA0083207ABCB8D523E248");
     GTEST_LOG_(INFO) << "DfxElfTest002: end.";
 }
+
 } // namespace HiviewDFX
 } // namespace OHOS
 

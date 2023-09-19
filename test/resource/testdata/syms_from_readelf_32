@@ -1,0 +1,153 @@
+
+Symbol table '.dynsym' contains 34 entries:
+   Num:    Value  Size Type    Bind   Vis      Ndx Name
+     0: 00000000     0 NOTYPE  LOCAL  DEFAULT  UND 
+     1: 00000000     0 FUNC    WEAK   DEFAULT  UND __cxa_finalize@GLIBC_2.1.3 (2)
+     2: 00000000     0 FUNC    GLOBAL DEFAULT  UND _ZNSaIcED2Ev@GLIBCXX_3.4 (3)
+     3: 00000000     0 FUNC    GLOBAL DEFAULT  UND _ZNSt7__cxx1112basic_stri@GLIBCXX_3.4.21 (4)
+     4: 00000000     0 FUNC    GLOBAL DEFAULT  UND __cxa_begin_catch@CXXABI_1.3 (5)
+     5: 00000000     0 FUNC    GLOBAL DEFAULT  UND _ZNSt7__cxx1112basic_stri@GLIBCXX_3.4.21 (4)
+     6: 00000000     0 FUNC    GLOBAL DEFAULT  UND __cxa_atexit@GLIBC_2.1.3 (2)
+     7: 00000000     0 FUNC    GLOBAL DEFAULT  UND _ZSt19__throw_logic_error@GLIBCXX_3.4 (3)
+     8: 00000000     0 FUNC    GLOBAL DEFAULT  UND _ZNSt7__cxx1112basic_stri@GLIBCXX_3.4.21 (4)
+     9: 00000000     0 FUNC    GLOBAL DEFAULT  UND _ZNSt7__cxx1112basic_stri@GLIBCXX_3.4.21 (4)
+    10: 00000000     0 FUNC    GLOBAL DEFAULT  UND _ZNSt7__cxx1112basic_stri@GLIBCXX_3.4.21 (4)
+    11: 00000000     0 FUNC    GLOBAL DEFAULT  UND _ZNSt7__cxx1112basic_stri@GLIBCXX_3.4.21 (4)
+    12: 00000000     0 FUNC    GLOBAL DEFAULT  UND __libc_start_main@GLIBC_2.0 (6)
+    13: 00000000     0 FUNC    GLOBAL DEFAULT  UND vsnprintf@GLIBC_2.0 (6)
+    14: 00000000     0 FUNC    GLOBAL DEFAULT  UND _ZNSt7__cxx1112basic_stri@GLIBCXX_3.4.21 (4)
+    15: 00000000     0 FUNC    GLOBAL DEFAULT  UND _ZNSaIcED1Ev@GLIBCXX_3.4 (3)
+    16: 00000000     0 FUNC    GLOBAL DEFAULT  UND _ZNKSt7__cxx1112basic_str@GLIBCXX_3.4.21 (4)
+    17: 00000000     0 FUNC    GLOBAL DEFAULT  UND __stack_chk_fail@GLIBC_2.4 (7)
+    18: 00000000     0 FUNC    GLOBAL DEFAULT  UND _ZNSt7__cxx1112basic_stri@GLIBCXX_3.4.21 (4)
+    19: 00000000     0 FUNC    GLOBAL DEFAULT  UND _ZNSt7__cxx1112basic_stri@GLIBCXX_3.4.21 (4)
+    20: 00000000     0 FUNC    GLOBAL DEFAULT  UND _ZNSt7__cxx1112basic_stri@GLIBCXX_3.4.21 (4)
+    21: 00000000     0 FUNC    GLOBAL DEFAULT  UND __cxa_rethrow@CXXABI_1.3 (5)
+    22: 00000000     0 FUNC    GLOBAL DEFAULT  UND __cxa_end_catch@CXXABI_1.3 (5)
+    23: 00000000     0 FUNC    GLOBAL DEFAULT  UND __gxx_personality_v0@CXXABI_1.3 (5)
+    24: 00000000     0 FUNC    GLOBAL DEFAULT  UND _ZNSt7__cxx1112basic_stri@GLIBCXX_3.4.21 (4)
+    25: 00000000     0 NOTYPE  WEAK   DEFAULT  UND _ITM_deregisterTMCloneTab
+    26: 00000000     0 FUNC    GLOBAL DEFAULT  UND _Unwind_Resume@GCC_3.0 (8)
+    27: 00000000     0 FUNC    GLOBAL DEFAULT  UND _ZNSaIcEC1Ev@GLIBCXX_3.4 (3)
+    28: 00000000     0 NOTYPE  WEAK   DEFAULT  UND __gmon_start__
+    29: 00000000     0 NOTYPE  WEAK   DEFAULT  UND _ITM_registerTMCloneTable
+    30: 00001784   125 FUNC    WEAK   DEFAULT   16 _ZNSt7__cxx1112basic_stri
+    31: 000018ec   350 FUNC    WEAK   DEFAULT   16 _ZNSt7__cxx1112basic_stri
+    32: 00002000     4 OBJECT  GLOBAL DEFAULT   18 _IO_stdin_used
+    33: 00001784   125 FUNC    WEAK   DEFAULT   16 _ZNSt7__cxx1112basic_stri
+
+Symbol table '.symtab' contains 113 entries:
+   Num:    Value  Size Type    Bind   Vis      Ndx Name
+     0: 00000000     0 NOTYPE  LOCAL  DEFAULT  UND 
+     1: 000001b4     0 SECTION LOCAL  DEFAULT    1 
+     2: 000001c8     0 SECTION LOCAL  DEFAULT    2 
+     3: 000001ec     0 SECTION LOCAL  DEFAULT    3 
+     4: 00000208     0 SECTION LOCAL  DEFAULT    4 
+     5: 00000228     0 SECTION LOCAL  DEFAULT    5 
+     6: 00000258     0 SECTION LOCAL  DEFAULT    6 
+     7: 00000478     0 SECTION LOCAL  DEFAULT    7 
+     8: 00000a44     0 SECTION LOCAL  DEFAULT    8 
+     9: 00000a88     0 SECTION LOCAL  DEFAULT    9 
+    10: 00000b28     0 SECTION LOCAL  DEFAULT   10 
+    11: 00000b88     0 SECTION LOCAL  DEFAULT   11 
+    12: 00001000     0 SECTION LOCAL  DEFAULT   12 
+    13: 00001030     0 SECTION LOCAL  DEFAULT   13 
+    14: 000011a0     0 SECTION LOCAL  DEFAULT   14 
+    15: 000011c0     0 SECTION LOCAL  DEFAULT   15 
+    16: 00001320     0 SECTION LOCAL  DEFAULT   16 
+    17: 00001b38     0 SECTION LOCAL  DEFAULT   17 
+    18: 00002000     0 SECTION LOCAL  DEFAULT   18 
+    19: 00002034     0 SECTION LOCAL  DEFAULT   19 
+    20: 00002110     0 SECTION LOCAL  DEFAULT   20 
+    21: 000024b0     0 SECTION LOCAL  DEFAULT   21 
+    22: 00003e6c     0 SECTION LOCAL  DEFAULT   22 
+    23: 00003e74     0 SECTION LOCAL  DEFAULT   23 
+    24: 00003e78     0 SECTION LOCAL  DEFAULT   24 
+    25: 00003f80     0 SECTION LOCAL  DEFAULT   25 
+    26: 00004000     0 SECTION LOCAL  DEFAULT   26 
+    27: 00004008     0 SECTION LOCAL  DEFAULT   27 
+    28: 00000000     0 SECTION LOCAL  DEFAULT   28 
+    29: 00000000     0 FILE    LOCAL  DEFAULT  ABS crtstuff.c
+    30: 00001370     0 FUNC    LOCAL  DEFAULT   16 deregister_tm_clones
+    31: 000013b0     0 FUNC    LOCAL  DEFAULT   16 register_tm_clones
+    32: 00001400     0 FUNC    LOCAL  DEFAULT   16 __do_global_dtors_aux
+    33: 00004008     1 OBJECT  LOCAL  DEFAULT   27 completed.7622
+    34: 00003e74     0 OBJECT  LOCAL  DEFAULT   23 __do_global_dtors_aux_fin
+    35: 00001450     0 FUNC    LOCAL  DEFAULT   16 frame_dummy
+    36: 00003e6c     0 OBJECT  LOCAL  DEFAULT   22 __frame_dummy_init_array_
+    37: 00000000     0 FILE    LOCAL  DEFAULT  ABS elf_test_source_code.cpp
+    38: 00004010    24 OBJECT  LOCAL  DEFAULT   27 _ZL11gTestString
+    39: 0000152d    93 FUNC    LOCAL  DEFAULT   16 _Z41__static_initializati
+    40: 0000158a    40 FUNC    LOCAL  DEFAULT   16 _GLOBAL__sub_I_gTestGloba
+    41: 00000000     0 FILE    LOCAL  DEFAULT  ABS crtstuff.c
+    42: 000024ac     0 OBJECT  LOCAL  DEFAULT   20 __FRAME_END__
+    43: 00000000     0 FILE    LOCAL  DEFAULT  ABS 
+    44: 00002034     0 NOTYPE  LOCAL  DEFAULT   19 __GNU_EH_FRAME_HDR
+    45: 00001000     0 FUNC    LOCAL  DEFAULT   12 _init
+    46: 00003e78     0 OBJECT  LOCAL  DEFAULT   24 _DYNAMIC
+    47: 00003e74     0 NOTYPE  LOCAL  DEFAULT   22 __init_array_end
+    48: 00003e6c     0 NOTYPE  LOCAL  DEFAULT   22 __init_array_start
+    49: 00003f80     0 OBJECT  LOCAL  DEFAULT   25 _GLOBAL_OFFSET_TABLE_
+    50: 00001a64    25 FUNC    WEAK   DEFAULT   16 _ZSt19__iterator_category
+    51: 00000000     0 FUNC    WEAK   DEFAULT  UND __cxa_finalize@@GLIBC_2.1
+    52: 00001a96     0 FUNC    GLOBAL HIDDEN    16 __x86.get_pc_thunk.ax
+    53: 00000000     0 FUNC    GLOBAL DEFAULT  UND _ZNSaIcED2Ev@@GLIBCXX_3.4
+    54: 00004008     0 NOTYPE  GLOBAL DEFAULT   26 _edata
+    55: 00000000     0 FUNC    GLOBAL DEFAULT  UND _ZNSt7__cxx1112basic_stri
+    56: 00001784   125 FUNC    WEAK   DEFAULT   16 _ZNSt7__cxx1112basic_stri
+    57: 00002000     4 OBJECT  GLOBAL DEFAULT   18 _IO_stdin_used
+    58: 00001784   125 FUNC    WEAK   DEFAULT   16 _ZNSt7__cxx1112basic_stri
+    59: 000018ec   350 FUNC    WEAK   DEFAULT   16 _ZNSt7__cxx1112basic_stri
+    60: 00001b20    24 FUNC    GLOBAL HIDDEN    16 __stack_chk_fail_local
+    61: 00000000     0 FUNC    GLOBAL DEFAULT  UND __cxa_begin_catch@@CXXABI
+    62: 00001a4a    26 FUNC    WEAK   DEFAULT   16 _ZN9__gnu_cxx17__is_null_
+    63: 00001512    27 FUNC    GLOBAL DEFAULT   16 main
+    64: 00004000     0 OBJECT  GLOBAL HIDDEN    26 __dso_handle
+    65: 00000000     0 FUNC    GLOBAL DEFAULT  UND _ZNSt7__cxx1112basic_stri
+    66: 00004004     4 OBJECT  WEAK   HIDDEN    26 DW.ref.__gxx_personality_
+    67: 00000000     0 FUNC    GLOBAL DEFAULT  UND __cxa_atexit@@GLIBC_2.1.3
+    68: 00000000     0 FUNC    GLOBAL DEFAULT  UND _ZSt19__throw_logic_error
+    69: 00001b38     0 FUNC    GLOBAL HIDDEN    17 _fini
+    70: 00000000     0 FUNC    GLOBAL DEFAULT  UND _ZNSt7__cxx1112basic_stri
+    71: 0000145d   124 FUNC    GLOBAL DEFAULT   16 TestGlobalChildFunction
+    72: 00001612   326 FUNC    WEAK   DEFAULT   16 _ZN9__gnu_cxx12__to_xstri
+    73: 00000000     0 FUNC    GLOBAL DEFAULT  UND _ZNSt7__cxx1112basic_stri
+    74: 00001a7d    25 FUNC    WEAK   DEFAULT   16 _ZSt10__distanceIPcENSt15
+    75: 00001360     4 FUNC    GLOBAL HIDDEN    16 __x86.get_pc_thunk.bx
+    76: 00001b15     0 FUNC    GLOBAL HIDDEN    16 __x86.get_pc_thunk.bp
+    77: 00000000     0 FUNC    GLOBAL DEFAULT  UND _ZNSt7__cxx1112basic_stri
+    78: 00000000     0 FUNC    GLOBAL DEFAULT  UND _ZNSt7__cxx1112basic_stri
+    79: 00001883   104 FUNC    WEAK   DEFAULT   16 _ZSt8distanceIPcENSt15ite
+    80: 00001758    43 FUNC    WEAK   DEFAULT   16 _ZNSt7__cxx1112basic_stri
+    81: 00000000     0 FUNC    GLOBAL DEFAULT  UND __libc_start_main@@GLIBC_
+    82: 00001320    58 FUNC    GLOBAL DEFAULT   16 _start
+    83: 00000000     0 FUNC    GLOBAL DEFAULT  UND vsnprintf@@GLIBC_2.0
+    84: 00000000     0 FUNC    GLOBAL DEFAULT  UND _ZNSt7__cxx1112basic_stri
+    85: 00001758    43 FUNC    WEAK   DEFAULT   16 _ZNSt7__cxx1112basic_stri
+    86: 00000000     0 FUNC    GLOBAL DEFAULT  UND _ZNSaIcED1Ev@@GLIBCXX_3.4
+    87: 00000000     0 FUNC    GLOBAL DEFAULT  UND _ZNKSt7__cxx1112basic_str
+    88: 00000000     0 FUNC    GLOBAL DEFAULT  UND __stack_chk_fail@@GLIBC_2
+    89: 00004008     0 OBJECT  GLOBAL HIDDEN    26 __TMC_END__
+    90: 00000000     0 FUNC    GLOBAL DEFAULT  UND _ZNSt7__cxx1112basic_stri
+    91: 00000000     0 FUNC    GLOBAL DEFAULT  UND _ZNSt7__cxx1112basic_stri
+    92: 00001802    42 FUNC    WEAK   DEFAULT   16 _ZNSt7__cxx1112basic_stri
+    93: 000015b2    96 FUNC    WEAK   DEFAULT   16 _ZNSt7__cxx119to_stringEi
+    94: 00004028     0 NOTYPE  GLOBAL DEFAULT   27 _end
+    95: 00000000     0 FUNC    GLOBAL DEFAULT  UND _ZNSt7__cxx1112basic_stri
+    96: 0000182c    87 FUNC    WEAK   DEFAULT   16 _ZNSt7__cxx1112basic_stri
+    97: 00001459     0 FUNC    GLOBAL HIDDEN    16 __x86.get_pc_thunk.dx
+    98: 000014d9    57 FUNC    GLOBAL DEFAULT   16 TestGlobalParentFunction
+    99: 00000000     0 FUNC    GLOBAL DEFAULT  UND __cxa_rethrow@@CXXABI_1.3
+   100: 00004008     0 NOTYPE  GLOBAL DEFAULT   27 __bss_start
+   101: 00001aa0   101 FUNC    GLOBAL DEFAULT   16 __libc_csu_init
+   102: 00000000     0 FUNC    GLOBAL DEFAULT  UND __cxa_end_catch@@CXXABI_1
+   103: 00000000     0 FUNC    GLOBAL DEFAULT  UND __gxx_personality_v0@@CXX
+   104: 0000400c     4 OBJECT  GLOBAL DEFAULT   27 gTestGlobalCounter
+   105: 00000000     0 FUNC    GLOBAL DEFAULT  UND _ZNSt7__cxx1112basic_stri
+   106: 00000000     0 NOTYPE  WEAK   DEFAULT  UND _ITM_deregisterTMCloneTab
+   107: 00000000     0 FUNC    GLOBAL DEFAULT  UND _Unwind_Resume@@GCC_3.0
+   108: 00000000     0 FUNC    GLOBAL DEFAULT  UND _ZNSaIcEC1Ev@@GLIBCXX_3.4
+   109: 00001b10     5 FUNC    GLOBAL DEFAULT   16 __libc_csu_fini
+   110: 00000000     0 NOTYPE  WEAK   DEFAULT  UND __gmon_start__
+   111: 00000000     0 NOTYPE  WEAK   DEFAULT  UND _ITM_registerTMCloneTable
+   112: 00001a9a     0 FUNC    GLOBAL HIDDEN    16 __x86.get_pc_thunk.si

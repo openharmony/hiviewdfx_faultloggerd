@@ -78,7 +78,7 @@ HWTEST_F(DfxMemoryTest, DfxMemoryTest002, TestSize.Level2)
     bool ret = memory->ReadMem(addr, &value);
     EXPECT_EQ(true, ret) << "DfxMemoryTest002: ret" << ret;
     printf("addr: %llx, value: %llx \n", static_cast<uint64_t>(addr), static_cast<uint64_t>(value));
-    //EXPECT_EQ(val, value) << "DfxMemoryTest002: value" << value;
+
     uint64_t tmp;
     tmp = static_cast<uint64_t>(memory->Read<uint8_t>(addr, false));
     printf("addr: %llx, u8: %llx \n", static_cast<uint64_t>(addr), tmp);
