@@ -115,7 +115,6 @@ bool ElfParser::ParseProgramHeaders(const EhdrType& ehdr)
     bool firstLoadHeader = true;
     for (size_t i = 0; i < ehdr.e_phnum; i++, offset += ehdr.e_phentsize) {
         PhdrType phdr;
-        LOGU("offset: %llx", (uint64_t)offset);
         if (!Read((uintptr_t)offset, &phdr, sizeof(phdr))) {
             return false;
         }
@@ -140,6 +139,7 @@ bool ElfParser::ParseProgramHeaders(const EhdrType& ehdr)
             if (phdr.p_vaddr + phdr.p_memsz > endVaddr_) {
                 endVaddr_ = phdr.p_vaddr + phdr.p_memsz;
             }
+            LOGU("Elf startVaddr: %llx, endVaddr: %llx", (uint64_t)startVaddr_, (uint64_t)endVaddr_);
             break;
         }
         case PT_DYNAMIC: {
@@ -164,14 +164,12 @@ bool ElfParser::ParseSectionHeaders(const EhdrType& ehdr)
     //section header string table index. include section header table with section name string table.
     if (ehdr.e_shstrndx < ehdr.e_shnum) {
         uint64_t shNdxOffset = offset + ehdr.e_shstrndx * ehdr.e_shentsize;
-        LOGU("shNdxOffset: %llx", (uint64_t)shNdxOffset);
         if (!Read((uintptr_t)shNdxOffset, &shdr, sizeof(shdr))) {
             LOGE("Read section header string table failed");
             return false;
         }
         secOffset = shdr.sh_offset;
         secSize = shdr.sh_size;
-        LOGU("secOffset: %llx", (uint64_t)secOffset);
         if (!ParseStrTab(sectionNames_, secOffset, secSize)) {
             return false;
         }
@@ -186,7 +184,6 @@ bool ElfParser::ParseSectionHeaders(const EhdrType& ehdr)
         if (i == ehdr.e_shstrndx) {
             continue;
         }
-        LOGU("offset: %llx", (uint64_t)offset);
         if (!Read((uintptr_t)offset, &shdr, sizeof(shdr))) {
             return false;
         }
@@ -292,7 +289,6 @@ bool ElfParser::ParseElfSymbols()
         uint64_t offset = shdr.offset;
         const char* strtabPtr = GetStrTabPtr(shdr.link);
         for (; offset < shdr.offset + shdr.size; offset += shdr.entSize) {
-            LOGU("offset: %llx", (uint64_t)offset);
             if (!Read((uintptr_t)offset, &sym, sizeof(sym))) {
                 continue;
             }
@@ -310,8 +306,8 @@ bool ElfParser::ParseElfSymbols()
             elfSymbol.size = static_cast<uint64_t>(sym.st_size);
             elfSymbols_.push_back(elfSymbol);
         }
+        LOGU("elfSymbols.size: %d", elfSymbols_.size());
     }
-    LOGU("elfSymbols.size: %d", elfSymbols_.size());
     return (elfSymbols_.size() > 0);
 }
 

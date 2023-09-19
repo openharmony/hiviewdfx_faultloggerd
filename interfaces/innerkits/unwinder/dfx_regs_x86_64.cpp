@@ -30,7 +30,7 @@ namespace OHOS {
 namespace HiviewDFX {
 void DfxRegsX86_64::SetFromUcontext(const ucontext_t &context)
 {
-    std::vector<uintptr_t> regs(REG_LAST);
+    std::vector<uintptr_t> regs;
     regs[REG_X86_64_RAX] = context.uc_mcontext.gregs[REG_RAX];
     regs[REG_X86_64_RDX] = context.uc_mcontext.gregs[REG_RDX];
     regs[REG_X86_64_RCX] = context.uc_mcontext.gregs[REG_RCX];
@@ -89,7 +89,7 @@ bool DfxRegsX86_64::StepIfSignalHandler(uint64_t relPc, DfxElf* elf, DfxMemory* 
     if (elf == nullptr || !elf->IsValid() || (relPc < static_cast<uint64_t>(elf->GetLoadBias()))) {
         return false;
     }
-    uint64_t elfOffset = relPc - elf->GetLoadBias();
+    uintptr_t elfOffset = static_cast<uintptr_t>(relPc - elf->GetLoadBias());
     uint64_t data;
     if (!elf->Read(elfOffset, &data, sizeof(data))) {
         return false;
@@ -114,7 +114,7 @@ bool DfxRegsX86_64::StepIfSignalHandler(uint64_t relPc, DfxElf* elf, DfxMemory* 
     // Read the mcontext data from the stack.
     // sp points to the ucontext data structure, read only the mcontext part.
     ucontext_t ucontext;
-    uint64_t offset = regsData_[REG_SP] + 0x28;
+    uintptr_t offset = regsData_[REG_SP] + 0x28;
     if (!memory->Read(offset, &ucontext.uc_mcontext, sizeof(ucontext), false)) {
         return false;
     }

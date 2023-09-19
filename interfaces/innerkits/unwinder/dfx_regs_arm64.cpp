@@ -30,7 +30,7 @@ namespace OHOS {
 namespace HiviewDFX {
 void DfxRegsArm64::SetFromUcontext(const ucontext_t &context)
 {
-    std::vector<uintptr_t> regs(REG_LAST);
+    std::vector<uintptr_t> regs;
     regs.push_back(uintptr_t(context.uc_mcontext.regs[REG_AARCH64_X0]));   // 0:x0
     regs.push_back(uintptr_t(context.uc_mcontext.regs[REG_AARCH64_X1]));   // 1:x1
     regs.push_back(uintptr_t(context.uc_mcontext.regs[REG_AARCH64_X2]));   // 2:x2
@@ -127,7 +127,7 @@ bool DfxRegsArm64::StepIfSignalHandler(uint64_t relPc, DfxElf* elf, DfxMemory* m
     if (elf == nullptr || !elf->IsValid() || (relPc < static_cast<uint64_t>(elf->GetLoadBias()))) {
         return false;
     }
-    uint64_t elfOffset = relPc - elf->GetLoadBias();
+    uintptr_t elfOffset = static_cast<uintptr_t>(relPc - elf->GetLoadBias());
     uint64_t data;
     if (!elf->Read(elfOffset, &data, sizeof(data))) {
         return false;
@@ -142,7 +142,7 @@ bool DfxRegsArm64::StepIfSignalHandler(uint64_t relPc, DfxElf* elf, DfxMemory* m
     }
 
     // SP + sizeof(siginfo_t) + uc_mcontext offset + X0 offset.
-    uint64_t offset = regsData_[REG_SP] + 0x80 + 0xb0 + 0x08;
+    uintptr_t offset = regsData_[REG_SP] + 0x80 + 0xb0 + 0x08;
     if (!memory->Read(offset, regsData_.data(), sizeof(uint64_t) * REG_LAST, false)) {
         return false;
     }

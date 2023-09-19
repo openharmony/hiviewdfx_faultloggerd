@@ -126,31 +126,35 @@ bool Unwinder::Unwind(void *ctx, size_t maxFrameNum, size_t skipFrameNum)
             lastErrorData_.code = UNW_ERROR_INVALID_MAP;
             break;
         }
+        map_ = map;
 
-        auto elf = map->GetElf();
-        if (elf == nullptr) {
+        elf_ = map_->GetElf();
+        if (elf_ == nullptr) {
             LOGE("elf is null");
             lastErrorData_.code = UNW_ERROR_INVALID_ELF;
             break;
         }
 
         if (pid_ > 0) {
+            LOGU("remote context");
             UnwindRemoteContext* context = reinterpret_cast<UnwindRemoteContext *>(ctx);
-            context->map = map;
-            context->elf = elf;
-        } else if (pid_ > UWNIND_TYPE_LOCAL) {
+            context->map = map_;
+            context->elf = elf_;
+        } else if (pid_ == UWNIND_TYPE_LOCAL) {
+            LOGU("local context");
             UnwindLocalContext* context = reinterpret_cast<UnwindLocalContext *>(ctx);
-            context->map = map;
-            context->elf = elf;
+            context->map = map_;
+            context->elf = elf_;
         }
 
-        uintptr_t relPc = static_cast<uintptr_t>(elf->GetRelPc(pc, map->begin, map->end));
+        uintptr_t relPc = static_cast<uintptr_t>(elf_->GetRelPc(pc, map_->begin, map_->offset));
+        LOGU("relPc: %llx", (uint64_t)relPc);
         DfxFrame frame;
         frame.index = curIndex;
         frame.relPc = relPc;
-        frame.mapName = map->name;
-        DfxSymbols::GetFuncNameAndOffset((uint64_t)relPc, elf, frame.funcName, frame.funcOffset);
-        frame.buildId = elf->GetBuildId();
+        frame.mapName = map_->name;
+        //DfxSymbols::GetFuncNameAndOffset((uint64_t)relPc, elf_, frame.funcName, frame.funcOffset);
+        //frame.buildId = elf_->GetBuildId();
         frames_.push_back(frame);
 
         stepPc = relPc;
@@ -159,9 +163,9 @@ bool Unwinder::Unwind(void *ctx, size_t maxFrameNum, size_t skipFrameNum)
         }
         needAdjustPc = true;
 
-        if (regs_->StepIfSignalHandler(relPc, elf.get(), memory_.get())) {
-            stepPc = relPc;
-        } else if (!Step(stepPc, sp, ctx)) {
+        //if (regs_->StepIfSignalHandler(relPc, elf_.get(), memory_.get())) {
+        //    stepPc = relPc;
+        if (!Step(pc, sp, ctx)) {
             break;
         }
 

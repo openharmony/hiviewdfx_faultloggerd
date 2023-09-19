@@ -89,8 +89,10 @@ private:
     std::shared_ptr<DfxAccessors> acc_;
     std::shared_ptr<DfxMemory> memory_;
     std::map<uintptr_t, std::shared_ptr<RegLocState>> rsCache_;
-    std::shared_ptr<DfxRegs> regs_;
-    std::shared_ptr<DfxMaps> maps_;
+    std::shared_ptr<DfxRegs> regs_ = nullptr;
+    std::shared_ptr<DfxMaps> maps_ = nullptr;
+    std::shared_ptr<DfxMap> map_ = nullptr;
+    std::shared_ptr<DfxElf> elf_ = nullptr;
     std::vector<uintptr_t> pcs_;
     std::vector<DfxFrame> frames_;
     UnwindErrorData lastErrorData_;
