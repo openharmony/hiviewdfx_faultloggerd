@@ -201,10 +201,16 @@ static int32_t InheritCapabilities(void)
     return 0;
 }
 
+static bool IsDumpSignal(int sig)
+{
+    return sig == SIGDUMP || sig == SIGLEAK_STACK;
+}
+
 static const int SIGCHAIN_SIGNAL_LIST[] = {
     SIGABRT, SIGBUS, SIGDUMP, SIGFPE,
-    SIGSEGV, SIGSTKFLT, SIGSYS, SIGTRAP,
+    SIGSEGV, SIGSTKFLT, SIGSYS, SIGTRAP, SIGLEAK_STACK
 };
+
 static const int SIGACTION_SIGNAL_LIST[] = {
     SIGILL,
 };
@@ -313,6 +319,9 @@ static bool IsMainThread(void)
 
 static void ExitIfSandboxPid(int sig)
 {
+    if (IsDumpSignal(sig)) {
+        return;
+    }
     // real init will not handle crash signal,
     // crash in pid namespace may not exit even if rethrow the signal, use exit instead
     if (syscall(SYS_getpid) == 1) {
@@ -323,7 +332,7 @@ static void ExitIfSandboxPid(int sig)
 
 static void ResetAndRethrowSignalIfNeed(int sig, siginfo_t *si)
 {
-    if (sig == SIGDUMP) {
+    if (IsDumpSignal(sig)) {
         return;
     }
 
@@ -352,7 +361,7 @@ static void PauseMainThreadHandler(int sig)
 
 static void BlockMainThreadIfNeed(int sig)
 {
-    if (IsMainThread() || (sig == SIGDUMP)) {
+    if (IsMainThread() || IsDumpSignal(sig)) {
         return;
     }
 
@@ -511,7 +520,7 @@ static bool DFX_SigchainHandler(int sig, siginfo_t *si, void *context)
 
     // crash signal should never be skipped
     pthread_mutex_lock(&g_signalHandlerMutex);
-    if (g_prevHandledSignal != SIGDUMP) {
+    if (!IsDumpSignal(g_prevHandledSignal)) {
         pthread_mutex_unlock(&g_signalHandlerMutex);
         ExitIfSandboxPid(sig);
         return ret;
@@ -526,6 +535,7 @@ static bool DFX_SigchainHandler(int sig, siginfo_t *si, void *context)
     // for protecting g_reservedChildStack
     // g_signalHandlerMutex will be unlocked in ForkAndExecProcessDump function
     if (sig != SIGDUMP) {
+        ret = sig == SIGLEAK_STACK ? true : false;
         ForkAndDoProcessDump();
         ExitIfSandboxPid(sig);
     } else {

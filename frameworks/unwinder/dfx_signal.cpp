@@ -106,6 +106,7 @@ std::string DfxSignal::FormatSignalName(const int32_t signal)
         { SIGSTKFLT, std::string("SIGSTKFLT") },
         { SIGSYS, std::string("SIGSYS") },
         { SIGDUMP, std::string("SIGDUMP") },
+        { SIGLEAK_STACK, std::string("SIGLEAK_STACK") },
     };
 
     if (sigMaps.find(signal) != sigMaps.end()) {
