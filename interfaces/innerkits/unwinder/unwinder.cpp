@@ -15,17 +15,13 @@
 
 #include "unwinder.h"
 
-#include <pthread.h>
-#if defined(__arm__)
-#include "arm_exidx.h"
-#endif
-#include "dwarf_section.h"
 #include "dfx_define.h"
 #include "dfx_errors.h"
 #include "dfx_regs_get.h"
 #include "dfx_log.h"
 #include "dfx_instructions.h"
 #include "dfx_unwind_table.h"
+#include "dfx_symbols.h"
 #include "stack_util.h"
 #include "string_printf.h"
 
@@ -41,32 +37,29 @@ namespace {
 void Unwinder::Init()
 {
     memory_ = std::make_shared<DfxMemory>(acc_);
+    rsCache_.clear();
     lastErrorData_.code = UNW_ERROR_NONE;
     lastErrorData_.addr = 0;
+    pcs_.clear();
     frames_.clear();
-    GetSelfStackRange(stackBottom_, stackTop_);
+#if defined(__arm__)
+    armExidx_ = std::make_shared<ArmExidx>(memory_);
+#endif
+    dwarfSection_ = std::make_shared<DwarfSection>(memory_);
 
     if (pid_ == UWNIND_TYPE_LOCAL) {
         maps_ = DfxMaps::Create(getpid());
     } else {
-        if (pid_ <= 0) {
-            return;
+        if (pid_ > 0) {
+            maps_ = DfxMaps::Create(pid_);
         }
-        maps_ = DfxMaps::Create(pid_);
     }
 }
 
 void Unwinder::Destroy()
 {
+    pcs_.clear();
     frames_.clear();
-}
-
-bool Unwinder::IsValidFrame(uintptr_t addr, uintptr_t stackTop, uintptr_t stackBottom)
-{
-    if (UNLIKELY(stackTop < stackBottom)) {
-        return false;
-    }
-    return ((addr >= stackBottom) && (addr < stackTop - sizeof(uintptr_t)));
 }
 
 bool Unwinder::UnwindLocal(size_t maxFrameNum, size_t skipFrameNum)
@@ -74,12 +67,15 @@ bool Unwinder::UnwindLocal(size_t maxFrameNum, size_t skipFrameNum)
     if (regs_ == nullptr) {
         regs_ = DfxRegs::Create();
     }
+    uintptr_t stackBottom, stackTop;
+    GetSelfStackRange(stackBottom, stackTop);
+    LOGU("stackBottom: %llx, stackTop: %llx", (uint64_t)stackBottom, (uint64_t)stackTop);
 
     UnwindLocalContext context;
     GetLocalRegs(regs_->RawData());
-    context.regs = static_cast<uintptr_t *>(regs_->RawData());
-    context.regsSize = regs_->RegsSize();
-
+    context.regs = regs_;
+    context.stackBottom = stackBottom;
+    context.stackTop = stackTop;
     return Unwind(&context, maxFrameNum, skipFrameNum);
 }
 
@@ -97,8 +93,13 @@ bool Unwinder::UnwindRemote(size_t maxFrameNum, size_t skipFrameNum)
 
 bool Unwinder::Unwind(void *ctx, size_t maxFrameNum, size_t skipFrameNum)
 {
+    if ((ctx == nullptr) || (regs_ == nullptr) || (maps_ == nullptr)) {
+        LOGE("params is nullptr?");
+        return false;
+    }
     memory_->SetCtx(ctx);
 
+    bool needAdjustPc = false;
     size_t index = 0;
     size_t curIndex = 0;
     uintptr_t pc, sp, stepPc;
@@ -114,16 +115,9 @@ bool Unwinder::Unwind(void *ctx, size_t maxFrameNum, size_t skipFrameNum)
             break;
         }
 
-        if (!memory_->ReadReg(REG_PC, &pc)) {
-            LOGE("Read pc failed");
-            lastErrorData_.code = UNW_ERROR_INVALID_REGS;
-            break;
-        }
-        if (!memory_->ReadReg(REG_SP, &sp)) {
-            LOGE("Read sp failed");
-            lastErrorData_.code = UNW_ERROR_INVALID_REGS;
-            break;
-        }
+        pc = regs_->GetPc();
+        sp = regs_->GetSp();
+        pcs_.push_back(pc);
 
         std::shared_ptr<DfxMap> map = nullptr;
         if (!maps_->FindMapByAddr(map, pc) || (map == nullptr)) {
@@ -132,8 +126,9 @@ bool Unwinder::Unwind(void *ctx, size_t maxFrameNum, size_t skipFrameNum)
             lastErrorData_.code = UNW_ERROR_INVALID_MAP;
             break;
         }
+        map_ = map;
 
-        elf_ = map->GetElf();
+        elf_ = map_->GetElf();
         if (elf_ == nullptr) {
             LOGE("elf is null");
             lastErrorData_.code = UNW_ERROR_INVALID_ELF;
@@ -141,15 +136,36 @@ bool Unwinder::Unwind(void *ctx, size_t maxFrameNum, size_t skipFrameNum)
         }
 
         if (pid_ > 0) {
+            LOGU("remote context");
             UnwindRemoteContext* context = reinterpret_cast<UnwindRemoteContext *>(ctx);
+            context->map = map_;
+            context->elf = elf_;
+        } else if (pid_ == UWNIND_TYPE_LOCAL) {
+            LOGU("local context");
+            UnwindLocalContext* context = reinterpret_cast<UnwindLocalContext *>(ctx);
+            context->map = map_;
             context->elf = elf_;
         }
-        uint64_t relPc = elf_->GetRelPc(pc, map->begin, map->end);
-        stepPc = relPc;
 
-        if (regs_->StepIfSignalHandler(relPc, elf_.get(), memory_.get())) {
-            stepPc = relPc;
-        } else if (Step(stepPc, sp, ctx) <= 0) {
+        uintptr_t relPc = static_cast<uintptr_t>(elf_->GetRelPc(pc, map_->begin, map_->offset));
+        LOGU("relPc: %llx", (uint64_t)relPc);
+        DfxFrame frame;
+        frame.index = curIndex;
+        frame.relPc = relPc;
+        frame.mapName = map_->name;
+        //DfxSymbols::GetFuncNameAndOffset((uint64_t)relPc, elf_, frame.funcName, frame.funcOffset);
+        //frame.buildId = elf_->GetBuildId();
+        frames_.push_back(frame);
+
+        stepPc = relPc;
+        if (needAdjustPc) {
+            DoPcAdjust(stepPc);
+        }
+        needAdjustPc = true;
+
+        //if (regs_->StepIfSignalHandler(relPc, elf_.get(), memory_.get())) {
+        //    stepPc = relPc;
+        if (!Step(pc, sp, ctx)) {
             break;
         }
 
@@ -163,7 +179,6 @@ bool Unwinder::Step(uintptr_t& pc, uintptr_t& sp, void *ctx)
     LOGU("++++++pc: %llx, sp: %llx", (uint64_t)pc, (uint64_t)sp);
     lastErrorData_.addr = pc;
     int errorCode = UNW_ERROR_NONE;
-    DoPcAdjust(pc);
     memory_->SetCtx(ctx);
     std::shared_ptr<RegLocState> rs = nullptr;
     bool ret = false;
@@ -171,21 +186,23 @@ bool Unwinder::Step(uintptr_t& pc, uintptr_t& sp, void *ctx)
         // 1. find cache rs
         auto iter = rsCache_.find(pc);
         if (iter != rsCache_.end()) {
+            LOGU("Find rs cache");
             rs = iter->second;
+            ret = true;
             break;
         }
 
         // 2. find unwind table and entry
         UnwindTableInfo di;
         if ((errorCode = acc_->FindUnwindTable(pc, di, ctx)) != UNW_ERROR_NONE) {
-            LOGE("Failed to find unwind table?");
+            LOGE("Failed to find unwind table? errorCode: %d", errorCode);
             lastErrorData_.code = static_cast<uint16_t>(errorCode);
             break;
         }
 
         struct UnwindEntryInfo pi;
         if ((errorCode = DfxUnwindTable::SearchUnwindEntry(pi, di, pc, memory_)) != UNW_ERROR_NONE) {
-            LOGE("Failed to search unwind entry?");
+            LOGE("Failed to search unwind entry? errorCode: %d", errorCode);
             lastErrorData_.code = static_cast<uint16_t>(errorCode);
             break;
         }
@@ -194,21 +211,21 @@ bool Unwinder::Step(uintptr_t& pc, uintptr_t& sp, void *ctx)
         rs = std::make_shared<RegLocState>();
 #if defined(__arm__)
         if (!ret && pi.format == UNW_INFO_FORMAT_ARM_EXIDX) {
-            ArmExidx armExidx(memory_);
-            if (!armExidx.Step((uintptr_t)pi.unwindInfo, regs_, rs)) {
-                lastErrorData_.code = armExidx.GetLastErrorCode();
-                lastErrorData_.addr = armExidx.GetLastErrorAddr();
+            if (!armExidx_->Step((uintptr_t)pi.unwindInfo, regs_, rs)) {
+                lastErrorData_.code = armExidx_->GetLastErrorCode();
+                lastErrorData_.addr = armExidx_->GetLastErrorAddr();
+                LOGE("Step exidx section error, errorCode: %d", lastErrorData_.code);
             } else {
                 ret = true;
             }
         }
 #endif
         if (!ret && pi.format == UNW_INFO_FORMAT_REMOTE_TABLE) {
-            DwarfSection dwarfSection(memory_);
-            dwarfSection.SetDataOffset(di.segbase);
-            if (!dwarfSection.Step((uintptr_t)pi.unwindInfo, regs_, rs)) {
-                lastErrorData_.code = dwarfSection.GetLastErrorCode();
-                lastErrorData_.addr = dwarfSection.GetLastErrorAddr();
+            memory_->SetDataOffset(di.segbase);
+            if (!dwarfSection_->Step((uintptr_t)pi.unwindInfo, regs_, rs)) {
+                lastErrorData_.code = dwarfSection_->GetLastErrorCode();
+                lastErrorData_.addr = dwarfSection_->GetLastErrorAddr();
+                LOGE("Step dwarf section error, errorCode: %d", lastErrorData_.code);
             } else {
                 ret = true;
             }
@@ -222,8 +239,8 @@ bool Unwinder::Step(uintptr_t& pc, uintptr_t& sp, void *ctx)
     } while (false);
 
     // 5. update regs and regs state
-    if (!Apply(regs_, rs)) {
-        LOGE("Failed to Apply");
+    if (ret) {
+        ret = Apply(regs_, rs);
     }
 
     pc = regs_->GetPc();
@@ -232,18 +249,32 @@ bool Unwinder::Step(uintptr_t& pc, uintptr_t& sp, void *ctx)
     return ret;
 }
 
-bool Unwinder::Apply(std::shared_ptr<DfxRegs> regs, std::shared_ptr<RegLocState> rs)
+bool Unwinder::FpStep(uintptr_t& fp, uintptr_t& pc, void *ctx)
 {
-    if (rs == nullptr || regs == nullptr) {
-        return false;
-    }
-    if (DfxInstructions::Apply(*(regs.get()), memory_, *(rs.get()))) {
-        if (!rs->isPcSet) {
-            regs->SetReg(REG_PC, regs->GetReg(REG_LR));
-        }
+    UnwindLocalContext* context = reinterpret_cast<UnwindLocalContext *>(ctx);
+    uintptr_t prevFp = fp;
+    if (DfxAccessorsLocal::IsValidFrame(prevFp, context->stackBottom, context->stackTop)) {
+        fp = *reinterpret_cast<uintptr_t*>(prevFp);
+        pc = *reinterpret_cast<uintptr_t*>(prevFp + sizeof(uintptr_t));
         return true;
     }
     return false;
+}
+
+bool Unwinder::Apply(std::shared_ptr<DfxRegs> regs, std::shared_ptr<RegLocState> rs)
+{
+    bool ret = false;
+    if (rs == nullptr || regs == nullptr) {
+        return false;
+    }
+    ret = DfxInstructions::Apply(*(regs.get()), memory_, *(rs.get()));
+    if (!ret) {
+        LOGE("Failed to apply rs");
+    }
+    if (!rs->isPcSet) {
+        regs->SetReg(REG_PC, regs->GetReg(REG_LR));
+    }
+    return ret;
 }
 
 void Unwinder::DoPcAdjust(uintptr_t& pc)

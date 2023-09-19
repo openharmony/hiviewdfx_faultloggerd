@@ -31,7 +31,7 @@ namespace {
 
 bool DfxMemory::ReadReg(int regIdx, uintptr_t *val)
 {
-    if (acc_->AccessReg(regIdx, val, ctx_) == UNW_ERROR_NONE) {
+    if (acc_ != nullptr && acc_->AccessReg(regIdx, val, ctx_) == UNW_ERROR_NONE) {
         return true;
     }
     return false;
@@ -39,7 +39,7 @@ bool DfxMemory::ReadReg(int regIdx, uintptr_t *val)
 
 bool DfxMemory::ReadMem(uintptr_t addr, uintptr_t *val)
 {
-    if (acc_->AccessMem(addr, val, ctx_) == UNW_ERROR_NONE) {
+    if (acc_ != nullptr && acc_->AccessMem(addr, val, ctx_) == UNW_ERROR_NONE) {
         return true;
     }
     return false;
@@ -47,6 +47,9 @@ bool DfxMemory::ReadMem(uintptr_t addr, uintptr_t *val)
 
 size_t DfxMemory::Read(uintptr_t& addr, void* val, size_t size, bool incre)
 {
+    if (val == nullptr) {
+        return 0;
+    }
     uintptr_t tmpAddr = addr;
     uint64_t maxSize;
     if (__builtin_add_overflow(tmpAddr, size, &maxSize)) {
@@ -140,6 +143,36 @@ bool DfxMemory::ReadUptr(uintptr_t& addr, uintptr_t *val, bool incre)
     return false;
 }
 
+bool DfxMemory::ReadString(uintptr_t& addr, std::string* str, size_t maxSize, bool incre)
+{
+    char buf[NAME_LEN];
+    size_t size = 0;
+    uintptr_t ptr = addr;
+    for (size_t offset = 0; offset < maxSize; offset += size) {
+        size_t readn = std::min(sizeof(buf), maxSize - offset);
+        ptr = ptr + offset;
+        size = Read(ptr, buf, readn, false);
+        if (size == 0) {
+            return false;
+        }
+        size_t length = strnlen(buf, size);
+        if (length < size) {
+            if (offset == 0) {
+                str->assign(buf, length);
+                return true;
+            } else {
+                str->assign(offset + length, '\0');
+                Read(ptr, (void *)str->data(), str->size(), false);
+                return true;
+            }
+        }
+    }
+    if (incre) {
+        addr += str->size();
+    }
+    return false;
+}
+
 bool DfxMemory::ReadPrel31(uintptr_t& addr, uintptr_t *val)
 {
     uintptr_t offset;
@@ -159,7 +192,9 @@ uint64_t DfxMemory::ReadUleb128(uintptr_t& addr)
     uint64_t shift = 0;
     uint8_t byte;
     do {
-        byte = Read<uint8_t>(addr, true);
+        if (!ReadU8(addr, &byte, true)) {
+            break;
+        }
 
         val |= static_cast<uint64_t>(byte & 0x7f) << shift;
         shift += 7;
@@ -173,7 +208,9 @@ int64_t DfxMemory::ReadSleb128(uintptr_t& addr)
     uint64_t shift = 0;
     uint8_t byte;
     do {
-        byte = Read<uint8_t>(addr, true);
+        if (!ReadU8(addr, &byte, true)) {
+            break;
+        }
 
         val |= static_cast<uint64_t>(byte & 0x7f) << shift;
         shift += 7;
@@ -209,10 +246,10 @@ size_t DfxMemory::GetEncodedSize(uint8_t encoding)
     }
 }
 
-uintptr_t DfxMemory::ReadEncodedValue(uintptr_t& addr, uint8_t encoding, uintptr_t dataRel, uintptr_t funcRel)
+uintptr_t DfxMemory::ReadEncodedValue(uintptr_t& addr, uint8_t encoding)
 {
-    uintptr_t val = 0;
     uintptr_t startAddr = addr;
+    uintptr_t val = 0;
     if (encoding == DW_EH_PE_omit) {
         return val;
     } else if (encoding == DW_EH_PE_aligned) {
@@ -220,12 +257,13 @@ uintptr_t DfxMemory::ReadEncodedValue(uintptr_t& addr, uint8_t encoding, uintptr
             return val;
         }
         addr &= -sizeof(uintptr_t);
-        return val = Read<uintptr_t>(addr, true);
+        ReadUptr(addr, &val, true);
+        return val;
     }
 
     switch (encoding & DW_EH_PE_FORMAT_MASK) {
         case DW_EH_PE_absptr:
-            val = Read<uintptr_t>(addr, true);
+            ReadUptr(addr, &val, true);
             return val;
         case DW_EH_PE_uleb128:
             val = static_cast<uintptr_t>(ReadUleb128(addr));
@@ -233,36 +271,32 @@ uintptr_t DfxMemory::ReadEncodedValue(uintptr_t& addr, uint8_t encoding, uintptr
         case DW_EH_PE_sleb128:
             val = static_cast<uintptr_t>(ReadSleb128(addr));
             break;
-        case DW_EH_PE_udata1: {
-            val = static_cast<uintptr_t>(Read<uint8_t>(addr, true));
-        }
-            break;
+        case DW_EH_PE_udata1:
         case DW_EH_PE_sdata1: {
-            val = static_cast<uintptr_t>(Read<int8_t>(addr, true));
+            uint8_t tmp = 0;
+            ReadU8(addr, &tmp, true);
+            val = static_cast<uintptr_t>(tmp);
         }
             break;
-        case DW_EH_PE_udata2: {
-            val = static_cast<uintptr_t>(Read<uint16_t>(addr, true));
-        }
-            break;
+        case DW_EH_PE_udata2:
         case DW_EH_PE_sdata2: {
-            val = static_cast<uintptr_t>(Read<int16_t>(addr, true));
+            uint16_t tmp = 0;
+            ReadU16(addr, &tmp, true);
+            val = static_cast<uintptr_t>(tmp);
         }
             break;
-        case DW_EH_PE_udata4: {
-            val = static_cast<uintptr_t>(Read<uint32_t>(addr, true));
-        }
-            break;
+        case DW_EH_PE_udata4:
         case DW_EH_PE_sdata4: {
-            val = static_cast<uintptr_t>(Read<int32_t>(addr, true));
+            uint32_t tmp = 0;
+            ReadU32(addr, &tmp, true);
+            val = static_cast<uintptr_t>(tmp);
         }
             break;
-        case DW_EH_PE_udata8: {
-            val = static_cast<uintptr_t>(Read<uint64_t>(addr, true));
-        }
-            break;
+        case DW_EH_PE_udata8:
         case DW_EH_PE_sdata8: {
-            val = static_cast<uintptr_t>(Read<int64_t>(addr, true));
+            uint64_t tmp = 0;
+            ReadU64(addr, &tmp, true);
+            val = static_cast<uintptr_t>(tmp);
         }
             break;
         default:
@@ -278,21 +312,38 @@ uintptr_t DfxMemory::ReadEncodedValue(uintptr_t& addr, uint8_t encoding, uintptr
             LOGE("XXX For now we don't support text-rel values");
             break;
         case DW_EH_PE_datarel:
-            val += dataRel;
+            val += dataOffset_;
             break;
         case DW_EH_PE_funcrel:
-            val += funcRel;
+            val += funcOffset_;
             break;
         default:
-            LOGW("Unexpected application type 0x%x", encoding & DW_EH_PE_APPL_MASK);
             break;
     }
 
     if (encoding & DW_EH_PE_indirect) {
         uintptr_t indirectAddr = val;
-        val = Read<uintptr_t>(indirectAddr, true);
+        ReadUptr(indirectAddr, &val, true);
     }
     return val;
+}
+
+size_t DfxMemoryCpy::Read(uintptr_t& addr, void* val, size_t size, bool incre)
+{
+    size_t ret = 0;
+    if (val == nullptr) {
+        return ret;
+    }
+    errno_t err = memcpy_s(val, size, (void*)addr, size);
+    if (err != EOK) {
+        LOGE("memcpy_s failed");
+        return ret;
+    }
+    ret = size;
+    if (incre) {
+        addr += size;
+    }
+    return ret;
 }
 } // namespace HiviewDFX
 } // namespace OHOS

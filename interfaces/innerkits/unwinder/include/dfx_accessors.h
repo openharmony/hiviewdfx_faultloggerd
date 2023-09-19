@@ -42,6 +42,7 @@ class DfxAccessorsLocal : public DfxAccessors
 public:
     DfxAccessorsLocal() = default;
     virtual ~DfxAccessorsLocal() = default;
+    static bool IsValidFrame(uintptr_t addr, uintptr_t stackBottom, uintptr_t stackTop);
 
     int AccessMem(uintptr_t addr, uintptr_t *val, void *arg) override;
     int AccessReg(int regIdx, uintptr_t *val, void *arg) override;

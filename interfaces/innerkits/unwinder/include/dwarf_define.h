@@ -17,6 +17,7 @@
 
 #include <cinttypes>
 #include <string>
+#include <vector>
 
 namespace OHOS {
 namespace HiviewDFX {
@@ -205,27 +206,27 @@ enum DwarfEncoding : uint8_t {
 // we only need to parse eh_frame and eh_frame_hdr to get the dwarf-encoded unwind info
 // https://refspecs.linuxbase.org/LSB_4.1.0/LSB-Core-generic/LSB-Core-generic/ehframechpt.html
 // Parsed Common Information Entry Format
-typedef struct {
+struct CommonInfoEntry {
     uintptr_t cieStart;
     uintptr_t cieEnd;
     uint32_t codeAlignFactor;
     int32_t dataAlignFactor;
     uintptr_t returnAddressRegister;
-    bool hasAugmentationData;
+    bool hasAugmentationData = false;
+    bool isSignalFrame = false;
+    uint8_t segmentSize;
     uintptr_t instructions;  // need instruction end ?
     // P
     uint8_t personality;
-    uint8_t personalityEncoding;
     // L
     uint8_t lsdaEncoding;
     // R
     uint8_t pointerEncoding;
-    bool isSignalFrame;
-} CommonInfoEntry;
+};
 
 // Parsed Frame Description Entry
 // Table 8-3. Frame Description Entry Format
-typedef struct {
+struct FrameDescEntry {
     uintptr_t fdeStart;
     uintptr_t fdeEnd;
     uintptr_t pcStart;
@@ -233,7 +234,13 @@ typedef struct {
     uintptr_t lsda;
     uintptr_t instructions;  // need instruction end ?
     uintptr_t cieAddr;
-} FrameDescEntry;
+    CommonInfoEntry cie;
+};
+
+struct DwarfTableEntry {
+    int32_t startPcOffset;
+    int32_t fdeOffset;
+};
 
 } // namespace HiviewDFX
 } // namespace OHOS

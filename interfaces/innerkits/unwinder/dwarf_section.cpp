@@ -29,20 +29,18 @@ namespace {
 
 bool DwarfSection::Step(uintptr_t fdeAddr, std::shared_ptr<DfxRegs> regs, std::shared_ptr<RegLocState> rs)
 {
-    LOGU("Step: fdeAddr=%p", (void*)fdeAddr);
-    lastErrorData_.code = UNW_ERROR_NONE;
-    lastErrorData_.addr = fdeAddr;
-    CommonInfoEntry cieInfo;
+    lastErrorData_.code = static_cast<uint16_t>(UNW_ERROR_NONE);
+    lastErrorData_.addr = static_cast<uint64_t>(fdeAddr);
     FrameDescEntry fdeInfo;
-    if (!ParseFde(fdeAddr, fdeInfo, cieInfo)) {
+    if (!ParseFde(fdeAddr, fdeInfo)) {
         LOGE("Failed to parse fde?");
         lastErrorData_.code = UNW_ERROR_DWARF_INVALID_FDE;
         return false;
     }
 
-    LOGU("pc: %p, FDE start: %p", (void*) regs->GetPc(), (void*) (fdeInfo.pcStart) );
+    LOGU("pc: %p, FDE start: %p", (void*)regs->GetPc(), (void*)fdeInfo.pcStart);
     DwarfCfaInstructions dwarfInstructions(memory_);
-    if (!dwarfInstructions.Parse(regs->GetPc(), cieInfo, fdeInfo, *(rs.get()))) {
+    if (!dwarfInstructions.Parse(regs->GetPc(), fdeInfo, *(rs.get()))) {
         LOGE("Failed to parse dwarf instructions?");
         lastErrorData_.code = UNW_ERROR_DWARF_INVALID_INSTR;
         return false;
@@ -50,83 +48,143 @@ bool DwarfSection::Step(uintptr_t fdeAddr, std::shared_ptr<DfxRegs> regs, std::s
     return true;
 }
 
-bool DwarfSection::ParseFde(uintptr_t fdeAddr, FrameDescEntry &fdeInfo, CommonInfoEntry &cieInfo)
+bool DwarfSection::ParseFde(uintptr_t fdeAddr, FrameDescEntry &fdeInfo)
 {
     LOGU("fdeAddr: %llx", (uint64_t)fdeAddr);
-    uintptr_t ptr = fdeAddr;
-    uintptr_t length = static_cast<uintptr_t>(memory_->Read<uint32_t>(ptr, true));
-    if (length == 0xffffffff) {
-        length = static_cast<uintptr_t>(memory_->Read<uint64_t>(ptr, true));
+    if (!fdeEntries_.empty()) {
+        auto iter = fdeEntries_.find(fdeAddr);
+        if (iter != fdeEntries_.end()) {
+            fdeInfo = iter->second;
+            return true;
+        }
     }
-    if (length == 0) {
-        LOGE("Failed to parse FDE, length?");
-        return false;
-    }
-
-    uintptr_t nextFdeAddr = ptr + length;
-    uint32_t ciePtr = memory_->Read<uint32_t>(ptr, false);
-    if (ciePtr == 0) {
-        LOGE("Failed to parse FDE, ciePtr?");
-        return false;
-    }
-    uintptr_t cieAddr = static_cast<uintptr_t>(ptr - ciePtr);
-    LOGU("cieAddr: %llx", (uint64_t)cieAddr);
-    ptr += sizeof(uint32_t);
-
     fdeInfo.fdeStart = fdeAddr;
-    fdeInfo.fdeEnd = nextFdeAddr;
-    fdeInfo.cieAddr = cieAddr;
-    if (!FillInFde(ptr, fdeInfo, cieInfo)) {
+    uintptr_t ptr = fdeAddr;
+    if (!FillInFdeHeader(ptr, fdeInfo) || !FillInFde(ptr, fdeInfo)) {
         LOGE("Failed to fill FDE?");
+        fdeEntries_.erase(fdeAddr);
         return false;
     }
+    fdeEntries_[fdeAddr] = fdeInfo;
+    return true;
+}
+
+bool DwarfSection::FillInFdeHeader(uintptr_t& ptr, FrameDescEntry &fdeInfo)
+{
+    uint32_t length = memory_->Read<uint32_t>(ptr, true);
+    uintptr_t ciePtr = 0;
+    if (length == static_cast<uint32_t>(-1)) {
+        uint64_t length64 = memory_->Read<uint64_t>(ptr, true);
+        fdeInfo.fdeEnd = ptr + length64;
+        ciePtr = static_cast<uintptr_t>(memory_->Read<uint64_t>(ptr, false));
+        if (ciePtr == cie64Value_) {
+            LOGE("Failed to parse FDE, ciePtr?");
+            return false;
+        }
+        fdeInfo.cieAddr = static_cast<uintptr_t>(ptr - ciePtr);
+        ptr += sizeof(uint64_t);
+    } else {
+        fdeInfo.fdeEnd = ptr + length;
+        ciePtr = static_cast<uintptr_t>(memory_->Read<uint32_t>(ptr, false));
+        if (ciePtr == cie32Value_) {
+            LOGE("Failed to parse FDE, ciePtr?");
+            return false;
+        }
+        fdeInfo.cieAddr = static_cast<uintptr_t>(ptr - ciePtr);
+        ptr += sizeof(uint32_t);
+    }
+    return true;
+}
+
+bool DwarfSection::FillInFde(uintptr_t& ptr, FrameDescEntry &fdeInfo)
+{
+    if (!ParseCie(fdeInfo.cieAddr, fdeInfo.cie)) {
+        LOGE("Failed to fill CIE?");
+        return false;
+    }
+
+    if (fdeInfo.cie.segmentSize != 0) {
+        // Skip over the segment selector for now.
+        ptr += fdeInfo.cie.segmentSize;
+    }
+    // Parse pc begin and range.
+    LOGU("pointerEncoding: %02x", fdeInfo.cie.pointerEncoding);
+    uintptr_t pcStart = memory_->ReadEncodedValue(ptr, (DwarfEncoding)fdeInfo.cie.pointerEncoding);
+    uintptr_t pcRange = memory_->ReadEncodedValue(ptr, (DwarfEncoding)(fdeInfo.cie.pointerEncoding & 0x0F));
+
+    fdeInfo.lsda = 0;
+    // Check for augmentation length.
+    if (fdeInfo.cie.hasAugmentationData) {
+        uintptr_t augLen = memory_->ReadUleb128(ptr);
+        uintptr_t instructionsPtr = ptr + augLen;
+        if (fdeInfo.cie.lsdaEncoding != DW_EH_PE_omit) {
+            uintptr_t lsdaPtr = ptr;
+            if (memory_->ReadEncodedValue(ptr, (DwarfEncoding)(fdeInfo.cie.lsdaEncoding & 0x0F)) != 0) {
+                fdeInfo.lsda = memory_->ReadEncodedValue(lsdaPtr, (DwarfEncoding)fdeInfo.cie.lsdaEncoding);
+            }
+        }
+        ptr = instructionsPtr;
+    }
+
+    fdeInfo.instructions = ptr;
+    fdeInfo.pcStart = pcStart;
+    fdeInfo.pcEnd = pcStart + pcRange;
+    LOGU("FDE pcStart: %p, pcEnd: %p", (void*)(fdeInfo.pcStart), (void*)(fdeInfo.pcEnd));
     return true;
 }
 
 bool DwarfSection::ParseCie(uintptr_t cieAddr, CommonInfoEntry &cieInfo)
 {
-    LOGU("cieAddr: %p", (void *)cieAddr);
+    LOGU("cieAddr: %llx", (uint64_t)cieAddr);
+    if (!cieEntries_.empty()) {
+        auto iter = cieEntries_.find(cieAddr);
+        if (iter != cieEntries_.end()) {
+            cieInfo = iter->second;
+            return true;
+        }
+    }
     cieInfo.cieStart = cieAddr;
     uintptr_t ptr = cieAddr;
     if (!FillInCieHeader(ptr, cieInfo) || !FillInCie(ptr, cieInfo)) {
+        cieEntries_.erase(cieAddr);
         return false;
     }
+    cieEntries_[cieAddr] = cieInfo;
     return true;
 }
 
-bool DwarfSection::FillInCieHeader(uintptr_t& addr, CommonInfoEntry &cieInfo)
+bool DwarfSection::FillInCieHeader(uintptr_t& ptr, CommonInfoEntry &cieInfo)
 {
     cieInfo.lsdaEncoding = DW_EH_PE_omit;
-    if (sizeof(uintptr_t) == 4) {
-        cieInfo.pointerEncoding = DW_EH_PE_udata4;
+    uint32_t length = static_cast<uintptr_t>(memory_->Read<uint32_t>(ptr, true));
+    if (length == static_cast<uint32_t>(-1)) {
+        uint64_t length64 = static_cast<uintptr_t>(memory_->Read<uint64_t>(ptr, true));
+        cieInfo.cieEnd = ptr + length64;
+        cieInfo.pointerEncoding = DW_EH_PE_sdata8;
+        uint64_t cieId = memory_->Read<uint64_t>(ptr, true);
+        if (cieId != cie64Value_) {
+            LOGE("Failed to FillInCieHeader, cieId?");
+            lastErrorData_.code = UNW_ERROR_ILLEGAL_VALUE;
+            return false;
+        }
     } else {
-        cieInfo.pointerEncoding = DW_EH_PE_udata8;
-    }
-
-    uintptr_t length = static_cast<uintptr_t>(memory_->Read<uint32_t>(addr, true));
-    if (length == 0xffffffff) {
-        length = static_cast<uintptr_t>(memory_->Read<uint64_t>(addr, true));
-    }
-    if (length == 0) {
-        LOGE("Failed to FillInCieHeader, length?");
-        return false;
-    }
-    cieInfo.cieEnd = addr + length;
-    uint32_t cieId = memory_->Read<uint32_t>(addr, true);
-    if (cieId != cieIdValue_) {
-        LOGE("Failed to FillInCieHeader, cieId?");
-        lastErrorData_.code = UNW_ERROR_ILLEGAL_VALUE;
-        return false;
+        cieInfo.cieEnd = ptr + length;
+        cieInfo.pointerEncoding = DW_EH_PE_sdata4;
+        uint32_t cieId = memory_->Read<uint32_t>(ptr, true);
+        if (cieId != cie32Value_) {
+            LOGE("Failed to FillInCieHeader, cieId?");
+            lastErrorData_.code = UNW_ERROR_ILLEGAL_VALUE;
+            return false;
+        }
     }
     return true;
 }
 
-bool DwarfSection::FillInCie(uintptr_t& addr, CommonInfoEntry &cieInfo)
+bool DwarfSection::FillInCie(uintptr_t& ptr, CommonInfoEntry &cieInfo)
 {
-    uintptr_t ptr = addr;
     uint8_t version = memory_->Read<uint8_t>(ptr, true);
     LOGU("Cie version: %d", version);
-    if (version != DW_EH_VERSION) {
+    if (version != DW_EH_VERSION && version != 3 && version != 4 && version != 5) {
         LOGE("Invalid cie version: %d", version);
         lastErrorData_.code = UNW_ERROR_UNSUPPORTED_VERSION;
         return false;
@@ -134,13 +192,19 @@ bool DwarfSection::FillInCie(uintptr_t& addr, CommonInfoEntry &cieInfo)
 
     // save augmentation string
     uint8_t ch;
-    uint8_t augStr[5];
-    memset_s(augStr, sizeof(augStr), 0, sizeof(augStr));
-    size_t i = 0;
+    std::vector<char> augStr;
+    augStr.clear();
     while ((ch = memory_->Read<uint8_t>(ptr, true)) != '\0') {
-        if (i < sizeof(augStr) - 1) {
-            augStr[i++] = ch;
-        }
+        augStr.push_back(ch);
+    }
+
+    // Segment Size
+    if (version == 4 || version == 5) {
+        // Skip the Address Size field since we only use it for validation.
+        ptr += 1;
+        cieInfo.segmentSize = memory_->Read<uint8_t>(ptr, true);
+    } else {
+        cieInfo.segmentSize = 0;
     }
 
     // parse code aligment factor
@@ -152,24 +216,30 @@ bool DwarfSection::FillInCie(uintptr_t& addr, CommonInfoEntry &cieInfo)
     LOGU("dataAlignFactor: %d", cieInfo.dataAlignFactor);
 
     // parse return address register
-    cieInfo.returnAddressRegister = (uintptr_t)memory_->ReadUleb128(ptr);
+    if (version == DW_EH_VERSION) {
+        cieInfo.returnAddressRegister = (uintptr_t)memory_->Read<uint8_t>(ptr, true);
+    } else {
+        cieInfo.returnAddressRegister = (uintptr_t)memory_->ReadUleb128(ptr);
+    }
     LOGU("returnAddressRegister: %d", (int)cieInfo.returnAddressRegister);
 
     // parse augmentation data based on augmentation string
-    i = 0;
-    if (augStr[0] == 'z') {
-        cieInfo.hasAugmentationData = true;
-        // parse augmentation data length
-        MAYBE_UNUSED uintptr_t augSize = memory_->ReadUleb128(ptr);
-        LOGU("augSize: %x", augSize);
-        i++;
+    if (augStr.empty() || augStr[0] != 'z') {
+        cieInfo.instructions = ptr;
+        return true;
     }
-    for (; i < sizeof(augStr) && augStr[i]; ++i) {
+    cieInfo.hasAugmentationData = true;
+    // parse augmentation data length
+    MAYBE_UNUSED uintptr_t augSize = memory_->ReadUleb128(ptr);
+    LOGU("augSize: %x", augSize);
+    cieInfo.instructions = ptr + augSize;
+
+    for (size_t i = 1; i < augStr.size(); ++i) {
         switch (augStr[i]) {
-            case 'P':
-                cieInfo.personalityEncoding = memory_->Read<uint8_t>(ptr, true);
-                cieInfo.personality = memory_->ReadEncodedValue(
-                    ptr, (DwarfEncoding)cieInfo.personalityEncoding, dataOffset_);
+            case 'P': {
+                uint8_t personalityEncoding = memory_->Read<uint8_t>(ptr, true);
+                cieInfo.personality = memory_->ReadEncodedValue(ptr, personalityEncoding);
+            }
                 break;
             case 'L':
                 cieInfo.lsdaEncoding = memory_->Read<uint8_t>(ptr, true);
@@ -186,45 +256,6 @@ bool DwarfSection::FillInCie(uintptr_t& addr, CommonInfoEntry &cieInfo)
                 break;
         }
     }
-    cieInfo.instructions = ptr;
-    return true;
-}
-
-bool DwarfSection::FillInFde(uintptr_t& addr, FrameDescEntry &fdeInfo, CommonInfoEntry &cieInfo)
-{
-    // TODO: cie cache?
-    if (!ParseCie(fdeInfo.cieAddr, cieInfo)) {
-        LOGE("Failed to fill CIE?");
-        return false;
-    }
-
-    uintptr_t ptr = addr;
-
-    // Parse pc begin and range.
-    LOGU("pointerEncoding: %02x", cieInfo.pointerEncoding);
-    uintptr_t pcStart = memory_->ReadEncodedValue(ptr, (DwarfEncoding)cieInfo.pointerEncoding);
-    LOGU("pcStart: %p", (void *)pcStart);
-    uintptr_t pcRange = memory_->ReadEncodedValue(ptr, (DwarfEncoding)(cieInfo.pointerEncoding & 0x0F));
-    LOGU("pcRange: %p", (void *)pcRange);
-
-    fdeInfo.lsda = 0;
-    // Check for augmentation length.
-    if (cieInfo.hasAugmentationData) {
-        uintptr_t augLen = memory_->ReadUleb128(ptr);
-        uintptr_t instructionsPtr = ptr + augLen;
-        if (cieInfo.lsdaEncoding != DW_EH_PE_omit) {
-            uintptr_t lsdaPtr = ptr;
-            if (memory_->ReadEncodedValue(ptr, (DwarfEncoding)(cieInfo.lsdaEncoding & 0x0F)) != 0) {
-                fdeInfo.lsda = memory_->ReadEncodedValue(lsdaPtr, (DwarfEncoding)cieInfo.lsdaEncoding);
-            }
-        }
-        ptr = instructionsPtr;
-    }
-
-    fdeInfo.instructions = ptr;
-    fdeInfo.pcStart = pcStart;
-    fdeInfo.pcEnd = pcStart + pcRange;
-    LOGU("FDE pcStart: %p, pcEnd: %p",(void*)(fdeInfo.pcStart), (void*)(fdeInfo.pcEnd));
     return true;
 }
 }   // namespace HiviewDFX

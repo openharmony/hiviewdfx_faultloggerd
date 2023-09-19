@@ -19,10 +19,15 @@
 #include <memory>
 #include <vector>
 #include "dfx_accessors.h"
+#include "dfx_errors.h"
 #include "dfx_frame.h"
 #include "dfx_memory.h"
 #include "dfx_maps.h"
 #include "dfx_regs.h"
+#if defined(__arm__)
+#include "arm_exidx.h"
+#endif
+#include "dwarf_section.h"
 #include "unwind_context.h"
 
 namespace OHOS {
@@ -65,9 +70,10 @@ public:
 
     bool Unwind(void *ctx, size_t maxFrameNum = 64, size_t skipFrameNum = 0);
     bool Step(uintptr_t& pc, uintptr_t& sp, void *ctx);
+    bool FpStep(uintptr_t& fp, uintptr_t& pc, void *ctx);
 
-    bool UnwindLocal(size_t maxFrameNum, size_t skipFrameNum);
-    bool UnwindRemote(size_t maxFrameNum, size_t skipFrameNum);
+    bool UnwindLocal(size_t maxFrameNum = 64, size_t skipFrameNum = 0);
+    bool UnwindRemote(size_t maxFrameNum = 64, size_t skipFrameNum = 0);
 
 private:
     bool Apply(std::shared_ptr<DfxRegs> regs, std::shared_ptr<RegLocState> rs);
@@ -75,23 +81,25 @@ private:
 private:
     void Init();
     void Destroy();
-    bool IsValidFrame(uintptr_t addr, uintptr_t stackTop, uintptr_t stackBottom);
     void DoPcAdjust(uintptr_t& pc);
 
 private:
     int32_t pid_;
     UnwindMode mode_ = DWARF_UNWIND;
-    uintptr_t stackBottom_;
-    uintptr_t stackTop_;
     std::shared_ptr<DfxAccessors> acc_;
     std::shared_ptr<DfxMemory> memory_;
     std::map<uintptr_t, std::shared_ptr<RegLocState>> rsCache_;
-    std::shared_ptr<DfxRegs> regs_;
-    std::shared_ptr<DfxMaps> maps_;
-    std::shared_ptr<DfxElf> elf_;
+    std::shared_ptr<DfxRegs> regs_ = nullptr;
+    std::shared_ptr<DfxMaps> maps_ = nullptr;
+    std::shared_ptr<DfxMap> map_ = nullptr;
+    std::shared_ptr<DfxElf> elf_ = nullptr;
     std::vector<uintptr_t> pcs_;
     std::vector<DfxFrame> frames_;
     UnwindErrorData lastErrorData_;
+#if defined(__arm__)
+    std::shared_ptr<ArmExidx> armExidx_;
+#endif
+    std::shared_ptr<DwarfSection> dwarfSection_;
 };
 } // namespace HiviewDFX
 } // namespace OHOS

@@ -19,6 +19,7 @@
 #include <securec.h>
 #include "dfx_define.h"
 #include "dfx_log.h"
+#include "dwarf_define.h"
 
 namespace OHOS {
 namespace HiviewDFX {
@@ -43,58 +44,327 @@ int DfxUnwindTable::IsPcInUnwindTable(struct UnwindTableInfo uti, uintptr_t pc)
 
 int DfxUnwindTable::IsPcInElfTable(struct ElfTableInfo eti, uintptr_t pc)
 {
-    if (IsPcInUnwindTable(eti.diCache, pc) == TABLE_ERROR_FORMAT &&
+    if (IsPcInUnwindTable(eti.diEhHdr, pc) == TABLE_ERROR_FORMAT &&
 #if defined(__arm__)
-        IsPcInUnwindTable(eti.diArm, pc) == TABLE_ERROR_FORMAT &&
+        IsPcInUnwindTable(eti.diExidx, pc) == TABLE_ERROR_FORMAT &&
 #endif
         IsPcInUnwindTable(eti.diDebug, pc) == TABLE_ERROR_FORMAT) {
-        LOGE("Have not elf table info?");
         return UNW_ERROR_NO_UNWIND_INFO;
     }
 
-    if (IsPcInUnwindTable(eti.diCache, pc) == TABLE_ERROR_NONE ||
+    if (IsPcInUnwindTable(eti.diEhHdr, pc) == TABLE_ERROR_NONE ||
 #if defined(__arm__)
-        IsPcInUnwindTable(eti.diArm, pc) == TABLE_ERROR_NONE ||
+        IsPcInUnwindTable(eti.diExidx, pc) == TABLE_ERROR_NONE ||
 #endif
         IsPcInUnwindTable(eti.diDebug, pc) == TABLE_ERROR_NONE) {
+        LOGU("ElfTableInfo matched pc: %p", (void*)pc);
         return UNW_ERROR_NONE;
     }
     LOGE("Pc(%p) is not in elf table info?", (void *)pc);
     return UNW_ERROR_PC_NOT_IN_UNWIND_INFO;
 }
 
-int DfxUnwindTable::FindUnwindTable2(struct ElfTableInfo& eti, uintptr_t pc)
+int DfxUnwindTable::ResetElfTableInfo(struct ElfTableInfo& edi)
 {
-    if (IsPcInElfTable(eti, pc) == TABLE_ERROR_NONE) {
-        return UNW_ERROR_NONE;
+    int ret = memset_s(&edi, sizeof(ElfTableInfo), 0, sizeof(ElfTableInfo));
+    edi.diEhHdr.format = -1;
+    edi.diDebug.format = -1;
+#if defined(__arm__)
+    edi.diExidx.format = -1;
+#endif
+    return ret;
+}
+
+bool DfxUnwindTable::GetExidxTableInfo(struct UnwindTableInfo& ti,
+    std::shared_ptr<DfxMap> map, std::shared_ptr<DfxElf> elf)
+{
+    if ((map == nullptr) || (elf == nullptr)) {
+        LOGE("params error");
+        return false;
+    }
+#if defined(__arm__)
+    uintptr_t loadBase = elf->GetLoadBase(map->begin, map->offset);
+
+    ShdrInfo shdr;
+    if (elf->GetSectionInfo(shdr, ARM_EXIDX)) {
+        ti.startPc = elf->GetStartPc();
+        ti.endPc = elf->GetEndPc();
+        LOGU("Exidx startPc: %llx, endPc: %llx", (uint64_t)ti.startPc, (uint64_t)ti.endPc);
+        ti.gp = 0;
+        ti.format = UNW_INFO_FORMAT_ARM_EXIDX;
+        ti.tableData = loadBase + shdr.addr;
+        ti.tableLen = shdr.size;
+        LOGU("Exidx tableLen: %d, tableData: %llx", (int)ti.tableLen, (uint64_t)ti.tableData);
+        return true;
+    }
+#endif
+    LOGE("Get elf Exidx section error");
+    return false;
+}
+
+bool DfxUnwindTable::GetEhHdrTableInfo(struct UnwindTableInfo& ti,
+    std::shared_ptr<DfxMap> map, std::shared_ptr<DfxElf> elf)
+{
+    if ((map == nullptr) || (elf == nullptr)) {
+        LOGE("params error");
+        return false;
+    }
+    uintptr_t loadBase = elf->GetLoadBase(map->begin, map->offset);
+
+    ShdrInfo shdr;
+    if (elf->GetSectionInfo(shdr, EH_FRAME_HDR)) {
+        ti.startPc = elf->GetStartPc();
+        ti.endPc = elf->GetEndPc();
+        LOGU("EhHdr startPc: %llx, endPc: %llx", (uint64_t)ti.startPc, (uint64_t)ti.endPc);
+        ti.gp = elf->GetGlobalPointer();
+        LOGU("Elf mmap ptr: %p", (void*)elf->GetMmapPtr());
+        struct DwarfEhFrameHdr* hdr = (struct DwarfEhFrameHdr *) (shdr.offset + (char *) elf->GetMmapPtr());
+        if (hdr->version != DW_EH_VERSION) {
+            LOGE("Hdr version(%d) error", hdr->version);
+            return false;
+        }
+
+        auto memory = std::make_shared<DfxMemoryCpy>();
+        uintptr_t ptr = (uintptr_t)(&(hdr->ehFrame));
+        LOGU("hdr: %llx, ehFrame: %llx", (uint64_t)hdr, (uint64_t)ptr);
+        LOGU("gp: %llx, ehFramePtrEnc: %x, fdeCountEnc: %x", (uint64_t)ti.gp, hdr->ehFramePtrEnc, hdr->fdeCountEnc);
+        memory->SetDataOffset(ti.gp);
+        MAYBE_UNUSED uintptr_t ehFrameStart = memory->ReadEncodedValue(ptr, hdr->ehFramePtrEnc);
+        uintptr_t fdeCount = memory->ReadEncodedValue(ptr, hdr->fdeCountEnc);
+        if (fdeCount == 0) {
+            LOGE("Hdr no FDEs?");
+            return false;
+        }
+        LOGU("ehFrameStart: %llx, fdeCount: %d", (uint64_t)ehFrameStart, (int)fdeCount);
+
+        ti.format = UNW_INFO_FORMAT_REMOTE_TABLE;
+        ti.namePtr = 0;
+        ti.tableLen = (fdeCount * sizeof(DwarfTableEntry)) / sizeof(uintptr_t);
+        ti.tableData = ((loadBase + shdr.addr) + (ptr - (uintptr_t)hdr));
+        ti.segbase = loadBase + shdr.addr;
+        LOGU("EhHdr tableLen: %d, tableData: %llx, segbase: %llx",
+            (int)ti.tableLen, (uint64_t)ti.tableData, (uint64_t)ti.segbase);
+        return true;
+    }
+    LOGE("Get elf EH_FRAME_HDR section error");
+    return false;
+}
+
+bool DfxUnwindTable::GetElfTableInfo(struct ElfTableInfo& eti, uintptr_t pc,
+    std::shared_ptr<DfxMap> map, std::shared_ptr<DfxElf> elf)
+{
+    if (elf == nullptr || !elf->IsValid()) {
+        LOGE("params error");
+        return false;
+    }
+    ResetElfTableInfo(eti);
+
+    bool hasTableInfo = false;
+#if defined(__arm__)
+    hasTableInfo = GetExidxTableInfo(eti.diExidx, map, elf);
+#endif
+    if (!hasTableInfo) {
+        hasTableInfo = GetEhHdrTableInfo(eti.diEhHdr, map, elf);
     }
 
-    DfxElf::DlCbData cbData;
+    if (hasTableInfo) {
+        eti.startPc = elf->GetStartPc();
+        eti.endPc = elf->GetEndPc();
+        return true;
+    }
+    return false;
+}
+
+int DfxUnwindTable::DlPhdrCb(struct dl_phdr_info *info, size_t size, void *data)
+{
+    struct DlCbData *cbData = (struct DlCbData *)data;
+    ElfTableInfo *edi = &cbData->edi;
+    const ElfW(Phdr) *pText = nullptr;
+    const ElfW(Phdr) *pDynamic = nullptr;
+#if defined(__arm__)
+    const ElfW(Phdr) *pArmExidx = nullptr;
+#endif
+    const ElfW(Phdr) *pEhHdr = nullptr;
+    struct DwarfEhFrameHdr *hdr = nullptr;
+    struct DwarfEhFrameHdr synthHdr;
+    const ElfW(Phdr) *phdr = info->dlpi_phdr;
+    ElfW(Addr) loadBase = info->dlpi_addr, maxLoadAddr = 0;
+    for (size_t i = 0; i < info->dlpi_phnum; i++, phdr++) {
+        switch (phdr->p_type) {
+        case PT_LOAD: {
+            ElfW(Addr) vaddr = phdr->p_vaddr + loadBase;
+            if (cbData->pc >= vaddr && cbData->pc < vaddr + phdr->p_memsz) {
+                pText = phdr;
+            }
+
+            if (vaddr + phdr->p_filesz > maxLoadAddr) {
+                maxLoadAddr = vaddr + phdr->p_filesz;
+            }
+            break;
+        }
+#if defined(__arm__)
+        case PT_ARM_EXIDX: {
+            pArmExidx = phdr;
+            break;
+        }
+#endif
+        case PT_GNU_EH_FRAME: {
+            pEhHdr = phdr;
+            break;
+        }
+        case PT_DYNAMIC: {
+            pDynamic = phdr;
+            break;
+        }
+        default:
+            break;
+        }
+    }
+    if (pText == nullptr) {
+        LOGE("pText is nullptr?");
+        return UNW_ERROR_NO_UNWIND_INFO;
+    }
+    uintptr_t startPc = pText->p_vaddr + loadBase;
+    uintptr_t endPc = startPc + pText->p_memsz;
+
+    bool hasTableInfo = false;
+#if defined(__arm__)
+    if (pArmExidx) {
+        edi->diExidx.format = UNW_INFO_FORMAT_ARM_EXIDX;
+        edi->diExidx.startPc = startPc;
+        edi->diExidx.endPc = endPc;
+        edi->diExidx.gp = 0;
+        edi->diExidx.namePtr = (uintptr_t) info->dlpi_name;
+        edi->diExidx.tableData = pArmExidx->p_vaddr + loadBase;
+        edi->diExidx.tableLen = pArmExidx->p_memsz;
+        LOGU("Exidx tableLen: %d, tableData: %llx", (int)edi->diExidx.tableLen, (uint64_t)edi->diExidx.tableData);
+        hasTableInfo = true;
+    }
+#endif
+
+    if (pEhHdr) {
+        hdr = (struct DwarfEhFrameHdr *) (pEhHdr->p_vaddr + loadBase);
+    } else {
+        LOGW("No .eh_frame_hdr section found");
+        ElfW(Addr) ehFrame = FindSection(info, EH_FRAME);
+        if (ehFrame != 0) {
+            LOGD("using synthetic .eh_frame_hdr section for %s", info->dlpi_name);
+            synthHdr.version = DW_EH_VERSION;
+            synthHdr.ehFramePtrEnc = DW_EH_PE_absptr |
+                ((sizeof(ElfW(Addr)) == 4) ? DW_EH_PE_udata4 : DW_EH_PE_udata8);
+            synthHdr.fdeCountEnc = DW_EH_PE_omit;
+            synthHdr.tableEnc = DW_EH_PE_omit;
+            synthHdr.ehFrame = ehFrame;
+            hdr = &synthHdr;
+        }
+    }
+    if (hdr != nullptr) {
+        if (pDynamic) {
+            ElfW(Dyn) *dyn = (ElfW(Dyn) *)(pDynamic->p_vaddr + loadBase);
+            for (; dyn->d_tag != DT_NULL; ++dyn) {
+                if (dyn->d_tag == DT_PLTGOT) {
+                    edi->diEhHdr.gp = dyn->d_un.d_ptr;
+                    break;
+                }
+            }
+        } else {
+            edi->diEhHdr.gp = 0;
+        }
+
+        if (hdr->version != DW_EH_VERSION) {
+            LOGE("Hdr version(%d) error", hdr->version);
+            return false;
+        }
+
+        auto memory = std::make_shared<DfxMemoryCpy>();
+        uintptr_t ptr = (uintptr_t)(&(hdr->ehFrame));
+        LOGU("hdr: %llx, ehFrame: %llx", (uint64_t)hdr, (uint64_t)ptr);
+
+        LOGU("gp: %llx, ehFramePtrEnc: %x, fdeCountEnc: %x",
+            (uint64_t)edi->diEhHdr.gp, hdr->ehFramePtrEnc, hdr->fdeCountEnc);
+        memory->SetDataOffset(edi->diEhHdr.gp);
+        MAYBE_UNUSED uintptr_t ehFrameStart = memory->ReadEncodedValue(ptr, hdr->ehFramePtrEnc);
+        uintptr_t fdeCount = memory->ReadEncodedValue(ptr, hdr->fdeCountEnc);
+        LOGU("ehFrameStart: %llx, fdeCount: %d", (uint64_t)ehFrameStart, (int)fdeCount);
+
+        edi->diEhHdr.startPc = startPc;
+        edi->diEhHdr.endPc = endPc;
+        edi->diEhHdr.format = UNW_INFO_FORMAT_REMOTE_TABLE;
+        edi->diEhHdr.namePtr = (uintptr_t) info->dlpi_name;
+        edi->diEhHdr.tableLen = (fdeCount * sizeof(DwarfTableEntry)) / sizeof(uintptr_t);
+        edi->diEhHdr.tableData = ptr;
+        edi->diEhHdr.segbase = (uintptr_t)hdr;
+        LOGU("EhHdr tableLen: %d, tableData: %llx, segbase: %llx",
+            (int)edi->diEhHdr.tableLen, (uint64_t)edi->diEhHdr.tableData, (uint64_t)edi->diEhHdr.segbase);
+    }
+
+    if (hasTableInfo) {
+        cbData->edi.startPc = startPc;
+        cbData->edi.endPc = endPc;
+        return UNW_ERROR_NONE;
+    }
+    return UNW_ERROR_NO_UNWIND_INFO;
+}
+
+ElfW(Addr) DfxUnwindTable::FindSection(struct dl_phdr_info *info, const std::string secName)
+{
+    const char *file = info->dlpi_name;
+    if (strlen(file) == 0) {
+        file = PROC_SELF_EXE_PATH;
+    }
+
+    auto elf = DfxElf::Create(file);
+    if (elf == nullptr) {
+        return 0;
+    }
+
+    ElfW(Addr) addr = 0;
+    ShdrInfo shdr;
+    if (!elf->GetSectionInfo(shdr, secName)) {
+        return 0;
+    }
+    addr = shdr.addr + info->dlpi_addr;
+    return addr;
+}
+
+
+int DfxUnwindTable::FindUnwindTableLocal(struct ElfTableInfo& eti, uintptr_t pc)
+{
+    int ret = IsPcInElfTable(eti, pc);
+    if (ret == TABLE_ERROR_NONE) {
+        LOGU("ElfTableInfo had pc matched");
+        return ret;
+    }
+
+    DlCbData cbData;
     memset_s(&cbData, sizeof(cbData), 0, sizeof(cbData));
     cbData.pc = pc;
-    DfxElf::ResetElfTableInfo(cbData.edi);
-    (void)dl_iterate_phdr(DfxElf::DlPhdrCb, &cbData);
+    ResetElfTableInfo(cbData.edi);
+    (void)dl_iterate_phdr(DlPhdrCb, &cbData);
 
-    int ret = IsPcInElfTable(cbData.edi, pc);
+    ret = IsPcInElfTable(cbData.edi, pc);
     if (ret == UNW_ERROR_NONE) {
         eti = cbData.edi;
     }
     return ret;
 }
 
-int DfxUnwindTable::FindUnwindTable(struct ElfTableInfo& eti, uintptr_t pc, std::shared_ptr<DfxElf> elf)
+int DfxUnwindTable::FindUnwindTable(struct ElfTableInfo& eti, uintptr_t pc,
+    std::shared_ptr<DfxMap> map, std::shared_ptr<DfxElf> elf)
 {
-    if (IsPcInElfTable(eti, pc) == TABLE_ERROR_NONE) {
-        return UNW_ERROR_NONE;
+    int ret = IsPcInElfTable(eti, pc);
+    if (ret == TABLE_ERROR_NONE) {
+        LOGU("ElfTableInfo had pc matched");
+        return ret;
     }
 
     struct ElfTableInfo edi;
-    DfxElf::ResetElfTableInfo(edi);
-    if (elf == nullptr || !elf->GetElfTableInfo(pc, edi)) {
+    ResetElfTableInfo(edi);
+    if (!GetElfTableInfo(edi, pc, map, elf)) {
         return UNW_ERROR_NO_UNWIND_INFO;
     }
 
-    int ret = IsPcInElfTable(edi, pc);
+    ret = IsPcInElfTable(edi, pc);
     if (ret == TABLE_ERROR_NONE) {
         eti = edi;
     }
@@ -112,6 +382,7 @@ int DfxUnwindTable::SearchUnwindEntry(struct UnwindEntryInfo& pi, struct UnwindT
     if (uti.format == UNW_INFO_FORMAT_REMOTE_TABLE || uti.format == UNW_INFO_FORMAT_IP_OFFSET) {
         return DwarfSearchUnwindEntry(pi, uti, pc, memory);
     }
+    LOGE("UnwindTableInfo format: %d", uti.format);
     return UNW_ERROR_NO_UNWIND_INFO;
 }
 
@@ -163,6 +434,7 @@ int DfxUnwindTable::ExdixSearchUnwindEntry(struct UnwindEntryInfo& pi, struct Un
         pi.endPc--;
     }
 
+    pi.gp = uti.gp;
     pi.unwindInfoSize = ARM_EXIDX_TABLE_SIZE;
     pi.unwindInfo = (void *) entry;
     pi.format = UNW_INFO_FORMAT_ARM_EXIDX;
@@ -174,43 +446,40 @@ int DfxUnwindTable::DwarfSearchUnwindEntry(struct UnwindEntryInfo& pi, struct Un
 {
     MAYBE_UNUSED auto segbase = uti.segbase;
     auto fdeCount = uti.tableLen;
-    uintptr_t eh_frame_hdr_table = uti.tableData;
-    uintptr_t eh_frame_hdr = eh_frame_hdr_table - 12;
-    LOGU("DwarfSearchUnwindTable pc:%p, segbase:%p, eh_frame_hdr_table:%p, tableLen: %d",
-        (void*)pc, (void*)segbase, (void*)eh_frame_hdr_table, fdeCount);
+    uintptr_t tableData = uti.tableData;
+    LOGU("DwarfSearchUnwindTable segbase:%p, tableData:%p, tableLen: %d",
+        (void*)segbase, (void*)tableData, fdeCount);
 
     // do binary search, encode is stored in symbol file, we have no means to find?
     // hard code for 1b DwarfEncoding
     uintptr_t entry;
     uintptr_t low = 0;
-    LOGU("target pc: %p, target relPc:%p", (void *)pc , (void *)(pc - segbase));
     for (uintptr_t len = fdeCount; len > 1;) {
-        uintptr_t mid = low + (len / 2);
-        entry = (uintptr_t) eh_frame_hdr_table + mid * 8;
-        uintptr_t val = (uintptr_t)(memory->Read<int32_t>(entry, true));
-        uintptr_t start = val + eh_frame_hdr; // todo read encode size from hdr?
-        LOGU("target RelPc:%p, curRelPc:%p, idx:%d, val:%lx",
-            (void *)(pc - segbase) , (void *)(start - segbase), (int)mid, (int64_t)val);
+        uintptr_t cur = low + (len / 2);
+        entry = (uintptr_t) tableData + cur * sizeof(DwarfTableEntry);
+        LOGU("cur:%d, entry:%llx", (int)cur, (uint64_t)entry);
+        int32_t startPcOffset = memory->Read<int32_t>(entry, true);
+        uintptr_t startPc = static_cast<uintptr_t>(startPcOffset + segbase);
+        LOGU("target Pc:%p, startPc:%p", (void *)pc, (void *)startPc);
 
-        if (start == pc) {
-            low = mid;
+        if (startPc == pc) {
+            low = cur;
             break;
-        } else if (start < pc) {
-            low = mid;
+        } else if (startPc < pc) {
+            low = cur;
             len -= (len / 2);
         } else {
             len /= 2;
         }
     }
 
-    entry = eh_frame_hdr_table + low * sizeof(uintptr_t);
-    //MAYBE_UNUSED uintptr_t startPc = memory->Read<int32_t>(entry, true) + eh_frame_hdr;
-    //LOGU("entry: %llx, rel startPc: %llx, target relPc: %llx",
-    //    (uint64_t)entry, (uint64_t)(startPc - segbase), (uint64_t)(pc - segbase));
-    entry += sizeof(int32_t);
-    pi.unwindInfo = (void *) (memory->Read<int32_t>(entry, true) + eh_frame_hdr);
-    LOGU("entry: %llx, fde entry: %llx", (uint64_t)entry, (uint64_t)pi.unwindInfo);
+    entry = (uintptr_t) tableData + low * sizeof(DwarfTableEntry);
+    entry += 4;
+    uintptr_t fdeOffset = static_cast<uintptr_t>(memory->Read<int32_t>(entry, true)) + segbase;
+    pi.unwindInfo = (void *) (fdeOffset);
+    LOGU("fde offset entry: %llx", (uint64_t)pi.unwindInfo);
     pi.format = UNW_INFO_FORMAT_REMOTE_TABLE;
+    pi.gp = uti.gp;
     return UNW_ERROR_NONE;
 }
 } // namespace HiviewDFX

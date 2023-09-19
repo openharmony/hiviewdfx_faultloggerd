@@ -78,10 +78,12 @@ void DfxRegsArm64::SetFromFpMiniRegs(const uintptr_t* regs)
 
 void DfxRegsArm64::SetFromQutMiniRegs(const uintptr_t* regs)
 {
-    regsData_[REG_AARCH64_X28] = regs[2]; // 2 : REG_AARCH64_X28 offset
+    regsData_[REG_AARCH64_X20] = regs[1]; // 1 : X20 offset
+    regsData_[REG_AARCH64_X28] = regs[2]; // 2 : X28 offset
     regsData_[REG_FP] = regs[3]; // 3 : fp offset
     regsData_[REG_SP] = regs[4];  // 4 : sp offset
     regsData_[REG_PC] = regs[5];  // 5 : pc offset
+    regsData_[REG_LR] = regs[6];  // 6 : lr offset
 }
 
 std::string DfxRegsArm64::PrintRegs() const
@@ -125,7 +127,7 @@ bool DfxRegsArm64::StepIfSignalHandler(uint64_t relPc, DfxElf* elf, DfxMemory* m
     if (elf == nullptr || !elf->IsValid() || (relPc < static_cast<uint64_t>(elf->GetLoadBias()))) {
         return false;
     }
-    uint64_t elfOffset = relPc - elf->GetLoadBias();
+    uintptr_t elfOffset = static_cast<uintptr_t>(relPc - elf->GetLoadBias());
     uint64_t data;
     if (!elf->Read(elfOffset, &data, sizeof(data))) {
         return false;
@@ -140,7 +142,7 @@ bool DfxRegsArm64::StepIfSignalHandler(uint64_t relPc, DfxElf* elf, DfxMemory* m
     }
 
     // SP + sizeof(siginfo_t) + uc_mcontext offset + X0 offset.
-    uint64_t offset = regsData_[REG_SP] + 0x80 + 0xb0 + 0x08;
+    uintptr_t offset = regsData_[REG_SP] + 0x80 + 0xb0 + 0x08;
     if (!memory->Read(offset, regsData_.data(), sizeof(uint64_t) * REG_LAST, false)) {
         return false;
     }

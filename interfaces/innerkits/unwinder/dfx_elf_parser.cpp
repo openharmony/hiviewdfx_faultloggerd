@@ -42,10 +42,9 @@ namespace {
 #define LOG_TAG "DfxElfParser"
 }
 
-bool ElfParser::Read(uint64_t pos, void *buf, size_t size)
+bool ElfParser::Read(uintptr_t pos, void *buf, size_t size)
 {
-    size_t rc = mmap_->Read(&pos, buf, size);
-    if (rc == size) {
+    if (mmap_->Read(pos, buf, size) == size) {
         return true;
     }
     return false;
@@ -80,7 +79,7 @@ bool ElfParser::ParseAllHeaders()
     }
 
     if (!ParseSectionHeaders<EhdrType, ShdrType>(ehdr)) {
-        DFXLOG_WARN("ReadSectionHeaders failed");
+        DFXLOG_WARN("ParseSectionHeaders failed");
         return false;
     }
     return true;
@@ -116,7 +115,7 @@ bool ElfParser::ParseProgramHeaders(const EhdrType& ehdr)
     bool firstLoadHeader = true;
     for (size_t i = 0; i < ehdr.e_phnum; i++, offset += ehdr.e_phentsize) {
         PhdrType phdr;
-        if (!Read(offset, &phdr, sizeof(phdr))) {
+        if (!Read((uintptr_t)offset, &phdr, sizeof(phdr))) {
             return false;
         }
 
@@ -140,18 +139,11 @@ bool ElfParser::ParseProgramHeaders(const EhdrType& ehdr)
             if (phdr.p_vaddr + phdr.p_memsz > endVaddr_) {
                 endVaddr_ = phdr.p_vaddr + phdr.p_memsz;
             }
+            LOGU("Elf startVaddr: %llx, endVaddr: %llx", (uint64_t)startVaddr_, (uint64_t)endVaddr_);
             break;
         }
         case PT_DYNAMIC: {
-            pDynamic_ = reinterpret_cast<void *>(&phdr);
-            break;
-        }
-        case PT_ARM_EXIDX: {
-            pArmExidx_ = reinterpret_cast<void *>(&phdr);
-            break;
-        }
-        case PT_GNU_EH_FRAME: {
-            pEhHdr_ = reinterpret_cast<void *>(&phdr);
+            dynamicOffset_ = phdr.p_offset;
             break;
         }
         default:
@@ -172,7 +164,7 @@ bool ElfParser::ParseSectionHeaders(const EhdrType& ehdr)
     //section header string table index. include section header table with section name string table.
     if (ehdr.e_shstrndx < ehdr.e_shnum) {
         uint64_t shNdxOffset = offset + ehdr.e_shstrndx * ehdr.e_shentsize;
-        if (!Read(shNdxOffset, &shdr, sizeof(shdr))) {
+        if (!Read((uintptr_t)shNdxOffset, &shdr, sizeof(shdr))) {
             LOGE("Read section header string table failed");
             return false;
         }
@@ -192,7 +184,7 @@ bool ElfParser::ParseSectionHeaders(const EhdrType& ehdr)
         if (i == ehdr.e_shstrndx) {
             continue;
         }
-        if (!Read(offset, &shdr, sizeof(shdr))) {
+        if (!Read((uintptr_t)offset, &shdr, sizeof(shdr))) {
             return false;
         }
 
@@ -230,59 +222,51 @@ bool ElfParser::ParseSectionHeaders(const EhdrType& ehdr)
     return true;
 }
 
-template <typename NhdrType>
-std::string ElfParser::ParseBuildId(uint64_t noteOffset, uint64_t noteSize)
+template <typename DynType>
+bool ElfParser::ParseElfDynamic()
 {
-    uint64_t tmp;
-    if (__builtin_add_overflow(noteOffset, noteSize, &tmp)) {
-        return "";
+    if (dynamicOffset_ == 0) {
+        return false;
     }
 
-    uint64_t offset = 0;
-    while (offset < noteSize) {
-        if (noteSize - offset < sizeof(NhdrType)) {
-            return "";
+    DynType *dyn = (DynType *)(dynamicOffset_ + (char *) mmap_->Get());
+    for (; dyn->d_tag != DT_NULL; ++dyn) {
+        if (dyn->d_tag == DT_PLTGOT) {
+            // Assume that _DYNAMIC is writable and GLIBC has relocated it (true for x86 at least).
+            dtPltGotAddr_ = dyn->d_un.d_ptr;
+            break;
+        } else if (dyn->d_tag == DT_STRTAB) {
+            dtStrtabAddr_ = dyn->d_un.d_ptr;
+        } else if (dyn->d_tag == DT_STRSZ) {
+            dtStrtabSize_ = dyn->d_un.d_val;
+        } else if (dyn->d_tag == DT_SONAME) {
+            dtSonameOffset_ = dyn->d_un.d_val;
         }
-        NhdrType hdr;
-        if (!Read(noteOffset + offset, &hdr, sizeof(hdr))) {
-            return "";
-        }
-        offset += sizeof(hdr);
-        if (noteSize - offset < hdr.n_namesz) {
-            return "";
-        }
-        if (hdr.n_namesz > 0) {
-            std::string name(hdr.n_namesz, '\0');
-            if (!Read(noteOffset + offset, &(name[0]), hdr.n_namesz)) {
-                return "";
-            }
-            // Trim trailing \0 as GNU is stored as a C string in the ELF file.
-            if (name.back() == '\0') {
-                name.resize(name.size() - 1);
-            }
-
-            // Align hdr.n_namesz to next power multiple of 4. See man 5 elf.
-            offset += (hdr.n_namesz + 3) & ~3;
-            if (name == "GNU" && hdr.n_type == NT_GNU_BUILD_ID) {
-                if (noteSize - offset < hdr.n_descsz || hdr.n_descsz == 0) {
-                    return "";
-                }
-                std::string buildIdRaw(hdr.n_descsz, '\0');
-                if (Read(noteOffset + offset, &buildIdRaw[0], hdr.n_descsz)) {
-                    return buildIdRaw;
-                }
-            }
-        }
-        // Align hdr.n_descsz to next power multiple of 4. See man 5 elf.
-        offset += (hdr.n_descsz + 3) & ~3;
     }
-    return "";
+    return true;
 }
 
 template <typename DynType>
-std::string ElfParser::ParseElfName()
+bool ElfParser::ParseElfName()
 {
-    return "";
+    if (!ParseElfDynamic<DynType>()) {
+        return false;
+    }
+    ShdrInfo shdr;
+    if (GetSectionInfo(shdr, DYNSTR)) {
+        if ((uintptr_t)shdr.addr == dtStrtabAddr_) {
+            uintptr_t sonameOffset = shdr.offset + dtSonameOffset_;
+            uint64_t sonameOffsetMax = shdr.offset + dtStrtabSize_;
+            if (sonameOffset >= sonameOffsetMax) {
+                return false;
+            }
+            size_t maxStrSize = static_cast<size_t>(sonameOffsetMax - sonameOffset);
+            if (!mmap_->ReadString(sonameOffset, &soname_, maxStrSize)) {
+                return false;
+            }
+        }
+    }
+    return true;
 }
 
 template <typename SymType>
@@ -304,8 +288,8 @@ bool ElfParser::ParseElfSymbols()
         //    shdr.offset, shdr.size, shdr.entSize, shdr.link);
         uint64_t offset = shdr.offset;
         const char* strtabPtr = GetStrTabPtr(shdr.link);
-        for (; offset < shdr.size; offset += shdr.entSize) {
-            if (!Read(offset, &sym, sizeof(sym))) {
+        for (; offset < shdr.offset + shdr.size; offset += shdr.entSize) {
+            if (!Read((uintptr_t)offset, &sym, sizeof(sym))) {
                 continue;
             }
 
@@ -322,8 +306,8 @@ bool ElfParser::ParseElfSymbols()
             elfSymbol.size = static_cast<uint64_t>(sym.st_size);
             elfSymbols_.push_back(elfSymbol);
         }
+        LOGU("elfSymbols.size: %d", elfSymbols_.size());
     }
-    LOGU("elfSymbols.size: %d", elfSymbols_.size());
     return (elfSymbols_.size() > 0);
 }
 
@@ -363,7 +347,7 @@ bool ElfParser::ParseStrTab(std::string& nameStr, const uint64_t offset, const u
         return false;
     }
     (void)memset_s(namesBuf, size, '\0', size);
-    if (!Read(offset, namesBuf, size)) {
+    if (!Read((uintptr_t)offset, namesBuf, size)) {
         LOGE("Read failed");
         delete[] namesBuf;
         namesBuf = nullptr;
@@ -403,32 +387,34 @@ bool ElfParser64::InitHeaders()
     return ParseAllHeaders<Elf64_Ehdr, Elf64_Phdr, Elf64_Shdr>();
 }
 
-std::string ElfParser32::GetBuildId()
-{
-    ShdrInfo shdr;
-    if (GetSectionInfo(shdr, NOTE_GNU_BUILD_ID)){
-        return ParseBuildId<Elf32_Nhdr>(shdr.offset, shdr.size);
-    }
-    return "";
-}
-
-std::string ElfParser64::GetBuildId()
-{
-    ShdrInfo shdr;
-    if (GetSectionInfo(shdr, NOTE_GNU_BUILD_ID)){
-        return ParseBuildId<Elf64_Nhdr>(shdr.offset, shdr.size);
-    }
-    return "";
-}
-
 std::string ElfParser32::GetElfName()
 {
-    return ParseElfName<Elf32_Dyn>();
+    if (soname_ == "") {
+        ParseElfName<Elf32_Dyn>();
+    }
+    return soname_;
 }
-
 std::string ElfParser64::GetElfName()
 {
-    return ParseElfName<Elf64_Dyn>();
+    if (soname_ == "") {
+        ParseElfName<Elf64_Dyn>();
+    }
+    return soname_;
+}
+
+uintptr_t ElfParser32::GetGlobalPointer()
+{
+    if (dtPltGotAddr_ == 0) {
+        ParseElfDynamic<Elf32_Dyn>();
+    }
+    return dtPltGotAddr_;
+}
+uintptr_t ElfParser64::GetGlobalPointer()
+{
+    if (dtPltGotAddr_ == 0) {
+        ParseElfDynamic<Elf64_Dyn>();
+    }
+    return dtPltGotAddr_;
 }
 
 const std::vector<ElfSymbol>& ElfParser32::GetElfSymbols()
@@ -438,7 +424,6 @@ const std::vector<ElfSymbol>& ElfParser32::GetElfSymbols()
     }
     return elfSymbols_;
 }
-
 const std::vector<ElfSymbol>& ElfParser64::GetElfSymbols()
 {
     if (elfSymbols_.empty()) {

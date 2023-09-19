@@ -47,12 +47,12 @@ public:
     virtual uint64_t GetStartVaddr() { return startVaddr_; }
     virtual uint64_t GetEndVaddr() { return endVaddr_; }
     virtual std::string GetElfName() = 0;
-    virtual std::string GetBuildId() = 0;
+    virtual uintptr_t GetGlobalPointer() = 0;
     virtual const std::vector<ElfSymbol>& GetElfSymbols() = 0;
     virtual bool GetSymSection(ElfShdr& shdr, const std::string secName);
     virtual bool GetSectionInfo(ShdrInfo& shdr, const std::string secName);
     const std::unordered_map<uint64_t, ElfLoadInfo>& GetPtLoads() {return ptLoads_;}
-    bool Read(uint64_t pos, void *buf, size_t size);
+    bool Read(uintptr_t pos, void *buf, size_t size);
 
 protected:
     size_t MmapSize();
@@ -66,16 +66,22 @@ protected:
     bool ParseSectionHeaders(const EhdrType& ehdr);
     template <typename SymType>
     bool ParseElfSymbols();
-    template <typename NhdrType>
-    std::string ParseBuildId(uint64_t noteOffset, uint64_t noteSize);
     template <typename DynType>
-    std::string ParseElfName();
+    bool ParseElfDynamic();
+    template <typename DynType>
+    bool ParseElfName();
     bool ParseStrTab(std::string& nameStr, const uint64_t offset, const uint64_t size);
     bool GetSectionNameByIndex(std::string& nameStr, const uint32_t name);
     const char* GetStrTabPtr(const uint32_t link);
 
 protected:
     std::vector<ElfSymbol> elfSymbols_;
+    uint64_t dynamicOffset_ = 0;
+    uintptr_t dtPltGotAddr_ = 0;
+    uintptr_t dtStrtabAddr_ = 0;
+    uintptr_t dtStrtabSize_ = 0;
+    uintptr_t dtSonameOffset_ = 0;
+    std::string soname_ = "";
 
 private:
     std::shared_ptr<DfxMmap> mmap_;
@@ -83,25 +89,20 @@ private:
     uint64_t elfSize_ = 0;
     int64_t loadBias_ = 0;
     uint64_t startVaddr_ = static_cast<uint64_t>(-1);
-    uint64_t endVaddr_ = static_cast<uint64_t>(-1);
+    uint64_t endVaddr_ = 0;
     std::unordered_map<std::string, ElfShdr> symShdrs_;
     std::map<const std::string, ShdrInfo> shdrInfos_;
     std::unordered_map<uint32_t, ElfSecInfo> elfSecInfos_;
     std::unordered_map<uint64_t, ElfLoadInfo> ptLoads_;
     std::string sectionNames_;
-    void* pDynamic_;
-#if defined(__arm__)
-    void* pArmExidx_;
-#endif
-    void* pEhHdr_;
 };
 
 class ElfParser32 : public ElfParser {
 public:
     ElfParser32(const std::shared_ptr<DfxMmap>& mmap) : ElfParser(mmap) {}
     bool InitHeaders() override;
-    std::string GetBuildId() override;
     std::string GetElfName() override;
+    uintptr_t GetGlobalPointer() override;
     const std::vector<ElfSymbol>& GetElfSymbols() override;
 };
 
@@ -109,8 +110,8 @@ class ElfParser64 : public ElfParser {
 public:
     ElfParser64(const std::shared_ptr<DfxMmap>& mmap) : ElfParser(mmap) {}
     bool InitHeaders() override;
-    std::string GetBuildId() override;
     std::string GetElfName() override;
+    uintptr_t GetGlobalPointer() override;
     const std::vector<ElfSymbol>& GetElfSymbols() override;
 };
 

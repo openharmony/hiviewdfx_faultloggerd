@@ -117,27 +117,31 @@ bool ArmExidx::ExtractEntryData(uintptr_t entryOffset)
     lastErrorData_.code = UNW_ERROR_NONE;
     lastErrorData_.addr = entryOffset;
     if (entryOffset & 1) {
+        LOGE("entryOffset: %llx error.", (uint64_t)entryOffset);
         lastErrorData_.code = UNW_ERROR_INVALID_ALIGNMENT;
         return false;
     }
 
     entryOffset += 4;
     if (!memory_->ReadU32(entryOffset, &data, false)) {
+        LOGE("entryOffset: %llx error.", (uint64_t)entryOffset);
         lastErrorData_.addr = entryOffset;
+        lastErrorData_.code = UNW_ERROR_ILLEGAL_VALUE;
         return false;
     }
 
     if (data == ARM_EXIDX_CANT_UNWIND) {
-        LOGU("This is a CANT UNWIND entry.");
+        LOGE("This is a CANT UNWIND entry, data: %x.", data);
         lastErrorData_.code = UNW_ERROR_CANT_UNWIND;
         lastErrorData_.addr = entryOffset;
         return false;
-    } else if ((data & ARM_EXIDX_COMPACT)) {
+    } else if ((data & ARM_EXIDX_COMPACT) != 0) {
         if (((data >> 24) & 0x7f) != 0) {
-            LOGU("This is a non-zero index, this code doesn't support other formats.");
+            LOGE("This is a non-zero index, this code doesn't support other formats.");
             lastErrorData_.code = UNW_ERROR_INVALID_PERSONALITY;
             return false;
         }
+        LOGU("This is a compact table entry, data: %x.", data);
         ops_.push_back((data >> 16) & 0xff);
         ops_.push_back((data >> 8) & 0xff);
         uint8_t lastOp = data & 0xff;
@@ -162,9 +166,10 @@ bool ArmExidx::ExtractEntryData(uintptr_t entryOffset)
 
     uint8_t tableCount = 0;
     if ((data & ARM_EXIDX_COMPACT) == 0) {
-        LOGU("Arm generic personality.");
+        LOGU("Arm generic personality, data: %x.", data);
         uintptr_t perRoutine;
         if (!memory_->ReadPrel31(extabAddr, &perRoutine)) {
+            LOGE("Arm Personality routine error");
             return false;
         }
         extabAddr += 4;
@@ -180,7 +185,7 @@ bool ArmExidx::ExtractEntryData(uintptr_t entryOffset)
         ops_.push_back(data & 0xff);
         extabAddr += 4;
     } else {
-        LOGU("Arm compact personality.");
+        LOGU("Arm compact personality, data: %x.", data);
         if (data >> 28 != 8) {
             LOGE("incorrect Arm compact model, [31:28]bit must be 0x8(%x)", data >> 28);
             return false;
@@ -294,11 +299,12 @@ inline bool ArmExidx::Decode(DecodeTable decodeTable[], size_t size)
     }
 
     bool ret = false;
-    for (size_t i = 0 ; i < size ; ++i) {
+    for (size_t i = 0; i < size; ++i) {
         if ((curOp_ & decodeTable[i].mask) == decodeTable[i].result) {
             if (decodeTable[i].decoder != nullptr) {
                 LOGU("decodeTable[%d].mask: %02x", i, decodeTable[i].mask);
                 ret = (this->*(decodeTable[i].decoder))();
+                break;
             }
         }
     }
