@@ -214,6 +214,7 @@ int DfxUnwindTable::DlPhdrCb(struct dl_phdr_info *info, size_t size, void *data)
         }
     }
     if (pText == nullptr) {
+        LOGE("pText is nullptr?");
         return UNW_ERROR_NO_UNWIND_INFO;
     }
     uintptr_t startPc = pText->p_vaddr + loadBase;

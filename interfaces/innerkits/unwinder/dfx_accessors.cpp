@@ -80,7 +80,8 @@ int DfxAccessorsLocal::FindUnwindTable(uintptr_t pc, UnwindTableInfo& uti, void 
     }
 
     int ret = UNW_ERROR_NONE;
-    if ((ret = DfxUnwindTable::FindUnwindTableLocal(ctx->edi, pc)) != UNW_ERROR_NONE) {
+    if ((ret = DfxUnwindTable::FindUnwindTable(ctx->edi, pc, ctx->map, ctx->elf)) != UNW_ERROR_NONE) {
+    //if ((ret = DfxUnwindTable::FindUnwindTableLocal(ctx->edi, pc)) != UNW_ERROR_NONE) {
         return ret;
     }
 

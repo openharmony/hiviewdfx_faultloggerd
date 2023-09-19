@@ -192,51 +192,6 @@ uint64_t DfxElf::GetRelPc(uint64_t pc, uint64_t mapStart, uint64_t mapOffset)
     return (pc - GetLoadBase(mapStart, mapOffset));
 }
 
-uint64_t DfxElf::GetPcAdjustment(uint64_t relPc)
-{
-#if defined(__arm__)
-    if (!IsValid()) {
-        return 2;
-    }
-
-    if (relPc < static_cast<uint64_t>(GetLoadBias())) {
-        if (relPc < 2) {
-            return 0;
-        }
-        return 2;
-    }
-
-    uint64_t relPcAdjusted = relPc - GetLoadBias();
-    if (relPcAdjusted < 5) {
-        if (relPcAdjusted < 2) {
-            return 0;
-        }
-        return 2;
-    }
-    if (relPcAdjusted & 1) {
-        // This is a thumb instruction, it could be 2 or 4 bytes.
-        uint32_t value;
-        if (!Read((uintptr_t)(relPcAdjusted - 5), &value, sizeof(value)) ||
-            (value & 0xe000f000) != 0xe000f000) {
-            return 2;
-        }
-    }
-    return 4;
-#elif defined(__aarch64__)
-    if (relPc <= 4) {
-        return 0;
-    }
-    return 4;
-#elif defined(__x86_64__)
-    if (relPc < 1) {
-        return 0;
-    }
-    return 1;
-#else
-#error "Unsupported architecture"
-#endif
-}
-
 uint64_t DfxElf::GetElfSize()
 {
     if (!IsValid()) {

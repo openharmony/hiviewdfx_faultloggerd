@@ -78,10 +78,12 @@ void DfxRegsArm64::SetFromFpMiniRegs(const uintptr_t* regs)
 
 void DfxRegsArm64::SetFromQutMiniRegs(const uintptr_t* regs)
 {
-    regsData_[REG_AARCH64_X28] = regs[2]; // 2 : REG_AARCH64_X28 offset
+    regsData_[REG_AARCH64_X20] = regs[1]; // 1 : X20 offset
+    regsData_[REG_AARCH64_X28] = regs[2]; // 2 : X28 offset
     regsData_[REG_FP] = regs[3]; // 3 : fp offset
     regsData_[REG_SP] = regs[4];  // 4 : sp offset
     regsData_[REG_PC] = regs[5];  // 5 : pc offset
+    regsData_[REG_LR] = regs[6];  // 6 : lr offset
 }
 
 std::string DfxRegsArm64::PrintRegs() const

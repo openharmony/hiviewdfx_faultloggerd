@@ -69,6 +69,7 @@ bool Unwinder::UnwindLocal(size_t maxFrameNum, size_t skipFrameNum)
     }
     uintptr_t stackBottom, stackTop;
     GetSelfStackRange(stackBottom, stackTop);
+    LOGU("stackBottom: %llx, stackTop: %llx", (uint64_t)stackBottom, (uint64_t)stackTop);
 
     UnwindLocalContext context;
     GetLocalRegs(regs_->RawData());
@@ -137,6 +138,10 @@ bool Unwinder::Unwind(void *ctx, size_t maxFrameNum, size_t skipFrameNum)
             UnwindRemoteContext* context = reinterpret_cast<UnwindRemoteContext *>(ctx);
             context->map = map;
             context->elf = elf;
+        } else if (pid_ > UWNIND_TYPE_LOCAL) {
+            UnwindLocalContext* context = reinterpret_cast<UnwindLocalContext *>(ctx);
+            context->map = map;
+            context->elf = elf;
         }
 
         uintptr_t relPc = static_cast<uintptr_t>(elf->GetRelPc(pc, map->begin, map->end));
@@ -186,14 +191,14 @@ bool Unwinder::Step(uintptr_t& pc, uintptr_t& sp, void *ctx)
         // 2. find unwind table and entry
         UnwindTableInfo di;
         if ((errorCode = acc_->FindUnwindTable(pc, di, ctx)) != UNW_ERROR_NONE) {
-            LOGE("Failed to find unwind table?");
+            LOGE("Failed to find unwind table? errorCode: %d", errorCode);
             lastErrorData_.code = static_cast<uint16_t>(errorCode);
             break;
         }
 
         struct UnwindEntryInfo pi;
         if ((errorCode = DfxUnwindTable::SearchUnwindEntry(pi, di, pc, memory_)) != UNW_ERROR_NONE) {
-            LOGE("Failed to search unwind entry?");
+            LOGE("Failed to search unwind entry? errorCode: %d", errorCode);
             lastErrorData_.code = static_cast<uint16_t>(errorCode);
             break;
         }
@@ -205,6 +210,7 @@ bool Unwinder::Step(uintptr_t& pc, uintptr_t& sp, void *ctx)
             if (!armExidx_->Step((uintptr_t)pi.unwindInfo, regs_, rs)) {
                 lastErrorData_.code = armExidx_->GetLastErrorCode();
                 lastErrorData_.addr = armExidx_->GetLastErrorAddr();
+                LOGE("Step exidx section error, errorCode: %d", lastErrorData_.code);
             } else {
                 ret = true;
             }
@@ -215,6 +221,7 @@ bool Unwinder::Step(uintptr_t& pc, uintptr_t& sp, void *ctx)
             if (!dwarfSection_->Step((uintptr_t)pi.unwindInfo, regs_, rs)) {
                 lastErrorData_.code = dwarfSection_->GetLastErrorCode();
                 lastErrorData_.addr = dwarfSection_->GetLastErrorAddr();
+                LOGE("Step dwarf section error, errorCode: %d", lastErrorData_.code);
             } else {
                 ret = true;
             }

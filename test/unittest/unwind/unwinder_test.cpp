@@ -58,7 +58,7 @@ HWTEST_F(UnwinderTest, UnwinderTest001, TestSize.Level2)
         ElapsedTime counter2;
         Unwinder unwinder;
         bool unwRet = unwinder.UnwindLocal();
-        ASSERT_EQ(true, unwRet);
+        EXPECT_EQ(true, unwRet) << "UnwinderTest001: unwRet:" << unwRet;
         GTEST_LOG_(INFO) << "ChildProcessElapsed:" << counter2.Elapsed();
         const auto& frames = unwinder.GetFrames();
         ASSERT_GT(frames.size(), 0);

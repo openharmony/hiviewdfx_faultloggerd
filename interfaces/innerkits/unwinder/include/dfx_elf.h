@@ -53,7 +53,6 @@ public:
     uint64_t GetStartPc();
     uint64_t GetEndPc();
     uint64_t GetRelPc(uint64_t pc, uint64_t mapStart, uint64_t mapOffset);
-    uint64_t GetPcAdjustment(uint64_t pc);
     const uint8_t* GetMmapPtr();
     size_t GetMmapSize();
     bool Read(uintptr_t pos, void *buf, size_t size);
