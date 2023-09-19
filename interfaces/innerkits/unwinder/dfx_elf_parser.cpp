@@ -139,6 +139,7 @@ bool ElfParser::ParseProgramHeaders(const EhdrType& ehdr)
             if (phdr.p_vaddr + phdr.p_memsz > endVaddr_) {
                 endVaddr_ = phdr.p_vaddr + phdr.p_memsz;
             }
+            LOGU("Elf startVaddr: %llx, endVaddr: %llx", (uint64_t)startVaddr_, (uint64_t)endVaddr_);
             break;
         }
         case PT_DYNAMIC: {
@@ -305,8 +306,8 @@ bool ElfParser::ParseElfSymbols()
             elfSymbol.size = static_cast<uint64_t>(sym.st_size);
             elfSymbols_.push_back(elfSymbol);
         }
+        LOGU("elfSymbols.size: %d", elfSymbols_.size());
     }
-    LOGU("elfSymbols.size: %d", elfSymbols_.size());
     return (elfSymbols_.size() > 0);
 }
 

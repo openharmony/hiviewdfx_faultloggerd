@@ -73,14 +73,16 @@ struct UnwindLocalContext {
     uintptr_t stackBottom;
     uintptr_t stackTop;
     std::shared_ptr<DfxRegs> regs;
+    std::shared_ptr<DfxMap> map;
+    std::shared_ptr<DfxElf> elf;
     struct ElfTableInfo edi;
 };
 
 struct UnwindRemoteContext {
     int pid;
+    std::shared_ptr<DfxRegs> regs;
     std::shared_ptr<DfxMap> map;
     std::shared_ptr<DfxElf> elf;
-    std::shared_ptr<DfxRegs> regs;
     struct ElfTableInfo edi;
 };
 } // namespace HiviewDFX

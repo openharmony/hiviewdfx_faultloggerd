@@ -49,7 +49,6 @@ int DfxUnwindTable::IsPcInElfTable(struct ElfTableInfo eti, uintptr_t pc)
         IsPcInUnwindTable(eti.diExidx, pc) == TABLE_ERROR_FORMAT &&
 #endif
         IsPcInUnwindTable(eti.diDebug, pc) == TABLE_ERROR_FORMAT) {
-        LOGE("Have not elf table info?");
         return UNW_ERROR_NO_UNWIND_INFO;
     }
 
@@ -58,6 +57,7 @@ int DfxUnwindTable::IsPcInElfTable(struct ElfTableInfo eti, uintptr_t pc)
         IsPcInUnwindTable(eti.diExidx, pc) == TABLE_ERROR_NONE ||
 #endif
         IsPcInUnwindTable(eti.diDebug, pc) == TABLE_ERROR_NONE) {
+        LOGU("ElfTableInfo matched pc: %p", (void*)pc);
         return UNW_ERROR_NONE;
     }
     LOGE("Pc(%p) is not in elf table info?", (void *)pc);
@@ -79,6 +79,7 @@ bool DfxUnwindTable::GetExidxTableInfo(struct UnwindTableInfo& ti,
     std::shared_ptr<DfxMap> map, std::shared_ptr<DfxElf> elf)
 {
     if ((map == nullptr) || (elf == nullptr)) {
+        LOGE("params error");
         return false;
     }
 #if defined(__arm__)
@@ -88,6 +89,7 @@ bool DfxUnwindTable::GetExidxTableInfo(struct UnwindTableInfo& ti,
     if (elf->GetSectionInfo(shdr, ARM_EXIDX)) {
         ti.startPc = elf->GetStartPc();
         ti.endPc = elf->GetEndPc();
+        LOGU("Exidx startPc: %llx, endPc: %llx", (uint64_t)ti.startPc, (uint64_t)ti.endPc);
         ti.gp = 0;
         ti.format = UNW_INFO_FORMAT_ARM_EXIDX;
         ti.tableData = loadBase + shdr.addr;
@@ -96,6 +98,7 @@ bool DfxUnwindTable::GetExidxTableInfo(struct UnwindTableInfo& ti,
         return true;
     }
 #endif
+    LOGE("Get elf Exidx section error");
     return false;
 }
 
@@ -103,6 +106,7 @@ bool DfxUnwindTable::GetEhHdrTableInfo(struct UnwindTableInfo& ti,
     std::shared_ptr<DfxMap> map, std::shared_ptr<DfxElf> elf)
 {
     if ((map == nullptr) || (elf == nullptr)) {
+        LOGE("params error");
         return false;
     }
     uintptr_t loadBase = elf->GetLoadBase(map->begin, map->offset);
@@ -111,6 +115,7 @@ bool DfxUnwindTable::GetEhHdrTableInfo(struct UnwindTableInfo& ti,
     if (elf->GetSectionInfo(shdr, EH_FRAME_HDR)) {
         ti.startPc = elf->GetStartPc();
         ti.endPc = elf->GetEndPc();
+        LOGU("EhHdr startPc: %llx, endPc: %llx", (uint64_t)ti.startPc, (uint64_t)ti.endPc);
         ti.gp = elf->GetGlobalPointer();
         LOGU("Elf mmap ptr: %p", (void*)elf->GetMmapPtr());
         struct DwarfEhFrameHdr* hdr = (struct DwarfEhFrameHdr *) (shdr.offset + (char *) elf->GetMmapPtr());
@@ -141,6 +146,7 @@ bool DfxUnwindTable::GetEhHdrTableInfo(struct UnwindTableInfo& ti,
             (int)ti.tableLen, (uint64_t)ti.tableData, (uint64_t)ti.segbase);
         return true;
     }
+    LOGE("Get elf EH_FRAME_HDR section error");
     return false;
 }
 
@@ -148,7 +154,8 @@ bool DfxUnwindTable::GetElfTableInfo(struct ElfTableInfo& eti, uintptr_t pc,
     std::shared_ptr<DfxMap> map, std::shared_ptr<DfxElf> elf)
 {
     if (elf == nullptr || !elf->IsValid()) {
-         return false;
+        LOGE("params error");
+        return false;
     }
     ResetElfTableInfo(eti);
 
@@ -214,6 +221,7 @@ int DfxUnwindTable::DlPhdrCb(struct dl_phdr_info *info, size_t size, void *data)
         }
     }
     if (pText == nullptr) {
+        LOGE("pText is nullptr?");
         return UNW_ERROR_NO_UNWIND_INFO;
     }
     uintptr_t startPc = pText->p_vaddr + loadBase;
@@ -322,8 +330,10 @@ ElfW(Addr) DfxUnwindTable::FindSection(struct dl_phdr_info *info, const std::str
 
 int DfxUnwindTable::FindUnwindTableLocal(struct ElfTableInfo& eti, uintptr_t pc)
 {
-    if (IsPcInElfTable(eti, pc) == TABLE_ERROR_NONE) {
-        return UNW_ERROR_NONE;
+    int ret = IsPcInElfTable(eti, pc);
+    if (ret == TABLE_ERROR_NONE) {
+        LOGU("ElfTableInfo had pc matched");
+        return ret;
     }
 
     DlCbData cbData;
@@ -332,7 +342,7 @@ int DfxUnwindTable::FindUnwindTableLocal(struct ElfTableInfo& eti, uintptr_t pc)
     ResetElfTableInfo(cbData.edi);
     (void)dl_iterate_phdr(DlPhdrCb, &cbData);
 
-    int ret = IsPcInElfTable(cbData.edi, pc);
+    ret = IsPcInElfTable(cbData.edi, pc);
     if (ret == UNW_ERROR_NONE) {
         eti = cbData.edi;
     }
@@ -342,8 +352,10 @@ int DfxUnwindTable::FindUnwindTableLocal(struct ElfTableInfo& eti, uintptr_t pc)
 int DfxUnwindTable::FindUnwindTable(struct ElfTableInfo& eti, uintptr_t pc,
     std::shared_ptr<DfxMap> map, std::shared_ptr<DfxElf> elf)
 {
-    if (IsPcInElfTable(eti, pc) == TABLE_ERROR_NONE) {
-        return UNW_ERROR_NONE;
+    int ret = IsPcInElfTable(eti, pc);
+    if (ret == TABLE_ERROR_NONE) {
+        LOGU("ElfTableInfo had pc matched");
+        return ret;
     }
 
     struct ElfTableInfo edi;
@@ -352,7 +364,7 @@ int DfxUnwindTable::FindUnwindTable(struct ElfTableInfo& eti, uintptr_t pc,
         return UNW_ERROR_NO_UNWIND_INFO;
     }
 
-    int ret = IsPcInElfTable(edi, pc);
+    ret = IsPcInElfTable(edi, pc);
     if (ret == TABLE_ERROR_NONE) {
         eti = edi;
     }

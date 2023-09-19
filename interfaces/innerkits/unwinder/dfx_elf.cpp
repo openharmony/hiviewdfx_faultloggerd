@@ -146,6 +146,7 @@ int64_t DfxElf::GetLoadBias()
     if (loadBias_ == 0) {
         if (IsValid()) {
             loadBias_ = elfParse_->GetLoadBias();
+            LOGU("Elf loadBias: %llx", (uint64_t)loadBias_);
         }
     }
     return loadBias_;
@@ -155,7 +156,9 @@ uint64_t DfxElf::GetLoadBase(uint64_t mapStart, uint64_t mapOffset)
 {
     if (loadBase_ == static_cast<uint64_t>(-1)) {
         if (IsValid()) {
+            LOGU("mapStart: %llx, mapOffset: %llx", (uint64_t)mapStart, (uint64_t)mapOffset);
             loadBase_ = mapStart - mapOffset - GetLoadBias();
+            LOGU("Elf loadBase: %llx", (uint64_t)loadBase_);
         }
     }
     return loadBase_;
@@ -168,6 +171,7 @@ uint64_t DfxElf::GetStartPc()
             auto startVaddr = elfParse_->GetStartVaddr();
             if (loadBase_ != static_cast<uint64_t>(-1) && startVaddr != static_cast<uint64_t>(-1)) {
                 startPc_ = startVaddr + loadBase_;
+                LOGU("Elf startPc: %llx", (uint64_t)startPc_);
             }
         }
     }
@@ -181,6 +185,7 @@ uint64_t DfxElf::GetEndPc()
             auto endVaddr = elfParse_->GetEndVaddr();
             if (loadBase_ != static_cast<uint64_t>(-1) && endVaddr != 0) {
                 endPc_ = endVaddr + loadBase_;
+                LOGU("Elf endPc: %llx", (uint64_t)endPc_);
             }
         }
     }
@@ -190,51 +195,6 @@ uint64_t DfxElf::GetEndPc()
 uint64_t DfxElf::GetRelPc(uint64_t pc, uint64_t mapStart, uint64_t mapOffset)
 {
     return (pc - GetLoadBase(mapStart, mapOffset));
-}
-
-uint64_t DfxElf::GetPcAdjustment(uint64_t relPc)
-{
-#if defined(__arm__)
-    if (!IsValid()) {
-        return 2;
-    }
-
-    if (relPc < static_cast<uint64_t>(GetLoadBias())) {
-        if (relPc < 2) {
-            return 0;
-        }
-        return 2;
-    }
-
-    uint64_t relPcAdjusted = relPc - GetLoadBias();
-    if (relPcAdjusted < 5) {
-        if (relPcAdjusted < 2) {
-            return 0;
-        }
-        return 2;
-    }
-    if (relPcAdjusted & 1) {
-        // This is a thumb instruction, it could be 2 or 4 bytes.
-        uint32_t value;
-        if (!Read((uintptr_t)(relPcAdjusted - 5), &value, sizeof(value)) ||
-            (value & 0xe000f000) != 0xe000f000) {
-            return 2;
-        }
-    }
-    return 4;
-#elif defined(__aarch64__)
-    if (relPc <= 4) {
-        return 0;
-    }
-    return 4;
-#elif defined(__x86_64__)
-    if (relPc < 1) {
-        return 0;
-    }
-    return 1;
-#else
-#error "Unsupported architecture"
-#endif
 }
 
 uint64_t DfxElf::GetElfSize()
@@ -262,7 +222,9 @@ std::string DfxElf::GetBuildId()
         ShdrInfo shdr;
         if (GetSectionInfo(shdr, NOTE_GNU_BUILD_ID)){
             std::string buildIdHex = GetBuildId((uint64_t)((char *)mmap_->Get() + shdr.offset), shdr.size);
+            LOGU("Elf buildIdHex: %s", buildIdHex.c_str());
             buildId_ = ToReadableBuildId(buildIdHex);
+            LOGU("Elf buildId: %s", buildId_.c_str());
         }
     }
     return buildId_;

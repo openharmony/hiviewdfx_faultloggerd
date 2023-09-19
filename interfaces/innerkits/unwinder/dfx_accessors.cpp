@@ -47,10 +47,10 @@ int DfxAccessorsLocal::AccessMem(uintptr_t addr, uintptr_t *val, void *arg)
     if (ctx == nullptr) {
         return UNW_ERROR_INVALID_CONTEXT;
     }
-    if (!IsValidFrame(addr, ctx->stackBottom, ctx->stackTop)) {
-        LOGE("Failed to access addr: %llx", (uint64_t)addr);
-        return UNW_ERROR_INVALID_MEMORY;
-    }
+    //if (!IsValidFrame(addr, ctx->stackBottom, ctx->stackTop)) {
+    //    LOGE("Failed to access addr: %llx", (uint64_t)addr);
+    //    return UNW_ERROR_INVALID_MEMORY;
+    //}
     *val = *(uintptr_t *) addr;
     LOGD("val: %llx", *val);
     return UNW_ERROR_NONE;
@@ -80,7 +80,8 @@ int DfxAccessorsLocal::FindUnwindTable(uintptr_t pc, UnwindTableInfo& uti, void 
     }
 
     int ret = UNW_ERROR_NONE;
-    if ((ret = DfxUnwindTable::FindUnwindTableLocal(ctx->edi, pc)) != UNW_ERROR_NONE) {
+    if ((ret = DfxUnwindTable::FindUnwindTable(ctx->edi, pc, ctx->map, ctx->elf)) != UNW_ERROR_NONE) {
+    //if ((ret = DfxUnwindTable::FindUnwindTableLocal(ctx->edi, pc)) != UNW_ERROR_NONE) {
         return ret;
     }
 
@@ -93,6 +94,7 @@ int DfxAccessorsLocal::FindUnwindTable(uintptr_t pc, UnwindTableInfo& uti, void 
     } else if(ctx->edi.diDebug.format != -1) {
         uti = ctx->edi.diDebug;
     } else {
+        LOGE("UnwindTableInfo format error");
         return UNW_ERROR_NO_UNWIND_INFO;
     }
     return ret;

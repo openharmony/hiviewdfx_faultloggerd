@@ -72,8 +72,8 @@ public:
     bool Step(uintptr_t& pc, uintptr_t& sp, void *ctx);
     bool FpStep(uintptr_t& fp, uintptr_t& pc, void *ctx);
 
-    bool UnwindLocal(size_t maxFrameNum, size_t skipFrameNum);
-    bool UnwindRemote(size_t maxFrameNum, size_t skipFrameNum);
+    bool UnwindLocal(size_t maxFrameNum = 64, size_t skipFrameNum = 0);
+    bool UnwindRemote(size_t maxFrameNum = 64, size_t skipFrameNum = 0);
 
 private:
     bool Apply(std::shared_ptr<DfxRegs> regs, std::shared_ptr<RegLocState> rs);
@@ -89,8 +89,10 @@ private:
     std::shared_ptr<DfxAccessors> acc_;
     std::shared_ptr<DfxMemory> memory_;
     std::map<uintptr_t, std::shared_ptr<RegLocState>> rsCache_;
-    std::shared_ptr<DfxRegs> regs_;
-    std::shared_ptr<DfxMaps> maps_;
+    std::shared_ptr<DfxRegs> regs_ = nullptr;
+    std::shared_ptr<DfxMaps> maps_ = nullptr;
+    std::shared_ptr<DfxMap> map_ = nullptr;
+    std::shared_ptr<DfxElf> elf_ = nullptr;
     std::vector<uintptr_t> pcs_;
     std::vector<DfxFrame> frames_;
     UnwindErrorData lastErrorData_;

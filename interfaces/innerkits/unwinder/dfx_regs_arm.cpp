@@ -46,7 +46,7 @@ namespace OHOS {
 namespace HiviewDFX {
 void DfxRegsArm::SetFromUcontext(const ucontext_t& context)
 {
-    std::vector<uintptr_t> regs(REG_LAST);
+    std::vector<uintptr_t> regs;
     regs.push_back(uintptr_t(context.uc_mcontext.arm_r0));   // 0:r0
     regs.push_back(uintptr_t(context.uc_mcontext.arm_r1));   // 1:r1
     regs.push_back(uintptr_t(context.uc_mcontext.arm_r2));   // 2:r2
@@ -71,18 +71,19 @@ void DfxRegsArm::SetFromFpMiniRegs(const uintptr_t* regs)
 {
     regsData_[REG_ARM_R7] = regs[0];
     regsData_[REG_ARM_R11] = regs[1];
-    regsData_[REG_ARM_R13] = regs[2]; // 2 : sp offset
-    regsData_[REG_ARM_R15] = regs[3]; // 3 : pc offset
+    regsData_[REG_SP] = regs[2]; // 2 : sp offset
+    regsData_[REG_PC] = regs[3]; // 3 : pc offset
 }
 
 void DfxRegsArm::SetFromQutMiniRegs(const uintptr_t* regs)
 {
-    regsData_[REG_ARM_R4] = regs[0];
-    regsData_[REG_ARM_R7] = regs[1];
+    regsData_[REG_ARM_R4] = regs[0]; // 0 : r4 offset
+    regsData_[REG_ARM_R7] = regs[1]; // 1 : r7 offset
     regsData_[REG_ARM_R10] = regs[2]; // 2 : r10 offset
     regsData_[REG_ARM_R11] = regs[3]; // 3 : r11 offset
-    regsData_[REG_ARM_R13] = regs[4];  // 4 : sp offset
-    regsData_[REG_ARM_R15] = regs[5];  // 5 : pc offset
+    regsData_[REG_SP] = regs[4];  // 4 : sp offset
+    regsData_[REG_PC] = regs[5];  // 5 : pc offset
+    regsData_[REG_LR] = regs[6];  // 6 : lr offset
 }
 
 std::string DfxRegsArm::PrintRegs() const
@@ -111,7 +112,7 @@ bool DfxRegsArm::StepIfSignalHandler(uint64_t relPc, DfxElf* elf, DfxMemory* mem
     if (elf == nullptr || !elf->IsValid() || (relPc < static_cast<uint64_t>(elf->GetLoadBias()))) {
         return false;
     }
-    uint64_t elfOffset = relPc - elf->GetLoadBias();
+    uintptr_t elfOffset = static_cast<uintptr_t>(relPc - elf->GetLoadBias());
     uint32_t data;
     if (!elf->Read(elfOffset, &data, sizeof(data))) {
         return false;

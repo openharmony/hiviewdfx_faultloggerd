@@ -31,7 +31,7 @@ namespace {
 
 bool DfxMemory::ReadReg(int regIdx, uintptr_t *val)
 {
-    if (acc_->AccessReg(regIdx, val, ctx_) == UNW_ERROR_NONE) {
+    if (acc_ != nullptr && acc_->AccessReg(regIdx, val, ctx_) == UNW_ERROR_NONE) {
         return true;
     }
     return false;
@@ -39,7 +39,7 @@ bool DfxMemory::ReadReg(int regIdx, uintptr_t *val)
 
 bool DfxMemory::ReadMem(uintptr_t addr, uintptr_t *val)
 {
-    if (acc_->AccessMem(addr, val, ctx_) == UNW_ERROR_NONE) {
+    if (acc_ != nullptr && acc_->AccessMem(addr, val, ctx_) == UNW_ERROR_NONE) {
         return true;
     }
     return false;

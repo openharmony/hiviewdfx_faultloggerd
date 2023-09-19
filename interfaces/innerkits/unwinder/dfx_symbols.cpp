@@ -90,6 +90,7 @@ bool DfxSymbols::GetFuncNameAndOffset(uint64_t relPc, std::shared_ptr<DfxElf> el
     uint64_t end = 0;
     bool ret = GetFuncNameAndOffset(relPc, elf, funcName, start, end);
     funcOffset = relPc - start;
+    LOGU("Symbols funcName: %s, funcOffset: %llx", funcName.c_str(), (uint64_t)funcOffset);
     return ret;
 }
 
