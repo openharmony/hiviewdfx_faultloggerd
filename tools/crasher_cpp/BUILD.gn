@@ -43,7 +43,9 @@ if (defined(ohos_lite)) {
 
     cflags = [
       "-DHAS_HITRACE",
+      "-DHAS_CRASH_EXAMPLES",
       "-Wno-frame-larger-than",
+      "-Wno-frame-address",
     ]
   }
 
@@ -52,13 +54,23 @@ if (defined(ohos_lite)) {
       ":crasher_config",
       "$faultloggerd_path/common/build:coverage_flags",
     ]
+
     sources = [ "dfx_crasher.cpp" ]
+    sources += [
+      "faults/ipc_issues.cpp",
+      "faults/multi_thread_container_access.cpp",
+      "faults/nullpointer_dereference.cpp",
+      "faults/parcel_sample.cpp",
+      "faults/remote_object_interface_proxy.cpp",
+      "faults/remote_object_interface_stub.cpp",
+    ]
 
     external_deps = [
       "c_utils:utils",
       "hilog:libhilog",
       "hitrace:libhitracechain",
     ]
+    external_deps += [ "ipc:ipc_single" ]
 
     part_name = "faultloggerd"
     subsystem_name = "hiviewdfx"

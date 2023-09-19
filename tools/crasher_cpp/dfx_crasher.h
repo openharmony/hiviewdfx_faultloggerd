@@ -32,35 +32,41 @@ public:
     static DfxCrasher &GetInstance();
     ~DfxCrasher();
 
-    int RaiseAbort() const;
-    int RaiseBusError() const;
-    int RaiseFloatingPointException() const;
-    int RaiseIllegalInstructionException() const;
-    int RaiseSegmentFaultException() const;
-    int RaiseTrapException() const;
-    int IllegalInstructionException(void) const;
-    int SegmentFaultException(void) const;
-    int Abort(void) const;
+    static int RaiseAbort();
+    static int RaiseBusError();
+    static int RaiseFloatingPointException();
+    static int RaiseIllegalInstructionException();
+    static int RaiseSegmentFaultException();
+    static int RaiseTrapException();
+    static int IllegalInstructionException();
+    static int SegmentFaultException();
+    static int Abort();
+    static int Loop();
 
     void PrintUsage() const;
 
     static void* DoCrashInThread(void* inputArg);
     uint64_t DoActionOnSubThread(const char* arg) const;
-    uint64_t ParseAndDoCrash(const char* arg);
-    int MaxStackDepth() const;
-    int MultiThreadCrash() const;
-    int ProgramCounterZero() const;
-    int StackOver64() const;
-    int StackTop() const;
+    uint64_t ParseAndDoCrash(const char* arg) const;
+    static int MaxStackDepth();
+    static int MultiThreadCrash();
+    static int ProgramCounterZero();
+    static int StackOver64();
+    static int StackTop();
     //           1         2         3         4         5         6         7
     //  1234567890123456789012345678901234567890123456789012345678901234567890
-    int MaxMethodNameTest12345678901234567890123456789012345678901234567890ABC() const;
+    static int MaxMethodNameTest12345678901234567890123456789012345678901234567890ABC();
+    static int TriggerSegmentFaultException();
+    static int StackOverflow();
+    static int Oom();
+    static int TriggerTrapException();
+    static int CrashInLambda();
+    static int DoDumpCrash();
+    static int TestExitHook();
+    static int TestSigHook();
+    static int StackCorruption();
 
-    int TriggerSegmentFaultException() const;
-    int StackOverflow() const;
-    int Oom() const;
-    int TriggerTrapException() const;
-
+    static int RecursiveFunc(int curLevel, int targetLevel);
 private:
     DfxCrasher();
     DfxCrasher(const DfxCrasher &) = delete;

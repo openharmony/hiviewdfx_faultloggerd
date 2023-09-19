@@ -34,7 +34,12 @@
 
 #ifdef HAS_HITRACE
 #include <hitrace/hitracechain.h>
-using namespace OHOS::HiviewDFX;
+#endif
+
+#ifdef HAS_CRASH_EXAMPLES
+#include "faults/nullpointer_dereference.h"
+#include "faults/multi_thread_container_access.h"
+#include "faults/ipc_issues.h"
 #endif
 
 #ifdef LOG_DOMAIN
@@ -49,9 +54,67 @@ using namespace OHOS::HiviewDFX;
 
 static const int ARG1024 = 1024;
 static const int ARG128 = 128;
+static const int CMD_SZ = 32;
+static const int CMD_DESC_SZ = 128;
 
 static const int NUMBER_TWO = 2;
 static const int NUMBER_ONE = 1;
+
+using namespace OHOS::HiviewDFX;
+using CommandFunc = int(*)();
+struct CrasherCommandLine {
+    char cmdline[CMD_SZ];
+    char description[CMD_DESC_SZ];
+    CommandFunc func;
+};
+
+constexpr static CrasherCommandLine CMDLINE_TABLE[] = {
+    {"SIGFPE", "raise a SIGFPE", &DfxCrasher::RaiseFloatingPointException},
+    {"SIGILL", "raise a SIGILL", &DfxCrasher::RaiseIllegalInstructionException},
+    {"SIGSEGV", "raise a SIGSEGV", &DfxCrasher::RaiseSegmentFaultException},
+    {"SIGTRAP", "raise a SIGTRAP", &DfxCrasher::RaiseTrapException},
+    {"SIGABRT", "raise a SIGABRT", &DfxCrasher::RaiseAbort},
+    {"SIGBUS", "raise a SIGBUS", &DfxCrasher::RaiseBusError},
+
+    {"triSIGILL", "trigger a SIGILL", &DfxCrasher::IllegalInstructionException},
+    {"triSIGSEGV", "trigger a SIGSEGV", &DfxCrasher::SegmentFaultException},
+    {"triSIGTRAP", "trigger a SIGTRAP", &DfxCrasher::TriggerTrapException},
+    {"triSIGABRT", "trigger a SIGABRT", &DfxCrasher::Abort},
+
+    {"Loop", "trigger a ForeverLoop", &DfxCrasher::Loop},
+    {"MaxStack", "trigger SIGSEGV after 64 function call", &DfxCrasher::MaxStackDepth},
+    {"MaxMethod", "trigger SIGSEGV after call a function with longer name",
+        &DfxCrasher::MaxMethodNameTest12345678901234567890123456789012345678901234567890ABC},
+
+    {"STACKOF", "trigger a stack overflow", &DfxCrasher::StackOverflow},
+    {"OOM", "trigger out of memory", &DfxCrasher::Oom},
+    {"PCZero", "trigger a crash with pc equal zero", &DfxCrasher::ProgramCounterZero},
+    {"MTCrash", "trigger a multi-thread crash", &DfxCrasher::MultiThreadCrash},
+    {"StackOver64", "trigger SIGSEGV after 70 function call", &DfxCrasher::StackOver64},
+    {"StackTop", "trigger SIGSEGV to make sure stack top", &DfxCrasher::StackTop},
+    {"DumpCrash", "trigger a SIGDUMP", &DfxCrasher::DoDumpCrash},
+    {"CrashInLambda", "trigger a crash in lambda", &DfxCrasher::CrashInLambda},
+    {"ExitHook", "trigger a process exit using exit(0)", &DfxCrasher::TestExitHook},
+    {"SigHook", "register sigsegv signal handler", &DfxCrasher::TestSigHook},
+    {"StackCorruption", "reset values stored on stack", &DfxCrasher::StackCorruption},
+
+#ifdef HAS_CRASH_EXAMPLES
+    {"NullPointerDeref0", "nullpointer fault testcase 0", &TestNullPointerDereferenceCrash0},
+    {"NullPointerDeref1", "nullpointer fault testcase 1", &TestNullPointerDereferenceCrash1},
+    {"NullPointerDeref2", "nullpointer fault testcase 2", &TestNullPointerDereferenceCrash2},
+    {"NullPointerDeref3", "nullpointer fault testcase 3", &TestNullPointerDereferenceCrash3},
+
+    {"MultiThreadList", "manipulate list without lock in multithread case", &MultiThreadListAccess},
+    {"MultiThreadVector", "manipulate vector without lock in multithread case", &MultiThreadVectorAccess},
+    {"MultiThreadMap", "manipulate map without lock in multithread case", &MultiThreadMapAccess},
+
+    {"SptrMismatch", "mix use sptr and raw pointer", &IPCIssues::SptrMismatch},
+    {"SptrAndSharedPtrMixUsage", "miss match parcel marshalling and unmarshalling",
+        &IPCIssues::SptrAndSharedPtrMixUsage},
+    {"ParcelReadWriteMismatch", "miss match parcel marshalling and unmarshalling",
+        &IPCIssues::ParcelReadWriteMismatch},
+#endif
+};
 
 DfxCrasher::DfxCrasher() {}
 DfxCrasher::~DfxCrasher() {}
@@ -62,56 +125,65 @@ DfxCrasher &DfxCrasher::GetInstance()
     return instance;
 }
 
-NOINLINE int DfxCrasher::TriggerTrapException() const
+NOINLINE int RecursiveHelperFunction(int curLevel, int targetLevel)
 {
-#ifndef __x86_64__
-    __asm__ volatile(".inst 0xde01");
-#endif
+    if (curLevel == targetLevel) {
+        auto top = __builtin_frame_address(0);
+        printf("RecursiveHelperFunction top:%p\n", top);
+        // crash in return address
+        const uintptr_t size = 4096;
+        (void)memset_s(top, size, 0, size);
+        return 0;
+    }
+    printf("RecursiveHelperFunction curLevel:%d targetLevel:%d\n", curLevel, targetLevel);
+    return RecursiveHelperFunction(curLevel + 1, targetLevel);
+}
+
+NOINLINE int DfxCrasher::StackCorruption()
+{
+    constexpr int targetLevel = 64;
+    return RecursiveHelperFunction(1, targetLevel);
+}
+
+NOINLINE int DfxCrasher::RaiseFloatingPointException()
+{
+    raise(SIGFPE);
     return 0;
 }
 
-NOINLINE int DfxCrasher::TriggerSegmentFaultException() const
+NOINLINE int DfxCrasher::RaiseIllegalInstructionException()
 {
-    std::cout << "test TriggerSegmentFaultException" << std::endl;
-    // for crash test force cast the type
-    int *a = (int *)(&TestFunc70);
-    *a = SIGSEGV;
+    raise(SIGILL);
     return 0;
 }
 
-NOINLINE int DfxCrasher::RaiseAbort() const
+NOINLINE int DfxCrasher::RaiseSegmentFaultException()
+{
+    std::cout << "call RaiseSegmentFaultException" << std::endl;
+    raise(SIGSEGV);
+    return 0;
+}
+
+NOINLINE int DfxCrasher::RaiseTrapException()
+{
+    raise(SIGTRAP);
+    return 0;
+}
+
+NOINLINE int DfxCrasher::RaiseAbort()
 {
     HILOG_FATAL(LOG_CORE, "Test Trigger ABORT!");
     raise(SIGABRT);
     return 0;
 }
 
-NOINLINE int DfxCrasher::Abort(void) const
-{
-    HILOG_FATAL(LOG_CORE, "Test Trigger ABORT!");
-    abort();
-    return 0;
-}
-
-NOINLINE int DfxCrasher::RaiseBusError() const
+NOINLINE int DfxCrasher::RaiseBusError()
 {
     raise(SIGBUS);
     return 0;
 }
 
-NOINLINE int DfxCrasher::RaiseFloatingPointException() const
-{
-    raise(SIGFPE);
-    return 0;
-}
-
-NOINLINE int DfxCrasher::RaiseIllegalInstructionException() const
-{
-    raise(SIGILL);
-    return 0;
-}
-
-NOINLINE int DfxCrasher::IllegalInstructionException(void) const
+NOINLINE int DfxCrasher::IllegalInstructionException(void)
 {
 #if defined(__aarch64__)
     __asm__ volatile(".word 0\n");
@@ -125,40 +197,50 @@ NOINLINE int DfxCrasher::IllegalInstructionException(void) const
     return 0;
 }
 
-NOINLINE int DfxCrasher::SegmentFaultException(void) const
+NOINLINE int DfxCrasher::TriggerSegmentFaultException()
+{
+    std::cout << "test TriggerSegmentFaultException" << std::endl;
+    // for crash test force cast the type
+    int *a = (int *)(&TestFunc70);
+    *a = SIGSEGV;
+    return 0;
+}
+
+NOINLINE int DfxCrasher::TriggerTrapException()
+{
+#ifndef __x86_64__
+    __asm__ volatile(".inst 0xde01");
+#endif
+    return 0;
+}
+
+NOINLINE int DfxCrasher::Abort(void)
+{
+    HILOG_FATAL(LOG_CORE, "Test Trigger ABORT!");
+    abort();
+    return 0;
+}
+
+NOINLINE int DfxCrasher::SegmentFaultException(void)
 {
     volatile char *ptr = nullptr;
     *ptr;
-
     return 0;
 }
 
-NOINLINE int DfxCrasher::RaiseSegmentFaultException() const
-{
-    std::cout << "call RaiseSegmentFaultException" << std::endl;
-    raise(SIGSEGV);
-    return 0;
-}
-
-NOINLINE int DfxCrasher::RaiseTrapException() const
-{
-    raise(SIGTRAP);
-    return 0;
-}
-
-NOINLINE int DfxCrasher::MaxStackDepth() const
+NOINLINE int DfxCrasher::MaxStackDepth()
 {
     return TestFunc1();
 }
 
-NOINLINE int DfxCrasher::MaxMethodNameTest12345678901234567890123456789012345678901234567890ABC() const
+NOINLINE int DfxCrasher::MaxMethodNameTest12345678901234567890123456789012345678901234567890ABC()
 {
     std::cout << "call MaxMethodNameTest12345678901234567890123456789012345678901234567890ABC" << std::endl;
     raise(SIGSEGV);
     return 0;
 }
 
-NOINLINE int DfxCrasher::StackOverflow() const
+NOINLINE int DfxCrasher::StackOverflow()
 {
     std::cout << "call StackOverflow" << std::endl;
     // for stack overflow test
@@ -175,7 +257,7 @@ NOINLINE int DfxCrasher::StackOverflow() const
     return 0;
 }
 
-NOINLINE int DfxCrasher::Oom() const
+NOINLINE int DfxCrasher::Oom()
 {
     std::cout << "test oom" << std::endl;
     struct rlimit oldRlimit;
@@ -214,7 +296,7 @@ NOINLINE int DfxCrasher::Oom() const
     return 0;
 }
 
-NOINLINE int DfxCrasher::ProgramCounterZero() const
+NOINLINE int DfxCrasher::ProgramCounterZero()
 {
     std::cout << "test PCZero" << std::endl;
 #if defined(__arm__)
@@ -231,7 +313,7 @@ NOINLINE int DfxCrasher::ProgramCounterZero() const
     return 0;
 }
 
-NOINLINE int DfxCrasher::MultiThreadCrash() const
+NOINLINE int DfxCrasher::MultiThreadCrash()
 {
     std::cout << "test MultiThreadCrash" << std::endl;
 
@@ -244,7 +326,7 @@ NOINLINE int DfxCrasher::MultiThreadCrash() const
     return 0;
 }
 
-NOINLINE int DfxCrasher::StackOver64() const
+NOINLINE int DfxCrasher::StackOver64()
 {
     std::cout << "test StackOver64" << std::endl;
 
@@ -261,7 +343,7 @@ int SleepThread(int threadID)
     return 0;
 }
 
-NOINLINE int DfxCrasher::StackTop() const
+NOINLINE int DfxCrasher::StackTop()
 {
     std::cout << "test StackTop" << std::endl;
 #if defined(__arm__)
@@ -294,40 +376,22 @@ void DfxCrasher::PrintUsage() const
     std::cout << "  usage: crasher CMD" << std::endl;
     std::cout << "\n";
     std::cout << "  where CMD support:" << std::endl;
-    std::cout << "  SIGFPE                raise a SIGFPE" << std::endl;
-    std::cout << "  SIGILL                raise a SIGILL" << std::endl;
-    std::cout << "  SIGSEGV               raise a SIGSEGV" << std::endl;
-    std::cout << "  SIGTRAP               raise a SIGTRAP" << std::endl;
-    std::cout << "  SIGABRT               raise a SIGABRT" << std::endl;
-    std::cout << "  SIGBUS                raise a SIGBUS" << std::endl;
-
-    std::cout << "  triSIGILL             trigger a SIGILL" << std::endl;
-    std::cout << "  triSIGSEGV            trigger a SIGSEGV" << std::endl;
-    std::cout << "  triSIGTRAP            trigger a SIGTRAP" << std::endl;
-    std::cout << "  triSIGABRT            trigger a SIGABRT" << std::endl;
-
-    std::cout << "  Loop                  trigger a ForeverLoop" << std::endl;
-    std::cout << "  MaxStack              trigger SIGSEGV after 64 function call" << std::endl;
-    std::cout << "  MaxMethod             trigger SIGSEGV after call a function with longer name" << std::endl;
-    std::cout << "  STACKOF               trigger a stack overflow" << std::endl;
-    std::cout << "  OOM                   trigger out of memory" << std::endl;
-    std::cout << "  PCZero                trigger pc = 0" << std::endl;
-    std::cout << "  MTCrash               trigger crash with multi-thread" << std::endl;
-    std::cout << "  StackOver64           trigger SIGSEGV after 70 function call" << std::endl;
-    std::cout << "  StackTop              trigger SIGSEGV to make sure stack top" << std::endl;
+    for (auto& item : CMDLINE_TABLE) {
+        std::cout << "  " << item.cmdline << " : " << item.description << std::endl;
+    }
     std::cout << "  if you want the command execute in a sub thread" << std::endl;
     std::cout << "  add thread Prefix, e.g crasher thread-SIGFPE" << std::endl;
     std::cout << "\n";
 }
 
-NOINLINE static uint64_t CrashInLambda()
+NOINLINE int DfxCrasher::CrashInLambda()
 {
     std::function<void()> lambda = TestFunc50;
     lambda();
     return 0;
 }
 
-NOINLINE static uint64_t DoDumpCrash()
+NOINLINE int DfxCrasher::DoDumpCrash()
 {
     std::thread t(TestFunc1);
     raise(SIGDUMP);
@@ -335,7 +399,7 @@ NOINLINE static uint64_t DoDumpCrash()
     return 0;
 }
 
-NOINLINE static uint64_t TestExitHook()
+NOINLINE int DfxCrasher::TestExitHook()
 {
     exit(1);
     return 0;
@@ -346,7 +410,7 @@ static void SigHookHandler(int signo)
     printf("SigHookHandler:%d\n", signo);
 }
 
-NOINLINE static uint64_t TestSigHook()
+NOINLINE int DfxCrasher::TestSigHook()
 {
     signal(SIGSEGV, SigHookHandler);
     return 0;
@@ -368,7 +432,17 @@ uint64_t DfxCrasher::DoActionOnSubThread(const char *arg) const
     return (uint64_t)(result);
 }
 
-uint64_t DfxCrasher::ParseAndDoCrash(const char *arg)
+int DfxCrasher::Loop()
+{
+    int i = 0;
+    while (1) {
+        usleep(10000); // 10000:sleep 0.01 second
+        i++;
+    }
+    return 0;
+}
+
+uint64_t DfxCrasher::ParseAndDoCrash(const char *arg) const
 {
     // Prefix
     if (!strncmp(arg, "thread-", strlen("thread-"))) {
@@ -377,101 +451,11 @@ uint64_t DfxCrasher::ParseAndDoCrash(const char *arg)
 #ifdef HAS_HITRACE
     auto beginId = HiTraceChain::Begin("test", HITRACE_FLAG_NO_BE_INFO);
 #endif
-    // Action
-    if (!strcasecmp(arg, "SIGFPE")) {
-        return RaiseFloatingPointException();
-    }
-
-    if (!strcasecmp(arg, "SIGILL")) {
-        return RaiseIllegalInstructionException();
-    }
-
-    if (!strcasecmp(arg, "SIGSEGV")) {
-        return RaiseSegmentFaultException();
-    }
-
-    if (!strcasecmp(arg, "SIGTRAP")) {
-        return RaiseTrapException();
-    }
-
-    if (!strcasecmp(arg, "triSIGILL")) {
-        return IllegalInstructionException();
-    }
-
-    if (!strcasecmp(arg, "SIGABRT")) {
-        return RaiseAbort();
-    }
-
-    if (!strcasecmp(arg, "triSIGABRT")) {
-        return Abort();
-    }
-
-    if (!strcasecmp(arg, "SIGBUS")) {
-        return RaiseBusError();
-    }
-
-    if (!strcasecmp(arg, "triSIGTRAP")) {
-        return TriggerTrapException();
-    }
-
-    if (!strcasecmp(arg, "Loop")) {
-        int i = 0;
-        while (1) {
-            usleep(10000); // 10000:sleep 0.01 second
-            i++;
+    // Actions
+    for (auto& item : CMDLINE_TABLE) {
+        if (!strcasecmp(arg, item.cmdline)) {
+            return item.func();
         }
-    }
-
-    if (!strcasecmp(arg, "triSIGSEGV")) {
-        return SegmentFaultException();
-    }
-
-    if (!strcasecmp(arg, "MaxStack")) {
-        return MaxStackDepth();
-    }
-
-    if (!strcasecmp(arg, "MaxMethod")) {
-        return MaxMethodNameTest12345678901234567890123456789012345678901234567890ABC();
-    }
-
-    if (!strcasecmp(arg, "STACKOF")) {
-        return StackOverflow();
-    }
-
-    if (!strcasecmp(arg, "OOM")) {
-        return Oom();
-    }
-
-    if (!strcasecmp(arg, "PCZero")) {
-        return ProgramCounterZero();
-    }
-
-    if (!strcasecmp(arg, "MTCrash")) {
-        return MultiThreadCrash();
-    }
-
-    if (!strcasecmp(arg, "StackOver64")) {
-        return StackOver64();
-    }
-
-    if (!strcasecmp(arg, "StackTop")) {
-        return StackTop();
-    }
-
-    if (!strcasecmp(arg, "DumpCrash")) {
-        return DoDumpCrash();
-    }
-
-    if (!strcasecmp(arg, "CrashInLambda")) {
-        return CrashInLambda();
-    }
-
-    if (!strcasecmp(arg, "ExitHook")) {
-        return TestExitHook();
-    }
-
-    if (!strcasecmp(arg, "SigHook")) {
-        return TestSigHook();
     }
 #ifdef HAS_HITRACE
     HiTraceChain::End(beginId);
