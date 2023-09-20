@@ -47,6 +47,7 @@
             <option name="push" value="testdata/phdrs_from_readelf_64 -> /data/test/resource/testdata/" src="res"/>
             <option name="push" value="testdata/syms_from_readelf_32 -> /data/test/resource/testdata/" src="res"/>
             <option name="push" value="testdata/syms_from_readelf_64 -> /data/test/resource/testdata/" src="res"/>
+            <option name="push" value="/data/unwind_test.txt -> /data/" src="res"/>
         </preparer>
     </target>
 </configuration>
