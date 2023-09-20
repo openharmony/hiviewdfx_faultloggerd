@@ -94,6 +94,10 @@ std::shared_ptr<DfxMaps> DfxMaps::Create(const std::string path, bool enableMapI
             DFXLOG_WARN("Failed to init map info:%s.", mapBuf.c_str());
             continue;
         } else {
+            if (map->name == "[stack]") {
+                dfxMaps->stackBottom_ = (uintptr_t)map->begin;
+                dfxMaps->stackTop_ = (uintptr_t)map->end;
+            }
             dfxMaps->AddMap(map, enableMapIndex);
         }
     }
@@ -188,6 +192,16 @@ void DfxMaps::Sort(bool less)
             return a->begin > b->begin;
         });
     }
+}
+
+bool DfxMaps::GetStackRange(uintptr_t& bottom, uintptr_t& top)
+{
+    if (stackBottom_ == 0 || stackTop_ == 0) {
+        return false;
+    }
+    bottom = stackBottom_;
+    top = stackTop_;
+    return true;
 }
 
 bool DfxMaps::IsArkExecutedMap(uintptr_t addr)
