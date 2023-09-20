@@ -107,21 +107,21 @@ std::string DfxRegsArm::PrintRegs() const
     return regString;
 }
 
-bool DfxRegsArm::StepIfSignalHandler(uint64_t relPc, DfxElf* elf, DfxMemory* memory)
+bool DfxRegsArm::StepIfSignalFrame(uintptr_t pc, std::shared_ptr<DfxMemory> memory)
 {
-    if (elf == nullptr || !elf->IsValid() || (relPc < static_cast<uint64_t>(elf->GetLoadBias()))) {
-        return false;
-    }
-    uintptr_t elfOffset = static_cast<uintptr_t>(relPc - elf->GetLoadBias());
-    uint32_t data;
-    if (!elf->Read(elfOffset, &data, sizeof(data))) {
-        return false;
-    }
+    // The least bit denotes thumb/arm mode. Do not read there.
+    pc = pc & ~0x1;
 
-    uintptr_t offset = 0;
+    uint32_t data;
+    if (!DfxMemoryCpy::GetInstance().Read(pc, &data, sizeof(data))) {
+        return false;
+    }
+    LOGU("data: %lx", data);
+
+    uintptr_t scAddr = 0;
     if (data == MOV_R7_SIGRETURN || data == ARM_SIGRETURN
         || data == THUMB_SIGRETURN || data == THUMB2_SIGRETURN) {
-        uintptr_t sp = regsData_[REG_SP];
+        uintptr_t spAddr = regsData_[REG_SP];
         // non-RT sigreturn call.
         // __restore:
         //
@@ -135,19 +135,19 @@ bool DfxRegsArm::StepIfSignalHandler(uint64_t relPc, DfxElf* elf, DfxMemory* mem
         // Form 3 (thumb):
         // 0x77 0x27              movs r7, #77
         // 0x00 0xdf              svc 0
-        if (!memory->Read(sp, &data, sizeof(data), false)) {
+        if (!memory->Read(spAddr, &data, sizeof(data), false)) {
             return false;
         }
         if (data == 0x5ac3c35a) {
             // SP + uc_mcontext offset + r0 offset.
-            offset = sp + 0x14 + 0xc;
+            scAddr = spAddr + 0x14 + 0xc;
         } else {
             // SP + r0 offset
-            offset = sp + 0xc;
+            scAddr = spAddr + 0xc;
         }
     } else if (data == MOV_R7_RT_SIGRETURN || data == ARM_RT_SIGRETURN
         || data == THUMB_RT_SIGRETURN || data == THUMB2_RT_SIGRETURN) {
-        uintptr_t sp = regsData_[REG_SP];
+        uintptr_t spAddr = regsData_[REG_SP];
         // RT sigreturn call.
         // __restore_rt:
         //
@@ -161,21 +161,21 @@ bool DfxRegsArm::StepIfSignalHandler(uint64_t relPc, DfxElf* elf, DfxMemory* mem
         // Form 3 (thumb):
         // 0xad 0x27              movs r7, #ad
         // 0x00 0xdf              svc 0
-        if (!memory->Read(sp, &data, sizeof(data), false)) {
+        if (!memory->Read(spAddr, &data, sizeof(data), false)) {
             return false;
         }
-        if (data == sp + 8) {
+        if (data == spAddr + 8) {
             // SP + 8 + sizeof(siginfo_t) + uc_mcontext_offset + r0 offset
-            offset = sp + 8 + 0x80 + 0x14 + 0xc;
+            scAddr = spAddr + 8 + sizeof(siginfo_t) + 0x14 + 0xc;
         } else {
             // SP + sizeof(siginfo_t) + uc_mcontext_offset + r0 offset
-            offset = sp + 0x80 + 0x14 + 0xc;
+            scAddr = spAddr + sizeof(siginfo_t) + 0x14 + 0xc;
         }
     }
-    if (offset == 0) {
+    if (scAddr == 0) {
         return false;
     }
-    if (!memory->Read(offset, regsData_.data(), sizeof(uint32_t) * REG_LAST, false)) {
+    if (!memory->Read(scAddr, regsData_.data(), sizeof(uint32_t) * REG_LAST, false)) {
         return false;
     }
     return true;

@@ -51,37 +51,65 @@ AddressType DwarfOp<AddressType>::Eval(DfxRegs& regs, AddressType initStackValue
 template <typename AddressType>
 bool DwarfOp<AddressType>::Decode(DfxRegs& regs, uintptr_t& addr)
 {
-    uint8_t opcode = memory_->Read<uint8_t>(addr, true);
+    uint8_t opcode;
+    memory_->ReadU8(addr, &opcode, true);
     switch (opcode) {
-        case DW_OP_addr:
-            OpPush(memory_->Read<uintptr_t>(addr, true));
+        case DW_OP_addr: {
+            uintptr_t val;
+            memory_->ReadUptr(addr, &val, true);
+            OpPush(val);
+        }
             break;
         case DW_OP_deref:
             OpDeref();
             break;
-        case DW_OP_const1u:
-            OpPush(memory_->Read<uint8_t>(addr, true));
+        case DW_OP_const1u: {
+            uint8_t val;
+            memory_->ReadU8(addr, &val, true);
+            OpPush(val);
+        }
             break;
-        case DW_OP_const1s:
-            OpPush(memory_->Read<int8_t>(addr, true));
+        case DW_OP_const1s: {
+            int8_t val;
+            memory_->ReadS8(addr, &val, true);
+            OpPush(val);
+        }
             break;
-        case DW_OP_const2u:
-            OpPush(memory_->Read<uint16_t>(addr, true));
+        case DW_OP_const2u: {
+            uint16_t val;
+            memory_->ReadU16(addr, &val, true);
+            OpPush(val);
+        }
             break;
-        case DW_OP_const2s:
-            OpPush(memory_->Read<int16_t>(addr, true));
+        case DW_OP_const2s: {
+            int16_t val;
+            memory_->ReadS16(addr, &val, true);
+            OpPush(val);
+        }
             break;
-        case DW_OP_const4u:
-            OpPush(memory_->Read<uint32_t>(addr, true));
+        case DW_OP_const4u: {
+            uint32_t val;
+            memory_->ReadU32(addr, &val, true);
+            OpPush(val);
+        }
             break;
-        case DW_OP_const4s:
-            OpPush(memory_->Read<int32_t>(addr, true));
+        case DW_OP_const4s: {
+            int32_t val;
+            memory_->ReadS32(addr, &val, true);
+            OpPush(val);
+        }
             break;
-        case DW_OP_const8u:
-            OpPush(memory_->Read<uint64_t>(addr, true));
+        case DW_OP_const8u: {
+            uint64_t val;
+            memory_->ReadU64(addr, &val, true);
+            OpPush(val);
+        }
             break;
-        case DW_OP_const8s:
-            OpPush(memory_->Read<int64_t>(addr, true));
+        case DW_OP_const8s: {
+            int64_t val;
+            memory_->ReadS64(addr, &val, true);
+            OpPush(val);
+        }
             break;
         case DW_OP_constu:
             OpPush(memory_->ReadUleb128(addr));

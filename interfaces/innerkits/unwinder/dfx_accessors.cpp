@@ -22,6 +22,8 @@
 #include "dfx_define.h"
 #include "dfx_log.h"
 #include "dfx_regs.h"
+#include "dfx_elf.h"
+#include "dfx_maps.h"
 #include "dfx_unwind_table.h"
 
 namespace OHOS {
@@ -47,10 +49,10 @@ int DfxAccessorsLocal::AccessMem(uintptr_t addr, uintptr_t *val, void *arg)
     if (ctx == nullptr) {
         return UNW_ERROR_INVALID_CONTEXT;
     }
-    //if (!IsValidFrame(addr, ctx->stackBottom, ctx->stackTop)) {
-    //    LOGE("Failed to access addr: %llx", (uint64_t)addr);
-    //    return UNW_ERROR_INVALID_MEMORY;
-    //}
+    if (!IsValidFrame(addr, ctx->stackBottom, ctx->stackTop)) {
+        LOGE("Failed to access addr: %llx", (uint64_t)addr);
+        return UNW_ERROR_INVALID_MEMORY;
+    }
     *val = *(uintptr_t *) addr;
     LOGD("val: %llx", *val);
     return UNW_ERROR_NONE;
@@ -78,24 +80,14 @@ int DfxAccessorsLocal::FindUnwindTable(uintptr_t pc, UnwindTableInfo& uti, void 
         LOGE("ctx is null");
         return UNW_ERROR_INVALID_CONTEXT;
     }
-
-    int ret = UNW_ERROR_NONE;
-    if ((ret = DfxUnwindTable::FindUnwindTable(ctx->edi, pc, ctx->map, ctx->elf)) != UNW_ERROR_NONE) {
-    //if ((ret = DfxUnwindTable::FindUnwindTableLocal(ctx->edi, pc)) != UNW_ERROR_NONE) {
-        return ret;
+    if (pc >= ctx->di.startPc && pc < ctx->di.endPc) {
+        LOGU("FindUnwindTable had pc matched");
+        uti = ctx->di;
+        return UNW_ERROR_NONE;
     }
-
-    if(ctx->edi.diEhHdr.format != -1) {
-        uti = ctx->edi.diEhHdr;
-#if defined(__arm__)
-    } else if(ctx->edi.diExidx.format != -1) {
-        uti = ctx->edi.diExidx;
-#endif
-    } else if(ctx->edi.diDebug.format != -1) {
-        uti = ctx->edi.diDebug;
-    } else {
-        LOGE("UnwindTableInfo format error");
-        return UNW_ERROR_NO_UNWIND_INFO;
+    int ret = DfxElf::FindUnwindTableLocal(uti, pc);
+    if (ret == UNW_ERROR_NONE) {
+        ctx->di = uti;
     }
     return ret;
 }
@@ -166,25 +158,27 @@ int DfxAccessorsRemote::AccessReg(int reg, uintptr_t *val, void *arg)
 int DfxAccessorsRemote::FindUnwindTable(uintptr_t pc, UnwindTableInfo& uti, void *arg)
 {
     UnwindRemoteContext *ctx = reinterpret_cast<UnwindRemoteContext *>(arg);
-    if (ctx == nullptr) {
+    if (ctx == nullptr || ctx->maps == nullptr) {
         return UNW_ERROR_INVALID_CONTEXT;
     }
-
-    int ret = UNW_ERROR_NONE;
-    if ((ret = DfxUnwindTable::FindUnwindTable(ctx->edi, pc, ctx->map, ctx->elf)) != UNW_ERROR_NONE) {
-        return ret;
+    if (pc >= ctx->di.startPc && pc < ctx->di.endPc) {
+        LOGU("FindUnwindTable had pc matched");
+        uti = ctx->di;
+        return UNW_ERROR_NONE;
     }
-
-    if(ctx->edi.diEhHdr.format != -1) {
-        uti = ctx->edi.diEhHdr;
-#if defined(__arm__)
-    } else if(ctx->edi.diExidx.format != -1) {
-        uti = ctx->edi.diExidx;
-#endif
-    } else if(ctx->edi.diDebug.format != -1) {
-        uti = ctx->edi.diDebug;
-    } else {
-        return UNW_ERROR_NO_UNWIND_INFO;
+    std::shared_ptr<DfxMap> map = nullptr;
+    if (!ctx->maps->FindMapByAddr(map, pc) || (map == nullptr)) {
+        LOGE("FindUnwindTable map is null");
+        return UNW_ERROR_INVALID_MAP;
+    }
+    auto elf = map->GetElf();
+    if (elf == nullptr) {
+        LOGE("FindUnwindTable elf is null");
+        return UNW_ERROR_INVALID_ELF;
+    }
+    int ret = elf->FindUnwindTableInfo(uti, pc, map);
+    if (ret == UNW_ERROR_NONE) {
+        ctx->di = uti;
     }
     return ret;
 }

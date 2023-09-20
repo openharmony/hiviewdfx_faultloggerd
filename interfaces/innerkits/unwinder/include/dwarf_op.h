@@ -68,32 +68,46 @@ private:
 
     // DW_OP_deref
     inline void OpDeref() {
-        AddressType addr = StackPop();
-        AddressType value = memory_->Read<uintptr_t>(addr);
-        StackPush(value);
+        auto addr = static_cast<uintptr_t>(StackPop());
+        uintptr_t val;
+        memory_->ReadUptr(addr, &val);
+        StackPush(static_cast<AddressType>(val));
     };
 
     // DW_OP_deref_size
     inline void OpDerefSize(AddressType& exprPtr) {
-        AddressType addr = StackPop();
+        auto addr = static_cast<uintptr_t>(StackPop());
         AddressType value = 0;
-        uint8_t operand = memory_->Read<uint8_t>(exprPtr, true);
+        uint8_t operand;
+        memory_->ReadU8(exprPtr, &operand, true);
         switch (operand) {
-            case 1:  // 1 Byte
-                value = memory_->Read<uint8_t>(addr);
+            case 1: {
+                uint8_t u8;
+                memory_->ReadU8(addr, &u8, true);
+                value = static_cast<AddressType>(u8);
+            }
                 break;
-            case 2:  // 2 Byte
-                value = memory_->Read<uint16_t>(addr);
+            case 2: {
+                uint16_t u16;
+                memory_->ReadU16(addr, &u16, true);
+                value = static_cast<AddressType>(u16);
+            }
                 break;
             case 3:
-            case 4:  // 4 Byte
-                value = memory_->Read<uint32_t>(addr);
+            case 4: {
+                uint32_t u32;
+                memory_->ReadU32(addr, &u32, true);
+                value = static_cast<AddressType>(u32);
+            }
                 break;
             case 5:
             case 6:
             case 7:
-            case 8:  // 8 Byte
-                value = static_cast<UnsignedType>(memory_->Read<uint64_t>(addr));
+            case 8: {
+                uint64_t u64;
+                memory_->ReadU64(addr, &u64, true);
+                value = static_cast<AddressType>(u64);
+            }
                 break;
             default:
                 break;
@@ -118,7 +132,8 @@ private:
 
     // DW_OP_pick
     inline void OpPick(AddressType& exprPtr) {
-        uint32_t reg = memory_->Read<uint8_t>(exprPtr, true);
+        uint8_t reg;
+        memory_->ReadU8(exprPtr, &reg, true);
         if (reg > StackSize()) {
             return;
         }
@@ -232,14 +247,16 @@ private:
     };
 
     inline void OpSkip(AddressType& exprPtr) {
-        auto offset = memory_->Read<int16_t>(exprPtr, true);
+        int16_t offset;
+        memory_->ReadS16(exprPtr, &offset, true);
         exprPtr = static_cast<AddressType>(exprPtr + offset);
     };
 
     // DW_OP_bra
     inline void OpBra(AddressType& exprPtr) {
         AddressType top = StackPop();
-        int16_t offset = memory_->Read<int16_t>(exprPtr, true);
+        int16_t offset;
+        memory_->ReadS16(exprPtr, &offset, true);
         if (top != 0) {
             exprPtr = exprPtr + offset;
         }
