@@ -40,10 +40,13 @@ public:
     const std::vector<std::shared_ptr<DfxMap>>& GetMaps() const { return maps_; }
     const std::vector<int>& GetMapIndexVec() const { return mapIndex_; }
     size_t GetMapsSize() const { return maps_.size(); }
+    bool GetStackRange(uintptr_t& bottom, uintptr_t& top);
 
     bool IsArkExecutedMap(uintptr_t addr);
 
 private:
+    uintptr_t stackBottom_ = 0;
+    uintptr_t stackTop_ = 0;
     std::vector<std::shared_ptr<DfxMap>> maps_;
     std::vector<int> mapIndex_;
 };
