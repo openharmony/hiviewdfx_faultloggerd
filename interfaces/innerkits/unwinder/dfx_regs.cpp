@@ -159,6 +159,11 @@ uintptr_t DfxRegs::GetFp() const
     return regsData_[REG_FP];
 }
 
+void DfxRegs::SetFp(uintptr_t fp)
+{
+    regsData_[REG_FP] = fp;
+}
+
 std::string DfxRegs::GetSpecialRegsName(uintptr_t val) const
 {
     uintptr_t fp = 0, lr = 0, sp = 0, pc = 0;

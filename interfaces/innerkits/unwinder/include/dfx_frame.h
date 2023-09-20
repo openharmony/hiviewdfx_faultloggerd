@@ -59,10 +59,17 @@ struct CallFrame {
     int32_t symbolIndex = -1; // symbols index , should update after sort
 
     // add for constructor function
-    CallFrame(uint64_t pc, uint64_t sp)
+    CallFrame(uint64_t pc, uint64_t sp = 0)
     {
         frame.pc = pc;
         frame.sp = sp;
+    }
+
+    CallFrame(uint64_t pc, uint64_t vaddrInFile, const std::string& name, const std::string& filePath)
+    {
+        frame.pc = pc;
+        frame.funcName = name;
+        frame.mapName = filePath;
     }
 
     // add for sort function

@@ -54,13 +54,8 @@ bool DfxSymbols::ParseSymbols(std::vector<DfxSymbol>& symbols, std::shared_ptr<D
             if (elfSymbol.value == 0) {
                 continue;
             }
-            DfxSymbol symbol;
-            symbol.SetVaddr(elfSymbol.value, elfSymbol.value, elfSymbol.size);
-            std::string demangleName = Demangle(elfSymbol.nameStr);
-            symbol.SetName(elfSymbol.nameStr, demangleName);
-            symbol.SetModule(filePath);
-            //LOGU("%016" PRIx64 "|%4" PRIu64 "|%s", elfSymbol.value, elfSymbol.size, demangleName.c_str());
-            symbols.emplace_back(symbol);
+            symbols.emplace_back(elfSymbol.value, elfSymbol.size, elfSymbol.nameStr,
+                Demangle(elfSymbol.nameStr), filePath);
         } else {
             continue;
         }
@@ -68,18 +63,15 @@ bool DfxSymbols::ParseSymbols(std::vector<DfxSymbol>& symbols, std::shared_ptr<D
     return true;
 }
 
-bool DfxSymbols::AddSymbolsByPlt(std::vector<DfxSymbol>& symbols, std::shared_ptr<DfxElf> elf, const std::string& filePath)
+bool DfxSymbols::AddSymbolsByPlt(std::vector<DfxSymbol>& symbols, std::shared_ptr<DfxElf> elf,
+                                 const std::string& filePath)
 {
     if (elf == nullptr) {
         return false;
     }
-    DfxSymbol symbol;
     ShdrInfo shdr;
     elf->GetSectionInfo(shdr, PLT);
-    symbol.SetVaddr(shdr.addr, shdr.addr, shdr.size);
-    symbol.SetName(PLT, PLT);
-    symbol.SetModule(filePath);
-    symbols.emplace_back(symbol);
+    symbols.emplace_back(shdr.addr, shdr.size, PLT, filePath);
     return true;
 }
 

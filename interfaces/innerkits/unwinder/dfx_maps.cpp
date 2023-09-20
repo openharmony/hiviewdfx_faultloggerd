@@ -52,7 +52,27 @@ std::shared_ptr<DfxMaps> DfxMaps::Create(pid_t pid)
     return Create(path);
 }
 
-std::shared_ptr<DfxMaps> DfxMaps::Create(const std::string path)
+bool DfxMaps::Create(pid_t pid, std::vector<std::shared_ptr<DfxMap>>& maps, std::vector<int>& mapIndex)
+{
+    if (pid <= 0) {
+        return false;
+    }
+    std::string path;
+    if ((pid == 0) || (pid == getpid())) {
+        path = std::string(PROC_SELF_MAPS_PATH);
+    } else {
+        path = StringPrintf("/proc/%d/maps", pid);
+    }
+    auto dfxMaps = Create(path, true);
+    if (dfxMaps == nullptr) {
+        return false;
+    }
+    maps = dfxMaps->GetMaps();
+    mapIndex = dfxMaps->GetMapIndexVec();
+    return true;
+}
+
+std::shared_ptr<DfxMaps> DfxMaps::Create(const std::string path, bool enableMapIndex)
 {
     char realPath[PATH_MAX] = {0};
     if (realpath(path.c_str(), realPath) == nullptr) {
@@ -71,20 +91,25 @@ std::shared_ptr<DfxMaps> DfxMaps::Create(const std::string path)
     while (getline(ifs, mapBuf)) {
         std::shared_ptr<DfxMap> map = DfxMap::Create(mapBuf, mapBuf.length());
         if (map == nullptr) {
-            DFXLOG_WARN("Fail to init map info:%s.", mapBuf.c_str());
+            DFXLOG_WARN("Failed to init map info:%s.", mapBuf.c_str());
             continue;
         } else {
-            dfxMaps->AddMap(map);
+            dfxMaps->AddMap(map, enableMapIndex);
         }
     }
     ifs.close();
-    dfxMaps->Sort();
+    if (!enableMapIndex) {
+        dfxMaps->Sort();
+    }
     return dfxMaps;
 }
 
-void DfxMaps::AddMap(std::shared_ptr<DfxMap> map)
+void DfxMaps::AddMap(std::shared_ptr<DfxMap> map, bool enableMapIndex)
 {
     maps_.push_back(map);
+    if (enableMapIndex) {
+        mapIndex_.push_back(maps_.size() - 1);
+    }
 }
 
 bool DfxMaps::FindMapByAddr(std::shared_ptr<DfxMap>& map, uintptr_t addr) const
@@ -163,6 +188,27 @@ void DfxMaps::Sort(bool less)
             return a->begin > b->begin;
         });
     }
+}
+
+bool DfxMaps::IsArkExecutedMap(uintptr_t addr)
+{
+    std::shared_ptr<DfxMap> map = nullptr;
+    if (!FindMapByAddr(map, addr)) {
+        LOGU("Not mapped map for current addr.");
+        return false;
+    }
+
+    if ((!EndsWith(map->name, "[anon:ArkTS Code]")) && (!EndsWith(map->name, "/dev/zero"))) {
+        LOGU("Not ark map: %s", map->name.c_str());
+        return false;
+    }
+
+    if ((map->flag & PROT_EXEC) == 0) {
+        LOGU("current map is not executable.");
+        return false;
+    }
+
+    return true;
 }
 } // namespace HiviewDFX
 } // namespace OHOS
