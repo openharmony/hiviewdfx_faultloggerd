@@ -26,7 +26,7 @@ namespace OHOS {
 namespace HiviewDFX {
 class DfxSymbols final {
 public:
-    DfxSymbols() = default;
+    DfxSymbols() { Clear(); }
     ~DfxSymbols() = default;
 
     void Clear()
@@ -37,15 +37,17 @@ public:
     static bool ParseSymbols(std::vector<DfxSymbol>& symbols, std::shared_ptr<DfxElf> elf, const std::string& filePath);
     static bool AddSymbolsByPlt(std::vector<DfxSymbol>& symbols, std::shared_ptr<DfxElf> elf, const std::string& filePath);
 
-    static bool GetFuncNameAndOffset(uint64_t relPc, std::shared_ptr<DfxElf> elf,
+    bool GetFuncNameAndOffset(uint64_t relPc, std::shared_ptr<DfxElf> elf,
         std::string& funcName, uint64_t& funcOffset);
-    static bool GetFuncNameAndOffset(uint64_t relPc, std::shared_ptr<DfxElf> elf,
-        std::string& funcName, uint64_t& start, uint64_t& end);
 
     static std::string Demangle(const std::string buf);
 
 private:
     static bool IsFunc(const ElfSymbol symbol);
+    bool GetFuncNameAndOffset(uint64_t relPc, std::shared_ptr<DfxElf> elf,
+        std::string& funcName, uint64_t& start, uint64_t& end);
+    bool BinarySearch(uint64_t pc, std::string& name, uint64_t& offset);
+
 private:
     std::vector<DfxSymbol> symbols_;
 };

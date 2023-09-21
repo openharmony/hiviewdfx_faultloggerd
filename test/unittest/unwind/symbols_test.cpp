@@ -75,9 +75,9 @@ HWTEST_F(DfxSymbolsTest, DfxSymbolsTest001, TestSize.Level2)
         symbols[i].module_ = symbolsImitate[i].module_;
     }
     std::string funcName;
-    uint64_t start;
-    uint64_t end;
-    ASSERT_TRUE(DfxSymbols::GetFuncNameAndOffset(0x00001786, elf, funcName, start, end));
+    uint64_t funcOffset;
+    DfxSymbols dfxSymbols;
+    ASSERT_TRUE(dfxSymbols.GetFuncNameAndOffset(0x00001786, elf, funcName, funcOffset));
     GTEST_LOG_(INFO) << "DfxSymbolsTest001: end.";
 }
 
@@ -100,7 +100,7 @@ HWTEST_F(DfxSymbolsTest, DfxSymbolsTest002, TestSize.Level2)
     ASSERT_EQ(symbols.size(), symbolsImitate.size());
     for (size_t i = 0; i < symbolsImitate.size(); ++i) {
         symbols[i].fileVaddr_ = symbolsImitate[i].fileVaddr_;
-        
+
         symbols[i].funcVaddr_ = symbolsImitate[i].funcVaddr_;
         symbols[i].name_ = symbolsImitate[i].name_;
         symbols[i].demangle_ = symbolsImitate[i].demangle_;
@@ -118,9 +118,9 @@ HWTEST_F(DfxSymbolsTest, DfxSymbolsTest002, TestSize.Level2)
         symbols[i].module_ = symbolsImitate[i].module_;
     }
     std::string funcName;
-    uint64_t start;
-    uint64_t end;
-    ASSERT_TRUE(DfxSymbols::GetFuncNameAndOffset(0x00002a08, elf, funcName, start, end));
+    uint64_t funcOffset;
+    DfxSymbols dfxSymbols;
+    ASSERT_TRUE(dfxSymbols.GetFuncNameAndOffset(0x00002a08, elf, funcName, funcOffset));
 
     GTEST_LOG_(INFO) << "DfxSymbolsTest002: end.";
 }

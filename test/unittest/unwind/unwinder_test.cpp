@@ -22,6 +22,7 @@
 #include <malloc.h>
 #include <securec.h>
 #include "unwinder.h"
+#include "elapsed_time.h"
 
 using namespace testing;
 using namespace testing::ext;
@@ -52,11 +53,15 @@ HWTEST_F(UnwinderTest, UnwinderTest001, TestSize.Level2)
     pid_t child = fork();
     if (child == 0) {
         Unwinder unwinder;
+        ElapsedTime counter;
         bool unwRet = unwinder.UnwindLocal(true);
+        GTEST_LOG_(INFO) << "Elapsed: " << counter.Elapsed();
         EXPECT_EQ(true, unwRet) << "UnwinderTest001: unwRet:" << unwRet;
-        const auto& frames = unwinder.GetFrames();
+        std::vector<DfxFrame> frames;
+        Unwinder::GetFramesByPcs(frames, unwinder.GetPcs(), unwinder.GetMaps());
         ASSERT_GT(frames.size(), 0);
-        GTEST_LOG_(INFO) << "frames:\n" << unwinder.GetFramesStr(frames);
+        GTEST_LOG_(INFO) << "Elapsed: " << counter.Elapsed();
+        GTEST_LOG_(INFO) << "frames:\n" << Unwinder::GetFramesStr(frames);
         _exit(0);
     }
 

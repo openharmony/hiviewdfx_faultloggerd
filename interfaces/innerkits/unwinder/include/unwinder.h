@@ -62,6 +62,7 @@ public:
 
     inline void SetRegs(std::shared_ptr<DfxRegs> regs) { regs_ = regs; }
     inline const std::shared_ptr<DfxRegs>& GetRegs() { return regs_; }
+    inline const std::shared_ptr<DfxMaps>& GetMaps() { return maps_; }
 
     const std::vector<uintptr_t>& GetPcs() { return pcs_; }
     const std::vector<DfxFrame>& GetFrames() { return frames_; }
@@ -78,7 +79,7 @@ public:
 
     static void GetFramesByPcs(std::vector<DfxFrame>& frames, std::vector<uintptr_t> pcs,
         std::shared_ptr<DfxMaps> maps);
-    static std::string GetFramesStr(std::vector<DfxFrame> frames);
+    static std::string GetFramesStr(const std::vector<DfxFrame>& frames);
 
 private:
     bool Apply(std::shared_ptr<DfxRegs> regs, std::shared_ptr<RegLocState> rs);
