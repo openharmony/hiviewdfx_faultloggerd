@@ -22,6 +22,8 @@
 #include "dfx_instructions.h"
 #include "dfx_unwind_table.h"
 #include "dfx_symbols.h"
+#include "dfx_frame_formatter.h"
+#include "elapsed_time.h"
 #include "stack_util.h"
 #include "string_printf.h"
 
@@ -62,13 +64,30 @@ void Unwinder::Destroy()
     frames_.clear();
 }
 
-bool Unwinder::UnwindLocal(size_t maxFrameNum, size_t skipFrameNum)
+bool Unwinder::GetStackRange(uintptr_t& stackBottom, uintptr_t& stackTop, bool isMainThread)
+{
+    if (isMainThread) {
+        if (maps_ == nullptr || !maps_->GetStackRange(stackBottom, stackTop)) {
+            return false;
+        }
+    } else {
+        if (GetSelfStackRange(stackBottom, stackTop) != 0) {
+            return false;
+        }
+    }
+    return true;
+}
+
+bool Unwinder::UnwindLocal(bool isMainThread, size_t maxFrameNum, size_t skipFrameNum)
 {
     if (regs_ == nullptr) {
         regs_ = DfxRegs::Create();
     }
-    uintptr_t stackBottom, stackTop;
-    GetSelfStackRange(stackBottom, stackTop);
+    uintptr_t stackBottom = 1, stackTop = static_cast<uintptr_t>(-1);
+    if (!GetStackRange(stackBottom, stackTop, isMainThread)) {
+        LOGE("Get stack range error");
+        return false;
+    }
     LOGU("stackBottom: %llx, stackTop: %llx", (uint64_t)stackBottom, (uint64_t)stackTop);
 
     UnwindLocalContext context;
@@ -76,7 +95,12 @@ bool Unwinder::UnwindLocal(size_t maxFrameNum, size_t skipFrameNum)
     context.regs = regs_;
     context.stackBottom = stackBottom;
     context.stackTop = stackTop;
-    return Unwind(&context, maxFrameNum, skipFrameNum);
+    ElapsedTime counter;
+    bool ret = Unwind(&context, maxFrameNum, skipFrameNum);
+    LOGU("Elapsed: %lld", (uint64_t)counter.Elapsed());
+    GetFramesByPcs(frames_, pcs_, maps_);
+    LOGU("Elapsed: %lld", (uint64_t)counter.Elapsed());
+    return ret;
 }
 
 bool Unwinder::UnwindRemote(size_t maxFrameNum, size_t skipFrameNum)
@@ -87,8 +111,14 @@ bool Unwinder::UnwindRemote(size_t maxFrameNum, size_t skipFrameNum)
 
     UnwindRemoteContext context;
     context.pid = pid_;
+    context.maps = maps_;
     context.regs = regs_;
-    return Unwind(&context, maxFrameNum, skipFrameNum);
+    ElapsedTime counter;
+    bool ret = Unwind(&context, maxFrameNum, skipFrameNum);
+    LOGU("Elapsed: %lld", (uint64_t)counter.Elapsed());
+    GetFramesByPcs(frames_, pcs_, maps_);
+    LOGU("Elapsed: %lld", (uint64_t)counter.Elapsed());
+    return ret;
 }
 
 bool Unwinder::Unwind(void *ctx, size_t maxFrameNum, size_t skipFrameNum)
@@ -119,53 +149,13 @@ bool Unwinder::Unwind(void *ctx, size_t maxFrameNum, size_t skipFrameNum)
         sp = regs_->GetSp();
         pcs_.push_back(pc);
 
-        std::shared_ptr<DfxMap> map = nullptr;
-        if (!maps_->FindMapByAddr(map, pc) || (map == nullptr)) {
-            LOGE("map is null");
-            lastErrorData_.code = pc;
-            lastErrorData_.code = UNW_ERROR_INVALID_MAP;
-            break;
-        }
-        map_ = map;
-
-        elf_ = map_->GetElf();
-        if (elf_ == nullptr) {
-            LOGE("elf is null");
-            lastErrorData_.code = UNW_ERROR_INVALID_ELF;
-            break;
-        }
-
-        if (pid_ > 0) {
-            LOGU("remote context");
-            UnwindRemoteContext* context = reinterpret_cast<UnwindRemoteContext *>(ctx);
-            context->map = map_;
-            context->elf = elf_;
-        } else if (pid_ == UWNIND_TYPE_LOCAL) {
-            LOGU("local context");
-            UnwindLocalContext* context = reinterpret_cast<UnwindLocalContext *>(ctx);
-            context->map = map_;
-            context->elf = elf_;
-        }
-
-        uintptr_t relPc = static_cast<uintptr_t>(elf_->GetRelPc(pc, map_->begin, map_->offset));
-        LOGU("relPc: %llx", (uint64_t)relPc);
-        DfxFrame frame;
-        frame.index = curIndex;
-        frame.relPc = relPc;
-        frame.mapName = map_->name;
-        //DfxSymbols::GetFuncNameAndOffset((uint64_t)relPc, elf_, frame.funcName, frame.funcOffset);
-        //frame.buildId = elf_->GetBuildId();
-        frames_.push_back(frame);
-
-        stepPc = relPc;
+        stepPc = pc;
         if (needAdjustPc) {
             DoPcAdjust(stepPc);
         }
         needAdjustPc = true;
 
-        //if (regs_->StepIfSignalHandler(relPc, elf_.get(), memory_.get())) {
-        //    stepPc = relPc;
-        if (!Step(pc, sp, ctx)) {
+        if (!Step(stepPc, sp, ctx)) {
             break;
         }
 
@@ -176,10 +166,19 @@ bool Unwinder::Unwind(void *ctx, size_t maxFrameNum, size_t skipFrameNum)
 
 bool Unwinder::Step(uintptr_t& pc, uintptr_t& sp, void *ctx)
 {
+    if (regs_ == nullptr || memory_ == nullptr) {
+        LOGE("params is nullptr");
+    }
     LOGU("++++++pc: %llx, sp: %llx", (uint64_t)pc, (uint64_t)sp);
     lastErrorData_.addr = pc;
     int errorCode = UNW_ERROR_NONE;
     memory_->SetCtx(ctx);
+
+    // Check if this is a signal frame.
+    if (regs_->StepIfSignalFrame(pc, memory_)) {
+        LOGW("Step signal frame, pc: %llx, sp: %llx", (uint64_t)pc, (uint64_t)sp);
+    }
+
     std::shared_ptr<RegLocState> rs = nullptr;
     bool ret = false;
     do {
@@ -201,7 +200,7 @@ bool Unwinder::Step(uintptr_t& pc, uintptr_t& sp, void *ctx)
         }
 
         struct UnwindEntryInfo pi;
-        if ((errorCode = DfxUnwindTable::SearchUnwindEntry(pi, di, pc, memory_)) != UNW_ERROR_NONE) {
+        if ((errorCode = DfxUnwindTable::SearchUnwindEntry(pi, di, pc)) != UNW_ERROR_NONE) {
             LOGE("Failed to search unwind entry? errorCode: %d", errorCode);
             lastErrorData_.code = static_cast<uint16_t>(errorCode);
             break;
@@ -243,6 +242,11 @@ bool Unwinder::Step(uintptr_t& pc, uintptr_t& sp, void *ctx)
         ret = Apply(regs_, rs);
     }
 
+    if (!ret && (pid_ == UWNIND_TYPE_LOCAL)) {
+        uintptr_t fp = regs_->GetFp();
+        ret = FpStep(fp, pc, ctx);
+    }
+
     pc = regs_->GetPc();
     sp = regs_->GetSp();
     LOGU("------pc: %llx, sp: %llx", (uint64_t)pc, (uint64_t)sp);
@@ -252,10 +256,14 @@ bool Unwinder::Step(uintptr_t& pc, uintptr_t& sp, void *ctx)
 bool Unwinder::FpStep(uintptr_t& fp, uintptr_t& pc, void *ctx)
 {
     UnwindLocalContext* context = reinterpret_cast<UnwindLocalContext *>(ctx);
+    LOGU("++++++fp: %llx, pc: %llx", (uint64_t)fp, (uint64_t)pc);
     uintptr_t prevFp = fp;
     if (DfxAccessorsLocal::IsValidFrame(prevFp, context->stackBottom, context->stackTop)) {
         fp = *reinterpret_cast<uintptr_t*>(prevFp);
         pc = *reinterpret_cast<uintptr_t*>(prevFp + sizeof(uintptr_t));
+        regs_->SetReg(REG_FP, &fp);
+        regs_->SetReg(REG_PC, &pc);
+        LOGU("------fp: %llx, pc: %llx", (uint64_t)fp, (uint64_t)pc);
         return true;
     }
     return false;
@@ -286,7 +294,7 @@ void Unwinder::DoPcAdjust(uintptr_t& pc)
 #if defined(__arm__)
     if (pc & 1) {
         uintptr_t val;
-        if (pc < 5 || !(memory_->ReadMem(pc - 5, &val)) ||
+        if (pc < 5 || !(DfxMemoryCpy::GetInstance().ReadMem(pc - 5, &val)) ||
             (val & 0xe000f000) != 0xe000f000) {
             sz = 2;
         }
@@ -295,6 +303,45 @@ void Unwinder::DoPcAdjust(uintptr_t& pc)
     sz = 1;
 #endif
     pc -= sz;
+}
+
+void Unwinder::GetFramesByPcs(std::vector<DfxFrame>& frames, std::vector<uintptr_t> pcs,
+    std::shared_ptr<DfxMaps> maps)
+{
+    frames.clear();
+    DfxFrame frame;
+    for (size_t i = 0; i < pcs.size(); ++i) {
+        frame.index = i;
+        frame.pc = pcs[i];
+
+        std::shared_ptr<DfxMap> map = nullptr;
+        if (!maps->FindMapByAddr(map, frame.pc) || (map == nullptr)) {
+            LOGE("map is null");
+            continue;
+        }
+        frame.mapName = map->name;
+        frame.relPc = map->GetRelPc(frame.pc);
+        LOGU("relPc: %llx", frame.relPc);
+
+        auto elf = map->GetElf();
+        if (elf == nullptr) {
+            LOGE("elf is null");
+            continue;
+        }
+        uint64_t funcOffset = 0;
+        std::string funcName;
+        if (DfxSymbols::GetFuncNameAndOffset(frame.relPc, elf, frame.funcName, frame.funcOffset)) {
+            frame.funcName = funcName;
+            frame.funcOffset = funcOffset;
+        }
+        frame.buildId = elf->GetBuildId();
+        frames.push_back(frame);
+    }
+}
+
+std::string Unwinder::GetFramesStr(std::vector<DfxFrame> frames)
+{
+    return DfxFrameFormatter::GetFramesStr(frames);
 }
 } // namespace HiviewDFX
 } // namespace OHOS

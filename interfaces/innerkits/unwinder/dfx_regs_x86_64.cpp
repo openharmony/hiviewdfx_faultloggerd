@@ -84,16 +84,13 @@ std::string DfxRegsX86_64::PrintRegs() const
     return regString;
 }
 
-bool DfxRegsX86_64::StepIfSignalHandler(uint64_t relPc, DfxElf* elf, DfxMemory* memory)
+bool DfxRegsX86_64::StepIfSignalFrame(uintptr_t pc, std::shared_ptr<DfxMemory> memory)
 {
-    if (elf == nullptr || !elf->IsValid() || (relPc < static_cast<uint64_t>(elf->GetLoadBias()))) {
-        return false;
-    }
-    uintptr_t elfOffset = static_cast<uintptr_t>(relPc - elf->GetLoadBias());
     uint64_t data;
-    if (!elf->Read(elfOffset, &data, sizeof(data))) {
+    if (!DfxMemoryCpy::GetInstance().Read(pc, &data, sizeof(data))) {
         return false;
     }
+    LOGU("data: %llx", data);
 
     // __restore_rt:
     // 0x48 0xc7 0xc0 0x0f 0x00 0x00 0x00   mov $0xf,%rax
@@ -104,7 +101,7 @@ bool DfxRegsX86_64::StepIfSignalHandler(uint64_t relPc, DfxElf* elf, DfxMemory* 
     }
 
     uint16_t data2;
-    if (!elf->Read(elfOffset + sizeof(uint64_t), &data2, sizeof(data2))) {
+    if (!DfxMemoryCpy::GetInstance().Read(pc + sizeof(uint64_t), &data2, sizeof(data2))) {
         return false;
     }
     if (data2 != 0x0f05) {
@@ -114,8 +111,8 @@ bool DfxRegsX86_64::StepIfSignalHandler(uint64_t relPc, DfxElf* elf, DfxMemory* 
     // Read the mcontext data from the stack.
     // sp points to the ucontext data structure, read only the mcontext part.
     ucontext_t ucontext;
-    uintptr_t offset = regsData_[REG_SP] + 0x28;
-    if (!memory->Read(offset, &ucontext.uc_mcontext, sizeof(ucontext), false)) {
+    uintptr_t scAddr = regsData_[REG_SP] + 0x28;
+    if (!memory->Read(scAddr, &ucontext.uc_mcontext, sizeof(ucontext), false)) {
         return false;
     }
     SetFromUcontext(ucontext);

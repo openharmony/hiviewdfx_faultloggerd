@@ -21,9 +21,6 @@
 #include <hilog/log.h>
 #include <malloc.h>
 #include <securec.h>
-
-#include "elapsed_time.h"
-#include "dfx_frame_formatter.h"
 #include "unwinder.h"
 
 using namespace testing;
@@ -52,21 +49,16 @@ public:
 HWTEST_F(UnwinderTest, UnwinderTest001, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "UnwinderTest001: start.";
-    ElapsedTime counter;
     pid_t child = fork();
     if (child == 0) {
-        ElapsedTime counter2;
         Unwinder unwinder;
-        bool unwRet = unwinder.UnwindLocal();
+        bool unwRet = unwinder.UnwindLocal(true);
         EXPECT_EQ(true, unwRet) << "UnwinderTest001: unwRet:" << unwRet;
-        GTEST_LOG_(INFO) << "ChildProcessElapsed:" << counter2.Elapsed();
         const auto& frames = unwinder.GetFrames();
         ASSERT_GT(frames.size(), 0);
-        GTEST_LOG_(INFO) << "frames:" << DfxFrameFormatter::GetFramesStr(frames);
-        GTEST_LOG_(INFO) << "ChildProcessElapsed:" << counter2.Elapsed();
+        GTEST_LOG_(INFO) << "frames:\n" << unwinder.GetFramesStr(frames);
         _exit(0);
     }
-    GTEST_LOG_(INFO) << "CurrentThreadElapsed:" << counter.Elapsed();
 
     int status;
     int ret = wait(&status);

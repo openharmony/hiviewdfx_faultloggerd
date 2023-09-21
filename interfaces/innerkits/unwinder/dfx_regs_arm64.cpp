@@ -124,14 +124,11 @@ std::string DfxRegsArm64::PrintRegs() const
 
 bool DfxRegsArm64::StepIfSignalHandler(uint64_t relPc, DfxElf* elf, DfxMemory* memory)
 {
-    if (elf == nullptr || !elf->IsValid() || (relPc < static_cast<uint64_t>(elf->GetLoadBias()))) {
-        return false;
-    }
-    uintptr_t elfOffset = static_cast<uintptr_t>(relPc - elf->GetLoadBias());
     uint64_t data;
-    if (!elf->Read(elfOffset, &data, sizeof(data))) {
+    if (!DfxMemoryCpy::GetInstance().Read(pc, &data, sizeof(data))) {
         return false;
     }
+    LOGU("data: %llx", data);
 
     // Look for the kernel sigreturn function.
     // __kernel_rt_sigreturn:
@@ -142,8 +139,8 @@ bool DfxRegsArm64::StepIfSignalHandler(uint64_t relPc, DfxElf* elf, DfxMemory* m
     }
 
     // SP + sizeof(siginfo_t) + uc_mcontext offset + X0 offset.
-    uintptr_t offset = regsData_[REG_SP] + 0x80 + 0xb0 + 0x08;
-    if (!memory->Read(offset, regsData_.data(), sizeof(uint64_t) * REG_LAST, false)) {
+    uintptr_t scAddr = regsData_[REG_SP] + sizeof(siginfo_t) + 0xb0 + 0x08;
+    if (!memory->Read(scAddr, regsData_.data(), sizeof(uint64_t) * REG_LAST, false)) {
         return false;
     }
     return true;

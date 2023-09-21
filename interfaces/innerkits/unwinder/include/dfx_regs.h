@@ -49,7 +49,7 @@ public:
     virtual void SetFromFpMiniRegs(const uintptr_t* regs) = 0;
     virtual void SetFromQutMiniRegs(const uintptr_t* regs) = 0;
     virtual std::string PrintRegs() const = 0;
-    virtual bool StepIfSignalHandler(uint64_t relPc, DfxElf* elf, DfxMemory* memory) = 0;
+    virtual bool StepIfSignalFrame(uintptr_t pc, std::shared_ptr<DfxMemory> memory) = 0;
 
     inline uintptr_t& operator[](size_t idx) { return regsData_[idx]; }
 
@@ -84,7 +84,7 @@ public:
     void SetFromFpMiniRegs(const uintptr_t* regs) override;
     void SetFromQutMiniRegs(const uintptr_t* regs) override;
     std::string PrintRegs() const override;
-    bool StepIfSignalHandler(uint64_t relPc, DfxElf* elf, DfxMemory* memory) override;
+    bool StepIfSignalFrame(uintptr_t pc, std::shared_ptr<DfxMemory> memory) override;
 };
 
 class DfxRegsArm64 : public DfxRegs {
@@ -95,7 +95,7 @@ public:
     void SetFromFpMiniRegs(const uintptr_t* regs) override;
     void SetFromQutMiniRegs(const uintptr_t* regs) override;
     std::string PrintRegs() const override;
-    bool StepIfSignalHandler(uint64_t relPc, DfxElf* elf, DfxMemory* memory) override;
+    bool StepIfSignalFrame(uintptr_t pc, std::shared_ptr<DfxMemory> memory) override;
 };
 
 class DfxRegsX86_64 : public DfxRegs {
@@ -106,7 +106,7 @@ public:
     void SetFromFpMiniRegs(const uintptr_t* regs) override;
     void SetFromQutMiniRegs(const uintptr_t* regs) override;
     std::string PrintRegs() const override;
-    bool StepIfSignalHandler(uint64_t relPc, DfxElf* elf, DfxMemory* memory) override;
+    bool StepIfSignalFrame(uintptr_t pc, std::shared_ptr<DfxMemory> memory) override;
 };
 } // namespace HiviewDFX
 } // namespace OHOS

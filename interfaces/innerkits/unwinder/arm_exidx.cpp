@@ -123,7 +123,7 @@ bool ArmExidx::ExtractEntryData(uintptr_t entryOffset)
     }
 
     entryOffset += 4;
-    if (!memory_->ReadU32(entryOffset, &data, false)) {
+    if (!DfxMemoryCpy::GetInstance().ReadU32(entryOffset, &data, false)) {
         LOGE("entryOffset: %llx error.", (uint64_t)entryOffset);
         lastErrorData_.addr = entryOffset;
         lastErrorData_.code = UNW_ERROR_ILLEGAL_VALUE;
@@ -155,11 +155,11 @@ bool ArmExidx::ExtractEntryData(uintptr_t entryOffset)
 
     uintptr_t extabAddr = 0;
     // prel31 decode point to .ARM.extab
-    if (!memory_->ReadPrel31(entryOffset, &extabAddr)) {
+    if (!DfxMemoryCpy::GetInstance().ReadPrel31(entryOffset, &extabAddr)) {
         lastErrorData_.code = UNW_ERROR_INVALID_MEMORY;
         return false;
     }
-    if (!memory_->ReadU32(extabAddr, &data, false)) {
+    if (!DfxMemoryCpy::GetInstance().ReadU32(extabAddr, &data, false)) {
         lastErrorData_.code = UNW_ERROR_INVALID_MEMORY;
         return false;
     }
@@ -168,13 +168,13 @@ bool ArmExidx::ExtractEntryData(uintptr_t entryOffset)
     if ((data & ARM_EXIDX_COMPACT) == 0) {
         LOGU("Arm generic personality, data: %x.", data);
         uintptr_t perRoutine;
-        if (!memory_->ReadPrel31(extabAddr, &perRoutine)) {
+        if (!DfxMemoryCpy::GetInstance().ReadPrel31(extabAddr, &perRoutine)) {
             LOGE("Arm Personality routine error");
             return false;
         }
         extabAddr += 4;
         // Skip four bytes, because dont have unwind data to read
-        if (!memory_->ReadU32(extabAddr, &data, false)) {
+        if (!DfxMemoryCpy::GetInstance().ReadU32(extabAddr, &data, false)) {
             lastErrorData_.code = UNW_ERROR_INVALID_MEMORY;
             lastErrorData_.addr = extabAddr;
             return false;
@@ -211,7 +211,7 @@ bool ArmExidx::ExtractEntryData(uintptr_t entryOffset)
     }
 
     for (size_t i = 0; i < tableCount; i++) {
-        if (!memory_->ReadU32(extabAddr, &data, false)) {
+        if (!DfxMemoryCpy::GetInstance().ReadU32(extabAddr, &data, false)) {
             return false;
         }
         extabAddr += 4;

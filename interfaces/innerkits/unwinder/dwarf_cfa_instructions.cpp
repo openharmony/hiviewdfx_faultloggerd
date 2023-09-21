@@ -43,7 +43,8 @@ bool DwarfCfaInstructions::Iterate(uintptr_t pc, FrameDescEntry &fde, uintptr_t 
         uint64_t reg = 0;
         uint64_t reg2 = 0;
         // Read the cfa information.
-        uint8_t opCode = memory_->Read<uint8_t>(instPtr, true);
+        uint8_t opCode;
+        memory_->ReadU8(instPtr, &opCode, true);
         switch (opCode) {
             case DW_CFA_nop:
                 LOGU("DW_CFA_nop");

@@ -70,28 +70,26 @@ HWTEST_F(DfxMemoryTest, DfxMemoryTest002, TestSize.Level2)
     GTEST_LOG_(INFO) << "DfxMemoryTest002: start.";
     uint8_t values[] = {0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8};
 
-    auto memory = std::make_shared<DfxMemoryCpy>();
-
     uintptr_t addr = (uintptr_t)(&values[0]);
     uintptr_t value;
-    bool ret = memory->ReadUptr(addr, &value, false);
+    bool ret = DfxMemoryCpy::GetInstance().ReadUptr(addr, &value, false);
     EXPECT_EQ(true, ret) << "DfxMemoryTest002: ret:" << ret;
     printf("addr: %llx, value: %llx \n", static_cast<uint64_t>(addr), static_cast<uint64_t>(value));
 
     uint64_t tmp;
-    memory->Read(addr, &tmp, sizeof(uint8_t), false);
+    DfxMemoryCpy::GetInstance().Read(addr, &tmp, sizeof(uint8_t), false);
     printf("addr: %llx, u8: %llx \n", static_cast<uint64_t>(addr), tmp);
     ASSERT_EQ(tmp, 0x01);
 
-    memory->Read(addr, &tmp, sizeof(uint16_t), false);
+    DfxMemoryCpy::GetInstance().Read(addr, &tmp, sizeof(uint16_t), false);
     printf("addr: %llx, u16: %llx \n", static_cast<uint64_t>(addr), tmp);
     ASSERT_EQ(tmp, 0x0201);
 
-    memory->Read(addr, &tmp, sizeof(uint32_t), false);
+    DfxMemoryCpy::GetInstance().Read(addr, &tmp, sizeof(uint32_t), false);
     printf("addr: %llx, u32: %llx \n", static_cast<uint64_t>(addr), tmp);
     ASSERT_EQ(tmp, 0x04030201);
 
-    memory->Read(addr, &tmp, sizeof(uint64_t), false);
+    DfxMemoryCpy::GetInstance().Read(addr, &tmp, sizeof(uint64_t), false);
     printf("addr: %llx, u64: %llx \n", static_cast<uint64_t>(addr), tmp);
     ASSERT_EQ(tmp, 0x0807060504030201);
 

@@ -18,6 +18,7 @@
 #include <memory>
 #include <mutex>
 #include "dfx_elf_parser.h"
+#include "dfx_map.h"
 
 namespace OHOS {
 namespace HiviewDFX {
@@ -32,6 +33,11 @@ struct ElfFileInfo {
         size_t pos = path.find_last_of("/");
         return path.substr(pos + 1);
     }
+};
+
+struct DlCbData {
+    uintptr_t pc;
+    ElfTableInfo eti;
 };
 
 class DfxElf final {
@@ -59,14 +65,22 @@ public:
     const std::unordered_map<uint64_t, ElfLoadInfo>& GetPtLoads();
     const std::vector<ElfSymbol>& GetElfSymbols();
     bool GetSectionInfo(ShdrInfo& shdr, const std::string secName);
-
-	static std::string ToReadableBuildId(const std::string& buildIdHex);
+    int FindElfTableInfo(struct ElfTableInfo& eti, uintptr_t pc, std::shared_ptr<DfxMap> map);
+    int FindUnwindTableInfo(struct UnwindTableInfo& uti, uintptr_t pc, std::shared_ptr<DfxMap> map);
+    static int FindUnwindTableLocal(struct UnwindTableInfo& uti, uintptr_t pc);
+    static void ResetElfTable(struct ElfTableInfo& edi);
+    static std::string ToReadableBuildId(const std::string& buildIdHex);
 
 protected:
     bool InitHeaders();
     bool Init(const std::string& file);
     void Clear();
     bool ParseElfIdent();
+    bool GetExidxTableInfo(struct UnwindTableInfo& ti, std::shared_ptr<DfxMap> map);
+    bool GetEhHdrTableInfo(struct UnwindTableInfo& ti, std::shared_ptr<DfxMap> map);
+
+    static int DlPhdrCb(struct dl_phdr_info *info, size_t size, void *data);
+    static ElfW(Addr) FindSection(struct dl_phdr_info *info, const std::string secName);
 
 private:
     bool valid_ = false;
@@ -76,6 +90,8 @@ private:
     uint64_t startPc_ = static_cast<uint64_t>(-1);
     uint64_t endPc_ = 0;
     std::string buildId_ = "";
+    struct ElfTableInfo eti_;
+    bool hasTableInfo_ = false;
     std::shared_ptr<DfxMmap> mmap_;
     std::unique_ptr<ElfParser> elfParse_;
 };
