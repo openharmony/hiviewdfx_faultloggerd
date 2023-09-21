@@ -166,17 +166,22 @@ int DfxAccessorsRemote::FindUnwindTable(uintptr_t pc, UnwindTableInfo& uti, void
         uti = ctx->di;
         return UNW_ERROR_NONE;
     }
-    std::shared_ptr<DfxMap> map = nullptr;
-    if (!ctx->maps->FindMapByAddr(map, pc) || (map == nullptr)) {
-        LOGE("FindUnwindTable map is null");
-        return UNW_ERROR_INVALID_MAP;
+    if (ctx->map != nullptr && pc >= (uintptr_t)ctx->map->begin && pc < (uintptr_t)ctx->map->end) {
+        LOGU("FindUnwindTable map had matched");
+    } else {
+        std::shared_ptr<DfxMap> map = nullptr;
+        if (!ctx->maps->FindMapByAddr(map, pc) || (map == nullptr)) {
+            LOGE("FindUnwindTable map is null");
+            return UNW_ERROR_INVALID_MAP;
+        }
+        ctx->map = map;
     }
-    auto elf = map->GetElf();
+    auto elf = ctx->map->GetElf();
     if (elf == nullptr) {
         LOGE("FindUnwindTable elf is null");
         return UNW_ERROR_INVALID_ELF;
     }
-    int ret = elf->FindUnwindTableInfo(uti, pc, map);
+    int ret = elf->FindUnwindTableInfo(uti, pc, ctx->map);
     if (ret == UNW_ERROR_NONE) {
         ctx->di = uti;
     }

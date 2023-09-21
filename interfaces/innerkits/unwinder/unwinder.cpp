@@ -23,7 +23,6 @@
 #include "dfx_unwind_table.h"
 #include "dfx_symbols.h"
 #include "dfx_frame_formatter.h"
-#include "elapsed_time.h"
 #include "stack_util.h"
 #include "string_printf.h"
 
@@ -95,11 +94,8 @@ bool Unwinder::UnwindLocal(bool isMainThread, size_t maxFrameNum, size_t skipFra
     context.regs = regs_;
     context.stackBottom = stackBottom;
     context.stackTop = stackTop;
-    ElapsedTime counter;
     bool ret = Unwind(&context, maxFrameNum, skipFrameNum);
-    LOGU("Elapsed: %lld", (uint64_t)counter.Elapsed());
-    GetFramesByPcs(frames_, pcs_, maps_);
-    LOGU("Elapsed: %lld", (uint64_t)counter.Elapsed());
+    //GetFramesByPcs(frames_, pcs_, maps_);
     return ret;
 }
 
@@ -113,11 +109,8 @@ bool Unwinder::UnwindRemote(size_t maxFrameNum, size_t skipFrameNum)
     context.pid = pid_;
     context.maps = maps_;
     context.regs = regs_;
-    ElapsedTime counter;
     bool ret = Unwind(&context, maxFrameNum, skipFrameNum);
-    LOGU("Elapsed: %lld", (uint64_t)counter.Elapsed());
     GetFramesByPcs(frames_, pcs_, maps_);
-    LOGU("Elapsed: %lld", (uint64_t)counter.Elapsed());
     return ret;
 }
 
@@ -309,17 +302,22 @@ void Unwinder::GetFramesByPcs(std::vector<DfxFrame>& frames, std::vector<uintptr
     std::shared_ptr<DfxMaps> maps)
 {
     frames.clear();
-    DfxFrame frame;
+    std::shared_ptr<DfxMap> map = nullptr;
+    DfxSymbols symbols;
     for (size_t i = 0; i < pcs.size(); ++i) {
+        DfxFrame frame;
         frame.index = i;
-        frame.pc = pcs[i];
-
-        std::shared_ptr<DfxMap> map = nullptr;
-        if (!maps->FindMapByAddr(map, frame.pc) || (map == nullptr)) {
-            LOGE("map is null");
-            continue;
+        frame.pc = static_cast<uint64_t>(pcs[i]);
+        if (map != nullptr && frame.pc >= map->begin && frame.pc < map->end) {
+            LOGU("map had matched");
+        } else {
+            if (!maps->FindMapByAddr(map, frame.pc) || (map == nullptr)) {
+                LOGE("map is null");
+                continue;
+            }
         }
         frame.mapName = map->name;
+        frame.mapOffset = map->offset;
         frame.relPc = map->GetRelPc(frame.pc);
         LOGU("relPc: %llx", frame.relPc);
 
@@ -328,18 +326,13 @@ void Unwinder::GetFramesByPcs(std::vector<DfxFrame>& frames, std::vector<uintptr
             LOGE("elf is null");
             continue;
         }
-        uint64_t funcOffset = 0;
-        std::string funcName;
-        if (DfxSymbols::GetFuncNameAndOffset(frame.relPc, elf, frame.funcName, frame.funcOffset)) {
-            frame.funcName = funcName;
-            frame.funcOffset = funcOffset;
-        }
+        symbols.GetFuncNameAndOffset(frame.relPc, elf, frame.funcName, frame.funcOffset);
         frame.buildId = elf->GetBuildId();
         frames.push_back(frame);
     }
 }
 
-std::string Unwinder::GetFramesStr(std::vector<DfxFrame> frames)
+std::string Unwinder::GetFramesStr(const std::vector<DfxFrame>& frames)
 {
     return DfxFrameFormatter::GetFramesStr(frames);
 }

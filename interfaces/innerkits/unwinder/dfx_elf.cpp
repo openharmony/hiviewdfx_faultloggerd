@@ -506,7 +506,6 @@ int DfxElf::DlPhdrCb(struct dl_phdr_info *info, size_t size, void *data)
     struct DlCbData *cbData = (struct DlCbData *)data;
     ElfTableInfo* eti = &cbData->eti;
     uintptr_t pc = cbData->pc;
-    LOGU("pc: %p", (void*)pc);
     const ElfW(Phdr) *pText = nullptr;
     const ElfW(Phdr) *pDynamic = nullptr;
 #if defined(__arm__)

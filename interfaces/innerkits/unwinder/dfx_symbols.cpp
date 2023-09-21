@@ -78,29 +78,52 @@ bool DfxSymbols::AddSymbolsByPlt(std::vector<DfxSymbol>& symbols, std::shared_pt
 bool DfxSymbols::GetFuncNameAndOffset(uint64_t relPc, std::shared_ptr<DfxElf> elf,
     std::string& funcName, uint64_t& funcOffset)
 {
+    if (BinarySearch(relPc, funcName, funcOffset)) {
+        LOGU("Symbols funcName: %s, funcOffset: %llx", funcName.c_str(), (uint64_t)funcOffset);
+        return true;
+    }
+
     uint64_t start = 0;
     uint64_t end = 0;
     bool ret = GetFuncNameAndOffset(relPc, elf, funcName, start, end);
     funcOffset = relPc - start;
-    LOGU("Symbols funcName: %s, funcOffset: %llx", funcName.c_str(), (uint64_t)funcOffset);
     return ret;
 }
 
 bool DfxSymbols::GetFuncNameAndOffset(uint64_t relPc, std::shared_ptr<DfxElf> elf,
     std::string& funcName, uint64_t& start, uint64_t& end)
 {
-    std::vector<DfxSymbol> symbols;
-    if (!ParseSymbols(symbols, elf, "")) {
+    if (!ParseSymbols(symbols_, elf, "")) {
         return false;
     }
 
-    // TODO: use binary search ?
-    for (const auto& symbol : symbols) {
+    for (const auto& symbol : symbols_) {
         if (symbol.Contain(relPc)) {
             funcName = symbol.demangle_;
             start = symbol.funcVaddr_;
             end = symbol.funcVaddr_ + symbol.size_;
+            LOGU("Symbols funcName: %s, start: %llx", funcName.c_str(), (uint64_t)start);
             return true;
+        }
+    }
+    return false;
+}
+
+bool DfxSymbols::BinarySearch(uint64_t addr, std::string& name, uint64_t& offset)
+{
+    size_t begin = 0;
+    size_t end = symbols_.size();
+    while (begin < end) {
+        size_t mid = begin + (end - begin) / 2;
+        const DfxSymbol& symbol = symbols_[mid];
+        if (addr < symbol.funcVaddr_) {
+            end = mid;
+        } else if (addr <= (symbol.funcVaddr_ + symbol.size_)) {
+            offset = addr - symbol.funcVaddr_;
+            name = symbol.demangle_;
+            return true;
+        } else {
+            begin = mid + 1;
         }
     }
     return false;
