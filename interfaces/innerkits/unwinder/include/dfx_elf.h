@@ -63,7 +63,9 @@ public:
     size_t GetMmapSize();
     bool Read(uintptr_t pos, void *buf, size_t size);
     const std::unordered_map<uint64_t, ElfLoadInfo>& GetPtLoads();
-    const std::vector<ElfSymbol>& GetElfSymbols();
+    const std::vector<ElfSymbol>& GetElfSymbols(bool isSort = false);
+    const std::vector<ElfSymbol>& GetFuncSymbols(bool isSort = false);
+    bool GetFuncInfo(uint64_t addr, std::string& name, uint64_t& start, uint64_t& size);
     bool GetSectionInfo(ShdrInfo& shdr, const std::string secName);
     int FindElfTableInfo(struct ElfTableInfo& eti, uintptr_t pc, std::shared_ptr<DfxMap> map);
     int FindUnwindTableInfo(struct UnwindTableInfo& uti, uintptr_t pc, std::shared_ptr<DfxMap> map);
@@ -94,6 +96,8 @@ private:
     bool hasTableInfo_ = false;
     std::shared_ptr<DfxMmap> mmap_;
     std::unique_ptr<ElfParser> elfParse_;
+    std::vector<ElfSymbol> elfSymbols_;
+    std::vector<ElfSymbol> funcSymbols_;
 };
 } // namespace HiviewDFX
 } // namespace OHOS

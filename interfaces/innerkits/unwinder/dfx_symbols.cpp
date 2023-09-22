@@ -37,28 +37,15 @@ const std::string LINKER_PREFIX = "__dl_";
 const std::string LINKER_PREFIX_NAME = "[linker]";
 }
 
-bool DfxSymbols::IsFunc(const ElfSymbol symbol)
-{
-    return ((symbol.shndx != SHN_UNDEF) &&
-        (ELF32_ST_TYPE(symbol.info) == STT_FUNC || ELF32_ST_TYPE(symbol.info) == STT_GNU_IFUNC));
-}
-
 bool DfxSymbols::ParseSymbols(std::vector<DfxSymbol>& symbols, std::shared_ptr<DfxElf> elf, const std::string& filePath)
 {
     if (elf == nullptr) {
         return false;
     }
-    std::vector<ElfSymbol> elfSymbols = elf->GetElfSymbols();
+    auto elfSymbols = elf->GetFuncSymbols(true);
     for (auto elfSymbol : elfSymbols) {
-        if (IsFunc(elfSymbol)) {
-            if (elfSymbol.value == 0) {
-                continue;
-            }
-            symbols.emplace_back(elfSymbol.value, elfSymbol.size, elfSymbol.nameStr,
-                Demangle(elfSymbol.nameStr), filePath);
-        } else {
-            continue;
-        }
+        symbols.emplace_back(elfSymbol.value, elfSymbol.size,
+            elfSymbol.nameStr, Demangle(elfSymbol.nameStr), filePath);
     }
     return true;
 }
@@ -75,52 +62,40 @@ bool DfxSymbols::AddSymbolsByPlt(std::vector<DfxSymbol>& symbols, std::shared_pt
     return true;
 }
 
-bool DfxSymbols::GetFuncNameAndOffset(uint64_t relPc, std::shared_ptr<DfxElf> elf,
+bool DfxSymbols::GetFuncNameAndOffsetByPc(uint64_t relPc, std::shared_ptr<DfxElf> elf,
     std::string& funcName, uint64_t& funcOffset)
 {
     if (BinarySearch(relPc, funcName, funcOffset)) {
-        LOGU("Symbols funcName: %s, funcOffset: %llx", funcName.c_str(), (uint64_t)funcOffset);
         return true;
     }
 
-    uint64_t start = 0;
-    uint64_t end = 0;
-    bool ret = GetFuncNameAndOffset(relPc, elf, funcName, start, end);
-    funcOffset = relPc - start;
-    return ret;
-}
-
-bool DfxSymbols::GetFuncNameAndOffset(uint64_t relPc, std::shared_ptr<DfxElf> elf,
-    std::string& funcName, uint64_t& start, uint64_t& end)
-{
-    if (!ParseSymbols(symbols_, elf, "")) {
-        return false;
-    }
-
-    for (const auto& symbol : symbols_) {
-        if (symbol.Contain(relPc)) {
-            funcName = symbol.demangle_;
-            start = symbol.funcVaddr_;
-            end = symbol.funcVaddr_ + symbol.size_;
-            LOGU("Symbols funcName: %s, start: %llx", funcName.c_str(), (uint64_t)start);
-            return true;
-        }
+    std::string name;
+    uint64_t start, size;
+    if (elf->GetFuncInfo(relPc, name, start, size)) {
+        funcName = Demangle(name);
+        funcOffset = relPc - start;
+        LOGU("Symbol funcName: %s, funcOffset: %llx", funcName.c_str(), (uint64_t)funcOffset);
+        symbols_.emplace_back(start, size, name, funcName, "");
+        return true;
     }
     return false;
 }
 
-bool DfxSymbols::BinarySearch(uint64_t addr, std::string& name, uint64_t& offset)
+bool DfxSymbols::BinarySearch(uint64_t addr, std::string& funcName, uint64_t& funcOffset)
 {
+    if (symbols_.empty()) {
+        return false;
+    }
     size_t begin = 0;
     size_t end = symbols_.size();
     while (begin < end) {
         size_t mid = begin + (end - begin) / 2;
-        const DfxSymbol& symbol = symbols_[mid];
-        if (addr < symbol.funcVaddr_) {
+        const auto& iter = symbols_[mid];
+        if (addr < iter.funcVaddr_) {
             end = mid;
-        } else if (addr <= (symbol.funcVaddr_ + symbol.size_)) {
-            offset = addr - symbol.funcVaddr_;
-            name = symbol.demangle_;
+        } else if (addr < (iter.funcVaddr_ + iter.size_)) {
+            funcName = iter.demangle_;
+            funcOffset = addr - iter.funcVaddr_;
             return true;
         } else {
             begin = mid + 1;

@@ -131,7 +131,7 @@ bool ArmExidx::ExtractEntryData(uintptr_t entryOffset)
     }
 
     if (data == ARM_EXIDX_CANT_UNWIND) {
-        LOGE("This is a CANT UNWIND entry, data: %x.", data);
+        LOGU("This is a CANT UNWIND entry, data: %x.", data);
         lastErrorData_.code = UNW_ERROR_CANT_UNWIND;
         lastErrorData_.addr = entryOffset;
         return false;

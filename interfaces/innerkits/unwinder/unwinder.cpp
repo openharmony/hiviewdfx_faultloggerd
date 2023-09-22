@@ -206,7 +206,7 @@ bool Unwinder::Step(uintptr_t& pc, uintptr_t& sp, void *ctx)
             if (!armExidx_->Step((uintptr_t)pi.unwindInfo, regs_, rs)) {
                 lastErrorData_.code = armExidx_->GetLastErrorCode();
                 lastErrorData_.addr = armExidx_->GetLastErrorAddr();
-                LOGE("Step exidx section error, errorCode: %d", lastErrorData_.code);
+                LOGU("Step exidx section error, errorCode: %d", lastErrorData_.code);
             } else {
                 ret = true;
             }
@@ -217,7 +217,7 @@ bool Unwinder::Step(uintptr_t& pc, uintptr_t& sp, void *ctx)
             if (!dwarfSection_->Step((uintptr_t)pi.unwindInfo, regs_, rs)) {
                 lastErrorData_.code = dwarfSection_->GetLastErrorCode();
                 lastErrorData_.addr = dwarfSection_->GetLastErrorAddr();
-                LOGE("Step dwarf section error, errorCode: %d", lastErrorData_.code);
+                LOGU("Step dwarf section error, errorCode: %d", lastErrorData_.code);
             } else {
                 ret = true;
             }
@@ -302,31 +302,40 @@ void Unwinder::GetFramesByPcs(std::vector<DfxFrame>& frames, std::vector<uintptr
     std::shared_ptr<DfxMaps> maps)
 {
     frames.clear();
+    std::map<uintptr_t, std::shared_ptr<DfxMap>> savedMaps;
     std::shared_ptr<DfxMap> map = nullptr;
     DfxSymbols symbols;
     for (size_t i = 0; i < pcs.size(); ++i) {
         DfxFrame frame;
         frame.index = i;
         frame.pc = static_cast<uint64_t>(pcs[i]);
-        if (map != nullptr && frame.pc >= map->begin && frame.pc < map->end) {
-            LOGU("map had matched");
+        if ((map != nullptr) && map->Contain(static_cast<uint64_t>(frame.pc))) {
+            LOGU("matched prev map");
         } else {
-            if (!maps->FindMapByAddr(map, frame.pc) || (map == nullptr)) {
-                LOGE("map is null");
-                continue;
+            auto it = savedMaps.upper_bound(frame.pc);
+            if (it != savedMaps.end() && it->second->Contain(static_cast<uint64_t>(frame.pc))) {
+                LOGU("matched saved maps");
+                map = it->second;
+            } else {
+                if (!maps->FindMapByAddr(map, frame.pc) || (map == nullptr)) {
+                    LOGE("map is null");
+                    continue;
+                }
+                savedMaps.emplace(map->begin, map);
             }
         }
+
         frame.mapName = map->name;
         frame.mapOffset = map->offset;
         frame.relPc = map->GetRelPc(frame.pc);
-        LOGU("relPc: %llx", frame.relPc);
+        LOGU("relPc: %llx, mapName: %s", frame.relPc, frame.mapName.c_str());
 
         auto elf = map->GetElf();
         if (elf == nullptr) {
             LOGE("elf is null");
             continue;
         }
-        symbols.GetFuncNameAndOffset(frame.relPc, elf, frame.funcName, frame.funcOffset);
+        symbols.GetFuncNameAndOffsetByPc(frame.relPc, elf, frame.funcName, frame.funcOffset);
         frame.buildId = elf->GetBuildId();
         frames.push_back(frame);
     }

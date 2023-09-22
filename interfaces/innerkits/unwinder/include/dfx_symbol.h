@@ -66,11 +66,6 @@ struct DfxSymbol {
 
     DfxSymbol& operator=(const DfxSymbol& other) = default;
 
-    static bool SameVaddr(const DfxSymbol &a, const DfxSymbol &b)
-    {
-        return (a.funcVaddr_ == b.funcVaddr_);
-    }
-
     inline bool Equal(const DfxSymbol &b) const
     {
         return ((funcVaddr_ == b.funcVaddr_) && (demangle_ == b.demangle_));
@@ -161,16 +156,6 @@ struct DfxSymbol {
     {
         return vaddr <= a.funcVaddr_;
     }
-
-    static bool CompareLessThen(const DfxSymbol &a, const DfxSymbol &b)
-    {
-        return a.funcVaddr_ < b.funcVaddr_; // we should use vaddr to sort
-    };
-
-    static bool CompareByPointer(const DfxSymbol *a, const DfxSymbol *b)
-    {
-        return a->funcVaddr_ < b->funcVaddr_; // we should use vaddr to sort
-    };
 };
 } // namespace HiviewDFX
 } // namespace OHOS
