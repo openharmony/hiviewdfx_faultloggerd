@@ -122,7 +122,7 @@ std::string DfxRegsArm64::PrintRegs() const
     return regString;
 }
 
-bool DfxRegsArm64::StepIfSignalFrame(uint64_t relPc, DfxElf* elf, DfxMemory* memory)
+bool DfxRegsArm64::StepIfSignalFrame(uintptr_t pc, std::shared_ptr<DfxMemory> memory)
 {
     uint64_t data;
     if (!DfxMemoryCpy::GetInstance().Read(pc, &data, sizeof(data))) {

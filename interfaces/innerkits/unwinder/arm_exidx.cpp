@@ -220,10 +220,14 @@ bool ArmExidx::ExtractEntryData(uintptr_t entryOffset)
 
     uintptr_t extabAddr = 0;
     // prel31 decode point to .ARM.extab
+#ifndef UNITTEST
     if (!DfxMemoryCpy::GetInstance().ReadPrel31(entryOffset, &extabAddr)) {
         lastErrorData_.code = UNW_ERROR_INVALID_MEMORY;
         return false;
     }
+#else
+    extabAddr = entryOffset + 4;
+#endif
     if (!DfxMemoryCpy::GetInstance().ReadU32(extabAddr, &data, false)) {
         lastErrorData_.code = UNW_ERROR_INVALID_MEMORY;
         return false;
@@ -232,11 +236,14 @@ bool ArmExidx::ExtractEntryData(uintptr_t entryOffset)
     uint8_t tableCount = 0;
     if ((data & ARM_EXIDX_COMPACT) == 0) {
         LOGU("Arm generic personality, data: %x.", data);
+#ifndef UNITTEST
         uintptr_t perRoutine;
         if (!DfxMemoryCpy::GetInstance().ReadPrel31(extabAddr, &perRoutine)) {
             LOGE("Arm Personality routine error");
             return false;
         }
+#endif // !UNITTEST
+
         extabAddr += 4;
         // Skip four bytes, because dont have unwind data to read
         if (!DfxMemoryCpy::GetInstance().ReadU32(extabAddr, &data, false)) {
@@ -335,7 +342,7 @@ bool ArmExidx::Eval(uintptr_t entryOffset)
     return true;
 }
 
-bool ArmExidx::Step(uintptr_t entryOffset, std::shared_ptr<DfxRegs> regs, std::shared_ptr<RegLocState> rs)
+bool ArmExidx::Step(uintptr_t entryOffset, std::shared_ptr<RegLocState> rs)
 {
     if (rs == nullptr) {
         return false;
@@ -532,7 +539,7 @@ inline bool ArmExidx::Decode101101nn()
 inline bool ArmExidx::Decode10111nnn()
 {
     // 10111nnn: Pop VFP double-precision registers D[8]-D[8+nnn] by FSTMFDX
-    uint8_t popRegCount = (curOp_ & 0x0f) + 1;
+    uint8_t popRegCount = (curOp_ & 0x07) + 1;
     uint32_t offset = popRegCount * 8 + 4;
     context_.AddUpVsp(offset);
     return true;
