@@ -152,6 +152,7 @@ const std::shared_ptr<DfxElf>& DfxMap::GetElf()
 {
     if (elf == nullptr) {
         if (!name.empty()) {
+            LOGU("GetElf name: %s", name.c_str());
             elf = DfxElf::Create(name);
         }
     }

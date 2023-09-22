@@ -24,7 +24,6 @@
 #include "dfx_regs.h"
 #include "dfx_elf.h"
 #include "dfx_maps.h"
-#include "dfx_unwind_table.h"
 
 namespace OHOS {
 namespace HiviewDFX {

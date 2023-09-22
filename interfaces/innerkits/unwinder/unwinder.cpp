@@ -20,7 +20,6 @@
 #include "dfx_regs_get.h"
 #include "dfx_log.h"
 #include "dfx_instructions.h"
-#include "dfx_unwind_table.h"
 #include "dfx_symbols.h"
 #include "dfx_frame_formatter.h"
 #include "stack_util.h"
@@ -110,7 +109,7 @@ bool Unwinder::UnwindRemote(size_t maxFrameNum, size_t skipFrameNum)
     context.maps = maps_;
     context.regs = regs_;
     bool ret = Unwind(&context, maxFrameNum, skipFrameNum);
-    GetFramesByPcs(frames_, pcs_, maps_);
+    //GetFramesByPcs(frames_, pcs_, maps_);
     return ret;
 }
 
@@ -164,7 +163,6 @@ bool Unwinder::Step(uintptr_t& pc, uintptr_t& sp, void *ctx)
     }
     LOGU("++++++pc: %llx, sp: %llx", (uint64_t)pc, (uint64_t)sp);
     lastErrorData_.addr = pc;
-    int errorCode = UNW_ERROR_NONE;
     memory_->SetCtx(ctx);
 
     // Check if this is a signal frame.
@@ -186,23 +184,21 @@ bool Unwinder::Step(uintptr_t& pc, uintptr_t& sp, void *ctx)
 
         // 2. find unwind table and entry
         UnwindTableInfo di;
-        if ((errorCode = acc_->FindUnwindTable(pc, di, ctx)) != UNW_ERROR_NONE) {
-            LOGE("Failed to find unwind table? errorCode: %d", errorCode);
-            lastErrorData_.code = static_cast<uint16_t>(errorCode);
-            break;
-        }
-
-        struct UnwindEntryInfo pi;
-        if ((errorCode = DfxUnwindTable::SearchUnwindEntry(pi, di, pc)) != UNW_ERROR_NONE) {
-            LOGE("Failed to search unwind entry? errorCode: %d", errorCode);
-            lastErrorData_.code = static_cast<uint16_t>(errorCode);
+        if ((lastErrorData_.code = acc_->FindUnwindTable(pc, di, ctx)) != UNW_ERROR_NONE) {
+            LOGE("Failed to find unwind table? errorCode: %d", lastErrorData_.code);
             break;
         }
 
         // 3. parse instructions and get cache rs
+        struct UnwindEntryInfo pi;
         rs = std::make_shared<RegLocState>();
 #if defined(__arm__)
-        if (!ret && pi.format == UNW_INFO_FORMAT_ARM_EXIDX) {
+        if (!ret && di.format == UNW_INFO_FORMAT_ARM_EXIDX) {
+            if (!armExidx_->SearchEntry(pi, di, pc)) {
+                lastErrorData_.code = armExidx_->GetLastErrorCode();
+                LOGE("Failed to search unwind entry? errorCode: %d", lastErrorData_.code);
+                break;
+            }
             if (!armExidx_->Step((uintptr_t)pi.unwindInfo, regs_, rs)) {
                 lastErrorData_.code = armExidx_->GetLastErrorCode();
                 lastErrorData_.addr = armExidx_->GetLastErrorAddr();
@@ -212,7 +208,12 @@ bool Unwinder::Step(uintptr_t& pc, uintptr_t& sp, void *ctx)
             }
         }
 #endif
-        if (!ret && pi.format == UNW_INFO_FORMAT_REMOTE_TABLE) {
+        if (!ret && di.format == UNW_INFO_FORMAT_REMOTE_TABLE) {
+            if (!dwarfSection_->SearchEntry(pi, di, pc)) {
+                lastErrorData_.code = dwarfSection_->GetLastErrorCode();
+                LOGE("Failed to search unwind entry? errorCode: %d", lastErrorData_.code);
+                break;
+            }
             memory_->SetDataOffset(di.segbase);
             if (!dwarfSection_->Step((uintptr_t)pi.unwindInfo, regs_, rs)) {
                 lastErrorData_.code = dwarfSection_->GetLastErrorCode();
@@ -321,7 +322,7 @@ void Unwinder::GetFramesByPcs(std::vector<DfxFrame>& frames, std::vector<uintptr
                     LOGE("map is null");
                     continue;
                 }
-                savedMaps.emplace(map->begin, map);
+                savedMaps.emplace(map->end, map);
             }
         }
 
