@@ -32,9 +32,10 @@ public:
     {
         lastErrorData_.code = UNW_ERROR_NONE;
         lastErrorData_.addr = 0;
-    };
+    }
     virtual ~DwarfSection() = default;
 
+    bool SearchEntry(struct UnwindEntryInfo& pi, struct UnwindTableInfo uti, uintptr_t pc);
     bool Step(uintptr_t fdeAddr, std::shared_ptr<DfxRegs> regs, std::shared_ptr<RegLocState> rs);
 
     const uint16_t& GetLastErrorCode() const { return lastErrorData_.code; }

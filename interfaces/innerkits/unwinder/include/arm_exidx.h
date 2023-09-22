@@ -40,9 +40,14 @@ public:
 
 class ArmExidx {
 public:
-    ArmExidx(std::shared_ptr<DfxMemory> memory) : memory_(memory) {}
+    ArmExidx(std::shared_ptr<DfxMemory> memory) : memory_(memory)
+    {
+        lastErrorData_.code = UNW_ERROR_NONE;
+        lastErrorData_.addr = 0;
+    }
     virtual ~ArmExidx() = default;
 
+    bool SearchEntry(struct UnwindEntryInfo& pi, struct UnwindTableInfo uti, uintptr_t pc);
     bool Step(uintptr_t entryOffset, std::shared_ptr<DfxRegs> regs, std::shared_ptr<RegLocState> rs);
 
     const uint16_t& GetLastErrorCode() const { return lastErrorData_.code; }

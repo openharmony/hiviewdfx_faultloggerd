@@ -353,12 +353,12 @@ bool DfxElf::GetFuncInfo(uint64_t addr, std::string& name, uint64_t& start, uint
             start = symbol.value;
             size = symbol.size;
             name = symbol.nameStr;
+            LOGU("GetFuncInfo start: %llx, name: %s", start, name.c_str());
             return true;
         } else {
             begin = mid + 1;
         }
     }
-    LOGE("GetFuncInfo error");
     return false;
 }
 

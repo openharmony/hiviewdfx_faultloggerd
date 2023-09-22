@@ -294,6 +294,7 @@ bool ElfParser::ParseElfSymbols(bool isFunc, bool isSort)
 
             if (isFunc) {
                 if ((sym.st_value == 0) ||
+                    (sym.st_shndx == SHN_UNDEF) ||
                     (ELF32_ST_TYPE(sym.st_info) != STT_FUNC && ELF32_ST_TYPE(sym.st_info) != STT_GNU_IFUNC)) {
                     continue;
                 }

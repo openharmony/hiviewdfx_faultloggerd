@@ -27,9 +27,52 @@ namespace {
 #define LOG_TAG "DfxDwarfSection"
 }
 
+bool DwarfSection::SearchEntry(struct UnwindEntryInfo& pi, struct UnwindTableInfo uti, uintptr_t pc)
+{
+    MAYBE_UNUSED auto segbase = uti.segbase;
+    auto fdeCount = uti.tableLen;
+    uintptr_t tableData = uti.tableData;
+    LOGU("DwarfSearchUnwindTable segbase:%p, tableData:%p, tableLen: %d",
+        (void*)segbase, (void*)tableData, fdeCount);
+
+    // do binary search, encode is stored in symbol file, we have no means to find?
+    // hard code for 1b DwarfEncoding
+    uintptr_t entry;
+    uintptr_t low = 0;
+    DwarfTableEntry dwarfTableEntry;
+    for (uintptr_t len = fdeCount; len > 1;) {
+        uintptr_t cur = low + (len / 2);
+        entry = (uintptr_t) tableData + cur * sizeof(DwarfTableEntry);
+        LOGU("cur:%d, entry:%llx", (int)cur, (uint64_t)entry);
+        DfxMemoryCpy::GetInstance().ReadS32(entry, &dwarfTableEntry.startPcOffset, true);
+        uintptr_t startPc = static_cast<uintptr_t>(dwarfTableEntry.startPcOffset + segbase);
+        LOGU("target Pc:%p, startPc:%p", (void *)pc, (void *)startPc);
+
+        if (startPc == pc) {
+            low = cur;
+            break;
+        } else if (startPc < pc) {
+            low = cur;
+            len -= (len / 2);
+        } else {
+            len /= 2;
+        }
+    }
+
+    entry = (uintptr_t) tableData + low * sizeof(DwarfTableEntry);
+    entry += 4;
+
+    DfxMemoryCpy::GetInstance().ReadS32(entry, &dwarfTableEntry.fdeOffset, true);
+    uintptr_t fdeAddr = static_cast<uintptr_t>(dwarfTableEntry.fdeOffset + segbase);
+    pi.unwindInfo = (void *)(fdeAddr);
+    LOGU("fde offset entry: %llx", (uint64_t)pi.unwindInfo);
+    pi.format = UNW_INFO_FORMAT_REMOTE_TABLE;
+    pi.gp = uti.gp;
+    return true;
+}
+
 bool DwarfSection::Step(uintptr_t fdeAddr, std::shared_ptr<DfxRegs> regs, std::shared_ptr<RegLocState> rs)
 {
-    lastErrorData_.code = static_cast<uint16_t>(UNW_ERROR_NONE);
     lastErrorData_.addr = static_cast<uint64_t>(fdeAddr);
     FrameDescEntry fdeInfo;
     if (!ParseFde(fdeAddr, fdeInfo)) {
