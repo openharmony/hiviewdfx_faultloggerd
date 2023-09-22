@@ -261,21 +261,20 @@ bool ElfParser::ParseElfName()
                 return false;
             }
             size_t maxStrSize = static_cast<size_t>(sonameOffsetMax - sonameOffset);
-            if (!mmap_->ReadString(sonameOffset, &soname_, maxStrSize)) {
-                return false;
-            }
+            soname_ = std::string(((char *)mmap_->Get() + sonameOffset), maxStrSize);
         }
     }
     return true;
 }
 
 template <typename SymType>
-bool ElfParser::ParseElfSymbols()
+bool ElfParser::ParseElfSymbols(bool isFunc, bool isSort)
 {
     if (symShdrs_.empty()) {
         return false;
     }
 
+    elfSymbols_.clear();
     for (const auto &iter : symShdrs_) {
         const auto &shdr = iter.second;
         if (shdr.type != SHT_SYMTAB && shdr.type != SHT_DYNSYM) {
@@ -293,19 +292,33 @@ bool ElfParser::ParseElfSymbols()
                 continue;
             }
 
-            ElfSymbol elfSymbol;
-            elfSymbol.name = static_cast<uint32_t>(sym.st_name);
-            if (strtabPtr != nullptr) {
-                elfSymbol.nameStr = std::string(strtabPtr + elfSymbol.name);
-                //LOGU("elfSymbol.nameStr: %s", elfSymbol.nameStr.c_str());
+            if (isFunc) {
+                if ((sym.st_value == 0) ||
+                    (ELF32_ST_TYPE(sym.st_info) != STT_FUNC && ELF32_ST_TYPE(sym.st_info) != STT_GNU_IFUNC)) {
+                    continue;
+                }
             }
+
+            ElfSymbol elfSymbol;
             elfSymbol.info = sym.st_info;
             elfSymbol.other = sym.st_other;
             elfSymbol.shndx = static_cast<uint16_t>(sym.st_shndx);
             elfSymbol.value = static_cast<uint64_t>(sym.st_value);
             elfSymbol.size = static_cast<uint64_t>(sym.st_size);
+            elfSymbol.name = static_cast<uint32_t>(sym.st_name);
+            if (strtabPtr != nullptr) {
+                elfSymbol.nameStr = std::string(strtabPtr + elfSymbol.name);
+                //LOGU("elfSymbol.nameStr: %s", elfSymbol.nameStr.c_str());
+            }
             elfSymbols_.push_back(elfSymbol);
         }
+        if (isSort) {
+            auto comp = [](auto a, auto b) { return a.value < b.value; };
+            std::sort(elfSymbols_.begin(), elfSymbols_.end(), comp);
+        }
+        auto pred = [](auto a, auto b) { return a.value == b.value; };
+        elfSymbols_.erase(std::unique(elfSymbols_.begin(), elfSymbols_.end(), pred), elfSymbols_.end());
+        elfSymbols_.shrink_to_fit();
         LOGU("elfSymbols.size: %d", elfSymbols_.size());
     }
     return (elfSymbols_.size() > 0);
@@ -417,18 +430,14 @@ uintptr_t ElfParser64::GetGlobalPointer()
     return dtPltGotAddr_;
 }
 
-const std::vector<ElfSymbol>& ElfParser32::GetElfSymbols()
+const std::vector<ElfSymbol>& ElfParser32::GetElfSymbols(bool isFunc, bool isSort)
 {
-    if (elfSymbols_.empty()) {
-        ParseElfSymbols<Elf32_Sym>();
-    }
+    ParseElfSymbols<Elf32_Sym>(isFunc, isSort);
     return elfSymbols_;
 }
-const std::vector<ElfSymbol>& ElfParser64::GetElfSymbols()
+const std::vector<ElfSymbol>& ElfParser64::GetElfSymbols(bool isFunc, bool isSort)
 {
-    if (elfSymbols_.empty()) {
-        ParseElfSymbols<Elf64_Sym>();
-    }
+    ParseElfSymbols<Elf64_Sym>(isFunc, isSort);
     return elfSymbols_;
 }
 } // namespace HiviewDFX

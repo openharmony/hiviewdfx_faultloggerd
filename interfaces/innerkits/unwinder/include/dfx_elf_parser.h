@@ -48,7 +48,7 @@ public:
     virtual uint64_t GetEndVaddr() { return endVaddr_; }
     virtual std::string GetElfName() = 0;
     virtual uintptr_t GetGlobalPointer() = 0;
-    virtual const std::vector<ElfSymbol>& GetElfSymbols() = 0;
+    virtual const std::vector<ElfSymbol>& GetElfSymbols(bool isFunc, bool isSort) = 0;
     virtual bool GetSymSection(ElfShdr& shdr, const std::string secName);
     virtual bool GetSectionInfo(ShdrInfo& shdr, const std::string secName);
     const std::unordered_map<uint64_t, ElfLoadInfo>& GetPtLoads() {return ptLoads_;}
@@ -65,7 +65,7 @@ protected:
     template <typename EhdrType, typename ShdrType>
     bool ParseSectionHeaders(const EhdrType& ehdr);
     template <typename SymType>
-    bool ParseElfSymbols();
+    bool ParseElfSymbols(bool isFunc, bool isSort);
     template <typename DynType>
     bool ParseElfDynamic();
     template <typename DynType>
@@ -103,7 +103,7 @@ public:
     bool InitHeaders() override;
     std::string GetElfName() override;
     uintptr_t GetGlobalPointer() override;
-    const std::vector<ElfSymbol>& GetElfSymbols() override;
+    const std::vector<ElfSymbol>& GetElfSymbols(bool isFunc, bool isSort) override;
 };
 
 class ElfParser64 : public ElfParser {
@@ -112,7 +112,7 @@ public:
     bool InitHeaders() override;
     std::string GetElfName() override;
     uintptr_t GetGlobalPointer() override;
-    const std::vector<ElfSymbol>& GetElfSymbols() override;
+    const std::vector<ElfSymbol>& GetElfSymbols(bool isFunc, bool isSort) override;
 };
 
 } // namespace HiviewDFX

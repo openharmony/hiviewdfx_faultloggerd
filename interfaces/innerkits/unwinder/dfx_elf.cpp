@@ -320,9 +320,46 @@ bool DfxElf::GetSectionInfo(ShdrInfo& shdr, const std::string secName)
     return elfParse_->GetSectionInfo(shdr, secName);
 }
 
-const std::vector<ElfSymbol>& DfxElf::GetElfSymbols()
+const std::vector<ElfSymbol>& DfxElf::GetElfSymbols(bool isSort)
 {
-    return elfParse_->GetElfSymbols();
+    if (elfSymbols_.empty()) {
+        elfSymbols_ = elfParse_->GetElfSymbols(false, isSort);
+    }
+    return elfSymbols_;
+}
+
+const std::vector<ElfSymbol>& DfxElf::GetFuncSymbols(bool isSort)
+{
+    if (funcSymbols_.empty()) {
+        funcSymbols_ = elfParse_->GetElfSymbols(true, isSort);
+    }
+    return funcSymbols_;
+}
+
+bool DfxElf::GetFuncInfo(uint64_t addr, std::string& name, uint64_t& start, uint64_t& size)
+{
+    auto symbols = GetFuncSymbols(true);
+    if (symbols.empty()) {
+        return false;
+    }
+    size_t begin = 0;
+    size_t end = symbols.size();
+    while (begin < end) {
+        size_t mid = begin + (end - begin) / 2;
+        const auto& symbol = symbols[mid];
+        if (addr < symbol.value) {
+            end = mid;
+        } else if (addr < (symbol.value + symbol.size)) {
+            start = symbol.value;
+            size = symbol.size;
+            name = symbol.nameStr;
+            return true;
+        } else {
+            begin = mid + 1;
+        }
+    }
+    LOGE("GetFuncInfo error");
+    return false;
 }
 
 const std::unordered_map<uint64_t, ElfLoadInfo>& DfxElf::GetPtLoads()
