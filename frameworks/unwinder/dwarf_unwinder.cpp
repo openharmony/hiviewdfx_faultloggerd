@@ -119,7 +119,7 @@ bool DwarfUnwinder::UnwindWithContext(unw_addr_space_t as, unw_context_t& contex
 
         struct map_info* map = unw_get_map(&cursor);
         bool isValidFrame = true;
-        if ((map != nullptr) && (strlen(map->path) < SYMBOL_BUF_SIZE - 1)) {
+        if ((map != nullptr) && (strlen(map->path) < LINE_BUF_SIZE - 1)) {
             UpdateFrameFuncName(as, symbol, frame);
             frame.mapName = std::string(map->path);
             if (frame.mapName.find(".hap") != std::string::npos) {

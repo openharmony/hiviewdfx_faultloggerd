@@ -294,7 +294,7 @@ static int DFX_ExecDump(void)
         return INHERIT_CAP_FAIL;
     }
     DFXLOG_INFO("execl processdump.");
-#ifdef DFX_LOG_USE_HILOG_BASE
+#ifdef DFX_LOG_HILOG_BASE
     execl("/system/bin/processdump", "processdump", "-signalhandler", NULL);
 #else
     execl("/bin/processdump", "processdump", "-signalhandler", NULL);

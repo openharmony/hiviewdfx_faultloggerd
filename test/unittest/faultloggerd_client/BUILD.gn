@@ -21,7 +21,7 @@ ohos_unittest("test_faultloggerd_client") {
   module_out_path = module_output_path
   visibility = [ "*:*" ]
   include_dirs = [
-    "$faultloggerd_path/common",
+    "$faultloggerd_interfaces_path/common",
     "$faultloggerd_path/common/dfxlog",
     "$faultloggerd_path/interfaces/innerkits/faultloggerd_client",
     "$faultloggerd_path/interfaces/innerkits/faultloggerd_client/include",
@@ -34,7 +34,6 @@ ohos_unittest("test_faultloggerd_client") {
   ]
 
   deps = [
-    "$faultloggerd_path/common/dfxlog:static_common_log",
     "$faultloggerd_path/common/dfxutil:dfx_util",
     "$faultloggerd_path/test/utils:dfx_test_util",
   ]

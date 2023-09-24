@@ -38,8 +38,6 @@ namespace {
 #undef LOG_TAG
 #define LOG_TAG "DfxBacktrace"
 #define LOG_DOMAIN 0xD002D11
-
-constexpr int SKIP_ONE_FRAME = 1; // skip current frame
 }
 
 bool GetBacktraceFramesByTid(std::vector<DfxFrame>& frames, int32_t tid, size_t skipFrameNum, bool fast)
@@ -81,7 +79,7 @@ bool GetBacktraceStringByTid(std::string& out, int32_t tid, size_t skipFrameNum,
 bool PrintBacktrace(int32_t fd, bool fast)
 {
     std::vector<DfxFrame> frames;
-    bool ret = GetBacktraceFramesByTid(frames, BACKTRACE_CURRENT_THREAD, SKIP_ONE_FRAME, fast);
+    bool ret = GetBacktraceFramesByTid(frames, BACKTRACE_CURRENT_THREAD, 1, fast); // 1: skip current frame
     if (!ret) {
         return false;
     }
@@ -100,7 +98,7 @@ bool PrintBacktrace(int32_t fd, bool fast)
 
 bool GetBacktrace(std::string& out, bool fast)
 {
-    return GetBacktraceStringByTid(out, BACKTRACE_CURRENT_THREAD, SKIP_ONE_FRAME, fast);
+    return GetBacktraceStringByTid(out, BACKTRACE_CURRENT_THREAD, 1, fast); // 1: skip current frame
 }
 
 bool GetBacktrace(std::string& out, size_t skipFrameNum, bool fast)

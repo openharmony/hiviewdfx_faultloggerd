@@ -19,13 +19,12 @@
 #include <cstdlib>
 #include "dfx_define.h"
 #include "dfx_log.h"
-#include "dfx_regs_define.h"
-#include "string_util.h"
-#include "unwinder_define.h"
+#include "string_printf.h"
+#include "unwind_define.h"
 
 namespace OHOS {
 namespace HiviewDFX {
-std::shared_ptr<DfxRegs> DfxRegs::Create()
+std::shared_ptr<DfxRegs> DfxRegs::Create(int mode)
 {
     std::shared_ptr<DfxRegs> dfxregs;
 #if defined(__arm__)
@@ -37,6 +36,19 @@ std::shared_ptr<DfxRegs> DfxRegs::Create()
 #else
 #error "Unsupported architecture"
 #endif
+    if (mode == UnwindMode::FRAMEPOINTER_UNWIND) {
+        uintptr_t regs[FP_MINI_REGS_SIZE] = {0};
+        dfxregs->GetFramePointerMiniRegs(regs);
+        dfxregs->fp_ = regs[0]; // 0 : index of x29 or r11 register
+        dfxregs->pc_ = regs[3]; // 3 : index of x32 or r15 register
+    } else if (mode == UnwindMode::MINIMAL_UNWIND) {
+        uintptr_t regs[QUT_MINI_REGS_SIZE] = {0};
+        dfxregs->GetQuickenMiniRegs(regs);
+        dfxregs->fp_ = regs[3]; // 3 : index of x29 or r11 register
+        dfxregs->sp_ = regs[4]; // 4 : index of x31 or r13 register
+        dfxregs->pc_ = regs[5]; // 5 : index of x32 or r15 register
+        dfxregs->lr_ = regs[6]; // 6 : index of x30 or r14 register
+    }
     return dfxregs;
 }
 
@@ -63,19 +75,14 @@ std::vector<uintptr_t> DfxRegs::GetRegsData() const
 void DfxRegs::SetRegsData(const std::vector<uintptr_t>& regs)
 {
     regsData_ = regs;
-#if defined(__arm__)
-    fp_ = regs[REG_ARM_R11];
-    sp_ = regs[REG_ARM_R13];
-    lr_ = regs[REG_ARM_R14];
-    pc_ = regs[REG_ARM_R15];
-#elif defined(__aarch64__)
-    fp_ = regs[REG_AARCH64_FP];
-    sp_ = regs[REG_AARCH64_SP];
-    lr_ = regs[REG_AARCH64_X30];
-    pc_ = regs[REG_AARCH64_PC];
+#if defined(__arm__) || defined(__aarch64__)
+    fp_ = regs[REG_FP];
+    sp_ = regs[REG_SP];
+    lr_ = regs[REG_LR];
+    pc_ = regs[REG_PC];
 #elif defined(__x86_64__)
-    sp_ = regs[REG_X86_64_SP];
-    pc_ = regs[REG_X86_64_PC];
+    sp_ = regs[REG_SP];
+    pc_ = regs[REG_PC];
 #else
 #error "Unsupported architecture"
 #endif
@@ -98,13 +105,13 @@ std::string DfxRegs::GetSpecialRegisterName(uintptr_t val) const
 
 std::string DfxRegs::PrintSpecialRegs() const
 {
-    char buf[REGS_PRINT_LEN_SPECIAL] = {0};
+    std::string regsStr;
 #ifdef __LP64__
-    BufferPrintf(buf, sizeof(buf), "fp:%016lx sp:%016lx lr:%016lx pc:%016lx\n", fp_, sp_, lr_, pc_);
+    regsStr = StringPrintf("fp:%016lx sp:%016lx lr:%016lx pc:%016lx\n", fp_, sp_, lr_, pc_);
 #else
-    BufferPrintf(buf, sizeof(buf), "fp:%08x sp:%08x lr:%08x pc:%08x\n", fp_, sp_, lr_, pc_);
+    regsStr = StringPrintf("fp:%08x sp:%08x lr:%08x pc:%08x\n", fp_, sp_, lr_, pc_);
 #endif
-    return std::string(buf);
+    return regsStr;
 }
 } // namespace HiviewDFX
 } // namespace OHOS

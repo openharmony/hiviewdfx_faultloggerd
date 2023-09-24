@@ -233,7 +233,7 @@ int RequestSdkDump(int32_t type, int32_t pid, int32_t tid)
 
 int RequestPrintTHilog(const char *msg, int length)
 {
-    if (length >= LOG_BUF_LEN) {
+    if (length >= LINE_BUF_SIZE) {
         return -1;
     }
 

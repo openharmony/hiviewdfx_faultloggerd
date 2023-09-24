@@ -44,9 +44,9 @@ bool DfxSymbols::GetNameAndOffsetByPc(struct unw_addr_space *as,
         return true;
     }
 
-    char buf[LOG_BUF_LEN] = {0};
+    char buf[LINE_BUF_SIZE] = {0};
     SymbolInfo symbol;
-    if (unw_get_symbol_info_by_pc(as, pc, LOG_BUF_LEN, buf, &symbol.start, &symbol.end) != 0) {
+    if (unw_get_symbol_info_by_pc(as, pc, LINE_BUF_SIZE, buf, &symbol.start, &symbol.end) != 0) {
         return false;
     }
 
@@ -108,7 +108,7 @@ bool DfxSymbols::GetNameAndOffsetByPc(uint64_t pc, std::string& name, uint64_t& 
 
 bool DfxSymbols::Demangle(const char* buf, const int len, std::string& funcName)
 {
-    if ((buf == nullptr) || (len >= LOG_BUF_LEN - 1)) {
+    if ((buf == nullptr) || (len >= LINE_BUF_SIZE - 1)) {
         return false;
     }
 

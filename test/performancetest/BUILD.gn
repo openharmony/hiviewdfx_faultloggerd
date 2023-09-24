@@ -26,15 +26,14 @@ if (defined(ohos_lite)) {
       include_dirs = [
         "include/",
         "$c_utils_include_path",
-        "$faultloggerd_frameworks_path/unwinder/include",
+        "$faultloggerd_frameworks_path/unwind/include",
         "$faultloggerd_interfaces_path/common",
         "$faultloggerd_interfaces_path/innerkits/procinfo/include",
-        "$faultloggerd_path/common",
-        "$faultloggerd_path/tools/process_dump",
-        "$faultloggerd_path/interfaces/innerkits/backtrace/include/",
-        "$faultloggerd_path/interfaces/innerkits/faultloggerd_client/include",
-        "$faultloggerd_path/interfaces/innerkits/dump_catcher/include/",
+        "$faultloggerd_interfaces_path/innerkits/backtrace/include/",
+        "$faultloggerd_interfaces_path/innerkits/faultloggerd_client/include",
+        "$faultloggerd_interfaces_path/innerkits/dump_catcher/include/",
         "$faultloggerd_path/test/utils",
+        "$faultloggerd_path/tools/process_dump",
         "$hilog_lite_include_path",
       ]
 
@@ -62,7 +61,6 @@ if (defined(ohos_lite)) {
       "$faultloggerd_interfaces_path/common",
       "$faultloggerd_interfaces_path/innerkits/backtrace/include/",
       "$faultloggerd_interfaces_path/innerkits/dump_catcher/include/",
-      "$faultloggerd_path/common",
       "$faultloggerd_path/test/utils",
     ]
   }

@@ -29,7 +29,7 @@ if (defined(ohos_lite)) {
         "$faultloggerd_path/tools/process_dump",
         "$faultloggerd_path/interfaces/innerkits/faultloggerd_client/include",
         "$faultloggerd_path/interfaces/innerkits/faultloggerd_client",
-        "$faultloggerd_path/common",
+        "$faultloggerd_interfaces_path/common",
         "$faultloggerd_path/common/dfxlog",
         "$faultloggerd_path/common/dfxutil",
       ]
@@ -45,7 +45,6 @@ if (defined(ohos_lite)) {
       sources += [ "$c_utils_src_path/directory_ex.cpp" ]
 
       deps = [
-        "$faultloggerd_path/common/dfxlog:static_common_log",
         "$faultloggerd_path/common/dfxutil:dfx_util",
         "$faultloggerd_path/interfaces/innerkits/faultloggerd_client:libfaultloggerd",
         "//base/hiviewdfx/hilog_lite/frameworks/featured:hilog_shared",
@@ -88,7 +87,6 @@ if (defined(ohos_lite)) {
     ]
 
     deps = [
-      "$faultloggerd_path/common/dfxlog:static_common_log",
       "$faultloggerd_path/common/dfxutil:dfx_util",
       "$faultloggerd_path/interfaces/innerkits/faultloggerd_client:libfaultloggerd",
       "//third_party/googletest:gmock_main",

@@ -22,18 +22,15 @@
 #include <ucontext.h>
 #include <vector>
 #include "dfx_define.h"
-#include "unwinder_define.h"
+#include "unwind_define.h"
 
 namespace OHOS {
 namespace HiviewDFX {
-#define FP_MINI_REGS_SIZE 4
-#define QUT_MINI_REGS_SIZE 7
-
 class DfxRegs {
 public:
     DfxRegs() = default;
     virtual ~DfxRegs() {};
-    static std::shared_ptr<DfxRegs> Create();
+    static std::shared_ptr<DfxRegs> Create(int mode = UnwindMode::DWARF_UNWIND);
     static std::shared_ptr<DfxRegs> CreateFromContext(const ucontext_t &context);
 
     inline uintptr_t& operator[](size_t reg) { return regsData_[reg]; }
@@ -43,7 +40,8 @@ public:
     void SetRegsData(const std::vector<uintptr_t>& regs);
 
     virtual std::string PrintRegs() const = 0;
-    virtual inline AT_ALWAYS_INLINE void GetFramePointerMiniRegs(void *regs) = 0;
+    virtual void GetFramePointerMiniRegs(void *regs) = 0;
+    virtual void GetQuickenMiniRegs(void *regs) = 0;
 
     std::string GetSpecialRegisterName(uintptr_t val) const;
 protected:
@@ -84,6 +82,28 @@ public:
         : "r1", "r2", "memory");
 #endif
     }
+
+    // Get 7 registers [r4, r7, r10, r11, sp, pc, unset].
+    inline AT_ALWAYS_INLINE void GetQuickenMiniRegs(void *regs) override
+    {
+#if defined(__arm__)
+        asm volatile(
+        ".align 2\n"
+        "bx pc\n"
+        "nop\n"
+        ".code 32\n"
+        "stmia %[base], {r4, r7, r10, r11}\n"
+        "add %[base], #16\n"
+        "mov r1, r13\n"
+        "mov r2, r15\n"
+        "stmia %[base], {r1, r2}\n"
+        "orr %[base], pc, #1\n"
+        "bx %[base]\n"
+        : [base] "+r"(regs)
+        :
+        : "r1", "r2", "memory");
+#endif
+    }
 };
 
 class DfxRegsArm64 : public DfxRegs {
@@ -107,6 +127,22 @@ public:
         : "x12", "x13", "memory");
 #endif
     }
+
+    // Get 7 registers with [unuse, unset, x28, x29, sp, pc, unset].
+    inline AT_ALWAYS_INLINE void GetQuickenMiniRegs(void *regs) override
+    {
+#if defined(__aarch64__)
+        asm volatile(
+        "1:\n"
+        "stp x28, x29, [%[base], #16]\n"
+        "mov x12, sp\n"
+        "adr x13, 1b\n"
+        "stp x12, x13, [%[base], #32]\n"
+        : [base] "+r"(regs)
+        :
+        : "x12", "x13", "memory");
+#endif
+    }
 };
 
 class DfxRegsX86_64 : public DfxRegs {
@@ -116,6 +152,7 @@ public:
     ~DfxRegsX86_64() override {};
     std::string PrintRegs() const override;
     inline AT_ALWAYS_INLINE void GetFramePointerMiniRegs(void *regs) override {};
+    inline AT_ALWAYS_INLINE void GetQuickenMiniRegs(void *regs) override {};
 };
 } // namespace HiviewDFX
 } // namespace OHOS

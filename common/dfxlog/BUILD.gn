@@ -13,40 +13,58 @@
 
 import("//base/hiviewdfx/faultloggerd/faultloggerd.gni")
 
+dfx_log_sources = [ "dfx_log.cpp" ]
+
 if (defined(ohos_lite)) {
   config("dfx_log_config") {
     visibility = [ ":*" ]
     include_dirs = [
       ".",
-      "$faultloggerd_path/common",
+      "$faultloggerd_interfaces_path/common",
       "$hilog_lite_include_path",
     ]
   }
-  static_library("static_common_log") {
-    sources = [ "dfx_log.cpp" ]
-    public_configs = [ ":dfx_log_config" ]
-    defines = [ "DFX_LOG_USE_DMESG" ]
 
-    deps = [ "//base/hiviewdfx/hilog_lite/frameworks/featured:hilog_shared" ]
+  static_library("dfx_hilog") {
+    sources = dfx_log_sources
+    public_configs = [ ":dfx_log_config" ]
+    deps = [ "$hilog_lite_deps_path" ]
   }
 
-  static_library("static_hilog") {
-    sources = [ "dfx_log.cpp" ]
+  static_library("dfx_hilog_dmesg") {
+    sources = dfx_log_sources
     public_configs = [ ":dfx_log_config" ]
+    defines = [ "DFX_LOG_DMESG" ]
+    deps = [ "$hilog_lite_deps_path" ]
+  }
 
-    deps = [ "//base/hiviewdfx/hilog_lite/frameworks/featured:hilog_shared" ]
+  static_library("dfx_hilog_base") {
+    sources = dfx_log_sources
+    public_configs = [ ":dfx_log_config" ]
+    defines = [ "DFX_LOG_HILOG_BASE" ]
+    deps = [ "$hilog_lite_deps_path" ]
+  }
+
+  static_library("dfx_hilog_base_dmesg") {
+    sources = dfx_log_sources
+    public_configs = [ ":dfx_log_config" ]
+    defines = [
+      "DFX_LOG_HILOG_BASE",
+      "DFX_LOG_DMESG",
+    ]
+    deps = [ "$hilog_lite_deps_path" ]
   }
 } else {
   config("dfx_log_config") {
     visibility = [ ":*" ]
     include_dirs = [
       ".",
-      "$faultloggerd_path/common",
+      "$faultloggerd_interfaces_path/common",
     ]
   }
 
-  ohos_static_library("static_common_log") {
-    sources = [ "dfx_log.cpp" ]
+  ohos_static_library("dfx_hilog") {
+    sources = dfx_log_sources
     public_configs = [ ":dfx_log_config" ]
     external_deps = [
       "c_utils:utils",
@@ -56,9 +74,10 @@ if (defined(ohos_lite)) {
     subsystem_name = "hiviewdfx"
   }
 
-  ohos_static_library("static_hilog") {
-    sources = [ "dfx_log.cpp" ]
+  ohos_static_library("dfx_hilog_dmesg") {
+    sources = dfx_log_sources
     public_configs = [ ":dfx_log_config" ]
+    defines = [ "DFX_LOG_DMESG" ]
     external_deps = [
       "c_utils:utils",
       "hilog:libhilog",
@@ -67,10 +86,10 @@ if (defined(ohos_lite)) {
     subsystem_name = "hiviewdfx"
   }
 
-  ohos_static_library("static_hilog_base") {
-    sources = [ "dfx_log.cpp" ]
+  ohos_static_library("dfx_hilog_base") {
+    sources = dfx_log_sources
     public_configs = [ ":dfx_log_config" ]
-    defines = [ "DFX_LOG_USE_HILOG_BASE" ]
+    defines = [ "DFX_LOG_HILOG_BASE" ]
     external_deps = [
       "c_utils:utils",
       "hilog:libhilog_base",
@@ -79,12 +98,12 @@ if (defined(ohos_lite)) {
     subsystem_name = "hiviewdfx"
   }
 
-  ohos_static_library("static_hilog_base_dmesg") {
-    sources = [ "dfx_log.cpp" ]
+  ohos_static_library("dfx_hilog_base_dmesg") {
+    sources = dfx_log_sources
     public_configs = [ ":dfx_log_config" ]
     defines = [
-      "DFX_LOG_USE_HILOG_BASE",
-      "DFX_LOG_USE_DMESG",
+      "DFX_LOG_HILOG_BASE",
+      "DFX_LOG_DMESG",
     ]
     external_deps = [
       "c_utils:utils",

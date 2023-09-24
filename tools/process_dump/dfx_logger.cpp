@@ -23,7 +23,7 @@
 
 static const int WRITE_LOG_BUF_LEN = 2048;
 static int32_t g_DebugLogFd = INVALID_FD;
-#ifndef DFX_LOG_USE_HILOG_BASE
+#ifndef DFX_LOG_HILOG_BASE
 static int32_t g_StdErrFd = INVALID_FD;
 #endif
 

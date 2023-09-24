@@ -25,7 +25,6 @@ if (defined(ohos_lite)) {
       include_dirs = [
         "$c_utils_include_path",
         "$faultloggerd_interfaces_path/common",
-        "$faultloggerd_path/common",
         "$faultloggerd_path/common/dfxlog",
         "$faultloggerd_path/common/dfxutil",
         "$faultloggerd_path/interfaces/innerkits/procinfo/include",
@@ -35,7 +34,7 @@ if (defined(ohos_lite)) {
       sources = [ "procinfo_test.cpp" ]
 
       deps = [
-        "$faultloggerd_path/common/dfxlog:static_common_log",
+        "$faultloggerd_path/common/dfxlog:dfx_hilog",
         "$faultloggerd_path/common/dfxutil:dfx_util",
         "$faultloggerd_path/interfaces/innerkits/procinfo:libdfx_procinfo",
         "$hilog_lite_deps_path",
@@ -53,10 +52,7 @@ if (defined(ohos_lite)) {
   config("module_private_config") {
     visibility = [ ":*" ]
 
-    include_dirs = [
-      "$faultloggerd_interfaces_path/common",
-      "$faultloggerd_path/common",
-    ]
+    include_dirs = [ "$faultloggerd_interfaces_path/common" ]
   }
 
   ohos_unittest("test_procinfo") {
@@ -66,7 +62,7 @@ if (defined(ohos_lite)) {
     configs = [ ":module_private_config" ]
 
     deps = [
-      "$faultloggerd_path/common/dfxlog:static_common_log",
+      "$faultloggerd_path/common/dfxlog:dfx_hilog",
       "$faultloggerd_path/common/dfxutil:dfx_util",
       "$faultloggerd_path/interfaces/innerkits/procinfo:libdfx_procinfo",
       "//third_party/googletest:gmock_main",

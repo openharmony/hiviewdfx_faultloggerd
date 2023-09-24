@@ -28,6 +28,7 @@
 #include "dfx_define.h"
 #include "dfx_util.h"
 #include "file_util.h"
+#include "string_printf.h"
 #include "string_util.h"
 
 namespace OHOS {

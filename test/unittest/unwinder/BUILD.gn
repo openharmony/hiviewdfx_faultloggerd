@@ -14,13 +14,14 @@
 import("//base/hiviewdfx/faultloggerd/faultloggerd.gni")
 import("//build/config/features.gni")
 import("//build/test.gni")
+
 module_output_path = "faultloggerd/unwinder"
 
 ohos_unittest("test_unwinder") {
   module_out_path = module_output_path
   visibility = [ "*:*" ]
   include_dirs = [
-    "$faultloggerd_path/common",
+    "$faultloggerd_interfaces_path/common",
     "$faultloggerd_frameworks_path/unwinder/include",
   ]
   configs = [ "$faultloggerd_path/common/build:coverage_flags" ]

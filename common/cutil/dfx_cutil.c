@@ -97,7 +97,7 @@ pid_t GetRealPid(void)
         return pid;
     }
 
-    char buf[LOG_BUF_LEN];
+    char buf[LINE_BUF_SIZE];
     int i = 0;
     char b;
     while (1) {
@@ -106,7 +106,7 @@ pid_t GetRealPid(void)
             break;
         }
 
-        if (b == '\n' || i == LOG_BUF_LEN) {
+        if (b == '\n' || i == LINE_BUF_SIZE) {
             if (strncmp(buf, PID_STR_NAME, strlen(PID_STR_NAME)) == 0) {
                 (void)sscanf_s(buf, "%*[^0-9]%d", &pid);
                 break;

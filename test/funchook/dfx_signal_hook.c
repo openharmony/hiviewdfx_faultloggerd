@@ -135,7 +135,7 @@ static bool IsSigactionAddr(uintptr_t sigactionAddr)
 {
     bool ret = false;
     char path[NAME_LEN] = {0};
-    if (snprintf_s(path, sizeof(path), sizeof(path) - 1, "/proc/self/maps") <= 0) {
+    if (snprintf_s(path, sizeof(path), sizeof(path) - 1, PROC_SELF_MAPS_PATH) <= 0) {
         LOGW("Fail to print path.");
         return false;
     }

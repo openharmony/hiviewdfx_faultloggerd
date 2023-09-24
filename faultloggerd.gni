@@ -11,8 +11,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# hiview path definitions
 faultloggerd_path = "//base/hiviewdfx/faultloggerd"
+faultloggerd_common_path = "$faultloggerd_path/common"
 faultloggerd_frameworks_path = "$faultloggerd_path/frameworks"
 faultloggerd_interfaces_path = "$faultloggerd_path/interfaces"
 

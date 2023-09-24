@@ -12,77 +12,96 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 #ifndef DFX_LOG_H
 #define DFX_LOG_H
+
+#ifndef DFX_NO_PRINT_LOG
+#ifdef DFX_LOG_HILOG_BASE
+#include <hilog_base/log_base.h>
+#else
+#include <hilog/log.h>
+#endif
+#include "dfx_log_define.h"
+#endif
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-#ifdef DFX_NO_PRINT_LOG
-#define DFXLOG_DEBUG(fmt, ...)
-#define DFXLOG_INFO(fmt, ...)
-#define DFXLOG_WARN(fmt, ...)
-#define DFXLOG_ERROR(fmt, ...)
-#define DFXLOG_FATAL(fmt, ...)
+#ifndef DFX_NO_PRINT_LOG
+
+bool CheckDebugLevel(void);
+void InitDebugFd(int fd);
+void SetLogLevel(const LogLevel logLevel);
+LogLevel GetLogLevel(void);
+
+int DfxLogPrint(const LogLevel logLevel, const unsigned int domain, const char* tag, const char *fmt, ...);
+int DfxLogPrintV(const LogLevel logLevel, const unsigned int domain, const char* tag, const char *fmt, va_list ap);
+
+#define DFXLOG_PRINT(prio, domain, tag, ...) DfxLogPrint(prio, domain, tag, ##__VA_ARGS__)
+#define DFXLOG_PRINTV(prio, domain, tag, fmt, args) DfxLogPrintV(prio, domain, tag, fmt, args)
+
+#define DFXLOG_DEBUG(...) DFXLOG_PRINT(LOG_DEBUG, LOG_DOMAIN, LOG_TAG, ##__VA_ARGS__)
+#define DFXLOG_INFO(...) DFXLOG_PRINT(LOG_INFO, LOG_DOMAIN, LOG_TAG, ##__VA_ARGS__)
+#define DFXLOG_WARN(...) DFXLOG_PRINT(LOG_WARN, LOG_DOMAIN, LOG_TAG, ##__VA_ARGS__)
+#define DFXLOG_ERROR(...) DFXLOG_PRINT(LOG_ERROR, LOG_DOMAIN, LOG_TAG, ##__VA_ARGS__)
+#define DFXLOG_FATAL(...) DFXLOG_PRINT(LOG_FATAL, LOG_DOMAIN, LOG_TAG, ##__VA_ARGS__)
+
+#define LOGD(fmt, ...) \
+    DFXLOG_PRINT(LOG_DEBUG, LOG_DOMAIN, LOG_TAG, "[%s:%d]" fmt, (__FILENAME__), (__LINE__), ##__VA_ARGS__)
+#define LOGI(fmt, ...) \
+    DFXLOG_PRINT(LOG_INFO, LOG_DOMAIN, LOG_TAG, "[%s:%d]" fmt, (__FILENAME__), (__LINE__), ##__VA_ARGS__)
+#define LOGW(fmt, ...) \
+    DFXLOG_PRINT(LOG_WARN, LOG_DOMAIN, LOG_TAG, "[%s:%d]" fmt, (__FILENAME__), (__LINE__), ##__VA_ARGS__)
+#define LOGE(fmt, ...) \
+    DFXLOG_PRINT(LOG_ERROR, LOG_DOMAIN, LOG_TAG, "[%s:%d]" fmt, (__FILENAME__), (__LINE__), ##__VA_ARGS__)
+#define LOGF(fmt, ...) \
+    DFXLOG_PRINT(LOG_FATAL, LOG_DOMAIN, LOG_TAG, "[%s:%d]" fmt, (__FILENAME__), (__LINE__), ##__VA_ARGS__)
+
+#else
+#define DFXLOG_PRINT(prio, domain, tag, ...)
+#define DFXLOG_PRINTV(prio, domain, tag, fmt, args)
+
+#define DFXLOG_DEBUG(...)
+#define DFXLOG_INFO(...)
+#define DFXLOG_WARN(...)
+#define DFXLOG_ERROR(...)
+#define DFXLOG_FATAL(...)
 
 #define LOGD(fmt, ...)
 #define LOGI(fmt, ...)
 #define LOGW(fmt, ...)
 #define LOGE(fmt, ...)
 #define LOGF(fmt, ...)
-
-#else
-
-#define FILE_NAME   (strrchr((__FILE__), '/') ? strrchr((__FILE__), '/') + 1 : (__FILE__))
-
-#ifndef LOG_DOMAIN
-#define LOG_DOMAIN 0xD002D11
 #endif
 
-#ifndef LOG_TAG
-#define LOG_TAG "DfxFaultLogger"
-#endif
-
-typedef enum Level {
-    DEBUG = 0,
-    INFO,
-    WARN,
-    ERROR,
-    FATAL
-} Level;
-
-bool CheckDebugLevel(void);
-void InitDebugFd(int fd);
-int DfxLog(const Level logLevel, const unsigned int domain, const char* tag, const char *fmt, ...);
-
-#define DFXLOG_DEBUG(fmt, ...)   DfxLog(DEBUG, LOG_DOMAIN, LOG_TAG, fmt, ##__VA_ARGS__)
-#define DFXLOG_INFO(fmt, ...)    DfxLog(INFO, LOG_DOMAIN, LOG_TAG, fmt, ##__VA_ARGS__)
-#define DFXLOG_WARN(fmt, ...)    DfxLog(WARN, LOG_DOMAIN, LOG_TAG, fmt, ##__VA_ARGS__)
-#define DFXLOG_ERROR(fmt, ...)   DfxLog(ERROR, LOG_DOMAIN, LOG_TAG, fmt, ##__VA_ARGS__)
-#define DFXLOG_FATAL(fmt, ...)   DfxLog(FATAL, LOG_DOMAIN, LOG_TAG, fmt, ##__VA_ARGS__)
-
-#define LOGD(fmt, ...) DfxLog(DEBUG, LOG_DOMAIN, LOG_TAG, "[%s:%d]" fmt, (FILE_NAME), (__LINE__), ##__VA_ARGS__)
-#define LOGI(fmt, ...) DfxLog(INFO, LOG_DOMAIN, LOG_TAG, "[%s:%d]" fmt, (FILE_NAME), (__LINE__), ##__VA_ARGS__)
-#define LOGW(fmt, ...) DfxLog(WARN, LOG_DOMAIN, LOG_TAG, "[%s:%d]" fmt, (FILE_NAME), (__LINE__), ##__VA_ARGS__)
-#define LOGE(fmt, ...) DfxLog(ERROR, LOG_DOMAIN, LOG_TAG, "[%s:%d]" fmt, (FILE_NAME), (__LINE__), ##__VA_ARGS__)
-#define LOGF(fmt, ...) DfxLog(FATAL, LOG_DOMAIN, LOG_TAG, "[%s:%d]" fmt, (FILE_NAME), (__LINE__), ##__VA_ARGS__)
-
-#ifndef LOG_ASSERT_MESSAGE
-#define LOG_ASSERT_MESSAGE(condition, fmt, ...)                                                         \
-    if (!(condition)) {                                                                                 \
-        DfxLog(FATAL, LOG_DOMAIN, LOG_TAG, " assert failed: '%s' ", fmt, #condition, ##__VA_ARGS__);     \
+#ifndef LOG_CHECK_MSG
+#define LOG_CHECK_MSG(condition, ...) \
+    if (__builtin_expect(!(condition), false)) { \
+        LOGE(" check failed: %s ", #condition, ##__VA_ARGS__); \
     }
 #endif
 
-#ifndef LOG_ASSERT
-#define LOG_ASSERT(condition) LOG_ASSERT_MESSAGE(condition, "")
+#ifndef LOG_CHECK
+#define LOG_CHECK(condition) LOG_CHECK_MSG(condition, "")
 #endif
 
+#ifndef LOG_CHECK_ABORT
+#define LOG_CHECK_ABORT(condition) \
+    if (__builtin_expect(!(condition), false)) { \
+        LOGF(" check abort: %s", #condition); \
+        abort(); \
+    }
+#endif
+
+#ifdef DFX_LOG_UNWIND
+#define LOGU(fmt, ...) \
+    DFXLOG_PRINT(LOG_INFO, LOG_DOMAIN, LOG_TAG, "[%s:%d]" fmt, (__FILENAME__), (__LINE__), ##__VA_ARGS__)
+#else
+#define LOGU(fmt, ...)
 #endif
 
 #ifdef __cplusplus
 }
 #endif
-#endif // DFX_LOG_H
+#endif

@@ -22,7 +22,7 @@ if (defined(ohos_lite)) {
       ".",
       "$c_utils_include_path",
       "$hilog_lite_include_path",
-      "$faultloggerd_path/common",
+      "$faultloggerd_interfaces_path/common",
       "$faultloggerd_path/common/dfxutil",
     ]
     sources = dfx_test_util_sources
@@ -33,7 +33,7 @@ if (defined(ohos_lite)) {
     visibility = [ "*:*" ]
     include_dirs = [
       ".",
-      "$faultloggerd_path/common",
+      "$faultloggerd_interfaces_path/common",
       "$faultloggerd_path/common/dfxutil",
     ]
     sources = dfx_test_util_sources

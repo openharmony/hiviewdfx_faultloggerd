@@ -12,25 +12,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#ifndef STACK_UTIL_H
+#define STACK_UTIL_H
 
-#ifdef CALLSTACK_PRINT_LOG
-#include "dfx_log.h"
+#include <cstdio>
+#include <string>
+#include <pthread.h>
 
-#ifdef LOG_DOMAIN
-#undef LOG_DOMAIN
-#define LOG_DOMAIN 0xD002D11
-#endif
-
-#ifdef LOG_TAG
-#undef LOG_TAG
-#define LOG_TAG "DfxCallStack"
-#endif
-#else
-#define DFXLOG_DEBUG(fmt, ...)
-#define DFXLOG_INFO(fmt, ...)
-#define DFXLOG_WARN(fmt, ...)
-#define DFXLOG_ERROR(fmt, ...)
-#define DFXLOG_FATAL(fmt, ...)
-#define LOG_ASSERT_MESSAGE(condition, fmt, ...)
-#define LOG_ASSERT(condition) LOG_ASSERT_MESSAGE(condition, "")
+namespace OHOS {
+namespace HiviewDFX {
+inline int GetSelfStackRange(uintptr_t& stackBottom, uintptr_t& stackTop)
+{
+    pthread_attr_t tattr;
+    void *base = nullptr;
+    size_t size = 0;
+    pthread_getattr_np(pthread_self(), &tattr);
+    int ret = pthread_attr_getstack(&tattr, &base, &size);
+    stackBottom = reinterpret_cast<uintptr_t>(base);
+    stackTop = reinterpret_cast<uintptr_t>(base) + size;
+    return ret;
+}
+} // namespace HiviewDFX
+} // namespace OHOS
 #endif

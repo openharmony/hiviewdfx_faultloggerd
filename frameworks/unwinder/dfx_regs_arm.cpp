@@ -21,8 +21,7 @@
 #include <securec.h>
 #include "dfx_define.h"
 #include "dfx_log.h"
-#include "dfx_regs_define.h"
-#include "string_util.h"
+#include "string_printf.h"
 
 namespace OHOS {
 namespace HiviewDFX {
@@ -52,7 +51,7 @@ DfxRegsArm::DfxRegsArm(const ucontext_t& context)
 
 std::string DfxRegsArm::PrintRegs() const
 {
-    char buf[REGS_PRINT_LEN_ARM] = {0};
+    char buf[REGS_PRINT_LEN] = {0};
     std::vector<uintptr_t> regs = GetRegsData();
 
     BufferPrintf(buf, sizeof(buf), "r0:%08x r1:%08x r2:%08x r3:%08x\n", \
