@@ -27,7 +27,6 @@ ohos_unittest("test_unwind") {
   defines = [ "DFX_LOG_UNWIND" ]
   sources = [
     "elf_test.cpp",
-    "maps_test.cpp",
     "memory_test.cpp",
     "elf_imitate.cpp",
     "regs_test.cpp",
@@ -49,7 +48,41 @@ ohos_unittest("test_unwind") {
   ]
 }
 
+ohos_unittest("test_exidx") {
+  module_out_path = module_output_path
+  visibility = [ "*:*" ]
+  include_dirs = [
+    "$faultloggerd_interfaces_path/common",
+    "$faultloggerd_interfaces_path/innerkits/unwinder/include",
+  ]
+  configs = [ "$faultloggerd_common_path/build:coverage_flags" ]
+  defines = [
+    "DFX_LOG_UNWIND",
+    "UNITTEST"
+  ]
+  sources = [
+    "$faultloggerd_interfaces_path/innerkits/unwinder/arm_exidx.cpp",
+    "$faultloggerd_interfaces_path/innerkits/unwinder/dfx_accessors.cpp",
+    "$faultloggerd_interfaces_path/innerkits/unwinder/dfx_memory.cpp",
+    "$faultloggerd_interfaces_path/innerkits/unwinder/dfx_regs.cpp",
+    "arm_exidx_test.cpp",
+  ]
+  deps = [
+    "$faultloggerd_common_path/dfxutil:dfx_util",
+    "$faultloggerd_common_path/dfxlog:dfx_hilog",
+    "//third_party/bounds_checking_function:libsec_shared",
+    "//third_party/googletest:gtest_main",
+  ]
+  external_deps = [
+    "c_utils:utils",
+    "hilog:libhilog",
+  ]
+}
+
 group("unittest") {
   testonly = true
-  deps = [ ":test_unwind" ]
+  deps = [
+    ":test_unwind",
+    ":test_exidx",
+  ]
 }

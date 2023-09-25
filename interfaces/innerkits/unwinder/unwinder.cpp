@@ -199,7 +199,7 @@ bool Unwinder::Step(uintptr_t& pc, uintptr_t& sp, void *ctx)
                 LOGE("Failed to search unwind entry? errorCode: %d", lastErrorData_.code);
                 break;
             }
-            if (!armExidx_->Step((uintptr_t)pi.unwindInfo, regs_, rs)) {
+            if (!armExidx_->Step((uintptr_t)pi.unwindInfo, rs)) {
                 lastErrorData_.code = armExidx_->GetLastErrorCode();
                 lastErrorData_.addr = armExidx_->GetLastErrorAddr();
                 LOGU("Step exidx section error, errorCode: %d", lastErrorData_.code);

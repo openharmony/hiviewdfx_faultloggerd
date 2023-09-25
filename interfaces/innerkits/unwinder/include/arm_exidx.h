@@ -48,7 +48,7 @@ public:
     virtual ~ArmExidx() = default;
 
     bool SearchEntry(struct UnwindEntryInfo& pi, struct UnwindTableInfo uti, uintptr_t pc);
-    bool Step(uintptr_t entryOffset, std::shared_ptr<DfxRegs> regs, std::shared_ptr<RegLocState> rs);
+    bool Step(uintptr_t entryOffset, std::shared_ptr<RegLocState> rs);
 
     const uint16_t& GetLastErrorCode() const { return lastErrorData_.code; }
     const uint64_t& GetLastErrorAddr() const { return lastErrorData_.addr; }
