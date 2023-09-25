@@ -14,7 +14,6 @@
  */
 
 #include "unwinder.h"
-
 #include "dfx_define.h"
 #include "dfx_errors.h"
 #include "dfx_regs_get.h"
@@ -37,9 +36,9 @@ namespace {
 void Unwinder::Init()
 {
     memory_ = std::make_shared<DfxMemory>(acc_);
-    rsCache_.clear();
     lastErrorData_.code = UNW_ERROR_NONE;
     lastErrorData_.addr = 0;
+    rsCache_.clear();
     pcs_.clear();
     frames_.clear();
 #if defined(__arm__)
@@ -56,7 +55,7 @@ void Unwinder::Init()
     }
 }
 
-void Unwinder::Destroy()
+void Unwinder::Clear()
 {
     pcs_.clear();
     frames_.clear();
@@ -76,18 +75,16 @@ bool Unwinder::GetStackRange(uintptr_t& stackBottom, uintptr_t& stackTop, bool i
     return true;
 }
 
-bool Unwinder::UnwindLocal(bool isMainThread, size_t maxFrameNum, size_t skipFrameNum)
+bool Unwinder::UnwindLocal(size_t maxFrameNum, size_t skipFrameNum)
 {
-    if (regs_ == nullptr) {
-        regs_ = DfxRegs::Create();
-    }
     uintptr_t stackBottom = 1, stackTop = static_cast<uintptr_t>(-1);
-    if (!GetStackRange(stackBottom, stackTop, isMainThread)) {
+    if (!GetStackRange(stackBottom, stackTop, isMainThread_)) {
         LOGE("Get stack range error");
         return false;
     }
     LOGU("stackBottom: %llx, stackTop: %llx", (uint64_t)stackBottom, (uint64_t)stackTop);
 
+    regs_ = DfxRegs::Create();
     UnwindLocalContext context;
     GetLocalRegs(regs_->RawData());
     context.regs = regs_;
@@ -100,8 +97,10 @@ bool Unwinder::UnwindLocal(bool isMainThread, size_t maxFrameNum, size_t skipFra
 
 bool Unwinder::UnwindRemote(size_t maxFrameNum, size_t skipFrameNum)
 {
-    if (regs_ == nullptr) {
-        regs_ = DfxRegs::CreateRemoteRegs(pid_);
+    regs_ = DfxRegs::CreateRemoteRegs(pid_);
+    if ((regs_ == nullptr) || (pid_ <= 0)) {
+        LOGE("params is nullptr, pid: %d", pid_);
+        return false;
     }
 
     UnwindRemoteContext context;
@@ -119,7 +118,7 @@ bool Unwinder::Unwind(void *ctx, size_t maxFrameNum, size_t skipFrameNum)
         LOGE("params is nullptr?");
         return false;
     }
-    memory_->SetCtx(ctx);
+    pcs_.clear();
 
     bool needAdjustPc = false;
     size_t index = 0;
@@ -139,7 +138,6 @@ bool Unwinder::Unwind(void *ctx, size_t maxFrameNum, size_t skipFrameNum)
 
         pc = regs_->GetPc();
         sp = regs_->GetSp();
-        pcs_.push_back(pc);
 
         stepPc = pc;
         if (needAdjustPc) {
@@ -151,6 +149,7 @@ bool Unwinder::Unwind(void *ctx, size_t maxFrameNum, size_t skipFrameNum)
             break;
         }
 
+        pcs_.push_back(pc);
         index++;
     } while (true);
     return (curIndex > 0);
@@ -176,7 +175,7 @@ bool Unwinder::Step(uintptr_t& pc, uintptr_t& sp, void *ctx)
         // 1. find cache rs
         auto iter = rsCache_.find(pc);
         if (iter != rsCache_.end()) {
-            LOGU("Find rs cache");
+            LOGU("Find rs cache, pc: %p", (void*)pc);
             rs = iter->second;
             ret = true;
             break;

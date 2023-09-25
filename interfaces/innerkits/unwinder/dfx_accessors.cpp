@@ -141,11 +141,6 @@ int DfxAccessorsRemote::AccessReg(int reg, uintptr_t *val, void *arg)
     if (ctx == nullptr) {
         return UNW_ERROR_INVALID_CONTEXT;
     }
-
-    pid_t pid = ctx->pid;
-    if (ctx->regs == nullptr ) {
-        ctx->regs = DfxRegs::CreateRemoteRegs(pid);
-    }
     if (ctx->regs == nullptr || reg < 0 || reg >= (int)ctx->regs->RegsSize()) {
         return UNW_ERROR_INVALID_REGS;
     }

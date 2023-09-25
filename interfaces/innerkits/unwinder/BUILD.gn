@@ -28,6 +28,7 @@ dfx_unwind_sources = [
   "dfx_maps.cpp",
   "dfx_memory.cpp",
   "dfx_mmap.cpp",
+  "dfx_ptrace.cpp",
   "dfx_regs.cpp",
   "dfx_regs_arm.cpp",
   "dfx_regs_arm64.cpp",
