@@ -65,6 +65,7 @@ bool DfxMaps::Create(pid_t pid, std::vector<std::shared_ptr<DfxMap>>& maps, std:
     }
     auto dfxMaps = Create(path, true);
     if (dfxMaps == nullptr) {
+        LOGE("Create maps error, path: %s", path.c_str());
         return false;
     }
     maps = dfxMaps->GetMaps();

@@ -446,7 +446,7 @@ int DfxElf::FindElfTableInfo(struct ElfTableInfo& eti, uintptr_t pc, std::shared
     if (hasTableInfo_) {
         if (pc >= eti_.startPc && pc < eti_.endPc) {
             eti = eti_;
-            LOGU("FindElfTableLocal had found");
+            LOGU("FindElfTableInfo had found");
             return UNW_ERROR_NONE;
         }
     }

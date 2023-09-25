@@ -52,13 +52,14 @@ public:
         acc_ = std::make_shared<DfxAccessorsCustomize>(accessors);
         Init();
     };
-    ~Unwinder() { Destroy(); }
+    ~Unwinder() { Clear(); }
 
     inline UnwindMode GetUnwindMode() { return mode_; }
     inline void SetUnwindMode(UnwindMode mode) { mode_ = mode; }
 
     inline void SetTargetPid(int pid) { pid_ = pid; }
     inline int32_t GetTargetPid() { return pid_; }
+    inline void SetLocalMainThread(bool isMainThread = false) { isMainThread_ = isMainThread; }
 
     inline void SetRegs(std::shared_ptr<DfxRegs> regs) { regs_ = regs; }
     inline const std::shared_ptr<DfxRegs>& GetRegs() { return regs_; }
@@ -74,7 +75,7 @@ public:
     bool FpStep(uintptr_t& fp, uintptr_t& pc, void *ctx);
 
     bool GetStackRange(uintptr_t& stackBottom, uintptr_t& stackTop, bool isMainThread = false);
-    bool UnwindLocal(bool isMainThread = false, size_t maxFrameNum = 64, size_t skipFrameNum = 0);
+    bool UnwindLocal(size_t maxFrameNum = 64, size_t skipFrameNum = 0);
     bool UnwindRemote(size_t maxFrameNum = 64, size_t skipFrameNum = 0);
 
     static void GetFramesByPcs(std::vector<DfxFrame>& frames, std::vector<uintptr_t> pcs,
@@ -86,11 +87,12 @@ private:
 
 private:
     void Init();
-    void Destroy();
+    void Clear();
     void DoPcAdjust(uintptr_t& pc);
 
 private:
-    int32_t pid_;
+    int32_t pid_ = 0;
+    bool isMainThread_ = false;
     UnwindMode mode_ = DWARF_UNWIND;
     std::shared_ptr<DfxAccessors> acc_;
     std::shared_ptr<DfxMemory> memory_;
