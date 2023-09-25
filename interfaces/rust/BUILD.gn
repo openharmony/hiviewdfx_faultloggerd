@@ -24,3 +24,9 @@ group("libstacktrace_rust") {
     deps = [ "stacktrace:stacktrace_rust" ]
   }
 }
+
+group("rustc_demangle") {
+  if (!defined(ohos_lite)) {
+    deps = [ "rustc_demangle:rustc_demangle" ]
+  }
+}

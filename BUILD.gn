@@ -31,6 +31,7 @@ group("faultloggerd_targets") {
       "interfaces/innerkits/signal_handler:dfx_signalhandler",
       "interfaces/rust:libpanic_handler",
       "interfaces/rust:libstacktrace_rust",
+      "interfaces/rust:rustc_demangle",
       "services:faultloggerd",
       "tools/crash_validator:crash_validator",
       "tools/dump_catcher:dumpcatcher",

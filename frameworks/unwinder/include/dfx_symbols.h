@@ -17,6 +17,7 @@
 #define DFX_SYMBOLS_H
 
 #include <cstdint>
+#include <dlfcn.h>
 #include <string>
 #include <vector>
 #include <unordered_map>
@@ -40,19 +41,35 @@ struct unw_addr_space;
 
 namespace OHOS {
 namespace HiviewDFX {
+using RustDemangleFn = char*(*)(const char *);
 class DfxSymbols final {
 public:
     DfxSymbols();
-    ~DfxSymbols() = default;
+    ~DfxSymbols()
+    {
+        if (rustDemangleFn_ != nullptr) {
+            rustDemangleFn_ = nullptr;
+        }
+
+        if (rustDemangleLibHandle_ != nullptr) {
+            dlclose(rustDemangleLibHandle_);
+            rustDemangleLibHandle_ = nullptr;
+        }
+    };
+
     bool GetNameAndOffsetByPc(struct unw_addr_space *as, uint64_t pc, std::string& name, uint64_t& offset);
     bool GetNameAndOffsetByPc(std::shared_ptr<DfxMemory> memory, uint64_t pc, std::string& name, uint64_t& offset);
 
 private:
     bool GetNameAndOffsetByPc(uint64_t pc, std::string& name, uint64_t& offset);
     bool Demangle(const char* buf, const int len, std::string& funcName);
+    bool FindRustDemangleFunction();
 
 private:
     std::vector<SymbolInfo> symbols_;
+    bool hasTryLoadRustDemangleLib_ = false;
+    RustDemangleFn rustDemangleFn_ = nullptr;
+    void* rustDemangleLibHandle_ = nullptr;
 };
 } // namespace HiviewDFX
 } // namespace OHOS
