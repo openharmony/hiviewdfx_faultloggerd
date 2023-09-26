@@ -314,7 +314,7 @@ void Unwinder::GetFramesByPcs(std::vector<DfxFrame>& frames, std::vector<uintptr
         frame.index = i;
         frame.pc = static_cast<uint64_t>(pcs[i]);
         Dl_info info{};
-        int success = dladdr((void *)frame.pc, &info);
+        int rc = dladdr((void *)frame.pc, &info);
 #if defined(__aarch64__)
         // fp_unwind 得到的 pc 除了第 0 帧实际都是 LR, arm64 指令长度都是定长 32bit, 所以 -4 以恢复 pc
         uintptr_t realPc = frame.pc - (i > 0 ? 4 : 0);
@@ -322,9 +322,12 @@ void Unwinder::GetFramesByPcs(std::vector<DfxFrame>& frames, std::vector<uintptr
         uintptr_t realPc = frame.pc;
 #endif
         frame.relPc = realPc - (uintptr_t)info.dli_fbase;
-        frame.mapName = (success == 0 || info.dli_fname == nullptr) ? "" : info.dli_fname;
-        std::string funcName = (success == 0 || info.dli_sname == nullptr) ? "" : info.dli_sname;
-        frame.funcName = DfxSymbols::Demangle(funcName);
+        if (rc != 0) {
+            frame.mapName = (info.dli_fname == nullptr) ? "" : info.dli_fname;
+            std::string funcName = (info.dli_sname == nullptr) ? "" : info.dli_sname;
+            frame.funcName = DfxSymbols::Demangle(funcName);
+        }
+        frames.push_back(frame);
     }
 }
 
