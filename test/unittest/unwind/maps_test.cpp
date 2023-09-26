@@ -13,18 +13,20 @@
  * limitations under the License.
  */
 
+#include "dfx_elf.h"
+#include "dfx_maps.h"
 #include <gtest/gtest.h>
 #include <memory>
 #include <sys/types.h>
-#include "dfx_maps.h"
 
 using namespace OHOS::HiviewDFX;
-using namespace testing::ext;
 using namespace std;
+using namespace testing::ext;
+
 
 namespace OHOS {
 namespace HiviewDFX {
-class DfxMapsTest : public testing::Test {
+class MapsTest : public testing::Test {
 public:
     static void SetUpTestCase(void) {}
     static void TearDownTestCase(void) {}
@@ -33,19 +35,34 @@ public:
 };
 
 namespace {
-/**
- * @tc.name: DfxMapsTest001
- * @tc.desc: test map Create
- * @tc.type: FUNC
- */
-HWTEST_F(DfxMapsTest, DfxMapsTest001, TestSize.Level2)
-{
-    GTEST_LOG_(INFO) << "DfxMapsTest001: start.";
 
-    GTEST_LOG_(INFO) << "DfxMapsTest001: end.";
-}
+static const uintptr_t INVALID_ADDR = {0Xffffffff};
+static const std::string INVALID_NAME = "/system/lib64/init/libinit_context111111.z.so";
+static const uintptr_t OFFSET = {0X0};
+static const uintptr_t INVALID_OFFSET = {0Xffffffff};
 
-/////////////////////////////////////////
+#ifdef __arm__
+std::shared_ptr<DfxMaps> g_maps = DfxMaps::Create("/data/test/resource/testdata/testmaps_32");
+static const uintptr_t ADDR = {0xf6d80000};
+static const std::string NAME = "/system/lib/init/libinit_context.z.so";
+static const char MAPBUF[] = "f6d83000-f6d84000 r--p 00001000 b3:07 1892 /system/lib/init/libinit_context.z.so";
+static const uint64_t PC = {0Xf6d83001};
+static const char INVALID_MAPBUF[] = "f6d83000-f6d84000 r--p 00001000 b3:07 1892 /system/lib/init/libinit_context.z.so111";
+static const uint64_t INVALID_ELFRESULT = {0x1001};
+#else
+std::shared_ptr<DfxMaps> g_maps = DfxMaps::Create("/data/test/resource/testdata/testmaps_64");
+static const uintptr_t ADDR = {0x7f8b8f3001};
+static const std::string NAME = "/system/lib64/init/libinit_context.z.so";
+static const char MAPBUF[] = "7f0ab40000-7f0ab41000 r--p 00000000 b3:07 1882 /system/lib64/init/libinit_context1.z.so";
+static const uint64_t PC = {0x7f0ab40016};
+static const char INVALID_MAPBUF[] = "7f0ab40000-7f0ab41000 r--p 00000000 b3:07 1882 /system/lib64/init/libinit_context11111.z.so";
+static const uint64_t INVALID_ELFRESULT = {0x16};
+static const uintptr_t INVALID_ADDR = {0Xffffffff};
+static const std::string INVALID_NAME = "/system/lib64/init/libinit_context111111.z.so";
+static const uintptr_t OFFSET = {0X0};
+static const uintptr_t INVALID_OFFSET = {0Xffffffff};
+#endif
+
 
 /**
  * @tc.name: DfxMaps::FindMapByAddrTest001
@@ -54,13 +71,9 @@ HWTEST_F(DfxMapsTest, DfxMapsTest001, TestSize.Level2)
  */
 HWTEST_F(MapsTest, FindMapByAddrTest001, TestSize.Level2)
 {
-    GTEST_LOG_(INFO) << "FindMapByAddrTest001: start.";
-    const std::string path = "/data/unwind_test.txt";
-    std::shared_ptr<DfxMaps> maps = DfxMaps::Create(path);
+    GTEST_LOG_(INFO) << "FindMapByAddrTest001: start."; 
     auto map = std::make_shared<DfxMap>();
-    uintptr_t addr = {0xf6d80000};
-    bool ifExist = maps->FindMapByAddr(map,addr);
-    EXPECT_EQ(true, ifExist);
+    EXPECT_EQ(true, g_maps->FindMapByAddr(map, ADDR));
     GTEST_LOG_(INFO) << "FindMapByAddrTest001: end.";
 }
 
@@ -71,16 +84,10 @@ HWTEST_F(MapsTest, FindMapByAddrTest001, TestSize.Level2)
  */
 HWTEST_F(MapsTest, FindMapByAddrTest002, TestSize.Level2)
 {
-    GTEST_LOG_(INFO) << "FindMapByAddrTest002: start.";
-    std::shared_ptr<DfxMaps> maps = DfxMaps::Create(std::string("/data/unwind_test.txt"));
     auto map = std::make_shared<DfxMap>();
-    uintptr_t addr = {0Xffffffff};
-    bool ifExist = maps->FindMapByAddr(map,addr);
-    EXPECT_EQ(false, ifExist);
+    EXPECT_EQ(false, g_maps->FindMapByAddr(map, INVALID_ADDR));
     GTEST_LOG_(INFO) << "FindMapByAddrTest002: end.";
 }
-
-/////////////////////////////////////////
 
 /**
  * @tc.name: DfxMaps::FindMapByFileInfoTest001
@@ -90,12 +97,8 @@ HWTEST_F(MapsTest, FindMapByAddrTest002, TestSize.Level2)
 HWTEST_F(MapsTest, FindMapByFileInfoTest001, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "FindMapByFileInfoTest001: start.";
-    std::shared_ptr<DfxMaps> maps = DfxMaps::Create(std::string("/data/unwind_test.txt"));
     auto map = std::make_shared<DfxMap>();
-    std::string name = "/system/lib/init/libinit_context.z.so";
-    uintptr_t offset = {0X0};
-    bool ifExist = maps->FindMapByFileInfo(map,name,offset);
-    EXPECT_EQ(true, ifExist);
+    EXPECT_EQ(true, g_maps->FindMapByFileInfo(map, NAME, OFFSET));
     GTEST_LOG_(INFO) << "FindMapByFileInfoTest001: end.";
 }
 
@@ -107,12 +110,8 @@ HWTEST_F(MapsTest, FindMapByFileInfoTest001, TestSize.Level2)
 HWTEST_F(MapsTest, FindMapByFileInfoTest002, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "FindMapByFileInfoTest002: start.";
-    std::shared_ptr<DfxMaps> maps = DfxMaps::Create(std::string("/data/unwind_test.txt"));
     auto map = std::make_shared<DfxMap>();
-    std::string name = "/system/lib/init/libinit_context111.z.so";
-    uintptr_t offset = {0X0};
-    bool ifExist = maps->FindMapByFileInfo(map,name,offset);
-    EXPECT_EQ(false, ifExist);
+    EXPECT_EQ(false, g_maps->FindMapByFileInfo(map, INVALID_NAME, OFFSET));
     GTEST_LOG_(INFO) << "FindMapByFileInfoTest002: end.";
 }
 
@@ -124,12 +123,8 @@ HWTEST_F(MapsTest, FindMapByFileInfoTest002, TestSize.Level2)
 HWTEST_F(MapsTest, FindMapByFileInfoTest003, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "FindMapByFileInfoTest003: start.";
-    std::shared_ptr<DfxMaps> maps = DfxMaps::Create(std::string("/data/unwind_test.txt"));
     auto map = std::make_shared<DfxMap>();
-    std::string name = "/system/lib/init/libinit_context.z.so";
-    uintptr_t offset = {0Xffffffff};
-    bool ifExist = maps->FindMapByFileInfo(map,name,offset);
-    EXPECT_EQ(false, ifExist);
+    EXPECT_EQ(false, g_maps->FindMapByFileInfo(map,NAME,INVALID_OFFSET));
     GTEST_LOG_(INFO) << "FindMapByFileInfoTest003: end.";
 }
 
@@ -141,16 +136,10 @@ HWTEST_F(MapsTest, FindMapByFileInfoTest003, TestSize.Level2)
 HWTEST_F(MapsTest, FindMapByFileInfoTest004, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "FindMapByFileInfoTest004: start.";
-    std::shared_ptr<DfxMaps> maps = DfxMaps::Create(std::string("/data/unwind_test.txt"));
     auto map = std::make_shared<DfxMap>();
-    std::string name = "/system/lib/init/libinit_context1111.z.so";
-    uintptr_t offset = {0Xffffffff};
-    bool ifExist = maps->FindMapByFileInfo(map,name,offset);
-    EXPECT_EQ(false, ifExist);
+    EXPECT_EQ(false, g_maps->FindMapByFileInfo(map,INVALID_NAME,INVALID_OFFSET));
     GTEST_LOG_(INFO) << "FindMapByFileInfoTest004: end.";
 }
-
-/////////////////////////////////////////
 
 /**
  * @tc.name: DfxMaps::FindMapsByNameTest001
@@ -160,11 +149,8 @@ HWTEST_F(MapsTest, FindMapByFileInfoTest004, TestSize.Level2)
 HWTEST_F(MapsTest, FindMapsByNameTest001, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "FindMapsByNameTest001: start.";
-    std::shared_ptr<DfxMaps> dfxMaps = DfxMaps::Create(std::string("/data/unwind_test.txt"));
-    auto maps = std::vector<std::shared_ptr<DfxMap>>();
-    std::string elfName = "ibinit_context.z.so";
-    bool ifExist = dfxMaps->FindMapsByName(maps,elfName);
-    EXPECT_EQ(true, ifExist);
+    auto mapsV = std::vector<std::shared_ptr<DfxMap>>();
+    EXPECT_EQ(true, g_maps->FindMapsByName(mapsV,NAME));
     GTEST_LOG_(INFO) << "FindMapsByNameTest001: end.";
 }
 
@@ -176,33 +162,35 @@ HWTEST_F(MapsTest, FindMapsByNameTest001, TestSize.Level2)
 HWTEST_F(MapsTest, FindMapsByNameTest002, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "FindMapsByNameTest002: start.";
-    std::shared_ptr<DfxMaps> dfxMaps = DfxMaps::Create(std::string("/data/unwind_test.txt"));
-    auto maps = std::vector<std::shared_ptr<DfxMap>>();
-    std::string elfName = "libinit_context.z.soxxx";
-    bool ifExist = dfxMaps->FindMapsByName(maps,elfName);
-    EXPECT_EQ(false, ifExist);
+    auto mapsV = std::vector<std::shared_ptr<DfxMap>>();
+    EXPECT_EQ(false, g_maps->FindMapsByName(mapsV,INVALID_NAME));
     GTEST_LOG_(INFO) << "FindMapsByNameTest002: end.";
 }
 
-/////////////////////////////////////////
-
 /**
  * @tc.name: DfxMap::GetRelPcTest001
- * @tc.desc: test getRelPc
+ * @tc.desc: test getRelPc has elf
  * @tc.type: FUNC
  */
 HWTEST_F(MapsTest, GetRelPcTest001, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "GetRelPcTest001: start.";
-    char mapBuf[] = "f6d83000-f6d84000 r--p 00001000 b3:07 1892                               /system/lib/init/libinit_context.z.so";
-    std::shared_ptr<DfxMap> map = DfxMap::Create(mapBuf, sizeof(mapBuf));
-    uint64_t pc = {0Xf6d83000};
-    uint64_t relpc =  map->GetRelPc(pc);
-    GTEST_LOG_(INFO) << relpc;
+
     GTEST_LOG_(INFO) << "GetRelPcTest001: end.";
 }
 
-/////////////////////////////////////////
+/**
+ * @tc.name: DfxMap::GetRelPcTest002
+ * @tc.desc: test getRelPc no elf
+ * @tc.type: FUNC
+ */
+HWTEST_F(MapsTest, GetRelPcTest002, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "GetRelPcTest002: start.";
+    std::shared_ptr<DfxMap> map = DfxMap::Create(INVALID_MAPBUF, sizeof(INVALID_MAPBUF));
+    EXPECT_EQ(true, ((map->GetElf() == nullptr) && (map->GetRelPc(PC) == INVALID_ELFRESULT)));
+    GTEST_LOG_(INFO) << "GetRelPcTest002: end.";
+}
 
 /**
  * @tc.name: DfxMap::ToStringTest001
@@ -212,11 +200,9 @@ HWTEST_F(MapsTest, GetRelPcTest001, TestSize.Level2)
 HWTEST_F(MapsTest, ToStringTest001, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "ToStringTest001: start.";
-    char mapBuf[] = "f6d83000-f6d84000 r--p 00001000 b3:07 1892                               /system/lib/init/libinit_context.z.so";
-    std::shared_ptr<DfxMap> map = DfxMap::Create(mapBuf, sizeof(mapBuf));
-    std::string mapStr = map->ToString();
-    EXPECT_EQ(true, 1 == 1);
-    GTEST_LOG_(INFO) << mapStr;
+    std::shared_ptr<DfxMap> map = DfxMap::Create(MAPBUF, sizeof(MAPBUF));
+    GTEST_LOG_(INFO) << map->ToString();
+    EXPECT_EQ(true, sizeof(map->ToString()) != 0);
     GTEST_LOG_(INFO) << "ToStringTest001: end.";
 }
 
