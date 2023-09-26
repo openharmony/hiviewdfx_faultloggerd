@@ -24,10 +24,10 @@
 namespace OHOS {
 namespace HiviewDFX {
 namespace {
-const int STRING_BUF_LEN = 1024;
+const int STRING_BUF_LEN = 4096;
 }
 
-static inline int BufferAppendV(char *buf, int size, const char *fmt, va_list ap)
+static int BufferAppendV(char *buf, int size, const char *fmt, va_list ap)
 {
     if (buf == nullptr || size <= 0) {
         return -1;
@@ -36,34 +36,17 @@ static inline int BufferAppendV(char *buf, int size, const char *fmt, va_list ap
     return ret;
 }
 
-static inline bool StringAppendV(std::string* dst, const char* fmt, va_list ap)
+static bool StringAppendV(std::string& dst, const char* fmt, va_list ap)
 {
     char buffer[STRING_BUF_LEN] = {0};
     va_list bakAp;
     va_copy(bakAp, ap);
     int ret = BufferAppendV(buffer, sizeof(buffer), fmt, bakAp);
     va_end(bakAp);
-
-    if (ret < static_cast<int>(sizeof(buffer))) {
-        if (ret >= 0) {
-            dst->append(buffer, ret);
-            return true;
-        } else {
-            return false;
-        }
+    if (ret > 0) {
+        dst.append(buffer, ret);
     }
-
-    int size = ret + 1;
-    char* buf = new char[size];
-    va_copy(bakAp, ap);
-    ret = BufferAppendV(buf, size, fmt, bakAp);
-    va_end(bakAp);
-
-    if (ret >= 0 && ret < size) {
-        dst->append(buf, ret);
-    }
-    delete[] buf;
-    return true;
+    return ret != -1;
 }
 
 inline int BufferPrintf(char *buf, size_t size, const char *fmt, ...)
@@ -83,12 +66,12 @@ inline std::string StringPrintf(const char *fmt, ...)
     std::string dst;
     va_list ap;
     va_start(ap, fmt);
-    StringAppendV(&dst, fmt, ap);
+    StringAppendV(dst, fmt, ap);
     va_end(ap);
     return dst;
 }
 
-inline void StringAppendF(std::string* dst, const char* fmt, ...)
+inline void StringAppendF(std::string& dst, const char* fmt, ...)
 {
     va_list ap;
     va_start(ap, fmt);

@@ -502,9 +502,9 @@ static void ForkAndDoProcessDump(void)
     int status;
     int ret = waitpid(childPid, &status, 0);
     RestoreDumpState(prevDumpableStatus, isTracerStatusModified);
-    pthread_mutex_unlock(&g_signalHandlerMutex);
     DFXLOG_INFO("(%d) wait for VmProcess(%d) return with ret(%d) status(%d)",
         syscall(SYS_getpid), childPid, ret, status);
+    pthread_mutex_unlock(&g_signalHandlerMutex);
 }
 
 static bool DFX_SigchainHandler(int sig, siginfo_t *si, void *context)

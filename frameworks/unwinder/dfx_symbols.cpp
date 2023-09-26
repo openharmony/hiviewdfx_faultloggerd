@@ -19,22 +19,42 @@
 #include <cstdlib>
 #include <cstring>
 #include <cxxabi.h>
+#include <dlfcn.h>
 #include <string>
 #include <vector>
 #include "dfx_define.h"
 #include "dfx_log.h"
 #include "libunwind_i-ohos.h"
-#ifdef RUSTC_DEMANGLE
-#include "rustc_demangle.h"
-#endif
 #include "dfx_elf.h"
 
 namespace OHOS {
 namespace HiviewDFX {
-
 DfxSymbols::DfxSymbols()
 {
     symbols_.clear();
+}
+
+bool DfxSymbols::FindRustDemangleFunction()
+{
+    if (hasTryLoadRustDemangleLib_) {
+        return (rustDemangleFn_ != nullptr);
+    }
+
+    hasTryLoadRustDemangleLib_ = true;
+    void* rustDemangleLibHandle_ = dlopen("librustc_demangle.z.so", RTLD_LAZY | RTLD_NODELETE);
+    if (rustDemangleLibHandle_ == nullptr) {
+        DFXLOG_WARN("Failed to dlopen librustc_demangle, %s\n", dlerror());
+        return false;
+    }
+
+    auto rustDemangleFn_ = (RustDemangleFn)dlsym(rustDemangleLibHandle_, "rustc_demangle");
+    if (rustDemangleFn_ == nullptr) {
+        DFXLOG_WARN("Failed to dlsym rustc_demangle, %s\n", dlerror());
+        dlclose(rustDemangleLibHandle_);
+        rustDemangleLibHandle_ = nullptr;
+        return false;
+    }
+    return true;
 }
 
 bool DfxSymbols::GetNameAndOffsetByPc(struct unw_addr_space *as,
@@ -115,9 +135,10 @@ bool DfxSymbols::Demangle(const char* buf, const int len, std::string& funcName)
     int status = 0;
     auto name = abi::__cxa_demangle(buf, nullptr, nullptr, &status);
 #ifdef RUSTC_DEMANGLE
-    if (name == nullptr) {
+    if (name == nullptr && FindRustDemangleFunction() &&
+        rustDemangleFn_ != nullptr) {
         DFXLOG_DEBUG("Fail to __cxa_demangle(%s), will rustc_demangle.", buf);
-        name = rustc_demangle(buf);
+        name = rustDemangleFn_(buf);
     }
 #endif
     if (name != nullptr) {

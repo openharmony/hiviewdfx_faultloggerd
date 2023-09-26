@@ -41,6 +41,15 @@
 namespace OHOS {
 namespace HiviewDFX {
 namespace {
+#ifdef LOG_DOMAIN
+#undef LOG_DOMAIN
+#define LOG_DOMAIN 0xD002D11
+#endif
+
+#ifdef LOG_TAG
+#undef LOG_TAG
+#define LOG_TAG "DfxDumpCatcher"
+#endif
 static const int DUMP_CATCHE_WORK_TIME_S = 60;
 static const int BACK_TRACE_DUMP_MIX_TIMEOUT_MS = 2000;
 static const int BACK_TRACE_DUMP_CPP_TIMEOUT_MS = 10000;

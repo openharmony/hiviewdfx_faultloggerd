@@ -43,22 +43,6 @@ static const int DUMP_TYPE_NATIVE = -1;
 static const int DUMP_TYPE_MIX = -2;
 static const int DUMP_TYPE_KERNEL = -3;
 
-enum NUMBER : int8_t {
-    ZERO = 0,
-    ONE = 1,
-    TWO = 2,
-    THREE = 3,
-    FOUR = 4,
-    FIVE = 5,
-    SIX = 6,
-    SEVEN = 7,
-    EIGHT = 8,
-    NINE = 9,
-    TEN = 10,
-    ELEVEN = 11,
-    TWELVE = 12,
-};
-
 static const int SOCKET_BUFFER_SIZE = 256;
 static const char FAULTLOGGERD_SOCK_BASE_PATH[] = "/dev/unix/socket/";
 static const char SERVER_SOCKET_NAME[] = "faultloggerd.server";
