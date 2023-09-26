@@ -14,6 +14,8 @@
  */
 
 #include "unwinder.h"
+#include <dlfcn.h>
+#include <link.h>
 #include "dfx_define.h"
 #include "dfx_errors.h"
 #include "dfx_regs_get.h"
@@ -85,8 +87,14 @@ bool Unwinder::UnwindLocal(size_t maxFrameNum, size_t skipFrameNum)
     LOGU("stackBottom: %llx, stackTop: %llx", (uint64_t)stackBottom, (uint64_t)stackTop);
 
     regs_ = DfxRegs::Create();
+    auto regsData = regs_->RawData();
+    if (regsData == nullptr) {
+        LOGE("params is nullptr");
+        return false;
+    }
+    GetLocalRegs(regsData);
+
     UnwindLocalContext context;
-    GetLocalRegs(regs_->RawData());
     context.regs = regs_;
     context.stackBottom = stackBottom;
     context.stackTop = stackTop;
@@ -138,6 +146,7 @@ bool Unwinder::Unwind(void *ctx, size_t maxFrameNum, size_t skipFrameNum)
 
         pc = regs_->GetPc();
         sp = regs_->GetSp();
+        pcs_.push_back(pc);
 
         stepPc = pc;
         if (needAdjustPc) {
@@ -149,7 +158,6 @@ bool Unwinder::Unwind(void *ctx, size_t maxFrameNum, size_t skipFrameNum)
             break;
         }
 
-        pcs_.push_back(pc);
         index++;
     } while (true);
     return (curIndex > 0);
@@ -296,6 +304,28 @@ void Unwinder::DoPcAdjust(uintptr_t& pc)
     sz = 1;
 #endif
     pc -= sz;
+}
+
+void Unwinder::GetFramesByPcs(std::vector<DfxFrame>& frames, std::vector<uintptr_t> pcs)
+{
+    frames.clear();
+    for (size_t i = 0; i < pcs.size(); ++i) {
+        DfxFrame frame;
+        frame.index = i;
+        frame.pc = static_cast<uint64_t>(pcs[i]);
+        Dl_info info{};
+        int success = dladdr((void *)frame.pc, &info);
+#if defined(__aarch64__)
+        // fp_unwind 得到的 pc 除了第 0 帧实际都是 LR, arm64 指令长度都是定长 32bit, 所以 -4 以恢复 pc
+        uintptr_t realPc = frame.pc - (i > 0 ? 4 : 0);
+#else
+        uintptr_t realPc = frame.pc;
+#endif
+        frame.relPc = realPc - (uintptr_t)info.dli_fbase;
+        frame.mapName = (success == 0 || info.dli_fname == nullptr) ? "" : info.dli_fname;
+        std::string funcName = (success == 0 || info.dli_sname == nullptr) ? "" : info.dli_sname;
+        frame.funcName = DfxSymbols::Demangle(funcName);
+    }
 }
 
 void Unwinder::GetFramesByPcs(std::vector<DfxFrame>& frames, std::vector<uintptr_t> pcs,
