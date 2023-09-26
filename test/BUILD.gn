@@ -57,7 +57,6 @@ group("faultloggerd_unittest") {
   if (!defined(ohos_lite)) {
     deps += [
       "unittest/backtrace:unittest",
-      "unittest/callstack:unittest",
       "unittest/faultloggerd_client:unittest",
       "unittest/panic_handler:unittest",
       "unittest/rustc_demangle:unittest",

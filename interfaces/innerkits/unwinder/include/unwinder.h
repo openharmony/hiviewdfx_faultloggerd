@@ -80,6 +80,7 @@ public:
 
     static void GetFramesByPcs(std::vector<DfxFrame>& frames, std::vector<uintptr_t> pcs,
         std::shared_ptr<DfxMaps> maps);
+    static void GetFramesByPcs(std::vector<DfxFrame>& frames, std::vector<uintptr_t> pcs);
     static std::string GetFramesStr(const std::vector<DfxFrame>& frames);
 
 private:

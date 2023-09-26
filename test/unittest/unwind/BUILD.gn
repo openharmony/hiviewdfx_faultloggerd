@@ -26,9 +26,9 @@ ohos_unittest("test_unwind") {
   configs = [ "$faultloggerd_common_path/build:coverage_flags" ]
   defines = [ "DFX_LOG_UNWIND" ]
   sources = [
+    "elf_imitate.cpp",
     "elf_test.cpp",
     "memory_test.cpp",
-    "elf_imitate.cpp",
     "regs_test.cpp",
     "symbols_test.cpp",
     "unwinder_test.cpp",
@@ -58,7 +58,7 @@ ohos_unittest("test_exidx") {
   configs = [ "$faultloggerd_common_path/build:coverage_flags" ]
   defines = [
     "DFX_LOG_UNWIND",
-    "UNITTEST"
+    "UNITTEST",
   ]
   sources = [
     "$faultloggerd_interfaces_path/innerkits/unwinder/arm_exidx.cpp",
@@ -82,7 +82,7 @@ ohos_unittest("test_exidx") {
 group("unittest") {
   testonly = true
   deps = [
-    ":test_unwind",
     ":test_exidx",
+    ":test_unwind",
   ]
 }
