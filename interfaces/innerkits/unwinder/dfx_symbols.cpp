@@ -74,7 +74,7 @@ bool DfxSymbols::GetFuncNameAndOffsetByPc(uint64_t relPc, std::shared_ptr<DfxElf
 #if defined(__arm__)
     relPc = relPc | 1;
 #endif
-    if (elf->GetFuncInfo(relPc, name, start, size)) {
+    if (elf != nullptr && elf->GetFuncInfo(relPc, name, start, size)) {
         funcName = Demangle(name);
         funcOffset = relPc - start;
 #if defined(__arm__)

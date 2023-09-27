@@ -62,8 +62,7 @@ HWTEST_F(UnwinderTest, UnwinderLocalTest001, TestSize.Level2)
         MAYBE_UNUSED bool unwRet = unwinder->UnwindLocal();
         time_t elapsed1 = counter.Elapsed();
         EXPECT_EQ(true, unwRet) << "UnwinderLocalTest001: Unwind:" << unwRet;
-        std::vector<DfxFrame> frames;
-        Unwinder::GetFramesByPcs(frames, unwinder->GetPcs());
+        auto frames = unwinder->GetFrames();
         ASSERT_GT(frames.size(), 0);
         time_t elapsed2 = counter.Elapsed();
         GTEST_LOG_(INFO) << "Elapsed-: " << elapsed1;
@@ -103,9 +102,8 @@ HWTEST_F(UnwinderTest, UnwinderLocalTest002, TestSize.Level2)
             ElapsedTime counter;
             MAYBE_UNUSED bool unwRet = unwinder->UnwindLocal();
             time_t elapsed1 = counter.Elapsed();
-            //EXPECT_EQ(true, unwRet) << "UnwinderLocalTest002: Unwind:" << unwRet;
-            std::vector<DfxFrame> frames;
-            Unwinder::GetFramesByPcs(frames, unwinder->GetPcs());
+            EXPECT_EQ(true, unwRet) << "UnwinderLocalTest002: Unwind:" << unwRet;
+            auto frames = unwinder->GetFrames();
             ASSERT_GT(frames.size(), 0);
             time_t elapsed2 = counter.Elapsed();
             GTEST_LOG_(INFO) << "Elapsed-: " << elapsed1;
@@ -142,8 +140,7 @@ HWTEST_F(UnwinderTest, UnwinderRemoteTest001, TestSize.Level2)
         unwRet = unwinder->UnwindRemote();
         time_t elapsed1 = counter.Elapsed();
         EXPECT_EQ(true, unwRet) << "UnwinderRemoteTest001: Unwind:" << unwRet;
-        std::vector<DfxFrame> frames;
-        Unwinder::GetFramesByPcs(frames, unwinder->GetPcs(), unwinder->GetMaps());
+        auto frames = unwinder->GetFrames();
         ASSERT_GT(frames.size(), 0);
         time_t elapsed2 = counter.Elapsed();
         GTEST_LOG_(INFO) << "Elapsed-: " << elapsed1;
@@ -186,8 +183,7 @@ HWTEST_F(UnwinderTest, UnwinderRemoteTest002, TestSize.Level2)
             unwRet = unwinder->UnwindRemote();
             time_t elapsed1 = counter.Elapsed();
             EXPECT_EQ(true, unwRet) << "UnwinderRemoteTest002: Unwind:" << unwRet;
-            std::vector<DfxFrame> frames;
-            Unwinder::GetFramesByPcs(frames, unwinder->GetPcs(), unwinder->GetMaps());
+            auto frames = unwinder->GetFrames();
             ASSERT_GT(frames.size(), 0);
             time_t elapsed2 = counter.Elapsed();
             GTEST_LOG_(INFO) << "Elapsed-: " << elapsed1;

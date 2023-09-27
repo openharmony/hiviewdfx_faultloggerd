@@ -66,7 +66,8 @@ public:
     inline const std::shared_ptr<DfxMaps>& GetMaps() { return maps_; }
 
     const std::vector<uintptr_t>& GetPcs() { return pcs_; }
-    const std::vector<DfxFrame>& GetFrames() { return frames_; }
+    void FillFrames(std::vector<DfxFrame>& frames);
+    const std::vector<DfxFrame>& GetFrames() { FillFrames(frames_); return frames_; }
     const uint16_t& GetLastErrorCode() const { return lastErrorData_.code; }
     const uint64_t& GetLastErrorAddr() const { return lastErrorData_.addr; }
 
@@ -80,7 +81,7 @@ public:
 
     static void GetFramesByPcs(std::vector<DfxFrame>& frames, std::vector<uintptr_t> pcs,
         std::shared_ptr<DfxMaps> maps);
-    static void GetFramesByPcs(std::vector<DfxFrame>& frames, std::vector<uintptr_t> pcs);
+    static void FillFrame(DfxFrame& frame);
     static std::string GetFramesStr(const std::vector<DfxFrame>& frames);
 
 private:

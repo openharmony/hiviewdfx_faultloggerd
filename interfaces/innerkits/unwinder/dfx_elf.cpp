@@ -377,7 +377,7 @@ void DfxElf::ResetElfTable(struct ElfTableInfo& edi)
 #endif
 }
 
-bool DfxElf::GetExidxTableInfo(struct UnwindTableInfo& ti, std::shared_ptr<DfxMap> map)
+bool DfxElf::GetExidxTableInfo(std::shared_ptr<DfxMap> map, struct UnwindTableInfo& ti)
 {
 #if defined(__arm__)
     uintptr_t loadBase = GetLoadBase(map->begin, map->offset);
@@ -399,7 +399,7 @@ bool DfxElf::GetExidxTableInfo(struct UnwindTableInfo& ti, std::shared_ptr<DfxMa
     return false;
 }
 
-bool DfxElf::GetEhHdrTableInfo(struct UnwindTableInfo& ti, std::shared_ptr<DfxMap> map)
+bool DfxElf::GetEhHdrTableInfo(std::shared_ptr<DfxMap> map, struct UnwindTableInfo& ti)
 {
     uintptr_t loadBase = GetLoadBase(map->begin, map->offset);
 
@@ -441,7 +441,7 @@ bool DfxElf::GetEhHdrTableInfo(struct UnwindTableInfo& ti, std::shared_ptr<DfxMa
     return false;
 }
 
-int DfxElf::FindElfTableInfo(struct ElfTableInfo& eti, uintptr_t pc, std::shared_ptr<DfxMap> map)
+int DfxElf::FindElfTableInfo(uintptr_t pc, std::shared_ptr<DfxMap> map, struct ElfTableInfo& eti)
 {
     if (hasTableInfo_) {
         if (pc >= eti_.startPc && pc < eti_.endPc) {
@@ -452,10 +452,10 @@ int DfxElf::FindElfTableInfo(struct ElfTableInfo& eti, uintptr_t pc, std::shared
     }
 
 #if defined(__arm__)
-    hasTableInfo_ = GetExidxTableInfo(eti.diExidx, map);
+    hasTableInfo_ = GetExidxTableInfo(map, eti.diExidx);
 #endif
     if (!hasTableInfo_) {
-        hasTableInfo_ = GetEhHdrTableInfo(eti.diEhHdr, map);
+        hasTableInfo_ = GetEhHdrTableInfo(map, eti.diEhHdr);
     }
 
     if (hasTableInfo_) {
@@ -472,12 +472,12 @@ int DfxElf::FindElfTableInfo(struct ElfTableInfo& eti, uintptr_t pc, std::shared
     return UNW_ERROR_NO_UNWIND_INFO;
 }
 
-int DfxElf::FindUnwindTableInfo(struct UnwindTableInfo& uti, uintptr_t pc, std::shared_ptr<DfxMap> map)
+int DfxElf::FindUnwindTableInfo(uintptr_t pc, std::shared_ptr<DfxMap> map, struct UnwindTableInfo& uti)
 {
     int ret = UNW_ERROR_NONE;
     ElfTableInfo eti;
     ResetElfTable(eti);
-    if ((ret = FindElfTableInfo(eti, pc, map)) != UNW_ERROR_NONE) {
+    if ((ret = FindElfTableInfo(pc, map, eti)) != UNW_ERROR_NONE) {
         return ret;
     }
 
@@ -494,7 +494,7 @@ int DfxElf::FindUnwindTableInfo(struct UnwindTableInfo& uti, uintptr_t pc, std::
     return ret;
 }
 
-int DfxElf::FindUnwindTableLocal(struct UnwindTableInfo& uti, uintptr_t pc)
+int DfxElf::FindUnwindTableLocal(uintptr_t pc, struct UnwindTableInfo& uti)
 {
     DlCbData cbData;
     memset_s(&cbData, sizeof(cbData), 0, sizeof(cbData));

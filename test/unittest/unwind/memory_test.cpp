@@ -49,7 +49,7 @@ HWTEST_F(DfxMemoryTest, DfxMemoryTest001, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "DfxMemoryTest001: start.";
     uintptr_t regs[] = {0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xa};
-    UnwindLocalContext ctx;
+    UnwindContext ctx;
     ctx.regs = DfxRegs::CreateFromRegs(UnwindMode::DWARF_UNWIND, regs);
     auto acc = std::make_shared<DfxAccessorsLocal>();
     auto memory = std::make_shared<DfxMemory>(acc);
@@ -102,7 +102,7 @@ HWTEST_F(DfxMemoryTest, DfxMemoryTest003, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "DfxMemoryTest003: start.";
     uint8_t values[] = {0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8};
-    UnwindLocalContext ctx;
+    UnwindContext ctx;
     auto acc = std::make_shared<DfxAccessorsLocal>();
     ASSERT_EQ(GetSelfStackRange(ctx.stackBottom, ctx.stackTop), 0);
     auto memory = std::make_shared<DfxMemory>(acc);
@@ -141,7 +141,7 @@ HWTEST_F(DfxMemoryTest, DfxMemoryTest004, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "DfxMemoryTest004: start.";
     uint8_t values[] = {0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8};
-    UnwindLocalContext ctx;
+    UnwindContext ctx;
     auto acc = std::make_shared<DfxAccessorsLocal>();
     ASSERT_EQ(GetSelfStackRange(ctx.stackBottom, ctx.stackTop), 0);
     auto memory = std::make_shared<DfxMemory>(acc);
@@ -171,7 +171,7 @@ HWTEST_F(DfxMemoryTest, DfxMemoryTest005, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "DfxMemoryTest005: start.";
     uint8_t values[] = {0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8};
-    UnwindLocalContext ctx;
+    UnwindContext ctx;
     auto acc = std::make_shared<DfxAccessorsLocal>();
     ASSERT_EQ(GetSelfStackRange(ctx.stackBottom, ctx.stackTop), 0);
     auto memory = std::make_shared<DfxMemory>(acc);
@@ -198,7 +198,7 @@ HWTEST_F(DfxMemoryTest, DfxMemoryTest005, TestSize.Level2)
 HWTEST_F(DfxMemoryTest, DfxMemoryTest006, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "DfxMemoryTest006: start.";
-    UnwindLocalContext ctx;
+    UnwindContext ctx;
     auto acc = std::make_shared<DfxAccessorsLocal>();
     ASSERT_EQ(GetSelfStackRange(ctx.stackBottom, ctx.stackTop), 0);
     auto memory = std::make_shared<DfxMemory>(acc);
