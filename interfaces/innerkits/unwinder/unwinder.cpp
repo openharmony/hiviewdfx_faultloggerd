@@ -94,12 +94,12 @@ bool Unwinder::UnwindLocal(size_t maxFrameNum, size_t skipFrameNum)
     }
     GetLocalRegs(regsData);
 
-    UnwindLocalContext context;
+    UnwindContext context;
+    context.pid = UWNIND_TYPE_LOCAL;
     context.regs = regs_;
     context.stackBottom = stackBottom;
     context.stackTop = stackTop;
     bool ret = Unwind(&context, maxFrameNum, skipFrameNum);
-    //GetFramesByPcs(frames_, pcs_, maps_);
     return ret;
 }
 
@@ -111,12 +111,10 @@ bool Unwinder::UnwindRemote(size_t maxFrameNum, size_t skipFrameNum)
         return false;
     }
 
-    UnwindRemoteContext context;
+    UnwindContext context;
     context.pid = pid_;
-    context.maps = maps_;
     context.regs = regs_;
     bool ret = Unwind(&context, maxFrameNum, skipFrameNum);
-    //GetFramesByPcs(frames_, pcs_, maps_);
     return ret;
 }
 
@@ -127,6 +125,7 @@ bool Unwinder::Unwind(void *ctx, size_t maxFrameNum, size_t skipFrameNum)
         return false;
     }
     pcs_.clear();
+    frames_.clear();
 
     bool needAdjustPc = false;
     size_t index = 0;
@@ -147,6 +146,27 @@ bool Unwinder::Unwind(void *ctx, size_t maxFrameNum, size_t skipFrameNum)
         pc = regs_->GetPc();
         sp = regs_->GetSp();
         pcs_.push_back(pc);
+
+        DfxFrame frame;
+        std::shared_ptr<DfxMap> map = nullptr;
+        if (pid_ >= 0 || pid_ == UWNIND_TYPE_LOCAL) {
+            UnwindContext* uctx = reinterpret_cast<UnwindContext *>(ctx);
+            if (uctx->map != nullptr && pc >= (uintptr_t)uctx->map->begin && pc < (uintptr_t)uctx->map->end) {
+                LOGU("map had matched");
+                map = uctx->map;
+            } else {
+                if (!maps_->FindMapByAddr(map, pc) || (map == nullptr)) {
+                    LOGE("map is null");
+                    lastErrorData_.code = UNW_ERROR_INVALID_MAP;
+                    break;
+                }
+                uctx->map = map;
+            }
+        }
+        frame.index = curIndex;
+        frame.pc = static_cast<uint64_t>(pc);
+        frame.map = map;
+        frames_.push_back(frame);
 
         stepPc = pc;
         if (needAdjustPc) {
@@ -256,10 +276,10 @@ bool Unwinder::Step(uintptr_t& pc, uintptr_t& sp, void *ctx)
 
 bool Unwinder::FpStep(uintptr_t& fp, uintptr_t& pc, void *ctx)
 {
-    UnwindLocalContext* context = reinterpret_cast<UnwindLocalContext *>(ctx);
+    UnwindContext* uctx = reinterpret_cast<UnwindContext *>(ctx);
     LOGU("++++++fp: %llx, pc: %llx", (uint64_t)fp, (uint64_t)pc);
     uintptr_t prevFp = fp;
-    if (DfxAccessorsLocal::IsValidFrame(prevFp, context->stackBottom, context->stackTop)) {
+    if (DfxAccessorsLocal::IsValidFrame(prevFp, uctx->stackBottom, uctx->stackTop)) {
         fp = *reinterpret_cast<uintptr_t*>(prevFp);
         pc = *reinterpret_cast<uintptr_t*>(prevFp + sizeof(uintptr_t));
         regs_->SetReg(REG_FP, &fp);
@@ -286,6 +306,35 @@ bool Unwinder::Apply(std::shared_ptr<DfxRegs> regs, std::shared_ptr<RegLocState>
     return ret;
 }
 
+void Unwinder::FillFrames(std::vector<DfxFrame>& frames)
+{
+    for (size_t i = 0; i < frames.size(); ++i) {
+        DfxFrame& frame = frames[i];
+        FillFrame(frame);
+    }
+}
+
+void Unwinder::FillFrame(DfxFrame& frame)
+{
+    if (frame.map == nullptr) {
+        LOGE("map is null");
+        return;
+    }
+    frame.mapName = frame.map->name;
+    frame.mapOffset = frame.map->offset;
+    frame.relPc = frame.map->GetRelPc(frame.pc);
+    LOGU("relPc: %llx, mapName: %s", frame.relPc, frame.mapName.c_str());
+
+    auto elf = frame.map->GetElf();
+    if (elf == nullptr) {
+        LOGE("elf is null");
+        return;
+    }
+    DfxSymbols symbols;
+    symbols.GetFuncNameAndOffsetByPc(frame.relPc, elf, frame.funcName, frame.funcOffset);
+    frame.buildId = elf->GetBuildId();
+}
+
 void Unwinder::DoPcAdjust(uintptr_t& pc)
 {
     if (pc <= 4) {
@@ -306,70 +355,25 @@ void Unwinder::DoPcAdjust(uintptr_t& pc)
     pc -= sz;
 }
 
-void Unwinder::GetFramesByPcs(std::vector<DfxFrame>& frames, std::vector<uintptr_t> pcs)
-{
-    frames.clear();
-    for (size_t i = 0; i < pcs.size(); ++i) {
-        DfxFrame frame;
-        frame.index = i;
-        frame.pc = static_cast<uint64_t>(pcs[i]);
-        Dl_info info{};
-        int rc = dladdr((void *)frame.pc, &info);
-#if defined(__aarch64__)
-        // fp_unwind 得到的 pc 除了第 0 帧实际都是 LR, arm64 指令长度都是定长 32bit, 所以 -4 以恢复 pc
-        uintptr_t realPc = frame.pc - (i > 0 ? 4 : 0);
-#else
-        uintptr_t realPc = frame.pc;
-#endif
-        frame.relPc = realPc - (uintptr_t)info.dli_fbase;
-        if (rc != 0) {
-            frame.mapName = (info.dli_fname == nullptr) ? "" : info.dli_fname;
-            std::string funcName = (info.dli_sname == nullptr) ? "" : info.dli_sname;
-            frame.funcName = DfxSymbols::Demangle(funcName);
-        }
-        frames.push_back(frame);
-    }
-}
-
 void Unwinder::GetFramesByPcs(std::vector<DfxFrame>& frames, std::vector<uintptr_t> pcs,
     std::shared_ptr<DfxMaps> maps)
 {
     frames.clear();
-    std::map<uintptr_t, std::shared_ptr<DfxMap>> savedMaps;
     std::shared_ptr<DfxMap> map = nullptr;
-    DfxSymbols symbols;
     for (size_t i = 0; i < pcs.size(); ++i) {
         DfxFrame frame;
         frame.index = i;
-        frame.pc = static_cast<uint64_t>(pcs[i]);
-        if ((map != nullptr) && map->Contain(static_cast<uint64_t>(frame.pc))) {
-            LOGU("matched prev map");
+        uintptr_t pc = static_cast<uint64_t>(pcs[i]);
+        if ((map != nullptr) && map->Contain(static_cast<uint64_t>(pc))) {
+            LOGU("map had matched");
         } else {
-            auto it = savedMaps.upper_bound(frame.pc);
-            if (it != savedMaps.end() && it->second->Contain(static_cast<uint64_t>(frame.pc))) {
-                LOGU("matched saved maps");
-                map = it->second;
-            } else {
-                if (!maps->FindMapByAddr(map, frame.pc) || (map == nullptr)) {
-                    LOGE("map is null");
-                    continue;
-                }
-                savedMaps.emplace(map->end, map);
+            if (!maps->FindMapByAddr(map, pc) || (map == nullptr)) {
+                LOGE("map is null");
+                continue;
             }
         }
-
-        frame.mapName = map->name;
-        frame.mapOffset = map->offset;
-        frame.relPc = map->GetRelPc(frame.pc);
-        LOGU("relPc: %llx, mapName: %s", frame.relPc, frame.mapName.c_str());
-
-        auto elf = map->GetElf();
-        if (elf == nullptr) {
-            LOGE("elf is null");
-            continue;
-        }
-        symbols.GetFuncNameAndOffsetByPc(frame.relPc, elf, frame.funcName, frame.funcOffset);
-        frame.buildId = elf->GetBuildId();
+        frame.map = map;
+        FillFrame(frame);
         frames.push_back(frame);
     }
 }

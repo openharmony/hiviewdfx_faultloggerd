@@ -67,9 +67,9 @@ public:
     const std::vector<ElfSymbol>& GetFuncSymbols(bool isSort = false);
     bool GetFuncInfo(uint64_t addr, std::string& name, uint64_t& start, uint64_t& size);
     bool GetSectionInfo(ShdrInfo& shdr, const std::string secName);
-    int FindElfTableInfo(struct ElfTableInfo& eti, uintptr_t pc, std::shared_ptr<DfxMap> map);
-    int FindUnwindTableInfo(struct UnwindTableInfo& uti, uintptr_t pc, std::shared_ptr<DfxMap> map);
-    static int FindUnwindTableLocal(struct UnwindTableInfo& uti, uintptr_t pc);
+    int FindElfTableInfo(uintptr_t pc, std::shared_ptr<DfxMap> map, struct ElfTableInfo& eti);
+    int FindUnwindTableInfo(uintptr_t pc, std::shared_ptr<DfxMap> map, struct UnwindTableInfo& uti);
+    static int FindUnwindTableLocal(uintptr_t pc, struct UnwindTableInfo& uti);
     static void ResetElfTable(struct ElfTableInfo& edi);
     static std::string ToReadableBuildId(const std::string& buildIdHex);
 
@@ -78,8 +78,8 @@ protected:
     bool Init(const std::string& file);
     void Clear();
     bool ParseElfIdent();
-    bool GetExidxTableInfo(struct UnwindTableInfo& ti, std::shared_ptr<DfxMap> map);
-    bool GetEhHdrTableInfo(struct UnwindTableInfo& ti, std::shared_ptr<DfxMap> map);
+    bool GetExidxTableInfo(std::shared_ptr<DfxMap> map, struct UnwindTableInfo& ti);
+    bool GetEhHdrTableInfo(std::shared_ptr<DfxMap> map, struct UnwindTableInfo& ti);
 
     static int DlPhdrCb(struct dl_phdr_info *info, size_t size, void *data);
     static ElfW(Addr) FindSection(struct dl_phdr_info *info, const std::string secName);

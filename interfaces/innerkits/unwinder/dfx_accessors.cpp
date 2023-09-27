@@ -44,7 +44,7 @@ bool DfxAccessorsLocal::IsValidFrame(uintptr_t addr, uintptr_t stackBottom, uint
 
 int DfxAccessorsLocal::AccessMem(uintptr_t addr, uintptr_t *val, void *arg)
 {
-    UnwindLocalContext* ctx = reinterpret_cast<UnwindLocalContext *>(arg);
+    UnwindContext* ctx = reinterpret_cast<UnwindContext *>(arg);
     if (ctx == nullptr) {
         return UNW_ERROR_INVALID_CONTEXT;
     }
@@ -59,7 +59,7 @@ int DfxAccessorsLocal::AccessMem(uintptr_t addr, uintptr_t *val, void *arg)
 
 int DfxAccessorsLocal::AccessReg(int reg, uintptr_t *val, void *arg)
 {
-    UnwindLocalContext* ctx = reinterpret_cast<UnwindLocalContext *>(arg);
+    UnwindContext* ctx = reinterpret_cast<UnwindContext *>(arg);
     if (ctx == nullptr) {
         return UNW_ERROR_INVALID_CONTEXT;
     }
@@ -74,17 +74,13 @@ int DfxAccessorsLocal::AccessReg(int reg, uintptr_t *val, void *arg)
 
 int DfxAccessorsLocal::FindUnwindTable(uintptr_t pc, UnwindTableInfo& uti, void *arg)
 {
-    UnwindLocalContext *ctx = reinterpret_cast<UnwindLocalContext *>(arg);
+    UnwindContext *ctx = reinterpret_cast<UnwindContext *>(arg);
     if (ctx == nullptr) {
         LOGE("ctx is null");
         return UNW_ERROR_INVALID_CONTEXT;
     }
-    if (pc >= ctx->di.startPc && pc < ctx->di.endPc) {
-        LOGU("FindUnwindTable had pc matched");
-        uti = ctx->di;
-        return UNW_ERROR_NONE;
-    }
-    int ret = DfxElf::FindUnwindTableLocal(uti, pc);
+
+    int ret = DfxElf::FindUnwindTableLocal(pc, uti);
     if (ret == UNW_ERROR_NONE) {
         ctx->di = uti;
     }
@@ -99,11 +95,10 @@ int DfxAccessorsRemote::AccessMem(uintptr_t addr, uintptr_t *val, void *arg)
         return UNW_ERROR_ILLEGAL_VALUE;
     }
 #endif
-    UnwindRemoteContext *ctx = reinterpret_cast<UnwindRemoteContext *>(arg);
-    if (ctx == nullptr) {
+    UnwindContext *ctx = reinterpret_cast<UnwindContext *>(arg);
+    if ((ctx == nullptr) || (ctx->pid <= 0)) {
         return UNW_ERROR_INVALID_CONTEXT;
     }
-    pid_t pid = ctx->pid;
     int i, end;
     if (sizeof(long) == 4 && sizeof(uintptr_t) == 8) {
         end = 2;
@@ -116,7 +111,7 @@ int DfxAccessorsRemote::AccessMem(uintptr_t addr, uintptr_t *val, void *arg)
         uintptr_t tmpAddr = ((i == 0) ? addr : addr + 4);
         errno = 0;
 
-        tmpVal = (unsigned long) ptrace(PTRACE_PEEKDATA, pid, tmpAddr, nullptr);
+        tmpVal = (unsigned long) ptrace(PTRACE_PEEKDATA, ctx->pid, tmpAddr, nullptr);
         if (i == 0) {
             *val = 0;
         }
@@ -137,7 +132,7 @@ int DfxAccessorsRemote::AccessMem(uintptr_t addr, uintptr_t *val, void *arg)
 
 int DfxAccessorsRemote::AccessReg(int reg, uintptr_t *val, void *arg)
 {
-    UnwindRemoteContext *ctx = reinterpret_cast<UnwindRemoteContext *>(arg);
+    UnwindContext *ctx = reinterpret_cast<UnwindContext *>(arg);
     if (ctx == nullptr) {
         return UNW_ERROR_INVALID_CONTEXT;
     }
@@ -151,8 +146,8 @@ int DfxAccessorsRemote::AccessReg(int reg, uintptr_t *val, void *arg)
 
 int DfxAccessorsRemote::FindUnwindTable(uintptr_t pc, UnwindTableInfo& uti, void *arg)
 {
-    UnwindRemoteContext *ctx = reinterpret_cast<UnwindRemoteContext *>(arg);
-    if (ctx == nullptr || ctx->maps == nullptr) {
+    UnwindContext *ctx = reinterpret_cast<UnwindContext *>(arg);
+    if (ctx == nullptr || ctx->map == nullptr) {
         return UNW_ERROR_INVALID_CONTEXT;
     }
     if (pc >= ctx->di.startPc && pc < ctx->di.endPc) {
@@ -160,22 +155,13 @@ int DfxAccessorsRemote::FindUnwindTable(uintptr_t pc, UnwindTableInfo& uti, void
         uti = ctx->di;
         return UNW_ERROR_NONE;
     }
-    if (ctx->map != nullptr && pc >= (uintptr_t)ctx->map->begin && pc < (uintptr_t)ctx->map->end) {
-        LOGU("FindUnwindTable map had matched");
-    } else {
-        std::shared_ptr<DfxMap> map = nullptr;
-        if (!ctx->maps->FindMapByAddr(map, pc) || (map == nullptr)) {
-            LOGE("FindUnwindTable map is null");
-            return UNW_ERROR_INVALID_MAP;
-        }
-        ctx->map = map;
-    }
+
     auto elf = ctx->map->GetElf();
     if (elf == nullptr) {
         LOGE("FindUnwindTable elf is null");
         return UNW_ERROR_INVALID_ELF;
     }
-    int ret = elf->FindUnwindTableInfo(uti, pc, ctx->map);
+    int ret = elf->FindUnwindTableInfo(pc, ctx->map, uti);
     if (ret == UNW_ERROR_NONE) {
         ctx->di = uti;
     }
