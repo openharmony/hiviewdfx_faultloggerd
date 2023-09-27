@@ -294,7 +294,7 @@ static int DFX_ExecDump(void)
         return INHERIT_CAP_FAIL;
     }
     DFXLOG_INFO("execl processdump.");
-#ifdef DFX_LOG_USE_HILOG_BASE
+#ifdef DFX_LOG_HILOG_BASE
     execl("/system/bin/processdump", "processdump", "-signalhandler", NULL);
 #else
     execl("/bin/processdump", "processdump", "-signalhandler", NULL);
@@ -502,9 +502,9 @@ static void ForkAndDoProcessDump(void)
     int status;
     int ret = waitpid(childPid, &status, 0);
     RestoreDumpState(prevDumpableStatus, isTracerStatusModified);
-    pthread_mutex_unlock(&g_signalHandlerMutex);
     DFXLOG_INFO("(%d) wait for VmProcess(%d) return with ret(%d) status(%d)",
         syscall(SYS_getpid), childPid, ret, status);
+    pthread_mutex_unlock(&g_signalHandlerMutex);
 }
 
 static bool DFX_SigchainHandler(int sig, siginfo_t *si, void *context)

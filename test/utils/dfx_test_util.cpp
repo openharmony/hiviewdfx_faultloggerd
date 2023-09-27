@@ -260,7 +260,7 @@ uint64_t GetSelfMemoryCount()
 
 uint32_t GetSelfMapsCount()
 {
-    std::string path = "/proc/self/maps";
+    std::string path = std::string(PROC_SELF_MAPS_PATH);
     std::string content;
     if (!OHOS::HiviewDFX::LoadStringFromFile(path, content)) {
         printf("Failed to load path content: %s\n", path.c_str());

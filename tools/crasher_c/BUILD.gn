@@ -23,7 +23,7 @@ if (defined(ohos_lite)) {
     visibility = [ "*:*" ]
     include_dirs = [
       ".",
-      "$faultloggerd_path/common",
+      "$faultloggerd_interfaces_path/common",
       "//commonlibrary/c_utils/base/include",
       "$hilog_lite_include_path",
     ]
@@ -39,7 +39,7 @@ if (defined(ohos_lite)) {
 
     include_dirs = [
       ".",
-      "$faultloggerd_path/common",
+      "$faultloggerd_interfaces_path/common",
     ]
     cflags = [ "-Wno-frame-larger-than" ]
   }

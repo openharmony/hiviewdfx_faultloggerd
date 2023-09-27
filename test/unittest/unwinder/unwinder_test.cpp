@@ -36,32 +36,16 @@ namespace OHOS {
 namespace HiviewDFX {
 #undef LOG_DOMAIN
 #undef LOG_TAG
-#define LOG_TAG "UnwinderTest"
+#define LOG_TAG "DfxUnwinderTest"
 #define LOG_DOMAIN 0xD002D11
 
 class UnwinderTest : public testing::Test {
 public:
-    static void SetUpTestCase();
-    static void TearDownTestCase();
-    void SetUp();
-    void TearDown();
+    static void SetUpTestCase() {}
+    static void TearDownTestCase() {}
+    void SetUp() {}
+    void TearDown() {}
 };
-
-void UnwinderTest::SetUpTestCase()
-{
-}
-
-void UnwinderTest::TearDownTestCase()
-{
-}
-
-void UnwinderTest::SetUp()
-{
-}
-
-void UnwinderTest::TearDown()
-{
-}
 
 /**
  * @tc.name: DfxConfigTest001

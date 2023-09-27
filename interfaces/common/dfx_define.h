@@ -24,41 +24,39 @@
 #define SIGLEAK_STACK 42
 #define PROCESSDUMP_TIMEOUT 8
 #define DUMPCATCHER_TIMEOUT 15
-#define NAME_LEN 128
-#define PATH_LEN 1024
-#define MAX_FATAL_MSG_SIZE 1024
+
+#ifndef NAME_MAX
+#define NAME_MAX         255
+#endif
+#ifndef PATH_MAX
+#define PATH_MAX        1024
+#endif
+#define NAME_LEN        128
+#define PATH_LEN        512
+#define LINE_BUF_SIZE   1024
+#define MAX_FATAL_MSG_SIZE  1024
+static const int NUMBER_ONE_THOUSAND = 1000;
+static const int NUMBER_ONE_MILLION = 1000000;
 
 static const int INVALID_FD = -1;
+static const int DUMP_TYPE_NATIVE = -1;
+static const int DUMP_TYPE_MIX = -2;
+static const int DUMP_TYPE_KERNEL = -3;
 
 static const int SOCKET_BUFFER_SIZE = 256;
 static const char FAULTLOGGERD_SOCK_BASE_PATH[] = "/dev/unix/socket/";
 static const char SERVER_SOCKET_NAME[] = "faultloggerd.server";
 static const char SERVER_CRASH_SOCKET_NAME[] = "faultloggerd.crash.server";
+
 static const char PROC_SELF_STATUS_PATH[] = "/proc/self/status";
 static const char PROC_SELF_TASK_PATH[] = "/proc/self/task";
 static const char PROC_SELF_CMDLINE_PATH[] = "/proc/self/cmdline";
 static const char PROC_SELF_COMM_PATH[] = "/proc/self/comm";
-
-static const int DUMP_CATCHER_NUMBER_ONE = 1;
-static const int DUMP_CATCHER_NUMBER_TWO = 2;
-static const int DUMP_CATCHER_NUMBER_THREE = 3;
-static const int NUMBER_ONE_THOUSAND = 1000;
-static const int NUMBER_ONE_MILLION = 1000000;
-
-static const int FAULTSTACK_ITEM_BUFFER_LENGTH = 2048;
-static const int FAULTSTACK_SP_REVERSE = 3;
-static const int FAULTSTACK_FIRST_FRAME_SEARCH_LENGTH = 64;
-
-static const int SYMBOL_BUF_SIZE = 1024;
-static const int LOG_BUF_LEN = 1024;
-static const int FILE_WRITE_BUF_LEN = 4096;
+static const char PROC_SELF_MAPS_PATH[] = "/proc/self/maps";
+static const char PROC_SELF_EXE_PATH[] = "/proc/self/exe";
 
 static const char TEST_BUNDLE_NAME[] = "com.example.myapplication";
 static const char TRUNCATE_TEST_BUNDLE_NAME[] = "e.myapplication";
-
-static const int DUMP_TYPE_NATIVE = -1;
-static const int DUMP_TYPE_MIX = -2;
-static const int DUMP_TYPE_KERNEL = -3;
 
 #define LIKELY(exp)       (__builtin_expect(!!(exp), true))
 #define UNLIKELY(exp)     (__builtin_expect(!!(exp), false))
@@ -70,6 +68,10 @@ static const int DUMP_TYPE_KERNEL = -3;
 #define AT_UNUSED               __attribute__((unused))
 #define MAYBE_UNUSED            [[maybe_unused]]
 
+#ifndef FALLTHROUGH_INTENDED
+#define FALLTHROUGH_INTENDED [[clang::fallthrough]]  // NOLINT
+#endif
+
 #define OHOS_TEMP_FAILURE_RETRY(exp)            \
     ({                                          \
     long int _rc;                               \
@@ -79,14 +81,4 @@ static const int DUMP_TYPE_KERNEL = -3;
     _rc;                                        \
     })
 
-#define BYTE_TO_BINARY_PATTERN "%c%c%c%c%c%c%c%c"
-#define BYTE_TO_BINARY(byte) \
-    ((byte) & 0x80 ? '1' : '0'), \
-    ((byte) & 0x40 ? '1' : '0'), \
-    ((byte) & 0x20 ? '1' : '0'), \
-    ((byte) & 0x10 ? '1' : '0'), \
-    ((byte) & 0x08 ? '1' : '0'), \
-    ((byte) & 0x04 ? '1' : '0'), \
-    ((byte) & 0x02 ? '1' : '0'), \
-    ((byte) & 0x01 ? '1' : '0')
-#endif // DFX_DEFINE_H
+#endif

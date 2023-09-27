@@ -20,7 +20,7 @@
 #include <string>
 #include "dfx_define.h"
 #include "dfx_log.h"
-#include "string_util.h"
+#include "string_printf.h"
 
 namespace OHOS {
 namespace HiviewDFX {

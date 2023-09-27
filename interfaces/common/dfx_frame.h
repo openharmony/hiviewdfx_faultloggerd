@@ -16,7 +16,9 @@
 #define DFX_FRAME_H
 
 #include <cinttypes>
+#include <memory>
 #include <string>
+#include "string_printf.h"
 
 namespace OHOS {
 namespace HiviewDFX {
@@ -33,6 +35,8 @@ struct DfxFrame {
     uint64_t relPc {0};
     /** stack pointer value */
     uint64_t sp {0};
+    /** map offset */
+    uint64_t mapOffset {0};
     /** function byte offset */
     uint64_t funcOffset {0};
     /** elf file name */

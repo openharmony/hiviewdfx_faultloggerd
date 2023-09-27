@@ -24,10 +24,9 @@ if (defined(ohos_lite)) {
 
       include_dirs = [
         "$c_utils_include_path",
+        "$faultloggerd_common_path/dfxutil",
         "$faultloggerd_frameworks_path/unwinder/include",
         "$faultloggerd_interfaces_path/common",
-        "$faultloggerd_path/common",
-        "$faultloggerd_path/common/dfxutil",
         "$faultloggerd_path/test/utils",
         "$faultloggerd_path/tools/process_dump",
         "//third_party/libunwind/include/",
@@ -62,10 +61,9 @@ if (defined(ohos_lite)) {
     visibility = [ ":*" ]
 
     include_dirs = [
+      "$faultloggerd_common_path/dfxutil",
       "$faultloggerd_frameworks_path/unwinder/include",
       "$faultloggerd_interfaces_path/common",
-      "$faultloggerd_path/common",
-      "$faultloggerd_path/common/dfxutil",
       "$faultloggerd_path/test/utils",
       "$faultloggerd_path/tools/process_dump",
       "//third_party/libunwind/include/",

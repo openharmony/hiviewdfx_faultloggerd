@@ -18,19 +18,26 @@
 
 #include <cstdint>
 #include <cstdio>
+#include <stdlib.h>
 #include <string>
+#include <string.h>
 #include <securec.h>
 
 namespace OHOS {
 namespace HiviewDFX {
-namespace {
-const int DFX_STRING_BUF_LEN = 4096;
-const std::string EMPTY_STRING = "";
-}
-
 inline bool StartsWith(const std::string& s, const std::string& prefix)
 {
     return s.substr(0, prefix.size()) == prefix;
+}
+
+inline bool StartsWith(const std::string& s, char prefix)
+{
+    return !s.empty() && s.front() == prefix;
+}
+
+inline bool StartsWithIgnoreCase(const std::string& s, const std::string& prefix)
+{
+    return s.size() >= prefix.size() && strncasecmp(s.data(), prefix.data(), prefix.size()) == 0;
 }
 
 inline bool EndsWith(const std::string& s, const std::string& suffix)
@@ -39,38 +46,22 @@ inline bool EndsWith(const std::string& s, const std::string& suffix)
             s.substr(s.size() - suffix.size(), suffix.size()) == suffix;
 }
 
+inline bool EndsWith(const std::string& s, char suffix)
+{
+    return !s.empty() && s.back() == suffix;
+}
+
+inline bool EndsWithIgnoreCase(const std::string& s, const std::string& suffix)
+{
+    return s.size() >= suffix.size() &&
+        strncasecmp(s.data() + (s.size() - suffix.size()), suffix.data(), suffix.size()) == 0;
+}
+
 inline void Trim(std::string& str)
 {
     std::string blanks("\f\v\r\t\n ");
     str.erase(0, str.find_first_not_of(blanks));
     str.erase(str.find_last_not_of(blanks) + sizeof(char));
-}
-
-inline int BufferPrintf(char *buf, size_t size, const char *fmt, ...)
-{
-    int ret = -1;
-    if (buf == nullptr || size == 0) {
-        return ret;
-    }
-    va_list args;
-    va_start(args, fmt);
-    ret = vsnprintf_s(buf, size, size - 1, fmt, args);
-    va_end(args);
-    return ret;
-}
-
-template<typename... VA>
-std::string StringPrintf(const char *fmt, VA... args)
-{
-    if (fmt == nullptr) {
-        return EMPTY_STRING;
-    }
-
-    char buf[DFX_STRING_BUF_LEN] = {0};
-    if (snprintf_s(buf, sizeof(buf), sizeof(buf) - 1, fmt, args...) < 0) {
-        return EMPTY_STRING;
-    }
-    return std::string(buf);
 }
 } // namespace HiviewDFX
 } // namespace OHOS

@@ -19,8 +19,7 @@
 #include <securec.h>
 #include "dfx_define.h"
 #include "dfx_log.h"
-#include "dfx_regs_define.h"
-#include "string_util.h"
+#include "string_printf.h"
 
 namespace OHOS {
 namespace HiviewDFX {
@@ -66,7 +65,7 @@ DfxRegsArm64::DfxRegsArm64(const ucontext_t &context)
 
 std::string DfxRegsArm64::PrintRegs() const
 {
-    char buf[REGS_PRINT_LEN_ARM64] = {0};
+    char buf[REGS_PRINT_LEN] = {0};
     std::vector<uintptr_t> regs = GetRegsData();
 
     BufferPrintf(buf, sizeof(buf), "x0:%016lx x1:%016lx x2:%016lx x3:%016lx\n", \
@@ -94,12 +93,11 @@ std::string DfxRegsArm64::PrintRegs() const
         regs[REG_AARCH64_X28], regs[REG_AARCH64_X29]);
 
     BufferPrintf(buf + strlen(buf), sizeof(buf) - strlen(buf), "lr:%016lx sp:%016lx pc:%016lx\n", \
-        regs[REG_AARCH64_X30], regs[REG_AARCH64_SP], regs[REG_AARCH64_PC]);
+        regs[REG_LR], regs[REG_SP], regs[REG_PC]);
 
     std::string regString = StringPrintf("Registers:\n%s", buf);
     return regString;
 }
-
 } // namespace HiviewDFX
 } // namespace OHOS
 #endif

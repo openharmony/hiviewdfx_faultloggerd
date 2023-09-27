@@ -37,7 +37,8 @@ processdump_sources = [
 ]
 
 if (defined(ohos_lite)) {
-  source_set("process_info_src") {
+  config("processdump_config") {
+    visibility = [ "*:*" ]
     cflags = []
 
     defines = [
@@ -46,66 +47,46 @@ if (defined(ohos_lite)) {
       "HAVE_LINK_H",
     ]
 
-    visibility = [ "*:*" ]
-
     include_dirs = [
       ".",
       "$c_utils_include_path",
+      "$faultloggerd_common_path/dfxlog",
+      "$faultloggerd_common_path/dfxutil",
       "$faultloggerd_frameworks_path/unwinder/include",
       "$faultloggerd_interfaces_path/common",
-      "$faultloggerd_path/common",
-      "$faultloggerd_path/common/dfxlog",
-      "$faultloggerd_path/common/dfxutil",
-      "$faultloggerd_path/interfaces/innerkits/faultloggerd_client/include",
-      "$faultloggerd_path/interfaces/innerkits/procinfo/include",
+      "$faultloggerd_interfaces_path/innerkits/faultloggerd_client/include",
+      "$faultloggerd_interfaces_path/innerkits/procinfo/include",
       "$hilog_lite_include_path",
     ]
+  }
 
+  source_set("process_info_src") {
     sources = processdump_sources
+    public_configs = [ ":processdump_config" ]
 
     deps = [
-      "$faultloggerd_path/common/dfxlog:static_common_log",
-      "$faultloggerd_path/common/dfxutil:dfx_util",
-      "$faultloggerd_path/interfaces/innerkits/faultloggerd_client:libfaultloggerd",
-      "$faultloggerd_path/interfaces/innerkits/procinfo:libdfx_procinfo",
+      "$faultloggerd_common_path/dfxlog:dfx_hilog",
+      "$faultloggerd_common_path/dfxutil:dfx_util",
+      "$faultloggerd_interfaces_path/innerkits/faultloggerd_client:libfaultloggerd",
+      "$faultloggerd_interfaces_path/innerkits/procinfo:libdfx_procinfo",
       "//base/hiviewdfx/hilog_lite/frameworks/featured:hilog_shared",
       "//third_party/libunwind:libunwind",
     ]
   }
 
   executable("processdump") {
-    visibility = [ "*:*" ]
-
-    include_dirs = [
-      ".",
-      "$c_utils_include_path",
-      "$faultloggerd_frameworks_path/unwinder/include",
-      "$faultloggerd_interfaces_path/common",
-      "$faultloggerd_path/common",
-      "$faultloggerd_path/common/dfxlog",
-      "$faultloggerd_path/common/dfxutil",
-      "$faultloggerd_path/interfaces/innerkits/faultloggerd_client/include",
-      "$faultloggerd_path/interfaces/innerkits/procinfo/include",
-      "$hilog_lite_include_path",
-    ]
-
-    defines = [
-      "HAVE_CONFIG_H",
-      "HAVE_ELF_H",
-      "HAVE_LINK_H",
-    ]
-
     sources = processdump_sources
     sources += [
       "cppcrash_reporter.cpp",
       "main.cpp",
     ]
+    public_configs = [ ":processdump_config" ]
 
     deps = [
-      "$faultloggerd_path/common/dfxlog:static_common_log",
-      "$faultloggerd_path/common/dfxutil:dfx_util",
-      "$faultloggerd_path/interfaces/innerkits/faultloggerd_client:libfaultloggerd",
-      "$faultloggerd_path/interfaces/innerkits/procinfo:libdfx_procinfo",
+      "$faultloggerd_common_path/dfxlog:dfx_hilog",
+      "$faultloggerd_common_path/dfxutil:dfx_util",
+      "$faultloggerd_interfaces_path/innerkits/faultloggerd_client:libfaultloggerd",
+      "$faultloggerd_interfaces_path/innerkits/procinfo:libdfx_procinfo",
       "//base/hiviewdfx/hilog_lite/frameworks/featured:hilog_shared",
       "//third_party/libunwind:libunwind",
     ]
@@ -126,17 +107,15 @@ if (defined(ohos_lite)) {
   }
 
   ohos_source_set("process_info_src") {
-    cflags = []
-
+    sources = processdump_sources
     configs = [
       ":processdump_config",
-      "$faultloggerd_path/common/build:coverage_flags",
+      "$faultloggerd_common_path/build:coverage_flags",
     ]
-    sources = processdump_sources
 
     deps = [
-      "$faultloggerd_path/common/dfxlog:static_common_log",
-      "$faultloggerd_path/common/dfxutil:dfx_util",
+      "$faultloggerd_common_path/dfxlog:dfx_hilog",
+      "$faultloggerd_common_path/dfxutil:dfx_util",
       "$faultloggerd_path/interfaces/innerkits/faultloggerd_client:libfaultloggerd",
       "$faultloggerd_path/interfaces/innerkits/procinfo:libdfx_procinfo",
       "//third_party/libunwind:libunwind",
@@ -166,8 +145,8 @@ if (defined(ohos_lite)) {
     cflags_cc = [ "-DDEBUG_CRASH_LOCAL_HANDLER" ]
 
     deps = [
-      "$faultloggerd_path/common/dfxlog:static_common_log",
-      "$faultloggerd_path/common/dfxutil:dfx_util",
+      "$faultloggerd_common_path/dfxlog:dfx_hilog",
+      "$faultloggerd_common_path/dfxutil:dfx_util",
       "$faultloggerd_path/interfaces/innerkits/faultloggerd_client:libfaultloggerd",
       "$faultloggerd_path/interfaces/innerkits/procinfo:libdfx_procinfo",
       "$faultloggerd_path/interfaces/innerkits/signal_handler:dfx_local_handler",

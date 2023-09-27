@@ -30,7 +30,7 @@ if (defined(ohos_lite)) {
     visibility = [ "*:*" ]
 
     include_dirs = [
-      "$faultloggerd_path/common",
+      "$faultloggerd_interfaces_path/common",
       "$faultloggerd_path/interfaces/innerkits/signal_handler/include/",
       "$faultloggerd_path/interfaces/innerkits/signal_handler/",
       "$faultloggerd_path/test/utils",

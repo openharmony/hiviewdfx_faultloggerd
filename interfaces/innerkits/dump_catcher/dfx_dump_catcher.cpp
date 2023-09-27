@@ -41,6 +41,15 @@
 namespace OHOS {
 namespace HiviewDFX {
 namespace {
+#ifdef LOG_DOMAIN
+#undef LOG_DOMAIN
+#define LOG_DOMAIN 0xD002D11
+#endif
+
+#ifdef LOG_TAG
+#undef LOG_TAG
+#define LOG_TAG "DfxDumpCatcher"
+#endif
 static const int DUMP_CATCHE_WORK_TIME_S = 60;
 static const int BACK_TRACE_DUMP_MIX_TIMEOUT_MS = 2000;
 static const int BACK_TRACE_DUMP_CPP_TIMEOUT_MS = 10000;
@@ -91,7 +100,7 @@ bool DfxDumpCatcher::DoDumpLocalPid(int pid, std::string& msg)
         DFXLOG_ERROR("%s :: DoDumpLocalPid :: return false as param error.", DFXDUMPCATCHER_TAG.c_str());
         return ret;
     }
-    size_t skipFramNum = DUMP_CATCHER_NUMBER_THREE;
+    size_t skipFramNum = 3; // 3: skip 3 frame
 
     std::function<bool(int)> func = [&](int tid) {
         if (tid <= 0) {
@@ -119,7 +128,7 @@ bool DfxDumpCatcher::DoDumpRemoteLocked(int pid, int tid, std::string& msg)
 bool DfxDumpCatcher::DoDumpLocalLocked(int pid, int tid, std::string& msg)
 {
     bool ret = false;
-    size_t skipFramNum = DUMP_CATCHER_NUMBER_TWO;
+    size_t skipFramNum = 2; // 2: skip 2 frame
     if (tid == syscall(SYS_gettid)) {
         ret = DoDumpCurrTid(skipFramNum, msg);
     } else if (tid == 0) {
@@ -323,7 +332,7 @@ int DfxDumpCatcher::DoDumpRemotePoll(int bufFd, int resFd, int timeout, std::str
 
 bool DfxDumpCatcher::DoReadBuf(int fd, std::string& msg)
 {
-    char buffer[LOG_BUF_LEN] = {0};
+    char buffer[LINE_BUF_SIZE] = {0};
     ssize_t nread = read(fd, buffer, sizeof(buffer) - 1);
     if (nread <= 0) {
         DFXLOG_WARN("%s :: %s :: read error", DFXDUMPCATCHER_TAG.c_str(), __func__);

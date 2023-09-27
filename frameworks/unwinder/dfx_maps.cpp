@@ -84,7 +84,7 @@ std::shared_ptr<DfxElfMaps> DfxElfMaps::Create(pid_t pid)
 
 std::shared_ptr<DfxElfMaps> DfxElfMaps::CreateFromLocal()
 {
-    return Create(std::string("/proc/self/maps"));
+    return Create(std::string(PROC_SELF_MAPS_PATH));
 }
 
 std::shared_ptr<DfxElfMaps> DfxElfMaps::Create(const std::string path)
@@ -204,7 +204,7 @@ bool DfxElfMap::IsValidPath()
 
 std::string DfxElfMap::PrintMap()
 {
-    char buf[LOG_BUF_LEN] = {0};
+    char buf[LINE_BUF_SIZE] = {0};
     int ret = snprintf_s(buf, sizeof(buf), sizeof(buf) - 1, "%" PRIx64 "-%" PRIx64 " %s %08" PRIx64 " %s\n", \
         begin, end, perms.c_str(), offset, path.c_str());
     if (ret <= 0) {

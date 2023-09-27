@@ -26,7 +26,6 @@ if (defined(ohos_lite)) {
         "$c_utils_include_path",
         "$hilog_lite_include_path",
         "$faultloggerd_interfaces_path/common",
-        "$faultloggerd_path/common",
         "$faultloggerd_path/common/dfxlog",
         "$faultloggerd_path/common/dfxutil",
       ]
@@ -34,7 +33,7 @@ if (defined(ohos_lite)) {
       sources = [ "common_test.cpp" ]
 
       deps = [
-        "$faultloggerd_path/common/dfxlog:static_common_log",
+        "$faultloggerd_path/common/dfxlog:dfx_hilog",
         "$faultloggerd_path/common/dfxutil:dfx_util",
         "$faultloggerd_path/interfaces/innerkits/faultloggerd_client:libfaultloggerd",
         "$hilog_lite_deps_path",
@@ -54,7 +53,6 @@ if (defined(ohos_lite)) {
 
     include_dirs = [
       "$faultloggerd_interfaces_path/common",
-      "$faultloggerd_path/common",
       "$faultloggerd_path/common/cutil",
       "$faultloggerd_path/common/dfxlog",
       "$faultloggerd_path/common/dfxutil",
@@ -68,7 +66,7 @@ if (defined(ohos_lite)) {
       "common_cutil_test.cpp",
       "common_test.cpp",
     ]
-    defines = [ "DFX_LOG_USE_DMESG" ]
+    defines = [ "DFX_LOG_DMESG" ]
     configs = [ ":module_private_config" ]
 
     deps = [

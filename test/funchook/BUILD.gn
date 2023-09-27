@@ -22,7 +22,7 @@ if (!defined(ohos_lite)) {
 
     include_dirs = [
       ".",
-      "$faultloggerd_path/common",
+      "$faultloggerd_interfaces_path/common",
     ]
   }
 
@@ -34,8 +34,8 @@ if (!defined(ohos_lite)) {
     install_enable = true
 
     cflags = [
-      "-DDFX_LOG_USE_HILOG_BASE",
-      "-DDFX_LOG_USE_DMESG",
+      "-DDFX_LOG_HILOG_BASE",
+      "-DDFX_LOG_DMESG",
     ]
 
     sources = [
@@ -44,7 +44,7 @@ if (!defined(ohos_lite)) {
     ]
 
     deps = [
-      "$faultloggerd_path/common/dfxlog:static_hilog_base_dmesg",
+      "$faultloggerd_path/common/dfxlog:dfx_hilog_base_dmesg",
       "//third_party/libunwind:libunwind",
     ]
 
@@ -64,7 +64,7 @@ if (!defined(ohos_lite)) {
     ]
     install_enable = true
 
-    cflags = [ "-DDFX_LOG_USE_DMESG" ]
+    cflags = [ "-DDFX_LOG_DMESG" ]
 
     sources = [
       "dfx_exit_hook.c",
@@ -72,7 +72,7 @@ if (!defined(ohos_lite)) {
     ]
 
     deps = [
-      "$faultloggerd_path/common/dfxlog:static_common_log",
+      "$faultloggerd_path/common/dfxlog:dfx_hilog_dmesg",
       "//third_party/libunwind:libunwind",
     ]
 

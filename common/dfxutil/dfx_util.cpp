@@ -176,17 +176,5 @@ off_t GetFileSize(const int& fd)
     }
     return fileSize;
 }
-
-int GetStackRange(uintptr_t& stackBottom, uintptr_t& stackTop)
-{
-    pthread_attr_t tattr;
-    void *base = nullptr;
-    size_t size = 0;
-    pthread_getattr_np(pthread_self(), &tattr);
-    int ret = pthread_attr_getstack(&tattr, &base, &size);
-    stackBottom = reinterpret_cast<uintptr_t>(base);
-    stackTop = reinterpret_cast<uintptr_t>(base) + size;
-    return ret;
-}
 }   // namespace HiviewDFX
 }   // namespace OHOS
