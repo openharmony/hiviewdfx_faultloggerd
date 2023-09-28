@@ -43,11 +43,8 @@ bool DwarfSection::SearchEntry(struct UnwindEntryInfo& pi, struct UnwindTableInf
     for (uintptr_t len = fdeCount; len > 1;) {
         uintptr_t cur = low + (len / 2);
         entry = (uintptr_t) tableData + cur * sizeof(DwarfTableEntry);
-        LOGU("cur:%d, entry:%llx", (int)cur, (uint64_t)entry);
         DfxMemoryCpy::GetInstance().ReadS32(entry, &dwarfTableEntry.startPcOffset, true);
         uintptr_t startPc = static_cast<uintptr_t>(dwarfTableEntry.startPcOffset + segbase);
-        LOGU("target Pc:%p, startPc:%p", (void *)pc, (void *)startPc);
-
         if (startPc == pc) {
             low = cur;
             break;
@@ -65,7 +62,7 @@ bool DwarfSection::SearchEntry(struct UnwindEntryInfo& pi, struct UnwindTableInf
     DfxMemoryCpy::GetInstance().ReadS32(entry, &dwarfTableEntry.fdeOffset, true);
     uintptr_t fdeAddr = static_cast<uintptr_t>(dwarfTableEntry.fdeOffset + segbase);
     pi.unwindInfo = (void *)(fdeAddr);
-    LOGU("fde offset entry: %llx", (uint64_t)pi.unwindInfo);
+    LOGU("fde index:%llu, entry: %llx", low, (uint64_t)pi.unwindInfo);
     pi.format = UNW_INFO_FORMAT_REMOTE_TABLE;
     pi.gp = uti.gp;
     return true;

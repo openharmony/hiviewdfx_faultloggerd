@@ -51,4 +51,10 @@
             <option name="push" value="testdata/testmaps_64 -> /data/test/resource/testdata/" src="res"/>
         </preparer>
     </target>
+    <target name="test_dwarf">
+        <preparer>
+            <option name="push" value="testdata/dwarf_test_aarch64_elf -> /data/test/" src="res"/>
+            <option name="push" value="testdata/dwarf_test_aarch64_elf_result -> /data/test/" src="res"/>
+        </preparer>
+    </target>
 </configuration>

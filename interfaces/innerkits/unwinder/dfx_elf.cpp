@@ -168,6 +168,11 @@ uint64_t DfxElf::GetLoadBase(uint64_t mapStart, uint64_t mapOffset)
     return loadBase_;
 }
 
+void DfxElf::SetLoadBase(uint64_t base)
+{
+    loadBase_ = base;
+}
+
 uint64_t DfxElf::GetStartPc()
 {
     if (startPc_ == static_cast<uint64_t>(-1)) {
@@ -420,8 +425,10 @@ bool DfxElf::GetEhHdrTableInfo(std::shared_ptr<DfxMap> map, struct UnwindTableIn
         LOGU("hdr: %llx, ehFrame: %llx", (uint64_t)hdr, (uint64_t)ptr);
         LOGU("gp: %llx, ehFramePtrEnc: %x, fdeCountEnc: %x", (uint64_t)ti.gp, hdr->ehFramePtrEnc, hdr->fdeCountEnc);
         mmap_->SetDataOffset(ti.gp);
-        MAYBE_UNUSED uintptr_t ehFrameStart = mmap_->ReadEncodedValue(ptr, hdr->ehFramePtrEnc);
-        uintptr_t fdeCount = mmap_->ReadEncodedValue(ptr, hdr->fdeCountEnc);
+        auto ptrOffset = ptr - reinterpret_cast<uintptr_t>(GetMmapPtr());
+        MAYBE_UNUSED uintptr_t ehFrameStart = mmap_->ReadEncodedValue(ptrOffset, hdr->ehFramePtrEnc);
+        uintptr_t fdeCount = mmap_->ReadEncodedValue(ptrOffset, hdr->fdeCountEnc);
+        ptr = reinterpret_cast<uintptr_t>(GetMmapPtr()) + ptrOffset;
         if (fdeCount == 0) {
             LOGE("Hdr no FDEs?");
             return false;

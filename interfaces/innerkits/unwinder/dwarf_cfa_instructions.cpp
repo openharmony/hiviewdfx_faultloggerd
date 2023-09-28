@@ -18,6 +18,7 @@
 #include <string.h>
 #include "dfx_log.h"
 #include "dwarf_define.h"
+#include "unwind_define.h"
 
 namespace OHOS {
 namespace HiviewDFX {
@@ -36,8 +37,6 @@ bool DwarfCfaInstructions::Iterate(uintptr_t pc, FrameDescEntry &fde, uintptr_t 
     RegLocState prevRs = rsState;
     auto& cie = fde.cie;
     while ((instPtr < instEnd) && (codeOffset <= pc - pcStart)) {
-        LOGU("instPtr:%p instEnd:%p codeOffset:%d relPc:%p\n",
-            (void*)instPtr , (void*)instEnd , (int)codeOffset, (void*)(pc - pcStart));
         uintptr_t value = 0;
         int64_t offset = 0;
         uint64_t reg = 0;
@@ -62,7 +61,8 @@ bool DwarfCfaInstructions::Iterate(uintptr_t pc, FrameDescEntry &fde, uintptr_t 
             case DW_CFA_advance_loc2:
                 value = DfxMemoryCpy::GetInstance().ReadEncodedValue(instPtr, (DwarfEncoding)DW_EH_PE_udata2);
                 codeOffset += (value * cie.codeAlignFactor);
-                LOGU("DW_CFA_advance_loc2: new offset=%" PRIu64 "", static_cast<uint64_t>(codeOffset));
+                LOGU("DW_CFA_advance_loc2: %" PRIu64 " to %llx",
+                    static_cast<uint64_t>(value * cie.codeAlignFactor), codeOffset);
                 break;
             case DW_CFA_advance_loc4:
                 value = DfxMemoryCpy::GetInstance().ReadEncodedValue(instPtr, (DwarfEncoding)DW_EH_PE_udata4);
@@ -72,20 +72,32 @@ bool DwarfCfaInstructions::Iterate(uintptr_t pc, FrameDescEntry &fde, uintptr_t 
             case DW_CFA_offset_extended:
                 reg = DfxMemoryCpy::GetInstance().ReadUleb128(instPtr);
                 offset = (int64_t)DfxMemoryCpy::GetInstance().ReadUleb128(instPtr) * cie.codeAlignFactor;
+                if (reg > REGS_MAX_SIZE) {
+                    LOGU("DW_CFA_offset_extended: reg=%d (Skipped)", (int)reg);
+                    break;
+                }
                 rsState.locs[reg].type = REG_LOC_MEM_OFFSET;
                 rsState.locs[reg].val = offset;
+                LOGU("DW_CFA_offset_extended: reg=%d", (int)reg);
                 break;
             case DW_CFA_restore_extended:
                 reg = DfxMemoryCpy::GetInstance().ReadUleb128(instPtr);
+                if (reg > REGS_MAX_SIZE) {
+                    LOGU("DW_CFA_restore_extended: reg=%d (Skipped)", (int)reg);
+                    break;
+                }
                 rsState.locs[reg] = prevRs.locs[reg];
+                LOGU("DW_CFA_restore_extended: reg=%d", (int)reg);
                 break;
             case DW_CFA_undefined:
                 reg = DfxMemoryCpy::GetInstance().ReadUleb128(instPtr);
                 rsState.locs[reg].type = REG_LOC_UNDEFINED;  // cfa offset
+                LOGU("DW_CFA_undefined: reg=%d", (int)reg);
                 break;
             case DW_CFA_same_value:
                 reg = DfxMemoryCpy::GetInstance().ReadUleb128(instPtr);
                 rsState.locs[reg].type = REG_LOC_UNUSED;
+                LOGU("DW_CFA_same_value: reg=%d", (int)reg);
                 break;
             case DW_CFA_register:
                 reg = DfxMemoryCpy::GetInstance().ReadUleb128(instPtr);
@@ -96,7 +108,7 @@ bool DwarfCfaInstructions::Iterate(uintptr_t pc, FrameDescEntry &fde, uintptr_t 
                 break;
             case DW_CFA_remember_state:
                 saveRsStates_.push(rsState);
-                LOGU("DW_CFA_remember_state:");
+                LOGU("DW_CFA_remember_state");
                 break;
             case DW_CFA_restore_state:
                 if (saveRsStates_.size() == 0) {
@@ -104,7 +116,7 @@ bool DwarfCfaInstructions::Iterate(uintptr_t pc, FrameDescEntry &fde, uintptr_t 
                 } else {
                     rsState = saveRsStates_.top();
                     saveRsStates_.pop();
-                    LOGU("DW_CFA_restore_state:");
+                    LOGU("DW_CFA_restore_state");
                 }
                 break;
             case DW_CFA_def_cfa:
@@ -201,7 +213,7 @@ bool DwarfCfaInstructions::Iterate(uintptr_t pc, FrameDescEntry &fde, uintptr_t 
                         LOGU("DW_CFA_restore: reg=%d", (int)reg);
                         break;
                     default:
-                        LOGU("Unknown DW_CFA opcode 0x%02x", opCode);
+                        LOGU("DW_CFA_unknown: opcode=0x%02x", opCode);
                         break;
                 }
         }
