@@ -27,14 +27,16 @@ namespace OHOS {
 namespace HiviewDFX {
 class CppCrashReporter {
 public:
-    CppCrashReporter(uint64_t time, siginfo_t siginfo, std::shared_ptr<DfxProcess> process) \
-        : time_(time), siginfo_(siginfo), process_(process)
+    CppCrashReporter(uint64_t time, std::shared_ptr<DfxProcess> process) \
+        : time_(time), process_(process)
     {
         pid_ = 0;
         uid_ = 0;
         cmdline_ = "";
         reason_ = "";
         stack_ = "";
+        registers_ = "";
+        otherThreadInfo_ = "";
     };
     virtual ~CppCrashReporter() {};
 
@@ -60,15 +62,17 @@ public:
 
 private:
     bool Format();
+    std::string GetRegsString(std::shared_ptr<DfxThread> thread) const;
 
 private:
     uint64_t time_;
-    siginfo_t siginfo_;
     int32_t pid_;
     uint32_t uid_;
     std::string cmdline_;
     std::string reason_;
     std::string stack_;
+    std::string registers_;
+    std::string otherThreadInfo_;
     std::map<std::string, std::string> kvPairs_;
     std::shared_ptr<DfxProcess> process_;
 };

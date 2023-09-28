@@ -65,7 +65,7 @@ int FpUnwinder::DlIteratePhdrCallback(struct dl_phdr_info *info, size_t size, vo
     return 0;
 }
 
-bool FpUnwinder::UnwindWithContext(unw_context_t& context, size_t skipFrameNum)
+bool FpUnwinder::UnwindWithContext(unw_context_t& context, size_t skipFrameNum, size_t maxFrameNums)
 {
     std::shared_ptr<DfxRegs> dfxregs = DfxRegs::Create();
 #if defined(__arm__)
@@ -78,20 +78,20 @@ bool FpUnwinder::UnwindWithContext(unw_context_t& context, size_t skipFrameNum)
 #pragma message("Unsupported architecture")
 #endif
 
-    return Unwind(dfxregs, skipFrameNum);
+    return Unwind(dfxregs, skipFrameNum, maxFrameNums);
 }
 
-bool FpUnwinder::Unwind(size_t skipFrameNum)
+bool FpUnwinder::Unwind(size_t skipFrameNum, size_t maxFrameNums)
 {
     std::shared_ptr<DfxRegs> dfxregs = DfxRegs::Create();
     uintptr_t regs[FP_MINI_REGS_SIZE] = {0};
     dfxregs->GetFramePointerMiniRegs(regs);
     dfxregs->fp_ = regs[0]; // 0 : index of x29 or r11 register
     dfxregs->pc_ = regs[3]; // 3 : index of x32 or r15 register
-    return Unwind(dfxregs, skipFrameNum);
+    return Unwind(dfxregs, skipFrameNum, maxFrameNums);
 }
 
-bool FpUnwinder::Unwind(const std::shared_ptr<DfxRegs> &dfxregs, size_t skipFrameNum)
+bool FpUnwinder::Unwind(const std::shared_ptr<DfxRegs> &dfxregs, size_t skipFrameNum, size_t maxFrameNums)
 {
     uintptr_t fp = dfxregs->fp_;
     uintptr_t pc = dfxregs->pc_;
@@ -110,7 +110,7 @@ bool FpUnwinder::Unwind(const std::shared_ptr<DfxRegs> &dfxregs, size_t skipFram
         frame.pc = index == 0 ? pc : pc - 4; // 4 : aarch64 instruction size
         frames_.emplace_back(frame);
         index++;
-    } while (Step(fp, pc) && (curIndex < DfxConfig::GetConfig().maxFrameNums));
+    } while (Step(fp, pc) && (curIndex < maxFrameNums));
     return (frames_.size() > 0);
 }
 

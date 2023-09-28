@@ -26,6 +26,8 @@
 
 namespace OHOS {
 namespace HiviewDFX {
+static const size_t DEFAULT_MAX_FRAME_NUM = 256;
+
 class DfxDumpCatcher {
 public:
     DfxDumpCatcher() {}
@@ -37,9 +39,10 @@ public:
      * @param pid  process id
      * @param tid  thread id
      * @param msg  message of native stack
+     * @param maxFrameNums the maximum number of frames to dump, if pid is not equal to caller pid then it is ignored
      * @return if succeed return true, otherwise return false
     */
-    bool DumpCatch(int pid, int tid, std::string& msg);
+    bool DumpCatch(int pid, int tid, std::string& msg, size_t maxFrameNums = DEFAULT_MAX_FRAME_NUM);
 
     /**
      * @brief Dump native and js mixed-stack by specify pid and tid
@@ -57,9 +60,12 @@ public:
      * @param pid  process id
      * @param tid  thread id
      * @param fd  file descriptor
+     * @param maxFrameNums the maximum number of frames to dump,
+     *  if pid is not equal to caller pid then it does not support setting
      * @return if succeed return true, otherwise return false
     */
-    bool DumpCatchFd(int pid, int tid, std::string& msg, int fd);
+    bool DumpCatchFd(int pid, int tid, std::string& msg, int fd, size_t maxFrameNums = DEFAULT_MAX_FRAME_NUM);
+
     /**
      * @brief Dump native stack by multi-pid
      *
@@ -71,10 +77,10 @@ public:
     bool DumpCatchMultiPid(const std::vector<int> pidV, std::string& msg);
 
 private:
-    bool DoDumpCurrTid(const size_t skipFrameNum, std::string& msg);
-    bool DoDumpLocalTid(const int tid, std::string& msg);
-    bool DoDumpLocalPid(int pid, std::string& msg);
-    bool DoDumpLocalLocked(int pid, int tid, std::string& msg);
+    bool DoDumpCurrTid(const size_t skipFrameNum, std::string& msg, size_t maxFrameNums);
+    bool DoDumpLocalTid(const int tid, std::string& msg, size_t maxFrameNums);
+    bool DoDumpLocalPid(int pid, std::string& msg, size_t maxFrameNums);
+    bool DoDumpLocalLocked(int pid, int tid, std::string& msg, size_t maxFrameNums);
     bool DoDumpRemoteLocked(int pid, int tid, std::string& msg);
     bool DoDumpCatchRemote(const int type, int pid, int tid, std::string& msg);
     int DoDumpRemotePid(const int type, int pid, std::string& msg);

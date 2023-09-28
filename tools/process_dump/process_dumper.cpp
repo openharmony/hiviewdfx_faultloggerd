@@ -124,11 +124,11 @@ int ProcessDumper::DumpProcess(std::shared_ptr<ProcessDumpRequest> request)
         }
 
         if (isCrash_ && !isLeakDump) {
-            reporter_ = std::make_shared<CppCrashReporter>(request->timeStamp, request->siginfo, process_);
+            reporter_ = std::make_shared<CppCrashReporter>(request->timeStamp, process_);
         }
 
-        Printer::PrintDumpHeader(request, process_);
-        if (DfxUnwindRemote::GetInstance().UnwindProcess(process_) == false) {
+        if (!DfxUnwindRemote::GetInstance().UnwindProcess(request, process_)) {
+            Printer::PrintDumpHeader(request, process_);
             DFXLOG_ERROR("Failed to unwind process.");
             dumpRes = DumpErrorCode::DUMP_ESTOPUNWIND;
         }

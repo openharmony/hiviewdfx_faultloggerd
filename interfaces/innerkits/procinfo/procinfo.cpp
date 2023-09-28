@@ -30,6 +30,7 @@
 #include "file_util.h"
 #include "string_printf.h"
 #include "string_util.h"
+#include <iostream>
 
 namespace OHOS {
 namespace HiviewDFX {
@@ -195,6 +196,7 @@ void ReadProcessName(const int pid, std::string& str)
     }
     std::string name;
     OHOS::HiviewDFX::LoadStringFromFile(path, name);
+    std::cout << name << std::endl;
     TrimAndDupStr(name, str);
 }
 

@@ -28,6 +28,7 @@
 extern "C" {
 #endif
 int MultiThreadConstructor(const int threadNum);
+int MultiThreadConstructorForThreadCrash(const int threadNum);
 #ifdef __cplusplus
 }
 #endif

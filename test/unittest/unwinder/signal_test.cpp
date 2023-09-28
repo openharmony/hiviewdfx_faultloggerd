@@ -65,7 +65,7 @@ HWTEST_F(DfxSignalTest, DfxSignalTest001, TestSize.Level2)
         std::string sigKeyword = "Signal:";
         si.si_signo = sigKey.first;
         sigKeyword += sigKey.second;
-        std::string sigStr = DfxSignal::PrintSignal(si);
+        std::string sigStr = DfxSignal::PrintSignal(si) + "\n";
         GTEST_LOG_(INFO) << sigStr;
         ASSERT_TRUE(sigStr.find(sigKeyword) != std::string::npos);
     }
@@ -222,7 +222,7 @@ HWTEST_F(DfxSignalTest, DfxSignalTest006, TestSize.Level2)
             sigKeyword += sigKey.second;
             si.si_code = code.first;
             sigKeyword = sigKeyword + "(" + code.second + ")";
-            std::string sigStr = DfxSignal::PrintSignal(si);
+            std::string sigStr = DfxSignal::PrintSignal(si) + "\n";
             GTEST_LOG_(INFO) << sigStr;
             ASSERT_TRUE(sigStr.find(sigKeyword) != std::string::npos);
         }

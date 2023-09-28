@@ -46,6 +46,9 @@ public:
     void SetThreadRegs(const std::shared_ptr<DfxRegs> &regs);
     void AddFrame(std::shared_ptr<DfxFrame> frame);
     const std::vector<std::shared_ptr<DfxFrame>>& GetFrames() const;
+    void SetFrames(std::vector<std::shared_ptr<DfxFrame>> frames) { frames_ = frames; }
+    void InitFaultStack(bool needParseStack = false);
+    std::shared_ptr<FaultStack> GetFaultStack() { return faultStack_; }
     std::string ToString() const;
 
     void Detach();
@@ -65,6 +68,7 @@ private:
     ThreadStatus threadStatus = ThreadStatus::THREAD_STATUS_INVALID;
     std::shared_ptr<DfxRegs> regs_;
     std::vector<std::shared_ptr<DfxFrame>> frames_;
+    std::shared_ptr<FaultStack> faultStack_;
 };
 } // namespace HiviewDFX
 } // namespace OHOS

@@ -16,6 +16,7 @@
 #include "multithread_constructor.h"
 
 #include <pthread.h>
+#include <signal.h>
 #include <stdio.h>
 #include <unistd.h>
 #include "stdio.h"
@@ -29,6 +30,14 @@ static void CreateThread(int *argv)
     int threadID = *argv;
     printf("create MultiThread %d\n", threadID);
     TestFunc1();
+    return;
+}
+
+static void CreateThreadForCrash(int *argv)
+{
+    int threadID = *argv;
+    printf("create ThreadForCrash %d\n", threadID);
+    raise(SIGSEGV);
     return;
 }
 
@@ -46,6 +55,26 @@ NOINLINE int MultiThreadConstructor(const int threadNum)
     while (1) {
         continue;
     }
+
+    return 0;
+}
+
+NOINLINE int MultiThreadConstructorForThreadCrash(const int threadNum)
+{
+    pthread_t t[threadNum];
+    int threadID[threadNum];
+    pthread_t threadCrash;
+    int threadIDCrash = threadNum;
+
+    for (int i = 0; i < threadNum; ++i) {
+        threadID[i] = i;
+        pthread_create(&t[i], NULL, (void *(*)(void *))CreateThread, &threadID[i]);
+        pthread_detach(t[i]);
+    }
+    pthread_create(&threadCrash, NULL, (void *(*)(void *))CreateThreadForCrash, &threadIDCrash);
+    pthread_detach(threadCrash);
+
+    sleep(5); // 5 : wait 5s, then exit process
 
     return 0;
 }

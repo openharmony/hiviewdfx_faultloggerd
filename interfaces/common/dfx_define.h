@@ -43,6 +43,8 @@ static const int DUMP_TYPE_NATIVE = -1;
 static const int DUMP_TYPE_MIX = -2;
 static const int DUMP_TYPE_KERNEL = -3;
 
+static const int DEFAULT_MAX_FRAME_NUM = 256;
+
 static const int SOCKET_BUFFER_SIZE = 256;
 static const char FAULTLOGGERD_SOCK_BASE_PATH[] = "/dev/unix/socket/";
 static const char SERVER_SOCKET_NAME[] = "faultloggerd.server";

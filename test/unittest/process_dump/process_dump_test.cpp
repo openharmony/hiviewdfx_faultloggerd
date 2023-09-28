@@ -175,7 +175,8 @@ HWTEST_F (ProcessDumpTest, DfxUnwindRemoteTest001, TestSize.Level2)
     std::shared_ptr<DfxProcess> process = DfxProcess::Create(pid, pid);
     process->keyThread_ = thread;
     thread->Attach();
-    bool ret = DfxUnwindRemote::GetInstance().UnwindProcess(process);
+    std::shared_ptr<ProcessDumpRequest> request = std::make_shared<ProcessDumpRequest>();
+    bool ret = DfxUnwindRemote::GetInstance().UnwindProcess(request, process);
     thread->Detach();
     EXPECT_EQ(true, ret) << "DfxUnwindRemoteTest001 Failed";
     GTEST_LOG_(INFO) << "DfxUnwindRemoteTest001: end.";

@@ -56,6 +56,7 @@ public:
     pid_t recycleTid_ = 0;
     std::shared_ptr<DfxThread> keyThread_ = nullptr;
     std::shared_ptr<DfxThread> vmThread_ = nullptr;
+    std::string reason = "";
 private:
     DfxProcess() = default;
     void InitProcessInfo(pid_t pid, pid_t nsPid);
