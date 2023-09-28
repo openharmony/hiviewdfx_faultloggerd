@@ -33,18 +33,13 @@ if (!defined(ohos_lite)) {
     ]
     install_enable = true
 
-    cflags = [
-      "-DDFX_LOG_HILOG_BASE",
-      "-DDFX_LOG_DMESG",
-    ]
-
     sources = [
       "dfx_hook_utils.c",
       "dfx_signal_hook.c",
     ]
 
     deps = [
-      "$faultloggerd_path/common/dfxlog:dfx_hilog_base_dmesg",
+      "$faultloggerd_path/common/dfxlog:dfx_hilog_base",
       "//third_party/libunwind:libunwind",
     ]
 
@@ -64,15 +59,13 @@ if (!defined(ohos_lite)) {
     ]
     install_enable = true
 
-    cflags = [ "-DDFX_LOG_DMESG" ]
-
     sources = [
       "dfx_exit_hook.c",
       "dfx_hook_utils.c",
     ]
 
     deps = [
-      "$faultloggerd_path/common/dfxlog:dfx_hilog_dmesg",
+      "$faultloggerd_path/common/dfxlog:dfx_hilog",
       "//third_party/libunwind:libunwind",
     ]
 
