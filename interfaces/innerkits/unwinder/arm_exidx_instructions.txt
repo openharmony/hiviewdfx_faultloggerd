@@ -1,0 +1,68 @@
+Instruction         Explanation
+00xxxxxx	        vsp = vsp + (xxxxxx << 2) + 4. Covers range 0x04-0x100 inclusive
+01xxxxxx	        vsp = vsp – (xxxxxx << 2) - 4. Covers range 0x04-0x100 inclusive
+10000000 00000000	Refuse to unwind (for example, out of a cleanup) (see remark a)
+1000iiii iiiiiiii   (i not a ll 0)	Pop up to 12 integer registers under masks {r15-r12}, {r11-r4} (see remark b)
+1001nnnn            ( nnnn != 13,15)	Set vsp = r[nnnn]
+10011101	        Reserved as prefix for ARM register to register moves
+10011111	        Reserved as prefix for Intel Wireless MMX register to register moves
+10100nnn	        Pop r4-r[4+nnn]
+10101nnn	        Pop r4-r[4+nnn], r14
+10110000	        Finish (see remark c)
+10110001 00000000	Spare (see remark f)
+10110001 0000iiii   ( i not all 0)	Pop integer registers under mask {r3, r2, r1, r0}
+10110001 xxxxyyyy	Spare (xxxx != 0000)
+10110010 uleb128	vsp = vsp + 0x204+ (uleb128 << 2) (for vsp increments of 0x104-0x200, use 00xxxxxx twice)
+10110011 sssscccc	Pop VFP double-precision registers D[ssss]-D[ssss+cccc] saved (as if) by FSTMFDX (see remark d)
+101101nn	        Spare (was Pop FPA)
+10111nnn	        Pop VFP double-precision registers D[8]-D[8+nnn] saved (as if) by FSTMFDX (seeremark d)
+11000nnn            (nnn != 6,7)	Intel Wireless MMX pop wR[10]-wR[10+nnn]
+11000110 sssscccc	Intel Wireless MMX pop wR[ssss]-wR[ssss+cccc] (see remark e)
+11000111 00000000	Spare
+11000111 0000iiii	Intel Wireless MMX pop wCGR registers under mask {wCGR3,2,1,0}
+11000111 xxxxyyyy	Spare (xxxx != 0000)
+11001000 sssscccc	Pop VFP double precision registers D[16+ssss]-D[16+ssss+cccc] saved (as if) by VPUSH (see remarks d,e)
+11001001 sssscccc	Pop VFP double precision registers D[ssss]-D[ssss+cccc] saved (as if) by VPUSH (see remark d)
+11001yyy	        Spare (yyy != 000, 001)
+11010nnn	        Pop VFP double-precision registers D[8]-D[8+nnn] saved (as if) by VPUSH (seeremark d)
+11xxxyyy	        Spare (xxx != 000, 001, 010)
+
+
+QUT encode for 32-bit:
+00nn nnnn           : vsp = vsp + (nnnnnn << 2)             			; # (nnnnnnn << 2) in [0, 0xfc]
+01nn nnnn           : vsp = vsp - (nnnnnn << 2)             			; # (nnnnnnn << 2) in [0, 0xfc]
+
+1000 0000           : vsp = r7		              						; # r7 is fp reg in thumb mode
+1000 0001           : vsp = r7 + 8, lr = [vsp - 4], sp = [vsp - 8]      ; # Have prologue
+1000 0010           : vsp = r11		             						; # r11 is fp reg in arm mode
+1000 0011           : vsp = r11 + 8, lr = [vsp - 4], sp = [vsp - 8]     ; # Have prologue
+1000 0100           : vsp = sp                                    		; # XXX
+
+1000 0101 0nnn nnnn : vsp = r7 + (nnnnnnn << 2)							;
+1000 0110 0nnn nnnn : vsp = r11 + (nnnnnnn << 2)						;
+
+1001 0101 0nnn nnnn : vsp = r10 + (nnnnnnn << 2)						; # (nnnnnnn << 2) in [0, 0x1fc],  0nnnnnnn is an one byte ULEB128
+1001 0110 + SLEB128 : vsp = SLEB128							    		; # vsp set by IMM
+
+1001 0111 			: dex_pc = r4										; # Dex pc is saved in r4
+
+1001 1001			: End of instructions                				;
+1001 1111			: Finish                							;
+
+1010 nnnn 			: r4 = [vsp - (nnnn << 2)]     						; # (nnnn << 2) in [0, 0x3c]
+1011 nnnn           : r7 = [vsp - (nnnn << 2)]     						; # Same as above
+1100 nnnn           : r10 = [vsp - (nnnn << 2)]    						; # Same as above. r10 will be used while unwinding through JNI function
+1101 nnnn           : r11 = [vsp - (nnnn << 2)]    						; # Same as above
+1110 nnnn           : lr = [vsp - (nnnn << 2)]     						; # Same as above
+
+1111 0xxx 			: Reserved											;
+1111 1000			: Reserved											;
+
+1111 1001 + SLEB128 : r7 = [vsp - SLEB128]  							; # [addr] means get value from pointed by addr
+1111 1010 + SLEB128 : r10 = [vsp - SLEB128] 							; # Same as above
+1111 1011 + SLEB128 : r11 = [vsp - SLEB128] 							; # Same as above
+1111 1100 + SLEB128 : sp = [vsp - SLEB128]  							; # Same as above
+1111 1101 + SLEB128 : lr = [vsp - SLEB128]  							; # Same as above
+1111 1110 + SLEB128 : pc = [vsp - SLEB128]  							; # Same as above
+
+1111 1111 + SLEB128 : vsp = vsp + SLEB128   							;

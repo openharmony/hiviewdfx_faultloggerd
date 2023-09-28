@@ -29,6 +29,7 @@ group("faultloggerd_targets") {
       "interfaces/innerkits/dump_catcher:libdfx_dumpcatcher",
       "interfaces/innerkits/faultloggerd_client:libfaultloggerd",
       "interfaces/innerkits/signal_handler:dfx_signalhandler",
+      "interfaces/innerkits/unwinder:libunwinder",
       "interfaces/rust:libpanic_handler",
       "interfaces/rust:libstacktrace_rust",
       "interfaces/rust:rustc_demangle",

@@ -22,6 +22,8 @@
 
 namespace OHOS {
 namespace HiviewDFX {
+class DfxMap;
+
 /**
  * @brief Native Frame struct
  * It serves as the public definition of the native stack frame.
@@ -45,6 +47,8 @@ struct DfxFrame {
     std::string funcName {""};
     /** elf file build id */
     std::string buildId {""};
+    /** map cache */
+    std::shared_ptr<DfxMap> map;
 };
 } // namespace HiviewDFX
 } // namespace OHOS

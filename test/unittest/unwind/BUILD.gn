@@ -1,0 +1,115 @@
+# Copyright (c) 2022-2023 Huawei Device Co., Ltd.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import("//base/hiviewdfx/faultloggerd/faultloggerd.gni")
+import("//build/config/features.gni")
+import("//build/test.gni")
+module_output_path = "faultloggerd/unwind"
+
+ohos_unittest("test_unwind") {
+  module_out_path = module_output_path
+  visibility = [ "*:*" ]
+  include_dirs = [
+    "$faultloggerd_interfaces_path/common",
+    "$faultloggerd_path/test/unittest/unwind/include",
+  ]
+  configs = [ "$faultloggerd_common_path/build:coverage_flags" ]
+  defines = [ "DFX_LOG_UNWIND" ]
+  sources = [
+    "elf_imitate.cpp",
+    "elf_test.cpp",
+    "maps_test.cpp",
+    "memory_test.cpp",
+    "regs_test.cpp",
+    "symbols_test.cpp",
+    "unwinder_test.cpp",
+  ]
+  deps = [
+    "$faultloggerd_common_path/dfxlog:dfx_hilog",
+    "$faultloggerd_common_path/dfxutil:dfx_util",
+    "$faultloggerd_interfaces_path/innerkits/unwinder:libunwinder",
+    "//third_party/bounds_checking_function:libsec_shared",
+    "//third_party/googletest:gtest_main",
+  ]
+  resource_config_file = "$faultloggerd_path/test/resource/ohos_test.xml"
+
+  external_deps = [
+    "c_utils:utils",
+    "hilog:libhilog",
+  ]
+}
+
+ohos_unittest("test_exidx") {
+  module_out_path = module_output_path
+  visibility = [ "*:*" ]
+  include_dirs = [
+    "$faultloggerd_interfaces_path/common",
+    "$faultloggerd_interfaces_path/innerkits/unwinder/include",
+  ]
+  configs = [ "$faultloggerd_common_path/build:coverage_flags" ]
+  defines = [
+    "DFX_LOG_UNWIND",
+    "UNITTEST",
+  ]
+  sources = [ "arm_exidx_test.cpp" ]
+  deps = [
+    "$faultloggerd_common_path/dfxlog:dfx_hilog",
+    "$faultloggerd_common_path/dfxutil:dfx_util",
+    "$faultloggerd_interfaces_path/innerkits/unwinder:libunwinder",
+    "//third_party/bounds_checking_function:libsec_shared",
+    "//third_party/googletest:gtest_main",
+  ]
+  external_deps = [
+    "c_utils:utils",
+    "hilog:libhilog",
+  ]
+}
+
+ohos_unittest("test_dwarf") {
+  module_out_path = module_output_path
+  visibility = [ "*:*" ]
+  defines = [
+    "DFX_LOG_UNWIND",
+    "UNITTEST",
+  ]
+  include_dirs = [
+    "$faultloggerd_interfaces_path/common",
+    "$faultloggerd_interfaces_path/innerkits/unwinder/include",
+  ]
+  configs = [ "$faultloggerd_path/common/build:coverage_flags" ]
+  sources = [ "dwarf_test.cpp" ]
+
+  deps = [
+    "$faultloggerd_common_path/dfxlog:dfx_hilog",
+    "$faultloggerd_common_path/dfxutil:dfx_util",
+    "$faultloggerd_interfaces_path/innerkits/unwinder:libunwinder",
+    "//third_party/bounds_checking_function:libsec_shared",
+    "//third_party/googletest:gtest_main",
+  ]
+
+  external_deps = [
+    "c_utils:utils",
+    "hilog:libhilog",
+  ]
+}
+
+group("unittest") {
+  testonly = true
+  deps = [ ":test_unwind" ]
+  if (target_cpu == "arm") {
+    deps += [ ":test_exidx" ]
+  }
+  if (target_cpu == "arm64") {
+    deps += [ ":test_dwarf" ]
+  }
+}
