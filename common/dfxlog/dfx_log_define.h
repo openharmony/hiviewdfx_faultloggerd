@@ -25,12 +25,18 @@ extern "C" {
  */
 #ifndef LOG_DOMAIN
 #define LOG_DOMAIN 0xD002D11
+#else
+#undef LOG_DOMAIN
+#define LOG_DOMAIN 0xD002D11
 #endif
 
 /**
  * Log tag
  */
 #ifndef LOG_TAG
+#define LOG_TAG "DfxFaultLogger"
+#else
+#undef LOG_TAG
 #define LOG_TAG "DfxFaultLogger"
 #endif
 

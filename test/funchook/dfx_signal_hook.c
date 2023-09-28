@@ -24,7 +24,6 @@
 #include <unistd.h>
 #include "dfx_define.h"
 #include "dfx_log.h"
-#include "hilog_base/log_base.h"
 #include "libunwind-arm.h"
 #include "libunwind_i.h"
 #include "pthread.h"
