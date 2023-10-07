@@ -55,6 +55,7 @@ bool DwarfOp<AddressType>::Decode(DfxRegs& regs, uintptr_t& addr)
     memory_->ReadU8(addr, &opcode, true);
     switch (opcode) {
         case DW_OP_addr: {
+            LOGU("DW_OP_addr");
             uintptr_t val;
             memory_->ReadUptr(addr, &val, true);
             OpPush(val);
@@ -64,57 +65,67 @@ bool DwarfOp<AddressType>::Decode(DfxRegs& regs, uintptr_t& addr)
             OpDeref();
             break;
         case DW_OP_const1u: {
+            LOGU("DW_OP_const1u");
             uint8_t val;
             memory_->ReadU8(addr, &val, true);
             OpPush(val);
         }
             break;
         case DW_OP_const1s: {
+            LOGU("DW_OP_const1s");
             int8_t val;
             memory_->ReadS8(addr, &val, true);
             OpPush(val);
         }
             break;
         case DW_OP_const2u: {
+            LOGU("DW_OP_const2u");
             uint16_t val;
             memory_->ReadU16(addr, &val, true);
             OpPush(val);
         }
             break;
         case DW_OP_const2s: {
+            LOGU("DW_OP_const2s");
             int16_t val;
             memory_->ReadS16(addr, &val, true);
             OpPush(val);
         }
             break;
         case DW_OP_const4u: {
+            LOGU("DW_OP_const4u");
             uint32_t val;
             memory_->ReadU32(addr, &val, true);
             OpPush(val);
         }
             break;
         case DW_OP_const4s: {
+            LOGU("DW_OP_const4s");
             int32_t val;
             memory_->ReadS32(addr, &val, true);
             OpPush(val);
         }
             break;
         case DW_OP_const8u: {
+            LOGU("DW_OP_const8u");
             uint64_t val;
             memory_->ReadU64(addr, &val, true);
             OpPush(val);
         }
             break;
         case DW_OP_const8s: {
+            LOGU("DW_OP_const8s");
             int64_t val;
             memory_->ReadS64(addr, &val, true);
             OpPush(val);
         }
             break;
         case DW_OP_constu:
+            LOGU("DW_OP_constu");
             OpPush(memory_->ReadUleb128(addr));
             break;
         case DW_OP_consts:
+            LOGU("DW_OP_consts");
             OpPush(memory_->ReadSleb128(addr));
             break;
         case DW_OP_dup:

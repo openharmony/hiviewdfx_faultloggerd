@@ -56,6 +56,7 @@ public:
     uintptr_t GetGlobalPointer();
     int64_t GetLoadBias();
     uint64_t GetLoadBase(uint64_t mapStart, uint64_t mapOffset);
+    void SetLoadBase(uint64_t base);
     uint64_t GetStartPc();
     uint64_t GetEndPc();
     uint64_t GetRelPc(uint64_t pc, uint64_t mapStart, uint64_t mapOffset);

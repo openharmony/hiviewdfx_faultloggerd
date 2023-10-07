@@ -272,50 +272,50 @@ uintptr_t DfxMemory::ReadEncodedValue(uintptr_t& addr, uint8_t encoding)
             val = static_cast<uintptr_t>(ReadSleb128(addr));
             break;
         case DW_EH_PE_udata1: {
-            int8_t tmp = 0;
-            ReadS8(addr, &tmp, true);
-            val = static_cast<uintptr_t>(tmp);
-        }
-            break;
-        case DW_EH_PE_sdata1: {
             uint8_t tmp = 0;
             ReadU8(addr, &tmp, true);
             val = static_cast<uintptr_t>(tmp);
         }
             break;
-        case DW_EH_PE_udata2: {
-            int16_t tmp = 0;
-            ReadS16(addr, &tmp, true);
+        case DW_EH_PE_sdata1: {
+            int8_t tmp = 0;
+            ReadS8(addr, &tmp, true);
             val = static_cast<uintptr_t>(tmp);
         }
             break;
-        case DW_EH_PE_sdata2: {
+        case DW_EH_PE_udata2: {
             uint16_t tmp = 0;
             ReadU16(addr, &tmp, true);
             val = static_cast<uintptr_t>(tmp);
         }
             break;
-        case DW_EH_PE_udata4: {
-            int32_t tmp = 0;
-            ReadS32(addr, &tmp, true);
+        case DW_EH_PE_sdata2: {
+            int16_t tmp = 0;
+            ReadS16(addr, &tmp, true);
             val = static_cast<uintptr_t>(tmp);
         }
             break;
-        case DW_EH_PE_sdata4: {
+        case DW_EH_PE_udata4: {
             uint32_t tmp = 0;
             ReadU32(addr, &tmp, true);
             val = static_cast<uintptr_t>(tmp);
         }
             break;
+        case DW_EH_PE_sdata4: {
+            int32_t tmp = 0;
+            ReadS32(addr, &tmp, true);
+            val = static_cast<uintptr_t>(tmp);
+        }
+            break;
         case DW_EH_PE_udata8: {
-            int64_t tmp = 0;
-            ReadS64(addr, &tmp, true);
+            uint64_t tmp = 0;
+            ReadU64(addr, &tmp, true);
             val = static_cast<uintptr_t>(tmp);
         }
             break;
         case DW_EH_PE_sdata8: {
-            uint64_t tmp = 0;
-            ReadU64(addr, &tmp, true);
+            int64_t tmp = 0;
+            ReadS64(addr, &tmp, true);
             val = static_cast<uintptr_t>(tmp);
         }
             break;
