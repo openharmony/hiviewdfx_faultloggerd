@@ -799,15 +799,6 @@ bool ElfImitate::GetSectionInfo(ShdrInfo& shdr, const std::string secName)
     return false;
 }
 
-bool ElfImitate::GetSymSection(ElfShdr& shdr, const std::string secName)
-{
-    if (symShdrs_.find(secName) != symShdrs_.end()) {
-        shdr = symShdrs_[secName];
-        return true;
-    }
-    return false;
-}
-
 const std::vector<ElfSymbol>& ElfImitate::GetElfSymbols()
 {
     if (elfSymbols_.empty()) {

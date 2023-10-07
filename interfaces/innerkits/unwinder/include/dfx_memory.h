@@ -93,19 +93,6 @@ private:
     uintptr_t dataOffset_ = 0;
     uintptr_t funcOffset_ = 0;
 };
-
-class DfxMemoryCpy : public DfxMemory {
-public:
-    static DfxMemoryCpy &GetInstance();
-    virtual ~DfxMemoryCpy() = default;
-
-    size_t Read(uintptr_t& addr, void* val, size_t size, bool incre = false) override;
-
-private:
-    DfxMemoryCpy() = default;
-    DfxMemoryCpy(const DfxMemoryCpy &) = delete;
-    DfxMemoryCpy &operator=(const DfxMemoryCpy &) = delete;
-};
 } // namespace HiviewDFX
 } // namespace OHOS
 #endif

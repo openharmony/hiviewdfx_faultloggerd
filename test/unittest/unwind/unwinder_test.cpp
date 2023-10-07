@@ -57,7 +57,6 @@ HWTEST_F(UnwinderTest, UnwinderLocalTest001, TestSize.Level2)
     pid_t child = fork();
     if (child == 0) {
         auto unwinder = std::make_shared<Unwinder>();
-        unwinder->SetLocalMainThread(true);
         ElapsedTime counter;
         MAYBE_UNUSED bool unwRet = unwinder->UnwindLocal();
         time_t elapsed1 = counter.Elapsed();
@@ -97,7 +96,6 @@ HWTEST_F(UnwinderTest, UnwinderLocalTest002, TestSize.Level2)
                 unwinder = it->second;
             } else {
                 unwinder = std::make_shared<Unwinder>();
-                unwinder->SetLocalMainThread(true);
             }
             ElapsedTime counter;
             MAYBE_UNUSED bool unwRet = unwinder->UnwindLocal();

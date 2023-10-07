@@ -20,19 +20,10 @@
 extern "C" {
 #endif
 
-/**
- * Log domain
- */
-#ifndef LOG_DOMAIN
+#undef LOG_DOMAIN
+#undef LOG_TAG
 #define LOG_DOMAIN 0xD002D11
-#endif
-
-/**
- * Log tag
- */
-#ifndef LOG_TAG
 #define LOG_TAG "DfxFaultLogger"
-#endif
 
 #define LOG_BUF_LEN 1024
 #define __FILENAME__ (__builtin_strrchr((__FILE__), '/') ? __builtin_strrchr((__FILE__), '/') + 1 : (__FILE__))

@@ -347,29 +347,5 @@ uintptr_t DfxMemory::ReadEncodedValue(uintptr_t& addr, uint8_t encoding)
     }
     return val;
 }
-
-size_t DfxMemoryCpy::Read(uintptr_t& addr, void* val, size_t size, bool incre)
-{
-    size_t ret = 0;
-    if (val == nullptr) {
-        return ret;
-    }
-    errno_t err = memcpy_s(val, size, (void*)addr, size);
-    if (err != EOK) {
-        LOGE("memcpy_s failed");
-        return ret;
-    }
-    ret = size;
-    if (incre) {
-        addr += size;
-    }
-    return ret;
-}
-
-DfxMemoryCpy &DfxMemoryCpy::GetInstance()
-{
-    static DfxMemoryCpy instance;
-    return instance;
-}
 } // namespace HiviewDFX
 } // namespace OHOS

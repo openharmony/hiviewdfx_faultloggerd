@@ -32,7 +32,7 @@ bool DwarfSection::SearchEntry(struct UnwindEntryInfo& pi, struct UnwindTableInf
     MAYBE_UNUSED auto segbase = uti.segbase;
     auto fdeCount = uti.tableLen;
     uintptr_t tableData = uti.tableData;
-    LOGU("DwarfSearchUnwindTable segbase:%p, tableData:%p, tableLen: %d",
+    LOGU("SearchEntry segbase:%p, tableData:%p, tableLen: %d",
         (void*)segbase, (void*)tableData, fdeCount);
 
     // do binary search, encode is stored in symbol file, we have no means to find?
@@ -43,7 +43,7 @@ bool DwarfSection::SearchEntry(struct UnwindEntryInfo& pi, struct UnwindTableInf
     for (uintptr_t len = fdeCount; len > 1;) {
         uintptr_t cur = low + (len / 2);
         entry = (uintptr_t) tableData + cur * sizeof(DwarfTableEntry);
-        DfxMemoryCpy::GetInstance().ReadS32(entry, &dwarfTableEntry.startPcOffset, true);
+        memory_->ReadS32(entry, &dwarfTableEntry.startPcOffset, true);
         uintptr_t startPc = static_cast<uintptr_t>(dwarfTableEntry.startPcOffset + segbase);
         if (startPc == pc) {
             low = cur;
@@ -59,7 +59,7 @@ bool DwarfSection::SearchEntry(struct UnwindEntryInfo& pi, struct UnwindTableInf
     entry = (uintptr_t) tableData + low * sizeof(DwarfTableEntry);
     entry += 4;
 
-    DfxMemoryCpy::GetInstance().ReadS32(entry, &dwarfTableEntry.fdeOffset, true);
+    memory_->ReadS32(entry, &dwarfTableEntry.fdeOffset, true);
     uintptr_t fdeAddr = static_cast<uintptr_t>(dwarfTableEntry.fdeOffset + segbase);
     pi.unwindInfo = (void *)(fdeAddr);
     LOGU("fde index:%llu, entry: %llx", low, (uint64_t)pi.unwindInfo);
@@ -112,14 +112,14 @@ bool DwarfSection::ParseFde(uintptr_t fdeAddr, FrameDescEntry &fdeInfo)
 bool DwarfSection::FillInFdeHeader(uintptr_t& ptr, FrameDescEntry &fdeInfo)
 {
     uint32_t value32 = 0;
-    DfxMemoryCpy::GetInstance().ReadU32(ptr, &value32, true);
+    memory_->ReadU32(ptr, &value32, true);
     uintptr_t ciePtr = 0;
     if (value32 == static_cast<uint32_t>(-1)) {
         uint64_t value64;
-        DfxMemoryCpy::GetInstance().ReadU64(ptr, &value64, true);
+        memory_->ReadU64(ptr, &value64, true);
         fdeInfo.fdeEnd = ptr + value64;
 
-        DfxMemoryCpy::GetInstance().ReadU64(ptr, &value64, true);
+        memory_->ReadU64(ptr, &value64, true);
         ciePtr = static_cast<uintptr_t>(value64);
         if (ciePtr == cie64Value_) {
             LOGE("Failed to parse FDE, ciePtr?");
@@ -129,7 +129,7 @@ bool DwarfSection::FillInFdeHeader(uintptr_t& ptr, FrameDescEntry &fdeInfo)
         ptr += sizeof(uint64_t);
     } else {
         fdeInfo.fdeEnd = ptr + value32;
-        DfxMemoryCpy::GetInstance().ReadU32(ptr, &value32, false);
+        memory_->ReadU32(ptr, &value32, false);
         ciePtr = static_cast<uintptr_t>(value32);
         if (ciePtr == cie32Value_) {
             LOGE("Failed to parse FDE, ciePtr?");
@@ -154,18 +154,18 @@ bool DwarfSection::FillInFde(uintptr_t& ptr, FrameDescEntry &fdeInfo)
     }
     // Parse pc begin and range.
     LOGU("pointerEncoding: %02x", fdeInfo.cie.pointerEncoding);
-    uintptr_t pcStart = DfxMemoryCpy::GetInstance().ReadEncodedValue(ptr, fdeInfo.cie.pointerEncoding);
-    uintptr_t pcRange = DfxMemoryCpy::GetInstance().ReadEncodedValue(ptr, (fdeInfo.cie.pointerEncoding & 0x0F));
+    uintptr_t pcStart = memory_->ReadEncodedValue(ptr, fdeInfo.cie.pointerEncoding);
+    uintptr_t pcRange = memory_->ReadEncodedValue(ptr, (fdeInfo.cie.pointerEncoding & 0x0F));
 
     fdeInfo.lsda = 0;
     // Check for augmentation length.
     if (fdeInfo.cie.hasAugmentationData) {
-        uintptr_t augLen = DfxMemoryCpy::GetInstance().ReadUleb128(ptr);
+        uintptr_t augLen = memory_->ReadUleb128(ptr);
         uintptr_t instructionsPtr = ptr + augLen;
         if (fdeInfo.cie.lsdaEncoding != DW_EH_PE_omit) {
             uintptr_t lsdaPtr = ptr;
-            if (DfxMemoryCpy::GetInstance().ReadEncodedValue(ptr, (fdeInfo.cie.lsdaEncoding & 0x0F)) != 0) {
-                fdeInfo.lsda = DfxMemoryCpy::GetInstance().ReadEncodedValue(lsdaPtr, fdeInfo.cie.lsdaEncoding);
+            if (memory_->ReadEncodedValue(ptr, (fdeInfo.cie.lsdaEncoding & 0x0F)) != 0) {
+                fdeInfo.lsda = memory_->ReadEncodedValue(lsdaPtr, fdeInfo.cie.lsdaEncoding);
             }
         }
         ptr = instructionsPtr;
@@ -202,14 +202,14 @@ bool DwarfSection::FillInCieHeader(uintptr_t& ptr, CommonInfoEntry &cieInfo)
 {
     cieInfo.lsdaEncoding = DW_EH_PE_omit;
     uint32_t value32 = 0;
-    DfxMemoryCpy::GetInstance().ReadU32(ptr, &value32, true); //length
+    memory_->ReadU32(ptr, &value32, true); //length
     if (value32 == static_cast<uint32_t>(-1)) {
         uint64_t value64 = 0;
-        DfxMemoryCpy::GetInstance().ReadU64(ptr, &value64, true); //length64
+        memory_->ReadU64(ptr, &value64, true); //length64
         cieInfo.cieEnd = ptr + value64;
         cieInfo.pointerEncoding = DW_EH_PE_sdata8;
 
-        DfxMemoryCpy::GetInstance().ReadU64(ptr, &value64, true); //cieid
+        memory_->ReadU64(ptr, &value64, true); //cieid
         if (value64 != cie64Value_) {
             LOGE("Failed to FillInCieHeader, cieId?");
             lastErrorData_.code = UNW_ERROR_ILLEGAL_VALUE;
@@ -218,7 +218,7 @@ bool DwarfSection::FillInCieHeader(uintptr_t& ptr, CommonInfoEntry &cieInfo)
     } else {
         cieInfo.cieEnd = ptr + value32;
         cieInfo.pointerEncoding = DW_EH_PE_sdata4;
-        DfxMemoryCpy::GetInstance().ReadU32(ptr, &value32, true);
+        memory_->ReadU32(ptr, &value32, true);
         if (value32 != cie32Value_) {
             LOGE("Failed to FillInCieHeader, cieId?");
             lastErrorData_.code = UNW_ERROR_ILLEGAL_VALUE;
@@ -231,7 +231,7 @@ bool DwarfSection::FillInCieHeader(uintptr_t& ptr, CommonInfoEntry &cieInfo)
 bool DwarfSection::FillInCie(uintptr_t& ptr, CommonInfoEntry &cieInfo)
 {
     uint8_t version;
-    DfxMemoryCpy::GetInstance().ReadU8(ptr, &version, true);
+    memory_->ReadU8(ptr, &version, true);
     LOGU("Cie version: %d", version);
     if (version != DW_EH_VERSION && version != 3 && version != 4 && version != 5) {
         LOGE("Invalid cie version: %d", version);
@@ -244,7 +244,7 @@ bool DwarfSection::FillInCie(uintptr_t& ptr, CommonInfoEntry &cieInfo)
     std::vector<char> augStr;
     augStr.clear();
     while (true) {
-        DfxMemoryCpy::GetInstance().ReadU8(ptr, &ch, true);
+        memory_->ReadU8(ptr, &ch, true);
         if (ch == '\0') {
             break;
         }
@@ -255,26 +255,26 @@ bool DwarfSection::FillInCie(uintptr_t& ptr, CommonInfoEntry &cieInfo)
     if (version == 4 || version == 5) {
         // Skip the Address Size field since we only use it for validation.
         ptr += 1;
-        DfxMemoryCpy::GetInstance().ReadU8(ptr, &cieInfo.segmentSize, true);
+        memory_->ReadU8(ptr, &cieInfo.segmentSize, true);
     } else {
         cieInfo.segmentSize = 0;
     }
 
     // parse code aligment factor
-    cieInfo.codeAlignFactor = (uint32_t)DfxMemoryCpy::GetInstance().ReadUleb128(ptr);
+    cieInfo.codeAlignFactor = (uint32_t)memory_->ReadUleb128(ptr);
     LOGU("codeAlignFactor: %d", cieInfo.codeAlignFactor);
 
     // parse data alignment factor
-    cieInfo.dataAlignFactor = (int32_t)DfxMemoryCpy::GetInstance().ReadSleb128(ptr);
+    cieInfo.dataAlignFactor = (int32_t)memory_->ReadSleb128(ptr);
     LOGU("dataAlignFactor: %d", cieInfo.dataAlignFactor);
 
     // parse return address register
     if (version == DW_EH_VERSION) {
         uint8_t val;
-        DfxMemoryCpy::GetInstance().ReadU8(ptr, &val, true);
+        memory_->ReadU8(ptr, &val, true);
         cieInfo.returnAddressRegister = static_cast<uintptr_t>(val);
     } else {
-        cieInfo.returnAddressRegister = (uintptr_t)DfxMemoryCpy::GetInstance().ReadUleb128(ptr);
+        cieInfo.returnAddressRegister = (uintptr_t)memory_->ReadUleb128(ptr);
     }
     LOGU("returnAddressRegister: %d", (int)cieInfo.returnAddressRegister);
 
@@ -285,7 +285,7 @@ bool DwarfSection::FillInCie(uintptr_t& ptr, CommonInfoEntry &cieInfo)
     }
     cieInfo.hasAugmentationData = true;
     // parse augmentation data length
-    MAYBE_UNUSED uintptr_t augSize = DfxMemoryCpy::GetInstance().ReadUleb128(ptr);
+    MAYBE_UNUSED uintptr_t augSize = memory_->ReadUleb128(ptr);
     LOGU("augSize: %x", augSize);
     cieInfo.instructions = ptr + augSize;
 
@@ -293,16 +293,16 @@ bool DwarfSection::FillInCie(uintptr_t& ptr, CommonInfoEntry &cieInfo)
         switch (augStr[i]) {
             case 'P': {
                 uint8_t personalityEncoding;
-                DfxMemoryCpy::GetInstance().ReadU8(ptr, &personalityEncoding, true);
-                cieInfo.personality = DfxMemoryCpy::GetInstance().ReadEncodedValue(ptr, personalityEncoding);
+                memory_->ReadU8(ptr, &personalityEncoding, true);
+                cieInfo.personality = memory_->ReadEncodedValue(ptr, personalityEncoding);
             }
                 break;
             case 'L':
-                DfxMemoryCpy::GetInstance().ReadU8(ptr, &cieInfo.lsdaEncoding, true);
+                memory_->ReadU8(ptr, &cieInfo.lsdaEncoding, true);
                 LOGU("cieInfo.lsdaEncoding: %x", cieInfo.lsdaEncoding);
                 break;
             case 'R':
-                DfxMemoryCpy::GetInstance().ReadU8(ptr, &cieInfo.pointerEncoding, true);
+                memory_->ReadU8(ptr, &cieInfo.pointerEncoding, true);
                 LOGU("cieInfo.pointerEncoding: %x", cieInfo.pointerEncoding);
                 break;
             case 'S':

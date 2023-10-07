@@ -49,7 +49,6 @@ public:
     virtual std::string GetElfName() = 0;
     virtual uintptr_t GetGlobalPointer() = 0;
     virtual const std::vector<ElfSymbol>& GetElfSymbols(bool isFunc, bool isSort) = 0;
-    virtual bool GetSymSection(ElfShdr& shdr, const std::string secName);
     virtual bool GetSectionInfo(ShdrInfo& shdr, const std::string secName);
     const std::unordered_map<uint64_t, ElfLoadInfo>& GetPtLoads() {return ptLoads_;}
     bool Read(uintptr_t pos, void *buf, size_t size);
@@ -64,6 +63,8 @@ protected:
     bool ParseProgramHeaders(const EhdrType& ehdr);
     template <typename EhdrType, typename ShdrType>
     bool ParseSectionHeaders(const EhdrType& ehdr);
+    template <typename SymType>
+    bool IsFunc(const SymType sym);
     template <typename SymType>
     bool ParseElfSymbols(bool isFunc, bool isSort);
     template <typename DynType>
@@ -90,7 +91,7 @@ private:
     int64_t loadBias_ = 0;
     uint64_t startVaddr_ = static_cast<uint64_t>(-1);
     uint64_t endVaddr_ = 0;
-    std::unordered_map<std::string, ElfShdr> symShdrs_;
+    std::vector<ElfShdr> symShdrs_;
     std::map<const std::string, ShdrInfo> shdrInfos_;
     std::unordered_map<uint32_t, ElfSecInfo> elfSecInfos_;
     std::unordered_map<uint64_t, ElfLoadInfo> ptLoads_;
