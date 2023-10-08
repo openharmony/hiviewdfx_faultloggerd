@@ -69,8 +69,9 @@ struct UnwindAccessors {
 };
 
 struct UnwindContext {
-    uintptr_t stackBottom;
-    uintptr_t stackTop;
+    bool stackCheck = false;
+    uintptr_t stackBottom = 0;
+    uintptr_t stackTop = 0;
     int pid;
     std::shared_ptr<DfxRegs> regs = nullptr;
     std::shared_ptr<DfxMap> map = nullptr;

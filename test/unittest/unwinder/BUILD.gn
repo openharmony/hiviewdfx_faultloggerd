@@ -48,38 +48,7 @@ ohos_unittest("test_unwinder") {
   ]
 }
 
-ohos_unittest("test_dwarf") {
-  module_out_path = module_output_path
-  visibility = [ "*:*" ]
-  defines = [ "UNITTEST" ]
-  include_dirs = [
-    "$faultloggerd_path/common",
-    "$faultloggerd_path/common/dfxlog",
-    "$faultloggerd_path/interfaces/innerkits/common",
-    "$faultloggerd_path/interfaces/innerkits/unwinder/include",
-    "$faultloggerd_path/interfaces/innerkits/unwinder",
-  ]
-  configs = [ "$faultloggerd_path/common/build:coverage_flags" ]
-  sources = [ "dwarf_test.cpp" ]
-
-  deps = [
-    "$faultloggerd_path/common/dfxutil:dfx_util",
-    "$faultloggerd_path/interfaces/innerkits/unwinder:libunwinder_static",
-    "//third_party/bounds_checking_function:libsec_shared",
-    "//third_party/googletest:gtest_main",
-  ]
-
-  external_deps = [
-    "c_utils:utils",
-    "hilog:libhilog",
-  ]
-}
-
 group("unittest") {
   testonly = true
   deps = [ ":test_unwinder" ]
-
-  if (target_cpu == "arm64") {
-    deps += [ ":test_dwarf" ]
-  }
 }

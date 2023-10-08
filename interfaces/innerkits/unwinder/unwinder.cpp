@@ -63,9 +63,9 @@ void Unwinder::Clear()
     frames_.clear();
 }
 
-bool Unwinder::GetStackRange(uintptr_t& stackBottom, uintptr_t& stackTop, bool isMainThread)
+bool Unwinder::GetStackRange(uintptr_t& stackBottom, uintptr_t& stackTop)
 {
-    if (isMainThread) {
+    if (getpid() == gettid()) {
         if (maps_ == nullptr || !maps_->GetStackRange(stackBottom, stackTop)) {
             return false;
         }
@@ -80,7 +80,7 @@ bool Unwinder::GetStackRange(uintptr_t& stackBottom, uintptr_t& stackTop, bool i
 bool Unwinder::UnwindLocal(size_t maxFrameNum, size_t skipFrameNum)
 {
     uintptr_t stackBottom = 1, stackTop = static_cast<uintptr_t>(-1);
-    if (!GetStackRange(stackBottom, stackTop, isMainThread_)) {
+    if (!GetStackRange(stackBottom, stackTop)) {
         LOGE("Get stack range error");
         return false;
     }
@@ -97,6 +97,7 @@ bool Unwinder::UnwindLocal(size_t maxFrameNum, size_t skipFrameNum)
     UnwindContext context;
     context.pid = UWNIND_TYPE_LOCAL;
     context.regs = regs_;
+    context.stackCheck = false;
     context.stackBottom = stackBottom;
     context.stackTop = stackTop;
     bool ret = Unwind(&context, maxFrameNum, skipFrameNum);
@@ -190,6 +191,10 @@ bool Unwinder::Step(uintptr_t& pc, uintptr_t& sp, void *ctx)
     }
     LOGU("++++++pc: %llx, sp: %llx", (uint64_t)pc, (uint64_t)sp);
     lastErrorData_.addr = pc;
+    if (pid_ == UWNIND_TYPE_LOCAL) {
+        UnwindContext* uctx = reinterpret_cast<UnwindContext *>(ctx);
+        uctx->stackCheck = false;
+    }
     memory_->SetCtx(ctx);
 
     // Check if this is a signal frame.
@@ -260,6 +265,10 @@ bool Unwinder::Step(uintptr_t& pc, uintptr_t& sp, void *ctx)
 
     // 5. update regs and regs state
     if (ret) {
+        if (pid_ == UWNIND_TYPE_LOCAL) {
+            UnwindContext* uctx = reinterpret_cast<UnwindContext *>(ctx);
+            uctx->stackCheck = true;
+        }
         ret = Apply(regs_, rs);
     }
 
@@ -270,6 +279,9 @@ bool Unwinder::Step(uintptr_t& pc, uintptr_t& sp, void *ctx)
 
     pc = regs_->GetPc();
     sp = regs_->GetSp();
+    if (pc == 0) {
+        ret = false;
+    }
     LOGU("------pc: %llx, sp: %llx", (uint64_t)pc, (uint64_t)sp);
     return ret;
 }
@@ -344,7 +356,7 @@ void Unwinder::DoPcAdjust(uintptr_t& pc)
 #if defined(__arm__)
     if (pc & 1) {
         uintptr_t val;
-        if (pc < 5 || !(DfxMemoryCpy::GetInstance().ReadMem(pc - 5, &val)) ||
+        if (pc < 5 || !(memory_->ReadMem(pc - 5, &val)) ||
             (val & 0xe000f000) != 0xe000f000) {
             sz = 2;
         }

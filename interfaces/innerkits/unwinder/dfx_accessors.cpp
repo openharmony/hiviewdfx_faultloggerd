@@ -48,12 +48,12 @@ int DfxAccessorsLocal::AccessMem(uintptr_t addr, uintptr_t *val, void *arg)
     if (ctx == nullptr) {
         return UNW_ERROR_INVALID_CONTEXT;
     }
-    if (!IsValidFrame(addr, ctx->stackBottom, ctx->stackTop)) {
+    if ((ctx->stackCheck == true) && (!IsValidFrame(addr, ctx->stackBottom, ctx->stackTop))) {
         LOGE("Failed to access addr: %llx", (uint64_t)addr);
         return UNW_ERROR_INVALID_MEMORY;
     }
     *val = *(uintptr_t *) addr;
-    LOGD("val: %llx", *val);
+    LOGU("mem[%lx] -> %lx", (long) addr, (long) (*val));
     return UNW_ERROR_NONE;
 }
 

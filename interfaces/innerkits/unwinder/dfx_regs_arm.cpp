@@ -113,7 +113,7 @@ bool DfxRegsArm::StepIfSignalFrame(uintptr_t pc, std::shared_ptr<DfxMemory> memo
     pc = pc & ~0x1;
 
     uint32_t data;
-    if (!DfxMemoryCpy::GetInstance().Read(pc, &data, sizeof(data))) {
+    if (!memory->Read(pc, &data, sizeof(data))) {
         return false;
     }
     LOGU("data: %lx", data);

@@ -87,7 +87,7 @@ std::string DfxRegsX86_64::PrintRegs() const
 bool DfxRegsX86_64::StepIfSignalFrame(uintptr_t pc, std::shared_ptr<DfxMemory> memory)
 {
     uint64_t data;
-    if (!DfxMemoryCpy::GetInstance().Read(pc, &data, sizeof(data))) {
+    if (!memory_->Read(pc, &data, sizeof(data))) {
         return false;
     }
     LOGU("data: %llx", data);
@@ -101,7 +101,7 @@ bool DfxRegsX86_64::StepIfSignalFrame(uintptr_t pc, std::shared_ptr<DfxMemory> m
     }
 
     uint16_t data2;
-    if (!DfxMemoryCpy::GetInstance().Read(pc + sizeof(uint64_t), &data2, sizeof(data2))) {
+    if (!memory->Read(pc + sizeof(uint64_t), &data2, sizeof(data2))) {
         return false;
     }
     if (data2 != 0x0f05) {

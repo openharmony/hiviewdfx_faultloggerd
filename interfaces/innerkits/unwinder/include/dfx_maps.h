@@ -31,6 +31,7 @@ public:
     static std::shared_ptr<DfxMaps> Create(pid_t pid = 0);
     static bool Create(pid_t pid, std::vector<std::shared_ptr<DfxMap>>& maps, std::vector<int>& mapIndex);
     static std::shared_ptr<DfxMaps> Create(const std::string path, bool enableMapIndex = false);
+    static bool IsLegalMapItem(const std::string& name);
 
     void AddMap(std::shared_ptr<DfxMap> map, bool enableMapIndex = false);
     void Sort(bool less = true);

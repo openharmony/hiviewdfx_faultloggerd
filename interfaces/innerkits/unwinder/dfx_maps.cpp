@@ -28,6 +28,7 @@
 #include "dfx_log.h"
 #include "dfx_util.h"
 #include "string_printf.h"
+#include "string_util.h"
 
 namespace OHOS {
 namespace HiviewDFX {
@@ -99,7 +100,9 @@ std::shared_ptr<DfxMaps> DfxMaps::Create(const std::string path, bool enableMapI
                 dfxMaps->stackBottom_ = (uintptr_t)map->begin;
                 dfxMaps->stackTop_ = (uintptr_t)map->end;
             }
-            dfxMaps->AddMap(map, enableMapIndex);
+            if ((!enableMapIndex) || IsLegalMapItem(map->name)) {
+                dfxMaps->AddMap(map, enableMapIndex);
+            }
         }
     }
     ifs.close();
@@ -107,6 +110,22 @@ std::shared_ptr<DfxMaps> DfxMaps::Create(const std::string path, bool enableMapI
         dfxMaps->Sort();
     }
     return dfxMaps;
+}
+
+bool DfxMaps::IsLegalMapItem(const std::string& name)
+{
+    // some special
+    if (name == "[vdso]") {
+        return true;
+    }
+    if (name.empty() || name.find(':') != std::string::npos || name.front() == '[' ||
+        name.back() == ']' || std::strncmp(name.c_str(), "/dev/", sizeof("/dev/")) == 0 ||
+        std::strncmp(name.c_str(), "/memfd:", sizeof("/memfd:")) == 0 ||
+        std::strncmp(name.c_str(), "//anon", sizeof("//anon")) == 0 ||
+        EndsWith(name, ".ttf")) {
+        return false;
+    }
+    return true;
 }
 
 void DfxMaps::AddMap(std::shared_ptr<DfxMap> map, bool enableMapIndex)

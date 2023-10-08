@@ -113,15 +113,15 @@ bool ArmExidx::SearchEntry(struct UnwindEntryInfo& pi, struct UnwindTableInfo ut
 {
     uintptr_t first = uti.tableData;
     uintptr_t last = uti.tableData + uti.tableLen - ARM_EXIDX_TABLE_SIZE;
-    LOGU("SearchUnwindTable pc:%p, tableData: %llx", (void*)pc, (uint64_t)first);
+    LOGU("SearchEntry pc:%p, tableData: %llx", (void*)pc, (uint64_t)first);
     uintptr_t entry, val;
 
-    if (!DfxMemoryCpy::GetInstance().ReadPrel31(first, &val) || pc < val) {
+    if (!memory_->ReadPrel31(first, &val) || pc < val) {
         lastErrorData_.addr = first;
         lastErrorData_.code = UNW_ERROR_ILLEGAL_VALUE;
         return false;
     }
-    if (!DfxMemoryCpy::GetInstance().ReadPrel31(last, &val)) {
+    if (!memory_->ReadPrel31(last, &val)) {
         lastErrorData_.addr = last;
         lastErrorData_.code = UNW_ERROR_ILLEGAL_VALUE;
         return false;
@@ -129,7 +129,7 @@ bool ArmExidx::SearchEntry(struct UnwindEntryInfo& pi, struct UnwindTableInfo ut
 
     if (pc >= val) {
         entry = last;
-        if (!DfxMemoryCpy::GetInstance().ReadPrel31(entry, &(pi.startPc))) {
+        if (!memory_->ReadPrel31(entry, &(pi.startPc))) {
             lastErrorData_.addr = entry;
             lastErrorData_.code = UNW_ERROR_ILLEGAL_VALUE;
             return false;
@@ -138,7 +138,7 @@ bool ArmExidx::SearchEntry(struct UnwindEntryInfo& pi, struct UnwindTableInfo ut
     } else {
         while (first < last - 8) {
             entry = first + (((last - first) / ARM_EXIDX_TABLE_SIZE + 1) >> 1) * ARM_EXIDX_TABLE_SIZE;
-            if (!DfxMemoryCpy::GetInstance().ReadPrel31(entry, &val)) {
+            if (!memory_->ReadPrel31(entry, &val)) {
                 lastErrorData_.addr = entry;
                 lastErrorData_.code = UNW_ERROR_ILLEGAL_VALUE;
                 return false;
@@ -152,14 +152,14 @@ bool ArmExidx::SearchEntry(struct UnwindEntryInfo& pi, struct UnwindTableInfo ut
         entry = first;
 
         uintptr_t cur = entry;
-        if (!DfxMemoryCpy::GetInstance().ReadPrel31(cur, &(pi.startPc))) {
+        if (!memory_->ReadPrel31(cur, &(pi.startPc))) {
             lastErrorData_.addr = cur;
             lastErrorData_.code = UNW_ERROR_ILLEGAL_VALUE;
             return false;
         }
 
         cur = entry + 8;
-        if (!DfxMemoryCpy::GetInstance().ReadPrel31(cur, &(pi.endPc))) {
+        if (!memory_->ReadPrel31(cur, &(pi.endPc))) {
             lastErrorData_.addr = cur;
             lastErrorData_.code = UNW_ERROR_ILLEGAL_VALUE;
             return false;
@@ -188,7 +188,7 @@ bool ArmExidx::ExtractEntryData(uintptr_t entryOffset)
     }
 
     entryOffset += 4;
-    if (!DfxMemoryCpy::GetInstance().ReadU32(entryOffset, &data, false)) {
+    if (!memory_->ReadU32(entryOffset, &data, false)) {
         LOGE("entryOffset: %llx error.", (uint64_t)entryOffset);
         lastErrorData_.addr = entryOffset;
         lastErrorData_.code = UNW_ERROR_ILLEGAL_VALUE;
@@ -221,14 +221,14 @@ bool ArmExidx::ExtractEntryData(uintptr_t entryOffset)
     uintptr_t extabAddr = 0;
     // prel31 decode point to .ARM.extab
 #ifndef UNITTEST
-    if (!DfxMemoryCpy::GetInstance().ReadPrel31(entryOffset, &extabAddr)) {
+    if (!memory_->ReadPrel31(entryOffset, &extabAddr)) {
         lastErrorData_.code = UNW_ERROR_INVALID_MEMORY;
         return false;
     }
 #else
     extabAddr = entryOffset + 4;
 #endif
-    if (!DfxMemoryCpy::GetInstance().ReadU32(extabAddr, &data, false)) {
+    if (!memory_->ReadU32(extabAddr, &data, false)) {
         lastErrorData_.code = UNW_ERROR_INVALID_MEMORY;
         return false;
     }
@@ -238,7 +238,7 @@ bool ArmExidx::ExtractEntryData(uintptr_t entryOffset)
         LOGU("Arm generic personality, data: %x.", data);
 #ifndef UNITTEST
         uintptr_t perRoutine;
-        if (!DfxMemoryCpy::GetInstance().ReadPrel31(extabAddr, &perRoutine)) {
+        if (!memory_->ReadPrel31(extabAddr, &perRoutine)) {
             LOGE("Arm Personality routine error");
             return false;
         }
@@ -246,7 +246,7 @@ bool ArmExidx::ExtractEntryData(uintptr_t entryOffset)
 
         extabAddr += 4;
         // Skip four bytes, because dont have unwind data to read
-        if (!DfxMemoryCpy::GetInstance().ReadU32(extabAddr, &data, false)) {
+        if (!memory_->ReadU32(extabAddr, &data, false)) {
             lastErrorData_.code = UNW_ERROR_INVALID_MEMORY;
             lastErrorData_.addr = extabAddr;
             return false;
@@ -283,7 +283,7 @@ bool ArmExidx::ExtractEntryData(uintptr_t entryOffset)
     }
 
     for (size_t i = 0; i < tableCount; i++) {
-        if (!DfxMemoryCpy::GetInstance().ReadU32(extabAddr, &data, false)) {
+        if (!memory_->ReadU32(extabAddr, &data, false)) {
             return false;
         }
         extabAddr += 4;
