@@ -203,8 +203,10 @@ bool ElfParser::ParseSectionHeaders(const EhdrType& ehdr)
 
         elfSecInfos_[i] = ElfSecInfo{secName, shdrInfo};
 
-        if (shdr.sh_type == SHT_SYMTAB ||
-            shdr.sh_type == SHT_DYNSYM) {
+        if (shdr.sh_type == SHT_SYMTAB || shdr.sh_type == SHT_DYNSYM) {
+            if (shdr.sh_link >= ehdr.e_shnum) {
+                continue;
+            }
             ElfShdr elfShdr;
             elfShdr.name = static_cast<uint32_t>(shdr.sh_name);
             elfShdr.type = static_cast<uint32_t>(shdr.sh_type);
@@ -216,7 +218,7 @@ bool ElfParser::ParseSectionHeaders(const EhdrType& ehdr)
             elfShdr.info = static_cast<uint32_t>(shdr.sh_info);
             elfShdr.addrAlign = static_cast<uint64_t>(shdr.sh_addralign);
             elfShdr.entSize = static_cast<uint64_t>(shdr.sh_entsize);
-            symShdrs_.emplace(secName, elfShdr);
+            symShdrs_.push_back(elfShdr);
         }
     }
     return true;
@@ -268,6 +270,13 @@ bool ElfParser::ParseElfName()
 }
 
 template <typename SymType>
+bool ElfParser::IsFunc(const SymType sym)
+{
+  return ((sym.st_shndx != SHN_UNDEF) &&
+        (ELF32_ST_TYPE(sym.st_info) == STT_FUNC || ELF32_ST_TYPE(sym.st_info) == STT_GNU_IFUNC));
+}
+
+template <typename SymType>
 bool ElfParser::ParseElfSymbols(bool isFunc, bool isSort)
 {
     if (symShdrs_.empty()) {
@@ -276,15 +285,15 @@ bool ElfParser::ParseElfSymbols(bool isFunc, bool isSort)
 
     elfSymbols_.clear();
     for (const auto &iter : symShdrs_) {
-        const auto &shdr = iter.second;
+        const auto &shdr = iter;
         if (shdr.type != SHT_SYMTAB && shdr.type != SHT_DYNSYM) {
             LOGE("shdr.type: %d", shdr.type);
             continue;
         }
 
-        SymType sym;
         //LOGU("shdr.offset: %llx, size: %llx, entSize: %llx, link: %d",
         //    shdr.offset, shdr.size, shdr.entSize, shdr.link);
+        SymType sym;
         uint64_t offset = shdr.offset;
         const char* strtabPtr = GetStrTabPtr(shdr.link);
         for (; offset < shdr.offset + shdr.size; offset += shdr.entSize) {
@@ -292,12 +301,8 @@ bool ElfParser::ParseElfSymbols(bool isFunc, bool isSort)
                 continue;
             }
 
-            if (isFunc) {
-                if ((sym.st_value == 0) ||
-                    (sym.st_shndx == SHN_UNDEF) ||
-                    (ELF32_ST_TYPE(sym.st_info) != STT_FUNC && ELF32_ST_TYPE(sym.st_info) != STT_GNU_IFUNC)) {
-                    continue;
-                }
+            if (isFunc && !IsFunc(sym)) {
+                continue;
             }
 
             ElfSymbol elfSymbol;
@@ -340,15 +345,6 @@ bool ElfParser::GetSectionNameByIndex(std::string& nameStr, const uint32_t name)
     return false;
 }
 
-const char* ElfParser::GetStrTabPtr(const uint32_t link)
-{
-    if (elfSecInfos_.find(link) == elfSecInfos_.end()) {
-        return nullptr;
-    }
-    auto secInfo = elfSecInfos_[link];
-    return ((char *)mmap_->Get() + secInfo.shdrInfo.offset);
-}
-
 bool ElfParser::ParseStrTab(std::string& nameStr, const uint64_t offset, const uint64_t size)
 {
     if (size > MmapSize()) {
@@ -373,19 +369,19 @@ bool ElfParser::ParseStrTab(std::string& nameStr, const uint64_t offset, const u
     return true;
 }
 
+const char* ElfParser::GetStrTabPtr(const uint32_t link)
+{
+    if (elfSecInfos_.find(link) == elfSecInfos_.end()) {
+        return nullptr;
+    }
+    auto secInfo = elfSecInfos_[link];
+    return ((char *)mmap_->Get() + secInfo.shdrInfo.offset);
+}
+
 bool ElfParser::GetSectionInfo(ShdrInfo& shdr, const std::string secName)
 {
     if (shdrInfos_.find(secName) != shdrInfos_.end()) {
         shdr = shdrInfos_[secName];
-        return true;
-    }
-    return false;
-}
-
-bool ElfParser::GetSymSection(ElfShdr& shdr, const std::string secName)
-{
-    if (symShdrs_.find(secName) != symShdrs_.end()) {
-        shdr = symShdrs_[secName];
         return true;
     }
     return false;

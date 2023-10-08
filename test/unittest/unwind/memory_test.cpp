@@ -73,21 +73,23 @@ HWTEST_F(DfxMemoryTest, DfxMemoryTest002, TestSize.Level2)
 
     uintptr_t addr = (uintptr_t)(&values[0]);
     uintptr_t value;
-    bool ret = DfxMemoryCpy::GetInstance().ReadUptr(addr, &value, false);
+    auto acc = std::make_shared<DfxAccessorsLocal>();
+    auto memory = std::make_shared<DfxMemory>(acc);
+    bool ret = memory->ReadUptr(addr, &value, false);
     EXPECT_EQ(true, ret) << "DfxMemoryTest002: ret:" << ret;
 
 
     uint64_t tmp;
-    DfxMemoryCpy::GetInstance().Read(addr, &tmp, sizeof(uint8_t), false);
+    memory->Read(addr, &tmp, sizeof(uint8_t), false);
     ASSERT_EQ(tmp, 0x01);
 
-    DfxMemoryCpy::GetInstance().Read(addr, &tmp, sizeof(uint16_t), false);
+    memory->Read(addr, &tmp, sizeof(uint16_t), false);
     ASSERT_EQ(tmp, 0x0201);
 
-    DfxMemoryCpy::GetInstance().Read(addr, &tmp, sizeof(uint32_t), false);
+    memory->Read(addr, &tmp, sizeof(uint32_t), false);
     ASSERT_EQ(tmp, 0x04030201);
 
-    DfxMemoryCpy::GetInstance().Read(addr, &tmp, sizeof(uint64_t), false);
+    memory->Read(addr, &tmp, sizeof(uint64_t), false);
     ASSERT_EQ(tmp, 0x0807060504030201);
 
     GTEST_LOG_(INFO) << "DfxMemoryTest002: end.";

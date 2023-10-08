@@ -54,7 +54,6 @@ public:
     uint64_t GetStartVaddr() { return startVaddr_; }
     uint64_t GetEndVaddr() { return endVaddr_; }
     const std::vector<ElfSymbol>& GetElfSymbols();
-    bool GetSymSection(ElfShdr& shdr, const std::string secName);
     bool GetSectionInfo(ShdrInfo& shdr, const std::string secName);
     const std::unordered_map<uint64_t, ElfLoadInfo>& GetPtLoads() {return ptLoads_;}
     uint8_t GetClassType() { return classType_;}

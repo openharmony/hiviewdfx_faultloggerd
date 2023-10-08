@@ -80,7 +80,7 @@ bool DfxElf::ParseElfIdent()
     uintptr_t curOffset = 0;
     // ELF Magic Number，7f 45 4c 46
     uint8_t ident[SELFMAG + 1];
-    if (mmap_->Read(curOffset, ident, SELFMAG) != SELFMAG) {
+    if (!Read(curOffset, ident, SELFMAG)) {
         return false;
     }
 
@@ -89,7 +89,7 @@ bool DfxElf::ParseElfIdent()
     }
 
     curOffset += EI_CLASS;
-    if (mmap_->Read(curOffset, &classType_, sizeof(uint8_t)) != sizeof(uint8_t)) {
+    if (!Read(curOffset, &classType_, sizeof(uint8_t))) {
         return false;
     }
     return true;
@@ -229,8 +229,8 @@ std::string DfxElf::GetBuildId()
             return "";
         }
         ShdrInfo shdr;
-        if (GetSectionInfo(shdr, NOTE_GNU_BUILD_ID)){
-            std::string buildIdHex = GetBuildId((uint64_t)((char *)mmap_->Get() + shdr.offset), shdr.size);
+        if (GetSectionInfo(shdr, NOTE_GNU_BUILD_ID) || GetSectionInfo(shdr, NOTES)){
+            std::string buildIdHex = GetBuildId((uint64_t)((char *)GetMmapPtr() + shdr.offset), shdr.size);
             if (!buildIdHex.empty()) {
                 buildId_ = ToReadableBuildId(buildIdHex);
                 LOGU("Elf buildId: %s", buildId_.c_str());
@@ -415,7 +415,7 @@ bool DfxElf::GetEhHdrTableInfo(std::shared_ptr<DfxMap> map, struct UnwindTableIn
         LOGU("EhHdr startPc: %llx, endPc: %llx", (uint64_t)ti.startPc, (uint64_t)ti.endPc);
         ti.gp = GetGlobalPointer();
         LOGU("Elf mmap ptr: %p", (void*)GetMmapPtr());
-        struct DwarfEhFrameHdr* hdr = (struct DwarfEhFrameHdr *) (shdr.offset + (char *) GetMmapPtr());
+        struct DwarfEhFrameHdr* hdr = (struct DwarfEhFrameHdr *) (shdr.offset + (char *)GetMmapPtr());
         if (hdr->version != DW_EH_VERSION) {
             LOGE("Hdr version(%d) error", hdr->version);
             return false;
@@ -653,9 +653,11 @@ int DfxElf::DlPhdrCb(struct dl_phdr_info *info, size_t size, void *data)
 
         LOGU("gp: %llx, ehFramePtrEnc: %x, fdeCountEnc: %x",
             (uint64_t)eti->diEhHdr.gp, hdr->ehFramePtrEnc, hdr->fdeCountEnc);
-        DfxMemoryCpy::GetInstance().SetDataOffset(eti->diEhHdr.gp);
-        MAYBE_UNUSED uintptr_t ehFrameStart = DfxMemoryCpy::GetInstance().ReadEncodedValue(ptr, hdr->ehFramePtrEnc);
-        uintptr_t fdeCount = DfxMemoryCpy::GetInstance().ReadEncodedValue(ptr, hdr->fdeCountEnc);
+        auto acc = std::make_shared<DfxAccessorsLocal>();
+        auto memory = std::make_shared<DfxMemory>(acc);
+        memory->SetDataOffset(eti->diEhHdr.gp);
+        MAYBE_UNUSED uintptr_t ehFrameStart = memory->ReadEncodedValue(ptr, hdr->ehFramePtrEnc);
+        uintptr_t fdeCount = memory->ReadEncodedValue(ptr, hdr->fdeCountEnc);
         LOGU("ehFrameStart: %llx, fdeCount: %d", (uint64_t)ehFrameStart, (int)fdeCount);
 
         eti->diEhHdr.startPc = startPc;
@@ -674,7 +676,10 @@ int DfxElf::DlPhdrCb(struct dl_phdr_info *info, size_t size, void *data)
 
 bool DfxElf::Read(uintptr_t pos, void *buf, size_t size)
 {
-    return elfParse_->Read(pos, buf, size);
+    if (mmap_->Read(pos, buf, size) == size) {
+        return true;
+    }
+    return false;
 }
 
 const uint8_t* DfxElf::GetMmapPtr()

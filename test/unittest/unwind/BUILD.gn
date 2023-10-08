@@ -61,16 +61,11 @@ ohos_unittest("test_exidx") {
     "DFX_LOG_UNWIND",
     "UNITTEST",
   ]
-  sources = [
-    "$faultloggerd_interfaces_path/innerkits/unwinder/arm_exidx.cpp",
-    "$faultloggerd_interfaces_path/innerkits/unwinder/dfx_accessors.cpp",
-    "$faultloggerd_interfaces_path/innerkits/unwinder/dfx_memory.cpp",
-    "$faultloggerd_interfaces_path/innerkits/unwinder/dfx_regs.cpp",
-    "arm_exidx_test.cpp",
-  ]
+  sources = [ "arm_exidx_test.cpp" ]
   deps = [
     "$faultloggerd_common_path/dfxlog:dfx_hilog",
     "$faultloggerd_common_path/dfxutil:dfx_util",
+    "$faultloggerd_interfaces_path/innerkits/unwinder:libunwinder",
     "//third_party/bounds_checking_function:libsec_shared",
     "//third_party/googletest:gtest_main",
   ]
@@ -80,10 +75,41 @@ ohos_unittest("test_exidx") {
   ]
 }
 
+ohos_unittest("test_dwarf") {
+  module_out_path = module_output_path
+  visibility = [ "*:*" ]
+  defines = [
+    "DFX_LOG_UNWIND",
+    "UNITTEST",
+  ]
+  include_dirs = [
+    "$faultloggerd_interfaces_path/common",
+    "$faultloggerd_interfaces_path/innerkits/unwinder/include",
+  ]
+  configs = [ "$faultloggerd_path/common/build:coverage_flags" ]
+  sources = [ "dwarf_test.cpp" ]
+
+  deps = [
+    "$faultloggerd_common_path/dfxlog:dfx_hilog",
+    "$faultloggerd_common_path/dfxutil:dfx_util",
+    "$faultloggerd_interfaces_path/innerkits/unwinder:libunwinder",
+    "//third_party/bounds_checking_function:libsec_shared",
+    "//third_party/googletest:gtest_main",
+  ]
+
+  external_deps = [
+    "c_utils:utils",
+    "hilog:libhilog",
+  ]
+}
+
 group("unittest") {
   testonly = true
-  deps = [
-    ":test_exidx",
-    ":test_unwind",
-  ]
+  deps = [ ":test_unwind" ]
+  if (target_cpu == "arm") {
+    deps += [ ":test_exidx" ]
+  }
+  if (target_cpu == "arm64") {
+    deps += [ ":test_dwarf" ]
+  }
 }
