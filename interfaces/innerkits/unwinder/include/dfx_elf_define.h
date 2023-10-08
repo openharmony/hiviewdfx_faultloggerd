@@ -17,8 +17,10 @@
 
 #include <cinttypes>
 #include <string>
+#if !is_mingw
 #include <elf.h>
 #include <link.h>
+#endif
 
 namespace OHOS {
 namespace HiviewDFX {

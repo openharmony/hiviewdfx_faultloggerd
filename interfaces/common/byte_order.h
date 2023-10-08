@@ -12,9 +12,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 #ifndef BYTE_ORDER_H
 #define BYTE_ORDER_H
 
+#if is_mingw
+#define UNWIND_LITTLE_ENDIAN 1234
+#define UNWIND_BIG_ENDIAN 4321
+#define UNWIND_BYTE_ORDER -1 // Unknown
+#else
 #include <endian.h>
 
 #if defined(__LITTLE_ENDIAN)
@@ -45,5 +51,6 @@
 #define UNWIND_BYTE_ORDER BYTE_ORDER
 #else
 #error Target has unknown byte ordering.
+#endif
 #endif
 #endif

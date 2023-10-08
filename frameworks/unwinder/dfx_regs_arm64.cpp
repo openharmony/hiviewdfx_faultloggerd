@@ -93,7 +93,7 @@ std::string DfxRegsArm64::PrintRegs() const
         regs[REG_AARCH64_X28], regs[REG_AARCH64_X29]);
 
     BufferPrintf(buf + strlen(buf), sizeof(buf) - strlen(buf), "lr:%016lx sp:%016lx pc:%016lx\n", \
-        regs[REG_AARCH64_X30], regs[REG_AARCH64_SP], regs[REG_AARCH64_PC]);
+        regs[REG_LR], regs[REG_SP], regs[REG_PC]);
 
     std::string regString = StringPrintf("Registers:\n%s", buf);
     return regString;
