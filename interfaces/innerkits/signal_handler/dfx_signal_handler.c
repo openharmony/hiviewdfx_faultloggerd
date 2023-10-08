@@ -413,33 +413,36 @@ static void SetSelfThreadParam(const char* name, int priority)
     pthread_setschedparam(pthread_self(), SCHED_FIFO, &schedParam);
 }
 
-static bool WaitProcessdumpExit(int childPid)
+static bool WaitProcessExit(int childPid, const char* name)
 {
     int ret = -1;
     int status = 0;
     int startTime = (int)time(NULL);
-    DFXLOG_INFO("(%d) wait processdump(%d) exit.", syscall(SYS_gettid), childPid);
+    bool isSuccess = false;
+    DFXLOG_INFO("(%d) wait %s(%d) exit.", syscall(SYS_gettid), name, childPid);
     do {
         errno = 0;
         ret = waitpid(childPid, &status, WNOHANG);
         if (ret < 0) {
             DFXLOG_ERROR("Failed to wait child process terminated, errno(%d)", errno);
-            return false;
+            return isSuccess;
         }
 
         if (ret == childPid) {
+            isSuccess = true;
             break;
         }
 
         if ((int)time(NULL) - startTime > PROCESSDUMP_TIMEOUT) {
-            DFXLOG_INFO("(%d) wait for processdump(%d) timeout", syscall(SYS_gettid), childPid);
+            DFXLOG_INFO("(%d) wait for (%d) timeout", syscall(SYS_gettid), childPid);
+            isSuccess = false;
             break;
         }
         usleep(SIGNALHANDLER_TIMEOUT); // sleep 10ms
     } while (1);
-    DFXLOG_INFO("(%d) wait for processdump(%d) return with ret(%d) status(%d)",
+    DFXLOG_INFO("(%d) wait for (%d) return with ret(%d) status(%d)",
         syscall(SYS_gettid), childPid, ret, status);
-    return true;
+    return isSuccess;
 }
 
 static int ForkAndExecProcessDump(void)
@@ -463,7 +466,7 @@ static int ForkAndExecProcessDump(void)
         DFXLOG_ERROR("Failed to fork child process, errno(%d).", errno);
         goto out;
     }
-    WaitProcessdumpExit(childPid);
+    WaitProcessExit(childPid, "processdump");
 out:
     RestoreDumpState(prevDumpableStatus, isTracerStatusModified);
     pthread_mutex_unlock(&g_signalHandlerMutex);
@@ -478,7 +481,7 @@ static int CloneAndDoProcessDump(void* arg)
     return ForkAndExecProcessDump();
 }
 
-static void ForkAndDoProcessDump(void)
+static void ForkAndDoProcessDump(int sig)
 {
     int prevDumpableStatus = prctl(PR_GET_DUMPABLE);
     bool isTracerStatusModified = SetDumpState();
@@ -499,22 +502,31 @@ static void ForkAndDoProcessDump(void)
 
     DFXLOG_INFO("Start wait for VmProcess(%d) exit.", childPid);
     errno = 0;
-    int status;
-    int ret = waitpid(childPid, &status, 0);
+    if (!WaitProcessExit(childPid, "VmProcess") &&
+        sig != SIGDUMP &&
+        sig != SIGLEAK_STACK) {
+        DFXLOG_INFO("Wait VmProcess(%d) exit timeout in handling critical signal.", childPid);
+        _exit(0);
+    }
     RestoreDumpState(prevDumpableStatus, isTracerStatusModified);
-    DFXLOG_INFO("(%d) wait for VmProcess(%d) return with ret(%d) status(%d)",
-        syscall(SYS_getpid), childPid, ret, status);
     pthread_mutex_unlock(&g_signalHandlerMutex);
 }
 
 static bool DFX_SigchainHandler(int sig, siginfo_t *si, void *context)
 {
-    DFXLOG_INFO("DFX_SigchainHandler :: sig(%d), pid(%d), tid(%d).", sig, syscall(SYS_getpid), syscall(SYS_gettid));
+    int pid = syscall(SYS_getpid);
+    int tid = syscall(SYS_gettid);
+    DFXLOG_INFO("DFX_SigchainHandler :: sig(%d), pid(%d), tid(%d).", sig, pid, tid);
     bool ret = false;
     if (sig == SIGDUMP) {
-        ret = true;
         if (si->si_code != DUMP_TYPE_NATIVE) {
-            return ret;
+            return true;
+        }
+
+        if ((si->si_value.sival_int == 0) && (pid != tid)) {
+            DFXLOG_INFO("DFX_SigchainHandler :: mismatch request(%d), pid(%d), tid(%d).",
+                si->si_value.sival_int, pid, tid);
+            return true;
         }
     }
 
@@ -536,7 +548,7 @@ static bool DFX_SigchainHandler(int sig, siginfo_t *si, void *context)
     // g_signalHandlerMutex will be unlocked in ForkAndExecProcessDump function
     if (sig != SIGDUMP) {
         ret = sig == SIGLEAK_STACK ? true : false;
-        ForkAndDoProcessDump();
+        ForkAndDoProcessDump(sig);
         ExitIfSandboxPid(sig);
     } else {
         ret = true;
@@ -578,7 +590,7 @@ void DFX_InstallSignalHandler(void)
         .sca_mask = {},
         .sca_flags = 0,
     };
-
+    sigfillset(&sigchain.sca_mask);
     for (size_t i = 0; i < sizeof(SIGCHAIN_SIGNAL_LIST) / sizeof(SIGCHAIN_SIGNAL_LIST[0]); i++) {
         int32_t sig = SIGCHAIN_SIGNAL_LIST[i];
         add_special_handler_at_last(sig, &sigchain);
