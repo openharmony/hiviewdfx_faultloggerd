@@ -29,8 +29,10 @@ public:
     DfxSymbols() { symbols_.clear(); }
     ~DfxSymbols() = default;
 
-    static bool ParseSymbols(std::vector<DfxSymbol>& symbols, std::shared_ptr<DfxElf> elf, const std::string& filePath);
-    static bool AddSymbolsByPlt(std::vector<DfxSymbol>& symbols, std::shared_ptr<DfxElf> elf, const std::string& filePath);
+    static bool ParseSymbols(std::vector<DfxSymbol>& symbols,
+        std::shared_ptr<DfxElf> elf, const std::string& filePath);
+    static bool AddSymbolsByPlt(std::vector<DfxSymbol>& symbols,
+        std::shared_ptr<DfxElf> elf, const std::string& filePath);
 
     bool GetFuncNameAndOffsetByPc(uint64_t relPc, std::shared_ptr<DfxElf> elf,
         std::string& funcName, uint64_t& funcOffset);
