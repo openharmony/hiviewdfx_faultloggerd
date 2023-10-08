@@ -20,6 +20,7 @@
 #include <string>
 #include <vector>
 #include "dfx_frame.h"
+#include "dfx_define.h"
 
 namespace OHOS {
 namespace HiviewDFX {
@@ -31,9 +32,11 @@ namespace HiviewDFX {
  * @param tid  the id of thread
  * @param skipFrameNum the number of frames to skip
  * @param fast flag for using fp backtrace(true) or dwarf backtrace(false)
+ * @param maxFrameNums the maximum number of frames to backtrace
  * @return if succeed return true, otherwise return false
 */
-bool GetBacktraceFramesByTid(std::vector<DfxFrame>& frames, int32_t tid, size_t skipFrameNum, bool fast);
+bool GetBacktraceFramesByTid(std::vector<DfxFrame>& frames, int32_t tid, size_t skipFrameNum, bool fast,
+                             size_t maxFrameNums = DEFAULT_MAX_FRAME_NUM);
 
 /**
  * @brief Get a thread of backtrace string  by specify tid
@@ -42,27 +45,31 @@ bool GetBacktraceFramesByTid(std::vector<DfxFrame>& frames, int32_t tid, size_t 
  * @param tid  the id of thread
  * @param skipFrameNum the number of frames to skip
  * @param fast flag for using fp backtrace(true) or dwarf backtrace(false)
+ * @param maxFrameNums the maximum number of frames to backtrace
  * @return if succeed return true, otherwise return false
 */
-bool GetBacktraceStringByTid(std::string& out, int32_t tid, size_t skipFrameNum, bool fast);
+bool GetBacktraceStringByTid(std::string& out, int32_t tid, size_t skipFrameNum, bool fast,
+                             size_t maxFrameNums = DEFAULT_MAX_FRAME_NUM);
 
 /**
  * @brief Print backtrace information to fd
  *
  * @param fd  file descriptor
  * @param fast flag for using fp backtrace(true) or dwarf backtrace(false)
+ * @param maxFrameNums the maximum number of frames to backtrace
  * @return if succeed return true, otherwise return false
 */
-bool PrintBacktrace(int32_t fd = -1, bool fast = false);
+bool PrintBacktrace(int32_t fd = -1, bool fast = false, size_t maxFrameNums = DEFAULT_MAX_FRAME_NUM);
 
 /**
  * @brief Get backtrace string of the current process
  *
  * @param out  backtrace string(output parameter)
  * @param fast flag for using fp backtrace(true) or dwarf backtrace(false)
+ * @param maxFrameNums the maximum number of frames to backtrace
  * @return if succeed return true, otherwise return false
 */
-bool GetBacktrace(std::string& out, bool fast = false);
+bool GetBacktrace(std::string& out, bool fast = false, size_t maxFrameNums = DEFAULT_MAX_FRAME_NUM);
 
 /**
  * @brief Get backtrace string of the current process
@@ -70,35 +77,40 @@ bool GetBacktrace(std::string& out, bool fast = false);
  * @param out  backtrace string(output parameter)
  * @param skipFrameNum the number of frames to skip
  * @param fast flag for using fp backtrace(true) or dwarf backtrace(false)
+ * @param maxFrameNums the maximum number of frames to backtrace
  * @return if succeed return true, otherwise return false
 */
-bool GetBacktrace(std::string& out, size_t skipFrameNum, bool fast = false);
+bool GetBacktrace(std::string& out, size_t skipFrameNum, bool fast = false,
+                  size_t maxFrameNums = DEFAULT_MAX_FRAME_NUM);
 
 /**
  * @brief Get formated stacktrace string of current process
  *
  * This API is used to get formated stacktrace string of current process
  *
+ * @param maxFrameNums the maximum number of frames to backtrace
  * @return formated stacktrace string
 */
-std::string GetProcessStacktrace();
+std::string GetProcessStacktrace(size_t maxFrameNums = DEFAULT_MAX_FRAME_NUM);
 
 extern "C" {
     /**
      * @brief Print backtrace information to fd
      *
      * @param fd  file descriptor
+     * @param maxFrameNums the maximum number of frames to backtrace
      * @return if succeed return true, otherwise return false
     */
-    bool PrintTrace(int32_t fd = -1);
+    bool PrintTrace(int32_t fd = -1, size_t maxFrameNums = DEFAULT_MAX_FRAME_NUM);
 
     /**
      * @brief Get backtrace of the current process
      *
      * @param skipFrameNum the number of frames to skip
+     * @param maxFrameNums the maximum number of frames to backtrace
      * @return backtrace of the current process
     */
-    const char* GetTrace(size_t skipFrameNum = 0);
+    const char* GetTrace(size_t skipFrameNum = 0, size_t maxFrameNums = DEFAULT_MAX_FRAME_NUM);
 }
 
 } // namespace HiviewDFX

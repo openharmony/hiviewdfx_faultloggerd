@@ -65,10 +65,10 @@ enum DfxDumpPollRes : int32_t {
 };
 }
 
-bool DfxDumpCatcher::DoDumpCurrTid(const size_t skipFrameNum, std::string& msg)
+bool DfxDumpCatcher::DoDumpCurrTid(const size_t skipFrameNum, std::string& msg, size_t maxFrameNums)
 {
     bool ret = false;
-    ret = GetBacktrace(msg, skipFrameNum + 1, false);
+    ret = GetBacktrace(msg, skipFrameNum + 1, false, maxFrameNums);
     if (!ret) {
         int currTid = syscall(SYS_gettid);
         msg.append("Failed to dump curr thread:" + std::to_string(currTid) + ".\n");
@@ -77,7 +77,7 @@ bool DfxDumpCatcher::DoDumpCurrTid(const size_t skipFrameNum, std::string& msg)
     return ret;
 }
 
-bool DfxDumpCatcher::DoDumpLocalTid(const int tid, std::string& msg)
+bool DfxDumpCatcher::DoDumpLocalTid(const int tid, std::string& msg, size_t maxFrameNums)
 {
     bool ret = false;
     if (tid <= 0) {
@@ -85,7 +85,7 @@ bool DfxDumpCatcher::DoDumpLocalTid(const int tid, std::string& msg)
         return ret;
     }
 
-    ret = GetBacktraceStringByTid(msg, tid, 0, false);
+    ret = GetBacktraceStringByTid(msg, tid, 0, false, maxFrameNums);
     if (!ret) {
         msg.append("Failed to dump thread:" + std::to_string(tid) + ".\n");
     }
@@ -93,7 +93,7 @@ bool DfxDumpCatcher::DoDumpLocalTid(const int tid, std::string& msg)
     return ret;
 }
 
-bool DfxDumpCatcher::DoDumpLocalPid(int pid, std::string& msg)
+bool DfxDumpCatcher::DoDumpLocalPid(int pid, std::string& msg, size_t maxFrameNums)
 {
     bool ret = false;
     if (pid <= 0) {
@@ -108,9 +108,9 @@ bool DfxDumpCatcher::DoDumpLocalPid(int pid, std::string& msg)
         }
 
         if (tid == gettid()) {
-            return DoDumpCurrTid(skipFramNum, msg);
+            return DoDumpCurrTid(skipFramNum, msg, maxFrameNums);
         }
-        return DoDumpLocalTid(tid, msg);
+        return DoDumpLocalTid(tid, msg, maxFrameNums);
     };
     std::vector<int> tids;
     ret = GetTidsByPidWithFunc(getpid(), tids, func);
@@ -125,19 +125,19 @@ bool DfxDumpCatcher::DoDumpRemoteLocked(int pid, int tid, std::string& msg)
     return DoDumpCatchRemote(type, pid, tid, msg);
 }
 
-bool DfxDumpCatcher::DoDumpLocalLocked(int pid, int tid, std::string& msg)
+bool DfxDumpCatcher::DoDumpLocalLocked(int pid, int tid, std::string& msg, size_t maxFrameNums)
 {
     bool ret = false;
     size_t skipFramNum = 2; // 2: skip 2 frame
     if (tid == syscall(SYS_gettid)) {
-        ret = DoDumpCurrTid(skipFramNum, msg);
+        ret = DoDumpCurrTid(skipFramNum, msg, maxFrameNums);
     } else if (tid == 0) {
-        ret = DoDumpLocalPid(pid, msg);
+        ret = DoDumpLocalPid(pid, msg, maxFrameNums);
     } else {
         if (!IsThreadInPid(pid, tid)) {
             msg.append("tid(" + std::to_string(tid) + ") is not in pid(" + std::to_string(pid) + ").\n");
         } else {
-            ret = DoDumpLocalTid(tid, msg);
+            ret = DoDumpLocalTid(tid, msg, maxFrameNums);
         }
     }
 
@@ -151,7 +151,7 @@ bool DfxDumpCatcher::DumpCatchMix(int pid, int tid, std::string& msg)
     return DoDumpCatchRemote(type, pid, tid, msg);
 }
 
-bool DfxDumpCatcher::DumpCatch(int pid, int tid, std::string& msg)
+bool DfxDumpCatcher::DumpCatch(int pid, int tid, std::string& msg, size_t maxFrameNums)
 {
     bool ret = false;
     if (pid <= 0 || tid < 0) {
@@ -165,18 +165,22 @@ bool DfxDumpCatcher::DumpCatch(int pid, int tid, std::string& msg)
         DFXDUMPCATCHER_TAG.c_str(), currentPid, pid, tid);
 
     if (pid == currentPid) {
-        ret = DoDumpLocalLocked(pid, tid, msg);
+        ret = DoDumpLocalLocked(pid, tid, msg, maxFrameNums);
     } else {
+        if (maxFrameNums != DEFAULT_MAX_FRAME_NUM) {
+            DFXLOG_INFO("%s :: dump_catch :: maxFrameNums does not support setting when pid is not equal to caller pid",
+                DFXDUMPCATCHER_TAG.c_str());
+        }
         ret = DoDumpRemoteLocked(pid, tid, msg);
     }
     DFXLOG_DEBUG("%s :: dump_catch :: ret: %d, msg: %s", DFXDUMPCATCHER_TAG.c_str(), ret, msg.c_str());
     return ret;
 }
 
-bool DfxDumpCatcher::DumpCatchFd(int pid, int tid, std::string& msg, int fd)
+bool DfxDumpCatcher::DumpCatchFd(int pid, int tid, std::string& msg, int fd, size_t maxFrameNums)
 {
     bool ret = false;
-    ret = DumpCatch(pid, tid, msg);
+    ret = DumpCatch(pid, tid, msg, maxFrameNums);
     if (fd > 0) {
         ret = write(fd, msg.c_str(), msg.length());
     }

@@ -60,7 +60,7 @@ DfxUnwindRemote::DfxUnwindRemote() : as_(nullptr)
     symbols_ = std::move(symbols);
 }
 
-bool DfxUnwindRemote::UnwindProcess(std::shared_ptr<DfxProcess> process)
+bool DfxUnwindRemote::UnwindProcess(std::shared_ptr<ProcessDumpRequest> request, std::shared_ptr<DfxProcess> process)
 {
     bool ret = false;
     if (process == nullptr) {
@@ -88,13 +88,16 @@ bool DfxUnwindRemote::UnwindProcess(std::shared_ptr<DfxProcess> process)
             break;
         }
 
-        Printer::PrintThreadHeaderByConfig(process->keyThread_);
         ret = UnwindThread(process, unwThread);
         if (!ret) {
             UnwindThreadFallback(process, unwThread);
         }
-
+        UnwindThreadByParseStackIfNeed(process, unwThread);
+        Printer::PrintDumpHeader(request, process);
+        Printer::PrintThreadHeaderByConfig(unwThread);
+        Printer::PrintThreadBacktraceByConfig(unwThread);
         if (ProcessDumper::GetInstance().IsCrash()) {
+            Printer::PrintThreadRegsByConfig(unwThread);
             if (!DfxConfig::GetConfig().dumpOtherThreads) {
                 break;
             }
@@ -108,17 +111,14 @@ bool DfxUnwindRemote::UnwindProcess(std::shared_ptr<DfxProcess> process)
 
         size_t index = 0;
         for (auto thread : threads) {
-            if ((index == 1) && ProcessDumper::GetInstance().IsCrash()) {
+            if ((index == 0) && ProcessDumper::GetInstance().IsCrash()) {
                 Printer::PrintOtherThreadHeaderByConfig();
-            }
-
-            if (index != 0) {
-                DfxRingBufferWrapper::GetInstance().AppendMsg("\n");
             }
 
             if (thread->Attach()) {
                 Printer::PrintThreadHeaderByConfig(thread);
                 UnwindThread(process, thread);
+                Printer::PrintThreadBacktraceByConfig(thread);
                 thread->Detach();
             }
             index++;
@@ -127,7 +127,6 @@ bool DfxUnwindRemote::UnwindProcess(std::shared_ptr<DfxProcess> process)
     } while (false);
 
     if (ProcessDumper::GetInstance().IsCrash()) {
-        Printer::PrintThreadRegsByConfig(unwThread);
         Printer::PrintThreadFaultStackByConfig(process, unwThread);
         Printer::PrintProcessMapsByConfig(process);
     }
@@ -135,6 +134,30 @@ bool DfxUnwindRemote::UnwindProcess(std::shared_ptr<DfxProcess> process)
     unw_destroy_addr_space(as_);
     as_ = nullptr;
     return ret;
+}
+
+void DfxUnwindRemote::UnwindThreadByParseStackIfNeed(std::shared_ptr<DfxProcess> &process, std::shared_ptr<DfxThread> &thread)
+{
+    if (process == nullptr || thread == nullptr) {
+        return;
+    }
+    auto frames = thread->GetFrames();
+    constexpr int MIN_FRAMES_NUM = 3;
+    if (frames.size() < MIN_FRAMES_NUM ||
+        frames[MIN_FRAMES_NUM - 1]->mapName.find("Not mapped") != std::string::npos) {
+        bool needParseStack = true;
+        thread->InitFaultStack(needParseStack);
+        std::vector<std::shared_ptr<DfxFrame>> newFrames;
+        process->InitProcessMaps();
+        auto faultStack = thread->GetFaultStack();
+        if (faultStack == nullptr || !faultStack->ParseUnwindStack(process->GetMaps(), newFrames)) {
+            return;
+        }
+        thread->SetFrames(newFrames);
+        std::string tip = " Failed to unwind stack, try to get call stack by reparse thread stack";
+        std::string msg = process->GetFatalMessage() + tip;
+        process->SetFatalMessage(msg);
+    }
 }
 
 uint64_t DfxUnwindRemote::DoAdjustPc(unw_cursor_t & cursor, uint64_t pc)
@@ -379,7 +402,6 @@ bool DfxUnwindRemote::UnwindThread(std::shared_ptr<DfxProcess> process, std::sha
         unwRet = unw_step(&cursor);
     } while ((unwRet > 0) && (index < DfxConfig::GetConfig().maxFrameNums));
 
-    Printer::PrintThreadBacktraceByConfig(thread);
     _UPT_destroy(context);
     return true;
 }
@@ -417,7 +439,6 @@ void DfxUnwindRemote::UnwindThreadFallback(std::shared_ptr<DfxProcess> process, 
 
     createFrame(0, regs->pc_);
     createFrame(1, regs->lr_);
-    Printer::PrintThreadBacktraceByConfig(thread);
 }
 } // namespace HiviewDFX
 } // namespace OHOS

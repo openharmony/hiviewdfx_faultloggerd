@@ -21,6 +21,8 @@
 #include "dfx_config.h"
 #include "dfx_logger.h"
 #include "dfx_ring_buffer_wrapper.h"
+#include "dfx_elf.h"
+#include "dfx_memory_file.h"
 
 namespace OHOS {
 namespace HiviewDFX {
@@ -72,7 +74,7 @@ uintptr_t FaultStack::AdjustAndCreateMemoryBlock(size_t index, uintptr_t prevSp,
     return startAddr + size * STEP;
 }
 
-bool FaultStack::CollectStackInfo(const std::vector<std::shared_ptr<DfxFrame>> &frames)
+bool FaultStack::CollectStackInfo(const std::vector<std::shared_ptr<DfxFrame>> &frames, bool needParseStack)
 {
     if (frames.empty()) {
         DFXLOG_WARN("null frames.");
@@ -85,7 +87,11 @@ bool FaultStack::CollectStackInfo(const std::vector<std::shared_ptr<DfxFrame>> &
     uintptr_t prevSp = 0;
     uintptr_t curSp = 0;
     uintptr_t prevEndAddr = 0;
-    uintptr_t highAddrLength = DfxConfig::GetConfig().highAddressStep;
+    uintptr_t highAddrLength = DfxConfig::GetConfig().highAddressStep;;
+    if (needParseStack) {
+        highAddrLength = 8192;
+    }
+
     auto firstFrame = frames.at(0);
     if (firstFrame != nullptr) {
         prevSp = static_cast<uintptr_t>(firstFrame->sp);
@@ -119,7 +125,7 @@ bool FaultStack::CollectStackInfo(const std::vector<std::shared_ptr<DfxFrame>> &
     return true;
 }
 
-uintptr_t FaultStack::PrintMemoryBlock(const MemoryBlockInfo& info) const
+uintptr_t FaultStack::PrintMemoryBlock(const MemoryBlockInfo& info, uintptr_t stackStartAddr) const
 {
     uintptr_t targetAddr = info.startAddr;
     for (uint64_t i = 0; i < static_cast<uint64_t>(info.content.size()); i++) {
@@ -132,6 +138,9 @@ uintptr_t FaultStack::PrintMemoryBlock(const MemoryBlockInfo& info) const
             DfxRingBufferWrapper::GetInstance().AppendBuf("    " PRINT_FORMAT " " PRINT_FORMAT "\n",
                 targetAddr,
                 info.content.at(i));
+        }
+        if(targetAddr - stackStartAddr > STEP * DfxConfig::GetConfig().highAddressStep) {
+            break;
         }
         targetAddr += STEP;
     }
@@ -148,11 +157,12 @@ void FaultStack::Print() const
 
     DfxRingBufferWrapper::GetInstance().AppendMsg("FaultStack:\n");
     uintptr_t end = 0;
+    uintptr_t stackStartAddr = blocks_.at(0).startAddr;
     for (const auto& block : blocks_) {
         if (end != 0 && end < block.startAddr) {
             DfxRingBufferWrapper::GetInstance().AppendMsg("    ...\n");
         }
-        end = PrintMemoryBlock(block);
+        end = PrintMemoryBlock(block, stackStartAddr);
     }
 }
 
@@ -244,5 +254,49 @@ void FaultStack::PrintRegisterMemory() const
         }
     }
 }
+
+bool FaultStack::ParseUnwindStack(std::shared_ptr<DfxElfMaps> maps, std::vector<std::shared_ptr<DfxFrame>> &frames)
+{
+    if (maps == nullptr) {
+        return false;
+    }
+    size_t index = 0;
+    for (const auto& block : blocks_) {
+        uintptr_t targetAddr = block.startAddr;
+        std::shared_ptr<DfxElfMap> map;
+        for (size_t i = 0; i < block.content.size(); i++) {
+            if (!maps->FindMapByAddr(block.content[i], map) ||
+                map->perms.find("x") == std::string::npos) {
+                targetAddr += STEP;
+                continue;
+            }
+            std::shared_ptr<DfxFrame> frame = std::make_shared<DfxFrame>();
+            if (frame == nullptr) {
+                return false;
+            }
+            frame->index = index;
+            frame->pc = block.content[i];
+            frame->mapName = map->path;
+            auto memoryFile = DfxMemoryFile::CreateFileMemory(frame->mapName, 0);
+            if (memoryFile == nullptr) {
+                return false;
+            }
+            std::shared_ptr<DfxElf> elf = std::make_shared<DfxElf>(memoryFile);
+            if (elf == nullptr) {
+                return false;
+            }
+            elf->Init();
+            frame->relPc = frame->pc - map->begin + map->offset + elf->GetLoadBias();
+            frame->buildId = DfxElf::GetReadableBuildID(elf->GetBuildID());
+            frames.emplace_back(frame);
+            constexpr int MAX_VALID_ADDRESS_NUM = 32;
+            if (++index >= MAX_VALID_ADDRESS_NUM) {
+                return true;
+            }
+        }
+    }
+    return true;
+}
+
 } // namespace HiviewDFX
 } // namespace OHOS

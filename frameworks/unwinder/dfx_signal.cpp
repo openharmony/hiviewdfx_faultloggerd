@@ -81,7 +81,7 @@ std::string DfxSignal::PrintSignal(const siginfo_t &info)
 #if defined(__LP64__)
         sigString = sigString + StringPrintf("@%018p ", (uint64_t)info.si_addr);
 #else
-        sigString = sigString + StringPrintf("@%010p ", (uint64_t)info.si_addr);
+        sigString = sigString + StringPrintf("@%llx ", (uint64_t)info.si_addr);
 #endif
     }
 
@@ -89,7 +89,6 @@ std::string DfxSignal::PrintSignal(const siginfo_t &info)
         sigString = sigString + StringPrintf("from:%d:%u", info.si_pid, info.si_uid);
     }
 
-    sigString = sigString + "\n";
     return sigString;
 }
 

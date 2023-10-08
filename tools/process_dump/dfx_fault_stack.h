@@ -37,15 +37,16 @@ public:
     explicit FaultStack(int32_t tid) : tid_(tid) {};
     ~FaultStack() = default;
 
-    bool CollectStackInfo(const std::vector<std::shared_ptr<DfxFrame>> &frames);
+    bool CollectStackInfo(const std::vector<std::shared_ptr<DfxFrame>> &frames, bool needParseStack = false);
     void CollectRegistersBlock(std::shared_ptr<DfxRegs> regs, std::shared_ptr<DfxElfMaps> maps);
     void Print() const;
     void PrintRegisterMemory() const;
+    bool ParseUnwindStack(std::shared_ptr<DfxElfMaps> maps, std::vector<std::shared_ptr<DfxFrame>> &frames);
 
 private:
     bool ReadTargetMemory(uintptr_t addr, uintptr_t &value) const;
     uintptr_t AdjustAndCreateMemoryBlock(size_t index, uintptr_t prevSp, uintptr_t prevEndAddr, uintptr_t size);
-    uintptr_t PrintMemoryBlock(const MemoryBlockInfo& info) const;
+    uintptr_t PrintMemoryBlock(const MemoryBlockInfo& info, uintptr_t stackStartAddr) const;
     MemoryBlockInfo CreateMemoryBlock(uintptr_t addr, uintptr_t offset, uintptr_t size, const std::string& name) const;
 
 private:

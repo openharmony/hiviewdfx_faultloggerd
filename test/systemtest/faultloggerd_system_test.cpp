@@ -160,6 +160,30 @@ static bool CheckCountNumAbort(const string& filePath, const pid_t& pid)
     return CheckKeyWords(filePath, log, expectNum, minRegIdx) == expectNum;
 }
 
+
+static bool CheckCountNumNullpointer(const string& filePath, const pid_t& pid)
+{
+    string log[] = {
+        "Pid:" + to_string(pid), "Uid", ":crasher", "SIGSEGV", "NULL", "pointer", "dereference", "Tid:", "#00",
+        "Registers:", REGISTERS, "FaultStack:", "Maps:", "/crasher"
+    };
+    int minRegIdx = 9; // 7 : index of first REGISTERS - 1
+    int expectNum = sizeof(log) / sizeof(log[0]);
+    return CheckKeyWords(filePath, log, expectNum, minRegIdx) == expectNum;
+}
+
+static bool CheckCountNumStackOverFlow(const string& filePath, const pid_t& pid)
+{
+    string log[] = {
+        "Pid:" + to_string(pid), "Uid", ":crasher", "SIGSEGV", "stack-buffer-overflow", "Tid:", "#00",
+        "Registers:", REGISTERS, "FaultStack:", "Maps:", "/crasher"
+    };
+    int minRegIdx = 7; // 7 : index of first REGISTERS - 1
+    int expectNum = sizeof(log) / sizeof(log[0]);
+    return CheckKeyWords(filePath, log, expectNum, minRegIdx) == expectNum;
+}
+
+
 static bool CheckCountNumPCZero(const string& filePath, const pid_t& pid)
 {
     string log[] = {
@@ -1149,6 +1173,66 @@ HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest105, TestSize.Level2)
     }
     EXPECT_TRUE(CheckCppCrashAllLabelKeywords(fileName, pid)) << "FaultLoggerdSystemTest105 Failed";
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest105: end.";
+}
+
+/**
+ * @tc.name: FaultLoggerdSystemTest106
+ * @tc.desc: test CPP crasher application: NullPointerDeref0
+ * @tc.type: FUNC
+ */
+HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest106, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest106: start.";
+    string cmd = "NullPointerDeref0";
+    string fileName;
+    pid_t pid = TriggerCrasherAndGetFileName(cmd, CRASHER_CPP, fileName);
+    GTEST_LOG_(INFO) << "test pid(" << pid << ")"  << " cppcrash file name : " << fileName;
+    if (pid < 0 || fileName.size() < CPPCRASH_FILENAME_MIN_LENGTH) {
+        GTEST_LOG_(ERROR) << "Trigger Crash Failed.";
+        FAIL();
+    }
+    EXPECT_TRUE(CheckCountNumNullpointer(fileName, pid)) << "FaultLoggerdSystemTest106 Failed";
+    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest106: end.";
+}
+
+/**
+ * @tc.name: FaultLoggerdSystemTest107
+ * @tc.desc: test CPP crasher application: STACKOF
+ * @tc.type: FUNC
+ */
+HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest107, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest107: start.";
+    string cmd = "STACKOF";
+    string fileName;
+    pid_t pid = TriggerCrasherAndGetFileName(cmd, CRASHER_CPP, fileName);
+    GTEST_LOG_(INFO) << "test pid(" << pid << ")"  << " cppcrash file name : " << fileName;
+    if (pid < 0 || fileName.size() < CPPCRASH_FILENAME_MIN_LENGTH) {
+        GTEST_LOG_(ERROR) << "Trigger Crash Failed.";
+        FAIL();
+    }
+    EXPECT_TRUE(CheckCountNumStackOverFlow(fileName, pid)) << "FaultLoggerdSystemTest107 Failed";
+    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest107: end.";
+}
+
+/**
+ * @tc.name: FaultLoggerdSystemTest108
+ * @tc.desc: test Cpp crasher application: StackCorruption, and check all label keywords
+ * @tc.type: FUNC
+ */
+HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest108, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest108: start.";
+    string cmd = "StackCorruption";
+    string fileName;
+    pid_t pid = TriggerCrasherAndGetFileName(cmd, CRASHER_CPP, fileName);
+    GTEST_LOG_(INFO) << "test pid(" << pid << ")"  << " cppcrash file name : " << fileName;
+    if (pid < 0 || fileName.size() < CPPCRASH_FILENAME_MIN_LENGTH) {
+        GTEST_LOG_(ERROR) << "Trigger Crash Failed.";
+        FAIL();
+    }
+    EXPECT_TRUE(CheckCppCrashAllLabelKeywords(fileName, pid)) << "FaultLoggerdSystemTest108 Failed";
+    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest108: end.";
 }
 } // namespace HiviewDFX
 } // namespace OHOS

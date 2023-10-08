@@ -18,6 +18,7 @@
 #include <cinttypes>
 #include <dlfcn.h>
 #include <map>
+#include <sstream>
 #include <string>
 #include "dfx_logger.h"
 #include "dfx_process.h"
@@ -33,10 +34,13 @@ struct FaultLogInfoInner {
     std::string reason;
     std::string summary;
     std::string logPath;
+    std::string registers;
+    std::string otherThreadInfo;
     std::map<std::string, std::string> sectionMaps;
 };
 static const char FOUNDATION_PROCESS_NAME[] = "foundation";
 static const char HIVIEW_PROCESS_NAME[] = "/system/bin/hiview";
+static const char REGS_KEY_WORD[] = "Registers:\n";
 
 using AddFaultLog = void (*)(FaultLogInfoInner* info);
 using RecordAppExitReason = int (*)(int reason);
@@ -53,7 +57,7 @@ bool CppCrashReporter::Format()
     cmdline_ = process_->processInfo_.processName;
     pid_ = process_->processInfo_.pid;
     uid_ = process_->processInfo_.uid;
-    reason_ = DfxSignal::PrintSignal(siginfo_);
+    reason_ = process_->reason;
     auto msg = process_->GetFatalMessage();
     if (!msg.empty()) {
         stack_ = "LastFatalMessage:" + msg + "\n";
@@ -70,6 +74,19 @@ bool CppCrashReporter::Format()
             }
         }
         stack_ += threadInfo;
+
+        // regs
+        registers_ = GetRegsString(process_->vmThread_);
+
+        // other thread info
+        std::vector<std::shared_ptr<DfxThread>> otherThreads = process_->GetOtherThreads();
+        unsigned long index = 0;
+        for (auto oneThread : otherThreads) {
+            std::stringstream ss;
+            ss << "Tid:" << oneThread->threadInfo_.tid << ", ";
+            otherThreadInfo_ += ss.str() + oneThread->ToString();
+            index++;
+        }
     }
     return true;
 }
@@ -106,6 +123,8 @@ void CppCrashReporter::ReportToHiview()
     info.module = cmdline_;
     info.reason = reason_;
     info.summary = stack_;
+    info.registers = registers_;
+    info.otherThreadInfo = otherThreadInfo_;
     info.sectionMaps = kvPairs_;
     addFaultLog(&info);
     DFXLOG_INFO("Finish report fault to FaultLogger %s(%d,%d)", cmdline_.c_str(), pid_, uid_);
@@ -136,6 +155,25 @@ void CppCrashReporter::ReportToAbilityManagerService()
     const int cppCrashExitReason = 2;
     recordAppExitReason(cppCrashExitReason);
     dlclose(handle);
+}
+
+std::string CppCrashReporter::GetRegsString(std::shared_ptr<DfxThread> thread) const
+{
+    std::string regsString = "";
+    if (thread == nullptr) {
+        return regsString;
+    }
+    std::shared_ptr<DfxRegs> regs = thread->GetThreadRegs();
+    if (regs == nullptr) {
+        return regsString;
+    }
+    regsString = regs->PrintRegs();
+
+    // if start with 'Registers:\n', need remove
+    if (regsString.find(REGS_KEY_WORD) == 0) {
+        regsString = regsString.substr(strlen(REGS_KEY_WORD));
+    }
+    return regsString;
 }
 } // namespace HiviewDFX
 } // namespace OHOS

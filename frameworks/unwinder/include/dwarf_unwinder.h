@@ -17,6 +17,7 @@
 
 #include <vector>
 #include <libunwind.h>
+#include "dfx_define.h"
 #include "dfx_frame.h"
 #include "dfx_symbols.h"
 
@@ -28,8 +29,8 @@ public:
     ~DwarfUnwinder();
 
     bool UnwindWithContext(unw_addr_space_t as, unw_context_t& context, std::shared_ptr<DfxSymbols> symbol,
-        size_t skipFrameNum);
-    bool Unwind(size_t skipFrameNum);
+        size_t skipFrameNum, size_t maxFrameNums = DEFAULT_MAX_FRAME_NUM);
+    bool Unwind(size_t skipFrameNum, size_t maxFrameNums = DEFAULT_MAX_FRAME_NUM);
     const std::vector<DfxFrame>& GetFrames() const;
 private:
     void UpdateFrameFuncName(unw_addr_space_t as, std::shared_ptr<DfxSymbols> symbol, DfxFrame& frame);
