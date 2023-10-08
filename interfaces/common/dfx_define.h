@@ -15,7 +15,6 @@
 #ifndef DFX_DEFINE_H
 #define DFX_DEFINE_H
 
-#include <endian.h>
 #include <inttypes.h>
 #include <stdbool.h>
 

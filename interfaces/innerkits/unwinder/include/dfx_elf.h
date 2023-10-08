@@ -12,6 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 #ifndef DFX_ELF_H
 #define DFX_ELF_H
 
@@ -81,9 +82,10 @@ protected:
     bool ParseElfIdent();
     bool GetExidxTableInfo(std::shared_ptr<DfxMap> map, struct UnwindTableInfo& ti);
     bool GetEhHdrTableInfo(std::shared_ptr<DfxMap> map, struct UnwindTableInfo& ti);
-
+#if is_ohos && !is_mingw
     static int DlPhdrCb(struct dl_phdr_info *info, size_t size, void *data);
     static ElfW(Addr) FindSection(struct dl_phdr_info *info, const std::string secName);
+#endif
 
 private:
     bool valid_ = false;

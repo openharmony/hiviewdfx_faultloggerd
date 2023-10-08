@@ -21,8 +21,13 @@
 #include <cstring>
 #include <fstream>
 #include <securec.h>
-#include <sys/mman.h>
 #include <sstream>
+#if is_mingw
+#include "dfx_nonlinux_define.h"
+#else
+#include <sys/mman.h>
+#endif
+
 #include "dfx_define.h"
 #include "dfx_elf.h"
 #include "dfx_log.h"
@@ -77,10 +82,12 @@ bool DfxMaps::Create(pid_t pid, std::vector<std::shared_ptr<DfxMap>>& maps, std:
 std::shared_ptr<DfxMaps> DfxMaps::Create(const std::string path, bool enableMapIndex)
 {
     char realPath[PATH_MAX] = {0};
+#if is_ohos
     if (realpath(path.c_str(), realPath) == nullptr) {
         DFXLOG_WARN("Maps path(%s) is not exist.", path.c_str());
         return nullptr;
     }
+#endif
 
     std::ifstream ifs;
     ifs.open(realPath, std::ios::in);

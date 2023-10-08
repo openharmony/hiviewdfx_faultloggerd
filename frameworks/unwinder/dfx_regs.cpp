@@ -75,19 +75,14 @@ std::vector<uintptr_t> DfxRegs::GetRegsData() const
 void DfxRegs::SetRegsData(const std::vector<uintptr_t>& regs)
 {
     regsData_ = regs;
-#if defined(__arm__)
-    fp_ = regs[REG_ARM_R11];
-    sp_ = regs[REG_ARM_R13];
-    lr_ = regs[REG_ARM_R14];
-    pc_ = regs[REG_ARM_R15];
-#elif defined(__aarch64__)
-    fp_ = regs[REG_AARCH64_FP];
-    sp_ = regs[REG_AARCH64_SP];
-    lr_ = regs[REG_AARCH64_X30];
-    pc_ = regs[REG_AARCH64_PC];
+#if defined(__arm__) || defined(__aarch64__)
+    fp_ = regs[REG_FP];
+    sp_ = regs[REG_SP];
+    lr_ = regs[REG_LR];
+    pc_ = regs[REG_PC];
 #elif defined(__x86_64__)
-    sp_ = regs[REG_X86_64_SP];
-    pc_ = regs[REG_X86_64_PC];
+    sp_ = regs[REG_SP];
+    pc_ = regs[REG_PC];
 #else
 #error "Unsupported architecture"
 #endif

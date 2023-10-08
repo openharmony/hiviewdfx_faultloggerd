@@ -18,7 +18,11 @@
 #include <atomic>
 #include <cstdint>
 #include <string>
+#if !is_mingw
 #include <sys/mman.h>
+#else
+#include "dfx_nonlinux_define.h"
+#endif
 #include "dfx_memory.h"
 
 namespace OHOS {

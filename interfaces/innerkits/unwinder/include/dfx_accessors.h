@@ -12,6 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 #ifndef DFX_ACCESSORS_H
 #define DFX_ACCESSORS_H
 
@@ -21,6 +22,12 @@
 #include <string>
 #include "dfx_define.h"
 #include "unwind_context.h"
+
+#if is_mingw
+#ifndef UNWIND_BYTE_ORDER
+#define UNWIND_BYTE_ORDER -1 // unknown
+#endif
+#endif
 
 namespace OHOS {
 namespace HiviewDFX {

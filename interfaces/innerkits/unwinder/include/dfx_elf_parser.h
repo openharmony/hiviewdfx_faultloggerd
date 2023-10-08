@@ -16,21 +16,26 @@
 #define DFX_ELF_PARSER_H
 
 #include <cstddef>
+#if is_mingw
+#include "dfx_nonlinux_define.h"
+#else
 #include <elf.h>
 #include <link.h>
-#include <stdint.h>
+#endif
 #include <map>
 #include <memory>
+#include <stdint.h>
 #include <string>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
 #include <unordered_map>
 #include <vector>
+
 #include "dfx_define.h"
+#include "dfx_elf_define.h"
 #include "dfx_mmap.h"
 #include "dfx_symbol.h"
-#include "dfx_elf_define.h"
 #include "unwind_context.h"
 
 namespace OHOS {

@@ -16,7 +16,10 @@
 #define UNWIND_CONTEXT_H
 
 #include <memory>
+#if is_ohos
 #include <ucontext.h>
+#endif
+
 #include "byte_order.h"
 #include "dfx_errors.h"
 #include "unwind_define.h"

@@ -16,16 +16,19 @@
 #include "dfx_elf.h"
 
 #include <cstdlib>
-#include <elf.h>
 #include <fcntl.h>
-#include <link.h>
 #include <securec.h>
 #include <string>
+#if is_mingw
+#include "dfx_nonlinux_define.h"
+#else
 #include <sys/mman.h>
+#endif
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
 #include <utility>
+
 #include "dfx_define.h"
 #include "dfx_log.h"
 #include "dfx_util.h"
@@ -503,6 +506,7 @@ int DfxElf::FindUnwindTableInfo(uintptr_t pc, std::shared_ptr<DfxMap> map, struc
 
 int DfxElf::FindUnwindTableLocal(uintptr_t pc, struct UnwindTableInfo& uti)
 {
+#if is_ohos && !is_mingw
     DlCbData cbData;
     memset_s(&cbData, sizeof(cbData), 0, sizeof(cbData));
     cbData.pc = pc;
@@ -522,8 +526,12 @@ int DfxElf::FindUnwindTableLocal(uintptr_t pc, struct UnwindTableInfo& uti)
         return UNW_ERROR_NONE;
     }
     return UNW_ERROR_NO_UNWIND_INFO;
+#else
+    return UNW_ERROR_UNSUPPORTED_VERSION;
+#endif
 }
 
+#if is_ohos && !is_mingw
 ElfW(Addr) DfxElf::FindSection(struct dl_phdr_info *info, const std::string secName)
 {
     const char *file = info->dlpi_name;
@@ -673,6 +681,7 @@ int DfxElf::DlPhdrCb(struct dl_phdr_info *info, size_t size, void *data)
     }
     return 0;
 }
+#endif
 
 bool DfxElf::Read(uintptr_t pos, void *buf, size_t size)
 {

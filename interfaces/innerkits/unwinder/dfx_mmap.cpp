@@ -14,9 +14,13 @@
  */
 
 #include "dfx_mmap.h"
+
 #include <fcntl.h>
 #include <securec.h>
+#if defined(is_ohos) && is_ohos
 #include <unique_fd.h>
+#endif
+
 #include "dfx_define.h"
 #include "dfx_log.h"
 #include "dfx_util.h"
@@ -32,6 +36,7 @@ namespace {
 
 bool DfxMmap::Init(const std::string &file)
 {
+#if defined(is_ohos) && is_ohos
     Clear();
 
     OHOS::UniqueFd fd = OHOS::UniqueFd(OHOS_TEMP_FAILURE_RETRY(open(file.c_str(), O_RDONLY)));
@@ -46,14 +51,19 @@ bool DfxMmap::Init(const std::string &file)
     }
     DFXLOG_DEBUG("mmap size %u", size_);
     return true;
+#else
+    return false;
+#endif
 }
 
 void DfxMmap::Clear()
 {
+#if defined(is_ohos) && is_ohos
     if (mmap_ != MAP_FAILED) {
         munmap(mmap_, size_);
         mmap_ = MAP_FAILED;
     }
+#endif
 }
 
 size_t DfxMmap::Read(uintptr_t& addr, void* val, size_t size, bool incre)
