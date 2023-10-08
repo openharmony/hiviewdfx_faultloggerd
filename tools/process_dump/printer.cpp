@@ -48,37 +48,7 @@ void Printer::PrintDumpHeader(std::shared_ptr<ProcessDumpRequest> request, std::
     DfxRingBufferWrapper::GetInstance().AppendBuf("Process name:%s\n", process->processInfo_.processName.c_str());
 
     if (isCrash) {
-        DfxRingBufferWrapper::GetInstance().AppendMsg("Reason:");
-        process->reason += DfxSignal::PrintSignal(request->siginfo);
-        uint64_t addr = (uint64_t)(request->siginfo.si_addr);
-        process->InitProcessMaps();
-        if (request->siginfo.si_signo == SIGSEGV && (request->siginfo.si_code == SEGV_MAPERR || request->siginfo.si_code == SEGV_ACCERR)) {
-            if (addr < PAGE_SIZE) {
-                process->reason += " probably caused by NULL pointer dereference";
-            } else {
-                std::shared_ptr<DfxElfMaps> maps = process->GetMaps();
-                std::shared_ptr<DfxElfMap> map;
-                if (process->vmThread_ == nullptr) {
-                    DFXLOG_WARN("vmThread_ is nullptr");
-                    return;
-                }
-                auto regs = process->vmThread_->GetThreadRegs();
-                if (regs == nullptr) {
-                    DFXLOG_WARN("regs is nullptr");
-                    return;
-                }
-                uintptr_t sp = regs->sp_;
-                if (maps != nullptr && maps->FindMapByAddr(sp, map)) {
-                    if(addr < map->begin && map->begin - addr <= PAGE_SIZE){
-                        process->reason += StringPrintf(
-                            " current thread stack low address = %x, probably caused by stack-buffer-overflow",
-                            map->begin);
-                    }
-                }
-            }
-        }
-        process->reason += "\n";
-        DfxRingBufferWrapper::GetInstance().AppendMsg(process->reason);
+        PrintReason(request, process);
         auto msg = process->GetFatalMessage();
         if (!msg.empty()) {
             DfxRingBufferWrapper::GetInstance().AppendBuf("LastFatalMessage:%s\n", msg.c_str());
@@ -95,7 +65,41 @@ void Printer::PrintDumpHeader(std::shared_ptr<ProcessDumpRequest> request, std::
         }
     }
 }
-
+void Printer::PrintReason(std::shared_ptr<ProcessDumpRequest> request, std::shared_ptr<DfxProcess> process)
+{
+    DfxRingBufferWrapper::GetInstance().AppendMsg("Reason:");
+    process->reason += DfxSignal::PrintSignal(request->siginfo);
+    uint64_t addr = (uint64_t)(request->siginfo.si_addr);
+    process->InitProcessMaps();
+    if (request->siginfo.si_signo == SIGSEGV &&
+        (request->siginfo.si_code == SEGV_MAPERR || request->siginfo.si_code == SEGV_ACCERR)) {
+        if (addr < PAGE_SIZE) {
+            process->reason += " probably caused by NULL pointer dereference";
+        } else {
+            std::shared_ptr<DfxElfMaps> maps = process->GetMaps();
+            std::shared_ptr<DfxElfMap> map;
+            if (process->vmThread_ == nullptr) {
+                DFXLOG_WARN("vmThread_ is nullptr");
+                return;
+            }
+            auto regs = process->vmThread_->GetThreadRegs();
+            if (regs == nullptr) {
+                DFXLOG_WARN("regs is nullptr");
+                return;
+            }
+            uintptr_t sp = regs->sp_;
+            if (maps != nullptr && maps->FindMapByAddr(sp, map)) {
+                if (addr < map->begin && map->begin - addr <= PAGE_SIZE) {
+                    process->reason += StringPrintf(
+                        " current thread stack low address = %x, probably caused by stack-buffer-overflow",
+                        map->begin);
+                }
+            }
+        }
+    }
+    process->reason += "\n";
+    DfxRingBufferWrapper::GetInstance().AppendMsg(process->reason);
+}
 void Printer::PrintProcessMapsByConfig(std::shared_ptr<DfxProcess> process)
 {
     if (DfxConfig::GetConfig().displayMaps) {

@@ -150,5 +150,15 @@ void DfxThread::InitFaultStack(bool needParseStack)
     faultStack_ = std::make_shared<FaultStack>(threadInfo_.nsTid);
     faultStack_->CollectStackInfo(frames_, needParseStack);
 }
+
+void DfxThread::SetFrames(std::vector<std::shared_ptr<DfxFrame>> frames)
+{
+    frames_ = frames;
+}
+
+std::shared_ptr<FaultStack> DfxThread::GetFaultStack() const
+{
+    return faultStack_;
+}
 } // namespace HiviewDFX
 } // nampespace OHOS

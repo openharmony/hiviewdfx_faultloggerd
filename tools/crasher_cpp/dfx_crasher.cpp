@@ -242,15 +242,15 @@ NOINLINE int DfxCrasher::MaxMethodNameTest12345678901234567890123456789012345678
 }
 
 void *DoStackOverflow(void * inputArg)
- {
+{
     int b[10] = {1};
-    int *c = 0;
-    memcpy_s(c, sizeof(int), b, sizeof(int));
-    if (b[0] == 0){
-        return (void*)(b + 9);
+    int *c = nullptr;
+    (void)memcpy_s(c, sizeof(int), b, sizeof(int));
+    if (b[0] == 0) {
+        return (void*)(b + 9); // 9: last element of array
     }
     DoStackOverflow(inputArg);
-    return (void*)(b + 9);
+    return (void*)(b + 9); // 9: last element of array
 }
 
 NOINLINE int DfxCrasher::StackOverflow()
@@ -259,7 +259,8 @@ NOINLINE int DfxCrasher::StackOverflow()
     pthread_t tid;
     pthread_attr_t attr;
     errno=pthread_attr_init(&attr);
-    if (pthread_attr_setstacksize(&attr, 1024 * 10) == 0) {
+    constexpr int maxStackSize = 1024 * 10;
+    if (pthread_attr_setstacksize(&attr, maxStackSize) == 0) {
         pthread_create(&tid, &attr, DoStackOverflow, nullptr);
         pthread_join(tid, nullptr);
     } else {

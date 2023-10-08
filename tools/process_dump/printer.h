@@ -35,6 +35,8 @@ public:
     static void PrintThreadBacktraceByConfig(std::shared_ptr<DfxThread> thread);
     static void PrintThreadRegsByConfig(std::shared_ptr<DfxThread> thread);
     static void PrintThreadFaultStackByConfig(std::shared_ptr<DfxProcess> process, std::shared_ptr<DfxThread> thread);
+private:
+    static void PrintReason(std::shared_ptr<ProcessDumpRequest> request, std::shared_ptr<DfxProcess> process);
 };
 } // namespace HiviewDFX
 } // namespace OHOS
