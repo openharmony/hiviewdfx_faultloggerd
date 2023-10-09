@@ -17,7 +17,10 @@
 
 #include <cinttypes>
 #include <string>
+#if defined(is_ohos) && is_ohos
 #include <ucontext.h>
+#endif
+#include <vector>
 
 namespace OHOS {
 namespace HiviewDFX {
@@ -80,7 +83,12 @@ struct RegsUserX86_64 {
     uint64_t gs;
 };
 
+static const std::vector<int> QUT_REGS {
+    // empty
+};
+#if defined(is_ohos) && is_ohos
 typedef ucontext_t UnwindUContext_t;
+#endif
 } // namespace HiviewDFX
 } // namespace OHOS
 #endif

@@ -15,19 +15,18 @@
 
 #include "dfx_elf_parser.h"
 
+#include <algorithm>
 #include <cstdlib>
-#include <elf.h>
-#include <link.h>
+#include <iostream>
 #include <securec.h>
 #include <string>
-#include <sys/mman.h>
 #include <sys/types.h>
 #include <unistd.h>
 #include <utility>
+
 #include "dfx_define.h"
 #include "dfx_log.h"
 #include "dfx_util.h"
-#include <iostream>
 
 #ifndef PAGE_SIZE
 #define PAGE_SIZE 4096
@@ -193,7 +192,7 @@ bool ElfParser::ParseSectionHeaders(const EhdrType& ehdr)
             LOGE("Failed to get section name");
             continue;
         }
-        //LOGU("ParseSectionHeaders secName: %s", secName.c_str());
+        // LOGU("ParseSectionHeaders secName: %s", secName.c_str());
 
         ShdrInfo shdrInfo;
         shdrInfo.addr = static_cast<uint64_t>(shdr.sh_addr);

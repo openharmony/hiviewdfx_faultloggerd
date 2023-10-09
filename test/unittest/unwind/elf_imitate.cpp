@@ -760,10 +760,10 @@ bool ElfImitate::ParseElfSymbols()
         } else {
             elfSymbol.shndx = static_cast<uint16_t>(std::stoul(strVec[6]));
         }
-        elfSymbol.nameStr = "";
-        if (strVec.size() > 7) {
-            elfSymbol.nameStr = strVec.back();
-        }
+        //elfSymbol.nameStr = "";
+        //if (strVec.size() > 7) {
+        //    elfSymbol.nameStr = strVec.back();
+        //}
         elfSymbols_.push_back(elfSymbol);
     }
     return true;
@@ -847,8 +847,9 @@ bool ElfImitate::ParseSymbols(std::vector<DfxSymbol>& symbols, const std::string
             if (elfSymbol.value == 0) {
                 continue;
             }
+            std::string nameStr = "";
             symbols.emplace_back(elfSymbol.value, elfSymbol.size,
-                                 elfSymbol.nameStr, DfxSymbols::Demangle(elfSymbol.nameStr), filePath);
+                                 nameStr, DfxSymbols::Demangle(nameStr), filePath);
         } else {
             continue;
         }

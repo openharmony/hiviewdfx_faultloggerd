@@ -17,8 +17,10 @@
 
 #include <cinttypes>
 #include <string>
+#if !is_mingw
 #include <elf.h>
 #include <link.h>
+#endif
 
 namespace OHOS {
 namespace HiviewDFX {
@@ -43,7 +45,6 @@ struct ElfLoadInfo {
 };
 
 struct ElfSymbol {
-    std::string nameStr;
     uint32_t name;
     unsigned char info;
     unsigned char other;

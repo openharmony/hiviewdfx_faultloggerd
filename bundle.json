@@ -109,6 +109,18 @@
             ],
             "header_base": "//base/hiviewdfx/faultloggerd/interfaces/innerkits/unwinder/include"
           }
+        },
+        {
+          "name": "//base/hiviewdfx/faultloggerd/interfaces/innerkits/unwinder:unwinder_host",
+          "header": {
+            "header_files": [
+              "dfx_map.h",
+              "dfx_maps.h",
+              "dfx_elf.h",
+              "dfx_symbol.h"
+            ],
+            "header_base": "//base/hiviewdfx/faultloggerd/interfaces/innerkits/unwinder/include"
+          }
         }
       ],
       "test": [

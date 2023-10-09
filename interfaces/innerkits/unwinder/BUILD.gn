@@ -88,6 +88,9 @@ if (defined(ohos_lite)) {
     ]
 
     defines = [
+      "is_ohos=${is_ohos}",
+      "is_linux=${is_linux}",
+      "is_mingw=${is_mingw}",
       "HAVE_CONFIG_H",
       "HAVE_ELF_H",
       "HAVE_LINK_H",
@@ -146,6 +149,48 @@ if (defined(ohos_lite)) {
       "c_utils:utils",
       "hilog:libhilog",
     ]
+    part_name = "faultloggerd"
+    subsystem_name = "hiviewdfx"
+  }
+
+  config("unwinder_host_config") {
+    visibility = [ "*:*" ]
+
+    include_dirs = [
+      "include",
+      "$faultloggerd_common_path/dfxlog",
+      "$faultloggerd_common_path/dfxutil",
+      "$faultloggerd_interfaces_path/common",
+      "$faultloggerd_interfaces_path/nonlinux",
+    ]
+
+    defines = [
+      "is_ohos=${is_ohos}",
+      "is_linux=${is_linux}",
+      "is_mingw=${is_mingw}",
+      "DFX_NO_PRINT_LOG",
+    ]
+  }
+
+  ohos_static_library("unwinder_host") {
+    public_configs = [ ":unwinder_host_config" ]
+    sources = [
+      "dfx_elf_parser.cpp",
+      "dfx_elf.cpp",
+      "dfx_map.cpp",
+      "dfx_maps.cpp",
+      "dfx_memory.cpp",
+      "dfx_mmap.cpp",
+      "dfx_symbols.cpp",
+    ]
+
+    deps = [
+      "//third_party/bounds_checking_function:libsec_static",
+    ]
+
+    if (is_ohos) {
+      external_deps = [ "c_utils:utils" ]
+    }
     part_name = "faultloggerd"
     subsystem_name = "hiviewdfx"
   }

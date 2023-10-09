@@ -20,12 +20,17 @@
 #include <cstdlib>
 #include <cstring>
 #include <securec.h>
-#include <sys/mman.h>
 #include <sstream>
+#if is_mingw
+#include "dfx_nonlinux_define.h"
+#else
+#include <sys/mman.h>
+#endif
+
 #include "dfx_define.h"
+#include "dfx_elf.h"
 #include "dfx_log.h"
 #include "dfx_util.h"
-#include "dfx_elf.h"
 
 namespace OHOS {
 namespace HiviewDFX {
@@ -47,6 +52,7 @@ std::shared_ptr<DfxMap> DfxMap::Create(const std::string buf, int size)
 
 bool DfxMap::Parse(const std::string buf, int size)
 {
+#if defined(is_ohos) && is_ohos
     int pos = 0;
     uint64_t begin = 0;
     uint64_t end = 0;
@@ -76,6 +82,9 @@ bool DfxMap::Parse(const std::string buf, int size)
         this->prots |= PROT_DEVICE_MAP;
     }
     return true;
+#else
+    return false;
+#endif
 }
 
 bool DfxMap::IsValidName()

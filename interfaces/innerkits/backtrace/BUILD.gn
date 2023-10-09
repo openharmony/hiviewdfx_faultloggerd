@@ -81,6 +81,7 @@ if (defined(ohos_lite)) {
     ]
 
     defines = [
+      "is_ohos=${is_ohos}",
       "HAVE_CONFIG_H",
       "HAVE_ELF_H",
       "HAVE_LINK_H",

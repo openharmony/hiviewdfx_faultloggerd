@@ -40,8 +40,6 @@ namespace HiviewDFX {
 static const int FRAME_MAX_SIZE = 64;
 static const int REGS_MAX_SIZE = 64;
 
-static const uintptr_t PAGESIZE_ALIGN_MASK = ~(((uintptr_t)getpagesize()) - 1UL); //0xF000
-
 /**
  * @brief chip architecture
  */
