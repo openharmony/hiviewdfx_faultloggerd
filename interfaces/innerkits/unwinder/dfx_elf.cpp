@@ -328,6 +328,7 @@ bool DfxElf::GetSectionInfo(ShdrInfo& shdr, const std::string secName)
 const std::vector<ElfSymbol>& DfxElf::GetElfSymbols(bool isSort)
 {
     if (elfSymbols_.empty()) {
+        LOGU("GetElfSymbols");
         elfSymbols_ = elfParse_->GetElfSymbols(false, isSort);
     }
     return elfSymbols_;
@@ -336,15 +337,17 @@ const std::vector<ElfSymbol>& DfxElf::GetElfSymbols(bool isSort)
 const std::vector<ElfSymbol>& DfxElf::GetFuncSymbols(bool isSort)
 {
     if (funcSymbols_.empty()) {
+        LOGU("GetFuncSymbols");
         funcSymbols_ = elfParse_->GetElfSymbols(true, isSort);
     }
     return funcSymbols_;
 }
 
-bool DfxElf::GetFuncInfo(uint64_t addr, std::string& name, uint64_t& start, uint64_t& size)
+bool DfxElf::GetFuncInfo(uint64_t addr, ElfSymbol& elfSymbol)
 {
     auto symbols = GetFuncSymbols(true);
     if (symbols.empty()) {
+        LOGE("GetFuncInfo not symbols?");
         return false;
     }
     size_t begin = 0;
@@ -355,10 +358,12 @@ bool DfxElf::GetFuncInfo(uint64_t addr, std::string& name, uint64_t& start, uint
         if (addr < symbol.value) {
             end = mid;
         } else if (addr < (symbol.value + symbol.size)) {
-            start = symbol.value;
-            size = symbol.size;
-            name = symbol.nameStr;
-            LOGU("GetFuncInfo start: %llx, name: %s", start, name.c_str());
+            elfSymbol = symbol;
+            uint64_t nameOffset = elfSymbol.strOffset + elfSymbol.name;
+            if (nameOffset < elfSymbol.strSize) {
+                elfSymbol.nameStr = std::string((char *)GetMmapPtr() + nameOffset);
+                LOGU("elfSymbol.nameStr: %s", elfSymbol.nameStr.c_str());
+            }
             return true;
         } else {
             begin = mid + 1;

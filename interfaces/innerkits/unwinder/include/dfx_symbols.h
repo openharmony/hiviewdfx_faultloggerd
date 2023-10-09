@@ -26,7 +26,7 @@ namespace OHOS {
 namespace HiviewDFX {
 class DfxSymbols final {
 public:
-    DfxSymbols() { symbols_.clear(); }
+    DfxSymbols() = default;
     ~DfxSymbols() = default;
 
     static bool ParseSymbols(std::vector<DfxSymbol>& symbols,
@@ -34,16 +34,10 @@ public:
     static bool AddSymbolsByPlt(std::vector<DfxSymbol>& symbols,
         std::shared_ptr<DfxElf> elf, const std::string& filePath);
 
-    bool GetFuncNameAndOffsetByPc(uint64_t relPc, std::shared_ptr<DfxElf> elf,
+    static bool GetFuncNameAndOffsetByPc(uint64_t relPc, std::shared_ptr<DfxElf> elf,
         std::string& funcName, uint64_t& funcOffset);
 
     static std::string Demangle(const std::string buf);
-
-private:
-    bool BinarySearch(uint64_t addr, std::string& funcName, uint64_t& funcOffset);
-
-private:
-    std::vector<DfxSymbol> symbols_;
 };
 } // namespace HiviewDFX
 } // namespace OHOS

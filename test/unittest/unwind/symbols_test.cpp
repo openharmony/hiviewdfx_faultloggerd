@@ -76,8 +76,7 @@ HWTEST_F(DfxSymbolsTest, DfxSymbolsTest001, TestSize.Level2)
     }
     std::string funcName;
     uint64_t funcOffset;
-    DfxSymbols dfxSymbols;
-    ASSERT_TRUE(dfxSymbols.GetFuncNameAndOffsetByPc(0x00001786, elf, funcName, funcOffset));
+    ASSERT_TRUE(DfxSymbols::GetFuncNameAndOffsetByPc(0x00001786, elf, funcName, funcOffset));
     GTEST_LOG_(INFO) << "DfxSymbolsTest001: end.";
 }
 
@@ -119,8 +118,7 @@ HWTEST_F(DfxSymbolsTest, DfxSymbolsTest002, TestSize.Level2)
     }
     std::string funcName;
     uint64_t funcOffset;
-    DfxSymbols dfxSymbols;
-    ASSERT_TRUE(dfxSymbols.GetFuncNameAndOffsetByPc(0x00002a08, elf, funcName, funcOffset));
+    ASSERT_TRUE(DfxSymbols::GetFuncNameAndOffsetByPc(0x00002a08, elf, funcName, funcOffset));
 
     GTEST_LOG_(INFO) << "DfxSymbolsTest002: end.";
 }
