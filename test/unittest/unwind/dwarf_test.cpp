@@ -121,7 +121,7 @@ size_t DfxMemoryTest::Read(uintptr_t& addr, void* val, size_t size, bool incre)
 }
 
 void DfxMemoryTest::SetBuffer(uintptr_t addr, std::vector<uint8_t> buffer)
-{   
+{
     printf("DfxMemoryTest::SetBuffer:%" PRIxPTR " size:%zu\n", addr, buffer.size());
     buffers.push_back({addr, buffer});
 }
@@ -415,7 +415,7 @@ bool DwarfOpTest::Test09(std::shared_ptr<DfxMemoryTest> memory)
     OpPlusULEBConst(exprPtr);
     uintptr_t value = StackPop();
     printf("Test09-01 value:%" PRIxPTR "\n", value);
-    ret = (0x10 == value);
+    ret = (value == 0x10);
 
     StackReset(0);
     uintptr_t exprPtrOld = exprPtr;
@@ -454,12 +454,12 @@ bool DwarfOpTest::Test10(std::shared_ptr<DfxMemoryTest> memory)
     StackReset(0);
     OpLit(DW_OP_lit1);
     uintptr_t value = StackPop();
-    ret = (0x01 == value);
+    ret = (value == 0x01);
     printf("Test10-01 value:%" PRIxPTR " ret:%d\n", value, ret);
 
     OpLit(DW_OP_lit31);
     value = StackPop();
-    ret &= (0x1f == value);
+    ret &= (value == 0x1f);
     printf("Test10-02 value:%" PRIxPTR " ret:%d\n", value, ret);
 
     StackReset(0);
@@ -467,26 +467,26 @@ bool DwarfOpTest::Test10(std::shared_ptr<DfxMemoryTest> memory)
     (*reg)[0] = 0xa;
     OpReg(DW_OP_reg0, *(reg.get()));
     value = StackPop();
-    ret &= (0xa == value);
+    ret &= (value == 0xa);
     printf("Test10-03 value:%" PRIxPTR " ret:%d\n", value, ret);
 
     StackReset(0);
     (*reg)[0x1] = 0x14;
     OpRegx(exprPtr, *(reg.get()));
     value = StackPop();
-    ret &= (0x14 == value);
+    ret &= (value == 0x14);
     printf("Test10-04 value:%" PRIxPTR " ret:%d\n", value, ret);
 
     StackReset(0);
     OpBReg(DW_OP_breg0, exprPtr, *(reg.get()));
     value = StackPop();
-    ret &= (0xb == value); // 0xa + 1
+    ret &= (value == 0xb); // 0xa + 1
     printf("Test10-05 value:%" PRIxPTR " ret:%d\n", value, ret);
 
     StackReset(0);
     OpBRegx(exprPtr, *(reg.get()));
     value = StackPop();
-    ret &= (0x15 == value); // 0x14 + 1
+    ret &= (value == 0x15); // 0x14 + 1
     printf("Test10-06 value:%" PRIxPTR " ret:%d\n", value, ret);
     return ret;
 }
@@ -728,7 +728,7 @@ HWTEST_F(DwarfTest, DwarfTest002, TestSize.Level2)
     */
     uint64_t startPc = loadbase + 0x6F640;
     uint64_t endPc = startPc + 0xa8ec0;
-    printf("startPc:%p endPc:%p\n", (void*)startPc, (void*)endPc);
+    printf("startPc:%p endPc:%p\n", static_cast<void*>(startPc), static_cast<void*>(endPc));
     uint64_t mapStart = loadbase + 0x6F000;
     uint64_t mapEnd = mapStart + 0xab000;
     const uint64_t offset = 0x6e000;

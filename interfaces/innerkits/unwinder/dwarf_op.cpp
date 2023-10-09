@@ -14,7 +14,7 @@
  */
 
 #include "dwarf_op.h"
-#include <string.h>
+#include <cstring>
 #include "dfx_log.h"
 
 namespace OHOS {

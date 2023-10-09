@@ -27,7 +27,7 @@ namespace {
 #define LOG_TAG "DfxDwarfSection"
 }
 
-bool DwarfSection::SearchEntry(struct UnwindEntryInfo& pi, struct UnwindTableInfo uti, uintptr_t pc)
+bool DwarfSection::SearchEntry(struct UnwindEntryInfo& uei, struct UnwindTableInfo uti, uintptr_t pc)
 {
     MAYBE_UNUSED auto segbase = uti.segbase;
     auto fdeCount = uti.tableLen;
@@ -61,10 +61,10 @@ bool DwarfSection::SearchEntry(struct UnwindEntryInfo& pi, struct UnwindTableInf
 
     memory_->ReadS32(entry, &dwarfTableEntry.fdeOffset, true);
     uintptr_t fdeAddr = static_cast<uintptr_t>(dwarfTableEntry.fdeOffset + segbase);
-    pi.unwindInfo = (void *)(fdeAddr);
-    LOGU("fde index:%llu, entry: %llx", low, (uint64_t)pi.unwindInfo);
-    pi.format = UNW_INFO_FORMAT_REMOTE_TABLE;
-    pi.gp = uti.gp;
+    uei.unwindInfo = (void *)(fdeAddr);
+    LOGU("fde index:%llu, entry: %llx", low, (uint64_t)uei.unwindInfo);
+    uei.format = UNW_INFO_FORMAT_REMOTE_TABLE;
+    uei.gp = uti.gp;
     return true;
 }
 
@@ -202,14 +202,14 @@ bool DwarfSection::FillInCieHeader(uintptr_t& ptr, CommonInfoEntry &cieInfo)
 {
     cieInfo.lsdaEncoding = DW_EH_PE_omit;
     uint32_t value32 = 0;
-    memory_->ReadU32(ptr, &value32, true); //length
+    memory_->ReadU32(ptr, &value32, true);
     if (value32 == static_cast<uint32_t>(-1)) {
         uint64_t value64 = 0;
-        memory_->ReadU64(ptr, &value64, true); //length64
+        memory_->ReadU64(ptr, &value64, true);
         cieInfo.cieEnd = ptr + value64;
         cieInfo.pointerEncoding = DW_EH_PE_sdata8;
 
-        memory_->ReadU64(ptr, &value64, true); //cieid
+        memory_->ReadU64(ptr, &value64, true); // parse cie id
         if (value64 != cie64Value_) {
             LOGE("Failed to FillInCieHeader, cieId?");
             lastErrorData_.code = UNW_ERROR_ILLEGAL_VALUE;
@@ -260,7 +260,7 @@ bool DwarfSection::FillInCie(uintptr_t& ptr, CommonInfoEntry &cieInfo)
         cieInfo.segmentSize = 0;
     }
 
-    // parse code aligment factor
+    // parse code alignment factor
     cieInfo.codeAlignFactor = (uint32_t)memory_->ReadUleb128(ptr);
     LOGU("codeAlignFactor: %d", cieInfo.codeAlignFactor);
 
@@ -291,11 +291,10 @@ bool DwarfSection::FillInCie(uintptr_t& ptr, CommonInfoEntry &cieInfo)
 
     for (size_t i = 1; i < augStr.size(); ++i) {
         switch (augStr[i]) {
-            case 'P': {
+            case 'P':
                 uint8_t personalityEncoding;
                 memory_->ReadU8(ptr, &personalityEncoding, true);
                 cieInfo.personality = memory_->ReadEncodedValue(ptr, personalityEncoding);
-            }
                 break;
             case 'L':
                 memory_->ReadU8(ptr, &cieInfo.lsdaEncoding, true);

@@ -232,7 +232,7 @@ std::string DfxElf::GetBuildId()
             return "";
         }
         ShdrInfo shdr;
-        if (GetSectionInfo(shdr, NOTE_GNU_BUILD_ID) || GetSectionInfo(shdr, NOTES)){
+        if (GetSectionInfo(shdr, NOTE_GNU_BUILD_ID) || GetSectionInfo(shdr, NOTES)) {
             std::string buildIdHex = GetBuildId((uint64_t)((char *)GetMmapPtr() + shdr.offset), shdr.size);
             if (!buildIdHex.empty()) {
                 buildId_ = ToReadableBuildId(buildIdHex);
@@ -306,7 +306,7 @@ std::string DfxElf::ToReadableBuildId(const std::string& buildIdHex)
     if (buildIdHex.empty()) {
         return "";
     }
-    static const char HEXTABLE[] = "0123456789ABCDEF";
+    static const char HEXTABLE[] = "0123456789abcdef";
     static const int HEXLENGTH = 16;
     static const int HEX_EXPAND_PARAM = 2;
     const size_t len = buildIdHex.length();
@@ -492,13 +492,13 @@ int DfxElf::FindUnwindTableInfo(uintptr_t pc, std::shared_ptr<DfxMap> map, struc
     }
 
 #if defined(__arm__)
-    if(eti.diExidx.format != -1) {
+    if (eti.diExidx.format != -1) {
         uti = eti.diExidx;
     }
 #endif
-    if(eti.diEhHdr.format != -1) {
+    if (eti.diEhHdr.format != -1) {
         uti = eti.diEhHdr;
-    } else if(eti.diDebug.format != -1) {
+    } else if (eti.diDebug.format != -1) {
         uti = eti.diDebug;
     }
     return ret;
@@ -514,13 +514,13 @@ int DfxElf::FindUnwindTableLocal(uintptr_t pc, struct UnwindTableInfo& uti)
     int ret = dl_iterate_phdr(DlPhdrCb, &cbData);
     if (ret > 0) {
 #if defined(__arm__)
-        if(cbData.eti.diExidx.format != -1) {
+        if (cbData.eti.diExidx.format != -1) {
             uti = cbData.eti.diExidx;
         }
 #endif
-        if(cbData.eti.diEhHdr.format != -1) {
+        if (cbData.eti.diEhHdr.format != -1) {
             uti = cbData.eti.diEhHdr;
-        } else if(cbData.eti.diDebug.format != -1) {
+        } else if (cbData.eti.diDebug.format != -1) {
             uti = cbData.eti.diDebug;
         }
         return UNW_ERROR_NONE;
@@ -571,33 +571,33 @@ int DfxElf::DlPhdrCb(struct dl_phdr_info *info, size_t size, void *data)
     ElfW(Addr) loadBase = info->dlpi_addr, maxLoadAddr = 0;
     for (size_t i = 0; i < info->dlpi_phnum; i++, phdr++) {
         switch (phdr->p_type) {
-        case PT_LOAD: {
-            ElfW(Addr) vaddr = phdr->p_vaddr + loadBase;
-            if (pc >= vaddr && pc < vaddr + phdr->p_memsz) {
-                pText = phdr;
-            }
+            case PT_LOAD: {
+                ElfW(Addr) vaddr = phdr->p_vaddr + loadBase;
+                if (pc >= vaddr && pc < vaddr + phdr->p_memsz) {
+                    pText = phdr;
+                }
 
-            if (vaddr + phdr->p_filesz > maxLoadAddr) {
-                maxLoadAddr = vaddr + phdr->p_filesz;
+                if (vaddr + phdr->p_filesz > maxLoadAddr) {
+                    maxLoadAddr = vaddr + phdr->p_filesz;
+                }
+                break;
             }
-            break;
-        }
 #if defined(__arm__)
-        case PT_ARM_EXIDX: {
-            pArmExidx = phdr;
-            break;
-        }
+            case PT_ARM_EXIDX: {
+                pArmExidx = phdr;
+                break;
+            }
 #endif
-        case PT_GNU_EH_FRAME: {
-            pEhHdr = phdr;
-            break;
-        }
-        case PT_DYNAMIC: {
-            pDynamic = phdr;
-            break;
-        }
-        default:
-            break;
+            case PT_GNU_EH_FRAME: {
+                pEhHdr = phdr;
+                break;
+            }
+            case PT_DYNAMIC: {
+                pDynamic = phdr;
+                break;
+            }
+            default:
+                break;
         }
     }
     if (pText == nullptr) {

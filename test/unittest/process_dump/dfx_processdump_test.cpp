@@ -72,6 +72,17 @@ static pid_t CreateMultiThreadProcess(int threadNum)
     return pid;
 }
 
+static pid_t CreateMultiThreadForThreadCrash(int threadNum)
+{
+    pid_t pid = fork();
+    if (pid < 0) {
+        GTEST_LOG_(ERROR) << "Failed to fork new test process.";
+    } else if (pid == 0) {
+        (void)MultiThreadConstructorForThreadCrash(threadNum);
+    }
+    return pid;
+}
+
 static bool CheckCppCrashKeyWords(const string& filePath, pid_t pid, int sig)
 {
     if (filePath.empty() || pid <= 0) {
@@ -206,6 +217,7 @@ HWTEST_F(DfxProcessDumpTest, DfxProcessDumpTest006, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "DfxProcessDumpTest006: start.";
     pid_t testProcess = CreateMultiThreadProcess(10); // 10 : create a process with ten threads
+    GTEST_LOG_(INFO) << "process pid:" << testProcess;
     sleep(1);
     auto curTime = GetTimeMilliSeconds();
     kill(testProcess, SIGSEGV);
@@ -288,5 +300,21 @@ HWTEST_F(DfxProcessDumpTest, DfxProcessDumpTest010, TestSize.Level2)
     int count = GetKeywordsNum(procDumpLog, log, expectNum);
     EXPECT_EQ(count, expectNum) << "DfxProcessDumpTest010 Failed";
     GTEST_LOG_(INFO) << "DfxProcessDumpTest010: end.";
+}
+
+/**
+ * @tc.name: DfxProcessDumpTest011
+ * @tc.desc: Testing the sub thread crash of multithreaded programs
+ * @tc.type: FUNC
+ */
+HWTEST_F(DfxProcessDumpTest, DfxProcessDumpTest011, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "DfxProcessDumpTest011: start.";
+    pid_t testProcess = CreateMultiThreadForThreadCrash(10); // 10 : create a process with ten threads
+    GTEST_LOG_(INFO) << "process pid:" << testProcess;
+    sleep(3); // 3 : wait 3s to generate cpp crash file
+    auto filename = GetCppCrashFileName(testProcess);
+    ASSERT_TRUE(CheckCppCrashKeyWords(filename, testProcess, SIGSEGV));
+    GTEST_LOG_(INFO) << "DfxProcessDumpTest011: end.";
 }
 }

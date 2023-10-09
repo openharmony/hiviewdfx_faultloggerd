@@ -39,12 +39,14 @@ public:
 
     const std::vector<DfxFrame>& GetFrames() const;
     std::string GetFormatedStr(bool withThreadName = false);
+    void SetMaxFrameNums(size_t maxFrameNums);
 private:
     bool UnwindCurrentThread(unw_addr_space_t as, std::shared_ptr<DfxSymbols> symbol,
         size_t skipFrameNum, bool fast = false);
 
 private:
     int32_t tid_;
+    size_t maxFrameNums_;
     std::vector<DfxFrame> frames_;
 };
 } // namespace HiviewDFX

@@ -180,7 +180,6 @@ bool DfxMemory::ReadPrel31(uintptr_t& addr, uintptr_t *val)
         return false;
     }
     // int32_t signedData = static_cast<int32_t>(data << 1) >> 1;
-    // uint32_t addr = offset + signedData;
     offset = static_cast<uintptr_t>(static_cast<int32_t>(offset << 1) >> 1);
     *val = addr + offset;
     return true;

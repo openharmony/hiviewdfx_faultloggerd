@@ -86,7 +86,7 @@ struct DfxSymbol {
         return !module_.empty();
     }
 
-    inline STRING_VIEW GetName() const
+    STRING_VIEW GetName() const
     {
         if (!demangle_.empty()) {
             return demangle_;
@@ -118,10 +118,10 @@ struct DfxSymbol {
         return ss.str();
     };
 
-    inline std::string ToDebugString() const
+    std::string ToDebugString() const
     {
         std::stringstream ss;
-        ss << "0x" << std::setfill('0') << std::setw(sizeof(funcVaddr_) * 2) << std::hex << funcVaddr_;
+        ss << "0x" << std::setfill('0') << std::setw(sizeof(funcVaddr_) * 2) << std::hex << funcVaddr_; // 2:a multiplicand
         ss << "|";
         ss << std::setfill('0') << std::setw(sizeof(size_)) << size_;
         ss << "|";

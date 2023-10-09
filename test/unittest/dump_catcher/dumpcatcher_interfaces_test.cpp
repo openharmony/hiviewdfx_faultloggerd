@@ -68,6 +68,36 @@ void DumpCatcherInterfacesTest::SetUp()
 void DumpCatcherInterfacesTest::TearDown()
 {}
 
+static void TestFunRecursive(int recursiveCount)
+{
+    GTEST_LOG_(INFO) << "Enter TestFunRecursive recursiveCount:" << recursiveCount;
+    if (recursiveCount <= 0) {
+        GTEST_LOG_(INFO) << "start enter sleep" << gettid();
+        sleep(THREAD_ALIVE_TIME);
+        GTEST_LOG_(INFO) << "sleep end.";
+    } else {
+        TestFunRecursive(recursiveCount - 1);
+    }
+}
+
+static void* CreateRecursiveThread(void *argv)
+{
+    g_threadId = gettid();
+    GTEST_LOG_(INFO) << "create Recursive MultiThread " << gettid();
+    TestFunRecursive(266); // 266: set recursive count to 266, used for dumpcatcher get stack info
+    GTEST_LOG_(INFO) << "Recursive MultiThread thread sleep end.";
+    return nullptr;
+}
+
+static int RecursiveMultiThreadConstructor(void)
+{
+    pthread_t thread;
+    pthread_create(&thread, nullptr, CreateRecursiveThread, nullptr);
+    pthread_detach(thread);
+    usleep(CREATE_THREAD_TIMEOUT);
+    return 0;
+}
+
 static void* CreateThread(void *argv)
 {
     g_threadId = gettid();
@@ -599,6 +629,47 @@ HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest027, TestSize.Level
     GTEST_LOG_(INFO) << ret;
     EXPECT_EQ(ret, true) << "DumpCatcherInterfacesTest027 Failed";
     GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest027: end.";
+}
+
+/**
+ * @tc.name: DumpCatcherInterfacesTest028
+ * @tc.desc: test DumpCatchFd API: PID(getpid()), TID(child thread) and config FrameNum
+ * @tc.type: FUNC
+ */
+HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest028, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest028: start.";
+    RecursiveMultiThreadConstructor();
+    DfxDumpCatcher dumplog;
+    std::string msg = "";
+    GTEST_LOG_(INFO) << "dump local process, "  << " tid:" << g_threadId;
+    bool ret = dumplog.DumpCatchFd(getpid(), g_threadId, msg, 1, 10); // 10 means backtrace frames is 10
+    GTEST_LOG_(INFO) << "message:"  << msg;
+    GTEST_LOG_(INFO) << ret;
+    EXPECT_TRUE(msg.find("#10") != std::string::npos);
+    EXPECT_EQ(ret, true) << "DumpCatcherInterfacesTest028 Failed";
+    GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest028: end.";
+}
+
+/**
+ * @tc.name: DumpCatcherInterfacesTest029
+ * @tc.desc: test DumpCatchFd API: PID(getpid()), TID(child thread) and DEFAULT_MAX_FRAME_NUM
+ * @tc.type: FUNC
+ */
+HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest029, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest029: start.";
+    RecursiveMultiThreadConstructor();
+    DfxDumpCatcher dumplog;
+    std::string msg = "";
+    GTEST_LOG_(INFO) << "dump local process, "  << " tid:" << g_threadId;
+    bool ret = dumplog.DumpCatchFd(getpid(), g_threadId, msg, 1);
+    GTEST_LOG_(INFO) << "message:"  << msg;
+    GTEST_LOG_(INFO) << ret;
+    std::string stackKeyword = std::string("#") + std::to_string(DEFAULT_MAX_FRAME_NUM);
+    EXPECT_TRUE(msg.find(stackKeyword.c_str()) != std::string::npos);
+    EXPECT_EQ(ret, true) << "DumpCatcherInterfacesTest029 Failed";
+    GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest029: end.";
 }
 } // namespace HiviewDFX
 } // namepsace OHOS

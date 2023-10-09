@@ -563,7 +563,6 @@ bool ElfImitate::ParseProgramHeaders(ElfFileType fileType)
             if (flg.find("E") == std::string::npos) {
                 continue;
             }
-            //LOGU("phdr.p_offset: %llx, vAddr: %llx", phdr.p_offset, vAddr);
             ptLoads_[offset] = ElfLoadInfo{offset, vAddr, static_cast<size_t>(memSize)};
 
             // Only set the load bias from the first executable load header.
@@ -733,8 +732,8 @@ bool ElfImitate::ParseElfSymbols()
         {"GNU_IFUNC", STT_GNU_IFUNC}, {"HIOS", STT_HIOS}, {"LOPROC", STT_LOPROC}, {"HIPROC", STT_HIPROC},
     };
     std::unordered_map <std::string, uint8_t> bindMap = {
-        {"LOCAL", STB_LOCAL}, {"GLOBAL", STB_GLOBAL}, {"WEAK", STB_WEAK}, {"NUM", STB_NUM},{"LOOS", STB_LOOS},
-        {"GNU_UNIQUE", STB_GNU_UNIQUE}, {"HIOS", STB_HIOS}, {"LOPROC", STB_LOPROC},{"HIPROC", STB_HIPROC}
+        {"LOCAL", STB_LOCAL}, {"GLOBAL", STB_GLOBAL}, {"WEAK", STB_WEAK}, {"NUM", STB_NUM}, {"LOOS", STB_LOOS},
+        {"GNU_UNIQUE", STB_GNU_UNIQUE}, {"HIOS", STB_HIOS}, {"LOPROC", STB_LOPROC}, {"HIPROC", STB_HIPROC}
     };
     std::unordered_map <std::string, uint8_t> vsMap = {
         {"DEFAULT", STV_DEFAULT}, {"INTERNAL", STV_INTERNAL}, {"HIDDEN", STV_HIDDEN}, {"PROTECTED", STV_PROTECTED},
@@ -767,7 +766,6 @@ bool ElfImitate::ParseElfSymbols()
         elfSymbols_.push_back(elfSymbol);
     }
     return true;
-
 }
 const std::string ElfImitate::GetNextSymLine()
 {
@@ -815,7 +813,6 @@ uint64_t ElfImitate::GetLoadBase(uint64_t mapStart, uint64_t mapOffset)
 
 uint64_t ElfImitate::GetStartPc()
 {
-
     auto startVaddr = GetStartVaddr();
     startPc_ = startVaddr + loadBase_;
     return startPc_;

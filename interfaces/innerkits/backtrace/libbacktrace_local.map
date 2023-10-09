@@ -20,6 +20,7 @@
       OHOS::HiviewDFX::BacktraceLocalContext::GetInstance*;
       OHOS::HiviewDFX::BacktraceLocalContext::CleanUp*;
       OHOS::HiviewDFX::BacktraceLocalThread::GetFormatedStr*;
+      OHOS::HiviewDFX::BacktraceLocalThread::SetMaxFrameNums*;
     };
     extern "C" {
       PrintTrace*;

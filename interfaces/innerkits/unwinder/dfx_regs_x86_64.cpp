@@ -18,7 +18,7 @@
 
 #include <elf.h>
 #include <securec.h>
-#include <stdint.h>
+#include <cstdint>
 #include <sys/ptrace.h>
 #include <sys/uio.h>
 #include "dfx_define.h"

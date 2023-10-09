@@ -60,10 +60,10 @@ HWTEST_F(UnwinderTest, DfxConfigTest001, TestSize.Level2)
     ASSERT_EQ(DfxConfig::GetConfig().displayBacktrace, true);
     ASSERT_EQ(DfxConfig::GetConfig().displayMaps, true);
     ASSERT_EQ(DfxConfig::GetConfig().displayFaultStack, true);
-    ASSERT_EQ(DfxConfig::GetConfig().dumpOtherThreads, false);
+    ASSERT_EQ(DfxConfig::GetConfig().dumpOtherThreads, true);
     ASSERT_EQ(DfxConfig::GetConfig().highAddressStep, 512);
     ASSERT_EQ(DfxConfig::GetConfig().lowAddressStep, 16);
-    ASSERT_EQ(DfxConfig::GetConfig().maxFrameNums, 64);
+    ASSERT_EQ(DfxConfig::GetConfig().maxFrameNums, 256);
     GTEST_LOG_(INFO) << "DfxConfigTest001: end.";
 }
 

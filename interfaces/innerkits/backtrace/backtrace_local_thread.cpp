@@ -44,6 +44,7 @@ namespace {
 
 BacktraceLocalThread::BacktraceLocalThread(int32_t tid) : tid_(tid)
 {
+    maxFrameNums_ = DEFAULT_MAX_FRAME_NUM;
     frames_.clear();
 }
 
@@ -66,14 +67,14 @@ bool BacktraceLocalThread::UnwindCurrentThread(unw_addr_space_t as, std::shared_
     if (fast) {
 #ifdef __aarch64__
         FpUnwinder unwinder;
-        ret = unwinder.UnwindWithContext(context, skipFrameNum + 1);
+        ret = unwinder.UnwindWithContext(context, skipFrameNum + 1, maxFrameNums_);
         unwinder.UpdateFrameInfo();
         frames_ = unwinder.GetFrames();
 #endif
     }
     if (!ret) {
         DwarfUnwinder unwinder;
-        ret = unwinder.UnwindWithContext(as, context, symbol, skipFrameNum + 1);
+        ret = unwinder.UnwindWithContext(as, context, symbol, skipFrameNum + 1, maxFrameNums_);
         frames_ = unwinder.GetFrames();
     }
     return ret;
@@ -106,7 +107,7 @@ bool BacktraceLocalThread::Unwind(unw_addr_space_t as, std::shared_ptr<DfxSymbol
     if (!ret) {
         DwarfUnwinder unwinder;
         std::unique_lock<std::mutex> mlock(threadContext->lock);
-        ret = unwinder.UnwindWithContext(as, *(threadContext->ctx), symbol, skipFrameNum);
+        ret = unwinder.UnwindWithContext(as, *(threadContext->ctx), symbol, skipFrameNum, maxFrameNums_);
         frames_ = unwinder.GetFrames();
     }
 
@@ -144,6 +145,11 @@ std::string BacktraceLocalThread::GetFormatedStr(bool withThreadName)
 
     ss << DfxFrameFormat::GetFramesStr(frames_);
     return ss.str();
+}
+
+void BacktraceLocalThread::SetMaxFrameNums(size_t maxFrameNums)
+{
+    maxFrameNums_ = maxFrameNums;
 }
 } // namespace HiviewDFX
 } // namespace OHOS

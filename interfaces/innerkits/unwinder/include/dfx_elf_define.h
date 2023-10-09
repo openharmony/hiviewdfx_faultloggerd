@@ -55,16 +55,16 @@ struct ElfSymbol {
 };
 
 struct ElfShdr {
-    uint32_t	name;		/* Section name (string tbl index) */
-    uint32_t	type;		/* Section type */
-    uint64_t	flags;		/* Section flags */
-    uint64_t	addr;		/* Section virtual addr at execution */
-    uint64_t	offset;		/* Section file offset */
-    uint64_t	size;		/* Section size in bytes */
-    uint32_t	link;		/* Link to another section */
-    uint32_t	info;		/* Additional section information */
-    uint64_t	addrAlign;		/* Section alignment */
-    uint64_t	entSize;		/* Entry size if section holds table */
+    uint32_t	name;       // Section name (string tbl index)
+    uint32_t	type;       // Section type
+    uint64_t	flags;      // Section flags
+    uint64_t	addr;       // Section virtual addr at execution
+    uint64_t	offset;     // Section file offset
+    uint64_t	size;       // Section size in bytes
+    uint32_t	link;       // Link to another section
+    uint32_t	info;       // Additional section information
+    uint64_t	addrAlign;  // Section alignment
+    uint64_t	entSize;    // Entry size if section holds table
 };
 
 struct ShdrInfo {
@@ -78,8 +78,7 @@ struct ElfSecInfo {
     ShdrInfo shdrInfo;
 };
 
-struct __attribute__((packed)) DwarfEhFrameHdr
-{
+struct __attribute__((packed)) DwarfEhFrameHdr {
     unsigned char version;
     unsigned char ehFramePtrEnc;
     unsigned char fdeCountEnc;

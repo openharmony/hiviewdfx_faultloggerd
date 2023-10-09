@@ -27,6 +27,7 @@
 #include <libunwind.h>
 
 #include "dfx_define.h"
+#include "dfx_dump_request.h"
 #include "dfx_process.h"
 #include "dfx_symbols.h"
 #include "dfx_thread.h"
@@ -39,7 +40,7 @@ public:
     static DfxUnwindRemote &GetInstance();
     ~DfxUnwindRemote() = default;
 
-    bool UnwindProcess(std::shared_ptr<DfxProcess> process);
+    bool UnwindProcess(std::shared_ptr<ProcessDumpRequest> request, std::shared_ptr<DfxProcess> process);
     bool UnwindThread(std::shared_ptr<DfxProcess> process, std::shared_ptr<DfxThread> thread);
     void UnwindThreadFallback(std::shared_ptr<DfxProcess> process, std::shared_ptr<DfxThread> thread);
     bool GetArkJsHeapFuncName(std::string& funcName, std::shared_ptr<DfxThread> thread);
@@ -51,6 +52,7 @@ private:
     bool UpdateAndFillFrame(unw_cursor_t& cursor, std::shared_ptr<DfxFrame> frame,
         std::shared_ptr<DfxProcess> process, std::shared_ptr<DfxThread> thread, bool enableBuildId);
     static std::string GetReadableBuildId(uint8_t* buildId, size_t length);
+    void UnwindThreadByParseStackIfNeed(std::shared_ptr<DfxProcess> &process, std::shared_ptr<DfxThread> &thread);
 
 private:
     DfxUnwindRemote();

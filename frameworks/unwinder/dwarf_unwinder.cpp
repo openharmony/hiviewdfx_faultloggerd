@@ -54,7 +54,7 @@ void DwarfUnwinder::UpdateFrameFuncName(unw_addr_space_t as,
     }
 }
 
-bool DwarfUnwinder::Unwind(size_t skipFrameNum)
+bool DwarfUnwinder::Unwind(size_t skipFrameNum, size_t maxFrameNums)
 {
     unw_addr_space_t as;
     unw_init_local_address_space(&as);
@@ -67,13 +67,13 @@ bool DwarfUnwinder::Unwind(size_t skipFrameNum)
     (void)memset_s(&context, sizeof(unw_context_t), 0, sizeof(unw_context_t));
     unw_getcontext(&context);
 
-    bool ret = UnwindWithContext(as, context, symbol, skipFrameNum + 1);
+    bool ret = UnwindWithContext(as, context, symbol, skipFrameNum + 1, maxFrameNums);
     unw_destroy_local_address_space(as);
     return ret;
 }
 
 bool DwarfUnwinder::UnwindWithContext(unw_addr_space_t as, unw_context_t& context,
-    std::shared_ptr<DfxSymbols> symbol, size_t skipFrameNum)
+    std::shared_ptr<DfxSymbols> symbol, size_t skipFrameNum, size_t maxFrameNums)
 {
     if (as == nullptr) {
         return false;
@@ -143,7 +143,7 @@ bool DwarfUnwinder::UnwindWithContext(unw_addr_space_t as, unw_context_t& contex
         }
 
         index++;
-    } while ((unw_step(&cursor) > 0) && (curIndex < DfxConfig::GetConfig().maxFrameNums));
+    } while ((unw_step(&cursor) > 0) && (curIndex < maxFrameNums));
     return (frames_.size() > 0);
 }
 } // namespace HiviewDFX

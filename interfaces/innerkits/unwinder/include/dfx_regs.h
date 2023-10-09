@@ -65,7 +65,7 @@ public:
     void SetSp(uintptr_t sp);
     uintptr_t GetPc() const;
     void SetPc(uintptr_t pc);
-#if defined(is_ohos) && is_ohos
+#if is_ohos
     uintptr_t GetFp() const;
     void SetFp(uintptr_t fp);
     void GetSpecialRegs(uintptr_t& fp, uintptr_t& lr, uintptr_t& sp, uintptr_t& pc) const;

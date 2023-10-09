@@ -215,23 +215,23 @@ bool Unwinder::Step(uintptr_t& pc, uintptr_t& sp, void *ctx)
         }
 
         // 2. find unwind table and entry
-        UnwindTableInfo di;
-        if ((lastErrorData_.code = acc_->FindUnwindTable(pc, di, ctx)) != UNW_ERROR_NONE) {
+        UnwindTableInfo uti;
+        if ((lastErrorData_.code = acc_->FindUnwindTable(pc, uti, ctx)) != UNW_ERROR_NONE) {
             LOGE("Failed to find unwind table? errorCode: %d", lastErrorData_.code);
             break;
         }
 
         // 3. parse instructions and get cache rs
-        struct UnwindEntryInfo pi;
+        struct UnwindEntryInfo uei;
         rs = std::make_shared<RegLocState>();
 #if defined(__arm__)
-        if (!ret && di.format == UNW_INFO_FORMAT_ARM_EXIDX) {
-            if (!armExidx_->SearchEntry(pi, di, pc)) {
+        if (!ret && uti.format == UNW_INFO_FORMAT_ARM_EXIDX) {
+            if (!armExidx_->SearchEntry(uei, uti, pc)) {
                 lastErrorData_.code = armExidx_->GetLastErrorCode();
                 LOGE("Failed to search unwind entry? errorCode: %d", lastErrorData_.code);
                 break;
             }
-            if (!armExidx_->Step((uintptr_t)pi.unwindInfo, rs)) {
+            if (!armExidx_->Step((uintptr_t)uei.unwindInfo, rs)) {
                 lastErrorData_.code = armExidx_->GetLastErrorCode();
                 lastErrorData_.addr = armExidx_->GetLastErrorAddr();
                 LOGU("Step exidx section error, errorCode: %d", lastErrorData_.code);
@@ -240,14 +240,14 @@ bool Unwinder::Step(uintptr_t& pc, uintptr_t& sp, void *ctx)
             }
         }
 #endif
-        if (!ret && di.format == UNW_INFO_FORMAT_REMOTE_TABLE) {
-            if (!dwarfSection_->SearchEntry(pi, di, pc)) {
+        if (!ret && uti.format == UNW_INFO_FORMAT_REMOTE_TABLE) {
+            if (!dwarfSection_->SearchEntry(uei, uti, pc)) {
                 lastErrorData_.code = dwarfSection_->GetLastErrorCode();
                 LOGE("Failed to search unwind entry? errorCode: %d", lastErrorData_.code);
                 break;
             }
-            memory_->SetDataOffset(di.segbase);
-            if (!dwarfSection_->Step((uintptr_t)pi.unwindInfo, regs_, rs)) {
+            memory_->SetDataOffset(uti.segbase);
+            if (!dwarfSection_->Step((uintptr_t)uei.unwindInfo, regs_, rs)) {
                 lastErrorData_.code = dwarfSection_->GetLastErrorCode();
                 lastErrorData_.addr = dwarfSection_->GetLastErrorAddr();
                 LOGU("Step dwarf section error, errorCode: %d", lastErrorData_.code);

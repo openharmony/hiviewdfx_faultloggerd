@@ -141,5 +141,14 @@ bool DfxThread::Attach()
     threadStatus = ThreadStatus::THREAD_STATUS_ATTACHED;
     return true;
 }
+
+void DfxThread::InitFaultStack(bool needParseStack)
+{
+    if (faultStack_ != nullptr) {
+        return;
+    }
+    faultStack_ = std::make_shared<FaultStack>(threadInfo_.nsTid);
+    faultStack_->CollectStackInfo(frames_, needParseStack);
+}
 } // namespace HiviewDFX
 } // nampespace OHOS

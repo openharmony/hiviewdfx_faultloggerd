@@ -40,10 +40,12 @@ namespace {
 #define LOG_DOMAIN 0xD002D11
 }
 
-bool GetBacktraceFramesByTid(std::vector<DfxFrame>& frames, int32_t tid, size_t skipFrameNum, bool fast)
+bool GetBacktraceFramesByTid(std::vector<DfxFrame>& frames, int32_t tid, size_t skipFrameNum, bool fast,
+                             size_t maxFrameNums)
 {
     bool ret = false;
     BacktraceLocalThread thread(tid);
+    thread.SetMaxFrameNums(maxFrameNums);
     if (fast) {
 #ifdef __aarch64__
         ret = thread.Unwind(nullptr, nullptr, skipFrameNum, fast);
@@ -66,20 +68,20 @@ bool GetBacktraceFramesByTid(std::vector<DfxFrame>& frames, int32_t tid, size_t 
     return ret;
 }
 
-bool GetBacktraceStringByTid(std::string& out, int32_t tid, size_t skipFrameNum, bool fast)
+bool GetBacktraceStringByTid(std::string& out, int32_t tid, size_t skipFrameNum, bool fast, size_t maxFrameNums)
 {
     std::vector<DfxFrame> frames;
-    bool ret = GetBacktraceFramesByTid(frames, tid, skipFrameNum + 1, fast);
+    bool ret = GetBacktraceFramesByTid(frames, tid, skipFrameNum + 1, fast, maxFrameNums);
 
     out.clear();
     out = DfxFrameFormat::GetFramesStr(frames);
     return ret;
 }
 
-bool PrintBacktrace(int32_t fd, bool fast)
+bool PrintBacktrace(int32_t fd, bool fast, size_t maxFrameNums)
 {
     std::vector<DfxFrame> frames;
-    bool ret = GetBacktraceFramesByTid(frames, BACKTRACE_CURRENT_THREAD, 1, fast); // 1: skip current frame
+    bool ret = GetBacktraceFramesByTid(frames, BACKTRACE_CURRENT_THREAD, 1, fast, maxFrameNums); // 1: skip current frame
     if (!ret) {
         return false;
     }
@@ -96,26 +98,26 @@ bool PrintBacktrace(int32_t fd, bool fast)
     return ret;
 }
 
-bool GetBacktrace(std::string& out, bool fast)
+bool GetBacktrace(std::string& out, bool fast, size_t maxFrameNums)
 {
-    return GetBacktraceStringByTid(out, BACKTRACE_CURRENT_THREAD, 1, fast); // 1: skip current frame
+    return GetBacktraceStringByTid(out, BACKTRACE_CURRENT_THREAD, 1, fast, maxFrameNums); // 1: skip current frame
 }
 
-bool GetBacktrace(std::string& out, size_t skipFrameNum, bool fast)
+bool GetBacktrace(std::string& out, size_t skipFrameNum, bool fast, size_t maxFrameNums)
 {
-    return GetBacktraceStringByTid(out, BACKTRACE_CURRENT_THREAD, skipFrameNum + 1, fast);
+    return GetBacktraceStringByTid(out, BACKTRACE_CURRENT_THREAD, skipFrameNum + 1, fast, maxFrameNums);
 }
 
-bool PrintTrace(int32_t fd)
+bool PrintTrace(int32_t fd, size_t maxFrameNums)
 {
-    return PrintBacktrace(fd, false);
+    return PrintBacktrace(fd, false, maxFrameNums);
 }
 
-const char* GetTrace(size_t skipFrameNum)
+const char* GetTrace(size_t skipFrameNum, size_t maxFrameNums)
 {
     static std::string trace;
     trace.clear();
-    if (!GetBacktrace(trace, skipFrameNum)) {
+    if (!GetBacktrace(trace, skipFrameNum, false, maxFrameNums)) {
         HILOG_ERROR(LOG_CORE, "Failed to get trace string");
     }
     return trace.c_str();
@@ -134,7 +136,7 @@ static std::string GetStacktraceHeader()
     return ss.str();
 }
 
-std::string GetProcessStacktrace()
+std::string GetProcessStacktrace(size_t maxFrameNums)
 {
     unw_addr_space_t as;
     unw_init_local_address_space(&as);
@@ -150,6 +152,7 @@ std::string GetProcessStacktrace()
             return false;
         }
         BacktraceLocalThread thread(tid);
+        thread.SetMaxFrameNums(maxFrameNums);
         if (thread.Unwind(as, symbol, 0)) {
             ss << thread.GetFormatedStr(true) << std::endl;
         } else {

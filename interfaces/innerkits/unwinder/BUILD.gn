@@ -69,7 +69,7 @@ if (defined(ohos_lite)) {
     deps = [
       "$faultloggerd_common_path/dfxlog:dfx_hilog",
       "$faultloggerd_common_path/dfxutil:dfx_util",
-      "//base/hiviewdfx/hilog_lite/frameworks/featured:hilog_shared",
+      "$hilog_lite_deps_path",
       "//third_party/bounds_checking_function:libsec_shared",
     ]
   }
@@ -97,7 +97,7 @@ if (defined(ohos_lite)) {
     deps = [
       "$faultloggerd_common_path/dfxlog:dfx_hilog",
       "$faultloggerd_common_path/dfxutil:dfx_util",
-      "//base/hiviewdfx/hilog_lite/frameworks/featured:hilog_shared",
+      "$hilog_lite_deps_path",
       "//third_party/bounds_checking_function:libsec_shared",
     ]
   }
@@ -199,8 +199,8 @@ if (defined(ohos_lite)) {
   ohos_static_library("unwinder_host") {
     public_configs = [ ":unwinder_host_config" ]
     sources = [
-      "dfx_elf_parser.cpp",
       "dfx_elf.cpp",
+      "dfx_elf_parser.cpp",
       "dfx_map.cpp",
       "dfx_maps.cpp",
       "dfx_memory.cpp",
@@ -208,9 +208,7 @@ if (defined(ohos_lite)) {
       "dfx_symbols.cpp",
     ]
 
-    deps = [
-      "//third_party/bounds_checking_function:libsec_static",
-    ]
+    deps = [ "//third_party/bounds_checking_function:libsec_static" ]
 
     if (is_ohos) {
       external_deps = [ "c_utils:utils" ]

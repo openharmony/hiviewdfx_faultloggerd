@@ -20,6 +20,7 @@
 #include <link.h>
 #include <unistd.h>
 #include <libunwind.h>
+#include "dfx_define.h"
 #include "dfx_frame.h"
 #include "dfx_regs.h"
 
@@ -30,9 +31,10 @@ public:
     FpUnwinder();
     ~FpUnwinder();
 
-    bool UnwindWithContext(unw_context_t& context, size_t skipFrameNum);
-    bool Unwind(size_t skipFrameNum);
-    bool Unwind(const std::shared_ptr<DfxRegs> &dfxregs, size_t skipFrameNum);
+    bool UnwindWithContext(unw_context_t& context, size_t skipFrameNum, size_t maxFrameNums = DEFAULT_MAX_FRAME_NUM);
+    bool Unwind(size_t skipFrameNum, size_t maxFrameNums = DEFAULT_MAX_FRAME_NUM);
+    bool Unwind(const std::shared_ptr<DfxRegs> &dfxregs, size_t skipFrameNum,
+        size_t maxFrameNums = DEFAULT_MAX_FRAME_NUM);
 
     void UpdateFrameInfo();
     const std::vector<DfxFrame>& GetFrames() const;

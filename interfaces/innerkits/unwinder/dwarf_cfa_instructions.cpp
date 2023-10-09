@@ -14,8 +14,8 @@
  */
 
 #include "dwarf_cfa_instructions.h"
-#include <stdio.h>
-#include <string.h>
+#include <cstdio>
+#include <cstring>
 #include "dfx_log.h"
 #include "dwarf_define.h"
 #include "unwind_define.h"

@@ -15,6 +15,7 @@
 
 #include "dfx_crasher.h"
 
+#include <errno.h>
 #include <cinttypes>
 #include <csignal>
 #include <cstdio>
@@ -240,20 +241,30 @@ NOINLINE int DfxCrasher::MaxMethodNameTest12345678901234567890123456789012345678
     return 0;
 }
 
+void *DoStackOverflow(void * inputArg)
+ {
+    int b[10] = {1};
+    int *c = 0;
+    memcpy_s(c, sizeof(int), b, sizeof(int));
+    if (b[0] == 0){
+        return (void*)(b + 9);
+    }
+    DoStackOverflow(inputArg);
+    return (void*)(b + 9);
+}
+
 NOINLINE int DfxCrasher::StackOverflow()
 {
-    std::cout << "call StackOverflow" << std::endl;
-    // for stack overflow test
-    char a[1024][1024][1024] = { { {'1'} } };
-    char b[1024][1024][1024] = { { {'1'} } };
-    char c[1024][1024][1024] = { { {'1'} } };
-    char d[1024][1024][1024] = { { {'1'} } };
-
-    std::cout << a[0][0] << std::endl;
-    std::cout << b[0][0] << std::endl;
-    std::cout << c[0][0] << std::endl;
-    std::cout << d[0][0] << std::endl;
-
+    int errno;
+    pthread_t tid;
+    pthread_attr_t attr;
+    errno=pthread_attr_init(&attr);
+    if (pthread_attr_setstacksize(&attr, 1024 * 10) == 0) {
+        pthread_create(&tid, &attr, DoStackOverflow, nullptr);
+        pthread_join(tid, nullptr);
+    } else {
+        std::cout << "failed" << std::endl;
+    }
     return 0;
 }
 

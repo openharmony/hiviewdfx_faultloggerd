@@ -66,7 +66,10 @@ public:
 
     const std::vector<uintptr_t>& GetPcs() { return pcs_; }
     void FillFrames(std::vector<DfxFrame>& frames);
-    const std::vector<DfxFrame>& GetFrames() { FillFrames(frames_); return frames_; }
+    const std::vector<DfxFrame>& GetFrames() {
+        FillFrames(frames_);
+        return frames_;
+    };
     const uint16_t& GetLastErrorCode() const { return lastErrorData_.code; }
     const uint64_t& GetLastErrorAddr() const { return lastErrorData_.addr; }
 

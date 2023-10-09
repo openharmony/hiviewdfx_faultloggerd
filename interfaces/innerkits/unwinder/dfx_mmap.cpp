@@ -17,7 +17,7 @@
 
 #include <fcntl.h>
 #include <securec.h>
-#if defined(is_ohos) && is_ohos
+#if is_ohos
 #include <unique_fd.h>
 #endif
 
@@ -36,7 +36,7 @@ namespace {
 
 bool DfxMmap::Init(const std::string &file)
 {
-#if defined(is_ohos) && is_ohos
+#if is_ohos
     Clear();
 
     OHOS::UniqueFd fd = OHOS::UniqueFd(OHOS_TEMP_FAILURE_RETRY(open(file.c_str(), O_RDONLY)));
@@ -58,7 +58,7 @@ bool DfxMmap::Init(const std::string &file)
 
 void DfxMmap::Clear()
 {
-#if defined(is_ohos) && is_ohos
+#if is_ohos
     if (mmap_ != MAP_FAILED) {
         munmap(mmap_, size_);
         mmap_ = MAP_FAILED;

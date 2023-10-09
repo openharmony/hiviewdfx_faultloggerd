@@ -119,38 +119,37 @@ bool ElfParser::ParseProgramHeaders(const EhdrType& ehdr)
         }
 
         switch (phdr.p_type) {
-        case PT_LOAD: {
-            if ((phdr.p_flags & PF_X) == 0) {
-                continue;
-            }
-            // LOGU("phdr.p_offset: %llx, phdr.p_vaddr: %llx", phdr.p_offset, phdr.p_vaddr);
-            ElfLoadInfo loadInfo;
-            loadInfo.offset = phdr.p_offset;
-            loadInfo.tableVaddr = phdr.p_vaddr;
-            loadInfo.tableSize = static_cast<size_t>(phdr.p_memsz);
-            ptLoads_[phdr.p_offset] = loadInfo;
+            case PT_LOAD: {
+                if ((phdr.p_flags & PF_X) == 0) {
+                    continue;
+                }
+                ElfLoadInfo loadInfo;
+                loadInfo.offset = phdr.p_offset;
+                loadInfo.tableVaddr = phdr.p_vaddr;
+                loadInfo.tableSize = static_cast<size_t>(phdr.p_memsz);
+                ptLoads_[phdr.p_offset] = loadInfo;
 
-            // Only set the load bias from the first executable load header.
-            if (firstLoadHeader) {
-                loadBias_ = static_cast<int64_t>(static_cast<uint64_t>(phdr.p_vaddr) - phdr.p_offset);
-            }
-            firstLoadHeader = false;
+                // Only set the load bias from the first executable load header.
+                if (firstLoadHeader) {
+                    loadBias_ = static_cast<int64_t>(static_cast<uint64_t>(phdr.p_vaddr) - phdr.p_offset);
+                }
+                firstLoadHeader = false;
 
-            if (phdr.p_vaddr < startVaddr_) {
-                startVaddr_ = phdr.p_vaddr;
+                if (phdr.p_vaddr < startVaddr_) {
+                    startVaddr_ = phdr.p_vaddr;
+                }
+                if (phdr.p_vaddr + phdr.p_memsz > endVaddr_) {
+                    endVaddr_ = phdr.p_vaddr + phdr.p_memsz;
+                }
+                LOGU("Elf startVaddr: %llx, endVaddr: %llx", (uint64_t)startVaddr_, (uint64_t)endVaddr_);
+                break;
             }
-            if (phdr.p_vaddr + phdr.p_memsz > endVaddr_) {
-                endVaddr_ = phdr.p_vaddr + phdr.p_memsz;
+            case PT_DYNAMIC: {
+                dynamicOffset_ = phdr.p_offset;
+                break;
             }
-            LOGU("Elf startVaddr: %llx, endVaddr: %llx", (uint64_t)startVaddr_, (uint64_t)endVaddr_);
-            break;
-        }
-        case PT_DYNAMIC: {
-            dynamicOffset_ = phdr.p_offset;
-            break;
-        }
-        default:
-            break;
+            default:
+                break;
         }
     }
     return true;
@@ -181,7 +180,6 @@ bool ElfParser::ParseSectionHeaders(const EhdrType& ehdr)
 		return false;
     }
 
-    // Skip the first header, it's always going to be NULL.
     offset += ehdr.e_shentsize;
     for (size_t i = 1; i < ehdr.e_shnum; i++, offset += ehdr.e_shentsize) {
         if (i == ehdr.e_shstrndx) {
@@ -196,7 +194,6 @@ bool ElfParser::ParseSectionHeaders(const EhdrType& ehdr)
             LOGE("Failed to get section name");
             continue;
         }
-        // LOGU("ParseSectionHeaders secName: %s", secName.c_str());
 
         ShdrInfo shdrInfo;
         shdrInfo.addr = static_cast<uint64_t>(shdr.sh_addr);
@@ -320,7 +317,6 @@ bool ElfParser::ParseElfSymbols(bool isFunc, bool isSort)
             elfSymbol.name = static_cast<uint32_t>(sym.st_name);
             if (strtabPtr != nullptr) {
                 elfSymbol.nameStr = std::string(strtabPtr + elfSymbol.name);
-                //LOGU("elfSymbol.nameStr: %s", elfSymbol.nameStr.c_str());
             }
             elfSymbols_.push_back(elfSymbol);
         }
@@ -328,7 +324,7 @@ bool ElfParser::ParseElfSymbols(bool isFunc, bool isSort)
             auto comp = [](ElfSymbol a, ElfSymbol b) { return a.value < b.value; };
             std::sort(elfSymbols_.begin(), elfSymbols_.end(), comp);
         }
-        auto pred = [](ElfSymbol a,ElfSymbol b) { return a.value == b.value; };
+        auto pred = [](ElfSymbol a, ElfSymbol b) { return a.value == b.value; };
         elfSymbols_.erase(std::unique(elfSymbols_.begin(), elfSymbols_.end(), pred), elfSymbols_.end());
         elfSymbols_.shrink_to_fit();
         LOGU("elfSymbols.size: %d", elfSymbols_.size());

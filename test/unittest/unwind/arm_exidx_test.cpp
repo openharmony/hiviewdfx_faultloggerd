@@ -510,7 +510,8 @@ HWTEST_F(ArmExidxTest, ArmExidxTest018, TestSize.Level2)
 HWTEST_F(ArmExidxTest, ArmExidxTest019, TestSize.Level2)
 {
     /**
-     * 11001000 sssscccc Pop VFP double precision registers D[16+ssss]-D[16+ssss+cccc] saved (as if) by VPUSH (see remarks d,e)
+     * 11001000 sssscccc Pop VFP double precision registers
+     *    D[16+ssss]-D[16+ssss+cccc] saved (as if) by VPUSH (see remarks d,e)
      * 11001001 sssscccc Pop VFP double precision registers D[ssss]-D[ssss+cccc] saved (as if) by VPUSH (see remark d)
      * 11001yyy(yyy != 000, 001) Spare
     */

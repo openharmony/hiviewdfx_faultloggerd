@@ -38,7 +38,8 @@ static const uintptr_t ADDR = {0xf6d80000};
 static const std::string NAME = "/system/lib/init/libinit_context.z.so";
 static const char MAPBUF[] = "f6d83000-f6d84000 r--p 00001000 b3:07 1892 /system/lib/init/libinit_context.z.so";
 static const uint64_t PC = {0Xf6d83001};
-static const char INVALID_MAPBUF[] = "f6d83000-f6d84000 r--p 00001000 b3:07 1892 /system/lib/init/libinit_context.z.so111";
+static const char INVALID_MAPBUF[] =
+    "f6d83000-f6d84000 r--p 00001000 b3:07 1892 /system/lib/init/libinit_context.z.so111";
 static const uint64_t INVALID_ELFRESULT = {0x1001};
 #else
 static const std::string MAPS_FILE = "/data/test/resource/testdata/testmaps_64";
@@ -46,7 +47,8 @@ static const uintptr_t ADDR = {0x7f8b8f3001};
 static const std::string NAME = "/system/lib64/init/libinit_context.z.so";
 static const char MAPBUF[] = "7f0ab40000-7f0ab41000 r--p 00000000 b3:07 1882 /system/lib64/init/libinit_context1.z.so";
 static const uint64_t PC = {0x7f0ab40016};
-static const char INVALID_MAPBUF[] = "7f0ab40000-7f0ab41000 r--p 00000000 b3:07 1882 /system/lib64/init/libinit_context11111.z.so";
+static const char INVALID_MAPBUF[] =
+    "7f0ab40000-7f0ab41000 r--p 00000000 b3:07 1882 /system/lib64/init/libinit_context11111.z.so";
 static const uint64_t INVALID_ELFRESULT = {0x16};
 #endif
 }

@@ -258,7 +258,7 @@ bool ArmExidx::ExtractEntryData(uintptr_t entryOffset)
         extabAddr += 4;
     } else {
         LOGU("Arm compact personality, data: %x.", data);
-        if (data >> 28 != 8) {
+        if ((data >> 28) != 8) {
             LOGE("incorrect Arm compact model, [31:28]bit must be 0x8(%x)", data >> 28);
             return false;
         }
@@ -359,7 +359,7 @@ bool ArmExidx::Step(uintptr_t entryOffset, std::shared_ptr<RegLocState> rs)
 
 inline bool ArmExidx::DecodeSpare()
 {
-    LOGU("Exdix Decode Spare");
+    LOGU("Exidx Decode Spare");
     lastErrorData_.code = UNW_ERROR_ARM_EXIDX_SPARE;
     return false;
 }

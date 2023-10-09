@@ -27,6 +27,11 @@
 #include "dfx_ring_buffer_wrapper.h"
 #include "dfx_signal.h"
 #include "dfx_util.h"
+#include "string_util.h"
+
+#ifndef PAGE_SIZE
+constexpr size_t PAGE_SIZE = 4096;
+#endif
 
 namespace OHOS {
 namespace HiviewDFX {
@@ -44,7 +49,36 @@ void Printer::PrintDumpHeader(std::shared_ptr<ProcessDumpRequest> request, std::
 
     if (isCrash) {
         DfxRingBufferWrapper::GetInstance().AppendMsg("Reason:");
-        DfxRingBufferWrapper::GetInstance().AppendMsg(DfxSignal::PrintSignal(request->siginfo));
+        process->reason += DfxSignal::PrintSignal(request->siginfo);
+        uint64_t addr = (uint64_t)(request->siginfo.si_addr);
+        process->InitProcessMaps();
+        if (request->siginfo.si_signo == SIGSEGV && (request->siginfo.si_code == SEGV_MAPERR || request->siginfo.si_code == SEGV_ACCERR)) {
+            if (addr < PAGE_SIZE) {
+                process->reason += " probably caused by NULL pointer dereference";
+            } else {
+                std::shared_ptr<DfxElfMaps> maps = process->GetMaps();
+                std::shared_ptr<DfxElfMap> map;
+                if (process->vmThread_ == nullptr) {
+                    DFXLOG_WARN("vmThread_ is nullptr");
+                    return;
+                }
+                auto regs = process->vmThread_->GetThreadRegs();
+                if (regs == nullptr) {
+                    DFXLOG_WARN("regs is nullptr");
+                    return;
+                }
+                uintptr_t sp = regs->sp_;
+                if (maps != nullptr && maps->FindMapByAddr(sp, map)) {
+                    if(addr < map->begin && map->begin - addr <= PAGE_SIZE){
+                        process->reason += StringPrintf(
+                            " current thread stack low address = %x, probably caused by stack-buffer-overflow",
+                            map->begin);
+                    }
+                }
+            }
+        }
+        process->reason += "\n";
+        DfxRingBufferWrapper::GetInstance().AppendMsg(process->reason);
         auto msg = process->GetFatalMessage();
         if (!msg.empty()) {
             DfxRingBufferWrapper::GetInstance().AppendBuf("LastFatalMessage:%s\n", msg.c_str());
@@ -81,7 +115,7 @@ void Printer::PrintProcessMapsByConfig(std::shared_ptr<DfxProcess> process)
 void Printer::PrintOtherThreadHeaderByConfig()
 {
     if (DfxConfig::GetConfig().displayBacktrace) {
-        DfxRingBufferWrapper::GetInstance().AppendMsg("\nOther thread info:\n");
+        DfxRingBufferWrapper::GetInstance().AppendMsg("Other thread info:\n");
     }
 }
 
@@ -120,14 +154,14 @@ void Printer::PrintThreadRegsByConfig(std::shared_ptr<DfxThread> thread)
 void Printer::PrintThreadFaultStackByConfig(std::shared_ptr<DfxProcess> process, std::shared_ptr<DfxThread> thread)
 {
     if (DfxConfig::GetConfig().displayFaultStack) {
-        auto faultstack = std::unique_ptr<FaultStack>(new FaultStack(thread->threadInfo_.nsTid));
-        if (faultstack == nullptr) {
+        if (process == nullptr) {
             return;
         }
-        faultstack->CollectStackInfo(thread->GetFrames());
+        thread->InitFaultStack();
+        auto faultStack = thread->GetFaultStack();
         process->InitProcessMaps();
-        faultstack->CollectRegistersBlock(thread->GetThreadRegs(), process->GetMaps());
-        faultstack->Print();
+        faultStack->CollectRegistersBlock(thread->GetThreadRegs(), process->GetMaps());
+        faultStack->Print();
     }
 }
 } // namespace HiviewDFX

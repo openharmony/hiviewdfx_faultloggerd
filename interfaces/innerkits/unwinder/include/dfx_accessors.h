@@ -31,8 +31,7 @@
 
 namespace OHOS {
 namespace HiviewDFX {
-class DfxAccessors
-{
+class DfxAccessors {
 public:
     DfxAccessors(int bigEndian = UNWIND_BYTE_ORDER) : bigEndian_(bigEndian) {}
     virtual ~DfxAccessors() = default;
@@ -44,8 +43,7 @@ public:
     int bigEndian_ = UNWIND_BYTE_ORDER;
 };
 
-class DfxAccessorsLocal : public DfxAccessors
-{
+class DfxAccessorsLocal : public DfxAccessors {
 public:
     DfxAccessorsLocal() = default;
     virtual ~DfxAccessorsLocal() = default;
@@ -56,8 +54,7 @@ public:
     int FindUnwindTable(uintptr_t pc, UnwindTableInfo& uti, void *arg) override;
 };
 
-class DfxAccessorsRemote : public DfxAccessors
-{
+class DfxAccessorsRemote : public DfxAccessors {
 public:
     DfxAccessorsRemote() = default;
     virtual ~DfxAccessorsRemote() = default;

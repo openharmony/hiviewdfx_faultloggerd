@@ -17,7 +17,7 @@
 
 #include <cinttypes>
 #include <string>
-#if defined(is_ohos) && is_ohos
+#if is_ohos
 #include <ucontext.h>
 #endif
 #include <vector>
@@ -86,7 +86,7 @@ struct RegsUserX86_64 {
 static const std::vector<int> QUT_REGS {
     // empty
 };
-#if defined(is_ohos) && is_ohos
+#if is_ohos
 typedef ucontext_t UnwindUContext_t;
 #endif
 } // namespace HiviewDFX

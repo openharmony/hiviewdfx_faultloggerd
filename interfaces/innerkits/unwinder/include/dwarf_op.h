@@ -43,17 +43,14 @@ public:
 protected:
     bool Decode(DfxRegs& regs, uintptr_t& addr);
 
-    inline void StackReset(AddressType initialStackValue)
-    {
+    inline void StackReset(AddressType initialStackValue) {
         stack_.clear();
         stack_.push_front(initialStackValue);
     };
-    inline void StackPush(AddressType value)
-    {
+    inline void StackPush(AddressType value) {
         stack_.push_front(value);
     }
-    inline AddressType StackPop()
-    {
+    inline AddressType StackPop() {
         AddressType value = stack_.front();
         stack_.pop_front();
         return value;
@@ -61,13 +58,13 @@ protected:
     inline AddressType StackAt(size_t index) { return stack_[index]; }
     inline size_t StackSize() { return stack_.size(); }
 
-    // DW_OP_addr DW_OP_constXs DW_OP_constXu
+    /* DW_OP_addr DW_OP_constXs DW_OP_constXu */
     template <typename T>
     inline void OpPush(T value) {
         StackPush(static_cast<AddressType>(value));
     };
 
-    // DW_OP_deref
+    /* DW_OP_deref */
     inline void OpDeref() {
         LOGU("DW_OP_deref");
         auto addr = static_cast<uintptr_t>(StackPop());
@@ -76,37 +73,37 @@ protected:
         StackPush(static_cast<AddressType>(val));
     };
 
-    // DW_OP_deref_size
-    inline void OpDerefSize(AddressType& exprPtr) {
+    /* DW_OP_deref_size */
+    void OpDerefSize(AddressType& exprPtr) {
         LOGU("DW_OP_deref_size");
         auto addr = static_cast<uintptr_t>(StackPop());
         AddressType value = 0;
         uint8_t operand;
         memory_->ReadU8(exprPtr, &operand, true);
         switch (operand) {
-            case 1: {
+            case 1: { // 1 : read one byte length
                 uint8_t u8;
                 memory_->ReadU8(addr, &u8, true);
                 value = static_cast<AddressType>(u8);
             }
                 break;
-            case 2: {
+            case 2: { // 2 : read two bytes length
                 uint16_t u16;
                 memory_->ReadU16(addr, &u16, true);
                 value = static_cast<AddressType>(u16);
             }
                 break;
-            case 3:
-            case 4: {
+            case 3: // 3 : read four bytes length
+            case 4: { // 4 : read four bytes length
                 uint32_t u32;
                 memory_->ReadU32(addr, &u32, true);
                 value = static_cast<AddressType>(u32);
             }
                 break;
-            case 5:
-            case 6:
-            case 7:
-            case 8: {
+            case 5: // 5 : read eight bytes length
+            case 6: // 6 : read eight bytes length
+            case 7: // 7 : read eight bytes length
+            case 8: { // 8 : read eight bytes length
                 uint64_t u64;
                 memory_->ReadU64(addr, &u64, true);
                 value = static_cast<AddressType>(u64);
@@ -118,25 +115,25 @@ protected:
         StackPush(static_cast<UnsignedType>(value));
     };
 
-    // DW_OP_dup
+    /* DW_OP_dup */
     inline void OpDup() {
         LOGU("DW_OP_dup");
         StackPush(StackAt(0));
     };
 
-    // DW_OP_drop
+    /* DW_OP_drop */
     inline void OpDrop() {
         LOGU("DW_OP_drop");
         StackPop();
     };
 
-    // DW_OP_over
+    /* DW_OP_over */
     inline void OpOver() {
         LOGU("DW_OP_over");
         StackPush(StackAt(1));
     };
 
-    // DW_OP_pick
+    /* DW_OP_pick */
     inline void OpPick(AddressType& exprPtr) {
         LOGU("DW_OP_pick");
         uint8_t reg;
@@ -148,7 +145,7 @@ protected:
         StackPush(value);
     };
 
-    // DW_OP_swap
+    /* DW_OP_swap */
     inline void OpSwap() {
         LOGU("DW_OP_swap");
         AddressType oldValue = stack_[0];
@@ -156,16 +153,16 @@ protected:
         stack_[1] = oldValue;
     }
 
-    // DW_OP_rot
+    /* DW_OP_rot */
     inline void OpRot() {
         LOGU("DW_OP_rot");
         AddressType top = stack_[0];
         stack_[0] = stack_[1];
-        stack_[1] = stack_[2];
-        stack_[2] = top;
+        stack_[1] = stack_[2]; // 2:the index of the array
+        stack_[2] = top; // 2:the index of the array
     }
 
-    // DW_OP_abs
+    /* DW_OP_abs */
     inline void OpAbs() {
         LOGU("DW_OP_abs");
         SignedType signedValue = static_cast<SignedType>(stack_[0]);
@@ -175,14 +172,14 @@ protected:
         stack_[0] = static_cast<AddressType>(signedValue);
     };
 
-    // DW_OP_and
+    /* DW_OP_and */
     inline void OpAnd() {
         LOGU("DW_OP_and");
         AddressType top = StackPop();
         stack_[0] &= top;
     };
 
-    // DW_OP_div
+    /* DW_OP_div */
     inline void OpDiv() {
         LOGU("DW_OP_div");
         AddressType top = StackPop();
@@ -194,14 +191,14 @@ protected:
         stack_[0] = static_cast<AddressType>(signedDividend / signedDivisor);
     };
 
-    // DW_OP_minus
+    /* DW_OP_minus */
     inline void OpMinus() {
         LOGU("DW_OP_minus");
         AddressType top = StackPop();
         stack_[0] -= top;
     };
 
-    // DW_OP_mod
+    /* DW_OP_mod */
     inline void OpMod() {
         LOGU("DW_OP_mod");
         AddressType top = StackPop();
@@ -211,7 +208,7 @@ protected:
         stack_[0] %= top;
     };
 
-    // DW_OP_mul
+    /* DW_OP_mul */
     inline void OpMul() {
         LOGU("DW_OP_mul");
         AddressType top = StackPop();

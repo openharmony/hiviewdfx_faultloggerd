@@ -129,7 +129,7 @@ bool DfxMaps::IsLegalMapItem(const std::string& name)
         name.back() == ']' || std::strncmp(name.c_str(), "/dev/", sizeof("/dev/")) == 0 ||
         std::strncmp(name.c_str(), "/memfd:", sizeof("/memfd:")) == 0 ||
         std::strncmp(name.c_str(), "//anon", sizeof("//anon")) == 0 ||
-        EndsWith(name, ".ttf")) {
+        EndsWith(name, ".ttf") || EndsWith(name, ".an") || EndsWith(name, ".ai")) {
         return false;
     }
     return true;
