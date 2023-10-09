@@ -44,8 +44,14 @@ bool DfxSymbols::ParseSymbols(std::vector<DfxSymbol>& symbols, std::shared_ptr<D
     }
     auto elfSymbols = elf->GetFuncSymbols(true);
     for (auto elfSymbol : elfSymbols) {
+        uint64_t nameOffset = elfSymbol.strOffset + elfSymbol.name;
+        if (nameOffset >= elfSymbol.strSize) {
+            continue;
+        }
+        std::string nameStr = std::string((char *)elf->GetMmapPtr() + nameOffset);
+        //LOGU("nameStr: %s", nameStr.c_str());
         symbols.emplace_back(elfSymbol.value, elfSymbol.size,
-            elfSymbol.nameStr, Demangle(elfSymbol.nameStr), filePath);
+            nameStr, Demangle(nameStr), filePath);
     }
     return true;
 }
@@ -65,47 +71,23 @@ bool DfxSymbols::AddSymbolsByPlt(std::vector<DfxSymbol>& symbols, std::shared_pt
 bool DfxSymbols::GetFuncNameAndOffsetByPc(uint64_t relPc, std::shared_ptr<DfxElf> elf,
     std::string& funcName, uint64_t& funcOffset)
 {
-    if (BinarySearch(relPc, funcName, funcOffset)) {
-        return true;
-    }
-
-    std::string name;
-    uint64_t start, size;
 #if defined(__arm__)
     relPc = relPc | 1;
 #endif
-    if (elf != nullptr && elf->GetFuncInfo(relPc, name, start, size)) {
-        funcName = Demangle(name);
-        funcOffset = relPc - start;
+    ElfSymbol elfSymbol;
+    if ((elf != nullptr) && elf->GetFuncInfo(relPc, elfSymbol)) {
+        uint64_t nameOffset = elfSymbol.strOffset + elfSymbol.name;
+        if (nameOffset >= elfSymbol.strSize) {
+            return false;
+        }
+        std::string nameStr = std::string((char *)elf->GetMmapPtr() + nameOffset);
+        funcName = Demangle(nameStr);
+        funcOffset = relPc - elfSymbol.value;
 #if defined(__arm__)
         funcOffset &= ~1;
 #endif
         LOGU("Symbol relPc: %llx, funcName: %s, funcOffset: %llx", relPc, funcName.c_str(), funcOffset);
-        symbols_.emplace_back(start, size, name, funcName, "");
         return true;
-    }
-    return false;
-}
-
-bool DfxSymbols::BinarySearch(uint64_t addr, std::string& funcName, uint64_t& funcOffset)
-{
-    if (symbols_.empty()) {
-        return false;
-    }
-    size_t begin = 0;
-    size_t end = symbols_.size();
-    while (begin < end) {
-        size_t mid = begin + (end - begin) / 2;
-        const auto& iter = symbols_[mid];
-        if (addr < iter.funcVaddr_) {
-            end = mid;
-        } else if (addr < (iter.funcVaddr_ + iter.size_)) {
-            funcName = iter.demangle_;
-            funcOffset = addr - iter.funcVaddr_;
-            return true;
-        } else {
-            begin = mid + 1;
-        }
     }
     return false;
 }
