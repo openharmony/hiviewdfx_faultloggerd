@@ -98,6 +98,7 @@ bool DfxElfImpl::ReadAllHeaders()
 {
     ElfW(Ehdr) ehdr;
     if (!ReadElfHeaders(ehdr)) {
+        DFXLOG_ERROR("%s : Failed to read elf headers.", __func__);
         return false;
     }
     ReadProgramHeaders(ehdr);
@@ -120,6 +121,7 @@ void DfxElfImpl::ReadProgramHeaders(const ElfW(Ehdr)& ehdr)
     for (size_t i = 0; i < ehdr.e_phnum; i++, offset += ehdr.e_phentsize) {
         ElfW(Phdr) phdr;
         if (!memory_->ReadFully(offset, &phdr, sizeof(phdr))) {
+            DFXLOG_ERROR("%s : Failed to read memory of program headers.", __func__);
             return;
         }
 
@@ -167,6 +169,7 @@ void DfxElfImpl::ReadSectionHeaders(const ElfW(Ehdr)& ehdr)
 
     for (size_t i = 1; i < ehdr.e_shnum; i++, offset += ehdr.e_shentsize) {
         if (!memory_->ReadFully(offset, &shdr, sizeof(shdr))) {
+            DFXLOG_ERROR("%s : Failed to read memory of section headers.", __func__);
             return;
         }
 
@@ -353,6 +356,7 @@ bool DfxElf::Init()
     }
 
     if (!ReadElfInfo()) {
+        DFXLOG_ERROR("%s : Failed to read elf info.", __func__);
         return false;
     }
 
@@ -511,7 +515,7 @@ std::string DfxElf::GetReadableBuildID(const std::string &buildIdHex)
     if (buildIdHex.empty()) {
         return "";
     }
-    static const char HEXTABLE[] = "0123456789ABCDEF";
+    static const char HEXTABLE[] = "0123456789abcdef";
     static const int HEXLENGTH = 16;
     static const int HEX_EXPAND_PARAM = 2;
     const size_t len = buildIdHex.length();
