@@ -94,7 +94,7 @@ bool DfxUnwindRemote::UnwindProcess(std::shared_ptr<ProcessDumpRequest> request,
         }
         UnwindThreadByParseStackIfNeed(process, unwThread);
         Printer::PrintDumpHeader(request, process);
-        Printer::PrintThreadHeaderByConfig(unwThread);
+        Printer::PrintThreadHeaderByConfig(process->keyThread_);
         Printer::PrintThreadBacktraceByConfig(unwThread);
         if (ProcessDumper::GetInstance().IsCrash()) {
             Printer::PrintThreadRegsByConfig(unwThread);
@@ -152,6 +152,7 @@ void DfxUnwindRemote::UnwindThreadByParseStackIfNeed(std::shared_ptr<DfxProcess>
         process->InitProcessMaps();
         auto faultStack = thread->GetFaultStack();
         if (faultStack == nullptr || !faultStack->ParseUnwindStack(process->GetMaps(), newFrames)) {
+            DFXLOG_ERROR("%s : Failed to parse unwind stack.", __func__);
             return;
         }
         thread->SetFrames(newFrames);

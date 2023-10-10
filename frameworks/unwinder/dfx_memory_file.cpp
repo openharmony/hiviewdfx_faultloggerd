@@ -53,11 +53,13 @@ bool DfxMemoryFile::Init(const std::string& file, uint64_t offset, uint64_t size
     OHOS::UniqueFd ufd = OHOS::UniqueFd(OHOS_TEMP_FAILURE_RETRY(open(file.c_str(), O_RDONLY | O_CLOEXEC)));
     int fd = ufd.Get();
     if (fd == -1) {
+        DFXLOG_ERROR("%s : Failed to get fd.", __func__);
         return false;
     }
 
     size_t fileSize = static_cast<size_t>(GetFileSize(fd));
     if ((fileSize == 0) || (offset >= static_cast<uint64_t>(fileSize))) {
+        DFXLOG_ERROR("%s : invalid fileSize(%lu)", __func__, fileSize);
         return false;
     }
 
@@ -65,6 +67,9 @@ bool DfxMemoryFile::Init(const std::string& file, uint64_t offset, uint64_t size
     uint64_t alignedOffset = offset & ALIGN_MASK(getpagesize());
     if (alignedOffset > static_cast<uint64_t>(fileSize) ||
         offset > static_cast<uint64_t>(fileSize)) {
+        DFXLOG_ERROR(
+            "%s : invalid alignedOffset(%lu) or offset(%lu) : file size(%lu)",
+            __func__, alignedOffset, offset, fileSize);
         return false;
     }
 
@@ -78,6 +83,7 @@ bool DfxMemoryFile::Init(const std::string& file, uint64_t offset, uint64_t size
     // by 'rw-p' privilege flags to avoid disturbing these libraries.
     void* map = mmap(nullptr, size_, PROT_READ | PROT_WRITE, MAP_PRIVATE, fd, alignedOffset);
     if (map == MAP_FAILED) {
+        DFXLOG_ERROR("%s : Failed to mmap", __func__);
         return false;
     }
 

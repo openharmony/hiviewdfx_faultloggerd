@@ -18,6 +18,7 @@
 #include <algorithm>
 #include <csignal>
 #include <sys/ptrace.h>
+#include <sys/stat.h>
 #include "dfx_config.h"
 #include "dfx_logger.h"
 #include "dfx_ring_buffer_wrapper.h"
@@ -258,36 +259,45 @@ void FaultStack::PrintRegisterMemory() const
 bool FaultStack::ParseUnwindStack(std::shared_ptr<DfxElfMaps> maps, std::vector<std::shared_ptr<DfxFrame>> &frames)
 {
     if (maps == nullptr) {
+        DFXLOG_ERROR("%s : maps is null.", __func__);
         return false;
     }
     size_t index = 0;
     for (const auto& block : blocks_) {
-        uintptr_t targetAddr = block.startAddr;
         std::shared_ptr<DfxElfMap> map;
         for (size_t i = 0; i < block.content.size(); i++) {
             if (!maps->FindMapByAddr(block.content[i], map) ||
                 map->perms.find("x") == std::string::npos) {
-                targetAddr += STEP;
                 continue;
             }
             std::shared_ptr<DfxFrame> frame = std::make_shared<DfxFrame>();
             if (frame == nullptr) {
+                DFXLOG_ERROR("%s : Failed to create DfxFrame.", __func__);
                 return false;
             }
             frame->index = index;
             frame->pc = block.content[i];
             frame->mapName = map->path;
-            auto memoryFile = DfxMemoryFile::CreateFileMemory(frame->mapName, 0);
-            if (memoryFile == nullptr) {
-                return false;
+            int64_t loadBaise = 0;
+            struct stat st;
+            if (stat(map->path.c_str(), &st) == 0 && (st.st_mode & S_IFREG)) {
+                auto memoryFile = DfxMemoryFile::CreateFileMemory(frame->mapName, 0);
+                if (memoryFile == nullptr) {
+                    DFXLOG_ERROR("%s : Failed to CreateFileMemory, elf path(%s).", __func__, frame->mapName.c_str());
+                    return false;
+                }
+                std::shared_ptr<DfxElf> elf = std::make_shared<DfxElf>(memoryFile);
+                if (elf == nullptr || !elf->Init()) {
+                    DFXLOG_ERROR("%s : Failed to create DfxElf, elf path(%s).", __func__, frame->mapName.c_str());
+                    return false;
+                }
+                loadBaise = elf->GetLoadBias();
+                frame->buildId = DfxElf::GetReadableBuildID(elf->GetBuildID());
+            } else {
+                DFXLOG_WARN("%s : mapName(%s) is not file.", __func__, frame->mapName.c_str());
             }
-            std::shared_ptr<DfxElf> elf = std::make_shared<DfxElf>(memoryFile);
-            if (elf == nullptr) {
-                return false;
-            }
-            elf->Init();
-            frame->relPc = frame->pc - map->begin + map->offset + elf->GetLoadBias();
-            frame->buildId = DfxElf::GetReadableBuildID(elf->GetBuildID());
+
+            frame->relPc = frame->pc - map->begin + map->offset + loadBaise;
             frames.emplace_back(frame);
             constexpr int MAX_VALID_ADDRESS_NUM = 32;
             if (++index >= MAX_VALID_ADDRESS_NUM) {
