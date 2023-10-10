@@ -168,7 +168,6 @@ std::string CppCrashReporter::GetRegsString(std::shared_ptr<DfxThread> thread) c
         return regsString;
     }
     regsString = regs->PrintRegs();
-
     // if start with 'Registers:\n', need remove
     if (regsString.find(REGS_KEY_WORD) == 0) {
         regsString = regsString.substr(strlen(REGS_KEY_WORD));

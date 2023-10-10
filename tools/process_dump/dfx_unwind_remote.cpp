@@ -136,7 +136,8 @@ bool DfxUnwindRemote::UnwindProcess(std::shared_ptr<ProcessDumpRequest> request,
     return ret;
 }
 
-void DfxUnwindRemote::UnwindThreadByParseStackIfNeed(std::shared_ptr<DfxProcess> &process, std::shared_ptr<DfxThread> &thread)
+void DfxUnwindRemote::UnwindThreadByParseStackIfNeed(std::shared_ptr<DfxProcess> &process,
+    std::shared_ptr<DfxThread> &thread)
 {
     if (process == nullptr || thread == nullptr) {
         return;

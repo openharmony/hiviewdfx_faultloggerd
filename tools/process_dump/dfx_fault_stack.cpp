@@ -87,9 +87,9 @@ bool FaultStack::CollectStackInfo(const std::vector<std::shared_ptr<DfxFrame>> &
     uintptr_t prevSp = 0;
     uintptr_t curSp = 0;
     uintptr_t prevEndAddr = 0;
-    uintptr_t highAddrLength = DfxConfig::GetConfig().highAddressStep;;
+    uintptr_t highAddrLength = DfxConfig::GetConfig().highAddressStep;
     if (needParseStack) {
-        highAddrLength = 8192;
+        highAddrLength = 8192; // 8192 : 32k / STEP
     }
 
     auto firstFrame = frames.at(0);
@@ -139,7 +139,7 @@ uintptr_t FaultStack::PrintMemoryBlock(const MemoryBlockInfo& info, uintptr_t st
                 targetAddr,
                 info.content.at(i));
         }
-        if(targetAddr - stackStartAddr > STEP * DfxConfig::GetConfig().highAddressStep) {
+        if (targetAddr - stackStartAddr > STEP * DfxConfig::GetConfig().highAddressStep) {
             break;
         }
         targetAddr += STEP;

@@ -37,7 +37,10 @@ static void CreateThreadForCrash(int *argv)
 {
     int threadID = *argv;
     printf("create ThreadForCrash %d\n", threadID);
-    raise(SIGSEGV);
+    int ret = raise(SIGSEGV);
+    if (ret != 0) {
+        printf("remove failed!");
+    }
     return;
 }
 
