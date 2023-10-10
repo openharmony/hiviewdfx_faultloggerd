@@ -87,6 +87,27 @@ uint32_t BacktraceLocalTest::fdCountTotal = 0;
 uint32_t BacktraceLocalTest::mapsCountTotal = 0;
 uint64_t BacktraceLocalTest::memCountTotal = 0;
 
+size_t PrintBacktraceByLibunwind()
+{
+    unw_cursor_t cursor;
+    unw_word_t ip;
+    size_t n = 0;
+    unw_context_t uc;
+    unw_getcontext (&uc);
+    if (unlikely (unw_init_local (&cursor, &uc) < 0)) {
+        return 0;
+    }
+
+    while (unw_step (&cursor) > 0) {
+        if (unw_get_reg (&cursor, UNW_REG_IP, &ip) < 0) {
+            return n;
+        }
+        n++;
+        printf("current pc:%llx \n", static_cast<unsigned long long>(ip));
+    }
+    return n;
+}
+
 void BacktraceLocalTest::SetUpTestCase()
 {
     BacktraceLocalTest::fdCountTotal = GetSelfFdCount();
@@ -101,6 +122,7 @@ void BacktraceLocalTest::TearDownTestCase()
 
 void BacktraceLocalTest::SetUp()
 {
+    ASSERT_GT(PrintBacktraceByLibunwind(), 0);
     fdCount = GetSelfFdCount();
     mapsCount = GetSelfMapsCount();
     memCount = GetSelfMemoryCount();
@@ -108,6 +130,7 @@ void BacktraceLocalTest::SetUp()
 
 void BacktraceLocalTest::TearDown()
 {
+    ASSERT_GT(PrintBacktraceByLibunwind(), 0);
     CheckResourceUsage(fdCount, mapsCount, memCount);
 }
 
@@ -139,6 +162,7 @@ HWTEST_F(BacktraceLocalTest, BacktraceLocalTest001, TestSize.Level2)
     }
 
     unw_destroy_local_address_space(as);
+    ASSERT_GE(frames.size(), PrintBacktraceByLibunwind());
     GTEST_LOG_(INFO) << "BacktraceLocalTest001: end.";
 }
 
