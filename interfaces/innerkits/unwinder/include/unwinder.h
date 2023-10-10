@@ -35,7 +35,7 @@ namespace HiviewDFX {
 class Unwinder {
 public:
     // for local
-    Unwinder() : pid_(UWNIND_TYPE_LOCAL)
+    Unwinder() : pid_(UNWIND_TYPE_LOCAL)
     {
         acc_ = std::make_shared<DfxAccessorsLocal>();
         Init();
@@ -47,7 +47,7 @@ public:
         Init();
     };
     // for customized
-    Unwinder(std::shared_ptr<UnwindAccessors> accessors) : pid_(UWNIND_TYPE_CUSTOMIZE)
+    Unwinder(std::shared_ptr<UnwindAccessors> accessors) : pid_(UNWIND_TYPE_CUSTOMIZE)
     {
         acc_ = std::make_shared<DfxAccessorsCustomize>(accessors);
         Init();

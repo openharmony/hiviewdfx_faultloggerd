@@ -120,6 +120,10 @@ if (defined(ohos_lite)) {
       "is_linux=${is_linux}",
       "is_mingw=${is_mingw}",
     ]
+
+    if (libunwinder_debug) {
+      defines += [ "DFX_LOG_UNWIND" ]
+    }
   }
 
   ohos_shared_library("libunwinder") {

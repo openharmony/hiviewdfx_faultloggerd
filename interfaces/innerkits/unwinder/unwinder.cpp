@@ -14,15 +14,17 @@
  */
 
 #include "unwinder.h"
+
 #include <dlfcn.h>
 #include <link.h>
+
 #include "dfx_define.h"
 #include "dfx_errors.h"
-#include "dfx_regs_get.h"
-#include "dfx_log.h"
-#include "dfx_instructions.h"
-#include "dfx_symbols.h"
 #include "dfx_frame_formatter.h"
+#include "dfx_instructions.h"
+#include "dfx_log.h"
+#include "dfx_regs_get.h"
+#include "dfx_symbols.h"
 #include "stack_util.h"
 #include "string_printf.h"
 
@@ -48,7 +50,7 @@ void Unwinder::Init()
 #endif
     dwarfSection_ = std::make_shared<DwarfSection>(memory_);
 
-    if (pid_ == UWNIND_TYPE_LOCAL) {
+    if (pid_ == UNWIND_TYPE_LOCAL) {
         maps_ = DfxMaps::Create(getpid());
     } else {
         if (pid_ > 0) {
@@ -95,7 +97,7 @@ bool Unwinder::UnwindLocal(size_t maxFrameNum, size_t skipFrameNum)
     GetLocalRegs(regsData);
 
     UnwindContext context;
-    context.pid = UWNIND_TYPE_LOCAL;
+    context.pid = UNWIND_TYPE_LOCAL;
     context.regs = regs_;
     context.stackCheck = false;
     context.stackBottom = stackBottom;
@@ -150,7 +152,7 @@ bool Unwinder::Unwind(void *ctx, size_t maxFrameNum, size_t skipFrameNum)
 
         DfxFrame frame;
         std::shared_ptr<DfxMap> map = nullptr;
-        if (pid_ >= 0 || pid_ == UWNIND_TYPE_LOCAL) {
+        if (pid_ >= 0 || pid_ == UNWIND_TYPE_LOCAL) {
             UnwindContext* uctx = reinterpret_cast<UnwindContext *>(ctx);
             if (uctx->map != nullptr && pc >= (uintptr_t)uctx->map->begin && pc < (uintptr_t)uctx->map->end) {
                 LOGU("map had matched");
@@ -191,7 +193,7 @@ bool Unwinder::Step(uintptr_t& pc, uintptr_t& sp, void *ctx)
     }
     LOGU("++++++pc: %llx, sp: %llx", (uint64_t)pc, (uint64_t)sp);
     lastErrorData_.addr = pc;
-    if (pid_ == UWNIND_TYPE_LOCAL) {
+    if (pid_ == UNWIND_TYPE_LOCAL) {
         UnwindContext* uctx = reinterpret_cast<UnwindContext *>(ctx);
         uctx->stackCheck = false;
     }
@@ -265,14 +267,14 @@ bool Unwinder::Step(uintptr_t& pc, uintptr_t& sp, void *ctx)
 
     // 5. update regs and regs state
     if (ret) {
-        if (pid_ == UWNIND_TYPE_LOCAL) {
+        if (pid_ == UNWIND_TYPE_LOCAL) {
             UnwindContext* uctx = reinterpret_cast<UnwindContext *>(ctx);
             uctx->stackCheck = true;
         }
         ret = Apply(regs_, rs);
     }
 
-    if (!ret && (pid_ == UWNIND_TYPE_LOCAL)) {
+    if (!ret && (pid_ == UNWIND_TYPE_LOCAL)) {
         uintptr_t fp = regs_->GetFp();
         ret = FpStep(fp, pc, ctx);
     }

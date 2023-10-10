@@ -52,9 +52,9 @@ enum ArchType : uint8_t {
 };
 
 enum UnwindType : int8_t {
-    UWNIND_TYPE_CUSTOMIZE = -2,
-    UWNIND_TYPE_LOCAL = -1,
-    UWNIND_TYPE_REMOTE,
+    UNWIND_TYPE_CUSTOMIZE = -2,
+    UNWIND_TYPE_LOCAL = -1,
+    UNWIND_TYPE_REMOTE,
 };
 
 enum UnwindFrameType {
