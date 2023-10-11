@@ -67,7 +67,7 @@ public:
     const std::unordered_map<uint64_t, ElfLoadInfo>& GetPtLoads();
     const std::vector<ElfSymbol>& GetElfSymbols(bool isSort = false);
     const std::vector<ElfSymbol>& GetFuncSymbols(bool isSort = false);
-    bool GetFuncInfo(uint64_t addr, std::string& name, uint64_t& start, uint64_t& size);
+    bool GetFuncInfo(uint64_t addr, ElfSymbol& elfSymbol);
     bool GetSectionInfo(ShdrInfo& shdr, const std::string secName);
     int FindElfTableInfo(uintptr_t pc, std::shared_ptr<DfxMap> map, struct ElfTableInfo& eti);
     int FindUnwindTableInfo(uintptr_t pc, std::shared_ptr<DfxMap> map, struct UnwindTableInfo& uti);

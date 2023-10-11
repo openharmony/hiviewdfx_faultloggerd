@@ -72,13 +72,16 @@ protected:
     bool IsFunc(const SymType sym);
     template <typename SymType>
     bool ParseElfSymbols(bool isFunc, bool isSort);
+    template <typename SymType>
+    bool ParseElfSymbols(ElfShdr shdr, bool isFunc, bool isSort);
+    template <typename SymType>
+    bool ParseElfSymbol(ElfShdr shdr, uint32_t idx, bool isFunc, ElfSymbol& elfSymbol);
     template <typename DynType>
     bool ParseElfDynamic();
     template <typename DynType>
     bool ParseElfName();
     bool ParseStrTab(std::string& nameStr, const uint64_t offset, const uint64_t size);
     bool GetSectionNameByIndex(std::string& nameStr, const uint32_t name);
-    const char* GetStrTabPtr(const uint32_t link);
 
 protected:
     std::vector<ElfSymbol> elfSymbols_;

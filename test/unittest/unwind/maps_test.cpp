@@ -27,29 +27,23 @@ using namespace testing::ext;
 namespace OHOS {
 namespace HiviewDFX {
 namespace {
-static const uintptr_t INVALID_ADDR = {0Xffffffff};
+static const uintptr_t INVALID_ADDR = 0xffffffff;
 static const std::string INVALID_NAME = "/system/lib64/init/libinit_context111111.z.so";
-static const uintptr_t OFFSET = {0X0};
-static const uintptr_t INVALID_OFFSET = {0Xffffffff};
+static const uintptr_t OFFSET = 0;
+static const uintptr_t INVALID_OFFSET = 0xffffffff;
 
 #ifdef __arm__
 static const std::string MAPS_FILE = "/data/test/resource/testdata/testmaps_32";
-static const uintptr_t ADDR = {0xf6d80000};
 static const std::string NAME = "/system/lib/init/libinit_context.z.so";
-static const char MAPBUF[] = "f6d83000-f6d84000 r--p 00001000 b3:07 1892 /system/lib/init/libinit_context.z.so";
-static const uint64_t PC = {0Xf6d83001};
 static const char INVALID_MAPBUF[] =
     "f6d83000-f6d84000 r--p 00001000 b3:07 1892 /system/lib/init/libinit_context.z.so111";
-static const uint64_t INVALID_ELFRESULT = {0x1001};
+static const uint64_t INVALID_ELFRESULT = 0x1001;
 #else
 static const std::string MAPS_FILE = "/data/test/resource/testdata/testmaps_64";
-static const uintptr_t ADDR = {0x7f8b8f3001};
 static const std::string NAME = "/system/lib64/init/libinit_context.z.so";
-static const char MAPBUF[] = "7f0ab40000-7f0ab41000 r--p 00000000 b3:07 1882 /system/lib64/init/libinit_context1.z.so";
-static const uint64_t PC = {0x7f0ab40016};
 static const char INVALID_MAPBUF[] =
     "7f0ab40000-7f0ab41000 r--p 00000000 b3:07 1882 /system/lib64/init/libinit_context11111.z.so";
-static const uint64_t INVALID_ELFRESULT = {0x16};
+static const uint64_t INVALID_ELFRESULT = 0x16;
 #endif
 }
 
@@ -74,7 +68,12 @@ HWTEST_F(MapsTest, FindMapByAddrTest001, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "FindMapByAddrTest001: start.";
     auto map = std::make_shared<DfxMap>();
-    EXPECT_EQ(true, maps_->FindMapByAddr(map, ADDR));
+#ifdef __arm__
+    uintptr_t testAddr = 0xf6d80000;
+#else
+    uintptr_t testAddr = 0x7f8b8f3001;
+#endif
+    EXPECT_EQ(true, maps_->FindMapByAddr(map, testAddr));
     GTEST_LOG_(INFO) << "FindMapByAddrTest001: end.";
 }
 
@@ -169,18 +168,6 @@ HWTEST_F(MapsTest, FindMapsByNameTest002, TestSize.Level2)
 }
 
 /**
- * @tc.name: DfxMap::GetRelPcTest001
- * @tc.desc: test getRelPc has elf
- * @tc.type: FUNC
- */
-HWTEST_F(MapsTest, GetRelPcTest001, TestSize.Level2)
-{
-    GTEST_LOG_(INFO) << "GetRelPcTest001: start.";
-
-    GTEST_LOG_(INFO) << "GetRelPcTest001: end.";
-}
-
-/**
  * @tc.name: DfxMap::GetRelPcTest002
  * @tc.desc: test getRelPc no elf
  * @tc.type: FUNC
@@ -189,7 +176,12 @@ HWTEST_F(MapsTest, GetRelPcTest002, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "GetRelPcTest002: start.";
     std::shared_ptr<DfxMap> map = DfxMap::Create(INVALID_MAPBUF, sizeof(INVALID_MAPBUF));
-    EXPECT_EQ(true, ((map->GetElf() == nullptr) && (map->GetRelPc(PC) == INVALID_ELFRESULT)));
+#ifdef __arm__
+    uint64_t pc = 0xf6d83001;
+#else
+    uint64_t pc = 0x7f0ab40016;
+#endif
+    EXPECT_EQ(true, ((map->GetElf() == nullptr) && (map->GetRelPc(pc) == INVALID_ELFRESULT)));
     GTEST_LOG_(INFO) << "GetRelPcTest002: end.";
 }
 
@@ -201,7 +193,12 @@ HWTEST_F(MapsTest, GetRelPcTest002, TestSize.Level2)
 HWTEST_F(MapsTest, ToStringTest001, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "ToStringTest001: start.";
-    std::shared_ptr<DfxMap> map = DfxMap::Create(MAPBUF, sizeof(MAPBUF));
+#ifdef __arm__
+    char testMap[] = "f6d83000-f6d84000 r--p 00001000 b3:07 1892 /system/lib/init/libinit_context.z.so";
+#else
+    char testMap[] = "7f0ab40000-7f0ab41000 r--p 00000000 b3:07 1882 /system/lib64/init/libinit_context1.z.so";
+#endif
+    std::shared_ptr<DfxMap> map = DfxMap::Create(testMap, sizeof(testMap));
     GTEST_LOG_(INFO) << map->ToString();
     EXPECT_EQ(true, sizeof(map->ToString()) != 0);
     GTEST_LOG_(INFO) << "ToStringTest001: end.";

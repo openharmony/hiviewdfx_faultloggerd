@@ -344,8 +344,7 @@ void Unwinder::FillFrame(DfxFrame& frame)
         LOGE("elf is null");
         return;
     }
-    DfxSymbols symbols;
-    symbols.GetFuncNameAndOffsetByPc(frame.relPc, elf, frame.funcName, frame.funcOffset);
+    DfxSymbols::GetFuncNameAndOffsetByPc(frame.relPc, elf, frame.funcName, frame.funcOffset);
     frame.buildId = elf->GetBuildId();
 }
 

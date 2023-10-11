@@ -64,11 +64,13 @@ Note:If the text contains special characters, please escape them according to th
         <filefilterlist>
             <filefilter name="defaultFilter" desc="Files not to check">
             </filefilter>
-            <filefilter name="defaultPolicyFilter" desc="Filters for compatibility，license header policies">
+            <filefilter name="defaultPolicyFilter" desc="Filters for compatibility, license header policies">
             </filefilter>
             <filefilter name="copyrightPolicyFilter" desc="Filters for copyright header policies">
+                <filteritem type="filepath" name="test/resource/testdata/*" desc="test resource file, no copyright header"/>
             </filefilter>
             <filefilter name="licenseFileNamePolicyFilter" desc="Filters for LICENSE file policies">
+                <filteritem type="filepath" name="test/resource/testdata/*" desc="test resource file, no license header"/>
             </filefilter>
             <filefilter name="readmeFileNamePolicyFilter" desc="Filters for README file policies">
             </filefilter>
@@ -76,6 +78,9 @@ Note:If the text contains special characters, please escape them according to th
             </filefilter>
             <filefilter name="binaryFileTypePolicyFilter" desc="Filters for binary file policies">
                 <filteritem type="filepath" name="figures/.*" desc="self developed pictures used in readme documents"/>
+                <filteritem type="filepath" name="test/resource/testdata/dwarf_test_aarch64_elf" desc="the binary file for test, the file is self-developed"/>
+                <filteritem type="filepath" name="test/resource/testdata/elf32_test" desc="the binary file for test, the file is self-developed"/>
+                <filteritem type="filepath" name="test/resource/testdata/elf_test" desc="the binary file for test, the file is self-developed"/>
             </filefilter>
         </filefilterlist>
         <licensematcherlist>

@@ -28,6 +28,7 @@ class DfxMaps {
 public:
     DfxMaps() = default;
     ~DfxMaps() = default;
+    static const std::string GetMapsFile(pid_t pid = 0);
     static std::shared_ptr<DfxMaps> Create(pid_t pid = 0);
     static bool Create(pid_t pid, std::vector<std::shared_ptr<DfxMap>>& maps, std::vector<int>& mapIndex);
     static std::shared_ptr<DfxMaps> Create(const std::string path, bool enableMapIndex = false);
