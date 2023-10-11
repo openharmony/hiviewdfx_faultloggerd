@@ -74,11 +74,6 @@ struct ShdrInfo {
     uint64_t size = 0;
 };
 
-struct ElfSecInfo {
-    std::string secName {""};
-    ShdrInfo shdrInfo;
-};
-
 struct __attribute__((packed)) DwarfEhFrameHdr
 {
     unsigned char version;
