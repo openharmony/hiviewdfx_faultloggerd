@@ -36,7 +36,8 @@ static int BufferAppendV(char *buf, int size, const char *fmt, va_list ap)
     return ret;
 }
 
-static bool StringAppendV(std::string& dst, const char* fmt, va_list ap) {
+static bool StringAppendV(std::string& dst, const char* fmt, va_list ap)
+{
     char buffer[STRING_BUF_LEN] = {0};
     va_list bakAp;
     va_copy(bakAp, ap);

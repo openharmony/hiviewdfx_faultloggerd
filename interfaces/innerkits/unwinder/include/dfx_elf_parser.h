@@ -54,6 +54,7 @@ public:
     virtual std::string GetElfName() = 0;
     virtual uintptr_t GetGlobalPointer() = 0;
     virtual const std::vector<ElfSymbol>& GetElfSymbols(bool isFunc, bool isSort) = 0;
+    virtual bool GetSectionInfo(ShdrInfo& shdr, const uint32_t idx);
     virtual bool GetSectionInfo(ShdrInfo& shdr, const std::string secName);
     const std::unordered_map<uint64_t, ElfLoadInfo>& GetPtLoads() {return ptLoads_;}
     bool Read(uintptr_t pos, void *buf, size_t size);
@@ -100,8 +101,7 @@ private:
     uint64_t startVaddr_ = static_cast<uint64_t>(-1);
     uint64_t endVaddr_ = 0;
     std::vector<ElfShdr> symShdrs_;
-    std::map<const std::string, ShdrInfo> shdrInfos_;
-    std::unordered_map<uint32_t, ElfSecInfo> elfSecInfos_;
+    std::map<std::pair<uint32_t, const std::string>, ShdrInfo> shdrInfoPairs_;
     std::unordered_map<uint64_t, ElfLoadInfo> ptLoads_;
     std::string sectionNames_;
 };

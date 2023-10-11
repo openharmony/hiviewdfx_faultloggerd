@@ -198,9 +198,7 @@ bool ElfParser::ParseSectionHeaders(const EhdrType& ehdr)
         shdrInfo.addr = static_cast<uint64_t>(shdr.sh_addr);
         shdrInfo.size = static_cast<uint64_t>(shdr.sh_size);
         shdrInfo.offset = static_cast<uint64_t>(shdr.sh_offset);
-        shdrInfos_.emplace(secName, shdrInfo);
-
-        elfSecInfos_[i] = ElfSecInfo{secName, shdrInfo};
+        shdrInfoPairs_.emplace(std::make_pair(i, secName), shdrInfo);
 
         if (shdr.sh_type == SHT_SYMTAB || shdr.sh_type == SHT_DYNSYM) {
             if (shdr.sh_link >= ehdr.e_shnum) {
@@ -253,17 +251,19 @@ bool ElfParser::ParseElfName()
     if (!ParseElfDynamic<DynType>()) {
         return false;
     }
-    ShdrInfo shdr;
-    if (GetSectionInfo(shdr, DYNSTR)) {
-        if ((uintptr_t)shdr.addr == dtStrtabAddr_) {
-            uintptr_t sonameOffset = shdr.offset + dtSonameOffset_;
-            uint64_t sonameOffsetMax = shdr.offset + dtStrtabSize_;
-            if (sonameOffset >= sonameOffsetMax) {
-                return false;
-            }
-            size_t maxStrSize = static_cast<size_t>(sonameOffsetMax - sonameOffset);
-            soname_ = std::string(((char *)mmap_->Get() + sonameOffset), maxStrSize);
+    ShdrInfo shdrInfo;
+    if (!GetSectionInfo(shdrInfo, DYNSTR)) {
+        return false;
+    }
+
+    if ((uintptr_t)shdrInfo.addr == dtStrtabAddr_) {
+        uintptr_t sonameOffset = shdrInfo.offset + dtSonameOffset_;
+        uint64_t sonameOffsetMax = shdrInfo.offset + dtStrtabSize_;
+        if (sonameOffset >= sonameOffsetMax) {
+            return false;
         }
+        size_t maxStrSize = static_cast<size_t>(sonameOffsetMax - sonameOffset);
+        soname_ = std::string(((char *)mmap_->Get() + sonameOffset), maxStrSize);
     }
     return true;
 }
@@ -300,10 +300,11 @@ bool ElfParser::ParseElfSymbols(ElfShdr shdr, bool isFunc, bool isSort)
 
     //LOGU("shdr.offset: %llx, size: %llx, entSize: %llx, link: %d",
     //    shdr.offset, shdr.size, shdr.entSize, shdr.link);
-    if (elfSecInfos_.find(shdr.link) == elfSecInfos_.end()) {
+    ShdrInfo shdrInfo;
+    if (!GetSectionInfo(shdrInfo, shdr.link)) {
         return false;
     }
-    auto secInfo = elfSecInfos_[shdr.link];
+
     uint32_t count = static_cast<uint32_t>((shdr.entSize != 0) ? (shdr.size / shdr.entSize) : 0);
     LOGU("count: %d", count);
     for (uint32_t idx = 0; idx < count; ++idx) {
@@ -311,8 +312,8 @@ bool ElfParser::ParseElfSymbols(ElfShdr shdr, bool isFunc, bool isSort)
         if (!ParseElfSymbol<SymType>(shdr, idx, isFunc, elfSymbol)) {
             continue;
         }
-        elfSymbol.strOffset = secInfo.shdrInfo.offset;
-        elfSymbol.strSize = secInfo.shdrInfo.size;
+        elfSymbol.strOffset = shdrInfo.offset;
+        elfSymbol.strSize = shdrInfo.size;
         elfSymbols_.push_back(elfSymbol);
     }
 
@@ -384,11 +385,28 @@ bool ElfParser::ParseStrTab(std::string& nameStr, const uint64_t offset, const u
     return true;
 }
 
+bool ElfParser::GetSectionInfo(ShdrInfo& shdr, const uint32_t idx)
+{
+    for (const auto &iter: shdrInfoPairs_)
+    {
+        auto tmpPair = iter.first;
+        if (tmpPair.first == idx) {
+            shdr = iter.second;
+            return true;
+        }
+    }
+    return false;
+}
+
 bool ElfParser::GetSectionInfo(ShdrInfo& shdr, const std::string secName)
 {
-    if (shdrInfos_.find(secName) != shdrInfos_.end()) {
-        shdr = shdrInfos_[secName];
-        return true;
+    for (const auto &iter: shdrInfoPairs_)
+    {
+        auto tmpPair = iter.first;
+        if (tmpPair.second == secName) {
+            shdr = iter.second;
+            return true;
+        }
     }
     return false;
 }
