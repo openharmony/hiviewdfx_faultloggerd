@@ -44,30 +44,34 @@ namespace {
 #define LOG_TAG "DfxMaps"
 }
 
-std::shared_ptr<DfxMaps> DfxMaps::Create(pid_t pid)
+const std::string DfxMaps::GetMapsFile(pid_t pid)
 {
     if (pid < 0) {
-        return nullptr;
+        return "";
     }
     std::string path;
     if ((pid == 0) || (pid == getpid())) {
         path = std::string(PROC_SELF_MAPS_PATH);
     } else {
         path = StringPrintf("/proc/%d/maps", pid);
+    }
+    return path;
+}
+
+std::shared_ptr<DfxMaps> DfxMaps::Create(pid_t pid)
+{
+    std::string path = GetMapsFile(pid);
+    if (path == "") {
+        return nullptr;
     }
     return Create(path);
 }
 
 bool DfxMaps::Create(pid_t pid, std::vector<std::shared_ptr<DfxMap>>& maps, std::vector<int>& mapIndex)
 {
-    if (pid <= 0) {
+    std::string path = GetMapsFile(pid);
+    if (path == "") {
         return false;
-    }
-    std::string path;
-    if ((pid == 0) || (pid == getpid())) {
-        path = std::string(PROC_SELF_MAPS_PATH);
-    } else {
-        path = StringPrintf("/proc/%d/maps", pid);
     }
     auto dfxMaps = Create(path, true);
     if (dfxMaps == nullptr) {
