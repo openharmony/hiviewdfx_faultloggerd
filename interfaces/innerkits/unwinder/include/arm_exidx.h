@@ -19,7 +19,6 @@
 #include <memory>
 #include <vector>
 #include "dfx_errors.h"
-#include "dfx_regs.h"
 #include "dfx_memory.h"
 #include "unwind_context.h"
 

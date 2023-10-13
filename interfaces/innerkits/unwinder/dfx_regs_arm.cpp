@@ -164,9 +164,9 @@ bool DfxRegsArm::StepIfSignalFrame(uintptr_t pc, std::shared_ptr<DfxMemory> memo
         if (!memory->Read(spAddr, &data, sizeof(data), false)) {
             return false;
         }
-        if (data == spAddr + 8) {
+        if (data == spAddr + 8) { // 8 : eight bytes offset
             // SP + 8 + sizeof(siginfo_t) + uc_mcontext_offset + r0 offset
-            scAddr = spAddr + 8 + sizeof(siginfo_t) + 0x14 + 0xc;
+            scAddr = spAddr + 8 + sizeof(siginfo_t) + 0x14 + 0xc; // 8 : eight bytes offset
         } else {
             // SP + sizeof(siginfo_t) + uc_mcontext_offset + r0 offset
             scAddr = spAddr + sizeof(siginfo_t) + 0x14 + 0xc;

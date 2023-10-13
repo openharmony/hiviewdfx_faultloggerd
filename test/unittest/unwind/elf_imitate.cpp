@@ -32,18 +32,19 @@
 #endif
 
 namespace {
-const std::string ehdr32 {"/data/test/resource/testdata/ehdr_from_readelf_32"};
-const std::string ehdr64 {"/data/test/resource/testdata/ehdr_from_readelf_64"};
-const std::string shdrs32 {"/data/test/resource/testdata/shdrs_from_readelf_32"};
-const std::string shdrs64 {"/data/test/resource/testdata/shdrs_from_readelf_64"};
-const std::string phdrs32 {"/data/test/resource/testdata/phdrs_from_readelf_32"};
-const std::string phdrs64 {"/data/test/resource/testdata/phdrs_from_readelf_64"};
-const std::string syms32 {"/data/test/resource/testdata/syms_from_readelf_32"};
-const std::string syms64 {"/data/test/resource/testdata/syms_from_readelf_64"};
+const std::string EHDR_32 {"/data/test/resource/testdata/ehdr_from_readelf_32"};
+const std::string EHDR_64 {"/data/test/resource/testdata/ehdr_from_readelf_64"};
+const std::string SHDRS_32 {"/data/test/resource/testdata/shdrs_from_readelf_32"};
+const std::string SHDRS_64 {"/data/test/resource/testdata/shdrs_from_readelf_64"};
+const std::string PHDRS_32 {"/data/test/resource/testdata/phdrs_from_readelf_32"};
+const std::string PHDRS_64 {"/data/test/resource/testdata/phdrs_from_readelf_64"};
+const std::string SYMS_32 {"/data/test/resource/testdata/syms_from_readelf_32"};
+const std::string SYMS_64 {"/data/test/resource/testdata/syms_from_readelf_64"};
 } // namespace
 namespace OHOS {
 namespace HiviewDFX {
-ElfImitate::~ElfImitate() {
+ElfImitate::~ElfImitate()
+{
     if (ehdrFP_ != nullptr) {
         fclose(ehdrFP_);
         ehdrFP_ = nullptr;
@@ -61,6 +62,7 @@ ElfImitate::~ElfImitate() {
         symTabFP_ = nullptr;
     }
 }
+
 static const std::string GetNextLine(FILE *fp, int *status)
 {
     constexpr int bufSize {128};
@@ -106,38 +108,38 @@ std::vector<std::string> ElfImitate::StringSplit(std::string src, const std::str
 bool ElfImitate::ParseAllHeaders(ElfFileType fileType)
 {
     if (fileType == ElfFileType::ELF32) {
-        ehdrFP_ = std::fopen(ehdr32.c_str(), "rb");
+        ehdrFP_ = std::fopen(EHDR_32.c_str(), "rb");
         if (ehdrFP_ == nullptr) {
-            DFXLOG_ERROR("fopen(ehdr32, \"r\") failed");
+            DFXLOG_ERROR("fopen(EHDR_32, \"r\") failed");
         }
-        shdrFP_ = fopen(shdrs32.c_str(), "rb");
+        shdrFP_ = fopen(SHDRS_32.c_str(), "rb");
         if (shdrFP_ == nullptr) {
-            DFXLOG_ERROR("fopen(shdrs32, \"r\") failed");
+            DFXLOG_ERROR("fopen(SHDRS_32, \"r\") failed");
         }
-        phdrFP_ = fopen(phdrs32.c_str(), "rb");
+        phdrFP_ = fopen(PHDRS_32.c_str(), "rb");
         if (phdrFP_ == nullptr) {
-            DFXLOG_ERROR("fopen(phdrs32, \"r\") failed");
+            DFXLOG_ERROR("fopen(PHDRS_32, \"r\") failed");
         }
-        symTabFP_ = fopen(syms32.c_str(), "rb");
+        symTabFP_ = fopen(SYMS_32.c_str(), "rb");
         if (symTabFP_ == nullptr) {
-            DFXLOG_ERROR("fopen(syms32, \"r\") failed");
+            DFXLOG_ERROR("fopen(SYMS_32, \"r\") failed");
         }
-    }else if (fileType == ElfFileType::ELF64) {
-        ehdrFP_ = fopen(ehdr64.c_str(), "rb");
+    } else if (fileType == ElfFileType::ELF64) {
+        ehdrFP_ = fopen(EHDR_64.c_str(), "rb");
         if (ehdrFP_ == nullptr) {
-            DFXLOG_ERROR("fopen(ehdr64, \"r\") failed");
+            DFXLOG_ERROR("fopen(EHDR_64, \"r\") failed");
         }
-        shdrFP_ = fopen(shdrs64.c_str(), "rb");
+        shdrFP_ = fopen(SHDRS_64.c_str(), "rb");
         if (shdrFP_ == nullptr) {
-            DFXLOG_ERROR("fopen(shdrs64, \"r\") failed");
+            DFXLOG_ERROR("fopen(SHDRS_64, \"r\") failed");
         }
-        phdrFP_ = fopen(phdrs64.c_str(), "rb");
+        phdrFP_ = fopen(PHDRS_64.c_str(), "rb");
         if (phdrFP_ == nullptr) {
-            DFXLOG_ERROR("fopen(phdrs64, \"r\") failed");
+            DFXLOG_ERROR("fopen(PHDRS_64, \"r\") failed");
         }
-        symTabFP_ = fopen(syms64.c_str(), "rb");
+        symTabFP_ = fopen(SYMS_64.c_str(), "rb");
         if (symTabFP_ == nullptr) {
-            DFXLOG_ERROR("fopen(syms64, \"r\") failed");
+            DFXLOG_ERROR("fopen(SYMS_64, \"r\") failed");
         }
     }
     if (!ParseElfHeaders()) {
@@ -163,7 +165,7 @@ bool ElfImitate::ParseAllHeaders(ElfFileType fileType)
 
 bool ElfImitate::ParseElfHeaders()
 {
-     if (ehdrFP_ == nullptr) {
+    if (ehdrFP_ == nullptr) {
         DFXLOG_ERROR("param is null");
         return false;
     }
@@ -747,8 +749,9 @@ bool ElfImitate::ParseElfSymbols()
         }
         auto strVec = StringSplit(line, " ");
         ElfSymbol elfSymbol;
+        constexpr int base {16};
         elfSymbol.name = std::stoul(strVec[0].substr(0, strVec[0].size() -1));
-        elfSymbol.value = std::stoull(strVec[1]);
+        elfSymbol.value = std::stoull(strVec[1], nullptr, base);
         elfSymbol.size = std::stoull(strVec[2]);
         elfSymbol.info = ELF32_ST_INFO(bindMap[strVec[4]], typeMap[strVec[3]]);
         elfSymbol.other = vsMap["strVec[5]"];
@@ -759,10 +762,6 @@ bool ElfImitate::ParseElfSymbols()
         } else {
             elfSymbol.shndx = static_cast<uint16_t>(std::stoul(strVec[6]));
         }
-        //elfSymbol.nameStr = "";
-        //if (strVec.size() > 7) {
-        //    elfSymbol.nameStr = strVec.back();
-        //}
         elfSymbols_.push_back(elfSymbol);
     }
     return true;
@@ -851,6 +850,11 @@ bool ElfImitate::ParseSymbols(std::vector<DfxSymbol>& symbols, const std::string
             continue;
         }
     }
+    auto comp = [](DfxSymbol a, DfxSymbol b) { return a.funcVaddr_ < b.funcVaddr_; };
+    std::sort(symbols.begin(), symbols.end(), comp);
+    auto pred = [](DfxSymbol a, DfxSymbol b) { return a.funcVaddr_ == b.funcVaddr_; };
+    symbols.erase(std::unique(symbols.begin(), symbols.end(), pred), symbols.end());
+    symbols.shrink_to_fit();
     return true;
 }
 

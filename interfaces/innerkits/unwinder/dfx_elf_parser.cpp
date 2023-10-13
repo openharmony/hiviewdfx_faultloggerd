@@ -177,7 +177,7 @@ bool ElfParser::ParseSectionHeaders(const EhdrType& ehdr)
         }
     } else {
         LOGE("e_shstrndx(%u) cannot greater than or equal e_shnum(%u)", ehdr.e_shstrndx, ehdr.e_shnum);
-		return false;
+        return false;
     }
 
     offset += ehdr.e_shentsize;
@@ -275,7 +275,7 @@ bool ElfParser::ParseElfName()
 template <typename SymType>
 bool ElfParser::IsFunc(const SymType sym)
 {
-  return ((sym.st_shndx != SHN_UNDEF) &&
+    return ((sym.st_shndx != SHN_UNDEF) &&
         (ELF32_ST_TYPE(sym.st_info) == STT_FUNC || ELF32_ST_TYPE(sym.st_info) == STT_GNU_IFUNC));
 }
 
@@ -302,8 +302,6 @@ bool ElfParser::ParseElfSymbols(ElfShdr shdr, bool isFunc, bool isSort)
         return false;
     }
 
-    //LOGU("shdr.offset: %llx, size: %llx, entSize: %llx, link: %d",
-    //    shdr.offset, shdr.size, shdr.entSize, shdr.link);
     if (elfSecInfos_.find(shdr.link) == elfSecInfos_.end()) {
         return false;
     }

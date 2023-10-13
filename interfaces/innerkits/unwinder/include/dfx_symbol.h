@@ -121,7 +121,8 @@ struct DfxSymbol {
     std::string ToDebugString() const
     {
         std::stringstream ss;
-        ss << "0x" << std::setfill('0') << std::setw(sizeof(funcVaddr_) * 2) << std::hex << funcVaddr_; // 2:a multiplicand
+        ss << "0x" << std::setfill('0') << std::setw(sizeof(funcVaddr_) * 2); // 2 : a multiplicand
+        ss << std::hex << funcVaddr_;
         ss << "|";
         ss << std::setfill('0') << std::setw(sizeof(size_)) << size_;
         ss << "|";

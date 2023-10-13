@@ -14,6 +14,7 @@
  */
 #include "arm_exidx.h"
 #include "dfx_define.h"
+#include "dfx_regs.h"
 #include "dfx_log.h"
 #include "dfx_util.h"
 #include "string_printf.h"
@@ -31,6 +32,16 @@ namespace {
 #define ARM_EXIDX_CANT_UNWIND   0x00000001
 #define ARM_EXIDX_COMPACT       0x80000000
 #define ARM_EXTBL_OP_FINISH     0xb0
+
+static const uintptr_t EXIDX_ENTRY_SIZE = 8;
+static const uintptr_t FOUR_BYTE_OFFSET = 4;
+static const int TWO_BIT_OFFSET = 2;
+static const int FOUR_BIT_OFFSET = 4;
+static const int SEVEN_BIT_OFFSET = 7;
+static const int EIGHT_BIT_OFFSET = 8;
+static const int SIXTEEN_BIT_OFFSET = 16;
+static const int TWENTY_FOUR_BIT_OFFSET = 24;
+static const int TWENTY_EIGHT_BIT_OFFSET = 28;
 }
 
 void ExidxContext::Reset()
@@ -109,7 +120,7 @@ inline void ArmExidx::LogRawData()
     LOGU("%s", logStr.c_str());
 }
 
-bool ArmExidx::SearchEntry(struct UnwindEntryInfo& pi, struct UnwindTableInfo uti, uintptr_t pc)
+bool ArmExidx::SearchEntry(struct UnwindEntryInfo& uei, struct UnwindTableInfo uti, uintptr_t pc)
 {
     uintptr_t first = uti.tableData;
     uintptr_t last = uti.tableData + uti.tableLen - ARM_EXIDX_TABLE_SIZE;
@@ -129,14 +140,14 @@ bool ArmExidx::SearchEntry(struct UnwindEntryInfo& pi, struct UnwindTableInfo ut
 
     if (pc >= val) {
         entry = last;
-        if (!memory_->ReadPrel31(entry, &(pi.startPc))) {
+        if (!memory_->ReadPrel31(entry, &(uei.startPc))) {
             lastErrorData_.addr = entry;
             lastErrorData_.code = UNW_ERROR_ILLEGAL_VALUE;
             return false;
         }
-        pi.endPc = uti.endPc - 1;
+        uei.endPc = uti.endPc - 1;
     } else {
-        while (first < last - 8) {
+        while (first < last - EXIDX_ENTRY_SIZE) {
             entry = first + (((last - first) / ARM_EXIDX_TABLE_SIZE + 1) >> 1) * ARM_EXIDX_TABLE_SIZE;
             if (!memory_->ReadPrel31(entry, &val)) {
                 lastErrorData_.addr = entry;
@@ -152,26 +163,26 @@ bool ArmExidx::SearchEntry(struct UnwindEntryInfo& pi, struct UnwindTableInfo ut
         entry = first;
 
         uintptr_t cur = entry;
-        if (!memory_->ReadPrel31(cur, &(pi.startPc))) {
+        if (!memory_->ReadPrel31(cur, &(uei.startPc))) {
             lastErrorData_.addr = cur;
             lastErrorData_.code = UNW_ERROR_ILLEGAL_VALUE;
             return false;
         }
 
-        cur = entry + 8;
-        if (!memory_->ReadPrel31(cur, &(pi.endPc))) {
+        cur = entry + EXIDX_ENTRY_SIZE;
+        if (!memory_->ReadPrel31(cur, &(uei.endPc))) {
             lastErrorData_.addr = cur;
             lastErrorData_.code = UNW_ERROR_ILLEGAL_VALUE;
             return false;
         }
 
-        pi.endPc--;
+        uei.endPc--;
     }
 
-    pi.gp = uti.gp;
-    pi.unwindInfoSize = ARM_EXIDX_TABLE_SIZE;
-    pi.unwindInfo = (void *) entry;
-    pi.format = UNW_INFO_FORMAT_ARM_EXIDX;
+    uei.gp = uti.gp;
+    uei.unwindInfoSize = ARM_EXIDX_TABLE_SIZE;
+    uei.unwindInfo = (void *) entry;
+    uei.format = UNW_INFO_FORMAT_ARM_EXIDX;
     return true;
 }
 
@@ -187,7 +198,7 @@ bool ArmExidx::ExtractEntryData(uintptr_t entryOffset)
         return false;
     }
 
-    entryOffset += 4;
+    entryOffset += FOUR_BYTE_OFFSET;
     if (!memory_->ReadU32(entryOffset, &data, false)) {
         LOGE("entryOffset: %llx error.", (uint64_t)entryOffset);
         lastErrorData_.addr = entryOffset;
@@ -201,14 +212,14 @@ bool ArmExidx::ExtractEntryData(uintptr_t entryOffset)
         lastErrorData_.addr = entryOffset;
         return false;
     } else if ((data & ARM_EXIDX_COMPACT) != 0) {
-        if (((data >> 24) & 0x7f) != 0) {
+        if (((data >> TWENTY_FOUR_BIT_OFFSET) & 0x7f) != 0) {
             LOGE("This is a non-zero index, this code doesn't support other formats.");
             lastErrorData_.code = UNW_ERROR_INVALID_PERSONALITY;
             return false;
         }
         LOGU("This is a compact table entry, data: %x.", data);
-        ops_.push_back((data >> 16) & 0xff);
-        ops_.push_back((data >> 8) & 0xff);
+        ops_.push_back((data >> SIXTEEN_BIT_OFFSET) & 0xff);
+        ops_.push_back((data >> EIGHT_BIT_OFFSET) & 0xff);
         uint8_t lastOp = data & 0xff;
         ops_.push_back(lastOp);
         if (lastOp != ARM_EXTBL_OP_FINISH) {
@@ -226,7 +237,7 @@ bool ArmExidx::ExtractEntryData(uintptr_t entryOffset)
         return false;
     }
 #else
-    extabAddr = entryOffset + 4;
+    extabAddr = entryOffset + FOUR_BYTE_OFFSET;
 #endif
     if (!memory_->ReadU32(extabAddr, &data, false)) {
         lastErrorData_.code = UNW_ERROR_INVALID_MEMORY;
@@ -244,40 +255,40 @@ bool ArmExidx::ExtractEntryData(uintptr_t entryOffset)
         }
 #endif // !UNITTEST
 
-        extabAddr += 4;
+        extabAddr += FOUR_BYTE_OFFSET;
         // Skip four bytes, because dont have unwind data to read
         if (!memory_->ReadU32(extabAddr, &data, false)) {
             lastErrorData_.code = UNW_ERROR_INVALID_MEMORY;
             lastErrorData_.addr = extabAddr;
             return false;
         }
-        tableCount = (data >> 24) & 0xff;
-        ops_.push_back((data >> 16) & 0xff);
-        ops_.push_back((data >> 8) & 0xff);
+        tableCount = (data >> TWENTY_FOUR_BIT_OFFSET) & 0xff;
+        ops_.push_back((data >> SIXTEEN_BIT_OFFSET) & 0xff);
+        ops_.push_back((data >> EIGHT_BIT_OFFSET) & 0xff);
         ops_.push_back(data & 0xff);
-        extabAddr += 4;
+        extabAddr += FOUR_BYTE_OFFSET;
     } else {
         LOGU("Arm compact personality, data: %x.", data);
-        if ((data >> 28) != 8) {
-            LOGE("incorrect Arm compact model, [31:28]bit must be 0x8(%x)", data >> 28);
+        if ((data >> TWENTY_EIGHT_BIT_OFFSET) != 0x8) {
+            LOGE("incorrect Arm compact model, [31:28]bit must be 0x8(%x)", data >> TWENTY_EIGHT_BIT_OFFSET);
             return false;
         }
-        uint8_t personality = (data >> 24) & 0x3;
-        if (personality > 2) {
+        uint8_t personality = (data >> TWENTY_FOUR_BIT_OFFSET) & 0x3;
+        if (personality > 2) { // 2 : personality must be 0 1 2
             LOGE("incorrect Arm compact personality(%u)", personality);
             return false;
         }
         // inline compact model, when personality is 0
         if (personality == 0) {
-            ops_.push_back((data >> 16) & 0xff);
-        } else if (personality == 1 || personality == 2) {
-            tableCount = (data >> 16) & 0xff;
-            extabAddr += 4;
+            ops_.push_back((data >> SIXTEEN_BIT_OFFSET) & 0xff);
+        } else if (personality == 1 || personality == 2) { // 2 : personality equal to 2
+            tableCount = (data >> SIXTEEN_BIT_OFFSET) & 0xff;
+            extabAddr += FOUR_BYTE_OFFSET;
         }
-        ops_.push_back((data >> 8) & 0xff);
+        ops_.push_back((data >> EIGHT_BIT_OFFSET) & 0xff);
         ops_.push_back(data & 0xff);
     }
-    if (tableCount > 5) {
+    if (tableCount > 5) { // 5 : 5 operators
         lastErrorData_.code = UNW_ERROR_NOT_SUPPORT;
         return false;
     }
@@ -286,10 +297,10 @@ bool ArmExidx::ExtractEntryData(uintptr_t entryOffset)
         if (!memory_->ReadU32(extabAddr, &data, false)) {
             return false;
         }
-        extabAddr += 4;
-        ops_.push_back((data >> 24) & 0xff);
-        ops_.push_back((data >> 16) & 0xff);
-        ops_.push_back((data >> 8) & 0xff);
+        extabAddr += FOUR_BYTE_OFFSET;
+        ops_.push_back((data >> TWENTY_FOUR_BIT_OFFSET) & 0xff);
+        ops_.push_back((data >> SIXTEEN_BIT_OFFSET) & 0xff);
+        ops_.push_back((data >> EIGHT_BIT_OFFSET) & 0xff);
         ops_.push_back(data & 0xff);
     }
 
@@ -410,7 +421,7 @@ inline bool ArmExidx::Decode1000iiiiiiiiiiii()
         return false;
     }
 
-    registers <<= 4;
+    registers <<= FOUR_BIT_OFFSET;
     LOGU("1000iiii iiiiiiii: registers: %02x)", registers);
     for (size_t reg = REG_ARM_R4; reg < REG_ARM_LAST; reg++) {
         if ((registers & (1 << reg))) {
@@ -418,7 +429,7 @@ inline bool ArmExidx::Decode1000iiiiiiiiiiii()
                 rsState_->isPcSet = true;
             }
             context_.Transform(reg);
-            context_.AddUpVsp(4);
+            context_.AddUpVsp(FOUR_BYTE_OFFSET);
         }
     }
     return true;
@@ -427,7 +438,7 @@ inline bool ArmExidx::Decode1000iiiiiiiiiiii()
 inline bool ArmExidx::Decode1001nnnn()
 {
     uint8_t bits = curOp_ & 0xf;
-    if (bits == 13 || bits == 15) {
+    if (bits == REG_ARM_R13 || bits == REG_ARM_R15) {
         LOGU("10011101 or 10011111: Reserved");
         lastErrorData_.code = UNW_ERROR_RESERVED_VALUE;
         return false;
@@ -462,12 +473,12 @@ inline bool ArmExidx::Decode1010nnnn()
 
     for (size_t reg = startReg; reg <= endReg; reg++) {
         context_.Transform(reg);
-        context_.AddUpVsp(4);
+        context_.AddUpVsp(FOUR_BYTE_OFFSET);
     }
 
     if (curOp_ & 0x8) {
         context_.Transform(REG_LR);
-        context_.AddUpVsp(4);
+        context_.AddUpVsp(FOUR_BYTE_OFFSET);
     }
     return true;
 }
@@ -493,9 +504,9 @@ inline bool ArmExidx::Decode101100010000iiii()
     // 10110001 0000iiii(i not all 0) Pop integer registers under mask{r3, r2, r1, r0}
     uint8_t registers = curOp_ & 0x0f;
     LOGU("10110001 0000iiii, registers: %02x", registers);
-    for (size_t reg = 0; reg < 4; reg++) {
+    for (size_t reg = 0; reg < 4; reg++) { // 4 : four registers {r3, r2, r1, r0}
         if ((registers & (1 << reg))) {
-            context_.AddUpVsp(4);
+            context_.AddUpVsp(FOUR_BYTE_OFFSET);
         }
     }
     return true;
@@ -511,9 +522,9 @@ inline bool ArmExidx::Decode10110010uleb128()
             return false;
         }
         uleb128 |= (curOp_ & 0x7f) << shift;
-        shift += 7;
+        shift += SEVEN_BIT_OFFSET;
     } while ((curOp_ & 0x80) != 0);
-    uint32_t offset = 0x204 + (uleb128 << 2);
+    uint32_t offset = 0x204 + (uleb128 << TWO_BIT_OFFSET);
     LOGU("vsp = vsp + %d", offset);
     context_.AddUpVsp(offset);
     return true;
@@ -567,9 +578,9 @@ inline bool ArmExidx::Decode110001110000iiii()
     }
 
     // 11000111 0000iiii: Intel Wireless MMX pop wCGR registers {wCGR0,1,2,3}
-    for (size_t i = 0; i < 4; i++) {
+    for (size_t i = 0; i < 4; i++) { // 4 : four registers
         if (curOp_ & (1 << i)) {
-            context_.AddUpVsp(4);
+            context_.AddUpVsp(FOUR_BYTE_OFFSET);
         }
     }
     return true;

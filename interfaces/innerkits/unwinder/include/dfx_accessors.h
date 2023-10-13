@@ -64,8 +64,7 @@ public:
     int FindUnwindTable(uintptr_t pc, UnwindTableInfo& uti, void *arg) override;
 };
 
-class DfxAccessorsCustomize : public DfxAccessors
-{
+class DfxAccessorsCustomize : public DfxAccessors {
 public:
     DfxAccessorsCustomize(std::shared_ptr<UnwindAccessors> accessors) : accessors_(accessors) {}
     virtual ~DfxAccessorsCustomize() = default;

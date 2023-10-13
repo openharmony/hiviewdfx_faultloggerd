@@ -36,20 +36,20 @@ static const char ARK_LIB_NAME[] = "libark_jsruntime.so";
 static void* g_handle = nullptr;
 static pthread_mutex_t g_mutex;
 
-static int (*StepArkManagedNativeFrameFn)(int, uintptr_t*, uintptr_t*, uintptr_t*, char*, size_t);
-static int (*GetArkJsHeapCrashInfoFn)(int, uintptr_t *, uintptr_t *, int, char *, size_t);
+static int (*g_stepArkManagedNativeFrameFn)(int, uintptr_t*, uintptr_t*, uintptr_t*, char*, size_t);
+static int (*g_getArkJsHeapCrashInfoFn)(int, uintptr_t *, uintptr_t *, int, char *, size_t);
 }
 
 int DfxArk::StepArkManagedNativeFrame(int pid, uintptr_t& pc, uintptr_t& fp, uintptr_t& sp, char* buf, size_t bufSize)
 {
-    if (StepArkManagedNativeFrameFn != nullptr) {
-        return StepArkManagedNativeFrameFn(pid, &pc, &fp, &sp, buf, bufSize);
+    if (g_stepArkManagedNativeFrameFn != nullptr) {
+        return g_stepArkManagedNativeFrameFn(pid, &pc, &fp, &sp, buf, bufSize);
     }
 
     pthread_mutex_lock(&g_mutex);
-    if (StepArkManagedNativeFrameFn != nullptr) {
+    if (g_stepArkManagedNativeFrameFn != nullptr) {
         pthread_mutex_unlock(&g_mutex);
-        return StepArkManagedNativeFrameFn(pid, &pc, &fp, &sp, buf, bufSize);
+        return g_stepArkManagedNativeFrameFn(pid, &pc, &fp, &sp, buf, bufSize);
     }
 
     if (g_handle == nullptr) {
@@ -61,8 +61,8 @@ int DfxArk::StepArkManagedNativeFrame(int pid, uintptr_t& pc, uintptr_t& fp, uin
         }
     }
 
-    *(void**)(&StepArkManagedNativeFrameFn) = dlsym(g_handle, "step_ark_managed_native_frame");
-    if (!StepArkManagedNativeFrameFn) {
+    *(void**)(&g_stepArkManagedNativeFrameFn) = dlsym(g_handle, "step_ark_managed_native_frame");
+    if (!g_stepArkManagedNativeFrameFn) {
         LOGU("Failed to find symbol(%s).", dlerror());
         g_handle = nullptr;
         pthread_mutex_unlock(&g_mutex);
@@ -70,19 +70,19 @@ int DfxArk::StepArkManagedNativeFrame(int pid, uintptr_t& pc, uintptr_t& fp, uin
     }
 
     pthread_mutex_unlock(&g_mutex);
-    return StepArkManagedNativeFrameFn(pid, &pc, &fp, &sp, buf, bufSize);
+    return g_stepArkManagedNativeFrameFn(pid, &pc, &fp, &sp, buf, bufSize);
 }
 
 int DfxArk::GetArkJsHeapCrashInfo(int pid, uintptr_t& x20, uintptr_t& fp, int outJsInfo, char* buf, size_t bufSize)
 {
-    if (GetArkJsHeapCrashInfoFn != nullptr) {
-        return GetArkJsHeapCrashInfoFn(pid, &x20, &fp, outJsInfo, buf, bufSize);
+    if (g_getArkJsHeapCrashInfoFn != nullptr) {
+        return g_getArkJsHeapCrashInfoFn(pid, &x20, &fp, outJsInfo, buf, bufSize);
     }
 
     pthread_mutex_lock(&g_mutex);
-    if (GetArkJsHeapCrashInfoFn != nullptr) {
+    if (g_getArkJsHeapCrashInfoFn != nullptr) {
         pthread_mutex_unlock(&g_mutex);
-        return GetArkJsHeapCrashInfoFn(pid, &x20, &fp, outJsInfo, buf, bufSize);
+        return g_getArkJsHeapCrashInfoFn(pid, &x20, &fp, outJsInfo, buf, bufSize);
     }
 
     if (g_handle == nullptr) {
@@ -94,8 +94,8 @@ int DfxArk::GetArkJsHeapCrashInfo(int pid, uintptr_t& x20, uintptr_t& fp, int ou
         }
     }
 
-    *(void**)(&GetArkJsHeapCrashInfoFn) = dlsym(g_handle, "get_ark_js_heap_crash_info");
-    if (!GetArkJsHeapCrashInfoFn) {
+    *(void**)(&g_getArkJsHeapCrashInfoFn) = dlsym(g_handle, "get_ark_js_heap_crash_info");
+    if (!g_getArkJsHeapCrashInfoFn) {
         LOGU("Failed to find symbol(%s).", dlerror());
         g_handle = nullptr;
         pthread_mutex_unlock(&g_mutex);
@@ -103,7 +103,7 @@ int DfxArk::GetArkJsHeapCrashInfo(int pid, uintptr_t& x20, uintptr_t& fp, int ou
     }
 
     pthread_mutex_unlock(&g_mutex);
-    return GetArkJsHeapCrashInfoFn(pid, &x20, &fp, outJsInfo, buf, bufSize);
+    return g_getArkJsHeapCrashInfoFn(pid, &x20, &fp, outJsInfo, buf, bufSize);
 }
 } // namespace HiviewDFX
 } // namespace OHOS

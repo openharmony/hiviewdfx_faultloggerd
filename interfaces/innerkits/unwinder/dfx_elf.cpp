@@ -276,7 +276,7 @@ std::string DfxElf::GetBuildId(uint64_t noteAddr, uint64_t noteSize)
             }
 
             // Align nhdr.n_namesz to next power multiple of 4. See man 5 elf.
-            offset += (nhdr.n_namesz + 3) & ~3;
+            offset += (nhdr.n_namesz + 3) & ~3; // 3 : Align the offset to a 4-byte boundary
             if (name == "GNU" && nhdr.n_type == NT_GNU_BUILD_ID) {
                 if (noteSize - offset < nhdr.n_descsz || nhdr.n_descsz == 0) {
                     return "";
@@ -288,7 +288,7 @@ std::string DfxElf::GetBuildId(uint64_t noteAddr, uint64_t noteSize)
             }
         }
         // Align hdr.n_descsz to next power multiple of 4. See man 5 elf.
-        offset += (nhdr.n_descsz + 3) & ~3;
+        offset += (nhdr.n_descsz + 3) & ~3; // 3 : Align the offset to a 4-byte boundary
     }
     return "";
 }
@@ -323,7 +323,7 @@ std::string DfxElf::ToReadableBuildId(const std::string& buildIdHex)
 bool DfxElf::GetSectionInfo(ShdrInfo& shdr, const std::string secName)
 {
     if (!IsValid()) {
-         return false;
+        return false;
     }
     return elfParse_->GetSectionInfo(shdr, secName);
 }
@@ -447,7 +447,7 @@ bool DfxElf::GetEhHdrTableInfo(std::shared_ptr<DfxMap> map, struct UnwindTableIn
             (int)ti.tableLen, (uint64_t)ti.tableData, (uint64_t)ti.segbase);
         return true;
     }
-    LOGE("Get elf EH_FRAME_HDR section error");
+    LOGE("Get elf(%s) EH_FRAME_HDR section error", map->name.c_str());
     return false;
 }
 
@@ -631,7 +631,7 @@ int DfxElf::DlPhdrCb(struct dl_phdr_info *info, size_t size, void *data)
             LOGD("using synthetic .eh_frame_hdr section for %s", info->dlpi_name);
             synthHdr.version = DW_EH_VERSION;
             synthHdr.ehFramePtrEnc = DW_EH_PE_absptr |
-                ((sizeof(ElfW(Addr)) == 4) ? DW_EH_PE_udata4 : DW_EH_PE_udata8);
+                ((sizeof(ElfW(Addr)) == 4) ? DW_EH_PE_udata4 : DW_EH_PE_udata8); // 4 : four bytes
             synthHdr.fdeCountEnc = DW_EH_PE_omit;
             synthHdr.tableEnc = DW_EH_PE_omit;
             synthHdr.ehFrame = ehFrame;

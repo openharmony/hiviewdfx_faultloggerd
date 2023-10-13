@@ -61,7 +61,7 @@ public:
     uint64_t GetStartPc();
     uint64_t GetEndPc();
     uint64_t GetRelPc(uint64_t pc, uint64_t mapStart, uint64_t mapOffset);
-    bool ParseSymbols(std::vector<DfxSymbol>& symbols,const std::string& filePath);
+    bool ParseSymbols(std::vector<DfxSymbol>& symbols, const std::string& filePath);
     bool AddSymbolsByPlt(std::vector<DfxSymbol>& symbols, const std::string& filePath);
     bool GetFuncNameAndOffset(uint64_t pc, std::string& funcName, uint64_t& start, uint64_t& end);
 protected:

@@ -64,11 +64,13 @@ class DwarfSectionTest : public DwarfSection {
 public:
     DwarfSectionTest() : DwarfSection(nullptr) {};
     ~DwarfSectionTest() {};
-    bool ParseFdeTest(uintptr_t addr, FrameDescEntry &fde) {
+    bool ParseFdeTest(uintptr_t addr, FrameDescEntry &fde)
+    {
         return ParseFde(addr, fde);
     };
 
-    bool ParseCieTest(uintptr_t cieAddr, CommonInfoEntry &cieInfo) {
+    bool ParseCieTest(uintptr_t cieAddr, CommonInfoEntry &cieInfo)
+    {
         return ParseCie(cieAddr, cieInfo);
     };
 };
@@ -431,7 +433,7 @@ bool DwarfOpTest::Test09(std::shared_ptr<DfxMemoryTest> memory)
     ret &= (exprPtrOld + exprData[0] == exprPtr);
     printf("Test09-03 exprPtrOld:%" PRIxPTR " exprPtrNew:%" PRIxPTR "\n",
         exprPtrOld, exprPtr);
-    
+
     StackReset(0);
     exprPtr = exprPtrOld;
     OpBra(exprPtr);

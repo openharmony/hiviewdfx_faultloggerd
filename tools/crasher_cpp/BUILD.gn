@@ -47,6 +47,7 @@ if (defined(ohos_lite)) {
       "-Wno-frame-larger-than",
       "-Wno-frame-address",
     ]
+    cflags_c = [ "-Wno-frame-larger-than" ]
     cflags_cc = [ "-Wno-frame-larger-than" ]
     ldflags = [ "-Wno-frame-larger-than" ]
   }

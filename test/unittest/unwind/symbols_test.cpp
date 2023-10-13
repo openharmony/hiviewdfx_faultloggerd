@@ -99,7 +99,6 @@ HWTEST_F(DfxSymbolsTest, DfxSymbolsTest002, TestSize.Level2)
     ASSERT_EQ(symbols.size(), symbolsImitate.size());
     for (size_t i = 0; i < symbolsImitate.size(); ++i) {
         symbols[i].fileVaddr_ = symbolsImitate[i].fileVaddr_;
-
         symbols[i].funcVaddr_ = symbolsImitate[i].funcVaddr_;
         symbols[i].name_ = symbolsImitate[i].name_;
         symbols[i].demangle_ = symbolsImitate[i].demangle_;

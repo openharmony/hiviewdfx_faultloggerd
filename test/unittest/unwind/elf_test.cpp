@@ -78,7 +78,7 @@ HWTEST_F(DfxElfTest, DfxElfTest001, TestSize.Level2)
     ASSERT_EQ(elf.GetStartPc(), elfImitate.GetStartPc());
     ASSERT_EQ(elf.GetEndPc(), elfImitate.GetEndPc());
     ASSERT_EQ(elf.GetRelPc(0xf78c00f0, 0xf78c0000, 0), elfImitate.GetRelPc(0xf78c00f0, 0xf78c0000, 0));
-    ASSERT_EQ(elf.GetBuildId(), "8E5A30338BE326934FF93C998DCD0D22FE345870");
+    ASSERT_EQ(elf.GetBuildId(), "8e5a30338be326934ff93c998dcd0d22fe345870");
     GTEST_LOG_(INFO) << "DfxElfTest001: end.";
 }
 
@@ -119,7 +119,7 @@ HWTEST_F(DfxElfTest, DfxElfTest002, TestSize.Level2)
     ASSERT_EQ(elf.GetStartPc(), elfImitate.GetStartPc());
     ASSERT_EQ(elf.GetEndPc(), elfImitate.GetEndPc());
     ASSERT_EQ(elf.GetRelPc(0xf78c00f0, 0xf78c0000, 0), elfImitate.GetRelPc(0xf78c00f0, 0xf78c0000, 0));
-    ASSERT_EQ(elf.GetBuildId(), "24C55DCCC5BAAAA140DA0083207ABCB8D523E248");
+    ASSERT_EQ(elf.GetBuildId(), "24c55dccc5baaaa140da0083207abcb8d523e248");
     GTEST_LOG_(INFO) << "DfxElfTest002: end.";
 }
 

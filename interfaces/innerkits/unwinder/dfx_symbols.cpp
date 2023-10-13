@@ -48,7 +48,6 @@ bool DfxSymbols::ParseSymbols(std::vector<DfxSymbol>& symbols, std::shared_ptr<D
             return false;
         }
         std::string nameStr = std::string((char *)elf->GetMmapPtr() + elfSymbol.strOffset + elfSymbol.name);
-        //LOGU("nameStr: %s", nameStr.c_str());
         symbols.emplace_back(elfSymbol.value, elfSymbol.size,
             nameStr, Demangle(nameStr), filePath);
     }

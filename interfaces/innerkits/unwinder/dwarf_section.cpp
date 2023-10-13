@@ -25,6 +25,8 @@ namespace {
 #undef LOG_TAG
 #define LOG_DOMAIN 0xD002D11
 #define LOG_TAG "DfxDwarfSection"
+
+static const int FOUR_BYTE_OFFSET = 4;
 }
 
 bool DwarfSection::SearchEntry(struct UnwindEntryInfo& uei, struct UnwindTableInfo uti, uintptr_t pc)
@@ -41,7 +43,7 @@ bool DwarfSection::SearchEntry(struct UnwindEntryInfo& uei, struct UnwindTableIn
     uintptr_t low = 0;
     DwarfTableEntry dwarfTableEntry;
     for (uintptr_t len = fdeCount; len > 1;) {
-        uintptr_t cur = low + (len / 2);
+        uintptr_t cur = low + (len / 2); // 2 : binary search divided parameter
         entry = (uintptr_t) tableData + cur * sizeof(DwarfTableEntry);
         memory_->ReadS32(entry, &dwarfTableEntry.startPcOffset, true);
         uintptr_t startPc = static_cast<uintptr_t>(dwarfTableEntry.startPcOffset + segbase);
@@ -50,14 +52,14 @@ bool DwarfSection::SearchEntry(struct UnwindEntryInfo& uei, struct UnwindTableIn
             break;
         } else if (startPc < pc) {
             low = cur;
-            len -= (len / 2);
+            len -= (len / 2); // 2 : binary search divided parameter
         } else {
-            len /= 2;
+            len /= 2; // 2 : binary search divided parameter
         }
     }
 
     entry = (uintptr_t) tableData + low * sizeof(DwarfTableEntry);
-    entry += 4;
+    entry += FOUR_BYTE_OFFSET;
 
     memory_->ReadS32(entry, &dwarfTableEntry.fdeOffset, true);
     uintptr_t fdeAddr = static_cast<uintptr_t>(dwarfTableEntry.fdeOffset + segbase);
@@ -233,7 +235,7 @@ bool DwarfSection::FillInCie(uintptr_t& ptr, CommonInfoEntry &cieInfo)
     uint8_t version;
     memory_->ReadU8(ptr, &version, true);
     LOGU("Cie version: %d", version);
-    if (version != DW_EH_VERSION && version != 3 && version != 4 && version != 5) {
+    if (version != DW_EH_VERSION && version != 3 && version != 4 && version != 5) { // 3 4 5 : cie version
         LOGE("Invalid cie version: %d", version);
         lastErrorData_.code = UNW_ERROR_UNSUPPORTED_VERSION;
         return false;
@@ -252,7 +254,7 @@ bool DwarfSection::FillInCie(uintptr_t& ptr, CommonInfoEntry &cieInfo)
     }
 
     // Segment Size
-    if (version == 4 || version == 5) {
+    if (version == 4 || version == 5) { // 4 5 : cie version
         // Skip the Address Size field since we only use it for validation.
         ptr += 1;
         memory_->ReadU8(ptr, &cieInfo.segmentSize, true);

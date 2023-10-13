@@ -27,6 +27,11 @@ namespace {
 #undef LOG_TAG
 #define LOG_DOMAIN 0xD002D11
 #define LOG_TAG "DfxMemory"
+
+static const int SEVEN_BIT_OFFSET = 7;
+static const int TWO_BYTE_SIZE = 2;
+static const int FOUR_BYTE_SIZE = 4;
+static const int EIGHT_BYTE_SIZE = 8;
 }
 
 bool DfxMemory::ReadReg(int regIdx, uintptr_t *val)
@@ -179,7 +184,6 @@ bool DfxMemory::ReadPrel31(uintptr_t& addr, uintptr_t *val)
     if (!ReadUptr(addr, &offset, false)) {
         return false;
     }
-    // int32_t signedData = static_cast<int32_t>(data << 1) >> 1;
     offset = static_cast<uintptr_t>(static_cast<int32_t>(offset << 1) >> 1);
     *val = addr + offset;
     return true;
@@ -196,7 +200,7 @@ uint64_t DfxMemory::ReadUleb128(uintptr_t& addr)
         }
 
         val |= static_cast<uint64_t>(byte & 0x7f) << shift;
-        shift += 7;
+        shift += SEVEN_BIT_OFFSET;
     } while (byte & 0x80);
     return val;
 }
@@ -212,7 +216,7 @@ int64_t DfxMemory::ReadSleb128(uintptr_t& addr)
         }
 
         val |= static_cast<uint64_t>(byte & 0x7f) << shift;
-        shift += 7;
+        shift += SEVEN_BIT_OFFSET;
     } while (byte & 0x80);
 
     if ((byte & 0x40) != 0) {
@@ -231,13 +235,13 @@ size_t DfxMemory::GetEncodedSize(uint8_t encoding)
             return 1;
         case DW_EH_PE_udata2:
         case DW_EH_PE_sdata2:
-            return 2;
+            return TWO_BYTE_SIZE;
         case DW_EH_PE_udata4:
         case DW_EH_PE_sdata4:
-            return 4;
+            return FOUR_BYTE_SIZE;
         case DW_EH_PE_udata8:
         case DW_EH_PE_sdata8:
-            return 8;
+            return EIGHT_BYTE_SIZE;
         case DW_EH_PE_uleb128:
         case DW_EH_PE_sleb128:
         default:

@@ -33,6 +33,10 @@ namespace {
 #undef LOG_TAG
 #define LOG_DOMAIN 0xD002D11
 #define LOG_TAG "DfxAccessors"
+
+static const int FOUR_BYTES = 4;
+static const int EIGHT_BYTES = 8;
+static const int THIRTY_TWO_BITS = 32;
 }
 
 bool DfxAccessorsLocal::IsValidFrame(uintptr_t addr, uintptr_t stackBottom, uintptr_t stackTop)
@@ -98,15 +102,15 @@ int DfxAccessorsRemote::AccessMem(uintptr_t addr, uintptr_t *val, void *arg)
         return UNW_ERROR_INVALID_CONTEXT;
     }
     int i, end;
-    if (sizeof(long) == 4 && sizeof(uintptr_t) == 8) {
-        end = 2;
+    if (sizeof(long) == FOUR_BYTES && sizeof(uintptr_t) == EIGHT_BYTES) {
+        end = 2; // 2 : read two times
     } else {
         end = 1;
     }
 
     uintptr_t tmpVal;
     for (i = 0; i < end; i++) {
-        uintptr_t tmpAddr = ((i == 0) ? addr : addr + 4);
+        uintptr_t tmpAddr = ((i == 0) ? addr : addr + FOUR_BYTES);
         errno = 0;
 
         tmpVal = (unsigned long) ptrace(PTRACE_PEEKDATA, ctx->pid, tmpAddr, nullptr);
@@ -115,9 +119,9 @@ int DfxAccessorsRemote::AccessMem(uintptr_t addr, uintptr_t *val, void *arg)
         }
 
 #if __BYTE_ORDER == __LITTLE_ENDIAN
-        *val |= tmpVal << (i * 32);
+        *val |= tmpVal << (i * THIRTY_TWO_BITS);
 #else
-        *val |= (i == 0 && end == 2 ? tmpVal << 32 : tmpVal);
+        *val |= (i == 0 && end == 2 ? tmpVal << THIRTY_TWO_BITS : tmpVal); // 2 : read two times
 #endif
         if (errno) {
             LOGE("errno: %d", errno);

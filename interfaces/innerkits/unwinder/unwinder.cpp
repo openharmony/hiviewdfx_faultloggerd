@@ -350,20 +350,20 @@ void Unwinder::FillFrame(DfxFrame& frame)
 
 void Unwinder::DoPcAdjust(uintptr_t& pc)
 {
-    if (pc <= 4) {
+    if (pc <= 0x4) {
         return;
     }
-    uintptr_t sz = 4;
+    uintptr_t sz = 0x4;
 #if defined(__arm__)
-    if (pc & 1) {
+    if (pc & 0x1) {
         uintptr_t val;
-        if (pc < 5 || !(memory_->ReadMem(pc - 5, &val)) ||
+        if (pc < 0x5 || !(memory_->ReadMem(pc - 0x5, &val)) ||
             (val & 0xe000f000) != 0xe000f000) {
-            sz = 2;
+            sz = 0x2;
         }
     }
 #elif defined(__x86_64__)
-    sz = 1;
+    sz = 0x1;
 #endif
     pc -= sz;
 }

@@ -52,6 +52,7 @@ void ArmExidxTest::SetUp()
 
 void ArmExidxTest::TearDown()
 {}
+
 /**
  * @tc.name: ArmExidxTest001
  * @tc.desc: test ExtractEntryData
@@ -60,7 +61,8 @@ void ArmExidxTest::TearDown()
 HWTEST_F(ArmExidxTest, ArmExidxTest001, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "ArmExidxTest001: start.";
-    std::shared_ptr<DfxMemory> memory = std::make_shared<DfxMemory>();
+    std::shared_ptr<DfxAccessorsLocal> acc = std::make_shared<DfxAccessorsLocal>();
+    std::shared_ptr<DfxMemory> memory = std::make_shared<DfxMemory>(acc);
     ArmExidx exidx(memory);
     uint32_t values[] = {0x1, 0x1};
     uintptr_t entryOffset = (uintptr_t)(&values[0]);
@@ -77,7 +79,8 @@ HWTEST_F(ArmExidxTest, ArmExidxTest001, TestSize.Level2)
 HWTEST_F(ArmExidxTest, ArmExidxTest002, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "ArmExidxTest002: start.";
-     std::shared_ptr<DfxMemory> memory = std::make_shared<DfxMemory>();
+    std::shared_ptr<DfxAccessorsLocal> acc = std::make_shared<DfxAccessorsLocal>();
+    std::shared_ptr<DfxMemory> memory = std::make_shared<DfxMemory>(acc);
     ArmExidx exidx(memory);
     // inline compact model
     uint32_t values[] = {0x7fff2340, 0x80c0c0c0};
@@ -99,7 +102,8 @@ HWTEST_F(ArmExidxTest, ArmExidxTest002, TestSize.Level2)
 HWTEST_F(ArmExidxTest, ArmExidxTest003, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "ArmExidxTest003: start.";
-    std::shared_ptr<DfxMemory> memory = std::make_shared<DfxMemory>();
+    std::shared_ptr<DfxAccessorsLocal> acc = std::make_shared<DfxAccessorsLocal>();
+    std::shared_ptr<DfxMemory> memory = std::make_shared<DfxMemory>(acc);
     ArmExidx exidx(memory);
 
     //personality 0
@@ -156,7 +160,8 @@ HWTEST_F(ArmExidxTest, ArmExidxTest004, TestSize.Level2)
 {
     // 00xxxxxx: vsp = vsp + (xxxxxx << 2) + 4
     GTEST_LOG_(INFO) << "ArmExidxTest004: start.";
-    std::shared_ptr<DfxMemory> memory = std::make_shared<DfxMemory>();
+    std::shared_ptr<DfxAccessorsLocal> acc = std::make_shared<DfxAccessorsLocal>();
+    std::shared_ptr<DfxMemory> memory = std::make_shared<DfxMemory>(acc);
     ArmExidx exidx(memory);
     std::shared_ptr<RegLocState> rs = std::make_shared<RegLocState>();
     uint32_t values[] = {0x7fff2340, 0x00001111, 0x810010b0};
@@ -175,7 +180,8 @@ HWTEST_F(ArmExidxTest, ArmExidxTest005, TestSize.Level2)
 {
     // 01xxxxxx: vsp = vsp - (xxxxxx << 2) - 4
     GTEST_LOG_(INFO) << "ArmExidxTest005: start.";
-    std::shared_ptr<DfxMemory> memory = std::make_shared<DfxMemory>();
+    std::shared_ptr<DfxAccessorsLocal> acc = std::make_shared<DfxAccessorsLocal>();
+    std::shared_ptr<DfxMemory> memory = std::make_shared<DfxMemory>(acc);
     ArmExidx exidx(memory);
     std::shared_ptr<RegLocState> rs = std::make_shared<RegLocState>();
     uint32_t values[] = {0x7fff2340, 0x00001111, 0x810041b0};
@@ -194,7 +200,8 @@ HWTEST_F(ArmExidxTest, ArmExidxTest006, TestSize.Level2)
 {
     // 10000000 00000000: Refuse to unwind
     GTEST_LOG_(INFO) << "ArmExidxTest006: start.";
-    std::shared_ptr<DfxMemory> memory = std::make_shared<DfxMemory>();
+    std::shared_ptr<DfxAccessorsLocal> acc = std::make_shared<DfxAccessorsLocal>();
+    std::shared_ptr<DfxMemory> memory = std::make_shared<DfxMemory>(acc);
     ArmExidx exidx(memory);
     std::shared_ptr<RegLocState> rs = std::make_shared<RegLocState>();
     uint32_t values[] = {0x7fff2340, 0x00001111, 0x81008000};
@@ -214,7 +221,8 @@ HWTEST_F(ArmExidxTest, ArmExidxTest007, TestSize.Level2)
 {
     // 1000iiii iiiiiiii (i not all 0)
     GTEST_LOG_(INFO) << "ArmExidxTest007: start.";
-    std::shared_ptr<DfxMemory> memory = std::make_shared<DfxMemory>();
+    std::shared_ptr<DfxAccessorsLocal> acc = std::make_shared<DfxAccessorsLocal>();
+    std::shared_ptr<DfxMemory> memory = std::make_shared<DfxMemory>(acc);
     ArmExidx exidx(memory);
     std::shared_ptr<RegLocState> rs = std::make_shared<RegLocState>();
     uint32_t values[] = {0x7fff2340, 0x00001111, 0x81008811};
@@ -237,7 +245,8 @@ HWTEST_F(ArmExidxTest, ArmExidxTest008, TestSize.Level2)
 {
     // 10011101 || 10011111
     GTEST_LOG_(INFO) << "ArmExidxTest008: start.";
-    std::shared_ptr<DfxMemory> memory = std::make_shared<DfxMemory>();
+    std::shared_ptr<DfxAccessorsLocal> acc = std::make_shared<DfxAccessorsLocal>();
+    std::shared_ptr<DfxMemory> memory = std::make_shared<DfxMemory>(acc);
     ArmExidx exidx(memory);
     std::shared_ptr<RegLocState> rs = std::make_shared<RegLocState>();
     uint32_t values[] = {0x7fff2340, 0x00001111, 0x81009db0};
@@ -259,7 +268,8 @@ HWTEST_F(ArmExidxTest, ArmExidxTest008, TestSize.Level2)
 HWTEST_F(ArmExidxTest, ArmExidxTest009, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "ArmExidxTest009: start.";
-    std::shared_ptr<DfxMemory> memory = std::make_shared<DfxMemory>();
+    std::shared_ptr<DfxAccessorsLocal> acc = std::make_shared<DfxAccessorsLocal>();
+    std::shared_ptr<DfxMemory> memory = std::make_shared<DfxMemory>(acc);
     ArmExidx exidx(memory);
     std::shared_ptr<RegLocState> rs = std::make_shared<RegLocState>();
     uint32_t values[] = {0x7fff2340, 0x00001111, 0x81009cb0};
@@ -281,7 +291,8 @@ HWTEST_F(ArmExidxTest, ArmExidxTest010, TestSize.Level2)
 {
     //10100nnn Pop r4-r[4+nnn]
     GTEST_LOG_(INFO) << "ArmExidxTest010: start.";
-    std::shared_ptr<DfxMemory> memory = std::make_shared<DfxMemory>();
+    std::shared_ptr<DfxAccessorsLocal> acc = std::make_shared<DfxAccessorsLocal>();
+    std::shared_ptr<DfxMemory> memory = std::make_shared<DfxMemory>(acc);
     ArmExidx exidx(memory);
     std::shared_ptr<RegLocState> rs = std::make_shared<RegLocState>();
     uint32_t values[] = {0x7fff2340, 0x00001111, 0x8100a7b0};
@@ -305,7 +316,8 @@ HWTEST_F(ArmExidxTest, ArmExidxTest011, TestSize.Level2)
 {
     // 10101nnn Pop r4-r[4+nnn], r14
     GTEST_LOG_(INFO) << "ArmExidxTest011: start.";
-    std::shared_ptr<DfxMemory> memory = std::make_shared<DfxMemory>();
+    std::shared_ptr<DfxAccessorsLocal> acc = std::make_shared<DfxAccessorsLocal>();
+    std::shared_ptr<DfxMemory> memory = std::make_shared<DfxMemory>(acc);
     ArmExidx exidx(memory);
     std::shared_ptr<RegLocState> rs = std::make_shared<RegLocState>();
     uint32_t values[] = {0x7fff2340, 0x00001111, 0x8100afb0};
@@ -331,7 +343,8 @@ HWTEST_F(ArmExidxTest, ArmExidxTest012, TestSize.Level2)
 {
     // 10110000 Finish
     GTEST_LOG_(INFO) << "ArmExidxTest012: start.";
-    std::shared_ptr<DfxMemory> memory = std::make_shared<DfxMemory>();
+    std::shared_ptr<DfxAccessorsLocal> acc = std::make_shared<DfxAccessorsLocal>();
+    std::shared_ptr<DfxMemory> memory = std::make_shared<DfxMemory>(acc);
     ArmExidx exidx(memory);
     std::shared_ptr<RegLocState> rs = std::make_shared<RegLocState>();
     uint32_t values[] = {0x7fff2340, 0x00001111, 0x8100b0b0};
@@ -352,7 +365,8 @@ HWTEST_F(ArmExidxTest, ArmExidxTest013, TestSize.Level2)
 {
     // 10110001 00000000: Spare
     GTEST_LOG_(INFO) << "ArmExidxTest013: start.";
-    std::shared_ptr<DfxMemory> memory = std::make_shared<DfxMemory>();
+    std::shared_ptr<DfxAccessorsLocal> acc = std::make_shared<DfxAccessorsLocal>();
+    std::shared_ptr<DfxMemory> memory = std::make_shared<DfxMemory>(acc);
     ArmExidx exidx(memory);
     std::shared_ptr<RegLocState> rs = std::make_shared<RegLocState>();
     uint32_t values[] = {0x7fff2340, 0x00001111, 0x8100b100};
@@ -376,7 +390,8 @@ HWTEST_F(ArmExidxTest, ArmExidxTest014, TestSize.Level2)
 {
     // 10110001 0000iiii(i not all 0) Pop integer registers under mask{r3, r2,r1,r0}
     GTEST_LOG_(INFO) << "ArmExidxTest014: start.";
-    std::shared_ptr<DfxMemory> memory = std::make_shared<DfxMemory>();
+    std::shared_ptr<DfxAccessorsLocal> acc = std::make_shared<DfxAccessorsLocal>();
+    std::shared_ptr<DfxMemory> memory = std::make_shared<DfxMemory>(acc);
     ArmExidx exidx(memory);
     std::shared_ptr<RegLocState> rs = std::make_shared<RegLocState>();
     uint32_t values[] = {0x7fff2340, 0x00001111, 0x8100b108};
@@ -396,7 +411,8 @@ HWTEST_F(ArmExidxTest, ArmExidxTest015, TestSize.Level2)
 {
     // 10110010 uleb128 vsp = vsp + 0x204 + (uleb128 << 2)
     GTEST_LOG_(INFO) << "ArmExidxTest015: start.";
-    std::shared_ptr<DfxMemory> memory = std::make_shared<DfxMemory>();
+    std::shared_ptr<DfxAccessorsLocal> acc = std::make_shared<DfxAccessorsLocal>();
+    std::shared_ptr<DfxMemory> memory = std::make_shared<DfxMemory>(acc);
     ArmExidx exidx(memory);
     std::shared_ptr<RegLocState> rs = std::make_shared<RegLocState>();
     uint32_t values[] = {0x7fff2340, 0x00001111, 0x8100b208};
@@ -416,7 +432,8 @@ HWTEST_F(ArmExidxTest, ArmExidxTest016, TestSize.Level2)
 {
     // 10110011 sssscccc: Pop VFP double precision registers D[ssss]-D[ssss+cccc] saved by FSTMFDX
     GTEST_LOG_(INFO) << "ArmExidxTest016: start.";
-    std::shared_ptr<DfxMemory> memory = std::make_shared<DfxMemory>();
+    std::shared_ptr<DfxAccessorsLocal> acc = std::make_shared<DfxAccessorsLocal>();
+    std::shared_ptr<DfxMemory> memory = std::make_shared<DfxMemory>(acc);
     ArmExidx exidx(memory);
     std::shared_ptr<RegLocState> rs = std::make_shared<RegLocState>();
     uint32_t values[] = {0x7fff2340, 0x00001111, 0x8100b302};
@@ -437,7 +454,8 @@ HWTEST_F(ArmExidxTest, ArmExidxTest017, TestSize.Level2)
 {
     // 10111nnn:  VFP double-precision registers D[8]-D[8+nnn] saved by FSTMFDX
     GTEST_LOG_(INFO) << "ArmExidxTest016: start.";
-    std::shared_ptr<DfxMemory> memory = std::make_shared<DfxMemory>();
+    std::shared_ptr<DfxAccessorsLocal> acc = std::make_shared<DfxAccessorsLocal>();
+    std::shared_ptr<DfxMemory> memory = std::make_shared<DfxMemory>(acc);
     ArmExidx exidx(memory);
     std::shared_ptr<RegLocState> rs = std::make_shared<RegLocState>();
     uint32_t values[] = {0x7fff2340, 0x00001111, 0x8100b9b0};
@@ -462,7 +480,8 @@ HWTEST_F(ArmExidxTest, ArmExidxTest018, TestSize.Level2)
     *  11000111 xxxxyyyy (xxxx!=0000): spare
     */
     GTEST_LOG_(INFO) << "ArmExidxTest018: start.";
-    std::shared_ptr<DfxMemory> memory = std::make_shared<DfxMemory>();
+    std::shared_ptr<DfxAccessorsLocal> acc = std::make_shared<DfxAccessorsLocal>();
+    std::shared_ptr<DfxMemory> memory = std::make_shared<DfxMemory>(acc);
     ArmExidx exidx(memory);
     std::shared_ptr<RegLocState> rs = std::make_shared<RegLocState>();
 
@@ -516,7 +535,8 @@ HWTEST_F(ArmExidxTest, ArmExidxTest019, TestSize.Level2)
      * 11001yyy(yyy != 000, 001) Spare
     */
     GTEST_LOG_(INFO) << "ArmExidxTest019: start.";
-    std::shared_ptr<DfxMemory> memory = std::make_shared<DfxMemory>();
+    std::shared_ptr<DfxAccessorsLocal> acc = std::make_shared<DfxAccessorsLocal>();
+    std::shared_ptr<DfxMemory> memory = std::make_shared<DfxMemory>(acc);
     ArmExidx exidx(memory);
     std::shared_ptr<RegLocState> rs = std::make_shared<RegLocState>();
 
@@ -549,7 +569,8 @@ HWTEST_F(ArmExidxTest, ArmExidxTest019, TestSize.Level2)
 HWTEST_F(ArmExidxTest, ArmExidxTest020, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "ArmExidxTest020: start.";
-    std::shared_ptr<DfxMemory> memory = std::make_shared<DfxMemory>();
+    std::shared_ptr<DfxAccessorsLocal> acc = std::make_shared<DfxAccessorsLocal>();
+    std::shared_ptr<DfxMemory> memory = std::make_shared<DfxMemory>(acc);
     ArmExidx exidx(memory);
     std::shared_ptr<RegLocState> rs = std::make_shared<RegLocState>();
 

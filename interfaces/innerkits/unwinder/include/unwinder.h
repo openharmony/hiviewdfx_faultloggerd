@@ -66,7 +66,8 @@ public:
 
     const std::vector<uintptr_t>& GetPcs() { return pcs_; }
     void FillFrames(std::vector<DfxFrame>& frames);
-    const std::vector<DfxFrame>& GetFrames() {
+    const std::vector<DfxFrame>& GetFrames()
+    {
         FillFrames(frames_);
         return frames_;
     };
