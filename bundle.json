@@ -24,6 +24,7 @@
         "c_utils",
         "hilog",
         "hisysevent",
+        "hitrace",
         "init",
         "ipc"
       ],
