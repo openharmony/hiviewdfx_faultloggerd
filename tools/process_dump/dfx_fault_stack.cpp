@@ -262,7 +262,7 @@ bool FaultStack::ParseUnwindStack(std::shared_ptr<DfxElfMaps> maps, std::vector<
         DFXLOG_ERROR("%s : maps is null.", __func__);
         return false;
     }
-    size_t index = 0;
+    size_t index = frames.size();
     for (const auto& block : blocks_) {
         std::shared_ptr<DfxElfMap> map;
         for (size_t i = 0; i < block.content.size(); i++) {
