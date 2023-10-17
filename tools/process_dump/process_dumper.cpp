@@ -223,7 +223,7 @@ int ProcessDumper::InitPrintThread(std::shared_ptr<ProcessDumpRequest> request)
     int fd = -1;
     struct FaultLoggerdRequest faultloggerdRequest;
     (void)memset_s(&faultloggerdRequest, sizeof(faultloggerdRequest), 0, sizeof(struct FaultLoggerdRequest));
-    faultloggerdRequest.type = GetLogTypeBySignal(request->siginfo.si_signo);
+    faultloggerdRequest.type = ProcessDumper::GetLogTypeBySignal(request->siginfo.si_signo);
     faultloggerdRequest.pid = request->pid;
     faultloggerdRequest.tid = request->tid;
     faultloggerdRequest.uid = request->uid;
