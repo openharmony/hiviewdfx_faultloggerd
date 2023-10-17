@@ -34,7 +34,7 @@ void LogToDmesg(const LogLevel logLevel, const char *tag, const char *info)
 {
     static const char *LOG_LEVEL_STR[] = { "DEBUG", "INFO", "WARNING", "ERROR", "FATAL" };
     static const char *LOG_KLEVEL_STR[] = { "<7>", "<6>", "<4>", "<3>", "<3>" };
-    int dmesgLevel = static_cast<int>(logLevel) - 2; // 2: DEBUG - FATAL
+    int dmesgLevel = static_cast<int>(logLevel) - LOG_DEBUG;
 
     if (UNLIKELY(g_dmesgFd < 0)) {
         g_dmesgFd = open("/dev/kmsg", O_WRONLY, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP);

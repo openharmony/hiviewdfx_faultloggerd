@@ -257,13 +257,13 @@ bool ElfParser::ParseElfName()
     }
 
     if ((uintptr_t)shdrInfo.addr == dtStrtabAddr_) {
-        uintptr_t sonameOffset = shdrInfo.offset + dtSonameOffset_;
-        uint64_t sonameOffsetMax = shdrInfo.offset + dtStrtabSize_;
-        if (sonameOffset >= sonameOffsetMax) {
+        if (dtSonameOffset_ >= dtStrtabSize_) {
             return false;
         }
+        uintptr_t sonameOffset = shdrInfo.offset + dtSonameOffset_;
+        uint64_t sonameOffsetMax = shdrInfo.offset + dtStrtabSize_;
         size_t maxStrSize = static_cast<size_t>(sonameOffsetMax - sonameOffset);
-        soname_ = std::string(((char *)mmap_->Get() + sonameOffset), maxStrSize);
+        mmap_->ReadString(sonameOffset, &soname_, maxStrSize);
     }
     return true;
 }

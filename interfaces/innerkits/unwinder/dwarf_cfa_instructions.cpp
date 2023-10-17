@@ -29,14 +29,24 @@ namespace {
 #define LOG_TAG "DfxDwarfCfaInstructions"
 }
 
-bool DwarfCfaInstructions::Iterate(uintptr_t pc, FrameDescEntry &fde, uintptr_t instStart, uintptr_t instEnd,
-    uintptr_t pcStart, RegLocState &rsState)
+bool DwarfCfaInstructions::Iterate(uintptr_t pc, FrameDescEntry &fde,
+    uintptr_t instStart, uintptr_t instEnd, RegLocState &rsState)
 {
     uintptr_t instPtr = instStart;
-    uintptr_t codeOffset = 0;
+    uintptr_t pcOffset = fde.pcStart;
+    rsState.pcStart = pcOffset;
     RegLocState prevRs = rsState;
-    auto& cie = fde.cie;
-    while ((instPtr < instEnd) && (codeOffset <= pc - pcStart)) {
+    const auto& cie = fde.cie;
+    while (true) {
+        if (pcOffset > pc) {
+            rsState.pcEnd = pcOffset;
+            break;
+        }
+        if (instPtr > instEnd) {
+            rsState.pcEnd = fde.pcEnd;
+            break;
+        }
+        rsState.pcStart = pcOffset;
         uintptr_t value = 0;
         int64_t offset = 0;
         uint64_t reg = 0;
@@ -50,24 +60,24 @@ bool DwarfCfaInstructions::Iterate(uintptr_t pc, FrameDescEntry &fde, uintptr_t 
                 break;
             case DW_CFA_set_loc:
                 value = memory_->ReadEncodedValue(instPtr, (DwarfEncoding)cie.pointerEncoding);
-                codeOffset = value;
-                LOGU("DW_CFA_set_loc: new offset=%" PRIu64 "", static_cast<uint64_t>(codeOffset));
+                pcOffset = value;
+                LOGU("DW_CFA_set_loc: new offset=%" PRIu64 "", static_cast<uint64_t>(pcOffset));
                 break;
             case DW_CFA_advance_loc1:
                 value = memory_->ReadEncodedValue(instPtr, (DwarfEncoding)DW_EH_PE_udata1);
-                codeOffset += (value * cie.codeAlignFactor);
-                LOGU("DW_CFA_advance_loc1: new offset=%" PRIu64 "", static_cast<uint64_t>(codeOffset));
+                pcOffset += (value * cie.codeAlignFactor);
+                LOGU("DW_CFA_advance_loc1: new offset=%" PRIu64 "", static_cast<uint64_t>(pcOffset));
                 break;
             case DW_CFA_advance_loc2:
                 value = memory_->ReadEncodedValue(instPtr, (DwarfEncoding)DW_EH_PE_udata2);
-                codeOffset += (value * cie.codeAlignFactor);
+                pcOffset += (value * cie.codeAlignFactor);
                 LOGU("DW_CFA_advance_loc2: %" PRIu64 " to %llx",
-                    static_cast<uint64_t>(value * cie.codeAlignFactor), codeOffset);
+                    static_cast<uint64_t>(value * cie.codeAlignFactor), pcOffset);
                 break;
             case DW_CFA_advance_loc4:
                 value = memory_->ReadEncodedValue(instPtr, (DwarfEncoding)DW_EH_PE_udata4);
-                codeOffset += (value * cie.codeAlignFactor);
-                LOGU("DW_CFA_advance_loc4: new offset=%" PRIu64 "", static_cast<uint64_t>(codeOffset));
+                pcOffset += (value * cie.codeAlignFactor);
+                LOGU("DW_CFA_advance_loc4: new offset=%" PRIu64 "", static_cast<uint64_t>(pcOffset));
                 break;
             case DW_CFA_offset_extended:
                 reg = memory_->ReadUleb128(instPtr);
@@ -197,8 +207,8 @@ bool DwarfCfaInstructions::Iterate(uintptr_t pc, FrameDescEntry &fde, uintptr_t 
                 // Check the 2 high bits.
                 switch (opCode & 0xC0) {
                     case DW_CFA_advance_loc:
-                        codeOffset += operand * cie.codeAlignFactor;
-                        LOGU("DW_CFA_advance_loc: codeOffset=%" PRIu64 "", static_cast<uint64_t>(codeOffset));
+                        pcOffset += operand * cie.codeAlignFactor;
+                        LOGU("DW_CFA_advance_loc: pcOffset=%" PRIu64 "", static_cast<uint64_t>(pcOffset));
                         break;
                     case DW_CFA_offset:
                         reg = operand;
@@ -224,13 +234,13 @@ bool DwarfCfaInstructions::Iterate(uintptr_t pc, FrameDescEntry &fde, uintptr_t 
 bool DwarfCfaInstructions::Parse(uintptr_t pc, FrameDescEntry &fde, RegLocState &rsState)
 {
     LOGU("Iterate cie operations");
-    if (!Iterate(pc, fde, fde.cie.instructions, fde.cie.cieEnd, fde.pcStart, rsState)) {
+    if (!Iterate(pc, fde, fde.cie.instructionsOff, fde.cie.instructionsEnd, rsState)) {
         LOGE("Failed to run cie inst");
         return false;
     }
 
     LOGU("Iterate fde operations");
-    if (!Iterate(pc, fde, fde.instructions, fde.fdeEnd, fde.pcStart, rsState)) {
+    if (!Iterate(pc, fde, fde.instructionsOff, fde.instructionsEnd, rsState)) {
         LOGE("Failed to run fde inst");
         return false;
     }

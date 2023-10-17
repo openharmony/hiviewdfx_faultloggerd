@@ -40,6 +40,8 @@ struct RegLoc {
 // saved register status after running call frame instructions
 // it should describe how register saved
 struct RegLocState {
+    uintptr_t pcStart = 0;
+    uintptr_t pcEnd = 0;
     uint32_t cfaReg; // cfa = [r14]
     union {
         int32_t cfaRegOffset; // cfa = cfa + offset

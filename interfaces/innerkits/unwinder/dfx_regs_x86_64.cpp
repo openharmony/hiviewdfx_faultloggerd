@@ -87,7 +87,7 @@ std::string DfxRegsX86_64::PrintRegs() const
 bool DfxRegsX86_64::StepIfSignalFrame(uintptr_t pc, std::shared_ptr<DfxMemory> memory)
 {
     uint64_t data;
-    if (!memory_->Read(pc, &data, sizeof(data))) {
+    if (!memory_->ReadU64(pc, &data, false)) {
         return false;
     }
     LOGU("data: %llx", data);
@@ -101,7 +101,7 @@ bool DfxRegsX86_64::StepIfSignalFrame(uintptr_t pc, std::shared_ptr<DfxMemory> m
     }
 
     uint16_t data2;
-    if (!memory->Read(pc + sizeof(uint64_t), &data2, sizeof(data2))) {
+    if (!memory->ReadU16(pc + sizeof(uint64_t), &data2, false)) {
         return false;
     }
     if (data2 != 0x0f05) {
@@ -112,9 +112,8 @@ bool DfxRegsX86_64::StepIfSignalFrame(uintptr_t pc, std::shared_ptr<DfxMemory> m
     // sp points to the ucontext data structure, read only the mcontext part.
     ucontext_t ucontext;
     uintptr_t scAddr = regsData_[REG_SP] + 0x28;
-    if (!memory->Read(scAddr, &ucontext.uc_mcontext, sizeof(ucontext), false)) {
-        return false;
-    }
+    LOGU("scAddr: %llx", scAddr);
+    memory->Read(scAddr, &ucontext.uc_mcontext, sizeof(ucontext), false);
     SetFromUcontext(ucontext);
     return true;
 }
