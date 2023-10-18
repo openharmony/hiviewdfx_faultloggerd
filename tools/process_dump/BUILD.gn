@@ -119,7 +119,6 @@ if (defined(ohos_lite)) {
       "$faultloggerd_frameworks_path/unwinder/include",
       "$faultloggerd_interfaces_path/common",
       "$faultloggerd_path/common",
-      "$faultloggerd_path/interfaces/rust/rustc_demangle",
       "$faultloggerd_path/interfaces/innerkits/signal_handler",
     ]
 
@@ -140,7 +139,6 @@ if (defined(ohos_lite)) {
       "$faultloggerd_path/common/dfxutil:dfx_util",
       "$faultloggerd_path/interfaces/innerkits/faultloggerd_client:libfaultloggerd",
       "$faultloggerd_path/interfaces/innerkits/procinfo:libdfx_procinfo",
-      "$faultloggerd_path/interfaces/rust/rustc_demangle:rustc_demangle",
       "//third_party/libunwind:libunwind",
     ]
 
@@ -173,7 +171,6 @@ if (defined(ohos_lite)) {
       "$faultloggerd_path/interfaces/innerkits/faultloggerd_client:libfaultloggerd",
       "$faultloggerd_path/interfaces/innerkits/procinfo:libdfx_procinfo",
       "$faultloggerd_path/interfaces/innerkits/signal_handler:dfx_local_handler",
-      "$faultloggerd_path/interfaces/rust/rustc_demangle:rustc_demangle",
       "//third_party/libunwind:libunwind",
     ]
 
