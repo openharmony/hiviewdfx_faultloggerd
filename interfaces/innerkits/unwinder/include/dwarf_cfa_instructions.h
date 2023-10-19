@@ -34,8 +34,7 @@ public:
     bool Parse(uintptr_t pc, FrameDescEntry& fde, RegLocState& rsState);
 
 private:
-    bool Iterate(uintptr_t pc, FrameDescEntry& fde, uintptr_t instStart, uintptr_t instEnd,
-        uintptr_t pcStart, RegLocState &rsState);
+    bool Iterate(uintptr_t pc, FrameDescEntry& fde, uintptr_t instStart, uintptr_t instEnd, RegLocState &rsState);
 
 private:
     std::shared_ptr<DfxMemory> memory_;

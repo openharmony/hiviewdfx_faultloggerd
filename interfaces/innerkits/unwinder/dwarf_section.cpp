@@ -43,8 +43,8 @@ bool DwarfSection::SearchEntry(struct UnwindEntryInfo& pi, struct UnwindTableInf
     for (uintptr_t len = fdeCount; len > 1;) {
         uintptr_t cur = low + (len / 2);
         entry = (uintptr_t) tableData + cur * sizeof(DwarfTableEntry);
-        memory_->ReadS32(entry, &dwarfTableEntry.startPcOffset, true);
-        uintptr_t startPc = static_cast<uintptr_t>(dwarfTableEntry.startPcOffset + segbase);
+        memory_->ReadS32(entry, &dwarfTableEntry.startPc, true);
+        uintptr_t startPc = static_cast<uintptr_t>(dwarfTableEntry.startPc + segbase);
         if (startPc == pc) {
             low = cur;
             break;
@@ -98,7 +98,6 @@ bool DwarfSection::ParseFde(uintptr_t fdeAddr, FrameDescEntry &fdeInfo)
             return true;
         }
     }
-    fdeInfo.fdeStart = fdeAddr;
     uintptr_t ptr = fdeAddr;
     if (!FillInFdeHeader(ptr, fdeInfo) || !FillInFde(ptr, fdeInfo)) {
         LOGE("Failed to fill FDE?");
@@ -117,7 +116,7 @@ bool DwarfSection::FillInFdeHeader(uintptr_t& ptr, FrameDescEntry &fdeInfo)
     if (value32 == static_cast<uint32_t>(-1)) {
         uint64_t value64;
         memory_->ReadU64(ptr, &value64, true);
-        fdeInfo.fdeEnd = ptr + value64;
+        fdeInfo.instructionsEnd = ptr + value64;
 
         memory_->ReadU64(ptr, &value64, true);
         ciePtr = static_cast<uintptr_t>(value64);
@@ -128,7 +127,7 @@ bool DwarfSection::FillInFdeHeader(uintptr_t& ptr, FrameDescEntry &fdeInfo)
         fdeInfo.cieAddr = static_cast<uintptr_t>(ptr - ciePtr);
         ptr += sizeof(uint64_t);
     } else {
-        fdeInfo.fdeEnd = ptr + value32;
+        fdeInfo.instructionsEnd = ptr + value32;
         memory_->ReadU32(ptr, &value32, false);
         ciePtr = static_cast<uintptr_t>(value32);
         if (ciePtr == cie32Value_) {
@@ -171,7 +170,7 @@ bool DwarfSection::FillInFde(uintptr_t& ptr, FrameDescEntry &fdeInfo)
         ptr = instructionsPtr;
     }
 
-    fdeInfo.instructions = ptr;
+    fdeInfo.instructionsOff = ptr;
     fdeInfo.pcStart = pcStart;
     fdeInfo.pcEnd = pcStart + pcRange;
     LOGU("FDE pcStart: %p, pcEnd: %p", (void*)(fdeInfo.pcStart), (void*)(fdeInfo.pcEnd));
@@ -188,7 +187,6 @@ bool DwarfSection::ParseCie(uintptr_t cieAddr, CommonInfoEntry &cieInfo)
             return true;
         }
     }
-    cieInfo.cieStart = cieAddr;
     uintptr_t ptr = cieAddr;
     if (!FillInCieHeader(ptr, cieInfo) || !FillInCie(ptr, cieInfo)) {
         cieEntries_.erase(cieAddr);
@@ -206,7 +204,7 @@ bool DwarfSection::FillInCieHeader(uintptr_t& ptr, CommonInfoEntry &cieInfo)
     if (value32 == static_cast<uint32_t>(-1)) {
         uint64_t value64 = 0;
         memory_->ReadU64(ptr, &value64, true); //length64
-        cieInfo.cieEnd = ptr + value64;
+        cieInfo.instructionsEnd = ptr + value64;
         cieInfo.pointerEncoding = DW_EH_PE_sdata8;
 
         memory_->ReadU64(ptr, &value64, true); //cieid
@@ -216,7 +214,7 @@ bool DwarfSection::FillInCieHeader(uintptr_t& ptr, CommonInfoEntry &cieInfo)
             return false;
         }
     } else {
-        cieInfo.cieEnd = ptr + value32;
+        cieInfo.instructionsEnd = ptr + value32;
         cieInfo.pointerEncoding = DW_EH_PE_sdata4;
         memory_->ReadU32(ptr, &value32, true);
         if (value32 != cie32Value_) {
@@ -280,14 +278,14 @@ bool DwarfSection::FillInCie(uintptr_t& ptr, CommonInfoEntry &cieInfo)
 
     // parse augmentation data based on augmentation string
     if (augStr.empty() || augStr[0] != 'z') {
-        cieInfo.instructions = ptr;
+        cieInfo.instructionsOff = ptr;
         return true;
     }
     cieInfo.hasAugmentationData = true;
     // parse augmentation data length
     MAYBE_UNUSED uintptr_t augSize = memory_->ReadUleb128(ptr);
     LOGU("augSize: %x", augSize);
-    cieInfo.instructions = ptr + augSize;
+    cieInfo.instructionsOff = ptr + augSize;
 
     for (size_t i = 1; i < augStr.size(); ++i) {
         switch (augStr[i]) {

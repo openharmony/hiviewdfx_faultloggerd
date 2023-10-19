@@ -207,15 +207,14 @@ enum DwarfEncoding : uint8_t {
 // https://refspecs.linuxbase.org/LSB_4.1.0/LSB-Core-generic/LSB-Core-generic/ehframechpt.html
 // Parsed Common Information Entry Format
 struct CommonInfoEntry {
-    uintptr_t cieStart;
-    uintptr_t cieEnd;
     uint32_t codeAlignFactor;
     int32_t dataAlignFactor;
     uintptr_t returnAddressRegister;
     bool hasAugmentationData = false;
     bool isSignalFrame = false;
     uint8_t segmentSize;
-    uintptr_t instructions;  // need instruction end ?
+    uintptr_t instructionsOff;
+    uintptr_t instructionsEnd;
     // P
     uint8_t personality;
     // L
@@ -227,18 +226,17 @@ struct CommonInfoEntry {
 // Parsed Frame Description Entry
 // Table 8-3. Frame Description Entry Format
 struct FrameDescEntry {
-    uintptr_t fdeStart;
-    uintptr_t fdeEnd;
     uintptr_t pcStart;
     uintptr_t pcEnd;
     uintptr_t lsda;
-    uintptr_t instructions;  // need instruction end ?
+    uintptr_t instructionsOff;
+    uintptr_t instructionsEnd;
     uintptr_t cieAddr;
     CommonInfoEntry cie;
 };
 
 struct DwarfTableEntry {
-    int32_t startPcOffset;
+    int32_t startPc;
     int32_t fdeOffset;
 };
 
