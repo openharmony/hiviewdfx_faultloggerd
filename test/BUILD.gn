@@ -61,6 +61,7 @@ group("faultloggerd_unittest") {
       "unittest/panic_handler:unittest",
       "unittest/rustc_demangle:unittest",
       "unittest/stacktrace_rust:unittest",
+      "unittest/unwind:unittest",
       "unittest/unwinder:unittest",
     ]
   }

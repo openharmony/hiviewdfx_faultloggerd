@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- Copyright (c) 2021 Huawei Device Co., Ltd.
+<!-- Copyright (c) 2021-2023 Huawei Device Co., Ltd.
 
      Licensed under the Apache License, Version 2.0 (the "License");
      you may not use this file except in compliance with the License.
@@ -64,9 +64,31 @@ Note:If the text contains special characters, please escape them according to th
         <filefilterlist>
             <filefilter name="defaultFilter" desc="Files not to check">
             </filefilter>
-            <filefilter name="defaultPolicyFilter" desc="Filters for compatibility，license header policies">
+            <filefilter name="defaultPolicyFilter" desc="Filters for compatibility, license header policies">
+                <filteritem type="filename" name="ehdr_from_readelf_32" desc="test resource file, no license header"/>
+                <filteritem type="filename" name="ehdr_from_readelf_64" desc="test resource file, no license header"/>
+                <filteritem type="filename" name="phdrs_from_readelf_32" desc="test resource file, no license header"/>
+                <filteritem type="filename" name="phdrs_from_readelf_64" desc="test resource file, no license header"/>
+                <filteritem type="filename" name="shdrs_from_readelf_32" desc="test resource file, no license header"/>
+                <filteritem type="filename" name="shdrs_from_readelf_64" desc="test resource file, no license header"/>
+                <filteritem type="filename" name="syms_from_readelf_32" desc="test resource file, no license header"/>
+                <filteritem type="filename" name="syms_from_readelf_64" desc="test resource file, no license header"/>
+                <filteritem type="filename" name="testmaps_32" desc="test resource file, no license header"/>
+                <filteritem type="filename" name="testmaps_64" desc="test resource file, no license header"/>
+                <filteritem type="filename" name="dwarf_test_aarch64_elf_result" desc="test resource file, no license header"/>
             </filefilter>
             <filefilter name="copyrightPolicyFilter" desc="Filters for copyright header policies">
+                <filteritem type="filename" name="ehdr_from_readelf_32" desc="test resource file, no copyright header"/>
+                <filteritem type="filename" name="ehdr_from_readelf_64" desc="test resource file, no copyright header"/>
+                <filteritem type="filename" name="phdrs_from_readelf_32" desc="test resource file, no copyright header"/>
+                <filteritem type="filename" name="phdrs_from_readelf_64" desc="test resource file, no copyright header"/>
+                <filteritem type="filename" name="shdrs_from_readelf_32" desc="test resource file, no copyright header"/>
+                <filteritem type="filename" name="shdrs_from_readelf_64" desc="test resource file, no copyright header"/>
+                <filteritem type="filename" name="syms_from_readelf_32" desc="test resource file, no copyright header"/>
+                <filteritem type="filename" name="syms_from_readelf_64" desc="test resource file, no copyright header"/>
+                <filteritem type="filename" name="testmaps_32" desc="test resource file, no copyright header"/>
+                <filteritem type="filename" name="testmaps_64" desc="test resource file, no copyright header"/>
+                <filteritem type="filename" name="dwarf_test_aarch64_elf_result" desc="test resource file, no copyright header"/>
             </filefilter>
             <filefilter name="licenseFileNamePolicyFilter" desc="Filters for LICENSE file policies">
             </filefilter>
@@ -76,6 +98,9 @@ Note:If the text contains special characters, please escape them according to th
             </filefilter>
             <filefilter name="binaryFileTypePolicyFilter" desc="Filters for binary file policies">
                 <filteritem type="filepath" name="figures/.*" desc="self developed pictures used in readme documents"/>
+                <filteritem type="filename" name="dwarf_test_aarch64_elf" desc="the binary file for test, the file is self-developed"/>
+                <filteritem type="filename" name="elf32_test" desc="the binary file for test, the file is self-developed"/>
+                <filteritem type="filename" name="elf_test" desc="the binary file for test, the file is self-developed"/>
             </filefilter>
         </filefilterlist>
         <licensematcherlist>

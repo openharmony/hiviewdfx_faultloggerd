@@ -40,8 +40,6 @@ namespace HiviewDFX {
 static const int FRAME_MAX_SIZE = 64;
 static const int REGS_MAX_SIZE = 64;
 
-static const uintptr_t PAGESIZE_ALIGN_MASK = ~(((uintptr_t)getpagesize()) - 1UL); //0xF000
-
 /**
  * @brief chip architecture
  */
@@ -54,9 +52,9 @@ enum ArchType : uint8_t {
 };
 
 enum UnwindType : int8_t {
-    UWNIND_TYPE_CUSTOMIZE = -2,
-    UWNIND_TYPE_LOCAL = -1,
-    UWNIND_TYPE_REMOTE,
+    UNWIND_TYPE_CUSTOMIZE = -2,
+    UNWIND_TYPE_LOCAL = -1,
+    UNWIND_TYPE_REMOTE,
 };
 
 enum UnwindFrameType {

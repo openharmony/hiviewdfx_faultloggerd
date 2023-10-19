@@ -99,7 +99,7 @@ void DfxThread::Detach()
 {
     if (threadStatus == ThreadStatus::THREAD_STATUS_ATTACHED) {
         ptrace(PTRACE_CONT, threadInfo_.nsTid, 0, 0);
-        ptrace(PTRACE_DETACH, threadInfo_.nsTid, NULL, NULL);
+        ptrace(PTRACE_DETACH, threadInfo_.nsTid, nullptr, nullptr);
         threadStatus = ThreadStatus::THREAD_STATUS_INIT;
     }
 }
@@ -119,7 +119,7 @@ bool DfxThread::Attach()
     if (ptrace(PTRACE_INTERRUPT, threadInfo_.nsTid, 0, 0) != 0) {
         DFXLOG_WARN("Failed to interrupt thread(%d:%d) from (%d:%d), errno=%d",
             threadInfo_.tid, threadInfo_.nsTid, getuid(), getgid(), errno);
-        ptrace(PTRACE_DETACH, threadInfo_.nsTid, NULL, NULL);
+        ptrace(PTRACE_DETACH, threadInfo_.nsTid, nullptr, nullptr);
         return false;
     }
 
@@ -132,7 +132,7 @@ bool DfxThread::Attach()
         int64_t curTime = std::chrono::duration_cast<std::chrono::milliseconds>(
             std::chrono::system_clock::now().time_since_epoch()).count();
         if (curTime - startTime > 1000) { // 1000 : 1s timeout
-            ptrace(PTRACE_DETACH, threadInfo_.nsTid, NULL, NULL);
+            ptrace(PTRACE_DETACH, threadInfo_.nsTid, nullptr, nullptr);
             DFXLOG_WARN("Failed to wait thread(%d:%d) attached.", threadInfo_.tid, threadInfo_.nsTid);
             return false;
         }
