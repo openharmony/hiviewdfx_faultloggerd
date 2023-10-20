@@ -132,7 +132,7 @@ NOINLINE int RecursiveHelperFunction(int curLevel, int targetLevel)
         auto top = __builtin_frame_address(0);
         printf("RecursiveHelperFunction top:%p\n", top);
         // crash in return address
-        const uintptr_t size = 4096;
+        const uintptr_t size = 1024;
         (void)memset_s(top, size, 0, size);
         return 0;
     }
