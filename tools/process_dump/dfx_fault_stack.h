@@ -42,6 +42,8 @@ public:
     void Print() const;
     void PrintRegisterMemory() const;
     bool ParseUnwindStack(std::shared_ptr<DfxElfMaps> maps, std::vector<std::shared_ptr<DfxFrame>> &frames);
+    bool CreateBlockForCorruptedStack(const std::vector<std::shared_ptr<DfxFrame>> &frames,
+        uintptr_t prevEndAddr, uintptr_t size);
 
 private:
     bool ReadTargetMemory(uintptr_t addr, uintptr_t &value) const;

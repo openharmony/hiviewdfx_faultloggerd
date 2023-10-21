@@ -65,8 +65,9 @@ public:
     static int TestExitHook();
     static int TestSigHook();
     static int StackCorruption();
+    static int StackCorruption2();
 
-    static int RecursiveFunc(int curLevel, int targetLevel);
+    static int RecursiveFunc(int curLevel, int targetLevel, int midLevel);
 private:
     DfxCrasher();
     DfxCrasher(const DfxCrasher &) = delete;
