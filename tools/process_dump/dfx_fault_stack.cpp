@@ -121,8 +121,26 @@ bool FaultStack::CollectStackInfo(const std::vector<std::shared_ptr<DfxFrame>> &
 
     if ((blocks_.size() < MAX_FAULT_STACK_SZ) && (prevSp > minAddr)) {
         size = highAddrLength;
-        AdjustAndCreateMemoryBlock(index, prevSp, prevEndAddr, size);
+        prevEndAddr = AdjustAndCreateMemoryBlock(index, prevSp, prevEndAddr, size);
     }
+
+    const uintptr_t minCorruptedStackSz = 1024;
+    CreateBlockForCorruptedStack(frames, prevEndAddr, minCorruptedStackSz);
+    return true;
+}
+
+bool FaultStack::CreateBlockForCorruptedStack(const std::vector<std::shared_ptr<DfxFrame>> &frames,
+    uintptr_t prevEndAddr, uintptr_t size)
+{
+    const auto& frame = frames.back();
+    // stack trace should end with libc or ffrt or */bin/*
+    if (frame->mapName.find("ld-musl") != std::string::npos ||
+        frame->mapName.find("ffrt") != std::string::npos ||
+        frame->mapName.find("bin") != std::string::npos) {
+        return false;
+    }
+
+    AdjustAndCreateMemoryBlock(frame->index, frame->sp, prevEndAddr, size);
     return true;
 }
 

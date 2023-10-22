@@ -219,7 +219,8 @@ bool DfxUnwindRemote::DoUnwindStep(size_t const & index,
         return ret;
     }
 
-    if (prevFrameSp == frameSp && index != 0) {
+    // use lr as pc in the second frame may not change sp
+    if (prevFrameSp == frameSp && index > MIN_VALID_FRAME_COUNT - 1) {
         return ret;
     }
     prevFrameSp = frameSp;
