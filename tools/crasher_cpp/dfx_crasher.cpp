@@ -98,6 +98,7 @@ constexpr static CrasherCommandLine CMDLINE_TABLE[] = {
     {"ExitHook", "trigger a process exit using exit(0)", &DfxCrasher::TestExitHook},
     {"SigHook", "register sigsegv signal handler", &DfxCrasher::TestSigHook},
     {"StackCorruption", "reset values stored on stack", &DfxCrasher::StackCorruption},
+    {"StackCorruption2", "reset values stored in the middle of the stack", &DfxCrasher::StackCorruption2},
 
 #ifdef HAS_CRASH_EXAMPLES
     {"NullPointerDeref0", "nullpointer fault testcase 0", &TestNullPointerDereferenceCrash0},
@@ -126,24 +127,46 @@ DfxCrasher &DfxCrasher::GetInstance()
     return instance;
 }
 
-NOINLINE int RecursiveHelperFunction(int curLevel, int targetLevel)
+NOINLINE int RecursiveHelperFunction(int curLevel, int targetLevel, int midLevel)
 {
+    auto top = __builtin_frame_address(0);
+    uintptr_t size = 256;
     if (curLevel == targetLevel) {
-        auto top = __builtin_frame_address(0);
+        if (midLevel != 0) {
+            abort();
+        }
         printf("RecursiveHelperFunction top:%p\n", top);
         // crash in return address
-        const uintptr_t size = 1024;
         (void)memset_s(top, size, 0, size);
         return 0;
     }
-    printf("RecursiveHelperFunction curLevel:%d targetLevel:%d\n", curLevel, targetLevel);
-    return RecursiveHelperFunction(curLevel + 1, targetLevel);
+
+    if (midLevel != 0 && curLevel == midLevel) {
+        // crash in return address
+        (void)memset_s(top, size, 0, size);
+    }
+
+    int nextLevel = curLevel + 1;
+    if (midLevel != 0 || targetLevel != 0) {
+        RecursiveHelperFunction(nextLevel, targetLevel, midLevel);
+    }
+
+    printf("RecursiveHelperFunction curLevel:%d targetLevel:%d top:%p\n", curLevel, targetLevel, top);
+    return nextLevel + 1;
 }
 
 NOINLINE int DfxCrasher::StackCorruption()
 {
     constexpr int targetLevel = 64;
-    return RecursiveHelperFunction(1, targetLevel);
+    constexpr int midLevel = 0;
+    return RecursiveHelperFunction(1, targetLevel, midLevel);
+}
+
+NOINLINE int DfxCrasher::StackCorruption2()
+{
+    constexpr int targetLevel = 64;
+    constexpr int midLevel = 32;
+    return RecursiveHelperFunction(1, targetLevel, midLevel);
 }
 
 NOINLINE int DfxCrasher::RaiseFloatingPointException()

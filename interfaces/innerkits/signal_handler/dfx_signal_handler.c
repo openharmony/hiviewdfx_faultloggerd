@@ -125,7 +125,9 @@ void SetThreadInfoCallback(ThreadInfoCallBack func)
 static void FillLastFatalMessageLocked(int32_t sig, void *context)
 {
     if (sig != SIGABRT && threadInfoCallBack != NULL) {
+        DFXLOG_INFO("Start collect crash thread info.");
         threadInfoCallBack(g_request.lastFatalMessage, sizeof(g_request.lastFatalMessage), context);
+        DFXLOG_INFO("Finish collect crash thread info.");
         return;
     }
 
@@ -506,8 +508,11 @@ static void ForkAndDoProcessDump(int sig)
         sig != SIGDUMP &&
         sig != SIGLEAK_STACK) {
         DFXLOG_INFO("Wait VmProcess(%d) exit timeout in handling critical signal.", childPid);
+        // do not left vm process
+        kill(childPid, SIGKILL);
         _exit(0);
     }
+
     RestoreDumpState(prevDumpableStatus, isTracerStatusModified);
     pthread_mutex_unlock(&g_signalHandlerMutex);
 }

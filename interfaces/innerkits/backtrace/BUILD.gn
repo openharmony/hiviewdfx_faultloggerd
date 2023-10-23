@@ -107,7 +107,7 @@ if (defined(ohos_lite)) {
     include_dirs = [
       "$faultloggerd_common_path/dfxlog",
       "$faultloggerd_common_path/dfxutil",
-      "$faultloggerd_interfaces_path/innerkits/unwinder/include",
+      "$faultloggerd_frameworks_path/unwinder/include",
       "//third_party/libunwind/include",
       "//third_party/libunwind/include/tdep/",
       "//third_party/libunwind/src",
