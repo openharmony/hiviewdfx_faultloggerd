@@ -113,7 +113,7 @@ bool DfxRegsArm::StepIfSignalFrame(uintptr_t pc, std::shared_ptr<DfxMemory> memo
     pc = pc & ~0x1;
 
     uint32_t data;
-    if (!memory->Read(pc, &data, sizeof(data))) {
+    if (!memory->ReadU32(pc, &data, false)) {
         return false;
     }
     LOGU("data: %lx", data);
@@ -135,7 +135,7 @@ bool DfxRegsArm::StepIfSignalFrame(uintptr_t pc, std::shared_ptr<DfxMemory> memo
         // Form 3 (thumb):
         // 0x77 0x27              movs r7, #77
         // 0x00 0xdf              svc 0
-        if (!memory->Read(spAddr, &data, sizeof(data), false)) {
+        if (!memory->ReadU32(spAddr, &data, false)) {
             return false;
         }
         if (data == 0x5ac3c35a) {
@@ -161,7 +161,7 @@ bool DfxRegsArm::StepIfSignalFrame(uintptr_t pc, std::shared_ptr<DfxMemory> memo
         // Form 3 (thumb):
         // 0xad 0x27              movs r7, #ad
         // 0x00 0xdf              svc 0
-        if (!memory->Read(spAddr, &data, sizeof(data), false)) {
+        if (!memory->ReadU32(spAddr, &data, false)) {
             return false;
         }
         if (data == spAddr + 8) { // 8 : eight bytes offset
@@ -175,9 +175,8 @@ bool DfxRegsArm::StepIfSignalFrame(uintptr_t pc, std::shared_ptr<DfxMemory> memo
     if (scAddr == 0) {
         return false;
     }
-    if (!memory->Read(scAddr, regsData_.data(), sizeof(uint32_t) * REG_LAST, false)) {
-        return false;
-    }
+    LOGU("scAddr: %llx", scAddr);
+    memory->Read(scAddr, regsData_.data(), sizeof(uint32_t) * REG_LAST, false);
     return true;
 }
 } // namespace HiviewDFX

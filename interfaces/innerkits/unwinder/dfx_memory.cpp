@@ -74,7 +74,7 @@ size_t DfxMemory::Read(uintptr_t& addr, void* val, size_t size, bool incre)
             }
             uintptr_t valp = static_cast<uintptr_t>(tmpVal);
             size_t copyBytes = std::min(alignBytes_ - alignBytes, size);
-            memcpy_s(val, copyBytes, reinterpret_cast<uint8_t*>(&valp) + alignBytes, copyBytes);
+            (void)memcpy_s(val, copyBytes, reinterpret_cast<uint8_t*>(&valp) + alignBytes, copyBytes);
             tmpAddr += copyBytes;
             val = reinterpret_cast<void*>(reinterpret_cast<uintptr_t>(val) + copyBytes);
             size -= copyBytes;
@@ -86,7 +86,7 @@ size_t DfxMemory::Read(uintptr_t& addr, void* val, size_t size, bool incre)
         if (!ReadMem(tmpAddr, &tmpVal)) {
             return bytesRead;
         }
-        memcpy_s(val, sizeof(uintptr_t), &tmpVal, sizeof(uintptr_t));
+        (void)memcpy_s(val, sizeof(uintptr_t), &tmpVal, sizeof(uintptr_t));
         val = reinterpret_cast<void*>(reinterpret_cast<uintptr_t>(val) + sizeof(uintptr_t));
         tmpAddr += sizeof(uintptr_t);
         bytesRead += sizeof(uintptr_t);
@@ -97,7 +97,7 @@ size_t DfxMemory::Read(uintptr_t& addr, void* val, size_t size, bool incre)
         if (!ReadMem(tmpAddr, &tmpVal)) {
             return bytesRead;
         }
-        memcpy_s(val, leftOver, &tmpVal, leftOver);
+        (void)memcpy_s(val, leftOver, &tmpVal, leftOver);
         tmpAddr += leftOver;
         bytesRead += leftOver;
     }

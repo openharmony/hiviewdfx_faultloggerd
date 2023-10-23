@@ -632,9 +632,8 @@ bool ElfImitate::ParseSectionHeaders(ElfFileType fileType)
         shdrInfo.addr = secAddr;
         shdrInfo.offset = secOffset;
         shdrInfo.size = secSize;
-        shdrInfos_.emplace(secName, shdrInfo);
+        shdrInfoPairs_.emplace(std::make_pair(secIndex, secName), shdrInfo);
 
-        elfSecInfos_[secIndex] = ElfSecInfo{secName, shdrInfo};
         if (secType == "SYMTAB" || secType == "DYNSYM") {
             ElfShdr elfShdr;
             elfShdr.name = static_cast<uint32_t>(secIndex);
@@ -789,9 +788,13 @@ const std::string ElfImitate::GetNextSymLine()
 
 bool ElfImitate::GetSectionInfo(ShdrInfo& shdr, const std::string secName)
 {
-    if (shdrInfos_.find(secName) != shdrInfos_.end()) {
-        shdr = shdrInfos_[secName];
-        return true;
+    for (const auto &iter: shdrInfoPairs_)
+    {
+        auto tmpPair = iter.first;
+        if (tmpPair.second == secName) {
+            shdr = iter.second;
+            return true;
+        }
     }
     return false;
 }

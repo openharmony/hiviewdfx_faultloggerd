@@ -24,7 +24,7 @@ namespace OHOS {
 namespace HiviewDFX {
 class DfxSignal {
 public:
-    explicit DfxSignal(const int32_t signal);
+    explicit DfxSignal(const int32_t signal) : signal_(signal) {}
     ~DfxSignal() = default;
 
     static std::string PrintSignal(const siginfo_t &info);
@@ -32,7 +32,7 @@ public:
     bool IsAvailable() const;
     bool IsAddrAvailable() const;
     bool IsPidAvailable() const;
-    int32_t GetSignal() const;
+    int32_t GetSignal() const { return signal_; }
 private:
     DfxSignal() = delete;
 

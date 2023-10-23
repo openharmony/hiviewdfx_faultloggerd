@@ -101,8 +101,7 @@ private:
     uint64_t startVaddr_ = static_cast<uint64_t>(-1);
     uint64_t endVaddr_ = 0;
     std::unordered_map<std::string, ElfShdr> symShdrs_;
-    std::map<const std::string, ShdrInfo> shdrInfos_;
-    std::unordered_map<uint32_t, ElfSecInfo> elfSecInfos_;
+    std::map<std::pair<uint32_t, const std::string>, ShdrInfo> shdrInfoPairs_;
     std::unordered_map<uint64_t, ElfLoadInfo> ptLoads_;
     FILE *ehdrFP_ {nullptr};
     FILE *shdrFP_ {nullptr};
