@@ -52,7 +52,7 @@ class DwarfTest : public testing::Test {
 public:
     static void SetUpTestCase(void)
     {
-        InitDebugFd(1);
+        InitDebugFd(STDOUT_FILENO);
     };
 
     static void TearDownTestCase(void) {}
@@ -62,16 +62,16 @@ public:
 
 class DwarfSectionTest : public DwarfSection {
 public:
-    DwarfSectionTest() : DwarfSection(nullptr) {};
+    explicit DwarfSectionTest(std::shared_ptr<DfxMemory> memory) : DwarfSection(memory) {};
     ~DwarfSectionTest() {};
     bool ParseFdeTest(uintptr_t addr, FrameDescEntry &fde)
     {
-        return ParseFde(addr, fde);
+        return ParseFde(addr, addr, fde);
     };
 
     bool ParseCieTest(uintptr_t cieAddr, CommonInfoEntry &cieInfo)
     {
-        return ParseCie(cieAddr, cieInfo);
+        return ParseCie(cieAddr, cieAddr, cieInfo);
     };
 };
 
@@ -521,9 +521,11 @@ HWTEST_F(DwarfTest, DwarfTest001, TestSize.Level2)
     struct UnwindTableInfo uti;
     ASSERT_EQ(DfxElf::FindUnwindTableLocal(pc, uti), 0);
 
-    DwarfSectionTest dwarfSection;
+    auto acc = std::make_shared<DfxAccessorsLocal>();
+    auto memory = std::make_shared<DfxMemory>(acc);
+    DwarfSectionTest dwarfSection(memory);
     struct UnwindEntryInfo pi;
-    ASSERT_EQ(true, dwarfSection.SearchEntry(pi, uti, pc));
+    ASSERT_EQ(true, dwarfSection.SearchEntry(pc, uti, pi));
 
     FrameDescEntry fde;
     ASSERT_EQ(true, dwarfSection.ParseFdeTest(reinterpret_cast<uintptr_t>(pi.unwindInfo), fde));
@@ -533,7 +535,7 @@ HWTEST_F(DwarfTest, DwarfTest001, TestSize.Level2)
     ASSERT_EQ(true, dwarfSection.ParseCieTest(fde.cieAddr, cie));
 
     RegLocState rsState;
-    DwarfCfaInstructions instructions(nullptr);
+    DwarfCfaInstructions instructions(memory);
     ASSERT_EQ(true, instructions.Parse(pc, fde, rsState));
     /*
         Version:               1
@@ -735,15 +737,16 @@ HWTEST_F(DwarfTest, DwarfTest002, TestSize.Level2)
     uint64_t mapEnd = mapStart + 0xab000;
     const uint64_t offset = 0x6e000;
     auto map1 = std::make_shared<DfxMap>(mapStart, mapEnd, offset, "r-xp", "dwarf_test_aarch64_elf");
-    ElfTableInfo info {};
-    ASSERT_EQ(0, elf->FindElfTableInfo(startPc + 0x2, map1, info));
+    UnwindTableInfo info {};
+    ASSERT_EQ(0, elf->FindUnwindTableInfo(startPc + 0x2, map1, info));
     ASSERT_EQ(info.startPc, startPc);
     ASSERT_EQ(info.endPc, endPc);
-    ASSERT_NE(info.diEhHdr.format, -1);
-    ASSERT_EQ(info.diDebug.format, -1);
+    ASSERT_NE(info.format, -1);
     auto testElfFdeResult = ParseFdeResultFromFile();
-    DwarfSectionTest dwarfSection;
-    ASSERT_EQ(testElfFdeResult.size(), info.diEhHdr.tableLen); // cie
+    auto acc = std::make_shared<DfxAccessorsLocal>();
+    auto memory = std::make_shared<DfxMemory>(acc);
+    DwarfSectionTest dwarfSection(memory);
+    ASSERT_EQ(testElfFdeResult.size(), info.tableLen); // cie
     int index = 0;
     for (auto& fdeResult : testElfFdeResult) {
         auto pc = fdeResult->relPcEnd - 2 + loadbase;
@@ -751,7 +754,7 @@ HWTEST_F(DwarfTest, DwarfTest002, TestSize.Level2)
         ASSERT_LT(pc, fdeResult->relPcEnd + loadbase);
 
         struct UnwindEntryInfo pi;
-        ASSERT_EQ(true, dwarfSection.SearchEntry(pi, info.diEhHdr, pc));
+        ASSERT_EQ(true, dwarfSection.SearchEntry(pc, info, pi));
 
         FrameDescEntry fde;
         ASSERT_EQ(true, dwarfSection.ParseFdeTest(reinterpret_cast<uintptr_t>(pi.unwindInfo), fde));
@@ -768,7 +771,7 @@ HWTEST_F(DwarfTest, DwarfTest002, TestSize.Level2)
         fprintf(stderr, "currentFdeIndex:%d relPcStart:%p relPcEnd:%p begin\n",
             index, (void*)fdeResult->relPcStart, (void*)fdeResult->relPcEnd);
         RegLocState rsState;
-        DwarfCfaInstructions instructions(nullptr);
+        DwarfCfaInstructions instructions(memory);
         ASSERT_EQ(true, instructions.Parse(pc, fde, rsState));
         fprintf(stderr, "currentFdeIndex:%d relPcStart:%p relPcEnd:%p end\n",
             index, (void*)fdeResult->relPcStart, (void*)fdeResult->relPcEnd);

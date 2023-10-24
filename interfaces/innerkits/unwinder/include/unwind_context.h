@@ -31,27 +31,15 @@ class DfxMap;
 class DfxRegs;
 
 struct UnwindTableInfo {
-    UnwindTableInfo *next;
-    UnwindTableInfo *prev;
     uintptr_t startPc;
     uintptr_t endPc;
     uintptr_t gp; /* global-pointer in effect for this entry */
     int format = -1;
-    uintptr_t hint;
+    bool isLinear = false;
     uintptr_t namePtr;
     uintptr_t segbase;
     uintptr_t tableLen;
     uintptr_t tableData;
-};
-
-struct ElfTableInfo {
-    uintptr_t startPc;
-    uintptr_t endPc;
-    UnwindTableInfo diEhHdr;
-    UnwindTableInfo diDebug;    /* additional table info for .debug_frame */
-#if defined(__arm__)
-    UnwindTableInfo diExidx;      /* additional table info for .ARM.exidx */
-#endif
 };
 
 struct UnwindEntryInfo {

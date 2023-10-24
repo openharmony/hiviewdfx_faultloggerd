@@ -28,26 +28,27 @@ namespace OHOS {
 namespace HiviewDFX {
 class DwarfSection {
 public:
-    DwarfSection(std::shared_ptr<DfxMemory> memory) : memory_(memory)
+    explicit DwarfSection(std::shared_ptr<DfxMemory> memory) : memory_(memory)
     {
         lastErrorData_.code = UNW_ERROR_NONE;
         lastErrorData_.addr = 0;
     }
     virtual ~DwarfSection() = default;
 
-    bool SearchEntry(struct UnwindEntryInfo& uei, struct UnwindTableInfo uti, uintptr_t pc);
+    bool LinearSearchEntry(uintptr_t pc, struct UnwindTableInfo uti, struct UnwindEntryInfo& uei);
+    bool SearchEntry(uintptr_t pc, struct UnwindTableInfo uti, struct UnwindEntryInfo& uei);
     bool Step(uintptr_t fdeAddr, std::shared_ptr<DfxRegs> regs, std::shared_ptr<RegLocState> rs);
 
     const uint16_t& GetLastErrorCode() const { return lastErrorData_.code; }
     const uint64_t& GetLastErrorAddr() const { return lastErrorData_.addr; }
 
 protected:
-    bool ParseFde(uintptr_t addr, FrameDescEntry &fde);
-    bool FillInFdeHeader(uintptr_t& ptr, FrameDescEntry &fdeInfo);
-    bool FillInFde(uintptr_t& ptr, FrameDescEntry &fdeInfo);
-    bool ParseCie(uintptr_t cieAddr, CommonInfoEntry &cieInfo);
-    bool FillInCieHeader(uintptr_t& ptr, CommonInfoEntry &cieInfo);
-    bool FillInCie(uintptr_t& ptr, CommonInfoEntry &cieInfo);
+    bool GetCieOrFde(uintptr_t &addr, FrameDescEntry &fdeInfo);
+    void ParseCieOrFdeHeader(uintptr_t& ptr, FrameDescEntry& fdeInfo, bool& isCieEntry);
+    bool ParseFde(uintptr_t fdeAddr, uintptr_t fdePtr, FrameDescEntry &fdeInfo);
+    bool FillInFde(uintptr_t ptr, FrameDescEntry &fdeInfo);
+    bool ParseCie(uintptr_t cieAddr, uintptr_t ciePtr, CommonInfoEntry &cieInfo);
+    bool FillInCie(uintptr_t ptr, CommonInfoEntry &cieInfo);
 
 protected:
     std::shared_ptr<DfxMemory> memory_;

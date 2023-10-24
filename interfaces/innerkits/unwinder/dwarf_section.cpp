@@ -27,13 +27,36 @@ namespace {
 #define LOG_TAG "DfxDwarfSection"
 }
 
-bool DwarfSection::SearchEntry(struct UnwindEntryInfo& uei, struct UnwindTableInfo uti, uintptr_t pc)
+bool DwarfSection::LinearSearchEntry(uintptr_t pc, struct UnwindTableInfo uti, struct UnwindEntryInfo& uei)
+{
+    uintptr_t fdeCount = uti.tableLen;
+    uintptr_t tableData = uti.tableData;
+    LOGU("LinearSearchEntry tableData:%p, tableLen: %u", (void*)tableData, (uint32_t)fdeCount);
+    uintptr_t i = 0, fdeAddr, ptr = tableData;
+    FrameDescEntry fdeInfo;
+    while (i++ < fdeCount && ptr < uti.endPc) {
+        fdeAddr = ptr;
+        if (GetCieOrFde(ptr, fdeInfo)) {
+            if (pc >= fdeInfo.pcStart && pc < fdeInfo.pcEnd) {
+                LOGU("Fde entry addr: %llx", (uint64_t)fdeAddr);
+                uei.unwindInfo = (void *)(fdeAddr);
+                uei.format = UNW_INFO_FORMAT_REMOTE_TABLE;
+                return true;
+            }
+        } else {
+            break;
+        }
+    }
+    return false;
+}
+
+bool DwarfSection::SearchEntry(uintptr_t pc, struct UnwindTableInfo uti, struct UnwindEntryInfo& uei)
 {
     MAYBE_UNUSED auto segbase = uti.segbase;
-    auto fdeCount = uti.tableLen;
+    uintptr_t fdeCount = uti.tableLen;
     uintptr_t tableData = uti.tableData;
-    LOGU("SearchEntry segbase:%p, tableData:%p, tableLen: %d",
-        (void*)segbase, (void*)tableData, fdeCount);
+    LOGU("SearchEntry segbase:%p, tableData:%p, tableLen: %u",
+        (void*)segbase, (void*)tableData, (uint32_t)fdeCount);
 
     // do binary search, encode is stored in symbol file, we have no means to find?
     // hard code for 1b DwarfEncoding
@@ -57,14 +80,13 @@ bool DwarfSection::SearchEntry(struct UnwindEntryInfo& uei, struct UnwindTableIn
     }
 
     entry = (uintptr_t) tableData + low * sizeof(DwarfTableEntry);
-    entry += 4; // four bytes
+    entry += 4; // 4 : four bytes
 
     memory_->ReadS32(entry, &dwarfTableEntry.fdeOffset, true);
     uintptr_t fdeAddr = static_cast<uintptr_t>(dwarfTableEntry.fdeOffset + segbase);
+    LOGU("Fde entry addr: %llx", (uint64_t)fdeAddr);
     uei.unwindInfo = (void *)(fdeAddr);
-    LOGU("fde index:%llu, entry: %llx", low, (uint64_t)uei.unwindInfo);
     uei.format = UNW_INFO_FORMAT_REMOTE_TABLE;
-    uei.gp = uti.gp;
     return true;
 }
 
@@ -72,7 +94,7 @@ bool DwarfSection::Step(uintptr_t fdeAddr, std::shared_ptr<DfxRegs> regs, std::s
 {
     lastErrorData_.addr = static_cast<uint64_t>(fdeAddr);
     FrameDescEntry fdeInfo;
-    if (!ParseFde(fdeAddr, fdeInfo)) {
+    if (!ParseFde(fdeAddr, fdeAddr, fdeInfo)) {
         LOGE("Failed to parse fde?");
         lastErrorData_.code = UNW_ERROR_DWARF_INVALID_FDE;
         return false;
@@ -88,7 +110,67 @@ bool DwarfSection::Step(uintptr_t fdeAddr, std::shared_ptr<DfxRegs> regs, std::s
     return true;
 }
 
-bool DwarfSection::ParseFde(uintptr_t fdeAddr, FrameDescEntry &fdeInfo)
+bool DwarfSection::GetCieOrFde(uintptr_t &addr, FrameDescEntry &fdeInfo)
+{
+    uintptr_t ptr = addr;
+    bool isCieEntry = false;
+    ParseCieOrFdeHeader(ptr, fdeInfo, isCieEntry);
+
+    if (isCieEntry) {
+        if (!ParseCie(addr, ptr, fdeInfo.cie)) {
+            LOGE("Failed to Parse CIE?");
+            return false;
+        }
+        addr = fdeInfo.cie.instructionsEnd;
+    } else {
+        if (!ParseFde(addr, ptr, fdeInfo)) {
+            LOGE("Failed to Parse FDE?");
+            return false;
+        }
+        addr = fdeInfo.instructionsEnd;
+    }
+    return true;
+}
+
+void DwarfSection::ParseCieOrFdeHeader(uintptr_t& ptr, FrameDescEntry &fdeInfo, bool& isCieEntry)
+{
+    uint32_t value32 = 0;
+    memory_->ReadU32(ptr, &value32, true);
+    uintptr_t ciePtr = 0;
+    uintptr_t instructionsEnd = 0;
+    if (value32 == static_cast<uint32_t>(-1)) {
+        uint64_t value64;
+        memory_->ReadU64(ptr, &value64, true);
+        instructionsEnd = ptr + value64;
+
+        memory_->ReadU64(ptr, &value64, true);
+        ciePtr = static_cast<uintptr_t>(value64);
+        if (ciePtr == cie64Value_) {
+            isCieEntry = true;
+            fdeInfo.cie.instructionsEnd = instructionsEnd;
+            fdeInfo.cie.pointerEncoding = DW_EH_PE_sdata8;
+        } else {
+            fdeInfo.instructionsEnd = instructionsEnd;
+            fdeInfo.cieAddr = static_cast<uintptr_t>(ptr - ciePtr);
+        }
+        ptr += sizeof(uint64_t);
+    } else {
+        instructionsEnd = ptr + value32;
+        memory_->ReadU32(ptr, &value32, false);
+        ciePtr = static_cast<uintptr_t>(value32);
+        if (ciePtr == cie32Value_) {
+            isCieEntry = true;
+            fdeInfo.cie.instructionsEnd = instructionsEnd;
+            fdeInfo.cie.pointerEncoding = DW_EH_PE_sdata4;
+        } else {
+            fdeInfo.instructionsEnd = instructionsEnd;
+            fdeInfo.cieAddr = static_cast<uintptr_t>(ptr - ciePtr);
+        }
+        ptr += sizeof(uint32_t);
+    }
+}
+
+bool DwarfSection::ParseFde(uintptr_t fdeAddr, uintptr_t fdePtr, FrameDescEntry &fdeInfo)
 {
     LOGU("fdeAddr: %llx", (uint64_t)fdeAddr);
     if (!fdeEntries_.empty()) {
@@ -98,9 +180,17 @@ bool DwarfSection::ParseFde(uintptr_t fdeAddr, FrameDescEntry &fdeInfo)
             return true;
         }
     }
-    uintptr_t ptr = fdeAddr;
-    if (!FillInFdeHeader(ptr, fdeInfo) || !FillInFde(ptr, fdeInfo)) {
-        LOGE("Failed to fill FDE?");
+
+    if (fdeAddr == fdePtr) {
+        bool isCieEntry = false;
+        ParseCieOrFdeHeader(fdePtr, fdeInfo, isCieEntry);
+        if (isCieEntry) {
+            LOGE("ParseFde error, is Cie Entry?");
+            return false;
+        }
+    }
+    if (!FillInFde(fdePtr, fdeInfo)) {
+        LOGE("ParseFde error, failed to fill FDE?");
         fdeEntries_.erase(fdeAddr);
         return false;
     }
@@ -108,42 +198,10 @@ bool DwarfSection::ParseFde(uintptr_t fdeAddr, FrameDescEntry &fdeInfo)
     return true;
 }
 
-bool DwarfSection::FillInFdeHeader(uintptr_t& ptr, FrameDescEntry &fdeInfo)
+bool DwarfSection::FillInFde(uintptr_t ptr, FrameDescEntry &fdeInfo)
 {
-    uint32_t value32 = 0;
-    memory_->ReadU32(ptr, &value32, true);
-    uintptr_t ciePtr = 0;
-    if (value32 == static_cast<uint32_t>(-1)) {
-        uint64_t value64;
-        memory_->ReadU64(ptr, &value64, true);
-        fdeInfo.instructionsEnd = ptr + value64;
-
-        memory_->ReadU64(ptr, &value64, true);
-        ciePtr = static_cast<uintptr_t>(value64);
-        if (ciePtr == cie64Value_) {
-            LOGE("Failed to parse FDE, ciePtr?");
-            return false;
-        }
-        fdeInfo.cieAddr = static_cast<uintptr_t>(ptr - ciePtr);
-        ptr += sizeof(uint64_t);
-    } else {
-        fdeInfo.instructionsEnd = ptr + value32;
-        memory_->ReadU32(ptr, &value32, false);
-        ciePtr = static_cast<uintptr_t>(value32);
-        if (ciePtr == cie32Value_) {
-            LOGE("Failed to parse FDE, ciePtr?");
-            return false;
-        }
-        fdeInfo.cieAddr = static_cast<uintptr_t>(ptr - ciePtr);
-        ptr += sizeof(uint32_t);
-    }
-    return true;
-}
-
-bool DwarfSection::FillInFde(uintptr_t& ptr, FrameDescEntry &fdeInfo)
-{
-    if (!ParseCie(fdeInfo.cieAddr, fdeInfo.cie)) {
-        LOGE("Failed to fill CIE?");
+    if (!ParseCie(fdeInfo.cieAddr, fdeInfo.cieAddr, fdeInfo.cie)) {
+        LOGE("Failed to parse CIE?");
         return false;
     }
 
@@ -177,7 +235,7 @@ bool DwarfSection::FillInFde(uintptr_t& ptr, FrameDescEntry &fdeInfo)
     return true;
 }
 
-bool DwarfSection::ParseCie(uintptr_t cieAddr, CommonInfoEntry &cieInfo)
+bool DwarfSection::ParseCie(uintptr_t cieAddr, uintptr_t ciePtr, CommonInfoEntry &cieInfo)
 {
     LOGU("cieAddr: %llx", (uint64_t)cieAddr);
     if (!cieEntries_.empty()) {
@@ -187,8 +245,19 @@ bool DwarfSection::ParseCie(uintptr_t cieAddr, CommonInfoEntry &cieInfo)
             return true;
         }
     }
-    uintptr_t ptr = cieAddr;
-    if (!FillInCieHeader(ptr, cieInfo) || !FillInCie(ptr, cieInfo)) {
+    if (cieAddr == ciePtr) {
+        cieInfo.lsdaEncoding = DW_EH_PE_omit;
+        bool isCieEntry = false;
+        FrameDescEntry fdeInfo;
+        ParseCieOrFdeHeader(ciePtr, fdeInfo, isCieEntry);
+        if (!isCieEntry) {
+            LOGE("ParseCie error, is not Cie Entry?");
+            return false;
+        }
+        cieInfo = fdeInfo.cie;
+    }
+    if (!FillInCie(ciePtr, cieInfo)) {
+        LOGE("ParseCie error, failed to fill Cie?");
         cieEntries_.erase(cieAddr);
         return false;
     }
@@ -196,37 +265,7 @@ bool DwarfSection::ParseCie(uintptr_t cieAddr, CommonInfoEntry &cieInfo)
     return true;
 }
 
-bool DwarfSection::FillInCieHeader(uintptr_t& ptr, CommonInfoEntry &cieInfo)
-{
-    cieInfo.lsdaEncoding = DW_EH_PE_omit;
-    uint32_t value32 = 0;
-    memory_->ReadU32(ptr, &value32, true);
-    if (value32 == static_cast<uint32_t>(-1)) {
-        uint64_t value64 = 0;
-        memory_->ReadU64(ptr, &value64, true);
-        cieInfo.instructionsEnd = ptr + value64;
-        cieInfo.pointerEncoding = DW_EH_PE_sdata8;
-
-        memory_->ReadU64(ptr, &value64, true); // parse cie id
-        if (value64 != cie64Value_) {
-            LOGE("Failed to FillInCieHeader, cieId?");
-            lastErrorData_.code = UNW_ERROR_ILLEGAL_VALUE;
-            return false;
-        }
-    } else {
-        cieInfo.instructionsEnd = ptr + value32;
-        cieInfo.pointerEncoding = DW_EH_PE_sdata4;
-        memory_->ReadU32(ptr, &value32, true);
-        if (value32 != cie32Value_) {
-            LOGE("Failed to FillInCieHeader, cieId?");
-            lastErrorData_.code = UNW_ERROR_ILLEGAL_VALUE;
-            return false;
-        }
-    }
-    return true;
-}
-
-bool DwarfSection::FillInCie(uintptr_t& ptr, CommonInfoEntry &cieInfo)
+bool DwarfSection::FillInCie(uintptr_t ptr, CommonInfoEntry &cieInfo)
 {
     uint8_t version;
     memory_->ReadU8(ptr, &version, true);

@@ -120,7 +120,7 @@ inline void ArmExidx::LogRawData()
     LOGU("%s", logStr.c_str());
 }
 
-bool ArmExidx::SearchEntry(struct UnwindEntryInfo& uei, struct UnwindTableInfo uti, uintptr_t pc)
+bool ArmExidx::SearchEntry(uintptr_t pc, struct UnwindTableInfo uti, struct UnwindEntryInfo& uei)
 {
     uintptr_t first = uti.tableData;
     uintptr_t last = uti.tableData + uti.tableLen - ARM_EXIDX_TABLE_SIZE;

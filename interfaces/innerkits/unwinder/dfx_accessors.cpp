@@ -55,7 +55,6 @@ int DfxAccessorsLocal::AccessMem(uintptr_t addr, uintptr_t *val, void *arg)
         return UNW_ERROR_INVALID_MEMORY;
     }
     *val = *(uintptr_t *) addr;
-    LOGU("mem[%lx] -> %lx", (long) addr, (long) (*val));
     return UNW_ERROR_NONE;
 }
 
@@ -70,7 +69,6 @@ int DfxAccessorsLocal::AccessReg(int reg, uintptr_t *val, void *arg)
     }
 
     *val = static_cast<uintptr_t>((*(ctx->regs))[reg]);
-    LOGD("val: %llx", *val);
     return UNW_ERROR_NONE;
 }
 
@@ -127,7 +125,6 @@ int DfxAccessorsRemote::AccessMem(uintptr_t addr, uintptr_t *val, void *arg)
             LOGE("errno: %d", errno);
             return UNW_ERROR_ILLEGAL_VALUE;
         }
-        LOGU("mem[%lx] -> %lx", (long) tmpAddr, (long) tmpVal);
     }
     return UNW_ERROR_NONE;
 }

@@ -29,7 +29,7 @@ namespace {
 #define LOG_TAG "DfxDwarfCfaInstructions"
 }
 
-bool DwarfCfaInstructions::Iterate(uintptr_t pc, FrameDescEntry &fde,
+bool DwarfCfaInstructions::Iterate(uintptr_t pc, FrameDescEntry fde,
     uintptr_t instStart, uintptr_t instEnd, RegLocState &rsState)
 {
     uintptr_t instPtr = instStart;
@@ -42,7 +42,7 @@ bool DwarfCfaInstructions::Iterate(uintptr_t pc, FrameDescEntry &fde,
             rsState.pcEnd = pcOffset;
             break;
         }
-        if (instPtr > instEnd) {
+        if (instPtr >= instEnd) {
             rsState.pcEnd = fde.pcEnd;
             break;
         }
@@ -228,10 +228,11 @@ bool DwarfCfaInstructions::Iterate(uintptr_t pc, FrameDescEntry &fde,
                 }
         }
     }
+    LOGU("rsState pcStart=%llx, pcEnd=%llx", (uint64_t)rsState.pcStart, (uint64_t)rsState.pcEnd);
     return true;
 }
 
-bool DwarfCfaInstructions::Parse(uintptr_t pc, FrameDescEntry &fde, RegLocState &rsState)
+bool DwarfCfaInstructions::Parse(uintptr_t pc, FrameDescEntry fde, RegLocState &rsState)
 {
     LOGU("Iterate cie operations");
     if (!Iterate(pc, fde, fde.cie.instructionsOff, fde.cie.instructionsEnd, rsState)) {

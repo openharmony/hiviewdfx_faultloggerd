@@ -87,7 +87,7 @@ std::string DfxRegsX86_64::PrintRegs() const
 bool DfxRegsX86_64::StepIfSignalFrame(uintptr_t pc, std::shared_ptr<DfxMemory> memory)
 {
     uint64_t data;
-    if (!memory_->ReadU64(pc, &data, false)) {
+    if (!memory->ReadU64(pc, &data, false)) {
         return false;
     }
     LOGU("data: %llx", data);

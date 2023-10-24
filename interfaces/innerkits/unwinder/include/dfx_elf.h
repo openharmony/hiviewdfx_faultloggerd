@@ -23,22 +23,10 @@
 
 namespace OHOS {
 namespace HiviewDFX {
-struct ElfFileInfo {
-    std::string name = "";
-    std::string path = "";
-    std::string buildId = "";
-    std::string hash = "";
-
-    static std::string GetNameFromPath(const std::string &path)
-    {
-        size_t pos = path.find_last_of("/");
-        return path.substr(pos + 1);
-    }
-};
-
 struct DlCbData {
     uintptr_t pc;
-    ElfTableInfo eti;
+    UnwindTableInfo uti;
+    bool singleFde = false;
 };
 
 class DfxElf final {
@@ -69,10 +57,8 @@ public:
     const std::vector<ElfSymbol>& GetFuncSymbols(bool isSort = false);
     bool GetFuncInfo(uint64_t addr, ElfSymbol& elfSymbol);
     bool GetSectionInfo(ShdrInfo& shdr, const std::string secName);
-    int FindElfTableInfo(uintptr_t pc, std::shared_ptr<DfxMap> map, struct ElfTableInfo& eti);
     int FindUnwindTableInfo(uintptr_t pc, std::shared_ptr<DfxMap> map, struct UnwindTableInfo& uti);
     static int FindUnwindTableLocal(uintptr_t pc, struct UnwindTableInfo& uti);
-    static void ResetElfTable(struct ElfTableInfo& edi);
     static std::string ToReadableBuildId(const std::string& buildIdHex);
 
 protected:
@@ -80,12 +66,13 @@ protected:
     bool Init(const std::string& file);
     void Clear();
     bool ParseElfIdent();
-    bool GetExidxTableInfo(std::shared_ptr<DfxMap> map, struct UnwindTableInfo& ti);
-    bool GetEhHdrTableInfo(std::shared_ptr<DfxMap> map, struct UnwindTableInfo& ti);
 #if is_ohos && !is_mingw
     static int DlPhdrCb(struct dl_phdr_info *info, size_t size, void *data);
     static ElfW(Addr) FindSection(struct dl_phdr_info *info, const std::string secName);
+    static bool FillUnwindTableByEhhdrLocal(struct DwarfEhFrameHdr* hdr, struct UnwindTableInfo* uti);
 #endif
+    bool FillUnwindTableByEhhdr(struct DwarfEhFrameHdr* hdr, uintptr_t shdrBase, struct UnwindTableInfo* uti);
+    static bool FillUnwindTableByExidx(ShdrInfo shdr, uintptr_t loadBase, struct UnwindTableInfo* uti);
 
 private:
     bool valid_ = false;
@@ -95,7 +82,7 @@ private:
     uint64_t startPc_ = static_cast<uint64_t>(-1);
     uint64_t endPc_ = 0;
     std::string buildId_ = "";
-    struct ElfTableInfo eti_;
+    struct UnwindTableInfo uti_;
     bool hasTableInfo_ = false;
     std::shared_ptr<DfxMmap> mmap_;
     std::unique_ptr<ElfParser> elfParse_;
