@@ -278,10 +278,12 @@ bool Unwinder::Step(uintptr_t& pc, uintptr_t& sp, void *ctx)
         ret = Apply(regs_, rs);
     }
 
+#if defined(__aarch64__)
     if (!ret && (pid_ == UNWIND_TYPE_LOCAL)) {
         uintptr_t fp = regs_->GetFp();
         ret = FpStep(fp, pc, ctx);
     }
+#endif
 
     pc = regs_->GetPc();
     sp = regs_->GetSp();
@@ -292,6 +294,7 @@ bool Unwinder::Step(uintptr_t& pc, uintptr_t& sp, void *ctx)
     return ret;
 }
 
+#if defined(__aarch64__)
 bool Unwinder::FpStep(uintptr_t& fp, uintptr_t& pc, void *ctx)
 {
     UnwindContext* uctx = reinterpret_cast<UnwindContext *>(ctx);
@@ -307,6 +310,7 @@ bool Unwinder::FpStep(uintptr_t& fp, uintptr_t& pc, void *ctx)
     }
     return false;
 }
+#endif
 
 bool Unwinder::Apply(std::shared_ptr<DfxRegs> regs, std::shared_ptr<RegLocState> rs)
 {
@@ -318,9 +322,11 @@ bool Unwinder::Apply(std::shared_ptr<DfxRegs> regs, std::shared_ptr<RegLocState>
     if (!ret) {
         LOGE("Failed to apply rs");
     }
+#if defined(__arm__) || defined(__aarch64__)
     if (!rs->isPcSet) {
         regs->SetReg(REG_PC, regs->GetReg(REG_LR));
     }
+#endif
     return ret;
 }
 

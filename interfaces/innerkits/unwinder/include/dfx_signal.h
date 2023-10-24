@@ -32,7 +32,11 @@ public:
     bool IsAvailable() const;
     bool IsAddrAvailable() const;
     bool IsPidAvailable() const;
-    int32_t GetSignal() const { return signal_; }
+    int32_t GetSignal() const
+    {
+        return signal_;
+    }
+
 private:
     DfxSignal() = delete;
 
