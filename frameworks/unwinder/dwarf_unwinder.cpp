@@ -102,7 +102,7 @@ bool DwarfUnwinder::UnwindWithContext(unw_addr_space_t as, unw_context_t& contex
             break;
         }
 
-        if (frame.index > 1 && prevFrameSp == frame.sp) {
+        if (prevFrameSp == frame.sp && index > MIN_VALID_FRAME_COUNT - 1) {
             break;
         }
         prevFrameSp = frame.sp;
