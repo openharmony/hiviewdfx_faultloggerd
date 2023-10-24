@@ -125,7 +125,7 @@ std::string DfxRegsArm64::PrintRegs() const
 bool DfxRegsArm64::StepIfSignalFrame(uintptr_t pc, std::shared_ptr<DfxMemory> memory)
 {
     uint64_t data;
-    if (!memory->Read(pc, &data, sizeof(data))) {
+    if (!memory->ReadU64(pc, &data, false)) {
         return false;
     }
     LOGU("data: %llx", data);
@@ -140,9 +140,8 @@ bool DfxRegsArm64::StepIfSignalFrame(uintptr_t pc, std::shared_ptr<DfxMemory> me
 
     // SP + sizeof(siginfo_t) + uc_mcontext offset + X0 offset.
     uintptr_t scAddr = regsData_[REG_SP] + sizeof(siginfo_t) + 0xb0 + 0x08;
-    if (!memory->Read(scAddr, regsData_.data(), sizeof(uint64_t) * REG_LAST, false)) {
-        return false;
-    }
+    LOGU("scAddr: %llx", scAddr);
+    memory->Read(scAddr, regsData_.data(), sizeof(uint64_t) * REG_LAST, false);
     return true;
 }
 } // namespace HiviewDFX

@@ -190,6 +190,7 @@ bool Unwinder::Step(uintptr_t& pc, uintptr_t& sp, void *ctx)
 {
     if (regs_ == nullptr || memory_ == nullptr) {
         LOGE("params is nullptr");
+        return false;
     }
     LOGU("++++++pc: %llx, sp: %llx", (uint64_t)pc, (uint64_t)sp);
     lastErrorData_.addr = pc;
@@ -201,7 +202,10 @@ bool Unwinder::Step(uintptr_t& pc, uintptr_t& sp, void *ctx)
 
     // Check if this is a signal frame.
     if (regs_->StepIfSignalFrame(pc, memory_)) {
+        pc = regs_->GetPc();
+        sp = regs_->GetSp();
         LOGW("Step signal frame, pc: %llx, sp: %llx", (uint64_t)pc, (uint64_t)sp);
+        return true;
     }
 
     std::shared_ptr<RegLocState> rs = nullptr;

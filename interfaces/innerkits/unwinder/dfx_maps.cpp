@@ -83,7 +83,7 @@ bool DfxMaps::Create(pid_t pid, std::vector<std::shared_ptr<DfxMap>>& maps, std:
     return true;
 }
 
-std::shared_ptr<DfxMaps> DfxMaps::Create(const std::string path, bool enableMapIndex)
+std::shared_ptr<DfxMaps> DfxMaps::Create(const std::string& path, bool enableMapIndex)
 {
     char realPath[PATH_MAX] = {0};
 #if is_ohos

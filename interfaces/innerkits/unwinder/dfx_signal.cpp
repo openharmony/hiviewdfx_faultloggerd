@@ -31,11 +31,6 @@ namespace {
 #define LOG_TAG "DfxSignal"
 }
 
-DfxSignal::DfxSignal(const int32_t signal)
-{
-    signal_ = signal;
-}
-
 bool DfxSignal::IsAvailable() const
 {
     struct sigaction prevAction;
@@ -71,11 +66,6 @@ bool DfxSignal::IsPidAvailable() const
         default:
             return false;
     }
-}
-
-int32_t DfxSignal::GetSignal() const
-{
-    return signal_;
 }
 
 std::string DfxSignal::PrintSignal(const siginfo_t &info)

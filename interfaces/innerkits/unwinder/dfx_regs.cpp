@@ -82,7 +82,7 @@ std::shared_ptr<DfxRegs> DfxRegs::CreateRemoteRegs(pid_t pid)
         LOGE("Failed to ptrace pid(%d), errno=%d", pid, errno);
         return nullptr;
     }
-    memcpy_s(dfxregs->regsData_.data(), REG_LAST * sizeof(uintptr_t), &regs, REG_LAST * sizeof(uintptr_t));
+    (void)memcpy_s(dfxregs->regsData_.data(), REG_LAST * sizeof(uintptr_t), &regs, REG_LAST * sizeof(uintptr_t));
     return dfxregs;
 }
 
@@ -99,7 +99,7 @@ void DfxRegs::SetRegsData(const std::vector<uintptr_t>& regs)
 
 void DfxRegs::SetRegsData(const uintptr_t* regs)
 {
-    memcpy_s(RawData(), REG_LAST * sizeof(uintptr_t), regs, REG_LAST * sizeof(uintptr_t));
+    (void)memcpy_s(RawData(), REG_LAST * sizeof(uintptr_t), regs, REG_LAST * sizeof(uintptr_t));
     PrintRegs();
 }
 
