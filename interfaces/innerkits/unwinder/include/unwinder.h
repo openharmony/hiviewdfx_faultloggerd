@@ -76,7 +76,9 @@ public:
 
     bool Unwind(void *ctx, size_t maxFrameNum = 64, size_t skipFrameNum = 0);
     bool Step(uintptr_t& pc, uintptr_t& sp, void *ctx);
+#if defined(__aarch64__)
     bool FpStep(uintptr_t& fp, uintptr_t& pc, void *ctx);
+#endif
 
     bool GetStackRange(uintptr_t& stackBottom, uintptr_t& stackTop);
     bool UnwindLocal(size_t maxFrameNum = 64, size_t skipFrameNum = 0);

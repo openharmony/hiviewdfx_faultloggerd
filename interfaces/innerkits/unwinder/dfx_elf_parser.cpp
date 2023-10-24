@@ -386,8 +386,7 @@ bool ElfParser::ParseStrTab(std::string& nameStr, const uint64_t offset, const u
 
 bool ElfParser::GetSectionInfo(ShdrInfo& shdr, const uint32_t idx)
 {
-    for (const auto &iter: shdrInfoPairs_)
-    {
+    for (const auto &iter: shdrInfoPairs_) {
         auto tmpPair = iter.first;
         if (tmpPair.first == idx) {
             shdr = iter.second;
@@ -399,8 +398,7 @@ bool ElfParser::GetSectionInfo(ShdrInfo& shdr, const uint32_t idx)
 
 bool ElfParser::GetSectionInfo(ShdrInfo& shdr, const std::string& secName)
 {
-    for (const auto &iter: shdrInfoPairs_)
-    {
+    for (const auto &iter: shdrInfoPairs_) {
         auto tmpPair = iter.first;
         if (tmpPair.second == secName) {
             shdr = iter.second;

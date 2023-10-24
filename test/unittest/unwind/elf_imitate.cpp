@@ -788,8 +788,7 @@ const std::string ElfImitate::GetNextSymLine()
 
 bool ElfImitate::GetSectionInfo(ShdrInfo& shdr, const std::string secName)
 {
-    for (const auto &iter: shdrInfoPairs_)
-    {
+    for (const auto &iter: shdrInfoPairs_) {
         auto tmpPair = iter.first;
         if (tmpPair.second == secName) {
             shdr = iter.second;

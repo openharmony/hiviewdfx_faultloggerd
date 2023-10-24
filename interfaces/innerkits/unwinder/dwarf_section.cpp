@@ -57,7 +57,7 @@ bool DwarfSection::SearchEntry(struct UnwindEntryInfo& uei, struct UnwindTableIn
     }
 
     entry = (uintptr_t) tableData + low * sizeof(DwarfTableEntry);
-    entry += 4; // four bytes
+    entry += 4; // 4 : four bytes
 
     memory_->ReadS32(entry, &dwarfTableEntry.fdeOffset, true);
     uintptr_t fdeAddr = static_cast<uintptr_t>(dwarfTableEntry.fdeOffset + segbase);
