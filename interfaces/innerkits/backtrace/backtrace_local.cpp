@@ -157,6 +157,14 @@ std::string GetProcessStacktrace(size_t maxFrameNums)
         if (thread.Unwind(as, symbol, 0)) {
             ss << thread.GetFormatedStr(true) << std::endl;
         } else {
+            std::string msg;
+            if (tid == getpid()) {
+                ReadProcessStatus(msg, tid);
+                ss << msg << std::endl;
+                msg = "";
+            }
+            ReadThreadWchan(msg, tid, true);
+            ss << msg << std::endl;
             HILOG_ERROR(LOG_CORE, "Failed to dump stack trace of thread %d.", tid);
         }
         return true;
