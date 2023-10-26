@@ -232,7 +232,7 @@ bool Unwinder::Step(uintptr_t& pc, uintptr_t& sp, void *ctx)
         rs = std::make_shared<RegLocState>();
 #if defined(__arm__)
         if (!ret && uti.format == UNW_INFO_FORMAT_ARM_EXIDX) {
-            if (!armExidx_->SearchEntry(uei, uti, pc)) {
+            if (!armExidx_->SearchEntry(pc, uti, uei)) {
                 lastErrorData_.code = armExidx_->GetLastErrorCode();
                 LOGE("Failed to search unwind entry? errorCode: %d", lastErrorData_.code);
                 break;
@@ -247,7 +247,8 @@ bool Unwinder::Step(uintptr_t& pc, uintptr_t& sp, void *ctx)
         }
 #endif
         if (!ret && uti.format == UNW_INFO_FORMAT_REMOTE_TABLE) {
-            if (!dwarfSection_->SearchEntry(uei, uti, pc)) {
+            if ((uti.isLinear == false && !dwarfSection_->SearchEntry(pc, uti, uei)) ||
+                (uti.isLinear == true && !dwarfSection_->LinearSearchEntry(pc, uti, uei))) {
                 lastErrorData_.code = dwarfSection_->GetLastErrorCode();
                 LOGE("Failed to search unwind entry? errorCode: %d", lastErrorData_.code);
                 break;

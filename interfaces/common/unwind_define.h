@@ -57,22 +57,10 @@ enum UnwindType : int8_t {
     UNWIND_TYPE_REMOTE,
 };
 
-enum UnwindFrameType {
-    UNWIND_FRAME_ALIGNED = -3,       /* x86_64: frame stack pointer aligned */
-    UNWIND_FRAME_SYSCALL = -3,      /* arm32: r7 saved in r12, sp offset zero */
-    UNWIND_FRAME_STANDARD = -2,     /* regular r7, sp +/- offset */
-    UNWIND_FRAME_SIGRETURN = -1,    /* special sigreturn frame */
-    UNWIND_FRAME_OTHER = 0,         /* not cacheable (special or unrecognised) */
-    UNWIND_FRAME_GUESSED = 1        /* guessed it was regular, but not known */
-};
-
 enum UnwindDynInfoFormatType {
-    UNW_INFO_FORMAT_DYNAMIC,            /* unw_dyn_proc_info_t */
     UNW_INFO_FORMAT_TABLE,              /* unw_dyn_table_t */
     UNW_INFO_FORMAT_REMOTE_TABLE,       /* unw_dyn_remote_table_t */
     UNW_INFO_FORMAT_ARM_EXIDX,          /* ARM specific unwind info */
-    UNW_INFO_FORMAT_IP_OFFSET           /* Like UNW_INFO_FORMAT_REMOTE_TABLE, but table entries are
-                                            considered relative to di->start_ip, rather than di->segbase */
 };
 
 /**

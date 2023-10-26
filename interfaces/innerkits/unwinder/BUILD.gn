@@ -126,6 +126,13 @@ if (defined(ohos_lite)) {
     }
   }
 
+  config("dfx_unwinder_test_config") {
+    defines = [
+      "UNITTEST",
+      "DFX_LOG_UNWIND",
+    ]
+  }
+
   ohos_shared_library("libunwinder") {
     public_configs = [
       ":dfx_unwinder_config",
@@ -161,6 +168,31 @@ if (defined(ohos_lite)) {
 
   ohos_static_library("libunwinder_static") {
     public_configs = [ ":dfx_unwinder_config" ]
+
+    sources = dfx_unwinder_sources
+    sources += dfx_unwind_sources
+    sources += dfx_exidx_sources
+    sources += dfx_dwarf_sources
+
+    deps = [
+      "$faultloggerd_common_path/dfxlog:dfx_hilog",
+      "$faultloggerd_common_path/dfxutil:dfx_util",
+      "//third_party/bounds_checking_function:libsec_shared",
+    ]
+
+    external_deps = [
+      "c_utils:utils",
+      "hilog:libhilog",
+    ]
+    part_name = "faultloggerd"
+    subsystem_name = "hiviewdfx"
+  }
+
+  ohos_static_library("libunwinder_test") {
+    public_configs = [
+      ":dfx_unwinder_config",
+      ":dfx_unwinder_test_config",
+    ]
 
     sources = dfx_unwinder_sources
     sources += dfx_unwind_sources

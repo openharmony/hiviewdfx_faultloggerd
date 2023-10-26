@@ -74,8 +74,7 @@ struct ShdrInfo {
     uint64_t size = 0;
 };
 
-struct __attribute__((packed)) DwarfEhFrameHdr
-{
+struct __attribute__((packed)) DwarfEhFrameHdr {
     unsigned char version;
     unsigned char ehFramePtrEnc;
     unsigned char fdeCountEnc;

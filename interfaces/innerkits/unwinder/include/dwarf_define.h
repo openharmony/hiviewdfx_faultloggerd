@@ -207,37 +207,37 @@ enum DwarfEncoding : uint8_t {
 // https://refspecs.linuxbase.org/LSB_4.1.0/LSB-Core-generic/LSB-Core-generic/ehframechpt.html
 // Parsed Common Information Entry Format
 struct CommonInfoEntry {
-    uint32_t codeAlignFactor;
-    int32_t dataAlignFactor;
-    uintptr_t returnAddressRegister;
+    uint32_t codeAlignFactor = 0;
+    int32_t dataAlignFactor = 0;
+    uintptr_t returnAddressRegister = 0;
     bool hasAugmentationData = false;
     bool isSignalFrame = false;
-    uint8_t segmentSize;
-    uintptr_t instructionsOff;
-    uintptr_t instructionsEnd;
+    uint8_t segmentSize = 0;
+    uintptr_t instructionsOff = 0;
+    uintptr_t instructionsEnd = 0;
     // P
-    uint8_t personality;
+    uint8_t personality = 0;
     // L
-    uint8_t lsdaEncoding;
+    uint8_t lsdaEncoding = 0;
     // R
-    uint8_t pointerEncoding;
+    uint8_t pointerEncoding = 0;
 };
 
 // Parsed Frame Description Entry
 // Table 8-3. Frame Description Entry Format
 struct FrameDescEntry {
-    uintptr_t pcStart;
-    uintptr_t pcEnd;
-    uintptr_t lsda;
-    uintptr_t instructionsOff;
-    uintptr_t instructionsEnd;
-    uintptr_t cieAddr;
+    uintptr_t pcStart = 0;
+    uintptr_t pcEnd = 0;
+    uintptr_t lsda = 0;
+    uintptr_t instructionsOff = 0;
+    uintptr_t instructionsEnd = 0;
+    uintptr_t cieAddr = 0;
     CommonInfoEntry cie;
 };
 
 struct DwarfTableEntry {
-    int32_t startPc;
-    int32_t fdeOffset;
+    int32_t startPc = 0;
+    int32_t fdeOffset = 0;
 };
 
 } // namespace HiviewDFX
