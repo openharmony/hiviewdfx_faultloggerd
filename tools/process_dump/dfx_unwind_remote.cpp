@@ -207,6 +207,7 @@ bool DfxUnwindRemote::DoUnwindStep(size_t const & index,
 {
     bool ret = false;
     uint64_t framePc;
+    static unw_word_t prevFramePc = 0;
     static unw_word_t prevFrameSp = 0;
     if (unw_get_reg(&cursor, UNW_REG_IP, (unw_word_t*)(&framePc))) {
         DFXLOG_WARN("Fail to get current pc.");
@@ -220,10 +221,11 @@ bool DfxUnwindRemote::DoUnwindStep(size_t const & index,
     }
 
     // use lr as pc in the second frame may not change sp
-    if (prevFrameSp == frameSp && index > MIN_VALID_FRAME_COUNT - 1) {
+    if (prevFrameSp == frameSp && prevFramePc == framePc) {
         return ret;
     }
     prevFrameSp = frameSp;
+    prevFramePc = framePc;
 
     uint64_t relPc = unw_get_rel_pc(&cursor);
     if (index != 0) {
