@@ -99,7 +99,7 @@ size_t PrintBacktraceByLibunwind()
     }
 
     while (unw_step (&cursor) > 0) {
-        if (unw_get_reg (&cursor, UNW_REG_IP, &ip)) {
+        if (unw_get_reg (&cursor, UNW_REG_IP, &ip) || ip == 0) {
             return n;
         }
         n++;
