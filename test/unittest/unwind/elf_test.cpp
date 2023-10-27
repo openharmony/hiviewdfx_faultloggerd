@@ -28,8 +28,10 @@ using namespace std;
 
 #define ELF32_FILE "/data/test/resource/testdata/elf32_test"
 #define ELF64_FILE "/data/test/resource/testdata/elf_test"
+#define DUMPCATCHER_ELF_FILE "/system/bin/dumpcatcher"
 #define PT_LOAD_OFFSET 0x001000
 #define PT_LOAD_OFFSET64 0x0000000000002000
+
 namespace OHOS {
 namespace HiviewDFX {
 class DfxElfTest : public testing::Test {
@@ -123,6 +125,22 @@ HWTEST_F(DfxElfTest, DfxElfTest002, TestSize.Level2)
     GTEST_LOG_(INFO) << "DfxElfTest002: end.";
 }
 
+/**
+ * @tc.name: DfxElfTest003
+ * @tc.desc: test DfxElf class functions with minidebugInfo
+ * @tc.type: FUNC
+ */
+HWTEST_F(DfxElfTest, DfxElfTest003, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "DfxElfTest003: start.";
+    DfxElf elf(DUMPCATCHER_ELF_FILE);
+    elf.EnableMiniDebugInfo();
+    ASSERT_TRUE(elf.IsValid());
+    GTEST_LOG_(INFO) << "MinidebuInfo Ptr: " << elf.GetMiniDebugInfo();
+    ASSERT_TRUE(elf.GetMiniDebugInfo() != nullptr);
+    ASSERT_TRUE(elf.GetEmbeddedElf() != nullptr);
+    GTEST_LOG_(INFO) << "DfxElfTest003: end.";
+}
 } // namespace HiviewDFX
 } // namespace OHOS
 

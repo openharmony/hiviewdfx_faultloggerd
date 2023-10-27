@@ -33,6 +33,7 @@ public:
     virtual ~DfxMmap() { Clear(); }
 
     bool Init(const std::string &file);
+    bool Init(uint8_t *decompressedData, size_t size);
     void Clear();
 
     inline void* Get()

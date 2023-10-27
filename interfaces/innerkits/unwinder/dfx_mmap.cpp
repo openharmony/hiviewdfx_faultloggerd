@@ -56,6 +56,18 @@ bool DfxMmap::Init(const std::string &file)
 #endif
 }
 
+bool DfxMmap::Init(uint8_t *decompressedData, size_t size)
+{
+    if (!decompressedData || size == 0) {
+        return false;
+    }
+
+    // this pointer was managed by shared_ptr will not occur double free issue.
+    mmap_ = decompressedData;
+    size_ = size;
+    return true;
+}
+
 void DfxMmap::Clear()
 {
 #if is_ohos

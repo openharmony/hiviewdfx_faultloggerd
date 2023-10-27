@@ -33,6 +33,9 @@
 #include "dfx_log.h"
 #include "dfx_util.h"
 #include "dwarf_define.h"
+#ifndef is_ohos_lite
+#include "dfx_xz_utils.h"
+#endif
 
 namespace OHOS {
 namespace HiviewDFX {
@@ -50,6 +53,22 @@ std::shared_ptr<DfxElf> DfxElf::Create(const std::string& path)
         return elf;
     }
     return nullptr;
+}
+
+DfxElf::DfxElf(uint8_t *decompressedData, size_t size)
+{
+    if (mmap_ == nullptr) {
+        mmap_ = std::make_shared<DfxMmap>();
+        // this mean the embedded elf initialization.
+        mmap_->Init(decompressedData, size);
+    }
+    uti_.format = -1;
+    hasTableInfo_ = false;
+}
+
+void DfxElf::EnableMiniDebugInfo()
+{
+    enableMiniDebugInfo_ = true;
 }
 
 bool DfxElf::Init(const std::string& file)
@@ -98,6 +117,21 @@ bool DfxElf::ParseElfIdent()
     return true;
 }
 
+bool DfxElf::IsEmbeddedElf()
+{
+    return embeddedElf_ != nullptr;
+}
+
+std::shared_ptr<DfxElf> DfxElf::GetEmbeddedElf()
+{
+    return embeddedElf_;
+}
+
+std::shared_ptr<MiniDebugInfo> DfxElf::GetMiniDebugInfo()
+{
+    return miniDebugInfo_;
+}
+
 bool DfxElf::InitHeaders()
 {
     if (elfParse_ != nullptr) {
@@ -119,9 +153,49 @@ bool DfxElf::InitHeaders()
     }
     if (elfParse_ != nullptr) {
         valid_ = true;
+
+#ifndef is_ohos_lite
+        if (enableMiniDebugInfo_) {
+            elfParse_->EnableMiniDebugInfo();
+        }
+#endif
+
         elfParse_->InitHeaders();
+
+#ifndef is_ohos_lite
+        miniDebugInfo_ = elfParse_->GetMiniDebugInfo();
+#endif
     }
     return valid_;
+}
+
+void DfxElf::InitEmbeddedElf()
+{
+#ifndef is_ohos_lite
+
+    if (!miniDebugInfo_) {
+        return;
+    }
+
+    uint8_t *addr = miniDebugInfo_->offset + const_cast<uint8_t*>(GetMmapPtr());
+
+    embeddedElfData_ = std::make_shared<std::vector<uint8_t>>();
+
+    if (!embeddedElfData_) {
+        LOGE("Create embeddedElfData failed.");
+        return;
+    }
+    if (XzDecompress(addr, miniDebugInfo_->size, embeddedElfData_)) {
+        // embeddedElfData_ store the decompressed bytes.
+        // use these bytes to construct an elf.
+        embeddedElf_= std::make_shared<DfxElf>(embeddedElfData_->data(), embeddedElfData_->size());
+        if (!embeddedElf_->IsValid()) {
+            LOGE("Failed to parse Embedded Elf.");
+        }
+    } else {
+        LOGE("Failed to decompressed .gnu_debugdata seciton.");
+    }
+#endif
 }
 
 bool DfxElf::IsValid()
@@ -129,6 +203,12 @@ bool DfxElf::IsValid()
     if (valid_ == false) {
         InitHeaders();
     }
+
+#ifndef is_ohos_lite
+    if (miniDebugInfo_) {
+        InitEmbeddedElf();
+    }
+#endif
     return valid_;
 }
 
