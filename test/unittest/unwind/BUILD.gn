@@ -59,14 +59,32 @@ ohos_unittest("test_exidx") {
   configs = [ "$faultloggerd_common_path/build:coverage_flags" ]
   defines = [
     "DFX_LOG_UNWIND",
-    "UNITTEST",
     "is_ohos=${is_ohos}",
+    "UNITTEST",
   ]
-  sources = [ "arm_exidx_test.cpp" ]
+  sources = [
+    "$faultloggerd_interfaces_path/innerkits/unwinder/arch_util.cpp",
+    "$faultloggerd_interfaces_path/innerkits/unwinder/arm_exidx.cpp",
+    "$faultloggerd_interfaces_path/innerkits/unwinder/dfx_accessors.cpp",
+    "$faultloggerd_interfaces_path/innerkits/unwinder/dfx_ark.cpp",
+    "$faultloggerd_interfaces_path/innerkits/unwinder/dfx_config.cpp",
+    "$faultloggerd_interfaces_path/innerkits/unwinder/dfx_elf.cpp",
+    "$faultloggerd_interfaces_path/innerkits/unwinder/dfx_elf_parser.cpp",
+    "$faultloggerd_interfaces_path/innerkits/unwinder/dfx_frame_formatter.cpp",
+    "$faultloggerd_interfaces_path/innerkits/unwinder/dfx_instructions.cpp",
+    "$faultloggerd_interfaces_path/innerkits/unwinder/dfx_map.cpp",
+    "$faultloggerd_interfaces_path/innerkits/unwinder/dfx_maps.cpp",
+    "$faultloggerd_interfaces_path/innerkits/unwinder/dfx_memory.cpp",
+    "$faultloggerd_interfaces_path/innerkits/unwinder/dfx_mmap.cpp",
+    "$faultloggerd_interfaces_path/innerkits/unwinder/dfx_ptrace.cpp",
+    "$faultloggerd_interfaces_path/innerkits/unwinder/dfx_regs.cpp",
+    "$faultloggerd_interfaces_path/innerkits/unwinder/dfx_regs_arm.cpp",
+    "$faultloggerd_interfaces_path/innerkits/unwinder/dfx_symbols.cpp",
+    "arm_exidx_test.cpp",
+  ]
   deps = [
     "$faultloggerd_common_path/dfxlog:dfx_hilog",
     "$faultloggerd_common_path/dfxutil:dfx_util",
-    "$faultloggerd_interfaces_path/innerkits/unwinder:libunwinder_test",
     "//third_party/bounds_checking_function:libsec_shared",
     "//third_party/googletest:gtest_main",
   ]
