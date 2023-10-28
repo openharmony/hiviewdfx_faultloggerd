@@ -223,7 +223,7 @@ bool Unwinder::Step(uintptr_t& pc, uintptr_t& sp, void *ctx)
         // 2. find unwind table and entry
         UnwindTableInfo uti;
         if ((lastErrorData_.code = acc_->FindUnwindTable(pc, uti, ctx)) != UNW_ERROR_NONE) {
-            LOGE("Failed to find unwind table? errorCode: %d", lastErrorData_.code);
+            LOGE("Failed to find unwind table for pc: %p? errorCode: %d", (void*)pc, lastErrorData_.code);
             break;
         }
 
@@ -280,7 +280,7 @@ bool Unwinder::Step(uintptr_t& pc, uintptr_t& sp, void *ctx)
     }
 
 #if defined(__aarch64__)
-    if (!ret && (pid_ == UNWIND_TYPE_LOCAL)) {
+    if (!ret) {
         uintptr_t fp = regs_->GetFp();
         ret = FpStep(fp, pc, ctx);
     }
@@ -298,14 +298,18 @@ bool Unwinder::Step(uintptr_t& pc, uintptr_t& sp, void *ctx)
 #if defined(__aarch64__)
 bool Unwinder::FpStep(uintptr_t& fp, uintptr_t& pc, void *ctx)
 {
-    UnwindContext* uctx = reinterpret_cast<UnwindContext *>(ctx);
     LOGU("++++++fp: %llx, pc: %llx", (uint64_t)fp, (uint64_t)pc);
+    if (pid_ == UNWIND_TYPE_LOCAL) {
+        UnwindContext* uctx = reinterpret_cast<UnwindContext *>(ctx);
+        uctx->stackCheck = true;
+    }
     uintptr_t prevFp = fp;
-    if (DfxAccessorsLocal::IsValidFrame(prevFp, uctx->stackBottom, uctx->stackTop)) {
-        fp = *reinterpret_cast<uintptr_t*>(prevFp);
-        pc = *reinterpret_cast<uintptr_t*>(prevFp + sizeof(uintptr_t));
+    uintptr_t ptr = fp;
+    if (memory_->ReadUptr(ptr, &fp, true) &&
+        memory_->ReadUptr(ptr, &pc, false)) {
         regs_->SetReg(REG_FP, &fp);
         regs_->SetReg(REG_PC, &pc);
+        regs_->SetReg(REG_SP, &prevFp);
         LOGU("------fp: %llx, pc: %llx", (uint64_t)fp, (uint64_t)pc);
         return true;
     }
@@ -325,7 +329,7 @@ bool Unwinder::Apply(std::shared_ptr<DfxRegs> regs, std::shared_ptr<RegLocState>
     }
 #if defined(__arm__) || defined(__aarch64__)
     if (!rs->isPcSet) {
-        regs->SetReg(REG_PC, regs->GetReg(REG_LR));
+        regs->SetPc(*(regs->GetReg(REG_LR)));
     }
 #endif
     return ret;

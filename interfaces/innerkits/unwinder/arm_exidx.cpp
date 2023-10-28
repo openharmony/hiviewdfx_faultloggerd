@@ -33,7 +33,6 @@ namespace {
 #define ARM_EXIDX_COMPACT       0x80000000
 #define ARM_EXTBL_OP_FINISH     0xb0
 
-static const uintptr_t EXIDX_ENTRY_SIZE = 8;
 static const uintptr_t FOUR_BYTE_OFFSET = 4;
 static const int TWO_BIT_OFFSET = 2;
 static const int FOUR_BIT_OFFSET = 4;
@@ -122,64 +121,43 @@ inline void ArmExidx::LogRawData()
 
 bool ArmExidx::SearchEntry(uintptr_t pc, struct UnwindTableInfo uti, struct UnwindEntryInfo& uei)
 {
-    uintptr_t first = uti.tableData;
-    uintptr_t last = uti.tableData + uti.tableLen - ARM_EXIDX_TABLE_SIZE;
-    LOGU("SearchEntry pc:%p, tableData: %llx", (void*)pc, (uint64_t)first);
-    uintptr_t entry, val;
+    uintptr_t tableLen = uti.tableLen / ARM_EXIDX_TABLE_SIZE;
+    uintptr_t tableData = uti.tableData;
+    LOGU("SearchEntry tableData:%p, tableLen: %u", (void*)tableData, (uint32_t)tableLen);
 
-    if (!memory_->ReadPrel31(first, &val) || pc < val) {
-        lastErrorData_.addr = first;
-        lastErrorData_.code = UNW_ERROR_ILLEGAL_VALUE;
-        return false;
-    }
-    if (!memory_->ReadPrel31(last, &val)) {
-        lastErrorData_.addr = last;
-        lastErrorData_.code = UNW_ERROR_ILLEGAL_VALUE;
-        return false;
-    }
-
-    if (pc >= val) {
-        entry = last;
-        if (!memory_->ReadPrel31(entry, &(uei.startPc))) {
-            lastErrorData_.addr = entry;
-            lastErrorData_.code = UNW_ERROR_ILLEGAL_VALUE;
-            return false;
-        }
-        uei.endPc = uti.endPc - 1;
-    } else {
-        while (first < last - EXIDX_ENTRY_SIZE) {
-            entry = first + (((last - first) / ARM_EXIDX_TABLE_SIZE + 1) >> 1) * ARM_EXIDX_TABLE_SIZE;
-            if (!memory_->ReadPrel31(entry, &val)) {
-                lastErrorData_.addr = entry;
-                lastErrorData_.code = UNW_ERROR_ILLEGAL_VALUE;
-                return false;
-            }
-            if (pc < val) {
-                last = entry;
-            } else {
-                first = entry;
-            }
-        }
-        entry = first;
-
-        uintptr_t cur = entry;
-        if (!memory_->ReadPrel31(cur, &(uei.startPc))) {
-            lastErrorData_.addr = cur;
+    // do binary search
+    uintptr_t ptr = 0;
+    uintptr_t entry = 0;
+    uintptr_t low = 0;
+    uintptr_t high = tableLen;
+    while (low < high) {
+        uintptr_t cur = (low + high) / 2; // 2 : binary search divided parameter
+        ptr = tableData + cur * ARM_EXIDX_TABLE_SIZE;
+        uintptr_t addr = 0;
+        if (!memory_->ReadPrel31(ptr, &addr)) {
+            lastErrorData_.addr = ptr;
             lastErrorData_.code = UNW_ERROR_ILLEGAL_VALUE;
             return false;
         }
 
-        cur = entry + EXIDX_ENTRY_SIZE;
-        if (!memory_->ReadPrel31(cur, &(uei.endPc))) {
-            lastErrorData_.addr = cur;
-            lastErrorData_.code = UNW_ERROR_ILLEGAL_VALUE;
+        if (pc == addr) {
+            entry = ptr;
+            break;
+        }
+        if (pc < addr) {
+            high = cur;
+        } else {
+            low = cur + 1;
+        }
+    }
+    if (entry == 0) {
+        if (high != 0) {
+            entry = tableData + (high - 1) * ARM_EXIDX_TABLE_SIZE;
+        } else {
             return false;
         }
-
-        uei.endPc--;
     }
 
-    uei.gp = uti.gp;
     uei.unwindInfoSize = ARM_EXIDX_TABLE_SIZE;
     uei.unwindInfo = (void *) entry;
     uei.format = UNW_INFO_FORMAT_ARM_EXIDX;
