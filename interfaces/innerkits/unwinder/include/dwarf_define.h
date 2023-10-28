@@ -171,6 +171,7 @@ typedef enum {
     DW_CFA_val_expression,      // ULEB128, BLOCK
 
     DW_CFA_lo_user = 0x1c,
+    DW_CFA_AARCH64_negate_ra_state = 0x2d,
     // GNU extensions
     DW_CFA_GNU_args_size = 0x2e,
     DW_CFA_GNU_negative_offset_extended = 0x2f,

@@ -59,6 +59,7 @@ public:
 
     inline void SetTargetPid(int pid) { pid_ = pid; }
     inline int32_t GetTargetPid() { return pid_; }
+    inline void SetPacMask(uintptr_t mask) { pacMask_ = mask; }
 
     inline void SetRegs(std::shared_ptr<DfxRegs> regs) { regs_ = regs; }
     inline const std::shared_ptr<DfxRegs>& GetRegs() { return regs_; }
@@ -91,6 +92,7 @@ public:
 
 private:
     bool Apply(std::shared_ptr<DfxRegs> regs, std::shared_ptr<RegLocState> rs);
+    static uintptr_t StripPac(uintptr_t inAddr, uintptr_t pacMask);
 
 private:
     void Init();
@@ -99,6 +101,7 @@ private:
 
 private:
     int32_t pid_ = 0;
+    uintptr_t pacMask_ = 0;
     UnwindMode mode_ = DWARF_UNWIND;
     std::shared_ptr<DfxAccessors> acc_;
     std::shared_ptr<DfxMemory> memory_;

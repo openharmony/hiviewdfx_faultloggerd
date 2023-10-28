@@ -65,7 +65,7 @@ uintptr_t DfxInstructions::Flush(DfxRegs& regs, std::shared_ptr<DfxMemory> memor
     return result;
 }
 
-bool DfxInstructions::Apply(DfxRegs& regs, std::shared_ptr<DfxMemory> memory, RegLocState& rsState)
+bool DfxInstructions::Apply(std::shared_ptr<DfxMemory> memory, DfxRegs& regs, RegLocState& rsState)
 {
     uintptr_t cfa = 0;
     RegLoc cfaLoc;

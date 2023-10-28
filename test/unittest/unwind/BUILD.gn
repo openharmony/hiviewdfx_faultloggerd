@@ -42,7 +42,7 @@ ohos_unittest("test_unwind") {
     "//third_party/googletest:gtest_main",
   ]
   resource_config_file = "$faultloggerd_path/test/resource/ohos_test.xml"
-
+  branch_protector_ret = "pac_ret"
   external_deps = [
     "c_utils:utils",
     "hilog:libhilog",

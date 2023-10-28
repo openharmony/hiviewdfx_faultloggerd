@@ -40,6 +40,7 @@ namespace {
 void Unwinder::Init()
 {
     memory_ = std::make_shared<DfxMemory>(acc_);
+    pacMask_ = 0;
     lastErrorData_.code = UNW_ERROR_NONE;
     lastErrorData_.addr = 0;
     rsCache_.clear();
@@ -323,16 +324,38 @@ bool Unwinder::Apply(std::shared_ptr<DfxRegs> regs, std::shared_ptr<RegLocState>
     if (rs == nullptr || regs == nullptr) {
         return false;
     }
-    ret = DfxInstructions::Apply(*(regs.get()), memory_, *(rs.get()));
+    ret = DfxInstructions::Apply(memory_, *(regs.get()), *(rs.get()));
     if (!ret) {
         LOGE("Failed to apply rs");
     }
 #if defined(__arm__) || defined(__aarch64__)
     if (!rs->isPcSet) {
-        regs->SetPc(*(regs->GetReg(REG_LR)));
+        regs_->SetReg(REG_PC, regs->GetReg(REG_LR));
+    }
+#endif
+#if defined(__aarch64__)
+    if (rs->pseudoReg != 0) {
+        regs->SetPc(StripPac(regs_->GetPc(), pacMask_));
     }
 #endif
     return ret;
+}
+
+uintptr_t Unwinder::StripPac(uintptr_t inAddr, uintptr_t pacMask)
+{
+    uintptr_t outAddr = inAddr;
+#if defined(__aarch64__)
+    if (outAddr != 0) {
+        if (pacMask != 0) {
+            outAddr &= ~pacMask;
+        } else {
+            register uint64_t x30 __asm("x30") = inAddr;
+            asm("hint 0x7" : "+r"(x30));
+            outAddr = x30;
+        }
+    }
+#endif
+    return outAddr;
 }
 
 void Unwinder::FillFrames(std::vector<DfxFrame>& frames)

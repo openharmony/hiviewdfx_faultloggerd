@@ -29,7 +29,7 @@ public:
     DfxInstructions() = default;
     virtual ~DfxInstructions() = default;
 
-    static bool Apply(DfxRegs& regs, std::shared_ptr<DfxMemory> memory, RegLocState& rs);
+    static bool Apply(std::shared_ptr<DfxMemory> memory, DfxRegs& regs, RegLocState& rsState);
 
 private:
     static uintptr_t Flush(DfxRegs& dfxRegs, std::shared_ptr<DfxMemory> memory, uintptr_t cfa, RegLoc loc);

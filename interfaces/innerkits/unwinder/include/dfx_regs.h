@@ -78,6 +78,7 @@ protected:
     static std::vector<int> qutRegs_;
 };
 
+#if defined(__arm__)
 class DfxRegsArm : public DfxRegs {
 public:
     DfxRegsArm() = default;
@@ -88,7 +89,9 @@ public:
     std::string PrintRegs() const override;
     bool StepIfSignalFrame(uintptr_t pc, std::shared_ptr<DfxMemory> memory) override;
 };
+#endif
 
+#if defined(__aarch64__)
 class DfxRegsArm64 : public DfxRegs {
 public:
     DfxRegsArm64() = default;
@@ -99,7 +102,9 @@ public:
     std::string PrintRegs() const override;
     bool StepIfSignalFrame(uintptr_t pc, std::shared_ptr<DfxMemory> memory) override;
 };
+#endif
 
+#if defined(__x86_64__)
 class DfxRegsX86_64 : public DfxRegs {
 public:
     DfxRegsX86_64() = default;
@@ -110,6 +115,7 @@ public:
     std::string PrintRegs() const override;
     bool StepIfSignalFrame(uintptr_t pc, std::shared_ptr<DfxMemory> memory) override;
 };
+#endif
 } // namespace HiviewDFX
 } // namespace OHOS
 #endif

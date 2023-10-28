@@ -48,6 +48,7 @@ struct RegLocState {
         uintptr_t cfaExprPtr; // cfa = expr
     };
     bool isPcSet = false;
+    uintptr_t pseudoReg = 0;
     RegLoc locs[REGS_MAX_SIZE];
 };
 } // namespace HiviewDFX
