@@ -135,6 +135,10 @@ bool Unwinder::Unwind(void *ctx, size_t maxFrameNum, size_t skipFrameNum)
     size_t curIndex = 0;
     uintptr_t pc, sp, stepPc;
     do {
+        if (pid_ == UNWIND_TYPE_LOCAL) {
+            UnwindContext* uctx = reinterpret_cast<UnwindContext *>(ctx);
+            uctx->stackCheck = false;
+        }
         // skip 0 stack, as this is dump catcher. Caller don't need it.
         if (index < skipFrameNum) {
             index++;
@@ -391,11 +395,11 @@ void Unwinder::GetFramesByPcs(std::vector<DfxFrame>& frames, std::vector<uintptr
     for (size_t i = 0; i < pcs.size(); ++i) {
         DfxFrame frame;
         frame.index = i;
-        uintptr_t pc = static_cast<uint64_t>(pcs[i]);
-        if ((map != nullptr) && map->Contain(static_cast<uint64_t>(pc))) {
+        frame.pc = static_cast<uint64_t>(pcs[i]);
+        if ((map != nullptr) && map->Contain(frame.pc)) {
             LOGU("map had matched");
         } else {
-            if (!maps->FindMapByAddr(map, pc) || (map == nullptr)) {
+            if (!maps->FindMapByAddr(map, pcs[i]) || (map == nullptr)) {
                 LOGE("map is null");
                 continue;
             }
