@@ -127,10 +127,7 @@ if (defined(ohos_lite)) {
   }
 
   config("dfx_unwinder_test_config") {
-    defines = [
-      "UNITTEST",
-      "DFX_LOG_UNWIND",
-    ]
+    defines = [ "DFX_LOG_UNWIND" ]
   }
 
   ohos_shared_library("libunwinder") {
