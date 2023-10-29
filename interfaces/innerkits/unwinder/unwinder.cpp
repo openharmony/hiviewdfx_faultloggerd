@@ -303,6 +303,7 @@ bool Unwinder::Step(uintptr_t& pc, uintptr_t& sp, void *ctx)
 bool Unwinder::FpStep(uintptr_t& fp, uintptr_t& pc, void *ctx)
 {
     LOGU("++++++fp: %llx, pc: %llx", (uint64_t)fp, (uint64_t)pc);
+    memory_->SetCtx(ctx);
     if (pid_ == UNWIND_TYPE_LOCAL) {
         UnwindContext* uctx = reinterpret_cast<UnwindContext *>(ctx);
         uctx->stackCheck = true;
