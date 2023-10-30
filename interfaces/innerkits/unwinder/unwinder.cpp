@@ -40,7 +40,6 @@ namespace {
 void Unwinder::Init()
 {
     memory_ = std::make_shared<DfxMemory>(acc_);
-    pacMask_ = 0;
     lastErrorData_.code = UNW_ERROR_NONE;
     lastErrorData_.addr = 0;
     rsCache_.clear();
@@ -136,6 +135,10 @@ bool Unwinder::Unwind(void *ctx, size_t maxFrameNum, size_t skipFrameNum)
     size_t curIndex = 0;
     uintptr_t pc, sp, stepPc;
     do {
+        if (pid_ == UNWIND_TYPE_LOCAL) {
+            UnwindContext* uctx = reinterpret_cast<UnwindContext *>(ctx);
+            uctx->stackCheck = false;
+        }
         // skip 0 stack, as this is dump catcher. Caller don't need it.
         if (index < skipFrameNum) {
             index++;
@@ -235,13 +238,14 @@ bool Unwinder::Step(uintptr_t& pc, uintptr_t& sp, void *ctx)
         if (!ret && uti.format == UNW_INFO_FORMAT_ARM_EXIDX) {
             if (!armExidx_->SearchEntry(pc, uti, uei)) {
                 lastErrorData_.code = armExidx_->GetLastErrorCode();
-                LOGE("Failed to search unwind entry? errorCode: %d", lastErrorData_.code);
+                lastErrorData_.addr = armExidx_->GetLastErrorAddr();
+                LOGE("Failed to search unwind entry?");
                 break;
             }
             if (!armExidx_->Step((uintptr_t)uei.unwindInfo, rs)) {
                 lastErrorData_.code = armExidx_->GetLastErrorCode();
                 lastErrorData_.addr = armExidx_->GetLastErrorAddr();
-                LOGU("Step exidx section error, errorCode: %d", lastErrorData_.code);
+                LOGU("Step exidx section error?");
             } else {
                 ret = true;
             }
@@ -251,14 +255,15 @@ bool Unwinder::Step(uintptr_t& pc, uintptr_t& sp, void *ctx)
             if ((uti.isLinear == false && !dwarfSection_->SearchEntry(pc, uti, uei)) ||
                 (uti.isLinear == true && !dwarfSection_->LinearSearchEntry(pc, uti, uei))) {
                 lastErrorData_.code = dwarfSection_->GetLastErrorCode();
-                LOGE("Failed to search unwind entry? errorCode: %d", lastErrorData_.code);
+                lastErrorData_.addr = dwarfSection_->GetLastErrorAddr();
+                LOGU("Failed to search unwind entry?");
                 break;
             }
             memory_->SetDataOffset(uti.segbase);
             if (!dwarfSection_->Step((uintptr_t)uei.unwindInfo, regs_, rs)) {
                 lastErrorData_.code = dwarfSection_->GetLastErrorCode();
                 lastErrorData_.addr = dwarfSection_->GetLastErrorAddr();
-                LOGU("Step dwarf section error, errorCode: %d", lastErrorData_.code);
+                LOGU("Step dwarf section error?");
             } else {
                 ret = true;
             }
@@ -278,6 +283,8 @@ bool Unwinder::Step(uintptr_t& pc, uintptr_t& sp, void *ctx)
             uctx->stackCheck = true;
         }
         ret = Apply(regs_, rs);
+    } else {
+        LOGU("errorCode: %d, addr: %p", lastErrorData_.code, (void *)lastErrorData_.addr);
     }
 
 #if defined(__aarch64__)
@@ -300,6 +307,7 @@ bool Unwinder::Step(uintptr_t& pc, uintptr_t& sp, void *ctx)
 bool Unwinder::FpStep(uintptr_t& fp, uintptr_t& pc, void *ctx)
 {
     LOGU("++++++fp: %llx, pc: %llx", (uint64_t)fp, (uint64_t)pc);
+    memory_->SetCtx(ctx);
     if (pid_ == UNWIND_TYPE_LOCAL) {
         UnwindContext* uctx = reinterpret_cast<UnwindContext *>(ctx);
         uctx->stackCheck = true;
@@ -414,11 +422,11 @@ void Unwinder::GetFramesByPcs(std::vector<DfxFrame>& frames, std::vector<uintptr
     for (size_t i = 0; i < pcs.size(); ++i) {
         DfxFrame frame;
         frame.index = i;
-        uintptr_t pc = static_cast<uint64_t>(pcs[i]);
-        if ((map != nullptr) && map->Contain(static_cast<uint64_t>(pc))) {
+        frame.pc = static_cast<uint64_t>(pcs[i]);
+        if ((map != nullptr) && map->Contain(frame.pc)) {
             LOGU("map had matched");
         } else {
-            if (!maps->FindMapByAddr(map, pc) || (map == nullptr)) {
+            if (!maps->FindMapByAddr(map, pcs[i]) || (map == nullptr)) {
                 LOGE("map is null");
                 continue;
             }

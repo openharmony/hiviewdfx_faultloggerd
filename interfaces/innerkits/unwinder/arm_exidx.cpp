@@ -123,7 +123,8 @@ bool ArmExidx::SearchEntry(uintptr_t pc, struct UnwindTableInfo uti, struct Unwi
 {
     uintptr_t tableLen = uti.tableLen / ARM_EXIDX_TABLE_SIZE;
     uintptr_t tableData = uti.tableData;
-    LOGU("SearchEntry tableData:%p, tableLen: %u", (void*)tableData, (uint32_t)tableLen);
+    LOGU("SearchEntry pc: %p tableData: %p, tableLen: %u",
+        (void*)pc, (void*)tableData, (uint32_t)tableLen);
 
     // do binary search
     uintptr_t ptr = 0;
@@ -209,7 +210,7 @@ bool ArmExidx::ExtractEntryData(uintptr_t entryOffset)
 
     uintptr_t extabAddr = 0;
     // prel31 decode point to .ARM.extab
-#ifndef UNITTEST
+#ifndef TEST_ARM_EXIDX
     if (!memory_->ReadPrel31(entryOffset, &extabAddr)) {
         lastErrorData_.code = UNW_ERROR_INVALID_MEMORY;
         return false;
@@ -225,13 +226,13 @@ bool ArmExidx::ExtractEntryData(uintptr_t entryOffset)
     uint8_t tableCount = 0;
     if ((data & ARM_EXIDX_COMPACT) == 0) {
         LOGU("Arm generic personality, data: %x.", data);
-#ifndef UNITTEST
+#ifndef TEST_ARM_EXIDX
         uintptr_t perRoutine;
         if (!memory_->ReadPrel31(extabAddr, &perRoutine)) {
             LOGE("Arm Personality routine error");
             return false;
         }
-#endif // !UNITTEST
+#endif
 
         extabAddr += FOUR_BYTE_OFFSET;
         // Skip four bytes, because dont have unwind data to read

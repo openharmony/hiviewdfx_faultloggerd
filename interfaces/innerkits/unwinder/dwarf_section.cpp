@@ -55,8 +55,8 @@ bool DwarfSection::SearchEntry(uintptr_t pc, struct UnwindTableInfo uti, struct 
     MAYBE_UNUSED auto segbase = uti.segbase;
     uintptr_t fdeCount = uti.tableLen;
     uintptr_t tableData = uti.tableData;
-    LOGU("SearchEntry segbase:%p, tableData:%p, tableLen: %u",
-        (void*)segbase, (void*)tableData, (uint32_t)fdeCount);
+    LOGU("SearchEntry pc: %p segbase:%p, tableData:%p, tableLen: %u",
+        (void*)pc, (void*)segbase, (void*)tableData, (uint32_t)fdeCount);
 
     // do binary search, encode is stored in symbol file, we have no means to find?
     // hard code for 1b DwarfEncoding

@@ -50,6 +50,9 @@ public:
     Unwinder(std::shared_ptr<UnwindAccessors> accessors) : pid_(UNWIND_TYPE_CUSTOMIZE)
     {
         acc_ = std::make_shared<DfxAccessorsCustomize>(accessors);
+#if defined(__aarch64__)
+        pacMask_ = pacMaskDefault_;
+#endif
         Init();
     };
     ~Unwinder() { Clear(); }
@@ -100,6 +103,9 @@ private:
     void DoPcAdjust(uintptr_t& pc);
 
 private:
+#if defined(__aarch64__)
+    MAYBE_UNUSED const uintptr_t pacMaskDefault_ = static_cast<uintptr_t>(0xFFFFFF8000000000);
+#endif
     int32_t pid_ = 0;
     uintptr_t pacMask_ = 0;
     UnwindMode mode_ = DWARF_UNWIND;
