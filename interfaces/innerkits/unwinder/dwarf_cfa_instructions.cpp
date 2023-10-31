@@ -194,6 +194,12 @@ bool DwarfCfaInstructions::Iterate(uintptr_t pc, FrameDescEntry fde,
                 rsState.locs[reg].val = instPtr;
                 instPtr += static_cast<uintptr_t>(memory_->ReadUleb128(instPtr));
                 break;
+#if defined(__aarch64__)
+            case DW_CFA_AARCH64_negate_ra_state:
+                rsState.pseudoReg ^= 0x1;
+                LOGU("DW_CFA_AARCH64_negate_ra_state");
+                break;
+#endif
             case DW_CFA_GNU_negative_offset_extended:
                 reg = memory_->ReadUleb128(instPtr);
                 offset = -(int64_t)memory_->ReadUleb128(instPtr);

@@ -63,7 +63,7 @@ HWTEST_F(UnwinderTest, UnwinderLocalTest001, TestSize.Level2)
         time_t elapsed1 = counter.Elapsed();
         EXPECT_EQ(true, unwRet) << "UnwinderLocalTest001: Unwind:" << unwRet;
         auto frames = unwinder->GetFrames();
-        ASSERT_GT(frames.size(), 0);
+        ASSERT_GT(frames.size(), 1);
         time_t elapsed2 = counter.Elapsed();
         GTEST_LOG_(INFO) << "Elapsed-: " << elapsed1;
         GTEST_LOG_(INFO) << "Elapsed+: " << elapsed2;
@@ -73,6 +73,7 @@ HWTEST_F(UnwinderTest, UnwinderLocalTest001, TestSize.Level2)
 
     int status;
     int ret = wait(&status);
+    ASSERT_EQ(status, 0);
     GTEST_LOG_(INFO) << "Status:" << status << " Result:" << ret;
     GTEST_LOG_(INFO) << "UnwinderLocalTest001: end.";
 }
@@ -103,7 +104,7 @@ HWTEST_F(UnwinderTest, UnwinderLocalTest002, TestSize.Level2)
             time_t elapsed1 = counter.Elapsed();
             EXPECT_EQ(true, unwRet) << "UnwinderLocalTest002: Unwind:" << unwRet;
             auto frames = unwinder->GetFrames();
-            ASSERT_GT(frames.size(), 0);
+            ASSERT_GT(frames.size(), 1);
             time_t elapsed2 = counter.Elapsed();
             GTEST_LOG_(INFO) << "Elapsed-: " << elapsed1;
             GTEST_LOG_(INFO) << "Elapsed+: " << elapsed2;
@@ -116,6 +117,7 @@ HWTEST_F(UnwinderTest, UnwinderLocalTest002, TestSize.Level2)
 
     int status;
     int ret = wait(&status);
+    ASSERT_EQ(status, 0);
     GTEST_LOG_(INFO) << "Status:" << status << " Result:" << ret;
     GTEST_LOG_(INFO) << "UnwinderLocalTest002: end.";
 }
@@ -140,7 +142,7 @@ HWTEST_F(UnwinderTest, UnwinderRemoteTest001, TestSize.Level2)
         time_t elapsed1 = counter.Elapsed();
         EXPECT_EQ(true, unwRet) << "UnwinderRemoteTest001: Unwind:" << unwRet;
         auto frames = unwinder->GetFrames();
-        ASSERT_GT(frames.size(), 0);
+        ASSERT_GT(frames.size(), 1);
         time_t elapsed2 = counter.Elapsed();
         GTEST_LOG_(INFO) << "Elapsed-: " << elapsed1;
         GTEST_LOG_(INFO) << "Elapsed+: " << elapsed2;
@@ -151,6 +153,7 @@ HWTEST_F(UnwinderTest, UnwinderRemoteTest001, TestSize.Level2)
 
     int status;
     int ret = wait(&status);
+    ASSERT_EQ(status, 0);
     GTEST_LOG_(INFO) << "Status:" << status << " Result:" << ret;
     GTEST_LOG_(INFO) << "UnwinderRemoteTest001: end.";
 }
@@ -183,7 +186,7 @@ HWTEST_F(UnwinderTest, UnwinderRemoteTest002, TestSize.Level2)
             time_t elapsed1 = counter.Elapsed();
             EXPECT_EQ(true, unwRet) << "UnwinderRemoteTest002: Unwind:" << unwRet;
             auto frames = unwinder->GetFrames();
-            ASSERT_GT(frames.size(), 0);
+            ASSERT_GT(frames.size(), 1);
             time_t elapsed2 = counter.Elapsed();
             GTEST_LOG_(INFO) << "Elapsed-: " << elapsed1;
             GTEST_LOG_(INFO) << "Elapsed+: " << elapsed2;
@@ -197,6 +200,7 @@ HWTEST_F(UnwinderTest, UnwinderRemoteTest002, TestSize.Level2)
 
     int status;
     int ret = wait(&status);
+    ASSERT_EQ(status, 0);
     GTEST_LOG_(INFO) << "Status:" << status << " Result:" << ret;
     GTEST_LOG_(INFO) << "UnwinderRemoteTest002: end.";
 }
@@ -226,7 +230,7 @@ HWTEST_F(UnwinderTest, UnwindTest001, TestSize.Level2)
         time_t elapsed1 = counter.Elapsed();
         EXPECT_EQ(true, unwRet) << "UnwindTest001: Unwind:" << unwRet;
         auto frames = unwinder->GetFrames();
-        ASSERT_GT(frames.size(), 0);
+        ASSERT_GT(frames.size(), 1);
         time_t elapsed2 = counter.Elapsed();
         GTEST_LOG_(INFO) << "Elapsed-: " << elapsed1;
         GTEST_LOG_(INFO) << "Elapsed+: " << elapsed2;
@@ -237,6 +241,7 @@ HWTEST_F(UnwinderTest, UnwindTest001, TestSize.Level2)
 
     int status;
     int ret = wait(&status);
+    ASSERT_EQ(status, 0);
     GTEST_LOG_(INFO) << "Status:" << status << " Result:" << ret;
     GTEST_LOG_(INFO) << "UnwindTest001: end.";
 }
@@ -271,7 +276,7 @@ HWTEST_F(UnwinderTest, UnwindTest002, TestSize.Level2)
         time_t elapsed2 = counter.Elapsed();
         EXPECT_EQ(true, unwRet) << "UnwindTest002: Unwind:" << unwRet;
         auto frames = unwinder->GetFrames();
-        ASSERT_GT(frames.size(), 0);
+        ASSERT_GT(frames.size(), 1);
         GTEST_LOG_(INFO) << "Elapsed-: " << elapsed1;
         GTEST_LOG_(INFO) << "Elapsed+: " << elapsed2;
         GTEST_LOG_(INFO) << "frames:\n" << Unwinder::GetFramesStr(frames);
@@ -280,6 +285,7 @@ HWTEST_F(UnwinderTest, UnwindTest002, TestSize.Level2)
 
     int status;
     int ret = wait(&status);
+    ASSERT_EQ(status, 0);
     GTEST_LOG_(INFO) << "Status:" << status << " Result:" << ret;
     GTEST_LOG_(INFO) << "UnwindTest002: end.";
 }
@@ -310,13 +316,14 @@ HWTEST_F(UnwinderTest, UnwindTest003, TestSize.Level2)
         std::vector<DfxFrame> frames;
         std::shared_ptr<DfxMaps> maps = unwinder->GetMaps();
         unwinder->GetFramesByPcs(frames, pcs, maps);
-        ASSERT_GT(frames.size(), 0);
+        ASSERT_GT(frames.size(), 1);
         GTEST_LOG_(INFO) << "frames:\n" << Unwinder::GetFramesStr(frames);
         _exit(0);
     }
 
     int status;
     int ret = wait(&status);
+    ASSERT_EQ(status, 0);
     GTEST_LOG_(INFO) << "Status:" << status << " Result:" << ret;
     GTEST_LOG_(INFO) << "UnwindTest003: end.";
 }
@@ -361,6 +368,7 @@ HWTEST_F(UnwinderTest, StepTest001, TestSize.Level2)
 
     int status;
     int ret = wait(&status);
+    ASSERT_EQ(status, 0);
     GTEST_LOG_(INFO) << "Status:" << status << " Result:" << ret;
     GTEST_LOG_(INFO) << "StepTest001: end.";
 }
@@ -404,6 +412,7 @@ HWTEST_F(UnwinderTest, StepTest002, TestSize.Level2)
 
     int status;
     int ret = wait(&status);
+    ASSERT_EQ(status, 0);
     GTEST_LOG_(INFO) << "Status:" << status << " Result:" << ret;
     GTEST_LOG_(INFO) << "StepTest002: end.";
 }
@@ -431,21 +440,27 @@ HWTEST_F(UnwinderTest, StepTest003, TestSize.Level2)
         context.pid = pid;
         context.regs = regs;
         ElapsedTime counter;
+        int idx = 0;
         uintptr_t pc, fp;
-        pc = regs->GetPc();
-        fp = regs->GetFp();
-        time_t elapsed1 = counter.Elapsed();
-        unwRet = unwinder->FpStep(fp, pc, &context);
-        time_t elapsed2 = counter.Elapsed();
-        ASSERT_TRUE(unwRet) << "StepTest003: Unwind:" << unwRet;
-        GTEST_LOG_(INFO) << "Elapsed-: " << elapsed1;
-        GTEST_LOG_(INFO) << "Elapsed+: " << elapsed2;
+        while (true) {
+            pc = regs->GetPc();
+            fp = regs->GetFp();
+            if (!unwinder->FpStep(fp, pc, &context) || (pc == 0)) {
+                break;
+            }
+            idx++;
+        };
         DfxPtrace::Detach(pid);
+        ASSERT_GT(idx, 1);
+        GTEST_LOG_(INFO) << "idx: " << idx;
+        time_t elapsed = counter.Elapsed();
+        GTEST_LOG_(INFO) << "Elapsed: " << elapsed;
         _exit(0);
     }
 
     int status;
     int ret = wait(&status);
+    ASSERT_EQ(status, 0);
     GTEST_LOG_(INFO) << "Status:" << status << " Result:" << ret;
     GTEST_LOG_(INFO) << "StepTest003: end.";
 }
@@ -475,20 +490,26 @@ HWTEST_F(UnwinderTest, StepTest004, TestSize.Level2)
         context.stackBottom = stackBottom;
         context.stackTop = stackTop;
         unwinder->SetRegs(regs);
+        int idx = 0;
         uintptr_t pc, fp;
-        pc = regs->GetPc();
-        fp = regs->GetFp();
-        time_t elapsed1 = counter.Elapsed();
-        bool unwRet = unwinder->FpStep(fp, pc, &context);
-        time_t elapsed2 = counter.Elapsed();
-        ASSERT_TRUE(unwRet) << "StepTest004: Unwind:" << unwRet;
-        GTEST_LOG_(INFO) << "Elapsed-: " << elapsed1;
-        GTEST_LOG_(INFO) << "Elapsed+: " << elapsed2;
+        while (true) {
+            pc = regs->GetPc();
+            fp = regs->GetFp();
+            if (!unwinder->FpStep(fp, pc, &context) || (pc == 0)) {
+                break;
+            }
+            idx++;
+        };
+        ASSERT_GT(idx, 1);
+        GTEST_LOG_(INFO) << "idx: " << idx;
+        time_t elapsed = counter.Elapsed();
+        GTEST_LOG_(INFO) << "Elapsed: " << elapsed;
         _exit(0);
     }
 
     int status;
     int ret = wait(&status);
+    ASSERT_EQ(status, 0);
     GTEST_LOG_(INFO) << "Status:" << status << " Result:" << ret;
     GTEST_LOG_(INFO) << "StepTest004: end.";
 }

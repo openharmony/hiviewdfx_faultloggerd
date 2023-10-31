@@ -58,7 +58,7 @@ size_t DfxMemory::Read(uintptr_t& addr, void* val, size_t size, bool incre)
     uintptr_t tmpAddr = addr;
     uint64_t maxSize;
     if (__builtin_add_overflow(tmpAddr, size, &maxSize)) {
-        LOGE("size: %d", size);
+        LOGE("size(%zu) overflow", size);
         return 0;
     }
 

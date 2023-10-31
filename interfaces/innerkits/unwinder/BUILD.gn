@@ -128,7 +128,7 @@ if (defined(ohos_lite)) {
     }
   }
 
-  config("dfx_unwinder_test_config") {
+  config("dfx_unwinder_src_config") {
     defines = [ "DFX_LOG_UNWIND" ]
   }
 
@@ -189,10 +189,10 @@ if (defined(ohos_lite)) {
     subsystem_name = "hiviewdfx"
   }
 
-  ohos_static_library("libunwinder_test") {
+  ohos_source_set("libunwinder_src") {
     public_configs = [
       ":dfx_unwinder_config",
-      ":dfx_unwinder_test_config",
+      ":dfx_unwinder_src_config",
     ]
 
     sources = dfx_unwinder_sources
