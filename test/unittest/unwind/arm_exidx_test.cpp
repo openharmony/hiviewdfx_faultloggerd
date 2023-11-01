@@ -69,6 +69,7 @@ HWTEST_F(ArmExidxTest, ArmExidxTest001, TestSize.Level2)
     // cant unwind
     ASSERT_FALSE(exidx.ExtractEntryData(entryOffset));
     ASSERT_EQ(exidx.GetLastErrorCode(), UNW_ERROR_CANT_UNWIND);
+    ASSERT_EQ(exidx.GetLastErrorAddr(), entryOffset);
     GTEST_LOG_(INFO) << "ArmExidxTest001: end.";
 }
 /**
@@ -209,6 +210,7 @@ HWTEST_F(ArmExidxTest, ArmExidxTest006, TestSize.Level2)
 
     ASSERT_TRUE(exidx.Step(entryOffset, rs));
     ASSERT_EQ(exidx.GetLastErrorCode(), UNW_ERROR_CANT_UNWIND);
+    ASSERT_EQ(exidx.GetLastErrorAddr(), entryOffset);
     GTEST_LOG_(INFO) << "ArmExidxTest006: end.";
 }
 

@@ -151,3 +151,7 @@ f7d35000-f7d36000 rw-p 00110000 b3:07 1899                               /system
 f7d36000-f7d42000 rw-p 00000000 00:00 0                                  [anon:ld-musl-arm.so.1.bss]
 ff860000-ff881000 rw-p 00000000 00:00 0                                  [stack]
 ffff0000-ffff1000 r-xp 00000000 00:00 0                                  [vectors]
+ffff1000-ffff2000 r--p 00000000 b3:07 1899                               [anon:ArkTS Code]
+ffff2000-ffff3000 r-xp 00054000 b3:07 1899                               [anon:ArkTS Code]
+ffff3000-ffff4000 r--p 0010f000 b3:07 1899                               [anon:ArkTS Code]
+ffff4000-ffff5000 rw-p 00110000 b3:07 1899                               [anon:ArkTS Code]

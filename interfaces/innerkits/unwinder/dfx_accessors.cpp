@@ -49,6 +49,9 @@ bool DfxAccessorsLocal::IsValidFrame(uintptr_t addr, uintptr_t stackBottom, uint
 
 int DfxAccessorsLocal::AccessMem(uintptr_t addr, uintptr_t *val, void *arg)
 {
+    if (val == nullptr) {
+        return UNW_ERROR_INVALID_MEMORY;
+    }
     UnwindContext* ctx = reinterpret_cast<UnwindContext *>(arg);
     if ((ctx != nullptr) && (ctx->stackCheck == true) && (!IsValidFrame(addr, ctx->stackBottom, ctx->stackTop))) {
         LOGE("Failed to access addr: %llx", (uint64_t)addr);

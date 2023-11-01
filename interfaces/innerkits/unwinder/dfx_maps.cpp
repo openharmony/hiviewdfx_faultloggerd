@@ -248,7 +248,7 @@ bool DfxMaps::IsArkExecutedMap(uintptr_t addr)
         return false;
     }
 
-    if ((map->flag & PROT_EXEC) == 0) {
+    if ((map->prots & PROT_EXEC) == 0) {
         LOGU("current map is not executable.");
         return false;
     }
