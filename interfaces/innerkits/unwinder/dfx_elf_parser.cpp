@@ -155,6 +155,16 @@ bool ElfParser::ParseProgramHeaders(const EhdrType& ehdr)
     return true;
 }
 
+void ElfParser::EnableMiniDebugInfo()
+{
+    enableMiniDebugInfo_ = true;
+}
+
+std::shared_ptr<MiniDebugInfo> ElfParser::GetMiniDebugInfo()
+{
+    return minidebugInfo_;
+}
+
 template <typename EhdrType, typename ShdrType>
 bool ElfParser::ParseSectionHeaders(const EhdrType& ehdr)
 {
@@ -193,6 +203,14 @@ bool ElfParser::ParseSectionHeaders(const EhdrType& ehdr)
         if (!GetSectionNameByIndex(secName, shdr.sh_name)) {
             LOGE("Failed to get section name");
             continue;
+        }
+
+        if (enableMiniDebugInfo_) {
+            if (shdr.sh_size != 0 && secName == GNU_DEBUGDATA) {
+                minidebugInfo_ = std::make_shared<MiniDebugInfo>();
+                minidebugInfo_->offset = shdr.sh_offset;
+                minidebugInfo_->size = shdr.sh_size;
+            }
         }
 
         ShdrInfo shdrInfo;

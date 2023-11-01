@@ -97,10 +97,8 @@ std::string DfxSymbols::Demangle(const std::string buf)
 
     std::string funcName;
     const char *bufStr = buf.c_str();
-    bool isLinkerName = false;
     if (StartsWith(buf, LINKER_PREFIX)) {
         bufStr += LINKER_PREFIX.size();
-        isLinkerName = true;
         funcName += LINKER_PREFIX_NAME;
     }
 

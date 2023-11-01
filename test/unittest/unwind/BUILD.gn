@@ -22,6 +22,7 @@ ohos_unittest("test_unwind") {
   include_dirs = [
     "$faultloggerd_interfaces_path/common",
     "$faultloggerd_path/test/unittest/unwind/include",
+    "//third_party/lzma/C",
   ]
   configs = [ "$faultloggerd_common_path/build:coverage_flags" ]
   defines = [ "DFX_LOG_UNWIND" ]
@@ -33,6 +34,7 @@ ohos_unittest("test_unwind") {
     "regs_test.cpp",
     "symbols_test.cpp",
     "unwinder_test.cpp",
+    "xz_util_test.cpp",
   ]
   deps = [
     "$faultloggerd_common_path/dfxlog:dfx_hilog",
