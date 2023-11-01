@@ -135,6 +135,10 @@ bool Unwinder::Unwind(void *ctx, size_t maxFrameNum, size_t skipFrameNum)
     size_t curIndex = 0;
     uintptr_t pc, sp, stepPc;
     do {
+        if (pid_ == UNWIND_TYPE_LOCAL) {
+            UnwindContext* uctx = reinterpret_cast<UnwindContext *>(ctx);
+            uctx->stackCheck = false;
+        }
         // skip 0 stack, as this is dump catcher. Caller don't need it.
         if (index < skipFrameNum) {
             index++;
@@ -223,7 +227,7 @@ bool Unwinder::Step(uintptr_t& pc, uintptr_t& sp, void *ctx)
         // 2. find unwind table and entry
         UnwindTableInfo uti;
         if ((lastErrorData_.code = acc_->FindUnwindTable(pc, uti, ctx)) != UNW_ERROR_NONE) {
-            LOGE("Failed to find unwind table? errorCode: %d", lastErrorData_.code);
+            LOGE("Failed to find unwind table for pc: %p? errorCode: %d", (void*)pc, lastErrorData_.code);
             break;
         }
 
@@ -234,13 +238,14 @@ bool Unwinder::Step(uintptr_t& pc, uintptr_t& sp, void *ctx)
         if (!ret && uti.format == UNW_INFO_FORMAT_ARM_EXIDX) {
             if (!armExidx_->SearchEntry(pc, uti, uei)) {
                 lastErrorData_.code = armExidx_->GetLastErrorCode();
-                LOGE("Failed to search unwind entry? errorCode: %d", lastErrorData_.code);
+                lastErrorData_.addr = armExidx_->GetLastErrorAddr();
+                LOGE("Failed to search unwind entry?");
                 break;
             }
             if (!armExidx_->Step((uintptr_t)uei.unwindInfo, rs)) {
                 lastErrorData_.code = armExidx_->GetLastErrorCode();
                 lastErrorData_.addr = armExidx_->GetLastErrorAddr();
-                LOGU("Step exidx section error, errorCode: %d", lastErrorData_.code);
+                LOGU("Step exidx section error?");
             } else {
                 ret = true;
             }
@@ -250,14 +255,15 @@ bool Unwinder::Step(uintptr_t& pc, uintptr_t& sp, void *ctx)
             if ((uti.isLinear == false && !dwarfSection_->SearchEntry(pc, uti, uei)) ||
                 (uti.isLinear == true && !dwarfSection_->LinearSearchEntry(pc, uti, uei))) {
                 lastErrorData_.code = dwarfSection_->GetLastErrorCode();
-                LOGE("Failed to search unwind entry? errorCode: %d", lastErrorData_.code);
+                lastErrorData_.addr = dwarfSection_->GetLastErrorAddr();
+                LOGU("Failed to search unwind entry?");
                 break;
             }
             memory_->SetDataOffset(uti.segbase);
             if (!dwarfSection_->Step((uintptr_t)uei.unwindInfo, regs_, rs)) {
                 lastErrorData_.code = dwarfSection_->GetLastErrorCode();
                 lastErrorData_.addr = dwarfSection_->GetLastErrorAddr();
-                LOGU("Step dwarf section error, errorCode: %d", lastErrorData_.code);
+                LOGU("Step dwarf section error?");
             } else {
                 ret = true;
             }
@@ -277,10 +283,12 @@ bool Unwinder::Step(uintptr_t& pc, uintptr_t& sp, void *ctx)
             uctx->stackCheck = true;
         }
         ret = Apply(regs_, rs);
+    } else {
+        LOGU("errorCode: %d, addr: %p", lastErrorData_.code, (void *)lastErrorData_.addr);
     }
 
 #if defined(__aarch64__)
-    if (!ret && (pid_ == UNWIND_TYPE_LOCAL)) {
+    if (!ret) {
         uintptr_t fp = regs_->GetFp();
         ret = FpStep(fp, pc, ctx);
     }
@@ -298,14 +306,19 @@ bool Unwinder::Step(uintptr_t& pc, uintptr_t& sp, void *ctx)
 #if defined(__aarch64__)
 bool Unwinder::FpStep(uintptr_t& fp, uintptr_t& pc, void *ctx)
 {
-    UnwindContext* uctx = reinterpret_cast<UnwindContext *>(ctx);
     LOGU("++++++fp: %llx, pc: %llx", (uint64_t)fp, (uint64_t)pc);
+    memory_->SetCtx(ctx);
+    if (pid_ == UNWIND_TYPE_LOCAL) {
+        UnwindContext* uctx = reinterpret_cast<UnwindContext *>(ctx);
+        uctx->stackCheck = true;
+    }
     uintptr_t prevFp = fp;
-    if (DfxAccessorsLocal::IsValidFrame(prevFp, uctx->stackBottom, uctx->stackTop)) {
-        fp = *reinterpret_cast<uintptr_t*>(prevFp);
-        pc = *reinterpret_cast<uintptr_t*>(prevFp + sizeof(uintptr_t));
+    uintptr_t ptr = fp;
+    if (memory_->ReadUptr(ptr, &fp, true) &&
+        memory_->ReadUptr(ptr, &pc, false)) {
         regs_->SetReg(REG_FP, &fp);
         regs_->SetReg(REG_PC, &pc);
+        regs_->SetReg(REG_SP, &prevFp);
         LOGU("------fp: %llx, pc: %llx", (uint64_t)fp, (uint64_t)pc);
         return true;
     }
@@ -319,16 +332,38 @@ bool Unwinder::Apply(std::shared_ptr<DfxRegs> regs, std::shared_ptr<RegLocState>
     if (rs == nullptr || regs == nullptr) {
         return false;
     }
-    ret = DfxInstructions::Apply(*(regs.get()), memory_, *(rs.get()));
+    ret = DfxInstructions::Apply(memory_, *(regs.get()), *(rs.get()));
     if (!ret) {
         LOGE("Failed to apply rs");
     }
 #if defined(__arm__) || defined(__aarch64__)
     if (!rs->isPcSet) {
-        regs->SetReg(REG_PC, regs->GetReg(REG_LR));
+        regs_->SetReg(REG_PC, regs->GetReg(REG_LR));
+    }
+#endif
+#if defined(__aarch64__)
+    if (rs->pseudoReg != 0) {
+        regs->SetPc(StripPac(regs_->GetPc(), pacMask_));
     }
 #endif
     return ret;
+}
+
+uintptr_t Unwinder::StripPac(uintptr_t inAddr, uintptr_t pacMask)
+{
+    uintptr_t outAddr = inAddr;
+#if defined(__aarch64__)
+    if (outAddr != 0) {
+        if (pacMask != 0) {
+            outAddr &= ~pacMask;
+        } else {
+            register uint64_t x30 __asm("x30") = inAddr;
+            asm("hint 0x7" : "+r"(x30));
+            outAddr = x30;
+        }
+    }
+#endif
+    return outAddr;
 }
 
 void Unwinder::FillFrames(std::vector<DfxFrame>& frames)
@@ -387,11 +422,11 @@ void Unwinder::GetFramesByPcs(std::vector<DfxFrame>& frames, std::vector<uintptr
     for (size_t i = 0; i < pcs.size(); ++i) {
         DfxFrame frame;
         frame.index = i;
-        uintptr_t pc = static_cast<uint64_t>(pcs[i]);
-        if ((map != nullptr) && map->Contain(static_cast<uint64_t>(pc))) {
+        frame.pc = static_cast<uint64_t>(pcs[i]);
+        if ((map != nullptr) && map->Contain(frame.pc)) {
             LOGU("map had matched");
         } else {
-            if (!maps->FindMapByAddr(map, pc) || (map == nullptr)) {
+            if (!maps->FindMapByAddr(map, pcs[i]) || (map == nullptr)) {
                 LOGE("map is null");
                 continue;
             }

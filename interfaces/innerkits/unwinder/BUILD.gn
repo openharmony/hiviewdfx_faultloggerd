@@ -123,12 +123,14 @@ if (defined(ohos_lite)) {
       "include",
       "$faultloggerd_common_path/dfxutil",
       "$faultloggerd_interfaces_path/common",
+      "$faultloggerd_path/interfaces/rust/rustc_demangle",
     ]
 
     defines = [
       "is_ohos=${is_ohos}",
       "is_linux=${is_linux}",
       "is_mingw=${is_mingw}",
+      "RUSTC_DEMANGLE",
     ]
 
     if (libunwinder_debug) {
@@ -136,11 +138,8 @@ if (defined(ohos_lite)) {
     }
   }
 
-  config("dfx_unwinder_test_config") {
-    defines = [
-      "UNITTEST",
-      "DFX_LOG_UNWIND",
-    ]
+  config("dfx_unwinder_src_config") {
+    defines = [ "DFX_LOG_UNWIND" ]
   }
 
   config("lzma_config") {
@@ -162,6 +161,7 @@ if (defined(ohos_lite)) {
     deps = [
       "$faultloggerd_common_path/dfxlog:dfx_hilog",
       "$faultloggerd_common_path/dfxutil:dfx_util",
+      "$faultloggerd_path/interfaces/rust/rustc_demangle:rustc_demangle",
       "//third_party/bounds_checking_function:libsec_shared",
     ]
 
@@ -197,6 +197,7 @@ if (defined(ohos_lite)) {
     deps = [
       "$faultloggerd_common_path/dfxlog:dfx_hilog",
       "$faultloggerd_common_path/dfxutil:dfx_util",
+      "$faultloggerd_path/interfaces/rust/rustc_demangle:rustc_demangle",
       "//third_party/bounds_checking_function:libsec_shared",
     ]
 
@@ -209,10 +210,10 @@ if (defined(ohos_lite)) {
     subsystem_name = "hiviewdfx"
   }
 
-  ohos_static_library("libunwinder_test") {
+  ohos_source_set("libunwinder_src") {
     public_configs = [
       ":dfx_unwinder_config",
-      ":dfx_unwinder_test_config",
+      ":dfx_unwinder_src_config",
       ":lzma_config",
     ]
 
@@ -224,6 +225,7 @@ if (defined(ohos_lite)) {
     deps = [
       "$faultloggerd_common_path/dfxlog:dfx_hilog",
       "$faultloggerd_common_path/dfxutil:dfx_util",
+      "$faultloggerd_path/interfaces/rust/rustc_demangle:rustc_demangle",
       "//third_party/bounds_checking_function:libsec_shared",
     ]
 

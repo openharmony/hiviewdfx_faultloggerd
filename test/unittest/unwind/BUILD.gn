@@ -39,12 +39,35 @@ ohos_unittest("test_unwind") {
   deps = [
     "$faultloggerd_common_path/dfxlog:dfx_hilog",
     "$faultloggerd_common_path/dfxutil:dfx_util",
-    "$faultloggerd_interfaces_path/innerkits/unwinder:libunwinder_test",
+    "$faultloggerd_interfaces_path/innerkits/unwinder:libunwinder_src",
     "//third_party/bounds_checking_function:libsec_shared",
     "//third_party/googletest:gtest_main",
   ]
   resource_config_file = "$faultloggerd_path/test/resource/ohos_test.xml"
+  external_deps = [
+    "c_utils:utils",
+    "hilog:libhilog",
+  ]
+}
 
+ohos_unittest("test_unwind_pac") {
+  module_out_path = module_output_path
+  visibility = [ "*:*" ]
+  include_dirs = [
+    "$faultloggerd_interfaces_path/common",
+    "$faultloggerd_path/test/unittest/unwind/include",
+  ]
+  configs = [ "$faultloggerd_common_path/build:coverage_flags" ]
+  defines = [ "DFX_LOG_UNWIND" ]
+  sources = [ "unwind_pac_test.cpp" ]
+  deps = [
+    "$faultloggerd_common_path/dfxlog:dfx_hilog",
+    "$faultloggerd_common_path/dfxutil:dfx_util",
+    "$faultloggerd_interfaces_path/innerkits/unwinder:libunwinder_src",
+    "//third_party/bounds_checking_function:libsec_shared",
+    "//third_party/googletest:gtest_main",
+  ]
+  branch_protector_ret = "pac_ret"
   external_deps = [
     "c_utils:utils",
     "hilog:libhilog",
@@ -61,14 +84,14 @@ ohos_unittest("test_exidx") {
   configs = [ "$faultloggerd_common_path/build:coverage_flags" ]
   defines = [
     "DFX_LOG_UNWIND",
-    "UNITTEST",
     "is_ohos=${is_ohos}",
+    "TEST_ARM_EXIDX",
   ]
   sources = [ "arm_exidx_test.cpp" ]
   deps = [
     "$faultloggerd_common_path/dfxlog:dfx_hilog",
     "$faultloggerd_common_path/dfxutil:dfx_util",
-    "$faultloggerd_interfaces_path/innerkits/unwinder:libunwinder_test",
+    "$faultloggerd_interfaces_path/innerkits/unwinder:libunwinder_src",
     "//third_party/bounds_checking_function:libsec_shared",
     "//third_party/googletest:gtest_main",
   ]
@@ -81,10 +104,7 @@ ohos_unittest("test_exidx") {
 ohos_unittest("test_dwarf") {
   module_out_path = module_output_path
   visibility = [ "*:*" ]
-  defines = [
-    "DFX_LOG_UNWIND",
-    "UNITTEST",
-  ]
+  defines = [ "DFX_LOG_UNWIND" ]
   include_dirs = [
     "$faultloggerd_interfaces_path/common",
     "$faultloggerd_interfaces_path/innerkits/unwinder/include",
@@ -95,7 +115,7 @@ ohos_unittest("test_dwarf") {
   deps = [
     "$faultloggerd_common_path/dfxlog:dfx_hilog",
     "$faultloggerd_common_path/dfxutil:dfx_util",
-    "$faultloggerd_interfaces_path/innerkits/unwinder:libunwinder_test",
+    "$faultloggerd_interfaces_path/innerkits/unwinder:libunwinder_src",
     "//third_party/bounds_checking_function:libsec_shared",
     "//third_party/googletest:gtest_main",
   ]

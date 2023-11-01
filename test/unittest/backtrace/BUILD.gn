@@ -35,6 +35,7 @@ ohos_unittest("backtrace_utils_test") {
   if (use_musl && use_jemalloc && use_jemalloc_dfx_intf) {
     defines = [ "USE_JEMALLOC_DFX_INTF" ]
   }
+  branch_protector_ret = "pac_ret"
   external_deps = [
     "c_utils:utils",
     "hilog:libhilog",
@@ -59,7 +60,7 @@ ohos_unittest("backtrace_local_test") {
     "//third_party/googletest:gtest_main",
     "//third_party/libunwind:libunwind",
   ]
-
+  branch_protector_ret = "pac_ret"
   external_deps = [
     "c_utils:utils",
     "hilog:libhilog",

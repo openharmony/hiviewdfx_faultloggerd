@@ -55,37 +55,57 @@ bool DwarfSection::SearchEntry(uintptr_t pc, struct UnwindTableInfo uti, struct 
     MAYBE_UNUSED auto segbase = uti.segbase;
     uintptr_t fdeCount = uti.tableLen;
     uintptr_t tableData = uti.tableData;
-    LOGU("SearchEntry segbase:%p, tableData:%p, tableLen: %u",
-        (void*)segbase, (void*)tableData, (uint32_t)fdeCount);
+    LOGU("SearchEntry pc: %p segbase:%p, tableData:%p, tableLen: %u",
+        (void*)pc, (void*)segbase, (void*)tableData, (uint32_t)fdeCount);
 
     // do binary search, encode is stored in symbol file, we have no means to find?
     // hard code for 1b DwarfEncoding
-    uintptr_t entry;
+    uintptr_t ptr = 0;
+    uintptr_t entry = 0;
     uintptr_t low = 0;
+    uintptr_t high = fdeCount;
     DwarfTableEntry dwarfTableEntry;
-    for (uintptr_t len = fdeCount; len > 1;) {
-        uintptr_t cur = low + (len / 2); // 2 : binary search divided parameter
-        entry = (uintptr_t) tableData + cur * sizeof(DwarfTableEntry);
-        memory_->ReadS32(entry, &dwarfTableEntry.startPc, true);
+    while (low < high) {
+        uintptr_t cur = (low + high) / 2; // 2 : binary search divided parameter
+        ptr = (uintptr_t) tableData + cur * sizeof(DwarfTableEntry);
+        if (!memory_->ReadS32(ptr, &dwarfTableEntry.startPc, true)) {
+            lastErrorData_.addr = ptr;
+            lastErrorData_.code = UNW_ERROR_ILLEGAL_VALUE;
+            return false;
+        }
         uintptr_t startPc = static_cast<uintptr_t>(dwarfTableEntry.startPc + segbase);
         if (startPc == pc) {
-            low = cur;
+            if (!memory_->ReadS32(ptr, &dwarfTableEntry.fdeOffset, true)) {
+                lastErrorData_.addr = ptr;
+                lastErrorData_.code = UNW_ERROR_ILLEGAL_VALUE;
+                return false;
+            }
+            entry = static_cast<uintptr_t>(dwarfTableEntry.fdeOffset + segbase);
             break;
-        } else if (startPc < pc) {
-            low = cur;
-            len -= (len / 2); // 2 : binary search divided parameter
+        } else if (pc < startPc) {
+            high = cur;
         } else {
-            len /= 2; // 2 : binary search divided parameter
+            low = cur + 1;
         }
     }
 
-    entry = (uintptr_t) tableData + low * sizeof(DwarfTableEntry);
-    entry += 4; // 4 : four bytes
+    if (entry == 0) {
+        if (high != 0) {
+            ptr = (uintptr_t) tableData + (high - 1) * sizeof(DwarfTableEntry);
+            ptr += 4; // 4 : four bytes
+            if (!memory_->ReadS32(ptr, &dwarfTableEntry.fdeOffset, true)) {
+                lastErrorData_.addr = ptr;
+                lastErrorData_.code = UNW_ERROR_ILLEGAL_VALUE;
+                return false;
+            }
+            entry = static_cast<uintptr_t>(dwarfTableEntry.fdeOffset + segbase);
+        } else {
+            return false;
+        }
+    }
 
-    memory_->ReadS32(entry, &dwarfTableEntry.fdeOffset, true);
-    uintptr_t fdeAddr = static_cast<uintptr_t>(dwarfTableEntry.fdeOffset + segbase);
-    LOGU("Fde entry addr: %llx", (uint64_t)fdeAddr);
-    uei.unwindInfo = (void *)(fdeAddr);
+    LOGU("Fde entry addr: %llx", (uint64_t)entry);
+    uei.unwindInfo = (void *)(entry);
     uei.format = UNW_INFO_FORMAT_REMOTE_TABLE;
     return true;
 }

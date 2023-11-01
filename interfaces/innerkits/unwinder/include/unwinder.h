@@ -50,6 +50,9 @@ public:
     Unwinder(std::shared_ptr<UnwindAccessors> accessors) : pid_(UNWIND_TYPE_CUSTOMIZE)
     {
         acc_ = std::make_shared<DfxAccessorsCustomize>(accessors);
+#if defined(__aarch64__)
+        pacMask_ = pacMaskDefault_;
+#endif
         Init();
     };
     ~Unwinder() { Clear(); }
@@ -59,6 +62,7 @@ public:
 
     inline void SetTargetPid(int pid) { pid_ = pid; }
     inline int32_t GetTargetPid() { return pid_; }
+    inline void SetPacMask(uintptr_t mask) { pacMask_ = mask; }
 
     inline void SetRegs(std::shared_ptr<DfxRegs> regs) { regs_ = regs; }
     inline const std::shared_ptr<DfxRegs>& GetRegs() { return regs_; }
@@ -91,6 +95,7 @@ public:
 
 private:
     bool Apply(std::shared_ptr<DfxRegs> regs, std::shared_ptr<RegLocState> rs);
+    static uintptr_t StripPac(uintptr_t inAddr, uintptr_t pacMask);
 
 private:
     void Init();
@@ -98,7 +103,11 @@ private:
     void DoPcAdjust(uintptr_t& pc);
 
 private:
+#if defined(__aarch64__)
+    MAYBE_UNUSED const uintptr_t pacMaskDefault_ = static_cast<uintptr_t>(0xFFFFFF8000000000);
+#endif
     int32_t pid_ = 0;
+    uintptr_t pacMask_ = 0;
     UnwindMode mode_ = DWARF_UNWIND;
     std::shared_ptr<DfxAccessors> acc_;
     std::shared_ptr<DfxMemory> memory_;

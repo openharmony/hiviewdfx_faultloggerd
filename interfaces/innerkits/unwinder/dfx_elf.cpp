@@ -76,6 +76,7 @@ bool DfxElf::Init(const std::string& file)
     bool ret = false;
     if (mmap_ == nullptr) {
         mmap_ = std::make_shared<DfxMmap>();
+        LOGU("file: %s", file.c_str());
         ret = mmap_->Init(file);
     }
     uti_.format = -1;

@@ -326,7 +326,7 @@ static void ExitIfSandboxPid(int sig)
     }
     // real init will not handle crash signal,
     // crash in pid namespace may not exit even if rethrow the signal, use exit instead
-    if (syscall(SYS_getpid) == 1) {
+    if (syscall(SYS_getpid) == 1 && syscall(SYS_getuid) != 0) {
         DFXLOG_ERROR("Sandbox process is about to exit with signal %d.", sig);
         _exit(sig);
     }
