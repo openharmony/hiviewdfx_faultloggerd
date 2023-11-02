@@ -31,10 +31,10 @@ namespace OHOS {
 namespace HiviewDFX {
 #undef LOG_DOMAIN
 #undef LOG_TAG
-#define LOG_TAG "DfxUnwinderPacTest"
+#define LOG_TAG "DfxUnwinderSeparateCodeTest"
 #define LOG_DOMAIN 0xD002D11
 
-class UnwinderPacTest : public testing::Test {
+class UnwinderSeparateCodeTest : public testing::Test {
 public:
     static void SetUpTestCase() {}
     static void TearDownTestCase() {}
@@ -43,27 +43,27 @@ public:
 };
 
 /**
- * @tc.name: UnwinderPacTest001
- * @tc.desc: test unwinder unwind interface with pac
+ * @tc.name: UnwinderSeparateCodeTest001
+ * @tc.desc: test unwinder unwind interface with separate code
  * @tc.type: FUNC
  */
-HWTEST_F(UnwinderPacTest, UnwinderPacTest001, TestSize.Level2)
+HWTEST_F(UnwinderSeparateCodeTest, UnwinderSeparateCodeTest001, TestSize.Level2)
 {
-    GTEST_LOG_(INFO) << "UnwinderPacTest001: start.";
+    GTEST_LOG_(INFO) << "UnwinderSeparateCodeTest001: start.";
     static pid_t pid = getpid();
     pid_t child = fork();
     if (child == 0) {
         GTEST_LOG_(INFO) << "pid: " << pid << ", ppid:" << getppid();
         auto unwinder = std::make_shared<Unwinder>(pid);
         bool unwRet = DfxPtrace::Attach(pid);
-        EXPECT_EQ(true, unwRet) << "UnwinderPacTest001: Attach:" << unwRet;
+        EXPECT_EQ(true, unwRet) << "UnwinderSeparateCodeTest001: Attach:" << unwRet;
         auto regs = DfxRegs::CreateRemoteRegs(pid);
         unwinder->SetRegs(regs);
         UnwindContext context;
         context.pid = pid;
         context.regs = regs;
         unwRet = unwinder->Unwind(&context);
-        EXPECT_EQ(true, unwRet) << "UnwinderPacTest001: Unwind:" << unwRet;
+        EXPECT_EQ(true, unwRet) << "UnwinderSeparateCodeTest001: Unwind:" << unwRet;
         auto frames = unwinder->GetFrames();
         ASSERT_GT(frames.size(), 1);
         GTEST_LOG_(INFO) << "frames:\n" << Unwinder::GetFramesStr(frames);
@@ -75,17 +75,17 @@ HWTEST_F(UnwinderPacTest, UnwinderPacTest001, TestSize.Level2)
     int ret = wait(&status);
     ASSERT_EQ(status, 0);
     GTEST_LOG_(INFO) << "Status:" << status << " Result:" << ret;
-    GTEST_LOG_(INFO) << "UnwinderPacTest001: end.";
+    GTEST_LOG_(INFO) << "UnwinderSeparateCodeTest001: end.";
 }
 
 /**
- * @tc.name: UnwinderPacTest002
- * @tc.desc: test unwinder FpStep interface with pac
+ * @tc.name: UnwinderSeparateCodeTest002
+ * @tc.desc: test unwinder FpStep interface with separate code
  * @tc.type: FUNC
  */
-HWTEST_F(UnwinderPacTest, UnwinderPacTest002, TestSize.Level2)
+HWTEST_F(UnwinderSeparateCodeTest, UnwinderSeparateCodeTest002, TestSize.Level2)
 {
-    GTEST_LOG_(INFO) << "UnwinderPacTest002: start.";
+    GTEST_LOG_(INFO) << "UnwinderSeparateCodeTest002: start.";
 #if defined(__aarch64__)
     static pid_t pid = getpid();
     pid_t child = fork();
@@ -93,7 +93,7 @@ HWTEST_F(UnwinderPacTest, UnwinderPacTest002, TestSize.Level2)
         GTEST_LOG_(INFO) << "pid: " << pid << ", ppid:" << getppid();
         auto unwinder = std::make_shared<Unwinder>(pid);
         bool unwRet = DfxPtrace::Attach(pid);
-        EXPECT_EQ(true, unwRet) << "UnwinderPacTest002: Attach:" << unwRet;
+        EXPECT_EQ(true, unwRet) << "UnwinderSeparateCodeTest002: Attach:" << unwRet;
         auto regs = DfxRegs::CreateRemoteRegs(pid);
         unwinder->SetRegs(regs);
         UnwindContext context;
@@ -120,7 +120,7 @@ HWTEST_F(UnwinderPacTest, UnwinderPacTest002, TestSize.Level2)
     ASSERT_EQ(status, 0);
     GTEST_LOG_(INFO) << "Status:" << status << " Result:" << ret;
 #endif
-    GTEST_LOG_(INFO) << "UnwinderPacTest002: end.";
+    GTEST_LOG_(INFO) << "UnwinderSeparateCodeTest002: end.";
 }
 } // namespace HiviewDFX
 } // namepsace OHOS

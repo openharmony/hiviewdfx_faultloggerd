@@ -42,6 +42,7 @@ if (defined(ohos_lite)) {
       "$faultloggerd_interfaces_path/common",
     ]
     cflags = [ "-Wno-frame-larger-than" ]
+    cflags_c = [ "-Wno-frame-larger-than" ]
     cflags_cc = [ "-Wno-frame-larger-than" ]
     ldflags = [ "-Wno-frame-larger-than" ]
   }

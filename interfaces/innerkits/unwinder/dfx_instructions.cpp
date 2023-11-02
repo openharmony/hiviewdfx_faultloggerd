@@ -20,6 +20,7 @@
 #include <cstdlib>
 #include "dfx_define.h"
 #include "dfx_log.h"
+#include "dfx_instr_statistic.h"
 #include "dwarf_op.h"
 
 namespace OHOS {
@@ -77,6 +78,7 @@ bool DfxInstructions::Apply(std::shared_ptr<DfxMemory> memory, DfxRegs& regs, Re
         cfa = Flush(regs, memory, 0, cfaLoc);
     } else {
         LOGE("no cfa info exist?");
+        INSTR_STATISTIC(UnsupportedCfaLocation, rsState.cfaReg, UNW_ERROR_NOT_SUPPORT);
         return false;
     }
     LOGU("Update cfa : %llx", (uint64_t)cfa);

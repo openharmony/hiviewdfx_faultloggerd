@@ -83,7 +83,7 @@ struct RegsUserX86_64 {
     uint64_t gs;
 };
 
-static const std::vector<int> QUT_REGS {
+static const std::vector<uint16_t> QUT_REGS {
     // empty
 };
 #if is_ohos

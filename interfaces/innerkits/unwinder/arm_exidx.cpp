@@ -16,6 +16,7 @@
 #include "dfx_define.h"
 #include "dfx_regs.h"
 #include "dfx_log.h"
+#include "dfx_instr_statistic.h"
 #include "dfx_util.h"
 #include "string_printf.h"
 
@@ -429,6 +430,9 @@ inline bool ArmExidx::Decode1001nnnn()
             // No register transformed, ignore vsp offset.
             context_.Reset();
         }
+    } else {
+        INSTR_STATISTIC(UnsupportedArmExidx, bits, curOp_);
+        return false;
     }
     rsState_->cfaReg = bits;
     rsState_->cfaRegOffset = 0;

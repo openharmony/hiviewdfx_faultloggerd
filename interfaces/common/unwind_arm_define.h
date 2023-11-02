@@ -51,7 +51,7 @@ enum RegsEnumArm : uint16_t {
     REG_LAST = REG_ARM_LAST,
 };
 
-static const std::vector<int> QUT_REGS {
+static const std::vector<uint16_t> QUT_REGS {
     REG_ARM_R7,
     REG_ARM_R11,
     REG_SP,

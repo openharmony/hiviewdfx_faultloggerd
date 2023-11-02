@@ -68,7 +68,7 @@ protected:
     bool ParseElfIdent();
 #if is_ohos && !is_mingw
     static int DlPhdrCb(struct dl_phdr_info *info, size_t size, void *data);
-    static ElfW(Addr) FindSection(struct dl_phdr_info *info, const std::string secName);
+    static bool FindSection(struct dl_phdr_info *info, const std::string secName, ShdrInfo& shdr);
     static bool FillUnwindTableByEhhdrLocal(struct DwarfEhFrameHdr* hdr, struct UnwindTableInfo* uti);
 #endif
     bool FillUnwindTableByEhhdr(struct DwarfEhFrameHdr* hdr, uintptr_t shdrBase, struct UnwindTableInfo* uti);

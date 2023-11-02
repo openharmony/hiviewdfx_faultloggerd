@@ -23,6 +23,7 @@ dfx_unwind_sources = [
   "dfx_elf.cpp",
   "dfx_elf_parser.cpp",
   "dfx_frame_formatter.cpp",
+  "dfx_instr_statistic.cpp",
   "dfx_instructions.cpp",
   "dfx_map.cpp",
   "dfx_maps.cpp",
@@ -129,7 +130,10 @@ if (defined(ohos_lite)) {
   }
 
   config("dfx_unwinder_src_config") {
-    defines = [ "DFX_LOG_UNWIND" ]
+    defines = [
+      "DFX_LOG_UNWIND",
+      "INSTR_STATISTIC_ENABLE",
+    ]
   }
 
   ohos_shared_library("libunwinder") {
