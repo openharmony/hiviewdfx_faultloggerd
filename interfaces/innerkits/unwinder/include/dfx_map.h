@@ -42,7 +42,7 @@ public:
     bool Parse(const std::string buf, int size);
     bool IsValidName();
     bool IsArkName();
-    const std::shared_ptr<DfxElf>& GetElf();
+    const std::shared_ptr<DfxElf> GetElf();
     uint64_t GetRelPc(uint64_t pc);
     std::string ToString();
 
@@ -57,6 +57,7 @@ public:
     std::string perms = ""; // 5:rwxp
     std::string name = "";
     std::shared_ptr<DfxElf> elf;
+    std::shared_ptr<DfxMap> prevMap;
     uint64_t elfOffset = 0;
     uint64_t elfStartOffset = 0;
 

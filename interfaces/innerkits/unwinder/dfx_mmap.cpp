@@ -68,6 +68,28 @@ bool DfxMmap::Init(uint8_t *decompressedData, size_t size)
     return true;
 }
 
+bool DfxMmap::InitElfInHap(const int fd, const size_t elfSz, const off_t offset)
+{
+#if is_ohos
+    Clear();
+
+    if (fd < 0) {
+        return false;
+    }
+    size_ = GetFileSize(fd);
+    mmap_ = mmap(nullptr, elfSz, PROT_READ, MAP_PRIVATE, fd, offset);
+    if (mmap_ == MAP_FAILED) {
+        LOGE("Faild to mmap elf in hap.");
+        size_ = 0;
+        return false;
+    }
+    DFXLOG_DEBUG("mmap size %u", size_);
+    return true;
+#else
+    return false;
+#endif
+}
+
 void DfxMmap::Clear()
 {
 #if is_ohos

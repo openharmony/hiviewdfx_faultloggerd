@@ -32,7 +32,10 @@ struct DlCbData {
 class DfxElf final {
 public:
     static std::shared_ptr<DfxElf> Create(const std::string& file);
+    static std::shared_ptr<DfxElf> CreateFromHap(const std::string& file, std::shared_ptr<DfxMap> prevMap,
+                                                 uint64_t& offset);
     explicit DfxElf(const std::string& file) { Init(file); }
+    explicit DfxElf(const int fd, const size_t elfSz, const off_t offset);
     DfxElf(uint8_t *decompressedData, size_t size);
     ~DfxElf() { Clear(); }
 
@@ -66,6 +69,11 @@ public:
     void InitEmbeddedElf();
     std::shared_ptr<DfxElf> GetEmbeddedElf();
     std::shared_ptr<MiniDebugInfo> GetMiniDebugInfo();
+#if is_ohos
+    template <typename EhdrType>
+    static size_t CalcElfSize(void* elfPtr, size_t sz);
+#endif
+
 protected:
     bool InitHeaders();
     bool Init(const std::string& file);

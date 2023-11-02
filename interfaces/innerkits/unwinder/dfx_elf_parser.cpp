@@ -274,16 +274,11 @@ bool ElfParser::ParseElfName()
     if (!GetSectionInfo(shdrInfo, DYNSTR)) {
         return false;
     }
-
-    if ((uintptr_t)shdrInfo.addr == dtStrtabAddr_) {
-        if (dtSonameOffset_ >= dtStrtabSize_) {
-            return false;
-        }
-        uintptr_t sonameOffset = shdrInfo.offset + dtSonameOffset_;
-        uint64_t sonameOffsetMax = shdrInfo.offset + dtStrtabSize_;
-        size_t maxStrSize = static_cast<size_t>(sonameOffsetMax - sonameOffset);
-        mmap_->ReadString(sonameOffset, &soname_, maxStrSize);
-    }
+    uintptr_t sonameOffset = shdrInfo.offset + dtSonameOffset_;
+    uint64_t sonameOffsetMax = shdrInfo.offset + dtStrtabSize_;
+    size_t maxStrSize = static_cast<size_t>(sonameOffsetMax - sonameOffset);
+    mmap_->ReadString(sonameOffset, &soname_, maxStrSize);
+    LOGU("parse current elf file soname is %s.", soname_.c_str());
     return true;
 }
 
@@ -443,6 +438,7 @@ std::string ElfParser32::GetElfName()
     }
     return soname_;
 }
+
 std::string ElfParser64::GetElfName()
 {
     if (soname_ == "") {
@@ -458,6 +454,7 @@ uintptr_t ElfParser32::GetGlobalPointer()
     }
     return dtPltGotAddr_;
 }
+
 uintptr_t ElfParser64::GetGlobalPointer()
 {
     if (dtPltGotAddr_ == 0) {
@@ -471,6 +468,7 @@ const std::vector<ElfSymbol>& ElfParser32::GetElfSymbols(bool isFunc, bool isSor
     ParseElfSymbols<Elf32_Sym>(isFunc, isSort);
     return elfSymbols_;
 }
+
 const std::vector<ElfSymbol>& ElfParser64::GetElfSymbols(bool isFunc, bool isSort)
 {
     ParseElfSymbols<Elf64_Sym>(isFunc, isSort);

@@ -19,6 +19,7 @@
 #include "dfx_log.h"
 #include "dfx_define.h"
 #include "string_printf.h"
+#include "string_util.h"
 
 namespace OHOS {
 namespace HiviewDFX {
@@ -27,6 +28,17 @@ namespace {
 #undef LOG_TAG
 #define LOG_DOMAIN 0xD002D11
 #define LOG_TAG "DfxFrameFormatter"
+
+static void FormatMapName(std::string& mapName)
+{
+    // format sandbox file path, drop '/proc/xxx/root' prefix
+    if (StartsWith(mapName, "/proc/")) {
+        auto startPos = mapName.find("/data/storage/");
+        if (startPos != std::string::npos) {
+            mapName = mapName.substr(startPos);
+        }
+    }
+}
 }
 
 std::string DfxFrameFormatter::GetFrameStr(const DfxFrame& frame)
@@ -44,6 +56,7 @@ std::string DfxFrameFormatter::GetFrameStr(const std::shared_ptr<DfxFrame>& fram
 #endif
 
     if (!frame->mapName.empty()) {
+        FormatMapName(frame->mapName);
         data += "  " + frame->mapName;
     } else {
         data += "  [Unknown]";
