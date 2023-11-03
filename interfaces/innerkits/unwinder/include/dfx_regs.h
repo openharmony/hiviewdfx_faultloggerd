@@ -37,13 +37,23 @@ public:
     static std::shared_ptr<DfxRegs> CreateFromUcontext(const ucontext_t& context);
     static std::shared_ptr<DfxRegs> CreateFromRegs(const UnwindMode mode, const uintptr_t* regs);
     static std::shared_ptr<DfxRegs> CreateRemoteRegs(pid_t pid);
-    static void SetQutRegs(std::vector<int> qutRegs) { qutRegs_ = qutRegs; }
-    static const std::vector<int>& GetQutRegs()
+    static void SetQutRegs(std::vector<uint16_t> qutRegs) { qutRegs_ = qutRegs; }
+    static const std::vector<uint16_t>& GetQutRegs()
     {
         if (!qutRegs_.empty()) {
             return qutRegs_;
         }
         return QUT_REGS;
+    };
+    static bool IsQutReg(uint16_t reg)
+    {
+        const std::vector<uint16_t>& qutRegs = GetQutRegs();
+        for (size_t i = 0; i < qutRegs.size(); ++i) {
+            if (qutRegs[i] == reg) {
+                return true;
+            }
+        }
+        return false;
     };
     virtual void SetFromUcontext(const ucontext_t& context) = 0;
     virtual void SetFromFpMiniRegs(const uintptr_t* regs) = 0;
@@ -75,7 +85,7 @@ public:
     std::string PrintSpecialRegs() const;
 protected:
     std::vector<uintptr_t> regsData_ {};
-    static std::vector<int> qutRegs_;
+    static std::vector<uint16_t> qutRegs_;
 };
 
 #if defined(__arm__)

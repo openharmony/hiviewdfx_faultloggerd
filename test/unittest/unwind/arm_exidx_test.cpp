@@ -272,12 +272,12 @@ HWTEST_F(ArmExidxTest, ArmExidxTest009, TestSize.Level2)
     std::shared_ptr<DfxMemory> memory = std::make_shared<DfxMemory>(acc);
     ArmExidx exidx(memory);
     std::shared_ptr<RegLocState> rs = std::make_shared<RegLocState>();
-    uint32_t values[] = {0x7fff2340, 0x00001111, 0x81009cb0};
+    uint32_t values[] = {0x7fff2340, 0x00001111, 0x81009bb0};
     uintptr_t entryOffset = (uintptr_t)(&values[0]);
     ASSERT_TRUE(exidx.Step(entryOffset, rs));
 
     // 1001nnnn(nnnn != 13, 15)
-    ASSERT_EQ(rs->cfaReg, 12U);
+    ASSERT_EQ(rs->cfaReg, 11U);
     ASSERT_EQ(rs->cfaRegOffset, 0);
     GTEST_LOG_(INFO) << "ArmExidxTest009: end.";
 }

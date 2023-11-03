@@ -75,6 +75,10 @@ enum UnwindErrorCode : uint16_t {
     UNW_ERROR_DWARF_INVALID_FDE,
     /** Dwarf instr invalid */
     UNW_ERROR_DWARF_INVALID_INSTR,
+    /** Dwarf unsupported breg */
+    UNW_ERROR_DWARF_UNSUPPORTED_BREG,
+    /** Dwarf unsupported bregx */
+    UNW_ERROR_DWARF_UNSUPPORTED_BREGX,
     /** Unsupported version */
     UNW_ERROR_UNSUPPORTED_VERSION,
     /** Not support */

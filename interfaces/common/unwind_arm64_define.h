@@ -68,7 +68,7 @@ enum RegsEnumArm64 : uint16_t {
     REG_LAST = REG_AARCH64_LAST,
 };
 
-static const std::vector<int> QUT_REGS {
+static const std::vector<uint16_t> QUT_REGS {
     REG_AARCH64_X28,
     REG_AARCH64_X29,
     REG_SP,

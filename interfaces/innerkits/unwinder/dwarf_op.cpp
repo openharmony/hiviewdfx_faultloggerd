@@ -62,6 +62,7 @@ bool DwarfOp<AddressType>::Decode(DfxRegs& regs, uintptr_t& addr)
         }
             break;
         case DW_OP_deref:
+            LOGU("DW_OP_deref");
             OpDeref();
             break;
         case DW_OP_const1u: {
@@ -129,90 +130,119 @@ bool DwarfOp<AddressType>::Decode(DfxRegs& regs, uintptr_t& addr)
             OpPush(memory_->ReadSleb128(addr));
             break;
         case DW_OP_dup:
+            LOGU("DW_OP_dup");
             OpDup();
             break;
         case DW_OP_drop:
+            LOGU("DW_OP_drop");
             OpDrop();
             break;
         case DW_OP_over:
+            LOGU("DW_OP_over");
             OpOver();
             break;
         case DW_OP_pick:
+            LOGU("DW_OP_pick");
             OpPick(addr);
             break;
         case DW_OP_swap:
+            LOGU("DW_OP_swap");
             OpSwap();
             break;
         case DW_OP_rot:
+            LOGU("DW_OP_rot");
             OpRot();
             break;
         case DW_OP_abs:
+            LOGU("DW_OP_abs");
             OpAbs();
             break;
         case DW_OP_and:
+            LOGU("DW_OP_and");
             OpAnd();
             break;
         case DW_OP_div:
+            LOGU("DW_OP_div");
             OpDiv();
             break;
         case DW_OP_minus:
+            LOGU("DW_OP_minus");
             OpMinus();
             break;
         case DW_OP_mod:
+            LOGU("DW_OP_mod");
             OpMod();
             break;
         case DW_OP_mul:
+            LOGU("DW_OP_mul");
             OpMul();
             break;
         case DW_OP_neg:
+            LOGU("DW_OP_neg");
             OpNeg();
             break;
         case DW_OP_not:
+            LOGU("DW_OP_not");
             OpNot();
             break;
         case DW_OP_or:
+            LOGU("DW_OP_or");
             OpOr();
             break;
         case DW_OP_plus:
+            LOGU("DW_OP_plus");
             OpPlus();
             break;
         case DW_OP_plus_uconst:
+            LOGU("DW_OP_plus_uconst");
             OpPlusULEBConst(addr);
             break;
         case DW_OP_shl:
+            LOGU("DW_OP_shl");
             OpShl();
             break;
         case DW_OP_shr:
+            LOGU("DW_OP_shr");
             OpShr();
             break;
         case DW_OP_shra:
+            LOGU("DW_OP_shra");
             OpShra();
             break;
         case DW_OP_xor:
+            LOGU("DW_OP_xor");
             OpXor();
             break;
         case DW_OP_skip:
+            LOGU("DW_OP_skip");
             OpSkip(addr);
             break;
         case DW_OP_bra:
+            LOGU("DW_OP_bra");
             OpBra(addr);
             break;
         case DW_OP_eq:
+            LOGU("DW_OP_eq");
             OpEQ();
             break;
         case DW_OP_ge:
+            LOGU("DW_OP_ge");
             OpGE();
             break;
         case DW_OP_gt:
+            LOGU("DW_OP_gt");
             OpGT();
             break;
         case DW_OP_le:
+            LOGU("DW_OP_le");
             OpLE();
             break;
         case DW_OP_lt:
+            LOGU("DW_OP_lt");
             OpLT();
             break;
         case DW_OP_ne:
+            LOGU("DW_OP_ne");
             OpNE();
             break;
         case DW_OP_lit0:
@@ -247,6 +277,7 @@ bool DwarfOp<AddressType>::Decode(DfxRegs& regs, uintptr_t& addr)
         case DW_OP_lit29:
         case DW_OP_lit30:
         case DW_OP_lit31:
+            LOGU("DW_OP_litXX");
             OpLit(opcode);
             break;
         case DW_OP_reg0:
@@ -281,9 +312,11 @@ bool DwarfOp<AddressType>::Decode(DfxRegs& regs, uintptr_t& addr)
         case DW_OP_reg29:
         case DW_OP_reg30:
         case DW_OP_reg31:
+            LOGU("DW_OP_regXX");
             OpReg(opcode, regs);
             break;
         case DW_OP_regx:
+            LOGU("DW_OP_regx");
             OpRegx(addr, regs);
             break;
         case DW_OP_breg0:
@@ -318,12 +351,15 @@ bool DwarfOp<AddressType>::Decode(DfxRegs& regs, uintptr_t& addr)
         case DW_OP_breg29:
         case DW_OP_breg30:
         case DW_OP_breg31:
+            LOGU("DW_OP_bregXX");
             OpBReg(opcode, addr, regs);
             break;
         case DW_OP_bregx:
+            LOGU("DW_OP_bregx");
             OpBRegx(addr, regs);
             break;
         case DW_OP_deref_size:
+            LOGU("DW_OP_deref_size");
             OpDerefSize(addr);
             break;
         case DW_OP_fbreg:
@@ -335,6 +371,7 @@ bool DwarfOp<AddressType>::Decode(DfxRegs& regs, uintptr_t& addr)
         case DW_OP_call2:
         case DW_OP_call4:
         case DW_OP_call_ref:
+            LOGE("DWARF OpNop opcode: %x", opcode);
             OpNop(opcode);
             break;
         default:

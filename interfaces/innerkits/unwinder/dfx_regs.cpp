@@ -31,7 +31,7 @@ namespace {
 #define LOG_DOMAIN 0xD002D11
 #define LOG_TAG "DfxRegs"
 }
-std::vector<int> DfxRegs::qutRegs_ = {};
+std::vector<uint16_t> DfxRegs::qutRegs_ = {};
 
 std::shared_ptr<DfxRegs> DfxRegs::Create()
 {

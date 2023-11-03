@@ -31,6 +31,7 @@
 
 #include "dfx_define.h"
 #include "dfx_log.h"
+#include "dfx_instr_statistic.h"
 #include "dfx_util.h"
 #include "dwarf_define.h"
 #ifndef is_ohos_lite
@@ -461,6 +462,7 @@ bool DfxElf::FillUnwindTableByExidx(ShdrInfo shdr, uintptr_t loadBase, struct Un
     uti->gp = 0;
     uti->tableData = loadBase + shdr.addr;
     uti->tableLen = shdr.size;
+    INSTR_STATISTIC(InstructionEntriesArmExidx, shdr.size, 0);
     uti->format = UNW_INFO_FORMAT_ARM_EXIDX;
     LOGU("tableData: %llx, tableLen: %d", (uint64_t)uti->tableData, (int)uti->tableLen);
     return true;
@@ -586,9 +588,11 @@ int DfxElf::FindUnwindTableInfo(uintptr_t pc, std::shared_ptr<DfxMap> map, struc
         struct DwarfEhFrameHdr* hdr = nullptr;
         struct DwarfEhFrameHdr synthHdr;
         if (GetSectionInfo(shdr, EH_FRAME_HDR)) {
+            INSTR_STATISTIC(InstructionEntriesEhFrame, shdr.size, 0);
             hdr = (struct DwarfEhFrameHdr *) (shdr.offset + (char *)GetMmapPtr());
         } else if (GetSectionInfo(shdr, EH_FRAME)) {
             LOGW("Elf(%s) no found .eh_frame_hdr section, using synthetic .eh_frame section", map->name.c_str());
+            INSTR_STATISTIC(InstructionEntriesEhFrame, shdr.size, 0);
             synthHdr.version = DW_EH_VERSION;
             synthHdr.ehFramePtrEnc = DW_EH_PE_absptr |
                 ((sizeof(ElfW(Addr)) == 4) ? DW_EH_PE_udata4 : DW_EH_PE_udata8); // 4 : four bytes
@@ -629,7 +633,7 @@ int DfxElf::FindUnwindTableLocal(uintptr_t pc, struct UnwindTableInfo& uti)
 }
 
 #if is_ohos && !is_mingw
-ElfW(Addr) DfxElf::FindSection(struct dl_phdr_info *info, const std::string secName)
+bool DfxElf::FindSection(struct dl_phdr_info *info, const std::string secName, ShdrInfo& shdr)
 {
     const char *file = info->dlpi_name;
     if (strlen(file) == 0) {
@@ -638,15 +642,10 @@ ElfW(Addr) DfxElf::FindSection(struct dl_phdr_info *info, const std::string secN
 
     auto elf = Create(file);
     if (elf == nullptr) {
-        return 0;
+        return false;
     }
 
-    ShdrInfo shdr;
-    if (!elf->GetSectionInfo(shdr, secName)) {
-        return 0;
-    }
-    ElfW(Addr) addr = shdr.addr + info->dlpi_addr;
-    return addr;
+    return elf->GetSectionInfo(shdr, secName);
 }
 
 int DfxElf::DlPhdrCb(struct dl_phdr_info *info, size_t size, void *data)
@@ -722,17 +721,19 @@ int DfxElf::DlPhdrCb(struct dl_phdr_info *info, size_t size, void *data)
     struct DwarfEhFrameHdr *hdr = nullptr;
     struct DwarfEhFrameHdr synthHdr;
     if (pEhHdr) {
+        INSTR_STATISTIC(InstructionEntriesEhFrame, pEhHdr->p_memsz, 0);
         hdr = (struct DwarfEhFrameHdr *) (pEhHdr->p_vaddr + loadBase);
     } else {
-        ElfW(Addr) ehFrame = FindSection(info, EH_FRAME);
-        if (ehFrame != 0) {
+        ShdrInfo shdr;
+        if (FindSection(info, EH_FRAME, shdr)) {
             LOGW("Elf(%s) no found .eh_frame_hdr section, using synthetic .eh_frame section", info->dlpi_name);
+            INSTR_STATISTIC(InstructionEntriesEhFrame, shdr.size, 0);
             synthHdr.version = DW_EH_VERSION;
             synthHdr.ehFramePtrEnc = DW_EH_PE_absptr |
                 ((sizeof(ElfW(Addr)) == 4) ? DW_EH_PE_udata4 : DW_EH_PE_udata8); // 4 : four bytes
             synthHdr.fdeCountEnc = DW_EH_PE_omit;
             synthHdr.tableEnc = DW_EH_PE_omit;
-            synthHdr.ehFrame = ehFrame;
+            synthHdr.ehFrame = (ElfW(Addr))(shdr.addr + info->dlpi_addr);
             hdr = &synthHdr;
         }
     }
