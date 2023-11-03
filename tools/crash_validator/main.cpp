@@ -41,12 +41,12 @@ static void SigIntHandler()
 
 int main(int argc, char *argv[])
 {
-    g_validator = std::make_shared<OHOS::HiviewDFX::CrashValidator>();
-    g_validator->InitSysEventListener();
     sigset_t waitMask;
     sigemptyset(&waitMask);
     sigaddset(&waitMask, SIGINT);
-    pthread_sigmask(SIG_SETMASK, &waitMask, nullptr);
+    sigprocmask(SIG_SETMASK, &waitMask, nullptr);
+    g_validator = std::make_shared<OHOS::HiviewDFX::CrashValidator>();
+    g_validator->InitSysEventListener();
     int sig = 0;
     int ret = -1;
     do {

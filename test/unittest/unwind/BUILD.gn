@@ -22,6 +22,7 @@ ohos_unittest("test_unwind") {
   include_dirs = [
     "$faultloggerd_interfaces_path/common",
     "$faultloggerd_path/test/unittest/unwind/include",
+    "//third_party/lzma/C",
   ]
   configs = [ "$faultloggerd_common_path/build:coverage_flags" ]
   defines = [ "DFX_LOG_UNWIND" ]
@@ -34,6 +35,7 @@ ohos_unittest("test_unwind") {
     "regs_test.cpp",
     "symbols_test.cpp",
     "unwinder_test.cpp",
+    "xz_util_test.cpp",
   ]
   deps = [
     "$faultloggerd_common_path/dfxlog:dfx_hilog",
@@ -84,7 +86,7 @@ ohos_unittest("test_unwind_separate_code") {
   configs = [ "$faultloggerd_common_path/build:coverage_flags" ]
   defines = [ "DFX_LOG_UNWIND" ]
   ldflags = [ "-Wl,-z,separate-code" ]
-  sources = [ "unwind_separate_code_test.cpp" ]
+  sources = [ "unwind_pac_test.cpp" ]
   deps = [
     "$faultloggerd_common_path/dfxlog:dfx_hilog",
     "$faultloggerd_common_path/dfxutil:dfx_util",
@@ -104,6 +106,7 @@ ohos_unittest("test_exidx") {
   include_dirs = [
     "$faultloggerd_interfaces_path/common",
     "$faultloggerd_interfaces_path/innerkits/unwinder/include",
+    "//third_party/lzma/C",
   ]
   configs = [ "$faultloggerd_common_path/build:coverage_flags" ]
   defines = [
@@ -129,6 +132,7 @@ ohos_unittest("test_exidx") {
     "$faultloggerd_interfaces_path/innerkits/unwinder/dfx_regs.cpp",
     "$faultloggerd_interfaces_path/innerkits/unwinder/dfx_regs_arm.cpp",
     "$faultloggerd_interfaces_path/innerkits/unwinder/dfx_symbols.cpp",
+    "$faultloggerd_interfaces_path/innerkits/unwinder/dfx_xz_utils.cpp",
     "arm_exidx_test.cpp",
   ]
   deps = [
@@ -137,6 +141,7 @@ ohos_unittest("test_exidx") {
     "//third_party/bounds_checking_function:libsec_shared",
     "//third_party/googletest:gtest_main",
   ]
+  public_deps = [ "//third_party/lzma:lzma_shared" ]
   external_deps = [
     "c_utils:utils",
     "hilog:libhilog",

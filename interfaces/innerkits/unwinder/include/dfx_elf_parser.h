@@ -58,7 +58,8 @@ public:
     virtual bool GetSectionInfo(ShdrInfo& shdr, const std::string& secName);
     const std::unordered_map<uint64_t, ElfLoadInfo>& GetPtLoads() {return ptLoads_;}
     bool Read(uintptr_t pos, void *buf, size_t size);
-
+    void EnableMiniDebugInfo();
+    std::shared_ptr<MiniDebugInfo> GetMiniDebugInfo();
 protected:
     size_t MmapSize();
     template <typename EhdrType, typename PhdrType, typename ShdrType>
@@ -92,6 +93,8 @@ protected:
     uintptr_t dtStrtabSize_ = 0;
     uintptr_t dtSonameOffset_ = 0;
     std::string soname_ = "";
+    bool enableMiniDebugInfo_ = false;
+    std::shared_ptr<MiniDebugInfo> minidebugInfo_ = nullptr;
 
 private:
     std::shared_ptr<DfxMmap> mmap_;
