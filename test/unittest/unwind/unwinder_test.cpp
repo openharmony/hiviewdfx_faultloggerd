@@ -22,8 +22,11 @@
 #include <hilog/log.h>
 #include <malloc.h>
 #include <securec.h>
+#include "dfx_config.h"
+#include "dfx_frame_formatter.h"
 #include "dfx_ptrace.h"
 #include "dfx_regs_get.h"
+#include "dfx_test_util.h"
 #include "unwinder.h"
 #include "elapsed_time.h"
 
@@ -329,6 +332,42 @@ HWTEST_F(UnwinderTest, UnwindTest003, TestSize.Level2)
 }
 
 /**
+ * @tc.name: UnwindTest004
+ * @tc.desc: test unwinder local unwind for
+ * GetFramesStr(const std::vector<std::shared_ptr<DfxFrame>>& frames)
+ * @tc.type: FUNC
+ */
+HWTEST_F(UnwinderTest, UnwindTest004, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "UnwindTest004: start.";
+    pid_t child = fork();
+    if (child == 0) {
+        auto unwinder = std::make_shared<Unwinder>();
+        ElapsedTime counter;
+        MAYBE_UNUSED bool unwRet = unwinder->UnwindLocal();
+        ASSERT_EQ(true, unwRet) << "UnwindTest004: Unwind:" << unwRet;
+        auto frames = unwinder->GetFrames();
+        ASSERT_GT(frames.size(), 1);
+
+        auto framesVec = DfxFrameFormatter::ConvertFrames(frames);
+        std::string framesStr = DfxFrameFormatter::GetFramesStr(framesVec);
+        GTEST_LOG_(INFO) << "frames:\n" << framesStr;
+
+        string log[] = {"pc", "test_unwind", "#00", "#01", "#02"};
+        int len = sizeof(log) / sizeof(log[0]);
+        int count = GetKeywordsNum(framesStr, log, len);
+        ASSERT_EQ(count, len) << "UnwindTest004 Failed";
+        _exit(0);
+    }
+
+    int status;
+    int ret = wait(&status);
+    ASSERT_EQ(status, 0);
+    GTEST_LOG_(INFO) << "Status:" << status << " Result:" << ret;
+    GTEST_LOG_(INFO) << "UnwindTest004: end.";
+}
+
+/**
  * @tc.name: StepTest001
  * @tc.desc: test unwinder Step interface in remote case
  * @tc.type: FUNC
@@ -514,5 +553,25 @@ HWTEST_F(UnwinderTest, StepTest004, TestSize.Level2)
     GTEST_LOG_(INFO) << "StepTest004: end.";
 }
 #endif
+
+/**
+ * @tc.name: DfxConfigTest001
+ * @tc.desc: test DfxConfig class functions
+ * @tc.type: FUNC
+ */
+HWTEST_F(UnwinderTest, DfxConfigTest001, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "DfxConfigTest001: start.";
+    ASSERT_EQ(DfxConfig::GetConfig().logPersist, false);
+    ASSERT_EQ(DfxConfig::GetConfig().displayRegister, true);
+    ASSERT_EQ(DfxConfig::GetConfig().displayBacktrace, true);
+    ASSERT_EQ(DfxConfig::GetConfig().displayMaps, true);
+    ASSERT_EQ(DfxConfig::GetConfig().displayFaultStack, true);
+    ASSERT_EQ(DfxConfig::GetConfig().dumpOtherThreads, true);
+    ASSERT_EQ(DfxConfig::GetConfig().highAddressStep, 512);
+    ASSERT_EQ(DfxConfig::GetConfig().lowAddressStep, 16);
+    ASSERT_EQ(DfxConfig::GetConfig().maxFrameNums, 256);
+    GTEST_LOG_(INFO) << "DfxConfigTest001: end.";
+}
 } // namespace HiviewDFX
 } // namepsace OHOS
