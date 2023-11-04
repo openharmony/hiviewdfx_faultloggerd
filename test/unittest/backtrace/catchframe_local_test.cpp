@@ -38,14 +38,6 @@ public:
     void TearDown();
 };
 
-static const int THREAD_ALIVE_TIME = 2;
-
-static const int CREATE_THREAD_TIMEOUT = 300000;
-
-static pid_t g_threadId = 0;
-
-static pid_t g_processId = 0;
-
 int g_testPid = 0;
 
 void CatchFrameLocalTest::SetUpTestCase()

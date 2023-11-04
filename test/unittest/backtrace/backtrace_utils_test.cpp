@@ -59,7 +59,6 @@ static void CheckResourceUsage(uint32_t fdCount, uint32_t mapsCount, uint64_t me
 {
     // check memory/fd/maps
     auto curFdCount = GetSelfFdCount();
-    constexpr uint32_t extraVal = 10;
     GTEST_LOG_(INFO) << "AfterTest Fd New:" << std::to_string(curFdCount);
     GTEST_LOG_(INFO) << "Fd Old:" << std::to_string(fdCount) << "\n";
 
@@ -68,7 +67,6 @@ static void CheckResourceUsage(uint32_t fdCount, uint32_t mapsCount, uint64_t me
     GTEST_LOG_(INFO) << "Maps Old:" << std::to_string(mapsCount) << "\n";
 
     auto curMemSize = GetSelfMemoryCount();
-    constexpr double ratio = 1.5;
     GTEST_LOG_(INFO) << "AfterTest Memory New(KB):" << std::to_string(curMemSize);
     GTEST_LOG_(INFO) << "Memory Old(KB):" << std::to_string(memCount) << "\n";
 }

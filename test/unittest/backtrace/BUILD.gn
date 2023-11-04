@@ -90,11 +90,97 @@ ohos_unittest("catchframe_local_test") {
   ]
 }
 
+ohos_unittest("backtrace_utils_test_static") {
+  module_out_path = module_output_path
+  visibility = [ "*:*" ]
+  include_dirs = [
+    "$faultloggerd_interfaces_path/common",
+    "$faultloggerd_path/test/utils",
+    "$faultloggerd_frameworks_path/unwind/include",
+    "$faultloggerd_interfaces_path/innerkits/backtrace",
+    "//third_party/libunwind/include",
+    "//third_party/libunwind/include/tdep/",
+    "//third_party/libunwind/src",
+  ]
+  sources = [ "backtrace_utils_test.cpp" ]
+  deps = [
+    "$faultloggerd_common_path/dfxutil:dfx_util",
+    "$faultloggerd_interfaces_path/innerkits/backtrace:backtrace_local",
+    "$faultloggerd_path/test/utils:dfx_test_util",
+    "//third_party/googletest:gtest_main",
+  ]
+  if (use_musl && use_jemalloc && use_jemalloc_dfx_intf) {
+    defines = [ "USE_JEMALLOC_DFX_INTF" ]
+  }
+  branch_protector_ret = "pac_ret"
+  external_deps = [
+    "c_utils:utils",
+    "hilog:libhilog",
+  ]
+}
+
+ohos_unittest("backtrace_local_test_static") {
+  module_out_path = module_output_path
+  visibility = [ "*:*" ]
+  include_dirs = [
+    "$faultloggerd_interfaces_path/common",
+    "$faultloggerd_path/test/utils",
+    "$faultloggerd_frameworks_path/unwind/include",
+    "$faultloggerd_interfaces_path/innerkits/backtrace",
+    "//third_party/libunwind/include",
+    "//third_party/libunwind/include/tdep/",
+    "//third_party/libunwind/src",
+  ]
+  sources = [ "backtrace_local_test.cpp" ]
+  deps = [
+    "$faultloggerd_common_path/dfxutil:dfx_util",
+    "$faultloggerd_interfaces_path/innerkits/backtrace:backtrace_local",
+    "$faultloggerd_path/test/utils:dfx_test_util",
+    "//third_party/bounds_checking_function:libsec_shared",
+    "//third_party/googletest:gtest_main",
+    "//third_party/libunwind:libunwind",
+  ]
+  branch_protector_ret = "pac_ret"
+  external_deps = [
+    "c_utils:utils",
+    "hilog:libhilog",
+  ]
+}
+
+ohos_unittest("catchframe_local_test_static") {
+  module_out_path = module_output_path
+  visibility = [ "*:*" ]
+  include_dirs = [
+    "$faultloggerd_interfaces_path/common",
+    "$faultloggerd_path/test/utils",
+    "$faultloggerd_frameworks_path/unwind/include",
+    "//third_party/libunwind/include",
+    "//third_party/libunwind/include/tdep/",
+    "//third_party/libunwind/src",
+  ]
+  sources = [ "catchframe_local_test.cpp" ]
+  deps = [
+    "$faultloggerd_path/common/dfxutil:dfx_util",
+    "$faultloggerd_path/interfaces/innerkits/backtrace:backtrace_local",
+    "$faultloggerd_path/test/utils:dfx_test_util",
+    "//third_party/bounds_checking_function:libsec_shared",
+    "//third_party/googletest:gtest_main",
+  ]
+
+  external_deps = [
+    "c_utils:utils",
+    "hilog:libhilog",
+  ]
+}
+
 group("unittest") {
   testonly = true
   deps = [
     ":backtrace_local_test",
+    ":backtrace_local_test_static",
     ":backtrace_utils_test",
+    ":backtrace_utils_test_static",
     ":catchframe_local_test",
+    ":catchframe_local_test_static",
   ]
 }
