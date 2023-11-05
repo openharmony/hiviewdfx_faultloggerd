@@ -16,6 +16,7 @@
 #include "7zCrc.h"
 #include "Xz.h"
 #include "XzCrc64.h"
+#include <cstdlib>
 
 namespace OHOS {
 namespace HiviewDFX {
