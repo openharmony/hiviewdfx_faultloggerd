@@ -455,5 +455,197 @@ HWTEST_F(SignalHandlerTest, SignalHandlerTest007, TestSize.Level2)
     }
     GTEST_LOG_(INFO) << "SignalHandlerTest007: end.";
 }
+
+int TestThread2(int threadId, int sig, int total, bool exitEarly)
+{
+    std::string subThreadName = "SubTestThread" + to_string(threadId);
+    prctl(PR_SET_NAME, subThreadName.c_str());
+    SetThreadInfoCallback(ThreadInfo);
+    if (threadId == total - 1) {
+        GTEST_LOG_(INFO) << subThreadName << " is ready to raise signo(" << sig <<")";
+        raise(sig);
+    }
+
+    if (!exitEarly) {
+        sleep(total - threadId);
+    }
+    SetThreadInfoCallback(NULL);
+    return 0;
+}
+
+/**
+ * @tc.name: SignalHandlerTest008
+ * @tc.desc: test add 36 thread info callback and crash thread has no callback
+ * @tc.type: FUNC
+ */
+HWTEST_F(SignalHandlerTest, SignalHandlerTest008, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "SignalHandlerTest008: start.";
+    pid_t pid = fork();
+    if (pid < 0) {
+        GTEST_LOG_(ERROR) << "Failed to fork new test process.";
+    } else if (pid == 0) {
+        std::vector<std::thread> threads;
+        const int testThreadCount = 36;
+        for (int i = 0; i < testThreadCount; i++) {
+            threads.push_back(std::thread(TestThread2, i, SIGSEGV, testThreadCount, false));
+        }
+
+        for (auto& thread : threads) {
+            thread.join();
+        }
+    } else {
+        sleep(2); // 2 : wait for cppcrash generating
+        auto file = GetCppCrashFileName(pid);
+        ASSERT_FALSE(file.empty());
+    }
+    GTEST_LOG_(INFO) << "SignalHandlerTest008: end.";
+}
+
+/**
+ * @tc.name: SignalHandlerTest009
+ * @tc.desc: test add 36 thread info callback and crash thread has the callback
+ * @tc.type: FUNC
+ */
+HWTEST_F(SignalHandlerTest, SignalHandlerTest009, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "SignalHandlerTest009: start.";
+    pid_t pid = fork();
+    if (pid < 0) {
+        GTEST_LOG_(ERROR) << "Failed to fork new test process.";
+    } else if (pid == 0) {
+        std::vector<std::thread> threads;
+        const int testThreadCount = 36;
+        for (int i = 0; i < testThreadCount; i++) {
+            bool exitEarly = false;
+            if (i % 2 == 0) {
+                exitEarly =  true;
+            }
+            threads.push_back(std::thread (TestThread2, i, SIGSEGV, testThreadCount, exitEarly));
+        }
+
+        for (auto& thread : threads) {
+            thread.join();
+        }
+    } else {
+        sleep(2); // 2 : wait for cppcrash generating
+        auto file = GetCppCrashFileName(pid);
+        ASSERT_FALSE(file.empty());
+    }
+    GTEST_LOG_(INFO) << "SignalHandlerTest009: end.";
+}
+
+/**
+ * @tc.name: SignalHandlerTest010
+ * @tc.desc: test crash when free a invalid address
+ * @tc.type: FUNC
+ */
+HWTEST_F(SignalHandlerTest, SignalHandlerTest010, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "SignalHandlerTest010: start.";
+    pid_t pid = fork();
+    if (pid < 0) {
+        GTEST_LOG_(ERROR) << "Failed to fork new test process.";
+    } else if (pid == 0) {
+        SetThreadInfoCallback(ThreadInfo);
+        int32_t freeAddr = 0x111;
+        // trigger crash
+        free(reinterpret_cast<void*>(freeAddr));
+        // force crash if not crash in free
+        abort();
+    } else {
+        sleep(2); // 2 : wait for cppcrash generating
+        auto file = GetCppCrashFileName(pid);
+        ASSERT_FALSE(file.empty());
+    }
+    GTEST_LOG_(INFO) << "SignalHandlerTest010: end.";
+}
+
+/**
+ * @tc.name: SignalHandlerTest011
+ * @tc.desc: test crash when realloc a invalid address
+ * @tc.type: FUNC
+ */
+HWTEST_F(SignalHandlerTest, SignalHandlerTest011, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "SignalHandlerTest011: start.";
+    pid_t pid = fork();
+    if (pid < 0) {
+        GTEST_LOG_(ERROR) << "Failed to fork new test process.";
+    } else if (pid == 0) {
+        int32_t initAllocSz = 10;
+        int32_t reallocSz = 20;
+        SetThreadInfoCallback(ThreadInfo);
+        // alloc a buffer
+        int8_t* addr = reinterpret_cast<int8_t*>(malloc(initAllocSz));
+        // overwrite the control block
+        int8_t* newAddr = addr - initAllocSz;
+        (void)memset_s(newAddr, initAllocSz, 0, initAllocSz);
+        addr = reinterpret_cast<int8_t*>(realloc(reinterpret_cast<void*>(addr), reallocSz));
+        free(addr);
+        // force crash if not crash in realloc
+        abort();
+    } else {
+        sleep(2); // 2 : wait for cppcrash generating
+        auto file = GetCppCrashFileName(pid);
+        ASSERT_FALSE(file.empty());
+    }
+    GTEST_LOG_(INFO) << "SignalHandlerTest011: end.";
+}
+
+/**
+ * @tc.name: SignalHandlerTest012
+ * @tc.desc: test crash when realloc a invalid address without threadInfo callback
+ * @tc.type: FUNC
+ */
+HWTEST_F(SignalHandlerTest, SignalHandlerTest012, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "SignalHandlerTest012: start.";
+    pid_t pid = fork();
+    if (pid < 0) {
+        GTEST_LOG_(ERROR) << "Failed to fork new test process.";
+    } else if (pid == 0) {
+        int32_t initAllocSz = 10;
+        int32_t reallocSz = 20;
+        // alloc a buffer
+        int8_t* addr = reinterpret_cast<int8_t*>(malloc(initAllocSz));
+        // overwrite the control block
+        int8_t* newAddr = addr - initAllocSz;
+        (void)memset_s(newAddr, initAllocSz, 0, initAllocSz);
+        addr = reinterpret_cast<int8_t*>(realloc(reinterpret_cast<void*>(addr), reallocSz));
+        free(addr);
+        // force crash if not crash in realloc
+        abort();
+    } else {
+        sleep(2); // 2 : wait for cppcrash generating
+        auto file = GetCppCrashFileName(pid);
+        ASSERT_FALSE(file.empty());
+    }
+    GTEST_LOG_(INFO) << "SignalHandlerTest012: end.";
+}
+
+/**
+ * @tc.name: SignalHandlerTest013
+ * @tc.desc: test add 100 thread info callback and do nothing
+ * @tc.type: FUNC
+ */
+HWTEST_F(SignalHandlerTest, SignalHandlerTest013, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "SignalHandlerTest013: start.";
+    std::vector<std::thread> threads;
+    const int testThreadCount = 100;
+    for (int i = 0; i < testThreadCount - 1; i++) {
+        threads.push_back(std::thread (TestThread2, i, SIGSEGV, testThreadCount, true));
+    }
+
+    for (auto& thread : threads) {
+        if (thread.joinable()) {
+            thread.join();
+        }
+    }
+    auto file = GetCppCrashFileName(getpid());
+    ASSERT_TRUE(file.empty());
+    GTEST_LOG_(INFO) << "SignalHandlerTest013: end.";
+}
 } // namespace HiviewDFX
 } // namepsace OHOS
