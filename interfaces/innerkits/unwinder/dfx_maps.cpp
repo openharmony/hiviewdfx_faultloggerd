@@ -64,16 +64,16 @@ std::shared_ptr<DfxMaps> DfxMaps::Create(pid_t pid)
     if (path == "") {
         return nullptr;
     }
-    return Create(path);
+    return Create(pid, path);
 }
 
-bool DfxMaps::Create(pid_t pid, std::vector<std::shared_ptr<DfxMap>>& maps, std::vector<int>& mapIndex)
+bool DfxMaps::Create(const pid_t pid, std::vector<std::shared_ptr<DfxMap>>& maps, std::vector<int>& mapIndex)
 {
     std::string path = GetMapsFile(pid);
     if (path == "") {
         return false;
     }
-    auto dfxMaps = Create(path, true);
+    auto dfxMaps = Create(pid, path, true);
     if (dfxMaps == nullptr) {
         LOGE("Create maps error, path: %s", path.c_str());
         return false;
@@ -83,7 +83,7 @@ bool DfxMaps::Create(pid_t pid, std::vector<std::shared_ptr<DfxMap>>& maps, std:
     return true;
 }
 
-std::shared_ptr<DfxMaps> DfxMaps::Create(const std::string& path, bool enableMapIndex)
+std::shared_ptr<DfxMaps> DfxMaps::Create(const pid_t pid, const std::string& path, bool enableMapIndex)
 {
     char realPath[PATH_MAX] = {0};
 #if is_ohos
@@ -110,6 +110,9 @@ std::shared_ptr<DfxMaps> DfxMaps::Create(const std::string& path, bool enableMap
             if (map->name == "[stack]") {
                 dfxMaps->stackBottom_ = (uintptr_t)map->begin;
                 dfxMaps->stackTop_ = (uintptr_t)map->end;
+            }
+            if (StartsWith(map->name, "/data/storage/") && (pid != getpid())) {
+                map->name = "/proc/" + std::to_string(pid) + "/root/" + map->name;
             }
             if ((!enableMapIndex) || IsLegalMapItem(map->name)) {
                 dfxMaps->AddMap(map, enableMapIndex);
@@ -160,6 +163,9 @@ bool DfxMaps::FindMapByAddr(std::shared_ptr<DfxMap>& map, uintptr_t addr) const
         const auto& cur = maps_[index];
         if (addr >= cur->begin && addr < cur->end) {
             map = cur;
+            if (index > 0) {
+                map->prevMap = maps_[index - 1];
+            }
             return true;
         } else if (addr < cur->begin) {
             last = index;

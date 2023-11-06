@@ -22,6 +22,7 @@
 #if is_mingw
 #include "dfx_nonlinux_define.h"
 #else
+#include <elf.h>
 #include <sys/mman.h>
 #endif
 #include <sys/stat.h>
@@ -54,6 +55,78 @@ std::shared_ptr<DfxElf> DfxElf::Create(const std::string& path)
         return elf;
     }
     return nullptr;
+}
+
+std::shared_ptr<DfxElf> DfxElf::CreateFromHap(const std::string& file, std::shared_ptr<DfxMap> prevMap,
+                                              uint64_t& offset)
+{
+#if is_ohos
+    // elf header is in the first mmap area
+    // c3840000-c38a6000 r--p 00174000 /data/storage/el1/bundle/entry.hap <- program header
+    // c38a6000-c3945000 r-xp 001d9000 /data/storage/el1/bundle/entry.hap <- pc is in this region
+    // c3945000-c394b000 r--p 00277000 /data/storage/el1/bundle/entry.hap
+    // c394b000-c394c000 rw-p 0027c000 /data/storage/el1/bundle/entry.hap
+    if (prevMap == nullptr) {
+        LOGE("current hap mapitem has no prev mapitem, maybe pc is wrong?");
+        return nullptr;
+    }
+
+    struct stat stat;
+    int fd;
+    fd = OHOS_TEMP_FAILURE_RETRY(open(file.c_str(), O_RDONLY));
+    if (fd < 0) {
+        LOGE("Failed to open hap file, errno(%d)", errno);
+        return nullptr;
+    }
+
+    if (fstat(fd, &stat) < 0) {
+        LOGE("Failed to stat hap file size, errno(%d)", errno);
+        close(fd);
+        return nullptr;
+    }
+
+    size_t size = prevMap->end - prevMap->begin;
+    void* phdr = mmap(nullptr, size, PROT_READ, MAP_PRIVATE, fd, prevMap->offset);
+    if (phdr == MAP_FAILED) {
+        LOGE("failed to map program header in hap.(%d)", errno);
+        close(fd);
+        return nullptr;
+    }
+
+    size_t elfSz = 0;
+#if defined(__arm__)
+    elfSz = DfxElf::CalcElfSize<Elf32_Ehdr>(phdr, size);
+#elif defined(__aarch64__)
+    elfSz = DfxElf::CalcElfSize<Elf64_Ehdr>(phdr, size);
+#endif
+
+    offset -= prevMap->offset;
+    munmap(phdr, size);
+    if (elfSz <= 0 || elfSz > (size_t)(stat.st_size - prevMap->offset)) {
+        LOGE("invalid elf size? sz:%d, hap sz:%d", (int)elfSz, (int)stat.st_size);
+        close(fd);
+        return nullptr;
+    }
+
+    auto elf = std::make_shared<DfxElf>(fd, elfSz, prevMap->offset);
+    close(fd);
+    if (elf->IsValid()) {
+        return elf;
+    }
+#endif
+    return nullptr;
+}
+
+DfxElf::DfxElf(const int fd, const size_t elfSz, const off_t offset)
+{
+    if (mmap_ == nullptr) {
+        mmap_ = std::make_shared<DfxMmap>();
+        if (!mmap_->InitElfInHap(fd, elfSz, offset)) {
+            LOGE("Failed to init elf in hap.");
+        }
+    }
+    uti_.format = -1;
+    hasTableInfo_ = false;
 }
 
 DfxElf::DfxElf(uint8_t *decompressedData, size_t size)
@@ -764,5 +837,33 @@ size_t DfxElf::GetMmapSize()
     }
     return mmap_->Size();
 }
+
+#if is_ohos
+template <typename EhdrType>
+size_t DfxElf::CalcElfSize(void* elfPtr, size_t sz)
+{
+    if (sz < sizeof(EhdrType)) {
+        LOGW("Invalid elf size? sz:%d, request sz:%d", sz, sizeof(EhdrType));
+        return 0;
+    }
+
+#if defined(__arm__)
+    uint8_t elfClass = ELFCLASS32;
+#elif defined(__aarch64__)
+    uint8_t elfClass = ELFCLASS64;
+#endif
+
+    if (!(memcmp(elfPtr, ELFMAG, SELFMAG) == 0 &&
+        ((uint8_t*)elfPtr)[EI_CLASS] == elfClass &&
+        ((uint8_t*)elfPtr)[EI_VERSION] != EV_NONE &&
+        ((uint8_t*)elfPtr)[EI_VERSION] <= EV_CURRENT)) {
+        LOGW("invalid elf hdr?");
+        return 0;
+    }
+
+    EhdrType *ehdr = (EhdrType*)elfPtr;
+    return (ehdr->e_shoff + (ehdr->e_shentsize * ehdr->e_shnum));
+}
+#endif
 } // namespace HiviewDFX
 } // namespace OHOS

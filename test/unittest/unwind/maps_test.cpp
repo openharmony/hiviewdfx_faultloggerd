@@ -41,7 +41,7 @@ class MapsTest : public testing::Test {
 public:
     static void SetUpTestCase(void) {}
     static void TearDownTestCase(void) {}
-    void SetUp() { maps_ = DfxMaps::Create(MAPS_FILE); }
+    void SetUp() { maps_ = DfxMaps::Create(getpid(), MAPS_FILE); }
     void TearDown() {}
 
 public:

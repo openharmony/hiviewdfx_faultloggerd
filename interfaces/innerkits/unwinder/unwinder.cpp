@@ -27,6 +27,7 @@
 #include "dfx_symbols.h"
 #include "stack_util.h"
 #include "string_printf.h"
+#include "string_util.h"
 
 namespace OHOS {
 namespace HiviewDFX {
@@ -381,6 +382,9 @@ void Unwinder::FillFrame(DfxFrame& frame)
         return;
     }
     frame.mapName = frame.map->name;
+    if (EndsWith(frame.mapName, ".hap") && frame.map->GetElf() != nullptr) {
+        frame.mapName.append("!" + frame.map->elf->GetElfName());
+    }
     frame.mapOffset = frame.map->offset;
     frame.relPc = frame.map->GetRelPc(frame.pc);
     LOGU("relPc: %llx, mapName: %s", frame.relPc, frame.mapName.c_str());

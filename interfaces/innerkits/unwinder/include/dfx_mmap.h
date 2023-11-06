@@ -34,6 +34,7 @@ public:
 
     bool Init(const std::string &file);
     bool Init(uint8_t *decompressedData, size_t size);
+    bool InitElfInHap(const int fd, const size_t elfSz, const off_t offset);
     void Clear();
 
     inline void* Get()

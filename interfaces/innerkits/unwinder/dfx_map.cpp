@@ -157,11 +157,18 @@ void DfxMap::PermsToProts(const std::string perms, uint32_t& prots, uint32_t& fl
     }
 }
 
-const std::shared_ptr<DfxElf>& DfxMap::GetElf()
+const std::shared_ptr<DfxElf> DfxMap::GetElf()
 {
     if (elf == nullptr) {
-        if (!name.empty()) {
-            LOGU("GetElf name: %s", name.c_str());
+        if (name.empty()) {
+            LOGE("invalid map name?");
+            return nullptr;
+        }
+        LOGU("GetElf name: %s", name.c_str());
+        if (strstr(name.c_str(), ".hap") != nullptr) {
+            // parse so in hap
+            elf = DfxElf::CreateFromHap(name, prevMap, offset);
+        } else {
             elf = DfxElf::Create(name);
         }
     }
