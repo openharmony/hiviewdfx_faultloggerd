@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 Huawei Device Co., Ltd.
+ * Copyright (c) 2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -16,19 +16,20 @@
 #include <gtest/gtest.h>
 
 #include <cstdio>
-#include <map>
-#include <thread>
-#include <unistd.h>
 #include <hilog/log.h>
 #include <malloc.h>
+#include <map>
 #include <securec.h>
+#include <thread>
+#include <unistd.h>
+
 #include "dfx_config.h"
 #include "dfx_frame_formatter.h"
 #include "dfx_ptrace.h"
 #include "dfx_regs_get.h"
 #include "dfx_test_util.h"
-#include "unwinder.h"
 #include "elapsed_time.h"
+#include "unwinder.h"
 
 using namespace testing;
 using namespace testing::ext;
@@ -49,6 +50,46 @@ public:
 
     std::map<int, std::shared_ptr<Unwinder>> unwinders_;
 };
+
+/**
+ * @tc.name: GetStackRangeTest001
+ * @tc.desc: test unwinder GetStackRange interface in pid == tid
+ * @tc.type: FUNC
+ */
+HWTEST_F(UnwinderTest, GetStackRangeTest001, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "GetStackRangeTest001: start.";
+    auto unwinder = std::make_shared<Unwinder>();
+    uintptr_t stackBottom = 1;
+    uintptr_t stackTop = static_cast<uintptr_t>(-1);
+    GTEST_LOG_(INFO) << "when pid == tid and maps_ != null, GetStackRange(stackBottom, stackTop) is true";
+    ASSERT_TRUE(unwinder->GetStackRange(stackBottom, stackTop));
+    // When the param is less than -1, maps_ = null when method Unwinder is constructed
+    auto unwinderNegative = std::make_shared<Unwinder>(-2);
+    GTEST_LOG_(INFO) << "when pid == tid and maps_ == null, GetStackRange(stackBottom, stackTop) is false";
+    ASSERT_FALSE(unwinderNegative->GetStackRange(stackBottom, stackTop));
+    GTEST_LOG_(INFO) << "GetStackRangeTest001: end.";
+}
+
+/**
+ * @tc.name: GetStackRangeTest002
+ * @tc.desc: test unwinder GetStackRange interface in pid != tid
+ * @tc.type: FUNC
+ */
+HWTEST_F(UnwinderTest, GetStackRangeTest002, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "GetStackRangeTest002: start.";
+    auto unwinder = std::make_shared<Unwinder>();
+    uintptr_t stackBottom = 1;
+    uintptr_t stackTop = static_cast<uintptr_t>(-1);
+    bool result = false;
+    GTEST_LOG_(INFO) << "Run the function with thread will get pid != tid,\
+                            GetStackRange(stackBottom, stackTop) is true";
+    std::thread* thread = new std::thread([&]{result = unwinder->GetStackRange(stackBottom, stackTop);});
+    thread->join();
+    ASSERT_TRUE(result);
+    GTEST_LOG_(INFO) << "GetStackRangeTest002: end.";
+}
 
 /**
  * @tc.name: UnwinderLocalTest001
@@ -124,6 +165,27 @@ HWTEST_F(UnwinderTest, UnwinderLocalTest002, TestSize.Level2)
     GTEST_LOG_(INFO) << "Status:" << status << " Result:" << ret;
     GTEST_LOG_(INFO) << "UnwinderLocalTest002: end.";
 }
+
+/**
+ * @tc.name: UnwinderLocalTest003
+ * @tc.desc: test unwinder UnwinderLocal interface GetStackRange == false or GetStackRange == true
+ * @tc.type: FUNC
+ */
+HWTEST_F(UnwinderTest, UnwinderLocalTest003, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "UnwinderLocalTest003: start.";
+    // When the param is less than -1, maps_ = null when method Unwinder is constructed
+    auto unwinderNegative = std::make_shared<Unwinder>(-2);
+    size_t maxFrameNum = 64;
+    size_t skipFrameNum = 0;
+    GTEST_LOG_(INFO) << "when pid == tid and maps_ == null, UnwindLocal(maxFrameNum, skipFrameNum) is false";
+    ASSERT_FALSE(unwinderNegative->UnwindLocal(maxFrameNum, skipFrameNum));
+    auto unwinder = std::make_shared<Unwinder>();
+    GTEST_LOG_(INFO) << "when pid == tid and maps_ != null, UnwindLocal(maxFrameNum, skipFrameNum) is true";
+    ASSERT_TRUE(unwinder->UnwindLocal(maxFrameNum, skipFrameNum));
+    GTEST_LOG_(INFO) << "UnwinderLocalTest003: end.";
+}
+
 
 /**
  * @tc.name: UnwinderRemoteTest001
@@ -206,6 +268,23 @@ HWTEST_F(UnwinderTest, UnwinderRemoteTest002, TestSize.Level2)
     ASSERT_EQ(status, 0);
     GTEST_LOG_(INFO) << "Status:" << status << " Result:" << ret;
     GTEST_LOG_(INFO) << "UnwinderRemoteTest002: end.";
+}
+
+/**
+ * @tc.name: UnwinderRemoteTest003
+ * @tc.desc: test unwinder UnwinderRemote interface GetStackRange == false or GetStackRange == true
+ * @tc.type: FUNC
+ */
+HWTEST_F(UnwinderTest, UnwinderRemoteTest003, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "UnwinderRemoteTest003: start.";
+    // When the param is less than -1, pid_ < 0 when method Unwinder is constructed
+    auto unwinderNegative = std::make_shared<Unwinder>(-2);
+    size_t maxFrameNum = 64;
+    size_t skipFrameNum = 0;
+    GTEST_LOG_(INFO) << "when pid <= 0, UnwindLocal(maxFrameNum, skipFrameNum) is false";
+    ASSERT_FALSE(unwinderNegative->UnwindRemote(maxFrameNum, skipFrameNum));
+    GTEST_LOG_(INFO) << "UnwinderRemoteTest003: end.";
 }
 
 /**
@@ -572,6 +651,66 @@ HWTEST_F(UnwinderTest, DfxConfigTest001, TestSize.Level2)
     ASSERT_EQ(DfxConfig::GetConfig().lowAddressStep, 16);
     ASSERT_EQ(DfxConfig::GetConfig().maxFrameNums, 256);
     GTEST_LOG_(INFO) << "DfxConfigTest001: end.";
+}
+
+/**
+ * @tc.name: FillFrameTest001
+ * @tc.desc: test unwinder FillFrame interface
+ *  in local case
+ * @tc.type: FUNC
+ */
+HWTEST_F(UnwinderTest, FillFrameTest001, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "FillFrameTest001: start.";
+    auto unwinder = std::make_shared<Unwinder>();
+    DfxFrame frame;
+    unwinder->FillFrame(frame);
+    GTEST_LOG_(INFO) << " when DfxFrame::map is null, frame.buildId.size() is 0";
+    ASSERT_EQ(frame.buildId.size(), 0);
+
+    string testMap = "f6d83000-f6d84000 r--p 00001000 b3:07 1892 /system/lib/init/libinit_context.z.so.noexit";
+    auto map = DfxMap::Create(testMap, sizeof(testMap));
+    frame.map = map;
+    unwinder->FillFrame(frame);
+    GTEST_LOG_(INFO) << " when DfxFrame::map is not null and file not exist, frame.buildId.size() is 0";
+    ASSERT_EQ(frame.buildId.size(), 0);
+#ifdef __arm__
+    testMap = "f6d83000-f6d84000 r--p 00001000 b3:07 1892 /system/lib/init/libinit_context.z.so";
+#else
+    testMap = "7f0ab40000-7f0ab41000 r--p 00000000 b3:07 1882 /system/lib64/init/libinit_context1.z.so";
+#endif
+    map = DfxMap::Create(testMap, sizeof(testMap));
+    frame.map = map;
+    unwinder->FillFrame(frame);
+    GTEST_LOG_(INFO) << " when DfxFrame::map is not null and file exist, frame.buildId.size() is bigger than 0";
+    ASSERT_EQ(frame.buildId.size() == 0, false);
+    GTEST_LOG_(INFO) << "FillFrameTest001: end.";
+}
+
+/**
+ * @tc.name: FillFramesTest001
+ * @tc.desc: test unwinder FillFrames interface
+ *  in local case
+ * @tc.type: FUNC
+ */
+HWTEST_F(UnwinderTest, FillFramesTest001, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "FillFramesTest001: start.";
+#ifdef __arm__
+    const string testMap = "f6d83000-f6d84000 r--p 00001000 b3:07 1892 /system/lib/init/libinit_context.z.so";
+#else
+    const string testMap = "7f0ab40000-7f0ab41000 r--p 00000000 b3:07 1882 /system/lib64/init/libinit_context1.z.so";
+#endif
+    auto unwinder = std::make_shared<Unwinder>();
+    std::vector<DfxFrame> frames;
+    DfxFrame frame;
+    auto map = DfxMap::Create(testMap, sizeof(testMap));
+    frame.map = map;
+    frames.push_back(frame);
+    ASSERT_EQ(frames[0].buildId.size(), 0);
+    unwinder->FillFrames(frames);
+    ASSERT_EQ(frames[0].buildId.size() == 0, false);
+    GTEST_LOG_(INFO) << "FillFramesTest001: end.";
 }
 } // namespace HiviewDFX
 } // namepsace OHOS
