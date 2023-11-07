@@ -71,62 +71,68 @@ std::shared_ptr<DfxElf> DfxElf::CreateFromHap(const std::string& file, std::shar
         return nullptr;
     }
 
-    struct stat stat;
-    int fd;
-    fd = OHOS_TEMP_FAILURE_RETRY(open(file.c_str(), O_RDONLY));
+    int fd = OHOS_TEMP_FAILURE_RETRY(open(file.c_str(), O_RDONLY));
     if (fd < 0) {
         LOGE("Failed to open hap file, errno(%d)", errno);
         return nullptr;
     }
-
-    if (fstat(fd, &stat) < 0) {
-        LOGE("Failed to stat hap file size, errno(%d)", errno);
-        close(fd);
-        return nullptr;
-    }
-
+    auto fileSize = GetFileSize(fd);
+    size_t elfSize = 0;
     size_t size = prevMap->end - prevMap->begin;
-    void* phdr = mmap(nullptr, size, PROT_READ, MAP_PRIVATE, fd, prevMap->offset);
-    if (phdr == MAP_FAILED) {
-        LOGE("failed to map program header in hap.(%d)", errno);
-        close(fd);
-        return nullptr;
+    do {
+        auto mmap = std::make_shared<DfxMmap>();
+        if (!mmap->Init(fd, size, (off_t)prevMap->offset)) {
+            LOGE("failed to mmap program header in hap.");
+            break;
+        }
+        offset -= prevMap->offset;
+
+        elfSize = GetElfSize(mmap->Get());
+        if (elfSize <= 0 || elfSize > (size_t)(fileSize - prevMap->offset)) {
+            LOGE("Invalid elf size? elf size: %d, hap size: %d", (int)elfSize, (int)fileSize);
+            break;
+        }
+    } while (false);
+
+    if (elfSize != 0) {
+        LOGU("elfSize: %zu", elfSize);
+        auto elf = std::make_shared<DfxElf>(fd, elfSize, prevMap->offset);
+        if (elf->IsValid()) {
+            close(fd);
+            return elf;
+        }
     }
-
-    size_t elfSz = 0;
-#if defined(__arm__)
-    elfSz = DfxElf::CalcElfSize<Elf32_Ehdr>(phdr, size);
-#elif defined(__aarch64__)
-    elfSz = DfxElf::CalcElfSize<Elf64_Ehdr>(phdr, size);
-#endif
-
-    offset -= prevMap->offset;
-    munmap(phdr, size);
-    if (elfSz <= 0 || elfSz > (size_t)(stat.st_size - prevMap->offset)) {
-        LOGE("invalid elf size? sz:%d, hap sz:%d", (int)elfSz, (int)stat.st_size);
-        close(fd);
-        return nullptr;
-    }
-
-    auto elf = std::make_shared<DfxElf>(fd, elfSz, prevMap->offset);
     close(fd);
-    if (elf->IsValid()) {
-        return elf;
-    }
 #endif
     return nullptr;
+}
+
+DfxElf::DfxElf(const std::string& file)
+{
+    if (mmap_ == nullptr) {
+        mmap_ = std::make_shared<DfxMmap>();
+        LOGU("file: %s", file.c_str());
+        int fd = OHOS_TEMP_FAILURE_RETRY(open(file.c_str(), O_RDONLY));
+        if (fd > 0) {
+            auto size = static_cast<size_t>(GetFileSize(fd));
+            if (!mmap_->Init(fd, size, 0)) {
+                LOGE("Failed to mmap init.");
+            }
+            close(fd);
+        }
+    }
+    Init();
 }
 
 DfxElf::DfxElf(const int fd, const size_t elfSz, const off_t offset)
 {
     if (mmap_ == nullptr) {
         mmap_ = std::make_shared<DfxMmap>();
-        if (!mmap_->InitElfInHap(fd, elfSz, offset)) {
-            LOGE("Failed to init elf in hap.");
+        if (!mmap_->Init(fd, elfSz, offset)) {
+            LOGE("Failed to mmap init elf in hap.");
         }
     }
-    uti_.format = -1;
-    hasTableInfo_ = false;
+    Init();
 }
 
 DfxElf::DfxElf(uint8_t *decompressedData, size_t size)
@@ -136,6 +142,11 @@ DfxElf::DfxElf(uint8_t *decompressedData, size_t size)
         // this mean the embedded elf initialization.
         mmap_->Init(decompressedData, size);
     }
+    Init();
+}
+
+void DfxElf::Init()
+{
     uti_.format = -1;
     hasTableInfo_ = false;
 }
@@ -143,19 +154,6 @@ DfxElf::DfxElf(uint8_t *decompressedData, size_t size)
 void DfxElf::EnableMiniDebugInfo()
 {
     enableMiniDebugInfo_ = true;
-}
-
-bool DfxElf::Init(const std::string& file)
-{
-    bool ret = false;
-    if (mmap_ == nullptr) {
-        mmap_ = std::make_shared<DfxMmap>();
-        LOGU("file: %s", file.c_str());
-        ret = mmap_->Init(file);
-    }
-    uti_.format = -1;
-    hasTableInfo_ = false;
-    return ret;
 }
 
 void DfxElf::Clear()
@@ -170,26 +168,6 @@ void DfxElf::Clear()
         mmap_.reset();
         mmap_ = nullptr;
     }
-}
-
-bool DfxElf::ParseElfIdent()
-{
-    uintptr_t curOffset = 0;
-    // ELF Magic Number，7f 45 4c 46
-    uint8_t ident[SELFMAG + 1];
-    if (!Read(curOffset, ident, SELFMAG)) {
-        return false;
-    }
-
-    if (memcmp(ident, ELFMAG, SELFMAG) != 0) {
-        return false;
-    }
-
-    curOffset += EI_CLASS;
-    if (!Read(curOffset, &classType_, sizeof(uint8_t))) {
-        return false;
-    }
-    return true;
 }
 
 bool DfxElf::IsEmbeddedElf()
@@ -213,8 +191,12 @@ bool DfxElf::InitHeaders()
         return true;
     }
 
-    if (!ParseElfIdent()) {
-        DFXLOG_WARN("ParseElfIdent failed");
+    uint8_t ident[SELFMAG + 1];
+    if (!Read(0, ident, SELFMAG) || !IsValidElf(ident)) {
+        return false;
+    }
+
+    if (!Read(EI_CLASS, &classType_, sizeof(uint8_t))) {
         return false;
     }
 
@@ -378,6 +360,11 @@ std::string DfxElf::GetElfName()
         return "";
     }
     return elfParse_->GetElfName();
+}
+
+void DfxElf::SetBuildId(const std::string buildId)
+{
+    buildId_ = buildId;
 }
 
 std::string DfxElf::GetBuildId()
@@ -838,31 +825,37 @@ size_t DfxElf::GetMmapSize()
     return mmap_->Size();
 }
 
-#if is_ohos
-template <typename EhdrType>
-size_t DfxElf::CalcElfSize(void* elfPtr, size_t sz)
+bool DfxElf::IsValidElf(void* ptr)
 {
-    if (sz < sizeof(EhdrType)) {
-        LOGW("Invalid elf size? sz:%d, request sz:%d", sz, sizeof(EhdrType));
+    if (ptr == nullptr) {
+        return false;
+    }
+
+    if (memcmp(ptr, ELFMAG, SELFMAG) != 0) {
+        LOGW("Invalid elf hdr?");
+        return false;
+    }
+    return true;
+}
+
+#if is_ohos
+size_t DfxElf::GetElfSize(void* ptr)
+{
+    if (!IsValidElf(ptr)) {
         return 0;
     }
 
-#if defined(__arm__)
-    uint8_t elfClass = ELFCLASS32;
-#elif defined(__aarch64__)
-    uint8_t elfClass = ELFCLASS64;
-#endif
-
-    if (!(memcmp(elfPtr, ELFMAG, SELFMAG) == 0 &&
-        ((uint8_t*)elfPtr)[EI_CLASS] == elfClass &&
-        ((uint8_t*)elfPtr)[EI_VERSION] != EV_NONE &&
-        ((uint8_t*)elfPtr)[EI_VERSION] <= EV_CURRENT)) {
-        LOGW("invalid elf hdr?");
-        return 0;
+    const uint8_t* data = static_cast<const uint8_t*>(ptr);
+    uint8_t classType = data[EI_CLASS];
+    if (classType == ELFCLASS32) {
+        Elf32_Ehdr *ehdr = (Elf32_Ehdr *)data;
+        return static_cast<size_t>(ehdr->e_shoff + (ehdr->e_shentsize * ehdr->e_shnum));
+    } else if (classType == ELFCLASS64) {
+        Elf64_Ehdr *ehdr = (Elf64_Ehdr *)data;
+        return static_cast<size_t>(ehdr->e_shoff + (ehdr->e_shentsize * ehdr->e_shnum));
     }
-
-    EhdrType *ehdr = (EhdrType*)elfPtr;
-    return (ehdr->e_shoff + (ehdr->e_shentsize * ehdr->e_shnum));
+    DFXLOG_WARN("classType(%d) error", classType);
+    return 0;
 }
 #endif
 } // namespace HiviewDFX

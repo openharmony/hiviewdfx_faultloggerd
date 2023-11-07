@@ -32,9 +32,8 @@ public:
     DfxMmap() = default;
     virtual ~DfxMmap() { Clear(); }
 
-    bool Init(const std::string &file);
+    bool Init(const int fd, const size_t size, const off_t offset = 0);
     bool Init(uint8_t *decompressedData, size_t size);
-    bool InitElfInHap(const int fd, const size_t elfSz, const off_t offset);
     void Clear();
 
     inline void* Get()

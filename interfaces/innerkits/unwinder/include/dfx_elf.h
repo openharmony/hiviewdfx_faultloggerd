@@ -34,10 +34,15 @@ public:
     static std::shared_ptr<DfxElf> Create(const std::string& file);
     static std::shared_ptr<DfxElf> CreateFromHap(const std::string& file, std::shared_ptr<DfxMap> prevMap,
                                                  uint64_t& offset);
-    explicit DfxElf(const std::string& file) { Init(file); }
+    explicit DfxElf(const std::string& file);
     explicit DfxElf(const int fd, const size_t elfSz, const off_t offset);
     DfxElf(uint8_t *decompressedData, size_t size);
     ~DfxElf() { Clear(); }
+
+    static bool IsValidElf(void* ptr);
+#if is_ohos
+    static size_t GetElfSize(void* ptr);
+#endif
 
     bool IsValid();
     uint8_t GetClassType();
@@ -45,6 +50,7 @@ public:
     uint64_t GetElfSize();
     std::string GetElfName();
     std::string GetBuildId();
+    void SetBuildId(const std::string buildId);
     static std::string GetBuildId(uint64_t noteAddr, uint64_t noteSize);
     uintptr_t GetGlobalPointer();
     int64_t GetLoadBias();
@@ -69,16 +75,11 @@ public:
     void InitEmbeddedElf();
     std::shared_ptr<DfxElf> GetEmbeddedElf();
     std::shared_ptr<MiniDebugInfo> GetMiniDebugInfo();
-#if is_ohos
-    template <typename EhdrType>
-    static size_t CalcElfSize(void* elfPtr, size_t sz);
-#endif
 
 protected:
-    bool InitHeaders();
-    bool Init(const std::string& file);
+    void Init();
     void Clear();
-    bool ParseElfIdent();
+    bool InitHeaders();
 #if is_ohos && !is_mingw
     static int DlPhdrCb(struct dl_phdr_info *info, size_t size, void *data);
     static bool FindSection(struct dl_phdr_info *info, const std::string secName, ShdrInfo& shdr);

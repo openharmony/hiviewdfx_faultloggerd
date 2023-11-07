@@ -56,7 +56,8 @@ HWTEST_F(DfxElfTest, DfxElfTest001, TestSize.Level2)
     ElfImitate elfImitate;
     ShdrInfo shdr;
     ShdrInfo shdrImitate;
-    elfImitate.ParseAllHeaders(ElfImitate::ElfFileType::ELF32);
+    bool ret = elfImitate.ParseAllHeaders(ElfImitate::ElfFileType::ELF32);
+    ASSERT_TRUE(ret);
     for (size_t i = 0; i < interestedSections.size(); i++) {
         elf.GetSectionInfo(shdr, interestedSections[i]);
         elfImitate.GetSectionInfo(shdrImitate, interestedSections[i]);
@@ -97,7 +98,8 @@ HWTEST_F(DfxElfTest, DfxElfTest002, TestSize.Level2)
     ElfImitate elfImitate;
     ShdrInfo shdr;
     ShdrInfo shdrImitate;
-    elfImitate.ParseAllHeaders(ElfImitate::ElfFileType::ELF64);
+    bool ret = elfImitate.ParseAllHeaders(ElfImitate::ElfFileType::ELF64);
+    ASSERT_TRUE(ret);
     for (size_t i = 0; i < interestedSections.size(); i++) {
         GTEST_LOG_(INFO) << interestedSections[i];
         elf.GetSectionInfo(shdr, interestedSections[i]);

@@ -94,13 +94,11 @@ std::vector<uintptr_t> DfxRegs::GetRegsData() const
 void DfxRegs::SetRegsData(const std::vector<uintptr_t>& regs)
 {
     regsData_ = regs;
-    PrintRegs();
 }
 
 void DfxRegs::SetRegsData(const uintptr_t* regs)
 {
     (void)memcpy_s(RawData(), REG_LAST * sizeof(uintptr_t), regs, REG_LAST * sizeof(uintptr_t));
-    PrintRegs();
 }
 
 uintptr_t* DfxRegs::GetReg(size_t idx)
