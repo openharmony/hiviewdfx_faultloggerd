@@ -43,6 +43,7 @@ public:
     bool IsValidName();
     bool IsArkName();
     const std::shared_ptr<DfxElf> GetElf();
+    std::string GetElfName();
     uint64_t GetRelPc(uint64_t pc);
     std::string ToString();
 

@@ -31,6 +31,7 @@
 #include "dfx_elf.h"
 #include "dfx_log.h"
 #include "dfx_util.h"
+#include "string_util.h"
 
 namespace OHOS {
 namespace HiviewDFX {
@@ -165,14 +166,25 @@ const std::shared_ptr<DfxElf> DfxMap::GetElf()
             return nullptr;
         }
         LOGU("GetElf name: %s", name.c_str());
-        if (strstr(name.c_str(), ".hap") != nullptr) {
-            // parse so in hap
+        if (EndsWith(name, ".hap")) {
             elf = DfxElf::CreateFromHap(name, prevMap, offset);
         } else {
             elf = DfxElf::Create(name);
         }
     }
     return elf;
+}
+
+std::string DfxMap::GetElfName()
+{
+    if (name.empty()) {
+        return name;
+    }
+    std::string soName = name;
+    if (EndsWith(name, ".hap") && GetElf() != nullptr) {
+        soName.append("!" + elf->GetElfName());
+    }
+    return soName;
 }
 } // namespace HiviewDFX
 } // namespace OHOS

@@ -52,12 +52,12 @@ void DfxRegsX86_64::SetFromUcontext(const ucontext_t &context)
     SetRegsData(regs);
 }
 
-void DfxRegsX86_64::SetFromFpMiniRegs(const uintptr_t* regs)
+void DfxRegsX86_64::SetFromFpMiniRegs(const uintptr_t* regs, const size_t size)
 {
     // TODO
 }
 
-void DfxRegsX86_64::SetFromQutMiniRegs(const uintptr_t* regs)
+void DfxRegsX86_64::SetFromQutMiniRegs(const uintptr_t* regs, const size_t size)
 {
     // TODO
 }

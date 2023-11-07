@@ -55,7 +55,7 @@ HWTEST_F(DfxRegsTest, DfxRegsTest001, TestSize.Level2)
     ASSERT_EQ(setRegs, getRegs);
 
     uintptr_t regsData[REG_LAST] = { 0 };
-    dfxRegs->SetRegsData(regsData);
+    dfxRegs->SetRegsData(regsData, REG_LAST);
     getRegs = dfxRegs->GetRegsData();
     for (size_t i = 0; i < getRegs.size(); i++) {
         ASSERT_EQ(regsData[i], getRegs[i]);
@@ -174,10 +174,10 @@ HWTEST_F(DfxRegsTest, DfxRegsTest003, TestSize.Level2)
 HWTEST_F(DfxRegsTest, DfxRegsTest004, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "DfxRegsTest004: start.";
-    uintptr_t regs[4] = {1, 2, 3, 4};
+    uintptr_t regs[FP_MINI_REGS_SIZE] = {1, 2, 3, 4};
 #if defined(__arm__)
     auto dfxregsArm = std::make_shared<DfxRegsArm>();
-    dfxregsArm->SetFromFpMiniRegs(regs);
+    dfxregsArm->SetFromFpMiniRegs(regs, sizeof(regs));
     ASSERT_EQ((*dfxregsArm.get())[7], regs[0]);
     ASSERT_EQ((*dfxregsArm.get())[11], regs[1]);
     ASSERT_EQ((*dfxregsArm.get())[13], regs[2]);
@@ -185,7 +185,7 @@ HWTEST_F(DfxRegsTest, DfxRegsTest004, TestSize.Level2)
 
 #elif defined(__aarch64__)
     auto dfxregsArm64 = std::make_shared<DfxRegsArm64>();
-    dfxregsArm64->SetFromFpMiniRegs(regs);
+    dfxregsArm64->SetFromFpMiniRegs(regs, sizeof(regs));
     ASSERT_EQ((*dfxregsArm64.get())[29], regs[0]);
     ASSERT_EQ((*dfxregsArm64.get())[30], regs[1]);
     ASSERT_EQ((*dfxregsArm64.get())[31], regs[2]);

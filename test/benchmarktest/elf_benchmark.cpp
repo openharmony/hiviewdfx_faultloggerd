@@ -50,9 +50,9 @@ static void InitializeBuildId(benchmark::State& state, DfxMaps* dfxMaps, DfxMap*
 * @tc.name: BenchmarkElfGetBuildIdFromObj
 * @tc.desc: Elf Get BuildId From obj
 * @tc.type: FUNC
-* @tc.require:
 */
-static void BenchmarkElfGetBuildIdFromObj(benchmark::State& state) {
+static void BenchmarkElfGetBuildIdFromObj(benchmark::State& state)
+{
     auto dfxMaps = DfxMaps::Create();
     DfxMap* buildIdMap;
     InitializeBuildId(state, dfxMaps.get(), &buildIdMap);

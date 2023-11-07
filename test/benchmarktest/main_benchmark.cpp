@@ -19,6 +19,7 @@
 #include <sched.h>
 #include <string>
 #include <vector>
+#include "dfx_log.h"
 #include "string_util.h"
 #endif
 
@@ -33,14 +34,14 @@ static bool LockToCpu(int lockCpu)
     CPU_SET(lockCpu, &cpuSet);
     if (sched_setaffinity(0, sizeof(cpuSet), &cpuSet) != 0) {
         if (errno == EINVAL) {
-            printf("Invalid cpu %d\n", lockCpu);
+            LOGW("Invalid cpu %d", lockCpu);
         } else {
-            perror("sched_setaffinity failed");
+            LOGE("sched_setaffinity failed");
         }
         return false;
     }
 
-    printf("Locked to cpu %d\n", lockCpu);
+    LOGI("Locked to cpu %d\n", lockCpu);
     return true;
 }
 
@@ -55,7 +56,7 @@ int main(int argc, char** argv)
             char* endptr = nullptr;
             long cpu = strtol(&argv[i][16], &endptr, 10);
             if (endptr == nullptr || *endptr != '\0' || cpu > INT_MAX || cpu < 0) {
-                printf("Malformed value for --benchmark_cpu, requires a valid positive number.\n");
+                LOGW("Malformed value for --benchmark_cpu, requires a valid positive number.");
                 return 1;
             }
             lockCpu = cpu;

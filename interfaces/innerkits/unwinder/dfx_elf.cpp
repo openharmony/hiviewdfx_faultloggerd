@@ -85,13 +85,15 @@ std::shared_ptr<DfxElf> DfxElf::CreateFromHap(const std::string& file, std::shar
             LOGE("failed to mmap program header in hap.");
             break;
         }
-        offset -= prevMap->offset;
 
         elfSize = GetElfSize(mmap->Get());
         if (elfSize <= 0 || elfSize > (size_t)(fileSize - prevMap->offset)) {
             LOGE("Invalid elf size? elf size: %d, hap size: %d", (int)elfSize, (int)fileSize);
+            elfSize = 0;
             break;
         }
+
+        offset -= prevMap->offset;
     } while (false);
 
     if (elfSize != 0) {
@@ -109,18 +111,20 @@ std::shared_ptr<DfxElf> DfxElf::CreateFromHap(const std::string& file, std::shar
 
 DfxElf::DfxElf(const std::string& file)
 {
+#if is_ohos
     if (mmap_ == nullptr) {
-        mmap_ = std::make_shared<DfxMmap>();
         LOGU("file: %s", file.c_str());
         int fd = OHOS_TEMP_FAILURE_RETRY(open(file.c_str(), O_RDONLY));
         if (fd > 0) {
             auto size = static_cast<size_t>(GetFileSize(fd));
+            mmap_ = std::make_shared<DfxMmap>();
             if (!mmap_->Init(fd, size, 0)) {
                 LOGE("Failed to mmap init.");
             }
             close(fd);
         }
     }
+#endif
     Init();
 }
 
