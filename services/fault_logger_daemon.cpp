@@ -419,20 +419,24 @@ void FaultLoggerDaemon::HandleSdkDumpRequest(int32_t connectionFd, FaultLoggerdR
             .si_uid = static_cast<uid_t>(request->callerTid)
         };
 #pragma clang diagnostic pop
-        // means we need dump all the threads in a process.
+        int32_t reqTid = 0;
         if (request->tid == 0) {
-            if (syscall(SYS_rt_sigqueueinfo, request->pid, si.si_signo, &si) != 0) {
-                DFXLOG_ERROR("Failed to SYS_rt_sigqueueinfo signal(%d), errno(%d).", si.si_signo, errno);
-                resSdkDump = FaultLoggerSdkDumpResp::SDK_DUMP_NOPROC;
-                break;
-            }
+            /*
+             * means we need dump all the threads in a process
+             * --------
+             * Accroding to the linux manual, A process-directed signal may be delivered to any one of the
+             * threads that does not currently have the signal blocked. So we should specify the main thread
+             * as the target thread of signal.
+            */
+            reqTid = request->pid;
         } else {
             // means we need dump a specified thread
-            if (syscall(SYS_rt_tgsigqueueinfo, request->pid, request->tid, si.si_signo, &si) != 0) {
-                DFXLOG_ERROR("Failed to SYS_rt_tgsigqueueinfo signal(%d), errno(%d).", si.si_signo, errno);
-                resSdkDump = FaultLoggerSdkDumpResp::SDK_DUMP_NOPROC;
-                break;
-            }
+            reqTid = request->tid;
+        }
+        if (syscall(SYS_rt_tgsigqueueinfo, request->pid, reqTid, si.si_signo, &si) != 0) {
+            DFXLOG_ERROR("Failed to SYS_rt_tgsigqueueinfo signal(%d), errno(%d).", si.si_signo, errno);
+            resSdkDump = FaultLoggerSdkDumpResp::SDK_DUMP_NOPROC;
+            break;
         }
     } while (false);
 
