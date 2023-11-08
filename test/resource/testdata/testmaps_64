@@ -143,3 +143,7 @@
 7f8baf8000-7f8baf9000 rw-p 00115000 b3:07 1785                           /system/lib/ld-musl-aarch64.so.1
 7f8baf9000-7f8bb08000 rw-p 00000000 00:00 0                              [anon:ld-musl-aarch64.so.1.bss]
 7fe37db000-7fe37fc000 rw-p 00000000 00:00 0                              [stack]
+7fe37fc000-7fe37fd000 r--p 00000000 b3:07 1899                           [anon:ArkTS Code]
+7fe37fd000-7fe37fe000 r-xp 00054000 b3:07 1899                           [anon:ArkTS Code]
+7fe37fe000-7fe37ff000 r--p 0010f000 b3:07 1899                           [anon:ArkTS Code]
+7fe37ff000-7fe3800000 rw-p 00110000 b3:07 1899                           [anon:ArkTS Code]
