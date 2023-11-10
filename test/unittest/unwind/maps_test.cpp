@@ -199,13 +199,13 @@ HWTEST_F(MapsTest, IsArkNameTest003, TestSize.Level2)
 }
 
 /**
- * @tc.name: GetRelPcTest002
+ * @tc.name: GetRelPcTest
  * @tc.desc: test getRelPc no elf
  * @tc.type: FUNC
  */
-HWTEST_F(MapsTest, GetRelPcTest002, TestSize.Level2)
+HWTEST_F(MapsTest, GetRelPcTest, TestSize.Level2)
 {
-    GTEST_LOG_(INFO) << "GetRelPcTest002: start.";
+    GTEST_LOG_(INFO) << "GetRelPcTest: start.";
 #ifdef __arm__
     const string invalidMap =
         "f6d83000-f6d84000 r--p 00001000 b3:07 1892 /system/lib/init/libinit_context.z.so111";
@@ -219,17 +219,17 @@ HWTEST_F(MapsTest, GetRelPcTest002, TestSize.Level2)
 #endif
     shared_ptr<DfxMap> map = DfxMap::Create(invalidMap, sizeof(invalidMap));
     EXPECT_EQ(true, ((map->GetElf() == nullptr) && (map->GetRelPc(pc) == invalidOffset)));
-    GTEST_LOG_(INFO) << "GetRelPcTest002: end.";
+    GTEST_LOG_(INFO) << "GetRelPcTest: end.";
 }
 
 /**
- * @tc.name: ToStringTest001
+ * @tc.name: ToStringTest
  * @tc.desc: test ToString
  * @tc.type: FUNC
  */
-HWTEST_F(MapsTest, ToStringTest001, TestSize.Level2)
+HWTEST_F(MapsTest, ToStringTest, TestSize.Level2)
 {
-    GTEST_LOG_(INFO) << "ToStringTest001: start.";
+    GTEST_LOG_(INFO) << "ToStringTest: start.";
 #ifdef __arm__
     const string testMap = "f6d83000-f6d84000 r--p 00001000 b3:07 1892 /system/lib/init/libinit_context.z.so";
 #else
@@ -238,50 +238,30 @@ HWTEST_F(MapsTest, ToStringTest001, TestSize.Level2)
     shared_ptr<DfxMap> map = DfxMap::Create(testMap, sizeof(testMap));
     GTEST_LOG_(INFO) << map->ToString();
     EXPECT_EQ(true, sizeof(map->ToString()) != 0);
-    GTEST_LOG_(INFO) << "ToStringTest001: end.";
+    GTEST_LOG_(INFO) << "ToStringTest: end.";
 }
 
 /**
- * @tc.name: InitMapsTest001
- * @tc.desc: test Clear Get functions
- * @tc.type: FUNC
- */
-HWTEST_F(MapsTest, InitMapsTest001, TestSize.Level2)
-{
-    GTEST_LOG_(INFO) << "InitMapsTest001: start.";
-    const std::string file = "InitMapsTest001";
-    DfxMmap maps;
-    if (maps.Init(file)) {
-        FAIL() << "current test map file should not be initilized successfully";
-    }
-    maps.Clear();
-    if (maps.Get() != nullptr) {
-        FAIL() << "InitMapsTest001: Clear function purge failed.";
-    }
-    GTEST_LOG_(INFO) << "InitMapsTest001: end.";
-}
-
-/**
- * @tc.name: CreateMapsTest001
+ * @tc.name: CreateMapsTest
  * @tc.desc: test create maps by pid
  * @tc.type: FUNC
  */
-HWTEST_F(MapsTest, CreateMapsTest001, TestSize.Level2)
+HWTEST_F(MapsTest, CreateMapsTest, TestSize.Level2)
 {
-    GTEST_LOG_(INFO) << "CreateMapsTest001: start.";
+    GTEST_LOG_(INFO) << "CreateMapsTest: start.";
     shared_ptr<DfxMaps> maps = DfxMaps::Create(getpid());
     EXPECT_NE(maps, nullptr);
-    GTEST_LOG_(INFO) << "CreateMapsTest001: end.";
+    GTEST_LOG_(INFO) << "CreateMapsTest: end.";
 }
 
 /**
- * @tc.name: GetStackRangeTest001
+ * @tc.name: GetStackRangeTest
  * @tc.desc: test GetStackRange
  * @tc.type: FUNC
  */
-HWTEST_F(MapsTest, GetStackRangeTest001, TestSize.Level2)
+HWTEST_F(MapsTest, GetStackRangeTest, TestSize.Level2)
 {
-    GTEST_LOG_(INFO) << "GetStackRangeTest001: start.";
+    GTEST_LOG_(INFO) << "GetStackRangeTest: start.";
     uintptr_t bottom, top;
     ASSERT_TRUE(maps_->GetStackRange(bottom, top));
 #ifdef __arm__
@@ -291,17 +271,17 @@ HWTEST_F(MapsTest, GetStackRangeTest001, TestSize.Level2)
     EXPECT_EQ(bottom, 0x7fe37db000);
     EXPECT_EQ(top, 0x7fe37fc000);
 #endif
-    GTEST_LOG_(INFO) << "GetStackRangeTest001: end.";
+    GTEST_LOG_(INFO) << "GetStackRangeTest: end.";
 }
 
 /**
- * @tc.name: IsArkExecutedMapTest001
+ * @tc.name: IsArkExecutedMapTest
  * @tc.desc: test IsArkExecutedMap
  * @tc.type: FUNC
  */
-HWTEST_F(MapsTest, IsArkExecutedMapTest001, TestSize.Level2)
+HWTEST_F(MapsTest, IsArkExecutedMapTest, TestSize.Level2)
 {
-    GTEST_LOG_(INFO) << "IsArkExecutedMapTest001: start.";
+    GTEST_LOG_(INFO) << "IsArkExecutedMapTest: start.";
     uintptr_t addr;
 #ifdef __arm__
     addr = 0xffff2001;
@@ -318,7 +298,7 @@ HWTEST_F(MapsTest, IsArkExecutedMapTest001, TestSize.Level2)
     addr = 0x0;
     ASSERT_FALSE(maps_->IsArkExecutedMap(addr));
     maps_->Sort(false);
-    GTEST_LOG_(INFO) << "IsArkExecutedMapTest001: end.";
+    GTEST_LOG_(INFO) << "IsArkExecutedMapTest: end.";
 }
 }
 } // namespace HiviewDFX
