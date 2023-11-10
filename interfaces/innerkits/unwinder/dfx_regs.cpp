@@ -14,6 +14,7 @@
  */
 
 #include "dfx_regs.h"
+#include "dfx_regs_qut.h"
 
 #include <elf.h>
 #include <securec.h>
@@ -31,39 +32,7 @@ namespace {
 #define LOG_DOMAIN 0xD002D11
 #define LOG_TAG "DfxRegs"
 }
-std::vector<uint16_t> DfxRegs::qutRegs_ = {};
-
-void DfxRegs::SetQutRegs(std::vector<uint16_t> qutRegs)
-{
-    qutRegs_ = qutRegs;
-}
-
-const std::vector<uint16_t>& DfxRegs::GetQutRegs()
-{
-    if (!qutRegs_.empty()) {
-        return qutRegs_;
-    }
-    return QUT_REGS;
-}
-
-size_t DfxRegs::GetQutRegsSize()
-{
-    if (qutRegs_.empty()) {
-        GetQutRegs();
-    }
-    return qutRegs_.size();
-}
-
-bool DfxRegs::IsQutReg(uint16_t reg)
-{
-    const std::vector<uint16_t>& qutRegs = GetQutRegs();
-    for (size_t i = 0; i < qutRegs.size(); ++i) {
-        if (qutRegs[i] == reg) {
-            return true;
-        }
-    }
-    return false;
-}
+std::vector<uint16_t> DfxRegsQut::qutRegs_ = {};
 
 std::shared_ptr<DfxRegs> DfxRegs::Create()
 {
@@ -130,7 +99,8 @@ void DfxRegs::SetRegsData(const std::vector<uintptr_t>& regs)
 
 void DfxRegs::SetRegsData(const uintptr_t* regs, const size_t size)
 {
-    (void)memcpy_s(RawData(), size * sizeof(uintptr_t), regs, size * sizeof(uintptr_t));
+    size_t cpySize = (size > RegsSize()) ? RegsSize() : size;
+    (void)memcpy_s(RawData(), cpySize * sizeof(uintptr_t), regs, cpySize * sizeof(uintptr_t));
 }
 
 uintptr_t* DfxRegs::GetReg(size_t idx)

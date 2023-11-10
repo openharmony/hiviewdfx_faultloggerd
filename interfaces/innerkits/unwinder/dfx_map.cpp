@@ -16,9 +16,6 @@
 #include "dfx_map.h"
 
 #include <algorithm>
-#include <cstdio>
-#include <cstdlib>
-#include <cstring>
 #include <securec.h>
 #include <sstream>
 #if is_mingw

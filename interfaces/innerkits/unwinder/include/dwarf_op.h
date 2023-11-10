@@ -24,6 +24,7 @@
 #include "dfx_instr_statistic.h"
 #include "dfx_memory.h"
 #include "dfx_regs.h"
+#include "dfx_regs_qut.h"
 #include "dwarf_cfa_instructions.h"
 
 namespace OHOS {
@@ -340,6 +341,11 @@ protected:
     inline void OpReg(uint8_t opcode, DfxRegs& regs)
     {
         auto reg = static_cast<UnsignedType>(opcode - DW_OP_reg0);
+        size_t qutIdx = 0;
+        if (!DfxRegsQut::IsQutReg(static_cast<uint16_t>(reg), qutIdx)) {
+            INSTR_STATISTIC(UnsupportedDwarfOp_Reg, reg, UNW_ERROR_UNSUPPORTED_QUT_REG);
+            return;
+        }
         stack_.push_front(regs[reg]);
     };
 
@@ -347,14 +353,21 @@ protected:
     inline void OpRegx(AddressType& exprPtr, DfxRegs& regs)
     {
         auto reg = static_cast<uint32_t>(memory_->ReadUleb128(exprPtr));
+        size_t qutIdx = 0;
+        if (!DfxRegsQut::IsQutReg(static_cast<uint16_t>(reg), qutIdx)) {
+            INSTR_STATISTIC(UnsupportedDwarfOp_Regx, reg, UNW_ERROR_UNSUPPORTED_QUT_REG);
+            return;
+        }
         stack_.push_front(regs[reg]);
     };
 
     inline void OpBReg(uint8_t opcode, AddressType& exprPtr, DfxRegs& regs)
     {
         auto reg = static_cast<uint32_t>(opcode - DW_OP_breg0);
-        if (!DfxRegs::IsQutReg(static_cast<uint16_t>(reg))) {
-            INSTR_STATISTIC(UnsupportedDwarfOp_OpBreg_Reg, reg, UNW_ERROR_DWARF_UNSUPPORTED_BREG);
+        size_t qutIdx = 0;
+        if (!DfxRegsQut::IsQutReg(static_cast<uint16_t>(reg), qutIdx)) {
+            INSTR_STATISTIC(UnsupportedDwarfOp_Breg, reg, UNW_ERROR_UNSUPPORTED_QUT_REG);
+            return;
         }
         auto value = static_cast<SignedType>(memory_->ReadSleb128(exprPtr));
         value += static_cast<SignedType>(regs[reg]);
@@ -364,8 +377,10 @@ protected:
     inline void OpBRegx(AddressType& exprPtr, DfxRegs& regs)
     {
         auto reg = static_cast<uint32_t>(memory_->ReadUleb128(exprPtr));
-        if (!DfxRegs::IsQutReg(static_cast<uint16_t>(reg))) {
-            INSTR_STATISTIC(UnsupportedDwarfOp_OpBregx_Reg, reg, UNW_ERROR_DWARF_UNSUPPORTED_BREGX);
+        size_t qutIdx = 0;
+        if (!DfxRegsQut::IsQutReg(static_cast<uint16_t>(reg), qutIdx)) {
+            INSTR_STATISTIC(UnsupportedDwarfOp_Bregx, reg, UNW_ERROR_UNSUPPORTED_QUT_REG);
+            return;
         }
         auto value = static_cast<SignedType>(memory_->ReadSleb128(exprPtr));
         value += static_cast<SignedType>(regs[reg]);

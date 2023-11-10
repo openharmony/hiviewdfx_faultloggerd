@@ -28,19 +28,15 @@ namespace OHOS {
 namespace HiviewDFX {
 class DwarfSection {
 public:
-    explicit DwarfSection(std::shared_ptr<DfxMemory> memory) : memory_(memory)
-    {
-        lastErrorData_.code = UNW_ERROR_NONE;
-        lastErrorData_.addr = 0;
-    }
+    explicit DwarfSection(std::shared_ptr<DfxMemory> memory);
     virtual ~DwarfSection() = default;
 
     bool LinearSearchEntry(uintptr_t pc, struct UnwindTableInfo uti, struct UnwindEntryInfo& uei);
     bool SearchEntry(uintptr_t pc, struct UnwindTableInfo uti, struct UnwindEntryInfo& uei);
     bool Step(uintptr_t fdeAddr, std::shared_ptr<DfxRegs> regs, std::shared_ptr<RegLocState> rs);
 
-    const uint16_t& GetLastErrorCode() const { return lastErrorData_.code; }
-    const uint64_t& GetLastErrorAddr() const { return lastErrorData_.addr; }
+    const uint16_t& GetLastErrorCode() { return lastErrorData_.GetCode(); }
+    const uint64_t& GetLastErrorAddr() { return lastErrorData_.GetAddr(); }
 
 protected:
     bool GetCieOrFde(uintptr_t &addr, FrameDescEntry &fdeInfo);

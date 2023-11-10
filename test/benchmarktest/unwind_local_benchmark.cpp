@@ -18,6 +18,7 @@
 #include <vector>
 #include "dfx_log.h"
 #include "dfx_regs_get.h"
+#include "dfx_regs_qut.h"
 #include "dfx_test_util.h"
 #include "unwinder.h"
 
@@ -79,31 +80,29 @@ static size_t UnwinderLocal(MAYBE_UNUSED void* data)
 
 #if defined(__aarch64__)
 static size_t UnwinderLocalFp(MAYBE_UNUSED void* data) {
-    auto unwinder = std::make_shared<Unwinder>();
+    UnwindData* dataPtr = reinterpret_cast<UnwindData*>(data);
+    UnwindData unwindData;
+    if (dataPtr != nullptr) {
+        unwindData.unwinder = dataPtr->unwinder;
+    }
+    if (unwindData.unwinder == nullptr) {
+        unwindData.unwinder = std::make_shared<Unwinder>();
+    }
     uintptr_t stackBottom = 1, stackTop = static_cast<uintptr_t>(-1);
-    unwinder->GetStackRange(stackBottom, stackTop);
+    unwindData.unwinder->GetStackRange(stackBottom, stackTop);
     uintptr_t miniRegs[FP_MINI_REGS_SIZE] = {0};
     GetFramePointerMiniRegs(miniRegs);
     auto regs = DfxRegs::CreateFromRegs(UnwindMode::FRAMEPOINTER_UNWIND, miniRegs);
-    unwinder->SetRegs(regs);
+    unwindData.unwinder->SetRegs(regs);
     UnwindContext context;
     context.pid = UNWIND_TYPE_LOCAL;
     context.regs = regs;
     context.stackCheck = false;
     context.stackBottom = stackBottom;
     context.stackTop = stackTop;
-
-    int idx = 0;
-    uintptr_t pc, fp;
-    while (true) {
-        pc = regs->GetPc();
-        fp = regs->GetFp();
-        if (!unwinder->FpStep(fp, pc, &context) || (pc == 0)) {
-            break;
-        }
-        idx++;
-    };
-    return idx;
+    unwindData.unwinder->UnwindByFp(&context);
+    auto pcs = unwindData.unwinder->GetPcs();
+    return pcs.size();
 }
 #endif
 
@@ -127,7 +126,7 @@ static void BenchmarkUnwinderLocalFull(benchmark::State& state)
     for (uint16_t i = REG_EH; i < REG_LAST; ++i) {
         qutRegs.push_back(i);
     }
-    DfxRegs::SetQutRegs(qutRegs);
+    DfxRegsQut::SetQutRegs(qutRegs);
     Run(state, UnwinderLocal, nullptr);
 }
 BENCHMARK(BenchmarkUnwinderLocalFull);
@@ -139,7 +138,7 @@ BENCHMARK(BenchmarkUnwinderLocalFull);
 */
 static void BenchmarkUnwinderLocalQut(benchmark::State& state)
 {
-    DfxRegs::SetQutRegs(QUT_REGS);
+    DfxRegsQut::SetQutRegs(QUT_REGS);
     Run(state, UnwinderLocal, nullptr);
 }
 BENCHMARK(BenchmarkUnwinderLocalQut);
@@ -151,7 +150,7 @@ BENCHMARK(BenchmarkUnwinderLocalQut);
 */
 static void BenchmarkUnwinderLocalQutCache(benchmark::State& state)
 {
-    DfxRegs::SetQutRegs(QUT_REGS);
+    DfxRegsQut::SetQutRegs(QUT_REGS);
     UnwindData data;
     data.unwinder = std::make_shared<Unwinder>();
     Run(state, UnwinderLocal, &data);
@@ -165,7 +164,7 @@ BENCHMARK(BenchmarkUnwinderLocalQutCache);
 */
 static void BenchmarkUnwinderLocalQutFrames(benchmark::State& state)
 {
-    DfxRegs::SetQutRegs(QUT_REGS);
+    DfxRegsQut::SetQutRegs(QUT_REGS);
     UnwindData data;
     data.unwinder = nullptr;
     data.isFillFrames = true;
@@ -180,7 +179,7 @@ BENCHMARK(BenchmarkUnwinderLocalQutFrames);
 */
 static void BenchmarkUnwinderLocalQutFramesCache(benchmark::State& state)
 {
-    DfxRegs::SetQutRegs(QUT_REGS);
+    DfxRegsQut::SetQutRegs(QUT_REGS);
     UnwindData data;
     data.unwinder = std::make_shared<Unwinder>();
     data.isFillFrames = true;
@@ -196,7 +195,9 @@ BENCHMARK(BenchmarkUnwinderLocalQutFramesCache);
 */
 static void BenchmarkUnwinderLocalFp(benchmark::State& state)
 {
-    Run(state, UnwinderLocalFp, nullptr);
+    UnwindData data;
+    data.unwinder = std::make_shared<Unwinder>();
+    Run(state, UnwinderLocalFp, &data);
 }
 BENCHMARK(BenchmarkUnwinderLocalFp);
 #endif

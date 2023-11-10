@@ -193,15 +193,15 @@ uint64_t DfxMemory::ReadUleb128(uintptr_t& addr)
 {
     uint64_t val = 0;
     uint64_t shift = 0;
-    uint8_t byte;
+    uint8_t u8;
     do {
-        if (!ReadU8(addr, &byte, true)) {
+        if (!ReadU8(addr, &u8, true)) {
             break;
         }
 
-        val |= static_cast<uint64_t>(byte & 0x7f) << shift;
+        val |= static_cast<uint64_t>(u8 & 0x7f) << shift;
         shift += SEVEN_BIT_OFFSET;
-    } while (byte & 0x80);
+    } while (u8 & 0x80);
     return val;
 }
 

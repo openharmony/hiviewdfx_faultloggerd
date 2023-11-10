@@ -39,9 +39,9 @@ public:
     DfxElf(uint8_t *decompressedData, size_t size);
     ~DfxElf() { Clear(); }
 
-    static bool IsValidElf(void* ptr);
+    static bool IsValidElf(const void* ptr);
 #if is_ohos
-    static size_t GetElfSize(void* ptr);
+    static size_t GetElfSize(const void* ptr);
 #endif
 
     bool IsValid();
@@ -50,7 +50,7 @@ public:
     uint64_t GetElfSize();
     std::string GetElfName();
     std::string GetBuildId();
-    void SetBuildId(const std::string buildId);
+    void SetBuildId(const std::string& buildId);
     static std::string GetBuildId(uint64_t noteAddr, uint64_t noteSize);
     uintptr_t GetGlobalPointer();
     int64_t GetLoadBias();
@@ -98,8 +98,8 @@ private:
     std::string buildId_ = "";
     struct UnwindTableInfo uti_;
     bool hasTableInfo_ = false;
-    std::shared_ptr<DfxMmap> mmap_;
-    std::unique_ptr<ElfParser> elfParse_;
+    std::shared_ptr<DfxMmap> mmap_ = nullptr;
+    std::unique_ptr<ElfParser> elfParse_ = nullptr;
     std::vector<ElfSymbol> elfSymbols_;
     std::vector<ElfSymbol> funcSymbols_;
     bool enableMiniDebugInfo_ = false;

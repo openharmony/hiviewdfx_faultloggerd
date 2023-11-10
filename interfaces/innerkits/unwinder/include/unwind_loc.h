@@ -18,6 +18,7 @@
 #include <cinttypes>
 #include <string>
 #include <vector>
+#include "dfx_regs_qut.h"
 #include "unwind_define.h"
 
 namespace OHOS {
@@ -40,16 +41,20 @@ struct RegLoc {
 // saved register status after running call frame instructions
 // it should describe how register saved
 struct RegLocState {
+    RegLocState() { locs.resize(DfxRegsQut::GetQutRegsSize()); }
+    explicit RegLocState(size_t locsSize) { locs.resize(locsSize); }
+    ~RegLocState() = default;
+
     uintptr_t pcStart = 0;
     uintptr_t pcEnd = 0;
-    uint32_t cfaReg; // cfa = [r14]
+    uint32_t cfaReg = 0; // cfa = [r14]
     union {
-        int32_t cfaRegOffset; // cfa = cfa + offset
+        int32_t cfaRegOffset = 0; // cfa = cfa + offset
         uintptr_t cfaExprPtr; // cfa = expr
     };
     bool isPcSet = false;
     uintptr_t pseudoReg = 0;
-    RegLoc locs[REGS_MAX_SIZE];
+    std::vector<RegLoc> locs;
 };
 } // namespace HiviewDFX
 } // namespace OHOS

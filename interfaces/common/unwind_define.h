@@ -22,8 +22,6 @@
 #include "unwind_arm_define.h"
 #elif defined(__aarch64__)
 #include "unwind_arm64_define.h"
-#elif defined(__i386__)
-#include "unwind_x86_define.h"
 #elif defined(__x86_64__)
 #include "unwind_x86_64_define.h"
 #else
@@ -38,7 +36,6 @@ namespace HiviewDFX {
 #define ARM_EXIDX_TABLE_SIZE 8
 
 static const int FRAME_MAX_SIZE = 64;
-static const int REGS_MAX_SIZE = 64;
 
 /**
  * @brief chip architecture

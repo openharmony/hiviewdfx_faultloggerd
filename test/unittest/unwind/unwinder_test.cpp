@@ -68,9 +68,8 @@ HWTEST_F(UnwinderTest, UnwinderLocalTest001, TestSize.Level2)
         auto frames = unwinder->GetFrames();
         ASSERT_GT(frames.size(), 1);
         time_t elapsed2 = counter.Elapsed();
-        GTEST_LOG_(INFO) << "Elapsed-: " << elapsed1;
-        GTEST_LOG_(INFO) << "Elapsed+: " << elapsed2;
-        GTEST_LOG_(INFO) << "frames:\n" << Unwinder::GetFramesStr(frames);
+        GTEST_LOG_(INFO) << "Elapsed-: " << elapsed1 << "\tElapsed+: " << elapsed2;
+        GTEST_LOG_(INFO) << "UnwinderLocalTest001: frames:\n" << Unwinder::GetFramesStr(frames);
         _exit(0);
     }
 
@@ -109,9 +108,8 @@ HWTEST_F(UnwinderTest, UnwinderLocalTest002, TestSize.Level2)
             auto frames = unwinder->GetFrames();
             ASSERT_GT(frames.size(), 1);
             time_t elapsed2 = counter.Elapsed();
-            GTEST_LOG_(INFO) << "Elapsed-: " << elapsed1;
-            GTEST_LOG_(INFO) << "Elapsed+: " << elapsed2;
-            GTEST_LOG_(INFO) << "frames:\n" << Unwinder::GetFramesStr(frames);
+            GTEST_LOG_(INFO) << "Elapsed-: " << elapsed1 << "\tElapsed+: " << elapsed2;
+            GTEST_LOG_(INFO) << "UnwinderLocalTest002: frames:\n" << Unwinder::GetFramesStr(frames);
             unwinders_[pid] = unwinder;
             sleep(1);
         }
@@ -143,13 +141,12 @@ HWTEST_F(UnwinderTest, UnwinderRemoteTest001, TestSize.Level2)
         ElapsedTime counter;
         unwRet = unwinder->UnwindRemote();
         time_t elapsed1 = counter.Elapsed();
-        EXPECT_EQ(true, unwRet) << "UnwinderRemoteTest001: Unwind:" << unwRet;
+        EXPECT_EQ(true, unwRet) << "UnwinderRemoteTest001: unwRet:" << unwRet;
         auto frames = unwinder->GetFrames();
         ASSERT_GT(frames.size(), 1);
         time_t elapsed2 = counter.Elapsed();
-        GTEST_LOG_(INFO) << "Elapsed-: " << elapsed1;
-        GTEST_LOG_(INFO) << "Elapsed+: " << elapsed2;
-        GTEST_LOG_(INFO) << "frames:\n" << Unwinder::GetFramesStr(frames);
+        GTEST_LOG_(INFO) << "Elapsed-: " << elapsed1 << "\tElapsed+: " << elapsed2;
+        GTEST_LOG_(INFO) << "UnwinderRemoteTest001: frames:\n" << Unwinder::GetFramesStr(frames);
         DfxPtrace::Detach(pid);
         _exit(0);
     }
@@ -191,9 +188,8 @@ HWTEST_F(UnwinderTest, UnwinderRemoteTest002, TestSize.Level2)
             auto frames = unwinder->GetFrames();
             ASSERT_GT(frames.size(), 1);
             time_t elapsed2 = counter.Elapsed();
-            GTEST_LOG_(INFO) << "Elapsed-: " << elapsed1;
-            GTEST_LOG_(INFO) << "Elapsed+: " << elapsed2;
-            GTEST_LOG_(INFO) << "frames:\n" << Unwinder::GetFramesStr(frames);
+            GTEST_LOG_(INFO) << "Elapsed-: " << elapsed1 << "\tElapsed+: " << elapsed2;
+            GTEST_LOG_(INFO) << "UnwinderRemoteTest002: frames:\n" << Unwinder::GetFramesStr(frames);
             unwinders_[pid] = unwinder;
             sleep(1);
         }
@@ -235,9 +231,8 @@ HWTEST_F(UnwinderTest, UnwindTest001, TestSize.Level2)
         auto frames = unwinder->GetFrames();
         ASSERT_GT(frames.size(), 1);
         time_t elapsed2 = counter.Elapsed();
-        GTEST_LOG_(INFO) << "Elapsed-: " << elapsed1;
-        GTEST_LOG_(INFO) << "Elapsed+: " << elapsed2;
-        GTEST_LOG_(INFO) << "frames:\n" << Unwinder::GetFramesStr(frames);
+        GTEST_LOG_(INFO) << "Elapsed-: " << elapsed1 << "\tElapsed+: " << elapsed2;
+        GTEST_LOG_(INFO) << "UnwindTest001: frames:\n" << Unwinder::GetFramesStr(frames);
         DfxPtrace::Detach(pid);
         _exit(0);
     }
@@ -260,29 +255,25 @@ HWTEST_F(UnwinderTest, UnwindTest002, TestSize.Level2)
     pid_t child = fork();
     if (child == 0) {
         auto unwinder = std::make_shared<Unwinder>();
-        ElapsedTime counter;
         uintptr_t stackBottom = 1, stackTop = static_cast<uintptr_t>(-1);
         ASSERT_TRUE(unwinder->GetStackRange(stackBottom, stackTop));
+        GTEST_LOG_(INFO) << "UnwindTest002: GetStackRange.";
+        UnwindContext context;
+        context.stackCheck = false;
+        context.stackBottom = stackBottom;
+        context.stackTop = stackTop;
 
         auto regs = DfxRegs::Create();
         auto regsData = regs->RawData();
         GetLocalRegs(regsData);
         unwinder->SetRegs(regs);
-        UnwindContext context;
         context.pid = UNWIND_TYPE_LOCAL;
         context.regs = regs;
-        context.stackCheck = false;
-        context.stackBottom = stackBottom;
-        context.stackTop = stackTop;
-        time_t elapsed1 = counter.Elapsed();
         bool unwRet = unwinder->Unwind(&context);
-        time_t elapsed2 = counter.Elapsed();
-        EXPECT_EQ(true, unwRet) << "UnwindTest002: Unwind:" << unwRet;
+        EXPECT_EQ(true, unwRet) << "UnwindTest002: unwRet:" << unwRet;
         auto frames = unwinder->GetFrames();
         ASSERT_GT(frames.size(), 1);
-        GTEST_LOG_(INFO) << "Elapsed-: " << elapsed1;
-        GTEST_LOG_(INFO) << "Elapsed+: " << elapsed2;
-        GTEST_LOG_(INFO) << "frames:\n" << Unwinder::GetFramesStr(frames);
+        GTEST_LOG_(INFO) << "UnwindTest002:frames:\n" << Unwinder::GetFramesStr(frames);
         _exit(0);
     }
 
@@ -320,7 +311,7 @@ HWTEST_F(UnwinderTest, UnwindTest003, TestSize.Level2)
         std::shared_ptr<DfxMaps> maps = unwinder->GetMaps();
         unwinder->GetFramesByPcs(frames, pcs, maps);
         ASSERT_GT(frames.size(), 1);
-        GTEST_LOG_(INFO) << "frames:\n" << Unwinder::GetFramesStr(frames);
+        GTEST_LOG_(INFO) << "UnwindTest003: frames:\n" << Unwinder::GetFramesStr(frames);
         _exit(0);
     }
 
@@ -351,7 +342,7 @@ HWTEST_F(UnwinderTest, UnwindTest004, TestSize.Level2)
 
         auto framesVec = DfxFrameFormatter::ConvertFrames(frames);
         std::string framesStr = DfxFrameFormatter::GetFramesStr(framesVec);
-        GTEST_LOG_(INFO) << "frames:\n" << framesStr;
+        GTEST_LOG_(INFO) << "UnwindTest004: frames:\n" << framesStr;
 
         string log[] = {"pc", "test_unwind", "#00", "#01", "#02"};
         int len = sizeof(log) / sizeof(log[0]);
@@ -388,19 +379,14 @@ HWTEST_F(UnwinderTest, StepTest001, TestSize.Level2)
         UnwindContext context;
         context.pid = pid;
         context.regs = regs;
-        ElapsedTime counter;
         uintptr_t pc, sp;
         pc = regs->GetPc();
         sp = regs->GetSp();
         std::shared_ptr<DfxMap> map = nullptr;
         ASSERT_TRUE(maps->FindMapByAddr(map, pc));
         context.map = map;
-        time_t elapsed1 = counter.Elapsed();
         unwRet = unwinder->Step(pc, sp, &context);
-        time_t elapsed2 = counter.Elapsed();
         ASSERT_TRUE(unwRet) << "StepTest001: Unwind:" << unwRet;
-        GTEST_LOG_(INFO) << "Elapsed-: " << elapsed1;
-        GTEST_LOG_(INFO) << "Elapsed+: " << elapsed2;
         DfxPtrace::Detach(pid);
         _exit(0);
     }
@@ -408,7 +394,7 @@ HWTEST_F(UnwinderTest, StepTest001, TestSize.Level2)
     int status;
     int ret = wait(&status);
     ASSERT_EQ(status, 0);
-    GTEST_LOG_(INFO) << "Status:" << status << " Result:" << ret;
+    GTEST_LOG_(INFO) << "StepTest001: Status:" << status << " Result:" << ret;
     GTEST_LOG_(INFO) << "StepTest001: end.";
 }
 
@@ -423,36 +409,33 @@ HWTEST_F(UnwinderTest, StepTest002, TestSize.Level2)
     pid_t child = fork();
     if (child == 0) {
         auto unwinder = std::make_shared<Unwinder>();
-        ElapsedTime counter;
         uintptr_t stackBottom = 1, stackTop = static_cast<uintptr_t>(-1);
         ASSERT_TRUE(unwinder->GetStackRange(stackBottom, stackTop));
+        GTEST_LOG_(INFO) << "StepTest002: GetStackRange.";
+        UnwindContext context;
+        context.pid = UNWIND_TYPE_LOCAL;
+        context.stackCheck = false;
+        context.stackBottom = stackBottom;
+        context.stackTop = stackTop;
 
         auto regs = DfxRegs::Create();
         auto regsData = regs->RawData();
         GetLocalRegs(regsData);
         unwinder->SetRegs(regs);
-        UnwindContext context;
-        context.pid = UNWIND_TYPE_LOCAL;
         context.regs = regs;
-        context.stackCheck = false;
-        context.stackBottom = stackBottom;
-        context.stackTop = stackTop;
+
         uintptr_t pc, sp;
         pc = regs->GetPc();
         sp = regs->GetSp();
-        time_t elapsed1 = counter.Elapsed();
         bool unwRet = unwinder->Step(pc, sp, &context);
-        time_t elapsed2 = counter.Elapsed();
-        ASSERT_TRUE(unwRet) << "StepTest002: Unwind:" << unwRet;
-        GTEST_LOG_(INFO) << "Elapsed-: " << elapsed1;
-        GTEST_LOG_(INFO) << "Elapsed+: " << elapsed2;
+        ASSERT_TRUE(unwRet) << "StepTest002: unwRet:" << unwRet;
         _exit(0);
     }
 
     int status;
     int ret = wait(&status);
     ASSERT_EQ(status, 0);
-    GTEST_LOG_(INFO) << "Status:" << status << " Result:" << ret;
+    GTEST_LOG_(INFO) << "StepTest002: Status:" << status << " Result:" << ret;
     GTEST_LOG_(INFO) << "StepTest002: end.";
 }
 
@@ -477,23 +460,12 @@ HWTEST_F(UnwinderTest, StepTest003, TestSize.Level2)
         unwinder->SetRegs(regs);
         UnwindContext context;
         context.pid = pid;
-        context.regs = regs;
         ElapsedTime counter;
-        int idx = 0;
-        uintptr_t pc, fp;
-        while (true) {
-            pc = regs->GetPc();
-            fp = regs->GetFp();
-            if (!unwinder->FpStep(fp, pc, &context) || (pc == 0)) {
-                break;
-            }
-            idx++;
-        };
+        unwRet = unwinder->UnwindByFp(&context);
+        ASSERT_TRUE(unwRet) << "StepTest003: unwind:" << unwRet;
         DfxPtrace::Detach(pid);
-        ASSERT_GT(idx, 1);
-        GTEST_LOG_(INFO) << "idx: " << idx;
         time_t elapsed = counter.Elapsed();
-        GTEST_LOG_(INFO) << "Elapsed: " << elapsed;
+        GTEST_LOG_(INFO) << "StepTest003: Elapsed: " << elapsed;
         _exit(0);
     }
 
@@ -518,31 +490,40 @@ HWTEST_F(UnwinderTest, StepTest004, TestSize.Level2)
         ElapsedTime counter;
         uintptr_t stackBottom = 1, stackTop = static_cast<uintptr_t>(-1);
         ASSERT_TRUE(unwinder->GetStackRange(stackBottom, stackTop));
+        GTEST_LOG_(INFO) << "StepTest004: GetStackRange.";
 
         auto regs = DfxRegs::Create();
         auto regsData = regs->RawData();
         GetLocalRegs(regsData);
         UnwindContext context;
         context.pid = UNWIND_TYPE_LOCAL;
-        context.regs = regs;
         context.stackCheck = false;
         context.stackBottom = stackBottom;
         context.stackTop = stackTop;
         unwinder->SetRegs(regs);
-        int idx = 0;
+
+        bool unwRet = unwinder->UnwindByFp(&context);
+        ASSERT_TRUE(unwRet) << "StepTest004: unwRet:" << unwRet;
+        size_t unwSize = unwinder->GetPcs().size();
+        GTEST_LOG_(INFO) << "StepTest004: unwSize: " << unwSize;
+
+        uintptr_t miniRegs[FP_MINI_REGS_SIZE] = {0};
+        GetFramePointerMiniRegs(miniRegs);
+        regs = DfxRegs::CreateFromRegs(UnwindMode::FRAMEPOINTER_UNWIND, miniRegs);
+        unwinder->SetRegs(regs);
+        size_t idx = 0;
         uintptr_t pc, fp;
         while (true) {
             pc = regs->GetPc();
             fp = regs->GetFp();
+            idx++;
             if (!unwinder->FpStep(fp, pc, &context) || (pc == 0)) {
                 break;
             }
-            idx++;
         };
-        ASSERT_GT(idx, 1);
-        GTEST_LOG_(INFO) << "idx: " << idx;
+        ASSERT_EQ(idx, unwSize) << "StepTest004: idx:" << idx;
         time_t elapsed = counter.Elapsed();
-        GTEST_LOG_(INFO) << "Elapsed: " << elapsed;
+        GTEST_LOG_(INFO) << "StepTest004: Elapsed: " << elapsed;
         _exit(0);
     }
 

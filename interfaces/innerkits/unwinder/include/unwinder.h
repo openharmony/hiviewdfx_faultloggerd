@@ -68,8 +68,8 @@ public:
     inline const std::shared_ptr<DfxRegs>& GetRegs() { return regs_; }
     inline const std::shared_ptr<DfxMaps>& GetMaps() { return maps_; }
 
-    const uint16_t& GetLastErrorCode() const { return lastErrorData_.code; }
-    const uint64_t& GetLastErrorAddr() const { return lastErrorData_.addr; }
+    inline const uint16_t& GetLastErrorCode() { return lastErrorData_.GetCode(); }
+    inline const uint64_t& GetLastErrorAddr() { return lastErrorData_.GetAddr(); }
 
     bool GetStackRange(uintptr_t& stackBottom, uintptr_t& stackTop);
     bool GetMap(uintptr_t pc, void *ctx, std::shared_ptr<DfxMap>& map);
@@ -77,10 +77,11 @@ public:
     bool UnwindLocal(size_t maxFrameNum = 64, size_t skipFrameNum = 0);
     bool UnwindRemote(size_t maxFrameNum = 64, size_t skipFrameNum = 0);
     bool Unwind(void *ctx, size_t maxFrameNum = 64, size_t skipFrameNum = 0);
+    bool UnwindByFp(void *ctx, size_t maxFrameNum = 64, size_t skipFrameNum = 0);
     bool Step(uintptr_t& pc, uintptr_t& sp, void *ctx);
     bool FpStep(uintptr_t& fp, uintptr_t& pc, void *ctx);
 
-    const std::vector<uintptr_t>& GetPcs() { return pcs_; }
+    inline const std::vector<uintptr_t>& GetPcs() { return pcs_; }
     void FillFrames(std::vector<DfxFrame>& frames);
     const std::vector<DfxFrame>& GetFrames();
     static void GetFramesByPcs(std::vector<DfxFrame>& frames, std::vector<uintptr_t> pcs,
@@ -94,6 +95,13 @@ private:
     void DoPcAdjust(uintptr_t& pc);
     bool Apply(std::shared_ptr<DfxRegs> regs, std::shared_ptr<RegLocState> rs);
     static uintptr_t StripPac(uintptr_t inAddr, uintptr_t pacMask);
+    inline void SetLocalStackCheck(void* ctx, bool check)
+    {
+        if (pid_ == UNWIND_TYPE_LOCAL) {
+            UnwindContext* uctx = reinterpret_cast<UnwindContext *>(ctx);
+            uctx->stackCheck = check;
+        }
+    }
 
 private:
 #if defined(__aarch64__)
