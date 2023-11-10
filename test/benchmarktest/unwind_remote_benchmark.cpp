@@ -98,7 +98,6 @@ static void Run(benchmark::State& state, void* data)
         MAYBE_UNUSED bool unwRet = unwinder->UnwindRemote();
         if (unwindData.isFillFrames) {
             auto frames = unwinder->GetFrames();
-            //LOGU("frames\n: %s", unwinder->GetFramesStr(frames).c_str());
             if (frames.size() < TEST_MIN_UNWIND_FRAMES) {
                 state.SkipWithError("Failed to unwind.");
             }
@@ -143,7 +142,6 @@ static void RunCache(benchmark::State& state, void* data)
         MAYBE_UNUSED bool unwRet = unwinder->UnwindRemote();
         if (unwindData.isFillFrames) {
             auto frames = unwinder->GetFrames();
-            //LOGU("frames\n: %s", unwinder->GetFramesStr(frames).c_str());
             if (frames.size() < TEST_MIN_UNWIND_FRAMES) {
                 state.SkipWithError("Failed to unwind.");
             }

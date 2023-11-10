@@ -82,6 +82,11 @@ HWTEST_F(DfxElfTest, DfxElfTest001, TestSize.Level2)
     ASSERT_EQ(elf.GetEndPc(), elfImitate.GetEndPc());
     ASSERT_EQ(elf.GetRelPc(0xf78c00f0, 0xf78c0000, 0), elfImitate.GetRelPc(0xf78c00f0, 0xf78c0000, 0));
     ASSERT_EQ(elf.GetBuildId(), "8e5a30338be326934ff93c998dcd0d22fe345870");
+    EXPECT_NE(DfxElf::Create(ELF32_FILE), nullptr);
+    EXPECT_NE(elf.GetGlobalPointer(), 0);
+    EXPECT_FALSE(elf.GetElfSymbols(true).empty());
+    EXPECT_FALSE(elf.GetElfSymbols(false).empty());
+    EXPECT_GT(elf.GetMmapSize(), 0);
     GTEST_LOG_(INFO) << "DfxElfTest001: end.";
 }
 
@@ -124,24 +129,50 @@ HWTEST_F(DfxElfTest, DfxElfTest002, TestSize.Level2)
     ASSERT_EQ(elf.GetEndPc(), elfImitate.GetEndPc());
     ASSERT_EQ(elf.GetRelPc(0xf78c00f0, 0xf78c0000, 0), elfImitate.GetRelPc(0xf78c00f0, 0xf78c0000, 0));
     ASSERT_EQ(elf.GetBuildId(), "24c55dccc5baaaa140da0083207abcb8d523e248");
+    EXPECT_NE(elf.GetGlobalPointer(), 0);
+    EXPECT_FALSE(elf.GetElfSymbols(true).empty());
+    EXPECT_FALSE(elf.GetElfSymbols(false).empty());
+    EXPECT_GT(elf.GetMmapSize(), 0);
     GTEST_LOG_(INFO) << "DfxElfTest002: end.";
 }
 
 /**
  * @tc.name: DfxElfTest003
- * @tc.desc: test DfxElf class functions with minidebugInfo
+ * @tc.desc: test DfxElf functions with using error
  * @tc.type: FUNC
  */
 HWTEST_F(DfxElfTest, DfxElfTest003, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "DfxElfTest003: start.";
+    DfxElf elf("");
+    ASSERT_FALSE(elf.IsValid());
+    ASSERT_EQ(elf.GetClassType(), ELFCLASSNONE);
+    ASSERT_EQ(elf.GetElfSize(), 0);
+    ASSERT_TRUE(elf.GetBuildId().empty());
+    EXPECT_EQ(DfxElf::Create("123"), nullptr);
+    ASSERT_TRUE(DfxElf::ToReadableBuildId("").empty());
+    EXPECT_EQ(elf.GetGlobalPointer(), 0);
+    ShdrInfo shdrInfo;
+    EXPECT_FALSE(elf.GetSectionInfo(shdrInfo, ""));
+    EXPECT_EQ(elf.GetMmapSize(), 0);
+    GTEST_LOG_(INFO) << "DfxElfTest003: end.";
+}
+
+/**
+ * @tc.name: DfxElfTest004
+ * @tc.desc: test DfxElf class functions with minidebugInfo
+ * @tc.type: FUNC
+ */
+HWTEST_F(DfxElfTest, DfxElfTest004, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "DfxElfTest004: start.";
     DfxElf elf(DUMPCATCHER_ELF_FILE);
     elf.EnableMiniDebugInfo();
     ASSERT_TRUE(elf.IsValid());
     GTEST_LOG_(INFO) << "MinidebuInfo Ptr: " << elf.GetMiniDebugInfo();
     ASSERT_TRUE(elf.GetMiniDebugInfo() != nullptr);
     ASSERT_TRUE(elf.GetEmbeddedElf() != nullptr);
-    GTEST_LOG_(INFO) << "DfxElfTest003: end.";
+    GTEST_LOG_(INFO) << "DfxElfTest004: end.";
 }
 } // namespace HiviewDFX
 } // namespace OHOS

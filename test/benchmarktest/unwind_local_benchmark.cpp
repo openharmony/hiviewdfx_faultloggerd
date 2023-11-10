@@ -71,7 +71,6 @@ static size_t UnwinderLocal(MAYBE_UNUSED void* data)
     MAYBE_UNUSED bool unwRet = unwindData.unwinder->UnwindLocal();
     if (unwindData.isFillFrames) {
         auto frames = unwindData.unwinder->GetFrames();
-        //LOGU("frames\n: %s", unwindData.unwinder->GetFramesStr(frames).c_str());
         return frames.size();
     }
     auto pcs = unwindData.unwinder->GetPcs();
@@ -108,7 +107,8 @@ static size_t UnwinderLocalFp(MAYBE_UNUSED void* data) {
 }
 #endif
 
-static void Run(benchmark::State& state, size_t (*func)(void*), void* data) {
+static void Run(benchmark::State& state, size_t (*func)(void*), void* data)
+{
     for (const auto& _ : state) {
         if (TestFunc1(func, data) < TEST_MIN_UNWIND_FRAMES) {
             state.SkipWithError("Failed to unwind.");
