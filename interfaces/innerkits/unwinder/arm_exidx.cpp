@@ -48,13 +48,16 @@ void ExidxContext::Reset()
 {
     vsp = 0;
     transformedBits = 0;
+    memset_s(regs, sizeof(int32_t) * REG_LAST, 0, sizeof(int32_t) * REG_LAST);
 }
 
 void ExidxContext::Transform(uint32_t reg)
 {
     LOGU("Transform reg: %d", reg);
-    transformedBits = transformedBits | (1 << reg);
-    regs[reg] = 0;
+    if (DfxRegs::IsQutReg(static_cast<uint16_t>(reg))) {
+        transformedBits = transformedBits | (1 << reg);
+        regs[reg] = 0;
+    }
 }
 
 bool ExidxContext::IsTransformed(uint32_t reg)
@@ -76,7 +79,6 @@ void ExidxContext::AddUpTransformed(uint32_t reg, int32_t imm)
 void ExidxContext::AddUpVsp(int32_t imm)
 {
     LOGU("AddUpVsp imm: %d", imm);
-
     vsp += imm;
 
     auto qutRegs = DfxRegs::GetQutRegs();
@@ -126,6 +128,10 @@ bool ArmExidx::SearchEntry(uintptr_t pc, struct UnwindTableInfo uti, struct Unwi
     uintptr_t tableData = uti.tableData;
     LOGU("SearchEntry pc: %p tableData: %p, tableLen: %u",
         (void*)pc, (void*)tableData, (uint32_t)tableLen);
+    if (tableLen == 0) {
+        lastErrorData_.code = UNW_ERROR_NO_UNWIND_INFO;
+        return false;
+    }
 
     // do binary search
     uintptr_t ptr = 0;
@@ -156,6 +162,7 @@ bool ArmExidx::SearchEntry(uintptr_t pc, struct UnwindTableInfo uti, struct Unwi
         if (high != 0) {
             entry = tableData + (high - 1) * ARM_EXIDX_TABLE_SIZE;
         } else {
+            lastErrorData_.code = UNW_ERROR_NO_UNWIND_INFO;
             return false;
         }
     }

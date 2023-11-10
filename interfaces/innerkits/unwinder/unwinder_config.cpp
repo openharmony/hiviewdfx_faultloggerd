@@ -12,26 +12,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef UNWINDER_CONFIG_H
-#define UNWINDER_CONFIG_H
 
-#include <memory>
-#include "unwind_context.h"
+#include "unwinder_config.h"
 
 namespace OHOS {
 namespace HiviewDFX {
-class UnwinderConfig final {
-public:
-    static inline void SetByteOrder(int bigEndian) { bigEndian_ = bigEndian; }
-    static inline int GetByteOrder() { return bigEndian_; }
-
-    static inline void SetCachePolicy(UnwindCachingPolicy policy) { cachingPolicy_ = policy; }
-    static inline UnwindCachingPolicy GetCachePolicy() { return cachingPolicy_; }
-
-private:
-    static int bigEndian_;
-    static UnwindCachingPolicy cachingPolicy_;
-};
+int UnwinderConfig::bigEndian_ = UNWIND_BYTE_ORDER;
+UnwindCachingPolicy UnwinderConfig::cachingPolicy_ = UNWIND_CACHE_NONE;
 } // namespace HiviewDFX
 } // namespace OHOS
-#endif

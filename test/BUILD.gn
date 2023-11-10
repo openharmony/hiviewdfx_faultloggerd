@@ -19,6 +19,11 @@ if (defined(ohos_lite)) {
   import("//build/test.gni")
 }
 
+group("faultloggerd_benchmarktest") {
+  testonly = true
+  deps = [ "benchmarktest:benchmarktest" ]
+}
+
 group("faultloggerd_moduletest") {
   testonly = true
   deps = [ "moduletest:moduletest" ]

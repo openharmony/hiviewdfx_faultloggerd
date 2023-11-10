@@ -12,12 +12,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-#ifndef DFX_TEST_UTIL
-#define DFX_TEST_UTIL
+#ifndef DFX_TEST_UTIL_H
+#define DFX_TEST_UTIL_H
 
 #include <string>
 #include <vector>
+#include <signal.h>
+#include <sys/wait.h>
 
 static const std::string ACCOUNTMGR_NAME = "accountmgr";
 static const std::string FOUNDATION_NAME = "foundation";
@@ -39,6 +40,20 @@ static const std::string APPSPAWN_NAME = "appspawn";
 
 namespace OHOS {
 namespace HiviewDFX {
+class TestScopedPidReaper {
+public:
+    TestScopedPidReaper(pid_t pid) : pid_(pid) {}
+    ~TestScopedPidReaper() { Kill(pid_); }
+
+    static void Kill(pid_t pid)
+    {
+        kill(pid, SIGKILL);
+        waitpid(pid, nullptr, 0);
+    }
+private:
+    pid_t pid_;
+};
+
 enum CrasherType {
     CRASHER_C,
     CRASHER_CPP

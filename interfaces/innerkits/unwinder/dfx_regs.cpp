@@ -33,6 +33,38 @@ namespace {
 }
 std::vector<uint16_t> DfxRegs::qutRegs_ = {};
 
+void DfxRegs::SetQutRegs(std::vector<uint16_t> qutRegs)
+{
+    qutRegs_ = qutRegs;
+}
+
+const std::vector<uint16_t>& DfxRegs::GetQutRegs()
+{
+    if (!qutRegs_.empty()) {
+        return qutRegs_;
+    }
+    return QUT_REGS;
+}
+
+size_t DfxRegs::GetQutRegsSize()
+{
+    if (qutRegs_.empty()) {
+        GetQutRegs();
+    }
+    return qutRegs_.size();
+}
+
+bool DfxRegs::IsQutReg(uint16_t reg)
+{
+    const std::vector<uint16_t>& qutRegs = GetQutRegs();
+    for (size_t i = 0; i < qutRegs.size(); ++i) {
+        if (qutRegs[i] == reg) {
+            return true;
+        }
+    }
+    return false;
+}
+
 std::shared_ptr<DfxRegs> DfxRegs::Create()
 {
 #if defined(__arm__)
@@ -58,11 +90,11 @@ std::shared_ptr<DfxRegs> DfxRegs::CreateFromRegs(const UnwindMode mode, const ui
 {
     auto dfxregs = DfxRegs::Create();
     if (mode == UnwindMode::DWARF_UNWIND) {
-        dfxregs->SetRegsData(regs);
+        dfxregs->SetRegsData(regs, REG_LAST);
     } else if (mode == UnwindMode::FRAMEPOINTER_UNWIND) {
-        dfxregs->SetFromFpMiniRegs(regs);
+        dfxregs->SetFromFpMiniRegs(regs, FP_MINI_REGS_SIZE);
     } else if (mode == UnwindMode::MINIMAL_UNWIND) {
-        dfxregs->SetFromQutMiniRegs(regs);
+        dfxregs->SetFromQutMiniRegs(regs, QUT_MINI_REGS_SIZE);
     }
     return dfxregs;
 }
@@ -94,13 +126,11 @@ std::vector<uintptr_t> DfxRegs::GetRegsData() const
 void DfxRegs::SetRegsData(const std::vector<uintptr_t>& regs)
 {
     regsData_ = regs;
-    PrintRegs();
 }
 
-void DfxRegs::SetRegsData(const uintptr_t* regs)
+void DfxRegs::SetRegsData(const uintptr_t* regs, const size_t size)
 {
-    (void)memcpy_s(RawData(), REG_LAST * sizeof(uintptr_t), regs, REG_LAST * sizeof(uintptr_t));
-    PrintRegs();
+    (void)memcpy_s(RawData(), size * sizeof(uintptr_t), regs, size * sizeof(uintptr_t));
 }
 
 uintptr_t* DfxRegs::GetReg(size_t idx)

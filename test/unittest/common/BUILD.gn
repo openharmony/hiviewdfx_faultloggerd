@@ -59,8 +59,10 @@ if (defined(ohos_lite)) {
     ]
   }
 
+  module_output_path = "faultloggerd/common"
+
   ohos_unittest("test_common") {
-    module_out_path = "faultloggerd/common"
+    module_out_path = module_output_path
     sources = [
       "$faultloggerd_path/common/dfxlog/dfx_log.cpp",
       "common_cutil_test.cpp",

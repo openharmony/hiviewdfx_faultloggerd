@@ -91,8 +91,8 @@ bool DfxSymbols::GetFuncNameAndOffsetByPc(uint64_t relPc, std::shared_ptr<DfxElf
 
 std::string DfxSymbols::Demangle(const std::string buf)
 {
-    if (buf.empty()) {
-        return "";
+    if ((buf.length() < 2) || (buf[0] != '_')) { // 2 : min buf length
+        return buf;
     }
 
     std::string funcName;
@@ -103,17 +103,19 @@ std::string DfxSymbols::Demangle(const std::string buf)
     }
 
     int status = 0;
-    auto name = abi::__cxa_demangle(bufStr, nullptr, nullptr, &status);
+    char* demangledStr = nullptr;
+    if (buf[1] == 'Z') {
+        demangledStr = abi::__cxa_demangle(bufStr, nullptr, nullptr, &status);
+    }
 #ifdef RUSTC_DEMANGLE
-    if (name == nullptr) {
-        DFXLOG_DEBUG("Fail to __cxa_demangle(%s), will rustc_demangle.", bufStr);
-        name = rustc_demangle(bufStr);
+    if (buf[1] == 'R') {
+        demangledStr = rustc_demangle(bufStr);
     }
 #endif
     std::string demangleName;
-    if (name != nullptr) {
-        demangleName = std::string(name);
-        std::free(name);
+    if (demangledStr == nullptr) {
+        demangleName = std::string(demangledStr);
+        std::free(demangledStr);
     } else {
         demangleName = std::string(bufStr);
     }

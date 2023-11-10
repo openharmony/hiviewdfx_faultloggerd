@@ -59,7 +59,7 @@ HWTEST_F(DfxRegsTest, DfxRegsTest001, TestSize.Level2)
     ASSERT_EQ(setRegs, getRegs);
 
     uintptr_t regsData[REG_LAST] = { 0 };
-    dfxRegs->SetRegsData(regsData);
+    dfxRegs->SetRegsData(regsData, REG_LAST);
     getRegs = dfxRegs->GetRegsData();
     for (size_t i = 0; i < getRegs.size(); i++) {
         ASSERT_EQ(regsData[i], getRegs[i]);
@@ -192,11 +192,11 @@ HWTEST_F(DfxRegsTest, DfxRegsTest004, TestSize.Level2)
         REG_SP, REG_PC, REG_LR};
     uintptr_t fpRegs[FP_MINI_REGS_SIZE] = {REG_ARM_R7, REG_FP, REG_SP, REG_PC};
     auto dfxregsArm = std::make_shared<DfxRegsArm>();
-    dfxregsArm->SetFromQutMiniRegs(pushRegs);
+    dfxregsArm->SetFromQutMiniRegs(pushRegs, QUT_MINI_REGS_SIZE);
     for (size_t i = 0; i < sizeof(qutRegs) / sizeof(qutRegs[0]); ++i) {
         ASSERT_EQ((*dfxregsArm.get())[qutRegs[i]], pushRegs[i]);
     }
-    dfxregsArm->SetFromFpMiniRegs(pushRegs);
+    dfxregsArm->SetFromFpMiniRegs(pushRegs, FP_MINI_REGS_SIZE);
     for (size_t i = 0; i < sizeof(fpRegs) / sizeof(fpRegs[0]); ++i) {
         ASSERT_EQ((*dfxregsArm.get())[fpRegs[i]], pushRegs[i]);
     }
@@ -210,11 +210,11 @@ HWTEST_F(DfxRegsTest, DfxRegsTest004, TestSize.Level2)
         REG_FP, REG_SP, REG_AARCH64_PC, REG_LR};
     uintptr_t fpRegs[FP_MINI_REGS_SIZE] = {REG_FP, REG_LR, REG_SP, REG_PC};
     auto dfxregsArm64 = std::make_shared<DfxRegsArm64>();
-    dfxregsArm64->SetFromQutMiniRegs(pushRegs);
+    dfxregsArm64->SetFromQutMiniRegs(pushRegs, QUT_MINI_REGS_SIZE);
     for (size_t i = 1; i < sizeof(qutRegs) / sizeof(qutRegs[0]); ++i) {
         ASSERT_EQ((*dfxregsArm64.get())[qutRegs[i]], pushRegs[i]);
     }
-    dfxregsArm64->SetFromFpMiniRegs(pushRegs);
+    dfxregsArm64->SetFromFpMiniRegs(pushRegs, FP_MINI_REGS_SIZE);
     for (size_t i = 0; i < sizeof(fpRegs) / sizeof(fpRegs[0]); ++i) {
         ASSERT_EQ((*dfxregsArm64.get())[fpRegs[i]], pushRegs[i]);
     }

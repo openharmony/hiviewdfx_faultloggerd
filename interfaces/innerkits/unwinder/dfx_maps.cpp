@@ -152,7 +152,7 @@ void DfxMaps::AddMap(std::shared_ptr<DfxMap> map, bool enableMapIndex)
 
 bool DfxMaps::FindMapByAddr(std::shared_ptr<DfxMap>& map, uintptr_t addr) const
 {
-    if ((maps_.size() == 0) || (addr == 0x0)) {
+    if ((maps_.empty()) || (addr == 0x0)) {
         return false;
     }
 

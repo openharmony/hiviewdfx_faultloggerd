@@ -15,8 +15,8 @@
 #ifndef UNWINDER_H
 #define UNWINDER_H
 
-#include <map>
 #include <memory>
+#include <unordered_map>
 #include <vector>
 #include "dfx_accessors.h"
 #include "dfx_errors.h"
@@ -68,39 +68,32 @@ public:
     inline const std::shared_ptr<DfxRegs>& GetRegs() { return regs_; }
     inline const std::shared_ptr<DfxMaps>& GetMaps() { return maps_; }
 
-    const std::vector<uintptr_t>& GetPcs() { return pcs_; }
-    void FillFrames(std::vector<DfxFrame>& frames);
-    const std::vector<DfxFrame>& GetFrames()
-    {
-        FillFrames(frames_);
-        return frames_;
-    };
     const uint16_t& GetLastErrorCode() const { return lastErrorData_.code; }
     const uint64_t& GetLastErrorAddr() const { return lastErrorData_.addr; }
 
-    bool Unwind(void *ctx, size_t maxFrameNum = 64, size_t skipFrameNum = 0);
-    bool Step(uintptr_t& pc, uintptr_t& sp, void *ctx);
-#if defined(__aarch64__)
-    bool FpStep(uintptr_t& fp, uintptr_t& pc, void *ctx);
-#endif
-
     bool GetStackRange(uintptr_t& stackBottom, uintptr_t& stackTop);
+    bool GetMap(uintptr_t pc, void *ctx, std::shared_ptr<DfxMap>& map);
+
     bool UnwindLocal(size_t maxFrameNum = 64, size_t skipFrameNum = 0);
     bool UnwindRemote(size_t maxFrameNum = 64, size_t skipFrameNum = 0);
+    bool Unwind(void *ctx, size_t maxFrameNum = 64, size_t skipFrameNum = 0);
+    bool Step(uintptr_t& pc, uintptr_t& sp, void *ctx);
+    bool FpStep(uintptr_t& fp, uintptr_t& pc, void *ctx);
 
+    const std::vector<uintptr_t>& GetPcs() { return pcs_; }
+    void FillFrames(std::vector<DfxFrame>& frames);
+    const std::vector<DfxFrame>& GetFrames();
     static void GetFramesByPcs(std::vector<DfxFrame>& frames, std::vector<uintptr_t> pcs,
         std::shared_ptr<DfxMaps> maps);
     static void FillFrame(DfxFrame& frame);
     static std::string GetFramesStr(const std::vector<DfxFrame>& frames);
 
 private:
-    bool Apply(std::shared_ptr<DfxRegs> regs, std::shared_ptr<RegLocState> rs);
-    static uintptr_t StripPac(uintptr_t inAddr, uintptr_t pacMask);
-
-private:
     void Init();
     void Clear();
     void DoPcAdjust(uintptr_t& pc);
+    bool Apply(std::shared_ptr<DfxRegs> regs, std::shared_ptr<RegLocState> rs);
+    static uintptr_t StripPac(uintptr_t inAddr, uintptr_t pacMask);
 
 private:
 #if defined(__aarch64__)
@@ -111,7 +104,7 @@ private:
     UnwindMode mode_ = DWARF_UNWIND;
     std::shared_ptr<DfxAccessors> acc_;
     std::shared_ptr<DfxMemory> memory_;
-    std::map<uintptr_t, std::shared_ptr<RegLocState>> rsCache_;
+    std::unordered_map<uintptr_t, std::shared_ptr<RegLocState>> rsCache_;
     std::shared_ptr<DfxRegs> regs_ = nullptr;
     std::shared_ptr<DfxMaps> maps_ = nullptr;
     std::vector<uintptr_t> pcs_;

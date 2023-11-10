@@ -69,7 +69,7 @@ enum RegsEnumArm64 : uint16_t {
 };
 
 static const std::vector<uint16_t> QUT_REGS {
-    REG_AARCH64_X28,
+    REG_AARCH64_X0,
     REG_AARCH64_X29,
     REG_SP,
     REG_PC,
