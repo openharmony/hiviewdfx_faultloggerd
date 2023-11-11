@@ -112,7 +112,7 @@ std::shared_ptr<DfxElf> DfxElf::CreateFromHap(const std::string& file, std::shar
 DfxElf::DfxElf(const std::string& file)
 {
 #if is_ohos
-    if (mmap_ == nullptr) {
+    if (mmap_ == nullptr && (!file.empty())) {
         LOGU("file: %s", file.c_str());
         int fd = OHOS_TEMP_FAILURE_RETRY(open(file.c_str(), O_RDONLY));
         if (fd > 0) {
@@ -191,6 +191,10 @@ std::shared_ptr<MiniDebugInfo> DfxElf::GetMiniDebugInfo()
 
 bool DfxElf::InitHeaders()
 {
+    if (mmap_ == nullptr) {
+        return false;
+    }
+
     if (elfParse_ != nullptr) {
         return true;
     }

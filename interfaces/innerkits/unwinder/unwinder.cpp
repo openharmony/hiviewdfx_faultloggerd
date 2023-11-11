@@ -315,11 +315,12 @@ bool Unwinder::Step(uintptr_t& pc, uintptr_t& sp, void *ctx)
             }
             ret = Apply(regs_, rs);
         }
-
+#if defined(__aarch64__)
         if (!ret) {
             uintptr_t fp = regs_->GetFp();
             ret = FpStep(fp, pc, ctx);
         }
+#endif
     } else {
         LOGW("Step signal frame");
         ret = true;

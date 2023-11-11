@@ -25,10 +25,6 @@ using namespace OHOS::HiviewDFX;
 using namespace testing::ext;
 using namespace std;
 
-#ifndef REG_ARM_VALUE
-constexpr size_t REG_ARM_VALUE = 1;
-#endif
-
 namespace OHOS {
 namespace HiviewDFX {
 class DfxRegsTest : public testing::Test {
@@ -186,7 +182,7 @@ HWTEST_F(DfxRegsTest, DfxRegsTest004, TestSize.Level2)
 #if defined(__arm__)
     uintptr_t pushRegs[QUT_MINI_REGS_SIZE];
     for (size_t i = 0; i < QUT_MINI_REGS_SIZE; ++i) {
-        pushRegs[i] = i + REG_ARM_VALUE;
+        pushRegs[i] = i + 1;
     }
     uintptr_t qutRegs[QUT_MINI_REGS_SIZE] = {REG_ARM_R4, REG_ARM_R7, REG_ARM_R10, REG_ARM_R11,
         REG_SP, REG_PC, REG_LR};
@@ -233,7 +229,7 @@ HWTEST_F(DfxRegsTest, DfxRegsTest005, TestSize.Level2)
 #if defined(__arm__)
     uintptr_t regs[QUT_MINI_REGS_SIZE];
     for (size_t i = 0; i < QUT_MINI_REGS_SIZE; ++i) {
-        regs[i] = i + REG_ARM_VALUE;
+        regs[i] = i + 1;
     }
     uintptr_t minimal[QUT_MINI_REGS_SIZE] = {REG_ARM_R4, REG_ARM_R7, REG_ARM_R10, REG_ARM_R11,
         REG_SP, REG_PC, REG_LR};
