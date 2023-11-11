@@ -72,10 +72,7 @@ if (defined(ohos_lite)) {
       "system",
       "updater",
     ]
-    innerapi_tags = [
-      "chipsetsdk_indirect",
-      "platformsdk_indirect",
-    ]
+    innerapi_tags = [ "platformsdk_indirect" ]
     part_name = "faultloggerd"
     subsystem_name = "hiviewdfx"
   }
