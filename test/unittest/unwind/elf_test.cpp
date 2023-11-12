@@ -174,6 +174,30 @@ HWTEST_F(DfxElfTest, DfxElfTest004, TestSize.Level2)
     ASSERT_TRUE(elf.GetEmbeddedElf() != nullptr);
     GTEST_LOG_(INFO) << "DfxElfTest004: end.";
 }
+
+/**
+ * @tc.name: DfxElfTest005
+ * @tc.desc: test GetBuildId function when input empty elf file path
+ * @tc.type: FUNC
+ */
+HWTEST_F(DfxElfTest, DfxElfTest005, TestSize.Level2)
+{
+    auto elfFile = std::make_shared<DfxElf>("");
+    ASSERT_NE(elfFile, nullptr);
+    EXPECT_STREQ(elfFile->GetBuildId().c_str(), "");
+}
+
+/**
+ * @tc.name: DfxElfTest006
+ * @tc.desc: test GetBuildId function when input illegal elf file path
+ * @tc.type: FUNC
+ */
+HWTEST_F(DfxElfTest, DfxElfTest006, TestSize.Level2)
+{
+    auto elfFile = std::make_shared<DfxElf>("/proc/illegal");
+    ASSERT_NE(elfFile, nullptr);
+    EXPECT_STREQ(elfFile->GetBuildId().c_str(), "");
+}
 } // namespace HiviewDFX
 } // namespace OHOS
 
