@@ -80,8 +80,8 @@ std::string DfxFrameFormatter::GetFramesStr(const std::vector<DfxFrame>& frames)
         return "";
     }
     std::ostringstream ss;
-    for (const auto& frame : frames) {
-        ss << GetFrameStr(frame);
+    for (const auto& f : frames) {
+        ss << GetFrameStr(f);
     }
     return ss.str();
 }
@@ -92,8 +92,8 @@ std::string DfxFrameFormatter::GetFramesStr(const std::vector<std::shared_ptr<Df
         return "";
     }
     std::ostringstream ss;
-    for (const auto& frame : frames) {
-        ss << GetFrameStr(frame);
+    for (const auto& pf : frames) {
+        ss << GetFrameStr(pf);
     }
     return ss.str();
 }

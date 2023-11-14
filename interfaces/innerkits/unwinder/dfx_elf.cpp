@@ -122,6 +122,8 @@ DfxElf::DfxElf(const std::string& file)
                 LOGE("Failed to mmap init.");
             }
             close(fd);
+        } else {
+            LOGE("Failed to open file: %s", file.c_str());
         }
     }
 #endif
@@ -370,7 +372,7 @@ std::string DfxElf::GetElfName()
     return elfParse_->GetElfName();
 }
 
-void DfxElf::SetBuildId(const std::string buildId)
+void DfxElf::SetBuildId(const std::string& buildId)
 {
     buildId_ = buildId;
 }
@@ -427,15 +429,18 @@ std::string DfxElf::GetBuildId(uint64_t noteAddr, uint64_t noteSize)
 
             // Align nhdr.n_namesz to next power multiple of 4. See man 5 elf.
             offset += (nhdr.n_namesz + 3) & ~3; // 3 : Align the offset to a 4-byte boundary
-            if (name == "GNU" && nhdr.n_type == NT_GNU_BUILD_ID) {
-                if (noteSize - offset < nhdr.n_descsz || nhdr.n_descsz == 0) {
-                    return "";
-                }
-                std::string buildIdRaw(nhdr.n_descsz, '\0');
-                ptr = noteAddr + offset;
-                (void)memcpy_s(&buildIdRaw[0], nhdr.n_descsz, (void*)ptr, nhdr.n_descsz);
-                return buildIdRaw;
+            if (name != "GNU" || nhdr.n_type != NT_GNU_BUILD_ID) {
+                offset += (nhdr.n_descsz + 3) & ~3; // 3 : Align the offset to a 4-byte boundary
+                continue;
             }
+
+            if (noteSize - offset < nhdr.n_descsz || nhdr.n_descsz == 0) {
+                return "";
+            }
+            std::string buildIdRaw(nhdr.n_descsz, '\0');
+            ptr = noteAddr + offset;
+            (void)memcpy_s(&buildIdRaw[0], nhdr.n_descsz, (void*)ptr, nhdr.n_descsz);
+            return buildIdRaw;
         }
         // Align hdr.n_descsz to next power multiple of 4. See man 5 elf.
         offset += (nhdr.n_descsz + 3) & ~3; // 3 : Align the offset to a 4-byte boundary
@@ -684,7 +689,7 @@ int DfxElf::FindUnwindTableLocal(uintptr_t pc, struct UnwindTableInfo& uti)
 {
 #if is_ohos && !is_mingw
     DlCbData cbData;
-    memset_s(&cbData, sizeof(cbData), 0, sizeof(cbData));
+    (void)memset_s(&cbData, sizeof(cbData), 0, sizeof(cbData));
     cbData.pc = pc;
     cbData.uti.format = -1;
     int ret = dl_iterate_phdr(DlPhdrCb, &cbData);
@@ -811,7 +816,7 @@ int DfxElf::DlPhdrCb(struct dl_phdr_info *info, size_t size, void *data)
 
 bool DfxElf::Read(uintptr_t pos, void *buf, size_t size)
 {
-    if (mmap_->Read(pos, buf, size) == size) {
+    if ((mmap_ != nullptr) && (mmap_->Read(pos, buf, size) == size)) {
         return true;
     }
     return false;
@@ -833,7 +838,7 @@ size_t DfxElf::GetMmapSize()
     return mmap_->Size();
 }
 
-bool DfxElf::IsValidElf(void* ptr)
+bool DfxElf::IsValidElf(const void* ptr)
 {
     if (ptr == nullptr) {
         return false;
@@ -847,7 +852,7 @@ bool DfxElf::IsValidElf(void* ptr)
 }
 
 #if is_ohos
-size_t DfxElf::GetElfSize(void* ptr)
+size_t DfxElf::GetElfSize(const void* ptr)
 {
     if (!IsValidElf(ptr)) {
         return 0;

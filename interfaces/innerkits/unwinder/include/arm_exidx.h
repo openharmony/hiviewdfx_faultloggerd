@@ -28,29 +28,24 @@ struct ExidxContext {
 public:
     int32_t vsp = 0;
     uint32_t transformedBits = 0;
-    int32_t regs[REG_LAST] = {0};
+    std::vector<int32_t> regs;
 
-    void Reset();
+    void Reset(size_t size = 0);
     void Transform(uint32_t reg);
     bool IsTransformed(uint32_t reg);
-    void AddUpTransformed(uint32_t reg, int32_t imm);
     void AddUpVsp(int32_t imm);
 };
 
 class ArmExidx {
 public:
-    ArmExidx(std::shared_ptr<DfxMemory> memory) : memory_(memory)
-    {
-        lastErrorData_.code = UNW_ERROR_NONE;
-        lastErrorData_.addr = 0;
-    }
+    explicit ArmExidx(std::shared_ptr<DfxMemory> memory);
     virtual ~ArmExidx() = default;
 
     bool SearchEntry(uintptr_t pc, struct UnwindTableInfo uti, struct UnwindEntryInfo& uei);
     bool Step(uintptr_t entryOffset, std::shared_ptr<RegLocState> rs);
 
-    const uint16_t& GetLastErrorCode() const { return lastErrorData_.code; }
-    const uint64_t& GetLastErrorAddr() const { return lastErrorData_.addr; }
+    const uint16_t& GetLastErrorCode() { return lastErrorData_.GetCode(); }
+    const uint64_t& GetLastErrorAddr() { return lastErrorData_.GetAddr(); }
 
 private:
     struct DecodeTable {
@@ -64,6 +59,7 @@ private:
 
     void LogRawData();
     bool ExtractEntryData(uintptr_t entryOffset);
+    bool ExtractEntryTab(uintptr_t tabOffset);
     bool GetOpCode();
     bool Decode(DecodeTable decodeTable[], size_t size);
     bool Decode00xxxxxx();

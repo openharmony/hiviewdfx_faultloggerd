@@ -23,8 +23,36 @@ namespace HiviewDFX {
  * @brief Unwind error data
  */
 struct UnwindErrorData {
-    uint16_t code;
-    uint64_t addr;
+    inline const uint16_t& GetCode() { return code_; }
+    inline const uint64_t& GetAddr() { return addr_; }
+
+    template <typename T1, typename T2>
+    inline void SetAddrAndCode(T1 addr, T2 code)
+    {
+#ifdef DFX_UNWIND_ERROR
+        addr_ = static_cast<uint64_t>(addr);
+        code_ = static_cast<uint16_t>(code);
+#endif
+    }
+
+    template <typename T>
+    inline void SetCode(T code)
+    {
+#ifdef DFX_UNWIND_ERROR
+        code_ = static_cast<uint16_t>(code);
+#endif
+    }
+
+    template <typename T>
+    inline void SetAddr(T addr)
+    {
+#ifdef DFX_UNWIND_ERROR
+        addr_ = static_cast<uint64_t>(addr);
+#endif
+    }
+private:
+    uint16_t code_;
+    uint64_t addr_;
 };
 
 /**
@@ -75,10 +103,8 @@ enum UnwindErrorCode : uint16_t {
     UNW_ERROR_DWARF_INVALID_FDE,
     /** Dwarf instr invalid */
     UNW_ERROR_DWARF_INVALID_INSTR,
-    /** Dwarf unsupported breg */
-    UNW_ERROR_DWARF_UNSUPPORTED_BREG,
-    /** Dwarf unsupported bregx */
-    UNW_ERROR_DWARF_UNSUPPORTED_BREGX,
+    /** Unsupported qut reg */
+    UNW_ERROR_UNSUPPORTED_QUT_REG,
     /** Unsupported version */
     UNW_ERROR_UNSUPPORTED_VERSION,
     /** Not support */

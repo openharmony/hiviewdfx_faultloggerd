@@ -54,12 +54,10 @@ void DfxRegsX86_64::SetFromUcontext(const ucontext_t &context)
 
 void DfxRegsX86_64::SetFromFpMiniRegs(const uintptr_t* regs, const size_t size)
 {
-    // TODO
 }
 
 void DfxRegsX86_64::SetFromQutMiniRegs(const uintptr_t* regs, const size_t size)
 {
-    // TODO
 }
 
 std::string DfxRegsX86_64::PrintRegs() const

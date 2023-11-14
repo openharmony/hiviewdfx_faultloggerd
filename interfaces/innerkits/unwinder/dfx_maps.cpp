@@ -16,12 +16,9 @@
 #include "dfx_maps.h"
 
 #include <algorithm>
-#include <cstdio>
-#include <cstdlib>
 #include <cstring>
 #include <fstream>
 #include <securec.h>
-#include <sstream>
 #if is_mingw
 #include "dfx_nonlinux_define.h"
 #else
@@ -31,7 +28,6 @@
 #include "dfx_define.h"
 #include "dfx_elf.h"
 #include "dfx_log.h"
-#include "dfx_util.h"
 #include "string_printf.h"
 #include "string_util.h"
 

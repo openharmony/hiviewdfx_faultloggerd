@@ -33,11 +33,6 @@ public:
     explicit DfxRegs() : regsData_(REG_LAST) {}
     virtual ~DfxRegs() = default;
 
-    static void SetQutRegs(std::vector<uint16_t> qutRegs);
-    static const std::vector<uint16_t>& GetQutRegs();
-    static size_t GetQutRegsSize();
-    static bool IsQutReg(uint16_t reg);
-
     static std::shared_ptr<DfxRegs> Create();
     static std::shared_ptr<DfxRegs> CreateFromUcontext(const ucontext_t& context);
     static std::shared_ptr<DfxRegs> CreateFromRegs(const UnwindMode mode, const uintptr_t* regs);
@@ -72,7 +67,6 @@ public:
     std::string PrintSpecialRegs() const;
 protected:
     std::vector<uintptr_t> regsData_ {};
-    static std::vector<uint16_t> qutRegs_;
 };
 
 #if defined(__arm__)

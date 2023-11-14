@@ -18,6 +18,7 @@
 #include <vector>
 #include "dfx_log.h"
 #include "dfx_ptrace.h"
+#include "dfx_regs_qut.h"
 #include "dfx_test_util.h"
 #include "unwinder.h"
 
@@ -77,13 +78,28 @@ static pid_t RemoteFork()
     return pid;
 }
 
+static size_t UnwindRemote(std::shared_ptr<Unwinder> unwinder, UnwindData* dataPtr)
+{
+    if (unwinder == nullptr) {
+        return 0;
+    }
+    UnwindData data;
+    if (dataPtr != nullptr) {
+        data.isFillFrames = dataPtr->isFillFrames;
+    }
+    MAYBE_UNUSED bool unwRet = unwinder->UnwindRemote();
+    if (data.isFillFrames) {
+        auto frames = unwinder->GetFrames();
+        return frames.size();
+    } else {
+        auto pcs = unwinder->GetPcs();
+        return pcs.size();
+    }
+}
+
 static void Run(benchmark::State& state, void* data)
 {
     UnwindData* dataPtr = reinterpret_cast<UnwindData*>(data);
-    UnwindData unwindData;
-    if (dataPtr != nullptr) {
-        unwindData.isFillFrames = dataPtr->isFillFrames;
-    }
 
     pid_t pid = RemoteFork();
     if (pid == -1) {
@@ -95,30 +111,30 @@ static void Run(benchmark::State& state, void* data)
 
     for (const auto& _ : state) {
         auto unwinder = std::make_shared<Unwinder>(pid);
-        MAYBE_UNUSED bool unwRet = unwinder->UnwindRemote();
-        if (unwindData.isFillFrames) {
-            auto frames = unwinder->GetFrames();
-            if (frames.size() < TEST_MIN_UNWIND_FRAMES) {
-                state.SkipWithError("Failed to unwind.");
-            }
-        } else {
-            auto pcs = unwinder->GetPcs();
-            if (pcs.size() < TEST_MIN_UNWIND_FRAMES) {
-                state.SkipWithError("Failed to unwind.");
-            }
+        auto unwSize = UnwindRemote(unwinder, dataPtr);
+        if (unwSize < TEST_MIN_UNWIND_FRAMES) {
+            state.SkipWithError("Failed to unwind.");
         }
     }
     LOGU("Detach pid: %d", pid);
     DfxPtrace::Detach(pid);
 }
 
+static void GetCacheUnwinder(pid_t pid, std::shared_ptr<Unwinder>& unwinder)
+{
+    static std::unordered_map<pid_t, std::shared_ptr<Unwinder>> unwinders_;
+    auto iter = unwinders_.find(pid);
+    if (iter != unwinders_.end()) {
+        unwinder = iter->second;
+    } else {
+        unwinder = std::make_shared<Unwinder>(pid);
+        unwinders_[pid] = unwinder;
+    }
+}
+
 static void RunCache(benchmark::State& state, void* data)
 {
     UnwindData* dataPtr = reinterpret_cast<UnwindData*>(data);
-    UnwindData unwindData;
-    if (dataPtr != nullptr) {
-        unwindData.isFillFrames = dataPtr->isFillFrames;
-    }
 
     pid_t pid = RemoteFork();
     if (pid == -1) {
@@ -128,28 +144,13 @@ static void RunCache(benchmark::State& state, void* data)
     LOGU("pid: %d", pid);
     TestScopedPidReaper reap(pid);
 
-    static std::unordered_map<pid_t, std::shared_ptr<Unwinder>> unwinders_;
     std::shared_ptr<Unwinder> unwinder;
-    auto iter = unwinders_.find(pid);
-    if (iter != unwinders_.end()) {
-        unwinder = iter->second;
-    } else {
-        unwinder = std::make_shared<Unwinder>(pid);
-        unwinders_[pid] = unwinder;
-    }
+    GetCacheUnwinder(pid, unwinder);
 
     for (const auto& _ : state) {
-        MAYBE_UNUSED bool unwRet = unwinder->UnwindRemote();
-        if (unwindData.isFillFrames) {
-            auto frames = unwinder->GetFrames();
-            if (frames.size() < TEST_MIN_UNWIND_FRAMES) {
-                state.SkipWithError("Failed to unwind.");
-            }
-        } else {
-            auto pcs = unwinder->GetPcs();
-            if (pcs.size() < TEST_MIN_UNWIND_FRAMES) {
-                state.SkipWithError("Failed to unwind.");
-            }
+        auto unwSize = UnwindRemote(unwinder, dataPtr);
+        if (unwSize < TEST_MIN_UNWIND_FRAMES) {
+            state.SkipWithError("Failed to unwind.");
         }
     }
     LOGU("Detach pid: %d", pid);
@@ -167,7 +168,7 @@ static void BenchmarkUnwinderRemoteFull(benchmark::State& state)
     for (uint16_t i = REG_EH; i < REG_LAST; ++i) {
         qutRegs.push_back(i);
     }
-    DfxRegs::SetQutRegs(qutRegs);
+    DfxRegsQut::SetQutRegs(qutRegs);
     Run(state, nullptr);
 }
 BENCHMARK(BenchmarkUnwinderRemoteFull);
@@ -179,7 +180,7 @@ BENCHMARK(BenchmarkUnwinderRemoteFull);
 */
 static void BenchmarkUnwinderRemoteQut(benchmark::State& state)
 {
-    DfxRegs::SetQutRegs(QUT_REGS);
+    DfxRegsQut::SetQutRegs(QUT_REGS);
     Run(state, nullptr);
 }
 BENCHMARK(BenchmarkUnwinderRemoteQut);
@@ -191,7 +192,7 @@ BENCHMARK(BenchmarkUnwinderRemoteQut);
 */
 static void BenchmarkUnwinderRemoteQutCache(benchmark::State& state)
 {
-    DfxRegs::SetQutRegs(QUT_REGS);
+    DfxRegsQut::SetQutRegs(QUT_REGS);
     RunCache(state, nullptr);
 }
 BENCHMARK(BenchmarkUnwinderRemoteQutCache);
@@ -203,7 +204,7 @@ BENCHMARK(BenchmarkUnwinderRemoteQutCache);
 */
 static void BenchmarkUnwinderRemoteQutFrames(benchmark::State& state)
 {
-    DfxRegs::SetQutRegs(QUT_REGS);
+    DfxRegsQut::SetQutRegs(QUT_REGS);
     UnwindData data;
     data.isFillFrames = true;
     Run(state, &data);
@@ -217,7 +218,7 @@ BENCHMARK(BenchmarkUnwinderRemoteQutFrames);
 */
 static void BenchmarkUnwinderRemoteQutFramesCache(benchmark::State& state)
 {
-    DfxRegs::SetQutRegs(QUT_REGS);
+    DfxRegsQut::SetQutRegs(QUT_REGS);
     UnwindData data;
     data.isFillFrames = true;
     RunCache(state, &data);
@@ -240,24 +241,17 @@ static void BenchmarkUnwinderRemoteFp(benchmark::State& state)
     LOGU("pid: %d", pid);
     TestScopedPidReaper reap(pid);
 
+    std::shared_ptr<Unwinder> unwinder;
+    GetCacheUnwinder(pid, unwinder);
+
     for (const auto& _ : state) {
-        auto unwinder = std::make_shared<Unwinder>(pid);
         auto regs = DfxRegs::CreateRemoteRegs(pid);
         unwinder->SetRegs(regs);
         UnwindContext context;
         context.pid = pid;
-        context.regs = regs;
-        int idx = 0;
-        uintptr_t pc, fp;
-        while (true) {
-            pc = regs->GetPc();
-            fp = regs->GetFp();
-            if (!unwinder->FpStep(fp, pc, &context) || (pc == 0)) {
-                break;
-            }
-            idx++;
-        };
-        if (idx < TEST_MIN_UNWIND_FRAMES) {
+        unwinder->UnwindByFp(&context);
+        size_t unwSz = unwinder->GetPcs().size();
+        if (unwSz < TEST_MIN_UNWIND_FRAMES) {
             state.SkipWithError("Failed to unwind.");
         }
     }

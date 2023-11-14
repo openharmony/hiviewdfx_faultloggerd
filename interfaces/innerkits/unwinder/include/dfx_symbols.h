@@ -37,7 +37,7 @@ public:
     static bool GetFuncNameAndOffsetByPc(uint64_t relPc, std::shared_ptr<DfxElf> elf,
         std::string& funcName, uint64_t& funcOffset);
 
-    static std::string Demangle(const std::string buf);
+    static std::string Demangle(const std::string& buf);
 };
 } // namespace HiviewDFX
 } // namespace OHOS

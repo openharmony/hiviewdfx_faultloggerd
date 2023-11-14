@@ -38,9 +38,19 @@ enum InstrStatisticType : uint32_t {
     InstructionEntriesDebugFrame,
 
     UnsupportedArmExidx = 10,
-    UnsupportedDwarfOp_OpBreg_Reg,
-    UnsupportedDwarfOp_OpBregx_Reg,
-    UnsupportedCfaLocation,
+    UnsupportedDwarfOp_Reg,
+    UnsupportedDwarfOp_Regx,
+    UnsupportedDwarfOp_Breg,
+    UnsupportedDwarfOp_Bregx,
+    UnsupportedDwCfaOffset,
+    UnsupportedDwCfaValOffset,
+    UnsupportedDwCfaRegister,
+    UnsupportedDwCfaExpr,
+    UnsupportedDwCfaValExpr,
+    UnsupportedDwCfaRestore,
+    UnsupportedDwCfaUndefined,
+    UnsupportedDwCfaSame,
+    UnsupportedDefCfa,
 };
 
 class DfxInstrStatistic {

@@ -16,7 +16,8 @@
 #define UNWINDER_CONFIG_H
 
 #include <memory>
-#include "unwind_context.h"
+#include "byte_order.h"
+#include "unwind_define.h"
 
 namespace OHOS {
 namespace HiviewDFX {

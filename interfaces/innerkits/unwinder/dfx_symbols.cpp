@@ -89,7 +89,7 @@ bool DfxSymbols::GetFuncNameAndOffsetByPc(uint64_t relPc, std::shared_ptr<DfxElf
     return false;
 }
 
-std::string DfxSymbols::Demangle(const std::string buf)
+std::string DfxSymbols::Demangle(const std::string& buf)
 {
     if ((buf.length() < 2) || (buf[0] != '_')) { // 2 : min buf length
         return buf;
@@ -113,7 +113,7 @@ std::string DfxSymbols::Demangle(const std::string buf)
     }
 #endif
     std::string demangleName;
-    if (demangledStr == nullptr) {
+    if (demangledStr != nullptr) {
         demangleName = std::string(demangledStr);
         std::free(demangledStr);
     } else {
