@@ -58,6 +58,9 @@ public:
     void SetLoadBase(uint64_t base);
     uint64_t GetStartPc();
     uint64_t GetEndPc();
+    uint64_t GetStartVaddr();
+    uint64_t GetEndVaddr();
+    uint64_t GetStartOffset();
     uint64_t GetRelPc(uint64_t pc, uint64_t mapStart, uint64_t mapOffset);
     const uint8_t* GetMmapPtr();
     size_t GetMmapSize();
@@ -67,6 +70,7 @@ public:
     const std::vector<ElfSymbol>& GetFuncSymbols(bool isSort = false);
     bool GetFuncInfo(uint64_t addr, ElfSymbol& elfSymbol);
     bool GetSectionInfo(ShdrInfo& shdr, const std::string secName);
+    bool GetSectionData(unsigned char *buf, uint64_t size, std::string secName);
     int FindUnwindTableInfo(uintptr_t pc, std::shared_ptr<DfxMap> map, struct UnwindTableInfo& uti);
     static int FindUnwindTableLocal(uintptr_t pc, struct UnwindTableInfo& uti);
     static std::string ToReadableBuildId(const std::string& buildIdHex);

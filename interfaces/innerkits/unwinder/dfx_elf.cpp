@@ -337,6 +337,14 @@ uint64_t DfxElf::GetStartPc()
     return startPc_;
 }
 
+uint64_t DfxElf::GetStartVaddr()
+{
+    if (IsValid()) {
+        return elfParse_->GetStartVaddr();
+    }
+    return 0;
+}
+
 uint64_t DfxElf::GetEndPc()
 {
     if (endPc_ == 0) {
@@ -349,6 +357,22 @@ uint64_t DfxElf::GetEndPc()
         }
     }
     return endPc_;
+}
+
+uint64_t DfxElf::GetEndVaddr()
+{
+    if (IsValid()) {
+        return elfParse_->GetEndVaddr();
+    }
+    return 0;
+}
+
+uint64_t DfxElf::GetStartOffset()
+{
+    if (IsValid()) {
+        return elfParse_->GetStartOffset();
+    }
+    return 0;
 }
 
 uint64_t DfxElf::GetRelPc(uint64_t pc, uint64_t mapStart, uint64_t mapOffset)
@@ -481,6 +505,14 @@ bool DfxElf::GetSectionInfo(ShdrInfo& shdr, const std::string secName)
         return false;
     }
     return elfParse_->GetSectionInfo(shdr, secName);
+}
+
+bool DfxElf::GetSectionData(unsigned char *buf, uint64_t size, std::string secName)
+{
+    if (!IsValid()) {
+        return false;
+    }
+    return elfParse_->GetSectionData(buf, size, secName);
 }
 
 const std::vector<ElfSymbol>& DfxElf::GetElfSymbols(bool isSort)
