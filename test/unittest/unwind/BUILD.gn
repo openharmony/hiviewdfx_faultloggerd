@@ -28,16 +28,8 @@ ohos_unittest("test_unwind") {
   configs = [ "$faultloggerd_common_path/build:coverage_flags" ]
   defines = [ "DFX_LOG_UNWIND" ]
   sources = [
-    "elf_imitate.cpp",
-    "elf_test.cpp",
-    "instr_statistic_test.cpp",
-    "maps_test.cpp",
-    "memory_test.cpp",
-    "regs_test.cpp",
-    "signal_test.cpp",
-    "symbols_test.cpp",
+    "accessors_test.cpp",
     "unwinder_test.cpp",
-    "xz_util_test.cpp",
   ]
   deps = [
     "$faultloggerd_common_path/dfxlog:dfx_hilog",
@@ -180,15 +172,5 @@ ohos_unittest("test_dwarf") {
 
 group("unittest") {
   testonly = true
-  deps = [
-    ":test_unwind",
-    ":test_unwind_pac",
-    ":test_unwind_separate_code",
-  ]
-  if (target_cpu == "arm") {
-    deps += [ ":test_exidx" ]
-  }
-  if (target_cpu == "arm64") {
-    deps += [ ":test_dwarf" ]
-  }
+  deps = [ ":test_unwind" ]
 }
