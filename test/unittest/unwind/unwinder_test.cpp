@@ -64,7 +64,8 @@ HWTEST_F(UnwinderTest, GetStackRangeTest001, TestSize.Level2)
     uintptr_t stackTop = static_cast<uintptr_t>(-1);
     GTEST_LOG_(INFO) << "when pid == tid and maps_ != null, GetStackRange(stackBottom, stackTop) is true";
     ASSERT_TRUE(unwinder->GetStackRange(stackBottom, stackTop));
-    auto unwinderNegative = std::make_shared<Unwinder>(-2); // When the param is less than -1, maps_ = null when method Unwinder is constructed
+    // When the param is less than -1, maps_ = null when method Unwinder is constructed
+    auto unwinderNegative = std::make_shared<Unwinder>(-2);
     GTEST_LOG_(INFO) << "when pid == tid and maps_ == null, GetStackRange(stackBottom, stackTop) is false";
     ASSERT_FALSE(unwinderNegative->GetStackRange(stackBottom, stackTop));
     GTEST_LOG_(INFO) << "GetStackRangeTest001: end.";
@@ -80,12 +81,12 @@ HWTEST_F(UnwinderTest, GetStackRangeTest002, TestSize.Level2)
     GTEST_LOG_(INFO) << "GetStackRangeTest002: start.";
     auto unwinder = std::make_shared<Unwinder>();
     uintptr_t stackBottom = 1;
-    uintptr_t stackTop = static_cast<uintptr_t>(-1); 
+    uintptr_t stackTop = static_cast<uintptr_t>(-1);
     bool result = false;
     GTEST_LOG_(INFO) << "Run the function with thread will get pid != tid, GetStackRange(stackBottom, stackTop) is true";
-    std::thread* thread = new std::thread([&stackBottom, &stackTop, &result, &unwinder]{result = unwinder->GetStackRange(stackBottom, stackTop);});
+    std::thread* thread = new std::thread([&]{result = unwinder->GetStackRange(stackBottom, stackTop);});
     thread->join();
-    ASSERT_TRUE(result); 
+    ASSERT_TRUE(result);
     GTEST_LOG_(INFO) << "GetStackRangeTest002: end.";
 }
 
@@ -170,13 +171,16 @@ HWTEST_F(UnwinderTest, UnwinderLocalTest002, TestSize.Level2)
 HWTEST_F(UnwinderTest, UnwinderLocalTest003, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "UnwinderLocalTest003: start.";
-    auto unwinderNegative = std::make_shared<Unwinder>(-2); // When the param is less than -1, maps_ = null when method Unwinder is constructed
+    // When the param is less than -1, maps_ = null when method Unwinder is constructed
+    auto unwinderNegative = std::make_shared<Unwinder>(-2);
     size_t maxFrameNum = 64;
     size_t skipFrameNum = 0;
-    GTEST_LOG_(INFO) << "when pid == tid and maps_ == null, UnwindLocal(maxFrameNum, skipFrameNum) is false";
+    GTEST_LOG_(INFO) << "when pid == tid and maps_ == null, "
+                         "UnwindLocal(maxFrameNum, skipFrameNum) is false";
     ASSERT_FALSE(unwinderNegative->UnwindLocal(maxFrameNum, skipFrameNum));
     auto unwinder = std::make_shared<Unwinder>();
-    GTEST_LOG_(INFO) << "when pid == tid and maps_ != null, UnwindLocal(maxFrameNum, skipFrameNum) is true";
+    GTEST_LOG_(INFO) << "when pid == tid and maps_ != null, "
+                        "UnwindLocal(maxFrameNum, skipFrameNum) is true";
     ASSERT_TRUE(unwinder->UnwindLocal(maxFrameNum, skipFrameNum));
     GTEST_LOG_(INFO) << "UnwinderLocalTest003: end.";
 }
@@ -271,7 +275,8 @@ HWTEST_F(UnwinderTest, UnwinderRemoteTest002, TestSize.Level2)
 HWTEST_F(UnwinderTest, UnwinderRemoteTest003, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "UnwinderRemoteTest003: start.";
-    auto unwinderNegative = std::make_shared<Unwinder>(-2); // When the param is less than -1, pid_ < 0 when method Unwinder is constructed
+    // When the param is less than -1, pid_ < 0 when method Unwinder is constructed
+    auto unwinderNegative = std::make_shared<Unwinder>(-2);
     size_t maxFrameNum = 64;
     size_t skipFrameNum = 0;
     GTEST_LOG_(INFO) << "when pid <= 0, UnwindLocal(maxFrameNum, skipFrameNum) is false";
