@@ -122,7 +122,50 @@ HWTEST_F(DfxSymbolsTest, DfxSymbolsTest002, TestSize.Level2)
     GTEST_LOG_(INFO) << "DfxSymbolsTest002: end.";
 }
 
+/**
+ * @tc.name: DfxDemangleTest001
+ * @tc.desc: test DfxSymbols demangle functions
+ * @tc.type: FUNC
+ */
+HWTEST_F(DfxSymbolsTest, DfxDemangleTest001, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "DfxDemangleTest001: start.";
+    EXPECT_EQ("", DfxSymbols::Demangle(""));
+    EXPECT_EQ("a", DfxSymbols::Demangle("a"));
+    EXPECT_EQ("_", DfxSymbols::Demangle("_"));
+    EXPECT_EQ("ab", DfxSymbols::Demangle("ab"));
+    EXPECT_EQ("abc", DfxSymbols::Demangle("abc"));
+    EXPECT_EQ("_R", DfxSymbols::Demangle("_R"));
+    EXPECT_EQ("_Z", DfxSymbols::Demangle("_Z"));
+    GTEST_LOG_(INFO) << "DfxDemangleTest001: end.";
+}
 
+/**
+ * @tc.name: DfxDemangleTest002
+ * @tc.desc: test DfxSymbols demangle functions with cxx
+ * @tc.type: FUNC
+ */
+HWTEST_F(DfxSymbolsTest, DfxDemangleTest002, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "DfxDemangleTest002: start.";
+    EXPECT_EQ("fake(bool)", DfxSymbols::Demangle("_Z4fakeb"));
+    EXPECT_EQ("demangle(int)", DfxSymbols::Demangle("_Z8demanglei"));
+    GTEST_LOG_(INFO) << "DfxDemangleTest002: end.";
+}
+
+/**
+ * @tc.name: DfxDemangleTest003
+ * @tc.desc: test DfxSymbols demangle functions with rust
+ * @tc.type: FUNC
+ */
+HWTEST_F(DfxSymbolsTest, DfxDemangleTest003, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "DfxDemangleTest003: start.";
+    EXPECT_EQ("std::rt::lang_start_internal",
+        DfxSymbols::Demangle("_RNvNtCs2WRBrrl1bb1_3std2rt19lang_start_internal"));
+    EXPECT_EQ("profcollectd::main", DfxSymbols::Demangle("_RNvCs4VPobU5SDH_12profcollectd4main"));
+    GTEST_LOG_(INFO) << "DfxDemangleTest003: end.";
+}
 } // namespace HiviewDFX
 } // namespace OHOS
 
