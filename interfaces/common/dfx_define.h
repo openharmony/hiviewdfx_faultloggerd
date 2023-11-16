@@ -56,9 +56,6 @@ static const char PROC_SELF_COMM_PATH[] = "/proc/self/comm";
 static const char PROC_SELF_MAPS_PATH[] = "/proc/self/maps";
 static const char PROC_SELF_EXE_PATH[] = "/proc/self/exe";
 
-static const char TEST_BUNDLE_NAME[] = "com.example.myapplication";
-static const char TRUNCATE_TEST_BUNDLE_NAME[] = "e.myapplication";
-
 #define LIKELY(exp)       (__builtin_expect(!!(exp), true))
 #define UNLIKELY(exp)     (__builtin_expect(!!(exp), false))
 

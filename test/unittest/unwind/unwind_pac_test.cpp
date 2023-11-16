@@ -99,7 +99,7 @@ HWTEST_F(UnwinderPacTest, UnwinderPacTest002, TestSize.Level2)
         UnwindContext context;
         context.pid = pid;
         context.regs = regs;
-        bool unwRet = unwinder->UnwindByFp(&context);
+        unwRet = unwinder->UnwindByFp(&context);
         ASSERT_TRUE(unwRet) << "UnwinderPacTest002: unwRet:" << unwRet;
         DfxPtrace::Detach(pid);
         _exit(0);

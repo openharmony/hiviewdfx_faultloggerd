@@ -13,20 +13,12 @@
 
 import("//base/hiviewdfx/faultloggerd/faultloggerd.gni")
 
-group("libpanic_handler") {
+group("faultloggerd_rust") {
   if (!defined(ohos_lite)) {
-    deps = [ "panic_handler:panic_handler" ]
-  }
-}
-
-group("libstacktrace_rust") {
-  if (!defined(ohos_lite)) {
-    deps = [ "stacktrace:stacktrace_rust" ]
-  }
-}
-
-group("rustc_demangle") {
-  if (!defined(ohos_lite)) {
-    deps = [ "rustc_demangle:rustc_demangle" ]
+    deps = [
+      "panic_handler:panic_handler",
+      "rustc_demangle:rustc_demangle",
+      "stacktrace:stacktrace_rust",
+    ]
   }
 }

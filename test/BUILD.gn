@@ -20,54 +20,50 @@ if (defined(ohos_lite)) {
 }
 
 group("faultloggerd_benchmarktest") {
-  testonly = true
+  if (!defined(ohos_lite)) {
+    testonly = true
+  }
   deps = [ "benchmarktest:benchmarktest" ]
 }
 
 group("faultloggerd_moduletest") {
-  testonly = true
+  if (!defined(ohos_lite)) {
+    testonly = true
+  }
   deps = [ "moduletest:moduletest" ]
 }
 
 group("faultloggerd_systemtest") {
-  testonly = true
+  if (!defined(ohos_lite)) {
+    testonly = true
+  }
   deps = [ "systemtest:systemtest" ]
 }
 
 group("faultloggerd_funchook") {
-  testonly = true
-  deps = [ "funchook:dfxfunchook_unittest" ]
+  if (!defined(ohos_lite)) {
+    testonly = true
+  }
+  deps = [ "funchook:dfxfunchook" ]
 }
 
 group("faultloggerd_performancetest") {
-  testonly = true
+  if (!defined(ohos_lite)) {
+    testonly = true
+  }
   deps = [ "performancetest:performance" ]
 }
 
 group("faultloggerd_fuzzertest") {
-  testonly = true
-  deps = [ "fuzztest/faultloggerd_fuzzer:fuzztest" ]
+  if (!defined(ohos_lite)) {
+    testonly = true
+  }
+  deps = [ "fuzztest:fuzztest" ]
 }
 
 group("faultloggerd_unittest") {
-  testonly = true
-  deps = [
-    "unittest/common:unittest",
-    "unittest/dump_catcher:unittest",
-    "unittest/process_dump:unittest",
-    "unittest/procinfo:unittest",
-    "unittest/services:unittest",
-    "unittest/signal_handler:unittest",
-  ]
   if (!defined(ohos_lite)) {
-    deps += [
-      "unittest/backtrace:unittest",
-      "unittest/faultloggerd_client:unittest",
-      "unittest/panic_handler:unittest",
-      "unittest/rustc_demangle:unittest",
-      "unittest/stacktrace_rust:unittest",
-      "unittest/unwind:unittest",
-      "unittest/unwinder:unittest",
-    ]
+    testonly = true
   }
+  deps = [ "unittest:unittest" ]
 }

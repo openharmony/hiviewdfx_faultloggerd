@@ -13,54 +13,40 @@
 
 import("//base/hiviewdfx/faultloggerd/faultloggerd.gni")
 group("faultloggerd_targets") {
-  if (defined(ohos_lite)) {
-    deps = [
-      "interfaces/innerkits/dump_catcher:libdfx_dumpcatcher",
-      "interfaces/innerkits/faultloggerd_client:libfaultloggerd",
-      "interfaces/innerkits/signal_handler:dfx_signalhandler",
-      "services:faultloggerd",
-      "tools/crasher_c:crasher_c",
-      "tools/crasher_cpp:crasher_cpp",
-      "tools/process_dump:processdump",
-    ]
-  } else {
-    deps = [
+  deps = [
+    "interfaces/innerkits/dump_catcher:libdfx_dumpcatcher",
+    "interfaces/innerkits/faultloggerd_client:libfaultloggerd",
+    "interfaces/innerkits/signal_handler:dfx_signalhandler",
+    "services:faultloggerd",
+    "tools/process_dump:processdump",
+  ]
+  if (!defined(ohos_lite)) {
+    deps += [
       "interfaces/innerkits/backtrace:libbacktrace_local",
-      "interfaces/innerkits/dump_catcher:libdfx_dumpcatcher",
-      "interfaces/innerkits/faultloggerd_client:libfaultloggerd",
-      "interfaces/innerkits/signal_handler:dfx_signalhandler",
       "interfaces/innerkits/unwinder:libunwinder",
-      "interfaces/rust:libpanic_handler",
-      "interfaces/rust:libstacktrace_rust",
-      "interfaces/rust:rustc_demangle",
-      "services:faultloggerd",
+      "interfaces/rust:faultloggerd_rust",
       "tools/crash_validator:crash_validator",
       "tools/dump_catcher:dumpcatcher",
-      "tools/process_dump:processdump",
     ]
   }
 }
 
 group("faultloggerd_tests") {
-  if (defined(ohos_lite)) {
-    deps = [
-      "test/moduletest:FaultloggerdModuleTest",
-      "test/systemtest:test_faultloggerd",
-      "test/unittest/process_dump:test_processdump",
-      "test/unittest/services:test_service",
-    ]
-  } else {
+  deps = [
+    "test:faultloggerd_moduletest",
+    "test:faultloggerd_systemtest",
+    "test:faultloggerd_unittest",
+    "tools/crasher_c:crasher_c",
+    "tools/crasher_cpp:crasher_cpp",
+  ]
+  if (!defined(ohos_lite)) {
     testonly = true
-    deps = [
+    deps += [
       "example:dumpcatcherdemo",
+      "test:faultloggerd_benchmarktest",
       "test:faultloggerd_funchook",
       "test:faultloggerd_fuzzertest",
-      "test:faultloggerd_moduletest",
       "test:faultloggerd_performancetest",
-      "test:faultloggerd_systemtest",
-      "test:faultloggerd_unittest",
-      "tools/crasher_c:crasher_c",
-      "tools/crasher_cpp:crasher_cpp",
       "tools/panic_maker:panic_maker",
     ]
   }
