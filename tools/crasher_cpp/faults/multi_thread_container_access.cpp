@@ -102,7 +102,7 @@ std::string MultiThreadContainerAccess::GenerateStr()
 {
     constexpr int dictLen = 26;
     constexpr int len = 10;
-    char dict[dictLen] = { 'a', 'b', 'c', 'd', 'e', 'f', 'g',
+    const char dict[dictLen] = { 'a', 'b', 'c', 'd', 'e', 'f', 'g',
         'h', 'i', 'j', 'k', 'l', 'm', 'n',
         'o', 'p', 'q', 'r', 's', 't', 'u',
         'v', 'w', 'x', 'y', 'z' };
@@ -140,7 +140,7 @@ void MultiThreadContainerAccess::ManipulateList()
     }
 }
 
-void MultiThreadContainerAccess::Print()
+void MultiThreadContainerAccess::Print() const
 {
     printf("MultiThreadContainerAccess::Print begin\n");
     for (const auto& value : strList_) {

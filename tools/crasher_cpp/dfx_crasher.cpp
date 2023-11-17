@@ -278,10 +278,13 @@ void *DoStackOverflow(void * inputArg)
 
 NOINLINE int DfxCrasher::StackOverflow()
 {
-    int errno;
     pthread_t tid;
     pthread_attr_t attr;
-    errno=pthread_attr_init(&attr);
+    int err = pthread_attr_init(&attr);
+    if (err != 0) {
+        return err;
+    }
+
     constexpr int maxStackSize = 1024 * 10;
     if (pthread_attr_setstacksize(&attr, maxStackSize) == 0) {
         pthread_create(&tid, &attr, DoStackOverflow, nullptr);

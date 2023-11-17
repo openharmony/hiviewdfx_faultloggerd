@@ -157,7 +157,7 @@ void CppCrashReporter::ReportToAbilityManagerService()
     dlclose(handle);
 }
 
-std::string CppCrashReporter::GetRegsString(std::shared_ptr<DfxThread> thread) const
+std::string CppCrashReporter::GetRegsString(std::shared_ptr<DfxThread> thread)
 {
     std::string regsString = "";
     if (thread == nullptr) {

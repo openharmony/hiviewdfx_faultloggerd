@@ -128,8 +128,8 @@ bool DfxDumpCatcher::DoDumpRemoteLocked(int pid, int tid, std::string& msg)
 bool DfxDumpCatcher::DoDumpLocalLocked(int pid, int tid, std::string& msg, size_t maxFrameNums)
 {
     bool ret = false;
-    size_t skipFramNum = 2; // 2: skip 2 frame
     if (tid == syscall(SYS_gettid)) {
+        size_t skipFramNum = 2; // 2: skip 2 frame
         ret = DoDumpCurrTid(skipFramNum, msg, maxFrameNums);
     } else if (tid == 0) {
         ret = DoDumpLocalPid(pid, msg, maxFrameNums);

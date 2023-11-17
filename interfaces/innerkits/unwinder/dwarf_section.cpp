@@ -37,10 +37,10 @@ bool DwarfSection::LinearSearchEntry(uintptr_t pc, struct UnwindTableInfo uti, s
     uintptr_t fdeCount = uti.tableLen;
     uintptr_t tableData = uti.tableData;
     LOGU("LinearSearchEntry tableData:%p, tableLen: %u", (void*)tableData, (uint32_t)fdeCount);
-    uintptr_t i = 0, fdeAddr, ptr = tableData;
+    uintptr_t i = 0, ptr = tableData;
     FrameDescEntry fdeInfo;
     while (i++ < fdeCount && ptr < uti.endPc) {
-        fdeAddr = ptr;
+        uintptr_t fdeAddr = ptr;
         if (GetCieOrFde(ptr, fdeInfo)) {
             if (pc >= fdeInfo.pcStart && pc < fdeInfo.pcEnd) {
                 LOGU("Fde entry addr: %llx", (uint64_t)fdeAddr);

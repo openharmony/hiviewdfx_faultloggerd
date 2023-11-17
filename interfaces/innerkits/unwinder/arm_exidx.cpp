@@ -140,13 +140,12 @@ bool ArmExidx::SearchEntry(uintptr_t pc, struct UnwindTableInfo uti, struct Unwi
     }
 
     // do binary search
-    uintptr_t ptr = 0;
     uintptr_t entry = 0;
     uintptr_t low = 0;
     uintptr_t high = tableLen;
     while (low < high) {
         uintptr_t cur = (low + high) / 2; // 2 : binary search divided parameter
-        ptr = tableData + cur * ARM_EXIDX_TABLE_SIZE;
+        uintptr_t ptr = tableData + cur * ARM_EXIDX_TABLE_SIZE;
         uintptr_t addr = 0;
         if (!memory_->ReadPrel31(ptr, &addr)) {
             lastErrorData_.SetAddrAndCode(ptr, UNW_ERROR_ILLEGAL_VALUE);

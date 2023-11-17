@@ -167,7 +167,7 @@ bool DfxMemory::ReadString(uintptr_t& addr, std::string* str, size_t maxSize, bo
                 return true;
             } else {
                 str->assign(offset + length, '\0');
-                Read(ptr, (void *)str->data(), str->size(), false);
+                Read(ptr, (void*)str->data(), str->size(), false);
                 return true;
             }
         }

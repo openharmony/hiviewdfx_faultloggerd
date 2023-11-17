@@ -79,7 +79,7 @@ static const std::string GetNextLine(FILE *fp, int *status)
     *status = 0;
     std::string res {buf};
     if (res.back() == '\n') {
-        res = res.substr(0, res.length() - 1);
+        res.pop_back();
     }
     return res;
 }
@@ -528,8 +528,9 @@ bool ElfImitate::GetShdrStrTabIdx(FILE * const fp)
 
 bool ElfImitate::ParseProgramHeaders(ElfFileType fileType)
 {
-    std::string line {};
+    bool firstLoadHeader = true;
     while (true) {
+        std::string line {};
         line = GetNextPhdrLine();
         if (line.empty()) {
             break;
@@ -540,7 +541,6 @@ bool ElfImitate::ParseProgramHeaders(ElfFileType fileType)
             std::string lineAppend = GetNextLine(phdrFP_, &status);
             if (status == -1) {
                 DFXLOG_ERROR("GetNextLine(phdrFP_, &status) error:");
-                line = "";
                 break;
             }
             if (lineAppend.empty()) {
@@ -560,7 +560,6 @@ bool ElfImitate::ParseProgramHeaders(ElfFileType fileType)
         if (!std::all_of(strVec[7].begin(), strVec[7].end(), ::isdigit)) {
             flg += strVec[7];
         }
-        bool firstLoadHeader = true;
         if (type == "LOAD") {
             if (flg.find("E") == std::string::npos) {
                 continue;
@@ -590,7 +589,7 @@ bool ElfImitate::ParseSectionHeaders(ElfFileType fileType)
     (void)GetNextShdrLine(); //skip index 0 section header
     (void)GetNextLine(shdrFP_, &status);
     while (true) {
-        int status {0};
+        status = 0;
         line = GetNextShdrLine();
         if (line.empty()) {
             break;
@@ -739,8 +738,8 @@ bool ElfImitate::ParseElfSymbols()
     std::unordered_map <std::string, uint8_t> vsMap = {
         {"DEFAULT", STV_DEFAULT}, {"INTERNAL", STV_INTERNAL}, {"HIDDEN", STV_HIDDEN}, {"PROTECTED", STV_PROTECTED},
     };
-    std::string line {};
     while (true) {
+        std::string line {};
         line = GetNextSymLine();
         if (line.empty()) {
             DFXLOG_INFO("no more symbol lines");

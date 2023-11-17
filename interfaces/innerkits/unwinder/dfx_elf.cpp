@@ -385,7 +385,7 @@ std::string DfxElf::GetBuildId()
         }
         ShdrInfo shdr;
         if (GetSectionInfo(shdr, NOTE_GNU_BUILD_ID) || GetSectionInfo(shdr, NOTES)) {
-            std::string buildIdHex = GetBuildId((uint64_t)((char *)GetMmapPtr() + shdr.offset), shdr.size);
+            std::string buildIdHex = GetBuildId((uint64_t)((char*)GetMmapPtr() + shdr.offset), shdr.size);
             if (!buildIdHex.empty()) {
                 buildId_ = ToReadableBuildId(buildIdHex);
                 LOGU("Elf buildId: %s", buildId_.c_str());
@@ -646,7 +646,7 @@ int DfxElf::FindUnwindTableInfo(uintptr_t pc, std::shared_ptr<DfxMap> map, struc
     uti.endPc = GetEndPc();
     LOGU("Elf startPc: %llx, endPc: %llx", (uint64_t)uti.startPc, (uint64_t)uti.endPc);
     if (pc < uti.startPc && pc >= uti.endPc) {
-        LOGE("pc(%p) is not in elf table info?", (void *)pc);
+        LOGE("pc(%p) is not in elf table info?", (void*)pc);
         return UNW_ERROR_PC_NOT_IN_UNWIND_INFO;
     }
 
@@ -671,7 +671,7 @@ int DfxElf::FindUnwindTableInfo(uintptr_t pc, std::shared_ptr<DfxMap> map, struc
                 ((sizeof(ElfW(Addr)) == 4) ? DW_EH_PE_udata4 : DW_EH_PE_udata8); // 4 : four bytes
             synthHdr.fdeCountEnc = DW_EH_PE_omit;
             synthHdr.tableEnc = DW_EH_PE_omit;
-            synthHdr.ehFrame = (ElfW(Addr))(shdr.offset + (char *)GetMmapPtr());
+            synthHdr.ehFrame = (ElfW(Addr))(shdr.offset + (char*)GetMmapPtr());
             hdr = &synthHdr;
         }
         uintptr_t shdrBase = static_cast<uintptr_t>(loadBase + shdr.addr);
