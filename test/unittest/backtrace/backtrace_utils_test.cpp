@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 Huawei Device Co., Ltd.
+ * Copyright (c) 2022-2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -36,11 +36,10 @@ namespace OHOS {
 namespace HiviewDFX {
 #undef LOG_DOMAIN
 #undef LOG_TAG
-#define LOG_TAG "BacktraceTest"
+#define LOG_TAG "DfxBacktraceUtilsTest"
 #define LOG_DOMAIN 0xD002D11
 
 #define TEST_TEMP_FILE "/data/test/testfile"
-namespace {
 /*
 expected output log should be like this(aarch64):
     Backtrace: #01 pc 000000000000d2f8 /data/test/backtrace_utils_test
@@ -55,22 +54,7 @@ expected output log should be like this(aarch64):
     Backtrace: #10 pc 00000000000dcf74 /system/lib/ld-musl-aarch64.so.1
     Backtrace: #11 pc 000000000000c614 /data/test/backtrace_utils_test
 */
-static void CheckResourceUsage(uint32_t fdCount, uint32_t mapsCount, uint64_t memCount)
-{
-    // check memory/fd/maps
-    auto curFdCount = GetSelfFdCount();
-    GTEST_LOG_(INFO) << "AfterTest Fd New:" << std::to_string(curFdCount);
-    GTEST_LOG_(INFO) << "Fd Old:" << std::to_string(fdCount) << "\n";
 
-    auto curMapsCount = GetSelfMapsCount();
-    GTEST_LOG_(INFO) << "AfterTest Maps New:" << std::to_string(curMapsCount);
-    GTEST_LOG_(INFO) << "Maps Old:" << std::to_string(mapsCount) << "\n";
-
-    auto curMemSize = GetSelfMemoryCount();
-    GTEST_LOG_(INFO) << "AfterTest Memory New(KB):" << std::to_string(curMemSize);
-    GTEST_LOG_(INFO) << "Memory Old(KB):" << std::to_string(memCount) << "\n";
-}
-}
 class BacktraceUtilsTest : public testing::Test {
 public:
     static void SetUpTestCase();

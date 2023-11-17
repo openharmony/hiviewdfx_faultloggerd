@@ -24,6 +24,9 @@ static const std::string ACCOUNTMGR_NAME = "accountmgr";
 static const std::string FOUNDATION_NAME = "foundation";
 static const std::string APPSPAWN_NAME = "appspawn";
 
+static const char TEST_BUNDLE_NAME[] = "com.example.myapplication";
+static const char TRUNCATE_TEST_BUNDLE_NAME[] = "e.myapplication";
+
 #if defined(__arm__)
 #define REGISTERS           "r0:","r1:","r2:","r3:","r4:","r5:","r6:",\
                             "r7:","r8:","r9:","r10:","fp:","ip:","sp:","lr:","pc:"
@@ -74,6 +77,7 @@ std::string GetCppCrashFileName(const pid_t pid);
 uint32_t GetSelfFdCount();
 uint32_t GetSelfMapsCount();
 uint64_t GetSelfMemoryCount();
+void CheckResourceUsage(uint32_t fdCount, uint32_t mapsCount, uint64_t memCount);
 } // namespace HiviewDFX
 } // namespace OHOS
 #endif // DFX_TEST_UTIL

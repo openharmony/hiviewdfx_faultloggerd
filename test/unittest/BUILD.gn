@@ -13,12 +13,25 @@
 
 import("//base/hiviewdfx/faultloggerd/faultloggerd.gni")
 
-group("benchmarktest") {
+group("unittest") {
+  deps = [
+    "common:unittest",
+    "process_dump:unittest",
+    "procinfo:unittest",
+    "services:unittest",
+    "signal_handler:unittest",
+  ]
   if (!defined(ohos_lite)) {
     testonly = true
-    deps = [ "unwinder:benchmarktest" ]
-    if (has_libunwind) {
-      deps += [ "unwind:benchmarktest" ]
-    }
+    deps += [
+      "backtrace:unittest",
+      "dump_catcher:unittest",
+      "faultloggerd_client:unittest",
+      "panic_handler:unittest",
+      "rustc_demangle:unittest",
+      "stacktrace_rust:unittest",
+      "unwind:unittest",
+      "unwinder:unittest",
+    ]
   }
 }

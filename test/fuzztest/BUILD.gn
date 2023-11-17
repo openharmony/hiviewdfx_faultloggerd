@@ -13,12 +13,9 @@
 
 import("//base/hiviewdfx/faultloggerd/faultloggerd.gni")
 
-group("benchmarktest") {
+group("fuzztest") {
   if (!defined(ohos_lite)) {
     testonly = true
-    deps = [ "unwinder:benchmarktest" ]
-    if (has_libunwind) {
-      deps += [ "unwind:benchmarktest" ]
-    }
   }
+  deps = [ "faultloggerd_fuzzer:fuzztest" ]
 }

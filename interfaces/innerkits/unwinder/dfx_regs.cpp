@@ -159,15 +159,20 @@ void DfxRegs::SetPc(uintptr_t pc)
     regsData_[REG_PC] = pc;
 }
 
-#if defined(__arm__) || defined(__aarch64__)
 uintptr_t DfxRegs::GetFp() const
 {
+#if defined(__arm__) || defined(__aarch64__)
     return regsData_[REG_FP];
+#else
+    return 0;
+#endif
 }
 
 void DfxRegs::SetFp(uintptr_t fp)
 {
+#if defined(__arm__) || defined(__aarch64__)
     regsData_[REG_FP] = fp;
+#endif
 }
 
 std::string DfxRegs::GetSpecialRegsName(uintptr_t val) const
@@ -198,6 +203,5 @@ std::string DfxRegs::PrintSpecialRegs() const
 #endif
     return regsStr;
 }
-#endif
 } // namespace HiviewDFX
 } // namespace OHOS

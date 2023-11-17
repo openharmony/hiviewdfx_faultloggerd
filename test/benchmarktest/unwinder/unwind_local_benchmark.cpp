@@ -16,6 +16,7 @@
 #include <benchmark/benchmark.h>
 #include <string>
 #include <vector>
+#include <unistd.h>
 #include "dfx_log.h"
 #include "dfx_regs_get.h"
 #include "dfx_regs_qut.h"
@@ -75,6 +76,7 @@ static size_t UnwinderLocal(MAYBE_UNUSED void* data)
         return frames.size();
     }
     auto pcs = unwindData.unwinder->GetPcs();
+    LOGU("%s pcs.size: %zu", __func__, pcs.size());
     return pcs.size();
 }
 
@@ -102,17 +104,20 @@ static size_t UnwinderLocalFp(MAYBE_UNUSED void* data) {
     context.stackTop = stackTop;
     unwindData.unwinder->UnwindByFp(&context);
     auto pcs = unwindData.unwinder->GetPcs();
+    LOGU("%s pcs.size: %zu", __func__, pcs.size());
     return pcs.size();
 }
 #endif
 
 static void Run(benchmark::State& state, size_t (*func)(void*), void* data)
 {
+    LOGU("++++++pid: %d", getpid());
     for (const auto& _ : state) {
         if (TestFunc1(func, data) < TEST_MIN_UNWIND_FRAMES) {
             state.SkipWithError("Failed to unwind.");
         }
     }
+    LOGU("------pid: %d", getpid());
 }
 
 /**

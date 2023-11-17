@@ -78,14 +78,14 @@ static pid_t RemoteFork()
     return pid;
 }
 
-static size_t UnwindRemote(std::shared_ptr<Unwinder> unwinder, UnwindData* dataPtr)
+static size_t UnwinderRemote(std::shared_ptr<Unwinder> unwinder, UnwindData* dataPtr)
 {
-    if (unwinder == nullptr) {
-        return 0;
-    }
     UnwindData data;
     if (dataPtr != nullptr) {
         data.isFillFrames = dataPtr->isFillFrames;
+    }
+    if (unwinder == nullptr) {
+        return 0;
     }
     MAYBE_UNUSED bool unwRet = unwinder->UnwindRemote();
     if (data.isFillFrames) {
@@ -93,6 +93,7 @@ static size_t UnwindRemote(std::shared_ptr<Unwinder> unwinder, UnwindData* dataP
         return frames.size();
     } else {
         auto pcs = unwinder->GetPcs();
+        LOGU("%s pcs.size: %zu", __func__, pcs.size());
         return pcs.size();
     }
 }
@@ -111,7 +112,7 @@ static void Run(benchmark::State& state, void* data)
 
     for (const auto& _ : state) {
         auto unwinder = std::make_shared<Unwinder>(pid);
-        auto unwSize = UnwindRemote(unwinder, dataPtr);
+        auto unwSize = UnwinderRemote(unwinder, dataPtr);
         if (unwSize < TEST_MIN_UNWIND_FRAMES) {
             state.SkipWithError("Failed to unwind.");
         }
@@ -148,7 +149,7 @@ static void RunCache(benchmark::State& state, void* data)
     GetCacheUnwinder(pid, unwinder);
 
     for (const auto& _ : state) {
-        auto unwSize = UnwindRemote(unwinder, dataPtr);
+        auto unwSize = UnwinderRemote(unwinder, dataPtr);
         if (unwSize < TEST_MIN_UNWIND_FRAMES) {
             state.SkipWithError("Failed to unwind.");
         }
