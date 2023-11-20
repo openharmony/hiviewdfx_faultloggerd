@@ -93,9 +93,9 @@ void Printer::PrintReason(std::shared_ptr<ProcessDumpRequest> request, std::shar
                 if ((addr < map->begin && map->begin - addr <= PAGE_SIZE) || (map->path.compare(guardMapName) == 0)) {
                     process->reason += StringPrintf(
 #if defined(__LP64__)
-                        " current thread stack low address = %#016llx, probably caused by stack-buffer-overflow",
+                        " current thread stack low address = %#018llx, probably caused by stack-buffer-overflow",
 #else
-                        " current thread stack low address = %#08llx, probably caused by stack-buffer-overflow",
+                        " current thread stack low address = %#010llx, probably caused by stack-buffer-overflow",
 #endif
                         map->begin);
                 }
