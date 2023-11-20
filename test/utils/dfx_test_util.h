@@ -45,7 +45,7 @@ namespace OHOS {
 namespace HiviewDFX {
 class TestScopedPidReaper {
 public:
-    TestScopedPidReaper(pid_t pid) : pid_(pid) {}
+    explicit TestScopedPidReaper(pid_t pid) : pid_(pid) {}
     ~TestScopedPidReaper() { Kill(pid_); }
 
     static void Kill(pid_t pid)

@@ -30,24 +30,24 @@ namespace OHOS {
 namespace HiviewDFX {
 void DfxRegsX86_64::SetFromUcontext(const ucontext_t &context)
 {
-    std::vector<uintptr_t> regs;
-    regs[REG_X86_64_RAX] = context.uc_mcontext.gregs[REG_RAX];
-    regs[REG_X86_64_RDX] = context.uc_mcontext.gregs[REG_RDX];
-    regs[REG_X86_64_RCX] = context.uc_mcontext.gregs[REG_RCX];
-    regs[REG_X86_64_RBX] = context.uc_mcontext.gregs[REG_RBX];
-    regs[REG_X86_64_RSI] = context.uc_mcontext.gregs[REG_RSI];
-    regs[REG_X86_64_RDI] = context.uc_mcontext.gregs[REG_RDI];
-    regs[REG_X86_64_RBP] = context.uc_mcontext.gregs[REG_RBP];
-    regs[REG_X86_64_RSP] = context.uc_mcontext.gregs[REG_RSP];
-    regs[REG_X86_64_R8] = context.uc_mcontext.gregs[REG_R8];
-    regs[REG_X86_64_R9] = context.uc_mcontext.gregs[REG_R9];
-    regs[REG_X86_64_R10] = context.uc_mcontext.gregs[REG_R10];
-    regs[REG_X86_64_R11] = context.uc_mcontext.gregs[REG_R11];
-    regs[REG_X86_64_R12] = context.uc_mcontext.gregs[REG_R12];
-    regs[REG_X86_64_R13] = context.uc_mcontext.gregs[REG_R13];
-    regs[REG_X86_64_R14] = context.uc_mcontext.gregs[REG_R14];
-    regs[REG_X86_64_R15] = context.uc_mcontext.gregs[REG_R15];
-    regs[REG_X86_64_RIP] = context.uc_mcontext.gregs[REG_RIP];
+    std::vector<uintptr_t> regs {};
+    regs.push_back((uintptr_t)(context.uc_mcontext.gregs[REG_RAX]));
+    regs.push_back((uintptr_t)(context.uc_mcontext.gregs[REG_RDX]));
+    regs.push_back((uintptr_t)(context.uc_mcontext.gregs[REG_RCX]));
+    regs.push_back((uintptr_t)(context.uc_mcontext.gregs[REG_RBX]));
+    regs.push_back((uintptr_t)(context.uc_mcontext.gregs[REG_RSI]));
+    regs.push_back((uintptr_t)(context.uc_mcontext.gregs[REG_RDI]));
+    regs.push_back((uintptr_t)(context.uc_mcontext.gregs[REG_RBP]));
+    regs.push_back((uintptr_t)(context.uc_mcontext.gregs[REG_RSP]));
+    regs.push_back((uintptr_t)(context.uc_mcontext.gregs[REG_R8]));
+    regs.push_back((uintptr_t)(context.uc_mcontext.gregs[REG_R9]));
+    regs.push_back((uintptr_t)(context.uc_mcontext.gregs[REG_R10]));
+    regs.push_back((uintptr_t)(context.uc_mcontext.gregs[REG_R11]));
+    regs.push_back((uintptr_t)(context.uc_mcontext.gregs[REG_R12]));
+    regs.push_back((uintptr_t)(context.uc_mcontext.gregs[REG_R13]));
+    regs.push_back((uintptr_t)(context.uc_mcontext.gregs[REG_R14]));
+    regs.push_back((uintptr_t)(context.uc_mcontext.gregs[REG_R15]));
+    regs.push_back((uintptr_t)(context.uc_mcontext.gregs[REG_RIP]));
 
     SetRegsData(regs);
 }

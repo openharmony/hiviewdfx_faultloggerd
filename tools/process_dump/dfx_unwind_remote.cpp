@@ -92,7 +92,7 @@ bool DfxUnwindRemote::UnwindProcess(std::shared_ptr<ProcessDumpRequest> request,
         if (!ret) {
             UnwindThreadFallback(process, unwThread);
         }
-        UnwindThreadByParseStackIfNeed(process, unwThread);
+        DfxUnwindRemote::UnwindThreadByParseStackIfNeed(process, unwThread);
         Printer::PrintDumpHeader(request, process);
         Printer::PrintThreadHeaderByConfig(process->keyThread_);
         Printer::PrintThreadBacktraceByConfig(unwThread);

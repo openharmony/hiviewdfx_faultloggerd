@@ -170,12 +170,12 @@ template <typename EhdrType, typename ShdrType>
 bool ElfParser::ParseSectionHeaders(const EhdrType& ehdr)
 {
     uint64_t offset = ehdr.e_shoff;
-    uint64_t secOffset = 0;
-    uint64_t secSize = 0;
 
     ShdrType shdr;
     //section header string table index. include section header table with section name string table.
     if (ehdr.e_shstrndx < ehdr.e_shnum) {
+        uint64_t secOffset = 0;
+        uint64_t secSize = 0;
         uint64_t shNdxOffset = offset + ehdr.e_shstrndx * ehdr.e_shentsize;
         if (!Read((uintptr_t)shNdxOffset, &shdr, sizeof(shdr))) {
             LOGE("Read section header string table failed");
@@ -249,7 +249,7 @@ bool ElfParser::ParseElfDynamic()
         return false;
     }
 
-    DynType *dyn = (DynType *)(dynamicOffset_ + (char *) mmap_->Get());
+    DynType *dyn = (DynType *)(dynamicOffset_ + static_cast<char*>(mmap_->Get()));
     for (; dyn->d_tag != DT_NULL; ++dyn) {
         if (dyn->d_tag == DT_PLTGOT) {
             // Assume that _DYNAMIC is writable and GLIBC has relocated it (true for x86 at least).

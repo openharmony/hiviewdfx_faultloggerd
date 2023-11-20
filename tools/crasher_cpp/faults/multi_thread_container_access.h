@@ -37,13 +37,13 @@ public:
     void ManipulateVector();
     void ManipulateMap();
     void ManipulateList();
-    void Print();
+    void Print() const;
 
 private:
     static constexpr int MANIPULATION_TYPE = 2;
     static constexpr int ADD = 0;
     static constexpr int REMOVE = 1;
-    std::string GenerateStr();
+    static std::string GenerateStr();
 
 private:
     std::vector<std::string> strVector_;

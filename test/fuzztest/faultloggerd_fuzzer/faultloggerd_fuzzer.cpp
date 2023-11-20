@@ -40,8 +40,16 @@ bool DumpStackTraceTest(const uint8_t* data, size_t size)
     int pid[1];
     int tid[1];
     errno_t err = memcpy_s(pid, sizeof(pid), data, PID_SIZE);
+    if (err != 0) {
+        cout << "memcpy_s return value is abnormal" << endl;
+        return false;
+    }
     data += PID_SIZE;
     err = memcpy_s(tid, sizeof(tid), data, PID_SIZE);
+    if (err != 0) {
+        cout << "memcpy_s return value is abnormal" << endl;
+        return false;
+    }
     data += PID_SIZE;
     char invalidOption = *data;
     catcher->DumpCatch(pid[0], tid[0], msg);
@@ -65,10 +73,22 @@ bool FaultloggerdClientTest(const uint8_t* data, size_t size)
     int32_t pid[1];
     int32_t tid[1];
     errno_t err = memcpy_s(type, sizeof(type), data, sizeof(int32_t));
+    if (err != 0) {
+        cout << "memcpy_s return value is abnormal" << endl;
+        return false;
+    }
     data += sizeof(int32_t);
     err = memcpy_s(tid, sizeof(tid), data, sizeof(int32_t));
+    if (err != 0) {
+        cout << "memcpy_s return value is abnormal" << endl;
+        return false;
+    }
     data += sizeof(int32_t);
     err = memcpy_s(pid, sizeof(pid), data, sizeof(int32_t));
+    if (err != 0) {
+        cout << "memcpy_s return value is abnormal" << endl;
+        return false;
+    }
 
     RequestFileDescriptor(type[0]);
     RequestPipeFd(pid[0], type[0]);
@@ -87,8 +107,16 @@ bool FaultloggerdServerTest(const uint8_t* data, size_t size)
     int32_t epollFd[1];
     int32_t connectionFd[1];
     errno_t err = memcpy_s(epollFd, sizeof(epollFd), data, sizeof(int32_t));
+    if (err != 0) {
+        cout << "memcpy_s return value is abnormal" << endl;
+        return false;
+    }
     data += sizeof(int32_t);
     err = memcpy_s(connectionFd, sizeof(connectionFd), data, sizeof(int32_t));
+    if (err != 0) {
+        cout << "memcpy_s return value is abnormal" << endl;
+        return false;
+    }
 
     std::shared_ptr<FaultLoggerDaemon> daemon = std::make_shared<FaultLoggerDaemon>();
     daemon->HandleRequest(epollFd[0], connectionFd[0]);
