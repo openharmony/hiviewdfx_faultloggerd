@@ -137,6 +137,7 @@ bool ElfParser::ParseProgramHeaders(const EhdrType& ehdr)
 
                 if (phdr.p_vaddr < startVaddr_) {
                     startVaddr_ = phdr.p_vaddr;
+                    startOffset_ = phdr.p_offset;
                 }
                 if (phdr.p_vaddr + phdr.p_memsz > endVaddr_) {
                     endVaddr_ = phdr.p_vaddr + phdr.p_memsz;
@@ -215,6 +216,7 @@ bool ElfParser::ParseSectionHeaders(const EhdrType& ehdr)
 
         ShdrInfo shdrInfo;
         shdrInfo.addr = static_cast<uint64_t>(shdr.sh_addr);
+        shdrInfo.entSize = static_cast<uint64_t>(shdr.sh_entsize);
         shdrInfo.size = static_cast<uint64_t>(shdr.sh_size);
         shdrInfo.offset = static_cast<uint64_t>(shdr.sh_offset);
         shdrInfoPairs_.emplace(std::make_pair(i, secName), shdrInfo);
@@ -420,7 +422,18 @@ bool ElfParser::GetSectionInfo(ShdrInfo& shdr, const std::string& secName)
     }
     return false;
 }
-
+bool ElfParser::GetSectionData(unsigned char *buf, uint64_t size, std::string secName)
+{
+    ShdrInfo shdr;
+    if (GetSectionInfo(shdr, secName)) {
+        if (Read(shdr.offset, buf, size)) {
+            return true;
+        }
+    } else {
+        LOGE("string not found secName %u ", secName.c_str());
+    }
+    return false;
+}
 bool ElfParser32::InitHeaders()
 {
     return ParseAllHeaders<Elf32_Ehdr, Elf32_Phdr, Elf32_Shdr>();

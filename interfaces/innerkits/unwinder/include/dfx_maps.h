@@ -45,12 +45,13 @@ public:
     bool GetStackRange(uintptr_t& bottom, uintptr_t& top);
 
     bool IsArkExecutedMap(uintptr_t addr);
-
+    uint32_t filePathId_ {0}; // for maps item filePath id
+protected:
+    std::vector<std::shared_ptr<DfxMap>> maps_;
+    std::vector<int> mapIndex_;
 private:
     uintptr_t stackBottom_ = 0;
     uintptr_t stackTop_ = 0;
-    std::vector<std::shared_ptr<DfxMap>> maps_;
-    std::vector<int> mapIndex_;
 };
 } // namespace HiviewDFX
 } // namespace OHOS
