@@ -52,7 +52,8 @@ private:
     bool UpdateAndFillFrame(unw_cursor_t& cursor, std::shared_ptr<DfxFrame> frame,
         std::shared_ptr<DfxProcess> process, std::shared_ptr<DfxThread> thread, bool enableBuildId);
     static std::string GetReadableBuildId(uint8_t* buildId, size_t length);
-    void UnwindThreadByParseStackIfNeed(std::shared_ptr<DfxProcess> &process, std::shared_ptr<DfxThread> &thread);
+    static void UnwindThreadByParseStackIfNeed(std::shared_ptr<DfxProcess> &process,
+                                               std::shared_ptr<DfxThread> &thread);
 
 private:
     DfxUnwindRemote();

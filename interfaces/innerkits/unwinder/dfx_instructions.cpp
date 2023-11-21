@@ -21,6 +21,7 @@
 #include "dfx_define.h"
 #include "dfx_log.h"
 #include "dfx_instr_statistic.h"
+#include "dfx_regs_qut.h"
 #include "dwarf_op.h"
 
 namespace OHOS {
@@ -78,16 +79,15 @@ bool DfxInstructions::Apply(std::shared_ptr<DfxMemory> memory, DfxRegs& regs, Re
         cfa = Flush(regs, memory, 0, cfaLoc);
     } else {
         LOGE("no cfa info exist?");
-        INSTR_STATISTIC(UnsupportedCfaLocation, rsState.cfaReg, UNW_ERROR_NOT_SUPPORT);
+        INSTR_STATISTIC(UnsupportedDefCfa, rsState.cfaReg, UNW_ERROR_NOT_SUPPORT);
         return false;
     }
     LOGU("Update cfa : %llx", (uint64_t)cfa);
 
-    auto qutRegs = DfxRegs::GetQutRegs();
-    for (size_t i = 0; i < qutRegs.size(); i++) {
-        size_t reg = qutRegs[i];
-        if (rsState.locs[reg].type != REG_LOC_UNUSED) {
-            regs[reg] = Flush(regs, memory, cfa, rsState.locs[reg]);
+    for (size_t i = 0; i < rsState.locs.size(); i++) {
+        if (rsState.locs[i].type != REG_LOC_UNUSED) {
+            size_t reg = DfxRegsQut::GetQutRegs()[i];
+            regs[reg] = Flush(regs, memory, cfa, rsState.locs[i]);
             LOGU("Update reg[%d] : %llx", reg, (uint64_t)regs[reg]);
         }
     }

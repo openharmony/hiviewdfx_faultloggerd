@@ -32,9 +32,17 @@ struct DlCbData {
 class DfxElf final {
 public:
     static std::shared_ptr<DfxElf> Create(const std::string& file);
-    explicit DfxElf(const std::string& file) { Init(file); }
+    static std::shared_ptr<DfxElf> CreateFromHap(const std::string& file, std::shared_ptr<DfxMap> prevMap,
+                                                 uint64_t& offset);
+    explicit DfxElf(const std::string& file);
+    explicit DfxElf(const int fd, const size_t elfSz, const off_t offset);
     DfxElf(uint8_t *decompressedData, size_t size);
     ~DfxElf() { Clear(); }
+
+    static bool IsValidElf(const void* ptr);
+#if is_ohos
+    static size_t GetElfSize(const void* ptr);
+#endif
 
     bool IsValid();
     uint8_t GetClassType();
@@ -42,6 +50,7 @@ public:
     uint64_t GetElfSize();
     std::string GetElfName();
     std::string GetBuildId();
+    void SetBuildId(const std::string& buildId);
     static std::string GetBuildId(uint64_t noteAddr, uint64_t noteSize);
     uintptr_t GetGlobalPointer();
     int64_t GetLoadBias();
@@ -49,6 +58,9 @@ public:
     void SetLoadBase(uint64_t base);
     uint64_t GetStartPc();
     uint64_t GetEndPc();
+    uint64_t GetStartVaddr();
+    uint64_t GetEndVaddr();
+    uint64_t GetStartOffset();
     uint64_t GetRelPc(uint64_t pc, uint64_t mapStart, uint64_t mapOffset);
     const uint8_t* GetMmapPtr();
     size_t GetMmapSize();
@@ -58,6 +70,7 @@ public:
     const std::vector<ElfSymbol>& GetFuncSymbols(bool isSort = false);
     bool GetFuncInfo(uint64_t addr, ElfSymbol& elfSymbol);
     bool GetSectionInfo(ShdrInfo& shdr, const std::string secName);
+    bool GetSectionData(unsigned char *buf, uint64_t size, std::string secName);
     int FindUnwindTableInfo(uintptr_t pc, std::shared_ptr<DfxMap> map, struct UnwindTableInfo& uti);
     static int FindUnwindTableLocal(uintptr_t pc, struct UnwindTableInfo& uti);
     static std::string ToReadableBuildId(const std::string& buildIdHex);
@@ -66,11 +79,11 @@ public:
     void InitEmbeddedElf();
     std::shared_ptr<DfxElf> GetEmbeddedElf();
     std::shared_ptr<MiniDebugInfo> GetMiniDebugInfo();
+
 protected:
-    bool InitHeaders();
-    bool Init(const std::string& file);
+    void Init();
     void Clear();
-    bool ParseElfIdent();
+    bool InitHeaders();
 #if is_ohos && !is_mingw
     static int DlPhdrCb(struct dl_phdr_info *info, size_t size, void *data);
     static bool FindSection(struct dl_phdr_info *info, const std::string secName, ShdrInfo& shdr);
@@ -89,8 +102,8 @@ private:
     std::string buildId_ = "";
     struct UnwindTableInfo uti_;
     bool hasTableInfo_ = false;
-    std::shared_ptr<DfxMmap> mmap_;
-    std::unique_ptr<ElfParser> elfParse_;
+    std::shared_ptr<DfxMmap> mmap_ = nullptr;
+    std::unique_ptr<ElfParser> elfParse_ = nullptr;
     std::vector<ElfSymbol> elfSymbols_;
     std::vector<ElfSymbol> funcSymbols_;
     bool enableMiniDebugInfo_ = false;

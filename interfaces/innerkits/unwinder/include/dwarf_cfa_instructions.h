@@ -35,9 +35,11 @@ public:
 
 private:
     bool Iterate(uintptr_t pc, FrameDescEntry fde, uintptr_t instStart, uintptr_t instEnd, RegLocState &rsState);
+    bool DecodeDwCfa(uint8_t op, CommonInfoEntry cie, uintptr_t& pcOffset, uintptr_t& instPtr, RegLocState &rsState);
 
 private:
     std::shared_ptr<DfxMemory> memory_;
+    RegLocState backupRsState_;
     std::stack<RegLocState> saveRsStates_;
 };
 } // nameapace HiviewDFX

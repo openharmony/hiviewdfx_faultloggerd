@@ -151,7 +151,7 @@ void DfxThread::InitFaultStack(bool needParseStack)
     faultStack_->CollectStackInfo(frames_, needParseStack);
 }
 
-void DfxThread::SetFrames(std::vector<std::shared_ptr<DfxFrame>> frames)
+void DfxThread::SetFrames(const std::vector<std::shared_ptr<DfxFrame>> frames)
 {
     frames_ = frames;
 }

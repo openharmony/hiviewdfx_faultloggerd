@@ -279,5 +279,21 @@ uint32_t GetSelfFdCount()
     OHOS::GetDirFiles(path, content);
     return content.size();
 }
+
+void CheckResourceUsage(uint32_t fdCount, uint32_t mapsCount, uint64_t memCount)
+{
+    // check memory/fd/maps
+    auto curFdCount = GetSelfFdCount();
+    printf("AfterTest Fd New: %d\n", curFdCount);
+    printf("Fd Old: %u\n", fdCount);
+
+    auto curMapsCount = GetSelfMapsCount();
+    printf("AfterTest Maps New: %d\n", curMapsCount);
+    printf("Maps Old: %u\n", mapsCount);
+
+    auto curMemSize = GetSelfMemoryCount();
+    printf("AfterTest Memory New: %llu\n", curMemSize);
+    printf("Memory Old: %llu\n", memCount);
+}
 } // namespace HiviewDFX
 } // namespace OHOS

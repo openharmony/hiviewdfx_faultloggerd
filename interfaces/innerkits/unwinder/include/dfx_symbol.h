@@ -30,13 +30,18 @@ struct DfxSymbol {
     uint64_t fileVaddr_ = 0;
     uint64_t taskVaddr_ = 0;
     uint64_t size_ = 0;
+    uint32_t filePathId_ = 0; // for memMpaItem filePathId_
+    uint32_t symbolNameId_ = 0; // for symbolName_ id
     int32_t symbolFileIndex_ = -1; // symbols file index, used to report protobuf file
     int32_t index_ = -1;
+    uint32_t symbolId_ = 0; // for frame map id
     STRING_VIEW name_ = "";
     STRING_VIEW demangle_ = ""; // demangle string
     STRING_VIEW module_ = "";   // maybe empty
     STRING_VIEW comm_ = "";     // we need a comm name like comm@0x1234
+    STRING_VIEW symbolName_ = "";
     mutable STRING_VIEW unknow_ = "";
+    uint64_t offset_ = 0;
     mutable bool matched_ = false; // if some callstack match this
     int32_t hit_ = 0;
 
@@ -84,6 +89,21 @@ struct DfxSymbol {
     inline bool IsValid() const
     {
         return !module_.empty();
+    }
+    void SetMatchFlag() const
+    {
+        matched_ = true;
+    }
+
+    bool HasMatched() const
+    {
+        return matched_;
+    }
+
+    void SetIpVAddress(uint64_t vaddr)
+    {
+        fileVaddr_ = vaddr;
+        offset_ = fileVaddr_ - funcVaddr_;
     }
 
     STRING_VIEW GetName() const

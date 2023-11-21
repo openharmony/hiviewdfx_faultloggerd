@@ -231,8 +231,8 @@ HWTEST_F(ArmExidxTest, ArmExidxTest007, TestSize.Level2)
     ASSERT_TRUE(exidx.rsState_->isPcSet);
     ASSERT_EQ(rs->cfaReg, REG_SP);
     ASSERT_EQ(rs->cfaRegOffset, 12);
-    ASSERT_EQ(rs->locs[15].type, REG_LOC_MEM_OFFSET);
-    ASSERT_EQ(rs->locs[15].val, -4);
+    ASSERT_EQ(rs->locs[3].type, REG_LOC_MEM_OFFSET);
+    ASSERT_EQ(rs->locs[3].val, -4);
     GTEST_LOG_(INFO) << "ArmExidxTest007: end.";
 }
 
@@ -300,10 +300,10 @@ HWTEST_F(ArmExidxTest, ArmExidxTest010, TestSize.Level2)
     ASSERT_TRUE(exidx.Step(entryOffset, rs));
     ASSERT_EQ(rs->cfaReg, REG_SP);
     ASSERT_EQ(rs->cfaRegOffset, 32);
-    ASSERT_EQ(rs->locs[7].type, REG_LOC_MEM_OFFSET);
-    ASSERT_EQ(rs->locs[7].val, -20);
-    ASSERT_EQ(rs->locs[11].type, REG_LOC_MEM_OFFSET);
-    ASSERT_EQ(rs->locs[11].val, -4);
+    ASSERT_EQ(rs->locs[0].type, REG_LOC_MEM_OFFSET);
+    ASSERT_EQ(rs->locs[0].val, -20);
+    ASSERT_EQ(rs->locs[1].type, REG_LOC_MEM_OFFSET);
+    ASSERT_EQ(rs->locs[1].val, -4);
     GTEST_LOG_(INFO) << "ArmExidxTest010: end.";
 }
 
@@ -325,12 +325,12 @@ HWTEST_F(ArmExidxTest, ArmExidxTest011, TestSize.Level2)
     ASSERT_TRUE(exidx.Step(entryOffset, rs));
     ASSERT_EQ(rs->cfaReg, REG_SP);
     ASSERT_EQ(rs->cfaRegOffset, 36);
-    ASSERT_EQ(rs->locs[7].type, REG_LOC_MEM_OFFSET);
-    ASSERT_EQ(rs->locs[7].val, -24);
-    ASSERT_EQ(rs->locs[11].type, REG_LOC_MEM_OFFSET);
-    ASSERT_EQ(rs->locs[11].val, -8);
-    ASSERT_EQ(rs->locs[14].type, REG_LOC_MEM_OFFSET);
-    ASSERT_EQ(rs->locs[14].val, -4);
+    ASSERT_EQ(rs->locs[0].type, REG_LOC_MEM_OFFSET);
+    ASSERT_EQ(rs->locs[0].val, -24);
+    ASSERT_EQ(rs->locs[1].type, REG_LOC_MEM_OFFSET);
+    ASSERT_EQ(rs->locs[1].val, -8);
+    ASSERT_EQ(rs->locs[4].type, REG_LOC_MEM_OFFSET);
+    ASSERT_EQ(rs->locs[4].val, -4);
     GTEST_LOG_(INFO) << "ArmExidxTest011: end.";
 }
 

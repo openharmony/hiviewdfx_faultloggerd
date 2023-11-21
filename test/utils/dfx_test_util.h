@@ -12,16 +12,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-#ifndef DFX_TEST_UTIL
-#define DFX_TEST_UTIL
+#ifndef DFX_TEST_UTIL_H
+#define DFX_TEST_UTIL_H
 
 #include <string>
 #include <vector>
+#include <signal.h>
+#include <sys/wait.h>
 
 static const std::string ACCOUNTMGR_NAME = "accountmgr";
 static const std::string FOUNDATION_NAME = "foundation";
 static const std::string APPSPAWN_NAME = "appspawn";
+
+static const char TEST_BUNDLE_NAME[] = "com.example.myapplication";
+static const char TRUNCATE_TEST_BUNDLE_NAME[] = "e.myapplication";
 
 #if defined(__arm__)
 #define REGISTERS           "r0:","r1:","r2:","r3:","r4:","r5:","r6:",\
@@ -39,6 +43,20 @@ static const std::string APPSPAWN_NAME = "appspawn";
 
 namespace OHOS {
 namespace HiviewDFX {
+class TestScopedPidReaper {
+public:
+    explicit TestScopedPidReaper(pid_t pid) : pid_(pid) {}
+    ~TestScopedPidReaper() { Kill(pid_); }
+
+    static void Kill(pid_t pid)
+    {
+        kill(pid, SIGKILL);
+        waitpid(pid, nullptr, 0);
+    }
+private:
+    pid_t pid_;
+};
+
 enum CrasherType {
     CRASHER_C,
     CRASHER_CPP
@@ -59,6 +77,7 @@ std::string GetCppCrashFileName(const pid_t pid);
 uint32_t GetSelfFdCount();
 uint32_t GetSelfMapsCount();
 uint64_t GetSelfMemoryCount();
+void CheckResourceUsage(uint32_t fdCount, uint32_t mapsCount, uint64_t memCount);
 } // namespace HiviewDFX
 } // namespace OHOS
 #endif // DFX_TEST_UTIL

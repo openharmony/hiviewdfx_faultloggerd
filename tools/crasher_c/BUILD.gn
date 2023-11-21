@@ -42,7 +42,6 @@ if (defined(ohos_lite)) {
       "$faultloggerd_interfaces_path/common",
     ]
     cflags = [ "-Wno-frame-larger-than" ]
-    cflags_c = [ "-Wno-frame-larger-than" ]
     cflags_cc = [ "-Wno-frame-larger-than" ]
     ldflags = [ "-Wno-frame-larger-than" ]
   }
@@ -52,6 +51,7 @@ if (defined(ohos_lite)) {
       ":crasher_config",
       "$faultloggerd_path/common/build:coverage_flags",
     ]
+
     branch_protector_ret = "pac_ret"
     sources = [ "dfx_crasher.c" ]
     external_deps = [ "hilog:libhilog" ]

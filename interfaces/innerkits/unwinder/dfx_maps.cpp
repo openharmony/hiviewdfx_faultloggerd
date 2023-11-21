@@ -16,12 +16,9 @@
 #include "dfx_maps.h"
 
 #include <algorithm>
-#include <cstdio>
-#include <cstdlib>
 #include <cstring>
 #include <fstream>
 #include <securec.h>
-#include <sstream>
 #if is_mingw
 #include "dfx_nonlinux_define.h"
 #else
@@ -31,7 +28,6 @@
 #include "dfx_define.h"
 #include "dfx_elf.h"
 #include "dfx_log.h"
-#include "dfx_util.h"
 #include "string_printf.h"
 #include "string_util.h"
 
@@ -64,16 +60,16 @@ std::shared_ptr<DfxMaps> DfxMaps::Create(pid_t pid)
     if (path == "") {
         return nullptr;
     }
-    return Create(path);
+    return Create(pid, path);
 }
 
-bool DfxMaps::Create(pid_t pid, std::vector<std::shared_ptr<DfxMap>>& maps, std::vector<int>& mapIndex)
+bool DfxMaps::Create(const pid_t pid, std::vector<std::shared_ptr<DfxMap>>& maps, std::vector<int>& mapIndex)
 {
     std::string path = GetMapsFile(pid);
     if (path == "") {
         return false;
     }
-    auto dfxMaps = Create(path, true);
+    auto dfxMaps = Create(pid, path, true);
     if (dfxMaps == nullptr) {
         LOGE("Create maps error, path: %s", path.c_str());
         return false;
@@ -83,7 +79,7 @@ bool DfxMaps::Create(pid_t pid, std::vector<std::shared_ptr<DfxMap>>& maps, std:
     return true;
 }
 
-std::shared_ptr<DfxMaps> DfxMaps::Create(const std::string& path, bool enableMapIndex)
+std::shared_ptr<DfxMaps> DfxMaps::Create(const pid_t pid, const std::string& path, bool enableMapIndex)
 {
     char realPath[PATH_MAX] = {0};
 #if is_ohos
@@ -111,6 +107,9 @@ std::shared_ptr<DfxMaps> DfxMaps::Create(const std::string& path, bool enableMap
                 dfxMaps->stackBottom_ = (uintptr_t)map->begin;
                 dfxMaps->stackTop_ = (uintptr_t)map->end;
             }
+            if (StartsWith(map->name, "/data/storage/") && (pid != getpid())) {
+                map->name = "/proc/" + std::to_string(pid) + "/root/" + map->name;
+            }
             if ((!enableMapIndex) || IsLegalMapItem(map->name)) {
                 dfxMaps->AddMap(map, enableMapIndex);
             }
@@ -133,7 +132,7 @@ bool DfxMaps::IsLegalMapItem(const std::string& name)
         name.back() == ']' || std::strncmp(name.c_str(), "/dev/", sizeof("/dev/")) == 0 ||
         std::strncmp(name.c_str(), "/memfd:", sizeof("/memfd:")) == 0 ||
         std::strncmp(name.c_str(), "//anon", sizeof("//anon")) == 0 ||
-        EndsWith(name, ".ttf") || EndsWith(name, ".an") || EndsWith(name, ".ai")) {
+        EndsWith(name, ".ttf") || EndsWith(name, ".ai")) {
         return false;
     }
     return true;
@@ -149,7 +148,7 @@ void DfxMaps::AddMap(std::shared_ptr<DfxMap> map, bool enableMapIndex)
 
 bool DfxMaps::FindMapByAddr(std::shared_ptr<DfxMap>& map, uintptr_t addr) const
 {
-    if ((maps_.size() == 0) || (addr == 0x0)) {
+    if ((maps_.empty()) || (addr == 0x0)) {
         return false;
     }
 
@@ -160,6 +159,9 @@ bool DfxMaps::FindMapByAddr(std::shared_ptr<DfxMap>& map, uintptr_t addr) const
         const auto& cur = maps_[index];
         if (addr >= cur->begin && addr < cur->end) {
             map = cur;
+            if (index > 0) {
+                map->prevMap = maps_[index - 1];
+            }
             return true;
         } else if (addr < cur->begin) {
             last = index;
@@ -248,7 +250,7 @@ bool DfxMaps::IsArkExecutedMap(uintptr_t addr)
         return false;
     }
 
-    if ((map->flag & PROT_EXEC) == 0) {
+    if ((map->prots & PROT_EXEC) == 0) {
         LOGU("current map is not executable.");
         return false;
     }

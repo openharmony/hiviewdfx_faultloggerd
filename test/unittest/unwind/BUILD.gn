@@ -115,6 +115,7 @@ ohos_unittest("test_exidx") {
   configs = [ "$faultloggerd_common_path/build:coverage_flags" ]
   defines = [
     "DFX_LOG_UNWIND",
+    "DFX_UNWIND_ERROR",
     "is_ohos=${is_ohos}",
     "TEST_ARM_EXIDX",
   ]

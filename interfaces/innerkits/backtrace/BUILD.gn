@@ -18,6 +18,7 @@ backtrace_local_sources = [
   "backtrace_local_context.cpp",
   "backtrace_local_thread.cpp",
   "catchframe_local.cpp",
+  "dfx_json_formatter.cpp",
 ]
 
 if (defined(ohos_lite)) {
@@ -52,6 +53,7 @@ if (defined(ohos_lite)) {
       "HAVE_CONFIG_H",
       "HAVE_ELF_H",
       "HAVE_LINK_H",
+      "is_ohos_lite",
     ]
 
     deps = [
@@ -94,6 +96,8 @@ if (defined(ohos_lite)) {
       "$faultloggerd_common_path/build:coverage_flags",
     ]
 
+    configs = [ "//third_party/jsoncpp:jsoncpp_public_config" ]
+
     sources = backtrace_local_sources
 
     deps = [
@@ -102,6 +106,7 @@ if (defined(ohos_lite)) {
       "$faultloggerd_frameworks_path/unwinder:dfx_unwinder_src",
       "$faultloggerd_path/interfaces/innerkits/procinfo:libdfx_procinfo",
       "//third_party/bounds_checking_function:libsec_shared",
+      "//third_party/jsoncpp:jsoncpp",
       "//third_party/libunwind:libunwind",
     ]
     include_dirs = [
@@ -135,6 +140,8 @@ if (defined(ohos_lite)) {
   ohos_static_library("backtrace_local") {
     public_configs = [ ":dfx_backtrace_config" ]
 
+    configs = [ "//third_party/jsoncpp:jsoncpp_public_config" ]
+
     sources = backtrace_local_sources
     include_dirs = [
       "$faultloggerd_common_path/dfxlog",
@@ -150,6 +157,7 @@ if (defined(ohos_lite)) {
       "$faultloggerd_frameworks_path/unwinder:dfx_unwinder_static_src",
       "$faultloggerd_interfaces_path/innerkits/procinfo:dfx_procinfo_static",
       "//third_party/bounds_checking_function:libsec_static",
+      "//third_party/jsoncpp:jsoncpp",
       "//third_party/libunwind:libunwind_local",
     ]
 

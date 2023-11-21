@@ -30,8 +30,8 @@ public:
     ~DfxMaps() = default;
     static const std::string GetMapsFile(pid_t pid = 0);
     static std::shared_ptr<DfxMaps> Create(pid_t pid = 0);
-    static bool Create(pid_t pid, std::vector<std::shared_ptr<DfxMap>>& maps, std::vector<int>& mapIndex);
-    static std::shared_ptr<DfxMaps> Create(const std::string& path, bool enableMapIndex = false);
+    static bool Create(const pid_t pid, std::vector<std::shared_ptr<DfxMap>>& maps, std::vector<int>& mapIndex);
+    static std::shared_ptr<DfxMaps> Create(const pid_t pid, const std::string& path, bool enableMapIndex = false);
     static bool IsLegalMapItem(const std::string& name);
 
     void AddMap(std::shared_ptr<DfxMap> map, bool enableMapIndex = false);
@@ -45,12 +45,13 @@ public:
     bool GetStackRange(uintptr_t& bottom, uintptr_t& top);
 
     bool IsArkExecutedMap(uintptr_t addr);
-
+    uint32_t filePathId_ {0}; // for maps item filePath id
+protected:
+    std::vector<std::shared_ptr<DfxMap>> maps_;
+    std::vector<int> mapIndex_;
 private:
     uintptr_t stackBottom_ = 0;
     uintptr_t stackTop_ = 0;
-    std::vector<std::shared_ptr<DfxMap>> maps_;
-    std::vector<int> mapIndex_;
 };
 } // namespace HiviewDFX
 } // namespace OHOS

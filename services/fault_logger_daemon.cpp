@@ -150,7 +150,6 @@ void FaultLoggerDaemon::HandleRequest(int32_t epollFd, int32_t connectionFd)
         return;
     }
     char buf[REQUEST_BUF_SIZE] = {0};
-
     do {
         ssize_t nread = read(connectionFd, buf, sizeof(buf));
         if (nread < 0) {
@@ -250,24 +249,26 @@ void FaultLoggerDaemon::HandlePipeFdClientRequest(int32_t connectionFd, FaultLog
 {
     DFXLOG_DEBUG("%s :: pid(%d), pipeType(%d).\n", FAULTLOGGERD_TAG.c_str(), request->pid, request->pipeType);
     int fd = -1;
-
     FaultLoggerPipe2* faultLoggerPipe = faultLoggerPipeMap_->Get(request->pid);
     if (faultLoggerPipe == nullptr) {
         DFXLOG_ERROR("%s :: cannot find pipe fd for pid(%d).\n", FAULTLOGGERD_TAG.c_str(), request->pid);
         return;
     }
-
     switch (request->pipeType) {
         case (int32_t)FaultLoggerPipeType::PIPE_FD_READ_BUF: {
             FaultLoggerCheckPermissionResp resSecurityCheck = SecurityCheck(connectionFd, request);
             if (FaultLoggerCheckPermissionResp::CHECK_PERMISSION_PASS != resSecurityCheck) {
                 return;
             }
-            fd = faultLoggerPipe->faultLoggerPipeBuf_->GetReadFd();
+            if ((faultLoggerPipe->faultLoggerPipeBuf_) != nullptr) {
+                fd = faultLoggerPipe->faultLoggerPipeBuf_->GetReadFd();
+            }
             break;
         }
         case (int32_t)FaultLoggerPipeType::PIPE_FD_WRITE_BUF: {
-            fd = faultLoggerPipe->faultLoggerPipeBuf_->GetWriteFd();
+            if ((faultLoggerPipe->faultLoggerPipeBuf_) != nullptr) {
+                fd = faultLoggerPipe->faultLoggerPipeBuf_->GetWriteFd();
+            }
             break;
         }
         case (int32_t)FaultLoggerPipeType::PIPE_FD_READ_RES: {
@@ -275,22 +276,57 @@ void FaultLoggerDaemon::HandlePipeFdClientRequest(int32_t connectionFd, FaultLog
             if (FaultLoggerCheckPermissionResp::CHECK_PERMISSION_PASS != resSecurityCheck) {
                 return;
             }
-            fd = faultLoggerPipe->faultLoggerPipeRes_->GetReadFd();
+            if ((faultLoggerPipe->faultLoggerPipeRes_) != nullptr) {
+                fd = faultLoggerPipe->faultLoggerPipeRes_->GetReadFd();
+            }
             break;
         }
         case (int32_t)FaultLoggerPipeType::PIPE_FD_WRITE_RES: {
-            fd = faultLoggerPipe->faultLoggerPipeRes_->GetWriteFd();
+            if ((faultLoggerPipe->faultLoggerPipeRes_) != nullptr) {
+                fd = faultLoggerPipe->faultLoggerPipeRes_->GetWriteFd();
+            }
             break;
         }
         case (int32_t)FaultLoggerPipeType::PIPE_FD_DELETE: {
             faultLoggerPipeMap_->Del(request->pid);
             return;
         }
+        case (int32_t)FaultLoggerPipeType::PIPE_FD_JSON_READ_BUF: {
+            FaultLoggerCheckPermissionResp resSecurityCheck = SecurityCheck(connectionFd, request);
+            if (FaultLoggerCheckPermissionResp::CHECK_PERMISSION_PASS != resSecurityCheck) {
+                return;
+            }
+            if ((faultLoggerPipe->faultLoggerJsonPipeBuf_) != nullptr) {
+                fd = faultLoggerPipe->faultLoggerJsonPipeBuf_->GetReadFd();
+            }
+            break;
+        }
+        case (int32_t)FaultLoggerPipeType::PIPE_FD_JSON_WRITE_BUF: {
+            if ((faultLoggerPipe->faultLoggerJsonPipeBuf_) != nullptr) {
+                fd = faultLoggerPipe->faultLoggerJsonPipeBuf_->GetWriteFd();
+            }
+            break;
+        }
+        case (int32_t)FaultLoggerPipeType::PIPE_FD_JSON_READ_RES: {
+            FaultLoggerCheckPermissionResp resSecurityCheck = SecurityCheck(connectionFd, request);
+            if (FaultLoggerCheckPermissionResp::CHECK_PERMISSION_PASS != resSecurityCheck) {
+                return;
+            }
+            if ((faultLoggerPipe->faultLoggerJsonPipeRes_) != nullptr) {
+                fd = faultLoggerPipe->faultLoggerJsonPipeRes_->GetReadFd();
+            }
+            break;
+        }
+        case (int32_t)FaultLoggerPipeType::PIPE_FD_JSON_WRITE_RES: {
+            if ((faultLoggerPipe->faultLoggerJsonPipeRes_) != nullptr) {
+                fd = faultLoggerPipe->faultLoggerJsonPipeRes_->GetWriteFd();
+            }
+            break;
+        }
         default:
             DFXLOG_ERROR("%s :: unknown pipeType(%d).\n", FAULTLOGGERD_TAG.c_str(), request->pipeType);
             return;
     }
-
     if (fd < 0) {
         DFXLOG_ERROR("%s :: Failed to get pipe fd", FAULTLOGGERD_TAG.c_str());
         return;
@@ -405,7 +441,7 @@ void FaultLoggerDaemon::HandleSdkDumpRequest(int32_t connectionFd, FaultLoggerdR
             DFXLOG_ERROR("%s :: pid(%d) is dumping, break.\n", FAULTLOGGERD_TAG.c_str(), request->pid);
             break;
         }
-        faultLoggerPipeMap_->Set(request->pid, request->time);
+        faultLoggerPipeMap_->Set(request->pid, request->time, request->isJson);
 
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Winitializer-overrides"
@@ -419,20 +455,24 @@ void FaultLoggerDaemon::HandleSdkDumpRequest(int32_t connectionFd, FaultLoggerdR
             .si_uid = static_cast<uid_t>(request->callerTid)
         };
 #pragma clang diagnostic pop
-        // means we need dump all the threads in a process.
+        int32_t reqTid = 0;
         if (request->tid == 0) {
-            if (syscall(SYS_rt_sigqueueinfo, request->pid, si.si_signo, &si) != 0) {
-                DFXLOG_ERROR("Failed to SYS_rt_sigqueueinfo signal(%d), errno(%d).", si.si_signo, errno);
-                resSdkDump = FaultLoggerSdkDumpResp::SDK_DUMP_NOPROC;
-                break;
-            }
+            /*
+             * means we need dump all the threads in a process
+             * --------
+             * Accroding to the linux manual, A process-directed signal may be delivered to any one of the
+             * threads that does not currently have the signal blocked. So we should specify the main thread
+             * as the target thread of signal.
+            */
+            reqTid = request->pid;
         } else {
             // means we need dump a specified thread
-            if (syscall(SYS_rt_tgsigqueueinfo, request->pid, request->tid, si.si_signo, &si) != 0) {
-                DFXLOG_ERROR("Failed to SYS_rt_tgsigqueueinfo signal(%d), errno(%d).", si.si_signo, errno);
-                resSdkDump = FaultLoggerSdkDumpResp::SDK_DUMP_NOPROC;
-                break;
-            }
+            reqTid = request->tid;
+        }
+        if (syscall(SYS_rt_tgsigqueueinfo, request->pid, reqTid, si.si_signo, &si) != 0) {
+            DFXLOG_ERROR("Failed to SYS_rt_tgsigqueueinfo signal(%d), errno(%d).", si.si_signo, errno);
+            resSdkDump = FaultLoggerSdkDumpResp::SDK_DUMP_NOPROC;
+            break;
         }
     } while (false);
 

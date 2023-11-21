@@ -454,7 +454,7 @@ NOINLINE int TestFunc70(void)
 {
     int ret = raise(SIGSEGV);
     if (ret != 0) {
-        printf("remove failed!");
+        printf("raise failed!");
     }
     return 0;
 }
@@ -465,7 +465,7 @@ NOINLINE int CrashTest(void)
     sleep(sleepTime);
     int ret = raise(SIGSEGV);
     if (ret != 0) {
-        printf("remove failed!");
+        printf("raise failed!");
     }
     return 0;
 }

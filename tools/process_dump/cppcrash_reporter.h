@@ -35,8 +35,6 @@ public:
         cmdline_ = "";
         reason_ = "";
         stack_ = "";
-        registers_ = "";
-        otherThreadInfo_ = "";
     };
     virtual ~CppCrashReporter() {};
 
@@ -62,7 +60,7 @@ public:
 
 private:
     bool Format();
-    std::string GetRegsString(std::shared_ptr<DfxThread> thread) const;
+    static std::string GetRegsString(std::shared_ptr<DfxThread> thread);
 
 private:
     uint64_t time_;
@@ -71,8 +69,8 @@ private:
     std::string cmdline_;
     std::string reason_;
     std::string stack_;
-    std::string registers_;
-    std::string otherThreadInfo_;
+    std::string registers_ = "";
+    std::string otherThreadInfo_ = "";
     std::map<std::string, std::string> kvPairs_;
     std::shared_ptr<DfxProcess> process_;
 };

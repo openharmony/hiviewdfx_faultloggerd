@@ -68,16 +68,22 @@ void DfxRegsArm64::SetFromUcontext(const ucontext_t &context)
     SetRegsData(regs);
 }
 
-void DfxRegsArm64::SetFromFpMiniRegs(const uintptr_t* regs)
+void DfxRegsArm64::SetFromFpMiniRegs(const uintptr_t* regs, const size_t size)
 {
+    if (size < FP_MINI_REGS_SIZE) {
+        return;
+    }
     regsData_[REG_FP] = regs[0]; // 0 : fp offset
     regsData_[REG_LR] = regs[1]; // 1 : lr offset
     regsData_[REG_SP] = regs[2]; // 2 : sp offset
     regsData_[REG_PC] = regs[3]; // 3 : pc offset
 }
 
-void DfxRegsArm64::SetFromQutMiniRegs(const uintptr_t* regs)
+void DfxRegsArm64::SetFromQutMiniRegs(const uintptr_t* regs, const size_t size)
 {
+    if (size < QUT_MINI_REGS_SIZE) {
+        return;
+    }
     regsData_[REG_AARCH64_X20] = regs[1]; // 1 : X20 offset
     regsData_[REG_AARCH64_X28] = regs[2]; // 2 : X28 offset
     regsData_[REG_FP] = regs[3]; // 3 : fp offset

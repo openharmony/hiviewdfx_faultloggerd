@@ -51,11 +51,13 @@ public:
     virtual int64_t GetLoadBias() { return loadBias_; }
     virtual uint64_t GetStartVaddr() { return startVaddr_; }
     virtual uint64_t GetEndVaddr() { return endVaddr_; }
+    virtual uint64_t GetStartOffset() { return startOffset_; }
     virtual std::string GetElfName() = 0;
     virtual uintptr_t GetGlobalPointer() = 0;
     virtual const std::vector<ElfSymbol>& GetElfSymbols(bool isFunc, bool isSort) = 0;
     virtual bool GetSectionInfo(ShdrInfo& shdr, const uint32_t idx);
     virtual bool GetSectionInfo(ShdrInfo& shdr, const std::string& secName);
+    virtual bool GetSectionData(unsigned char *buf, uint64_t size, std::string secName);
     const std::unordered_map<uint64_t, ElfLoadInfo>& GetPtLoads() {return ptLoads_;}
     bool Read(uintptr_t pos, void *buf, size_t size);
     void EnableMiniDebugInfo();
@@ -102,6 +104,7 @@ private:
     uint64_t elfSize_ = 0;
     int64_t loadBias_ = 0;
     uint64_t startVaddr_ = static_cast<uint64_t>(-1);
+    uint64_t startOffset_ = 0;
     uint64_t endVaddr_ = 0;
     std::vector<ElfShdr> symShdrs_;
     std::map<std::pair<uint32_t, const std::string>, ShdrInfo> shdrInfoPairs_;

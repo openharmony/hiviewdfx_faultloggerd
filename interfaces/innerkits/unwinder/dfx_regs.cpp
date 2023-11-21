@@ -14,6 +14,7 @@
  */
 
 #include "dfx_regs.h"
+#include "dfx_regs_qut.h"
 
 #include <elf.h>
 #include <securec.h>
@@ -31,7 +32,7 @@ namespace {
 #define LOG_DOMAIN 0xD002D11
 #define LOG_TAG "DfxRegs"
 }
-std::vector<uint16_t> DfxRegs::qutRegs_ = {};
+std::vector<uint16_t> DfxRegsQut::qutRegs_ = {};
 
 std::shared_ptr<DfxRegs> DfxRegs::Create()
 {
@@ -58,11 +59,11 @@ std::shared_ptr<DfxRegs> DfxRegs::CreateFromRegs(const UnwindMode mode, const ui
 {
     auto dfxregs = DfxRegs::Create();
     if (mode == UnwindMode::DWARF_UNWIND) {
-        dfxregs->SetRegsData(regs);
+        dfxregs->SetRegsData(regs, REG_LAST);
     } else if (mode == UnwindMode::FRAMEPOINTER_UNWIND) {
-        dfxregs->SetFromFpMiniRegs(regs);
+        dfxregs->SetFromFpMiniRegs(regs, FP_MINI_REGS_SIZE);
     } else if (mode == UnwindMode::MINIMAL_UNWIND) {
-        dfxregs->SetFromQutMiniRegs(regs);
+        dfxregs->SetFromQutMiniRegs(regs, QUT_MINI_REGS_SIZE);
     }
     return dfxregs;
 }
@@ -94,13 +95,12 @@ std::vector<uintptr_t> DfxRegs::GetRegsData() const
 void DfxRegs::SetRegsData(const std::vector<uintptr_t>& regs)
 {
     regsData_ = regs;
-    PrintRegs();
 }
 
-void DfxRegs::SetRegsData(const uintptr_t* regs)
+void DfxRegs::SetRegsData(const uintptr_t* regs, const size_t size)
 {
-    (void)memcpy_s(RawData(), REG_LAST * sizeof(uintptr_t), regs, REG_LAST * sizeof(uintptr_t));
-    PrintRegs();
+    size_t cpySize = (size > RegsSize()) ? RegsSize() : size;
+    (void)memcpy_s(RawData(), cpySize * sizeof(uintptr_t), regs, cpySize * sizeof(uintptr_t));
 }
 
 uintptr_t* DfxRegs::GetReg(size_t idx)
@@ -159,15 +159,20 @@ void DfxRegs::SetPc(uintptr_t pc)
     regsData_[REG_PC] = pc;
 }
 
-#if defined(__arm__) || defined(__aarch64__)
 uintptr_t DfxRegs::GetFp() const
 {
+#if defined(__arm__) || defined(__aarch64__)
     return regsData_[REG_FP];
+#else
+    return 0;
+#endif
 }
 
 void DfxRegs::SetFp(uintptr_t fp)
 {
+#if defined(__arm__) || defined(__aarch64__)
     regsData_[REG_FP] = fp;
+#endif
 }
 
 std::string DfxRegs::GetSpecialRegsName(uintptr_t val) const
@@ -198,6 +203,5 @@ std::string DfxRegs::PrintSpecialRegs() const
 #endif
     return regsStr;
 }
-#endif
 } // namespace HiviewDFX
 } // namespace OHOS

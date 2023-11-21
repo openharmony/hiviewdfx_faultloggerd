@@ -137,6 +137,7 @@ bool ElfParser::ParseProgramHeaders(const EhdrType& ehdr)
 
                 if (phdr.p_vaddr < startVaddr_) {
                     startVaddr_ = phdr.p_vaddr;
+                    startOffset_ = phdr.p_offset;
                 }
                 if (phdr.p_vaddr + phdr.p_memsz > endVaddr_) {
                     endVaddr_ = phdr.p_vaddr + phdr.p_memsz;
@@ -169,12 +170,12 @@ template <typename EhdrType, typename ShdrType>
 bool ElfParser::ParseSectionHeaders(const EhdrType& ehdr)
 {
     uint64_t offset = ehdr.e_shoff;
-    uint64_t secOffset = 0;
-    uint64_t secSize = 0;
 
     ShdrType shdr;
     //section header string table index. include section header table with section name string table.
     if (ehdr.e_shstrndx < ehdr.e_shnum) {
+        uint64_t secOffset = 0;
+        uint64_t secSize = 0;
         uint64_t shNdxOffset = offset + ehdr.e_shstrndx * ehdr.e_shentsize;
         if (!Read((uintptr_t)shNdxOffset, &shdr, sizeof(shdr))) {
             LOGE("Read section header string table failed");
@@ -215,6 +216,7 @@ bool ElfParser::ParseSectionHeaders(const EhdrType& ehdr)
 
         ShdrInfo shdrInfo;
         shdrInfo.addr = static_cast<uint64_t>(shdr.sh_addr);
+        shdrInfo.entSize = static_cast<uint64_t>(shdr.sh_entsize);
         shdrInfo.size = static_cast<uint64_t>(shdr.sh_size);
         shdrInfo.offset = static_cast<uint64_t>(shdr.sh_offset);
         shdrInfoPairs_.emplace(std::make_pair(i, secName), shdrInfo);
@@ -247,7 +249,7 @@ bool ElfParser::ParseElfDynamic()
         return false;
     }
 
-    DynType *dyn = (DynType *)(dynamicOffset_ + (char *) mmap_->Get());
+    DynType *dyn = (DynType *)(dynamicOffset_ + static_cast<char*>(mmap_->Get()));
     for (; dyn->d_tag != DT_NULL; ++dyn) {
         if (dyn->d_tag == DT_PLTGOT) {
             // Assume that _DYNAMIC is writable and GLIBC has relocated it (true for x86 at least).
@@ -274,16 +276,11 @@ bool ElfParser::ParseElfName()
     if (!GetSectionInfo(shdrInfo, DYNSTR)) {
         return false;
     }
-
-    if ((uintptr_t)shdrInfo.addr == dtStrtabAddr_) {
-        if (dtSonameOffset_ >= dtStrtabSize_) {
-            return false;
-        }
-        uintptr_t sonameOffset = shdrInfo.offset + dtSonameOffset_;
-        uint64_t sonameOffsetMax = shdrInfo.offset + dtStrtabSize_;
-        size_t maxStrSize = static_cast<size_t>(sonameOffsetMax - sonameOffset);
-        mmap_->ReadString(sonameOffset, &soname_, maxStrSize);
-    }
+    uintptr_t sonameOffset = shdrInfo.offset + dtSonameOffset_;
+    uint64_t sonameOffsetMax = shdrInfo.offset + dtStrtabSize_;
+    size_t maxStrSize = static_cast<size_t>(sonameOffsetMax - sonameOffset);
+    mmap_->ReadString(sonameOffset, &soname_, maxStrSize);
+    LOGU("parse current elf file soname is %s.", soname_.c_str());
     return true;
 }
 
@@ -425,7 +422,18 @@ bool ElfParser::GetSectionInfo(ShdrInfo& shdr, const std::string& secName)
     }
     return false;
 }
-
+bool ElfParser::GetSectionData(unsigned char *buf, uint64_t size, std::string secName)
+{
+    ShdrInfo shdr;
+    if (GetSectionInfo(shdr, secName)) {
+        if (Read(shdr.offset, buf, size)) {
+            return true;
+        }
+    } else {
+        LOGE("string not found secName %u ", secName.c_str());
+    }
+    return false;
+}
 bool ElfParser32::InitHeaders()
 {
     return ParseAllHeaders<Elf32_Ehdr, Elf32_Phdr, Elf32_Shdr>();
@@ -443,6 +451,7 @@ std::string ElfParser32::GetElfName()
     }
     return soname_;
 }
+
 std::string ElfParser64::GetElfName()
 {
     if (soname_ == "") {
@@ -458,6 +467,7 @@ uintptr_t ElfParser32::GetGlobalPointer()
     }
     return dtPltGotAddr_;
 }
+
 uintptr_t ElfParser64::GetGlobalPointer()
 {
     if (dtPltGotAddr_ == 0) {
@@ -471,6 +481,7 @@ const std::vector<ElfSymbol>& ElfParser32::GetElfSymbols(bool isFunc, bool isSor
     ParseElfSymbols<Elf32_Sym>(isFunc, isSort);
     return elfSymbols_;
 }
+
 const std::vector<ElfSymbol>& ElfParser64::GetElfSymbols(bool isFunc, bool isSort)
 {
     ParseElfSymbols<Elf64_Sym>(isFunc, isSort);

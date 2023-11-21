@@ -16,7 +16,8 @@
 #define UNWINDER_CONFIG_H
 
 #include <memory>
-#include "unwind_context.h"
+#include "byte_order.h"
+#include "unwind_define.h"
 
 namespace OHOS {
 namespace HiviewDFX {
@@ -25,12 +26,12 @@ public:
     static inline void SetByteOrder(int bigEndian) { bigEndian_ = bigEndian; }
     static inline int GetByteOrder() { return bigEndian_; }
 
-    static inline void SetCachePolicy(UnwindCachePolicy policy) { cachingPolicy_ = policy; }
-    static inline UnwindCachePolicy GetCachePolicy() { return cachingPolicy_; }
+    static inline void SetCachePolicy(UnwindCachingPolicy policy) { cachingPolicy_ = policy; }
+    static inline UnwindCachingPolicy GetCachePolicy() { return cachingPolicy_; }
 
 private:
-    static int bigEndian_ = UNWIND_BYTE_ORDER;
-    static UnwindCachingPolicy cachingPolicy_ = UNWIND_CACHE_NONE;
+    static int bigEndian_;
+    static UnwindCachingPolicy cachingPolicy_;
 };
 } // namespace HiviewDFX
 } // namespace OHOS

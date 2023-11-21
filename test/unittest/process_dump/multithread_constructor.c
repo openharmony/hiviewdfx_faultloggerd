@@ -33,7 +33,7 @@ static void CreateThread(int *argv)
     return;
 }
 
-static void CreateThreadForCrash(int *argv)
+static void CreateThreadForCrash(const int *argv)
 {
     int threadID = *argv;
     printf("create ThreadForCrash %d\n", threadID);

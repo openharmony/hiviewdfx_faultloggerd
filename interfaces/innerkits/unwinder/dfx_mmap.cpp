@@ -17,13 +17,9 @@
 
 #include <fcntl.h>
 #include <securec.h>
-#if is_ohos
-#include <unique_fd.h>
-#endif
 
 #include "dfx_define.h"
 #include "dfx_log.h"
-#include "dfx_util.h"
 
 namespace OHOS {
 namespace HiviewDFX {
@@ -34,21 +30,21 @@ namespace {
 #define LOG_TAG "DfxMmap"
 }
 
-bool DfxMmap::Init(const std::string &file)
+bool DfxMmap::Init(const int fd, const size_t size, const off_t offset)
 {
 #if is_ohos
     Clear();
 
-    OHOS::UniqueFd fd = OHOS::UniqueFd(OHOS_TEMP_FAILURE_RETRY(open(file.c_str(), O_RDONLY)));
     if (fd < 0) {
         return false;
     }
-
-    size_ = GetFileSize(fd);
-    mmap_ = mmap(nullptr, size_, PROT_READ | PROT_WRITE, MAP_PRIVATE, fd, 0);
+    mmap_ = mmap(nullptr, size, PROT_READ | PROT_WRITE, MAP_PRIVATE, fd, offset);
     if (mmap_ == MAP_FAILED) {
+        LOGE("Faild to mmap, errno(%d)", errno);
         size_ = 0;
+        return false;
     }
+    size_ = size;
     DFXLOG_DEBUG("mmap size %u", size_);
     return true;
 #else

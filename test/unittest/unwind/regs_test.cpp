@@ -18,7 +18,7 @@
 #include <securec.h>
 #include <string>
 #include <vector>
-
+#include "dfx_ptrace.h"
 #include "dfx_regs.h"
 
 using namespace OHOS::HiviewDFX;
@@ -55,7 +55,7 @@ HWTEST_F(DfxRegsTest, DfxRegsTest001, TestSize.Level2)
     ASSERT_EQ(setRegs, getRegs);
 
     uintptr_t regsData[REG_LAST] = { 0 };
-    dfxRegs->SetRegsData(regsData);
+    dfxRegs->SetRegsData(regsData, REG_LAST);
     getRegs = dfxRegs->GetRegsData();
     for (size_t i = 0; i < getRegs.size(); i++) {
         ASSERT_EQ(regsData[i], getRegs[i]);
@@ -93,6 +93,11 @@ HWTEST_F(DfxRegsTest, DfxRegsTest002, TestSize.Level2)
     uintptr_t sp = 0x00000003;
     uintptr_t pc = 0x00000004;
     dfxRegs->SetSpecialRegs(fp, lr, sp, pc);
+    ASSERT_EQ(dfxRegs->GetSpecialRegsName(lr), "lr");
+    ASSERT_EQ(dfxRegs->GetSpecialRegsName(fp), "fp");
+    ASSERT_EQ(dfxRegs->GetSpecialRegsName(pc), "pc");
+    ASSERT_EQ(dfxRegs->GetSpecialRegsName(sp), "sp");
+    ASSERT_EQ(dfxRegs->GetSpecialRegsName(0x0), "");
     uintptr_t fpGet;
     uintptr_t lrGet;
     uintptr_t spGet;
@@ -168,30 +173,126 @@ HWTEST_F(DfxRegsTest, DfxRegsTest003, TestSize.Level2)
 
 /**
  * @tc.name: DfxRegsTest004
- * @tc.desc: test DfxRegs SetFromFpMiniRegs
+ * @tc.desc: test DfxRegs SetFromQutMiniRegs SetFromFpMiniRegs
  * @tc.type: FUNC
  */
 HWTEST_F(DfxRegsTest, DfxRegsTest004, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "DfxRegsTest004: start.";
-    uintptr_t regs[4] = {1, 2, 3, 4};
 #if defined(__arm__)
+    uintptr_t pushRegs[QUT_MINI_REGS_SIZE];
+    for (size_t i = 0; i < QUT_MINI_REGS_SIZE; ++i) {
+        pushRegs[i] = i + 1;
+    }
+    uintptr_t qutRegs[QUT_MINI_REGS_SIZE] = {REG_ARM_R4, REG_ARM_R7, REG_ARM_R10, REG_ARM_R11,
+        REG_SP, REG_PC, REG_LR};
+    uintptr_t fpRegs[FP_MINI_REGS_SIZE] = {REG_ARM_R7, REG_FP, REG_SP, REG_PC};
     auto dfxregsArm = std::make_shared<DfxRegsArm>();
-    dfxregsArm->SetFromFpMiniRegs(regs);
-    ASSERT_EQ((*dfxregsArm.get())[7], regs[0]);
-    ASSERT_EQ((*dfxregsArm.get())[11], regs[1]);
-    ASSERT_EQ((*dfxregsArm.get())[13], regs[2]);
-    ASSERT_EQ((*dfxregsArm.get())[15], regs[3]);
+    dfxregsArm->SetFromQutMiniRegs(pushRegs, QUT_MINI_REGS_SIZE);
+    for (size_t i = 0; i < sizeof(qutRegs) / sizeof(qutRegs[0]); ++i) {
+        ASSERT_EQ((*dfxregsArm.get())[qutRegs[i]], pushRegs[i]);
+    }
+    dfxregsArm->SetFromFpMiniRegs(pushRegs, FP_MINI_REGS_SIZE);
+    for (size_t i = 0; i < sizeof(fpRegs) / sizeof(fpRegs[0]); ++i) {
+        ASSERT_EQ((*dfxregsArm.get())[fpRegs[i]], pushRegs[i]);
+    }
 
 #elif defined(__aarch64__)
+    uintptr_t pushRegs[QUT_MINI_REGS_SIZE];
+    for (size_t i = 0; i < QUT_MINI_REGS_SIZE; ++i) {
+        pushRegs[i] = i;
+    }
+    uintptr_t qutRegs[QUT_MINI_REGS_SIZE] = {REG_AARCH64_X0, REG_AARCH64_X20, REG_AARCH64_X28,
+        REG_FP, REG_SP, REG_AARCH64_PC, REG_LR};
+    uintptr_t fpRegs[FP_MINI_REGS_SIZE] = {REG_FP, REG_LR, REG_SP, REG_PC};
     auto dfxregsArm64 = std::make_shared<DfxRegsArm64>();
-    dfxregsArm64->SetFromFpMiniRegs(regs);
-    ASSERT_EQ((*dfxregsArm64.get())[29], regs[0]);
-    ASSERT_EQ((*dfxregsArm64.get())[30], regs[1]);
-    ASSERT_EQ((*dfxregsArm64.get())[31], regs[2]);
-    ASSERT_EQ((*dfxregsArm64.get())[32], regs[3]);
+    dfxregsArm64->SetFromQutMiniRegs(pushRegs, QUT_MINI_REGS_SIZE);
+    for (size_t i = 1; i < sizeof(qutRegs) / sizeof(qutRegs[0]); ++i) {
+        ASSERT_EQ((*dfxregsArm64.get())[qutRegs[i]], pushRegs[i]);
+    }
+    dfxregsArm64->SetFromFpMiniRegs(pushRegs, FP_MINI_REGS_SIZE);
+    for (size_t i = 0; i < sizeof(fpRegs) / sizeof(fpRegs[0]); ++i) {
+        ASSERT_EQ((*dfxregsArm64.get())[fpRegs[i]], pushRegs[i]);
+    }
 #endif
     GTEST_LOG_(INFO) << "DfxRegsTest004: end.";
+}
+
+/**
+ * @tc.name: DfxRegsTest005
+ * @tc.desc: test DfxRegs CreateFromRegs
+ * @tc.type: FUNC
+ */
+HWTEST_F(DfxRegsTest, DfxRegsTest005, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "DfxRegsTest005: start.";
+#if defined(__arm__)
+    uintptr_t regs[QUT_MINI_REGS_SIZE];
+    for (size_t i = 0; i < QUT_MINI_REGS_SIZE; ++i) {
+        regs[i] = i + 1;
+    }
+    uintptr_t minimal[QUT_MINI_REGS_SIZE] = {REG_ARM_R4, REG_ARM_R7, REG_ARM_R10, REG_ARM_R11,
+        REG_SP, REG_PC, REG_LR};
+    uintptr_t framePointer[FP_MINI_REGS_SIZE] = {REG_ARM_R7, REG_FP, REG_SP, REG_PC};
+    auto dfxRegs = DfxRegs::CreateFromRegs(UnwindMode::FRAMEPOINTER_UNWIND, regs);
+    for (size_t i = 0; i < sizeof(framePointer) / sizeof(framePointer[0]); ++i) {
+        ASSERT_EQ((*dfxRegs.get())[framePointer[i]], regs[i]);
+    }
+    dfxRegs = DfxRegs::CreateFromRegs(UnwindMode::MINIMAL_UNWIND, regs);
+    for (size_t i = 0; i < sizeof(minimal) / sizeof(minimal[0]); ++i) {
+        ASSERT_EQ((*dfxRegs.get())[minimal[i]], regs[i]);
+    }
+
+#elif defined(__aarch64__)
+    uintptr_t regs[QUT_MINI_REGS_SIZE];
+    for (size_t i = 0; i < QUT_MINI_REGS_SIZE; ++i) {
+        regs[i] = i;
+    }
+    uintptr_t minimal[QUT_MINI_REGS_SIZE] = {REG_AARCH64_X0, REG_AARCH64_X20, REG_AARCH64_X28,
+        REG_FP, REG_SP, REG_PC, REG_LR};
+    uintptr_t framePointer[FP_MINI_REGS_SIZE] = {REG_FP, REG_LR, REG_SP, REG_PC};
+    auto dfxRegs = DfxRegs::CreateFromRegs(UnwindMode::FRAMEPOINTER_UNWIND, regs);
+    for (size_t i = 1; i < sizeof(framePointer) / sizeof(framePointer[0]); ++i) {
+        ASSERT_EQ((*dfxRegs.get())[framePointer[i]], regs[i]);
+    }
+    dfxRegs = DfxRegs::CreateFromRegs(UnwindMode::MINIMAL_UNWIND, regs);
+    for (size_t i = 0; i < sizeof(minimal) / sizeof(minimal[0]); ++i) {
+        ASSERT_EQ((*dfxRegs.get())[minimal[i]], regs[i]);
+    }
+#endif
+    GTEST_LOG_(INFO) << "DfxRegsTest005: end.";
+}
+
+
+/**
+ * @tc.name: DfxRegsTest006
+ * @tc.desc: test DfxRegs CreateRemoteRegs
+ * @tc.type: FUNC
+ */
+HWTEST_F(DfxRegsTest, DfxRegsTest006, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "DfxRegsTest006: start.";
+    static pid_t pid = getpid();
+    pid_t child = fork();
+    if (child == 0) {
+        DfxPtrace::Attach(pid);
+        auto dfxRegs = DfxRegs::CreateRemoteRegs(pid);
+        constexpr size_t maxIdx = 100;
+        ASSERT_NE(dfxRegs->GetReg(0), nullptr);
+        ASSERT_EQ(dfxRegs->GetReg(maxIdx), nullptr);
+        uintptr_t value = 0;
+        dfxRegs->SetReg(maxIdx, &value);
+        uintptr_t fp = 0x80;
+        dfxRegs->SetFp(fp);
+        ASSERT_EQ(dfxRegs->GetFp(), fp);
+        DfxPtrace::Detach(pid);
+        _exit(0);
+    }
+    int status;
+    int ret = wait(&status);
+    ASSERT_EQ(status, 0);
+    GTEST_LOG_(INFO) << "Status:" << status << " Result:" << ret;
+    GTEST_LOG_(INFO) << "DfxRegsTest006: end.";
 }
 }
 } // namespace HiviewDFX

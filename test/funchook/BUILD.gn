@@ -108,7 +108,7 @@ if (!defined(ohos_lite)) {
   }
 }
 
-group("dfxfunchook_unittest") {
+group("dfxfunchook") {
   if (!defined(ohos_lite)) {
     testonly = true
     deps = [ ":DfxFuncHookUnitTest" ]

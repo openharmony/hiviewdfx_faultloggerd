@@ -16,9 +16,6 @@
 #include "dfx_map.h"
 
 #include <algorithm>
-#include <cstdio>
-#include <cstdlib>
-#include <cstring>
 #include <securec.h>
 #include <sstream>
 #if is_mingw
@@ -31,6 +28,7 @@
 #include "dfx_elf.h"
 #include "dfx_log.h"
 #include "dfx_util.h"
+#include "string_util.h"
 
 namespace OHOS {
 namespace HiviewDFX {
@@ -157,15 +155,33 @@ void DfxMap::PermsToProts(const std::string perms, uint32_t& prots, uint32_t& fl
     }
 }
 
-const std::shared_ptr<DfxElf>& DfxMap::GetElf()
+const std::shared_ptr<DfxElf> DfxMap::GetElf()
 {
     if (elf == nullptr) {
-        if (!name.empty()) {
-            LOGU("GetElf name: %s", name.c_str());
+        if (name.empty()) {
+            LOGE("invalid map name?");
+            return nullptr;
+        }
+        LOGU("GetElf name: %s", name.c_str());
+        if (EndsWith(name, ".hap")) {
+            elf = DfxElf::CreateFromHap(name, prevMap, offset);
+        } else {
             elf = DfxElf::Create(name);
         }
     }
     return elf;
+}
+
+std::string DfxMap::GetElfName()
+{
+    if (name.empty()) {
+        return name;
+    }
+    std::string soName = name;
+    if (EndsWith(name, ".hap") && GetElf() != nullptr) {
+        soName.append("!" + elf->GetElfName());
+    }
+    return soName;
 }
 } // namespace HiviewDFX
 } // namespace OHOS

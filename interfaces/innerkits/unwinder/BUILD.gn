@@ -37,6 +37,7 @@ dfx_unwind_sources = [
   "dfx_signal.cpp",
   "dfx_symbols.cpp",
   "dfx_xz_utils.cpp",
+  "unwinder_config.cpp",
 ]
 
 dfx_exidx_sources = [ "arm_exidx.cpp" ]
@@ -135,13 +136,21 @@ if (defined(ohos_lite)) {
     ]
 
     if (libunwinder_debug) {
-      defines += [ "DFX_LOG_UNWIND" ]
+      defines += [
+        "DFX_LOG_UNWIND",
+        "DFX_UNWIND_ERROR",
+      ]
     }
+  }
+
+  config("dfx_unwinder_cache_config") {
+    defines = [ "LOC_REGS_CACHE" ]
   }
 
   config("dfx_unwinder_src_config") {
     defines = [
       "DFX_LOG_UNWIND",
+      "DFX_UNWIND_ERROR",
       "INSTR_STATISTIC_ENABLE",
     ]
   }
@@ -178,10 +187,7 @@ if (defined(ohos_lite)) {
       "system",
       "updater",
     ]
-    innerapi_tags = [
-      "chipsetsdk_indirect",
-      "platformsdk_indirect",
-    ]
+    innerapi_tags = [ "platformsdk_indirect" ]
     part_name = "faultloggerd"
     subsystem_name = "hiviewdfx"
   }
@@ -189,6 +195,7 @@ if (defined(ohos_lite)) {
   ohos_static_library("libunwinder_static") {
     public_configs = [
       ":dfx_unwinder_config",
+      ":dfx_unwinder_cache_config",
       ":lzma_config",
     ]
 
@@ -216,6 +223,7 @@ if (defined(ohos_lite)) {
   ohos_source_set("libunwinder_src") {
     public_configs = [
       ":dfx_unwinder_config",
+      ":dfx_unwinder_cache_config",
       ":dfx_unwinder_src_config",
       ":lzma_config",
     ]

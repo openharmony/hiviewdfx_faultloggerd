@@ -12,9 +12,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 #include "arm_exidx.h"
+#include <securec.h>
 #include "dfx_define.h"
 #include "dfx_regs.h"
+#include "dfx_regs_qut.h"
 #include "dfx_log.h"
 #include "dfx_instr_statistic.h"
 #include "dfx_util.h"
@@ -44,17 +47,22 @@ static const int TWENTY_FOUR_BIT_OFFSET = 24;
 static const int TWENTY_EIGHT_BIT_OFFSET = 28;
 }
 
-void ExidxContext::Reset()
+void ExidxContext::Reset(size_t size)
 {
     vsp = 0;
     transformedBits = 0;
+    if (size != 0) {
+        regs.resize(size);
+    }
+    for (size_t i = 0; i < regs.size(); ++i) {
+        regs[i] = 0;
+    }
 }
 
 void ExidxContext::Transform(uint32_t reg)
 {
     LOGU("Transform reg: %d", reg);
     transformedBits = transformedBits | (1 << reg);
-    regs[reg] = 0;
 }
 
 bool ExidxContext::IsTransformed(uint32_t reg)
@@ -65,24 +73,24 @@ bool ExidxContext::IsTransformed(uint32_t reg)
     return false;
 }
 
-void ExidxContext::AddUpTransformed(uint32_t reg, int32_t imm)
-{
-    if (IsTransformed(reg)) {
-        LOGU("AddUpTransformed reg: %d, imm: %d", reg, imm);
-        regs[reg] += imm;
-    }
-}
-
 void ExidxContext::AddUpVsp(int32_t imm)
 {
     LOGU("AddUpVsp imm: %d", imm);
-
     vsp += imm;
 
-    auto qutRegs = DfxRegs::GetQutRegs();
+    auto qutRegs = DfxRegsQut::GetQutRegs();
     for (size_t i = 0; i < qutRegs.size(); i++) {
-        AddUpTransformed(qutRegs[i], imm);
+        uint32_t reg = static_cast<uint32_t>(qutRegs[i]);
+        if (IsTransformed(reg)) {
+            regs[i] += imm;
+        }
     }
+}
+
+ArmExidx::ArmExidx(std::shared_ptr<DfxMemory> memory) : memory_(memory)
+{
+    (void)memset_s(&lastErrorData_, sizeof(UnwindErrorData), 0, sizeof(UnwindErrorData));
+    context_.Reset(DfxRegsQut::GetQutRegsSize());
 }
 
 inline void ArmExidx::FlushInstr()
@@ -97,14 +105,14 @@ inline void ArmExidx::FlushInstr()
     }
     LOGU("rsState cfaReg: %d, cfaRegOffset: %d", rsState_->cfaReg, rsState_->cfaRegOffset);
 
-    auto qutRegs = DfxRegs::GetQutRegs();
+    auto qutRegs = DfxRegsQut::GetQutRegs();
     for (size_t i = 0; i < qutRegs.size(); i++) {
-        size_t reg = qutRegs[i];
+        uint32_t reg = static_cast<uint32_t>(qutRegs[i]);
         if (context_.IsTransformed(reg)) {
-            LOG_CHECK((context_.regs[reg] & 0x3) == 0);
-            rsState_->locs[reg].type = REG_LOC_MEM_OFFSET;
-            rsState_->locs[reg].val = -context_.regs[reg];
-            LOGU("rsState locs[%d].type: %d, val: %d", reg, rsState_->locs[reg].type, rsState_->locs[reg].val);
+            LOG_CHECK((context_.regs[i] & 0x3) == 0);
+            rsState_->locs[i].type = REG_LOC_MEM_OFFSET;
+            rsState_->locs[i].val = -context_.regs[i];
+            LOGU("rsState reg: %d, locs[%d].val: %d", reg, i, rsState_->locs[i].val);
         }
     }
 
@@ -126,19 +134,21 @@ bool ArmExidx::SearchEntry(uintptr_t pc, struct UnwindTableInfo uti, struct Unwi
     uintptr_t tableData = uti.tableData;
     LOGU("SearchEntry pc: %p tableData: %p, tableLen: %u",
         (void*)pc, (void*)tableData, (uint32_t)tableLen);
+    if (tableLen == 0) {
+        lastErrorData_.SetCode(UNW_ERROR_NO_UNWIND_INFO);
+        return false;
+    }
 
     // do binary search
-    uintptr_t ptr = 0;
     uintptr_t entry = 0;
     uintptr_t low = 0;
     uintptr_t high = tableLen;
     while (low < high) {
         uintptr_t cur = (low + high) / 2; // 2 : binary search divided parameter
-        ptr = tableData + cur * ARM_EXIDX_TABLE_SIZE;
+        uintptr_t ptr = tableData + cur * ARM_EXIDX_TABLE_SIZE;
         uintptr_t addr = 0;
         if (!memory_->ReadPrel31(ptr, &addr)) {
-            lastErrorData_.addr = ptr;
-            lastErrorData_.code = UNW_ERROR_ILLEGAL_VALUE;
+            lastErrorData_.SetAddrAndCode(ptr, UNW_ERROR_ILLEGAL_VALUE);
             return false;
         }
 
@@ -156,6 +166,7 @@ bool ArmExidx::SearchEntry(uintptr_t pc, struct UnwindTableInfo uti, struct Unwi
         if (high != 0) {
             entry = tableData + (high - 1) * ARM_EXIDX_TABLE_SIZE;
         } else {
+            lastErrorData_.SetCode(UNW_ERROR_NO_UNWIND_INFO);
             return false;
         }
     }
@@ -171,30 +182,27 @@ bool ArmExidx::ExtractEntryData(uintptr_t entryOffset)
     LOGU("Exidx entryOffset: %llx", (uint64_t)entryOffset);
     ops_.clear();
     uint32_t data = 0;
-    lastErrorData_.addr = entryOffset;
     if (entryOffset & 1) {
         LOGE("entryOffset: %llx error.", (uint64_t)entryOffset);
-        lastErrorData_.code = UNW_ERROR_INVALID_ALIGNMENT;
+        lastErrorData_.SetAddrAndCode(entryOffset, UNW_ERROR_INVALID_ALIGNMENT);
         return false;
     }
 
     entryOffset += FOUR_BYTE_OFFSET;
     if (!memory_->ReadU32(entryOffset, &data, false)) {
         LOGE("entryOffset: %llx error.", (uint64_t)entryOffset);
-        lastErrorData_.addr = entryOffset;
-        lastErrorData_.code = UNW_ERROR_ILLEGAL_VALUE;
+        lastErrorData_.SetAddrAndCode(entryOffset, UNW_ERROR_ILLEGAL_VALUE);
         return false;
     }
 
     if (data == ARM_EXIDX_CANT_UNWIND) {
         LOGU("This is a CANT UNWIND entry, data: %x.", data);
-        lastErrorData_.code = UNW_ERROR_CANT_UNWIND;
-        lastErrorData_.addr = entryOffset;
+        lastErrorData_.SetAddrAndCode(entryOffset, UNW_ERROR_CANT_UNWIND);
         return false;
     } else if ((data & ARM_EXIDX_COMPACT) != 0) {
         if (((data >> TWENTY_FOUR_BIT_OFFSET) & 0x7f) != 0) {
             LOGE("This is a non-zero index, this code doesn't support other formats.");
-            lastErrorData_.code = UNW_ERROR_INVALID_PERSONALITY;
+            lastErrorData_.SetCode(UNW_ERROR_INVALID_PERSONALITY);
             return false;
         }
         LOGU("This is a compact table entry, data: %x.", data);
@@ -213,14 +221,21 @@ bool ArmExidx::ExtractEntryData(uintptr_t entryOffset)
     // prel31 decode point to .ARM.extab
 #ifndef TEST_ARM_EXIDX
     if (!memory_->ReadPrel31(entryOffset, &extabAddr)) {
-        lastErrorData_.code = UNW_ERROR_INVALID_MEMORY;
+        lastErrorData_.SetAddrAndCode(entryOffset, UNW_ERROR_INVALID_MEMORY);
         return false;
     }
 #else
     extabAddr = entryOffset + FOUR_BYTE_OFFSET;
 #endif
-    if (!memory_->ReadU32(extabAddr, &data, false)) {
-        lastErrorData_.code = UNW_ERROR_INVALID_MEMORY;
+    return ExtractEntryTab(extabAddr);
+}
+
+bool ArmExidx::ExtractEntryTab(uintptr_t tabOffset)
+{
+    uint32_t data = 0;
+    LOGU("Exidx tabOffset: %llx", (uint64_t)tabOffset);
+    if (!memory_->ReadU32(tabOffset, &data, false)) {
+        lastErrorData_.SetAddrAndCode(tabOffset, UNW_ERROR_INVALID_MEMORY);
         return false;
     }
 
@@ -229,33 +244,35 @@ bool ArmExidx::ExtractEntryData(uintptr_t entryOffset)
         LOGU("Arm generic personality, data: %x.", data);
 #ifndef TEST_ARM_EXIDX
         uintptr_t perRoutine;
-        if (!memory_->ReadPrel31(extabAddr, &perRoutine)) {
+        if (!memory_->ReadPrel31(tabOffset, &perRoutine)) {
             LOGE("Arm Personality routine error");
+            lastErrorData_.SetAddrAndCode(tabOffset, UNW_ERROR_INVALID_MEMORY);
             return false;
         }
 #endif
 
-        extabAddr += FOUR_BYTE_OFFSET;
+        tabOffset += FOUR_BYTE_OFFSET;
         // Skip four bytes, because dont have unwind data to read
-        if (!memory_->ReadU32(extabAddr, &data, false)) {
-            lastErrorData_.code = UNW_ERROR_INVALID_MEMORY;
-            lastErrorData_.addr = extabAddr;
+        if (!memory_->ReadU32(tabOffset, &data, false)) {
+            lastErrorData_.SetAddrAndCode(tabOffset, UNW_ERROR_INVALID_MEMORY);
             return false;
         }
         tableCount = (data >> TWENTY_FOUR_BIT_OFFSET) & 0xff;
         ops_.push_back((data >> SIXTEEN_BIT_OFFSET) & 0xff);
         ops_.push_back((data >> EIGHT_BIT_OFFSET) & 0xff);
         ops_.push_back(data & 0xff);
-        extabAddr += FOUR_BYTE_OFFSET;
+        tabOffset += FOUR_BYTE_OFFSET;
     } else {
         LOGU("Arm compact personality, data: %x.", data);
         if ((data >> TWENTY_EIGHT_BIT_OFFSET) != 0x8) {
             LOGE("incorrect Arm compact model, [31:28]bit must be 0x8(%x)", data >> TWENTY_EIGHT_BIT_OFFSET);
+            lastErrorData_.SetCode(UNW_ERROR_INVALID_PERSONALITY);
             return false;
         }
         uint8_t personality = (data >> TWENTY_FOUR_BIT_OFFSET) & 0x3;
         if (personality > 2) { // 2 : personality must be 0 1 2
             LOGE("incorrect Arm compact personality(%u)", personality);
+            lastErrorData_.SetCode(UNW_ERROR_INVALID_PERSONALITY);
             return false;
         }
         // inline compact model, when personality is 0
@@ -263,21 +280,21 @@ bool ArmExidx::ExtractEntryData(uintptr_t entryOffset)
             ops_.push_back((data >> SIXTEEN_BIT_OFFSET) & 0xff);
         } else if (personality == 1 || personality == 2) { // 2 : personality equal to 2
             tableCount = (data >> SIXTEEN_BIT_OFFSET) & 0xff;
-            extabAddr += FOUR_BYTE_OFFSET;
+            tabOffset += FOUR_BYTE_OFFSET;
         }
         ops_.push_back((data >> EIGHT_BIT_OFFSET) & 0xff);
         ops_.push_back(data & 0xff);
     }
     if (tableCount > 5) { // 5 : 5 operators
-        lastErrorData_.code = UNW_ERROR_NOT_SUPPORT;
+        lastErrorData_.SetCode(UNW_ERROR_NOT_SUPPORT);
         return false;
     }
 
     for (size_t i = 0; i < tableCount; i++) {
-        if (!memory_->ReadU32(extabAddr, &data, false)) {
+        if (!memory_->ReadU32(tabOffset, &data, false)) {
             return false;
         }
-        extabAddr += FOUR_BYTE_OFFSET;
+        tabOffset += FOUR_BYTE_OFFSET;
         ops_.push_back((data >> TWENTY_FOUR_BIT_OFFSET) & 0xff);
         ops_.push_back((data >> SIXTEEN_BIT_OFFSET) & 0xff);
         ops_.push_back((data >> EIGHT_BIT_OFFSET) & 0xff);
@@ -351,7 +368,7 @@ bool ArmExidx::Step(uintptr_t entryOffset, std::shared_ptr<RegLocState> rs)
 inline bool ArmExidx::DecodeSpare()
 {
     LOGU("Exidx Decode Spare");
-    lastErrorData_.code = UNW_ERROR_ARM_EXIDX_SPARE;
+    lastErrorData_.SetCode(UNW_ERROR_ARM_EXIDX_SPARE);
     return false;
 }
 
@@ -397,7 +414,7 @@ inline bool ArmExidx::Decode1000iiiiiiiiiiii()
     registers |= curOp_;
     if (registers == 0x0) {
         LOGE("10000000 00000000: Refuse to unwind!");
-        lastErrorData_.code = UNW_ERROR_CANT_UNWIND;
+        lastErrorData_.SetCode(UNW_ERROR_CANT_UNWIND);
         return false;
     }
 
@@ -420,7 +437,7 @@ inline bool ArmExidx::Decode1001nnnn()
     uint8_t bits = curOp_ & 0xf;
     if (bits == REG_ARM_R13 || bits == REG_ARM_R15) {
         LOGU("10011101 or 10011111: Reserved");
-        lastErrorData_.code = UNW_ERROR_RESERVED_VALUE;
+        lastErrorData_.SetCode(UNW_ERROR_RESERVED_VALUE);
         return false;
     }
     // 1001nnnn: Set vsp = r[nnnn]
@@ -469,7 +486,7 @@ inline bool ArmExidx::Decode1010nnnn()
 inline bool ArmExidx::Decode10110000()
 {
     LOGU("10110000: Finish");
-    lastErrorData_.code = UNW_ERROR_ARM_EXIDX_FINISH;
+    lastErrorData_.SetCode(UNW_ERROR_ARM_EXIDX_FINISH);
     return true;
 }
 

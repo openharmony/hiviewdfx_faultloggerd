@@ -27,15 +27,20 @@ namespace {
 #define LOG_TAG "DfxDwarfSection"
 }
 
+DwarfSection::DwarfSection(std::shared_ptr<DfxMemory> memory) : memory_(memory)
+{
+    (void)memset_s(&lastErrorData_, sizeof(UnwindErrorData), 0, sizeof(UnwindErrorData));
+}
+
 bool DwarfSection::LinearSearchEntry(uintptr_t pc, struct UnwindTableInfo uti, struct UnwindEntryInfo& uei)
 {
     uintptr_t fdeCount = uti.tableLen;
     uintptr_t tableData = uti.tableData;
     LOGU("LinearSearchEntry tableData:%p, tableLen: %u", (void*)tableData, (uint32_t)fdeCount);
-    uintptr_t i = 0, fdeAddr, ptr = tableData;
+    uintptr_t i = 0, ptr = tableData;
     FrameDescEntry fdeInfo;
     while (i++ < fdeCount && ptr < uti.endPc) {
-        fdeAddr = ptr;
+        uintptr_t fdeAddr = ptr;
         if (GetCieOrFde(ptr, fdeInfo)) {
             if (pc >= fdeInfo.pcStart && pc < fdeInfo.pcEnd) {
                 LOGU("Fde entry addr: %llx", (uint64_t)fdeAddr);
@@ -69,15 +74,13 @@ bool DwarfSection::SearchEntry(uintptr_t pc, struct UnwindTableInfo uti, struct 
         uintptr_t cur = (low + high) / 2; // 2 : binary search divided parameter
         ptr = (uintptr_t) tableData + cur * sizeof(DwarfTableEntry);
         if (!memory_->ReadS32(ptr, &dwarfTableEntry.startPc, true)) {
-            lastErrorData_.addr = ptr;
-            lastErrorData_.code = UNW_ERROR_ILLEGAL_VALUE;
+            lastErrorData_.SetAddrAndCode(ptr, UNW_ERROR_INVALID_MEMORY);
             return false;
         }
         uintptr_t startPc = static_cast<uintptr_t>(dwarfTableEntry.startPc + segbase);
         if (startPc == pc) {
             if (!memory_->ReadS32(ptr, &dwarfTableEntry.fdeOffset, true)) {
-                lastErrorData_.addr = ptr;
-                lastErrorData_.code = UNW_ERROR_ILLEGAL_VALUE;
+                lastErrorData_.SetAddrAndCode(ptr, UNW_ERROR_INVALID_MEMORY);
                 return false;
             }
             entry = static_cast<uintptr_t>(dwarfTableEntry.fdeOffset + segbase);
@@ -94,8 +97,7 @@ bool DwarfSection::SearchEntry(uintptr_t pc, struct UnwindTableInfo uti, struct 
             ptr = (uintptr_t) tableData + (high - 1) * sizeof(DwarfTableEntry);
             ptr += 4; // 4 : four bytes
             if (!memory_->ReadS32(ptr, &dwarfTableEntry.fdeOffset, true)) {
-                lastErrorData_.addr = ptr;
-                lastErrorData_.code = UNW_ERROR_ILLEGAL_VALUE;
+                lastErrorData_.SetAddrAndCode(ptr, UNW_ERROR_INVALID_MEMORY);
                 return false;
             }
             entry = static_cast<uintptr_t>(dwarfTableEntry.fdeOffset + segbase);
@@ -112,11 +114,10 @@ bool DwarfSection::SearchEntry(uintptr_t pc, struct UnwindTableInfo uti, struct 
 
 bool DwarfSection::Step(uintptr_t fdeAddr, std::shared_ptr<DfxRegs> regs, std::shared_ptr<RegLocState> rs)
 {
-    lastErrorData_.addr = static_cast<uint64_t>(fdeAddr);
     FrameDescEntry fdeInfo;
     if (!ParseFde(fdeAddr, fdeAddr, fdeInfo)) {
         LOGE("Failed to parse fde?");
-        lastErrorData_.code = UNW_ERROR_DWARF_INVALID_FDE;
+        lastErrorData_.SetAddrAndCode(fdeAddr, UNW_ERROR_DWARF_INVALID_FDE);
         return false;
     }
 
@@ -124,7 +125,7 @@ bool DwarfSection::Step(uintptr_t fdeAddr, std::shared_ptr<DfxRegs> regs, std::s
     DwarfCfaInstructions dwarfInstructions(memory_);
     if (!dwarfInstructions.Parse(regs->GetPc(), fdeInfo, *(rs.get()))) {
         LOGE("Failed to parse dwarf instructions?");
-        lastErrorData_.code = UNW_ERROR_DWARF_INVALID_INSTR;
+        lastErrorData_.SetAddrAndCode(regs->GetPc(), UNW_ERROR_DWARF_INVALID_INSTR);
         return false;
     }
     return true;
@@ -292,7 +293,7 @@ bool DwarfSection::FillInCie(uintptr_t ptr, CommonInfoEntry &cieInfo)
     LOGU("Cie version: %d", version);
     if (version != DW_EH_VERSION && version != 3 && version != 4 && version != 5) { // 3 4 5 : cie version
         LOGE("Invalid cie version: %d", version);
-        lastErrorData_.code = UNW_ERROR_UNSUPPORTED_VERSION;
+        lastErrorData_.SetAddrAndCode(ptr, UNW_ERROR_UNSUPPORTED_VERSION);
         return false;
     }
 

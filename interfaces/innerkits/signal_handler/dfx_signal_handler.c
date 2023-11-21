@@ -97,7 +97,6 @@ static const int SIGNALHANDLER_TIMEOUT = 10000; // 10000 us
 static const int ALARM_TIME_S = 10;
 static int g_prevHandledSignal = SIGDUMP;
 static struct sigaction g_oldSigactionList[NSIG] = {};
-static thread_local ThreadInfoCallBack threadInfoCallBack = NULL;
 enum DumpPreparationStage {
     CREATE_PIPE_FAIL = 1,
     SET_PIPE_LEN_FAIL,
@@ -118,15 +117,68 @@ static void FillTraceIdLocked(struct ProcessDumpRequest* request)
 }
 
 const char* GetLastFatalMessage(void) __attribute__((weak));
+
+typedef struct ThreadCallbackItem {
+    int32_t tid;
+    ThreadInfoCallBack callback;
+} ThreadCallbackItem;
+
+#define CALLBACK_ITEM_COUNT 32
+static ThreadCallbackItem g_callbackItems[CALLBACK_ITEM_COUNT];
+static void InitCallbackItems()
+{
+    for (int i = 0; i < CALLBACK_ITEM_COUNT; i++) {
+        g_callbackItems[i].tid = -1;
+        g_callbackItems[i].callback = NULL;
+    }
+}
+
+// caller should set to NULL before exit thread
 void SetThreadInfoCallback(ThreadInfoCallBack func)
 {
-    threadInfoCallBack = func;
+    int32_t currentTid = syscall(SYS_gettid);
+    int32_t firstEmptySlot = -1;
+    int32_t currentThreadSlot = -1;
+    pthread_mutex_lock(&g_signalHandlerMutex);
+    for (int i = 0; i < CALLBACK_ITEM_COUNT; i++) {
+        if (firstEmptySlot == -1 && g_callbackItems[i].tid == -1) {
+            firstEmptySlot = i;
+        }
+
+        if (g_callbackItems[i].tid == currentTid) {
+            currentThreadSlot = i;
+            break;
+        }
+    }
+
+    int32_t targetSlot = currentThreadSlot == -1 ? firstEmptySlot : currentThreadSlot;
+    if (targetSlot != -1) {
+        g_callbackItems[targetSlot].tid = func == NULL ? -1 : currentTid;
+        g_callbackItems[targetSlot].callback = func;
+        DFXLOG_INFO("Set ThreadInfoCallback for %d.", currentTid);
+    }
+    pthread_mutex_unlock(&g_signalHandlerMutex);
 }
+
+static ThreadInfoCallBack GetCallbackLocked()
+{
+    int32_t currentTid = syscall(SYS_gettid);
+    for (int i = 0; i < CALLBACK_ITEM_COUNT; i++) {
+        if (g_callbackItems[i].tid != currentTid) {
+            continue;
+        }
+
+        return g_callbackItems[i].callback;
+    }
+    return NULL;
+}
+
 static void FillLastFatalMessageLocked(int32_t sig, void *context)
 {
-    if (sig != SIGABRT && threadInfoCallBack != NULL) {
+    ThreadInfoCallBack callback = GetCallbackLocked();
+    if (sig != SIGABRT && callback != NULL) {
         DFXLOG_INFO("Start collect crash thread info.");
-        threadInfoCallBack(g_request.lastFatalMessage, sizeof(g_request.lastFatalMessage), context);
+        callback(g_request.lastFatalMessage, sizeof(g_request.lastFatalMessage), context);
         DFXLOG_INFO("Finish collect crash thread info.");
         return;
     }
@@ -581,6 +633,7 @@ void DFX_InstallSignalHandler(void)
         return;
     }
 
+    InitCallbackItems();
     // reserve stack for fork
     g_reservedChildStack = mmap(NULL, RESERVED_CHILD_STACK_SIZE, \
         PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_STACK, 1, 0);

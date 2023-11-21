@@ -42,7 +42,8 @@ public:
      * @param maxFrameNums the maximum number of frames to dump, if pid is not equal to caller pid then it is ignored
      * @return if succeed return true, otherwise return false
     */
-    bool DumpCatch(int pid, int tid, std::string& msg, size_t maxFrameNums = DEFAULT_MAX_FRAME_NUM);
+    bool DumpCatch(int pid, int tid, std::string& msg, size_t maxFrameNums = DEFAULT_MAX_FRAME_NUM,
+                   bool isJson = false);
 
     /**
      * @brief Dump native and js mixed-stack by specify pid and tid
@@ -77,14 +78,14 @@ public:
     bool DumpCatchMultiPid(const std::vector<int> pidV, std::string& msg);
 
 private:
-    bool DoDumpCurrTid(const size_t skipFrameNum, std::string& msg, size_t maxFrameNums);
-    bool DoDumpLocalTid(const int tid, std::string& msg, size_t maxFrameNums);
-    bool DoDumpLocalPid(int pid, std::string& msg, size_t maxFrameNums);
-    bool DoDumpLocalLocked(int pid, int tid, std::string& msg, size_t maxFrameNums);
-    bool DoDumpRemoteLocked(int pid, int tid, std::string& msg);
-    bool DoDumpCatchRemote(const int type, int pid, int tid, std::string& msg);
-    int DoDumpRemotePid(const int type, int pid, std::string& msg);
-    int DoDumpRemotePoll(int bufFd, int resFd, int timeout, std::string& msg);
+    bool DoDumpCurrTid(const size_t skipFrameNum, std::string& msg, size_t maxFrameNums, bool isJson = false);
+    bool DoDumpLocalTid(const int tid, std::string& msg, size_t maxFrameNums, bool isJson = false);
+    bool DoDumpLocalPid(int pid, std::string& msg, size_t maxFrameNums, bool isJson = false);
+    bool DoDumpLocalLocked(int pid, int tid, std::string& msg, size_t maxFrameNums, bool isJson = false);
+    bool DoDumpRemoteLocked(int pid, int tid, std::string& msg, bool isJson = false);
+    bool DoDumpCatchRemote(const int type, int pid, int tid, std::string& msg, bool isJson = false);
+    int DoDumpRemotePid(const int type, int pid, std::string& msg, bool isJson = false);
+    int DoDumpRemotePoll(int bufFd, int resFd, int timeout, std::string& msg, bool isJson = false);
     bool DoReadBuf(int fd, std::string& msg);
     bool DoReadRes(int fd, bool &ret, std::string& msg);
 

@@ -38,11 +38,15 @@ public:
     DfxMap(uint64_t begin, uint64_t end, uint64_t offset,
         const std::string& perms, const std::string& name)
         : begin(begin), end(end), offset(offset), perms(perms), name(name) {}
+    DfxMap(uint64_t begin, uint64_t end, uint64_t offset,
+        uint32_t prots, const std::string& name)
+        : begin(begin), end(end), offset(offset), prots(prots), name(name) {}
 
     bool Parse(const std::string buf, int size);
     bool IsValidName();
     bool IsArkName();
-    const std::shared_ptr<DfxElf>& GetElf();
+    const std::shared_ptr<DfxElf> GetElf();
+    std::string GetElfName();
     uint64_t GetRelPc(uint64_t pc);
     std::string ToString();
 
@@ -57,6 +61,7 @@ public:
     std::string perms = ""; // 5:rwxp
     std::string name = "";
     std::shared_ptr<DfxElf> elf;
+    std::shared_ptr<DfxMap> prevMap;
     uint64_t elfOffset = 0;
     uint64_t elfStartOffset = 0;
 
@@ -85,6 +90,12 @@ public:
     static bool ValueLessEqual(uint64_t vaddr, const DfxMap &a)
     {
         return vaddr <= a.begin;
+    }
+    uint64_t FileOffsetFromAddr(uint64_t vaddr) const
+    {
+        // real vaddr - real map begin = addr offset in section
+        // section offset + page off set = file offset
+        return vaddr - begin + offset;
     }
 };
 } // namespace HiviewDFX

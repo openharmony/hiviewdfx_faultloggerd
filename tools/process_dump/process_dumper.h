@@ -45,11 +45,14 @@ private:
     int InitPrintThread(std::shared_ptr<ProcessDumpRequest> request);
     int InitProcessInfo(std::shared_ptr<ProcessDumpRequest> request);
     static int GetLogTypeBySignal(int sig);
+    void WriteData(int fd, const std::string& data, int blockSize) const;
 
     std::shared_ptr<DfxProcess> process_ = nullptr;
     std::shared_ptr<CppCrashReporter> reporter_ = nullptr;
     bool isCrash_ = false;
+    bool isJsonDump_ = false;
     int32_t resFd_ = -1;
+    int32_t jsonFd_ = -1;
     int32_t resDump_ = 0;
 };
 } // namespace HiviewDFX
