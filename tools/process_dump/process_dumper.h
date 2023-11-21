@@ -48,6 +48,7 @@ private:
     void CreateVmProcessIfNeed(std::shared_ptr<ProcessDumpRequest> request, bool enableNs);
     bool InitProcessNsInfo(std::shared_ptr<ProcessDumpRequest> request, bool isCrash);
     int InitProcessInfo(std::shared_ptr<ProcessDumpRequest> request, bool isCrash, bool enableNs);
+    int GetLogTypeBySignal(int sig);
 
     ProcessDumper() = default;
     DISALLOW_COPY_AND_MOVE(ProcessDumper);

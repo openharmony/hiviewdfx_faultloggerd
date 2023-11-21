@@ -88,6 +88,18 @@ void ProcessDumper::PrintDumpProcessWithSignalContextHeader(std::shared_ptr<Proc
     }
 }
 
+int ProcessDumper::GetLogTypeBySignal(int sig)
+{
+    switch (sig) {
+        case SIGLEAK_STACK:
+            return FaultLoggerType::LEAK_STACKTRACE;
+        case SIGDUMP:
+            return FaultLoggerType::CPP_STACKTRACE;
+        default:
+            return FaultLoggerType::CPP_CRASH;
+    }
+}
+
 int ProcessDumper::InitPrintThread(bool fromSignalHandler, std::shared_ptr<ProcessDumpRequest> request)
 {
     int fd = -1;
@@ -98,7 +110,6 @@ int ProcessDumper::InitPrintThread(bool fromSignalHandler, std::shared_ptr<Proce
         int32_t pid = request->GetPid();
         int32_t signo = request->GetSiginfo().si_signo;
         bool isCrash = (signo != SIGDUMP);
-        FaultLoggerType type = isCrash ? FaultLoggerType::CPP_CRASH : FaultLoggerType::CPP_STACKTRACE;
 
         struct FaultLoggerdRequest faultloggerdRequest;
         if (memset_s(&faultloggerdRequest, sizeof(faultloggerdRequest), 0, sizeof(struct FaultLoggerdRequest)) != 0) {
@@ -106,16 +117,16 @@ int ProcessDumper::InitPrintThread(bool fromSignalHandler, std::shared_ptr<Proce
             return fd;
         }
 
-        if (isCrash) {
+        faultloggerdRequest.type = GetLogTypeBySignal(request->GetSiginfo().si_signo);
+        faultloggerdRequest.pid = request->GetPid();
+        faultloggerdRequest.tid = request->GetTid();
+        faultloggerdRequest.uid = request->GetUid();
+        faultloggerdRequest.time = request->GetTimeStamp();
+		if (isCrash || faultloggerdRequest.type == FaultLoggerType::LEAK_STACKTRACE) {
             if (DfxConfig::GetInstance().GetLogPersist()) {
-                InitDebugLog((int)type, targetPid_, request->GetTid(), request->GetUid());
+                InitDebugLog((int)faultloggerdRequest.type, targetPid_, request->GetTid(), request->GetUid());
             }
 
-            faultloggerdRequest.type = (int32_t)type;
-            faultloggerdRequest.pid = request->GetPid();
-            faultloggerdRequest.tid = request->GetTid();
-            faultloggerdRequest.uid = request->GetUid();
-            faultloggerdRequest.time = request->GetTimeStamp();
             if (strncpy_s(faultloggerdRequest.module, sizeof(faultloggerdRequest.module),
                 targetProcess_->GetProcessName().c_str(), sizeof(faultloggerdRequest.module) - 1) != 0) {
                 DfxLogWarn("Failed to set process name.");
@@ -186,14 +197,15 @@ int ProcessDumper::DumpProcessWithSignalContext(std::shared_ptr<ProcessDumpReque
             break;
         }
 
-        bool isCrash = (request->GetSiginfo().si_signo != SIGDUMP);
+        bool isCrash = request->GetSiginfo().si_signo != SIGDUMP;
+        bool isLeakDump = request->GetSiginfo().si_signo == SIGLEAK_STACK;
         std::string storeProcessName = request->GetProcessNameString();
         // We need check pid is same with getppid().
         // As in signal handler, current process is a child process, and target pid is our parent process.
         // If pid namespace is enalbed, both ppid and pid are equal one.
         // In this case, we have to parse /proc/self/stat
-        if ((!isCrash && (syscall(SYS_getppid) != request->GetPid())) ||
-            (isCrash && (syscall(SYS_getppid) != request->GetVmPid()))) {
+        if (((!isCrash) && (syscall(SYS_getppid) != request->GetPid())) ||
+            ((isCrash || isLeakDump) && (syscall(SYS_getppid) != request->GetVmPid()))) {
             DfxLogError("Target process(%s:%d) is not parent pid(%d), exit processdump for signal(%d).",
                 storeProcessName.c_str(), request->GetPid(), syscall(SYS_getppid), request->GetSiginfo().si_signo);
             dumpRes = ProcessDumpRes::DUMP_EGETPPID;

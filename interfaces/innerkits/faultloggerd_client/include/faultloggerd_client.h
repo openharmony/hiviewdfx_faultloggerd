@@ -32,6 +32,8 @@ enum FaultLoggerType {
     CPP_STACKTRACE,
     JS_STACKTRACE,
     JS_HEAP_SNAPSHOT,
+    /** leak stacktrace */
+    LEAK_STACKTRACE,
 };
 
 enum FaultLoggerClientType {

@@ -75,6 +75,8 @@ static std::string GetRequestTypeName(int32_t type)
             return "jsstack";
         case (int32_t)FaultLoggerType::JS_HEAP_SNAPSHOT:
             return "jsheap";
+        case (int32_t)FaultLoggerType::LEAK_STACKTRACE:
+            return "leakstack";
         default:
             return "unsupported";
     }
