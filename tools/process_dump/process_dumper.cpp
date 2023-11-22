@@ -122,7 +122,7 @@ int ProcessDumper::InitPrintThread(bool fromSignalHandler, std::shared_ptr<Proce
         faultloggerdRequest.tid = request->GetTid();
         faultloggerdRequest.uid = request->GetUid();
         faultloggerdRequest.time = request->GetTimeStamp();
-		if (isCrash || faultloggerdRequest.type == FaultLoggerType::LEAK_STACKTRACE) {
+        if (isCrash || faultloggerdRequest.type == FaultLoggerType::LEAK_STACKTRACE) {
             if (DfxConfig::GetInstance().GetLogPersist()) {
                 InitDebugLog((int)faultloggerdRequest.type, targetPid_, request->GetTid(), request->GetUid());
             }
