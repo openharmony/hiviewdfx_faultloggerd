@@ -137,6 +137,8 @@ std::string FormatSignalName(const int32_t signal)
             return "SIGDUMP";
         case SIGSTKFLT:
             return "SIGSTKFLT";
+        case SIGLEAK_STACK:
+            return "SIGLEAK_STACK";
         default:
             return "Uncare Signal";
     }

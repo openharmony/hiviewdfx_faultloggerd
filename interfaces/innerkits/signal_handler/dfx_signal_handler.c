@@ -178,9 +178,14 @@ static int32_t InheritCapabilities(void)
     return 0;
 }
 
+static bool IsDumpSignal(int sig)
+{
+    return sig == SIGDUMP || sig == SIGLEAK_STACK;
+}
+
 static const int g_interestedSignalList[] = {
     SIGABRT, SIGBUS, SIGDUMP, SIGFPE, SIGILL,
-    SIGSEGV, SIGSTKFLT, SIGSYS, SIGTRAP,
+    SIGSEGV, SIGSTKFLT, SIGSYS, SIGTRAP, SIGLEAK_STACK
 };
 
 static void SetInterestedSignalMasks(int how)
@@ -298,7 +303,7 @@ static bool IsMainThread(void)
 
 static void ResetSignalHandlerIfNeed(int sig)
 {
-    if (sig == SIGDUMP) {
+    if (IsDumpSignal(sig)) {
         return;
     }
 
@@ -330,7 +335,7 @@ static void PauseMainThreadHandler(int sig)
 
 static void BlockMainThreadIfNeed(int sig)
 {
-    if (IsMainThread() || (sig == SIGDUMP)) {
+    if (IsMainThread() || IsDumpSignal(sig)) {
         return;
     }
 
@@ -421,7 +426,7 @@ static int DoProcessDump(void* arg)
         g_request.recycleTid, childPid, ret, status, isTimeout);
 out:
 #if defined(CRASH_LOCAL_HANDLER)
-    if ((g_prevHandledSignal != SIGDUMP) && ((isTimeout) || ((ret >= 0) && (status != 0)))) {
+    if ((!IsDumpSignal(g_prevHandledSignal)) && ((isTimeout) || ((ret >= 0) && (status != 0)))) {
         CrashLocalHandler(&g_request);
     }
 #endif
@@ -468,7 +473,7 @@ static void ForkAndDoProcessDump(void)
 
 static void DFX_SignalHandler(int sig, siginfo_t *si, void *context)
 {
-    if (sig == SIGDUMP && g_isDumping) {
+    if ((IsDumpSignal(sig)) && g_isDumping) {
         DfxLogInfo("Current Process is dumping stacktrace now.");
         return;
     }
@@ -478,7 +483,7 @@ static void DFX_SignalHandler(int sig, siginfo_t *si, void *context)
     memset(&g_procInfo, 0, sizeof(g_procInfo));
     GetProcStatus(&g_procInfo);
     BlockMainThreadIfNeed(sig);
-    if (g_prevHandledSignal != SIGDUMP) {
+    if (!IsDumpSignal(g_prevHandledSignal)) {
         ResetSignalHandlerIfNeed(sig);
         if (syscall(SYS_rt_tgsigqueueinfo, GetPid(), GetTid(), si->si_signo, si) != 0) {
             DfxLogError("Failed to resend signal(%d), errno(%d).", si->si_signo, errno);
@@ -509,7 +514,7 @@ static void DFX_SignalHandler(int sig, siginfo_t *si, void *context)
 
     // for protecting g_reservedChildStack
     // g_signalHandlerMutex will be unlocked in DoProcessDump function
-    if (sig != SIGDUMP) {
+    if (!IsDumpSignal(sig)) {
         ForkAndDoProcessDump();
         ResetSignalHandlerIfNeed(sig);
         if (syscall(SYS_rt_tgsigqueueinfo, syscall(SYS_getpid), syscall(SYS_gettid), si->si_signo, si) != 0) {

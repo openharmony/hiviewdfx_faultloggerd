@@ -21,6 +21,7 @@
 
 #define SIGDUMP 35
 #define SIGLOCAL_DUMP 36
+#define SIGLEAK_STACK 42
 #define PROCESSDUMP_TIMEOUT 30
 #define NAME_LEN 128
 #define PATH_LEN 1024
