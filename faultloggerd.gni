@@ -20,6 +20,7 @@ faultloggerd_test_path = "$faultloggerd_path/test"
 declare_args() {
   libunwinder_debug = false
   has_libunwind = true
+  has_libunwindstack = false
 }
 
 if (defined(ohos_lite)) {

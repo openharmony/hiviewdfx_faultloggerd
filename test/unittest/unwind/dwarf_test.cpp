@@ -280,7 +280,7 @@ bool DwarfOpTest::Test05(std::shared_ptr<DfxMemoryTest> memory)
 bool DwarfOpTest::Test06()
 {
     // OpDrop OpOver OpSwap OpRot
-    bool ret = false;
+    MAYBE_UNUSED bool ret = false;
     StackReset(0);
     ret = (StackSize() == 1);
     OpPush(1);
@@ -448,7 +448,7 @@ bool DwarfOpTest::Test10(std::shared_ptr<DfxMemoryTest> memory)
     bool ret = false;
     memory->Reset();
     std::vector<uint8_t> exprData {
-        0x01, 0x00,
+        0x1e, 0x00,
     };
     uintptr_t exprPtr = reinterpret_cast<uintptr_t>(exprData.data());
     memory->SetBuffer(exprPtr, exprData);
@@ -473,7 +473,7 @@ bool DwarfOpTest::Test10(std::shared_ptr<DfxMemoryTest> memory)
     printf("Test10-03 value:%" PRIxPTR " ret:%d\n", value, ret);
 
     StackReset(0);
-    (*reg)[0x1] = 0x14;
+    (*reg)[0x1e] = 0x14;
     OpRegx(exprPtr, *(reg.get()));
     value = StackPop();
     ret &= (value == 0x14);
@@ -482,13 +482,13 @@ bool DwarfOpTest::Test10(std::shared_ptr<DfxMemoryTest> memory)
     StackReset(0);
     OpBReg(DW_OP_breg0, exprPtr, *(reg.get()));
     value = StackPop();
-    ret &= (value == 0xb); // 0xa + 1
+    ret &= (value == 0x28); // 0xa + 0x1e
     printf("Test10-05 value:%" PRIxPTR " ret:%d\n", value, ret);
 
     StackReset(0);
     OpBRegx(exprPtr, *(reg.get()));
     value = StackPop();
-    ret &= (value == 0x15); // 0x14 + 1
+    ret &= (value == 0x32); // 0x14 + 0x1e
     printf("Test10-06 value:%" PRIxPTR " ret:%d\n", value, ret);
     return ret;
 }
@@ -569,18 +569,18 @@ HWTEST_F(DwarfTest, DwarfTest001, TestSize.Level2)
     ASSERT_EQ(fde.pcStart, reinterpret_cast<uintptr_t>(requestFdFunc));
     ASSERT_EQ(rsState.cfaReg, REG_AARCH64_X29);
     ASSERT_EQ(rsState.cfaRegOffset, 32); // 32 : DW_CFA_def_cfa: r29 (x29) ofs 32
-    ASSERT_EQ(static_cast<uint8_t>(rsState.locs[REG_AARCH64_X15].type),
-        static_cast<uint8_t>(REG_LOC_MEM_OFFSET));
-    ASSERT_EQ(rsState.locs[REG_AARCH64_X15].val, -8); // -8: r15 (x15) at cfa-8
-    ASSERT_EQ(static_cast<uint8_t>(rsState.locs[REG_AARCH64_X19].type),
-        static_cast<uint8_t>(REG_LOC_MEM_OFFSET));
-    ASSERT_EQ(rsState.locs[REG_AARCH64_X19].val, -16); // -16: r19 (x19) at cfa-16
-    ASSERT_EQ(static_cast<uint8_t>(rsState.locs[REG_AARCH64_X30].type),
-        static_cast<uint8_t>(REG_LOC_MEM_OFFSET));
-    ASSERT_EQ(rsState.locs[REG_AARCH64_X30].val, -24); // -24: r30 (x30) at cfa-24
-    ASSERT_EQ(static_cast<uint8_t>(rsState.locs[REG_AARCH64_X29].type),
-        static_cast<uint8_t>(REG_LOC_MEM_OFFSET));
-    ASSERT_EQ(rsState.locs[REG_AARCH64_X29].val, -32); // -32: r29 (x29) at cfa-32
+
+    size_t qutIdx = 0;
+    if (DfxRegsQut::IsQutReg(static_cast<uint16_t>(REG_AARCH64_X30), qutIdx)) {
+        ASSERT_EQ(static_cast<uint8_t>(rsState.locs[qutIdx].type),
+            static_cast<uint8_t>(REG_LOC_MEM_OFFSET));
+        ASSERT_EQ(rsState.locs[qutIdx].val, -24); // -24: r30 (x30) at cfa-24
+    }
+    if (DfxRegsQut::IsQutReg(static_cast<uint16_t>(REG_AARCH64_X29), qutIdx)) {
+        ASSERT_EQ(static_cast<uint8_t>(rsState.locs[qutIdx].type),
+            static_cast<uint8_t>(REG_LOC_MEM_OFFSET));
+        ASSERT_EQ(rsState.locs[qutIdx].val, -32); // -32: r29 (x29) at cfa-32
+    }
 
     RegLocState rsState2;
     ASSERT_EQ(true, instructions.Parse(reinterpret_cast<uintptr_t>(requestFdFunc), fde, rsState2));

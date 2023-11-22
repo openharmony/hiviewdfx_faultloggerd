@@ -28,7 +28,7 @@
 using namespace OHOS::HiviewDFX;
 using namespace std;
 
-#define TEST_MIN_UNWIND_FRAMES 5
+static constexpr size_t TEST_MIN_UNWIND_FRAMES = 5;
 
 struct UnwindData {
     bool isFillFrames = false;
@@ -37,6 +37,7 @@ struct UnwindData {
 static void TestFunc6(MAYBE_UNUSED void (*func)(void*), MAYBE_UNUSED void* data)
 {
     while (true);
+    LOGE("Not be run here!!!");
 }
 
 static void TestFunc5(void (*func)(void*), void* data)
@@ -77,6 +78,7 @@ static pid_t RemoteFork()
     if (!DfxPtrace::Attach(pid)) {
         LOGE("Failed to attach pid: %d", pid);
         TestScopedPidReaper::Kill(pid);
+        return -1;
     }
     return pid;
 }
@@ -204,23 +206,23 @@ static void RunCache(benchmark::State& state, void* data)
 }
 
 /**
-* @tc.name: BenchmarkUnwinderRemote
+* @tc.name: BenchmarkUnwindRemote
 * @tc.desc: Unwind remote
 * @tc.type: FUNC
 */
-static void BenchmarkUnwinderRemote(benchmark::State& state)
+static void BenchmarkUnwindRemote(benchmark::State& state)
 {
     Run(state, nullptr);
 }
-BENCHMARK(BenchmarkUnwinderRemote);
+BENCHMARK(BenchmarkUnwindRemote);
 
 /**
-* @tc.name: BenchmarkUnwinderRemoteCache
+* @tc.name: BenchmarkUnwindRemoteCache
 * @tc.desc: Unwind remote cache
 * @tc.type: FUNC
 */
-static void BenchmarkUnwinderRemoteCache(benchmark::State& state)
+static void BenchmarkUnwindRemoteCache(benchmark::State& state)
 {
     RunCache(state, nullptr);
 }
-BENCHMARK(BenchmarkUnwinderRemoteCache);
+BENCHMARK(BenchmarkUnwindRemoteCache);

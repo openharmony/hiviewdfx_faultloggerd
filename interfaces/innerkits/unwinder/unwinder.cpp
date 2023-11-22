@@ -262,16 +262,17 @@ bool Unwinder::Step(uintptr_t& pc, uintptr_t& sp, void *ctx)
     std::shared_ptr<RegLocState> rs = nullptr;
     bool ret = false;
     do {
-#ifdef LOC_REGS_CACHE
-        // 1. find cache rs
-        auto iter = rsCache_.find(pc);
-        if (iter != rsCache_.end()) {
-            LOGU("Find rs cache, pc: %p", (void*)pc);
-            rs = iter->second;
-            ret = true;
-            break;
+        if (enableCache_) {
+            // 1. find cache rs
+            auto iter = rsCache_.find(pc);
+            if (iter != rsCache_.end()) {
+                LOGU("Find rs cache, pc: %p", (void*)pc);
+                rs = iter->second;
+                ret = true;
+                break;
+            }
         }
-#endif
+
         // Check if this is a signal frame.
         if (regs_->StepIfSignalFrame(pc, memory_)) {
             isSignalFrame = true;
@@ -321,13 +322,11 @@ bool Unwinder::Step(uintptr_t& pc, uintptr_t& sp, void *ctx)
             }
         }
 
-#ifdef LOC_REGS_CACHE
-        if (ret) {
+        if (ret && enableCache_) {
             // 4. update rs cache
             rsCache_.emplace(pc, rs);
             break;
         }
-#endif
     } while (false);
 
     if (!isSignalFrame) {
@@ -337,7 +336,7 @@ bool Unwinder::Step(uintptr_t& pc, uintptr_t& sp, void *ctx)
             ret = Apply(regs_, rs);
         }
 #if defined(__aarch64__)
-        if (!ret) {
+        if (!ret && enableFpFallback_) {
             uintptr_t fp = regs_->GetFp();
             ret = FpStep(fp, pc, ctx);
         }
@@ -439,15 +438,16 @@ void Unwinder::DoPcAdjust(uintptr_t& pc)
 
 const std::vector<DfxFrame>& Unwinder::GetFrames()
 {
-    FillFrames(frames_);
+    if (enableFillFrames_) {
+        FillFrames(frames_);
+    }
     return frames_;
 }
 
 void Unwinder::FillFrames(std::vector<DfxFrame>& frames)
 {
     for (size_t i = 0; i < frames.size(); ++i) {
-        DfxFrame& frame = frames[i];
-        FillFrame(frame);
+        FillFrame(frames[i]);
     }
 }
 

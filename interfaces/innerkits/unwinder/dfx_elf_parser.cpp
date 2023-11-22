@@ -422,6 +422,7 @@ bool ElfParser::GetSectionInfo(ShdrInfo& shdr, const std::string& secName)
     }
     return false;
 }
+
 bool ElfParser::GetSectionData(unsigned char *buf, uint64_t size, std::string secName)
 {
     ShdrInfo shdr;
@@ -430,10 +431,11 @@ bool ElfParser::GetSectionData(unsigned char *buf, uint64_t size, std::string se
             return true;
         }
     } else {
-        LOGE("string not found secName %u ", secName.c_str());
+        LOGE("Failed to get data from secName %s", secName.c_str());
     }
     return false;
 }
+
 bool ElfParser32::InitHeaders()
 {
     return ParseAllHeaders<Elf32_Ehdr, Elf32_Phdr, Elf32_Shdr>();
