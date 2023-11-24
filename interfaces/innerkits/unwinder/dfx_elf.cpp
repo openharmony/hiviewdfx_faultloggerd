@@ -101,6 +101,7 @@ std::shared_ptr<DfxElf> DfxElf::CreateFromHap(const std::string& file, std::shar
         auto elf = std::make_shared<DfxElf>(fd, elfSize, prevMap->offset);
         if (elf->IsValid()) {
             close(fd);
+            elf->SetBaseOffset(prevMap->offset);
             return elf;
         }
     }
@@ -335,6 +336,16 @@ uint64_t DfxElf::GetStartPc()
         }
     }
     return startPc_;
+}
+
+void DfxElf::SetBaseOffset(uint64_t offset)
+{
+    baseOffset_ = offset;
+}
+
+uint64_t DfxElf::GetBaseOffset()
+{
+    return baseOffset_;
 }
 
 uint64_t DfxElf::GetStartVaddr()

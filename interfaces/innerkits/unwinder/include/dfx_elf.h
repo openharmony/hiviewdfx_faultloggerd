@@ -60,6 +60,8 @@ public:
     uint64_t GetEndPc();
     uint64_t GetStartVaddr();
     uint64_t GetEndVaddr();
+    void SetBaseOffset(uint64_t offset);
+    uint64_t GetBaseOffset();
     uint64_t GetStartOffset();
     uint64_t GetRelPc(uint64_t pc, uint64_t mapStart, uint64_t mapOffset);
     const uint8_t* GetMmapPtr();
@@ -99,6 +101,7 @@ private:
     uint64_t loadBase_ = static_cast<uint64_t>(-1);
     uint64_t startPc_ = static_cast<uint64_t>(-1);
     uint64_t endPc_ = 0;
+    uint64_t baseOffset_ = 0; // use for so in hap
     std::string buildId_ = "";
     struct UnwindTableInfo uti_;
     bool hasTableInfo_ = false;
