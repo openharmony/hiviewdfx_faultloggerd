@@ -43,13 +43,17 @@ bool DfxSymbols::ParseSymbols(std::vector<DfxSymbol>& symbols, std::shared_ptr<D
         return false;
     }
     auto elfSymbols = elf->GetFuncSymbols(true);
+    std::string symbolsPath = filePath;
+    if (elf->GetBaseOffset() != 0) {
+        symbolsPath += ("!" + elf->GetElfName());
+    }
     for (auto elfSymbol : elfSymbols) {
         if (static_cast<uint64_t>(elfSymbol.name) >= elfSymbol.strSize) {
             return false;
         }
         std::string nameStr = std::string((char *)elf->GetMmapPtr() + elfSymbol.strOffset + elfSymbol.name);
         symbols.emplace_back(elfSymbol.value, elfSymbol.size,
-            nameStr, Demangle(nameStr), filePath);
+            nameStr, Demangle(nameStr), symbolsPath);
     }
     return true;
 }
