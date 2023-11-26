@@ -65,16 +65,20 @@ size_t DfxMemory::Read(uintptr_t& addr, void* val, size_t size, bool incre)
     size_t bytesRead = 0;
     uintptr_t tmpVal;
     if (alignAddr_ && (alignBytes_ != 0)) {
-        size_t alignBytes = tmpAddr & (alignBytes_ - 1);
+        size_t alignBytes = (uint64_t)tmpAddr & (uint64_t)(alignBytes_ - 1);
         if (alignBytes != 0) {
-            uintptr_t alignedAddr = tmpAddr & (~alignBytes_ - 1);
-            LOGU("alignBytes: %d, alignedAddr: %llx", alignBytes, static_cast<uint64_t>(alignedAddr));
+            uintptr_t alignedAddr = (uint64_t)tmpAddr & (uint64_t)(~alignBytes_ - 1);
+            LOGU("alignBytes: %d, alignedAddr", alignBytes);
             if (!ReadMem(alignedAddr, &tmpVal)) {
                 return bytesRead;
             }
             uintptr_t valp = static_cast<uintptr_t>(tmpVal);
             size_t copyBytes = std::min(alignBytes_ - alignBytes, size);
-            (void)memcpy_s(val, copyBytes, reinterpret_cast<uint8_t*>(&valp) + alignBytes, copyBytes);
+            errno_t err = memcpy_s(val, copyBytes, reinterpret_cast<uint8_t*>(&valp) + alignBytes, copyBytes);
+            if (err != 0) {
+                DFXLOG_ERROR("memcpy_s return value is abnormal");
+                return 0;
+            }
             tmpAddr += copyBytes;
             val = reinterpret_cast<void*>(reinterpret_cast<uintptr_t>(val) + copyBytes);
             size -= copyBytes;
@@ -86,7 +90,11 @@ size_t DfxMemory::Read(uintptr_t& addr, void* val, size_t size, bool incre)
         if (!ReadMem(tmpAddr, &tmpVal)) {
             return bytesRead;
         }
-        (void)memcpy_s(val, sizeof(uintptr_t), &tmpVal, sizeof(uintptr_t));
+        errno_t err = memcpy_s(val, sizeof(uintptr_t), &tmpVal, sizeof(uintptr_t));
+        if (err != 0) {
+            DFXLOG_ERROR("memcpy_s return value is abnormal");
+            return 0;
+        }
         val = reinterpret_cast<void*>(reinterpret_cast<uintptr_t>(val) + sizeof(uintptr_t));
         tmpAddr += sizeof(uintptr_t);
         bytesRead += sizeof(uintptr_t);
@@ -97,7 +105,11 @@ size_t DfxMemory::Read(uintptr_t& addr, void* val, size_t size, bool incre)
         if (!ReadMem(tmpAddr, &tmpVal)) {
             return bytesRead;
         }
-        (void)memcpy_s(val, leftOver, &tmpVal, leftOver);
+        errno_t err = memcpy_s(val, leftOver, &tmpVal, leftOver);
+        if (err != 0) {
+            DFXLOG_ERROR("memcpy_s return value is abnormal");
+            return 0;
+        }
         tmpAddr += leftOver;
         bytesRead += leftOver;
     }
@@ -184,7 +196,7 @@ bool DfxMemory::ReadPrel31(uintptr_t& addr, uintptr_t *val)
     if (!ReadUptr(addr, &offset, false)) {
         return false;
     }
-    offset = static_cast<uintptr_t>(static_cast<int32_t>(offset << 1) >> 1);
+    offset = static_cast<uintptr_t>(static_cast<uint32_t>(offset << 1) >> 1);
     *val = addr + offset;
     return true;
 }

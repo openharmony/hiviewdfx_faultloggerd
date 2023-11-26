@@ -60,8 +60,8 @@ public:
     ino_t inode = 0;
     std::string perms = ""; // 5:rwxp
     std::string name = "";
-    std::shared_ptr<DfxElf> elf;
-    std::shared_ptr<DfxMap> prevMap;
+    std::shared_ptr<DfxElf> elf = nullptr;
+    std::shared_ptr<DfxMap> prevMap = nullptr;
     uint64_t elfOffset = 0;
     uint64_t elfStartOffset = 0;
 

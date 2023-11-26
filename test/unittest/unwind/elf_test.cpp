@@ -198,6 +198,19 @@ HWTEST_F(DfxElfTest, DfxElfTest006, TestSize.Level2)
     ASSERT_NE(elfFile, nullptr);
     EXPECT_STREQ(elfFile->GetBuildId().c_str(), "");
 }
+
+/**
+ * @tc.name: DfxElfTest007
+ * @tc.desc: test SetBaseOffset function and GetBaseOffset function
+ * @tc.type: FUNC
+ */
+HWTEST_F(DfxElfTest, DfxElfTest007, TestSize.Level2)
+{
+    auto elf = std::make_shared<DfxElf>("");
+    ASSERT_EQ(elf->GetBaseOffset(), 0);
+    elf->SetBaseOffset(1);
+    ASSERT_EQ(elf->GetBaseOffset(), 1);
+}
 } // namespace HiviewDFX
 } // namespace OHOS
 
