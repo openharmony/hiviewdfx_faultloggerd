@@ -120,15 +120,17 @@ bool ElfParser::ParseProgramHeaders(const EhdrType& ehdr)
 
         switch (phdr.p_type) {
             case PT_LOAD: {
-                if ((phdr.p_flags & PF_X) == 0) {
-                    continue;
-                }
                 ElfLoadInfo loadInfo;
                 loadInfo.offset = phdr.p_offset;
                 loadInfo.tableVaddr = phdr.p_vaddr;
                 loadInfo.tableSize = static_cast<size_t>(phdr.p_memsz);
+                loadInfo.align = phdr.p_align;
+                uint64_t len = loadInfo.tableSize + (loadInfo.tableVaddr & (loadInfo.align - 1));
+                loadInfo.mmapLen = len - (len & (loadInfo.align - 1)) + loadInfo.align;
                 ptLoads_[phdr.p_offset] = loadInfo;
-
+                if ((phdr.p_flags & PF_X) == 0) {
+                    continue;
+                }
                 // Only set the load bias from the first executable load header.
                 if (firstLoadHeader) {
                     loadBias_ = static_cast<int64_t>(static_cast<uint64_t>(phdr.p_vaddr) - phdr.p_offset);
