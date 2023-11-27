@@ -20,5 +20,8 @@ group("benchmarktest") {
     if (has_libunwind) {
       deps += [ "unwind:benchmarktest" ]
     }
+    if (has_libunwindstack) {
+      deps += [ "unwindstack:benchmarktest" ]
+    }
   }
 }

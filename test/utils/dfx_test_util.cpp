@@ -292,8 +292,8 @@ void CheckResourceUsage(uint32_t fdCount, uint32_t mapsCount, uint64_t memCount)
     printf("Maps Old: %u\n", mapsCount);
 
     auto curMemSize = GetSelfMemoryCount();
-    printf("AfterTest Memory New: %llu\n", curMemSize);
-    printf("Memory Old: %llu\n", memCount);
+    printf("AfterTest Memory New: %lu\n", static_cast<unsigned long>(curMemSize));
+    printf("Memory Old: %lu\n", static_cast<unsigned long>(memCount));
 }
 } // namespace HiviewDFX
 } // namespace OHOS

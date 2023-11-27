@@ -14,6 +14,7 @@
  */
 
 #include <benchmark/benchmark.h>
+
 #include <string>
 #include <vector>
 #include "dfx_log.h"
@@ -25,15 +26,18 @@
 using namespace OHOS::HiviewDFX;
 using namespace std;
 
-#define TEST_MIN_UNWIND_FRAMES 5
+static constexpr size_t TEST_MIN_UNWIND_FRAMES = 5;
 
 struct UnwindData {
+    bool isCache = false;
     bool isFillFrames = false;
+    bool isFp = false;
 };
 
 static void TestFunc6(MAYBE_UNUSED void (*func)(void*), MAYBE_UNUSED void* data)
 {
     while (true);
+    LOGE("Not be run here!!!");
 }
 
 static void TestFunc5(void (*func)(void*), void* data)
@@ -74,54 +78,39 @@ static pid_t RemoteFork()
     if (!DfxPtrace::Attach(pid)) {
         LOGE("Failed to attach pid: %d", pid);
         TestScopedPidReaper::Kill(pid);
+        return -1;
     }
     return pid;
 }
 
-static size_t UnwinderRemote(std::shared_ptr<Unwinder> unwinder, UnwindData* dataPtr)
+static size_t UnwinderRemote(std::shared_ptr<Unwinder> unwinder)
 {
-    UnwindData data;
-    if (dataPtr != nullptr) {
-        data.isFillFrames = dataPtr->isFillFrames;
-    }
     if (unwinder == nullptr) {
         return 0;
     }
     MAYBE_UNUSED bool unwRet = unwinder->UnwindRemote();
-    if (data.isFillFrames) {
-        auto frames = unwinder->GetFrames();
-        return frames.size();
-    } else {
-        auto pcs = unwinder->GetPcs();
-        LOGU("%s pcs.size: %zu", __func__, pcs.size());
-        return pcs.size();
-    }
+    auto frames = unwinder->GetFrames();
+    LOGU("%s frames.size: %zu", __func__, frames.size());
+    return frames.size();
 }
 
-static void Run(benchmark::State& state, void* data)
+static size_t UnwinderRemoteFp(std::shared_ptr<Unwinder> unwinder)
 {
-    UnwindData* dataPtr = reinterpret_cast<UnwindData*>(data);
-
-    pid_t pid = RemoteFork();
-    if (pid == -1) {
-        state.SkipWithError("Failed to fork remote process.");
-        return;
+    if (unwinder == nullptr) {
+        return 0;
     }
-    LOGU("pid: %d", pid);
-    TestScopedPidReaper reap(pid);
-
-    for (const auto& _ : state) {
-        auto unwinder = std::make_shared<Unwinder>(pid);
-        auto unwSize = UnwinderRemote(unwinder, dataPtr);
-        if (unwSize < TEST_MIN_UNWIND_FRAMES) {
-            state.SkipWithError("Failed to unwind.");
-        }
-    }
-    LOGU("Detach pid: %d", pid);
-    DfxPtrace::Detach(pid);
+    auto pid = unwinder->GetTargetPid();
+    auto regs = DfxRegs::CreateRemoteRegs(pid);
+    unwinder->SetRegs(regs);
+    UnwindContext context;
+    context.pid = pid;
+    unwinder->UnwindByFp(&context);
+    auto frames = unwinder->GetPcs();
+    LOGU("%s frames.size: %zu", __func__, frames.size());
+    return frames.size();
 }
 
-static void GetCacheUnwinder(pid_t pid, std::shared_ptr<Unwinder>& unwinder)
+static bool GetUnwinder(pid_t pid, void* data, std::shared_ptr<Unwinder>& unwinder, bool& isFp)
 {
     static std::unordered_map<pid_t, std::shared_ptr<Unwinder>> unwinders_;
     auto iter = unwinders_.find(pid);
@@ -131,12 +120,28 @@ static void GetCacheUnwinder(pid_t pid, std::shared_ptr<Unwinder>& unwinder)
         unwinder = std::make_shared<Unwinder>(pid);
         unwinders_[pid] = unwinder;
     }
+
+    UnwindData* dataPtr = reinterpret_cast<UnwindData*>(data);
+    if ((dataPtr != nullptr) && (unwinder != nullptr)) {
+        if (dataPtr->isFillFrames) {
+            unwinder->EnableFillFrames(true);
+        } else {
+            unwinder->EnableFillFrames(false);
+        }
+
+        if (dataPtr->isCache) {
+            unwinder->EnableUnwindCache(true);
+        } else {
+            unwinder->EnableUnwindCache(false);
+        }
+
+        isFp = dataPtr->isFp;
+    }
+    return true;
 }
 
-static void RunCache(benchmark::State& state, void* data)
+static void Run(benchmark::State& state, void* data)
 {
-    UnwindData* dataPtr = reinterpret_cast<UnwindData*>(data);
-
     pid_t pid = RemoteFork();
     if (pid == -1) {
         state.SkipWithError("Failed to fork remote process.");
@@ -146,10 +151,17 @@ static void RunCache(benchmark::State& state, void* data)
     TestScopedPidReaper reap(pid);
 
     std::shared_ptr<Unwinder> unwinder;
-    GetCacheUnwinder(pid, unwinder);
+    bool isFp = false;
+    GetUnwinder(pid, data, unwinder, isFp);
 
     for (const auto& _ : state) {
-        auto unwSize = UnwinderRemote(unwinder, dataPtr);
+        size_t unwSize = 0;
+        if (isFp) {
+            unwSize = UnwinderRemoteFp(unwinder);
+        } else {
+            unwSize = UnwinderRemote(unwinder);
+        }
+
         if (unwSize < TEST_MIN_UNWIND_FRAMES) {
             state.SkipWithError("Failed to unwind.");
         }
@@ -170,7 +182,10 @@ static void BenchmarkUnwinderRemoteFull(benchmark::State& state)
         qutRegs.push_back(i);
     }
     DfxRegsQut::SetQutRegs(qutRegs);
-    Run(state, nullptr);
+    UnwindData data;
+    data.isCache = false;
+    data.isFillFrames = false;
+    Run(state, &data);
 }
 BENCHMARK(BenchmarkUnwinderRemoteFull);
 
@@ -182,7 +197,10 @@ BENCHMARK(BenchmarkUnwinderRemoteFull);
 static void BenchmarkUnwinderRemoteQut(benchmark::State& state)
 {
     DfxRegsQut::SetQutRegs(QUT_REGS);
-    Run(state, nullptr);
+    UnwindData data;
+    data.isCache = false;
+    data.isFillFrames = false;
+    Run(state, &data);
 }
 BENCHMARK(BenchmarkUnwinderRemoteQut);
 
@@ -194,7 +212,10 @@ BENCHMARK(BenchmarkUnwinderRemoteQut);
 static void BenchmarkUnwinderRemoteQutCache(benchmark::State& state)
 {
     DfxRegsQut::SetQutRegs(QUT_REGS);
-    RunCache(state, nullptr);
+    UnwindData data;
+    data.isCache = true;
+    data.isFillFrames = false;
+    Run(state, &data);
 }
 BENCHMARK(BenchmarkUnwinderRemoteQutCache);
 
@@ -207,6 +228,7 @@ static void BenchmarkUnwinderRemoteQutFrames(benchmark::State& state)
 {
     DfxRegsQut::SetQutRegs(QUT_REGS);
     UnwindData data;
+    data.isCache = false;
     data.isFillFrames = true;
     Run(state, &data);
 }
@@ -221,8 +243,9 @@ static void BenchmarkUnwinderRemoteQutFramesCache(benchmark::State& state)
 {
     DfxRegsQut::SetQutRegs(QUT_REGS);
     UnwindData data;
+    data.isCache = true;
     data.isFillFrames = true;
-    RunCache(state, &data);
+    Run(state, &data);
 }
 BENCHMARK(BenchmarkUnwinderRemoteQutFramesCache);
 
@@ -234,30 +257,9 @@ BENCHMARK(BenchmarkUnwinderRemoteQutFramesCache);
 */
 static void BenchmarkUnwinderRemoteFp(benchmark::State& state)
 {
-    pid_t pid = RemoteFork();
-    if (pid == -1) {
-        state.SkipWithError("Failed to fork remote process.");
-        return;
-    }
-    LOGU("pid: %d", pid);
-    TestScopedPidReaper reap(pid);
-
-    std::shared_ptr<Unwinder> unwinder;
-    GetCacheUnwinder(pid, unwinder);
-
-    for (const auto& _ : state) {
-        auto regs = DfxRegs::CreateRemoteRegs(pid);
-        unwinder->SetRegs(regs);
-        UnwindContext context;
-        context.pid = pid;
-        unwinder->UnwindByFp(&context);
-        size_t unwSz = unwinder->GetPcs().size();
-        if (unwSz < TEST_MIN_UNWIND_FRAMES) {
-            state.SkipWithError("Failed to unwind.");
-        }
-    }
-    LOGU("Detach pid: %d", pid);
-    DfxPtrace::Detach(pid);
+    UnwindData data;
+    data.isFp = true;
+    Run(state, &data);
 }
 BENCHMARK(BenchmarkUnwinderRemoteFp);
 #endif

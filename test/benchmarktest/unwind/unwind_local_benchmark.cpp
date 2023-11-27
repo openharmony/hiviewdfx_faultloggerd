@@ -28,7 +28,7 @@
 using namespace OHOS::HiviewDFX;
 using namespace std;
 
-#define TEST_MIN_UNWIND_FRAMES 5
+static constexpr size_t TEST_MIN_UNWIND_FRAMES = 5;
 
 struct UnwindData {
     UnwindData() = default;

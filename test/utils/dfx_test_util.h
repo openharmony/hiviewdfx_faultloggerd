@@ -50,6 +50,9 @@ public:
 
     static void Kill(pid_t pid)
     {
+        if (pid <= 0) {
+            return;
+        }
         kill(pid, SIGKILL);
         waitpid(pid, nullptr, 0);
     }
