@@ -35,7 +35,7 @@
 #include "dfx_instr_statistic.h"
 #include "dfx_util.h"
 #include "dwarf_define.h"
-#ifndef is_ohos_lite
+#if is_ohos && !is_mingw && !is_emulator
 #include "dfx_xz_utils.h"
 #endif
 
@@ -158,11 +158,6 @@ void DfxElf::Init()
     hasTableInfo_ = false;
 }
 
-void DfxElf::EnableMiniDebugInfo()
-{
-    enableMiniDebugInfo_ = true;
-}
-
 void DfxElf::Clear()
 {
     if (elfParse_ == nullptr) {
@@ -175,6 +170,12 @@ void DfxElf::Clear()
         mmap_.reset();
         mmap_ = nullptr;
     }
+}
+
+#if is_ohos && !is_mingw && !is_emulator
+void DfxElf::EnableMiniDebugInfo()
+{
+    enableMiniDebugInfo_ = true;
 }
 
 bool DfxElf::IsEmbeddedElf()
@@ -191,6 +192,33 @@ std::shared_ptr<MiniDebugInfo> DfxElf::GetMiniDebugInfo()
 {
     return miniDebugInfo_;
 }
+
+void DfxElf::InitEmbeddedElf()
+{
+
+    if (miniDebugInfo_ != nullptr) {
+        return;
+    }
+
+    uint8_t *addr = miniDebugInfo_->offset + const_cast<uint8_t*>(GetMmapPtr());
+
+    embeddedElfData_ = std::make_shared<std::vector<uint8_t>>();
+    if (!embeddedElfData_) {
+        LOGE("Create embeddedElfData failed.");
+        return;
+    }
+    if (XzDecompress(addr, miniDebugInfo_->size, embeddedElfData_)) {
+        // embeddedElfData_ store the decompressed bytes.
+        // use these bytes to construct an elf.
+        embeddedElf_= std::make_shared<DfxElf>(embeddedElfData_->data(), embeddedElfData_->size());
+        if (!embeddedElf_->IsValid()) {
+            LOGE("Failed to parse Embedded Elf.");
+        }
+    } else {
+        LOGE("Failed to decompressed .gnu_debugdata seciton.");
+    }
+}
+#endif
 
 bool DfxElf::InitHeaders()
 {
@@ -222,7 +250,7 @@ bool DfxElf::InitHeaders()
     if (elfParse_ != nullptr) {
         valid_ = true;
 
-#ifndef is_ohos_lite
+#if is_ohos && !is_mingw && !is_emulator
         if (enableMiniDebugInfo_) {
             elfParse_->EnableMiniDebugInfo();
         }
@@ -230,40 +258,14 @@ bool DfxElf::InitHeaders()
 
         elfParse_->InitHeaders();
 
-#ifndef is_ohos_lite
+#if is_ohos && !is_mingw && !is_emulator
         miniDebugInfo_ = elfParse_->GetMiniDebugInfo();
+        if (miniDebugInfo_ != nullptr) {
+            InitEmbeddedElf();
+        }
 #endif
     }
     return valid_;
-}
-
-void DfxElf::InitEmbeddedElf()
-{
-#ifndef is_ohos_lite
-
-    if (!miniDebugInfo_) {
-        return;
-    }
-
-    uint8_t *addr = miniDebugInfo_->offset + const_cast<uint8_t*>(GetMmapPtr());
-
-    embeddedElfData_ = std::make_shared<std::vector<uint8_t>>();
-
-    if (!embeddedElfData_) {
-        LOGE("Create embeddedElfData failed.");
-        return;
-    }
-    if (XzDecompress(addr, miniDebugInfo_->size, embeddedElfData_)) {
-        // embeddedElfData_ store the decompressed bytes.
-        // use these bytes to construct an elf.
-        embeddedElf_= std::make_shared<DfxElf>(embeddedElfData_->data(), embeddedElfData_->size());
-        if (!embeddedElf_->IsValid()) {
-            LOGE("Failed to parse Embedded Elf.");
-        }
-    } else {
-        LOGE("Failed to decompressed .gnu_debugdata seciton.");
-    }
-#endif
 }
 
 bool DfxElf::IsValid()
@@ -271,12 +273,6 @@ bool DfxElf::IsValid()
     if (valid_ == false) {
         InitHeaders();
     }
-
-#ifndef is_ohos_lite
-    if (miniDebugInfo_) {
-        InitEmbeddedElf();
-    }
-#endif
     return valid_;
 }
 

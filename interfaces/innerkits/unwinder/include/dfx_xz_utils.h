@@ -12,6 +12,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+#ifndef DFX_XZ_UTILS_H
+#define DFX_XZ_UTILS_H
+#include <malloc.h>
 #include <memory>
 #include <vector>
 #include "dfx_define.h"
@@ -21,3 +25,4 @@ namespace HiviewDFX {
 AT_SYMBOL_HIDDEN bool XzDecompress(const uint8_t *src, size_t srcLen, std::shared_ptr<std::vector<uint8_t>> out);
 }   // namespace HiviewDFX
 }   // namespace OHOS
+#endif

@@ -36,7 +36,6 @@ dfx_unwind_sources = [
   "dfx_regs_x86_64.cpp",
   "dfx_signal.cpp",
   "dfx_symbols.cpp",
-  "dfx_xz_utils.cpp",
   "unwinder_config.cpp",
 ]
 
@@ -75,7 +74,6 @@ if (defined(ohos_lite)) {
     sources += dfx_exidx_sources
     sources += dfx_dwarf_sources
     sources += [ "$c_utils_src_path/directory_ex.cpp" ]
-    sources -= [ "dfx_xz_utils.cpp" ]
 
     deps = [
       "$faultloggerd_common_path/dfxlog:dfx_hilog",
@@ -104,7 +102,6 @@ if (defined(ohos_lite)) {
     sources += dfx_exidx_sources
     sources += dfx_dwarf_sources
     sources += [ "$c_utils_src_path/directory_ex.cpp" ]
-    sources -= [ "dfx_xz_utils.cpp" ]
 
     deps = [
       "$faultloggerd_common_path/dfxlog:dfx_hilog",
@@ -174,7 +171,11 @@ if (defined(ohos_lite)) {
       "//third_party/bounds_checking_function:libsec_shared",
     ]
 
-    public_deps = [ "//third_party/lzma:lzma_shared" ]
+    if (is_ohos && !is_mingw && !is_emulator) {
+      sources += [ "dfx_xz_utils.cpp" ]
+      public_deps = [ "//third_party/lzma:lzma_shared" ]
+    }
+
     external_deps = [
       "c_utils:utils",
       "hilog:libhilog",
@@ -205,8 +206,10 @@ if (defined(ohos_lite)) {
       "$faultloggerd_path/interfaces/rust/rustc_demangle:rustc_demangle",
       "//third_party/bounds_checking_function:libsec_shared",
     ]
-
-    public_deps = [ "//third_party/lzma:lzma_shared" ]
+    if (is_ohos && !is_mingw && !is_emulator) {
+      sources += [ "dfx_xz_utils.cpp" ]
+      public_deps = [ "//third_party/lzma:lzma_shared" ]
+    }
     external_deps = [
       "c_utils:utils",
       "hilog:libhilog",
@@ -233,8 +236,10 @@ if (defined(ohos_lite)) {
       "$faultloggerd_path/interfaces/rust/rustc_demangle:rustc_demangle",
       "//third_party/bounds_checking_function:libsec_shared",
     ]
-
-    public_deps = [ "//third_party/lzma:lzma_shared" ]
+    if (is_ohos && !is_mingw && !is_emulator) {
+      sources += [ "dfx_xz_utils.cpp" ]
+      public_deps = [ "//third_party/lzma:lzma_shared" ]
+    }
     external_deps = [
       "c_utils:utils",
       "hilog:libhilog",
@@ -258,15 +263,13 @@ if (defined(ohos_lite)) {
       "is_ohos=${is_ohos}",
       "is_linux=${is_linux}",
       "is_mingw=${is_mingw}",
+      "is_emulator=${is_emulator}",
       "DFX_NO_PRINT_LOG",
     ]
   }
 
   ohos_static_library("unwinder_host") {
-    public_configs = [
-      ":unwinder_host_config",
-      ":lzma_config",
-    ]
+    public_configs = [ ":unwinder_host_config" ]
     sources = [
       "dfx_elf.cpp",
       "dfx_elf_parser.cpp",
@@ -275,11 +278,9 @@ if (defined(ohos_lite)) {
       "dfx_memory.cpp",
       "dfx_mmap.cpp",
       "dfx_symbols.cpp",
-      "dfx_xz_utils.cpp",
     ]
 
     deps = [ "//third_party/bounds_checking_function:libsec_static" ]
-    public_deps = [ "//third_party/lzma:lzma_static" ]
     if (is_ohos) {
       external_deps = [ "c_utils:utils" ]
     }
