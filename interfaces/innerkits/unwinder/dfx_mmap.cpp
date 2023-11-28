@@ -89,7 +89,11 @@ size_t DfxMmap::Read(uintptr_t& addr, void* val, size_t size, bool incre)
     size_t left = size_ - ptr;
     const uint8_t* actualBase = static_cast<const uint8_t*>(mmap_) + ptr;
     size_t actualLen = std::min(left, size);
-    (void)memcpy_s(val, actualLen, actualBase, actualLen);
+    errno_t err = memcpy_s(val, actualLen, actualBase, actualLen);
+    if (err != 0) {
+        DFXLOG_ERROR("memcpy_s return value is abnormal");
+        return 0;
+    }
     if (incre) {
         addr += actualLen;
     }

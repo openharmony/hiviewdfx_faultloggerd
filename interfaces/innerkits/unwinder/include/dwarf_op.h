@@ -267,7 +267,7 @@ protected:
     inline void OpShra()
     {
         AddressType top = StackPop();
-        SignedType signedValue = static_cast<SignedType>(stack_[0]) >> top;
+        SignedType signedValue = static_cast<SignedType>((stack_[0]) >> top);
         stack_[0] = static_cast<AddressType>(signedValue);
     };
 

@@ -117,18 +117,18 @@ private:
     int32_t pid_ = 0;
     uintptr_t pacMask_ = 0;
     UnwindMode mode_ = DWARF_UNWIND;
-    std::shared_ptr<DfxAccessors> acc_;
-    std::shared_ptr<DfxMemory> memory_;
-    std::unordered_map<uintptr_t, std::shared_ptr<RegLocState>> rsCache_;
+    std::shared_ptr<DfxAccessors> acc_ = nullptr;
+    std::shared_ptr<DfxMemory> memory_ = nullptr;
+    std::unordered_map<uintptr_t, std::shared_ptr<RegLocState>> rsCache_ {};
     std::shared_ptr<DfxRegs> regs_ = nullptr;
     std::shared_ptr<DfxMaps> maps_ = nullptr;
-    std::vector<uintptr_t> pcs_;
-    std::vector<DfxFrame> frames_;
-    UnwindErrorData lastErrorData_;
+    std::vector<uintptr_t> pcs_ {};
+    std::vector<DfxFrame> frames_ {};
+    UnwindErrorData lastErrorData_ {};
 #if defined(__arm__)
-    std::shared_ptr<ArmExidx> armExidx_;
+    std::shared_ptr<ArmExidx> armExidx_ = nullptr;
 #endif
-    std::shared_ptr<DwarfSection> dwarfSection_;
+    std::shared_ptr<DwarfSection> dwarfSection_ = nullptr;
 };
 } // namespace HiviewDFX
 } // namespace OHOS
