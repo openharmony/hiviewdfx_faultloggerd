@@ -42,6 +42,8 @@ struct ElfLoadInfo {
     uint64_t offset = 0;
     uint64_t tableVaddr = 0;
     size_t tableSize = 0;
+    uint64_t align = 0;
+    uint64_t mmapLen = 0;
 };
 
 struct ElfSymbol {
