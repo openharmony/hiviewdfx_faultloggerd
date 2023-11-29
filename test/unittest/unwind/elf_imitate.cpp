@@ -552,13 +552,13 @@ bool ElfImitate::ParseProgramHeaders(ElfFileType fileType)
 
         auto strVec = StringSplit(line, " ");
         std::string type = strVec[0];
-        int base = 16;
-        uint64_t offset =  std::stoull(strVec[1], nullptr, base);
-        uint64_t vAddr = std::stoull(strVec[2], nullptr, base);
-        uint64_t memSize = std::stoull(strVec[5], nullptr, base);
-        std::string flg = strVec[6];
-        if (!std::all_of(strVec[7].begin(), strVec[7].end(), ::isdigit)) {
-            flg += strVec[7];
+        int base = 16; // 16:HEX
+        uint64_t offset =  std::stoull(strVec[INDEX_I1], nullptr, base);
+        uint64_t vAddr = std::stoull(strVec[INDEX_I2], nullptr, base);
+        uint64_t memSize = std::stoull(strVec[INDEX_I5], nullptr, base);
+        std::string flg = strVec[INDEX_I6];
+        if (!std::all_of(strVec[INDEX_I7].begin(), strVec[INDEX_I7].end(), ::isdigit)) {
+            flg += strVec[INDEX_I7];
         }
         if (type == "LOAD") {
             if (flg.find("E") == std::string::npos) {
@@ -747,18 +747,18 @@ bool ElfImitate::ParseElfSymbols()
         }
         auto strVec = StringSplit(line, " ");
         ElfSymbol elfSymbol;
-        constexpr int base {16};
-        elfSymbol.name = std::stoul(strVec[0].substr(0, strVec[0].size() -1));
-        elfSymbol.value = std::stoull(strVec[1], nullptr, base);
-        elfSymbol.size = std::stoull(strVec[2]);
-        elfSymbol.info = ELF32_ST_INFO(bindMap[strVec[4]], typeMap[strVec[3]]);
-        elfSymbol.other = vsMap["strVec[5]"];
-        if (strVec[6] == "UND") {
+        constexpr int base {16}; // 16:HEX
+        elfSymbol.name = std::stoul(strVec[INDEX_I0].substr(0, strVec[INDEX_I0].size() -1));
+        elfSymbol.value = std::stoull(strVec[INDEX_I1], nullptr, base);
+        elfSymbol.size = std::stoull(strVec[INDEX_I2]);
+        elfSymbol.info = ELF32_ST_INFO(bindMap[strVec[INDEX_I4]], typeMap[strVec[INDEX_I3]]);
+        elfSymbol.other = vsMap["strVec[INDEX_I5]"];
+        if (strVec[INDEX_I6] == "UND") {
             elfSymbol.shndx = SHN_UNDEF;
-        } else if (strVec[6] == "ABS") {
+        } else if (strVec[INDEX_I6] == "ABS") {
             elfSymbol.shndx = SHN_ABS;
         } else {
-            elfSymbol.shndx = static_cast<uint16_t>(std::stoul(strVec[6]));
+            elfSymbol.shndx = static_cast<uint16_t>(std::stoul(strVec[INDEX_I6]));
         }
         elfSymbols_.push_back(elfSymbol);
     }
@@ -874,7 +874,6 @@ bool ElfImitate::GetFuncNameAndOffset(uint64_t pc, std::string& funcName, uint64
         return false;
     }
 
-    // TODO: use binary search ?
     for (const auto& symbol : symbols) {
         if (symbol.Contain(pc)) {
             funcName = symbol.demangle_;

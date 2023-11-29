@@ -143,10 +143,10 @@ void DfxUnwindRemote::UnwindThreadByParseStackIfNeed(std::shared_ptr<DfxProcess>
         return;
     }
     auto frames = thread->GetFrames();
-    constexpr int MIN_FRAMES_NUM = 3;
+    constexpr int minFramesNum = 3;
     size_t initSize = frames.size();
-    if (initSize < MIN_FRAMES_NUM ||
-        frames[MIN_FRAMES_NUM - 1]->mapName.find("Not mapped") != std::string::npos) {
+    if (initSize < minFramesNum ||
+        frames[minFramesNum - 1]->mapName.find("Not mapped") != std::string::npos) {
         bool needParseStack = true;
         thread->InitFaultStack(needParseStack);
         process->InitProcessMaps();
@@ -315,7 +315,6 @@ bool DfxUnwindRemote::UpdateAndFillFrame(unw_cursor_t& cursor, std::shared_ptr<D
             frame->mapName = tips;
             isValidFrame = false;
         }
-
     }
 
     if (isValidFrame && (frame->pc == frame->relPc) &&

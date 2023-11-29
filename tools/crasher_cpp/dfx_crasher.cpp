@@ -15,7 +15,7 @@
 
 #include "dfx_crasher.h"
 
-#include <errno.h>
+#include <cerrno>
 #include <cinttypes>
 #include <csignal>
 #include <cstdio>
@@ -127,7 +127,7 @@ DfxCrasher &DfxCrasher::GetInstance()
     return instance;
 }
 
-NOINLINE int RecursiveHelperFunction(int curLevel, int targetLevel, int midLevel)
+static NOINLINE int RecursiveHelperFunction(int curLevel, int targetLevel, int midLevel)
 {
     auto top = __builtin_frame_address(0);
     uintptr_t size = 256;
@@ -264,13 +264,13 @@ NOINLINE int DfxCrasher::MaxMethodNameTest12345678901234567890123456789012345678
     return 0;
 }
 
-void *DoStackOverflow(void * inputArg)
+static void *DoStackOverflow(void * inputArg)
 {
     int b[10] = {1};
     int *c = nullptr;
     (void)memcpy_s(c, sizeof(int), b, sizeof(int));
     if (b[0] == 0) {
-        return (void*)(b + 9); // 9: last element of array
+        return static_cast<void*>(b + 9); // 9: last element of array
     }
     DoStackOverflow(inputArg);
     return (void*)(b + 9); // 9: last element of array

@@ -44,6 +44,16 @@ public:
         ELF32,
         ELF64,
     };
+    enum Index {
+        INDEX_I0 = 0,
+        INDEX_I1,
+        INDEX_I2,
+        INDEX_I3,
+        INDEX_I4,
+        INDEX_I5,
+        INDEX_I6,
+        INDEX_I7,
+    };
     ElfImitate()  {}
     ~ElfImitate();
 
