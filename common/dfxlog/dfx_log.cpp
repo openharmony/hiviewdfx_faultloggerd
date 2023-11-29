@@ -101,9 +101,6 @@ int DfxLogPrintV(const LogLevel logLevel, const unsigned int domain, const char*
 
     char buf[LOG_BUF_LEN] = {0};
     int ret = vsnprintf_s(buf, sizeof(buf), sizeof(buf) - 1, fmt, ap);
-    if (ret < 0) {
-        return ret;
-    }
 #ifdef DFX_LOG_HILOG_BASE
     ret = HiLogBasePrint(LOG_CORE, logLevel, domain, tag, "%{public}s", buf);
 #else

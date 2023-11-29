@@ -83,12 +83,7 @@ std::shared_ptr<DfxRegs> DfxRegs::CreateRemoteRegs(pid_t pid)
         LOGE("Failed to ptrace pid(%d), errno=%d", pid, errno);
         return nullptr;
     }
-    errno_t err = memcpy_s(dfxregs->regsData_.data(), REG_LAST * sizeof(uintptr_t), &regs,
-                           REG_LAST * sizeof(uintptr_t));
-    if (err != 0) {
-        DFXLOG_ERROR("memcpy_s return value is abnormal");
-        return nullptr;
-    }
+    (void)memcpy_s(dfxregs->regsData_.data(), REG_LAST * sizeof(uintptr_t), &regs, REG_LAST * sizeof(uintptr_t));
     return dfxregs;
 }
 
@@ -105,11 +100,7 @@ void DfxRegs::SetRegsData(const std::vector<uintptr_t>& regs)
 void DfxRegs::SetRegsData(const uintptr_t* regs, const size_t size)
 {
     size_t cpySize = (size > RegsSize()) ? RegsSize() : size;
-    errno_t err = memcpy_s(RawData(), cpySize * sizeof(uintptr_t), regs, cpySize * sizeof(uintptr_t));
-    if (err != 0) {
-        DFXLOG_ERROR("memcpy_s return value is abnormal");
-        return;
-    }
+    (void)memcpy_s(RawData(), cpySize * sizeof(uintptr_t), regs, cpySize * sizeof(uintptr_t));
 }
 
 uintptr_t* DfxRegs::GetReg(size_t idx)

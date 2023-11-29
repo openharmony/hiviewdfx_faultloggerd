@@ -39,9 +39,9 @@ public:
     DfxElf(uint8_t *decompressedData, size_t size);
     ~DfxElf() { Clear(); }
 
-    static bool IsValidElf(const void* ptr, size_t size);
+    static bool IsValidElf(const void* ptr);
 #if is_ohos
-    static size_t GetElfSize(const void* ptr, size_t size);
+    static size_t GetElfSize(const void* ptr);
 #endif
 
     bool IsValid();
@@ -98,7 +98,7 @@ protected:
 
 private:
     bool valid_ = false;
-    uint8_t classType_ = 0;
+    uint8_t classType_;
     int64_t loadBias_ = 0;
     uint64_t loadBase_ = static_cast<uint64_t>(-1);
     uint64_t startPc_ = static_cast<uint64_t>(-1);
