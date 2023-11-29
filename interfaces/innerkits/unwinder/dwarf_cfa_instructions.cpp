@@ -144,7 +144,7 @@ bool DwarfCfaInstructions::DecodeDwCfa(uint8_t opCode, CommonInfoEntry cie,
                 break;
             }
             rsState.locs[qutIdx].type = REG_LOC_REGISTER;  // register is saved in current register
-            rsState.locs[qutIdx].val = (intptr_t)reg2;
+            rsState.locs[qutIdx].val = reg2;
             break;
         case DW_CFA_remember_state:
             saveRsStates_.push(rsState);
@@ -230,7 +230,7 @@ bool DwarfCfaInstructions::DecodeDwCfa(uint8_t opCode, CommonInfoEntry cie,
                 INSTR_STATISTIC(UnsupportedDwCfaExpr, reg, UNW_ERROR_UNSUPPORTED_QUT_REG);
             } else {
                 rsState.locs[qutIdx].type = REG_LOC_MEM_EXPRESSION;
-                rsState.locs[qutIdx].val = (intptr_t)instPtr;
+                rsState.locs[qutIdx].val = instPtr;
             }
             instPtr += static_cast<uintptr_t>(memory_->ReadUleb128(instPtr));
             break;
@@ -240,7 +240,7 @@ bool DwarfCfaInstructions::DecodeDwCfa(uint8_t opCode, CommonInfoEntry cie,
                 INSTR_STATISTIC(UnsupportedDwCfaValExpr, reg, UNW_ERROR_UNSUPPORTED_QUT_REG);
             } else {
                 rsState.locs[qutIdx].type = REG_LOC_VAL_EXPRESSION;
-                rsState.locs[qutIdx].val = (intptr_t)instPtr;
+                rsState.locs[qutIdx].val = instPtr;
             }
             instPtr += static_cast<uintptr_t>(memory_->ReadUleb128(instPtr));
             break;

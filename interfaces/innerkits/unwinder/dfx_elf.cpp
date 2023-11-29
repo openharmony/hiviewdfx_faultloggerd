@@ -71,11 +71,7 @@ std::shared_ptr<DfxElf> DfxElf::CreateFromHap(const std::string& file, std::shar
         return nullptr;
     }
 
-    char realPath[PATH_MAX];
-    if (realpath(file.c_str(), realPath) == nullptr) {
-        return nullptr;
-    }
-    int fd = OHOS_TEMP_FAILURE_RETRY(open(realPath, O_RDONLY));
+    int fd = OHOS_TEMP_FAILURE_RETRY(open(file.c_str(), O_RDONLY));
     if (fd < 0) {
         LOGE("Failed to open hap file, errno(%d)", errno);
         return nullptr;
@@ -90,8 +86,8 @@ std::shared_ptr<DfxElf> DfxElf::CreateFromHap(const std::string& file, std::shar
             break;
         }
 
-        elfSize = GetElfSize(mmap->Get(), mmap->Size());
-        if (elfSize <= 0 || elfSize > (size_t)((uint64_t)fileSize - prevMap->offset)) {
+        elfSize = GetElfSize(mmap->Get());
+        if (elfSize <= 0 || elfSize > (size_t)(fileSize - prevMap->offset)) {
             LOGE("Invalid elf size? elf size: %d, hap size: %d", (int)elfSize, (int)fileSize);
             elfSize = 0;
             break;
@@ -119,11 +115,7 @@ DfxElf::DfxElf(const std::string& file)
 #if is_ohos
     if (mmap_ == nullptr && (!file.empty())) {
         LOGU("file: %s", file.c_str());
-        char realPath[PATH_MAX];
-        if (!realpath(file.c_str(), realPath)) {
-            DFXLOG_ERROR("realpath return value is abnormal");
-        }
-        int fd = OHOS_TEMP_FAILURE_RETRY(open(realPath, O_RDONLY));
+        int fd = OHOS_TEMP_FAILURE_RETRY(open(file.c_str(), O_RDONLY));
         if (fd > 0) {
             auto size = static_cast<size_t>(GetFileSize(fd));
             mmap_ = std::make_shared<DfxMmap>();
@@ -239,7 +231,7 @@ bool DfxElf::InitHeaders()
     }
 
     uint8_t ident[SELFMAG + 1];
-    if (!Read(0, ident, SELFMAG) || !IsValidElf(ident, SELFMAG)) {
+    if (!Read(0, ident, SELFMAG) || !IsValidElf(ident)) {
         return false;
     }
 
@@ -316,7 +308,7 @@ uint64_t DfxElf::GetLoadBase(uint64_t mapStart, uint64_t mapOffset)
     if (loadBase_ == static_cast<uint64_t>(-1)) {
         if (IsValid()) {
             LOGU("mapStart: %llx, mapOffset: %llx", (uint64_t)mapStart, (uint64_t)mapOffset);
-            loadBase_ = (uint64_t)((int64_t)mapStart - (int64_t)mapOffset - GetLoadBias());
+            loadBase_ = mapStart - mapOffset - GetLoadBias();
             LOGU("Elf loadBase: %llx", (uint64_t)loadBase_);
         }
     }
@@ -451,11 +443,7 @@ std::string DfxElf::GetBuildId(uint64_t noteAddr, uint64_t noteSize)
         }
 
         ptr = noteAddr + offset;
-        errno_t err = memcpy_s(&nhdr, sizeof(nhdr), (void*)ptr, sizeof(nhdr));
-        if (err != 0) {
-            DFXLOG_ERROR("memcpy_s return value is abnormal");
-            return "";
-        }
+        (void)memcpy_s(&nhdr, sizeof(nhdr), (void*)ptr, sizeof(nhdr));
         offset += sizeof(nhdr);
 
         if (noteSize - offset < nhdr.n_namesz) {
@@ -464,11 +452,7 @@ std::string DfxElf::GetBuildId(uint64_t noteAddr, uint64_t noteSize)
         if (nhdr.n_namesz > 0) {
             std::string name(nhdr.n_namesz, '\0');
             ptr = noteAddr + offset;
-            errno_t err = memcpy_s(&(name[0]), nhdr.n_namesz, (void*)ptr, nhdr.n_namesz);
-            if (err != 0) {
-                DFXLOG_ERROR("memcpy_s return value is abnormal");
-                return "";
-            }
+            (void)memcpy_s(&(name[0]), nhdr.n_namesz, (void*)ptr, nhdr.n_namesz);
             // Trim trailing \0 as GNU is stored as a C string in the ELF file.
             if (name.back() == '\0') {
                 name.resize(name.size() - 1);
@@ -486,11 +470,7 @@ std::string DfxElf::GetBuildId(uint64_t noteAddr, uint64_t noteSize)
             }
             std::string buildIdRaw(nhdr.n_descsz, '\0');
             ptr = noteAddr + offset;
-            err = memcpy_s(&buildIdRaw[0], nhdr.n_descsz, (void*)ptr, nhdr.n_descsz);
-            if (err != 0) {
-                DFXLOG_ERROR("memcpy_s return value is abnormal");
-                return "";
-            }
+            (void)memcpy_s(&buildIdRaw[0], nhdr.n_descsz, (void*)ptr, nhdr.n_descsz);
             return buildIdRaw;
         }
         // Align hdr.n_descsz to next power multiple of 4. See man 5 elf.
@@ -596,7 +576,7 @@ bool DfxElf::FillUnwindTableByExidx(ShdrInfo shdr, uintptr_t loadBase, struct Un
     uti->tableLen = shdr.size;
     INSTR_STATISTIC(InstructionEntriesArmExidx, shdr.size, 0);
     uti->format = UNW_INFO_FORMAT_ARM_EXIDX;
-    LOGU("tableLen: %d", (int)uti->tableLen);
+    LOGU("tableData: %llx, tableLen: %d", (uint64_t)uti->tableData, (int)uti->tableLen);
     return true;
 }
 
@@ -897,13 +877,13 @@ size_t DfxElf::GetMmapSize()
     return mmap_->Size();
 }
 
-bool DfxElf::IsValidElf(const void* ptr, size_t size)
+bool DfxElf::IsValidElf(const void* ptr)
 {
     if (ptr == nullptr) {
         return false;
     }
 
-    if (size == SELFMAG && memcmp(ptr, ELFMAG, size) != 0) {
+    if (memcmp(ptr, ELFMAG, SELFMAG) != 0) {
         LOGW("Invalid elf hdr?");
         return false;
     }
@@ -911,9 +891,9 @@ bool DfxElf::IsValidElf(const void* ptr, size_t size)
 }
 
 #if is_ohos
-size_t DfxElf::GetElfSize(const void* ptr, [[maybe_unused]]size_t size)
+size_t DfxElf::GetElfSize(const void* ptr)
 {
-    if (!IsValidElf(ptr, SELFMAG)) {
+    if (!IsValidElf(ptr)) {
         return 0;
     }
 
