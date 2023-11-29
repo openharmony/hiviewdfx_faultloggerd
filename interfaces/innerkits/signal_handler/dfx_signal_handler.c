@@ -125,7 +125,7 @@ typedef struct ThreadCallbackItem {
 
 #define CALLBACK_ITEM_COUNT 32
 static ThreadCallbackItem g_callbackItems[CALLBACK_ITEM_COUNT];
-static void InitCallbackItems()
+static void InitCallbackItems(void)
 {
     for (int i = 0; i < CALLBACK_ITEM_COUNT; i++) {
         g_callbackItems[i].tid = -1;

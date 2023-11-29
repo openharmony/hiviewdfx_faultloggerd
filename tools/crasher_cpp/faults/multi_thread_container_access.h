@@ -24,8 +24,8 @@
 #include <vector>
 
 int MultiThreadVectorAccess();
-int MultiThreadMapAccess();
-int MultiThreadListAccess();
+int MultiThreadMapAccess(void);
+int MultiThreadListAccess(void);
 
 namespace OHOS {
 namespace HiviewDFX {

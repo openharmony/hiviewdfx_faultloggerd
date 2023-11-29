@@ -58,7 +58,7 @@ HWTEST_F(DfxMemoryTest, DfxMemoryTest001, TestSize.Level2)
     uintptr_t value;
     bool ret = memory->ReadReg(0, &value);
     EXPECT_EQ(true, ret) << "DfxMemoryTest001: ret" << ret;
-    EXPECT_EQ((uintptr_t)0x1, value) << "DfxMemoryTest001: value" << value;
+    EXPECT_EQ(static_cast<uintptr_t>(0x1), value) << "DfxMemoryTest001: value" << value;
     GTEST_LOG_(INFO) << "DfxMemoryTest001: end.";
 }
 
@@ -231,7 +231,7 @@ HWTEST_F(DfxMemoryTest, DfxMemoryTest007, TestSize.Level2)
     uintptr_t value;
     bool ret = memory->ReadReg(0, &value);
     EXPECT_EQ(true, ret) << "DfxMemoryTest007: ret" << ret;
-    EXPECT_EQ((uintptr_t)0x1, value) << "DfxMemoryTest007: value" << value;
+    EXPECT_EQ(static_cast<uintptr_t>(0x1), value) << "DfxMemoryTest007: value" << value;
     GTEST_LOG_(INFO) << "DfxMemoryTest007: end.";
 }
 /**

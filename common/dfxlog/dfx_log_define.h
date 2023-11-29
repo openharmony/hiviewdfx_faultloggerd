@@ -26,7 +26,7 @@ extern "C" {
 #define LOG_TAG "DfxFaultLogger"
 
 #define LOG_BUF_LEN 1024
-#define __FILENAME__ (__builtin_strrchr((__FILE__), '/') ? __builtin_strrchr((__FILE__), '/') + 1 : (__FILE__))
+#define FILENAME_ (__builtin_strrchr((__FILE__), '/') ? __builtin_strrchr((__FILE__), '/') + 1 : (__FILE__))
 
 #ifdef __cplusplus
 }

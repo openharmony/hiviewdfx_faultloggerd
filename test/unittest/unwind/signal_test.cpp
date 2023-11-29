@@ -17,7 +17,7 @@
 #include <map>
 #include <memory>
 #include <securec.h>
-#include <signal.h>
+#include <csignal>
 #include <string>
 
 #include "dfx_signal.h"
