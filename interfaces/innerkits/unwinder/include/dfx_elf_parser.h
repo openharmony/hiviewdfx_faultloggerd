@@ -113,6 +113,7 @@ private:
 class ElfParser32 : public ElfParser {
 public:
     ElfParser32(const std::shared_ptr<DfxMmap>& mmap) : ElfParser(mmap) {}
+    virtual ~ElfParser32() = default;
     bool InitHeaders() override;
     std::string GetElfName() override;
     uintptr_t GetGlobalPointer() override;
@@ -122,6 +123,7 @@ public:
 class ElfParser64 : public ElfParser {
 public:
     ElfParser64(const std::shared_ptr<DfxMmap>& mmap) : ElfParser(mmap) {}
+    virtual ~ElfParser64() = default;
     bool InitHeaders() override;
     std::string GetElfName() override;
     uintptr_t GetGlobalPointer() override;

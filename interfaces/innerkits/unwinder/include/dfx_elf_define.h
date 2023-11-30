@@ -47,14 +47,13 @@ struct ElfLoadInfo {
 };
 
 struct ElfSymbol {
+    std::string nameStr;
     uint32_t name;
     unsigned char info;
     unsigned char other;
     uint16_t shndx;
     uint64_t value;
     uint64_t size;
-    uint64_t strOffset;
-    uint64_t strSize;
 };
 
 struct ElfShdr {

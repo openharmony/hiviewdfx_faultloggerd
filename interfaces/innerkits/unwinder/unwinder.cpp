@@ -105,16 +105,23 @@ bool Unwinder::UnwindLocal(size_t maxFrameNum, size_t skipFrameNum)
     return ret;
 }
 
-bool Unwinder::UnwindRemote(size_t maxFrameNum, size_t skipFrameNum)
+bool Unwinder::UnwindRemote(pid_t tid, size_t maxFrameNum, size_t skipFrameNum)
 {
-    regs_ = DfxRegs::CreateRemoteRegs(pid_);
-    if ((regs_ == nullptr) || (pid_ <= 0)) {
+    if ((pid_ <= 0) || (tid < 0)) {
         LOGE("params is nullptr, pid: %d", pid_);
+        return false;
+    }
+    if (tid == 0) {
+        tid = pid_;
+    }
+    regs_ = DfxRegs::CreateRemoteRegs(tid);
+    if ((regs_ == nullptr)) {
+        LOGE("regs is nullptr");
         return false;
     }
 
     UnwindContext context;
-    context.pid = pid_;
+    context.pid = tid;
     context.regs = regs_;
     bool ret = Unwind(&context, maxFrameNum, skipFrameNum);
     return ret;

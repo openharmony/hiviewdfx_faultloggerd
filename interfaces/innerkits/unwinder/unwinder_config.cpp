@@ -17,6 +17,7 @@
 
 namespace OHOS {
 namespace HiviewDFX {
+bool UnwinderConfig::enableMiniDebugInfo_ = false;
 int UnwinderConfig::bigEndian_ = UNWIND_BYTE_ORDER;
 UnwindCachingPolicy UnwinderConfig::cachingPolicy_ = UNWIND_CACHE_NONE;
 } // namespace HiviewDFX
