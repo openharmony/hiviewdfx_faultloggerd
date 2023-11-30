@@ -35,7 +35,7 @@
 #include "dfx_instr_statistic.h"
 #include "dfx_util.h"
 #include "dwarf_define.h"
-#if is_ohos && !is_mingw && !is_emulator
+#if is_ohos && !is_mingw && !is_emulator && !is_ohos_lite
 #include "dfx_xz_utils.h"
 #endif
 
@@ -172,15 +172,18 @@ void DfxElf::Clear()
     }
 }
 
-#if is_ohos && !is_mingw && !is_emulator
+#if is_ohos && !is_mingw && !is_emulator && !is_ohos_lite
 void DfxElf::EnableMiniDebugInfo()
 {
     enableMiniDebugInfo_ = true;
 }
 
-bool DfxElf::IsEmbeddedElf()
+bool DfxElf::IsEmbeddedElfValid()
 {
-    return embeddedElf_ != nullptr;
+    if (embeddedElf_ == nullptr) {
+        return InitEmbeddedElf();
+    }
+    return embeddedElf_ != nullptr && embeddedElf_->IsValid();
 }
 
 std::shared_ptr<DfxElf> DfxElf::GetEmbeddedElf()
@@ -193,30 +196,30 @@ std::shared_ptr<MiniDebugInfo> DfxElf::GetMiniDebugInfo()
     return miniDebugInfo_;
 }
 
-void DfxElf::InitEmbeddedElf()
+bool DfxElf::InitEmbeddedElf()
 {
-
-    if (miniDebugInfo_ != nullptr) {
-        return;
+    if (!enableMiniDebugInfo_ || miniDebugInfo_ == nullptr) {
+        return false;
     }
-
     uint8_t *addr = miniDebugInfo_->offset + const_cast<uint8_t*>(GetMmapPtr());
-
     embeddedElfData_ = std::make_shared<std::vector<uint8_t>>();
-    if (!embeddedElfData_) {
+    if (embeddedElfData_ == nullptr) {
         LOGE("Create embeddedElfData failed.");
-        return;
+        return false;
     }
     if (XzDecompress(addr, miniDebugInfo_->size, embeddedElfData_)) {
         // embeddedElfData_ store the decompressed bytes.
         // use these bytes to construct an elf.
         embeddedElf_= std::make_shared<DfxElf>(embeddedElfData_->data(), embeddedElfData_->size());
-        if (!embeddedElf_->IsValid()) {
+        if (embeddedElf_ != nullptr && embeddedElf_->IsValid()) {
+            return true;
+        } else {
             LOGE("Failed to parse Embedded Elf.");
         }
     } else {
         LOGE("Failed to decompressed .gnu_debugdata seciton.");
     }
+    return false;
 }
 #endif
 
@@ -249,20 +252,9 @@ bool DfxElf::InitHeaders()
     }
     if (elfParse_ != nullptr) {
         valid_ = true;
-
-#if is_ohos && !is_mingw && !is_emulator
-        if (enableMiniDebugInfo_) {
-            elfParse_->EnableMiniDebugInfo();
-        }
-#endif
-
         elfParse_->InitHeaders();
-
-#if is_ohos && !is_mingw && !is_emulator
+#if is_ohos && !is_mingw && !is_emulator && !is_ohos_lite
         miniDebugInfo_ = elfParse_->GetMiniDebugInfo();
-        if (miniDebugInfo_ != nullptr) {
-            InitEmbeddedElf();
-        }
 #endif
     }
     return valid_;

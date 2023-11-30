@@ -55,6 +55,11 @@ bool DfxSymbols::ParseSymbols(std::vector<DfxSymbol>& symbols, std::shared_ptr<D
         symbols.emplace_back(elfSymbol.value, elfSymbol.size,
             nameStr, Demangle(nameStr), symbolsPath);
     }
+#if is_ohos && !is_mingw && !is_emulator && !is_ohos_lite
+    if (elf->IsEmbeddedElfValid()) {
+        ParseSymbols(symbols, elf->GetEmbeddedElf(), filePath);
+    }
+#endif
     return true;
 }
 
