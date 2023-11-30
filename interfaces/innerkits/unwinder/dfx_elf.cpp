@@ -34,10 +34,12 @@
 #include "dfx_log.h"
 #include "dfx_instr_statistic.h"
 #include "dfx_util.h"
+#include "dfx_maps.h"
 #include "dwarf_define.h"
 #if is_ohos && !is_mingw && !is_emulator
 #include "dfx_xz_utils.h"
 #endif
+#include "string_util.h"
 
 namespace OHOS {
 namespace HiviewDFX {
@@ -70,7 +72,11 @@ std::shared_ptr<DfxElf> DfxElf::CreateFromHap(const std::string& file, std::shar
         LOGE("current hap mapitem has no prev mapitem, maybe pc is wrong?");
         return nullptr;
     }
-
+    const std::vector<const std::string> validFilePath = { "/proc" };
+    if (!VerifyFilePath(file, validFilePath) || !EndsWith(file, ".hap")) {
+        LOGE("illegal file path, please check it %s", file.c_str());
+        return nullptr;
+    }
     int fd = OHOS_TEMP_FAILURE_RETRY(open(file.c_str(), O_RDONLY));
     if (fd < 0) {
         LOGE("Failed to open hap file, errno(%d)", errno);
@@ -87,7 +93,7 @@ std::shared_ptr<DfxElf> DfxElf::CreateFromHap(const std::string& file, std::shar
         }
 
         elfSize = GetElfSize(mmap->Get());
-        if (elfSize <= 0 || elfSize > (size_t)(fileSize - prevMap->offset)) {
+        if (elfSize <= 0 || elfSize > static_cast<uint64_t>(fileSize) - prevMap->offset) {
             LOGE("Invalid elf size? elf size: %d, hap size: %d", (int)elfSize, (int)fileSize);
             elfSize = 0;
             break;
@@ -115,7 +121,17 @@ DfxElf::DfxElf(const std::string& file)
 #if is_ohos
     if (mmap_ == nullptr && (!file.empty())) {
         LOGU("file: %s", file.c_str());
-        int fd = OHOS_TEMP_FAILURE_RETRY(open(file.c_str(), O_RDONLY));
+        char realPath[PATH_MAX] = {0};
+        if (realpath(file.c_str(), realPath) == nullptr) {
+            DFXLOG_WARN("file path(%s) is invalid.", file.c_str());
+            return;
+        }
+        if (!DfxMaps::IsLegalMapItem(realPath)) {
+            LOGE("illegal file path, please check it %s", realPath);
+            return;
+        }
+        const char* filePath = realPath;
+        int fd = OHOS_TEMP_FAILURE_RETRY(open(filePath, O_RDONLY));
         if (fd > 0) {
             auto size = static_cast<size_t>(GetFileSize(fd));
             mmap_ = std::make_shared<DfxMmap>();
@@ -154,6 +170,7 @@ DfxElf::DfxElf(uint8_t *decompressedData, size_t size)
 
 void DfxElf::Init()
 {
+    uti_.namePtr = 0;
     uti_.format = -1;
     hasTableInfo_ = false;
 }
@@ -308,7 +325,7 @@ uint64_t DfxElf::GetLoadBase(uint64_t mapStart, uint64_t mapOffset)
     if (loadBase_ == static_cast<uint64_t>(-1)) {
         if (IsValid()) {
             LOGU("mapStart: %llx, mapOffset: %llx", (uint64_t)mapStart, (uint64_t)mapOffset);
-            loadBase_ = mapStart - mapOffset - GetLoadBias();
+            loadBase_ = mapStart - mapOffset - static_cast<uint64_t>(GetLoadBias());
             LOGU("Elf loadBase: %llx", (uint64_t)loadBase_);
         }
     }
@@ -433,7 +450,6 @@ std::string DfxElf::GetBuildId(uint64_t noteAddr, uint64_t noteSize)
         LOGE("noteAddr overflow");
         return "";
     }
-
     uint64_t offset = 0;
     uint64_t ptr = noteAddr;
     while (offset < noteSize) {
@@ -441,36 +457,39 @@ std::string DfxElf::GetBuildId(uint64_t noteAddr, uint64_t noteSize)
         if (noteSize - offset < sizeof(nhdr)) {
             return "";
         }
-
         ptr = noteAddr + offset;
-        (void)memcpy_s(&nhdr, sizeof(nhdr), (void*)ptr, sizeof(nhdr));
+        if (memcpy_s(&nhdr, sizeof(nhdr), (void*)ptr, sizeof(nhdr)) != 0) {
+            LOGE("memcpy nhdr failed");
+            return "";
+        }
         offset += sizeof(nhdr);
-
         if (noteSize - offset < nhdr.n_namesz) {
             return "";
         }
         if (nhdr.n_namesz > 0) {
             std::string name(nhdr.n_namesz, '\0');
             ptr = noteAddr + offset;
-            (void)memcpy_s(&(name[0]), nhdr.n_namesz, (void*)ptr, nhdr.n_namesz);
-            // Trim trailing \0 as GNU is stored as a C string in the ELF file.
-            if (name.back() == '\0') {
+            if (memcpy_s(&(name[0]), nhdr.n_namesz, (void*)ptr, nhdr.n_namesz) != 0) {
+                LOGE("memcpy note name failed");
+                return "";
+            }
+            if (name.back() == '\0') { // Trim trailing \0 as GNU is stored as a C string in the ELF file.
                 name.resize(name.size() - 1);
             }
-
             // Align nhdr.n_namesz to next power multiple of 4. See man 5 elf.
             offset += (nhdr.n_namesz + 3) & ~3; // 3 : Align the offset to a 4-byte boundary
             if (name != "GNU" || nhdr.n_type != NT_GNU_BUILD_ID) {
                 offset += (nhdr.n_descsz + 3) & ~3; // 3 : Align the offset to a 4-byte boundary
                 continue;
             }
-
             if (noteSize - offset < nhdr.n_descsz || nhdr.n_descsz == 0) {
                 return "";
             }
             std::string buildIdRaw(nhdr.n_descsz, '\0');
             ptr = noteAddr + offset;
-            (void)memcpy_s(&buildIdRaw[0], nhdr.n_descsz, (void*)ptr, nhdr.n_descsz);
+            if (memcpy_s(&buildIdRaw[0], nhdr.n_descsz, (void*)ptr, nhdr.n_descsz) != 0) {
+                return "";
+            }
             return buildIdRaw;
         }
         // Align hdr.n_descsz to next power multiple of 4. See man 5 elf.
@@ -685,7 +704,6 @@ int DfxElf::FindUnwindTableInfo(uintptr_t pc, std::shared_ptr<DfxMap> map, struc
     uti.endPc = GetEndPc();
     LOGU("Elf startPc: %llx, endPc: %llx", (uint64_t)uti.startPc, (uint64_t)uti.endPc);
     if (pc < uti.startPc && pc >= uti.endPc) {
-        LOGE("pc(%p) is not in elf table info?", (void*)pc);
         return UNW_ERROR_PC_NOT_IN_UNWIND_INFO;
     }
 

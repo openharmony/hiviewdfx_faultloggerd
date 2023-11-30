@@ -52,56 +52,49 @@ bool DfxMemory::ReadMem(uintptr_t addr, uintptr_t *val)
 
 size_t DfxMemory::Read(uintptr_t& addr, void* val, size_t size, bool incre)
 {
-    if (val == nullptr) {
-        return 0;
-    }
     uintptr_t tmpAddr = addr;
     uint64_t maxSize;
-    if (__builtin_add_overflow(tmpAddr, size, &maxSize)) {
-        LOGE("size(%zu) overflow", size);
+    if (val == nullptr || __builtin_add_overflow(tmpAddr, size, &maxSize)) {
+        LOGE("val is nullptr or size(%zu) overflow", size);
         return 0;
     }
-
     size_t bytesRead = 0;
     uintptr_t tmpVal;
     if (alignAddr_ && (alignBytes_ != 0)) {
-        size_t alignBytes = tmpAddr & (alignBytes_ - 1);
+        size_t alignBytes = tmpAddr & (static_cast<size_t>(alignBytes_) - 1);
         if (alignBytes != 0) {
-            uintptr_t alignedAddr = tmpAddr & (~alignBytes_ - 1);
+            uintptr_t alignedAddr = tmpAddr & (~(static_cast<uintptr_t>(alignBytes_)) - 1);
             LOGU("alignBytes: %d, alignedAddr: %llx", alignBytes, static_cast<uint64_t>(alignedAddr));
             if (!ReadMem(alignedAddr, &tmpVal)) {
                 return bytesRead;
             }
             uintptr_t valp = static_cast<uintptr_t>(tmpVal);
-            size_t copyBytes = std::min(alignBytes_ - alignBytes, size);
-            (void)memcpy_s(val, copyBytes, reinterpret_cast<uint8_t*>(&valp) + alignBytes, copyBytes);
+            size_t copyBytes = std::min(static_cast<size_t>(alignBytes_) - alignBytes, size);
+            if (memcpy_s(val, copyBytes, reinterpret_cast<uint8_t*>(&valp) + alignBytes, copyBytes) != 0) {
+                return bytesRead;
+            }
             tmpAddr += copyBytes;
             val = reinterpret_cast<void*>(reinterpret_cast<uintptr_t>(val) + copyBytes);
             size -= copyBytes;
             bytesRead += copyBytes;
         }
     }
-
     for (size_t i = 0; i < size / sizeof(uintptr_t); i++) {
-        if (!ReadMem(tmpAddr, &tmpVal)) {
+        if (!ReadMem(tmpAddr, &tmpVal) || memcpy_s(val, sizeof(uintptr_t), &tmpVal, sizeof(uintptr_t)) != 0) {
             return bytesRead;
         }
-        (void)memcpy_s(val, sizeof(uintptr_t), &tmpVal, sizeof(uintptr_t));
         val = reinterpret_cast<void*>(reinterpret_cast<uintptr_t>(val) + sizeof(uintptr_t));
         tmpAddr += sizeof(uintptr_t);
         bytesRead += sizeof(uintptr_t);
     }
-
     size_t leftOver = size & (sizeof(uintptr_t) - 1);
     if (leftOver) {
-        if (!ReadMem(tmpAddr, &tmpVal)) {
+        if (!ReadMem(tmpAddr, &tmpVal) || memcpy_s(val, leftOver, &tmpVal, leftOver) != 0) {
             return bytesRead;
         }
-        (void)memcpy_s(val, leftOver, &tmpVal, leftOver);
         tmpAddr += leftOver;
         bytesRead += leftOver;
     }
-
     if (incre) {
         addr = tmpAddr;
     }

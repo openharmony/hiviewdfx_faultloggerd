@@ -98,7 +98,7 @@ protected:
 
 private:
     bool valid_ = false;
-    uint8_t classType_;
+    uint8_t classType_ = 0;
     int64_t loadBias_ = 0;
     uint64_t loadBase_ = static_cast<uint64_t>(-1);
     uint64_t startPc_ = static_cast<uint64_t>(-1);
