@@ -321,8 +321,10 @@ bool ElfParser::ParseElfSymbols(ElfShdr shdr, bool isFunc, bool isSort)
         if (!ParseElfSymbol<SymType>(shdr, idx, isFunc, elfSymbol)) {
             continue;
         }
-        elfSymbol.strOffset = shdrInfo.offset;
-        elfSymbol.strSize = shdrInfo.size;
+        if (static_cast<uint64_t>(elfSymbol.name) >= shdrInfo.size) {
+            continue;
+        }
+        elfSymbol.nameStr = std::string(static_cast<char*>(mmap_->Get()) + shdrInfo.offset + elfSymbol.name);
         elfSymbols_.push_back(elfSymbol);
     }
 

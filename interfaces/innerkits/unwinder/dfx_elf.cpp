@@ -38,6 +38,7 @@
 #if is_ohos && !is_mingw && !is_emulator && !is_ohos_lite
 #include "dfx_xz_utils.h"
 #endif
+#include "unwinder_config.h"
 
 namespace OHOS {
 namespace HiviewDFX {
@@ -148,6 +149,7 @@ DfxElf::DfxElf(uint8_t *decompressedData, size_t size)
         mmap_ = std::make_shared<DfxMmap>();
         // this mean the embedded elf initialization.
         mmap_->Init(decompressedData, size);
+        mmap_->SetNeedUnmap(false);
     }
     Init();
 }
@@ -160,7 +162,7 @@ void DfxElf::Init()
 
 void DfxElf::Clear()
 {
-    if (elfParse_ == nullptr) {
+    if (elfParse_ != nullptr) {
         elfParse_.reset();
         elfParse_ = nullptr;
     }
@@ -173,11 +175,6 @@ void DfxElf::Clear()
 }
 
 #if is_ohos && !is_mingw && !is_emulator && !is_ohos_lite
-void DfxElf::EnableMiniDebugInfo()
-{
-    enableMiniDebugInfo_ = true;
-}
-
 bool DfxElf::IsEmbeddedElfValid()
 {
     if (embeddedElf_ == nullptr) {
@@ -198,7 +195,7 @@ std::shared_ptr<MiniDebugInfo> DfxElf::GetMiniDebugInfo()
 
 bool DfxElf::InitEmbeddedElf()
 {
-    if (!enableMiniDebugInfo_ || miniDebugInfo_ == nullptr) {
+    if (!UnwinderConfig::GetEnableMiniDebugInfo() || miniDebugInfo_ == nullptr) {
         return false;
     }
     uint8_t *addr = miniDebugInfo_->offset + const_cast<uint8_t*>(GetMmapPtr());
@@ -517,8 +514,15 @@ bool DfxElf::GetSectionData(unsigned char *buf, uint64_t size, std::string secNa
 const std::vector<ElfSymbol>& DfxElf::GetElfSymbols(bool isSort)
 {
     if (elfSymbols_.empty()) {
-        LOGU("GetElfSymbols");
         elfSymbols_ = elfParse_->GetElfSymbols(false, isSort);
+#if is_ohos && !is_mingw && !is_emulator && !is_ohos_lite
+        if (IsEmbeddedElfValid()) {
+            auto symbols = embeddedElf_->elfParse_->GetElfSymbols(true, isSort);
+            LOGU("Get EmbeddedElf FuncSymbols, size: %zu", symbols.size());
+            elfSymbols_.insert(elfSymbols_.end(), symbols.begin(), symbols.end());
+        }
+#endif
+        LOGU("GetElfSymbols, size: %zu", elfSymbols_.size());
     }
     return elfSymbols_;
 }
@@ -526,8 +530,15 @@ const std::vector<ElfSymbol>& DfxElf::GetElfSymbols(bool isSort)
 const std::vector<ElfSymbol>& DfxElf::GetFuncSymbols(bool isSort)
 {
     if (funcSymbols_.empty()) {
-        LOGU("GetFuncSymbols");
         funcSymbols_ = elfParse_->GetElfSymbols(true, isSort);
+#if is_ohos && !is_mingw && !is_emulator && !is_ohos_lite
+        if (IsEmbeddedElfValid()) {
+            auto symbols = embeddedElf_->elfParse_->GetElfSymbols(true, isSort);
+            LOGU("Get EmbeddedElf FuncSymbols, size: %zu", symbols.size());
+            funcSymbols_.insert(funcSymbols_.end(), symbols.begin(), symbols.end());
+        }
+#endif
+        LOGU("GetFuncSymbols, size: %zu", funcSymbols_.size());
     }
     return funcSymbols_;
 }

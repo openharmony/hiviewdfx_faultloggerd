@@ -18,6 +18,7 @@
 #include <vector>
 #include "dfx_elf.h"
 #include "dfx_xz_utils.h"
+#include "unwinder_config.h"
 
 using namespace OHOS::HiviewDFX;
 using namespace testing::ext;
@@ -45,8 +46,8 @@ namespace {
 HWTEST_F(DfxXzUtilTest, DfxXzUtilTest001, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "DfxXzUtilTest001: start.";
+    UnwinderConfig::SetEnableMiniDebugInfo(true);
     DfxElf elf(DUMPCATCHER_ELF_FILE);
-    elf.EnableMiniDebugInfo();
     ASSERT_TRUE(elf.IsValid());
     auto minidebugInfo = elf.GetMiniDebugInfo();
     ASSERT_TRUE(minidebugInfo != nullptr);

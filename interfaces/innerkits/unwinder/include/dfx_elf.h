@@ -78,7 +78,6 @@ public:
     static std::string ToReadableBuildId(const std::string& buildIdHex);
 #if is_ohos && !is_mingw && !is_emulator && !is_ohos_lite
     bool IsEmbeddedElfValid();
-    void EnableMiniDebugInfo();
     std::shared_ptr<DfxElf> GetEmbeddedElf();
     std::shared_ptr<MiniDebugInfo> GetMiniDebugInfo();
 #endif
@@ -99,7 +98,7 @@ protected:
 #endif
 private:
     bool valid_ = false;
-    uint8_t classType_;
+    uint8_t classType_ = 0;
     int64_t loadBias_ = 0;
     uint64_t loadBase_ = static_cast<uint64_t>(-1);
     uint64_t startPc_ = static_cast<uint64_t>(-1);
@@ -110,10 +109,9 @@ private:
     bool hasTableInfo_ = false;
     std::shared_ptr<DfxMmap> mmap_ = nullptr;
     std::unique_ptr<ElfParser> elfParse_ = nullptr;
-    std::vector<ElfSymbol> elfSymbols_;
-    std::vector<ElfSymbol> funcSymbols_;
+    std::vector<ElfSymbol> elfSymbols_ {};
+    std::vector<ElfSymbol> funcSymbols_ {};
 #if is_ohos && !is_mingw && !is_emulator && !is_ohos_lite
-    bool enableMiniDebugInfo_ = false;
     std::shared_ptr<DfxElf> embeddedElf_ = nullptr;
     std::shared_ptr<MiniDebugInfo> miniDebugInfo_ = nullptr;
     std::shared_ptr<std::vector<uint8_t>> embeddedElfData_ = nullptr;

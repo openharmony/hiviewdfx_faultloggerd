@@ -278,6 +278,7 @@ if (defined(ohos_lite)) {
       "dfx_memory.cpp",
       "dfx_mmap.cpp",
       "dfx_symbols.cpp",
+      "unwinder_config.cpp",
     ]
     if (is_ohos && !is_mingw && !is_emulator) {
       sources += [ "dfx_xz_utils.cpp" ]
