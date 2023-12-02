@@ -17,11 +17,12 @@
 
 #include <libunwind.h>
 #include <libunwind_i-ohos.h>
+
+#include "dfx_config.h"
 #include "dfx_define.h"
 #include "dfx_util.h"
 #include "stack_util.h"
 #include "unwind_define.h"
-#include "dfx_config.h"
 
 namespace OHOS {
 namespace HiviewDFX {

@@ -38,7 +38,7 @@ public:
     void ReleaseThread();
 
     const std::vector<DfxFrame>& GetFrames() const;
-    std::string GetFormatedStr(bool withThreadName = false);
+    std::string GetFormatedStr(bool withThreadName = false, bool isJson = false);
     void SetMaxFrameNums(size_t maxFrameNums);
 private:
     bool UnwindCurrentThread(unw_addr_space_t as, std::shared_ptr<DfxSymbols> symbol,

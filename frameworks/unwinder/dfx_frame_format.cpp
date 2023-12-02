@@ -14,9 +14,11 @@
  */
 
 #include "dfx_frame_format.h"
+
 #include <ostream>
 #include <securec.h>
 #include <sstream>
+
 #include "dfx_log.h"
 #include "dfx_define.h"
 
@@ -92,5 +94,33 @@ std::vector<std::shared_ptr<DfxFrame>> DfxFrameFormat::ConvertFrames(const std::
     }
     return ptrFrames;
 }
+
+#ifndef is_ohos_lite
+std::string DfxFrameFormat::GetFramesJson(const std::vector<DfxFrame>& frames)
+{
+    char buf[FRAME_BUF_LEN] = {0};
+#ifdef __LP64__
+    char format[] = "%016";
+#else
+    char format[] = "%08";
+#endif
+
+    Json::Value framesJson;
+    for (auto const frame : frames) {
+        Json::Value frameJson;
+        if (snprintf_s(buf, sizeof(buf), sizeof(buf) - 1, format, frame.relPc) > 0) {
+            frameJson["pc"] = buf;
+        } else {
+            frameJson["pc"] = frame.relPc;
+        }
+        frameJson["symbol"] = frame.funcName;
+        frameJson["offset"] = frame.funcOffset;
+        frameJson["file"] = frame.mapName;
+        frameJson["buildId"] = frame.buildId;
+        framesJson.append(frameJson);
+    }
+    return Json::FastWriter().write(framesJson);
+}
+#endif
 } // namespace HiviewDFX
 } // namespace OHOS

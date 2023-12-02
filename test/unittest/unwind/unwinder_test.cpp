@@ -84,7 +84,8 @@ HWTEST_F(UnwinderTest, GetStackRangeTest002, TestSize.Level2)
     uintptr_t stackBottom = 1;
     uintptr_t stackTop = static_cast<uintptr_t>(-1);
     bool result = false;
-    GTEST_LOG_(INFO) << "Run the function with thread will get pid != tid, GetStackRange(stackBottom, stackTop) is true";
+    GTEST_LOG_(INFO) << "Run the function with thread will get pid != tid, "
+                        "GetStackRange(stackBottom, stackTop) is true";
     std::thread* thread = new std::thread([&]{result = unwinder->GetStackRange(stackBottom, stackTop);});
     thread->join();
     ASSERT_TRUE(result);
@@ -568,8 +569,7 @@ HWTEST_F(UnwinderTest, FillFrameTest001, TestSize.Level2)
     DfxFrame frame;
     unwinder->FillFrame(frame);
     GTEST_LOG_(INFO) << " when DfxFrame::map is null, frame.buildId.size() is 0";
-    ASSERT_EQ(frame.buildId.size(),0);
-
+    ASSERT_EQ(frame.buildId.size(), 0);
     string testMap = "f6d83000-f6d84000 r--p 00001000 b3:07 1892 /system/lib/init/libinit_context.z.so.noexit";
     auto map = DfxMap::Create(testMap, sizeof(testMap));
     frame.map = map;

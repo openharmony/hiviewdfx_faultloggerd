@@ -16,6 +16,7 @@
 #include "process_dumper.h"
 
 #include <cerrno>
+#include <chrono>
 #include <cinttypes>
 #include <csignal>
 #include <cstdio>
@@ -43,12 +44,17 @@
 #include "dfx_process.h"
 #include "dfx_regs.h"
 #include "dfx_ring_buffer_wrapper.h"
+#include "dfx_stack_info_formatter.h"
 #include "dfx_thread.h"
 #include "dfx_unwind_remote.h"
 #include "dfx_util.h"
 
 namespace OHOS {
 namespace HiviewDFX {
+namespace {
+constexpr int ONE_BLOCK_SIZE = 1000;
+}
+
 ProcessDumper &ProcessDumper::GetInstance()
 {
     static ProcessDumper ins;
@@ -73,13 +79,24 @@ void ProcessDumper::Dump()
         }
     }
 
+    std::string jsonInfo;
+    if (isJsonDump_ || isCrash_) {
+        DfxStackInfoFormatter formatter(process_, request);
+        formatter.GetStackInfo(isJsonDump_, jsonInfo);
+        DFXLOG_INFO("Finish GetStackInfo len %d", jsonInfo.length());
+        if (isJsonDump_) {
+            WriteData(jsonFd_, jsonInfo, ONE_BLOCK_SIZE);
+        }
+    }
+
     WriteDumpRes(resDump_);
     DfxRingBufferWrapper::GetInstance().StopThread();
     DFXLOG_INFO("Finish dump stacktrace for %s(%d:%d).", request->processName, request->pid, request->tid);
     CloseDebugLog();
 
-    // check dump result ?
+    // check dump result
     if (reporter_ != nullptr) {
+        reporter_->SetValue("stackInfo", jsonInfo);
         reporter_->ReportToHiview();
         reporter_->ReportToAbilityManagerService();
     }
@@ -228,6 +245,8 @@ int ProcessDumper::InitPrintThread(std::shared_ptr<ProcessDumpRequest> request)
     faultloggerdRequest.tid = request->tid;
     faultloggerdRequest.uid = request->uid;
     faultloggerdRequest.time = request->timeStamp;
+    isJsonDump_ = false;
+    jsonFd_ = -1;
     if (isCrash_ || faultloggerdRequest.type == FaultLoggerType::LEAK_STACKTRACE) {
         if (DfxConfig::GetConfig().logPersist) {
             InitDebugLog((int)faultloggerdRequest.type, request->pid, request->tid, request->uid);
@@ -237,17 +256,32 @@ int ProcessDumper::InitPrintThread(std::shared_ptr<ProcessDumpRequest> request)
     } else {
         fd = RequestPipeFd(request->pid, FaultLoggerPipeType::PIPE_FD_WRITE_BUF);
         DFXLOG_DEBUG("write buf fd: %d", fd);
-        resFd_ = RequestPipeFd(request->pid, FaultLoggerPipeType::PIPE_FD_WRITE_RES);
-        DFXLOG_DEBUG("write res fd: %d", resFd_);
+        if (fd < 0) {
+            // If fd returns -1, we try to obtain the fd that needs to return JSON style
+            jsonFd_ = RequestPipeFd(request->pid, FaultLoggerPipeType::PIPE_FD_JSON_WRITE_BUF);
+            resFd_ = RequestPipeFd(request->pid, FaultLoggerPipeType::PIPE_FD_JSON_WRITE_RES);
+            DFXLOG_DEBUG("write json fd: %d, res fd: %d", jsonFd_, resFd_);
+        } else {
+            resFd_ = RequestPipeFd(request->pid, FaultLoggerPipeType::PIPE_FD_WRITE_RES);
+            DFXLOG_DEBUG("write res fd: %d", resFd_);
+        }
     }
-
-    if (fd < 0) {
+    if (jsonFd_ > 0) {
+        isJsonDump_ = true;
+    }
+    if ((fd < 0) && (jsonFd_ < 0)) {
         DFXLOG_WARN("Failed to request fd from faultloggerd.");
     }
 
-    DfxRingBufferWrapper::GetInstance().SetWriteBufFd(fd);
+    if (!isJsonDump_) {
+        DfxRingBufferWrapper::GetInstance().SetWriteBufFd(fd);
+    }
     DfxRingBufferWrapper::GetInstance().StartThread();
-    return fd;
+    if (isJsonDump_) {
+        return jsonFd_;
+    } else {
+        return fd;
+    }
 }
 
 int ProcessDumper::WriteDumpBuf(int fd, const char* buf, const int len)
@@ -275,6 +309,19 @@ void ProcessDumper::WriteDumpRes(int32_t res)
 bool ProcessDumper::IsCrash() const
 {
     return isCrash_;
+}
+
+void ProcessDumper::WriteData(int fd, const std::string& data, int blockSize) const
+{
+    int dataSize = data.length();
+    int index = 0;
+    int writeLength = 0;
+    while (index < dataSize) {
+        writeLength = (index + blockSize) <= dataSize ? blockSize : (dataSize - index);
+        write(fd, data.substr(index, writeLength).c_str(), writeLength);
+        index += writeLength;
+        usleep(DfxConfig::GetConfig().writeSleepTime);
+    }
 }
 } // namespace HiviewDFX
 } // namespace OHOS
