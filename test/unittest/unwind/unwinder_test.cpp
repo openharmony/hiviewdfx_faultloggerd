@@ -579,7 +579,7 @@ HWTEST_F(UnwinderTest, FillFrameTest001, TestSize.Level2)
 #ifdef __arm__
     testMap = "f6d83000-f6d84000 r--p 00001000 b3:07 1892 /system/lib/init/libinit_context.z.so";
 #else
-    testMap = "7f0ab40000-7f0ab41000 r--p 00000000 b3:07 1882 /system/lib64/init/libinit_context1.z.so";
+    testMap = "7f0ab40000-7f0ab41000 r--p 00000000 b3:07 1882 /system/lib64/init/libinit_context.z.so";
 #endif
     map = DfxMap::Create(testMap, sizeof(testMap));
     frame.map = map;
@@ -601,7 +601,7 @@ HWTEST_F(UnwinderTest, FillFramesTest001, TestSize.Level2)
 #ifdef __arm__
     const string testMap = "f6d83000-f6d84000 r--p 00001000 b3:07 1892 /system/lib/init/libinit_context.z.so";
 #else
-    const string testMap = "7f0ab40000-7f0ab41000 r--p 00000000 b3:07 1882 /system/lib64/init/libinit_context1.z.so";
+    const string testMap = "7f0ab40000-7f0ab41000 r--p 00000000 b3:07 1882 /system/lib64/init/libinit_context.z.so";
 #endif
     auto unwinder = std::make_shared<Unwinder>();
     std::vector<DfxFrame> frames;
