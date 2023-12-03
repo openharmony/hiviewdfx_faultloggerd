@@ -157,7 +157,7 @@ if (defined(ohos_lite)) {
       "$faultloggerd_frameworks_path/unwinder:dfx_unwinder_static_src",
       "$faultloggerd_interfaces_path/innerkits/procinfo:dfx_procinfo_static",
       "//third_party/bounds_checking_function:libsec_static",
-      "//third_party/jsoncpp:jsoncpp",
+      "//third_party/jsoncpp:jsoncpp_static",
       "//third_party/libunwind:libunwind_local",
     ]
 
