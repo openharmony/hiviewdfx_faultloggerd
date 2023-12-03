@@ -21,6 +21,7 @@
       OHOS::HiviewDFX::BacktraceLocalContext::CleanUp*;
       OHOS::HiviewDFX::BacktraceLocalThread::GetFormatedStr*;
       OHOS::HiviewDFX::BacktraceLocalThread::SetMaxFrameNums*;
+      OHOS::HiviewDFX::DfxJsonFormatter::FormatJsonStack*;
     };
     extern "C" {
       PrintTrace*;

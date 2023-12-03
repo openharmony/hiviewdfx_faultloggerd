@@ -100,9 +100,9 @@ std::string DfxFrameFormat::GetFramesJson(const std::vector<DfxFrame>& frames)
 {
     char buf[FRAME_BUF_LEN] = {0};
 #ifdef __LP64__
-    char format[] = "%016";
+    char format[] = "%016" PRIx64 "";
 #else
-    char format[] = "%08";
+    char format[] = "%08" PRIx64 "";
 #endif
 
     Json::Value framesJson;
