@@ -20,7 +20,6 @@
     "ram": "~1024KB",
     "deps": {
       "components": [
-        "build_framework",
         "c_utils",
         "hilog",
         "hisysevent",
@@ -30,6 +29,7 @@
       ],
       "third_party": [
         "bounds_checking_function",
+        "jsoncpp",
         "libunwind",
         "lzma"
       ]

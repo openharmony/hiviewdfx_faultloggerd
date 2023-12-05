@@ -45,6 +45,8 @@
 using namespace OHOS::HiviewDFX;
 using namespace testing::ext;
 using namespace std;
+#define HEX 16
+#define STACK_VALUE (-8)
 
 namespace OHOS {
 namespace HiviewDFX {
@@ -354,7 +356,7 @@ bool DwarfOpTest::Test07()
     StackReset(0);
     StackPush(0x8);
     OpNeg();
-    ret &= (static_cast<uintptr_t>(-8) == StackPop());
+    ret &= (static_cast<uintptr_t>(STACK_VALUE) == StackPop());
 
     StackReset(0);
     StackPush(1);
@@ -676,8 +678,8 @@ std::vector<std::shared_ptr<FdeParseResult>> ParseFdeResultFromFile()
             auto pos1 = pcRange.find("..");
             std::string pcStart = pcRange.substr(0, pos1);
             std::string pcEnd = pcRange.substr(pos1 + strlen(".."));
-            result->relPcStart = std::stoul(pcStart, nullptr, 16);
-            result->relPcEnd = std::stoul(pcEnd, nullptr, 16);
+            result->relPcStart = std::stoul(pcStart, nullptr, HEX);
+            result->relPcEnd = std::stoul(pcEnd, nullptr, HEX);
             result->index = index;
             index++;
             continue;
@@ -732,7 +734,7 @@ HWTEST_F(DwarfTest, DwarfTest002, TestSize.Level2)
     */
     uint64_t startPc = loadbase + 0x6F640;
     uint64_t endPc = startPc + 0xa8ec0;
-    printf("startPc:%p endPc:%p\n", (void*)startPc, (void*)endPc);
+    printf("startPc:%p endPc:%p\n", reinterpret_cast<void*>startPc, reinterpret_cast<void*>endPc);
     uint64_t mapStart = loadbase + 0x6F000;
     uint64_t mapEnd = mapStart + 0xab000;
     const uint64_t offset = 0x6e000;

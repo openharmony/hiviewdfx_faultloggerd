@@ -20,6 +20,10 @@
 #include <vector>
 #include "dfx_frame.h"
 
+#ifndef is_ohos_lite
+#include "json/json.h"
+#endif
+
 namespace OHOS {
 namespace HiviewDFX {
 class DfxFrameFormat {
@@ -66,6 +70,16 @@ public:
      * @return std::vector<std::shared_ptr<DfxFrame>> native frame pointer list
      */
     static std::vector<std::shared_ptr<DfxFrame>> ConvertFrames(const std::vector<DfxFrame>& frames);
+
+#ifndef is_ohos_lite
+    /**
+     * @brief Get the Frames Json object
+     *
+     * @param frames native DfxFrame pointer list
+     * @return std::string native frames Json
+     */
+    static std::string GetFramesJson(const std::vector<DfxFrame>& frames);
+#endif
 };
 } // namespace HiviewDFX
 } // namespace OHOS

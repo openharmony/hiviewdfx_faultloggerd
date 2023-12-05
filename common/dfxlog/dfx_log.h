@@ -48,15 +48,15 @@ int DfxLogPrintV(const LogLevel logLevel, const unsigned int domain, const char*
 #define DFXLOG_FATAL(...) DFXLOG_PRINT(LOG_FATAL, LOG_DOMAIN, LOG_TAG, ##__VA_ARGS__)
 
 #define LOGD(fmt, ...) \
-    DFXLOG_PRINT(LOG_DEBUG, LOG_DOMAIN, LOG_TAG, "[%s:%d]" fmt, (__FILENAME__), (__LINE__), ##__VA_ARGS__)
+    DFXLOG_PRINT(LOG_DEBUG, LOG_DOMAIN, LOG_TAG, "[%s:%d]" fmt, (FILENAME_), (__LINE__), ##__VA_ARGS__)
 #define LOGI(fmt, ...) \
-    DFXLOG_PRINT(LOG_INFO, LOG_DOMAIN, LOG_TAG, "[%s:%d]" fmt, (__FILENAME__), (__LINE__), ##__VA_ARGS__)
+    DFXLOG_PRINT(LOG_INFO, LOG_DOMAIN, LOG_TAG, "[%s:%d]" fmt, (FILENAME_), (__LINE__), ##__VA_ARGS__)
 #define LOGW(fmt, ...) \
-    DFXLOG_PRINT(LOG_WARN, LOG_DOMAIN, LOG_TAG, "[%s:%d]" fmt, (__FILENAME__), (__LINE__), ##__VA_ARGS__)
+    DFXLOG_PRINT(LOG_WARN, LOG_DOMAIN, LOG_TAG, "[%s:%d]" fmt, (FILENAME_), (__LINE__), ##__VA_ARGS__)
 #define LOGE(fmt, ...) \
-    DFXLOG_PRINT(LOG_ERROR, LOG_DOMAIN, LOG_TAG, "[%s:%d]" fmt, (__FILENAME__), (__LINE__), ##__VA_ARGS__)
+    DFXLOG_PRINT(LOG_ERROR, LOG_DOMAIN, LOG_TAG, "[%s:%d]" fmt, (FILENAME_), (__LINE__), ##__VA_ARGS__)
 #define LOGF(fmt, ...) \
-    DFXLOG_PRINT(LOG_FATAL, LOG_DOMAIN, LOG_TAG, "[%s:%d]" fmt, (__FILENAME__), (__LINE__), ##__VA_ARGS__)
+    DFXLOG_PRINT(LOG_FATAL, LOG_DOMAIN, LOG_TAG, "[%s:%d]" fmt, (FILENAME_), (__LINE__), ##__VA_ARGS__)
 
 #else
 #define DFXLOG_PRINT(prio, domain, tag, ...)
@@ -96,7 +96,7 @@ int DfxLogPrintV(const LogLevel logLevel, const unsigned int domain, const char*
 
 #ifdef DFX_LOG_UNWIND
 #define LOGU(fmt, ...) \
-    DFXLOG_PRINT(LOG_INFO, LOG_DOMAIN, LOG_TAG, "[%s:%d]" fmt, (__FILENAME__), (__LINE__), ##__VA_ARGS__)
+    DFXLOG_PRINT(LOG_INFO, LOG_DOMAIN, LOG_TAG, "[%s:%d]" fmt, (FILENAME_), (__LINE__), ##__VA_ARGS__)
 #else
 #define LOGU(fmt, ...)
 #endif

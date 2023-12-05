@@ -44,12 +44,14 @@ public:
         return nullptr;
     }
     inline size_t Size() { return size_; }
+    inline void SetNeedUnmap(bool need) { needUnmap_ = need; }
 
     size_t Read(uintptr_t& addr, void* val, size_t size, bool incre = false) override;
 
 private:
     void *mmap_ = MAP_FAILED;
     size_t size_ = 0;
+    bool needUnmap_ = true;
 };
 } // namespace HiviewDFX
 } // namespace OHOS

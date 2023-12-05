@@ -12,13 +12,35 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#ifndef DFX_JSON_FORMATTER_H
+#define DFX_JSON_FORMATTER_H
 
-#include "unwinder_config.h"
+#include <memory>
+#include <string>
+#include <dfx_frame.h>
+
+#ifndef is_ohos_lite
+#include "json/json.h"
+#endif
 
 namespace OHOS {
 namespace HiviewDFX {
-bool UnwinderConfig::enableMiniDebugInfo_ = false;
-int UnwinderConfig::bigEndian_ = UNWIND_BYTE_ORDER;
-UnwindCachingPolicy UnwinderConfig::cachingPolicy_ = UNWIND_CACHE_NONE;
+class DfxJsonFormatter {
+public:
+    DfxJsonFormatter() = default;
+    ~DfxJsonFormatter() = default;
+
+    /**
+     * @brief Format Json string to stack string
+     *
+     * @param jsonStack input the json string
+     * @param outStackStr output the stack string
+     * @return bool
+     */
+#ifndef is_ohos_lite
+    static bool FormatJsonStack(std::string jsonStack, std::string& outStackStr);
+#endif
+};
 } // namespace HiviewDFX
 } // namespace OHOS
+#endif

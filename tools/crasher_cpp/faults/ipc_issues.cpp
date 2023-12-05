@@ -49,7 +49,7 @@ int IPCIssues::SptrAndSharedPtrMixUsage()
 {
     printf("IPCIssues::SptrAndSharedPtrMixUsage begin.\n");
     {
-        auto sendObj = std::shared_ptr<RemoteObjectInterfaceStub>(new RemoteObjectInterfaceStub());
+        auto sendObj = std::make_shared<RemoteObjectInterfaceStub>();
         printf("sendObj:%p.\n", sendObj.get());
         delete sendObj.get();
         sendObj = nullptr;

@@ -83,6 +83,7 @@ if (defined(ohos_lite)) {
     configs = [
       ":module_private_config",
       "$faultloggerd_path/common/build:coverage_flags",
+      "//third_party/jsoncpp:jsoncpp_public_config",
     ]
 
     defines = [ "UNITTEST" ]
@@ -92,6 +93,7 @@ if (defined(ohos_lite)) {
       "$faultloggerd_path/tools/process_dump:process_info_src",
       "//third_party/googletest:gmock_main",
       "//third_party/googletest:gtest_main",
+      "//third_party/jsoncpp:jsoncpp",
       "//third_party/libunwind:libunwind",
     ]
     external_deps = [ "c_utils:utils" ]
@@ -108,6 +110,7 @@ if (defined(ohos_lite)) {
     configs = [
       ":module_private_config",
       "$faultloggerd_path/common/build:coverage_flags",
+      "//third_party/jsoncpp:jsoncpp_public_config",
     ]
 
     defines = [ "UNITTEST" ]
@@ -117,6 +120,7 @@ if (defined(ohos_lite)) {
       "$faultloggerd_path/tools/process_dump:process_info_src",
       "//third_party/googletest:gmock_main",
       "//third_party/googletest:gtest_main",
+      "//third_party/jsoncpp:jsoncpp",
       "//third_party/libunwind:libunwind",
     ]
 

@@ -236,18 +236,13 @@ __attribute__((noinline)) bool UnwindWithContextByFramePointer(const int fd, unw
     uintptr_t fp = context->uc_mcontext.regs[UNW_AARCH64_X29];
     uintptr_t pc = context->uc_mcontext.pc;
 
-    pthread_attr_t tattr;
-    void *base;
-    size_t size;
-    pthread_getattr_np(pthread_self(), &tattr);
-    pthread_attr_getstack(&tattr, &base, &size);
-    uintptr_t stackBottom = (uintptr_t)base;
-    uintptr_t stackTop = (uintptr_t)base + size;
+    uintptr_t stackBottom = 0;
+    uintptr_t stackTop = (uintptr_t)(-1); // -1:stackTop
 
     int index = 0;
     do {
         uintptr_t prevFp = fp;
-        if (stackBottom < prevFp && (prevFp + sizeof(uintptr_t)) < stackTop) {
+        if (stackBottom < prevFp && (prevFp + sizeof(uintptr_t)) < stackTop && pc != 0) {
             PrintLog(fd, "#%02d fp(%lx) pc(%lx)\n", index, fp, pc);
             fp = *(uintptr_t*)prevFp;
             pc = *(uintptr_t*)(prevFp + sizeof(uintptr_t));

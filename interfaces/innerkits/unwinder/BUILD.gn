@@ -278,8 +278,12 @@ if (defined(ohos_lite)) {
       "dfx_memory.cpp",
       "dfx_mmap.cpp",
       "dfx_symbols.cpp",
+      "unwinder_config.cpp",
     ]
-
+    if (is_ohos && !is_mingw && !is_emulator) {
+      sources += [ "dfx_xz_utils.cpp" ]
+      public_deps = [ "//third_party/lzma:lzma_static" ]
+    }
     deps = [ "//third_party/bounds_checking_function:libsec_static" ]
     if (is_ohos) {
       external_deps = [ "c_utils:utils" ]

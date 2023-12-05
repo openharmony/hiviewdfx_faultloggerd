@@ -55,6 +55,7 @@ if (defined(ohos_lite)) {
       "HAVE_CONFIG_H",
       "HAVE_ELF_H",
       "HAVE_LINK_H",
+      "is_ohos_lite",
     ]
 
     deps = [
@@ -86,6 +87,7 @@ if (defined(ohos_lite)) {
     public_configs = [
       ":dfx_unwinder_config",
       "$faultloggerd_path/common/build:coverage_flags",
+      "//third_party/jsoncpp:jsoncpp_public_config",
     ]
 
     sources = dfx_unwinder_sources
@@ -94,6 +96,7 @@ if (defined(ohos_lite)) {
       "$faultloggerd_path/common/dfxlog:dfx_hilog",
       "$faultloggerd_path/common/dfxutil:dfx_util",
       "//third_party/bounds_checking_function:libsec_shared",
+      "//third_party/jsoncpp:jsoncpp",
       "//third_party/libunwind:libunwind",
     ]
 
@@ -106,7 +109,10 @@ if (defined(ohos_lite)) {
   }
 
   ohos_source_set("dfx_unwinder_static_src") {
-    public_configs = [ ":dfx_unwinder_config" ]
+    public_configs = [
+      ":dfx_unwinder_config",
+      "//third_party/jsoncpp:jsoncpp_public_config",
+    ]
 
     sources = dfx_unwinder_sources
 
@@ -114,6 +120,7 @@ if (defined(ohos_lite)) {
       "$faultloggerd_path/common/dfxlog:dfx_hilog_base",
       "$faultloggerd_path/common/dfxutil:dfx_util_static",
       "//third_party/bounds_checking_function:libsec_static",
+      "//third_party/jsoncpp:jsoncpp_static",
       "//third_party/libunwind:libunwind_local",
     ]
 

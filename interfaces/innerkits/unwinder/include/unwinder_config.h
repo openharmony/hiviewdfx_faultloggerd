@@ -23,6 +23,9 @@ namespace OHOS {
 namespace HiviewDFX {
 class UnwinderConfig final {
 public:
+    static inline void SetEnableMiniDebugInfo(bool enableMiniDebugInfo) { enableMiniDebugInfo_ = enableMiniDebugInfo; }
+    static inline bool GetEnableMiniDebugInfo() { return enableMiniDebugInfo_; }
+
     static inline void SetByteOrder(int bigEndian) { bigEndian_ = bigEndian; }
     static inline int GetByteOrder() { return bigEndian_; }
 
@@ -30,6 +33,7 @@ public:
     static inline UnwindCachingPolicy GetCachePolicy() { return cachingPolicy_; }
 
 private:
+    static bool enableMiniDebugInfo_;
     static int bigEndian_;
     static UnwindCachingPolicy cachingPolicy_;
 };

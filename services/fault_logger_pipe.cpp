@@ -34,6 +34,7 @@
 #include "dfx_define.h"
 #include "dfx_log.h"
 
+
 namespace OHOS {
 namespace HiviewDFX {
 namespace {
@@ -101,10 +102,15 @@ void FaultLoggerPipe::Close(int fd) const
     }
 }
 
-FaultLoggerPipe2::FaultLoggerPipe2(uint64_t time)
-    : faultLoggerPipeBuf_(std::unique_ptr<FaultLoggerPipe>(new FaultLoggerPipe())),
-    faultLoggerPipeRes_(std::unique_ptr<FaultLoggerPipe>(new FaultLoggerPipe()))
+FaultLoggerPipe2::FaultLoggerPipe2(uint64_t time, bool isJson)
 {
+    if (isJson) {
+        faultLoggerJsonPipeBuf_ = std::unique_ptr<FaultLoggerPipe>(new FaultLoggerPipe());
+        faultLoggerJsonPipeRes_ = std::unique_ptr<FaultLoggerPipe>(new FaultLoggerPipe());
+    } else {
+        faultLoggerPipeBuf_ = std::unique_ptr<FaultLoggerPipe>(new FaultLoggerPipe());
+        faultLoggerPipeRes_ = std::unique_ptr<FaultLoggerPipe>(new FaultLoggerPipe());
+    }
     time_ = time;
 }
 
@@ -112,6 +118,8 @@ FaultLoggerPipe2::~FaultLoggerPipe2()
 {
     faultLoggerPipeBuf_.reset();
     faultLoggerPipeRes_.reset();
+    faultLoggerJsonPipeBuf_.reset();
+    faultLoggerJsonPipeRes_.reset();
     time_ = 0;
 }
 
@@ -130,11 +138,11 @@ FaultLoggerPipeMap::~FaultLoggerPipeMap()
     }
 }
 
-void FaultLoggerPipeMap::Set(int pid, uint64_t time)
+void FaultLoggerPipeMap::Set(int pid, uint64_t time, bool isJson)
 {
     std::lock_guard<std::mutex> lck(pipeMapsMutex_);
     if (!Find(pid)) {
-        std::unique_ptr<FaultLoggerPipe2> ptr = std::unique_ptr<FaultLoggerPipe2>(new FaultLoggerPipe2(time));
+        std::unique_ptr<FaultLoggerPipe2> ptr = std::unique_ptr<FaultLoggerPipe2>(new FaultLoggerPipe2(time, isJson));
         faultLoggerPipes_.emplace(pid, std::move(ptr));
     }
 }

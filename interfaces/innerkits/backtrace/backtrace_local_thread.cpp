@@ -129,7 +129,7 @@ void BacktraceLocalThread::ReleaseThread()
     }
 }
 
-std::string BacktraceLocalThread::GetFormatedStr(bool withThreadName)
+std::string BacktraceLocalThread::GetFormatedStr(bool withThreadName, bool isJson)
 {
     if (frames_.empty()) {
         return "";
@@ -142,8 +142,13 @@ std::string BacktraceLocalThread::GetFormatedStr(bool withThreadName)
         ReadThreadName(tid_, threadName);
         ss << "Tid:" << tid_ << ", Name:" << threadName << std::endl;
     }
-
-    ss << DfxFrameFormat::GetFramesStr(frames_);
+    if (isJson) {
+#ifndef is_ohos_lite
+        ss << DfxFrameFormat::GetFramesJson(frames_);
+#endif
+    } else {
+        ss << DfxFrameFormat::GetFramesStr(frames_);
+    }
     return ss.str();
 }
 

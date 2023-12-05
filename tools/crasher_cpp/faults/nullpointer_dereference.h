@@ -18,10 +18,10 @@
 
 #include <cinttypes>
 
-int TestNullPointerDereferenceCrash0();
-int TestNullPointerDereferenceCrash1();
-int TestNullPointerDereferenceCrash2();
-int TestNullPointerDereferenceCrash3();
+int TestNullPointerDereferenceCrash0(void);
+int TestNullPointerDereferenceCrash1(void);
+int TestNullPointerDereferenceCrash2(void);
+int TestNullPointerDereferenceCrash3(void);
 
 namespace OHOS {
 namespace HiviewDFX {

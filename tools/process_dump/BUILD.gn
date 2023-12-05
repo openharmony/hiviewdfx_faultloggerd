@@ -30,6 +30,7 @@ processdump_sources = [
   "dfx_logger.cpp",
   "dfx_process.cpp",
   "dfx_ring_buffer_wrapper.cpp",
+  "dfx_stack_info_formatter.cpp",
   "dfx_thread.cpp",
   "dfx_unwind_remote.cpp",
   "printer.cpp",
@@ -45,6 +46,7 @@ if (defined(ohos_lite)) {
       "HAVE_CONFIG_H",
       "HAVE_ELF_H",
       "HAVE_LINK_H",
+      "is_ohos_lite",
     ]
 
     include_dirs = [
@@ -111,6 +113,7 @@ if (defined(ohos_lite)) {
     configs = [
       ":processdump_config",
       "$faultloggerd_common_path/build:coverage_flags",
+      "//third_party/jsoncpp:jsoncpp_public_config",
     ]
 
     deps = [
@@ -118,6 +121,7 @@ if (defined(ohos_lite)) {
       "$faultloggerd_common_path/dfxutil:dfx_util",
       "$faultloggerd_path/interfaces/innerkits/faultloggerd_client:libfaultloggerd",
       "$faultloggerd_path/interfaces/innerkits/procinfo:libdfx_procinfo",
+      "//third_party/jsoncpp:jsoncpp",
       "//third_party/libunwind:libunwind",
     ]
 
@@ -135,6 +139,7 @@ if (defined(ohos_lite)) {
     configs = [
       ":processdump_config",
       "$faultloggerd_path/common/build:coverage_flags",
+      "//third_party/jsoncpp:jsoncpp_public_config",
     ]
     sources = processdump_sources
     sources += [
@@ -150,6 +155,7 @@ if (defined(ohos_lite)) {
       "$faultloggerd_path/interfaces/innerkits/faultloggerd_client:libfaultloggerd",
       "$faultloggerd_path/interfaces/innerkits/procinfo:libdfx_procinfo",
       "$faultloggerd_path/interfaces/innerkits/signal_handler:dfx_local_handler",
+      "//third_party/jsoncpp:jsoncpp",
       "//third_party/libunwind:libunwind",
     ]
 

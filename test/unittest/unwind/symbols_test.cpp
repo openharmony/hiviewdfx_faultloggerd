@@ -21,6 +21,7 @@
 #include <iostream>
 #include "dfx_elf.h"
 #include "elf_imitate.h"
+#include "unwinder_config.h"
 
 using namespace OHOS::HiviewDFX;
 using namespace testing::ext;
@@ -28,6 +29,7 @@ using namespace std;
 
 #define ELF32_FILE "/data/test/resource/testdata/elf32_test"
 #define ELF64_FILE "/data/test/resource/testdata/elf_test"
+#define DUMPCATCHER_ELF_FILE "/system/bin/dumpcatcher"
 namespace OHOS {
 namespace HiviewDFX {
 class DfxSymbolsTest : public testing::Test {
@@ -120,6 +122,28 @@ HWTEST_F(DfxSymbolsTest, DfxSymbolsTest002, TestSize.Level2)
     ASSERT_TRUE(DfxSymbols::GetFuncNameAndOffsetByPc(0x00002a08, elf, funcName, funcOffset));
 
     GTEST_LOG_(INFO) << "DfxSymbolsTest002: end.";
+}
+
+/**
+ * @tc.name: DfxSymbolsTest003
+ * @tc.desc: test DfxSymbols functions with minidebuginfo elf
+ * @tc.type: FUNC
+ */
+HWTEST_F(DfxSymbolsTest, DfxSymbolsTest003, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "DfxSymbolsTest003: start.";
+    UnwinderConfig::SetEnableMiniDebugInfo(true);
+    std::vector<DfxSymbol> dfxSymbols;
+    std::shared_ptr<DfxElf> elf = make_shared<DfxElf>(DUMPCATCHER_ELF_FILE);
+    ASSERT_TRUE(elf->IsValid());
+    ASSERT_TRUE(elf->IsEmbeddedElfValid());
+    DfxSymbols::ParseSymbols(dfxSymbols, elf, DUMPCATCHER_ELF_FILE);
+    GTEST_LOG_(INFO) << "DfxSymbolsTest003: symbols size:" << dfxSymbols.size();
+    ASSERT_GE(dfxSymbols.size(), 0);
+    for (auto dfxSymbol : dfxSymbols) {
+        GTEST_LOG_(INFO) << "DfxSymbolsTest003: dfxSymbol.demangle_: "<< dfxSymbol.demangle_;
+    }
+    GTEST_LOG_(INFO) << "DfxSymbolsTest003: end.";
 }
 
 /**

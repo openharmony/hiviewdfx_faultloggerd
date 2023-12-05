@@ -174,7 +174,6 @@ static int SendRequestToServer(const FaultLoggerdRequest &request)
             DFXLOG_ERROR("StartConnect failed.");
             break;
         }
-
         if (write(sockfd, &request, sizeof(struct FaultLoggerdRequest)) != static_cast<long>(sizeof(request))) {
             DFXLOG_ERROR("write failed.");
             break;
@@ -213,13 +212,19 @@ bool RequestCheckPermission(int32_t pid)
 
 int RequestSdkDump(int32_t type, int32_t pid, int32_t tid)
 {
-    DFXLOG_INFO("RequestSdkDump :: type(%d), pid(%d), tid(%d).", type, pid, tid);
+    return RequestSdkDumpJson(type, pid, tid, false);
+}
+
+int RequestSdkDumpJson(int32_t type, int32_t pid, int32_t tid, bool isJson)
+{
+    DFXLOG_INFO("RequestSdkDumpJson :: type(%d), pid(%d), tid(%d).", type, pid, tid);
     if (pid <= 0 || tid < 0) {
         return -1;
     }
 
     struct FaultLoggerdRequest request;
     (void)memset_s(&request, sizeof(request), 0, sizeof(request));
+    request.isJson = isJson;
     request.sigCode = type;
     request.pid = pid;
     request.tid = tid;
@@ -273,19 +278,28 @@ int RequestPrintTHilog(const char *msg, int length)
 int32_t RequestPipeFd(int32_t pid, int32_t pipeType)
 {
     if (pipeType < static_cast<int32_t>(FaultLoggerPipeType::PIPE_FD_READ_BUF) ||
-        pipeType > static_cast<int32_t>(FaultLoggerPipeType::PIPE_FD_WRITE_RES)) {
+        pipeType > static_cast<int32_t>(FaultLoggerPipeType::PIPE_FD_DELETE)) {
         DFXLOG_ERROR("%s :: pipeType(%d) failed.", __func__, pipeType);
         return -1;
     }
     struct FaultLoggerdRequest request;
     (void)memset_s(&request, sizeof(request), 0, sizeof(struct FaultLoggerdRequest));
+
+    if ((pipeType == static_cast<int32_t>(FaultLoggerPipeType::PIPE_FD_JSON_READ_BUF)) ||
+        (pipeType == static_cast<int32_t>(FaultLoggerPipeType::PIPE_FD_JSON_READ_RES))) {
+        request.isJson = true;
+    } else {
+        request.isJson = false;
+    }
     request.pipeType = pipeType;
     request.pid = pid;
     request.callerPid = getpid();
     request.callerTid = syscall(SYS_gettid);
     request.clientType = (int32_t)FaultLoggerClientType::PIPE_FD_CLIENT;
     if ((pipeType == static_cast<int32_t>(FaultLoggerPipeType::PIPE_FD_READ_BUF)) ||
-        (pipeType == static_cast<int32_t>(FaultLoggerPipeType::PIPE_FD_READ_RES))) {
+        (pipeType == static_cast<int32_t>(FaultLoggerPipeType::PIPE_FD_READ_RES)) ||
+        (pipeType == static_cast<int32_t>(FaultLoggerPipeType::PIPE_FD_JSON_READ_BUF)) ||
+        (pipeType == static_cast<int32_t>(FaultLoggerPipeType::PIPE_FD_JSON_READ_RES))) {
         return RequestFileDescriptorByCheck(&request);
     }
     return RequestFileDescriptorEx(&request);

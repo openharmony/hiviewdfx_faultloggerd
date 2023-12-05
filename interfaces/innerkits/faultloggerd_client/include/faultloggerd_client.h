@@ -75,6 +75,14 @@ enum FaultLoggerPipeType {
     PIPE_FD_READ_RES,
     /** For request file descriptor of pipe to write result  */
     PIPE_FD_WRITE_RES,
+    /** For request file descriptor of pipe to json read buffer  */
+    PIPE_FD_JSON_READ_BUF,
+    /** For request file descriptor of pipe to json write buffer  */
+    PIPE_FD_JSON_WRITE_BUF,
+    /** For request file descriptor of pipe to json read result  */
+    PIPE_FD_JSON_READ_RES,
+    /** For request file descriptor of pipe to json write result  */
+    PIPE_FD_JSON_WRITE_RES,
     /** For request to delete file descriptor of pipe */
     PIPE_FD_DELETE,
 };
@@ -124,6 +132,8 @@ struct FaultLoggerdRequest {
     int32_t callerTid;
     /** time of current request */
     uint64_t time;
+    /** ture output json string, false output default string */
+    bool isJson;
 } __attribute__((packed));
 /**
  * @brief Check connection status of client
@@ -188,6 +198,14 @@ int RequestPrintTHilog(const char *msg, int length);
  * @return if succeed return 0 , otherwise return -1
 */
 int RequestSdkDump(int32_t type, int32_t pid, int32_t tid);
+
+/**
+ * @brief request dump stack about process
+ * @param pid process id
+ * @param tid thread id, if equal 0 means dump all the threads in a process.
+ * @return if succeed return 0 , otherwise return -1
+*/
+int RequestSdkDumpJson(int32_t type, int32_t pid, int32_t tid, bool isJson);
 
 #ifdef __cplusplus
 }

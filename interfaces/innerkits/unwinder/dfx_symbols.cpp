@@ -48,12 +48,8 @@ bool DfxSymbols::ParseSymbols(std::vector<DfxSymbol>& symbols, std::shared_ptr<D
         symbolsPath += ("!" + elf->GetElfName());
     }
     for (auto elfSymbol : elfSymbols) {
-        if (static_cast<uint64_t>(elfSymbol.name) >= elfSymbol.strSize) {
-            return false;
-        }
-        std::string nameStr = std::string((char *)elf->GetMmapPtr() + elfSymbol.strOffset + elfSymbol.name);
         symbols.emplace_back(elfSymbol.value, elfSymbol.size,
-            nameStr, Demangle(nameStr), symbolsPath);
+            elfSymbol.nameStr, Demangle(elfSymbol.nameStr), symbolsPath);
     }
     return true;
 }
@@ -78,11 +74,7 @@ bool DfxSymbols::GetFuncNameAndOffsetByPc(uint64_t relPc, std::shared_ptr<DfxElf
 #endif
     ElfSymbol elfSymbol;
     if ((elf != nullptr) && elf->GetFuncInfo(relPc, elfSymbol)) {
-        if (static_cast<uint64_t>(elfSymbol.name) >= elfSymbol.strSize) {
-            return false;
-        }
-        std::string nameStr = std::string((char *)elf->GetMmapPtr() + elfSymbol.strOffset + elfSymbol.name);
-        funcName = Demangle(nameStr);
+        funcName = Demangle(elfSymbol.nameStr);
         funcOffset = relPc - elfSymbol.value;
 #if defined(__arm__)
         funcOffset &= ~1;

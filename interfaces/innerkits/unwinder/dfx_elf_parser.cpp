@@ -158,11 +158,6 @@ bool ElfParser::ParseProgramHeaders(const EhdrType& ehdr)
     return true;
 }
 
-void ElfParser::EnableMiniDebugInfo()
-{
-    enableMiniDebugInfo_ = true;
-}
-
 std::shared_ptr<MiniDebugInfo> ElfParser::GetMiniDebugInfo()
 {
     return minidebugInfo_;
@@ -208,12 +203,10 @@ bool ElfParser::ParseSectionHeaders(const EhdrType& ehdr)
             continue;
         }
 
-        if (enableMiniDebugInfo_) {
-            if (shdr.sh_size != 0 && secName == GNU_DEBUGDATA) {
-                minidebugInfo_ = std::make_shared<MiniDebugInfo>();
-                minidebugInfo_->offset = shdr.sh_offset;
-                minidebugInfo_->size = shdr.sh_size;
-            }
+        if (shdr.sh_size != 0 && secName == GNU_DEBUGDATA) {
+            minidebugInfo_ = std::make_shared<MiniDebugInfo>();
+            minidebugInfo_->offset = shdr.sh_offset;
+            minidebugInfo_->size = shdr.sh_size;
         }
 
         ShdrInfo shdrInfo;
@@ -328,8 +321,10 @@ bool ElfParser::ParseElfSymbols(ElfShdr shdr, bool isFunc, bool isSort)
         if (!ParseElfSymbol<SymType>(shdr, idx, isFunc, elfSymbol)) {
             continue;
         }
-        elfSymbol.strOffset = shdrInfo.offset;
-        elfSymbol.strSize = shdrInfo.size;
+        if (static_cast<uint64_t>(elfSymbol.name) >= shdrInfo.size) {
+            continue;
+        }
+        elfSymbol.nameStr = std::string(static_cast<char*>(mmap_->Get()) + shdrInfo.offset + elfSymbol.name);
         elfSymbols_.push_back(elfSymbol);
     }
 

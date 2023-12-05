@@ -67,7 +67,7 @@ bool DfxMmap::Init(uint8_t *decompressedData, size_t size)
 void DfxMmap::Clear()
 {
 #if is_ohos
-    if (mmap_ != MAP_FAILED) {
+    if ((mmap_ != MAP_FAILED) && (needUnmap_)) {
         munmap(mmap_, size_);
         mmap_ = MAP_FAILED;
     }

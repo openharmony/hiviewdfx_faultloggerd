@@ -21,6 +21,7 @@
 #include <iostream>
 #include "dfx_elf.h"
 #include "elf_imitate.h"
+#include "unwinder_config.h"
 
 using namespace OHOS::HiviewDFX;
 using namespace testing::ext;
@@ -166,12 +167,16 @@ HWTEST_F(DfxElfTest, DfxElfTest003, TestSize.Level2)
 HWTEST_F(DfxElfTest, DfxElfTest004, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "DfxElfTest004: start.";
+    UnwinderConfig::SetEnableMiniDebugInfo(true);
     DfxElf elf(DUMPCATCHER_ELF_FILE);
-    elf.EnableMiniDebugInfo();
     ASSERT_TRUE(elf.IsValid());
-    GTEST_LOG_(INFO) << "MinidebuInfo Ptr: " << elf.GetMiniDebugInfo();
-    ASSERT_TRUE(elf.GetMiniDebugInfo() != nullptr);
-    ASSERT_TRUE(elf.GetEmbeddedElf() != nullptr);
+    ASSERT_TRUE(elf.IsEmbeddedElfValid());
+    auto symbols1 = elf.GetFuncSymbols();
+    GTEST_LOG_(INFO) << "DfxElfTest004: symbols1 size:" << symbols1.size();
+    auto symbols2 = elf.GetEmbeddedElf()->GetFuncSymbols();
+    GTEST_LOG_(INFO) << "DfxElfTest004: symbols2 size:" << symbols2.size();
+    ASSERT_GE(symbols2.size(), 0);
+    ASSERT_GE(symbols1.size(), symbols2.size());
     GTEST_LOG_(INFO) << "DfxElfTest004: end.";
 }
 
