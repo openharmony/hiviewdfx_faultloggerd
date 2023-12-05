@@ -101,16 +101,23 @@ bool DfxMap::IsValidName()
     return true;
 }
 
-bool DfxMap::IsArkName()
+bool DfxMap::IsArkExecutable()
 {
     if (name.length() == 0) {
         return false;
     }
 
-    if ((strstr(name.c_str(), "[anon:ArkTS Code]") == nullptr) &&
-        (strstr(name.c_str(), "/dev/zero") == nullptr)) {
+    if ((!StartsWith(name, "[anon:ArkTS Code]")) && (!StartsWith(name, "/dev/zero"))) {
+        LOGU("not ark map: %s", name.c_str());
         return false;
     }
+
+    if ((prots & PROT_EXEC) == 0) {
+        LOGU("target map is not executable.");
+        return false;
+    }
+
+    LOGU("current map is ark map: %s", name.c_str());
     return true;
 }
 

@@ -22,10 +22,14 @@
 #include <mutex>
 #include <string>
 #include <thread>
+
 #include "cppcrash_reporter.h"
 #include "dfx_dump_request.h"
 #include "dfx_process.h"
 #include "nocopyable.h"
+#if !defined(__x86_64__)
+#include "unwinder.h"
+#endif
 
 namespace OHOS {
 namespace HiviewDFX {
@@ -37,6 +41,7 @@ public:
     void Dump();
     void WriteDumpRes(int32_t res);
     bool IsCrash() const;
+
 private:
     ProcessDumper() = default;
     DISALLOW_COPY_AND_MOVE(ProcessDumper);
@@ -47,8 +52,12 @@ private:
     static int GetLogTypeBySignal(int sig);
     void WriteData(int fd, const std::string& data, int blockSize) const;
 
+private:
     std::shared_ptr<DfxProcess> process_ = nullptr;
     std::shared_ptr<CppCrashReporter> reporter_ = nullptr;
+#if !defined(__x86_64__)
+    std::shared_ptr<Unwinder> unwinder_ = nullptr;
+#endif
     bool isCrash_ = false;
     bool isJsonDump_ = false;
     int32_t resFd_ = -1;

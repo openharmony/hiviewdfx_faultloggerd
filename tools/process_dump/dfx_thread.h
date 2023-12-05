@@ -20,6 +20,7 @@
 #include <string>
 #include <sys/types.h>
 #include <vector>
+
 #include "dfx_define.h"
 #include "dfx_fault_stack.h"
 #include "dfx_frame.h"
@@ -44,9 +45,15 @@ public:
 
     std::shared_ptr<DfxRegs> GetThreadRegs() const;
     void SetThreadRegs(const std::shared_ptr<DfxRegs> &regs);
+#if defined(__x86_64__)
     void AddFrame(std::shared_ptr<DfxFrame> frame);
     const std::vector<std::shared_ptr<DfxFrame>>& GetFrames() const;
     void SetFrames(std::vector<std::shared_ptr<DfxFrame>> frames);
+#else
+    void AddFrame(DfxFrame& frame);
+    const std::vector<DfxFrame>& GetFrames() const;
+    void SetFrames(const std::vector<DfxFrame>& frames);
+#endif
     void InitFaultStack(bool needParseStack = false);
     std::shared_ptr<FaultStack> GetFaultStack() const;
     std::string ToString() const;
@@ -67,7 +74,11 @@ private:
 
     ThreadStatus threadStatus = ThreadStatus::THREAD_STATUS_INVALID;
     std::shared_ptr<DfxRegs> regs_;
+#if defined(__x86_64__)
     std::vector<std::shared_ptr<DfxFrame>> frames_;
+#else
+    std::vector<DfxFrame> frames_;
+#endif
     std::shared_ptr<FaultStack> faultStack_;
 };
 } // namespace HiviewDFX

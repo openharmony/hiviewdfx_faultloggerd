@@ -80,7 +80,7 @@ bool CppCrashReporter::Format()
 
         // other thread info
         std::vector<std::shared_ptr<DfxThread>> otherThreads = process_->GetOtherThreads();
-        unsigned long index = 0;
+        MAYBE_UNUSED unsigned long index = 0;
         for (auto oneThread : otherThreads) {
             std::stringstream ss;
             ss << "Tid:" << oneThread->threadInfo_.tid << ", ";

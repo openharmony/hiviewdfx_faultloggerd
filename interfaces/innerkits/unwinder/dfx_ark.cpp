@@ -20,8 +20,10 @@
 #include <cstdlib>
 #include <dlfcn.h>
 #include <pthread.h>
+
 #include "dfx_define.h"
 #include "dfx_log.h"
+#include "string_util.h"
 
 namespace OHOS {
 namespace HiviewDFX {
@@ -35,9 +37,42 @@ static const char ARK_LIB_NAME[] = "libark_jsruntime.so";
 
 static void* g_handle = nullptr;
 static pthread_mutex_t g_mutex;
-
+static int (*g_getArkNativeFrameInfoFn)(int, uintptr_t*, uintptr_t*, uintptr_t*, size_t&, JsFrame**);
 static int (*g_stepArkManagedNativeFrameFn)(int, uintptr_t*, uintptr_t*, uintptr_t*, char*, size_t);
 static int (*g_getArkJsHeapCrashInfoFn)(int, uintptr_t *, uintptr_t *, int, char *, size_t);
+}
+
+int DfxArk::GetArkNativeFrameInfo(int pid, uintptr_t& pc, uintptr_t& fp, uintptr_t& sp, size_t& size, JsFrame** frames)
+{
+    if (g_getArkNativeFrameInfoFn != nullptr) {
+        return g_getArkNativeFrameInfoFn(pid, &pc, &fp, &sp, size, frames);
+    }
+
+    pthread_mutex_lock(&g_mutex);
+    if (g_getArkNativeFrameInfoFn != nullptr) {
+        pthread_mutex_unlock(&g_mutex);
+        return g_getArkNativeFrameInfoFn(pid, &pc, &fp, &sp, size, frames);
+    }
+
+    if (g_handle == nullptr) {
+        g_handle = dlopen(ARK_LIB_NAME, RTLD_LAZY);
+        if (g_handle == nullptr) {
+            LOGU("Failed to load library(%s).", dlerror());
+            pthread_mutex_unlock(&g_mutex);
+            return -1;
+        }
+    }
+
+    *(void**)(&g_getArkNativeFrameInfoFn) = dlsym(g_handle, "get_ark_native_frame_info");
+    if (!g_getArkNativeFrameInfoFn) {
+        LOGU("Failed to find symbol(%s).", dlerror());
+        g_handle = nullptr;
+        pthread_mutex_unlock(&g_mutex);
+        return -1;
+    }
+
+    pthread_mutex_unlock(&g_mutex);
+    return g_getArkNativeFrameInfoFn(pid, &pc, &fp, &sp, size, frames);
 }
 
 int DfxArk::StepArkManagedNativeFrame(int pid, uintptr_t& pc, uintptr_t& fp, uintptr_t& sp, char* buf, size_t bufSize)

@@ -22,7 +22,6 @@
 #include "stdio.h"
 #include "stdlib.h"
 
-const static int ARGUMENT_LIMIT = 2;
 const static unsigned int SLEEP_TIMEOUT = 360000;
 
 static void CreateThread(int *argv)
@@ -91,6 +90,7 @@ NOINLINE int TestFunc70(void)
 #ifndef UNITTEST
 int main(int argc, char* argv[])
 {
+    const int ARGUMENT_LIMIT = 2;
     if (argc != ARGUMENT_LIMIT) {
         printf("invalid input argument.\n");
         return 0;

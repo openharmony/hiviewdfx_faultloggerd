@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-#include "printer.h"
+#include "printer_emulator.h"
 
 #include <cinttypes>
 #include <dlfcn.h>
@@ -23,7 +23,7 @@
 #include <unistd.h>
 
 #include "dfx_config.h"
-#include "dfx_frame_formatter.h"
+#include "dfx_frame_format.h"
 #include "dfx_logger.h"
 #include "dfx_ring_buffer_wrapper.h"
 #include "dfx_signal.h"
@@ -36,8 +36,7 @@ constexpr size_t PAGE_SIZE = 4096;
 
 namespace OHOS {
 namespace HiviewDFX {
-void Printer::PrintDumpHeader(std::shared_ptr<ProcessDumpRequest> request, std::shared_ptr<DfxProcess> process,
-                              std::shared_ptr<Unwinder> unwinder)
+void Printer::PrintDumpHeader(std::shared_ptr<ProcessDumpRequest> request, std::shared_ptr<DfxProcess> process)
 {
     bool isCrash = (request->siginfo.si_signo != SIGDUMP);
     if (isCrash) {
@@ -50,7 +49,7 @@ void Printer::PrintDumpHeader(std::shared_ptr<ProcessDumpRequest> request, std::
     DfxRingBufferWrapper::GetInstance().AppendBuf("Process name:%s\n", process->processInfo_.processName.c_str());
 
     if (isCrash) {
-        PrintReason(request, process, unwinder);
+        PrintReason(request, process);
         auto msg = process->GetFatalMessage();
         if (!msg.empty()) {
             DfxRingBufferWrapper::GetInstance().AppendBuf("LastFatalMessage:%s\n", msg.c_str());
@@ -67,20 +66,19 @@ void Printer::PrintDumpHeader(std::shared_ptr<ProcessDumpRequest> request, std::
         }
     }
 }
-
-void Printer::PrintReason(std::shared_ptr<ProcessDumpRequest> request, std::shared_ptr<DfxProcess> process,
-                          std::shared_ptr<Unwinder> unwinder)
+void Printer::PrintReason(std::shared_ptr<ProcessDumpRequest> request, std::shared_ptr<DfxProcess> process)
 {
     DfxRingBufferWrapper::GetInstance().AppendMsg("Reason:");
     process->reason += DfxSignal::PrintSignal(request->siginfo);
     uint64_t addr = (uint64_t)(request->siginfo.si_addr);
+    process->InitProcessMaps();
     if (request->siginfo.si_signo == SIGSEGV &&
         (request->siginfo.si_code == SEGV_MAPERR || request->siginfo.si_code == SEGV_ACCERR)) {
         if (addr < PAGE_SIZE) {
             process->reason += " probably caused by NULL pointer dereference";
         } else {
-            std::shared_ptr<DfxMaps> maps = unwinder->GetMaps();
-            std::shared_ptr<DfxMap> map;
+            std::shared_ptr<DfxElfMaps> maps = process->GetMaps();
+            std::shared_ptr<DfxElfMap> map;
             if (process->vmThread_ == nullptr) {
                 DFXLOG_WARN("vmThread_ is nullptr");
                 return;
@@ -90,10 +88,10 @@ void Printer::PrintReason(std::shared_ptr<ProcessDumpRequest> request, std::shar
                 DFXLOG_WARN("regs is nullptr");
                 return;
             }
-            uintptr_t sp = regs->GetSp();
-            if (maps != nullptr && maps->FindMapByAddr(map, sp)) {
+            uintptr_t sp = regs->sp_;
+            if (maps != nullptr && maps->FindMapByAddr(sp, map)) {
                 std::string guardMapName = StringPrintf("[anon:guard:%d]", process->keyThread_->threadInfo_.tid);
-                if ((addr < map->begin && map->begin - addr <= PAGE_SIZE) || (map->name.compare(guardMapName) == 0)) {
+                if ((addr < map->begin && map->begin - addr <= PAGE_SIZE) || (map->path.compare(guardMapName) == 0)) {
                     process->reason += StringPrintf(
 #if defined(__LP64__)
                         " current thread stack low address = %#018llx, probably caused by stack-buffer-overflow",
@@ -108,17 +106,18 @@ void Printer::PrintReason(std::shared_ptr<ProcessDumpRequest> request, std::shar
     process->reason += "\n";
     DfxRingBufferWrapper::GetInstance().AppendMsg(process->reason);
 }
-
-void Printer::PrintProcessMapsByConfig(std::shared_ptr<DfxMaps> maps)
+void Printer::PrintProcessMapsByConfig(std::shared_ptr<DfxProcess> process)
 {
     if (DfxConfig::GetConfig().displayMaps) {
-        if (maps == nullptr) {
+        process->InitProcessMaps();
+        if (process->GetMaps() == nullptr) {
+            DFXLOG_WARN("Pid:%d maps is null", process->processInfo_.pid);
             return;
         }
-        auto mapsVec = maps->GetMaps();
         DfxRingBufferWrapper::GetInstance().AppendMsg("\nMaps:\n");
-        for (auto iter = mapsVec.begin(); iter != mapsVec.end(); iter++) {
-            DfxRingBufferWrapper::GetInstance().AppendMsg((*iter)->ToString());
+        auto maps = process->GetMaps()->GetMaps();
+        for (auto iter = maps.begin(); iter != maps.end(); iter++) {
+            DfxRingBufferWrapper::GetInstance().AppendMsg((*iter)->PrintMap());
         }
     }
 }
@@ -138,15 +137,16 @@ void Printer::PrintThreadHeaderByConfig(std::shared_ptr<DfxThread> thread)
     }
 }
 
-void Printer::PrintThreadBacktraceByConfig(std::shared_ptr<Unwinder> unwinder)
+void Printer::PrintThreadBacktraceByConfig(std::shared_ptr<DfxThread> thread)
 {
     if (DfxConfig::GetConfig().displayBacktrace) {
-        const auto& frames = unwinder->GetFrames();
+        const auto& frames = thread->GetFrames();
         if (frames.size() == 0) {
+            DFXLOG_WARN("Tid:%d frame is null", thread->threadInfo_.tid);
             return;
         }
         for (const auto& frame : frames) {
-            DfxRingBufferWrapper::GetInstance().AppendMsg(DfxFrameFormatter::GetFrameStr(frame));
+            DfxRingBufferWrapper::GetInstance().AppendMsg(DfxFrameFormat::GetFrameStr(frame));
         }
     }
 }
@@ -154,25 +154,14 @@ void Printer::PrintThreadBacktraceByConfig(std::shared_ptr<Unwinder> unwinder)
 void Printer::PrintThreadRegsByConfig(std::shared_ptr<DfxThread> thread)
 {
     if (DfxConfig::GetConfig().displayRegister) {
-        auto regs = thread->GetThreadRegs();
+        std::shared_ptr<DfxRegs> regs = thread->GetThreadRegs();
         if (regs != nullptr) {
             DfxRingBufferWrapper::GetInstance().AppendMsg(regs->PrintRegs());
         }
     }
 }
 
-void Printer::PrintRegsByConfig(std::shared_ptr<DfxRegs> regs)
-{
-    if (regs == nullptr) {
-        return;
-    }
-    if (DfxConfig::GetConfig().displayRegister) {
-        DfxRingBufferWrapper::GetInstance().AppendMsg(regs->PrintRegs());
-    }
-}
-
-void Printer::PrintThreadFaultStackByConfig(std::shared_ptr<DfxProcess> process, std::shared_ptr<DfxThread> thread,
-                                            std::shared_ptr<Unwinder> unwinder)
+void Printer::PrintThreadFaultStackByConfig(std::shared_ptr<DfxProcess> process, std::shared_ptr<DfxThread> thread)
 {
     if (DfxConfig::GetConfig().displayFaultStack) {
         if (process == nullptr) {
@@ -180,7 +169,8 @@ void Printer::PrintThreadFaultStackByConfig(std::shared_ptr<DfxProcess> process,
         }
         thread->InitFaultStack();
         auto faultStack = thread->GetFaultStack();
-        faultStack->CollectRegistersBlock(thread->GetThreadRegs(), unwinder->GetMaps());
+        process->InitProcessMaps();
+        faultStack->CollectRegistersBlock(thread->GetThreadRegs(), process->GetMaps());
         faultStack->Print();
     }
 }

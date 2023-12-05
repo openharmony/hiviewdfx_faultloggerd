@@ -17,6 +17,7 @@
 
 #include <cinttypes>
 #include <string>
+
 #include "dfx_logger.h"
 #include "dfx_process.h"
 #include "dfx_signal.h"
@@ -54,12 +55,12 @@ bool DfxStackInfoFormatter::GetStackInfo(bool isJsonDump, Json::Value& jsonInfo)
     if (isJsonDump) {
         GetDumpInfo(jsonInfo);
     } else {
-        GetCppCrashInfo(jsonInfo);
+        GetNativeCrashInfo(jsonInfo);
     }
     return true;
 }
 
-void DfxStackInfoFormatter::GetCppCrashInfo(Json::Value& jsonInfo) const
+void DfxStackInfoFormatter::GetNativeCrashInfo(Json::Value& jsonInfo) const
 {
     jsonInfo["time"] = request_->timeStamp;
     jsonInfo["uuid"] = "";
@@ -85,7 +86,7 @@ void DfxStackInfoFormatter::GetCppCrashInfo(Json::Value& jsonInfo) const
     jsonInfo["exception"] = exception;
 
     // fill other thread info
-    std::vector<std::shared_ptr<DfxThread>> otherThreads = process_->GetOtherThreads();
+    auto otherThreads = process_->GetOtherThreads();
     if (otherThreads.size() > 0) {
         Json::Value threadsJsonArray;
         AppendThreads(otherThreads, threadsJsonArray);
@@ -104,7 +105,7 @@ void DfxStackInfoFormatter::GetDumpInfo(Json::Value& jsonInfo) const
     jsonInfo.append(thread);
 
     // fill other thread info
-    std::vector<std::shared_ptr<DfxThread>> otherThreads = process_->GetOtherThreads();
+    auto otherThreads = process_->GetOtherThreads();
     if (otherThreads.size() > 0) {
         AppendThreads(otherThreads, jsonInfo);
     }
@@ -117,22 +118,63 @@ bool DfxStackInfoFormatter::FillFrames(const std::shared_ptr<DfxThread>& thread,
         DFXLOG_ERROR("FillFrames thread is null");
         return false;
     }
-    const std::vector<std::shared_ptr<DfxFrame>>& threadFrames = thread->GetFrames();
-    for (auto const& oneFrame : threadFrames) {
-        Json::Value frameJson;
-#ifdef __LP64__
-        frameJson["pc"] = StringPrintf("%016lx", oneFrame->relPc);
-#else
-        frameJson["pc"] = StringPrintf("%08x", oneFrame->relPc);
+    const auto& threadFrames = thread->GetFrames();
+    for (const auto& frame : threadFrames) {
+#if defined(__arch64__) && defined(ENABLE_MIXSTACK)
+        if (frame.isJsFrame) {
+            FillJsFrame(frame, jsonInfo);
+            continue;
+        }
 #endif
-        frameJson["symbol"] = oneFrame->funcName;
-        frameJson["offset"] = oneFrame->funcOffset;
-        frameJson["file"] = oneFrame->mapName;
-        frameJson["buildId"] = oneFrame->buildId;
-        jsonInfo.append(frameJson);
+        FillNativeFrame(frame, jsonInfo);
     }
     return true;
 }
+
+void DfxStackInfoFormatter::FillNativeFrame(const DfxFrame& frame, Json::Value& jsonInfo) const
+{
+    Json::Value frameJson;
+#ifdef __LP64__
+    frameJson["pc"] = StringPrintf("%016lx", frame.relPc);
+#else
+    frameJson["pc"] = StringPrintf("%08x", frame.relPc);
+#endif
+    frameJson["symbol"] = frame.funcName;
+    frameJson["offset"] = frame.funcOffset;
+    frameJson["file"] = frame.mapName;
+    frameJson["buildId"] = frame.buildId;
+    jsonInfo.append(frameJson);
+}
+
+void DfxStackInfoFormatter::FillNativeFrame(std::shared_ptr<DfxFrame> frame, Json::Value& jsonInfo) const
+{
+    if (frame == nullptr) {
+        return;
+    }
+    Json::Value frameJson;
+#ifdef __LP64__
+    frameJson["pc"] = StringPrintf("%016lx", frame->relPc);
+#else
+    frameJson["pc"] = StringPrintf("%08x", frame->relPc);
+#endif
+    frameJson["symbol"] = frame->funcName;
+    frameJson["offset"] = frame->funcOffset;
+    frameJson["file"] = frame->mapName;
+    frameJson["buildId"] = frame->buildId;
+    jsonInfo.append(frameJson);
+}
+
+#if defined(__arch64__) && defined(ENABLE_MIXSTACK)
+bool DfxStackInfoFormatter::FillJsFrame(const DfxFrame& frame, Json::Value& jsonInfo) const
+{
+    Json::Value frameJson;
+    frameJson["file"] = frame.mapName;
+    frameJson["symbol"] = frame.funcName;
+    frameJson["line"] = frame.line;
+    frameJson["column"] = frame.column;
+    jsonInfo.append(frameJson);
+}
+#endif
 
 void DfxStackInfoFormatter::AppendThreads(const std::vector<std::shared_ptr<DfxThread>>& threads,
                                           Json::Value& jsonInfo) const

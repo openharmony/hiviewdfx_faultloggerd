@@ -66,6 +66,7 @@ if (defined(ohos_lite)) {
       "$faultloggerd_common_path/dfxlog",
       "$faultloggerd_common_path/dfxutil",
       "$faultloggerd_interfaces_path/common",
+      "$faultloggerd_interfaces_path/innerkits/procinfo/include",
       "$hilog_lite_include_path",
     ]
 
@@ -78,6 +79,7 @@ if (defined(ohos_lite)) {
     deps = [
       "$faultloggerd_common_path/dfxlog:dfx_hilog",
       "$faultloggerd_common_path/dfxutil:dfx_util",
+      "$faultloggerd_interfaces_path/innerkits/procinfo:libdfx_procinfo",
       "$hilog_lite_deps_path",
       "//third_party/bounds_checking_function:libsec_shared",
     ]
@@ -94,6 +96,7 @@ if (defined(ohos_lite)) {
       "$faultloggerd_common_path/dfxlog",
       "$faultloggerd_common_path/dfxutil",
       "$faultloggerd_interfaces_path/common",
+      "$faultloggerd_interfaces_path/innerkits/procinfo/include",
       "$hilog_lite_include_path",
     ]
 
@@ -106,6 +109,7 @@ if (defined(ohos_lite)) {
     deps = [
       "$faultloggerd_common_path/dfxlog:dfx_hilog",
       "$faultloggerd_common_path/dfxutil:dfx_util",
+      "$faultloggerd_interfaces_path/innerkits/procinfo:libdfx_procinfo",
       "$hilog_lite_deps_path",
       "//third_party/bounds_checking_function:libsec_shared",
     ]
@@ -122,6 +126,7 @@ if (defined(ohos_lite)) {
       "include",
       "$faultloggerd_common_path/dfxutil",
       "$faultloggerd_interfaces_path/common",
+      "$faultloggerd_interfaces_path/procinfo/include",
       "$faultloggerd_path/interfaces/rust/rustc_demangle",
     ]
 
@@ -137,6 +142,10 @@ if (defined(ohos_lite)) {
         "DFX_LOG_UNWIND",
         "DFX_UNWIND_ERROR",
       ]
+    }
+
+    if (enable_mixstack) {
+      defines += [ "ENABLE_MIXSTACK" ]
     }
   }
 
@@ -167,6 +176,7 @@ if (defined(ohos_lite)) {
     deps = [
       "$faultloggerd_common_path/dfxlog:dfx_hilog",
       "$faultloggerd_common_path/dfxutil:dfx_util",
+      "$faultloggerd_interfaces_path/innerkits/procinfo:libdfx_procinfo",
       "$faultloggerd_path/interfaces/rust/rustc_demangle:rustc_demangle",
       "//third_party/bounds_checking_function:libsec_shared",
     ]
@@ -203,6 +213,7 @@ if (defined(ohos_lite)) {
     deps = [
       "$faultloggerd_common_path/dfxlog:dfx_hilog",
       "$faultloggerd_common_path/dfxutil:dfx_util",
+      "$faultloggerd_interfaces_path/innerkits/procinfo:libdfx_procinfo",
       "$faultloggerd_path/interfaces/rust/rustc_demangle:rustc_demangle",
       "//third_party/bounds_checking_function:libsec_shared",
     ]
@@ -233,7 +244,8 @@ if (defined(ohos_lite)) {
     deps = [
       "$faultloggerd_common_path/dfxlog:dfx_hilog",
       "$faultloggerd_common_path/dfxutil:dfx_util",
-      "$faultloggerd_path/interfaces/rust/rustc_demangle:rustc_demangle",
+      "$faultloggerd_interfaces_path/innerkits/procinfo:libdfx_procinfo",
+      "$faultloggerd_interfaces_path/rust/rustc_demangle:rustc_demangle",
       "//third_party/bounds_checking_function:libsec_shared",
     ]
     if (is_ohos && !is_mingw && !is_emulator) {

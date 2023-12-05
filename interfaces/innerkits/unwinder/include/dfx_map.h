@@ -44,7 +44,7 @@ public:
 
     bool Parse(const std::string buf, int size);
     bool IsValidName();
-    bool IsArkName();
+    bool IsArkExecutable();
     const std::shared_ptr<DfxElf> GetElf();
     std::string GetElfName();
     uint64_t GetRelPc(uint64_t pc);

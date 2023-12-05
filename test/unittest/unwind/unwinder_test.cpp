@@ -189,7 +189,7 @@ HWTEST_F(UnwinderTest, UnwinderRemoteTest001, TestSize.Level2)
     bool unwRet = DfxPtrace::Attach(child);
     EXPECT_EQ(true, unwRet) << "UnwinderRemoteTest001: Attach:" << unwRet;
     ElapsedTime counter;
-    unwRet = unwinder->UnwindRemote();
+    unwRet = unwinder->UnwindRemote(child);
     time_t elapsed1 = counter.Elapsed();
     EXPECT_EQ(true, unwRet) << "UnwinderRemoteTest001: unwRet:" << unwRet;
     auto frames = unwinder->GetFrames();
@@ -228,7 +228,7 @@ HWTEST_F(UnwinderTest, UnwinderRemoteTest002, TestSize.Level2)
             unwinder = std::make_shared<Unwinder>(child);
         }
         ElapsedTime counter;
-        unwRet = unwinder->UnwindRemote();
+        unwRet = unwinder->UnwindRemote(child);
         time_t elapsed1 = counter.Elapsed();
         EXPECT_EQ(true, unwRet) << "UnwinderRemoteTest002: Unwind:" << unwRet;
         auto frames = unwinder->GetFrames();
@@ -256,7 +256,7 @@ HWTEST_F(UnwinderTest, UnwinderRemoteTest003, TestSize.Level2)
     size_t maxFrameNum = 64;
     size_t skipFrameNum = 0;
     GTEST_LOG_(INFO) << "when pid <= 0, UnwindLocal(maxFrameNum, skipFrameNum) is false";
-    ASSERT_FALSE(unwinderNegative->UnwindRemote(maxFrameNum, skipFrameNum));
+    ASSERT_FALSE(unwinderNegative->UnwindRemote(-2, maxFrameNum, skipFrameNum));
     GTEST_LOG_(INFO) << "UnwinderRemoteTest003: end.";
 }
 

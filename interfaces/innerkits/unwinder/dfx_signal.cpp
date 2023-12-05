@@ -86,7 +86,6 @@ std::string DfxSignal::PrintSignal(const siginfo_t &info)
         sigString = sigString + StringPrintf("from:%d:%u", info.si_pid, info.si_uid);
     }
 
-    sigString = sigString + "\n";
     return sigString;
 }
 

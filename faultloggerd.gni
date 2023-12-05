@@ -21,6 +21,7 @@ declare_args() {
   libunwinder_debug = false
   has_libunwind = true
   has_libunwindstack = false
+  enable_mixstack = true
 }
 
 if (defined(ohos_lite)) {

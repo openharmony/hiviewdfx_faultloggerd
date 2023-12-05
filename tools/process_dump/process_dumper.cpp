@@ -22,20 +22,17 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <fcntl.h>
 #include <iostream>
 #include <memory>
-#include <string>
-#include <fcntl.h>
 #include <pthread.h>
+#include <securec.h>
+#include <string>
 #include <syscall.h>
 #include <ucontext.h>
 #include <unistd.h>
-#include <securec.h>
 
-#include "faultloggerd_client.h"
 #include "cppcrash_reporter.h"
-#include "printer.h"
-#include "procinfo.h"
 #include "dfx_config.h"
 #include "dfx_define.h"
 #include "dfx_dump_request.h"
@@ -46,8 +43,17 @@
 #include "dfx_ring_buffer_wrapper.h"
 #include "dfx_stack_info_formatter.h"
 #include "dfx_thread.h"
-#include "dfx_unwind_remote.h"
 #include "dfx_util.h"
+#include "faultloggerd_client.h"
+#include "procinfo.h"
+
+#if defined(__x86_64__)
+#include "dfx_unwind_remote_emulator.h"
+#include "printer_emulator.h"
+#else
+#include "dfx_unwind_remote.h"
+#include "printer.h"
+#endif
 
 namespace OHOS {
 namespace HiviewDFX {
@@ -117,7 +123,7 @@ int ProcessDumper::DumpProcess(std::shared_ptr<ProcessDumpRequest> request)
         bool isLeakDump = request->siginfo.si_signo == SIGLEAK_STACK;
         // We need check pid is same with getppid().
         // As in signal handler, current process is a child process, and target pid is our parent process.
-        // If pid namespace is enalbed, both ppid and pid are equal one.
+        // If pid namespace is enabled, both ppid and pid are equal one.
         // In this case, we have to parse /proc/self/status
         if (((!isCrash_) && (syscall(SYS_getppid) != request->nsPid)) ||
             ((isCrash_ || isLeakDump) && (syscall(SYS_getppid) != request->vmNsPid))) {
@@ -144,8 +150,12 @@ int ProcessDumper::DumpProcess(std::shared_ptr<ProcessDumpRequest> request)
             reporter_ = std::make_shared<CppCrashReporter>(request->timeStamp, process_);
         }
 
+#if defined(__x86_64__)
         if (!DfxUnwindRemote::GetInstance().UnwindProcess(request, process_)) {
             Printer::PrintDumpHeader(request, process_);
+#else
+		if (!DfxUnwindRemote::GetInstance().UnwindProcess(request, process_, unwinder_)) {
+#endif
             DFXLOG_ERROR("Failed to unwind process.");
             dumpRes = DumpErrorCode::DUMP_ESTOPUNWIND;
         }
@@ -184,11 +194,16 @@ int ProcessDumper::InitProcessInfo(std::shared_ptr<ProcessDumpRequest> request)
         }
         process_->vmThread_ = DfxThread::Create(request->vmPid, request->vmPid, request->vmNsPid);
         if (!process_->vmThread_->Attach()) {
-            DFXLOG_ERROR("Fail to attach vm thread(%d).", request->vmNsPid);
+            DFXLOG_ERROR("Failed to attach vm thread(%d).", request->vmNsPid);
             return -1;
         }
 
+        // attention: vm thead is cloned by crash thread
+#if defined(__x86_64__)
         process_->vmThread_->SetThreadRegs(DfxRegs::CreateFromContext(request->context));
+#else
+        process_->vmThread_->SetThreadRegs(DfxRegs::CreateFromUcontext(request->context));
+#endif
         process_->vmThread_->threadInfo_.threadName = std::string(request->threadName);
     }
 
@@ -202,8 +217,13 @@ int ProcessDumper::InitProcessInfo(std::shared_ptr<ProcessDumpRequest> request)
         }
     }
     process_->keyThread_ = DfxThread::Create(process_->processInfo_.pid, tid, nsTid);
+#if !defined(__x86_64__)
+    if (!isCrash_) {
+        process_->keyThread_->SetThreadRegs(DfxRegs::CreateFromUcontext(request->context));
+    }
+#endif
     if (!process_->keyThread_->Attach()) {
-        DFXLOG_ERROR("Fail to attach key thread(%d).", nsTid);
+        DFXLOG_ERROR("Failed to attach key thread(%d).", nsTid);
         if (!isCrash_) {
             return -1;
         }
@@ -220,6 +240,10 @@ int ProcessDumper::InitProcessInfo(std::shared_ptr<ProcessDumpRequest> request)
             process_->InitOtherThreads();
         }
     }
+#if !defined(__x86_64__)
+    // init unwinder
+    unwinder_ = std::make_shared<Unwinder>(process_->processInfo_.pid); // attention: maybe should input nsPid?
+#endif
     return 0;
 }
 

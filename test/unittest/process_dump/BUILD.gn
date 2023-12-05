@@ -25,11 +25,11 @@ if (defined(ohos_lite)) {
       include_dirs = [
         "$c_utils_include_path",
         "$faultloggerd_common_path/dfxutil",
-        "$faultloggerd_frameworks_path/unwinder/include",
         "$faultloggerd_interfaces_path/common",
+        "$faultloggerd_interfaces_path/innerkits/procinfo/include",
+        "$faultloggerd_interfaces_path/innerkits/unwinder/include",
         "$faultloggerd_path/test/utils",
         "$faultloggerd_path/tools/process_dump",
-        "//third_party/libunwind/include/",
         "//third_party/googletest/googlemock/include",
         "$hilog_lite_include_path",
       ]
@@ -42,10 +42,11 @@ if (defined(ohos_lite)) {
       sources += [ "$c_utils_src_path/directory_ex.cpp" ]
 
       deps = [
+        "$faultloggerd_interfaces_path/innerkits/procinfo:libdfx_procinfo",
+        "$faultloggerd_interfaces_path/innerkits/unwinder:libunwinder",
         "$faultloggerd_path/test/utils:dfx_test_util",
         "$faultloggerd_path/tools/process_dump:process_info_src",
         "//base/hiviewdfx/hilog_lite/frameworks/featured:hilog_shared",
-        "//third_party/libunwind:libunwind",
       ]
     }
   }
@@ -62,11 +63,10 @@ if (defined(ohos_lite)) {
 
     include_dirs = [
       "$faultloggerd_common_path/dfxutil",
-      "$faultloggerd_frameworks_path/unwinder/include",
       "$faultloggerd_interfaces_path/common",
+      "$faultloggerd_interfaces_path/innerkits/unwinder/include",
       "$faultloggerd_path/test/utils",
       "$faultloggerd_path/tools/process_dump",
-      "//third_party/libunwind/include/",
     ]
   }
 
@@ -89,12 +89,12 @@ if (defined(ohos_lite)) {
     defines = [ "UNITTEST" ]
 
     deps = [
+      "$faultloggerd_path/interfaces/innerkits/unwinder:libunwinder_static",
       "$faultloggerd_path/test/utils:dfx_test_util",
       "$faultloggerd_path/tools/process_dump:process_info_src",
       "//third_party/googletest:gmock_main",
       "//third_party/googletest:gtest_main",
       "//third_party/jsoncpp:jsoncpp",
-      "//third_party/libunwind:libunwind",
     ]
     external_deps = [ "c_utils:utils" ]
     if (support_jsapi) {
@@ -116,12 +116,11 @@ if (defined(ohos_lite)) {
     defines = [ "UNITTEST" ]
 
     deps = [
-      "$faultloggerd_path/interfaces/innerkits/backtrace:libbacktrace_local",
+      "$faultloggerd_path/interfaces/innerkits/unwinder:libunwinder_static",
       "$faultloggerd_path/tools/process_dump:process_info_src",
       "//third_party/googletest:gmock_main",
       "//third_party/googletest:gtest_main",
       "//third_party/jsoncpp:jsoncpp",
-      "//third_party/libunwind:libunwind",
     ]
 
     external_deps = [ "c_utils:utils" ]

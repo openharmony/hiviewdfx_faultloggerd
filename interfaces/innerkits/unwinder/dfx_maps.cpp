@@ -108,7 +108,7 @@ std::shared_ptr<DfxMaps> DfxMaps::Create(const pid_t pid, const std::string& pat
                 dfxMaps->stackTop_ = (uintptr_t)map->end;
             }
             if (StartsWith(map->name, "/data/storage/") && (pid != getpid())) {
-                map->name = "/proc/" + std::to_string(pid) + "/root/" + map->name;
+                map->name = "/proc/" + std::to_string(pid) + "/root" + map->name;
             }
             if ((!enableMapIndex) || IsLegalMapItem(map->name)) {
                 dfxMaps->AddMap(map, enableMapIndex);
@@ -245,17 +245,7 @@ bool DfxMaps::IsArkExecutedMap(uintptr_t addr)
         return false;
     }
 
-    if ((!EndsWith(map->name, "[anon:ArkTS Code]")) && (!EndsWith(map->name, "/dev/zero"))) {
-        LOGU("Not ark map: %s", map->name.c_str());
-        return false;
-    }
-
-    if ((map->prots & PROT_EXEC) == 0) {
-        LOGU("current map is not executable.");
-        return false;
-    }
-
-    return true;
+    return map->IsArkExecutable();
 }
 } // namespace HiviewDFX
 } // namespace OHOS

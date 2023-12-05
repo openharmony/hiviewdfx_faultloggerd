@@ -29,6 +29,7 @@ struct DfxConfigInfo {
     unsigned int lowAddressStep = 16;
     unsigned int highAddressStep = 64;
     unsigned int maxFrameNums = 64;
+    int writeSleepTime = 0;
 };
 
 class DfxConfig {
