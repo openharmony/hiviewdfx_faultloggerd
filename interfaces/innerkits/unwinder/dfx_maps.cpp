@@ -108,7 +108,7 @@ std::shared_ptr<DfxMaps> DfxMaps::Create(const pid_t pid, const std::string& pat
                 dfxMaps->stackTop_ = (uintptr_t)map->end;
             }
             if (StartsWith(map->name, "/data/storage/") && (pid != getpid())) {
-                map->name = "/proc/" + std::to_string(pid) + "/root/" + map->name;
+                map->name = "/proc/" + std::to_string(pid) + "/root" + map->name;
             }
             if ((!enableMapIndex) || IsLegalMapItem(map->name)) {
                 dfxMaps->AddMap(map, enableMapIndex);

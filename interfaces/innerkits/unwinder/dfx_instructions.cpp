@@ -39,7 +39,7 @@ uintptr_t DfxInstructions::Flush(DfxRegs& regs, std::shared_ptr<DfxMemory> memor
     uintptr_t location;
     switch (loc.type) {
         case REG_LOC_VAL_OFFSET:
-            result = cfa + loc.val;
+            result = cfa + static_cast<uintptr_t>(loc.val);
             break;
         case REG_LOC_MEM_OFFSET:
             location = cfa + loc.val;
@@ -72,10 +72,10 @@ bool DfxInstructions::Apply(std::shared_ptr<DfxMemory> memory, DfxRegs& regs, Re
     uintptr_t cfa = 0;
     RegLoc cfaLoc;
     if (rsState.cfaReg != 0) {
-        cfa = regs[rsState.cfaReg] + rsState.cfaRegOffset;
+        cfa = regs[rsState.cfaReg] + static_cast<uint32_t>(rsState.cfaRegOffset);
     } else if (rsState.cfaExprPtr != 0) {
         cfaLoc.type = REG_LOC_VAL_EXPRESSION;
-        cfaLoc.val = rsState.cfaExprPtr;
+        cfaLoc.val = static_cast<intptr_t>(rsState.cfaExprPtr);
         cfa = Flush(regs, memory, 0, cfaLoc);
     } else {
         LOGE("no cfa info exist?");

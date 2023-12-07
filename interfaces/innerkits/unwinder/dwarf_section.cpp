@@ -77,13 +77,13 @@ bool DwarfSection::SearchEntry(uintptr_t pc, struct UnwindTableInfo uti, struct 
             lastErrorData_.SetAddrAndCode(ptr, UNW_ERROR_INVALID_MEMORY);
             return false;
         }
-        uintptr_t startPc = static_cast<uintptr_t>(dwarfTableEntry.startPc + segbase);
+        uintptr_t startPc = static_cast<uintptr_t>(dwarfTableEntry.startPc) + segbase;
         if (startPc == pc) {
             if (!memory_->ReadS32(ptr, &dwarfTableEntry.fdeOffset, true)) {
                 lastErrorData_.SetAddrAndCode(ptr, UNW_ERROR_INVALID_MEMORY);
                 return false;
             }
-            entry = static_cast<uintptr_t>(dwarfTableEntry.fdeOffset + segbase);
+            entry = static_cast<uintptr_t>(dwarfTableEntry.fdeOffset) + segbase;
             break;
         } else if (pc < startPc) {
             high = cur;
