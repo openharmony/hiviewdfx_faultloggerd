@@ -42,7 +42,9 @@ namespace {
 void Unwinder::Init()
 {
     Clear();
-    (void)memset_s(&lastErrorData_, sizeof(UnwindErrorData), 0, sizeof(UnwindErrorData));
+    if (memset_s(&lastErrorData_, sizeof(UnwindErrorData), 0, sizeof(UnwindErrorData)) != 0) {
+        LOGE("set memory of lastErrorData_ failed");
+    }
     memory_ = std::make_shared<DfxMemory>(acc_);
 #if defined(__arm__)
     armExidx_ = std::make_shared<ArmExidx>(memory_);
@@ -194,7 +196,6 @@ bool Unwinder::Unwind(void *ctx, size_t maxFrameNum, size_t skipFrameNum)
 
         if (pid_ >= 0 || pid_ == UNWIND_TYPE_LOCAL) {
             if (!GetMap(pc, ctx, map)) {
-                LOGE("map is null? pc: %llx", (uint64_t)pc);
                 lastErrorData_.SetAddrAndCode(pc, UNW_ERROR_INVALID_MAP);
                 break;
             }
@@ -324,7 +325,7 @@ bool Unwinder::Step(uintptr_t& pc, uintptr_t& sp, void *ctx)
         MAYBE_UNUSED int utiRet = UNW_ERROR_NONE;
         if ((utiRet = acc_->FindUnwindTable(pc, uti, ctx)) != UNW_ERROR_NONE) {
             lastErrorData_.SetAddrAndCode(pc, UNW_ERROR_NO_UNWIND_INFO);
-            LOGE("Failed to find unwind table for pc: %p? ret: %d", (void*)pc, utiRet);
+            LOGE("Failed to find unwind table ret: %d", utiRet);
             break;
         }
 

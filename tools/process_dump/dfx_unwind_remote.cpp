@@ -75,7 +75,7 @@ bool DfxUnwindRemote::UnwindProcess(std::shared_ptr<ProcessDumpRequest> request,
         UnwindThreadByParseStackIfNeed(process, unwThread, unwinder);
         Printer::PrintDumpHeader(request, process, unwinder);
         Printer::PrintThreadHeaderByConfig(process->keyThread_);
-        Printer::PrintThreadBacktraceByConfig(unwinder);
+        Printer::PrintThreadBacktraceByConfig(unwThread);
         if (ProcessDumper::GetInstance().IsCrash()) {
             // Registers of unwThread has been changed, we should print regs from request context.
             Printer::PrintRegsByConfig(DfxRegs::CreateFromUcontext(request->context));
@@ -99,9 +99,9 @@ bool DfxUnwindRemote::UnwindProcess(std::shared_ptr<ProcessDumpRequest> request,
             if (thread->Attach()) {
                 Printer::PrintThreadHeaderByConfig(thread);
                 unwinder->UnwindRemote(thread->threadInfo_.tid, false, DfxConfig::GetConfig().maxFrameNums);
-                Printer::PrintThreadBacktraceByConfig(unwinder);
                 thread->Detach();
                 thread->SetFrames(unwinder->GetFrames());
+                Printer::PrintThreadBacktraceByConfig(thread);
             }
             index++;
         }

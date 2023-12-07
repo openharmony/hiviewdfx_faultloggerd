@@ -198,7 +198,6 @@ int ProcessDumper::InitProcessInfo(std::shared_ptr<ProcessDumpRequest> request)
             return -1;
         }
 
-        // attention: vm thead is cloned by crash thread
 #if defined(__x86_64__)
         process_->vmThread_->SetThreadRegs(DfxRegs::CreateFromContext(request->context));
 #else
@@ -242,7 +241,7 @@ int ProcessDumper::InitProcessInfo(std::shared_ptr<ProcessDumpRequest> request)
     }
 #if !defined(__x86_64__)
     // init unwinder
-    unwinder_ = std::make_shared<Unwinder>(process_->processInfo_.pid); // attention: maybe should input nsPid?
+    unwinder_ = std::make_shared<Unwinder>(process_->processInfo_.pid);
 #endif
     return 0;
 }

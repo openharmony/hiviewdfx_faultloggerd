@@ -309,7 +309,7 @@ bool FaultStack::ParseUnwindStack(std::shared_ptr<DfxElfMaps> maps, std::vector<
             frame.index = index;
             frame.pc = block.content[i];
             frame.mapName = map->path;
-            int64_t loadBaise = 0;
+            int64_t loadBias = 0;
             struct stat st;
             if (stat(map->path.c_str(), &st) == 0 && (st.st_mode & S_IFREG)) {
                 auto memoryFile = DfxMemoryFile::CreateFileMemory(frame.mapName, 0);
@@ -322,13 +322,13 @@ bool FaultStack::ParseUnwindStack(std::shared_ptr<DfxElfMaps> maps, std::vector<
                     DFXLOG_ERROR("%s : Failed to create DfxElf, elf path(%s).", __func__, frame.mapName.c_str());
                     return false;
                 }
-                loadBaise = elf->GetLoadBias();
+                loadBias = elf->GetLoadBias();
                 frame.buildId = DfxElf::GetReadableBuildID(elf->GetBuildID());
             } else {
                 DFXLOG_WARN("%s : mapName(%s) is not file.", __func__, frame.mapName.c_str());
             }
 
-            frame.relPc = frame.pc - map->begin + map->offset + loadBaise;
+            frame.relPc = frame.pc - map->begin + map->offset + static_cast<uint64_t>(loadBias);
             frames.emplace_back(frame);
             constexpr int MAX_VALID_ADDRESS_NUM = 32;
             if (++index >= MAX_VALID_ADDRESS_NUM) {

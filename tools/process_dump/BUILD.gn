@@ -27,7 +27,7 @@ if (target_cpu == "x86_64") {
   processdump_sources += [
     "$faultloggerd_frameworks_path/unwinder/dfx_config.cpp",
     "$faultloggerd_frameworks_path/unwinder/dfx_elf.cpp",
-    "$faultloggerd_frameworks_path/unwinder/dfx_frame_formatter.cpp",
+    "$faultloggerd_frameworks_path/unwinder/dfx_frame_format.cpp",
     "$faultloggerd_frameworks_path/unwinder/dfx_maps.cpp",
     "$faultloggerd_frameworks_path/unwinder/dfx_memory.cpp",
     "$faultloggerd_frameworks_path/unwinder/dfx_memory_file.cpp",

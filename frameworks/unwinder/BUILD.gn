@@ -17,7 +17,7 @@ dfx_unwinder_sources = [
   "arch_util.cpp",
   "dfx_config.cpp",
   "dfx_elf.cpp",
-  "dfx_frame_formatter.cpp",
+  "dfx_frame_format.cpp",
   "dfx_maps.cpp",
   "dfx_memory.cpp",
   "dfx_memory_file.cpp",

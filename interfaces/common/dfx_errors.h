@@ -51,8 +51,8 @@ struct UnwindErrorData {
 #endif
     }
 private:
-    uint16_t code_;
-    uint64_t addr_;
+    uint16_t code_ = 0;
+    uint64_t addr_ = 0;
 };
 
 /**

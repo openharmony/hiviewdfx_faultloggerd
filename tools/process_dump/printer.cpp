@@ -138,10 +138,10 @@ void Printer::PrintThreadHeaderByConfig(std::shared_ptr<DfxThread> thread)
     }
 }
 
-void Printer::PrintThreadBacktraceByConfig(std::shared_ptr<Unwinder> unwinder)
+void Printer::PrintThreadBacktraceByConfig(std::shared_ptr<DfxThread> thread)
 {
     if (DfxConfig::GetConfig().displayBacktrace) {
-        const auto& frames = unwinder->GetFrames();
+        const auto& frames = thread->GetFrames();
         if (frames.size() == 0) {
             return;
         }

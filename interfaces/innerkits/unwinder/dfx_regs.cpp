@@ -83,10 +83,10 @@ std::shared_ptr<DfxRegs> DfxRegs::CreateRemoteRegs(pid_t pid)
         LOGE("Failed to ptrace pid(%d), errno=%d", pid, errno);
         return nullptr;
     }
-    errno_t err = memcpy_s(dfxregs->regsData_.data(), REG_LAST * sizeof(uintptr_t), &regs,
-                           REG_LAST * sizeof(uintptr_t));
-    if (err != 0) {
-        DFXLOG_ERROR("memcpy_s return value is abnormal");
+    if (memcpy_s(dfxregs->regsData_.data(),
+        REG_LAST * sizeof(uintptr_t), &regs,
+        REG_LAST * sizeof(uintptr_t)) != 0) {
+        LOGE("Failed to memcpy regs data, errno=%d", errno);
         return nullptr;
     }
     return dfxregs;
@@ -105,10 +105,8 @@ void DfxRegs::SetRegsData(const std::vector<uintptr_t>& regs)
 void DfxRegs::SetRegsData(const uintptr_t* regs, const size_t size)
 {
     size_t cpySize = (size > RegsSize()) ? RegsSize() : size;
-    errno_t err = memcpy_s(RawData(), cpySize * sizeof(uintptr_t), regs, cpySize * sizeof(uintptr_t));
-    if (err != 0) {
-        DFXLOG_ERROR("memcpy_s return value is abnormal");
-        return;
+    if (memcpy_s(RawData(), cpySize * sizeof(uintptr_t), regs, cpySize * sizeof(uintptr_t)) != 0) {
+        LOGE("Failed to set regs data, errno=%d", errno);
     }
 }
 

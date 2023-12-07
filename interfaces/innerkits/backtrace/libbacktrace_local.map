@@ -14,8 +14,8 @@
       OHOS::HiviewDFX::BacktraceLocalThread::BacktraceLocalThread*;
       OHOS::HiviewDFX::BacktraceLocalThread::Unwind*;
       OHOS::HiviewDFX::BacktraceLocalThread::GetFrames*;
-      OHOS::HiviewDFX::DfxFrameFormatter::GetFrameStr*;
-      OHOS::HiviewDFX::DfxFrameFormatter::GetFramesStr*;
+      OHOS::HiviewDFX::DfxFrameFormat::GetFrameStr*;
+      OHOS::HiviewDFX::DfxFrameFormat::GetFramesStr*;
       OHOS::HiviewDFX::BacktraceLocalThread::~BacktraceLocalThread*;
       OHOS::HiviewDFX::BacktraceLocalContext::GetInstance*;
       OHOS::HiviewDFX::BacktraceLocalContext::CleanUp*;

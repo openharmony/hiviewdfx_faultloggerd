@@ -24,7 +24,7 @@
 
 #include "dfx_define.h"
 #include "dfx_frame.h"
-#include "dfx_frame_formatter.h"
+#include "dfx_frame_format.h"
 #include "dfx_log.h"
 
 namespace OHOS {

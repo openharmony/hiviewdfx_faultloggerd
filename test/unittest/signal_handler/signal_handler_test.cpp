@@ -142,7 +142,9 @@ static bool CheckCrashKeyWords(const string& filePath, pid_t pid, int sig)
 void ThreadInfo(char* buf, size_t len, void* context __attribute__((unused)))
 {
     char mes[] = "this is cash information of test thread";
-    (void)memcpy_s(buf, len, mes, sizeof(mes));
+    if (memcpy_s(buf, len, mes, sizeof(mes)) != 0) {
+        GTEST_LOG_(INFO) << "Failed to set thread info";
+    }
 }
 
 int TestThread(int threadId, int sig)

@@ -25,7 +25,7 @@
 #include <vector>
 
 #include "backtrace_local_thread.h"
-#include "dfx_frame_formatter.h"
+#include "dfx_frame_format.h"
 #include "dfx_util.h"
 #include "directory_ex.h"
 #include "procinfo.h"
@@ -75,7 +75,7 @@ bool GetBacktraceJsonByTid(std::string& out, int32_t tid, size_t skipFrameNum, b
     std::vector<DfxFrame> frames;
     bool ret = GetBacktraceFramesByTid(frames, tid, skipFrameNum + 1, fast, maxFrameNums);
     out.clear();
-    out = DfxFrameFormatter::GetFramesJson(frames);
+    out = DfxFrameFormat::GetFramesJson(frames);
     return ret;
 }
 #endif
@@ -86,7 +86,7 @@ bool GetBacktraceStringByTid(std::string& out, int32_t tid, size_t skipFrameNum,
     std::vector<DfxFrame> frames;
     bool ret = GetBacktraceFramesByTid(frames, tid, skipFrameNum + 1, fast, maxFrameNums);
     out.clear();
-    out = DfxFrameFormatter::GetFramesStr(frames);
+    out = DfxFrameFormat::GetFramesStr(frames);
     return ret;
 }
 
@@ -100,7 +100,7 @@ bool PrintBacktrace(int32_t fd, bool fast, size_t maxFrameNums)
     }
 
     for (auto const& frame : frames) {
-        auto line = DfxFrameFormatter::GetFrameStr(frame);
+        auto line = DfxFrameFormat::GetFrameStr(frame);
         if (fd < 0) {
             // print to hilog
             HILOG_INFO(LOG_CORE, " %{public}s", line.c_str());

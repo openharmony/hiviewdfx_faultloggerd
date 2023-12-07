@@ -146,7 +146,7 @@ void Printer::PrintThreadBacktraceByConfig(std::shared_ptr<DfxThread> thread)
             return;
         }
         for (const auto& frame : frames) {
-            DfxRingBufferWrapper::GetInstance().AppendMsg(DfxFrameFormatter::GetFrameStr(frame));
+            DfxRingBufferWrapper::GetInstance().AppendMsg(DfxFrameFormat::GetFrameStr(frame));
         }
     }
 }

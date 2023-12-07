@@ -31,15 +31,15 @@ class DfxMap;
 class DfxRegs;
 
 struct UnwindTableInfo {
-    uintptr_t startPc;
-    uintptr_t endPc;
-    uintptr_t gp; /* global-pointer in effect for this entry */
+    uintptr_t startPc = 0;
+    uintptr_t endPc = 0;
+    uintptr_t gp = 0; /* global-pointer in effect for this entry */
     int format = -1;
     bool isLinear = false;
-    uintptr_t namePtr;
-    uintptr_t segbase;
-    uintptr_t tableLen;
-    uintptr_t tableData;
+    uintptr_t namePtr = 0;
+    uintptr_t segbase = 0;
+    uintptr_t tableLen = 0;
+    uintptr_t tableData = 0;
 };
 
 struct UnwindEntryInfo {
