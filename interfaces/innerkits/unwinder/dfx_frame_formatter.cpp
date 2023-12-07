@@ -50,7 +50,7 @@ std::string DfxFrameFormatter::GetFrameStr(const std::shared_ptr<DfxFrame>& fram
 {
     std::string data;
     if (frame->isJsFrame) {
-#if defined(__aarch64__) && defined(ENABLE_MIXSTACK)
+#if defined(ENABLE_MIXSTACK)
         data = StringPrintf("#%02zu at %s (%s:%d:%d)", frame->index, frame->funcName.c_str(), frame->mapName.c_str(),
             frame->line, frame->column);
 #endif

@@ -40,18 +40,14 @@ public:
 
     void Print() const;
     void PrintRegisterMemory() const;
-#if defined(__x86_64__)
-    bool CollectStackInfo(const std::vector<std::shared_ptr<DfxFrame>> &frames, bool needParseStack = false);
-    void CollectRegistersBlock(std::shared_ptr<DfxRegs> regs, std::shared_ptr<DfxElfMaps> maps);
-    bool ParseUnwindStack(std::shared_ptr<DfxElfMaps> maps, std::vector<std::shared_ptr<DfxFrame>> &frames);
-    bool CreateBlockForCorruptedStack(const std::vector<std::shared_ptr<DfxFrame>> &frames,
-        uintptr_t prevEndAddr, uintptr_t size);
-#else
     bool CollectStackInfo(const std::vector<DfxFrame>& frames, bool needParseStack = false);
+    bool CreateBlockForCorruptedStack(const std::vector<DfxFrame>& frames, uintptr_t prevEndAddr, uintptr_t size);
+#if defined(__x86_64__)
+    void CollectRegistersBlock(std::shared_ptr<DfxRegs> regs, std::shared_ptr<DfxElfMaps> maps);
+    bool ParseUnwindStack(std::shared_ptr<DfxElfMaps> maps, std::vector<DfxFrame>& frames);
+#else
     void CollectRegistersBlock(std::shared_ptr<DfxRegs> regs, std::shared_ptr<DfxMaps> maps);
     bool ParseUnwindStack(std::shared_ptr<DfxMaps> maps, std::vector<DfxFrame>& frames);
-    bool CreateBlockForCorruptedStack(const std::vector<DfxFrame>& frames,
-        uintptr_t prevEndAddr, uintptr_t size);
 #endif
 
 private:

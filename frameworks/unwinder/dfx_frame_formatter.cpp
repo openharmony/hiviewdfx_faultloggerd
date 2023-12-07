@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-#include "dfx_frame_format.h"
+#include "dfx_frame_formatter.h"
 
 #include <ostream>
 #include <securec.h>
@@ -26,12 +26,12 @@ namespace OHOS {
 namespace HiviewDFX {
 const int FRAME_BUF_LEN = 1024;
 
-std::string DfxFrameFormat::GetFrameStr(const DfxFrame& frame)
+std::string DfxFrameFormatter::GetFrameStr(const DfxFrame& frame)
 {
     return GetFrameStr(std::make_shared<DfxFrame>(frame));
 }
 
-std::string DfxFrameFormat::GetFrameStr(const std::shared_ptr<DfxFrame>& frame)
+std::string DfxFrameFormatter::GetFrameStr(const std::shared_ptr<DfxFrame>& frame)
 {
     char buf[FRAME_BUF_LEN] = {0};
 #ifdef __LP64__
@@ -62,7 +62,7 @@ std::string DfxFrameFormat::GetFrameStr(const std::shared_ptr<DfxFrame>& frame)
     return ss.str();
 }
 
-std::string DfxFrameFormat::GetFramesStr(const std::vector<DfxFrame>& frames)
+std::string DfxFrameFormatter::GetFramesStr(const std::vector<DfxFrame>& frames)
 {
     if (frames.size() == 0) {
         return "";
@@ -74,7 +74,7 @@ std::string DfxFrameFormat::GetFramesStr(const std::vector<DfxFrame>& frames)
     return ss.str();
 }
 
-std::string DfxFrameFormat::GetFramesStr(const std::vector<std::shared_ptr<DfxFrame>>& frames)
+std::string DfxFrameFormatter::GetFramesStr(const std::vector<std::shared_ptr<DfxFrame>>& frames)
 {
     if (frames.size() == 0) {
         return "";
@@ -86,7 +86,7 @@ std::string DfxFrameFormat::GetFramesStr(const std::vector<std::shared_ptr<DfxFr
     return ss.str();
 }
 
-std::vector<std::shared_ptr<DfxFrame>> DfxFrameFormat::ConvertFrames(const std::vector<DfxFrame>& frames)
+std::vector<std::shared_ptr<DfxFrame>> DfxFrameFormatter::ConvertFrames(const std::vector<DfxFrame>& frames)
 {
     std::vector<std::shared_ptr<DfxFrame>> ptrFrames;
     for (const auto& frame : frames) {
@@ -96,7 +96,7 @@ std::vector<std::shared_ptr<DfxFrame>> DfxFrameFormat::ConvertFrames(const std::
 }
 
 #ifndef is_ohos_lite
-std::string DfxFrameFormat::GetFramesJson(const std::vector<DfxFrame>& frames)
+std::string DfxFrameFormatter::GetFramesJson(const std::vector<DfxFrame>& frames)
 {
     char buf[FRAME_BUF_LEN] = {0};
 #ifdef __LP64__

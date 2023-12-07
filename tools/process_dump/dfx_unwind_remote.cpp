@@ -126,7 +126,7 @@ void DfxUnwindRemote::UnwindThreadByParseStackIfNeed(std::shared_ptr<DfxProcess>
     constexpr int minFramesNum = 3;
     size_t initSize = frames.size();
     if (initSize < minFramesNum ||
-        frames[minFramesNum - 1].mapName.find("Not mapped") != std::string::npos) { // attention : maybe there is not that keywords
+        frames[minFramesNum - 1].mapName.find("Not mapped") != std::string::npos) {
         bool needParseStack = true;
         thread->InitFaultStack(needParseStack);
         auto faultStack = thread->GetFaultStack();
@@ -158,10 +158,11 @@ void DfxUnwindRemote::UnwindThreadFallback(std::shared_ptr<DfxProcess> process, 
         return;
     }
 
-    auto createFrame = [maps, unwinder] (size_t index, uintptr_t pc) {
+    auto createFrame = [maps, unwinder] (size_t index, uintptr_t pc, uintptr_t sp = 0) {
         std::shared_ptr<DfxMap> map;
         DfxFrame frame;
         frame.pc = pc;
+        frame.sp = sp;
         frame.index = index;
         if (maps->FindMapByAddr(map, pc)) {
             frame.relPc = map->GetRelPc(pc);
@@ -173,7 +174,7 @@ void DfxUnwindRemote::UnwindThreadFallback(std::shared_ptr<DfxProcess> process, 
         unwinder->AddFrame(frame);
     };
 
-    createFrame(0, regs->GetPc());
+    createFrame(0, regs->GetPc(), regs->GetSp());
     createFrame(1, *(regs->GetReg(REG_LR)));
 }
 } // namespace HiviewDFX

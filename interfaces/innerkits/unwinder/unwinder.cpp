@@ -211,7 +211,7 @@ bool Unwinder::Unwind(void *ctx, size_t maxFrameNum, size_t skipFrameNum)
         frame.pc = static_cast<uint64_t>(pc);
         frame.map = map;
         frames_.push_back(frame);
-#if defined(__aarch64__) && defined(ENABLE_MIXSTACK)
+#if defined(ENABLE_MIXSTACK)
         uintptr_t fp = regs_->GetFp();
         if (map->IsArkExecutable()) {
             JsFrame* jsFrames = nullptr;

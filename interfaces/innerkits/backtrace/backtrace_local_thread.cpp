@@ -31,7 +31,7 @@
 #include "procinfo.h"
 #include "fp_unwinder.h"
 #include "dwarf_unwinder.h"
-#include "dfx_frame_format.h"
+#include "dfx_frame_formatter.h"
 
 namespace OHOS {
 namespace HiviewDFX {
@@ -144,10 +144,10 @@ std::string BacktraceLocalThread::GetFormatedStr(bool withThreadName, bool isJso
     }
     if (isJson) {
 #ifndef is_ohos_lite
-        ss << DfxFrameFormat::GetFramesJson(frames_);
+        ss << DfxFrameFormatter::GetFramesJson(frames_);
 #endif
     } else {
-        ss << DfxFrameFormat::GetFramesStr(frames_);
+        ss << DfxFrameFormatter::GetFramesStr(frames_);
     }
     return ss.str();
 }

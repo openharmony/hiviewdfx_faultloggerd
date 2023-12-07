@@ -120,7 +120,7 @@ bool DfxStackInfoFormatter::FillFrames(const std::shared_ptr<DfxThread>& thread,
     }
     const auto& threadFrames = thread->GetFrames();
     for (const auto& frame : threadFrames) {
-#if defined(__arch64__) && defined(ENABLE_MIXSTACK)
+#if defined(ENABLE_MIXSTACK)
         if (frame.isJsFrame) {
             FillJsFrame(frame, jsonInfo);
             continue;
@@ -146,26 +146,8 @@ void DfxStackInfoFormatter::FillNativeFrame(const DfxFrame& frame, Json::Value& 
     jsonInfo.append(frameJson);
 }
 
-void DfxStackInfoFormatter::FillNativeFrame(std::shared_ptr<DfxFrame> frame, Json::Value& jsonInfo) const
-{
-    if (frame == nullptr) {
-        return;
-    }
-    Json::Value frameJson;
-#ifdef __LP64__
-    frameJson["pc"] = StringPrintf("%016lx", frame->relPc);
-#else
-    frameJson["pc"] = StringPrintf("%08x", frame->relPc);
-#endif
-    frameJson["symbol"] = frame->funcName;
-    frameJson["offset"] = frame->funcOffset;
-    frameJson["file"] = frame->mapName;
-    frameJson["buildId"] = frame->buildId;
-    jsonInfo.append(frameJson);
-}
-
-#if defined(__arch64__) && defined(ENABLE_MIXSTACK)
-bool DfxStackInfoFormatter::FillJsFrame(const DfxFrame& frame, Json::Value& jsonInfo) const
+#if defined(ENABLE_MIXSTACK)
+void DfxStackInfoFormatter::FillJsFrame(const DfxFrame& frame, Json::Value& jsonInfo) const
 {
     Json::Value frameJson;
     frameJson["file"] = frame.mapName;

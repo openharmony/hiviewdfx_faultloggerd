@@ -78,11 +78,7 @@ uintptr_t FaultStack::AdjustAndCreateMemoryBlock(size_t index, uintptr_t prevSp,
     return startAddr + size * STEP;
 }
 
-#if defined(__x86_64__)
-bool FaultStack::CollectStackInfo(const std::vector<std::shared_ptr<DfxFrame>> &frames, bool needParseStack)
-#else
 bool FaultStack::CollectStackInfo(const std::vector<DfxFrame>& frames, bool needParseStack)
-#endif
 {
     if (frames.empty()) {
         DFXLOG_WARN("null frames.");
@@ -101,13 +97,7 @@ bool FaultStack::CollectStackInfo(const std::vector<DfxFrame>& frames, bool need
     }
 
     auto firstFrame = frames.at(0);
-#if defined(__x86_64__)
-    if (firstFrame != nullptr) {
-        prevSp = static_cast<uintptr_t>(firstFrame->sp);
-    }
-#else
     prevSp = static_cast<uintptr_t>(firstFrame.sp);
-#endif
     constexpr size_t MAX_FAULT_STACK_SZ = 4;
     for (index = 1; index < frames.size(); index++) {
         if (index > MAX_FAULT_STACK_SZ) {
@@ -115,13 +105,7 @@ bool FaultStack::CollectStackInfo(const std::vector<DfxFrame>& frames, bool need
         }
 
         auto frame = frames.at(index);
-#if defined(__x86_64__)
-        if (frame != nullptr) {
-            curSp = static_cast<uintptr_t>(frame->sp);
-        }
-#else
         curSp = static_cast<uintptr_t>(frame.sp);
-#endif
 
         size = 0;
         if (curSp > prevSp) {
@@ -144,22 +128,6 @@ bool FaultStack::CollectStackInfo(const std::vector<DfxFrame>& frames, bool need
     return true;
 }
 
-#if defined(__x86_64__)
-bool FaultStack::CreateBlockForCorruptedStack(const std::vector<std::shared_ptr<DfxFrame>> &frames,
-    uintptr_t prevEndAddr, uintptr_t size)
-{
-    const auto& frame = frames.back();
-    // stack trace should end with libc or ffrt or */bin/*
-    if (frame->mapName.find("ld-musl") != std::string::npos ||
-        frame->mapName.find("ffrt") != std::string::npos ||
-        frame->mapName.find("bin") != std::string::npos) {
-        return false;
-    }
-
-    AdjustAndCreateMemoryBlock(frame->index, frame->sp, prevEndAddr, size);
-    return true;
-}
-#else
 bool FaultStack::CreateBlockForCorruptedStack(const std::vector<DfxFrame>& frames, uintptr_t prevEndAddr,
                                               uintptr_t size)
 {
@@ -174,7 +142,6 @@ bool FaultStack::CreateBlockForCorruptedStack(const std::vector<DfxFrame>& frame
     AdjustAndCreateMemoryBlock(frame.index, frame.sp, prevEndAddr, size);
     return true;
 }
-#endif
 
 uintptr_t FaultStack::PrintMemoryBlock(const MemoryBlockInfo& info, uintptr_t stackStartAddr) const
 {
@@ -324,7 +291,7 @@ void FaultStack::PrintRegisterMemory() const
 }
 
 #if defined(__x86_64__)
-bool FaultStack::ParseUnwindStack(std::shared_ptr<DfxElfMaps> maps, std::vector<std::shared_ptr<DfxFrame>> &frames)
+bool FaultStack::ParseUnwindStack(std::shared_ptr<DfxElfMaps> maps, std::vector<DfxFrame>& frames)
 {
     if (maps == nullptr) {
         DFXLOG_ERROR("%s : maps is null.", __func__);
@@ -338,34 +305,30 @@ bool FaultStack::ParseUnwindStack(std::shared_ptr<DfxElfMaps> maps, std::vector<
                 map->perms.find("x") == std::string::npos) {
                 continue;
             }
-            std::shared_ptr<DfxFrame> frame = std::make_shared<DfxFrame>();
-            if (frame == nullptr) {
-                DFXLOG_ERROR("%s : Failed to create DfxFrame.", __func__);
-                return false;
-            }
-            frame->index = index;
-            frame->pc = block.content[i];
-            frame->mapName = map->path;
+            DfxFrame frame;
+            frame.index = index;
+            frame.pc = block.content[i];
+            frame.mapName = map->path;
             int64_t loadBaise = 0;
             struct stat st;
             if (stat(map->path.c_str(), &st) == 0 && (st.st_mode & S_IFREG)) {
-                auto memoryFile = DfxMemoryFile::CreateFileMemory(frame->mapName, 0);
+                auto memoryFile = DfxMemoryFile::CreateFileMemory(frame.mapName, 0);
                 if (memoryFile == nullptr) {
-                    DFXLOG_ERROR("%s : Failed to CreateFileMemory, elf path(%s).", __func__, frame->mapName.c_str());
+                    DFXLOG_ERROR("%s : Failed to CreateFileMemory, elf path(%s).", __func__, frame.mapName.c_str());
                     return false;
                 }
                 std::shared_ptr<DfxElf> elf = std::make_shared<DfxElf>(memoryFile);
                 if (elf == nullptr || !elf->Init()) {
-                    DFXLOG_ERROR("%s : Failed to create DfxElf, elf path(%s).", __func__, frame->mapName.c_str());
+                    DFXLOG_ERROR("%s : Failed to create DfxElf, elf path(%s).", __func__, frame.mapName.c_str());
                     return false;
                 }
                 loadBaise = elf->GetLoadBias();
-                frame->buildId = DfxElf::GetReadableBuildID(elf->GetBuildID());
+                frame.buildId = DfxElf::GetReadableBuildID(elf->GetBuildID());
             } else {
-                DFXLOG_WARN("%s : mapName(%s) is not file.", __func__, frame->mapName.c_str());
+                DFXLOG_WARN("%s : mapName(%s) is not file.", __func__, frame.mapName.c_str());
             }
 
-            frame->relPc = frame->pc - map->begin + map->offset + loadBaise;
+            frame.relPc = frame.pc - map->begin + map->offset + loadBaise;
             frames.emplace_back(frame);
             constexpr int MAX_VALID_ADDRESS_NUM = 32;
             if (++index >= MAX_VALID_ADDRESS_NUM) {
@@ -384,7 +347,7 @@ bool FaultStack::ParseUnwindStack(std::shared_ptr<DfxMaps> maps, std::vector<Dfx
     }
     size_t index = frames.size();
     for (const auto& block : blocks_) {
-       std::shared_ptr<DfxMap> map;
+        std::shared_ptr<DfxMap> map;
         for (size_t i = 0; i < block.content.size(); i++) {
             if (!maps->FindMapByAddr(map, block.content[i]) ||
                 map->perms.find("x") == std::string::npos) {
@@ -393,6 +356,7 @@ bool FaultStack::ParseUnwindStack(std::shared_ptr<DfxMaps> maps, std::vector<Dfx
             DfxFrame frame;
             frame.index = index;
             frame.pc = block.content[i];
+            frame.map = map;
             frame.mapName = map->name;
             int64_t loadBias = 0;
             struct stat st;

@@ -154,7 +154,7 @@ int ProcessDumper::DumpProcess(std::shared_ptr<ProcessDumpRequest> request)
         if (!DfxUnwindRemote::GetInstance().UnwindProcess(request, process_)) {
             Printer::PrintDumpHeader(request, process_);
 #else
-		if (!DfxUnwindRemote::GetInstance().UnwindProcess(request, process_, unwinder_)) {
+        if (!DfxUnwindRemote::GetInstance().UnwindProcess(request, process_, unwinder_)) {
 #endif
             DFXLOG_ERROR("Failed to unwind process.");
             dumpRes = DumpErrorCode::DUMP_ESTOPUNWIND;

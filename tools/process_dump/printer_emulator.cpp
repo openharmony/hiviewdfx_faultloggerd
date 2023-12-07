@@ -23,7 +23,7 @@
 #include <unistd.h>
 
 #include "dfx_config.h"
-#include "dfx_frame_format.h"
+#include "dfx_frame_formatter.h"
 #include "dfx_logger.h"
 #include "dfx_ring_buffer_wrapper.h"
 #include "dfx_signal.h"
@@ -146,7 +146,7 @@ void Printer::PrintThreadBacktraceByConfig(std::shared_ptr<DfxThread> thread)
             return;
         }
         for (const auto& frame : frames) {
-            DfxRingBufferWrapper::GetInstance().AppendMsg(DfxFrameFormat::GetFrameStr(frame));
+            DfxRingBufferWrapper::GetInstance().AppendMsg(DfxFrameFormatter::GetFrameStr(frame));
         }
     }
 }

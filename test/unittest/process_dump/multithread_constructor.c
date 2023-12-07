@@ -90,8 +90,8 @@ NOINLINE int TestFunc70(void)
 #ifndef UNITTEST
 int main(int argc, char* argv[])
 {
-    const int ARGUMENT_LIMIT = 2;
-    if (argc != ARGUMENT_LIMIT) {
+    const int argumentLimit = 2;
+    if (argc != argumentLimit) {
         printf("invalid input argument.\n");
         return 0;
     }

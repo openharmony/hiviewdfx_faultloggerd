@@ -38,6 +38,11 @@ public:
         std::string& funcName, uint64_t& funcOffset);
 
     static std::string Demangle(const std::string& buf);
+
+private:
+#ifdef RUSTC_DEMANGLE
+    static bool FindRustDemangleFunction();
+#endif
 };
 } // namespace HiviewDFX
 } // namespace OHOS

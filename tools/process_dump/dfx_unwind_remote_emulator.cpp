@@ -147,7 +147,7 @@ void DfxUnwindRemote::UnwindThreadByParseStackIfNeed(std::shared_ptr<DfxProcess>
     constexpr int minFramesNum = 3;
     size_t initSize = frames.size();
     if (initSize < minFramesNum ||
-        frames[minFramesNum - 1]->mapName.find("Not mapped") != std::string::npos) {
+        frames[minFramesNum - 1].mapName.find("Not mapped") != std::string::npos) {
         bool needParseStack = true;
         thread->InitFaultStack(needParseStack);
         process->InitProcessMaps();
@@ -241,11 +241,11 @@ bool DfxUnwindRemote::DoUnwindStep(size_t const & index,
         relPc = framePc;
     }
 
-    auto frame = std::make_shared<DfxFrame>();
-    frame->relPc = relPc;
-    frame->pc = framePc;
-    frame->sp = frameSp;
-    frame->index = index;
+    DfxFrame frame;
+    frame.relPc = relPc;
+    frame.pc = framePc;
+    frame.sp = frameSp;
+    frame.index = index;
     ret = UpdateAndFillFrame(cursor, frame, process, thread, ProcessDumper::GetInstance().IsCrash());
     if (ret) {
         thread->AddFrame(frame);
@@ -255,7 +255,7 @@ bool DfxUnwindRemote::DoUnwindStep(size_t const & index,
     return ret;
 }
 
-bool DfxUnwindRemote::UpdateAndFillFrame(unw_cursor_t& cursor, std::shared_ptr<DfxFrame> frame,
+bool DfxUnwindRemote::UpdateAndFillFrame(unw_cursor_t& cursor, DfxFrame& frame,
     std::shared_ptr<DfxProcess> process, std::shared_ptr<DfxThread> thread, bool enableBuildId)
 {
     struct map_info* mapInfo = unw_get_map(&cursor);
@@ -265,17 +265,17 @@ bool DfxUnwindRemote::UpdateAndFillFrame(unw_cursor_t& cursor, std::shared_ptr<D
         std::string funcName;
         bool isGetFuncName = false;
 #if defined(__aarch64__)
-        if ((frame->index == 0) && ((mapPath.find("ArkTS Code") != std::string::npos))) {
+        if ((frame.index == 0) && ((mapPath.find("ArkTS Code") != std::string::npos))) {
             isGetFuncName = GetArkJsHeapFuncName(funcName, thread);
             if (isGetFuncName) {
-                frame->funcName = funcName;
+                frame.funcName = funcName;
             }
         }
 #endif
         uint64_t funcOffset;
-        if (!isGetFuncName && symbols_->GetNameAndOffsetByPc(as_, frame->pc, funcName, funcOffset)) {
-            frame->funcName = funcName;
-            frame->funcOffset = funcOffset;
+        if (!isGetFuncName && symbols_->GetNameAndOffsetByPc(as_, frame.pc, funcName, funcOffset)) {
+            frame.funcName = funcName;
+            frame.funcOffset = funcOffset;
         }
 
         if (mapPath.find(".hap") != std::string::npos) {
@@ -284,10 +284,10 @@ bool DfxUnwindRemote::UpdateAndFillFrame(unw_cursor_t& cursor, std::shared_ptr<D
                 mapPath = mapPath + "!" + std::string(libraryName);
             }
         }
-        frame->mapName = mapPath;
+        frame.mapName = mapPath;
 
         if (enableBuildId && buildIds_.find(mapPath) != buildIds_.end()) {
-            frame->buildId = buildIds_[mapPath];
+            frame.buildId = buildIds_[mapPath];
         } else if (enableBuildId && buildIds_.find(mapPath) == buildIds_.end()) {
             uint8_t* buildId = nullptr;
             size_t length = 0;
@@ -297,33 +297,33 @@ bool DfxUnwindRemote::UpdateAndFillFrame(unw_cursor_t& cursor, std::shared_ptr<D
             }
             if (!buildIdStr.empty()) {
                 buildIds_.insert(std::pair<std::string, std::string>(std::string(mapPath), buildIdStr));
-                frame->buildId = buildIdStr;
+                frame.buildId = buildIdStr;
             }
         }
     } else {
         process->InitProcessMaps();
         std::shared_ptr<DfxElfMaps> maps = process->GetMaps();
         std::shared_ptr<DfxElfMap> map;
-        if (maps != nullptr && maps->FindMapByAddr(frame->pc, map)) {
-            frame->relPc = map->GetRelPc(frame->pc);
-            frame->mapName = map->path;
+        if (maps != nullptr && maps->FindMapByAddr(frame.pc, map)) {
+            frame.relPc = map->GetRelPc(frame.pc);
+            frame.mapName = map->path;
         } else {
             std::string tips = "Not mapped ";
             std::shared_ptr<DfxRegs> regs = thread->GetThreadRegs();
             if (regs != nullptr) {
-                tips.append(regs->GetSpecialRegisterName(frame->pc));
+                tips.append(regs->GetSpecialRegisterName(frame.pc));
             }
-            frame->mapName = tips;
+            frame.mapName = tips;
             isValidFrame = false;
         }
     }
 
-    if (isValidFrame && (frame->pc == frame->relPc) &&
-        (frame->mapName.find("Ark") == std::string::npos)) {
+    if (isValidFrame && (frame.pc == frame.relPc) &&
+        (frame.mapName.find("Ark") == std::string::npos)) {
         isValidFrame = false;
     }
 
-    bool ret = frame->index < MIN_VALID_FRAME_COUNT || isValidFrame;
+    bool ret = frame.index < MIN_VALID_FRAME_COUNT || isValidFrame;
     return ret;
 }
 
@@ -431,15 +431,15 @@ void DfxUnwindRemote::UnwindThreadFallback(std::shared_ptr<DfxProcess> process, 
 
     auto createFrame = [maps, thread] (size_t index, uintptr_t pc) {
         std::shared_ptr<DfxElfMap> map;
-        auto frame = std::make_shared<DfxFrame>();
-        frame->pc = pc;
-        frame->index = index;
+        DfxFrame frame;
+        frame.pc = pc;
+        frame.index = index;
         if (maps->FindMapByAddr(pc, map)) {
-            frame->relPc = map->GetRelPc(pc);
-            frame->mapName = map->path;
+            frame.relPc = map->GetRelPc(pc);
+            frame.mapName = map->path;
         } else {
-            frame->relPc = pc;
-            frame->mapName = (index == 0 ? "Not mapped pc" : "Not mapped lr");
+            frame.relPc = pc;
+            frame.mapName = (index == 0 ? "Not mapped pc" : "Not mapped lr");
         }
         thread->AddFrame(frame);
     };

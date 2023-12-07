@@ -49,7 +49,7 @@ private:
     bool DoUnwindStep(size_t const &index,
         std::shared_ptr<DfxThread> &thread, unw_cursor_t &cursor, std::shared_ptr<DfxProcess> process);
     uint64_t DoAdjustPc(unw_cursor_t &cursor, uint64_t pc);
-    bool UpdateAndFillFrame(unw_cursor_t& cursor, std::shared_ptr<DfxFrame> frame,
+    bool UpdateAndFillFrame(unw_cursor_t& cursor, DfxFrame& frame,
         std::shared_ptr<DfxProcess> process, std::shared_ptr<DfxThread> thread, bool enableBuildId);
     static std::string GetReadableBuildId(uint8_t* buildId, size_t length);
     static void UnwindThreadByParseStackIfNeed(std::shared_ptr<DfxProcess> &process,

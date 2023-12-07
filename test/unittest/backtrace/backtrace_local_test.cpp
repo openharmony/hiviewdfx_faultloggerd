@@ -31,7 +31,7 @@
 #include <libunwind.h>
 #include <securec.h>
 
-#include "dfx_frame_format.h"
+#include "dfx_frame_formatter.h"
 #include "backtrace_local.h"
 #include "backtrace_local_context.h"
 #include "backtrace_local_thread.h"
@@ -140,7 +140,7 @@ HWTEST_F(BacktraceLocalTest, BacktraceLocalTest001, TestSize.Level2)
     const auto& frames = thread.GetFrames();
     ASSERT_GT(frames.size(), 0);
     for (const auto& frame : frames) {
-        GTEST_LOG_(INFO) << DfxFrameFormat::GetFrameStr(frame);
+        GTEST_LOG_(INFO) << DfxFrameFormatter::GetFrameStr(frame);
     }
 
     unw_destroy_local_address_space(as);

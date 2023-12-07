@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 Huawei Device Co., Ltd.
+ * Copyright (c) 2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -18,15 +18,17 @@
 #include <algorithm>
 #include <cstdlib>
 #include <cxxabi.h>
+#ifdef RUSTC_DEMANGLE
+#include <dlfcn.h>
+#endif
+
 #include "dfx_define.h"
 #include "dfx_log.h"
 #include "string_util.h"
-#ifdef RUSTC_DEMANGLE
-#include "rustc_demangle.h"
-#endif
 
 namespace OHOS {
 namespace HiviewDFX {
+using RustDemangleFn = char*(*)(const char *);
 namespace {
 #undef LOG_DOMAIN
 #undef LOG_TAG
@@ -35,7 +37,37 @@ namespace {
 
 const std::string LINKER_PREFIX = "__dl_";
 const std::string LINKER_PREFIX_NAME = "[linker]";
+
+#ifdef RUSTC_DEMANGLE
+static std::mutex g_mutex;
+static bool g_hasTryLoadRustDemangleLib = false;
+static RustDemangleFn g_rustDemangleFn = nullptr;
+#endif
 }
+
+#ifdef RUSTC_DEMANGLE
+bool DfxSymbols::FindRustDemangleFunction()
+{
+    if (g_hasTryLoadRustDemangleLib) {
+        return (g_rustDemangleFn != nullptr);
+    }
+
+    g_hasTryLoadRustDemangleLib = true;
+    void* rustDemangleLibHandle = dlopen("librustc_demangle.z.so", RTLD_LAZY | RTLD_NODELETE);
+    if (rustDemangleLibHandle == nullptr) {
+        LOGW("Failed to dlopen librustc_demangle, %s\n", dlerror());
+        return false;
+    }
+
+    g_rustDemangleFn = (RustDemangleFn)dlsym(rustDemangleLibHandle, "rustc_demangle");
+    if (g_rustDemangleFn == nullptr) {
+        LOGW("Failed to dlsym rustc_demangle, %s\n", dlerror());
+        dlclose(rustDemangleLibHandle);
+        return false;
+    }
+    return true;
+}
+#endif
 
 bool DfxSymbols::ParseSymbols(std::vector<DfxSymbol>& symbols, std::shared_ptr<DfxElf> elf, const std::string& filePath)
 {
@@ -105,7 +137,10 @@ std::string DfxSymbols::Demangle(const std::string& buf)
     }
 #ifdef RUSTC_DEMANGLE
     if (buf[1] == 'R') {
-        demangledStr = rustc_demangle(bufStr);
+        std::lock_guard<std::mutex> lck(g_mutex);
+        if (FindRustDemangleFunction()) {
+            demangledStr = g_rustDemangleFn(bufStr);
+        }
     }
 #endif
     std::string demangleName;
