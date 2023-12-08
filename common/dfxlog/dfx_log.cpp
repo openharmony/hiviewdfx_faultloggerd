@@ -109,7 +109,7 @@ int DfxLogPrintV(const LogLevel logLevel, const unsigned int domain, const char*
 #else
     ret = HiLogPrint(LOG_CORE, logLevel, domain, tag, "%{public}s", buf);
 #endif
-    if (ret != 0) {
+    if (ret < 0) {
         fprintf(stderr, "print to hilog failed\n");
     }
 
