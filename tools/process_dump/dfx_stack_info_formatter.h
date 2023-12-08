@@ -21,6 +21,7 @@
 #include <map>
 #include <memory>
 #include <string>
+
 #include "dfx_dump_request.h"
 #include "dfx_process.h"
 #ifndef is_ohos_lite
@@ -41,9 +42,13 @@ private:
     DfxStackInfoFormatter() = delete;
 #ifndef is_ohos_lite
     bool GetStackInfo(bool isJsonDump, Json::Value& jsonInfo) const;
-    void GetCppCrashInfo(Json::Value& jsonInfo) const;
+    void GetNativeCrashInfo(Json::Value& jsonInfo) const;
     void GetDumpInfo(Json::Value& jsonInfo) const;
     bool FillFrames(const std::shared_ptr<DfxThread>& thread, Json::Value& jsonInfo) const;
+    void FillNativeFrame(const DfxFrame& frame, Json::Value& jsonInfo) const;
+#if defined(ENABLE_MIXSTACK)
+    void FillJsFrame(const DfxFrame& frame, Json::Value& jsonInfo) const;
+#endif
     void AppendThreads(const std::vector<std::shared_ptr<DfxThread>>& threads, Json::Value& jsonInfo) const;
 #endif
 

@@ -15,17 +15,12 @@
 
 #include <gtest/gtest.h>
 #include <cerrno>
-
-#include <libunwind_i-ohos.h>
-#include <libunwind_i.h>
-#include <map_info.h>
 #include <unistd.h>
 
 #include "dfx_fault_stack.h"
-#include "dfx_frame_format.h"
-#include "dfx_regs.h"
+#include "dfx_frame_formatter.h"
 #include "dfx_maps.h"
-#include "catchframe_local.h"
+#include "dfx_regs.h"
 #include "dfx_ring_buffer_wrapper.h"
 #include "dfx_thread.h"
 #include "dfx_unwind_remote.h"
@@ -76,63 +71,7 @@ int FaultStackUnittest::WriteLogFunc(int32_t fd, const char *buf, int len)
     return 0;
 }
 
-int unw_get_ark_js_heap_crash_info(int pid, uintptr_t* x20, uintptr_t* fp, int out_js_info, char* buf, size_t buf_sz)
-{
-    printf("unw_get_ark_js_heap_crash_info is called\n");
-    if ((*x20 == 0) || (*fp == 0)) {
-        return -1;
-    }
-
-    return 0;
-}
-
 namespace {
-#if defined(__arm__)
-std::vector<uintptr_t> GetCurrentRegs(unw_context_t ctx)
-{
-    std::vector<uintptr_t> regs {};
-    auto sz = sizeof(ctx.regs) / sizeof(ctx.regs[0]);
-    printf("ctx.regs size:%zu\n", sz);
-    for (size_t i = 0; i < sz; i++) {
-        regs.push_back(ctx.regs[i]);
-    }
-    return regs;
-}
-#elif defined(__aarch64__)
-std::vector<uintptr_t> GetCurrentRegs(unw_context_t ctx)
-{
-    std::vector<uintptr_t> regs {};
-    auto sz = sizeof(ctx.uc_mcontext.regs) / sizeof(ctx.uc_mcontext.regs[0]);
-    printf("uc_mcontext.regs size:%zu\n", sz);
-    for (size_t i = 0; i < sz; i++) {
-        regs.push_back(ctx.uc_mcontext.regs[i]);
-    }
-    regs.push_back(ctx.uc_mcontext.sp);
-    regs.push_back(ctx.uc_mcontext.pc);
-    return regs;
-}
-#endif
-std::shared_ptr<DfxRegs> GetCurrentReg()
-{
-    printf("GetCurrentReg begin\n");
-    unw_context_t ctx;
-    printf("GetCurrentReg ctx:%p\n", &ctx);
-    unw_getcontext(&ctx);
-#if defined(__arm__)
-    std::shared_ptr<DfxRegsArm> reg = std::make_shared<DfxRegsArm>();
-    std::vector<uintptr_t> regVec = GetCurrentRegs(ctx);
-    reg->SetRegsData(regVec);
-#elif defined(__aarch64__)
-    std::shared_ptr<DfxRegsArm64> reg = std::make_shared<DfxRegsArm64>();
-    std::vector<uintptr_t> regVec = GetCurrentRegs(ctx);
-    reg->SetRegsData(regVec);
-#else
-    std::shared_ptr<DfxRegs> reg = nullptr;
-#endif
-    printf("GetCurrentReg end\n");
-    return reg;
-}
-
 /**
  * @tc.name: FaultStackUnittest001
  * @tc.desc: check whether fault stack and register can be print out
@@ -141,12 +80,13 @@ std::shared_ptr<DfxRegs> GetCurrentReg()
 HWTEST_F(FaultStackUnittest, FaultStackUnittest001, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "FaultStackUnittest001: start.";
-    std::vector<DfxFrame> frames;
-    DfxCatchFrameLocal catcher(getpid());
-    ASSERT_EQ(true, catcher.InitFrameCatcher());
-    ASSERT_EQ(true, catcher.CatchFrame(getpid(), frames));
-    ASSERT_GT(frames.size(), 0);
-    GTEST_LOG_(INFO) << "frame size:" << frames.size();
+
+    auto unwinder = std::make_shared<Unwinder>();
+    bool unwRet = unwinder->UnwindLocal();
+    if (!unwRet) {
+        FAIL() << "Failed to unwind local";
+    }
+    auto frames = unwinder->GetFrames();
     int childPid = fork();
     if (childPid == 0) {
         uint32_t left = 10;
@@ -161,13 +101,12 @@ HWTEST_F(FaultStackUnittest, FaultStackUnittest001, TestSize.Level2)
 
     DfxThread thread(childPid, childPid, childPid);
     ASSERT_EQ(true, thread.Attach());
-    auto maps = DfxElfMaps::Create(childPid);
-    auto reg = GetCurrentReg();
+    auto maps = DfxMaps::Create(childPid);
+    auto reg = DfxRegs::CreateRemoteRegs(childPid);
     std::unique_ptr<FaultStack> stack = std::make_unique<FaultStack>(childPid);
-    stack->CollectStackInfo(DfxFrameFormat::ConvertFrames(frames));
+    stack->CollectStackInfo(frames);
     stack->CollectRegistersBlock(reg, maps);
     stack->Print();
-    catcher.DestroyFrameCatcher();
     thread.Detach();
 
     if (result.find("Memory near registers") == std::string::npos) {
@@ -188,27 +127,5 @@ HWTEST_F(FaultStackUnittest, FaultStackUnittest001, TestSize.Level2)
     GTEST_LOG_(INFO) << "Result Log length:" << result.length();
     ASSERT_GT(result.length(), 0);
     GTEST_LOG_(INFO) << "FaultStackUnittest001: end.";
-}
-
-/**
- * @tc.name: FaultStackUnittest002
- * @tc.desc: test Get Ark Js Func
- * @tc.type: FUNC
- */
-HWTEST_F(FaultStackUnittest, FaultStackUnittest002, TestSize.Level2)
-{
-#if defined(__aarch64__)
-    auto& unwindRemote = DfxUnwindRemote::GetInstance();
-    auto thread = std::make_shared<DfxThread>(getpid(), getpid(), getpid());
-    std::string funcName;
-    bool ret = unwindRemote.GetArkJsHeapFuncName(funcName, thread);
-    ASSERT_EQ(false, ret);
-    auto regs = GetCurrentReg();
-    thread->SetThreadRegs(regs);
-    ret = unwindRemote.GetArkJsHeapFuncName(funcName, thread);
-    ASSERT_EQ(true, ret);
-#else
-    printf("Get Ark Js Func Test is only support in aarch64\n");
-#endif
 }
 }

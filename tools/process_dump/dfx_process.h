@@ -21,7 +21,9 @@
 #include <memory>
 #include <string>
 
+#if defined(__x86_64__)
 #include "dfx_maps.h"
+#endif
 #include "dfx_thread.h"
 
 namespace OHOS {
@@ -48,21 +50,25 @@ public:
 
     void SetFatalMessage(const std::string &msg);
     std::string GetFatalMessage() const;
+#if defined(__x86_64__)
     void InitProcessMaps();
     void SetMaps(std::shared_ptr<DfxElfMaps> maps);
     std::shared_ptr<DfxElfMaps> GetMaps() const;
+#endif
 
     DfxProcessInfo processInfo_;
     pid_t recycleTid_ = 0;
-    std::shared_ptr<DfxThread> keyThread_ = nullptr;
-    std::shared_ptr<DfxThread> vmThread_ = nullptr;
+    std::shared_ptr<DfxThread> keyThread_ = nullptr; // comment: crash thread or dump target thread
+    std::shared_ptr<DfxThread> vmThread_ = nullptr; // comment: vm thread object in crash secnario
     std::string reason = "";
 private:
     DfxProcess() = default;
     void InitProcessInfo(pid_t pid, pid_t nsPid);
 
     std::string fatalMsg_ = "";
+#if defined(__x86_64__)
     std::shared_ptr<DfxElfMaps> maps_;
+#endif
     std::vector<std::shared_ptr<DfxThread>> otherThreads_;
     std::map<int, int> kvThreads_;
 };

@@ -18,6 +18,7 @@
 #include <string>
 
 #include "dfx_regs.h"
+#include "dfx_regs_get.h"
 #include "dfx_dump_request.h"
 #include "dfx_thread.h"
 #include "process_dumper.h"
@@ -112,25 +113,6 @@ HWTEST_F (ProcessDumpTest, DfxProcessTest004, TestSize.Level2)
 }
 
 /**
- * @tc.name: DfxProcessTest005
- * @tc.desc: test get map
- * @tc.type: FUNC
- */
-HWTEST_F (ProcessDumpTest, DfxProcessTest005, TestSize.Level2)
-{
-    GTEST_LOG_(INFO) << "DfxProcessTest005: start.";
-    std::shared_ptr<DfxProcess> process = DfxProcess::Create(getpid(), getpid());
-    process->InitProcessMaps();
-    auto output = process->GetMaps();
-    EXPECT_EQ(true, output != nullptr) << "DfxProcessTest005 Failed";
-    std::shared_ptr<DfxElfMaps> maps = std::make_shared<DfxElfMaps>();
-    process->SetMaps(maps);
-    output = process->GetMaps();
-    EXPECT_EQ(true, output == maps) << "DfxProcessTest005 Failed";
-    GTEST_LOG_(INFO) << "DfxProcessTest005: end.";
-}
-
-/**
  * @tc.name: DfxThreadTest001
  * @tc.desc: test DfxThread Create
  * @tc.type: FUNC
@@ -173,10 +155,12 @@ HWTEST_F (ProcessDumpTest, DfxUnwindRemoteTest001, TestSize.Level2)
     pid_t tid = pid;
     std::shared_ptr<DfxThread> thread = DfxThread::Create(pid, tid, tid);
     std::shared_ptr<DfxProcess> process = DfxProcess::Create(pid, pid);
+    auto unwinder = std::make_shared<Unwinder>(pid);
     process->keyThread_ = thread;
     thread->Attach();
+    thread->SetThreadRegs(DfxRegs::CreateRemoteRegs(pid));
     std::shared_ptr<ProcessDumpRequest> request = std::make_shared<ProcessDumpRequest>();
-    bool ret = DfxUnwindRemote::GetInstance().UnwindProcess(request, process);
+    bool ret = DfxUnwindRemote::GetInstance().UnwindProcess(request, process, unwinder);
     thread->Detach();
     EXPECT_EQ(true, ret) << "DfxUnwindRemoteTest001 Failed";
     GTEST_LOG_(INFO) << "DfxUnwindRemoteTest001: end.";
@@ -184,7 +168,7 @@ HWTEST_F (ProcessDumpTest, DfxUnwindRemoteTest001, TestSize.Level2)
 
 /**
  * @tc.name: DfxUnwindRemoteTest002
- * @tc.desc: test UnwindThread
+ * @tc.desc: test UnwindThreadFallback
  * @tc.type: FUNC
  */
 HWTEST_F (ProcessDumpTest, DfxUnwindRemoteTest002, TestSize.Level2)
@@ -194,37 +178,13 @@ HWTEST_F (ProcessDumpTest, DfxUnwindRemoteTest002, TestSize.Level2)
     pid_t tid = pid;
     std::shared_ptr<DfxThread> thread = DfxThread::Create(pid, tid, tid);
     std::shared_ptr<DfxProcess> process = DfxProcess::Create(pid, pid);
+    auto unwinder = std::make_shared<Unwinder>(pid);
     process->keyThread_ = thread;
     thread->Attach();
-    bool ret = DfxUnwindRemote::GetInstance().UnwindThread(process, thread);
+    thread->SetThreadRegs(DfxRegs::CreateRemoteRegs(pid));
+    DfxUnwindRemote::GetInstance().UnwindThreadFallback(process, thread, unwinder);
     thread->Detach();
-    EXPECT_EQ(true, ret) << "DfxUnwindRemoteTest002 Failed";
+    EXPECT_EQ(unwinder->GetFrames().size(), 2) << "DfxUnwindRemoteTest002 Failed";
     GTEST_LOG_(INFO) << "DfxUnwindRemoteTest002: end.";
-}
-
-/**
- * @tc.name: DfxUnwindRemoteTest003
- * @tc.desc: test UnwindThreadFallback
- * @tc.type: FUNC
- */
-HWTEST_F (ProcessDumpTest, DfxUnwindRemoteTest003, TestSize.Level2)
-{
-    GTEST_LOG_(INFO) << "DfxUnwindRemoteTest003: start.";
-    pid_t pid = GetProcessPid(FOUNDATION_NAME);
-    pid_t tid = pid;
-    std::shared_ptr<DfxThread> thread = DfxThread::Create(pid, tid, tid);
-    std::shared_ptr<DfxProcess> process = DfxProcess::Create(pid, pid);
-    auto dfxregs = DfxRegs::Create();
-    uintptr_t regs[FP_MINI_REGS_SIZE] = {0};
-    dfxregs->GetFramePointerMiniRegs(regs);
-    dfxregs->fp_ = regs[0]; // 0 : index of x29 or r11 register
-    dfxregs->pc_ = regs[3]; // 3 : index of x32 or r15 register
-    thread->SetThreadRegs(dfxregs);
-    process->keyThread_ = thread;
-    thread->Attach();
-    DfxUnwindRemote::GetInstance().UnwindThreadFallback(process, thread);
-    thread->Detach();
-    EXPECT_EQ(thread->GetFrames().size(), 2) << "DfxUnwindRemoteTest003 Failed";
-    GTEST_LOG_(INFO) << "DfxUnwindRemoteTest003: end.";
 }
 }

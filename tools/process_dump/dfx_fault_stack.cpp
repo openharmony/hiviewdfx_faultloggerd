@@ -19,11 +19,14 @@
 #include <csignal>
 #include <sys/ptrace.h>
 #include <sys/stat.h>
+
 #include "dfx_config.h"
+#include "dfx_elf.h"
 #include "dfx_logger.h"
 #include "dfx_ring_buffer_wrapper.h"
-#include "dfx_elf.h"
+#if defined(__x86_64__)
 #include "dfx_memory_file.h"
+#endif
 
 namespace OHOS {
 namespace HiviewDFX {
@@ -75,7 +78,7 @@ uintptr_t FaultStack::AdjustAndCreateMemoryBlock(size_t index, uintptr_t prevSp,
     return startAddr + size * STEP;
 }
 
-bool FaultStack::CollectStackInfo(const std::vector<std::shared_ptr<DfxFrame>> &frames, bool needParseStack)
+bool FaultStack::CollectStackInfo(const std::vector<DfxFrame>& frames, bool needParseStack)
 {
     if (frames.empty()) {
         DFXLOG_WARN("null frames.");
@@ -94,9 +97,7 @@ bool FaultStack::CollectStackInfo(const std::vector<std::shared_ptr<DfxFrame>> &
     }
 
     auto firstFrame = frames.at(0);
-    if (firstFrame != nullptr) {
-        prevSp = static_cast<uintptr_t>(firstFrame->sp);
-    }
+    prevSp = static_cast<uintptr_t>(firstFrame.sp);
     constexpr size_t MAX_FAULT_STACK_SZ = 4;
     for (index = 1; index < frames.size(); index++) {
         if (index > MAX_FAULT_STACK_SZ) {
@@ -104,9 +105,7 @@ bool FaultStack::CollectStackInfo(const std::vector<std::shared_ptr<DfxFrame>> &
         }
 
         auto frame = frames.at(index);
-        if (frame != nullptr) {
-            curSp = static_cast<uintptr_t>(frame->sp);
-        }
+        curSp = static_cast<uintptr_t>(frame.sp);
 
         size = 0;
         if (curSp > prevSp) {
@@ -129,18 +128,18 @@ bool FaultStack::CollectStackInfo(const std::vector<std::shared_ptr<DfxFrame>> &
     return true;
 }
 
-bool FaultStack::CreateBlockForCorruptedStack(const std::vector<std::shared_ptr<DfxFrame>> &frames,
-    uintptr_t prevEndAddr, uintptr_t size)
+bool FaultStack::CreateBlockForCorruptedStack(const std::vector<DfxFrame>& frames, uintptr_t prevEndAddr,
+                                              uintptr_t size)
 {
     const auto& frame = frames.back();
     // stack trace should end with libc or ffrt or */bin/*
-    if (frame->mapName.find("ld-musl") != std::string::npos ||
-        frame->mapName.find("ffrt") != std::string::npos ||
-        frame->mapName.find("bin") != std::string::npos) {
+    if (frame.mapName.find("ld-musl") != std::string::npos ||
+        frame.mapName.find("ffrt") != std::string::npos ||
+        frame.mapName.find("bin") != std::string::npos) {
         return false;
     }
 
-    AdjustAndCreateMemoryBlock(frame->index, frame->sp, prevEndAddr, size);
+    AdjustAndCreateMemoryBlock(frame.index, frame.sp, prevEndAddr, size);
     return true;
 }
 
@@ -209,7 +208,11 @@ MemoryBlockInfo FaultStack::CreateMemoryBlock(
     return info;
 }
 
+#if defined(__x86_64__)
 void FaultStack::CollectRegistersBlock(std::shared_ptr<DfxRegs> regs, std::shared_ptr<DfxElfMaps> maps)
+#else
+void FaultStack::CollectRegistersBlock(std::shared_ptr<DfxRegs> regs, std::shared_ptr<DfxMaps> maps)
+#endif
 {
     if (regs == nullptr || maps == nullptr) {
         return;
@@ -219,8 +222,13 @@ void FaultStack::CollectRegistersBlock(std::shared_ptr<DfxRegs> regs, std::share
     int index = 0;
     for (auto data : regData) {
         index++;
+#if defined(__x86_64__)
         std::shared_ptr<DfxElfMap> map;
         if (!maps->FindMapByAddr(data, map)) {
+#else
+        std::shared_ptr<DfxMap> map;
+        if (!maps->FindMapByAddr(map, data)) {
+#endif
             continue;
         }
 
@@ -228,7 +236,11 @@ void FaultStack::CollectRegistersBlock(std::shared_ptr<DfxRegs> regs, std::share
             continue;
         }
 
+#if defined(__x86_64__)
         std::string name = regs->GetSpecialRegisterName(data);
+#else
+        std::string name = regs->GetSpecialRegsName(data);
+#endif
         if (name.empty()) {
 #if defined(__arm__)
 #define NAME_PREFIX "r"
@@ -243,7 +255,11 @@ void FaultStack::CollectRegistersBlock(std::shared_ptr<DfxRegs> regs, std::share
         constexpr size_t SIZE = sizeof(uintptr_t);
         constexpr int COUNT = 32;
         constexpr int FORWARD_SZ = 2;
+#if defined(__x86_64__)
         auto mapName = map->path;
+#else
+        auto mapName = map->name;
+#endif
         if (!mapName.empty()) {
             name.append("(" + mapName + ")");
         }
@@ -274,7 +290,8 @@ void FaultStack::PrintRegisterMemory() const
     }
 }
 
-bool FaultStack::ParseUnwindStack(std::shared_ptr<DfxElfMaps> maps, std::vector<std::shared_ptr<DfxFrame>> &frames)
+#if defined(__x86_64__)
+bool FaultStack::ParseUnwindStack(std::shared_ptr<DfxElfMaps> maps, std::vector<DfxFrame>& frames)
 {
     if (maps == nullptr) {
         DFXLOG_ERROR("%s : maps is null.", __func__);
@@ -288,34 +305,30 @@ bool FaultStack::ParseUnwindStack(std::shared_ptr<DfxElfMaps> maps, std::vector<
                 map->perms.find("x") == std::string::npos) {
                 continue;
             }
-            std::shared_ptr<DfxFrame> frame = std::make_shared<DfxFrame>();
-            if (frame == nullptr) {
-                DFXLOG_ERROR("%s : Failed to create DfxFrame.", __func__);
-                return false;
-            }
-            frame->index = index;
-            frame->pc = block.content[i];
-            frame->mapName = map->path;
+            DfxFrame frame;
+            frame.index = index;
+            frame.pc = block.content[i];
+            frame.mapName = map->path;
             int64_t loadBias = 0;
             struct stat st;
             if (stat(map->path.c_str(), &st) == 0 && (st.st_mode & S_IFREG)) {
-                auto memoryFile = DfxMemoryFile::CreateFileMemory(frame->mapName, 0);
+                auto memoryFile = DfxMemoryFile::CreateFileMemory(frame.mapName, 0);
                 if (memoryFile == nullptr) {
-                    DFXLOG_ERROR("%s : Failed to CreateFileMemory, elf path(%s).", __func__, frame->mapName.c_str());
+                    DFXLOG_ERROR("%s : Failed to CreateFileMemory, elf path(%s).", __func__, frame.mapName.c_str());
                     return false;
                 }
                 std::shared_ptr<DfxElf> elf = std::make_shared<DfxElf>(memoryFile);
                 if (elf == nullptr || !elf->Init()) {
-                    DFXLOG_ERROR("%s : Failed to create DfxElf, elf path(%s).", __func__, frame->mapName.c_str());
+                    DFXLOG_ERROR("%s : Failed to create DfxElf, elf path(%s).", __func__, frame.mapName.c_str());
                     return false;
                 }
                 loadBias = elf->GetLoadBias();
-                frame->buildId = DfxElf::GetReadableBuildID(elf->GetBuildID());
+                frame.buildId = DfxElf::GetReadableBuildID(elf->GetBuildID());
             } else {
-                DFXLOG_WARN("%s : mapName(%s) is not file.", __func__, frame->mapName.c_str());
+                DFXLOG_WARN("%s : mapName(%s) is not file.", __func__, frame.mapName.c_str());
             }
 
-            frame->relPc = frame->pc - map->begin + map->offset + static_cast<uint64_t>(loadBias);
+            frame.relPc = frame.pc - map->begin + map->offset + static_cast<uint64_t>(loadBias);
             frames.emplace_back(frame);
             constexpr int MAX_VALID_ADDRESS_NUM = 32;
             if (++index >= MAX_VALID_ADDRESS_NUM) {
@@ -325,6 +338,50 @@ bool FaultStack::ParseUnwindStack(std::shared_ptr<DfxElfMaps> maps, std::vector<
     }
     return true;
 }
+#else
+bool FaultStack::ParseUnwindStack(std::shared_ptr<DfxMaps> maps, std::vector<DfxFrame>& frames)
+{
+    if (maps == nullptr) {
+        DFXLOG_ERROR("%s : maps is null.", __func__);
+        return false;
+    }
+    size_t index = frames.size();
+    for (const auto& block : blocks_) {
+        std::shared_ptr<DfxMap> map;
+        for (size_t i = 0; i < block.content.size(); i++) {
+            if (!maps->FindMapByAddr(map, block.content[i]) ||
+                map->perms.find("x") == std::string::npos) {
+                continue;
+            }
+            DfxFrame frame;
+            frame.index = index;
+            frame.pc = block.content[i];
+            frame.map = map;
+            frame.mapName = map->name;
+            int64_t loadBias = 0;
+            struct stat st;
+            if (stat(map->name.c_str(), &st) == 0 && (st.st_mode & S_IFREG)) {
+                auto elf = DfxElf::Create(frame.mapName);
+                if (elf == nullptr || !elf->IsValid()) {
+                    DFXLOG_ERROR("%s : Failed to create DfxElf, elf path(%s).", __func__, frame.mapName.c_str());
+                    return false;
+                }
+                loadBias = elf->GetLoadBias();
+                frame.buildId = elf->GetBuildId();
+            } else {
+                DFXLOG_WARN("%s : mapName(%s) is not file.", __func__, frame.mapName.c_str());
+            }
 
+            frame.relPc = frame.pc - map->begin + map->offset + loadBias;
+            frames.emplace_back(frame);
+            constexpr int MAX_VALID_ADDRESS_NUM = 32;
+            if (++index >= MAX_VALID_ADDRESS_NUM) {
+                return true;
+            }
+        }
+    }
+    return true;
+}
+#endif
 } // namespace HiviewDFX
 } // namespace OHOS

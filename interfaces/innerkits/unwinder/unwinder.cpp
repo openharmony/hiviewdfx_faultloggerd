@@ -18,6 +18,7 @@
 #include <dlfcn.h>
 #include <link.h>
 
+#include "dfx_ark.h"
 #include "dfx_define.h"
 #include "dfx_errors.h"
 #include "dfx_frame_formatter.h"
@@ -107,7 +108,7 @@ bool Unwinder::UnwindLocal(size_t maxFrameNum, size_t skipFrameNum)
     return ret;
 }
 
-bool Unwinder::UnwindRemote(pid_t tid, size_t maxFrameNum, size_t skipFrameNum)
+bool Unwinder::UnwindRemote(pid_t tid, bool withRegs, size_t maxFrameNum, size_t skipFrameNum)
 {
     if ((pid_ <= 0) || (tid < 0)) {
         LOGE("params is nullptr, pid: %d", pid_);
@@ -116,7 +117,9 @@ bool Unwinder::UnwindRemote(pid_t tid, size_t maxFrameNum, size_t skipFrameNum)
     if (tid == 0) {
         tid = pid_;
     }
-    regs_ = DfxRegs::CreateRemoteRegs(tid);
+    if (!withRegs) {
+        regs_ = DfxRegs::CreateRemoteRegs(tid);
+    }
     if ((regs_ == nullptr)) {
         LOGE("regs is nullptr");
         return false;
@@ -209,7 +212,37 @@ bool Unwinder::Unwind(void *ctx, size_t maxFrameNum, size_t skipFrameNum)
         frame.pc = static_cast<uint64_t>(pc);
         frame.map = map;
         frames_.push_back(frame);
-
+#if defined(ENABLE_MIXSTACK)
+        uintptr_t fp = regs_->GetFp();
+        if (map->IsArkExecutable()) {
+            JsFrame* jsFrames = nullptr;
+            size_t size = 0;
+            LOGU("input ark pc: %llx, fp: %llx, sp: %llx.", (uint64_t)pc, (uint64_t)fp, (uint64_t)sp);
+            int ret = DfxArk::GetArkNativeFrameInfo(pid_, pc, fp, sp, size, &jsFrames);
+            LOGU("output ark pc: %llx, fp: %llx, sp: %llx, js frame size: %d.",
+                 (uint64_t)pc, (uint64_t)fp, (uint64_t)sp, size);
+            if (ret < 0) {
+                LOGE("Failed to get ark native frame info.");
+            } else {
+                while (size > 0 && jsFrames != nullptr) {
+                    DfxFrame frame;
+                    frame.isJsFrame = true;
+                    frame.index = (++curIndex);
+                    frame.mapName = std::string(jsFrames->url);
+                    frame.funcName = std::string(jsFrames->functionName);
+                    frame.line = jsFrames->line;
+                    frame.column = jsFrames->column;
+                    frames_.push_back(frame);
+                    jsFrames++;
+                    size--;
+                    index++;
+                }
+                regs_->SetPc(pc);
+                regs_->SetSp(sp);
+                regs_->SetFp(fp);
+            }
+        }
+#endif
         stepPc = pc;
         if (!Step(stepPc, sp, ctx)) {
             break;
@@ -444,12 +477,22 @@ void Unwinder::DoPcAdjust(uintptr_t& pc)
     pc -= sz;
 }
 
-const std::vector<DfxFrame>& Unwinder::GetFrames()
+std::vector<DfxFrame>& Unwinder::GetFrames()
 {
     if (enableFillFrames_) {
         FillFrames(frames_);
     }
     return frames_;
+}
+
+void Unwinder::SetFrames(std::vector<DfxFrame>& frames)
+{
+    frames_ = frames;
+}
+
+void Unwinder::AddFrame(DfxFrame& frame)
+{
+    frames_.push_back(frame);
 }
 
 void Unwinder::FillFrames(std::vector<DfxFrame>& frames)
@@ -461,8 +504,12 @@ void Unwinder::FillFrames(std::vector<DfxFrame>& frames)
 
 void Unwinder::FillFrame(DfxFrame& frame)
 {
+    if (frame.isJsFrame) {
+        return;
+    }
     if (frame.map == nullptr) {
-        LOGE("map is null");
+        frame.mapName = "Not mapped";
+        LOGE("Current frame is not mapped.");
         return;
     }
     frame.relPc = frame.map->GetRelPc(frame.pc);

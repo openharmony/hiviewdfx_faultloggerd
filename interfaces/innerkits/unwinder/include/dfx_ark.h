@@ -20,10 +20,26 @@
 #include <mutex>
 #include <string>
 
+#include "dfx_map.h"
+
+namespace panda::ecmascript {
+constexpr uint16_t FUNCTIONNAME_MAX = 1024;
+constexpr uint16_t URL_MAX = 1024;
+struct JsFrame {
+    char functionName[FUNCTIONNAME_MAX];
+    char url[URL_MAX];
+    int32_t line;
+    int32_t column;
+};
+}
+
 namespace OHOS {
 namespace HiviewDFX {
+using JsFrame = panda::ecmascript::JsFrame;
 class DfxArk {
 public:
+    static int GetArkNativeFrameInfo(int pid, uintptr_t& pc, uintptr_t& fp, uintptr_t& sp,
+                                     size_t& size, JsFrame** frames);
     static int StepArkManagedNativeFrame(int pid, uintptr_t& pc, uintptr_t& fp, uintptr_t& sp,
                                          char* buf, size_t bufSize);
     static int GetArkJsHeapCrashInfo(int pid, uintptr_t& x20, uintptr_t& fp, int outJsInfo, char* buf, size_t bufSize);

@@ -24,6 +24,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <vector>
+
 #include "dfx_config.h"
 #include "dfx_define.h"
 #include "dfx_logger.h"
@@ -153,6 +154,7 @@ std::string DfxProcess::GetFatalMessage() const
     return fatalMsg_;
 }
 
+#if defined(__x86_64__)
 void DfxProcess::SetMaps(std::shared_ptr<DfxElfMaps> maps)
 {
     maps_ = maps;
@@ -172,5 +174,6 @@ std::shared_ptr<DfxElfMaps> DfxProcess::GetMaps() const
 {
     return maps_;
 }
+#endif
 } // namespace HiviewDFX
 } // namespace OHOS

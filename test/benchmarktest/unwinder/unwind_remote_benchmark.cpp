@@ -83,12 +83,12 @@ static pid_t RemoteFork()
     return pid;
 }
 
-static size_t UnwinderRemote(std::shared_ptr<Unwinder> unwinder)
+static size_t UnwinderRemote(std::shared_ptr<Unwinder> unwinder, const pid_t tid)
 {
     if (unwinder == nullptr) {
         return 0;
     }
-    MAYBE_UNUSED bool unwRet = unwinder->UnwindRemote();
+    MAYBE_UNUSED bool unwRet = unwinder->UnwindRemote(tid);
     auto frames = unwinder->GetFrames();
     LOGU("%s frames.size: %zu", __func__, frames.size());
     return frames.size();
@@ -159,7 +159,7 @@ static void Run(benchmark::State& state, void* data)
         if (isFp) {
             unwSize = UnwinderRemoteFp(unwinder);
         } else {
-            unwSize = UnwinderRemote(unwinder);
+            unwSize = UnwinderRemote(unwinder, pid);
         }
 
         if (unwSize < TEST_MIN_UNWIND_FRAMES) {

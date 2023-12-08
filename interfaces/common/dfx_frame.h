@@ -29,6 +29,8 @@ class DfxMap;
  * It serves as the public definition of the native stack frame.
  */
 struct DfxFrame {
+    /** whether is Js frame */
+    bool isJsFrame {false};
     /** frame index */
     size_t index {0};
     /** program counter register value */
@@ -49,6 +51,12 @@ struct DfxFrame {
     std::string buildId {""};
     /** map cache */
     std::shared_ptr<DfxMap> map;
+#if defined(ENABLE_MIXSTACK)
+    /** Js frame code line */
+    int32_t line {0};
+    /** Js frame code column */
+    int32_t column {0};
+#endif
 };
 } // namespace HiviewDFX
 } // namespace OHOS

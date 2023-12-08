@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef CPP_CRASH_PRINTER_H
-#define CPP_CRASH_PRINTER_H
+#ifndef CPP_CRASH_PRINTER_EMULATOR_H
+#define CPP_CRASH_PRINTER_EMULATOR_H
 
 #include <cinttypes>
 #include <csignal>
@@ -22,29 +22,22 @@
 #include <string>
 
 #include "dfx_dump_request.h"
-#include "dfx_maps.h"
 #include "dfx_process.h"
-#include "dfx_regs.h"
 #include "dfx_thread.h"
-#include "unwinder.h"
 
 namespace OHOS {
 namespace HiviewDFX {
 class Printer {
 public:
-    static void PrintDumpHeader(std::shared_ptr<ProcessDumpRequest> request, std::shared_ptr<DfxProcess> process,
-                                std::shared_ptr<Unwinder> unwinder);
-    static void PrintProcessMapsByConfig(std::shared_ptr<DfxMaps> process);
+    static void PrintDumpHeader(std::shared_ptr<ProcessDumpRequest> request, std::shared_ptr<DfxProcess> process);
+    static void PrintProcessMapsByConfig(std::shared_ptr<DfxProcess> process);
     static void PrintOtherThreadHeaderByConfig();
     static void PrintThreadHeaderByConfig(std::shared_ptr<DfxThread> thread);
     static void PrintThreadBacktraceByConfig(std::shared_ptr<DfxThread> thread);
     static void PrintThreadRegsByConfig(std::shared_ptr<DfxThread> thread);
-    static void PrintRegsByConfig(std::shared_ptr<DfxRegs> regs);
-    static void PrintThreadFaultStackByConfig(std::shared_ptr<DfxProcess> process, std::shared_ptr<DfxThread> thread,
-                                              std::shared_ptr<Unwinder> unwinder);
+    static void PrintThreadFaultStackByConfig(std::shared_ptr<DfxProcess> process, std::shared_ptr<DfxThread> thread);
 private:
-    static void PrintReason(std::shared_ptr<ProcessDumpRequest> request, std::shared_ptr<DfxProcess> process,
-                            std::shared_ptr<Unwinder> unwinder);
+    static void PrintReason(std::shared_ptr<ProcessDumpRequest> request, std::shared_ptr<DfxProcess> process);
 };
 } // namespace HiviewDFX
 } // namespace OHOS

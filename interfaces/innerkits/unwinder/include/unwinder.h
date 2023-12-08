@@ -78,15 +78,17 @@ public:
     bool GetMap(uintptr_t pc, void *ctx, std::shared_ptr<DfxMap>& map);
 
     bool UnwindLocal(size_t maxFrameNum = 64, size_t skipFrameNum = 0);
-    bool UnwindRemote(pid_t tid = 0, size_t maxFrameNum = 64, size_t skipFrameNum = 0);
+    bool UnwindRemote(pid_t tid = 0, bool withRegs = false, size_t maxFrameNum = 64, size_t skipFrameNum = 0);
     bool Unwind(void *ctx, size_t maxFrameNum = 64, size_t skipFrameNum = 0);
     bool UnwindByFp(void *ctx, size_t maxFrameNum = 64, size_t skipFrameNum = 0);
     bool Step(uintptr_t& pc, uintptr_t& sp, void *ctx);
     bool FpStep(uintptr_t& fp, uintptr_t& pc, void *ctx);
 
     inline const std::vector<uintptr_t>& GetPcs() { return pcs_; }
+    void AddFrame(DfxFrame& frame);
     void FillFrames(std::vector<DfxFrame>& frames);
-    const std::vector<DfxFrame>& GetFrames();
+    std::vector<DfxFrame>& GetFrames();
+    void SetFrames(std::vector<DfxFrame>& frames);
     static void GetFramesByPcs(std::vector<DfxFrame>& frames, std::vector<uintptr_t> pcs,
         std::shared_ptr<DfxMaps> maps);
     static void FillFrame(DfxFrame& frame);

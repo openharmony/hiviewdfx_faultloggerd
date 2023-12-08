@@ -161,40 +161,40 @@ HWTEST_F(MapsTest, FindMapsByNameTest002, TestSize.Level2)
 
 /**
  * @tc.name: IsArkNameTest001
- * @tc.desc: test IsArkName functions
+ * @tc.desc: test IsArkExecutable functions
  * @tc.type: FUNC
  */
 HWTEST_F(MapsTest, IsArkNameTest001, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "IsArkNameTest001: start.";
     DfxMap DfxMap(0, 0, 0, "1", "anon:ArkTS Code");
-    EXPECT_EQ(false, DfxMap.IsArkName());
+    EXPECT_EQ(false, DfxMap.IsArkExecutable());
     GTEST_LOG_(INFO) << "IsArkNameTest001: end.";
 }
 
 /**
  * @tc.name: IsArkNameTest002
- * @tc.desc: test IsArkName functions
+ * @tc.desc: test IsArkExecutable functions
  * @tc.type: FUNC
  */
 HWTEST_F(MapsTest, IsArkNameTest002, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "IsArkNameTest002: start.";
     DfxMap DfxMap(0, 0, 0, "1", "/dev/zero");
-    EXPECT_EQ(true, DfxMap.IsArkName());
+    EXPECT_EQ(false, DfxMap.IsArkExecutable());
     GTEST_LOG_(INFO) << "IsArkNameTest002: end.";
 }
 
 /**
  * @tc.name: IsArkNameTest003
- * @tc.desc: test IsArkName functions
+ * @tc.desc: test IsArkExecutable functions
  * @tc.type: FUNC
  */
 HWTEST_F(MapsTest, IsArkNameTest003, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "IsArkNameTest003: start.";
-    DfxMap DfxMap(0, 0, 0, "1", "[anon:ArkTS Code]");
-    EXPECT_EQ(true, DfxMap.IsArkName());
+    DfxMap DfxMap(0, 0, 0, 4, "[anon:ArkTS Code]");
+    EXPECT_EQ(true, DfxMap.IsArkExecutable());
     GTEST_LOG_(INFO) << "IsArkNameTest003: end.";
 }
 

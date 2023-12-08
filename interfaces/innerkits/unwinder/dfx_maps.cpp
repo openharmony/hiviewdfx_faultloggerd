@@ -245,17 +245,7 @@ bool DfxMaps::IsArkExecutedMap(uintptr_t addr)
         return false;
     }
 
-    if ((!EndsWith(map->name, "[anon:ArkTS Code]")) && (!EndsWith(map->name, "/dev/zero"))) {
-        LOGU("Not ark map: %s", map->name.c_str());
-        return false;
-    }
-
-    if ((map->prots & PROT_EXEC) == 0) {
-        LOGU("current map is not executable.");
-        return false;
-    }
-
-    return true;
+    return map->IsArkExecutable();
 }
 } // namespace HiviewDFX
 } // namespace OHOS
