@@ -37,7 +37,9 @@ if (defined(ohos_lite)) {
       "$faultloggerd_path/common/dfxutil",
     ]
     sources = dfx_test_util_sources
-    external_deps = [ "c_utils:utils" ]
+    if (faultloggerd_cutils_enable) {
+      external_deps = [ "c_utils:utils" ]
+    }
     part_name = "faultloggerd"
     subsystem_name = "hiviewdfx"
   }

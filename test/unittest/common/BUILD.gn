@@ -78,10 +78,7 @@ if (defined(ohos_lite)) {
       "//third_party/googletest:gtest_main",
     ]
 
-    external_deps = [
-      "c_utils:utils",
-      "hilog:libhilog",
-    ]
+    external_deps = common_deps
   }
 
   group("unittest") {

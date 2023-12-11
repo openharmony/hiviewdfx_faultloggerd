@@ -158,14 +158,20 @@ if (defined(ohos_lite)) {
 
   config("lzma_config") {
     include_dirs = [ "//third_party/lzma/C" ]
+    if (is_ohos && !is_mingw && !is_emulator) {
+      defines = [ "ENABLE_MINIDEBUGINFO" ]
+    }
   }
 
   ohos_shared_library("libunwinder") {
     public_configs = [
       ":dfx_unwinder_config",
       "$faultloggerd_common_path/build:coverage_flags",
-      ":lzma_config",
     ]
+
+    if (faultloggerd_lzma_enable) {
+      public_configs += [ ":lzma_config" ]
+    }
 
     sources = dfx_unwinder_sources
     sources += dfx_unwind_sources
@@ -179,15 +185,12 @@ if (defined(ohos_lite)) {
       "//third_party/bounds_checking_function:libsec_shared",
     ]
 
-    if (is_ohos && !is_mingw && !is_emulator) {
+    if (faultloggerd_lzma_enable && is_ohos && !is_mingw && !is_emulator) {
       sources += [ "dfx_xz_utils.cpp" ]
       public_deps = [ "//third_party/lzma:lzma_shared" ]
     }
 
-    external_deps = [
-      "c_utils:utils",
-      "hilog:libhilog",
-    ]
+    external_deps = common_deps
     install_images = [
       "system",
       "updater",
@@ -198,10 +201,10 @@ if (defined(ohos_lite)) {
   }
 
   ohos_static_library("libunwinder_static") {
-    public_configs = [
-      ":dfx_unwinder_config",
-      ":lzma_config",
-    ]
+    public_configs = [ ":dfx_unwinder_config" ]
+    if (faultloggerd_lzma_enable) {
+      public_configs += [ ":lzma_config" ]
+    }
 
     sources = dfx_unwinder_sources
     sources += dfx_unwind_sources
@@ -214,14 +217,11 @@ if (defined(ohos_lite)) {
       "$faultloggerd_interfaces_path/innerkits/procinfo:libdfx_procinfo",
       "//third_party/bounds_checking_function:libsec_shared",
     ]
-    if (is_ohos && !is_mingw && !is_emulator) {
+    if (faultloggerd_lzma_enable && is_ohos && !is_mingw && !is_emulator) {
       sources += [ "dfx_xz_utils.cpp" ]
       public_deps = [ "//third_party/lzma:lzma_shared" ]
     }
-    external_deps = [
-      "c_utils:utils",
-      "hilog:libhilog",
-    ]
+    external_deps = common_deps
     part_name = "faultloggerd"
     subsystem_name = "hiviewdfx"
   }
@@ -230,8 +230,10 @@ if (defined(ohos_lite)) {
     public_configs = [
       ":dfx_unwinder_config",
       ":dfx_unwinder_src_config",
-      ":lzma_config",
     ]
+    if (faultloggerd_lzma_enable) {
+      public_configs += [ ":lzma_config" ]
+    }
 
     sources = dfx_unwinder_sources
     sources += dfx_unwind_sources
@@ -244,14 +246,11 @@ if (defined(ohos_lite)) {
       "$faultloggerd_interfaces_path/innerkits/procinfo:libdfx_procinfo",
       "//third_party/bounds_checking_function:libsec_shared",
     ]
-    if (is_ohos && !is_mingw && !is_emulator) {
+    if (faultloggerd_lzma_enable && is_ohos && !is_mingw && !is_emulator) {
       sources += [ "dfx_xz_utils.cpp" ]
       public_deps = [ "//third_party/lzma:lzma_shared" ]
     }
-    external_deps = [
-      "c_utils:utils",
-      "hilog:libhilog",
-    ]
+    external_deps = common_deps
     part_name = "faultloggerd"
     subsystem_name = "hiviewdfx"
   }
@@ -288,12 +287,12 @@ if (defined(ohos_lite)) {
       "dfx_symbols.cpp",
       "unwinder_config.cpp",
     ]
-    if (is_ohos && !is_mingw && !is_emulator) {
+    if (faultloggerd_lzma_enable && is_ohos && !is_mingw && !is_emulator) {
       sources += [ "dfx_xz_utils.cpp" ]
       public_deps = [ "//third_party/lzma:lzma_static" ]
     }
     deps = [ "//third_party/bounds_checking_function:libsec_static" ]
-    if (is_ohos) {
+    if (is_ohos && faultloggerd_cutils_enable) {
       external_deps = [ "c_utils:utils" ]
     }
     part_name = "faultloggerd"

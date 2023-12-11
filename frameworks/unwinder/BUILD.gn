@@ -100,10 +100,7 @@ if (defined(ohos_lite)) {
       "//third_party/libunwind:libunwind",
     ]
 
-    external_deps = [
-      "c_utils:utils",
-      "hilog:libhilog",
-    ]
+    external_deps = common_deps
     part_name = "faultloggerd"
     subsystem_name = "hiviewdfx"
   }
@@ -124,10 +121,12 @@ if (defined(ohos_lite)) {
       "//third_party/libunwind:libunwind_local",
     ]
 
-    external_deps = [
-      "c_utils:utils",
-      "hilog:libhilog_base",
-    ]
+    if (faultloggerd_cutils_enable) {
+      external_deps = [ "c_utils:utils" ]
+    }
+    if (faultloggerd_hilog_enable) {
+      external_deps += [ "hilog:libhilog_base" ]
+    }
     part_name = "faultloggerd"
     subsystem_name = "hiviewdfx"
   }

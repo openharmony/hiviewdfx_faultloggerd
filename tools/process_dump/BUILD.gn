@@ -149,10 +149,7 @@ if (defined(ohos_lite)) {
       deps += [ "$faultloggerd_interfaces_path/innerkits/unwinder:libunwinder" ]
     }
 
-    external_deps = [
-      "c_utils:utils",
-      "hilog:libhilog",
-    ]
+    external_deps = common_deps
 
     part_name = "faultloggerd"
     subsystem_name = "hiviewdfx"
@@ -188,10 +185,7 @@ if (defined(ohos_lite)) {
       deps += [ "$faultloggerd_interfaces_path/innerkits/unwinder:libunwinder" ]
     }
 
-    external_deps = [
-      "c_utils:utils",
-      "hilog:libhilog",
-    ]
+    external_deps = common_deps
 
     install_images = [
       "system",

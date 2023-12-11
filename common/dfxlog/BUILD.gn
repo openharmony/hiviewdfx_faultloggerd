@@ -66,10 +66,7 @@ if (defined(ohos_lite)) {
   ohos_static_library("dfx_hilog") {
     sources = dfx_log_sources
     public_configs = [ ":dfx_log_config" ]
-    external_deps = [
-      "c_utils:utils",
-      "hilog:libhilog",
-    ]
+    external_deps = common_deps
     part_name = "faultloggerd"
     subsystem_name = "hiviewdfx"
   }
@@ -78,10 +75,7 @@ if (defined(ohos_lite)) {
     sources = dfx_log_sources
     public_configs = [ ":dfx_log_config" ]
     defines = [ "DFX_LOG_DMESG" ]
-    external_deps = [
-      "c_utils:utils",
-      "hilog:libhilog",
-    ]
+    external_deps = common_deps
     part_name = "faultloggerd"
     subsystem_name = "hiviewdfx"
   }
@@ -90,10 +84,12 @@ if (defined(ohos_lite)) {
     sources = dfx_log_sources
     public_configs = [ ":dfx_log_config" ]
     defines = [ "DFX_LOG_HILOG_BASE" ]
-    external_deps = [
-      "c_utils:utils",
-      "hilog:libhilog_base",
-    ]
+    if (faultloggerd_cutils_enable) {
+      external_deps = [ "c_utils:utils" ]
+    }
+    if (faultloggerd_hilog_enable) {
+      external_deps += [ "hilog:libhilog_base" ]
+    }
     part_name = "faultloggerd"
     subsystem_name = "hiviewdfx"
   }
@@ -105,10 +101,12 @@ if (defined(ohos_lite)) {
       "DFX_LOG_HILOG_BASE",
       "DFX_LOG_DMESG",
     ]
-    external_deps = [
-      "c_utils:utils",
-      "hilog:libhilog_base",
-    ]
+    if (faultloggerd_cutils_enable) {
+      external_deps = [ "c_utils:utils" ]
+    }
+    if (faultloggerd_hilog_enable) {
+      external_deps += [ "hilog:libhilog_base" ]
+    }
     part_name = "faultloggerd"
     subsystem_name = "hiviewdfx"
   }
