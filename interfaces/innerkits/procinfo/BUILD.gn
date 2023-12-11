@@ -54,10 +54,9 @@ if (defined(ohos_lite)) {
       "//third_party/bounds_checking_function:libsec_shared",
     ]
     version_script = "libprocinfo.map"
-    external_deps = [
-      "c_utils:utils",
-      "hilog:libhilog",
-    ]
+    if (faultloggerd_cutils_enable) {
+      external_deps = [ "c_utils:utils" ]
+    }
     install_images = [
       "system",
       "updater",
@@ -80,10 +79,9 @@ if (defined(ohos_lite)) {
       "//third_party/bounds_checking_function:libsec_static",
     ]
 
-    external_deps = [
-      "c_utils:utils",
-      "hilog:libhilog_base",
-    ]
+    if (faultloggerd_cutils_enable) {
+      external_deps = [ "c_utils:utils" ]
+    }
 
     part_name = "faultloggerd"
     subsystem_name = "hiviewdfx"

@@ -64,17 +64,15 @@ if (defined(ohos_lite)) {
     configs = [ ":module_private_config" ]
 
     deps = [
-      "$faultloggerd_path/common/dfxlog:dfx_hilog",
       "$faultloggerd_path/common/dfxutil:dfx_util",
       "$faultloggerd_path/interfaces/innerkits/procinfo:libdfx_procinfo",
       "//third_party/googletest:gmock_main",
       "//third_party/googletest:gtest_main",
     ]
 
-    external_deps = [
-      "c_utils:utils",
-      "hilog:libhilog",
-    ]
+    if (faultloggerd_cutils_enable) {
+      external_deps = [ "c_utils:utils" ]
+    }
   }
 
   group("unittest") {

@@ -73,12 +73,11 @@ if (defined(ohos_lite)) {
 
     branch_protector_ret = "pac_ret"
 
-    external_deps = [
-      "c_utils:utils",
-      "hilog:libhilog",
+    external_deps = common_deps
+    external_deps += [
       "hitrace:libhitracechain",
+      "ipc:ipc_single",
     ]
-    external_deps += [ "ipc:ipc_single" ]
 
     part_name = "faultloggerd"
     subsystem_name = "hiviewdfx"

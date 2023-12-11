@@ -16,9 +16,12 @@ import("//base/hiviewdfx/faultloggerd/faultloggerd.gni")
 group("faultloggerd_rust") {
   if (!defined(ohos_lite)) {
     deps = [
-      "panic_handler:panic_handler",
       "rustc_demangle:rustc_demangle",
       "stacktrace:stacktrace_rust",
     ]
+
+    if (faultloggerd_hisysevent_enable) {
+      deps += [ "panic_handler:panic_handler" ]
+    }
   }
 }

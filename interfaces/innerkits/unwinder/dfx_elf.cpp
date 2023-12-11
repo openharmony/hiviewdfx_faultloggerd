@@ -36,7 +36,7 @@
 #include "dfx_util.h"
 #include "dfx_maps.h"
 #include "dwarf_define.h"
-#if is_ohos && !is_mingw && !is_emulator && !is_ohos_lite
+#if defined(ENABLE_MINIDEBUGINFO)
 #include "dfx_xz_utils.h"
 #endif
 #include "string_util.h"
@@ -191,7 +191,7 @@ void DfxElf::Clear()
     }
 }
 
-#if is_ohos && !is_mingw && !is_emulator && !is_ohos_lite
+#if defined(ENABLE_MINIDEBUGINFO)
 bool DfxElf::IsEmbeddedElfValid()
 {
     if (embeddedElf_ == nullptr) {
@@ -267,7 +267,7 @@ bool DfxElf::InitHeaders()
     if (elfParse_ != nullptr) {
         valid_ = true;
         elfParse_->InitHeaders();
-#if is_ohos && !is_mingw && !is_emulator && !is_ohos_lite
+#if defined(ENABLE_MINIDEBUGINFO)
         miniDebugInfo_ = elfParse_->GetMiniDebugInfo();
 #endif
     }
@@ -534,7 +534,7 @@ const std::vector<ElfSymbol>& DfxElf::GetElfSymbols(bool isSort)
 {
     if (elfSymbols_.empty()) {
         elfSymbols_ = elfParse_->GetElfSymbols(false, isSort);
-#if is_ohos && !is_mingw && !is_emulator && !is_ohos_lite
+#if defined(ENABLE_MINIDEBUGINFO)
         if (IsEmbeddedElfValid()) {
             auto symbols = embeddedElf_->elfParse_->GetElfSymbols(true, isSort);
             LOGU("Get EmbeddedElf FuncSymbols, size: %zu", symbols.size());
@@ -550,7 +550,7 @@ const std::vector<ElfSymbol>& DfxElf::GetFuncSymbols(bool isSort)
 {
     if (funcSymbols_.empty()) {
         funcSymbols_ = elfParse_->GetElfSymbols(true, isSort);
-#if is_ohos && !is_mingw && !is_emulator && !is_ohos_lite
+#if defined(ENABLE_MINIDEBUGINFO)
         if (IsEmbeddedElfValid()) {
             auto symbols = embeddedElf_->elfParse_->GetElfSymbols(true, isSort);
             LOGU("Get EmbeddedElf FuncSymbols, size: %zu", symbols.size());

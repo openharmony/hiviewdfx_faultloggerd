@@ -22,6 +22,24 @@ declare_args() {
   has_libunwind = true
   has_libunwindstack = false
   enable_mixstack = true
+  faultloggerd_cutils_enable = false
+  faultloggerd_hilog_enable = false
+  faultloggerd_hisysevent_enable = false
+  faultloggerd_lzma_enable = false
+  if (defined(global_parts_info)) {
+    if (defined(global_parts_info.commonlibrary_c_utils)) {
+      faultloggerd_cutils_enable = true
+    }
+    if (defined(global_parts_info.hiviewdfx_hilog)) {
+      faultloggerd_hilog_enable = true
+    }
+    if (defined(global_parts_info.hiviewdfx_hisysevent)) {
+      faultloggerd_hisysevent_enable = true
+    }
+    if (defined(global_parts_info.third_party_lzma)) {
+      faultloggerd_lzma_enable = true
+    }
+  }
 }
 
 if (defined(ohos_lite)) {
@@ -41,4 +59,11 @@ if (defined(ohos_lite)) {
   }
 } else {
   import("//build/ohos.gni")
+  common_deps = []
+  if (faultloggerd_cutils_enable) {
+    common_deps += [ "c_utils:utils" ]
+  }
+  if (faultloggerd_hilog_enable) {
+    common_deps += [ "hilog:libhilog" ]
+  }
 }

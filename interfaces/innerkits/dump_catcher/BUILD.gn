@@ -104,10 +104,7 @@ if (defined(ohos_lite)) {
       "$faultloggerd_interfaces_path/innerkits/procinfo:libdfx_procinfo",
     ]
 
-    external_deps = [
-      "c_utils:utils",
-      "hilog:libhilog",
-    ]
+    external_deps = common_deps
     install_images = [
       "system",
       "updater",

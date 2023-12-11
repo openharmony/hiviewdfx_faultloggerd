@@ -96,7 +96,9 @@ if (defined(ohos_lite)) {
       "//third_party/googletest:gtest_main",
       "//third_party/jsoncpp:jsoncpp",
     ]
-    external_deps = [ "c_utils:utils" ]
+    if (faultloggerd_cutils_enable) {
+      external_deps = [ "c_utils:utils" ]
+    }
     if (support_jsapi) {
       deps += [ "$faultloggerd_path/test/resource:FaultloggerdJsTest" ]
     }
@@ -123,7 +125,9 @@ if (defined(ohos_lite)) {
       "//third_party/jsoncpp:jsoncpp",
     ]
 
-    external_deps = [ "c_utils:utils" ]
+    if (faultloggerd_cutils_enable) {
+      external_deps = [ "c_utils:utils" ]
+    }
   }
 
   group("unittest") {

@@ -124,6 +124,7 @@ HWTEST_F(DfxSymbolsTest, DfxSymbolsTest002, TestSize.Level2)
     GTEST_LOG_(INFO) << "DfxSymbolsTest002: end.";
 }
 
+#if defined(ENABLE_MINIDEBUGINFO)
 /**
  * @tc.name: DfxSymbolsTest003
  * @tc.desc: test DfxSymbols functions with minidebuginfo elf
@@ -145,6 +146,7 @@ HWTEST_F(DfxSymbolsTest, DfxSymbolsTest003, TestSize.Level2)
     }
     GTEST_LOG_(INFO) << "DfxSymbolsTest003: end.";
 }
+#endif
 
 /**
  * @tc.name: DfxDemangleTest001
