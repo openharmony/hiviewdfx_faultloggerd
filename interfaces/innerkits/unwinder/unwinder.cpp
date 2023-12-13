@@ -168,6 +168,40 @@ bool Unwinder::IsMapExecByPc(uintptr_t pc, void *ctx)
     return map->IsValidName();
 }
 
+#if defined(ENABLE_MIXSTACK)
+bool Unwinder::StepArkJsFrame(size_t& idx, size_t& curIdx)
+{
+    uintptr_t pc = regs_->GetPc();
+    uintptr_t sp = regs_->GetSp();
+    uintptr_t fp = regs_->GetFp();
+    JsFrame* jsFrames = nullptr;
+    size_t size = 0;
+    LOGU("input ark pc: %llx, fp: %llx, sp: %llx.", (uint64_t)pc, (uint64_t)fp, (uint64_t)sp);
+    int ret = DfxArk::GetArkNativeFrameInfo(pid_, pc, fp, sp, size, &jsFrames);
+    LOGU("output ark pc: %llx, fp: %llx, sp: %llx, js frame size: %d.", (uint64_t)pc, (uint64_t)fp, (uint64_t)sp, size);
+    if (ret < 0) {
+        return false;
+    }
+    while (size > 0 && jsFrames != nullptr) {
+        DfxFrame frame;
+        frame.isJsFrame = true;
+        frame.index = (curIdx++);
+        frame.mapName = std::string(jsFrames->url);
+        frame.funcName = std::string(jsFrames->functionName);
+        frame.line = jsFrames->line;
+        frame.column = jsFrames->column;
+        frames_.push_back(frame);
+        jsFrames++;
+        size--;
+        idx++;
+    }
+    regs_->SetPc(pc);
+    regs_->SetSp(sp);
+    regs_->SetFp(fp);
+    return true;
+}
+#endif
+
 bool Unwinder::Unwind(void *ctx, size_t maxFrameNum, size_t skipFrameNum)
 {
     if ((ctx == nullptr) || (regs_ == nullptr) || (maps_ == nullptr)) {
@@ -235,35 +269,11 @@ bool Unwinder::Unwind(void *ctx, size_t maxFrameNum, size_t skipFrameNum)
         needAdjustPc = true;
 #if defined(ENABLE_MIXSTACK)
         if (map->IsArkExecutable()) {
-            uintptr_t fp = regs_->GetFp();
-            JsFrame* jsFrames = nullptr;
-            size_t size = 0;
-            LOGU("input ark pc: %llx, fp: %llx, sp: %llx.", (uint64_t)pc, (uint64_t)fp, (uint64_t)sp);
-            int ret = DfxArk::GetArkNativeFrameInfo(pid_, pc, fp, sp, size, &jsFrames);
-            LOGU("output ark pc: %llx, fp: %llx, sp: %llx, js frame size: %d.",
-                 (uint64_t)pc, (uint64_t)fp, (uint64_t)sp, size);
-            if (ret < 0) {
-                LOGE("Failed to get ark native frame info.");
+            if (!StepArkJsFrame(index, curIndex)) {
+                LOGE("Failed to step ark Js frames.");
                 break;
-            } else {
-                while (size > 0 && jsFrames != nullptr) {
-                    DfxFrame frame;
-                    frame.isJsFrame = true;
-                    frame.index = (++curIndex);
-                    frame.mapName = std::string(jsFrames->url);
-                    frame.funcName = std::string(jsFrames->functionName);
-                    frame.line = jsFrames->line;
-                    frame.column = jsFrames->column;
-                    frames_.push_back(frame);
-                    jsFrames++;
-                    size--;
-                    index++;
-                }
-                regs_->SetPc(pc);
-                regs_->SetSp(sp);
-                regs_->SetFp(fp);
-                continue;
             }
+            continue;
         }
 #endif
         pcs_.push_back(pc);

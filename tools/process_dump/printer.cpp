@@ -85,7 +85,7 @@ void Printer::PrintReason(std::shared_ptr<ProcessDumpRequest> request, std::shar
                 DFXLOG_WARN("vmThread_ is nullptr");
                 return;
             }
-            auto regs = process->vmThread_->GetThreadRegs();
+            auto regs = DfxRegs::CreateFromUcontext(request->context);
             if (regs == nullptr) {
                 DFXLOG_WARN("regs is nullptr");
                 return;

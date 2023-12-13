@@ -125,8 +125,7 @@ void DfxUnwindRemote::UnwindThreadByParseStackIfNeed(std::shared_ptr<DfxProcess>
     auto frames = unwinder->GetFrames();
     constexpr int minFramesNum = 3;
     size_t initSize = frames.size();
-    if (initSize < minFramesNum ||
-        frames[minFramesNum - 1].mapName.find("Not mapped") != std::string::npos) {
+    if (initSize < minFramesNum || frames[minFramesNum - 1].mapName.find("Not mapped") != std::string::npos) {
         bool needParseStack = true;
         thread->InitFaultStack(needParseStack);
         auto faultStack = thread->GetFaultStack();
@@ -134,7 +133,7 @@ void DfxUnwindRemote::UnwindThreadByParseStackIfNeed(std::shared_ptr<DfxProcess>
             DFXLOG_ERROR("%s : Failed to parse unwind stack.", __func__);
             return;
         }
-        unwinder->SetFrames(frames);
+        thread->SetFrames(frames);
         std::string tip = StringPrintf(
             " Failed to unwind stack, try to get call stack from #%02zu by reparsing thread stack", initSize);
         std::string msg = process->GetFatalMessage() + tip;

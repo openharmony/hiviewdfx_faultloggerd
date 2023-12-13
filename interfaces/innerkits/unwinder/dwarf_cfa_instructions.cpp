@@ -139,7 +139,8 @@ bool DwarfCfaInstructions::DecodeDwCfa(uint8_t opCode, CommonInfoEntry cie,
             reg = memory_->ReadUleb128(instPtr);
             reg2 = memory_->ReadUleb128(instPtr);
             LOGU("DW_CFA_register: reg=%d, reg2=%d", (int)reg, (int)reg2);
-            if (!DfxRegsQut::IsQutReg(static_cast<uint16_t>(reg), qutIdx)) {
+            if (!DfxRegsQut::IsQutReg(static_cast<uint16_t>(reg2), qutIdx) ||
+                !DfxRegsQut::IsQutReg(static_cast<uint16_t>(reg), qutIdx)) {
                 INSTR_STATISTIC(UnsupportedDwCfaRegister, reg, UNW_ERROR_UNSUPPORTED_QUT_REG);
                 break;
             }

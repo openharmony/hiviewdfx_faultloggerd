@@ -25,7 +25,7 @@ declare_args() {
   faultloggerd_cutils_enable = false
   faultloggerd_hilog_enable = false
   faultloggerd_hisysevent_enable = false
-  faultloggerd_lzma_enable = false
+  faultloggerd_lzma_enable = true
   if (defined(global_parts_info)) {
     if (defined(global_parts_info.commonlibrary_c_utils)) {
       faultloggerd_cutils_enable = true
