@@ -41,6 +41,7 @@ public:
     virtual void SetFromFpMiniRegs(const uintptr_t* regs, const size_t size) = 0;
     virtual void SetFromQutMiniRegs(const uintptr_t* regs, const size_t size) = 0;
     virtual std::string PrintRegs() const = 0;
+    virtual bool SetPcFromReturnAddress(std::shared_ptr<DfxMemory> memory) = 0;
     virtual bool StepIfSignalFrame(uintptr_t pc, std::shared_ptr<DfxMemory> memory) = 0;
 
     inline uintptr_t& operator[](size_t idx) { return regsData_[idx]; }
@@ -76,6 +77,7 @@ public:
     void SetFromFpMiniRegs(const uintptr_t* regs, const size_t size) override;
     void SetFromQutMiniRegs(const uintptr_t* regs, const size_t size) override;
     std::string PrintRegs() const override;
+    bool SetPcFromReturnAddress(std::shared_ptr<DfxMemory> memory) override;
     bool StepIfSignalFrame(uintptr_t pc, std::shared_ptr<DfxMemory> memory) override;
 };
 #endif
@@ -89,6 +91,7 @@ public:
     void SetFromFpMiniRegs(const uintptr_t* regs, const size_t size) override;
     void SetFromQutMiniRegs(const uintptr_t* regs, const size_t size) override;
     std::string PrintRegs() const override;
+    bool SetPcFromReturnAddress(std::shared_ptr<DfxMemory> memory) override;
     bool StepIfSignalFrame(uintptr_t pc, std::shared_ptr<DfxMemory> memory) override;
 };
 #endif
@@ -102,6 +105,7 @@ public:
     void SetFromFpMiniRegs(const uintptr_t* regs, const size_t size) override;
     void SetFromQutMiniRegs(const uintptr_t* regs, const size_t size) override;
     std::string PrintRegs() const override;
+    bool SetPcFromReturnAddress(std::shared_ptr<DfxMemory> memory) override;
     bool StepIfSignalFrame(uintptr_t pc, std::shared_ptr<DfxMemory> memory) override;
 };
 #endif

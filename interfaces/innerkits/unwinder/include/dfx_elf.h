@@ -76,16 +76,15 @@ public:
     int FindUnwindTableInfo(uintptr_t pc, std::shared_ptr<DfxMap> map, struct UnwindTableInfo& uti);
     static int FindUnwindTableLocal(uintptr_t pc, struct UnwindTableInfo& uti);
     static std::string ToReadableBuildId(const std::string& buildIdHex);
-#if defined(ENABLE_MINIDEBUGINFO)
     bool IsEmbeddedElfValid();
     std::shared_ptr<DfxElf> GetEmbeddedElf();
     std::shared_ptr<MiniDebugInfo> GetMiniDebugInfo();
-#endif
 
 protected:
     void Init();
     void Clear();
     bool InitHeaders();
+    bool InitEmbeddedElf();
 #if is_ohos && !is_mingw
     static int DlPhdrCb(struct dl_phdr_info *info, size_t size, void *data);
     static bool FindSection(struct dl_phdr_info *info, const std::string secName, ShdrInfo& shdr);
@@ -93,9 +92,7 @@ protected:
 #endif
     bool FillUnwindTableByEhhdr(struct DwarfEhFrameHdr* hdr, uintptr_t shdrBase, struct UnwindTableInfo* uti);
     static bool FillUnwindTableByExidx(ShdrInfo shdr, uintptr_t loadBase, struct UnwindTableInfo* uti);
-#if defined(ENABLE_MINIDEBUGINFO)
-    bool InitEmbeddedElf();
-#endif
+
 private:
     bool valid_ = false;
     uint8_t classType_ = 0;
@@ -111,11 +108,9 @@ private:
     std::unique_ptr<ElfParser> elfParse_ = nullptr;
     std::vector<ElfSymbol> elfSymbols_ {};
     std::vector<ElfSymbol> funcSymbols_ {};
-#if defined(ENABLE_MINIDEBUGINFO)
     std::shared_ptr<DfxElf> embeddedElf_ = nullptr;
     std::shared_ptr<MiniDebugInfo> miniDebugInfo_ = nullptr;
     std::shared_ptr<std::vector<uint8_t>> embeddedElfData_ = nullptr;
-#endif
 };
 } // namespace HiviewDFX
 } // namespace OHOS

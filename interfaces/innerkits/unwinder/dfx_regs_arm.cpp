@@ -92,6 +92,16 @@ void DfxRegsArm::SetFromQutMiniRegs(const uintptr_t* regs, const size_t size)
     regsData_[REG_LR] = regs[6];  // 6 : lr offset
 }
 
+bool DfxRegsArm::SetPcFromReturnAddress(MAYBE_UNUSED std::shared_ptr<DfxMemory> memory)
+{
+    uintptr_t lr = regsData_[REG_LR];
+    if (regsData_[REG_PC] == lr) {
+        return false;
+    }
+    regsData_[REG_PC] = lr;
+    return true;
+}
+
 std::string DfxRegsArm::PrintRegs() const
 {
     char buf[REGS_PRINT_LEN] = {0};

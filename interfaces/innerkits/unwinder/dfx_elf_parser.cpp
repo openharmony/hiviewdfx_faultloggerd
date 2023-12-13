@@ -205,8 +205,8 @@ bool ElfParser::ParseSectionHeaders(const EhdrType& ehdr)
 
         if (shdr.sh_size != 0 && secName == GNU_DEBUGDATA) {
             minidebugInfo_ = std::make_shared<MiniDebugInfo>();
-            minidebugInfo_->offset = shdr.sh_offset;
-            minidebugInfo_->size = shdr.sh_size;
+            minidebugInfo_->offset = static_cast<uint64_t>(shdr.sh_offset);
+            minidebugInfo_->size = static_cast<uintptr_t>(shdr.sh_size);
         }
 
         ShdrInfo shdrInfo;

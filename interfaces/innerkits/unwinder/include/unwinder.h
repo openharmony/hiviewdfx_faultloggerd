@@ -64,6 +64,7 @@ public:
     inline int32_t GetTargetPid() { return pid_; }
     inline void SetPacMask(uintptr_t mask) { pacMask_ = mask; }
     inline void EnableUnwindCache(bool enableCache) { enableCache_ = enableCache; }
+    inline void EnableLrFallback(bool enableLrFallback) { enableLrFallback_ = enableLrFallback; }
     inline void EnableFpFallback(bool enableFpFallback) { enableFpFallback_ = enableFpFallback; }
     inline void EnableFillFrames(bool enableFillFrames) { enableFillFrames_ = enableFillFrames; }
 
@@ -75,7 +76,6 @@ public:
     inline const uint64_t& GetLastErrorAddr() { return lastErrorData_.GetAddr(); }
 
     bool GetStackRange(uintptr_t& stackBottom, uintptr_t& stackTop);
-    bool GetMap(uintptr_t pc, void *ctx, std::shared_ptr<DfxMap>& map);
 
     bool UnwindLocal(size_t maxFrameNum = 64, size_t skipFrameNum = 0);
     bool UnwindRemote(pid_t tid = 0, bool withRegs = false, size_t maxFrameNum = 64, size_t skipFrameNum = 0);
@@ -98,6 +98,8 @@ private:
     void Init();
     void Clear();
     void DoPcAdjust(uintptr_t& pc);
+    bool GetMapByPc(uintptr_t pc, void *ctx, std::shared_ptr<DfxMap>& map);
+    bool IsMapExecByPc(uintptr_t pc, void *ctx);
     bool Apply(std::shared_ptr<DfxRegs> regs, std::shared_ptr<RegLocState> rs);
     static uintptr_t StripPac(uintptr_t inAddr, uintptr_t pacMask);
     inline void SetLocalStackCheck(void* ctx, bool check)
@@ -114,6 +116,7 @@ private:
 #endif
     bool enableCache_ = true;
     bool enableFillFrames_ = true;
+    bool enableLrFallback_ = true;
     bool enableFpFallback_ = true;
 
     int32_t pid_ = 0;
