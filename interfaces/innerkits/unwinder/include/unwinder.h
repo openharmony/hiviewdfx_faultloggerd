@@ -101,6 +101,9 @@ private:
     bool GetMapByPc(uintptr_t pc, void *ctx, std::shared_ptr<DfxMap>& map);
     bool IsMapExecByPc(uintptr_t pc, void *ctx);
     bool Apply(std::shared_ptr<DfxRegs> regs, std::shared_ptr<RegLocState> rs);
+#if defined(ENABLE_MIXSTACK)
+    bool StepArkJsFrame(size_t& idx, size_t& curIdx);
+#endif
     static uintptr_t StripPac(uintptr_t inAddr, uintptr_t pacMask);
     inline void SetLocalStackCheck(void* ctx, bool check)
     {

@@ -372,7 +372,7 @@ bool FaultStack::ParseUnwindStack(std::shared_ptr<DfxMaps> maps, std::vector<Dfx
                 DFXLOG_WARN("%s : mapName(%s) is not file.", __func__, frame.mapName.c_str());
             }
 
-            frame.relPc = frame.pc - map->begin + map->offset + loadBias;
+            frame.relPc = frame.pc - map->begin + map->offset + static_cast<uint64_t>(loadBias);
             frames.emplace_back(frame);
             constexpr int MAX_VALID_ADDRESS_NUM = 32;
             if (++index >= MAX_VALID_ADDRESS_NUM) {
