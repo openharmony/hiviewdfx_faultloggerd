@@ -181,11 +181,11 @@ const std::shared_ptr<DfxElf> DfxMap::GetElf()
 
 std::string DfxMap::GetElfName()
 {
-    if (name.empty()) {
+    if (name.empty() || GetElf() == nullptr) {
         return name;
     }
     std::string soName = name;
-    if (EndsWith(name, ".hap") && GetElf() != nullptr) {
+    if (EndsWith(name, ".hap")) {
         soName.append("!" + elf->GetElfName());
     }
     return soName;

@@ -60,6 +60,17 @@ void DfxRegsX86_64::SetFromQutMiniRegs(const uintptr_t* regs, const size_t size)
 {
 }
 
+bool DfxRegsX86_64::SetPcFromReturnAddress(std::shared_ptr<DfxMemory> memory)
+{
+    uintptr_t newPc;
+    if (!memory->ReadUptr(regsData_[REG_SP], &newPc, false) ||
+        newPc == regsData_[REG_PC]) {
+        return false;
+    }
+    regsData_[REG_PC] = newPc;
+    return true;
+}
+
 std::string DfxRegsX86_64::PrintRegs() const
 {
     char buf[REGS_PRINT_LEN] = {0};

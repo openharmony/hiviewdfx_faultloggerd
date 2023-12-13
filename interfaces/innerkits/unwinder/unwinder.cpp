@@ -132,7 +132,7 @@ bool Unwinder::UnwindRemote(pid_t tid, bool withRegs, size_t maxFrameNum, size_t
     return ret;
 }
 
-bool Unwinder::GetMap(uintptr_t pc, void *ctx, std::shared_ptr<DfxMap>& map)
+bool Unwinder::GetMapByPc(uintptr_t pc, void *ctx, std::shared_ptr<DfxMap>& map)
 {
     UnwindContext* uctx = reinterpret_cast<UnwindContext *>(ctx);
     if (uctx->map != nullptr &&
@@ -159,6 +159,15 @@ bool Unwinder::GetMap(uintptr_t pc, void *ctx, std::shared_ptr<DfxMap>& map)
     return true;
 }
 
+bool Unwinder::IsMapExecByPc(uintptr_t pc, void *ctx)
+{
+    std::shared_ptr<DfxMap> map = nullptr;
+    if (!GetMapByPc(pc, ctx, map)) {
+        return false;
+    }
+    return map->IsValidName();
+}
+
 bool Unwinder::Unwind(void *ctx, size_t maxFrameNum, size_t skipFrameNum)
 {
     if ((ctx == nullptr) || (regs_ == nullptr) || (maps_ == nullptr)) {
@@ -171,7 +180,8 @@ bool Unwinder::Unwind(void *ctx, size_t maxFrameNum, size_t skipFrameNum)
     bool needAdjustPc = false;
     size_t index = 0;
     size_t curIndex = 0;
-    uintptr_t pc, sp, stepPc;
+    uintptr_t pc = 0, sp = 0, stepPc = 0;
+    uintptr_t prevPc = 0, prevSp = 0;
 
     std::shared_ptr<DfxMap> map = nullptr;
     pc = regs_->GetPc();
@@ -193,28 +203,39 @@ bool Unwinder::Unwind(void *ctx, size_t maxFrameNum, size_t skipFrameNum)
 
         pc = regs_->GetPc();
         sp = regs_->GetSp();
+        if ((prevPc == pc) && (prevSp == sp)) {
+            LOGE("pc and sp is same");
+            break;
+        }
 
         if (pid_ >= 0 || pid_ == UNWIND_TYPE_LOCAL) {
-            if (!GetMap(pc, ctx, map)) {
-                lastErrorData_.SetAddrAndCode(pc, UNW_ERROR_INVALID_MAP);
-                break;
+            if (!GetMapByPc(pc, ctx, map)) {
+                if (curIndex != 0) {
+                    lastErrorData_.SetAddrAndCode(pc, UNW_ERROR_INVALID_MAP);
+                    break;
+                }
+                if (enableLrFallback_ && regs_->SetPcFromReturnAddress(memory_)) {
+                    LOGW("Failed to get map, lr fallback");
+                    continue;
+                }
+                uintptr_t fp = regs_->GetFp();
+                if (!FpStep(fp, pc, ctx)) {
+                    break;
+                }
+                LOGW("Failed to get map, fp fallback");
+                continue;
             }
         }
 
+        prevPc = pc;
+        prevSp = sp;
         if (needAdjustPc) {
             DoPcAdjust(pc);
         }
         needAdjustPc = true;
-        pcs_.push_back(pc);
-        DfxFrame frame;
-        frame.index = curIndex;
-        frame.sp = static_cast<uint64_t>(sp);
-        frame.pc = static_cast<uint64_t>(pc);
-        frame.map = map;
-        frames_.push_back(frame);
 #if defined(ENABLE_MIXSTACK)
-        uintptr_t fp = regs_->GetFp();
         if (map->IsArkExecutable()) {
+            uintptr_t fp = regs_->GetFp();
             JsFrame* jsFrames = nullptr;
             size_t size = 0;
             LOGU("input ark pc: %llx, fp: %llx, sp: %llx.", (uint64_t)pc, (uint64_t)fp, (uint64_t)sp);
@@ -223,6 +244,7 @@ bool Unwinder::Unwind(void *ctx, size_t maxFrameNum, size_t skipFrameNum)
                  (uint64_t)pc, (uint64_t)fp, (uint64_t)sp, size);
             if (ret < 0) {
                 LOGE("Failed to get ark native frame info.");
+                break;
             } else {
                 while (size > 0 && jsFrames != nullptr) {
                     DfxFrame frame;
@@ -240,9 +262,18 @@ bool Unwinder::Unwind(void *ctx, size_t maxFrameNum, size_t skipFrameNum)
                 regs_->SetPc(pc);
                 regs_->SetSp(sp);
                 regs_->SetFp(fp);
+                continue;
             }
         }
 #endif
+        pcs_.push_back(pc);
+        DfxFrame frame;
+        frame.index = curIndex;
+        frame.sp = static_cast<uint64_t>(sp);
+        frame.pc = static_cast<uint64_t>(pc);
+        frame.map = map;
+        frames_.push_back(frame);
+
         stepPc = pc;
         if (!Step(stepPc, sp, ctx)) {
             break;
@@ -407,6 +438,10 @@ bool Unwinder::FpStep(uintptr_t& fp, uintptr_t& pc, void *ctx)
     uintptr_t ptr = fp;
     if (memory_->ReadUptr(ptr, &fp, true) &&
         memory_->ReadUptr(ptr, &pc, false)) {
+        if ((pid_ >= 0 || pid_ == UNWIND_TYPE_LOCAL) && (!IsMapExecByPc(pc, ctx))) {
+            LOGE("Map is not exec");
+            return false;
+        }
         regs_->SetReg(REG_FP, &fp);
         regs_->SetReg(REG_PC, &pc);
         regs_->SetReg(REG_SP, &prevFp);

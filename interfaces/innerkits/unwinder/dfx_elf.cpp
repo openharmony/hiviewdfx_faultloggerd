@@ -191,13 +191,15 @@ void DfxElf::Clear()
     }
 }
 
-#if defined(ENABLE_MINIDEBUGINFO)
 bool DfxElf::IsEmbeddedElfValid()
 {
+#if defined(ENABLE_MINIDEBUGINFO)
     if (embeddedElf_ == nullptr) {
         return InitEmbeddedElf();
     }
     return embeddedElf_ != nullptr && embeddedElf_->IsValid();
+#endif
+    return false;
 }
 
 std::shared_ptr<DfxElf> DfxElf::GetEmbeddedElf()
@@ -212,6 +214,7 @@ std::shared_ptr<MiniDebugInfo> DfxElf::GetMiniDebugInfo()
 
 bool DfxElf::InitEmbeddedElf()
 {
+#if defined(ENABLE_MINIDEBUGINFO)
     if (!UnwinderConfig::GetEnableMiniDebugInfo() || miniDebugInfo_ == nullptr) {
         return false;
     }
@@ -224,7 +227,7 @@ bool DfxElf::InitEmbeddedElf()
     if (XzDecompress(addr, miniDebugInfo_->size, embeddedElfData_)) {
         // embeddedElfData_ store the decompressed bytes.
         // use these bytes to construct an elf.
-        embeddedElf_= std::make_shared<DfxElf>(embeddedElfData_->data(), embeddedElfData_->size());
+        embeddedElf_ = std::make_shared<DfxElf>(embeddedElfData_->data(), embeddedElfData_->size());
         if (embeddedElf_ != nullptr && embeddedElf_->IsValid()) {
             return true;
         } else {
@@ -233,9 +236,9 @@ bool DfxElf::InitEmbeddedElf()
     } else {
         LOGE("Failed to decompressed .gnu_debugdata seciton.");
     }
+#endif
     return false;
 }
-#endif
 
 bool DfxElf::InitHeaders()
 {
