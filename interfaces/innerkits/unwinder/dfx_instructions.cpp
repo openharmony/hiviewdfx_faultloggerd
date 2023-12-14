@@ -33,38 +33,42 @@ namespace {
 #define LOG_TAG "DfxInstructions"
 }
 
-uintptr_t DfxInstructions::Flush(DfxRegs& regs, std::shared_ptr<DfxMemory> memory, uintptr_t cfa, RegLoc loc)
+bool DfxInstructions::Flush(uintptr_t& val, DfxRegs& regs, std::shared_ptr<DfxMemory> memory,
+                            uintptr_t cfa, RegLoc loc)
 {
-    uintptr_t result = 0;
     uintptr_t location;
     switch (loc.type) {
         case REG_LOC_VAL_OFFSET:
-            result = cfa + static_cast<uintptr_t>(loc.val);
+            val = cfa + static_cast<uintptr_t>(loc.val);
             break;
         case REG_LOC_MEM_OFFSET:
             location = cfa + loc.val;
-            memory->ReadUptr(location, &result);
+            memory->ReadUptr(location, &val);
             break;
         case REG_LOC_REGISTER:
             location = loc.val;
-            result = regs[location];
+            if (location >= regs.RegsSize()) {
+                LOGE("illegal register location");
+                return false;
+            }
+            val = regs[location];
             break;
         case REG_LOC_MEM_EXPRESSION: {
             DwarfOp<uintptr_t> dwarfOp(memory);
             location = dwarfOp.Eval(regs, cfa, loc.val);
-            memory->ReadUptr(location, &result);
+            memory->ReadUptr(location, &val);
             break;
         }
         case REG_LOC_VAL_EXPRESSION: {
             DwarfOp<uintptr_t> dwarfOp(memory);
-            result = dwarfOp.Eval(regs, cfa, loc.val);
+            val = dwarfOp.Eval(regs, cfa, loc.val);
             break;
         }
         default:
             LOGE("Failed to save register.");
-            break;
+            return false;
     }
-    return result;
+    return true;
 }
 
 bool DfxInstructions::Apply(std::shared_ptr<DfxMemory> memory, DfxRegs& regs, RegLocState& rsState)
@@ -76,7 +80,10 @@ bool DfxInstructions::Apply(std::shared_ptr<DfxMemory> memory, DfxRegs& regs, Re
     } else if (rsState.cfaExprPtr != 0) {
         cfaLoc.type = REG_LOC_VAL_EXPRESSION;
         cfaLoc.val = static_cast<intptr_t>(rsState.cfaExprPtr);
-        cfa = Flush(regs, memory, 0, cfaLoc);
+        if (!Flush(cfa, regs, memory, 0, cfaLoc)) {
+            LOGE("Failed to update cfa.");
+            return false;
+        }
     } else {
         LOGE("no cfa info exist?");
         INSTR_STATISTIC(UnsupportedDefCfa, rsState.cfaReg, UNW_ERROR_NOT_SUPPORT);
@@ -87,8 +94,9 @@ bool DfxInstructions::Apply(std::shared_ptr<DfxMemory> memory, DfxRegs& regs, Re
     for (size_t i = 0; i < rsState.locs.size(); i++) {
         if (rsState.locs[i].type != REG_LOC_UNUSED) {
             size_t reg = DfxRegsQut::GetQutRegs()[i];
-            regs[reg] = Flush(regs, memory, cfa, rsState.locs[i]);
-            LOGU("Update reg[%d] : %llx", reg, (uint64_t)regs[reg]);
+            if (Flush(regs[reg], regs, memory, cfa, rsState.locs[i])) {
+                LOGU("Update reg[%d] : %llx", reg, (uint64_t)regs[reg]);
+            }
         }
     }
 

@@ -46,6 +46,7 @@
 #include "dfx_util.h"
 #include "faultloggerd_client.h"
 #include "procinfo.h"
+#include "unwinder_config.h"
 
 #if defined(__x86_64__)
 #include "dfx_unwind_remote_emulator.h"
@@ -240,8 +241,9 @@ int ProcessDumper::InitProcessInfo(std::shared_ptr<ProcessDumpRequest> request)
         }
     }
 #if !defined(__x86_64__)
-    // init unwinder
+    // init unwinder and enable minidebuginfo
     unwinder_ = std::make_shared<Unwinder>(process_->processInfo_.pid);
+    UnwinderConfig::SetEnableMiniDebugInfo(true);
 #endif
     return 0;
 }
