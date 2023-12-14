@@ -32,7 +32,7 @@ public:
     static bool Apply(std::shared_ptr<DfxMemory> memory, DfxRegs& regs, RegLocState& rsState);
 
 private:
-    static uintptr_t Flush(DfxRegs& dfxRegs, std::shared_ptr<DfxMemory> memory, uintptr_t cfa, RegLoc loc);
+    static bool Flush(uintptr_t& val, DfxRegs& dfxRegs, std::shared_ptr<DfxMemory> memory, uintptr_t cfa, RegLoc loc);
 };
 } // namespace HiviewDFX
 } // namespace OHOS

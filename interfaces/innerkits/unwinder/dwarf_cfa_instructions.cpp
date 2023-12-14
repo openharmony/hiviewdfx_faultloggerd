@@ -289,7 +289,7 @@ bool DwarfCfaInstructions::DecodeDwCfa(uint8_t opCode, CommonInfoEntry cie,
                         INSTR_STATISTIC(UnsupportedDwCfaRestore, reg, UNW_ERROR_UNSUPPORTED_QUT_REG);
                         break;
                     }
-                    rsState.locs[qutIdx] = backupRsState_.locs[reg];
+                    rsState.locs[qutIdx] = backupRsState_.locs[qutIdx];
                     break;
                 default:
                     LOGU("DW_CFA_unknown: opcode=0x%02x", opCode);
