@@ -251,7 +251,7 @@ bool DfxElf::InitHeaders()
     }
 
     uint8_t ident[SELFMAG + 1];
-    if (!Read(0, ident, SELFMAG) || !IsValidElf(ident)) {
+    if (!Read(0, ident, SELFMAG) || !IsValidElf(ident, SELFMAG)) {
         return false;
     }
 
@@ -450,7 +450,7 @@ std::string DfxElf::GetBuildId(uint64_t noteAddr, uint64_t noteSize)
             return "";
         }
         ptr = noteAddr + offset;
-        if (memcpy_s(&nhdr, sizeof(nhdr), (void*)ptr, sizeof(nhdr)) != 0) {
+        if (memcpy_s(&nhdr, sizeof(nhdr), reinterpret_cast<void*>(ptr), sizeof(nhdr)) != 0) {
             LOGE("memcpy nhdr failed");
             return "";
         }
@@ -461,7 +461,7 @@ std::string DfxElf::GetBuildId(uint64_t noteAddr, uint64_t noteSize)
         if (nhdr.n_namesz > 0) {
             std::string name(nhdr.n_namesz, '\0');
             ptr = noteAddr + offset;
-            if (memcpy_s(&(name[0]), nhdr.n_namesz, (void*)ptr, nhdr.n_namesz) != 0) {
+            if (memcpy_s(&(name[0]), nhdr.n_namesz, reinterpret_cast<void*>(ptr), nhdr.n_namesz) != 0) {
                 LOGE("memcpy note name failed");
                 return "";
             }
@@ -479,7 +479,7 @@ std::string DfxElf::GetBuildId(uint64_t noteAddr, uint64_t noteSize)
             }
             std::string buildIdRaw(nhdr.n_descsz, '\0');
             ptr = noteAddr + offset;
-            if (memcpy_s(&buildIdRaw[0], nhdr.n_descsz, (void*)ptr, nhdr.n_descsz) != 0) {
+            if (memcpy_s(&buildIdRaw[0], nhdr.n_descsz, reinterpret_cast<void*>(ptr), nhdr.n_descsz) != 0) {
                 return "";
             }
             return buildIdRaw;
@@ -901,13 +901,13 @@ size_t DfxElf::GetMmapSize()
     return mmap_->Size();
 }
 
-bool DfxElf::IsValidElf(const void* ptr)
+bool DfxElf::IsValidElf(const void* ptr, size_t size)
 {
     if (ptr == nullptr) {
         return false;
     }
 
-    if (memcmp(ptr, ELFMAG, SELFMAG) != 0) {
+    if (memcmp(ptr, ELFMAG, size) != 0) {
         LOGW("Invalid elf hdr?");
         return false;
     }
@@ -917,7 +917,7 @@ bool DfxElf::IsValidElf(const void* ptr)
 #if is_ohos
 size_t DfxElf::GetElfSize(const void* ptr)
 {
-    if (!IsValidElf(ptr)) {
+    if (!IsValidElf(ptr, SELFMAG)) {
         return 0;
     }
 

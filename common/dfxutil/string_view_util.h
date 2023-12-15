@@ -17,6 +17,7 @@
 
 #include <cstdio>
 #include <string>
+#include <securec.h>
 #include <vector>
 #include "cpp_define.h"
 
@@ -45,7 +46,9 @@ public:
         if (p == nullptr) {
             return "";
         }
-        p[view.size()] = '\0';
+        if (memset_s(p, view.size() + 1, '\0', view.size() + 1) != 0) {
+            return "";
+        }
         std::copy(view.data(), view.data() + view.size(), p);
         views_.emplace_back(p);
         return p;

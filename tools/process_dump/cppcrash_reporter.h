@@ -43,7 +43,8 @@ public:
         reason_ = reason;
     };
 
-    void AppendCrashStack(const std::string& frame) {
+    void AppendCrashStack(const std::string& frame)
+    {
         stack_.append(frame).append("\n");
     };
 

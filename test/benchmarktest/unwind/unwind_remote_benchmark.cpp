@@ -85,10 +85,6 @@ static pid_t RemoteFork()
 
 static size_t UnwindRemote(unw_addr_space_t as, UnwindData* dataPtr)
 {
-    UnwindData data;
-    if (dataPtr != nullptr) {
-        data.isFillFrames = dataPtr->isFillFrames;
-    }
     if (as == nullptr) {
         LOGE("as is nullptr");
         return 0;
