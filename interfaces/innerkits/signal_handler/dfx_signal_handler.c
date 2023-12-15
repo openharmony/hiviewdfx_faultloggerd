@@ -371,19 +371,6 @@ static bool IsMainThread(void)
     return false;
 }
 
-static void ExitIfSandboxPid(int sig)
-{
-    if (IsDumpSignal(sig)) {
-        return;
-    }
-    // real init will not handle crash signal,
-    // crash in pid namespace may not exit even if rethrow the signal, use exit instead
-    if (syscall(SYS_getpid) == 1 && syscall(SYS_getuid) != 0) {
-        DFXLOG_ERROR("Sandbox process is about to exit with signal %d.", sig);
-        _exit(sig);
-    }
-}
-
 static void ResetAndRethrowSignalIfNeed(int sig, siginfo_t *si)
 {
     if (IsDumpSignal(sig)) {
@@ -591,7 +578,6 @@ static bool DFX_SigchainHandler(int sig, siginfo_t *si, void *context)
     pthread_mutex_lock(&g_signalHandlerMutex);
     if (!IsDumpSignal(g_prevHandledSignal)) {
         pthread_mutex_unlock(&g_signalHandlerMutex);
-        ExitIfSandboxPid(sig);
         return ret;
     }
     BlockMainThreadIfNeed(sig);
@@ -606,7 +592,6 @@ static bool DFX_SigchainHandler(int sig, siginfo_t *si, void *context)
     if (sig != SIGDUMP) {
         ret = sig == SIGLEAK_STACK ? true : false;
         ForkAndDoProcessDump(sig);
-        ExitIfSandboxPid(sig);
     } else {
         ret = true;
         int recycleTid = clone(CloneAndDoProcessDump, g_reservedChildStack,\
