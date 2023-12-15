@@ -80,7 +80,7 @@ void Printer::PrintReason(std::shared_ptr<ProcessDumpRequest> request, std::shar
             process->reason += " probably caused by NULL pointer dereference";
         } else {
             std::shared_ptr<DfxMaps> maps = unwinder->GetMaps();
-            std::shared_ptr<DfxMap> map;
+            std::vector<std::shared_ptr<DfxMap>> map;
             if (process->vmThread_ == nullptr) {
                 DFXLOG_WARN("vmThread_ is nullptr");
                 return;
@@ -90,17 +90,18 @@ void Printer::PrintReason(std::shared_ptr<ProcessDumpRequest> request, std::shar
                 DFXLOG_WARN("regs is nullptr");
                 return;
             }
-            uintptr_t sp = regs->GetSp();
-            if (maps != nullptr && maps->FindMapByAddr(map, sp)) {
+            std::string elfName = StringPrintf("[anon:stack:%d]", process->keyThread_->threadInfo_.tid);
+            if (maps != nullptr && maps->FindMapsByName(map, elfName)) {
                 std::string guardMapName = StringPrintf("[anon:guard:%d]", process->keyThread_->threadInfo_.tid);
-                if ((addr < map->begin && map->begin - addr <= PAGE_SIZE) || (map->name.compare(guardMapName) == 0)) {
+                if ((addr < map[0]->begin && map[0]->begin - addr <= PAGE_SIZE) ||
+                    (map[0]->name.compare(guardMapName) == 0)) {
                     process->reason += StringPrintf(
 #if defined(__LP64__)
                         " current thread stack low address = %#018llx, probably caused by stack-buffer-overflow",
 #else
                         " current thread stack low address = %#010llx, probably caused by stack-buffer-overflow",
 #endif
-                        map->begin);
+                        map[0]->begin);
                 }
             }
         }
