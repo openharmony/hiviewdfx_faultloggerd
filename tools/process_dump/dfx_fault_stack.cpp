@@ -224,11 +224,10 @@ void FaultStack::CollectRegistersBlock(std::shared_ptr<DfxRegs> regs, std::share
         index++;
 #if defined(__x86_64__)
         std::shared_ptr<DfxElfMap> map;
-        if (!maps->FindMapByAddr(data, map)) {
 #else
         std::shared_ptr<DfxMap> map;
-        if (!maps->FindMapByAddr(map, data)) {
 #endif
+        if (!maps->FindMapByAddr(data, map)) {
             continue;
         }
 
@@ -349,7 +348,7 @@ bool FaultStack::ParseUnwindStack(std::shared_ptr<DfxMaps> maps, std::vector<Dfx
     for (const auto& block : blocks_) {
         std::shared_ptr<DfxMap> map;
         for (size_t i = 0; i < block.content.size(); i++) {
-            if (!maps->FindMapByAddr(map, block.content[i]) ||
+            if (!maps->FindMapByAddr(block.content[i], map) ||
                 map->perms.find("x") == std::string::npos) {
                 continue;
             }

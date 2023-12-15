@@ -91,7 +91,7 @@ void Printer::PrintReason(std::shared_ptr<ProcessDumpRequest> request, std::shar
                 return;
             }
             uintptr_t sp = regs->GetSp();
-            if (maps != nullptr && maps->FindMapByAddr(map, sp)) {
+            if (maps != nullptr && maps->FindMapByAddr(sp, map)) {
                 std::string guardMapName = StringPrintf("[anon:guard:%d]", process->keyThread_->threadInfo_.tid);
                 if ((addr < map->begin && map->begin - addr <= PAGE_SIZE) || (map->name.compare(guardMapName) == 0)) {
                     process->reason += StringPrintf(

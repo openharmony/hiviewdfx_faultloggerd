@@ -413,7 +413,7 @@ HWTEST_F(UnwinderTest, StepTest001, TestSize.Level2)
     pc = regs->GetPc();
     sp = regs->GetSp();
     std::shared_ptr<DfxMap> map = nullptr;
-    ASSERT_TRUE(maps->FindMapByAddr(map, pc));
+    ASSERT_TRUE(maps->FindMapByAddr(pc, map));
     context.map = map;
     unwRet = unwinder->Step(pc, sp, &context);
     ASSERT_TRUE(unwRet) << "StepTest001: Unwind:" << unwRet;

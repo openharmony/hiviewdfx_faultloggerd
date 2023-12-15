@@ -241,9 +241,10 @@ int ProcessDumper::InitProcessInfo(std::shared_ptr<ProcessDumpRequest> request)
         }
     }
 #if !defined(__x86_64__)
-    // init unwinder and enable minidebuginfo
     unwinder_ = std::make_shared<Unwinder>(process_->processInfo_.pid);
+#if defined(PROCESSDUMP_MINIDEBUGINFO)
     UnwinderConfig::SetEnableMiniDebugInfo(true);
+#endif
 #endif
     return 0;
 }

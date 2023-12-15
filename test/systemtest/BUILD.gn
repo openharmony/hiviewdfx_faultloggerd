@@ -65,6 +65,10 @@ if (defined(ohos_lite)) {
     ]
 
     cflags_cc = [ "-fno-exceptions" ]
+
+    if (faultloggerd_lzma_enable && processdump_minidebuginfo_enable) {
+      defines = [ "PROCESSDUMP_MINIDEBUGINFO" ]
+    }
   }
 
   module_output_path = "faultloggerd/faultloggerd_native"

@@ -542,6 +542,9 @@ const std::vector<ElfSymbol>& DfxElf::GetElfSymbols(bool isSort)
             auto symbols = embeddedElf_->elfParse_->GetElfSymbols(true, isSort);
             LOGU("Get EmbeddedElf FuncSymbols, size: %zu", symbols.size());
             elfSymbols_.insert(elfSymbols_.end(), symbols.begin(), symbols.end());
+            sort(elfSymbols_.begin(), elfSymbols_.end(), [](ElfSymbol& sym1, ElfSymbol& sym2) {
+                return sym1.value < sym2.value;
+            });
         }
 #endif
         LOGU("GetElfSymbols, size: %zu", elfSymbols_.size());
@@ -558,6 +561,9 @@ const std::vector<ElfSymbol>& DfxElf::GetFuncSymbols(bool isSort)
             auto symbols = embeddedElf_->elfParse_->GetElfSymbols(true, isSort);
             LOGU("Get EmbeddedElf FuncSymbols, size: %zu", symbols.size());
             funcSymbols_.insert(funcSymbols_.end(), symbols.begin(), symbols.end());
+            sort(funcSymbols_.begin(), funcSymbols_.end(), [](ElfSymbol& sym1, ElfSymbol& sym2) {
+                return sym1.value < sym2.value;
+            });
         }
 #endif
         LOGU("GetFuncSymbols, size: %zu", funcSymbols_.size());
