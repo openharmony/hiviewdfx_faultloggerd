@@ -23,6 +23,7 @@
 
 #include "dfx_define.h"
 #include "dfx_dump_catcher.h"
+#include "dfx_json_formatter.h"
 #include "dfx_test_util.h"
 
 using namespace testing;
@@ -670,6 +671,73 @@ HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest029, TestSize.Level
     EXPECT_TRUE(msg.find(stackKeyword.c_str()) != std::string::npos);
     EXPECT_EQ(ret, true) << "DumpCatcherInterfacesTest029 Failed";
     GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest029: end.";
+}
+
+/**
+ * @tc.name: DumpCatcherInterfacesTest030
+ * @tc.desc: test DumpCatch remote API: PID(getpid()), TID(child thread)
+ *     and maxFrameNums(DEFAULT_MAX_FRAME_NUM), isJsom(true)
+ * @tc.type: FUNC
+ */
+HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest030, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest030: start.";
+    ForkMultiThreadProcess();
+    GTEST_LOG_(INFO) << "dump remote process, "  << " pid:" << 1 << ", tid:" << g_threadId;
+    DfxDumpCatcher dumplog;
+    DfxJsonFormatter format;
+    string msg = "";
+    bool ret = dumplog.DumpCatch(1, g_threadId, msg);
+    EXPECT_TRUE(ret) << "DumpCatch remote msg Failed.";
+    string jsonMsg = "";
+    bool jsonRet = dumplog.DumpCatch(1, g_threadId, jsonMsg, DEFAULT_MAX_FRAME_NUM, true);
+    std::cout << jsonMsg << std::endl;
+    EXPECT_TRUE(jsonRet) << "DumpCatch remote json Failed.";
+    string stackMsg = "";
+    bool formatRet = format.FormatJsonStack(jsonMsg, stackMsg);
+    EXPECT_TRUE(formatRet) << "FormatJsonStack Failed.";
+    size_t pos = msg.find("Process name:");
+    if (pos != std::string::npos) {
+        msg = msg.erase(0, pos);
+        msg = msg.erase(0, msg.find("\n") + 1);
+    } else {
+        msg = msg.erase(0, msg.find("\n") + 1);
+    }
+    EXPECT_EQ(stackMsg == msg, true) << "stackMsg != msg";
+    GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest030: end.";
+}
+
+/**
+ * @tc.name: DumpCatcherInterfacesTest031
+ * @tc.desc: test DumpCatch local API: PID(getpid()), TID(child thread)
+ *     and maxFrameNums(DEFAULT_MAX_FRAME_NUM), isJsom(true)
+ * @tc.type: FUNC
+ */
+HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest031, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest031: start.";
+    GTEST_LOG_(INFO) << "dump remote process, "  << " pid:" << getpid() << ", tid:" << gettid();
+    DfxDumpCatcher dumplog;
+    DfxJsonFormatter format;
+    string msg = "";
+    int pid = getpid() ;
+    int tid = gettid();
+    bool ret = dumplog.DumpCatch(pid, tid, msg);
+    EXPECT_TRUE(ret) << "DumpCatch remote msg Failed.";
+    string jsonMsg = "";
+    bool jsonRet = dumplog.DumpCatch(pid, tid, jsonMsg, DEFAULT_MAX_FRAME_NUM, true);
+    EXPECT_TRUE(jsonRet) << "DumpCatch remote json Failed.";
+    string stackMsg = "";
+    jsonMsg = "[{\"frames\":" + jsonMsg + ",\"thread_name\":\"init\",\"tid\":1}]";
+    bool formatRet = format.FormatJsonStack(jsonMsg, stackMsg);
+    EXPECT_TRUE(formatRet) << "FormatJsonStack Failed.";
+    stackMsg = stackMsg.erase(0, stackMsg.find("\n") + 1);
+    stackMsg = stackMsg.erase(0, stackMsg.find("\n") + 1);
+    stackMsg = stackMsg.erase(0, stackMsg.find("\n") + 1);
+    msg = msg.erase(0, msg.find("\n") + 1);
+    msg = msg.erase(0, msg.find("\n") + 1);
+    EXPECT_EQ(stackMsg == msg, true) << "stackMsg != msg";
+    GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest031: end.";
 }
 } // namespace HiviewDFX
 } // namepsace OHOS
