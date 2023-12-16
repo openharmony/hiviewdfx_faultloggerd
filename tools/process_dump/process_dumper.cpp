@@ -46,7 +46,6 @@
 #include "dfx_util.h"
 #include "faultloggerd_client.h"
 #include "procinfo.h"
-#include "unwinder_config.h"
 
 #if defined(__x86_64__)
 #include "dfx_unwind_remote_emulator.h"
@@ -54,6 +53,7 @@
 #else
 #include "dfx_unwind_remote.h"
 #include "printer.h"
+#include "unwinder_config.h"
 #endif
 
 namespace OHOS {
