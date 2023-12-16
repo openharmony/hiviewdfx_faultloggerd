@@ -64,7 +64,7 @@ HWTEST_F(MapsTest, FindMapByAddrTest001, TestSize.Level2)
 #else
     uintptr_t testAddr = 0x7f8b8f3001;
 #endif
-    EXPECT_EQ(true, maps_->FindMapByAddr(map, testAddr));
+    EXPECT_EQ(true, maps_->FindMapByAddr(testAddr, map));
     GTEST_LOG_(INFO) << "FindMapByAddrTest001: end.";
 }
 
@@ -77,7 +77,7 @@ HWTEST_F(MapsTest, FindMapByAddrTest002, TestSize.Level2)
 {
     auto map = make_shared<DfxMap>();
     maps_->Sort(true);
-    EXPECT_EQ(false, maps_->FindMapByAddr(map, 0xffffffff)); // 0xffffffff : invalid address
+    EXPECT_EQ(false, maps_->FindMapByAddr(0xffffffff, map)); // 0xffffffff : invalid address
     GTEST_LOG_(INFO) << "FindMapByAddrTest002: end.";
 }
 
@@ -90,7 +90,7 @@ HWTEST_F(MapsTest, FindMapByFileInfoTest001, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "FindMapByFileInfoTest001: start.";
     auto map = make_shared<DfxMap>();
-    EXPECT_EQ(true, maps_->FindMapByFileInfo(map, TEST_MAP_TARGET, 0));
+    EXPECT_EQ(true, maps_->FindMapByFileInfo(TEST_MAP_TARGET, 0, map));
     GTEST_LOG_(INFO) << "FindMapByFileInfoTest001: end.";
 }
 
@@ -103,7 +103,7 @@ HWTEST_F(MapsTest, FindMapByFileInfoTest002, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "FindMapByFileInfoTest002: start.";
     auto map = make_shared<DfxMap>();
-    EXPECT_EQ(false, maps_->FindMapByFileInfo(map, INVALID_MAP_ITEM, 0));
+    EXPECT_EQ(false, maps_->FindMapByFileInfo(INVALID_MAP_ITEM, 0, map));
     GTEST_LOG_(INFO) << "FindMapByFileInfoTest002: end.";
 }
 
@@ -116,7 +116,7 @@ HWTEST_F(MapsTest, FindMapByFileInfoTest003, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "FindMapByFileInfoTest003: start.";
     auto map = make_shared<DfxMap>();
-    EXPECT_EQ(false, maps_->FindMapByFileInfo(map, TEST_MAP_TARGET, 0xffffffff)); // 0xffffffff : invalid offset
+    EXPECT_EQ(false, maps_->FindMapByFileInfo(TEST_MAP_TARGET, 0xffffffff, map)); // 0xffffffff : invalid offset
     GTEST_LOG_(INFO) << "FindMapByFileInfoTest003: end.";
 }
 
@@ -129,7 +129,7 @@ HWTEST_F(MapsTest, FindMapByFileInfoTest004, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "FindMapByFileInfoTest004: start.";
     auto map = make_shared<DfxMap>();
-    EXPECT_EQ(false, maps_->FindMapByFileInfo(map, INVALID_MAP_ITEM, 0xffffffff)); // 0xffffffff : invalid offset
+    EXPECT_EQ(false, maps_->FindMapByFileInfo(INVALID_MAP_ITEM, 0xffffffff, map)); // 0xffffffff : invalid offset
     GTEST_LOG_(INFO) << "FindMapByFileInfoTest004: end.";
 }
 
@@ -142,7 +142,7 @@ HWTEST_F(MapsTest, FindMapsByNameTest001, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "FindMapsByNameTest001: start.";
     auto mapsV = vector<shared_ptr<DfxMap>>();
-    EXPECT_EQ(true, maps_->FindMapsByName(mapsV, TEST_MAP_TARGET));
+    EXPECT_EQ(true, maps_->FindMapsByName(TEST_MAP_TARGET, mapsV));
     GTEST_LOG_(INFO) << "FindMapsByNameTest001: end.";
 }
 
@@ -155,7 +155,7 @@ HWTEST_F(MapsTest, FindMapsByNameTest002, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "FindMapsByNameTest002: start.";
     auto mapsV = vector<shared_ptr<DfxMap>>();
-    EXPECT_EQ(false, maps_->FindMapsByName(mapsV, INVALID_MAP_ITEM));
+    EXPECT_EQ(false, maps_->FindMapsByName(INVALID_MAP_ITEM, mapsV));
     GTEST_LOG_(INFO) << "FindMapsByNameTest002: end.";
 }
 

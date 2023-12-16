@@ -33,8 +33,7 @@ namespace {
 #define LOG_TAG "DfxInstructions"
 }
 
-bool DfxInstructions::Flush(uintptr_t& val, DfxRegs& regs, std::shared_ptr<DfxMemory> memory,
-                            uintptr_t cfa, RegLoc loc)
+bool DfxInstructions::Flush(DfxRegs& regs, std::shared_ptr<DfxMemory> memory, uintptr_t cfa, RegLoc loc, uintptr_t& val)
 {
     uintptr_t location;
     switch (loc.type) {
@@ -80,7 +79,7 @@ bool DfxInstructions::Apply(std::shared_ptr<DfxMemory> memory, DfxRegs& regs, Re
     } else if (rsState.cfaExprPtr != 0) {
         cfaLoc.type = REG_LOC_VAL_EXPRESSION;
         cfaLoc.val = static_cast<intptr_t>(rsState.cfaExprPtr);
-        if (!Flush(cfa, regs, memory, 0, cfaLoc)) {
+        if (!Flush(regs, memory, 0, cfaLoc, cfa)) {
             LOGE("Failed to update cfa.");
             return false;
         }
@@ -94,7 +93,7 @@ bool DfxInstructions::Apply(std::shared_ptr<DfxMemory> memory, DfxRegs& regs, Re
     for (size_t i = 0; i < rsState.locs.size(); i++) {
         if (rsState.locs[i].type != REG_LOC_UNUSED) {
             size_t reg = DfxRegsQut::GetQutRegs()[i];
-            if (Flush(regs[reg], regs, memory, cfa, rsState.locs[i])) {
+            if (Flush(regs, memory, cfa, rsState.locs[i], regs[reg])) {
                 LOGU("Update reg[%d] : %llx", reg, (uint64_t)regs[reg]);
             }
         }

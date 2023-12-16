@@ -22,6 +22,7 @@ declare_args() {
   has_libunwind = true
   has_libunwindstack = false
   enable_mixstack = true
+  processdump_minidebuginfo_enable = true
   faultloggerd_cutils_enable = false
   faultloggerd_hilog_enable = false
   faultloggerd_hisysevent_enable = false

@@ -1234,5 +1234,108 @@ HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest108, TestSize.Level2)
     EXPECT_TRUE(CheckCppCrashAllLabelKeywords(fileName, pid)) << "FaultLoggerdSystemTest108 Failed";
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest108: end.";
 }
+
+#if defined(PROCESSDUMP_MINIDEBUGINFO)
+static bool CheckMinidebugSymbols(const string& filePath, const pid_t& pid, const string& option)
+{
+    map<string, string> optionSymbolMap = {
+        { string("triSIGSEGV"), string("SegmentFaultException") },
+        { string("triSIGARBT"), string("Abort") }
+    };
+    string symbol;
+    auto iter = optionSymbolMap.find(option);
+    if (iter != optionSymbolMap.end()) {
+        GTEST_LOG_(INFO) << "optionSymbolMap matched";
+        symbol = iter->second;
+    }
+    string log[] = {
+        "Pid:" + to_string(pid), "Uid", ":crasher", "Tid:", "#00",
+        symbol, "ParseAndDoCrash", "main", REGISTERS
+    };
+    int minRegIdx = 7; // 7 : index of first REGISTERS - 1
+    int expectNum = sizeof(log) / sizeof(log[0]);
+    return CheckKeyWords(filePath, log, expectNum, minRegIdx) == expectNum;
+}
+
+/**
+ * @tc.name: FaultLoggerdSystemTest109
+ * @tc.desc: trigger crasher_c SIGSEGV and check minidebug synbols
+ * @tc.type: FUNC
+ */
+HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest109, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest109: start.";
+    string cmd = "triSIGSEGV";
+    string fileName;
+    pid_t pid = TriggerCrasherAndGetFileName(cmd, CRASHER_C, fileName);
+    GTEST_LOG_(INFO) << "test pid(" << pid << ")"  << " cppcrash file name : " << fileName;
+    if (pid < 0 || fileName.size() < CPPCRASH_FILENAME_MIN_LENGTH) {
+        GTEST_LOG_(ERROR) << "Trigger Crash Failed.";
+        FAIL();
+    }
+    EXPECT_TRUE(CheckMinidebugSymbols(fileName, pid, cmd)) << "FaultLoggerdSystemTest109 Failed";
+    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest109: end.";
+}
+
+/**
+ * @tc.name: FaultLoggerdSystemTest110
+ * @tc.desc: trigger crasher_cpp SIGSEGV and check minidebug synbols
+ * @tc.type: FUNC
+ */
+HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest110, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest110: start.";
+    string cmd = "triSIGSEGV";
+    string fileName;
+    pid_t pid = TriggerCrasherAndGetFileName(cmd, CRASHER_CPP, fileName);
+    GTEST_LOG_(INFO) << "test pid(" << pid << ")"  << " cppcrash file name : " << fileName;
+    if (pid < 0 || fileName.size() < CPPCRASH_FILENAME_MIN_LENGTH) {
+        GTEST_LOG_(ERROR) << "Trigger Crash Failed.";
+        FAIL();
+    }
+    EXPECT_TRUE(CheckMinidebugSymbols(fileName, pid, cmd)) << "FaultLoggerdSystemTest110 Failed";
+    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest110: end.";
+}
+
+/**
+ * @tc.name: FaultLoggerdSystemTest111
+ * @tc.desc: trigger crasher_c SIGABRT and check minidebug synbols
+ * @tc.type: FUNC
+ */
+HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest111, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest111: start.";
+    string cmd = "triSIGABRT";
+    string fileName;
+    pid_t pid = TriggerCrasherAndGetFileName(cmd, CRASHER_C, fileName);
+    GTEST_LOG_(INFO) << "test pid(" << pid << ")"  << " cppcrash file name : " << fileName;
+    if (pid < 0 || fileName.size() < CPPCRASH_FILENAME_MIN_LENGTH) {
+        GTEST_LOG_(ERROR) << "Trigger Crash Failed.";
+        FAIL();
+    }
+    EXPECT_TRUE(CheckMinidebugSymbols(fileName, pid, cmd)) << "FaultLoggerdSystemTest111 Failed";
+    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest111: end.";
+}
+
+/**
+ * @tc.name: FaultLoggerdSystemTest112
+ * @tc.desc: trigger crasher_cpp SIGABRT and check minidebug synbols
+ * @tc.type: FUNC
+ */
+HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest112, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest112: start.";
+    string cmd = "triSIGABRT";
+    string fileName;
+    pid_t pid = TriggerCrasherAndGetFileName(cmd, CRASHER_CPP, fileName);
+    GTEST_LOG_(INFO) << "test pid(" << pid << ")"  << " cppcrash file name : " << fileName;
+    if (pid < 0 || fileName.size() < CPPCRASH_FILENAME_MIN_LENGTH) {
+        GTEST_LOG_(ERROR) << "Trigger Crash Failed.";
+        FAIL();
+    }
+    EXPECT_TRUE(CheckMinidebugSymbols(fileName, pid, cmd)) << "FaultLoggerdSystemTest112 Failed";
+    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest112: end.";
+}
+#endif
 } // namespace HiviewDFX
 } // namespace OHOS

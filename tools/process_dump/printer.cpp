@@ -91,7 +91,7 @@ void Printer::PrintReason(std::shared_ptr<ProcessDumpRequest> request, std::shar
                 return;
             }
             std::string elfName = StringPrintf("[anon:stack:%d]", process->keyThread_->threadInfo_.tid);
-            if (maps != nullptr && maps->FindMapsByName(map, elfName)) {
+            if (maps != nullptr && maps->FindMapsByName(elfName, map)) {
                 std::string guardMapName = StringPrintf("[anon:guard:%d]", process->keyThread_->threadInfo_.tid);
                 if ((addr < map[0]->begin && map[0]->begin - addr <= PAGE_SIZE) ||
                     (map[0]->name.compare(guardMapName) == 0)) {

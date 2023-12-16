@@ -144,6 +144,9 @@ void DfxUnwindRemote::UnwindThreadByParseStackIfNeed(std::shared_ptr<DfxProcess>
 void DfxUnwindRemote::UnwindThreadFallback(std::shared_ptr<DfxProcess> process, std::shared_ptr<DfxThread> thread,
                                            std::shared_ptr<Unwinder> unwinder)
 {
+    if (unwinder->GetFrames().size() > 0) {
+        return;
+    }
     // As we failed to init libunwind, just print pc and lr for first two frames
     std::shared_ptr<DfxRegs> regs = thread->GetThreadRegs();
     if (regs == nullptr) {
@@ -163,7 +166,7 @@ void DfxUnwindRemote::UnwindThreadFallback(std::shared_ptr<DfxProcess> process, 
         frame.pc = pc;
         frame.sp = sp;
         frame.index = index;
-        if (maps->FindMapByAddr(map, pc)) {
+        if (maps->FindMapByAddr(pc, map)) {
             frame.relPc = map->GetRelPc(pc);
             frame.mapName = map->name;
         } else {

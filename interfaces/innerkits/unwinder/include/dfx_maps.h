@@ -36,9 +36,9 @@ public:
 
     void AddMap(std::shared_ptr<DfxMap> map, bool enableMapIndex = false);
     void Sort(bool less = true);
-    bool FindMapByAddr(std::shared_ptr<DfxMap>& map, uintptr_t addr) const;
-    bool FindMapByFileInfo(std::shared_ptr<DfxMap>& map, std::string name, uint64_t offset) const;
-    bool FindMapsByName(std::vector<std::shared_ptr<DfxMap>>& maps, std::string name) const;
+    bool FindMapByAddr(uintptr_t addr, std::shared_ptr<DfxMap>& map) const;
+    bool FindMapByFileInfo(std::string name, uint64_t offset, std::shared_ptr<DfxMap>& map) const;
+    bool FindMapsByName(std::string name, std::vector<std::shared_ptr<DfxMap>>& maps) const;
     const std::vector<std::shared_ptr<DfxMap>>& GetMaps() const { return maps_; }
     const std::vector<int>& GetMapIndexVec() const { return mapIndex_; }
     size_t GetMapsSize() const { return maps_.size(); }

@@ -46,7 +46,6 @@
 #include "dfx_util.h"
 #include "faultloggerd_client.h"
 #include "procinfo.h"
-#include "unwinder_config.h"
 
 #if defined(__x86_64__)
 #include "dfx_unwind_remote_emulator.h"
@@ -54,6 +53,7 @@
 #else
 #include "dfx_unwind_remote.h"
 #include "printer.h"
+#include "unwinder_config.h"
 #endif
 
 namespace OHOS {
@@ -241,9 +241,10 @@ int ProcessDumper::InitProcessInfo(std::shared_ptr<ProcessDumpRequest> request)
         }
     }
 #if !defined(__x86_64__)
-    // init unwinder and enable minidebuginfo
     unwinder_ = std::make_shared<Unwinder>(process_->processInfo_.pid);
+#if defined(PROCESSDUMP_MINIDEBUGINFO)
     UnwinderConfig::SetEnableMiniDebugInfo(true);
+#endif
 #endif
     return 0;
 }

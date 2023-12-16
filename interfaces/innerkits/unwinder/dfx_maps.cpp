@@ -146,7 +146,7 @@ void DfxMaps::AddMap(std::shared_ptr<DfxMap> map, bool enableMapIndex)
     }
 }
 
-bool DfxMaps::FindMapByAddr(std::shared_ptr<DfxMap>& map, uintptr_t addr) const
+bool DfxMaps::FindMapByAddr(uintptr_t addr, std::shared_ptr<DfxMap>& map) const
 {
     if ((maps_.empty()) || (addr == 0x0)) {
         return false;
@@ -172,7 +172,7 @@ bool DfxMaps::FindMapByAddr(std::shared_ptr<DfxMap>& map, uintptr_t addr) const
     return false;
 }
 
-bool DfxMaps::FindMapByFileInfo(std::shared_ptr<DfxMap>& map, std::string name, uint64_t offset) const
+bool DfxMaps::FindMapByFileInfo(std::string name, uint64_t offset, std::shared_ptr<DfxMap>& map) const
 {
     for (auto &iter : maps_) {
         if (name != iter->name) {
@@ -189,13 +189,13 @@ bool DfxMaps::FindMapByFileInfo(std::shared_ptr<DfxMap>& map, std::string name, 
     return false;
 }
 
-bool DfxMaps::FindMapsByName(std::vector<std::shared_ptr<DfxMap>>& maps, std::string elfName) const
+bool DfxMaps::FindMapsByName(std::string name, std::vector<std::shared_ptr<DfxMap>>& maps) const
 {
     if (maps_.empty()) {
         return false;
     }
     for (size_t i = 0; i < maps_.size(); ++i) {
-        if (EndsWith(maps_[i]->name, elfName)) {
+        if (EndsWith(maps_[i]->name, name)) {
             maps.push_back(maps_[i]);
         }
     }
@@ -240,7 +240,7 @@ bool DfxMaps::GetStackRange(uintptr_t& bottom, uintptr_t& top)
 bool DfxMaps::IsArkExecutedMap(uintptr_t addr)
 {
     std::shared_ptr<DfxMap> map = nullptr;
-    if (!FindMapByAddr(map, addr)) {
+    if (!FindMapByAddr(addr, map)) {
         LOGU("Not mapped map for current addr.");
         return false;
     }

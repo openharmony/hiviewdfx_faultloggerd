@@ -152,7 +152,7 @@ bool Unwinder::GetMapByPc(uintptr_t pc, void *ctx, std::shared_ptr<DfxMap>& map)
         }
     }
 
-    if (!maps_->FindMapByAddr(map, pc) || (map == nullptr)) {
+    if (!maps_->FindMapByAddr(pc, map) || (map == nullptr)) {
         return false;
     }
     uctx->map = map;
@@ -219,7 +219,7 @@ bool Unwinder::Unwind(void *ctx, size_t maxFrameNum, size_t skipFrameNum)
 
     std::shared_ptr<DfxMap> map = nullptr;
     pc = regs_->GetPc();
-    if (!maps_->FindMapByAddr(map, pc) || (map == nullptr)) {
+    if (!maps_->FindMapByAddr(pc, map) || (map == nullptr)) {
         regs_->SetPc(StripPac(pc, pacMask_));
     }
 
@@ -583,7 +583,7 @@ void Unwinder::GetFramesByPcs(std::vector<DfxFrame>& frames, std::vector<uintptr
         if ((map != nullptr) && map->Contain(frame.pc)) {
             LOGU("map had matched");
         } else {
-            if (!maps->FindMapByAddr(map, pcs[i]) || (map == nullptr)) {
+            if (!maps->FindMapByAddr(pcs[i], map) || (map == nullptr)) {
                 LOGE("map is null");
                 continue;
             }

@@ -125,6 +125,10 @@ if (defined(ohos_lite)) {
     }
 
     cflags_cc = [ "-DRUSTC_DEMANGLE" ]
+
+    if (faultloggerd_lzma_enable && processdump_minidebuginfo_enable) {
+      defines = [ "PROCESSDUMP_MINIDEBUGINFO" ]
+    }
   }
 
   ohos_source_set("process_info_src") {
