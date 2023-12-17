@@ -38,7 +38,7 @@ namespace {
 #define LOG_DOMAIN 0xD002D11
 #define LOG_TAG "DfxUnwinder"
 }
-
+bool Unwinder::loadSymbolLazily = false;
 void Unwinder::Init()
 {
     Clear();
@@ -567,6 +567,11 @@ void Unwinder::FillFrame(DfxFrame& frame)
         LOGE("elf is null");
         return;
     }
+
+    if (loadSymbolLazily) {
+        elf->LoadSymbolLazily();
+    }
+
     DfxSymbols::GetFuncNameAndOffsetByPc(frame.relPc, elf, frame.funcName, frame.funcOffset);
     frame.buildId = elf->GetBuildId();
 }
@@ -597,6 +602,11 @@ void Unwinder::GetFramesByPcs(std::vector<DfxFrame>& frames, std::vector<uintptr
 std::string Unwinder::GetFramesStr(const std::vector<DfxFrame>& frames)
 {
     return DfxFrameFormatter::GetFramesStr(frames);
+}
+
+void Unwinder::LoadSymbolLazily()
+{
+    loadSymbolLazily = true;
 }
 } // namespace HiviewDFX
 } // namespace OHOS

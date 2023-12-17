@@ -340,6 +340,50 @@ bool ElfParser::ParseElfSymbols(ElfShdr shdr, bool isFunc, bool isSort)
 }
 
 template <typename SymType>
+bool ElfParser::ParseElfSymbolByAddr(uint64_t addr, ElfSymbol& elfSymbol)
+{
+    if (symShdrs_.empty()) {
+        return false;
+    }
+
+    for (const auto &shdr : symShdrs_) {
+        if (shdr.type != SHT_SYMTAB && shdr.type != SHT_DYNSYM) {
+            continue;
+        }
+
+        ShdrInfo shdrInfo;
+        if (!GetSectionInfo(shdrInfo, shdr.link)) {
+            continue;
+        }
+
+        uint32_t count = static_cast<uint32_t>((shdr.entSize != 0) ? (shdr.size / shdr.entSize) : 0);
+
+        for (uint32_t idx = 0; idx < count; ++idx) {
+            uintptr_t offset = static_cast<uintptr_t>(shdr.offset + idx * shdr.entSize);
+            SymType sym;
+            if (!Read(offset, &sym, sizeof(sym))) { // todo inplace search
+                continue;
+            }
+
+            if (sym.st_value == 0 || sym.st_size == 0) {
+                continue;
+            }
+
+            if (sym.st_value <= addr &&
+                addr < (sym.st_value + sym.st_size) &&
+                (static_cast<uint64_t>(sym.st_name) < shdrInfo.size)) {
+                elfSymbol.value = static_cast<uint64_t>(sym.st_value);
+                elfSymbol.size = static_cast<uint64_t>(sym.st_size);
+                elfSymbol.name = static_cast<uint32_t>(sym.st_name);
+                elfSymbol.nameStr = std::string(static_cast<char*>(mmap_->Get()) + shdrInfo.offset + sym.st_name);
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+template <typename SymType>
 bool ElfParser::ParseElfSymbol(ElfShdr shdr, uint32_t idx, bool isFunc, ElfSymbol& elfSymbol)
 {
     uintptr_t offset = static_cast<uintptr_t>(shdr.offset + idx * shdr.entSize);
@@ -485,6 +529,16 @@ const std::vector<ElfSymbol>& ElfParser64::GetElfSymbols(bool isFunc, bool isSor
 {
     ParseElfSymbols<Elf64_Sym>(isFunc, isSort);
     return elfSymbols_;
+}
+
+bool ElfParser32::GetElfSymbol(uint64_t addr, ElfSymbol& elfSymbol)
+{
+    return ParseElfSymbolByAddr<Elf32_Sym>(addr, elfSymbol);
+}
+
+bool ElfParser64::GetElfSymbol(uint64_t addr, ElfSymbol& elfSymbol)
+{
+    return ParseElfSymbolByAddr<Elf64_Sym>(addr, elfSymbol);
 }
 } // namespace HiviewDFX
 } // namespace OHOS

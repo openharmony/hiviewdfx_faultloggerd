@@ -242,6 +242,7 @@ int ProcessDumper::InitProcessInfo(std::shared_ptr<ProcessDumpRequest> request)
     }
 #if !defined(__x86_64__)
     unwinder_ = std::make_shared<Unwinder>(process_->processInfo_.pid);
+    unwinder_->LoadSymbolLazily();
 #if defined(PROCESSDUMP_MINIDEBUGINFO)
     UnwinderConfig::SetEnableMiniDebugInfo(true);
 #endif

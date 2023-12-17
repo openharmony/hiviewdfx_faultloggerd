@@ -79,6 +79,8 @@ public:
     bool IsEmbeddedElfValid();
     std::shared_ptr<DfxElf> GetEmbeddedElf();
     std::shared_ptr<MiniDebugInfo> GetMiniDebugInfo();
+    void LoadSymbolLazily();
+    bool GetFuncSymbolLazily(uint64_t addr, ElfSymbol& elfSymbol);
 
 protected:
     void Init();
@@ -91,6 +93,8 @@ protected:
     static bool FillUnwindTableByEhhdrLocal(struct DwarfEhFrameHdr* hdr, struct UnwindTableInfo* uti);
 #endif
     bool FillUnwindTableByEhhdr(struct DwarfEhFrameHdr* hdr, uintptr_t shdrBase, struct UnwindTableInfo* uti);
+    bool GetFuncSymbol(uint64_t addr, const std::vector<ElfSymbol>& symbols,ElfSymbol& elfSymbol);
+
     static bool FillUnwindTableByExidx(ShdrInfo shdr, uintptr_t loadBase, struct UnwindTableInfo* uti);
 
 private:
@@ -104,6 +108,7 @@ private:
     std::string buildId_ = "";
     struct UnwindTableInfo uti_;
     bool hasTableInfo_ = false;
+    bool loadSymbolLazily_ = false;
     std::shared_ptr<DfxMmap> mmap_ = nullptr;
     std::unique_ptr<ElfParser> elfParse_ = nullptr;
     std::vector<ElfSymbol> elfSymbols_ {};

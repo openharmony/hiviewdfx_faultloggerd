@@ -93,6 +93,7 @@ public:
         std::shared_ptr<DfxMaps> maps);
     static void FillFrame(DfxFrame& frame);
     static std::string GetFramesStr(const std::vector<DfxFrame>& frames);
+    void LoadSymbolLazily();
 
 private:
     void Init();
@@ -121,7 +122,7 @@ private:
     bool enableFillFrames_ = true;
     bool enableLrFallback_ = true;
     bool enableFpFallback_ = true;
-
+    static bool loadSymbolLazily;
     int32_t pid_ = 0;
     uintptr_t pacMask_ = 0;
     UnwindMode mode_ = DWARF_UNWIND;
