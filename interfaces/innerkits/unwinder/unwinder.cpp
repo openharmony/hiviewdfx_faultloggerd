@@ -174,25 +174,28 @@ bool Unwinder::StepArkJsFrame(size_t& idx, size_t& curIdx)
     uintptr_t pc = regs_->GetPc();
     uintptr_t sp = regs_->GetSp();
     uintptr_t fp = regs_->GetFp();
-    JsFrame* jsFrames = nullptr;
-    size_t size = 0;
+    const size_t JSFRAME_MAX = 64;
+    JsFrame jsFrames[JSFRAME_MAX];
+    size_t size = JSFRAME_MAX;
+    if (memset_s(jsFrames, sizeof(JsFrame) * JSFRAME_MAX, 0, sizeof(JsFrame) * JSFRAME_MAX) != 0) {
+        LOGE("Failed to memset_s jsFrames.");
+        return false;
+    }
     LOGU("input ark pc: %llx, fp: %llx, sp: %llx.", (uint64_t)pc, (uint64_t)fp, (uint64_t)sp);
-    int ret = DfxArk::GetArkNativeFrameInfo(pid_, pc, fp, sp, size, &jsFrames);
+    int ret = DfxArk::GetArkNativeFrameInfo(pid_, pc, fp, sp, jsFrames, size);
     LOGU("output ark pc: %llx, fp: %llx, sp: %llx, js frame size: %d.", (uint64_t)pc, (uint64_t)fp, (uint64_t)sp, size);
     if (ret < 0) {
         return false;
     }
-    while (size > 0 && jsFrames != nullptr) {
+    for (size_t i = 0; i < size; ++i) {
         DfxFrame frame;
         frame.isJsFrame = true;
         frame.index = (curIdx++);
-        frame.mapName = std::string(jsFrames->url);
-        frame.funcName = std::string(jsFrames->functionName);
-        frame.line = jsFrames->line;
-        frame.column = jsFrames->column;
+        frame.mapName = std::string(jsFrames[i].url);
+        frame.funcName = std::string(jsFrames[i].functionName);
+        frame.line = jsFrames[i].line;
+        frame.column = jsFrames[i].column;
         frames_.push_back(frame);
-        jsFrames++;
-        size--;
         idx++;
     }
     regs_->SetPc(pc);

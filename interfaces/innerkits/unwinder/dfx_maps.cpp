@@ -125,7 +125,7 @@ std::shared_ptr<DfxMaps> DfxMaps::Create(const pid_t pid, const std::string& pat
 bool DfxMaps::IsLegalMapItem(const std::string& name)
 {
     // some special
-    if (name == "[vdso]") {
+    if (EndsWith(name, "[vdso]")) {
         return true;
     }
     if (name.empty() || name.find(':') != std::string::npos || name.front() == '[' ||
