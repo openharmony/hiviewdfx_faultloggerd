@@ -284,11 +284,11 @@ void CheckResourceUsage(uint32_t fdCount, uint32_t mapsCount, uint64_t memCount)
 {
     // check memory/fd/maps
     auto curFdCount = GetSelfFdCount();
-    printf("AfterTest Fd New: %d\n", curFdCount);
+    printf("AfterTest Fd New: %u\n", curFdCount);
     printf("Fd Old: %u\n", fdCount);
 
     auto curMapsCount = GetSelfMapsCount();
-    printf("AfterTest Maps New: %d\n", curMapsCount);
+    printf("AfterTest Maps New: %u\n", curMapsCount);
     printf("Maps Old: %u\n", mapsCount);
 
     auto curMemSize = GetSelfMemoryCount();

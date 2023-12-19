@@ -105,13 +105,10 @@ int DfxLogPrintV(const LogLevel logLevel, const unsigned int domain, const char*
         return ret;
     }
 #ifdef DFX_LOG_HILOG_BASE
-    ret = HiLogBasePrint(LOG_CORE, logLevel, domain, tag, "%{public}s", buf);
+    HiLogBasePrint(LOG_CORE, logLevel, domain, tag, "%{public}s", buf);
 #else
-    ret = HiLogPrint(LOG_CORE, logLevel, domain, tag, "%{public}s", buf);
+    HiLogPrint(LOG_CORE, logLevel, domain, tag, "%{public}s", buf);
 #endif
-    if (ret < 0) {
-        fprintf(stderr, "print to hilog failed\n");
-    }
 
 #ifdef DFX_LOG_DMESG
     LogToDmesg(logLevel, tag, buf);

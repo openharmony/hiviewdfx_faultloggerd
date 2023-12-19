@@ -291,7 +291,7 @@ bool Unwinder::Unwind(void *ctx, size_t maxFrameNum, size_t skipFrameNum)
 
         index++;
     } while (true);
-    LOGU("Last error code: %d, addr: %p", (int)GetLastErrorCode(), (void *)GetLastErrorAddr());
+    LOGU("Last error code: %d, addr: %p", (int)GetLastErrorCode(), reinterpret_cast<void *>(GetLastErrorAddr()));
     return (curIndex > 0);
 }
 

@@ -39,7 +39,7 @@ public:
     DfxElf(uint8_t *decompressedData, size_t size);
     ~DfxElf() { Clear(); }
 
-    static bool IsValidElf(const void* ptr);
+    static bool IsValidElf(const void* ptr, size_t size);
 #if is_ohos
     static size_t GetElfSize(const void* ptr);
 #endif

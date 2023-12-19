@@ -99,7 +99,7 @@ bool DwarfCfaInstructions::DecodeDwCfa(uint8_t opCode, CommonInfoEntry cie,
             break;
         case DW_CFA_offset_extended:
             reg = memory_->ReadUleb128(instPtr);
-            offset = (int64_t)memory_->ReadUleb128(instPtr) * cie.codeAlignFactor;
+            offset = (int64_t)(memory_->ReadUleb128(instPtr) * cie.codeAlignFactor);
             LOGU("DW_CFA_offset_extended: reg=%d", (int)reg);
             if (!DfxRegsQut::IsQutReg(static_cast<uint16_t>(reg), qutIdx)) {
                 INSTR_STATISTIC(UnsupportedDwCfaOffset, reg, UNW_ERROR_UNSUPPORTED_QUT_REG);
