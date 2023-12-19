@@ -277,7 +277,7 @@ HWTEST_F(DumpCatcherCommandTest, DumpCatcherCommandTest008, TestSize.Level2)
  */
 HWTEST_F(DumpCatcherCommandTest, DumpCatcherCommandTest009, TestSize.Level2)
 {
-    GTEST_LOG_(INFO) << "DumpCatcherCommandTest010: start.";
+    GTEST_LOG_(INFO) << "DumpCatcherCommandTest009: start.";
     string systemui = "com.ohos.systemui";
     string procCMD = "dumpcatcher -m -p -1 -t -1";
     string procDumpLog = ExecuteCommands(procCMD);

@@ -681,15 +681,14 @@ HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest029, TestSize.Level
 HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest030, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest030: start.";
-    ForkMultiThreadProcess();
-    GTEST_LOG_(INFO) << "dump remote process, "  << " pid:" << 1 << ", tid:" << g_threadId;
+    GTEST_LOG_(INFO) << "dump remote process, "  << " pid:" << 1 << ", tid:" << 0;
     DfxDumpCatcher dumplog;
     DfxJsonFormatter format;
     string msg = "";
-    bool ret = dumplog.DumpCatch(1, g_threadId, msg);
+    bool ret = dumplog.DumpCatch(1, 0, msg);
     EXPECT_TRUE(ret) << "DumpCatch remote msg Failed.";
     string jsonMsg = "";
-    bool jsonRet = dumplog.DumpCatch(1, g_threadId, jsonMsg, DEFAULT_MAX_FRAME_NUM, true);
+    bool jsonRet = dumplog.DumpCatch(1, 0, jsonMsg, DEFAULT_MAX_FRAME_NUM, true);
     std::cout << jsonMsg << std::endl;
     EXPECT_TRUE(jsonRet) << "DumpCatch remote json Failed.";
     string stackMsg = "";
