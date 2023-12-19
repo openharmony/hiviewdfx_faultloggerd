@@ -528,60 +528,67 @@ bool DfxElf::GetSectionData(unsigned char *buf, uint64_t size, std::string secNa
     return elfParse_->GetSectionData(buf, size, secName);
 }
 
-const std::vector<ElfSymbol>& DfxElf::GetElfSymbols(bool isSort)
+const std::vector<ElfSymbol>& DfxElf::GetElfSymbols()
 {
-    if (elfSymbols_.empty()) {
-        elfSymbols_ = elfParse_->GetElfSymbols(false, isSort);
-#if defined(ENABLE_MINIDEBUGINFO)
-        if (IsEmbeddedElfValid()) {
-            auto symbols = embeddedElf_->elfParse_->GetElfSymbols(true, isSort);
-            LOGU("Get EmbeddedElf FuncSymbols, size: %zu", symbols.size());
-            elfSymbols_.insert(elfSymbols_.end(), symbols.begin(), symbols.end());
-            sort(elfSymbols_.begin(), elfSymbols_.end(), [](ElfSymbol& sym1, ElfSymbol& sym2) {
-                return sym1.value < sym2.value;
-            });
-        }
-#endif
-        LOGU("GetElfSymbols, size: %zu", elfSymbols_.size());
+    if (!elfSymbols_.empty()) {
+        return elfSymbols_;
     }
+    elfSymbols_ = elfParse_->GetElfSymbols(false);
+#if defined(ENABLE_MINIDEBUGINFO)
+    if (IsEmbeddedElfValid()) {
+        auto symbols = embeddedElf_->elfParse_->GetElfSymbols(false);
+        LOGU("Get EmbeddedElf ElfSymbols, size: %zu", symbols.size());
+        elfSymbols_.insert(elfSymbols_.end(), symbols.begin(), symbols.end());
+    }
+#endif
+    std::sort(elfSymbols_.begin(), elfSymbols_.end(), [](ElfSymbol& sym1, ElfSymbol& sym2) {
+        return sym1.value < sym2.value;
+    });
+    auto pred = [](ElfSymbol a, ElfSymbol b) { return a.value == b.value; };
+    elfSymbols_.erase(std::unique(elfSymbols_.begin(), elfSymbols_.end(), pred), elfSymbols_.end());
+    elfSymbols_.shrink_to_fit();
+    LOGU("GetElfSymbols, size: %zu", elfSymbols_.size());
     return elfSymbols_;
 }
 
-const std::vector<ElfSymbol>& DfxElf::GetFuncSymbols(bool isSort)
+const std::vector<ElfSymbol>& DfxElf::GetFuncSymbols()
 {
-    if (funcSymbols_.empty()) {
-        funcSymbols_ = elfParse_->GetElfSymbols(true, isSort);
-#if defined(ENABLE_MINIDEBUGINFO)
-        if (IsEmbeddedElfValid()) {
-            auto symbols = embeddedElf_->elfParse_->GetElfSymbols(true, isSort);
-            LOGU("Get EmbeddedElf FuncSymbols, size: %zu", symbols.size());
-            funcSymbols_.insert(funcSymbols_.end(), symbols.begin(), symbols.end());
-            sort(funcSymbols_.begin(), funcSymbols_.end(), [](ElfSymbol& sym1, ElfSymbol& sym2) {
-                return sym1.value < sym2.value;
-            });
-        }
-#endif
-        LOGU("GetFuncSymbols, size: %zu", funcSymbols_.size());
+    if (!funcSymbols_.empty()) {
+        return funcSymbols_;
     }
+    funcSymbols_ = elfParse_->GetElfSymbols(true);
+#if defined(ENABLE_MINIDEBUGINFO)
+    if (IsEmbeddedElfValid()) {
+        auto symbols = embeddedElf_->elfParse_->GetElfSymbols(true);
+        LOGU("Get EmbeddedElf FuncSymbols, size: %zu", symbols.size());
+        funcSymbols_.insert(funcSymbols_.end(), symbols.begin(), symbols.end());
+    }
+#endif
+    std::sort(funcSymbols_.begin(), funcSymbols_.end(), [](ElfSymbol& sym1, ElfSymbol& sym2) {
+        return sym1.value < sym2.value;
+    });
+    auto pred = [](ElfSymbol a, ElfSymbol b) { return a.value == b.value; };
+    funcSymbols_.erase(std::unique(funcSymbols_.begin(), funcSymbols_.end(), pred), funcSymbols_.end());
+    funcSymbols_.shrink_to_fit();
+    LOGU("GetFuncSymbols, size: %zu", funcSymbols_.size());
     return funcSymbols_;
 }
 
-bool DfxElf::GetFuncSymbolLazily(uint64_t addr, ElfSymbol& elfSymbol)
+bool DfxElf::GetFuncInfoLazily(uint64_t addr, ElfSymbol& elfSymbol)
 {
-    if (GetFuncSymbol(addr, funcSymbols_, elfSymbol)) {
+    if (FindFuncSymbol(addr, funcSymbols_, elfSymbol)) {
         return true;
     }
-
     bool findSymbol = false;
 #if defined(ENABLE_MINIDEBUGINFO)
     if (IsEmbeddedElfValid() &&
-        embeddedElf_->elfParse_->GetElfSymbol(addr, elfSymbol)) {
+        embeddedElf_->elfParse_->GetElfSymbolByAddr(addr, elfSymbol)) {
         funcSymbols_.emplace_back(elfSymbol);
         findSymbol = true;
     }
 #endif
 
-    if (!findSymbol && elfParse_->GetElfSymbol(addr, elfSymbol)) {
+    if (!findSymbol && elfParse_->GetElfSymbolByAddr(addr, elfSymbol)) {
         funcSymbols_.emplace_back(elfSymbol);
         findSymbol = true;
     }
@@ -590,19 +597,31 @@ bool DfxElf::GetFuncSymbolLazily(uint64_t addr, ElfSymbol& elfSymbol)
         std::sort(funcSymbols_.begin(), funcSymbols_.end(), [](ElfSymbol& sym1, ElfSymbol& sym2) {
             return sym1.value < sym2.value;
         });
+        auto pred = [](ElfSymbol a, ElfSymbol b) { return a.value == b.value; };
+        funcSymbols_.erase(std::unique(funcSymbols_.begin(), funcSymbols_.end(), pred), funcSymbols_.end());
+        funcSymbols_.shrink_to_fit();
+        LOGU("GetFuncInfoLazily, size: %zu", funcSymbols_.size());
         return true;
     }
-
     return false;
 }
 
-bool DfxElf::GetFuncSymbol(uint64_t addr, const std::vector<ElfSymbol>& symbols,ElfSymbol& elfSymbol)
+bool DfxElf::GetFuncInfo(uint64_t addr, ElfSymbol& elfSymbol)
 {
-    if (symbols.empty()) {
-        LOGE("GetFuncInfo not symbols?");
-        return false;
+    if (UnwinderConfig::GetEnableLoadSymbolLazily()) {
+        return GetFuncInfoLazily(addr, elfSymbol);
     }
 
+    auto symbols = GetFuncSymbols();
+    return FindFuncSymbol(addr, symbols, elfSymbol);
+}
+
+bool DfxElf::FindFuncSymbol(uint64_t addr, const std::vector<ElfSymbol>& symbols, ElfSymbol& elfSymbol)
+{
+    if (symbols.empty()) {
+        LOGU("FindFuncSymbol not symbols?");
+        return false;
+    }
     size_t begin = 0;
     size_t end = symbols.size();
     while (begin < end) {
@@ -618,16 +637,6 @@ bool DfxElf::GetFuncSymbol(uint64_t addr, const std::vector<ElfSymbol>& symbols,
         }
     }
     return false;
-}
-
-bool DfxElf::GetFuncInfo(uint64_t addr, ElfSymbol& elfSymbol)
-{
-    if (loadSymbolLazily_) {
-        return GetFuncSymbolLazily(addr, elfSymbol);
-    }
-
-    auto symbols = GetFuncSymbols(true);
-    return GetFuncSymbol(addr, symbols, elfSymbol);
 }
 
 const std::unordered_map<uint64_t, ElfLoadInfo>& DfxElf::GetPtLoads()
@@ -953,11 +962,6 @@ bool DfxElf::IsValidElf(const void* ptr)
         return false;
     }
     return true;
-}
-
-void DfxElf::LoadSymbolLazily()
-{
-    loadSymbolLazily_ = true;
 }
 
 #if is_ohos

@@ -22,9 +22,15 @@
 #include "dfx_regs_qut.h"
 #include "dfx_test_util.h"
 #include "unwinder.h"
+#include "unwinder_config.h"
 
 using namespace OHOS::HiviewDFX;
 using namespace std;
+
+#undef LOG_DOMAIN
+#undef LOG_TAG
+#define LOG_DOMAIN 0xD002D11
+#define LOG_TAG "DfxUnwinderLocal"
 
 static constexpr size_t TEST_MIN_UNWIND_FRAMES = 5;
 
@@ -100,6 +106,7 @@ static size_t UnwinderLocalFp(MAYBE_UNUSED void* data) {
     context.stackCheck = false;
     context.stackBottom = stackBottom;
     context.stackTop = stackTop;
+    unwinder->EnableFpCheckMapExec(false);
     unwinder->UnwindByFp(&context);
     auto unwSize = unwinder->GetPcs().size();
     LOGU("%s frames.size: %zu", __func__, unwSize);
@@ -201,6 +208,44 @@ static void BenchmarkUnwinderLocalQutFramesCache(benchmark::State& state)
     Run(state, UnwinderLocal, &data);
 }
 BENCHMARK(BenchmarkUnwinderLocalQutFramesCache);
+
+/**
+* @tc.name: BenchmarkUnwinderLocalQutMiniDebugInfos
+* @tc.desc: Unwind local qut minidebuginfo
+* @tc.type: FUNC
+*/
+static void BenchmarkUnwinderLocalQutMiniDebugInfos(benchmark::State& state)
+{
+    DfxRegsQut::SetQutRegs(QUT_REGS);
+    UnwinderConfig::SetEnableMiniDebugInfo(true);
+    UnwindData data;
+    data.unwinder = std::make_shared<Unwinder>();
+    data.unwinder->EnableUnwindCache(false);
+    data.unwinder->EnableFillFrames(true);
+    Run(state, UnwinderLocal, &data);
+    UnwinderConfig::SetEnableMiniDebugInfo(false);
+}
+BENCHMARK(BenchmarkUnwinderLocalQutMiniDebugInfos);
+
+/**
+* @tc.name: BenchmarkUnwinderLocalQutMiniDebugInfosLazily
+* @tc.desc: Unwind local qut minidebuginfo lazily
+* @tc.type: FUNC
+*/
+static void BenchmarkUnwinderLocalQutMiniDebugInfosLazily(benchmark::State& state)
+{
+    DfxRegsQut::SetQutRegs(QUT_REGS);
+    UnwinderConfig::SetEnableMiniDebugInfo(true);
+    UnwinderConfig::SetEnableLoadSymbolLazily(true);
+    UnwindData data;
+    data.unwinder = std::make_shared<Unwinder>();
+    data.unwinder->EnableUnwindCache(true);
+    data.unwinder->EnableFillFrames(true);
+    Run(state, UnwinderLocal, &data);
+    UnwinderConfig::SetEnableMiniDebugInfo(false);
+    UnwinderConfig::SetEnableLoadSymbolLazily(false);
+}
+BENCHMARK(BenchmarkUnwinderLocalQutMiniDebugInfosLazily);
 
 #if defined(__aarch64__)
 /**

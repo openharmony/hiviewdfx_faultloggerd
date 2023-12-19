@@ -74,7 +74,7 @@ bool DfxSymbols::ParseSymbols(std::vector<DfxSymbol>& symbols, std::shared_ptr<D
     if (elf == nullptr) {
         return false;
     }
-    auto elfSymbols = elf->GetFuncSymbols(true);
+    auto elfSymbols = elf->GetFuncSymbols();
     std::string symbolsPath = filePath;
     if (elf->GetBaseOffset() != 0) {
         symbolsPath += ("!" + elf->GetElfName());

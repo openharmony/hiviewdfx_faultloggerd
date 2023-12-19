@@ -23,8 +23,23 @@ namespace OHOS {
 namespace HiviewDFX {
 class UnwinderConfig final {
 public:
-    static inline void SetEnableMiniDebugInfo(bool enableMiniDebugInfo) { enableMiniDebugInfo_ = enableMiniDebugInfo; }
-    static inline bool GetEnableMiniDebugInfo() { return enableMiniDebugInfo_; }
+    static inline void SetEnableMiniDebugInfo(bool enableMiniDebugInfo)
+    {
+        enableMiniDebugInfo_ = enableMiniDebugInfo;
+    }
+    static inline bool GetEnableMiniDebugInfo()
+    {
+        return enableMiniDebugInfo_;
+    }
+
+    static inline void SetEnableLoadSymbolLazily(bool enableLoadSymbolLazily)
+    {
+        enableLoadSymbolLazily_ = enableLoadSymbolLazily;
+    }
+    static inline bool GetEnableLoadSymbolLazily()
+    {
+        return enableLoadSymbolLazily_;
+    }
 
     static inline void SetByteOrder(int bigEndian) { bigEndian_ = bigEndian; }
     static inline int GetByteOrder() { return bigEndian_; }
@@ -34,6 +49,7 @@ public:
 
 private:
     static bool enableMiniDebugInfo_;
+    static bool enableLoadSymbolLazily_;
     static int bigEndian_;
     static UnwindCachingPolicy cachingPolicy_;
 };

@@ -22,9 +22,15 @@
 #include "dfx_regs_qut.h"
 #include "dfx_test_util.h"
 #include "unwinder.h"
+#include "unwinder_config.h"
 
 using namespace OHOS::HiviewDFX;
 using namespace std;
+
+#undef LOG_DOMAIN
+#undef LOG_TAG
+#define LOG_DOMAIN 0xD002D11
+#define LOG_TAG "DfxUnwinderRemote"
 
 static constexpr size_t TEST_MIN_UNWIND_FRAMES = 5;
 
@@ -104,6 +110,7 @@ static size_t UnwinderRemoteFp(std::shared_ptr<Unwinder> unwinder)
     unwinder->SetRegs(regs);
     UnwindContext context;
     context.pid = pid;
+    unwinder->EnableFpCheckMapExec(false);
     unwinder->UnwindByFp(&context);
     auto frames = unwinder->GetPcs();
     LOGU("%s frames.size: %zu", __func__, frames.size());
@@ -248,6 +255,42 @@ static void BenchmarkUnwinderRemoteQutFramesCache(benchmark::State& state)
     Run(state, &data);
 }
 BENCHMARK(BenchmarkUnwinderRemoteQutFramesCache);
+
+/**
+* @tc.name: BenchmarkUnwinderRemoteQutMiniDebugInfos
+* @tc.desc: Unwind remote qut minidebuginfo
+* @tc.type: FUNC
+*/
+static void BenchmarkUnwinderRemoteQutMiniDebugInfos(benchmark::State& state)
+{
+    DfxRegsQut::SetQutRegs(QUT_REGS);
+    UnwinderConfig::SetEnableMiniDebugInfo(true);
+    UnwindData data;
+    data.isCache = false;
+    data.isFillFrames = true;
+    Run(state, &data);
+    UnwinderConfig::SetEnableMiniDebugInfo(false);
+}
+BENCHMARK(BenchmarkUnwinderRemoteQutMiniDebugInfos);
+
+/**
+* @tc.name: BenchmarkUnwinderRemoteQutMiniDebugInfosLazily
+* @tc.desc: Unwind remote qut minidebuginfo lazily
+* @tc.type: FUNC
+*/
+static void BenchmarkUnwinderRemoteQutMiniDebugInfosLazily(benchmark::State& state)
+{
+    DfxRegsQut::SetQutRegs(QUT_REGS);
+    UnwinderConfig::SetEnableMiniDebugInfo(true);
+    UnwinderConfig::SetEnableLoadSymbolLazily(true);
+    UnwindData data;
+    data.isCache = false;
+    data.isFillFrames = true;
+    Run(state, &data);
+    UnwinderConfig::SetEnableMiniDebugInfo(false);
+    UnwinderConfig::SetEnableLoadSymbolLazily(false);
+}
+BENCHMARK(BenchmarkUnwinderRemoteQutMiniDebugInfosLazily);
 
 #if defined(__aarch64__)
 /**

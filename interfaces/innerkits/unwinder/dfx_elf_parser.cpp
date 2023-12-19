@@ -231,7 +231,7 @@ bool ElfParser::ParseSectionHeaders(const EhdrType& ehdr)
             elfShdr.info = static_cast<uint32_t>(shdr.sh_info);
             elfShdr.addrAlign = static_cast<uint64_t>(shdr.sh_addralign);
             elfShdr.entSize = static_cast<uint64_t>(shdr.sh_entsize);
-            symShdrs_.push_back(elfShdr);
+            symShdrs_.emplace_back(elfShdr);
         }
     }
     return true;
@@ -287,7 +287,7 @@ bool ElfParser::IsFunc(const SymType sym)
 }
 
 template <typename SymType>
-bool ElfParser::ParseElfSymbols(bool isFunc, bool isSort)
+bool ElfParser::ParseElfSymbols(bool isFunc)
 {
     if (symShdrs_.empty()) {
         return false;
@@ -296,45 +296,40 @@ bool ElfParser::ParseElfSymbols(bool isFunc, bool isSort)
     elfSymbols_.clear();
     for (const auto &iter : symShdrs_) {
         const auto &shdr = iter;
-        ParseElfSymbols<SymType>(shdr, isFunc, isSort);
+        ParseElfSymbols<SymType>(shdr, isFunc);
     }
     return (elfSymbols_.size() > 0);
 }
 
 template <typename SymType>
-bool ElfParser::ParseElfSymbols(ElfShdr shdr, bool isFunc, bool isSort)
+bool ElfParser::ParseElfSymbols(ElfShdr shdr, bool isFunc)
 {
-    if (shdr.type != SHT_SYMTAB && shdr.type != SHT_DYNSYM) {
-        LOGE("shdr.type: %d", shdr.type);
-        return false;
-    }
-
-    ShdrInfo shdrInfo;
-    if (!GetSectionInfo(shdrInfo, shdr.link)) {
-        return false;
+    if (linkShdrInfo_.offset == 0) {
+        if (!GetSectionInfo(linkShdrInfo_, shdr.link)) {
+            return false;
+        }
     }
 
     uint32_t count = static_cast<uint32_t>((shdr.entSize != 0) ? (shdr.size / shdr.entSize) : 0);
-    LOGU("count: %d", count);
     for (uint32_t idx = 0; idx < count; ++idx) {
+        uintptr_t offset = static_cast<uintptr_t>(shdr.offset + idx * shdr.entSize);
+        SymType sym;
+        if (!Read(offset, &sym, sizeof(sym))) {
+            continue;
+        }
+        if (isFunc && !IsFunc(sym)) {
+            continue;
+        }
+        if (sym.st_value == 0 || sym.st_size == 0 || static_cast<uint64_t>(sym.st_name) >= linkShdrInfo_.size) {
+            continue;
+        }
         ElfSymbol elfSymbol;
-        if (!ParseElfSymbol<SymType>(shdr, idx, isFunc, elfSymbol)) {
-            continue;
-        }
-        if (static_cast<uint64_t>(elfSymbol.name) >= shdrInfo.size) {
-            continue;
-        }
-        elfSymbol.nameStr = std::string(static_cast<char*>(mmap_->Get()) + shdrInfo.offset + elfSymbol.name);
-        elfSymbols_.push_back(elfSymbol);
+        elfSymbol.value = static_cast<uint64_t>(sym.st_value);
+        elfSymbol.size = static_cast<uint64_t>(sym.st_size);
+        elfSymbol.name = static_cast<uint32_t>(sym.st_name);
+        elfSymbol.nameStr = std::string(static_cast<char*>(mmap_->Get()) + linkShdrInfo_.offset + elfSymbol.name);
+        elfSymbols_.emplace_back(elfSymbol);
     }
-
-    if (isSort) {
-        auto comp = [](ElfSymbol a, ElfSymbol b) { return a.value < b.value; };
-        std::sort(elfSymbols_.begin(), elfSymbols_.end(), comp);
-    }
-    auto pred = [](ElfSymbol a, ElfSymbol b) { return a.value == b.value; };
-    elfSymbols_.erase(std::unique(elfSymbols_.begin(), elfSymbols_.end(), pred), elfSymbols_.end());
-    elfSymbols_.shrink_to_fit();
     LOGU("elfSymbols.size: %d", elfSymbols_.size());
     return true;
 }
@@ -347,17 +342,13 @@ bool ElfParser::ParseElfSymbolByAddr(uint64_t addr, ElfSymbol& elfSymbol)
     }
 
     for (const auto &shdr : symShdrs_) {
-        if (shdr.type != SHT_SYMTAB && shdr.type != SHT_DYNSYM) {
-            continue;
-        }
-
-        ShdrInfo shdrInfo;
-        if (!GetSectionInfo(shdrInfo, shdr.link)) {
-            continue;
+        if (linkShdrInfo_.offset == 0) {
+            if (!GetSectionInfo(linkShdrInfo_, shdr.link)) {
+                continue;
+            }
         }
 
         uint32_t count = static_cast<uint32_t>((shdr.entSize != 0) ? (shdr.size / shdr.entSize) : 0);
-
         for (uint32_t idx = 0; idx < count; ++idx) {
             uintptr_t offset = static_cast<uintptr_t>(shdr.offset + idx * shdr.entSize);
             SymType sym;
@@ -365,40 +356,25 @@ bool ElfParser::ParseElfSymbolByAddr(uint64_t addr, ElfSymbol& elfSymbol)
                 continue;
             }
 
+            if (!IsFunc(sym)) {
+                continue;
+            }
             if (sym.st_value == 0 || sym.st_size == 0) {
                 continue;
             }
 
             if (sym.st_value <= addr &&
                 addr < (sym.st_value + sym.st_size) &&
-                (static_cast<uint64_t>(sym.st_name) < shdrInfo.size)) {
+                (static_cast<uint64_t>(sym.st_name) < linkShdrInfo_.size)) {
                 elfSymbol.value = static_cast<uint64_t>(sym.st_value);
                 elfSymbol.size = static_cast<uint64_t>(sym.st_size);
                 elfSymbol.name = static_cast<uint32_t>(sym.st_name);
-                elfSymbol.nameStr = std::string(static_cast<char*>(mmap_->Get()) + shdrInfo.offset + sym.st_name);
+                elfSymbol.nameStr = std::string(static_cast<char*>(mmap_->Get()) + linkShdrInfo_.offset + sym.st_name);
                 return true;
             }
         }
     }
     return false;
-}
-
-template <typename SymType>
-bool ElfParser::ParseElfSymbol(ElfShdr shdr, uint32_t idx, bool isFunc, ElfSymbol& elfSymbol)
-{
-    uintptr_t offset = static_cast<uintptr_t>(shdr.offset + idx * shdr.entSize);
-    SymType sym;
-    if (!Read(offset, &sym, sizeof(sym))) {
-        return false;
-    }
-
-    if (isFunc && !IsFunc(sym)) {
-        return false;
-    }
-    elfSymbol.value = static_cast<uint64_t>(sym.st_value);
-    elfSymbol.size = static_cast<uint64_t>(sym.st_size);
-    elfSymbol.name = static_cast<uint32_t>(sym.st_name);
-    return true;
 }
 
 bool ElfParser::GetSectionNameByIndex(std::string& nameStr, const uint32_t name)
@@ -519,24 +495,24 @@ uintptr_t ElfParser64::GetGlobalPointer()
     return dtPltGotAddr_;
 }
 
-const std::vector<ElfSymbol>& ElfParser32::GetElfSymbols(bool isFunc, bool isSort)
+const std::vector<ElfSymbol>& ElfParser32::GetElfSymbols(bool isFunc)
 {
-    ParseElfSymbols<Elf32_Sym>(isFunc, isSort);
+    ParseElfSymbols<Elf32_Sym>(isFunc);
     return elfSymbols_;
 }
 
-const std::vector<ElfSymbol>& ElfParser64::GetElfSymbols(bool isFunc, bool isSort)
+const std::vector<ElfSymbol>& ElfParser64::GetElfSymbols(bool isFunc)
 {
-    ParseElfSymbols<Elf64_Sym>(isFunc, isSort);
+    ParseElfSymbols<Elf64_Sym>(isFunc);
     return elfSymbols_;
 }
 
-bool ElfParser32::GetElfSymbol(uint64_t addr, ElfSymbol& elfSymbol)
+bool ElfParser32::GetElfSymbolByAddr(uint64_t addr, ElfSymbol& elfSymbol)
 {
     return ParseElfSymbolByAddr<Elf32_Sym>(addr, elfSymbol);
 }
 
-bool ElfParser64::GetElfSymbol(uint64_t addr, ElfSymbol& elfSymbol)
+bool ElfParser64::GetElfSymbolByAddr(uint64_t addr, ElfSymbol& elfSymbol)
 {
     return ParseElfSymbolByAddr<Elf64_Sym>(addr, elfSymbol);
 }

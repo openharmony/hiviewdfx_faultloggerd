@@ -38,7 +38,7 @@ namespace {
 #define LOG_DOMAIN 0xD002D11
 #define LOG_TAG "DfxUnwinder"
 }
-bool Unwinder::loadSymbolLazily = false;
+
 void Unwinder::Init()
 {
     Clear();
@@ -448,7 +448,7 @@ bool Unwinder::FpStep(uintptr_t& fp, uintptr_t& pc, void *ctx)
     uintptr_t ptr = fp;
     if (memory_->ReadUptr(ptr, &fp, true) &&
         memory_->ReadUptr(ptr, &pc, false)) {
-        if ((pid_ >= 0 || pid_ == UNWIND_TYPE_LOCAL) && (!IsMapExecByPc(pc, ctx))) {
+        if (enableFpCheckMapExec_ && (!IsMapExecByPc(pc, ctx))) {
             LOGE("Map is not exec");
             return false;
         }
@@ -567,11 +567,6 @@ void Unwinder::FillFrame(DfxFrame& frame)
         LOGE("elf is null");
         return;
     }
-
-    if (loadSymbolLazily) {
-        elf->LoadSymbolLazily();
-    }
-
     DfxSymbols::GetFuncNameAndOffsetByPc(frame.relPc, elf, frame.funcName, frame.funcOffset);
     frame.buildId = elf->GetBuildId();
 }
@@ -602,11 +597,6 @@ void Unwinder::GetFramesByPcs(std::vector<DfxFrame>& frames, std::vector<uintptr
 std::string Unwinder::GetFramesStr(const std::vector<DfxFrame>& frames)
 {
     return DfxFrameFormatter::GetFramesStr(frames);
-}
-
-void Unwinder::LoadSymbolLazily()
-{
-    loadSymbolLazily = true;
 }
 } // namespace HiviewDFX
 } // namespace OHOS
