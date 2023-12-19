@@ -41,6 +41,9 @@ if (!defined(ohos_lite)) {
 
     cflags_cc = [ "-frtti" ]
     defines = [ "LOCK_TO_CPU" ]
+    if (libunwinder_debug) {
+      defines += [ "DFX_LOG_UNWIND" ]
+    }
     sources = [
       "$faultloggerd_test_path/benchmarktest/main/main_benchmark.cpp",
       "pid_utils.cpp",

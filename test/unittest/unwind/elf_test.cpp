@@ -85,8 +85,7 @@ HWTEST_F(DfxElfTest, DfxElfTest001, TestSize.Level2)
     ASSERT_EQ(elf.GetBuildId(), "8e5a30338be326934ff93c998dcd0d22fe345870");
     EXPECT_NE(DfxElf::Create(ELF32_FILE), nullptr);
     EXPECT_NE(elf.GetGlobalPointer(), 0);
-    EXPECT_FALSE(elf.GetElfSymbols(true).empty());
-    EXPECT_FALSE(elf.GetElfSymbols(false).empty());
+    EXPECT_FALSE(elf.GetElfSymbols().empty());
     EXPECT_GT(elf.GetMmapSize(), 0);
     GTEST_LOG_(INFO) << "DfxElfTest001: end.";
 }
@@ -131,8 +130,7 @@ HWTEST_F(DfxElfTest, DfxElfTest002, TestSize.Level2)
     ASSERT_EQ(elf.GetRelPc(0xf78c00f0, 0xf78c0000, 0), elfImitate.GetRelPc(0xf78c00f0, 0xf78c0000, 0));
     ASSERT_EQ(elf.GetBuildId(), "24c55dccc5baaaa140da0083207abcb8d523e248");
     EXPECT_NE(elf.GetGlobalPointer(), 0);
-    EXPECT_FALSE(elf.GetElfSymbols(true).empty());
-    EXPECT_FALSE(elf.GetElfSymbols(false).empty());
+    EXPECT_FALSE(elf.GetElfSymbols().empty());
     EXPECT_GT(elf.GetMmapSize(), 0);
     GTEST_LOG_(INFO) << "DfxElfTest002: end.";
 }

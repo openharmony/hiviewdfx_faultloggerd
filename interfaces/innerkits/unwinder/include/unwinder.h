@@ -38,18 +38,21 @@ public:
     Unwinder() : pid_(UNWIND_TYPE_LOCAL)
     {
         acc_ = std::make_shared<DfxAccessorsLocal>();
+        enableFpCheckMapExec_ = true;
         Init();
     };
     // for remote
     Unwinder(int pid) : pid_(pid)
     {
         acc_ = std::make_shared<DfxAccessorsRemote>();
+        enableFpCheckMapExec_ = true;
         Init();
     };
     // for customized
     Unwinder(std::shared_ptr<UnwindAccessors> accessors) : pid_(UNWIND_TYPE_CUSTOMIZE)
     {
         acc_ = std::make_shared<DfxAccessorsCustomize>(accessors);
+        enableFpCheckMapExec_ = false;
 #if defined(__aarch64__)
         pacMask_ = pacMaskDefault_;
 #endif
@@ -57,15 +60,13 @@ public:
     };
     ~Unwinder() { Clear(); }
 
-    inline UnwindMode GetUnwindMode() { return mode_; }
-    inline void SetUnwindMode(UnwindMode mode) { mode_ = mode; }
-
     inline void SetTargetPid(int pid) { pid_ = pid; }
     inline int32_t GetTargetPid() { return pid_; }
     inline void SetPacMask(uintptr_t mask) { pacMask_ = mask; }
     inline void EnableUnwindCache(bool enableCache) { enableCache_ = enableCache; }
     inline void EnableLrFallback(bool enableLrFallback) { enableLrFallback_ = enableLrFallback; }
     inline void EnableFpFallback(bool enableFpFallback) { enableFpFallback_ = enableFpFallback; }
+    inline void EnableFpCheckMapExec(bool enableFpCheckMapExec) { enableFpCheckMapExec_ = enableFpCheckMapExec; }
     inline void EnableFillFrames(bool enableFillFrames) { enableFillFrames_ = enableFillFrames; }
 
     inline void SetRegs(std::shared_ptr<DfxRegs> regs) { regs_ = regs; }
@@ -93,7 +94,6 @@ public:
         std::shared_ptr<DfxMaps> maps);
     static void FillFrame(DfxFrame& frame);
     static std::string GetFramesStr(const std::vector<DfxFrame>& frames);
-    void LoadSymbolLazily();
 
 private:
     void Init();
@@ -122,10 +122,10 @@ private:
     bool enableFillFrames_ = true;
     bool enableLrFallback_ = true;
     bool enableFpFallback_ = true;
-    static bool loadSymbolLazily;
+    bool enableFpCheckMapExec_ = false;
+
     int32_t pid_ = 0;
     uintptr_t pacMask_ = 0;
-    UnwindMode mode_ = DWARF_UNWIND;
     std::shared_ptr<DfxAccessors> acc_ = nullptr;
     std::shared_ptr<DfxMemory> memory_ = nullptr;
     std::unordered_map<uintptr_t, std::shared_ptr<RegLocState>> rsCache_ {};

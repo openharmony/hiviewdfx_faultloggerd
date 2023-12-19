@@ -16,19 +16,13 @@
 #include "dfx_signal_hook.h"
 
 #include <dlfcn.h>
-#include <libunwind_i-ohos.h>
-#include <map_info.h>
 #include <securec.h>
 #include <signal.h>
 #include <stdio.h>
 #include <unistd.h>
 #include "dfx_define.h"
 #include "dfx_log.h"
-#include "libunwind-arm.h"
-#include "libunwind_i.h"
 #include "pthread.h"
-#include "stdbool.h"
-#include "stdlib.h"
 
 #include "dfx_hook_utils.h"
 
