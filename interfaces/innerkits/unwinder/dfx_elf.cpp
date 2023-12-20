@@ -123,11 +123,20 @@ DfxElf::DfxElf(const std::string& file)
 #if is_ohos
     if (mmap_ == nullptr && (!file.empty())) {
         LOGU("file: %s", file.c_str());
-        if (!DfxMaps::IsLegalMapItem(file.c_str())) {
+        if (!DfxMaps::IsLegalMapItem(file)) {
             LOGE("illegal file path, please check it %s", file.c_str());
             return;
         }
-        int fd = OHOS_TEMP_FAILURE_RETRY(open(file.c_str(), O_RDONLY));
+        bool checkPath = false;
+        char realPath[PATH_MAX] = {0};
+        if (!StartsWith(file, "/proc/")) { // sandbox file should not be check by realpath function
+            if (realpath(file.c_str(), realPath) == nullptr) {
+                DFXLOG_WARN("file path(%s) is invalid.", file.c_str());
+                return;
+            }
+            checkPath = true;
+        }
+        int fd = OHOS_TEMP_FAILURE_RETRY(open(checkPath ? realPath : file.c_str(), O_RDONLY));
         if (fd > 0) {
             auto size = static_cast<size_t>(GetFileSize(fd));
             mmap_ = std::make_shared<DfxMmap>();

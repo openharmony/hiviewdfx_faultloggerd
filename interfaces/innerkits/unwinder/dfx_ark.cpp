@@ -37,21 +37,21 @@ static const char ARK_LIB_NAME[] = "libark_jsruntime.so";
 
 static void* g_handle = nullptr;
 static pthread_mutex_t g_mutex;
-static int (*g_getArkNativeFrameInfoFn)(int, uintptr_t*, uintptr_t*, uintptr_t*, size_t&, JsFrame**);
+static int (*g_getArkNativeFrameInfoFn)(int, uintptr_t*, uintptr_t*, uintptr_t*, JsFrame*, size_t&);
 static int (*g_stepArkManagedNativeFrameFn)(int, uintptr_t*, uintptr_t*, uintptr_t*, char*, size_t);
 static int (*g_getArkJsHeapCrashInfoFn)(int, uintptr_t *, uintptr_t *, int, char *, size_t);
 }
 
-int DfxArk::GetArkNativeFrameInfo(int pid, uintptr_t& pc, uintptr_t& fp, uintptr_t& sp, size_t& size, JsFrame** frames)
+int DfxArk::GetArkNativeFrameInfo(int pid, uintptr_t& pc, uintptr_t& fp, uintptr_t& sp, JsFrame* frames, size_t& size)
 {
     if (g_getArkNativeFrameInfoFn != nullptr) {
-        return g_getArkNativeFrameInfoFn(pid, &pc, &fp, &sp, size, frames);
+        return g_getArkNativeFrameInfoFn(pid, &pc, &fp, &sp, frames, size);
     }
 
     pthread_mutex_lock(&g_mutex);
     if (g_getArkNativeFrameInfoFn != nullptr) {
         pthread_mutex_unlock(&g_mutex);
-        return g_getArkNativeFrameInfoFn(pid, &pc, &fp, &sp, size, frames);
+        return g_getArkNativeFrameInfoFn(pid, &pc, &fp, &sp, frames, size);
     }
 
     if (g_handle == nullptr) {
@@ -72,7 +72,7 @@ int DfxArk::GetArkNativeFrameInfo(int pid, uintptr_t& pc, uintptr_t& fp, uintptr
     }
 
     pthread_mutex_unlock(&g_mutex);
-    return g_getArkNativeFrameInfoFn(pid, &pc, &fp, &sp, size, frames);
+    return g_getArkNativeFrameInfoFn(pid, &pc, &fp, &sp, frames, size);
 }
 
 int DfxArk::StepArkManagedNativeFrame(int pid, uintptr_t& pc, uintptr_t& fp, uintptr_t& sp, char* buf, size_t bufSize)

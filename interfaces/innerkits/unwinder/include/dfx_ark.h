@@ -39,7 +39,7 @@ using JsFrame = panda::ecmascript::JsFrame;
 class DfxArk {
 public:
     static int GetArkNativeFrameInfo(int pid, uintptr_t& pc, uintptr_t& fp, uintptr_t& sp,
-                                     size_t& size, JsFrame** frames);
+                                     JsFrame* frames, size_t& size);
     static int StepArkManagedNativeFrame(int pid, uintptr_t& pc, uintptr_t& fp, uintptr_t& sp,
                                          char* buf, size_t bufSize);
     static int GetArkJsHeapCrashInfo(int pid, uintptr_t& x20, uintptr_t& fp, int outJsInfo, char* buf, size_t bufSize);
