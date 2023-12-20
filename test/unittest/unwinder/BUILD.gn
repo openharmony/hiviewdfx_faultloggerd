@@ -42,7 +42,10 @@ ohos_unittest("test_unwinder") {
     "//third_party/libunwind:libunwind",
   ]
 
-  external_deps = common_deps
+  external_deps = [
+    "c_utils:utils",
+    "hilog:libhilog",
+  ]
 }
 
 group("unittest") {

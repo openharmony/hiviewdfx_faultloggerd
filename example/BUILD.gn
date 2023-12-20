@@ -82,7 +82,10 @@ if (defined(ohos_lite)) {
       "$faultloggerd_interfaces_path/innerkits/dump_catcher:libdfx_dumpcatcher",
     ]
 
-    external_deps = common_deps
+    external_deps = [
+      "c_utils:utils",
+      "hilog:libhilog",
+    ]
 
     part_name = "faultloggerd"
     subsystem_name = "hiviewdfx"

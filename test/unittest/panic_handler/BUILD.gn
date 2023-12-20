@@ -42,12 +42,10 @@ if (defined(ohos_lite)) {
     resource_config_file = "$faultloggerd_path/test/resource/ohos_test.xml"
 
     external_deps = [
+      "c_utils:utils",
       "hisysevent:libhisysevent",
       "hisysevent:libhisyseventmanager",
     ]
-    if (faultloggerd_cutils_enable) {
-      external_deps += [ "c_utils:utils" ]
-    }
   }
 
   group("unittest") {

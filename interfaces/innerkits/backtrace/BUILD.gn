@@ -118,7 +118,10 @@ if (defined(ohos_lite)) {
       "//third_party/libunwind/src",
     ]
     version_script = "libbacktrace_local.map"
-    external_deps = common_deps
+    external_deps = [
+      "c_utils:utils",
+      "hilog:libhilog",
+    ]
 
     install_images = [
       "system",
@@ -158,12 +161,10 @@ if (defined(ohos_lite)) {
       "//third_party/libunwind:libunwind_local",
     ]
 
-    if (faultloggerd_cutils_enable) {
-      external_deps = [ "c_utils:utils" ]
-    }
-    if (faultloggerd_hilog_enable) {
-      external_deps += [ "hilog:libhilog_base" ]
-    }
+    external_deps = [
+      "c_utils:utils",
+      "hilog:libhilog_base",
+    ]
 
     part_name = "faultloggerd"
     subsystem_name = "hiviewdfx"

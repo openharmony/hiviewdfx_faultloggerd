@@ -73,8 +73,9 @@ if (defined(ohos_lite)) {
 
     branch_protector_ret = "pac_ret"
 
-    external_deps = common_deps
-    external_deps += [
+    external_deps = [
+      "c_utils:utils",
+      "hilog:libhilog",
       "hitrace:libhitracechain",
       "ipc:ipc_single",
     ]

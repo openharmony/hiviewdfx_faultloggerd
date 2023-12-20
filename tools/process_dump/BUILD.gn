@@ -126,7 +126,7 @@ if (defined(ohos_lite)) {
 
     cflags_cc = [ "-DRUSTC_DEMANGLE" ]
 
-    if (faultloggerd_lzma_enable && processdump_minidebuginfo_enable) {
+    if (processdump_minidebuginfo_enable) {
       defines = [ "PROCESSDUMP_MINIDEBUGINFO" ]
     }
 
@@ -157,7 +157,10 @@ if (defined(ohos_lite)) {
       deps += [ "$faultloggerd_interfaces_path/innerkits/unwinder:libunwinder" ]
     }
 
-    external_deps = common_deps
+    external_deps = [
+      "c_utils:utils",
+      "hilog:libhilog",
+    ]
 
     part_name = "faultloggerd"
     subsystem_name = "hiviewdfx"
@@ -193,7 +196,10 @@ if (defined(ohos_lite)) {
       deps += [ "$faultloggerd_interfaces_path/innerkits/unwinder:libunwinder" ]
     }
 
-    external_deps = common_deps
+    external_deps = [
+      "c_utils:utils",
+      "hilog:libhilog",
+    ]
 
     install_images = [
       "system",

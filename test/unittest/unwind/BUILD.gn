@@ -23,10 +23,8 @@ ohos_unittest("test_unwind") {
     "$faultloggerd_interfaces_path/common",
     "$faultloggerd_path/test/unittest/unwind/include",
     "$faultloggerd_path/test/utils",
+    "//third_party/lzma/C",
   ]
-  if (faultloggerd_lzma_enable) {
-    include_dirs += [ "//third_party/lzma/C" ]
-  }
   configs = [ "$faultloggerd_common_path/build:coverage_flags" ]
   defines = [ "DFX_LOG_UNWIND" ]
   sources = [
@@ -40,10 +38,8 @@ ohos_unittest("test_unwind") {
     "signal_test.cpp",
     "symbols_test.cpp",
     "unwinder_test.cpp",
+    "xz_util_test.cpp",
   ]
-  if (faultloggerd_lzma_enable) {
-    sources += [ "xz_util_test.cpp" ]
-  }
   deps = [
     "$faultloggerd_common_path/dfxlog:dfx_hilog",
     "$faultloggerd_common_path/dfxutil:dfx_util",
@@ -54,7 +50,10 @@ ohos_unittest("test_unwind") {
     "//third_party/googletest:gtest_main",
   ]
   resource_config_file = "$faultloggerd_path/test/resource/ohos_test.xml"
-  external_deps = common_deps
+  external_deps = [
+    "c_utils:utils",
+    "hilog:libhilog",
+  ]
 }
 
 ohos_unittest("test_unwind_pac") {
@@ -75,7 +74,10 @@ ohos_unittest("test_unwind_pac") {
     "//third_party/googletest:gtest_main",
   ]
   branch_protector_ret = "pac_ret"
-  external_deps = common_deps
+  external_deps = [
+    "c_utils:utils",
+    "hilog:libhilog",
+  ]
 }
 
 ohos_unittest("test_unwind_separate_code") {
@@ -96,7 +98,10 @@ ohos_unittest("test_unwind_separate_code") {
     "//third_party/bounds_checking_function:libsec_shared",
     "//third_party/googletest:gtest_main",
   ]
-  external_deps = common_deps
+  external_deps = [
+    "c_utils:utils",
+    "hilog:libhilog",
+  ]
 }
 
 ohos_unittest("test_exidx") {
@@ -105,10 +110,8 @@ ohos_unittest("test_exidx") {
   include_dirs = [
     "$faultloggerd_interfaces_path/common",
     "$faultloggerd_interfaces_path/innerkits/unwinder/include",
+    "//third_party/lzma/C",
   ]
-  if (faultloggerd_lzma_enable) {
-    include_dirs += [ "//third_party/lzma/C" ]
-  }
   configs = [ "$faultloggerd_common_path/build:coverage_flags" ]
   defines = [
     "DFX_LOG_UNWIND",
@@ -134,22 +137,20 @@ ohos_unittest("test_exidx") {
     "$faultloggerd_interfaces_path/innerkits/unwinder/dfx_regs.cpp",
     "$faultloggerd_interfaces_path/innerkits/unwinder/dfx_regs_arm.cpp",
     "$faultloggerd_interfaces_path/innerkits/unwinder/dfx_symbols.cpp",
+    "$faultloggerd_interfaces_path/innerkits/unwinder/dfx_xz_utils.cpp",
     "arm_exidx_test.cpp",
   ]
-  if (faultloggerd_lzma_enable) {
-    sources +=
-        [ "$faultloggerd_interfaces_path/innerkits/unwinder/dfx_xz_utils.cpp" ]
-  }
   deps = [
     "$faultloggerd_common_path/dfxlog:dfx_hilog",
     "$faultloggerd_common_path/dfxutil:dfx_util",
     "//third_party/bounds_checking_function:libsec_shared",
     "//third_party/googletest:gtest_main",
   ]
-  if (faultloggerd_lzma_enable) {
-    public_deps = [ "//third_party/lzma:lzma_shared" ]
-  }
-  external_deps = common_deps
+  public_deps = [ "//third_party/lzma:lzma_shared" ]
+  external_deps = [
+    "c_utils:utils",
+    "hilog:libhilog",
+  ]
 }
 
 ohos_unittest("test_dwarf") {
@@ -172,7 +173,10 @@ ohos_unittest("test_dwarf") {
   ]
 
   resource_config_file = "$faultloggerd_path/test/resource/ohos_test.xml"
-  external_deps = common_deps
+  external_deps = [
+    "c_utils:utils",
+    "hilog:libhilog",
+  ]
 }
 
 group("unittest") {
