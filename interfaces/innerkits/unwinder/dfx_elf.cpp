@@ -15,6 +15,7 @@
 
 #include "dfx_elf.h"
 
+#include <algorithm>
 #include <cstdlib>
 #include <fcntl.h>
 #include <securec.h>
@@ -571,13 +572,43 @@ const std::vector<ElfSymbol>& DfxElf::GetFuncSymbols(bool isSort)
     return funcSymbols_;
 }
 
-bool DfxElf::GetFuncInfo(uint64_t addr, ElfSymbol& elfSymbol)
+bool DfxElf::GetFuncSymbolLazily(uint64_t addr, ElfSymbol& elfSymbol)
 {
-    auto symbols = GetFuncSymbols(true);
+    if (GetFuncSymbol(addr, funcSymbols_, elfSymbol)) {
+        return true;
+    }
+
+    bool findSymbol = false;
+#if defined(ENABLE_MINIDEBUGINFO)
+    if (IsEmbeddedElfValid() &&
+        embeddedElf_->elfParse_->GetElfSymbol(addr, elfSymbol)) {
+        funcSymbols_.emplace_back(elfSymbol);
+        findSymbol = true;
+    }
+#endif
+
+    if (!findSymbol && elfParse_->GetElfSymbol(addr, elfSymbol)) {
+        funcSymbols_.emplace_back(elfSymbol);
+        findSymbol = true;
+    }
+
+    if (findSymbol) {
+        std::sort(funcSymbols_.begin(), funcSymbols_.end(), [](ElfSymbol& sym1, ElfSymbol& sym2) {
+            return sym1.value < sym2.value;
+        });
+        return true;
+    }
+
+    return false;
+}
+
+bool DfxElf::GetFuncSymbol(uint64_t addr, const std::vector<ElfSymbol>& symbols,ElfSymbol& elfSymbol)
+{
     if (symbols.empty()) {
         LOGE("GetFuncInfo not symbols?");
         return false;
     }
+
     size_t begin = 0;
     size_t end = symbols.size();
     while (begin < end) {
@@ -593,6 +624,16 @@ bool DfxElf::GetFuncInfo(uint64_t addr, ElfSymbol& elfSymbol)
         }
     }
     return false;
+}
+
+bool DfxElf::GetFuncInfo(uint64_t addr, ElfSymbol& elfSymbol)
+{
+    if (loadSymbolLazily_) {
+        return GetFuncSymbolLazily(addr, elfSymbol);
+    }
+
+    auto symbols = GetFuncSymbols(true);
+    return GetFuncSymbol(addr, symbols, elfSymbol);
 }
 
 const std::unordered_map<uint64_t, ElfLoadInfo>& DfxElf::GetPtLoads()
@@ -918,6 +959,11 @@ bool DfxElf::IsValidElf(const void* ptr)
         return false;
     }
     return true;
+}
+
+void DfxElf::LoadSymbolLazily()
+{
+    loadSymbolLazily_ = true;
 }
 
 #if is_ohos
