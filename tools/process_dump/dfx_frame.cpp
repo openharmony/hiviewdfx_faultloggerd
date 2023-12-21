@@ -177,6 +177,8 @@ uint64_t DfxFrame::CalculateRelativePc(std::shared_ptr<DfxElfMap> elfMap)
     relativePc_ = relativePc_ - 4; // 4 : instr offset
 #elif defined(__x86_64__)
     relativePc_ = relativePc_ - 1; // 1 : instr offset
+#elif defined(__riscv) && __riscv_xlen == 64
+    relativePc_ = relativePc_ - 4; // 4 : instr offset?
 #endif
     return relativePc_;
 }

@@ -64,6 +64,9 @@ if (defined(ohos_lite)) {
     } else if (target_cpu == "x86_64") {
       sources += [ "dfx_regs_x86_64.cpp" ]
       cflags += [ "-D__x86_64__" ]
+    } else if (target_cpu == "riscv64") {
+      sources += [ "dfx_regs_riscv64.cpp" ]
+      cflags += [ "-D__riscv64__" ]
     }
 
     deps = [
@@ -126,6 +129,9 @@ if (defined(ohos_lite)) {
     } else if (target_cpu == "x86_64") {
       sources += [ "dfx_regs_x86_64.cpp" ]
       cflags = [ "-D__x86_64__" ]
+    } else if (target_cpu == "riscv64") {
+      sources += [ "dfx_regs_riscv64.cpp" ]
+      cflags = [ "-D__riscv64__" ]
     }
 
     deps = [
@@ -181,6 +187,9 @@ if (defined(ohos_lite)) {
     } else if (target_cpu == "x86_64") {
       sources += [ "dfx_regs_x86_64.cpp" ]
       cflags += [ "-D__x86_64__" ]
+    } else if (target_cpu == "riscv64") {
+      sources += [ "dfx_regs_riscv64.cpp" ]
+      cflags += [ "-D__riscv64__" ]
     }
 
     deps = [
@@ -233,6 +242,9 @@ if (defined(ohos_lite)) {
     } else if (target_cpu == "x86_64") {
       sources += [ "dfx_regs_x86_64.cpp" ]
       cflags = [ "-D__x86_64__" ]
+    } else if (target_cpu == "riscv64") {
+      sources += [ "dfx_regs_riscv64.cpp" ]
+      cflags = [ "-D__riscv64__" ]
     }
 
     cflags_cc = [ "-DDEBUG_CRASH_LOCAL_HANDLER" ]
