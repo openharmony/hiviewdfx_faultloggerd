@@ -57,6 +57,8 @@ HWTEST_F(DfxSymbolsTest, DfxSymbolsTest001, TestSize.Level2)
     std::vector<DfxSymbol> symbolsImitate;
     DfxSymbols::ParseSymbols(symbols, elf, ELF32_FILE);
     elfImitate.ParseSymbols(symbolsImitate, ELF32_FILE);
+    GTEST_LOG_(INFO) << "DfxSymbolsTest001: start." << symbols.size();
+    GTEST_LOG_(INFO) << "DfxSymbolsTest001: start." << symbolsImitate.size();
     ASSERT_EQ(symbols.size(), symbolsImitate.size());
     for (size_t i = 0; i < symbolsImitate.size(); ++i) {
         symbols[i].fileVaddr_ = symbolsImitate[i].fileVaddr_;

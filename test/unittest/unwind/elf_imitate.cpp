@@ -841,7 +841,7 @@ bool ElfImitate::ParseSymbols(std::vector<DfxSymbol>& symbols, const std::string
     std::vector<ElfSymbol> elfSymbols = GetElfSymbols();
     for (auto elfSymbol : elfSymbols) {
         if (IsFunc(elfSymbol)) {
-            if (elfSymbol.value == 0) {
+            if (elfSymbol.value == 0 || elfSymbol.size == 0) {
                 continue;
             }
             std::string nameStr = "";
