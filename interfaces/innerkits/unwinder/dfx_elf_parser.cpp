@@ -304,10 +304,9 @@ bool ElfParser::ParseElfSymbols(bool isFunc)
 template <typename SymType>
 bool ElfParser::ParseElfSymbols(ElfShdr shdr, bool isFunc)
 {
-    if (linkShdrInfo_.offset == 0) {
-        if (!GetSectionInfo(linkShdrInfo_, shdr.link)) {
-            return false;
-        }
+    ShdrInfo linkShdrInfo;
+    if (!GetSectionInfo(linkShdrInfo, shdr.link)) {
+        return false;
     }
 
     uint32_t count = static_cast<uint32_t>((shdr.entSize != 0) ? (shdr.size / shdr.entSize) : 0);
@@ -320,14 +319,14 @@ bool ElfParser::ParseElfSymbols(ElfShdr shdr, bool isFunc)
         if (isFunc && !IsFunc(sym)) {
             continue;
         }
-        if (sym.st_value == 0 || sym.st_size == 0 || static_cast<uint64_t>(sym.st_name) >= linkShdrInfo_.size) {
+        if (sym.st_value == 0 || sym.st_size == 0 || static_cast<uint64_t>(sym.st_name) >= linkShdrInfo.size) {
             continue;
         }
         ElfSymbol elfSymbol;
         elfSymbol.value = static_cast<uint64_t>(sym.st_value);
         elfSymbol.size = static_cast<uint64_t>(sym.st_size);
         elfSymbol.name = static_cast<uint32_t>(sym.st_name);
-        elfSymbol.nameStr = std::string(static_cast<char*>(mmap_->Get()) + linkShdrInfo_.offset + elfSymbol.name);
+        elfSymbol.nameStr = std::string(static_cast<char*>(mmap_->Get()) + linkShdrInfo.offset + elfSymbol.name);
         elfSymbols_.emplace_back(elfSymbol);
     }
     LOGU("elfSymbols.size: %d", elfSymbols_.size());
@@ -342,10 +341,9 @@ bool ElfParser::ParseElfSymbolByAddr(uint64_t addr, ElfSymbol& elfSymbol)
     }
 
     for (const auto &shdr : symShdrs_) {
-        if (linkShdrInfo_.offset == 0) {
-            if (!GetSectionInfo(linkShdrInfo_, shdr.link)) {
-                continue;
-            }
+        ShdrInfo linkShdrInfo;
+        if (!GetSectionInfo(linkShdrInfo, shdr.link)) {
+            continue;
         }
 
         uint32_t count = static_cast<uint32_t>((shdr.entSize != 0) ? (shdr.size / shdr.entSize) : 0);
@@ -365,11 +363,11 @@ bool ElfParser::ParseElfSymbolByAddr(uint64_t addr, ElfSymbol& elfSymbol)
 
             if (sym.st_value <= addr &&
                 addr < (sym.st_value + sym.st_size) &&
-                (static_cast<uint64_t>(sym.st_name) < linkShdrInfo_.size)) {
+                (static_cast<uint64_t>(sym.st_name) < linkShdrInfo.size)) {
                 elfSymbol.value = static_cast<uint64_t>(sym.st_value);
                 elfSymbol.size = static_cast<uint64_t>(sym.st_size);
                 elfSymbol.name = static_cast<uint32_t>(sym.st_name);
-                elfSymbol.nameStr = std::string(static_cast<char*>(mmap_->Get()) + linkShdrInfo_.offset + sym.st_name);
+                elfSymbol.nameStr = std::string(static_cast<char*>(mmap_->Get()) + linkShdrInfo.offset + sym.st_name);
                 return true;
             }
         }
