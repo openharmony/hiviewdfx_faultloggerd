@@ -89,7 +89,6 @@ protected:
 
 protected:
     std::vector<ElfSymbol> elfSymbols_;
-    ShdrInfo linkShdrInfo_;
     uint64_t dynamicOffset_ = 0;
     uintptr_t dtPltGotAddr_ = 0;
     uintptr_t dtStrtabAddr_ = 0;
