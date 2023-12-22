@@ -96,6 +96,20 @@ public:
 };
 #endif
 
+#if defined(__riscv) && __riscv_xlen == 64
+class DfxRegsRiscv64 : public DfxRegs {
+public:
+    DfxRegsRiscv64() = default;
+    ~DfxRegsRiscv64() = default;
+    void SetFromUcontext(const ucontext_t& context) override;
+    void SetFromFpMiniRegs(const uintptr_t* regs, const size_t size) override;
+    void SetFromQutMiniRegs(const uintptr_t* regs, const size_t size) override;
+    std::string PrintRegs() const override;
+    bool SetPcFromReturnAddress(std::shared_ptr<DfxMemory> memory) override;
+    bool StepIfSignalFrame(uintptr_t pc, std::shared_ptr<DfxMemory> memory) override;
+};
+#endif
+
 #if defined(__x86_64__)
 class DfxRegsX86_64 : public DfxRegs {
 public:

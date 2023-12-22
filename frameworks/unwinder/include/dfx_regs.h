@@ -145,6 +145,33 @@ public:
     }
 };
 
+class DfxRegsRiscv64 : public DfxRegs {
+public:
+    explicit DfxRegsRiscv64(const ucontext_t &context);
+    DfxRegsRiscv64() = default;
+    ~DfxRegsRiscv64() override {};
+    std::string PrintRegs() const override;
+    // Get 4 registers from x29 to x32.
+    inline AT_ALWAYS_INLINE void GetFramePointerMiniRegs(void *regs) override
+    {
+#if defined(__riscv) && __riscv_xlen == 64
+//future work
+        asm volatile(
+        "ret");
+#endif
+    }
+
+    // Get 7 registers with [unuse, unset, x28, x29, sp, pc, unset].
+    inline AT_ALWAYS_INLINE void GetQuickenMiniRegs(void *regs) override
+    {
+#if defined(__riscv) && __riscv_xlen == 64
+//future work
+        asm volatile(
+        "ret");
+#endif
+    }
+};
+
 class DfxRegsX86_64 : public DfxRegs {
 public:
     explicit DfxRegsX86_64(const ucontext_t &context);
