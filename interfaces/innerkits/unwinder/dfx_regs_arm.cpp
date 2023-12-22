@@ -47,22 +47,22 @@ namespace HiviewDFX {
 void DfxRegsArm::SetFromUcontext(const ucontext_t& context)
 {
     std::vector<uintptr_t> regs;
-    regs.push_back(uintptr_t(context.uc_mcontext.arm_r0));   // 0:r0
-    regs.push_back(uintptr_t(context.uc_mcontext.arm_r1));   // 1:r1
-    regs.push_back(uintptr_t(context.uc_mcontext.arm_r2));   // 2:r2
-    regs.push_back(uintptr_t(context.uc_mcontext.arm_r3));   // 3:r3
-    regs.push_back(uintptr_t(context.uc_mcontext.arm_r4));   // 4:r4
-    regs.push_back(uintptr_t(context.uc_mcontext.arm_r5));   // 5:r5
-    regs.push_back(uintptr_t(context.uc_mcontext.arm_r6));   // 6:r6
-    regs.push_back(uintptr_t(context.uc_mcontext.arm_r7));   // 7:r7
-    regs.push_back(uintptr_t(context.uc_mcontext.arm_r8));   // 8:r8
-    regs.push_back(uintptr_t(context.uc_mcontext.arm_r9));   // 9:r9
-    regs.push_back(uintptr_t(context.uc_mcontext.arm_r10)); // 10:r10
-    regs.push_back(uintptr_t(context.uc_mcontext.arm_fp));  // 11:fp
-    regs.push_back(uintptr_t(context.uc_mcontext.arm_ip));  // 12:ip
-    regs.push_back(uintptr_t(context.uc_mcontext.arm_sp));  // 13:sp
-    regs.push_back(uintptr_t(context.uc_mcontext.arm_lr));  // 14:lr
-    regs.push_back(uintptr_t(context.uc_mcontext.arm_pc));  // 15:pc
+    regs.emplace_back(uintptr_t(context.uc_mcontext.arm_r0));   // 0:r0
+    regs.emplace_back(uintptr_t(context.uc_mcontext.arm_r1));   // 1:r1
+    regs.emplace_back(uintptr_t(context.uc_mcontext.arm_r2));   // 2:r2
+    regs.emplace_back(uintptr_t(context.uc_mcontext.arm_r3));   // 3:r3
+    regs.emplace_back(uintptr_t(context.uc_mcontext.arm_r4));   // 4:r4
+    regs.emplace_back(uintptr_t(context.uc_mcontext.arm_r5));   // 5:r5
+    regs.emplace_back(uintptr_t(context.uc_mcontext.arm_r6));   // 6:r6
+    regs.emplace_back(uintptr_t(context.uc_mcontext.arm_r7));   // 7:r7
+    regs.emplace_back(uintptr_t(context.uc_mcontext.arm_r8));   // 8:r8
+    regs.emplace_back(uintptr_t(context.uc_mcontext.arm_r9));   // 9:r9
+    regs.emplace_back(uintptr_t(context.uc_mcontext.arm_r10)); // 10:r10
+    regs.emplace_back(uintptr_t(context.uc_mcontext.arm_fp));  // 11:fp
+    regs.emplace_back(uintptr_t(context.uc_mcontext.arm_ip));  // 12:ip
+    regs.emplace_back(uintptr_t(context.uc_mcontext.arm_sp));  // 13:sp
+    regs.emplace_back(uintptr_t(context.uc_mcontext.arm_lr));  // 14:lr
+    regs.emplace_back(uintptr_t(context.uc_mcontext.arm_pc));  // 15:pc
 
     SetRegsData(regs);
 }

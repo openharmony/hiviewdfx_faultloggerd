@@ -108,7 +108,7 @@ std::vector<std::shared_ptr<DfxFrame>> DfxFrameFormatter::ConvertFrames(const st
 {
     std::vector<std::shared_ptr<DfxFrame>> pFrames;
     for (const auto& frame : frames) {
-        pFrames.push_back(std::make_shared<DfxFrame>(frame));
+        pFrames.emplace_back(std::make_shared<DfxFrame>(frame));
     }
     return pFrames;
 }

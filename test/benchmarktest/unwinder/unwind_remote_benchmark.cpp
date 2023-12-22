@@ -186,7 +186,7 @@ static void BenchmarkUnwinderRemoteFull(benchmark::State& state)
 {
     std::vector<uint16_t> qutRegs;
     for (uint16_t i = REG_EH; i < REG_LAST; ++i) {
-        qutRegs.push_back(i);
+        qutRegs.emplace_back(i);
     }
     DfxRegsQut::SetQutRegs(qutRegs);
     UnwindData data;

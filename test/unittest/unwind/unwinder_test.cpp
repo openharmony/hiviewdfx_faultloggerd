@@ -169,7 +169,6 @@ HWTEST_F(UnwinderTest, UnwinderLocalTest003, TestSize.Level2)
     GTEST_LOG_(INFO) << "UnwinderLocalTest003: end.";
 }
 
-
 /**
  * @tc.name: UnwinderRemoteTest001
  * @tc.desc: test unwinder remote unwind
