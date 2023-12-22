@@ -183,7 +183,6 @@ static bool CheckCountNumStackOverFlow(const string& filePath, const pid_t& pid)
     return CheckKeyWords(filePath, log, expectNum, minRegIdx) == expectNum;
 }
 
-
 static bool CheckCountNumPCZero(const string& filePath, const pid_t& pid)
 {
     string log[] = {

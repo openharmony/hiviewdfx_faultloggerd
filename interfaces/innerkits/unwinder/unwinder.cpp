@@ -81,7 +81,13 @@ bool Unwinder::GetStackRange(uintptr_t& stackBottom, uintptr_t& stackTop)
     return true;
 }
 
-bool Unwinder::UnwindLocal(size_t maxFrameNum, size_t skipFrameNum)
+bool Unwinder::UnwindLocalWithContext(const ucontext_t context, size_t maxFrameNum, size_t skipFrameNum)
+{
+    regs_ = DfxRegs::CreateFromUcontext(context);
+    return UnwindLocal(true, maxFrameNum, skipFrameNum);
+}
+
+bool Unwinder::UnwindLocal(bool withRegs, size_t maxFrameNum, size_t skipFrameNum)
 {
     uintptr_t stackBottom = 1, stackTop = static_cast<uintptr_t>(-1);
     if (!GetStackRange(stackBottom, stackTop)) {
@@ -90,13 +96,15 @@ bool Unwinder::UnwindLocal(size_t maxFrameNum, size_t skipFrameNum)
     }
     LOGU("stackBottom: %llx, stackTop: %llx", (uint64_t)stackBottom, (uint64_t)stackTop);
 
-    regs_ = DfxRegs::Create();
-    auto regsData = regs_->RawData();
-    if (regsData == nullptr) {
-        LOGE("params is nullptr");
-        return false;
+    if (!withRegs) {
+        regs_ = DfxRegs::Create();
+        auto regsData = regs_->RawData();
+        if (regsData == nullptr) {
+            LOGE("params is nullptr");
+            return false;
+        }
+        GetLocalRegs(regsData);
     }
-    GetLocalRegs(regsData);
 
     UnwindContext context;
     context.pid = UNWIND_TYPE_LOCAL;
@@ -134,6 +142,9 @@ bool Unwinder::UnwindRemote(pid_t tid, bool withRegs, size_t maxFrameNum, size_t
 
 bool Unwinder::GetMapByPc(uintptr_t pc, void *ctx, std::shared_ptr<DfxMap>& map)
 {
+    if (ctx == nullptr) {
+        return false;
+    }
     UnwindContext* uctx = reinterpret_cast<UnwindContext *>(ctx);
     if (uctx->map != nullptr &&
         (pc >= (uintptr_t)uctx->map->begin && pc < (uintptr_t)uctx->map->end)) {
@@ -195,7 +206,7 @@ bool Unwinder::StepArkJsFrame(size_t& idx, size_t& curIdx)
         frame.funcName = std::string(jsFrames[i].functionName);
         frame.line = jsFrames[i].line;
         frame.column = jsFrames[i].column;
-        frames_.push_back(frame);
+        frames_.emplace_back(frame);
         idx++;
     }
     regs_->SetPc(pc);
@@ -253,6 +264,8 @@ bool Unwinder::Unwind(void *ctx, size_t maxFrameNum, size_t skipFrameNum)
                 }
                 if (enableLrFallback_ && regs_->SetPcFromReturnAddress(memory_)) {
                     LOGW("Failed to get map, lr fallback");
+                    AddFrame(curIndex, pc, sp, map);
+                    index++;
                     continue;
                 }
                 uintptr_t fp = regs_->GetFp();
@@ -279,13 +292,7 @@ bool Unwinder::Unwind(void *ctx, size_t maxFrameNum, size_t skipFrameNum)
             continue;
         }
 #endif
-        pcs_.push_back(pc);
-        DfxFrame frame;
-        frame.index = curIndex;
-        frame.sp = static_cast<uint64_t>(sp);
-        frame.pc = static_cast<uint64_t>(pc);
-        frame.map = map;
-        frames_.push_back(frame);
+        AddFrame(curIndex, pc, sp, map);
 
         stepPc = pc;
         if (!Step(stepPc, sp, ctx)) {
@@ -322,7 +329,7 @@ bool Unwinder::UnwindByFp(void *ctx, size_t maxFrameNum, size_t skipFrameNum)
 
         pc = regs_->GetPc();
         fp = regs_->GetFp();
-        pcs_.push_back(pc);
+        pcs_.emplace_back(pc);
 
         if (!FpStep(fp, pc, ctx) || (pc == 0)) {
             break;
@@ -538,9 +545,20 @@ void Unwinder::SetFrames(std::vector<DfxFrame>& frames)
     frames_ = frames;
 }
 
+void Unwinder::AddFrame(size_t index, uintptr_t pc, uintptr_t sp, std::shared_ptr<DfxMap> map)
+{
+    pcs_.emplace_back(pc);
+    DfxFrame frame;
+    frame.index = index;
+    frame.sp = static_cast<uint64_t>(sp);
+    frame.pc = static_cast<uint64_t>(pc);
+    frame.map = map;
+    frames_.emplace_back(frame);
+}
+
 void Unwinder::AddFrame(DfxFrame& frame)
 {
-    frames_.push_back(frame);
+    frames_.emplace_back(frame);
 }
 
 void Unwinder::FillFrames(std::vector<DfxFrame>& frames)
@@ -593,8 +611,24 @@ void Unwinder::GetFramesByPcs(std::vector<DfxFrame>& frames, std::vector<uintptr
         }
         frame.map = map;
         FillFrame(frame);
-        frames.push_back(frame);
+        frames.emplace_back(frame);
     }
+}
+
+bool Unwinder::GetSymbolByPc(uintptr_t pc, std::shared_ptr<DfxMaps> maps, std::string& funcName, uint64_t& funcOffset)
+{
+    std::shared_ptr<DfxMap> map = nullptr;
+    if (!maps->FindMapByAddr(pc, map) || (map == nullptr)) {
+        LOGE("Find map is null");
+        return false;
+    }
+    uint64_t relPc = map->GetRelPc(static_cast<uint64_t>(pc));
+    auto elf = map->GetElf();
+    if (elf == nullptr) {
+        LOGE("Get elf is null");
+        return false;
+    }
+    return DfxSymbols::GetFuncNameAndOffsetByPc(relPc, elf, funcName, funcOffset);
 }
 
 std::string Unwinder::GetFramesStr(const std::vector<DfxFrame>& frames)

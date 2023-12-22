@@ -74,7 +74,7 @@ void DfxThread::SetThreadRegs(const std::shared_ptr<DfxRegs> &regs)
 
 void DfxThread::AddFrame(DfxFrame& frame)
 {
-    frames_.push_back(frame);
+    frames_.emplace_back(frame);
 }
 
 const std::vector<DfxFrame>& DfxThread::GetFrames() const

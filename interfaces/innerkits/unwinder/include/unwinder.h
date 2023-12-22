@@ -69,8 +69,9 @@ public:
     inline void EnableFpCheckMapExec(bool enableFpCheckMapExec) { enableFpCheckMapExec_ = enableFpCheckMapExec; }
     inline void EnableFillFrames(bool enableFillFrames) { enableFillFrames_ = enableFillFrames; }
 
-    inline void SetRegs(std::shared_ptr<DfxRegs> regs) { regs_ = regs; }
+    inline void SetRegs(const std::shared_ptr<DfxRegs> regs) { regs_ = regs; }
     inline const std::shared_ptr<DfxRegs>& GetRegs() { return regs_; }
+    inline void SetMaps(const std::shared_ptr<DfxMaps> maps) { maps_ = maps; }
     inline const std::shared_ptr<DfxMaps>& GetMaps() { return maps_; }
 
     inline const uint16_t& GetLastErrorCode() { return lastErrorData_.GetCode(); }
@@ -78,7 +79,8 @@ public:
 
     bool GetStackRange(uintptr_t& stackBottom, uintptr_t& stackTop);
 
-    bool UnwindLocal(size_t maxFrameNum = 64, size_t skipFrameNum = 0);
+    bool UnwindLocalWithContext(const ucontext_t context, size_t maxFrameNum, size_t skipFrameNum);
+    bool UnwindLocal(bool withRegs = false, size_t maxFrameNum = 64, size_t skipFrameNum = 0);
     bool UnwindRemote(pid_t tid = 0, bool withRegs = false, size_t maxFrameNum = 64, size_t skipFrameNum = 0);
     bool Unwind(void *ctx, size_t maxFrameNum = 64, size_t skipFrameNum = 0);
     bool UnwindByFp(void *ctx, size_t maxFrameNum = 64, size_t skipFrameNum = 0);
@@ -90,6 +92,8 @@ public:
     void FillFrames(std::vector<DfxFrame>& frames);
     std::vector<DfxFrame>& GetFrames();
     void SetFrames(std::vector<DfxFrame>& frames);
+    static bool GetSymbolByPc(uintptr_t pc, std::shared_ptr<DfxMaps> maps,
+        std::string& funcName, uint64_t& funcOffset);
     static void GetFramesByPcs(std::vector<DfxFrame>& frames, std::vector<uintptr_t> pcs,
         std::shared_ptr<DfxMaps> maps);
     static void FillFrame(DfxFrame& frame);
@@ -100,6 +104,7 @@ private:
     void Clear();
     void DoPcAdjust(uintptr_t& pc);
     bool GetMapByPc(uintptr_t pc, void *ctx, std::shared_ptr<DfxMap>& map);
+    void AddFrame(size_t index, uintptr_t pc, uintptr_t sp, std::shared_ptr<DfxMap> map);
     bool IsMapExecByPc(uintptr_t pc, void *ctx);
     bool Apply(std::shared_ptr<DfxRegs> regs, std::shared_ptr<RegLocState> rs);
 #if defined(ENABLE_MIXSTACK)

@@ -628,7 +628,6 @@ bool DfxElf::GetFuncInfo(uint64_t addr, ElfSymbol& elfSymbol)
 bool DfxElf::FindFuncSymbol(uint64_t addr, const std::vector<ElfSymbol>& symbols, ElfSymbol& elfSymbol)
 {
     if (symbols.empty()) {
-        LOGU("FindFuncSymbol not symbols?");
         return false;
     }
     size_t begin = 0;

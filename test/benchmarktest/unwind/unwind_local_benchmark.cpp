@@ -95,7 +95,7 @@ static size_t UnwindLocal(MAYBE_UNUSED void* data)
         if ((unw_get_reg(&cursor, UNW_REG_IP, (unw_word_t*)(&(pc)))) || (prevPc == pc)) {
             break;
         }
-        pcs.push_back(pc);
+        pcs.emplace_back(pc);
         prevPc = pc;
         relPc = unw_get_rel_pc(&cursor);
         unw_word_t sz = unw_get_previous_instr_sz(&cursor);
