@@ -44,6 +44,8 @@ DfxThread::DfxThread(pid_t pid, pid_t tid, pid_t nsTid, const ucontext_t &contex
     reg = std::make_shared<DfxRegsArm64>(context);
 #elif defined(__x86_64__)
     reg = std::make_shared<DfxRegsX86_64>(context);
+#elif defined(__riscv) && (__riscv_xlen == 64)
+    reg = std::make_shared<DfxRegsRiscv64>(context);
 #endif
     regs_ = reg;
 

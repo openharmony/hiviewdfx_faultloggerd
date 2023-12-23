@@ -46,10 +46,16 @@ static const int REG_SP_NUM = 31;
 #elif defined(__x86_64__)
 static const int USER_REG_NUM = 27;
 static const int REG_PC_NUM = 16;
+#elif defined(__riscv) && (__riscv_xlen == 64)
+static const int USER_REG_NUM = 32;
+static const int REG_PC_NUM = 0;
+static const int REG_LR_NUM = 5;
+static const int REG_SP_NUM = 2;
 #endif
 
 static const int ARM_EXEC_STEP_NORMAL = 4;
 static const int ARM_EXEC_STEP_THUMB = 3;
+static const int RISCV64_EXEC_STEP_NORMAL = 4;
 
 static const char PID_STR_NAME[] = "Pid:";
 static const char PPID_STR_NAME[] = "PPid:";
@@ -82,6 +88,7 @@ static const int FILE_WRITE_BUF_LEN = 4096;
 static const int REGS_PRINT_LEN_ARM = 256;
 static const int REGS_PRINT_LEN_ARM64 = 1024;
 static const int REGS_PRINT_LEN_X86 = 512;
+static const int REGS_PRINT_LEN_RISCV64 = 1024;
 
 #define OHOS_TEMP_FAILURE_RETRY(exp)            \
     ({                                          \

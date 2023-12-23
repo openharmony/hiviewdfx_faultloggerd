@@ -224,6 +224,11 @@ NOINLINE int ProgramCounterZero(void)
         "adr x30, .\n"
         "br x0\n"
     );
+#elif defined(__riscv) && __riscv_xlen == 64
+    __asm__ volatile (
+       "li a0,#0x00\n"
+       "jalr ra, a0,0\n"
+    );
 #endif
     return 0;
 }
@@ -278,6 +283,10 @@ NOINLINE int StackTop(void)
     uint64_t stackTop;
     __asm__ volatile ("mov %0, sp":"=r"(stackTop)::);
     printf("crasher_c: stack top is = %16llx", (unsigned long long)stackTop);
+#elif defined(__riscv) && __riscv_xlen == 64
+   uint64_t stackTop;
+    __asm__ volatile ("mov %0, sp":"=r"(stackTop)::);
+    printf("crasher_c: stack top is = %16llx", (unsigned long long)stackTop);
 #else
     return 0;
 #endif
@@ -292,6 +301,8 @@ NOINLINE int StackTop(void)
 #if defined(__arm__)
     int ret = fprintf(fp, "%08x", stackTop);
 #elif defined(__aarch64__)
+    int ret = fprintf(fp, "%16llx", (unsigned long long)stackTop);
+#elif defined(__riscv) && __riscv_xlen == 64
     int ret = fprintf(fp, "%16llx", (unsigned long long)stackTop);
 #endif
     if (ret == EOF) {

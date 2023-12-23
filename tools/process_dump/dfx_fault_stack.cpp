@@ -30,7 +30,7 @@ namespace {
 constexpr size_t MEM_BLOCK_BUF_SZ = 64;
 #if defined(__arm__)
 constexpr uint64_t STEP = 4;
-#elif defined(__aarch64__)
+#elif defined(__aarch64__) || (defined(__riscv) && __riscv_xlen == 64)
 constexpr uint64_t STEP = 8;
 #else
 constexpr uint64_t STEP = 8;
@@ -122,7 +122,7 @@ uintptr_t FaultStack::PrintMemoryBlock(const MemoryBlockInfo& info) const
 {
 #if defined(__arm__)
 #define PRINT_FORMAT "%08x"
-#elif defined(__aarch64__)
+#elif defined(__aarch64__) || (defined(__riscv) && __riscv_xlen == 64)
 #define PRINT_FORMAT "%016llx"
 #else
 #define PRINT_FORMAT "%016llx"

@@ -235,6 +235,11 @@ NOINLINE int DfxCrasher::ProgramCounterZero() const
         "adr x30, .\n"
         "br x0\n"
     );
+#elif defined(__riscv) && __riscv_xlen == 64
+	__asm__ volatile (
+       "li a0,#0x00\n"
+       "jalr ra, a0,0\n"      
+	);
 #endif
     return 0;
 }
@@ -276,6 +281,9 @@ NOINLINE int DfxCrasher::StackTop() const
     unsigned int stackTop;
     __asm__ volatile ("mov %0, sp":"=r"(stackTop)::);
 #elif defined(__aarch64__)
+    uint64_t stackTop;
+    __asm__ volatile ("mov %0, sp":"=r"(stackTop)::);
+#elif defined(__riscv) && __riscv_xlen == 64
     uint64_t stackTop;
     __asm__ volatile ("mov %0, sp":"=r"(stackTop)::);
 #endif

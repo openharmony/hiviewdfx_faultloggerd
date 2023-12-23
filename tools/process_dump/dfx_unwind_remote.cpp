@@ -138,6 +138,8 @@ uint64_t DfxUnwindRemote::DfxUnwindRemoteDoAdjustPc(unw_cursor_t & cursor, uint6
         ret = pc - ARM_EXEC_STEP_NORMAL;
 #elif defined(__x86_64__)
         ret = pc - 1;
+#elif defined(__riscv)
+        ret = pc - RISCV64_EXEC_STEP_NORMAL;
 #endif
     }
 

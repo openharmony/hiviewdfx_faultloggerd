@@ -80,6 +80,18 @@ public:
 private:
     DfxRegsX86_64() = delete;
 };
+
+class DfxRegsRiscv64 : public DfxRegs {
+public:
+    explicit DfxRegsRiscv64(const ucontext_t &context);
+    ~DfxRegsRiscv64() override {};
+    std::string PrintRegs() const override;
+    std::string GetSpecialRegisterName(uintptr_t val) const override;
+	uintptr_t GetPC() const override;
+	uintptr_t GetLR() const override;
+private:
+    DfxRegsRiscv64() = delete;
+};
 } // namespace HiviewDFX
 } // namespace OHOS
 #endif
