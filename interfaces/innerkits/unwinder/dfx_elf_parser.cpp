@@ -326,7 +326,9 @@ bool ElfParser::ParseElfSymbols(ElfShdr shdr, bool isFunc)
         elfSymbol.value = static_cast<uint64_t>(sym.st_value);
         elfSymbol.size = static_cast<uint64_t>(sym.st_size);
         elfSymbol.name = static_cast<uint32_t>(sym.st_name);
-        elfSymbol.nameStr = std::string(static_cast<char*>(mmap_->Get()) + linkShdrInfo.offset + elfSymbol.name);
+        uintptr_t nameOffset = static_cast<uintptr_t>(linkShdrInfo.offset + sym.st_name);
+        size_t nameMaxSize = static_cast<size_t>(linkShdrInfo.size - sym.st_name);
+        mmap_->ReadString(nameOffset, &(elfSymbol.nameStr), nameMaxSize);
         elfSymbols_.emplace_back(elfSymbol);
     }
     LOGU("elfSymbols.size: %d", elfSymbols_.size());
@@ -367,7 +369,9 @@ bool ElfParser::ParseElfSymbolByAddr(uint64_t addr, ElfSymbol& elfSymbol)
                 elfSymbol.value = static_cast<uint64_t>(sym.st_value);
                 elfSymbol.size = static_cast<uint64_t>(sym.st_size);
                 elfSymbol.name = static_cast<uint32_t>(sym.st_name);
-                elfSymbol.nameStr = std::string(static_cast<char*>(mmap_->Get()) + linkShdrInfo.offset + sym.st_name);
+                uintptr_t nameOffset = static_cast<uintptr_t>(linkShdrInfo.offset + sym.st_name);
+                size_t nameMaxSize = static_cast<size_t>(linkShdrInfo.size - sym.st_name);
+                mmap_->ReadString(nameOffset, &(elfSymbol.nameStr), nameMaxSize);
                 return true;
             }
         }
