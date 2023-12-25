@@ -81,7 +81,7 @@ bool Unwinder::GetStackRange(uintptr_t& stackBottom, uintptr_t& stackTop)
     return true;
 }
 
-bool Unwinder::UnwindLocalWithContext(const ucontext_t context, size_t maxFrameNum, size_t skipFrameNum)
+bool Unwinder::UnwindLocalWithContext(const ucontext_t& context, size_t maxFrameNum, size_t skipFrameNum)
 {
     regs_ = DfxRegs::CreateFromUcontext(context);
     return UnwindLocal(true, maxFrameNum, skipFrameNum);
@@ -192,9 +192,9 @@ bool Unwinder::StepArkJsFrame(size_t& idx, size_t& curIdx)
         LOGE("Failed to memset_s jsFrames.");
         return false;
     }
-    LOGU("input ark pc: %llx, fp: %llx, sp: %llx.", (uint64_t)pc, (uint64_t)fp, (uint64_t)sp);
+    LOGI("[in ark] pc: %llx, fp: %llx, sp: %llx", (uint64_t)pc, (uint64_t)fp, (uint64_t)sp);
     int ret = DfxArk::GetArkNativeFrameInfo(pid_, pc, fp, sp, jsFrames, size);
-    LOGU("output ark pc: %llx, fp: %llx, sp: %llx, js frame size: %d.", (uint64_t)pc, (uint64_t)fp, (uint64_t)sp, size);
+    LOGI("[out ark] pc: %llx, fp: %llx, sp: %llx, js frame size: %d", (uint64_t)pc, (uint64_t)fp, (uint64_t)sp, size);
     if (ret < 0) {
         return false;
     }
@@ -252,7 +252,12 @@ bool Unwinder::Unwind(void *ctx, size_t maxFrameNum, size_t skipFrameNum)
         pc = regs_->GetPc();
         sp = regs_->GetSp();
         if ((prevPc == pc) && (prevSp == sp)) {
-            LOGE("pc and sp is same");
+            if (pid_ >= 0) {
+                UnwindContext* uctx = reinterpret_cast<UnwindContext *>(ctx);
+                LOGE("pc and sp is same, tid: %d", uctx->pid);
+            } else {
+                LOGE("pc and sp is same");
+            }
             break;
         }
 
@@ -285,6 +290,9 @@ bool Unwinder::Unwind(void *ctx, size_t maxFrameNum, size_t skipFrameNum)
         needAdjustPc = true;
 #if defined(ENABLE_MIXSTACK)
         if (map->IsArkExecutable()) {
+            AddFrame(curIndex, pc, sp, map);
+            index++;
+            curIndex++;
             if (!StepArkJsFrame(index, curIndex)) {
                 LOGE("Failed to step ark Js frames.");
                 break;

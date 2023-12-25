@@ -734,7 +734,7 @@ HWTEST_F(DwarfTest, DwarfTest002, TestSize.Level2)
     */
     uint64_t startPc = loadbase + 0x6F640;
     uint64_t endPc = startPc + 0xa8ec0;
-    printf("startPc:%p endPc:%p\n", reinterpret_cast<void*>startPc, reinterpret_cast<void*>endPc);
+    printf("startPc:%p endPc:%p\n", reinterpret_cast<void*>(startPc), reinterpret_cast<void*>(endPc));
     uint64_t mapStart = loadbase + 0x6F000;
     uint64_t mapEnd = mapStart + 0xab000;
     const uint64_t offset = 0x6e000;
