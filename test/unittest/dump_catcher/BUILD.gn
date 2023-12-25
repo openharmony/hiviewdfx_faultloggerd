@@ -83,7 +83,10 @@ if (defined(ohos_lite)) {
       deps += [ "$faultloggerd_path/test/resource:FaultloggerdJsTest" ]
     }
     resource_config_file = "$faultloggerd_path/test/resource/ohos_test.xml"
-    external_deps = common_deps
+    external_deps = [
+      "c_utils:utils",
+      "hilog:libhilog",
+    ]
   }
 
   group("unittest") {

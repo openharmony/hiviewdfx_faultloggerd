@@ -43,8 +43,11 @@ ohos_unittest("test_faultloggerd_client") {
     cflags_cc = [ "-DHAS_LIB_SELINUX" ]
   }
 
-  external_deps = common_deps
-  external_deps += [ "init:libbegetutil" ]
+  external_deps = [
+    "c_utils:utils",
+    "hilog:libhilog",
+    "init:libbegetutil",
+  ]
 }
 
 group("unittest") {

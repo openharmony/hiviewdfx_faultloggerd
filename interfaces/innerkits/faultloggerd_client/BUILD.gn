@@ -63,8 +63,11 @@ if (defined(ohos_lite)) {
       "$faultloggerd_common_path/dfxlog:dfx_hilog",
       "$faultloggerd_common_path/dfxutil:dfx_util",
     ]
-    external_deps = common_deps
-    external_deps += [ "init:libbegetutil" ]
+    external_deps = [
+      "c_utils:utils",
+      "hilog:libhilog",
+      "init:libbegetutil",
+    ]
     install_images = [
       "system",
       "updater",

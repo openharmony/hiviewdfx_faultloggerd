@@ -43,12 +43,10 @@ if (!defined(ohos_lite)) {
       "//third_party/libunwind:libunwind",
     ]
 
-    if (faultloggerd_cutils_enable) {
-      external_deps = [ "c_utils:utils" ]
-    }
-    if (faultloggerd_hilog_enable) {
-      external_deps += [ "hilog:libhilog_base" ]
-    }
+    external_deps = [
+      "c_utils:utils",
+      "hilog:libhilog_base",
+    ]
 
     part_name = "faultloggerd"
     subsystem_name = "hiviewdfx"
@@ -71,7 +69,10 @@ if (!defined(ohos_lite)) {
       "//third_party/libunwind:libunwind",
     ]
 
-    external_deps = common_deps
+    external_deps = [
+      "c_utils:utils",
+      "hilog:libhilog",
+    ]
 
     part_name = "faultloggerd"
     subsystem_name = "hiviewdfx"
@@ -93,9 +94,8 @@ if (!defined(ohos_lite)) {
       "//third_party/googletest:gtest_main",
     ]
 
-    if (faultloggerd_cutils_enable) {
-      external_deps = [ "c_utils:utils" ]
-    }
+    external_deps = [ "c_utils:utils" ]
+
     if (use_musl) {
       resource_config_file =
           "//base/hiviewdfx/faultloggerd/test/funchook/ohos_test.xml"

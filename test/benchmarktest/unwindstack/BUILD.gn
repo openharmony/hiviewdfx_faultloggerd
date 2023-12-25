@@ -65,7 +65,10 @@ if (!defined(ohos_lite)) {
       "//third_party/bounds_checking_function:libsec_shared",
     ]
 
-    external_deps = common_deps
+    external_deps = [
+      "c_utils:utils",
+      "hilog:libhilog",
+    ]
   }
 
   group("benchmarktest") {

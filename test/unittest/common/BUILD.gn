@@ -77,8 +77,10 @@ if (defined(ohos_lite)) {
       "//third_party/googletest:gmock_main",
       "//third_party/googletest:gtest_main",
     ]
-
-    external_deps = common_deps
+    external_deps = [
+      "c_utils:utils",
+      "hilog:libhilog",
+    ]
   }
 
   group("unittest") {

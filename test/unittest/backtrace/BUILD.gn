@@ -38,7 +38,10 @@ ohos_unittest("backtrace_utils_test") {
     defines = [ "USE_JEMALLOC_DFX_INTF" ]
   }
   branch_protector_ret = "pac_ret"
-  external_deps = common_deps
+  external_deps = [
+    "c_utils:utils",
+    "hilog:libhilog",
+  ]
 }
 
 ohos_unittest("backtrace_local_test") {
@@ -62,7 +65,10 @@ ohos_unittest("backtrace_local_test") {
     "//third_party/libunwind:libunwind",
   ]
   branch_protector_ret = "pac_ret"
-  external_deps = common_deps
+  external_deps = [
+    "c_utils:utils",
+    "hilog:libhilog",
+  ]
 }
 
 ohos_unittest("catchframe_local_test") {
@@ -84,7 +90,10 @@ ohos_unittest("catchframe_local_test") {
     "//third_party/libunwind:libunwind",
   ]
 
-  external_deps = common_deps
+  external_deps = [
+    "c_utils:utils",
+    "hilog:libhilog",
+  ]
 }
 
 ohos_unittest("backtrace_utils_test_static") {
@@ -112,7 +121,10 @@ ohos_unittest("backtrace_utils_test_static") {
     defines = [ "USE_JEMALLOC_DFX_INTF" ]
   }
   branch_protector_ret = "pac_ret"
-  external_deps = common_deps
+  external_deps = [
+    "c_utils:utils",
+    "hilog:libhilog",
+  ]
 }
 
 ohos_unittest("backtrace_local_test_static") {
@@ -139,7 +151,10 @@ ohos_unittest("backtrace_local_test_static") {
     "//third_party/libunwind:libunwind",
   ]
   branch_protector_ret = "pac_ret"
-  external_deps = common_deps
+  external_deps = [
+    "c_utils:utils",
+    "hilog:libhilog",
+  ]
 }
 
 ohos_unittest("catchframe_local_test_static") {
@@ -163,7 +178,10 @@ ohos_unittest("catchframe_local_test_static") {
     "//third_party/googletest:gtest_main",
     "//third_party/jsoncpp:jsoncpp",
   ]
-  external_deps = common_deps
+  external_deps = [
+    "c_utils:utils",
+    "hilog:libhilog",
+  ]
 }
 
 group("unittest") {

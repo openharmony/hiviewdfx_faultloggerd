@@ -113,7 +113,10 @@ if (defined(ohos_lite)) {
       deps += [ ":faultloggerd.cfg" ]
     }
 
-    external_deps = common_deps
+    external_deps = [
+      "c_utils:utils",
+      "hilog:libhilog",
+    ]
     install_images = [
       "system",
       "updater",

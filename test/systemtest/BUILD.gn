@@ -66,7 +66,7 @@ if (defined(ohos_lite)) {
 
     cflags_cc = [ "-fno-exceptions" ]
 
-    if (faultloggerd_lzma_enable && processdump_minidebuginfo_enable) {
+    if (processdump_minidebuginfo_enable) {
       defines = [ "PROCESSDUMP_MINIDEBUGINFO" ]
     }
   }
@@ -96,9 +96,7 @@ if (defined(ohos_lite)) {
     ]
     resource_config_file = "$faultloggerd_path/test/resource/ohos_test.xml"
 
-    if (faultloggerd_cutils_enable) {
-      external_deps = [ "c_utils:utils" ]
-    }
+    external_deps = [ "c_utils:utils" ]
   }
 
   group("systemtest") {

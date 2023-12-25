@@ -54,9 +54,7 @@ if (defined(ohos_lite)) {
       "//third_party/googletest:gtest_main",
     ]
 
-    if (faultloggerd_cutils_enable) {
-      external_deps = [ "c_utils:utils" ]
-    }
+    external_deps = [ "c_utils:utils" ]
   }
 
   ohos_unittest("test_signalchain") {
@@ -75,9 +73,7 @@ if (defined(ohos_lite)) {
       "//third_party/googletest:gtest_main",
     ]
 
-    if (faultloggerd_cutils_enable) {
-      external_deps = [ "c_utils:utils" ]
-    }
+    external_deps = [ "c_utils:utils" ]
   }
 
   group("unittest") {

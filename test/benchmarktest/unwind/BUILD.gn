@@ -55,7 +55,10 @@ if (!defined(ohos_lite)) {
       "//third_party/libunwind:libunwind",
     ]
 
-    external_deps = common_deps
+    external_deps = [
+      "c_utils:utils",
+      "hilog:libhilog",
+    ]
   }
 
   group("benchmarktest") {

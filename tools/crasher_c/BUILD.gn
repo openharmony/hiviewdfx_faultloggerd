@@ -54,9 +54,7 @@ if (defined(ohos_lite)) {
 
     branch_protector_ret = "pac_ret"
     sources = [ "dfx_crasher.c" ]
-    if (faultloggerd_hilog_enable) {
-      external_deps = [ "hilog:libhilog" ]
-    }
+    external_deps = [ "hilog:libhilog" ]
     part_name = "faultloggerd"
     subsystem_name = "hiviewdfx"
   }
