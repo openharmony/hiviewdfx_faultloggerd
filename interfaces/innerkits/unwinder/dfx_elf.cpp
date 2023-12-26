@@ -550,7 +550,7 @@ const std::vector<ElfSymbol>& DfxElf::GetElfSymbols()
         elfSymbols_.insert(elfSymbols_.end(), symbols.begin(), symbols.end());
     }
 #endif
-    std::sort(elfSymbols_.begin(), elfSymbols_.end(), [](ElfSymbol& sym1, ElfSymbol& sym2) {
+    std::sort(elfSymbols_.begin(), elfSymbols_.end(), [](const ElfSymbol& sym1, const ElfSymbol& sym2) {
         return sym1.value < sym2.value;
     });
     auto pred = [](ElfSymbol a, ElfSymbol b) { return a.value == b.value; };
@@ -573,7 +573,7 @@ const std::vector<ElfSymbol>& DfxElf::GetFuncSymbols()
         funcSymbols_.insert(funcSymbols_.end(), symbols.begin(), symbols.end());
     }
 #endif
-    std::sort(funcSymbols_.begin(), funcSymbols_.end(), [](ElfSymbol& sym1, ElfSymbol& sym2) {
+    std::sort(funcSymbols_.begin(), funcSymbols_.end(), [](const ElfSymbol& sym1, const ElfSymbol& sym2) {
         return sym1.value < sym2.value;
     });
     auto pred = [](ElfSymbol a, ElfSymbol b) { return a.value == b.value; };
@@ -603,7 +603,7 @@ bool DfxElf::GetFuncInfoLazily(uint64_t addr, ElfSymbol& elfSymbol)
     }
 
     if (findSymbol) {
-        std::sort(funcSymbols_.begin(), funcSymbols_.end(), [](ElfSymbol& sym1, ElfSymbol& sym2) {
+        std::sort(funcSymbols_.begin(), funcSymbols_.end(), [](const ElfSymbol& sym1, const ElfSymbol& sym2) {
             return sym1.value < sym2.value;
         });
         auto pred = [](ElfSymbol a, ElfSymbol b) { return a.value == b.value; };

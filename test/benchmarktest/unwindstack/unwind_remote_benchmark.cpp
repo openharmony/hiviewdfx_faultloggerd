@@ -113,7 +113,7 @@ static size_t UnwindRemote(unwindstack::Unwinder unwinder, MAYBE_UNUSED UnwindDa
     unwinder.Unwind();
     auto unwSize = unwinder.NumFrames();
     LOGU("%s frames.size: %zu", __func__, unwSize);
-    if (dataPtr->isFillFrames) {
+    if (dataPtr != nullptr && dataPtr->isFillFrames) {
         for (size_t i = 0; i < unwSize; ++i) {
             auto str = unwinder.FormatFrame(i);
             LOGU("%s frames: %s", __func__, str.c_str());

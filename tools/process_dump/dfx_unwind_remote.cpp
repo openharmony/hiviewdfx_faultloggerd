@@ -37,6 +37,33 @@
 
 namespace OHOS {
 namespace HiviewDFX {
+namespace {
+void UnwindThreadByParseStackIfNeed(std::shared_ptr<DfxProcess> &process,
+    std::shared_ptr<DfxThread> &thread, std::shared_ptr<Unwinder> unwinder)
+{
+    if (process == nullptr || thread == nullptr) {
+        return;
+    }
+    auto frames = unwinder->GetFrames();
+    constexpr int minFramesNum = 3;
+    size_t initSize = frames.size();
+    if (initSize < minFramesNum || frames[minFramesNum - 1].mapName.find("Not mapped") != std::string::npos) {
+        bool needParseStack = true;
+        thread->InitFaultStack(needParseStack);
+        auto faultStack = thread->GetFaultStack();
+        if (faultStack == nullptr || !faultStack->ParseUnwindStack(unwinder->GetMaps(), frames)) {
+            DFXLOG_ERROR("%s : Failed to parse unwind stack.", __func__);
+            return;
+        }
+        thread->SetFrames(frames);
+        std::string tip = StringPrintf(
+            " Failed to unwind stack, try to get call stack from #%02zu by reparsing thread stack", initSize);
+        std::string msg = process->GetFatalMessage() + tip;
+        process->SetFatalMessage(msg);
+    }
+}
+}
+
 DfxUnwindRemote &DfxUnwindRemote::GetInstance()
 {
     static DfxUnwindRemote ins;
@@ -114,31 +141,6 @@ bool DfxUnwindRemote::UnwindProcess(std::shared_ptr<ProcessDumpRequest> request,
     }
 
     return ret;
-}
-
-void DfxUnwindRemote::UnwindThreadByParseStackIfNeed(std::shared_ptr<DfxProcess> &process,
-    std::shared_ptr<DfxThread> &thread, std::shared_ptr<Unwinder> unwinder)
-{
-    if (process == nullptr || thread == nullptr) {
-        return;
-    }
-    auto frames = unwinder->GetFrames();
-    constexpr int minFramesNum = 3;
-    size_t initSize = frames.size();
-    if (initSize < minFramesNum || frames[minFramesNum - 1].mapName.find("Not mapped") != std::string::npos) {
-        bool needParseStack = true;
-        thread->InitFaultStack(needParseStack);
-        auto faultStack = thread->GetFaultStack();
-        if (faultStack == nullptr || !faultStack->ParseUnwindStack(unwinder->GetMaps(), frames)) {
-            DFXLOG_ERROR("%s : Failed to parse unwind stack.", __func__);
-            return;
-        }
-        thread->SetFrames(frames);
-        std::string tip = StringPrintf(
-            " Failed to unwind stack, try to get call stack from #%02zu by reparsing thread stack", initSize);
-        std::string msg = process->GetFatalMessage() + tip;
-        process->SetFatalMessage(msg);
-    }
 }
 
 void DfxUnwindRemote::UnwindThreadFallback(std::shared_ptr<DfxProcess> process, std::shared_ptr<DfxThread> thread,

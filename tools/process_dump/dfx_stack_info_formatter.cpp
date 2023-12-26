@@ -28,6 +28,17 @@ namespace OHOS {
 namespace HiviewDFX {
 namespace {
 static const char NATIVE_CRASH_TYPE[] = "NativeCrash";
+#if defined(ENABLE_MIXSTACK)
+void FillJsFrame(const DfxFrame& frame, Json::Value& jsonInfo) const
+{
+    Json::Value frameJson;
+    frameJson["file"] = frame.mapName;
+    frameJson["symbol"] = frame.funcName;
+    frameJson["line"] = frame.line;
+    frameJson["column"] = frame.column;
+    jsonInfo.append(frameJson);
+}
+#endif
 }
 
 bool DfxStackInfoFormatter::GetStackInfo(bool isJsonDump, std::string& jsonStringInfo) const
@@ -145,18 +156,6 @@ void DfxStackInfoFormatter::FillNativeFrame(const DfxFrame& frame, Json::Value& 
     frameJson["buildId"] = frame.buildId;
     jsonInfo.append(frameJson);
 }
-
-#if defined(ENABLE_MIXSTACK)
-void DfxStackInfoFormatter::FillJsFrame(const DfxFrame& frame, Json::Value& jsonInfo) const
-{
-    Json::Value frameJson;
-    frameJson["file"] = frame.mapName;
-    frameJson["symbol"] = frame.funcName;
-    frameJson["line"] = frame.line;
-    frameJson["column"] = frame.column;
-    jsonInfo.append(frameJson);
-}
-#endif
 
 void DfxStackInfoFormatter::AppendThreads(const std::vector<std::shared_ptr<DfxThread>>& threads,
                                           Json::Value& jsonInfo) const
