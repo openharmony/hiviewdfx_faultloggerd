@@ -229,7 +229,6 @@ bool Unwinder::Unwind(void *ctx, size_t maxFrameNum, size_t skipFrameNum)
     size_t index = 0;
     size_t curIndex = 0;
     uintptr_t pc = 0, sp = 0, stepPc = 0;
-    uintptr_t prevPc = 0, prevSp = 0;
 
     std::shared_ptr<DfxMap> map = nullptr;
     pc = regs_->GetPc();
@@ -251,16 +250,6 @@ bool Unwinder::Unwind(void *ctx, size_t maxFrameNum, size_t skipFrameNum)
 
         pc = regs_->GetPc();
         sp = regs_->GetSp();
-        if ((prevPc == pc) && (prevSp == sp)) {
-            if (pid_ >= 0) {
-                UnwindContext* uctx = reinterpret_cast<UnwindContext *>(ctx);
-                LOGE("pc and sp is same, tid: %d", uctx->pid);
-            } else {
-                LOGE("pc and sp is same");
-            }
-            break;
-        }
-
         if (pid_ >= 0 || pid_ == UNWIND_TYPE_LOCAL) {
             if (!GetMapByPc(pc, ctx, map)) {
                 if (curIndex != 0) {
@@ -282,8 +271,6 @@ bool Unwinder::Unwind(void *ctx, size_t maxFrameNum, size_t skipFrameNum)
             }
         }
 
-        prevPc = pc;
-        prevSp = sp;
         if (needAdjustPc) {
             DoPcAdjust(pc);
         }
@@ -358,6 +345,8 @@ bool Unwinder::Step(uintptr_t& pc, uintptr_t& sp, void *ctx)
     SetLocalStackCheck(ctx, false);
     memory_->SetCtx(ctx);
     bool isSignalFrame = false;
+    uintptr_t prevPc = pc;
+    uintptr_t prevSp = sp;
 
     std::shared_ptr<RegLocState> rs = nullptr;
     bool ret = false;
@@ -448,10 +437,24 @@ bool Unwinder::Step(uintptr_t& pc, uintptr_t& sp, void *ctx)
 
     pc = regs_->GetPc();
     sp = regs_->GetSp();
-    if (pc == 0) {
+    if (ret && (prevPc == pc) && (prevSp == sp)) {
+        if (pid_ >= 0) {
+            UnwindContext* uctx = reinterpret_cast<UnwindContext *>(ctx);
+            LOGE("pc and sp is same, tid: %d", uctx->pid);
+        } else {
+            LOGE("pc and sp is same");
+        }
+        lastErrorData_.SetAddrAndCode(pc, UNW_ERROR_REPEATED_FRAME);
         ret = false;
     }
-    LOGU("------pc: %llx, sp: %llx", (uint64_t)pc, (uint64_t)sp);
+
+    uintptr_t tmp = 0;
+    if (ret && ((pc == 0) || (!memory_->ReadUptr(sp, &tmp, false)))) {
+        LOGW("------pc: %llx, sp: %llx error?", (uint64_t)pc, (uint64_t)sp);
+        ret = false;
+    } else {
+        LOGU("------pc: %llx, sp: %llx", (uint64_t)pc, (uint64_t)sp);
+    }
     return ret;
 }
 
