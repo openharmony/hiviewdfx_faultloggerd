@@ -392,7 +392,7 @@ bool DfxDumpCatcher::DumpCatchMultiPid(const std::vector<int> pidV, std::string&
 
     time_t startTime = time(nullptr);
     if (startTime > 0) {
-        DFXLOG_DEBUG("%s :: %s :: startTime(%lld).", DFXDUMPCATCHER_TAG.c_str(), __func__, startTime);
+        DFXLOG_DEBUG("%s :: %s :: startTime(%" PRId64 ").", DFXDUMPCATCHER_TAG.c_str(), __func__, startTime);
     }
 
     for (int i = 0; i < pidSize; i++) {
@@ -406,7 +406,7 @@ bool DfxDumpCatcher::DumpCatchMultiPid(const std::vector<int> pidV, std::string&
 
         time_t currentTime = time(nullptr);
         if (currentTime > 0) {
-            DFXLOG_DEBUG("%s :: %s :: startTime(%lld), currentTime(%lld).", DFXDUMPCATCHER_TAG.c_str(), \
+            DFXLOG_DEBUG("%s :: %s :: startTime(%" PRId64 "), currentTime(%" PRId64 ").", DFXDUMPCATCHER_TAG.c_str(), \
                 __func__, startTime, currentTime);
             if (currentTime > startTime + DUMP_CATCHE_WORK_TIME_S) {
                 break;

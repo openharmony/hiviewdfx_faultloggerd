@@ -72,7 +72,7 @@ __attribute__((noinline)) void PrintLog(int fd, const char *format, ...)
         }
         return;
     }
-    DFXLOG_ERROR(buf);
+    DFXLOG_ERROR("%s", buf);
     if (fd > 0) {
         (void)write(fd, buf, strlen(buf));
     }

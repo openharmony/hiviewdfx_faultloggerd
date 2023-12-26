@@ -88,13 +88,13 @@ bool DfxInstructions::Apply(std::shared_ptr<DfxMemory> memory, DfxRegs& regs, Re
         INSTR_STATISTIC(UnsupportedDefCfa, rsState.cfaReg, UNW_ERROR_NOT_SUPPORT);
         return false;
     }
-    LOGU("Update cfa : %llx", (uint64_t)cfa);
+    LOGU("Update cfa : %" PRIx64 "", (uint64_t)cfa);
 
     for (size_t i = 0; i < rsState.locs.size(); i++) {
         if (rsState.locs[i].type != REG_LOC_UNUSED) {
             size_t reg = DfxRegsQut::GetQutRegs()[i];
             if (Flush(regs, memory, cfa, rsState.locs[i], regs[reg])) {
-                LOGU("Update reg[%d] : %llx", reg, (uint64_t)regs[reg]);
+                LOGU("Update reg[%zu] : %" PRIx64 "", reg, (uint64_t)regs[reg]);
             }
         }
     }

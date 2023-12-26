@@ -198,7 +198,7 @@ bool ElfImitate::ParseElfHeaders()
     } else if (machine_ == "X86-64") {
         archType_ = ARCH_X86_64;
     } else {
-        DFXLOG_WARN("Failed the machine = %d", machine_.c_str());
+        DFXLOG_WARN("Failed the machine = %s", machine_.c_str());
     }
 
     if (!GetEntryAddr(ehdrFP_)) {

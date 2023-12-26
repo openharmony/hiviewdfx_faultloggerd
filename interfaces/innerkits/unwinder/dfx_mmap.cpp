@@ -45,7 +45,7 @@ bool DfxMmap::Init(const int fd, const size_t size, const off_t offset)
         return false;
     }
     size_ = size;
-    DFXLOG_DEBUG("mmap size %u", size_);
+    DFXLOG_DEBUG("mmap size %zu", size_);
     return true;
 #else
     return false;
@@ -82,7 +82,7 @@ size_t DfxMmap::Read(uintptr_t& addr, void* val, size_t size, bool incre)
 
     size_t ptr = static_cast<size_t>(addr);
     if (ptr >= size_) {
-        LOGE("pos: %d, size: %d", ptr, size_);
+        LOGE("pos: %zu, size: %zu", ptr, size_);
         return 0;
     }
 

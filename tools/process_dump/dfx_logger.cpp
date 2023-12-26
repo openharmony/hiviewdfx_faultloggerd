@@ -49,9 +49,9 @@ int WriteLog(int32_t fd, const char *format, ...)
             DFXLOG_ERROR("WriteLog :: write msg(%s) to fd(%d) failed, ret(%d).", buf, fd, ret);
         }
     } else if (fd == INVALID_FD) {
-        ret = DFXLOG_WARN(buf);
+        ret = DFXLOG_WARN("%s", buf);
     } else {
-        ret = DFXLOG_DEBUG(buf);
+        ret = DFXLOG_DEBUG("%s", buf);
     }
 
     return ret;

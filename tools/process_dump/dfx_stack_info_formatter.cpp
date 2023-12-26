@@ -137,7 +137,7 @@ void DfxStackInfoFormatter::FillNativeFrame(const DfxFrame& frame, Json::Value& 
 #ifdef __LP64__
     frameJson["pc"] = StringPrintf("%016lx", frame.relPc);
 #else
-    frameJson["pc"] = StringPrintf("%08x", frame.relPc);
+    frameJson["pc"] = StringPrintf("%08llx", frame.relPc);
 #endif
     frameJson["symbol"] = frame.funcName;
     frameJson["offset"] = frame.funcOffset;

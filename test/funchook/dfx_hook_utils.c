@@ -96,11 +96,11 @@ void LogBacktrace(void)
         char buf[BUF_SZ];
         (void)memset_s(&buf, sizeof(buf), 0, sizeof(buf));
         if (unw_get_symbol_info_by_pc(as, pc, BUF_SZ, buf, &start, &end) == 0) {
-            LOGI("#%02d %016p(%016p) %s(%s)\n", index, relPc, pc,
+            LOGI("#%02d %016" PRIuPTR "(%016" PRIuPTR ") %s(%s)\n", index, relPc, pc,
                 mapInfo == NULL ? "Unknown" : mapInfo->path,
                 buf);
         } else {
-            LOGI("#%02d %016p(%016p) %s\n", index, relPc, pc,
+            LOGI("#%02d %016" PRIuPTR "(%016" PRIuPTR ") %s\n", index, relPc, pc,
                 mapInfo == NULL ? "Unknown" : mapInfo->path);
         }
         index++;

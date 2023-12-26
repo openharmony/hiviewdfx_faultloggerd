@@ -387,17 +387,17 @@ static void ResetAndRethrowSignalIfNeed(int sig, siginfo_t *si)
     if (syscall(SYS_rt_tgsigqueueinfo, syscall(SYS_getpid), syscall(SYS_gettid), sig, si) != 0) {
         DFXLOG_ERROR("Failed to rethrow sig(%d), errno(%d).", sig, errno);
     } else {
-        DFXLOG_INFO("Current process(%d) rethrow sig(%d).", syscall(SYS_getpid), sig);
+        DFXLOG_INFO("Current process(%ld) rethrow sig(%d).", syscall(SYS_getpid), sig);
     }
 }
 
 static void PauseMainThreadHandler(int sig)
 {
-    DFXLOG_INFO("Crash(%d) in child thread(%d), lock main thread.", sig, syscall(SYS_gettid));
+    DFXLOG_INFO("Crash(%d) in child thread(%ld), lock main thread.", sig, syscall(SYS_gettid));
     // only work when subthread crash and send SIGDUMP to mainthread.
     pthread_mutex_lock(&g_signalHandlerMutex);
     pthread_mutex_unlock(&g_signalHandlerMutex);
-    DFXLOG_INFO("Crash in child thread(%d), exit main thread.", syscall(SYS_gettid));
+    DFXLOG_INFO("Crash in child thread(%ld), exit main thread.", syscall(SYS_gettid));
 }
 
 static void BlockMainThreadIfNeed(int sig)
@@ -460,7 +460,7 @@ static bool WaitProcessExit(int childPid, const char* name)
     int status = 0;
     int startTime = (int)time(NULL);
     bool isSuccess = false;
-    DFXLOG_INFO("(%d) wait %s(%d) exit.", syscall(SYS_gettid), name, childPid);
+    DFXLOG_INFO("(%ld) wait %s(%d) exit.", syscall(SYS_gettid), name, childPid);
     do {
         errno = 0;
         ret = waitpid(childPid, &status, WNOHANG);
@@ -475,13 +475,13 @@ static bool WaitProcessExit(int childPid, const char* name)
         }
 
         if ((int)time(NULL) - startTime > PROCESSDUMP_TIMEOUT) {
-            DFXLOG_INFO("(%d) wait for (%d) timeout", syscall(SYS_gettid), childPid);
+            DFXLOG_INFO("(%ld) wait for (%d) timeout", syscall(SYS_gettid), childPid);
             isSuccess = false;
             break;
         }
         usleep(SIGNALHANDLER_TIMEOUT); // sleep 10ms
     } while (1);
-    DFXLOG_INFO("(%d) wait for (%d) return with ret(%d) status(%d)",
+    DFXLOG_INFO("(%ld) wait for (%d) return with ret(%d) status(%d)",
         syscall(SYS_gettid), childPid, ret, status);
     return isSuccess;
 }
@@ -501,7 +501,7 @@ static int ForkAndExecProcessDump(void)
     // fork a child process that could ptrace us
     childPid = ForkBySyscall();
     if (childPid == 0) {
-        DFXLOG_INFO("The exec processdump pid(%d).", syscall(SYS_getpid));
+        DFXLOG_INFO("The exec processdump pid(%ld).", syscall(SYS_getpid));
         _exit(DFX_ExecDump());
     } else if (childPid < 0) {
         DFXLOG_ERROR("Failed to fork child process, errno(%d).", errno);
@@ -517,7 +517,7 @@ out:
 static int CloneAndDoProcessDump(void* arg)
 {
     (void)arg;
-    DFXLOG_INFO("The clone thread(%d).", syscall(SYS_gettid));
+    DFXLOG_INFO("The clone thread(%ld).", syscall(SYS_gettid));
     g_request.recycleTid = syscall(SYS_gettid);
     return ForkAndExecProcessDump();
 }

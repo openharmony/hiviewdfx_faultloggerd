@@ -91,7 +91,7 @@ static bool CheckReadResp(int sockfd)
 
     ssize_t nread = read(sockfd, ControlBuffer, sizeof(ControlBuffer) - 1);
     if (nread != static_cast<ssize_t>(strlen(FAULTLOGGER_DAEMON_RESP))) {
-        DFXLOG_ERROR("nread: %d.", nread);
+        DFXLOG_ERROR("nread: %zd.", nread);
         return false;
     }
     return true;

@@ -59,7 +59,7 @@ bool DfxMemoryFile::Init(const std::string& file, uint64_t offset, uint64_t size
 
     size_t fileSize = static_cast<size_t>(GetFileSize(fd));
     if ((fileSize == 0) || (offset >= static_cast<uint64_t>(fileSize))) {
-        DFXLOG_ERROR("%s : invalid fileSize(%lu)", __func__, fileSize);
+        DFXLOG_ERROR("%s : invalid fileSize(%zu)", __func__, fileSize);
         return false;
     }
 
@@ -68,7 +68,7 @@ bool DfxMemoryFile::Init(const std::string& file, uint64_t offset, uint64_t size
     if (alignedOffset > static_cast<uint64_t>(fileSize) ||
         offset > static_cast<uint64_t>(fileSize)) {
         DFXLOG_ERROR(
-            "%s : invalid alignedOffset(%lu) or offset(%lu) : file size(%lu)",
+            "%s : invalid alignedOffset(%" PRIu64 ") or offset(%" PRIu64 ") : file size(%zu)",
             __func__, alignedOffset, offset, fileSize);
         return false;
     }

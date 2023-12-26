@@ -90,7 +90,7 @@ void ProcessDumper::Dump()
     if (isJsonDump_ || isCrash_) {
         DfxStackInfoFormatter formatter(process_, request);
         formatter.GetStackInfo(isJsonDump_, jsonInfo);
-        DFXLOG_INFO("Finish GetStackInfo len %d", jsonInfo.length());
+        DFXLOG_INFO("Finish GetStackInfo len %" PRIuPTR "", jsonInfo.length());
         if (isJsonDump_) {
             WriteData(jsonFd_, jsonInfo, ONE_BLOCK_SIZE);
         }
@@ -128,7 +128,7 @@ int ProcessDumper::DumpProcess(std::shared_ptr<ProcessDumpRequest> request)
         // In this case, we have to parse /proc/self/status
         if (((!isCrash_) && (syscall(SYS_getppid) != request->nsPid)) ||
             ((isCrash_ || isLeakDump) && (syscall(SYS_getppid) != request->vmNsPid))) {
-            DFXLOG_ERROR("Target process(%s:%d) is not parent pid(%d), exit processdump for signal(%d).",
+            DFXLOG_ERROR("Target process(%s:%d) is not parent pid(%ld), exit processdump for signal(%d).",
                 request->processName, request->nsPid, syscall(SYS_getppid), request->siginfo.si_signo);
             dumpRes = DumpErrorCode::DUMP_EGETPPID;
             break;

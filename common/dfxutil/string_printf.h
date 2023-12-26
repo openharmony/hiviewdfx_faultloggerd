@@ -58,6 +58,8 @@ inline int BufferPrintf(char *buf, size_t size, const char *fmt, ...)
     return ret;
 }
 
+inline std::string StringPrintf(const char *fmt, ...) __attribute__((format(printf, 1, 2)));
+
 inline std::string StringPrintf(const char *fmt, ...)
 {
     if (fmt == nullptr) {

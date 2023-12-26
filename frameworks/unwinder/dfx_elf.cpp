@@ -144,7 +144,7 @@ void DfxElfImpl::ReadProgramHeaders(const ElfW(Ehdr)& ehdr)
             break;
         }
         default:
-            DFXLOG_WARN("phdr type(%lu) error", phdr.p_type);
+            DFXLOG_WARN("phdr type(%u) error", phdr.p_type);
             break;
         }
     }
