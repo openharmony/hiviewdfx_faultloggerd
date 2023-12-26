@@ -29,7 +29,7 @@ namespace {
 template <typename AddressType>
 AddressType DwarfOp<AddressType>::Eval(DfxRegs& regs, AddressType initStackValue, AddressType startPtr)
 {
-    LOGU("Eval: initStackValue=%" PRIu64 ", startPtr=%" PRIu64 "", initStackValue, startPtr);
+    LOGU("Eval: initStackValue=%" PRIuPTR ", startPtr=%" PRIuPTR "", initStackValue, startPtr);
     StackReset(initStackValue);
 
     uintptr_t addr = startPtr;

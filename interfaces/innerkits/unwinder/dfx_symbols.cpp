@@ -111,7 +111,7 @@ bool DfxSymbols::GetFuncNameAndOffsetByPc(uint64_t relPc, std::shared_ptr<DfxElf
 #if defined(__arm__)
         funcOffset &= ~1;
 #endif
-        LOGU("Symbol relPc: %llx, funcName: %s, funcOffset: %llx", relPc, funcName.c_str(), funcOffset);
+        LOGU("Symbol relPc: %" PRIx64 ", funcName: %s, funcOffset: %" PRIx64 "", relPc, funcName.c_str(), funcOffset);
         return true;
     }
     return false;

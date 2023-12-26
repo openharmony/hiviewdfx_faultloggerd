@@ -311,7 +311,7 @@ int ReadFileDescriptorFromSocket(int sockfd)
     }
 
     if (len != sizeof(int)) {
-        DFXLOG_ERROR("%s :: data is null or len is %d", __func__, len);
+        DFXLOG_ERROR("%s :: data is null or len is %zu", __func__, len);
         return -1;
     }
     int fd = *(reinterpret_cast<int *>(data));

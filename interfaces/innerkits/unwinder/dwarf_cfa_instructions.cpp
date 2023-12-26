@@ -59,7 +59,7 @@ bool DwarfCfaInstructions::Iterate(uintptr_t pc, FrameDescEntry fde,
             break;
         }
     }
-    LOGU("rsState pcStart=%llx, pcEnd=%llx", (uint64_t)rsState.pcStart, (uint64_t)rsState.pcEnd);
+    LOGU("rsState pcStart=%" PRIx64 ", pcEnd=%" PRIx64 "", (uint64_t)rsState.pcStart, (uint64_t)rsState.pcEnd);
     return true;
 }
 
@@ -89,8 +89,8 @@ bool DwarfCfaInstructions::DecodeDwCfa(uint8_t opCode, CommonInfoEntry cie,
         case DW_CFA_advance_loc2:
             value = memory_->ReadEncodedValue(instPtr, (DwarfEncoding)DW_EH_PE_udata2);
             pcOffset += (value * cie.codeAlignFactor);
-            LOGU("DW_CFA_advance_loc2: %" PRIu64 " to %llx",
-                static_cast<uint64_t>(value * cie.codeAlignFactor), pcOffset);
+            LOGU("DW_CFA_advance_loc2: %" PRIu64 " to %" PRIx64 "",
+                  static_cast<uint64_t>(value * cie.codeAlignFactor), static_cast<uint64_t>(pcOffset));
             break;
         case DW_CFA_advance_loc4:
             value = memory_->ReadEncodedValue(instPtr, (DwarfEncoding)DW_EH_PE_udata4);

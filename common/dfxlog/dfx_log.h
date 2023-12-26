@@ -35,7 +35,8 @@ void InitDebugFd(int fd);
 void SetLogLevel(const LogLevel logLevel);
 LogLevel GetLogLevel(void);
 
-int DfxLogPrint(const LogLevel logLevel, const unsigned int domain, const char* tag, const char *fmt, ...);
+int DfxLogPrint(const LogLevel logLevel, const unsigned int domain, const char* tag,
+                const char *fmt, ...) __attribute__((format(printf, 4, 5)));
 int DfxLogPrintV(const LogLevel logLevel, const unsigned int domain, const char* tag, const char *fmt, va_list ap);
 
 #define DFXLOG_PRINT(prio, domain, tag, ...) DfxLogPrint(prio, domain, tag, ##__VA_ARGS__)
@@ -76,9 +77,9 @@ int DfxLogPrintV(const LogLevel logLevel, const unsigned int domain, const char*
 #endif
 
 #ifndef LOG_CHECK_MSG
-#define LOG_CHECK_MSG(condition, ...) \
+#define LOG_CHECK_MSG(condition, fmt,  ...) \
     if (__builtin_expect(!(condition), false)) { \
-        LOGE(" check failed: %s ", #condition, ##__VA_ARGS__); \
+        DFXLOG_PRINT(LOG_ERROR, LOG_DOMAIN, LOG_TAG, " check failed: %s" fmt, #condition, ##__VA_ARGS__); \
     }
 #endif
 

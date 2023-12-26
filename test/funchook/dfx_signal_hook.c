@@ -154,7 +154,7 @@ static bool IsSigactionAddr(uintptr_t sigactionAddr)
         }
 
         if ((strstr(mapInfo, "r-xp") != NULL) && (strstr(mapInfo, "ld-musl") != NULL)) {
-            LOGI("begin: %lu, end: %lu, sigactionAddr: %lu", begin, end, sigactionAddr);
+            LOGI("begin: %" PRIu64 ", end: %" PRIu64 ", sigactionAddr: %" PRIuPTR  "", begin, end, sigactionAddr);
             if ((sigactionAddr >= begin) && (sigactionAddr <= end)) {
                 ret = true;
                 break;

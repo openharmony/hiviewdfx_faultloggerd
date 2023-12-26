@@ -94,7 +94,7 @@ bool Unwinder::UnwindLocal(bool withRegs, size_t maxFrameNum, size_t skipFrameNu
         LOGE("Get stack range error");
         return false;
     }
-    LOGU("stackBottom: %llx, stackTop: %llx", (uint64_t)stackBottom, (uint64_t)stackTop);
+    LOGU("stackBottom: %" PRIx64 ", stackTop: %" PRIx64 "", (uint64_t)stackBottom, (uint64_t)stackTop);
 
     if (!withRegs) {
         regs_ = DfxRegs::Create();
@@ -192,9 +192,10 @@ bool Unwinder::StepArkJsFrame(size_t& idx, size_t& curIdx)
         LOGE("Failed to memset_s jsFrames.");
         return false;
     }
-    LOGI("[in ark] pc: %llx, fp: %llx, sp: %llx", (uint64_t)pc, (uint64_t)fp, (uint64_t)sp);
+    LOGU("input ark pc: %" PRlx64 ", fp: %" PRlx64 ", sp: %" PRlx64 ".", (uint64_t)pc, (uint64_t)fp, (uint64_t)sp);
     int ret = DfxArk::GetArkNativeFrameInfo(pid_, pc, fp, sp, jsFrames, size);
-    LOGI("[out ark] pc: %llx, fp: %llx, sp: %llx, js frame size: %d", (uint64_t)pc, (uint64_t)fp, (uint64_t)sp, size);
+    LOGU("output ark pc: %" PRlx64 ", fp: %" PRlx64 ", sp: %" PRlx64 ", js frame size: %zu.",
+        (uint64_t)pc, (uint64_t)fp, (uint64_t)sp, size);
     if (ret < 0) {
         return false;
     }
@@ -354,7 +355,7 @@ bool Unwinder::Step(uintptr_t& pc, uintptr_t& sp, void *ctx)
         LOGE("params is nullptr");
         return false;
     }
-    LOGU("++++++pc: %llx, sp: %llx", (uint64_t)pc, (uint64_t)sp);
+    LOGU("++++++pc: %" PRIx64 ", sp: %" PRIx64 "", (uint64_t)pc, (uint64_t)sp);
     SetLocalStackCheck(ctx, false);
     memory_->SetCtx(ctx);
     bool isSignalFrame = false;
@@ -451,14 +452,14 @@ bool Unwinder::Step(uintptr_t& pc, uintptr_t& sp, void *ctx)
     if (pc == 0) {
         ret = false;
     }
-    LOGU("------pc: %llx, sp: %llx", (uint64_t)pc, (uint64_t)sp);
+    LOGU("------pc: %" PRIx64 ", sp: %" PRIx64 "", (uint64_t)pc, (uint64_t)sp);
     return ret;
 }
 
 bool Unwinder::FpStep(uintptr_t& fp, uintptr_t& pc, void *ctx)
 {
 #if defined(__aarch64__)
-    LOGU("++++++fp: %llx, pc: %llx", (uint64_t)fp, (uint64_t)pc);
+    LOGU("++++++fp: %lx, pc: %lx", (uint64_t)fp, (uint64_t)pc);
     SetLocalStackCheck(ctx, true);
     memory_->SetCtx(ctx);
 
@@ -473,7 +474,7 @@ bool Unwinder::FpStep(uintptr_t& fp, uintptr_t& pc, void *ctx)
         regs_->SetReg(REG_FP, &fp);
         regs_->SetReg(REG_PC, &pc);
         regs_->SetReg(REG_SP, &prevFp);
-        LOGU("------fp: %llx, pc: %llx", (uint64_t)fp, (uint64_t)pc);
+        LOGU("------fp: %lx, pc: %lx", (uint64_t)fp, (uint64_t)pc);
         return true;
     }
 #endif
@@ -507,7 +508,7 @@ uintptr_t Unwinder::StripPac(uintptr_t inAddr, uintptr_t pacMask)
     uintptr_t outAddr = inAddr;
 #if defined(__aarch64__)
     if (outAddr != 0) {
-        LOGU("Pac addr: %llx", (uint64_t)outAddr);
+        LOGU("Pac addr: %lx", (uint64_t)outAddr);
         if (pacMask != 0) {
             outAddr &= ~pacMask;
         } else {
@@ -589,7 +590,7 @@ void Unwinder::FillFrame(DfxFrame& frame)
     frame.relPc = frame.map->GetRelPc(frame.pc);
     frame.mapName = frame.map->GetElfName();
     frame.mapOffset = frame.map->offset;
-    LOGU("mapName: %s, mapOffset: %llx", frame.mapName.c_str(), frame.mapOffset);
+    LOGU("mapName: %s, mapOffset: %" PRIx64 "", frame.mapName.c_str(), frame.mapOffset);
 
     auto elf = frame.map->GetElf();
     if (elf == nullptr) {

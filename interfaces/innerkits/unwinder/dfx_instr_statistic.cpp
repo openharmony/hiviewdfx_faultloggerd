@@ -41,9 +41,9 @@ void DfxInstrStatistic::SetCurrentStatLib(const std::string soName)
 void DfxInstrStatistic::AddInstrStatistic(InstrStatisticType type, uint64_t val, uint64_t err)
 {
     if (err != 0) {
-        LOGE("type: %u, val: %llx, err: %llx", type, val, err);
+        LOGE("type: %u, val: %" PRIx64 ", err: %" PRIx64 "", type, val, err);
     } else {
-        LOGU("type: %u, val: %llx", type, val);
+        LOGU("type: %u, val: %" PRIx64 "", type, val);
     }
     std::shared_ptr<std::vector<std::pair<uint64_t, uint64_t>>> stats;
     auto iter = statisticInfo_.find(static_cast<uint32_t>(type));
@@ -67,14 +67,14 @@ void DfxInstrStatistic::DumpInstrStatResult(std::vector<std::pair<uint32_t, uint
             case InstructionEntriesArmExidx:
             case InstructionEntriesEhFrame:
             case InstructionEntriesDebugFrame:
-                LOGU("\t Type: %u, Count: %llu", type, (uint64_t) stats->size());
+                LOGU("\t Type: %u, Count: %" PRIu64 "", type, (uint64_t) stats->size());
                 for (size_t i = 0; i < stats->size(); ++i) {
-                    LOGU("\t Value: %llx", (uint64_t) stats->at(i).first);
+                    LOGU("\t Value: %" PRIx64 "", (uint64_t) stats->at(i).first);
                     result.push_back(std::make_pair(type, static_cast<uint32_t>(stats->at(i).first)));
                 }
                 break;
             default:
-                LOGU("\t Type: %u, Count: %llu", type, (uint64_t) stats->size());
+                LOGU("\t Type: %u, Count: %" PRIu64 "", type, (uint64_t) stats->size());
                 result.push_back(std::make_pair(type, static_cast<uint32_t>(stats->size())));
                 break;
         }

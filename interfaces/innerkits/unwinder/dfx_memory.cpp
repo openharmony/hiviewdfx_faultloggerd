@@ -64,7 +64,7 @@ size_t DfxMemory::Read(uintptr_t& addr, void* val, size_t size, bool incre)
         size_t alignBytes = tmpAddr & (static_cast<size_t>(alignBytes_) - 1);
         if (alignBytes != 0) {
             uintptr_t alignedAddr = tmpAddr & (~(static_cast<uintptr_t>(alignBytes_)) - 1);
-            LOGU("alignBytes: %d, alignedAddr: %llx", alignBytes, static_cast<uint64_t>(alignedAddr));
+            LOGU("alignBytes: %zu, alignedAddr: %" PRIx64 "", alignBytes, static_cast<uint64_t>(alignedAddr));
             if (!ReadMem(alignedAddr, &tmpVal)) {
                 return bytesRead;
             }

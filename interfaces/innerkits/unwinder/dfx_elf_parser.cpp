@@ -144,7 +144,7 @@ bool ElfParser::ParseProgramHeaders(const EhdrType& ehdr)
                 if (phdr.p_vaddr + phdr.p_memsz > endVaddr_) {
                     endVaddr_ = phdr.p_vaddr + phdr.p_memsz;
                 }
-                LOGU("Elf startVaddr: %llx, endVaddr: %llx", (uint64_t)startVaddr_, (uint64_t)endVaddr_);
+                LOGU("Elf startVaddr: %" PRIx64 ", endVaddr: %" PRIx64 "", (uint64_t)startVaddr_, (uint64_t)endVaddr_);
                 break;
             }
             case PT_DYNAMIC: {
@@ -331,7 +331,7 @@ bool ElfParser::ParseElfSymbols(ElfShdr shdr, bool isFunc)
         mmap_->ReadString(nameOffset, &(elfSymbol.nameStr), nameMaxSize);
         elfSymbols_.emplace_back(elfSymbol);
     }
-    LOGU("elfSymbols.size: %d", elfSymbols_.size());
+    LOGU("elfSymbols.size: %" PRIuPTR "", elfSymbols_.size());
     return true;
 }
 
@@ -382,7 +382,7 @@ bool ElfParser::ParseElfSymbolByAddr(uint64_t addr, ElfSymbol& elfSymbol)
 bool ElfParser::GetSectionNameByIndex(std::string& nameStr, const uint32_t name)
 {
     if (sectionNames_.empty() || name >= sectionNames_.size()) {
-        LOGE("name index(%u) out of range, size: %d", name, sectionNames_.size());
+        LOGE("name index(%u) out of range, size: %" PRIuPTR "", name, sectionNames_.size());
         return false;
     }
 

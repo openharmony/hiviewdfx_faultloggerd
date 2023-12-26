@@ -49,7 +49,7 @@ const std::string DfxMaps::GetMapsFile(pid_t pid)
     if ((pid == 0) || (pid == getpid())) {
         path = std::string(PROC_SELF_MAPS_PATH);
     } else {
-        path = StringPrintf("/proc/%d/maps", pid);
+        path = StringPrintf("/proc/%d/maps", (int)pid);
     }
     return path;
 }

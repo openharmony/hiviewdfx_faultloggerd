@@ -43,7 +43,7 @@ bool DwarfSection::LinearSearchEntry(uintptr_t pc, struct UnwindTableInfo uti, s
         uintptr_t fdeAddr = ptr;
         if (GetCieOrFde(ptr, fdeInfo)) {
             if (pc >= fdeInfo.pcStart && pc < fdeInfo.pcEnd) {
-                LOGU("Fde entry addr: %llx", (uint64_t)fdeAddr);
+                LOGU("Fde entry addr: %" PRIx64 "", (uint64_t)fdeAddr);
                 uei.unwindInfo = (void *)(fdeAddr);
                 uei.format = UNW_INFO_FORMAT_REMOTE_TABLE;
                 return true;
@@ -106,7 +106,7 @@ bool DwarfSection::SearchEntry(uintptr_t pc, struct UnwindTableInfo uti, struct 
         }
     }
 
-    LOGU("Fde entry addr: %llx", (uint64_t)entry);
+    LOGU("Fde entry addr: %" PRIx64 "", (uint64_t)entry);
     uei.unwindInfo = (void *)(entry);
     uei.format = UNW_INFO_FORMAT_REMOTE_TABLE;
     return true;
@@ -193,7 +193,7 @@ void DwarfSection::ParseCieOrFdeHeader(uintptr_t& ptr, FrameDescEntry &fdeInfo, 
 
 bool DwarfSection::ParseFde(uintptr_t fdeAddr, uintptr_t fdePtr, FrameDescEntry &fdeInfo)
 {
-    LOGU("fdeAddr: %llx", (uint64_t)fdeAddr);
+    LOGU("fdeAddr: %" PRIx64 "", (uint64_t)fdeAddr);
     if (!fdeEntries_.empty()) {
         auto iter = fdeEntries_.find(fdeAddr);
         if (iter != fdeEntries_.end()) {
@@ -258,7 +258,7 @@ bool DwarfSection::FillInFde(uintptr_t ptr, FrameDescEntry &fdeInfo)
 
 bool DwarfSection::ParseCie(uintptr_t cieAddr, uintptr_t ciePtr, CommonInfoEntry &cieInfo)
 {
-    LOGU("cieAddr: %llx", (uint64_t)cieAddr);
+    LOGU("cieAddr: %" PRIx64 "", (uint64_t)cieAddr);
     if (!cieEntries_.empty()) {
         auto iter = cieEntries_.find(cieAddr);
         if (iter != cieEntries_.end()) {
@@ -344,7 +344,7 @@ bool DwarfSection::FillInCie(uintptr_t ptr, CommonInfoEntry &cieInfo)
     cieInfo.hasAugmentationData = true;
     // parse augmentation data length
     MAYBE_UNUSED uintptr_t augSize = memory_->ReadUleb128(ptr);
-    LOGU("augSize: %x", augSize);
+    LOGU("augSize: %" PRIxPTR "", augSize);
     cieInfo.instructionsOff = ptr + augSize;
 
     for (size_t i = 1; i < augStr.size(); ++i) {

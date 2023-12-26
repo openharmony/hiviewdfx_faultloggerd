@@ -310,7 +310,7 @@ int64_t DfxElf::GetLoadBias()
     if (loadBias_ == 0) {
         if (IsValid()) {
             loadBias_ = elfParse_->GetLoadBias();
-            LOGU("Elf loadBias: %llx", (uint64_t)loadBias_);
+            LOGU("Elf loadBias: %" PRIx64 "", (uint64_t)loadBias_);
         }
     }
     return loadBias_;
@@ -320,9 +320,9 @@ uint64_t DfxElf::GetLoadBase(uint64_t mapStart, uint64_t mapOffset)
 {
     if (loadBase_ == static_cast<uint64_t>(-1)) {
         if (IsValid()) {
-            LOGU("mapStart: %llx, mapOffset: %llx", (uint64_t)mapStart, (uint64_t)mapOffset);
+            LOGU("mapStart: %" PRIx64 ", mapOffset: %" PRIx64 "", (uint64_t)mapStart, (uint64_t)mapOffset);
             loadBase_ = mapStart - mapOffset - static_cast<uint64_t>(GetLoadBias());
-            LOGU("Elf loadBase: %llx", (uint64_t)loadBase_);
+            LOGU("Elf loadBase: %" PRIx64 "", (uint64_t)loadBase_);
         }
     }
     return loadBase_;
@@ -340,7 +340,7 @@ uint64_t DfxElf::GetStartPc()
             auto startVaddr = elfParse_->GetStartVaddr();
             if (loadBase_ != static_cast<uint64_t>(-1) && startVaddr != static_cast<uint64_t>(-1)) {
                 startPc_ = startVaddr + loadBase_;
-                LOGU("Elf startPc: %llx", (uint64_t)startPc_);
+                LOGU("Elf startPc: %" PRIx64 "", (uint64_t)startPc_);
             }
         }
     }
@@ -372,7 +372,7 @@ uint64_t DfxElf::GetEndPc()
             auto endVaddr = elfParse_->GetEndVaddr();
             if (loadBase_ != static_cast<uint64_t>(-1) && endVaddr != 0) {
                 endPc_ = endVaddr + loadBase_;
-                LOGU("Elf endPc: %llx", (uint64_t)endPc_);
+                LOGU("Elf endPc: %" PRIx64 "", (uint64_t)endPc_);
             }
         }
     }
@@ -659,7 +659,7 @@ bool DfxElf::FillUnwindTableByExidx(ShdrInfo shdr, uintptr_t loadBase, struct Un
     uti->tableLen = shdr.size;
     INSTR_STATISTIC(InstructionEntriesArmExidx, shdr.size, 0);
     uti->format = UNW_INFO_FORMAT_ARM_EXIDX;
-    LOGU("tableData: %llx, tableLen: %d", (uint64_t)uti->tableData, (int)uti->tableLen);
+    LOGU("tableData: %" PRIx64 ", tableLen: %d", (uint64_t)uti->tableData, (int)uti->tableLen);
     return true;
 }
 
@@ -675,15 +675,16 @@ bool DfxElf::FillUnwindTableByEhhdrLocal(struct DwarfEhFrameHdr* hdr, struct Unw
     }
 
     uintptr_t ptr = (uintptr_t)(&(hdr->ehFrame));
-    LOGU("hdr: %llx, ehFrame: %llx", (uint64_t)hdr, (uint64_t)ptr);
+    LOGU("hdr: %" PRIx64 ", ehFrame: %" PRIx64 "", (uint64_t)hdr, (uint64_t)ptr);
 
     auto acc = std::make_shared<DfxAccessorsLocal>();
     auto memory = std::make_shared<DfxMemory>(acc);
-    LOGU("gp: %llx, ehFramePtrEnc: %x, fdeCountEnc: %x", (uint64_t)uti->gp, hdr->ehFramePtrEnc, hdr->fdeCountEnc);
+    LOGU("gp: %" PRIx64 ", ehFramePtrEnc: %x, fdeCountEnc: %x",
+        (uint64_t)uti->gp, hdr->ehFramePtrEnc, hdr->fdeCountEnc);
     memory->SetDataOffset(uti->gp);
     MAYBE_UNUSED uintptr_t ehFrameStart = memory->ReadEncodedValue(ptr, hdr->ehFramePtrEnc);
     uintptr_t fdeCount = memory->ReadEncodedValue(ptr, hdr->fdeCountEnc);
-    LOGU("ehFrameStart: %llx, fdeCount: %d", (uint64_t)ehFrameStart, (int)fdeCount);
+    LOGU("ehFrameStart: %" PRIx64 ", fdeCount: %d", (uint64_t)ehFrameStart, (int)fdeCount);
 
     if (hdr->tableEnc != (DW_EH_PE_datarel | DW_EH_PE_sdata4)) {
         LOGU("tableEnc: %x", hdr->tableEnc);
@@ -704,7 +705,7 @@ bool DfxElf::FillUnwindTableByEhhdrLocal(struct DwarfEhFrameHdr* hdr, struct Unw
         uti->segbase = (uintptr_t)hdr;
     }
     uti->format = UNW_INFO_FORMAT_REMOTE_TABLE;
-    LOGU("tableData: %llx, tableLen: %d", (uint64_t)uti->tableData, (int)uti->tableLen);
+    LOGU("tableData: %" PRIx64 ", tableLen: %d", (uint64_t)uti->tableData, (int)uti->tableLen);
     return true;
 }
 #endif
@@ -719,15 +720,16 @@ bool DfxElf::FillUnwindTableByEhhdr(struct DwarfEhFrameHdr* hdr, uintptr_t shdrB
         return false;
     }
     uintptr_t ptr = (uintptr_t)(&(hdr->ehFrame));
-    LOGU("hdr: %llx, ehFrame: %llx", (uint64_t)hdr, (uint64_t)ptr);
+    LOGU("hdr: %" PRIx64 ", ehFrame: %" PRIx64 "", (uint64_t)hdr, (uint64_t)ptr);
 
     uti->gp = GetGlobalPointer();
-    LOGU("gp: %llx, ehFramePtrEnc: %x, fdeCountEnc: %x", (uint64_t)uti->gp, hdr->ehFramePtrEnc, hdr->fdeCountEnc);
+    LOGU("gp: %" PRIx64 ", ehFramePtrEnc: %x, fdeCountEnc: %x",
+        (uint64_t)uti->gp, hdr->ehFramePtrEnc, hdr->fdeCountEnc);
     mmap_->SetDataOffset(uti->gp);
     auto ptrOffset = ptr - reinterpret_cast<uintptr_t>(GetMmapPtr());
     MAYBE_UNUSED uintptr_t ehFrameStart = mmap_->ReadEncodedValue(ptrOffset, hdr->ehFramePtrEnc);
     uintptr_t fdeCount = mmap_->ReadEncodedValue(ptrOffset, hdr->fdeCountEnc);
-    LOGU("ehFrameStart: %llx, fdeCount: %d", (uint64_t)ehFrameStart, (int)fdeCount);
+    LOGU("ehFrameStart: %" PRIx64 ", fdeCount: %d", (uint64_t)ehFrameStart, (int)fdeCount);
     ptr = reinterpret_cast<uintptr_t>(GetMmapPtr()) + ptrOffset;
 
     if (hdr->tableEnc != (DW_EH_PE_datarel | DW_EH_PE_sdata4)) {
@@ -750,7 +752,7 @@ bool DfxElf::FillUnwindTableByEhhdr(struct DwarfEhFrameHdr* hdr, uintptr_t shdrB
         uti->segbase = shdrBase;
     }
     uti->format = UNW_INFO_FORMAT_REMOTE_TABLE;
-    LOGU("tableData: %llx, tableLen: %d", (uint64_t)uti->tableData, (int)uti->tableLen);
+    LOGU("tableData: %" PRIx64 ", tableLen: %d", (uint64_t)uti->tableData, (int)uti->tableLen);
     return true;
 }
 
@@ -766,7 +768,7 @@ int DfxElf::FindUnwindTableInfo(uintptr_t pc, std::shared_ptr<DfxMap> map, struc
     uintptr_t loadBase = GetLoadBase(map->begin, map->offset);
     uti.startPc = GetStartPc();
     uti.endPc = GetEndPc();
-    LOGU("Elf startPc: %llx, endPc: %llx", (uint64_t)uti.startPc, (uint64_t)uti.endPc);
+    LOGU("Elf startPc: %" PRIx64 ", endPc: %" PRIx64 "", (uint64_t)uti.startPc, (uint64_t)uti.endPc);
     if (pc < uti.startPc && pc >= uti.endPc) {
         return UNW_ERROR_PC_NOT_IN_UNWIND_INFO;
     }
