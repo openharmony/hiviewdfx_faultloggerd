@@ -41,7 +41,7 @@ bool DfxJsonFormatter::FormatJsonStack(std::string jsonStack, std::string& outSt
         return false;
     }
 
-    for (int i = 0; i < threads.size(); ++i) {
+    for (uint32_t i = 0; i < threads.size(); ++i) {
         Json::Value thread = threads[i];
         char buf[FRAME_BUF_LEN] = {0};
         std::string name = thread["thread_name"].asString();
@@ -49,9 +49,9 @@ bool DfxJsonFormatter::FormatJsonStack(std::string jsonStack, std::string& outSt
         std::ostringstream ss;
         ss << "Tid:" << tid << ", Name:" << name << "\n";
         const Json::Value frames = thread["frames"];
-        for (int j = 0; j < frames.size(); ++j) {
+        for (uint32_t j = 0; j < frames.size(); ++j) {
             char buf[FRAME_BUF_LEN] = {0};
-            char format[] = "#%02zu pc %s %s";
+            char format[] = "#%02u pc %s %s";
 
             std::string buildId = frames[j]["buildId"].asString();
             std::string file = frames[j]["file"].asString();
@@ -77,7 +77,6 @@ bool DfxJsonFormatter::FormatJsonStack(std::string jsonStack, std::string& outSt
             ss << std::endl;
         }
         outStackStr.append(ss.str());
-
     }
     return true;
 }
