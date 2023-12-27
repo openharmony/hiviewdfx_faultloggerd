@@ -192,9 +192,9 @@ bool Unwinder::StepArkJsFrame(size_t& idx, size_t& curIdx)
         LOGE("Failed to memset_s jsFrames.");
         return false;
     }
-    LOGU("input ark pc: %" PRlx64 ", fp: %" PRlx64 ", sp: %" PRlx64 ".", (uint64_t)pc, (uint64_t)fp, (uint64_t)sp);
+    LOGI("input ark pc: %" PRIx64 ", fp: %" PRIx64 ", sp: %" PRIx64 ".", (uint64_t)pc, (uint64_t)fp, (uint64_t)sp);
     int ret = DfxArk::GetArkNativeFrameInfo(pid_, pc, fp, sp, jsFrames, size);
-    LOGU("output ark pc: %" PRlx64 ", fp: %" PRlx64 ", sp: %" PRlx64 ", js frame size: %zu.",
+    LOGI("output ark pc: %" PRIx64 ", fp: %" PRIx64 ", sp: %" PRIx64 ", js frame size: %zu.",
         (uint64_t)pc, (uint64_t)fp, (uint64_t)sp, size);
     if (ret < 0) {
         return false;
