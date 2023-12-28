@@ -106,7 +106,7 @@ std::string DfxFrameFormat::GetFramesJson(const std::vector<DfxFrame>& frames)
 #endif
 
     Json::Value framesJson;
-    for (auto const frame : frames) {
+    for (auto const& frame : frames) {
         Json::Value frameJson;
         if (snprintf_s(buf, sizeof(buf), sizeof(buf) - 1, format, frame.relPc) > 0) {
             frameJson["pc"] = buf;

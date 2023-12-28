@@ -251,25 +251,23 @@ bool Unwinder::Unwind(void *ctx, size_t maxFrameNum, size_t skipFrameNum)
 
         pc = regs_->GetPc();
         sp = regs_->GetSp();
-        if (pid_ >= 0 || pid_ == UNWIND_TYPE_LOCAL) {
-            if (!GetMapByPc(pc, ctx, map)) {
-                if (curIndex != 0) {
-                    lastErrorData_.SetAddrAndCode(pc, UNW_ERROR_INVALID_MAP);
-                    break;
-                }
-                if (enableLrFallback_ && regs_->SetPcFromReturnAddress(memory_)) {
-                    LOGW("Failed to get map, lr fallback");
-                    AddFrame(curIndex, pc, sp, map);
-                    index++;
-                    continue;
-                }
-                uintptr_t fp = regs_->GetFp();
-                if (!FpStep(fp, pc, ctx)) {
-                    break;
-                }
-                LOGW("Failed to get map, fp fallback");
+        if (!GetMapByPc(pc, ctx, map)) {
+            if (curIndex != 0) {
+                lastErrorData_.SetAddrAndCode(pc, UNW_ERROR_INVALID_MAP);
+                break;
+            }
+            if (enableLrFallback_ && regs_->SetPcFromReturnAddress(memory_)) {
+                LOGW("Failed to get map, lr fallback");
+                AddFrame(curIndex, pc, sp, map);
+                index++;
                 continue;
             }
+            uintptr_t fp = regs_->GetFp();
+            if (!FpStep(fp, pc, ctx)) {
+                break;
+            }
+            LOGW("Failed to get map, fp fallback");
+            continue;
         }
 
         if (needAdjustPc) {
