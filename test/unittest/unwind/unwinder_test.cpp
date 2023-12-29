@@ -157,15 +157,13 @@ HWTEST_F(UnwinderTest, UnwinderLocalTest003, TestSize.Level2)
     GTEST_LOG_(INFO) << "UnwinderLocalTest003: start.";
     // When the param is less than -1, maps_ = null when method Unwinder is constructed
     auto unwinderNegative = std::make_shared<Unwinder>(-2);
-    size_t maxFrameNum = 64;
-    size_t skipFrameNum = 0;
     GTEST_LOG_(INFO) << "when pid == tid and maps_ == null, "
                          "UnwindLocal(maxFrameNum, skipFrameNum) is false";
-    ASSERT_FALSE(unwinderNegative->UnwindLocal(maxFrameNum, skipFrameNum));
+    ASSERT_FALSE(unwinderNegative->UnwindLocal());
     auto unwinder = std::make_shared<Unwinder>();
     GTEST_LOG_(INFO) << "when pid == tid and maps_ != null, "
                         "UnwindLocal(maxFrameNum, skipFrameNum) is true";
-    ASSERT_TRUE(unwinder->UnwindLocal(maxFrameNum, skipFrameNum));
+    ASSERT_TRUE(unwinder->UnwindLocal());
     GTEST_LOG_(INFO) << "UnwinderLocalTest003: end.";
 }
 

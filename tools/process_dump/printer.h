@@ -34,7 +34,7 @@ class Printer {
 public:
     static void PrintDumpHeader(std::shared_ptr<ProcessDumpRequest> request, std::shared_ptr<DfxProcess> process,
                                 std::shared_ptr<Unwinder> unwinder);
-    static void PrintProcessMapsByConfig(std::shared_ptr<DfxMaps> process);
+    static void PrintProcessMapsByConfig(std::shared_ptr<DfxMaps> maps);
     static void PrintOtherThreadHeaderByConfig();
     static void PrintThreadHeaderByConfig(std::shared_ptr<DfxThread> thread);
     static void PrintThreadBacktraceByConfig(std::shared_ptr<DfxThread> thread);

@@ -60,6 +60,17 @@ namespace OHOS {
 namespace HiviewDFX {
 namespace {
 constexpr int ONE_BLOCK_SIZE = 1000;
+void WriteData(int fd, const std::string& data, int blockSize)
+{
+    int dataSize = data.length();
+    int index = 0;
+    while (index < dataSize) {
+        int writeLength = (index + blockSize) <= dataSize ? blockSize : (dataSize - index);
+        write(fd, data.substr(index, writeLength).c_str(), writeLength);
+        index += writeLength;
+        usleep(DfxConfig::GetConfig().writeSleepTime);
+    }
+}
 }
 
 ProcessDumper &ProcessDumper::GetInstance()
@@ -325,6 +336,7 @@ void ProcessDumper::WriteDumpRes(int32_t res)
     if (resFd_ > 0) {
         write(resFd_, &res, sizeof(res));
         close(resFd_);
+        resFd_ = -1;
     } else {
         if (res != DUMP_ESUCCESS) {
             DfxRingBufferWrapper::GetInstance().AppendMsg("Result:\n");
@@ -336,19 +348,6 @@ void ProcessDumper::WriteDumpRes(int32_t res)
 bool ProcessDumper::IsCrash() const
 {
     return isCrash_;
-}
-
-void ProcessDumper::WriteData(int fd, const std::string& data, int blockSize) const
-{
-    int dataSize = data.length();
-    int index = 0;
-    int writeLength = 0;
-    while (index < dataSize) {
-        writeLength = (index + blockSize) <= dataSize ? blockSize : (dataSize - index);
-        write(fd, data.substr(index, writeLength).c_str(), writeLength);
-        index += writeLength;
-        usleep(DfxConfig::GetConfig().writeSleepTime);
-    }
 }
 } // namespace HiviewDFX
 } // namespace OHOS

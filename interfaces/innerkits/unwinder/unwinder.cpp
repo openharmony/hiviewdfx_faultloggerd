@@ -354,7 +354,7 @@ bool Unwinder::Step(uintptr_t& pc, uintptr_t& sp, void *ctx)
             // 1. find cache rs
             auto iter = rsCache_.find(pc);
             if (iter != rsCache_.end()) {
-                LOGU("Find rs cache, pc: %p", (void*)pc);
+                LOGU("Find rs cache, pc: %p", reinterpret_cast<void *>(pc));
                 rs = iter->second;
                 ret = true;
                 break;

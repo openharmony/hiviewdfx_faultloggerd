@@ -46,9 +46,6 @@ private:
     void GetDumpInfo(Json::Value& jsonInfo) const;
     bool FillFrames(const std::shared_ptr<DfxThread>& thread, Json::Value& jsonInfo) const;
     void FillNativeFrame(const DfxFrame& frame, Json::Value& jsonInfo) const;
-#if defined(ENABLE_MIXSTACK)
-    void FillJsFrame(const DfxFrame& frame, Json::Value& jsonInfo) const;
-#endif
     void AppendThreads(const std::vector<std::shared_ptr<DfxThread>>& threads, Json::Value& jsonInfo) const;
 #endif
 

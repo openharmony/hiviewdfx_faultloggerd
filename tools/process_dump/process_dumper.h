@@ -50,7 +50,6 @@ private:
     int InitPrintThread(std::shared_ptr<ProcessDumpRequest> request);
     int InitProcessInfo(std::shared_ptr<ProcessDumpRequest> request);
     static int GetLogTypeBySignal(int sig);
-    void WriteData(int fd, const std::string& data, int blockSize) const;
 
 private:
     std::shared_ptr<DfxProcess> process_ = nullptr;

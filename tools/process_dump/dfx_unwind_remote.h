@@ -42,10 +42,6 @@ public:
                               std::shared_ptr<Unwinder> unwinder);
 
 private:
-    void UnwindThreadByParseStackIfNeed(std::shared_ptr<DfxProcess> &process, std::shared_ptr<DfxThread> &thread,
-        std::shared_ptr<Unwinder> unwinder);
-
-private:
     DfxUnwindRemote() = default;
     DISALLOW_COPY_AND_MOVE(DfxUnwindRemote);
 };

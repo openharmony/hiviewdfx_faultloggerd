@@ -89,7 +89,6 @@ bool FaultStack::CollectStackInfo(const std::vector<DfxFrame>& frames, bool need
     uintptr_t minAddr = 4096;
     uintptr_t size = 0;
     uintptr_t prevSp = 0;
-    uintptr_t curSp = 0;
     uintptr_t prevEndAddr = 0;
     uintptr_t highAddrLength = DfxConfig::GetConfig().highAddressStep;
     if (needParseStack) {
@@ -105,7 +104,7 @@ bool FaultStack::CollectStackInfo(const std::vector<DfxFrame>& frames, bool need
         }
 
         auto frame = frames.at(index);
-        curSp = static_cast<uintptr_t>(frame.sp);
+        uintptr_t curSp = static_cast<uintptr_t>(frame.sp);
 
         size = 0;
         if (curSp > prevSp) {
