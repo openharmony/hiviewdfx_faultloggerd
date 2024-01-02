@@ -183,7 +183,6 @@ std::string GetProcessStacktrace(size_t maxFrameNums, bool isJson)
             }
             ReadThreadWchan(msg, tid, true);
             ss << msg << std::endl;
-            HILOG_ERROR(LOG_CORE, "Failed to dump stack trace of thread %d.", tid);
         }
         return true;
     };
