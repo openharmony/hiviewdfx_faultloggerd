@@ -70,10 +70,10 @@ std::string DfxFrameFormatter::GetFrameStr(const std::shared_ptr<DfxFrame>& fram
         if (!frame->funcName.empty()) {
             data += "(" + frame->funcName;
             data += StringPrintf("+%" PRId64, frame->funcOffset);
-            data += ')';
+            data += ")";
         }
         if (!frame->buildId.empty()) {
-            data += "(" + frame->buildId + ')';
+            data += "(" + frame->buildId + ")";
         }
     }
     data += "\n";

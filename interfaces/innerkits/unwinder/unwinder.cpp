@@ -125,6 +125,7 @@ bool Unwinder::UnwindRemote(pid_t tid, bool withRegs, size_t maxFrameNum, size_t
     if (tid == 0) {
         tid = pid_;
     }
+    LOGI("tid: %d", tid);
     if (!withRegs) {
         regs_ = DfxRegs::CreateRemoteRegs(tid);
     }
@@ -591,13 +592,12 @@ void Unwinder::FillFrame(DfxFrame& frame)
     frame.relPc = frame.map->GetRelPc(frame.pc);
     frame.mapName = frame.map->GetElfName();
     frame.mapOffset = frame.map->offset;
-    LOGU("mapName: %s, mapOffset: %" PRIx64 "", frame.mapName.c_str(), frame.mapOffset);
-
     auto elf = frame.map->GetElf();
     if (elf == nullptr) {
-        LOGE("elf is null");
+        LOGE("elf is null, mapName: %s", frame.mapName.c_str());
         return;
     }
+    LOGU("mapName: %s, mapOffset: %" PRIx64 "", frame.mapName.c_str(), frame.mapOffset);
     DfxSymbols::GetFuncNameAndOffsetByPc(frame.relPc, elf, frame.funcName, frame.funcOffset);
     frame.buildId = elf->GetBuildId();
 }

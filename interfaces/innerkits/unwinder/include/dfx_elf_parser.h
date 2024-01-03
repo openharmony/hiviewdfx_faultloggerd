@@ -79,6 +79,8 @@ protected:
     template <typename SymType>
     bool ParseElfSymbols(ElfShdr shdr, bool isFunc);
     template <typename SymType>
+    bool ParseElfSymbolName(ShdrInfo linkShdr, SymType sym, std::string& nameStr);
+    template <typename SymType>
     bool ParseElfSymbolByAddr(uint64_t addr, ElfSymbol& elfSymbol);
     template <typename DynType>
     bool ParseElfDynamic();
