@@ -316,22 +316,30 @@ bool ElfParser::ParseElfSymbols(ElfShdr shdr, bool isFunc)
         if (!Read(offset, &sym, sizeof(sym))) {
             continue;
         }
-        if (isFunc && !IsFunc(sym)) {
-            continue;
-        }
-        if (sym.st_value == 0 || sym.st_size == 0 || static_cast<uint64_t>(sym.st_name) >= linkShdrInfo.size) {
+        if (sym.st_value == 0 || sym.st_size == 0) {
             continue;
         }
         ElfSymbol elfSymbol;
+        if (isFunc && (!ParseElfSymbolName(linkShdrInfo, sym, elfSymbol.nameStr))) {
+            continue;
+        }
         elfSymbol.value = static_cast<uint64_t>(sym.st_value);
         elfSymbol.size = static_cast<uint64_t>(sym.st_size);
         elfSymbol.name = static_cast<uint32_t>(sym.st_name);
-        uintptr_t nameOffset = static_cast<uintptr_t>(linkShdrInfo.offset + sym.st_name);
-        size_t nameMaxSize = static_cast<size_t>(linkShdrInfo.size - sym.st_name);
-        mmap_->ReadString(nameOffset, &(elfSymbol.nameStr), nameMaxSize);
         elfSymbols_.emplace_back(elfSymbol);
     }
     LOGU("elfSymbols.size: %" PRIuPTR "", elfSymbols_.size());
+    return true;
+}
+
+template <typename SymType>
+bool ElfParser::ParseElfSymbolName(ShdrInfo linkShdr, SymType sym, std::string& nameStr)
+{
+    if (!IsFunc(sym) || (static_cast<uint64_t>(sym.st_name) >= linkShdr.size)) {
+        return false;
+    }
+    uintptr_t nameOffset = static_cast<uintptr_t>(linkShdr.offset + sym.st_name);
+    nameStr = std::string(static_cast<char*>(mmap_->Get()) + nameOffset);
     return true;
 }
 
@@ -345,7 +353,7 @@ bool ElfParser::ParseElfSymbolByAddr(uint64_t addr, ElfSymbol& elfSymbol)
     for (const auto &shdr : symShdrs_) {
         ShdrInfo linkShdrInfo;
         if (!GetSectionInfo(linkShdrInfo, shdr.link)) {
-            continue;
+            return false;
         }
 
         uint32_t count = static_cast<uint32_t>((shdr.entSize != 0) ? (shdr.size / shdr.entSize) : 0);
@@ -355,23 +363,16 @@ bool ElfParser::ParseElfSymbolByAddr(uint64_t addr, ElfSymbol& elfSymbol)
             if (!Read(offset, &sym, sizeof(sym))) { // todo inplace search
                 continue;
             }
-
-            if (!IsFunc(sym)) {
-                continue;
-            }
             if (sym.st_value == 0 || sym.st_size == 0) {
                 continue;
             }
 
-            if (sym.st_value <= addr &&
-                addr < (sym.st_value + sym.st_size) &&
-                (static_cast<uint64_t>(sym.st_name) < linkShdrInfo.size)) {
+            if ((sym.st_value <= addr) && (addr < (sym.st_value + sym.st_size)) &&
+                ParseElfSymbolName(linkShdrInfo, sym, elfSymbol.nameStr)) {
                 elfSymbol.value = static_cast<uint64_t>(sym.st_value);
                 elfSymbol.size = static_cast<uint64_t>(sym.st_size);
                 elfSymbol.name = static_cast<uint32_t>(sym.st_name);
-                uintptr_t nameOffset = static_cast<uintptr_t>(linkShdrInfo.offset + sym.st_name);
-                size_t nameMaxSize = static_cast<size_t>(linkShdrInfo.size - sym.st_name);
-                mmap_->ReadString(nameOffset, &(elfSymbol.nameStr), nameMaxSize);
+                LOGU("Parse elf symbol nameStr: %s", elfSymbol.nameStr.c_str());
                 return true;
             }
         }

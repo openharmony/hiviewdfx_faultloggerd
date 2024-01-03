@@ -106,6 +106,7 @@ bool DfxSymbols::GetFuncNameAndOffsetByPc(uint64_t relPc, std::shared_ptr<DfxElf
 #endif
     ElfSymbol elfSymbol;
     if ((elf != nullptr) && elf->GetFuncInfo(relPc, elfSymbol)) {
+        LOGU("nameStr: %s", elfSymbol.nameStr.c_str());
         funcName = Demangle(elfSymbol.nameStr);
         funcOffset = relPc - elfSymbol.value;
 #if defined(__arm__)
@@ -114,6 +115,7 @@ bool DfxSymbols::GetFuncNameAndOffsetByPc(uint64_t relPc, std::shared_ptr<DfxElf
         LOGU("Symbol relPc: %" PRIx64 ", funcName: %s, funcOffset: %" PRIx64 "", relPc, funcName.c_str(), funcOffset);
         return true;
     }
+    LOGW("Failed to get symbol, relPc: %" PRIx64 "", relPc);
     return false;
 }
 

@@ -108,12 +108,11 @@ bool DfxMap::IsArkExecutable()
     }
 
     if ((!StartsWith(name, "[anon:ArkTS Code]")) && (!StartsWith(name, "/dev/zero")) && (!EndsWith(name, ".an"))) {
-        LOGU("not ark map: %s", name.c_str());
         return false;
     }
 
     if ((prots & PROT_EXEC) == 0) {
-        LOGU("target map is not executable.");
+        LOGW("target map is not executable.");
         return false;
     }
 
