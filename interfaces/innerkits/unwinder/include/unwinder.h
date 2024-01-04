@@ -63,6 +63,7 @@ public:
     inline void SetTargetPid(int pid) { pid_ = pid; }
     inline int32_t GetTargetPid() { return pid_; }
     inline void SetPacMask(uintptr_t mask) { pacMask_ = mask; }
+
     inline void EnableUnwindCache(bool enableCache) { enableCache_ = enableCache; }
     inline void EnableLrFallback(bool enableLrFallback) { enableLrFallback_ = enableLrFallback; }
     inline void EnableFpFallback(bool enableFpFallback) { enableFpFallback_ = enableFpFallback; }
@@ -79,7 +80,7 @@ public:
 
     bool GetStackRange(uintptr_t& stackBottom, uintptr_t& stackTop);
 
-    bool UnwindLocalWithContext(const ucontext_t& context, size_t maxFrameNum, size_t skipFrameNum);
+    bool UnwindLocalWithContext(const ucontext_t& context, size_t maxFrameNum = 64, size_t skipFrameNum = 0);
     bool UnwindLocal(bool withRegs = false, size_t maxFrameNum = 64, size_t skipFrameNum = 0);
     bool UnwindRemote(pid_t tid = 0, bool withRegs = false, size_t maxFrameNum = 64, size_t skipFrameNum = 0);
     bool Unwind(void *ctx, size_t maxFrameNum = 64, size_t skipFrameNum = 0);
@@ -104,11 +105,11 @@ private:
     void Clear();
     void DoPcAdjust(uintptr_t& pc);
     bool GetMapByPc(uintptr_t pc, void *ctx, std::shared_ptr<DfxMap>& map);
-    void AddFrame(size_t index, uintptr_t pc, uintptr_t sp, std::shared_ptr<DfxMap> map);
+    void AddFrame(uintptr_t pc, uintptr_t sp, std::shared_ptr<DfxMap> map, size_t& index);
     bool IsMapExecByPc(uintptr_t pc, void *ctx);
     bool Apply(std::shared_ptr<DfxRegs> regs, std::shared_ptr<RegLocState> rs);
 #if defined(ENABLE_MIXSTACK)
-    bool StepArkJsFrame(size_t& idx, size_t& curIdx);
+    bool StepArkJsFrame(size_t& curIdx);
 #endif
     static uintptr_t StripPac(uintptr_t inAddr, uintptr_t pacMask);
     inline void SetLocalStackCheck(void* ctx, bool check)

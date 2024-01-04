@@ -181,7 +181,7 @@ bool Unwinder::IsMapExecByPc(uintptr_t pc, void *ctx)
 }
 
 #if defined(ENABLE_MIXSTACK)
-bool Unwinder::StepArkJsFrame(size_t& idx, size_t& curIdx)
+bool Unwinder::StepArkJsFrame(size_t& curIdx)
 {
     uintptr_t pc = regs_->GetPc();
     uintptr_t sp = regs_->GetSp();
@@ -209,7 +209,6 @@ bool Unwinder::StepArkJsFrame(size_t& idx, size_t& curIdx)
         frame.line = jsFrames[i].line;
         frame.column = jsFrames[i].column;
         frames_.emplace_back(frame);
-        idx++;
     }
     regs_->SetPc(pc);
     regs_->SetSp(sp);
@@ -228,22 +227,16 @@ bool Unwinder::Unwind(void *ctx, size_t maxFrameNum, size_t skipFrameNum)
     frames_.clear();
 
     bool needAdjustPc = false;
-    size_t index = 0;
+    bool isFirstValidFrame = false;
+    size_t skipIndex = 0;
     size_t curIndex = 0;
     uintptr_t pc = 0, sp = 0, stepPc = 0;
-
     std::shared_ptr<DfxMap> map = nullptr;
-    pc = regs_->GetPc();
-    if (!maps_->FindMapByAddr(pc, map) || (map == nullptr)) {
-        regs_->SetPc(StripPac(pc, pacMask_));
-    }
-
     do {
-        if (index < skipFrameNum) {
-            index++;
+        if (skipIndex < skipFrameNum) {
+            skipIndex++;
             continue;
         }
-        curIndex = index - skipFrameNum;
         if (curIndex >= maxFrameNum) {
             lastErrorData_.SetCode(UNW_ERROR_MAX_FRAMES_EXCEEDED);
             break;
@@ -253,48 +246,47 @@ bool Unwinder::Unwind(void *ctx, size_t maxFrameNum, size_t skipFrameNum)
         pc = regs_->GetPc();
         sp = regs_->GetSp();
         if (!GetMapByPc(pc, ctx, map)) {
-            if (curIndex != 0) {
+            if (isFirstValidFrame) {
                 lastErrorData_.SetAddrAndCode(pc, UNW_ERROR_INVALID_MAP);
                 break;
             }
+
             if (enableLrFallback_ && regs_->SetPcFromReturnAddress(memory_)) {
                 LOGW("Failed to get map, lr fallback");
-                AddFrame(curIndex, pc, sp, map);
-                index++;
+                AddFrame(pc, sp, map, curIndex);
                 continue;
             }
+
             uintptr_t fp = regs_->GetFp();
             if (!FpStep(fp, pc, ctx)) {
                 break;
             }
             LOGW("Failed to get map, fp fallback");
+            isFirstValidFrame = true;
             continue;
         }
+        isFirstValidFrame = true;
 
         if (needAdjustPc) {
             DoPcAdjust(pc);
         }
         needAdjustPc = true;
+
+        AddFrame(pc, sp, map, curIndex);
 #if defined(ENABLE_MIXSTACK)
         if (map->IsArkExecutable()) {
-            AddFrame(curIndex, pc, sp, map);
-            index++;
-            curIndex++;
-            if (!StepArkJsFrame(index, curIndex)) {
+            if (!StepArkJsFrame(curIndex)) {
                 LOGE("Failed to step ark Js frames.");
                 break;
             }
             continue;
         }
 #endif
-        AddFrame(curIndex, pc, sp, map);
 
         stepPc = pc;
         if (!Step(stepPc, sp, ctx)) {
             break;
         }
-
-        index++;
     } while (true);
     LOGU("Last error code: %d, addr: %p", (int)GetLastErrorCode(), reinterpret_cast<void *>(GetLastErrorAddr()));
     return (curIndex > 0);
@@ -476,6 +468,10 @@ bool Unwinder::FpStep(uintptr_t& fp, uintptr_t& pc, void *ctx)
         regs_->SetReg(REG_FP, &fp);
         regs_->SetReg(REG_PC, &pc);
         regs_->SetReg(REG_SP, &prevFp);
+        if (pid_ == UNWIND_TYPE_CUSTOMIZE) {
+            LOGW("FpStep, Strip pac pc");
+            regs_->SetPc(StripPac(pc, pacMask_));
+        }
         LOGU("------fp: %lx, pc: %lx", (uint64_t)fp, (uint64_t)pc);
         return true;
     }
@@ -556,11 +552,11 @@ void Unwinder::SetFrames(std::vector<DfxFrame>& frames)
     frames_ = frames;
 }
 
-void Unwinder::AddFrame(size_t index, uintptr_t pc, uintptr_t sp, std::shared_ptr<DfxMap> map)
+void Unwinder::AddFrame(uintptr_t pc, uintptr_t sp, std::shared_ptr<DfxMap> map, size_t& index)
 {
     pcs_.emplace_back(pc);
     DfxFrame frame;
-    frame.index = index;
+    frame.index = (index++);
     frame.sp = static_cast<uint64_t>(sp);
     frame.pc = static_cast<uint64_t>(pc);
     frame.map = map;
