@@ -75,6 +75,9 @@ bool FpUnwinder::UnwindWithContext(unw_context_t& context, size_t skipFrameNum, 
 #elif defined(__aarch64__)
     dfxregs->fp_ = context.uc_mcontext.regs[REG_AARCH64_X29];
     dfxregs->pc_ = context.uc_mcontext.pc;
+#elif defined(__riscv) && __riscv_xlen == 64
+    dfxregs->fp_ = context.uc_mcontext.__gregs[REG_RISCV64_X8];
+    dfxregs->pc_ = context.uc_mcontext.__gregs[REG_RISCV64_X1];
 #else
 #pragma message("Unsupported architecture")
 #endif

@@ -31,6 +31,8 @@ std::shared_ptr<DfxRegs> DfxRegs::Create(int mode)
     dfxregs = std::make_shared<DfxRegsArm>();
 #elif defined(__aarch64__)
     dfxregs = std::make_shared<DfxRegsArm64>();
+#elif defined(__riscv) && __riscv_xlen == 64
+    dfxregs = std::make_shared<DfxRegsRiscv64>();
 #elif defined(__x86_64__)
     dfxregs = std::make_shared<DfxRegsX86_64>();
 #else
@@ -59,6 +61,8 @@ std::shared_ptr<DfxRegs> DfxRegs::CreateFromContext(const ucontext_t &context)
     dfxregs = std::make_shared<DfxRegsArm>(context);
 #elif defined(__aarch64__)
     dfxregs = std::make_shared<DfxRegsArm64>(context);
+#elif defined(__riscv) && __riscv_xlen == 64
+    dfxregs = std::make_shared<DfxRegsRiscv64>(context);
 #elif defined(__x86_64__)
     dfxregs = std::make_shared<DfxRegsX86_64>(context);
 #else
@@ -76,6 +80,19 @@ void DfxRegs::SetRegsData(const std::vector<uintptr_t>& regs)
 {
     regsData_ = regs;
 #if defined(__arm__) || defined(__aarch64__)
+    fp_ = regs[REG_FP];
+    sp_ = regs[REG_SP];
+    lr_ = regs[REG_LR];
+    pc_ = regs[REG_PC];
+#elif defined(__riscv) && __riscv_xlen == 64
+
+#ifdef REG_SP
+#undef REG_SP
+#endif
+#ifdef REG_PC
+#undef REG_PC
+#endif
+
     fp_ = regs[REG_FP];
     sp_ = regs[REG_SP];
     lr_ = regs[REG_LR];

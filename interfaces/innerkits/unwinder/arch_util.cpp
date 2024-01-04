@@ -29,6 +29,8 @@ ArchType GetCurrentArch()
     curArch = ArchType::ARCH_ARM;
 #elif defined(__aarch64__)
     curArch = ArchType::ARCH_ARM64;
+#elif defined(__riscv) && __riscv_xlen == 64
+    curArch = ArchType::ARCH_RISCV64;
 #elif defined(__i386__)
     curArch = ArchType::ARCH_X86;
 #elif defined(__x86_64__)
@@ -48,6 +50,8 @@ ArchType GetArchFromUname(const std::string& machine)
         return ArchType::ARCH_ARM;
     } else if (machine == "aarch64") {
         return ArchType::ARCH_ARM64;
+    } else if (machine == "riscv64") {
+        return ArchType::ARCH_RISCV64;
     } else if (machine == "x86_64") {
         return ArchType::ARCH_X86_64;
     } else if (machine == "x86" || machine == "i686") {
@@ -68,6 +72,8 @@ const std::string GetArchName(ArchType arch)
             return "ARM";
         case ArchType::ARCH_ARM64:
             return "ARM64";
+        case ArchType::ARCH_RISCV64:
+            return "RISCV64";
         default:
             return "Unsupport";
     }

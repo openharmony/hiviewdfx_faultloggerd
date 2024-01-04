@@ -50,6 +50,9 @@ bool GetBacktraceFramesByTid(std::vector<DfxFrame>& frames, int32_t tid, size_t 
 #ifdef __aarch64__
         ret = thread.Unwind(nullptr, nullptr, skipFrameNum, fast);
 #endif
+#if defined(__riscv) && __riscv_xlen == 64
+        ret = thread.Unwind(nullptr, nullptr, skipFrameNum, fast);
+#endif
     }
     if (!ret) {
         unw_addr_space_t as;

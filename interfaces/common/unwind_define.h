@@ -22,6 +22,8 @@
 #include "unwind_arm_define.h"
 #elif defined(__aarch64__)
 #include "unwind_arm64_define.h"
+#elif defined(__riscv) && __riscv_xlen == 64
+#include "unwind_riscv64_define.h"
 #elif defined(__x86_64__)
 #include "unwind_x86_64_define.h"
 #else
@@ -44,6 +46,7 @@ enum ArchType : uint8_t {
     ARCH_UNKNOWN = 0,
     ARCH_ARM,
     ARCH_ARM64,
+    ARCH_RISCV64,
     ARCH_X86,
     ARCH_X86_64,
 };

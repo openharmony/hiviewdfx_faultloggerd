@@ -40,6 +40,8 @@ std::shared_ptr<DfxRegs> DfxRegs::Create()
     auto dfxregs = std::make_shared<DfxRegsArm>();
 #elif defined(__aarch64__)
     auto dfxregs = std::make_shared<DfxRegsArm64>();
+#elif defined(__riscv) && __riscv_xlen == 64
+    auto dfxregs = std::make_shared<DfxRegsRiscv64>();
 #elif defined(__x86_64__)
     auto dfxregs = std::make_shared<DfxRegsX86_64>();
 #else
@@ -128,7 +130,7 @@ void DfxRegs::SetReg(const int idx, const uintptr_t* val)
 
 void DfxRegs::GetSpecialRegs(uintptr_t& fp, uintptr_t& lr, uintptr_t& sp, uintptr_t& pc) const
 {
-#if defined(__arm__) || defined(__aarch64__)
+#if defined(__arm__) || defined(__aarch64__) || defined(__riscv)
     fp = regsData_[REG_FP];
     lr = regsData_[REG_LR];
 #endif
@@ -138,7 +140,7 @@ void DfxRegs::GetSpecialRegs(uintptr_t& fp, uintptr_t& lr, uintptr_t& sp, uintpt
 
 void DfxRegs::SetSpecialRegs(uintptr_t fp, uintptr_t lr, uintptr_t sp, uintptr_t pc)
 {
-#if defined(__arm__) || defined(__aarch64__)
+#if defined(__arm__) || defined(__aarch64__) || defined(__riscv)
     regsData_[REG_FP] = fp;
     regsData_[REG_LR] = lr;
 #endif
@@ -177,7 +179,7 @@ uintptr_t DfxRegs::GetFp() const
 
 void DfxRegs::SetFp(uintptr_t fp)
 {
-#if defined(__arm__) || defined(__aarch64__)
+#if defined(__arm__) || defined(__aarch64__)  || defined(__riscv)
     regsData_[REG_FP] = fp;
 #endif
 }
