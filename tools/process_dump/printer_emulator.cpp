@@ -76,30 +76,32 @@ void Printer::PrintReason(std::shared_ptr<ProcessDumpRequest> request, std::shar
         (request->siginfo.si_code == SEGV_MAPERR || request->siginfo.si_code == SEGV_ACCERR)) {
         if (addr < PAGE_SIZE) {
             process->reason += " probably caused by NULL pointer dereference";
-        } else {
-            std::shared_ptr<DfxElfMaps> maps = process->GetMaps();
-            std::shared_ptr<DfxElfMap> map;
-            if (process->vmThread_ == nullptr) {
-                DFXLOG_WARN("vmThread_ is nullptr");
-                return;
-            }
-            auto regs = process->vmThread_->GetThreadRegs();
-            if (regs == nullptr) {
-                DFXLOG_WARN("regs is nullptr");
-                return;
-            }
-            uintptr_t sp = regs->sp_;
-            if (maps != nullptr && maps->FindMapByAddr(sp, map)) {
-                std::string guardMapName = StringPrintf("[anon:guard:%d]", process->keyThread_->threadInfo_.tid);
-                if ((addr < map->begin && map->begin - addr <= PAGE_SIZE) || (map->path.compare(guardMapName) == 0)) {
-                    process->reason += StringPrintf(
+            process->reason += "\n";
+            DfxRingBufferWrapper::GetInstance().AppendMsg(process->reason);
+        }
+        std::shared_ptr<DfxElfMaps> maps = process->GetMaps();
+        std::shared_ptr<DfxElfMap> map;
+        if (process->vmThread_ == nullptr) {
+            DFXLOG_WARN("vmThread_ is nullptr");
+            return;
+        }
+        auto regs = process->vmThread_->GetThreadRegs();
+        if (regs == nullptr) {
+            DFXLOG_WARN("regs is nullptr");
+            return;
+        }
+        std::string elfName = StringPrintf("[anon:stack:%d]", process->keyThread_->threadInfo_.tid);
+        if (maps != nullptr && maps->FindMapsByName(elfName, map)) {
+            std::string guardMapName = StringPrintf("[anon:guard:%d]", process->keyThread_->threadInfo_.tid);
+            if ((addr < map[0]->begin && map[0]->begin - addr <= PAGE_SIZE) ||
+                (map[0]->name.compare(guardMapName) == 0)) {
+                process->reason += StringPrintf(
 #if defined(__LP64__)
-                        " current thread stack low address = %#018llx, probably caused by stack-buffer-overflow",
+                    " current thread stack low address = %#018lx, probably caused by stack-buffer-overflow",
 #else
-                        " current thread stack low address = %#010llx, probably caused by stack-buffer-overflow",
+                    " current thread stack low address = %#010llx, probably caused by stack-buffer-overflow",
 #endif
-                        map->begin);
-                }
+                    map[0]->begin);
             }
         }
     }

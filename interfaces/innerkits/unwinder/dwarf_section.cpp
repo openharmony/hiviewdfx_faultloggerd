@@ -100,7 +100,7 @@ bool DwarfSection::SearchEntry(uintptr_t pc, struct UnwindTableInfo uti, struct 
                 lastErrorData_.SetAddrAndCode(ptr, UNW_ERROR_INVALID_MEMORY);
                 return false;
             }
-            entry = static_cast<uintptr_t>(dwarfTableEntry.fdeOffset + segbase);
+            entry = static_cast<uintptr_t>(dwarfTableEntry.fdeOffset) + segbase;
         } else {
             return false;
         }

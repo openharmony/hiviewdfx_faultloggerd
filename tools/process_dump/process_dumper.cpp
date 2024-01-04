@@ -59,13 +59,13 @@
 namespace OHOS {
 namespace HiviewDFX {
 namespace {
-constexpr int ONE_BLOCK_SIZE = 1000;
-void WriteData(int fd, const std::string& data, int blockSize)
+constexpr size_t ONE_BLOCK_SIZE = 1000;
+void WriteData(int fd, const std::string& data, size_t blockSize)
 {
-    int dataSize = data.length();
-    int index = 0;
+    size_t dataSize = data.length();
+    size_t index = 0;
     while (index < dataSize) {
-        int writeLength = (index + blockSize) <= dataSize ? blockSize : (dataSize - index);
+        size_t writeLength = (index + blockSize) <= dataSize ? blockSize : (dataSize - index);
         write(fd, data.substr(index, writeLength).c_str(), writeLength);
         index += writeLength;
         usleep(DfxConfig::GetConfig().writeSleepTime);

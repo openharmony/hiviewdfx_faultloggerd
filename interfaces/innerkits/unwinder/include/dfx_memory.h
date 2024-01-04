@@ -44,7 +44,7 @@ public:
     virtual bool ReadU8(uintptr_t& addr, uint8_t *val, bool incre = false);
     virtual bool ReadS8(uintptr_t& addr, int8_t *val, bool incre = false)
     {
-        uint8_t valp;
+        uint8_t valp = 0;
         bool ret = ReadU8(addr, &valp, incre);
         *val = static_cast<int8_t>(valp);
         return ret;
@@ -52,7 +52,7 @@ public:
     virtual bool ReadU16(uintptr_t& addr, uint16_t *val, bool incre = false);
     virtual bool ReadS16(uintptr_t& addr, int16_t *val, bool incre = false)
     {
-        uint16_t valp;
+        uint16_t valp = 0;
         bool ret = ReadU16(addr, &valp, incre);
         *val = static_cast<int16_t>(valp);
         return ret;
@@ -60,7 +60,7 @@ public:
     virtual bool ReadU32(uintptr_t& addr, uint32_t *val, bool incre = false);
     virtual bool ReadS32(uintptr_t& addr, int32_t *val, bool incre = false)
     {
-        uint32_t valp;
+        uint32_t valp = 0;
         bool ret = ReadU32(addr, &valp, incre);
         *val = static_cast<int32_t>(valp);
         return ret;
@@ -68,7 +68,7 @@ public:
     virtual bool ReadU64(uintptr_t& addr, uint64_t *val, bool incre = false);
     virtual bool ReadS64(uintptr_t& addr, int64_t *val, bool incre = false)
     {
-        uint64_t valp;
+        uint64_t valp = 0;
         bool ret = ReadU64(addr, &valp, incre);
         *val = static_cast<int64_t>(valp);
         return ret;
