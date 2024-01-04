@@ -41,11 +41,11 @@ bool DfxInstructions::Flush(DfxRegs& regs, std::shared_ptr<DfxMemory> memory, ui
             val = cfa + static_cast<uintptr_t>(loc.val);
             break;
         case REG_LOC_MEM_OFFSET:
-            location = cfa + loc.val;
+            location = cfa + static_cast<uintptr_t>(loc.val);
             memory->ReadUptr(location, &val);
             break;
         case REG_LOC_REGISTER:
-            location = loc.val;
+            location = static_cast<uintptr_t>(loc.val);
             if (location >= regs.RegsSize()) {
                 LOGE("illegal register location");
                 return false;

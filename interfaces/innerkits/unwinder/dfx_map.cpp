@@ -51,7 +51,7 @@ std::shared_ptr<DfxMap> DfxMap::Create(const std::string buf, int size)
 bool DfxMap::Parse(const std::string buf, int size)
 {
 #if is_ohos
-    int pos = 0;
+    uint32_t pos = 0;
     uint64_t begin = 0;
     uint64_t end = 0;
     uint64_t offset = 0;

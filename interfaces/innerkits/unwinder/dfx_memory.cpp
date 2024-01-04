@@ -202,7 +202,7 @@ int64_t DfxMemory::ReadSleb128(uintptr_t& addr)
 {
     uint64_t val = 0;
     uint64_t shift = 0;
-    uint8_t byte;
+    uint8_t byte = 0;
     do {
         if (!ReadU8(addr, &byte, true)) {
             break;
