@@ -79,7 +79,7 @@ public:
 
     bool GetStackRange(uintptr_t& stackBottom, uintptr_t& stackTop);
 
-    bool UnwindLocalWithContext(const ucontext_t& context, size_t maxFrameNum, size_t skipFrameNum);
+    bool UnwindLocalWithContext(const ucontext_t& context, size_t maxFrameNum = 256, size_t skipFrameNum = 0);
     bool UnwindLocal(bool withRegs = false, size_t maxFrameNum = 64, size_t skipFrameNum = 0);
     bool UnwindRemote(pid_t tid = 0, bool withRegs = false, size_t maxFrameNum = 64, size_t skipFrameNum = 0);
     bool Unwind(void *ctx, size_t maxFrameNum = 64, size_t skipFrameNum = 0);

@@ -77,8 +77,7 @@ void Printer::PrintReason(std::shared_ptr<ProcessDumpRequest> request, std::shar
     if (request->siginfo.si_signo == SIGSEGV &&
         (request->siginfo.si_code == SEGV_MAPERR || request->siginfo.si_code == SEGV_ACCERR)) {
         if (addr < PAGE_SIZE) {
-            process->reason += " probably caused by NULL pointer dereference";
-            process->reason += "\n";
+            process->reason += " probably caused by NULL pointer dereference\n";
             DfxRingBufferWrapper::GetInstance().AppendMsg(process->reason);
             return;
         }
@@ -95,9 +94,7 @@ void Printer::PrintReason(std::shared_ptr<ProcessDumpRequest> request, std::shar
         }
         std::string elfName = StringPrintf("[anon:stack:%d]", process->keyThread_->threadInfo_.tid);
         if (maps != nullptr && maps->FindMapsByName(elfName, map)) {
-            std::string guardMapName = StringPrintf("[anon:guard:%d]", process->keyThread_->threadInfo_.tid);
-            if ((addr < map[0]->begin && map[0]->begin - addr <= PAGE_SIZE) ||
-                (map[0]->name.compare(guardMapName) == 0)) {
+            if (addr < map[0]->begin && map[0]->begin - addr <= PAGE_SIZE) {
                 process->reason += StringPrintf(
 #if defined(__LP64__)
                     " current thread stack low address = %#018lx, probably caused by stack-buffer-overflow",
