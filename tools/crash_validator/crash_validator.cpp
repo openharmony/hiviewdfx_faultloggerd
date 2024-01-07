@@ -290,19 +290,19 @@ void CrashValidator::ReadServiceCrashStatus()
         if (pos == std::string::npos) {
             continue;
         }
-        std::string formatedLog = line.substr(pos + strlen(INIT_LOG_PATTERN));
+        std::string formattedLog = line.substr(pos + strlen(INIT_LOG_PATTERN));
         char name[LOG_SIZE] {0};
         int pid;
         int uid;
         int status;
-        int ret = sscanf_s(formatedLog.c_str(), "Service:%s pid:%d uid:%d status:%d",
+        int ret = sscanf_s(formattedLog.c_str(), "Service:%s pid:%d uid:%d status:%d",
             name, sizeof(name), &pid, &uid, &status);
         if (ret <= 0) {
-            printf("Failed to parse kmsg:%s", formatedLog.c_str());
+            printf("Failed to parse kmsg:%s", formattedLog.c_str());
             continue;
         }
 
-        printf("Kernel:%s", formatedLog.c_str());
+        printf("Kernel:%s", formattedLog.c_str());
         HiSysEventWrite(HiSysEvent::Domain::STARTUP, KEY_PROCESS_EXIT, HiSysEvent::EventType::BEHAVIOR,
             KEY_NAME, name, KEY_PID, pid, KEY_UID, uid, KEY_STATUS, status);
     }

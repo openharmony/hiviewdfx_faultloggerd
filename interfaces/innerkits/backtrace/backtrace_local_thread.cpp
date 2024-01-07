@@ -129,7 +129,7 @@ void BacktraceLocalThread::ReleaseThread()
     }
 }
 
-std::string BacktraceLocalThread::GetFormatedStr(bool withThreadName, bool isJson)
+std::string BacktraceLocalThread::GetFormattedStr(bool withThreadName, bool isJson)
 {
     if (frames_.empty()) {
         return "";

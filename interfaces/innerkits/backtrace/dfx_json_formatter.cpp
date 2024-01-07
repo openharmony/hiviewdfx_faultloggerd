@@ -29,51 +29,79 @@
 
 namespace OHOS {
 namespace HiviewDFX {
-const int FRAME_BUF_LEN = 1024;
-
 #ifndef is_ohos_lite
+namespace {
+const int FRAME_BUF_LEN = 1024;
+static bool FormatJsFrame(const Json::Value& frames, const uint32_t& frameIdx, std::string& outStr)
+{
+    const int jsIdxLen = 10;
+    char buf[jsIdxLen] = { 0 };
+    char idxFmt[] = "#%02u at ";
+    if (snprintf_s(buf, sizeof(buf), sizeof(buf) - 1, idxFmt, frameIdx) <= 0) {
+        return false;
+    }
+    outStr = std::string(buf, strlen(buf));
+    std::string symbol = frames[frameIdx]["symbol"].asString();
+    std::string file = frames[frameIdx]["file"].asString();
+    std::string line = frames[frameIdx]["line"].asString();
+    std::string column = frames[frameIdx]["column"].asString();
+    outStr.append(symbol + " (" + file + ":" + line + ":" + column + ")");
+    return true;
+}
+
+static bool FormatNativeFrame(const Json::Value& frames, const uint32_t& frameIdx, std::string& outStr)
+{
+    char buf[FRAME_BUF_LEN] = {0};
+    char format[] = "#%02u pc %s %s";
+    std::string buildId = frames[frameIdx]["buildId"].asString();
+    std::string file = frames[frameIdx]["file"].asString();
+    std::string offset = frames[frameIdx]["offset"].asString();
+    std::string pc = frames[frameIdx]["pc"].asString();
+    std::string symbol = frames[frameIdx]["symbol"].asString();
+    if (snprintf_s(buf, sizeof(buf), sizeof(buf) - 1, format, frameIdx, pc.c_str(),
+                   file.empty() ? "Unknown" : file.c_str()) <= 0) {
+        return false;
+    }
+    outStr = std::string(buf, strlen(buf));
+    if (!symbol.empty()) {
+        outStr.append("(" + symbol + "+" + offset + ")");
+    }
+    if (!buildId.empty()) {
+        outStr.append("(" + buildId + ")");
+    }
+    return true;
+}
+}
+
 bool DfxJsonFormatter::FormatJsonStack(std::string jsonStack, std::string& outStackStr)
 {
     Json::Reader reader;
     Json::Value threads;
     if (!(reader.parse(jsonStack, threads))) {
-        outStackStr.append("json not correct.");
+        outStackStr.append("Failed to parse json stack info.");
         return false;
     }
 
     for (uint32_t i = 0; i < threads.size(); ++i) {
-        Json::Value thread = threads[i];
-        std::string name = thread["thread_name"].asString();
-        std::string tid = thread["tid"].asString();
         std::ostringstream ss;
-        ss << "Tid:" << tid << ", Name:" << name << "\n";
+        Json::Value thread = threads[i];
+        ss << "Tid:" << thread["tid"].asString() << ", Name:" << thread["thread_name"].asString() << std::endl;
         const Json::Value frames = thread["frames"];
         for (uint32_t j = 0; j < frames.size(); ++j) {
-            char buf[FRAME_BUF_LEN] = {0};
-            char format[] = "#%02u pc %s %s";
-
-            std::string buildId = frames[j]["buildId"].asString();
-            std::string file = frames[j]["file"].asString();
-            std::string offset = frames[j]["offset"].asString();
-            std::string pc = frames[j]["pc"].asString();
-            std::string symbol = frames[j]["symbol"].asString();
-            if (snprintf_s(buf, sizeof(buf), sizeof(buf) - 1, format,
-                j,
-                pc.c_str(),
-                file.empty() ? "Unknown" : file.c_str()) <= 0) {
-                outStackStr.append("json not correct.");
+            std::string frameStr = "";
+            bool formatStatus = false;
+            if (frames[j]["line"].asString().empty()) {
+                formatStatus = FormatNativeFrame(frames, j, frameStr);
+            } else {
+                formatStatus = FormatJsFrame(frames, j, frameStr);
+            }
+            if (formatStatus) {
+                ss << frameStr << std::endl;
+            } else {
+                // Shall we try to print more information?
+                outStackStr.append("Frame info is illegal.");
                 return false;
             }
-            ss << std::string(buf, strlen(buf));
-            if (!symbol.empty()) {
-                ss << "(";
-                ss << symbol.c_str();
-                ss << "+" << offset << ")";
-            }
-            if (!buildId.empty()) {
-                ss << "(" << buildId << ")";
-            }
-            ss << std::endl;
         }
         outStackStr.append(ss.str());
     }

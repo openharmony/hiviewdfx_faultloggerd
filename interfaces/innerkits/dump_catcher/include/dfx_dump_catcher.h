@@ -40,6 +40,7 @@ public:
      * @param tid  thread id
      * @param msg  message of native stack
      * @param maxFrameNums the maximum number of frames to dump, if pid is not equal to caller pid then it is ignored
+     * @param isJson whether message of native stack is json formatted
      * @return if succeed return true, otherwise return false
     */
     bool DumpCatch(int pid, int tid, std::string& msg, size_t maxFrameNums = DEFAULT_MAX_FRAME_NUM,

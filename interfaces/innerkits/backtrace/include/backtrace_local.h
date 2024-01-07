@@ -100,12 +100,13 @@ bool GetBacktrace(std::string& out, size_t skipFrameNum, bool fast = false,
                   size_t maxFrameNums = DEFAULT_MAX_FRAME_NUM, bool isJson = false);
 
 /**
- * @brief Get formated stacktrace string of current process
+ * @brief Get formatted stacktrace string of current process
  *
- * This API is used to get formated stacktrace string of current process
+ * This API is used to get formatted stacktrace string of current process
  *
  * @param maxFrameNums the maximum number of frames to backtrace
- * @return formated stacktrace string
+ * @param isJson whether message of native stack is json formatted
+ * @return formatted stacktrace string
 */
 std::string GetProcessStacktrace(size_t maxFrameNums = DEFAULT_MAX_FRAME_NUM, bool isJson = false);
 
