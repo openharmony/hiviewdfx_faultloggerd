@@ -186,7 +186,7 @@ uint64_t DfxMemory::ReadUleb128(uintptr_t& addr)
 {
     uint64_t val = 0;
     uint64_t shift = 0;
-    uint8_t u8;
+    uint8_t u8 = 0;
     do {
         if (!ReadU8(addr, &u8, true)) {
             break;

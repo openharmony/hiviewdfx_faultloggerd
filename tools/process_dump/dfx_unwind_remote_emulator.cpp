@@ -158,7 +158,7 @@ void DfxUnwindRemote::UnwindThreadByParseStackIfNeed(std::shared_ptr<DfxProcess>
         }
         thread->SetFrames(frames);
         std::string tip = StringPrintf(
-            " Failed to unwind stack, try to get call stack from #%02zu by reparsing thread stack",
+            " Failed to unwind stack, try to get unreliable call stack from #%02zu by reparsing thread stack",
             initSize);
         std::string msg = process->GetFatalMessage() + tip;
         process->SetFatalMessage(msg);

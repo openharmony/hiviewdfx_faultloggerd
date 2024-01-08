@@ -29,7 +29,7 @@ namespace HiviewDFX {
 namespace {
 static const char NATIVE_CRASH_TYPE[] = "NativeCrash";
 #if defined(ENABLE_MIXSTACK)
-void FillJsFrame(const DfxFrame& frame, Json::Value& jsonInfo) const
+void FillJsFrame(const DfxFrame& frame, Json::Value& jsonInfo)
 {
     Json::Value frameJson;
     frameJson["file"] = frame.mapName;
