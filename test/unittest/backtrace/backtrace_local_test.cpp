@@ -193,7 +193,7 @@ HWTEST_F(BacktraceLocalTest, BacktraceLocalTest003, TestSize.Level2)
     BacktraceLocalContext::GetInstance().CleanUp();
     const auto& frames = thread.GetFrames();
     ASSERT_GT(frames.size(), 0);
-    auto backtraceStr = thread.GetFormatedStr(false);
+    auto backtraceStr = thread.GetFormattedStr(false);
     ASSERT_GT(backtraceStr.size(), 0);
     GTEST_LOG_(INFO) << backtraceStr;
     g_mutex.unlock();

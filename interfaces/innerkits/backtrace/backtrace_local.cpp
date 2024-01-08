@@ -176,7 +176,7 @@ std::string GetProcessStacktrace(size_t maxFrameNums, bool isJson)
         BacktraceLocalThread thread(tid);
         thread.SetMaxFrameNums(maxFrameNums);
         if (thread.Unwind(as, symbol, 0)) {
-            ss << thread.GetFormatedStr(true, isJson) << std::endl;
+            ss << thread.GetFormattedStr(true, isJson) << std::endl;
         } else {
             std::string msg;
             if (tid == getpid()) {
