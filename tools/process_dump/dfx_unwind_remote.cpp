@@ -82,10 +82,7 @@ bool DfxUnwindRemote::UnwindProcess(std::shared_ptr<ProcessDumpRequest> request,
 
     std::shared_ptr<DfxThread> unwThread = process->keyThread_;
     if (ProcessDumper::GetInstance().IsCrash() && (process->vmThread_ != nullptr)) {
-        unwinder->SetTargetPid(process->vmThread_->threadInfo_.pid);
         unwThread = process->vmThread_;
-    } else {
-        unwinder->SetTargetPid(process->processInfo_.pid);
     }
 
     do {
@@ -116,7 +113,6 @@ bool DfxUnwindRemote::UnwindProcess(std::shared_ptr<ProcessDumpRequest> request,
         if (threads.empty()) {
             break;
         }
-        unwinder->SetTargetPid(process->processInfo_.pid);
 
         size_t index = 0;
         for (auto thread : threads) {

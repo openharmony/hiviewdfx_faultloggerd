@@ -205,7 +205,7 @@ int ProcessDumper::InitProcessInfo(std::shared_ptr<ProcessDumpRequest> request)
             return -1;
         }
         process_->vmThread_ = DfxThread::Create(request->vmPid, request->vmPid, request->vmNsPid);
-        if (!process_->vmThread_->Attach()) {
+        if ((process_->vmThread_ == nullptr) || (!process_->vmThread_->Attach())) {
             DFXLOG_ERROR("Failed to attach vm thread(%d).", request->vmNsPid);
             return -1;
         }
@@ -228,18 +228,18 @@ int ProcessDumper::InitProcessInfo(std::shared_ptr<ProcessDumpRequest> request)
         }
     }
     process_->keyThread_ = DfxThread::Create(process_->processInfo_.pid, tid, nsTid);
-#if !defined(__x86_64__)
-    if (!isCrash_) {
-        process_->keyThread_->SetThreadRegs(DfxRegs::CreateFromUcontext(request->context));
-    }
-#endif
-    if (!process_->keyThread_->Attach()) {
+    if ((process_->keyThread_ == nullptr) || (!process_->keyThread_->Attach())) {
         DFXLOG_ERROR("Failed to attach key thread(%d).", nsTid);
         if (!isCrash_) {
             return -1;
         }
     }
-    if (process_->keyThread_->threadInfo_.threadName.empty()) {
+#if !defined(__x86_64__)
+    if (!isCrash_) {
+        process_->keyThread_->SetThreadRegs(DfxRegs::CreateFromUcontext(request->context));
+    }
+#endif
+    if ((process_->keyThread_ != nullptr) && process_->keyThread_->threadInfo_.threadName.empty()) {
         process_->keyThread_->threadInfo_.threadName = std::string(request->threadName);
     }
 
@@ -252,7 +252,11 @@ int ProcessDumper::InitProcessInfo(std::shared_ptr<ProcessDumpRequest> request)
         }
     }
 #if !defined(__x86_64__)
-    unwinder_ = std::make_shared<Unwinder>(process_->processInfo_.pid);
+    if (isCrash_) {
+        unwinder_ = std::make_shared<Unwinder>(process_->vmThread_->threadInfo_.pid);
+    } else {
+        unwinder_ = std::make_shared<Unwinder>(process_->processInfo_.pid);
+    }
 #if defined(PROCESSDUMP_MINIDEBUGINFO)
     UnwinderConfig::SetEnableMiniDebugInfo(true);
     UnwinderConfig::SetEnableLoadSymbolLazily(true);
