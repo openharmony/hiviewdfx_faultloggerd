@@ -167,7 +167,7 @@ void DfxUnwindRemote::UnwindThreadByParseStackIfNeed(std::shared_ptr<DfxProcess>
 
 uint64_t DfxUnwindRemote::DoAdjustPc(unw_cursor_t & cursor, uint64_t pc)
 {
-    DFXLOG_DEBUG("%s :: pc(0x%x).", __func__, pc);
+    DFXLOG_DEBUG("%s :: pc(0x%lx).", __func__, pc);
     uint64_t ret = 0;
 
     if (pc <= ARM_EXEC_STEP_NORMAL) {
@@ -181,7 +181,7 @@ uint64_t DfxUnwindRemote::DoAdjustPc(unw_cursor_t & cursor, uint64_t pc)
         ret = pc - 1;
 #endif
     }
-    DFXLOG_DEBUG("%s :: ret(0x%x).", __func__, ret);
+    DFXLOG_DEBUG("%s :: ret(0x%lx).", __func__, ret);
     return ret;
 }
 
@@ -251,7 +251,7 @@ bool DfxUnwindRemote::DoUnwindStep(size_t const & index,
         thread->AddFrame(frame);
     }
 
-    DFXLOG_DEBUG("%s :: index(%d), framePc(0x%x), frameSp(0x%x).", __func__, index, framePc, frameSp);
+    DFXLOG_DEBUG("%s :: index(%zu), framePc(0x%lx), frameSp(0x%lx).", __func__, index, framePc, frameSp);
     return ret;
 }
 
