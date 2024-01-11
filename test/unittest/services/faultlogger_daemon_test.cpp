@@ -145,8 +145,9 @@ HWTEST_F (FaultLoggerDaemonTest, FaultLoggerDaemonTest004, TestSize.Level2)
     int32_t type = (int32_t)FaultLoggerType::CPP_CRASH;
     int32_t pid = getpid();
     uint64_t time = GetTimeMilliSeconds();
-    int fd = daemon->CreateFileForRequest(type, pid, time, false);
+    int fd = daemon->CreateFileForRequest(type, pid, 0, time, false);
     ASSERT_NE(fd, -1);
+    close(fd);
     GTEST_LOG_(INFO) << "FaultLoggerDaemonTest004: end.";
 }
 }

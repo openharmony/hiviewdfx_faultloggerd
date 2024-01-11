@@ -223,7 +223,7 @@ void FaultLoggerDaemon::HandleDefaultClientRequest(int32_t connectionFd, const F
 {
     RemoveTempFileIfNeed();
 
-    int fd = CreateFileForRequest(request->type, request->pid, request->time, false);
+    int fd = CreateFileForRequest(request->type, request->pid, request->tid, request->time, false);
     if (fd < 0) {
         DFXLOG_ERROR("%s :: Failed to create log file, errno(%d)", FAULTLOGGERD_TAG.c_str(), errno);
         return;
@@ -235,7 +235,7 @@ void FaultLoggerDaemon::HandleDefaultClientRequest(int32_t connectionFd, const F
 
 void FaultLoggerDaemon::HandleLogFileDesClientRequest(int32_t connectionFd, const FaultLoggerdRequest * request)
 {
-    int fd = CreateFileForRequest(request->type, request->pid, request->time, true);
+    int fd = CreateFileForRequest(request->type, request->pid, request->tid, request->time, true);
     if (fd < 0) {
         DFXLOG_ERROR("%s :: Failed to create log file, errno(%d)", FAULTLOGGERD_TAG.c_str(), errno);
         return;
@@ -492,7 +492,8 @@ void FaultLoggerDaemon::HandleSdkDumpRequest(int32_t connectionFd, FaultLoggerdR
     }
 }
 
-int32_t FaultLoggerDaemon::CreateFileForRequest(int32_t type, int32_t pid, uint64_t time, bool debugFlag) const
+int32_t FaultLoggerDaemon::CreateFileForRequest(int32_t type, int32_t pid, int32_t tid,
+    uint64_t time, bool debugFlag) const
 {
     std::string typeStr = GetRequestTypeName(type);
     if (typeStr == "unsupported") {
@@ -500,11 +501,11 @@ int32_t FaultLoggerDaemon::CreateFileForRequest(int32_t type, int32_t pid, uint6
         return -1;
     }
 
-    std::string filePath = "";
+    std::string folderPath = "";
     if (debugFlag == false) {
-        filePath = faultLoggerConfig_->GetLogFilePath();
+        folderPath = faultLoggerConfig_->GetLogFilePath();
     } else {
-        filePath = faultLoggerConfig_->GetDebugLogFilePath();
+        folderPath = faultLoggerConfig_->GetDebugLogFilePath();
     }
 
     if (time == 0) {
@@ -512,9 +513,13 @@ int32_t FaultLoggerDaemon::CreateFileForRequest(int32_t type, int32_t pid, uint6
             (std::chrono::system_clock::now().time_since_epoch()).count());
     }
 
-    std::stringstream crashTime;
-    crashTime << "-" << time;
-    const std::string path = filePath + "/" + typeStr + "-" + std::to_string(pid) + crashTime.str();
+    std::stringstream ss;
+    ss << folderPath << "/" << typeStr << "-" << pid;
+    if (type == FaultLoggerType::JS_HEAP_SNAPSHOT) {
+        ss << "-" << tid;
+    }
+    ss << "-" << time;
+    const std::string path = ss.str();
     DFXLOG_INFO("%s :: file path(%s).\n", FAULTLOGGERD_TAG.c_str(), path.c_str());
     if (!VerifyFilePath(path, VALID_FILE_PATH)) {
         DFXLOG_ERROR("%s :: Open %s fail, please check it under valid path.\n", FAULTLOGGERD_TAG.c_str(), path.c_str());
