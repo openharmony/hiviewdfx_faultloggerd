@@ -110,6 +110,7 @@ bool PrintBacktrace(int32_t fd, bool fast, size_t maxFrameNums)
         } else {
             dprintf(fd, "    %s", line.c_str());
         }
+        HILOG_INFO(LOG_CORE, " %{public}s", line.c_str());
     }
     return ret;
 }
