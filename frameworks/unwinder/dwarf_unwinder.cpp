@@ -16,6 +16,7 @@
 #include "dwarf_unwinder.h"
 
 #include <securec.h>
+#include <hilog/log.h>
 #include <libunwind.h>
 #include <libunwind_i-ohos.h>
 #include "dfx_define.h"
@@ -88,6 +89,18 @@ bool DwarfUnwinder::UnwindWithContext(unw_addr_space_t as, unw_context_t& contex
     do {
         // skip 0 stack, as this is dump catcher. Caller don't need it.
         if (index < skipFrameNum) {
+            uint64_t skipPc = 0;
+            skipPc = unw_get_rel_pc(&cursor);
+            struct map_info* skipMap = unw_get_map(&cursor);
+            std::string skipMapName = "";
+            if ((skipMap != nullptr) && (strlen(skipMap->path) < LINE_BUF_SIZE - 1)) {
+                skipMapName = std::string(skipMap->path);
+            }
+            HILOG_INFO(LOG_CORE,
+                       " skip frame #%{public}u pc %{public}" PRIu64 " %{public}s",
+                       index,
+                       skipPc,
+                       skipMapName.c_str());
             index++;
             continue;
         }
