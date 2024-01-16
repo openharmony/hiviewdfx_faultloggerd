@@ -176,10 +176,12 @@ static ThreadInfoCallBack GetCallbackLocked()
 static void FillLastFatalMessageLocked(int32_t sig, void *context)
 {
     ThreadInfoCallBack callback = GetCallbackLocked();
-    if (sig != SIGABRT && callback != NULL) {
-        DFXLOG_INFO("Start collect crash thread info.");
-        callback(g_request.lastFatalMessage, sizeof(g_request.lastFatalMessage), context);
-        DFXLOG_INFO("Finish collect crash thread info.");
+    if (sig != SIGABRT) {
+        if (callback != NULL) {
+            DFXLOG_INFO("Start collect crash thread info.");
+            callback(g_request.lastFatalMessage, sizeof(g_request.lastFatalMessage), context);
+            DFXLOG_INFO("Finish collect crash thread info.");
+        }
         return;
     }
 
