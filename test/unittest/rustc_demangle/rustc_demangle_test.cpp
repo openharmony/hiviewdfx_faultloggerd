@@ -56,7 +56,7 @@ HWTEST_F(RustcDemangleTest, RustcDemangleTest001, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "RustcDemangleTest001: start.";
     char buf[BUF_LEN] = "_RNvCs7FufEY4pgE0_21panic_handler_example4main\0";
-    char *res = (char *)std::malloc(sizeof(char) * BUF_LEN);
+    char *res = reinterpret_cast<char*>(std::malloc(sizeof(char) * BUF_LEN));
     res = rustc_demangle(buf);
     int ret = -1;
     if (res != nullptr) {
@@ -77,7 +77,7 @@ HWTEST_F(RustcDemangleTest, RustcDemangleTest002, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "RustcDemangleTest002: start.";
     char buf[BUF_LEN] = "la la la\0";
-    char *res = (char *)std::malloc(sizeof(char) * BUF_LEN);
+    char *res = reinterpret_cast<char*>(std::malloc(sizeof(char) * BUF_LEN));
     res = rustc_demangle(buf);
     EXPECT_EQ(true, res == nullptr) << "RustcDemangleTest002 Failed";
     if (res != nullptr) {
@@ -95,7 +95,7 @@ HWTEST_F(RustcDemangleTest, RustcDemangleTest003, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "RustcDemangleTest003: start.";
     char buf[BUF_LEN] = "\0";
-    char *res = (char *)malloc(sizeof(char) * BUF_LEN);
+    char *res = reinterpret_cast<char*>(malloc(sizeof(char) * BUF_LEN));
     res = rustc_demangle(buf);
     EXPECT_EQ(true, res == nullptr) << "RustcDemangleTest003 Failed";
     if (res != nullptr) {
@@ -113,7 +113,7 @@ HWTEST_F(RustcDemangleTest, RustcDemangleTest004, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "RustcDemangleTest004: start.";
     char buf[BUF_LEN] = "\xe7\x8a\xb6\xe6\x80\x81\0";
-    char *res = (char *)std::malloc(sizeof(char) * BUF_LEN);
+    char *res = reinterpret_cast<char*>(std::malloc(sizeof(char) * BUF_LEN));
     res = rustc_demangle(buf);
     EXPECT_EQ(true, res == nullptr) << "RustcDemangleTest004 Failed";
     if (res != nullptr) {

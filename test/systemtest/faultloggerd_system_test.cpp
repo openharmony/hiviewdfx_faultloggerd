@@ -337,7 +337,6 @@ HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest002, TestSize.Level2)
  */
 HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest003, TestSize.Level2)
 {
-
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest003: start.";
     string cmd = "SIGILL";
     string fileName;
@@ -418,7 +417,6 @@ HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest006, TestSize.Level2)
  */
 HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest007, TestSize.Level2)
 {
-
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest007: start.";
     string cmd = "SIGSEGV";
     string fileName;
@@ -459,7 +457,6 @@ HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest008, TestSize.Level2)
 */
 HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest009, TestSize.Level2)
 {
-
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest009: start.";
     string cmd = "triSIGSEGV";
     string fileName;

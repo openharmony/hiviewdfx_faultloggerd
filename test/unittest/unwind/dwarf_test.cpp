@@ -171,8 +171,8 @@ bool DwarfOpTest::Test03()
     const uintptr_t value = 10;
     StackPush(value);
     ret = (value == StackPop());
-    ret &= (0 == StackAt(0));
-    ret &= (1 == StackSize());
+    ret &= (StackAt(0) == 0);
+    ret &= (StackSize() == 1);
     return ret;
 }
 
@@ -286,31 +286,31 @@ bool DwarfOpTest::Test06()
     StackReset(0);
     ret = (StackSize() == 1);
     OpPush(1);
-    ret &= (StackSize() == 2);
+    ret &= (StackSize() == 2); // 2:stack_.size()
 
     OpDrop();
     ret &= (StackSize() == 1);
 
     OpPush(1);
-    OpPush(2);
-    ret &= (StackSize() == 3);
+    OpPush(2); // 2:stack_.index
+    ret &= (StackSize() == 3); // 3:stack_.size()
 
     OpOver();
-    ret &= (StackSize() == 4);
+    ret &= (StackSize() == 4); // 4:stack_.size()
     uintptr_t value = StackPop();
     ret &= (value == 1);
-    ret &= (StackSize() == 3);
+    ret &= (StackSize() == 3); // 3:stack_.size()
 
-    ret &= (StackAt(0) == 2);
+    ret &= (StackAt(0) == 2); // 2:stack.value
     ret &= (StackAt(1) == 1);
     OpSwap();
     ret &= (StackAt(0) == 1);
-    ret &= (StackAt(1) == 2);
+    ret &= (StackAt(1) == 2); // 2:stack.value
 
     OpRot();
     ret &= (StackAt(0) == 0);
     ret &= (StackAt(1) == 1);
-    ret &= (StackAt(2) == 2);
+    ret &= (StackAt(2) == 2); // 2:stack.value
     return true;
 }
 

@@ -572,7 +572,7 @@ HWTEST_F(UnwinderTest, FillFrameTest001, TestSize.Level2)
     frame.map = map;
     unwinder->FillFrame(frame);
     GTEST_LOG_(INFO) << " when DfxFrame::map is not null and file not exist, frame.buildId.size() is 0";
-    ASSERT_EQ(frame.buildId.size(),0);
+    ASSERT_EQ(frame.buildId.size(), 0);
 #ifdef __arm__
     testMap = "f6d83000-f6d84000 r--p 00001000 b3:07 1892 /system/lib/init/libinit_context.z.so";
 #else

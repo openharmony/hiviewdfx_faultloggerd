@@ -33,7 +33,7 @@ static const int PERFORMANCE_TEST_NUMBER_ONE_HUNDRED = 100;
 static const double PERFORMANCE_TEST_MAX_UNWIND_TIME_S = 0.03;
 static const double PERFORMANCE_TEST_MAX_UNWIND_TIME_NEW_S = 0.04;
 
-clock_t GetStartTime ()
+clock_t GetStartTime()
 {
     return clock();
 }

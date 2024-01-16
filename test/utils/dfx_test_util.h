@@ -20,12 +20,12 @@
 #include <csignal>
 #include <sys/wait.h>
 
-static const std::string ACCOUNTMGR_NAME = "accountmgr";
-static const std::string FOUNDATION_NAME = "foundation";
-static const std::string APPSPAWN_NAME = "appspawn";
+#define ACCOUNTMGR_NAME           "accountmgr"
+#define FOUNDATION_NAME           "foundation"
+#define APPSPAWN_NAME             "appspawn"
+#define TEST_BUNDLE_NAME          "com.example.myapplication"
+#define TRUNCATE_TEST_BUNDLE_NAME "e.myapplication"
 
-static const char TEST_BUNDLE_NAME[] = "com.example.myapplication";
-static const char TRUNCATE_TEST_BUNDLE_NAME[] = "e.myapplication";
 
 #if defined(__arm__)
 #define REGISTERS           "r0:","r1:","r2:","r3:","r4:","r5:","r6:",\

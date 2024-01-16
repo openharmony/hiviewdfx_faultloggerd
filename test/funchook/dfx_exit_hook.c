@@ -44,7 +44,7 @@ static ExitFunc g_hookedExit = NULL;
 static ExitFunc g_hookedExitEx = NULL;
 static bool g_abortWhenExit = false;
 
-void __attribute__((constructor)) InitExitHook(void)
+static void __attribute__((constructor)) InitExitHook(void)
 {
     char* str = getenv("ABORT_EXIT");
     if (str != NULL && strlen(str) > 0) {
