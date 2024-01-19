@@ -324,11 +324,11 @@ void FaultLoggerDaemon::HandlePipeFdClientRequest(int32_t connectionFd, FaultLog
             break;
         }
         default:
-            DFXLOG_ERROR("%s :: unknown pipeType(%d).\n", FAULTLOGGERD_TAG.c_str(), request->pipeType);
+            DFXLOG_ERROR("%s :: unknown pipeType(%d).", FAULTLOGGERD_TAG.c_str(), request->pipeType);
             return;
     }
     if (fd < 0) {
-        DFXLOG_ERROR("%s :: Failed to get pipe fd", FAULTLOGGERD_TAG.c_str());
+        DFXLOG_ERROR("%s :: Failed to get pipe fd, pipeType(%d)", FAULTLOGGERD_TAG.c_str(), request->pipeType);
         return;
     }
     SendFileDescriptorToSocket(connectionFd, fd);

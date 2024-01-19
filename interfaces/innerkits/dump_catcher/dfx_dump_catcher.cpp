@@ -240,8 +240,8 @@ bool DfxDumpCatcher::DoDumpCatchRemote(const int type, int pid, int tid, std::st
 
 int DfxDumpCatcher::DoDumpRemotePid(const int type, int pid, std::string& msg, bool isJson)
 {
-    int readBufFd;
-    int readResFd;
+    int readBufFd = -1;
+    int readResFd = -1;
     if (isJson) {
         readBufFd = RequestPipeFd(pid, FaultLoggerPipeType::PIPE_FD_JSON_READ_BUF);
         readResFd = RequestPipeFd(pid, FaultLoggerPipeType::PIPE_FD_JSON_READ_RES);
@@ -287,11 +287,14 @@ int DfxDumpCatcher::DoDumpRemotePoll(int bufFd, int resFd, int timeout, std::str
     while (true) {
         if (bufFd < 0 || resFd < 0) {
             ret = DUMP_POLL_FD;
-            resMsg.append("Result: bufFd or resFd  < 0.\n");
+            resMsg.append("Result: bufFd or resFd < 0.\n");
             break;
         }
         int pollRet = poll(readfds, fdsSize, timeout);
         if (pollRet < 0) {
+            if (errno == EINTR) {
+                continue;
+            }
             ret = DUMP_POLL_FAILED;
             resMsg.append("Result: poll error, errno(" + std::to_string(errno) + ")\n");
             break;
@@ -349,14 +352,20 @@ int DfxDumpCatcher::DoDumpRemotePoll(int bufFd, int resFd, int timeout, std::str
 
 bool DfxDumpCatcher::DoReadBuf(int fd, std::string& msg)
 {
-    char buffer[LINE_BUF_SIZE] = {0};
-    ssize_t nread = read(fd, buffer, sizeof(buffer) - 1);
-    if (nread <= 0) {
-        DFXLOG_WARN("%s :: %s :: read error", DFXDUMPCATCHER_TAG.c_str(), __func__);
-        return false;
-    }
-    msg.append(buffer);
-    return true;
+    bool ret = false;
+    char *buffer = new char[MAX_PIPE_SIZE];
+    do {
+        ssize_t nread = read(fd, buffer, MAX_PIPE_SIZE);
+        if (nread <= 0) {
+            DFXLOG_WARN("%s :: %s :: read error", DFXDUMPCATCHER_TAG.c_str(), __func__);
+            break;
+        }
+        DFXLOG_DEBUG("%s :: %s :: nread: %zu", DFXDUMPCATCHER_TAG.c_str(), __func__, nread);
+        ret = true;
+        msg.append(buffer);
+    } while (false);
+    delete []buffer;
+    return ret;
 }
 
 bool DfxDumpCatcher::DoReadRes(int fd, bool &ret, std::string& msg)

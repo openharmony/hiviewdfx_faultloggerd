@@ -82,6 +82,23 @@ bool FaultLoggerPipe::Init(void)
         DFXLOG_DEBUG("%s :: create pipe.", __func__);
     }
     init_ = true;
+    if (!SetSize(MAX_PIPE_SIZE)) {
+        DFXLOG_ERROR("%s :: Failed to set pipe size.", __func__);
+    }
+    return true;
+}
+
+bool FaultLoggerPipe::SetSize(long sz)
+{
+    if (!init_) {
+        return false;
+    }
+    if (fcntl(fds_[PIPE_READ], F_SETPIPE_SZ, sz) < 0) {
+        return false;
+    }
+    if (fcntl(fds_[PIPE_WRITE], F_SETPIPE_SZ, sz) < 0) {
+        return false;
+    }
     return true;
 }
 

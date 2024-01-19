@@ -160,7 +160,7 @@ int DfxAccessorsRemote::FindUnwindTable(uintptr_t pc, UnwindTableInfo& uti, void
 
     auto elf = ctx->map->GetElf();
     if (elf == nullptr) {
-        LOGE("FindUnwindTable elf is null");
+        LOGU("FindUnwindTable elf is null");
         return UNW_ERROR_INVALID_ELF;
     }
     int ret = elf->FindUnwindTableInfo(pc, ctx->map, uti);
