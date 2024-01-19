@@ -18,7 +18,7 @@
 #define GEN_HOOK_FUNC(GenFuncName, RealHookFunc, FuncName, RealFuncName) \
 static void GenFuncName(void) \
 { \
-    RealFuncName = (RealHookFunc)dlsym(RTLD_NEXT, FuncName); \
+    RealFuncName = ((RealHookFunc)dlsym(RTLD_NEXT, FuncName)); \
     if (RealFuncName != NULL) { \
         return; \
     } \

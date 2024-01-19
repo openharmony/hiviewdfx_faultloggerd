@@ -225,7 +225,7 @@ NOINLINE int DfxCrasher::TriggerSegmentFaultException()
 {
     std::cout << "test TriggerSegmentFaultException" << std::endl;
     // for crash test force cast the type
-    int *a = (int *)(&TestFunc70);
+    int *a = reinterpret_cast<int *>(&TestFunc70);
     *a = SIGSEGV;
     return 0;
 }
@@ -273,7 +273,7 @@ static void *DoStackOverflow(void * inputArg)
         return static_cast<void*>(b + 9); // 9: last element of array
     }
     DoStackOverflow(inputArg);
-    return (void*)(b + 9); // 9: last element of array
+    return static_cast<void*>(b + 9); // 9: last element of array
 }
 
 NOINLINE int DfxCrasher::StackOverflow()
@@ -458,7 +458,7 @@ void* DfxCrasher::DoCrashInThread(void * inputArg)
 {
     prctl(PR_SET_NAME, "SubTestThread");
     const char* arg = (const char *)(inputArg);
-    return (void*)(DfxCrasher::GetInstance().ParseAndDoCrash(arg));
+    return reinterpret_cast<void*>(DfxCrasher::GetInstance().ParseAndDoCrash(arg));
 }
 
 uint64_t DfxCrasher::DoActionOnSubThread(const char *arg) const

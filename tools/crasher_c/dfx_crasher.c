@@ -210,7 +210,7 @@ NOINLINE int Oom(void)
     return 0;
 }
 
-NOINLINE int ProgramCounterZero(void)
+static NOINLINE int ProgramCounterZero(void)
 {
     printf("test PCZero");
 #if defined(__arm__)

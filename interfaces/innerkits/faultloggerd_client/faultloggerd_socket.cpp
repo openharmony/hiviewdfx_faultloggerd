@@ -147,7 +147,8 @@ static bool RecvMsgFromSocket(int sockfd, unsigned char* data, size_t& len)
     }
 
     do {
-        struct msghdr msgh = { 0 };
+        struct msghdr msgh;
+        (void)memset_s(&msgh, sizeof(msgh), 0, sizeof(msgh));
         char msgBuffer[SOCKET_BUFFER_SIZE] = { 0 };
         struct iovec iov = {
             .iov_base = msgBuffer,
@@ -190,7 +191,8 @@ bool RecvMsgCredFromSocket(int sockfd, struct ucred* pucred)
     }
 
     do {
-        struct msghdr msgh = { 0 };
+        struct msghdr msgh;
+        (void)memset_s(&msgh, sizeof(msgh), 0, sizeof(msgh));
         union {
             char buf[CMSG_SPACE(sizeof(struct ucred))];
 
@@ -239,7 +241,8 @@ bool SendMsgIovToSocket(int sockfd, void *iovBase, const int iovLen)
         return false;
     }
 
-    struct msghdr msgh = { 0 };
+    struct msghdr msgh;
+    (void)memset_s(&msgh, sizeof(msgh), 0, sizeof(msgh));
     msgh.msg_name = nullptr;
     msgh.msg_namelen = 0;
 
@@ -265,7 +268,8 @@ static bool SendMsgCtlToSocket(int sockfd, const void *cmsg, const int cmsgLen)
         return false;
     }
 
-    struct msghdr msgh = { 0 };
+    struct msghdr msgh;
+    (void)memset_s(&msgh, sizeof(msgh), 0, sizeof(msgh));
     char iovBase[] = "";
     struct iovec iov = {
         .iov_base = reinterpret_cast<void *>(iovBase),

@@ -382,8 +382,6 @@ bool DwarfOp<AddressType>::Decode(DfxRegs& regs, uintptr_t& addr)
 }
 
 // offline unwind should support both dwarf32 and dwarf64 ?
-// template class DwarfOp<uint32_t>;
-// template class DwarfOp<uint64_t>;
 template class DwarfOp<uintptr_t>;
 
 }   // namespace HiviewDFX

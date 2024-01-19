@@ -25,6 +25,7 @@ namespace OHOS {
 namespace HiviewDFX {
 static const int32_t INVALID_FD = -1;
 static const int32_t UNUSED_FD = -2;
+const int BACK_TRACE_RING_BUFFER_PRINT_WAIT_TIME_MS = 10;
 std::condition_variable DfxRingBufferWrapper::printCV_;
 std::mutex DfxRingBufferWrapper::printMutex_;
 

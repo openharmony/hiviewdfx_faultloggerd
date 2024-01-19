@@ -36,7 +36,7 @@ struct UnwindData {
 
 static void TestFunc6(MAYBE_UNUSED void (*func)(void*), MAYBE_UNUSED void* data)
 {
-    while (true);
+    while (true) {};
     LOGE("Not be run here!!!");
 }
 
