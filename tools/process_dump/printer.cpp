@@ -138,6 +138,30 @@ void Printer::PrintThreadHeaderByConfig(std::shared_ptr<DfxThread> thread)
     }
 }
 
+bool Printer::IsLastValidFrame(const DfxFrame& frame)
+{
+    static uintptr_t libcStartPc = 0;
+    static uintptr_t libffrtStartEntry = 0;
+    if (((libcStartPc != 0) && (frame.pc == libcStartPc)) ||
+        ((libffrtStartEntry != 0) && (frame.pc == libffrtStartEntry))) {
+        return true;
+    }
+
+    if (frame.mapName.find("ld-musl-aarch64.so.1") != std::string::npos &&
+        frame.funcName.find("start") != std::string::npos) {
+        libcStartPc = frame.pc;
+        return true;
+    }
+
+    if (frame.mapName.find("libffrt") != std::string::npos &&
+        frame.funcName.find("CoStartEntry") != std::string::npos) {
+        libffrtStartEntry = frame.pc;
+        return true;
+    }
+
+    return false;
+}
+
 void Printer::PrintThreadBacktraceByConfig(std::shared_ptr<DfxThread> thread)
 {
     if (DfxConfig::GetConfig().displayBacktrace) {
@@ -145,8 +169,17 @@ void Printer::PrintThreadBacktraceByConfig(std::shared_ptr<DfxThread> thread)
         if (frames.size() == 0) {
             return;
         }
+        bool needBreak = false;
         for (const auto& frame : frames) {
             DfxRingBufferWrapper::GetInstance().AppendMsg(DfxFrameFormatter::GetFrameStr(frame));
+            if (needBreak) {
+                break;
+            }
+#if defined(__aarch64__)
+            if (IsLastValidFrame(frame)) {
+                needBreak = true;
+            }
+#endif
         }
     }
 }

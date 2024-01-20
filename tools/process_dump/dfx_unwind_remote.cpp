@@ -122,7 +122,7 @@ bool DfxUnwindRemote::UnwindProcess(std::shared_ptr<ProcessDumpRequest> request,
 
             if (thread->Attach()) {
                 Printer::PrintThreadHeaderByConfig(thread);
-                unwinder->UnwindRemote(thread->threadInfo_.tid, false, DfxConfig::GetConfig().maxFrameNums);
+                unwinder->UnwindRemote(thread->threadInfo_.nsTid, false, DfxConfig::GetConfig().maxFrameNums);
                 thread->Detach();
                 thread->SetFrames(unwinder->GetFrames());
                 Printer::PrintThreadBacktraceByConfig(thread);
