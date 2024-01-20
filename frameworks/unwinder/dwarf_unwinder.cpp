@@ -97,7 +97,7 @@ bool DwarfUnwinder::UnwindWithContext(unw_addr_space_t as, unw_context_t& contex
                 skipMapName = std::string(skipMap->path);
             }
             HILOG_INFO(LOG_CORE,
-                       " skip frame #%{public}u pc %{public}" PRIu64 " %{public}s",
+                       " skip frame #%{public}zu pc %{public}" PRIu64 " %{public}s",
                        index,
                        skipPc,
                        skipMapName.c_str());
