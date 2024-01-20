@@ -66,7 +66,10 @@ void WriteData(int fd, const std::string& data, size_t blockSize)
     size_t index = 0;
     while (index < dataSize) {
         size_t writeLength = (index + blockSize) <= dataSize ? blockSize : (dataSize - index);
-        write(fd, data.substr(index, writeLength).c_str(), writeLength);
+        size_t nwrite = write(fd, data.substr(index, writeLength).c_str(), writeLength);
+        if (nwrite != writeLength) {
+            DFXLOG_INFO("%s :: nwrite: %zu, writeLength: %zu", __func__, nwrite, writeLength);
+        }
         index += writeLength;
         usleep(DfxConfig::GetConfig().writeSleepTime);
     }

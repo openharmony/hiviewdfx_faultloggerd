@@ -112,7 +112,6 @@ bool DfxMap::IsArkExecutable()
     }
 
     if ((prots & PROT_EXEC) == 0) {
-        LOGW("target map is not executable.");
         return false;
     }
 

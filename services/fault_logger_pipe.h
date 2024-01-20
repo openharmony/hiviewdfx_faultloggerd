@@ -35,6 +35,7 @@ public:
     void Close(int fd) const;
 private:
     bool Init(void);
+    bool SetSize(long sz);
     void Destroy(void);
 
     int fds_[2] = {-1, -1};

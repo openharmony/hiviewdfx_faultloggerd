@@ -446,7 +446,7 @@ bool Unwinder::Step(uintptr_t& pc, uintptr_t& sp, void *ctx)
 
     uintptr_t tmp = 0;
     if (ret && ((pc == 0) || (!memory_->ReadUptr(sp, &tmp, false)))) {
-        LOGW("------pc: %" PRIx64 ", sp: %" PRIx64 " error?", (uint64_t)pc, (uint64_t)sp);
+        LOGU("------pc: %" PRIx64 ", sp: %" PRIx64 " error?", (uint64_t)pc, (uint64_t)sp);
         ret = false;
     } else {
         LOGU("------pc: %" PRIx64 ", sp: %" PRIx64 "", (uint64_t)pc, (uint64_t)sp);
@@ -586,7 +586,7 @@ void Unwinder::FillFrame(DfxFrame& frame)
     }
     if (frame.map == nullptr) {
         frame.mapName = "Not mapped";
-        LOGE("Current frame is not mapped.");
+        LOGU("Current frame is not mapped.");
         return;
     }
     frame.relPc = frame.map->GetRelPc(frame.pc);
@@ -594,7 +594,7 @@ void Unwinder::FillFrame(DfxFrame& frame)
     frame.mapOffset = frame.map->offset;
     auto elf = frame.map->GetElf();
     if (elf == nullptr) {
-        LOGE("elf is null, mapName: %s", frame.mapName.c_str());
+        LOGU("elf is null, mapName: %s", frame.mapName.c_str());
         return;
     }
     LOGU("mapName: %s, mapOffset: %" PRIx64 "", frame.mapName.c_str(), frame.mapOffset);
