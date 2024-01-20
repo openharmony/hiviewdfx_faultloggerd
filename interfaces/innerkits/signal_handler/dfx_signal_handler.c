@@ -155,7 +155,6 @@ void SetThreadInfoCallback(ThreadInfoCallBack func)
     if (targetSlot != -1) {
         g_callbackItems[targetSlot].tid = func == NULL ? -1 : currentTid;
         g_callbackItems[targetSlot].callback = func;
-        DFXLOG_INFO("Set ThreadInfoCallback for %d.", currentTid);
     }
     pthread_mutex_unlock(&g_signalHandlerMutex);
 }
@@ -281,13 +280,16 @@ static void SetInterestedSignalMasks(int how)
     sigprocmask(how, &set, NULL);
 }
 
-static void DFX_SetUpEnvironment()
+static void CloseFds()
 {
-    // avoiding fd exhaust
     const int closeFdCount = 1024;
     for (int i = 0; i < closeFdCount; i++) {
         syscall(SYS_close, i);
     }
+}
+
+static void DFX_SetUpEnvironment()
+{
     // clear stdout and stderr
     int devNull = OHOS_TEMP_FAILURE_RETRY(open("/dev/null", O_RDWR));
     if (devNull < 0) {
@@ -520,6 +522,7 @@ static int CloneAndDoProcessDump(void* arg)
 {
     (void)arg;
     DFXLOG_INFO("The clone thread(%ld).", syscall(SYS_gettid));
+    CloseFds();
     g_request.recycleTid = syscall(SYS_gettid);
     return ForkAndExecProcessDump();
 }
@@ -530,6 +533,7 @@ static void ForkAndDoProcessDump(int sig)
     bool isTracerStatusModified = SetDumpState();
     int childPid = ForkBySyscall();
     if (childPid == 0) {
+        CloseFds();
         g_request.vmNsPid = syscall(SYS_getpid);
         g_request.vmPid = GetRealPid();
         DFXLOG_INFO("The vm pid(%d:%d).", g_request.vmPid, g_request.vmNsPid);

@@ -22,6 +22,7 @@
 #include <string>
 
 #include "dfx_dump_request.h"
+#include "dfx_frame.h"
 #include "dfx_maps.h"
 #include "dfx_process.h"
 #include "dfx_regs.h"
@@ -45,6 +46,7 @@ public:
 private:
     static void PrintReason(std::shared_ptr<ProcessDumpRequest> request, std::shared_ptr<DfxProcess> process,
                             std::shared_ptr<Unwinder> unwinder);
+    static bool IsLastValidFrame(const DfxFrame& frame);
 };
 } // namespace HiviewDFX
 } // namespace OHOS
