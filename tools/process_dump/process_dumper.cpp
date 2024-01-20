@@ -114,7 +114,6 @@ void ProcessDumper::Dump()
     DfxRingBufferWrapper::GetInstance().StopThread();
     DFXLOG_INFO("Finish dump stacktrace for %s(%d:%d).", request->processName, request->pid, request->tid);
     CloseDebugLog();
-
     // check dump result
     if (reporter_ != nullptr) {
         reporter_->SetValue("stackInfo", jsonInfo);
