@@ -370,7 +370,7 @@ bool DfxDumpCatcher::DoReadBuf(int fd, std::string& msg)
             DFXLOG_WARN("%s :: %s :: read error", DFXDUMPCATCHER_TAG.c_str(), __func__);
             break;
         }
-        DFXLOG_DEBUG("%s :: %s :: nread: %zu", DFXDUMPCATCHER_TAG.c_str(), __func__, nread);
+        DFXLOG_INFO("%s :: %s :: nread: %zu", DFXDUMPCATCHER_TAG.c_str(), __func__, nread);
         ret = true;
         msg.append(buffer);
     } while (false);
