@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -16,10 +16,10 @@
 #include "dfx_frame_formatter.h"
 #include <sstream>
 #include <securec.h>
-#include "dfx_log.h"
 #include "dfx_define.h"
+#include "dfx_log.h"
+#include "dfx_maps.h"
 #include "string_printf.h"
-#include "string_util.h"
 
 namespace OHOS {
 namespace HiviewDFX {
@@ -28,17 +28,6 @@ namespace {
 #undef LOG_TAG
 #define LOG_DOMAIN 0xD002D11
 #define LOG_TAG "DfxFrameFormatter"
-
-static void FormatMapName(std::string& mapName)
-{
-    // format sandbox file path, drop '/proc/xxx/root' prefix
-    if (StartsWith(mapName, "/proc/")) {
-        auto startPos = mapName.find("/data/storage/");
-        if (startPos != std::string::npos) {
-            mapName = mapName.substr(startPos);
-        }
-    }
-}
 }
 
 std::string DfxFrameFormatter::GetFrameStr(const DfxFrame& frame)
@@ -61,7 +50,7 @@ std::string DfxFrameFormatter::GetFrameStr(const std::shared_ptr<DfxFrame>& fram
         data = StringPrintf("#%02zu pc %08" PRIx64, frame->index, frame->relPc);
 #endif
         if (!frame->mapName.empty()) {
-            FormatMapName(frame->mapName);
+            DfxMaps::UnFormatMapName(frame->mapName);
             data += " " + frame->mapName;
         } else {
             data += " [Unknown]";

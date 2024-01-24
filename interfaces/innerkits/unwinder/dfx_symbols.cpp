@@ -115,7 +115,6 @@ bool DfxSymbols::GetFuncNameAndOffsetByPc(uint64_t relPc, std::shared_ptr<DfxElf
         LOGU("Symbol relPc: %" PRIx64 ", funcName: %s, funcOffset: %" PRIx64 "", relPc, funcName.c_str(), funcOffset);
         return true;
     }
-    LOGW("Failed to get symbol, relPc: %" PRIx64 "", relPc);
     return false;
 }
 
