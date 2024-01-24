@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2023-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -33,6 +33,8 @@ public:
     static bool Create(const pid_t pid, std::vector<std::shared_ptr<DfxMap>>& maps, std::vector<int>& mapIndex);
     static std::shared_ptr<DfxMaps> Create(const pid_t pid, const std::string& path, bool enableMapIndex = false);
     static bool IsLegalMapItem(const std::string& name);
+    static void FormatMapName(pid_t pid, std::string& mapName);
+    static void UnFormatMapName(std::string& mapName);
 
     void AddMap(std::shared_ptr<DfxMap> map, bool enableMapIndex = false);
     void Sort(bool less = true);

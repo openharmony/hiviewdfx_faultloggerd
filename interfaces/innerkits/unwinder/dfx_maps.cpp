@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -81,17 +81,16 @@ bool DfxMaps::Create(const pid_t pid, std::vector<std::shared_ptr<DfxMap>>& maps
 
 std::shared_ptr<DfxMaps> DfxMaps::Create(const pid_t pid, const std::string& path, bool enableMapIndex)
 {
-    char realPath[PATH_MAX] = {0};
-#if is_ohos
-    if (realpath(path.c_str(), realPath) == nullptr) {
-        DFXLOG_WARN("Maps path(%s) is not exist.", path.c_str());
+    std::string realPath = path;
+    if (!RealPath(path, realPath)) {
+        DFXLOG_WARN("Failed to realpath %s", path.c_str());
         return nullptr;
     }
-#endif
 
     std::ifstream ifs;
     ifs.open(realPath, std::ios::in);
     if (ifs.fail()) {
+        DFXLOG_WARN("Failed to open %s", realPath.c_str());
         return nullptr;
     }
 
@@ -107,9 +106,7 @@ std::shared_ptr<DfxMaps> DfxMaps::Create(const pid_t pid, const std::string& pat
                 dfxMaps->stackBottom_ = (uintptr_t)map->begin;
                 dfxMaps->stackTop_ = (uintptr_t)map->end;
             }
-            if (StartsWith(map->name, "/data/storage/") && (pid != getpid())) {
-                map->name = "/proc/" + std::to_string(pid) + "/root" + map->name;
-            }
+            FormatMapName(pid, map->name);
             if ((!enableMapIndex) || IsLegalMapItem(map->name)) {
                 dfxMaps->AddMap(map, enableMapIndex);
             }
@@ -122,9 +119,31 @@ std::shared_ptr<DfxMaps> DfxMaps::Create(const pid_t pid, const std::string& pat
     return dfxMaps;
 }
 
+void DfxMaps::FormatMapName(pid_t pid, std::string& mapName)
+{
+    // format sandbox file path, add '/proc/xxx/root' prefix
+    if (StartsWith(mapName, "/data/storage/") && (pid != getpid())) {
+        mapName = "/proc/" + std::to_string(pid) + "/root" + mapName;
+    }
+}
+
+void DfxMaps::UnFormatMapName(std::string& mapName)
+{
+    // unformat sandbox file path, drop '/proc/xxx/root' prefix
+    if (StartsWith(mapName, "/proc/")) {
+        auto startPos = mapName.find("/data/storage/");
+        if (startPos != std::string::npos) {
+            mapName = mapName.substr(startPos);
+        }
+    }
+}
+
 bool DfxMaps::IsLegalMapItem(const std::string& name)
 {
     // some special
+    if (StartsWith(name, "[anon:ArkTS Code]")) {
+        return true;
+    }
     if (EndsWith(name, "[vdso]")) {
         return true;
     }
@@ -180,7 +199,7 @@ bool DfxMaps::FindMapByFileInfo(std::string name, uint64_t offset, std::shared_p
         }
 
         if (offset >= iter->offset && (offset - iter->offset) < (iter->end - iter->begin)) {
-            LOGI("found name: %s, offset 0x%" PRIx64 " in map (%" PRIx64 "-%" PRIx64 " offset 0x%" PRIx64 ")",
+            LOGI("Found name: %s, offset 0x%" PRIx64 " in map (%" PRIx64 "-%" PRIx64 " offset 0x%" PRIx64 ")",
                 name.c_str(), offset, iter->begin, iter->end, iter->offset);
             map = iter;
             return true;
@@ -194,9 +213,9 @@ bool DfxMaps::FindMapsByName(std::string name, std::vector<std::shared_ptr<DfxMa
     if (maps_.empty()) {
         return false;
     }
-    for (size_t i = 0; i < maps_.size(); ++i) {
-        if (EndsWith(maps_[i]->name, name)) {
-            maps.push_back(maps_[i]);
+    for (auto &iter : maps_) {
+        if (EndsWith(iter->name, name)) {
+            maps.emplace_back(iter);
         }
     }
     return (maps.size() > 0);

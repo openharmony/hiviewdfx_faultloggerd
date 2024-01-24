@@ -25,6 +25,24 @@
 
 namespace OHOS {
 namespace HiviewDFX {
+#ifndef PATH_MAX
+#define PATH_MAX        1024
+#endif
+
+inline bool RealPath(const std::string& path, std::string& realPath)
+{
+#if is_ohos
+    realPath.reserve(PATH_MAX);
+    realPath.resize(PATH_MAX - 1);
+    if (realpath(path.c_str(), &(realPath[0])) == nullptr) {
+        return false;
+    }
+#else
+    realPath = path;
+#endif
+    return true;
+}
+
 inline bool StartsWith(const std::string& s, const std::string& prefix)
 {
     return s.substr(0, prefix.size()) == prefix;

@@ -43,6 +43,7 @@ public:
         : begin(begin), end(end), offset(offset), prots(prots), name(name) {}
 
     bool Parse(const std::string buf, int size);
+    bool IsMapExec();
     bool IsValidName();
     bool IsArkExecutable();
     const std::shared_ptr<DfxElf> GetElf();

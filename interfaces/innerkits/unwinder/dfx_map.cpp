@@ -85,6 +85,14 @@ bool DfxMap::Parse(const std::string buf, int size)
 #endif
 }
 
+bool DfxMap::IsMapExec()
+{
+    if ((prots & PROT_EXEC) != 0) {
+        return true;
+    }
+    return false;
+}
+
 bool DfxMap::IsValidName()
 {
     if (name.length() == 0) {
@@ -95,7 +103,7 @@ bool DfxMap::IsValidName()
         return false;
     }
 
-    if ((prots & PROT_EXEC) == 0) {
+    if (!IsMapExec()) {
         return false;
     }
     return true;
@@ -111,10 +119,9 @@ bool DfxMap::IsArkExecutable()
         return false;
     }
 
-    if ((prots & PROT_EXEC) == 0) {
+    if (!IsMapExec()) {
         return false;
     }
-
     LOGU("current map is ark map: %s", name.c_str());
     return true;
 }
@@ -164,7 +171,7 @@ const std::shared_ptr<DfxElf> DfxMap::GetElf()
 {
     if (elf == nullptr) {
         if (name.empty()) {
-            LOGE("invalid map name?");
+            LOGE("Invalid map, name empty.");
             return nullptr;
         }
         LOGU("GetElf name: %s", name.c_str());

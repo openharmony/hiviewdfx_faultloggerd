@@ -445,7 +445,7 @@ bool DfxDumpCatcher::IsValidJson(const std::string& json)
     int squareBrackets = 0;
     int braces = 0;
     for (auto& ch : json) {
-        switch(ch) {
+        switch (ch) {
             case '[':
                 squareBrackets++;
                 break;

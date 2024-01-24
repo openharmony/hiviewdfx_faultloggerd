@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2023-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -58,7 +58,7 @@ public:
 #endif
         Init();
     };
-    ~Unwinder() { Clear(); }
+    ~Unwinder() { Destroy(); }
 
     inline void SetTargetPid(int pid) { pid_ = pid; }
     inline int32_t GetTargetPid() { return pid_; }
@@ -81,10 +81,10 @@ public:
     bool GetStackRange(uintptr_t& stackBottom, uintptr_t& stackTop);
 
     bool UnwindLocalWithContext(const ucontext_t& context, size_t maxFrameNum = 256, size_t skipFrameNum = 0);
-    bool UnwindLocal(bool withRegs = false, size_t maxFrameNum = 64, size_t skipFrameNum = 0);
-    bool UnwindRemote(pid_t tid = 0, bool withRegs = false, size_t maxFrameNum = 64, size_t skipFrameNum = 0);
-    bool Unwind(void *ctx, size_t maxFrameNum = 64, size_t skipFrameNum = 0);
-    bool UnwindByFp(void *ctx, size_t maxFrameNum = 64, size_t skipFrameNum = 0);
+    bool UnwindLocal(bool withRegs = false, size_t maxFrameNum = 256, size_t skipFrameNum = 0);
+    bool UnwindRemote(pid_t tid = 0, bool withRegs = false, size_t maxFrameNum = 256, size_t skipFrameNum = 0);
+    bool Unwind(void *ctx, size_t maxFrameNum = 256, size_t skipFrameNum = 0);
+    bool UnwindByFp(void *ctx, size_t maxFrameNum = 256, size_t skipFrameNum = 0);
     bool Step(uintptr_t& pc, uintptr_t& sp, void *ctx);
     bool FpStep(uintptr_t& fp, uintptr_t& pc, void *ctx);
 
@@ -103,10 +103,10 @@ public:
 private:
     void Init();
     void Clear();
+    void Destroy();
     void DoPcAdjust(uintptr_t& pc);
     bool GetMapByPc(uintptr_t pc, void *ctx, std::shared_ptr<DfxMap>& map);
     void AddFrame(uintptr_t pc, uintptr_t sp, std::shared_ptr<DfxMap> map, size_t& index);
-    bool IsMapExecByPc(uintptr_t pc, void *ctx);
     bool Apply(std::shared_ptr<DfxRegs> regs, std::shared_ptr<RegLocState> rs);
 #if defined(ENABLE_MIXSTACK)
     bool StepArkJsFrame(size_t& curIdx);
@@ -129,6 +129,7 @@ private:
     bool enableLrFallback_ = true;
     bool enableFpFallback_ = true;
     bool enableFpCheckMapExec_ = false;
+    bool isFpStep_ = false;
 
     int32_t pid_ = 0;
     uintptr_t pacMask_ = 0;

@@ -41,10 +41,7 @@ namespace {
 
 void Unwinder::Init()
 {
-    Clear();
-    if (memset_s(&lastErrorData_, sizeof(UnwindErrorData), 0, sizeof(UnwindErrorData)) != 0) {
-        LOGE("set memory of lastErrorData_ failed");
-    }
+    Destroy();
     memory_ = std::make_shared<DfxMemory>(acc_);
 #if defined(__arm__)
     armExidx_ = std::make_shared<ArmExidx>(memory_);
@@ -62,9 +59,18 @@ void Unwinder::Init()
 
 void Unwinder::Clear()
 {
-    rsCache_.clear();
+    isFpStep_ = false;
     pcs_.clear();
     frames_.clear();
+    if (memset_s(&lastErrorData_, sizeof(UnwindErrorData), 0, sizeof(UnwindErrorData)) != 0) {
+        LOGE("Failed to memset lastErrorData");
+    }
+}
+
+void Unwinder::Destroy()
+{
+    Clear();
+    rsCache_.clear();
 }
 
 bool Unwinder::GetStackRange(uintptr_t& stackBottom, uintptr_t& stackTop)
@@ -171,15 +177,6 @@ bool Unwinder::GetMapByPc(uintptr_t pc, void *ctx, std::shared_ptr<DfxMap>& map)
     return true;
 }
 
-bool Unwinder::IsMapExecByPc(uintptr_t pc, void *ctx)
-{
-    std::shared_ptr<DfxMap> map = nullptr;
-    if (!GetMapByPc(pc, ctx, map)) {
-        return false;
-    }
-    return map->IsValidName();
-}
-
 #if defined(ENABLE_MIXSTACK)
 bool Unwinder::StepArkJsFrame(size_t& curIdx)
 {
@@ -227,8 +224,7 @@ bool Unwinder::Unwind(void *ctx, size_t maxFrameNum, size_t skipFrameNum)
         LOGE("params is nullptr?");
         return false;
     }
-    pcs_.clear();
-    frames_.clear();
+    Clear();
 
     bool needAdjustPc = false;
     bool isFirstValidFrame = false;
@@ -306,13 +302,14 @@ bool Unwinder::UnwindByFp(void *ctx, size_t maxFrameNum, size_t skipFrameNum)
 
     size_t idx = 0;
     size_t curIdx = 0;
-    uintptr_t pc, fp;
+    uintptr_t pc = 0;
+    uintptr_t fp = 0;
     do {
         if (idx < skipFrameNum) {
             idx++;
             continue;
         }
-        curIdx = idx - skipFrameNum;
+
         if (curIdx >= maxFrameNum) {
             lastErrorData_.SetCode(UNW_ERROR_MAX_FRAMES_EXCEEDED);
             break;
@@ -325,8 +322,7 @@ bool Unwinder::UnwindByFp(void *ctx, size_t maxFrameNum, size_t skipFrameNum)
         if (!FpStep(fp, pc, ctx) || (pc == 0)) {
             break;
         }
-
-        idx++;
+        curIdx++;
     } while (true);
     return (curIdx > 0);
 }
@@ -347,6 +343,10 @@ bool Unwinder::Step(uintptr_t& pc, uintptr_t& sp, void *ctx)
     std::shared_ptr<RegLocState> rs = nullptr;
     bool ret = false;
     do {
+        if (isFpStep_) {
+            break;
+        }
+
         if (enableCache_) {
             // 1. find cache rs
             auto iter = rsCache_.find(pc);
@@ -420,16 +420,17 @@ bool Unwinder::Step(uintptr_t& pc, uintptr_t& sp, void *ctx)
             SetLocalStackCheck(ctx, true);
             ret = Apply(regs_, rs);
         }
-#if defined(__aarch64__)
-        if (!ret && enableFpFallback_) {
-            uintptr_t fp = regs_->GetFp();
-            ret = FpStep(fp, pc, ctx);
-        }
-#endif
     } else {
         LOGW("Step signal frame");
         ret = true;
     }
+
+#if defined(__aarch64__)
+    if (!ret && enableFpFallback_) {
+        uintptr_t fp = regs_->GetFp();
+        ret = FpStep(fp, pc, ctx);
+    }
+#endif
 
     pc = regs_->GetPc();
     sp = regs_->GetSp();
@@ -458,6 +459,7 @@ bool Unwinder::FpStep(uintptr_t& fp, uintptr_t& pc, void *ctx)
 {
 #if defined(__aarch64__)
     LOGU("++++++fp: %lx, pc: %lx", (uint64_t)fp, (uint64_t)pc);
+    isFpStep_ = true;
     SetLocalStackCheck(ctx, true);
     memory_->SetCtx(ctx);
 
@@ -465,9 +467,11 @@ bool Unwinder::FpStep(uintptr_t& fp, uintptr_t& pc, void *ctx)
     uintptr_t ptr = fp;
     if (memory_->ReadUptr(ptr, &fp, true) &&
         memory_->ReadUptr(ptr, &pc, false)) {
-        if (enableFpCheckMapExec_ && (!IsMapExecByPc(pc, ctx))) {
-            LOGE("Map is not exec");
-            return false;
+        if (enableFpCheckMapExec_) {
+            std::shared_ptr<DfxMap> map = nullptr;
+            if (GetMapByPc(pc, ctx, map) && map->IsMapExec()) {
+                return false;
+            }
         }
         regs_->SetReg(REG_FP, &fp);
         regs_->SetReg(REG_PC, &pc);
@@ -598,7 +602,9 @@ void Unwinder::FillFrame(DfxFrame& frame)
         return;
     }
     LOGU("mapName: %s, mapOffset: %" PRIx64 "", frame.mapName.c_str(), frame.mapOffset);
-    DfxSymbols::GetFuncNameAndOffsetByPc(frame.relPc, elf, frame.funcName, frame.funcOffset);
+    if (!DfxSymbols::GetFuncNameAndOffsetByPc(frame.relPc, elf, frame.funcName, frame.funcOffset)) {
+        LOGW("Failed to get symbol, mapName: %s, relPc: %" PRIx64 "", frame.mapName.c_str(), frame.relPc);
+    }
     frame.buildId = elf->GetBuildId();
 }
 

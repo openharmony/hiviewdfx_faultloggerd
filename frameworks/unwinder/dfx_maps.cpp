@@ -33,6 +33,7 @@
 #include "dfx_memory_file.h"
 #include "dfx_log.h"
 #include "dfx_util.h"
+#include "string_util.h"
 
 namespace OHOS {
 namespace HiviewDFX {
@@ -89,13 +90,13 @@ std::shared_ptr<DfxElfMaps> DfxElfMaps::CreateFromLocal()
 
 std::shared_ptr<DfxElfMaps> DfxElfMaps::Create(const std::string path)
 {
-    char realPath[PATH_MAX] = {0};
-    if (realpath(path.c_str(), realPath) == nullptr) {
-        DFXLOG_WARN("Maps path(%s) is not exist.", path.c_str());
+    std::string realPath = path;
+    if (!RealPath(path, realPath)) {
+        DFXLOG_WARN("Failed to realpath %s", path.c_str());
         return nullptr;
     }
 
-    FILE *fp = fopen(realPath, "r");
+    FILE *fp = fopen(realPath.c_str(), "r");
     if (fp == nullptr) {
         DFXLOG_WARN("Fail to open maps info.");
         return nullptr;
