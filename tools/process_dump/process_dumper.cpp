@@ -59,19 +59,17 @@
 namespace OHOS {
 namespace HiviewDFX {
 namespace {
-constexpr size_t ONE_BLOCK_SIZE = 1000;
 void WriteData(int fd, const std::string& data, size_t blockSize)
 {
     size_t dataSize = data.length();
     size_t index = 0;
     while (index < dataSize) {
         size_t writeLength = (index + blockSize) <= dataSize ? blockSize : (dataSize - index);
-        size_t nwrite = write(fd, data.substr(index, writeLength).c_str(), writeLength);
+        size_t nwrite = OHOS_TEMP_FAILURE_RETRY(write(fd, data.substr(index, writeLength).c_str(), writeLength));
         if (nwrite != writeLength) {
             DFXLOG_INFO("%s :: nwrite: %zu, writeLength: %zu", __func__, nwrite, writeLength);
         }
         index += writeLength;
-        usleep(DfxConfig::GetConfig().writeSleepTime);
     }
 }
 }
@@ -106,7 +104,7 @@ void ProcessDumper::Dump()
         formatter.GetStackInfo(isJsonDump_, jsonInfo);
         DFXLOG_INFO("Finish GetStackInfo len %" PRIuPTR "", jsonInfo.length());
         if (isJsonDump_) {
-            WriteData(jsonFd_, jsonInfo, ONE_BLOCK_SIZE);
+            WriteData(jsonFd_, jsonInfo, MAX_PIPE_SIZE);
         }
     }
 
