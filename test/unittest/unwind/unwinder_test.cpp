@@ -611,5 +611,83 @@ HWTEST_F(UnwinderTest, FillFramesTest001, TestSize.Level2)
     ASSERT_EQ(frames[0].buildId.size() == 0, false);
     GTEST_LOG_(INFO) << "FillFramesTest001: end.";
 }
+
+/**
+ * @tc.name: UnwindLocalWithContextTest001
+ * @tc.desc: test unwinder UnwindLocalWithContext interface
+ *  in local case
+ * @tc.type: FUNC
+ */
+HWTEST_F(UnwinderTest, UnwindLocalWithContextTest001, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "UnwindLocalWithContextTest001: start.";
+    ucontext_t context;
+#if defined(__arm__)
+    context.uc_mcontext.arm_r0 = 0;
+    context.uc_mcontext.arm_r1 = 1;
+    context.uc_mcontext.arm_r2 = 2;
+    context.uc_mcontext.arm_r3 = 3;
+    context.uc_mcontext.arm_r4 = 4;
+    context.uc_mcontext.arm_r5 = 5;
+    context.uc_mcontext.arm_r6 = 6;
+    context.uc_mcontext.arm_r7 = 7;
+    context.uc_mcontext.arm_r8 = 8;
+    context.uc_mcontext.arm_r9 = 9;
+    context.uc_mcontext.arm_r10 = 10;
+    context.uc_mcontext.arm_fp = 11;
+    context.uc_mcontext.arm_ip = 12;
+    context.uc_mcontext.arm_sp = 13;
+    context.uc_mcontext.arm_lr = 14;
+    context.uc_mcontext.arm_pc = 15;
+#elif defined(__aarch64__)
+    for (int i = 0; i < 31; i++) {
+        context.uc_mcontext.regs[i] = i;
+    }
+    context.uc_mcontext.sp = 31;
+    context.uc_mcontext.pc = 32;
+#elif defined(___x86_64__)
+    context.uc_mcontext.gregs[REG_RAX] = 0;
+    context.uc_mcontext.gregs[REG_RDX] = 1;
+    context.uc_mcontext.gregs[REG_RCX] = 2;
+    context.uc_mcontext.gregs[REG_RBX] = 3;
+    context.uc_mcontext.gregs[REG_RSI] = 4;
+    context.uc_mcontext.gregs[REG_RDI] = 5;
+    context.uc_mcontext.gregs[REG_RBP] = 6;
+    context.uc_mcontext.gregs[REG_RSP] = 7;
+    context.uc_mcontext.gregs[REG_R8] = 8;
+    context.uc_mcontext.gregs[REG_R9] = 9;
+    context.uc_mcontext.gregs[REG_R10] = 10;
+    context.uc_mcontext.gregs[REG_R11] = 11;
+    context.uc_mcontext.gregs[REG_R12] = 12;
+    context.uc_mcontext.gregs[REG_R13] = 13;
+    context.uc_mcontext.gregs[REG_R14] = 14;
+    context.uc_mcontext.gregs[REG_R15] = 15;
+    context.uc_mcontext.gregs[REG_RIP] = 16;
+#endif
+    auto unwinder = std::make_shared<Unwinder>();
+    ASSERT_TRUE(unwinder->UnwindLocalWithContext(context));
+    GTEST_LOG_(INFO) << "UnwindLocalWithContextTest001: end.";
+}
+
+/**
+ * @tc.name: GetSymbolByPcTest001
+ * @tc.desc: test unwinder GetSymbolByPc interface
+ *  in local case
+ * @tc.type: FUNC
+ */
+HWTEST_F(UnwinderTest, GetSymbolByPcTest001, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "GetSymbolByPcTest001: start.";
+    auto unwinder = std::make_shared<Unwinder>();
+    unwinder->UnwindLocal();
+    auto pcs = unwinder->GetPcs();
+    std::string funcName;
+    uint64_t funcOffset;
+    std::shared_ptr<DfxMaps> maps = std::make_shared<DfxMaps>();
+    ASSERT_FALSE(unwinder->GetSymbolByPc(0x00000000, maps, funcName, funcOffset)); // Find map is null
+    ASSERT_FALSE(unwinder->GetSymbolByPc(pcs[0], maps, funcName, funcOffset)); // Get elf is null
+    GTEST_LOG_(INFO) << "GetSymbolByPcTest001: end.";
+}
 } // namespace HiviewDFX
 } // namepsace OHOS
+

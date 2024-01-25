@@ -92,7 +92,6 @@ public:
     void AddFrame(DfxFrame& frame);
     void FillFrames(std::vector<DfxFrame>& frames);
     std::vector<DfxFrame>& GetFrames();
-    void SetFrames(std::vector<DfxFrame>& frames);
     static bool GetSymbolByPc(uintptr_t pc, std::shared_ptr<DfxMaps> maps,
         std::string& funcName, uint64_t& funcOffset);
     static void GetFramesByPcs(std::vector<DfxFrame>& frames, std::vector<uintptr_t> pcs,
@@ -108,6 +107,7 @@ private:
     bool GetMapByPc(uintptr_t pc, void *ctx, std::shared_ptr<DfxMap>& map);
     void AddFrame(uintptr_t pc, uintptr_t sp, std::shared_ptr<DfxMap> map, size_t& index);
     bool Apply(std::shared_ptr<DfxRegs> regs, std::shared_ptr<RegLocState> rs);
+    void SetFrames(std::vector<DfxFrame>& frames);
 #if defined(ENABLE_MIXSTACK)
     bool StepArkJsFrame(size_t& curIdx);
 #endif
