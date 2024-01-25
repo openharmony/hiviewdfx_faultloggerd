@@ -303,6 +303,7 @@ int DfxDumpCatcher::DoDumpRemotePoll(int bufFd, int resFd, int timeout, std::str
         int pollRet = poll(readfds, fdsSize, timeout);
         if (pollRet < 0) {
             if (errno == EINTR) {
+                DFXLOG_INFO("%s :: %s :: errno == EINTR", DFXDUMPCATCHER_TAG.c_str(), __func__);
                 continue;
             }
             ret = DUMP_POLL_FAILED;
@@ -370,7 +371,7 @@ bool DfxDumpCatcher::DoReadBuf(int fd, std::string& msg)
             DFXLOG_WARN("%s :: %s :: read error", DFXDUMPCATCHER_TAG.c_str(), __func__);
             break;
         }
-        DFXLOG_DEBUG("%s :: %s :: nread: %zu", DFXDUMPCATCHER_TAG.c_str(), __func__, nread);
+        DFXLOG_INFO("%s :: %s :: nread: %zu", DFXDUMPCATCHER_TAG.c_str(), __func__, nread);
         ret = true;
         msg.append(buffer);
     } while (false);

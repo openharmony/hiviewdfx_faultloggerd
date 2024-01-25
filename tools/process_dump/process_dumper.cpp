@@ -71,6 +71,7 @@ void WriteData(int fd, const std::string& data, size_t blockSize)
         }
         index += writeLength;
     }
+    DFXLOG_INFO("%s :: needWriteDataSize: %zu, writeDataSize: %zu", __func__, dataSize, index);
 }
 }
 
