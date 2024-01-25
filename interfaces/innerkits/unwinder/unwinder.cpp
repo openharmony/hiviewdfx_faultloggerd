@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2023-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -351,7 +351,9 @@ bool Unwinder::Step(uintptr_t& pc, uintptr_t& sp, void *ctx)
             // 1. find cache rs
             auto iter = rsCache_.find(pc);
             if (iter != rsCache_.end()) {
-                LOGU("Find rs cache, pc: %p", reinterpret_cast<void *>(pc));
+                if (pid_ != UNWIND_TYPE_CUSTOMIZE) {
+                    LOGI("Find rs cache, pc: %p", reinterpret_cast<void *>(pc));
+                }
                 rs = iter->second;
                 ret = true;
                 break;
@@ -459,7 +461,10 @@ bool Unwinder::FpStep(uintptr_t& fp, uintptr_t& pc, void *ctx)
 {
 #if defined(__aarch64__)
     LOGU("++++++fp: %lx, pc: %lx", (uint64_t)fp, (uint64_t)pc);
-    isFpStep_ = true;
+    if (!isFpStep_) {
+        LOGI("First enter fp step, pc: %p", reinterpret_cast<void *>(pc));
+        isFpStep_ = true;
+    }
     SetLocalStackCheck(ctx, true);
     memory_->SetCtx(ctx);
 
