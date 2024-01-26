@@ -236,8 +236,8 @@ void ReadProcessWchan(std::string& result, const int pid, bool onlyPid, bool wit
     ss << "\nProcess threads wchan:\n";
     ss << "=======================================\n";
     bool flag = false;
-    std::string comm;
-    std::string wchan;
+    std::string comm = "";
+    std::string wchan= "";
     std::string taskPath = StringPrintf("/proc/%d/task", pid);
     std::vector<std::string> files;
     flag = ReadDirFiles(taskPath, files);
@@ -257,7 +257,7 @@ void ReadProcessWchan(std::string& result, const int pid, bool onlyPid, bool wit
     }
 
     if (!flag) {
-        ss << "Load process wchan failed." << std::endl;
+        ss << "Failed to access path: " << taskPath << std::endl;
     }
     ss << "=======================================\n";
     result.append(ss.str());

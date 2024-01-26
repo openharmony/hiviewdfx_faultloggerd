@@ -474,7 +474,7 @@ bool Unwinder::FpStep(uintptr_t& fp, uintptr_t& pc, void *ctx)
         memory_->ReadUptr(ptr, &pc, false)) {
         if (enableFpCheckMapExec_) {
             std::shared_ptr<DfxMap> map = nullptr;
-            if (GetMapByPc(pc, ctx, map) && map->IsMapExec()) {
+            if (!GetMapByPc(pc, ctx, map) || !map->IsMapExec()) {
                 return false;
             }
         }
