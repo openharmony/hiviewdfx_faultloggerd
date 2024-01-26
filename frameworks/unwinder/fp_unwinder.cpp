@@ -39,6 +39,16 @@ FpUnwinder::FpUnwinder()
     GetSelfStackRange(stackBottom_, stackTop_);
 }
 
+FpUnwinder::FpUnwinder(uintptr_t pcs[], int32_t sz)
+{
+    for (int32_t i = 0; i < sz; i++) {
+        DfxFrame frame;
+        frame.index = i;
+        frame.pc = i == 0 ? pcs[i] : pcs[i] - 4; // 4 : aarch64 instruction size
+        frames_.emplace_back(frame);
+    }
+}
+
 FpUnwinder::~FpUnwinder()
 {
     frames_.clear();

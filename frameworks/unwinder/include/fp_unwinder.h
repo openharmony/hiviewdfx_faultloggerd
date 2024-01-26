@@ -29,6 +29,7 @@ namespace HiviewDFX {
 class FpUnwinder {
 public:
     FpUnwinder();
+    FpUnwinder(uintptr_t pcs[], int32_t sz);
     ~FpUnwinder();
 
     bool UnwindWithContext(unw_context_t& context, size_t skipFrameNum, size_t maxFrameNums = DEFAULT_MAX_FRAME_NUM);

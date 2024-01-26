@@ -15,23 +15,23 @@
 
 #include "backtrace_local_thread.h"
 
-#include <sstream>
-
+#include <hilog/log.h>
 #include <link.h>
-#include <unistd.h>
-#include <mutex>
-#include <pthread.h>
 #include <libunwind.h>
 #include <libunwind_i-ohos.h>
+#include <mutex>
+#include <pthread.h>
 #include <securec.h>
+#include <sstream>
+#include <unistd.h>
 
 #include "backtrace_local_context.h"
 #include "dfx_define.h"
-#include "dfx_util.h"
-#include "procinfo.h"
-#include "fp_unwinder.h"
-#include "dwarf_unwinder.h"
 #include "dfx_frame_format.h"
+#include "dfx_util.h"
+#include "dwarf_unwinder.h"
+#include "fp_unwinder.h"
+#include "procinfo.h"
 
 namespace OHOS {
 namespace HiviewDFX {
@@ -93,23 +93,34 @@ bool BacktraceLocalThread::Unwind(unw_addr_space_t as, std::shared_ptr<DfxSymbol
         return ret;
     }
 
-    auto threadContext = BacktraceLocalContext::GetInstance().GetThreadContext(tid_);
+    auto threadContext = BacktraceLocalContext::GetInstance().CollectThreadContext(tid_);
     if (threadContext == nullptr) {
+        HILOG_INFO(LOG_CORE, "failed to get context\n");
         return ret;
     }
 
-    if (threadContext->ctx == nullptr) {
+    if (threadContext->ctx == nullptr && (threadContext->frameSz == 0)) {
         // should never happen
+        HILOG_INFO(LOG_CORE, "failed to get frameSz\n");
         ReleaseThread();
         return ret;
     }
 
+#if defined(__aarch64__)
+    if (threadContext->frameSz > 0) {
+        ret = true;
+        FpUnwinder fpUnwinder(threadContext->pcs, threadContext->frameSz);
+        fpUnwinder.UpdateFrameInfo();
+        frames_ = fpUnwinder.GetFrames();
+    }
+#else
     if (!ret) {
         DwarfUnwinder unwinder;
         std::unique_lock<std::mutex> mlock(threadContext->lock);
         ret = unwinder.UnwindWithContext(as, *(threadContext->ctx), symbol, skipFrameNum, maxFrameNums_);
         frames_ = unwinder.GetFrames();
     }
+#endif
 
     if (releaseThread) {
         ReleaseThread();
