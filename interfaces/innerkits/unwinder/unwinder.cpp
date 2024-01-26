@@ -594,6 +594,7 @@ void Unwinder::FillFrame(DfxFrame& frame)
         return;
     }
     if (frame.map == nullptr) {
+        frame.relPc = frame.pc;
         frame.mapName = "Not mapped";
         LOGU("Current frame is not mapped.");
         return;

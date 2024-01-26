@@ -237,7 +237,7 @@ void ReadProcessWchan(std::string& result, const int pid, bool onlyPid, bool wit
     ss << "=======================================\n";
     bool flag = false;
     std::string comm = "";
-    std::string wchan= "";
+    std::string wchan = "";
     std::string taskPath = StringPrintf("/proc/%d/task", pid);
     std::vector<std::string> files;
     flag = ReadDirFiles(taskPath, files);
