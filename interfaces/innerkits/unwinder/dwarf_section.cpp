@@ -120,7 +120,9 @@ bool DwarfSection::Step(uintptr_t fdeAddr, std::shared_ptr<DfxRegs> regs, std::s
         lastErrorData_.SetAddrAndCode(fdeAddr, UNW_ERROR_DWARF_INVALID_FDE);
         return false;
     }
-
+    if (regs->GetPc() < fdeInfo.pcStart || regs->GetPc() > fdeInfo.pcEnd) {
+        return false;
+    }
     LOGU("pc: %p, FDE start: %p", (void*)regs->GetPc(), (void*)fdeInfo.pcStart);
     DwarfCfaInstructions dwarfInstructions(memory_);
     if (!dwarfInstructions.Parse(regs->GetPc(), fdeInfo, *(rs.get()))) {
