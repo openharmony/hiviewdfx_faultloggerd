@@ -21,9 +21,13 @@
 #include <map>
 #include <mutex>
 
-#include <sys/syscall.h>
+#include <fcntl.h>
+#include <hilog/log.h>
 #include <securec.h>
+#include <sigchain.h>
+#include <sys/syscall.h>
 #include <unistd.h>
+
 #include "dfx_log.h"
 #include "dfx_define.h"
 #include "libunwind.h"
@@ -38,12 +42,13 @@ namespace {
 static struct sigaction g_sigaction;
 static std::mutex g_localMutex;
 static std::map<int32_t, std::shared_ptr<ThreadContext>> g_contextMap;
-static std::chrono::seconds g_timeOut = std::chrono::seconds(2); // 2 : 2 seconds
+static std::chrono::seconds g_timeOut = std::chrono::seconds(1);
 static std::shared_ptr<ThreadContext> CreateContext(int32_t tid)
 {
     auto threadContext = std::make_shared<ThreadContext>();
     threadContext->tid = tid;
     std::unique_lock<std::mutex> mlock(threadContext->lock);
+    threadContext->frameSz = 0;
     threadContext->ctx = new unw_context_t;
     (void)memset_s(threadContext->ctx, sizeof(unw_context_t), 0, sizeof(unw_context_t));
     return threadContext;
@@ -60,6 +65,7 @@ static std::shared_ptr<ThreadContext> GetContextLocked(int32_t tid)
 
     if (it->second->tid == ThreadContextStatus::CONTEXT_UNUSED) {
         it->second->tid = tid;
+        it->second->frameSz = 0;
         std::unique_lock<std::mutex> mlock(it->second->lock);
         if (it->second->ctx == nullptr) {
             it->second->ctx = new unw_context_t;
@@ -109,7 +115,7 @@ BacktraceLocalContext& BacktraceLocalContext::GetInstance()
     return instance;
 }
 
-std::shared_ptr<ThreadContext> BacktraceLocalContext::GetThreadContext(int32_t tid)
+std::shared_ptr<ThreadContext> BacktraceLocalContext::CollectThreadContext(int32_t tid)
 {
     std::unique_lock<std::mutex> lock(g_localMutex);
     auto context = GetContextLocked(tid);
@@ -118,18 +124,27 @@ std::shared_ptr<ThreadContext> BacktraceLocalContext::GetThreadContext(int32_t t
         return nullptr;
     }
 
-    if (!InstallSigHandler()) {
+    if (!Init()) {
         RemoveContextLocked(tid);
         DFXLOG_WARN("Failed to install local dump signal handler.");
         return nullptr;
     }
 
     if (!SignalRequestThread(tid, context.get())) {
-        UninstallSigHandler();
         return nullptr;
     }
-    UninstallSigHandler();
+    context->cv.wait_for(lock, g_timeOut);
     return context;
+}
+
+std::shared_ptr<ThreadContext> BacktraceLocalContext::GetThreadContext(int32_t tid)
+{
+    std::unique_lock<std::mutex> lock(g_localMutex);
+    auto it = g_contextMap.find(tid);
+    if (it != g_contextMap.end()) {
+        return it->second;
+    }
+    return nullptr;
 }
 
 void BacktraceLocalContext::ReleaseThread(int32_t tid)
@@ -140,7 +155,7 @@ void BacktraceLocalContext::ReleaseThread(int32_t tid)
         return;
     }
 
-    it->second->cv.notify_one();
+    it->second->cv.notify_all();
 }
 
 void BacktraceLocalContext::CleanUp()
@@ -159,13 +174,39 @@ void BacktraceLocalContext::CleanUp()
     }
 }
 
-void BacktraceLocalContext::CopyContextAndWaitTimeout(int sig, siginfo_t *si, void *context)
+bool BacktraceLocalContext::CopyContextAndWaitTimeout(int sig, siginfo_t *si, void *context)
 {
-    auto ctxPtr = static_cast<ThreadContext*>(si->si_value.sival_ptr);
-    if (ctxPtr == nullptr) {
-        // should never happen
-        return;
+    if (si->si_code != DUMP_TYPE_LOCAL) {
+        return false;
     }
+
+    auto ctxPtr = BacktraceLocalContext::GetInstance().GetThreadContext(syscall(SYS_gettid));
+    if (ctxPtr == nullptr || context == nullptr) {
+        return true;
+    }
+
+#if defined(__aarch64__)
+    uintptr_t fp = static_cast<ucontext_t*>(context)->uc_mcontext.regs[UNW_AARCH64_X29];
+    ctxPtr->pcs[0] = static_cast<ucontext_t*>(context)->uc_mcontext.pc;
+    int index = 1;
+    for (; index < DEFAULT_MAX_LOCAL_FRAME_NUM; index++) {
+        uintptr_t prevFp = fp;
+        if (!BacktraceLocalContext::GetInstance().ReadUintptrSafe(prevFp, fp)) {
+            break;
+        }
+
+        if (!BacktraceLocalContext::GetInstance().ReadUintptrSafe(fp + sizeof(uintptr_t), ctxPtr->pcs[index])) {
+            break;
+        }
+
+        if (fp == prevFp || fp == 0 || ctxPtr->pcs[index] == 0) {
+            break;
+        }
+    }
+    ctxPtr->frameSz = index;
+    ctxPtr->cv.notify_all();
+    return true;
+#else
     std::unique_lock<std::mutex> lock(ctxPtr->lock);
     if (ctxPtr->ctx != nullptr) {
 #if defined(__arm__)
@@ -194,76 +235,65 @@ void BacktraceLocalContext::CopyContextAndWaitTimeout(int sig, siginfo_t *si, vo
 #endif
     } else {
         ctxPtr->tid = static_cast<int32_t>(ThreadContextStatus::CONTEXT_UNUSED);
-        return;
+        return true;
     }
     ctxPtr->tid = static_cast<int32_t>(ThreadContextStatus::CONTEXT_READY);
+    ctxPtr->cv.notify_all();
     ctxPtr->cv.wait_for(lock, g_timeOut);
     ctxPtr->tid = static_cast<int32_t>(ThreadContextStatus::CONTEXT_UNUSED);
-}
-
-bool BacktraceLocalContext::InstallSigHandler()
-{
-    struct sigaction action;
-    (void)memset_s(&action, sizeof(action), 0, sizeof(action));
-    (void)memset_s(&g_sigaction, sizeof(g_sigaction), 0, sizeof(g_sigaction));
-    sigfillset(&action.sa_mask);
-    // do not block crash signals
-    sigdelset(&action.sa_mask, SIGABRT);
-    sigdelset(&action.sa_mask, SIGBUS);
-    sigdelset(&action.sa_mask, SIGILL);
-    sigdelset(&action.sa_mask, SIGSEGV);
-    action.sa_sigaction = BacktraceLocalContext::CopyContextAndWaitTimeout;
-    action.sa_flags = SA_RESTART | SA_SIGINFO;
-    if (sigaction(SIGLOCAL_DUMP, &action, &g_sigaction) != EOK) {
-        DFXLOG_WARN("Failed to install SigHandler for local backtrace(%d).", errno);
-        return false;
-    }
     return true;
-}
-
-void BacktraceLocalContext::UninstallSigHandler()
-{
-    if (g_sigaction.sa_sigaction == nullptr) {
-        signal(SIGLOCAL_DUMP, SIG_DFL);
-        return;
-    }
-
-    if (sigaction(SIGLOCAL_DUMP, &g_sigaction, nullptr) != EOK) {
-        DFXLOG_WARN("UninstallSigHandler :: Failed to reset signal(%d).", errno);
-        signal(SIGLOCAL_DUMP, SIG_DFL);
-    }
+#endif
 }
 
 bool BacktraceLocalContext::SignalRequestThread(int32_t tid, ThreadContext* ctx)
 {
     siginfo_t si {0};
-    si.si_signo = SIGLOCAL_DUMP;
-    si.si_value.sival_ptr = ctx; // pass context pointer by sival_ptr
+    si.si_signo = SIGDUMP;
     si.si_errno = 0;
-    si.si_code = -SIGLOCAL_DUMP;
+    si.si_code = DUMP_TYPE_LOCAL;
     if (syscall(SYS_rt_tgsigqueueinfo, getpid(), tid, si.si_signo, &si) != 0) {
         DFXLOG_WARN("Failed to queue signal(%d) to %d, errno(%d).", si.si_signo, tid, errno);
         ctx->tid = static_cast<int32_t>(ThreadContextStatus::CONTEXT_UNUSED);
         return false;
     }
-
-    int left = 10000; // 10000 : max wait 10ms for single thread
-    constexpr int pollTime = 10; // 10 : 10us
-    while (ctx->tid.load() != ThreadContextStatus::CONTEXT_READY) {
-        int ret = usleep(pollTime);
-        if (ret == 0) {
-            left -= pollTime;
-        } else {
-            left -= ret;
-        }
-
-        if (left <= 0 &&
-            ctx->tid.compare_exchange_strong(tid, static_cast<int32_t>(ThreadContextStatus::CONTEXT_UNUSED))) {
-            DFXLOG_WARN("Failed to wait for %d to write context.", tid);
-            return false;
-        }
-    }
     return true;
+}
+
+bool BacktraceLocalContext::Init()
+{
+    static std::once_flag flag;
+    std::call_once(flag, [&]() {
+        if (pipe2(pipe2_, O_CLOEXEC | O_NONBLOCK) != 0) {
+            DFXLOG_WARN("Failed to create pipe, errno(%d).", errno);
+            init_ = false;
+        } else {
+            struct signal_chain_action sigchain = {
+                .sca_sigaction = BacktraceLocalContext::CopyContextAndWaitTimeout,
+                .sca_mask = {},
+                .sca_flags = 0,
+            };
+            add_special_signal_handler(SIGDUMP, &sigchain);
+            init_ = true;
+        }
+    });
+
+    return init_;
+}
+
+bool BacktraceLocalContext::ReadUintptrSafe(uintptr_t addr, uintptr_t& value)
+{
+    if (!init_) {
+        return false;
+    }
+
+    if (OHOS_TEMP_FAILURE_RETRY(syscall(SYS_write, pipe2_[PIPE_WRITE], addr, sizeof(uintptr_t))) == -1) {
+        return false;
+    }
+
+    uintptr_t dummy;
+    value = *reinterpret_cast<uintptr_t *>(addr);
+    return OHOS_TEMP_FAILURE_RETRY(syscall(SYS_read, pipe2_[PIPE_READ], &dummy, sizeof(uintptr_t))) ==
+        sizeof(uintptr_t);
 }
 } // namespace HiviewDFX
 } // namespace OHOS
