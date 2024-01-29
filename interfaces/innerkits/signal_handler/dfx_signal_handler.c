@@ -525,7 +525,6 @@ static int CloneAndDoProcessDump(void* arg)
 {
     (void)arg;
     DFXLOG_INFO("The clone thread(%ld).", syscall(SYS_gettid));
-    CloseFds();
     g_request.recycleTid = syscall(SYS_gettid);
     return ForkAndExecProcessDump();
 }
