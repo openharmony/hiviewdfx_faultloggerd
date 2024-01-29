@@ -371,7 +371,7 @@ bool Unwinder::Step(uintptr_t& pc, uintptr_t& sp, void *ctx)
         MAYBE_UNUSED int utiRet = UNW_ERROR_NONE;
         if ((utiRet = acc_->FindUnwindTable(pc, uti, ctx)) != UNW_ERROR_NONE) {
             lastErrorData_.SetAddrAndCode(pc, UNW_ERROR_NO_UNWIND_INFO);
-            LOGE("Failed to find unwind table ret: %d", utiRet);
+            LOGU("Failed to find unwind table ret: %d", utiRet);
             break;
         }
 
@@ -438,10 +438,10 @@ bool Unwinder::Step(uintptr_t& pc, uintptr_t& sp, void *ctx)
     sp = regs_->GetSp();
     if (ret && (prevPc == pc) && (prevSp == sp)) {
         if (pid_ >= 0) {
-            UnwindContext* uctx = reinterpret_cast<UnwindContext *>(ctx);
-            LOGE("pc and sp is same, tid: %d", uctx->pid);
+            MAYBE_UNUSED UnwindContext* uctx = reinterpret_cast<UnwindContext *>(ctx);
+            LOGU("pc and sp is same, tid: %d", uctx->pid);
         } else {
-            LOGE("pc and sp is same");
+            LOGU("pc and sp is same");
         }
         lastErrorData_.SetAddrAndCode(pc, UNW_ERROR_REPEATED_FRAME);
         ret = false;
@@ -482,7 +482,6 @@ bool Unwinder::FpStep(uintptr_t& fp, uintptr_t& pc, void *ctx)
         regs_->SetReg(REG_PC, &pc);
         regs_->SetReg(REG_SP, &prevFp);
         if (pid_ == UNWIND_TYPE_CUSTOMIZE) {
-            LOGW("FpStep, Strip pac pc");
             regs_->SetPc(StripPac(pc, pacMask_));
         }
         LOGU("------fp: %lx, pc: %lx", (uint64_t)fp, (uint64_t)pc);
@@ -609,7 +608,7 @@ void Unwinder::FillFrame(DfxFrame& frame)
     }
     LOGU("mapName: %s, mapOffset: %" PRIx64 "", frame.mapName.c_str(), frame.mapOffset);
     if (!DfxSymbols::GetFuncNameAndOffsetByPc(frame.relPc, elf, frame.funcName, frame.funcOffset)) {
-        LOGW("Failed to get symbol, mapName: %s, relPc: %" PRIx64 "", frame.mapName.c_str(), frame.relPc);
+        LOGU("Failed to get symbol, mapName: %s, relPc: %" PRIx64 "", frame.mapName.c_str(), frame.relPc);
     }
     frame.buildId = elf->GetBuildId();
 }
