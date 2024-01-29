@@ -182,7 +182,7 @@ if (defined(ohos_lite)) {
     cflags_cc = [ "-DDEBUG_CRASH_LOCAL_HANDLER" ]
 
     deps = [
-      "$faultloggerd_common_path/dfxlog:dfx_hilog",
+      "$faultloggerd_common_path/dfxlog:dfx_hilog_base",
       "$faultloggerd_common_path/dfxutil:dfx_util",
       "$faultloggerd_interfaces_path/innerkits/faultloggerd_client:libfaultloggerd",
       "$faultloggerd_interfaces_path/innerkits/procinfo:libdfx_procinfo",
@@ -198,7 +198,7 @@ if (defined(ohos_lite)) {
 
     external_deps = [
       "c_utils:utils",
-      "hilog:libhilog",
+      "hilog:libhilog_base",
     ]
 
     install_images = [
