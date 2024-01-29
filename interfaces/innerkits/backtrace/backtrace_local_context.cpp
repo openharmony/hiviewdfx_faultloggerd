@@ -205,6 +205,7 @@ bool BacktraceLocalContext::CopyContextAndWaitTimeout(int sig, siginfo_t *si, vo
     }
     ctxPtr->frameSz = index;
     ctxPtr->cv.notify_all();
+    ctxPtr->tid = static_cast<int32_t>(ThreadContextStatus::CONTEXT_UNUSED);
     return true;
 #else
     std::unique_lock<std::mutex> lock(ctxPtr->lock);
