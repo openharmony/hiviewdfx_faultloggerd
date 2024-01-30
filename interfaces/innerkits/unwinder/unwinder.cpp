@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2023-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -193,9 +193,9 @@ bool Unwinder::StepArkJsFrame(size_t& curIdx)
     uintptr_t prevPc = pc;
     uintptr_t prevSp = sp;
     uintptr_t prevFp = fp;
-    LOGI("input ark pc: %" PRIx64 ", fp: %" PRIx64 ", sp: %" PRIx64 ".", (uint64_t)pc, (uint64_t)fp, (uint64_t)sp);
+    LOGI("Ark input pc: %" PRIx64 ", fp: %" PRIx64 ", sp: %" PRIx64 ".", (uint64_t)pc, (uint64_t)fp, (uint64_t)sp);
     int ret = DfxArk::GetArkNativeFrameInfo(pid_, pc, fp, sp, jsFrames, size);
-    LOGI("output ark pc: %" PRIx64 ", fp: %" PRIx64 ", sp: %" PRIx64 ", js frame size: %zu.",
+    LOGI("Ark output pc: %" PRIx64 ", fp: %" PRIx64 ", sp: %" PRIx64 ", js frame size: %zu.",
         (uint64_t)pc, (uint64_t)fp, (uint64_t)sp, size);
 
     if (ret < 0 || (pc == prevPc && prevSp == sp && prevFp == fp)) {
@@ -276,7 +276,7 @@ bool Unwinder::Unwind(void *ctx, size_t maxFrameNum, size_t skipFrameNum)
 #if defined(ENABLE_MIXSTACK)
         if (map->IsArkExecutable()) {
             if (!StepArkJsFrame(curIndex)) {
-                LOGE("Failed to step ark Js frames.");
+                LOGE("Failed to step ark Js frames, curIndex: %zu", curIndex);
                 break;
             }
             continue;
@@ -351,7 +351,9 @@ bool Unwinder::Step(uintptr_t& pc, uintptr_t& sp, void *ctx)
             // 1. find cache rs
             auto iter = rsCache_.find(pc);
             if (iter != rsCache_.end()) {
-                LOGU("Find rs cache, pc: %p", reinterpret_cast<void *>(pc));
+                if (pid_ != UNWIND_TYPE_CUSTOMIZE) {
+                    LOGI("Find rs cache, pc: %p", reinterpret_cast<void *>(pc));
+                }
                 rs = iter->second;
                 ret = true;
                 break;
@@ -366,10 +368,10 @@ bool Unwinder::Step(uintptr_t& pc, uintptr_t& sp, void *ctx)
 
         // 2. find unwind table and entry
         UnwindTableInfo uti;
-        MAYBE_UNUSED int utiRet = UNW_ERROR_NONE;
-        if ((utiRet = acc_->FindUnwindTable(pc, uti, ctx)) != UNW_ERROR_NONE) {
+        MAYBE_UNUSED int utiRet = acc_->FindUnwindTable(pc, uti, ctx);
+        if (utiRet != UNW_ERROR_NONE) {
             lastErrorData_.SetAddrAndCode(pc, UNW_ERROR_NO_UNWIND_INFO);
-            LOGE("Failed to find unwind table ret: %d", utiRet);
+            LOGU("Failed to find unwind table ret: %d", utiRet);
             break;
         }
 
@@ -436,10 +438,10 @@ bool Unwinder::Step(uintptr_t& pc, uintptr_t& sp, void *ctx)
     sp = regs_->GetSp();
     if (ret && (prevPc == pc) && (prevSp == sp)) {
         if (pid_ >= 0) {
-            UnwindContext* uctx = reinterpret_cast<UnwindContext *>(ctx);
-            LOGE("pc and sp is same, tid: %d", uctx->pid);
+            MAYBE_UNUSED UnwindContext* uctx = reinterpret_cast<UnwindContext *>(ctx);
+            LOGU("pc and sp is same, tid: %d", uctx->pid);
         } else {
-            LOGE("pc and sp is same");
+            LOGU("pc and sp is same");
         }
         lastErrorData_.SetAddrAndCode(pc, UNW_ERROR_REPEATED_FRAME);
         ret = false;
@@ -459,7 +461,10 @@ bool Unwinder::FpStep(uintptr_t& fp, uintptr_t& pc, void *ctx)
 {
 #if defined(__aarch64__)
     LOGU("++++++fp: %lx, pc: %lx", (uint64_t)fp, (uint64_t)pc);
-    isFpStep_ = true;
+    if (!isFpStep_) {
+        LOGI("First enter fp step, pc: %p", reinterpret_cast<void *>(pc));
+        isFpStep_ = true;
+    }
     SetLocalStackCheck(ctx, true);
     memory_->SetCtx(ctx);
 
@@ -469,7 +474,7 @@ bool Unwinder::FpStep(uintptr_t& fp, uintptr_t& pc, void *ctx)
         memory_->ReadUptr(ptr, &pc, false)) {
         if (enableFpCheckMapExec_) {
             std::shared_ptr<DfxMap> map = nullptr;
-            if (GetMapByPc(pc, ctx, map) && map->IsMapExec()) {
+            if (!GetMapByPc(pc, ctx, map) || !map->IsMapExec()) {
                 return false;
             }
         }
@@ -477,7 +482,6 @@ bool Unwinder::FpStep(uintptr_t& fp, uintptr_t& pc, void *ctx)
         regs_->SetReg(REG_PC, &pc);
         regs_->SetReg(REG_SP, &prevFp);
         if (pid_ == UNWIND_TYPE_CUSTOMIZE) {
-            LOGW("FpStep, Strip pac pc");
             regs_->SetPc(StripPac(pc, pacMask_));
         }
         LOGU("------fp: %lx, pc: %lx", (uint64_t)fp, (uint64_t)pc);
@@ -514,13 +518,15 @@ uintptr_t Unwinder::StripPac(uintptr_t inAddr, uintptr_t pacMask)
     uintptr_t outAddr = inAddr;
 #if defined(__aarch64__)
     if (outAddr != 0) {
-        LOGU("Pac addr: %lx", (uint64_t)outAddr);
         if (pacMask != 0) {
             outAddr &= ~pacMask;
         } else {
             register uint64_t x30 __asm("x30") = inAddr;
             asm("hint 0x7" : "+r"(x30));
             outAddr = x30;
+        }
+        if (outAddr != inAddr) {
+            LOGW("Strip pac in addr: %lx, out addr: %lx", (uint64_t)inAddr, (uint64_t)outAddr);
         }
     }
 #endif
@@ -589,6 +595,7 @@ void Unwinder::FillFrame(DfxFrame& frame)
         return;
     }
     if (frame.map == nullptr) {
+        frame.relPc = frame.pc;
         frame.mapName = "Not mapped";
         LOGU("Current frame is not mapped.");
         return;
@@ -603,7 +610,7 @@ void Unwinder::FillFrame(DfxFrame& frame)
     }
     LOGU("mapName: %s, mapOffset: %" PRIx64 "", frame.mapName.c_str(), frame.mapOffset);
     if (!DfxSymbols::GetFuncNameAndOffsetByPc(frame.relPc, elf, frame.funcName, frame.funcOffset)) {
-        LOGW("Failed to get symbol, mapName: %s, relPc: %" PRIx64 "", frame.mapName.c_str(), frame.relPc);
+        LOGU("Failed to get symbol, mapName: %s, relPc: %" PRIx64 "", frame.mapName.c_str(), frame.relPc);
     }
     frame.buildId = elf->GetBuildId();
 }
@@ -633,6 +640,9 @@ void Unwinder::GetFramesByPcs(std::vector<DfxFrame>& frames, std::vector<uintptr
 
 bool Unwinder::GetSymbolByPc(uintptr_t pc, std::shared_ptr<DfxMaps> maps, std::string& funcName, uint64_t& funcOffset)
 {
+    if (maps == nullptr) {
+        return false;
+    }
     std::shared_ptr<DfxMap> map = nullptr;
     if (!maps->FindMapByAddr(pc, map) || (map == nullptr)) {
         LOGE("Find map is null");

@@ -22,6 +22,8 @@
 #include <libunwind.h>
 #include <nocopyable.h>
 
+#include "dfx_define.h"
+
 namespace OHOS {
 namespace HiviewDFX {
 enum ThreadContextStatus {
@@ -38,6 +40,9 @@ struct ThreadContext {
     std::condition_variable cv;
     // store unwind context
     unw_context_t* ctx {nullptr};
+    // unwind in signal handler
+    uintptr_t pcs[DEFAULT_MAX_LOCAL_FRAME_NUM] {0};
+    std::atomic<int32_t> frameSz {0};
     ~ThreadContext()
     {
         std::unique_lock<std::mutex> mlock(lock);
@@ -53,16 +58,20 @@ public:
     static BacktraceLocalContext& GetInstance();
     ~BacktraceLocalContext() = default;
     // ThreadContext is released after calling ReleaseThread
+    std::shared_ptr<ThreadContext> CollectThreadContext(int32_t tid);
     std::shared_ptr<ThreadContext> GetThreadContext(int32_t tid);
+    bool ReadUintptrSafe(uintptr_t addr, uintptr_t& value);
     void ReleaseThread(int32_t tid);
     void CleanUp();
 private:
     BacktraceLocalContext() = default;
     DISALLOW_COPY_AND_MOVE(BacktraceLocalContext);
-    static void CopyContextAndWaitTimeout(int sig, siginfo_t *si, void *context);
-    bool InstallSigHandler();
-    void UninstallSigHandler();
+    static bool CopyContextAndWaitTimeout(int sig, siginfo_t *si, void *context);
     bool SignalRequestThread(int32_t tid, ThreadContext* ctx);
+    bool Init();
+private:
+    bool init_ {false};
+    int32_t pipe2_[PIPE_NUM_SZ];
 };
 } // namespace HiviewDFX
 } // namespace OHOS

@@ -24,9 +24,6 @@
 
 namespace OHOS {
 namespace HiviewDFX {
-namespace {
-const int PROT_DEVICE_MAP = 0x8000;
-}
 class DfxElf;
 
 class DfxMap {
@@ -44,7 +41,6 @@ public:
 
     bool Parse(const std::string buf, int size);
     bool IsMapExec();
-    bool IsValidName();
     bool IsArkExecutable();
     const std::shared_ptr<DfxElf> GetElf();
     std::string GetElfName();

@@ -612,6 +612,7 @@ HWTEST_F(UnwinderTest, FillFramesTest001, TestSize.Level2)
     GTEST_LOG_(INFO) << "FillFramesTest001: end.";
 }
 
+#if defined(__arm__) || defined(__aarch64__)
 /**
  * @tc.name: UnwindLocalWithContextTest001
  * @tc.desc: test unwinder UnwindLocalWithContext interface
@@ -621,53 +622,41 @@ HWTEST_F(UnwinderTest, FillFramesTest001, TestSize.Level2)
 HWTEST_F(UnwinderTest, UnwindLocalWithContextTest001, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "UnwindLocalWithContextTest001: start.";
+    auto regs = DfxRegs::Create();
+    auto regsData = regs->RawData();
+    GetLocalRegs(regsData);
     ucontext_t context;
-#if defined(__arm__)
-    context.uc_mcontext.arm_r0 = 0;
-    context.uc_mcontext.arm_r1 = 1;
-    context.uc_mcontext.arm_r2 = 2;
-    context.uc_mcontext.arm_r3 = 3;
-    context.uc_mcontext.arm_r4 = 4;
-    context.uc_mcontext.arm_r5 = 5;
-    context.uc_mcontext.arm_r6 = 6;
-    context.uc_mcontext.arm_r7 = 7;
-    context.uc_mcontext.arm_r8 = 8;
-    context.uc_mcontext.arm_r9 = 9;
-    context.uc_mcontext.arm_r10 = 10;
-    context.uc_mcontext.arm_fp = 11;
-    context.uc_mcontext.arm_ip = 12;
-    context.uc_mcontext.arm_sp = 13;
-    context.uc_mcontext.arm_lr = 14;
-    context.uc_mcontext.arm_pc = 15;
-#elif defined(__aarch64__)
-    for (int i = 0; i < 31; i++) {
-        context.uc_mcontext.regs[i] = i;
+    (void)memset_s(&context, sizeof(context), 0, sizeof(context));
+#ifdef __arm__
+    context.uc_mcontext.arm_r0 = *(regs->GetReg(REG_ARM_R0));
+    context.uc_mcontext.arm_r1 = *(regs->GetReg(REG_ARM_R1));
+    context.uc_mcontext.arm_r2 = *(regs->GetReg(REG_ARM_R2));
+    context.uc_mcontext.arm_r3 = *(regs->GetReg(REG_ARM_R3));
+    context.uc_mcontext.arm_r4 = *(regs->GetReg(REG_ARM_R4));
+    context.uc_mcontext.arm_r5 = *(regs->GetReg(REG_ARM_R5));
+    context.uc_mcontext.arm_r6 = *(regs->GetReg(REG_ARM_R6));
+    context.uc_mcontext.arm_r7 = *(regs->GetReg(REG_ARM_R7));
+    context.uc_mcontext.arm_r8 = *(regs->GetReg(REG_ARM_R8));
+    context.uc_mcontext.arm_r9 = *(regs->GetReg(REG_ARM_R9));
+    context.uc_mcontext.arm_r10 = *(regs->GetReg(REG_ARM_R10));
+    context.uc_mcontext.arm_fp = *(regs->GetReg(REG_ARM_R11));
+    context.uc_mcontext.arm_ip = *(regs->GetReg(REG_ARM_R12));
+    context.uc_mcontext.arm_sp = *(regs->GetReg(REG_ARM_R13));
+    context.uc_mcontext.arm_lr = *(regs->GetReg(REG_ARM_R14));
+    context.uc_mcontext.arm_pc = *(regs->GetReg(REG_ARM_R15));
+#else
+    for (int i = 0; i < REG_LAST; ++i) {
+        context.uc_mcontext.regs[i] = *(regs->GetReg(i));
     }
-    context.uc_mcontext.sp = 31;
-    context.uc_mcontext.pc = 32;
-#elif defined(___x86_64__)
-    context.uc_mcontext.gregs[REG_RAX] = 0;
-    context.uc_mcontext.gregs[REG_RDX] = 1;
-    context.uc_mcontext.gregs[REG_RCX] = 2;
-    context.uc_mcontext.gregs[REG_RBX] = 3;
-    context.uc_mcontext.gregs[REG_RSI] = 4;
-    context.uc_mcontext.gregs[REG_RDI] = 5;
-    context.uc_mcontext.gregs[REG_RBP] = 6;
-    context.uc_mcontext.gregs[REG_RSP] = 7;
-    context.uc_mcontext.gregs[REG_R8] = 8;
-    context.uc_mcontext.gregs[REG_R9] = 9;
-    context.uc_mcontext.gregs[REG_R10] = 10;
-    context.uc_mcontext.gregs[REG_R11] = 11;
-    context.uc_mcontext.gregs[REG_R12] = 12;
-    context.uc_mcontext.gregs[REG_R13] = 13;
-    context.uc_mcontext.gregs[REG_R14] = 14;
-    context.uc_mcontext.gregs[REG_R15] = 15;
-    context.uc_mcontext.gregs[REG_RIP] = 16;
 #endif
     auto unwinder = std::make_shared<Unwinder>();
     ASSERT_TRUE(unwinder->UnwindLocalWithContext(context));
+    auto frames = unwinder->GetFrames();
+    GTEST_LOG_(INFO) << unwinder->GetFramesStr(frames);
+    ASSERT_GT(frames.size(), 1);
     GTEST_LOG_(INFO) << "UnwindLocalWithContextTest001: end.";
 }
+#endif
 
 /**
  * @tc.name: GetSymbolByPcTest001

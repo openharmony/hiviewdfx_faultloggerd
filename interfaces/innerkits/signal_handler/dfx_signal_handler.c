@@ -261,21 +261,24 @@ static bool IsDumpSignal(int sig)
     return sig == SIGDUMP || sig == SIGLEAK_STACK;
 }
 
-static const int SIGCHAIN_SIGNAL_LIST[] = {
-    SIGABRT, SIGBUS, SIGDUMP, SIGFPE,
-    SIGSEGV, SIGSTKFLT, SIGSYS, SIGTRAP, SIGLEAK_STACK
+static const int SIGCHAIN_DUMP_SIGNAL_LIST[] = {
+    SIGDUMP, SIGLEAK_STACK
 };
 
-static const int SIGACTION_SIGNAL_LIST[] = {
-    SIGILL,
+static const int SIGCHAIN_CRASH_SIGNAL_LIST[] = {
+    SIGILL, SIGABRT, SIGBUS, SIGFPE,
+    SIGSEGV, SIGSTKFLT, SIGSYS, SIGTRAP
 };
 
 static void SetInterestedSignalMasks(int how)
 {
     sigset_t set;
     sigemptyset(&set);
-    for (size_t i = 0; i < sizeof(SIGCHAIN_SIGNAL_LIST) / sizeof(SIGCHAIN_SIGNAL_LIST[0]); i++) {
-        sigaddset(&set, SIGCHAIN_SIGNAL_LIST[i]);
+    for (size_t i = 0; i < sizeof(SIGCHAIN_DUMP_SIGNAL_LIST) / sizeof(SIGCHAIN_DUMP_SIGNAL_LIST[0]); i++) {
+        sigaddset(&set, SIGCHAIN_DUMP_SIGNAL_LIST[i]);
+    }
+    for (size_t i = 0; i < sizeof(SIGCHAIN_CRASH_SIGNAL_LIST) / sizeof(SIGCHAIN_CRASH_SIGNAL_LIST[0]); i++) {
+        sigaddset(&set, SIGCHAIN_CRASH_SIGNAL_LIST[i]);
     }
     sigprocmask(how, &set, NULL);
 }
@@ -617,6 +620,19 @@ static void DFX_SignalHandler(int sig, siginfo_t *si, void *context)
     ResetAndRethrowSignalIfNeed(sig, si);
 }
 
+static void InstallSigActionHandler(int sig)
+{
+    struct sigaction action;
+    memset(&action, 0, sizeof(action));
+    memset(&g_oldSigactionList, 0, sizeof(g_oldSigactionList));
+    sigfillset(&action.sa_mask);
+    action.sa_sigaction = DFX_SignalHandler;
+    action.sa_flags = SA_RESTART | SA_SIGINFO | SA_ONSTACK;
+    if (sigaction(sig, &action, &(g_oldSigactionList[sig])) != 0) {
+        DFXLOG_ERROR("Failed to register signal(%d)", sig);
+    }
+}
+
 void DFX_InstallSignalHandler(void)
 {
     if (g_hasInit) {
@@ -638,22 +654,23 @@ void DFX_InstallSignalHandler(void)
         .sca_mask = {},
         .sca_flags = 0,
     };
-    sigfillset(&sigchain.sca_mask);
-    for (size_t i = 0; i < sizeof(SIGCHAIN_SIGNAL_LIST) / sizeof(SIGCHAIN_SIGNAL_LIST[0]); i++) {
-        int32_t sig = SIGCHAIN_SIGNAL_LIST[i];
+
+    for (size_t i = 0; i < sizeof(SIGCHAIN_DUMP_SIGNAL_LIST) / sizeof(SIGCHAIN_DUMP_SIGNAL_LIST[0]); i++) {
+        int32_t sig = SIGCHAIN_DUMP_SIGNAL_LIST[i];
+        sigfillset(&sigchain.sca_mask);
+        // dump signal not mask crash signal
+        for (size_t j = 0; j < sizeof(SIGCHAIN_CRASH_SIGNAL_LIST) / sizeof(SIGCHAIN_CRASH_SIGNAL_LIST[0]); j++) {
+            sigdelset(&sigchain.sca_mask, SIGCHAIN_CRASH_SIGNAL_LIST[i]);
+        }
         add_special_handler_at_last(sig, &sigchain);
     }
-
-    struct sigaction action;
-    memset(&action, 0, sizeof(action));
-    memset(&g_oldSigactionList, 0, sizeof(g_oldSigactionList));
-    sigfillset(&action.sa_mask);
-    action.sa_sigaction = DFX_SignalHandler;
-    action.sa_flags = SA_RESTART | SA_SIGINFO | SA_ONSTACK;
-    for (size_t i = 0; i < sizeof(SIGACTION_SIGNAL_LIST) / sizeof(SIGACTION_SIGNAL_LIST[0]); i++) {
-        int32_t sig = SIGACTION_SIGNAL_LIST[i];
-        if (sigaction(sig, &action, &(g_oldSigactionList[sig])) != 0) {
-            DFXLOG_ERROR("Failed to register signal(%d)", sig);
+    for (size_t i = 0; i < sizeof(SIGCHAIN_CRASH_SIGNAL_LIST) / sizeof(SIGCHAIN_CRASH_SIGNAL_LIST[0]); i++) {
+        int32_t sig = SIGCHAIN_CRASH_SIGNAL_LIST[i];
+        if (sig == SIGILL) {
+            InstallSigActionHandler(sig);
+        } else {
+            sigfillset(&sigchain.sca_mask);
+            add_special_handler_at_last(sig, &sigchain);
         }
     }
 
