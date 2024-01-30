@@ -666,7 +666,8 @@ HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest029, TestSize.Level
     bool ret = dumplog.DumpCatchFd(getpid(), g_threadId, msg, 1);
     GTEST_LOG_(INFO) << "message:"  << msg;
     GTEST_LOG_(INFO) << ret;
-    std::string stackKeyword = std::string("#") + std::to_string(DEFAULT_MAX_FRAME_NUM);
+    int maxFrameNum = 31;
+    std::string stackKeyword = std::string("#") + std::to_string(maxFrameNum);
     EXPECT_TRUE(msg.find(stackKeyword.c_str()) != std::string::npos);
     EXPECT_EQ(ret, true) << "DumpCatcherInterfacesTest029 Failed";
     GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest029: end.";
