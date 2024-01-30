@@ -26,23 +26,11 @@ namespace OHOS {
 namespace HiviewDFX {
 class SignalChainTest : public testing::Test {
 public:
-    static void SetUpTestCase();
-    static void TearDownTestCase();
-    void SetUp();
-    void TearDown();
+    static void SetUpTestCase() {}
+    static void TearDownTestCase() {}
+    void SetUp() {}
+    void TearDown() {}
 };
-
-void SignalChainTest::SetUpTestCase()
-{}
-
-void SignalChainTest::TearDownTestCase()
-{}
-
-void SignalChainTest::SetUp()
-{}
-
-void SignalChainTest::TearDown()
-{}
 
 #define SIGCHIAN_TEST_SIGNAL_NUM_1 1
 #define SIGCHIAN_TEST_SIGNAL_NUM_2 2
@@ -50,7 +38,7 @@ void SignalChainTest::TearDown()
 static const int TEST_PTR_VALUE = 10;
 static const int SLEEP_10_MS = 10000;
 static const int SLEEP_1000_MS = 1000000;
-static const int SLEEP_2000_MS = 1000000;
+static const int SLEEP_2000_MS = 2000000;
 
 static int g_count = 0;
 static bool g_testLastFlag = false;
@@ -221,12 +209,15 @@ public:
 static int KillAndWaitPid(int pid)
 {
     usleep(SLEEP_10_MS);
+    GTEST_LOG_(INFO) << "kill SIGDUMP pid: " << pid;
     kill(pid, SIGDUMP);
-    usleep(SLEEP_1000_MS);
+    usleep(SLEEP_10_MS);
+    GTEST_LOG_(INFO) << "kill SIGSEGV pid: " << pid;
     kill(pid, SIGSEGV);
     usleep(SLEEP_2000_MS);
     int status;
     int ret = waitpid(pid, &status, 0);
+    GTEST_LOG_(INFO) << "waitpid: " << pid << ", ret: "<< ret << std::endl;
     return ret;
 }
 

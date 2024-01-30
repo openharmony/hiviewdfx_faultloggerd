@@ -76,9 +76,6 @@ bool DfxMap::Parse(const std::string buf, int size)
     this->perms = std::string(perms, sizeof(perms));
     PermsToProts(this->perms, this->prots, this->flag);
     TrimAndDupStr(buf.substr(pos), this->name);
-    if (!IsValidName()) {
-        this->prots |= PROT_DEVICE_MAP;
-    }
     return true;
 #else
     return false;
@@ -91,22 +88,6 @@ bool DfxMap::IsMapExec()
         return true;
     }
     return false;
-}
-
-bool DfxMap::IsValidName()
-{
-    if (name.length() == 0) {
-        return false;
-    }
-
-    if (strncmp(name.c_str(), "/dev/", 5) == 0) { // 5:length of "/dev/"
-        return false;
-    }
-
-    if (!IsMapExec()) {
-        return false;
-    }
-    return true;
 }
 
 bool DfxMap::IsArkExecutable()
