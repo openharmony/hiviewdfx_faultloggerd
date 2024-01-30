@@ -193,9 +193,9 @@ bool Unwinder::StepArkJsFrame(size_t& curIdx)
     uintptr_t prevPc = pc;
     uintptr_t prevSp = sp;
     uintptr_t prevFp = fp;
-    LOGI("input ark pc: %" PRIx64 ", fp: %" PRIx64 ", sp: %" PRIx64 ".", (uint64_t)pc, (uint64_t)fp, (uint64_t)sp);
+    LOGI("Ark input pc: %" PRIx64 ", fp: %" PRIx64 ", sp: %" PRIx64 ".", (uint64_t)pc, (uint64_t)fp, (uint64_t)sp);
     int ret = DfxArk::GetArkNativeFrameInfo(pid_, pc, fp, sp, jsFrames, size);
-    LOGI("output ark pc: %" PRIx64 ", fp: %" PRIx64 ", sp: %" PRIx64 ", js frame size: %zu.",
+    LOGI("Ark output pc: %" PRIx64 ", fp: %" PRIx64 ", sp: %" PRIx64 ", js frame size: %zu.",
         (uint64_t)pc, (uint64_t)fp, (uint64_t)sp, size);
 
     if (ret < 0 || (pc == prevPc && prevSp == sp && prevFp == fp)) {
@@ -276,7 +276,7 @@ bool Unwinder::Unwind(void *ctx, size_t maxFrameNum, size_t skipFrameNum)
 #if defined(ENABLE_MIXSTACK)
         if (map->IsArkExecutable()) {
             if (!StepArkJsFrame(curIndex)) {
-                LOGE("Failed to step ark Js frames.");
+                LOGE("Failed to step ark Js frames, curIndex: %zu", curIndex);
                 break;
             }
             continue;
@@ -368,8 +368,8 @@ bool Unwinder::Step(uintptr_t& pc, uintptr_t& sp, void *ctx)
 
         // 2. find unwind table and entry
         UnwindTableInfo uti;
-        MAYBE_UNUSED int utiRet = UNW_ERROR_NONE;
-        if ((utiRet = acc_->FindUnwindTable(pc, uti, ctx)) != UNW_ERROR_NONE) {
+        MAYBE_UNUSED int utiRet = acc_->FindUnwindTable(pc, uti, ctx);
+        if (utiRet != UNW_ERROR_NONE) {
             lastErrorData_.SetAddrAndCode(pc, UNW_ERROR_NO_UNWIND_INFO);
             LOGU("Failed to find unwind table ret: %d", utiRet);
             break;
@@ -518,13 +518,15 @@ uintptr_t Unwinder::StripPac(uintptr_t inAddr, uintptr_t pacMask)
     uintptr_t outAddr = inAddr;
 #if defined(__aarch64__)
     if (outAddr != 0) {
-        LOGU("Pac addr: %lx", (uint64_t)outAddr);
         if (pacMask != 0) {
             outAddr &= ~pacMask;
         } else {
             register uint64_t x30 __asm("x30") = inAddr;
             asm("hint 0x7" : "+r"(x30));
             outAddr = x30;
+        }
+        if (outAddr != inAddr) {
+            LOGW("Strip pac in addr: %lx, out addr: %lx", (uint64_t)inAddr, (uint64_t)outAddr);
         }
     }
 #endif
@@ -638,6 +640,9 @@ void Unwinder::GetFramesByPcs(std::vector<DfxFrame>& frames, std::vector<uintptr
 
 bool Unwinder::GetSymbolByPc(uintptr_t pc, std::shared_ptr<DfxMaps> maps, std::string& funcName, uint64_t& funcOffset)
 {
+    if (maps == nullptr) {
+        return false;
+    }
     std::shared_ptr<DfxMap> map = nullptr;
     if (!maps->FindMapByAddr(pc, map) || (map == nullptr)) {
         LOGE("Find map is null");
