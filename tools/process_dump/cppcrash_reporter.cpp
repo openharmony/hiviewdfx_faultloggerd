@@ -35,7 +35,6 @@ struct FaultLogInfoInner {
     std::string summary;
     std::string logPath;
     std::string registers;
-    std::string otherThreadInfo;
     std::map<std::string, std::string> sectionMaps;
 };
 static const char FOUNDATION_PROCESS_NAME[] = "foundation";
@@ -124,7 +123,6 @@ void CppCrashReporter::ReportToHiview()
     info.reason = reason_;
     info.summary = stack_;
     info.registers = registers_;
-    info.otherThreadInfo = otherThreadInfo_;
     info.sectionMaps = kvPairs_;
     addFaultLog(&info);
     DFXLOG_INFO("Finish report fault to FaultLogger %s(%d,%d)", cmdline_.c_str(), pid_, uid_);
