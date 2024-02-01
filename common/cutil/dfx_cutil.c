@@ -33,8 +33,8 @@ static bool ReadStringFromFile(const char* path, char* dst, size_t dstSz)
     if ((dst == NULL) || (path == NULL)) {
         return false;
     }
-    char name[NAME_LEN];
-    char nameFilter[NAME_LEN];
+    char name[NAME_BUF_LEN];
+    char nameFilter[NAME_BUF_LEN];
     (void)memset_s(name, sizeof(name), '\0', sizeof(name));
     (void)memset_s(nameFilter, sizeof(nameFilter), '\0', sizeof(nameFilter));
 
@@ -44,7 +44,7 @@ static bool ReadStringFromFile(const char* path, char* dst, size_t dstSz)
         return false;
     }
 
-    ssize_t nRead = OHOS_TEMP_FAILURE_RETRY(read(fd, name, NAME_LEN - 1));
+    ssize_t nRead = OHOS_TEMP_FAILURE_RETRY(read(fd, name, NAME_BUF_LEN - 1));
     if (nRead <= 0) {
         close(fd);
         return false;
@@ -53,13 +53,13 @@ static bool ReadStringFromFile(const char* path, char* dst, size_t dstSz)
     char* p = name;
     int i = 0;
     while (*p != '\0') {
-        if ((*p == '\n') || (i == NAME_LEN)) {
+        if ((*p == '\n') || (i == NAME_BUF_LEN)) {
             break;
         }
         nameFilter[i] = *p;
         p++, i++;
     }
-    nameFilter[NAME_LEN - 1] = '\0';
+    nameFilter[NAME_BUF_LEN - 1] = '\0';
 
     if (memcpy_s(dst, dstSz, nameFilter, strlen(nameFilter) + 1) != 0) {
         close(fd);
@@ -77,7 +77,7 @@ bool GetThreadName(char* buffer, size_t bufferSz)
 
 bool GetThreadNameByTid(int32_t tid, char* buffer, size_t bufferSz)
 {
-    char threadNamePath[NAME_LEN] = { 0 };
+    char threadNamePath[NAME_BUF_LEN] = { 0 };
     if (snprintf_s(threadNamePath, sizeof(threadNamePath), sizeof(threadNamePath) - 1, "/proc/%d/comm", tid) <= 0) {
         return false;
     }
