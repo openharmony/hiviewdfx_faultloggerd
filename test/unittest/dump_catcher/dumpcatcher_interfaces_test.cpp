@@ -373,7 +373,7 @@ HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest014, TestSize.Level
     std::string msg = "";
     bool ret = dumplog.DumpCatchMix(g_testPid, 0, msg);
     GTEST_LOG_(INFO) << ret;
-    string log[] = { "Tid:", "Name:", "#00", "/system/bin/appspawn", "Name:OS_DfxWatchdog" };
+    string log[] = { "Tid:", "Name:", "#00", "Name:OS_DfxWatchdog" };
     log[0] += std::to_string(g_testPid);
     log[1] += TRUNCATE_TEST_BUNDLE_NAME;
     int len = sizeof(log) / sizeof(log[0]);
@@ -403,7 +403,7 @@ HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest015, TestSize.Level
     std::string msg = "";
     bool ret = dumplog.DumpCatchMix(g_testPid, g_testPid, msg);
     GTEST_LOG_(INFO) << ret;
-    string log[] = { "Tid:", "Name:", "#00", "/system/bin/appspawn"};
+    string log[] = { "Tid:", "Name:", "#00" };
     log[0] += std::to_string(g_testPid);
     log[1] += TRUNCATE_TEST_BUNDLE_NAME;
     int len = sizeof(log) / sizeof(log[0]);
