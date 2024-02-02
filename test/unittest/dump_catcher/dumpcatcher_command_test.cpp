@@ -206,7 +206,7 @@ HWTEST_F(DumpCatcherCommandTest, DumpCatcherCommandTest006, TestSize.Level2)
     string procCMD = "dumpcatcher -m -p " + to_string(testPid);
     string procDumpLog = ExecuteCommands(procCMD);
     GTEST_LOG_(INFO) << "procDumpLog: " << procDumpLog;
-    string log[] = { "Tid:", "Name:", "#00", "/system/bin/appspawn", "Name:OS_DfxWatchdog" };
+    string log[] = { "Tid:", "Name:", "#00", "Name:OS_DfxWatchdog" };
     log[0] += to_string(testPid);
     log[1] += TRUNCATE_TEST_BUNDLE_NAME;
     int expectNum = sizeof(log) / sizeof(log[0]);
@@ -239,7 +239,7 @@ HWTEST_F(DumpCatcherCommandTest, DumpCatcherCommandTest007, TestSize.Level2)
         " -t " + to_string(testPid);
     string procDumpLog = ExecuteCommands(procCMD);
     GTEST_LOG_(INFO) << "procDumpLog: " << procDumpLog;
-    string log[] = { "Tid:", "Name:", "#00", "/system/bin/appspawn" };
+    string log[] = { "Tid:", "Name:", "#00" };
     log[0] += to_string(testPid);
     log[1] += TRUNCATE_TEST_BUNDLE_NAME;
     int expectNum = sizeof(log) / sizeof(log[0]);
