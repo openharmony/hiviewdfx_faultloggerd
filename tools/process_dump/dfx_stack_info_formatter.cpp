@@ -100,7 +100,7 @@ void DfxStackInfoFormatter::GetNativeCrashInfo(Json::Value& jsonInfo) const
     auto otherThreads = process_->GetOtherThreads();
     if (otherThreads.size() > 0) {
         Json::Value threadsJsonArray;
-        AppendThreads(otherThreads, threadsJsonArray, true);
+        AppendThreads(otherThreads, threadsJsonArray);
         jsonInfo["threads"] = threadsJsonArray;
     }
 }
@@ -118,32 +118,26 @@ void DfxStackInfoFormatter::GetDumpInfo(Json::Value& jsonInfo) const
     // fill other thread info
     auto otherThreads = process_->GetOtherThreads();
     if (otherThreads.size() > 0) {
-        AppendThreads(otherThreads, jsonInfo, false);
+        AppendThreads(otherThreads, jsonInfo);
     }
 }
 
 bool DfxStackInfoFormatter::FillFrames(const std::shared_ptr<DfxThread>& thread,
-                                       Json::Value& jsonInfo, int maxFrame) const
+                                       Json::Value& jsonInfo) const
 {
     if (thread == nullptr) {
         DFXLOG_ERROR("FillFrames thread is null");
         return false;
     }
     const auto& threadFrames = thread->GetFrames();
-    int frameIndex = 0;
     for (const auto& frame : threadFrames) {
-        if (frameIndex >= maxFrame) {
-            break;
-        }
 #if defined(ENABLE_MIXSTACK)
         if (frame.isJsFrame) {
             FillJsFrame(frame, jsonInfo);
-            frameIndex++;
             continue;
         }
 #endif
         FillNativeFrame(frame, jsonInfo);
-        frameIndex++;
     }
     return true;
 }
@@ -164,21 +158,16 @@ void DfxStackInfoFormatter::FillNativeFrame(const DfxFrame& frame, Json::Value& 
 }
 
 void DfxStackInfoFormatter::AppendThreads(const std::vector<std::shared_ptr<DfxThread>>& threads,
-                                          Json::Value& jsonInfo, bool isCrash) const
+                                          Json::Value& jsonInfo) const
 {
-    int index = 0;
     for (auto const& oneThread : threads) {
         Json::Value threadJson;
         threadJson["thread_name"] = oneThread->threadInfo_.threadName;
         threadJson["tid"] = oneThread->threadInfo_.tid;
         Json::Value frames;
-        FillFrames(oneThread, frames, isCrash ? 32 : 256);
+        FillFrames(oneThread, frames);
         threadJson["frames"] = frames;
         jsonInfo.append(threadJson);
-        index++;
-        if (isCrash && index > 10) { // 10 : thread numbers limit
-            break;
-        }
     }
 }
 #endif
