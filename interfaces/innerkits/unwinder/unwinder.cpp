@@ -21,9 +21,7 @@
 #include "dfx_ark.h"
 #include "dfx_define.h"
 #include "dfx_errors.h"
-#if defined(OFFLINE_MIXSTACK)
 #include "dfx_extractor_utils.h"
-#endif
 #include "dfx_frame_formatter.h"
 #include "dfx_instructions.h"
 #include "dfx_log.h"
@@ -163,11 +161,8 @@ bool Unwinder::UnwindRemote(pid_t tid, bool withRegs, size_t maxFrameNum, size_t
 }
 
 #if defined(ENABLE_MIXSTACK)
-bool Unwinder::StepArkJsFrame()
+bool Unwinder::StepArkJsFrame(uintptr_t& pc, uintptr_t& fp, uintptr_t& sp)
 {
-    uintptr_t pc = regs_->GetPc();
-    uintptr_t sp = regs_->GetSp();
-    uintptr_t fp = regs_->GetFp();
     const size_t JSFRAME_MAX = 64;
     JsFrame jsFrames[JSFRAME_MAX];
     size_t size = JSFRAME_MAX;
@@ -175,26 +170,43 @@ bool Unwinder::StepArkJsFrame()
         LOGE("Failed to memset_s jsFrames.");
         return false;
     }
-    LOGI("Ark input pc: %" PRIx64 ", fp: %" PRIx64 ", sp: %" PRIx64 ".", (uint64_t)pc, (uint64_t)fp, (uint64_t)sp);
+    LOGI("+++ark pc: %" PRIx64 ", fp: %" PRIx64 ", sp: %" PRIx64 ".", (uint64_t)pc, (uint64_t)fp, (uint64_t)sp);
     if (DfxArk::GetArkNativeFrameInfo(pid_, pc, fp, sp, jsFrames, size) < 0) {
         return false;
     }
-    LOGI("Ark output pc: %" PRIx64 ", fp: %" PRIx64 ", sp: %" PRIx64 ", js frame size: %zu.",
+    LOGI("---ark pc: %" PRIx64 ", fp: %" PRIx64 ", sp: %" PRIx64 ", js frame size: %zu.",
         (uint64_t)pc, (uint64_t)fp, (uint64_t)sp, size);
 
     for (size_t i = 0; i < size; ++i) {
         DfxFrame frame;
+        if (i == (size - 1)) {
+            frame.pc = static_cast<uint64_t>(pc);
+            frame.sp = static_cast<uint64_t>(sp);
+            frame.fp = static_cast<uint64_t>(fp);
+        }
         frame.isJsFrame = true;
         frame.index = frames_.size();
         frame.mapName = std::string(jsFrames[i].url);
         frame.funcName = std::string(jsFrames[i].functionName);
         frame.line = jsFrames[i].line;
         frame.column = jsFrames[i].column;
-        frames_.emplace_back(frame);
+        AddFrame(frame);
     }
-    regs_->SetPc(pc);
-    regs_->SetSp(sp);
-    regs_->SetFp(fp);
+    return true;
+}
+
+bool Unwinder::StepArkJsFrame(uintptr_t& pc, uintptr_t& fp, uintptr_t& sp, bool& isJsFrame)
+{
+    LOGI("+++ark pc: %" PRIx64 ", fp: %" PRIx64 ", sp: %" PRIx64 ", isJsFrame: %d.",
+        (uint64_t)pc, (uint64_t)fp, (uint64_t)sp, isJsFrame);
+    if (DfxArk::StepArkFrame(memory_.get(), &(Unwinder::AccessMem), &fp, &sp, &pc, &isJsFrame) < 0) {
+        LOGE("Failed to step ark Js frames, pc: %" PRIx64, (uint64_t)pc);
+        return false;
+    }
+    LOGI("---ark pc: %" PRIx64 ", fp: %" PRIx64 ", sp: %" PRIx64 ", isJsFrame: %d.",
+        (uint64_t)pc, (uint64_t)fp, (uint64_t)sp, isJsFrame);
+
+    AddFrame(isJsFrame, pc, sp, fp);
     return true;
 }
 #endif
@@ -209,7 +221,8 @@ bool Unwinder::Unwind(void *ctx, size_t maxFrameNum, size_t skipFrameNum)
 
     bool needAdjustPc = false;
     size_t skipIndex = 0;
-    uintptr_t prevPc = 0, prevSp = 0;
+    uintptr_t prevPc = 0;
+    uintptr_t prevSp = 0;
     do {
         if (skipIndex < skipFrameNum) {
             skipIndex++;
@@ -225,14 +238,16 @@ bool Unwinder::Unwind(void *ctx, size_t maxFrameNum, size_t skipFrameNum)
         }
 
         DfxFrame& frame = frames_.back();
-        prevPc = static_cast<uintptr_t>(frame.pc);
-        prevSp = static_cast<uintptr_t>(frame.sp);
         if (pid_ != UNWIND_TYPE_CUSTOMIZE) {
             if (needAdjustPc) {
-                DoPcAdjust(frame.pc);
+                uintptr_t adjustPc = static_cast<uintptr_t>(frame.pc);
+                DoPcAdjust(adjustPc);
+                frame.pc = static_cast<uint64_t>(adjustPc);
             }
             needAdjustPc = true;
         }
+        prevPc = static_cast<uintptr_t>(frame.pc);
+        prevSp = static_cast<uintptr_t>(frame.sp);
 
         if (!Step(frame, ctx)) {
             break;
@@ -309,21 +324,15 @@ bool Unwinder::Step(DfxFrame& frame, void *ctx)
     uintptr_t sp = static_cast<uintptr_t>(frame.sp);
     MAYBE_UNUSED uintptr_t fp = static_cast<uintptr_t>(frame.fp);
     MAYBE_UNUSED bool isJsFrame = frame.isJsFrame;
-    LOGU("++++++pc: %" PRIx64 ", sp: %" PRIx64 "", (uint64_t)pc, (uint64_t)sp);
+    LOGU("+pc: %" PRIx64 ", sp: %" PRIx64 ", fp: %" PRIx64 "", (uint64_t)pc, (uint64_t)sp, (uint64_t)fp);
 
     std::shared_ptr<DfxMap> map = nullptr;
     MAYBE_UNUSED int mapRet = acc_->GetMapByPc(pc, map, ctx);
     if (mapRet != UNW_ERROR_NONE) {
-        if (frames_.size() > 2) {
+        if (frames_.size() > 2) { //2, least 2 frame
             LOGE("Failed to get map, frames size: %zu", frames_.size());
             lastErrorData_.SetAddrAndCode(pc, mapRet);
             return false;
-        }
-
-        if (enableLrFallback_ && regs_->SetPcFromReturnAddress(memory_)) {
-            LOGW("Failed to get map, lr fallback");
-            AddFrame(false, regs_->GetPc(), regs_->GetSp(), regs_->GetFp());
-            return true;
         }
     }
     frame.map = map;
@@ -331,29 +340,22 @@ bool Unwinder::Step(DfxFrame& frame, void *ctx)
 #if defined(ENABLE_MIXSTACK)
 #if defined(ONLINE_MIXSTACK)
     if (map != nullptr && map->IsArkExecutable()) {
-        if (!StepArkJsFrame()) {
+        if (!StepArkJsFrame(pc, fp, sp)) {
             LOGE("Failed to step ark Js frames, pc: %" PRIx64, (uint64_t)pc);
             return false;
         }
-        return true;
-    }
 #else
     if ((map != nullptr && map->IsArkExecutable()) || isJsFrame) {
-        LOGI("Ark input pc: %" PRIx64 ", fp: %" PRIx64 ", sp: %" PRIx64 ", isJsFrame: %d.",
-            (uint64_t)pc, (uint64_t)fp, (uint64_t)sp, isJsFrame);
-        if (DfxArk::StepArkFrame(memory_.get(), &(Unwinder::AccessMem), &fp, &sp, &pc, &isJsFrame) < 0) {
+        if (!StepArkJsFrame(pc, fp, sp, isJsFrame)) {
             LOGE("Failed to step ark Js frames, pc: %" PRIx64, (uint64_t)pc);
             return false;
         }
-        LOGI("Ark output pc: %" PRIx64 ", fp: %" PRIx64 ", sp: %" PRIx64 ", isJsFrame: %d.",
-            (uint64_t)pc, (uint64_t)fp, (uint64_t)sp, isJsFrame);
+#endif
         regs_->SetPc(pc);
         regs_->SetSp(sp);
         regs_->SetFp(fp);
-        AddFrame(isJsFrame, pc, sp, fp);
         return true;
     }
-#endif
 #endif
 
     bool ret = false;
@@ -442,6 +444,11 @@ bool Unwinder::Step(DfxFrame& frame, void *ctx)
         if (ret) {
             SetLocalStackCheck(ctx, true);
             ret = Apply(regs_, rs);
+        } else {
+            if ((frames_.size() == 1) && enableLrFallback_ && regs_->SetPcFromReturnAddress(memory_)) {
+                LOGW("Failed to step first frame, lr fallback");
+                ret = true;
+            }
         }
     } else {
         LOGW("Step signal frame, pc: %p", reinterpret_cast<void *>(pc));
@@ -459,11 +466,11 @@ bool Unwinder::Step(DfxFrame& frame, void *ctx)
     fp = regs_->GetFp();
     uintptr_t tmp = 0;
     if (ret && ((pc == 0) || (!memory_->ReadUptr(sp, &tmp, false)))) {
-        LOGU("------pc: %" PRIx64 ", sp: %" PRIx64 " error?", (uint64_t)pc, (uint64_t)sp);
+        LOGU("-pc: %" PRIx64 ", sp: %" PRIx64 ", fp: %" PRIx64 " error?", (uint64_t)pc, (uint64_t)sp, (uint64_t)fp);
         ret = false;
     } else {
         AddFrame(false, pc, sp, fp);
-        LOGU("------pc: %" PRIx64 ", sp: %" PRIx64 "", (uint64_t)pc, (uint64_t)sp);
+        LOGU("-pc: %" PRIx64 ", sp: %" PRIx64 ", fp: %" PRIx64 "", (uint64_t)pc, (uint64_t)sp, (uint64_t)fp);
     }
     return ret;
 }
@@ -471,7 +478,7 @@ bool Unwinder::Step(DfxFrame& frame, void *ctx)
 bool Unwinder::FpStep(uintptr_t& fp, uintptr_t& pc, void *ctx)
 {
 #if defined(__aarch64__)
-    LOGU("++++++fp: %lx, pc: %lx", (uint64_t)fp, (uint64_t)pc);
+    LOGU("+fp: %lx, pc: %lx", (uint64_t)fp, (uint64_t)pc);
     if ((regs_ == nullptr) || (!CheckAndReset(ctx))) {
         LOGE("params is nullptr");
         return false;
@@ -491,7 +498,7 @@ bool Unwinder::FpStep(uintptr_t& fp, uintptr_t& pc, void *ctx)
         if (pid_ == UNWIND_TYPE_CUSTOMIZE) {
             regs_->SetPc(StripPac(pc, pacMask_));
         }
-        LOGU("------fp: %lx, pc: %lx", (uint64_t)fp, (uint64_t)pc);
+        LOGU("-fp: %lx, pc: %lx", (uint64_t)fp, (uint64_t)pc);
         return true;
     }
 #endif
@@ -570,7 +577,6 @@ std::vector<DfxFrame>& Unwinder::GetFrames()
 
 void Unwinder::AddFrame(bool isJsFrame, uintptr_t pc, uintptr_t sp, uintptr_t fp)
 {
-    LOGU("Frame pc: %" PRIx64 ", sp: %" PRIx64 " ", (uint64_t)pc, (uint64_t)sp);
     DfxFrame frame;
     frame.isJsFrame = isJsFrame;
     frame.index = frames_.size();
@@ -610,7 +616,6 @@ void Unwinder::FillFrame(DfxFrame& frame)
         LOGU("Current frame is not mapped.");
         return;
     }
-    LOGU("Frame pc: %" PRIx64 "", frame.pc);
     frame.relPc = frame.map->GetRelPc(frame.pc);
     frame.mapName = frame.map->GetElfName();
     frame.mapOffset = frame.map->offset;
@@ -635,8 +640,8 @@ void Unwinder::FillJsFrame(DfxFrame& frame)
         LOGU("Current js frame is not mapped.");
         return;
     }
-    LOGU("Frame pc: %" PRIx64 ", map name: %s", frame.pc, frame.map->name.c_str());
 #if defined(OFFLINE_MIXSTACK)
+    LOGU("Js frame pc: %" PRIx64 ", map name: %s", frame.pc, frame.map->name.c_str());
     std::shared_ptr<DfxExtractor> extractor = std::make_shared<DfxExtractor>(frame.map->name);
     uintptr_t loadOffset = 0;
     std::unique_ptr<uint8_t[]> dataPtr = nullptr;
@@ -653,17 +658,24 @@ void Unwinder::FillJsFrame(DfxFrame& frame)
     }
     frame.mapName = std::string(jsFunction.url);
     frame.funcName = std::string(jsFunction.functionName);
-    LOGU("Frame mapName: %s, funcName: %s", frame.mapName.c_str(), frame.funcName.c_str());
+    frame.line = jsFunction.line;
+    frame.column = jsFunction.column;
+    LOGU("Js frame abc mapName: %s, funcName: %s, line: %d, column: %d",
+        frame.mapName.c_str(), frame.funcName.c_str(), frame.line, frame.column);
 
     loadOffset = 0;
     dataPtr = nullptr;
     dataSize = 0;
     if (extractor->GetHapSourceMapInfo(loadOffset, dataPtr, dataSize)) {
-        if (DfxArk::TranslateArkFrameInfo(dataPtr.get(), dataSize, &jsFunction) >= 0) {
+        if (DfxArk::TranslateArkFrameInfo(dataPtr.get(), dataSize, &jsFunction) < 0) {
             LOGU("Failed to translate ark frame info: %s", frame.map->name.c_str());
+        } else {
+            frame.mapName = std::string(jsFunction.url);
+            frame.funcName = std::string(jsFunction.functionName);
             frame.line = jsFunction.line;
             frame.column = jsFunction.column;
-            LOGU("Frame line: %d, column: %d", frame.line, frame.column);
+            LOGU("Js frame sourcemap mapName: %s, funcName: %s, line: %d, column: %d",
+                frame.mapName.c_str(), frame.funcName.c_str(), frame.line, frame.column);
         }
     }
 #endif

@@ -144,7 +144,7 @@ bool DfxMemory::ReadUptr(uintptr_t& addr, uintptr_t *val, bool incre)
 
 bool DfxMemory::ReadString(uintptr_t& addr, std::string* str, size_t maxSize, bool incre)
 {
-    char buf[NAME_LEN];
+    char buf[NAME_BUF_LEN];
     size_t size = 0;
     uintptr_t ptr = addr;
     for (size_t offset = 0; offset < maxSize; offset += size) {

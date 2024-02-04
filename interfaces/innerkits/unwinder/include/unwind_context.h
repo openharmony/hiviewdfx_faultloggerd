@@ -58,7 +58,7 @@ struct UnwindAccessors {
     int (*FindUnwindTable)(uintptr_t, UnwindTableInfo &, void *);
     int (*AccessMem)(uintptr_t, uintptr_t *, void *);
     int (*AccessReg)(int, uintptr_t *, void *);
-	int (*GetMapByPc)(uintptr_t, std::shared_ptr<DfxMap> &, void *);
+    int (*GetMapByPc)(uintptr_t, std::shared_ptr<DfxMap> &, void *);
 };
 
 struct UnwindContext {

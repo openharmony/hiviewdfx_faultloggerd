@@ -12,7 +12,6 @@
 # limitations under the License.
 
 import("//base/hiviewdfx/faultloggerd/faultloggerd.gni")
-import("//foundation/ability/ability_base/ability_base.gni")
 
 dfx_unwinder_sources = [ "unwinder.cpp" ]
 
@@ -160,7 +159,7 @@ if (defined(ohos_lite)) {
     if (target_cpu == "arm64") {
       defines = [ "ENABLE_MIXSTACK" ]
       defines += [ "OFFLINE_MIXSTACK" ]
-      defines += [ "HAS_OHOS_HAP_EXTRACTOR" ]
+      defines += [ "ENABLE_HAP_EXTRACTOR" ]
     }
   }
 
@@ -175,7 +174,7 @@ if (defined(ohos_lite)) {
     public_configs = [
       ":dfx_unwinder_config",
       ":lzma_config",
-      ":offline_mixstack_config",
+      ":mixstack_config",
       "$faultloggerd_common_path/build:coverage_flags",
     ]
 
@@ -196,7 +195,6 @@ if (defined(ohos_lite)) {
       public_deps = [ "//third_party/lzma:lzma_shared" ]
     }
     external_deps = [
-      "ability_base:extractortool",
       "c_utils:utils",
       "hilog:libhilog",
     ]
@@ -216,7 +214,6 @@ if (defined(ohos_lite)) {
     public_configs = [
       ":dfx_unwinder_config",
       ":lzma_config",
-      ":offline_mixstack_config",
     ]
 
     sources = dfx_unwinder_sources
@@ -236,7 +233,6 @@ if (defined(ohos_lite)) {
       public_deps = [ "//third_party/lzma:lzma_shared" ]
     }
     external_deps = [
-      "ability_base:extractortool",
       "c_utils:utils",
       "hilog:libhilog",
     ]
@@ -248,7 +244,7 @@ if (defined(ohos_lite)) {
     public_configs = [
       ":dfx_unwinder_config",
       ":lzma_config",
-      ":offline_mixstack_config",
+      ":mixstack_config",
     ]
     defines = [
       "DFX_LOG_UNWIND",
@@ -273,7 +269,6 @@ if (defined(ohos_lite)) {
       public_deps = [ "//third_party/lzma:lzma_shared" ]
     }
     external_deps = [
-      "ability_base:extractortool",
       "c_utils:utils",
       "hilog:libhilog",
     ]

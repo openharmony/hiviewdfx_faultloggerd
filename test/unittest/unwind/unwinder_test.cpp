@@ -277,9 +277,11 @@ HWTEST_F(UnwinderTest, UnwindTest001, TestSize.Level2)
     EXPECT_EQ(true, unwRet) << "UnwindTest001: Attach:" << unwRet;
     auto regs = DfxRegs::CreateRemoteRegs(child);
     unwinder->SetRegs(regs);
+    auto maps = DfxMaps::Create(child);
     UnwindContext context;
     context.pid = child;
     context.regs = regs;
+    context.maps = maps;
     ElapsedTime counter;
     unwRet = unwinder->Unwind(&context);
     time_t elapsed1 = counter.Elapsed();
@@ -314,8 +316,10 @@ HWTEST_F(UnwinderTest, UnwindTest002, TestSize.Level2)
     auto regsData = regs->RawData();
     GetLocalRegs(regsData);
     unwinder->SetRegs(regs);
+    auto maps = DfxMaps::Create(getpid());
     context.pid = UNWIND_TYPE_LOCAL;
     context.regs = regs;
+    context.maps = maps;
     bool unwRet = unwinder->Unwind(&context);
     EXPECT_EQ(true, unwRet) << "UnwindTest002: unwRet:" << unwRet;
     auto frames = unwinder->GetFrames();
@@ -326,7 +330,7 @@ HWTEST_F(UnwinderTest, UnwindTest002, TestSize.Level2)
 
 /**
  * @tc.name: UnwindTest003
- * @tc.desc: test GetPcs GetLastErrorCode GetLastErrorAddr GetFramesByPcs functions
+ * @tc.desc: test GetLastErrorCode GetLastErrorAddr GetFramesByPcs functions
  *  in local case
  * @tc.type: FUNC
  */
@@ -406,11 +410,13 @@ HWTEST_F(UnwinderTest, StepTest001, TestSize.Level2)
     bool unwRet = DfxPtrace::Attach(child);
     EXPECT_EQ(true, unwRet) << "StepTest001: Attach:" << unwRet;
     auto regs = DfxRegs::CreateRemoteRegs(child);
-    std::shared_ptr<DfxMaps> maps = DfxMaps::Create(child);
+    auto maps = DfxMaps::Create(child);
     unwinder->SetRegs(regs);
     UnwindContext context;
     context.pid = child;
     context.regs = regs;
+    context.maps = maps;
+
     uintptr_t pc, sp;
     pc = regs->GetPc();
     sp = regs->GetSp();
@@ -435,6 +441,7 @@ HWTEST_F(UnwinderTest, StepTest002, TestSize.Level2)
     uintptr_t stackBottom = 1, stackTop = static_cast<uintptr_t>(-1);
     ASSERT_TRUE(unwinder->GetStackRange(stackBottom, stackTop));
     GTEST_LOG_(INFO) << "StepTest002: GetStackRange.";
+    auto maps = DfxMaps::Create(getpid());
     UnwindContext context;
     context.pid = UNWIND_TYPE_LOCAL;
     context.stackCheck = false;
@@ -446,6 +453,7 @@ HWTEST_F(UnwinderTest, StepTest002, TestSize.Level2)
     GetLocalRegs(regsData);
     unwinder->SetRegs(regs);
     context.regs = regs;
+    context.maps = maps;
 
     uintptr_t pc, sp;
     pc = regs->GetPc();
@@ -681,8 +689,6 @@ HWTEST_F(UnwinderTest, GetSymbolByPcTest001, TestSize.Level2)
     std::shared_ptr<DfxMaps> maps = std::make_shared<DfxMaps>();
     ASSERT_FALSE(unwinder->GetSymbolByPc(0x00000000, maps, funcName, funcOffset)); // Find map is null
     ASSERT_FALSE(unwinder->GetSymbolByPc(pc0, maps, funcName, funcOffset)); // Get elf is null
-    maps = unwinder->GetMaps();
-    ASSERT_TRUE(unwinder->GetSymbolByPc(pc0, maps, funcName, funcOffset));
     GTEST_LOG_(INFO) << "GetSymbolByPcTest001: end.";
 }
 } // namespace HiviewDFX

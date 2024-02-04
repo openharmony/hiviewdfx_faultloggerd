@@ -125,7 +125,8 @@ private:
     void AddFrame(bool isJsFrame, uintptr_t pc, uintptr_t sp, uintptr_t fp);
     bool Apply(std::shared_ptr<DfxRegs> regs, std::shared_ptr<RegLocState> rs);
 #if defined(ENABLE_MIXSTACK)
-    bool StepArkJsFrame();
+    bool StepArkJsFrame(uintptr_t& pc, uintptr_t& fp, uintptr_t& sp);
+    bool StepArkJsFrame(uintptr_t& pc, uintptr_t& fp, uintptr_t& sp, bool& isJsFrame);
 #endif
     static uintptr_t StripPac(uintptr_t inAddr, uintptr_t pacMask);
     inline void SetLocalStackCheck(void* ctx, bool check)

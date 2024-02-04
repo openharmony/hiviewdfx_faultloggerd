@@ -23,10 +23,11 @@
 #include <string>
 #include <unistd.h>
 #include <vector>
-#include "dfx_define.h"
 
 namespace OHOS {
 namespace HiviewDFX {
+static const size_t DEFAULT_MAX_FRAME_NUM = 256;
+
 class DfxDumpCatcher {
 public:
     DfxDumpCatcher() {}

@@ -168,7 +168,7 @@ public:
         readPosition = (readPosition + numReads) % LENGTH;
     }
 
-    bool Overrun()
+    bool Overrun() const
     {
         return overrunFlag;
     }
@@ -177,7 +177,7 @@ public:
      * @brief    The total size of the ring buffer including the full position.
      *
      */
-    unsigned int Length()
+    unsigned int Length() const
     {
         return LENGTH;
     }

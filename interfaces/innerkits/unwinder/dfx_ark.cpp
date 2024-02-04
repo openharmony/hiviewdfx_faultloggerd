@@ -108,7 +108,7 @@ int DfxArk::TranslateArkFrameInfo(uint8_t *data, uint64_t dataSize, JsFunction *
 }
 
 int DfxArk::StepArkFrame(void *obj, OHOS::HiviewDFX::ReadMemFunc readMemFn,
-        uintptr_t *fp, uintptr_t *sp, uintptr_t *pc, bool *isJsFrame)
+    uintptr_t *fp, uintptr_t *sp, uintptr_t *pc, bool *isJsFrame)
 {
     if (g_stepArkFn != nullptr) {
         return g_stepArkFn(obj, readMemFn, fp, sp, pc, isJsFrame);

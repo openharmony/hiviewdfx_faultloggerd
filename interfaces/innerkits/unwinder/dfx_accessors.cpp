@@ -47,8 +47,8 @@ bool DfxAccessors::GetMapByPcAndCtx(uintptr_t pc, std::shared_ptr<DfxMap>& map, 
     }
     UnwindContext* ctx = reinterpret_cast<UnwindContext *>(arg);
     if (ctx->map != nullptr && ctx->map->Contain(static_cast<uint64_t>(pc))) {
-        LOGU("map had matched by ctx");
         map = ctx->map;
+        LOGU("map had matched by ctx, map name: %s", map->name.c_str());
         return true;
     }
 

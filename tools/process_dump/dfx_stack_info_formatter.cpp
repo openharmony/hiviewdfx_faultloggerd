@@ -29,6 +29,7 @@ namespace HiviewDFX {
 namespace {
 static const char NATIVE_CRASH_TYPE[] = "NativeCrash";
 
+#ifndef is_ohos_lite
 void FillJsFrame(const DfxFrame& frame, Json::Value& jsonInfo)
 {
     Json::Value frameJson;
@@ -38,6 +39,7 @@ void FillJsFrame(const DfxFrame& frame, Json::Value& jsonInfo)
     frameJson["column"] = frame.column;
     jsonInfo.append(frameJson);
 }
+#endif
 }
 
 bool DfxStackInfoFormatter::GetStackInfo(bool isJsonDump, std::string& jsonStringInfo) const
@@ -171,7 +173,7 @@ void DfxStackInfoFormatter::AppendThreads(const std::vector<std::shared_ptr<DfxT
         threadJson["thread_name"] = oneThread->threadInfo_.threadName;
         threadJson["tid"] = oneThread->threadInfo_.tid;
         Json::Value frames;
-        FillFrames(oneThread, frames, isCrash ? 32 : DEFAULT_MAX_FRAME_NUM);
+        FillFrames(oneThread, frames, isCrash ? 32 : DEFAULT_MAX_FRAME_NUM); // 32, crash max frame num
         threadJson["frames"] = frames;
         jsonInfo.append(threadJson);
         index++;

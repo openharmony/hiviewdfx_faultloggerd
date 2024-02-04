@@ -20,7 +20,6 @@
     "ram": "~1024KB",
     "deps": {
       "components": [
-        "ability_base",
         "c_utils",
         "hilog",
         "hisysevent",

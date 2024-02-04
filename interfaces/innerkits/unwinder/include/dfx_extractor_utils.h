@@ -18,7 +18,7 @@
 #include <memory>
 #include <vector>
 #include "dfx_define.h"
-#ifdef HAS_OHOS_HAP_EXTRACTOR
+#ifdef ENABLE_HAP_EXTRACTOR
 #include "zip_file.h"
 #endif
 
@@ -48,7 +48,7 @@ protected:
     void Clear();
 
 private:
-#ifdef HAS_OHOS_HAP_EXTRACTOR
+#ifdef ENABLE_HAP_EXTRACTOR
     std::shared_ptr<AbilityBase::ZipFile> zipFile_ = nullptr;
 #endif
 };

@@ -32,8 +32,8 @@ static const char PID_STR_NAME[] = "Pid:";
 
 static bool ReadStringFromFile(const char* path, char* dst, size_t dstSz)
 {
-    char name[NAME_LEN];
-    char nameFilter[NAME_LEN];
+    char name[NAME_BUF_LEN];
+    char nameFilter[NAME_BUF_LEN];
     memset(name, 0, sizeof(name));
     memset(nameFilter, 0, sizeof(nameFilter));
 
@@ -43,7 +43,7 @@ static bool ReadStringFromFile(const char* path, char* dst, size_t dstSz)
         return false;
     }
 
-    int nRead = OHOS_TEMP_FAILURE_RETRY(read(fd, name, NAME_LEN -1));
+    int nRead = OHOS_TEMP_FAILURE_RETRY(read(fd, name, NAME_BUF_LEN -1));
     if (nRead == -1) {
         close(fd);
         return false;
@@ -52,13 +52,13 @@ static bool ReadStringFromFile(const char* path, char* dst, size_t dstSz)
     char* p = name;
     int i = 0;
     while (*p != '\0') {
-        if ((*p == '\n') || (i == NAME_LEN)) {
+        if ((*p == '\n') || (i == NAME_BUF_LEN)) {
             break;
         }
         nameFilter[i] = *p;
         p++, i++;
     }
-    nameFilter[NAME_LEN - 1] = '\0';
+    nameFilter[NAME_BUF_LEN - 1] = '\0';
 
     size_t cpyLen = strlen(nameFilter) + 1;
     if (cpyLen > dstSz) {
@@ -76,7 +76,7 @@ bool GetThreadName(char* buffer, size_t bufferSz)
 
 bool GetThreadNameByTid(int32_t tid, char* buffer, size_t bufferSz)
 {
-    char threadNamePath[NAME_LEN] = { 0 };
+    char threadNamePath[NAME_BUF_LEN] = { 0 };
     if (snprintf(threadNamePath, sizeof(threadNamePath), "/proc/%d/comm", tid) <= 0) {
         return false;
     }

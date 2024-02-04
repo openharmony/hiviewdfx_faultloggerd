@@ -18,11 +18,11 @@
 #include <malloc.h>
 #include <memory>
 #include <vector>
-#include "dfx_define.h"
 
 namespace OHOS {
 namespace HiviewDFX {
-AT_SYMBOL_HIDDEN bool XzDecompress(const uint8_t *src, size_t srcLen, std::shared_ptr<std::vector<uint8_t>> out);
+__attribute__ ((visibility("hidden"))) bool XzDecompress(const uint8_t *src, size_t srcLen,
+    std::shared_ptr<std::vector<uint8_t>> out);
 }   // namespace HiviewDFX
 }   // namespace OHOS
 #endif

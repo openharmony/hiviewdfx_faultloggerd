@@ -58,10 +58,12 @@ HWTEST_F(UnwinderPacTest, UnwinderPacTest001, TestSize.Level2)
         bool unwRet = DfxPtrace::Attach(pid);
         EXPECT_EQ(true, unwRet) << "UnwinderPacTest001: Attach:" << unwRet;
         auto regs = DfxRegs::CreateRemoteRegs(pid);
+        auto maps = DfxMaps::Create(pid);
         unwinder->SetRegs(regs);
         UnwindContext context;
         context.pid = pid;
         context.regs = regs;
+        context.maps = maps;
         unwRet = unwinder->Unwind(&context);
         EXPECT_EQ(true, unwRet) << "UnwinderPacTest001: Unwind:" << unwRet;
         auto frames = unwinder->GetFrames();

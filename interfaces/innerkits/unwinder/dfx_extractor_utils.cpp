@@ -17,7 +17,7 @@
 #include "dfx_define.h"
 #include "dfx_log.h"
 #include "dfx_map.h"
-#ifdef HAS_OHOS_HAP_EXTRACTOR
+#ifdef ENABLE_HAP_EXTRACTOR
 #include "extractor.h"
 #include "string_util.h"
 #endif
@@ -39,7 +39,7 @@ DfxExtractor::DfxExtractor(const std::string& file)
 bool DfxExtractor::Init(const std::string& file)
 {
     bool ret = false;
-#ifdef HAS_OHOS_HAP_EXTRACTOR
+#ifdef ENABLE_HAP_EXTRACTOR
     if (zipFile_ == nullptr) {
         zipFile_ = std::make_shared<AbilityBase::ZipFile>(file);
     }
@@ -57,7 +57,7 @@ bool DfxExtractor::Init(const std::string& file)
 
 void DfxExtractor::Clear()
 {
-#ifdef HAS_OHOS_HAP_EXTRACTOR
+#ifdef ENABLE_HAP_EXTRACTOR
     if (zipFile_ == nullptr) {
         return;
     }
@@ -68,7 +68,7 @@ void DfxExtractor::Clear()
 bool DfxExtractor::GetHapInfos(std::vector<HapExtractorInfo>& hapInfos)
 {
     hapInfos.clear();
-#ifdef HAS_OHOS_HAP_EXTRACTOR
+#ifdef ENABLE_HAP_EXTRACTOR
     if (zipFile_ == nullptr) {
         return false;
     }
@@ -93,7 +93,7 @@ bool DfxExtractor::GetHapInfos(std::vector<HapExtractorInfo>& hapInfos)
         std::unique_ptr<uint8_t[]> abcDataPtr;
         size_t abcDataSize;
         if (zipFile_->ExtractToBufByName(fileName, abcDataPtr, abcDataSize)) {
-            LOGU("Hap abc: %s, size: %zu", fileName.c_str() , abcDataSize);
+            LOGU("Hap abc: %s, size: %zu", fileName.c_str(), abcDataSize);
             hapInfo.abcData = abcDataPtr.get();
             hapInfo.abcDataSize = abcDataSize;
         }
@@ -140,7 +140,7 @@ bool DfxExtractor::GetHapAbcInfo(uintptr_t& loadOffset,
     std::unique_ptr<uint8_t[]>& abcDataPtr, size_t& abcDataSize)
 {
     bool ret = false;
-#ifdef HAS_OHOS_HAP_EXTRACTOR
+#ifdef ENABLE_HAP_EXTRACTOR
     if (zipFile_ == nullptr) {
         return false;
     }
@@ -161,7 +161,7 @@ bool DfxExtractor::GetHapAbcInfo(uintptr_t& loadOffset,
         LOGU("Hap entry file: %s, offset: 0x%016" PRIx64 ", length: %u", fileName.c_str(), (uint64_t)offset, length);
         loadOffset = static_cast<uintptr_t>(offset);
         if (zipFile_->ExtractToBufByName(fileName, abcDataPtr, abcDataSize)) {
-            LOGU("Hap abc: %s, size: %zu", fileName.c_str() , abcDataSize);
+            LOGU("Hap abc: %s, size: %zu", fileName.c_str(), abcDataSize);
             ret = true;
             break;
         }
@@ -174,7 +174,7 @@ bool DfxExtractor::GetHapSourceMapInfo(uintptr_t& loadOffset,
     std::unique_ptr<uint8_t[]>& sourceMapPtr, size_t& sourceMapSize)
 {
     bool ret = false;
-#ifdef HAS_OHOS_HAP_EXTRACTOR
+#ifdef ENABLE_HAP_EXTRACTOR
     if (zipFile_ == nullptr) {
         return false;
     }

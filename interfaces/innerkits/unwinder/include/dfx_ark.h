@@ -25,7 +25,8 @@
 #include "dfx_map.h"
 #include "dfx_memory.h"
 
-namespace panda::ecmascript {
+namespace panda {
+namespace ecmascript {
 constexpr uint16_t FUNCTIONNAME_MAX = 1024;
 constexpr uint16_t URL_MAX = 1024;
 constexpr uint16_t BUF_SIZE_MAX = FUNCTIONNAME_MAX + 32;
@@ -46,13 +47,15 @@ struct JsFunction {
     int32_t column;
     uintptr_t codeBegin;
     uintptr_t codeSize;
-    std::string ToString() {
+    std::string ToString()
+    {
         char buff[BUF_SIZE_MAX] = {0};
         snprintf_s(buff, sizeof(buff), sizeof(buff), "%s:[begin:0x%" PRIx64 ", size:0x%" PRIx64 "]",
             functionName, codeBegin, codeSize);
         return std::string(buff);
     }
 };
+}
 }
 
 namespace OHOS {

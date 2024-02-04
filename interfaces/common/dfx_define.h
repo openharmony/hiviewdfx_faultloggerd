@@ -30,7 +30,7 @@
 #ifndef PATH_MAX
 #define PATH_MAX        1024
 #endif
-#define NAME_LEN        128
+#define NAME_BUF_LEN    128
 #define PATH_LEN        512
 #define LINE_BUF_SIZE   1024
 #define MAX_FATAL_MSG_SIZE  1024
