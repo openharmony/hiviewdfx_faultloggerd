@@ -81,7 +81,7 @@ std::string FaultPerformanceTest::ForkAndRootCommands(const std::vector<std::str
         exit(1);
     }
     std::string pidLog;
-    char result_buf_shell[NAME_LEN] = { 0, };
+    char result_buf_shell[NAME_BUF_LEN] = { 0, };
     if (fgets(result_buf_shell, sizeof(result_buf_shell), procFileInfo) != nullptr) {
         pidLog = result_buf_shell;
         looprootPid = atoi(pidLog.c_str());

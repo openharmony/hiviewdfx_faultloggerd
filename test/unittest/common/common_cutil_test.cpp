@@ -42,8 +42,8 @@ namespace {
 HWTEST_F(CommonCutilTest, DfxCutilTest001, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "DfxCutilTest001: start.";
-    char threadName[NAME_LEN];
-    char processName[NAME_LEN];
+    char threadName[NAME_BUF_LEN];
+    char processName[NAME_BUF_LEN];
     ASSERT_TRUE(GetThreadName(threadName, sizeof(threadName)));
     ASSERT_TRUE(GetThreadNameByTid(gettid(), threadName, sizeof(threadName)));
     ASSERT_TRUE(GetProcessName(processName, sizeof(processName)));

@@ -75,7 +75,7 @@ std::shared_ptr<DfxElfMap> DfxElfMap::Create(const std::string mapBuf, int size)
 
 std::shared_ptr<DfxElfMaps> DfxElfMaps::Create(pid_t pid)
 {
-    char path[NAME_LEN] = {0};
+    char path[NAME_BUF_LEN] = {0};
     if (snprintf_s(path, sizeof(path), sizeof(path) - 1, "/proc/%d/maps", pid) <= 0) {
         DFXLOG_WARN("Fail to print path.");
         return nullptr;
