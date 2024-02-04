@@ -91,9 +91,9 @@ struct ProcessDumpRequest {
     /** current process context */
     ucontext_t context;
     /** thread name */
-    char threadName[NAME_LEN];
+    char threadName[NAME_BUF_LEN];
     /** process name */
-    char processName[NAME_LEN];
+    char processName[NAME_BUF_LEN];
     /** hilog last fatal log message */
     char lastFatalMessage[MAX_FATAL_MSG_SIZE];
     /** process trace info */

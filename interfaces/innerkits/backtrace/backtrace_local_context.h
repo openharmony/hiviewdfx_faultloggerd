@@ -71,7 +71,7 @@ private:
     bool Init();
 private:
     bool init_ {false};
-    int32_t pipe2_[PIPE_NUM_SZ];
+    int32_t pipe2_[PIPE_NUM_SZ] = {-1, -1};
 };
 } // namespace HiviewDFX
 } // namespace OHOS
