@@ -41,6 +41,7 @@ public:
     const std::vector<DfxFrame>& GetFrames() const;
 private:
     bool Step(uintptr_t& fp, uintptr_t& pc);
+    static uintptr_t StripPac(uintptr_t addr);
     inline bool IsValidFrame(uintptr_t frame, uintptr_t stackTop, uintptr_t stackBottom)
     {
         return ((frame > stackBottom) && (frame < stackTop - sizeof(uintptr_t)));
