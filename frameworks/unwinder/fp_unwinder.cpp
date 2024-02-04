@@ -54,6 +54,19 @@ FpUnwinder::~FpUnwinder()
     frames_.clear();
 }
 
+uintptr_t FpUnwinder::StripPac(uintptr_t addr)
+{
+    uintptr_t outAddr = addr;
+#if defined(__aarch64__)
+    if (outAddr != 0) {
+        register uint64_t x30 __asm("x30") = addr;
+        asm("hint 0x7" : "+r"(x30));
+        outAddr = x30;
+    }
+#endif
+    return outAddr;
+}
+
 const std::vector<DfxFrame>& FpUnwinder::GetFrames() const
 {
     return frames_;
@@ -63,6 +76,7 @@ int FpUnwinder::DlIteratePhdrCallback(struct dl_phdr_info *info, size_t size, vo
 {
     auto frame = static_cast<DfxFrame*>(data);
     const Elf_W(Phdr) *phdr = info->dlpi_phdr;
+    frame->pc = StripPac(frame->pc);
     for (int n = info->dlpi_phnum; --n >= 0; phdr++) {
         if (phdr->p_type == PT_LOAD) {
             Elf_W(Addr) vaddr = phdr->p_vaddr + info->dlpi_addr;
