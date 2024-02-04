@@ -18,10 +18,9 @@ faultloggerd_interfaces_path = "$faultloggerd_path/interfaces"
 faultloggerd_test_path = "$faultloggerd_path/test"
 
 declare_args() {
-  libunwinder_debug = false
+  libunwinder_debug = true
   has_libunwind = true
   has_libunwindstack = false
-  enable_mixstack = true
   processdump_minidebuginfo_enable = true
   faultloggerd_hisysevent_enable = false
   if (defined(global_parts_info)) {

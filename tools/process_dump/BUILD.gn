@@ -129,10 +129,6 @@ if (defined(ohos_lite)) {
     if (processdump_minidebuginfo_enable) {
       defines = [ "PROCESSDUMP_MINIDEBUGINFO" ]
     }
-
-    if (enable_mixstack && target_cpu == "arm64") {
-      defines += [ "ENABLE_MIXSTACK" ]
-    }
   }
 
   ohos_source_set("process_info_src") {

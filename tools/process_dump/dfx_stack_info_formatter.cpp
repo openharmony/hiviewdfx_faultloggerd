@@ -28,7 +28,7 @@ namespace OHOS {
 namespace HiviewDFX {
 namespace {
 static const char NATIVE_CRASH_TYPE[] = "NativeCrash";
-#if defined(ENABLE_MIXSTACK)
+
 void FillJsFrame(const DfxFrame& frame, Json::Value& jsonInfo)
 {
     Json::Value frameJson;
@@ -38,7 +38,6 @@ void FillJsFrame(const DfxFrame& frame, Json::Value& jsonInfo)
     frameJson["column"] = frame.column;
     jsonInfo.append(frameJson);
 }
-#endif
 }
 
 bool DfxStackInfoFormatter::GetStackInfo(bool isJsonDump, std::string& jsonStringInfo) const
@@ -135,13 +134,13 @@ bool DfxStackInfoFormatter::FillFrames(const std::shared_ptr<DfxThread>& thread,
         if (frameIndex >= maxFrame) {
             break;
         }
-#if defined(ENABLE_MIXSTACK)
+
         if (frame.isJsFrame) {
             FillJsFrame(frame, jsonInfo);
             frameIndex++;
             continue;
         }
-#endif
+
         FillNativeFrame(frame, jsonInfo);
         frameIndex++;
     }
@@ -172,7 +171,7 @@ void DfxStackInfoFormatter::AppendThreads(const std::vector<std::shared_ptr<DfxT
         threadJson["thread_name"] = oneThread->threadInfo_.threadName;
         threadJson["tid"] = oneThread->threadInfo_.tid;
         Json::Value frames;
-        FillFrames(oneThread, frames, isCrash ? 32 : 256);
+        FillFrames(oneThread, frames, isCrash ? 32 : DEFAULT_MAX_FRAME_NUM);
         threadJson["frames"] = frames;
         jsonInfo.append(threadJson);
         index++;

@@ -120,14 +120,15 @@ bool DwarfSection::Step(uintptr_t fdeAddr, std::shared_ptr<DfxRegs> regs, std::s
         lastErrorData_.SetAddrAndCode(fdeAddr, UNW_ERROR_DWARF_INVALID_FDE);
         return false;
     }
-    if (regs->GetPc() < fdeInfo.pcStart || regs->GetPc() > fdeInfo.pcEnd) {
+    uintptr_t pc = regs->GetPc();
+    if (pc < fdeInfo.pcStart || pc >= fdeInfo.pcEnd) {
         return false;
     }
-    LOGU("pc: %p, FDE start: %p", (void*)regs->GetPc(), (void*)fdeInfo.pcStart);
+    LOGU("pc: %p, FDE start: %p", (void*)pc, (void*)fdeInfo.pcStart);
     DwarfCfaInstructions dwarfInstructions(memory_);
-    if (!dwarfInstructions.Parse(regs->GetPc(), fdeInfo, *(rs.get()))) {
+    if (!dwarfInstructions.Parse(pc, fdeInfo, *(rs.get()))) {
         LOGE("Failed to parse dwarf instructions?");
-        lastErrorData_.SetAddrAndCode(regs->GetPc(), UNW_ERROR_DWARF_INVALID_INSTR);
+        lastErrorData_.SetAddrAndCode(pc, UNW_ERROR_DWARF_INVALID_INSTR);
         return false;
     }
     return true;

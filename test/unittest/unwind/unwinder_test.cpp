@@ -337,20 +337,25 @@ HWTEST_F(UnwinderTest, UnwindTest003, TestSize.Level2)
     auto unwinder = std::make_shared<Unwinder>();
     MAYBE_UNUSED bool unwRet = unwinder->UnwindLocal();
     EXPECT_EQ(true, unwRet) << "UnwindTest003: Unwind ret:" << unwRet;
-    auto pcs = unwinder->GetPcs();
-    ASSERT_GT(pcs.size(), 0);
-    GTEST_LOG_(INFO) << "pcs.size() > 0\n";
+    unwinder->EnableFillFrames(false);
+    const auto& frames = unwinder->GetFrames();
+    ASSERT_GT(frames.size(), 1) << "frames.size() error";
 
     uint16_t errorCode = unwinder->GetLastErrorCode();
     uint64_t errorAddr = unwinder->GetLastErrorAddr();
     GTEST_LOG_(INFO) << "errorCode:" << errorCode;
     GTEST_LOG_(INFO) << "errorAddr:" << errorAddr;
 
-    std::vector<DfxFrame> frames;
+    std::vector<uintptr_t> pcs;
+    for (size_t i = 0; i < frames.size(); ++i) {
+        pcs.emplace_back(static_cast<uintptr_t>(frames[i].pc));
+    }
+
+    std::vector<DfxFrame> frameVec;
     std::shared_ptr<DfxMaps> maps = unwinder->GetMaps();
-    unwinder->GetFramesByPcs(frames, pcs, maps);
-    ASSERT_GT(frames.size(), 1);
-    GTEST_LOG_(INFO) << "UnwindTest003: frames:\n" << Unwinder::GetFramesStr(frames);
+    unwinder->GetFramesByPcs(frameVec, pcs, maps);
+    ASSERT_GT(frameVec.size(), 1);
+    GTEST_LOG_(INFO) << "UnwindTest003: frames:\n" << Unwinder::GetFramesStr(frameVec);
     GTEST_LOG_(INFO) << "UnwindTest003: end.";
 }
 
@@ -509,8 +514,8 @@ HWTEST_F(UnwinderTest, StepTest004, TestSize.Level2)
 
     bool unwRet = unwinder->UnwindByFp(&context);
     ASSERT_TRUE(unwRet) << "StepTest004: unwRet:" << unwRet;
-    size_t unwSize = unwinder->GetPcs().size();
-    GTEST_LOG_(INFO) << "StepTest004: unwSize: " << unwSize;
+    auto unwSize = unwinder->GetPcs().size();
+    ASSERT_GT(unwSize, 1) << "pcs.size() error";
 
     uintptr_t miniRegs[FP_MINI_REGS_SIZE] = {0};
     GetFramePointerMiniRegs(miniRegs);
@@ -669,12 +674,15 @@ HWTEST_F(UnwinderTest, GetSymbolByPcTest001, TestSize.Level2)
     GTEST_LOG_(INFO) << "GetSymbolByPcTest001: start.";
     auto unwinder = std::make_shared<Unwinder>();
     unwinder->UnwindLocal();
-    auto pcs = unwinder->GetPcs();
+    auto frames = unwinder->GetFrames();
+    uintptr_t pc0 = static_cast<uintptr_t>(frames[0].pc);
     std::string funcName;
     uint64_t funcOffset;
     std::shared_ptr<DfxMaps> maps = std::make_shared<DfxMaps>();
     ASSERT_FALSE(unwinder->GetSymbolByPc(0x00000000, maps, funcName, funcOffset)); // Find map is null
-    ASSERT_FALSE(unwinder->GetSymbolByPc(pcs[0], maps, funcName, funcOffset)); // Get elf is null
+    ASSERT_FALSE(unwinder->GetSymbolByPc(pc0, maps, funcName, funcOffset)); // Get elf is null
+    maps = unwinder->GetMaps();
+    ASSERT_TRUE(unwinder->GetSymbolByPc(pc0, maps, funcName, funcOffset));
     GTEST_LOG_(INFO) << "GetSymbolByPcTest001: end.";
 }
 } // namespace HiviewDFX
