@@ -115,7 +115,7 @@ void ProcessDumper::Dump()
     CloseDebugLog();
     // check dump result
     if (reporter_ != nullptr) {
-        reporter_->SetValue("stackInfo", jsonInfo);
+        reporter_->SetCppCrashInfo(jsonInfo);
         reporter_->ReportToHiview();
         reporter_->ReportToAbilityManagerService();
     }

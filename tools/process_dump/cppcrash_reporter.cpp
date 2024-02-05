@@ -17,9 +17,11 @@
 
 #include <cinttypes>
 #include <dlfcn.h>
+#include <fcntl.h>
 #include <map>
 #include <sstream>
 #include <string>
+#include "dfx_define.h"
 #include "dfx_logger.h"
 #include "dfx_process.h"
 #include "dfx_signal.h"
@@ -29,6 +31,7 @@ struct FaultLogInfoInner {
     uint64_t time {0};
     uint32_t id {0};
     int32_t pid {-1};
+    int32_t pipeFd {-1};
     int32_t faultLogType {0};
     std::string module;
     std::string reason;
@@ -76,16 +79,6 @@ bool CppCrashReporter::Format()
 
         // regs
         registers_ = GetRegsString(process_->vmThread_);
-
-        // other thread info
-        std::vector<std::shared_ptr<DfxThread>> otherThreads = process_->GetOtherThreads();
-        MAYBE_UNUSED unsigned long index = 0;
-        for (auto oneThread : otherThreads) {
-            std::stringstream ss;
-            ss << "Tid:" << oneThread->threadInfo_.tid << ", ";
-            otherThreadInfo_ += ss.str() + oneThread->ToString();
-            index++;
-        }
     }
     return true;
 }
@@ -118,15 +111,47 @@ void CppCrashReporter::ReportToHiview()
     info.time = time_;
     info.id = uid_;
     info.pid = pid_;
+    info.pipeFd = WriteCppCrashInfoByPipe();
     info.faultLogType = 2; // 2 : CPP_CRASH_TYPE
     info.module = cmdline_;
     info.reason = reason_;
     info.summary = stack_;
     info.registers = registers_;
-    info.sectionMaps = kvPairs_;
     addFaultLog(&info);
     DFXLOG_INFO("Finish report fault to FaultLogger %s(%d,%d)", cmdline_.c_str(), pid_, uid_);
     dlclose(handle);
+}
+
+// read fd will be closed after transfering to hiview
+int32_t CppCrashReporter::WriteCppCrashInfoByPipe()
+{
+    size_t sz = cppCrashInfo_.size();
+    if (sz > MAX_PIPE_SIZE) {
+        DFXLOG_ERROR("the size of json string is greater than max pipe size, do not report");
+        return -1;
+    }
+    int pipeFd[2] = {-1, -1};
+    if (pipe(pipeFd) != 0) {
+        DFXLOG_ERROR("Failed to create pipe.");
+    }
+    if (fcntl(pipeFd[PIPE_READ], F_SETPIPE_SZ, sz) < 0 ||
+        fcntl(pipeFd[PIPE_WRITE], F_SETPIPE_SZ, sz) < 0) {
+        DFXLOG_ERROR("Failed to set pipe size.");
+    }
+    int flags = fcntl(pipeFd[PIPE_READ], F_GETFL);
+    flags |= O_NONBLOCK;
+    if (fcntl(pipeFd[PIPE_READ], F_SETFL, flags) < 0) {
+        DFXLOG_ERROR("Failed to set pipe flag.");
+    }
+    ssize_t realWriteSize = -1;
+    realWriteSize = OHOS_TEMP_FAILURE_RETRY(write(pipeFd[PIPE_WRITE], cppCrashInfo_.c_str(), sz));
+    close(pipeFd[PIPE_WRITE]);
+    if ((ssize_t)cppCrashInfo_.size() != realWriteSize) {
+        DFXLOG_ERROR("Failed to write pipe. realWriteSize %zd, json size %zd", realWriteSize, sz);
+        close(pipeFd[PIPE_READ]);
+        return -1;
+    }
+    return pipeFd[PIPE_READ];
 }
 
 void CppCrashReporter::ReportToAbilityManagerService()
