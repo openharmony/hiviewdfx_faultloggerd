@@ -92,7 +92,9 @@ bool DfxUnwindRemote::UnwindProcess(std::shared_ptr<ProcessDumpRequest> request,
 
         // unwinding with context passed by dump request, only for crash thread or target thread.
         unwinder->SetRegs(unwThread->GetThreadRegs());
-        ret = unwinder->UnwindRemote(unwThread->threadInfo_.tid, true, DfxConfig::GetConfig().maxFrameNums);
+        ret = unwinder->UnwindRemote(unwThread->threadInfo_.nsTid,
+                                     ProcessDumper::GetInstance().IsCrash(),
+                                     DfxConfig::GetConfig().maxFrameNums);
         if (!ret && ProcessDumper::GetInstance().IsCrash()) {
             UnwindThreadFallback(process, unwThread, unwinder);
         }
