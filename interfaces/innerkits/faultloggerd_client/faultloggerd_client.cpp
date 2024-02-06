@@ -26,6 +26,7 @@
 #include <sys/un.h>
 #include <sys/stat.h>
 
+#include "dfx_cutil.h"
 #include "dfx_define.h"
 #include "dfx_log.h"
 #include "dfx_util.h"
@@ -37,9 +38,9 @@ static const int32_t SOCKET_TIMEOUT = 5;
 
 static std::string GetSocketConnectionName()
 {
-    std::string content;
-    OHOS::HiviewDFX::LoadStringFromFile(PROC_SELF_CMDLINE_PATH, content);
-    if (content.find("processdump") != std::string::npos) {
+    char content[NAME_BUF_LEN];
+    GetProcessName(content, sizeof(content));
+    if (std::string(content).find("processdump") != std::string::npos) {
         return std::string(SERVER_CRASH_SOCKET_NAME);
     }
     return std::string(SERVER_SOCKET_NAME);
