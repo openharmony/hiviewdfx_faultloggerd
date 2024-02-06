@@ -557,7 +557,6 @@ static void ForkAndDoProcessDump(int sig)
         DFXLOG_INFO("Wait VmProcess(%d) exit timeout in handling critical signal.", childPid);
         // do not left vm process
         kill(childPid, SIGKILL);
-        _exit(0);
     }
 
     RestoreDumpState(prevDumpableStatus, isTracerStatusModified);
