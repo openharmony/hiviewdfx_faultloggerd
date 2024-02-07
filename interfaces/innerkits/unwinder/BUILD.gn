@@ -1,4 +1,4 @@
-# Copyright (c) 2023 Huawei Device Co., Ltd.
+# Copyright (c) 2023-2024 Huawei Device Co., Ltd.
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -22,6 +22,7 @@ dfx_unwind_sources = [
   "dfx_config.cpp",
   "dfx_elf.cpp",
   "dfx_elf_parser.cpp",
+  "dfx_extractor_utils.cpp",
   "dfx_frame_formatter.cpp",
   "dfx_instr_statistic.cpp",
   "dfx_instructions.cpp",
@@ -143,18 +144,23 @@ if (defined(ohos_lite)) {
         "DFX_UNWIND_ERROR",
       ]
     }
+  }
 
-    if (enable_mixstack && target_cpu == "arm64") {
-      defines += [ "ENABLE_MIXSTACK" ]
+  config("mixstack_config") {
+    if (target_cpu == "arm64") {
+      defines = [ "ENABLE_MIXSTACK" ]
+      defines += [ "ONLINE_MIXSTACK" ]
     }
   }
 
-  config("dfx_unwinder_src_config") {
-    defines = [
-      "DFX_LOG_UNWIND",
-      "DFX_UNWIND_ERROR",
-      "INSTR_STATISTIC_ENABLE",
-    ]
+  config("offline_mixstack_config") {
+    include_dirs =
+        [ "$ability_base_path/interfaces/kits/native/extractortool/include" ]
+    if (target_cpu == "arm64") {
+      defines = [ "ENABLE_MIXSTACK" ]
+      defines += [ "OFFLINE_MIXSTACK" ]
+      defines += [ "ENABLE_HAP_EXTRACTOR" ]
+    }
   }
 
   config("lzma_config") {
@@ -167,10 +173,10 @@ if (defined(ohos_lite)) {
   ohos_shared_library("libunwinder") {
     public_configs = [
       ":dfx_unwinder_config",
+      ":lzma_config",
+      ":mixstack_config",
       "$faultloggerd_common_path/build:coverage_flags",
     ]
-
-    public_configs += [ ":lzma_config" ]
 
     sources = dfx_unwinder_sources
     sources += dfx_unwind_sources
@@ -188,7 +194,6 @@ if (defined(ohos_lite)) {
       sources += [ "dfx_xz_utils.cpp" ]
       public_deps = [ "//third_party/lzma:lzma_shared" ]
     }
-
     external_deps = [
       "c_utils:utils",
       "hilog:libhilog",
@@ -222,6 +227,7 @@ if (defined(ohos_lite)) {
       "$faultloggerd_interfaces_path/innerkits/procinfo:libdfx_procinfo",
       "//third_party/bounds_checking_function:libsec_shared",
     ]
+
     if (is_ohos && !is_mingw && !is_emulator) {
       sources += [ "dfx_xz_utils.cpp" ]
       public_deps = [ "//third_party/lzma:lzma_shared" ]
@@ -237,8 +243,13 @@ if (defined(ohos_lite)) {
   ohos_source_set("libunwinder_src") {
     public_configs = [
       ":dfx_unwinder_config",
-      ":dfx_unwinder_src_config",
       ":lzma_config",
+      ":mixstack_config",
+    ]
+    defines = [
+      "DFX_LOG_UNWIND",
+      "DFX_UNWIND_ERROR",
+      "INSTR_STATISTIC_ENABLE",
     ]
 
     sources = dfx_unwinder_sources
@@ -252,6 +263,7 @@ if (defined(ohos_lite)) {
       "$faultloggerd_interfaces_path/innerkits/procinfo:libdfx_procinfo",
       "//third_party/bounds_checking_function:libsec_shared",
     ]
+
     if (is_ohos && !is_mingw && !is_emulator) {
       sources += [ "dfx_xz_utils.cpp" ]
       public_deps = [ "//third_party/lzma:lzma_shared" ]

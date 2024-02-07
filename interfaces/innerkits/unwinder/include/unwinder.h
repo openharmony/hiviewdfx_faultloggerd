@@ -19,6 +19,7 @@
 #include <unordered_map>
 #include <vector>
 #include "dfx_accessors.h"
+#include "dfx_define.h"
 #include "dfx_errors.h"
 #include "dfx_frame.h"
 #include "dfx_memory.h"
@@ -52,7 +53,9 @@ public:
     Unwinder(std::shared_ptr<UnwindAccessors> accessors) : pid_(UNWIND_TYPE_CUSTOMIZE)
     {
         acc_ = std::make_shared<DfxAccessorsCustomize>(accessors);
+        enableLrFallback_ = false;
         enableFpCheckMapExec_ = false;
+        enableFillFrames_ = false;
 #if defined(__aarch64__)
         pacMask_ = pacMaskDefault_;
 #endif
@@ -80,41 +83,55 @@ public:
 
     bool GetStackRange(uintptr_t& stackBottom, uintptr_t& stackTop);
 
-    bool UnwindLocalWithContext(const ucontext_t& context, size_t maxFrameNum = 256, size_t skipFrameNum = 0);
-    bool UnwindLocal(bool withRegs = false, size_t maxFrameNum = 256, size_t skipFrameNum = 0);
-    bool UnwindRemote(pid_t tid = 0, bool withRegs = false, size_t maxFrameNum = 256, size_t skipFrameNum = 0);
-    bool Unwind(void *ctx, size_t maxFrameNum = 256, size_t skipFrameNum = 0);
-    bool UnwindByFp(void *ctx, size_t maxFrameNum = 256, size_t skipFrameNum = 0);
+    bool UnwindLocalWithContext(const ucontext_t& context, \
+        size_t maxFrameNum = DEFAULT_MAX_FRAME_NUM, size_t skipFrameNum = 0);
+    bool UnwindLocal(bool withRegs = false, \
+        size_t maxFrameNum = DEFAULT_MAX_FRAME_NUM, size_t skipFrameNum = 0);
+    bool UnwindRemote(pid_t tid = 0, bool withRegs = false, \
+        size_t maxFrameNum = DEFAULT_MAX_FRAME_NUM, size_t skipFrameNum = 0);
+    bool Unwind(void *ctx, \
+        size_t maxFrameNum = DEFAULT_MAX_FRAME_NUM, size_t skipFrameNum = 0);
+    bool UnwindByFp(void *ctx, \
+        size_t maxFrameNum = DEFAULT_MAX_FRAME_NUM, size_t skipFrameNum = 0);
+
+    bool Step(DfxFrame& frame, void *ctx);
     bool Step(uintptr_t& pc, uintptr_t& sp, void *ctx);
     bool FpStep(uintptr_t& fp, uintptr_t& pc, void *ctx);
 
-    inline const std::vector<uintptr_t>& GetPcs() { return pcs_; }
     void AddFrame(DfxFrame& frame);
     void FillFrames(std::vector<DfxFrame>& frames);
     std::vector<DfxFrame>& GetFrames();
+    inline const std::vector<uintptr_t>& GetPcs() { return pcs_; }
+
     static bool GetSymbolByPc(uintptr_t pc, std::shared_ptr<DfxMaps> maps,
         std::string& funcName, uint64_t& funcOffset);
     static void GetFramesByPcs(std::vector<DfxFrame>& frames, std::vector<uintptr_t> pcs,
         std::shared_ptr<DfxMaps> maps);
     static void FillFrame(DfxFrame& frame);
+    static void FillJsFrame(DfxFrame& frame);
     static std::string GetFramesStr(const std::vector<DfxFrame>& frames);
+
+    static bool AccessMem(void* memory, uintptr_t addr, uintptr_t *val)
+    {
+        return reinterpret_cast<DfxMemory*>(memory)->ReadMem(addr, val);
+    }
 
 private:
     void Init();
     void Clear();
     void Destroy();
+    bool CheckAndReset(void* ctx);
     void DoPcAdjust(uintptr_t& pc);
-    bool GetMapByPc(uintptr_t pc, void *ctx, std::shared_ptr<DfxMap>& map);
-    void AddFrame(uintptr_t pc, uintptr_t sp, std::shared_ptr<DfxMap> map, size_t& index);
+    void AddFrame(bool isJsFrame, uintptr_t pc, uintptr_t sp, uintptr_t fp);
     bool Apply(std::shared_ptr<DfxRegs> regs, std::shared_ptr<RegLocState> rs);
-    void SetFrames(std::vector<DfxFrame>& frames);
 #if defined(ENABLE_MIXSTACK)
-    bool StepArkJsFrame(size_t& curIdx);
+    bool StepArkJsFrame(uintptr_t& pc, uintptr_t& fp, uintptr_t& sp);
+    bool StepArkJsFrame(uintptr_t& pc, uintptr_t& fp, uintptr_t& sp, bool& isJsFrame);
 #endif
     static uintptr_t StripPac(uintptr_t inAddr, uintptr_t pacMask);
     inline void SetLocalStackCheck(void* ctx, bool check)
     {
-        if (pid_ == UNWIND_TYPE_LOCAL) {
+        if ((pid_ == UNWIND_TYPE_LOCAL) && (ctx != nullptr)) {
             UnwindContext* uctx = reinterpret_cast<UnwindContext *>(ctx);
             uctx->stackCheck = check;
         }
@@ -138,7 +155,7 @@ private:
     std::unordered_map<uintptr_t, std::shared_ptr<RegLocState>> rsCache_ {};
     std::shared_ptr<DfxRegs> regs_ = nullptr;
     std::shared_ptr<DfxMaps> maps_ = nullptr;
-    std::vector<uintptr_t> pcs_ {};
+    std::vector<uintptr_t> pcs_ {}; // only for fp unwind
     std::vector<DfxFrame> frames_ {};
     UnwindErrorData lastErrorData_ {};
 #if defined(__arm__)

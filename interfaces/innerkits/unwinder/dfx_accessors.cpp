@@ -21,6 +21,7 @@
 #include <sys/ptrace.h>
 #include <sys/uio.h>
 #include "dfx_define.h"
+#include "dfx_errors.h"
 #include "dfx_log.h"
 #include "dfx_regs.h"
 #include "dfx_elf.h"
@@ -37,6 +38,25 @@ namespace {
 static const int FOUR_BYTES = 4;
 static const int EIGHT_BYTES = 8;
 static const int THIRTY_TWO_BITS = 32;
+}
+
+bool DfxAccessors::GetMapByPcAndCtx(uintptr_t pc, std::shared_ptr<DfxMap>& map, void *arg)
+{
+    if (arg == nullptr) {
+        return false;
+    }
+    UnwindContext* ctx = reinterpret_cast<UnwindContext *>(arg);
+    if (ctx->map != nullptr && ctx->map->Contain(static_cast<uint64_t>(pc))) {
+        map = ctx->map;
+        LOGU("map had matched by ctx, map name: %s", map->name.c_str());
+        return true;
+    }
+
+    if (!ctx->maps->FindMapByAddr(pc, map) || (map == nullptr)) {
+        return false;
+    }
+    ctx->map = map;
+    return true;
 }
 
 bool DfxAccessorsLocal::IsValidFrame(uintptr_t addr, uintptr_t stackBottom, uintptr_t stackTop)
@@ -88,6 +108,14 @@ int DfxAccessorsLocal::FindUnwindTable(uintptr_t pc, UnwindTableInfo& uti, void 
         ctx->di = uti;
     }
     return ret;
+}
+
+int DfxAccessorsLocal::GetMapByPc(uintptr_t pc, std::shared_ptr<DfxMap>& map, void *arg)
+{
+    if (!DfxAccessors::GetMapByPcAndCtx(pc, map, arg)) {
+        return UNW_ERROR_INVALID_MAP;
+    }
+    return UNW_ERROR_NONE;
 }
 
 int DfxAccessorsRemote::AccessMem(uintptr_t addr, uintptr_t *val, void *arg)
@@ -170,6 +198,14 @@ int DfxAccessorsRemote::FindUnwindTable(uintptr_t pc, UnwindTableInfo& uti, void
     return ret;
 }
 
+int DfxAccessorsRemote::GetMapByPc(uintptr_t pc, std::shared_ptr<DfxMap>& map, void *arg)
+{
+    if (!DfxAccessors::GetMapByPcAndCtx(pc, map, arg)) {
+        return UNW_ERROR_INVALID_MAP;
+    }
+    return UNW_ERROR_NONE;
+}
+
 int DfxAccessorsCustomize::AccessMem(uintptr_t addr, uintptr_t *val, void *arg)
 {
     if (accessors_ == nullptr) {
@@ -192,6 +228,11 @@ int DfxAccessorsCustomize::FindUnwindTable(uintptr_t pc, UnwindTableInfo& uti, v
         return -1;
     }
     return accessors_->FindUnwindTable(pc, uti, arg);
+}
+
+int DfxAccessorsCustomize::GetMapByPc(uintptr_t pc, std::shared_ptr<DfxMap>& map, void *arg)
+{
+    return UNW_ERROR_NONE;
 }
 } // namespace HiviewDFX
 } // namespace OHOS

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2022-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -32,13 +32,17 @@ struct DfxFrame {
     /** whether is Js frame */
     bool isJsFrame {false};
     /** frame index */
-    size_t index {0};
+    int32_t index {0};
+    /** symbol file index */
+    int32_t symbolFileIndex = -1;
     /** program counter register value */
     uint64_t pc {0};
     /** relative program counter value */
     uint64_t relPc {0};
     /** stack pointer value */
     uint64_t sp {0};
+    /** frame pointer value */
+    uint64_t fp {0};
     /** map offset */
     uint64_t mapOffset {0};
     /** function byte offset */
@@ -50,12 +54,53 @@ struct DfxFrame {
     /** elf file build id */
     std::string buildId {""};
     /** map cache */
-    std::shared_ptr<DfxMap> map;
-#if defined(ENABLE_MIXSTACK)
+    std::shared_ptr<DfxMap> map = nullptr;
+
     /** Js frame code line */
     int32_t line {0};
     /** Js frame code column */
     int32_t column {0};
+
+    DfxFrame() {}
+    DfxFrame(size_t pc, size_t sp = 0) : pc(pc), sp(sp) {}
+    // only for UT
+    DfxFrame(size_t pc, size_t funcOffset, const char *mapName, const char *funcName)
+        : pc(pc), funcOffset(funcOffset), mapName(mapName), funcName(funcName) {}
+
+    bool operator==(const DfxFrame &b) const
+    {
+        return (pc == b.pc) && (sp == b.sp);
+    }
+    bool operator!=(const DfxFrame &b) const
+    {
+        return (pc != b.pc) || (sp != b.sp);
+    }
+
+#ifndef is_ohos_lite
+    std::string ToString() const
+    {
+#ifdef __LP64__
+        return StringPrintf("pc: 0x%016lx, sp: 0x%016lx", pc, sp);
+#else
+        return StringPrintf("pc: 0x%08llx, sp: 0x%08llx", pc, sp);
+#endif
+    }
+    std::string ToSymbolString() const
+    {
+        std::string output = StringPrintf("0x%016" PRIx64 " : ", pc);
+        output.append(funcName);
+        if (funcOffset != 0) {
+            output += StringPrintf("[0x%016" PRIx64 ":0x%016" PRIx64 "][+0x%" PRIx64 "]",
+                pc - mapOffset, funcOffset, mapOffset);
+        }
+        output.append("@");
+        output.append(mapName);
+        if (index != -1) {
+            output.append(":");
+            output.append(std::to_string(index));
+        }
+        return output;
+    }
 #endif
 };
 } // namespace HiviewDFX

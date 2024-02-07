@@ -12,6 +12,7 @@
 # limitations under the License.
 
 faultloggerd_path = "//base/hiviewdfx/faultloggerd"
+ability_base_path = "//foundation/ability/ability_base"
 faultloggerd_common_path = "$faultloggerd_path/common"
 faultloggerd_frameworks_path = "$faultloggerd_path/frameworks"
 faultloggerd_interfaces_path = "$faultloggerd_path/interfaces"
@@ -21,7 +22,6 @@ declare_args() {
   libunwinder_debug = false
   has_libunwind = true
   has_libunwindstack = false
-  enable_mixstack = true
   processdump_minidebuginfo_enable = true
   faultloggerd_hisysevent_enable = false
   if (defined(global_parts_info)) {

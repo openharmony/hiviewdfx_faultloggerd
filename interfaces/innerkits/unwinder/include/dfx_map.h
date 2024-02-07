@@ -61,6 +61,7 @@ public:
     std::shared_ptr<DfxMap> prevMap = nullptr;
     uint64_t elfOffset = 0;
     uint64_t elfStartOffset = 0;
+    int32_t symbolFileIndex = -1; // symbols file index
 
     // use for find
     inline bool operator==(const std::string &name) const

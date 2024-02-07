@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2023-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -31,14 +31,18 @@
 
 namespace OHOS {
 namespace HiviewDFX {
+class DfxMap;
+
 class DfxAccessors {
 public:
     DfxAccessors(int bigEndian = UNWIND_BYTE_ORDER) : bigEndian_(bigEndian) {}
     virtual ~DfxAccessors() = default;
+    static bool GetMapByPcAndCtx(uintptr_t pc, std::shared_ptr<DfxMap>& map, void *arg);
 
     virtual int AccessMem(uintptr_t addr, uintptr_t *val, void *arg) = 0;
     virtual int AccessReg(int regIdx, uintptr_t *val, void *arg) = 0;
     virtual int FindUnwindTable(uintptr_t pc, UnwindTableInfo& uti, void *arg) = 0;
+    virtual int GetMapByPc(uintptr_t pc, std::shared_ptr<DfxMap>& map, void *arg) = 0;
 
     int bigEndian_ = UNWIND_BYTE_ORDER;
 };
@@ -52,6 +56,7 @@ public:
     int AccessMem(uintptr_t addr, uintptr_t *val, void *arg) override;
     int AccessReg(int regIdx, uintptr_t *val, void *arg) override;
     int FindUnwindTable(uintptr_t pc, UnwindTableInfo& uti, void *arg) override;
+    int GetMapByPc(uintptr_t pc, std::shared_ptr<DfxMap>& map, void *arg) override;
 };
 
 class DfxAccessorsRemote : public DfxAccessors {
@@ -62,6 +67,7 @@ public:
     int AccessMem(uintptr_t addr, uintptr_t *val, void *arg) override;
     int AccessReg(int regIdx, uintptr_t *val, void *arg) override;
     int FindUnwindTable(uintptr_t pc, UnwindTableInfo& uti, void *arg) override;
+    int GetMapByPc(uintptr_t pc, std::shared_ptr<DfxMap>& map, void *arg) override;
 };
 
 class DfxAccessorsCustomize : public DfxAccessors {
@@ -72,6 +78,7 @@ public:
     int AccessMem(uintptr_t addr, uintptr_t *val, void *arg) override;
     int AccessReg(int regIdx, uintptr_t *val, void *arg) override;
     int FindUnwindTable(uintptr_t pc, UnwindTableInfo& uti, void *arg) override;
+    int GetMapByPc(uintptr_t pc, std::shared_ptr<DfxMap>& map, void *arg) override;
 private:
     std::shared_ptr<UnwindAccessors> accessors_;
 };

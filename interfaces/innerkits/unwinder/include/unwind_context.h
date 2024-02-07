@@ -28,6 +28,7 @@
 namespace OHOS {
 namespace HiviewDFX {
 class DfxMap;
+class DfxMaps;
 class DfxRegs;
 
 struct UnwindTableInfo {
@@ -57,6 +58,7 @@ struct UnwindAccessors {
     int (*FindUnwindTable)(uintptr_t, UnwindTableInfo &, void *);
     int (*AccessMem)(uintptr_t, uintptr_t *, void *);
     int (*AccessReg)(int, uintptr_t *, void *);
+    int (*GetMapByPc)(uintptr_t, std::shared_ptr<DfxMap> &, void *);
 };
 
 struct UnwindContext {
@@ -65,6 +67,7 @@ struct UnwindContext {
     uintptr_t stackTop = 0;
     int pid;
     std::shared_ptr<DfxRegs> regs = nullptr;
+    std::shared_ptr<DfxMaps> maps = nullptr;
     std::shared_ptr<DfxMap> map = nullptr;
     struct UnwindTableInfo di;
 };
