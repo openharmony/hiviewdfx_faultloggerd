@@ -19,6 +19,7 @@
 #include <string>
 #include <securec.h>
 #include <vector>
+#include <pthread.h>
 #include "cpp_define.h"
 
 namespace OHOS {
@@ -31,39 +32,52 @@ public:
         return instance;
     }
 
-    ~StringViewHold()
-    {
-        Clean();
-    }
-
     const char* Hold(STRING_VIEW view)
     {
+        pthread_spin_lock(&spin_lock_);
         if (view.size() == 0) {
+            pthread_spin_unlock(&spin_lock_);
             return "";
         }
 
         char *p = new (std::nothrow) char[view.size() + 1];
         if (p == nullptr) {
+            pthread_spin_unlock(&spin_lock_);
             return "";
         }
         if (memset_s(p, view.size() + 1, '\0', view.size() + 1) != 0) {
+            pthread_spin_unlock(&spin_lock_);
             return "";
         }
         std::copy(view.data(), view.data() + view.size(), p);
         views_.emplace_back(p);
+        pthread_spin_unlock(&spin_lock_);
         return p;
     }
 
     // only use in UT
     void Clean()
     {
+        pthread_spin_lock(&spin_lock_);
         for (auto &p : views_) {
             delete[] p;
         }
         views_.clear();
+        pthread_spin_unlock(&spin_lock_);
     }
 private:
+    StringViewHold()
+    {
+        pthread_spin_init(&spin_lock_, PTHREAD_PROCESS_PRIVATE);
+    }
+    ~StringViewHold()
+    {
+        Clean();
+        pthread_spin_destroy(&spin_lock_);
+    }
+
     std::vector<char *> views_;
+    pthread_spinlock_t spin_lock_;
 };
 } // namespace HiviewDFX
 } // namespace OHOS
