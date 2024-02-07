@@ -65,9 +65,11 @@ HWTEST_F(InstrStatisticTest, InstrStatisticTest001, TestSize.Level2)
         EXPECT_EQ(true, unwRet) << "InstrStatisticTest001: Attach:" << unwRet;
         auto regs = DfxRegs::CreateRemoteRegs(pid);
         unwinder->SetRegs(regs);
+        auto maps = DfxMaps::Create(pid);
         UnwindContext context;
         context.pid = pid;
         context.regs = regs;
+        context.maps = maps;
         unwRet = unwinder->Unwind(&context);
         EXPECT_EQ(true, unwRet) << "InstrStatisticTest001: Unwind:" << unwRet;
         auto frames = unwinder->GetFrames();

@@ -44,7 +44,7 @@ void UnwindThreadByParseStackIfNeed(std::shared_ptr<DfxProcess> &process,
     if (process == nullptr || thread == nullptr) {
         return;
     }
-    auto frames = unwinder->GetFrames();
+    auto frames = thread->GetFrames();
     constexpr int minFramesNum = 3;
     size_t initSize = frames.size();
     if (initSize < minFramesNum || frames[minFramesNum - 1].mapName.find("Not mapped") != std::string::npos) {
