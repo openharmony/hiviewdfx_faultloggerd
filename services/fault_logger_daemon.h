@@ -54,6 +54,7 @@ private:
 private:
     int32_t defaultSocketFd_ = -1;
     int32_t crashSocketFd_ = -1;
+    int32_t sdkdumpSocketFd_ = -1;
     int32_t eventFd_ = -1;
     std::map<int32_t, int32_t> connectionMap_;
 };

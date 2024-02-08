@@ -171,6 +171,10 @@ static int SendRequestToServer(const FaultLoggerdRequest &request)
     int resRsp = (int)FaultLoggerCheckPermissionResp::CHECK_PERMISSION_REJECT;
     do {
         std::string name = GetSocketConnectionName();
+        if (request.clientType == FaultLoggerClientType::SDK_DUMP_CLIENT) {
+            name = std::string(SERVER_SDKDUMP_SOCKET_NAME);
+        }
+
         if (!StartConnect(sockfd, name.c_str(), -1)) {
             DFXLOG_ERROR("StartConnect failed.");
             break;

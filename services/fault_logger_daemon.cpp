@@ -376,6 +376,17 @@ FaultLoggerCheckPermissionResp FaultLoggerDaemon::SecurityCheck(int32_t connecti
 
         request->uid = rcred.uid;
         request->callerPid = static_cast<int32_t>(rcred.pid);
+
+        auto it = connectionMap_.find(connectionFd);
+        if (it == connectionMap_.end()) {
+            break;
+        }
+
+        if (it->second == sdkdumpSocketFd_) {
+            resCheckPermission = FaultLoggerCheckPermissionResp::CHECK_PERMISSION_PASS;
+            break;
+        }
+
         bool res = CheckCallerUID(request->uid);
         if (res) {
             resCheckPermission = FaultLoggerCheckPermissionResp::CHECK_PERMISSION_PASS;
@@ -617,7 +628,7 @@ bool FaultLoggerDaemon::CheckRequestCredential(int32_t connectionFd, FaultLogger
         return false;
     }
 
-    if (it->second == crashSocketFd_) {
+    if (it->second == crashSocketFd_ || it->second == sdkdumpSocketFd_) {
         // only processdump use this socket
         return true;
     }
@@ -654,6 +665,14 @@ bool FaultLoggerDaemon::CreateSockets()
         return false;
     }
 
+    if (!StartListen(sdkdumpSocketFd_, SERVER_SDKDUMP_SOCKET_NAME, MAX_CONNECTION)) {
+        close(defaultSocketFd_);
+        defaultSocketFd_ = -1;
+        close(crashSocketFd_);
+        crashSocketFd_ = -1;
+        return false;
+    }
+
     return true;
 }
 
@@ -667,6 +686,11 @@ void FaultLoggerDaemon::CleanupSockets()
     if (crashSocketFd_ >= 0) {
         close(crashSocketFd_);
         crashSocketFd_ = -1;
+    }
+
+    if (sdkdumpSocketFd_ >= 0) {
+        close(sdkdumpSocketFd_);
+        sdkdumpSocketFd_ = -1;
     }
 }
 
@@ -683,6 +707,7 @@ void FaultLoggerDaemon::WaitForRequest()
 {
     AddEvent(eventFd_, defaultSocketFd_, EPOLLIN);
     AddEvent(eventFd_, crashSocketFd_, EPOLLIN);
+    AddEvent(eventFd_, sdkdumpSocketFd_, EPOLLIN);
     epoll_event events[MAX_CONNECTION];
     DFXLOG_DEBUG("%s :: %s: start epoll wait.", FAULTLOGGERD_TAG.c_str(), __func__);
     do {
@@ -700,7 +725,7 @@ void FaultLoggerDaemon::WaitForRequest()
             }
 
             int fd = events[i].data.fd;
-            if (fd == defaultSocketFd_ || fd == crashSocketFd_) {
+            if (fd == defaultSocketFd_ || fd == crashSocketFd_ || fd == sdkdumpSocketFd_) {
                 HandleAccept(eventFd_, fd);
             } else {
                 HandleRequest(eventFd_, fd);
@@ -713,6 +738,7 @@ void FaultLoggerDaemon::CleanupEventFd()
 {
     DelEvent(eventFd_, defaultSocketFd_, EPOLLIN);
     DelEvent(eventFd_, crashSocketFd_, EPOLLIN);
+    DelEvent(eventFd_, sdkdumpSocketFd_, EPOLLIN);
 
     if (eventFd_ > 0) {
         close(eventFd_);
