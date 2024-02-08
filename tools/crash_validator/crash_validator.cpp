@@ -36,7 +36,7 @@ constexpr char KEY_UID[] = "UID";
 constexpr char KEY_STATUS[] = "STATUS";
 constexpr char KEY_LOG_PATH[] = "LOG_PATH";
 constexpr char KEY_MODULE[] = "MODULE";
-constexpr char INIT_LOG_PATTERN[] = "SigHandler, SIGCHLD received, ";
+constexpr char INIT_LOG_PATTERN[] = "Service warning ";
 constexpr char KEY_NO_LOG_EVENT_NAME[] = "CPP_CRASH_NO_LOG";
 constexpr char KEY_HAPPEN_TIME[] = "HAPPEN_TIME";
 constexpr int32_t LOG_SIZE = 1024;
@@ -295,7 +295,7 @@ void CrashValidator::ReadServiceCrashStatus()
         int pid;
         int uid;
         int status;
-        int ret = sscanf_s(formattedLog.c_str(), "Service:%s pid:%d uid:%d status:%d",
+        int ret = sscanf_s(formattedLog.c_str(), "%s, SIGCHLD received, pid:%d uid:%d status:%d.",
             name, sizeof(name), &pid, &uid, &status);
         if (ret <= 0) {
             printf("Failed to parse kmsg:%s", formattedLog.c_str());
