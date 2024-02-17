@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -64,7 +64,6 @@ std::shared_ptr<DfxElf> DfxElf::Create(const std::string& path)
 std::shared_ptr<DfxElf> DfxElf::CreateFromHap(const std::string& file, std::shared_ptr<DfxMap> prevMap,
                                               uint64_t& offset)
 {
-#if is_ohos
     // elf header is in the first mmap area
     // c3840000-c38a6000 r--p 00174000 /data/storage/el1/bundle/entry.hap <- program header
     // c38a6000-c3945000 r-xp 001d9000 /data/storage/el1/bundle/entry.hap <- pc is in this region
@@ -74,8 +73,7 @@ std::shared_ptr<DfxElf> DfxElf::CreateFromHap(const std::string& file, std::shar
         LOGE("current hap mapitem has no prev mapitem, maybe pc is wrong?");
         return nullptr;
     }
-    const std::vector<const std::string> validFilePath = { "/proc" };
-    if (!VerifyFilePath(file, validFilePath) || !EndsWith(file, ".hap")) {
+    if (!StartsWith(file, "/proc") || !EndsWith(file, ".hap")) {
         LOGE("Illegal file path, please check file: %s", file.c_str());
         return nullptr;
     }
@@ -114,19 +112,19 @@ std::shared_ptr<DfxElf> DfxElf::CreateFromHap(const std::string& file, std::shar
         }
     }
     close(fd);
-#endif
     return nullptr;
 }
 
 DfxElf::DfxElf(const std::string& file)
 {
-#if is_ohos
     if (mmap_ == nullptr && (!file.empty())) {
         LOGU("file: %s", file.c_str());
+#if defined(is_ohos) && is_ohos
         if (!DfxMaps::IsLegalMapItem(file)) {
             LOGE("Illegal map file, please check file: %s", file.c_str());
             return;
         }
+#endif
         std::string realPath = file;
         if (!StartsWith(file, "/proc/")) { // sandbox file should not be check by realpath function
             if (!RealPath(file, realPath)) {
@@ -134,7 +132,11 @@ DfxElf::DfxElf(const std::string& file)
                 return;
             }
         }
+#if defined(is_mingw) && is_mingw
+        int fd = OHOS_TEMP_FAILURE_RETRY(open(realPath.c_str(), O_RDONLY | O_BINARY));
+#else
         int fd = OHOS_TEMP_FAILURE_RETRY(open(realPath.c_str(), O_RDONLY));
+#endif
         if (fd > 0) {
             auto size = static_cast<size_t>(GetFileSize(fd));
             mmap_ = std::make_shared<DfxMmap>();
@@ -146,7 +148,6 @@ DfxElf::DfxElf(const std::string& file)
             LOGE("Failed to open file: %s", file.c_str());
         }
     }
-#endif
     Init();
 }
 
@@ -266,7 +267,7 @@ bool DfxElf::InitHeaders()
     } else if (classType_ == ELFCLASS64) {
         elfParse_ = std::unique_ptr<ElfParser>(new ElfParser64(mmap_));
     } else {
-        DFXLOG_WARN("InitHeaders failed, classType: %d", classType_);
+        LOGW("InitHeaders failed, classType: %d", classType_);
         return false;
     }
     if (elfParse_ != nullptr) {
@@ -972,7 +973,6 @@ bool DfxElf::IsValidElf(const void* ptr, size_t size)
     return true;
 }
 
-#if is_ohos
 size_t DfxElf::GetElfSize(const void* ptr)
 {
     if (!IsValidElf(ptr, SELFMAG)) {
@@ -991,6 +991,5 @@ size_t DfxElf::GetElfSize(const void* ptr)
     DFXLOG_WARN("classType(%d) error", classType);
     return 0;
 }
-#endif
 } // namespace HiviewDFX
 } // namespace OHOS

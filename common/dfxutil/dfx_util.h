@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -24,13 +24,24 @@
 
 namespace OHOS {
 namespace HiviewDFX {
+#ifndef is_host
 AT_SYMBOL_HIDDEN bool TrimAndDupStr(const std::string &source, std::string &str);
 AT_SYMBOL_HIDDEN uint64_t GetTimeMilliSeconds(void);
 AT_SYMBOL_DEFAULT std::string GetCurrentTimeStr(uint64_t current = 0);
 AT_SYMBOL_HIDDEN bool ReadDirFiles(const std::string& path, std::vector<std::string>& files);
 AT_SYMBOL_HIDDEN bool ReadDirFilesByPid(const int& pid, std::vector<std::string>& files);
 AT_SYMBOL_HIDDEN bool VerifyFilePath(const std::string& filePath, const std::vector<const std::string>& validPaths);
+#endif
 AT_SYMBOL_HIDDEN off_t GetFileSize(const int& fd);
 } // nameapace HiviewDFX
 } // nameapace OHOS
+
+// this will also used for libunwinder head (out of namespace)
+#if defined(is_mingw) && is_mingw
+#ifndef MMAP_FAILED
+#define MMAP_FAILED reinterpret_cast<void *>(-1)
+#endif
+void *mmap(void *addr, size_t length, int prot, int flags, int fd, size_t offset);
+int munmap(void *addr, size_t);
+#endif
 #endif

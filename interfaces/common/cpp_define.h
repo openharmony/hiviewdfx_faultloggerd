@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -12,17 +12,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 #ifndef CPP_DEFINE_H
 #define CPP_DEFINE_H
 
-#ifdef __cplusplus
-#if (__cplusplus >= 201703L)
-#include <string_view>
+#ifndef is_ohos_lite
 #define STRING_VIEW std::string_view
 #else
 #include <string>
 #define STRING_VIEW std::string
-#endif
 #endif
 
 #endif

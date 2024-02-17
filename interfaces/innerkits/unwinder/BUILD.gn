@@ -312,7 +312,10 @@ if (defined(ohos_lite)) {
       sources += [ "dfx_xz_utils.cpp" ]
       public_deps = [ "//third_party/lzma:lzma_static" ]
     }
-    deps = [ "//third_party/bounds_checking_function:libsec_static" ]
+    deps = [
+      "$faultloggerd_common_path/dfxutil:dfx_util_host",
+      "//third_party/bounds_checking_function:libsec_static",
+    ]
     if (is_ohos) {
       external_deps = [ "c_utils:utils" ]
     }
