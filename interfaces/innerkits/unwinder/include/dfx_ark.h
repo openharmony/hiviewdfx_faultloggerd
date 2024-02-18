@@ -50,7 +50,7 @@ struct JsFunction {
     std::string ToString()
     {
         char buff[BUF_SIZE_MAX] = {0};
-        snprintf_s(buff, sizeof(buff), sizeof(buff), "%s:[begin:0x%" PRIx64 ", size:0x%" PRIx64 "]",
+        (void)snprintf_s(buff, sizeof(buff), sizeof(buff), "%s:[begin:0x%" PRIx64 ", size:0x%" PRIx64 "]",
             functionName, codeBegin, codeSize);
         return std::string(buff);
     }

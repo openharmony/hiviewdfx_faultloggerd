@@ -59,22 +59,23 @@ bool GetLibArkHandle()
 }
 }
 
-#define DLSYM_ARK_FUNC(FuncName, DlsymFuncName) \
+#define DLSYM_ARK_FUNC(FuncName, DlsymFuncName) { \
     pthread_mutex_lock(&g_mutex); \
     do { \
-        if (DlsymFuncName != nullptr) { \
+        if ((DlsymFuncName) != nullptr) { \
             break; \
         } \
         if (!GetLibArkHandle()) { \
             break; \
         } \
-        *(void**)(&DlsymFuncName) = dlsym(g_handle, FuncName); \
-        if (DlsymFuncName == NULL) { \
-            LOGE("Failed to dlsym(%s), error: %s", FuncName, dlerror()); \
+        *(void**)(&(DlsymFuncName)) = dlsym(g_handle, (FuncName)); \
+        if ((DlsymFuncName) == NULL) { \
+            LOGE("Failed to dlsym(%s), error: %s", (FuncName), dlerror()); \
             break; \
         } \
     } while (false); \
-    pthread_mutex_unlock(&g_mutex);
+    pthread_mutex_unlock(&g_mutex); \
+}
 
 int DfxArk::ParseArkFrameInfo(uintptr_t byteCodePc, uintptr_t mapBase, uintptr_t loadOffset,
     uint8_t *data, uint64_t dataSize, JsFunction *jsFunction)
