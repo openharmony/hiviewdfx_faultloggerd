@@ -466,11 +466,14 @@ bool Unwinder::Step(DfxFrame& frame, void *ctx)
     fp = regs_->GetFp();
     uintptr_t tmp = 0;
     if (ret && ((pc == 0) || (!memory_->ReadUptr(sp, &tmp, false)))) {
-        LOGU("-pc: %" PRIx64 ", sp: %" PRIx64 ", fp: %" PRIx64 " error?", (uint64_t)pc, (uint64_t)sp, (uint64_t)fp);
         ret = false;
-    } else {
+    }
+
+    if (ret) {
         AddFrame(false, pc, sp, fp);
         LOGU("-pc: %" PRIx64 ", sp: %" PRIx64 ", fp: %" PRIx64 "", (uint64_t)pc, (uint64_t)sp, (uint64_t)fp);
+    } else {
+        LOGU("-pc: %" PRIx64 ", sp: %" PRIx64 ", fp: %" PRIx64 " error?", (uint64_t)pc, (uint64_t)sp, (uint64_t)fp);
     }
     return ret;
 }
