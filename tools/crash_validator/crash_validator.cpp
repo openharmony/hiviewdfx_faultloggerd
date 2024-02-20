@@ -295,7 +295,7 @@ void CrashValidator::ReadServiceCrashStatus()
         int pid;
         int uid;
         int status;
-        int ret = sscanf_s(formattedLog.c_str(), "%s, SIGCHLD received, pid:%d uid:%d status:%d.",
+        int ret = sscanf_s(formattedLog.c_str(), "%[^,], SIGCHLD received, pid:%d uid:%d status:%d.",
             name, sizeof(name), &pid, &uid, &status);
         if (ret <= 0) {
             printf("Failed to parse kmsg:%s", formattedLog.c_str());
