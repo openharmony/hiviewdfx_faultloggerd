@@ -16,9 +16,6 @@
 #ifndef FAULTLOGGERD_FUZZER_H
 #define FAULTLOGGERD_FUZZER_H
 
-#include <cstdlib>
-#include <cstdio>
-
 #define FUZZ_PROJECT_NAME "faultloggerd_fuzzer"
 
 #endif

@@ -17,7 +17,6 @@ faultloggerd_sources = [
   "fault_logger_config.cpp",
   "fault_logger_daemon.cpp",
   "fault_logger_pipe.cpp",
-  "main.cpp",
 ]
 
 if (defined(ohos_lite)) {
@@ -47,6 +46,7 @@ if (defined(ohos_lite)) {
     ]
 
     sources = faultloggerd_sources
+    sources += [ "main.cpp" ]
     sources += [ "$c_utils_src_path/directory_ex.cpp" ]
 
     deps = [
@@ -98,6 +98,7 @@ if (defined(ohos_lite)) {
       "$faultloggerd_path/common/build:coverage_flags",
     ]
     sources = faultloggerd_sources
+    sources += [ "main.cpp" ]
 
     cflags_cc = [ "-DDEBUG_CRASH_LOCAL_HANDLER" ]
 
@@ -120,6 +121,24 @@ if (defined(ohos_lite)) {
     install_images = [
       "system",
       "updater",
+    ]
+    part_name = "faultloggerd"
+    subsystem_name = "hiviewdfx"
+  }
+
+  ohos_source_set("faultloggerd_fuzzer_src") {
+    configs = [ ":faultloggerd_config" ]
+    defines = [ "FAULTLOGGERD_FUZZER" ]
+    sources = faultloggerd_sources
+
+    deps = [
+      "$faultloggerd_common_path/dfxlog:dfx_hilog",
+      "$faultloggerd_common_path/dfxutil:dfx_util",
+      "$faultloggerd_path/interfaces/innerkits/faultloggerd_client:libfaultloggerd",
+    ]
+    external_deps = [
+      "c_utils:utils",
+      "hilog:libhilog",
     ]
     part_name = "faultloggerd"
     subsystem_name = "hiviewdfx"

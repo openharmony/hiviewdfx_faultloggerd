@@ -143,6 +143,13 @@ void FaultLoggerDaemon::HandleAccept(int32_t epollFd, int32_t socketFd)
     connectionMap_.insert(std::pair<int32_t, int32_t>(connectionFd, socketFd));
 }
 
+#ifdef FAULTLOGGERD_FUZZER
+void FaultLoggerDaemon::HandleRequestForFuzzer(int32_t epollFd, int32_t connectionFd)
+{
+    HandleRequest(epollFd, connectionFd);
+}
+#endif
+
 void FaultLoggerDaemon::HandleRequest(int32_t epollFd, int32_t connectionFd)
 {
     if (epollFd < 0 || connectionFd < 3) { // 3: not allow fd = 0,1,2 because they are reserved by system
