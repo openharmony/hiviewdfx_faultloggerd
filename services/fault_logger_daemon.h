@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -29,6 +29,9 @@ public:
     int32_t StartServer();
     bool InitEnvironment();
     int32_t CreateFileForRequest(int32_t type, int32_t pid, int32_t tid, uint64_t time, bool debugFlag) const;
+#ifdef FAULTLOGGERD_FUZZER
+    void HandleRequestForFuzzer(int32_t epollFd, int32_t connectionFd);
+#endif
 
 private:
     void AddEvent(int32_t epollFd, int32_t addFd, uint32_t event);

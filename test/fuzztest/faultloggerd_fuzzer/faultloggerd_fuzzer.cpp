@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -23,49 +23,47 @@
 #include "fault_logger_daemon.h"
 #include "securec.h"
 
-using namespace OHOS::HiviewDFX;
-using namespace std;
-
+namespace OHOS {
+namespace HiviewDFX {
 static const int PID_SIZE = 4;
 static const int RAND_BUF_LIMIT = 9;
 
-namespace OHOS {
 bool DumpStackTraceTest(const uint8_t* data, size_t size)
 {
     if (size < RAND_BUF_LIMIT) {
         return true;
     }
-    shared_ptr<DfxDumpCatcher> catcher = make_shared<DfxDumpCatcher>();
-    string msg;
+    std::shared_ptr<DfxDumpCatcher> catcher = std::make_shared<DfxDumpCatcher>();
+    std::string msg;
     int pid[1];
     int tid[1];
     errno_t err = memcpy_s(pid, sizeof(pid), data, PID_SIZE);
     if (err != 0) {
-        cout << "memcpy_s return value is abnormal" << endl;
+        std::cout << "memcpy_s return value is abnormal" << std::endl;
         return false;
     }
     data += PID_SIZE;
     err = memcpy_s(tid, sizeof(tid), data, PID_SIZE);
     if (err != 0) {
-        cout << "memcpy_s return value is abnormal" << endl;
+        std::cout << "memcpy_s return value is abnormal" << std::endl;
         return false;
     }
     data += PID_SIZE;
     char invalidOption = *data;
-    catcher->DumpCatch(pid[0], tid[0], msg);
+    catcher->DumpCatch(pid[0], tid[0], msg, DEFAULT_MAX_FRAME_NUM, false);
 
-    string processdumpCmd = "dumpcatcher -p " + to_string(pid[0]) + " -t " + to_string(tid[0]);
+    std::string processdumpCmd = "dumpcatcher -p " + std::to_string(pid[0]) + " -t " + std::to_string(tid[0]);
     system(processdumpCmd.c_str());
 
-    string processdumpInvalidCmd = "dumpcatcher -" + to_string(invalidOption) + " -p " +
-        to_string(pid[0]) + " -t " + to_string(tid[0]);
+    std::string processdumpInvalidCmd = "dumpcatcher -" + std::to_string(invalidOption) + " -p " +
+        std::to_string(pid[0]) + " -t " + std::to_string(tid[0]);
     system(processdumpInvalidCmd.c_str());
     return true;
 }
 
 bool FaultloggerdClientTest(const uint8_t* data, size_t size)
 {
-    cout << "enter FaultloggerdClientTest, size:" << size << endl;
+    std::cout << "enter FaultloggerdClientTest, size:" << size << std::endl;
     if (size < sizeof(int32_t) * 3) { // 3 : construct three int32_t parameters
         return true;
     }
@@ -74,19 +72,19 @@ bool FaultloggerdClientTest(const uint8_t* data, size_t size)
     int32_t tid[1];
     errno_t err = memcpy_s(type, sizeof(type), data, sizeof(int32_t));
     if (err != 0) {
-        cout << "memcpy_s return value is abnormal" << endl;
+        std::cout << "memcpy_s return value is abnormal" << std::endl;
         return false;
     }
     data += sizeof(int32_t);
     err = memcpy_s(tid, sizeof(tid), data, sizeof(int32_t));
     if (err != 0) {
-        cout << "memcpy_s return value is abnormal" << endl;
+        std::cout << "memcpy_s return value is abnormal" << std::endl;
         return false;
     }
     data += sizeof(int32_t);
     err = memcpy_s(pid, sizeof(pid), data, sizeof(int32_t));
     if (err != 0) {
-        cout << "memcpy_s return value is abnormal" << endl;
+        std::cout << "memcpy_s return value is abnormal" << std::endl;
         return false;
     }
 
@@ -100,7 +98,7 @@ bool FaultloggerdClientTest(const uint8_t* data, size_t size)
 
 bool FaultloggerdServerTest(const uint8_t* data, size_t size)
 {
-    cout << "enter FaultloggerdServerTest, size:" << size << endl;
+    std::cout << "enter FaultloggerdServerTest, size:" << size << std::endl;
     if (size < sizeof(int32_t) * 2) { // 2 : construct two int32_t parameters
         return true;
     }
@@ -108,28 +106,36 @@ bool FaultloggerdServerTest(const uint8_t* data, size_t size)
     int32_t connectionFd[1];
     errno_t err = memcpy_s(epollFd, sizeof(epollFd), data, sizeof(int32_t));
     if (err != 0) {
-        cout << "memcpy_s return value is abnormal" << endl;
+        std::cout << "memcpy_s return value is abnormal" << std::endl;
         return false;
     }
     data += sizeof(int32_t);
     err = memcpy_s(connectionFd, sizeof(connectionFd), data, sizeof(int32_t));
     if (err != 0) {
-        cout << "memcpy_s return value is abnormal" << endl;
+        std::cout << "memcpy_s return value is abnormal" << std::endl;
         return false;
     }
 
+#ifdef FAULTLOGGERD_FUZZER
     std::shared_ptr<FaultLoggerDaemon> daemon = std::make_shared<FaultLoggerDaemon>();
-    daemon->HandleRequest(epollFd[0], connectionFd[0]);
+    daemon->HandleRequestForFuzzer(epollFd[0], connectionFd[0]);
+#endif
     return true;
 }
+} // namespace HiviewDFX
 } // namespace OHOS
 
 /* Fuzzer entry point */
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size)
 {
+    if (data == nullptr || size == 0) {
+        std::cout << "invalid data" << std::endl;
+        return 0;
+    }
+
     /* Run your code on data */
-    OHOS::DumpStackTraceTest(data, size);
-    OHOS::FaultloggerdClientTest(data, size);
-    OHOS::FaultloggerdServerTest(data, size);
+    OHOS::HiviewDFX::DumpStackTraceTest(data, size);
+    OHOS::HiviewDFX::FaultloggerdClientTest(data, size);
+    OHOS::HiviewDFX::FaultloggerdServerTest(data, size);
     return 0;
 }

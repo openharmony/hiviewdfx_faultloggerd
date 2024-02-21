@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -142,6 +142,13 @@ void FaultLoggerDaemon::HandleAccept(int32_t epollFd, int32_t socketFd)
     AddEvent(eventFd_, connectionFd, EPOLLIN);
     connectionMap_.insert(std::pair<int32_t, int32_t>(connectionFd, socketFd));
 }
+
+#ifdef FAULTLOGGERD_FUZZER
+void FaultLoggerDaemon::HandleRequestForFuzzer(int32_t epollFd, int32_t connectionFd)
+{
+    HandleRequest(epollFd, connectionFd);
+}
+#endif
 
 void FaultLoggerDaemon::HandleRequest(int32_t epollFd, int32_t connectionFd)
 {
