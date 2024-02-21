@@ -43,7 +43,7 @@ static const char HIVIEW_PROCESS_NAME[] = "/system/bin/hiview";
 static const char REGS_KEY_WORD[] = "Registers:\n";
 
 using AddFaultLog = void (*)(FaultLogInfoInner* info);
-using RecordAppExitReason = int (*)(int reason);
+using RecordAppExitReason = int (*)(int reason, const char *exitMsg);
 
 namespace OHOS {
 namespace HiviewDFX {
@@ -153,7 +153,7 @@ void CppCrashReporter::ReportToAbilityManagerService()
 
     // defined in interfaces/inner_api/ability_manager/include/ability_state.h
     const int cppCrashExitReason = 2;
-    recordAppExitReason(cppCrashExitReason);
+    recordAppExitReason(cppCrashExitReason, reason_.c_str());
     dlclose(handle);
 }
 
