@@ -99,6 +99,7 @@ bool DfxUnwindRemote::UnwindProcess(std::shared_ptr<ProcessDumpRequest> request,
             UnwindThreadFallback(process, unwThread, unwinder);
         }
         unwThread->SetFrames(unwinder->GetFrames());
+        DFXLOG_INFO("%s, unwind tid(%d) finish.", __func__, unwThread->threadInfo_.nsTid);
         UnwindThreadByParseStackIfNeed(process, unwThread, unwinder);
         Printer::PrintDumpHeader(request, process, unwinder);
         Printer::PrintThreadHeaderByConfig(process->keyThread_);
@@ -127,6 +128,7 @@ bool DfxUnwindRemote::UnwindProcess(std::shared_ptr<ProcessDumpRequest> request,
                 unwinder->UnwindRemote(thread->threadInfo_.nsTid, false, DfxConfig::GetConfig().maxFrameNums);
                 thread->Detach();
                 thread->SetFrames(unwinder->GetFrames());
+                DFXLOG_INFO("%s, unwind tid(%d) finish.", __func__, thread->threadInfo_.nsTid);
                 Printer::PrintThreadBacktraceByConfig(thread);
             }
             index++;

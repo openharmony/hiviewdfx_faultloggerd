@@ -157,6 +157,7 @@ bool Unwinder::UnwindRemote(pid_t tid, bool withRegs, size_t maxFrameNum, size_t
     context.regs = regs_;
     context.maps = maps_;
     bool ret = Unwind(&context, maxFrameNum, skipFrameNum);
+    LOGI("tid: %d, ret: %d", tid, ret);
     return ret;
 }
 
@@ -238,6 +239,13 @@ bool Unwinder::Unwind(void *ctx, size_t maxFrameNum, size_t skipFrameNum)
         }
 
         DfxFrame& frame = frames_.back();
+        // Check if this is a signal frame.
+        if (regs_->StepIfSignalFrame(static_cast<uintptr_t>(frame.pc), memory_)) {
+            LOGW("Step signal frame, pc: %p", reinterpret_cast<void *>(frame.pc));
+            AddFrame(false, regs_->GetPc(), regs_->GetSp(), regs_->GetFp());
+            continue;
+        }
+
         if (pid_ != UNWIND_TYPE_CUSTOMIZE) {
             if (needAdjustPc) {
                 uintptr_t adjustPc = static_cast<uintptr_t>(frame.pc);
@@ -304,11 +312,18 @@ bool Unwinder::UnwindByFp(void *ctx, size_t maxFrameNum, size_t skipFrameNum)
 
 bool Unwinder::Step(uintptr_t& pc, uintptr_t& sp, void *ctx)
 {
-    DfxFrame frame;
-    frame.pc = static_cast<uint64_t>(pc);
-    frame.sp = static_cast<uint64_t>(sp);
-    frame.fp = static_cast<uint64_t>(regs_->GetFp());
-    bool ret = Step(frame, ctx);
+    bool ret = false;
+    // Check if this is a signal frame.
+    if ((memory_ != nullptr) && regs_->StepIfSignalFrame(pc, memory_)) {
+        LOGW("Step signal frame, pc: %p", reinterpret_cast<void *>(pc));
+        ret = true;
+    } else {
+        DfxFrame frame;
+        frame.pc = static_cast<uint64_t>(pc);
+        frame.sp = static_cast<uint64_t>(sp);
+        frame.fp = static_cast<uint64_t>(regs_->GetFp());
+        ret = Step(frame, ctx);
+    }
     pc = regs_->GetPc();
     sp = regs_->GetSp();
     return ret;
@@ -359,7 +374,6 @@ bool Unwinder::Step(DfxFrame& frame, void *ctx)
 #endif
 
     bool ret = false;
-    bool isSignalFrame = false;
     std::shared_ptr<RegLocState> rs = nullptr;
     do {
         if (isFpStep_) {
@@ -381,12 +395,6 @@ bool Unwinder::Step(DfxFrame& frame, void *ctx)
                 ret = true;
                 break;
             }
-        }
-
-        // Check if this is a signal frame.
-        if (regs_->StepIfSignalFrame(pc, memory_)) {
-            isSignalFrame = true;
-            break;
         }
 
         // 2. find unwind table and entry
@@ -439,20 +447,15 @@ bool Unwinder::Step(DfxFrame& frame, void *ctx)
         }
     } while (false);
 
-    if (!isSignalFrame) {
-        // 5. update regs and regs state
-        if (ret) {
-            SetLocalStackCheck(ctx, true);
-            ret = Apply(regs_, rs);
-        } else {
-            if ((frames_.size() == 1) && enableLrFallback_ && regs_->SetPcFromReturnAddress(memory_)) {
-                LOGW("Failed to step first frame, lr fallback");
-                ret = true;
-            }
-        }
+    // 5. update regs and regs state
+    if (ret) {
+        SetLocalStackCheck(ctx, true);
+        ret = Apply(regs_, rs);
     } else {
-        LOGW("Step signal frame, pc: %p", reinterpret_cast<void *>(pc));
-        ret = true;
+        if ((frames_.size() == 1) && enableLrFallback_ && regs_->SetPcFromReturnAddress(memory_)) {
+            LOGW("Failed to step first frame, lr fallback");
+            ret = true;
+        }
     }
 
 #if defined(__aarch64__)

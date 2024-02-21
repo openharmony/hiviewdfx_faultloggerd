@@ -129,9 +129,9 @@ if (defined(ohos_lite)) {
     configs = [ ":faultloggerd_config" ]
     defines = [ "FAULTLOGGERD_FUZZER" ]
     sources = [
-      "$faultloggerd_path/services/fault_logger_config.cpp",
-      "$faultloggerd_path/services/fault_logger_daemon.cpp",
-      "$faultloggerd_path/services/fault_logger_pipe.cpp",
+      "fault_logger_config.cpp",
+      "fault_logger_daemon.cpp",
+      "fault_logger_pipe.cpp",
     ]
 
     deps = [
