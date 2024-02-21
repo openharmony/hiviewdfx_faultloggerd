@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -24,6 +24,7 @@
 #include "securec.h"
 
 namespace OHOS {
+namespace HiviewDFX {
 static const int PID_SIZE = 4;
 static const int RAND_BUF_LIMIT = 9;
 
@@ -32,7 +33,7 @@ bool DumpStackTraceTest(const uint8_t* data, size_t size)
     if (size < RAND_BUF_LIMIT) {
         return true;
     }
-    std::shared_ptr<HiviewDFX::DfxDumpCatcher> catcher = std::make_shared<HiviewDFX::DfxDumpCatcher>();
+    std::shared_ptr<DfxDumpCatcher> catcher = std::make_shared<DfxDumpCatcher>();
     std::string msg;
     int pid[1];
     int tid[1];
@@ -49,7 +50,7 @@ bool DumpStackTraceTest(const uint8_t* data, size_t size)
     }
     data += PID_SIZE;
     char invalidOption = *data;
-    catcher->DumpCatch(pid[0], tid[0], msg, HiviewDFX::DEFAULT_MAX_FRAME_NUM, false);
+    catcher->DumpCatch(pid[0], tid[0], msg, DEFAULT_MAX_FRAME_NUM, false);
 
     std::string processdumpCmd = "dumpcatcher -p " + std::to_string(pid[0]) + " -t " + std::to_string(tid[0]);
     system(processdumpCmd.c_str());
@@ -116,11 +117,12 @@ bool FaultloggerdServerTest(const uint8_t* data, size_t size)
     }
 
 #ifdef FAULTLOGGERD_FUZZER
-    std::shared_ptr<HiviewDFX::FaultLoggerDaemon> daemon = std::make_shared<HiviewDFX::FaultLoggerDaemon>();
+    std::shared_ptr<FaultLoggerDaemon> daemon = std::make_shared<FaultLoggerDaemon>();
     daemon->HandleRequestForFuzzer(epollFd[0], connectionFd[0]);
 #endif
     return true;
 }
+} // namespace HiviewDFX
 } // namespace OHOS
 
 /* Fuzzer entry point */
@@ -130,9 +132,10 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size)
         std::cout << "invalid data" << std::endl;
         return 0;
     }
+
     /* Run your code on data */
-    OHOS::DumpStackTraceTest(data, size);
-    OHOS::FaultloggerdClientTest(data, size);
-    OHOS::FaultloggerdServerTest(data, size);
+    OHOS::HiviewDFX::DumpStackTraceTest(data, size);
+    OHOS::HiviewDFX::FaultloggerdClientTest(data, size);
+    OHOS::HiviewDFX::FaultloggerdServerTest(data, size);
     return 0;
 }
