@@ -30,8 +30,10 @@
 #include <thread>
 #include <unistd.h>
 #include <vector>
-#include "securec.h"
+
 #include "dfx_define.h"
+#include "info/fatal_message.h"
+#include "securec.h"
 
 #ifdef HAS_HITRACE
 #include <hitrace/hitracechain.h>
@@ -116,6 +118,8 @@ constexpr static CrasherCommandLine CMDLINE_TABLE[] = {
     {"ParcelReadWriteMismatch", "miss match parcel marshalling and unmarshalling",
         &IPCIssues::ParcelReadWriteMismatch},
 #endif
+    {"FatalMessage", "PrintFatalMessageInLibc",
+        &DfxCrasher::PrintFatalMessageInLibc},
 };
 
 DfxCrasher::DfxCrasher() {}
@@ -451,6 +455,13 @@ static void SigHookHandler(int signo)
 NOINLINE int DfxCrasher::TestSigHook()
 {
     signal(SIGSEGV, SigHookHandler);
+    return 0;
+}
+
+NOINLINE int DfxCrasher::PrintFatalMessageInLibc()
+{
+    set_fatal_message("TestPrintFatalMessageInLibc");
+    RaiseAbort();
     return 0;
 }
 

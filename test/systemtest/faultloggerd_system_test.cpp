@@ -1333,5 +1333,25 @@ HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest112, TestSize.Level2)
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest112: end.";
 }
 #endif
+
+/**
+* @tc.name: FaultLoggerdSystemTest113
+* @tc.desc: test fetch last fatal message from libc
+* @tc.type: FUNC
+*/
+HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest113, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest113: start.";
+    string cmd = "FatalMessage";
+    string fileName;
+    pid_t pid = TriggerCrasherAndGetFileName(cmd, CRASHER_CPP, fileName);
+    GTEST_LOG_(INFO) << "test pid(" << pid << ")"  << " cppcrash file name : " << fileName;
+    if (pid < 0 || fileName.size() < CPPCRASH_FILENAME_MIN_LENGTH) {
+        GTEST_LOG_(ERROR) << "Trigger Crash Failed.";
+        FAIL();
+    }
+    EXPECT_TRUE(CheckCppCrashAllLabelKeywords(fileName, pid)) << "FaultLoggerdSystemTest113 Failed";
+    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest113: end.";
+}
 } // namespace HiviewDFX
 } // namespace OHOS

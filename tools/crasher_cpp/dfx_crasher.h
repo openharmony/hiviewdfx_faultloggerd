@@ -68,6 +68,7 @@ public:
     static int StackCorruption2();
 
     static int RecursiveFunc(int curLevel, int targetLevel, int midLevel);
+    static int PrintFatalMessageInLibc();
 private:
     DfxCrasher();
     DfxCrasher(const DfxCrasher &) = delete;
