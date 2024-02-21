@@ -157,6 +157,7 @@ bool Unwinder::UnwindRemote(pid_t tid, bool withRegs, size_t maxFrameNum, size_t
     context.regs = regs_;
     context.maps = maps_;
     bool ret = Unwind(&context, maxFrameNum, skipFrameNum);
+    LOGI("tid: %d, ret: %d", tid, ret);
     return ret;
 }
 
