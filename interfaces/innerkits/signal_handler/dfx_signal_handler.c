@@ -50,6 +50,8 @@
 #include "musl_log.h"
 #endif
 
+#include "info/fatal_message.h"
+
 #ifdef LOG_DOMAIN
 #undef LOG_DOMAIN
 #define LOG_DOMAIN 0xD002D11
@@ -117,7 +119,7 @@ static void FillTraceIdLocked(struct ProcessDumpRequest* request)
 }
 
 const char* GetLastFatalMessage(void) __attribute__((weak));
-
+fatal_msg_t *get_fatal_message(void) __attribute__((weak));
 typedef struct ThreadCallbackItem {
     int32_t tid;
     ThreadInfoCallBack callback;
@@ -174,8 +176,8 @@ static ThreadInfoCallBack GetCallbackLocked()
 
 static void FillLastFatalMessageLocked(int32_t sig, void *context)
 {
-    ThreadInfoCallBack callback = GetCallbackLocked();
     if (sig != SIGABRT) {
+        ThreadInfoCallBack callback = GetCallbackLocked();
         if (callback != NULL) {
             DFXLOG_INFO("Start collect crash thread info.");
             callback(g_request.lastFatalMessage, sizeof(g_request.lastFatalMessage), context);
@@ -184,14 +186,17 @@ static void FillLastFatalMessageLocked(int32_t sig, void *context)
         return;
     }
 
-    if (GetLastFatalMessage == NULL) {
-        DFXLOG_INFO("Could not find GetLastFatalMessage func");
-        return;
+    const char* lastFatalMessage = NULL;
+    if (get_fatal_message != NULL) {
+        fatal_msg_t* fatalMsg = get_fatal_message();
+        lastFatalMessage = fatalMsg == NULL ? NULL : fatalMsg->msg;
     }
 
-    const char* lastFatalMessage = GetLastFatalMessage();
+    if (lastFatalMessage == NULL && GetLastFatalMessage != NULL) {
+        lastFatalMessage = GetLastFatalMessage();
+    }
+
     if (lastFatalMessage == NULL) {
-        DFXLOG_ERROR("Could not find last message");
         return;
     }
 
