@@ -190,6 +190,7 @@ bool DfxDumpCatcher::DumpCatch(int pid, int tid, std::string& msg, size_t maxFra
             ret = DoDumpRemoteLocked(pid, tid, msg, false);
         }
     }
+    DFXLOG_INFO("%s :: dump_catch :: msgLength: %d",  DFXDUMPCATCHER_TAG.c_str(), msg.size());
     DFXLOG_DEBUG("%s :: dump_catch :: ret: %d, msg: %s", DFXDUMPCATCHER_TAG.c_str(), ret, msg.c_str());
     return ret;
 }
