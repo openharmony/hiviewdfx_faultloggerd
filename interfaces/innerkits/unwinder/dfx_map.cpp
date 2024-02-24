@@ -148,7 +148,7 @@ void DfxMap::PermsToProts(const std::string perms, uint32_t& prots, uint32_t& fl
     }
 }
 
-const std::shared_ptr<DfxElf> DfxMap::GetElf()
+const std::shared_ptr<DfxElf> DfxMap::GetElf(pid_t pid)
 {
     if (elf == nullptr) {
         if (name.empty()) {
@@ -158,6 +158,17 @@ const std::shared_ptr<DfxElf> DfxMap::GetElf()
         LOGU("GetElf name: %s", name.c_str());
         if (EndsWith(name, ".hap")) {
             elf = DfxElf::CreateFromHap(name, prevMap, offset);
+        } else if (name == "shmm" && IsMapExec()) {
+#if is_ohos && !is_mingw
+            size_t size = end - begin;
+            shmmData = std::make_shared<std::vector<uint8_t>>(size);
+            size_t byte = DfxMemory::ReadProcMemByPid(pid, begin, shmmData->data(), size);
+            if (byte <= 0) {
+                LOGE("read shmm data failed");
+                return nullptr;
+            }
+            elf = std::make_shared<DfxElf>(shmmData->data(), byte);
+#endif
         } else {
             elf = DfxElf::Create(name);
         }
