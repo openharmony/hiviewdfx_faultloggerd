@@ -186,7 +186,7 @@ int DfxAccessorsRemote::FindUnwindTable(uintptr_t pc, UnwindTableInfo& uti, void
         return UNW_ERROR_NONE;
     }
 
-    auto elf = ctx->map->GetElf();
+    auto elf = ctx->map->GetElf(ctx->pid);
     if (elf == nullptr) {
         LOGU("FindUnwindTable elf is null");
         return UNW_ERROR_INVALID_ELF;

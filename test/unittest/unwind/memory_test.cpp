@@ -19,10 +19,14 @@
 #include <string>
 #include <vector>
 
+#include "dfx_elf.h"
+#include "dfx_maps.h"
 #include "dfx_memory.h"
 #include "dfx_regs.h"
 #include "dfx_regs_get.h"
+#include "dfx_symbols.h"
 #include "dfx_ptrace.h"
+#include "dfx_test_util.h"
 #include "dwarf_define.h"
 #include "stack_util.h"
 
@@ -469,6 +473,42 @@ HWTEST_F(DfxMemoryTest, DfxMemoryTest013, TestSize.Level2)
     GTEST_LOG_(INFO) << "DfxMemoryTest013: end.";
 }
 
+/**
+ * @tc.name: DfxMemoryTest014
+ * @tc.desc: test DfxMemory class ReadProcMemByPid
+ * @tc.type: FUNC
+ */
+HWTEST_F(DfxMemoryTest, DfxMemoryTest014, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "DfxMemoryTest014: start.";
+    pid_t pid = GetProcessPid(FOUNDATION_NAME);
+    auto maps = DfxMaps::Create(pid);
+    std::vector<std::shared_ptr<DfxMap>> shmmMaps;
+    if (!maps->FindMapsByName("shmm", shmmMaps)) {
+        GTEST_LOG_(INFO) << "DfxMemoryTest014: Failed to find shmm";
+        return;
+    }
+    std::shared_ptr<DfxMap> shmmMap = nullptr;
+    for (auto map : shmmMaps) {
+        if (map->IsMapExec()) {
+            shmmMap = map;
+            break;
+        }
+    }
+    ASSERT_TRUE(shmmMap != nullptr);
+    auto shmmData = std::make_shared<std::vector<uint8_t>>(shmmMap->end - shmmMap->begin);
+    DfxMemory::ReadProcMemByPid(pid, shmmMap->begin, shmmData->data(), shmmMap->end - shmmMap->begin);
+    auto shmmElf = std::make_shared<DfxElf>(shmmData->data(), shmmMap->end - shmmMap->begin);
+    ASSERT_TRUE(shmmElf->IsValid());
+    std::vector<DfxSymbol> shmmSyms;
+    DfxSymbols::ParseSymbols(shmmSyms, shmmElf, "");
+    GTEST_LOG_(INFO) << "shmm symbols size" << shmmSyms.size();
+    ASSERT_GT(shmmSyms.size(), 0);
+    for (auto& sym : shmmSyms) {
+        GTEST_LOG_(INFO) << sym.ToDebugString();
+    }
+    GTEST_LOG_(INFO) << "DfxMemoryTest014 : end.";
+}
 }
 } // namespace HiviewDFX
 } // namespace OHOS
