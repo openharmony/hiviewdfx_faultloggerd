@@ -49,9 +49,9 @@ private:
     static int DlIteratePhdrCallback(struct dl_phdr_info *info, size_t size, void *data);
 
 private:
-    std::vector<DfxFrame> frames_;
-    uintptr_t stackBottom_;
-    uintptr_t stackTop_;
+    std::vector<DfxFrame> frames_ {};
+    uintptr_t stackBottom_ = 0;
+    uintptr_t stackTop_ = 0;
 };
 } // namespace HiviewDFX
 } // namespace OHOS

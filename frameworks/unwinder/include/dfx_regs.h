@@ -154,7 +154,7 @@ public:
     // Get 4 registers from x29 to x32.
     inline AT_ALWAYS_INLINE void GetFramePointerMiniRegs(void *regs) override
     {
-#if defined(__riscv) && __riscv_xlen == 64
+#if defined(__riscv) && defined(__riscv_xlen) && __riscv_xlen == 64
 //future work
         asm volatile(
         "ret");
@@ -164,7 +164,7 @@ public:
     // Get 7 registers with [unuse, unset, x28, x29, sp, pc, unset].
     inline AT_ALWAYS_INLINE void GetQuickenMiniRegs(void *regs) override
     {
-#if defined(__riscv) && __riscv_xlen == 64
+#if defined(__riscv) && defined(__riscv_xlen) && __riscv_xlen == 64
 //future work
         asm volatile(
         "ret");
