@@ -11,7 +11,7 @@ Pid:1205  <- 进程号
 Uid:0  <- 用户ID
 Process name:com.ohos.launcher  <- 模块名
 Reason:Signal:SIGSEGV(SEGV_MAPERR)@0x00000004    <- 异常信息
-Fault thread Info:
+Fault thread info:
 Tid:1044, Name:com.ohos.launch <- 异常线程
 #00 pc 0004f8ac /system/lib/libark_jsruntime.so  <- 调用栈
 #01 pc 0015aa11 /system/lib/libark_jsruntime.so

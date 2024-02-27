@@ -62,7 +62,7 @@ void Printer::PrintDumpHeader(std::shared_ptr<ProcessDumpRequest> request, std::
         }
 
         if (process->vmThread_ != nullptr) {
-            DfxRingBufferWrapper::GetInstance().AppendMsg("Fault thread Info:\n");
+            DfxRingBufferWrapper::GetInstance().AppendMsg("Fault thread info:\n");
         }
     }
 }
