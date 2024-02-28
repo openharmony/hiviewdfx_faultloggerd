@@ -206,6 +206,88 @@ HWTEST_F(FaultloggerdClientTest, FaultloggerdClientTest004, TestSize.Level2)
     }
     GTEST_LOG_(INFO) << "FaultloggerdClientTest004: end.";
 }
+
+/**
+ * @tc.name: FaultloggerdClientTest005
+ * @tc.desc: sdkdump request which selinux label belongs to { hiview hidumper foundation }
+ * @tc.type: FUNC
+ */
+HWTEST_F(FaultloggerdClientTest, FaultloggerdClientTest005, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "FaultloggerdClientTest005: start.";
+
+    // If selinux is not opened, skip this test item
+    if (!IsSelinuxEnforced()) {
+        GTEST_LOG_(INFO) << "Selinux is not opened, skip FaultloggerdClientTest005";
+        return;
+    }
+    int32_t pid = fork();
+    if (pid == 0) {
+        int ret = 1;
+        constexpr int32_t appUid = 100068;
+        setcon("u:r:hiview:s0");
+        setuid(appUid);
+        int resp = RequestSdkDump(-1, 1, 1);
+        if (resp == FaultLoggerCheckPermissionResp::CHECK_PERMISSION_PASS) {
+            ret = 0;
+        }
+        exit(ret);
+    } else if (pid > 0) {
+        int status;
+        if (waitpid(pid, &status, 0) == -1) {
+            return;
+        }
+
+        int exitCode = -1;
+        if (WIFEXITED(status)) {
+            exitCode = WEXITSTATUS(status);
+            printf("Exit status was %d\n", exitCode);
+        }
+        ASSERT_EQ(exitCode, 0);
+    }
+    GTEST_LOG_(INFO) << "FaultloggerdClientTest005: end.";
+}
+
+/**
+ * @tc.name: FaultloggerdClientTest006
+ * @tc.desc: sdkdump request which selinux label doesn't belongs to { hiview hidumper foundation }
+ * @tc.type: FUNC
+ */
+HWTEST_F(FaultloggerdClientTest, FaultloggerdClientTest006, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "FaultloggerdClientTest006: start.";
+
+    // If selinux is not opened, skip this test item
+    if (!IsSelinuxEnforced()) {
+        GTEST_LOG_(INFO) << "Selinux is not opened, skip FaultloggerdClientTest006";
+        return;
+    }
+    int32_t pid = fork();
+    if (pid == 0) {
+        int ret = 1;
+        constexpr int32_t appUid = 100068;
+        setcon("u:r:wifi_host:s0");
+        setuid(appUid);
+        int resp = RequestSdkDump(-1, 1, 1);
+        if (resp == FaultLoggerCheckPermissionResp::CHECK_PERMISSION_REJECT) {
+            ret = 0;
+        }
+        exit(ret);
+    } else if (pid > 0) {
+        int status;
+        if (waitpid(pid, &status, 0) == -1) {
+            return;
+        }
+
+        int exitCode = -1;
+        if (WIFEXITED(status)) {
+            exitCode = WEXITSTATUS(status);
+            printf("Exit status was %d\n", exitCode);
+        }
+        ASSERT_EQ(exitCode, 0);
+    }
+    GTEST_LOG_(INFO) << "FaultloggerdClientTest006: end.";
+}
 #endif
 
 void DoClientProcess(const std::string& socketFileName)

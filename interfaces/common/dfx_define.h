@@ -53,6 +53,7 @@ static const int SOCKET_BUFFER_SIZE = 256;
 static const char FAULTLOGGERD_SOCK_BASE_PATH[] = "/dev/unix/socket/";
 static const char SERVER_SOCKET_NAME[] = "faultloggerd.server";
 static const char SERVER_CRASH_SOCKET_NAME[] = "faultloggerd.crash.server";
+static const char SERVER_SDKDUMP_SOCKET_NAME[] = "faultloggerd.sdkdump.server";
 
 static const char PROC_SELF_STATUS_PATH[] = "/proc/self/status";
 static const char PROC_SELF_TASK_PATH[] = "/proc/self/task";
