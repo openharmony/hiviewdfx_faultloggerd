@@ -50,8 +50,9 @@ struct JsFunction {
     std::string ToString()
     {
         char buff[BUF_SIZE_MAX] = {0};
-        (void)snprintf_s(buff, sizeof(buff), sizeof(buff), "%s:[begin:0x%" PRIx64 ", size:0x%" PRIx64 "]",
-            functionName, codeBegin, codeSize);
+        if (snprintf_s(buff, sizeof(buff), sizeof(buff), "%s:[url:%s]", functionName, url) < 0) {
+            return std::string("Unknown Function:[url:Unknown URL]");
+        }
         return std::string(buff);
     }
 };

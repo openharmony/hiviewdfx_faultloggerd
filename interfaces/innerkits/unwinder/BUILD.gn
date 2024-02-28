@@ -154,8 +154,6 @@ if (defined(ohos_lite)) {
   }
 
   config("offline_mixstack_config") {
-    include_dirs =
-        [ "$ability_base_path/interfaces/kits/native/extractortool/include" ]
     if (target_cpu == "arm64") {
       defines = [ "ENABLE_MIXSTACK" ]
       defines += [ "OFFLINE_MIXSTACK" ]
@@ -216,6 +214,10 @@ if (defined(ohos_lite)) {
       ":lzma_config",
     ]
 
+    if (faultloggerd_abilitybase_enable) {
+      public_configs += [ ":offline_mixstack_config" ]
+    }
+
     sources = dfx_unwinder_sources
     sources += dfx_unwind_sources
     sources += dfx_exidx_sources
@@ -236,6 +238,9 @@ if (defined(ohos_lite)) {
       "c_utils:utils",
       "hilog:libhilog",
     ]
+    if (faultloggerd_abilitybase_enable) {
+      external_deps += [ "ability_base:extractortool" ]
+    }
     part_name = "faultloggerd"
     subsystem_name = "hiviewdfx"
   }

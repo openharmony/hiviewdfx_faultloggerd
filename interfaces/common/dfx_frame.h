@@ -62,9 +62,9 @@ struct DfxFrame {
     int32_t column {0};
 
     DfxFrame() {}
-    DfxFrame(size_t pc, size_t sp = 0) : pc(pc), sp(sp) {}
+    DfxFrame(uint64_t pc, uint64_t sp = 0) : pc(pc), sp(sp) {}
     // only for UT
-    DfxFrame(size_t pc, size_t funcOffset, const char *mapName, const char *funcName)
+    DfxFrame(uint64_t pc, uint64_t funcOffset, const char *mapName, const char *funcName)
         : pc(pc), funcOffset(funcOffset), mapName(mapName), funcName(funcName) {}
 
     bool operator==(const DfxFrame &b) const

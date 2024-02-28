@@ -96,7 +96,7 @@ bool DfxMap::IsArkExecutable()
         return false;
     }
 
-    if ((!StartsWith(name, "[anon:ArkTS Code]")) && (!StartsWith(name, "/dev/zero")) && (!EndsWith(name, ".an"))) {
+    if ((!StartsWith(name, "[anon:ArkTS Code")) && (!StartsWith(name, "/dev/zero")) && (!EndsWith(name, ".an"))) {
         return false;
     }
 

@@ -141,7 +141,7 @@ void DfxMaps::UnFormatMapName(std::string& mapName)
 bool DfxMaps::IsLegalMapItem(const std::string& name)
 {
     // some special
-    if (StartsWith(name, "[anon:ArkTS Code]")) {
+    if (StartsWith(name, "[anon:ArkTS Code") || EndsWith(name, ".hap") || EndsWith(name, ".hsp")) {
         return true;
     }
     if (EndsWith(name, "[vdso]")) {

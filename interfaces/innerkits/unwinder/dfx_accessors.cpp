@@ -208,7 +208,7 @@ int DfxAccessorsRemote::GetMapByPc(uintptr_t pc, std::shared_ptr<DfxMap>& map, v
 
 int DfxAccessorsCustomize::AccessMem(uintptr_t addr, uintptr_t *val, void *arg)
 {
-    if (accessors_ == nullptr) {
+    if (accessors_ == nullptr || accessors_->AccessMem == nullptr) {
         return -1;
     }
     return accessors_->AccessMem(addr, val, arg);
@@ -216,7 +216,7 @@ int DfxAccessorsCustomize::AccessMem(uintptr_t addr, uintptr_t *val, void *arg)
 
 int DfxAccessorsCustomize::AccessReg(int reg, uintptr_t *val, void *arg)
 {
-    if (accessors_ == nullptr) {
+    if (accessors_ == nullptr || accessors_->AccessReg == nullptr) {
         return -1;
     }
     return accessors_->AccessReg(reg, val, arg);
@@ -224,7 +224,7 @@ int DfxAccessorsCustomize::AccessReg(int reg, uintptr_t *val, void *arg)
 
 int DfxAccessorsCustomize::FindUnwindTable(uintptr_t pc, UnwindTableInfo& uti, void *arg)
 {
-    if (accessors_ == nullptr) {
+    if (accessors_ == nullptr || accessors_->FindUnwindTable == nullptr) {
         return -1;
     }
     return accessors_->FindUnwindTable(pc, uti, arg);
@@ -232,7 +232,10 @@ int DfxAccessorsCustomize::FindUnwindTable(uintptr_t pc, UnwindTableInfo& uti, v
 
 int DfxAccessorsCustomize::GetMapByPc(uintptr_t pc, std::shared_ptr<DfxMap>& map, void *arg)
 {
-    return UNW_ERROR_NONE;
+    if (accessors_ == nullptr || accessors_->GetMapByPc == nullptr) {
+        return -1;
+    }
+    return accessors_->GetMapByPc(pc, map, arg);
 }
 } // namespace HiviewDFX
 } // namespace OHOS
