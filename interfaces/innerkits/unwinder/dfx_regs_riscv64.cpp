@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-#if defined(__riscv) && __riscv_xlen == 64
+#if defined(__riscv) && defined(__riscv_xlen) && __riscv_xlen == 64
 #include "dfx_regs.h"
 
 #include <elf.h>

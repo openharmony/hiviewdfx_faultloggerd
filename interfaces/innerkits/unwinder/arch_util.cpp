@@ -29,7 +29,7 @@ ArchType GetCurrentArch()
     curArch = ArchType::ARCH_ARM;
 #elif defined(__aarch64__)
     curArch = ArchType::ARCH_ARM64;
-#elif defined(__riscv) && __riscv_xlen == 64
+#elif defined(__riscv) && defined(__riscv_xlen) && __riscv_xlen == 64
     curArch = ArchType::ARCH_RISCV64;
 #elif defined(__i386__)
     curArch = ArchType::ARCH_X86;

@@ -40,7 +40,7 @@ std::shared_ptr<DfxRegs> DfxRegs::Create()
     auto dfxregs = std::make_shared<DfxRegsArm>();
 #elif defined(__aarch64__)
     auto dfxregs = std::make_shared<DfxRegsArm64>();
-#elif defined(__riscv) && __riscv_xlen == 64
+#elif defined(__riscv) && defined(__riscv_xlen) && __riscv_xlen == 64
     auto dfxregs = std::make_shared<DfxRegsRiscv64>();
 #elif defined(__x86_64__)
     auto dfxregs = std::make_shared<DfxRegsX86_64>();

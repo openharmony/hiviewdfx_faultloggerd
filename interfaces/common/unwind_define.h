@@ -22,7 +22,7 @@
 #include "unwind_arm_define.h"
 #elif defined(__aarch64__)
 #include "unwind_arm64_define.h"
-#elif defined(__riscv) && __riscv_xlen == 64
+#elif defined(__riscv) && defined(__riscv_xlen) && __riscv_xlen == 64
 #include "unwind_riscv64_define.h"
 #elif defined(__x86_64__)
 #include "unwind_x86_64_define.h"

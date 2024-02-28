@@ -288,7 +288,7 @@ static void SetInterestedSignalMasks(int how)
     sigprocmask(how, &set, NULL);
 }
 
-static void CloseFds()
+static void CloseFds(void)
 {
     const int closeFdCount = 1024;
     for (int i = 0; i < closeFdCount; i++) {

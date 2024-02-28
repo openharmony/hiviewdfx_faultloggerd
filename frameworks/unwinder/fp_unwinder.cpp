@@ -41,7 +41,7 @@ FpUnwinder::FpUnwinder()
 
 FpUnwinder::FpUnwinder(uintptr_t pcs[], int32_t sz)
 {
-    for (int32_t i = 0; i < sz; i++) {
+    for (uint32_t i = 0; i < sz; i++) {
         DfxFrame frame;
         frame.index = i;
         frame.pc = i == 0 ? pcs[i] : pcs[i] - 4; // 4 : aarch64 instruction size
@@ -99,7 +99,7 @@ bool FpUnwinder::UnwindWithContext(unw_context_t& context, size_t skipFrameNum, 
 #elif defined(__aarch64__)
     dfxregs->fp_ = context.uc_mcontext.regs[REG_AARCH64_X29];
     dfxregs->pc_ = context.uc_mcontext.pc;
-#elif defined(__riscv) && __riscv_xlen == 64
+#elif defined(__riscv) && defined(__riscv_xlen) && __riscv_xlen == 64
     dfxregs->fp_ = context.uc_mcontext.__gregs[REG_RISCV64_X8];
     dfxregs->pc_ = context.uc_mcontext.__gregs[REG_RISCV64_X1];
 #else

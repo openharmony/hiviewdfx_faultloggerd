@@ -158,7 +158,7 @@ inline AT_ALWAYS_INLINE void GetQuickenMiniRegsAsm(void *regs)
 {
 }
 
-#elif defined(__riscv) && __riscv_xlen == 64
+#elif defined(__riscv) && defined(__riscv_xlen) && __riscv_xlen == 64
 
 //future work
 inline AT_ALWAYS_INLINE void GetLocalRegs(void* regs)
