@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2022-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -47,7 +47,7 @@ struct DfxSymbol {
 
     // elf use this
     DfxSymbol(uint64_t vaddr, uint64_t size, const std::string &name, const std::string &demangle,
-           const std::string module)
+              const std::string module)
         : funcVaddr_(vaddr),
           fileVaddr_(vaddr),
           size_(size),
@@ -63,9 +63,7 @@ struct DfxSymbol {
 
     // Symbolic use this
     DfxSymbol(uint64_t taskVaddr = 0, const std::string &comm = "")
-        : taskVaddr_(taskVaddr), comm_(comm)
-    {
-    }
+        : taskVaddr_(taskVaddr), comm_(comm) {}
 
     DfxSymbol(const DfxSymbol &other) = default;
 

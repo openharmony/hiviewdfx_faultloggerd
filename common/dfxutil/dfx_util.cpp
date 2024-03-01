@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -15,6 +15,11 @@
 
 #include "dfx_util.h"
 
+#if defined(is_mingw) && is_mingw
+#include <memoryapi.h>
+#include <windows.h>
+#endif
+#ifndef is_host
 #include <cctype>
 #include <climits>
 #include <cstdio>
@@ -22,14 +27,15 @@
 #include <cstring>
 #include <ctime>
 #include <securec.h>
-#include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/time.h>
 #include <fcntl.h>
 #include <pthread.h>
 #include <unistd.h>
 #include <dirent.h>
-#include "dfx_define.h"
+#endif
+#include <sys/stat.h>
+
 #include "dfx_log.h"
 
 #ifdef LOG_DOMAIN
@@ -44,6 +50,7 @@
 
 namespace OHOS {
 namespace HiviewDFX {
+#ifndef is_host
 bool TrimAndDupStr(const std::string &source, std::string &str)
 {
     if (source.empty()) {
@@ -164,6 +171,7 @@ bool VerifyFilePath(const std::string& filePath, const std::vector<const std::st
     }
     return false;
 }
+#endif
 
 off_t GetFileSize(const int& fd)
 {
@@ -178,3 +186,59 @@ off_t GetFileSize(const int& fd)
 }
 }   // namespace HiviewDFX
 }   // namespace OHOS
+
+// this will also used for libunwinder head (out of namespace)
+#if defined(is_mingw) && is_mingw
+std::string GetLastErrorString()
+{
+    LPVOID lpMsgBuf;
+    FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM |
+                      FORMAT_MESSAGE_IGNORE_INSERTS,
+                  NULL, GetLastError(), 0, (LPTSTR)&lpMsgBuf, 0, NULL);
+    std::string error((LPTSTR)lpMsgBuf);
+    LocalFree(lpMsgBuf);
+    return error;
+}
+
+void *mmap(void *addr, size_t length, int prot, int flags, int fd, size_t offset)
+{
+    HANDLE FileHandle = reinterpret_cast<HANDLE>(_get_osfhandle(fd));
+    if (FileHandle == INVALID_HANDLE_VALUE) {
+        return MMAP_FAILED;
+    }
+
+    LOGD("fd is %d", fd);
+
+    HANDLE FileMappingHandle = ::CreateFileMappingW(FileHandle, 0, PAGE_READONLY, 0, 0, 0);
+    if (FileMappingHandle == nullptr) {
+        LOGE("CreateFileMappingW %zu Failed with %ld:%s", length, GetLastError(), GetLastErrorString().c_str());
+        return MMAP_FAILED;
+    }
+
+    void *mapAddr = ::MapViewOfFile(FileMappingHandle, FILE_MAP_READ, 0, 0, 0);
+    if (mapAddr == nullptr) {
+        LOGE("MapViewOfFile %zu Failed with %ld:%s", length, GetLastError(), GetLastErrorString().c_str());
+        return MMAP_FAILED;
+    }
+
+    // Close all the handles except for the view. It will keep the other handles
+    // alive.
+    ::CloseHandle(FileMappingHandle);
+    return mapAddr;
+}
+
+int munmap(void *addr, size_t)
+{
+    /*
+        On success, munmap() returns 0.  On failure, it returns -1, and
+        errno is set to indicate the error (probably to EINVAL).
+
+        UnmapViewOfFile function (memoryapi.h)
+
+        If the function succeeds, the return value is nonzero.
+        If the function fails, the return value is zero. To get extended error information, call
+    GetLastError.
+    */
+    return !UnmapViewOfFile(addr);
+}
+#endif

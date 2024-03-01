@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2023-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -20,6 +20,7 @@
 
 #include "dfx_define.h"
 #include "dfx_log.h"
+#include "dfx_util.h"
 
 namespace OHOS {
 namespace HiviewDFX {
@@ -32,7 +33,6 @@ namespace {
 
 bool DfxMmap::Init(const int fd, const size_t size, const off_t offset)
 {
-#if is_ohos
     Clear();
 
     if (fd < 0) {
@@ -47,9 +47,6 @@ bool DfxMmap::Init(const int fd, const size_t size, const off_t offset)
     size_ = size;
     DFXLOG_DEBUG("mmap size %zu", size_);
     return true;
-#else
-    return false;
-#endif
 }
 
 bool DfxMmap::Init(uint8_t *decompressedData, size_t size)
@@ -66,12 +63,10 @@ bool DfxMmap::Init(uint8_t *decompressedData, size_t size)
 
 void DfxMmap::Clear()
 {
-#if is_ohos
     if ((mmap_ != MAP_FAILED) && (needUnmap_)) {
         munmap(mmap_, size_);
         mmap_ = MAP_FAILED;
     }
-#endif
 }
 
 size_t DfxMmap::Read(uintptr_t& addr, void* val, size_t size, bool incre)
