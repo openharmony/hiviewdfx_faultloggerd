@@ -101,9 +101,10 @@ bool DfxMap::IsArkExecutable()
     }
 
     if (!IsMapExec()) {
+        LOGW("Current ark map(%s) is not exec", name.c_str());
         return false;
     }
-    LOGU("current map is ark map: %s", name.c_str());
+    LOGI("Current ark map: %s", name.c_str());
     return true;
 }
 
@@ -163,8 +164,8 @@ const std::shared_ptr<DfxElf> DfxMap::GetElf(pid_t pid)
             size_t size = end - begin;
             shmmData = std::make_shared<std::vector<uint8_t>>(size);
             size_t byte = DfxMemory::ReadProcMemByPid(pid, begin, shmmData->data(), size);
-            if (byte <= 0) {
-                LOGE("read shmm data failed");
+            if (byte != size) {
+                LOGE("Failed to read shmm data");
                 return nullptr;
             }
             elf = std::make_shared<DfxElf>(shmmData->data(), byte);

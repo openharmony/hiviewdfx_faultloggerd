@@ -22,6 +22,7 @@
 #include "dfx_util.h"
 #include "dfx_dump_res.h"
 #include "dfx_log.h"
+#include "string_util.h"
 
 using namespace OHOS::HiviewDFX;
 using namespace testing::ext;
@@ -112,6 +113,23 @@ HWTEST_F(CommonTest, DfxLogTest001, TestSize.Level2)
     EXPECT_NE(DFXLOG_ERROR("%s", "test message"), -1);
     EXPECT_NE(DFXLOG_FATAL("%s", "test message"), -1);
     GTEST_LOG_(INFO) << "DfxLogTest001: end.";
+}
+
+/**
+ * @tc.name: StringUtilTest001
+ * @tc.desc: test StartsWith functions
+ * @tc.type: FUNC
+ */
+HWTEST_F(CommonTest, StringUtilTest001, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "StringUtilTest001: start.";
+    std::string start = "[anon:ArkTS Code2024]";
+    bool ret = StartsWith(start, "[anon:ArkTS Code");
+    EXPECT_TRUE(ret);
+    std::string end = "test.hap";
+    ret = EndsWith(end, ".hap");
+    EXPECT_TRUE(ret);
+    GTEST_LOG_(INFO) << "StringUtilTest001: end.";
 }
 }
 } // namespace HiviewDFX
