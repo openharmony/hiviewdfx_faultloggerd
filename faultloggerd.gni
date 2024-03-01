@@ -12,7 +12,6 @@
 # limitations under the License.
 
 faultloggerd_path = "//base/hiviewdfx/faultloggerd"
-ability_base_path = "//foundation/ability/ability_base"
 faultloggerd_common_path = "$faultloggerd_path/common"
 faultloggerd_frameworks_path = "$faultloggerd_path/frameworks"
 faultloggerd_interfaces_path = "$faultloggerd_path/interfaces"

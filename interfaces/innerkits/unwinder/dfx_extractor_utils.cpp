@@ -46,6 +46,7 @@ bool DfxExtractor::Init(const std::string& file)
     if (zipFile_ != nullptr) {
         if (!zipFile_->Open()) {
             LOGE("Failed to open zip file(%s)", file.c_str());
+            zipFile_ = nullptr;
             return false;
         }
     }

@@ -26,14 +26,17 @@ using namespace testing::ext;
 namespace OHOS {
 namespace HiviewDFX {
 namespace {
-static const string INVALID_MAP_ITEM = "/system/lib64/init/libinit_context111111.z.so";
-
+const string INVALID_MAP_NAME = "/system/lib64/init/libinit_context111.z.so";
 #ifdef __arm__
-static const string MAPS_FILE = "/data/test/resource/testdata/testmaps_32";
-static const string TEST_MAP_TARGET = "/system/lib/init/libinit_context.z.so";
+const string MAPS_FILE = "/data/test/resource/testdata/testmaps_32";
+const string VALID_MAP_NAME = "/system/lib/init/libinit_context.z.so";
+const string VALID_MAP_ITEM = "f6d83000-f6d84000 r--p 00001000 b3:07 1892 /system/lib/init/libinit_context.z.so";
+const string INVALID_MAP_ITEM = "f6d83000-f6d84000 r--p 00001000 b3:07 1892 /system/lib/init/libinit_context111.z.so";
 #else
-static const string MAPS_FILE = "/data/test/resource/testdata/testmaps_64";
-static const string TEST_MAP_TARGET = "/system/lib64/init/libinit_context.z.so";
+const string MAPS_FILE = "/data/test/resource/testdata/testmaps_64";
+const string VALID_MAP_NAME = "/system/lib64/init/libinit_context.z.so";
+const string VALID_MAP_ITEM = "7f0ab40000-7f0ab41000 r--p 00000000 b3:07 1882 /system/lib64/init/libinit_context.z.so";
+const string INVALID_MAP_ITEM = "7f0ab40000-7f0ab41000 r--p 00000000 b3:07 1882 /system/lib64/init/libinit_context111.z.so";
 #endif
 }
 
@@ -45,118 +48,62 @@ public:
     void TearDown() {}
 
 public:
-    shared_ptr<DfxMaps> maps_;
+    std::shared_ptr<DfxMaps> maps_;
 };
 
 namespace {
 
 /**
  * @tc.name: FindMapByAddrTest001
- * @tc.desc: test exist
+ * @tc.desc: test FindMapByAddr functions
  * @tc.type: FUNC
  */
 HWTEST_F(MapsTest, FindMapByAddrTest001, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "FindMapByAddrTest001: start.";
-    auto map = make_shared<DfxMap>();
+    maps_->Sort(true);
 #ifdef __arm__
-    uintptr_t testAddr = 0xf6d80000;
+    uintptr_t validAddr = 0xf6d80000;
 #else
-    uintptr_t testAddr = 0x7f8b8f3001;
+    uintptr_t validAddr = 0x7f8b8f3001;
 #endif
-    EXPECT_EQ(true, maps_->FindMapByAddr(testAddr, map));
+    const uintptr_t invalidAddr = 0xffffffff;
+    std::shared_ptr<DfxMap> map = nullptr;
+    EXPECT_EQ(true, maps_->FindMapByAddr(validAddr, map));
+    EXPECT_EQ(false, maps_->FindMapByAddr(invalidAddr, map));
     GTEST_LOG_(INFO) << "FindMapByAddrTest001: end.";
 }
 
 /**
- * @tc.name: FindMapByAddrTest002
- * @tc.desc: test not exist
- * @tc.type: FUNC
- */
-HWTEST_F(MapsTest, FindMapByAddrTest002, TestSize.Level2)
-{
-    auto map = make_shared<DfxMap>();
-    maps_->Sort(true);
-    EXPECT_EQ(false, maps_->FindMapByAddr(0xffffffff, map)); // 0xffffffff : invalid address
-    GTEST_LOG_(INFO) << "FindMapByAddrTest002: end.";
-}
-
-/**
  * @tc.name: FindMapByFileInfoTest001
- * @tc.desc: test name exist and offset exist
+ * @tc.desc: test FindMapByFileInfo functions
  * @tc.type: FUNC
  */
 HWTEST_F(MapsTest, FindMapByFileInfoTest001, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "FindMapByFileInfoTest001: start.";
-    auto map = make_shared<DfxMap>();
-    EXPECT_EQ(true, maps_->FindMapByFileInfo(TEST_MAP_TARGET, 0, map));
+    std::shared_ptr<DfxMap> map = nullptr;
+    EXPECT_EQ(true, maps_->FindMapByFileInfo(VALID_MAP_NAME, 0, map));
+    EXPECT_EQ(false, maps_->FindMapByFileInfo(INVALID_MAP_NAME, 0, map));
+    const uint64_t invalidOffset = 0xffffffff;
+    EXPECT_EQ(false, maps_->FindMapByFileInfo(VALID_MAP_NAME, invalidOffset, map));
+    EXPECT_EQ(false, maps_->FindMapByFileInfo(INVALID_MAP_NAME, invalidOffset, map));
     GTEST_LOG_(INFO) << "FindMapByFileInfoTest001: end.";
 }
 
 /**
- * @tc.name: FindMapByFileInfoTest002
- * @tc.desc: test name not exist and offset exist
- * @tc.type: FUNC
- */
-HWTEST_F(MapsTest, FindMapByFileInfoTest002, TestSize.Level2)
-{
-    GTEST_LOG_(INFO) << "FindMapByFileInfoTest002: start.";
-    auto map = make_shared<DfxMap>();
-    EXPECT_EQ(false, maps_->FindMapByFileInfo(INVALID_MAP_ITEM, 0, map));
-    GTEST_LOG_(INFO) << "FindMapByFileInfoTest002: end.";
-}
-
-/**
- * @tc.name: FindMapByFileInfoTest003
- * @tc.desc: test name exist and offset not exist
- * @tc.type: FUNC
- */
-HWTEST_F(MapsTest, FindMapByFileInfoTest003, TestSize.Level2)
-{
-    GTEST_LOG_(INFO) << "FindMapByFileInfoTest003: start.";
-    auto map = make_shared<DfxMap>();
-    EXPECT_EQ(false, maps_->FindMapByFileInfo(TEST_MAP_TARGET, 0xffffffff, map)); // 0xffffffff : invalid offset
-    GTEST_LOG_(INFO) << "FindMapByFileInfoTest003: end.";
-}
-
-/**
- * @tc.name: FindMapByFileInfoTest004
- * @tc.desc: test name not exist and offset not exist
- * @tc.type: FUNC
- */
-HWTEST_F(MapsTest, FindMapByFileInfoTest004, TestSize.Level2)
-{
-    GTEST_LOG_(INFO) << "FindMapByFileInfoTest004: start.";
-    auto map = make_shared<DfxMap>();
-    EXPECT_EQ(false, maps_->FindMapByFileInfo(INVALID_MAP_ITEM, 0xffffffff, map)); // 0xffffffff : invalid offset
-    GTEST_LOG_(INFO) << "FindMapByFileInfoTest004: end.";
-}
-
-/**
  * @tc.name: FindMapsByNameTest001
- * @tc.desc: test exist
+ * @tc.desc: test FindMapsByName functions
  * @tc.type: FUNC
  */
 HWTEST_F(MapsTest, FindMapsByNameTest001, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "FindMapsByNameTest001: start.";
-    auto mapsV = vector<shared_ptr<DfxMap>>();
-    EXPECT_EQ(true, maps_->FindMapsByName(TEST_MAP_TARGET, mapsV));
+    std::vector<std::shared_ptr<DfxMap>> mapsV;
+    EXPECT_EQ(true, maps_->FindMapsByName(VALID_MAP_NAME, mapsV));
+    mapsV.clear();
+    EXPECT_EQ(false, maps_->FindMapsByName(INVALID_MAP_NAME, mapsV));
     GTEST_LOG_(INFO) << "FindMapsByNameTest001: end.";
-}
-
-/**
- * @tc.name: FindMapsByNameTest002
- * @tc.desc: test not exist
- * @tc.type: FUNC
- */
-HWTEST_F(MapsTest, FindMapsByNameTest002, TestSize.Level2)
-{
-    GTEST_LOG_(INFO) << "FindMapsByNameTest002: start.";
-    auto mapsV = vector<shared_ptr<DfxMap>>();
-    EXPECT_EQ(false, maps_->FindMapsByName(INVALID_MAP_ITEM, mapsV));
-    GTEST_LOG_(INFO) << "FindMapsByNameTest002: end.";
 }
 
 /**
@@ -167,35 +114,14 @@ HWTEST_F(MapsTest, FindMapsByNameTest002, TestSize.Level2)
 HWTEST_F(MapsTest, IsArkNameTest001, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "IsArkNameTest001: start.";
-    DfxMap DfxMap(0, 0, 0, "1", "anon:ArkTS Code");
-    EXPECT_EQ(false, DfxMap.IsArkExecutable());
+    std::shared_ptr<DfxMap> map = nullptr;
+    map = std::make_shared<DfxMap>(0, 0, 0, "1", "anon:ArkTS Code");
+    EXPECT_EQ(false, map->IsArkExecutable());
+    map = std::make_shared<DfxMap>(0, 0, 0, "1", "/dev/zero");
+    EXPECT_EQ(false, map->IsArkExecutable());
+    map = std::make_shared<DfxMap>(0, 0, 0, 4, "[anon:ArkTS Code]");
+    EXPECT_EQ(true, map->IsArkExecutable());
     GTEST_LOG_(INFO) << "IsArkNameTest001: end.";
-}
-
-/**
- * @tc.name: IsArkNameTest002
- * @tc.desc: test IsArkExecutable functions
- * @tc.type: FUNC
- */
-HWTEST_F(MapsTest, IsArkNameTest002, TestSize.Level2)
-{
-    GTEST_LOG_(INFO) << "IsArkNameTest002: start.";
-    DfxMap DfxMap(0, 0, 0, "1", "/dev/zero");
-    EXPECT_EQ(false, DfxMap.IsArkExecutable());
-    GTEST_LOG_(INFO) << "IsArkNameTest002: end.";
-}
-
-/**
- * @tc.name: IsArkNameTest003
- * @tc.desc: test IsArkExecutable functions
- * @tc.type: FUNC
- */
-HWTEST_F(MapsTest, IsArkNameTest003, TestSize.Level2)
-{
-    GTEST_LOG_(INFO) << "IsArkNameTest003: start.";
-    DfxMap DfxMap(0, 0, 0, 4, "[anon:ArkTS Code]");
-    EXPECT_EQ(true, DfxMap.IsArkExecutable());
-    GTEST_LOG_(INFO) << "IsArkNameTest003: end.";
 }
 
 /**
@@ -207,17 +133,13 @@ HWTEST_F(MapsTest, GetRelPcTest, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "GetRelPcTest: start.";
 #ifdef __arm__
-    const string invalidMap =
-        "f6d83000-f6d84000 r--p 00001000 b3:07 1892 /system/lib/init/libinit_context.z.so111";
     uint64_t pc = 0xf6d83001;
     const uint64_t invalidOffset = 0x1001;
 #else
-    const string invalidMap =
-        "7f0ab40000-7f0ab41000 r--p 00000000 b3:07 1882 /system/lib64/init/libinit_context11111.z.so";
     uint64_t pc = 0x7f0ab40016;
     const uint64_t invalidOffset = 0x16;
 #endif
-    shared_ptr<DfxMap> map = DfxMap::Create(invalidMap, sizeof(invalidMap));
+    shared_ptr<DfxMap> map = DfxMap::Create(INVALID_MAP_ITEM, sizeof(INVALID_MAP_ITEM));
     EXPECT_EQ(true, ((map->GetElf() == nullptr) && (map->GetRelPc(pc) == invalidOffset)));
     GTEST_LOG_(INFO) << "GetRelPcTest: end.";
 }
@@ -230,12 +152,7 @@ HWTEST_F(MapsTest, GetRelPcTest, TestSize.Level2)
 HWTEST_F(MapsTest, ToStringTest, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "ToStringTest: start.";
-#ifdef __arm__
-    const string testMap = "f6d83000-f6d84000 r--p 00001000 b3:07 1892 /system/lib/init/libinit_context.z.so";
-#else
-    const string testMap = "7f0ab40000-7f0ab41000 r--p 00000000 b3:07 1882 /system/lib64/init/libinit_context1.z.so";
-#endif
-    shared_ptr<DfxMap> map = DfxMap::Create(testMap, sizeof(testMap));
+    shared_ptr<DfxMap> map = DfxMap::Create(VALID_MAP_ITEM, sizeof(VALID_MAP_ITEM));
     GTEST_LOG_(INFO) << map->ToString();
     EXPECT_EQ(true, sizeof(map->ToString()) != 0);
     GTEST_LOG_(INFO) << "ToStringTest: end.";
