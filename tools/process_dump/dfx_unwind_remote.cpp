@@ -112,6 +112,8 @@ bool DfxUnwindRemote::UnwindProcess(std::shared_ptr<ProcessDumpRequest> request,
             }
         }
 
+        // print base info to hilog when crash
+        DfxRingBufferWrapper::GetInstance().PrintBaseInfo();
         auto threads = process->GetOtherThreads();
         if (threads.empty()) {
             break;

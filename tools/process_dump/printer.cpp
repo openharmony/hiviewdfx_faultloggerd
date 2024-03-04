@@ -39,38 +39,52 @@ namespace HiviewDFX {
 void Printer::PrintDumpHeader(std::shared_ptr<ProcessDumpRequest> request, std::shared_ptr<DfxProcess> process,
                               std::shared_ptr<Unwinder> unwinder)
 {
+    std::stringstream headerInfo;
     bool isCrash = (request->siginfo.si_signo != SIGDUMP);
     if (isCrash) {
+        headerInfo << "Timestamp:" << GetCurrentTimeStr(request->timeStamp);
         DfxRingBufferWrapper::GetInstance().AppendMsg("Timestamp:" + GetCurrentTimeStr(request->timeStamp));
     } else {
+        headerInfo << "Timestamp:" << GetCurrentTimeStr();
         DfxRingBufferWrapper::GetInstance().AppendMsg("Timestamp:" + GetCurrentTimeStr());
     }
+    headerInfo << "Pid:" << process->processInfo_.pid << "\n" <<
+                  "Uid:" << process->processInfo_.uid << "\n" <<
+                  "Process name:" << process->processInfo_.processName.c_str() << "\n";
     DfxRingBufferWrapper::GetInstance().AppendBuf("Pid:%d\n", process->processInfo_.pid);
     DfxRingBufferWrapper::GetInstance().AppendBuf("Uid:%d\n", process->processInfo_.uid);
     DfxRingBufferWrapper::GetInstance().AppendBuf("Process name:%s\n", process->processInfo_.processName.c_str());
 
     if (isCrash) {
-        PrintReason(request, process, unwinder);
+        std::string reasonInfo;
+        PrintReason(request, process, unwinder, reasonInfo);
+        headerInfo << reasonInfo << "\n";
         auto msg = process->GetFatalMessage();
         if (!msg.empty()) {
+            headerInfo << "LastFatalMessage:" << msg.c_str() << "\n";
             DfxRingBufferWrapper::GetInstance().AppendBuf("LastFatalMessage:%s\n", msg.c_str());
         }
 
         auto traceId = request->traceInfo;
         if (traceId.chainId != 0) {
+            headerInfo << "TraceId:" << std::hex << std::uppercase <<
+                          static_cast<unsigned long long>(traceId.chainId) << "\n";
             DfxRingBufferWrapper::GetInstance().AppendBuf("TraceId:%llx\n",
                 static_cast<unsigned long long>(traceId.chainId));
         }
 
         if (process->vmThread_ != nullptr) {
-            DfxRingBufferWrapper::GetInstance().AppendMsg("Fault thread info:\n");
+            headerInfo << "Fault thread Info:\n";
+            DfxRingBufferWrapper::GetInstance().AppendMsg("Fault thread Info:\n");
         }
     }
+    DfxRingBufferWrapper::GetInstance().AppendBaseInfo(headerInfo.str());
 }
 
 void Printer::PrintReason(std::shared_ptr<ProcessDumpRequest> request, std::shared_ptr<DfxProcess> process,
-                          std::shared_ptr<Unwinder> unwinder)
+                          std::shared_ptr<Unwinder> unwinder, std::string& reasonInfo)
 {
+    reasonInfo += "Reason:";
     DfxRingBufferWrapper::GetInstance().AppendMsg("Reason:");
     process->reason += DfxSignal::PrintSignal(request->siginfo);
     uint64_t addr = (uint64_t)(request->siginfo.si_addr);
@@ -79,6 +93,7 @@ void Printer::PrintReason(std::shared_ptr<ProcessDumpRequest> request, std::shar
         if (addr < PAGE_SIZE) {
             process->reason += " probably caused by NULL pointer dereference\n";
             DfxRingBufferWrapper::GetInstance().AppendMsg(process->reason);
+            reasonInfo += process->reason;
             return;
         }
         std::shared_ptr<DfxMaps> maps = unwinder->GetMaps();
@@ -107,6 +122,7 @@ void Printer::PrintReason(std::shared_ptr<ProcessDumpRequest> request, std::shar
     }
     process->reason += "\n";
     DfxRingBufferWrapper::GetInstance().AppendMsg(process->reason);
+    reasonInfo += process->reason;
 }
 
 void Printer::PrintProcessMapsByConfig(std::shared_ptr<DfxMaps> maps)
@@ -132,10 +148,13 @@ void Printer::PrintOtherThreadHeaderByConfig()
 
 void Printer::PrintThreadHeaderByConfig(std::shared_ptr<DfxThread> thread)
 {
+    std::stringstream headerInfo;
     if (DfxConfig::GetConfig().displayBacktrace) {
         DfxRingBufferWrapper::GetInstance().AppendBuf("Tid:%d, Name:%s\n",\
             thread->threadInfo_.tid, thread->threadInfo_.threadName.c_str());
+        headerInfo << "Tid:" << thread->threadInfo_.tid << ", Name:" << thread->threadInfo_.threadName.c_str() << "\n";
     }
+    DfxRingBufferWrapper::GetInstance().AppendBaseInfo(headerInfo.str());
 }
 
 bool Printer::IsLastValidFrame(const DfxFrame& frame)
@@ -172,6 +191,7 @@ void Printer::PrintThreadBacktraceByConfig(std::shared_ptr<DfxThread> thread)
         bool needBreak = false;
         for (const auto& frame : frames) {
             DfxRingBufferWrapper::GetInstance().AppendMsg(DfxFrameFormatter::GetFrameStr(frame));
+            DfxRingBufferWrapper::GetInstance().AppendBaseInfo(DfxFrameFormatter::GetFrameStr(frame));
             if (needBreak) {
                 break;
             }
@@ -201,6 +221,7 @@ void Printer::PrintRegsByConfig(std::shared_ptr<DfxRegs> regs)
     }
     if (DfxConfig::GetConfig().displayRegister) {
         DfxRingBufferWrapper::GetInstance().AppendMsg(regs->PrintRegs());
+        DfxRingBufferWrapper::GetInstance().AppendBaseInfo(regs->PrintRegs());
     }
 }
 

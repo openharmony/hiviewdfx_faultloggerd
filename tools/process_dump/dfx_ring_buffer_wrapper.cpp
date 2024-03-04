@@ -93,6 +93,44 @@ int DfxRingBufferWrapper::AppendBuf(const char *format, ...)
     return ret;
 }
 
+static std::vector<std::string> SplitDumpInfo(const std::string& dumpInfo, const std::string& sepator)
+{
+    std::vector<std::string> result;
+    if (dumpInfo.empty() || sepator.empty()) {
+        return result;
+    }
+    size_t begin = 0;
+    size_t pos = dumpInfo.find(sepator, begin);
+    while (pos != std::string::npos) {
+        result.push_back(dumpInfo.substr(begin, pos - begin));
+
+        begin = pos + sepator.size();
+        pos = dumpInfo.find(sepator, begin);
+    }
+    if (begin < dumpInfo.size()) {
+        result.push_back(dumpInfo.substr(begin));
+    }
+    return result;
+}
+
+void DfxRingBufferWrapper::AppendBaseInfo(const std::string& info)
+{
+    crashBaseInfo_.emplace_back(info);
+}
+
+void DfxRingBufferWrapper::PrintBaseInfo()
+{
+    if (crashBaseInfo_.empty()) {
+        DFXLOG_ERROR("crash base info is empty");
+    }
+    for (auto& item : crashBaseInfo_) {
+        std::vector<std::string> itemVec = SplitDumpInfo(item, "\n");
+        for (size_t i = 0; i < itemVec.size(); i++) {
+            DFXLOG_INFO("%s", itemVec[i].c_str());
+        }
+    }
+}
+
 void DfxRingBufferWrapper::StartThread()
 {
     hasFinished_ = false;
