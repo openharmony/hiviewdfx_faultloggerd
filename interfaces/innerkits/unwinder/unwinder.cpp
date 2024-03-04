@@ -180,11 +180,6 @@ bool Unwinder::StepArkJsFrame(uintptr_t& pc, uintptr_t& fp, uintptr_t& sp)
 
     for (size_t i = 0; i < size; ++i) {
         DfxFrame frame;
-        if (i == (size - 1)) {
-            frame.pc = static_cast<uint64_t>(pc);
-            frame.sp = static_cast<uint64_t>(sp);
-            frame.fp = static_cast<uint64_t>(fp);
-        }
         frame.isJsFrame = true;
         frame.index = frames_.size();
         frame.mapName = std::string(jsFrames[i].url);
@@ -359,18 +354,22 @@ bool Unwinder::Step(DfxFrame& frame, void *ctx)
             LOGE("Failed to step ark Js frames, pc: %" PRIx64, (uint64_t)pc);
             return false;
         }
+        regs_->SetPc(pc);
+        regs_->SetSp(sp);
+        regs_->SetFp(fp);
+    }
 #else
     if ((map != nullptr && map->IsArkExecutable()) || isJsFrame) {
         if (!StepArkJsFrame(pc, fp, sp, isJsFrame)) {
             LOGE("Failed to step ark Js frames, pc: %" PRIx64, (uint64_t)pc);
             return false;
         }
-#endif
         regs_->SetPc(pc);
         regs_->SetSp(sp);
         regs_->SetFp(fp);
         return true;
     }
+#endif
 #endif
 
     bool ret = false;
@@ -513,11 +512,10 @@ bool Unwinder::FpStep(uintptr_t& fp, uintptr_t& pc, void *ctx)
 
 bool Unwinder::Apply(std::shared_ptr<DfxRegs> regs, std::shared_ptr<RegLocState> rs)
 {
-    bool ret = false;
     if (rs == nullptr || regs == nullptr) {
         return false;
     }
-    ret = DfxInstructions::Apply(memory_, *(regs.get()), *(rs.get()));
+    bool ret = DfxInstructions::Apply(memory_, *(regs.get()), *(rs.get()));
     if (!ret) {
         LOGE("Failed to apply rs");
     }
@@ -700,7 +698,7 @@ void Unwinder::GetFramesByPcs(std::vector<DfxFrame>& frames, std::vector<uintptr
             LOGU("map had matched");
         } else {
             if (!maps->FindMapByAddr(pcs[i], map) || (map == nullptr)) {
-                LOGE("map is null");
+                LOGE("Find map error");
                 continue;
             }
         }
