@@ -489,10 +489,6 @@ bool Unwinder::FpStep(uintptr_t& fp, uintptr_t& pc, void *ctx)
         LOGE("params is nullptr");
         return false;
     }
-    if (!isFpStep_) {
-        LOGI("First enter fp step, pc: %p", reinterpret_cast<void *>(pc));
-        isFpStep_ = true;
-    }
 
     uintptr_t prevFp = fp;
     uintptr_t ptr = fp;
@@ -503,7 +499,12 @@ bool Unwinder::FpStep(uintptr_t& fp, uintptr_t& pc, void *ctx)
         regs_->SetReg(REG_SP, &prevFp);
         if (pid_ == UNWIND_TYPE_CUSTOMIZE) {
             regs_->SetPc(StripPac(pc, pacMask_));
+        } else {
+            if (!isFpStep_) {
+                LOGI("First enter fp step, pc: %p", reinterpret_cast<void *>(pc));
+            }
         }
+        isFpStep_ = true;
         LOGU("-fp: %lx, pc: %lx", (uint64_t)fp, (uint64_t)pc);
         return true;
     }
@@ -546,7 +547,7 @@ uintptr_t Unwinder::StripPac(uintptr_t inAddr, uintptr_t pacMask)
             outAddr = x30;
         }
         if (outAddr != inAddr) {
-            LOGW("Strip pac in addr: %lx, out addr: %lx", (uint64_t)inAddr, (uint64_t)outAddr);
+            LOGU("Strip pac in addr: %lx, out addr: %lx", (uint64_t)inAddr, (uint64_t)outAddr);
         }
     }
 #endif
