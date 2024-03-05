@@ -281,7 +281,11 @@ bool BacktraceLocalContext::Init()
     return init_;
 }
 
+#if defined(__has_feature) && __has_feature(address_sanitizer)
+__attribute__((no_sanitize("address"))) bool BacktraceLocalContext::ReadUintptrSafe(uintptr_t addr, uintptr_t& value)
+#else
 bool BacktraceLocalContext::ReadUintptrSafe(uintptr_t addr, uintptr_t& value)
+#endif
 {
     if (!init_) {
         return false;

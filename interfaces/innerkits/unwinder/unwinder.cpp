@@ -242,6 +242,10 @@ bool Unwinder::Unwind(void *ctx, size_t maxFrameNum, size_t skipFrameNum)
         // Check if this is a signal frame.
         if (regs_->StepIfSignalFrame(static_cast<uintptr_t>(frame.pc), memory_)) {
             LOGW("Step signal frame, pc: %p", reinterpret_cast<void *>(frame.pc));
+            std::shared_ptr<DfxMap> map = nullptr;
+            if (acc_->GetMapByPc(frame.pc, map, ctx) == UNW_ERROR_NONE) {
+                frame.map = map;
+            }
             AddFrame(false, regs_->GetPc(), regs_->GetSp(), regs_->GetFp());
             continue;
         }
