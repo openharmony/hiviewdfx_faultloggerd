@@ -44,6 +44,9 @@ public:
 
     void AppendMsg(const std::string& msg);
     int AppendBuf(const char *format, ...);
+
+    void AppendBaseInfo(const std::string& info);
+    void PrintBaseInfo();
 private:
     static void LoopPrintRingBuffer();
     static int DefaultWrite(int32_t fd, const char *buf, const int len);
@@ -56,6 +59,7 @@ private:
     DfxRingBuffer<BACK_TRACE_RING_BUFFER_SIZE, std::string> ringBuffer_;
     int32_t fd_ = -1;
     volatile bool hasFinished_ = false;
+    std::vector<std::string> crashBaseInfo_;
 
     static std::condition_variable printCV_;
     static std::mutex printMutex_;

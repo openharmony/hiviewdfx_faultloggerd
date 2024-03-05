@@ -45,7 +45,7 @@ public:
                                               std::shared_ptr<Unwinder> unwinder);
 private:
     static void PrintReason(std::shared_ptr<ProcessDumpRequest> request, std::shared_ptr<DfxProcess> process,
-                            std::shared_ptr<Unwinder> unwinder);
+                            std::shared_ptr<Unwinder> unwinder, std::string& reasonInfo);
     static bool IsLastValidFrame(const DfxFrame& frame);
 };
 } // namespace HiviewDFX
