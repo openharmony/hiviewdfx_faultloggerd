@@ -84,7 +84,18 @@ ProcessDumper &ProcessDumper::GetInstance()
 void ProcessDumper::Dump()
 {
     std::shared_ptr<ProcessDumpRequest> request = std::make_shared<ProcessDumpRequest>();
-    resDump_ = DumpProcess(request);
+    std::future<int> future = std::async(std::launch::async, DumpProcess, request);
+    std::future_status status = future.wait_for(std::chrono::seconds(DUMPPROCESS_MAX_SECOND));
+    // avoid sync thread write dirty data to process_
+    std::mutex processDump_mutex;
+    processDump_mutex.lock();
+    if (status == std::future_status::timeout) {
+        resDump_ = DUMP_ETIMEOUT;
+    } else if (status == std::future_status::ready) {
+        resDump_ = future.get();
+    } else {
+        DFXLOG_ERROR("DumpProcess future status is deferred");
+    }
     if (process_ == nullptr) {
         DFXLOG_ERROR("Dump process failed, please check permission and whether pid is valid.");
     } else {
@@ -112,6 +123,7 @@ void ProcessDumper::Dump()
     WriteDumpRes(resDump_);
     DfxRingBufferWrapper::GetInstance().StopThread();
     DFXLOG_INFO("Finish dump stacktrace for %s(%d:%d).", request->processName, request->pid, request->tid);
+    processDump_mutex.unlock();
     CloseDebugLog();
     // check dump result
     if (reporter_ != nullptr) {

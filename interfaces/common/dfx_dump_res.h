@@ -55,6 +55,8 @@ enum DumpErrorCode : int32_t {
     DUMP_EBADVERSION,
     /** no unwind info found */
     DUMP_ENOINFO,
+    /** timeout */
+    DUMP_ETIMEOUT,
 };
 
 class DfxDumpRes {
