@@ -278,6 +278,27 @@ int ProcessDumper::GetLogTypeBySignal(int sig)
     }
 }
 
+static int32_t CreateFileForCrash(int32_t pid, uint64_t time)
+{
+    const std::string logFilePath = "/log/crash";
+    const std::string logFileType = "cppcrash";
+    const int32_t logcrashFileProp = 0640; // 0640:-rw-r-----
+    if (access(logFilePath.c_str(), F_OK) != 0) {
+        DFXLOG_ERROR("%s is not exist.", logFilePath.c_str());
+        return INVALID_FD;
+    }
+    std::stringstream ss;
+    ss << logFilePath << "/" << logFileType << "-" << pid << "-" << time;
+    std::string logPath = ss.str();
+    int32_t fd = OHOS_TEMP_FAILURE_RETRY(open(logPath.c_str(), O_RDWR | O_CREAT, logcrashFileProp));
+    if (fd == INVALID_FD) {
+        DFXLOG_ERROR("create %s failed, errno=%d", logPath.c_str(), errno);
+    } else {
+        DFXLOG_INFO("create crash path %s succ.", logPath.c_str());
+    }
+    return fd;
+}
+
 int ProcessDumper::InitPrintThread(std::shared_ptr<ProcessDumpRequest> request)
 {
     int fd = -1;
@@ -295,6 +316,9 @@ int ProcessDumper::InitPrintThread(std::shared_ptr<ProcessDumpRequest> request)
             InitDebugLog((int)faultloggerdRequest.type, request->pid, request->tid, request->uid);
         }
         fd = RequestFileDescriptorEx(&faultloggerdRequest);
+        if (fd == -1) {
+            fd = CreateFileForCrash(request->pid, request->timeStamp);
+        }
         DfxRingBufferWrapper::GetInstance().SetWriteFunc(ProcessDumper::WriteDumpBuf);
     } else {
         fd = RequestPipeFd(request->pid, FaultLoggerPipeType::PIPE_FD_WRITE_BUF);
