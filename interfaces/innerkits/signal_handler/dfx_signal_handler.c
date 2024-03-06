@@ -606,6 +606,7 @@ static bool DFX_SigchainHandler(int sig, siginfo_t *si, void *context)
         ForkAndDoProcessDump(sig);
     } else {
         ret = true;
+        DFXLOG_INFO("Finish handle signal(%d) in %d:%d", sig, g_request.pid, g_request.tid);
         int recycleTid = clone(CloneAndDoProcessDump, g_reservedChildStack,\
             CLONE_THREAD | CLONE_SIGHAND | CLONE_VM, NULL);
         if (recycleTid == -1) {
