@@ -18,7 +18,9 @@
 #include <cinttypes>
 #include <string>
 
+#include "dfx_define.h"
 #include "dfx_logger.h"
+#include "dfx_maps.h"
 #include "dfx_process.h"
 #include "dfx_signal.h"
 #include "dfx_thread.h"
@@ -157,9 +159,16 @@ void DfxStackInfoFormatter::FillNativeFrame(const DfxFrame& frame, Json::Value& 
 #else
     frameJson["pc"] = StringPrintf("%08llx", frame.relPc);
 #endif
-    frameJson["symbol"] = frame.funcName;
+    if (frame.funcName.length() > MAX_FUNC_NAME_LEN) {
+        DFXLOG_WARN("length of funcName greater than 256 byte, do not report it");
+        frameJson["symbol"] = "";
+    } else {
+        frameJson["symbol"] = frame.funcName;
+    }
     frameJson["offset"] = frame.funcOffset;
-    frameJson["file"] = frame.mapName;
+    std::string strippedMapName = frame.mapName;
+    DfxMaps::UnFormatMapName(strippedMapName);
+    frameJson["file"] = strippedMapName;
     frameJson["buildId"] = frame.buildId;
     jsonInfo.append(frameJson);
 }
