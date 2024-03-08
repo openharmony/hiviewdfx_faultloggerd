@@ -94,7 +94,8 @@ pid_t GetRealPid(void)
     pid_t pid = syscall(SYS_getpid);
     int fd = OHOS_TEMP_FAILURE_RETRY(open(PROC_SELF_STATUS_PATH, O_RDONLY));
     if (fd < 0) {
-        DFXLOG_INFO("GetRealPid::pid:(%ld), fd:(%d).", syscall(SYS_getpid), fd);
+        DFXLOG_ERROR("GetRealPid::open /proc/self/status failed! get pid by syscall(SYS_getpid). \
+            pid:(%ld), errno:(%d).", pid, errno);
         return pid;
     }
 
@@ -105,14 +106,15 @@ pid_t GetRealPid(void)
     while (1) {
         nRead = OHOS_TEMP_FAILURE_RETRY(read(fd, &b, sizeof(char)));
         if (nRead <= 0 || b == '\0') {
-            DFXLOG_INFO("GetRealPid::nRead:(%zu), b:(%s).", nRead, b);
+            DFXLOG_ERROR("GetRealPid::nRead:read fd failed! get pid by syscall(SYS_getpid). \
+                pid:(%ld), errno:(%d).", pid, errno);
             break;
         }
 
         if (b == '\n' || i == LINE_BUF_SIZE) {
             if (strncmp(buf, PID_STR_NAME, strlen(PID_STR_NAME)) == 0) {
                 (void)sscanf(buf, "%*[^0-9]%d", &pid);
-                DFXLOG_INFO("GetRealPid::buf:(%s), pid:(%ld).", buf, pid);
+                DFXLOG_INFO("GetRealPid::get pid from /proc/self/status. pid:(%ld).", pid);
                 break;
             }
             i = 0;
