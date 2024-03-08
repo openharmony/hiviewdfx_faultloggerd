@@ -105,6 +105,7 @@ bool BacktraceLocalThread::Unwind(unw_addr_space_t as, std::shared_ptr<DfxSymbol
 
     if (!ret) {
         DwarfUnwinder unwinder;
+        std::unique_lock<std::mutex> mlock(threadContext->lock);
         ret = unwinder.UnwindWithContext(as, *(threadContext->ctx), symbol, skipFrameNum);
         frames_ = unwinder.GetFrames();
     }
