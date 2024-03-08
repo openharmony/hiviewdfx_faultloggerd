@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2022-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -81,7 +81,7 @@ uintptr_t FaultStack::AdjustAndCreateMemoryBlock(size_t index, uintptr_t prevSp,
 bool FaultStack::CollectStackInfo(const std::vector<DfxFrame>& frames, bool needParseStack)
 {
     if (frames.empty()) {
-        DFXLOG_WARN("null frames.");
+        DFXLOG_WARN("%s", "null frames.");
         return false;
     }
 

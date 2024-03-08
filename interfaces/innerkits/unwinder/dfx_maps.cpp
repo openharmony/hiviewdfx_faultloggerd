@@ -83,14 +83,14 @@ std::shared_ptr<DfxMaps> DfxMaps::Create(const pid_t pid, const std::string& pat
 {
     std::string realPath = path;
     if (!RealPath(path, realPath)) {
-        DFXLOG_WARN("Failed to realpath %s", path.c_str());
+        LOGW("Failed to realpath %s", path.c_str());
         return nullptr;
     }
 
     std::ifstream ifs;
     ifs.open(realPath, std::ios::in);
     if (ifs.fail()) {
-        DFXLOG_WARN("Failed to open %s", realPath.c_str());
+        LOGW("Failed to open %s", realPath.c_str());
         return nullptr;
     }
 
@@ -99,7 +99,7 @@ std::shared_ptr<DfxMaps> DfxMaps::Create(const pid_t pid, const std::string& pat
     while (getline(ifs, mapBuf)) {
         std::shared_ptr<DfxMap> map = DfxMap::Create(mapBuf, mapBuf.length());
         if (map == nullptr) {
-            DFXLOG_WARN("Failed to init map info:%s.", mapBuf.c_str());
+            LOGW("Failed to init map info:%s.", mapBuf.c_str());
             continue;
         } else {
             if (map->name == "[stack]") {
@@ -260,7 +260,7 @@ bool DfxMaps::IsArkExecutedMap(uintptr_t addr)
 {
     std::shared_ptr<DfxMap> map = nullptr;
     if (!FindMapByAddr(addr, map)) {
-        LOGU("Not mapped map for current addr.");
+        LOGU("%s", "Not mapped map for current addr.");
         return false;
     }
 

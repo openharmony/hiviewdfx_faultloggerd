@@ -40,12 +40,12 @@ bool DfxMmap::Init(const int fd, const size_t size, const off_t offset)
     }
     mmap_ = mmap(nullptr, size, PROT_READ | PROT_WRITE, MAP_PRIVATE, fd, offset);
     if (mmap_ == MAP_FAILED) {
-        LOGE("Faild to mmap, errno(%d)", errno);
+        LOGE("Failed to mmap, errno(%d)", errno);
         size_ = 0;
         return false;
     }
     size_ = size;
-    DFXLOG_DEBUG("mmap size %zu", size_);
+    LOGD("mmap size %zu", size_);
     return true;
 }
 
@@ -85,7 +85,7 @@ size_t DfxMmap::Read(uintptr_t& addr, void* val, size_t size, bool incre)
     const uint8_t* actualBase = static_cast<const uint8_t*>(mmap_) + ptr;
     size_t actualLen = std::min(left, size);
     if (memcpy_s(val, actualLen, actualBase, actualLen) != 0) {
-        LOGE("fail to memcpy");
+        LOGE("%s", "Failed to memcpy_s");
         return 0;
     }
     if (incre) {

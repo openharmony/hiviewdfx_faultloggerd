@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2023-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -82,12 +82,12 @@ void Printer::PrintReason(std::shared_ptr<ProcessDumpRequest> request, std::shar
         std::shared_ptr<DfxElfMaps> maps = process->GetMaps();
         std::shared_ptr<DfxElfMap> map;
         if (process->vmThread_ == nullptr) {
-            DFXLOG_WARN("vmThread_ is nullptr");
+            DFXLOG_WARN("%s", "vmThread_ is nullptr");
             return;
         }
         auto regs = process->vmThread_->GetThreadRegs();
         if (regs == nullptr) {
-            DFXLOG_WARN("regs is nullptr");
+            DFXLOG_WARN("%s", "regs is nullptr");
             return;
         }
         uintptr_t sp = regs->sp_;

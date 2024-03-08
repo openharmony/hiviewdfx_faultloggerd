@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -86,7 +86,7 @@ void ProcessDumper::Dump()
     std::shared_ptr<ProcessDumpRequest> request = std::make_shared<ProcessDumpRequest>();
     resDump_ = DumpProcess(request);
     if (process_ == nullptr) {
-        DFXLOG_ERROR("Dump process failed, please check permission and whether pid is valid.");
+        DFXLOG_ERROR("%s", "Dump process failed, please check permission and whether pid is valid.");
     } else {
         if (isCrash_) {
             if (process_->vmThread_ != nullptr) {
@@ -127,7 +127,7 @@ int ProcessDumper::DumpProcess(std::shared_ptr<ProcessDumpRequest> request)
     do {
         ssize_t readCount = read(STDIN_FILENO, request.get(), sizeof(ProcessDumpRequest));
         if (readCount != static_cast<long>(sizeof(ProcessDumpRequest))) {
-            DFXLOG_ERROR("Fail to read DumpRequest(%d).", errno);
+            DFXLOG_ERROR("Failed to read DumpRequest(%d).", errno);
             dumpRes = DumpErrorCode::DUMP_EREADREQUEST;
             break;
         }
@@ -149,13 +149,13 @@ int ProcessDumper::DumpProcess(std::shared_ptr<ProcessDumpRequest> request)
             request->siginfo.si_value.sival_int, request->pid, request->nsPid, request->tid, request->threadName);
 
         if (InitProcessInfo(request) < 0) {
-            DFXLOG_ERROR("Failed to init crash process info.");
+            DFXLOG_ERROR("%s", "Failed to init crash process info.");
             dumpRes = DumpErrorCode::DUMP_EATTACH;
             break;
         }
 
         if (InitPrintThread(request) < 0) {
-            DFXLOG_ERROR("Failed to init print thread.");
+            DFXLOG_ERROR("%s", "Failed to init print thread.");
             dumpRes = DumpErrorCode::DUMP_EGETFD;
         }
 
@@ -169,7 +169,7 @@ int ProcessDumper::DumpProcess(std::shared_ptr<ProcessDumpRequest> request)
 #else
         if (!DfxUnwindRemote::GetInstance().UnwindProcess(request, process_, unwinder_)) {
 #endif
-            DFXLOG_ERROR("Failed to unwind process.");
+            DFXLOG_ERROR("%s", "Failed to unwind process.");
             dumpRes = DumpErrorCode::DUMP_ESTOPUNWIND;
         }
 
@@ -313,7 +313,7 @@ int ProcessDumper::InitPrintThread(std::shared_ptr<ProcessDumpRequest> request)
         isJsonDump_ = true;
     }
     if ((fd < 0) && (jsonFd_ < 0)) {
-        DFXLOG_WARN("Failed to request fd from faultloggerd.");
+        DFXLOG_WARN("%s", "Failed to request fd from faultloggerd.");
     }
 
     if (!isJsonDump_) {

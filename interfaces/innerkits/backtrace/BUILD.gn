@@ -141,6 +141,7 @@ if (defined(ohos_lite)) {
     public_configs = [ ":dfx_backtrace_config" ]
 
     configs = [ "//third_party/jsoncpp:jsoncpp_public_config" ]
+    defines = [ "DFX_LOG_HILOG_BASE" ]
 
     sources = backtrace_local_sources
     include_dirs = [
@@ -163,7 +164,6 @@ if (defined(ohos_lite)) {
 
     external_deps = [
       "c_utils:utils",
-      "hilog:libhilog",
       "hilog:libhilog_base",
     ]
 

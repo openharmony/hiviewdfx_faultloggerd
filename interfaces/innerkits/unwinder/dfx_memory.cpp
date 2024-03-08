@@ -329,7 +329,7 @@ uintptr_t DfxMemory::ReadEncodedValue(uintptr_t& addr, uint8_t encoding)
             val += startAddr;
             break;
         case DW_EH_PE_textrel:
-            LOGE("XXX For now we don't support text-rel values");
+            LOGE("%s", "XXX For now we don't support text-rel values");
             break;
         case DW_EH_PE_datarel:
             val += dataOffset_;

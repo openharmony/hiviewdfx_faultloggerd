@@ -64,7 +64,7 @@ void Unwinder::Clear()
     pcs_.clear();
     frames_.clear();
     if (memset_s(&lastErrorData_, sizeof(UnwindErrorData), 0, sizeof(UnwindErrorData)) != 0) {
-        LOGE("Failed to memset lastErrorData");
+        LOGE("%s", "Failed to memset lastErrorData");
     }
 }
 
@@ -108,7 +108,7 @@ bool Unwinder::UnwindLocal(bool withRegs, size_t maxFrameNum, size_t skipFrameNu
 {
     uintptr_t stackBottom = 1, stackTop = static_cast<uintptr_t>(-1);
     if ((maps_ == nullptr) || !GetStackRange(stackBottom, stackTop)) {
-        LOGE("Get stack range error");
+        LOGE("%s", "Get stack range error");
         return false;
     }
     LOGU("stackBottom: %" PRIx64 ", stackTop: %" PRIx64 "", (uint64_t)stackBottom, (uint64_t)stackTop);
@@ -117,7 +117,7 @@ bool Unwinder::UnwindLocal(bool withRegs, size_t maxFrameNum, size_t skipFrameNu
         regs_ = DfxRegs::Create();
         auto regsData = regs_->RawData();
         if (regsData == nullptr) {
-            LOGE("params is nullptr");
+            LOGE("%s", "params is nullptr");
             return false;
         }
         GetLocalRegs(regsData);
@@ -148,7 +148,7 @@ bool Unwinder::UnwindRemote(pid_t tid, bool withRegs, size_t maxFrameNum, size_t
         regs_ = DfxRegs::CreateRemoteRegs(tid);
     }
     if ((regs_ == nullptr)) {
-        LOGE("regs is nullptr");
+        LOGE("%s", "regs is nullptr");
         return false;
     }
 
@@ -168,7 +168,7 @@ bool Unwinder::StepArkJsFrame(uintptr_t& pc, uintptr_t& fp, uintptr_t& sp)
     JsFrame jsFrames[JSFRAME_MAX];
     size_t size = JSFRAME_MAX;
     if (memset_s(jsFrames, sizeof(JsFrame) * JSFRAME_MAX, 0, sizeof(JsFrame) * JSFRAME_MAX) != 0) {
-        LOGE("Failed to memset_s jsFrames.");
+        LOGE("%s", "Failed to memset_s jsFrames.");
         return false;
     }
     LOGI("+++ark pc: %" PRIx64 ", fp: %" PRIx64 ", sp: %" PRIx64 ".", (uint64_t)pc, (uint64_t)fp, (uint64_t)sp);
@@ -210,7 +210,7 @@ bool Unwinder::StepArkJsFrame(uintptr_t& pc, uintptr_t& fp, uintptr_t& sp, bool&
 bool Unwinder::Unwind(void *ctx, size_t maxFrameNum, size_t skipFrameNum)
 {
     if ((regs_ == nullptr) || (!CheckAndReset(ctx))) {
-        LOGE("params is nullptr?");
+        LOGE("%s", "params is nullptr?");
         return false;
     }
     Clear();
@@ -267,7 +267,7 @@ bool Unwinder::Unwind(void *ctx, size_t maxFrameNum, size_t skipFrameNum)
                 MAYBE_UNUSED UnwindContext* uctx = reinterpret_cast<UnwindContext *>(ctx);
                 LOGU("pc and sp is same, tid: %d", uctx->pid);
             } else {
-                LOGU("pc and sp is same");
+                LOGU("%s", "pc and sp is same");
             }
             lastErrorData_.SetAddrAndCode(pc, UNW_ERROR_REPEATED_FRAME);
             break;
@@ -280,7 +280,7 @@ bool Unwinder::Unwind(void *ctx, size_t maxFrameNum, size_t skipFrameNum)
 bool Unwinder::UnwindByFp(void *ctx, size_t maxFrameNum, size_t skipFrameNum)
 {
     if (regs_ == nullptr) {
-        LOGE("params is nullptr?");
+        LOGE("%s", "params is nullptr?");
         return false;
     }
     pcs_.clear();
@@ -331,7 +331,7 @@ bool Unwinder::Step(uintptr_t& pc, uintptr_t& sp, void *ctx)
 bool Unwinder::Step(DfxFrame& frame, void *ctx)
 {
     if ((regs_ == nullptr) || (!CheckAndReset(ctx))) {
-        LOGE("params is nullptr");
+        LOGE("%s", "params is nullptr");
         return false;
     }
     uintptr_t pc = static_cast<uintptr_t>(frame.pc);
@@ -381,7 +381,7 @@ bool Unwinder::Step(DfxFrame& frame, void *ctx)
     do {
         if (isFpStep_) {
             if (enableFpCheckMapExec_ && (map != nullptr && !map->IsMapExec())) {
-                LOGE("Fp step check map is not exec");
+                LOGE("%s", "Fp step check map is not exec");
                 return false;
             }
             break;
@@ -416,12 +416,12 @@ bool Unwinder::Step(DfxFrame& frame, void *ctx)
         if (!ret && uti.format == UNW_INFO_FORMAT_ARM_EXIDX) {
             if (!armExidx_->SearchEntry(pc, uti, uei)) {
                 lastErrorData_.SetAddrAndCode(armExidx_->GetLastErrorAddr(), armExidx_->GetLastErrorCode());
-                LOGE("Failed to search unwind entry?");
+                LOGE("%s", "Failed to search unwind entry?");
                 break;
             }
             if (!armExidx_->Step((uintptr_t)uei.unwindInfo, rs)) {
                 lastErrorData_.SetAddrAndCode(armExidx_->GetLastErrorAddr(), armExidx_->GetLastErrorCode());
-                LOGU("Step exidx section error?");
+                LOGU("%s", "Step exidx section error?");
             } else {
                 ret = true;
             }
@@ -431,13 +431,13 @@ bool Unwinder::Step(DfxFrame& frame, void *ctx)
             if ((uti.isLinear == false && !dwarfSection_->SearchEntry(pc, uti, uei)) ||
                 (uti.isLinear == true && !dwarfSection_->LinearSearchEntry(pc, uti, uei))) {
                 lastErrorData_.SetAddrAndCode(dwarfSection_->GetLastErrorAddr(), dwarfSection_->GetLastErrorCode());
-                LOGU("Failed to search unwind entry?");
+                LOGU("%s", "Failed to search unwind entry?");
                 break;
             }
             memory_->SetDataOffset(uti.segbase);
             if (!dwarfSection_->Step((uintptr_t)uei.unwindInfo, regs_, rs)) {
                 lastErrorData_.SetAddrAndCode(dwarfSection_->GetLastErrorAddr(), dwarfSection_->GetLastErrorCode());
-                LOGU("Step dwarf section error?");
+                LOGU("%s", "Step dwarf section error?");
             } else {
                 ret = true;
             }
@@ -456,7 +456,7 @@ bool Unwinder::Step(DfxFrame& frame, void *ctx)
         ret = Apply(regs_, rs);
     } else {
         if ((frames_.size() == 1) && enableLrFallback_ && regs_->SetPcFromReturnAddress(memory_)) {
-            LOGW("Failed to step first frame, lr fallback");
+            LOGW("%s", "Failed to step first frame, lr fallback");
             ret = true;
         }
     }
@@ -489,7 +489,7 @@ bool Unwinder::FpStep(uintptr_t& fp, uintptr_t& pc, void *ctx)
 #if defined(__aarch64__)
     LOGU("+fp: %lx, pc: %lx", (uint64_t)fp, (uint64_t)pc);
     if ((regs_ == nullptr) || (!CheckAndReset(ctx))) {
-        LOGE("params is nullptr");
+        LOGE("%s", "params is nullptr");
         return false;
     }
 
@@ -522,7 +522,7 @@ bool Unwinder::Apply(std::shared_ptr<DfxRegs> regs, std::shared_ptr<RegLocState>
     }
     bool ret = DfxInstructions::Apply(memory_, *(regs.get()), *(rs.get()));
     if (!ret) {
-        LOGE("Failed to apply rs");
+        LOGE("%s", "Failed to apply rs");
     }
 #if defined(__arm__) || defined(__aarch64__)
     if (!rs->isPcSet) {
@@ -622,7 +622,7 @@ void Unwinder::FillFrame(DfxFrame& frame)
     if (frame.map == nullptr) {
         frame.relPc = frame.pc;
         frame.mapName = "Not mapped";
-        LOGU("Current frame is not mapped.");
+        LOGU("%s", "Current frame is not mapped.");
         return;
     }
     frame.relPc = frame.map->GetRelPc(frame.pc);
@@ -646,7 +646,7 @@ void Unwinder::FillJsFrame(DfxFrame& frame)
         return;
     }
     if (frame.map == nullptr || frame.map->name.empty()) {
-        LOGU("Current js frame is not mapped.");
+        LOGU("%s", "Current js frame is not mapped.");
         return;
     }
 #if defined(OFFLINE_MIXSTACK)
@@ -700,10 +700,10 @@ void Unwinder::GetFramesByPcs(std::vector<DfxFrame>& frames, std::vector<uintptr
         frame.index = i;
         frame.pc = static_cast<uint64_t>(pcs[i]);
         if ((map != nullptr) && map->Contain(frame.pc)) {
-            LOGU("map had matched");
+            LOGU("%s", "map had matched");
         } else {
             if (!maps->FindMapByAddr(pcs[i], map) || (map == nullptr)) {
-                LOGE("Find map error");
+                LOGE("%s", "Find map error");
                 continue;
             }
         }
@@ -720,13 +720,13 @@ bool Unwinder::GetSymbolByPc(uintptr_t pc, std::shared_ptr<DfxMaps> maps, std::s
     }
     std::shared_ptr<DfxMap> map = nullptr;
     if (!maps->FindMapByAddr(pc, map) || (map == nullptr)) {
-        LOGE("Find map is null");
+        LOGE("%s", "Find map is null");
         return false;
     }
     uint64_t relPc = map->GetRelPc(static_cast<uint64_t>(pc));
     auto elf = map->GetElf();
     if (elf == nullptr) {
-        LOGE("Get elf is null");
+        LOGE("%s", "Get elf is null");
         return false;
     }
     return DfxSymbols::GetFuncNameAndOffsetByPc(relPc, elf, funcName, funcOffset);

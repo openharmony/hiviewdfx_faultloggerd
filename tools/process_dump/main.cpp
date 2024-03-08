@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -58,7 +58,7 @@ int main(int argc, char *argv[])
     DFX_InstallLocalSignalHandler();
 #endif
     if (signal(SIGCHLD, SIG_IGN) == SIG_ERR) {
-        DFXLOG_ERROR("Processdump ignore SIGCHLD failed.");
+        DFXLOG_ERROR("%s", "Processdump ignore SIGCHLD failed.");
     }
 
     bool isSignalHdlr = false;

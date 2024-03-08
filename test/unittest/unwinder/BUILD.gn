@@ -21,6 +21,8 @@ ohos_unittest("test_unwinder") {
   module_out_path = module_output_path
   visibility = [ "*:*" ]
   include_dirs = [
+    "$faultloggerd_path/common/dfxlog",
+    "$faultloggerd_path/common/dfxutil",
     "$faultloggerd_interfaces_path/common",
     "$faultloggerd_frameworks_path/unwinder/include",
   ]
@@ -35,6 +37,7 @@ ohos_unittest("test_unwinder") {
     "unwinder_test.cpp",
   ]
   deps = [
+    "$faultloggerd_path/common/dfxlog:dfx_hilog",
     "$faultloggerd_path/common/dfxutil:dfx_util",
     "$faultloggerd_path/frameworks/unwinder:dfx_unwinder_src",
     "//third_party/bounds_checking_function:libsec_shared",

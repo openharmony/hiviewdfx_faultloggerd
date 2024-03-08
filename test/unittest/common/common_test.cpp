@@ -107,11 +107,6 @@ HWTEST_F(CommonTest, DfxLogTest001, TestSize.Level2)
     GTEST_LOG_(INFO) << "DfxLogTest001: start.";
     InitDebugFd(STDERR_FILENO);
     EXPECT_FALSE(CheckDebugLevel());
-    EXPECT_EQ(DFXLOG_DEBUG("%s", "test message"), -1);
-    EXPECT_NE(DFXLOG_INFO("%s", "test message"), -1);
-    EXPECT_NE(DFXLOG_WARN("%s", "test message"), -1);
-    EXPECT_NE(DFXLOG_ERROR("%s", "test message"), -1);
-    EXPECT_NE(DFXLOG_FATAL("%s", "test message"), -1);
     GTEST_LOG_(INFO) << "DfxLogTest001: end.";
 }
 

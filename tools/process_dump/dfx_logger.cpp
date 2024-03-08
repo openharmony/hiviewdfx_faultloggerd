@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 Huawei Device Co., Ltd.
+ * Copyright (c) 2022-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -22,26 +22,28 @@
 #include "faultloggerd_client.h"
 
 static const int WRITE_LOG_BUF_LEN = 2048;
+#ifndef is_ohos_lite
 static int32_t g_DebugLogFd = INVALID_FD;
-#ifndef DFX_LOG_HILOG_BASE
 static int32_t g_StdErrFd = INVALID_FD;
 #endif
 
 int WriteLog(int32_t fd, const char *format, ...)
 {
-    int ret;
+    int ret = -1;
     char buf[WRITE_LOG_BUF_LEN] = {0};
     va_list args;
     va_start(args, format);
     ret = vsnprintf_s(buf, sizeof(buf), sizeof(buf) - 1, format, args);
     if (ret == -1) {
-        DFXLOG_WARN("WriteLog: vsnprintf_s fail");
+        DFXLOG_WARN("%s", "WriteLog: vsnprintf_s fail");
     }
     va_end(args);
 
+#ifndef is_ohos_lite
     if (g_DebugLogFd != INVALID_FD) {
         fprintf(stderr, "%s", buf);
     }
+#endif
 
     if (fd >= 0) {
         ret = dprintf(fd, "%s", buf);
@@ -49,9 +51,9 @@ int WriteLog(int32_t fd, const char *format, ...)
             DFXLOG_ERROR("WriteLog :: write msg(%s) to fd(%d) failed, ret(%d).", buf, fd, ret);
         }
     } else if (fd == INVALID_FD) {
-        ret = DFXLOG_WARN("%s", buf);
+        DFXLOG_WARN("%s", buf);
     } else {
-        ret = DFXLOG_DEBUG("%s", buf);
+        DFXLOG_DEBUG("%s", buf);
     }
 
     return ret;
@@ -75,7 +77,7 @@ void DfxLogToSocket(const char *msg)
 
 void InitDebugLog(int type, int pid, int tid, unsigned int uid)
 {
-#ifndef DFX_LOG_USE_HILOG_BASE
+#ifndef is_ohos_lite
     DFXLOG_INFO("InitDebugLog :: type(%d), pid(%d), tid(%d), uid(%d).", type, pid, tid, uid);
     if (g_DebugLogFd != INVALID_FD) {
         return;
@@ -90,13 +92,13 @@ void InitDebugLog(int type, int pid, int tid, unsigned int uid)
 
     g_DebugLogFd = RequestLogFileDescriptor(&faultloggerdRequest);
     if (g_DebugLogFd <= 0) {
-        DFXLOG_ERROR("InitDebugLog :: RequestLogFileDescriptor failed.");
+        DFXLOG_ERROR("%s", "InitDebugLog :: RequestLogFileDescriptor failed.");
         g_DebugLogFd = INVALID_FD;
     } else {
         g_StdErrFd = dup(STDERR_FILENO);
 
         if (dup2(g_DebugLogFd, STDERR_FILENO) == -1) {
-            DFXLOG_ERROR("InitDebugLog :: dup2 failed.");
+            DFXLOG_ERROR("%s", "InitDebugLog :: dup2 failed.");
             close(g_DebugLogFd);
             g_DebugLogFd = INVALID_FD;
             g_StdErrFd = INVALID_FD;
@@ -109,7 +111,7 @@ void InitDebugLog(int type, int pid, int tid, unsigned int uid)
 
 void CloseDebugLog()
 {
-#ifndef DFX_LOG_USE_HILOG_BASE
+#ifndef is_ohos_lite
     if (g_DebugLogFd == INVALID_FD) {
         return;
     }

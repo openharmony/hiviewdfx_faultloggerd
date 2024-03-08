@@ -282,7 +282,7 @@ static bool CheckCppCrashAllLabelKeywords(const string& filePath, const pid_t& p
 {
     string log[] = {
         "Timestamp:", "Pid:" + to_string(pid), "Uid:", "Process", "Reason:", "LastFatalMessage:", "Fault", "thread",
-        "Info:", "Tid:", "#00", "Registers:", REGISTERS, "Memory", "near", "registers:", "FaultStack:", "Maps:",
+        "info:", "Tid:", "#00", "Registers:", REGISTERS, "Memory", "near", "registers:", "FaultStack:", "Maps:",
         "/crasher"
     };
     int minRegIdx = 11; // 11 : index of first REGISTERS - 1
