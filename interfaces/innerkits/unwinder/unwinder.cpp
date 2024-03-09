@@ -30,6 +30,8 @@
 #include "stack_util.h"
 #include "string_printf.h"
 #include "string_util.h"
+#include "parameter.h"
+#include "parameters.h"
 
 namespace OHOS {
 namespace HiviewDFX {
@@ -39,6 +41,10 @@ namespace {
 #define LOG_DOMAIN 0xD002D11
 #define LOG_TAG "DfxUnwinder"
 }
+
+#if defined(ENABLE_MIXSTACK)
+constexpr char MIXSTACK_ENABLED_KEY[] = "persist.faultloggerd.priv.mixstack.enabled";
+#endif
 
 void Unwinder::Init()
 {
@@ -352,28 +358,31 @@ bool Unwinder::Step(DfxFrame& frame, void *ctx)
     frame.map = map;
 
 #if defined(ENABLE_MIXSTACK)
+    if (OHOS::system::GetParameter(MIXSTACK_ENABLED_KEY, "true") == "true") {
+        LOGI("Check mixstack enabled.");
 #if defined(ONLINE_MIXSTACK)
-    if (map != nullptr && map->IsArkExecutable()) {
-        if (!StepArkJsFrame(pc, fp, sp)) {
-            LOGE("Failed to step ark Js frames, pc: %" PRIx64, (uint64_t)pc);
-            return false;
+        if (map != nullptr && map->IsArkExecutable()) {
+            if (!StepArkJsFrame(pc, fp, sp)) {
+                LOGE("Failed to step ark Js frames, pc: %" PRIx64, (uint64_t)pc);
+                return false;
+            }
+            regs_->SetPc(pc);
+            regs_->SetSp(sp);
+            regs_->SetFp(fp);
         }
-        regs_->SetPc(pc);
-        regs_->SetSp(sp);
-        regs_->SetFp(fp);
-    }
 #else
-    if ((map != nullptr && map->IsArkExecutable()) || isJsFrame) {
-        if (!StepArkJsFrame(pc, fp, sp, isJsFrame)) {
-            LOGE("Failed to step ark Js frames, pc: %" PRIx64, (uint64_t)pc);
-            return false;
+        if ((map != nullptr && map->IsArkExecutable()) || isJsFrame) {
+            if (!StepArkJsFrame(pc, fp, sp, isJsFrame)) {
+                LOGE("Failed to step ark Js frames, pc: %" PRIx64, (uint64_t)pc);
+                return false;
+            }
+            regs_->SetPc(pc);
+            regs_->SetSp(sp);
+            regs_->SetFp(fp);
+            return true;
         }
-        regs_->SetPc(pc);
-        regs_->SetSp(sp);
-        regs_->SetFp(fp);
-        return true;
-    }
 #endif
+    }
 #endif
 
     bool ret = false;
