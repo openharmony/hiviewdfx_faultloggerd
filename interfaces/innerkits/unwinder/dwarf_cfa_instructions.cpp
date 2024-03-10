@@ -74,7 +74,7 @@ bool DwarfCfaInstructions::DecodeDwCfa(uint8_t opCode, CommonInfoEntry cie,
 
     switch (opCode) {
         case DW_CFA_nop:
-            LOGU("DW_CFA_nop");
+            LOGU("%s", "DW_CFA_nop");
             break;
         case DW_CFA_set_loc:
             value = memory_->ReadEncodedValue(instPtr, (DwarfEncoding)cie.pointerEncoding);
@@ -149,15 +149,15 @@ bool DwarfCfaInstructions::DecodeDwCfa(uint8_t opCode, CommonInfoEntry cie,
             break;
         case DW_CFA_remember_state:
             saveRsStates_.push(rsState);
-            LOGU("DW_CFA_remember_state");
+            LOGU("%s", "DW_CFA_remember_state");
             break;
         case DW_CFA_restore_state:
             if (saveRsStates_.size() == 0) {
-                LOGU("DW_CFA_restore_state: Attempt to restore without remember");
+                LOGU("%s", "DW_CFA_restore_state: Attempt to restore without remember");
             } else {
                 rsState = saveRsStates_.top();
                 saveRsStates_.pop();
-                LOGU("DW_CFA_restore_state");
+                LOGU("%s", "DW_CFA_restore_state");
             }
             break;
         case DW_CFA_def_cfa:
@@ -248,7 +248,7 @@ bool DwarfCfaInstructions::DecodeDwCfa(uint8_t opCode, CommonInfoEntry cie,
 #if defined(__aarch64__)
         case DW_CFA_AARCH64_negate_ra_state:
             rsState.pseudoReg ^= 0x1;
-            LOGU("DW_CFA_AARCH64_negate_ra_state");
+            LOGU("%s", "DW_CFA_AARCH64_negate_ra_state");
             break;
 #endif
         case DW_CFA_GNU_negative_offset_extended:
@@ -301,15 +301,15 @@ bool DwarfCfaInstructions::DecodeDwCfa(uint8_t opCode, CommonInfoEntry cie,
 
 bool DwarfCfaInstructions::Parse(uintptr_t pc, FrameDescEntry fde, RegLocState &rsState)
 {
-    LOGU("Iterate cie operations");
+    LOGU("%s", "Iterate cie operations");
     if (!Iterate(pc, fde, fde.cie.instructionsOff, fde.cie.instructionsEnd, rsState)) {
-        LOGE("Failed to run cie inst");
+        LOGE("%s", "Failed to run cie inst");
         return false;
     }
 
-    LOGU("Iterate fde operations");
+    LOGU("%s", "Iterate fde operations");
     if (!Iterate(pc, fde, fde.instructionsOff, fde.instructionsEnd, rsState)) {
-        LOGE("Failed to run fde inst");
+        LOGE("%s", "Failed to run fde inst");
         return false;
     }
     return true;

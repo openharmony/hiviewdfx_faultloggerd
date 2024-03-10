@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2022-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -16,18 +16,17 @@
 #include <gtest/gtest.h>
 
 #include <cstdio>
+#include <directory_ex.h>
 #include <fcntl.h>
+#include <malloc.h>
+#include <string_ex.h>
 #include <thread>
 #include <unistd.h>
 
-#include <directory_ex.h>
-#include "file_util.h"
-#include <hilog/log.h>
-#include <string_ex.h>
-#include <malloc.h>
-
 #include "backtrace_local.h"
+#include "dfx_log.h"
 #include "dfx_test_util.h"
+#include "file_util.h"
 
 using namespace testing;
 using namespace testing::ext;
@@ -77,7 +76,7 @@ uint64_t BacktraceUtilsTest::memCountTotal = 0;
 
 void BacktraceUtilsTest::SetUpTestCase()
 {
-    HILOG_INFO(LOG_CORE, "DfxSetUpTestCase");
+    DFXLOG_INFO("%s", "DfxSetUpTestCase");
     // get memory/fd/maps
     BacktraceUtilsTest::fdCountTotal = GetSelfFdCount();
     BacktraceUtilsTest::mapsCountTotal = GetSelfMapsCount();

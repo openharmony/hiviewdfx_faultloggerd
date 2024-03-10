@@ -68,17 +68,17 @@ bool ElfParser::ParseAllHeaders()
     }
 
     if (!ParseElfHeaders<EhdrType>(ehdr)) {
-        DFXLOG_WARN("ParseElfHeaders failed");
+        LOGW("%s", "ParseElfHeaders failed");
         return false;
     }
 
     if (!ParseProgramHeaders<EhdrType, PhdrType>(ehdr)) {
-        DFXLOG_WARN("ParseProgramHeaders failed");
+        LOGW("%s", "ParseProgramHeaders failed");
         return false;
     }
 
     if (!ParseSectionHeaders<EhdrType, ShdrType>(ehdr)) {
-        DFXLOG_WARN("ParseSectionHeaders failed");
+        LOGW("%s", "ParseSectionHeaders failed");
         return false;
     }
     return true;
@@ -177,7 +177,7 @@ bool ElfParser::ParseSectionHeaders(const EhdrType& ehdr)
         uint64_t secSize = 0;
         uint64_t shNdxOffset = offset + ehdr.e_shstrndx * ehdr.e_shentsize;
         if (!Read((uintptr_t)shNdxOffset, &shdr, sizeof(shdr))) {
-            LOGE("Read section header string table failed");
+            LOGE("%s", "Read section header string table failed");
             return false;
         }
         secOffset = shdr.sh_offset;
@@ -201,7 +201,7 @@ bool ElfParser::ParseSectionHeaders(const EhdrType& ehdr)
 
         std::string secName;
         if (!GetSectionNameByIndex(secName, shdr.sh_name)) {
-            LOGE("Failed to get section name");
+            LOGE("%s", "Failed to get section name");
             continue;
         }
 
@@ -405,12 +405,12 @@ bool ElfParser::ParseStrTab(std::string& nameStr, const uint64_t offset, const u
     }
     char *namesBuf = new char[size];
     if (namesBuf == nullptr) {
-        LOGE("New failed");
+        LOGE("%s", "New failed");
         return false;
     }
     (void)memset_s(namesBuf, size, '\0', size);
     if (!Read((uintptr_t)offset, namesBuf, size)) {
-        LOGE("Read failed");
+        LOGE("%s", "Read failed");
         delete[] namesBuf;
         namesBuf = nullptr;
         return false;

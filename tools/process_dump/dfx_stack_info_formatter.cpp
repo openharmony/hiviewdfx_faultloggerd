@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2023-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -63,7 +63,7 @@ bool DfxStackInfoFormatter::GetStackInfo(bool isJsonDump, std::string& jsonStrin
 bool DfxStackInfoFormatter::GetStackInfo(bool isJsonDump, Json::Value& jsonInfo) const
 {
     if ((process_ == nullptr) || (request_ == nullptr)) {
-        DFXLOG_ERROR("GetStackInfo var is null");
+        DFXLOG_ERROR("%s", "GetStackInfo var is null");
         return false;
     }
     if (isJsonDump) {
@@ -129,7 +129,7 @@ bool DfxStackInfoFormatter::FillFrames(const std::shared_ptr<DfxThread>& thread,
                                        Json::Value& jsonInfo, int maxFrame) const
 {
     if (thread == nullptr) {
-        DFXLOG_ERROR("FillFrames thread is null");
+        DFXLOG_ERROR("%s", "FillFrames thread is null");
         return false;
     }
     const auto& threadFrames = thread->GetFrames();
@@ -160,7 +160,7 @@ void DfxStackInfoFormatter::FillNativeFrame(const DfxFrame& frame, Json::Value& 
     frameJson["pc"] = StringPrintf("%08llx", frame.relPc);
 #endif
     if (frame.funcName.length() > MAX_FUNC_NAME_LEN) {
-        DFXLOG_WARN("length of funcName greater than 256 byte, do not report it");
+        DFXLOG_WARN("%s", "length of funcName greater than 256 byte, do not report it");
         frameJson["symbol"] = "";
     } else {
         frameJson["symbol"] = frame.funcName;

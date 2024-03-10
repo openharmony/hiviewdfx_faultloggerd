@@ -47,7 +47,7 @@ bool DfxInstructions::Flush(DfxRegs& regs, std::shared_ptr<DfxMemory> memory, ui
         case REG_LOC_REGISTER:
             location = static_cast<uintptr_t>(loc.val);
             if (location >= regs.RegsSize()) {
-                LOGE("illegal register location");
+                LOGE("%s", "Illegal register location");
                 return false;
             }
             val = regs[location];
@@ -64,7 +64,7 @@ bool DfxInstructions::Flush(DfxRegs& regs, std::shared_ptr<DfxMemory> memory, ui
             break;
         }
         default:
-            LOGE("Failed to save register.");
+            LOGE("%s", "Failed to save register.");
             return false;
     }
     return true;
@@ -80,11 +80,11 @@ bool DfxInstructions::Apply(std::shared_ptr<DfxMemory> memory, DfxRegs& regs, Re
         cfaLoc.type = REG_LOC_VAL_EXPRESSION;
         cfaLoc.val = static_cast<intptr_t>(rsState.cfaExprPtr);
         if (!Flush(regs, memory, 0, cfaLoc, cfa)) {
-            LOGE("Failed to update cfa.");
+            LOGE("%s", "Failed to update cfa.");
             return false;
         }
     } else {
-        LOGE("no cfa info exist?");
+        LOGE("%s", "no cfa info exist?");
         INSTR_STATISTIC(UnsupportedDefCfa, rsState.cfaReg, UNW_ERROR_NOT_SUPPORT);
         return false;
     }

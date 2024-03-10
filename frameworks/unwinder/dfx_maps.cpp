@@ -57,7 +57,7 @@ std::shared_ptr<DfxElfMap> DfxElfMap::Create(const std::string mapBuf, int size)
     if (sscanf_s(mapBuf.c_str(), "%" SCNxPTR "-%" SCNxPTR " %4s %" SCNxPTR " %*x:%*x %*d%n", &begin, &end,
         &perms, sizeof(perms), &offset,
         &pos) != 4) { // 4:scan size
-        DFXLOG_WARN("Fail to parse maps info.");
+        DFXLOG_WARN("%s", "Failed to parse maps info.");
         return nullptr;
     }
 
@@ -77,7 +77,7 @@ std::shared_ptr<DfxElfMaps> DfxElfMaps::Create(pid_t pid)
 {
     char path[NAME_BUF_LEN] = {0};
     if (snprintf_s(path, sizeof(path), sizeof(path) - 1, "/proc/%d/maps", pid) <= 0) {
-        DFXLOG_WARN("Fail to print path.");
+        DFXLOG_WARN("%s", "Failed to print path.");
         return nullptr;
     }
     return Create(std::string(path));
@@ -98,7 +98,7 @@ std::shared_ptr<DfxElfMaps> DfxElfMaps::Create(const std::string path)
 
     FILE *fp = fopen(realPath.c_str(), "r");
     if (fp == nullptr) {
-        DFXLOG_WARN("Fail to open maps info.");
+        DFXLOG_WARN("%s", "Failed to open maps info.");
         return nullptr;
     }
 
@@ -107,7 +107,7 @@ std::shared_ptr<DfxElfMaps> DfxElfMaps::Create(const std::string path)
     while (fgets(mapBuf, sizeof(mapBuf), fp) != nullptr) {
         std::shared_ptr<DfxElfMap> map = DfxElfMap::Create(mapBuf, sizeof(mapBuf));
         if (map == nullptr) {
-            DFXLOG_WARN("Fail to init map info:%s.", mapBuf);
+            DFXLOG_WARN("Failed to init map info:%s.", mapBuf);
             continue;
         } else {
             dfxElfMaps->AddMap(map);
@@ -115,7 +115,7 @@ std::shared_ptr<DfxElfMaps> DfxElfMaps::Create(const std::string path)
     }
     int ret = fclose(fp);
     if (ret < 0) {
-        DFXLOG_WARN("Fail to close maps info.");
+        DFXLOG_WARN("%s", "Failed to close maps info.");
     }
     dfxElfMaps->Sort();
     return dfxElfMaps;
@@ -132,7 +132,7 @@ std::shared_ptr<DfxElfMaps> DfxElfMaps::Create(const char* buffer)
     while (std::getline(iss, temp)) {
         std::shared_ptr<DfxElfMap> map = DfxElfMap::Create(temp, temp.length());
         if (map == nullptr) {
-            DFXLOG_WARN("Fail to init map info:%s.", temp.c_str());
+            DFXLOG_WARN("Failed to init map info:%s.", temp.c_str());
             continue;
         } else {
             dfxElfMaps->AddMap(map);

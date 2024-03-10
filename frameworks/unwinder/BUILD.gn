@@ -73,6 +73,8 @@ if (defined(ohos_lite)) {
     include_dirs = [
       "include",
       "$faultloggerd_interfaces_path/common",
+      "$faultloggerd_common_path/dfxlog",
+      "$faultloggerd_common_path/dfxutil",
       "//third_party/libunwind/include",
       "//third_party/libunwind/src",
     ]
@@ -114,6 +116,7 @@ if (defined(ohos_lite)) {
       ":dfx_unwinder_config",
       "//third_party/jsoncpp:jsoncpp_public_config",
     ]
+    defines = [ "DFX_LOG_HILOG_BASE" ]
 
     sources = dfx_unwinder_sources
 

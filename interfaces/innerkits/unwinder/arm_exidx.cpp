@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2023-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -100,7 +100,9 @@ inline void ArmExidx::FlushInstr()
     }
     rsState_->cfaRegOffset = 0;
     if (context_.vsp != 0) {
-        LOG_CHECK((context_.vsp & 0x3) == 0);
+        if (__builtin_expect(!((context_.vsp & 0x3) == 0), false)) {
+            LOGE("%s", "Check failed: context_.vsp & 0x3) == 0");
+        }
         rsState_->cfaRegOffset = context_.vsp;
     }
     LOGU("rsState cfaReg: %d, cfaRegOffset: %d", rsState_->cfaReg, rsState_->cfaRegOffset);
@@ -109,7 +111,9 @@ inline void ArmExidx::FlushInstr()
     for (size_t i = 0; i < qutRegs.size(); i++) {
         uint32_t reg = static_cast<uint32_t>(qutRegs[i]);
         if (context_.IsTransformed(reg)) {
-            LOG_CHECK((context_.regs[i] & 0x3) == 0);
+            if (__builtin_expect(!((context_.regs[i] & 0x3) == 0), false)) {
+                LOGE("Check failed: context_.regs[%zu] & 0x3) == 0", i);
+            }
             rsState_->locs[i].type = REG_LOC_MEM_OFFSET;
             rsState_->locs[i].val = -context_.regs[i];
             LOGU("rsState reg: %d, locs[%d].val: %d", reg, i, rsState_->locs[i].val);
@@ -201,7 +205,7 @@ bool ArmExidx::ExtractEntryData(uintptr_t entryOffset)
         return false;
     } else if ((data & ARM_EXIDX_COMPACT) != 0) {
         if (((data >> TWENTY_FOUR_BIT_OFFSET) & 0x7f) != 0) {
-            LOGE("This is a non-zero index, this code doesn't support other formats.");
+            LOGE("%s", "This is a non-zero index, this code doesn't support other formats.");
             lastErrorData_.SetCode(UNW_ERROR_INVALID_PERSONALITY);
             return false;
         }
@@ -245,7 +249,7 @@ bool ArmExidx::ExtractEntryTab(uintptr_t tabOffset)
 #ifndef TEST_ARM_EXIDX
         uintptr_t perRoutine;
         if (!memory_->ReadPrel31(tabOffset, &perRoutine)) {
-            LOGE("Arm Personality routine error");
+            LOGE("%s", "Arm Personality routine error");
             lastErrorData_.SetAddrAndCode(tabOffset, UNW_ERROR_INVALID_MEMORY);
             return false;
         }
@@ -367,7 +371,7 @@ bool ArmExidx::Step(uintptr_t entryOffset, std::shared_ptr<RegLocState> rs)
 
 inline bool ArmExidx::DecodeSpare()
 {
-    LOGU("Exidx Decode Spare");
+    LOGU("%s", "Exidx Decode Spare");
     lastErrorData_.SetCode(UNW_ERROR_ARM_EXIDX_SPARE);
     return false;
 }
@@ -413,7 +417,7 @@ inline bool ArmExidx::Decode1000iiiiiiiiiiii()
     }
     registers |= curOp_;
     if (registers == 0x0) {
-        LOGE("10000000 00000000: Refuse to unwind!");
+        LOGE("%s", "10000000 00000000: Refuse to unwind!");
         lastErrorData_.SetCode(UNW_ERROR_CANT_UNWIND);
         return false;
     }
@@ -436,7 +440,7 @@ inline bool ArmExidx::Decode1001nnnn()
 {
     uint8_t bits = curOp_ & 0xf;
     if (bits == REG_ARM_R13 || bits == REG_ARM_R15) {
-        LOGU("10011101 or 10011111: Reserved");
+        LOGU("%s", "10011101 or 10011111: Reserved");
         lastErrorData_.SetCode(UNW_ERROR_RESERVED_VALUE);
         return false;
     }
@@ -485,7 +489,7 @@ inline bool ArmExidx::Decode1010nnnn()
 
 inline bool ArmExidx::Decode10110000()
 {
-    LOGU("10110000: Finish");
+    LOGU("%s", "10110000: Finish");
     lastErrorData_.SetCode(UNW_ERROR_ARM_EXIDX_FINISH);
     return true;
 }
