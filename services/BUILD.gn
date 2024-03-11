@@ -26,16 +26,6 @@ if (defined(ohos_lite)) {
     outputs = [ "$root_out_dir/etc/init/faultloggerd.cfg" ]
   }
 
-  copy("faultloggerd.para") {
-    sources = [ "$faultloggerd_path/services/config/faultloggerd.para" ]
-    outputs = [ "$root_out_dir/etc/param/faultloggerd.para" ]
-  }
-
-  copy("faultloggerd.para.dac") {
-    sources = [ "$faultloggerd_path/services/config/faultloggerd.para.dac" ]
-    outputs = [ "$root_out_dir/etc/param/faultloggerd.para.dac" ]
-  }
-
   copy("faultlogger.conf") {
     sources = [ "$faultloggerd_path/services/config/faultlogger.conf" ]
     outputs = [ "$root_out_dir/etc/faultlogger.conf" ]
