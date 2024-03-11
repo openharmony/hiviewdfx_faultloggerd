@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -94,11 +94,11 @@ bool CppCrashReporter::Format()
 void CppCrashReporter::ReportToHiview()
 {
     if (!Format()) {
-        DFXLOG_WARN("Failed to format crash report.");
+        DFXLOG_WARN("%s", "Failed to format crash report.");
         return;
     }
     if (process_->processInfo_.processName.find(HIVIEW_PROCESS_NAME) != std::string::npos) {
-        DFXLOG_WARN("Failed to report, hiview is crashed.");
+        DFXLOG_WARN("%s", "Failed to report, hiview is crashed.");
         return;
     }
 
@@ -134,7 +134,7 @@ void CppCrashReporter::ReportToHiview()
 void CppCrashReporter::ReportToAbilityManagerService()
 {
     if (process_->processInfo_.processName.find(FOUNDATION_PROCESS_NAME) != std::string::npos) {
-        DFXLOG_WARN("Do not to report to AbilityManagerService, foundation is crashed.");
+        DFXLOG_WARN("%s", "Do not to report to AbilityManagerService, foundation is crashed.");
         return;
     }
 

@@ -28,16 +28,18 @@
 
 #include <sys/types.h>
 
+#include "backtrace_local_context.h"
+#include "backtrace_local_thread.h"
 #include "dfx_define.h"
 #include "dfx_log.h"
+#include "dfx_symbols.h"
 #include "dfx_util.h"
 #include "securec.h"
 #include "strings.h"
 #include "libunwind.h"
 #include "libunwind_i-ohos.h"
-#include "dfx_symbols.h"
-#include "backtrace_local_context.h"
-#include "backtrace_local_thread.h"
+
+
 // forward declaration
 struct unw_addr_space;
 typedef struct unw_addr_space *unw_addr_space_t;
@@ -101,7 +103,7 @@ bool DfxCatchFrameLocal::CatchFrame(std::map<int, std::vector<DfxFrame>>& mapFra
     }
 
     if (pid_ != procInfo_.pid) {
-        DFXLOG_ERROR("CatchFrame :: only support local pid.");
+        DFXLOG_ERROR("%s", "CatchFrame :: only support local pid.");
         return false;
     }
 
@@ -130,7 +132,7 @@ bool DfxCatchFrameLocal::CatchFrame(int tid, std::vector<DfxFrame>& frames, int 
     }
 
     if (tid <= 0 || pid_ != procInfo_.pid) {
-        DFXLOG_ERROR("CatchFrame :: only support local pid.");
+        DFXLOG_ERROR("%s", "CatchFrame :: only support local pid.");
         return false;
     }
 
@@ -143,7 +145,7 @@ bool DfxCatchFrameLocal::CatchFrame(int tid, std::vector<DfxFrame>& frames, int 
         TidToNstid(pid_, tid, nstid);
     } else {
         if (!IsThreadInPid(pid_, nstid)) {
-            DFXLOG_ERROR("CatchFrame :: target tid is not in our task.");
+            DFXLOG_ERROR("%s", "CatchFrame :: target tid is not in our task.");
             return false;
         }
     }

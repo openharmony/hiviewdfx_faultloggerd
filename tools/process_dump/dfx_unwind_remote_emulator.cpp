@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2023-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -211,13 +211,13 @@ bool DfxUnwindRemote::DoUnwindStep(size_t const & index,
     static unw_word_t prevFramePc = 0;
     static unw_word_t prevFrameSp = 0;
     if (unw_get_reg(&cursor, UNW_REG_IP, (unw_word_t*)(&framePc))) {
-        DFXLOG_WARN("Fail to get current pc.");
+        DFXLOG_WARN("%s", "Failed to get current pc.");
         return ret;
     }
 
     uint64_t frameSp;
     if (unw_get_reg(&cursor, UNW_REG_SP, (unw_word_t*)(&frameSp))) {
-        DFXLOG_WARN("Fail to get stack pointer.");
+        DFXLOG_WARN("%s", "Failed to get stack pointer.");
         return ret;
     }
 
@@ -347,7 +347,7 @@ bool DfxUnwindRemote::GetArkJsHeapFuncName(std::string& funcName, std::shared_pt
         int result = unw_get_ark_js_heap_crash_info(thread->threadInfo_.tid,
             (uintptr_t*)&x20, (uintptr_t*)&fp, false, buf, ARK_JS_HEAD_LEN);
         if (result < 0) {
-            DFXLOG_WARN("Fail to unw_get_ark_js_heap_crash_info.");
+            DFXLOG_WARN("%s", "Failed to unw_get_ark_js_heap_crash_info.");
             break;
         }
         ret = true;
@@ -362,7 +362,7 @@ bool DfxUnwindRemote::GetArkJsHeapFuncName(std::string& funcName, std::shared_pt
 bool DfxUnwindRemote::UnwindThread(std::shared_ptr<DfxProcess> process, std::shared_ptr<DfxThread> thread)
 {
     if (thread == nullptr) {
-        DFXLOG_ERROR("NULL thread needs unwind.");
+        DFXLOG_ERROR("%s", "NULL thread needs unwind.");
         return false;
     }
 

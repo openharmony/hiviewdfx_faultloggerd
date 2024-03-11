@@ -67,20 +67,20 @@ int32_t RequestLogFileDescriptor(struct FaultLoggerdRequest *request)
 int32_t RequestFileDescriptorEx(const struct FaultLoggerdRequest *request)
 {
     if (request == nullptr) {
-        DFXLOG_ERROR("nullptr request");
+        DFXLOG_ERROR("%s", "nullptr request");
         return -1;
     }
 
     int sockfd;
     std::string name = GetSocketConnectionName();
     if (!StartConnect(sockfd, name.c_str(), SOCKET_TIMEOUT)) {
-        DFXLOG_ERROR("StartConnect failed");
+        DFXLOG_ERROR("StartConnect(%d) failed", sockfd);
         return -1;
     }
 
     write(sockfd, request, sizeof(struct FaultLoggerdRequest));
     int fd = ReadFileDescriptorFromSocket(sockfd);
-    DFXLOG_DEBUG("RequestFileDescriptorEx(%d).\n", fd);
+    DFXLOG_DEBUG("RequestFileDescriptorEx(%d).", fd);
     close(sockfd);
     return fd;
 }
@@ -102,7 +102,7 @@ static int32_t RequestFileDescriptorByCheck(const struct FaultLoggerdRequest *re
 {
     int32_t fd = -1;
     if (request == nullptr) {
-        DFXLOG_ERROR("nullptr request");
+        DFXLOG_ERROR("%s", "nullptr request");
         return -1;
     }
 
@@ -110,7 +110,7 @@ static int32_t RequestFileDescriptorByCheck(const struct FaultLoggerdRequest *re
     do {
         std::string name = GetSocketConnectionName();
         if (!StartConnect(sockfd, name.c_str(), SOCKET_TIMEOUT)) {
-            DFXLOG_ERROR("StartConnect failed");
+            DFXLOG_ERROR("StartConnect(%d) failed", sockfd);
             break;
         }
 
@@ -127,7 +127,7 @@ static int32_t RequestFileDescriptorByCheck(const struct FaultLoggerdRequest *re
         }
 
         fd = ReadFileDescriptorFromSocket(sockfd);
-        DFXLOG_DEBUG("RequestFileDescriptorByCheck(%d).\n", fd);
+        DFXLOG_DEBUG("RequestFileDescriptorByCheck(%d).", fd);
     } while (false);
     close(sockfd);
     return fd;
@@ -176,11 +176,11 @@ static int SendRequestToServer(const FaultLoggerdRequest &request)
         }
 
         if (!StartConnect(sockfd, name.c_str(), -1)) {
-            DFXLOG_ERROR("StartConnect failed.");
+            DFXLOG_ERROR("StartConnect(%d) failed", sockfd);
             break;
         }
         if (write(sockfd, &request, sizeof(struct FaultLoggerdRequest)) != static_cast<long>(sizeof(request))) {
-            DFXLOG_ERROR("write failed.");
+            DFXLOG_ERROR("%s", "write failed.");
             break;
         }
 
@@ -256,7 +256,7 @@ int RequestPrintTHilog(const char *msg, int length)
     do {
         std::string name = GetSocketConnectionName();
         if (!StartConnect(sockfd, name.c_str(), -1)) {
-            DFXLOG_ERROR("StartConnect failed");
+            DFXLOG_ERROR("StartConnect(%d) failed", sockfd);
             break;
         }
 
@@ -321,7 +321,7 @@ int32_t RequestDelPipeFd(int32_t pid)
     int sockfd;
     std::string name = GetSocketConnectionName();
     if (!StartConnect(sockfd, name.c_str(), SOCKET_TIMEOUT)) {
-        DFXLOG_ERROR("StartConnect failed");
+        DFXLOG_ERROR("StartConnect(%d) failed", sockfd);
         return -1;
     }
 

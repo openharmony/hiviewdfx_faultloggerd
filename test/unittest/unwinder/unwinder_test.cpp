@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 Huawei Device Co., Ltd.
+ * Copyright (c) 2022-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -18,15 +18,14 @@
 #include <cstdio>
 #include <thread>
 #include <unistd.h>
-#include <hilog/log.h>
 #include <malloc.h>
 #include <libunwind_i-ohos.h>
 #include <libunwind.h>
 #include <securec.h>
 
 #include "dfx_config.h"
-#include "elapsed_time.h"
 #include "dwarf_unwinder.h"
+#include "elapsed_time.h"
 #include "fp_unwinder.h"
 
 using namespace testing;

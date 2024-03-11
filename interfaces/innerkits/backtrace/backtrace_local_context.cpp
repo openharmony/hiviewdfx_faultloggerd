@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2022-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -22,7 +22,6 @@
 #include <mutex>
 
 #include <fcntl.h>
-#include <hilog/log.h>
 #include <securec.h>
 #include <sigchain.h>
 #include <sys/syscall.h>
@@ -126,7 +125,7 @@ std::shared_ptr<ThreadContext> BacktraceLocalContext::CollectThreadContext(int32
 
     if (!Init()) {
         RemoveContextLocked(tid);
-        DFXLOG_WARN("Failed to install local dump signal handler.");
+        DFXLOG_WARN("%s", "Failed to install local dump signal handler.");
         return nullptr;
     }
 
@@ -231,7 +230,7 @@ bool BacktraceLocalContext::CopyContextAndWaitTimeout(int sig, siginfo_t *si, vo
 #else
         // the ucontext.uc_mcontext.__reserved of libunwind is simplified with the system's own in aarch64
         if (memcpy_s(ctxPtr->ctx, sizeof(unw_context_t), context, sizeof(unw_context_t)) != 0) {
-            DFXLOG_WARN("Failed to copy local unwind context.");
+            DFXLOG_WARN("%s", "Failed to copy local unwind context.");
         }
 #endif
     } else {

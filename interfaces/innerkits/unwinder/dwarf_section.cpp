@@ -116,7 +116,7 @@ bool DwarfSection::Step(uintptr_t fdeAddr, std::shared_ptr<DfxRegs> regs, std::s
 {
     FrameDescEntry fdeInfo;
     if (!ParseFde(fdeAddr, fdeAddr, fdeInfo)) {
-        LOGE("Failed to parse fde?");
+        LOGE("%s", "Failed to parse fde?");
         lastErrorData_.SetAddrAndCode(fdeAddr, UNW_ERROR_DWARF_INVALID_FDE);
         return false;
     }
@@ -127,7 +127,7 @@ bool DwarfSection::Step(uintptr_t fdeAddr, std::shared_ptr<DfxRegs> regs, std::s
     LOGU("pc: %p, FDE start: %p", (void*)pc, (void*)fdeInfo.pcStart);
     DwarfCfaInstructions dwarfInstructions(memory_);
     if (!dwarfInstructions.Parse(pc, fdeInfo, *(rs.get()))) {
-        LOGE("Failed to parse dwarf instructions?");
+        LOGE("%s", "Failed to parse dwarf instructions?");
         lastErrorData_.SetAddrAndCode(pc, UNW_ERROR_DWARF_INVALID_INSTR);
         return false;
     }
@@ -142,13 +142,13 @@ bool DwarfSection::GetCieOrFde(uintptr_t &addr, FrameDescEntry &fdeInfo)
 
     if (isCieEntry) {
         if (!ParseCie(addr, ptr, fdeInfo.cie)) {
-            LOGE("Failed to Parse CIE?");
+            LOGE("%s", "Failed to Parse CIE?");
             return false;
         }
         addr = fdeInfo.cie.instructionsEnd;
     } else {
         if (!ParseFde(addr, ptr, fdeInfo)) {
-            LOGE("Failed to Parse FDE?");
+            LOGE("%s", "Failed to Parse FDE?");
             return false;
         }
         addr = fdeInfo.instructionsEnd;
@@ -209,12 +209,12 @@ bool DwarfSection::ParseFde(uintptr_t fdeAddr, uintptr_t fdePtr, FrameDescEntry 
         bool isCieEntry = false;
         ParseCieOrFdeHeader(fdePtr, fdeInfo, isCieEntry);
         if (isCieEntry) {
-            LOGE("ParseFde error, is Cie Entry?");
+            LOGE("%s", "ParseFde error, is Cie Entry?");
             return false;
         }
     }
     if (!FillInFde(fdePtr, fdeInfo)) {
-        LOGE("ParseFde error, failed to fill FDE?");
+        LOGE("%s", "ParseFde error, failed to fill FDE?");
         fdeEntries_.erase(fdeAddr);
         return false;
     }
@@ -225,7 +225,7 @@ bool DwarfSection::ParseFde(uintptr_t fdeAddr, uintptr_t fdePtr, FrameDescEntry 
 bool DwarfSection::FillInFde(uintptr_t ptr, FrameDescEntry &fdeInfo)
 {
     if (!ParseCie(fdeInfo.cieAddr, fdeInfo.cieAddr, fdeInfo.cie)) {
-        LOGE("Failed to parse CIE?");
+        LOGE("%s", "Failed to parse CIE?");
         return false;
     }
 
@@ -275,13 +275,13 @@ bool DwarfSection::ParseCie(uintptr_t cieAddr, uintptr_t ciePtr, CommonInfoEntry
         FrameDescEntry fdeInfo;
         ParseCieOrFdeHeader(ciePtr, fdeInfo, isCieEntry);
         if (!isCieEntry) {
-            LOGE("ParseCie error, is not Cie Entry?");
+            LOGE("%s", "ParseCie error, is not Cie Entry?");
             return false;
         }
         cieInfo = fdeInfo.cie;
     }
     if (!FillInCie(ciePtr, cieInfo)) {
-        LOGE("ParseCie error, failed to fill Cie?");
+        LOGE("%s", "ParseCie error, failed to fill Cie?");
         cieEntries_.erase(cieAddr);
         return false;
     }

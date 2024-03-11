@@ -74,7 +74,7 @@ int DfxAccessorsLocal::AccessMem(uintptr_t addr, uintptr_t *val, void *arg)
     }
     UnwindContext* ctx = reinterpret_cast<UnwindContext *>(arg);
     if ((ctx != nullptr) && (ctx->stackCheck == true) && (!IsValidFrame(addr, ctx->stackBottom, ctx->stackTop))) {
-        LOGE("Failed to access addr");
+        LOGE("%s", "Failed to access addr");
         return UNW_ERROR_INVALID_MEMORY;
     }
     *val = *(uintptr_t *) addr;
@@ -99,7 +99,7 @@ int DfxAccessorsLocal::FindUnwindTable(uintptr_t pc, UnwindTableInfo& uti, void 
 {
     UnwindContext *ctx = reinterpret_cast<UnwindContext *>(arg);
     if (ctx == nullptr) {
-        LOGE("ctx is null");
+        LOGE("%s", "ctx is null");
         return UNW_ERROR_INVALID_CONTEXT;
     }
 
@@ -181,14 +181,14 @@ int DfxAccessorsRemote::FindUnwindTable(uintptr_t pc, UnwindTableInfo& uti, void
         return UNW_ERROR_INVALID_CONTEXT;
     }
     if (pc >= ctx->di.startPc && pc < ctx->di.endPc) {
-        LOGU("FindUnwindTable had pc matched");
+        LOGU("%s", "FindUnwindTable had pc matched");
         uti = ctx->di;
         return UNW_ERROR_NONE;
     }
 
     auto elf = ctx->map->GetElf(ctx->pid);
     if (elf == nullptr) {
-        LOGU("FindUnwindTable elf is null");
+        LOGU("%s", "FindUnwindTable elf is null");
         return UNW_ERROR_INVALID_ELF;
     }
     int ret = elf->FindUnwindTableInfo(pc, ctx->map, uti);

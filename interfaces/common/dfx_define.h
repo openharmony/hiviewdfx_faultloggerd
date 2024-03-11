@@ -35,6 +35,7 @@
 #define LINE_BUF_SIZE   1024
 #define MAX_FATAL_MSG_SIZE  1024
 #define MAX_PIPE_SIZE (1024 * 1024)
+#define MAX_FUNC_NAME_LEN  256
 static const int NUMBER_ONE_THOUSAND = 1000;
 static const int NUMBER_ONE_MILLION = 1000000;
 

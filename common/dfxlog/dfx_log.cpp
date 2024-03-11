@@ -20,7 +20,6 @@
 #include <fcntl.h>
 #include <securec.h>
 #include <unistd.h>
-
 #include "dfx_define.h"
 
 static int g_debugFd = INVALID_FD;
@@ -85,11 +84,13 @@ int DfxLogPrint(const LogLevel logLevel, const unsigned int domain, const char* 
         return -1;
     }
 #endif
-
+    int ret = -1;
+#if defined(DFX_LOG_HILOG_BASE) || defined(is_ohos_lite)
     va_list args;
     va_start(args, fmt);
-    int ret = DFXLOG_PRINTV(logLevel, domain, tag, fmt, args);
+    ret = DFXLOG_PRINTV(logLevel, domain, tag, fmt, args);
     va_end(args);
+#endif
     return ret;
 }
 

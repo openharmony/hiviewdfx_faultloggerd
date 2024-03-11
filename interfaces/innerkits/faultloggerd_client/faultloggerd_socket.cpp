@@ -34,7 +34,7 @@ bool StartConnect(int& sockfd, const char* path, const int timeout)
 {
     bool ret = false;
     if ((sockfd = socket(AF_LOCAL, SOCK_STREAM, 0)) < 0) {
-        DFXLOG_ERROR("%s :: Failed to socket\n", __func__);
+        DFXLOG_ERROR("%s :: Failed to socket", __func__);
         return ret;
     }
 
@@ -47,7 +47,7 @@ bool StartConnect(int& sockfd, const char* path, const int timeout)
             void* pTimev = &timev;
             if (setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, \
                 static_cast<const char*>(pTimev), sizeof(timev)) != 0) {
-                    DFXLOG_ERROR("setsockopt SO_RCVTIMEO error");
+                    DFXLOG_ERROR("setsockopt(%d) SO_RCVTIMEO error", sockfd);
             }
         }
 

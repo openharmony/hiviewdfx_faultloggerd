@@ -63,7 +63,7 @@ bool DfxMap::Parse(const std::string buf, int size)
     // 7658d38000-7658d40000 rw-p 00000000 00:00 0                              [anon:thread signal stack]
     if (sscanf_s(buf.c_str(), "%" SCNxPTR "-%" SCNxPTR " %4s %" SCNxPTR " %x:%x %" SCNxPTR " %n",
         &begin, &end, &perms, sizeof(perms), &offset, &major, &minor, &inode, &pos) != 7) { // 7:scan size
-        DFXLOG_WARN("Fail to parse maps info.");
+        LOGW("%s", "Failed to parse maps info.");
         return false;
     }
 
@@ -122,7 +122,7 @@ std::string DfxMap::ToString()
     int ret = snprintf_s(buf, sizeof(buf), sizeof(buf) - 1, "%" PRIx64 "-%" PRIx64 " %s %08" PRIx64 " %s\n", \
         begin, end, perms.c_str(), offset, name.c_str());
     if (ret <= 0) {
-        DFXLOG_ERROR("%s :: snprintf_s failed, line: %d.", __func__, __LINE__);
+        LOGE("%s :: snprintf_s failed, line: %d.", __func__, __LINE__);
     }
     return std::string(buf);
 }
@@ -153,7 +153,7 @@ const std::shared_ptr<DfxElf> DfxMap::GetElf(pid_t pid)
 {
     if (elf == nullptr) {
         if (name.empty()) {
-            LOGE("Invalid map, name empty.");
+            LOGE("%s", "Invalid map, name empty.");
             return nullptr;
         }
         LOGU("GetElf name: %s", name.c_str());
@@ -165,7 +165,7 @@ const std::shared_ptr<DfxElf> DfxMap::GetElf(pid_t pid)
             shmmData = std::make_shared<std::vector<uint8_t>>(size);
             size_t byte = DfxMemory::ReadProcMemByPid(pid, begin, shmmData->data(), size);
             if (byte != size) {
-                LOGE("Failed to read shmm data");
+                LOGE("%s", "Failed to read shmm data");
                 return nullptr;
             }
             elf = std::make_shared<DfxElf>(shmmData->data(), byte);

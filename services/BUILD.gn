@@ -124,12 +124,14 @@ if (defined(ohos_lite)) {
     sources = faultloggerd_sources
 
     cflags_cc = [ "-DDEBUG_CRASH_LOCAL_HANDLER" ]
+    defines = [ "DFX_LOG_HILOG_BASE" ]
 
     deps = [
       ":faultlogger.conf",
       ":faultloggerd.para",
       ":faultloggerd.para.dac",
       "$faultloggerd_path/common/dfxlog:dfx_hilog",
+      "$faultloggerd_path/common/dfxlog:dfx_hilog_base",
       "$faultloggerd_path/common/dfxutil:dfx_util",
       "$faultloggerd_path/interfaces/innerkits/faultloggerd_client:libfaultloggerd",
       "$faultloggerd_path/interfaces/innerkits/signal_handler:dfx_local_handler",
@@ -141,7 +143,7 @@ if (defined(ohos_lite)) {
 
     external_deps = [
       "c_utils:utils",
-      "hilog:libhilog",
+      "hilog:libhilog_base",
     ]
     install_images = [
       "system",

@@ -80,7 +80,7 @@ void DfxInstrStatistic::DumpInstrStatResult(std::vector<std::pair<uint32_t, uint
         }
         iter++;
     }
-    LOGU("------Dump Instr Statistic End.\n");
+    LOGU("%s", "------Dump Instr Statistic End.");
 }
 } // namespace HiviewDFX
 } // namespace OHOS
