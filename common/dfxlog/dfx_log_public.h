@@ -33,7 +33,7 @@ template<typename LHS, typename RHS>
 constexpr auto ConcatStr(LHS&& lhs, RHS&& rhs)
 {
     std::array<char, sizeof(lhs) + sizeof(rhs) - 1> res {};
-    size_t i = 0;
+    std::size_t i = 0;
     for (auto it = std::begin(lhs); it != std::end(lhs) && *it; ++it) {
         res[i++] = *it;
     }
@@ -44,14 +44,14 @@ constexpr auto ConcatStr(LHS&& lhs, RHS&& rhs)
 }
 
 // 编译时计算: 直接得到func<line>:字符串，避免运行时格式化开销
-template<size_t N, int... D>
+template<std::size_t N, int... D>
 struct NumStr : NumStr<N / 10, N % 10, D...> { // 10 : decimal
 };
 
 template<int ...D>
 struct NumStr<0, D...> {
     static_assert(((D >= 0 && D <= 9) && ...)); // 9 : decimal
-    constexpr static size_t len = sizeof...(D);
+    constexpr static std::size_t len = sizeof...(D);
     constexpr static char str[] { D + '0'... };
 };
 

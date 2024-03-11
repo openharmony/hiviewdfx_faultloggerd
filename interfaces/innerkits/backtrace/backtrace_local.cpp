@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2022-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -15,9 +15,11 @@
 
 #include "backtrace_local.h"
 
+// dfx_log header must be included in front of libunwind header
+#include "dfx_log.h"
+
 #include <cstring>
 #include <dirent.h>
-#include <hilog/log.h>
 #include <libunwind_i-ohos.h>
 #include <mutex>
 #include <sstream>
@@ -106,11 +108,11 @@ bool PrintBacktrace(int32_t fd, bool fast, size_t maxFrameNums)
         auto line = DfxFrameFormat::GetFrameStr(frame);
         if (fd < 0) {
             // print to hilog
-            HILOG_INFO(LOG_CORE, " %{public}s", line.c_str());
+            DFXLOG_INFO(" %s", line.c_str());
         } else {
             dprintf(fd, "    %s", line.c_str());
         }
-        HILOG_INFO(LOG_CORE, " %{public}s", line.c_str());
+        DFXLOG_INFO(" %s", line.c_str());
     }
     return ret;
 }
@@ -141,7 +143,7 @@ const char* GetTrace(size_t skipFrameNum, size_t maxFrameNums)
     static std::string trace;
     trace.clear();
     if (!GetBacktrace(trace, skipFrameNum, false, maxFrameNums)) {
-        HILOG_ERROR(LOG_CORE, "Failed to get trace string");
+        DFXLOG_ERROR("%s", "Failed to get trace string");
     }
     return trace.c_str();
 }
