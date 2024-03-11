@@ -49,6 +49,7 @@ public:
     void TearDown() {}
 
     std::map<int, std::shared_ptr<Unwinder>> unwinders_;
+    const size_t skipFrameNum = 2;
 };
 
 /**
@@ -109,6 +110,11 @@ HWTEST_F(UnwinderTest, UnwinderLocalTest001, TestSize.Level2)
     time_t elapsed2 = counter.Elapsed();
     GTEST_LOG_(INFO) << "Elapsed-: " << elapsed1 << "\tElapsed+: " << elapsed2;
     GTEST_LOG_(INFO) << "UnwinderLocalTest001: frames:\n" << Unwinder::GetFramesStr(frames);
+    unwRet = unwinder->UnwindLocal(false, DEFAULT_MAX_FRAME_NUM, skipFrameNum);
+    EXPECT_EQ(true, unwRet) << "UnwinderLocalTest001: Unwind:" << unwRet;
+    auto frames2 = unwinder->GetFrames();
+    ASSERT_GT(frames.size(), frames2.size());
+    GTEST_LOG_(INFO) << "UnwinderLocalTest001: frames2:\n" << Unwinder::GetFramesStr(frames2);
     GTEST_LOG_(INFO) << "UnwinderLocalTest001: end.";
 }
 
@@ -193,6 +199,11 @@ HWTEST_F(UnwinderTest, UnwinderRemoteTest001, TestSize.Level2)
     time_t elapsed2 = counter.Elapsed();
     GTEST_LOG_(INFO) << "Elapsed-: " << elapsed1 << "\tElapsed+: " << elapsed2;
     GTEST_LOG_(INFO) << "UnwinderRemoteTest001: frames:\n" << Unwinder::GetFramesStr(frames);
+    unwRet = unwinder->UnwindRemote(child, false, DEFAULT_MAX_FRAME_NUM, skipFrameNum);
+    EXPECT_EQ(true, unwRet) << "UnwinderRemoteTest001: unwRet:" << unwRet;
+    auto frames2 = unwinder->GetFrames();
+    ASSERT_GT(frames.size(), frames2.size());
+    GTEST_LOG_(INFO) << "UnwinderLocalTest001: frames2:\n" << Unwinder::GetFramesStr(frames2);
     DfxPtrace::Detach(child);
     GTEST_LOG_(INFO) << "UnwinderRemoteTest001: end.";
 }
@@ -251,7 +262,7 @@ HWTEST_F(UnwinderTest, UnwinderRemoteTest003, TestSize.Level2)
     auto unwinderNegative = std::make_shared<Unwinder>(-2);
     size_t maxFrameNum = 64;
     size_t skipFrameNum = 0;
-    GTEST_LOG_(INFO) << "when pid <= 0, UnwindLocal(maxFrameNum, skipFrameNum) is false";
+    GTEST_LOG_(INFO) << "when pid <= 0, UnwindRemote(maxFrameNum, skipFrameNum) is false";
     ASSERT_FALSE(unwinderNegative->UnwindRemote(-2, maxFrameNum, skipFrameNum));
     GTEST_LOG_(INFO) << "UnwinderRemoteTest003: end.";
 }
