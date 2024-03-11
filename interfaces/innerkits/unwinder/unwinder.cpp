@@ -497,6 +497,10 @@ bool Unwinder::FpStep(uintptr_t& fp, uintptr_t& pc, void *ctx)
     uintptr_t ptr = fp;
     if (memory_->ReadUptr(ptr, &fp, true) &&
         memory_->ReadUptr(ptr, &pc, false)) {
+        if (fp == prevFp) {
+            LOGW("-fp: %lx is same", (uint64_t)fp);
+            return false;
+        }
         regs_->SetReg(REG_FP, &fp);
         regs_->SetReg(REG_PC, &pc);
         regs_->SetReg(REG_SP, &prevFp);
