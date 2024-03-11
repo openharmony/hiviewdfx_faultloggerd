@@ -94,7 +94,6 @@ public:
     bool UnwindByFp(void *ctx, \
         size_t maxFrameNum = DEFAULT_MAX_FRAME_NUM, size_t skipFrameNum = 0);
 
-    bool Step(DfxFrame& frame, void *ctx);
     bool Step(uintptr_t& pc, uintptr_t& sp, void *ctx);
     bool FpStep(uintptr_t& fp, uintptr_t& pc, void *ctx);
 
@@ -122,7 +121,8 @@ private:
     void Destroy();
     bool CheckAndReset(void* ctx);
     void DoPcAdjust(uintptr_t& pc);
-    void AddFrame(bool isJsFrame, uintptr_t pc, uintptr_t sp, uintptr_t fp);
+    void AddFrame(bool isJsFrame, uintptr_t pc, uintptr_t sp, std::shared_ptr<DfxMap> map);
+    bool StepInner(const bool isSigFrame, bool& isJsFrame, uintptr_t& pc, uintptr_t& sp, void *ctx);
     bool Apply(std::shared_ptr<DfxRegs> regs, std::shared_ptr<RegLocState> rs);
 #if defined(ENABLE_MIXSTACK)
     bool StepArkJsFrame(uintptr_t& pc, uintptr_t& fp, uintptr_t& sp);

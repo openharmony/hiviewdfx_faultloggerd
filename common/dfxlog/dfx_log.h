@@ -82,7 +82,7 @@ do { \
     constexpr HILOG_FMT_IN_SECTION static auto hilogFmt = OHOS::HiviewDFX::ConcatStr("[%{public}s:%{public}d] ", \
         fmt ## _DfxToPublic); \
     FmtId fmtid { HILOG_UUID, HILOG_FMT_OFFSET(hilogFmt.data()) }; \
-    HiLogPrintDict(LOG_CORE, level, LOG_DOMAIN, LOG_TAG,
+    HiLogPrintDict(LOG_CORE, level, LOG_DOMAIN, LOG_TAG, \
         &fmtid, hilogFmt.data(), (FILENAME_), (__LINE__), ##__VA_ARGS__); \
 } while (0)
 #else
