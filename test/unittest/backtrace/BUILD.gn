@@ -1,4 +1,4 @@
-# Copyright (c) 2022-2023 Huawei Device Co., Ltd.
+# Copyright (c) 2022-2024 Huawei Device Co., Ltd.
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -109,16 +109,17 @@ ohos_unittest("backtrace_utils_test_static") {
     "//third_party/libunwind/include/tdep/",
     "//third_party/libunwind/src",
   ]
+  defines = [ "DFX_LOG_HILOG_BASE" ]
   sources = [ "backtrace_utils_test.cpp" ]
   deps = [
-    "$faultloggerd_common_path/dfxutil:dfx_util",
+    "$faultloggerd_common_path/dfxutil:dfx_util_static",
     "$faultloggerd_interfaces_path/innerkits/backtrace:backtrace_local",
     "$faultloggerd_path/test/utils:dfx_test_util",
     "//third_party/googletest:gtest_main",
     "//third_party/jsoncpp:jsoncpp",
   ]
   if (use_musl && use_jemalloc && use_jemalloc_dfx_intf) {
-    defines = [ "USE_JEMALLOC_DFX_INTF" ]
+    defines += [ "USE_JEMALLOC_DFX_INTF" ]
   }
   branch_protector_ret = "pac_ret"
   external_deps = [
@@ -140,9 +141,10 @@ ohos_unittest("backtrace_local_test_static") {
     "//third_party/libunwind/include/tdep/",
     "//third_party/libunwind/src",
   ]
+  defines = [ "DFX_LOG_HILOG_BASE" ]
   sources = [ "backtrace_local_test.cpp" ]
   deps = [
-    "$faultloggerd_common_path/dfxutil:dfx_util",
+    "$faultloggerd_common_path/dfxutil:dfx_util_static",
     "$faultloggerd_interfaces_path/innerkits/backtrace:backtrace_local",
     "$faultloggerd_path/test/utils:dfx_test_util",
     "//third_party/bounds_checking_function:libsec_shared",
@@ -169,9 +171,10 @@ ohos_unittest("catchframe_local_test_static") {
     "//third_party/libunwind/include/tdep/",
     "//third_party/libunwind/src",
   ]
+  defines = [ "DFX_LOG_HILOG_BASE" ]
   sources = [ "catchframe_local_test.cpp" ]
   deps = [
-    "$faultloggerd_path/common/dfxutil:dfx_util",
+    "$faultloggerd_path/common/dfxutil:dfx_util_static",
     "$faultloggerd_path/interfaces/innerkits/backtrace:backtrace_local",
     "$faultloggerd_path/test/utils:dfx_test_util",
     "//third_party/bounds_checking_function:libsec_shared",
