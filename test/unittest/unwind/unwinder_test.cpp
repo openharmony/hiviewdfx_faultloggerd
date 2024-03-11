@@ -203,7 +203,7 @@ HWTEST_F(UnwinderTest, UnwinderRemoteTest001, TestSize.Level2)
     EXPECT_EQ(true, unwRet) << "UnwinderRemoteTest001: unwRet:" << unwRet;
     auto frames2 = unwinder->GetFrames();
     ASSERT_GT(frames.size(), frames2.size());
-    GTEST_LOG_(INFO) << "UnwinderLocalTest001: frames2:\n" << Unwinder::GetFramesStr(frames2);
+    GTEST_LOG_(INFO) << "UnwinderRemoteTest001: frames2:\n" << Unwinder::GetFramesStr(frames2);
     DfxPtrace::Detach(child);
     GTEST_LOG_(INFO) << "UnwinderRemoteTest001: end.";
 }

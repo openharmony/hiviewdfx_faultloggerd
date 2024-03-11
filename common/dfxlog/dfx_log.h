@@ -75,7 +75,7 @@ int DfxLogPrintV(const LogLevel logLevel, const unsigned int domain, const char*
 do { \
     constexpr HILOG_FMT_IN_SECTION static auto hilogFmt = fmt ## _DfxToPublic; \
     FmtId fmtid { HILOG_UUID, HILOG_FMT_OFFSET(hilogFmt.data()) }; \
-    HiLogPrintDict(LOG_CORE, level, LOG_DOMAIN, LOG_TAG, &fmtid, fmt ## _DfxToPublic.data(), ##__VA_ARGS__); \
+    HiLogPrintDict(LOG_CORE, level, LOG_DOMAIN, LOG_TAG, &fmtid, hilogFmt.data(), ##__VA_ARGS__); \
 } while (0)
 #define DFXLOG_STD_ARRAY_FILE(level, fmt, ...) \
 do { \
@@ -83,7 +83,7 @@ do { \
         fmt ## _DfxToPublic); \
     FmtId fmtid { HILOG_UUID, HILOG_FMT_OFFSET(hilogFmt.data()) }; \
     HiLogPrintDict(LOG_CORE, level, LOG_DOMAIN, LOG_TAG, \
-        &fmtid, fmt ## _DfxToPublic.data(), (FILENAME_), (__LINE__), ##__VA_ARGS__); \
+        &fmtid, hilogFmt.data(), (FILENAME_), (__LINE__), ##__VA_ARGS__); \
 } while (0)
 #else
 #define DFXLOG_STD_ARRAY(level, fmt, ...) \
