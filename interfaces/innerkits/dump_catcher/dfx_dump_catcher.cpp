@@ -233,13 +233,11 @@ bool DfxDumpCatcher::DoDumpCatchRemote(const int type, int pid, int tid, std::st
             ret = true;
             break;
         case DUMP_POLL_TIMEOUT:
-            if (type == DUMP_TYPE_MIX) {
-                msg.append("Result: pid(" + std::to_string(pid) + ") dump mix timeout, try dump native frame.\n");
-                int type = DUMP_TYPE_NATIVE;
-                return DoDumpCatchRemote(type, pid, tid, msg, isJson);
-            } else if (type == DUMP_TYPE_NATIVE) {
+            if (msg == "Result: poll timeout.\n") { // when process killed in 6s, print status and wchan
                 ReadProcessStatus(msg, pid);
                 ReadProcessWchan(msg, pid, false, true);
+            } else {
+                ret = true;
             }
             break;
         default:
