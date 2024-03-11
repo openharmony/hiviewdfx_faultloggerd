@@ -30,8 +30,10 @@
 #include "stack_util.h"
 #include "string_printf.h"
 #include "string_util.h"
+#if defined(ENABLE_MIXSTACK)
 #include "parameter.h"
 #include "parameters.h"
+#endif
 
 namespace OHOS {
 namespace HiviewDFX {

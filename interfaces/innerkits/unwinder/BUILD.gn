@@ -85,8 +85,6 @@ if (defined(ohos_lite)) {
       "$hilog_lite_deps_path",
       "//third_party/bounds_checking_function:libsec_shared",
     ]
-
-    external_deps = [ "init:libbegetutil" ]
   }
 
   static_library("libunwinder_static") {
@@ -117,8 +115,6 @@ if (defined(ohos_lite)) {
       "$hilog_lite_deps_path",
       "//third_party/bounds_checking_function:libsec_shared",
     ]
-
-    external_deps = [ "init:libbegetutil" ]
   }
 
   static_library("unwinder_host") {
