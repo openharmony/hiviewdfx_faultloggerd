@@ -186,6 +186,14 @@ void ReadThreadName(const int tid, std::string& str)
     TrimAndDupStr(name, str);
 }
 
+void ReadThreadNameByPidAndTid(const int pid, const int tid, std::string& str)
+{
+    std::string path = StringPrintf("/proc/%d/task/%d/comm", pid, tid);
+    std::string name;
+    OHOS::HiviewDFX::LoadStringFromFile(path, name);
+    TrimAndDupStr(name, str);
+}
+
 void ReadProcessName(const int pid, std::string& str)
 {
     std::string path;

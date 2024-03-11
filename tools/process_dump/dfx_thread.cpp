@@ -53,7 +53,7 @@ void DfxThread::InitThreadInfo(pid_t pid, pid_t tid, pid_t nsTid)
     threadInfo_.pid = pid;
     threadInfo_.tid = tid;
     threadInfo_.nsTid = nsTid;
-    ReadThreadName(threadInfo_.tid, threadInfo_.threadName);
+    ReadThreadNameByPidAndTid(threadInfo_.pid, threadInfo_.tid, threadInfo_.threadName);
     threadStatus = ThreadStatus::THREAD_STATUS_INIT;
 }
 
