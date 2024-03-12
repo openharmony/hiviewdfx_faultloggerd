@@ -120,7 +120,6 @@ if (defined(ohos_lite)) {
       ":faultlogger.conf",
       ":faultloggerd.para",
       ":faultloggerd.para.dac",
-      "$faultloggerd_path/common/dfxlog:dfx_hilog",
       "$faultloggerd_path/common/dfxlog:dfx_hilog_base",
       "$faultloggerd_path/common/dfxutil:dfx_util",
       "$faultloggerd_path/interfaces/innerkits/faultloggerd_client:libfaultloggerd",
