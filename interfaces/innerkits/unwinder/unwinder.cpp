@@ -69,7 +69,6 @@ void Unwinder::Init()
         LOGI("Check mixstack enabled.");
         enableMixstack_ = true;
     } else {
-        
         LOGI("Check mixstack disabled.");
         enableMixstack_ = false;
     }
