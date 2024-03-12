@@ -66,8 +66,11 @@ void Unwinder::Init()
     }
 #if defined(ENABLE_MIXSTACK)
     if (OHOS::system::GetParameter(MIXSTACK_ENABLED_KEY, "true") == "true") {
+        LOGI("Check mixstack enabled.");
         enableMixstack_ = true;
     } else {
+        
+        LOGI("Check mixstack disabled.");
         enableMixstack_ = false;
     }
 #endif
@@ -368,7 +371,6 @@ bool Unwinder::Step(DfxFrame& frame, void *ctx)
 
 #if defined(ENABLE_MIXSTACK)
     if (enableMixstack_) {
-        LOGI("Check mixstack enabled.");
 #if defined(ONLINE_MIXSTACK)
         if (map != nullptr && map->IsArkExecutable()) {
             if (!StepArkJsFrame(pc, fp, sp)) {
