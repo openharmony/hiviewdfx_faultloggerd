@@ -195,6 +195,7 @@ if (defined(ohos_lite)) {
     external_deps = [
       "c_utils:utils",
       "hilog:libhilog",
+      "init:libbegetutil",
     ]
     install_images = [
       "system",
@@ -237,6 +238,7 @@ if (defined(ohos_lite)) {
     external_deps = [
       "c_utils:utils",
       "hilog:libhilog",
+      "init:libbegetutil",
     ]
     if (faultloggerd_abilitybase_enable) {
       external_deps += [ "ability_base:extractortool" ]
@@ -276,6 +278,7 @@ if (defined(ohos_lite)) {
     external_deps = [
       "c_utils:utils",
       "hilog:libhilog",
+      "init:libbegetutil",
     ]
     part_name = "faultloggerd"
     subsystem_name = "hiviewdfx"

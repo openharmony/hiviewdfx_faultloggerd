@@ -85,6 +85,20 @@ if (defined(ohos_lite)) {
     subsystem_name = "hiviewdfx"
   }
 
+  ohos_prebuilt_etc("faultloggerd.para") {
+    source = "config/faultloggerd.para"
+    relative_install_dir = "param"
+    part_name = "faultloggerd"
+    subsystem_name = "hiviewdfx"
+  }
+
+  ohos_prebuilt_etc("faultloggerd.para.dac") {
+    source = "config/faultloggerd.para.dac"
+    relative_install_dir = "param"
+    part_name = "faultloggerd"
+    subsystem_name = "hiviewdfx"
+  }
+
   ohos_prebuilt_etc("faultlogger.conf") {
     source = "config/faultlogger.conf"
     part_name = "faultloggerd"
@@ -104,6 +118,9 @@ if (defined(ohos_lite)) {
 
     deps = [
       ":faultlogger.conf",
+      ":faultloggerd.para",
+      ":faultloggerd.para.dac",
+      "$faultloggerd_path/common/dfxlog:dfx_hilog",
       "$faultloggerd_path/common/dfxlog:dfx_hilog_base",
       "$faultloggerd_path/common/dfxutil:dfx_util",
       "$faultloggerd_path/interfaces/innerkits/faultloggerd_client:libfaultloggerd",
