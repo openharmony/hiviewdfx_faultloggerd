@@ -147,6 +147,9 @@ private:
     bool enableFpFallback_ = true;
     bool enableFpCheckMapExec_ = false;
     bool isFpStep_ = false;
+#if defined(ENABLE_MIXSTACK)
+    bool enableMixstack_ = true;
+#endif
 
     int32_t pid_ = 0;
     uintptr_t pacMask_ = 0;

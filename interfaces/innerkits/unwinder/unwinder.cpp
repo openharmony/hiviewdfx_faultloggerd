@@ -64,6 +64,13 @@ void Unwinder::Init()
             maps_ = DfxMaps::Create(pid_);
         }
     }
+#if defined(ENABLE_MIXSTACK)
+    if (OHOS::system::GetParameter(MIXSTACK_ENABLED_KEY, "true") == "true") {
+        enableMixstack_ = true;
+    } else {
+        enableMixstack_ = false;
+    }
+#endif
 }
 
 void Unwinder::Clear()
@@ -360,7 +367,7 @@ bool Unwinder::Step(DfxFrame& frame, void *ctx)
     frame.map = map;
 
 #if defined(ENABLE_MIXSTACK)
-    if (OHOS::system::GetParameter(MIXSTACK_ENABLED_KEY, "true") == "true") {
+    if (enableMixstack_) {
         LOGI("Check mixstack enabled.");
 #if defined(ONLINE_MIXSTACK)
         if (map != nullptr && map->IsArkExecutable()) {
