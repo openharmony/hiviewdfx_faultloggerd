@@ -49,12 +49,10 @@ if (defined(ohos_lite)) {
     ]
     sources = [ "procinfo.cpp" ]
 
-    deps = [
-      "$faultloggerd_path/common/dfxutil:dfx_util",
-      "//third_party/bounds_checking_function:libsec_shared",
-    ]
+    deps = [ "$faultloggerd_path/common/dfxutil:dfx_util" ]
     version_script = "libprocinfo.map"
     external_deps = [
+      "bounds_checking_function:libsec_shared",
       "c_utils:utils",
       "hilog:libhilog",
     ]
@@ -75,12 +73,12 @@ if (defined(ohos_lite)) {
 
     sources = [ "procinfo.cpp" ]
 
-    deps = [
-      "$faultloggerd_path/common/dfxutil:dfx_util_static",
-      "//third_party/bounds_checking_function:libsec_static",
-    ]
+    deps = [ "$faultloggerd_path/common/dfxutil:dfx_util_static" ]
 
-    external_deps = [ "c_utils:utils" ]
+    external_deps = [
+      "bounds_checking_function:libsec_static",
+      "c_utils:utils",
+    ]
 
     part_name = "faultloggerd"
     subsystem_name = "hiviewdfx"

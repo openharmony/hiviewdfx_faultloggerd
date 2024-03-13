@@ -162,7 +162,6 @@ if (defined(ohos_lite)) {
   }
 
   config("lzma_config") {
-    include_dirs = [ "//third_party/lzma/C" ]
     if (is_ohos && !is_mingw && !is_emulator) {
       defines = [ "ENABLE_MINIDEBUGINFO" ]
     }
@@ -185,14 +184,14 @@ if (defined(ohos_lite)) {
       "$faultloggerd_common_path/dfxlog:dfx_hilog",
       "$faultloggerd_common_path/dfxutil:dfx_util",
       "$faultloggerd_interfaces_path/innerkits/procinfo:libdfx_procinfo",
-      "//third_party/bounds_checking_function:libsec_shared",
     ]
 
     if (is_ohos && !is_mingw && !is_emulator) {
       sources += [ "dfx_xz_utils.cpp" ]
-      public_deps = [ "//third_party/lzma:lzma_shared" ]
     }
+    public_external_deps = [ "lzma:lzma_shared" ]
     external_deps = [
+      "bounds_checking_function:libsec_shared",
       "c_utils:utils",
       "hilog:libhilog",
       "init:libbegetutil",
@@ -228,14 +227,14 @@ if (defined(ohos_lite)) {
       "$faultloggerd_common_path/dfxlog:dfx_hilog",
       "$faultloggerd_common_path/dfxutil:dfx_util",
       "$faultloggerd_interfaces_path/innerkits/procinfo:libdfx_procinfo",
-      "//third_party/bounds_checking_function:libsec_shared",
     ]
 
     if (is_ohos && !is_mingw && !is_emulator) {
       sources += [ "dfx_xz_utils.cpp" ]
-      public_deps = [ "//third_party/lzma:lzma_shared" ]
     }
+    public_external_deps = [ "lzma:lzma_shared" ]
     external_deps = [
+      "bounds_checking_function:libsec_shared",
       "c_utils:utils",
       "hilog:libhilog",
       "init:libbegetutil",
@@ -268,14 +267,14 @@ if (defined(ohos_lite)) {
       "$faultloggerd_common_path/dfxlog:dfx_hilog",
       "$faultloggerd_common_path/dfxutil:dfx_util",
       "$faultloggerd_interfaces_path/innerkits/procinfo:libdfx_procinfo",
-      "//third_party/bounds_checking_function:libsec_shared",
     ]
 
     if (is_ohos && !is_mingw && !is_emulator) {
       sources += [ "dfx_xz_utils.cpp" ]
-      public_deps = [ "//third_party/lzma:lzma_shared" ]
     }
+    public_external_deps = [ "lzma:lzma_shared" ]
     external_deps = [
+      "bounds_checking_function:libsec_shared",
       "c_utils:utils",
       "hilog:libhilog",
       "init:libbegetutil",
@@ -318,14 +317,12 @@ if (defined(ohos_lite)) {
     ]
     if (is_ohos && !is_mingw && !is_emulator) {
       sources += [ "dfx_xz_utils.cpp" ]
-      public_deps = [ "//third_party/lzma:lzma_static" ]
+      public_external_deps = [ "lzma:lzma_static" ]
     }
-    deps = [
-      "$faultloggerd_common_path/dfxutil:dfx_util_host",
-      "//third_party/bounds_checking_function:libsec_static",
-    ]
+    deps = [ "$faultloggerd_common_path/dfxutil:dfx_util_host" ]
+    external_deps = [ "bounds_checking_function:libsec_static" ]
     if (is_ohos) {
-      external_deps = [ "c_utils:utils" ]
+      external_deps += [ "c_utils:utils" ]
     }
     part_name = "faultloggerd"
     subsystem_name = "hiviewdfx"
