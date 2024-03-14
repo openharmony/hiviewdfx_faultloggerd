@@ -31,7 +31,13 @@
 #include <unistd.h>
 #include <vector>
 
+#include "async_stack.h"
 #include "dfx_define.h"
+#ifndef is_ohos_lite
+#include "ffrt_inner.h"
+#include "uv.h"
+#endif // !is_ohos_lite
+
 #include "info/fatal_message.h"
 #include "securec.h"
 
@@ -120,6 +126,18 @@ constexpr static CrasherCommandLine CMDLINE_TABLE[] = {
 #endif
     {"FatalMessage", "PrintFatalMessageInLibc",
         &DfxCrasher::PrintFatalMessageInLibc},
+#ifndef is_ohos_lite
+    {"AsyncStack", "Test async stacktrace in nomal thread crash case",
+        &DfxCrasher::AsyncStacktrace},
+    {"CrashInFFRT", "Test async-stacktrace api in ffrt crash case",
+        &DfxCrasher::CrashInFFRT},
+    {"CrashInLibuvWork", "Test async-stacktrace api in work callback crash case",
+        &DfxCrasher::CrashInLibuvWork},
+    {"CrashInLibuvTimer", "Test async-stacktrace api in timer callback crash case",
+        &DfxCrasher::CrashInLibuvTimer},
+    {"CrashInLibuvWorkDone", "Test async-stacktrace api in work callback done crash case",
+        &DfxCrasher::CrashInLibuvWorkDone},
+#endif
 };
 
 DfxCrasher::DfxCrasher() {}
@@ -464,6 +482,137 @@ NOINLINE int DfxCrasher::PrintFatalMessageInLibc()
     RaiseAbort();
     return 0;
 }
+
+void* CrashInSubThread(void* stackIdPtr)
+{
+    SetStackId(*((uint64_t*)stackIdPtr));
+    printf("CrashInSubThread stackId:%p value:%p.\n", stackIdPtr, (void*)*((uint64_t*)stackIdPtr));
+    raise(SIGSEGV);
+    return nullptr;
+}
+
+#ifndef is_ohos_lite
+NOINLINE int DfxCrasher::AsyncStacktrace()
+{
+#ifdef __aarch64__
+    EnableAsyncStack();
+    uint64_t stackId = CollectAsyncStack();
+    printf("Current stackId:%p.\n", (void*)stackId);
+    pthread_t thread;
+    pthread_create(&thread, NULL, CrashInSubThread, (void*)&stackId);
+    void *result = nullptr;
+    pthread_join(thread, &result);
+    return (uint64_t)(result);
+#else
+    printf("Unsupported arch.\n");
+    return 0;
+#endif
+}
+
+NOINLINE int FFRTTaskSubmit1(int i)
+{
+    int inner = i + 1;
+    printf("FFRTTaskSubmit1:current %d\n", inner);
+    ffrt::submit(
+        [&]() {
+            inner = 2; // 2 : inner count
+            raise(SIGSEGV);
+        },
+        {},
+        {&inner});
+    return inner;
+}
+
+NOINLINE int FFRTTaskSubmit0(int i)
+{
+    int inner = i + 1;
+    printf("FFRTTaskSubmit0:current %d\n", inner);
+    return FFRTTaskSubmit1(i);
+}
+
+NOINLINE int DfxCrasher::CrashInFFRT()
+{
+    int i = FFRTTaskSubmit0(10);
+    ffrt::wait();
+    return i;
+}
+
+static bool g_done = 0;
+static unsigned g_events = 0;
+static unsigned g_result;
+
+NOINLINE static void WorkCallback(uv_work_t* req)
+{
+    req->data = &g_result;
+    raise(SIGSEGV);
+}
+
+NOINLINE static void AfterWorkCallback(uv_work_t* req, int status)
+{
+    g_events++;
+    if (!g_done) {
+        uv_queue_work(req->loop, req, WorkCallback, AfterWorkCallback);
+    }
+}
+
+static void TimerCallback(uv_timer_t* handle)
+{
+    g_done = true;
+}
+
+NOINLINE int DfxCrasher::CrashInLibuvWork()
+{
+    uv_timer_t timerHandle;
+    uv_work_t work;
+    uv_loop_t* loop = uv_default_loop();
+    int timeout = 5000;
+    uv_timer_init(loop, &timerHandle);
+    uv_timer_start(&timerHandle, TimerCallback, timeout, 0);
+    uv_queue_work(loop, &work, WorkCallback, AfterWorkCallback);
+    uv_run(loop, UV_RUN_DEFAULT);
+    printf("END in CrashInLibuvWork\n");
+    return 0;
+}
+
+static void TimerCallback2(uv_timer_t* handle)
+{
+    raise(SIGSEGV);
+}
+
+NOINLINE int DfxCrasher::CrashInLibuvTimer()
+{
+    uv_timer_t timerHandle;
+    uv_work_t work;
+    uv_loop_t* loop = uv_default_loop();
+    int timeout = 5000;
+    uv_timer_init(loop, &timerHandle);
+    uv_timer_start(&timerHandle, TimerCallback2, timeout, 0);
+    uv_queue_work(loop, &work, WorkCallback, AfterWorkCallback);
+    uv_run(loop, UV_RUN_DEFAULT);
+    printf("END in CrashInLibuvTimer\n");
+    return 0;
+}
+
+NOINLINE static void WorkCallback2(uv_work_t* req)
+{
+    req->data = &g_result;
+}
+
+NOINLINE static void CrashAfterWorkCallback(uv_work_t* req, int status)
+{
+    raise(SIGSEGV);
+}
+
+NOINLINE int DfxCrasher::CrashInLibuvWorkDone()
+{
+    uv_work_t work;
+    uv_loop_t* loop = uv_default_loop();
+    uv_queue_work(loop, &work, WorkCallback2, CrashAfterWorkCallback);
+    uv_run(loop, UV_RUN_DEFAULT);
+    printf("END in CrashInLibuvWorkDone\n");
+    return 0;
+}
+#endif
 
 void* DfxCrasher::DoCrashInThread(void * inputArg)
 {

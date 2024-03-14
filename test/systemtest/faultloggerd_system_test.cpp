@@ -290,6 +290,20 @@ static bool CheckCppCrashAllLabelKeywords(const string& filePath, const pid_t& p
     return CheckKeyWords(filePath, log, expectNum, minRegIdx) == expectNum;
 }
 
+#if defined(__aarch64__)
+static bool CheckCppCrashAsyncStackKeywords(const string& filePath, const pid_t& pid)
+{
+    string log[] = {
+        "Timestamp:", "Pid:" + to_string(pid), "Uid:", "Process", "Reason:", "Fault", "thread", "info:",
+        "SubmitterStacktrace", "Tid:", "#00", "Registers:", REGISTERS, "Memory", "near", "registers:",
+        "FaultStack:", "Maps:", "/crasher"
+    };
+    int minRegIdx = 11; // 11 : index of first REGISTERS - 1
+    int expectNum = sizeof(log) / sizeof(log[0]);
+    return CheckKeyWords(filePath, log, expectNum, minRegIdx) == expectNum;
+}
+#endif
+
 /**
  * @tc.name: FaultLoggerdSystemTest001
  * @tc.desc: test C crasher application: SIGFPE
@@ -1353,5 +1367,107 @@ HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest113, TestSize.Level2)
     EXPECT_TRUE(CheckCppCrashAllLabelKeywords(fileName, pid)) << "FaultLoggerdSystemTest113 Failed";
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest113: end.";
 }
+
+#if defined(__aarch64__)
+/**
+* @tc.name: FaultLoggerdSystemTest114
+* @tc.desc: Test async stacktrace in nomal thread crash case
+* @tc.type: FUNC
+*/
+HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest114, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest114: start.";
+    string cmd = "AsyncStack";
+    string fileName;
+    pid_t pid = TriggerCrasherAndGetFileName(cmd, CRASHER_CPP, fileName);
+    GTEST_LOG_(INFO) << "test pid(" << pid << ")"  << " cppcrash file name : " << fileName;
+    if (pid < 0 || fileName.size() < CPPCRASH_FILENAME_MIN_LENGTH) {
+        GTEST_LOG_(ERROR) << "Trigger Crash Failed.";
+        FAIL();
+    }
+    EXPECT_TRUE(CheckCppCrashAsyncStackKeywords(fileName, pid)) << "FaultLoggerdSystemTest114 Failed";
+    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest114: end.";
+}
+
+/**
+* @tc.name: FaultLoggerdSystemTest115
+* @tc.desc: Test async-stacktrace api in ffrt crash case
+* @tc.type: FUNC
+*/
+HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest115, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest115: start.";
+    string cmd = "CrashInFFRT";
+    string fileName;
+    pid_t pid = TriggerCrasherAndGetFileName(cmd, CRASHER_CPP, fileName);
+    GTEST_LOG_(INFO) << "test pid(" << pid << ")"  << " cppcrash file name : " << fileName;
+    if (pid < 0 || fileName.size() < CPPCRASH_FILENAME_MIN_LENGTH) {
+        GTEST_LOG_(ERROR) << "Trigger Crash Failed.";
+        FAIL();
+    }
+    EXPECT_TRUE(CheckCppCrashAsyncStackKeywords(fileName, pid)) << "FaultLoggerdSystemTest115 Failed";
+    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest115: end.";
+}
+
+/**
+* @tc.name: FaultLoggerdSystemTest116
+* @tc.desc: Test async-stacktrace api in work callback crash case
+* @tc.type: FUNC
+*/
+HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest116, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest116: start.";
+    string cmd = "CrashInLibuvWork";
+    string fileName;
+    pid_t pid = TriggerCrasherAndGetFileName(cmd, CRASHER_CPP, fileName);
+    GTEST_LOG_(INFO) << "test pid(" << pid << ")"  << " cppcrash file name : " << fileName;
+    if (pid < 0 || fileName.size() < CPPCRASH_FILENAME_MIN_LENGTH) {
+        GTEST_LOG_(ERROR) << "Trigger Crash Failed.";
+        FAIL();
+    }
+    EXPECT_TRUE(CheckCppCrashAsyncStackKeywords(fileName, pid)) << "FaultLoggerdSystemTest116 Failed";
+    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest116: end.";
+}
+
+/**
+* @tc.name: FaultLoggerdSystemTest117
+* @tc.desc: Test async-stacktrace api in timer callback crash case
+* @tc.type: FUNC
+*/
+HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest117, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest117: start.";
+    string cmd = "CrashInLibuvTimer";
+    string fileName;
+    pid_t pid = TriggerCrasherAndGetFileName(cmd, CRASHER_CPP, fileName);
+    GTEST_LOG_(INFO) << "test pid(" << pid << ")"  << " cppcrash file name : " << fileName;
+    if (pid < 0 || fileName.size() < CPPCRASH_FILENAME_MIN_LENGTH) {
+        GTEST_LOG_(ERROR) << "Trigger Crash Failed.";
+        FAIL();
+    }
+    EXPECT_TRUE(CheckCppCrashAsyncStackKeywords(fileName, pid)) << "FaultLoggerdSystemTest117 Failed";
+    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest117: end.";
+}
+
+/**
+* @tc.name: FaultLoggerdSystemTest118
+* @tc.desc: Test async-stacktrace api in work callback done crash case
+* @tc.type: FUNC
+*/
+HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest118, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest118: start.";
+    string cmd = "CrashInLibuvWorkDone";
+    string fileName;
+    pid_t pid = TriggerCrasherAndGetFileName(cmd, CRASHER_CPP, fileName);
+    GTEST_LOG_(INFO) << "test pid(" << pid << ")"  << " cppcrash file name : " << fileName;
+    if (pid < 0 || fileName.size() < CPPCRASH_FILENAME_MIN_LENGTH) {
+        GTEST_LOG_(ERROR) << "Trigger Crash Failed.";
+        FAIL();
+    }
+    EXPECT_TRUE(CheckCppCrashAsyncStackKeywords(fileName, pid)) << "FaultLoggerdSystemTest118 Failed";
+    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest118: end.";
+}
+#endif
 } // namespace HiviewDFX
 } // namespace OHOS

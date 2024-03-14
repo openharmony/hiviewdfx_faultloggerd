@@ -12,3 +12,4 @@
 # limitations under the License.
 
 persist.faultloggerd.priv.mixstack.enabled="faultloggerd:shell:775"
+persist.faultloggerd.priv.asyncstack.enabled="faultloggerd:shell:775"

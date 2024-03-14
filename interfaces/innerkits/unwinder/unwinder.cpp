@@ -708,7 +708,7 @@ void Unwinder::GetFramesByPcs(std::vector<DfxFrame>& frames, std::vector<uintptr
     for (size_t i = 0; i < pcs.size(); ++i) {
         DfxFrame frame;
         frame.index = i;
-        frame.pc = static_cast<uint64_t>(pcs[i]);
+        frame.pc = static_cast<uint64_t>(StripPac(pcs[i], 0));
         if ((map != nullptr) && map->Contain(frame.pc)) {
             LOGU("%s", "map had matched");
         } else {

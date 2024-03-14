@@ -125,6 +125,16 @@
             ],
             "header_base": "//base/hiviewdfx/faultloggerd/interfaces/innerkits/unwinder/include"
           }
+        },
+        {
+          "name": "//base/hiviewdfx/faultloggerd/interfaces/innerkits/async_stack:libasync_stack",
+          "header": {
+            "header_files": [
+              "async_stack.h",
+              "unique_stack_table.h"
+            ],
+            "header_base": "//base/hiviewdfx/faultloggerd/interfaces/innerkits/async_stack/include"
+          }
         }
       ],
       "test": [
