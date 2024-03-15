@@ -38,11 +38,13 @@ public:
 
     bool UnwindProcess(std::shared_ptr<ProcessDumpRequest> request, std::shared_ptr<DfxProcess> process,
                        std::shared_ptr<Unwinder> unwinder);
-    void UnwindThreadFallback(std::shared_ptr<DfxProcess> process, std::shared_ptr<DfxThread> thread,
-                              std::shared_ptr<Unwinder> unwinder);
 
 private:
     DfxUnwindRemote() = default;
+    void UnwindKeyThread(std::shared_ptr<ProcessDumpRequest> request, std::shared_ptr<DfxProcess> process,
+                                      std::shared_ptr<Unwinder> unwinder);
+    void UnwindOtherThread(std::shared_ptr<DfxProcess> process, std::shared_ptr<Unwinder> unwinder);
+
     DISALLOW_COPY_AND_MOVE(DfxUnwindRemote);
 };
 }   // namespace HiviewDFX

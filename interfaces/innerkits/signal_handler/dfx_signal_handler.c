@@ -135,6 +135,13 @@ static void InitCallbackItems(void)
     }
 }
 
+static GetStackIdFunc g_GetStackIdFunc = NULL;
+void SetAsyncStackCallbackFunc(void* func)
+{
+    DFXLOG_INFO("SetCrashCallbackFunc.");
+    g_GetStackIdFunc = (GetStackIdFunc)func;
+}
+
 // caller should set to NULL before exit thread
 void SetThreadInfoCallback(ThreadInfoCallBack func)
 {
@@ -209,6 +216,11 @@ static void FillLastFatalMessageLocked(int32_t sig, void *context)
     (void)strncpy(g_request.lastFatalMessage, lastFatalMessage, sizeof(g_request.lastFatalMessage) - 1);
 }
 
+static bool IsDumpSignal(int sig)
+{
+    return sig == SIGDUMP || sig == SIGLEAK_STACK;
+}
+
 static void FillDumpRequest(int sig, siginfo_t *si, void *context)
 {
     memset(&g_request, 0, sizeof(g_request));
@@ -219,6 +231,10 @@ static void FillDumpRequest(int sig, siginfo_t *si, void *context)
     g_request.uid = getuid();
     g_request.reserved = 0;
     g_request.timeStamp = GetTimeMilliseconds();
+    if (!IsDumpSignal(sig) && g_GetStackIdFunc!= NULL) {
+        g_request.stackId = g_GetStackIdFunc();
+        DFXLOG_INFO("g_GetStackIdFunc %p.", (void*)g_request.stackId);
+    }
 
     GetThreadNameByTid(g_request.tid, g_request.threadName, sizeof(g_request.threadName));
     GetProcessName(g_request.processName, sizeof(g_request.processName));
@@ -259,11 +275,6 @@ static int32_t InheritCapabilities(void)
         ambCap = ambCap >> 1;
     }
     return 0;
-}
-
-static bool IsDumpSignal(int sig)
-{
-    return sig == SIGDUMP || sig == SIGLEAK_STACK;
 }
 
 static const int SIGCHAIN_DUMP_SIGNAL_LIST[] = {

@@ -188,16 +188,26 @@ void Printer::PrintThreadBacktraceByConfig(std::shared_ptr<DfxThread> thread)
         if (frames.size() == 0) {
             return;
         }
-        bool needBreak = false;
+        bool needSkip = false;
+        bool isSubmitter = true;
         for (const auto& frame : frames) {
+            if (frame.index == 0) {
+                isSubmitter = !isSubmitter;
+            }
+            if (isSubmitter) {
+                DfxRingBufferWrapper::GetInstance().AppendMsg("========SubmitterStacktrace========\n");
+                DfxRingBufferWrapper::GetInstance().AppendBaseInfo("========SubmitterStacktrace========\n");
+                isSubmitter = false;
+                needSkip = false;
+            }
+            if (needSkip) {
+                continue;
+            }
             DfxRingBufferWrapper::GetInstance().AppendMsg(DfxFrameFormatter::GetFrameStr(frame));
             DfxRingBufferWrapper::GetInstance().AppendBaseInfo(DfxFrameFormatter::GetFrameStr(frame));
-            if (needBreak) {
-                break;
-            }
 #if defined(__aarch64__)
             if (IsLastValidFrame(frame)) {
-                needBreak = true;
+                needSkip = true;
             }
 #endif
         }

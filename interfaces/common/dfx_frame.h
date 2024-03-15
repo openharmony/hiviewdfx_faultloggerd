@@ -55,7 +55,6 @@ struct DfxFrame {
     std::string buildId {""};
     /** map cache */
     std::shared_ptr<DfxMap> map = nullptr;
-
     /** Js frame code line */
     int32_t line {0};
     /** Js frame code column */

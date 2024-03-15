@@ -34,7 +34,9 @@
 #include "dfx_ptrace.h"
 #include "dfx_util.h"
 #include "procinfo.h"
-
+#if defined(__aarch64__)
+#include "printer.h"
+#endif
 namespace OHOS {
 namespace HiviewDFX {
 std::shared_ptr<DfxThread> DfxThread::Create(pid_t pid, pid_t tid, pid_t nsTid)
@@ -90,11 +92,29 @@ std::string DfxThread::ToString() const
 
     std::stringstream ss;
     ss << "Thread name:" << threadInfo_.threadName << "" << std::endl;
-    for (size_t i = 0; i < frames_.size(); i++) {
+    bool needSkip = false;
+    bool isSubmitter = true;
+    for (const auto& frame : frames_) {
+        if (frame.index == 0) {
+            isSubmitter = !isSubmitter;
+        }
+        if (isSubmitter) {
+            ss << "========SubmitterStacktrace========" << std::endl;
+            isSubmitter = false;
+            needSkip = false;
+        }
+        if (needSkip) {
+            continue;
+        }
 #if defined(__x86_64__)
-        ss << DfxFrameFormat::GetFrameStr(frames_[i]);
+        ss << DfxFrameFormat::GetFrameStr(frame);
 #else
-        ss << DfxFrameFormatter::GetFrameStr(frames_[i]);
+        ss << DfxFrameFormatter::GetFrameStr(frame);
+#endif
+#if defined(__aarch64__)
+        if (Printer::IsLastValidFrame(frame)) {
+            needSkip = true;
+        }
 #endif
     }
     return ss.str();

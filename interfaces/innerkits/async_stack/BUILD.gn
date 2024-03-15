@@ -1,0 +1,76 @@
+# Copyright (c) 2021-2023 Huawei Device Co., Ltd.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import("//base/hiviewdfx/faultloggerd/faultloggerd.gni")
+
+config("async_stack_config") {
+  visibility = [ "*:*" ]
+
+  include_dirs = [
+    "include",
+    ".",
+    "$faultloggerd_interfaces_path/common",
+  ]
+}
+if (defined(ohos_lite)) {
+  shared_library("libasync_stack") {
+    include_dirs = [
+      "include",
+      ".",
+      "$faultloggerd_interfaces_path/common",
+    ]
+    sources = [
+      "async_stack.cpp",
+      "fp_unwinder.cpp",
+      "unique_stack_table.cpp",
+    ]
+    defines = [
+      "is_ohos=${is_ohos}",
+      "is_ohos_lite",
+    ]
+    deps = [
+      "$faultloggerd_path/common/cutil:dfx_cutil",
+      "$faultloggerd_path/common/dfxlog:dfx_hilog",
+      "//third_party/bounds_checking_function:libsec_static",
+    ]
+  }
+} else {
+  ohos_shared_library("libasync_stack") {
+    public_configs = [ ":async_stack_config" ]
+
+    sources = [
+      "async_stack.cpp",
+      "fp_unwinder.cpp",
+      "unique_stack_table.cpp",
+    ]
+    deps = [ "$faultloggerd_common_path/dfxlog:dfx_hilog" ]
+    external_deps = [
+      "c_utils:utils",
+      "hilog:libhilog",
+      "init:libbegetutil",
+    ]
+
+    install_images = [
+      "system",
+      "updater",
+    ]
+
+    innerapi_tags = [
+      "chipsetsdk_indirect",
+      "platformsdk_indirect",
+    ]
+
+    part_name = "faultloggerd"
+    subsystem_name = "hiviewdfx"
+  }
+}
