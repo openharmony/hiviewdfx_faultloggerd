@@ -22,6 +22,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <dirent.h>
 #include <fcntl.h>
 #include <iostream>
 #include <memory>
@@ -29,6 +30,7 @@
 #include <securec.h>
 #include <string>
 #include <syscall.h>
+#include <sys/types.h>
 #include <ucontext.h>
 #include <unistd.h>
 
@@ -37,6 +39,7 @@
 #include "dfx_define.h"
 #include "dfx_dump_request.h"
 #include "dfx_dump_res.h"
+#include "dfx_fdsan.h"
 #include "dfx_logger.h"
 #include "dfx_process.h"
 #include "dfx_regs.h"
@@ -72,6 +75,110 @@ void WriteData(int fd, const std::string& data, size_t blockSize)
         index += writeLength;
     }
     DFXLOG_INFO("%s :: needWriteDataSize: %zu, writeDataSize: %zu", __func__, dataSize, index);
+}
+
+const int ARG_MAX_NUM = 131072;
+using OpenFilesList = std::map<int, FDInfo>;
+
+bool ReadLink(std::string &src, std::string &dst)
+{
+    char buf[PATH_MAX];
+    ssize_t count = readlink(src.c_str(), buf, sizeof(buf) - 1);
+    if (count < 0) {
+        return false;
+    }
+    buf[count] = '\0';
+    dst = buf;
+    return true;
+}
+
+void CollectOpenFiles(OpenFilesList &list, pid_t pid)
+{
+    std::string fdDirName = "/proc/" + std::to_string(pid) + "/fd";
+    std::unique_ptr<DIR, int (*)(DIR *)> dir(opendir(fdDirName.c_str()), closedir);
+    if (dir == nullptr) {
+        DFXLOG_ERROR("failed to open directory %s: %s", fdDirName.c_str(), strerror(errno));
+        return;
+    }
+
+    struct dirent *de;
+    while ((de = readdir(dir.get())) != nullptr) {
+        if (*de->d_name == '.') {
+            continue;
+        }
+
+        int fd = atoi(de->d_name);
+        std::string path = fdDirName + "/" + std::string(de->d_name);
+        std::string target;
+        if (ReadLink(path, target)) {
+            list[fd].path = target;
+        } else {
+            list[fd].path = "???";
+            DFXLOG_ERROR("failed to readlink %s: %s", path.c_str(), strerror(errno));
+        }
+    }
+}
+
+void FillFdsaninfo(OpenFilesList &list, pid_t pid, uint64_t fdTableAddr)
+{
+    constexpr size_t fds = sizeof(FdTable::entries) / sizeof(*FdTable::entries);
+    size_t entryOffset = offsetof(FdTable, entries);
+    for (size_t i = 0; i < fds; i++) {
+        uint64_t addr = fdTableAddr + entryOffset + sizeof(FdEntry) * i;
+        FdEntry entry;
+        if (DfxMemory::ReadProcMemByPid(pid, addr, &entry, sizeof(entry)) != sizeof(entry)) {
+            DFXLOG_ERROR("%s", "read pid mem error");
+            return;
+        }
+        if (entry.close_tag) {
+            list[i].fdsanOwner = entry.close_tag;
+        }
+    }
+    size_t overflowOffset = offsetof(FdTable, overflow);
+    uintptr_t overflow = 0;
+    uint64_t tmp = fdTableAddr + overflowOffset;
+    if (DfxMemory::ReadProcMemByPid(pid, tmp, &overflow, sizeof(overflow)) != sizeof(overflow)) {
+        return;
+    }
+    if (!overflow) {
+        return;
+    }
+
+    size_t overflowLength;
+    if (DfxMemory::ReadProcMemByPid(pid, overflow, &overflowLength, sizeof(overflowLength)) != sizeof(overflowLength)) {
+        return;
+    }
+    if (overflowLength > ARG_MAX_NUM) {
+        return;
+    }
+    for (size_t i = 0; i < overflowLength; i++) {
+        int fd = i + fds;
+        uint64_t address = overflow + offsetof(FdTableOverflow, entries) + sizeof(FdEntry) * i;
+        FdEntry entry;
+        if (DfxMemory::ReadProcMemByPid(pid, address, &entry, sizeof(entry)) != sizeof(entry)) {
+            return;
+        }
+        if (entry.close_tag) {
+            list[fd].fdsanOwner = entry.close_tag;
+        }
+    }
+}
+
+std::string DumpOpenFiles(OpenFilesList &files)
+{
+    std::string openFiles;
+    for (auto &[fd, entry]: files) {
+        const std::string path = entry.path;
+        uint64_t tag = entry.fdsanOwner;
+        const char* type = fdsan_get_tag_type(tag);
+        uint64_t val = fdsan_get_tag_value(tag);
+        if (!path.empty()) {
+            openFiles += std::to_string(fd) + "->" + path + " " + type + " " + std::to_string(val) + "\n";
+        } else {
+            openFiles += "OpenFilesList  contain an entry (fd " + std::to_string(fd) + ") with no path or owner\n";
+        }
+    }
+    return openFiles;
 }
 }
 
@@ -121,6 +228,15 @@ void ProcessDumper::Dump()
     }
 }
 
+std::string GetOpenFiles(int32_t pid, uint64_t fdTableAddr)
+{
+    OpenFilesList openFies;
+    CollectOpenFiles(openFies, pid);
+    FillFdsaninfo(openFies, pid, fdTableAddr);
+    std::string fds = DumpOpenFiles(openFies);
+    return fds;
+}
+
 int ProcessDumper::DumpProcess(std::shared_ptr<ProcessDumpRequest> request)
 {
     int dumpRes = DumpErrorCode::DUMP_ESUCCESS;
@@ -153,7 +269,7 @@ int ProcessDumper::DumpProcess(std::shared_ptr<ProcessDumpRequest> request)
             dumpRes = DumpErrorCode::DUMP_EATTACH;
             break;
         }
-
+        process_->openFiles = GetOpenFiles(request->pid, request->fdTableAddr);
         if (InitPrintThread(request) < 0) {
             DFXLOG_ERROR("%s", "Failed to init print thread.");
             dumpRes = DumpErrorCode::DUMP_EGETFD;

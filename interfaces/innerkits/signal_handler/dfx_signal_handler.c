@@ -231,6 +231,7 @@ static void FillDumpRequest(int sig, siginfo_t *si, void *context)
     g_request.uid = getuid();
     g_request.reserved = 0;
     g_request.timeStamp = GetTimeMilliseconds();
+    g_request.fdTableAddr = (uint64_t)fdsan_get_fd_table();
     if (!IsDumpSignal(sig) && g_GetStackIdFunc!= NULL) {
         g_request.stackId = g_GetStackIdFunc();
         DFXLOG_INFO("g_GetStackIdFunc %p.", (void*)g_request.stackId);

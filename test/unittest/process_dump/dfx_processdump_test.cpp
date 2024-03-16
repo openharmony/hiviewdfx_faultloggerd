@@ -83,6 +83,20 @@ static pid_t CreateMultiThreadForThreadCrash(int threadNum)
     return pid;
 }
 
+static pid_t CreateMultiThreadForThreadCrashWithOpen(int threadNum, int openNum)
+{
+    pid_t pid = fork();
+    if (pid < 0) {
+        GTEST_LOG_(ERROR) << "Failed to fork new test process.";
+    } else if (pid == 0) {
+        for (int i = 0; i < openNum; ++i) {
+            fopen("/dev/null", "r");
+        }
+        (void)MultiThreadConstructorForThreadCrash(threadNum);
+    }
+    return pid;
+}
+
 static bool CheckCppCrashKeyWords(const string& filePath, pid_t pid, int sig)
 {
     if (filePath.empty() || pid <= 0) {
@@ -113,6 +127,14 @@ static bool CheckCppCrashKeyWords(const string& filePath, pid_t pid, int sig)
     return count == length;
 }
 namespace {
+bool CheckCppCrashExtraKeyWords(const string& filePath, std::string *keywords, int length, int minRegIdx)
+{
+    if (filePath.empty()) {
+        return false;
+    }
+    int count = CheckKeyWords(filePath, keywords, length, minRegIdx);
+    return count == length;
+}
 /**
  * @tc.name: DfxProcessDumpTest001
  * @tc.desc: test SIGILL crash
@@ -316,5 +338,51 @@ HWTEST_F(DfxProcessDumpTest, DfxProcessDumpTest011, TestSize.Level2)
     auto filename = GetCppCrashFileName(testProcess);
     ASSERT_TRUE(CheckCppCrashKeyWords(filename, testProcess, SIGSEGV));
     GTEST_LOG_(INFO) << "DfxProcessDumpTest011: end.";
+}
+
+
+/**
+ * @tc.name: DfxProcessDumpTest012
+ * @tc.desc: Testing new add key word
+ * @tc.type: FUNC
+ */
+HWTEST_F(DfxProcessDumpTest, DfxProcessDumpTest012, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "DfxProcessDumpTest012: start.";
+    pid_t testProcess = CreateMultiThreadForThreadCrash(10); // 10 : create a process with ten threads
+    GTEST_LOG_(INFO) << "process pid:" << testProcess;
+    sleep(3); // 3 : wait 3s to generate cpp crash file
+    auto filename = GetCppCrashFileName(testProcess);
+    string keywords[] = {
+        "cycle", "OpenFiles:"
+    };
+    int length = sizeof(keywords) / sizeof(keywords[0]);
+    int minRegIdx = -1; // -1 : no not check register value
+    ASSERT_TRUE(CheckCppCrashExtraKeyWords(filename, keywords, length, minRegIdx));
+    GTEST_LOG_(INFO) << "DfxProcessDumpTest012: end.";
+}
+
+/**
+ * @tc.name: DfxProcessDumpTest013
+ * @tc.desc: Testing new add key word
+ * @tc.type: FUNC
+ */
+HWTEST_F(DfxProcessDumpTest, DfxProcessDumpTest013, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "DfxProcessDumpTest013: start.";
+    int openNum = 128;
+    pid_t testProcess = CreateMultiThreadForThreadCrashWithOpen(10, openNum); // 10 : create a process with ten threads
+    GTEST_LOG_(INFO) << "process pid:" << testProcess;
+    sleep(3); // 3 : wait 3s to generate cpp crash file
+    auto filename = GetCppCrashFileName(testProcess);
+    string keywords[openNum];
+    string str = "FILE*";
+    for (int i = 0; i < openNum; ++i) {
+        keywords[i] = str;
+    }
+    int length = sizeof(keywords) / sizeof(keywords[0]);
+    int minRegIdx = -1; // -1 : no not check register value
+    ASSERT_TRUE(CheckCppCrashExtraKeyWords(filename, keywords, length, minRegIdx));
+    GTEST_LOG_(INFO) << "DfxProcessDumpTest013: end.";
 }
 }

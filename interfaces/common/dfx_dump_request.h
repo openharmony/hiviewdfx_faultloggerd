@@ -98,6 +98,8 @@ struct ProcessDumpRequest {
     char lastFatalMessage[MAX_FATAL_MSG_SIZE];
     /** process trace info */
     TraceInfo traceInfo;
+    /** current porcess fd table address*/
+    uint64_t fdTableAddr;
     /** stackId for async-stack */
     uint64_t stackId;
 };

@@ -54,6 +54,8 @@ void Printer::PrintDumpHeader(std::shared_ptr<ProcessDumpRequest> request, std::
     DfxRingBufferWrapper::GetInstance().AppendBuf("Pid:%d\n", process->processInfo_.pid);
     DfxRingBufferWrapper::GetInstance().AppendBuf("Uid:%d\n", process->processInfo_.uid);
     DfxRingBufferWrapper::GetInstance().AppendBuf("Process name:%s\n", process->processInfo_.processName.c_str());
+    DfxRingBufferWrapper::GetInstance().AppendBuf("Process life cycle:%s\n",
+                                                  DfxProcess::GetProcessLifeCycle(process->processInfo_.pid).c_str());
 
     if (isCrash) {
         std::string reasonInfo;
@@ -246,6 +248,20 @@ void Printer::PrintThreadFaultStackByConfig(std::shared_ptr<DfxProcess> process,
         auto faultStack = thread->GetFaultStack();
         faultStack->CollectRegistersBlock(thread->GetThreadRegs(), unwinder->GetMaps());
         faultStack->Print();
+    }
+}
+
+void Printer::PrintThreadOpenFiles(std::shared_ptr<DfxProcess> process)
+{
+    if (process == nullptr) {
+        return;
+    }
+
+    DfxRingBufferWrapper::GetInstance().AppendMsg("OpenFiles:\n");
+    std::string infos = process->openFiles;
+    constexpr int step = 1024;
+    for (int i = 0; i < infos.size(); i += step) {
+        DfxRingBufferWrapper::GetInstance().AppendMsg(infos.substr(i, step));
     }
 }
 } // namespace HiviewDFX
