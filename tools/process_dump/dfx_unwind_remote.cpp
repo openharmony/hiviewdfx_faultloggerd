@@ -65,6 +65,7 @@ bool DfxUnwindRemote::UnwindProcess(std::shared_ptr<ProcessDumpRequest> request,
             Printer::PrintThreadFaultStackByConfig(process, process->vmThread_, unwinder);
         }
         Printer::PrintProcessMapsByConfig(unwinder->GetMaps());
+        Printer::PrintThreadOpenFiles(process);
     }
 
     return ret;

@@ -50,6 +50,7 @@ public:
 
     void SetFatalMessage(const std::string &msg);
     std::string GetFatalMessage() const;
+    static std::string GetProcessLifeCycle(pid_t pid);
 #if defined(__x86_64__)
     void InitProcessMaps();
     void SetMaps(std::shared_ptr<DfxElfMaps> maps);
@@ -61,6 +62,7 @@ public:
     std::shared_ptr<DfxThread> keyThread_ = nullptr; // comment: crash thread or dump target thread
     std::shared_ptr<DfxThread> vmThread_ = nullptr; // comment: vm thread object in crash secnario
     std::string reason = "";
+    std::string openFiles = "";
 private:
     DfxProcess() = default;
     void InitProcessInfo(pid_t pid, pid_t nsPid);
