@@ -135,6 +135,15 @@
             ],
             "header_base": "//base/hiviewdfx/faultloggerd/interfaces/innerkits/async_stack/include"
           }
+        },
+        {
+          "name": "//base/hiviewdfx/faultloggerd/interfaces/innerkits/crash_exception:crash_exception",
+          "header": {
+            "header_files": [
+              "crash_exception.h"
+            ],
+            "header_base": "//base/hiviewdfx/faultloggerd/interfaces/innerkits/crash_exception"
+          }
         }
       ],
       "test": [

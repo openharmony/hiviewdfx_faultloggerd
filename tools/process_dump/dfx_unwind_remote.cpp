@@ -36,6 +36,7 @@
 #include "dfx_util.h"
 #include "process_dumper.h"
 #include "printer.h"
+#include "crash_exception.h"
 
 namespace OHOS {
 namespace HiviewDFX {
@@ -55,6 +56,8 @@ bool DfxUnwindRemote::UnwindProcess(std::shared_ptr<ProcessDumpRequest> request,
         return ret;
     }
 
+    SetCrashProcInfo(process->processInfo_.processName, process->processInfo_.pid,
+                     process->processInfo_.uid);
     UnwindKeyThread(request, process, unwinder);
     UnwindOtherThread(process, unwinder);
     ret = true;
@@ -86,6 +89,13 @@ void DfxUnwindRemote::UnwindKeyThread(std::shared_ptr<ProcessDumpRequest> reques
     unwindAsyncThread->UnwindStack();
 
     std::string fatalMsg = process->GetFatalMessage() + unwindAsyncThread->tip;
+    if (!unwindAsyncThread->tip.empty()) {
+        if (ProcessDumper::GetInstance().IsCrash()) {
+            ReportCrashException(process->processInfo_.processName, process->processInfo_.pid,
+                                 process->processInfo_.uid, GetTimeMillisec(),
+                                 CrashExceptionCode::CRASH_UNWIND_ESTACK);
+        }
+    }
     process->SetFatalMessage(fatalMsg);
     Printer::PrintDumpHeader(request, process, unwinder);
     Printer::PrintThreadHeaderByConfig(process->keyThread_);

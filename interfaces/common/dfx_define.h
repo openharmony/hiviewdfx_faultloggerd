@@ -51,6 +51,7 @@ static const int PIPE_NUM_SZ = 2;
 static const int PIPE_READ = 0;
 static const int PIPE_WRITE = 1;
 static const int SOCKET_BUFFER_SIZE = 256;
+static const char FAULTLOGGER_DAEMON_RESP[] =  "RESP:COMPLETE";
 static const char FAULTLOGGERD_SOCK_BASE_PATH[] = "/dev/unix/socket/";
 static const char SERVER_SOCKET_NAME[] = "faultloggerd.server";
 static const char SERVER_CRASH_SOCKET_NAME[] = "faultloggerd.crash.server";

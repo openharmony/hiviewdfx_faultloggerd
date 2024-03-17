@@ -15,6 +15,10 @@
 #ifndef DFX_MUSL_LOG_H
 #define DFX_MUSL_LOG_H
 
+#include <inttypes.h>
+#include <stdarg.h>
+#include <stddef.h>
+
 #include "dfx_log_define.h"
 
 #ifdef __cplusplus
@@ -62,28 +66,10 @@ extern int HiLogAdapterPrintArgs(
 extern int vsnprintfp_s(char *strDest, size_t destMax, size_t count, int priv, const char *format, va_list arglist);
 
 __attribute__ ((visibility("hidden"))) int MuslHiLogPrinter(
-    LogType type, LogLevel level, unsigned int domain, const char *tag, const char *fmt, ...)
-{
-    int ret;
-    va_list ap;
-    va_start(ap, fmt);
-    ret = HiLogAdapterPrintArgs(type, level, domain, tag, fmt, ap);
-    va_end(ap);
-    return ret;
-}
+    LogType type, LogLevel level, unsigned int domain, const char *tag, const char *fmt, ...);
 
 __attribute__ ((visibility("hidden"))) int DfxLogPrint(
-    const LogLevel logLevel, const unsigned int domain, const char* tag, const char *fmt, ...)
-{
-    int ret;
-    char buf[LOG_BUF_LEN] = {0};
-    va_list args;
-    va_start(args, fmt);
-    ret = vsnprintfp_s(buf, sizeof(buf), sizeof(buf) - 1, false, fmt, args);
-    va_end(args);
-    MuslHiLogPrinter(LOG_CORE, logLevel, domain, tag, "%{public}s", buf);
-    return ret;
-}
+    const LogLevel logLevel, const unsigned int domain, const char* tag, const char *fmt, ...);
 
 #define DFXLOG_PRINT(prio, domain, tag, ...) DfxLogPrint(prio, domain, tag, ##__VA_ARGS__)
 
