@@ -50,6 +50,12 @@ if (defined(ohos_lite)) {
         "$faultloggerd_path/interfaces/innerkits/faultloggerd_client:libfaultloggerd",
         "//base/hiviewdfx/hilog_lite/frameworks/featured:hilog_shared",
       ]
+
+      if (faultloggerd_hisysevent_enable) {
+        deps += [ "hisysevent:libhisysevent" ]
+      } else {
+        defines = [ "hisysevent_disable" ]
+      }
     }
   }
 
@@ -97,6 +103,7 @@ if (defined(ohos_lite)) {
     external_deps = [
       "c_utils:utils",
       "hilog:libhilog",
+      "hisysevent:libhisysevent",
     ]
   }
 

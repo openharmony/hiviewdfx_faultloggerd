@@ -33,7 +33,6 @@
 #include "faultloggerd_socket.h"
 #include "file_util.h"
 
-#define FAULTLOGGER_DAEMON_RESP "RESP:COMPLETE"
 static const int32_t SOCKET_TIMEOUT = 5;
 
 static std::string GetSocketConnectionName()

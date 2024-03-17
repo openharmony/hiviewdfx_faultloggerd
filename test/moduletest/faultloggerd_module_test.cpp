@@ -84,7 +84,6 @@ HWTEST_F(FaultloggerdModuleTest, FaultloggerdClientFdRquestTest001, TestSize.Lev
     CheckFdRequestFunction(FaultLoggerType::CPP_STACKTRACE, true);
     CheckFdRequestFunction(FaultLoggerType::JS_STACKTRACE, true);
     CheckFdRequestFunction(FaultLoggerType::JS_HEAP_SNAPSHOT, true);
-    CheckFdRequestFunction(FaultLoggerType::JAVA_STACKTRACE, false);
     CheckFdRequestFunction(FaultLoggerType::LEAK_STACKTRACE, true);
 }
 

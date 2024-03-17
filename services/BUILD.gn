@@ -56,6 +56,12 @@ if (defined(ohos_lite)) {
       "$faultloggerd_path/interfaces/innerkits/faultloggerd_client:libfaultloggerd",
       "//base/hiviewdfx/hilog_lite/frameworks/featured:hilog_shared",
     ]
+
+    if (faultloggerd_hisysevent_enable) {
+      deps += [ "hisysevent:libhisysevent" ]
+    } else {
+      defines = [ "hisysevent_disable" ]
+    }
   }
 } else {
   config("faultloggerd_config") {
@@ -133,6 +139,7 @@ if (defined(ohos_lite)) {
     external_deps = [
       "c_utils:utils",
       "hilog:libhilog_base",
+      "hisysevent:libhisysevent",
     ]
     install_images = [
       "system",
@@ -159,6 +166,7 @@ if (defined(ohos_lite)) {
     external_deps = [
       "c_utils:utils",
       "hilog:libhilog",
+      "hisysevent:libhisysevent",
     ]
     part_name = "faultloggerd"
     subsystem_name = "hiviewdfx"

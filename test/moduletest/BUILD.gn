@@ -19,6 +19,7 @@ config("module_private_config") {
     "include",
     "//commonlibrary/c_utils/base/include",
     "$faultloggerd_path/interfaces/innerkits/faultloggerd_client/include",
+    "$faultloggerd_interfaces_path/common",
     "$faultloggerd_path/test/utils",
   ]
 }

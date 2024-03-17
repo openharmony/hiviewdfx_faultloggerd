@@ -14,6 +14,7 @@
 import("//base/hiviewdfx/faultloggerd/faultloggerd.gni")
 group("faultloggerd_targets") {
   deps = [
+    "interfaces/innerkits/crash_exception:crash_exception",
     "interfaces/innerkits/dump_catcher:libdfx_dumpcatcher",
     "interfaces/innerkits/faultloggerd_client:libfaultloggerd",
     "interfaces/innerkits/signal_handler:dfx_signalhandler",

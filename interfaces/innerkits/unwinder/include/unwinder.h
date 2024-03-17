@@ -43,7 +43,7 @@ public:
         Init();
     };
     // for remote
-    Unwinder(int pid) : pid_(pid)
+    Unwinder(int pid, bool crash = false) : pid_(pid), isCrash_(crash)
     {
         acc_ = std::make_shared<DfxAccessorsRemote>();
         enableFpCheckMapExec_ = true;
@@ -152,6 +152,7 @@ private:
 #endif
 
     int32_t pid_ = 0;
+    bool isCrash_ = false;
     uintptr_t pacMask_ = 0;
     std::shared_ptr<DfxAccessors> acc_ = nullptr;
     std::shared_ptr<DfxMemory> memory_ = nullptr;
