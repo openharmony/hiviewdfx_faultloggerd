@@ -295,7 +295,7 @@ static bool CheckCppCrashAsyncStackKeywords(const string& filePath, const pid_t&
 {
     string log[] = {
         "Timestamp:", "Pid:" + to_string(pid), "Uid:", "Process", "Reason:", "Fault", "thread", "info:",
-        "SubmitterStacktrace", "Tid:", "#00", "Registers:", REGISTERS, "Memory", "near", "registers:",
+        "Tid:", "#00", "SubmitterStacktrace", "Registers:", REGISTERS, "Memory", "near", "registers:",
         "FaultStack:", "Maps:", "/crasher"
     };
     int minRegIdx = 11; // 11 : index of first REGISTERS - 1
