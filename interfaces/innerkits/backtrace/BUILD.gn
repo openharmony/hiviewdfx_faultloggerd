@@ -105,7 +105,6 @@ if (defined(ohos_lite)) {
       "$faultloggerd_common_path/dfxutil:dfx_util",
       "$faultloggerd_frameworks_path/unwinder:dfx_unwinder_src",
       "$faultloggerd_path/interfaces/innerkits/procinfo:libdfx_procinfo",
-      "//third_party/bounds_checking_function:libsec_shared",
       "//third_party/jsoncpp:jsoncpp",
       "//third_party/libunwind:libunwind",
     ]
@@ -119,6 +118,7 @@ if (defined(ohos_lite)) {
     ]
     version_script = "libbacktrace_local.map"
     external_deps = [
+      "bounds_checking_function:libsec_shared",
       "c_utils:utils",
       "hilog:libhilog",
     ]
@@ -157,12 +157,12 @@ if (defined(ohos_lite)) {
       "$faultloggerd_common_path/dfxlog:dfx_hilog_base",
       "$faultloggerd_frameworks_path/unwinder:dfx_unwinder_static_src",
       "$faultloggerd_interfaces_path/innerkits/procinfo:dfx_procinfo_static",
-      "//third_party/bounds_checking_function:libsec_static",
       "//third_party/jsoncpp:jsoncpp_static",
       "//third_party/libunwind:libunwind_local",
     ]
 
     external_deps = [
+      "bounds_checking_function:libsec_static",
       "c_utils:utils",
       "hilog:libhilog_base",
     ]

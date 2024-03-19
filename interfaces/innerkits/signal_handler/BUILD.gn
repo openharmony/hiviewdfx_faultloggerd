@@ -179,7 +179,7 @@ if (defined(ohos_lite)) {
     subsystem_name = "hiviewdfx"
   }
 
-  source_set("dfxsignalhandler") {
+  static_library("dfxsignalhandler") {
     cflags = [ "-DDFX_SIGNAL_LIBC" ]
 
     sources = [

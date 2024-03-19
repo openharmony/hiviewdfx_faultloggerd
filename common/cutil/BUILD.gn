@@ -35,7 +35,7 @@ if (defined(ohos_lite)) {
   ohos_static_library("dfx_cutil") {
     sources = [ "dfx_cutil.c" ]
     public_configs = [ ":dfx_cutil_config" ]
-    deps = [ "//third_party/bounds_checking_function:libsec_static" ]
+    external_deps = [ "bounds_checking_function:libsec_static" ]
     part_name = "faultloggerd"
     subsystem_name = "hiviewdfx"
   }
