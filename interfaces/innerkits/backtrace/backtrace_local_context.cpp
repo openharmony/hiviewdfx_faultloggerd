@@ -179,7 +179,7 @@ bool BacktraceLocalContext::CopyContextAndWaitTimeout(int sig, siginfo_t *si, vo
         return false;
     }
 
-    auto ctxPtr = BacktraceLocalContext::GetInstance().GetThreadContext(syscall(SYS_gettid));
+    auto ctxPtr = BacktraceLocalContext::GetInstance().GetThreadContext(getproctid());
     if (ctxPtr == nullptr || context == nullptr) {
         return true;
     }
@@ -251,7 +251,7 @@ bool BacktraceLocalContext::SignalRequestThread(int32_t tid, ThreadContext* ctx)
     si.si_signo = SIGDUMP;
     si.si_errno = 0;
     si.si_code = DUMP_TYPE_LOCAL;
-    if (syscall(SYS_rt_tgsigqueueinfo, getpid(), tid, si.si_signo, &si) != 0) {
+    if (syscall(SYS_rt_tgsigqueueinfo, getprocpid(), tid, si.si_signo, &si) != 0) {
         DFXLOG_WARN("Failed to queue signal(%d) to %d, errno(%d).", si.si_signo, tid, errno);
         ctx->tid = static_cast<int32_t>(ThreadContextStatus::CONTEXT_UNUSED);
         return false;
