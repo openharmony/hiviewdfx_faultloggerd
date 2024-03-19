@@ -258,6 +258,7 @@ bool Unwinder::Unwind(void *ctx, size_t maxFrameNum, size_t skipFrameNum)
         pc = regs_->GetPc();
         sp = regs_->GetSp();
         // Check if this is a signal frame.
+        SetLocalStackCheck(ctx, true);
         if (regs_->StepIfSignalFrame(static_cast<uintptr_t>(pc), memory_)) {
             LOGW("Step signal frame, pc: %p", reinterpret_cast<void *>(pc));
             StepInner(true, isJsFrame, pc, sp, ctx);
