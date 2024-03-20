@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2023-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -12,6 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 #ifndef UNWIND_X86_64_DEFINE_H
 #define UNWIND_X86_64_DEFINE_H
 
@@ -53,6 +54,26 @@ enum RegsEnumX86_64 : uint16_t {
     REG_LAST = REG_X86_64_LAST,
 };
 
+enum RegsX86_64_Map : uint16_t {
+    R15 = 0,
+    R14,
+    R13,
+    R12,
+    RBP,
+    RBX,
+    R11,
+    R10,
+    R9,
+    R8,
+    RAX,
+    RCX,
+    RDX,
+    RSI,
+    RDI,
+    RIP = 16,
+    RSP = 19,
+};
+
 struct RegsUserX86_64 {
     uint64_t r15;
     uint64_t r14;
@@ -84,7 +105,9 @@ struct RegsUserX86_64 {
 };
 
 static const std::vector<uint16_t> QUT_REGS {
-    // empty
+    REG_X86_64_RBP,
+    REG_X86_64_RSP,
+    REG_X86_64_RIP,
 };
 #if is_ohos
 typedef ucontext_t UnwindUContext_t;

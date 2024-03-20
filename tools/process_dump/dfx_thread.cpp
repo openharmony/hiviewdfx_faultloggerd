@@ -25,11 +25,7 @@
 #include <unistd.h>
 
 #include "dfx_define.h"
-#if defined(__x86_64__)
-#include "dfx_frame_format.h"
-#else
 #include "dfx_frame_formatter.h"
-#endif
 #include "dfx_log.h"
 #include "dfx_ptrace.h"
 #include "dfx_util.h"
@@ -106,11 +102,7 @@ std::string DfxThread::ToString() const
         if (needSkip) {
             continue;
         }
-#if defined(__x86_64__)
-        ss << DfxFrameFormat::GetFrameStr(frame);
-#else
         ss << DfxFrameFormatter::GetFrameStr(frame);
-#endif
 #if defined(__aarch64__)
         if (Printer::IsLastValidFrame(frame)) {
             needSkip = true;

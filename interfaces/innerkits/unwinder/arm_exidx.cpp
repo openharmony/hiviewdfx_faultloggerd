@@ -15,6 +15,7 @@
 
 #include "arm_exidx.h"
 #include <securec.h>
+
 #include "dfx_define.h"
 #include "dfx_regs.h"
 #include "dfx_regs_qut.h"
@@ -118,6 +119,12 @@ inline void ArmExidx::FlushInstr()
             rsState_->locs[i].val = -context_.regs[i];
             LOGU("rsState reg: %d, locs[%d].val: %d", reg, i, rsState_->locs[i].val);
         }
+    }
+
+    if (!isPcSet_) {
+        rsState_->returnAddressRegister = REG_LR;
+    } else {
+        rsState_->returnAddressRegister = REG_PC;
     }
 
     context_.Reset();
@@ -427,7 +434,7 @@ inline bool ArmExidx::Decode1000iiiiiiiiiiii()
     for (size_t reg = REG_ARM_R4; reg < REG_ARM_LAST; reg++) {
         if ((registers & (1 << reg))) {
             if (REG_PC == reg) {
-                rsState_->isPcSet = true;
+                isPcSet_ = true;
             }
             context_.Transform(reg);
             context_.AddUpVsp(FOUR_BYTE_OFFSET);

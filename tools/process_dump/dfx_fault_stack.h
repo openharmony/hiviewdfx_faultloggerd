@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2022-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -42,13 +42,8 @@ public:
     void PrintRegisterMemory() const;
     bool CollectStackInfo(const std::vector<DfxFrame>& frames, bool needParseStack = false);
     bool CreateBlockForCorruptedStack(const std::vector<DfxFrame>& frames, uintptr_t prevEndAddr, uintptr_t size);
-#if defined(__x86_64__)
-    void CollectRegistersBlock(std::shared_ptr<DfxRegs> regs, std::shared_ptr<DfxElfMaps> maps);
-    bool ParseUnwindStack(std::shared_ptr<DfxElfMaps> maps, std::vector<DfxFrame>& frames);
-#else
     void CollectRegistersBlock(std::shared_ptr<DfxRegs> regs, std::shared_ptr<DfxMaps> maps);
     bool ParseUnwindStack(std::shared_ptr<DfxMaps> maps, std::vector<DfxFrame>& frames);
-#endif
 
 private:
     bool ReadTargetMemory(uintptr_t addr, uintptr_t &value) const;

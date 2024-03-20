@@ -24,9 +24,6 @@
 #include "dfx_elf.h"
 #include "dfx_logger.h"
 #include "dfx_ring_buffer_wrapper.h"
-#if defined(__x86_64__)
-#include "dfx_memory_file.h"
-#endif
 
 namespace OHOS {
 namespace HiviewDFX {
@@ -207,11 +204,7 @@ MemoryBlockInfo FaultStack::CreateMemoryBlock(
     return info;
 }
 
-#if defined(__x86_64__)
-void FaultStack::CollectRegistersBlock(std::shared_ptr<DfxRegs> regs, std::shared_ptr<DfxElfMaps> maps)
-#else
 void FaultStack::CollectRegistersBlock(std::shared_ptr<DfxRegs> regs, std::shared_ptr<DfxMaps> maps)
-#endif
 {
     if (regs == nullptr || maps == nullptr) {
         return;
@@ -221,11 +214,7 @@ void FaultStack::CollectRegistersBlock(std::shared_ptr<DfxRegs> regs, std::share
     int index = 0;
     for (auto data : regData) {
         index++;
-#if defined(__x86_64__)
-        std::shared_ptr<DfxElfMap> map;
-#else
         std::shared_ptr<DfxMap> map;
-#endif
         if (!maps->FindMapByAddr(data, map)) {
             continue;
         }
@@ -234,11 +223,7 @@ void FaultStack::CollectRegistersBlock(std::shared_ptr<DfxRegs> regs, std::share
             continue;
         }
 
-#if defined(__x86_64__)
-        std::string name = regs->GetSpecialRegisterName(data);
-#else
         std::string name = regs->GetSpecialRegsName(data);
-#endif
         if (name.empty()) {
 #if defined(__arm__)
 #define NAME_PREFIX "r"
@@ -253,11 +238,7 @@ void FaultStack::CollectRegistersBlock(std::shared_ptr<DfxRegs> regs, std::share
         constexpr size_t SIZE = sizeof(uintptr_t);
         constexpr int COUNT = 32;
         constexpr int FORWARD_SZ = 2;
-#if defined(__x86_64__)
-        auto mapName = map->path;
-#else
         auto mapName = map->name;
-#endif
         if (!mapName.empty()) {
             name.append("(" + mapName + ")");
         }
@@ -288,55 +269,6 @@ void FaultStack::PrintRegisterMemory() const
     }
 }
 
-#if defined(__x86_64__)
-bool FaultStack::ParseUnwindStack(std::shared_ptr<DfxElfMaps> maps, std::vector<DfxFrame>& frames)
-{
-    if (maps == nullptr) {
-        DFXLOG_ERROR("%s : maps is null.", __func__);
-        return false;
-    }
-    size_t index = frames.size();
-    for (const auto& block : blocks_) {
-        std::shared_ptr<DfxElfMap> map;
-        for (size_t i = 0; i < block.content.size(); i++) {
-            if (!maps->FindMapByAddr(block.content[i], map) ||
-                map->perms.find("x") == std::string::npos) {
-                continue;
-            }
-            DfxFrame frame;
-            frame.index = index;
-            frame.pc = block.content[i];
-            frame.mapName = map->path;
-            int64_t loadBias = 0;
-            struct stat st;
-            if (stat(map->path.c_str(), &st) == 0 && (st.st_mode & S_IFREG)) {
-                auto memoryFile = DfxMemoryFile::CreateFileMemory(frame.mapName, 0);
-                if (memoryFile == nullptr) {
-                    DFXLOG_ERROR("%s : Failed to CreateFileMemory, elf path(%s).", __func__, frame.mapName.c_str());
-                    return false;
-                }
-                std::shared_ptr<DfxElf> elf = std::make_shared<DfxElf>(memoryFile);
-                if (elf == nullptr || !elf->Init()) {
-                    DFXLOG_ERROR("%s : Failed to create DfxElf, elf path(%s).", __func__, frame.mapName.c_str());
-                    return false;
-                }
-                loadBias = elf->GetLoadBias();
-                frame.buildId = DfxElf::GetReadableBuildID(elf->GetBuildID());
-            } else {
-                DFXLOG_WARN("%s : mapName(%s) is not file.", __func__, frame.mapName.c_str());
-            }
-
-            frame.relPc = frame.pc - map->begin + map->offset + static_cast<uint64_t>(loadBias);
-            frames.emplace_back(frame);
-            constexpr int MAX_VALID_ADDRESS_NUM = 32;
-            if (++index >= MAX_VALID_ADDRESS_NUM) {
-                return true;
-            }
-        }
-    }
-    return true;
-}
-#else
 bool FaultStack::ParseUnwindStack(std::shared_ptr<DfxMaps> maps, std::vector<DfxFrame>& frames)
 {
     if (maps == nullptr) {
@@ -380,6 +312,5 @@ bool FaultStack::ParseUnwindStack(std::shared_ptr<DfxMaps> maps, std::vector<Dfx
     }
     return true;
 }
-#endif
 } // namespace HiviewDFX
 } // namespace OHOS

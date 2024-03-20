@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2023-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -85,6 +85,10 @@ enum UnwindErrorCode : uint16_t {
     UNW_ERROR_ILLEGAL_STATE,
     /** The last frame has the same pc/sp as the next frame */
     UNW_ERROR_REPEATED_FRAME,
+    /** The last return address has the same */
+    UNW_ERROR_RETURN_ADDRESS_SAME,
+    /** The last return address undefined */
+    UNW_ERROR_RETURN_ADDRESS_UNDEFINED,
     /** The number of frames exceed the total allowed */
     UNW_ERROR_MAX_FRAMES_EXCEEDED,
     /** arm exidx invalid alignment */

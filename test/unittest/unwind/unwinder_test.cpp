@@ -30,6 +30,10 @@
 #include "elapsed_time.h"
 #include "unwinder.h"
 
+#if defined(__x86_64__)
+#include <unwind.h> // GCC's internal unwinder, part of libgcc
+#endif
+
 using namespace testing;
 using namespace testing::ext;
 
@@ -678,6 +682,64 @@ HWTEST_F(UnwinderTest, UnwindLocalWithContextTest001, TestSize.Level2)
     GTEST_LOG_(INFO) << unwinder->GetFramesStr(frames);
     ASSERT_GT(frames.size(), 1);
     GTEST_LOG_(INFO) << "UnwindLocalWithContextTest001: end.";
+}
+#endif
+
+#if defined(__x86_64__)
+static _Unwind_Reason_Code TraceFunc(_Unwind_Context *ctx, void *d)
+{
+    int *depth = (int*)d;
+    printf("\t#%d: program counter at %p\n", *depth, static_cast<void *>(_Unwind_GetIP(ctx)));
+    (*depth)++;
+    return _URC_NO_REASON;
+}
+
+static void PrintUnwindBacktrace()
+{
+    int depth = 0;
+    _Unwind_Backtrace(&TraceFunc, &depth);
+}
+
+/**
+ * @tc.name: UnwindLocalX86_64Test001
+ * @tc.desc: test unwinder UnwindLocal interface
+ * @tc.type: FUNC
+ */
+HWTEST_F(UnwinderTest, UnwindLocalX86_64Test001, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "UnwindLocalX86_64Test001: start.";
+    auto unwinder = std::make_shared<Unwinder>();
+    if (unwinder->UnwindLocal(false)) {
+        auto frames = unwinder->GetFrames();
+        printf("Unwinder frame size: %zu\n", frames.size());
+        auto framesStr = unwinder->GetFramesStr(frames);
+        printf("Unwinder frames:\n%s\n", framesStr.c_str());
+    }
+
+    PrintUnwindBacktrace();
+    GTEST_LOG_(INFO) << "UnwindLocalX86_64Test001: end.";
+}
+
+/**
+ * @tc.name: UnwindRemoteX86_64Test001
+ * @tc.desc: test unwinder UnwindRemote interface
+ * @tc.type: FUNC
+ */
+HWTEST_F(UnwinderTest, UnwindRemoteX86_64Test001, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "UnwindLocalX86_64Test001: start.";
+    const pid_t initPid = 1;
+    auto unwinder = std::make_shared<Unwinder>(initPid);
+    DfxPtrace::Attach(initPid);
+    if (unwinder->UnwindRemote(initPid)) {
+        auto frames = unwinder->GetFrames();
+        printf("Unwinder frame size: %zu\n", frames.size());
+        auto framesStr = unwinder->GetFramesStr(frames);
+        printf("Unwinder frames:\n%s\n", framesStr.c_str());
+    }
+    DfxPtrace::Detach(initPid);
+
+    GTEST_LOG_(INFO) << "UnwindRemoteX86_64Test001: end.";
 }
 #endif
 

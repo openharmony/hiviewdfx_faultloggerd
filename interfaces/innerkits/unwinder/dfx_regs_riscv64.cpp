@@ -21,6 +21,7 @@
 #include <stdint.h>
 #include <sys/ptrace.h>
 #include <sys/uio.h>
+
 #include "dfx_define.h"
 #include "dfx_log.h"
 #include "dfx_elf.h"
@@ -144,9 +145,18 @@ bool DfxRegsRiscv64::StepIfSignalFrame(uintptr_t pc, std::shared_ptr<DfxMemory> 
         return false;
     }
     LOGU("data: %llx", data);
-    //future work
+
+    // Look for the kernel sigreturn function.
+    // __kernel_rt_sigreturn:
+    // li a7, __NR_rt_sigreturn
+    // scall
+    const int scallSize = 8;
+    const uint8_t liScall[] = {0x93, 0x08, 0xb0, 0x08, 0x73, 0x00, 0x00, 0x00};
+    if (memcmp(&data, &liScall, scallSize) != 0) {
+        return false;
+    }
     // SP + sizeof(siginfo_t) + uc_mcontext offset + X0 offset.
-    uintptr_t scAddr = regsData_[REG_SP] + sizeof(siginfo_t) + 0xb0 + 0x08;
+    uintptr_t scAddr = regsData_[REG_SP] + sizeof(siginfo_t) + 0xb0 + 0x00;
     LOGU("scAddr: %llx", scAddr);
     memory->Read(scAddr, regsData_.data(), sizeof(uint64_t) * REG_LAST, false);
     return true;

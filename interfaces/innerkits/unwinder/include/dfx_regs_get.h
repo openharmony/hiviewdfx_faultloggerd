@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -19,6 +19,7 @@
 #include <string>
 #include <memory>
 #include <vector>
+
 #include "dfx_define.h"
 
 namespace OHOS {
@@ -145,9 +146,10 @@ inline AT_ALWAYS_INLINE void GetQuickenMiniRegsAsm(void *regs)
 }
 
 #elif defined(__x86_64__)
-
+extern "C" int _x86_64_getcontext(void* regs);
 inline AT_ALWAYS_INLINE void GetLocalRegs(void* regs)
 {
+    _x86_64_getcontext(regs);
 }
 
 inline AT_ALWAYS_INLINE void GetFramePointerMiniRegs(void *regs)

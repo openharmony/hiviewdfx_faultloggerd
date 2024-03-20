@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -203,28 +203,5 @@ std::string DfxProcess::GetProcessLifeCycle(pid_t pid)
     }
     return "";
 }
-
-
-#if defined(__x86_64__)
-void DfxProcess::SetMaps(std::shared_ptr<DfxElfMaps> maps)
-{
-    maps_ = maps;
-}
-
-void DfxProcess::InitProcessMaps()
-{
-    if (maps_ == nullptr) {
-        if (processInfo_.pid <= 0) {
-            return;
-        }
-        maps_ = DfxElfMaps::Create(processInfo_.pid);
-    }
-}
-
-std::shared_ptr<DfxElfMaps> DfxProcess::GetMaps() const
-{
-    return maps_;
-}
-#endif
 } // namespace HiviewDFX
 } // namespace OHOS

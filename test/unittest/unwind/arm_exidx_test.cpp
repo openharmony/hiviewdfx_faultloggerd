@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2023-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -228,7 +228,6 @@ HWTEST_F(ArmExidxTest, ArmExidxTest007, TestSize.Level2)
     uint32_t values[] = {0x7fff2340, 0x00001111, 0x81008811};
     uintptr_t entryOffset = (uintptr_t)(&values[0]);
     ASSERT_TRUE(exidx.Step(entryOffset, rs));
-    ASSERT_TRUE(exidx.rsState_->isPcSet);
     ASSERT_EQ(rs->cfaReg, REG_SP);
     ASSERT_EQ(rs->cfaRegOffset, 12);
     ASSERT_EQ(rs->locs[3].type, REG_LOC_MEM_OFFSET);
