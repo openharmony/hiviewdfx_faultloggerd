@@ -59,7 +59,11 @@ void Unwinder::Init()
     dwarfSection_ = std::make_shared<DwarfSection>(memory_);
 
     if (pid_ == UNWIND_TYPE_LOCAL) {
+#if is_ohos
+        maps_ = DfxMaps::Create(getprocpid());
+#else
         maps_ = DfxMaps::Create(getpid());
+#endif
     } else {
         if (pid_ > 0) {
             maps_ = DfxMaps::Create(pid_);
@@ -104,7 +108,11 @@ bool Unwinder::CheckAndReset(void* ctx)
 
 bool Unwinder::GetStackRange(uintptr_t& stackBottom, uintptr_t& stackTop)
 {
+#if is_ohos
+    if (getprocpid() == getproctid()) {
+#else
     if (getpid() == gettid()) {
+#endif
         if (maps_ == nullptr || !maps_->GetStackRange(stackBottom, stackTop)) {
             return false;
         }

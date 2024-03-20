@@ -71,7 +71,7 @@ bool DfxDumpCatcher::DoDumpCurrTid(const size_t skipFrameNum, std::string& msg, 
 
     ret = GetBacktrace(msg, skipFrameNum + 1, false, maxFrameNums, isJson);
     if (!ret) {
-        int currTid = syscall(SYS_gettid);
+        int currTid = getproctid();
         msg.append("Failed to dump curr thread:" + std::to_string(currTid) + ".\n");
     }
     DFXLOG_DEBUG("%s :: DoDumpCurrTid :: return %d.", DFXDUMPCATCHER_TAG.c_str(), ret);
@@ -114,13 +114,13 @@ bool DfxDumpCatcher::DoDumpLocalPid(int pid, std::string& msg, size_t maxFrameNu
             return false;
         }
 
-        if (tid == gettid()) {
+        if (tid == getproctid()) {
             return DoDumpCurrTid(skipFramNum, msg, maxFrameNums, isJson);
         }
         return DoDumpLocalTid(tid, msg, maxFrameNums, isJson);
     };
     std::vector<int> tids;
-    ret = GetTidsByPidWithFunc(getpid(), tids, func);
+    ret = GetTidsByPidWithFunc(getprocpid(), tids, func);
 
     DFXLOG_DEBUG("%s :: DoDumpLocalPid :: return %d.", DFXDUMPCATCHER_TAG.c_str(), ret);
     return ret;
@@ -135,7 +135,7 @@ bool DfxDumpCatcher::DoDumpRemoteLocked(int pid, int tid, std::string& msg, bool
 bool DfxDumpCatcher::DoDumpLocalLocked(int pid, int tid, std::string& msg, size_t maxFrameNums, bool isJson)
 {
     bool ret = false;
-    if (tid == syscall(SYS_gettid)) {
+    if (tid == getproctid()) {
         size_t skipFramNum = 2; // 2: skip 2 frame
         ret = DoDumpCurrTid(skipFramNum, msg, maxFrameNums, isJson);
     } else if (tid == 0) {
@@ -167,7 +167,7 @@ bool DfxDumpCatcher::DumpCatch(int pid, int tid, std::string& msg, size_t maxFra
     }
 
     std::unique_lock<std::mutex> lck(mutex_);
-    int currentPid = getpid();
+    int currentPid = getprocpid();
     DFXLOG_DEBUG("%s :: dump_catch :: cPid(%d), pid(%d), tid(%d).",
         DFXDUMPCATCHER_TAG.c_str(), currentPid, pid, tid);
 
@@ -406,8 +406,8 @@ bool DfxDumpCatcher::DumpCatchMultiPid(const std::vector<int> pidV, std::string&
     }
 
     std::unique_lock<std::mutex> lck(mutex_);
-    int currentPid = getpid();
-    int currentTid = syscall(SYS_gettid);
+    int currentPid = getprocpid();
+    int currentTid = getproctid();
     DFXLOG_DEBUG("%s :: %s :: cPid(%d), cTid(%d), pidSize(%d).", DFXDUMPCATCHER_TAG.c_str(), \
         __func__, currentPid, currentTid, pidSize);
 

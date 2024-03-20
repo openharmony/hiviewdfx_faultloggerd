@@ -115,7 +115,7 @@ bool DfxCatchFrameLocal::CatchFrame(std::map<int, std::vector<DfxFrame>>& mapFra
 
     std::vector<DfxFrame> frames;
     for (size_t i = 0; i < nstids.size(); ++i) {
-        if (tids[i] == gettid()) {
+        if (tids[i] == getproctid()) {
             CatchFrameCurrTid(frames, 0, releaseThread);
         } else {
             CatchFrameLocalTid(nstids[i], frames, 0, releaseThread);
@@ -136,7 +136,7 @@ bool DfxCatchFrameLocal::CatchFrame(int tid, std::vector<DfxFrame>& frames, int 
         return false;
     }
 
-    if (tid == gettid()) {
+    if (tid == getproctid()) {
         return CatchFrameCurrTid(frames, skipFrames, releaseThread);
     }
 

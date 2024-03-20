@@ -46,7 +46,11 @@ const std::string DfxMaps::GetMapsFile(pid_t pid)
         return "";
     }
     std::string path;
+#if is_ohos
+    if ((pid == 0) || (pid == getprocpid())) {
+#else
     if ((pid == 0) || (pid == getpid())) {
+#endif
         path = std::string(PROC_SELF_MAPS_PATH);
     } else {
         path = StringPrintf("/proc/%d/maps", (int)pid);
@@ -122,7 +126,11 @@ std::shared_ptr<DfxMaps> DfxMaps::Create(const pid_t pid, const std::string& pat
 void DfxMaps::FormatMapName(pid_t pid, std::string& mapName)
 {
     // format sandbox file path, add '/proc/xxx/root' prefix
+#if is_ohos
+    if (StartsWith(mapName, "/data/storage/") && (pid != getprocpid())) {
+#else
     if (StartsWith(mapName, "/data/storage/") && (pid != getpid())) {
+#endif
         mapName = "/proc/" + std::to_string(pid) + "/root" + mapName;
     }
 }

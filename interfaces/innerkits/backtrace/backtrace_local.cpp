@@ -150,7 +150,7 @@ const char* GetTrace(size_t skipFrameNum, size_t maxFrameNums)
 
 static std::string GetStacktraceHeader()
 {
-    pid_t pid = getpid();
+    pid_t pid = getprocpid();
     std::ostringstream ss;
     ss << "" << std::endl << "Timestamp:" << GetCurrentTimeStr();
     ss << "Pid:" << pid << std::endl;
@@ -173,7 +173,7 @@ std::string GetProcessStacktrace(size_t maxFrameNums, bool isJson)
     ss << std::endl << GetStacktraceHeader();
 
     std::function<bool(int)> func = [&](int tid) {
-        if (tid <= 0 || tid == gettid()) {
+        if (tid <= 0 || tid == getproctid()) {
             return false;
         }
         BacktraceLocalThread thread(tid);
@@ -182,7 +182,7 @@ std::string GetProcessStacktrace(size_t maxFrameNums, bool isJson)
             ss << thread.GetFormattedStr(true, isJson) << std::endl;
         } else {
             std::string msg;
-            if (tid == getpid()) {
+            if (tid == getprocpid()) {
                 ReadProcessStatus(msg, tid);
                 ss << msg << std::endl;
                 msg = "";
@@ -194,7 +194,7 @@ std::string GetProcessStacktrace(size_t maxFrameNums, bool isJson)
     };
 
     std::vector<int> tids;
-    GetTidsByPidWithFunc(getpid(), tids, func);
+    GetTidsByPidWithFunc(getprocpid(), tids, func);
 
     unw_destroy_local_address_space(as);
     return ss.str();

@@ -50,8 +50,8 @@ int32_t RequestFileDescriptor(int32_t type)
     struct FaultLoggerdRequest request;
     (void)memset_s(&request, sizeof(request), 0, sizeof(request));
     request.type = type;
-    request.pid = getpid();
-    request.tid = gettid();
+    request.pid = getprocpid();
+    request.tid = getproctid();
     request.uid = getuid();
     request.time = OHOS::HiviewDFX::GetTimeMilliSeconds();
     return RequestFileDescriptorEx(&request);
@@ -232,8 +232,8 @@ int RequestSdkDumpJson(int32_t type, int32_t pid, int32_t tid, bool isJson)
     request.sigCode = type;
     request.pid = pid;
     request.tid = tid;
-    request.callerPid = getpid();
-    request.callerTid = syscall(SYS_gettid);
+    request.callerPid = getprocpid();
+    request.callerTid = getproctid();
     request.clientType = (int32_t)FaultLoggerClientType::SDK_DUMP_CLIENT;
     request.time = OHOS::HiviewDFX::GetTimeMilliSeconds();
 
@@ -249,7 +249,7 @@ int RequestPrintTHilog(const char *msg, int length)
     struct FaultLoggerdRequest request;
     (void)memset_s(&request, sizeof(request), 0, sizeof(request));
     request.clientType = (int32_t)FaultLoggerClientType::PRINT_T_HILOG_CLIENT;
-    request.pid = getpid();
+    request.pid = getprocpid();
     request.uid = getuid();
     int sockfd = -1;
     do {
@@ -297,8 +297,8 @@ int32_t RequestPipeFd(int32_t pid, int32_t pipeType)
     }
     request.pipeType = pipeType;
     request.pid = pid;
-    request.callerPid = getpid();
-    request.callerTid = syscall(SYS_gettid);
+    request.callerPid = getprocpid();
+    request.callerTid = getproctid();
     request.clientType = (int32_t)FaultLoggerClientType::PIPE_FD_CLIENT;
     if ((pipeType == static_cast<int32_t>(FaultLoggerPipeType::PIPE_FD_READ_BUF)) ||
         (pipeType == static_cast<int32_t>(FaultLoggerPipeType::PIPE_FD_READ_RES)) ||
