@@ -20,7 +20,6 @@
 #include "dfx_log.h"
 namespace OHOS {
 namespace HiviewDFX {
-static pthread_mutex_t g_stackTableMutex = PTHREAD_MUTEX_INITIALIZER;
 UniqueStackTable* UniqueStackTable::Instance()
 {
     static UniqueStackTable* instance = new UniqueStackTable();
@@ -135,7 +134,7 @@ uint64_t UniqueStackTable::PutPcInSlot(uint64_t thisPc, uint64_t prevIdx)
 // todo add lock
 uint64_t UniqueStackTable::PutPcsInTable(StackId *stackId, uintptr_t* pcs, size_t nr)
 {
-    pthread_mutex_lock(&g_stackTableMutex);
+    std::lock_guard<std::mutex> guard(stackTableMutex_);
     if (tableBufMMap_ == nullptr) {
         if (!Init()) {
             LOGW("%s", "init Hashtable failed, fatal error!");
@@ -158,7 +157,6 @@ uint64_t UniqueStackTable::PutPcsInTable(StackId *stackId, uintptr_t* pcs, size_
 
     stackId->section.id = prev;
     stackId->section.nr = static_cast<uint64_t>(nr);
-    pthread_mutex_unlock(&g_stackTableMutex);
     return prev;
 }
 

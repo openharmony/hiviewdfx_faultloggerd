@@ -16,6 +16,7 @@
 #define UNIQUE_STACK_TABLE_H
 
 #include <cinttypes>
+#include <mutex>
 #include <memory>
 #include <string>
 #include <vector>
@@ -146,6 +147,7 @@ private:
     // for de-conflict
     uint64_t hashStep_;
     uint8_t deconflictTimes_ = INIT_DECONFLICT_ALLOWED;
+    std::mutex stackTableMutex_;
 };
 }
 }
