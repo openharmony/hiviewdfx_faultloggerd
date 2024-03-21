@@ -365,7 +365,7 @@ size_t DfxMemory::ReadProcMemByPid(const pid_t pid, const uint64_t addr, void* d
             return totalRead;
         }
         RemoteIovs[iovecsIndex].iov_base = reinterpret_cast<void*>(cur);
-        uintptr_t misalign = cur & (getpagesize() - 1);
+        uintptr_t misalign = cur & static_cast<uint64_t>(getpagesize() - 1);
         size_t iovLen = std::min(getpagesize() - misalign, size);
 
         size -= iovLen;
@@ -380,7 +380,7 @@ size_t DfxMemory::ReadProcMemByPid(const pid_t pid, const uint64_t addr, void* d
             if (count == -1) {
                 return totalRead;
             }
-            totalRead += count;
+            totalRead += static_cast<size_t>(count);
             iovecsIndex -= maxSize;
             dataIov.iov_base = &reinterpret_cast<uint8_t*>(data)[totalRead];
             dataIov.iov_len = size;

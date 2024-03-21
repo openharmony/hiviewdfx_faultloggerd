@@ -32,7 +32,7 @@ struct DfxFrame {
     /** whether is Js frame */
     bool isJsFrame {false};
     /** frame index */
-    int32_t index {0};
+    size_t index {0};
     /** symbol file index */
     int32_t symbolFileIndex = -1;
     /** program counter register value */
