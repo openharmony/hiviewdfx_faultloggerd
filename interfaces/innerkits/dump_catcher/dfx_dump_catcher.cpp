@@ -367,7 +367,6 @@ bool DfxDumpCatcher::DoReadBuf(int fd, std::string& msg)
     bool ret = false;
     char *buffer = new char[MAX_PIPE_SIZE];
     do {
-        ssize_t nread = read(fd, buffer, MAX_PIPE_SIZE);
         ssize_t nread = OHOS_TEMP_FAILURE_RETRY(read(fd, buffer, MAX_PIPE_SIZE));
         if (nread <= 0) {
             DFXLOG_WARN("%s :: %s :: read error", DFXDUMPCATCHER_TAG.c_str(), __func__);

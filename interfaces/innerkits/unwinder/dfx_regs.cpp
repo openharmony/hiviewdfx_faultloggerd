@@ -212,5 +212,25 @@ std::string DfxRegs::PrintSpecialRegs() const
 #endif
     return regsStr;
 }
+
+void DfxRegs::DoPcAdjust(MAYBE_UNUSED std::shared_ptr<DfxMemory> memory, uintptr_t& pc)
+{
+    if (pc <= 0x4) {
+        return;
+    }
+    uintptr_t sz = 0x4;
+#if defined(__arm__)
+    if (pc & 0x1) {
+        uintptr_t val;
+        if (pc < 0x5 || !(memory->ReadMem(pc - 0x5, &val)) ||
+            (val & 0xe000f000) != 0xe000f000) {
+            sz = 0x2;
+        }
+    }
+#elif defined(__x86_64__)
+    sz = 0x1;
+#endif
+    pc -= sz;
+}
 } // namespace HiviewDFX
 } // namespace OHOS
