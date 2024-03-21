@@ -13,16 +13,22 @@
 
 import("//base/hiviewdfx/faultloggerd/faultloggerd.gni")
 
-ohos_rust_shared_library("panic_handler") {
-  sources = [ "lib.rs" ]
-  cflags_cc = [ "-DRUSTC_DEMANGLE" ]
-  deps = [ "$faultloggerd_path/interfaces/rust/stacktrace:stacktrace_rust" ]
-  external_deps = [
-    "hilog:hilog_rust",
-    "hisysevent:hisysevent_rust",
-  ]
-  crate_name = "panic_handler"
-  crate_type = "dylib"
-  part_name = "faultloggerd"
-  subsystem_name = "hiviewdfx"
+if (defined(ohos_lite)) {
+  group("panic_handler") {
+    deps = []
+  }
+} else {
+  ohos_rust_shared_library("panic_handler") {
+    sources = [ "lib.rs" ]
+    cflags_cc = [ "-DRUSTC_DEMANGLE" ]
+    deps = [ "$faultloggerd_path/interfaces/rust/stacktrace:stacktrace_rust" ]
+    external_deps = [
+      "hilog:hilog_rust",
+      "hisysevent:hisysevent_rust",
+    ]
+    crate_name = "panic_handler"
+    crate_type = "dylib"
+    part_name = "faultloggerd"
+    subsystem_name = "hiviewdfx"
+  }
 }
