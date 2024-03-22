@@ -42,32 +42,25 @@ int DfxLogPrint(const LogLevel logLevel, const unsigned int domain, const char* 
                 const char *fmt, ...) __attribute__((format(printf, 4, 5)));
 int DfxLogPrintV(const LogLevel logLevel, const unsigned int domain, const char* tag, const char *fmt, va_list ap);
 
-#define DFXLOG_PRINT(prio, domain, tag, ...) DfxLogPrint(prio, domain, tag, ##__VA_ARGS__)
-#define DFXLOG_PRINTV(prio, domain, tag, fmt, args) DfxLogPrintV(prio, domain, tag, fmt, args)
+#define DFXLOG_PRINT(prio, ...) DfxLogPrint(prio, LOG_DOMAIN, LOG_TAG, ##__VA_ARGS__)
 
-#define LOGD(fmt, ...) \
-    DFXLOG_PRINT(LOG_DEBUG, LOG_DOMAIN, LOG_TAG, "[%s:%d] " fmt, (FILENAME_), (__LINE__), ##__VA_ARGS__)
-#define LOGI(fmt, ...) \
-    DFXLOG_PRINT(LOG_INFO, LOG_DOMAIN, LOG_TAG, "[%s:%d] " fmt, (FILENAME_), (__LINE__), ##__VA_ARGS__)
-#define LOGW(fmt, ...) \
-    DFXLOG_PRINT(LOG_WARN, LOG_DOMAIN, LOG_TAG, "[%s:%d] " fmt, (FILENAME_), (__LINE__), ##__VA_ARGS__)
-#define LOGE(fmt, ...) \
-    DFXLOG_PRINT(LOG_ERROR, LOG_DOMAIN, LOG_TAG, "[%s:%d] " fmt, (FILENAME_), (__LINE__), ##__VA_ARGS__)
-#define LOGF(fmt, ...) \
-    DFXLOG_PRINT(LOG_FATAL, LOG_DOMAIN, LOG_TAG, "[%s:%d] " fmt, (FILENAME_), (__LINE__), ##__VA_ARGS__)
+#define LOGD(fmt, ...) DFXLOG_PRINT(LOG_DEBUG, "[%s:%d] " fmt, (FILENAME_), (__LINE__), ##__VA_ARGS__)
+#define LOGI(fmt, ...) DFXLOG_PRINT(LOG_INFO, "[%s:%d] " fmt, (FILENAME_), (__LINE__), ##__VA_ARGS__)
+#define LOGW(fmt, ...) DFXLOG_PRINT(LOG_WARN, "[%s:%d] " fmt, (FILENAME_), (__LINE__), ##__VA_ARGS__)
+#define LOGE(fmt, ...) DFXLOG_PRINT(LOG_ERROR, "[%s:%d] " fmt, (FILENAME_), (__LINE__), ##__VA_ARGS__)
+#define LOGF(fmt, ...) DFXLOG_PRINT(LOG_FATAL, "[%s:%d] " fmt, (FILENAME_), (__LINE__), ##__VA_ARGS__)
 
 #ifdef DFX_LOG_UNWIND
-#define LOGU(fmt, ...) \
-    DFXLOG_PRINT(LOG_INFO, LOG_DOMAIN, LOG_TAG, "[%s:%d] " fmt, (FILENAME_), (__LINE__), ##__VA_ARGS__)
+#define LOGU(fmt, ...) DFXLOG_PRINT(LOG_INFO, "[%s:%d] " fmt, (FILENAME_), (__LINE__), ##__VA_ARGS__)
 #else
 #define LOGU(fmt, ...)
 #endif
 
-#define DFXLOG_DEBUG(fmt, ...) DFXLOG_PRINT(LOG_DEBUG, LOG_DOMAIN, LOG_TAG, fmt, ##__VA_ARGS__)
-#define DFXLOG_INFO(fmt, ...) DFXLOG_PRINT(LOG_INFO, LOG_DOMAIN, LOG_TAG, fmt, ##__VA_ARGS__)
-#define DFXLOG_WARN(fmt, ...) DFXLOG_PRINT(LOG_WARN, LOG_DOMAIN, LOG_TAG, fmt, ##__VA_ARGS__)
-#define DFXLOG_ERROR(fmt, ...) DFXLOG_PRINT(LOG_ERROR, LOG_DOMAIN, LOG_TAG, fmt, ##__VA_ARGS__)
-#define DFXLOG_FATAL(fmt, ...) DFXLOG_PRINT(LOG_FATAL, LOG_DOMAIN, LOG_TAG, fmt, ##__VA_ARGS__)
+#define DFXLOG_DEBUG(fmt, ...) DFXLOG_PRINT(LOG_DEBUG, fmt, ##__VA_ARGS__)
+#define DFXLOG_INFO(fmt, ...) DFXLOG_PRINT(LOG_INFO, fmt, ##__VA_ARGS__)
+#define DFXLOG_WARN(fmt, ...) DFXLOG_PRINT(LOG_WARN, fmt, ##__VA_ARGS__)
+#define DFXLOG_ERROR(fmt, ...) DFXLOG_PRINT(LOG_ERROR, fmt, ##__VA_ARGS__)
+#define DFXLOG_FATAL(fmt, ...) DFXLOG_PRINT(LOG_FATAL, fmt, ##__VA_ARGS__)
 #else
 
 #ifdef HILOG_FMTID
@@ -117,8 +110,7 @@ do { \
 #endif
 
 #else
-#define DFXLOG_PRINT(prio, domain, tag, ...)
-#define DFXLOG_PRINTV(prio, domain, tag, fmt, args)
+#define DFXLOG_PRINT(prio, ...)
 
 #define DFXLOG_DEBUG(fmt, ...)
 #define DFXLOG_INFO(fmt, ...)

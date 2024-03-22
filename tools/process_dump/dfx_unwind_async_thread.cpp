@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2022-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -13,6 +13,7 @@
  * limitations under the License.
  */
 #include "dfx_unwind_async_thread.h"
+
 #include "dfx_config.h"
 #include "dfx_log.h"
 #include "dfx_memory.h"
@@ -22,6 +23,7 @@
 #include "process_dumper.h"
 #include "printer.h"
 #include "unique_stack_table.h"
+
 namespace OHOS {
 namespace HiviewDFX {
 void DfxUnwindAsyncThread::UnwindStack()
@@ -33,12 +35,14 @@ void DfxUnwindAsyncThread::UnwindStack()
     // 1: get crash stack
     // unwinding with context passed by dump request, only for crash thread or target thread.
     unwinder_->SetRegs(thread_->GetThreadRegs());
-    bool ret = unwinder_->UnwindRemote(thread_->threadInfo_.nsTid,
-                                       ProcessDumper::GetInstance().IsCrash(),
-                                       DfxConfig::GetConfig().maxFrameNums);
+    MAYBE_UNUSED bool ret = unwinder_->UnwindRemote(thread_->threadInfo_.nsTid,
+                                                    ProcessDumper::GetInstance().IsCrash(),
+                                                    DfxConfig::GetConfig().maxFrameNums);
+#ifndef __x86_64__
     if (!ret && ProcessDumper::GetInstance().IsCrash()) {
         UnwindThreadFallback();
     }
+#endif
     thread_->SetFrames(unwinder_->GetFrames());
     DFXLOG_INFO("%s, unwind tid(%d) finish.", __func__, thread_->threadInfo_.nsTid);
     UnwindThreadByParseStackIfNeed();
@@ -50,6 +54,7 @@ void DfxUnwindAsyncThread::UnwindStack()
         MergeStack(submmiterFrames);
     }
 }
+
 void DfxUnwindAsyncThread::GetSubmitterStack(std::vector<DfxFrame> &submitterFrames)
 {
     if (stackId_ <= 0) {

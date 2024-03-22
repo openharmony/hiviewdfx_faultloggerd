@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -21,6 +21,7 @@
 #include <cstdint>
 #include <sys/ptrace.h>
 #include <sys/uio.h>
+
 #include "dfx_define.h"
 #include "dfx_log.h"
 #include "dfx_elf.h"
@@ -111,10 +112,8 @@ bool DfxRegsX86_64::StepIfSignalFrame(uintptr_t pc, std::shared_ptr<DfxMemory> m
 
     uint16_t data2;
     pc += sizeof(uint64_t);
-    if (!memory->ReadU16(pc, &data2, false)) {
-        return false;
-    }
-    if (data2 != 0x0f05) {
+    if (!memory->ReadU16(pc, &data2, false) || (data2 != 0x0f05)) {
+        LOGU("data2: %x", data2);
         return false;
     }
 
@@ -123,7 +122,7 @@ bool DfxRegsX86_64::StepIfSignalFrame(uintptr_t pc, std::shared_ptr<DfxMemory> m
     ucontext_t ucontext;
     uintptr_t scAddr = regsData_[REG_SP] + 0x28;
     LOGU("scAddr: %llx", scAddr);
-    memory->Read(scAddr, &ucontext.uc_mcontext, sizeof(ucontext), false);
+    memory->Read(scAddr, &ucontext.uc_mcontext, sizeof(ucontext.uc_mcontext), false);
     SetFromUcontext(ucontext);
     return true;
 }

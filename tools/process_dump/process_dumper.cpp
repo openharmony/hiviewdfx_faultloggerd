@@ -35,6 +35,7 @@
 #include <unistd.h>
 
 #include "cppcrash_reporter.h"
+#include "crash_exception.h"
 #include "dfx_config.h"
 #include "dfx_define.h"
 #include "dfx_dump_request.h"
@@ -46,19 +47,12 @@
 #include "dfx_ring_buffer_wrapper.h"
 #include "dfx_stack_info_formatter.h"
 #include "dfx_thread.h"
+#include "dfx_unwind_remote.h"
 #include "dfx_util.h"
 #include "faultloggerd_client.h"
-#include "procinfo.h"
-#include "crash_exception.h"
-
-#if defined(__x86_64__)
-#include "dfx_unwind_remote_emulator.h"
-#include "printer_emulator.h"
-#else
-#include "dfx_unwind_remote.h"
 #include "printer.h"
+#include "procinfo.h"
 #include "unwinder_config.h"
-#endif
 
 namespace OHOS {
 namespace HiviewDFX {
@@ -176,7 +170,7 @@ std::string DumpOpenFiles(OpenFilesList &files)
         if (!path.empty()) {
             openFiles += std::to_string(fd) + "->" + path + " " + type + " " + std::to_string(val) + "\n";
         } else {
-            openFiles += "OpenFilesList  contain an entry (fd " + std::to_string(fd) + ") with no path or owner\n";
+            openFiles += "OpenFilesList contain an entry (fd " + std::to_string(fd) + ") with no path or owner\n";
         }
     }
     return openFiles;
@@ -290,12 +284,7 @@ int ProcessDumper::DumpProcess(std::shared_ptr<ProcessDumpRequest> request)
             reporter_ = std::make_shared<CppCrashReporter>(request->timeStamp, process_);
         }
 
-#if defined(__x86_64__)
-        if (!DfxUnwindRemote::GetInstance().UnwindProcess(request, process_)) {
-            Printer::PrintDumpHeader(request, process_);
-#else
         if (!DfxUnwindRemote::GetInstance().UnwindProcess(request, process_, unwinder_)) {
-#endif
             DFXLOG_ERROR("%s", "Failed to unwind process.");
             dumpRes = DumpErrorCode::DUMP_ESTOPUNWIND;
         }
@@ -342,11 +331,7 @@ int ProcessDumper::InitProcessInfo(std::shared_ptr<ProcessDumpRequest> request)
             return -1;
         }
 
-#if defined(__x86_64__)
-        process_->vmThread_->SetThreadRegs(DfxRegs::CreateFromContext(request->context));
-#else
         process_->vmThread_->SetThreadRegs(DfxRegs::CreateFromUcontext(request->context));
-#endif
         process_->vmThread_->threadInfo_.threadName = std::string(request->threadName);
     }
 
@@ -368,11 +353,11 @@ int ProcessDumper::InitProcessInfo(std::shared_ptr<ProcessDumpRequest> request)
             return -1;
         }
     }
-#if !defined(__x86_64__)
+
     if (!isCrash_) {
         process_->keyThread_->SetThreadRegs(DfxRegs::CreateFromUcontext(request->context));
     }
-#endif
+
     if ((process_->keyThread_ != nullptr) && process_->keyThread_->threadInfo_.threadName.empty()) {
         process_->keyThread_->threadInfo_.threadName = std::string(request->threadName);
     }
@@ -385,7 +370,7 @@ int ProcessDumper::InitProcessInfo(std::shared_ptr<ProcessDumpRequest> request)
             process_->InitOtherThreads();
         }
     }
-#if !defined(__x86_64__)
+
     if (isCrash_) {
         unwinder_ = std::make_shared<Unwinder>(process_->vmThread_->threadInfo_.pid, true);
     } else {
@@ -395,7 +380,7 @@ int ProcessDumper::InitProcessInfo(std::shared_ptr<ProcessDumpRequest> request)
     UnwinderConfig::SetEnableMiniDebugInfo(true);
     UnwinderConfig::SetEnableLoadSymbolLazily(true);
 #endif
-#endif
+
     return 0;
 }
 

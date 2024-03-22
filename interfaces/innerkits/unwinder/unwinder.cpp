@@ -557,15 +557,13 @@ bool Unwinder::Apply(std::shared_ptr<DfxRegs> regs, std::shared_ptr<RegLocState>
     if (rs == nullptr || regs == nullptr) {
         return false;
     }
-    bool ret = DfxInstructions::Apply(memory_, *(regs.get()), *(rs.get()));
+
+    uint16_t errCode = 0;
+    bool ret = DfxInstructions::Apply(memory_, *(regs.get()), *(rs.get()), errCode);
     if (!ret) {
-        LOGE("%s", "Failed to apply rs");
+        lastErrorData_.SetCode(errCode);
+        LOGE("%s", "Failed to apply reg state");
     }
-#if defined(__arm__) || defined(__aarch64__)
-    if (!rs->isPcSet) {
-        regs_->SetReg(REG_PC, regs->GetReg(REG_LR));
-    }
-#endif
 
     if (rs->pseudoReg != 0) {
         regs->SetPc(StripPac(regs_->GetPc(), pacMask_));

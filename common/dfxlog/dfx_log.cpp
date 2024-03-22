@@ -88,7 +88,7 @@ int DfxLogPrint(const LogLevel logLevel, const unsigned int domain, const char* 
 #if defined(DFX_LOG_HILOG_BASE) || defined(is_ohos_lite)
     va_list args;
     va_start(args, fmt);
-    ret = DFXLOG_PRINTV(logLevel, domain, tag, fmt, args);
+    ret = DfxLogPrintV(logLevel, domain, tag, fmt, args);
     va_end(args);
 #endif
     return ret;
