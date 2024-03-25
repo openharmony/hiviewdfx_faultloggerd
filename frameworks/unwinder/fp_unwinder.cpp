@@ -41,7 +41,7 @@ FpUnwinder::FpUnwinder()
 
 FpUnwinder::FpUnwinder(uintptr_t pcs[], int32_t sz)
 {
-    for (uint32_t i = 0; i < sz; i++) {
+    for (size_t i = 0; i < static_cast<size_t>(sz); i++) {
         DfxFrame frame;
         frame.index = i;
         frame.pc = i == 0 ? pcs[i] : pcs[i] - 4; // 4 : aarch64 instruction size

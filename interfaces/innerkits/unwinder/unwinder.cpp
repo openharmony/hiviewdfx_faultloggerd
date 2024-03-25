@@ -101,7 +101,6 @@ bool Unwinder::CheckAndReset(void* ctx)
         return false;
     }
     memory_->SetCtx(ctx);
-    SetLocalStackCheck(ctx, false);
     return true;
 }
 
@@ -193,7 +192,11 @@ bool Unwinder::StepArkJsFrame(uintptr_t& pc, uintptr_t& fp, uintptr_t& sp)
         return false;
     }
     LOGI("+++ark pc: %" PRIx64 ", fp: %" PRIx64 ", sp: %" PRIx64 ".", (uint64_t)pc, (uint64_t)fp, (uint64_t)sp);
-    if (DfxArk::GetArkNativeFrameInfo(pid_, pc, fp, sp, jsFrames, size) < 0) {
+    int32_t pid = pid_;
+    if (pid_ == UNWIND_TYPE_LOCAL) {
+        pid = getpid();
+    }
+    if (DfxArk::GetArkNativeFrameInfo(pid, pc, fp, sp, jsFrames, size) < 0) {
         return false;
     }
     LOGI("---ark pc: %" PRIx64 ", fp: %" PRIx64 ", sp: %" PRIx64 ", js frame size: %zu.",
@@ -239,15 +242,12 @@ bool Unwinder::Unwind(void *ctx, size_t maxFrameNum, size_t skipFrameNum)
         }
         return false;
     }
+    SetLocalStackCheck(ctx, false);
     Clear();
 
     bool needAdjustPc = false;
     bool resetFrames = false;
     bool isJsFrame = false;
-    uintptr_t pc = 0;
-    uintptr_t sp = 0;
-    uintptr_t prevPc = 0;
-    uintptr_t prevSp = 0;
     do {
         if (!resetFrames && (skipFrameNum != 0) && (frames_.size() >= skipFrameNum)) {
             resetFrames = true;
@@ -260,8 +260,8 @@ bool Unwinder::Unwind(void *ctx, size_t maxFrameNum, size_t skipFrameNum)
             break;
         }
 
-        pc = regs_->GetPc();
-        sp = regs_->GetSp();
+        uintptr_t pc = regs_->GetPc();
+        uintptr_t sp = regs_->GetSp();
         // Check if this is a signal frame.
         if (pid_ != UNWIND_TYPE_LOCAL && regs_->StepIfSignalFrame(static_cast<uintptr_t>(pc), memory_)) {
             LOGW("Step signal frame, pc: %p", reinterpret_cast<void *>(pc));
@@ -276,8 +276,8 @@ bool Unwinder::Unwind(void *ctx, size_t maxFrameNum, size_t skipFrameNum)
             needAdjustPc = true;
         }
 
-        prevPc = pc;
-        prevSp = sp;
+        uintptr_t prevPc = pc;
+        uintptr_t prevSp = sp;
         if (!StepInner(false, isJsFrame, pc, sp, ctx)) {
             break;
         }
@@ -294,6 +294,7 @@ bool Unwinder::Unwind(void *ctx, size_t maxFrameNum, size_t skipFrameNum)
         }
     } while (true);
     LOGU("Last error code: %d, addr: %p", (int)GetLastErrorCode(), reinterpret_cast<void *>(GetLastErrorAddr()));
+    LOGU("Last frame size: %zu, last frame pc: %p", frames_.size(), reinterpret_cast<void *>(regs_->GetPc()));
     return (frames_.size() > 0);
 }
 
@@ -307,8 +308,6 @@ bool Unwinder::UnwindByFp(void *ctx, size_t maxFrameNum, size_t skipFrameNum)
 
     bool needAdjustPc = false;
     bool resetFrames = false;
-    uintptr_t pc = 0;
-    uintptr_t fp = 0;
     do {
         if (!resetFrames && skipFrameNum != 0 && (pcs_.size() == skipFrameNum)) {
             LOGU("pcs size: %zu, will be reset pcs", pcs_.size());
@@ -320,8 +319,8 @@ bool Unwinder::UnwindByFp(void *ctx, size_t maxFrameNum, size_t skipFrameNum)
             break;
         }
 
-        pc = regs_->GetPc();
-        fp = regs_->GetFp();
+        uintptr_t pc = regs_->GetPc();
+        uintptr_t fp = regs_->GetFp();
 
         if (needAdjustPc) {
             DoPcAdjust(pc);
@@ -367,6 +366,7 @@ bool Unwinder::StepInner(const bool isSigFrame, bool& isJsFrame, uintptr_t& pc, 
         LOGE("%s", "params is nullptr");
         return false;
     }
+    SetLocalStackCheck(ctx, false);
     MAYBE_UNUSED uintptr_t fp = regs_->GetFp();
     LOGU("+pc: %" PRIx64 ", sp: %" PRIx64 ", fp: %" PRIx64 "", (uint64_t)pc, (uint64_t)sp, (uint64_t)fp);
 
@@ -488,8 +488,8 @@ bool Unwinder::StepInner(const bool isSigFrame, bool& isJsFrame, uintptr_t& pc, 
     } while (false);
 
     // 5. update regs and regs state
+    SetLocalStackCheck(ctx, true);
     if (ret) {
-        SetLocalStackCheck(ctx, true);
         ret = Apply(regs_, rs);
     } else {
         if ((frames_.size() == 1) && enableLrFallback_ && regs_->SetPcFromReturnAddress(memory_)) {

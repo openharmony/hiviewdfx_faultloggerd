@@ -50,7 +50,7 @@ void Printer::PrintDumpHeader(std::shared_ptr<ProcessDumpRequest> request, std::
     }
     headerInfo << "Pid:" << process->processInfo_.pid << "\n" <<
                   "Uid:" << process->processInfo_.uid << "\n" <<
-                  "Process name:" << process->processInfo_.processName.c_str() << "\n";
+                  "Process name:" << process->processInfo_.processName << "\n";
     DfxRingBufferWrapper::GetInstance().AppendBuf("Pid:%d\n", process->processInfo_.pid);
     DfxRingBufferWrapper::GetInstance().AppendBuf("Uid:%d\n", process->processInfo_.uid);
     DfxRingBufferWrapper::GetInstance().AppendBuf("Process name:%s\n", process->processInfo_.processName.c_str());
@@ -154,7 +154,7 @@ void Printer::PrintThreadHeaderByConfig(std::shared_ptr<DfxThread> thread)
     if (DfxConfig::GetConfig().displayBacktrace) {
         DfxRingBufferWrapper::GetInstance().AppendBuf("Tid:%d, Name:%s\n",\
             thread->threadInfo_.tid, thread->threadInfo_.threadName.c_str());
-        headerInfo << "Tid:" << thread->threadInfo_.tid << ", Name:" << thread->threadInfo_.threadName.c_str() << "\n";
+        headerInfo << "Tid:" << thread->threadInfo_.tid << ", Name:" << thread->threadInfo_.threadName << "\n";
     }
     DfxRingBufferWrapper::GetInstance().AppendBaseInfo(headerInfo.str());
 }

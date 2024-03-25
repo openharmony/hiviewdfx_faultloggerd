@@ -353,6 +353,7 @@ HWTEST_F(UnwinderTest, UnwindTest003, TestSize.Level2)
     GTEST_LOG_(INFO) << "UnwindTest003: start.";
 
     auto unwinder = std::make_shared<Unwinder>();
+    unwinder->IgnoreMixstack(true);
     MAYBE_UNUSED bool unwRet = unwinder->UnwindLocal();
     EXPECT_EQ(true, unwRet) << "UnwindTest003: Unwind ret:" << unwRet;
     unwinder->EnableFillFrames(false);

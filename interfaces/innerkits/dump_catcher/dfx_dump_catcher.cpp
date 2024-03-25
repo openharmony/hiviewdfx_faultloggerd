@@ -51,7 +51,6 @@ namespace {
 #define LOG_TAG "DfxDumpCatcher"
 #endif
 static const int DUMP_CATCHE_WORK_TIME_S = 60;
-static const int BACK_TRACE_DUMP_MIX_TIMEOUT_MS = 2000;
 static const int BACK_TRACE_DUMP_CPP_TIMEOUT_MS = 10000;
 static const std::string DFXDUMPCATCHER_TAG = "DfxDumpCatcher";
 
@@ -128,8 +127,7 @@ bool DfxDumpCatcher::DoDumpLocalPid(int pid, std::string& msg, size_t maxFrameNu
 
 bool DfxDumpCatcher::DoDumpRemoteLocked(int pid, int tid, std::string& msg, bool isJson)
 {
-    int type = DUMP_TYPE_NATIVE;
-    return DoDumpCatchRemote(type, pid, tid, msg, isJson);
+    return DoDumpCatchRemote(pid, tid, msg, isJson);
 }
 
 bool DfxDumpCatcher::DoDumpLocalLocked(int pid, int tid, std::string& msg, size_t maxFrameNums, bool isJson)
@@ -154,8 +152,7 @@ bool DfxDumpCatcher::DoDumpLocalLocked(int pid, int tid, std::string& msg, size_
 
 bool DfxDumpCatcher::DumpCatchMix(int pid, int tid, std::string& msg)
 {
-    int type = DUMP_TYPE_MIX;
-    return DoDumpCatchRemote(type, pid, tid, msg);
+    return DoDumpCatchRemote(pid, tid, msg);
 }
 
 bool DfxDumpCatcher::DumpCatch(int pid, int tid, std::string& msg, size_t maxFrameNums, bool isJson)
@@ -205,7 +202,7 @@ bool DfxDumpCatcher::DumpCatchFd(int pid, int tid, std::string& msg, int fd, siz
     return ret;
 }
 
-bool DfxDumpCatcher::DoDumpCatchRemote(const int type, int pid, int tid, std::string& msg, bool isJson)
+bool DfxDumpCatcher::DoDumpCatchRemote(int pid, int tid, std::string& msg, bool isJson)
 {
     bool ret = false;
     if (pid <= 0 || tid < 0) {
@@ -213,7 +210,7 @@ bool DfxDumpCatcher::DoDumpCatchRemote(const int type, int pid, int tid, std::st
         DFXLOG_WARN("%s :: %s :: %s", DFXDUMPCATCHER_TAG.c_str(), __func__, msg.c_str());
         return ret;
     }
-    int sdkdumpRet = RequestSdkDumpJson(type, pid, tid, isJson);
+    int sdkdumpRet = RequestSdkDumpJson(pid, tid, isJson);
     if (sdkdumpRet != static_cast<int>(FaultLoggerSdkDumpResp::SDK_DUMP_PASS)) {
         if (sdkdumpRet == static_cast<int>(FaultLoggerSdkDumpResp::SDK_DUMP_REPEAT)) {
             msg.append("Result: pid(" + std::to_string(pid) + ") is dumping.\n");
@@ -227,20 +224,14 @@ bool DfxDumpCatcher::DoDumpCatchRemote(const int type, int pid, int tid, std::st
         return ret;
     }
 
-    int pollRet = DoDumpRemotePid(type, pid, msg, isJson);
+    int pollRet = DoDumpRemotePid(pid, msg, isJson);
     switch (pollRet) {
         case DUMP_POLL_OK:
             ret = true;
             break;
         case DUMP_POLL_TIMEOUT:
-            if (type == DUMP_TYPE_MIX) {
-                msg.append("Result: pid(" + std::to_string(pid) + ") dump mix timeout, try dump native frame.\n");
-                int type = DUMP_TYPE_NATIVE;
-                return DoDumpCatchRemote(type, pid, tid, msg, isJson);
-            } else if (type == DUMP_TYPE_NATIVE) {
-                ReadProcessStatus(msg, pid);
-                ReadProcessWchan(msg, pid, false, true);
-            }
+            ReadProcessStatus(msg, pid);
+            ReadProcessWchan(msg, pid, false, true);
             break;
         default:
             break;
@@ -249,7 +240,7 @@ bool DfxDumpCatcher::DoDumpCatchRemote(const int type, int pid, int tid, std::st
     return ret;
 }
 
-int DfxDumpCatcher::DoDumpRemotePid(const int type, int pid, std::string& msg, bool isJson)
+int DfxDumpCatcher::DoDumpRemotePid(int pid, std::string& msg, bool isJson)
 {
     int readBufFd = -1;
     int readResFd = -1;
@@ -263,9 +254,6 @@ int DfxDumpCatcher::DoDumpRemotePid(const int type, int pid, std::string& msg, b
     DFXLOG_DEBUG("read res fd: %d", readResFd);
 
     int timeout = BACK_TRACE_DUMP_CPP_TIMEOUT_MS;
-    if (type == DUMP_TYPE_MIX) {
-        timeout = BACK_TRACE_DUMP_MIX_TIMEOUT_MS;
-    }
     int ret = DoDumpRemotePoll(readBufFd, readResFd, timeout, msg, isJson);
     // request close fds in faultloggerd
     RequestDelPipeFd(pid);

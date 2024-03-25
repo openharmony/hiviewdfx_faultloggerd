@@ -40,14 +40,14 @@ std::string DfxFrameFormatter::GetFrameStr(const std::shared_ptr<DfxFrame>& fram
     std::string data;
     if (frame->isJsFrame) {
 #if defined(ENABLE_MIXSTACK)
-        data = StringPrintf("#%02d at %s (%s:%d:%d)", frame->index, frame->funcName.c_str(), frame->mapName.c_str(),
+        data = StringPrintf("#%zu at %s (%s:%d:%d)", frame->index, frame->funcName.c_str(), frame->mapName.c_str(),
             frame->line, frame->column);
 #endif
     } else {
 #ifdef __LP64__
-        data = StringPrintf("#%02d pc %016" PRIx64, frame->index, frame->relPc);
+        data = StringPrintf("#%zu pc %016" PRIx64, frame->index, frame->relPc);
 #else
-        data = StringPrintf("#%02d pc %08" PRIx64, frame->index, frame->relPc);
+        data = StringPrintf("#%zu pc %08" PRIx64, frame->index, frame->relPc);
 #endif
         if (!frame->mapName.empty()) {
             DfxMaps::UnFormatMapName(frame->mapName);

@@ -214,14 +214,14 @@ bool RequestCheckPermission(int32_t pid)
     return ret;
 }
 
-int RequestSdkDump(int32_t type, int32_t pid, int32_t tid)
+int RequestSdkDump(int32_t pid, int32_t tid)
 {
-    return RequestSdkDumpJson(type, pid, tid, false);
+    return RequestSdkDumpJson(pid, tid, false);
 }
 
-int RequestSdkDumpJson(int32_t type, int32_t pid, int32_t tid, bool isJson)
+int RequestSdkDumpJson(int32_t pid, int32_t tid, bool isJson)
 {
-    DFXLOG_INFO("RequestSdkDumpJson :: type(%d), pid(%d), tid(%d).", type, pid, tid);
+    DFXLOG_INFO("RequestSdkDumpJson :: pid(%d), tid(%d).", pid, tid);
     if (pid <= 0 || tid < 0) {
         return -1;
     }
@@ -229,7 +229,7 @@ int RequestSdkDumpJson(int32_t type, int32_t pid, int32_t tid, bool isJson)
     struct FaultLoggerdRequest request;
     (void)memset_s(&request, sizeof(request), 0, sizeof(request));
     request.isJson = isJson;
-    request.sigCode = type;
+    request.sigCode = DUMP_TYPE_REMOTE;
     request.pid = pid;
     request.tid = tid;
     request.callerPid = getprocpid();
