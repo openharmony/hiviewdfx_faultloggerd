@@ -247,10 +247,6 @@ bool Unwinder::Unwind(void *ctx, size_t maxFrameNum, size_t skipFrameNum)
     bool needAdjustPc = false;
     bool resetFrames = false;
     bool isJsFrame = false;
-    uintptr_t pc = 0;
-    uintptr_t sp = 0;
-    uintptr_t prevPc = 0;
-    uintptr_t prevSp = 0;
     do {
         if (!resetFrames && (skipFrameNum != 0) && (frames_.size() >= skipFrameNum)) {
             resetFrames = true;
@@ -263,8 +259,8 @@ bool Unwinder::Unwind(void *ctx, size_t maxFrameNum, size_t skipFrameNum)
             break;
         }
 
-        pc = regs_->GetPc();
-        sp = regs_->GetSp();
+        uintptr_t pc = regs_->GetPc();
+        uintptr_t sp = regs_->GetSp();
         // Check if this is a signal frame.
         if (pid_ != UNWIND_TYPE_LOCAL && regs_->StepIfSignalFrame(static_cast<uintptr_t>(pc), memory_)) {
             LOGW("Step signal frame, pc: %p", reinterpret_cast<void *>(pc));
@@ -279,8 +275,8 @@ bool Unwinder::Unwind(void *ctx, size_t maxFrameNum, size_t skipFrameNum)
             needAdjustPc = true;
         }
 
-        prevPc = pc;
-        prevSp = sp;
+        uintptr_t prevPc = pc;
+        uintptr_t prevSp = sp;
         if (!StepInner(false, isJsFrame, pc, sp, ctx)) {
             break;
         }
@@ -309,8 +305,6 @@ bool Unwinder::UnwindByFp(void *ctx, size_t maxFrameNum, size_t skipFrameNum)
     pcs_.clear();
 
     bool resetFrames = false;
-    uintptr_t pc = 0;
-    uintptr_t fp = 0;
     do {
         if (!resetFrames && skipFrameNum != 0 && (pcs_.size() == skipFrameNum)) {
             LOGU("pcs size: %zu, will be reset pcs", pcs_.size());
@@ -322,8 +316,8 @@ bool Unwinder::UnwindByFp(void *ctx, size_t maxFrameNum, size_t skipFrameNum)
             break;
         }
 
-        pc = regs_->GetPc();
-        fp = regs_->GetFp();
+        uintptr_t pc = regs_->GetPc();
+        uintptr_t fp = regs_->GetFp();
         pcs_.emplace_back(pc);
 
         if (!FpStep(fp, pc, ctx) || (pc == 0)) {
