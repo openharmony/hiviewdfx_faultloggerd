@@ -71,12 +71,11 @@ void Unwinder::Init()
     }
 #if defined(ENABLE_MIXSTACK)
     if (OHOS::system::GetParameter(MIXSTACK_ENABLED_KEY, "true") == "true") {
-        LOGI("Check mixstack enabled.");
         enableMixstack_ = true;
     } else {
-        LOGI("Check mixstack disabled.");
         enableMixstack_ = false;
     }
+    LOGI("Check mixstack enable: %d", enableMixstack_);
 #endif
 }
 
@@ -108,11 +107,7 @@ bool Unwinder::CheckAndReset(void* ctx)
 
 bool Unwinder::GetStackRange(uintptr_t& stackBottom, uintptr_t& stackTop)
 {
-#if is_ohos
-    if (getprocpid() == getproctid()) {
-#else
     if (getpid() == gettid()) {
-#endif
         if (maps_ == nullptr || !maps_->GetStackRange(stackBottom, stackTop)) {
             return false;
         }
@@ -204,15 +199,17 @@ bool Unwinder::StepArkJsFrame(uintptr_t& pc, uintptr_t& fp, uintptr_t& sp)
     LOGI("---ark pc: %" PRIx64 ", fp: %" PRIx64 ", sp: %" PRIx64 ", js frame size: %zu.",
         (uint64_t)pc, (uint64_t)fp, (uint64_t)sp, size);
 
-    for (size_t i = 0; i < size; ++i) {
-        DfxFrame frame;
-        frame.isJsFrame = true;
-        frame.index = frames_.size();
-        frame.mapName = std::string(jsFrames[i].url);
-        frame.funcName = std::string(jsFrames[i].functionName);
-        frame.line = jsFrames[i].line;
-        frame.column = jsFrames[i].column;
-        AddFrame(frame);
+    if (!ignoreMixstack_) {
+        for (size_t i = 0; i < size; ++i) {
+            DfxFrame frame;
+            frame.isJsFrame = true;
+            frame.index = frames_.size();
+            frame.mapName = std::string(jsFrames[i].url);
+            frame.funcName = std::string(jsFrames[i].functionName);
+            frame.line = jsFrames[i].line;
+            frame.column = jsFrames[i].column;
+            AddFrame(frame);
+        }
     }
     return true;
 }
@@ -308,6 +305,7 @@ bool Unwinder::UnwindByFp(void *ctx, size_t maxFrameNum, size_t skipFrameNum)
     }
     pcs_.clear();
 
+    bool needAdjustPc = false;
     bool resetFrames = false;
     uintptr_t pc = 0;
     uintptr_t fp = 0;
@@ -324,6 +322,11 @@ bool Unwinder::UnwindByFp(void *ctx, size_t maxFrameNum, size_t skipFrameNum)
 
         pc = regs_->GetPc();
         fp = regs_->GetFp();
+
+        if (needAdjustPc) {
+            DoPcAdjust(pc);
+        }
+        needAdjustPc = true;
         pcs_.emplace_back(pc);
 
         if (!FpStep(fp, pc, ctx) || (pc == 0)) {
@@ -621,6 +624,11 @@ std::vector<DfxFrame>& Unwinder::GetFrames()
 
 void Unwinder::AddFrame(bool isJsFrame, uintptr_t pc, uintptr_t sp, std::shared_ptr<DfxMap> map)
 {
+#if defined(OFFLINE_MIXSTACK)
+    if (ignoreMixstack_ && isJsFrame) {
+        return;
+    }
+#endif
     DfxFrame frame;
     frame.isJsFrame = isJsFrame;
     frame.index = frames_.size();
@@ -649,6 +657,22 @@ void Unwinder::FillFrames(std::vector<DfxFrame>& frames)
     }
 }
 
+void Unwinder::FillLocalFrames(std::vector<DfxFrame>& frames)
+{
+    if (frames.empty()) {
+        return;
+    }
+    auto it = frames.begin();
+    while (it != frames.end()) {
+        if (dl_iterate_phdr(Unwinder::DlPhdrCallback, &(*it)) != 1) {
+            // clean up frames after first invalid frame
+            frames.erase(it, frames.end());
+            break;
+        }
+        it++;
+    }
+}
+
 void Unwinder::FillFrame(DfxFrame& frame)
 {
     if (frame.isJsFrame) {
@@ -670,7 +694,7 @@ void Unwinder::FillFrame(DfxFrame& frame)
     }
     LOGU("mapName: %s, mapOffset: %" PRIx64 "", frame.mapName.c_str(), frame.mapOffset);
     if (!DfxSymbols::GetFuncNameAndOffsetByPc(frame.relPc, elf, frame.funcName, frame.funcOffset)) {
-        LOGU("Failed to get symbol, mapName: %s, relPc: %" PRIx64 "", frame.mapName.c_str(), frame.relPc);
+        LOGU("Failed to get symbol, relPc: %" PRIx64 ", mapName: %s", frame.relPc, frame.mapName.c_str());
     }
     frame.buildId = elf->GetBuildId();
 }
@@ -770,6 +794,25 @@ bool Unwinder::GetSymbolByPc(uintptr_t pc, std::shared_ptr<DfxMaps> maps, std::s
 std::string Unwinder::GetFramesStr(const std::vector<DfxFrame>& frames)
 {
     return DfxFrameFormatter::GetFramesStr(frames);
+}
+
+int Unwinder::DlPhdrCallback(struct dl_phdr_info *info, size_t size, void *data)
+{
+    auto frame = reinterpret_cast<DfxFrame *>(data);
+    const ElfW(Phdr) *phdr = info->dlpi_phdr;
+    frame->pc = StripPac(frame->pc, 0);
+    for (int n = info->dlpi_phnum; --n >= 0; phdr++) {
+        if (phdr->p_type == PT_LOAD) {
+            ElfW(Addr) vaddr = phdr->p_vaddr + info->dlpi_addr;
+            if (frame->pc >= vaddr && frame->pc < vaddr + phdr->p_memsz) {
+                frame->relPc = frame->pc - info->dlpi_addr;
+                frame->mapName = std::string(info->dlpi_name);
+                LOGU("relPc: %" PRIx64 ", mapName: %s", frame->relPc, frame->mapName.c_str());
+                return 1;
+            }
+        }
+    }
+    return 0;
 }
 } // namespace HiviewDFX
 } // namespace OHOS

@@ -71,17 +71,17 @@ __attribute__ ((visibility("hidden"))) int MuslHiLogPrinter(
 __attribute__ ((visibility("hidden"))) int DfxLogPrint(
     const LogLevel logLevel, const unsigned int domain, const char* tag, const char *fmt, ...);
 
-#define DFXLOG_PRINT(prio, domain, tag, ...) DfxLogPrint(prio, domain, tag, ##__VA_ARGS__)
+#define DFXLOG_PRINT(prio, ...) DfxLogPrint(prio, LOG_DOMAIN, LOG_TAG, ##__VA_ARGS__)
 
-#define DFXLOG_DEBUG(...) DFXLOG_PRINT(LOG_DEBUG, LOG_DOMAIN, LOG_TAG, ##__VA_ARGS__)
-#define DFXLOG_INFO(...) DFXLOG_PRINT(LOG_INFO, LOG_DOMAIN, LOG_TAG, ##__VA_ARGS__)
-#define DFXLOG_WARN(...) DFXLOG_PRINT(LOG_WARN, LOG_DOMAIN, LOG_TAG, ##__VA_ARGS__)
-#define DFXLOG_ERROR(...) DFXLOG_PRINT(LOG_ERROR, LOG_DOMAIN, LOG_TAG, ##__VA_ARGS__)
-#define DFXLOG_FATAL(...) DFXLOG_PRINT(LOG_FATAL, LOG_DOMAIN, LOG_TAG, ##__VA_ARGS__)
+#define DFXLOG_DEBUG(...) DFXLOG_PRINT(LOG_DEBUG, ##__VA_ARGS__)
+#define DFXLOG_INFO(...) DFXLOG_PRINT(LOG_INFO, ##__VA_ARGS__)
+#define DFXLOG_WARN(...) DFXLOG_PRINT(LOG_WARN, ##__VA_ARGS__)
+#define DFXLOG_ERROR(...) DFXLOG_PRINT(LOG_ERROR, ##__VA_ARGS__)
+#define DFXLOG_FATAL(...) DFXLOG_PRINT(LOG_FATAL, ##__VA_ARGS__)
 
 #else
 
-#define DFXLOG_PRINT(prio, domain, tag, ...)
+#define DFXLOG_PRINT(prio, ...)
 
 #define DFXLOG_DEBUG(...)
 #define DFXLOG_INFO(...)

@@ -157,7 +157,7 @@ std::string DfxProcess::GetFatalMessage() const
 }
 
 namespace {
-bool GetProcessInfo(pid_t tid, unsigned  long long &startTime)
+bool GetProcessInfo(pid_t tid, unsigned long long &startTime)
 {
     std::string path = "/proc/" +std::to_string(tid);
     UniqueFd dirFd(open(path.c_str(), O_DIRECTORY | O_RDONLY));
@@ -188,7 +188,7 @@ bool GetProcessInfo(pid_t tid, unsigned  long long &startTime)
             return true;
         }
     }
-    return  false;
+    return false;
 }
 }
 
