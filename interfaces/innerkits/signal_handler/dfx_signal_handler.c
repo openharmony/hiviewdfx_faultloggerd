@@ -617,7 +617,9 @@ static bool DFX_SigchainHandler(int sig, siginfo_t *si, void *context)
     DFXLOG_INFO("DFX_SigchainHandler :: sig(%d), pid(%d), tid(%d).", sig, pid, tid);
     bool ret = false;
     if (sig == SIGDUMP) {
-        if (si->si_code != DUMP_TYPE_NATIVE) {
+        if (si->si_code != DUMP_TYPE_REMOTE) {
+            DFXLOG_WARN("DFX_SigchainHandler :: sig(%d:%d) is not remote dump type, return directly",
+                        sig, si->si_code);
             return true;
         }
 

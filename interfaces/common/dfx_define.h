@@ -40,6 +40,7 @@ static const int NUMBER_ONE_THOUSAND = 1000;
 static const int NUMBER_ONE_MILLION = 1000000;
 
 static const int INVALID_FD = -1;
+static const int DUMP_TYPE_REMOTE = -1;
 static const int DUMP_TYPE_NATIVE = -1;
 static const int DUMP_TYPE_MIX = -2;
 static const int DUMP_TYPE_KERNEL = -3;

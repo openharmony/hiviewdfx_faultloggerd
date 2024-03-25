@@ -84,7 +84,7 @@ int RequestPrintTHilog(const char *msg, int length);
  * @param tid thread id, if equal 0 means dump all the threads in a process.
  * @return if succeed return 0 , otherwise return -1
 */
-int RequestSdkDump(int32_t type, int32_t pid, int32_t tid);
+int RequestSdkDump(int32_t pid, int32_t tid);
 
 /**
  * @brief request dump stack about process
@@ -92,7 +92,7 @@ int RequestSdkDump(int32_t type, int32_t pid, int32_t tid);
  * @param tid thread id, if equal 0 means dump all the threads in a process.
  * @return if succeed return 0 , otherwise return -1
 */
-int RequestSdkDumpJson(int32_t type, int32_t pid, int32_t tid, bool isJson);
+int RequestSdkDumpJson(int32_t pid, int32_t tid, bool isJson);
 
 #ifdef __cplusplus
 }

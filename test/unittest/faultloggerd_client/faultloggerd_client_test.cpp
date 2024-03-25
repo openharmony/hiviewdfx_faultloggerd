@@ -101,7 +101,7 @@ HWTEST_F(FaultloggerdClientTest, FaultloggerdClientTest002, TestSize.Level2)
             close(fd);
             ret = 0;
         }
-        
+
         fd = RequestFileDescriptor(FaultLoggerType::JS_HEAP_SNAPSHOT);
         if (fd >= 0) {
             close(fd);
@@ -227,7 +227,7 @@ HWTEST_F(FaultloggerdClientTest, FaultloggerdClientTest005, TestSize.Level2)
         constexpr int32_t appUid = 100068;
         setcon("u:r:hiview:s0");
         setuid(appUid);
-        int resp = RequestSdkDump(-1, 1, 1);
+        int resp = RequestSdkDump(1, 1);
         if (resp == FaultLoggerCheckPermissionResp::CHECK_PERMISSION_PASS) {
             ret = 0;
         }
@@ -268,7 +268,7 @@ HWTEST_F(FaultloggerdClientTest, FaultloggerdClientTest006, TestSize.Level2)
         constexpr int32_t appUid = 100068;
         setcon("u:r:wifi_host:s0");
         setuid(appUid);
-        int resp = RequestSdkDump(-1, 1, 1);
+        int resp = RequestSdkDump(1, 1);
         if (resp == FaultLoggerCheckPermissionResp::CHECK_PERMISSION_REJECT) {
             ret = 0;
         }
