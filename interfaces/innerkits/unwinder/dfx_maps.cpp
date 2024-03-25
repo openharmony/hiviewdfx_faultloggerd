@@ -116,6 +116,15 @@ std::shared_ptr<DfxMaps> DfxMaps::Create(const pid_t pid, const std::string& pat
             }
         }
     }
+    if (dfxMaps->maps_.empty()) {
+        LOGE("DfxMaps size is 0. %s Content :", path.c_str());
+        ifs.clear();
+        ifs.seekg(0, std::ios::beg);
+        std::string tmpBuff;
+        while (getline(ifs, tmpBuff)) {
+            LOGI("%s", tmpBuff.c_str());
+        }
+    }
     ifs.close();
     if (!enableMapIndex) {
         dfxMaps->Sort();
