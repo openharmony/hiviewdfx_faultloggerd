@@ -94,10 +94,8 @@ struct DfxFrame {
         }
         output.append("@");
         output.append(mapName);
-        if (index != -1) {
-            output.append(":");
-            output.append(std::to_string(index));
-        }
+        output.append(":");
+        output.append(std::to_string(index));
         return output;
     }
 #endif

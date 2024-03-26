@@ -72,6 +72,7 @@ public:
     inline void EnableFpFallback(bool enableFpFallback) { enableFpFallback_ = enableFpFallback; }
     inline void EnableFpCheckMapExec(bool enableFpCheckMapExec) { enableFpCheckMapExec_ = enableFpCheckMapExec; }
     inline void EnableFillFrames(bool enableFillFrames) { enableFillFrames_ = enableFillFrames; }
+    inline void IgnoreMixstack(bool ignoreMixstack) { ignoreMixstack_ = ignoreMixstack; }
 
     inline void SetRegs(const std::shared_ptr<DfxRegs> regs) { regs_ = regs; }
     inline const std::shared_ptr<DfxRegs>& GetRegs() { return regs_; }
@@ -98,7 +99,6 @@ public:
     bool FpStep(uintptr_t& fp, uintptr_t& pc, void *ctx);
 
     void AddFrame(DfxFrame& frame);
-    void FillFrames(std::vector<DfxFrame>& frames);
     std::vector<DfxFrame>& GetFrames();
     inline const std::vector<uintptr_t>& GetPcs() { return pcs_; }
 
@@ -106,9 +106,12 @@ public:
         std::string& funcName, uint64_t& funcOffset);
     static void GetFramesByPcs(std::vector<DfxFrame>& frames, std::vector<uintptr_t> pcs,
         std::shared_ptr<DfxMaps> maps);
+    static void FillFrames(std::vector<DfxFrame>& frames);
     static void FillFrame(DfxFrame& frame);
     static void FillJsFrame(DfxFrame& frame);
     static std::string GetFramesStr(const std::vector<DfxFrame>& frames);
+    static void FillLocalFrames(std::vector<DfxFrame>& frames);
+    static int DlPhdrCallback(struct dl_phdr_info *info, size_t size, void *data);
 
     static bool AccessMem(void* memory, uintptr_t addr, uintptr_t *val)
     {
@@ -149,6 +152,7 @@ private:
 #if defined(ENABLE_MIXSTACK)
     bool enableMixstack_ = true;
 #endif
+    bool ignoreMixstack_ = false;
 
     int32_t pid_ = 0;
     bool isCrash_ = false;

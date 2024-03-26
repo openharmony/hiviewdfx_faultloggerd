@@ -376,11 +376,15 @@ int ProcessDumper::InitProcessInfo(std::shared_ptr<ProcessDumpRequest> request)
     } else {
         unwinder_ = std::make_shared<Unwinder>(process_->processInfo_.pid);
     }
+    if (unwinder_ == nullptr) {
+        DFXLOG_ERROR("%s", "Failed to create unwinder?");
+        return -1;
+    }
+
 #if defined(PROCESSDUMP_MINIDEBUGINFO)
     UnwinderConfig::SetEnableMiniDebugInfo(true);
     UnwinderConfig::SetEnableLoadSymbolLazily(true);
 #endif
-
     return 0;
 }
 

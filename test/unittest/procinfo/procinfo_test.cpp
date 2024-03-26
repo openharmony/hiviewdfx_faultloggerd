@@ -129,5 +129,8 @@ HWTEST_F(ProcinfoTest, ProcinfoTest005, TestSize.Level2)
     ReadThreadName(getpid(), result);
     GTEST_LOG_(INFO) << result;
     ASSERT_TRUE(result.find("test_procinfo") != std::string::npos);
+    ReadThreadNameByPidAndTid(getpid(), gettid(), result);
+    GTEST_LOG_(INFO) << result;
+    ASSERT_TRUE(result.find("test_procinfo") != std::string::npos);
     GTEST_LOG_(INFO) << "ProcinfoTest005: end.";
 }

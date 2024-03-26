@@ -65,8 +65,12 @@ static const char PROC_SELF_COMM_PATH[] = "/proc/self/comm";
 static const char PROC_SELF_MAPS_PATH[] = "/proc/self/maps";
 static const char PROC_SELF_EXE_PATH[] = "/proc/self/exe";
 
+#ifndef LIKELY
 #define LIKELY(exp)       (__builtin_expect(!!(exp), true))
+#endif
+#ifndef UNLIKELY
 #define UNLIKELY(exp)     (__builtin_expect(!!(exp), false))
+#endif
 
 #define AT_SYMBOL_DEFAULT       __attribute__ ((visibility("default")))
 #define AT_SYMBOL_HIDDEN        __attribute__ ((visibility("hidden")))

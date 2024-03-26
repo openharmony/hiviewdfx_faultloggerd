@@ -238,7 +238,7 @@ void DfxRegs::DoPcAdjust(MAYBE_UNUSED std::shared_ptr<DfxMemory> memory, uintptr
     }
     uintptr_t sz = 0x4;
 #if defined(__arm__)
-    if (pc & 0x1) {
+    if ((pc & 0x1) && (memory != nullptr)) {
         uintptr_t val;
         if (pc < 0x5 || !(memory->ReadMem(pc - 0x5, &val)) ||
             (val & 0xe000f000) != 0xe000f000) {

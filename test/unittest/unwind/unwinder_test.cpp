@@ -353,6 +353,7 @@ HWTEST_F(UnwinderTest, UnwindTest003, TestSize.Level2)
     GTEST_LOG_(INFO) << "UnwindTest003: start.";
 
     auto unwinder = std::make_shared<Unwinder>();
+    unwinder->IgnoreMixstack(true);
     MAYBE_UNUSED bool unwRet = unwinder->UnwindLocal();
     EXPECT_EQ(true, unwRet) << "UnwindTest003: Unwind ret:" << unwRet;
     unwinder->EnableFillFrames(false);
@@ -634,7 +635,7 @@ HWTEST_F(UnwinderTest, FillFramesTest001, TestSize.Level2)
     frame.map = map;
     frames.push_back(frame);
     ASSERT_EQ(frames[0].buildId.size(), 0);
-    unwinder->FillFrames(frames);
+    Unwinder::FillFrames(frames);
     ASSERT_EQ(frames[0].buildId.size() == 0, false);
     GTEST_LOG_(INFO) << "FillFramesTest001: end.";
 }
