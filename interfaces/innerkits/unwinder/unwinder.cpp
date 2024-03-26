@@ -270,7 +270,7 @@ bool Unwinder::Unwind(void *ctx, size_t maxFrameNum, size_t skipFrameNum)
 
         if (pid_ != UNWIND_TYPE_CUSTOMIZE) {
             if (needAdjustPc) {
-                DoPcAdjust(pc);
+                DfxRegs::DoPcAdjust(memory_, pc);
             }
             needAdjustPc = true;
         }
@@ -583,26 +583,6 @@ uintptr_t Unwinder::StripPac(uintptr_t inAddr, uintptr_t pacMask)
     }
 #endif
     return outAddr;
-}
-
-void Unwinder::DoPcAdjust(uintptr_t& pc)
-{
-    if (pc <= 0x4) {
-        return;
-    }
-    uintptr_t sz = 0x4;
-#if defined(__arm__)
-    if (pc & 0x1) {
-        uintptr_t val;
-        if (pc < 0x5 || !(memory_->ReadMem(pc - 0x5, &val)) ||
-            (val & 0xe000f000) != 0xe000f000) {
-            sz = 0x2;
-        }
-    }
-#elif defined(__x86_64__)
-    sz = 0x1;
-#endif
-    pc -= sz;
 }
 
 std::vector<DfxFrame>& Unwinder::GetFrames()
