@@ -78,7 +78,7 @@ int DfxAccessorsLocal::AccessMem(uintptr_t addr, uintptr_t *val, void *arg)
     }
     UnwindContext* ctx = reinterpret_cast<UnwindContext *>(arg);
     if ((ctx != nullptr) && (ctx->stackCheck == true) && (!IsValidFrame(addr, ctx->stackBottom, ctx->stackTop))) {
-        LOGE("%s", "Failed to access addr");
+        LOGU("%s", "Failed to access addr");
         return UNW_ERROR_INVALID_MEMORY;
     }
     *val = *(uintptr_t *) addr;

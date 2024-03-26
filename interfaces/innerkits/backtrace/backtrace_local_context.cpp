@@ -248,7 +248,7 @@ bool BacktraceLocalContext::CopyContextAndWaitTimeout(int sig, siginfo_t *si, vo
 bool BacktraceLocalContext::SignalRequestThread(int32_t tid, ThreadContext* ctx)
 {
     siginfo_t si {0};
-    si.si_signo = SIGDUMP;
+    si.si_signo = SIGLOCAL_DUMP;
     si.si_errno = 0;
     si.si_code = DUMP_TYPE_LOCAL;
     if (syscall(SYS_rt_tgsigqueueinfo, getprocpid(), tid, si.si_signo, &si) != 0) {
@@ -272,7 +272,7 @@ bool BacktraceLocalContext::Init()
                 .sca_mask = {},
                 .sca_flags = 0,
             };
-            add_special_signal_handler(SIGDUMP, &sigchain);
+            add_special_signal_handler(SIGLOCAL_DUMP, &sigchain);
             init_ = true;
         }
     });
