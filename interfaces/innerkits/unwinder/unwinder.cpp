@@ -271,7 +271,7 @@ bool Unwinder::Unwind(void *ctx, size_t maxFrameNum, size_t skipFrameNum)
 
         if (pid_ != UNWIND_TYPE_CUSTOMIZE) {
             if (needAdjustPc) {
-                DoPcAdjust(pc);
+                DfxRegs::DoPcAdjust(memory_, pc);
             }
             needAdjustPc = true;
         }
@@ -306,7 +306,6 @@ bool Unwinder::UnwindByFp(void *ctx, size_t maxFrameNum, size_t skipFrameNum)
     }
     pcs_.clear();
 
-    bool needAdjustPc = false;
     bool resetFrames = false;
     do {
         if (!resetFrames && skipFrameNum != 0 && (pcs_.size() == skipFrameNum)) {
@@ -321,11 +320,6 @@ bool Unwinder::UnwindByFp(void *ctx, size_t maxFrameNum, size_t skipFrameNum)
 
         uintptr_t pc = regs_->GetPc();
         uintptr_t fp = regs_->GetFp();
-
-        if (needAdjustPc) {
-            DoPcAdjust(pc);
-        }
-        needAdjustPc = true;
         pcs_.emplace_back(pc);
 
         if (!FpStep(fp, pc, ctx) || (pc == 0)) {
@@ -538,16 +532,15 @@ bool Unwinder::FpStep(uintptr_t& fp, uintptr_t& pc, void *ctx)
             return false;
         }
         regs_->SetReg(REG_FP, &fp);
-        regs_->SetReg(REG_PC, &pc);
         regs_->SetReg(REG_SP, &prevFp);
-        if (pid_ == UNWIND_TYPE_CUSTOMIZE) {
-            regs_->SetPc(StripPac(pc, pacMask_));
-        } else {
-            if (!isFpStep_) {
+        regs_->SetPc(StripPac(pc, pacMask_));
+
+        if (!isFpStep_) {
+            if (pid_ != UNWIND_TYPE_CUSTOMIZE) {
                 LOGI("First enter fp step, pc: %p", reinterpret_cast<void *>(pc));
             }
+            isFpStep_ = true;
         }
-        isFpStep_ = true;
         LOGU("-fp: %lx, pc: %lx", (uint64_t)fp, (uint64_t)pc);
         return true;
     }
@@ -592,26 +585,6 @@ uintptr_t Unwinder::StripPac(uintptr_t inAddr, uintptr_t pacMask)
     }
 #endif
     return outAddr;
-}
-
-void Unwinder::DoPcAdjust(uintptr_t& pc)
-{
-    if (pc <= 0x4) {
-        return;
-    }
-    uintptr_t sz = 0x4;
-#if defined(__arm__)
-    if (pc & 0x1) {
-        uintptr_t val;
-        if (pc < 0x5 || !(memory_->ReadMem(pc - 0x5, &val)) ||
-            (val & 0xe000f000) != 0xe000f000) {
-            sz = 0x2;
-        }
-    }
-#elif defined(__x86_64__)
-    sz = 0x1;
-#endif
-    pc -= sz;
 }
 
 std::vector<DfxFrame>& Unwinder::GetFrames()

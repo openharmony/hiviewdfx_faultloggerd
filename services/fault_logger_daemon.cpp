@@ -629,7 +629,8 @@ void FaultLoggerDaemon::RemoveTempFileIfNeed()
         DFXLOG_ERROR("%s :: currentTime is less than zero CreateFileForRequest", FAULTLOGGERD_TAG.c_str());
     }
 
-    int startIndex = maxFileCount / 2;
+    constexpr int deleteNum = 1;
+    int startIndex = maxFileCount > deleteNum ? maxFileCount - deleteNum : maxFileCount;
     for (unsigned int index = (unsigned int)startIndex; index < files.size(); index++) {
         struct stat st;
         int err = stat(files[index].c_str(), &st);

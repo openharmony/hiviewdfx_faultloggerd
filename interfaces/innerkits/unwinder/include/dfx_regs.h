@@ -37,6 +37,7 @@ public:
     static std::shared_ptr<DfxRegs> CreateFromUcontext(const ucontext_t& context);
     static std::shared_ptr<DfxRegs> CreateFromRegs(const UnwindMode mode, const uintptr_t* regs);
     static std::shared_ptr<DfxRegs> CreateRemoteRegs(pid_t pid);
+    static void DoPcAdjust(std::shared_ptr<DfxMemory> memory, uintptr_t& pc);
     virtual void SetFromUcontext(const ucontext_t& context) = 0;
     virtual void SetFromFpMiniRegs(const uintptr_t* regs, const size_t size) = 0;
     virtual void SetFromQutMiniRegs(const uintptr_t* regs, const size_t size) = 0;

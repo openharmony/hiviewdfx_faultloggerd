@@ -123,7 +123,6 @@ private:
     void Clear();
     void Destroy();
     bool CheckAndReset(void* ctx);
-    void DoPcAdjust(uintptr_t& pc);
     void AddFrame(bool isJsFrame, uintptr_t pc, uintptr_t sp, std::shared_ptr<DfxMap> map);
     bool StepInner(const bool isSigFrame, bool& isJsFrame, uintptr_t& pc, uintptr_t& sp, void *ctx);
     bool Apply(std::shared_ptr<DfxRegs> regs, std::shared_ptr<RegLocState> rs);
