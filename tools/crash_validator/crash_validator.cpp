@@ -58,6 +58,9 @@ CrashValidator::~CrashValidator()
 void CrashValidator::OnEvent(std::shared_ptr<HiviewDFX::HiSysEventRecord> sysEvent)
 {
     std::lock_guard<std::mutex> lock(lock_);
+    if (sysEvent == nullptr) {
+        return;
+    }
     auto domain = sysEvent->GetDomain();
     auto eventName = sysEvent->GetEventName();
     if (eventName == EVENT_CPP_CRASH) {
@@ -166,6 +169,9 @@ bool CrashValidator::RemoveSimilarEvent(const CrashEvent& event)
 
 void CrashValidator::HandleCppCrashEvent(std::shared_ptr<HiviewDFX::HiSysEventRecord> sysEvent)
 {
+    if (sysEvent == nullptr) {
+        return;
+    }
     CrashEvent crashEvent;
     crashEvent.isCppCrash = true;
     sysEvent->GetParamValue(KEY_HAPPEN_TIME, crashEvent.time);
@@ -183,6 +189,9 @@ void CrashValidator::HandleCppCrashEvent(std::shared_ptr<HiviewDFX::HiSysEventRe
 
 void CrashValidator::HandleProcessExitEvent(std::shared_ptr<HiviewDFX::HiSysEventRecord> sysEvent)
 {
+    if (sysEvent == nullptr) {
+        return;
+    }
     int64_t status64 = 0;
     sysEvent->GetParamValue(KEY_STATUS, status64);
     int32_t status = static_cast<int32_t>(status64);

@@ -175,7 +175,7 @@ void BacktraceLocalContext::CleanUp()
 
 bool BacktraceLocalContext::CopyContextAndWaitTimeout(int sig, siginfo_t *si, void *context)
 {
-    if (si->si_code != DUMP_TYPE_LOCAL) {
+    if (si == nullptr || si->si_code != DUMP_TYPE_LOCAL) {
         return false;
     }
 

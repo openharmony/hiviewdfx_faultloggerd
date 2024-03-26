@@ -37,6 +37,9 @@ std::string DfxFrameFormatter::GetFrameStr(const DfxFrame& frame)
 
 std::string DfxFrameFormatter::GetFrameStr(const std::shared_ptr<DfxFrame>& frame)
 {
+    if (frame == nullptr) {
+        return "";
+    }
     std::string data;
     if (frame->isJsFrame) {
 #if defined(ENABLE_MIXSTACK)

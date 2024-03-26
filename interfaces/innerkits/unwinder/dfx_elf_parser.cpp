@@ -242,11 +242,14 @@ bool ElfParser::ParseSectionHeaders(const EhdrType& ehdr)
 template <typename DynType>
 bool ElfParser::ParseElfDynamic()
 {
-    if (dynamicOffset_ == 0) {
+    if (dynamicOffset_ == 0 || mmap_->Get() == nullptr) {
         return false;
     }
 
     DynType *dyn = (DynType *)(dynamicOffset_ + static_cast<char*>(mmap_->Get()));
+    if (dyn == nullptr) {
+        return false;
+    }
     for (; dyn->d_tag != DT_NULL; ++dyn) {
         if (dyn->d_tag == DT_PLTGOT) {
             // Assume that _DYNAMIC is writable and GLIBC has relocated it (true for x86 at least).
@@ -337,7 +340,7 @@ bool ElfParser::ParseElfSymbols(ElfShdr shdr, bool isFunc)
 template <typename SymType>
 bool ElfParser::ParseElfSymbolName(ShdrInfo linkShdr, SymType sym, std::string& nameStr)
 {
-    if (!IsFunc(sym) || (static_cast<uint64_t>(sym.st_name) >= linkShdr.size)) {
+    if (!IsFunc(sym) || (static_cast<uint64_t>(sym.st_name) >= linkShdr.size) || mmap_->Get() == nullptr) {
         return false;
     }
     uintptr_t nameOffset = static_cast<uintptr_t>(linkShdr.offset + sym.st_name);

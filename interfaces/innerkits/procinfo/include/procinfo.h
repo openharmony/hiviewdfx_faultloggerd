@@ -39,7 +39,7 @@ typedef struct ProcInfo {
     /** namespace process id */
     int nsPid;
     /** namespace is enabled or not */
-    bool ns;
+    bool ns = false;
 } ProcInfo;
 
 /**

@@ -37,6 +37,9 @@ namespace {
 
 bool DfxInstructions::Flush(DfxRegs& regs, std::shared_ptr<DfxMemory> memory, uintptr_t cfa, RegLoc loc, uintptr_t& val)
 {
+    if (memory == nullptr) {
+        return false;
+    }
     uintptr_t location;
     switch (loc.type) {
         case REG_LOC_VAL_OFFSET:

@@ -354,7 +354,7 @@ HWTEST_F(DfxProcessDumpTest, DfxProcessDumpTest012, TestSize.Level2)
     sleep(3); // 3 : wait 3s to generate cpp crash file
     auto filename = GetCppCrashFileName(testProcess);
     string keywords[] = {
-        "cycle", "OpenFiles:"
+        "time", "OpenFiles:"
     };
     int length = sizeof(keywords) / sizeof(keywords[0]);
     int minRegIdx = -1; // -1 : no not check register value

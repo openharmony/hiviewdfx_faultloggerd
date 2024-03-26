@@ -38,6 +38,9 @@ std::shared_ptr<DfxRegs> DfxRegs::Create(int mode)
 #else
 #error "Unsupported architecture"
 #endif
+    if (dfxregs == nullptr) {
+        return dfxregs;
+    }
     if (mode == UnwindMode::FRAMEPOINTER_UNWIND) {
         uintptr_t regs[FP_MINI_REGS_SIZE] = {0};
         dfxregs->GetFramePointerMiniRegs(regs);

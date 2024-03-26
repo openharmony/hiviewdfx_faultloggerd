@@ -85,6 +85,10 @@ void DfxUnwindRemote::UnwindKeyThread(std::shared_ptr<ProcessDumpRequest> reques
         DFXLOG_WARN("%s::unwind thread is not initialized.", __func__);
         return;
     }
+    if (request == nullptr) {
+        DFXLOG_WARN("%s::request is not initialized.", __func__);
+        return;
+    }
     auto unwindAsyncThread = std::make_shared<DfxUnwindAsyncThread>(unwThread, unwinder, request->stackId);
     unwindAsyncThread->UnwindStack();
 
