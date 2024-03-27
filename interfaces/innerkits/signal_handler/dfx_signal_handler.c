@@ -708,7 +708,7 @@ void DFX_InstallSignalHandler(void)
         sigfillset(&sigchain.sca_mask);
         // dump signal not mask crash signal
         for (size_t j = 0; j < sizeof(SIGCHAIN_CRASH_SIGNAL_LIST) / sizeof(SIGCHAIN_CRASH_SIGNAL_LIST[0]); j++) {
-            sigdelset(&sigchain.sca_mask, SIGCHAIN_CRASH_SIGNAL_LIST[i]);
+            sigdelset(&sigchain.sca_mask, SIGCHAIN_CRASH_SIGNAL_LIST[j]);
         }
         add_special_handler_at_last(sig, &sigchain);
     }
