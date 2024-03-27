@@ -79,6 +79,13 @@
           }
         },
         {
+          "name": "//base/hiviewdfx/faultloggerd/interfaces/rust/panic_handler:panic_handler",
+          "header": {
+            "header_files": [],
+            "header_base": []
+          }
+        },
+        {
           "name": "//base/hiviewdfx/faultloggerd/interfaces/innerkits/procinfo:libdfx_procinfo",
           "header": {
             "header_files": [
