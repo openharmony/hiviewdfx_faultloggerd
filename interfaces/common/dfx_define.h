@@ -19,7 +19,7 @@
 #include <stdbool.h>
 
 #define SIGDUMP 35
-#define SIGLOCAL_DUMP 36
+#define SIGLOCAL_DUMP 38
 #define SIGLEAK_STACK 42
 #define PROCESSDUMP_TIMEOUT 8
 #define DUMPCATCHER_TIMEOUT 15

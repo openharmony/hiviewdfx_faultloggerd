@@ -165,9 +165,7 @@ bool DfxDumpCatcher::DumpCatch(int pid, int tid, std::string& msg, size_t maxFra
 
     std::unique_lock<std::mutex> lck(mutex_);
     int currentPid = getprocpid();
-    DFXLOG_DEBUG("%s :: dump_catch :: cPid(%d), pid(%d), tid(%d).",
-        DFXDUMPCATCHER_TAG.c_str(), currentPid, pid, tid);
-
+    DFXLOG_INFO("Receive DumpCatch request for cPid:(%d), pid(%d), tid:(%d).", currentPid, pid, tid);
     if (pid == currentPid) {
         ret = DoDumpLocalLocked(pid, tid, msg, maxFrameNums, isJson);
     } else {

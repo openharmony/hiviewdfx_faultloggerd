@@ -97,6 +97,7 @@ bool GetBacktraceStringByTid(std::string& out, int32_t tid, size_t skipFrameNum,
 
 bool PrintBacktrace(int32_t fd, bool fast, size_t maxFrameNums)
 {
+    DFXLOG_INFO("%s", "Receive PrintBacktrace request.");
     std::vector<DfxFrame> frames;
     bool ret = GetBacktraceFramesByTid(frames,
         BACKTRACE_CURRENT_THREAD, 1, fast, maxFrameNums); // 1: skip current frame
@@ -119,11 +120,13 @@ bool PrintBacktrace(int32_t fd, bool fast, size_t maxFrameNums)
 
 bool GetBacktrace(std::string& out, bool fast, size_t maxFrameNums)
 {
+    DFXLOG_INFO("%s", "Receive GetBacktrace request.");
     return GetBacktraceStringByTid(out, BACKTRACE_CURRENT_THREAD, 1, fast, maxFrameNums); // 1: skip current frame
 }
 
 bool GetBacktrace(std::string& out, size_t skipFrameNum, bool fast, size_t maxFrameNums, bool isJson)
 {
+    DFXLOG_INFO("Receive GetBacktrace request for isJson(%d).", isJson);
     if (isJson) {
 #ifndef is_ohos_lite
         return GetBacktraceJsonByTid(out, BACKTRACE_CURRENT_THREAD, skipFrameNum + 1, fast, maxFrameNums);
