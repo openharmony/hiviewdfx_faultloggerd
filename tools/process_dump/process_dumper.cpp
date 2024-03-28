@@ -372,7 +372,7 @@ int ProcessDumper::InitProcessInfo(std::shared_ptr<ProcessDumpRequest> request)
     }
 
     if (isCrash_) {
-        unwinder_ = std::make_shared<Unwinder>(process_->vmThread_->threadInfo_.pid, true);
+        unwinder_ = std::make_shared<Unwinder>(process_->vmThread_->threadInfo_.pid);
     } else {
         unwinder_ = std::make_shared<Unwinder>(process_->processInfo_.pid);
     }

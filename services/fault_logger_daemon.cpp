@@ -43,7 +43,7 @@
 #include "fault_logger_config.h"
 #include "fault_logger_pipe.h"
 #include "faultloggerd_socket.h"
-#ifndef hisysevent_disable
+#ifndef HISYSEVENT_DISABLE
 #include "hisysevent.h"
 #endif
 
@@ -102,7 +102,7 @@ static bool CheckCallerUID(uint32_t callerUid)
 
 static void ReportExceptionToSysEvent(CrashDumpException& exception)
 {
-#ifndef hisysevent_disable
+#ifndef HISYSEVENT_DISABLE
     HiSysEventWrite(
         HiSysEvent::Domain::RELIABILITY,
         "CPP_CRASH_EXCEPTION",
