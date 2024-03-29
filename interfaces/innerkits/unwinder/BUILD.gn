@@ -13,9 +13,7 @@
 
 import("//base/hiviewdfx/faultloggerd/faultloggerd.gni")
 
-dfx_unwinder_sources = [ "unwinder.cpp" ]
-
-dfx_unwind_sources = [
+dfx_unwinder_sources = [
   "arch_util.cpp",
   "dfx_accessors.cpp",
   "dfx_ark.cpp",
@@ -38,6 +36,8 @@ dfx_unwind_sources = [
   "dfx_regs_x86_64.cpp",
   "dfx_signal.cpp",
   "dfx_symbols.cpp",
+  "getcontext_x86_64.S",
+  "unwinder.cpp",
   "unwinder_config.cpp",
 ]
 
@@ -68,12 +68,13 @@ if (defined(ohos_lite)) {
       "$faultloggerd_common_path/dfxlog",
       "$faultloggerd_common_path/dfxutil",
       "$faultloggerd_interfaces_path/common",
+      "$faultloggerd_interfaces_path/innerkits/crash_exception",
       "$faultloggerd_interfaces_path/innerkits/procinfo/include",
       "$hilog_lite_include_path",
     ]
 
+    dfx_unwinder_sources -= [ "getcontext_x86_64.S" ]
     sources = dfx_unwinder_sources
-    sources += dfx_unwind_sources
     sources += dfx_exidx_sources
     sources += dfx_dwarf_sources
     sources += [ "$c_utils_src_path/directory_ex.cpp" ]
@@ -81,6 +82,7 @@ if (defined(ohos_lite)) {
     deps = [
       "$faultloggerd_common_path/dfxlog:dfx_hilog",
       "$faultloggerd_common_path/dfxutil:dfx_util",
+      "$faultloggerd_interfaces_path/innerkits/crash_exception:crash_exception",
       "$faultloggerd_interfaces_path/innerkits/procinfo:libdfx_procinfo",
       "$hilog_lite_deps_path",
       "//third_party/bounds_checking_function:libsec_shared",
@@ -98,12 +100,13 @@ if (defined(ohos_lite)) {
       "$faultloggerd_common_path/dfxlog",
       "$faultloggerd_common_path/dfxutil",
       "$faultloggerd_interfaces_path/common",
+      "$faultloggerd_interfaces_path/innerkits/crash_exception",
       "$faultloggerd_interfaces_path/innerkits/procinfo/include",
       "$hilog_lite_include_path",
     ]
 
+    dfx_unwinder_sources -= [ "getcontext_x86_64.S" ]
     sources = dfx_unwinder_sources
-    sources += dfx_unwind_sources
     sources += dfx_exidx_sources
     sources += dfx_dwarf_sources
     sources += [ "$c_utils_src_path/directory_ex.cpp" ]
@@ -111,6 +114,7 @@ if (defined(ohos_lite)) {
     deps = [
       "$faultloggerd_common_path/dfxlog:dfx_hilog",
       "$faultloggerd_common_path/dfxutil:dfx_util",
+      "$faultloggerd_interfaces_path/innerkits/crash_exception:crash_exception",
       "$faultloggerd_interfaces_path/innerkits/procinfo:libdfx_procinfo",
       "$hilog_lite_deps_path",
       "//third_party/bounds_checking_function:libsec_shared",
@@ -129,6 +133,7 @@ if (defined(ohos_lite)) {
       "$faultloggerd_common_path/dfxutil",
       "$faultloggerd_interfaces_path/common",
       "$faultloggerd_interfaces_path/procinfo/include",
+      "$faultloggerd_interfaces_path/innerkits/crash_exception",
     ]
 
     defines = [
@@ -162,7 +167,6 @@ if (defined(ohos_lite)) {
   }
 
   config("lzma_config") {
-    include_dirs = [ "//third_party/lzma/C" ]
     if (is_ohos && !is_mingw && !is_emulator) {
       defines = [ "ENABLE_MINIDEBUGINFO" ]
     }
@@ -176,25 +180,29 @@ if (defined(ohos_lite)) {
       "$faultloggerd_common_path/build:coverage_flags",
     ]
 
+    if (target_cpu != "x86_64") {
+      dfx_unwinder_sources -= [ "getcontext_x86_64.S" ]
+    }
     sources = dfx_unwinder_sources
-    sources += dfx_unwind_sources
     sources += dfx_exidx_sources
     sources += dfx_dwarf_sources
 
     deps = [
       "$faultloggerd_common_path/dfxlog:dfx_hilog",
       "$faultloggerd_common_path/dfxutil:dfx_util",
+      "$faultloggerd_interfaces_path/innerkits/crash_exception:crash_exception",
       "$faultloggerd_interfaces_path/innerkits/procinfo:libdfx_procinfo",
-      "//third_party/bounds_checking_function:libsec_shared",
     ]
 
     if (is_ohos && !is_mingw && !is_emulator) {
       sources += [ "dfx_xz_utils.cpp" ]
-      public_deps = [ "//third_party/lzma:lzma_shared" ]
     }
+    public_external_deps = [ "lzma:lzma_shared" ]
     external_deps = [
+      "bounds_checking_function:libsec_shared",
       "c_utils:utils",
       "hilog:libhilog",
+      "init:libbegetutil",
     ]
     install_images = [
       "system",
@@ -218,25 +226,29 @@ if (defined(ohos_lite)) {
       public_configs += [ ":offline_mixstack_config" ]
     }
 
+    if (target_cpu != "x86_64") {
+      dfx_unwinder_sources -= [ "getcontext_x86_64.S" ]
+    }
     sources = dfx_unwinder_sources
-    sources += dfx_unwind_sources
     sources += dfx_exidx_sources
     sources += dfx_dwarf_sources
 
     deps = [
       "$faultloggerd_common_path/dfxlog:dfx_hilog",
       "$faultloggerd_common_path/dfxutil:dfx_util",
+      "$faultloggerd_interfaces_path/innerkits/crash_exception:crash_exception",
       "$faultloggerd_interfaces_path/innerkits/procinfo:libdfx_procinfo",
-      "//third_party/bounds_checking_function:libsec_shared",
     ]
 
     if (is_ohos && !is_mingw && !is_emulator) {
       sources += [ "dfx_xz_utils.cpp" ]
-      public_deps = [ "//third_party/lzma:lzma_shared" ]
     }
+    public_external_deps = [ "lzma:lzma_shared" ]
     external_deps = [
+      "bounds_checking_function:libsec_shared",
       "c_utils:utils",
       "hilog:libhilog",
+      "init:libbegetutil",
     ]
     if (faultloggerd_abilitybase_enable) {
       external_deps += [ "ability_base:extractortool" ]
@@ -257,25 +269,29 @@ if (defined(ohos_lite)) {
       "INSTR_STATISTIC_ENABLE",
     ]
 
+    if (target_cpu != "x86_64") {
+      dfx_unwinder_sources -= [ "getcontext_x86_64.S" ]
+    }
     sources = dfx_unwinder_sources
-    sources += dfx_unwind_sources
     sources += dfx_exidx_sources
     sources += dfx_dwarf_sources
 
     deps = [
       "$faultloggerd_common_path/dfxlog:dfx_hilog",
       "$faultloggerd_common_path/dfxutil:dfx_util",
+      "$faultloggerd_interfaces_path/innerkits/crash_exception:crash_exception",
       "$faultloggerd_interfaces_path/innerkits/procinfo:libdfx_procinfo",
-      "//third_party/bounds_checking_function:libsec_shared",
     ]
 
     if (is_ohos && !is_mingw && !is_emulator) {
       sources += [ "dfx_xz_utils.cpp" ]
-      public_deps = [ "//third_party/lzma:lzma_shared" ]
     }
+    public_external_deps = [ "lzma:lzma_shared" ]
     external_deps = [
+      "bounds_checking_function:libsec_shared",
       "c_utils:utils",
       "hilog:libhilog",
+      "init:libbegetutil",
     ]
     part_name = "faultloggerd"
     subsystem_name = "hiviewdfx"
@@ -315,14 +331,12 @@ if (defined(ohos_lite)) {
     ]
     if (is_ohos && !is_mingw && !is_emulator) {
       sources += [ "dfx_xz_utils.cpp" ]
-      public_deps = [ "//third_party/lzma:lzma_static" ]
+      public_external_deps = [ "lzma:lzma_static" ]
     }
-    deps = [
-      "$faultloggerd_common_path/dfxutil:dfx_util_host",
-      "//third_party/bounds_checking_function:libsec_static",
-    ]
+    deps = [ "$faultloggerd_common_path/dfxutil:dfx_util_host" ]
+    external_deps = [ "bounds_checking_function:libsec_static" ]
     if (is_ohos) {
-      external_deps = [ "c_utils:utils" ]
+      external_deps += [ "c_utils:utils" ]
     }
     part_name = "faultloggerd"
     subsystem_name = "hiviewdfx"

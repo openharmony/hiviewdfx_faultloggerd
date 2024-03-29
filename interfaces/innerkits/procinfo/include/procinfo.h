@@ -99,6 +99,12 @@ bool GetTidsByPid(const int pid, std::vector<int>& tids, std::vector<int>& nstid
 */
 void ReadThreadName(const int tid, std::string& str);
 /**
+ * @brief read thread name by id
+ * @param tid thread id
+ * @param str thread name
+*/
+void ReadThreadNameByPidAndTid(const int pid, const int tid, std::string& str);
+/**
  * @brief read process name by id
  * @param pid process id
  * @param str process name

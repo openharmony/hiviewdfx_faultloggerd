@@ -19,15 +19,18 @@ if (defined(ohos_lite)) {
       "-funwind-tables",
       "-Wno-frame-larger-than",
     ]
+    defines = [ "is_ohos_lite" ]
     visibility = [ "*:*" ]
     include_dirs = [
       ".",
       "$faultloggerd_interfaces_path/common",
+      "$faultloggerd_interfaces_path/innerkits/async_stack/include",
       "//commonlibrary/c_utils/base/include",
       "$hilog_lite_include_path",
     ]
     sources = [ "dfx_crasher.cpp" ]
     deps = [
+      "$faultloggerd_interfaces_path/innerkits/async_stack:libasync_stack",
       "$hilog_lite_deps_path",
       "//third_party/bounds_checking_function:libsec_shared",
     ]
@@ -73,11 +76,16 @@ if (defined(ohos_lite)) {
 
     branch_protector_ret = "pac_ret"
 
+    deps =
+        [ "$faultloggerd_interfaces_path/innerkits/async_stack:libasync_stack" ]
+
     external_deps = [
       "c_utils:utils",
+      "ffrt:libffrt",
       "hilog:libhilog",
       "hitrace:libhitracechain",
       "ipc:ipc_single",
+      "libuv:uv",
     ]
 
     part_name = "faultloggerd"

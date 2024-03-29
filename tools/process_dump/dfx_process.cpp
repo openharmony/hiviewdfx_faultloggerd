@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -22,6 +22,7 @@
 #include <dirent.h>
 #include <securec.h>
 #include <sys/types.h>
+#include <sys/sysinfo.h>
 #include <unistd.h>
 #include <vector>
 
@@ -32,6 +33,7 @@
 #include "dfx_signal.h"
 #include "dfx_util.h"
 #include "procinfo.h"
+#include "unique_fd.h"
 
 namespace OHOS {
 namespace HiviewDFX {
@@ -154,26 +156,52 @@ std::string DfxProcess::GetFatalMessage() const
     return fatalMsg_;
 }
 
-#if defined(__x86_64__)
-void DfxProcess::SetMaps(std::shared_ptr<DfxElfMaps> maps)
+namespace {
+bool GetProcessInfo(pid_t tid, unsigned long long &startTime)
 {
-    maps_ = maps;
-}
-
-void DfxProcess::InitProcessMaps()
-{
-    if (maps_ == nullptr) {
-        if (processInfo_.pid <= 0) {
-            return;
-        }
-        maps_ = DfxElfMaps::Create(processInfo_.pid);
+    std::string path = "/proc/" +std::to_string(tid);
+    UniqueFd dirFd(open(path.c_str(), O_DIRECTORY | O_RDONLY));
+    if (dirFd == -1) {
+        return false;
     }
+
+    UniqueFd statFd(openat(dirFd.Get(), "stat", O_RDONLY | O_CLOEXEC));
+    if (statFd == -1) {
+        return false;
+    }
+
+    std::string statStr;
+    if (!ReadFdToString(statFd.Get(), statStr)) {
+        return false;
+    }
+
+    std::string eoc = statStr.substr(statStr.find_last_of(")"));
+    std::istringstream is(eoc);
+    constexpr int startTimePos = 21;
+    constexpr int base = 10;
+    int pos = 0;
+    std::string tmp;
+    while (is >> tmp && pos <= startTimePos) {
+        pos++;
+        if (pos == startTimePos) {
+            startTime = strtoull(tmp.c_str(), nullptr, base);
+            return true;
+        }
+    }
+    return false;
+}
 }
 
-std::shared_ptr<DfxElfMaps> DfxProcess::GetMaps() const
+std::string DfxProcess::GetProcessLifeCycle(pid_t pid)
 {
-    return maps_;
+    struct sysinfo si;
+    sysinfo(&si);
+    unsigned long long startTime = 0;
+    if (GetProcessInfo(pid, startTime)) {
+        uint64_t upTime = si.uptime - startTime / sysconf(_SC_CLK_TCK);
+        return std::to_string(upTime) + "s";
+    }
+    return "";
 }
-#endif
 } // namespace HiviewDFX
 } // namespace OHOS

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -21,9 +21,6 @@
 #include <memory>
 #include <string>
 
-#if defined(__x86_64__)
-#include "dfx_maps.h"
-#endif
 #include "dfx_thread.h"
 
 namespace OHOS {
@@ -50,25 +47,19 @@ public:
 
     void SetFatalMessage(const std::string &msg);
     std::string GetFatalMessage() const;
-#if defined(__x86_64__)
-    void InitProcessMaps();
-    void SetMaps(std::shared_ptr<DfxElfMaps> maps);
-    std::shared_ptr<DfxElfMaps> GetMaps() const;
-#endif
+    static std::string GetProcessLifeCycle(pid_t pid);
 
     DfxProcessInfo processInfo_;
     pid_t recycleTid_ = 0;
     std::shared_ptr<DfxThread> keyThread_ = nullptr; // comment: crash thread or dump target thread
-    std::shared_ptr<DfxThread> vmThread_ = nullptr; // comment: vm thread object in crash secnario
+    std::shared_ptr<DfxThread> vmThread_ = nullptr; // comment: vm thread object in crash scenario
     std::string reason = "";
+    std::string openFiles = "";
 private:
     DfxProcess() = default;
     void InitProcessInfo(pid_t pid, pid_t nsPid);
 
     std::string fatalMsg_ = "";
-#if defined(__x86_64__)
-    std::shared_ptr<DfxElfMaps> maps_;
-#endif
     std::vector<std::shared_ptr<DfxThread>> otherThreads_;
     std::map<int, int> kvThreads_;
 };

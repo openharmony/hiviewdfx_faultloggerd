@@ -19,7 +19,7 @@
 #include <stdbool.h>
 
 #define SIGDUMP 35
-#define SIGLOCAL_DUMP 36
+#define SIGLOCAL_DUMP 38
 #define SIGLEAK_STACK 42
 #define PROCESSDUMP_TIMEOUT 8
 #define DUMPCATCHER_TIMEOUT 15
@@ -40,6 +40,7 @@ static const int NUMBER_ONE_THOUSAND = 1000;
 static const int NUMBER_ONE_MILLION = 1000000;
 
 static const int INVALID_FD = -1;
+static const int DUMP_TYPE_REMOTE = -1;
 static const int DUMP_TYPE_NATIVE = -1;
 static const int DUMP_TYPE_MIX = -2;
 static const int DUMP_TYPE_KERNEL = -3;
@@ -52,6 +53,7 @@ static const int PIPE_NUM_SZ = 2;
 static const int PIPE_READ = 0;
 static const int PIPE_WRITE = 1;
 static const int SOCKET_BUFFER_SIZE = 256;
+static const char FAULTLOGGER_DAEMON_RESP[] =  "RESP:COMPLETE";
 static const char FAULTLOGGERD_SOCK_BASE_PATH[] = "/dev/unix/socket/";
 static const char SERVER_SOCKET_NAME[] = "faultloggerd.server";
 static const char SERVER_CRASH_SOCKET_NAME[] = "faultloggerd.crash.server";
@@ -64,8 +66,12 @@ static const char PROC_SELF_COMM_PATH[] = "/proc/self/comm";
 static const char PROC_SELF_MAPS_PATH[] = "/proc/self/maps";
 static const char PROC_SELF_EXE_PATH[] = "/proc/self/exe";
 
+#ifndef LIKELY
 #define LIKELY(exp)       (__builtin_expect(!!(exp), true))
+#endif
+#ifndef UNLIKELY
 #define UNLIKELY(exp)     (__builtin_expect(!!(exp), false))
+#endif
 
 #define AT_SYMBOL_DEFAULT       __attribute__ ((visibility("default")))
 #define AT_SYMBOL_HIDDEN        __attribute__ ((visibility("hidden")))

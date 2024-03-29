@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -18,7 +18,6 @@
 
 #include <cinttypes>
 #include <condition_variable>
-#include <future>
 #include <memory>
 #include <mutex>
 #include <string>
@@ -28,9 +27,7 @@
 #include "dfx_dump_request.h"
 #include "dfx_process.h"
 #include "nocopyable.h"
-#if !defined(__x86_64__)
 #include "unwinder.h"
-#endif
 
 namespace OHOS {
 namespace HiviewDFX {
@@ -55,9 +52,8 @@ private:
 private:
     std::shared_ptr<DfxProcess> process_ = nullptr;
     std::shared_ptr<CppCrashReporter> reporter_ = nullptr;
-#if !defined(__x86_64__)
     std::shared_ptr<Unwinder> unwinder_ = nullptr;
-#endif
+
     bool isCrash_ = false;
     bool isJsonDump_ = false;
     int32_t resFd_ = -1;

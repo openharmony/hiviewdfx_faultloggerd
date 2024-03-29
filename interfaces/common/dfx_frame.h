@@ -32,7 +32,7 @@ struct DfxFrame {
     /** whether is Js frame */
     bool isJsFrame {false};
     /** frame index */
-    int32_t index {0};
+    size_t index {0};
     /** symbol file index */
     int32_t symbolFileIndex = -1;
     /** program counter register value */
@@ -55,7 +55,6 @@ struct DfxFrame {
     std::string buildId {""};
     /** map cache */
     std::shared_ptr<DfxMap> map = nullptr;
-
     /** Js frame code line */
     int32_t line {0};
     /** Js frame code column */
@@ -95,10 +94,8 @@ struct DfxFrame {
         }
         output.append("@");
         output.append(mapName);
-        if (index != -1) {
-            output.append(":");
-            output.append(std::to_string(index));
-        }
+        output.append(":");
+        output.append(std::to_string(index));
         return output;
     }
 #endif

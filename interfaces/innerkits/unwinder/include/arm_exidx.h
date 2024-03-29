@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2023-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -12,12 +12,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 #ifndef ARM_EXIDX_H
 #define ARM_EXIDX_H
 
 #include <deque>
 #include <memory>
 #include <vector>
+
 #include "dfx_errors.h"
 #include "dfx_memory.h"
 #include "unwind_context.h"
@@ -89,6 +91,7 @@ protected:
     ExidxContext context_;
     std::deque<uint8_t> ops_;
     uint8_t curOp_ = 0;
+    bool isPcSet_ = false;
 };
 } // namespace HiviewDFX
 } // namespace OHOS

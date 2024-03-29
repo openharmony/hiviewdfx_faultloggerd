@@ -47,6 +47,7 @@ private:
     void HandlePermissionRequest(int32_t connectionFd, FaultLoggerdRequest* request);
     void HandleSdkDumpRequest(int32_t connectionFd, FaultLoggerdRequest* request);
     void HandlePipeFdClientRequest(int32_t connectionFd, FaultLoggerdRequest* request);
+    void HandleExceptionRequest(int32_t connectionFd, FaultLoggerdRequest* request);
     bool CheckRequestCredential(int32_t connectionFd, FaultLoggerdRequest* request);
     bool CreateSockets();
     bool CreateEventFd();

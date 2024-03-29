@@ -1,4 +1,4 @@
-# Copyright (c) 2021-2023 Huawei Device Co., Ltd.
+# Copyright (c) 2021-2024 Huawei Device Co., Ltd.
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -20,33 +20,11 @@ processdump_sources = [
   "dfx_ring_buffer_wrapper.cpp",
   "dfx_stack_info_formatter.cpp",
   "dfx_thread.cpp",
+  "dfx_unwind_async_thread.cpp",
+  "dfx_unwind_remote.cpp",
+  "printer.cpp",
   "process_dumper.cpp",
 ]
-
-if (target_cpu == "x86_64") {
-  processdump_sources += [
-    "$faultloggerd_frameworks_path/unwinder/dfx_config.cpp",
-    "$faultloggerd_frameworks_path/unwinder/dfx_elf.cpp",
-    "$faultloggerd_frameworks_path/unwinder/dfx_frame_format.cpp",
-    "$faultloggerd_frameworks_path/unwinder/dfx_maps.cpp",
-    "$faultloggerd_frameworks_path/unwinder/dfx_memory.cpp",
-    "$faultloggerd_frameworks_path/unwinder/dfx_memory_file.cpp",
-    "$faultloggerd_frameworks_path/unwinder/dfx_ptrace.cpp",
-    "$faultloggerd_frameworks_path/unwinder/dfx_regs.cpp",
-    "$faultloggerd_frameworks_path/unwinder/dfx_regs_arm.cpp",
-    "$faultloggerd_frameworks_path/unwinder/dfx_regs_arm64.cpp",
-    "$faultloggerd_frameworks_path/unwinder/dfx_regs_x86_64.cpp",
-    "$faultloggerd_frameworks_path/unwinder/dfx_signal.cpp",
-    "$faultloggerd_frameworks_path/unwinder/dfx_symbols.cpp",
-    "dfx_unwind_remote_emulator.cpp",
-    "printer_emulator.cpp",
-  ]
-} else {
-  processdump_sources += [
-    "dfx_unwind_remote.cpp",
-    "printer.cpp",
-  ]
-}
 
 if (defined(ohos_lite)) {
   config("processdump_config") {
@@ -66,6 +44,8 @@ if (defined(ohos_lite)) {
       "$faultloggerd_common_path/dfxlog",
       "$faultloggerd_common_path/dfxutil",
       "$faultloggerd_interfaces_path/common",
+      "$faultloggerd_interfaces_path/innerkits/async_stack/include",
+      "$faultloggerd_interfaces_path/innerkits/crash_exception",
       "$faultloggerd_interfaces_path/innerkits/faultloggerd_client/include",
       "$faultloggerd_interfaces_path/innerkits/procinfo/include",
       "$faultloggerd_interfaces_path/innerkits/unwinder/include",
@@ -80,6 +60,8 @@ if (defined(ohos_lite)) {
     deps = [
       "$faultloggerd_common_path/dfxlog:dfx_hilog",
       "$faultloggerd_common_path/dfxutil:dfx_util",
+      "$faultloggerd_interfaces_path/innerkits/async_stack:libasync_stack",
+      "$faultloggerd_interfaces_path/innerkits/crash_exception",
       "$faultloggerd_interfaces_path/innerkits/faultloggerd_client:libfaultloggerd",
       "$faultloggerd_interfaces_path/innerkits/procinfo:libdfx_procinfo",
       "$faultloggerd_interfaces_path/innerkits/unwinder:libunwinder",
@@ -98,11 +80,12 @@ if (defined(ohos_lite)) {
     deps = [
       "$faultloggerd_common_path/dfxlog:dfx_hilog",
       "$faultloggerd_common_path/dfxutil:dfx_util",
+      "$faultloggerd_interfaces_path/innerkits/async_stack:libasync_stack",
+      "$faultloggerd_interfaces_path/innerkits/crash_exception",
       "$faultloggerd_interfaces_path/innerkits/faultloggerd_client:libfaultloggerd",
       "$faultloggerd_interfaces_path/innerkits/procinfo:libdfx_procinfo",
       "$faultloggerd_interfaces_path/innerkits/unwinder:libunwinder",
       "//base/hiviewdfx/hilog_lite/frameworks/featured:hilog_shared",
-      "//third_party/libunwind:libunwind",
     ]
   }
 } else {
@@ -112,17 +95,12 @@ if (defined(ohos_lite)) {
     include_dirs = [
       ".",
       "$faultloggerd_interfaces_path/common",
+      "$faultloggerd_interfaces_path/innerkits/crash_exception",
       "$faultloggerd_interfaces_path/innerkits/procinfo/include",
       "$faultloggerd_interfaces_path/innerkits/signal_handler",
+      "$faultloggerd_interfaces_path/innerkits/unwinder/include",
       "$faultloggerd_path/common",
     ]
-
-    if (target_cpu == "x86_64") {
-      include_dirs += [ "$faultloggerd_frameworks_path/unwinder/include" ]
-    } else {
-      include_dirs +=
-          [ "$faultloggerd_interfaces_path/innerkits/unwinder/include" ]
-    }
 
     cflags_cc = [ "-DRUSTC_DEMANGLE" ]
 
@@ -142,16 +120,13 @@ if (defined(ohos_lite)) {
     deps = [
       "$faultloggerd_common_path/dfxlog:dfx_hilog",
       "$faultloggerd_common_path/dfxutil:dfx_util",
+      "$faultloggerd_interfaces_path/innerkits/async_stack:libasync_stack",
+      "$faultloggerd_interfaces_path/innerkits/crash_exception",
       "$faultloggerd_interfaces_path/innerkits/faultloggerd_client:libfaultloggerd",
       "$faultloggerd_interfaces_path/innerkits/procinfo:libdfx_procinfo",
+      "$faultloggerd_interfaces_path/innerkits/unwinder:libunwinder",
       "//third_party/jsoncpp:jsoncpp",
     ]
-
-    if (target_cpu == "x86_64") {
-      deps += [ "//third_party/libunwind:libunwind" ]
-    } else {
-      deps += [ "$faultloggerd_interfaces_path/innerkits/unwinder:libunwinder" ]
-    }
 
     external_deps = [
       "c_utils:utils",
@@ -181,21 +156,19 @@ if (defined(ohos_lite)) {
     deps = [
       "$faultloggerd_common_path/dfxlog:dfx_hilog_base",
       "$faultloggerd_common_path/dfxutil:dfx_util",
+      "$faultloggerd_interfaces_path/innerkits/async_stack:libasync_stack",
+      "$faultloggerd_interfaces_path/innerkits/crash_exception",
       "$faultloggerd_interfaces_path/innerkits/faultloggerd_client:libfaultloggerd",
       "$faultloggerd_interfaces_path/innerkits/procinfo:libdfx_procinfo",
       "$faultloggerd_interfaces_path/innerkits/signal_handler:dfx_local_handler",
+      "$faultloggerd_interfaces_path/innerkits/unwinder:libunwinder",
       "//third_party/jsoncpp:jsoncpp",
     ]
-
-    if (target_cpu == "x86_64") {
-      deps += [ "//third_party/libunwind:libunwind" ]
-    } else {
-      deps += [ "$faultloggerd_interfaces_path/innerkits/unwinder:libunwinder" ]
-    }
 
     external_deps = [
       "c_utils:utils",
       "hilog:libhilog_base",
+      "hisysevent:libhisysevent",
     ]
 
     install_images = [

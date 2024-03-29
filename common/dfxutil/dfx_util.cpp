@@ -141,7 +141,7 @@ bool ReadDirFiles(const std::string& path, std::vector<std::string>& files)
 bool ReadDirFilesByPid(const int& pid, std::vector<std::string>& files)
 {
     char path[PATH_LEN] = {0};
-    if (pid == getpid()) {
+    if (pid == getprocpid()) {
         if (snprintf_s(path, sizeof(path), sizeof(path) - 1, PROC_SELF_TASK_PATH) <= 0) {
             return false;
         }
@@ -184,6 +184,23 @@ off_t GetFileSize(const int& fd)
     }
     return fileSize;
 }
+
+bool ReadFdToString(int fd, std::string& content)
+{
+    content.clear();
+    struct stat sb;
+    if (fstat(fd, &sb) != -1 && sb.st_size > 0) {
+        content.reserve(sb.st_size);
+    }
+
+    char buf[BUFSIZ] __attribute__((__uninitialized__));
+    ssize_t n;
+    while ((n = OHOS_TEMP_FAILURE_RETRY(read(fd, &buf[0], sizeof(buf)))) > 0) {
+        content.append(buf, n);
+    }
+    return (n == 0);
+}
+
 }   // namespace HiviewDFX
 }   // namespace OHOS
 

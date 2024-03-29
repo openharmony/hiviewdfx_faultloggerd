@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2022-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -15,9 +15,11 @@
 
 #include "backtrace_local.h"
 
+// dfx_log header must be included in front of libunwind header
+#include "dfx_log.h"
+
 #include <cstring>
 #include <dirent.h>
-#include <hilog/log.h>
 #include <libunwind_i-ohos.h>
 #include <mutex>
 #include <sstream>
@@ -95,6 +97,7 @@ bool GetBacktraceStringByTid(std::string& out, int32_t tid, size_t skipFrameNum,
 
 bool PrintBacktrace(int32_t fd, bool fast, size_t maxFrameNums)
 {
+    DFXLOG_INFO("%s", "Receive PrintBacktrace request.");
     std::vector<DfxFrame> frames;
     bool ret = GetBacktraceFramesByTid(frames,
         BACKTRACE_CURRENT_THREAD, 1, fast, maxFrameNums); // 1: skip current frame
@@ -106,22 +109,24 @@ bool PrintBacktrace(int32_t fd, bool fast, size_t maxFrameNums)
         auto line = DfxFrameFormat::GetFrameStr(frame);
         if (fd < 0) {
             // print to hilog
-            HILOG_INFO(LOG_CORE, " %{public}s", line.c_str());
+            DFXLOG_INFO(" %s", line.c_str());
         } else {
             dprintf(fd, "    %s", line.c_str());
         }
-        HILOG_INFO(LOG_CORE, " %{public}s", line.c_str());
+        DFXLOG_INFO(" %s", line.c_str());
     }
     return ret;
 }
 
 bool GetBacktrace(std::string& out, bool fast, size_t maxFrameNums)
 {
+    DFXLOG_INFO("%s", "Receive GetBacktrace request.");
     return GetBacktraceStringByTid(out, BACKTRACE_CURRENT_THREAD, 1, fast, maxFrameNums); // 1: skip current frame
 }
 
 bool GetBacktrace(std::string& out, size_t skipFrameNum, bool fast, size_t maxFrameNums, bool isJson)
 {
+    DFXLOG_INFO("Receive GetBacktrace request for isJson(%d).", isJson);
     if (isJson) {
 #ifndef is_ohos_lite
         return GetBacktraceJsonByTid(out, BACKTRACE_CURRENT_THREAD, skipFrameNum + 1, fast, maxFrameNums);
@@ -141,14 +146,14 @@ const char* GetTrace(size_t skipFrameNum, size_t maxFrameNums)
     static std::string trace;
     trace.clear();
     if (!GetBacktrace(trace, skipFrameNum, false, maxFrameNums)) {
-        HILOG_ERROR(LOG_CORE, "Failed to get trace string");
+        DFXLOG_ERROR("%s", "Failed to get trace string");
     }
     return trace.c_str();
 }
 
 static std::string GetStacktraceHeader()
 {
-    pid_t pid = getpid();
+    pid_t pid = getprocpid();
     std::ostringstream ss;
     ss << "" << std::endl << "Timestamp:" << GetCurrentTimeStr();
     ss << "Pid:" << pid << std::endl;
@@ -171,7 +176,7 @@ std::string GetProcessStacktrace(size_t maxFrameNums, bool isJson)
     ss << std::endl << GetStacktraceHeader();
 
     std::function<bool(int)> func = [&](int tid) {
-        if (tid <= 0 || tid == gettid()) {
+        if (tid <= 0 || tid == getproctid()) {
             return false;
         }
         BacktraceLocalThread thread(tid);
@@ -180,7 +185,7 @@ std::string GetProcessStacktrace(size_t maxFrameNums, bool isJson)
             ss << thread.GetFormattedStr(true, isJson) << std::endl;
         } else {
             std::string msg;
-            if (tid == getpid()) {
+            if (tid == getprocpid()) {
                 ReadProcessStatus(msg, tid);
                 ss << msg << std::endl;
                 msg = "";
@@ -192,7 +197,7 @@ std::string GetProcessStacktrace(size_t maxFrameNums, bool isJson)
     };
 
     std::vector<int> tids;
-    GetTidsByPidWithFunc(getpid(), tids, func);
+    GetTidsByPidWithFunc(getprocpid(), tids, func);
 
     unw_destroy_local_address_space(as);
     return ss.str();

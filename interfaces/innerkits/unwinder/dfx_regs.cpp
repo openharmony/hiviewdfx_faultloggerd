@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2023-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -85,12 +85,30 @@ std::shared_ptr<DfxRegs> DfxRegs::CreateRemoteRegs(pid_t pid)
         LOGE("Failed to ptrace pid(%d), errno=%d", pid, errno);
         return nullptr;
     }
-    if (memcpy_s(dfxregs->regsData_.data(),
-        REG_LAST * sizeof(uintptr_t), &regs,
-        REG_LAST * sizeof(uintptr_t)) != 0) {
+#if defined(__x86_64__)
+    dfxregs->regsData_[REG_X86_64_RAX] = regs[RAX];
+    dfxregs->regsData_[REG_X86_64_RDX] = regs[RDX];
+    dfxregs->regsData_[REG_X86_64_RCX] = regs[RCX];
+    dfxregs->regsData_[REG_X86_64_RBX] = regs[RBX];
+    dfxregs->regsData_[REG_X86_64_RSI] = regs[RSI];
+    dfxregs->regsData_[REG_X86_64_RDI] = regs[RDI];
+    dfxregs->regsData_[REG_X86_64_RBP] = regs[RBP];
+    dfxregs->regsData_[REG_X86_64_RSP] = regs[RSP];
+    dfxregs->regsData_[REG_X86_64_R8] = regs[R8];
+    dfxregs->regsData_[REG_X86_64_R9] = regs[R9];
+    dfxregs->regsData_[REG_X86_64_R10] = regs[R10];
+    dfxregs->regsData_[REG_X86_64_R11] = regs[R11];
+    dfxregs->regsData_[REG_X86_64_R12] = regs[R12];
+    dfxregs->regsData_[REG_X86_64_R13] = regs[R13];
+    dfxregs->regsData_[REG_X86_64_R14] = regs[R14];
+    dfxregs->regsData_[REG_X86_64_R15] = regs[R15];
+    dfxregs->regsData_[REG_X86_64_RIP] = regs[RIP];
+#else
+    if (memcpy_s(dfxregs->regsData_.data(), REG_LAST * sizeof(uintptr_t), &regs, REG_LAST * sizeof(uintptr_t)) != 0) {
         LOGE("Failed to memcpy regs data, errno=%d", errno);
         return nullptr;
     }
+#endif
     return dfxregs;
 }
 
@@ -211,6 +229,26 @@ std::string DfxRegs::PrintSpecialRegs() const
     regsStr = StringPrintf("fp:%08x sp:%08x lr:%08x pc:%08x\n", fp, sp, lr, pc);
 #endif
     return regsStr;
+}
+
+void DfxRegs::DoPcAdjust(MAYBE_UNUSED std::shared_ptr<DfxMemory> memory, uintptr_t& pc)
+{
+    if (pc <= 0x4) {
+        return;
+    }
+    uintptr_t sz = 0x4;
+#if defined(__arm__)
+    if ((pc & 0x1) && (memory != nullptr)) {
+        uintptr_t val;
+        if (pc < 0x5 || !(memory->ReadMem(pc - 0x5, &val)) ||
+            (val & 0xe000f000) != 0xe000f000) {
+            sz = 0x2;
+        }
+    }
+#elif defined(__x86_64__)
+    sz = 0x1;
+#endif
+    pc -= sz;
 }
 } // namespace HiviewDFX
 } // namespace OHOS

@@ -43,7 +43,7 @@ public:
         Init();
     };
     // for remote
-    Unwinder(int pid) : pid_(pid)
+    Unwinder(int pid, bool crash = false) : pid_(pid), isCrash_(crash)
     {
         acc_ = std::make_shared<DfxAccessorsRemote>();
         enableFpCheckMapExec_ = true;
@@ -72,6 +72,7 @@ public:
     inline void EnableFpFallback(bool enableFpFallback) { enableFpFallback_ = enableFpFallback; }
     inline void EnableFpCheckMapExec(bool enableFpCheckMapExec) { enableFpCheckMapExec_ = enableFpCheckMapExec; }
     inline void EnableFillFrames(bool enableFillFrames) { enableFillFrames_ = enableFillFrames; }
+    inline void IgnoreMixstack(bool ignoreMixstack) { ignoreMixstack_ = ignoreMixstack; }
 
     inline void SetRegs(const std::shared_ptr<DfxRegs> regs) { regs_ = regs; }
     inline const std::shared_ptr<DfxRegs>& GetRegs() { return regs_; }
@@ -94,12 +95,10 @@ public:
     bool UnwindByFp(void *ctx, \
         size_t maxFrameNum = DEFAULT_MAX_FRAME_NUM, size_t skipFrameNum = 0);
 
-    bool Step(DfxFrame& frame, void *ctx);
     bool Step(uintptr_t& pc, uintptr_t& sp, void *ctx);
     bool FpStep(uintptr_t& fp, uintptr_t& pc, void *ctx);
 
     void AddFrame(DfxFrame& frame);
-    void FillFrames(std::vector<DfxFrame>& frames);
     std::vector<DfxFrame>& GetFrames();
     inline const std::vector<uintptr_t>& GetPcs() { return pcs_; }
 
@@ -107,9 +106,12 @@ public:
         std::string& funcName, uint64_t& funcOffset);
     static void GetFramesByPcs(std::vector<DfxFrame>& frames, std::vector<uintptr_t> pcs,
         std::shared_ptr<DfxMaps> maps);
+    static void FillFrames(std::vector<DfxFrame>& frames);
     static void FillFrame(DfxFrame& frame);
     static void FillJsFrame(DfxFrame& frame);
     static std::string GetFramesStr(const std::vector<DfxFrame>& frames);
+    static void FillLocalFrames(std::vector<DfxFrame>& frames);
+    static int DlPhdrCallback(struct dl_phdr_info *info, size_t size, void *data);
 
     static bool AccessMem(void* memory, uintptr_t addr, uintptr_t *val)
     {
@@ -121,8 +123,8 @@ private:
     void Clear();
     void Destroy();
     bool CheckAndReset(void* ctx);
-    void DoPcAdjust(uintptr_t& pc);
-    void AddFrame(bool isJsFrame, uintptr_t pc, uintptr_t sp, uintptr_t fp);
+    void AddFrame(bool isJsFrame, uintptr_t pc, uintptr_t sp, std::shared_ptr<DfxMap> map);
+    bool StepInner(const bool isSigFrame, bool& isJsFrame, uintptr_t& pc, uintptr_t& sp, void *ctx);
     bool Apply(std::shared_ptr<DfxRegs> regs, std::shared_ptr<RegLocState> rs);
 #if defined(ENABLE_MIXSTACK)
     bool StepArkJsFrame(uintptr_t& pc, uintptr_t& fp, uintptr_t& sp);
@@ -147,8 +149,13 @@ private:
     bool enableFpFallback_ = true;
     bool enableFpCheckMapExec_ = false;
     bool isFpStep_ = false;
+#if defined(ENABLE_MIXSTACK)
+    bool enableMixstack_ = true;
+#endif
+    bool ignoreMixstack_ = false;
 
     int32_t pid_ = 0;
+    bool isCrash_ = false;
     uintptr_t pacMask_ = 0;
     std::shared_ptr<DfxAccessors> acc_ = nullptr;
     std::shared_ptr<DfxMemory> memory_ = nullptr;

@@ -22,8 +22,10 @@
 #include <link.h>
 #include <securec.h>
 
+#include "dfx_unwind_async_thread.h"
 #include "dfx_config.h"
 #include "dfx_define.h"
+#include "dfx_frame_formatter.h"
 #include "dfx_logger.h"
 #include "dfx_maps.h"
 #include "dfx_process.h"
@@ -34,36 +36,10 @@
 #include "dfx_util.h"
 #include "process_dumper.h"
 #include "printer.h"
+#include "crash_exception.h"
 
 namespace OHOS {
 namespace HiviewDFX {
-namespace {
-void UnwindThreadByParseStackIfNeed(std::shared_ptr<DfxProcess> &process,
-    std::shared_ptr<DfxThread> &thread, std::shared_ptr<Unwinder> unwinder)
-{
-    if (process == nullptr || thread == nullptr) {
-        return;
-    }
-    auto frames = thread->GetFrames();
-    constexpr int minFramesNum = 3;
-    size_t initSize = frames.size();
-    if (initSize < minFramesNum || frames[minFramesNum - 1].mapName.find("Not mapped") != std::string::npos) {
-        bool needParseStack = true;
-        thread->InitFaultStack(needParseStack);
-        auto faultStack = thread->GetFaultStack();
-        if (faultStack == nullptr || !faultStack->ParseUnwindStack(unwinder->GetMaps(), frames)) {
-            DFXLOG_ERROR("%s : Failed to parse unwind stack.", __func__);
-            return;
-        }
-        thread->SetFrames(frames);
-        std::string tip = StringPrintf(
-            " Failed to unwind stack, try to get unreliable call stack from #%02zu by reparsing thread stack",
-            initSize);
-        std::string msg = process->GetFatalMessage() + tip;
-        process->SetFatalMessage(msg);
-    }
-}
-}
 
 DfxUnwindRemote &DfxUnwindRemote::GetInstance()
 {
@@ -80,109 +56,82 @@ bool DfxUnwindRemote::UnwindProcess(std::shared_ptr<ProcessDumpRequest> request,
         return ret;
     }
 
-    std::shared_ptr<DfxThread> unwThread = process->keyThread_;
-    if (ProcessDumper::GetInstance().IsCrash() && (process->vmThread_ != nullptr)) {
-        unwThread = process->vmThread_;
-    }
-
-    do {
-        if (unwThread == nullptr) {
-            break;
-        }
-
-        // unwinding with context passed by dump request, only for crash thread or target thread.
-        unwinder->SetRegs(unwThread->GetThreadRegs());
-        ret = unwinder->UnwindRemote(unwThread->threadInfo_.nsTid,
-                                     ProcessDumper::GetInstance().IsCrash(),
-                                     DfxConfig::GetConfig().maxFrameNums);
-        if (!ret && ProcessDumper::GetInstance().IsCrash()) {
-            UnwindThreadFallback(process, unwThread, unwinder);
-        }
-        unwThread->SetFrames(unwinder->GetFrames());
-        DFXLOG_INFO("%s, unwind tid(%d) finish.", __func__, unwThread->threadInfo_.nsTid);
-        UnwindThreadByParseStackIfNeed(process, unwThread, unwinder);
-        Printer::PrintDumpHeader(request, process, unwinder);
-        Printer::PrintThreadHeaderByConfig(process->keyThread_);
-        Printer::PrintThreadBacktraceByConfig(unwThread);
-        if (ProcessDumper::GetInstance().IsCrash()) {
-            // Registers of unwThread has been changed, we should print regs from request context.
-            Printer::PrintRegsByConfig(DfxRegs::CreateFromUcontext(request->context));
-            if (!DfxConfig::GetConfig().dumpOtherThreads) {
-                break;
-            }
-        }
-
-        // print base info to hilog when crash
-        DfxRingBufferWrapper::GetInstance().PrintBaseInfo();
-        auto threads = process->GetOtherThreads();
-        if (threads.empty()) {
-            break;
-        }
-
-        size_t index = 0;
-        for (auto thread : threads) {
-            if ((index == 0) && ProcessDumper::GetInstance().IsCrash()) {
-                Printer::PrintOtherThreadHeaderByConfig();
-            }
-
-            if (thread->Attach()) {
-                Printer::PrintThreadHeaderByConfig(thread);
-                unwinder->UnwindRemote(thread->threadInfo_.nsTid, false, DfxConfig::GetConfig().maxFrameNums);
-                thread->Detach();
-                thread->SetFrames(unwinder->GetFrames());
-                DFXLOG_INFO("%s, unwind tid(%d) finish.", __func__, thread->threadInfo_.nsTid);
-                Printer::PrintThreadBacktraceByConfig(thread);
-            }
-            index++;
-        }
-        ret = true;
-    } while (false);
-
+    SetCrashProcInfo(process->processInfo_.processName, process->processInfo_.pid,
+                     process->processInfo_.uid);
+    UnwindKeyThread(request, process, unwinder);
+    UnwindOtherThread(process, unwinder);
+    ret = true;
     if (ProcessDumper::GetInstance().IsCrash()) {
-        Printer::PrintThreadFaultStackByConfig(process, unwThread, unwinder);
+        if (process->vmThread_ == nullptr) {
+            DFXLOG_WARN("%s::unwind thread is not initialized.", __func__);
+        } else {
+            Printer::PrintThreadFaultStackByConfig(process, process->vmThread_, unwinder);
+        }
         Printer::PrintProcessMapsByConfig(unwinder->GetMaps());
+        Printer::PrintThreadOpenFiles(process);
     }
 
     return ret;
 }
 
-void DfxUnwindRemote::UnwindThreadFallback(std::shared_ptr<DfxProcess> process, std::shared_ptr<DfxThread> thread,
-                                           std::shared_ptr<Unwinder> unwinder)
+void DfxUnwindRemote::UnwindKeyThread(std::shared_ptr<ProcessDumpRequest> request, std::shared_ptr<DfxProcess> process,
+                                      std::shared_ptr<Unwinder> unwinder)
 {
-    if (unwinder->GetFrames().size() > 0) {
+    std::shared_ptr<DfxThread> unwThread = process->keyThread_;
+    if (ProcessDumper::GetInstance().IsCrash() && (process->vmThread_ != nullptr)) {
+        unwThread = process->vmThread_;
+    }
+    if (unwThread == nullptr) {
+        DFXLOG_WARN("%s::unwind thread is not initialized.", __func__);
         return;
     }
-    // As we failed to init libunwind, just print pc and lr for first two frames
-    std::shared_ptr<DfxRegs> regs = thread->GetThreadRegs();
-    if (regs == nullptr) {
-        DfxRingBufferWrapper::GetInstance().AppendMsg("RegisterInfo is not existed for crash process");
-        return;
-    }
+    auto unwindAsyncThread = std::make_shared<DfxUnwindAsyncThread>(unwThread, unwinder, request->stackId);
+    unwindAsyncThread->UnwindStack();
 
-    std::shared_ptr<DfxMaps> maps = unwinder->GetMaps();
-    if (maps == nullptr) {
-        DfxRingBufferWrapper::GetInstance().AppendMsg("MapsInfo is not existed for crash process");
-        return;
-    }
-
-    auto createFrame = [maps, unwinder] (size_t index, uintptr_t pc, uintptr_t sp = 0) {
-        std::shared_ptr<DfxMap> map;
-        DfxFrame frame;
-        frame.pc = pc;
-        frame.sp = sp;
-        frame.index = index;
-        if (maps->FindMapByAddr(pc, map)) {
-            frame.relPc = map->GetRelPc(pc);
-            frame.mapName = map->name;
-        } else {
-            frame.relPc = pc;
-            frame.mapName = (index == 0 ? "Not mapped pc" : "Not mapped lr");
+    std::string fatalMsg = process->GetFatalMessage() + unwindAsyncThread->tip;
+    if (!unwindAsyncThread->tip.empty()) {
+        if (ProcessDumper::GetInstance().IsCrash()) {
+            ReportCrashException(process->processInfo_.processName, process->processInfo_.pid,
+                                 process->processInfo_.uid, GetTimeMillisec(),
+                                 CrashExceptionCode::CRASH_UNWIND_ESTACK);
         }
-        unwinder->AddFrame(frame);
-    };
+    }
+    process->SetFatalMessage(fatalMsg);
+    Printer::PrintDumpHeader(request, process, unwinder);
+    Printer::PrintThreadHeaderByConfig(process->keyThread_);
+    Printer::PrintThreadBacktraceByConfig(unwThread);
+    if (ProcessDumper::GetInstance().IsCrash()) {
+        // Registers of unwThread has been changed, we should print regs from request context.
+        Printer::PrintRegsByConfig(DfxRegs::CreateFromUcontext(request->context));
+    }
+}
 
-    createFrame(0, regs->GetPc(), regs->GetSp());
-    createFrame(1, *(regs->GetReg(REG_LR)));
+void DfxUnwindRemote::UnwindOtherThread(std::shared_ptr<DfxProcess> process, std::shared_ptr<Unwinder> unwinder)
+{
+    if (!DfxConfig::GetConfig().dumpOtherThreads) {
+        return;
+    }
+    auto threads = process->GetOtherThreads();
+    if (threads.empty()) {
+        return;
+    }
+
+    size_t index = 0;
+    for (auto thread : threads) {
+        if ((index == 0) && ProcessDumper::GetInstance().IsCrash()) {
+            Printer::PrintOtherThreadHeaderByConfig();
+        }
+
+        if (thread->Attach()) {
+            Printer::PrintThreadHeaderByConfig(thread);
+            unwinder->UnwindRemote(thread->threadInfo_.nsTid, false, DfxConfig::GetConfig().maxFrameNums);
+            thread->Detach();
+            thread->SetFrames(unwinder->GetFrames());
+            DFXLOG_INFO("%s, unwind tid(%d) finish.", __func__, thread->threadInfo_.nsTid);
+            Printer::PrintThreadBacktraceByConfig(thread);
+        }
+        index++;
+    }
 }
 } // namespace HiviewDFX
 } // namespace OHOS

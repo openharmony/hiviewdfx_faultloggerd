@@ -67,14 +67,18 @@ bool DfxAccessorsLocal::IsValidFrame(uintptr_t addr, uintptr_t stackBottom, uint
     return ((addr >= stackBottom) && (addr < stackTop - sizeof(uintptr_t)));
 }
 
+#if defined(__has_feature) && __has_feature(address_sanitizer)
+__attribute__((no_sanitize("address"))) int DfxAccessorsLocal::AccessMem(uintptr_t addr, uintptr_t *val, void *arg)
+#else
 int DfxAccessorsLocal::AccessMem(uintptr_t addr, uintptr_t *val, void *arg)
+#endif
 {
     if (val == nullptr) {
         return UNW_ERROR_INVALID_MEMORY;
     }
     UnwindContext* ctx = reinterpret_cast<UnwindContext *>(arg);
     if ((ctx != nullptr) && (ctx->stackCheck == true) && (!IsValidFrame(addr, ctx->stackBottom, ctx->stackTop))) {
-        LOGE("%s", "Failed to access addr");
+        LOGU("%s", "Failed to access addr");
         return UNW_ERROR_INVALID_MEMORY;
     }
     *val = *(uintptr_t *) addr;

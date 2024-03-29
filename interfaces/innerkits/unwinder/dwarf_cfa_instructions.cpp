@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2023-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -14,8 +14,10 @@
  */
 
 #include "dwarf_cfa_instructions.h"
+
 #include <cstdio>
 #include <cstring>
+
 #include "dfx_log.h"
 #include "dfx_instr_statistic.h"
 #include "dfx_regs_qut.h"
@@ -120,6 +122,9 @@ bool DwarfCfaInstructions::DecodeDwCfa(uint8_t opCode, CommonInfoEntry cie,
         case DW_CFA_undefined:
             reg = memory_->ReadUleb128(instPtr);
             LOGU("DW_CFA_undefined: reg=%d", (int)reg);
+            if (reg == rsState.returnAddressRegister) {
+                rsState.returnAddressUndefined = true;
+            }
             if (!DfxRegsQut::IsQutReg(static_cast<uint16_t>(reg), qutIdx)) {
                 INSTR_STATISTIC(UnsupportedDwCfaUndefined, reg, UNW_ERROR_UNSUPPORTED_QUT_REG);
                 break;
@@ -129,6 +134,9 @@ bool DwarfCfaInstructions::DecodeDwCfa(uint8_t opCode, CommonInfoEntry cie,
         case DW_CFA_same_value:
             reg = memory_->ReadUleb128(instPtr);
             LOGU("DW_CFA_same_value: reg=%d", (int)reg);
+            if (reg == rsState.returnAddressRegister) {
+                rsState.returnAddressSame = true;
+            }
             if (!DfxRegsQut::IsQutReg(static_cast<uint16_t>(reg), qutIdx)) {
                 INSTR_STATISTIC(UnsupportedDwCfaSame, reg, UNW_ERROR_UNSUPPORTED_QUT_REG);
                 break;
@@ -301,8 +309,11 @@ bool DwarfCfaInstructions::DecodeDwCfa(uint8_t opCode, CommonInfoEntry cie,
 
 bool DwarfCfaInstructions::Parse(uintptr_t pc, FrameDescEntry fde, RegLocState &rsState)
 {
+    const auto& cie = fde.cie;
+    rsState.returnAddressRegister = cie.returnAddressRegister;
+
     LOGU("%s", "Iterate cie operations");
-    if (!Iterate(pc, fde, fde.cie.instructionsOff, fde.cie.instructionsEnd, rsState)) {
+    if (!Iterate(pc, fde, cie.instructionsOff, cie.instructionsEnd, rsState)) {
         LOGE("%s", "Failed to run cie inst");
         return false;
     }

@@ -33,7 +33,6 @@
 #include "faultloggerd_socket.h"
 #include "file_util.h"
 
-#define FAULTLOGGER_DAEMON_RESP "RESP:COMPLETE"
 static const int32_t SOCKET_TIMEOUT = 5;
 
 static std::string GetSocketConnectionName()
@@ -51,8 +50,8 @@ int32_t RequestFileDescriptor(int32_t type)
     struct FaultLoggerdRequest request;
     (void)memset_s(&request, sizeof(request), 0, sizeof(request));
     request.type = type;
-    request.pid = getpid();
-    request.tid = gettid();
+    request.pid = getprocpid();
+    request.tid = getproctid();
     request.uid = getuid();
     request.time = OHOS::HiviewDFX::GetTimeMilliSeconds();
     return RequestFileDescriptorEx(&request);
@@ -215,14 +214,14 @@ bool RequestCheckPermission(int32_t pid)
     return ret;
 }
 
-int RequestSdkDump(int32_t type, int32_t pid, int32_t tid)
+int RequestSdkDump(int32_t pid, int32_t tid)
 {
-    return RequestSdkDumpJson(type, pid, tid, false);
+    return RequestSdkDumpJson(pid, tid, false);
 }
 
-int RequestSdkDumpJson(int32_t type, int32_t pid, int32_t tid, bool isJson)
+int RequestSdkDumpJson(int32_t pid, int32_t tid, bool isJson)
 {
-    DFXLOG_INFO("RequestSdkDumpJson :: type(%d), pid(%d), tid(%d).", type, pid, tid);
+    DFXLOG_INFO("RequestSdkDumpJson :: pid(%d), tid(%d).", pid, tid);
     if (pid <= 0 || tid < 0) {
         return -1;
     }
@@ -230,11 +229,11 @@ int RequestSdkDumpJson(int32_t type, int32_t pid, int32_t tid, bool isJson)
     struct FaultLoggerdRequest request;
     (void)memset_s(&request, sizeof(request), 0, sizeof(request));
     request.isJson = isJson;
-    request.sigCode = type;
+    request.sigCode = DUMP_TYPE_REMOTE;
     request.pid = pid;
     request.tid = tid;
-    request.callerPid = getpid();
-    request.callerTid = syscall(SYS_gettid);
+    request.callerPid = getprocpid();
+    request.callerTid = getproctid();
     request.clientType = (int32_t)FaultLoggerClientType::SDK_DUMP_CLIENT;
     request.time = OHOS::HiviewDFX::GetTimeMilliSeconds();
 
@@ -250,7 +249,7 @@ int RequestPrintTHilog(const char *msg, int length)
     struct FaultLoggerdRequest request;
     (void)memset_s(&request, sizeof(request), 0, sizeof(request));
     request.clientType = (int32_t)FaultLoggerClientType::PRINT_T_HILOG_CLIENT;
-    request.pid = getpid();
+    request.pid = getprocpid();
     request.uid = getuid();
     int sockfd = -1;
     do {
@@ -298,8 +297,8 @@ int32_t RequestPipeFd(int32_t pid, int32_t pipeType)
     }
     request.pipeType = pipeType;
     request.pid = pid;
-    request.callerPid = getpid();
-    request.callerTid = syscall(SYS_gettid);
+    request.callerPid = getprocpid();
+    request.callerTid = getproctid();
     request.clientType = (int32_t)FaultLoggerClientType::PIPE_FD_CLIENT;
     if ((pipeType == static_cast<int32_t>(FaultLoggerPipeType::PIPE_FD_READ_BUF)) ||
         (pipeType == static_cast<int32_t>(FaultLoggerPipeType::PIPE_FD_READ_RES)) ||

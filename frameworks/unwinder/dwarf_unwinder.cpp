@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2023-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -15,10 +15,13 @@
 
 #include "dwarf_unwinder.h"
 
+// dfx_log header must be included in front of libunwind header
+#include "dfx_log.h"
+
 #include <securec.h>
-#include <hilog/log.h>
 #include <libunwind.h>
 #include <libunwind_i-ohos.h>
+
 #include "dfx_define.h"
 #include "dfx_config.h"
 
@@ -96,11 +99,7 @@ bool DwarfUnwinder::UnwindWithContext(unw_addr_space_t as, unw_context_t& contex
             if ((skipMap != nullptr) && (strlen(skipMap->path) < LINE_BUF_SIZE - 1)) {
                 skipMapName = std::string(skipMap->path);
             }
-            HILOG_INFO(LOG_CORE,
-                       " skip frame #%{public}zu pc %{public}" PRIu64 " %{public}s",
-                       index,
-                       skipPc,
-                       skipMapName.c_str());
+            DFXLOG_INFO(" skip frame #%zu pc %" PRIu64 " %s", index, skipPc, skipMapName.c_str());
             index++;
             continue;
         }

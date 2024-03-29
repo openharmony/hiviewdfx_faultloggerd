@@ -36,12 +36,16 @@
 #include <sys/wait.h>
 
 #include "dfx_define.h"
+#include "dfx_exception.h"
 #include "dfx_log.h"
 #include "dfx_util.h"
 #include "directory_ex.h"
 #include "fault_logger_config.h"
 #include "fault_logger_pipe.h"
 #include "faultloggerd_socket.h"
+#ifndef hisysevent_disable
+#include "hisysevent.h"
+#endif
 
 namespace OHOS {
 namespace HiviewDFX {
@@ -94,6 +98,21 @@ static bool CheckCallerUID(uint32_t callerUid)
     DFXLOG_WARN("%s :: CheckCallerUID :: Caller Uid(%d) is unexpectly.\n", FAULTLOGGERD_TAG.c_str(), callerUid);
     return false;
 }
+}
+
+static void ReportExceptionToSysEvent(CrashDumpException& exception)
+{
+#ifndef hisysevent_disable
+    HiSysEventWrite(
+        HiSysEvent::Domain::RELIABILITY,
+        "CPP_CRASH_EXCEPTION",
+        HiSysEvent::EventType::FAULT,
+        "PID", exception.pid,
+        "UID", exception.uid,
+        "HAPPEN_TIME", exception.time,
+        "ERROR_CODE", exception.error,
+        "ERROR_MSG", exception.message);
+#endif
 }
 
 FaultLoggerDaemon::FaultLoggerDaemon()
@@ -150,6 +169,21 @@ void FaultLoggerDaemon::HandleRequestForFuzzer(int32_t epollFd, int32_t connecti
 }
 #endif
 
+static bool CheckReadRequest(ssize_t nread, ssize_t size)
+{
+    if (nread < 0) {
+        DFXLOG_ERROR("%s :: Failed to read message", FAULTLOGGERD_TAG.c_str());
+        return false;
+    } else if (nread == 0) {
+        DFXLOG_ERROR("%s :: Read null from request socket", FAULTLOGGERD_TAG.c_str());
+        return false;
+    } else if (nread != static_cast<long>(size)) {
+        DFXLOG_ERROR("%s :: Unmatched request length", FAULTLOGGERD_TAG.c_str());
+        return false;
+    }
+    return true;
+}
+
 void FaultLoggerDaemon::HandleRequest(int32_t epollFd, int32_t connectionFd)
 {
     if (epollFd < 0 || connectionFd < 3) { // 3: not allow fd = 0,1,2 because they are reserved by system
@@ -159,14 +193,7 @@ void FaultLoggerDaemon::HandleRequest(int32_t epollFd, int32_t connectionFd)
     char buf[REQUEST_BUF_SIZE] = {0};
     do {
         ssize_t nread = read(connectionFd, buf, sizeof(buf));
-        if (nread < 0) {
-            DFXLOG_ERROR("%s :: Failed to read message", FAULTLOGGERD_TAG.c_str());
-            break;
-        } else if (nread == 0) {
-            DFXLOG_ERROR("%s :: HandleRequest :: Read null from request socket", FAULTLOGGERD_TAG.c_str());
-            break;
-        } else if (nread != static_cast<long>(sizeof(FaultLoggerdRequest))) {
-            DFXLOG_ERROR("%s :: Unmatched request length", FAULTLOGGERD_TAG.c_str());
+        if (!CheckReadRequest(nread, sizeof(FaultLoggerdRequest))) {
             break;
         }
 
@@ -194,6 +221,9 @@ void FaultLoggerDaemon::HandleRequest(int32_t epollFd, int32_t connectionFd)
                 break;
             case static_cast<int32_t>(FaultLoggerClientType::PIPE_FD_CLIENT):
                 HandlePipeFdClientRequest(connectionFd, request);
+                break;
+            case static_cast<int32_t>(FaultLoggerClientType::REPORT_EXCEPTION_CLIENT):
+                HandleExceptionRequest(connectionFd, request);
                 break;
             default:
                 DFXLOG_ERROR("%s :: unknown clientType(%d).\n", FAULTLOGGERD_TAG.c_str(), request->clientType);
@@ -250,6 +280,22 @@ void FaultLoggerDaemon::HandleLogFileDesClientRequest(int32_t connectionFd, cons
     SendFileDescriptorToSocket(connectionFd, fd);
 
     close(fd);
+}
+
+void FaultLoggerDaemon::HandleExceptionRequest(int32_t connectionFd, FaultLoggerdRequest * request)
+{
+    if (write(connectionFd, DAEMON_RESP.c_str(), DAEMON_RESP.length()) != static_cast<ssize_t>(DAEMON_RESP.length())) {
+        DFXLOG_ERROR("%s :: Failed to write DAEMON_RESP.", FAULTLOGGERD_TAG.c_str());
+    }
+
+    CrashDumpException exception;
+    (void)memset_s(&exception, sizeof(CrashDumpException), 0, sizeof(CrashDumpException));
+    ssize_t nread = read(connectionFd, &exception, sizeof(CrashDumpException));
+    if (!CheckReadRequest(nread, sizeof(CrashDumpException))) {
+        return;
+    }
+
+    ReportExceptionToSysEvent(exception);
 }
 
 void FaultLoggerDaemon::HandlePipeFdClientRequest(int32_t connectionFd, FaultLoggerdRequest * request)
@@ -583,7 +629,8 @@ void FaultLoggerDaemon::RemoveTempFileIfNeed()
         DFXLOG_ERROR("%s :: currentTime is less than zero CreateFileForRequest", FAULTLOGGERD_TAG.c_str());
     }
 
-    int startIndex = maxFileCount / 2;
+    constexpr int deleteNum = 1;
+    int startIndex = maxFileCount > deleteNum ? maxFileCount - deleteNum : maxFileCount;
     for (unsigned int index = (unsigned int)startIndex; index < files.size(); index++) {
         struct stat st;
         int err = stat(files[index].c_str(), &st);
@@ -653,6 +700,9 @@ bool FaultLoggerDaemon::CheckRequestCredential(int32_t connectionFd, FaultLogger
     }
 
     bool isCredentialMatched = (creds.pid == request->pid);
+    if (request->clientType == (int32_t)REPORT_EXCEPTION_CLIENT) {
+        isCredentialMatched = (creds.uid == request->uid);   /* check uid when report exception */
+    }
     if (!isCredentialMatched) {
         DFXLOG_WARN("Failed to check request credential request:%d:%d cred:%d:%d",
             request->pid, request->uid, creds.pid, creds.uid);

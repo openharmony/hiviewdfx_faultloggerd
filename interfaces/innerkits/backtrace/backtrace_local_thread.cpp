@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2022-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -15,7 +15,9 @@
 
 #include "backtrace_local_thread.h"
 
-#include <hilog/log.h>
+// dfx_log header must be included in front of libunwind header
+#include "dfx_log.h"
+
 #include <link.h>
 #include <libunwind.h>
 #include <libunwind_i-ohos.h>
@@ -95,13 +97,13 @@ bool BacktraceLocalThread::Unwind(unw_addr_space_t as, std::shared_ptr<DfxSymbol
 
     auto threadContext = BacktraceLocalContext::GetInstance().CollectThreadContext(tid_);
     if (threadContext == nullptr) {
-        HILOG_INFO(LOG_CORE, "failed to get context\n");
+        DFXLOG_INFO("%s", "Failed to get context");
         return ret;
     }
 
     if (threadContext->ctx == nullptr && (threadContext->frameSz == 0)) {
         // should never happen
-        HILOG_INFO(LOG_CORE, "failed to get frameSz\n");
+        DFXLOG_INFO("%s", "Failed to get frameSz");
         ReleaseThread();
         return ret;
     }

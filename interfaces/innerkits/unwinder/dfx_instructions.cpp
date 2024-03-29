@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2023-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -18,7 +18,9 @@
 #include <algorithm>
 #include <cstdio>
 #include <cstdlib>
+
 #include "dfx_define.h"
+#include "dfx_errors.h"
 #include "dfx_log.h"
 #include "dfx_instr_statistic.h"
 #include "dfx_regs_qut.h"
@@ -70,7 +72,7 @@ bool DfxInstructions::Flush(DfxRegs& regs, std::shared_ptr<DfxMemory> memory, ui
     return true;
 }
 
-bool DfxInstructions::Apply(std::shared_ptr<DfxMemory> memory, DfxRegs& regs, RegLocState& rsState)
+bool DfxInstructions::Apply(std::shared_ptr<DfxMemory> memory, DfxRegs& regs, RegLocState& rsState, uint16_t& errCode)
 {
     uintptr_t cfa = 0;
     RegLoc cfaLoc;
@@ -100,6 +102,26 @@ bool DfxInstructions::Apply(std::shared_ptr<DfxMemory> memory, DfxRegs& regs, Re
     }
 
     regs.SetSp(cfa);
+
+    if (rsState.returnAddressUndefined) {
+        regs.SetPc(0);
+        errCode = UNW_ERROR_RETURN_ADDRESS_UNDEFINED;
+        return false;
+    } else {
+        if (rsState.returnAddressRegister >= REG_EH && rsState.returnAddressRegister < REG_LAST) {
+            LOGU("returnAddressRegister: %d", (int)rsState.returnAddressRegister);
+            regs.SetPc(regs[rsState.returnAddressRegister]);
+        } else {
+            LOGE("returnAddressRegister: %d error", (int)rsState.returnAddressRegister);
+            errCode = UNW_ERROR_ILLEGAL_VALUE;
+            return false;
+        }
+    }
+    if (rsState.returnAddressSame) {
+        errCode = UNW_ERROR_RETURN_ADDRESS_SAME;
+        return false;
+    }
+
     return true;
 }
 } // namespace HiviewDFX

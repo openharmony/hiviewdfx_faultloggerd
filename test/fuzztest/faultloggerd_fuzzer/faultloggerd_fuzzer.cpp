@@ -92,7 +92,7 @@ bool FaultloggerdClientTest(const uint8_t* data, size_t size)
     RequestPipeFd(pid[0], type[0]);
     RequestDelPipeFd(pid[0]);
     RequestCheckPermission(pid[0]);
-    RequestSdkDump(type[0], pid[0], tid[0]);
+    RequestSdkDump(pid[0], tid[0]);
     return true;
 }
 

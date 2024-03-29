@@ -50,10 +50,12 @@ void Printer::PrintDumpHeader(std::shared_ptr<ProcessDumpRequest> request, std::
     }
     headerInfo << "Pid:" << process->processInfo_.pid << "\n" <<
                   "Uid:" << process->processInfo_.uid << "\n" <<
-                  "Process name:" << process->processInfo_.processName.c_str() << "\n";
+                  "Process name:" << process->processInfo_.processName << "\n";
     DfxRingBufferWrapper::GetInstance().AppendBuf("Pid:%d\n", process->processInfo_.pid);
     DfxRingBufferWrapper::GetInstance().AppendBuf("Uid:%d\n", process->processInfo_.uid);
     DfxRingBufferWrapper::GetInstance().AppendBuf("Process name:%s\n", process->processInfo_.processName.c_str());
+    DfxRingBufferWrapper::GetInstance().AppendBuf("Process life time:%s\n",
+                                                  DfxProcess::GetProcessLifeCycle(process->processInfo_.pid).c_str());
 
     if (isCrash) {
         std::string reasonInfo;
@@ -152,7 +154,7 @@ void Printer::PrintThreadHeaderByConfig(std::shared_ptr<DfxThread> thread)
     if (DfxConfig::GetConfig().displayBacktrace) {
         DfxRingBufferWrapper::GetInstance().AppendBuf("Tid:%d, Name:%s\n",\
             thread->threadInfo_.tid, thread->threadInfo_.threadName.c_str());
-        headerInfo << "Tid:" << thread->threadInfo_.tid << ", Name:" << thread->threadInfo_.threadName.c_str() << "\n";
+        headerInfo << "Tid:" << thread->threadInfo_.tid << ", Name:" << thread->threadInfo_.threadName << "\n";
     }
     DfxRingBufferWrapper::GetInstance().AppendBaseInfo(headerInfo.str());
 }
@@ -188,16 +190,26 @@ void Printer::PrintThreadBacktraceByConfig(std::shared_ptr<DfxThread> thread)
         if (frames.size() == 0) {
             return;
         }
-        bool needBreak = false;
+        bool needSkip = false;
+        bool isSubmitter = true;
         for (const auto& frame : frames) {
+            if (frame.index == 0) {
+                isSubmitter = !isSubmitter;
+            }
+            if (isSubmitter) {
+                DfxRingBufferWrapper::GetInstance().AppendMsg("========SubmitterStacktrace========\n");
+                DfxRingBufferWrapper::GetInstance().AppendBaseInfo("========SubmitterStacktrace========\n");
+                isSubmitter = false;
+                needSkip = false;
+            }
+            if (needSkip) {
+                continue;
+            }
             DfxRingBufferWrapper::GetInstance().AppendMsg(DfxFrameFormatter::GetFrameStr(frame));
             DfxRingBufferWrapper::GetInstance().AppendBaseInfo(DfxFrameFormatter::GetFrameStr(frame));
-            if (needBreak) {
-                break;
-            }
 #if defined(__aarch64__)
             if (IsLastValidFrame(frame)) {
-                needBreak = true;
+                needSkip = true;
             }
 #endif
         }
@@ -236,6 +248,20 @@ void Printer::PrintThreadFaultStackByConfig(std::shared_ptr<DfxProcess> process,
         auto faultStack = thread->GetFaultStack();
         faultStack->CollectRegistersBlock(thread->GetThreadRegs(), unwinder->GetMaps());
         faultStack->Print();
+    }
+}
+
+void Printer::PrintThreadOpenFiles(std::shared_ptr<DfxProcess> process)
+{
+    if (process == nullptr) {
+        return;
+    }
+
+    DfxRingBufferWrapper::GetInstance().AppendMsg("OpenFiles:\n");
+    std::string infos = process->openFiles;
+    constexpr int step = 1024;
+    for (int i = 0; i < infos.size(); i += step) {
+        DfxRingBufferWrapper::GetInstance().AppendMsg(infos.substr(i, step));
     }
 }
 } // namespace HiviewDFX

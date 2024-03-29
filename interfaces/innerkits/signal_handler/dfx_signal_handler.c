@@ -37,6 +37,7 @@
 #include <unistd.h>
 #include "dfx_define.h"
 #include "dfx_dump_request.h"
+#include "dfx_signalhandler_exception.h"
 #include "errno.h"
 #include "linux/capability.h"
 #include "stdbool.h"
@@ -135,6 +136,13 @@ static void InitCallbackItems(void)
     }
 }
 
+static GetStackIdFunc g_GetStackIdFunc = NULL;
+void SetAsyncStackCallbackFunc(void* func)
+{
+    DFXLOG_INFO("SetCrashCallbackFunc.");
+    g_GetStackIdFunc = (GetStackIdFunc)func;
+}
+
 // caller should set to NULL before exit thread
 void SetThreadInfoCallback(ThreadInfoCallBack func)
 {
@@ -209,6 +217,35 @@ static void FillLastFatalMessageLocked(int32_t sig, void *context)
     (void)strncpy(g_request.lastFatalMessage, lastFatalMessage, sizeof(g_request.lastFatalMessage) - 1);
 }
 
+static const char* GetCrashDescription(const int32_t errCode)
+{
+    int32_t i;
+
+    for (i = 0; i < sizeof(g_crashExceptionMap) / sizeof(g_crashExceptionMap[0]); i++) {
+        if (errCode == g_crashExceptionMap[i].errCode) {
+            return g_crashExceptionMap[i].str;
+        }
+    }
+    return g_crashExceptionMap[i].str;    /* the end of map is "unknown reason" */
+}
+
+static void FillCrashExceptionAndReport(const int err)
+{
+    struct CrashDumpException exception;
+    memset(&exception, 0, sizeof(struct CrashDumpException));
+    exception.pid = g_request.pid;
+    exception.uid = g_request.uid;
+    exception.error = err;
+    exception.time = GetTimeMilliseconds();
+    (void)strncpy(exception.message, GetCrashDescription(err), sizeof(exception.message) - 1);
+    ReportException(exception);
+}
+
+static bool IsDumpSignal(int sig)
+{
+    return sig == SIGDUMP || sig == SIGLEAK_STACK;
+}
+
 static void FillDumpRequest(int sig, siginfo_t *si, void *context)
 {
     memset(&g_request, 0, sizeof(g_request));
@@ -219,6 +256,11 @@ static void FillDumpRequest(int sig, siginfo_t *si, void *context)
     g_request.uid = getuid();
     g_request.reserved = 0;
     g_request.timeStamp = GetTimeMilliseconds();
+    g_request.fdTableAddr = (uint64_t)fdsan_get_fd_table();
+    if (!IsDumpSignal(sig) && g_GetStackIdFunc!= NULL) {
+        g_request.stackId = g_GetStackIdFunc();
+        DFXLOG_INFO("g_GetStackIdFunc %p.", (void*)g_request.stackId);
+    }
 
     GetThreadNameByTid(g_request.tid, g_request.threadName, sizeof(g_request.threadName));
     GetProcessName(g_request.processName, sizeof(g_request.processName));
@@ -259,11 +301,6 @@ static int32_t InheritCapabilities(void)
         ambCap = ambCap >> 1;
     }
     return 0;
-}
-
-static bool IsDumpSignal(int sig)
-{
-    return sig == SIGDUMP || sig == SIGLEAK_STACK;
 }
 
 static const int SIGCHAIN_DUMP_SIGNAL_LIST[] = {
@@ -357,6 +394,7 @@ static int DFX_ExecDump(void)
 
     if (InheritCapabilities() != 0) {
         DFXLOG_ERROR("Failed to inherit Capabilities from parent.");
+        FillCrashExceptionAndReport(CRASH_SIGNAL_EINHERITCAP);
         return INHERIT_CAP_FAIL;
     }
     DFXLOG_INFO("execl processdump.");
@@ -366,6 +404,7 @@ static int DFX_ExecDump(void)
     execl("/bin/processdump", "processdump", "-signalhandler", NULL);
 #endif
     DFXLOG_ERROR("Failed to execl processdump, errno: %d(%s)", errno, strerror(errno));
+    FillCrashExceptionAndReport(CRASH_SIGNAL_EEXECL);
     return errno;
 }
 
@@ -507,6 +546,7 @@ static int ForkAndExecProcessDump(void)
     int prevDumpableStatus = prctl(PR_GET_DUMPABLE);
     bool isTracerStatusModified = SetDumpState();
     if (!isTracerStatusModified) {
+        FillCrashExceptionAndReport(CRASH_SIGNAL_ESETSTATE);
         goto out;
     }
 
@@ -517,6 +557,7 @@ static int ForkAndExecProcessDump(void)
         _exit(DFX_ExecDump());
     } else if (childPid < 0) {
         DFXLOG_ERROR("Failed to fork child process, errno(%d).", errno);
+        FillCrashExceptionAndReport(CRASH_SIGNAL_EFORK);
         goto out;
     }
     WaitProcessExit(childPid, "processdump");
@@ -560,6 +601,7 @@ static void ForkAndDoProcessDump(int sig)
         sig != SIGDUMP &&
         sig != SIGLEAK_STACK) {
         DFXLOG_INFO("Wait VmProcess(%d) exit timeout in handling critical signal.", childPid);
+        FillCrashExceptionAndReport(CRASH_SIGNAL_EWAITEXIT);
         // do not left vm process
         kill(childPid, SIGKILL);
     }
@@ -575,7 +617,9 @@ static bool DFX_SigchainHandler(int sig, siginfo_t *si, void *context)
     DFXLOG_INFO("DFX_SigchainHandler :: sig(%d), pid(%d), tid(%d).", sig, pid, tid);
     bool ret = false;
     if (sig == SIGDUMP) {
-        if (si->si_code != DUMP_TYPE_NATIVE) {
+        if (si->si_code != DUMP_TYPE_REMOTE) {
+            DFXLOG_WARN("DFX_SigchainHandler :: sig(%d:%d) is not remote dump type, return directly",
+                        sig, si->si_code);
             return true;
         }
 
@@ -664,7 +708,7 @@ void DFX_InstallSignalHandler(void)
         sigfillset(&sigchain.sca_mask);
         // dump signal not mask crash signal
         for (size_t j = 0; j < sizeof(SIGCHAIN_CRASH_SIGNAL_LIST) / sizeof(SIGCHAIN_CRASH_SIGNAL_LIST[0]); j++) {
-            sigdelset(&sigchain.sca_mask, SIGCHAIN_CRASH_SIGNAL_LIST[i]);
+            sigdelset(&sigchain.sca_mask, SIGCHAIN_CRASH_SIGNAL_LIST[j]);
         }
         add_special_handler_at_last(sig, &sigchain);
     }

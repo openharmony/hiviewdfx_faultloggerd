@@ -17,8 +17,12 @@
 #define DFX_UTIL_H
 
 #include <cstdio>
+#include <fcntl.h>
 #include <memory>
 #include <string>
+#include <sstream>
+#include <sys/stat.h>
+#include <unistd.h>
 #include <vector>
 #include "dfx_define.h"
 
@@ -33,6 +37,7 @@ AT_SYMBOL_HIDDEN bool ReadDirFilesByPid(const int& pid, std::vector<std::string>
 AT_SYMBOL_HIDDEN bool VerifyFilePath(const std::string& filePath, const std::vector<const std::string>& validPaths);
 #endif
 AT_SYMBOL_HIDDEN off_t GetFileSize(const int& fd);
+AT_SYMBOL_HIDDEN bool ReadFdToString(int fd, std::string& content);
 } // nameapace HiviewDFX
 } // nameapace OHOS
 

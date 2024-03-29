@@ -44,6 +44,9 @@ void SetThreadInfoCallback(ThreadInfoCallBack func);
 */
 void DFX_InstallSignalHandler(void);
 
+typedef uint64_t(*GetStackIdFunc)();
+void SetAsyncStackCallbackFunc(void* func);
+
 #ifdef __cplusplus
 }
 #endif

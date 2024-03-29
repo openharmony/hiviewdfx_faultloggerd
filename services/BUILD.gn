@@ -56,6 +56,12 @@ if (defined(ohos_lite)) {
       "$faultloggerd_path/interfaces/innerkits/faultloggerd_client:libfaultloggerd",
       "//base/hiviewdfx/hilog_lite/frameworks/featured:hilog_shared",
     ]
+
+    if (faultloggerd_hisysevent_enable) {
+      deps += [ "hisysevent:libhisysevent" ]
+    } else {
+      defines = [ "hisysevent_disable" ]
+    }
   }
 } else {
   config("faultloggerd_config") {
@@ -63,7 +69,6 @@ if (defined(ohos_lite)) {
 
     include_dirs = [
       ".",
-      "//commonlibrary/c_utils/base/include",
       "$faultloggerd_interfaces_path/common",
       "$faultloggerd_path/common/dfxlog",
       "$faultloggerd_path/common/dfxutil",
@@ -81,6 +86,20 @@ if (defined(ohos_lite)) {
     }
 
     relative_install_dir = "init"
+    part_name = "faultloggerd"
+    subsystem_name = "hiviewdfx"
+  }
+
+  ohos_prebuilt_etc("faultloggerd.para") {
+    source = "config/faultloggerd.para"
+    relative_install_dir = "param"
+    part_name = "faultloggerd"
+    subsystem_name = "hiviewdfx"
+  }
+
+  ohos_prebuilt_etc("faultloggerd.para.dac") {
+    source = "config/faultloggerd.para.dac"
+    relative_install_dir = "param"
     part_name = "faultloggerd"
     subsystem_name = "hiviewdfx"
   }
@@ -104,6 +123,8 @@ if (defined(ohos_lite)) {
 
     deps = [
       ":faultlogger.conf",
+      ":faultloggerd.para",
+      ":faultloggerd.para.dac",
       "$faultloggerd_path/common/dfxlog:dfx_hilog_base",
       "$faultloggerd_path/common/dfxutil:dfx_util",
       "$faultloggerd_path/interfaces/innerkits/faultloggerd_client:libfaultloggerd",
@@ -117,6 +138,7 @@ if (defined(ohos_lite)) {
     external_deps = [
       "c_utils:utils",
       "hilog:libhilog_base",
+      "hisysevent:libhisysevent",
     ]
     install_images = [
       "system",
@@ -143,6 +165,7 @@ if (defined(ohos_lite)) {
     external_deps = [
       "c_utils:utils",
       "hilog:libhilog",
+      "hisysevent:libhisysevent",
     ]
     part_name = "faultloggerd"
     subsystem_name = "hiviewdfx"

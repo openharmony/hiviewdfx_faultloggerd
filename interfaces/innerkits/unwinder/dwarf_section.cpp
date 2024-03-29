@@ -121,6 +121,7 @@ bool DwarfSection::Step(uintptr_t fdeAddr, std::shared_ptr<DfxRegs> regs, std::s
         return false;
     }
     uintptr_t pc = regs->GetPc();
+    DfxRegs::DoPcAdjust(memory_, pc);
     if (pc < fdeInfo.pcStart || pc >= fdeInfo.pcEnd) {
         return false;
     }

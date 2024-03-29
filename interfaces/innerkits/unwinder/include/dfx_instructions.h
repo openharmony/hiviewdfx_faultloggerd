@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2023-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -18,6 +18,7 @@
 
 #include <cstdint>
 #include <string>
+
 #include "dfx_memory.h"
 #include "dfx_regs.h"
 #include "unwind_context.h"
@@ -29,7 +30,7 @@ public:
     DfxInstructions() = default;
     virtual ~DfxInstructions() = default;
 
-    static bool Apply(std::shared_ptr<DfxMemory> memory, DfxRegs& regs, RegLocState& rsState);
+    static bool Apply(std::shared_ptr<DfxMemory> memory, DfxRegs& regs, RegLocState& rsState, uint16_t& errCode);
 
 private:
     static bool Flush(DfxRegs& dfxRegs, std::shared_ptr<DfxMemory> memory, uintptr_t cfa, RegLoc loc, uintptr_t& val);

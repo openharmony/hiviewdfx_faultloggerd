@@ -84,7 +84,6 @@ HWTEST_F(FaultloggerdModuleTest, FaultloggerdClientFdRquestTest001, TestSize.Lev
     CheckFdRequestFunction(FaultLoggerType::CPP_STACKTRACE, true);
     CheckFdRequestFunction(FaultLoggerType::JS_STACKTRACE, true);
     CheckFdRequestFunction(FaultLoggerType::JS_HEAP_SNAPSHOT, true);
-    CheckFdRequestFunction(FaultLoggerType::JAVA_STACKTRACE, false);
     CheckFdRequestFunction(FaultLoggerType::LEAK_STACKTRACE, true);
 }
 
@@ -151,7 +150,7 @@ HWTEST_F(FaultloggerdModuleTest, FaultloggerdClientFdRquestTest004, TestSize.Lev
  */
 HWTEST_F(FaultloggerdModuleTest, FaultloggerdClientPipeFdRquestTest001, TestSize.Level0)
 {
-    RequestSdkDump(-1, getpid(), getpid());
+    RequestSdkDump(getpid(), getpid());
     int32_t pipeFd = RequestPipeFd(getpid(), FaultLoggerPipeType::PIPE_FD_READ_BUF);
     ASSERT_NE(pipeFd, -1);
     int32_t ret = RequestDelPipeFd(getpid());
@@ -167,7 +166,7 @@ HWTEST_F(FaultloggerdModuleTest, FaultloggerdClientPipeFdRquestTest001, TestSize
  */
 HWTEST_F(FaultloggerdModuleTest, FaultloggerdClientPipeFdRquestTest002, TestSize.Level0)
 {
-    RequestSdkDump(-1, getpid(), getpid());
+    RequestSdkDump(getpid(), getpid());
     int32_t pipeFd = RequestPipeFd(getpid(), -1);
     ASSERT_EQ(pipeFd, -1);
     pipeFd = RequestPipeFd(getpid(), FaultLoggerPipeType::PIPE_FD_DELETE);

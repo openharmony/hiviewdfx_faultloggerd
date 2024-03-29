@@ -23,7 +23,11 @@ if (defined(ohos_lite)) {
       "$faultloggerd_path/common/cutil",
       "$faultloggerd_path/common/dfxlog",
     ]
-    sources = [ "dfx_signal_handler.c" ]
+    sources = [
+      "dfx_signal_handler.c",
+      "dfx_signalhandler_exception.c",
+      "musl_log.c",
+    ]
 
     deps = [
       "$faultloggerd_path/common/cutil:dfx_cutil",
@@ -140,7 +144,11 @@ if (defined(ohos_lite)) {
     ]
     defines = [ "DFX_LOG_HILOG_BASE" ]
     version_script = "libdfx_signalhandler.map"
-    sources = [ "dfx_signal_handler.c" ]
+    sources = [
+      "dfx_signal_handler.c",
+      "dfx_signalhandler_exception.c",
+      "musl_log.c",
+    ]
 
     deps = [
       "$faultloggerd_common_path/cutil:dfx_cutil",
@@ -171,10 +179,14 @@ if (defined(ohos_lite)) {
     subsystem_name = "hiviewdfx"
   }
 
-  source_set("dfxsignalhandler") {
+  static_library("dfxsignalhandler") {
     cflags = [ "-DDFX_SIGNAL_LIBC" ]
 
-    sources = [ "dfx_signal_handler.c" ]
+    sources = [
+      "dfx_signal_handler.c",
+      "dfx_signalhandler_exception.c",
+      "musl_log.c",
+    ]
     configs -= inherited_configs
     configs += [
       "//build/config/compiler:compiler",

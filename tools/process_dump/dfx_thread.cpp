@@ -25,16 +25,14 @@
 #include <unistd.h>
 
 #include "dfx_define.h"
-#if defined(__x86_64__)
-#include "dfx_frame_format.h"
-#else
 #include "dfx_frame_formatter.h"
-#endif
 #include "dfx_log.h"
 #include "dfx_ptrace.h"
 #include "dfx_util.h"
 #include "procinfo.h"
-
+#if defined(__aarch64__)
+#include "printer.h"
+#endif
 namespace OHOS {
 namespace HiviewDFX {
 std::shared_ptr<DfxThread> DfxThread::Create(pid_t pid, pid_t tid, pid_t nsTid)
@@ -53,7 +51,7 @@ void DfxThread::InitThreadInfo(pid_t pid, pid_t tid, pid_t nsTid)
     threadInfo_.pid = pid;
     threadInfo_.tid = tid;
     threadInfo_.nsTid = nsTid;
-    ReadThreadName(threadInfo_.tid, threadInfo_.threadName);
+    ReadThreadNameByPidAndTid(threadInfo_.pid, threadInfo_.tid, threadInfo_.threadName);
     threadStatus = ThreadStatus::THREAD_STATUS_INIT;
 }
 
@@ -90,11 +88,25 @@ std::string DfxThread::ToString() const
 
     std::stringstream ss;
     ss << "Thread name:" << threadInfo_.threadName << "" << std::endl;
-    for (size_t i = 0; i < frames_.size(); i++) {
-#if defined(__x86_64__)
-        ss << DfxFrameFormat::GetFrameStr(frames_[i]);
-#else
-        ss << DfxFrameFormatter::GetFrameStr(frames_[i]);
+    bool needSkip = false;
+    bool isSubmitter = true;
+    for (const auto& frame : frames_) {
+        if (frame.index == 0) {
+            isSubmitter = !isSubmitter;
+        }
+        if (isSubmitter) {
+            ss << "========SubmitterStacktrace========" << std::endl;
+            isSubmitter = false;
+            needSkip = false;
+        }
+        if (needSkip) {
+            continue;
+        }
+        ss << DfxFrameFormatter::GetFrameStr(frame);
+#if defined(__aarch64__)
+        if (Printer::IsLastValidFrame(frame)) {
+            needSkip = true;
+        }
 #endif
     }
     return ss.str();

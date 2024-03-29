@@ -46,7 +46,10 @@ if (defined(ohos_lite)) {
   config("faultloggerd_client_config") {
     visibility = [ "*:*" ]
 
-    include_dirs = [ "include" ]
+    include_dirs = [
+      "include",
+      "$faultloggerd_interfaces_path/common",
+    ]
   }
 
   ohos_shared_library("libfaultloggerd") {

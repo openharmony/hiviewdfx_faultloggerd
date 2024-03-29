@@ -43,10 +43,11 @@ public:
     static void PrintRegsByConfig(std::shared_ptr<DfxRegs> regs);
     static void PrintThreadFaultStackByConfig(std::shared_ptr<DfxProcess> process, std::shared_ptr<DfxThread> thread,
                                               std::shared_ptr<Unwinder> unwinder);
+    static bool IsLastValidFrame(const DfxFrame& frame);
+    static void PrintThreadOpenFiles(std::shared_ptr<DfxProcess> process);
 private:
     static void PrintReason(std::shared_ptr<ProcessDumpRequest> request, std::shared_ptr<DfxProcess> process,
                             std::shared_ptr<Unwinder> unwinder, std::string& reasonInfo);
-    static bool IsLastValidFrame(const DfxFrame& frame);
 };
 } // namespace HiviewDFX
 } // namespace OHOS

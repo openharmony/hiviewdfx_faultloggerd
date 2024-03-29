@@ -69,6 +69,14 @@ public:
 
     static int RecursiveFunc(int curLevel, int targetLevel, int midLevel);
     static int PrintFatalMessageInLibc();
+#ifndef is_ohos_lite
+    static int AsyncStacktrace();
+    static int CrashInFFRT();
+    static int CrashInLibuvWork();
+    static int CrashInLibuvTimer();
+    static int CrashInLibuvWorkDone();
+#endif
+
 private:
     DfxCrasher();
     DfxCrasher(const DfxCrasher &) = delete;

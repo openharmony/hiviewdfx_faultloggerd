@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2023-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -12,12 +12,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 #ifndef UNWIND_LOC_H
 #define UNWIND_LOC_H
 
 #include <cinttypes>
 #include <string>
 #include <vector>
+
 #include "dfx_regs_qut.h"
 #include "unwind_define.h"
 
@@ -52,7 +54,9 @@ struct RegLocState {
         int32_t cfaRegOffset = 0; // cfa = cfa + offset
         uintptr_t cfaExprPtr; // cfa = expr
     };
-    bool isPcSet = false;
+    bool returnAddressUndefined = false;
+    bool returnAddressSame = false;
+    uint16_t returnAddressRegister = 0; // lr
     uintptr_t pseudoReg = 0;
     std::vector<RegLoc> locs;
 };
