@@ -1109,6 +1109,16 @@ HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest103, TestSize.Level2)
 {
     string clearTempFilesCmd = "rm -rf /data/log/faultlog/temp/*";
     system(clearTempFilesCmd.c_str());
+    system("/data/crasher_c SIGSEGV"); // trigger aging mechanism
+    sleep(1); // 1 : sleep for 1 seconds
+    vector<string> files;
+    OHOS::GetDirFiles("/data/log/faultlog/temp/", files);
+    string oldcrash = "";
+    if (!files.empty()) {
+        oldcrash = files[0];
+    }
+    GTEST_LOG_(INFO) << oldcrash;
+    files.clear();
     for (int i = 0; i < 25; i++) { // 25 : the count of crash file
         system("/data/crasher_c SIGSEGV");
     }
@@ -1116,16 +1126,19 @@ HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest103, TestSize.Level2)
         sleep(3); //3 : sleep for 3 seconds
         system("/data/crasher_c SIGSEGV");
     }
-    vector<string> files;
     OHOS::GetDirFiles("/data/log/faultlog/temp/", files);
+    for (size_t i = 0; i < files.size(); i++) {
+        if (files[i] == oldcrash) {
+            FAIL();
+        }
+    }
     int fileCount = files.size();
     GTEST_LOG_(INFO) << fileCount;
     system("/data/crasher_c SIGSEGV"); // trigger aging mechanism
     sleep(1); // 1 : sleep for 1 seconds
     files.clear();
     OHOS::GetDirFiles("/data/log/faultlog/temp/", files);
-    GTEST_LOG_(INFO) << files.size();
-    EXPECT_GT(fileCount, files.size()) << "FaultLoggerdSystemTest103 Failed";
+    EXPECT_EQ(fileCount, files.size()) << "FaultLoggerdSystemTest103 Failed";
 }
 
 /**

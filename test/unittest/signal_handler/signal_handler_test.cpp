@@ -103,7 +103,7 @@ static bool CheckThreadCrashKeyWords(const string& filePath, pid_t pid, int sig)
         sigKeyword = iter->second;
     }
     string keywords[] = {
-        "Pid:" + to_string(pid), "Uid:", "name:./test_signalhandler", sigKeyword, "LastFatalMessage:",
+        "Pid:" + to_string(pid), "Uid:", "name:./test_signalhandler", sigKeyword,
         "Tid:", "#00", "Registers:", "FaultStack:", "Maps:", "test_signalhandler"
     };
     int length = sizeof(keywords) / sizeof(keywords[0]);

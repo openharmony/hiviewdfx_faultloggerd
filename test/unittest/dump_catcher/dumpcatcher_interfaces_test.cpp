@@ -660,6 +660,7 @@ HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest029, TestSize.Level
 {
     GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest029: start.";
     RecursiveMultiThreadConstructor();
+    usleep(CREATE_THREAD_TIMEOUT);
     DfxDumpCatcher dumplog;
     std::string msg = "";
     GTEST_LOG_(INFO) << "dump local process, "  << " tid:" << g_threadId;
@@ -699,7 +700,7 @@ HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest030, TestSize.Level
     string stackMsg = "";
     bool formatRet = format.FormatJsonStack(jsonMsg, stackMsg);
     EXPECT_TRUE(formatRet) << "FormatJsonStack Failed.";
-    size_t pos = msg.find("Process name:");
+    size_t pos = msg.find("Process life time:");
     if (pos != std::string::npos) {
         msg = msg.erase(0, pos);
         msg = msg.erase(0, msg.find("\n") + 1);
