@@ -44,6 +44,9 @@ bool DfxMemory::ReadFully(uint64_t addr, void* dst, size_t size)
 
 bool DfxMemory::ReadString(uint64_t addr, std::string* dst, size_t maxRead)
 {
+    if (dst == nullptr) {
+        return false;
+    }
     char buffer[LOG_BUF_LEN] = {0};
     size_t size = 0;
     for (size_t nRead = 0; nRead < maxRead; nRead += size) {

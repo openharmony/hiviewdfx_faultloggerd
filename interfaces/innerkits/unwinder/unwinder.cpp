@@ -734,7 +734,7 @@ void Unwinder::GetFramesByPcs(std::vector<DfxFrame>& frames, std::vector<uintptr
         if ((map != nullptr) && map->Contain(frame.pc)) {
             LOGU("%s", "map had matched");
         } else {
-            if (!maps->FindMapByAddr(pcs[i], map) || (map == nullptr)) {
+            if ((maps == nullptr) || !maps->FindMapByAddr(pcs[i], map) || (map == nullptr)) {
                 LOGE("%s", "Find map error");
                 continue;
             }

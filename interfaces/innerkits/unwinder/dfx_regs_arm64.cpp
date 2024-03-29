@@ -140,6 +140,9 @@ std::string DfxRegsArm64::PrintRegs() const
 
 bool DfxRegsArm64::StepIfSignalFrame(uintptr_t pc, std::shared_ptr<DfxMemory> memory)
 {
+    if (memory == nullptr) {
+        return false;
+    }
     uint64_t data;
     if (!memory->ReadU64(pc, &data, false)) {
         return false;

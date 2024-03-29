@@ -193,6 +193,9 @@ bool DfxMaps::FindMapByAddr(uintptr_t addr, std::shared_ptr<DfxMap>& map) const
     while (first < last) {
         size_t index = (first + last) / 2;
         const auto& cur = maps_[index];
+        if (cur == nullptr) {
+            continue;
+        }
         if (addr >= cur->begin && addr < cur->end) {
             map = cur;
             if (index > 0) {
@@ -240,6 +243,9 @@ bool DfxMaps::FindMapsByName(std::string name, std::vector<std::shared_ptr<DfxMa
 
 void DfxMaps::Sort(bool less)
 {
+    if (maps_.empty()) {
+        return;
+    }
     if (less) {
         std::sort(maps_.begin(), maps_.end(),
             [](const std::shared_ptr<DfxMap>& a, const std::shared_ptr<DfxMap>& b) {
@@ -280,7 +286,6 @@ bool DfxMaps::IsArkExecutedMap(uintptr_t addr)
         LOGU("%s", "Not mapped map for current addr.");
         return false;
     }
-
     return map->IsArkExecutable();
 }
 } // namespace HiviewDFX

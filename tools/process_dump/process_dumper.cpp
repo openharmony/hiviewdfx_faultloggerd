@@ -147,7 +147,7 @@ void FillFdsaninfo(OpenFilesList &list, pid_t pid, uint64_t fdTableAddr)
         return;
     }
     for (size_t i = 0; i < overflowLength; i++) {
-        int fd = i + fds;
+        size_t fd = i + fds;
         uint64_t address = overflow + offsetof(FdTableOverflow, entries) + sizeof(FdEntry) * i;
         FdEntry entry;
         if (DfxMemory::ReadProcMemByPid(pid, address, &entry, sizeof(entry)) != sizeof(entry)) {

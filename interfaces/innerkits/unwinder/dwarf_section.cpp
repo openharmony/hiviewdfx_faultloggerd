@@ -120,6 +120,9 @@ bool DwarfSection::Step(uintptr_t fdeAddr, std::shared_ptr<DfxRegs> regs, std::s
         lastErrorData_.SetAddrAndCode(fdeAddr, UNW_ERROR_DWARF_INVALID_FDE);
         return false;
     }
+    if (regs == nullptr) {
+        return false;
+    }
     uintptr_t pc = regs->GetPc();
     DfxRegs::DoPcAdjust(memory_, pc);
     if (pc < fdeInfo.pcStart || pc >= fdeInfo.pcEnd) {

@@ -198,7 +198,10 @@ std::string DfxProcess::GetProcessLifeCycle(pid_t pid)
     sysinfo(&si);
     unsigned long long startTime = 0;
     if (GetProcessInfo(pid, startTime)) {
-        uint64_t upTime = si.uptime - startTime / sysconf(_SC_CLK_TCK);
+        if (sysconf(_SC_CLK_TCK) == -1) {
+            return "";
+        }
+        uint64_t upTime = si.uptime - startTime / static_cast<uint32_t>(sysconf(_SC_CLK_TCK));
         return std::to_string(upTime) + "s";
     }
     return "";

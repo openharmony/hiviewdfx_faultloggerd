@@ -53,7 +53,9 @@ void DfxInstrStatistic::AddInstrStatistic(InstrStatisticType type, uint64_t val,
         stats = std::make_shared<std::vector<std::pair<uint64_t, uint64_t>>>();
         statisticInfo_[type] = stats;
     }
-    stats->push_back(std::make_pair(val, err));
+    if (stats != nullptr) {
+        stats->push_back(std::make_pair(val, err));
+    }
 }
 
 void DfxInstrStatistic::DumpInstrStatResult(std::vector<std::pair<uint32_t, uint32_t>> &result)
@@ -63,6 +65,10 @@ void DfxInstrStatistic::DumpInstrStatResult(std::vector<std::pair<uint32_t, uint
     while (iter != statisticInfo_.end()) {
         InstrStatisticType type = static_cast<InstrStatisticType>(iter->first);
         std::shared_ptr<std::vector<std::pair<uint64_t, uint64_t>>> stats = iter->second;
+        if (stats == nullptr) {
+            iter++;
+            continue;
+        }
         switch (type) {
             case InstructionEntriesArmExidx:
             case InstructionEntriesEhFrame:
