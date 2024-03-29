@@ -42,8 +42,10 @@ int (*g_stepArkManagedNativeFrameFn)(int, uintptr_t*, uintptr_t*, uintptr_t*, ch
 int (*g_getArkJsHeapCrashInfoFn)(int, uintptr_t *, uintptr_t *, int, char *, size_t);
 int (*g_stepArkFn)(void *ctx, OHOS::HiviewDFX::ReadMemFunc readMemFn,
     uintptr_t *fp, uintptr_t *sp, uintptr_t *pc, bool *isJsFrame);
-int (*g_parseArkFrameInfoFn)(uintptr_t, uintptr_t, uintptr_t, uint8_t *, uint64_t, JsFunction *);
+int (*g_parseArkFrameInfoFn)(uintptr_t, uintptr_t, uintptr_t, uint8_t *, uint64_t, uintptr_t, JsFunction *);
 int (*g_translateArkFrameInfoFn)(uint8_t *, uint64_t, JsFunction *);
+int (*g_arkCreateJsSymbolExtractorFn)(uintptr_t *);
+int (*g_arkDestoryJsSymbolExtractorFn)(uintptr_t);
 
 bool GetLibArkHandle()
 {
@@ -77,18 +79,48 @@ bool GetLibArkHandle()
     pthread_mutex_unlock(&g_mutex); \
 }
 
+int DfxArk::ArkCreateJsSymbolExtractor(uintptr_t* extractorPtr)
+{
+    if (g_arkCreateJsSymbolExtractorFn != nullptr) {
+        return g_arkCreateJsSymbolExtractorFn(extractorPtr);
+    }
+
+    const char* arkFuncName = "ark_create_js_symbol_extractor";
+    DLSYM_ARK_FUNC(arkFuncName, g_arkCreateJsSymbolExtractorFn)
+
+    if (g_arkCreateJsSymbolExtractorFn != nullptr) {
+        return g_arkCreateJsSymbolExtractorFn(extractorPtr);
+    }
+    return -1;
+}
+
+int DfxArk::ArkDestoryJsSymbolExtractor(uintptr_t extractorPtr)
+{
+    if (g_arkDestoryJsSymbolExtractorFn != nullptr) {
+        return g_arkDestoryJsSymbolExtractorFn(extractorPtr);
+    }
+
+    const char* arkFuncName = "ark_destory_js_symbol_extractor";
+    DLSYM_ARK_FUNC(arkFuncName, g_arkDestoryJsSymbolExtractorFn)
+
+    if (g_arkDestoryJsSymbolExtractorFn != nullptr) {
+        return g_arkDestoryJsSymbolExtractorFn(extractorPtr);
+    }
+    return -1;
+}
+
 int DfxArk::ParseArkFrameInfo(uintptr_t byteCodePc, uintptr_t mapBase, uintptr_t loadOffset,
-    uint8_t *data, uint64_t dataSize, JsFunction *jsFunction)
+    uint8_t *data, uint64_t dataSize, uintptr_t extractorPtr, JsFunction *jsFunction)
 {
     if (g_parseArkFrameInfoFn != nullptr) {
-        return g_parseArkFrameInfoFn(byteCodePc, mapBase, loadOffset, data, dataSize, jsFunction);
+        return g_parseArkFrameInfoFn(byteCodePc, mapBase, loadOffset, data, dataSize, extractorPtr, jsFunction);
     }
 
     const char* arkFuncName = "ark_parse_js_frame_info";
     DLSYM_ARK_FUNC(arkFuncName, g_parseArkFrameInfoFn)
 
     if (g_parseArkFrameInfoFn != nullptr) {
-        return g_parseArkFrameInfoFn(byteCodePc, mapBase, loadOffset, data, dataSize, jsFunction);
+        return g_parseArkFrameInfoFn(byteCodePc, mapBase, loadOffset, data, dataSize, extractorPtr, jsFunction);
     }
     return -1;
 }
