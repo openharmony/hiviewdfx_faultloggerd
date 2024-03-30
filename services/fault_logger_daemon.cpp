@@ -159,7 +159,7 @@ void FaultLoggerDaemon::HandleAccept(int32_t epollFd, int32_t socketFd)
     }
 
     AddEvent(eventFd_, connectionFd, EPOLLIN);
-    connectionMap_.insert(std::pair<int32_t, int32_t>(connectionFd, socketFd));
+    connectionMap_[connectionFd] = socketFd;
 }
 
 #ifdef FAULTLOGGERD_FUZZER
@@ -679,6 +679,8 @@ bool FaultLoggerDaemon::CheckRequestCredential(int32_t connectionFd, FaultLogger
 
     auto it = connectionMap_.find(connectionFd);
     if (it == connectionMap_.end()) {
+        DFXLOG_ERROR("%s : Failed to find fd:%d, map size:%zu", FAULTLOGGERD_TAG.c_str(),
+            connectionFd, connectionMap_.size());
         return false;
     }
 
@@ -704,8 +706,8 @@ bool FaultLoggerDaemon::CheckRequestCredential(int32_t connectionFd, FaultLogger
         isCredentialMatched = (creds.uid == request->uid);   /* check uid when report exception */
     }
     if (!isCredentialMatched) {
-        DFXLOG_WARN("Failed to check request credential request:%d:%d cred:%d:%d",
-            request->pid, request->uid, creds.pid, creds.uid);
+        DFXLOG_WARN("Failed to check request credential request:%d:%d cred:%d:%d fd:%d:%d",
+            request->pid, request->uid, creds.pid, creds.uid, it->second, crashSocketFd_);
     }
     return isCredentialMatched;
 }
