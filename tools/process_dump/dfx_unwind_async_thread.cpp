@@ -14,6 +14,7 @@
  */
 #include "dfx_unwind_async_thread.h"
 
+#include "crash_exception.h"
 #include "dfx_config.h"
 #include "dfx_log.h"
 #include "dfx_memory.h"
@@ -38,6 +39,9 @@ void DfxUnwindAsyncThread::UnwindStack()
     MAYBE_UNUSED bool ret = unwinder_->UnwindRemote(thread_->threadInfo_.nsTid,
                                                     ProcessDumper::GetInstance().IsCrash(),
                                                     DfxConfig::GetConfig().maxFrameNums);
+    if (ProcessDumper::GetInstance().IsCrash()) {
+        ReportUnwinderException(unwinder_->GetLastErrorCode());
+    }
 #ifndef __x86_64__
     if (!ret && ProcessDumper::GetInstance().IsCrash()) {
         UnwindThreadFallback();

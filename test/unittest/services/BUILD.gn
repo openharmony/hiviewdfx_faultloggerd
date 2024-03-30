@@ -54,7 +54,7 @@ if (defined(ohos_lite)) {
       if (faultloggerd_hisysevent_enable) {
         deps += [ "hisysevent:libhisysevent" ]
       } else {
-        defines = [ "hisysevent_disable" ]
+        defines = [ "HISYSEVENT_DISABLE" ]
       }
     }
   }

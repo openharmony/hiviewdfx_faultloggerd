@@ -15,15 +15,18 @@
 
 #include "crash_exception.h"
 
+#include <map>
 #include <regex>
 #include <sys/time.h>
-#ifndef hisysevent_disable
+#include "dfx_errors.h"
+#ifndef HISYSEVENT_DISABLE
 #include "hisysevent.h"
 #endif
 
 namespace OHOS {
 namespace HiviewDFX {
 
+static bool g_isInitProcessInfo = false;
 static std::string g_crashProcessName = "";
 static int32_t g_crashProcessPid = 0;
 static int32_t g_crashProcessUid = 0;
@@ -38,24 +41,13 @@ uint64_t GetTimeMillisec(void)
 
 void SetCrashProcInfo(std::string& name, int32_t pid, int32_t uid)
 {
+    if (pid <= 0) {
+        return;
+    }
+    g_isInitProcessInfo = true;
     g_crashProcessName = name;
     g_crashProcessPid = pid;
     g_crashProcessUid = uid;
-}
-
-std::string GetCrashPorcName()
-{
-    return g_crashProcessName;
-}
-
-int32_t GetCrashPorcPid()
-{
-    return g_crashProcessPid;
-}
-
-int32_t GetCrashPorcUid()
-{
-    return g_crashProcessUid;
 }
 
 static const char* GetCrashDescription(const int32_t errCode)
@@ -81,7 +73,7 @@ void ReportCrashException(const char* pName, int32_t pid, int32_t uid, int64_t t
 
 void ReportCrashException(std::string name, int32_t pid, int32_t uid, int64_t time, int32_t errCode)
 {
-#ifndef hisysevent_disable
+#ifndef HISYSEVENT_DISABLE
     if (errCode == CrashExceptionCode::CRASH_ESUCCESS) {
         return;
     }
@@ -96,6 +88,25 @@ void ReportCrashException(std::string name, int32_t pid, int32_t uid, int64_t ti
         "ERROR_CODE", errCode,
         "ERROR_MSG", GetCrashDescription(errCode));
 #endif
+}
+
+void ReportUnwinderException(uint16_t unwError)
+{
+    if (!g_isInitProcessInfo) {
+        return;
+    }
+
+    const std::map<uint16_t, int32_t> unwMaps = {
+        { UnwindErrorCode::UNW_ERROR_STEP_ARK_FRAME, CrashExceptionCode::CRASH_UNWIND_EFRAME },
+        { UnwindErrorCode::UNW_ERROR_INVALID_CONTEXT, CrashExceptionCode::CRASH_UNWIND_ECONTEXT },
+    };
+    int32_t errCode = 0;
+    auto iter = unwMaps.find(unwError);
+    if (iter == unwMaps.end()) {
+        return;
+    }
+    errCode = iter->second;
+    ReportCrashException(g_crashProcessName, g_crashProcessPid, g_crashProcessUid, GetTimeMillisec(), errCode);
 }
 
 int32_t CheckCrashLogValid(std::string& file)

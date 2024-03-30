@@ -30,7 +30,6 @@
 #include "stack_util.h"
 #include "string_printf.h"
 #include "string_util.h"
-#include "crash_exception.h"
 #if defined(ENABLE_MIXSTACK)
 #include "parameter.h"
 #include "parameters.h"
@@ -239,11 +238,7 @@ bool Unwinder::Unwind(void *ctx, size_t maxFrameNum, size_t skipFrameNum)
 {
     if ((regs_ == nullptr) || (!CheckAndReset(ctx))) {
         LOGE("%s", "params is nullptr?");
-        if (isCrash_) {
-            ReportCrashException(GetCrashPorcName(), GetCrashPorcPid(),
-                                 GetCrashPorcUid(), GetTimeMillisec(),
-                                 CrashExceptionCode::CRASH_UNWIND_ECONTEXT);
-        }
+        lastErrorData_.SetCode(UNW_ERROR_INVALID_CONTEXT);
         return false;
     }
     SetLocalStackCheck(ctx, false);
@@ -347,17 +342,6 @@ bool Unwinder::Step(uintptr_t& pc, uintptr_t& sp, void *ctx)
     return ret;
 }
 
-#if defined(ENABLE_MIXSTACK)
-static void UnwinderReportException(bool crash)
-{
-    if (crash) {
-        ReportCrashException(GetCrashPorcName(), GetCrashPorcPid(),
-                             GetCrashPorcUid(), GetTimeMillisec(),
-                             CrashExceptionCode::CRASH_UNWIND_EFRAME);
-    }
-}
-#endif
-
 bool Unwinder::StepInner(const bool isSigFrame, bool& isJsFrame, uintptr_t& pc, uintptr_t& sp, void *ctx)
 {
     if ((regs_ == nullptr) || (!CheckAndReset(ctx))) {
@@ -388,7 +372,7 @@ bool Unwinder::StepInner(const bool isSigFrame, bool& isJsFrame, uintptr_t& pc, 
         if (map != nullptr && map->IsArkExecutable()) {
             if (!StepArkJsFrame(pc, fp, sp)) {
                 LOGE("Failed to step ark Js frames, pc: %" PRIx64, (uint64_t)pc);
-                UnwinderReportException(isCrash_);
+                lastErrorData_.SetAddrAndCode(pc, UNW_ERROR_STEP_ARK_FRAME);
                 return false;
             }
             regs_->SetPc(pc);
@@ -399,7 +383,7 @@ bool Unwinder::StepInner(const bool isSigFrame, bool& isJsFrame, uintptr_t& pc, 
         if ((map != nullptr && map->IsArkExecutable()) || isJsFrame) {
             if (!StepArkJsFrame(pc, fp, sp, isJsFrame)) {
                 LOGE("Failed to step ark Js frames, pc: %" PRIx64, (uint64_t)pc);
-                UnwinderReportException(isCrash_);
+                lastErrorData_.SetAddrAndCode(pc, UNW_ERROR_STEP_ARK_FRAME);
                 return false;
             }
             regs_->SetPc(pc);

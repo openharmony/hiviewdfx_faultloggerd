@@ -29,7 +29,7 @@ if (defined(ohos_lite)) {
     if (faultloggerd_hisysevent_enable) {
       external_deps = [ "hisysevent:libhisysevent" ]
     } else {
-      defines = [ "hisysevent_disable" ]
+      defines = [ "HISYSEVENT_DISABLE" ]
     }
   }
 } else {
