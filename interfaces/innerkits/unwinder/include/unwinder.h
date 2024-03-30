@@ -108,7 +108,7 @@ public:
         std::shared_ptr<DfxMaps> maps);
     static void FillFrames(std::vector<DfxFrame>& frames);
     static void FillFrame(DfxFrame& frame);
-    static void FillJsFrame(DfxFrame& frame);
+    static void FillJsFrame(DfxFrame& frame, uintptr_t cachePtr);
     static std::string GetFramesStr(const std::vector<DfxFrame>& frames);
     static void FillLocalFrames(std::vector<DfxFrame>& frames);
     static int DlPhdrCallback(struct dl_phdr_info *info, size_t size, void *data);

@@ -101,10 +101,10 @@ bool DfxMap::IsArkExecutable()
     }
 
     if (!IsMapExec()) {
-        LOGW("Current ark map(%s) is not exec", name.c_str());
+        LOGU("Current ark map(%s) is not exec", name.c_str());
         return false;
     }
-    LOGI("Current ark map: %s", name.c_str());
+    LOGU("Current ark map: %s", name.c_str());
     return true;
 }
 

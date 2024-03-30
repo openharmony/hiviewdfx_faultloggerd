@@ -77,8 +77,11 @@ public:
         uintptr_t *fp, uintptr_t *sp, uintptr_t *pc, bool *isJsFrame);
 
     static int ParseArkFrameInfo(uintptr_t byteCodePc, uintptr_t mapBase, uintptr_t loadOffset,
-        uint8_t *data, uint64_t dataSize, JsFunction *jsFunction);
+        uint8_t *data, uint64_t dataSize, uintptr_t extractorPtr, JsFunction *jsFunction);
     static int TranslateArkFrameInfo(uint8_t *data, uint64_t dataSize, JsFunction *jsFunction);
+
+    static int ArkCreateJsSymbolExtractor(uintptr_t* extractorPtr);
+    static int ArkDestoryJsSymbolExtractor(uintptr_t extractorPtr);
 };
 } // namespace HiviewDFX
 } // namespace OHOS

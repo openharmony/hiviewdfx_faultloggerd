@@ -219,14 +219,18 @@ bool Unwinder::StepArkJsFrame(uintptr_t& pc, uintptr_t& fp, uintptr_t& sp)
 
 bool Unwinder::StepArkJsFrame(uintptr_t& pc, uintptr_t& fp, uintptr_t& sp, bool& isJsFrame)
 {
-    LOGI("+++ark pc: %" PRIx64 ", fp: %" PRIx64 ", sp: %" PRIx64 ", isJsFrame: %d.",
-        (uint64_t)pc, (uint64_t)fp, (uint64_t)sp, isJsFrame);
+    if (pid_ != UNWIND_TYPE_CUSTOMIZE) {
+        LOGI("+++ark pc: %" PRIx64 ", fp: %" PRIx64 ", sp: %" PRIx64 ", isJsFrame: %d.",
+            (uint64_t)pc, (uint64_t)fp, (uint64_t)sp, isJsFrame);
+    }
     if (DfxArk::StepArkFrame(memory_.get(), &(Unwinder::AccessMem), &fp, &sp, &pc, &isJsFrame) < 0) {
         LOGE("Failed to step ark Js frames, pc: %" PRIx64, (uint64_t)pc);
         return false;
     }
-    LOGI("---ark pc: %" PRIx64 ", fp: %" PRIx64 ", sp: %" PRIx64 ", isJsFrame: %d.",
-        (uint64_t)pc, (uint64_t)fp, (uint64_t)sp, isJsFrame);
+    if (pid_ != UNWIND_TYPE_CUSTOMIZE) {
+        LOGI("---ark pc: %" PRIx64 ", fp: %" PRIx64 ", sp: %" PRIx64 ", isJsFrame: %d.",
+            (uint64_t)pc, (uint64_t)fp, (uint64_t)sp, isJsFrame);
+    }
     return true;
 }
 #endif
@@ -618,16 +622,23 @@ void Unwinder::AddFrame(DfxFrame& frame)
 
 void Unwinder::FillFrames(std::vector<DfxFrame>& frames)
 {
+#if defined(OFFLINE_MIXSTACK)
+    uintptr_t cachePtr = 0;
+    DfxArk::ArkCreateJsSymbolExtractor(&cachePtr);
+#endif
     for (size_t i = 0; i < frames.size(); ++i) {
         auto& frame = frames[i];
         if (frame.isJsFrame) {
 #if defined(OFFLINE_MIXSTACK)
-            FillJsFrame(frame);
+            FillJsFrame(frame, cachePtr);
 #endif
         } else {
             FillFrame(frame);
         }
     }
+#if defined(OFFLINE_MIXSTACK)
+    DfxArk::ArkDestoryJsSymbolExtractor(cachePtr);
+#endif
 }
 
 void Unwinder::FillLocalFrames(std::vector<DfxFrame>& frames)
@@ -672,7 +683,7 @@ void Unwinder::FillFrame(DfxFrame& frame)
     frame.buildId = elf->GetBuildId();
 }
 
-void Unwinder::FillJsFrame(DfxFrame& frame)
+void Unwinder::FillJsFrame(DfxFrame& frame, uintptr_t cachePtr)
 {
     if (!frame.isJsFrame) {
         return;
@@ -693,7 +704,7 @@ void Unwinder::FillJsFrame(DfxFrame& frame)
     }
     JsFunction jsFunction;
     if (DfxArk::ParseArkFrameInfo(frame.pc, static_cast<uintptr_t>(frame.map->begin), loadOffset,
-        dataPtr.get(), dataSize, &jsFunction) < 0) {
+        dataPtr.get(), dataSize, cachePtr, &jsFunction) < 0) {
         LOGW("Failed to parse ark frame info: %s", frame.map->name.c_str());
         return;
     }
