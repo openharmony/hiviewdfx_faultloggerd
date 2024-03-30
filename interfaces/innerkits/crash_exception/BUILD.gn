@@ -46,6 +46,14 @@ if (defined(ohos_lite)) {
     sources = crash_exception_sources
     public_configs = [ ":crash_exception_config" ]
     external_deps = [ "hisysevent:libhisysevent" ]
+    install_images = [
+      "system",
+      "updater",
+    ]
+    innerapi_tags = [
+      "chipsetsdk_indirect",
+      "platformsdk_indirect",
+    ]
     part_name = "faultloggerd"
     subsystem_name = "hiviewdfx"
   }
