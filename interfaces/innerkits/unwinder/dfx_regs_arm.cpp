@@ -46,25 +46,25 @@ namespace OHOS {
 namespace HiviewDFX {
 void DfxRegsArm::SetFromUcontext(const ucontext_t& context)
 {
-    std::vector<uintptr_t> regs;
-    regs.emplace_back(uintptr_t(context.uc_mcontext.arm_r0));   // 0:r0
-    regs.emplace_back(uintptr_t(context.uc_mcontext.arm_r1));   // 1:r1
-    regs.emplace_back(uintptr_t(context.uc_mcontext.arm_r2));   // 2:r2
-    regs.emplace_back(uintptr_t(context.uc_mcontext.arm_r3));   // 3:r3
-    regs.emplace_back(uintptr_t(context.uc_mcontext.arm_r4));   // 4:r4
-    regs.emplace_back(uintptr_t(context.uc_mcontext.arm_r5));   // 5:r5
-    regs.emplace_back(uintptr_t(context.uc_mcontext.arm_r6));   // 6:r6
-    regs.emplace_back(uintptr_t(context.uc_mcontext.arm_r7));   // 7:r7
-    regs.emplace_back(uintptr_t(context.uc_mcontext.arm_r8));   // 8:r8
-    regs.emplace_back(uintptr_t(context.uc_mcontext.arm_r9));   // 9:r9
-    regs.emplace_back(uintptr_t(context.uc_mcontext.arm_r10)); // 10:r10
-    regs.emplace_back(uintptr_t(context.uc_mcontext.arm_fp));  // 11:fp
-    regs.emplace_back(uintptr_t(context.uc_mcontext.arm_ip));  // 12:ip
-    regs.emplace_back(uintptr_t(context.uc_mcontext.arm_sp));  // 13:sp
-    regs.emplace_back(uintptr_t(context.uc_mcontext.arm_lr));  // 14:lr
-    regs.emplace_back(uintptr_t(context.uc_mcontext.arm_pc));  // 15:pc
-
-    SetRegsData(regs);
+    if (regsData_.size() < REG_LAST) {
+        return;
+    }
+    regsData_[REG_ARM_R0] = static_cast<uintptr_t>(context.uc_mcontext.arm_r0);
+    regsData_[REG_ARM_R1] = static_cast<uintptr_t>(context.uc_mcontext.arm_r1);
+    regsData_[REG_ARM_R2] = static_cast<uintptr_t>(context.uc_mcontext.arm_r2);
+    regsData_[REG_ARM_R3] = static_cast<uintptr_t>(context.uc_mcontext.arm_r3);
+    regsData_[REG_ARM_R4] = static_cast<uintptr_t>(context.uc_mcontext.arm_r4);
+    regsData_[REG_ARM_R5] = static_cast<uintptr_t>(context.uc_mcontext.arm_r5);
+    regsData_[REG_ARM_R6] = static_cast<uintptr_t>(context.uc_mcontext.arm_r6);
+    regsData_[REG_ARM_R7] = static_cast<uintptr_t>(context.uc_mcontext.arm_r7);
+    regsData_[REG_ARM_R8] = static_cast<uintptr_t>(context.uc_mcontext.arm_r8);
+    regsData_[REG_ARM_R9] = static_cast<uintptr_t>(context.uc_mcontext.arm_r9);
+    regsData_[REG_ARM_R10] = static_cast<uintptr_t>(context.uc_mcontext.arm_r10);
+    regsData_[REG_ARM_R11] = static_cast<uintptr_t>(context.uc_mcontext.arm_fp);
+    regsData_[REG_ARM_R12] = static_cast<uintptr_t>(context.uc_mcontext.arm_ip);
+    regsData_[REG_ARM_R13] = static_cast<uintptr_t>(context.uc_mcontext.arm_sp);
+    regsData_[REG_ARM_R14] = static_cast<uintptr_t>(context.uc_mcontext.arm_lr);
+    regsData_[REG_ARM_R15] = static_cast<uintptr_t>(context.uc_mcontext.arm_pc);
 }
 
 void DfxRegsArm::SetFromFpMiniRegs(const uintptr_t* regs, const size_t size)

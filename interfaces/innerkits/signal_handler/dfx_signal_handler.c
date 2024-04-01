@@ -532,8 +532,16 @@ static bool WaitProcessExit(int childPid, const char* name)
         }
         usleep(SIGNALHANDLER_TIMEOUT); // sleep 10ms
     } while (1);
-    DFXLOG_INFO("(%ld) wait for (%d) return with ret(%d) status(%d)",
-        syscall(SYS_gettid), childPid, ret, status);
+
+    DFXLOG_INFO("(%ld) wait for %s(%d) return with ret(%d), status(%d)",
+        syscall(SYS_gettid), name, childPid, ret, status);
+    if (WIFEXITED(status)) {
+        int exitCode = WEXITSTATUS(status);
+        DFXLOG_INFO("wait %s(%d) exit code: %d", name, childPid, exitCode);
+    } else if (WIFSIGNALED(status)) {
+        int sigNum = WTERMSIG(status);
+        DFXLOG_INFO("wait %s(%d) exit with sig: %d", name, childPid, sigNum);
+    }
     return isSuccess;
 }
 

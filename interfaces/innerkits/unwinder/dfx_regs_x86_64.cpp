@@ -31,26 +31,26 @@ namespace OHOS {
 namespace HiviewDFX {
 void DfxRegsX86_64::SetFromUcontext(const ucontext_t &context)
 {
-    std::vector<uintptr_t> regs {};
-    regs.emplace_back((uintptr_t)(context.uc_mcontext.gregs[REG_RAX]));
-    regs.emplace_back((uintptr_t)(context.uc_mcontext.gregs[REG_RDX]));
-    regs.emplace_back((uintptr_t)(context.uc_mcontext.gregs[REG_RCX]));
-    regs.emplace_back((uintptr_t)(context.uc_mcontext.gregs[REG_RBX]));
-    regs.emplace_back((uintptr_t)(context.uc_mcontext.gregs[REG_RSI]));
-    regs.emplace_back((uintptr_t)(context.uc_mcontext.gregs[REG_RDI]));
-    regs.emplace_back((uintptr_t)(context.uc_mcontext.gregs[REG_RBP]));
-    regs.emplace_back((uintptr_t)(context.uc_mcontext.gregs[REG_RSP]));
-    regs.emplace_back((uintptr_t)(context.uc_mcontext.gregs[REG_R8]));
-    regs.emplace_back((uintptr_t)(context.uc_mcontext.gregs[REG_R9]));
-    regs.emplace_back((uintptr_t)(context.uc_mcontext.gregs[REG_R10]));
-    regs.emplace_back((uintptr_t)(context.uc_mcontext.gregs[REG_R11]));
-    regs.emplace_back((uintptr_t)(context.uc_mcontext.gregs[REG_R12]));
-    regs.emplace_back((uintptr_t)(context.uc_mcontext.gregs[REG_R13]));
-    regs.emplace_back((uintptr_t)(context.uc_mcontext.gregs[REG_R14]));
-    regs.emplace_back((uintptr_t)(context.uc_mcontext.gregs[REG_R15]));
-    regs.emplace_back((uintptr_t)(context.uc_mcontext.gregs[REG_RIP]));
-
-    SetRegsData(regs);
+    if (regsData_.size() < REG_LAST) {
+        return;
+    }
+    regsData_[REG_X86_64_RAX] = static_cast<uintptr_t>(context.uc_mcontext.gregs[REG_RAX]);
+    regsData_[REG_X86_64_RDX] = static_cast<uintptr_t>(context.uc_mcontext.gregs[REG_RDX]);
+    regsData_[REG_X86_64_RCX] = static_cast<uintptr_t>(context.uc_mcontext.gregs[REG_RCX]);
+    regsData_[REG_X86_64_RBX] = static_cast<uintptr_t>(context.uc_mcontext.gregs[REG_RBX]);
+    regsData_[REG_X86_64_RSI] = static_cast<uintptr_t>(context.uc_mcontext.gregs[REG_RSI]);
+    regsData_[REG_X86_64_RDI] = static_cast<uintptr_t>(context.uc_mcontext.gregs[REG_RDI]);
+    regsData_[REG_X86_64_RBP] = static_cast<uintptr_t>(context.uc_mcontext.gregs[REG_RBP]);
+    regsData_[REG_X86_64_RSP] = static_cast<uintptr_t>(context.uc_mcontext.gregs[REG_RSP]);
+    regsData_[REG_X86_64_R8] = static_cast<uintptr_t>(context.uc_mcontext.gregs[REG_R8]);
+    regsData_[REG_X86_64_R9] = static_cast<uintptr_t>(context.uc_mcontext.gregs[REG_R9]);
+    regsData_[REG_X86_64_R10] = static_cast<uintptr_t>(context.uc_mcontext.gregs[REG_R10]);
+    regsData_[REG_X86_64_R11] = static_cast<uintptr_t>(context.uc_mcontext.gregs[REG_R11]);
+    regsData_[REG_X86_64_R12] = static_cast<uintptr_t>(context.uc_mcontext.gregs[REG_R12]);
+    regsData_[REG_X86_64_R13] = static_cast<uintptr_t>(context.uc_mcontext.gregs[REG_R13]);
+    regsData_[REG_X86_64_R14] = static_cast<uintptr_t>(context.uc_mcontext.gregs[REG_R14]);
+    regsData_[REG_X86_64_R15] = static_cast<uintptr_t>(context.uc_mcontext.gregs[REG_R15]);
+    regsData_[REG_X86_64_RIP] = static_cast<uintptr_t>(context.uc_mcontext.gregs[REG_RIP]);
 }
 
 void DfxRegsX86_64::SetFromFpMiniRegs(const uintptr_t* regs, const size_t size)
