@@ -47,10 +47,11 @@ std::string DfxFrameFormatter::GetFrameStr(const std::shared_ptr<DfxFrame>& fram
             frame->line, frame->column);
 #endif
     } else {
+        uint64_t pc = frame->relPc == 0 ? frame->pc : frame->relPc;
 #ifdef __LP64__
-        data = StringPrintf("#%02zu pc %016" PRIx64, frame->index, frame->relPc);
+        data = StringPrintf("#%02zu pc %016" PRIx64, frame->index, pc);
 #else
-        data = StringPrintf("#%02zu pc %08" PRIx64, frame->index, frame->relPc);
+        data = StringPrintf("#%02zu pc %08" PRIx64, frame->index, pc);
 #endif
         if (!frame->mapName.empty()) {
             DfxMaps::UnFormatMapName(frame->mapName);
