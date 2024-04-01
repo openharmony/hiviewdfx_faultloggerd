@@ -63,7 +63,11 @@ static bool GetProcStatusByPath(struct ProcInfo& procInfo, const std::string& pa
         if (strncmp(buf, PID_STR_NAME, strlen(PID_STR_NAME)) == 0) {
             // Pid:   1892
             if (sscanf_s(buf, "%*[^0-9]%d", &pid) != ARGS_COUNT_ONE) {
+#if is_ohos
                 procInfo.pid = getprocpid();
+#else
+                procInfo.pid = getpid();
+#endif
             } else {
                 procInfo.pid = pid;
             }
@@ -115,7 +119,11 @@ bool TidToNstid(const int pid, const int tid, int& nstid)
 
 bool GetProcStatusByPid(int realPid, struct ProcInfo& procInfo)
 {
+#if is_ohos
     if (realPid == getprocpid()) {
+#else
+    if (realPid == getpid()) {
+#endif
         return GetProcStatus(procInfo);
     }
     std::string path = StringPrintf("/proc/%d/status", realPid);
@@ -130,7 +138,11 @@ bool GetProcStatus(struct ProcInfo& procInfo)
 bool IsThreadInPid(int32_t pid, int32_t tid)
 {
     std::string path;
+#if is_ohos
     if (pid == getprocpid()) {
+#else
+    if (pid == getpid()) {
+#endif
         path = StringPrintf("%s/%d", PROC_SELF_TASK_PATH, tid);
     } else {
         path = StringPrintf("/proc/%d/task/%d", pid, tid);
@@ -197,7 +209,11 @@ void ReadThreadNameByPidAndTid(const int pid, const int tid, std::string& str)
 void ReadProcessName(const int pid, std::string& str)
 {
     std::string path;
+#if is_ohos
     if (pid == getprocpid()) {
+#else
+    if (pid == getpid()) {
+#endif
         path = std::string(PROC_SELF_CMDLINE_PATH);
     } else {
         path = StringPrintf("/proc/%d/cmdline", pid);

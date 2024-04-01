@@ -81,7 +81,7 @@ int DfxAccessorsLocal::AccessMem(uintptr_t addr, uintptr_t *val, void *arg)
         LOGU("%s", "Failed to access addr");
         return UNW_ERROR_INVALID_MEMORY;
     }
-    *val = *(uintptr_t *) addr;
+    *val = *reinterpret_cast<uintptr_t *>(addr);
     return UNW_ERROR_NONE;
 }
 

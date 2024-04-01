@@ -141,7 +141,11 @@ bool ReadDirFiles(const std::string& path, std::vector<std::string>& files)
 bool ReadDirFilesByPid(const int& pid, std::vector<std::string>& files)
 {
     char path[PATH_LEN] = {0};
+#if is_ohos
     if (pid == getprocpid()) {
+#else
+    if (pid == getpid()) {
+#endif
         if (snprintf_s(path, sizeof(path), sizeof(path) - 1, PROC_SELF_TASK_PATH) <= 0) {
             return false;
         }
@@ -200,7 +204,6 @@ bool ReadFdToString(int fd, std::string& content)
     }
     return (n == 0);
 }
-
 }   // namespace HiviewDFX
 }   // namespace OHOS
 

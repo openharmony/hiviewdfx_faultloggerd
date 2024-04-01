@@ -34,6 +34,7 @@
 #include "parameter.h"
 #include "parameters.h"
 #endif
+#include "thread_context.h"
 
 namespace OHOS {
 namespace HiviewDFX {
@@ -117,15 +118,78 @@ bool Unwinder::GetStackRange(uintptr_t& stackBottom, uintptr_t& stackTop)
     return true;
 }
 
+bool Unwinder::UnwindLocalWithTid(const pid_t tid, size_t maxFrameNum, size_t skipFrameNum)
+{
+    if ((maps_ == nullptr) || (tid < 0)) {
+        LOGE("params is nullptr, tid: %d", tid);
+        return false;
+    }
+
+    auto threadContext = LocalThreadContext::GetInstance().CollectThreadContext(tid);
+#if defined(__aarch64__)
+    if (threadContext->frameSz > 0) {
+        pcs_.clear();
+        for (size_t i = 0; i < threadContext->frameSz; i++) {
+            pcs_.emplace_back(threadContext->pcs[i]);
+        }
+        return true;
+    }
+    return false;
+#else
+
+    if (threadContext == nullptr || threadContext->ctx == nullptr) {
+        LOGW("Failed to get thread context of tid(%d)", tid);
+        LocalThreadContext::GetInstance().ReleaseThread(tid);
+        return false;
+    }
+
+    if (regs_ == nullptr) {
+        regs_ = DfxRegs::CreateFromUcontext(*(threadContext->ctx));
+        if (regs_ == nullptr) {
+            LOGE("%s", "regs is nullptr");
+            return false;
+        }
+    } else {
+        regs_->SetFromUcontext(*(threadContext->ctx));
+    }
+
+    uintptr_t stackBottom = 1;
+    uintptr_t stackTop = static_cast<uintptr_t>(-1);
+    if (!LocalThreadContext::GetInstance().GetStackRange(tid, stackBottom, stackTop)) {
+        LOGE("Failed to get stack range with tid(%d)", tid);
+        return false;
+    }
+    LOGU("stackBottom: %" PRIx64 ", stackTop: %" PRIx64 "", (uint64_t)stackBottom, (uint64_t)stackTop);
+
+    UnwindContext context;
+    context.pid = UNWIND_TYPE_LOCAL;
+    context.regs = regs_;
+    context.maps = maps_;
+    context.stackCheck = false;
+    context.stackBottom = stackBottom;
+    context.stackTop = stackTop;
+    return Unwind(&context, maxFrameNum, skipFrameNum);
+#endif
+}
+
 bool Unwinder::UnwindLocalWithContext(const ucontext_t& context, size_t maxFrameNum, size_t skipFrameNum)
 {
-    regs_ = DfxRegs::CreateFromUcontext(context);
+    if (regs_ == nullptr) {
+        regs_ = DfxRegs::CreateFromUcontext(context);
+        if (regs_ == nullptr) {
+            LOGE("%s", "regs is nullptr");
+            return false;
+        }
+    } else {
+        regs_->SetFromUcontext(context);
+    }
     return UnwindLocal(true, maxFrameNum, skipFrameNum);
 }
 
 bool Unwinder::UnwindLocal(bool withRegs, size_t maxFrameNum, size_t skipFrameNum)
 {
-    uintptr_t stackBottom = 1, stackTop = static_cast<uintptr_t>(-1);
+    uintptr_t stackBottom = 1;
+    uintptr_t stackTop = static_cast<uintptr_t>(-1);
     if ((maps_ == nullptr) || !GetStackRange(stackBottom, stackTop)) {
         LOGE("%s", "Get stack range error");
         return false;
@@ -328,6 +392,36 @@ bool Unwinder::UnwindByFp(void *ctx, size_t maxFrameNum, size_t skipFrameNum)
     return (pcs_.size() > 0);
 }
 
+bool Unwinder::FpStep(uintptr_t& fp, uintptr_t& pc, void *ctx)
+{
+#if defined(__aarch64__)
+    LOGU("+fp: %lx, pc: %lx", (uint64_t)fp, (uint64_t)pc);
+    if ((regs_ == nullptr) || (memory_ == nullptr)) {
+        LOGE("%s", "params is nullptr");
+        return false;
+    }
+    if (ctx != nullptr) {
+        memory_->SetCtx(ctx);
+    }
+
+    uintptr_t prevFp = fp;
+    uintptr_t ptr = fp;
+    if (memory_->ReadUptr(ptr, &fp, true) &&
+        memory_->ReadUptr(ptr, &pc, false)) {
+        if (fp == prevFp) {
+            LOGW("-fp: %lx is same", (uint64_t)fp);
+            return false;
+        }
+        regs_->SetReg(REG_FP, &fp);
+        regs_->SetReg(REG_SP, &prevFp);
+        regs_->SetPc(StripPac(pc, pacMask_));
+        LOGU("-fp: %lx, pc: %lx", (uint64_t)fp, (uint64_t)pc);
+        return true;
+    }
+#endif
+    return false;
+}
+
 bool Unwinder::Step(uintptr_t& pc, uintptr_t& sp, void *ctx)
 {
     bool ret = false;
@@ -483,6 +577,12 @@ bool Unwinder::StepInner(const bool isSigFrame, bool& isJsFrame, uintptr_t& pc, 
 #if defined(__aarch64__)
     if (!ret && enableFpFallback_) {
         ret = FpStep(fp, pc, ctx);
+        if (ret && !isFpStep_) {
+            if (pid_ != UNWIND_TYPE_CUSTOMIZE) {
+                LOGI("First enter fp step, pc: %p", reinterpret_cast<void *>(pc));
+            }
+            isFpStep_ = true;
+        }
     }
 #endif
 
@@ -500,40 +600,6 @@ bool Unwinder::StepInner(const bool isSigFrame, bool& isJsFrame, uintptr_t& pc, 
         LOGU("-pc: %" PRIx64 ", sp: %" PRIx64 ", fp: %" PRIx64 " error?", (uint64_t)pc, (uint64_t)sp, (uint64_t)fp);
     }
     return ret;
-}
-
-bool Unwinder::FpStep(uintptr_t& fp, uintptr_t& pc, void *ctx)
-{
-#if defined(__aarch64__)
-    LOGU("+fp: %lx, pc: %lx", (uint64_t)fp, (uint64_t)pc);
-    if ((regs_ == nullptr) || (!CheckAndReset(ctx))) {
-        LOGE("%s", "params is nullptr");
-        return false;
-    }
-
-    uintptr_t prevFp = fp;
-    uintptr_t ptr = fp;
-    if (memory_->ReadUptr(ptr, &fp, true) &&
-        memory_->ReadUptr(ptr, &pc, false)) {
-        if (fp == prevFp) {
-            LOGW("-fp: %lx is same", (uint64_t)fp);
-            return false;
-        }
-        regs_->SetReg(REG_FP, &fp);
-        regs_->SetReg(REG_SP, &prevFp);
-        regs_->SetPc(StripPac(pc, pacMask_));
-
-        if (!isFpStep_) {
-            if (pid_ != UNWIND_TYPE_CUSTOMIZE) {
-                LOGI("First enter fp step, pc: %p", reinterpret_cast<void *>(pc));
-            }
-            isFpStep_ = true;
-        }
-        LOGU("-fp: %lx, pc: %lx", (uint64_t)fp, (uint64_t)pc);
-        return true;
-    }
-#endif
-    return false;
 }
 
 bool Unwinder::Apply(std::shared_ptr<DfxRegs> regs, std::shared_ptr<RegLocState> rs)

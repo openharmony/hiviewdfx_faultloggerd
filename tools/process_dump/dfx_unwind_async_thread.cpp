@@ -42,11 +42,11 @@ void DfxUnwindAsyncThread::UnwindStack()
     if (ProcessDumper::GetInstance().IsCrash()) {
         ReportUnwinderException(unwinder_->GetLastErrorCode());
     }
-#ifndef __x86_64__
+
     if (!ret && ProcessDumper::GetInstance().IsCrash()) {
         UnwindThreadFallback();
     }
-#endif
+
     thread_->SetFrames(unwinder_->GetFrames());
     DFXLOG_INFO("%s, unwind tid(%d) finish.", __func__, thread_->threadInfo_.nsTid);
     UnwindThreadByParseStackIfNeed();
@@ -98,6 +98,7 @@ void DfxUnwindAsyncThread::MergeStack(std::vector<DfxFrame> &submitterFrames)
 
 void DfxUnwindAsyncThread::UnwindThreadFallback()
 {
+#ifndef __x86_64__
     if (unwinder_->GetFrames().size() > 0) {
         return;
     }
@@ -133,6 +134,7 @@ void DfxUnwindAsyncThread::UnwindThreadFallback()
 
     createFrame(0, regs->GetPc(), regs->GetSp());
     createFrame(1, *(regs->GetReg(REG_LR)));
+#endif
 }
 
 void DfxUnwindAsyncThread::UnwindThreadByParseStackIfNeed()

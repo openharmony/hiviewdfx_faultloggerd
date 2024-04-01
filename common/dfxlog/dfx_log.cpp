@@ -46,11 +46,20 @@ static void LogToDmesg(const LogLevel logLevel, const char *tag, const char *inf
         g_dmesgFd = open("/dev/kmsg", O_WRONLY, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP);
     }
     char buf[LOG_BUF_LEN] = {0};
+#if is_ohos
     if (snprintf_s(buf, sizeof(buf), sizeof(buf) - 1, "%s[pid=%d %d][%s][%s]%s",
         LOG_KLEVEL_STR[dmesgLevel], getprocpid(), getppid(), tag, LOG_LEVEL_STR[dmesgLevel], info) < 0) {
         CloseDmesg();
         return;
     }
+#else
+    if (snprintf_s(buf, sizeof(buf), sizeof(buf) - 1, "%s[pid=%d %d][%s][%s]%s",
+        LOG_KLEVEL_STR[dmesgLevel], getpid(), getppid(), tag, LOG_LEVEL_STR[dmesgLevel], info) < 0) {
+        CloseDmesg();
+        return;
+    }
+#endif
+
     if (write(g_dmesgFd, buf, strlen(buf)) < 0) {
         CloseDmesg();
     }
