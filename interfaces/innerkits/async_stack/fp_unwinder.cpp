@@ -88,12 +88,11 @@ int32_t FpUnwinder::UnwindFallback(uintptr_t* pcs, int32_t sz, int32_t skipFrame
     int32_t realSz = 0;
     while ((index < sz - 1) && (fp - firstFp < g_maxUnwindAddrRange)) {
         uintptr_t addr = fp + sizeof(uintptr_t);
-        uintptr_t tempAddr = 0;
         if (!ReadUintptrSafe(addr, pcs[++index])) {
             break;
         }
         if ((++index) >= skipFrameNum) {
-            pcs[index - skipFrameNum] = tempAddr;
+            pcs[index - skipFrameNum] = 0;
             realSz = index - skipFrameNum + 1;
         }
         uintptr_t prevFp = fp;
@@ -147,7 +146,6 @@ void FpUnwinder::GetMainThreadStackRange()
         uint64_t minor = 0;
         ino_t inode = 0;
         char perms[5] = {0}; //5:rwxp
-        std::string name;
         if (sscanf_s(mapBuf.c_str(), "%" SCNxPTR "-%" SCNxPTR " %4s %" SCNxPTR " %x:%x %" SCNxPTR " %n",
             &begin, &end, &perms, sizeof(perms), &offset, &major, &minor, &inode, &pos) != 7) { // 7:scan size
             continue;

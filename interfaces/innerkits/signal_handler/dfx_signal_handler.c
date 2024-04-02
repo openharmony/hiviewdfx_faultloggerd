@@ -219,7 +219,7 @@ static void FillLastFatalMessageLocked(int32_t sig, void *context)
 
 static const char* GetCrashDescription(const int32_t errCode)
 {
-    int32_t i;
+    size_t i;
 
     for (i = 0; i < sizeof(g_crashExceptionMap) / sizeof(g_crashExceptionMap[0]); i++) {
         if (errCode == g_crashExceptionMap[i].errCode) {

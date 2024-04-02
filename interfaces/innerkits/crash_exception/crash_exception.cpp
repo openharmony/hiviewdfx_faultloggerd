@@ -52,7 +52,7 @@ void SetCrashProcInfo(std::string& name, int32_t pid, int32_t uid)
 
 static const char* GetCrashDescription(const int32_t errCode)
 {
-    int32_t i;
+    size_t i;
 
     for (i = 0; i < sizeof(g_crashExceptionMap) / sizeof(g_crashExceptionMap[0]); i++) {
         if (errCode == g_crashExceptionMap[i].errCode) {
@@ -123,7 +123,6 @@ int32_t CheckCrashLogValid(std::string& file)
     };
 
     int32_t keySize = sizeof(checkMap) / sizeof(checkMap[0]);
-    size_t end = 0;
     for (int i = 0; i < keySize; i++) {
         checkMap[i].start = file.find(checkMap[i].key);
         if ((checkMap[i].start == std::string::npos) ||
@@ -133,7 +132,7 @@ int32_t CheckCrashLogValid(std::string& file)
     }
 
     for (int i = 0; i < keySize; i++) {
-        end = (i == (keySize - 1) ? file.length() : checkMap[i + 1].start);
+        size_t end = (i == (keySize - 1) ? file.length() : checkMap[i + 1].start);
         if (end - checkMap[i].start > MAX_FATAL_MSG_SIZE) {
             end = checkMap[i].start + MAX_FATAL_MSG_SIZE;
         }
