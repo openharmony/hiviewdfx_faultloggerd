@@ -287,7 +287,7 @@ int DfxDumpCatcher::DoDumpRemotePoll(int bufFd, int resFd, int timeout, std::str
             resMsg.append("Result: bufFd or resFd < 0.\n");
             break;
         }
-        int pollRet = poll(readfds, fdsSize, timeout);
+        int pollRet = OHOS_TEMP_FAILURE_RETRY(poll(readfds, fdsSize, timeout));
         if (pollRet < 0) {
             if (errno == EINTR) {
                 DFXLOG_INFO("%s :: %s :: errno == EINTR", DFXDUMPCATCHER_TAG.c_str(), __func__);

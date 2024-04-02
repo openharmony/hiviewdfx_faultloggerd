@@ -274,7 +274,9 @@ int ProcessDumper::DumpProcess(std::shared_ptr<ProcessDumpRequest> request)
             dumpRes = DumpErrorCode::DUMP_EATTACH;
             break;
         }
-        process_->openFiles = GetOpenFiles(request->pid, request->fdTableAddr);
+        if (isCrash_ && !isLeakDump) {
+            process_->openFiles = GetOpenFiles(request->pid, request->fdTableAddr);
+        }
         if (InitPrintThread(request) < 0) {
             DFXLOG_ERROR("%s", "Failed to init print thread.");
             dumpRes = DumpErrorCode::DUMP_EGETFD;
@@ -443,16 +445,17 @@ int ProcessDumper::InitPrintThread(std::shared_ptr<ProcessDumpRequest> request)
         }
         DfxRingBufferWrapper::GetInstance().SetWriteFunc(ProcessDumper::WriteDumpBuf);
     } else {
-        fd = RequestPipeFd(request->pid, FaultLoggerPipeType::PIPE_FD_WRITE_BUF);
-        DFXLOG_DEBUG("write buf fd: %d", fd);
-        if (fd < 0) {
+        jsonFd_ = RequestPipeFd(request->pid, FaultLoggerPipeType::PIPE_FD_JSON_WRITE_BUF);
+
+        if (jsonFd_ < 0) {
             // If fd returns -1, we try to obtain the fd that needs to return JSON style
-            jsonFd_ = RequestPipeFd(request->pid, FaultLoggerPipeType::PIPE_FD_JSON_WRITE_BUF);
-            resFd_ = RequestPipeFd(request->pid, FaultLoggerPipeType::PIPE_FD_JSON_WRITE_RES);
-            DFXLOG_DEBUG("write json fd: %d, res fd: %d", jsonFd_, resFd_);
-        } else {
+            fd = RequestPipeFd(request->pid, FaultLoggerPipeType::PIPE_FD_WRITE_BUF);
+            DFXLOG_DEBUG("write buf fd: %d", fd);
             resFd_ = RequestPipeFd(request->pid, FaultLoggerPipeType::PIPE_FD_WRITE_RES);
             DFXLOG_DEBUG("write res fd: %d", resFd_);
+        } else {
+            resFd_ = RequestPipeFd(request->pid, FaultLoggerPipeType::PIPE_FD_JSON_WRITE_RES);
+            DFXLOG_DEBUG("write json fd: %d, res fd: %d", jsonFd_, resFd_);
         }
     }
     if (jsonFd_ > 0) {
