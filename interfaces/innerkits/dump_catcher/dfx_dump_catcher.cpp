@@ -119,8 +119,11 @@ bool DfxDumpCatcher::DoDumpLocalPid(int pid, std::string& msg, size_t maxFrameNu
         return DoDumpLocalTid(tid, msg, maxFrameNums, isJson);
     };
     std::vector<int> tids;
+#if defined(is_ohos) && is_ohos
     ret = GetTidsByPidWithFunc(getprocpid(), tids, func);
-
+#else
+    ret = GetTidsByPidWithFunc(getpid(), tids, func);
+#endif
     DFXLOG_DEBUG("%s :: DoDumpLocalPid :: return %d.", DFXDUMPCATCHER_TAG.c_str(), ret);
     return ret;
 }
@@ -392,8 +395,13 @@ bool DfxDumpCatcher::DumpCatchMultiPid(const std::vector<int> pidV, std::string&
     }
 
     std::unique_lock<std::mutex> lck(mutex_);
+#if defined(is_ohos) && is_ohos
     int currentPid = getprocpid();
     int currentTid = getproctid();
+#else
+    int currentPid = getpid();
+    int currentTid = gettid();
+#endif
     DFXLOG_DEBUG("%s :: %s :: cPid(%d), cTid(%d), pidSize(%d).", DFXDUMPCATCHER_TAG.c_str(), \
         __func__, currentPid, currentTid, pidSize);
 

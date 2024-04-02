@@ -29,7 +29,7 @@ static int DoGetCrashFd(void)
 {
     OHOS::HiviewDFX::FaultLoggerDaemon daemon;
     int32_t type = (int32_t)FaultLoggerType::CPP_CRASH;
-    int32_t pid = getprocpid();
+    int32_t pid = getpid();
     uint64_t time = OHOS::HiviewDFX::GetTimeMilliSeconds();
     int fd = daemon.CreateFileForRequest(type, pid, getproctid(), time, false);
     return fd;

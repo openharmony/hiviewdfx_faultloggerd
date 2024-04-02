@@ -17,7 +17,6 @@
 
 #include <algorithm>
 #include <cstring>
-#include <fstream>
 #include <securec.h>
 #if is_mingw
 #include "dfx_nonlinux_define.h"
@@ -38,41 +37,31 @@ namespace {
 #undef LOG_TAG
 #define LOG_DOMAIN 0xD002D11
 #define LOG_TAG "DfxMaps"
-}
 
-const std::string DfxMaps::GetMapsFile(pid_t pid)
+inline const std::string GetMapsFile(pid_t pid)
 {
     if (pid < 0) {
         return "";
     }
     std::string path;
-#if is_ohos
-    if ((pid == 0) || (pid == getprocpid())) {
-#else
     if ((pid == 0) || (pid == getpid())) {
-#endif
         path = std::string(PROC_SELF_MAPS_PATH);
     } else {
         path = StringPrintf("/proc/%d/maps", (int)pid);
     }
     return path;
 }
+}
 
 std::shared_ptr<DfxMaps> DfxMaps::Create(pid_t pid)
 {
     std::string path = GetMapsFile(pid);
-    if (path == "") {
-        return nullptr;
-    }
     return Create(pid, path);
 }
 
 bool DfxMaps::Create(const pid_t pid, std::vector<std::shared_ptr<DfxMap>>& maps, std::vector<int>& mapIndex)
 {
     std::string path = GetMapsFile(pid);
-    if (path == "") {
-        return false;
-    }
     auto dfxMaps = Create(pid, path, true);
     if (dfxMaps == nullptr) {
         LOGE("Create maps error, path: %s", path.c_str());
@@ -86,46 +75,40 @@ bool DfxMaps::Create(const pid_t pid, std::vector<std::shared_ptr<DfxMap>>& maps
 std::shared_ptr<DfxMaps> DfxMaps::Create(const pid_t pid, const std::string& path, bool enableMapIndex)
 {
     std::string realPath = path;
-    if (!RealPath(path, realPath)) {
+    if ((path == "") || !RealPath(path, realPath)) {
         LOGW("Failed to realpath %s", path.c_str());
         return nullptr;
     }
 
-    std::ifstream ifs;
-    ifs.open(realPath, std::ios::in);
-    if (ifs.fail()) {
+    FILE* fp = nullptr;
+    fp = fopen(realPath.c_str(), "r");
+    if (fp == nullptr) {
         LOGW("Failed to open %s", realPath.c_str());
         return nullptr;
     }
 
     auto dfxMaps = std::make_shared<DfxMaps>();
-    std::string mapBuf;
-    while (getline(ifs, mapBuf)) {
-        std::shared_ptr<DfxMap> map = DfxMap::Create(mapBuf, mapBuf.length());
+    char mapBuf[PATH_LEN] = {0};
+    while (fgets(mapBuf, sizeof(mapBuf), fp) != nullptr) {
+        std::shared_ptr<DfxMap> map = DfxMap::Create(mapBuf, sizeof(mapBuf));
         if (map == nullptr) {
-            LOGW("Failed to init map info:%s.", mapBuf.c_str());
+            LOGW("Failed to init map info: %s", mapBuf);
             continue;
-        } else {
-            if (map->name == "[stack]") {
-                dfxMaps->stackBottom_ = (uintptr_t)map->begin;
-                dfxMaps->stackTop_ = (uintptr_t)map->end;
-            }
-            FormatMapName(pid, map->name);
-            if ((!enableMapIndex) || IsLegalMapItem(map->name)) {
-                dfxMaps->AddMap(map, enableMapIndex);
-            }
+        }
+        if (map->name == "[stack]") {
+            dfxMaps->stackBottom_ = (uintptr_t)map->begin;
+            dfxMaps->stackTop_ = (uintptr_t)map->end;
+        }
+        FormatMapName(pid, map->name);
+        if ((!enableMapIndex) || IsLegalMapItem(map->name)) {
+            dfxMaps->AddMap(map, enableMapIndex);
         }
     }
-    if (dfxMaps->maps_.empty()) {
-        LOGE("DfxMaps size is 0. %s Content :", path.c_str());
-        ifs.clear();
-        ifs.seekg(0, std::ios::beg);
-        std::string tmpBuff;
-        while (getline(ifs, tmpBuff)) {
-            LOGI("%s", tmpBuff.c_str());
-        }
+    (void)fclose(fp);
+    if (dfxMaps->GetMapsSize() == 0) {
+        LOGE("Maps(%s) size is empty.", realPath.c_str());
+        return nullptr;
     }
-    ifs.close();
     if (!enableMapIndex) {
         dfxMaps->Sort();
     }
@@ -134,12 +117,11 @@ std::shared_ptr<DfxMaps> DfxMaps::Create(const pid_t pid, const std::string& pat
 
 void DfxMaps::FormatMapName(pid_t pid, std::string& mapName)
 {
+    if (pid <= 0 || pid == getpid()) {
+        return;
+    }
     // format sandbox file path, add '/proc/xxx/root' prefix
-#if is_ohos
-    if (StartsWith(mapName, "/data/storage/") && (pid != getprocpid())) {
-#else
-    if (StartsWith(mapName, "/data/storage/") && (pid != getpid())) {
-#endif
+    if (StartsWith(mapName, "/data/storage/")) {
         mapName = "/proc/" + std::to_string(pid) + "/root" + mapName;
     }
 }

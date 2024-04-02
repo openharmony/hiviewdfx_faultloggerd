@@ -59,11 +59,7 @@ void Unwinder::Init()
     dwarfSection_ = std::make_shared<DwarfSection>(memory_);
 
     if (pid_ == UNWIND_TYPE_LOCAL) {
-#if is_ohos
-        maps_ = DfxMaps::Create(getprocpid());
-#else
-        maps_ = DfxMaps::Create(getpid());
-#endif
+        maps_ = DfxMaps::Create();
     } else {
         if (pid_ > 0) {
             maps_ = DfxMaps::Create(pid_);
@@ -124,6 +120,7 @@ bool Unwinder::UnwindLocalWithTid(const pid_t tid, size_t maxFrameNum, size_t sk
         LOGE("params is nullptr, tid: %d", tid);
         return false;
     }
+    LOGI("UnwindLocalWithTid:: tid: %d", tid);
 
     auto threadContext = LocalThreadContext::GetInstance().CollectThreadContext(tid);
 #if defined(__aarch64__)
@@ -188,6 +185,7 @@ bool Unwinder::UnwindLocalWithContext(const ucontext_t& context, size_t maxFrame
 
 bool Unwinder::UnwindLocal(bool withRegs, bool fpUnwind, size_t maxFrameNum, size_t skipFrameNum)
 {
+    LOGI("UnwindLocal:: fpUnwind: %d", fpUnwind);
     uintptr_t stackBottom = 1;
     uintptr_t stackTop = static_cast<uintptr_t>(-1);
     if ((maps_ == nullptr) || !GetStackRange(stackBottom, stackTop)) {
@@ -238,7 +236,7 @@ bool Unwinder::UnwindRemote(pid_t tid, bool withRegs, size_t maxFrameNum, size_t
     if (tid == 0) {
         tid = pid_;
     }
-    LOGI("tid: %d", tid);
+    LOGI("UnwindRemote:: tid: %d", tid);
     if (!withRegs) {
         regs_ = DfxRegs::CreateRemoteRegs(tid);
     }
