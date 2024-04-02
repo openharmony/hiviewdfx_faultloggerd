@@ -73,6 +73,7 @@ public:
     inline void EnableFpCheckMapExec(bool enableFpCheckMapExec) { enableFpCheckMapExec_ = enableFpCheckMapExec; }
     inline void EnableFillFrames(bool enableFillFrames) { enableFillFrames_ = enableFillFrames; }
     inline void IgnoreMixstack(bool ignoreMixstack) { ignoreMixstack_ = ignoreMixstack; }
+    inline void StopWhenArkFrame(bool stopWhenArkFrame) { stopWhenArkFrame_ = stopWhenArkFrame; }
 
     inline void SetRegs(const std::shared_ptr<DfxRegs> regs) { regs_ = regs; }
     inline const std::shared_ptr<DfxRegs>& GetRegs() { return regs_; }
@@ -155,6 +156,7 @@ private:
     bool enableMixstack_ = true;
 #endif
     bool ignoreMixstack_ = false;
+    bool stopWhenArkFrame_ = false;
 
     int32_t pid_ = 0;
     uintptr_t pacMask_ = 0;
