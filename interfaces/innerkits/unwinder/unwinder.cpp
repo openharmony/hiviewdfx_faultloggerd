@@ -462,6 +462,10 @@ bool Unwinder::StepInner(const bool isSigFrame, bool& isJsFrame, uintptr_t& pc, 
 
 #if defined(ENABLE_MIXSTACK)
     if (enableMixstack_) {
+        if (map != nullptr && map->IsArkExecutable() && stopWhenArkFrame_) {
+            LOGU("Stop by ark frame");
+            return false;
+        }
 #if defined(ONLINE_MIXSTACK)
         if (map != nullptr && map->IsArkExecutable()) {
             if (!StepArkJsFrame(pc, fp, sp)) {
