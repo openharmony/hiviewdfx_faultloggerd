@@ -106,7 +106,7 @@ bool Unwinder::CheckAndReset(void* ctx)
 
 bool Unwinder::GetStackRange(uintptr_t& stackBottom, uintptr_t& stackTop)
 {
-    if (getpid() == gettid()) {
+    if (gettid() == getpid()) {
         if (maps_ == nullptr || !maps_->GetStackRange(stackBottom, stackTop)) {
             return false;
         }
@@ -186,7 +186,7 @@ bool Unwinder::UnwindLocalWithContext(const ucontext_t& context, size_t maxFrame
     return UnwindLocal(true, maxFrameNum, skipFrameNum);
 }
 
-bool Unwinder::UnwindLocal(bool withRegs, size_t maxFrameNum, size_t skipFrameNum)
+bool Unwinder::UnwindLocal(bool withRegs, bool fpUnwind, size_t maxFrameNum, size_t skipFrameNum)
 {
     uintptr_t stackBottom = 1;
     uintptr_t stackTop = static_cast<uintptr_t>(-1);
@@ -197,13 +197,22 @@ bool Unwinder::UnwindLocal(bool withRegs, size_t maxFrameNum, size_t skipFrameNu
     LOGU("stackBottom: %" PRIx64 ", stackTop: %" PRIx64 "", (uint64_t)stackBottom, (uint64_t)stackTop);
 
     if (!withRegs) {
-        regs_ = DfxRegs::Create();
-        auto regsData = regs_->RawData();
-        if (regsData == nullptr) {
-            LOGE("%s", "params is nullptr");
-            return false;
+#if defined(__aarch64__)
+        if (fpUnwind) {
+            uintptr_t miniRegs[FP_MINI_REGS_SIZE] = {0};
+            GetFramePointerMiniRegs(miniRegs);
+            regs_ = DfxRegs::CreateFromRegs(UnwindMode::FRAMEPOINTER_UNWIND, miniRegs);
         }
-        GetLocalRegs(regsData);
+#endif
+        if (regs_ == nullptr) {
+            regs_ = DfxRegs::Create();
+            auto regsData = regs_->RawData();
+            if (regsData == nullptr) {
+                LOGE("%s", "params is nullptr");
+                return false;
+            }
+            GetLocalRegs(regsData);
+        }
     }
 
     UnwindContext context;
@@ -213,8 +222,11 @@ bool Unwinder::UnwindLocal(bool withRegs, size_t maxFrameNum, size_t skipFrameNu
     context.stackCheck = false;
     context.stackBottom = stackBottom;
     context.stackTop = stackTop;
-    bool ret = Unwind(&context, maxFrameNum, skipFrameNum);
-    return ret;
+    if (fpUnwind) {
+        return UnwindByFp(&context, maxFrameNum, skipFrameNum);
+    } else {
+        return Unwind(&context, maxFrameNum, skipFrameNum);
+    }
 }
 
 bool Unwinder::UnwindRemote(pid_t tid, bool withRegs, size_t maxFrameNum, size_t skipFrameNum)
