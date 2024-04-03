@@ -25,6 +25,7 @@
 #include "dfx_dump_catcher.h"
 #include "dfx_json_formatter.h"
 #include "dfx_test_util.h"
+#include "faultloggerd_client.h"
 
 using namespace testing;
 using namespace testing::ext;
@@ -710,6 +711,27 @@ HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest030, TestSize.Level
     }
     EXPECT_EQ(stackMsg == msg, true) << "stackMsg != msg";
     GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest030: end.";
+}
+
+/**
+ * @tc.name: DumpCatcherInterfacesTest031
+ * @tc.desc: testDump after crashed
+ * @tc.type: FUNC
+ */
+HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest031, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest031: start.";
+    GTEST_LOG_(INFO) << "dump remote process, "  << " pid:" << getpid() << ", tid:" << gettid();
+    int32_t fd = RequestFileDescriptor(FaultLoggerType::CPP_CRASH);
+    ASSERT_GT(fd, 0);
+    close(fd);
+    DfxDumpCatcher dumplog;
+    string msg = "";
+    EXPECT_FALSE(dumplog.DumpCatch(getpid(), gettid(), msg));
+    constexpr int validTime = 8;
+    sleep(validTime);
+    msg = "";
+    EXPECT_TRUE(dumplog.DumpCatch(getpid(), gettid(), msg));
 }
 } // namespace HiviewDFX
 } // namepsace OHOS
