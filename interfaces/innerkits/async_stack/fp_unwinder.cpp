@@ -41,7 +41,7 @@ int32_t FpUnwinder::Unwind(uintptr_t* pcs, int32_t sz, int32_t skipFrameNum)
     uintptr_t stackBottom = 0;
     uintptr_t stackTop = 0;
     uint32_t realSz = 0;
-    if (getprocpid() == getproctid()) {
+    if (getpid() == gettid()) {
         GetMainThreadStackRange();
         stackBottom = g_mainThreadStackBottom;
         stackTop = g_mainThreadStackTop;

@@ -39,7 +39,7 @@ namespace {
 #define LOG_TAG "DfxMap"
 }
 
-std::shared_ptr<DfxMap> DfxMap::Create(const std::string buf, int size)
+std::shared_ptr<DfxMap> DfxMap::Create(const std::string buf, size_t size)
 {
     auto map = std::make_shared<DfxMap>();
     if (map->Parse(buf, size) == false) {
@@ -48,32 +48,22 @@ std::shared_ptr<DfxMap> DfxMap::Create(const std::string buf, int size)
     return map;
 }
 
-bool DfxMap::Parse(const std::string buf, int size)
+bool DfxMap::Parse(const std::string buf, size_t size)
 {
-#if is_ohos
+#if defined(is_ohos) && is_ohos
+    if (buf.empty() || size == 0) {
+        return false;
+    }
     uint32_t pos = 0;
-    uint64_t begin = 0;
-    uint64_t end = 0;
-    uint64_t offset = 0;
-    uint64_t major = 0;
-    uint64_t minor = 0;
-    ino_t inode = 0;
-    char perms[5] = {0}; // 5:rwxp
+    char permChs[5] = {0}; // 5:rwxp
 
     // 7658d38000-7658d40000 rw-p 00000000 00:00 0                              [anon:thread signal stack]
     if (sscanf_s(buf.c_str(), "%" SCNxPTR "-%" SCNxPTR " %4s %" SCNxPTR " %x:%x %" SCNxPTR " %n",
-        &begin, &end, &perms, sizeof(perms), &offset, &major, &minor, &inode, &pos) != 7) { // 7:scan size
-        LOGW("%s", "Failed to parse maps info.");
+        &begin, &end, &permChs, sizeof(permChs), &offset, &major, &minor, &inode, &pos) != 7) { // 7:scan size
+        LOGW("Failed to parse map info: %s.", buf.c_str());
         return false;
     }
-
-    this->begin = begin;
-    this->end = end;
-    this->offset = offset;
-    this->major = major;
-    this->minor = minor;
-    this->inode = inode;
-    this->perms = std::string(perms, sizeof(perms));
+    this->perms = std::string(permChs, sizeof(permChs));
     PermsToProts(this->perms, this->prots, this->flag);
     TrimAndDupStr(buf.substr(pos), this->name);
     return true;
