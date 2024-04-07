@@ -112,7 +112,7 @@ bool DwarfSection::SearchEntry(uintptr_t pc, struct UnwindTableInfo uti, struct 
     return true;
 }
 
-bool DwarfSection::Step(uintptr_t fdeAddr, std::shared_ptr<DfxRegs> regs, std::shared_ptr<RegLocState> rs)
+bool DwarfSection::Step(uintptr_t pc, uintptr_t fdeAddr, std::shared_ptr<RegLocState> rs)
 {
     FrameDescEntry fdeInfo;
     if (!ParseFde(fdeAddr, fdeAddr, fdeInfo)) {
@@ -120,15 +120,11 @@ bool DwarfSection::Step(uintptr_t fdeAddr, std::shared_ptr<DfxRegs> regs, std::s
         lastErrorData_.SetAddrAndCode(fdeAddr, UNW_ERROR_DWARF_INVALID_FDE);
         return false;
     }
-    if (regs == nullptr) {
-        return false;
-    }
-    uintptr_t pc = regs->GetPc();
-    DfxRegs::DoPcAdjust(memory_, pc);
+
     if (pc < fdeInfo.pcStart || pc >= fdeInfo.pcEnd) {
+        LOGU("pc: %p, FDE start: %p, end: %p", (void*)pc, (void*)fdeInfo.pcStart, (void*)fdeInfo.pcEnd);
         return false;
     }
-    LOGU("pc: %p, FDE start: %p", (void*)pc, (void*)fdeInfo.pcStart);
     DwarfCfaInstructions dwarfInstructions(memory_);
     if (!dwarfInstructions.Parse(pc, fdeInfo, *(rs.get()))) {
         LOGE("%s", "Failed to parse dwarf instructions?");

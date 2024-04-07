@@ -33,7 +33,7 @@ public:
 
     bool LinearSearchEntry(uintptr_t pc, struct UnwindTableInfo uti, struct UnwindEntryInfo& uei);
     bool SearchEntry(uintptr_t pc, struct UnwindTableInfo uti, struct UnwindEntryInfo& uei);
-    bool Step(uintptr_t fdeAddr, std::shared_ptr<DfxRegs> regs, std::shared_ptr<RegLocState> rs);
+    bool Step(uintptr_t pc, uintptr_t fdeAddr, std::shared_ptr<RegLocState> rs);
 
     const uint16_t& GetLastErrorCode() { return lastErrorData_.GetCode(); }
     const uint64_t& GetLastErrorAddr() { return lastErrorData_.GetAddr(); }

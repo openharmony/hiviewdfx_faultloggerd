@@ -344,7 +344,7 @@ bool Unwinder::Unwind(void *ctx, size_t maxFrameNum, size_t skipFrameNum)
 
         if (pid_ != UNWIND_TYPE_CUSTOMIZE) {
             if (needAdjustPc) {
-                DfxRegs::DoPcAdjust(memory_, pc);
+                DoPcAdjust(pc);
             }
             needAdjustPc = true;
         }
@@ -562,7 +562,7 @@ bool Unwinder::StepInner(const bool isSigFrame, bool& isJsFrame, uintptr_t& pc, 
                 break;
             }
             memory_->SetDataOffset(uti.segbase);
-            if (!dwarfSection_->Step((uintptr_t)uei.unwindInfo, regs_, rs)) {
+            if (!dwarfSection_->Step(pc, (uintptr_t)uei.unwindInfo, rs)) {
                 lastErrorData_.SetAddrAndCode(dwarfSection_->GetLastErrorAddr(), dwarfSection_->GetLastErrorCode());
                 LOGU("%s", "Step dwarf section error?");
             } else {
@@ -633,6 +633,26 @@ bool Unwinder::Apply(std::shared_ptr<DfxRegs> regs, std::shared_ptr<RegLocState>
         regs->SetPc(StripPac(regs_->GetPc(), pacMask_));
     }
     return ret;
+}
+
+void Unwinder::DoPcAdjust(uintptr_t& pc)
+{
+    if (pc <= 0x4) {
+        return;
+    }
+    uintptr_t sz = 0x4;
+#if defined(__arm__)
+    if ((pc & 0x1) && (memory_ != nullptr)) {
+        uintptr_t val;
+        if (pc < 0x5 || !(memory_->ReadMem(pc - 0x5, &val)) ||
+            (val & 0xe000f000) != 0xe000f000) {
+            sz = 0x2;
+        }
+    }
+#elif defined(__x86_64__)
+    sz = 0x1;
+#endif
+    pc -= sz;
 }
 
 uintptr_t Unwinder::StripPac(uintptr_t inAddr, uintptr_t pacMask)
