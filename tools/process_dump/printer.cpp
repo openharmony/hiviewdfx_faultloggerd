@@ -276,7 +276,7 @@ void Printer::PrintThreadOpenFiles(std::shared_ptr<DfxProcess> process)
 
     DfxRingBufferWrapper::GetInstance().AppendMsg("OpenFiles:\n");
     std::string infos = process->openFiles;
-    constexpr int step = 1024;
+    constexpr size_t step = 1024;
     for (size_t i = 0; i < infos.size(); i += step) {
         DfxRingBufferWrapper::GetInstance().AppendMsg(infos.substr(i, step));
     }

@@ -61,7 +61,7 @@ void DfxUnwindAsyncThread::UnwindStack()
 
 void DfxUnwindAsyncThread::GetSubmitterStack(std::vector<DfxFrame> &submitterFrames)
 {
-    if (stackId_ <= 0) {
+    if (stackId_ == 0) {
         return;
     }
     const std::shared_ptr<DfxMaps>& maps = unwinder_->GetMaps();
