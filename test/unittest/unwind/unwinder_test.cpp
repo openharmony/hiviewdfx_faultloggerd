@@ -160,7 +160,7 @@ HWTEST_F(UnwinderTest, UnwinderLocalTest002, TestSize.Level2)
 
 /**
  * @tc.name: UnwinderLocalTest003
- * @tc.desc: test unwinder UnwinderLocal interface GetStackRange == false or GetStackRange == true
+ * @tc.desc: test unwinder UnwindLocal interface
  * @tc.type: FUNC
  */
 HWTEST_F(UnwinderTest, UnwinderLocalTest003, TestSize.Level2)
@@ -258,7 +258,7 @@ HWTEST_F(UnwinderTest, UnwinderRemoteTest002, TestSize.Level2)
 
 /**
  * @tc.name: UnwinderRemoteTest003
- * @tc.desc: test unwinder UnwinderRemote interface GetStackRange == false or GetStackRange == true
+ * @tc.desc: test unwinder UnwindRemote interface
  * @tc.type: FUNC
  */
 HWTEST_F(UnwinderTest, UnwinderRemoteTest003, TestSize.Level2)

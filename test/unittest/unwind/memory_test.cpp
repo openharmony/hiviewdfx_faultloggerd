@@ -111,7 +111,7 @@ HWTEST_F(DfxMemoryTest, DfxMemoryTest003, TestSize.Level2)
     uint8_t values[] = {0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8};
     UnwindContext ctx;
     auto acc = std::make_shared<DfxAccessorsLocal>();
-    ASSERT_EQ(GetSelfStackRange(ctx.stackBottom, ctx.stackTop), 0);
+    ASSERT_TRUE(GetSelfStackRange(ctx.stackBottom, ctx.stackTop));
     auto memory = std::make_shared<DfxMemory>(acc);
     memory->SetCtx(&ctx);
     uintptr_t addr = (uintptr_t)(&values[0]);
@@ -150,7 +150,7 @@ HWTEST_F(DfxMemoryTest, DfxMemoryTest004, TestSize.Level2)
     uint8_t values[] = {0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8};
     UnwindContext ctx;
     auto acc = std::make_shared<DfxAccessorsLocal>();
-    ASSERT_EQ(GetSelfStackRange(ctx.stackBottom, ctx.stackTop), 0);
+    ASSERT_TRUE(GetSelfStackRange(ctx.stackBottom, ctx.stackTop));
     auto memory = std::make_shared<DfxMemory>(acc);
     memory->SetCtx(&ctx);
     uintptr_t addr = (uintptr_t)(&values[0]);
@@ -180,7 +180,7 @@ HWTEST_F(DfxMemoryTest, DfxMemoryTest005, TestSize.Level2)
     uint8_t values[] = {0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8};
     UnwindContext ctx;
     auto acc = std::make_shared<DfxAccessorsLocal>();
-    ASSERT_EQ(GetSelfStackRange(ctx.stackBottom, ctx.stackTop), 0);
+    ASSERT_TRUE(GetSelfStackRange(ctx.stackBottom, ctx.stackTop));
     auto memory = std::make_shared<DfxMemory>(acc);
     memory->SetCtx(&ctx);
     uintptr_t addr = (uintptr_t)(&values[0]);
@@ -207,7 +207,7 @@ HWTEST_F(DfxMemoryTest, DfxMemoryTest006, TestSize.Level2)
     GTEST_LOG_(INFO) << "DfxMemoryTest006: start.";
     UnwindContext ctx;
     auto acc = std::make_shared<DfxAccessorsLocal>();
-    ASSERT_EQ(GetSelfStackRange(ctx.stackBottom, ctx.stackTop), 0);
+    ASSERT_TRUE(GetSelfStackRange(ctx.stackBottom, ctx.stackTop));
     auto memory = std::make_shared<DfxMemory>(acc);
     memory->SetCtx(&ctx);
     ASSERT_EQ(memory->GetEncodedSize(DW_EH_PE_absptr), sizeof(uintptr_t));

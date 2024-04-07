@@ -13,21 +13,13 @@
 
 import("//base/hiviewdfx/faultloggerd/faultloggerd.gni")
 
-config("async_stack_config") {
-  visibility = [ "*:*" ]
-
-  include_dirs = [
-    "include",
-    ".",
-    "$faultloggerd_interfaces_path/common",
-  ]
-}
 if (defined(ohos_lite)) {
   shared_library("libasync_stack") {
     include_dirs = [
       "include",
       ".",
       "$faultloggerd_interfaces_path/common",
+      "$faultloggerd_common_path/dfxutil",
     ]
     sources = [
       "async_stack.cpp",
@@ -45,6 +37,17 @@ if (defined(ohos_lite)) {
     ]
   }
 } else {
+  config("async_stack_config") {
+    visibility = [ "*:*" ]
+
+    include_dirs = [
+      "include",
+      ".",
+      "$faultloggerd_interfaces_path/common",
+      "$faultloggerd_common_path/dfxutil",
+    ]
+  }
+
   ohos_shared_library("libasync_stack") {
     public_configs = [ ":async_stack_config" ]
 

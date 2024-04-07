@@ -27,7 +27,7 @@
 #include "dfx_log.h"
 #include "dfx_regs_get.h"
 #include "dfx_symbols.h"
-#include "stack_util.h"
+#include "fp_unwinder.h"
 #include "string_printf.h"
 #include "string_util.h"
 #if defined(ENABLE_MIXSTACK)
@@ -116,7 +116,7 @@ bool Unwinder::GetStackRange(uintptr_t& stackBottom, uintptr_t& stackTop)
 
 bool Unwinder::UnwindLocalWithTid(const pid_t tid, size_t maxFrameNum, size_t skipFrameNum)
 {
-    if ((maps_ == nullptr) || (tid < 0)) {
+    if (tid < 0) {
         LOGE("params is nullptr, tid: %d", tid);
         return false;
     }
@@ -142,19 +142,21 @@ bool Unwinder::UnwindLocalWithTid(const pid_t tid, size_t maxFrameNum, size_t sk
 
     if (regs_ == nullptr) {
         regs_ = DfxRegs::CreateFromUcontext(*(threadContext->ctx));
-        if (regs_ == nullptr) {
-            LOGE("%s", "regs is nullptr");
-            return false;
-        }
     } else {
         regs_->SetFromUcontext(*(threadContext->ctx));
     }
 
     uintptr_t stackBottom = 1;
     uintptr_t stackTop = static_cast<uintptr_t>(-1);
-    if (!LocalThreadContext::GetInstance().GetStackRange(tid, stackBottom, stackTop)) {
-        LOGE("Failed to get stack range with tid(%d)", tid);
-        return false;
+    if (tid == getprocpid()) {
+        if (maps_ == nullptr || !maps_->GetStackRange(stackBottom, stackTop)) {
+            return false;
+        }
+    } else {
+        if (!LocalThreadContext::GetInstance().GetStackRange(tid, stackBottom, stackTop)) {
+            LOGE("Failed to get stack range with tid(%d)", tid);
+            return false;
+        }
     }
     LOGU("stackBottom: %" PRIx64 ", stackTop: %" PRIx64 "", (uint64_t)stackBottom, (uint64_t)stackTop);
 
@@ -173,10 +175,6 @@ bool Unwinder::UnwindLocalWithContext(const ucontext_t& context, size_t maxFrame
 {
     if (regs_ == nullptr) {
         regs_ = DfxRegs::CreateFromUcontext(context);
-        if (regs_ == nullptr) {
-            LOGE("%s", "regs is nullptr");
-            return false;
-        }
     } else {
         regs_->SetFromUcontext(context);
     }
@@ -188,7 +186,7 @@ bool Unwinder::UnwindLocal(bool withRegs, bool fpUnwind, size_t maxFrameNum, siz
     LOGI("UnwindLocal:: fpUnwind: %d", fpUnwind);
     uintptr_t stackBottom = 1;
     uintptr_t stackTop = static_cast<uintptr_t>(-1);
-    if ((maps_ == nullptr) || !GetStackRange(stackBottom, stackTop)) {
+    if (!GetStackRange(stackBottom, stackTop)) {
         LOGE("%s", "Get stack range error");
         return false;
     }
@@ -418,7 +416,7 @@ bool Unwinder::FpStep(uintptr_t& fp, uintptr_t& pc, void *ctx)
     uintptr_t ptr = fp;
     if (memory_->ReadUptr(ptr, &fp, true) &&
         memory_->ReadUptr(ptr, &pc, false)) {
-        if (fp == prevFp) {
+        if (fp == prevFp || fp == 0) {
             LOGW("-fp: %lx is same", (uint64_t)fp);
             return false;
         }
