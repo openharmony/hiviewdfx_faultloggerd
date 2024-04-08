@@ -47,16 +47,19 @@ void DfxUnwindAsyncThread::UnwindStack()
         UnwindThreadFallback();
     }
 
-    thread_->SetFrames(unwinder_->GetFrames());
-    DFXLOG_INFO("%s, unwind tid(%d) finish.", __func__, thread_->threadInfo_.nsTid);
-    UnwindThreadByParseStackIfNeed();
     if (ProcessDumper::GetInstance().IsCrash()) {
+        thread_->SetFrames(unwinder_->GetFrames());
+        UnwindThreadByParseStackIfNeed();
         // 2: get submitterStack
         std::vector<DfxFrame> submmiterFrames;
         GetSubmitterStack(submmiterFrames);
         // 3: merge two stack
         MergeStack(submmiterFrames);
+    } else {
+        thread_->Detach();
+        thread_->SetFrames(unwinder_->GetFrames());
     }
+    DFXLOG_INFO("%s, unwind tid(%d) finish.", __func__, thread_->threadInfo_.nsTid);
 }
 
 void DfxUnwindAsyncThread::GetSubmitterStack(std::vector<DfxFrame> &submitterFrames)
