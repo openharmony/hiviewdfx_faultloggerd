@@ -107,7 +107,7 @@ bool Unwinder::GetStackRange(uintptr_t& stackBottom, uintptr_t& stackTop)
             return false;
         }
     } else {
-        if (GetSelfStackRange(stackBottom, stackTop) != 0) {
+        if (!GetSelfStackRange(stackBottom, stackTop)) {
             return false;
         }
     }
@@ -178,7 +178,7 @@ bool Unwinder::UnwindLocalWithContext(const ucontext_t& context, size_t maxFrame
     } else {
         regs_->SetFromUcontext(context);
     }
-    return UnwindLocal(true, maxFrameNum, skipFrameNum);
+    return UnwindLocal(true, false, maxFrameNum, skipFrameNum);
 }
 
 bool Unwinder::UnwindLocal(bool withRegs, bool fpUnwind, size_t maxFrameNum, size_t skipFrameNum)
