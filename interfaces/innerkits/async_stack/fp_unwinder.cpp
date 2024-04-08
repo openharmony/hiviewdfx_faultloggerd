@@ -25,11 +25,11 @@
 #include <fstream>
 #include <pthread.h>
 #include "dfx_log.h"
+#include "stack_util.h"
+
 namespace OHOS {
 namespace HiviewDFX {
 static int32_t g_validPipe[PIPE_NUM_SZ] = {-1, -1};
-static thread_local uintptr_t g_mainThreadStackBottom = 0;
-static thread_local uintptr_t g_mainThreadStackTop = 0;
 constexpr uintptr_t g_maxUnwindAddrRange = 16 * 1024;
 int32_t FpUnwinder::Unwind(uintptr_t* pcs, int32_t sz, int32_t skipFrameNum)
 {
@@ -42,13 +42,11 @@ int32_t FpUnwinder::Unwind(uintptr_t* pcs, int32_t sz, int32_t skipFrameNum)
     uintptr_t stackTop = 0;
     uint32_t realSz = 0;
     if (getpid() == gettid()) {
-        GetMainThreadStackRange();
-        stackBottom = g_mainThreadStackBottom;
-        stackTop = g_mainThreadStackTop;
+        GetMainStackRange(stackBottom, stackTop);
     } else {
-        GetStackRange(stackBottom, stackTop);
+        GetSelfStackRange(stackBottom, stackTop);
         if (!(stackPtr >= stackBottom && stackPtr < stackTop)) {
-            GetSignalAltStackRange(stackBottom, stackTop);
+            GetSigAltStackRange(stackBottom, stackTop);
             if (stackPtr < stackBottom || stackPtr >= stackTop) {
                 realSz = UnwindFallback(pcs, sz, skipFrameNum);
                 return realSz;
@@ -120,66 +118,6 @@ bool FpUnwinder::ReadUintptrSafe(uintptr_t addr, uintptr_t& value)
     }
     value = *reinterpret_cast<uintptr_t *>(addr);
     return true;
-}
-
-void FpUnwinder::GetMainThreadStackRange()
-{
-    if (g_mainThreadStackBottom != 0 && g_mainThreadStackTop != 0) {
-        return;
-    }
-    std::ifstream ifs;
-    ifs.open("/proc/self/maps", std::ios::in);
-    if (ifs.fail()) {
-        LOGE("%s", "open proc/self/maps failed!");
-        return;
-    }
-    std::string mapBuf;
-    while (getline(ifs, mapBuf)) {
-        if (mapBuf.find("[stack]") == std::string::npos) {
-            continue;
-        }
-        uint32_t pos = 0;
-        uint64_t begin = 0;
-        uint64_t end = 0;
-        uint64_t offset = 0;
-        uint64_t major = 0;
-        uint64_t minor = 0;
-        ino_t inode = 0;
-        char perms[5] = {0}; //5:rwxp
-        if (sscanf_s(mapBuf.c_str(), "%" SCNxPTR "-%" SCNxPTR " %4s %" SCNxPTR " %x:%x %" SCNxPTR " %n",
-            &begin, &end, &perms, sizeof(perms), &offset, &major, &minor, &inode, &pos) != 7) { // 7:scan size
-            continue;
-        }
-        g_mainThreadStackBottom = begin;
-        g_mainThreadStackTop = end;
-        break;
-    }
-    ifs.close();
-}
-
-void FpUnwinder::GetStackRange(uintptr_t& stackBottom, uintptr_t& stackTop)
-{
-    pthread_attr_t attr;
-    void *base = nullptr;
-    size_t size = 0;
-    if (pthread_getattr_np(pthread_self(), &attr) == 0) {
-        if (pthread_attr_getstack(&attr, &base, &size) == 0) {
-            stackBottom = reinterpret_cast<uintptr_t>(base);
-            stackTop = reinterpret_cast<uintptr_t>(base) + size;
-        }
-    }
-    pthread_attr_destroy(&attr);
-}
-
-void FpUnwinder::GetSignalAltStackRange(uintptr_t& stackBottom, uintptr_t& stackTop)
-{
-    stack_t altStack;
-    if (sigaltstack(nullptr, &altStack) != -1) {
-        if ((altStack.ss_flags & SS_ONSTACK) != 0) {
-            stackBottom = reinterpret_cast<uintptr_t>(altStack.ss_sp);
-            stackTop = reinterpret_cast<uintptr_t>(altStack.ss_sp) + altStack.ss_size;
-        }
-    }
 }
 }
 }

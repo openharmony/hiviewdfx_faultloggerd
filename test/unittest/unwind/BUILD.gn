@@ -31,6 +31,7 @@ ohos_unittest("test_unwind") {
     "accessors_test.cpp",
     "elf_imitate.cpp",
     "elf_test.cpp",
+    "fp_unwinder_test.cpp",
     "instr_statistic_test.cpp",
     "maps_test.cpp",
     "memory_test.cpp",
@@ -65,7 +66,7 @@ ohos_unittest("test_unwind_pac") {
   ]
   configs = [ "$faultloggerd_common_path/build:coverage_flags" ]
   defines = [ "DFX_LOG_UNWIND" ]
-  sources = [ "unwind_pac_test.cpp" ]
+  sources = [ "unwinder_pac_test.cpp" ]
   deps = [
     "$faultloggerd_common_path/dfxlog:dfx_hilog",
     "$faultloggerd_common_path/dfxutil:dfx_util",
@@ -90,7 +91,7 @@ ohos_unittest("test_unwind_separate_code") {
   configs = [ "$faultloggerd_common_path/build:coverage_flags" ]
   defines = [ "DFX_LOG_UNWIND" ]
   ldflags = [ "-Wl,-z,separate-code" ]
-  sources = [ "unwind_pac_test.cpp" ]
+  sources = [ "unwinder_pac_test.cpp" ]
   deps = [
     "$faultloggerd_common_path/dfxlog:dfx_hilog",
     "$faultloggerd_common_path/dfxutil:dfx_util",

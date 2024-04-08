@@ -72,8 +72,6 @@ public:
     void ReleaseThread(int32_t tid);
     void CleanUp();
 
-    bool ReadUintptrSafe(uintptr_t addr, uintptr_t& value);
-
 private:
     LocalThreadContext() = default;
     DISALLOW_COPY_AND_MOVE(LocalThreadContext);
@@ -84,7 +82,6 @@ private:
 
 private:
     std::mutex localMutex_;
-    int32_t pfd_[PIPE_NUM_SZ] = {-1, -1};
 };
 } // namespace Dfx
 } // namespace OHOS

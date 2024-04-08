@@ -16,20 +16,71 @@
 #define STACK_UTIL_H
 
 #include <cstdio>
+#include <csignal>
+#include <cstring>
 #include <string>
 #include <pthread.h>
+#include "dfx_define.h"
 
 namespace OHOS {
 namespace HiviewDFX {
-inline int GetSelfStackRange(uintptr_t& stackBottom, uintptr_t& stackTop)
+AT_UNUSED static bool GetMainStackRange(uintptr_t& stackBottom, uintptr_t& stackTop)
 {
+    FILE *fp = fopen(PROC_SELF_MAPS_PATH, "r");
+    if (fp == NULL) {
+        return false;
+    }
+    bool ret = false;
+    char mapInfo[256] = {0}; // 256: map info size
+    int pos = 0;
+    uint64_t begin = 0;
+    uint64_t end = 0;
+    uint64_t offset = 0;
+    char perms[5] = {0}; // 5:rwxp
+    while (fgets(mapInfo, sizeof(mapInfo), fp) != NULL) {
+        if (strstr(mapInfo, "[stack]") == NULL) {
+            continue;
+        }
+        if (sscanf_s(mapInfo, "%" SCNxPTR "-%" SCNxPTR " %4s %" SCNxPTR " %*x:%*x %*d%n", &begin, &end,
+            &perms, sizeof(perms), &offset, &pos) != 4) { // 4:scan size
+            continue;
+        }
+        stackBottom = static_cast<uintptr_t>(begin);
+        stackTop = static_cast<uintptr_t>(end);
+        ret = true;
+        break;
+    }
+    (void)fclose(fp);
+    return ret;
+}
+
+AT_UNUSED static bool GetSelfStackRange(uintptr_t& stackBottom, uintptr_t& stackTop)
+{
+    bool ret = false;
     pthread_attr_t tattr;
     void *base = nullptr;
     size_t size = 0;
     pthread_getattr_np(pthread_self(), &tattr);
-    int ret = pthread_attr_getstack(&tattr, &base, &size);
-    stackBottom = reinterpret_cast<uintptr_t>(base);
-    stackTop = reinterpret_cast<uintptr_t>(base) + size;
+    if (pthread_attr_getstack(&tattr, &base, &size) == 0) {
+        stackBottom = reinterpret_cast<uintptr_t>(base);
+        stackTop = reinterpret_cast<uintptr_t>(base) + size;
+        ret = true;
+    }
+    pthread_attr_destroy(&tattr);
+    return ret;
+}
+
+AT_UNUSED static bool GetSigAltStackRange(uintptr_t& stackBottom, uintptr_t& stackTop)
+{
+    bool ret = false;
+    stack_t altStack;
+    if (sigaltstack(nullptr, &altStack) != -1) {
+        if ((altStack.ss_flags & SS_ONSTACK) != 0) {
+            stackBottom = reinterpret_cast<uintptr_t>(altStack.ss_sp);
+            stackTop = reinterpret_cast<uintptr_t>(altStack.ss_sp) + altStack.ss_size;
+            ret = true;
+        }
+    }
     return ret;
 }
 } // namespace HiviewDFX

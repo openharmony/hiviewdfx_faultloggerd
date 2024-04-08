@@ -20,15 +20,13 @@
 #include <map>
 #include <memory>
 #include <mutex>
-#include <fcntl.h>
 #include <securec.h>
 #include <sigchain.h>
-#include <sys/syscall.h>
 #include <unistd.h>
 
 #include "dfx_define.h"
 #include "dfx_log.h"
-#include "stack_util.h"
+#include "fp_unwinder.h"
 #if defined(__aarch64__)
 #include "unwind_arm64_define.h"
 #endif
@@ -132,12 +130,9 @@ LocalThreadContext& LocalThreadContext::GetInstance()
 
 LocalThreadContext::~LocalThreadContext()
 {
-    if (pfd_[PIPE_READ] > 0) {
-        syscall(SYS_close, pfd_[PIPE_READ]);
-    }
-    if (pfd_[PIPE_WRITE] > 0) {
-        syscall(SYS_close, pfd_[PIPE_WRITE]);
-    }
+#if defined(__aarch64__)
+    FpUnwinder::GetInstance().ClosePipe();
+#endif
 }
 
 std::shared_ptr<ThreadContext> LocalThreadContext::GetThreadContext(int32_t tid)
@@ -198,24 +193,8 @@ bool LocalThreadContext::CopyContextAndWaitTimeout(int sig, siginfo_t *si, void 
         return true;
     }
     uintptr_t fp = reinterpret_cast<ucontext_t*>(context)->uc_mcontext.regs[REG_FP];
-    ctxPtr->pcs[0] = reinterpret_cast<ucontext_t*>(context)->uc_mcontext.pc;
-    size_t index = 1;
-    while (index < DEFAULT_MAX_LOCAL_FRAME_NUM) {
-        uintptr_t prevFp = fp;
-        if (!LocalThreadContext::GetInstance().ReadUintptrSafe(prevFp, fp)) {
-            break;
-        }
-
-        if (!LocalThreadContext::GetInstance().ReadUintptrSafe(prevFp + sizeof(uintptr_t), ctxPtr->pcs[index])) {
-            break;
-        }
-
-        if (fp == prevFp || fp == 0 || ctxPtr->pcs[index] == 0) {
-            break;
-        }
-        index++;
-    }
-    ctxPtr->frameSz = index;
+    uintptr_t pc = reinterpret_cast<ucontext_t*>(context)->uc_mcontext.pc;
+    ctxPtr->frameSz = FpUnwinder::GetInstance().UnwindFallback(pc, fp, ctxPtr->pcs, DEFAULT_MAX_LOCAL_FRAME_NUM);
     ctxPtr->cv.notify_all();
     ctxPtr->tid = static_cast<int32_t>(ThreadContextStatus::CONTEXT_UNUSED);
     return true;
@@ -230,7 +209,7 @@ bool LocalThreadContext::CopyContextAndWaitTimeout(int sig, siginfo_t *si, void 
     if (memcpy_s(ctxPtr->ctx, sizeof(ucontext_t), context, sizeof(ucontext_t)) != 0) {
         LOGW("Failed to copy local ucontext with tid(%d)", tid);
     }
-    if (GetSelfStackRange(ctxPtr->stackBottom, ctxPtr->stackTop) != 0) {
+    if (!GetSelfStackRange(ctxPtr->stackBottom, ctxPtr->stackTop)) {
         LOGW("Failed to get stack range with tid(%d)", tid);
     }
 
@@ -253,37 +232,10 @@ bool LocalThreadContext::GetStackRange(int32_t tid, uintptr_t& stackBottom, uint
     return true;
 }
 
-#if defined(__has_feature) && __has_feature(address_sanitizer)
-__attribute__((no_sanitize("address"))) bool LocalThreadContext::ReadUintptrSafe(uintptr_t addr, uintptr_t& value)
-#else
-bool LocalThreadContext::ReadUintptrSafe(uintptr_t addr, uintptr_t& value)
-#endif
-{
-    if ((pfd_[PIPE_READ] < 0) || (pfd_[PIPE_WRITE] < 0)) {
-        return false;
-    }
-
-    if (OHOS_TEMP_FAILURE_RETRY(syscall(SYS_write, pfd_[PIPE_WRITE], addr, sizeof(uintptr_t))) == -1) {
-        return false;
-    }
-
-    uintptr_t dummy = 0;
-    value = *reinterpret_cast<uintptr_t *>(addr);
-    if (OHOS_TEMP_FAILURE_RETRY(syscall(SYS_read, pfd_[PIPE_READ], &dummy, sizeof(uintptr_t))) == sizeof(uintptr_t)) {
-        return true;
-    }
-    return false;
-}
-
 void LocalThreadContext::InitSignalHandler()
 {
     static std::once_flag flag;
     std::call_once(flag, [&]() {
-#if defined(__aarch64__)
-        if (pipe2(pfd_, O_CLOEXEC | O_NONBLOCK) != 0) {
-            LOGW("Failed to create pipe, errno(%d).", errno);
-        }
-#endif
         struct signal_chain_action sigchain = {
             .sca_sigaction = LocalThreadContext::CopyContextAndWaitTimeout,
             .sca_mask = {},
@@ -292,6 +244,9 @@ void LocalThreadContext::InitSignalHandler()
         LOGU("Install local signal handler: %d", SIGLOCAL_DUMP);
         add_special_signal_handler(SIGLOCAL_DUMP, &sigchain);
     });
+#if defined(__aarch64__)
+    FpUnwinder::GetInstance().InitPipe();
+#endif
 }
 
 bool LocalThreadContext::SignalRequestThread(int32_t tid, ThreadContext* threadContext)
