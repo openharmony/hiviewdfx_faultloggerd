@@ -200,11 +200,8 @@ void ProcessDumper::Dump()
     if (process_ == nullptr) {
         DFXLOG_ERROR("%s", "Dump process failed, please check permission and whether pid is valid.");
     } else {
-        if (isCrash_) {
-            if (process_->vmThread_ != nullptr) {
-                process_->vmThread_->Detach();
-            }
-            process_->Detach();
+        if (isCrash_ && process_->vmThread_ != nullptr) {
+            process_->vmThread_->Detach();
         }
         if (process_->keyThread_ != nullptr) {
             process_->keyThread_->Detach();
