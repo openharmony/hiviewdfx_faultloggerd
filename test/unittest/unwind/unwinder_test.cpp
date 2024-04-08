@@ -116,7 +116,7 @@ HWTEST_F(UnwinderTest, UnwinderLocalTest001, TestSize.Level2)
     time_t elapsed2 = counter.Elapsed();
     GTEST_LOG_(INFO) << "Elapsed-: " << elapsed1 << "\tElapsed+: " << elapsed2;
     GTEST_LOG_(INFO) << "UnwinderLocalTest001: frames:\n" << Unwinder::GetFramesStr(frames);
-    unwRet = unwinder->UnwindLocal(false, DEFAULT_MAX_FRAME_NUM, skipFrameNum);
+    unwRet = unwinder->UnwindLocal(false, false, DEFAULT_MAX_FRAME_NUM, skipFrameNum);
     EXPECT_EQ(true, unwRet) << "UnwinderLocalTest001: Unwind:" << unwRet;
     auto frames2 = unwinder->GetFrames();
     ASSERT_GT(frames.size(), frames2.size());
@@ -757,7 +757,7 @@ HWTEST_F(UnwinderTest, UnwindLocalX86_64Test001, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "UnwindLocalX86_64Test001: start.";
     auto unwinder = std::make_shared<Unwinder>();
-    if (unwinder->UnwindLocal(false)) {
+    if (unwinder->UnwindLocal()) {
         auto frames = unwinder->GetFrames();
         printf("Unwinder frame size: %zu\n", frames.size());
         auto framesStr = Unwinder::GetFramesStr(frames);
