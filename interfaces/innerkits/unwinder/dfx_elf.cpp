@@ -218,7 +218,7 @@ std::shared_ptr<MiniDebugInfo> DfxElf::GetMiniDebugInfo()
 bool DfxElf::InitEmbeddedElf()
 {
 #if defined(ENABLE_MINIDEBUGINFO)
-    if (!UnwinderConfig::GetEnableMiniDebugInfo() || miniDebugInfo_ == nullptr) {
+    if (!UnwinderConfig::GetEnableMiniDebugInfo() || miniDebugInfo_ == nullptr || GetMmapPtr() == nullptr) {
         return false;
     }
     uint8_t *addr = miniDebugInfo_->offset + const_cast<uint8_t*>(GetMmapPtr());
@@ -427,7 +427,7 @@ std::string DfxElf::GetBuildId()
             return "";
         }
         ShdrInfo shdr;
-        if (GetSectionInfo(shdr, NOTE_GNU_BUILD_ID) || GetSectionInfo(shdr, NOTES)) {
+        if ((GetSectionInfo(shdr, NOTE_GNU_BUILD_ID) || GetSectionInfo(shdr, NOTES)) && GetMmapPtr() != nullptr) {
             std::string buildIdHex = GetBuildId((uint64_t)((char*)GetMmapPtr() + shdr.offset), shdr.size);
             if (!buildIdHex.empty()) {
                 buildId_ = ToReadableBuildId(buildIdHex);
@@ -653,6 +653,9 @@ const std::unordered_map<uint64_t, ElfLoadInfo>& DfxElf::GetPtLoads()
 
 bool DfxElf::FillUnwindTableByExidx(ShdrInfo shdr, uintptr_t loadBase, struct UnwindTableInfo* uti)
 {
+    if (uti == nullptr) {
+        return false;
+    }
     uti->gp = 0;
     uti->tableData = loadBase + shdr.addr;
     uti->tableLen = shdr.size;
@@ -711,7 +714,7 @@ bool DfxElf::FillUnwindTableByEhhdrLocal(struct DwarfEhFrameHdr* hdr, struct Unw
 
 bool DfxElf::FillUnwindTableByEhhdr(struct DwarfEhFrameHdr* hdr, uintptr_t shdrBase, struct UnwindTableInfo* uti)
 {
-    if (hdr == nullptr) {
+    if ((hdr == nullptr) || (uti == nullptr)) {
         return false;
     }
     if (hdr->version != DW_EH_VERSION) {
@@ -764,6 +767,9 @@ int DfxElf::FindUnwindTableInfo(uintptr_t pc, std::shared_ptr<DfxMap> map, struc
             return UNW_ERROR_NONE;
         }
     }
+    if (map == nullptr) {
+        return UNW_ERROR_INVALID_MAP;
+    }
     uintptr_t loadBase = GetLoadBase(map->begin, map->offset);
     uti.startPc = GetStartPc();
     uti.endPc = GetEndPc();
@@ -782,10 +788,10 @@ int DfxElf::FindUnwindTableInfo(uintptr_t pc, std::shared_ptr<DfxMap> map, struc
     if (!hasTableInfo_) {
         struct DwarfEhFrameHdr* hdr = nullptr;
         struct DwarfEhFrameHdr synthHdr;
-        if (GetSectionInfo(shdr, EH_FRAME_HDR)) {
+        if (GetSectionInfo(shdr, EH_FRAME_HDR) && GetMmapPtr() != nullptr) {
             INSTR_STATISTIC(InstructionEntriesEhFrame, shdr.size, 0);
             hdr = (struct DwarfEhFrameHdr *) (shdr.offset + (char *)GetMmapPtr());
-        } else if (GetSectionInfo(shdr, EH_FRAME)) {
+        } else if (GetSectionInfo(shdr, EH_FRAME) && GetMmapPtr() != nullptr) {
             LOGW("Elf(%s) no found .eh_frame_hdr section, using synthetic .eh_frame section", map->name.c_str());
             INSTR_STATISTIC(InstructionEntriesEhFrame, shdr.size, 0);
             synthHdr.version = DW_EH_VERSION;
@@ -830,6 +836,9 @@ int DfxElf::FindUnwindTableLocal(uintptr_t pc, struct UnwindTableInfo& uti)
 #if is_ohos && !is_mingw
 bool DfxElf::FindSection(struct dl_phdr_info *info, const std::string secName, ShdrInfo& shdr)
 {
+    if (info == nullptr) {
+        return false;
+    }
     const char *file = info->dlpi_name;
     if (strlen(file) == 0) {
         file = PROC_SELF_EXE_PATH;
@@ -846,6 +855,9 @@ bool DfxElf::FindSection(struct dl_phdr_info *info, const std::string secName, S
 int DfxElf::DlPhdrCb(struct dl_phdr_info *info, size_t size, void *data)
 {
     struct DlCbData *cbData = (struct DlCbData *)data;
+    if ((info == nullptr) || (cbData == nullptr)) {
+        return -1;
+    }
     UnwindTableInfo* uti = &cbData->uti;
     uintptr_t pc = cbData->pc;
     const ElfW(Phdr) *pText = nullptr;
@@ -857,7 +869,7 @@ int DfxElf::DlPhdrCb(struct dl_phdr_info *info, size_t size, void *data)
 
     const ElfW(Phdr) *phdr = info->dlpi_phdr;
     ElfW(Addr) loadBase = info->dlpi_addr;
-    for (size_t i = 0; i < info->dlpi_phnum; i++, phdr++) {
+    for (size_t i = 0; i < info->dlpi_phnum && phdr != nullptr; i++, phdr++) {
         switch (phdr->p_type) {
             case PT_LOAD: {
                 ElfW(Addr) vaddr = phdr->p_vaddr + loadBase;
@@ -903,6 +915,9 @@ int DfxElf::DlPhdrCb(struct dl_phdr_info *info, size_t size, void *data)
 
     if (pDynamic) {
         ElfW(Dyn) *dyn = (ElfW(Dyn) *)(pDynamic->p_vaddr + loadBase);
+        if (dyn == nullptr) {
+            return 0;
+        }
         for (; dyn->d_tag != DT_NULL; ++dyn) {
             if (dyn->d_tag == DT_PLTGOT) {
                 uti->gp = dyn->d_un.d_ptr;

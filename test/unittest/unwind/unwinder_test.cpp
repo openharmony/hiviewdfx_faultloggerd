@@ -90,8 +90,10 @@ HWTEST_F(UnwinderTest, GetStackRangeTest002, TestSize.Level2)
     bool result = false;
     GTEST_LOG_(INFO) << "Run the function with thread will get pid != tid, "
                         "GetStackRange(stackBottom, stackTop) is true";
-    std::thread* thread = new std::thread([&]{result = unwinder->GetStackRange(stackBottom, stackTop);});
-    thread->join();
+    std::thread th([&]{result = unwinder->GetStackRange(stackBottom, stackTop);});
+    if (th.joinable()) {
+        th.join();
+    }
     ASSERT_TRUE(result);
     GTEST_LOG_(INFO) << "GetStackRangeTest002: end.";
 }
@@ -344,7 +346,7 @@ HWTEST_F(UnwinderTest, UnwindTest002, TestSize.Level2)
 
 /**
  * @tc.name: UnwindTest003
- * @tc.desc: test GetLastErrorCode GetLastErrorAddr GetFramesByPcs functions
+ * @tc.desc: test GetLastErrorCode GetLastErrorAddr functions
  *  in local case
  * @tc.type: FUNC
  */
@@ -364,17 +366,6 @@ HWTEST_F(UnwinderTest, UnwindTest003, TestSize.Level2)
     uint64_t errorAddr = unwinder->GetLastErrorAddr();
     GTEST_LOG_(INFO) << "errorCode:" << errorCode;
     GTEST_LOG_(INFO) << "errorAddr:" << errorAddr;
-
-    std::vector<uintptr_t> pcs;
-    for (size_t i = 0; i < frames.size(); ++i) {
-        pcs.emplace_back(static_cast<uintptr_t>(frames[i].pc));
-    }
-
-    std::vector<DfxFrame> frameVec;
-    std::shared_ptr<DfxMaps> maps = unwinder->GetMaps();
-    unwinder->GetFramesByPcs(frameVec, pcs, maps);
-    ASSERT_GT(frameVec.size(), 1);
-    GTEST_LOG_(INFO) << "UnwindTest003: frames:\n" << Unwinder::GetFramesStr(frameVec);
     GTEST_LOG_(INFO) << "UnwindTest003: end.";
 }
 
@@ -481,7 +472,7 @@ HWTEST_F(UnwinderTest, StepTest002, TestSize.Level2)
 #if defined(__aarch64__)
 /**
  * @tc.name: StepTest003
- * @tc.desc: test unwinder FpStep interface in remote case
+ * @tc.desc: test unwinder UnwindByFp interface in remote case
  * @tc.type: FUNC
  */
 HWTEST_F(UnwinderTest, StepTest003, TestSize.Level2)
@@ -498,7 +489,6 @@ HWTEST_F(UnwinderTest, StepTest003, TestSize.Level2)
     bool unwRet = DfxPtrace::Attach(child);
     EXPECT_EQ(true, unwRet) << "StepTest003: Attach:" << unwRet;
     auto regs = DfxRegs::CreateRemoteRegs(child);
-    std::shared_ptr<DfxMaps> maps = DfxMaps::Create(child);
     unwinder->SetRegs(regs);
     UnwindContext context;
     context.pid = child;
@@ -508,6 +498,12 @@ HWTEST_F(UnwinderTest, StepTest003, TestSize.Level2)
     DfxPtrace::Detach(child);
     time_t elapsed = counter.Elapsed();
     GTEST_LOG_(INFO) << "StepTest003: Elapsed: " << elapsed;
+    auto pcs = unwinder->GetPcs();
+    auto maps = unwinder->GetMaps();
+    std::vector<DfxFrame> frames;
+    Unwinder::GetFramesByPcs(frames, pcs, maps);
+    ASSERT_GT(frames.size(), 1);
+    GTEST_LOG_(INFO) << "StepTest003: frames:\n" << Unwinder::GetFramesStr(frames);
     GTEST_LOG_(INFO) << "StepTest003: end.";
 }
 
@@ -680,11 +676,62 @@ HWTEST_F(UnwinderTest, UnwindLocalWithContextTest001, TestSize.Level2)
     auto unwinder = std::make_shared<Unwinder>();
     ASSERT_TRUE(unwinder->UnwindLocalWithContext(context));
     auto frames = unwinder->GetFrames();
-    GTEST_LOG_(INFO) << unwinder->GetFramesStr(frames);
     ASSERT_GT(frames.size(), 1);
+    GTEST_LOG_(INFO) << "UnwindLocalWithContextTest001: frames:\n" << Unwinder::GetFramesStr(frames);
     GTEST_LOG_(INFO) << "UnwindLocalWithContextTest001: end.";
 }
 #endif
+
+static int32_t g_tid = 0;
+static std::mutex g_mutex;
+__attribute__((noinline)) void ThreadTest002()
+{
+    printf("ThreadTest002\n");
+    g_mutex.lock();
+    g_mutex.unlock();
+}
+
+__attribute__((noinline)) void ThreadTest001()
+{
+    g_tid = gettid();
+    printf("ThreadTest001: tid: %d\n", g_tid);
+    ThreadTest002();
+}
+
+/**
+ * @tc.name: UnwindLocalWithTidTest001
+ * @tc.desc: test unwinder UnwindLocalWithTid interface
+ *  in local case
+ * @tc.type: FUNC
+ */
+HWTEST_F(UnwinderTest, UnwindLocalWithTidTest001, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "UnwindLocalWithTidTest001: start.";
+    auto unwinder = std::make_shared<Unwinder>();
+    g_mutex.lock();
+    std::thread unwThread(ThreadTest001);
+    sleep(1);
+    if (g_tid <= 0) {
+        FAIL() << "UnwindLocalWithTidTest001: Failed to create child thread.\n";
+    }
+    ASSERT_TRUE(unwinder->UnwindLocalWithTid(g_tid));
+#if defined(__aarch64__)
+    auto pcs = unwinder->GetPcs();
+    auto maps = unwinder->GetMaps();
+    std::vector<DfxFrame> frames;
+    Unwinder::GetFramesByPcs(frames, pcs, maps);
+#else
+    auto frames = unwinder->GetFrames();
+#endif
+    ASSERT_GT(frames.size(), 1);
+    GTEST_LOG_(INFO) << "UnwindLocalWithTidTest001: frames:\n" << Unwinder::GetFramesStr(frames);
+    g_mutex.unlock();
+    g_tid = 0;
+    if (unwThread.joinable()) {
+        unwThread.join();
+    }
+    GTEST_LOG_(INFO) << "UnwindLocalWithTidTest001: end.";
+}
 
 #if defined(__x86_64__)
 static _Unwind_Reason_Code TraceFunc(_Unwind_Context *ctx, void *d)
@@ -713,7 +760,7 @@ HWTEST_F(UnwinderTest, UnwindLocalX86_64Test001, TestSize.Level2)
     if (unwinder->UnwindLocal(false)) {
         auto frames = unwinder->GetFrames();
         printf("Unwinder frame size: %zu\n", frames.size());
-        auto framesStr = unwinder->GetFramesStr(frames);
+        auto framesStr = Unwinder::GetFramesStr(frames);
         printf("Unwinder frames:\n%s\n", framesStr.c_str());
     }
 
@@ -735,7 +782,7 @@ HWTEST_F(UnwinderTest, UnwindRemoteX86_64Test001, TestSize.Level2)
     if (unwinder->UnwindRemote(initPid)) {
         auto frames = unwinder->GetFrames();
         printf("Unwinder frame size: %zu\n", frames.size());
-        auto framesStr = unwinder->GetFramesStr(frames);
+        auto framesStr = Unwinder::GetFramesStr(frames);
         printf("Unwinder frames:\n%s\n", framesStr.c_str());
     }
     DfxPtrace::Detach(initPid);

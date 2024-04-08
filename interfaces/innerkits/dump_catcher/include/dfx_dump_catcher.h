@@ -85,8 +85,8 @@ private:
     bool DoDumpLocalLocked(int pid, int tid, std::string& msg, size_t maxFrameNums, bool isJson = false);
     bool DoDumpRemoteLocked(int pid, int tid, std::string& msg, bool isJson = false);
     bool DoDumpCatchRemote(int pid, int tid, std::string& msg, bool isJson = false);
-    int DoDumpRemotePid(int pid, std::string& msg, std::string& resMsg, bool isJson = false);
-    int DoDumpRemotePoll(int bufFd, int resFd, int timeout, std::string& msg, std::string& resMsg, bool isJson = false);
+    int DoDumpRemotePid(int pid, std::string& msg, bool isJson = false);
+    int DoDumpRemotePoll(int bufFd, int resFd, int timeout, std::string& msg, bool isJson = false);
     bool DoReadBuf(int fd, std::string& msg);
     bool DoReadRes(int fd, bool &ret, std::string& msg);
     bool IsValidJson(const std::string& json);

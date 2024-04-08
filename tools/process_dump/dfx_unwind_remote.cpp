@@ -22,6 +22,7 @@
 #include <link.h>
 #include <securec.h>
 
+#include "crash_exception.h"
 #include "dfx_unwind_async_thread.h"
 #include "dfx_config.h"
 #include "dfx_define.h"
@@ -36,7 +37,6 @@
 #include "dfx_util.h"
 #include "process_dumper.h"
 #include "printer.h"
-#include "crash_exception.h"
 
 namespace OHOS {
 namespace HiviewDFX {
@@ -85,6 +85,10 @@ void DfxUnwindRemote::UnwindKeyThread(std::shared_ptr<ProcessDumpRequest> reques
         DFXLOG_WARN("%s::unwind thread is not initialized.", __func__);
         return;
     }
+    if (request == nullptr) {
+        DFXLOG_WARN("%s::request is not initialized.", __func__);
+        return;
+    }
     auto unwindAsyncThread = std::make_shared<DfxUnwindAsyncThread>(unwThread, unwinder, request->stackId);
     unwindAsyncThread->UnwindStack();
 
@@ -127,6 +131,9 @@ void DfxUnwindRemote::UnwindOtherThread(std::shared_ptr<DfxProcess> process, std
             unwinder->UnwindRemote(thread->threadInfo_.nsTid, false, DfxConfig::GetConfig().maxFrameNums);
             thread->Detach();
             thread->SetFrames(unwinder->GetFrames());
+            if (ProcessDumper::GetInstance().IsCrash()) {
+                ReportUnwinderException(unwinder->GetLastErrorCode());
+            }
             DFXLOG_INFO("%s, unwind tid(%d) finish.", __func__, thread->threadInfo_.nsTid);
             Printer::PrintThreadBacktraceByConfig(thread);
         }

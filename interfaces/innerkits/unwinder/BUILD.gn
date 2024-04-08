@@ -37,6 +37,7 @@ dfx_unwinder_sources = [
   "dfx_signal.cpp",
   "dfx_symbols.cpp",
   "getcontext_x86_64.S",
+  "thread_context.cpp",
   "unwinder.cpp",
   "unwinder_config.cpp",
 ]
@@ -68,7 +69,6 @@ if (defined(ohos_lite)) {
       "$faultloggerd_common_path/dfxlog",
       "$faultloggerd_common_path/dfxutil",
       "$faultloggerd_interfaces_path/common",
-      "$faultloggerd_interfaces_path/innerkits/crash_exception",
       "$faultloggerd_interfaces_path/innerkits/procinfo/include",
       "$hilog_lite_include_path",
     ]
@@ -82,7 +82,6 @@ if (defined(ohos_lite)) {
     deps = [
       "$faultloggerd_common_path/dfxlog:dfx_hilog",
       "$faultloggerd_common_path/dfxutil:dfx_util",
-      "$faultloggerd_interfaces_path/innerkits/crash_exception:crash_exception",
       "$faultloggerd_interfaces_path/innerkits/procinfo:libdfx_procinfo",
       "$hilog_lite_deps_path",
       "//third_party/bounds_checking_function:libsec_shared",
@@ -100,7 +99,6 @@ if (defined(ohos_lite)) {
       "$faultloggerd_common_path/dfxlog",
       "$faultloggerd_common_path/dfxutil",
       "$faultloggerd_interfaces_path/common",
-      "$faultloggerd_interfaces_path/innerkits/crash_exception",
       "$faultloggerd_interfaces_path/innerkits/procinfo/include",
       "$hilog_lite_include_path",
     ]
@@ -114,7 +112,6 @@ if (defined(ohos_lite)) {
     deps = [
       "$faultloggerd_common_path/dfxlog:dfx_hilog",
       "$faultloggerd_common_path/dfxutil:dfx_util",
-      "$faultloggerd_interfaces_path/innerkits/crash_exception:crash_exception",
       "$faultloggerd_interfaces_path/innerkits/procinfo:libdfx_procinfo",
       "$hilog_lite_deps_path",
       "//third_party/bounds_checking_function:libsec_shared",
@@ -133,7 +130,6 @@ if (defined(ohos_lite)) {
       "$faultloggerd_common_path/dfxutil",
       "$faultloggerd_interfaces_path/common",
       "$faultloggerd_interfaces_path/procinfo/include",
-      "$faultloggerd_interfaces_path/innerkits/crash_exception",
     ]
 
     defines = [
@@ -144,10 +140,7 @@ if (defined(ohos_lite)) {
     ]
 
     if (libunwinder_debug) {
-      defines += [
-        "DFX_LOG_UNWIND",
-        "DFX_UNWIND_ERROR",
-      ]
+      defines += [ "DFX_LOG_UNWIND" ]
     }
   }
 
@@ -179,6 +172,7 @@ if (defined(ohos_lite)) {
       ":mixstack_config",
       "$faultloggerd_common_path/build:coverage_flags",
     ]
+    defines = [ "DFX_UNWIND_ERROR" ]
 
     if (target_cpu != "x86_64") {
       dfx_unwinder_sources -= [ "getcontext_x86_64.S" ]
@@ -190,7 +184,6 @@ if (defined(ohos_lite)) {
     deps = [
       "$faultloggerd_common_path/dfxlog:dfx_hilog",
       "$faultloggerd_common_path/dfxutil:dfx_util",
-      "$faultloggerd_interfaces_path/innerkits/crash_exception:crash_exception",
       "$faultloggerd_interfaces_path/innerkits/procinfo:libdfx_procinfo",
     ]
 
@@ -236,7 +229,6 @@ if (defined(ohos_lite)) {
     deps = [
       "$faultloggerd_common_path/dfxlog:dfx_hilog",
       "$faultloggerd_common_path/dfxutil:dfx_util",
-      "$faultloggerd_interfaces_path/innerkits/crash_exception:crash_exception",
       "$faultloggerd_interfaces_path/innerkits/procinfo:libdfx_procinfo",
     ]
 
@@ -279,7 +271,6 @@ if (defined(ohos_lite)) {
     deps = [
       "$faultloggerd_common_path/dfxlog:dfx_hilog",
       "$faultloggerd_common_path/dfxutil:dfx_util",
-      "$faultloggerd_interfaces_path/innerkits/crash_exception:crash_exception",
       "$faultloggerd_interfaces_path/innerkits/procinfo:libdfx_procinfo",
     ]
 

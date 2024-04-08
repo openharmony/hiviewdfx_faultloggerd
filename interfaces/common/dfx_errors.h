@@ -107,6 +107,8 @@ enum UnwindErrorCode : uint16_t {
     UNW_ERROR_DWARF_INVALID_FDE,
     /** Dwarf instr invalid */
     UNW_ERROR_DWARF_INVALID_INSTR,
+    /** step ark frame error */
+    UNW_ERROR_STEP_ARK_FRAME,
     /** Unsupported qut reg */
     UNW_ERROR_UNSUPPORTED_QUT_REG,
     /** Unsupported version */

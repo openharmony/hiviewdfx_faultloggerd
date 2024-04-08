@@ -14,6 +14,7 @@
  */
 #include "dfx_unwind_async_thread.h"
 
+#include "crash_exception.h"
 #include "dfx_config.h"
 #include "dfx_log.h"
 #include "dfx_memory.h"
@@ -38,11 +39,14 @@ void DfxUnwindAsyncThread::UnwindStack()
     MAYBE_UNUSED bool ret = unwinder_->UnwindRemote(thread_->threadInfo_.nsTid,
                                                     ProcessDumper::GetInstance().IsCrash(),
                                                     DfxConfig::GetConfig().maxFrameNums);
-#ifndef __x86_64__
+    if (ProcessDumper::GetInstance().IsCrash()) {
+        ReportUnwinderException(unwinder_->GetLastErrorCode());
+    }
+
     if (!ret && ProcessDumper::GetInstance().IsCrash()) {
         UnwindThreadFallback();
     }
-#endif
+
     thread_->SetFrames(unwinder_->GetFrames());
     DFXLOG_INFO("%s, unwind tid(%d) finish.", __func__, thread_->threadInfo_.nsTid);
     UnwindThreadByParseStackIfNeed();
@@ -57,7 +61,7 @@ void DfxUnwindAsyncThread::UnwindStack()
 
 void DfxUnwindAsyncThread::GetSubmitterStack(std::vector<DfxFrame> &submitterFrames)
 {
-    if (stackId_ <= 0) {
+    if (stackId_ == 0) {
         return;
     }
     const std::shared_ptr<DfxMaps>& maps = unwinder_->GetMaps();
@@ -94,6 +98,7 @@ void DfxUnwindAsyncThread::MergeStack(std::vector<DfxFrame> &submitterFrames)
 
 void DfxUnwindAsyncThread::UnwindThreadFallback()
 {
+#ifndef __x86_64__
     if (unwinder_->GetFrames().size() > 0) {
         return;
     }
@@ -129,6 +134,7 @@ void DfxUnwindAsyncThread::UnwindThreadFallback()
 
     createFrame(0, regs->GetPc(), regs->GetSp());
     createFrame(1, *(regs->GetReg(REG_LR)));
+#endif
 }
 
 void DfxUnwindAsyncThread::UnwindThreadByParseStackIfNeed()

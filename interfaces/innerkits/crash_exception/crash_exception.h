@@ -48,21 +48,6 @@ uint64_t GetTimeMillisec(void);
 void SetCrashProcInfo(std::string& name, int32_t pid, int32_t uid);
 
 /**
- * @brief get crash process name. only used in unwind module
-*/
-std::string GetCrashPorcName();
-
-/**
- * @brief get crash process pid. only used in unwind module
-*/
-int32_t GetCrashPorcPid();
-
-/**
- * @brief get crash process uid. only used in unwind module
-*/
-int32_t GetCrashPorcUid();
-
-/**
  * @brief report crash to sysevent
 */
 void ReportCrashException(const char* pName, int32_t pid, int32_t uid, int64_t time, int32_t errCode);
@@ -71,6 +56,11 @@ void ReportCrashException(const char* pName, int32_t pid, int32_t uid, int64_t t
  * @brief report crash to sysevent
 */
 void ReportCrashException(std::string name, int32_t pid, int32_t uid, int64_t time, int32_t errCode);
+
+/**
+ * @brief report crash unwinder error to sysevent
+*/
+void ReportUnwinderException(uint16_t unwError);
 
 /**
  * @brief Check fault log available

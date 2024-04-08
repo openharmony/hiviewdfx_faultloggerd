@@ -30,42 +30,42 @@ namespace OHOS {
 namespace HiviewDFX {
 void DfxRegsArm64::SetFromUcontext(const ucontext_t &context)
 {
-    std::vector<uintptr_t> regs;
-    regs.emplace_back(uintptr_t(context.uc_mcontext.regs[REG_AARCH64_X0]));   // 0:x0
-    regs.emplace_back(uintptr_t(context.uc_mcontext.regs[REG_AARCH64_X1]));   // 1:x1
-    regs.emplace_back(uintptr_t(context.uc_mcontext.regs[REG_AARCH64_X2]));   // 2:x2
-    regs.emplace_back(uintptr_t(context.uc_mcontext.regs[REG_AARCH64_X3]));   // 3:x3
-    regs.emplace_back(uintptr_t(context.uc_mcontext.regs[REG_AARCH64_X4]));   // 4:x4
-    regs.emplace_back(uintptr_t(context.uc_mcontext.regs[REG_AARCH64_X5]));   // 5:x5
-    regs.emplace_back(uintptr_t(context.uc_mcontext.regs[REG_AARCH64_X6]));   // 6:x6
-    regs.emplace_back(uintptr_t(context.uc_mcontext.regs[REG_AARCH64_X7]));   // 7:x7
-    regs.emplace_back(uintptr_t(context.uc_mcontext.regs[REG_AARCH64_X8]));   // 8:x8
-    regs.emplace_back(uintptr_t(context.uc_mcontext.regs[REG_AARCH64_X9]));   // 9:x9
-    regs.emplace_back(uintptr_t(context.uc_mcontext.regs[REG_AARCH64_X10])); // 10:x10
-    regs.emplace_back(uintptr_t(context.uc_mcontext.regs[REG_AARCH64_X11])); // 11:x11
-    regs.emplace_back(uintptr_t(context.uc_mcontext.regs[REG_AARCH64_X12])); // 12:x12
-    regs.emplace_back(uintptr_t(context.uc_mcontext.regs[REG_AARCH64_X13])); // 13:x13
-    regs.emplace_back(uintptr_t(context.uc_mcontext.regs[REG_AARCH64_X14])); // 14:x14
-    regs.emplace_back(uintptr_t(context.uc_mcontext.regs[REG_AARCH64_X15])); // 15:x15
-    regs.emplace_back(uintptr_t(context.uc_mcontext.regs[REG_AARCH64_X16])); // 16:x16
-    regs.emplace_back(uintptr_t(context.uc_mcontext.regs[REG_AARCH64_X17])); // 17:x17
-    regs.emplace_back(uintptr_t(context.uc_mcontext.regs[REG_AARCH64_X18])); // 18:x18
-    regs.emplace_back(uintptr_t(context.uc_mcontext.regs[REG_AARCH64_X19])); // 19:x19
-    regs.emplace_back(uintptr_t(context.uc_mcontext.regs[REG_AARCH64_X20])); // 20:x20
-    regs.emplace_back(uintptr_t(context.uc_mcontext.regs[REG_AARCH64_X21])); // 21:x21
-    regs.emplace_back(uintptr_t(context.uc_mcontext.regs[REG_AARCH64_X22])); // 22:x22
-    regs.emplace_back(uintptr_t(context.uc_mcontext.regs[REG_AARCH64_X23])); // 23:x23
-    regs.emplace_back(uintptr_t(context.uc_mcontext.regs[REG_AARCH64_X24])); // 24:x24
-    regs.emplace_back(uintptr_t(context.uc_mcontext.regs[REG_AARCH64_X25])); // 25:x25
-    regs.emplace_back(uintptr_t(context.uc_mcontext.regs[REG_AARCH64_X26])); // 26:x26
-    regs.emplace_back(uintptr_t(context.uc_mcontext.regs[REG_AARCH64_X27])); // 27:x27
-    regs.emplace_back(uintptr_t(context.uc_mcontext.regs[REG_AARCH64_X28])); // 28:x28
-    regs.emplace_back(uintptr_t(context.uc_mcontext.regs[REG_AARCH64_X29])); // 29:x29
-    regs.emplace_back(uintptr_t(context.uc_mcontext.regs[REG_AARCH64_X30])); // 30:lr
-    regs.emplace_back(uintptr_t(context.uc_mcontext.sp));       // 31:sp
-    regs.emplace_back(uintptr_t(context.uc_mcontext.pc));       // 32:pc
-
-    SetRegsData(regs);
+    if (regsData_.size() < REG_LAST) {
+        return;
+    }
+    regsData_[REG_AARCH64_X0] = static_cast<uintptr_t>(context.uc_mcontext.regs[REG_AARCH64_X0]);
+    regsData_[REG_AARCH64_X1] = static_cast<uintptr_t>(context.uc_mcontext.regs[REG_AARCH64_X1]);
+    regsData_[REG_AARCH64_X2] = static_cast<uintptr_t>(context.uc_mcontext.regs[REG_AARCH64_X2]);
+    regsData_[REG_AARCH64_X3] = static_cast<uintptr_t>(context.uc_mcontext.regs[REG_AARCH64_X3]);
+    regsData_[REG_AARCH64_X4] = static_cast<uintptr_t>(context.uc_mcontext.regs[REG_AARCH64_X4]);
+    regsData_[REG_AARCH64_X5] = static_cast<uintptr_t>(context.uc_mcontext.regs[REG_AARCH64_X5]);
+    regsData_[REG_AARCH64_X6] = static_cast<uintptr_t>(context.uc_mcontext.regs[REG_AARCH64_X6]);
+    regsData_[REG_AARCH64_X7] = static_cast<uintptr_t>(context.uc_mcontext.regs[REG_AARCH64_X7]);
+    regsData_[REG_AARCH64_X8] = static_cast<uintptr_t>(context.uc_mcontext.regs[REG_AARCH64_X8]);
+    regsData_[REG_AARCH64_X9] = static_cast<uintptr_t>(context.uc_mcontext.regs[REG_AARCH64_X9]);
+    regsData_[REG_AARCH64_X10] = static_cast<uintptr_t>(context.uc_mcontext.regs[REG_AARCH64_X10]);
+    regsData_[REG_AARCH64_X11] = static_cast<uintptr_t>(context.uc_mcontext.regs[REG_AARCH64_X11]);
+    regsData_[REG_AARCH64_X12] = static_cast<uintptr_t>(context.uc_mcontext.regs[REG_AARCH64_X12]);
+    regsData_[REG_AARCH64_X13] = static_cast<uintptr_t>(context.uc_mcontext.regs[REG_AARCH64_X13]);
+    regsData_[REG_AARCH64_X14] = static_cast<uintptr_t>(context.uc_mcontext.regs[REG_AARCH64_X14]);
+    regsData_[REG_AARCH64_X15] = static_cast<uintptr_t>(context.uc_mcontext.regs[REG_AARCH64_X15]);
+    regsData_[REG_AARCH64_X16] = static_cast<uintptr_t>(context.uc_mcontext.regs[REG_AARCH64_X16]);
+    regsData_[REG_AARCH64_X17] = static_cast<uintptr_t>(context.uc_mcontext.regs[REG_AARCH64_X17]);
+    regsData_[REG_AARCH64_X18] = static_cast<uintptr_t>(context.uc_mcontext.regs[REG_AARCH64_X18]);
+    regsData_[REG_AARCH64_X19] = static_cast<uintptr_t>(context.uc_mcontext.regs[REG_AARCH64_X19]);
+    regsData_[REG_AARCH64_X20] = static_cast<uintptr_t>(context.uc_mcontext.regs[REG_AARCH64_X20]);
+    regsData_[REG_AARCH64_X21] = static_cast<uintptr_t>(context.uc_mcontext.regs[REG_AARCH64_X21]);
+    regsData_[REG_AARCH64_X22] = static_cast<uintptr_t>(context.uc_mcontext.regs[REG_AARCH64_X22]);
+    regsData_[REG_AARCH64_X23] = static_cast<uintptr_t>(context.uc_mcontext.regs[REG_AARCH64_X23]);
+    regsData_[REG_AARCH64_X24] = static_cast<uintptr_t>(context.uc_mcontext.regs[REG_AARCH64_X24]);
+    regsData_[REG_AARCH64_X25] = static_cast<uintptr_t>(context.uc_mcontext.regs[REG_AARCH64_X25]);
+    regsData_[REG_AARCH64_X26] = static_cast<uintptr_t>(context.uc_mcontext.regs[REG_AARCH64_X26]);
+    regsData_[REG_AARCH64_X27] = static_cast<uintptr_t>(context.uc_mcontext.regs[REG_AARCH64_X27]);
+    regsData_[REG_AARCH64_X28] = static_cast<uintptr_t>(context.uc_mcontext.regs[REG_AARCH64_X28]);
+    regsData_[REG_AARCH64_X29] = static_cast<uintptr_t>(context.uc_mcontext.regs[REG_AARCH64_X29]);
+    regsData_[REG_AARCH64_X30] = static_cast<uintptr_t>(context.uc_mcontext.regs[REG_AARCH64_X30]);
+    regsData_[REG_AARCH64_X31] = static_cast<uintptr_t>(context.uc_mcontext.sp);
+    regsData_[REG_AARCH64_PC] = static_cast<uintptr_t>(context.uc_mcontext.pc);
 }
 
 void DfxRegsArm64::SetFromFpMiniRegs(const uintptr_t* regs, const size_t size)
@@ -140,6 +140,9 @@ std::string DfxRegsArm64::PrintRegs() const
 
 bool DfxRegsArm64::StepIfSignalFrame(uintptr_t pc, std::shared_ptr<DfxMemory> memory)
 {
+    if (memory == nullptr) {
+        return false;
+    }
     uint64_t data;
     if (!memory->ReadU64(pc, &data, false)) {
         return false;

@@ -219,7 +219,7 @@ static void FillLastFatalMessageLocked(int32_t sig, void *context)
 
 static const char* GetCrashDescription(const int32_t errCode)
 {
-    int32_t i;
+    size_t i;
 
     for (i = 0; i < sizeof(g_crashExceptionMap) / sizeof(g_crashExceptionMap[0]); i++) {
         if (errCode == g_crashExceptionMap[i].errCode) {
@@ -532,8 +532,16 @@ static bool WaitProcessExit(int childPid, const char* name)
         }
         usleep(SIGNALHANDLER_TIMEOUT); // sleep 10ms
     } while (1);
-    DFXLOG_INFO("(%ld) wait for (%d) return with ret(%d) status(%d)",
-        syscall(SYS_gettid), childPid, ret, status);
+
+    DFXLOG_INFO("(%ld) wait for %s(%d) return with ret(%d), status(%d)",
+        syscall(SYS_gettid), name, childPid, ret, status);
+    if (WIFEXITED(status)) {
+        int exitCode = WEXITSTATUS(status);
+        DFXLOG_INFO("wait %s(%d) exit code: %d", name, childPid, exitCode);
+    } else if (WIFSIGNALED(status)) {
+        int sigNum = WTERMSIG(status);
+        DFXLOG_INFO("wait %s(%d) exit with sig: %d", name, childPid, sigNum);
+    }
     return isSuccess;
 }
 

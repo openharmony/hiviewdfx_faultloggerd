@@ -148,7 +148,7 @@ void FillFdsaninfo(OpenFilesList &list, pid_t pid, uint64_t fdTableAddr)
         return;
     }
     for (size_t i = 0; i < overflowLength; i++) {
-        int fd = i + fds;
+        size_t fd = i + fds;
         uint64_t address = overflow + offsetof(FdTableOverflow, entries) + sizeof(FdEntry) * i;
         FdEntry entry;
         if (DfxMemory::ReadProcMemByPid(pid, address, &entry, sizeof(entry)) != sizeof(entry)) {
@@ -197,7 +197,6 @@ void ProcessDumper::Dump()
     } else {
         DFXLOG_ERROR("%s", "DumpProcess future status is deferred.");
     }
-
     if (process_ == nullptr) {
         DFXLOG_ERROR("%s", "Dump process failed, please check permission and whether pid is valid.");
     } else {
@@ -285,7 +284,9 @@ int ProcessDumper::DumpProcess(std::shared_ptr<ProcessDumpRequest> request)
             dumpRes = DumpErrorCode::DUMP_EATTACH;
             break;
         }
-        process_->openFiles = GetOpenFiles(request->pid, request->fdTableAddr);
+        if (isCrash_ && !isLeakDump) {
+            process_->openFiles = GetOpenFiles(request->pid, request->fdTableAddr);
+        }
         if (InitPrintThread(request) < 0) {
             DFXLOG_ERROR("%s", "Failed to init print thread.");
             dumpRes = DumpErrorCode::DUMP_EGETFD;
@@ -383,7 +384,7 @@ int ProcessDumper::InitProcessInfo(std::shared_ptr<ProcessDumpRequest> request)
     }
 
     if (isCrash_) {
-        unwinder_ = std::make_shared<Unwinder>(process_->vmThread_->threadInfo_.pid, true);
+        unwinder_ = std::make_shared<Unwinder>(process_->vmThread_->threadInfo_.pid);
     } else {
         unwinder_ = std::make_shared<Unwinder>(process_->processInfo_.pid);
     }
@@ -411,6 +412,27 @@ int ProcessDumper::GetLogTypeBySignal(int sig)
     }
 }
 
+static int32_t CreateFileForCrash(int32_t pid, uint64_t time)
+{
+    const std::string logFilePath = "/log/crash";
+    const std::string logFileType = "cppcrash";
+    const int32_t logcrashFileProp = 0640; // 0640:-rw-r-----
+    if (access(logFilePath.c_str(), F_OK) != 0) {
+        DFXLOG_ERROR("%s is not exist.", logFilePath.c_str());
+        return INVALID_FD;
+    }
+    std::stringstream ss;
+    ss << logFilePath << "/" << logFileType << "-" << pid << "-" << time;
+    std::string logPath = ss.str();
+    int32_t fd = OHOS_TEMP_FAILURE_RETRY(open(logPath.c_str(), O_RDWR | O_CREAT, logcrashFileProp));
+    if (fd == INVALID_FD) {
+        DFXLOG_ERROR("create %s failed, errno=%d", logPath.c_str(), errno);
+    } else {
+        DFXLOG_INFO("create crash path %s succ.", logPath.c_str());
+    }
+    return fd;
+}
+
 int ProcessDumper::InitPrintThread(std::shared_ptr<ProcessDumpRequest> request)
 {
     int fd = -1;
@@ -428,23 +450,24 @@ int ProcessDumper::InitPrintThread(std::shared_ptr<ProcessDumpRequest> request)
             InitDebugLog((int)faultloggerdRequest.type, request->pid, request->tid, request->uid);
         }
         fd = RequestFileDescriptorEx(&faultloggerdRequest);
+        if (fd == -1) {
+            fd = CreateFileForCrash(request->pid, request->timeStamp);
+        }
         DfxRingBufferWrapper::GetInstance().SetWriteFunc(ProcessDumper::WriteDumpBuf);
     } else {
-        fd = RequestPipeFd(request->pid, FaultLoggerPipeType::PIPE_FD_WRITE_BUF);
-        DFXLOG_DEBUG("write buf fd: %d", fd);
-        if (fd < 0) {
+        jsonFd_ = RequestPipeFd(request->pid, FaultLoggerPipeType::PIPE_FD_JSON_WRITE_BUF);
+
+        if (jsonFd_ < 0) {
             // If fd returns -1, we try to obtain the fd that needs to return JSON style
-            jsonFd_ = RequestPipeFd(request->pid, FaultLoggerPipeType::PIPE_FD_JSON_WRITE_BUF);
-            resFd_ = RequestPipeFd(request->pid, FaultLoggerPipeType::PIPE_FD_JSON_WRITE_RES);
-            DFXLOG_DEBUG("write json fd: %d, res fd: %d", jsonFd_, resFd_);
-        } else {
+            fd = RequestPipeFd(request->pid, FaultLoggerPipeType::PIPE_FD_WRITE_BUF);
+            DFXLOG_DEBUG("write buf fd: %d", fd);
             resFd_ = RequestPipeFd(request->pid, FaultLoggerPipeType::PIPE_FD_WRITE_RES);
             DFXLOG_DEBUG("write res fd: %d", resFd_);
+        } else {
+            resFd_ = RequestPipeFd(request->pid, FaultLoggerPipeType::PIPE_FD_JSON_WRITE_RES);
+            DFXLOG_DEBUG("write json fd: %d, res fd: %d", jsonFd_, resFd_);
         }
     }
-
-
-
     if (jsonFd_ > 0) {
         isJsonDump_ = true;
     }

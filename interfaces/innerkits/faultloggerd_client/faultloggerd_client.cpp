@@ -59,6 +59,10 @@ int32_t RequestFileDescriptor(int32_t type)
 
 int32_t RequestLogFileDescriptor(struct FaultLoggerdRequest *request)
 {
+    if (request == nullptr) {
+        DFXLOG_ERROR("%s", "nullptr request");
+        return -1;
+    }
     request->clientType = (int32_t)FaultLoggerClientType::LOG_FILE_DES_CLIENT;
     return RequestFileDescriptorEx(request);
 }

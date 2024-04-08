@@ -107,10 +107,7 @@ bool PrintBacktrace(int32_t fd, bool fast, size_t maxFrameNums)
 
     for (auto const& frame : frames) {
         auto line = DfxFrameFormat::GetFrameStr(frame);
-        if (fd < 0) {
-            // print to hilog
-            DFXLOG_INFO(" %s", line.c_str());
-        } else {
+        if (fd >= 0) {
             dprintf(fd, "    %s", line.c_str());
         }
         DFXLOG_INFO(" %s", line.c_str());

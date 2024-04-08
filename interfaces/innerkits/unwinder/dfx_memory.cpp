@@ -169,7 +169,7 @@ bool DfxMemory::ReadString(uintptr_t& addr, std::string* str, size_t maxSize, bo
             }
         }
     }
-    if (incre) {
+    if (incre && str != nullptr) {
         addr += str->size();
     }
     return false;
@@ -381,7 +381,9 @@ size_t DfxMemory::ReadProcMemByPid(const pid_t pid, const uint64_t addr, void* d
                 return totalRead;
             }
             totalRead += static_cast<size_t>(count);
-            iovecsIndex -= maxSize;
+            if (iovecsIndex >= maxSize) {
+                iovecsIndex -= maxSize;
+            }
             dataIov.iov_base = &reinterpret_cast<uint8_t*>(data)[totalRead];
             dataIov.iov_len = size;
         }

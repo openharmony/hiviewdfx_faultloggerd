@@ -46,7 +46,9 @@ int main(int argc, char *argv[])
     sigaddset(&waitMask, SIGINT);
     sigprocmask(SIG_SETMASK, &waitMask, nullptr);
     g_validator = std::make_shared<OHOS::HiviewDFX::CrashValidator>();
-    g_validator->InitSysEventListener();
+    if (g_validator != nullptr) {
+        g_validator->InitSysEventListener();
+    }
     int sig = 0;
     int ret = -1;
     do {

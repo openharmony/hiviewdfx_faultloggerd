@@ -119,8 +119,11 @@ bool DfxDumpCatcher::DoDumpLocalPid(int pid, std::string& msg, size_t maxFrameNu
         return DoDumpLocalTid(tid, msg, maxFrameNums, isJson);
     };
     std::vector<int> tids;
+#if defined(is_ohos) && is_ohos
     ret = GetTidsByPidWithFunc(getprocpid(), tids, func);
-
+#else
+    ret = GetTidsByPidWithFunc(getpid(), tids, func);
+#endif
     DFXLOG_DEBUG("%s :: DoDumpLocalPid :: return %d.", DFXDUMPCATCHER_TAG.c_str(), ret);
     return ret;
 }
@@ -174,7 +177,6 @@ bool DfxDumpCatcher::DumpCatch(int pid, int tid, std::string& msg, size_t maxFra
                 DFXDUMPCATCHER_TAG.c_str());
         }
         ret = DoDumpRemoteLocked(pid, tid, msg, isJson);
-        DFXLOG_INFO("%s :: ==YANGJUN3dump_catch :: msgLength: %zu",  DFXDUMPCATCHER_TAG.c_str(), msg.size());
     }
     if (ret && isJson && !IsValidJson(msg)) {
         DFXLOG_INFO("%s :: dump_catch :: json stack info is invalid, try to dump stack again.",
@@ -223,35 +225,23 @@ bool DfxDumpCatcher::DoDumpCatchRemote(int pid, int tid, std::string& msg, bool 
         return ret;
     }
 
-    std::string resMsg;
-    int pollRet = DoDumpRemotePid(pid, msg, resMsg, isJson);
-    DFXLOG_INFO("%s :: ==YANGJUN1dump_catch :: msgLength: %zu",  DFXDUMPCATCHER_TAG.c_str(), msg.size());
+    int pollRet = DoDumpRemotePid(pid, msg, isJson);
     switch (pollRet) {
         case DUMP_POLL_OK:
             ret = true;
             break;
         case DUMP_POLL_TIMEOUT:
-            if (msg != "") { // when msg is not empty, return msg
-                DFXLOG_INFO("%s :: %s :: dump timeout but msg not empty!", DFXDUMPCATCHER_TAG.c_str(), __func__);
-                ret = true;
-            } else {
-                ReadProcessStatus(msg, pid);
-                ReadProcessWchan(msg, pid, false, true);
-            }
+            ReadProcessStatus(msg, pid);
+            ReadProcessWchan(msg, pid, false, true);
             break;
         default:
             break;
     }
-
-    if (!isJson) {
-        msg = resMsg + msg;
-    }
-    DFXLOG_INFO("%s :: ==YANGJUN2dump_catch :: msgLength: %zu",  DFXDUMPCATCHER_TAG.c_str(), msg.size());
     DFXLOG_INFO("%s :: %s :: pid(%d) ret: %d", DFXDUMPCATCHER_TAG.c_str(), __func__, pid, ret);
     return ret;
 }
 
-int DfxDumpCatcher::DoDumpRemotePid(int pid, std::string& msg, std::string& resMsg, bool isJson)
+int DfxDumpCatcher::DoDumpRemotePid(int pid, std::string& msg, bool isJson)
 {
     int readBufFd = -1;
     int readResFd = -1;
@@ -265,8 +255,7 @@ int DfxDumpCatcher::DoDumpRemotePid(int pid, std::string& msg, std::string& resM
     DFXLOG_DEBUG("read res fd: %d", readResFd);
 
     int timeout = BACK_TRACE_DUMP_CPP_TIMEOUT_MS;
-    int ret = DoDumpRemotePoll(readBufFd, readResFd, timeout, msg, resMsg, isJson);
-    DFXLOG_INFO("%s :: ==YANGJUN01dump_catch :: msgLength: %zu",  DFXDUMPCATCHER_TAG.c_str(), msg.size());
+    int ret = DoDumpRemotePoll(readBufFd, readResFd, timeout, msg, isJson);
     // request close fds in faultloggerd
     RequestDelPipeFd(pid);
     if (readBufFd >= 0) {
@@ -281,11 +270,12 @@ int DfxDumpCatcher::DoDumpRemotePid(int pid, std::string& msg, std::string& resM
     return ret;
 }
 
-int DfxDumpCatcher::DoDumpRemotePoll(int bufFd, int resFd, int timeout, std::string& msg, std::string& resMsg, bool isJson)
+int DfxDumpCatcher::DoDumpRemotePoll(int bufFd, int resFd, int timeout, std::string& msg, bool isJson)
 {
     int ret = DUMP_POLL_INIT;
     bool res = false;
     std::string bufMsg;
+    std::string resMsg;
     struct pollfd readfds[2];
     (void)memset_s(readfds, sizeof(readfds), 0, sizeof(readfds));
     readfds[0].fd = bufFd;
@@ -300,7 +290,7 @@ int DfxDumpCatcher::DoDumpRemotePoll(int bufFd, int resFd, int timeout, std::str
             resMsg.append("Result: bufFd or resFd < 0.\n");
             break;
         }
-        int pollRet = poll(readfds, fdsSize, timeout);
+        int pollRet = OHOS_TEMP_FAILURE_RETRY(poll(readfds, fdsSize, timeout));
         if (pollRet < 0) {
             ret = DUMP_POLL_FAILED;
             resMsg.append("Result: poll error, errno(" + std::to_string(errno) + ")\n");
@@ -347,8 +337,11 @@ int DfxDumpCatcher::DoDumpRemotePoll(int bufFd, int resFd, int timeout, std::str
     }
 
     DFXLOG_INFO("%s :: %s :: %s", DFXDUMPCATCHER_TAG.c_str(), __func__, resMsg.c_str());
-    DFXLOG_INFO("%s :: ==YANGJUN001dump_catch :: msgLength: %zu",  DFXDUMPCATCHER_TAG.c_str(), bufMsg.size());
-    msg = bufMsg;
+    if (isJson) {
+        msg = bufMsg;
+    } else {
+        msg = resMsg + bufMsg;
+    }
     if (res) {
         ret = DUMP_POLL_OK;
     }
@@ -399,8 +392,13 @@ bool DfxDumpCatcher::DumpCatchMultiPid(const std::vector<int> pidV, std::string&
     }
 
     std::unique_lock<std::mutex> lck(mutex_);
+#if defined(is_ohos) && is_ohos
     int currentPid = getprocpid();
     int currentTid = getproctid();
+#else
+    int currentPid = getpid();
+    int currentTid = gettid();
+#endif
     DFXLOG_DEBUG("%s :: %s :: cPid(%d), cTid(%d), pidSize(%d).", DFXDUMPCATCHER_TAG.c_str(), \
         __func__, currentPid, currentTid, pidSize);
 
