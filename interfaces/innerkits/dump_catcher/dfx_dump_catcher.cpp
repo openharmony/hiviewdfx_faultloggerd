@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -25,17 +25,13 @@
 #include <securec.h>
 #include <strings.h>
 
+#include "backtrace_local.h"
 #include "dfx_define.h"
 #include "dfx_dump_res.h"
 #include "dfx_log.h"
 #include "dfx_util.h"
 #include "faultloggerd_client.h"
 #include "file_util.h"
-
-#include "libunwind.h"
-#include "libunwind_i-ohos.h"
-
-#include "backtrace_local.h"
 #include "procinfo.h"
 
 namespace OHOS {
@@ -137,7 +133,7 @@ bool DfxDumpCatcher::DoDumpLocalLocked(int pid, int tid, std::string& msg, size_
 {
     bool ret = false;
     if (tid == getproctid()) {
-        size_t skipFramNum = 2; // 2: skip 2 frame
+        size_t skipFramNum = 4; // 4: skip 4 frame
         ret = DoDumpCurrTid(skipFramNum, msg, maxFrameNums, isJson);
     } else if (tid == 0) {
         ret = DoDumpLocalPid(pid, msg, maxFrameNums, isJson);

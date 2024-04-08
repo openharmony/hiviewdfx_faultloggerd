@@ -24,35 +24,14 @@ if (defined(ohos_lite)) {
       "$c_utils_include_path",
       "$faultloggerd_common_path/dfxlog",
       "$faultloggerd_common_path/dfxutil",
-      "$faultloggerd_frameworks_path/unwind/include",
       "$faultloggerd_interfaces_path/common",
       "$faultloggerd_interfaces_path/innerkits/backtrace/include",
       "$faultloggerd_interfaces_path/innerkits/faultloggerd_client/include",
       "$faultloggerd_interfaces_path/innerkits/procinfo/include",
       "$hilog_lite_include_path",
-      "//third_party/libunwind/include",
-      "//third_party/libunwind/src",
     ]
-
-    if (target_cpu == "arm") {
-      include_dirs += [ "//third_party/libunwind/include/tdep-arm" ]
-    } else if (target_cpu == "arm64") {
-      include_dirs += [ "//third_party/libunwind/include/tdep-aarch64" ]
-    } else if (target_cpu == "x64" || target_cpu == "x86_64") {
-      include_dirs += [ "//third_party/libunwind/include/tdep-x86_64" ]
-    } else if (target_cpu == "mipsel") {
-      include_dirs += [ "//third_party/libunwind/include/tdep-mips" ]
-    } else if (target_cpu == "riscv64") {
-      include_dirs += [ "//third_party/libunwind/include/tdep-riscv" ]
-    }
 
     sources = dumpcatcher_sources
-
-    defines = [
-      "HAVE_CONFIG_H",
-      "HAVE_ELF_H",
-      "HAVE_LINK_H",
-    ]
 
     deps = [
       "$faultloggerd_common_path/dfxlog:dfx_hilog",
@@ -62,7 +41,6 @@ if (defined(ohos_lite)) {
       "$faultloggerd_interfaces_path/innerkits/procinfo:libdfx_procinfo",
       "//base/hiviewdfx/hilog_lite/frameworks/featured:hilog_shared",
       "//third_party/bounds_checking_function:libsec_shared",
-      "//third_party/libunwind:libunwind",
     ]
   }
 } else {
@@ -70,11 +48,6 @@ if (defined(ohos_lite)) {
     visibility = [ "*:*" ]
 
     include_dirs = [ "include" ]
-    defines = [
-      "HAVE_CONFIG_H",
-      "HAVE_ELF_H",
-      "HAVE_LINK_H",
-    ]
   }
 
   ohos_shared_library("libdfx_dumpcatcher") {
@@ -83,22 +56,7 @@ if (defined(ohos_lite)) {
       "$faultloggerd_path/common/build:coverage_flags",
     ]
     sources = dumpcatcher_sources
-    include_dirs = [
-      "$faultloggerd_interfaces_path/common",
-      "//third_party/libunwind/include",
-      "//third_party/libunwind/src",
-    ]
-    if (target_cpu == "arm") {
-      include_dirs += [ "//third_party/libunwind/include/tdep-arm" ]
-    } else if (target_cpu == "arm64") {
-      include_dirs += [ "//third_party/libunwind/include/tdep-aarch64" ]
-    } else if (target_cpu == "x64" || target_cpu == "x86_64") {
-      include_dirs += [ "//third_party/libunwind/include/tdep-x86_64" ]
-    } else if (target_cpu == "mipsel") {
-      include_dirs += [ "//third_party/libunwind/include/tdep-mips" ]
-    } else if (target_cpu == "riscv64") {
-      include_dirs += [ "//third_party/libunwind/include/tdep-riscv" ]
-    }
+    include_dirs = [ "$faultloggerd_interfaces_path/common" ]
     version_script = "libdfx_dumpcatcher.map"
     deps = [
       "$faultloggerd_common_path/dfxlog:dfx_hilog",

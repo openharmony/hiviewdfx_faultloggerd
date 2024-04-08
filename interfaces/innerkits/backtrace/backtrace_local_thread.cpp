@@ -15,24 +15,13 @@
 
 #include "backtrace_local_thread.h"
 
-// dfx_log header must be included in front of libunwind header
-#include "dfx_log.h"
-
-#include <link.h>
-#include <libunwind.h>
-#include <libunwind_i-ohos.h>
-#include <mutex>
-#include <pthread.h>
 #include <securec.h>
 #include <sstream>
 #include <unistd.h>
 
-#include "backtrace_local_context.h"
 #include "dfx_define.h"
-#include "dfx_frame_format.h"
-#include "dfx_util.h"
-#include "dwarf_unwinder.h"
-#include "fp_unwinder.h"
+#include "dfx_frame_formatter.h"
+#include "dfx_json_formatter.h"
 #include "procinfo.h"
 
 namespace OHOS {
@@ -44,7 +33,8 @@ namespace {
 #define LOG_TAG "DfxBacktraceLocal"
 }
 
-BacktraceLocalThread::BacktraceLocalThread(int32_t tid) : tid_(tid)
+BacktraceLocalThread::BacktraceLocalThread(int32_t tid, std::shared_ptr<Unwinder> unwinder)
+    : tid_(tid), unwinder_(unwinder)
 {
     maxFrameNums_ = DEFAULT_MAX_FRAME_NUM;
     frames_.clear();
@@ -52,94 +42,41 @@ BacktraceLocalThread::BacktraceLocalThread(int32_t tid) : tid_(tid)
 
 BacktraceLocalThread::~BacktraceLocalThread()
 {
-    if (tid_ != BACKTRACE_CURRENT_THREAD) {
-        BacktraceLocalContext::GetInstance().CleanUp();
-    }
     frames_.clear();
 }
 
-bool BacktraceLocalThread::UnwindCurrentThread(unw_addr_space_t as, std::shared_ptr<DfxSymbols> symbol,
-    size_t skipFrameNum, bool fast)
-{
-    bool ret = false;
-    unw_context_t context;
-    (void)memset_s(&context, sizeof(unw_context_t), 0, sizeof(unw_context_t));
-    unw_getcontext(&context);
-
-    if (fast) {
-#ifdef __aarch64__
-        FpUnwinder unwinder;
-        ret = unwinder.UnwindWithContext(context, skipFrameNum + 1, maxFrameNums_);
-        unwinder.UpdateFrameInfo();
-        frames_ = unwinder.GetFrames();
-#endif
-    }
-    if (!ret) {
-        DwarfUnwinder unwinder;
-        ret = unwinder.UnwindWithContext(as, context, symbol, skipFrameNum + 1, maxFrameNums_);
-        frames_ = unwinder.GetFrames();
-    }
-    return ret;
-}
-
-bool BacktraceLocalThread::Unwind(unw_addr_space_t as, std::shared_ptr<DfxSymbols> symbol,
-    size_t skipFrameNum, bool fast, bool releaseThread)
+bool BacktraceLocalThread::Unwind(size_t skipFrameNum, bool fast)
 {
     static std::mutex mutex;
     std::unique_lock<std::mutex> lock(mutex);
     bool ret = false;
 
+    if (tid_ < BACKTRACE_CURRENT_THREAD) {
+        return ret;
+    }
+
     if (tid_ == BACKTRACE_CURRENT_THREAD) {
-        return UnwindCurrentThread(as, symbol, skipFrameNum + 1, fast);
-    } else if (tid_ < BACKTRACE_CURRENT_THREAD) {
+        ret = unwinder_->UnwindLocal(false, fast, maxFrameNums_, skipFrameNum + 1);
+        if (fast) {
+            Unwinder::GetLocalFramesByPcs(frames_, unwinder_->GetPcs());
+        } else {
+            frames_ = unwinder_->GetFrames();
+        }
         return ret;
     }
 
-    auto threadContext = BacktraceLocalContext::GetInstance().CollectThreadContext(tid_);
-    if (threadContext == nullptr) {
-        DFXLOG_INFO("%s", "Failed to get context");
-        return ret;
-    }
-
-    if (threadContext->ctx == nullptr && (threadContext->frameSz == 0)) {
-        // should never happen
-        DFXLOG_INFO("%s", "Failed to get frameSz");
-        ReleaseThread();
-        return ret;
-    }
-
-#if defined(__aarch64__)
-    if (threadContext->frameSz > 0) {
-        ret = true;
-        FpUnwinder fpUnwinder(threadContext->pcs, threadContext->frameSz);
-        fpUnwinder.UpdateFrameInfo();
-        frames_ = fpUnwinder.GetFrames();
-    }
+    ret = unwinder_->UnwindLocalWithTid(tid_, maxFrameNums_, skipFrameNum + 1);
+#ifdef __aarch64__
+    Unwinder::GetLocalFramesByPcs(frames_, unwinder_->GetPcs());
 #else
-    if (!ret) {
-        DwarfUnwinder unwinder;
-        std::unique_lock<std::mutex> mlock(threadContext->lock);
-        ret = unwinder.UnwindWithContext(as, *(threadContext->ctx), symbol, skipFrameNum, maxFrameNums_);
-        frames_ = unwinder.GetFrames();
-    }
+    frames_ = unwinder_->GetFrames();
 #endif
-
-    if (releaseThread) {
-        ReleaseThread();
-    }
     return ret;
 }
 
 const std::vector<DfxFrame>& BacktraceLocalThread::GetFrames() const
 {
     return frames_;
-}
-
-void BacktraceLocalThread::ReleaseThread()
-{
-    if (tid_ > BACKTRACE_CURRENT_THREAD) {
-        BacktraceLocalContext::GetInstance().ReleaseThread(tid_);
-    }
 }
 
 std::string BacktraceLocalThread::GetFormattedStr(bool withThreadName, bool isJson)
@@ -157,10 +94,10 @@ std::string BacktraceLocalThread::GetFormattedStr(bool withThreadName, bool isJs
     }
     if (isJson) {
 #ifndef is_ohos_lite
-        ss << DfxFrameFormat::GetFramesJson(frames_);
+        ss << DfxJsonFormatter::GetFramesJson(frames_);
 #endif
     } else {
-        ss << DfxFrameFormat::GetFramesStr(frames_);
+        ss << DfxFrameFormatter::GetFramesStr(frames_);
     }
     return ss.str();
 }

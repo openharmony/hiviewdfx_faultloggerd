@@ -1,4 +1,4 @@
-# Copyright (c) 2022-2023 Huawei Device Co., Ltd.
+# Copyright (c) 2022-2024 Huawei Device Co., Ltd.
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -15,9 +15,7 @@ import("//base/hiviewdfx/faultloggerd/faultloggerd.gni")
 
 backtrace_local_sources = [
   "backtrace_local.cpp",
-  "backtrace_local_context.cpp",
   "backtrace_local_thread.cpp",
-  "catchframe_local.cpp",
   "dfx_json_formatter.cpp",
 ]
 
@@ -30,40 +28,22 @@ if (defined(ohos_lite)) {
       "$c_utils_include_path",
       "$faultloggerd_common_path/dfxlog",
       "$faultloggerd_common_path/dfxutil",
-      "$faultloggerd_frameworks_path/unwinder/include",
       "$faultloggerd_interfaces_path/common",
       "$faultloggerd_path/interfaces/innerkits/procinfo/include",
-      "//third_party/libunwind/include",
-      "//third_party/libunwind/src",
+      "$faultloggerd_interfaces_path/innerkits/unwinder/include",
     ]
-
-    if (target_cpu == "arm") {
-      include_dirs += [ "//third_party/libunwind/include/tdep-arm" ]
-    } else if (target_cpu == "arm64") {
-      include_dirs += [ "//third_party/libunwind/include/tdep-aarch64" ]
-    } else if (target_cpu == "x64" || target_cpu == "x86_64") {
-      include_dirs += [ "//third_party/libunwind/include/tdep-x86_64" ]
-    } else if (target_cpu == "mipsel") {
-      include_dirs += [ "//third_party/libunwind/include/tdep-mips" ]
-    }
 
     sources = backtrace_local_sources
 
-    defines = [
-      "HAVE_CONFIG_H",
-      "HAVE_ELF_H",
-      "HAVE_LINK_H",
-      "is_ohos_lite",
-    ]
+    defines = [ "is_ohos_lite" ]
 
     deps = [
       "$faultloggerd_common_path/dfxlog:dfx_hilog",
       "$faultloggerd_common_path/dfxutil:dfx_util",
-      "$faultloggerd_frameworks_path/unwinder:dfx_unwinder_src",
       "$faultloggerd_interfaces_path/innerkits/procinfo:libdfx_procinfo",
+      "$faultloggerd_interfaces_path/innerkits/unwinder:libunwinder",
       "//base/hiviewdfx/hilog_lite/frameworks/featured:hilog_shared",
       "//third_party/bounds_checking_function:libsec_shared",
-      "//third_party/libunwind:libunwind",
     ]
   }
 
@@ -77,17 +57,12 @@ if (defined(ohos_lite)) {
     include_dirs = [
       "include",
       "$faultloggerd_common_path/dfxutil",
-      "$faultloggerd_frameworks_path/unwinder/include",
       "$faultloggerd_interfaces_path/common",
       "$faultloggerd_interfaces_path/innerkits/procinfo/include",
+      "$faultloggerd_interfaces_path/innerkits/unwinder/include",
     ]
 
-    defines = [
-      "is_ohos=${is_ohos}",
-      "HAVE_CONFIG_H",
-      "HAVE_ELF_H",
-      "HAVE_LINK_H",
-    ]
+    defines = [ "is_ohos=${is_ohos}" ]
   }
 
   ohos_shared_library("libbacktrace_local") {
@@ -103,19 +78,11 @@ if (defined(ohos_lite)) {
     deps = [
       "$faultloggerd_common_path/dfxlog:dfx_hilog",
       "$faultloggerd_common_path/dfxutil:dfx_util",
-      "$faultloggerd_frameworks_path/unwinder:dfx_unwinder_src",
+      "$faultloggerd_interfaces_path/innerkits/unwinder:libunwinder",
       "$faultloggerd_path/interfaces/innerkits/procinfo:libdfx_procinfo",
       "//third_party/jsoncpp:jsoncpp",
-      "//third_party/libunwind:libunwind",
     ]
-    include_dirs = [
-      "$faultloggerd_common_path/dfxlog",
-      "$faultloggerd_common_path/dfxutil",
-      "$faultloggerd_frameworks_path/unwinder/include",
-      "//third_party/libunwind/include",
-      "//third_party/libunwind/include/tdep/",
-      "//third_party/libunwind/src",
-    ]
+    include_dirs = [ "$faultloggerd_common_path/dfxlog" ]
     version_script = "libbacktrace_local.map"
     external_deps = [
       "bounds_checking_function:libsec_shared",
@@ -147,18 +114,13 @@ if (defined(ohos_lite)) {
     include_dirs = [
       "$faultloggerd_common_path/dfxlog",
       "$faultloggerd_common_path/dfxutil",
-      "$faultloggerd_frameworks_path/unwind/include",
-      "//third_party/libunwind/include",
-      "//third_party/libunwind/include/tdep/",
-      "//third_party/libunwind/src",
     ]
 
     deps = [
       "$faultloggerd_common_path/dfxlog:dfx_hilog_base",
-      "$faultloggerd_frameworks_path/unwinder:dfx_unwinder_static_src",
       "$faultloggerd_interfaces_path/innerkits/procinfo:dfx_procinfo_static",
+      "$faultloggerd_interfaces_path/innerkits/unwinder:libunwinder_static",
       "//third_party/jsoncpp:jsoncpp_static",
-      "//third_party/libunwind:libunwind_local",
     ]
 
     external_deps = [

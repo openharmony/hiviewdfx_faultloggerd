@@ -3,25 +3,14 @@
     extern "C++" {
       OHOS::HiviewDFX::Get*;
       OHOS::HiviewDFX::PrintBacktrace*;
-      OHOS::HiviewDFX::DfxCatchFrameLocal::InitFrameCatcher*;
-      OHOS::HiviewDFX::DfxCatchFrameLocal::Catch*;
-      OHOS::HiviewDFX::DfxCatchFrameLocal::ReleaseThread*;
-      OHOS::HiviewDFX::DfxCatchFrameLocal::DestroyFrameCatcher*;
-
-      OHOS::HiviewDFX::DfxCatchFrameLocal::DfxCatchFrameLocal*;
-      OHOS::HiviewDFX::DfxCatchFrameLocal::~DfxCatchFrameLocal*;
-      OHOS::HiviewDFX::DfxSymbols::DfxSymbols*;
       OHOS::HiviewDFX::BacktraceLocalThread::BacktraceLocalThread*;
       OHOS::HiviewDFX::BacktraceLocalThread::Unwind*;
       OHOS::HiviewDFX::BacktraceLocalThread::GetFrames*;
-      OHOS::HiviewDFX::DfxFrameFormat::GetFrameStr*;
-      OHOS::HiviewDFX::DfxFrameFormat::GetFramesStr*;
       OHOS::HiviewDFX::BacktraceLocalThread::~BacktraceLocalThread*;
-      OHOS::HiviewDFX::BacktraceLocalContext::GetInstance*;
-      OHOS::HiviewDFX::BacktraceLocalContext::CleanUp*;
       OHOS::HiviewDFX::BacktraceLocalThread::GetFormattedStr*;
       OHOS::HiviewDFX::BacktraceLocalThread::SetMaxFrameNums*;
       OHOS::HiviewDFX::DfxJsonFormatter::FormatJsonStack*;
+      OHOS::HiviewDFX::DfxJsonFormatter::GetFramesJson*;
     };
     extern "C" {
       PrintTrace*;

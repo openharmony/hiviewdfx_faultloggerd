@@ -167,7 +167,9 @@ bool Unwinder::UnwindLocalWithTid(const pid_t tid, size_t maxFrameNum, size_t sk
     context.stackCheck = false;
     context.stackBottom = stackBottom;
     context.stackTop = stackTop;
-    return Unwind(&context, maxFrameNum, skipFrameNum);
+    auto ret = Unwind(&context, maxFrameNum, skipFrameNum);
+    LocalThreadContext::GetInstance().ReleaseThread(tid);
+    return ret;
 #endif
 }
 
@@ -376,6 +378,7 @@ bool Unwinder::UnwindByFp(void *ctx, size_t maxFrameNum, size_t skipFrameNum)
         return false;
     }
     pcs_.clear();
+    bool needAdjustPc = false;
 
     bool resetFrames = false;
     do {
@@ -391,6 +394,10 @@ bool Unwinder::UnwindByFp(void *ctx, size_t maxFrameNum, size_t skipFrameNum)
 
         uintptr_t pc = regs_->GetPc();
         uintptr_t fp = regs_->GetFp();
+        if (needAdjustPc) {
+            DoPcAdjust(pc);
+        }
+        needAdjustPc = true;
         pcs_.emplace_back(pc);
 
         if (!FpStep(fp, pc, ctx) || (pc == 0)) {
@@ -836,6 +843,18 @@ void Unwinder::GetFramesByPcs(std::vector<DfxFrame>& frames, std::vector<uintptr
         FillFrame(frame);
         frames.emplace_back(frame);
     }
+}
+
+void Unwinder::GetLocalFramesByPcs(std::vector<DfxFrame>& frames, std::vector<uintptr_t> pcs)
+{
+    frames.clear();
+    for (size_t i = 0; i < pcs.size(); ++i) {
+        DfxFrame frame;
+        frame.index = i;
+        frame.pc = static_cast<uint64_t>(pcs[i]);
+        frames.emplace_back(frame);
+    }
+    FillLocalFrames(frames);
 }
 
 bool Unwinder::GetSymbolByPc(uintptr_t pc, std::shared_ptr<DfxMaps> maps, std::string& funcName, uint64_t& funcOffset)

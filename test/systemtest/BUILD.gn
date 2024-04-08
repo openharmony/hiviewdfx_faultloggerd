@@ -30,7 +30,6 @@ if (defined(ohos_lite)) {
       include_dirs = [
         "$c_utils_include_path",
         "$faultloggerd_common_path/dfxutil",
-        "$faultloggerd_frameworks_path/unwind/include",
         "$faultloggerd_interfaces_path/innerkits/backtrace/include",
         "$faultloggerd_path/interfaces/common",
         "$faultloggerd_path/interfaces/innerkits/dump_catcher/include",
