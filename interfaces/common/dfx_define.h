@@ -45,6 +45,7 @@ static const int DUMP_TYPE_NATIVE = -1;
 static const int DUMP_TYPE_MIX = -2;
 static const int DUMP_TYPE_KERNEL = -3;
 static const int DUMP_TYPE_LOCAL = -4;
+static const int DUMPPROCESS_MAX_SECOND = 6;
 
 static const int DEFAULT_MAX_FRAME_NUM = 256;
 static const int DEFAULT_MAX_LOCAL_FRAME_NUM = 32;

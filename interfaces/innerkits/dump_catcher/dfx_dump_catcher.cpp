@@ -179,7 +179,7 @@ bool DfxDumpCatcher::DumpCatch(int pid, int tid, std::string& msg, size_t maxFra
         ret = DoDumpRemoteLocked(pid, tid, msg, isJson);
     }
     if (ret && isJson && !IsValidJson(msg)) {
-        DFXLOG_WARN("%s :: dump_catch :: json stack info is invalid, try to dump stack again.",
+        DFXLOG_INFO("%s :: dump_catch :: json stack info is invalid, try to dump stack again.",
             DFXDUMPCATCHER_TAG.c_str());
         msg.clear();
         if (pid == currentPid) {
@@ -292,10 +292,6 @@ int DfxDumpCatcher::DoDumpRemotePoll(int bufFd, int resFd, int timeout, std::str
         }
         int pollRet = OHOS_TEMP_FAILURE_RETRY(poll(readfds, fdsSize, timeout));
         if (pollRet < 0) {
-            if (errno == EINTR) {
-                DFXLOG_INFO("%s :: %s :: errno == EINTR", DFXDUMPCATCHER_TAG.c_str(), __func__);
-                continue;
-            }
             ret = DUMP_POLL_FAILED;
             resMsg.append("Result: poll error, errno(" + std::to_string(errno) + ")\n");
             break;
@@ -333,6 +329,8 @@ int DfxDumpCatcher::DoDumpRemotePoll(int bufFd, int resFd, int timeout, std::str
         }
 
         if ((eventRet == false) || (bufRet == false) || (resRet == true)) {
+            DFXLOG_INFO("%s :: %s :: eventRet(%d) bufRet: %d resRet: %d", DFXDUMPCATCHER_TAG.c_str(), __func__,
+                eventRet, bufRet, resRet);
             ret = DUMP_POLL_RETURN;
             break;
         }
@@ -344,7 +342,6 @@ int DfxDumpCatcher::DoDumpRemotePoll(int bufFd, int resFd, int timeout, std::str
     } else {
         msg = resMsg + bufMsg;
     }
-
     if (res) {
         ret = DUMP_POLL_OK;
     }
