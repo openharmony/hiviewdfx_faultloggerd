@@ -47,6 +47,8 @@ void DFX_InstallSignalHandler(void);
 typedef uint64_t(*GetStackIdFunc)();
 void SetAsyncStackCallbackFunc(void* func);
 
+int DFX_SetAppRunningUniqueId(const char* appRunningId, size_t len);
+
 #ifdef __cplusplus
 }
 #endif

@@ -100,6 +100,7 @@ static const int SIGNALHANDLER_TIMEOUT = 10000; // 10000 us
 static const int ALARM_TIME_S = 10;
 static int g_prevHandledSignal = SIGDUMP;
 static struct sigaction g_oldSigactionList[NSIG] = {};
+static char g_appRunningId[MAX_APP_RUNNING_UNIQUE_ID_LEN];
 enum DumpPreparationStage {
     CREATE_PIPE_FAIL = 1,
     SET_PIPE_LEN_FAIL,
@@ -257,6 +258,7 @@ static void FillDumpRequest(int sig, siginfo_t *si, void *context)
     g_request.reserved = 0;
     g_request.timeStamp = GetTimeMilliseconds();
     g_request.fdTableAddr = (uint64_t)fdsan_get_fd_table();
+    memcpy(g_request.appRunningId, g_appRunningId, sizeof(g_request.appRunningId));
     if (!IsDumpSignal(sig) && g_GetStackIdFunc!= NULL) {
         g_request.stackId = g_GetStackIdFunc();
         DFXLOG_INFO("g_GetStackIdFunc %p.", (void*)g_request.stackId);
@@ -731,4 +733,16 @@ void DFX_InstallSignalHandler(void)
     }
 
     g_hasInit = TRUE;
+}
+
+int DFX_SetAppRunningUniqueId(const char* appRunningId, size_t len)
+{
+    size_t appRunningIdMaxLen = sizeof(g_appRunningId);
+    if (appRunningId == NULL || appRunningIdMaxLen <= len) {
+        DFXLOG_ERROR("param error. appRunningId is NULL or length overflow");
+        return -1;
+    }
+    memset(g_appRunningId, 0, appRunningIdMaxLen);
+    memcpy(g_appRunningId, appRunningId, len);
+    return 0;
 }
