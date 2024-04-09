@@ -44,9 +44,9 @@ private:
     bool GetStackInfo(bool isJsonDump, Json::Value& jsonInfo) const;
     void GetNativeCrashInfo(Json::Value& jsonInfo) const;
     void GetDumpInfo(Json::Value& jsonInfo) const;
-    bool FillFrames(const std::shared_ptr<DfxThread>& thread, Json::Value& jsonInfo, int maxFrame = 256) const;
+    bool FillFrames(const std::shared_ptr<DfxThread>& thread, Json::Value& jsonInfo) const;
     void FillNativeFrame(const DfxFrame& frame, Json::Value& jsonInfo) const;
-    void AppendThreads(const std::vector<std::shared_ptr<DfxThread>>& threads, Json::Value& jsonInfo, bool isCrash) const;
+    void AppendThreads(const std::vector<std::shared_ptr<DfxThread>>& threads, Json::Value& jsonInfo) const;
 #endif
 
 private:

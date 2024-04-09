@@ -48,13 +48,9 @@ public:
         stack_.append(frame).append("\n");
     };
 
-    void SetValue(const std::string& key, const std::string& value)
+    void SetCppCrashInfo(const std::string& cppCrashInfo)
     {
-        if (key.empty() || value.empty()) {
-            return;
-        }
-
-        kvPairs_[key] = value;
+        cppCrashInfo_ = cppCrashInfo;
     };
     void ReportToHiview();
     void ReportToAbilityManagerService();
@@ -62,6 +58,7 @@ public:
 private:
     bool Format();
     static std::string GetRegsString(std::shared_ptr<DfxThread> thread);
+    int32_t WriteCppCrashInfoByPipe();
 
 private:
     uint64_t time_;
@@ -71,8 +68,7 @@ private:
     std::string reason_;
     std::string stack_;
     std::string registers_ = "";
-    std::string otherThreadInfo_ = "";
-    std::map<std::string, std::string> kvPairs_;
+    std::string cppCrashInfo_ = "";
     std::shared_ptr<DfxProcess> process_;
 };
 } // namespace HiviewDFX
