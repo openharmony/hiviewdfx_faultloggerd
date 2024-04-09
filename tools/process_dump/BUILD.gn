@@ -114,7 +114,6 @@ if (defined(ohos_lite)) {
     configs = [
       ":processdump_config",
       "$faultloggerd_common_path/build:coverage_flags",
-      "//third_party/jsoncpp:jsoncpp_public_config",
     ]
 
     deps = [
@@ -125,12 +124,12 @@ if (defined(ohos_lite)) {
       "$faultloggerd_interfaces_path/innerkits/faultloggerd_client:libfaultloggerd",
       "$faultloggerd_interfaces_path/innerkits/procinfo:libdfx_procinfo",
       "$faultloggerd_interfaces_path/innerkits/unwinder:libunwinder",
-      "//third_party/jsoncpp:jsoncpp",
     ]
 
     external_deps = [
       "c_utils:utils",
       "hilog:libhilog",
+      "jsoncpp:jsoncpp",
     ]
 
     part_name = "faultloggerd"
@@ -142,7 +141,6 @@ if (defined(ohos_lite)) {
     configs = [
       ":processdump_config",
       "$faultloggerd_path/common/build:coverage_flags",
-      "//third_party/jsoncpp:jsoncpp_public_config",
     ]
     sources = processdump_sources
     sources += [
@@ -162,13 +160,13 @@ if (defined(ohos_lite)) {
       "$faultloggerd_interfaces_path/innerkits/procinfo:libdfx_procinfo",
       "$faultloggerd_interfaces_path/innerkits/signal_handler:dfx_local_handler",
       "$faultloggerd_interfaces_path/innerkits/unwinder:libunwinder",
-      "//third_party/jsoncpp:jsoncpp",
     ]
 
     external_deps = [
       "c_utils:utils",
       "hilog:libhilog_base",
       "hisysevent:libhisysevent",
+      "jsoncpp:jsoncpp",
     ]
 
     install_images = [
