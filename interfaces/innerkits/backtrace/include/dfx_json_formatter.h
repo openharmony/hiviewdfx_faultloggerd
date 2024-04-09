@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2023-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -30,6 +30,7 @@ public:
     DfxJsonFormatter() = default;
     ~DfxJsonFormatter() = default;
 
+#ifndef is_ohos_lite
     /**
      * @brief Format Json string to stack string
      *
@@ -37,8 +38,15 @@ public:
      * @param outStackStr output the stack string
      * @return bool
      */
-#ifndef is_ohos_lite
     static bool FormatJsonStack(std::string jsonStack, std::string& outStackStr);
+
+    /**
+     * @brief Get the Frames Json object
+     *
+     * @param frames native DfxFrame pointer list
+     * @return std::string native frames Json
+     */
+    static std::string GetFramesJson(const std::vector<DfxFrame>& frames);
 #endif
 };
 } // namespace HiviewDFX

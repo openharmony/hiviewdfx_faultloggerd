@@ -215,7 +215,7 @@ if (defined(ohos_lite)) {
       ":lzma_config",
     ]
 
-    if (faultloggerd_abilitybase_enable) {
+    if (faultloggerd_abilitybase_enable && !build_ohos_sdk) {
       public_configs += [ ":offline_mixstack_config" ]
     }
 
@@ -242,7 +242,7 @@ if (defined(ohos_lite)) {
       "hilog:libhilog",
       "init:libbegetutil",
     ]
-    if (faultloggerd_abilitybase_enable) {
+    if (faultloggerd_abilitybase_enable && !build_ohos_sdk) {
       external_deps += [ "ability_base:extractortool" ]
     }
     part_name = "faultloggerd"

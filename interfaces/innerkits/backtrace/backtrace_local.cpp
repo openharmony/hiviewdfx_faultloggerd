@@ -15,23 +15,21 @@
 
 #include "backtrace_local.h"
 
-// dfx_log header must be included in front of libunwind header
-#include "dfx_log.h"
-
 #include <cstring>
 #include <dirent.h>
-#include <libunwind_i-ohos.h>
 #include <mutex>
 #include <sstream>
 #include <unistd.h>
 #include <vector>
 
 #include "backtrace_local_thread.h"
-#include "dfx_frame_format.h"
+#include "dfx_frame_formatter.h"
+#include "dfx_json_formatter.h"
+#include "dfx_log.h"
 #include "dfx_util.h"
 #include "directory_ex.h"
 #include "procinfo.h"
-
+#include "unwinder.h"
 
 namespace OHOS {
 namespace HiviewDFX {
@@ -45,30 +43,10 @@ namespace {
 bool GetBacktraceFramesByTid(std::vector<DfxFrame>& frames, int32_t tid, size_t skipFrameNum, bool fast,
                              size_t maxFrameNums)
 {
-    bool ret = false;
-    BacktraceLocalThread thread(tid);
+    auto unwinder = std::make_shared<Unwinder>();
+    BacktraceLocalThread thread(tid, unwinder);
     thread.SetMaxFrameNums(maxFrameNums);
-    if (fast) {
-#ifdef __aarch64__
-        ret = thread.Unwind(nullptr, nullptr, skipFrameNum, fast);
-#endif
-#if defined(__riscv) && defined(__riscv_xlen) && __riscv_xlen == 64
-        ret = thread.Unwind(nullptr, nullptr, skipFrameNum, fast);
-#endif
-    }
-    if (!ret) {
-        unw_addr_space_t as;
-        unw_init_local_address_space(&as);
-        if (as == nullptr) {
-            return ret;
-        }
-
-        auto symbol = std::make_shared<DfxSymbols>();
-        ret = thread.Unwind(as, symbol, skipFrameNum, fast);
-
-        unw_destroy_local_address_space(as);
-    }
-    frames.clear();
+    bool ret = thread.Unwind(skipFrameNum + 1, fast);
     frames = thread.GetFrames();
     return ret;
 }
@@ -80,7 +58,7 @@ bool GetBacktraceJsonByTid(std::string& out, int32_t tid, size_t skipFrameNum, b
     std::vector<DfxFrame> frames;
     bool ret = GetBacktraceFramesByTid(frames, tid, skipFrameNum + 1, fast, maxFrameNums);
     out.clear();
-    out = DfxFrameFormat::GetFramesJson(frames);
+    out = DfxJsonFormatter::GetFramesJson(frames);
     return ret;
 }
 #endif
@@ -91,7 +69,7 @@ bool GetBacktraceStringByTid(std::string& out, int32_t tid, size_t skipFrameNum,
     std::vector<DfxFrame> frames;
     bool ret = GetBacktraceFramesByTid(frames, tid, skipFrameNum + 1, fast, maxFrameNums);
     out.clear();
-    out = DfxFrameFormat::GetFramesStr(frames);
+    out = DfxFrameFormatter::GetFramesStr(frames);
     return ret;
 }
 
@@ -106,7 +84,7 @@ bool PrintBacktrace(int32_t fd, bool fast, size_t maxFrameNums)
     }
 
     for (auto const& frame : frames) {
-        auto line = DfxFrameFormat::GetFrameStr(frame);
+        auto line = DfxFrameFormatter::GetFrameStr(frame);
         if (fd >= 0) {
             dprintf(fd, "    %s", line.c_str());
         }
@@ -163,22 +141,16 @@ static std::string GetStacktraceHeader()
 
 std::string GetProcessStacktrace(size_t maxFrameNums, bool isJson)
 {
-    unw_addr_space_t as;
-    unw_init_local_address_space(&as);
-    if (as == nullptr) {
-        return "";
-    }
-    auto symbol = std::make_shared<DfxSymbols>();
+    auto unwinder = std::make_shared<Unwinder>();
     std::ostringstream ss;
     ss << std::endl << GetStacktraceHeader();
-
     std::function<bool(int)> func = [&](int tid) {
         if (tid <= 0 || tid == getproctid()) {
             return false;
         }
-        BacktraceLocalThread thread(tid);
+        BacktraceLocalThread thread(tid, unwinder);
         thread.SetMaxFrameNums(maxFrameNums);
-        if (thread.Unwind(as, symbol, 0)) {
+        if (thread.Unwind(0)) {
             ss << thread.GetFormattedStr(true, isJson) << std::endl;
         } else {
             std::string msg;
@@ -196,7 +168,6 @@ std::string GetProcessStacktrace(size_t maxFrameNums, bool isJson)
     std::vector<int> tids;
     GetTidsByPidWithFunc(getprocpid(), tids, func);
 
-    unw_destroy_local_address_space(as);
     return ss.str();
 }
 } // namespace HiviewDFX

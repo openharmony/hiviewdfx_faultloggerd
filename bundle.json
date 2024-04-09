@@ -45,7 +45,7 @@
           "header": {
             "header_files": [
               "backtrace_local.h",
-              "catchframe_local.h"
+              "dfx_json_formatter.h"
             ],
             "header_base": "//base/hiviewdfx/faultloggerd/interfaces/innerkits/backtrace/include"
           }
@@ -55,7 +55,7 @@
           "header": {
             "header_files": [
               "backtrace_local.h",
-              "catchframe_local.h"
+              "dfx_json_formatter.h"
             ],
             "header_base": "//base/hiviewdfx/faultloggerd/interfaces/innerkits/backtrace/include"
           }
