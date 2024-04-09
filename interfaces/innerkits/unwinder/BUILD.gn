@@ -20,7 +20,6 @@ dfx_unwinder_sources = [
   "dfx_config.cpp",
   "dfx_elf.cpp",
   "dfx_elf_parser.cpp",
-  "dfx_extractor_utils.cpp",
   "dfx_frame_formatter.cpp",
   "dfx_instr_statistic.cpp",
   "dfx_instructions.cpp",
@@ -155,7 +154,6 @@ if (defined(ohos_lite)) {
     if (target_cpu == "arm64") {
       defines = [ "ENABLE_MIXSTACK" ]
       defines += [ "OFFLINE_MIXSTACK" ]
-      defines += [ "ENABLE_HAP_EXTRACTOR" ]
     }
   }
 
@@ -213,11 +211,8 @@ if (defined(ohos_lite)) {
     public_configs = [
       ":dfx_unwinder_config",
       ":lzma_config",
+      ":offline_mixstack_config",
     ]
-
-    if (faultloggerd_abilitybase_enable) {
-      public_configs += [ ":offline_mixstack_config" ]
-    }
 
     if (target_cpu != "x86_64") {
       dfx_unwinder_sources -= [ "getcontext_x86_64.S" ]
@@ -242,9 +237,6 @@ if (defined(ohos_lite)) {
       "hilog:libhilog",
       "init:libbegetutil",
     ]
-    if (faultloggerd_abilitybase_enable) {
-      external_deps += [ "ability_base:extractortool" ]
-    }
     part_name = "faultloggerd"
     subsystem_name = "hiviewdfx"
   }

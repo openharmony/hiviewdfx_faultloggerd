@@ -20,7 +20,6 @@
     "ram": "~1024KB",
     "deps": {
       "components": [
-        "ability_base",
         "bounds_checking_function",
         "c_utils",
         "hilog",
