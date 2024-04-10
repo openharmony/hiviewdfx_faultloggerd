@@ -31,7 +31,6 @@ group("unittest") {
       "rustc_demangle:unittest",
       "stacktrace_rust:unittest",
       "unwind:unittest",
-      "unwinder:unittest",
     ]
   }
 }

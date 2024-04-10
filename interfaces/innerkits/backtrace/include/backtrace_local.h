@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2022-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -129,7 +129,6 @@ extern "C" {
     */
     const char* GetTrace(size_t skipFrameNum = 0, size_t maxFrameNums = DEFAULT_MAX_FRAME_NUM);
 }
-
 } // namespace HiviewDFX
 } // namespace OHOS
 #endif

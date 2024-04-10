@@ -82,12 +82,12 @@ if (defined(ohos_lite)) {
       "$faultloggerd_common_path/dfxlog:dfx_hilog",
       "$faultloggerd_interfaces_path/innerkits/backtrace:backtrace_local",
       "$faultloggerd_interfaces_path/innerkits/dump_catcher:libdfx_dumpcatcher",
-      "//third_party/jsoncpp:jsoncpp",
     ]
 
     external_deps = [
       "c_utils:utils",
       "hilog:libhilog",
+      "jsoncpp:jsoncpp",
     ]
 
     part_name = "faultloggerd"

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2022-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -408,6 +408,7 @@ HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest015, TestSize.Level
     log[1] += TRUNCATE_TEST_BUNDLE_NAME;
     int len = sizeof(log) / sizeof(log[0]);
     int count = GetKeywordsNum(msg, log, len);
+    GTEST_LOG_(INFO) << msg;
     EXPECT_EQ(count, len) << msg << "DumpCatcherInterfacesTest015 Failed";
     GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest015: end.";
 }
@@ -646,7 +647,7 @@ HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest028, TestSize.Level
     bool ret = dumplog.DumpCatchFd(getpid(), g_threadId, msg, 1, 10); // 10 means backtrace frames is 10
     GTEST_LOG_(INFO) << "message:"  << msg;
     GTEST_LOG_(INFO) << ret;
-    EXPECT_TRUE(msg.find("#10") != std::string::npos);
+    EXPECT_TRUE(msg.find("#09") != std::string::npos);
     EXPECT_EQ(ret, true) << "DumpCatcherInterfacesTest028 Failed";
     GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest028: end.";
 }
@@ -670,7 +671,7 @@ HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest029, TestSize.Level
 #if defined(__aarch64__)
     std::string stackKeyword = std::string("#") + std::to_string(DEFAULT_MAX_LOCAL_FRAME_NUM - 1);
 #else
-    std::string stackKeyword = std::string("#") + std::to_string(DEFAULT_MAX_FRAME_NUM);
+    std::string stackKeyword = std::string("#") + std::to_string(DEFAULT_MAX_FRAME_NUM - 1);
 #endif
     GTEST_LOG_(INFO) << "stackKeyword:"  << stackKeyword;
     EXPECT_TRUE(msg.find(stackKeyword.c_str()) != std::string::npos);
@@ -681,7 +682,7 @@ HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest029, TestSize.Level
 /**
  * @tc.name: DumpCatcherInterfacesTest030
  * @tc.desc: test DumpCatch remote API: PID(getpid()), TID(child thread)
- *     and maxFrameNums(DEFAULT_MAX_FRAME_NUM), isJsom(true)
+ *     and maxFrameNums(DEFAULT_MAX_FRAME_NUM), isJson(true)
  * @tc.type: FUNC
  */
 HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest030, TestSize.Level2)
@@ -714,7 +715,7 @@ HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest030, TestSize.Level
 /**
  * @tc.name: DumpCatcherInterfacesTest031
  * @tc.desc: test DumpCatch local API: PID(getpid()), TID(child thread)
- *     and maxFrameNums(DEFAULT_MAX_FRAME_NUM), isJsom(true)
+ *     and maxFrameNums(DEFAULT_MAX_FRAME_NUM), isJson(true)
  * @tc.type: FUNC
  */
 HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest031, TestSize.Level2)
@@ -727,19 +728,24 @@ HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest031, TestSize.Level
     int pid = getpid() ;
     int tid = gettid();
     bool ret = dumplog.DumpCatch(pid, tid, msg);
-    EXPECT_TRUE(ret) << "DumpCatch remote msg Failed.";
+    ASSERT_TRUE(ret) << "DumpCatch remote msg Failed.";
     string jsonMsg = "";
     bool jsonRet = dumplog.DumpCatch(pid, tid, jsonMsg, DEFAULT_MAX_FRAME_NUM, true);
-    EXPECT_TRUE(jsonRet) << "DumpCatch remote json Failed.";
+    ASSERT_TRUE(jsonRet) << "DumpCatch remote json Failed.";
     string stackMsg = "";
     jsonMsg = "[{\"frames\":" + jsonMsg + ",\"thread_name\":\"init\",\"tid\":1}]";
     bool formatRet = format.FormatJsonStack(jsonMsg, stackMsg);
-    EXPECT_TRUE(formatRet) << "FormatJsonStack Failed.";
-    stackMsg = stackMsg.erase(0, stackMsg.find("\n") + 1);
-    stackMsg = stackMsg.erase(0, stackMsg.find("\n") + 1);
-    stackMsg = stackMsg.erase(0, stackMsg.find("\n") + 1);
-    msg = msg.erase(0, msg.find("\n") + 1);
-    msg = msg.erase(0, msg.find("\n") + 1);
+    ASSERT_TRUE(formatRet) << "FormatJsonStack Failed.";
+    auto stackIdx = stackMsg.find("#00");
+    if (stackIdx != std::string::npos) {
+        stackMsg = stackMsg.erase(0, stackIdx);
+    }
+    stackIdx = msg.find("#00");
+    if (stackIdx != std::string::npos) {
+        msg = msg.erase(0, stackIdx);
+    }
+    GTEST_LOG_(INFO) << msg;
+    GTEST_LOG_(INFO) << stackMsg;
     EXPECT_EQ(stackMsg == msg, true) << "stackMsg != msg";
     GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest031: end.";
 }

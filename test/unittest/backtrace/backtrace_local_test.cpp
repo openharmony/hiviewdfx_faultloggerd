@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2022-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -23,21 +23,16 @@
 
 #include <dlfcn.h>
 #include <fcntl.h>
+#include <securec.h>
 #include <sys/wait.h>
 #include <unistd.h>
 
-#include "file_util.h"
-#include <libunwind_i-ohos.h>
-#include <libunwind.h>
-#include <securec.h>
-
-#include "dfx_frame_format.h"
 #include "backtrace_local.h"
-#include "backtrace_local_context.h"
 #include "backtrace_local_thread.h"
-#include "dfx_symbols.h"
-#include "elapsed_time.h"
+#include "dfx_frame_formatter.h"
 #include "dfx_test_util.h"
+#include "elapsed_time.h"
+#include "file_util.h"
 
 using namespace testing;
 using namespace testing::ext;
@@ -69,26 +64,6 @@ uint32_t BacktraceLocalTest::fdCountTotal = 0;
 uint32_t BacktraceLocalTest::mapsCountTotal = 0;
 uint64_t BacktraceLocalTest::memCountTotal = 0;
 
-size_t PrintBacktraceByLibunwind()
-{
-    unw_cursor_t cursor;
-    unw_word_t ip;
-    size_t n = 0;
-    unw_context_t uc;
-    unw_getcontext (&uc);
-    if (unlikely (unw_init_local (&cursor, &uc) < 0)) {
-        return 0;
-    }
-
-    while (unw_step (&cursor) > 0) {
-        if (unw_get_reg (&cursor, UNW_REG_IP, &ip) || ip == 0) {
-            return n;
-        }
-        n++;
-        printf("current pc:%llx \n", static_cast<unsigned long long>(ip));
-    }
-    return n;
-}
 
 void BacktraceLocalTest::SetUpTestCase()
 {
@@ -104,7 +79,6 @@ void BacktraceLocalTest::TearDownTestCase()
 
 void BacktraceLocalTest::SetUp()
 {
-    ASSERT_GT(PrintBacktraceByLibunwind(), 0);
     fdCount = GetSelfFdCount();
     mapsCount = GetSelfMapsCount();
     memCount = GetSelfMemoryCount();
@@ -112,7 +86,6 @@ void BacktraceLocalTest::SetUp()
 
 void BacktraceLocalTest::TearDown()
 {
-    ASSERT_GT(PrintBacktraceByLibunwind(), 0);
     CheckResourceUsage(fdCount, mapsCount, memCount);
 }
 
@@ -124,27 +97,16 @@ void BacktraceLocalTest::TearDown()
 HWTEST_F(BacktraceLocalTest, BacktraceLocalTest001, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "BacktraceLocalTest001: start.";
-    unw_addr_space_t as;
-    unw_init_local_address_space(&as);
-    if (as == nullptr) {
-        FAIL() << "Failed to init address space.\n";
-        return;
-    }
-
-    auto symbol = std::make_shared<DfxSymbols>();
     ElapsedTime counter;
-    BacktraceLocalThread thread(BACKTRACE_CURRENT_THREAD);
-    ASSERT_EQ(true, thread.Unwind(as, symbol, 0));
-
+    auto unwinder = std::make_shared<Unwinder>();
+    BacktraceLocalThread thread(BACKTRACE_CURRENT_THREAD, unwinder);
+    ASSERT_EQ(true, thread.Unwind(0));
     GTEST_LOG_(INFO) << "UnwindCurrentCost:" << counter.Elapsed();
     const auto& frames = thread.GetFrames();
     ASSERT_GT(frames.size(), 0);
     for (const auto& frame : frames) {
-        GTEST_LOG_(INFO) << DfxFrameFormat::GetFrameStr(frame);
+        GTEST_LOG_(INFO) << DfxFrameFormatter::GetFrameStr(frame);
     }
-
-    unw_destroy_local_address_space(as);
-    ASSERT_GE(frames.size(), PrintBacktraceByLibunwind());
     GTEST_LOG_(INFO) << "BacktraceLocalTest001: end.";
 }
 
@@ -172,12 +134,6 @@ __attribute__((noinline)) void Test001()
 HWTEST_F(BacktraceLocalTest, BacktraceLocalTest003, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "BacktraceLocalTest003: start.";
-    unw_addr_space_t as;
-    unw_init_local_address_space(&as);
-    if (as == nullptr) {
-        FAIL() << "Failed to init address space.\n";
-        return;
-    }
     g_mutex.lock();
     std::thread backtraceThread(Test001);
     sleep(1);
@@ -185,19 +141,17 @@ HWTEST_F(BacktraceLocalTest, BacktraceLocalTest003, TestSize.Level2)
         FAIL() << "Failed to create child thread.\n";
     }
 
-    auto symbol = std::make_shared<DfxSymbols>();
     ElapsedTime counter;
-    BacktraceLocalThread thread(g_tid);
-    ASSERT_EQ(true, thread.Unwind(as, symbol, 0));
+    auto unwinder = std::make_shared<Unwinder>();
+    BacktraceLocalThread thread(g_tid, unwinder);
+    ASSERT_EQ(true, thread.Unwind(0));
     GTEST_LOG_(INFO) << "UnwindCurrentCost:" << counter.Elapsed();
-    BacktraceLocalContext::GetInstance().CleanUp();
     const auto& frames = thread.GetFrames();
     ASSERT_GT(frames.size(), 0);
     auto backtraceStr = thread.GetFormattedStr(false);
     ASSERT_GT(backtraceStr.size(), 0);
     GTEST_LOG_(INFO) << backtraceStr;
     g_mutex.unlock();
-    unw_destroy_local_address_space(as);
     g_tid = 0;
     if (backtraceThread.joinable()) {
         backtraceThread.join();
@@ -248,8 +202,7 @@ HWTEST_F(BacktraceLocalTest, BacktraceLocalTest004, TestSize.Level2)
     }
 
     // both dlclose debug enabled and disabled cases
-    if (content.find("Not mapped pc") == std::string::npos &&
-        content.find("libunwind") == std::string::npos) {
+    if (content.find("Not mapped") == std::string::npos) {
         FAIL();
     }
 

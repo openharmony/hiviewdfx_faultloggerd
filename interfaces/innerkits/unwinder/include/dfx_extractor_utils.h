@@ -121,13 +121,12 @@ protected:
             zipFile_ = std::make_shared<AbilityBase::ZipFile>(file);
         }
         if ((zipFile_ == nullptr) || (!zipFile_->Open())) {
-                LOGE("Failed to open zip file(%s)", file.c_str());
-                zipFile_ = nullptr;
-                return false;
-            }
-            LOGU("Done load zip file %s", file.c_str());
-            return true;
+            LOGE("Failed to open zip file(%s)", file.c_str());
+            zipFile_ = nullptr;
+            return false;
         }
+        LOGU("Done load zip file %s", file.c_str());
+        return true;
 #endif
         return false;
     }

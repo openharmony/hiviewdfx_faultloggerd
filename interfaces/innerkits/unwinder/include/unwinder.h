@@ -109,6 +109,7 @@ public:
         std::string& funcName, uint64_t& funcOffset);
     static void GetFramesByPcs(std::vector<DfxFrame>& frames, std::vector<uintptr_t> pcs,
         std::shared_ptr<DfxMaps> maps);
+    static void GetLocalFramesByPcs(std::vector<DfxFrame>& frames, std::vector<uintptr_t> pcs);
     static void FillFrames(std::vector<DfxFrame>& frames);
     static void FillFrame(DfxFrame& frame);
     static void FillJsFrame(DfxFrame& frame, uintptr_t cachePtr);

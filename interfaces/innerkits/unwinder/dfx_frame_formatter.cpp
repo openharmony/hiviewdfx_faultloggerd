@@ -14,8 +14,10 @@
  */
 
 #include "dfx_frame_formatter.h"
+
 #include <sstream>
 #include <securec.h>
+
 #include "dfx_define.h"
 #include "dfx_log.h"
 #include "dfx_maps.h"

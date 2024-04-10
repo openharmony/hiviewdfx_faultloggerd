@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -21,7 +21,6 @@
 
 #include "dfx_define.h"
 #include "dfx_dump_catcher.h"
-#include "catchframe_local.h"
 #include "dfx_test_util.h"
 
 using namespace OHOS::HiviewDFX;
@@ -221,34 +220,5 @@ HWTEST_F (FaultPerformanceTest, FaultPerformanceTest005, TestSize.Level2)
     double realTime = GetStopTime(befor) / PERFORMANCE_TEST_NUMBER_ONE_HUNDRED;
     EXPECT_EQ(true, realTime < expectTime) << "FaultPerformanceTest005 Failed";
     GTEST_LOG_(INFO) << "FaultPerformanceTest005: end.";
-}
-
-/**
- * @tc.name: FaultPerformanceTest006
- * @tc.desc: test DumpCatchFrame API: app PID(app), TID(0)
- * @tc.type: PERF
- */
-HWTEST_F (FaultPerformanceTest, FaultPerformanceTest006, TestSize.Level2)
-{
-    GTEST_LOG_(INFO) << "FaultPerformanceTest006: start.";
-    std::string name = "test_perfor";
-    int testPid = GetProcessPid(name);
-    GTEST_LOG_(INFO) << testPid;
-    DfxCatchFrameLocal dumplog(testPid);
-    if (!dumplog.InitFrameCatcher()) {
-        GTEST_LOG_(ERROR) << "Failed to suspend thread(" << testPid << ").";
-    }
-    std::vector<DfxFrame> frameV;
-    clock_t befor = GetStartTime();
-    for (int i = 0; i < PERFORMANCE_TEST_NUMBER_ONE_HUNDRED; i++) {
-        bool ret = dumplog.CatchFrame(testPid, frameV, 0, true);
-        GTEST_LOG_(INFO) << ret;
-    }
-    double timeInterval = GetStopTime(befor) / PERFORMANCE_TEST_NUMBER_ONE_HUNDRED;
-    GTEST_LOG_(INFO) << "DumpCatchFrame API time(PID(test_per), PID(test_per)):" << timeInterval << "s";
-    double expectTime = PERFORMANCE_TEST_MAX_UNWIND_TIME_S;
-    double realTime = GetStopTime(befor) / PERFORMANCE_TEST_NUMBER_ONE_HUNDRED;
-    EXPECT_EQ(true, realTime < expectTime) << "FaultPerformanceTest006 Failed";
-    GTEST_LOG_(INFO) << "FaultPerformanceTest006: end.";
 }
 }
