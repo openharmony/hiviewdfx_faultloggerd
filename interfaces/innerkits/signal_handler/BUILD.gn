@@ -160,15 +160,5 @@ if (defined(ohos_lite)) {
       "//build/config/compiler:compiler",
       ":static_sighandler_config",
     ]
-
-    deps = [
-      "//third_party/musl:create_alltypes_h",
-      "//third_party/musl:create_porting_src",
-      "//third_party/musl:create_syscall_h",
-      "//third_party/musl:create_version_h",
-      "//third_party/musl:musl_copy_inc_bits",
-      "//third_party/musl:musl_copy_inc_root",
-      "//third_party/musl:musl_copy_inc_sys",
-    ]
   }
 }
