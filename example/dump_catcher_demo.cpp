@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -21,35 +21,33 @@
 #include <iostream>
 #include <string>
 #include <unistd.h>
+#include "dfx_define.h"
 #include "dfx_dump_catcher.h"
 #include "dfx_json_formatter.h"
-#include "iosfwd"
-#include "ostream"
 
-using namespace std;
+static NOINLINE int TestFuncDump(int32_t pid, int32_t tid)
+{
+    OHOS::HiviewDFX::DfxDumpCatcher dumplog;
+    std::string msg = "";
+#ifdef is_ohos_lite
+    bool ret = dumplog.DumpCatch(pid, tid, msg, OHOS::HiviewDFX::DEFAULT_MAX_FRAME_NUM, false);
+    if (ret) {
+        std::cout << msg << std::endl;
+    }
+#else
+    bool ret = dumplog.DumpCatch(pid, tid, msg, OHOS::HiviewDFX::DEFAULT_MAX_FRAME_NUM, true);
+    if (ret) {
+        std::string outStr = "";
+        OHOS::HiviewDFX::DfxJsonFormatter::FormatJsonStack(msg, outStr);
+        std::cout << outStr << std::endl;
+    }
+#endif
+    return ret;
+}
 
 static NOINLINE int TestFunc10(void)
 {
-    OHOS::HiviewDFX::DfxDumpCatcher dumplog;
-    string msg = "";
-    bool ret = dumplog.DumpCatch(getpid(), gettid(), msg, 256, true); // 256 : max frame size
-    if (ret) {
-        cout << msg << endl;
-    }
-    return 0;
-}
-
-static NOINLINE int TestFuncRemote(int32_t pid, int32_t tid)
-{
-    OHOS::HiviewDFX::DfxDumpCatcher dumplog;
-    string msg = "";
-    bool ret = dumplog.DumpCatch(pid, tid, msg, 256, true); // 256 : max frame size
-    if (ret) {
-        string outStr = "";
-        OHOS::HiviewDFX::DfxJsonFormatter::FormatJsonStack(msg, outStr);
-        cout << outStr << endl;
-    }
-    return ret;
+    return TestFuncDump(getpid(), gettid());
 }
 
 // auto gen function
@@ -106,7 +104,7 @@ int main(int argc, char *argv[])
     int32_t pid = 0;
     int32_t tid = 0;
     if (ParseParameters(argc, argv, pid, tid)) {
-        TestFuncRemote(pid, tid);
+        TestFuncDump(pid, tid);
     } else {
         TestFunc0();
     }

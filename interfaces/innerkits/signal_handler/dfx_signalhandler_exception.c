@@ -104,14 +104,13 @@ int ReportException(struct CrashDumpException exception)
     request.clientType = (int32_t)REPORT_EXCEPTION_CLIENT;
     request.pid = exception.pid;
     request.uid = exception.uid;
-    int fd = -1;
+    int ret = -1;
+    int fd = ConnectSocket(FAULTLOGGERD_SOCKET_NAME, TIME_OUT); // connect timeout
+    if (fd == -1) {
+        DFXLOG_ERROR("Failed to connect socket.");
+        return ret;
+    }
     do {
-        fd = ConnectSocket(FAULTLOGGERD_SOCKET_NAME, TIME_OUT); // connect timeout
-        if (fd == -1) {
-            DFXLOG_ERROR("Failed to connect socket.");
-            break;
-        }
-
         if (write(fd, &request, sizeof(request)) != (long)sizeof(request)) {
             DFXLOG_ERROR("Failed to write request message to socket.");
             break;
@@ -126,9 +125,9 @@ int ReportException(struct CrashDumpException exception)
             DFXLOG_ERROR("Failed to write exception message to socket.");
             break;
         }
-        syscall(SYS_close, fd);
-        return 0;
+
+        ret = 0;
     } while (false);
     syscall(SYS_close, fd);
-    return -1;
+    return ret;
 }

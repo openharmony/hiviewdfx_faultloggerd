@@ -19,10 +19,6 @@
 #include <string>
 #include <dfx_frame.h>
 
-#ifndef is_ohos_lite
-#include "json/json.h"
-#endif
-
 namespace OHOS {
 namespace HiviewDFX {
 class DfxJsonFormatter {

@@ -25,6 +25,9 @@
 #include "dfx_define.h"
 #include "dfx_frame.h"
 #include "dfx_log.h"
+#ifndef is_ohos_lite
+#include "json/json.h"
+#endif
 
 namespace OHOS {
 namespace HiviewDFX {

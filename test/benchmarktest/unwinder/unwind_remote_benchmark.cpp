@@ -100,16 +100,15 @@ static size_t UnwinderRemote(std::shared_ptr<Unwinder> unwinder, const pid_t tid
     return frames.size();
 }
 
-static size_t UnwinderRemoteFp(std::shared_ptr<Unwinder> unwinder)
+static size_t UnwinderRemoteFp(std::shared_ptr<Unwinder> unwinder, const pid_t tid)
 {
     if (unwinder == nullptr) {
         return 0;
     }
-    auto pid = unwinder->GetTargetPid();
-    auto regs = DfxRegs::CreateRemoteRegs(pid);
+    auto regs = DfxRegs::CreateRemoteRegs(tid);
     unwinder->SetRegs(regs);
     UnwindContext context;
-    context.pid = pid;
+    context.pid = tid;
     unwinder->EnableFpCheckMapExec(false);
     unwinder->UnwindByFp(&context);
     auto frames = unwinder->GetPcs();
@@ -164,7 +163,7 @@ static void Run(benchmark::State& state, void* data)
     for (const auto& _ : state) {
         size_t unwSize = 0;
         if (isFp) {
-            unwSize = UnwinderRemoteFp(unwinder);
+            unwSize = UnwinderRemoteFp(unwinder, pid);
         } else {
             unwSize = UnwinderRemote(unwinder, pid);
         }
