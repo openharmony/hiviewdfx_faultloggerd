@@ -1,0 +1,46 @@
+# Copyright (c) 2024 Huawei Device Co., Ltd.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import("//base/hiviewdfx/faultloggerd/faultloggerd.gni")
+
+dfx_allocator_sources = [ "dfx_allocator.c" ]
+
+if (!defined(ohos_lite)) {
+  config("dfx_allocator_config") {
+    visibility = [ "*:*" ]
+    defines = [ "DFX_LOG_HILOG_BASE" ]
+    include_dirs = [
+      "include",
+      "$faultloggerd_interfaces_path/common",
+      "$faultloggerd_common_path/cutil",
+      "$faultloggerd_common_path/dfxlog",
+    ]
+  }
+  ohos_source_set("dfx_allocator_src") {
+    public_configs = [ ":dfx_allocator_config" ]
+    sources = dfx_allocator_sources
+
+    deps = [
+      "$faultloggerd_common_path/cutil:dfx_cutil",
+      "$faultloggerd_common_path/dfxlog:dfx_hilog_base",
+    ]
+
+    external_deps = [
+      "c_utils:utils",
+      "hilog:libhilog_base",
+    ]
+
+    part_name = "faultloggerd"
+    subsystem_name = "hiviewdfx"
+  }
+}

@@ -13,6 +13,7 @@
 
 faultloggerd_path = "//base/hiviewdfx/faultloggerd"
 faultloggerd_common_path = "$faultloggerd_path/common"
+faultloggerd_frameworks_path = "$faultloggerd_path/frameworks"
 faultloggerd_interfaces_path = "$faultloggerd_path/interfaces"
 faultloggerd_test_path = "$faultloggerd_path/test"
 

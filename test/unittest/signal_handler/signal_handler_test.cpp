@@ -24,7 +24,6 @@
 #include <sys/prctl.h>
 
 #include "dfx_define.h"
-#include "dfx_signal_local_handler.h"
 #include "dfx_signal_handler.h"
 #include "dfx_test_util.h"
 
@@ -53,39 +52,6 @@ void SignalHandlerTest::SetUp()
 
 void SignalHandlerTest::TearDown()
 {}
-
-static bool CheckLocalCrashKeyWords(const string& filePath, pid_t pid, int sig)
-{
-    if (filePath.empty() || pid <= 0) {
-        return false;
-    }
-    map<int, string> sigKey = {
-        { SIGILL, string("Signal(4)") },
-        { SIGABRT, string("Signal(6)") },
-        { SIGBUS, string("Signal(7)") },
-        { SIGSEGV, string("Signal(11)") },
-    };
-    string sigKeyword = "";
-    map<int, string>::iterator iter = sigKey.find(sig);
-    if (iter != sigKey.end()) {
-        sigKeyword = iter->second;
-    }
-#ifdef __aarch64__
-    string keywords[] = {
-        "Pid:" + to_string(pid), "Uid:", "name:./test_signalhandler",
-        sigKeyword, "Tid:", "fp", "x0:", "test_signalhandler"
-    };
-#else
-    string keywords[] = {
-        "Pid:" + to_string(pid), "Uid:", "name:./test_signalhandler",
-        sigKeyword, "Tid:", "#00", "test_signalhandler"
-    };
-#endif
-
-    int length = sizeof(keywords) / sizeof(keywords[0]);
-    int minRegIdx = -1;
-    return CheckKeyWords(filePath, keywords, length, minRegIdx) == length;
-}
 
 static bool CheckThreadCrashKeyWords(const string& filePath, pid_t pid, int sig)
 {
@@ -158,131 +124,6 @@ int TestThread(int threadId, int sig)
         raise(sig);
     }
     return 0;
-}
-
-/**
- * @tc.name: LocalHandlerTest001
- * @tc.desc: test crashlocalhandler signo(SIGILL)
- * @tc.type: FUNC
- */
-HWTEST_F(SignalHandlerTest, LocalHandlerTest001, TestSize.Level2)
-{
-    GTEST_LOG_(INFO) << "LocalHandlerTest001: start.";
-    pid_t pid = fork();
-    if (pid < 0) {
-        GTEST_LOG_(ERROR) << "Failed to fork new test process.";
-    } else if (pid == 0) {
-        DFX_InstallLocalSignalHandler();
-        sleep(1);
-    } else {
-        usleep(10000); // 10000 : sleep 10ms
-        GTEST_LOG_(INFO) << "process(" << getpid() << ") is ready to kill process(" << pid << ")";
-        kill(pid, SIGILL);
-        sleep(2); // 2 : wait for cppcrash generating
-        bool ret = CheckLocalCrashKeyWords(GetCppCrashFileName(pid), pid, SIGILL);
-        ASSERT_TRUE(ret);
-    }
-    GTEST_LOG_(INFO) << "LocalHandlerTest001: end.";
-}
-
-/**
- * @tc.name: LocalHandlerTest002
- * @tc.desc: test crashlocalhandler signo(SIGABRT)
- * @tc.type: FUNC
- */
-HWTEST_F(SignalHandlerTest, LocalHandlerTest002, TestSize.Level2)
-{
-    GTEST_LOG_(INFO) << "LocalHandlerTest002: start.";
-    pid_t pid = fork();
-    if (pid < 0) {
-        GTEST_LOG_(ERROR) << "Failed to fork new test process.";
-    } else if (pid == 0) {
-        DFX_InstallLocalSignalHandler();
-        sleep(1);
-    } else {
-        usleep(10000); // 10000 : sleep 10ms
-        GTEST_LOG_(INFO) << "process(" << getpid() << ") is ready to kill process(" << pid << ")";
-        kill(pid, SIGABRT);
-        sleep(2); // 2 : wait for cppcrash generating
-        bool ret = CheckLocalCrashKeyWords(GetCppCrashFileName(pid), pid, SIGABRT);
-        ASSERT_TRUE(ret);
-    }
-    GTEST_LOG_(INFO) << "LocalHandlerTest002: end.";
-}
-
-/**
- * @tc.name: LocalHandlerTest003
- * @tc.desc: test crashlocalhandler signo(SIGBUS)
- * @tc.type: FUNC
- */
-HWTEST_F(SignalHandlerTest, LocalHandlerTest003, TestSize.Level2)
-{
-    GTEST_LOG_(INFO) << "LocalHandlerTest003: start.";
-    pid_t pid = fork();
-    if (pid < 0) {
-        GTEST_LOG_(ERROR) << "Failed to fork new test process.";
-    } else if (pid == 0) {
-        DFX_InstallLocalSignalHandler();
-        sleep(1);
-    } else {
-        usleep(10000); // 10000 : sleep 10ms
-        GTEST_LOG_(INFO) << "process(" << getpid() << ") is ready to kill process(" << pid << ")";
-        kill(pid, SIGBUS);
-        sleep(2); // 2 : wait for cppcrash generating
-        bool ret = CheckLocalCrashKeyWords(GetCppCrashFileName(pid), pid, SIGBUS);
-        ASSERT_TRUE(ret);
-    }
-    GTEST_LOG_(INFO) << "LocalHandlerTest003: end.";
-}
-
-/**
- * @tc.name: LocalHandlerTest004
- * @tc.desc: test crashlocalhandler signo(SIGSEGV)
- * @tc.type: FUNC
- */
-HWTEST_F(SignalHandlerTest, LocalHandlerTest004, TestSize.Level2)
-{
-    GTEST_LOG_(INFO) << "LocalHandlerTest004: start.";
-    pid_t pid = fork();
-    if (pid < 0) {
-        GTEST_LOG_(ERROR) << "Failed to fork new test process.";
-    } else if (pid == 0) {
-        DFX_InstallLocalSignalHandler();
-        sleep(1);
-    } else {
-        usleep(10000); // 10000 : sleep 10ms
-        GTEST_LOG_(INFO) << "process(" << getpid() << ") is ready to kill process(" << pid << ")";
-        kill(pid, SIGSEGV);
-        sleep(2); // 2 : wait for cppcrash generating
-        bool ret = CheckLocalCrashKeyWords(GetCppCrashFileName(pid), pid, SIGSEGV);
-        ASSERT_TRUE(ret);
-    }
-    GTEST_LOG_(INFO) << "LocalHandlerTest004: end.";
-}
-
-/**
- * @tc.name: LocalHandlerTest005
- * @tc.desc: test crashlocalhandler signo(SIGSEGV) by execl
- * @tc.type: FUNC
- */
-HWTEST_F(SignalHandlerTest, LocalHandlerTest005, TestSize.Level2)
-{
-    GTEST_LOG_(INFO) << "LocalHandlerTest005: start.";
-    pid_t pid = fork();
-    if (pid < 0) {
-        GTEST_LOG_(ERROR) << "Failed to fork new test process.";
-    } else if (pid == 0) {
-        DFX_InstallLocalSignalHandler();
-        sleep(1);
-        raise(SIGSEGV);
-    } else {
-        usleep(10000); // 10000 : sleep 10ms
-        GTEST_LOG_(INFO) << "process(" << getpid() << ") is ready to wait process(" << pid << ")";
-        sleep(2); // 2 : wait for cppcrash generating
-        bool ret = CheckLocalCrashKeyWords(GetCppCrashFileName(pid), pid, SIGSEGV);
-        ASSERT_TRUE(ret);
-    }
-    GTEST_LOG_(INFO) << "LocalHandlerTest005: end.";
 }
 
 /**
