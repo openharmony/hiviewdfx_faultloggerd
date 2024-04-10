@@ -57,7 +57,6 @@ struct RegLocState {
     bool returnAddressUndefined = false;
     bool returnAddressSame = false;
     uint16_t returnAddressRegister = 0; // lr
-    uintptr_t pseudoReg = 0;
     std::vector<RegLoc> locs;
 };
 } // namespace HiviewDFX

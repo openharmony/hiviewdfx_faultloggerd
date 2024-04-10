@@ -255,7 +255,6 @@ bool DwarfCfaInstructions::DecodeDwCfa(uint8_t opCode, CommonInfoEntry cie,
             break;
 #if defined(__aarch64__)
         case DW_CFA_AARCH64_negate_ra_state:
-            rsState.pseudoReg ^= 0x1;
             LOGU("%s", "DW_CFA_AARCH64_negate_ra_state");
             break;
 #endif
