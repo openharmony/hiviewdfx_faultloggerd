@@ -634,9 +634,7 @@ bool Unwinder::Apply(std::shared_ptr<DfxRegs> regs, std::shared_ptr<RegLocState>
         LOGE("%s", "Failed to apply reg state");
     }
 
-    if (rs->pseudoReg != 0) {
-        regs->SetPc(StripPac(regs_->GetPc(), pacMask_));
-    }
+    regs->SetPc(StripPac(regs_->GetPc(), pacMask_));
     return ret;
 }
 
