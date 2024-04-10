@@ -80,6 +80,8 @@ static std::string GetRequestTypeName(int32_t type)
             return "jsheap";
         case (int32_t)FaultLoggerType::LEAK_STACKTRACE:
             return "leakstack";
+        case (int32_t)FaultLoggerType::FFRT_CRASH_LOG:
+            return "ffrtlog";
         default:
             return "unsupported";
     }
