@@ -16,6 +16,7 @@ import("//base/hiviewdfx/faultloggerd/faultloggerd.gni")
 group("unittest") {
   deps = [
     "common:unittest",
+    "local_handler:unittest",
     "process_dump:unittest",
     "procinfo:unittest",
     "services:unittest",

@@ -39,6 +39,7 @@ enum CrashExceptionCode : int32_t {
     CRASH_DUMP_EATTACH,                 /* Failed to attach target process */
     CRASH_DUMP_EWRITEFD,                /* Failed to request writen fd */
     CRASH_DUMP_EKILLED,                 /* Tagert process has been killed */
+    CRASH_DUMP_LOCAL_REPORT,            /* Local Handler DumpInfo Report*/
 
     CRASH_UNWIND_ECONTEXT = 301,        /* Unwind context illegal */
     CRASH_UNWIND_EFRAME,                /* Failed to step ark js frame */

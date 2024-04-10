@@ -154,11 +154,11 @@ if (defined(ohos_lite)) {
     deps = [
       "$faultloggerd_common_path/dfxlog:dfx_hilog_base",
       "$faultloggerd_common_path/dfxutil:dfx_util",
+      "$faultloggerd_frameworks_path/localhandler:dfx_local_handler_src",
       "$faultloggerd_interfaces_path/innerkits/async_stack:libasync_stack",
       "$faultloggerd_interfaces_path/innerkits/crash_exception",
       "$faultloggerd_interfaces_path/innerkits/faultloggerd_client:libfaultloggerd",
       "$faultloggerd_interfaces_path/innerkits/procinfo:libdfx_procinfo",
-      "$faultloggerd_interfaces_path/innerkits/signal_handler:dfx_local_handler",
       "$faultloggerd_interfaces_path/innerkits/unwinder:libunwinder",
     ]
 

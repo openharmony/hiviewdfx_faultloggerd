@@ -1,4 +1,4 @@
-# Copyright (c) 2022-2023 Huawei Device Co., Ltd.
+# Copyright (c) 2024 Huawei Device Co., Ltd.
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -24,9 +24,9 @@ if (defined(ohos_lite)) {
   import("//build/config/features.gni")
   import("//build/test.gni")
 
-  module_output_path = "faultloggerd/signal_handler"
+  module_output_path = "faultloggerd/local_handler"
 
-  config("module_test_signal_config") {
+  config("module_test_localhandler_config") {
     visibility = [ "*:*" ]
 
     include_dirs = [
@@ -37,36 +37,18 @@ if (defined(ohos_lite)) {
     ]
   }
 
-  ohos_unittest("test_signalhandler") {
+  ohos_unittest("test_localhandler") {
     module_out_path = module_output_path
     configs = [
-      ":module_test_signal_config",
+      ":module_test_localhandler_config",
       "$faultloggerd_path/common/build:coverage_flags",
     ]
 
     cflags_cc = [ "-Wno-free-nonheap-object" ]
-    sources = [ "signal_handler_test.cpp" ]
+    sources = [ "local_handler_test.cpp" ]
 
     deps = [
-      "$faultloggerd_path/common/cutil:dfx_cutil",
-      "$faultloggerd_path/test/utils:dfx_test_util",
-      "//third_party/googletest:gtest_main",
-    ]
-
-    external_deps = [ "c_utils:utils" ]
-  }
-
-  ohos_unittest("test_signalchain") {
-    module_out_path = module_output_path
-
-    configs = [
-      ":module_test_signal_config",
-      "$faultloggerd_path/common/build:coverage_flags",
-    ]
-
-    sources = [ "signal_chain_test.cpp" ]
-
-    deps = [
+      "$faultloggerd_frameworks_path/localhandler:dfx_local_handler_src",
       "$faultloggerd_path/common/cutil:dfx_cutil",
       "$faultloggerd_path/test/utils:dfx_test_util",
       "//third_party/googletest:gtest_main",
@@ -77,9 +59,6 @@ if (defined(ohos_lite)) {
 
   group("unittest") {
     testonly = true
-    deps = [
-      ":test_signalchain",
-      ":test_signalhandler",
-    ]
+    deps = [ ":test_localhandler" ]
   }
 }
