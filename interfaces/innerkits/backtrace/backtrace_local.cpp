@@ -45,15 +45,13 @@ bool GetBacktraceFramesByTid(std::vector<DfxFrame>& frames, int32_t tid, size_t 
 {
     auto unwinder = std::make_shared<Unwinder>();
     BacktraceLocalThread thread(tid, unwinder);
-    thread.SetMaxFrameNums(maxFrameNums);
-    bool ret = thread.Unwind(skipFrameNum + 1, fast);
+    bool ret = thread.Unwind(fast, maxFrameNums, skipFrameNum + 1);
     frames = thread.GetFrames();
     return ret;
 }
 
 #ifndef is_ohos_lite
-bool GetBacktraceJsonByTid(std::string& out, int32_t tid, size_t skipFrameNum, bool fast,
-    size_t maxFrameNums)
+bool GetBacktraceJsonByTid(std::string& out, int32_t tid, size_t skipFrameNum, bool fast, size_t maxFrameNums)
 {
     std::vector<DfxFrame> frames;
     bool ret = GetBacktraceFramesByTid(frames, tid, skipFrameNum + 1, fast, maxFrameNums);
@@ -63,8 +61,7 @@ bool GetBacktraceJsonByTid(std::string& out, int32_t tid, size_t skipFrameNum, b
 }
 #endif
 
-bool GetBacktraceStringByTid(std::string& out, int32_t tid, size_t skipFrameNum, bool fast,
-                             size_t maxFrameNums)
+bool GetBacktraceStringByTid(std::string& out, int32_t tid, size_t skipFrameNum, bool fast, size_t maxFrameNums)
 {
     std::vector<DfxFrame> frames;
     bool ret = GetBacktraceFramesByTid(frames, tid, skipFrameNum + 1, fast, maxFrameNums);
@@ -149,11 +146,10 @@ std::string GetProcessStacktrace(size_t maxFrameNums, bool isJson)
             return false;
         }
         BacktraceLocalThread thread(tid, unwinder);
-        thread.SetMaxFrameNums(maxFrameNums);
-        if (thread.Unwind(0)) {
+        if (thread.Unwind(false, maxFrameNums, 0)) {
             ss << thread.GetFormattedStr(true, isJson) << std::endl;
         } else {
-            std::string msg;
+            std::string msg = "";
             if (tid == getprocpid()) {
                 ReadProcessStatus(msg, tid);
                 ss << msg << std::endl;

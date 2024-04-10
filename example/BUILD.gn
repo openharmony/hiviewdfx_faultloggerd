@@ -1,4 +1,4 @@
-# Copyright (c) 2021-2023 Huawei Device Co., Ltd.
+# Copyright (c) 2021-2024 Huawei Device Co., Ltd.
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -20,6 +20,7 @@ if (defined(ohos_lite)) {
     sources = dumpcatcherdemo_sources
 
     visibility = [ "*:*" ]
+    defines = [ "is_ohos_lite" ]
 
     include_dirs = [
       ".",
@@ -27,37 +28,19 @@ if (defined(ohos_lite)) {
       "$faultloggerd_common_path/dfxlog",
       "$faultloggerd_common_path/dfxutil",
       "$faultloggerd_interfaces_path/common",
+      "$faultloggerd_interfaces_path/innerkits/backtrace/include/",
       "$faultloggerd_interfaces_path/innerkits/dump_catcher/include/",
       "$faultloggerd_interfaces_path/innerkits/faultloggerd_client/include",
-      "$faultloggerd_path/tools/process_dump",
       "$hilog_lite_include_path",
-      "//third_party/libunwind/include",
-      "//third_party/libunwind/src",
-    ]
-
-    if (target_cpu == "arm") {
-      include_dirs += [ "//third_party/libunwind/include/tdep-arm" ]
-    } else if (target_cpu == "arm64") {
-      include_dirs += [ "//third_party/libunwind/include/tdep-aarch64" ]
-    } else if (target_cpu == "x64" || target_cpu == "x86_64") {
-      include_dirs += [ "//third_party/libunwind/include/tdep-x86_64" ]
-    } else if (target_cpu == "mipsel") {
-      include_dirs += [ "//third_party/libunwind/include/tdep-mips" ]
-    }
-
-    defines = [
-      "HAVE_CONFIG_H",
-      "HAVE_ELF_H",
-      "HAVE_LINK_H",
     ]
 
     deps = [
       "$faultloggerd_common_path/dfxlog:dfx_hilog",
       "$faultloggerd_common_path/dfxutil:dfx_util",
+      "$faultloggerd_interfaces_path/innerkits/backtrace:backtrace_local",
       "$faultloggerd_interfaces_path/innerkits/dump_catcher:libdfx_dumpcatcher",
       "$faultloggerd_interfaces_path/innerkits/faultloggerd_client:libfaultloggerd",
       "$hilog_lite_deps_path",
-      "//third_party/libunwind:libunwind",
     ]
   }
 } else {
@@ -66,10 +49,7 @@ if (defined(ohos_lite)) {
 
     include_dirs = [
       ".",
-      "$faultloggerd_common_path/dfxlog",
       "$faultloggerd_interfaces_path/common",
-      "$faultloggerd_interfaces_path/innerkits/dump_catcher/include/",
-      "$faultloggerd_interfaces_path/innerkits/backtrace/include/",
     ]
   }
 

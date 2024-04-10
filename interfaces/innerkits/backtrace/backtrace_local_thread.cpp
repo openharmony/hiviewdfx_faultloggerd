@@ -36,7 +36,6 @@ namespace {
 BacktraceLocalThread::BacktraceLocalThread(int32_t tid, std::shared_ptr<Unwinder> unwinder)
     : tid_(tid), unwinder_(unwinder)
 {
-    maxFrameNums_ = DEFAULT_MAX_FRAME_NUM;
     frames_.clear();
 }
 
@@ -45,7 +44,7 @@ BacktraceLocalThread::~BacktraceLocalThread()
     frames_.clear();
 }
 
-bool BacktraceLocalThread::Unwind(size_t skipFrameNum, bool fast)
+bool BacktraceLocalThread::Unwind(bool fast, size_t maxFrameNum, size_t skipFrameNum)
 {
     static std::mutex mutex;
     std::unique_lock<std::mutex> lock(mutex);
@@ -56,7 +55,7 @@ bool BacktraceLocalThread::Unwind(size_t skipFrameNum, bool fast)
     }
 
     if (tid_ == BACKTRACE_CURRENT_THREAD) {
-        ret = unwinder_->UnwindLocal(false, fast, maxFrameNums_, skipFrameNum + 1);
+        ret = unwinder_->UnwindLocal(false, fast, maxFrameNum, skipFrameNum + 1);
         if (fast) {
             Unwinder::GetLocalFramesByPcs(frames_, unwinder_->GetPcs());
         } else {
@@ -65,7 +64,7 @@ bool BacktraceLocalThread::Unwind(size_t skipFrameNum, bool fast)
         return ret;
     }
 
-    ret = unwinder_->UnwindLocalWithTid(tid_, maxFrameNums_, skipFrameNum + 1);
+    ret = unwinder_->UnwindLocalWithTid(tid_, maxFrameNum, skipFrameNum + 1);
 #ifdef __aarch64__
     Unwinder::GetLocalFramesByPcs(frames_, unwinder_->GetPcs());
 #else
@@ -100,11 +99,6 @@ std::string BacktraceLocalThread::GetFormattedStr(bool withThreadName, bool isJs
         ss << DfxFrameFormatter::GetFramesStr(frames_);
     }
     return ss.str();
-}
-
-void BacktraceLocalThread::SetMaxFrameNums(size_t maxFrameNums)
-{
-    maxFrameNums_ = maxFrameNums;
 }
 } // namespace HiviewDFX
 } // namespace OHOS

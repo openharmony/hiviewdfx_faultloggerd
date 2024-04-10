@@ -58,6 +58,11 @@
 namespace OHOS {
 namespace HiviewDFX {
 namespace {
+#undef LOG_DOMAIN
+#undef LOG_TAG
+#define LOG_DOMAIN 0xD002D11
+#define LOG_TAG "DfxProcessDump"
+
 void WriteData(int fd, const std::string& data, size_t blockSize)
 {
     size_t dataSize = data.length();

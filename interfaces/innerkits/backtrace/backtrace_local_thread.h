@@ -32,15 +32,13 @@ public:
     explicit BacktraceLocalThread(int32_t tid, std::shared_ptr<Unwinder> unwinder);
     ~BacktraceLocalThread();
 
-    bool Unwind(size_t skipFrameNum, bool fast = false);
+    bool Unwind(bool fast = false, size_t maxFrameNum = DEFAULT_MAX_FRAME_NUM, size_t skipFrameNum = 0);
 
     const std::vector<DfxFrame>& GetFrames() const;
     std::string GetFormattedStr(bool withThreadName = false, bool isJson = false);
-    void SetMaxFrameNums(size_t maxFrameNums);
 
 private:
     int32_t tid_;
-    size_t maxFrameNums_;
     std::vector<DfxFrame> frames_;
     std::shared_ptr<Unwinder> unwinder_;
 };
