@@ -71,8 +71,6 @@ if (defined(ohos_lite)) {
       "$faultloggerd_common_path/build:coverage_flags",
     ]
 
-    configs = [ "//third_party/jsoncpp:jsoncpp_public_config" ]
-
     sources = backtrace_local_sources
 
     deps = [
@@ -80,7 +78,6 @@ if (defined(ohos_lite)) {
       "$faultloggerd_common_path/dfxutil:dfx_util",
       "$faultloggerd_interfaces_path/innerkits/unwinder:libunwinder",
       "$faultloggerd_path/interfaces/innerkits/procinfo:libdfx_procinfo",
-      "//third_party/jsoncpp:jsoncpp",
     ]
     include_dirs = [ "$faultloggerd_common_path/dfxlog" ]
     version_script = "libbacktrace_local.map"
@@ -88,6 +85,7 @@ if (defined(ohos_lite)) {
       "bounds_checking_function:libsec_shared",
       "c_utils:utils",
       "hilog:libhilog",
+      "jsoncpp:jsoncpp",
     ]
 
     install_images = [
@@ -106,8 +104,6 @@ if (defined(ohos_lite)) {
 
   ohos_static_library("backtrace_local") {
     public_configs = [ ":dfx_backtrace_config" ]
-
-    configs = [ "//third_party/jsoncpp:jsoncpp_public_config" ]
     defines = [ "DFX_LOG_HILOG_BASE" ]
 
     sources = backtrace_local_sources
@@ -120,13 +116,13 @@ if (defined(ohos_lite)) {
       "$faultloggerd_common_path/dfxlog:dfx_hilog_base",
       "$faultloggerd_interfaces_path/innerkits/procinfo:dfx_procinfo_static",
       "$faultloggerd_interfaces_path/innerkits/unwinder:libunwinder_static",
-      "//third_party/jsoncpp:jsoncpp_static",
     ]
 
     external_deps = [
       "bounds_checking_function:libsec_static",
       "c_utils:utils",
       "hilog:libhilog_base",
+      "jsoncpp:jsoncpp_static",
     ]
 
     part_name = "faultloggerd"

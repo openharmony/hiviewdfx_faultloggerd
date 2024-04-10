@@ -39,14 +39,12 @@ if (!defined(ohos_lite)) {
       "dfx_signal_hook.c",
     ]
 
-    deps = [
-      "$faultloggerd_path/common/dfxlog:dfx_hilog_base",
-      "//third_party/libunwind:libunwind",
-    ]
+    deps = [ "$faultloggerd_path/common/dfxlog:dfx_hilog_base" ]
 
     external_deps = [
       "c_utils:utils",
       "hilog:libhilog_base",
+      "libunwind:libunwind",
     ]
 
     part_name = "faultloggerd"
@@ -66,14 +64,12 @@ if (!defined(ohos_lite)) {
       "dfx_hook_utils.c",
     ]
 
-    deps = [
-      "$faultloggerd_path/common/dfxlog:dfx_hilog_base",
-      "//third_party/libunwind:libunwind",
-    ]
+    deps = [ "$faultloggerd_path/common/dfxlog:dfx_hilog_base" ]
 
     external_deps = [
       "c_utils:utils",
       "hilog:libhilog_base",
+      "libunwind:libunwind",
     ]
 
     part_name = "faultloggerd"

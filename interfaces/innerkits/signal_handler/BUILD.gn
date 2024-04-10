@@ -121,12 +121,12 @@ if (defined(ohos_lite)) {
       "$faultloggerd_common_path/cutil:dfx_cutil",
       "$faultloggerd_common_path/dfxlog:dfx_hilog_base",
       "$faultloggerd_interfaces_path/innerkits/faultloggerd_client:libfaultloggerd",
-      "//third_party/libunwind:libunwind",
     ]
 
     external_deps = [
       "c_utils:utils",
       "hilog:libhilog_base",
+      "libunwind:libunwind",
     ]
 
     part_name = "faultloggerd"
@@ -179,7 +179,7 @@ if (defined(ohos_lite)) {
     subsystem_name = "hiviewdfx"
   }
 
-  static_library("dfxsignalhandler") {
+  source_set("dfxsignalhandler") {
     cflags = [ "-DDFX_SIGNAL_LIBC" ]
 
     sources = [
