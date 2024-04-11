@@ -55,13 +55,13 @@ bool DfxSymbols::FindRustDemangleFunction()
     g_hasTryLoadRustDemangleLib = true;
     void* rustDemangleLibHandle = dlopen("librustc_demangle.z.so", RTLD_LAZY | RTLD_NODELETE);
     if (rustDemangleLibHandle == nullptr) {
-        LOGW("Failed to dlopen librustc_demangle, %s\n", dlerror());
+        LOGW("Failed to dlopen librustc_demangle, %s", dlerror());
         return false;
     }
 
     g_rustDemangleFn = (RustDemangleFn)dlsym(rustDemangleLibHandle, "rustc_demangle");
     if (g_rustDemangleFn == nullptr) {
-        LOGW("Failed to dlsym rustc_demangle, %s\n", dlerror());
+        LOGW("Failed to dlsym rustc_demangle, %s", dlerror());
         dlclose(rustDemangleLibHandle);
         return false;
     }

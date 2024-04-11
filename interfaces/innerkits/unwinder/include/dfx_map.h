@@ -25,6 +25,7 @@
 namespace OHOS {
 namespace HiviewDFX {
 class DfxElf;
+class DfxHap;
 
 class DfxMap {
 public:
@@ -42,6 +43,7 @@ public:
     bool Parse(const std::string buf, size_t size);
     bool IsMapExec();
     bool IsArkExecutable();
+    const std::shared_ptr<DfxHap> GetHap();
     const std::shared_ptr<DfxElf> GetElf(pid_t pid = 0);
     std::string GetElfName();
     uint64_t GetRelPc(uint64_t pc);
@@ -58,6 +60,7 @@ public:
     std::string perms = ""; // 5:rwxp
     std::string name = "";
     std::shared_ptr<DfxElf> elf = nullptr;
+    std::shared_ptr<DfxHap> hap = nullptr;
     std::shared_ptr<DfxMap> prevMap = nullptr;
     uint64_t elfOffset = 0;
     uint64_t elfStartOffset = 0;

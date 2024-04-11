@@ -131,7 +131,9 @@ LocalThreadContext& LocalThreadContext::GetInstance()
 LocalThreadContext::~LocalThreadContext()
 {
 #if defined(__aarch64__)
-    FpUnwinder::GetInstance().ClosePipe();
+    if (FpUnwinder::GetPtr() != nullptr) {
+        FpUnwinder::GetPtr()->ClosePipe();
+    }
 #endif
 }
 
@@ -194,7 +196,7 @@ bool LocalThreadContext::CopyContextAndWaitTimeout(int sig, siginfo_t *si, void 
     }
     uintptr_t fp = reinterpret_cast<ucontext_t*>(context)->uc_mcontext.regs[REG_FP];
     uintptr_t pc = reinterpret_cast<ucontext_t*>(context)->uc_mcontext.pc;
-    ctxPtr->frameSz = FpUnwinder::GetInstance().UnwindFallback(pc, fp, ctxPtr->pcs, DEFAULT_MAX_LOCAL_FRAME_NUM);
+    ctxPtr->frameSz = FpUnwinder::GetPtr()->UnwindSafe(pc, fp, ctxPtr->pcs, DEFAULT_MAX_LOCAL_FRAME_NUM);
     ctxPtr->cv.notify_all();
     ctxPtr->tid = static_cast<int32_t>(ThreadContextStatus::CONTEXT_UNUSED);
     return true;
@@ -245,7 +247,7 @@ void LocalThreadContext::InitSignalHandler()
         add_special_signal_handler(SIGLOCAL_DUMP, &sigchain);
     });
 #if defined(__aarch64__)
-    FpUnwinder::GetInstance().InitPipe();
+    FpUnwinder::GetPtr()->InitPipe();
 #endif
 }
 

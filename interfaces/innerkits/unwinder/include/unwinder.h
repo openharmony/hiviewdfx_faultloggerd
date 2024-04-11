@@ -104,18 +104,16 @@ public:
     void AddFrame(DfxFrame& frame);
     std::vector<DfxFrame>& GetFrames();
     inline const std::vector<uintptr_t>& GetPcs() { return pcs_; }
+    void FillFrames(std::vector<DfxFrame>& frames);
+    void FillFrame(DfxFrame& frame);
+    void FillJsFrame(DfxFrame& frame);
+    void GetFramesByPcs(std::vector<DfxFrame>& frames, std::vector<uintptr_t> pcs);
 
     static bool GetSymbolByPc(uintptr_t pc, std::shared_ptr<DfxMaps> maps,
         std::string& funcName, uint64_t& funcOffset);
-    static void GetFramesByPcs(std::vector<DfxFrame>& frames, std::vector<uintptr_t> pcs,
-        std::shared_ptr<DfxMaps> maps);
     static void GetLocalFramesByPcs(std::vector<DfxFrame>& frames, std::vector<uintptr_t> pcs);
-    static void FillFrames(std::vector<DfxFrame>& frames);
-    static void FillFrame(DfxFrame& frame);
-    static void FillJsFrame(DfxFrame& frame, uintptr_t cachePtr);
     static std::string GetFramesStr(const std::vector<DfxFrame>& frames);
     static void FillLocalFrames(std::vector<DfxFrame>& frames);
-    static int DlPhdrCallback(struct dl_phdr_info *info, size_t size, void *data);
 
     static bool AccessMem(void* memory, uintptr_t addr, uintptr_t *val)
     {
@@ -136,6 +134,7 @@ private:
     bool StepArkJsFrame(uintptr_t& pc, uintptr_t& fp, uintptr_t& sp, bool& isJsFrame);
 #endif
     static uintptr_t StripPac(uintptr_t inAddr, uintptr_t pacMask);
+    static int DlPhdrCallback(struct dl_phdr_info *info, size_t size, void *data);
     inline void SetLocalStackCheck(void* ctx, bool check)
     {
         if ((pid_ == UNWIND_TYPE_LOCAL) && (ctx != nullptr)) {
@@ -174,6 +173,7 @@ private:
     std::shared_ptr<ArmExidx> armExidx_ = nullptr;
 #endif
     std::shared_ptr<DwarfSection> dwarfSection_ = nullptr;
+    uintptr_t arkSymbolExtractorPtr_ = 0;
 };
 } // namespace HiviewDFX
 } // namespace OHOS

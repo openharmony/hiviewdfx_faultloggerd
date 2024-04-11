@@ -24,7 +24,13 @@
 
 namespace OHOS {
 namespace HiviewDFX {
-AT_UNUSED static bool GetMainStackRange(uintptr_t& stackBottom, uintptr_t& stackTop)
+namespace {
+static uintptr_t g_stackMapStart = 0;
+static uintptr_t g_stackMapEnd = 0;
+static uintptr_t g_arkMapStart = 0;
+static uintptr_t g_arkMapEnd = 0;
+
+static bool ParseSelfMaps()
 {
     FILE *fp = fopen(PROC_SELF_MAPS_PATH, "r");
     if (fp == NULL) {
@@ -38,20 +44,49 @@ AT_UNUSED static bool GetMainStackRange(uintptr_t& stackBottom, uintptr_t& stack
     uint64_t offset = 0;
     char perms[5] = {0}; // 5:rwxp
     while (fgets(mapInfo, sizeof(mapInfo), fp) != NULL) {
-        if (strstr(mapInfo, "[stack]") == NULL) {
-            continue;
+        if (strstr(mapInfo, "[stack]") != NULL) {
+            if (sscanf_s(mapInfo, "%" SCNxPTR "-%" SCNxPTR " %4s %" SCNxPTR " %*x:%*x %*d%n", &begin, &end,
+                &perms, sizeof(perms), &offset, &pos) != 4) { // 4:scan size
+                continue;
+            }
+            g_stackMapStart = static_cast<uintptr_t>(begin);
+            g_stackMapEnd = static_cast<uintptr_t>(end);
+            ret = true;
         }
-        if (sscanf_s(mapInfo, "%" SCNxPTR "-%" SCNxPTR " %4s %" SCNxPTR " %*x:%*x %*d%n", &begin, &end,
-            &perms, sizeof(perms), &offset, &pos) != 4) { // 4:scan size
-            continue;
+
+        if (strstr(mapInfo, "stub.an") != NULL) {
+            if (sscanf_s(mapInfo, "%" SCNxPTR "-%" SCNxPTR " %4s %" SCNxPTR " %*x:%*x %*d%n", &begin, &end,
+                &perms, sizeof(perms), &offset, &pos) != 4) { // 4:scan size
+                continue;
+            }
+            g_arkMapStart = static_cast<uintptr_t>(begin);
+            g_arkMapEnd = static_cast<uintptr_t>(end);
+            ret = true;
         }
-        stackBottom = static_cast<uintptr_t>(begin);
-        stackTop = static_cast<uintptr_t>(end);
-        ret = true;
-        break;
     }
     (void)fclose(fp);
     return ret;
+};
+}
+
+AT_UNUSED inline bool GetArkStackRange(uintptr_t& start, uintptr_t& end)
+{
+    if (g_arkMapStart == 0 || g_arkMapEnd == 0) {
+        ParseSelfMaps();
+    }
+    start = g_arkMapStart;
+    end = g_arkMapEnd;
+    return (g_arkMapStart != 0 && g_arkMapEnd != 0);
+}
+
+AT_UNUSED inline bool GetMainStackRange(uintptr_t& stackBottom, uintptr_t& stackTop)
+{
+    if (g_stackMapStart == 0 || g_stackMapEnd == 0) {
+        ParseSelfMaps();
+    }
+    stackBottom = g_stackMapStart;
+    stackTop = g_stackMapEnd;
+    return (g_stackMapStart != 0 && g_stackMapEnd != 0);
 }
 
 AT_UNUSED static bool GetSelfStackRange(uintptr_t& stackBottom, uintptr_t& stackTop)

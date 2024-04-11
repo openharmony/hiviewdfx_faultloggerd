@@ -50,7 +50,7 @@ HWTEST_F(FpUnwinderTest, FpUnwinderTest001, TestSize.Level2)
     uintptr_t fp = regs[1];
     const size_t maxSize = 32;
     uintptr_t pcs[maxSize] = {0};
-    auto unwSz = FpUnwinder::GetInstance().Unwind(pc, fp, pcs, maxSize);
+    auto unwSz = FpUnwinder::GetPtr()->Unwind(pc, fp, pcs, maxSize);
     ASSERT_GT(unwSz, 1);
 
     std::vector<DfxFrame> frames;
@@ -69,7 +69,7 @@ HWTEST_F(FpUnwinderTest, FpUnwinderTest001, TestSize.Level2)
 
 /**
  * @tc.name: FpUnwinderTest002
- * @tc.desc: test fp unwinder UnwindFallback interface
+ * @tc.desc: test fp unwinder UnwindSafe interface
  * @tc.type: FUNC
  */
 HWTEST_F(FpUnwinderTest, FpUnwinderTest002, TestSize.Level2)
@@ -82,11 +82,11 @@ HWTEST_F(FpUnwinderTest, FpUnwinderTest002, TestSize.Level2)
     uintptr_t fp = regs[1];
     const size_t maxSize = 32;
     uintptr_t pcs[maxSize] = {0};
-    auto ret = FpUnwinder::GetInstance().InitPipe();
+    auto ret = FpUnwinder::GetPtr()->InitPipe();
     ASSERT_TRUE(ret);
-    auto unwSz = FpUnwinder::GetInstance().UnwindFallback(pc, fp, pcs, maxSize);
+    auto unwSz = FpUnwinder::GetPtr()->UnwindSafe(pc, fp, pcs, maxSize);
     ASSERT_GT(unwSz, 1);
-    FpUnwinder::GetInstance().ClosePipe();
+    FpUnwinder::GetPtr()->ClosePipe();
 
     std::vector<DfxFrame> frames;
     for (auto i = 0; i < unwSz; ++i) {

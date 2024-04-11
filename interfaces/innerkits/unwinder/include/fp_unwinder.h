@@ -15,14 +15,19 @@
 #ifndef FP_UNWINDER_H
 #define FP_UNWINDER_H
 
+#include <atomic>
 #include <cinttypes>
 #include <csignal>
-#include <nocopyable.h>
+#include <dlfcn.h>
 #include <fcntl.h>
+#include <memory>
+#include <mutex>
+#include <nocopyable.h>
 #include <securec.h>
 #include <sys/stat.h>
 #include <sys/syscall.h>
 #include <unistd.h>
+#include "dfx_ark_local.h"
 #include "dfx_define.h"
 #include "stack_util.h"
 
@@ -30,10 +35,16 @@ namespace OHOS {
 namespace HiviewDFX {
 class FpUnwinder {
 public:
-    static FpUnwinder& GetInstance()
+    static FpUnwinder* GetPtr()
     {
-        static FpUnwinder instance;
-        return instance;
+        static std::unique_ptr<FpUnwinder> ptr_ = nullptr;
+        if (ptr_ == nullptr) {
+            static std::once_flag flag;
+            std::call_once(flag, [&] {
+                ptr_.reset(new FpUnwinder());
+            });
+        }
+        return ptr_.get();
     }
     ~FpUnwinder() = default;
 
@@ -42,62 +53,89 @@ public:
         if (pcs == nullptr) {
             return 0;
         }
-        uintptr_t stackBottom = 0;
-        uintptr_t stackTop = 0;
         if (gettid() == getpid()) {
-            if (!GetMainStackRange(stackBottom, stackTop)) {
+            if (!GetMainStackRange(stackBottom_, stackTop_)) {
                 return 0;
             }
         } else {
-            if (!GetSelfStackRange(stackBottom, stackTop)) {
+            if (!GetSelfStackRange(stackBottom_, stackTop_)) {
                 return 0;
             }
         }
+#if defined(ENABLE_MIXSTACK)
+        MAYBE_UNUSED bool isGetArkRange = false;
+        if (!GetArkStackRange(arkMapStart_, arkMapEnd_)) {
+            isGetArkRange = true;
+        }
+#endif
         uintptr_t firstFp = fp;
-        uintptr_t stepFp = fp;
-        pcs[0] = pc;
-        size_t index = 1;
-        while ((index < maxSize) && (stepFp - firstFp < maxUnwindAddrRange_)) {
-            if ((stepFp < stackBottom) || (stepFp >= stackTop - sizeof(uintptr_t))) {
-                break;
-            }
-            uintptr_t prevFp = stepFp;
+        size_t index = 0;
+        MAYBE_UNUSED uintptr_t sp = 0;
+        MAYBE_UNUSED bool isJsFrame = false;
+        while ((index < maxSize) && (fp - firstFp < maxUnwindAddrRange_)) {
             if (index >= skipFrameNum) {
-                pcs[index - skipFrameNum] = *reinterpret_cast<uintptr_t *>(prevFp + sizeof(uintptr_t));
-            }
-            stepFp = *reinterpret_cast<uintptr_t *>(prevFp);
-            if (stepFp <= prevFp || stepFp == 0) {
-                break;
+                pcs[index - skipFrameNum] = pc;
             }
             index++;
+#if defined(ENABLE_MIXSTACK)
+            if (isGetArkRange && (pc >= arkMapStart_) && (pc < arkMapEnd_)) {
+                if (DfxArkLocal::StepArkFrame(FpUnwinder::GetPtr(), &(FpUnwinder::AccessMem),
+                    &fp, &sp, &pc, &isJsFrame) < 0) {
+                    break;
+                }
+                continue;
+            }
+#endif
+            uintptr_t prevFp = fp;
+            if ((!ReadUptr(prevFp, fp)) ||
+                (!ReadUptr(prevFp + sizeof(uintptr_t), pc))) {
+                break;
+            }
+            if (fp <= prevFp || fp == 0) {
+                break;
+            }
         }
-        return (index - skipFrameNum + 1);
+        return (index - skipFrameNum);
     }
 
-    size_t UnwindFallback(uintptr_t pc, uintptr_t fp, uintptr_t* pcs, size_t maxSize, size_t skipFrameNum = 0)
+    size_t UnwindSafe(uintptr_t pc, uintptr_t fp, uintptr_t* pcs, size_t maxSize, size_t skipFrameNum = 0)
     {
         if (pcs == nullptr) {
             return 0;
         }
-        uintptr_t stepFp = fp;
-        pcs[0] = pc;
-        size_t index = 1;
+#if defined(ENABLE_MIXSTACK)
+        MAYBE_UNUSED bool isGetArkRange = false;
+        if (!GetArkStackRange(arkMapStart_, arkMapEnd_)) {
+            isGetArkRange = true;
+        }
+#endif
+        size_t index = 0;
+        MAYBE_UNUSED uintptr_t sp = 0;
+        MAYBE_UNUSED bool isJsFrame = false;
         while (index < maxSize) {
-            uintptr_t prevFp = stepFp;
             if (index >= skipFrameNum) {
-                if (!ReadUptrSafe(prevFp + sizeof(uintptr_t), pcs[index - skipFrameNum])) {
-                    break;
-                }
-            }
-            if (!ReadUptrSafe(prevFp, stepFp)) {
-                break;
-            }
-            if (stepFp <= prevFp || stepFp == 0) {
-                break;
+                pcs[index - skipFrameNum] = pc;
             }
             index++;
+#if defined(ENABLE_MIXSTACK)
+            if (isGetArkRange && (pc >= arkMapStart_) && (pc < arkMapEnd_)) {
+                if (DfxArkLocal::StepArkFrame(FpUnwinder::GetPtr(), &(FpUnwinder::AccessMemSafe),
+                    &fp, &sp, &pc, &isJsFrame) < 0) {
+                    break;
+                }
+                continue;
+            }
+#endif
+            uintptr_t prevFp = fp;
+            if ((!ReadUptrSafe(prevFp, fp)) ||
+                (!ReadUptrSafe(prevFp + sizeof(uintptr_t), pc))) {
+                break;
+            }
+            if (fp <= prevFp || fp == 0) {
+                break;
+            }
         }
-        return (index - skipFrameNum + 1);
+        return (index - skipFrameNum);
     }
 
     static inline AT_ALWAYS_INLINE void GetPcFpRegs(void *regs)
@@ -133,9 +171,34 @@ public:
         }
     }
 
+#if defined(ENABLE_MIXSTACK)
+    static bool AccessMem(void* ptr, uintptr_t addr, uintptr_t *val)
+    {
+        return reinterpret_cast<FpUnwinder*>(ptr)->ReadUptr(addr, *val);
+    }
+
+    static bool AccessMemSafe(void* ptr, uintptr_t addr, uintptr_t *val)
+    {
+        return reinterpret_cast<FpUnwinder*>(ptr)->ReadUptrSafe(addr, *val);
+    }
+#endif
+
 private:
     FpUnwinder() = default;
     DISALLOW_COPY_AND_MOVE(FpUnwinder);
+
+#if defined(__has_feature) && __has_feature(address_sanitizer)
+    __attribute__((no_sanitize("address"))) bool ReadUptr(uintptr_t addr, uintptr_t& value)
+#else
+    bool ReadUptr(uintptr_t addr, uintptr_t& value)
+#endif
+    {
+        if ((addr < stackBottom_) || (addr >= stackTop_ - sizeof(uintptr_t))) {
+            return false;
+        }
+        value = *reinterpret_cast<uintptr_t *>(addr);
+        return true;
+    }
 
 #if defined(__has_feature) && __has_feature(address_sanitizer)
     __attribute__((no_sanitize("address"))) bool ReadUptrSafe(uintptr_t addr, uintptr_t& value)
@@ -155,6 +218,10 @@ private:
 
 private:
     MAYBE_UNUSED const uintptr_t maxUnwindAddrRange_ = 16 * 1024; // 16: 16k
+    uintptr_t stackBottom_ = 0;
+    uintptr_t stackTop_ = 0;
+    MAYBE_UNUSED uintptr_t arkMapStart_ = 0;
+    MAYBE_UNUSED uintptr_t arkMapEnd_ = 0;
     int32_t pfd_[PIPE_NUM_SZ] = {-1, -1};
     bool initPipe_ = false;
 };

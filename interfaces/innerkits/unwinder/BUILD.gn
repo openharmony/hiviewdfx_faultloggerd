@@ -22,6 +22,7 @@ dfx_unwinder_sources = [
   "dfx_elf_parser.cpp",
   "dfx_extractor_utils.cpp",
   "dfx_frame_formatter.cpp",
+  "dfx_hap.cpp",
   "dfx_instr_statistic.cpp",
   "dfx_instructions.cpp",
   "dfx_map.cpp",
@@ -128,6 +129,7 @@ if (defined(ohos_lite)) {
 
     include_dirs = [
       "include",
+      "$faultloggerd_common_path/dfxlog",
       "$faultloggerd_common_path/dfxutil",
       "$faultloggerd_interfaces_path/common",
       "$faultloggerd_interfaces_path/procinfo/include",
@@ -314,6 +316,7 @@ if (defined(ohos_lite)) {
     sources = [
       "dfx_elf.cpp",
       "dfx_elf_parser.cpp",
+      "dfx_hap.cpp",
       "dfx_map.cpp",
       "dfx_maps.cpp",
       "dfx_memory.cpp",
