@@ -19,10 +19,12 @@
 #include <link.h>
 
 #include "dfx_ark.h"
+#include "dfx_ark_local.h"
 #include "dfx_define.h"
 #include "dfx_errors.h"
 #include "dfx_extractor_utils.h"
 #include "dfx_frame_formatter.h"
+#include "dfx_hap.h"
 #include "dfx_instructions.h"
 #include "dfx_log.h"
 #include "dfx_regs_get.h"
@@ -87,6 +89,11 @@ void Unwinder::Clear()
 
 void Unwinder::Destroy()
 {
+#if defined(OFFLINE_MIXSTACK)
+    if (arkSymbolExtractorPtr_ != 0) {
+        DfxArk::ArkDestoryJsSymbolExtractor(arkSymbolExtractorPtr_);
+    }
+#endif
     Clear();
     rsCache_.clear();
 }
@@ -200,9 +207,10 @@ bool Unwinder::UnwindLocal(bool withRegs, bool fpUnwind, size_t maxFrameNum, siz
             uintptr_t miniRegs[FP_MINI_REGS_SIZE] = {0};
             GetFramePointerMiniRegs(miniRegs);
             regs_ = DfxRegs::CreateFromRegs(UnwindMode::FRAMEPOINTER_UNWIND, miniRegs);
+            withRegs = true;
         }
 #endif
-        if (regs_ == nullptr) {
+        if (!withRegs) {
             regs_ = DfxRegs::Create();
             auto regsData = regs_->RawData();
             if (regsData == nullptr) {
@@ -296,9 +304,16 @@ bool Unwinder::StepArkJsFrame(uintptr_t& pc, uintptr_t& fp, uintptr_t& sp, bool&
         LOGI("+++ark pc: %" PRIx64 ", fp: %" PRIx64 ", sp: %" PRIx64 ", isJsFrame: %d.",
             (uint64_t)pc, (uint64_t)fp, (uint64_t)sp, isJsFrame);
     }
-    if (DfxArk::StepArkFrame(memory_.get(), &(Unwinder::AccessMem), &fp, &sp, &pc, &isJsFrame) < 0) {
-        LOGE("Failed to step ark Js frames, pc: %" PRIx64, (uint64_t)pc);
-        return false;
+    if (pid_ == UNWIND_TYPE_LOCAL) {
+        if (DfxArkLocal::StepArkFrame(memory_.get(), &(Unwinder::AccessMem), &fp, &sp, &pc, &isJsFrame) < 0) {
+            LOGE("Failed to step ark Js frames, fp: %" PRIx64 " ,pc: %" PRIx64, (uint64_t)fp, (uint64_t)pc);
+            return false;
+        }
+    } else {
+        if (DfxArk::StepArkFrame(memory_.get(), &(Unwinder::AccessMem), &fp, &sp, &pc, &isJsFrame) < 0) {
+            LOGE("Failed to step ark Js frames, fp: %" PRIx64 " ,pc: %" PRIx64, (uint64_t)fp, (uint64_t)pc);
+            return false;
+        }
     }
     if (pid_ != UNWIND_TYPE_CUSTOMIZE) {
         LOGI("---ark pc: %" PRIx64 ", fp: %" PRIx64 ", sp: %" PRIx64 ", isJsFrame: %d.",
@@ -707,27 +722,6 @@ void Unwinder::AddFrame(DfxFrame& frame)
     frames_.emplace_back(frame);
 }
 
-void Unwinder::FillFrames(std::vector<DfxFrame>& frames)
-{
-#if defined(OFFLINE_MIXSTACK)
-    uintptr_t cachePtr = 0;
-    DfxArk::ArkCreateJsSymbolExtractor(&cachePtr);
-#endif
-    for (size_t i = 0; i < frames.size(); ++i) {
-        auto& frame = frames[i];
-        if (frame.isJsFrame) {
-#if defined(OFFLINE_MIXSTACK)
-            FillJsFrame(frame, cachePtr);
-#endif
-        } else {
-            FillFrame(frame);
-        }
-    }
-#if defined(OFFLINE_MIXSTACK)
-    DfxArk::ArkDestoryJsSymbolExtractor(cachePtr);
-#endif
-}
-
 void Unwinder::FillLocalFrames(std::vector<DfxFrame>& frames)
 {
     if (frames.empty()) {
@@ -744,11 +738,16 @@ void Unwinder::FillLocalFrames(std::vector<DfxFrame>& frames)
     }
 }
 
+void Unwinder::FillFrames(std::vector<DfxFrame>& frames)
+{
+    for (size_t i = 0; i < frames.size(); ++i) {
+        auto& frame = frames[i];
+        FillFrame(frame);
+    }
+}
+
 void Unwinder::FillFrame(DfxFrame& frame)
 {
-    if (frame.isJsFrame) {
-        return;
-    }
     if (frame.map == nullptr) {
         frame.relPc = frame.pc;
         frame.mapName = "Not mapped";
@@ -756,13 +755,16 @@ void Unwinder::FillFrame(DfxFrame& frame)
         return;
     }
     frame.relPc = frame.map->GetRelPc(frame.pc);
-    frame.mapName = frame.map->GetElfName();
-    frame.mapOffset = frame.map->offset;
     auto elf = frame.map->GetElf();
     if (elf == nullptr) {
-        LOGU("elf is null, mapName: %s", frame.mapName.c_str());
+#if defined(OFFLINE_MIXSTACK)
+        LOGU("elf is null, try to fill js frame?");
+        FillJsFrame(frame);
+#endif
         return;
     }
+    frame.mapName = frame.map->GetElfName();
+    frame.mapOffset = frame.map->offset;
     LOGU("mapName: %s, mapOffset: %" PRIx64 "", frame.mapName.c_str(), frame.mapOffset);
     if (!DfxSymbols::GetFuncNameAndOffsetByPc(frame.relPc, elf, frame.funcName, frame.funcOffset)) {
         LOGU("Failed to get symbol, relPc: %" PRIx64 ", mapName: %s", frame.relPc, frame.mapName.c_str());
@@ -770,58 +772,60 @@ void Unwinder::FillFrame(DfxFrame& frame)
     frame.buildId = elf->GetBuildId();
 }
 
-void Unwinder::FillJsFrame(DfxFrame& frame, uintptr_t cachePtr)
+void Unwinder::FillJsFrame(DfxFrame& frame)
 {
-    if (!frame.isJsFrame) {
+    if (frame.map == nullptr) {
+        LOGU("%s", "Current js frame is not map.");
         return;
     }
-    if (frame.map == nullptr || frame.map->name.empty()) {
-        LOGU("%s", "Current js frame is not mapped.");
-        return;
-    }
-#if defined(OFFLINE_MIXSTACK)
+
     LOGU("Js frame pc: %" PRIx64 ", map name: %s", frame.pc, frame.map->name.c_str());
-    std::shared_ptr<DfxExtractor> extractor = std::make_shared<DfxExtractor>(frame.map->name);
-    uintptr_t loadOffset = 0;
-    std::unique_ptr<uint8_t[]> dataPtr = nullptr;
-    size_t dataSize = 0;
-    if (!extractor->GetHapAbcInfo(loadOffset, dataPtr, dataSize)) {
-        LOGW("Failed to get hap abc info: %s", frame.map->name.c_str());
+    auto hap = frame.map->GetHap();
+    if (hap == nullptr) {
+        LOGW("hap is null");
         return;
     }
     JsFunction jsFunction;
-    if (DfxArk::ParseArkFrameInfo(frame.pc, static_cast<uintptr_t>(frame.map->begin), loadOffset,
-        dataPtr.get(), dataSize, cachePtr, &jsFunction) < 0) {
+    if ((pid_ != UNWIND_TYPE_LOCAL) &&
+        (!frame.map->name.empty()) && (EndsWith(frame.map->name, ".hap") || EndsWith(frame.map->name, ".hsp"))) {
+        if (!hap->ParseHapFileData(frame.map->name)) {
+            LOGW("Failed to parse hap file symbol, name: %s", frame.map->name.c_str());
+            return;
+        }
+    } else {
+        pid_t pid = pid_;
+        if (pid_ == UNWIND_TYPE_LOCAL) {
+            pid = getpid();
+        }
+        if (!hap->ParseHapMemData(pid, frame.map)) {
+            LOGW("Failed to parse hap mem symbol, pid: %d", pid);
+            return;
+        }
+    }
+
+#if defined(OFFLINE_MIXSTACK)
+    if (arkSymbolExtractorPtr_ == 0) {
+        DfxArk::ArkCreateJsSymbolExtractor(&arkSymbolExtractorPtr_);
+    }
+#endif
+    if (hap->abcDataPtr_ != nullptr && DfxArk::ParseArkFrameInfo(frame.pc, static_cast<uintptr_t>(frame.map->begin),
+        hap->abcLoadOffset_, hap->abcDataPtr_.get(), hap->abcDataSize_, arkSymbolExtractorPtr_, &jsFunction) < 0) {
         LOGW("Failed to parse ark frame info: %s", frame.map->name.c_str());
         return;
+    }
+    if (hap->srcMapDataPtr_ != nullptr && DfxArk::TranslateArkFrameInfo(hap->srcMapDataPtr_.get(),
+        hap->srcMapDataSize_, &jsFunction) < 0) {
+        LOGU("Failed to translate ark frame info: %s", frame.map->name.c_str());
     }
     frame.mapName = std::string(jsFunction.url);
     frame.funcName = std::string(jsFunction.functionName);
     frame.line = jsFunction.line;
     frame.column = jsFunction.column;
-    LOGU("Js frame abc mapName: %s, funcName: %s, line: %d, column: %d",
+    LOGU("Js frame mapName: %s, funcName: %s, line: %d, column: %d",
         frame.mapName.c_str(), frame.funcName.c_str(), frame.line, frame.column);
-
-    loadOffset = 0;
-    dataPtr = nullptr;
-    dataSize = 0;
-    if (extractor->GetHapSourceMapInfo(loadOffset, dataPtr, dataSize)) {
-        if (DfxArk::TranslateArkFrameInfo(dataPtr.get(), dataSize, &jsFunction) < 0) {
-            LOGU("Failed to translate ark frame info: %s", frame.map->name.c_str());
-        } else {
-            frame.mapName = std::string(jsFunction.url);
-            frame.funcName = std::string(jsFunction.functionName);
-            frame.line = jsFunction.line;
-            frame.column = jsFunction.column;
-            LOGU("Js frame sourcemap mapName: %s, funcName: %s, line: %d, column: %d",
-                frame.mapName.c_str(), frame.funcName.c_str(), frame.line, frame.column);
-        }
-    }
-#endif
 }
 
-void Unwinder::GetFramesByPcs(std::vector<DfxFrame>& frames, std::vector<uintptr_t> pcs,
-    std::shared_ptr<DfxMaps> maps)
+void Unwinder::GetFramesByPcs(std::vector<DfxFrame>& frames, std::vector<uintptr_t> pcs)
 {
     frames.clear();
     std::shared_ptr<DfxMap> map = nullptr;
@@ -832,9 +836,8 @@ void Unwinder::GetFramesByPcs(std::vector<DfxFrame>& frames, std::vector<uintptr
         if ((map != nullptr) && map->Contain(frame.pc)) {
             LOGU("%s", "map had matched");
         } else {
-            if ((maps == nullptr) || !maps->FindMapByAddr(pcs[i], map) || (map == nullptr)) {
+            if ((maps_ == nullptr) || !maps_->FindMapByAddr(pcs[i], map) || (map == nullptr)) {
                 LOGE("%s", "Find map error");
-                continue;
             }
         }
         frame.map = map;

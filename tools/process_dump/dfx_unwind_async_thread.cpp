@@ -86,7 +86,7 @@ void DfxUnwindAsyncThread::GetSubmitterStack(std::vector<DfxFrame> &submitterFra
     StackId id;
     id.value = stackId_;
     if (table->GetPcsByStackId(id, pcs)) {
-        unwinder_->GetFramesByPcs(submitterFrames, pcs, maps);
+        unwinder_->GetFramesByPcs(submitterFrames, pcs);
     } else {
         DFXLOG_WARN("%s::Failed to get pcs", __func__);
     }

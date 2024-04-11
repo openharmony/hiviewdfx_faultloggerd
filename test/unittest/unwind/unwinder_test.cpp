@@ -499,9 +499,8 @@ HWTEST_F(UnwinderTest, StepTest003, TestSize.Level2)
     time_t elapsed = counter.Elapsed();
     GTEST_LOG_(INFO) << "StepTest003: Elapsed: " << elapsed;
     auto pcs = unwinder->GetPcs();
-    auto maps = unwinder->GetMaps();
     std::vector<DfxFrame> frames;
-    Unwinder::GetFramesByPcs(frames, pcs, maps);
+    unwinder->GetFramesByPcs(frames, pcs);
     ASSERT_GT(frames.size(), 1);
     GTEST_LOG_(INFO) << "StepTest003: frames:\n" << Unwinder::GetFramesStr(frames);
     GTEST_LOG_(INFO) << "StepTest003: end.";
@@ -611,6 +610,29 @@ HWTEST_F(UnwinderTest, FillFrameTest001, TestSize.Level2)
 }
 
 /**
+ * @tc.name: FillJsFrameTest001
+ * @tc.desc: test unwinder FillJsFrame interface
+ *  in local case
+ * @tc.type: FUNC
+ */
+HWTEST_F(UnwinderTest, FillJsFrameTest001, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "FillJsFrameTest001: start.";
+    auto unwinder = std::make_shared<Unwinder>();
+    DfxFrame frame;
+    unwinder->FillJsFrame(frame);
+    GTEST_LOG_(INFO) << " when DfxFrame::map is null, frame.map is nullptr";
+    ASSERT_EQ(frame.map, nullptr);
+    string testMap = "f6d83000-f6d84000 r--p 00001000 b3:07 1892 /system/lib/init/libinit_context.z.so";
+    auto map = DfxMap::Create(testMap, sizeof(testMap));
+    frame.map = map;
+    unwinder->FillJsFrame(frame);
+    GTEST_LOG_(INFO) << " when DfxFrame::map is not null and file exist, frame.map.GetHap is not nullptr";
+    ASSERT_NE(frame.map->GetHap(), nullptr);
+    GTEST_LOG_(INFO) << "FillJsFrameTest001: end.";
+}
+
+/**
  * @tc.name: FillFramesTest001
  * @tc.desc: test unwinder FillFrames interface
  *  in local case
@@ -631,7 +653,7 @@ HWTEST_F(UnwinderTest, FillFramesTest001, TestSize.Level2)
     frame.map = map;
     frames.push_back(frame);
     ASSERT_EQ(frames[0].buildId.size(), 0);
-    Unwinder::FillFrames(frames);
+    unwinder->FillFrames(frames);
     ASSERT_EQ(frames[0].buildId.size() == 0, false);
     GTEST_LOG_(INFO) << "FillFramesTest001: end.";
 }
@@ -717,9 +739,8 @@ HWTEST_F(UnwinderTest, UnwindLocalWithTidTest001, TestSize.Level2)
     ASSERT_TRUE(unwinder->UnwindLocalWithTid(g_tid));
 #if defined(__aarch64__)
     auto pcs = unwinder->GetPcs();
-    auto maps = unwinder->GetMaps();
     std::vector<DfxFrame> frames;
-    Unwinder::GetFramesByPcs(frames, pcs, maps);
+    unwinder->GetFramesByPcs(frames, pcs);
 #else
     auto frames = unwinder->GetFrames();
 #endif

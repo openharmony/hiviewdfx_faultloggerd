@@ -26,6 +26,7 @@
 
 #include "dfx_define.h"
 #include "dfx_elf.h"
+#include "dfx_hap.h"
 #include "dfx_log.h"
 #include "dfx_util.h"
 #include "string_util.h"
@@ -137,6 +138,14 @@ void DfxMap::PermsToProts(const std::string perms, uint32_t& prots, uint32_t& fl
     } else if (perms.find("s") != std::string::npos) {
         flag = MAP_SHARED;
     }
+}
+
+const std::shared_ptr<DfxHap> DfxMap::GetHap()
+{
+    if (hap == nullptr) {
+        hap = std::make_shared<DfxHap>();
+    }
+    return hap;
 }
 
 const std::shared_ptr<DfxElf> DfxMap::GetElf(pid_t pid)
