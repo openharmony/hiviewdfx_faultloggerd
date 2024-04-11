@@ -24,7 +24,8 @@ namespace {
 static const std::string FAULTLOGGER_CONFIG_TAG = "FaultLoggerConfig";
 }
 
-FaultLoggerConfig::FaultLoggerConfig(const int number, const long size, const std::string& path, const std::string& debugPath)
+FaultLoggerConfig::FaultLoggerConfig(const int number, const long size,
+                                     const std::string& path, const std::string& debugPath)
     :logFileNumber_(number), logFileSize_(size), logFilePath_(path), debugLogFilePath_(debugPath)
 {
     DFXLOG_DEBUG("%s :: %d, %ld, %s, %s.",

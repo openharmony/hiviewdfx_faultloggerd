@@ -333,7 +333,7 @@ static void CloseFds(void)
     }
 }
 
-static void DFX_SetUpEnvironment()
+static void DFX_SetUpEnvironment(void)
 {
     // clear stdout and stderr
     int devNull = OHOS_TEMP_FAILURE_RETRY(open("/dev/null", O_RDWR));

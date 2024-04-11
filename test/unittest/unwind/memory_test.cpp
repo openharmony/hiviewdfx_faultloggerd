@@ -76,7 +76,7 @@ HWTEST_F(DfxMemoryTest, DfxMemoryTest002, TestSize.Level2)
     GTEST_LOG_(INFO) << "DfxMemoryTest002: start.";
     uint8_t values[] = {0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8};
 
-    uintptr_t addr = (uintptr_t)(&values[0]);
+    uintptr_t addr = reinterpret_cast<uintptr_t>(&values[0]);
     uintptr_t value;
     auto acc = std::make_shared<DfxAccessorsLocal>();
     auto memory = std::make_shared<DfxMemory>(acc);
@@ -189,7 +189,7 @@ HWTEST_F(DfxMemoryTest, DfxMemoryTest005, TestSize.Level2)
     ASSERT_EQ(valuePrel32, 0x04030201 + addr);
     char testStr[] = "Test ReadString Func";
     std::string resultStr;
-    uintptr_t addrStr = (uintptr_t)(&testStr[0]);
+    uintptr_t addrStr = reinterpret_cast<uintptr_t>(&testStr[0]);
     ASSERT_TRUE(memory->ReadString(addrStr, &resultStr, sizeof(testStr)/sizeof(char), false));
     ASSERT_EQ(testStr, resultStr);
     ASSERT_EQ(memory->ReadUleb128(addr), 1U);

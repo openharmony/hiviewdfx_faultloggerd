@@ -42,7 +42,7 @@ struct UnwindData {
 static void TestFunc6(MAYBE_UNUSED void (*func)(void*), MAYBE_UNUSED volatile bool* ready)
 {
     *ready = true;
-    while (true);
+    while (true) {};
     LOGE("Not be run here!!!");
 }
 

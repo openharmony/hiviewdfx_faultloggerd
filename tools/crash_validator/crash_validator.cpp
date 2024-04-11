@@ -279,7 +279,7 @@ void CrashValidator::ReadServiceCrashStatus()
     lseek(fd, 0, 3); // 3 : SEEK_DATA
     while (true) {
         ssize_t len;
-        if (-1 == (len = read(fd, kmsg, sizeof(kmsg))) && errno == EPIPE) {
+        if (((len = read(fd, kmsg, sizeof(kmsg))) == -1) && errno == EPIPE) {
             continue;
         }
         if (len == -1 && errno == EINVAL) {
