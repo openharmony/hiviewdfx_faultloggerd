@@ -63,8 +63,8 @@ static void ReserveChildThreadSignalStack(void)
         DFXLOG_ERROR("Failed to alloc memory for child stack.");
         return;
     }
-    g_reservedChildStack = static_cast<void *>(static_cast<uint8_t *>(g_reservedChildStack)
-        + LOCAL_HANDLER_STACK_SIZE - 1);
+    g_reservedChildStack = static_cast<void *>(static_cast<uint8_t *>(g_reservedChildStack) +
+        LOCAL_HANDLER_STACK_SIZE - 1);
 }
 
 AT_UNUSED static void FutexWait(volatile void* ftx, int value)

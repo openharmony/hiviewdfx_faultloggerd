@@ -34,7 +34,9 @@ if (!defined(ohos_lite)) {
       "$faultloggerd_common_path/cutil:dfx_cutil",
       "$faultloggerd_common_path/dfxlog:dfx_hilog_base",
     ]
-
+    if (is_asan) {
+      defines = [ "DFX_ALLOCATE_ASAN" ]
+    }
     external_deps = [
       "c_utils:utils",
       "hilog:libhilog_base",

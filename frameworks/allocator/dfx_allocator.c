@@ -34,8 +34,8 @@
 
 #define ALIGN_SIZE 16
 
-#define PAGE_SIZE 4096
-#define PAGE_MASK (~(PAGE_SIZE - 1))
+#define DFX_PAGE_SIZE 4096
+#define DFX_PAGE_MASK (~(DFX_PAGE_SIZE - 1))
 
 #define DFX_MEMPOOL_MIN_TYPE 4
 #define DFX_MEMPOOL_MAX_TYPE 10
@@ -52,12 +52,12 @@ static DfxAllocator g_dfxAllocator = {
 
 static inline uintptr_t PageStart(uintptr_t addr)
 {
-    return (addr & PAGE_MASK);
+    return (addr & DFX_PAGE_MASK);
 }
 
 static inline uintptr_t PageEnd(uintptr_t addr)
 {
-    return PageStart(addr + (PAGE_SIZE - 1));
+    return PageStart(addr + (DFX_PAGE_SIZE - 1));
 }
 
 static inline size_t AlignRoundUp(size_t val, size_t align)
@@ -116,7 +116,7 @@ static void MempoolRemovePage(DfxMempool* mempool, PageInfo* page)
 
 static void MempoolAllocPage(DfxMempool* mempool)
 {
-    void* mptr = mmap(NULL, PAGE_SIZE, PROT_READ | PROT_WRITE,
+    void* mptr = mmap(NULL, DFX_PAGE_SIZE, PROT_READ | PROT_WRITE,
         MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
     if (mptr == MAP_FAILED) {
         DFXLOG_ERROR("Mempool AllocPage mmap failed!");
@@ -146,7 +146,7 @@ static void MempoolFreePage(DfxMempool* mempool, PageInfo* page)
         return;
     }
     MempoolRemovePage(mempool, page);
-    munmap(page, PAGE_SIZE);
+    munmap(page, DFX_PAGE_SIZE);
     mempool->freePagesCnt--;
 }
 
@@ -242,7 +242,7 @@ static void InitDfxAllocator()
         g_dfxAllocator.dfxMempoolBuf[i].type = i + DFX_MEMPOOL_MIN_TYPE;
         g_dfxAllocator.dfxMempoolBuf[i].blockSize = (1UL << g_dfxAllocator.dfxMempoolBuf[i].type);
         g_dfxAllocator.dfxMempoolBuf[i].blocksPerPage =
-            (PAGE_SIZE - sizeof(PageInfo)) / (g_dfxAllocator.dfxMempoolBuf[i].blockSize);
+            (DFX_PAGE_SIZE - sizeof(PageInfo)) / (g_dfxAllocator.dfxMempoolBuf[i].blockSize);
         g_dfxAllocator.dfxMempoolBuf[i].freePagesCnt = 0;
         g_dfxAllocator.dfxMempoolBuf[i].pageList = NULL;
     }
@@ -383,7 +383,9 @@ static void* DfxRealloc(void* ptr, size_t size)
     if (oldsize < size) {
         void* res = DfxAlloc(size);
         if (res) {
-            (void)memcpy_s(res, size, ptr, oldsize);
+            if (memcpy_s(res, size, ptr, oldsize) != EOK) {
+                DFXLOG_ERROR("DfxRealloc memcpy fail");
+            }
             DfxFree(ptr);
             return res;
         }
@@ -413,24 +415,29 @@ static void HookFree(void* ptr)
 
 void RegisterAllocator()
 {
+#ifndef DFX_ALLOCATE_ASAN
     (void)memcpy_s(&g_dfxCustomMallocDispatch, sizeof(g_dfxCustomMallocDispatch),
         &(__libc_malloc_default_dispatch), sizeof(__libc_malloc_default_dispatch));
+#endif
     g_dfxCustomMallocDispatch.malloc = HookMalloc;
     g_dfxCustomMallocDispatch.calloc = HookCalloc;
     g_dfxCustomMallocDispatch.realloc = HookRealloc;
     g_dfxCustomMallocDispatch.free = HookFree;
-
+#ifndef DFX_ALLOCATE_ASAN
     atomic_store_explicit(&ohos_malloc_hook_shared_library, -1, memory_order_seq_cst);
     atomic_store_explicit(&__hook_enable_hook_flag, true, memory_order_seq_cst);
     atomic_store_explicit(&__musl_libc_globals.current_dispatch_table,
         (volatile const long long)&g_dfxCustomMallocDispatch, memory_order_seq_cst);
+#endif
 }
 
 void UnregisterAllocator()
 {
+#ifndef DFX_ALLOCATE_ASAN
     atomic_store_explicit(&ohos_malloc_hook_shared_library, 0, memory_order_seq_cst);
     atomic_store_explicit(&__hook_enable_hook_flag, false, memory_order_seq_cst);
     atomic_store_explicit(&__musl_libc_globals.current_dispatch_table, 0, memory_order_seq_cst);
+#endif
 }
 
 DfxAllocator* GetDfxAllocator()
