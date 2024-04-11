@@ -202,7 +202,7 @@ bool Unwinder::UnwindLocal(bool withRegs, bool fpUnwind, size_t maxFrameNum, siz
             regs_ = DfxRegs::CreateFromRegs(UnwindMode::FRAMEPOINTER_UNWIND, miniRegs);
         }
 #endif
-        if (regs_ == nullptr) {
+        if (!withRegs) {
             regs_ = DfxRegs::Create();
             auto regsData = regs_->RawData();
             if (regsData == nullptr) {

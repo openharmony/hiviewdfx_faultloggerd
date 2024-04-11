@@ -50,17 +50,6 @@ bool GetBacktraceFramesByTid(std::vector<DfxFrame>& frames, int32_t tid, size_t 
     return ret;
 }
 
-#ifndef is_ohos_lite
-bool GetBacktraceJsonByTid(std::string& out, int32_t tid, size_t skipFrameNum, bool fast, size_t maxFrameNums)
-{
-    std::vector<DfxFrame> frames;
-    bool ret = GetBacktraceFramesByTid(frames, tid, skipFrameNum + 1, fast, maxFrameNums);
-    out.clear();
-    out = DfxJsonFormatter::GetFramesJson(frames);
-    return ret;
-}
-#endif
-
 bool GetBacktraceStringByTid(std::string& out, int32_t tid, size_t skipFrameNum, bool fast, size_t maxFrameNums)
 {
     std::vector<DfxFrame> frames;
@@ -96,18 +85,6 @@ bool GetBacktrace(std::string& out, bool fast, size_t maxFrameNums)
     return GetBacktraceStringByTid(out, BACKTRACE_CURRENT_THREAD, 1, fast, maxFrameNums); // 1: skip current frame
 }
 
-bool GetBacktrace(std::string& out, size_t skipFrameNum, bool fast, size_t maxFrameNums, bool isJson)
-{
-    DFXLOG_INFO("Receive GetBacktrace request for isJson(%d).", isJson);
-    if (isJson) {
-#ifndef is_ohos_lite
-        return GetBacktraceJsonByTid(out, BACKTRACE_CURRENT_THREAD, skipFrameNum + 1, fast, maxFrameNums);
-#endif
-    } else {
-        return GetBacktraceStringByTid(out, BACKTRACE_CURRENT_THREAD, skipFrameNum + 1, fast, maxFrameNums);
-    }
-}
-
 bool PrintTrace(int32_t fd, size_t maxFrameNums)
 {
     return PrintBacktrace(fd, false, maxFrameNums);
@@ -117,7 +94,7 @@ const char* GetTrace(size_t skipFrameNum, size_t maxFrameNums)
 {
     static std::string trace;
     trace.clear();
-    if (!GetBacktrace(trace, skipFrameNum, false, maxFrameNums)) {
+    if (!GetBacktrace(trace, false, maxFrameNums)) {
         DFXLOG_ERROR("%s", "Failed to get trace string");
     }
     return trace.c_str();
@@ -136,7 +113,7 @@ static std::string GetStacktraceHeader()
     return ss.str();
 }
 
-std::string GetProcessStacktrace(size_t maxFrameNums, bool isJson)
+std::string GetProcessStacktrace(size_t maxFrameNums)
 {
     auto unwinder = std::make_shared<Unwinder>();
     std::ostringstream ss;
@@ -147,7 +124,7 @@ std::string GetProcessStacktrace(size_t maxFrameNums, bool isJson)
         }
         BacktraceLocalThread thread(tid, unwinder);
         if (thread.Unwind(false, maxFrameNums, 0)) {
-            ss << thread.GetFormattedStr(true, isJson) << std::endl;
+            ss << thread.GetFormattedStr(true) << std::endl;
         } else {
             std::string msg = "";
             if (tid == getprocpid()) {

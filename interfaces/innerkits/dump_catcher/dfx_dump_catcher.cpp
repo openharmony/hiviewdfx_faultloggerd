@@ -60,11 +60,11 @@ enum DfxDumpPollRes : int32_t {
 };
 }
 
-bool DfxDumpCatcher::DoDumpCurrTid(const size_t skipFrameNum, std::string& msg, size_t maxFrameNums, bool isJson)
+bool DfxDumpCatcher::DoDumpCurrTid(const size_t skipFrameNum, std::string& msg, size_t maxFrameNums)
 {
     bool ret = false;
 
-    ret = GetBacktrace(msg, skipFrameNum + 1, false, maxFrameNums, isJson);
+    ret = GetBacktrace(msg, false, maxFrameNums);
     if (!ret) {
         int currTid = getproctid();
         msg.append("Failed to dump curr thread:" + std::to_string(currTid) + ".\n");
@@ -73,21 +73,14 @@ bool DfxDumpCatcher::DoDumpCurrTid(const size_t skipFrameNum, std::string& msg, 
     return ret;
 }
 
-bool DfxDumpCatcher::DoDumpLocalTid(const int tid, std::string& msg, size_t maxFrameNums, bool isJson)
+bool DfxDumpCatcher::DoDumpLocalTid(const int tid, std::string& msg, size_t maxFrameNums)
 {
     bool ret = false;
     if (tid <= 0) {
         DFXLOG_ERROR("%s :: DoDumpLocalTid :: return false as param error.", DFXDUMPCATCHER_TAG.c_str());
         return ret;
     }
-    if (isJson) {
-#ifndef is_ohos_lite
-        ret = GetBacktraceJsonByTid(msg, tid, 0, false, maxFrameNums);
-#endif
-    } else {
-        ret = GetBacktraceStringByTid(msg, tid, 0, false, maxFrameNums);
-    }
-
+    ret = GetBacktraceStringByTid(msg, tid, 0, false, maxFrameNums);
     if (!ret) {
         msg.append("Failed to dump thread:" + std::to_string(tid) + ".\n");
     }
@@ -95,7 +88,7 @@ bool DfxDumpCatcher::DoDumpLocalTid(const int tid, std::string& msg, size_t maxF
     return ret;
 }
 
-bool DfxDumpCatcher::DoDumpLocalPid(int pid, std::string& msg, size_t maxFrameNums, bool isJson)
+bool DfxDumpCatcher::DoDumpLocalPid(int pid, std::string& msg, size_t maxFrameNums)
 {
     bool ret = false;
     if (pid <= 0) {
@@ -110,9 +103,9 @@ bool DfxDumpCatcher::DoDumpLocalPid(int pid, std::string& msg, size_t maxFrameNu
         }
 
         if (tid == getproctid()) {
-            return DoDumpCurrTid(skipFramNum, msg, maxFrameNums, isJson);
+            return DoDumpCurrTid(skipFramNum, msg, maxFrameNums);
         }
-        return DoDumpLocalTid(tid, msg, maxFrameNums, isJson);
+        return DoDumpLocalTid(tid, msg, maxFrameNums);
     };
     std::vector<int> tids;
 #if defined(is_ohos) && is_ohos
@@ -129,19 +122,19 @@ bool DfxDumpCatcher::DoDumpRemoteLocked(int pid, int tid, std::string& msg, bool
     return DoDumpCatchRemote(pid, tid, msg, isJson);
 }
 
-bool DfxDumpCatcher::DoDumpLocalLocked(int pid, int tid, std::string& msg, size_t maxFrameNums, bool isJson)
+bool DfxDumpCatcher::DoDumpLocalLocked(int pid, int tid, std::string& msg, size_t maxFrameNums)
 {
     bool ret = false;
     if (tid == getproctid()) {
         size_t skipFramNum = 4; // 4: skip 4 frame
-        ret = DoDumpCurrTid(skipFramNum, msg, maxFrameNums, isJson);
+        ret = DoDumpCurrTid(skipFramNum, msg, maxFrameNums);
     } else if (tid == 0) {
-        ret = DoDumpLocalPid(pid, msg, maxFrameNums, isJson);
+        ret = DoDumpLocalPid(pid, msg, maxFrameNums);
     } else {
         if (!IsThreadInPid(pid, tid)) {
             msg.append("tid(" + std::to_string(tid) + ") is not in pid(" + std::to_string(pid) + ").\n");
         } else {
-            ret = DoDumpLocalTid(tid, msg, maxFrameNums, isJson);
+            ret = DoDumpLocalTid(tid, msg, maxFrameNums);
         }
     }
 
@@ -166,7 +159,7 @@ bool DfxDumpCatcher::DumpCatch(int pid, int tid, std::string& msg, size_t maxFra
     int currentPid = getprocpid();
     DFXLOG_INFO("Receive DumpCatch request for cPid:(%d), pid(%d), tid:(%d).", currentPid, pid, tid);
     if (pid == currentPid) {
-        ret = DoDumpLocalLocked(pid, tid, msg, maxFrameNums, isJson);
+        ret = DoDumpLocalLocked(pid, tid, msg, maxFrameNums);
     } else {
         if (maxFrameNums != DEFAULT_MAX_FRAME_NUM) {
             DFXLOG_INFO("%s :: dump_catch :: maxFrameNums does not support setting when pid is not equal to caller pid",
@@ -179,7 +172,7 @@ bool DfxDumpCatcher::DumpCatch(int pid, int tid, std::string& msg, size_t maxFra
             DFXDUMPCATCHER_TAG.c_str());
         msg.clear();
         if (pid == currentPid) {
-            ret = DoDumpLocalLocked(pid, tid, msg, maxFrameNums, false);
+            ret = DoDumpLocalLocked(pid, tid, msg, maxFrameNums);
         } else {
             ret = DoDumpRemoteLocked(pid, tid, msg, false);
         }
