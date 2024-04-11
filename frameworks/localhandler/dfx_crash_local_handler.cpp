@@ -132,6 +132,9 @@ static std::string LocalUnwinderPrint(const ucontext_t* context)
 
 __attribute__((noinline)) void CrashLocalUnwind(const int fd, const ucontext_t* uc)
 {
+    if (uc == nullptr) {
+        return;
+    }
     std::string stackInfo = LocalUnwinderPrint(uc);
     for (unsigned int i = 0; i < stackInfo.length(); i += BUF_SZ_SMALL) {
         PrintLog(fd, "%s", stackInfo.substr(i, BUF_SZ_SMALL).c_str());
