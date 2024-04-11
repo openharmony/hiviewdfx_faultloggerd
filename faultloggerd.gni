@@ -23,13 +23,9 @@ declare_args() {
   has_libunwindstack = false
   processdump_minidebuginfo_enable = true
   faultloggerd_hisysevent_enable = false
-  faultloggerd_abilitybase_enable = false
   if (defined(global_parts_info)) {
     if (defined(global_parts_info.hiviewdfx_hisysevent)) {
       faultloggerd_hisysevent_enable = true
-    }
-    if (defined(global_parts_info.ability_ability_base)) {
-      faultloggerd_abilitybase_enable = true
     }
   }
 }
