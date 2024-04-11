@@ -447,6 +447,9 @@ DfxAllocator* GetDfxAllocator()
 
 int IsDfxAllocatorMem(void* ptr)
 {
+    if (!ptr) {
+        return 0;
+    }
     if (GetPage(ptr)) {
         return 1;
     }
