@@ -454,10 +454,14 @@ bool Unwinder::FpStep(uintptr_t& fp, uintptr_t& pc, void *ctx)
 
 bool Unwinder::Step(uintptr_t& pc, uintptr_t& sp, void *ctx)
 {
+    if ((regs_  == nullptr) || (!CheckAndReset(ctx))) {
+        LOGE("%s", "params is nullptr?");
+        return false;
+    }
     bool ret = false;
     bool isJsFrame = false;
     // Check if this is a signal frame.
-    if ((memory_ != nullptr) && regs_->StepIfSignalFrame(pc, memory_)) {
+    if (regs_->StepIfSignalFrame(pc, memory_)) {
         LOGW("Step signal frame, pc: %p", reinterpret_cast<void *>(pc));
         ret = StepInner(true, isJsFrame, pc, sp, ctx);
     } else {
