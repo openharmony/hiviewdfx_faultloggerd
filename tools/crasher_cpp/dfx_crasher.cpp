@@ -483,10 +483,11 @@ NOINLINE int DfxCrasher::PrintFatalMessageInLibc()
     return 0;
 }
 
-void* CrashInSubThread(void* stackIdPtr)
+static void* CrashInSubThread(void* stackIdPtr)
 {
-    SetStackId(*((uint64_t*)stackIdPtr));
-    printf("CrashInSubThread stackId:%p value:%p.\n", stackIdPtr, (void*)*((uint64_t*)stackIdPtr));
+    uint64_t value = *reinterpret_cast<uint64_t *>(stackIdPtr);
+    SetStackId(value);
+    printf("CrashInSubThread stackId:%p value:%p.\n", stackIdPtr, reinterpret_cast<void*>(value));
     raise(SIGSEGV);
     return nullptr;
 }
@@ -509,7 +510,7 @@ NOINLINE int DfxCrasher::AsyncStacktrace()
 #endif
 }
 
-NOINLINE int FFRTTaskSubmit1(int i)
+NOINLINE static int FFRTTaskSubmit1(int i)
 {
     int inner = i + 1;
     printf("FFRTTaskSubmit1:current %d\n", inner);
@@ -523,7 +524,7 @@ NOINLINE int FFRTTaskSubmit1(int i)
     return inner;
 }
 
-NOINLINE int FFRTTaskSubmit0(int i)
+NOINLINE static int FFRTTaskSubmit0(int i)
 {
     int inner = i + 1;
     printf("FFRTTaskSubmit0:current %d\n", inner);

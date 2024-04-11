@@ -30,7 +30,7 @@ uint64_t CollectAsyncStack(void);
 void SetStackId(uint64_t stackId);
 
 // get stack id from TLS
-uint64_t GetStackId();
+uint64_t GetStackId(void);
 
 #ifdef __cplusplus
 }

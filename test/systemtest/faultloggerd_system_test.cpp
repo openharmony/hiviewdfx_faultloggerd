@@ -1173,7 +1173,6 @@ HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest104, TestSize.Level2)
             EXPECT_FALSE(buildId.empty()) << "FaultLoggerdSystemTest104 Failed";
             break;
         }
-
     }
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest104: end.";
 }

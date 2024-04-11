@@ -27,7 +27,6 @@
 #include "dfx_log.h"
 
 static pthread_key_t g_stackidKey;
-static once_flag g_once_flag = ONCE_FLAG_INIT;
 static bool g_init = false;
 static bool g_enableDfxAsyncStack = true; // for test
 void EnableAsyncStack(void)
@@ -75,7 +74,8 @@ static void InitAsyncStackInner(void)
 
 static bool InitAsyncStack(void)
 {
-    call_once(&g_once_flag, InitAsyncStackInner);
+    static once_flag onceFlag = ONCE_FLAG_INIT;
+    call_once(&onceFlag, InitAsyncStackInner);
     return g_init;
 }
 

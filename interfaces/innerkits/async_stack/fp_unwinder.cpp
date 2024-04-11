@@ -30,7 +30,7 @@
 namespace OHOS {
 namespace HiviewDFX {
 static int32_t g_validPipe[PIPE_NUM_SZ] = {-1, -1};
-constexpr uintptr_t g_maxUnwindAddrRange = 16 * 1024;
+constexpr uintptr_t MAX_UNWIND_ADDR_RANGE = 16 * 1024;
 int32_t FpUnwinder::Unwind(uintptr_t* pcs, int32_t sz, int32_t skipFrameNum)
 {
     GetFpPcRegs(pcs);
@@ -53,7 +53,7 @@ int32_t FpUnwinder::Unwind(uintptr_t* pcs, int32_t sz, int32_t skipFrameNum)
             }
         }
     }
-    while ((index < sz - 1) && (fp - firstFp < g_maxUnwindAddrRange)) {
+    while ((index < sz - 1) && (fp - firstFp < MAX_UNWIND_ADDR_RANGE)) {
         if (fp < stackBottom || fp >= stackTop - sizeof(uintptr_t)) {
             break;
         }
@@ -84,7 +84,7 @@ int32_t FpUnwinder::UnwindFallback(uintptr_t* pcs, int32_t sz, int32_t skipFrame
     uintptr_t fp = firstFp;
     int32_t index = 0;
     int32_t realSz = 0;
-    while ((index < sz - 1) && (fp - firstFp < g_maxUnwindAddrRange)) {
+    while ((index < sz - 1) && (fp - firstFp < MAX_UNWIND_ADDR_RANGE)) {
         uintptr_t addr = fp + sizeof(uintptr_t);
         if (!ReadUintptrSafe(addr, pcs[++index])) {
             break;

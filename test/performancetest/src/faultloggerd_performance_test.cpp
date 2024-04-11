@@ -39,8 +39,8 @@ clock_t GetStartTime()
 
 double GetStopTime(clock_t befor)
 {
-    clock_t StartTimer = clock();
-    return  ((StartTimer - befor) / double(CLOCKS_PER_SEC));
+    clock_t startTimer = clock();
+    return  ((startTimer - befor) / double(CLOCKS_PER_SEC));
 }
 }
 
