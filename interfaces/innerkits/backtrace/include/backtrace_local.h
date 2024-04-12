@@ -52,21 +52,6 @@ bool GetBacktraceFramesByTid(std::vector<DfxFrame>& frames, int32_t tid, size_t 
 bool GetBacktraceStringByTid(std::string& out, int32_t tid, size_t skipFrameNum, bool fast,
                              size_t maxFrameNums = DEFAULT_MAX_FRAME_NUM);
 
-#ifndef is_ohos_lite
-/**
- * @brief Get a thread of backtrace json  by specify tid
- *
- * @param out  backtrace string(output parameter)
- * @param tid  the id of thread
- * @param skipFrameNum the number of frames to skip
- * @param fast flag for using fp backtrace(true) or dwarf backtrace(false)
- * @param maxFrameNums the maximum number of frames to backtrace
- * @return if succeed return true, otherwise return false
-*/
-bool GetBacktraceJsonByTid(std::string& out, int32_t tid, size_t skipFrameNum, bool fast,
-    size_t maxFrameNums = DEFAULT_MAX_FRAME_NUM);
-#endif
-
 /**
  * @brief Print backtrace information to fd
  *
@@ -88,18 +73,6 @@ bool PrintBacktrace(int32_t fd = -1, bool fast = false, size_t maxFrameNums = DE
 bool GetBacktrace(std::string& out, bool fast = false, size_t maxFrameNums = DEFAULT_MAX_FRAME_NUM);
 
 /**
- * @brief Get backtrace string of the current process
- *
- * @param out  backtrace string(output parameter)
- * @param skipFrameNum the number of frames to skip
- * @param fast flag for using fp backtrace(true) or dwarf backtrace(false)
- * @param maxFrameNums the maximum number of frames to backtrace
- * @return if succeed return true, otherwise return false
-*/
-bool GetBacktrace(std::string& out, size_t skipFrameNum, bool fast = false,
-                  size_t maxFrameNums = DEFAULT_MAX_FRAME_NUM, bool isJson = false);
-
-/**
  * @brief Get formatted stacktrace string of current process
  *
  * This API is used to get formatted stacktrace string of current process
@@ -108,7 +81,7 @@ bool GetBacktrace(std::string& out, size_t skipFrameNum, bool fast = false,
  * @param isJson whether message of native stack is json formatted
  * @return formatted stacktrace string
 */
-std::string GetProcessStacktrace(size_t maxFrameNums = DEFAULT_MAX_FRAME_NUM, bool isJson = false);
+std::string GetProcessStacktrace(size_t maxFrameNums = DEFAULT_MAX_FRAME_NUM);
 
 extern "C" {
     /**

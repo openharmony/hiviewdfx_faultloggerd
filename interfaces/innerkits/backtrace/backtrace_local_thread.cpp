@@ -78,7 +78,7 @@ const std::vector<DfxFrame>& BacktraceLocalThread::GetFrames() const
     return frames_;
 }
 
-std::string BacktraceLocalThread::GetFormattedStr(bool withThreadName, bool isJson)
+std::string BacktraceLocalThread::GetFormattedStr(bool withThreadName)
 {
     if (frames_.empty()) {
         return "";
@@ -91,13 +91,7 @@ std::string BacktraceLocalThread::GetFormattedStr(bool withThreadName, bool isJs
         ReadThreadName(tid_, threadName);
         ss << "Tid:" << tid_ << ", Name:" << threadName << std::endl;
     }
-    if (isJson) {
-#ifndef is_ohos_lite
-        ss << DfxJsonFormatter::GetFramesJson(frames_);
-#endif
-    } else {
-        ss << DfxFrameFormatter::GetFramesStr(frames_);
-    }
+    ss << DfxFrameFormatter::GetFramesStr(frames_);
     return ss.str();
 }
 } // namespace HiviewDFX

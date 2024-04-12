@@ -25,29 +25,28 @@
 #include "dfx_dump_catcher.h"
 #include "dfx_json_formatter.h"
 
-static NOINLINE int TestFuncDump(int32_t pid, int32_t tid)
+static NOINLINE int TestFuncDump(int32_t pid, int32_t tid, bool isJson)
 {
     OHOS::HiviewDFX::DfxDumpCatcher dumplog;
     std::string msg = "";
 #ifdef is_ohos_lite
-    bool ret = dumplog.DumpCatch(pid, tid, msg, OHOS::HiviewDFX::DEFAULT_MAX_FRAME_NUM, false);
+    isJson = false;
+#endif
+    bool ret = dumplog.DumpCatch(pid, tid, msg, OHOS::HiviewDFX::DEFAULT_MAX_FRAME_NUM, isJson);
     if (ret) {
         std::cout << msg << std::endl;
+        if (isJson) {
+            std::string outStr = "";
+            OHOS::HiviewDFX::DfxJsonFormatter::FormatJsonStack(msg, outStr);
+            std::cout << outStr << std::endl;
+        }
     }
-#else
-    bool ret = dumplog.DumpCatch(pid, tid, msg, OHOS::HiviewDFX::DEFAULT_MAX_FRAME_NUM, true);
-    if (ret) {
-        std::string outStr = "";
-        OHOS::HiviewDFX::DfxJsonFormatter::FormatJsonStack(msg, outStr);
-        std::cout << outStr << std::endl;
-    }
-#endif
     return ret;
 }
 
 static NOINLINE int TestFunc10(void)
 {
-    return TestFuncDump(getpid(), gettid());
+    return TestFuncDump(getpid(), gettid(), false);
 }
 
 // auto gen function
@@ -104,7 +103,7 @@ int main(int argc, char *argv[])
     int32_t pid = 0;
     int32_t tid = 0;
     if (ParseParameters(argc, argv, pid, tid)) {
-        TestFuncDump(pid, tid);
+        TestFuncDump(pid, tid, true);
     } else {
         TestFunc0();
     }

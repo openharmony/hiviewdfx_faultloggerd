@@ -79,10 +79,10 @@ public:
     bool DumpCatchMultiPid(const std::vector<int> pidV, std::string& msg);
 
 private:
-    bool DoDumpCurrTid(const size_t skipFrameNum, std::string& msg, size_t maxFrameNums, bool isJson = false);
-    bool DoDumpLocalTid(const int tid, std::string& msg, size_t maxFrameNums, bool isJson = false);
-    bool DoDumpLocalPid(int pid, std::string& msg, size_t maxFrameNums, bool isJson = false);
-    bool DoDumpLocalLocked(int pid, int tid, std::string& msg, size_t maxFrameNums, bool isJson = false);
+    bool DoDumpCurrTid(const size_t skipFrameNum, std::string& msg, size_t maxFrameNums);
+    bool DoDumpLocalTid(const int tid, std::string& msg, size_t maxFrameNums);
+    bool DoDumpLocalPid(int pid, std::string& msg, size_t maxFrameNums);
+    bool DoDumpLocalLocked(int pid, int tid, std::string& msg, size_t maxFrameNums);
     bool DoDumpRemoteLocked(int pid, int tid, std::string& msg, bool isJson = false);
     bool DoDumpCatchRemote(int pid, int tid, std::string& msg, bool isJson = false);
     int DoDumpRemotePid(int pid, std::string& msg, bool isJson = false);
