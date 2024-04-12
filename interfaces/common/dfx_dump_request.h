@@ -102,6 +102,8 @@ struct ProcessDumpRequest {
     uint64_t fdTableAddr;
     /** stackId for async-stack */
     uint64_t stackId;
+    /** application runing unique Id */
+    char appRunningId[MAX_APP_RUNNING_UNIQUE_ID_LEN];
 };
 #ifdef __cplusplus
 }

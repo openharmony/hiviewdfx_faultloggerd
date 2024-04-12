@@ -81,6 +81,7 @@ void DfxStackInfoFormatter::GetNativeCrashInfo(Json::Value& jsonInfo) const
     jsonInfo["crash_type"] = NATIVE_CRASH_TYPE;
     jsonInfo["pid"] = process_->processInfo_.pid;
     jsonInfo["uid"] = process_->processInfo_.uid;
+    jsonInfo["app_running_unique_id"] = request_->appRunningId;
 
     Json::Value signal;
     signal["signo"] = request_->siginfo.si_signo;
