@@ -30,6 +30,12 @@ if (!defined(ohos_lite)) {
       "//third_party/libunwind/include/tdep/",
       "//third_party/libunwind/src",
     ]
+    cflags = [
+      "-O0",
+      "-Werror",
+      "-Wno-reorder-init-list",
+      "-Wno-header-hygiene",
+    ]
     defines = [
       "HAVE_CONFIG_H",
       "HAVE_ELF_H",

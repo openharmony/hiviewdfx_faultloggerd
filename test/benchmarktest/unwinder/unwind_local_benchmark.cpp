@@ -38,27 +38,27 @@ struct UnwindData {
     std::shared_ptr<Unwinder> unwinder = nullptr;
 };
 
-static size_t TestFunc5(size_t (*func)(void*), void* data)
+NOINLINE static size_t TestFunc5(size_t (*func)(void*), void* data)
 {
     return func(data);
 }
 
-static size_t TestFunc4(size_t (*func)(void*), void* data)
+NOINLINE static size_t TestFunc4(size_t (*func)(void*), void* data)
 {
     return TestFunc5(func, data);
 }
 
-static size_t TestFunc3(size_t (*func)(void*), void* data)
+NOINLINE static size_t TestFunc3(size_t (*func)(void*), void* data)
 {
     return TestFunc4(func, data);
 }
 
-static size_t TestFunc2(size_t (*func)(void*), void* data)
+NOINLINE static size_t TestFunc2(size_t (*func)(void*), void* data)
 {
     return TestFunc3(func, data);
 }
 
-static size_t TestFunc1(size_t (*func)(void*), void* data)
+NOINLINE static size_t TestFunc1(size_t (*func)(void*), void* data)
 {
     return TestFunc2(func, data);
 }

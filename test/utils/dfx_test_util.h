@@ -20,6 +20,8 @@
 #include <csignal>
 #include <sys/wait.h>
 
+#define NOINLINE __attribute__((noinline))
+
 #define ACCOUNTMGR_NAME           "accountmgr"
 #define FOUNDATION_NAME           "foundation"
 #define APPSPAWN_NAME             "appspawn"

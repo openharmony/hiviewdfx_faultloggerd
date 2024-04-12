@@ -22,11 +22,11 @@
 #include <unwindstack/Memory.h>
 #include <unwindstack/Regs.h>
 #include <unwindstack/Unwinder.h>
-#include "MemoryRemote.h"
-#include "pid_utils.h"
 #include "dfx_define.h"
 #include "dfx_log.h"
 #include "dfx_test_util.h"
+#include "MemoryRemote.h"
+#include "pid_utils.h"
 
 using namespace OHOS::HiviewDFX;
 using namespace std;
@@ -39,34 +39,34 @@ struct UnwindData {
     bool isFillFrames = false;
 };
 
-static void TestFunc6(MAYBE_UNUSED void (*func)(void*), MAYBE_UNUSED volatile bool* ready)
+NOINLINE static void TestFunc6(MAYBE_UNUSED void (*func)(void*), MAYBE_UNUSED volatile bool* ready)
 {
     *ready = true;
     while (true) {};
     LOGE("Not be run here!!!");
 }
 
-static void TestFunc5(void (*func)(void*), volatile bool* ready)
+NOINLINE static void TestFunc5(void (*func)(void*), volatile bool* ready)
 {
     return TestFunc6(func, ready);
 }
 
-static void TestFunc4(void (*func)(void*), volatile bool* ready)
+NOINLINE static void TestFunc4(void (*func)(void*), volatile bool* ready)
 {
     return TestFunc5(func, ready);
 }
 
-static void TestFunc3(void (*func)(void*), volatile bool* ready)
+NOINLINE static void TestFunc3(void (*func)(void*), volatile bool* ready)
 {
     return TestFunc4(func, ready);
 }
 
-static void TestFunc2(void (*func)(void*), volatile bool* ready)
+NOINLINE static void TestFunc2(void (*func)(void*), volatile bool* ready)
 {
     return TestFunc3(func, ready);
 }
 
-static void TestFunc1(void (*func)(void*), volatile bool* ready)
+NOINLINE static void TestFunc1(void (*func)(void*), volatile bool* ready)
 {
     return TestFunc2(func, ready);
 }
@@ -92,8 +92,7 @@ static pid_t RemoteFork()
     if ((pid = fork()) == 0) {
         TestFunc1(nullptr, &ready);
         _exit(0);
-    }
-    if (pid == -1) {
+    } else if (pid < 0) {
         return -1;
     }
 
