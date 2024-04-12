@@ -31,6 +31,7 @@ if (defined(ohos_lite)) {
         "$faultloggerd_interfaces_path/common",
         "$faultloggerd_path/interfaces/innerkits/backtrace/include",
         "$faultloggerd_path/interfaces/innerkits/dump_catcher/include",
+        "$faultloggerd_path/interfaces/innerkits/faultloggerd_client/include",
         "$faultloggerd_path/test/utils",
         "$faultloggerd_path/tools/process_dump",
         "$faultloggerd_path/utils",
@@ -39,6 +40,7 @@ if (defined(ohos_lite)) {
 
       deps = [
         "$faultloggerd_path/interfaces/innerkits/dump_catcher:libdfx_dumpcatcher",
+        "$faultloggerd_path/interfaces/innerkits/faultloggerd_client:libfaultloggerd",
         "$faultloggerd_path/test/utils:dfx_test_util",
         "//base/hiviewdfx/hilog_lite/frameworks/featured:hilog_shared",
       ]
@@ -64,6 +66,7 @@ if (defined(ohos_lite)) {
       "$faultloggerd_interfaces_path/common",
       "$faultloggerd_path/interfaces/innerkits/backtrace/include",
       "$faultloggerd_path/interfaces/innerkits/dump_catcher/include",
+      "$faultloggerd_path/interfaces/innerkits/faultloggerd_client/include",
       "$faultloggerd_path/test/utils",
     ]
 
@@ -75,6 +78,7 @@ if (defined(ohos_lite)) {
     deps = [
       "$faultloggerd_interfaces_path/innerkits/backtrace:libbacktrace_local",
       "$faultloggerd_path/interfaces/innerkits/dump_catcher:libdfx_dumpcatcher",
+      "$faultloggerd_path/interfaces/innerkits/faultloggerd_client:libfaultloggerd",
       "$faultloggerd_path/test/utils:dfx_test_util",
       "//third_party/googletest:gtest_main",
       "//third_party/jsoncpp:jsoncpp",

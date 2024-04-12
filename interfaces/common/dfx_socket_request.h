@@ -110,6 +110,8 @@ enum FaultLoggerSdkDumpResp {
     SDK_DUMP_REPEAT,
     /** process not exist */
     SDK_DUMP_NOPROC,
+    /** process has crashed */
+    SDK_PROCESS_CRASHED,
 };
 /**
  * @brief  request information
