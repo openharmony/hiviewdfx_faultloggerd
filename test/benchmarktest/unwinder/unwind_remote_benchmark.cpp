@@ -40,53 +40,35 @@ struct UnwindData {
     bool isFp = false;
 };
 
-static void TestFunc6(MAYBE_UNUSED void (*func)(void*), MAYBE_UNUSED void* data)
+NOINLINE static void TestFunc6(MAYBE_UNUSED void (*func)(void*), MAYBE_UNUSED void* data)
 {
     while (true) {};
     LOGE("Not be run here!!!");
 }
 
-static void TestFunc5(void (*func)(void*), void* data)
+NOINLINE static void TestFunc5(void (*func)(void*), void* data)
 {
     return TestFunc6(func, data);
 }
 
-static void TestFunc4(void (*func)(void*), void* data)
+NOINLINE static void TestFunc4(void (*func)(void*), void* data)
 {
     return TestFunc5(func, data);
 }
 
-static void TestFunc3(void (*func)(void*), void* data)
+NOINLINE static void TestFunc3(void (*func)(void*), void* data)
 {
     return TestFunc4(func, data);
 }
 
-static void TestFunc2(void (*func)(void*), void* data)
+NOINLINE static void TestFunc2(void (*func)(void*), void* data)
 {
     return TestFunc3(func, data);
 }
 
-static void TestFunc1(void (*func)(void*), void* data)
+NOINLINE static void TestFunc1(void (*func)(void*), void* data)
 {
     return TestFunc2(func, data);
-}
-
-static pid_t RemoteFork()
-{
-    pid_t pid;
-    if ((pid = fork()) == 0) {
-        TestFunc1(nullptr, nullptr);
-        _exit(0);
-    }
-    if (pid == -1) {
-        return -1;
-    }
-    if (!DfxPtrace::Attach(pid)) {
-        LOGE("Failed to attach pid: %d", pid);
-        TestScopedPidReaper::Kill(pid);
-        return -1;
-    }
-    return pid;
 }
 
 static size_t UnwinderRemote(std::shared_ptr<Unwinder> unwinder, const pid_t tid)
@@ -148,17 +130,27 @@ static bool GetUnwinder(pid_t pid, void* data, std::shared_ptr<Unwinder>& unwind
 
 static void Run(benchmark::State& state, void* data)
 {
-    pid_t pid = RemoteFork();
-    if (pid == -1) {
-        state.SkipWithError("Failed to fork remote process.");
+    pid_t pid = fork();
+    if (pid == 0) {
+        TestFunc1(nullptr, nullptr);
+        _exit(0);
+    } else if (pid < 0) {
+        return;
+    }
+    if (!DfxPtrace::Attach(pid)) {
+        LOGE("Failed to attach pid: %d", pid);
+        TestScopedPidReaper::Kill(pid);
         return;
     }
     LOGU("pid: %d", pid);
     TestScopedPidReaper reap(pid);
 
-    std::shared_ptr<Unwinder> unwinder;
+    std::shared_ptr<Unwinder> unwinder = nullptr;
     bool isFp = false;
-    GetUnwinder(pid, data, unwinder, isFp);
+    if (!GetUnwinder(pid, data, unwinder, isFp) || (unwinder == nullptr)) {
+        state.SkipWithError("Failed to get unwinder.");
+        return;
+    }
 
     for (const auto& _ : state) {
         size_t unwSize = 0;

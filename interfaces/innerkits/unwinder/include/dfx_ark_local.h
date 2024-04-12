@@ -15,15 +15,9 @@
 #ifndef DFX_ARK_LOCAL_H
 #define DFX_ARK_LOCAL_H
 
-#include <atomic>
 #include <cinttypes>
-#include <csignal>
 #include <dlfcn.h>
-#include <fcntl.h>
-#include <memory>
-#include <mutex>
-#include <sys/stat.h>
-#include <unistd.h>
+#include <pthread.h>
 
 namespace OHOS {
 namespace HiviewDFX {

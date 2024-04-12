@@ -34,56 +34,38 @@ struct UnwindData {
     bool isFillFrames = false;
 };
 
-static void TestFunc6(MAYBE_UNUSED void (*func)(void*), MAYBE_UNUSED void* data)
+NOINLINE static void TestFunc6(MAYBE_UNUSED void (*func)(void*), MAYBE_UNUSED void* data)
 {
     while (true) {};
     LOGE("Not be run here!!!");
 }
 
-static void TestFunc5(void (*func)(void*), void* data)
+NOINLINE static void TestFunc5(void (*func)(void*), void* data)
 {
     return TestFunc6(func, data);
 }
 
-static void TestFunc4(void (*func)(void*), void* data)
+NOINLINE static void TestFunc4(void (*func)(void*), void* data)
 {
     return TestFunc5(func, data);
 }
 
-static void TestFunc3(void (*func)(void*), void* data)
+NOINLINE static void TestFunc3(void (*func)(void*), void* data)
 {
     return TestFunc4(func, data);
 }
 
-static void TestFunc2(void (*func)(void*), void* data)
+NOINLINE static void TestFunc2(void (*func)(void*), void* data)
 {
     return TestFunc3(func, data);
 }
 
-static void TestFunc1(void (*func)(void*), void* data)
+NOINLINE static void TestFunc1(void (*func)(void*), void* data)
 {
     return TestFunc2(func, data);
 }
 
-static pid_t RemoteFork()
-{
-    pid_t pid;
-    if ((pid = fork()) == 0) {
-        TestFunc1(nullptr, nullptr);
-        _exit(0);
-    }
-    if (pid == -1) {
-        return -1;
-    }
-    if (!DfxPtrace::Attach(pid)) {
-        LOGE("Failed to attach pid: %d", pid);
-        TestScopedPidReaper::Kill(pid);
-        return -1;
-    }
-    return pid;
-}
-
-static size_t UnwindRemote(unw_addr_space_t as, UnwindData* dataPtr)
+static size_t UnwindRemote(unw_addr_space_t as, void* data)
 {
     if (as == nullptr) {
         LOGE("as is nullptr");
@@ -137,20 +119,26 @@ static size_t UnwindRemote(unw_addr_space_t as, UnwindData* dataPtr)
 
 static void Run(benchmark::State& state, void* data)
 {
-    UnwindData* dataPtr = reinterpret_cast<UnwindData*>(data);
-
-    pid_t pid = RemoteFork();
-    if (pid == -1) {
-        state.SkipWithError("Failed to fork remote process.");
+    pid_t pid = fork();
+    if (pid == 0) {
+        TestFunc1(nullptr, nullptr);
+        _exit(0);
+    } else if (pid < 0) {
         return;
     }
+    if (!DfxPtrace::Attach(pid)) {
+        LOGE("Failed to attach pid: %d", pid);
+        TestScopedPidReaper::Kill(pid);
+        return;
+    }
+
     LOGU("pid: %d", pid);
     TestScopedPidReaper reap(pid);
 
     for (const auto& _ : state) {
         unw_addr_space_t as = unw_create_addr_space(&_UPT_accessors, 0);
         unw_set_target_pid(as, pid);
-        auto unwSize = UnwindRemote(as, dataPtr);
+        auto unwSize = UnwindRemote(as, data);
         if (unwSize < TEST_MIN_UNWIND_FRAMES) {
             state.SkipWithError("Failed to unwind.");
         }
@@ -175,11 +163,16 @@ static void GetCacheUnwind(pid_t pid, unw_addr_space_t& as)
 
 static void RunCache(benchmark::State& state, void* data)
 {
-    UnwindData* dataPtr = reinterpret_cast<UnwindData*>(data);
-
-    pid_t pid = RemoteFork();
-    if (pid == -1) {
-        state.SkipWithError("Failed to fork remote process.");
+    pid_t pid = fork();
+    if (pid == 0) {
+        TestFunc1(nullptr, nullptr);
+        _exit(0);
+    } else if (pid < 0) {
+        return;
+    }
+    if (!DfxPtrace::Attach(pid)) {
+        LOGE("Failed to attach pid: %d", pid);
+        TestScopedPidReaper::Kill(pid);
         return;
     }
     LOGU("pid: %d", pid);
@@ -190,7 +183,7 @@ static void RunCache(benchmark::State& state, void* data)
 
     for (const auto& _ : state) {
         unw_set_target_pid(as, pid);
-        auto unwSize = UnwindRemote(as, dataPtr);
+        auto unwSize = UnwindRemote(as, data);
         if (unwSize < TEST_MIN_UNWIND_FRAMES) {
             state.SkipWithError("Failed to unwind.");
         }
