@@ -24,6 +24,7 @@
 #include "dfx_define.h"
 #include "dfx_dump_catcher.h"
 #include "dfx_json_formatter.h"
+#include "elapsed_time.h"
 
 static NOINLINE int TestFuncDump(int32_t pid, int32_t tid, bool isJson)
 {
@@ -32,7 +33,9 @@ static NOINLINE int TestFuncDump(int32_t pid, int32_t tid, bool isJson)
 #ifdef is_ohos_lite
     isJson = false;
 #endif
+    OHOS::HiviewDFX::ElapsedTime counter;
     bool ret = dumplog.DumpCatch(pid, tid, msg, OHOS::HiviewDFX::DEFAULT_MAX_FRAME_NUM, isJson);
+    time_t elapsed1 = counter.Elapsed();
     if (ret) {
         std::cout << msg << std::endl;
         if (isJson) {
@@ -41,6 +44,8 @@ static NOINLINE int TestFuncDump(int32_t pid, int32_t tid, bool isJson)
             std::cout << outStr << std::endl;
         }
     }
+    time_t elapsed2 = counter.Elapsed();
+    std::cout << "elapsed1: " << elapsed1 << " ,elapsed2: " << elapsed2 << std::endl;
     return ret;
 }
 

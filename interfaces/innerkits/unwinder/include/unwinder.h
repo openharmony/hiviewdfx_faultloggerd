@@ -43,11 +43,11 @@ public:
         Init();
     };
     // for remote
-    Unwinder(int pid) : pid_(pid)
+    Unwinder(int pid, bool crash = true) : pid_(pid)
     {
         acc_ = std::make_shared<DfxAccessorsRemote>();
         enableFpCheckMapExec_ = true;
-        Init();
+        Init(crash);
     };
     // for customized
     Unwinder(std::shared_ptr<UnwindAccessors> accessors) : pid_(UNWIND_TYPE_CUSTOMIZE)
@@ -121,7 +121,7 @@ public:
     }
 
 private:
-    void Init();
+    void Init(bool crash = true);
     void Clear();
     void Destroy();
     bool CheckAndReset(void* ctx);

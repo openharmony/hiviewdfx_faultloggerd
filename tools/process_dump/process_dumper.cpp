@@ -388,7 +388,7 @@ int ProcessDumper::InitProcessInfo(std::shared_ptr<ProcessDumpRequest> request)
     if (isCrash_) {
         unwinder_ = std::make_shared<Unwinder>(process_->vmThread_->threadInfo_.pid);
     } else {
-        unwinder_ = std::make_shared<Unwinder>(process_->processInfo_.pid);
+        unwinder_ = std::make_shared<Unwinder>(process_->processInfo_.pid, false);
     }
     if (unwinder_ == nullptr) {
         DFXLOG_ERROR("%s", "Failed to create unwinder?");
