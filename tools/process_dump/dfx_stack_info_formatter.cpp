@@ -134,12 +134,21 @@ bool DfxStackInfoFormatter::FillFrames(const std::shared_ptr<DfxThread>& thread,
         return false;
     }
     const auto& threadFrames = thread->GetFrames();
+    bool needSkip = false;
     for (const auto& frame : threadFrames) {
+        if (needSkip) {
+            continue;
+        }
         if (frame.isJsFrame) {
             FillJsFrame(frame, jsonInfo);
             continue;
         }
         FillNativeFrame(frame, jsonInfo);
+#if defined(__aarch64__)
+        if (IsLastValidFrame(frame)) {
+            needSkip = true;
+        }
+#endif
     }
     return true;
 }

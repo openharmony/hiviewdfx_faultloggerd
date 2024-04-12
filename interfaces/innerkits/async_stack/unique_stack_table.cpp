@@ -56,7 +56,7 @@ bool UniqueStackTable::Resize()
 {
     if (tableBufMMap_ == nullptr) {
         LOGW("%s", "Hashtable not exist, fatal error!");
-        return 0;
+        return false;
     }
 
     uint32_t oldNumNodes = totalNodes_;
