@@ -18,7 +18,6 @@ import("//build/test.gni")
 module_output_path = "faultloggerd/backtrace"
 
 ohos_unittest("backtrace_utils_test") {
-  configs = [ "//third_party/jsoncpp:jsoncpp_public_config" ]
   module_out_path = module_output_path
   visibility = [ "*:*" ]
   include_dirs = [
@@ -31,7 +30,6 @@ ohos_unittest("backtrace_utils_test") {
     "$faultloggerd_interfaces_path/innerkits/backtrace:libbacktrace_local",
     "$faultloggerd_path/test/utils:dfx_test_util",
     "//third_party/googletest:gtest_main",
-    "//third_party/jsoncpp:jsoncpp",
   ]
   if (use_musl && use_jemalloc && use_jemalloc_dfx_intf) {
     defines = [ "USE_JEMALLOC_DFX_INTF" ]
@@ -44,7 +42,6 @@ ohos_unittest("backtrace_utils_test") {
 }
 
 ohos_unittest("backtrace_local_test") {
-  configs = [ "//third_party/jsoncpp:jsoncpp_public_config" ]
   module_out_path = module_output_path
   visibility = [ "*:*" ]
   include_dirs = [
@@ -61,7 +58,6 @@ ohos_unittest("backtrace_local_test") {
     "$faultloggerd_path/test/utils:dfx_test_util",
     "//third_party/bounds_checking_function:libsec_shared",
     "//third_party/googletest:gtest_main",
-    "//third_party/jsoncpp:jsoncpp",
   ]
   branch_protector_ret = "pac_ret"
   external_deps = [
@@ -71,55 +67,57 @@ ohos_unittest("backtrace_local_test") {
 }
 
 ohos_unittest("backtrace_utils_test_static") {
-  configs = [ "//third_party/jsoncpp:jsoncpp_public_config" ]
   module_out_path = module_output_path
   visibility = [ "*:*" ]
   include_dirs = [
     "$faultloggerd_interfaces_path/common",
     "$faultloggerd_path/test/utils",
     "$faultloggerd_interfaces_path/innerkits/backtrace",
+    "//third_party/lzma/C",
   ]
   defines = [ "DFX_LOG_HILOG_BASE" ]
   sources = [ "backtrace_utils_test.cpp" ]
   deps = [
+    "$faultloggerd_common_path/dfxlog:dfx_hilog_base",
     "$faultloggerd_common_path/dfxutil:dfx_util_static",
     "$faultloggerd_interfaces_path/innerkits/backtrace:backtrace_local",
     "$faultloggerd_path/test/utils:dfx_test_util",
     "//third_party/googletest:gtest_main",
-    "//third_party/jsoncpp:jsoncpp",
   ]
   if (use_musl && use_jemalloc && use_jemalloc_dfx_intf) {
     defines += [ "USE_JEMALLOC_DFX_INTF" ]
   }
   branch_protector_ret = "pac_ret"
+  public_external_deps = [ "lzma:lzma_static" ]
   external_deps = [
-    "c_utils:utils",
+    "c_utils:utilsbase",
     "hilog:libhilog_base",
   ]
 }
 
 ohos_unittest("backtrace_local_test_static") {
-  configs = [ "//third_party/jsoncpp:jsoncpp_public_config" ]
   module_out_path = module_output_path
   visibility = [ "*:*" ]
   include_dirs = [
     "$faultloggerd_interfaces_path/common",
     "$faultloggerd_path/test/utils",
     "$faultloggerd_interfaces_path/innerkits/backtrace",
+    "//third_party/lzma/C",
   ]
   defines = [ "DFX_LOG_HILOG_BASE" ]
   sources = [ "backtrace_local_test.cpp" ]
   deps = [
+    "$faultloggerd_common_path/dfxlog:dfx_hilog_base",
     "$faultloggerd_common_path/dfxutil:dfx_util_static",
     "$faultloggerd_interfaces_path/innerkits/backtrace:backtrace_local",
     "$faultloggerd_path/test/utils:dfx_test_util",
-    "//third_party/bounds_checking_function:libsec_shared",
+    "//third_party/bounds_checking_function:libsec_static",
     "//third_party/googletest:gtest_main",
-    "//third_party/jsoncpp:jsoncpp",
   ]
   branch_protector_ret = "pac_ret"
+  public_external_deps = [ "lzma:lzma_static" ]
   external_deps = [
-    "c_utils:utils",
+    "c_utils:utilsbase",
     "hilog:libhilog_base",
   ]
 }
@@ -128,8 +126,12 @@ group("unittest") {
   testonly = true
   deps = [
     ":backtrace_local_test",
-    ":backtrace_local_test_static",
     ":backtrace_utils_test",
-    ":backtrace_utils_test_static",
   ]
+  if (target_cpu == "arm64") {
+    deps += [
+      ":backtrace_local_test_static",
+      ":backtrace_utils_test_static",
+    ]
+  }
 }

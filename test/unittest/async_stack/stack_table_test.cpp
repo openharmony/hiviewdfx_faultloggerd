@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -13,12 +13,11 @@
  * limitations under the License.
  */
 
-#include "dfx_elf.h"
-#include "dfx_maps.h"
-#include "unique_stack_table.h"
 #include <gtest/gtest.h>
 #include <memory>
 #include <sys/types.h>
+
+#include "unique_stack_table.h"
 
 using namespace OHOS::HiviewDFX;
 using namespace std;

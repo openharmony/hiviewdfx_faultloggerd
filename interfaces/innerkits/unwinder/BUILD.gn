@@ -69,7 +69,6 @@ if (defined(ohos_lite)) {
       "$faultloggerd_common_path/dfxlog",
       "$faultloggerd_common_path/dfxutil",
       "$faultloggerd_interfaces_path/common",
-      "$faultloggerd_interfaces_path/innerkits/procinfo/include",
       "$hilog_lite_include_path",
     ]
 
@@ -82,7 +81,6 @@ if (defined(ohos_lite)) {
     deps = [
       "$faultloggerd_common_path/dfxlog:dfx_hilog",
       "$faultloggerd_common_path/dfxutil:dfx_util",
-      "$faultloggerd_interfaces_path/innerkits/procinfo:libdfx_procinfo",
       "$hilog_lite_deps_path",
     ]
 
@@ -100,7 +98,6 @@ if (defined(ohos_lite)) {
       "$faultloggerd_common_path/dfxlog",
       "$faultloggerd_common_path/dfxutil",
       "$faultloggerd_interfaces_path/common",
-      "$faultloggerd_interfaces_path/innerkits/procinfo/include",
       "$hilog_lite_include_path",
     ]
 
@@ -113,7 +110,6 @@ if (defined(ohos_lite)) {
     deps = [
       "$faultloggerd_common_path/dfxlog:dfx_hilog",
       "$faultloggerd_common_path/dfxutil:dfx_util",
-      "$faultloggerd_interfaces_path/innerkits/procinfo:libdfx_procinfo",
       "$hilog_lite_deps_path",
     ]
     external_deps = [ "bounds_checking_function:libsec_shared" ]
@@ -131,7 +127,6 @@ if (defined(ohos_lite)) {
       "$faultloggerd_common_path/dfxlog",
       "$faultloggerd_common_path/dfxutil",
       "$faultloggerd_interfaces_path/common",
-      "$faultloggerd_interfaces_path/procinfo/include",
     ]
 
     defines = [
@@ -174,6 +169,9 @@ if (defined(ohos_lite)) {
       "$faultloggerd_common_path/build:coverage_flags",
     ]
     defines = [ "DFX_UNWIND_ERROR" ]
+    if (target_cpu == "arm64") {
+      defines += [ "ENABLE_PARAMETER" ]
+    }
 
     if (target_cpu != "x86_64") {
       dfx_unwinder_sources -= [ "getcontext_x86_64.S" ]
@@ -185,7 +183,6 @@ if (defined(ohos_lite)) {
     deps = [
       "$faultloggerd_common_path/dfxlog:dfx_hilog",
       "$faultloggerd_common_path/dfxutil:dfx_util",
-      "$faultloggerd_interfaces_path/innerkits/procinfo:libdfx_procinfo",
     ]
 
     if (is_ohos && !is_mingw && !is_emulator) {
@@ -216,7 +213,6 @@ if (defined(ohos_lite)) {
       ":lzma_config",
       ":offline_mixstack_config",
     ]
-    include_dirs = [ "$faultloggerd_common_path/dfxlog" ]
 
     if (target_cpu != "x86_64") {
       dfx_unwinder_sources -= [ "getcontext_x86_64.S" ]
@@ -228,7 +224,6 @@ if (defined(ohos_lite)) {
     deps = [
       "$faultloggerd_common_path/dfxlog:dfx_hilog",
       "$faultloggerd_common_path/dfxutil:dfx_util",
-      "$faultloggerd_interfaces_path/innerkits/procinfo:libdfx_procinfo",
     ]
 
     if (is_ohos && !is_mingw && !is_emulator) {
@@ -239,7 +234,39 @@ if (defined(ohos_lite)) {
       "bounds_checking_function:libsec_shared",
       "c_utils:utils",
       "hilog:libhilog",
-      "init:libbegetutil",
+    ]
+    part_name = "faultloggerd"
+    subsystem_name = "hiviewdfx"
+  }
+
+  ohos_static_library("libunwinder_base") {
+    public_configs = [
+      ":dfx_unwinder_config",
+      ":lzma_config",
+      ":offline_mixstack_config",
+    ]
+    defines = [ "DFX_LOG_HILOG_BASE" ]
+
+    if (target_cpu != "x86_64") {
+      dfx_unwinder_sources -= [ "getcontext_x86_64.S" ]
+    }
+    sources = dfx_unwinder_sources
+    sources += dfx_exidx_sources
+    sources += dfx_dwarf_sources
+
+    deps = [
+      "$faultloggerd_common_path/dfxlog:dfx_hilog_base",
+      "$faultloggerd_common_path/dfxutil:dfx_util_static",
+    ]
+
+    if (is_ohos && !is_mingw && !is_emulator) {
+      sources += [ "dfx_xz_utils.cpp" ]
+    }
+    public_external_deps = [ "lzma:lzma_static" ]
+    external_deps = [
+      "bounds_checking_function:libsec_static",
+      "c_utils:utilsbase",
+      "hilog:libhilog_base",
     ]
     part_name = "faultloggerd"
     subsystem_name = "hiviewdfx"
@@ -267,7 +294,6 @@ if (defined(ohos_lite)) {
     deps = [
       "$faultloggerd_common_path/dfxlog:dfx_hilog",
       "$faultloggerd_common_path/dfxutil:dfx_util",
-      "$faultloggerd_interfaces_path/innerkits/procinfo:libdfx_procinfo",
     ]
 
     if (is_ohos && !is_mingw && !is_emulator) {
@@ -278,7 +304,6 @@ if (defined(ohos_lite)) {
       "bounds_checking_function:libsec_shared",
       "c_utils:utils",
       "hilog:libhilog",
-      "init:libbegetutil",
     ]
     part_name = "faultloggerd"
     subsystem_name = "hiviewdfx"

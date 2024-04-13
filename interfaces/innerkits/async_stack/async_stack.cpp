@@ -17,10 +17,7 @@
 
 #include <pthread.h>
 #include <threads.h>
-#ifndef is_ohos_lite
-#include "parameter.h"
-#include "parameters.h"
-#endif // !is_ohos_lite
+#include "dfx_param.h"
 #include "unique_stack_table.h"
 #include "fp_unwinder.h"
 
@@ -37,34 +34,26 @@ void EnableAsyncStack(void)
 extern "C" void SetAsyncStackCallbackFunc(void* func) __attribute__((weak));
 static void InitAsyncStackInner(void)
 {
-#ifndef is_ohos_lite
-    std::string betaParam = OHOS::system::GetParameter("const.logsystemversion.type", "true");
-    std::string asyncStackParam = OHOS::system::GetParameter("persist.faultloggerd.priv.asyncstack.enabled", "true");
-    if (!(betaParam == "true" && asyncStackParam == "true")) {
-        LOGE("%s", "async stack is not enable.\n");
-        return;
-    }
-#endif
     if (!g_enableDfxAsyncStack) {
-        LOGE("%s", "g_enableDfxAsyncStack false.\n");
+        LOGE("%s", "g_enableDfxAsyncStack false.");
         return;
     }
 
     if (SetAsyncStackCallbackFunc == nullptr) {
-        LOGE("%s", "failed to init async stack, could not find SetAsyncStackCallbackFunc.\n");
+        LOGE("%s", "failed to init async stack, could not find SetAsyncStackCallbackFunc.");
         return;
     }
 
     // init unique stack table
     if (!OHOS::HiviewDFX::UniqueStackTable::Instance()->Init()) {
-        LOGE("%s", "failed to init unique stack table?.\n");
+        LOGE("%s", "failed to init unique stack table?.");
         return;
     }
 
     if (pthread_key_create(&g_stackidKey, nullptr) == 0) {
         g_init = true;
     } else {
-        LOGE("%s", "failed to create key for stackId.\n");
+        LOGE("%s", "failed to create key for stackId.");
         return;
     }
 
@@ -74,6 +63,10 @@ static void InitAsyncStackInner(void)
 
 static bool InitAsyncStack(void)
 {
+    if (!(OHOS::HiviewDFX::DfxParam::EnableMixstack() && OHOS::HiviewDFX::DfxParam::EnableMixstack())) {
+        LOGE("%s", "async stack is not enable.");
+        return false;
+    }
     static once_flag onceFlag = ONCE_FLAG_INIT;
     call_once(&onceFlag, InitAsyncStackInner);
     return g_init;
@@ -83,7 +76,7 @@ extern "C" uint64_t CollectAsyncStack(void)
 {
 #if defined(__aarch64__)
     if (!InitAsyncStack()) {
-        LOGE("%s", "failed to init async stack.\n");
+        LOGE("%s", "failed to init async stack.");
         return 0;
     }
     const int32_t maxSize = 32;

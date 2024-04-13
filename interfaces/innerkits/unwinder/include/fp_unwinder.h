@@ -37,14 +37,14 @@ class FpUnwinder {
 public:
     static FpUnwinder* GetPtr()
     {
-        static std::unique_ptr<FpUnwinder> ptr_ = nullptr;
-        if (ptr_ == nullptr) {
+        static std::unique_ptr<FpUnwinder> ptr = nullptr;
+        if (ptr == nullptr) {
             static std::once_flag flag;
             std::call_once(flag, [&] {
-                ptr_.reset(new FpUnwinder());
+                ptr.reset(new FpUnwinder());
             });
         }
-        return ptr_.get();
+        return ptr.get();
     }
     ~FpUnwinder() = default;
 

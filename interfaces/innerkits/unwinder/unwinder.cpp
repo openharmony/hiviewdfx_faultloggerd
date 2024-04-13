@@ -32,10 +32,6 @@
 #include "fp_unwinder.h"
 #include "string_printf.h"
 #include "string_util.h"
-#if defined(ENABLE_MIXSTACK)
-#include "parameter.h"
-#include "parameters.h"
-#endif
 #include "thread_context.h"
 
 namespace OHOS {
@@ -47,12 +43,9 @@ namespace {
 #define LOG_TAG "DfxUnwinder"
 }
 
-#if defined(ENABLE_MIXSTACK)
-constexpr char MIXSTACK_ENABLED_KEY[] = "persist.faultloggerd.priv.mixstack.enabled";
-#endif
-
 void Unwinder::Init(bool crash)
 {
+    LOGI("Unwinder init, crash: %d", crash);
     Destroy();
     memory_ = std::make_shared<DfxMemory>(acc_);
 #if defined(__arm__)
@@ -67,13 +60,10 @@ void Unwinder::Init(bool crash)
             maps_ = DfxMaps::Create(pid_, crash);
         }
     }
+
+    InitParam();
 #if defined(ENABLE_MIXSTACK)
-    if (OHOS::system::GetParameter(MIXSTACK_ENABLED_KEY, "true") == "true") {
-        enableMixstack_ = true;
-    } else {
-        enableMixstack_ = false;
-    }
-    LOGI("Check mixstack enable: %d", enableMixstack_);
+    LOGI("Unwinder mixstack enable: %d", enableMixstack_);
 #endif
 }
 

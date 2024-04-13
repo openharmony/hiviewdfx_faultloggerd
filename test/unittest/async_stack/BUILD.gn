@@ -24,7 +24,10 @@ ohos_unittest("async_stack_test") {
     "$faultloggerd_interfaces_path/common",
     "$faultloggerd_path/test/utils",
   ]
-  sources = [ "async_stack_test.cpp" ]
+  sources = [
+    "async_stack_test.cpp",
+    "stack_table_test.cpp",
+  ]
   deps = [
     "$faultloggerd_common_path/dfxutil:dfx_util",
     "$faultloggerd_interfaces_path/innerkits/async_stack:libasync_stack",

@@ -24,6 +24,7 @@
 #include "dfx_frame.h"
 #include "dfx_memory.h"
 #include "dfx_maps.h"
+#include "dfx_param.h"
 #include "dfx_regs.h"
 #if defined(__arm__)
 #include "arm_exidx.h"
@@ -124,6 +125,12 @@ private:
     void Init(bool crash = true);
     void Clear();
     void Destroy();
+    void InitParam()
+    {
+#if defined(ENABLE_MIXSTACK)
+        enableMixstack_ = DfxParam::EnableMixstack();
+#endif
+    }
     bool CheckAndReset(void* ctx);
     void DoPcAdjust(uintptr_t& pc);
     void AddFrame(bool isJsFrame, uintptr_t pc, uintptr_t sp, std::shared_ptr<DfxMap> map);

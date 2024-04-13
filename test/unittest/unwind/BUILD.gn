@@ -23,7 +23,6 @@ ohos_unittest("test_unwind") {
     "$faultloggerd_interfaces_path/common",
     "$faultloggerd_path/test/unittest/unwind/include",
     "$faultloggerd_path/test/utils",
-    "//third_party/lzma/C",
   ]
   configs = [ "$faultloggerd_common_path/build:coverage_flags" ]
   defines = [ "DFX_LOG_UNWIND" ]
@@ -37,7 +36,6 @@ ohos_unittest("test_unwind") {
     "memory_test.cpp",
     "regs_test.cpp",
     "signal_test.cpp",
-    "stack_table_test.cpp",
     "symbols_test.cpp",
     "unwinder_test.cpp",
     "xz_util_test.cpp",
@@ -45,7 +43,6 @@ ohos_unittest("test_unwind") {
   deps = [
     "$faultloggerd_common_path/dfxlog:dfx_hilog",
     "$faultloggerd_common_path/dfxutil:dfx_util",
-    "$faultloggerd_interfaces_path/innerkits/async_stack:libasync_stack",
     "$faultloggerd_interfaces_path/innerkits/procinfo:libdfx_procinfo",
     "$faultloggerd_interfaces_path/innerkits/unwinder:libunwinder_src",
     "$faultloggerd_path/test/utils:dfx_test_util",

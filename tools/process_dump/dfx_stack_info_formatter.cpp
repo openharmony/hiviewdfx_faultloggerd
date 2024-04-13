@@ -25,6 +25,9 @@
 #include "dfx_signal.h"
 #include "dfx_thread.h"
 #include "process_dumper.h"
+#if defined(__aarch64__)
+#include "printer.h"
+#endif
 
 namespace OHOS {
 namespace HiviewDFX {
@@ -145,7 +148,7 @@ bool DfxStackInfoFormatter::FillFrames(const std::shared_ptr<DfxThread>& thread,
         }
         FillNativeFrame(frame, jsonInfo);
 #if defined(__aarch64__)
-        if (IsLastValidFrame(frame)) {
+        if (Printer::IsLastValidFrame(frame)) {
             needSkip = true;
         }
 #endif

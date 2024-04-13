@@ -39,8 +39,8 @@ const int CONF_LINE_SIZE = 256;
 DfxConfigInfo& DfxConfig::GetConfig()
 {
     static DfxConfigInfo config;
-    static std::once_flag initFlag;
-    std::call_once(initFlag, [&] {
+    static std::once_flag flag;
+    std::call_once(flag, [&] {
         ReadConfig(config);
     });
     return config;
