@@ -149,7 +149,11 @@ if (defined(ohos_lite)) {
     ]
 
     cflags_cc = [ "-DDEBUG_CRASH_LOCAL_HANDLER" ]
-    defines = [ "DFX_LOG_HILOG_BASE" ]
+    defines = [
+      "is_ohos=${is_ohos}",
+      "DFX_LOG_HILOG_BASE",
+      "ENABLE_PARAMETER",
+    ]
 
     deps = [
       "$faultloggerd_common_path/dfxlog:dfx_hilog_base",
@@ -166,6 +170,7 @@ if (defined(ohos_lite)) {
       "c_utils:utils",
       "hilog:libhilog_base",
       "hisysevent:libhisysevent",
+      "init:libbegetutil",
       "jsoncpp:jsoncpp",
     ]
 

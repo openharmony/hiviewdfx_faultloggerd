@@ -69,7 +69,6 @@ if (defined(ohos_lite)) {
       "$faultloggerd_common_path/dfxlog",
       "$faultloggerd_common_path/dfxutil",
       "$faultloggerd_interfaces_path/common",
-      "$faultloggerd_interfaces_path/innerkits/procinfo/include",
       "$hilog_lite_include_path",
     ]
 
@@ -82,7 +81,6 @@ if (defined(ohos_lite)) {
     deps = [
       "$faultloggerd_common_path/dfxlog:dfx_hilog",
       "$faultloggerd_common_path/dfxutil:dfx_util",
-      "$faultloggerd_interfaces_path/innerkits/procinfo:libdfx_procinfo",
       "$hilog_lite_deps_path",
     ]
 
@@ -100,7 +98,6 @@ if (defined(ohos_lite)) {
       "$faultloggerd_common_path/dfxlog",
       "$faultloggerd_common_path/dfxutil",
       "$faultloggerd_interfaces_path/common",
-      "$faultloggerd_interfaces_path/innerkits/procinfo/include",
       "$hilog_lite_include_path",
     ]
 
@@ -113,7 +110,6 @@ if (defined(ohos_lite)) {
     deps = [
       "$faultloggerd_common_path/dfxlog:dfx_hilog",
       "$faultloggerd_common_path/dfxutil:dfx_util",
-      "$faultloggerd_interfaces_path/innerkits/procinfo:libdfx_procinfo",
       "$hilog_lite_deps_path",
     ]
     external_deps = [ "bounds_checking_function:libsec_shared" ]
@@ -131,7 +127,6 @@ if (defined(ohos_lite)) {
       "$faultloggerd_common_path/dfxlog",
       "$faultloggerd_common_path/dfxutil",
       "$faultloggerd_interfaces_path/common",
-      "$faultloggerd_interfaces_path/procinfo/include",
     ]
 
     defines = [
@@ -185,7 +180,6 @@ if (defined(ohos_lite)) {
     deps = [
       "$faultloggerd_common_path/dfxlog:dfx_hilog",
       "$faultloggerd_common_path/dfxutil:dfx_util",
-      "$faultloggerd_interfaces_path/innerkits/procinfo:libdfx_procinfo",
     ]
 
     if (is_ohos && !is_mingw && !is_emulator) {
@@ -196,7 +190,6 @@ if (defined(ohos_lite)) {
       "bounds_checking_function:libsec_shared",
       "c_utils:utils",
       "hilog:libhilog",
-      "init:libbegetutil",
     ]
     install_images = [
       "system",
@@ -228,7 +221,6 @@ if (defined(ohos_lite)) {
     deps = [
       "$faultloggerd_common_path/dfxlog:dfx_hilog",
       "$faultloggerd_common_path/dfxutil:dfx_util",
-      "$faultloggerd_interfaces_path/innerkits/procinfo:libdfx_procinfo",
     ]
 
     if (is_ohos && !is_mingw && !is_emulator) {
@@ -239,7 +231,6 @@ if (defined(ohos_lite)) {
       "bounds_checking_function:libsec_shared",
       "c_utils:utils",
       "hilog:libhilog",
-      "init:libbegetutil",
     ]
     part_name = "faultloggerd"
     subsystem_name = "hiviewdfx"
@@ -267,7 +258,6 @@ if (defined(ohos_lite)) {
     deps = [
       "$faultloggerd_common_path/dfxlog:dfx_hilog",
       "$faultloggerd_common_path/dfxutil:dfx_util",
-      "$faultloggerd_interfaces_path/innerkits/procinfo:libdfx_procinfo",
     ]
 
     if (is_ohos && !is_mingw && !is_emulator) {
@@ -278,7 +268,6 @@ if (defined(ohos_lite)) {
       "bounds_checking_function:libsec_shared",
       "c_utils:utils",
       "hilog:libhilog",
-      "init:libbegetutil",
     ]
     part_name = "faultloggerd"
     subsystem_name = "hiviewdfx"
