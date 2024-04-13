@@ -29,25 +29,39 @@ using namespace OHOS::HiviewDFX;
 using namespace std;
 
 /**
-* @tc.name: BenchmarkMapsCreate
+* @tc.name: BenchmarkMapsCreateAll
 * @tc.desc: Maps Create
 * @tc.type: FUNC
 */
-static void BenchmarkMapsCreate(benchmark::State& state)
+static void BenchmarkMapsCreateAll(benchmark::State& state)
 {
     for (const auto& _ : state) {
         auto dfxMaps = DfxMaps::Create();
         LOGU("%s:: maps.size: %zu", __func__, dfxMaps->GetMapsSize());
     }
 }
-BENCHMARK(BenchmarkMapsCreate);
+BENCHMARK(BenchmarkMapsCreateAll);
 
 /**
-* @tc.name: BenchmarkMapsCreate2
+* @tc.name: BenchmarkMapsCreateOnlyExec
 * @tc.desc: Maps Create
 * @tc.type: FUNC
 */
-static void BenchmarkMapsCreate2(benchmark::State& state)
+static void BenchmarkMapsCreateOnlyExec(benchmark::State& state)
+{
+    for (const auto& _ : state) {
+        auto dfxMaps = DfxMaps::Create(0, false);
+        LOGU("%s:: maps.size: %zu", __func__, dfxMaps->GetMapsSize());
+    }
+}
+BENCHMARK(BenchmarkMapsCreateOnlyExec);
+
+/**
+* @tc.name: BenchmarkMapsCreateMapIndex
+* @tc.desc: Maps Create
+* @tc.type: FUNC
+*/
+static void BenchmarkMapsCreateMapIndex(benchmark::State& state)
 {
     std::vector<std::shared_ptr<DfxMap>> maps {};
     std::vector<int> mapIndex {};
@@ -57,4 +71,4 @@ static void BenchmarkMapsCreate2(benchmark::State& state)
         }
     }
 }
-BENCHMARK(BenchmarkMapsCreate2);
+BENCHMARK(BenchmarkMapsCreateMapIndex);

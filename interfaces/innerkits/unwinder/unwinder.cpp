@@ -51,7 +51,7 @@ namespace {
 constexpr char MIXSTACK_ENABLED_KEY[] = "persist.faultloggerd.priv.mixstack.enabled";
 #endif
 
-void Unwinder::Init()
+void Unwinder::Init(bool crash)
 {
     Destroy();
     memory_ = std::make_shared<DfxMemory>(acc_);
@@ -64,7 +64,7 @@ void Unwinder::Init()
         maps_ = DfxMaps::Create();
     } else {
         if (pid_ > 0) {
-            maps_ = DfxMaps::Create(pid_);
+            maps_ = DfxMaps::Create(pid_, crash);
         }
     }
 #if defined(ENABLE_MIXSTACK)
@@ -131,7 +131,7 @@ bool Unwinder::UnwindLocalWithTid(const pid_t tid, size_t maxFrameNum, size_t sk
 
     auto threadContext = LocalThreadContext::GetInstance().CollectThreadContext(tid);
 #if defined(__aarch64__)
-    if (threadContext->frameSz > 0) {
+    if (threadContext != nullptr && threadContext->frameSz > 0) {
         pcs_.clear();
         for (size_t i = 0; i < threadContext->frameSz; i++) {
             pcs_.emplace_back(threadContext->pcs[i]);
