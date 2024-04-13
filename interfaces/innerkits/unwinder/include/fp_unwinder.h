@@ -26,7 +26,6 @@
 #include <securec.h>
 #include <sys/stat.h>
 #include <sys/syscall.h>
-#include <threads.h>
 #include <unistd.h>
 #include "dfx_ark_local.h"
 #include "dfx_define.h"

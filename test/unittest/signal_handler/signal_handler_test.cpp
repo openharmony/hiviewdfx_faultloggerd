@@ -490,5 +490,20 @@ HWTEST_F(SignalHandlerTest, SignalHandlerTest013, TestSize.Level2)
     ASSERT_TRUE(file.empty());
     GTEST_LOG_(INFO) << "SignalHandlerTest013: end.";
 }
+
+void TestCallbackFunc()
+{}
+
+/**
+ * @tc.name: SignalHandlerTest014
+ * @tc.desc: test SetAsumcStaclCallbackFunc
+ * @tc.type: FUNC
+ */
+HWTEST_F(SignalHandlerTest, SignalHandlerTest014, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "SignalHandlerTest014: start.";
+    SetAsyncStackCallbackFunc(reinterpret_cast<void*>(TestCallbackFunc));
+    GTEST_LOG_(INFO) << "SignalHandlerTest014: end.";
+}
 } // namespace HiviewDFX
 } // namepsace OHOS

@@ -83,8 +83,23 @@ if (defined(ohos_lite)) {
     ]
   }
 
+  ohos_unittest("test_param") {
+    module_out_path = module_output_path
+    sources = [ "param_test.cpp" ]
+    configs = [ ":module_private_config" ]
+
+    deps = [
+      "//third_party/googletest:gmock_main",
+      "//third_party/googletest:gtest_main",
+    ]
+    external_deps = [ "c_utils:utils" ]
+  }
+
   group("unittest") {
     testonly = true
     deps = [ ":test_common" ]
+    if (!defined(ohos_lite)) {
+      deps += [ ":test_param" ]
+    }
   }
 }

@@ -42,7 +42,6 @@ public:
         acc_ = std::make_shared<DfxAccessorsLocal>();
         enableFpCheckMapExec_ = true;
         Init();
-        InitParam();
     };
     // for remote
     Unwinder(int pid, bool crash = true) : pid_(pid)
@@ -50,7 +49,6 @@ public:
         acc_ = std::make_shared<DfxAccessorsRemote>();
         enableFpCheckMapExec_ = true;
         Init(crash);
-        InitParam();
     };
     // for customized
     Unwinder(std::shared_ptr<UnwindAccessors> accessors) : pid_(UNWIND_TYPE_CUSTOMIZE)
@@ -63,7 +61,6 @@ public:
         pacMask_ = pacMaskDefault_;
 #endif
         Init();
-        InitParam();
     };
     ~Unwinder() { Destroy(); }
 

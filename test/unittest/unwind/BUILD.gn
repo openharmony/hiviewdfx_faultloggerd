@@ -23,7 +23,6 @@ ohos_unittest("test_unwind") {
     "$faultloggerd_interfaces_path/common",
     "$faultloggerd_path/test/unittest/unwind/include",
     "$faultloggerd_path/test/utils",
-    "//third_party/lzma/C",
   ]
   configs = [ "$faultloggerd_common_path/build:coverage_flags" ]
   defines = [ "DFX_LOG_UNWIND" ]

@@ -26,9 +26,9 @@ namespace OHOS {
 namespace HiviewDFX {
 namespace {
 #ifdef is_ohos_lite
-    [[maybe_unused]] constexpr bool g_defaultValue = false;
+[[maybe_unused]] constexpr bool g_defaultValue = false;
 #else
-    [[maybe_unused]] constexpr bool g_defaultValue = true;
+[[maybe_unused]] constexpr bool g_defaultValue = true;
 #endif
 [[maybe_unused]] constexpr char BETA_ENABLED_KEY[] = "const.logsystemversion.type";
 [[maybe_unused]] constexpr char ASYNCSTACK_ENABLED_KEY[] = "persist.faultloggerd.priv.asyncstack.enabled";

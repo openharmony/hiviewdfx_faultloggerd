@@ -25,6 +25,7 @@ group("unittest") {
   if (!defined(ohos_lite)) {
     testonly = true
     deps += [
+      "async_stack:unittest",
       "backtrace:unittest",
       "dump_catcher:unittest",
       "faultloggerd_client:unittest",
