@@ -53,7 +53,7 @@ public:
     std::string ToString() const;
 
     void Detach();
-    bool Attach();
+    bool Attach(int timeout = PTRACE_ATTATCH_KEY_THREAD_TIMEOUT);
 
     DfxThreadInfo threadInfo_;
 private:
