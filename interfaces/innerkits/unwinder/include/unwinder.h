@@ -160,9 +160,8 @@ private:
     bool enableFpFallback_ = true;
     bool enableFpCheckMapExec_ = false;
     bool isFpStep_ = false;
-#if defined(ENABLE_MIXSTACK)
     bool enableMixstack_ = true;
-#endif
+
     bool ignoreMixstack_ = false;
     bool stopWhenArkFrame_ = false;
 
