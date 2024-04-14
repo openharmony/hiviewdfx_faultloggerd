@@ -59,6 +59,9 @@ private:
     int32_t resFd_ = -1;
     int32_t jsonFd_ = -1;
     int32_t resDump_ = 0;
+
+    void InitRegs(std::shared_ptr<ProcessDumpRequest> request, pid_t &vmPid, int &dumpRes);
+    bool IsTargetProcessAlive(std::shared_ptr<ProcessDumpRequest> request, int &dummRes);
 };
 } // namespace HiviewDFX
 } // namespace OHOS

@@ -27,7 +27,7 @@
 
 namespace OHOS {
 namespace HiviewDFX {
-void DfxUnwindAsyncThread::UnwindStack()
+void DfxUnwindAsyncThread::UnwindStack(pid_t vmPid)
 {
     if (unwinder_ == nullptr || thread_ == nullptr) {
         DFXLOG_ERROR("%s::thread or unwinder is not initialized.", __func__);
@@ -35,9 +35,11 @@ void DfxUnwindAsyncThread::UnwindStack()
     }
     // 1: get crash stack
     // unwinding with context passed by dump request, only for crash thread or target thread.
-    unwinder_->SetRegs(thread_->GetThreadRegs());
-    MAYBE_UNUSED bool ret = unwinder_->UnwindRemote(thread_->threadInfo_.nsTid,
-                                                    ProcessDumper::GetInstance().IsCrash(),
+    auto regs = thread_->GetThreadRegs();
+    unwinder_->SetRegs(regs);
+    auto tmpPid = vmPid != 0 ? vmPid : thread_->threadInfo_.nsTid;
+    MAYBE_UNUSED bool ret = unwinder_->UnwindRemote(tmpPid,
+                                                    regs != nullptr,
                                                     DfxConfig::GetConfig().maxFrameNums);
     if (ProcessDumper::GetInstance().IsCrash()) {
         ReportUnwinderException(unwinder_->GetLastErrorCode());
