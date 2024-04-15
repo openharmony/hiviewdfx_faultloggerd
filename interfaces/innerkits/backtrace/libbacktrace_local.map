@@ -8,8 +8,6 @@
       OHOS::HiviewDFX::BacktraceLocalThread::GetFrames*;
       OHOS::HiviewDFX::BacktraceLocalThread::~BacktraceLocalThread*;
       OHOS::HiviewDFX::BacktraceLocalThread::GetFormattedStr*;
-      OHOS::HiviewDFX::DfxJsonFormatter::FormatJsonStack*;
-      OHOS::HiviewDFX::DfxJsonFormatter::GetFramesJson*;
     };
     extern "C" {
       PrintTrace*;

@@ -680,6 +680,7 @@ HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest029, TestSize.Level
     GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest029: end.";
 }
 
+#ifndef is_ohos_lite
 /**
  * @tc.name: DumpCatcherInterfacesTest030
  * @tc.desc: test DumpCatch remote API: PID(getpid()), TID(child thread)
@@ -712,6 +713,7 @@ HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest030, TestSize.Level
     EXPECT_EQ(stackMsg == msg, true) << "stackMsg != msg";
     GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest030: end.";
 }
+#endif
 
 /**
  * @tc.name: DumpCatcherInterfacesTest031

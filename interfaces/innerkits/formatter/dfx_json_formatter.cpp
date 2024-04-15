@@ -21,10 +21,6 @@
 #include <regex>
 #include <securec.h>
 #include <sstream>
-
-#include "dfx_define.h"
-#include "dfx_frame.h"
-#include "dfx_log.h"
 #ifndef is_ohos_lite
 #include "json/json.h"
 #endif
@@ -110,32 +106,6 @@ bool DfxJsonFormatter::FormatJsonStack(std::string jsonStack, std::string& outSt
         outStackStr.append(ss.str());
     }
     return true;
-}
-
-std::string DfxJsonFormatter::GetFramesJson(const std::vector<DfxFrame>& frames)
-{
-    char buf[FRAME_BUF_LEN] = {0};
-#ifdef __LP64__
-    char format[] = "%016" PRIx64 "";
-#else
-    char format[] = "%08" PRIx64 "";
-#endif
-
-    Json::Value framesJson;
-    for (auto const& frame : frames) {
-        Json::Value frameJson;
-        if (snprintf_s(buf, sizeof(buf), sizeof(buf) - 1, format, frame.relPc) > 0) {
-            frameJson["pc"] = buf;
-        } else {
-            frameJson["pc"] = frame.relPc;
-        }
-        frameJson["symbol"] = frame.funcName;
-        frameJson["offset"] = frame.funcOffset;
-        frameJson["file"] = frame.mapName;
-        frameJson["buildId"] = frame.buildId;
-        framesJson.append(frameJson);
-    }
-    return Json::FastWriter().write(framesJson);
 }
 #endif
 } // namespace HiviewDFX
