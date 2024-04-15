@@ -19,6 +19,12 @@
             <option name="push" value="hiviewdfx/faultloggerd/crasher_cpp -> /data/" src="out"/>
         </preparer>
     </target>
+    <target name="test_signalhandler">
+        <preparer>
+            <option name="push" value="hiviewdfx/faultloggerd/libdfx_signalhandler.z.so -> /system/lib/" src="out"/>
+            <option name="push" value="hiviewdfx/faultloggerd/libdfx_signalhandler.z.so -> /system/lib64/" src="out"/>
+        </preparer>
+    </target>
     <target name="test_dumpcatcher">
         <preparer>
             <option name="push" value="tests/unittest/faultloggerd/resource/FaultloggerdJsTest.hap -> /data/" src="out"/>
