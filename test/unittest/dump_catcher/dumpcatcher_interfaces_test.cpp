@@ -727,11 +727,11 @@ HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest031, TestSize.Level
     close(fd);
     DfxDumpCatcher dumplog;
     string msg = "";
-    EXPECT_FALSE(dumplog.DumpCatch(getpid(), gettid(), msg));
+    EXPECT_FALSE(dumplog.DumpCatchMix(getpid(), gettid(), msg));
     constexpr int validTime = 8;
     sleep(validTime);
     msg = "";
-    EXPECT_TRUE(dumplog.DumpCatch(getpid(), gettid(), msg));
+    EXPECT_TRUE(dumplog.DumpCatchMix(getpid(), gettid(), msg));
 }
 } // namespace HiviewDFX
 } // namepsace OHOS
