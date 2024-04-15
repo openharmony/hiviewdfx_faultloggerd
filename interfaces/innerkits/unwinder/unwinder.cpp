@@ -703,6 +703,7 @@ void Unwinder::AddFrame(bool isJsFrame, uintptr_t pc, uintptr_t sp, std::shared_
         return;
     }
 #endif
+    pcs_.emplace_back(pc);
     DfxFrame frame;
     frame.isJsFrame = isJsFrame;
     frame.index = frames_.size();
@@ -818,6 +819,20 @@ void Unwinder::FillJsFrame(DfxFrame& frame)
     frame.column = jsFunction.column;
     LOGU("Js frame mapName: %s, funcName: %s, line: %d, column: %d",
         frame.mapName.c_str(), frame.funcName.c_str(), frame.line, frame.column);
+}
+
+bool Unwinder::GetFrameByPc(uintptr_t pc, std::shared_ptr<DfxMaps> maps, DfxFrame &frame)
+{
+    frame.pc = static_cast<uint64_t>(StripPac(pc, 0));
+    std::shared_ptr<DfxMap> map = nullptr;
+    if ((maps == nullptr) || !maps->FindMapByAddr(pc, map) || map == nullptr) {
+        LOGE("%s", "Find map error");
+        return false;
+    }
+
+    frame.map = map;
+    FillFrame(frame);
+    return true;
 }
 
 void Unwinder::GetFramesByPcs(std::vector<DfxFrame>& frames, std::vector<uintptr_t> pcs)
