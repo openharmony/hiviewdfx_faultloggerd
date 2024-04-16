@@ -94,7 +94,20 @@ void __attribute__((constructor)) InitHandler(void)
 static struct ProcessDumpRequest g_request;
 static void *g_reservedChildStack = NULL;
 static pthread_mutex_t g_signalHandlerMutex = PTHREAD_MUTEX_INITIALIZER;
-static int g_pipefd[2] = {-1, -1};
+
+enum PIPE_FD_TYPE {
+    WRITE_TO_DUMP,
+    READ_FROM_DUMP_TO_MAIN,
+    READ_FORM_DUMP_TO_VIRTUAL,
+    PIPE_MAX,
+};
+
+static int g_pipeFds[PIPE_MAX][2] = {
+    {-1, -1},
+    {-1, -1},
+    {-1, -1}
+};
+
 static BOOL g_hasInit = FALSE;
 static const int SIGNALHANDLER_TIMEOUT = 10000; // 10000 us
 static const int ALARM_TIME_S = 10;
@@ -140,7 +153,6 @@ static void InitCallbackItems(void)
 static GetStackIdFunc g_GetStackIdFunc = NULL;
 void SetAsyncStackCallbackFunc(void* func)
 {
-    DFXLOG_INFO("SetCrashCallbackFunc.");
     g_GetStackIdFunc = (GetStackIdFunc)func;
 }
 
@@ -366,13 +378,20 @@ static int DFX_ExecDump(void)
     DFX_SetUpEnvironment();
     DFX_SetUpSigAlarmAction();
     alarm(ALARM_TIME_S);
+    int pipefd[2] = {-1, -1};
     // create pipe for passing request to processdump
-    if (pipe(g_pipefd) != 0) {
-        DFXLOG_ERROR("Failed to create pipe for transfering context.");
-        return CREATE_PIPE_FAIL;
+    if (g_request.dumpMode == SPLIT_MODE) {
+        if (pipe(pipefd) != 0) {
+            DFXLOG_ERROR("Failed to create pipe for transfering context.");
+            return CREATE_PIPE_FAIL;
+        }
+    } else {
+        pipefd[0] = g_pipeFds[WRITE_TO_DUMP][0];
+        pipefd[1] = g_pipeFds[WRITE_TO_DUMP][1];
     }
+
     ssize_t writeLen = (long)(sizeof(struct ProcessDumpRequest));
-    if (fcntl(g_pipefd[1], F_SETPIPE_SZ, writeLen) < writeLen) {
+    if (fcntl(pipefd[1], F_SETPIPE_SZ, writeLen) < writeLen) {
         DFXLOG_ERROR("Failed to set pipe buffer size.");
         return SET_PIPE_LEN_FAIL;
     }
@@ -383,16 +402,16 @@ static int DFX_ExecDump(void)
             .iov_len = sizeof(struct ProcessDumpRequest)
         },
     };
-    ssize_t realWriteSize = OHOS_TEMP_FAILURE_RETRY(writev(g_pipefd[1], iovs, 1));
+    ssize_t realWriteSize = OHOS_TEMP_FAILURE_RETRY(writev(pipefd[1], iovs, 1));
     if ((ssize_t)writeLen != realWriteSize) {
         DFXLOG_ERROR("Failed to write pipe.");
         return WRITE_PIPE_FAIL;
     }
-    OHOS_TEMP_FAILURE_RETRY(dup2(g_pipefd[0], STDIN_FILENO));
-    if (g_pipefd[0] != STDIN_FILENO) {
-        syscall(SYS_close, g_pipefd[0]);
+    OHOS_TEMP_FAILURE_RETRY(dup2(pipefd[0], STDIN_FILENO));
+    if (pipefd[0] != STDIN_FILENO) {
+        syscall(SYS_close, pipefd[0]);
     }
-    syscall(SYS_close, g_pipefd[1]);
+    syscall(SYS_close, pipefd[1]);
 
     if (InheritCapabilities() != 0) {
         DFXLOG_ERROR("Failed to inherit Capabilities from parent.");
@@ -563,6 +582,7 @@ static int ForkAndExecProcessDump(void)
     // fork a child process that could ptrace us
     childPid = ForkBySyscall();
     if (childPid == 0) {
+        g_request.dumpMode = SPLIT_MODE;
         DFXLOG_INFO("The exec processdump pid(%ld).", syscall(SYS_getpid));
         _exit(DFX_ExecDump());
     } else if (childPid < 0) {
@@ -583,6 +603,128 @@ static int CloneAndDoProcessDump(void* arg)
     DFXLOG_INFO("The clone thread(%ld).", syscall(SYS_gettid));
     g_request.recycleTid = syscall(SYS_gettid);
     return ForkAndExecProcessDump();
+}
+
+static void StartProcessdump()
+{
+    pid_t pid = ForkBySyscall();
+    if (pid < 0) {
+        DFXLOG_ERROR("Failed to fork dummy processdump(%d)", errno);
+        return;
+    } else if (pid == 0) {
+        pid_t processDumpPid = ForkBySyscall();
+        if (processDumpPid < 0) {
+            DFXLOG_ERROR("Failed to fork processdump(%d)", errno);
+            _exit(0);
+        } else if (processDumpPid > 0) {
+            _exit(0);
+        } else {
+            DFX_ExecDump();
+        }
+    }
+
+    if (waitpid(pid, NULL, 0) <= 0) {
+        DFXLOG_ERROR("failed to wait dummy processdump(%d)", errno);
+    }
+}
+
+static void StartVMProcessUnwind()
+{
+    pid_t pid = ForkBySyscall();
+    if (pid < 0) {
+        DFXLOG_ERROR("Failed to fork vm process(%d)", errno);
+        return;
+    } else if (pid == 0) {
+        pid_t vmPid = ForkBySyscall();
+        if (vmPid == 0) {
+            close(g_pipeFds[WRITE_TO_DUMP][0]);
+            pid_t curPid = syscall(SYS_getpid);
+            OHOS_TEMP_FAILURE_RETRY(write(g_pipeFds[WRITE_TO_DUMP][1], &curPid, sizeof(curPid)));
+            close(g_pipeFds[WRITE_TO_DUMP][1]);
+
+            uint32_t finishUnwind = OPE_FAIL;
+            close(g_pipeFds[READ_FORM_DUMP_TO_VIRTUAL][1]);
+            OHOS_TEMP_FAILURE_RETRY(read(g_pipeFds[READ_FORM_DUMP_TO_VIRTUAL][0], &finishUnwind, sizeof(finishUnwind)));
+            close(g_pipeFds[READ_FORM_DUMP_TO_VIRTUAL][0]);
+            DFXLOG_INFO("processdump unwind finish, exit vm pid = %d", curPid);
+            _exit(0);
+        } else {
+            DFXLOG_INFO("exit dummy vm process");
+            _exit(0);
+        }
+    }
+
+    if (waitpid(pid, NULL, 0) <= 0) {
+        DFXLOG_ERROR("failed to wait dummy vm process(%d)", errno);
+    }
+}
+
+static void CleanFd(int *pipeFd)
+{
+    if (*pipeFd != -1) {
+        close(*pipeFd);
+        *pipeFd = -1;
+    }
+}
+
+static void CleanPipe()
+{
+    for (size_t i = 0; i < PIPE_MAX; i++) {
+        CleanFd(&g_pipeFds[i][0]);
+        CleanFd(&g_pipeFds[i][1]);
+    }
+}
+
+static bool InitPipe()
+{
+    for (int i = 0; i < PIPE_MAX; i++) {
+        if (pipe(g_pipeFds[i]) == -1) {
+            DFXLOG_ERROR("create pipe fail");
+            CleanPipe();
+            return false;
+        }
+    }
+
+    g_request.pmPipeFd[0] = g_pipeFds[READ_FROM_DUMP_TO_MAIN][0];
+    g_request.pmPipeFd[1] = g_pipeFds[READ_FROM_DUMP_TO_MAIN][1];
+    g_request.vmPipeFd[0] = g_pipeFds[READ_FORM_DUMP_TO_VIRTUAL][0];
+    g_request.vmPipeFd[1] = g_pipeFds[READ_FORM_DUMP_TO_VIRTUAL][1];
+    return true;
+}
+
+static int ProcessDump(int sig)
+{
+    int prevDumpableStatus = prctl(PR_GET_DUMPABLE);
+    bool isTracerStatusModified = SetDumpState();
+
+    if (!InitPipe()) {
+        return -1;
+    }
+    g_request.dumpMode = FUSION_MODE;
+
+    StartProcessdump();
+    uint32_t isFinishGetRegs = OPE_FAIL;
+    close(g_pipeFds[READ_FROM_DUMP_TO_MAIN][1]);
+    int ret = OHOS_TEMP_FAILURE_RETRY(read(g_pipeFds[READ_FROM_DUMP_TO_MAIN][0],
+        &isFinishGetRegs, sizeof(isFinishGetRegs)));
+    if (ret != sizeof(isFinishGetRegs) || isFinishGetRegs != OPE_SUCCESS) {
+        DFXLOG_INFO("Failed to read resgs(%d).", errno);
+    }
+    DFXLOG_INFO("processdump have get all resgs");
+
+    StartVMProcessUnwind();
+    uint32_t isExitAfterUnwind = OPE_CONTINUE;
+    if (sig != SIGDUMP) {
+        read(g_pipeFds[READ_FROM_DUMP_TO_MAIN][0], &isExitAfterUnwind, sizeof(isExitAfterUnwind));
+    }
+    CleanPipe();
+    if (isExitAfterUnwind == OPE_BLOCK) {
+        DFXLOG_INFO("block crash process exit");
+        waitpid(0, NULL, 0);
+    }
+    DFXLOG_INFO("process dump end");
+    RestoreDumpState(prevDumpableStatus, isTracerStatusModified);
+    return 0;
 }
 
 static void ForkAndDoProcessDump(int sig)
@@ -624,6 +766,7 @@ static bool DFX_SigchainHandler(int sig, siginfo_t *si, void *context)
 {
     int pid = syscall(SYS_getpid);
     int tid = syscall(SYS_gettid);
+
     DFXLOG_INFO("DFX_SigchainHandler :: sig(%d), pid(%d), tid(%d).", sig, pid, tid);
     bool ret = false;
     if (sig == SIGDUMP) {
@@ -652,7 +795,12 @@ static bool DFX_SigchainHandler(int sig, siginfo_t *si, void *context)
     FillDumpRequest(sig, si, context);
     DFXLOG_INFO("DFX_SigchainHandler :: sig(%d), pid(%d), processName(%s), threadName(%s).",
         sig, g_request.pid, g_request.processName, g_request.threadName);
-
+    if (ProcessDump(sig) == 0) {
+        ret = sig == SIGDUMP || sig == SIGLEAK_STACK;
+        DFXLOG_INFO("Finish handle signal(%d) in %d:%d", sig, g_request.pid, g_request.tid);
+        pthread_mutex_unlock(&g_signalHandlerMutex);
+        return ret;
+    }
     // for protecting g_reservedChildStack
     // g_signalHandlerMutex will be unlocked in ForkAndExecProcessDump function
     if (sig != SIGDUMP) {

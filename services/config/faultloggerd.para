@@ -13,3 +13,4 @@
 
 persist.faultloggerd.priv.mixstack.enabled=true
 persist.faultloggerd.priv.asyncstack.enabled=true
+persist.faultloggerd.priv.block_crash_process.enabled=false

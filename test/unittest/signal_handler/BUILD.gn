@@ -49,13 +49,11 @@ if (defined(ohos_lite)) {
 
     deps = [
       "$faultloggerd_path/common/cutil:dfx_cutil",
-      "$faultloggerd_path/interfaces/innerkits/signal_handler:dfx_signalhandler",
       "$faultloggerd_path/test/utils:dfx_test_util",
       "//third_party/googletest:gtest_main",
     ]
 
     external_deps = [ "c_utils:utils" ]
-    resource_config_file = "$faultloggerd_path/test/resource/ohos_test.xml"
   }
 
   ohos_unittest("test_signalchain") {

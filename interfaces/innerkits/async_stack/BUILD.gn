@@ -50,6 +50,10 @@ if (defined(ohos_lite)) {
 
   ohos_shared_library("libasync_stack") {
     public_configs = [ ":async_stack_config" ]
+    defines = [
+      "is_ohos=${is_ohos}",
+      "ENABLE_PARAMETER",
+    ]
 
     sources = [
       "async_stack.cpp",

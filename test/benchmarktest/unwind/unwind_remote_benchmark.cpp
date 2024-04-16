@@ -16,11 +16,11 @@
 #include <benchmark/benchmark.h>
 
 #include <string>
+#include <unistd.h>
 #include <vector>
 #include "dfx_define.h"
 #include "dfx_log.h"
 #include <libunwind.h>
-#include <libunwind_i-ohos.h>
 #include <libunwind-ptrace.h>
 #include "dfx_ptrace.h"
 #include "dfx_test_util.h"
@@ -30,49 +30,45 @@ using namespace std;
 
 static constexpr size_t TEST_MIN_UNWIND_FRAMES = 5;
 
-struct UnwindData {
-    bool isFillFrames = false;
-};
-
-NOINLINE static void TestFunc6(MAYBE_UNUSED void (*func)(void*), MAYBE_UNUSED void* data)
+NOINLINE static void TestFunc6(MAYBE_UNUSED void (*func)(void*))
 {
     while (true) {};
     LOGE("Not be run here!!!");
 }
 
-NOINLINE static void TestFunc5(void (*func)(void*), void* data)
+NOINLINE static void TestFunc5(void (*func)(void*))
 {
-    return TestFunc6(func, data);
+    return TestFunc6(func);
 }
 
-NOINLINE static void TestFunc4(void (*func)(void*), void* data)
+NOINLINE static void TestFunc4(void (*func)(void*))
 {
-    return TestFunc5(func, data);
+    return TestFunc5(func);
 }
 
-NOINLINE static void TestFunc3(void (*func)(void*), void* data)
+NOINLINE static void TestFunc3(void (*func)(void*))
 {
-    return TestFunc4(func, data);
+    return TestFunc4(func);
 }
 
-NOINLINE static void TestFunc2(void (*func)(void*), void* data)
+NOINLINE static void TestFunc2(void (*func)(void*))
 {
-    return TestFunc3(func, data);
+    return TestFunc3(func);
 }
 
-NOINLINE static void TestFunc1(void (*func)(void*), void* data)
+NOINLINE static void TestFunc1(void (*func)(void*))
 {
-    return TestFunc2(func, data);
+    return TestFunc2(func);
 }
 
-static size_t UnwindRemote(unw_addr_space_t as, void* data)
+static size_t UnwindRemote(pid_t pid, unw_addr_space_t as)
 {
     if (as == nullptr) {
         LOGE("as is nullptr");
         return 0;
     }
     unw_set_caching_policy(as, UNW_CACHE_GLOBAL);
-    void *context = _UPT_create(as->pid);
+    void *context = _UPT_create(pid);
     if (context == nullptr) {
         LOGE("_UPT_create");
         return 0;
@@ -88,40 +84,26 @@ static size_t UnwindRemote(unw_addr_space_t as, void* data)
 
     std::vector<unw_word_t> pcs;
     size_t index = 0;
-    unw_word_t sp = 0, pc = 0, prevPc, relPc;
+    unw_word_t pc = 0;
+    unw_word_t prevPc;
     do {
         if ((unw_get_reg(&cursor, UNW_REG_IP, (unw_word_t*)(&(pc)))) || (prevPc == pc)) {
             break;
         }
         pcs.emplace_back(pc);
         prevPc = pc;
-        relPc = unw_get_rel_pc(&cursor);
-        unw_word_t sz = unw_get_previous_instr_sz(&cursor);
-        if ((index > 0) && (relPc > sz)) {
-            relPc -= sz;
-            pc -= sz;
-        }
-
-        struct map_info* map = unw_get_map(&cursor);
-        if (map == nullptr) {
-            break;
-        }
-
-        if (unw_step(&cursor) <= 0) {
-            break;
-        }
         index++;
-    } while (true);
+    } while (unw_step(&cursor) > 0);
     _UPT_destroy(context);
     LOGU("%s pcs.size: %zu", __func__, pcs.size());
     return pcs.size();
 }
 
-static void Run(benchmark::State& state, void* data)
+static void Run(benchmark::State& state)
 {
     pid_t pid = fork();
     if (pid == 0) {
-        TestFunc1(nullptr, nullptr);
+        TestFunc1(nullptr);
         _exit(0);
     } else if (pid < 0) {
         return;
@@ -137,8 +119,7 @@ static void Run(benchmark::State& state, void* data)
 
     for (const auto& _ : state) {
         unw_addr_space_t as = unw_create_addr_space(&_UPT_accessors, 0);
-        unw_set_target_pid(as, pid);
-        auto unwSize = UnwindRemote(as, data);
+        auto unwSize = UnwindRemote(pid, as);
         if (unwSize < TEST_MIN_UNWIND_FRAMES) {
             state.SkipWithError("Failed to unwind.");
         }
@@ -161,11 +142,11 @@ static void GetCacheUnwind(pid_t pid, unw_addr_space_t& as)
     }
 }
 
-static void RunCache(benchmark::State& state, void* data)
+static void RunCache(benchmark::State& state)
 {
     pid_t pid = fork();
     if (pid == 0) {
-        TestFunc1(nullptr, nullptr);
+        TestFunc1(nullptr);
         _exit(0);
     } else if (pid < 0) {
         return;
@@ -182,8 +163,7 @@ static void RunCache(benchmark::State& state, void* data)
     GetCacheUnwind(pid, as);
 
     for (const auto& _ : state) {
-        unw_set_target_pid(as, pid);
-        auto unwSize = UnwindRemote(as, data);
+        auto unwSize = UnwindRemote(pid, as);
         if (unwSize < TEST_MIN_UNWIND_FRAMES) {
             state.SkipWithError("Failed to unwind.");
         }
@@ -201,7 +181,7 @@ static void RunCache(benchmark::State& state, void* data)
 */
 static void BenchmarkUnwindRemote(benchmark::State& state)
 {
-    Run(state, nullptr);
+    Run(state);
 }
 BENCHMARK(BenchmarkUnwindRemote);
 
@@ -212,6 +192,6 @@ BENCHMARK(BenchmarkUnwindRemote);
 */
 static void BenchmarkUnwindRemoteCache(benchmark::State& state)
 {
-    RunCache(state, nullptr);
+    RunCache(state);
 }
 BENCHMARK(BenchmarkUnwindRemoteCache);

@@ -129,6 +129,7 @@ if (defined(ohos_lite)) {
     external_deps = [
       "c_utils:utils",
       "hilog:libhilog",
+      "init:libbegetutil",
       "jsoncpp:jsoncpp",
     ]
 
@@ -166,6 +167,7 @@ if (defined(ohos_lite)) {
       "c_utils:utils",
       "hilog:libhilog_base",
       "hisysevent:libhisysevent",
+      "init:libbegetutil",
       "jsoncpp:jsoncpp",
     ]
 

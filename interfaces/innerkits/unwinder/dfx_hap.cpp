@@ -48,7 +48,7 @@ bool DfxHap::ParseHapFileData(const std::string& name)
         return false;
     }
 
-    if (extractor_->GetHapSourceMapInfo(srcMapLoadOffset_, srcMapDataPtr_, srcMapDataSize_)) {
+    if (!extractor_->GetHapSourceMapInfo(srcMapLoadOffset_, srcMapDataPtr_, srcMapDataSize_)) {
         LOGU("Failed to get hap source map info: %s", name.c_str());
     }
     return true;

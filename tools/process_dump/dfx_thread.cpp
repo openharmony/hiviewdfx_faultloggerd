@@ -120,13 +120,13 @@ void DfxThread::Detach()
     }
 }
 
-bool DfxThread::Attach()
+bool DfxThread::Attach(int timeout)
 {
     if (threadStatus == ThreadStatus::THREAD_STATUS_ATTACHED) {
         return true;
     }
 
-    if (!DfxPtrace::Attach(threadInfo_.nsTid)) {
+    if (!DfxPtrace::Attach(threadInfo_.nsTid, timeout)) {
         return false;
     }
 

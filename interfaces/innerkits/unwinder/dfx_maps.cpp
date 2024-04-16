@@ -40,31 +40,50 @@ namespace {
 
 inline const std::string GetMapsFile(pid_t pid)
 {
-    if (pid < 0) {
-        return "";
-    }
-    std::string path;
-    if ((pid == 0) || (pid == getpid())) {
-        path = std::string(PROC_SELF_MAPS_PATH);
-    } else {
+    std::string path = "";
+    if (pid > 0) {
         path = StringPrintf("/proc/%d/maps", (int)pid);
+    } else if ((pid == 0) || (pid == getpid())) {
+        path = std::string(PROC_SELF_MAPS_PATH);
     }
     return path;
 }
 }
 
-std::shared_ptr<DfxMaps> DfxMaps::Create(pid_t pid)
+std::shared_ptr<DfxMaps> DfxMaps::Create(pid_t pid, bool crash)
 {
     std::string path = GetMapsFile(pid);
-    return Create(pid, path);
+    if (path == "") {
+        return nullptr;
+    }
+    auto dfxMaps = std::make_shared<DfxMaps>();
+    if (!crash) {
+        dfxMaps->EnableOnlyExec(true);
+    }
+    if (dfxMaps->Parse(pid, path)) {
+        return dfxMaps;
+    }
+    return nullptr;
+}
+
+std::shared_ptr<DfxMaps> DfxMaps::Create(const pid_t pid, const std::string& path)
+{
+    auto dfxMaps = std::make_shared<DfxMaps>();
+    if (dfxMaps->Parse(pid, path)) {
+        return dfxMaps;
+    }
+    return nullptr;
 }
 
 bool DfxMaps::Create(const pid_t pid, std::vector<std::shared_ptr<DfxMap>>& maps, std::vector<int>& mapIndex)
 {
     std::string path = GetMapsFile(pid);
-    auto dfxMaps = Create(pid, path, true);
-    if (dfxMaps == nullptr) {
-        LOGE("Create maps error, path: %s", path.c_str());
+    if (path == "") {
+        return false;
+    }
+    auto dfxMaps = std::make_shared<DfxMaps>();
+    dfxMaps->EnableMapIndex(true);
+    if (!dfxMaps->Parse(pid, path)) {
         return false;
     }
     maps = dfxMaps->GetMaps();
@@ -72,22 +91,21 @@ bool DfxMaps::Create(const pid_t pid, std::vector<std::shared_ptr<DfxMap>>& maps
     return true;
 }
 
-std::shared_ptr<DfxMaps> DfxMaps::Create(const pid_t pid, const std::string& path, bool enableMapIndex)
+bool DfxMaps::Parse(const pid_t pid, const std::string& path)
 {
     std::string realPath = path;
-    if ((path == "") || !RealPath(path, realPath)) {
-        LOGW("Failed to realpath %s", path.c_str());
-        return nullptr;
+    if ((pid < 0) || (path == "") || !RealPath(path, realPath)) {
+        LOGE("Failed to realpath %s", path.c_str());
+        return false;
     }
 
     FILE* fp = nullptr;
     fp = fopen(realPath.c_str(), "r");
     if (fp == nullptr) {
-        LOGW("Failed to open %s", realPath.c_str());
-        return nullptr;
+        LOGE("Failed to open %s", realPath.c_str());
+        return false;
     }
 
-    auto dfxMaps = std::make_shared<DfxMaps>();
     char mapBuf[PATH_LEN] = {0};
     while (fgets(mapBuf, sizeof(mapBuf), fp) != nullptr) {
         std::shared_ptr<DfxMap> map = DfxMap::Create(mapBuf, sizeof(mapBuf));
@@ -95,24 +113,28 @@ std::shared_ptr<DfxMaps> DfxMaps::Create(const pid_t pid, const std::string& pat
             LOGW("Failed to init map info: %s", mapBuf);
             continue;
         }
-        if (map->name == "[stack]") {
-            dfxMaps->stackBottom_ = (uintptr_t)map->begin;
-            dfxMaps->stackTop_ = (uintptr_t)map->end;
+        if (IsArkMapItem(map->name)) {
+            AddMap(map, enableMapIndex_);
+            continue;
+        }
+        if (onlyExec_ && !map->IsMapExec()) {
+            continue;
         }
         FormatMapName(pid, map->name);
-        if ((!enableMapIndex) || IsLegalMapItem(map->name)) {
-            dfxMaps->AddMap(map, enableMapIndex);
+        if ((!enableMapIndex_) || IsLegalMapItem(map->name, false)) {
+            AddMap(map, enableMapIndex_);
+        }
+        if (map->name == "[stack]") {
+            stackBottom_ = (uintptr_t)map->begin;
+            stackTop_ = (uintptr_t)map->end;
         }
     }
     (void)fclose(fp);
-    if (dfxMaps->GetMapsSize() == 0) {
-        LOGE("Maps(%s) size is empty.", realPath.c_str());
-        return nullptr;
+    if (GetMapsSize() == 0) {
+        LOGE("Failed to parse maps(%s), size is empty.", realPath.c_str());
+        return false;
     }
-    if (!enableMapIndex) {
-        dfxMaps->Sort();
-    }
-    return dfxMaps;
+    return true;
 }
 
 void DfxMaps::FormatMapName(pid_t pid, std::string& mapName)
@@ -137,10 +159,18 @@ void DfxMaps::UnFormatMapName(std::string& mapName)
     }
 }
 
-bool DfxMaps::IsLegalMapItem(const std::string& name)
+bool DfxMaps::IsArkMapItem(const std::string& name)
+{
+    if (StartsWith(name, "[anon:ArkTS Code") || EndsWith(name, ".hap") || EndsWith(name, ".hsp")) {
+        return true;
+    }
+    return false;
+}
+
+bool DfxMaps::IsLegalMapItem(const std::string& name, bool withArk)
 {
     // some special
-    if (StartsWith(name, "[anon:ArkTS Code") || EndsWith(name, ".hap") || EndsWith(name, ".hsp")) {
+    if (withArk && IsArkMapItem(name)) {
         return true;
     }
     if (EndsWith(name, "[vdso]")) {

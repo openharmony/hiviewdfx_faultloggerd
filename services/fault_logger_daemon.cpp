@@ -286,6 +286,7 @@ void FaultLoggerDaemon::HandleDefaultClientRequest(int32_t connectionFd, const F
         DFXLOG_ERROR("%s :: Failed to create log file, errno(%d)", FAULTLOGGERD_TAG.c_str(), errno);
         return;
     }
+    RecordFileCreation(request->type, request->pid);
     SendFileDescriptorToSocket(connectionFd, fd);
 
     close(fd);
@@ -520,7 +521,11 @@ void FaultLoggerDaemon::HandleSdkDumpRequest(int32_t connectionFd, FaultLoggerdR
             resSdkDump = FaultLoggerSdkDumpResp::SDK_DUMP_REJECT;
             break;
         }
-
+        if (IsCrashed(request->pid)) {
+            resSdkDump = FaultLoggerSdkDumpResp::SDK_PROCESS_CRASHED;
+            DFXLOG_WARN("%s :: pid(%d) has been crashed, break.\n", FAULTLOGGERD_TAG.c_str(), request->pid);
+            break;
+        }
         if (faultLoggerPipeMap_->Check(request->pid, request->time)) {
             resSdkDump = FaultLoggerSdkDumpResp::SDK_DUMP_REPEAT;
             DFXLOG_ERROR("%s :: pid(%d) is dumping, break.\n", FAULTLOGGERD_TAG.c_str(), request->pid);
@@ -560,21 +565,35 @@ void FaultLoggerDaemon::HandleSdkDumpRequest(int32_t connectionFd, FaultLoggerdR
             break;
         }
     } while (false);
+    auto retMsg = std::to_string(resSdkDump);
+    send(connectionFd, retMsg.data(), retMsg.length(), 0);
+}
 
-    switch (resSdkDump) {
-        case FaultLoggerSdkDumpResp::SDK_DUMP_REJECT:
-            send(connectionFd, "2", strlen("2"), 0);
-            break;
-        case FaultLoggerSdkDumpResp::SDK_DUMP_REPEAT:
-            send(connectionFd, "3", strlen("3"), 0);
-            break;
-        case FaultLoggerSdkDumpResp::SDK_DUMP_NOPROC:
-            send(connectionFd, "4", strlen("4"), 0);
-            break;
-        default:
-            send(connectionFd, "1", strlen("1"), 0);
-            break;
+void FaultLoggerDaemon::RecordFileCreation(int32_t type, int32_t pid)
+{
+    if (type == static_cast<int32_t>(FaultLoggerType::CPP_CRASH)) {
+        ClearTimeOutRecords();
+        crashTimeMap_[pid] = time(nullptr);
     }
+}
+
+void FaultLoggerDaemon::ClearTimeOutRecords()
+{
+    constexpr int validTime = 8;
+    auto currentTime = time(nullptr);
+    for (auto it = crashTimeMap_.begin(); it != crashTimeMap_.end();) {
+        if ((it->second + validTime) <= currentTime) {
+            crashTimeMap_.erase(it++);
+        } else {
+            it++;
+        }
+    }
+}
+
+bool FaultLoggerDaemon::IsCrashed(int32_t pid)
+{
+    ClearTimeOutRecords();
+    return crashTimeMap_.find(pid) != crashTimeMap_.end();
 }
 
 int32_t FaultLoggerDaemon::CreateFileForRequest(int32_t type, int32_t pid, int32_t tid,

@@ -57,8 +57,10 @@ void Printer::PrintDumpHeader(std::shared_ptr<ProcessDumpRequest> request, std::
     DfxRingBufferWrapper::GetInstance().AppendBuf("Pid:%d\n", process->processInfo_.pid);
     DfxRingBufferWrapper::GetInstance().AppendBuf("Uid:%d\n", process->processInfo_.uid);
     DfxRingBufferWrapper::GetInstance().AppendBuf("Process name:%s\n", process->processInfo_.processName.c_str());
-    DfxRingBufferWrapper::GetInstance().AppendBuf("Process life time:%s\n",
-                                                  DfxProcess::GetProcessLifeCycle(process->processInfo_.pid).c_str());
+    if (isCrash) {
+        DfxRingBufferWrapper::GetInstance().AppendBuf("Process life time:%s\n",
+            DfxProcess::GetProcessLifeCycle(process->processInfo_.pid).c_str());
+    }
 
     if (isCrash) {
         std::string reasonInfo;

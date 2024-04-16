@@ -36,6 +36,26 @@ enum ProcessDumpType : int32_t {
 
 /**
  * @brief Process trace information
+ */
+enum OperateResult : int32_t {
+    OPE_FAIL = 0,
+    OPE_SUCCESS = 1,
+    OPE_BLOCK = 2,
+    OPE_CONTINUE = 3,
+};
+
+enum ProcessFlowMode : int32_t {
+    SPLIT_MODE,
+    FUSION_MODE,
+};
+
+enum RemoteProcessType : int32_t {
+    MAIN_PROCESS,
+    VIRTUAL_PROCESS
+};
+
+/**
+ * @brief Process trace information
  * keep sync with the definition in hitracec.h
  */
 typedef struct TraceInfo {
@@ -104,6 +124,12 @@ struct ProcessDumpRequest {
     uint64_t stackId;
     /** application runing unique Id */
     char appRunningId[MAX_APP_RUNNING_UNIQUE_ID_LEN];
+    /** source process with processdump pipe */
+    int pmPipeFd[2];
+    /** vm process with proceeesump pipe */
+    int vmPipeFd[2];
+    /** is integrate crash dump flow 0:false 1:true */
+    int32_t dumpMode;
 };
 #ifdef __cplusplus
 }

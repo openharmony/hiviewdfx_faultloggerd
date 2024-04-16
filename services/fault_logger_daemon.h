@@ -28,6 +28,10 @@ public:
     ~FaultLoggerDaemon() {};
     int32_t StartServer();
     bool InitEnvironment();
+    void RecordFileCreation(int32_t type, int32_t pid);
+    void ClearTimeOutRecords();
+    bool IsCrashed(int32_t pid);
+
     int32_t CreateFileForRequest(int32_t type, int32_t pid, int32_t tid, uint64_t time, bool debugFlag) const;
 #ifdef FAULTLOGGERD_FUZZER
     void HandleRequestForFuzzer(int32_t epollFd, int32_t connectionFd);
@@ -61,6 +65,7 @@ private:
     int32_t sdkdumpSocketFd_ = -1;
     int32_t eventFd_ = -1;
     std::map<int32_t, int32_t> connectionMap_;
+    std::map<int32_t, int64_t> crashTimeMap_;
 };
 } // namespace HiviewDFX
 } // namespace OHOS

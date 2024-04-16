@@ -209,6 +209,8 @@ bool DfxDumpCatcher::DoDumpCatchRemote(int pid, int tid, std::string& msg, bool 
         } else if (sdkdumpRet == static_cast<int>(FaultLoggerSdkDumpResp::SDK_DUMP_NOPROC)) {
             msg.append("Result: pid(" + std::to_string(pid) + ") syscall SIGDUMP error.\n");
             RequestDelPipeFd(pid);
+        } else if (sdkdumpRet == static_cast<int>(FaultLoggerSdkDumpResp::SDK_PROCESS_CRASHED)) {
+            msg.append("Result: pid(" + std::to_string(pid) + ") has been crashed.\n");
         }
         DFXLOG_WARN("%s :: %s :: %s", DFXDUMPCATCHER_TAG.c_str(), __func__, msg.c_str());
         return ret;

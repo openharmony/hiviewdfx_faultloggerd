@@ -76,7 +76,7 @@ bool DfxProcess::InitOtherThreads(bool attach)
 
         auto thread = DfxThread::Create(processInfo_.pid, tids[i], nstids[i]);
         if (attach) {
-            thread->Attach();
+            thread->Attach(PTRACE_ATTATCH_OTHER_THREAD_TIMEOUT);
         }
         otherThreads_.push_back(thread);
     }
@@ -124,14 +124,14 @@ void DfxProcess::ClearOtherThreads()
 void DfxProcess::Attach(bool hasKey)
 {
     if (hasKey && keyThread_) {
-        keyThread_->Attach();
+        keyThread_->Attach(PTRACE_ATTATCH_KEY_THREAD_TIMEOUT);
     }
 
     if (otherThreads_.empty()) {
         return;
     }
     for (auto thread : otherThreads_) {
-        thread->Attach();
+        thread->Attach(PTRACE_ATTATCH_OTHER_THREAD_TIMEOUT);
     }
 }
 

@@ -24,6 +24,7 @@
 #include "dfx_frame.h"
 #include "dfx_memory.h"
 #include "dfx_maps.h"
+#include "dfx_param.h"
 #include "dfx_regs.h"
 #if defined(__arm__)
 #include "arm_exidx.h"
@@ -43,11 +44,11 @@ public:
         Init();
     };
     // for remote
-    Unwinder(int pid) : pid_(pid)
+    Unwinder(int pid, bool crash = true) : pid_(pid)
     {
         acc_ = std::make_shared<DfxAccessorsRemote>();
         enableFpCheckMapExec_ = true;
-        Init();
+        Init(crash);
     };
     // for customized
     Unwinder(std::shared_ptr<UnwindAccessors> accessors) : pid_(UNWIND_TYPE_CUSTOMIZE)
@@ -121,9 +122,15 @@ public:
     }
 
 private:
-    void Init();
+    void Init(bool crash = true);
     void Clear();
     void Destroy();
+    void InitParam()
+    {
+#if defined(ENABLE_MIXSTACK)
+        enableMixstack_ = DfxParam::EnableMixstack();
+#endif
+    }
     bool CheckAndReset(void* ctx);
     void DoPcAdjust(uintptr_t& pc);
     void AddFrame(bool isJsFrame, uintptr_t pc, uintptr_t sp, std::shared_ptr<DfxMap> map);
@@ -153,9 +160,8 @@ private:
     bool enableFpFallback_ = true;
     bool enableFpCheckMapExec_ = false;
     bool isFpStep_ = false;
-#if defined(ENABLE_MIXSTACK)
     bool enableMixstack_ = true;
-#endif
+
     bool ignoreMixstack_ = false;
     bool stopWhenArkFrame_ = false;
 

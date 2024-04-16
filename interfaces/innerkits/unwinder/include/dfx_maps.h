@@ -29,15 +29,19 @@ public:
     DfxMaps() = default;
     ~DfxMaps() = default;
 
-    static std::shared_ptr<DfxMaps> Create(pid_t pid = 0);
+    static std::shared_ptr<DfxMaps> Create(pid_t pid = 0, bool crash = true);
+    static std::shared_ptr<DfxMaps> Create(pid_t pid, const std::string& path);
     static bool Create(const pid_t pid, std::vector<std::shared_ptr<DfxMap>>& maps, std::vector<int>& mapIndex);
-    static std::shared_ptr<DfxMaps> Create(const pid_t pid, const std::string& path, bool enableMapIndex = false);
-    static bool IsLegalMapItem(const std::string& name);
+
+    static bool IsArkMapItem(const std::string& name);
+    static bool IsLegalMapItem(const std::string& name, bool withArk = true);
     static void FormatMapName(pid_t pid, std::string& mapName);
     static void UnFormatMapName(std::string& mapName);
 
     void AddMap(std::shared_ptr<DfxMap> map, bool enableMapIndex = false);
     void Sort(bool less = true);
+    void EnableMapIndex(bool enableMapIndex) { enableMapIndex_ = enableMapIndex; }
+    void EnableOnlyExec(bool onlyExec) { onlyExec_ = onlyExec; }
     bool FindMapByAddr(uintptr_t addr, std::shared_ptr<DfxMap>& map) const;
     bool FindMapByFileInfo(std::string name, uint64_t offset, std::shared_ptr<DfxMap>& map) const;
     bool FindMapsByName(std::string name, std::vector<std::shared_ptr<DfxMap>>& maps) const;
@@ -48,10 +52,15 @@ public:
 
     bool IsArkExecutedMap(uintptr_t addr);
     uint32_t filePathId_ {0}; // for maps item filePath id
+private:
+    bool Parse(const pid_t pid, const std::string& path);
+
 protected:
     std::vector<std::shared_ptr<DfxMap>> maps_ {};
     std::vector<int> mapIndex_ {};
 private:
+    bool enableMapIndex_ = false;
+    bool onlyExec_ = false;
     uintptr_t stackBottom_ = 0;
     uintptr_t stackTop_ = 0;
 };

@@ -32,10 +32,6 @@
 #include "fp_unwinder.h"
 #include "string_printf.h"
 #include "string_util.h"
-#if defined(ENABLE_MIXSTACK)
-#include "parameter.h"
-#include "parameters.h"
-#endif
 #include "thread_context.h"
 
 namespace OHOS {
@@ -47,12 +43,9 @@ namespace {
 #define LOG_TAG "DfxUnwinder"
 }
 
-#if defined(ENABLE_MIXSTACK)
-constexpr char MIXSTACK_ENABLED_KEY[] = "persist.faultloggerd.priv.mixstack.enabled";
-#endif
-
-void Unwinder::Init()
+void Unwinder::Init(bool crash)
 {
+    LOGI("Unwinder init, crash: %d", crash);
     Destroy();
     memory_ = std::make_shared<DfxMemory>(acc_);
 #if defined(__arm__)
@@ -64,22 +57,20 @@ void Unwinder::Init()
         maps_ = DfxMaps::Create();
     } else {
         if (pid_ > 0) {
-            maps_ = DfxMaps::Create(pid_);
+            maps_ = DfxMaps::Create(pid_, crash);
         }
     }
+
+    InitParam();
 #if defined(ENABLE_MIXSTACK)
-    if (OHOS::system::GetParameter(MIXSTACK_ENABLED_KEY, "true") == "true") {
-        enableMixstack_ = true;
-    } else {
-        enableMixstack_ = false;
-    }
-    LOGI("Check mixstack enable: %d", enableMixstack_);
+    LOGI("Unwinder mixstack enable: %d", enableMixstack_);
 #endif
 }
 
 void Unwinder::Clear()
 {
     isFpStep_ = false;
+    enableMixstack_ = true;
     pcs_.clear();
     frames_.clear();
     if (memset_s(&lastErrorData_, sizeof(UnwindErrorData), 0, sizeof(UnwindErrorData)) != 0) {
@@ -131,7 +122,7 @@ bool Unwinder::UnwindLocalWithTid(const pid_t tid, size_t maxFrameNum, size_t sk
 
     auto threadContext = LocalThreadContext::GetInstance().CollectThreadContext(tid);
 #if defined(__aarch64__)
-    if (threadContext->frameSz > 0) {
+    if (threadContext != nullptr && threadContext->frameSz > 0) {
         pcs_.clear();
         for (size_t i = 0; i < threadContext->frameSz; i++) {
             pcs_.emplace_back(threadContext->pcs[i]);
@@ -454,10 +445,14 @@ bool Unwinder::FpStep(uintptr_t& fp, uintptr_t& pc, void *ctx)
 
 bool Unwinder::Step(uintptr_t& pc, uintptr_t& sp, void *ctx)
 {
+    if ((regs_  == nullptr) || (!CheckAndReset(ctx))) {
+        LOGE("%s", "params is nullptr?");
+        return false;
+    }
     bool ret = false;
     bool isJsFrame = false;
     // Check if this is a signal frame.
-    if ((memory_ != nullptr) && regs_->StepIfSignalFrame(pc, memory_)) {
+    if (regs_->StepIfSignalFrame(pc, memory_)) {
         LOGW("Step signal frame, pc: %p", reinterpret_cast<void *>(pc));
         ret = StepInner(true, isJsFrame, pc, sp, ctx);
     } else {
