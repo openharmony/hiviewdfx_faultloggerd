@@ -254,10 +254,15 @@ void ProcessDumper::Dump()
         if (process_->keyThread_ != nullptr) {
             process_->keyThread_->Detach();
         }
+        if (isCrash_ && (request->dumpMode == FUSION_MODE) && IsBlockCrashProcess()) {
+            DFXLOG_INFO("start block crash process pid %d nspid %d", request->pid, request->nsPid);
+            if (syscall(SYS_tgkill, request->nsPid, request->tid, SIGSTOP) != 0) {
+                DFXLOG_ERROR("send signal stop to nsPid %d fail %s", request->nsPid, strerror(errno));
+            }
+        }
     }
 
-    int optType = isCrash_ && IsBlockCrashProcess() ? OPE_BLOCK : OPE_CONTINUE;
-    InfoRemoteProcessResult(request, optType, MAIN_PROCESS);
+    InfoRemoteProcessResult(request, OPE_CONTINUE, MAIN_PROCESS);
     std::string jsonInfo;
     if (isJsonDump_ || isCrash_) {
         DfxStackInfoFormatter formatter(process_, request);
@@ -313,7 +318,7 @@ void ProcessDumper::InitRegs(std::shared_ptr<ProcessDumpRequest> request, pid_t 
         }
 
         InfoRemoteProcessResult(request, opeResult, MAIN_PROCESS);
-        if (process_->keyThread_ != nullptr) {
+        if (process_->keyThread_ != nullptr && !isCrash_) {
             process_->keyThread_->Detach();
         }
 
@@ -447,7 +452,7 @@ int ProcessDumper::InitProcessInfo(std::shared_ptr<ProcessDumpRequest> request)
         }
     }
     if (request->dumpMode == FUSION_MODE) {
-        ptrace(PTRACE_CONT, process_->processInfo_.pid, 0, 0);
+        ptrace(PTRACE_CONT, process_->keyThread_->threadInfo_.nsTid, 0, 0);
     }
 
     if ((request->dumpMode == SPLIT_MODE) && !isCrash_) {
