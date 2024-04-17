@@ -108,6 +108,7 @@ public:
     void FillFrames(std::vector<DfxFrame>& frames);
     void FillFrame(DfxFrame& frame);
     void FillJsFrame(DfxFrame& frame);
+    bool GetFrameByPc(uintptr_t pc, std::shared_ptr<DfxMaps> maps, DfxFrame& frame);
     void GetFramesByPcs(std::vector<DfxFrame>& frames, std::vector<uintptr_t> pcs);
 
     static bool GetSymbolByPc(uintptr_t pc, std::shared_ptr<DfxMaps> maps,
