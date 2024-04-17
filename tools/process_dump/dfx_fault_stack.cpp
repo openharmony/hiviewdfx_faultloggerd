@@ -65,7 +65,7 @@ uintptr_t FaultStack::AdjustAndCreateMemoryBlock(size_t index, uintptr_t prevSp,
         size += lowAddrLength;
     }
 
-    if (size == 0) {
+    if (size == 0 || index == 0) {
         return prevEndAddr;
     }
 

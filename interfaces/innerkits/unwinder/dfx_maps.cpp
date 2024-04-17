@@ -189,7 +189,7 @@ bool DfxMaps::IsLegalMapItem(const std::string& name, bool withArk)
 void DfxMaps::AddMap(std::shared_ptr<DfxMap> map, bool enableMapIndex)
 {
     maps_.emplace_back(map);
-    if (enableMapIndex) {
+    if (enableMapIndex && !maps_.empty()) {
         mapIndex_.emplace_back(maps_.size() - 1);
     }
 }

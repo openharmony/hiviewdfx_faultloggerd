@@ -113,7 +113,7 @@ void Printer::PrintReason(std::shared_ptr<ProcessDumpRequest> request, std::shar
         }
         std::shared_ptr<DfxMaps> maps = unwinder->GetMaps();
         std::vector<std::shared_ptr<DfxMap>> map;
-        if (process->vmThread_ == nullptr || process->keyThread_ == nullptr) {
+        if ((request->dumpMode == SPLIT_MODE && process->vmThread_ == nullptr) || process->keyThread_ == nullptr) {
             DFXLOG_WARN("%s", "Thread_ is nullptr");
             return;
         }

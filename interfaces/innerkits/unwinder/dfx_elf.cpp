@@ -468,7 +468,8 @@ std::string DfxElf::GetBuildId(uint64_t noteAddr, uint64_t noteSize)
                 LOGE("%s", "memcpy_s note name failed");
                 return "";
             }
-            if (name.back() == '\0') { // Trim trailing \0 as GNU is stored as a C string in the ELF file.
+            // Trim trailing \0 as GNU is stored as a C string in the ELF file.
+            if (name.size() != 0 && name.back() == '\0') {
                 name.resize(name.size() - 1);
             }
             // Align nhdr.n_namesz to next power multiple of 4. See man 5 elf.

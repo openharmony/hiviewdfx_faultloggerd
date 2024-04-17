@@ -127,6 +127,9 @@ bool ElfParser::ParseProgramHeaders(const EhdrType& ehdr)
                 loadInfo.tableVaddr = phdr.p_vaddr;
                 loadInfo.tableSize = static_cast<size_t>(phdr.p_memsz);
                 loadInfo.align = phdr.p_align;
+                if (loadInfo.align == 0) {
+                    continue;
+                }
                 uint64_t len = loadInfo.tableSize + (loadInfo.tableVaddr & (loadInfo.align - 1));
                 loadInfo.mmapLen = len - (len & (loadInfo.align - 1)) + loadInfo.align;
                 ptLoads_[phdr.p_offset] = loadInfo;

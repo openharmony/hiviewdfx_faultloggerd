@@ -48,7 +48,7 @@ int32_t FpUnwinder::Unwind(uintptr_t* pcs, int32_t sz, int32_t skipFrameNum)
         if (!(stackPtr >= stackBottom && stackPtr < stackTop)) {
             GetSigAltStackRange(stackBottom, stackTop);
             if (stackPtr < stackBottom || stackPtr >= stackTop) {
-                realSz = UnwindFallback(pcs, sz, skipFrameNum);
+                realSz = static_cast<uint32_t>(UnwindFallback(pcs, sz, skipFrameNum));
                 return realSz;
             }
         }
@@ -59,7 +59,7 @@ int32_t FpUnwinder::Unwind(uintptr_t* pcs, int32_t sz, int32_t skipFrameNum)
         }
         if ((++index) >= skipFrameNum) {
             pcs[index - skipFrameNum] = *reinterpret_cast<uintptr_t*>(fp + sizeof(uintptr_t));
-            realSz = index - skipFrameNum + 1;
+            realSz = static_cast<uint32_t>(index - skipFrameNum + 1);
         }
         uintptr_t nextFp = *reinterpret_cast<uintptr_t*>(fp);
         if (nextFp <= fp) {

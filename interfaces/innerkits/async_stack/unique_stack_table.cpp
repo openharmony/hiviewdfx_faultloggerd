@@ -37,6 +37,9 @@ bool UniqueStackTable::Init()
     }
 
     availableNodes_ = totalNodes_;
+    if (availableNodes_ == 0) {
+        return false;
+    }
     hashModulus_ = availableNodes_ - 1;
     hashStep_ = (totalNodes_ / (deconflictTimes_ * 2 + 1)); // 2 : double times
     tableBufMMap_ = mmap(NULL, tableSize_, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
@@ -87,6 +90,9 @@ bool UniqueStackTable::Resize()
     availableIndex_ += availableNodes_;
     totalNodes_ = ((newtableSize / sizeof(Node)) >> 1) << 1; // make it even.
     availableNodes_ = totalNodes_ - oldNumNodes;
+    if (availableNodes_ == 0) {
+        return false;
+    }
     hashModulus_ = availableNodes_ - 1;
     hashStep_ = availableNodes_ / (deconflictTimes_ * 2 + 1); // 2: double times
     LOGW("After resize, totalNodes_: %u, availableNodes_: %u, \
@@ -120,6 +126,9 @@ uint64_t UniqueStackTable::PutPcInSlot(uint64_t thisPc, uint64_t prevIdx)
         }
 
         curPcIdx += currentDeconflictTimes_ * hashStep_ + 1;
+        if (availableNodes_ == 0) {
+            return 0;
+        }
         if (curPcIdx >= totalNodes_) {
             // make sure index 0 do not occupy
             curPcIdx -= (availableNodes_ - 1);
@@ -198,7 +207,7 @@ bool UniqueStackTable::GetPcsByStackId(StackId stackId, std::vector<uintptr_t>& 
     uint64_t tailIdx = stackId.section.id;
 
     Node *node = GetFrame(tailIdx);
-    while (node != nullptr && nr--) {
+    while (nr-- && node != nullptr) {
         pcs.push_back(
             node->section.inKernel ? (node->section.pc | KERNEL_PREFIX) : node->section.pc);
         if (node->section.prevIdx == HEAD_NODE_INDEX) {
