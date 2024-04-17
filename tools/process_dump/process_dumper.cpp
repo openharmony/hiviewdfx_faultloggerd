@@ -135,15 +135,15 @@ void CollectOpenFiles(OpenFilesList &list, pid_t pid)
     }
 }
 
-void FillFdsaninfo(OpenFilesList &list, pid_t pid, uint64_t fdTableAddr)
+void FillFdsaninfo(OpenFilesList &list, pid_t nsPid, uint64_t fdTableAddr)
 {
     constexpr size_t fds = sizeof(FdTable::entries) / sizeof(*FdTable::entries);
     size_t entryOffset = offsetof(FdTable, entries);
     for (size_t i = 0; i < fds; i++) {
         uint64_t addr = fdTableAddr + entryOffset + sizeof(FdEntry) * i;
         FdEntry entry;
-        if (DfxMemory::ReadProcMemByPid(pid, addr, &entry, sizeof(entry)) != sizeof(entry)) {
-            DFXLOG_ERROR("%s", "read pid mem error");
+        if (DfxMemory::ReadProcMemByPid(nsPid, addr, &entry, sizeof(entry)) != sizeof(entry)) {
+            DFXLOG_ERROR("read nsPid mem error %s", strerror(errno));
             return;
         }
         if (entry.close_tag) {
@@ -153,7 +153,7 @@ void FillFdsaninfo(OpenFilesList &list, pid_t pid, uint64_t fdTableAddr)
     size_t overflowOffset = offsetof(FdTable, overflow);
     uintptr_t overflow = 0;
     uint64_t tmp = fdTableAddr + overflowOffset;
-    if (DfxMemory::ReadProcMemByPid(pid, tmp, &overflow, sizeof(overflow)) != sizeof(overflow)) {
+    if (DfxMemory::ReadProcMemByPid(nsPid, tmp, &overflow, sizeof(overflow)) != sizeof(overflow)) {
         return;
     }
     if (!overflow) {
@@ -161,7 +161,8 @@ void FillFdsaninfo(OpenFilesList &list, pid_t pid, uint64_t fdTableAddr)
     }
 
     size_t overflowLength;
-    if (DfxMemory::ReadProcMemByPid(pid, overflow, &overflowLength, sizeof(overflowLength)) != sizeof(overflowLength)) {
+    if (DfxMemory::ReadProcMemByPid(nsPid, overflow, &overflowLength, sizeof(overflowLength))
+        != sizeof(overflowLength)) {
         return;
     }
     if (overflowLength > ARG_MAX_NUM) {
@@ -171,7 +172,7 @@ void FillFdsaninfo(OpenFilesList &list, pid_t pid, uint64_t fdTableAddr)
         size_t fd = i + fds;
         uint64_t address = overflow + offsetof(FdTableOverflow, entries) + sizeof(FdEntry) * i;
         FdEntry entry;
-        if (DfxMemory::ReadProcMemByPid(pid, address, &entry, sizeof(entry)) != sizeof(entry)) {
+        if (DfxMemory::ReadProcMemByPid(nsPid, address, &entry, sizeof(entry)) != sizeof(entry)) {
             return;
         }
         if (entry.close_tag) {
@@ -293,11 +294,11 @@ static int32_t ReadRequestAndCheck(std::shared_ptr<ProcessDumpRequest> request)
     return DumpErrorCode::DUMP_ESUCCESS;
 }
 
-std::string GetOpenFiles(int32_t pid, uint64_t fdTableAddr)
+std::string GetOpenFiles(int32_t pid, int nsPid, uint64_t fdTableAddr)
 {
     OpenFilesList openFies;
     CollectOpenFiles(openFies, pid);
-    FillFdsaninfo(openFies, pid, fdTableAddr);
+    FillFdsaninfo(openFies, nsPid, fdTableAddr);
     std::string fds = DumpOpenFiles(openFies);
     return fds;
 }
@@ -367,7 +368,7 @@ int ProcessDumper::DumpProcess(std::shared_ptr<ProcessDumpRequest> request)
             break;
         }
         if (isCrash_ && !isLeakDump) {
-            process_->openFiles = GetOpenFiles(request->pid, request->fdTableAddr);
+            process_->openFiles = GetOpenFiles(request->pid, request->nsPid, request->fdTableAddr);
         }
         if (InitPrintThread(request) < 0) {
             DFXLOG_ERROR("%s", "Failed to init print thread.");
