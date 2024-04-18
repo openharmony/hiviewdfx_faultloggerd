@@ -40,8 +40,7 @@ enum ProcessDumpType : int32_t {
 enum OperateResult : int32_t {
     OPE_FAIL = 0,
     OPE_SUCCESS = 1,
-    OPE_BLOCK = 2,
-    OPE_CONTINUE = 3,
+    OPE_CONTINUE = 2,
 };
 
 enum ProcessFlowMode : int32_t {

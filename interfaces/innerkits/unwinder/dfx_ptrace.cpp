@@ -63,7 +63,7 @@ bool DfxPtrace::Attach(pid_t tid, int timeout)
         }
         int64_t curTime = std::chrono::duration_cast<std::chrono::milliseconds>(
             std::chrono::system_clock::now().time_since_epoch()).count();
-        if (curTime - startTime > timeout) { // 1000 : 1s timeout
+        if (curTime - startTime > timeout) {
             ptrace(PTRACE_DETACH, tid, nullptr, nullptr);
             LOGW("Failed to wait tid(%d) attached.", tid);
             return false;

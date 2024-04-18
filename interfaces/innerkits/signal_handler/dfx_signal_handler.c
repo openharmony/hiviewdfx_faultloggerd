@@ -718,10 +718,6 @@ static int ProcessDump(int sig)
         read(g_pipeFds[READ_FROM_DUMP_TO_MAIN][0], &isExitAfterUnwind, sizeof(isExitAfterUnwind));
     }
     CleanPipe();
-    if (isExitAfterUnwind == OPE_BLOCK) {
-        DFXLOG_INFO("block crash process exit");
-        waitpid(0, NULL, 0);
-    }
     DFXLOG_INFO("process dump end");
     RestoreDumpState(prevDumpableStatus, isTracerStatusModified);
     return 0;
