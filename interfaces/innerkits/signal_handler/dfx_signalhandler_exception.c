@@ -103,7 +103,7 @@ int ReportException(struct CrashDumpException exception)
     (void)memset(&request, 0, sizeof(struct FaultLoggerdRequest));
     request.clientType = (int32_t)REPORT_EXCEPTION_CLIENT;
     request.pid = exception.pid;
-    request.uid = exception.uid;
+    request.uid = (uint32_t)(exception.uid);
     int ret = -1;
     int fd = ConnectSocket(FAULTLOGGERD_SOCKET_NAME, TIME_OUT); // connect timeout
     if (fd == -1) {

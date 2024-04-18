@@ -87,7 +87,8 @@ bool DfxJsonFormatter::FormatJsonStack(std::string jsonStack, std::string& outSt
     for (uint32_t i = 0; i < threads.size(); ++i) {
         std::ostringstream ss;
         Json::Value thread = threads[i];
-        if (thread.isMember("tid") && thread.isMember("thread_name")) {
+        if (thread["tid"].isConvertibleTo(Json::stringValue) &&
+            thread["thread_name"].isConvertibleTo(Json::stringValue)) {
             ss << "Tid:" << thread["tid"].asString() << ", Name:" << thread["thread_name"].asString() << std::endl;
         }
         const Json::Value frames = thread["frames"];

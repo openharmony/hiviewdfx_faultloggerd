@@ -247,9 +247,9 @@ static void FillCrashExceptionAndReport(const int err)
     struct CrashDumpException exception;
     memset(&exception, 0, sizeof(struct CrashDumpException));
     exception.pid = g_request.pid;
-    exception.uid = g_request.uid;
+    exception.uid = (int32_t)(g_request.uid);
     exception.error = err;
-    exception.time = GetTimeMilliseconds();
+    exception.time = (int64_t)(GetTimeMilliseconds());
     (void)strncpy(exception.message, GetCrashDescription(err), sizeof(exception.message) - 1);
     ReportException(exception);
 }

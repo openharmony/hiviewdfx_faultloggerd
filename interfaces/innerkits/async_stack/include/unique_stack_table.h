@@ -134,7 +134,7 @@ public:
 private:
     Node* GetFrame(uint64_t stackId);
     uint64_t PutPcInSlot(uint64_t thisPc, uint64_t prevIdx);
-    int32_t pid_;
+    int32_t pid_ = 0;
     void* tableBufMMap_ = nullptr;
     uint32_t tableSize_ = INITIAL_TABLE_SIZE;
     std::vector<uint32_t> usedSlots_;
@@ -145,7 +145,7 @@ private:
     // 0 for reserved, start from 1
     uint32_t availableIndex_ = 1;
     // for de-conflict
-    uint64_t hashStep_;
+    uint64_t hashStep_ = 0;
     uint8_t deconflictTimes_ = INIT_DECONFLICT_ALLOWED;
     std::mutex stackTableMutex_;
 };

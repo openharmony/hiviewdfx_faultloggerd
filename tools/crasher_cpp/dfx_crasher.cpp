@@ -25,6 +25,7 @@
 #include <hilog/log.h>
 #include <iostream>
 #include <pthread.h>
+#include <sys/mman.h>
 #include <sys/prctl.h>
 #include <sys/resource.h>
 #include <thread>
@@ -340,8 +341,9 @@ NOINLINE int DfxCrasher::Oom()
 
     std::vector<void*> vec;
     for (int i = 0; i < ARG128; i++) {
-        char* buf = static_cast<char*>(malloc(ARG1024 * ARG1024));
-        if (!buf) {
+        char* buf = static_cast<char*>(mmap(nullptr, (ARG1024 * ARG1024), PROT_READ | PROT_WRITE,
+                                            MAP_PRIVATE | MAP_ANONYMOUS, -1, 0));
+        if (buf == (char*)MAP_FAILED) {
             std::cout << "malloc return null" << std::endl;
             if (setrlimit(RLIMIT_AS, &oldRlimit) != 0) {
                 std::cout << "restore rlimit failed" << std::endl;

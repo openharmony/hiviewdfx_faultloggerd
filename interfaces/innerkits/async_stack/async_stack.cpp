@@ -82,7 +82,7 @@ extern "C" uint64_t CollectAsyncStack(void)
     const int32_t maxSize = 32;
     uintptr_t pcs[maxSize] = {0};
     int32_t skipFrameNum = 2;
-    size_t sz = OHOS::HiviewDFX::FpUnwinder::Unwind(pcs, maxSize, skipFrameNum);
+    size_t sz = static_cast<size_t>(OHOS::HiviewDFX::FpUnwinder::Unwind(pcs, maxSize, skipFrameNum));
     uint64_t stackId = 0;
     auto stackIdPtr = reinterpret_cast<OHOS::HiviewDFX::StackId*>(&stackId);
     OHOS::HiviewDFX::UniqueStackTable::Instance()->PutPcsInTable(stackIdPtr, pcs, sz);

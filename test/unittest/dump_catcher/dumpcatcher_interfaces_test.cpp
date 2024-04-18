@@ -702,7 +702,7 @@ HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest030, TestSize.Level
     string stackMsg = "";
     bool formatRet = format.FormatJsonStack(jsonMsg, stackMsg);
     EXPECT_TRUE(formatRet) << "FormatJsonStack Failed.";
-    size_t pos = msg.find("Process life time:");
+    size_t pos = msg.find("Process name:");
     if (pos != std::string::npos) {
         msg = msg.erase(0, pos);
         msg = msg.erase(0, msg.find("\n") + 1);
