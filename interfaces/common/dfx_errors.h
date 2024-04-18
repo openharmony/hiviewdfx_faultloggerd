@@ -83,6 +83,8 @@ enum UnwindErrorCode : uint16_t {
     UNW_ERROR_ILLEGAL_VALUE,
     /** Illegal state */
     UNW_ERROR_ILLEGAL_STATE,
+    /** unreadable sp */
+    UNW_ERROR_UNREADABLE_SP,
     /** The last frame has the same pc/sp as the next frame */
     UNW_ERROR_REPEATED_FRAME,
     /** The last return address has the same */

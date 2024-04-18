@@ -595,11 +595,21 @@ bool Unwinder::StepInner(const bool isSigFrame, bool& isJsFrame, uintptr_t& pc, 
     // 5. update regs and regs state
     SetLocalStackCheck(ctx, true);
     if (ret) {
+#if defined(__arm__) || defined(__aarch64__)
+        auto lr = *(regs_->GetReg(REG_LR));
+#endif
         ret = Apply(regs_, rs);
-    } else {
-        if ((frames_.size() == 1) && enableLrFallback_ && regs_->SetPcFromReturnAddress(memory_)) {
-            LOGW("%s", "Failed to step first frame, lr fallback");
+#if defined(__arm__) || defined(__aarch64__)
+        if (!ret && enableLrFallback_ && (frames_.size() == 1)) {
+            regs_->SetPc(lr);
             ret = true;
+            LOGW("%s", "Failed to apply first frame, lr fallback");
+        }
+#endif
+    } else {
+        if (enableLrFallback_ && (frames_.size() == 1) && regs_->SetPcFromReturnAddress(memory_)) {
+            ret = true;
+            LOGW("%s", "Failed to step first frame, lr fallback");
         }
     }
 
@@ -618,16 +628,11 @@ bool Unwinder::StepInner(const bool isSigFrame, bool& isJsFrame, uintptr_t& pc, 
     pc = regs_->GetPc();
     sp = regs_->GetSp();
     fp = regs_->GetFp();
-    uintptr_t tmp = 0;
-    if (ret && ((pc == 0) || (!memory_->ReadUptr(sp, &tmp, false)))) {
+    if (ret && (pc == 0)) {
         ret = false;
     }
-
-    if (ret) {
-        LOGU("-pc: %" PRIx64 ", sp: %" PRIx64 ", fp: %" PRIx64 "", (uint64_t)pc, (uint64_t)sp, (uint64_t)fp);
-    } else {
-        LOGU("-pc: %" PRIx64 ", sp: %" PRIx64 ", fp: %" PRIx64 " error?", (uint64_t)pc, (uint64_t)sp, (uint64_t)fp);
-    }
+    LOGU("-pc: %" PRIx64 ", sp: %" PRIx64 ", fp: %" PRIx64 ", ret: %d",
+        (uint64_t)pc, (uint64_t)sp, (uint64_t)fp, ret);
     return ret;
 }
 
@@ -639,6 +644,12 @@ bool Unwinder::Apply(std::shared_ptr<DfxRegs> regs, std::shared_ptr<RegLocState>
 
     uint16_t errCode = 0;
     bool ret = DfxInstructions::Apply(memory_, *(regs.get()), *(rs.get()), errCode);
+    uintptr_t tmp = 0;
+    auto sp = regs_->GetSp();
+    if (ret && (!memory_->ReadUptr(sp, &tmp, false))) {
+        errCode = UNW_ERROR_UNREADABLE_SP;
+        ret = false;
+    }
     if (!ret) {
         lastErrorData_.SetCode(errCode);
         LOGE("%s", "Failed to apply reg state");
