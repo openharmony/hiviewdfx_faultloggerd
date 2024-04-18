@@ -556,6 +556,81 @@ HWTEST_F(UnwinderTest, StepTest004, TestSize.Level2)
 }
 #endif
 
+#if defined(__arm__) || defined(__aarch64__)
+/**
+ * @tc.name: StepTest005
+ * @tc.desc: test unwinder Step interface in lr callback with apply failed case
+ * @tc.type: FUNC
+ */
+HWTEST_F(UnwinderTest, StepTest005, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "StepTest005: start.";
+    auto unwinder = std::make_shared<Unwinder>();
+    uintptr_t stackBottom = 1, stackTop = static_cast<uintptr_t>(-1);
+    ASSERT_TRUE(unwinder->GetStackRange(stackBottom, stackTop));
+    GTEST_LOG_(INFO) << "StepTest005: GetStackRange.";
+
+    UnwindContext context;
+    context.pid = UNWIND_TYPE_LOCAL;
+    context.stackCheck = false;
+    context.stackBottom = stackBottom;
+    context.stackTop = stackTop;
+
+    auto regs = DfxRegs::Create();
+    auto regsData = regs->RawData();
+    GetLocalRegs(regsData);
+    unwinder->SetRegs(regs);
+    context.regs = regs;
+    context.maps = unwinder->GetMaps();
+
+    uintptr_t lr = *(regs->GetReg(REG_LR));
+    uintptr_t pc = regs->GetPc();
+    uintptr_t failSp = stackTop + 1;
+    regs->SetSp(failSp);
+    bool unwRet = unwinder->Step(pc, failSp, &context);
+    ASSERT_TRUE(unwRet) << "StepTest005: unwRet:" << unwRet;
+    ASSERT_EQ(lr, pc) << "StepTest005: lr callback";
+    GTEST_LOG_(INFO) << "StepTest005: end.";
+}
+
+/**
+ * @tc.name: StepTest006
+ * @tc.desc: test unwinder Step interface in lr callback with step failed case
+ * @tc.type: FUNC
+ */
+HWTEST_F(UnwinderTest, StepTest006, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "StepTest006: start.";
+    auto unwinder = std::make_shared<Unwinder>();
+    uintptr_t stackBottom = 1, stackTop = static_cast<uintptr_t>(-1);
+    ASSERT_TRUE(unwinder->GetStackRange(stackBottom, stackTop));
+    GTEST_LOG_(INFO) << "StepTest006: GetStackRange.";
+
+    UnwindContext context;
+    context.pid = UNWIND_TYPE_LOCAL;
+    context.stackCheck = true;
+    context.stackBottom = stackBottom;
+    context.stackTop = stackTop;
+
+    auto regs = DfxRegs::Create();
+    auto regsData = regs->RawData();
+    GetLocalRegs(regsData);
+    unwinder->SetRegs(regs);
+    context.regs = regs;
+    context.maps = unwinder->GetMaps();
+
+    uintptr_t lr = *(regs->GetReg(REG_LR));
+    uintptr_t sp = regs->GetSp();
+    uintptr_t failPc = stackTop + 1;
+    regs->SetPc(failPc);
+    bool unwRet = unwinder->Step(failPc, sp, &context);
+    ASSERT_TRUE(unwRet) << "StepTest006: unwRet:" << unwRet;
+    ASSERT_EQ(lr, failPc) << "StepTest006: lr callback";
+
+    GTEST_LOG_(INFO) << "StepTest006: end.";
+}
+#endif
+
 /**
  * @tc.name: DfxConfigTest001
  * @tc.desc: test DfxConfig class functions

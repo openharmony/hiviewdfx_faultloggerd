@@ -173,7 +173,7 @@ private:
     std::unordered_map<uintptr_t, std::shared_ptr<RegLocState>> rsCache_ {};
     std::shared_ptr<DfxRegs> regs_ = nullptr;
     std::shared_ptr<DfxMaps> maps_ = nullptr;
-    std::vector<uintptr_t> pcs_ {}; // only for fp unwind
+    std::vector<uintptr_t> pcs_ {};
     std::vector<DfxFrame> frames_ {};
     UnwindErrorData lastErrorData_ {};
 #if defined(__arm__)
