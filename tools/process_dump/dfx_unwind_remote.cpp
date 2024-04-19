@@ -60,6 +60,9 @@ bool DfxUnwindRemote::UnwindProcess(std::shared_ptr<ProcessDumpRequest> request,
     SetCrashProcInfo(process->processInfo_.processName, process->processInfo_.pid,
                      process->processInfo_.uid);
     UnwindKeyThread(request, process, unwinder, vmPid);
+    // print keythread base info to hilog when carsh
+    DfxRingBufferWrapper::GetInstance().PrintBaseInfo();
+
     UnwindOtherThread(process, unwinder, vmPid);
     ret = true;
     if (ProcessDumper::GetInstance().IsCrash()) {
