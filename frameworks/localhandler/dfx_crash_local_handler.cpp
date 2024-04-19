@@ -57,7 +57,7 @@ static __attribute__((noinline)) int RequestOutputLogFile(const struct ProcessDu
     return RequestFileDescriptorEx(&faultloggerdRequest);
 }
 
-__attribute__((noinline)) void PrintLog(int fd, const char *format, ...)
+static __attribute__((noinline)) void PrintLog(int fd, const char *format, ...)
 {
     char buf[BUF_SZ] = {0};
     va_list args;
@@ -130,7 +130,7 @@ static std::string LocalUnwinderPrint(const ucontext_t* context)
     return logContext;
 }
 
-__attribute__((noinline)) void CrashLocalUnwind(const int fd, const ucontext_t* uc)
+static __attribute__((noinline)) void CrashLocalUnwind(const int fd, const ucontext_t* uc)
 {
     if (uc == nullptr) {
         return;
@@ -179,7 +179,7 @@ static void ReportToHiview(const char* logPath, const struct ProcessDumpRequest*
     exception.pid = request->pid;
     exception.uid = request->uid;
     exception.error = CRASH_DUMP_LOCAL_REPORT;
-    exception.time = GetTimeMilliseconds();
+    exception.time = static_cast<int32_t>(GetTimeMilliseconds());
     if (strncpy_s(exception.message, sizeof(exception.message) - 1, logPath, strlen(logPath)) != 0) {
         DFXLOG_ERROR("strcpy exception msg fail\n");
         return;

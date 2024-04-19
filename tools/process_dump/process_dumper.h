@@ -45,8 +45,10 @@ private:
     DISALLOW_COPY_AND_MOVE(ProcessDumper);
     static int WriteDumpBuf(int fd, const char* buf, const int len);
     int DumpProcess(std::shared_ptr<ProcessDumpRequest> request);
+    bool InitKeyThread(std::shared_ptr<ProcessDumpRequest> request, std::shared_ptr<DfxProcess> process_);
     int InitPrintThread(std::shared_ptr<ProcessDumpRequest> request);
     int InitProcessInfo(std::shared_ptr<ProcessDumpRequest> request);
+    bool InitVmThread(std::shared_ptr<ProcessDumpRequest> request, std::shared_ptr<DfxProcess> process_);
     static int GetLogTypeBySignal(int sig);
 
 private:
