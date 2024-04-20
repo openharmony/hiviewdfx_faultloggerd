@@ -80,10 +80,8 @@ void Printer::PrintDumpHeader(std::shared_ptr<ProcessDumpRequest> request, std::
                 static_cast<unsigned long long>(traceId.chainId));
         }
 
-        if (process->vmThread_ != nullptr) {
-            headerInfo << "Fault thread info:\n";
-            DfxRingBufferWrapper::GetInstance().AppendMsg("Fault thread info:\n");
-        }
+        headerInfo << "Fault thread info:\n";
+        DfxRingBufferWrapper::GetInstance().AppendMsg("Fault thread info:\n");
     }
     DfxRingBufferWrapper::GetInstance().AppendBaseInfo(headerInfo.str());
 }
