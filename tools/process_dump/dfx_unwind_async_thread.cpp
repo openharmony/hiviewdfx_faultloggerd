@@ -83,7 +83,7 @@ void DfxUnwindAsyncThread::GetSubmitterStack(std::vector<DfxFrame> &submitterFra
         DFXLOG_ERROR("%s", "Failed to read unique_table from target");
         return;
     }
-    auto table = std::unique_ptr<UniqueStackTable>(new UniqueStackTable(tableData->data(), size));
+    auto table = std::make_shared<UniqueStackTable>(tableData->data(), size, false);
     std::vector<uintptr_t> pcs;
     StackId id;
     id.value = stackId_;
