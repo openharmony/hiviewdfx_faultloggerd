@@ -64,7 +64,6 @@ public:
     };
     ~Unwinder() { Destroy(); }
 
-    inline void SetTargetPid(int pid) { pid_ = pid; }
     inline int32_t GetTargetPid() { return pid_; }
     inline void SetPacMask(uintptr_t mask) { pacMask_ = mask; }
 
