@@ -77,69 +77,24 @@ __attribute__((noinline)) void PrintLog(int fd, const char *format, ...)
     }
 }
 
-static __attribute__((noinline)) bool PrintMaps(const int fd)
-{
-    bool ret = false;
-    FILE *file = fopen(PROC_SELF_MAPS_PATH, "r");
-    if (file == NULL) {
-        DFXLOG_WARN("Fail to open maps info.");
-        return ret;
-    }
-
-    char mapInfo[MAPINFO_SIZE] = {0};
-    int pos = 0;
-    uint64_t begin = 0;
-    uint64_t end = 0;
-    uint64_t offset = 0;
-    char perms[5] = {0}; // 5:rwxp
-    char path[MAPINFO_SIZE] = {0};
-    char buf[BUF_SZ] = {0};
-
-    PrintLog(fd, "\nMaps:\n");
-    while (fgets(mapInfo, sizeof(mapInfo), file) != NULL) {
-        (void)memset_s(&perms, sizeof(perms), 0, sizeof(perms));
-        if (sscanf_s(mapInfo, "%" SCNxPTR "-%" SCNxPTR " %4s %" SCNxPTR " %*x:%*x %*d%n", &begin, &end,
-            &perms, sizeof(perms), &offset, &pos) != 4) { // 4:scan size
-            DFXLOG_WARN("Fail to parse maps info.");
-            break;
-        }
-        (void)memset_s(&path, sizeof(path), 0, sizeof(path));
-        if (!TrimAndDupStr(&mapInfo[pos], path)) {
-            DFXLOG_ERROR("TrimAndDupStr failed, line: %d.", __LINE__);
-            break;
-        }
-
-        (void)memset_s(&buf, sizeof(buf), 0, sizeof(buf));
-        if (snprintf_s(buf, sizeof(buf), sizeof(buf) - 1, "%" PRIx64 "-%" PRIx64 " %s %08" PRIx64 " %s", \
-            begin, end, perms, offset, path) <= 0) {
-            DFXLOG_ERROR("snprintf_s failed, line: %d.", __LINE__);
-            break;
-        }
-        PrintLog(fd, "%s\n", buf);
-    }
-    ret = fclose(file);
-    return ret;
-}
-
-static std::string LocalUnwinderPrint(const ucontext_t* context)
-{
-    OHOS::HiviewDFX::Unwinder unwind;
-    unwind.UnwindLocalWithContext(*context);
-    auto regs = OHOS::HiviewDFX::DfxRegs::CreateFromUcontext(*context);
-    std::string logContext = unwind.GetFramesStr(unwind.GetFrames()) + regs->PrintRegs() ;
-    return logContext;
-}
-
 __attribute__((noinline)) void CrashLocalUnwind(const int fd, const ucontext_t* uc)
 {
     if (uc == nullptr) {
         return;
     }
-    std::string stackInfo = LocalUnwinderPrint(uc);
-    for (unsigned int i = 0; i < stackInfo.length(); i += BUF_SZ_SMALL) {
-        PrintLog(fd, "%s", stackInfo.substr(i, BUF_SZ_SMALL).c_str());
+    OHOS::HiviewDFX::Unwinder unwind;
+    unwind.UnwindLocalWithContext(*uc);
+    auto regs = OHOS::HiviewDFX::DfxRegs::CreateFromUcontext(*uc);
+    std::string logContext = unwind.GetFramesStr(unwind.GetFrames()) + regs->PrintRegs();
+    logContext.append("\nMaps:\n");
+    for (const auto &map : unwind.GetMaps()->GetMaps()) {
+        logContext.append(map->ToString());
     }
-    (void)PrintMaps(fd);
+
+    for (unsigned int i = 0; i < logContext.length(); i += BUF_SZ_SMALL) {
+        PrintLog(fd, "%s", logContext.substr(i, BUF_SZ_SMALL).c_str());
+    }
+
     if (fd >= 0) {
         close(fd);
     }
