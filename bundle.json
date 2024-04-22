@@ -42,8 +42,7 @@
           "name": "//base/hiviewdfx/faultloggerd/interfaces/innerkits/backtrace:libbacktrace_local",
           "header": {
             "header_files": [
-              "backtrace_local.h",
-              "dfx_json_formatter.h"
+              "backtrace_local.h"
             ],
             "header_base": "//base/hiviewdfx/faultloggerd/interfaces/innerkits/backtrace/include"
           }
@@ -52,8 +51,7 @@
           "name": "//base/hiviewdfx/faultloggerd/interfaces/innerkits/backtrace:backtrace_local",
           "header": {
             "header_files": [
-              "backtrace_local.h",
-              "dfx_json_formatter.h"
+              "backtrace_local.h"
             ],
             "header_base": "//base/hiviewdfx/faultloggerd/interfaces/innerkits/backtrace/include"
           }
@@ -74,6 +72,15 @@
               "faultloggerd_client.h"
             ],
             "header_base": "//base/hiviewdfx/faultloggerd/interfaces/innerkits/faultloggerd_client/include"
+          }
+        },
+        {
+          "name": "//base/hiviewdfx/faultloggerd/interfaces/innerkits/formatter:libjson_stack_formatter",
+          "header": {
+            "header_files": [
+              "dfx_json_formatter.h"
+            ],
+            "header_base": "//base/hiviewdfx/faultloggerd/interfaces/innerkits/formatter/include"
           }
         },
         {
