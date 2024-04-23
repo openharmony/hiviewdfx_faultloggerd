@@ -141,8 +141,8 @@ private:
     std::vector<uint32_t> usedSlots_;
     uint32_t totalNodes_;
     // current available node count, include index 0
-    uint32_t availableNodes_;
-    uint32_t hashModulus_;
+    uint32_t availableNodes_ = 0;
+    uint32_t hashModulus_ = 0;
     // 0 for reserved, start from 1
     uint32_t availableIndex_ = 1;
     // for de-conflict

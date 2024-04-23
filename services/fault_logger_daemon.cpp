@@ -653,8 +653,7 @@ void FaultLoggerDaemon::RemoveTempFileIfNeed()
     }
 
     std::sort(files.begin(), files.end(),
-        [](const std::string& lhs, const std::string& rhs) -> int
-    {
+        [](const std::string& lhs, const std::string& rhs) -> int {
         auto lhsSplitPos = lhs.find_last_of("-");
         auto rhsSplitPos = rhs.find_last_of("-");
         if (lhsSplitPos == std::string::npos || rhsSplitPos == std::string::npos) {

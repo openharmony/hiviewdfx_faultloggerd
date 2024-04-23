@@ -605,7 +605,7 @@ static int CloneAndDoProcessDump(void* arg)
     return ForkAndExecProcessDump();
 }
 
-static void StartProcessdump()
+static void StartProcessdump(void)
 {
     pid_t pid = ForkBySyscall();
     if (pid < 0) {
@@ -628,7 +628,7 @@ static void StartProcessdump()
     }
 }
 
-static void StartVMProcessUnwind()
+static void StartVMProcessUnwind(void)
 {
     pid_t pid = ForkBySyscall();
     if (pid < 0) {
@@ -667,7 +667,7 @@ static void CleanFd(int *pipeFd)
     }
 }
 
-static void CleanPipe()
+static void CleanPipe(void)
 {
     for (size_t i = 0; i < PIPE_MAX; i++) {
         CleanFd(&g_pipeFds[i][0]);
@@ -675,7 +675,7 @@ static void CleanPipe()
     }
 }
 
-static bool InitPipe()
+static bool InitPipe(void)
 {
     for (int i = 0; i < PIPE_MAX; i++) {
         if (pipe(g_pipeFds[i]) == -1) {
@@ -707,7 +707,7 @@ static int ProcessDump(int sig)
     close(g_pipeFds[READ_FROM_DUMP_TO_MAIN][1]);
     int ret = OHOS_TEMP_FAILURE_RETRY(read(g_pipeFds[READ_FROM_DUMP_TO_MAIN][0],
         &isFinishGetRegs, sizeof(isFinishGetRegs)));
-    if (ret != sizeof(isFinishGetRegs) || isFinishGetRegs != OPE_SUCCESS) {
+    if (ret < 0 || ret != sizeof(isFinishGetRegs) || isFinishGetRegs != OPE_SUCCESS) {
         DFXLOG_INFO("Failed to read resgs(%d).", errno);
     }
     DFXLOG_INFO("processdump have get all resgs");

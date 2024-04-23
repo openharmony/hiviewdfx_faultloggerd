@@ -42,8 +42,7 @@
           "name": "//base/hiviewdfx/faultloggerd/interfaces/innerkits/backtrace:libbacktrace_local",
           "header": {
             "header_files": [
-              "backtrace_local.h",
-              "dfx_json_formatter.h"
+              "backtrace_local.h"
             ],
             "header_base": "//base/hiviewdfx/faultloggerd/interfaces/innerkits/backtrace/include"
           }
@@ -52,8 +51,7 @@
           "name": "//base/hiviewdfx/faultloggerd/interfaces/innerkits/backtrace:backtrace_local",
           "header": {
             "header_files": [
-              "backtrace_local.h",
-              "dfx_json_formatter.h"
+              "backtrace_local.h"
             ],
             "header_base": "//base/hiviewdfx/faultloggerd/interfaces/innerkits/backtrace/include"
           }
@@ -77,6 +75,15 @@
           }
         },
         {
+          "name": "//base/hiviewdfx/faultloggerd/interfaces/innerkits/formatter:libjson_stack_formatter",
+          "header": {
+            "header_files": [
+              "dfx_json_formatter.h"
+            ],
+            "header_base": "//base/hiviewdfx/faultloggerd/interfaces/innerkits/formatter/include"
+          }
+        },
+        {
           "name": "//base/hiviewdfx/faultloggerd/interfaces/rust/panic_handler:panic_handler",
           "header": {
             "header_files": [],
@@ -93,13 +100,7 @@
           }
         },
         {
-          "name": "//base/hiviewdfx/faultloggerd/interfaces/innerkits/signal_handler:dfx_signalhandler",
-          "header": {
-            "header_files": [
-              "dfx_signal_handler.h"
-            ],
-            "header_base": "//base/hiviewdfx/faultloggerd/interfaces/innerkits/signal_handler/include"
-          }
+          "name": "//base/hiviewdfx/faultloggerd/interfaces/innerkits/signal_handler:dfxsignalhandler"
         },
         {
           "name": "//base/hiviewdfx/faultloggerd/interfaces/innerkits/unwinder:libunwinder",

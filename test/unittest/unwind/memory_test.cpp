@@ -114,7 +114,7 @@ HWTEST_F(DfxMemoryTest, DfxMemoryTest003, TestSize.Level2)
     ASSERT_TRUE(GetSelfStackRange(ctx.stackBottom, ctx.stackTop));
     auto memory = std::make_shared<DfxMemory>(acc);
     memory->SetCtx(&ctx);
-    uintptr_t addr = (uintptr_t)(&values[0]);
+    uintptr_t addr = reinterpret_cast<uintptr_t>(&values[0]);
     uintptr_t value;
     ASSERT_TRUE(memory->ReadUptr(addr, &value, false));
 #if defined(__arm__)
