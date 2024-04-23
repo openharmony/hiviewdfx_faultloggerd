@@ -39,7 +39,11 @@ public:
 HWTEST_F(ParamTest, DfxParamTest001, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "DfxParamTest001: start.";
+#if defined(__arm__)
+    ASSERT_EQ(DfxParam::EnableBeta(), false);
+#elif defined(__aarch64__)
     ASSERT_EQ(DfxParam::EnableBeta(), true);
+#endif
     ASSERT_EQ(DfxParam::EnableAsyncStack(), true);
     ASSERT_EQ(DfxParam::EnableMixstack(), true);
     GTEST_LOG_(INFO) << "DfxParamTest001: end.";

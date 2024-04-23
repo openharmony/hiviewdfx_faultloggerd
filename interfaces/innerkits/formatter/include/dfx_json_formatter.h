@@ -17,7 +17,6 @@
 
 #include <memory>
 #include <string>
-#include <dfx_frame.h>
 
 namespace OHOS {
 namespace HiviewDFX {
@@ -35,14 +34,6 @@ public:
      * @return bool
      */
     static bool FormatJsonStack(std::string jsonStack, std::string& outStackStr);
-
-    /**
-     * @brief Get the Frames Json object
-     *
-     * @param frames native DfxFrame pointer list
-     * @return std::string native frames Json
-     */
-    static std::string GetFramesJson(const std::vector<DfxFrame>& frames);
 #endif
 };
 } // namespace HiviewDFX

@@ -37,7 +37,7 @@ namespace {
         static bool ret = true; \
         static std::once_flag flag; \
         std::call_once(flag, [&] { \
-            if (OHOS::system::GetParameter(EnableKey, DefValue) == ExpValue { \
+            if (OHOS::system::GetParameter(EnableKey, DefValue) == ExpValue) { \
                 ret = true; \
             } else { \
                 ret = false; \

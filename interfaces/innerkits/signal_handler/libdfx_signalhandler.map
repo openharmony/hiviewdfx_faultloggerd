@@ -4,6 +4,7 @@
         SetThreadInfoCallback;
         DFX_InstallSignalHandler;
         ThreadInfoCallBack;
+        SetAsyncStackCallbackFunc;
     };
   local:
     *;

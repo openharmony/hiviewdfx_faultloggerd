@@ -88,9 +88,7 @@ if (defined(ohos_lite)) {
     sources = [ "param_test.cpp" ]
     configs = [ ":module_private_config" ]
 
-    if (target_cpu == "arm64") {
-      defines = [ "ENABLE_PARAMETER" ]
-    }
+    defines = [ "ENABLE_PARAMETER" ]
 
     deps = [
       "//third_party/googletest:gmock_main",

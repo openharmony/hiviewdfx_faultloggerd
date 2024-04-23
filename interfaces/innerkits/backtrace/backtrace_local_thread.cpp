@@ -21,7 +21,6 @@
 
 #include "dfx_define.h"
 #include "dfx_frame_formatter.h"
-#include "dfx_json_formatter.h"
 #include "procinfo.h"
 
 namespace OHOS {
