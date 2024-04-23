@@ -90,7 +90,9 @@ HWTEST_F(UnwinderTest, GetStackRangeTest002, TestSize.Level2)
     bool result = false;
     GTEST_LOG_(INFO) << "Run the function with thread will get pid != tid, "
                         "GetStackRange(stackBottom, stackTop) is true";
-    std::thread th([&]{result = unwinder->GetStackRange(stackBottom, stackTop);});
+    std::thread th([unwinder, &stackBottom, &stackTop, &result] {
+        result = unwinder->GetStackRange(stackBottom, stackTop);
+    });
     if (th.joinable()) {
         th.join();
     }

@@ -119,7 +119,6 @@ bool Unwinder::UnwindLocalWithTid(const pid_t tid, size_t maxFrameNum, size_t sk
         return false;
     }
     LOGI("UnwindLocalWithTid:: tid: %d", tid);
-
     auto threadContext = LocalThreadContext::GetInstance().CollectThreadContext(tid);
 #if defined(__aarch64__)
     if (threadContext != nullptr && threadContext->frameSz > 0) {
@@ -131,33 +130,27 @@ bool Unwinder::UnwindLocalWithTid(const pid_t tid, size_t maxFrameNum, size_t sk
     }
     return false;
 #else
-
     if (threadContext == nullptr || threadContext->ctx == nullptr) {
         LOGW("Failed to get thread context of tid(%d)", tid);
         LocalThreadContext::GetInstance().ReleaseThread(tid);
         return false;
     }
-
     if (regs_ == nullptr) {
         regs_ = DfxRegs::CreateFromUcontext(*(threadContext->ctx));
     } else {
         regs_->SetFromUcontext(*(threadContext->ctx));
     }
-
     uintptr_t stackBottom = 1;
     uintptr_t stackTop = static_cast<uintptr_t>(-1);
     if (tid == getprocpid()) {
         if (maps_ == nullptr || !maps_->GetStackRange(stackBottom, stackTop)) {
             return false;
         }
-    } else {
-        if (!LocalThreadContext::GetInstance().GetStackRange(tid, stackBottom, stackTop)) {
-            LOGE("Failed to get stack range with tid(%d)", tid);
-            return false;
-        }
+    } else if (!LocalThreadContext::GetInstance().GetStackRange(tid, stackBottom, stackTop)) {
+        LOGE("Failed to get stack range with tid(%d)", tid);
+        return false;
     }
     LOGU("stackBottom: %" PRIx64 ", stackTop: %" PRIx64 "", (uint64_t)stackBottom, (uint64_t)stackTop);
-
     UnwindContext context;
     context.pid = UNWIND_TYPE_LOCAL;
     context.regs = regs_;
