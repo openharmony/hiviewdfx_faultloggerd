@@ -613,7 +613,10 @@ void ProcessDumper::WriteDumpRes(int32_t res)
 {
     DFXLOG_INFO("%s :: res: %d", __func__, res);
     if (resFd_ > 0) {
-        write(resFd_, &res, sizeof(res));
+        ssize_t nwrite = OHOS_TEMP_FAILURE_RETRY(write(resFd_, &res, sizeof(res)));
+        if (nwrite < 0) {
+            DFXLOG_ERROR("%s write fail, err:%d", __func__, errno);
+        }
         close(resFd_);
         resFd_ = -1;
     } else {
