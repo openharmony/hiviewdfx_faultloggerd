@@ -24,7 +24,6 @@
 
 #include "backtrace_local_thread.h"
 #include "dfx_frame_formatter.h"
-#include "dfx_json_formatter.h"
 #include "dfx_log.h"
 #include "dfx_util.h"
 #include "directory_ex.h"

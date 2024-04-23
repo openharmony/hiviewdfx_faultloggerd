@@ -91,14 +91,15 @@ public:
     {
     }
 
-    UniqueStackTable(void* buf, uint32_t size) : tableBufMMap_(buf), tableSize_(size)
+    UniqueStackTable(void* buf, uint32_t size, bool releaseBuffer = true)
+        :tableBufMMap_(buf), tableSize_(size), releaseBuffer_(releaseBuffer)
     {
         totalNodes_ = ((tableSize_ / sizeof(Node)) >> 1) << 1;
     }
 
     ~UniqueStackTable()
     {
-        if (tableBufMMap_ != nullptr) {
+        if (tableBufMMap_ != nullptr && releaseBuffer_) {
             munmap(tableBufMMap_, tableSize_);
             tableBufMMap_ = nullptr;
         }
@@ -148,6 +149,7 @@ private:
     uint64_t hashStep_ = 0;
     uint8_t deconflictTimes_ = INIT_DECONFLICT_ALLOWED;
     std::mutex stackTableMutex_;
+    bool releaseBuffer_ = true;
 };
 }
 }
