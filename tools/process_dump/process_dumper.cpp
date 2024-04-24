@@ -263,7 +263,6 @@ void ProcessDumper::Dump()
         }
     }
 
-    InfoRemoteProcessResult(request, OPE_CONTINUE, MAIN_PROCESS);
     std::string jsonInfo;
     if (isJsonDump_ || isCrash_) {
         DfxStackInfoFormatter formatter(process_, request);
@@ -283,6 +282,9 @@ void ProcessDumper::Dump()
         reporter_->SetCppCrashInfo(jsonInfo);
         reporter_->ReportToHiview();
         reporter_->ReportToAbilityManagerService();
+    }
+    if ((request->dumpMode == FUSION_MODE) && isCrash_) {
+        InfoRemoteProcessResult(request, OPE_CONTINUE, MAIN_PROCESS);
     }
 }
 
@@ -477,7 +479,7 @@ int ProcessDumper::InitProcessInfo(std::shared_ptr<ProcessDumpRequest> request)
     process_->processInfo_.uid = request->uid;
     process_->recycleTid_ = request->recycleTid;
     process_->SetFatalMessage(request->lastFatalMessage);
-    
+
     if (!InitVmThread(request, process_)) {
         return -1;
     }
