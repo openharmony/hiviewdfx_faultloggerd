@@ -25,44 +25,39 @@
 namespace OHOS {
 namespace HiviewDFX {
 namespace {
-#ifdef is_ohos_lite
-[[maybe_unused]] constexpr bool g_defaultValue = false;
-#else
-[[maybe_unused]] constexpr bool g_defaultValue = true;
-#endif
 [[maybe_unused]] constexpr char BETA_ENABLED_KEY[] = "const.logsystemversion.type";
 [[maybe_unused]] constexpr char ASYNCSTACK_ENABLED_KEY[] = "persist.faultloggerd.priv.asyncstack.enabled";
 [[maybe_unused]] constexpr char MIXSTACK_ENABLED_KEY[] = "persist.faultloggerd.priv.mixstack.enabled";
 }
 
 #if defined(ENABLE_PARAMETER)
-#define GEN_ENABLE_PARAM_FUNC(FuncName, EnableKey, DefValue) \
+#define GEN_ENABLE_PARAM_FUNC(FuncName, EnableKey, DefValue, ExpValue) \
     __attribute__((noinline)) static bool FuncName() \
     { \
-        static bool enable = DefValue; \
+        static bool ret = true; \
         static std::once_flag flag; \
         std::call_once(flag, [&] { \
-            if (OHOS::system::GetParameter(EnableKey, "true") == "true") { \
-                enable = true; \
+            if (OHOS::system::GetParameter(EnableKey, DefValue) == ExpValue) { \
+                ret = true; \
             } else { \
-                enable = false; \
+                ret = false; \
             } \
         }); \
-        return enable; \
+        return ret; \
     }
 #else
-#define GEN_ENABLE_PARAM_FUNC(FuncName, EnableKey, DefValue) \
+#define GEN_ENABLE_PARAM_FUNC(FuncName, EnableKey, DefValue, ExpValue) \
     __attribute__((noinline)) static bool FuncName() \
     { \
-        return DefValue; \
+        return false; \
     }
 #endif
 
 class DfxParam {
 public:
-    GEN_ENABLE_PARAM_FUNC(EnableBeta, BETA_ENABLED_KEY, g_defaultValue);
-    GEN_ENABLE_PARAM_FUNC(EnableAsyncStack, ASYNCSTACK_ENABLED_KEY, g_defaultValue);
-    GEN_ENABLE_PARAM_FUNC(EnableMixstack, MIXSTACK_ENABLED_KEY, g_defaultValue);
+    GEN_ENABLE_PARAM_FUNC(EnableBeta, BETA_ENABLED_KEY, "commercial", "beta");
+    GEN_ENABLE_PARAM_FUNC(EnableAsyncStack, ASYNCSTACK_ENABLED_KEY, "true", "true");
+    GEN_ENABLE_PARAM_FUNC(EnableMixstack, MIXSTACK_ENABLED_KEY, "true", "true");
 };
 } // namespace HiviewDFX
 } // namespace OHOS

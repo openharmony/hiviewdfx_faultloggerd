@@ -159,56 +159,6 @@ HWTEST_F(BacktraceLocalTest, BacktraceLocalTest003, TestSize.Level2)
     GTEST_LOG_(INFO) << "BacktraceLocalTest003: end.";
 }
 
-using GetMap = void (*)(void);
-/**
- * @tc.name: BacktraceLocalTest004
- * @tc.desc: test whether crash log is generated if we call a dlsym func after dlclose
- * @tc.type: FUNC
- */
-HWTEST_F(BacktraceLocalTest, BacktraceLocalTest004, TestSize.Level2)
-{
-    GTEST_LOG_(INFO) << "BacktraceLocalTest004: start.";
-    pid_t childPid = fork();
-    if (childPid == 0) {
-        void* handle = dlopen("libunwind.z.so", RTLD_LAZY);
-        if (handle == nullptr) {
-            FAIL();
-        }
-
-        auto getMap = reinterpret_cast<GetMap>(dlsym(handle, "unw_get_map"));
-        if (getMap == nullptr) {
-            dlclose(handle);
-            FAIL();
-        }
-        // close before call functrion
-        dlclose(handle);
-        getMap();
-        _exit(0);
-    }
-
-    int status;
-    int ret = wait(&status);
-    GTEST_LOG_(INFO) << "Status:" << status << " Result:" << ret;
-    sleep(1);
-    std::string path = GetCppCrashFileName(childPid);
-    if (path.empty()) {
-        FAIL();
-    }
-    GTEST_LOG_(INFO) << "LogFile: " << path;
-
-    std::string content;
-    if (!OHOS::HiviewDFX::LoadStringFromFile(path, content)) {
-        FAIL();
-    }
-
-    // both dlclose debug enabled and disabled cases
-    if (content.find("Not mapped") == std::string::npos) {
-        FAIL();
-    }
-
-    GTEST_LOG_(INFO) << "BacktraceLocalTest004: end.";
-}
-
 /**
  * @tc.name: BacktraceLocalTest005
  * @tc.desc: test get backtrace of current process

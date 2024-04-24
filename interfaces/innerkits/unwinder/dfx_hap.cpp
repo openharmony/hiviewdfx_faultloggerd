@@ -53,6 +53,7 @@ bool DfxHap::ParseHapFileData(const std::string& name)
     }
     return true;
 #endif
+    return false;
 }
 
 bool DfxHap::ParseHapMemData(const pid_t pid, std::shared_ptr<DfxMap> map)

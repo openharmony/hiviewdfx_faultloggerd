@@ -41,10 +41,10 @@ namespace {
 inline const std::string GetMapsFile(pid_t pid)
 {
     std::string path = "";
-    if (pid > 0) {
-        path = StringPrintf("/proc/%d/maps", (int)pid);
-    } else if ((pid == 0) || (pid == getpid())) {
+    if ((pid == 0) || (pid == getpid())) {
         path = std::string(PROC_SELF_MAPS_PATH);
+    } else if (pid > 0) {
+        path = StringPrintf("/proc/%d/maps", (int)pid);
     }
     return path;
 }

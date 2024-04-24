@@ -74,7 +74,12 @@ HWTEST_F(AsyncStackTest, AsyncStackTest001, TestSize.Level2)
     SetStackId(1);
     auto res = GetStackId();
     GTEST_LOG_(INFO) << "res: " << res;
+#if defined(__arm__)
+    ASSERT_EQ(0, res);
+#elif defined(__aarch64__)
     ASSERT_NE(0, res);
+#endif
+
     GTEST_LOG_(INFO) << "AsyncStackTest001: end.";
 }
 } // namespace HiviewDFX

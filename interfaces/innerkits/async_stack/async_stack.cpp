@@ -63,7 +63,7 @@ static void InitAsyncStackInner(void)
 
 static bool InitAsyncStack(void)
 {
-    if (!(OHOS::HiviewDFX::DfxParam::EnableMixstack() && OHOS::HiviewDFX::DfxParam::EnableMixstack())) {
+    if (!(OHOS::HiviewDFX::DfxParam::EnableBeta() && OHOS::HiviewDFX::DfxParam::EnableAsyncStack())) {
         LOGE("%s", "async stack is not enable.");
         return false;
     }
