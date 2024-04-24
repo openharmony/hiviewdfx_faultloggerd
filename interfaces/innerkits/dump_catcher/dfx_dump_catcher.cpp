@@ -312,6 +312,7 @@ int DfxDumpCatcher::DoDumpRemotePoll(int bufFd, int resFd, int timeout, std::str
 
             if (readfds[i].fd == bufFd) {
                 bufRet = DoReadBuf(bufFd, bufMsg);
+                continue;
             }
 
             if (readfds[i].fd == resFd) {
@@ -360,7 +361,7 @@ bool DfxDumpCatcher::DoReadBuf(int fd, std::string& msg)
 bool DfxDumpCatcher::DoReadRes(int fd, bool &ret, std::string& msg)
 {
     int32_t res = DumpErrorCode::DUMP_ESUCCESS;
-    ssize_t nread = read(fd, &res, sizeof(res));
+    ssize_t nread = OHOS_TEMP_FAILURE_RETRY(read(fd, &res, sizeof(res)));
     if (nread != sizeof(res)) {
         DFXLOG_WARN("%s :: %s :: read error", DFXDUMPCATCHER_TAG.c_str(), __func__);
         return false;

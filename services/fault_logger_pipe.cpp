@@ -72,7 +72,7 @@ int FaultLoggerPipe::GetWriteFd(void)
 bool FaultLoggerPipe::Init(void)
 {
     if (!init_) {
-        if (pipe(fds_) != 0) {
+        if (pipe2(fds_, O_NONBLOCK) != 0) {
             DFXLOG_ERROR("%s :: Failed to create pipe.", __func__);
             return false;
         }
