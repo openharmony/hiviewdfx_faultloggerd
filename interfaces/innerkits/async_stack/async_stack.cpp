@@ -76,7 +76,6 @@ extern "C" uint64_t CollectAsyncStack(void)
 {
 #if defined(__aarch64__)
     if (!InitAsyncStack()) {
-        LOGE("%s", "failed to init async stack.");
         return 0;
     }
     const int32_t maxSize = 32;
