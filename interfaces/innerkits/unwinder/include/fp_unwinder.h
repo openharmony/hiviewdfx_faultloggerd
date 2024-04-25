@@ -27,7 +27,7 @@
 #include <sys/stat.h>
 #include <sys/syscall.h>
 #include <unistd.h>
-#include "dfx_ark_local.h"
+#include "dfx_ark.h"
 #include "dfx_define.h"
 #include "stack_util.h"
 
@@ -79,7 +79,7 @@ public:
             index++;
 #if defined(ENABLE_MIXSTACK)
             if (isGetArkRange && (pc >= arkMapStart_) && (pc < arkMapEnd_)) {
-                if (DfxArkLocal::StepArkFrame(FpUnwinder::GetPtr(), &(FpUnwinder::AccessMem),
+                if (DfxArk::StepArkFrame(FpUnwinder::GetPtr(), &(FpUnwinder::AccessMem),
                     &fp, &sp, &pc, &isJsFrame) < 0) {
                     break;
                 }
@@ -119,7 +119,7 @@ public:
             index++;
 #if defined(ENABLE_MIXSTACK)
             if (isGetArkRange && (pc >= arkMapStart_) && (pc < arkMapEnd_)) {
-                if (DfxArkLocal::StepArkFrame(FpUnwinder::GetPtr(), &(FpUnwinder::AccessMemSafe),
+                if (DfxArk::StepArkFrame(FpUnwinder::GetPtr(), &(FpUnwinder::AccessMemSafe),
                     &fp, &sp, &pc, &isJsFrame) < 0) {
                     break;
                 }

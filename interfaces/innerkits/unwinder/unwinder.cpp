@@ -19,7 +19,6 @@
 #include <link.h>
 
 #include "dfx_ark.h"
-#include "dfx_ark_local.h"
 #include "dfx_define.h"
 #include "dfx_errors.h"
 #include "dfx_extractor_utils.h"
@@ -43,23 +42,64 @@ namespace {
 #define LOG_TAG "DfxUnwinder"
 }
 
-void Unwinder::Init(bool crash)
+Unwinder::Unwinder() : pid_(UNWIND_TYPE_LOCAL)
 {
-    LOGI("Unwinder init, crash: %d", crash);
+    maps_ = DfxMaps::Create();
+    acc_ = std::make_shared<DfxAccessorsLocal>();
+    enableFpCheckMapExec_ = true;
+    Init();
+}
+
+Unwinder::Unwinder(int pid, bool crash) : pid_(pid)
+{
+    if (pid <= 0) {
+        LOGE("pid(%d) error", pid);
+        return;
+    }
+    maps_ = DfxMaps::Create(pid, crash);
+    acc_ = std::make_shared<DfxAccessorsRemote>();
+    enableFpCheckMapExec_ = true;
+    Init();
+}
+
+Unwinder::Unwinder(int pid, int nspid, bool crash) : pid_(nspid)
+{
+    if (pid <= 0 || nspid <= 0) {
+        LOGE("pid(%d) or nspid(%d) error", pid, nspid);
+        return;
+    }
+    maps_ = DfxMaps::Create(pid, crash);
+    acc_ = std::make_shared<DfxAccessorsRemote>();
+    enableFpCheckMapExec_ = true;
+    Init();
+}
+
+Unwinder::Unwinder(std::shared_ptr<UnwindAccessors> accessors, bool local)
+{
+    if (local) {
+        pid_ = UNWIND_TYPE_CUSTOMIZE_LOCAL;
+    } else {
+        pid_ = UNWIND_TYPE_CUSTOMIZE;
+    }
+    acc_ = std::make_shared<DfxAccessorsCustomize>(accessors);
+    enableLrFallback_ = false;
+    enableFpCheckMapExec_ = false;
+    enableFillFrames_ = false;
+#if defined(__aarch64__)
+    pacMask_ = pacMaskDefault_;
+#endif
+    Init();
+}
+
+void Unwinder::Init()
+{
+    LOGI("Unwinder init");
     Destroy();
     memory_ = std::make_shared<DfxMemory>(acc_);
 #if defined(__arm__)
     armExidx_ = std::make_shared<ArmExidx>(memory_);
 #endif
     dwarfSection_ = std::make_shared<DwarfSection>(memory_);
-
-    if (pid_ == UNWIND_TYPE_LOCAL) {
-        maps_ = DfxMaps::Create();
-    } else {
-        if (pid_ > 0) {
-            maps_ = DfxMaps::Create(pid_, crash);
-        }
-    }
 
     InitParam();
 #if defined(ENABLE_MIXSTACK)
@@ -81,8 +121,8 @@ void Unwinder::Clear()
 void Unwinder::Destroy()
 {
 #if defined(OFFLINE_MIXSTACK)
-    if (arkSymbolExtractorPtr_ != 0) {
-        DfxArk::ArkDestoryJsSymbolExtractor(arkSymbolExtractorPtr_);
+    if ((pid_ == UNWIND_TYPE_LOCAL) || (pid_ == UNWIND_TYPE_CUSTOMIZE_LOCAL)) {
+        DfxArk::ArkDestoryLocal();
     }
 #endif
     Clear();
@@ -288,16 +328,9 @@ bool Unwinder::StepArkJsFrame(uintptr_t& pc, uintptr_t& fp, uintptr_t& sp, bool&
         LOGI("+++ark pc: %" PRIx64 ", fp: %" PRIx64 ", sp: %" PRIx64 ", isJsFrame: %d.",
             (uint64_t)pc, (uint64_t)fp, (uint64_t)sp, isJsFrame);
     }
-    if (pid_ == UNWIND_TYPE_LOCAL) {
-        if (DfxArkLocal::StepArkFrame(memory_.get(), &(Unwinder::AccessMem), &fp, &sp, &pc, &isJsFrame) < 0) {
-            LOGE("Failed to step ark Js frames, fp: %" PRIx64 " ,pc: %" PRIx64, (uint64_t)fp, (uint64_t)pc);
-            return false;
-        }
-    } else {
-        if (DfxArk::StepArkFrame(memory_.get(), &(Unwinder::AccessMem), &fp, &sp, &pc, &isJsFrame) < 0) {
-            LOGE("Failed to step ark Js frames, fp: %" PRIx64 " ,pc: %" PRIx64, (uint64_t)fp, (uint64_t)pc);
-            return false;
-        }
+    if (DfxArk::StepArkFrame(memory_.get(), &(Unwinder::AccessMem), &fp, &sp, &pc, &isJsFrame) < 0) {
+        LOGE("Failed to step ark frame");
+        return false;
     }
     if (pid_ != UNWIND_TYPE_CUSTOMIZE) {
         LOGI("---ark pc: %" PRIx64 ", fp: %" PRIx64 ", sp: %" PRIx64 ", isJsFrame: %d.",
@@ -335,7 +368,8 @@ bool Unwinder::Unwind(void *ctx, size_t maxFrameNum, size_t skipFrameNum)
         uintptr_t pc = regs_->GetPc();
         uintptr_t sp = regs_->GetSp();
         // Check if this is a signal frame.
-        if (pid_ != UNWIND_TYPE_LOCAL && regs_->StepIfSignalFrame(static_cast<uintptr_t>(pc), memory_)) {
+        if (pid_ != UNWIND_TYPE_LOCAL && pid_ != UNWIND_TYPE_CUSTOMIZE_LOCAL
+            && regs_->StepIfSignalFrame(static_cast<uintptr_t>(pc), memory_)) {
             LOGW("Step signal frame, pc: %p", reinterpret_cast<void *>(pc));
             StepInner(true, isJsFrame, pc, sp, ctx);
             continue;
@@ -742,7 +776,13 @@ void Unwinder::FillFrames(std::vector<DfxFrame>& frames)
 {
     for (size_t i = 0; i < frames.size(); ++i) {
         auto& frame = frames[i];
-        FillFrame(frame);
+        if (frame.isJsFrame) {
+#if defined(OFFLINE_MIXSTACK)
+            FillJsFrame(frame);
+#endif
+        } else {
+            FillFrame(frame);
+        }
     }
 }
 
@@ -757,10 +797,6 @@ void Unwinder::FillFrame(DfxFrame& frame)
     frame.relPc = frame.map->GetRelPc(frame.pc);
     auto elf = frame.map->GetElf();
     if (elf == nullptr) {
-#if defined(OFFLINE_MIXSTACK)
-        LOGU("elf is null, try to fill js frame?");
-        FillJsFrame(frame);
-#endif
         return;
     }
     frame.mapName = frame.map->GetElfName();
@@ -786,18 +822,15 @@ void Unwinder::FillJsFrame(DfxFrame& frame)
         return;
     }
     JsFunction jsFunction;
-    if ((pid_ != UNWIND_TYPE_LOCAL) &&
-        (!frame.map->name.empty()) && (EndsWith(frame.map->name, ".hap") || EndsWith(frame.map->name, ".hsp"))) {
-        if (!hap->ParseHapFileData(frame.map->name)) {
-            LOGW("Failed to parse hap file symbol, name: %s", frame.map->name.c_str());
+    if ((pid_ == UNWIND_TYPE_LOCAL) || (pid_ == UNWIND_TYPE_CUSTOMIZE_LOCAL)) {
+        if (DfxArk::ParseArkFrameInfoLocal(static_cast<uintptr_t>(frame.pc), static_cast<uintptr_t>(frame.map->begin),
+            static_cast<uintptr_t>(frame.map->offset), &jsFunction) < 0) {
+            LOGW("Failed to parse ark frame info local, pc: %p, begin: %p",
+                reinterpret_cast<void *>(frame.pc), reinterpret_cast<void *>(frame.map->begin));
             return;
         }
     } else {
-        pid_t pid = pid_;
-        if (pid_ == UNWIND_TYPE_LOCAL) {
-            pid = getpid();
-        }
-        if (!hap->ParseHapMemData(pid, frame.map)) {
+        if (!hap->ParseHapMemData(pid_, frame.map)) {
             LOGW("Failed to parse hap mem symbol, pid: %d", pid);
             return;
         }

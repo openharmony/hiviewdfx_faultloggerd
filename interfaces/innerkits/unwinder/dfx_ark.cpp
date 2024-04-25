@@ -42,10 +42,12 @@ int (*g_stepArkManagedNativeFrameFn)(int, uintptr_t*, uintptr_t*, uintptr_t*, ch
 int (*g_getArkJsHeapCrashInfoFn)(int, uintptr_t *, uintptr_t *, int, char *, size_t);
 int (*g_stepArkFn)(void *ctx, OHOS::HiviewDFX::ReadMemFunc readMemFn,
     uintptr_t *fp, uintptr_t *sp, uintptr_t *pc, bool *isJsFrame);
+int (*g_parseArkFrameInfoLocalFn)(uintptr_t, uintptr_t, uintptr_t, JsFunction *);
 int (*g_parseArkFrameInfoFn)(uintptr_t, uintptr_t, uintptr_t, uint8_t *, uint64_t, uintptr_t, JsFunction *);
 int (*g_translateArkFrameInfoFn)(uint8_t *, uint64_t, JsFunction *);
 int (*g_arkCreateJsSymbolExtractorFn)(uintptr_t *);
 int (*g_arkDestoryJsSymbolExtractorFn)(uintptr_t);
+int (*g_arkDestoryLocalFn)();
 
 bool GetLibArkHandle()
 {
@@ -105,6 +107,36 @@ int DfxArk::ArkDestoryJsSymbolExtractor(uintptr_t extractorPtr)
 
     if (g_arkDestoryJsSymbolExtractorFn != nullptr) {
         return g_arkDestoryJsSymbolExtractorFn(extractorPtr);
+    }
+    return -1;
+}
+
+int DfxArk::ArkDestoryLocal()
+{
+    if (g_arkDestoryLocalFn != nullptr) {
+        return g_arkDestoryLocalFn();
+    }
+
+    const char* arkFuncName = "ark_destory_local";
+    DLSYM_ARK_FUNC(arkFuncName, g_arkDestoryLocalFn)
+
+    if (g_arkDestoryLocalFn != nullptr) {
+        return g_arkDestoryLocalFn();
+    }
+    return -1;
+}
+
+int DfxArk::ParseArkFrameInfoLocal(uintptr_t byteCodePc, uintptr_t mapBase, uintptr_t offset, JsFunction *jsFunction)
+{
+    if (g_parseArkFrameInfoLocalFn != nullptr) {
+        return g_parseArkFrameInfoLocalFn(byteCodePc, mapBase, offset, jsFunction);
+    }
+
+    const char* arkFuncName = "ark_parse_js_frame_info_local";
+    DLSYM_ARK_FUNC(arkFuncName, g_parseArkFrameInfoLocalFn)
+
+    if (g_parseArkFrameInfoLocalFn != nullptr) {
+        return g_parseArkFrameInfoLocalFn(byteCodePc, mapBase, offset, jsFunction);
     }
     return -1;
 }

@@ -52,6 +52,7 @@ enum ArchType : uint8_t {
 };
 
 enum UnwindType : int8_t {
+    UNWIND_TYPE_CUSTOMIZE_LOCAL = -3,
     UNWIND_TYPE_CUSTOMIZE = -2,
     UNWIND_TYPE_LOCAL = -1,
     UNWIND_TYPE_REMOTE,

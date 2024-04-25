@@ -76,12 +76,16 @@ public:
     static int StepArkFrame(void *obj, OHOS::HiviewDFX::ReadMemFunc readMemFn,
         uintptr_t *fp, uintptr_t *sp, uintptr_t *pc, bool *isJsFrame);
 
+    static int ParseArkFrameInfoLocal(uintptr_t byteCodePc, uintptr_t mapBase, uintptr_t loadOffset,
+        JsFunction *jsFunction);
     static int ParseArkFrameInfo(uintptr_t byteCodePc, uintptr_t mapBase, uintptr_t loadOffset,
         uint8_t *data, uint64_t dataSize, uintptr_t extractorPtr, JsFunction *jsFunction);
     static int TranslateArkFrameInfo(uint8_t *data, uint64_t dataSize, JsFunction *jsFunction);
 
     static int ArkCreateJsSymbolExtractor(uintptr_t* extractorPtr);
     static int ArkDestoryJsSymbolExtractor(uintptr_t extractorPtr);
+
+    static int ArkDestoryLocal();
 };
 } // namespace HiviewDFX
 } // namespace OHOS
