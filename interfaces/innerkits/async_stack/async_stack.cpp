@@ -64,7 +64,6 @@ static void InitAsyncStackInner(void)
 static bool InitAsyncStack(void)
 {
     if (!(OHOS::HiviewDFX::DfxParam::EnableBeta() && OHOS::HiviewDFX::DfxParam::EnableAsyncStack())) {
-        LOGE("%s", "async stack is not enable.");
         return false;
     }
     static once_flag onceFlag = ONCE_FLAG_INIT;
