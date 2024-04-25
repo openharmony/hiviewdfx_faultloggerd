@@ -58,6 +58,7 @@ std::shared_ptr<DfxMaps> DfxMaps::Create(pid_t pid, bool crash)
     }
     auto dfxMaps = std::make_shared<DfxMaps>();
     if (!crash) {
+        LOGU("Create maps(%s) with not crash, will only parse exec map", path.c_str());
         dfxMaps->EnableOnlyExec(true);
     }
     if (dfxMaps->Parse(pid, path)) {
@@ -93,16 +94,15 @@ bool DfxMaps::Create(const pid_t pid, std::vector<std::shared_ptr<DfxMap>>& maps
 
 bool DfxMaps::Parse(const pid_t pid, const std::string& path)
 {
-    std::string realPath = path;
-    if ((pid < 0) || (path == "") || !RealPath(path, realPath)) {
-        LOGE("Failed to realpath %s", path.c_str());
+    if ((pid < 0) || (path == "")) {
+        LOGE("param is error");
         return false;
     }
 
     FILE* fp = nullptr;
-    fp = fopen(realPath.c_str(), "r");
+    fp = fopen(path.c_str(), "r");
     if (fp == nullptr) {
-        LOGE("Failed to open %s", realPath.c_str());
+        LOGE("Failed to open %s", path.c_str());
         return false;
     }
 
@@ -131,7 +131,7 @@ bool DfxMaps::Parse(const pid_t pid, const std::string& path)
     }
     (void)fclose(fp);
     if (GetMapsSize() == 0) {
-        LOGE("Failed to parse maps(%s), size is empty.", realPath.c_str());
+        LOGE("Failed to parse maps(%s), size is empty.", path.c_str());
         return false;
     }
     return true;
