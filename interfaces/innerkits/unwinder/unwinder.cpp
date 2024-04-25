@@ -30,6 +30,7 @@
 #include "dfx_regs_get.h"
 #include "dfx_symbols.h"
 #include "fp_unwinder.h"
+#include "stack_util.h"
 #include "string_printf.h"
 #include "string_util.h"
 #include "thread_context.h"
@@ -53,12 +54,8 @@ void Unwinder::Init(bool crash)
 #endif
     dwarfSection_ = std::make_shared<DwarfSection>(memory_);
 
-    if (pid_ == UNWIND_TYPE_LOCAL) {
-        maps_ = DfxMaps::Create();
-    } else {
-        if (pid_ > 0) {
-            maps_ = DfxMaps::Create(pid_, crash);
-        }
+    if (pid_ > 0) {
+        maps_ = DfxMaps::Create(pid_, crash);
     }
 
     InitParam();
@@ -98,16 +95,22 @@ bool Unwinder::CheckAndReset(void* ctx)
     return true;
 }
 
+bool Unwinder::GetMainStackRangeInner(uintptr_t& stackBottom, uintptr_t& stackTop)
+{
+    if (maps_ != nullptr && !maps_->GetStackRange(stackBottom, stackTop)) {
+        return false;
+    } else if (maps_ == nullptr && !GetMainStackRange(stackBottom, stackTop)) {
+        return false;
+    }
+    return true;
+}
+
 bool Unwinder::GetStackRange(uintptr_t& stackBottom, uintptr_t& stackTop)
 {
     if (gettid() == getpid()) {
-        if (maps_ == nullptr || !maps_->GetStackRange(stackBottom, stackTop)) {
-            return false;
-        }
+        return GetMainStackRangeInner(stackBottom, stackTop);
     } else {
-        if (!GetSelfStackRange(stackBottom, stackTop)) {
-            return false;
-        }
+        return GetSelfStackRange(stackBottom, stackTop);
     }
     return true;
 }
@@ -143,7 +146,7 @@ bool Unwinder::UnwindLocalWithTid(const pid_t tid, size_t maxFrameNum, size_t sk
     uintptr_t stackBottom = 1;
     uintptr_t stackTop = static_cast<uintptr_t>(-1);
     if (tid == getprocpid()) {
-        if (maps_ == nullptr || !maps_->GetStackRange(stackBottom, stackTop)) {
+        if (!GetMainStackRangeInner(stackBottom, stackTop)) {
             return false;
         }
     } else if (!LocalThreadContext::GetInstance().GetStackRange(tid, stackBottom, stackTop)) {
@@ -212,11 +215,12 @@ bool Unwinder::UnwindLocal(bool withRegs, bool fpUnwind, size_t maxFrameNum, siz
     context.stackCheck = false;
     context.stackBottom = stackBottom;
     context.stackTop = stackTop;
+#ifdef __aarch64__
     if (fpUnwind) {
         return UnwindByFp(&context, maxFrameNum, skipFrameNum);
-    } else {
-        return Unwind(&context, maxFrameNum, skipFrameNum);
     }
+#endif
+    return Unwind(&context, maxFrameNum, skipFrameNum);
 }
 
 bool Unwinder::UnwindRemote(pid_t tid, bool withRegs, size_t maxFrameNum, size_t skipFrameNum)
