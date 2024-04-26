@@ -49,7 +49,6 @@ Unwinder::Unwinder(bool needMaps) : pid_(UNWIND_TYPE_LOCAL)
     if (needMaps) {
         maps_ = DfxMaps::Create();
     }
-    maps_ = DfxMaps::Create();
     acc_ = std::make_shared<DfxAccessorsLocal>();
     enableFpCheckMapExec_ = true;
     Init();
