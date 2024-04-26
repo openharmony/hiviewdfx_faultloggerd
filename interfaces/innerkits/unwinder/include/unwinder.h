@@ -37,7 +37,7 @@ namespace HiviewDFX {
 class Unwinder {
 public:
     // for local
-    Unwinder();
+    Unwinder(bool needMaps = true);
     // for remote
     Unwinder(int pid, bool crash = true);
     Unwinder(int pid, int nspid, bool crash);
@@ -113,6 +113,7 @@ private:
         enableMixstack_ = DfxParam::EnableMixstack();
 #endif
     }
+    bool GetMainStackRangeInner(uintptr_t& stackBottom, uintptr_t& stackTop);
     bool CheckAndReset(void* ctx);
     void DoPcAdjust(uintptr_t& pc);
     void AddFrame(bool isJsFrame, uintptr_t pc, uintptr_t sp, std::shared_ptr<DfxMap> map);

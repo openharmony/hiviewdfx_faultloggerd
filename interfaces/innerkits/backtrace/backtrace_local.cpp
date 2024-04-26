@@ -42,7 +42,15 @@ namespace {
 bool GetBacktraceFramesByTid(std::vector<DfxFrame>& frames, int32_t tid, size_t skipFrameNum, bool fast,
                              size_t maxFrameNums)
 {
-    auto unwinder = std::make_shared<Unwinder>();
+    std::shared_ptr<Unwinder> unwinder = nullptr;
+#ifdef __aarch64__
+    if (fast || (tid != BACKTRACE_CURRENT_THREAD)) {
+        unwinder = std::make_shared<Unwinder>(false);
+    }
+#endif
+    if (unwinder == nullptr) {
+        unwinder = std::make_shared<Unwinder>();
+    }
     BacktraceLocalThread thread(tid, unwinder);
     bool ret = thread.Unwind(fast, maxFrameNums, skipFrameNum + 1);
     frames = thread.GetFrames();
