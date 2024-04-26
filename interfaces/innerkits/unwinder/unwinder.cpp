@@ -151,10 +151,8 @@ bool Unwinder::GetStackRange(uintptr_t& stackBottom, uintptr_t& stackTop)
 {
     if (gettid() == getpid()) {
         return GetMainStackRangeInner(stackBottom, stackTop);
-    } else {
-        return GetSelfStackRange(stackBottom, stackTop);
     }
-    return true;
+    return GetSelfStackRange(stackBottom, stackTop);
 }
 
 bool Unwinder::UnwindLocalWithTid(const pid_t tid, size_t maxFrameNum, size_t skipFrameNum)
