@@ -858,7 +858,7 @@ void Unwinder::FillJsFrame(DfxFrame& frame)
     }
     frame.mapName = std::string(jsFunction.url);
     frame.funcName = std::string(jsFunction.functionName);
-    frame.line = jsFunction.line;
+    frame.line = static_cast<int32_t>(jsFunction.line);
     frame.column = jsFunction.column;
     LOGU("Js frame mapName: %s, funcName: %s, line: %d, column: %d",
         frame.mapName.c_str(), frame.funcName.c_str(), frame.line, frame.column);

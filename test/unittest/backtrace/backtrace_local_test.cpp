@@ -32,7 +32,6 @@
 #include "dfx_frame_formatter.h"
 #include "dfx_test_util.h"
 #include "elapsed_time.h"
-#include "file_util.h"
 
 using namespace testing;
 using namespace testing::ext;

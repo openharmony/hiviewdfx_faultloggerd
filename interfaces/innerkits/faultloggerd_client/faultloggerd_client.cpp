@@ -31,7 +31,6 @@
 #include "dfx_log.h"
 #include "dfx_util.h"
 #include "faultloggerd_socket.h"
-#include "file_util.h"
 
 static const int32_t SOCKET_TIMEOUT = 5;
 
