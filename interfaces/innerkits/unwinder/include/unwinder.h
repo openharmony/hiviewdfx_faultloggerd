@@ -37,7 +37,7 @@ namespace HiviewDFX {
 class Unwinder {
 public:
     // for local
-    Unwinder();
+    Unwinder(bool needMaps = true);
     // for remote
     Unwinder(int pid, bool crash = true);
     Unwinder(int pid, int nspid, bool crash);
@@ -120,9 +120,10 @@ private:
         enableMixstack_ = DfxParam::EnableMixstack();
 #endif
     }
+    bool GetMainStackRangeInner(uintptr_t& stackBottom, uintptr_t& stackTop);
     bool CheckAndReset(void* ctx);
     void DoPcAdjust(uintptr_t& pc);
-    void AddFrame(StepFrame frame, std::shared_ptr<DfxMap> map);
+    void AddFrame(const StepFrame& frame, std::shared_ptr<DfxMap> map);
     bool StepInner(const bool isSigFrame, StepFrame& frame, void *ctx);
     bool Apply(std::shared_ptr<DfxRegs> regs, std::shared_ptr<RegLocState> rs);
 #if defined(ENABLE_MIXSTACK)
@@ -148,10 +149,9 @@ private:
     bool enableFpFallback_ = true;
     bool enableFpCheckMapExec_ = false;
     bool isFpStep_ = false;
-    bool enableMixstack_ = true;
-
-    bool ignoreMixstack_ = false;
-    bool stopWhenArkFrame_ = false;
+    MAYBE_UNUSED bool enableMixstack_ = true;
+    MAYBE_UNUSED bool ignoreMixstack_ = false;
+    MAYBE_UNUSED bool stopWhenArkFrame_ = false;
 
     int32_t pid_ = 0;
     uintptr_t pacMask_ = 0;

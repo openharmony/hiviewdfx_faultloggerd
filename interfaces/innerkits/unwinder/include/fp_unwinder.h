@@ -63,10 +63,7 @@ public:
             }
         }
 #if defined(ENABLE_MIXSTACK)
-        MAYBE_UNUSED bool isGetArkRange = false;
-        if (!GetArkStackRange(arkMapStart_, arkMapEnd_)) {
-            isGetArkRange = true;
-        }
+        MAYBE_UNUSED bool isGetArkRange = GetArkStackRange(arkMapStart_, arkMapEnd_);
 #endif
         uintptr_t firstFp = fp;
         size_t index = 0;
@@ -104,10 +101,7 @@ public:
             return 0;
         }
 #if defined(ENABLE_MIXSTACK)
-        MAYBE_UNUSED bool isGetArkRange = false;
-        if (!GetArkStackRange(arkMapStart_, arkMapEnd_)) {
-            isGetArkRange = true;
-        }
+        MAYBE_UNUSED bool isGetArkRange = GetArkStackRange(arkMapStart_, arkMapEnd_);
 #endif
         size_t index = 0;
         MAYBE_UNUSED uintptr_t sp = 0;
