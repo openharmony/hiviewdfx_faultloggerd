@@ -80,7 +80,7 @@ public:
 #if defined(ENABLE_MIXSTACK)
             if (isGetArkRange && (pc >= arkMapStart_) && (pc < arkMapEnd_)) {
                 if (DfxArk::StepArkFrame(FpUnwinder::GetPtr(), &(FpUnwinder::AccessMem),
-                    &fp, &sp, &pc, &isJsFrame) < 0) {
+                    &fp, &sp, &pc, nullptr, &isJsFrame) < 0) {
                     break;
                 }
                 continue;
@@ -120,7 +120,7 @@ public:
 #if defined(ENABLE_MIXSTACK)
             if (isGetArkRange && (pc >= arkMapStart_) && (pc < arkMapEnd_)) {
                 if (DfxArk::StepArkFrame(FpUnwinder::GetPtr(), &(FpUnwinder::AccessMemSafe),
-                    &fp, &sp, &pc, &isJsFrame) < 0) {
+                    &fp, &sp, &pc, nullptr, &isJsFrame) < 0) {
                     break;
                 }
                 continue;

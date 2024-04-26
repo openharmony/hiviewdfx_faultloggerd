@@ -104,6 +104,13 @@ public:
     }
 
 private:
+    struct StepFrame {
+        uintptr_t pc = 0;
+        uintptr_t methodid = 0;
+        uintptr_t sp = 0;
+        uintptr_t fp = 0;
+        bool isJsFrame {false};
+    };
     void Init();
     void Clear();
     void Destroy();
@@ -115,12 +122,11 @@ private:
     }
     bool CheckAndReset(void* ctx);
     void DoPcAdjust(uintptr_t& pc);
-    void AddFrame(bool isJsFrame, uintptr_t pc, uintptr_t sp, std::shared_ptr<DfxMap> map);
-    bool StepInner(const bool isSigFrame, bool& isJsFrame, uintptr_t& pc, uintptr_t& sp, void *ctx);
+    void AddFrame(StepFrame frame, std::shared_ptr<DfxMap> map);
+    bool StepInner(const bool isSigFrame, StepFrame& frame, void *ctx);
     bool Apply(std::shared_ptr<DfxRegs> regs, std::shared_ptr<RegLocState> rs);
 #if defined(ENABLE_MIXSTACK)
-    bool StepArkJsFrame(uintptr_t& pc, uintptr_t& fp, uintptr_t& sp);
-    bool StepArkJsFrame(uintptr_t& pc, uintptr_t& fp, uintptr_t& sp, bool& isJsFrame);
+    bool StepArkJsFrame(StepFrame& frame);
 #endif
     static uintptr_t StripPac(uintptr_t inAddr, uintptr_t pacMask);
     static int DlPhdrCallback(struct dl_phdr_info *info, size_t size, void *data);
@@ -161,7 +167,6 @@ private:
     std::shared_ptr<ArmExidx> armExidx_ = nullptr;
 #endif
     std::shared_ptr<DwarfSection> dwarfSection_ = nullptr;
-    uintptr_t arkSymbolExtractorPtr_ = 0;
 };
 } // namespace HiviewDFX
 } // namespace OHOS
