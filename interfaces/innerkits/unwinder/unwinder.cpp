@@ -523,29 +523,33 @@ bool Unwinder::StepInner(const bool isSigFrame, bool& isJsFrame, uintptr_t& pc, 
         return true;
     }
 
+    bool ret = false;
+    std::shared_ptr<RegLocState> rs = nullptr;
+    do {
 #if defined(ENABLE_MIXSTACK)
-    if (enableMixstack_) {
-        if (map != nullptr && map->IsArkExecutable() && stopWhenArkFrame_) {
+        if (enableMixstack_ && (map != nullptr && map->IsArkExecutable() && stopWhenArkFrame_)) {
             LOGU("Stop by ark frame");
             return false;
         }
 #if defined(ONLINE_MIXSTACK)
-        if (map != nullptr && map->IsArkExecutable()) {
+        if (enableMixstack_ && (map != nullptr && map->IsArkExecutable())) {
             if (!StepArkJsFrame(pc, fp, sp)) {
                 LOGE("Failed to step ark Js frames, pc: %" PRIx64, (uint64_t)pc);
                 lastErrorData_.SetAddrAndCode(pc, UNW_ERROR_STEP_ARK_FRAME);
-                return false;
+                ret = false;
+                break;
             }
             regs_->SetPc(pc);
             regs_->SetSp(sp);
             regs_->SetFp(fp);
         }
 #else
-        if ((map != nullptr && map->IsArkExecutable()) || isJsFrame) {
+        if (enableMixstack_ && ((map != nullptr && map->IsArkExecutable()) || isJsFrame)) {
             if (!StepArkJsFrame(pc, fp, sp, isJsFrame)) {
                 LOGE("Failed to step ark Js frames, pc: %" PRIx64, (uint64_t)pc);
                 lastErrorData_.SetAddrAndCode(pc, UNW_ERROR_STEP_ARK_FRAME);
-                return false;
+                ret = false;
+                break;
             }
             regs_->SetPc(pc);
             regs_->SetSp(sp);
@@ -553,12 +557,7 @@ bool Unwinder::StepInner(const bool isSigFrame, bool& isJsFrame, uintptr_t& pc, 
             return true;
         }
 #endif
-    }
 #endif
-
-    bool ret = false;
-    std::shared_ptr<RegLocState> rs = nullptr;
-    do {
         if (isFpStep_) {
             if (enableFpCheckMapExec_ && (map != nullptr && !map->IsMapExec())) {
                 LOGE("%s", "Fp step check map is not exec");
