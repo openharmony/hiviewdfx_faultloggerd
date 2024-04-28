@@ -37,31 +37,12 @@ namespace HiviewDFX {
 class Unwinder {
 public:
     // for local
-    Unwinder() : pid_(UNWIND_TYPE_LOCAL)
-    {
-        acc_ = std::make_shared<DfxAccessorsLocal>();
-        enableFpCheckMapExec_ = true;
-        Init();
-    };
+    Unwinder(bool needMaps = true);
     // for remote
-    Unwinder(int pid, bool crash = true) : pid_(pid)
-    {
-        acc_ = std::make_shared<DfxAccessorsRemote>();
-        enableFpCheckMapExec_ = true;
-        Init(crash);
-    };
+    Unwinder(int pid, bool crash = true);
+    Unwinder(int pid, int nspid, bool crash);
     // for customized
-    Unwinder(std::shared_ptr<UnwindAccessors> accessors) : pid_(UNWIND_TYPE_CUSTOMIZE)
-    {
-        acc_ = std::make_shared<DfxAccessorsCustomize>(accessors);
-        enableLrFallback_ = false;
-        enableFpCheckMapExec_ = false;
-        enableFillFrames_ = false;
-#if defined(__aarch64__)
-        pacMask_ = pacMaskDefault_;
-#endif
-        Init();
-    };
+    Unwinder(std::shared_ptr<UnwindAccessors> accessors);
     ~Unwinder() { Destroy(); }
 
     inline void SetTargetPid(int pid) { pid_ = pid; }
@@ -123,7 +104,7 @@ public:
     }
 
 private:
-    void Init(bool crash = true);
+    void Init();
     void Clear();
     void Destroy();
     void InitParam()
@@ -132,6 +113,7 @@ private:
         enableMixstack_ = DfxParam::EnableMixstack();
 #endif
     }
+    bool GetMainStackRangeInner(uintptr_t& stackBottom, uintptr_t& stackTop);
     bool CheckAndReset(void* ctx);
     void DoPcAdjust(uintptr_t& pc);
     void AddFrame(bool isJsFrame, uintptr_t pc, uintptr_t sp, std::shared_ptr<DfxMap> map);

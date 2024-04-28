@@ -187,7 +187,7 @@ bool LocalThreadContext::CopyContextAndWaitTimeout(int sig, siginfo_t *si, void 
         return false;
     }
 
-    int tid = getproctid();
+    int tid = gettid();
     LOGU("tid(%d) recv sig(%d)", tid, sig);
     auto ctxPtr = LocalThreadContext::GetInstance().GetThreadContext(tid);
 #if defined(__aarch64__)
