@@ -141,6 +141,46 @@ struct FaultLoggerdRequest {
     bool isJson;
 } __attribute__((packed));
 
+/**
+ * @brief  type of faultloggerd stats request
+*/
+enum FaultLoggerdStatType {
+    /** dump catcher stats */
+    DUMP_CATCHER = 0,
+    /** processdump stats */
+    PROCESS_DUMP
+};
+
+/**
+ * @brief  struct of faultloggerd stats request
+*/
+struct FaultLoggerdStatsRequest {
+    /** type of resquest */
+    int32_t type;
+    /** target process id outside sandbox */
+    int32_t pid;
+    /** the time call dumpcatcher interface */
+    uint64_t requestTime;
+    /** the time signal arrive in targe process */
+    uint64_t signalTime;
+    /** the time enter processdump main */
+    uint64_t processdumpStartTime;
+    /** the time finish processdump */
+    uint64_t processdumpFinishTime;
+    /** the time return from dumpcatcher interface */
+    uint64_t dumpCatcherFinishTime;
+    /** dumpcatcher result */
+    int32_t result;
+    /** caller elf offset */
+    uintptr_t offset;
+    char summary[128]; // 128 : max summary size
+    /** the caller elf of dumpcatcher interface */
+    char callerElf[128]; // 128 : max function name size
+    /** the caller processName */
+    char callerProcess[128]; // 128 : max function name size
+    /** the target processName */
+    char targetProcess[128]; // 128 : max function name size
+} __attribute__((packed));
 #ifdef __cplusplus
 }
 #endif
