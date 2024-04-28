@@ -82,11 +82,8 @@ HWTEST_F(FpUnwinderTest, FpUnwinderTest002, TestSize.Level2)
     uintptr_t fp = regs[1];
     const size_t maxSize = 32;
     uintptr_t pcs[maxSize] = {0};
-    auto ret = FpUnwinder::GetPtr()->InitPipe();
-    ASSERT_TRUE(ret);
     auto unwSz = FpUnwinder::GetPtr()->UnwindSafe(pc, fp, pcs, maxSize);
     ASSERT_GT(unwSz, 1);
-    FpUnwinder::GetPtr()->ClosePipe();
 
     std::vector<DfxFrame> frames;
     for (auto i = 0; i < unwSz; ++i) {

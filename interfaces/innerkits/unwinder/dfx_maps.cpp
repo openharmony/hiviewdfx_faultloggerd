@@ -117,16 +117,16 @@ bool DfxMaps::Parse(const pid_t pid, const std::string& path)
             AddMap(map, enableMapIndex_);
             continue;
         }
+        if (map->name == "[stack]") {
+            stackBottom_ = static_cast<uintptr_t>(map->begin);
+            stackTop_ = static_cast<uintptr_t>(map->end);
+        }
         if (onlyExec_ && !map->IsMapExec()) {
             continue;
         }
         FormatMapName(pid, map->name);
         if ((!enableMapIndex_) || IsLegalMapItem(map->name, false)) {
             AddMap(map, enableMapIndex_);
-        }
-        if (map->name == "[stack]") {
-            stackBottom_ = (uintptr_t)map->begin;
-            stackTop_ = (uintptr_t)map->end;
         }
     }
     (void)fclose(fp);
