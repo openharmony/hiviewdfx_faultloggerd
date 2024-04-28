@@ -46,7 +46,14 @@ public:
         }
         return ptr.get();
     }
-    ~FpUnwinder() = default;
+    ~FpUnwinder()
+    {
+        if (initPipe_) {
+            close(pfd_[PIPE_WRITE]);
+            close(pfd_[PIPE_READ]);
+            initPipe_ = false;
+        }
+    }
 
     size_t Unwind(uintptr_t pc, uintptr_t fp, uintptr_t* pcs, size_t maxSize, size_t skipFrameNum = 0)
     {
@@ -145,26 +152,6 @@ public:
 #endif
     }
 
-    inline bool InitPipe()
-    {
-        static std::once_flag flag;
-        std::call_once(flag, [&]() {
-            if (!initPipe_ && pipe2(pfd_, O_CLOEXEC | O_NONBLOCK) == 0) {
-                initPipe_ = true;
-            }
-        });
-        return initPipe_;
-    }
-
-    inline void ClosePipe()
-    {
-        if (initPipe_) {
-            close(pfd_[PIPE_WRITE]);
-            close(pfd_[PIPE_READ]);
-            initPipe_ = false;
-        }
-    }
-
 #if defined(ENABLE_MIXSTACK)
     static bool AccessMem(void* ptr, uintptr_t addr, uintptr_t *val)
     {
@@ -178,7 +165,12 @@ public:
 #endif
 
 private:
-    FpUnwinder() = default;
+    FpUnwinder()
+    {
+        if (pipe2(pfd_, O_CLOEXEC | O_NONBLOCK) == 0) {
+            initPipe_ = true;
+        }
+    }
     DISALLOW_COPY_AND_MOVE(FpUnwinder);
 
 #if defined(__has_feature) && __has_feature(address_sanitizer)
@@ -206,8 +198,11 @@ private:
         if (OHOS_TEMP_FAILURE_RETRY(syscall(SYS_write, pfd_[PIPE_WRITE], addr, sizeof(uintptr_t))) == -1) {
             return false;
         }
+
+        uintptr_t dummy;
         value = *reinterpret_cast<uintptr_t *>(addr);
-        return true;
+        return OHOS_TEMP_FAILURE_RETRY(syscall(SYS_read, pfd_[PIPE_READ], &dummy, sizeof(uintptr_t))) ==
+        sizeof(uintptr_t);
     }
 
 private:

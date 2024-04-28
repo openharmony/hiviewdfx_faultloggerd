@@ -128,15 +128,6 @@ LocalThreadContext& LocalThreadContext::GetInstance()
     return instance;
 }
 
-LocalThreadContext::~LocalThreadContext()
-{
-#if defined(__aarch64__)
-    if (FpUnwinder::GetPtr() != nullptr) {
-        FpUnwinder::GetPtr()->ClosePipe();
-    }
-#endif
-}
-
 std::shared_ptr<ThreadContext> LocalThreadContext::GetThreadContext(int32_t tid)
 {
     std::unique_lock<std::mutex> lock(localMutex_);
@@ -246,9 +237,6 @@ void LocalThreadContext::InitSignalHandler()
         LOGU("Install local signal handler: %d", SIGLOCAL_DUMP);
         add_special_signal_handler(SIGLOCAL_DUMP, &sigchain);
     });
-#if defined(__aarch64__)
-    FpUnwinder::GetPtr()->InitPipe();
-#endif
 }
 
 bool LocalThreadContext::SignalRequestThread(int32_t tid, ThreadContext* threadContext)
