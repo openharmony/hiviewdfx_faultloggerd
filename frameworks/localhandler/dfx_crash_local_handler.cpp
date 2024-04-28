@@ -144,6 +144,9 @@ static void ReportToHiview(const char* logPath, const struct ProcessDumpRequest*
 
 void CrashLocalHandlerFd(const int fd, const struct ProcessDumpRequest* request)
 {
+    if (request == nullptr) {
+        return;
+    }
     PrintTimeStamp(fd);
     PrintLog(fd, "Pid:%d\n", request->pid);
     PrintLog(fd, "Uid:%d\n", request->uid);

@@ -31,7 +31,6 @@
 #include "dfx_log.h"
 #include "dfx_util.h"
 #include "faultloggerd_client.h"
-#include "file_util.h"
 #include "procinfo.h"
 
 namespace OHOS {

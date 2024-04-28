@@ -153,7 +153,7 @@ HWTEST_F(DfxMemoryTest, DfxMemoryTest004, TestSize.Level2)
     ASSERT_TRUE(GetSelfStackRange(ctx.stackBottom, ctx.stackTop));
     auto memory = std::make_shared<DfxMemory>(acc);
     memory->SetCtx(&ctx);
-    uintptr_t addr = (uintptr_t)(&values[0]);
+    uintptr_t addr = reinterpret_cast<uintptr_t>(&values[0]);
     uint8_t tmp8;
     ASSERT_TRUE(memory->ReadU8(addr, &tmp8, false));
     ASSERT_EQ(tmp8, 0x01);
@@ -395,7 +395,7 @@ HWTEST_F(DfxMemoryTest, DfxMemoryTest011, TestSize.Level2)
         memory->SetCtx(&ctx);
         uintptr_t addr = (uintptr_t)(&values[0]);
         std::string resultStr;
-        uintptr_t addrStr = (uintptr_t)(&testStr[0]);
+        uintptr_t addrStr = reinterpret_cast<uintptr_t>(&testStr[0]);
         ASSERT_TRUE(memory->ReadString(addrStr, &resultStr, sizeof(testStr)/sizeof(char), false));
         ASSERT_EQ(testStr, resultStr);
         ASSERT_TRUE(memory->ReadString(addrStr, &resultStr, sizeof(testStr)/sizeof(char), true));

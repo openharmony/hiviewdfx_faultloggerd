@@ -226,6 +226,7 @@ HWTEST_F(SignalHandlerTest, SignalHandlerTest004, TestSize.Level2)
     } else if (pid == 0) {
         std::thread (TestThread, 1, SIGILL).join(); // 1 : first thread
         std::thread (TestThread, 2, SIGILL).join(); // 2 : second thread
+        _exit(0);
     } else {
         sleep(2); // 2 : wait for cppcrash generating
         bool ret = CheckThreadCrashKeyWords(GetCppCrashFileName(pid), pid, SIGILL);
@@ -248,6 +249,7 @@ HWTEST_F(SignalHandlerTest, SignalHandlerTest005, TestSize.Level2)
     } else if (pid == 0) {
         std::thread (TestThread, 1, SIGBUS).join(); // 1 : first thread
         std::thread (TestThread, 2, SIGBUS).join(); // 2 : second thread
+        _exit(0);
     } else {
         sleep(2); // 2 : wait for cppcrash generating
         bool ret = CheckThreadCrashKeyWords(GetCppCrashFileName(pid), pid, SIGBUS);
@@ -270,6 +272,7 @@ HWTEST_F(SignalHandlerTest, SignalHandlerTest006, TestSize.Level2)
     } else if (pid == 0) {
         std::thread (TestThread, 1, SIGSEGV).join(); // 1 : first thread
         std::thread (TestThread, 2, SIGSEGV).join(); // 2 : second thread
+        _exit(0);
     } else {
         sleep(2); // 2 : wait for cppcrash generating
         bool ret = CheckThreadCrashKeyWords(GetCppCrashFileName(pid), pid, SIGSEGV);
@@ -354,6 +357,7 @@ HWTEST_F(SignalHandlerTest, SignalHandlerTest008, TestSize.Level2)
         for (auto& thread : threads) {
             thread.join();
         }
+        _exit(0);
     } else {
         sleep(2); // 2 : wait for cppcrash generating
         auto file = GetCppCrashFileName(pid);
@@ -387,6 +391,7 @@ HWTEST_F(SignalHandlerTest, SignalHandlerTest009, TestSize.Level2)
         for (auto& thread : threads) {
             thread.join();
         }
+        _exit(0);
     } else {
         sleep(2); // 2 : wait for cppcrash generating
         auto file = GetCppCrashFileName(pid);
