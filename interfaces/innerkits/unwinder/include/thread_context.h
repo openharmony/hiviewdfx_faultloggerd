@@ -64,7 +64,6 @@ struct ThreadContext {
 class LocalThreadContext {
 public:
     static LocalThreadContext& GetInstance();
-    ~LocalThreadContext();
 
     bool GetStackRange(int32_t tid, uintptr_t& stackBottom, uintptr_t& stackTop);
     std::shared_ptr<ThreadContext> CollectThreadContext(int32_t tid);

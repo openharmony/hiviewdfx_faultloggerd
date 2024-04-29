@@ -198,11 +198,14 @@ std::string DumpOpenFiles(OpenFilesList &files)
     return openFiles;
 }
 
-pid_t ReadVmPid()
+
+void ReadPids(int& realPid, int& vmPid)
 {
-    pid_t vmPid = -1;
-    read(STDIN_FILENO, &vmPid, sizeof(vmPid));
-    return vmPid;
+    pid_t pids[PID_MAX] = {0};
+    OHOS_TEMP_FAILURE_RETRY(read(STDIN_FILENO, pids, sizeof(pids)));
+    realPid = pids[REAL_PROCESS_PID];
+    vmPid = pids[VIRTUAL_PROCESS_PID];
+    DFXLOG_INFO("procecdump get real pid is %d vm pid is %d", realPid, vmPid);
 }
 
 void InfoRemoteProcessResult(std::shared_ptr<ProcessDumpRequest> request, int result, int type)
@@ -263,7 +266,6 @@ void ProcessDumper::Dump()
         }
     }
 
-    InfoRemoteProcessResult(request, OPE_CONTINUE, MAIN_PROCESS);
     std::string jsonInfo;
     if (isJsonDump_ || isCrash_) {
         DfxStackInfoFormatter formatter(process_, request);
@@ -283,6 +285,9 @@ void ProcessDumper::Dump()
         reporter_->SetCppCrashInfo(jsonInfo);
         reporter_->ReportToHiview();
         reporter_->ReportToAbilityManagerService();
+    }
+    if ((request->dumpMode == FUSION_MODE) && isCrash_) {
+        InfoRemoteProcessResult(request, OPE_CONTINUE, MAIN_PROCESS);
     }
 }
 
@@ -308,7 +313,7 @@ std::string GetOpenFiles(int32_t pid, int nsPid, uint64_t fdTableAddr)
     return fds;
 }
 
-void ProcessDumper::InitRegs(std::shared_ptr<ProcessDumpRequest> request, pid_t &vmPid, int &dumpRes)
+void ProcessDumper::InitRegs(std::shared_ptr<ProcessDumpRequest> request, int &dumpRes)
 {
     uint32_t opeResult = OPE_SUCCESS;
     if (request->dumpMode == FUSION_MODE) {
@@ -322,9 +327,6 @@ void ProcessDumper::InitRegs(std::shared_ptr<ProcessDumpRequest> request, pid_t 
         if (process_->keyThread_ != nullptr && !isCrash_) {
             process_->keyThread_->Detach();
         }
-
-        vmPid = ReadVmPid();
-        DFXLOG_INFO("vm process pid = %d", vmPid);
     }
 }
 
@@ -339,6 +341,28 @@ bool ProcessDumper::IsTargetProcessAlive(std::shared_ptr<ProcessDumpRequest> req
             GetTimeMillisec(), CrashExceptionCode::CRASH_DUMP_EKILLED);
         return false;
     }
+    return true;
+}
+
+bool ProcessDumper::Unwind(std::shared_ptr<ProcessDumpRequest> request, int &dumpRes)
+{
+    pid_t realPid = 0;
+    pid_t vmPid = 0;
+    if (request->dumpMode == FUSION_MODE) {
+        ReadPids(realPid, vmPid);
+    }
+
+    if (!InitUnwinder(request, realPid, vmPid)) {
+        DFXLOG_ERROR("%s", "Failed to create unwinder");
+        return false;
+    }
+
+    if (!DfxUnwindRemote::GetInstance().UnwindProcess(request, process_, unwinder_, vmPid)) {
+        DFXLOG_ERROR("%s", "Failed to unwind process.");
+        dumpRes = DumpErrorCode::DUMP_ESTOPUNWIND;
+        return false;
+    }
+
     return true;
 }
 
@@ -380,15 +404,12 @@ int ProcessDumper::DumpProcess(std::shared_ptr<ProcessDumpRequest> request)
             dumpRes = DumpErrorCode::DUMP_EGETFD;
         }
 
-        pid_t vmPid = 0;
-        InitRegs(request, vmPid, dumpRes);
+        InitRegs(request, dumpRes);
         if (isCrash_ && !isLeakDump) {
             reporter_ = std::make_shared<CppCrashReporter>(request->timeStamp, process_);
         }
 
-        if (!DfxUnwindRemote::GetInstance().UnwindProcess(request, process_, unwinder_, vmPid)) {
-            DFXLOG_ERROR("%s", "Failed to unwind process.");
-            dumpRes = DumpErrorCode::DUMP_ESTOPUNWIND;
+        if (!Unwind(request, dumpRes)) {
             opeResult = OPE_FAIL;
         }
         if (request->dumpMode == FUSION_MODE) {
@@ -401,7 +422,7 @@ int ProcessDumper::DumpProcess(std::shared_ptr<ProcessDumpRequest> request)
     return dumpRes;
 }
 
-bool ProcessDumper::InitVmThread(std::shared_ptr<ProcessDumpRequest> request, std::shared_ptr<DfxProcess> process_)
+bool ProcessDumper::InitVmThread(std::shared_ptr<ProcessDumpRequest> request)
 {
     if (request == nullptr || process_ == nullptr) {
         return false;
@@ -425,7 +446,7 @@ bool ProcessDumper::InitVmThread(std::shared_ptr<ProcessDumpRequest> request, st
     return true;
 }
 
-bool ProcessDumper::InitKeyThread(std::shared_ptr<ProcessDumpRequest> request, std::shared_ptr<DfxProcess> process_)
+bool ProcessDumper::InitKeyThread(std::shared_ptr<ProcessDumpRequest> request)
 {
     if (request == nullptr || process_ == nullptr) {
         return false;
@@ -462,6 +483,20 @@ bool ProcessDumper::InitKeyThread(std::shared_ptr<ProcessDumpRequest> request, s
     return true;
 }
 
+bool ProcessDumper::InitUnwinder(std::shared_ptr<ProcessDumpRequest> request, pid_t vmPid, pid_t realPid)
+{
+    if (request->dumpMode == FUSION_MODE) {
+        unwinder_ = std::make_shared<Unwinder>(vmPid,  realPid, isCrash_);
+    } else {
+        if (isCrash_) {
+            unwinder_ = std::make_shared<Unwinder>(process_->vmThread_->threadInfo_.pid);
+        } else {
+            unwinder_ = std::make_shared<Unwinder>(process_->processInfo_.pid, false);
+        }
+    }
+    return unwinder_ != nullptr;
+}
+
 int ProcessDumper::InitProcessInfo(std::shared_ptr<ProcessDumpRequest> request)
 {
     if (request->pid <= 0) {
@@ -477,12 +512,12 @@ int ProcessDumper::InitProcessInfo(std::shared_ptr<ProcessDumpRequest> request)
     process_->processInfo_.uid = request->uid;
     process_->recycleTid_ = request->recycleTid;
     process_->SetFatalMessage(request->lastFatalMessage);
-    
-    if (!InitVmThread(request, process_)) {
+
+    if (!InitVmThread(request)) {
         return -1;
     }
 
-    if (!InitKeyThread(request, process_)) {
+    if (!InitKeyThread(request)) {
         return -1;
     }
 
@@ -496,15 +531,6 @@ int ProcessDumper::InitProcessInfo(std::shared_ptr<ProcessDumpRequest> request)
                 process_->Attach();
             }
         }
-    }
-    if ((request->dumpMode == SPLIT_MODE) && isCrash_) {
-        unwinder_ = std::make_shared<Unwinder>(process_->vmThread_->threadInfo_.pid);
-    } else {
-        unwinder_ = std::make_shared<Unwinder>(process_->processInfo_.pid, isCrash_);
-    }
-    if (unwinder_ == nullptr) {
-        DFXLOG_ERROR("%s", "Failed to create unwinder?");
-        return -1;
     }
 #if defined(PROCESSDUMP_MINIDEBUGINFO)
     UnwinderConfig::SetEnableMiniDebugInfo(true);
@@ -613,7 +639,10 @@ void ProcessDumper::WriteDumpRes(int32_t res)
 {
     DFXLOG_INFO("%s :: res: %d", __func__, res);
     if (resFd_ > 0) {
-        write(resFd_, &res, sizeof(res));
+        ssize_t nwrite = OHOS_TEMP_FAILURE_RETRY(write(resFd_, &res, sizeof(res)));
+        if (nwrite < 0) {
+            DFXLOG_ERROR("%s write fail, err:%d", __func__, errno);
+        }
         close(resFd_);
         resFd_ = -1;
     } else {

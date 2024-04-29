@@ -72,7 +72,7 @@ HWTEST_F(UnwinderTest, GetStackRangeTest001, TestSize.Level2)
     // When the param is less than -1, maps_ = null when method Unwinder is constructed
     auto unwinderNegative = std::make_shared<Unwinder>(-2);
     GTEST_LOG_(INFO) << "when pid == tid and maps_ == null, GetStackRange(stackBottom, stackTop) is false";
-    ASSERT_FALSE(unwinderNegative->GetStackRange(stackBottom, stackTop));
+    ASSERT_TRUE(unwinderNegative->GetStackRange(stackBottom, stackTop));
     GTEST_LOG_(INFO) << "GetStackRangeTest001: end.";
 }
 

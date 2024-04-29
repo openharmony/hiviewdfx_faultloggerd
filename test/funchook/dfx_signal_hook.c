@@ -99,7 +99,6 @@ int sigprocmask(int how, const sigset_t *restrict set, sigset_t *restrict oldset
             if (sigismember(set, i) && (IsPlatformHandleSignal(i)) &&
                 ((how == SIG_BLOCK) || (how == SIG_SETMASK))) {
                 LOGI("%d:%d sigprocmask signal(%d)\n", getpid(), gettid(), i);
-                LogBacktrace();
             }
         }
     }

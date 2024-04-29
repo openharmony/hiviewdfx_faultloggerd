@@ -63,8 +63,7 @@ static void InitAsyncStackInner(void)
 
 static bool InitAsyncStack(void)
 {
-    if (!(OHOS::HiviewDFX::DfxParam::EnableMixstack() && OHOS::HiviewDFX::DfxParam::EnableMixstack())) {
-        LOGE("%s", "async stack is not enable.");
+    if (!(OHOS::HiviewDFX::DfxParam::EnableBeta() && OHOS::HiviewDFX::DfxParam::EnableAsyncStack())) {
         return false;
     }
     static once_flag onceFlag = ONCE_FLAG_INIT;
@@ -76,7 +75,6 @@ extern "C" uint64_t CollectAsyncStack(void)
 {
 #if defined(__aarch64__)
     if (!InitAsyncStack()) {
-        LOGE("%s", "failed to init async stack.");
         return 0;
     }
     const int32_t maxSize = 32;

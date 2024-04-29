@@ -31,7 +31,6 @@
 #include "dfx_log.h"
 #include "dfx_util.h"
 #include "faultloggerd_client.h"
-#include "file_util.h"
 #include "procinfo.h"
 
 namespace OHOS {
@@ -64,7 +63,7 @@ bool DfxDumpCatcher::DoDumpCurrTid(const size_t skipFrameNum, std::string& msg, 
 {
     bool ret = false;
 
-    ret = GetBacktrace(msg, false, maxFrameNums);
+    ret = GetBacktrace(msg, skipFrameNum + 1, false, maxFrameNums);
     if (!ret) {
         int currTid = getproctid();
         msg.append("Failed to dump curr thread:" + std::to_string(currTid) + ".\n");
@@ -312,6 +311,7 @@ int DfxDumpCatcher::DoDumpRemotePoll(int bufFd, int resFd, int timeout, std::str
 
             if (readfds[i].fd == bufFd) {
                 bufRet = DoReadBuf(bufFd, bufMsg);
+                continue;
             }
 
             if (readfds[i].fd == resFd) {
@@ -360,7 +360,7 @@ bool DfxDumpCatcher::DoReadBuf(int fd, std::string& msg)
 bool DfxDumpCatcher::DoReadRes(int fd, bool &ret, std::string& msg)
 {
     int32_t res = DumpErrorCode::DUMP_ESUCCESS;
-    ssize_t nread = read(fd, &res, sizeof(res));
+    ssize_t nread = OHOS_TEMP_FAILURE_RETRY(read(fd, &res, sizeof(res)));
     if (nread != sizeof(res)) {
         DFXLOG_WARN("%s :: %s :: read error", DFXDUMPCATCHER_TAG.c_str(), __func__);
         return false;

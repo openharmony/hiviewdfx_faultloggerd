@@ -53,6 +53,12 @@ enum RemoteProcessType : int32_t {
     VIRTUAL_PROCESS
 };
 
+enum PidType : int32_t {
+    REAL_PROCESS_PID,
+    VIRTUAL_PROCESS_PID,
+    PID_MAX,
+};
+
 /**
  * @brief Process trace information
  * keep sync with the definition in hitracec.h

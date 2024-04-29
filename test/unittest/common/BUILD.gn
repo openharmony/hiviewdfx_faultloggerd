@@ -88,11 +88,16 @@ if (defined(ohos_lite)) {
     sources = [ "param_test.cpp" ]
     configs = [ ":module_private_config" ]
 
+    defines = [ "ENABLE_PARAMETER" ]
+
     deps = [
       "//third_party/googletest:gmock_main",
       "//third_party/googletest:gtest_main",
     ]
-    external_deps = [ "c_utils:utils" ]
+    external_deps = [
+      "c_utils:utils",
+      "init:libbegetutil",
+    ]
   }
 
   group("unittest") {

@@ -42,7 +42,15 @@ namespace {
 bool GetBacktraceFramesByTid(std::vector<DfxFrame>& frames, int32_t tid, size_t skipFrameNum, bool fast,
                              size_t maxFrameNums)
 {
-    auto unwinder = std::make_shared<Unwinder>();
+    std::shared_ptr<Unwinder> unwinder = nullptr;
+#ifdef __aarch64__
+    if (fast || (tid != BACKTRACE_CURRENT_THREAD)) {
+        unwinder = std::make_shared<Unwinder>(false);
+    }
+#endif
+    if (unwinder == nullptr) {
+        unwinder = std::make_shared<Unwinder>();
+    }
     BacktraceLocalThread thread(tid, unwinder);
     bool ret = thread.Unwind(fast, maxFrameNums, skipFrameNum + 1);
     frames = thread.GetFrames();
@@ -84,6 +92,12 @@ bool GetBacktrace(std::string& out, bool fast, size_t maxFrameNums)
     return GetBacktraceStringByTid(out, BACKTRACE_CURRENT_THREAD, 1, fast, maxFrameNums); // 1: skip current frame
 }
 
+bool GetBacktrace(std::string& out, size_t skipFrameNum, bool fast, size_t maxFrameNums)
+{
+    DFXLOG_INFO("%s", "Receive GetBacktrace request.");
+    return GetBacktraceStringByTid(out, BACKTRACE_CURRENT_THREAD, skipFrameNum + 1, fast, maxFrameNums);
+}
+
 bool PrintTrace(int32_t fd, size_t maxFrameNums)
 {
     return PrintBacktrace(fd, false, maxFrameNums);
@@ -93,7 +107,7 @@ const char* GetTrace(size_t skipFrameNum, size_t maxFrameNums)
 {
     static std::string trace;
     trace.clear();
-    if (!GetBacktrace(trace, false, maxFrameNums)) {
+    if (!GetBacktrace(trace, skipFrameNum, false, maxFrameNums)) {
         DFXLOG_ERROR("%s", "Failed to get trace string");
     }
     return trace.c_str();
