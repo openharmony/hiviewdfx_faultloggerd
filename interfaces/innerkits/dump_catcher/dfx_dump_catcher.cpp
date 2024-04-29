@@ -65,7 +65,7 @@ bool DfxDumpCatcher::DoDumpCurrTid(const size_t skipFrameNum, std::string& msg, 
 {
     bool ret = false;
 
-    ret = GetBacktrace(msg, false, maxFrameNums);
+    ret = GetBacktrace(msg, skipFrameNum + 1, false, maxFrameNums);
     if (!ret) {
         int currTid = getproctid();
         msg.append("Failed to dump curr thread:" + std::to_string(currTid) + ".\n");

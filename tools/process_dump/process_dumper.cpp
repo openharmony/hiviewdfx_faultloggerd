@@ -421,7 +421,7 @@ int ProcessDumper::DumpProcess(std::shared_ptr<ProcessDumpRequest> request)
     return dumpRes;
 }
 
-bool ProcessDumper::InitVmThread(std::shared_ptr<ProcessDumpRequest> request, std::shared_ptr<DfxProcess> process_)
+bool ProcessDumper::InitVmThread(std::shared_ptr<ProcessDumpRequest> request)
 {
     if (request == nullptr || process_ == nullptr) {
         return false;
@@ -445,7 +445,7 @@ bool ProcessDumper::InitVmThread(std::shared_ptr<ProcessDumpRequest> request, st
     return true;
 }
 
-bool ProcessDumper::InitKeyThread(std::shared_ptr<ProcessDumpRequest> request, std::shared_ptr<DfxProcess> process_)
+bool ProcessDumper::InitKeyThread(std::shared_ptr<ProcessDumpRequest> request)
 {
     if (request == nullptr || process_ == nullptr) {
         return false;
@@ -512,11 +512,11 @@ int ProcessDumper::InitProcessInfo(std::shared_ptr<ProcessDumpRequest> request)
     process_->recycleTid_ = request->recycleTid;
     process_->SetFatalMessage(request->lastFatalMessage);
 
-    if (!InitVmThread(request, process_)) {
+    if (!InitVmThread(request)) {
         return -1;
     }
 
-    if (!InitKeyThread(request, process_)) {
+    if (!InitKeyThread(request)) {
         return -1;
     }
 

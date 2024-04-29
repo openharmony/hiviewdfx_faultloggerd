@@ -27,7 +27,7 @@ namespace {
 const int MAX_FILE_LENGTH = 32 * 1024 * 1024;
 }
 
-inline bool LoadStringFromFile(const std::string& filePath, std::string& content)
+static bool LoadStringFromFile(const std::string& filePath, std::string& content)
 {
     std::ifstream file(filePath.c_str());
     if (!file.is_open()) {
