@@ -238,6 +238,7 @@ ProcessDumper &ProcessDumper::GetInstance()
 
 void ProcessDumper::Dump()
 {
+    startTime_ = GetTimeMillisec();
     std::shared_ptr<ProcessDumpRequest> request = std::make_shared<ProcessDumpRequest>();
     std::future<int> future = std::async(std::launch::async, &ProcessDumper::DumpProcess, &GetInstance(), request);
     std::future_status status = future.wait_for(std::chrono::seconds(DUMPPROCESS_MAX_SECOND));
@@ -276,16 +277,14 @@ void ProcessDumper::Dump()
         }
     }
 
+    finishTime_ = GetTimeMillisec();
+    ReportSigDumpStats(request);
+
     WriteDumpRes(resDump_);
     DfxRingBufferWrapper::GetInstance().StopThread();
     DFXLOG_INFO("Finish dump stacktrace for %s(%d:%d).", request->processName, request->pid, request->tid);
     CloseDebugLog();
-    // check dump result
-    if (reporter_ != nullptr) {
-        reporter_->SetCppCrashInfo(jsonInfo);
-        reporter_->ReportToHiview();
-        reporter_->ReportToAbilityManagerService();
-    }
+    ReportCrashInfo(jsonInfo);
     if ((request->dumpMode == FUSION_MODE) && isCrash_) {
         InfoRemoteProcessResult(request, OPE_CONTINUE, MAIN_PROCESS);
     }
@@ -656,6 +655,37 @@ void ProcessDumper::WriteDumpRes(int32_t res)
 bool ProcessDumper::IsCrash() const
 {
     return isCrash_;
+}
+
+void ProcessDumper::ReportSigDumpStats(std::shared_ptr<ProcessDumpRequest> request)
+{
+    if (isCrash_) {
+        return;
+    }
+
+    std::vector<uint8_t> buf(sizeof(struct FaultLoggerdStatsRequest), 0);
+    auto stat = reinterpret_cast<struct FaultLoggerdStatsRequest*>(buf.data());
+    stat->type = PROCESS_DUMP;
+    stat->pid = request->pid;
+    stat->signalTime = request->timeStamp;
+    stat->processdumpStartTime = startTime_;
+    stat->processdumpFinishTime = finishTime_;
+    if (memcpy_s(stat->targetProcess, sizeof(stat->targetProcess),
+        request->processName, sizeof(request->processName)) != 0) {
+        DFXLOG_ERROR("Failed to copy target processName (%d)", errno);
+        return;
+    }
+
+    ReportDumpStats(stat);
+}
+
+void ProcessDumper::ReportCrashInfo(const std::string& jsonInfo)
+{
+    if (reporter_ != nullptr) {
+        reporter_->SetCppCrashInfo(jsonInfo);
+        reporter_->ReportToHiview();
+        reporter_->ReportToAbilityManagerService();
+    }
 }
 } // namespace HiviewDFX
 } // namespace OHOS

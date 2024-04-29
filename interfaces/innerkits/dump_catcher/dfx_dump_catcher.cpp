@@ -19,6 +19,7 @@
 #include <memory>
 #include <vector>
 
+#include <dlfcn.h>
 #include <poll.h>
 #include <sys/syscall.h>
 #include <sys/types.h>
@@ -31,6 +32,7 @@
 #include "dfx_log.h"
 #include "dfx_util.h"
 #include "faultloggerd_client.h"
+#include "file_ex.h"
 #include "procinfo.h"
 
 namespace OHOS {
@@ -146,6 +148,48 @@ bool DfxDumpCatcher::DumpCatchMix(int pid, int tid, std::string& msg)
     return DoDumpCatchRemote(pid, tid, msg);
 }
 
+static void ReportDumpCatcherStats(int32_t pid,
+    uint64_t requestTime, bool ret, std::string& msg, void* retAddr)
+{
+    std::vector<uint8_t> buf(sizeof(struct FaultLoggerdStatsRequest), 0);
+    auto stat = reinterpret_cast<struct FaultLoggerdStatsRequest*>(buf.data());
+    stat->type = DUMP_CATCHER;
+    stat->pid = pid;
+    stat->requestTime = requestTime;
+    stat->dumpCatcherFinishTime = GetTimeMilliSeconds();
+    stat->result = ret ? 0 : -1; // we need more detailed failure info
+    size_t copyLen = 0;
+    if (!ret) {
+        copyLen = std::min(sizeof(stat->summary) - 1, msg.size());
+        if (memcpy_s(stat->summary, sizeof(stat->summary) - 1, msg.c_str(), copyLen) != 0) {
+            DFXLOG_ERROR("%s::Failed to copy dumpcatcher summary", DFXDUMPCATCHER_TAG.c_str());
+            return;
+        }
+    }
+
+    Dl_info info;
+    if (dladdr(retAddr, &info) != 0) {
+        copyLen = std::min(sizeof(stat->callerElf) - 1, strlen(info.dli_fname));
+        if (memcpy_s(stat->callerElf, sizeof(stat->callerElf) - 1, info.dli_fname, copyLen) != 0) {
+            DFXLOG_ERROR("%s::Failed to copy caller elf info", DFXDUMPCATCHER_TAG.c_str());
+            return;
+        }
+        stat->offset = reinterpret_cast<uintptr_t>(retAddr) - reinterpret_cast<uintptr_t>(info.dli_fbase);
+    }
+
+    std::string cmdline;
+    if (OHOS::LoadStringFromFile("/proc/self/cmdline", cmdline)) {
+        copyLen = std::min(sizeof(stat->callerProcess) - 1, cmdline.size());
+        if (memcpy_s(stat->callerProcess, sizeof(stat->callerProcess) - 1,
+            cmdline.c_str(), copyLen) != 0) {
+            DFXLOG_ERROR("%s::Failed to copy caller cmdline", DFXDUMPCATCHER_TAG.c_str());
+            return;
+        }
+    }
+
+    ReportDumpStats(stat);
+}
+
 bool DfxDumpCatcher::DumpCatch(int pid, int tid, std::string& msg, size_t maxFrameNums, bool isJson)
 {
     bool ret = false;
@@ -156,6 +200,8 @@ bool DfxDumpCatcher::DumpCatch(int pid, int tid, std::string& msg, size_t maxFra
 
     std::unique_lock<std::mutex> lck(mutex_);
     int currentPid = getprocpid();
+    bool reportStat = false;
+    uint64_t requestTime = GetTimeMilliSeconds();
     DFXLOG_INFO("Receive DumpCatch request for cPid:(%d), pid(%d), tid:(%d).", currentPid, pid, tid);
     if (pid == currentPid) {
         ret = DoDumpLocalLocked(pid, tid, msg, maxFrameNums);
@@ -164,8 +210,10 @@ bool DfxDumpCatcher::DumpCatch(int pid, int tid, std::string& msg, size_t maxFra
             DFXLOG_INFO("%s :: dump_catch :: maxFrameNums does not support setting when pid is not equal to caller pid",
                 DFXDUMPCATCHER_TAG.c_str());
         }
+        reportStat = true;
         ret = DoDumpRemoteLocked(pid, tid, msg, isJson);
     }
+
     if (ret && isJson && !IsValidJson(msg)) {
         DFXLOG_INFO("%s :: dump_catch :: json stack info is invalid, try to dump stack again.",
             DFXDUMPCATCHER_TAG.c_str());
@@ -173,9 +221,16 @@ bool DfxDumpCatcher::DumpCatch(int pid, int tid, std::string& msg, size_t maxFra
         if (pid == currentPid) {
             ret = DoDumpLocalLocked(pid, tid, msg, maxFrameNums);
         } else {
+            reportStat = true;
             ret = DoDumpRemoteLocked(pid, tid, msg, false);
         }
     }
+
+    if (reportStat) {
+        void* retAddr = __builtin_return_address(0);
+        ReportDumpCatcherStats(pid, requestTime, ret, msg, retAddr);
+    }
+
     DFXLOG_INFO("%s :: dump_catch :: msgLength: %zu",  DFXDUMPCATCHER_TAG.c_str(), msg.size());
     DFXLOG_DEBUG("%s :: dump_catch :: ret: %d, msg: %s", DFXDUMPCATCHER_TAG.c_str(), ret, msg.c_str());
     return ret;

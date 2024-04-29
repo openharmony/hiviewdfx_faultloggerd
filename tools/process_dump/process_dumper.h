@@ -51,6 +51,8 @@ private:
     bool InitVmThread(std::shared_ptr<ProcessDumpRequest> request);
     bool InitUnwinder(std::shared_ptr<ProcessDumpRequest> request, pid_t vmPid, pid_t realPid);
     static int GetLogTypeBySignal(int sig);
+    void ReportSigDumpStats(std::shared_ptr<ProcessDumpRequest> request);
+    void ReportCrashInfo(const std::string& jsonInfo);
 
 private:
     std::shared_ptr<DfxProcess> process_ = nullptr;
@@ -62,6 +64,9 @@ private:
     int32_t resFd_ = -1;
     int32_t jsonFd_ = -1;
     int32_t resDump_ = 0;
+
+    uint64_t startTime_ = 0;
+    uint64_t finishTime_ = 0;
 
     void InitRegs(std::shared_ptr<ProcessDumpRequest> request, int &dumpRes);
     bool IsTargetProcessAlive(std::shared_ptr<ProcessDumpRequest> request, int &dummRes);
