@@ -188,7 +188,7 @@ bool Unwinder::UnwindLocalWithTid(const pid_t tid, size_t maxFrameNum, size_t sk
     }
     uintptr_t stackBottom = 1;
     uintptr_t stackTop = static_cast<uintptr_t>(-1);
-    if (tid == getprocpid()) {
+    if (tid == getpid()) {
         if (!GetMainStackRangeInner(stackBottom, stackTop)) {
             return false;
         }
