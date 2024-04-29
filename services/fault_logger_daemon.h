@@ -17,11 +17,26 @@
 
 #include <cinttypes>
 #include <map>
+#include <string>
 
 #include "faultloggerd_client.h"
 
 namespace OHOS {
 namespace HiviewDFX {
+class DumpStats {
+public:
+    int32_t pid;
+    uint64_t requestTime;
+    uint64_t signalTime;
+    uint64_t processdumpStartTime;
+    uint64_t processdumpFinishTime;
+    uint64_t dumpCatcherFinishTime;
+    int32_t result;
+    std::string summary;
+    std::string callerProcessName;
+    std::string callerElfName;
+    std::string targetProcessName;
+};
 class FaultLoggerDaemon {
 public:
     FaultLoggerDaemon();
@@ -58,6 +73,9 @@ private:
     void CleanupSockets();
     void WaitForRequest();
     void CleanupEventFd();
+    void HandleDumpStats(int32_t connectionFd, FaultLoggerdStatsRequest* request);
+    void RemoveTimeoutDumpStats();
+    void ReportDumpStats(const DumpStats& stat);
 
 private:
     int32_t defaultSocketFd_ = -1;
@@ -66,6 +84,7 @@ private:
     int32_t eventFd_ = -1;
     std::map<int32_t, int32_t> connectionMap_;
     std::map<int32_t, int64_t> crashTimeMap_;
+    std::vector<DumpStats> stats_;
 };
 } // namespace HiviewDFX
 } // namespace OHOS

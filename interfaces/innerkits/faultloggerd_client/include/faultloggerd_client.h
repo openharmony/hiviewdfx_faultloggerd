@@ -94,6 +94,11 @@ int RequestSdkDump(int32_t pid, int32_t tid);
 */
 int RequestSdkDumpJson(int32_t pid, int32_t tid, bool isJson);
 
+/**
+ * @brief report sdk dump result to faultloggerd for stats collection
+ * @param request dump request result
+*/
+int ReportDumpStats(const struct FaultLoggerdStatsRequest *request);
 #ifdef __cplusplus
 }
 #endif

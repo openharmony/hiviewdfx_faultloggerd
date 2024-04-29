@@ -167,14 +167,16 @@ int DfxArk::ParseArkFrameInfo(uintptr_t byteCodePc, uintptr_t methodid, uintptr_
     uint8_t *data, uint64_t dataSize, uintptr_t extractorPtr, JsFunction *jsFunction)
 {
     if (g_parseArkFrameInfoFn != nullptr) {
-        return g_parseArkFrameInfoFn(byteCodePc, methodid, mapBase, loadOffset, data, dataSize, extractorPtr, jsFunction);
+        return g_parseArkFrameInfoFn(byteCodePc, methodid, mapBase, loadOffset, data, dataSize,
+            extractorPtr, jsFunction);
     }
 
     const char* arkFuncName = "ark_parse_js_frame_info";
     DLSYM_ARK_FUNC(arkFuncName, g_parseArkFrameInfoFn)
 
     if (g_parseArkFrameInfoFn != nullptr) {
-        return g_parseArkFrameInfoFn(byteCodePc, methodid, mapBase, loadOffset, data, dataSize, extractorPtr, jsFunction);
+        return g_parseArkFrameInfoFn(byteCodePc, methodid, mapBase, loadOffset, data, dataSize,
+            extractorPtr, jsFunction);
     }
     return -1;
 }

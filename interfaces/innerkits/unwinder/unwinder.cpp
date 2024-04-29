@@ -21,7 +21,6 @@
 #include "dfx_ark.h"
 #include "dfx_define.h"
 #include "dfx_errors.h"
-#include "dfx_extractor_utils.h"
 #include "dfx_frame_formatter.h"
 #include "dfx_hap.h"
 #include "dfx_instructions.h"
@@ -124,6 +123,9 @@ void Unwinder::Destroy()
 {
     Clear();
     rsCache_.clear();
+    if (pid_ == UNWIND_TYPE_LOCAL) {
+        LocalThreadContext::GetInstance().CleanUp();
+    }
 }
 
 bool Unwinder::CheckAndReset(void* ctx)
@@ -159,6 +161,12 @@ bool Unwinder::UnwindLocalWithTid(const pid_t tid, size_t maxFrameNum, size_t sk
         LOGE("params is nullptr, tid: %d", tid);
         return false;
     }
+    char path[PATH_LEN] = {0};
+    if ((snprintf_s(path, sizeof(path), sizeof(path) - 1, "/proc/self/task/%d", tid) <= 0) ||
+        (access(path, F_OK) != 0)) {
+        LOGE("tid(%d) is not in current pid", tid);
+        return false;
+    }
     LOGI("UnwindLocalWithTid:: tid: %d", tid);
     auto threadContext = LocalThreadContext::GetInstance().CollectThreadContext(tid);
 #if defined(__aarch64__)
@@ -183,7 +191,7 @@ bool Unwinder::UnwindLocalWithTid(const pid_t tid, size_t maxFrameNum, size_t sk
     }
     uintptr_t stackBottom = 1;
     uintptr_t stackTop = static_cast<uintptr_t>(-1);
-    if (tid == getprocpid()) {
+    if (tid == getpid()) {
         if (!GetMainStackRangeInner(stackBottom, stackTop)) {
             return false;
         }
@@ -338,7 +346,9 @@ bool Unwinder::StepArkJsFrame(StepFrame& frame)
         LOGE("%s", "Failed to step ark frame");
         return false;
     }
-    LOGI("---ark js frame methodid: %" PRIx64 "", (uint64_t)frame.methodid);
+    if (pid_ > 0) {
+        LOGI("---ark js frame methodid: %" PRIx64 "", (uint64_t)frame.methodid);
+    }
 #endif
     if (pid_ != UNWIND_TYPE_CUSTOMIZE) {
         LOGI("---ark pc: %p, fp: %p, sp: %p, isJsFrame: %d.", reinterpret_cast<void *>(frame.pc),
@@ -749,7 +759,9 @@ void Unwinder::AddFrame(const StepFrame& frame, std::shared_ptr<DfxMap> map)
     dfxFrame.pc = static_cast<uint64_t>(frame.pc);
     dfxFrame.sp = static_cast<uint64_t>(frame.sp);
 #if defined(OFFLINE_MIXSTACK)
-    dfxFrame.funcOffset = static_cast<uint64_t>(frame.methodid);
+    if (frame.isJsFrame) {
+        dfxFrame.funcOffset = static_cast<uint64_t>(frame.methodid);
+    }
 #endif
     dfxFrame.map = map;
     frames_.emplace_back(dfxFrame);
@@ -836,6 +848,7 @@ void Unwinder::FillJsFrame(DfxFrame& frame)
                 reinterpret_cast<void *>(frame.pc), reinterpret_cast<void *>(frame.map->begin));
             return;
         }
+        frame.isJsFrame = true;
     } else {
         if (!hap->ParseHapInfo(pid_, frame.pc, static_cast<uintptr_t>(frame.funcOffset), frame.map, &jsFunction)) {
             LOGW("Failed to parse hap info, pid: %d", pid_);
