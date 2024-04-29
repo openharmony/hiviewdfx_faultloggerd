@@ -540,10 +540,10 @@ void FaultLoggerDaemon::HandleSdkDumpRequest(int32_t connectionFd, FaultLoggerdR
             .si_signo = SIGDUMP,
             .si_errno = 0,
             .si_code = request->sigCode,
-            .si_value.sival_int = request->tid,
             .si_pid = request->callerPid,
             .si_uid = static_cast<uid_t>(request->callerTid)
         };
+        si.si_value.sival_int = request->tid; // Initialize the assignment will be a C99 alarm
 #pragma clang diagnostic pop
         int32_t reqTid = 0;
         if (request->tid == 0) {

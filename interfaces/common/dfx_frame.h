@@ -59,8 +59,6 @@ struct DfxFrame {
     int32_t line {0};
     /** Js frame code column */
     int32_t column {0};
-    /** Js frame methodid */
-    uintptr_t methodid {0};
 
     DfxFrame() {}
     DfxFrame(uint64_t pc, uint64_t sp = 0) : pc(pc), sp(sp) {}

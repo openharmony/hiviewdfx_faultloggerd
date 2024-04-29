@@ -31,7 +31,6 @@
 #include "dfx_log.h"
 #include "dfx_util.h"
 #include "faultloggerd_client.h"
-#include "file_util.h"
 #include "procinfo.h"
 
 namespace OHOS {
@@ -64,7 +63,7 @@ bool DfxDumpCatcher::DoDumpCurrTid(const size_t skipFrameNum, std::string& msg, 
 {
     bool ret = false;
 
-    ret = GetBacktrace(msg, false, maxFrameNums);
+    ret = GetBacktrace(msg, skipFrameNum + 1, false, maxFrameNums);
     if (!ret) {
         int currTid = getproctid();
         msg.append("Failed to dump curr thread:" + std::to_string(currTid) + ".\n");

@@ -122,11 +122,6 @@ void Unwinder::Clear()
 
 void Unwinder::Destroy()
 {
-#if defined(OFFLINE_MIXSTACK)
-    if ((pid_ == UNWIND_TYPE_LOCAL) || (pid_ == UNWIND_TYPE_CUSTOMIZE_LOCAL)) {
-        DfxArk::ArkDestoryLocal();
-    }
-#endif
     Clear();
     rsCache_.clear();
 }
@@ -312,7 +307,7 @@ bool Unwinder::StepArkJsFrame(StepFrame& frame)
     if (pid_ == UNWIND_TYPE_LOCAL) {
         pid = getpid();
     }
-    if (DfxArk::GetArkNativeFrameInfo(pid, frame.pc, frame.fp, frame.sp, frame.jsFrames, size) < 0) {
+    if (DfxArk::GetArkNativeFrameInfo(pid, frame.pc, frame.fp, frame.sp, jsFrames, size) < 0) {
         LOGE("%s", "Failed to get ark frame info");
         return false;
     }
@@ -486,7 +481,7 @@ bool Unwinder::FpStep(uintptr_t& fp, uintptr_t& pc, void *ctx)
 
 bool Unwinder::Step(uintptr_t& pc, uintptr_t& sp, void *ctx)
 {
-    if ((regs_  == nullptr) || (!CheckAndReset(ctx))) {
+    if ((regs_ == nullptr) || (!CheckAndReset(ctx))) {
         LOGE("%s", "params is nullptr?");
         return false;
     }
@@ -531,17 +526,20 @@ bool Unwinder::StepInner(const bool isSigFrame, StepFrame& frame, void *ctx)
         return true;
     }
 
+    bool ret = false;
+    std::shared_ptr<RegLocState> rs = nullptr;
+    do {
 #if defined(ENABLE_MIXSTACK)
-    if (enableMixstack_) {
-        if (map != nullptr && map->IsArkExecutable() && stopWhenArkFrame_) {
+        if (stopWhenArkFrame_ && (map != nullptr && map->IsArkExecutable())) {
             LOGU("Stop by ark frame");
             return false;
         }
-        if (map != nullptr && map->IsArkExecutable() || frame.isJsFrame) {
+        if ((enableMixstack_) && (map != nullptr && map->IsArkExecutable() || frame.isJsFrame)) {
             if (!StepArkJsFrame(frame)) {
                 LOGE("Failed to step ark Js frame, pc: %p", reinterpret_cast<void *>(frame.pc));
                 lastErrorData_.SetAddrAndCode(frame.pc, UNW_ERROR_STEP_ARK_FRAME);
-                return false;
+                ret = false;
+                break;
             }
             regs_->SetPc(frame.pc);
             regs_->SetSp(frame.sp);
@@ -550,12 +548,7 @@ bool Unwinder::StepInner(const bool isSigFrame, StepFrame& frame, void *ctx)
             return true;
 #endif
         }
-    }
 #endif
-
-    bool ret = false;
-    std::shared_ptr<RegLocState> rs = nullptr;
-    do {
         if (isFpStep_) {
             if (enableFpCheckMapExec_ && (map != nullptr && !map->IsMapExec())) {
                 LOGE("%s", "Fp step check map is not exec");
@@ -755,7 +748,9 @@ void Unwinder::AddFrame(const StepFrame& frame, std::shared_ptr<DfxMap> map)
     dfxFrame.index = frames_.size();
     dfxFrame.pc = static_cast<uint64_t>(frame.pc);
     dfxFrame.sp = static_cast<uint64_t>(frame.sp);
-    dfxFrame.methodid = frame.methodid;
+#if defined(OFFLINE_MIXSTACK)
+    dfxFrame.funcOffset = static_cast<uint64_t>(frame.methodid);
+#endif
     dfxFrame.map = map;
     frames_.emplace_back(dfxFrame);
 }
@@ -842,14 +837,14 @@ void Unwinder::FillJsFrame(DfxFrame& frame)
             return;
         }
     } else {
-        if (!hap->ParseHapInfo(pid_, frame.pc, frame.methodid, frame.map, &jsFunction)) {
+        if (!hap->ParseHapInfo(pid_, frame.pc, static_cast<uintptr_t>(frame.funcOffset), frame.map, &jsFunction)) {
             LOGW("Failed to parse hap info, pid: %d", pid_);
             return;
         }
     }
     frame.mapName = std::string(jsFunction.url);
     frame.funcName = std::string(jsFunction.functionName);
-    frame.line = jsFunction.line;
+    frame.line = static_cast<int32_t>(jsFunction.line);
     frame.column = jsFunction.column;
     LOGU("Js frame mapName: %s, funcName: %s, line: %d, column: %d",
         frame.mapName.c_str(), frame.funcName.c_str(), frame.line, frame.column);

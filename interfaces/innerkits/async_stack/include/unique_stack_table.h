@@ -139,7 +139,7 @@ private:
     void* tableBufMMap_ = nullptr;
     uint32_t tableSize_ = INITIAL_TABLE_SIZE;
     std::vector<uint32_t> usedSlots_;
-    uint32_t totalNodes_;
+    uint32_t totalNodes_ = 0;
     // current available node count, include index 0
     uint32_t availableNodes_ = 0;
     uint32_t hashModulus_ = 0;
