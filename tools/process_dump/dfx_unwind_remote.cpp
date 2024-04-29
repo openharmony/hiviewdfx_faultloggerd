@@ -122,8 +122,7 @@ void DfxUnwindRemote::UnwindKeyThread(std::shared_ptr<ProcessDumpRequest> reques
     if (!unwindAsyncThread->tip.empty()) {
         if (ProcessDumper::GetInstance().IsCrash()) {
             ReportCrashException(process->processInfo_.processName, process->processInfo_.pid,
-                                 process->processInfo_.uid, GetTimeMillisec(),
-                                 CrashExceptionCode::CRASH_UNWIND_ESTACK);
+                                 process->processInfo_.uid, CrashExceptionCode::CRASH_UNWIND_ESTACK);
         }
     }
     process->SetFatalMessage(fatalMsg);

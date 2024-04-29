@@ -296,7 +296,7 @@ static int32_t ReadRequestAndCheck(std::shared_ptr<ProcessDumpRequest> request)
     if (readCount != static_cast<long>(sizeof(ProcessDumpRequest))) {
         DFXLOG_ERROR("Failed to read DumpRequest(%d).", errno);
         ReportCrashException(request->processName, request->pid, request->uid,
-                             GetTimeMillisec(), CrashExceptionCode::CRASH_DUMP_EREADREQ);
+                             CrashExceptionCode::CRASH_DUMP_EREADREQ);
         return DumpErrorCode::DUMP_EREADREQUEST;
     }
 
@@ -337,7 +337,7 @@ bool ProcessDumper::IsTargetProcessAlive(std::shared_ptr<ProcessDumpRequest> req
             "Target process has been killed, the crash log may not be fully generated.");
         dumpRes = DumpErrorCode::DUMP_EGETPPID;
         ReportCrashException(request->processName, request->pid, request->uid,
-            GetTimeMillisec(), CrashExceptionCode::CRASH_DUMP_EKILLED);
+                             CrashExceptionCode::CRASH_DUMP_EKILLED);
         return false;
     }
     return true;
@@ -430,7 +430,7 @@ bool ProcessDumper::InitVmThread(std::shared_ptr<ProcessDumpRequest> request)
         if (getppid() != request->vmNsPid) {
             DFXLOG_ERROR("VM process(%d) should be parent pid.", request->vmNsPid);
             ReportCrashException(request->processName, request->pid, request->uid,
-                                 GetTimeMillisec(), CrashExceptionCode::CRASH_DUMP_EPARENTPID);
+                                 CrashExceptionCode::CRASH_DUMP_EPARENTPID);
             return false;
         }
         process_->vmThread_ = DfxThread::Create(request->vmPid, request->vmPid, request->vmNsPid);
@@ -463,7 +463,7 @@ bool ProcessDumper::InitKeyThread(std::shared_ptr<ProcessDumpRequest> request)
     if ((process_->keyThread_ == nullptr) || (!process_->keyThread_->Attach(PTRACE_ATTATCH_KEY_THREAD_TIMEOUT))) {
         DFXLOG_ERROR("Failed to attach key thread(%d).", nsTid);
         ReportCrashException(request->processName, request->pid, request->uid,
-                             GetTimeMillisec(), CrashExceptionCode::CRASH_DUMP_EATTACH);
+                             CrashExceptionCode::CRASH_DUMP_EATTACH);
         if (!isCrash_) {
             return false;
         }
@@ -612,7 +612,7 @@ int ProcessDumper::InitPrintThread(std::shared_ptr<ProcessDumpRequest> request)
     if ((fd < 0) && (jsonFd_ < 0)) {
         DFXLOG_WARN("%s", "Failed to request fd from faultloggerd.");
         ReportCrashException(request->processName, request->pid, request->uid,
-                             GetTimeMillisec(), CrashExceptionCode::CRASH_DUMP_EWRITEFD);
+                             CrashExceptionCode::CRASH_DUMP_EWRITEFD);
     }
 
     if (!isJsonDump_) {

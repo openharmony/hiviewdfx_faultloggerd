@@ -50,12 +50,12 @@ void SetCrashProcInfo(std::string& name, int32_t pid, int32_t uid);
 /**
  * @brief report crash to sysevent
 */
-void ReportCrashException(const char* pName, int32_t pid, int32_t uid, int64_t time, int32_t errCode);
+void ReportCrashException(const char* pName, int32_t pid, int32_t uid, int32_t errCode);
 
 /**
  * @brief report crash to sysevent
 */
-void ReportCrashException(std::string name, int32_t pid, int32_t uid, int64_t time, int32_t errCode);
+void ReportCrashException(std::string name, int32_t pid, int32_t uid, int32_t errCode);
 
 /**
  * @brief report crash unwinder error to sysevent
