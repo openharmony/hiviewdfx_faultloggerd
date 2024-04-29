@@ -126,6 +126,9 @@ void Unwinder::Destroy()
 #endif
     Clear();
     rsCache_.clear();
+    if (pid_ == UNWIND_TYPE_LOCAL) {
+        LocalThreadContext::GetInstance().CleanUp();
+    }
 }
 
 bool Unwinder::CheckAndReset(void* ctx)
