@@ -55,7 +55,7 @@ HWTEST_F(DfxMemoryTest, DfxMemoryTest001, TestSize.Level2)
     GTEST_LOG_(INFO) << "DfxMemoryTest001: start.";
     uintptr_t regs[] = {0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xa};
     UnwindContext ctx;
-    ctx.regs = DfxRegs::CreateFromRegs(UnwindMode::DWARF_UNWIND, regs);
+    ctx.regs = DfxRegs::CreateFromRegs(UnwindMode::DWARF_UNWIND, regs, sizeof(regs) / sizeof(regs[0]));
     auto acc = std::make_shared<DfxAccessorsLocal>();
     auto memory = std::make_shared<DfxMemory>(acc);
     memory->SetCtx(&ctx);
@@ -183,7 +183,7 @@ HWTEST_F(DfxMemoryTest, DfxMemoryTest005, TestSize.Level2)
     ASSERT_TRUE(GetSelfStackRange(ctx.stackBottom, ctx.stackTop));
     auto memory = std::make_shared<DfxMemory>(acc);
     memory->SetCtx(&ctx);
-    uintptr_t addr = (uintptr_t)(&values[0]);
+    uintptr_t addr = reinterpret_cast<uintptr_t>(&values[0]);
     uintptr_t valuePrel32;
     ASSERT_TRUE(memory->ReadPrel31(addr, &valuePrel32));
     ASSERT_EQ(valuePrel32, 0x04030201 + addr);
@@ -228,7 +228,7 @@ HWTEST_F(DfxMemoryTest, DfxMemoryTest007, TestSize.Level2)
     GTEST_LOG_(INFO) << "DfxMemoryTest007: start.";
     uintptr_t regs[] = {0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xa};
     UnwindContext ctx;
-    ctx.regs = DfxRegs::CreateFromRegs(UnwindMode::DWARF_UNWIND, regs);
+    ctx.regs = DfxRegs::CreateFromRegs(UnwindMode::DWARF_UNWIND, regs, sizeof(regs) / sizeof(regs[0]));
     auto acc = std::make_shared<DfxAccessorsRemote>();
     auto memory = std::make_shared<DfxMemory>(acc);
     memory->SetCtx(&ctx);
@@ -258,7 +258,7 @@ HWTEST_F(DfxMemoryTest, DfxMemoryTest008, TestSize.Level2)
         auto acc = std::make_shared<DfxAccessorsRemote>();
         auto memory = std::make_shared<DfxMemory>(acc);
         memory->SetCtx(&ctx);
-        uintptr_t addr = (uintptr_t)(&values[0]);
+        uintptr_t addr = reinterpret_cast<uintptr_t>(&values[0]);
         bool ret = memory->ReadUptr(addr, &value, false);
         EXPECT_EQ(true, ret) << "DfxMemoryTest008: ret:" << ret;
         uint64_t tmp;
@@ -301,7 +301,7 @@ HWTEST_F(DfxMemoryTest, DfxMemoryTest009, TestSize.Level2)
         auto acc = std::make_shared<DfxAccessorsRemote>();
         auto memory = std::make_shared<DfxMemory>(acc);
         memory->SetCtx(&ctx);
-        uintptr_t addr = (uintptr_t)(&values[0]);
+        uintptr_t addr = reinterpret_cast<uintptr_t>(&values[0]);
         uintptr_t value;
         ASSERT_TRUE(memory->ReadUptr(addr, &value, false));
 #if defined(__arm__)
@@ -351,7 +351,7 @@ HWTEST_F(DfxMemoryTest, DfxMemoryTest010, TestSize.Level2)
         auto acc = std::make_shared<DfxAccessorsRemote>();
         auto memory = std::make_shared<DfxMemory>(acc);
         memory->SetCtx(&ctx);
-        uintptr_t addr = (uintptr_t)(&values[0]);
+        uintptr_t addr = reinterpret_cast<uintptr_t>(&values[0]);
         uint8_t tmp8;
         ASSERT_TRUE(memory->ReadU8(addr, &tmp8, false));
         ASSERT_EQ(tmp8, 0x01);
@@ -393,7 +393,7 @@ HWTEST_F(DfxMemoryTest, DfxMemoryTest011, TestSize.Level2)
         auto acc = std::make_shared<DfxAccessorsRemote>();
         auto memory = std::make_shared<DfxMemory>(acc);
         memory->SetCtx(&ctx);
-        uintptr_t addr = (uintptr_t)(&values[0]);
+        uintptr_t addr = reinterpret_cast<uintptr_t>(&values[0]);
         std::string resultStr;
         uintptr_t addrStr = reinterpret_cast<uintptr_t>(&testStr[0]);
         ASSERT_TRUE(memory->ReadString(addrStr, &resultStr, sizeof(testStr)/sizeof(char), false));
@@ -457,12 +457,12 @@ HWTEST_F(DfxMemoryTest, DfxMemoryTest013, TestSize.Level2)
     EXPECT_FALSE(memory->ReadReg(0, &val));
     uintptr_t regs[] = {0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xa};
     UnwindContext ctx;
-    ctx.regs = DfxRegs::CreateFromRegs(UnwindMode::DWARF_UNWIND, regs);
+    ctx.regs = DfxRegs::CreateFromRegs(UnwindMode::DWARF_UNWIND, regs, sizeof(regs) / sizeof(regs[0]));
     memory->SetCtx(&ctx);
     EXPECT_FALSE(memory->ReadReg(-1, &val));
 
     uint8_t values[] = {0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8};
-    uintptr_t addr = (uintptr_t)(&values[0]);
+    uintptr_t addr = reinterpret_cast<uintptr_t>(&values[0]);
     EXPECT_FALSE(memory->ReadMem(addr, nullptr));
     EXPECT_FALSE(memory->ReadUptr(addr, nullptr, false));
     EXPECT_FALSE(memory->Read(addr, nullptr, sizeof(uint8_t), false));

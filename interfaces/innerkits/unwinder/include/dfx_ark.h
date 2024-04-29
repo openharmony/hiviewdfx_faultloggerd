@@ -43,8 +43,8 @@ struct JsFrame {
 struct JsFunction {
     char functionName[FUNCTIONNAME_MAX];
     char url[URL_MAX];
-    int32_t line;
-    int32_t column;
+    int32_t line = 0;
+    int32_t column = 0;
     uintptr_t codeBegin;
     uintptr_t codeSize;
     std::string ToString()

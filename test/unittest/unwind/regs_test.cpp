@@ -234,11 +234,11 @@ HWTEST_F(DfxRegsTest, DfxRegsTest005, TestSize.Level2)
     uintptr_t minimal[QUT_MINI_REGS_SIZE] = {REG_ARM_R4, REG_ARM_R7, REG_ARM_R10, REG_ARM_R11,
         REG_SP, REG_PC, REG_LR};
     uintptr_t framePointer[FP_MINI_REGS_SIZE] = {REG_ARM_R7, REG_FP, REG_SP, REG_PC};
-    auto dfxRegs = DfxRegs::CreateFromRegs(UnwindMode::FRAMEPOINTER_UNWIND, regs);
+    auto dfxRegs = DfxRegs::CreateFromRegs(UnwindMode::FRAMEPOINTER_UNWIND, regs, sizeof(regs) / sizeof(regs[0]));
     for (size_t i = 0; i < sizeof(framePointer) / sizeof(framePointer[0]); ++i) {
         ASSERT_EQ((*dfxRegs.get())[framePointer[i]], regs[i]);
     }
-    dfxRegs = DfxRegs::CreateFromRegs(UnwindMode::MINIMAL_UNWIND, regs);
+    dfxRegs = DfxRegs::CreateFromRegs(UnwindMode::MINIMAL_UNWIND, regs, sizeof(regs) / sizeof(regs[0]));
     for (size_t i = 0; i < sizeof(minimal) / sizeof(minimal[0]); ++i) {
         ASSERT_EQ((*dfxRegs.get())[minimal[i]], regs[i]);
     }
@@ -251,11 +251,11 @@ HWTEST_F(DfxRegsTest, DfxRegsTest005, TestSize.Level2)
     uintptr_t minimal[QUT_MINI_REGS_SIZE] = {REG_AARCH64_X0, REG_AARCH64_X20, REG_AARCH64_X28,
         REG_FP, REG_SP, REG_PC, REG_LR};
     uintptr_t framePointer[FP_MINI_REGS_SIZE] = {REG_FP, REG_LR, REG_SP, REG_PC};
-    auto dfxRegs = DfxRegs::CreateFromRegs(UnwindMode::FRAMEPOINTER_UNWIND, regs);
+    auto dfxRegs = DfxRegs::CreateFromRegs(UnwindMode::FRAMEPOINTER_UNWIND, regs, sizeof(regs) / sizeof(regs[0]));
     for (size_t i = 1; i < sizeof(framePointer) / sizeof(framePointer[0]); ++i) {
         ASSERT_EQ((*dfxRegs.get())[framePointer[i]], regs[i]);
     }
-    dfxRegs = DfxRegs::CreateFromRegs(UnwindMode::MINIMAL_UNWIND, regs);
+    dfxRegs = DfxRegs::CreateFromRegs(UnwindMode::MINIMAL_UNWIND, regs, sizeof(regs) / sizeof(regs[0]));
     for (size_t i = 0; i < sizeof(minimal) / sizeof(minimal[0]); ++i) {
         ASSERT_EQ((*dfxRegs.get())[minimal[i]], regs[i]);
     }

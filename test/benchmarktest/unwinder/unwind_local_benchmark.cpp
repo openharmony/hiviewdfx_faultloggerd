@@ -97,8 +97,9 @@ static size_t UnwinderLocalFp(MAYBE_UNUSED void* data) {
     uintptr_t stackBottom = 1, stackTop = static_cast<uintptr_t>(-1);
     unwinder->GetStackRange(stackBottom, stackTop);
     uintptr_t miniRegs[FP_MINI_REGS_SIZE] = {0};
-    GetFramePointerMiniRegs(miniRegs);
-    auto regs = DfxRegs::CreateFromRegs(UnwindMode::FRAMEPOINTER_UNWIND, miniRegs);
+    GetFramePointerMiniRegs(miniRegs, sizeof(miniRegs) / sizeof(miniRegs[0]));
+    auto regs = DfxRegs::CreateFromRegs(UnwindMode::FRAMEPOINTER_UNWIND, miniRegs,
+                                        sizeof(miniRegs) / sizeof(miniRegs[0]));
     unwinder->SetRegs(regs);
     UnwindContext context;
     context.pid = UNWIND_TYPE_LOCAL;
