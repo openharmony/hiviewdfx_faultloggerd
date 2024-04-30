@@ -179,7 +179,7 @@ private:
     bool ReadUptr(uintptr_t addr, uintptr_t& value)
 #endif
     {
-        if ((addr < stackBottom_) || (addr >= stackTop_ - sizeof(uintptr_t))) {
+        if ((addr < stackBottom_) || (addr + sizeof(uintptr_t) >= stackTop_)) {
             return false;
         }
         value = *reinterpret_cast<uintptr_t *>(addr);
