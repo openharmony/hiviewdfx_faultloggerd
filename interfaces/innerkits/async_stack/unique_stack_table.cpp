@@ -30,6 +30,9 @@ bool UniqueStackTable::Init()
 {
     std::lock_guard<std::mutex> guard(stackTableMutex_);
     // index 0 for reserved
+    if (tableBufMMap_ != nullptr) {
+        return true;
+    }
     availableIndex_ = 1;
     totalNodes_ = ((tableSize_ / sizeof(Node)) >> 1) << 1; // make it even.
     if (totalNodes_ > MAX_NODES_CNT) {
@@ -106,7 +109,6 @@ bool UniqueStackTable::Resize()
 
 uint64_t UniqueStackTable::PutPcInSlot(uint64_t thisPc, uint64_t prevIdx)
 {
-    std::lock_guard<std::mutex> guard(stackTableMutex_);
     Node *tableHead = reinterpret_cast<Node *>(tableBufMMap_);
     uint64_t curPcIdx = (((thisPc >> 2) ^ (prevIdx << 4)) % hashModulus_) + availableIndex_;
     uint8_t currentDeconflictTimes_ = deconflictTimes_;
@@ -147,13 +149,11 @@ uint64_t UniqueStackTable::PutPcInSlot(uint64_t thisPc, uint64_t prevIdx)
 // todo add lock
 uint64_t UniqueStackTable::PutPcsInTable(StackId *stackId, uintptr_t* pcs, size_t nr)
 {
-    std::lock_guard<std::mutex> guard(stackTableMutex_);
-    if (tableBufMMap_ == nullptr) {
-        if (!Init()) {
-            LOGW("%s", "init Hashtable failed, fatal error!");
-            return 0;
-        }
+    if (!Init()) {
+        LOGW("%s", "init Hashtable failed, fatal error!");
+        return 0;
     }
+    std::lock_guard<std::mutex> guard(stackTableMutex_);
     int64_t reverseIndex = static_cast<int64_t>(nr);
     uint64_t prev = 0;
     while (--reverseIndex >= 0) {
@@ -192,7 +192,6 @@ size_t UniqueStackTable::GetWriteSize()
 
 Node* UniqueStackTable::GetFrame(uint64_t stackId)
 {
-    std::lock_guard<std::mutex> guard(stackTableMutex_);
     Node *tableHead = reinterpret_cast<Node *>(tableBufMMap_);
     if (stackId >= totalNodes_) {
         // should not occur
