@@ -113,6 +113,7 @@ bool DfxMaps::Parse(const pid_t pid, const std::string& path)
             LOGW("Failed to init map info: %s", mapBuf);
             continue;
         }
+        FormatMapName(pid, map->name);
         if (IsArkMapItem(map->name)) {
             AddMap(map, enableMapIndex_);
             continue;
@@ -124,7 +125,6 @@ bool DfxMaps::Parse(const pid_t pid, const std::string& path)
         if (onlyExec_ && !map->IsMapExec()) {
             continue;
         }
-        FormatMapName(pid, map->name);
         if ((!enableMapIndex_) || IsLegalMapItem(map->name, false)) {
             AddMap(map, enableMapIndex_);
         }

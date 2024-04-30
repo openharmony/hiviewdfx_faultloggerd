@@ -19,6 +19,7 @@
 #include "dfx_log.h"
 #include "dfx_map.h"
 #include "dfx_memory.h"
+#include "string_util.h"
 
 namespace OHOS {
 namespace HiviewDFX {
@@ -27,6 +28,87 @@ namespace {
 #undef LOG_TAG
 #define LOG_DOMAIN 0xD002D11
 #define LOG_TAG "DfxHap"
+}
+
+DfxHap::~DfxHap()
+{
+#if is_ohos && !is_mingw
+    if (arkSymbolExtractorPtr_ != 0) {
+        DfxArk::ArkDestoryJsSymbolExtractor(arkSymbolExtractorPtr_);
+        arkSymbolExtractorPtr_ = 0;
+    }
+#endif
+}
+
+bool DfxHap::ParseHapInfo(pid_t pid, uint64_t pc, uintptr_t methodid, std::shared_ptr<DfxMap> map,
+    JsFunction *jsFunction)
+{
+#if is_ohos && !is_mingw
+    if (jsFunction == nullptr || map == nullptr) {
+        return false;
+    }
+
+    if (arkSymbolExtractorPtr_ == 0) {
+        if (DfxArk::ArkCreateJsSymbolExtractor(&arkSymbolExtractorPtr_) < 0) {
+            LOGU("%s", "Failed to create ark js symbol extractor");
+        }
+    }
+
+    if ((!map->name.empty()) && (EndsWith(map->name, ".hap") || EndsWith(map->name, ".hsp"))) {
+        if (!ParseHapFileInfo(pc, methodid, map, jsFunction)) {
+            LOGW("%s", "Failed to parse hap file info");
+            return false;
+        }
+    } else {
+        if (!ParseHapMemInfo(pid, pc, methodid, map, jsFunction)) {
+            LOGW("%s", "Failed to parse hap mem info");
+            return false;
+        }
+    }
+    return true;
+#endif
+    return false;
+}
+
+bool DfxHap::ParseHapFileInfo(uint64_t pc, uintptr_t methodid, std::shared_ptr<DfxMap> map, JsFunction *jsFunction)
+{
+#if is_ohos && !is_mingw
+    if (jsFunction == nullptr || map == nullptr || map->name.empty()) {
+        return false;
+    }
+
+    if (DfxArk::ParseArkFileInfo(static_cast<uintptr_t>(pc), methodid, static_cast<uintptr_t>(map->begin),
+        map->name.c_str(), arkSymbolExtractorPtr_, jsFunction) < 0) {
+        LOGW("Failed to parse ark file info, pc: %p, begin: %p",
+            reinterpret_cast<void *>(pc), reinterpret_cast<void *>(map->begin));
+        return false;
+    }
+    return true;
+#endif
+    return false;
+}
+
+bool DfxHap::ParseHapMemInfo(pid_t pid, uint64_t pc, uintptr_t methodid, std::shared_ptr<DfxMap> map,
+    JsFunction *jsFunction)
+{
+#if is_ohos && !is_mingw
+    if (pid < 0 || jsFunction == nullptr || map == nullptr) {
+        return false;
+    }
+
+    if (!ParseHapMemData(pid, map)) {
+        LOGW("Failed to parse hap mem data, pid: %d", pid);
+        return false;
+    }
+    if (DfxArk::ParseArkFrameInfo(static_cast<uintptr_t>(pc), methodid, static_cast<uintptr_t>(map->begin),
+        abcLoadOffset_, abcDataPtr_.get(), abcDataSize_, arkSymbolExtractorPtr_, jsFunction) < 0) {
+        LOGW("Failed to parse ark frame info, pc: %p, begin: %p",
+            reinterpret_cast<void *>(pc), reinterpret_cast<void *>(map->begin));
+        return false;
+    }
+    return true;
+#endif
+    return false;
 }
 
 bool DfxHap::ParseHapFileData(const std::string& name)
