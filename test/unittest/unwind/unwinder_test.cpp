@@ -538,8 +538,8 @@ HWTEST_F(UnwinderTest, StepTest004, TestSize.Level2)
     ASSERT_GT(unwSize, 1) << "pcs.size() error";
 
     uintptr_t miniRegs[FP_MINI_REGS_SIZE] = {0};
-    GetFramePointerMiniRegs(miniRegs);
-    regs = DfxRegs::CreateFromRegs(UnwindMode::FRAMEPOINTER_UNWIND, miniRegs);
+    GetFramePointerMiniRegs(miniRegs, sizeof(miniRegs) / sizeof(miniRegs[0]));
+    regs = DfxRegs::CreateFromRegs(UnwindMode::FRAMEPOINTER_UNWIND, miniRegs, sizeof(miniRegs) / sizeof(miniRegs[0]));
     unwinder->SetRegs(regs);
     size_t idx = 0;
     uintptr_t pc, fp;

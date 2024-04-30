@@ -416,7 +416,7 @@ bool DfxDumpCatcher::DoReadRes(int fd, bool &ret, std::string& msg)
 {
     int32_t res = DumpErrorCode::DUMP_ESUCCESS;
     ssize_t nread = OHOS_TEMP_FAILURE_RETRY(read(fd, &res, sizeof(res)));
-    if (nread != sizeof(res)) {
+    if (nread <= 0 || nread != sizeof(res)) {
         DFXLOG_WARN("%s :: %s :: read error", DFXDUMPCATCHER_TAG.c_str(), __func__);
         return false;
     }

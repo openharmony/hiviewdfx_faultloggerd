@@ -540,14 +540,13 @@ void FaultLoggerDaemon::HandleSdkDumpRequest(int32_t connectionFd, FaultLoggerdR
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Winitializer-overrides"
         // defined in out/hi3516dv300/obj/third_party/musl/intermidiates/linux/musl_src_ported/include/signal.h
-        siginfo_t si = {
-            .si_signo = SIGDUMP,
-            .si_errno = 0,
-            .si_code = request->sigCode,
-            .si_pid = request->callerPid,
-            .si_uid = static_cast<uid_t>(request->callerTid)
-        };
-        si.si_value.sival_int = request->tid; // Initialize the assignment will be a C99 alarm
+        siginfo_t si {0};
+        si.si_signo = SIGDUMP;
+        si.si_errno = 0;
+        si.si_value.sival_int = request->tid;
+        si.si_code = request->sigCode;
+        si.si_pid = request->callerPid;
+        si.si_uid = static_cast<uid_t>(request->callerTid);
 #pragma clang diagnostic pop
         int32_t reqTid = 0;
         if (request->tid == 0) {
