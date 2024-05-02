@@ -397,7 +397,7 @@ bool Unwinder::Unwind(void *ctx, size_t maxFrameNum, size_t skipFrameNum)
         }
 
         if (pid_ != UNWIND_TYPE_CUSTOMIZE) {
-            if (needAdjustPc) {
+            if (!frame.isJsFrame && needAdjustPc) {
                 DoPcAdjust(frame.pc);
             }
             needAdjustPc = true;
