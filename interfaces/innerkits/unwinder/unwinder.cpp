@@ -112,6 +112,7 @@ void Unwinder::Init()
 void Unwinder::Clear()
 {
     isFpStep_ = false;
+    enableMixstack_ = true;
     pcs_.clear();
     frames_.clear();
     if (memset_s(&lastErrorData_, sizeof(UnwindErrorData), 0, sizeof(UnwindErrorData)) != 0) {
