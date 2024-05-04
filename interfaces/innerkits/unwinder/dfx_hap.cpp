@@ -66,8 +66,9 @@ bool DfxHap::ParseHapInfo(pid_t pid, uint64_t pc, uintptr_t methodid, std::share
         }
     }
     return true;
-#endif
+#else
     return false;
+#endif
 }
 
 bool DfxHap::ParseHapFileInfo(uint64_t pc, uintptr_t methodid, std::shared_ptr<DfxMap> map, JsFunction *jsFunction)
