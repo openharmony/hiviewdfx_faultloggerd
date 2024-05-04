@@ -69,7 +69,7 @@ private:
     uint64_t finishTime_ = 0;
 
     void InitRegs(std::shared_ptr<ProcessDumpRequest> request, int &dumpRes);
-    bool IsTargetProcessAlive(std::shared_ptr<ProcessDumpRequest> request, int &dummRes);
+    bool IsTargetProcessAlive(std::shared_ptr<ProcessDumpRequest> request, int &dumpRes);
     bool Unwind(std::shared_ptr<ProcessDumpRequest> request, int &dumpRes);
 };
 } // namespace HiviewDFX
