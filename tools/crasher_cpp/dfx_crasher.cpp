@@ -498,7 +498,6 @@ static void* CrashInSubThread(void* stackIdPtr)
 NOINLINE int DfxCrasher::AsyncStacktrace()
 {
 #ifdef __aarch64__
-    EnableAsyncStack();
     uint64_t stackId = CollectAsyncStack();
     printf("Current stackId:%p.\n", (void*)stackId);
     pthread_t thread;
