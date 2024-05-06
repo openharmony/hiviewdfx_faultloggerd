@@ -1,0 +1,62 @@
+# Copyright (c) 2024 Huawei Device Co., Ltd.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import("//base/hiviewdfx/faultloggerd/faultloggerd.gni")
+
+if (defined(ohos_lite)) {
+  import("//build/lite/config/component/lite_component.gni")
+  import("//build/lite/config/test.gni")
+
+  group("unittest") {
+    deps = []
+  }
+} else {
+  import("//build/config/features.gni")
+  import("//build/test.gni")
+
+  config("module_private_config") {
+    visibility = [ ":*" ]
+
+    include_dirs = [ "$faultloggerd_interfaces_path/common" ]
+  }
+
+  module_output_path = "faultloggerd/crash_exception"
+
+  ohos_unittest("test_crash_exception") {
+    module_out_path = module_output_path
+    sources = [
+      "crash_exception_listener.cpp",
+      "crash_exception_test.cpp",
+    ]
+
+    configs = [ ":module_private_config" ]
+
+    deps = [
+      "$faultloggerd_path/common/dfxutil:dfx_util",
+      "$faultloggerd_path/interfaces/innerkits/crash_exception:crash_exception",
+      "//third_party/googletest:gmock_main",
+      "//third_party/googletest:gtest_main",
+    ]
+
+    external_deps = [
+      "c_utils:utils",
+      "hisysevent:libhisysevent",
+      "hisysevent:libhisyseventmanager",
+    ]
+  }
+
+  group("unittest") {
+    testonly = true
+    deps = [ ":test_crash_exception" ]
+  }
+}
