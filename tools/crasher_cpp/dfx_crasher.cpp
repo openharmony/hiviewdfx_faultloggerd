@@ -535,6 +535,7 @@ NOINLINE static int FFRTTaskSubmit0(int i)
 
 NOINLINE int DfxCrasher::CrashInFFRT()
 {
+    setenv("HAP_DEBUGGABLE", "true", 1);
     int i = FFRTTaskSubmit0(10);
     ffrt::wait();
     return i;
