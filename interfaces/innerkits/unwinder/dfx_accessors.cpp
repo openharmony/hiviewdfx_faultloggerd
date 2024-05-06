@@ -52,6 +52,10 @@ bool DfxAccessors::GetMapByPcAndCtx(uintptr_t pc, std::shared_ptr<DfxMap>& map, 
         return true;
     }
 
+    if (ctx->maps == nullptr) {
+        return false;
+    }
+
     if (!ctx->maps->FindMapByAddr(pc, map) || (map == nullptr)) {
         return false;
     }
