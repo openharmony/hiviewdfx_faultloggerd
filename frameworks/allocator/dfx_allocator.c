@@ -62,7 +62,11 @@ static inline uintptr_t PageEnd(uintptr_t addr)
 
 static inline size_t AlignRoundUp(size_t val, size_t align)
 {
-    return ((val + align - 1) & ~(align - 1));
+    size_t size = align;
+    if (size == 0) {
+        size = 1;
+    }
+    return ((val + size - 1) & ~(size - 1));
 }
 
 static void AddPage(PageInfo** pageList, PageInfo* page)
@@ -182,7 +186,9 @@ static void* MempoolAlloc(DfxMempool* mempool)
     if (page->freeBlocksCnt == mempool->blocksPerPage) {
         mempool->freePagesCnt--;
     }
-    page->freeBlocksCnt = page->freeBlocksCnt - 1;
+    if (page->freeBlocksCnt > 0) {
+        page->freeBlocksCnt--;
+    }
     (void)memset_s(block, mempool->blockSize, 0, mempool->blockSize);
     // when page's blocks all allocated, remove from pagelist but not free
     // then pagelist will be point page which have unused blocks
@@ -236,7 +242,7 @@ static inline uint32_t SelectMempoolType(size_t num)
     return res;
 }
 
-static void InitDfxAllocator()
+static void InitDfxAllocator(void)
 {
     for (uint32_t i = 0; i < DFX_MEMPOOLS_NUM; i++) {
         g_dfxAllocator.dfxMempoolBuf[i].type = i + DFX_MEMPOOL_MIN_TYPE;
@@ -318,7 +324,7 @@ static void* AllocImpl(size_t align, size_t size)
 
 static void* DfxAlloc(size_t size)
 {
-    int realSize = size;
+    size_t realSize = size;
     if (size == 0) {
         realSize = 1;
     }
@@ -431,7 +437,7 @@ void RegisterAllocator()
 #endif
 }
 
-void UnregisterAllocator()
+void UnregisterAllocator(void)
 {
 #ifndef DFX_ALLOCATE_ASAN
     atomic_store_explicit(&ohos_malloc_hook_shared_library, 0, memory_order_seq_cst);

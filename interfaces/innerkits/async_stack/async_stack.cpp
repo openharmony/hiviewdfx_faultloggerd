@@ -25,20 +25,10 @@
 
 static pthread_key_t g_stackidKey;
 static bool g_init = false;
-static bool g_enableDfxAsyncStack = true; // for test
-void EnableAsyncStack(void)
-{
-    g_enableDfxAsyncStack = true;
-}
 
 extern "C" void SetAsyncStackCallbackFunc(void* func) __attribute__((weak));
 static void InitAsyncStackInner(void)
 {
-    if (!g_enableDfxAsyncStack) {
-        LOGE("%s", "g_enableDfxAsyncStack false.");
-        return;
-    }
-
     if (SetAsyncStackCallbackFunc == nullptr) {
         LOGE("%s", "failed to init async stack, could not find SetAsyncStackCallbackFunc.");
         return;
@@ -64,7 +54,6 @@ static void InitAsyncStackInner(void)
 static bool InitAsyncStack(void)
 {
     if (!(OHOS::HiviewDFX::DfxParam::EnableBeta() && OHOS::HiviewDFX::DfxParam::EnableAsyncStack())) {
-        LOGE("%s", "async stack is not enable.");
         return false;
     }
     static once_flag onceFlag = ONCE_FLAG_INIT;
@@ -76,7 +65,6 @@ extern "C" uint64_t CollectAsyncStack(void)
 {
 #if defined(__aarch64__)
     if (!InitAsyncStack()) {
-        LOGE("%s", "failed to init async stack.");
         return 0;
     }
     const int32_t maxSize = 32;

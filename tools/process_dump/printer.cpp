@@ -60,9 +60,7 @@ void Printer::PrintDumpHeader(std::shared_ptr<ProcessDumpRequest> request, std::
     if (isCrash) {
         DfxRingBufferWrapper::GetInstance().AppendBuf("Process life time:%s\n",
             DfxProcess::GetProcessLifeCycle(process->processInfo_.pid).c_str());
-    }
 
-    if (isCrash) {
         std::string reasonInfo;
         PrintReason(request, process, unwinder, reasonInfo);
         headerInfo << reasonInfo << "\n";

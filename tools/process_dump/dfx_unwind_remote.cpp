@@ -76,8 +76,10 @@ bool DfxUnwindRemote::UnwindProcess(std::shared_ptr<ProcessDumpRequest> request,
             if (process->keyThread_ == nullptr) {
                 DFXLOG_WARN("%s::unwind key thread is not initialized.", __func__);
             } else {
-                process->keyThread_->threadInfo_.nsTid = vmPid;
+                pid_t nsTid = process->keyThread_->threadInfo_.nsTid;
+                process->keyThread_->threadInfo_.nsTid = vmPid; // read registers from vm process
                 Printer::PrintThreadFaultStackByConfig(process, process->keyThread_, unwinder);
+                process->keyThread_->threadInfo_.nsTid = nsTid;
             }
         }
         Printer::PrintProcessMapsByConfig(unwinder->GetMaps());
@@ -120,8 +122,7 @@ void DfxUnwindRemote::UnwindKeyThread(std::shared_ptr<ProcessDumpRequest> reques
     if (!unwindAsyncThread->tip.empty()) {
         if (ProcessDumper::GetInstance().IsCrash()) {
             ReportCrashException(process->processInfo_.processName, process->processInfo_.pid,
-                                 process->processInfo_.uid, GetTimeMillisec(),
-                                 CrashExceptionCode::CRASH_UNWIND_ESTACK);
+                                 process->processInfo_.uid, CrashExceptionCode::CRASH_UNWIND_ESTACK);
         }
     }
     process->SetFatalMessage(fatalMsg);

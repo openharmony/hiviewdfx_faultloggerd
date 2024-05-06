@@ -21,6 +21,7 @@
 #include <vector>
 
 #include "dfx_define.h"
+#include "unwind_define.h"
 
 namespace OHOS {
 namespace HiviewDFX {
@@ -48,8 +49,11 @@ inline AT_ALWAYS_INLINE void GetLocalRegs(void* regs)
 }
 
 // Only get 4 registers(r7/r11/sp/pc)
-inline AT_ALWAYS_INLINE void GetFramePointerMiniRegs(void *regs)
+inline AT_ALWAYS_INLINE void GetFramePointerMiniRegs(void *regs, size_t size)
 {
+    if (size < FP_MINI_REGS_SIZE) {
+        return;
+    }
     asm volatile(
     ".align 2\n"
     "bx pc\n"
@@ -118,8 +122,11 @@ inline AT_ALWAYS_INLINE void GetLocalRegs(void* regs)
 }
 
 // Only get 4 registers from x29 to x32.
-inline AT_ALWAYS_INLINE void GetFramePointerMiniRegs(void *regs)
+inline AT_ALWAYS_INLINE void GetFramePointerMiniRegs(void *regs, size_t size)
 {
+    if (size < FP_MINI_REGS_SIZE) {
+        return;
+    }
     asm volatile(
     "1:\n"
     "stp x29, x30, [%[base], #0]\n"
@@ -152,7 +159,7 @@ inline AT_ALWAYS_INLINE void GetLocalRegs(void* regs)
     _x86_64_getcontext(regs);
 }
 
-inline AT_ALWAYS_INLINE void GetFramePointerMiniRegs(void *regs)
+inline AT_ALWAYS_INLINE void GetFramePointerMiniRegs(void *regs, size_t size)
 {
 }
 
@@ -167,7 +174,7 @@ inline AT_ALWAYS_INLINE void GetLocalRegs(void* regs)
 {
 }
 
-inline AT_ALWAYS_INLINE void GetFramePointerMiniRegs(void *regs)
+inline AT_ALWAYS_INLINE void GetFramePointerMiniRegs(void *regs, size_t size)
 {
 }
 

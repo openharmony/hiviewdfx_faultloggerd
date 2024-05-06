@@ -605,7 +605,7 @@ static int CloneAndDoProcessDump(void* arg)
     return ForkAndExecProcessDump();
 }
 
-static void StartProcessdump()
+static void StartProcessdump(void)
 {
     pid_t pid = ForkBySyscall();
     if (pid < 0) {
@@ -628,7 +628,7 @@ static void StartProcessdump()
     }
 }
 
-static void StartVMProcessUnwind()
+static void StartVMProcessUnwind(void)
 {
     pid_t pid = ForkBySyscall();
     if (pid < 0) {
@@ -638,15 +638,18 @@ static void StartVMProcessUnwind()
         pid_t vmPid = ForkBySyscall();
         if (vmPid == 0) {
             close(g_pipeFds[WRITE_TO_DUMP][0]);
-            pid_t curPid = syscall(SYS_getpid);
-            OHOS_TEMP_FAILURE_RETRY(write(g_pipeFds[WRITE_TO_DUMP][1], &curPid, sizeof(curPid)));
+            pid_t pids[PID_MAX] = {0};
+            pids[REAL_PROCESS_PID] = GetRealPid();
+            pids[VIRTUAL_PROCESS_PID] = syscall(SYS_getpid);
+
+            OHOS_TEMP_FAILURE_RETRY(write(g_pipeFds[WRITE_TO_DUMP][1], pids, sizeof(pids)));
             close(g_pipeFds[WRITE_TO_DUMP][1]);
 
             uint32_t finishUnwind = OPE_FAIL;
             close(g_pipeFds[READ_FORM_DUMP_TO_VIRTUAL][1]);
             OHOS_TEMP_FAILURE_RETRY(read(g_pipeFds[READ_FORM_DUMP_TO_VIRTUAL][0], &finishUnwind, sizeof(finishUnwind)));
             close(g_pipeFds[READ_FORM_DUMP_TO_VIRTUAL][0]);
-            DFXLOG_INFO("processdump unwind finish, exit vm pid = %d", curPid);
+            DFXLOG_INFO("processdump unwind finish, exit vm pid = %d", pids[VIRTUAL_PROCESS_PID]);
             _exit(0);
         } else {
             DFXLOG_INFO("exit dummy vm process");
@@ -667,7 +670,7 @@ static void CleanFd(int *pipeFd)
     }
 }
 
-static void CleanPipe()
+static void CleanPipe(void)
 {
     for (size_t i = 0; i < PIPE_MAX; i++) {
         CleanFd(&g_pipeFds[i][0]);
@@ -675,7 +678,7 @@ static void CleanPipe()
     }
 }
 
-static bool InitPipe()
+static bool InitPipe(void)
 {
     for (int i = 0; i < PIPE_MAX; i++) {
         if (pipe(g_pipeFds[i]) == -1) {
@@ -707,7 +710,7 @@ static int ProcessDump(int sig)
     close(g_pipeFds[READ_FROM_DUMP_TO_MAIN][1]);
     int ret = OHOS_TEMP_FAILURE_RETRY(read(g_pipeFds[READ_FROM_DUMP_TO_MAIN][0],
         &isFinishGetRegs, sizeof(isFinishGetRegs)));
-    if (ret != sizeof(isFinishGetRegs) || isFinishGetRegs != OPE_SUCCESS) {
+    if (ret < 0 || ret != sizeof(isFinishGetRegs) || isFinishGetRegs != OPE_SUCCESS) {
         DFXLOG_INFO("Failed to read resgs(%d).", errno);
     }
     DFXLOG_INFO("processdump have get all resgs");

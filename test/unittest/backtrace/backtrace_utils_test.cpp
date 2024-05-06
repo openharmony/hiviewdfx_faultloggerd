@@ -106,7 +106,7 @@ void BacktraceUtilsTest::TearDown()
     CheckResourceUsage(fdCount, mapsCount, memCount);
 }
 
-static bool CheckBacktraceContent(const std::string& content)
+static bool CheckBacktraceContent(const std::string& content, bool fast = false)
 {
     std::string existKeyWords[] = { "#09", "backtrace_utils_test", "system" };
     std::string notExistkeyWords[] = {
@@ -116,9 +116,12 @@ static bool CheckBacktraceContent(const std::string& content)
         "00000000"
 #endif
     };
-    for (std::string keyWord : existKeyWords) {
-        if (!CheckContent(content, keyWord, true)) {
-            return false;
+
+    if (!fast) {
+        for (std::string keyWord : existKeyWords) {
+            if (!CheckContent(content, keyWord, true)) {
+                return false;
+            }
         }
     }
     for (std::string keyWord : notExistkeyWords) {
@@ -137,7 +140,6 @@ static bool TestGetBacktraceInterface()
     }
 
     GTEST_LOG_(INFO) << content;
-
     if (content.empty()) {
         return false;
     }
@@ -145,6 +147,26 @@ static bool TestGetBacktraceInterface()
     if (!CheckBacktraceContent(content)) {
         return false;
     }
+    return true;
+}
+
+static bool TestGetBacktraceFastInterface()
+{
+#ifdef __aarch64__
+    std::string content;
+    if (!GetBacktrace(content, true)) {
+        return false;
+    }
+
+    GTEST_LOG_(INFO) << content;
+    if (content.empty()) {
+        return false;
+    }
+
+    if (!CheckBacktraceContent(content, true)) {
+        return false;
+    }
+#endif
     return true;
 }
 
@@ -185,6 +207,7 @@ HWTEST_F(BacktraceUtilsTest, BacktraceUtilsTest002, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "BacktraceUtilsTest002: start.";
     ASSERT_EQ(TestGetBacktraceInterface(), true);
+    ASSERT_EQ(TestGetBacktraceFastInterface(), true);
     GTEST_LOG_(INFO) << "BacktraceUtilsTest002: end.";
 }
 
@@ -206,11 +229,9 @@ HWTEST_F(BacktraceUtilsTest, BacktraceUtilsTest003, TestSize.Level2)
 void DoCheckBacktraceInMultiThread()
 {
     std::string content;
-
     ASSERT_TRUE(GetBacktrace(content));
     ASSERT_FALSE(content.empty());
 }
-
 
 /**
  * @tc.name: BacktraceUtilsTest004

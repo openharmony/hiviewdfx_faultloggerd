@@ -16,6 +16,7 @@ import("//base/hiviewdfx/faultloggerd/faultloggerd.gni")
 ohos_rust_shared_ffi("rustc_demangle") {
   include_dirs = [ "." ]
   sources = [ "lib.rs" ]
+  rustflags = [ "-Zstack-protector=all" ]
   crate_name = "rustc_demangle"
   crate_type = "cdylib"
   install_images = [

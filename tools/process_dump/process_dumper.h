@@ -45,9 +45,14 @@ private:
     DISALLOW_COPY_AND_MOVE(ProcessDumper);
     static int WriteDumpBuf(int fd, const char* buf, const int len);
     int DumpProcess(std::shared_ptr<ProcessDumpRequest> request);
+    bool InitKeyThread(std::shared_ptr<ProcessDumpRequest> request);
     int InitPrintThread(std::shared_ptr<ProcessDumpRequest> request);
     int InitProcessInfo(std::shared_ptr<ProcessDumpRequest> request);
+    bool InitVmThread(std::shared_ptr<ProcessDumpRequest> request);
+    bool InitUnwinder(std::shared_ptr<ProcessDumpRequest> request, pid_t vmPid, pid_t realPid);
     static int GetLogTypeBySignal(int sig);
+    void ReportSigDumpStats(std::shared_ptr<ProcessDumpRequest> request);
+    void ReportCrashInfo(const std::string& jsonInfo);
 
 private:
     std::shared_ptr<DfxProcess> process_ = nullptr;
@@ -60,8 +65,12 @@ private:
     int32_t jsonFd_ = -1;
     int32_t resDump_ = 0;
 
-    void InitRegs(std::shared_ptr<ProcessDumpRequest> request, pid_t &vmPid, int &dumpRes);
-    bool IsTargetProcessAlive(std::shared_ptr<ProcessDumpRequest> request, int &dummRes);
+    uint64_t startTime_ = 0;
+    uint64_t finishTime_ = 0;
+
+    void InitRegs(std::shared_ptr<ProcessDumpRequest> request, int &dumpRes);
+    bool IsTargetProcessAlive(std::shared_ptr<ProcessDumpRequest> request, int &dumpRes);
+    bool Unwind(std::shared_ptr<ProcessDumpRequest> request, int &dumpRes);
 };
 } // namespace HiviewDFX
 } // namespace OHOS

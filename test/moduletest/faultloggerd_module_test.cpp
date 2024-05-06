@@ -150,7 +150,7 @@ HWTEST_F(FaultloggerdModuleTest, FaultloggerdClientFdRquestTest004, TestSize.Lev
  */
 HWTEST_F(FaultloggerdModuleTest, FaultloggerdClientPipeFdRquestTest001, TestSize.Level0)
 {
-    sleep(10);
+    sleep(8); // Wait for the last request to complete.
     RequestSdkDump(getpid(), getpid());
     int32_t pipeFd = RequestPipeFd(getpid(), FaultLoggerPipeType::PIPE_FD_READ_BUF);
     ASSERT_NE(pipeFd, -1);

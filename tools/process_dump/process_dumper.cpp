@@ -198,11 +198,14 @@ std::string DumpOpenFiles(OpenFilesList &files)
     return openFiles;
 }
 
-pid_t ReadVmPid()
+
+void ReadPids(int& realPid, int& vmPid)
 {
-    pid_t vmPid = -1;
-    read(STDIN_FILENO, &vmPid, sizeof(vmPid));
-    return vmPid;
+    pid_t pids[PID_MAX] = {0};
+    OHOS_TEMP_FAILURE_RETRY(read(STDIN_FILENO, pids, sizeof(pids)));
+    realPid = pids[REAL_PROCESS_PID];
+    vmPid = pids[VIRTUAL_PROCESS_PID];
+    DFXLOG_INFO("procecdump get real pid is %d vm pid is %d", realPid, vmPid);
 }
 
 void InfoRemoteProcessResult(std::shared_ptr<ProcessDumpRequest> request, int result, int type)
@@ -235,6 +238,7 @@ ProcessDumper &ProcessDumper::GetInstance()
 
 void ProcessDumper::Dump()
 {
+    startTime_ = GetTimeMillisec();
     std::shared_ptr<ProcessDumpRequest> request = std::make_shared<ProcessDumpRequest>();
     std::future<int> future = std::async(std::launch::async, &ProcessDumper::DumpProcess, &GetInstance(), request);
     std::future_status status = future.wait_for(std::chrono::seconds(DUMPPROCESS_MAX_SECOND));
@@ -263,7 +267,6 @@ void ProcessDumper::Dump()
         }
     }
 
-    InfoRemoteProcessResult(request, OPE_CONTINUE, MAIN_PROCESS);
     std::string jsonInfo;
     if (isJsonDump_ || isCrash_) {
         DfxStackInfoFormatter formatter(process_, request);
@@ -274,15 +277,16 @@ void ProcessDumper::Dump()
         }
     }
 
+    finishTime_ = GetTimeMillisec();
+    ReportSigDumpStats(request);
+
     WriteDumpRes(resDump_);
     DfxRingBufferWrapper::GetInstance().StopThread();
     DFXLOG_INFO("Finish dump stacktrace for %s(%d:%d).", request->processName, request->pid, request->tid);
     CloseDebugLog();
-    // check dump result
-    if (reporter_ != nullptr) {
-        reporter_->SetCppCrashInfo(jsonInfo);
-        reporter_->ReportToHiview();
-        reporter_->ReportToAbilityManagerService();
+    ReportCrashInfo(jsonInfo);
+    if ((request->dumpMode == FUSION_MODE) && isCrash_) {
+        InfoRemoteProcessResult(request, OPE_CONTINUE, MAIN_PROCESS);
     }
 }
 
@@ -292,7 +296,7 @@ static int32_t ReadRequestAndCheck(std::shared_ptr<ProcessDumpRequest> request)
     if (readCount != static_cast<long>(sizeof(ProcessDumpRequest))) {
         DFXLOG_ERROR("Failed to read DumpRequest(%d).", errno);
         ReportCrashException(request->processName, request->pid, request->uid,
-                             GetTimeMillisec(), CrashExceptionCode::CRASH_DUMP_EREADREQ);
+                             CrashExceptionCode::CRASH_DUMP_EREADREQ);
         return DumpErrorCode::DUMP_EREADREQUEST;
     }
 
@@ -308,7 +312,7 @@ std::string GetOpenFiles(int32_t pid, int nsPid, uint64_t fdTableAddr)
     return fds;
 }
 
-void ProcessDumper::InitRegs(std::shared_ptr<ProcessDumpRequest> request, pid_t &vmPid, int &dumpRes)
+void ProcessDumper::InitRegs(std::shared_ptr<ProcessDumpRequest> request, int &dumpRes)
 {
     uint32_t opeResult = OPE_SUCCESS;
     if (request->dumpMode == FUSION_MODE) {
@@ -322,9 +326,6 @@ void ProcessDumper::InitRegs(std::shared_ptr<ProcessDumpRequest> request, pid_t 
         if (process_->keyThread_ != nullptr && !isCrash_) {
             process_->keyThread_->Detach();
         }
-
-        vmPid = ReadVmPid();
-        DFXLOG_INFO("vm process pid = %d", vmPid);
     }
 }
 
@@ -336,9 +337,31 @@ bool ProcessDumper::IsTargetProcessAlive(std::shared_ptr<ProcessDumpRequest> req
             "Target process has been killed, the crash log may not be fully generated.");
         dumpRes = DumpErrorCode::DUMP_EGETPPID;
         ReportCrashException(request->processName, request->pid, request->uid,
-            GetTimeMillisec(), CrashExceptionCode::CRASH_DUMP_EKILLED);
+                             CrashExceptionCode::CRASH_DUMP_EKILLED);
         return false;
     }
+    return true;
+}
+
+bool ProcessDumper::Unwind(std::shared_ptr<ProcessDumpRequest> request, int &dumpRes)
+{
+    pid_t realPid = 0;
+    pid_t vmPid = 0;
+    if (request->dumpMode == FUSION_MODE) {
+        ReadPids(realPid, vmPid);
+    }
+
+    if (!InitUnwinder(request, realPid, vmPid)) {
+        DFXLOG_ERROR("%s", "Failed to create unwinder");
+        return false;
+    }
+
+    if (!DfxUnwindRemote::GetInstance().UnwindProcess(request, process_, unwinder_, vmPid)) {
+        DFXLOG_ERROR("%s", "Failed to unwind process.");
+        dumpRes = DumpErrorCode::DUMP_ESTOPUNWIND;
+        return false;
+    }
+
     return true;
 }
 
@@ -380,15 +403,12 @@ int ProcessDumper::DumpProcess(std::shared_ptr<ProcessDumpRequest> request)
             dumpRes = DumpErrorCode::DUMP_EGETFD;
         }
 
-        pid_t vmPid = 0;
-        InitRegs(request, vmPid, dumpRes);
+        InitRegs(request, dumpRes);
         if (isCrash_ && !isLeakDump) {
             reporter_ = std::make_shared<CppCrashReporter>(request->timeStamp, process_);
         }
 
-        if (!DfxUnwindRemote::GetInstance().UnwindProcess(request, process_, unwinder_, vmPid)) {
-            DFXLOG_ERROR("%s", "Failed to unwind process.");
-            dumpRes = DumpErrorCode::DUMP_ESTOPUNWIND;
+        if (!Unwind(request, dumpRes)) {
             opeResult = OPE_FAIL;
         }
         if (request->dumpMode == FUSION_MODE) {
@@ -399,6 +419,81 @@ int ProcessDumper::DumpProcess(std::shared_ptr<ProcessDumpRequest> request)
         }
     } while (false);
     return dumpRes;
+}
+
+bool ProcessDumper::InitVmThread(std::shared_ptr<ProcessDumpRequest> request)
+{
+    if (request == nullptr || process_ == nullptr) {
+        return false;
+    }
+    if (isCrash_ && request->vmPid != 0) {
+        if (getppid() != request->vmNsPid) {
+            DFXLOG_ERROR("VM process(%d) should be parent pid.", request->vmNsPid);
+            ReportCrashException(request->processName, request->pid, request->uid,
+                                 CrashExceptionCode::CRASH_DUMP_EPARENTPID);
+            return false;
+        }
+        process_->vmThread_ = DfxThread::Create(request->vmPid, request->vmPid, request->vmNsPid);
+        if ((process_->vmThread_ == nullptr) || (!process_->vmThread_->Attach(PTRACE_ATTATCH_KEY_THREAD_TIMEOUT))) {
+            DFXLOG_ERROR("Failed to attach vm thread(%d).", request->vmNsPid);
+            return false;
+        }
+
+        process_->vmThread_->SetThreadRegs(DfxRegs::CreateFromUcontext(request->context));
+        process_->vmThread_->threadInfo_.threadName = std::string(request->threadName);
+    }
+    return true;
+}
+
+bool ProcessDumper::InitKeyThread(std::shared_ptr<ProcessDumpRequest> request)
+{
+    if (request == nullptr || process_ == nullptr) {
+        return false;
+    }
+    pid_t dumpTid = request->siginfo.si_value.sival_int;
+    pid_t nsTid = request->tid;
+    pid_t tid = process_->ChangeTid(nsTid, true);
+    if (!isCrash_) {
+        if (dumpTid != 0 && dumpTid != tid && (IsThreadInPid(process_->processInfo_.pid, dumpTid))) {
+            tid = dumpTid;
+            nsTid = process_->ChangeTid(tid, false);
+        }
+    }
+    process_->keyThread_ = DfxThread::Create(process_->processInfo_.pid, tid, nsTid);
+    if ((process_->keyThread_ == nullptr) || (!process_->keyThread_->Attach(PTRACE_ATTATCH_KEY_THREAD_TIMEOUT))) {
+        DFXLOG_ERROR("Failed to attach key thread(%d).", nsTid);
+        ReportCrashException(request->processName, request->pid, request->uid,
+                             CrashExceptionCode::CRASH_DUMP_EATTACH);
+        if (!isCrash_) {
+            return false;
+        }
+    }
+    if (request->dumpMode == FUSION_MODE) {
+        ptrace(PTRACE_CONT, process_->keyThread_->threadInfo_.nsTid, 0, 0);
+    }
+
+    if ((request->dumpMode == SPLIT_MODE) && !isCrash_) {
+        process_->keyThread_->SetThreadRegs(DfxRegs::CreateFromUcontext(request->context));
+    }
+
+    if ((process_->keyThread_ != nullptr) && process_->keyThread_->threadInfo_.threadName.empty()) {
+        process_->keyThread_->threadInfo_.threadName = std::string(request->threadName);
+    }
+    return true;
+}
+
+bool ProcessDumper::InitUnwinder(std::shared_ptr<ProcessDumpRequest> request, pid_t vmPid, pid_t realPid)
+{
+    if (request->dumpMode == FUSION_MODE) {
+        unwinder_ = std::make_shared<Unwinder>(vmPid,  realPid, isCrash_);
+    } else {
+        if (isCrash_) {
+            unwinder_ = std::make_shared<Unwinder>(process_->vmThread_->threadInfo_.pid);
+        } else {
+            unwinder_ = std::make_shared<Unwinder>(process_->processInfo_.pid, false);
+        }
+    }
+    return unwinder_ != nullptr;
 }
 
 int ProcessDumper::InitProcessInfo(std::shared_ptr<ProcessDumpRequest> request)
@@ -417,75 +512,25 @@ int ProcessDumper::InitProcessInfo(std::shared_ptr<ProcessDumpRequest> request)
     process_->recycleTid_ = request->recycleTid;
     process_->SetFatalMessage(request->lastFatalMessage);
 
-    if (isCrash_ && request->vmPid != 0) {
-        if (getppid() != request->vmNsPid) {
-            DFXLOG_ERROR("VM process(%d) should be parent pid.", request->vmNsPid);
-            ReportCrashException(request->processName, request->pid, request->uid,
-                                 GetTimeMillisec(), CrashExceptionCode::CRASH_DUMP_EPARENTPID);
-            return -1;
-        }
-        process_->vmThread_ = DfxThread::Create(request->vmPid, request->vmPid, request->vmNsPid);
-        if ((process_->vmThread_ == nullptr) || (!process_->vmThread_->Attach(PTRACE_ATTATCH_KEY_THREAD_TIMEOUT))) {
-            DFXLOG_ERROR("Failed to attach vm thread(%d).", request->vmNsPid);
-            return -1;
-        }
-
-        process_->vmThread_->SetThreadRegs(DfxRegs::CreateFromUcontext(request->context));
-        process_->vmThread_->threadInfo_.threadName = std::string(request->threadName);
+    if (!InitVmThread(request)) {
+        return -1;
     }
 
-    pid_t dumpTid = request->siginfo.si_value.sival_int;
-    pid_t nsTid = request->tid;
-    pid_t tid = process_->ChangeTid(nsTid, true);
-    if (!isCrash_) {
-        if (dumpTid != 0 && dumpTid != tid && (IsThreadInPid(process_->processInfo_.pid, dumpTid))) {
-            tid = dumpTid;
-            nsTid = process_->ChangeTid(tid, false);
-        }
-    }
-    process_->keyThread_ = DfxThread::Create(process_->processInfo_.pid, tid, nsTid);
-    if ((process_->keyThread_ == nullptr) || (!process_->keyThread_->Attach(PTRACE_ATTATCH_KEY_THREAD_TIMEOUT))) {
-        DFXLOG_ERROR("Failed to attach key thread(%d).", nsTid);
-        ReportCrashException(request->processName, request->pid, request->uid,
-                             GetTimeMillisec(), CrashExceptionCode::CRASH_DUMP_EATTACH);
-        if (!isCrash_) {
-            return -1;
-        }
-    }
-    if (request->dumpMode == FUSION_MODE) {
-        ptrace(PTRACE_CONT, process_->keyThread_->threadInfo_.nsTid, 0, 0);
-    }
-
-    if ((request->dumpMode == SPLIT_MODE) && !isCrash_) {
-        process_->keyThread_->SetThreadRegs(DfxRegs::CreateFromUcontext(request->context));
-    }
-
-    if ((process_->keyThread_ != nullptr) && process_->keyThread_->threadInfo_.threadName.empty()) {
-        process_->keyThread_->threadInfo_.threadName = std::string(request->threadName);
+    if (!InitKeyThread(request)) {
+        return -1;
     }
 
     if (isCrash_) {
         process_->InitOtherThreads();
         process_->Attach();
     } else {
-        if (dumpTid == 0) {
+        if (request->siginfo.si_value.sival_int == 0) {
             process_->InitOtherThreads();
             if (request->dumpMode == FUSION_MODE) {
                 process_->Attach();
             }
         }
     }
-
-    if ((request->dumpMode == SPLIT_MODE) && isCrash_) {
-        unwinder_ = std::make_shared<Unwinder>(process_->vmThread_->threadInfo_.pid);
-    } else {
-        unwinder_ = std::make_shared<Unwinder>(process_->processInfo_.pid, isCrash_);
-    }
-    if (unwinder_ == nullptr) {
-        DFXLOG_ERROR("%s", "Failed to create unwinder?");
-        return -1;
-    }
-
 #if defined(PROCESSDUMP_MINIDEBUGINFO)
     UnwinderConfig::SetEnableMiniDebugInfo(true);
     UnwinderConfig::SetEnableLoadSymbolLazily(true);
@@ -567,7 +612,7 @@ int ProcessDumper::InitPrintThread(std::shared_ptr<ProcessDumpRequest> request)
     if ((fd < 0) && (jsonFd_ < 0)) {
         DFXLOG_WARN("%s", "Failed to request fd from faultloggerd.");
         ReportCrashException(request->processName, request->pid, request->uid,
-                             GetTimeMillisec(), CrashExceptionCode::CRASH_DUMP_EWRITEFD);
+                             CrashExceptionCode::CRASH_DUMP_EWRITEFD);
     }
 
     if (!isJsonDump_) {
@@ -593,7 +638,10 @@ void ProcessDumper::WriteDumpRes(int32_t res)
 {
     DFXLOG_INFO("%s :: res: %d", __func__, res);
     if (resFd_ > 0) {
-        write(resFd_, &res, sizeof(res));
+        ssize_t nwrite = OHOS_TEMP_FAILURE_RETRY(write(resFd_, &res, sizeof(res)));
+        if (nwrite < 0) {
+            DFXLOG_ERROR("%s write fail, err:%d", __func__, errno);
+        }
         close(resFd_);
         resFd_ = -1;
     } else {
@@ -607,6 +655,37 @@ void ProcessDumper::WriteDumpRes(int32_t res)
 bool ProcessDumper::IsCrash() const
 {
     return isCrash_;
+}
+
+void ProcessDumper::ReportSigDumpStats(std::shared_ptr<ProcessDumpRequest> request)
+{
+    if (isCrash_) {
+        return;
+    }
+
+    std::vector<uint8_t> buf(sizeof(struct FaultLoggerdStatsRequest), 0);
+    auto stat = reinterpret_cast<struct FaultLoggerdStatsRequest*>(buf.data());
+    stat->type = PROCESS_DUMP;
+    stat->pid = request->pid;
+    stat->signalTime = request->timeStamp;
+    stat->processdumpStartTime = startTime_;
+    stat->processdumpFinishTime = finishTime_;
+    if (memcpy_s(stat->targetProcess, sizeof(stat->targetProcess),
+        request->processName, sizeof(request->processName)) != 0) {
+        DFXLOG_ERROR("Failed to copy target processName (%d)", errno);
+        return;
+    }
+
+    ReportDumpStats(stat);
+}
+
+void ProcessDumper::ReportCrashInfo(const std::string& jsonInfo)
+{
+    if (reporter_ != nullptr) {
+        reporter_->SetCppCrashInfo(jsonInfo);
+        reporter_->ReportToHiview();
+        reporter_->ReportToAbilityManagerService();
+    }
 }
 } // namespace HiviewDFX
 } // namespace OHOS

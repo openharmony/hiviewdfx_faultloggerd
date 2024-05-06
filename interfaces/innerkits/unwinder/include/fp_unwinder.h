@@ -27,7 +27,7 @@
 #include <sys/stat.h>
 #include <sys/syscall.h>
 #include <unistd.h>
-#include "dfx_ark_local.h"
+#include "dfx_ark.h"
 #include "dfx_define.h"
 #include "stack_util.h"
 
@@ -46,7 +46,14 @@ public:
         }
         return ptr.get();
     }
-    ~FpUnwinder() = default;
+    ~FpUnwinder()
+    {
+        if (initPipe_) {
+            close(pfd_[PIPE_WRITE]);
+            close(pfd_[PIPE_READ]);
+            initPipe_ = false;
+        }
+    }
 
     size_t Unwind(uintptr_t pc, uintptr_t fp, uintptr_t* pcs, size_t maxSize, size_t skipFrameNum = 0)
     {
@@ -63,10 +70,7 @@ public:
             }
         }
 #if defined(ENABLE_MIXSTACK)
-        MAYBE_UNUSED bool isGetArkRange = false;
-        if (!GetArkStackRange(arkMapStart_, arkMapEnd_)) {
-            isGetArkRange = true;
-        }
+        MAYBE_UNUSED bool isGetArkRange = GetArkStackRange(arkMapStart_, arkMapEnd_);
 #endif
         uintptr_t firstFp = fp;
         size_t index = 0;
@@ -79,8 +83,8 @@ public:
             index++;
 #if defined(ENABLE_MIXSTACK)
             if (isGetArkRange && (pc >= arkMapStart_) && (pc < arkMapEnd_)) {
-                if (DfxArkLocal::StepArkFrame(FpUnwinder::GetPtr(), &(FpUnwinder::AccessMem),
-                    &fp, &sp, &pc, &isJsFrame) < 0) {
+                if (DfxArk::StepArkFrame(FpUnwinder::GetPtr(), &(FpUnwinder::AccessMem),
+                    &fp, &sp, &pc, nullptr, &isJsFrame) < 0) {
                     break;
                 }
                 continue;
@@ -104,10 +108,7 @@ public:
             return 0;
         }
 #if defined(ENABLE_MIXSTACK)
-        MAYBE_UNUSED bool isGetArkRange = false;
-        if (!GetArkStackRange(arkMapStart_, arkMapEnd_)) {
-            isGetArkRange = true;
-        }
+        MAYBE_UNUSED bool isGetArkRange = GetArkStackRange(arkMapStart_, arkMapEnd_);
 #endif
         size_t index = 0;
         MAYBE_UNUSED uintptr_t sp = 0;
@@ -119,8 +120,8 @@ public:
             index++;
 #if defined(ENABLE_MIXSTACK)
             if (isGetArkRange && (pc >= arkMapStart_) && (pc < arkMapEnd_)) {
-                if (DfxArkLocal::StepArkFrame(FpUnwinder::GetPtr(), &(FpUnwinder::AccessMemSafe),
-                    &fp, &sp, &pc, &isJsFrame) < 0) {
+                if (DfxArk::StepArkFrame(FpUnwinder::GetPtr(), &(FpUnwinder::AccessMemSafe),
+                    &fp, &sp, &pc, nullptr, &isJsFrame) < 0) {
                     break;
                 }
                 continue;
@@ -151,26 +152,6 @@ public:
 #endif
     }
 
-    inline bool InitPipe()
-    {
-        static std::once_flag flag;
-        std::call_once(flag, [&]() {
-            if (!initPipe_ && pipe2(pfd_, O_CLOEXEC | O_NONBLOCK) == 0) {
-                initPipe_ = true;
-            }
-        });
-        return initPipe_;
-    }
-
-    inline void ClosePipe()
-    {
-        if (initPipe_) {
-            close(pfd_[PIPE_WRITE]);
-            close(pfd_[PIPE_READ]);
-            initPipe_ = false;
-        }
-    }
-
 #if defined(ENABLE_MIXSTACK)
     static bool AccessMem(void* ptr, uintptr_t addr, uintptr_t *val)
     {
@@ -184,7 +165,12 @@ public:
 #endif
 
 private:
-    FpUnwinder() = default;
+    FpUnwinder()
+    {
+        if (pipe2(pfd_, O_CLOEXEC | O_NONBLOCK) == 0) {
+            initPipe_ = true;
+        }
+    }
     DISALLOW_COPY_AND_MOVE(FpUnwinder);
 
 #if defined(__has_feature) && __has_feature(address_sanitizer)
@@ -193,7 +179,7 @@ private:
     bool ReadUptr(uintptr_t addr, uintptr_t& value)
 #endif
     {
-        if ((addr < stackBottom_) || (addr >= stackTop_ - sizeof(uintptr_t))) {
+        if ((addr < stackBottom_) || (addr + sizeof(uintptr_t) >= stackTop_)) {
             return false;
         }
         value = *reinterpret_cast<uintptr_t *>(addr);
@@ -212,8 +198,11 @@ private:
         if (OHOS_TEMP_FAILURE_RETRY(syscall(SYS_write, pfd_[PIPE_WRITE], addr, sizeof(uintptr_t))) == -1) {
             return false;
         }
+
+        uintptr_t dummy;
         value = *reinterpret_cast<uintptr_t *>(addr);
-        return true;
+        return OHOS_TEMP_FAILURE_RETRY(syscall(SYS_read, pfd_[PIPE_READ], &dummy, sizeof(uintptr_t))) ==
+        sizeof(uintptr_t);
     }
 
 private:

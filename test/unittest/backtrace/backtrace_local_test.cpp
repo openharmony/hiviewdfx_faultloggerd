@@ -32,7 +32,6 @@
 #include "dfx_frame_formatter.h"
 #include "dfx_test_util.h"
 #include "elapsed_time.h"
-#include "file_util.h"
 
 using namespace testing;
 using namespace testing::ext;
@@ -150,7 +149,12 @@ HWTEST_F(BacktraceLocalTest, BacktraceLocalTest003, TestSize.Level2)
     ASSERT_GT(frames.size(), 0);
     auto backtraceStr = thread.GetFormattedStr(false);
     ASSERT_GT(backtraceStr.size(), 0);
-    GTEST_LOG_(INFO) << backtraceStr;
+    GTEST_LOG_(INFO) << "backtraceStr:\n" << backtraceStr;
+
+    std::string str;
+    auto ret = GetBacktraceStringByTid(str, g_tid, 0, false);
+    ASSERT_TRUE(ret);
+    GTEST_LOG_(INFO) << "GetBacktraceStringByTid:\n" << str;
     g_mutex.unlock();
     g_tid = 0;
     if (backtraceThread.joinable()) {

@@ -31,7 +31,6 @@
 #include "dfx_log.h"
 #include "dfx_util.h"
 #include "faultloggerd_socket.h"
-#include "file_util.h"
 
 static const int32_t SOCKET_TIMEOUT = 5;
 
@@ -329,6 +328,24 @@ int32_t RequestDelPipeFd(int32_t pid)
     }
 
     write(sockfd, &request, sizeof(struct FaultLoggerdRequest));
+    close(sockfd);
+    return 0;
+}
+
+int ReportDumpStats(const struct FaultLoggerdStatsRequest *request)
+{
+    int sockfd = -1;
+    std::string name = GetSocketConnectionName();
+    if (!StartConnect(sockfd, name.c_str(), -1)) {
+        DFXLOG_ERROR("%s", "ReportDumpCatcherStats: failed to connect to faultloggerd");
+        return -1;
+    }
+
+    if (write(sockfd, request, sizeof(struct FaultLoggerdStatsRequest)) != sizeof(struct FaultLoggerdStatsRequest)) {
+        DFXLOG_ERROR("%s", "ReportDumpCatcherStats: failed to write stats.");
+        close(sockfd);
+        return -1;
+    }
     close(sockfd);
     return 0;
 }

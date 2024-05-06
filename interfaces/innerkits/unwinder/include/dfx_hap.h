@@ -17,7 +17,7 @@
 
 #include <cstdint>
 #include <memory>
-#include <sys/types.h>
+#include "dfx_ark.h"
 #include "dfx_extractor_utils.h"
 
 namespace OHOS {
@@ -27,21 +27,28 @@ class DfxMap;
 class DfxHap {
 public:
     DfxHap() = default;
-    ~DfxHap() = default;
+    ~DfxHap();
+
+    bool ParseHapInfo(pid_t pid, uint64_t pc, uintptr_t methodid, std::shared_ptr<DfxMap> map,
+        JsFunction *jsFunction);
+
+private:
+    bool ParseHapFileInfo(uint64_t pc, uintptr_t methodid, std::shared_ptr<DfxMap> map, JsFunction *jsFunction);
+    bool ParseHapMemInfo(pid_t pid, uint64_t pc, uintptr_t methodid, std::shared_ptr<DfxMap> map,
+        JsFunction *jsFunction);
 
     bool ParseHapFileData(const std::string& name);
     bool ParseHapMemData(const pid_t pid, std::shared_ptr<DfxMap> map);
 
-public:
-    std::unique_ptr<uint8_t[]> abcDataPtr_ = nullptr;
-    size_t abcDataSize_ = 0;
-    uintptr_t abcLoadOffset_ = 0;
-    std::unique_ptr<uint8_t[]> srcMapDataPtr_ = nullptr;
-    size_t srcMapDataSize_ = 0;
-    uintptr_t srcMapLoadOffset_ = 0;
-
 private:
-    std::unique_ptr<DfxExtractor> extractor_ = nullptr;
+    MAYBE_UNUSED uintptr_t arkSymbolExtractorPtr_ = 0;
+    MAYBE_UNUSED std::unique_ptr<uint8_t[]> abcDataPtr_ = nullptr;
+    MAYBE_UNUSED size_t abcDataSize_ = 0;
+    MAYBE_UNUSED uintptr_t abcLoadOffset_ = 0;
+    MAYBE_UNUSED std::unique_ptr<uint8_t[]> srcMapDataPtr_ = nullptr;
+    MAYBE_UNUSED size_t srcMapDataSize_ = 0;
+    MAYBE_UNUSED uintptr_t srcMapLoadOffset_ = 0;
+    MAYBE_UNUSED std::unique_ptr<DfxExtractor> extractor_ = nullptr;
 };
 } // namespace HiviewDFX
 } // namespace OHOS

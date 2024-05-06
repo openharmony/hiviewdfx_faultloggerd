@@ -49,21 +49,27 @@ bool BacktraceLocalThread::Unwind(bool fast, size_t maxFrameNum, size_t skipFram
     std::unique_lock<std::mutex> lock(mutex);
     bool ret = false;
 
-    if (tid_ < BACKTRACE_CURRENT_THREAD) {
+    if (unwinder_ == nullptr || tid_ < BACKTRACE_CURRENT_THREAD) {
         return ret;
     }
 
     if (tid_ == BACKTRACE_CURRENT_THREAD) {
         ret = unwinder_->UnwindLocal(false, fast, maxFrameNum, skipFrameNum + 1);
+#ifdef __aarch64__
         if (fast) {
             Unwinder::GetLocalFramesByPcs(frames_, unwinder_->GetPcs());
-        } else {
+        }
+#endif
+        if (frames_.empty()) {
             frames_ = unwinder_->GetFrames();
         }
         return ret;
     }
-
-    ret = unwinder_->UnwindLocalWithTid(tid_, maxFrameNum, skipFrameNum + 1);
+    int nsTid = 0;
+    if (!(TidToNstid(getprocpid(), tid_, nsTid))) {
+        nsTid = tid_;
+    }
+    ret = unwinder_->UnwindLocalWithTid(nsTid, maxFrameNum, skipFrameNum + 1);
 #ifdef __aarch64__
     Unwinder::GetLocalFramesByPcs(frames_, unwinder_->GetPcs());
 #else

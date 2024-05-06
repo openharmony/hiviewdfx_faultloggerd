@@ -59,19 +59,19 @@ static const char* GetCrashDescription(const int32_t errCode)
             return g_crashExceptionMap[i].str;
         }
     }
-    return g_crashExceptionMap[i].str;    /* the end of map is "unknown reason" */
+    return g_crashExceptionMap[i - 1].str;    /* the end of map is "unknown reason" */
 }
 
-void ReportCrashException(const char* pName, int32_t pid, int32_t uid, int64_t time, int32_t errCode)
+void ReportCrashException(const char* pName, int32_t pid, int32_t uid, int32_t errCode)
 {
     if (pName == nullptr || strnlen(pName, NAME_BUF_LEN) == NAME_BUF_LEN) {
         return;
     }
 
-    ReportCrashException(std::string(pName), pid, uid, time, errCode);
+    ReportCrashException(std::string(pName), pid, uid, errCode);
 }
 
-void ReportCrashException(std::string name, int32_t pid, int32_t uid, int64_t time, int32_t errCode)
+void ReportCrashException(std::string name, int32_t pid, int32_t uid, int32_t errCode)
 {
 #ifndef HISYSEVENT_DISABLE
     if (errCode == CrashExceptionCode::CRASH_ESUCCESS) {
@@ -84,7 +84,7 @@ void ReportCrashException(std::string name, int32_t pid, int32_t uid, int64_t ti
         "PROCESS_NAME", name,
         "PID", pid,
         "UID", uid,
-        "HAPPEN_TIME", time,
+        "HAPPEN_TIME", GetTimeMillisec(),
         "ERROR_CODE", errCode,
         "ERROR_MSG", GetCrashDescription(errCode));
 #endif
@@ -106,7 +106,7 @@ void ReportUnwinderException(uint16_t unwError)
         return;
     }
     errCode = iter->second;
-    ReportCrashException(g_crashProcessName, g_crashProcessPid, g_crashProcessUid, GetTimeMillisec(), errCode);
+    ReportCrashException(g_crashProcessName, g_crashProcessPid, g_crashProcessUid, errCode);
 }
 
 int32_t CheckCrashLogValid(std::string& file)

@@ -27,6 +27,7 @@ group("unittest") {
     deps += [
       "async_stack:unittest",
       "backtrace:unittest",
+      "crash_exception:unittest",
       "dump_catcher:unittest",
       "faultloggerd_client:unittest",
       "panic_handler:unittest",

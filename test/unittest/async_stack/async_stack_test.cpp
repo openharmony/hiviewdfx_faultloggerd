@@ -30,7 +30,6 @@
 #include "async_stack.h"
 #include "dfx_test_util.h"
 #include "elapsed_time.h"
-#include "file_util.h"
 
 using namespace testing;
 using namespace testing::ext;
@@ -64,13 +63,12 @@ void AsyncStackTest::TearDown()
 
 /**
  * @tc.name: AsyncStackTest001
- * @tc.desc: test EnableAsyncStack() and GetStackId()
+ * @tc.desc: test GetStackId()
  * @tc.type: FUNC
  */
 HWTEST_F(AsyncStackTest, AsyncStackTest001, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "AsyncStackTest001: start.";
-    EnableAsyncStack();
     SetStackId(1);
     auto res = GetStackId();
     GTEST_LOG_(INFO) << "res: " << res;

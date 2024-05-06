@@ -55,7 +55,7 @@ std::shared_ptr<FaultLoggerPipeMap> faultLoggerPipeMap_;
 
 namespace {
 constexpr int32_t MAX_CONNECTION = 30;
-constexpr int32_t REQUEST_BUF_SIZE = 1024;
+constexpr int32_t REQUEST_BUF_SIZE = 2048;
 constexpr int32_t MAX_EPOLL_EVENT = 1024;
 const int32_t FAULTLOG_FILE_PROP = 0640;
 
@@ -199,7 +199,6 @@ static bool CheckReadRequest(ssize_t nread, ssize_t size)
         DFXLOG_ERROR("%s :: Read null from request socket", FAULTLOGGERD_TAG.c_str());
         return false;
     } else if (nread != static_cast<long>(size)) {
-        DFXLOG_ERROR("%s :: Unmatched request length", FAULTLOGGERD_TAG.c_str());
         return false;
     }
     return true;
@@ -211,14 +210,20 @@ void FaultLoggerDaemon::HandleRequest(int32_t epollFd, int32_t connectionFd)
         DFXLOG_ERROR("%s :: HandleRequest recieved invalid fd parmeters.", FAULTLOGGERD_TAG.c_str());
         return;
     }
-    char buf[REQUEST_BUF_SIZE] = {0};
+
+    std::vector<uint8_t> buf(REQUEST_BUF_SIZE, 0);
     do {
-        ssize_t nread = read(connectionFd, buf, sizeof(buf));
+        ssize_t nread = read(connectionFd, buf.data(), REQUEST_BUF_SIZE);
+        if (CheckReadRequest(nread, sizeof(FaultLoggerdStatsRequest))) {
+            HandleDumpStats(connectionFd, reinterpret_cast<FaultLoggerdStatsRequest *>(buf.data()));
+            break;
+        }
+
         if (!CheckReadRequest(nread, sizeof(FaultLoggerdRequest))) {
             break;
         }
 
-        auto request = reinterpret_cast<FaultLoggerdRequest *>(buf);
+        auto request = reinterpret_cast<FaultLoggerdRequest *>(buf.data());
         if (!CheckRequestCredential(connectionFd, request)) {
             break;
         }
@@ -251,7 +256,6 @@ void FaultLoggerDaemon::HandleRequest(int32_t epollFd, int32_t connectionFd)
                 break;
         }
     } while (false);
-
     DelEvent(eventFd_, connectionFd, EPOLLIN);
     connectionMap_.erase(connectionFd);
 }
@@ -536,14 +540,13 @@ void FaultLoggerDaemon::HandleSdkDumpRequest(int32_t connectionFd, FaultLoggerdR
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Winitializer-overrides"
         // defined in out/hi3516dv300/obj/third_party/musl/intermidiates/linux/musl_src_ported/include/signal.h
-        siginfo_t si = {
-            .si_signo = SIGDUMP,
-            .si_errno = 0,
-            .si_code = request->sigCode,
-            .si_value.sival_int = request->tid,
-            .si_pid = request->callerPid,
-            .si_uid = static_cast<uid_t>(request->callerTid)
-        };
+        siginfo_t si {0};
+        si.si_signo = SIGDUMP;
+        si.si_errno = 0;
+        si.si_value.sival_int = request->tid;
+        si.si_code = request->sigCode;
+        si.si_pid = request->callerPid;
+        si.si_uid = static_cast<uid_t>(request->callerTid);
 #pragma clang diagnostic pop
         int32_t reqTid = 0;
         if (request->tid == 0) {
@@ -653,8 +656,7 @@ void FaultLoggerDaemon::RemoveTempFileIfNeed()
     }
 
     std::sort(files.begin(), files.end(),
-        [](const std::string& lhs, const std::string& rhs) -> int
-    {
+        [](const std::string& lhs, const std::string& rhs) -> int {
         auto lhsSplitPos = lhs.find_last_of("-");
         auto rhsSplitPos = rhs.find_last_of("-");
         if (lhsSplitPos == std::string::npos || rhsSplitPos == std::string::npos) {
@@ -843,6 +845,97 @@ void FaultLoggerDaemon::CleanupEventFd()
         close(eventFd_);
         eventFd_ = -1;
     }
+}
+
+std::string GetElfName(FaultLoggerdStatsRequest* request)
+{
+    if (request == nullptr || strlen(request->callerElf) > NAME_BUF_LEN) {
+        return "";
+    }
+
+    std::stringstream stream;
+    stream << std::string(request->callerElf, strlen(request->callerElf));
+    stream << "(";
+    stream << std::hex << request->offset;
+    stream << ")";
+    return stream.str();
+}
+
+void FaultLoggerDaemon::HandleDumpStats(int32_t connectionFd, FaultLoggerdStatsRequest* request)
+{
+    DFXLOG_INFO("%s :: %s: HandleDumpStats", FAULTLOGGERD_TAG.c_str(), __func__);
+    size_t index = 0;
+    bool hasRecord = false;
+    for (index = 0; index < stats_.size(); index++) {
+        if (stats_[index].pid == request->pid) {
+            hasRecord = true;
+            break;
+        }
+    }
+
+    DumpStats stats;
+    if (request->type == PROCESS_DUMP && !hasRecord) {
+        stats.pid = request->pid;
+        stats.signalTime = request->signalTime;
+        stats.processdumpStartTime = request->processdumpStartTime;
+        stats.processdumpFinishTime = request->processdumpFinishTime;
+        stats.targetProcessName = request->targetProcess;
+        stats_.emplace_back(stats);
+    } else if (request->type == DUMP_CATCHER && hasRecord) {
+        stats_[index].requestTime = request->requestTime;
+        stats_[index].dumpCatcherFinishTime = request->dumpCatcherFinishTime;
+        stats_[index].callerElfName = GetElfName(request);
+        stats_[index].callerProcessName = request->callerProcess;
+        stats_[index].result = request->result;
+        stats_[index].summary = request->summary;
+        ReportDumpStats(stats_[index]);
+        stats_.erase(stats_.begin() + index);
+    } else if (request->type == DUMP_CATCHER) {
+        stats.pid = request->pid;
+        stats.requestTime = request->requestTime;
+        stats.dumpCatcherFinishTime = request->dumpCatcherFinishTime;
+        stats.callerElfName = GetElfName(request);
+        stats.result = request->result;
+        stats.callerProcessName = request->callerProcess;
+        stats.summary = request->summary;
+        ReportDumpStats(stats);
+    }
+    RemoveTimeoutDumpStats();
+}
+
+void FaultLoggerDaemon::RemoveTimeoutDumpStats()
+{
+    const uint64_t timeout = 10000;
+    uint64_t now = GetTimeMilliSeconds();
+    for (auto it = stats_.begin(); it != stats_.end();) {
+        if (((now > it->signalTime) && (now - it->signalTime > timeout)) ||
+            (now <= it->signalTime)) {
+            it = stats_.erase(it);
+        } else {
+            ++it;
+        }
+    }
+}
+
+void FaultLoggerDaemon::ReportDumpStats(const DumpStats& stat)
+{
+#ifndef HISYSEVENT_DISABLE
+    HiSysEventWrite(
+        HiSysEvent::Domain::HIVIEWDFX,
+        "DUMP_CATCHER_STATS",
+        HiSysEvent::EventType::STATISTIC,
+        "CALLER_PROCESS_NAME", stat.callerProcessName,
+        "CALLER_FUNC_NAME", stat.callerElfName,
+        "TARGET_PROCESS_NAME", stat.targetProcessName,
+        "RESULT", stat.result,
+        "SUMMARY", stat.summary, // we need to parse summary when interface return false
+        "PID", stat.pid,
+        "REQUEST_TIME", stat.requestTime,
+        "OVERALL_TIME", stat.dumpCatcherFinishTime - stat.requestTime,
+        "SIGNAL_TIME", stat.signalTime - stat.requestTime,
+        "DUMPER_START_TIME", stat.processdumpStartTime - stat.signalTime,
+        "UNWIND_TIME", stat.processdumpFinishTime - stat.processdumpStartTime);
+#endif
 }
 } // namespace HiviewDFX
 } // namespace OHOS

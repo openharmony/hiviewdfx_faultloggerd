@@ -107,7 +107,17 @@ int DfxAccessorsLocal::FindUnwindTable(uintptr_t pc, UnwindTableInfo& uti, void 
         return UNW_ERROR_INVALID_CONTEXT;
     }
 
-    int ret = DfxElf::FindUnwindTableLocal(pc, uti);
+    int ret = UNW_ERROR_INVALID_ELF;
+    if (ctx->map != nullptr && ctx->map->name == "shmm" && ctx->map->IsMapExec()) {
+        auto elf = ctx->map->GetElf(getpid());
+        if (elf == nullptr) {
+            LOGU("%s", "FindUnwindTable elf is null");
+            return ret;
+        }
+        ret = elf->FindUnwindTableInfo(pc, ctx->map, uti);
+    } else {
+        ret = DfxElf::FindUnwindTableLocal(pc, uti);
+    }
     if (ret == UNW_ERROR_NONE) {
         ctx->di = uti;
     }

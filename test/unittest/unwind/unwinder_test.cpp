@@ -72,7 +72,7 @@ HWTEST_F(UnwinderTest, GetStackRangeTest001, TestSize.Level2)
     // When the param is less than -1, maps_ = null when method Unwinder is constructed
     auto unwinderNegative = std::make_shared<Unwinder>(-2);
     GTEST_LOG_(INFO) << "when pid == tid and maps_ == null, GetStackRange(stackBottom, stackTop) is false";
-    ASSERT_FALSE(unwinderNegative->GetStackRange(stackBottom, stackTop));
+    ASSERT_TRUE(unwinderNegative->GetStackRange(stackBottom, stackTop));
     GTEST_LOG_(INFO) << "GetStackRangeTest001: end.";
 }
 
@@ -90,7 +90,9 @@ HWTEST_F(UnwinderTest, GetStackRangeTest002, TestSize.Level2)
     bool result = false;
     GTEST_LOG_(INFO) << "Run the function with thread will get pid != tid, "
                         "GetStackRange(stackBottom, stackTop) is true";
-    std::thread th([&]{result = unwinder->GetStackRange(stackBottom, stackTop);});
+    std::thread th([unwinder, &stackBottom, &stackTop, &result] {
+        result = unwinder->GetStackRange(stackBottom, stackTop);
+    });
     if (th.joinable()) {
         th.join();
     }
@@ -536,8 +538,8 @@ HWTEST_F(UnwinderTest, StepTest004, TestSize.Level2)
     ASSERT_GT(unwSize, 1) << "pcs.size() error";
 
     uintptr_t miniRegs[FP_MINI_REGS_SIZE] = {0};
-    GetFramePointerMiniRegs(miniRegs);
-    regs = DfxRegs::CreateFromRegs(UnwindMode::FRAMEPOINTER_UNWIND, miniRegs);
+    GetFramePointerMiniRegs(miniRegs, sizeof(miniRegs) / sizeof(miniRegs[0]));
+    regs = DfxRegs::CreateFromRegs(UnwindMode::FRAMEPOINTER_UNWIND, miniRegs, sizeof(miniRegs) / sizeof(miniRegs[0]));
     unwinder->SetRegs(regs);
     size_t idx = 0;
     uintptr_t pc, fp;
@@ -923,7 +925,7 @@ HWTEST_F(UnwinderTest, AccessMemTest001, TestSize.Level2)
     EXPECT_FALSE(memory->ReadReg(0, &val));
     uintptr_t regs[] = {0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xa};
     UnwindContext ctx;
-    ctx.regs = DfxRegs::CreateFromRegs(UnwindMode::DWARF_UNWIND, regs);
+    ctx.regs = DfxRegs::CreateFromRegs(UnwindMode::DWARF_UNWIND, regs, sizeof(regs) / sizeof(regs[0]));
     memory->SetCtx(&ctx);
     EXPECT_FALSE(memory->ReadReg(-1, &val));
 

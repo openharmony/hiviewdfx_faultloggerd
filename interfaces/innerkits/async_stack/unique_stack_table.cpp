@@ -28,7 +28,11 @@ UniqueStackTable* UniqueStackTable::Instance()
 
 bool UniqueStackTable::Init()
 {
+    std::lock_guard<std::mutex> guard(stackTableMutex_);
     // index 0 for reserved
+    if (tableBufMMap_ != nullptr) {
+        return true;
+    }
     availableIndex_ = 1;
     totalNodes_ = ((tableSize_ / sizeof(Node)) >> 1) << 1; // make it even.
     if (totalNodes_ > MAX_NODES_CNT) {
@@ -42,11 +46,12 @@ bool UniqueStackTable::Init()
     }
     hashModulus_ = availableNodes_ - 1;
     hashStep_ = (totalNodes_ / (deconflictTimes_ * 2 + 1)); // 2 : double times
-    tableBufMMap_ = mmap(NULL, tableSize_, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
-    if (tableBufMMap_ == MAP_FAILED) {
+    auto retBufMMap = mmap(NULL, tableSize_, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+    if (retBufMMap == MAP_FAILED) {
         LOGW("%s", "Failed to mmap!\n");
         return false;
     }
+    tableBufMMap_ = retBufMMap;
     prctl(PR_SET_VMA, PR_SET_VMA_ANON_NAME, tableBufMMap_, tableSize_, "async_stack_table");
     LOGW(
         "Init totalNodes_: %u, availableNodes_: %u, availableIndex_: %u \
@@ -57,6 +62,7 @@ bool UniqueStackTable::Init()
 
 bool UniqueStackTable::Resize()
 {
+    std::lock_guard<std::mutex> guard(stackTableMutex_);
     if (tableBufMMap_ == nullptr) {
         LOGW("%s", "Hashtable not exist, fatal error!");
         return false;
@@ -143,13 +149,11 @@ uint64_t UniqueStackTable::PutPcInSlot(uint64_t thisPc, uint64_t prevIdx)
 // todo add lock
 uint64_t UniqueStackTable::PutPcsInTable(StackId *stackId, uintptr_t* pcs, size_t nr)
 {
-    std::lock_guard<std::mutex> guard(stackTableMutex_);
-    if (tableBufMMap_ == nullptr) {
-        if (!Init()) {
-            LOGW("%s", "init Hashtable failed, fatal error!");
-            return 0;
-        }
+    if (!Init()) {
+        LOGW("%s", "init Hashtable failed, fatal error!");
+        return 0;
     }
+    std::lock_guard<std::mutex> guard(stackTableMutex_);
     int64_t reverseIndex = static_cast<int64_t>(nr);
     uint64_t prev = 0;
     while (--reverseIndex >= 0) {
@@ -171,6 +175,7 @@ uint64_t UniqueStackTable::PutPcsInTable(StackId *stackId, uintptr_t* pcs, size_
 
 size_t UniqueStackTable::GetWriteSize()
 {
+    std::lock_guard<std::mutex> guard(stackTableMutex_);
     if (tableBufMMap_ == nullptr) {
         LOGW("%s", "Hashtable not exist, fatal error!");
         return 0;
@@ -199,6 +204,7 @@ Node* UniqueStackTable::GetFrame(uint64_t stackId)
 
 bool UniqueStackTable::GetPcsByStackId(StackId stackId, std::vector<uintptr_t>& pcs)
 {
+    std::lock_guard<std::mutex> guard(stackTableMutex_);
     if (tableBufMMap_ == nullptr) {
         LOGW("%s", "Hashtable not exist, failed to find frame!");
         return false;
@@ -220,6 +226,7 @@ bool UniqueStackTable::GetPcsByStackId(StackId stackId, std::vector<uintptr_t>& 
 
 bool UniqueStackTable::ImportNode(uint32_t index, const Node& node)
 {
+    std::lock_guard<std::mutex> guard(stackTableMutex_);
     Node *tableHead = reinterpret_cast<Node *>(tableBufMMap_);
     if (index >= tableSize_) {
         return false;

@@ -21,6 +21,7 @@ if (defined(ohos_lite)) {
   ohos_rust_shared_library("panic_handler") {
     sources = [ "lib.rs" ]
     cflags_cc = [ "-DRUSTC_DEMANGLE" ]
+    rustflags = [ "-Zstack-protector=all" ]
     deps = [ "$faultloggerd_path/interfaces/rust/stacktrace:stacktrace_rust" ]
     external_deps = [
       "hilog:hilog_rust",

@@ -68,21 +68,21 @@ typedef struct DfxAllocatorSt {
  *   to perform memory operations
  * @return DfxAllocator addr of allcator for get some info
 */
-DfxAllocator* GetDfxAllocator();
+DfxAllocator* GetDfxAllocator(void);
 
 /**
  * @brief Change use custom allocator
  *   an independent memory allocator
  *   to perform memory operations
 */
-void RegisterAllocator();
+void RegisterAllocator(void);
 
 /**
  * @brief restore default allocator
  *   an independent memory allocator
  *   to perform memory operations
 */
-void UnregisterAllocator();
+void UnregisterAllocator(void);
 
 /**
  * @brief IsDfxAllocatorMem

@@ -73,6 +73,18 @@ bool PrintBacktrace(int32_t fd = -1, bool fast = false, size_t maxFrameNums = DE
 bool GetBacktrace(std::string& out, bool fast = false, size_t maxFrameNums = DEFAULT_MAX_FRAME_NUM);
 
 /**
+ * @brief Get backtrace string of the current process
+ *
+ * @param out  backtrace string(output parameter)
+ * @param skipFrameNum the number of frames to skip
+ * @param fast flag for using fp backtrace(true) or dwarf backtrace(false)
+ * @param maxFrameNums the maximum number of frames to backtrace
+ * @return if succeed return true, otherwise return false
+*/
+bool GetBacktrace(std::string& out, size_t skipFrameNum, bool fast = false,
+                  size_t maxFrameNums = DEFAULT_MAX_FRAME_NUM);
+
+/**
  * @brief Get formatted stacktrace string of current process
  *
  * This API is used to get formatted stacktrace string of current process
