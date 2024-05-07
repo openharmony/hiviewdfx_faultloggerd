@@ -282,6 +282,11 @@ bool DfxDumpCatcher::DoDumpCatchRemote(int pid, int tid, std::string& msg, bool 
         default:
             break;
     }
+
+    if (!ret && isJson && msg != "") {
+        DFXLOG_INFO("%s :: %s json msg not empty!", DFXDUMPCATCHER_TAG.c_str(), __func__);
+        ret = true;
+    }
     DFXLOG_INFO("%s :: %s :: pid(%d) ret: %d", DFXDUMPCATCHER_TAG.c_str(), __func__, pid, ret);
     return ret;
 }
@@ -420,7 +425,6 @@ bool DfxDumpCatcher::DoReadRes(int fd, bool &ret, std::string& msg)
         DFXLOG_WARN("%s :: %s :: read error", DFXDUMPCATCHER_TAG.c_str(), __func__);
         return false;
     }
-
     if (res == DumpErrorCode::DUMP_ESUCCESS) {
         ret = true;
     }

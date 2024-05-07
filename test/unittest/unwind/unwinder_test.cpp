@@ -909,6 +909,31 @@ HWTEST_F(UnwinderTest, GetSymbolByPcTest001, TestSize.Level2)
     ASSERT_FALSE(unwinder->GetSymbolByPc(pc0, maps, funcName, funcOffset)); // Get elf is null
     GTEST_LOG_(INFO) << "GetSymbolByPcTest001: end.";
 }
+
+/**
+ * @tc.name: AccessMemTest001
+ * @tc.desc: test unwinder AccessMem interface
+ * @tc.type: FUNC
+ */
+HWTEST_F(UnwinderTest, AccessMemTest001, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "AccessMemTest001: start.";
+    auto unwinder = std::make_shared<Unwinder>();
+    auto acc = std::make_shared<DfxAccessorsLocal>();
+    auto memory = std::make_shared<DfxMemory>(acc);
+    uintptr_t val;
+    EXPECT_FALSE(memory->ReadReg(0, &val));
+    uintptr_t regs[] = {0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xa};
+    UnwindContext ctx;
+    ctx.regs = DfxRegs::CreateFromRegs(UnwindMode::DWARF_UNWIND, regs, sizeof(regs) / sizeof(regs[0]));
+    memory->SetCtx(&ctx);
+    EXPECT_FALSE(memory->ReadReg(-1, &val));
+
+    uint8_t values[] = {0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8};
+    uintptr_t addr = (uintptr_t)(&values[0]);
+    EXPECT_FALSE(unwinder->AccessMem(&memory, addr, nullptr));
+    GTEST_LOG_(INFO) << "AccessMemTest001: end.";
+}
 } // namespace HiviewDFX
 } // namepsace OHOS
 
