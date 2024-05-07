@@ -70,6 +70,9 @@ void DfxUnwindAsyncThread::GetSubmitterStack(std::vector<DfxFrame> &submitterFra
         return;
     }
     const std::shared_ptr<DfxMaps>& maps = unwinder_->GetMaps();
+    if (maps == nullptr) {
+        return;
+    }
     std::vector<std::shared_ptr<DfxMap>> mapVec;
     if (!maps->FindMapsByName("[anon:async_stack_table]", mapVec)) {
         DFXLOG_ERROR("%s::Can not find map of async stack table", __func__);
