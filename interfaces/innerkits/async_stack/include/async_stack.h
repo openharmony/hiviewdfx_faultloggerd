@@ -21,8 +21,6 @@
 extern "C" {
 #endif
 
-void EnableAsyncStack(void);
-
 // return stackId
 uint64_t CollectAsyncStack(void);
 

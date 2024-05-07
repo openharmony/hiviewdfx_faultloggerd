@@ -239,7 +239,7 @@ bool Unwinder::UnwindLocal(bool withRegs, bool fpUnwind, size_t maxFrameNum, siz
 #if defined(__aarch64__)
         if (fpUnwind) {
             uintptr_t miniRegs[FP_MINI_REGS_SIZE] = {0};
-            GetFramePointerMiniRegs(miniRegs);
+            GetFramePointerMiniRegs(miniRegs, sizeof(miniRegs) / sizeof(miniRegs[0]));
             regs_ = DfxRegs::CreateFromRegs(UnwindMode::FRAMEPOINTER_UNWIND, miniRegs,
                                             sizeof(miniRegs) / sizeof(miniRegs[0]));
             withRegs = true;

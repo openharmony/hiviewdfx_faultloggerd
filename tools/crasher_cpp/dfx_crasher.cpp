@@ -24,6 +24,7 @@
 #include <fstream>
 #include <hilog/log.h>
 #include <iostream>
+#include <sstream>
 #include <pthread.h>
 #include <sys/mman.h>
 #include <sys/prctl.h>
@@ -72,10 +73,17 @@ static const int NUMBER_ONE = 1;
 
 using namespace OHOS::HiviewDFX;
 using CommandFunc = int(*)();
+using CommandFuncParam = int(*)(std::string);
 struct CrasherCommandLine {
     char cmdline[CMD_SZ];
     char description[CMD_DESC_SZ];
     CommandFunc func;
+};
+
+struct CrasherCommandLineParam {
+    char cmdline[CMD_SZ];
+    char description[CMD_DESC_SZ];
+    CommandFuncParam func;
 };
 
 constexpr static CrasherCommandLine CMDLINE_TABLE[] = {
@@ -130,6 +138,11 @@ constexpr static CrasherCommandLine CMDLINE_TABLE[] = {
 #ifndef is_ohos_lite
     {"AsyncStack", "Test async stacktrace in nomal thread crash case",
         &DfxCrasher::AsyncStacktrace},
+#endif
+};
+
+constexpr static CrasherCommandLineParam CMDLINE_TABLE_PARAM[] = {
+#ifndef is_ohos_lite
     {"CrashInFFRT", "Test async-stacktrace api in ffrt crash case",
         &DfxCrasher::CrashInFFRT},
     {"CrashInLibuvWork", "Test async-stacktrace api in work callback crash case",
@@ -498,7 +511,6 @@ static void* CrashInSubThread(void* stackIdPtr)
 NOINLINE int DfxCrasher::AsyncStacktrace()
 {
 #ifdef __aarch64__
-    EnableAsyncStack();
     uint64_t stackId = CollectAsyncStack();
     printf("Current stackId:%p.\n", (void*)stackId);
     pthread_t thread;
@@ -533,9 +545,11 @@ NOINLINE static int FFRTTaskSubmit0(int i)
     return FFRTTaskSubmit1(i);
 }
 
-NOINLINE int DfxCrasher::CrashInFFRT()
+NOINLINE int DfxCrasher::CrashInFFRT(std::string debug)
 {
-    setenv("HAP_DEBUGGABLE", "true", 1);
+    if (debug == "true") {
+        setenv("HAP_DEBUGGABLE", "true", 1);
+    }
     int i = FFRTTaskSubmit0(10);
     ffrt::wait();
     return i;
@@ -564,8 +578,11 @@ static void TimerCallback(uv_timer_t* handle)
     g_done = true;
 }
 
-NOINLINE int DfxCrasher::CrashInLibuvWork()
+NOINLINE int DfxCrasher::CrashInLibuvWork(std::string debug)
 {
+    if (debug == "true") {
+        setenv("HAP_DEBUGGABLE", "true", 1);
+    }
     uv_timer_t timerHandle;
     uv_work_t work;
     uv_loop_t* loop = uv_default_loop();
@@ -583,8 +600,11 @@ static void TimerCallback2(uv_timer_t* handle)
     raise(SIGSEGV);
 }
 
-NOINLINE int DfxCrasher::CrashInLibuvTimer()
+NOINLINE int DfxCrasher::CrashInLibuvTimer(std::string debug)
 {
+    if (debug == "true") {
+        setenv("HAP_DEBUGGABLE", "true", 1);
+    }
     uv_timer_t timerHandle;
     uv_work_t work;
     uv_loop_t* loop = uv_default_loop();
@@ -607,8 +627,11 @@ NOINLINE static void CrashAfterWorkCallback(uv_work_t* req, int status)
     raise(SIGSEGV);
 }
 
-NOINLINE int DfxCrasher::CrashInLibuvWorkDone()
+NOINLINE int DfxCrasher::CrashInLibuvWorkDone(std::string debug)
 {
+    if (debug == "true") {
+        setenv("HAP_DEBUGGABLE", "true", 1);
+    }
     uv_work_t work;
     uv_loop_t* loop = uv_default_loop();
     uv_queue_work(loop, &work, WorkCallback2, CrashAfterWorkCallback);
@@ -653,10 +676,20 @@ uint64_t DfxCrasher::ParseAndDoCrash(const char *arg) const
 #ifdef HAS_HITRACE
     auto beginId = HiTraceChain::Begin("test", HITRACE_FLAG_NO_BE_INFO);
 #endif
+    std::istringstream str(arg);
+    std::string out;
+    str >> out;
     // Actions
     for (auto& item : CMDLINE_TABLE) {
-        if (!strcasecmp(arg, item.cmdline)) {
+        if (!strcasecmp(out.c_str(), item.cmdline)) {
             return item.func();
+        }
+    }
+    for (auto& item : CMDLINE_TABLE_PARAM) {
+        if (!strcasecmp(out.c_str(), item.cmdline)) {
+            if (str >> out) {
+                return item.func(out);
+            }
         }
     }
 #ifdef HAS_HITRACE
