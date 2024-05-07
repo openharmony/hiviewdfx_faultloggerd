@@ -930,7 +930,7 @@ HWTEST_F(UnwinderTest, AccessMemTest001, TestSize.Level2)
     EXPECT_FALSE(memory->ReadReg(-1, &val));
 
     uint8_t values[] = {0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8};
-    uintptr_t addr = (uintptr_t)(&values[0]);
+    uintptr_t addr = reinterpret_cast<uintptr_t>(&values[0]);
     EXPECT_FALSE(unwinder->AccessMem(&memory, addr, nullptr));
     GTEST_LOG_(INFO) << "AccessMemTest001: end.";
 }

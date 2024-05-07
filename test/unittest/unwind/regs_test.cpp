@@ -123,46 +123,46 @@ HWTEST_F(DfxRegsTest, DfxRegsTest003, TestSize.Level2)
 
     ucontext_t context;
 #if defined(__arm__)
-    context.uc_mcontext.arm_r0 = 0;
-    context.uc_mcontext.arm_r1 = 1;
-    context.uc_mcontext.arm_r2 = 2;
-    context.uc_mcontext.arm_r3 = 3;
-    context.uc_mcontext.arm_r4 = 4;
-    context.uc_mcontext.arm_r5 = 5;
-    context.uc_mcontext.arm_r6 = 6;
-    context.uc_mcontext.arm_r7 = 7;
-    context.uc_mcontext.arm_r8 = 8;
-    context.uc_mcontext.arm_r9 = 9;
-    context.uc_mcontext.arm_r10 = 10;
-    context.uc_mcontext.arm_fp = 11;
-    context.uc_mcontext.arm_ip = 12;
-    context.uc_mcontext.arm_sp = 13;
-    context.uc_mcontext.arm_lr = 14;
-    context.uc_mcontext.arm_pc = 15;
+    context.uc_mcontext.arm_r0 = 0; // 0 : the 1st register of arm
+    context.uc_mcontext.arm_r1 = 1; // 1 : the 2st register of arm
+    context.uc_mcontext.arm_r2 = 2; // 2 : the 3st register of arm
+    context.uc_mcontext.arm_r3 = 3; // 3 : the 4st register of arm
+    context.uc_mcontext.arm_r4 = 4; // 4 : the 5st register of arm
+    context.uc_mcontext.arm_r5 = 5; // 5 : the 6st register of arm
+    context.uc_mcontext.arm_r6 = 6; // 6 : the 7st register of arm
+    context.uc_mcontext.arm_r7 = 7; // 7 : the 8st register of arm
+    context.uc_mcontext.arm_r8 = 8; // 8 : the 9st register of arm
+    context.uc_mcontext.arm_r9 = 9; // 9 : the 10st register of arm
+    context.uc_mcontext.arm_r10 = 10; // 10 : the 11st register of arm
+    context.uc_mcontext.arm_fp = 11; // 11 : the 12st register of arm
+    context.uc_mcontext.arm_ip = 12; // 12 : the 13st register of arm
+    context.uc_mcontext.arm_sp = 13; // 13 : the 14st register of arm
+    context.uc_mcontext.arm_lr = 14; // 14 : the 15st register of arm
+    context.uc_mcontext.arm_pc = 15; // 15 : the 16st register of arm
 #elif defined(__aarch64__)
     for (int i = 0; i < 31; i++) {
         context.uc_mcontext.regs[i] = i;
     }
-    context.uc_mcontext.sp = 31;
-    context.uc_mcontext.pc = 32;
+    context.uc_mcontext.sp = 31; // 31 : the 32st register of aarch64
+    context.uc_mcontext.pc = 32; // 32 : the 33st register of aarch64
 #elif defined(___x86_64__)
-    context.uc_mcontext.gregs[REG_RAX] = 0;
-    context.uc_mcontext.gregs[REG_RDX] = 1;
-    context.uc_mcontext.gregs[REG_RCX] = 2;
-    context.uc_mcontext.gregs[REG_RBX] = 3;
-    context.uc_mcontext.gregs[REG_RSI] = 4;
-    context.uc_mcontext.gregs[REG_RDI] = 5;
-    context.uc_mcontext.gregs[REG_RBP] = 6;
-    context.uc_mcontext.gregs[REG_RSP] = 7;
-    context.uc_mcontext.gregs[REG_R8] = 8;
-    context.uc_mcontext.gregs[REG_R9] = 9;
-    context.uc_mcontext.gregs[REG_R10] = 10;
-    context.uc_mcontext.gregs[REG_R11] = 11;
-    context.uc_mcontext.gregs[REG_R12] = 12;
-    context.uc_mcontext.gregs[REG_R13] = 13;
-    context.uc_mcontext.gregs[REG_R14] = 14;
-    context.uc_mcontext.gregs[REG_R15] = 15;
-    context.uc_mcontext.gregs[REG_RIP] = 16;
+    context.uc_mcontext.gregs[REG_RAX] = 0; // 0 : the 1st register of x86_64
+    context.uc_mcontext.gregs[REG_RDX] = 1; // 1 : the 2st register of x86_64
+    context.uc_mcontext.gregs[REG_RCX] = 2; // 2 : the 3st register of x86_64
+    context.uc_mcontext.gregs[REG_RBX] = 3; // 3 : the 4st register of x86_64
+    context.uc_mcontext.gregs[REG_RSI] = 4; // 4 : the 5st register of x86_64
+    context.uc_mcontext.gregs[REG_RDI] = 5; // 5 : the 6st register of x86_64
+    context.uc_mcontext.gregs[REG_RBP] = 6; // 6 : the 7st register of x86_64
+    context.uc_mcontext.gregs[REG_RSP] = 7; // 7 : the 8st register of x86_64
+    context.uc_mcontext.gregs[REG_R8] = 8; // 8 : the 9st register of x86_64
+    context.uc_mcontext.gregs[REG_R9] = 9; // 9 : the 10st register of x86_64
+    context.uc_mcontext.gregs[REG_R10] = 10; // 10 : the 11st register of x86_64
+    context.uc_mcontext.gregs[REG_R11] = 11; // 11 : the 12st register of x86_64
+    context.uc_mcontext.gregs[REG_R12] = 12; // 12 : the 13st register of x86_64
+    context.uc_mcontext.gregs[REG_R13] = 13; // 13 : the 14st register of x86_64
+    context.uc_mcontext.gregs[REG_R14] = 14; // 14 : the 15st register of x86_64
+    context.uc_mcontext.gregs[REG_R15] = 15; // 15 : the 16st register of x86_64
+    context.uc_mcontext.gregs[REG_RIP] = 16; // 16 : the 17st register of x86_64
 #endif
     auto dfxRegs = DfxRegs::CreateFromUcontext(context);
     for (size_t i = 0; i < REG_LAST; i++) {
