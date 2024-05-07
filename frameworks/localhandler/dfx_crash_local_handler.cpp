@@ -134,7 +134,7 @@ static void ReportToHiview(const char* logPath, const struct ProcessDumpRequest*
     exception.pid = request->pid;
     exception.uid = request->uid;
     exception.error = CRASH_DUMP_LOCAL_REPORT;
-    exception.time = static_cast<int32_t>(GetTimeMilliseconds());
+    exception.time = static_cast<int64_t>(GetTimeMilliseconds());
     if (strncpy_s(exception.message, sizeof(exception.message) - 1, logPath, strlen(logPath)) != 0) {
         DFXLOG_ERROR("strcpy exception msg fail\n");
         return;
