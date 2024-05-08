@@ -102,12 +102,14 @@ bool DfxMaps::Parse(const pid_t pid, const std::string& path)
     FILE* fp = nullptr;
     fp = fopen(path.c_str(), "r");
     if (fp == nullptr) {
-        LOGE("Failed to open %s", path.c_str());
+        LOGE("Failed to open %s, err=%d", path.c_str(), errno);
         return false;
     }
 
     char mapBuf[PATH_LEN] = {0};
+    int fgetCount = 0;
     while (fgets(mapBuf, sizeof(mapBuf), fp) != nullptr) {
+        fgetCount++;
         std::shared_ptr<DfxMap> map = DfxMap::Create(mapBuf, sizeof(mapBuf));
         if (map == nullptr) {
             LOGW("Failed to init map info: %s", mapBuf);
@@ -130,8 +132,12 @@ bool DfxMaps::Parse(const pid_t pid, const std::string& path)
         }
     }
     (void)fclose(fp);
+    if (fgetCount == 0) {
+        LOGE("Failed to get maps(%s), err(%d).", path.c_str(), errno);
+        return false;
+    }
     if (GetMapsSize() == 0) {
-        LOGE("Failed to parse maps(%s), size is empty.", path.c_str());
+        LOGE("Failed to parse maps(%s), size is empty. count(%d)", path.c_str(), fgetCount);
         return false;
     }
     return true;
