@@ -17,6 +17,7 @@
 #define DFX_CRASHER_H
 
 #include <cinttypes>
+#include <string>
 
 #define NOINLINE __attribute__((noinline))
 
@@ -71,10 +72,10 @@ public:
     static int PrintFatalMessageInLibc();
 #ifndef is_ohos_lite
     static int AsyncStacktrace();
-    static int CrashInFFRT();
-    static int CrashInLibuvWork();
-    static int CrashInLibuvTimer();
-    static int CrashInLibuvWorkDone();
+    static int CrashInFFRT(std::string debug);
+    static int CrashInLibuvWork(std::string debug);
+    static int CrashInLibuvTimer(std::string debug);
+    static int CrashInLibuvWorkDone(std::string debug);
 #endif
 
 private:

@@ -291,7 +291,7 @@ static bool CheckCppCrashAllLabelKeywords(const string& filePath, const pid_t& p
 }
 
 #if defined(__aarch64__)
-static bool CheckCppCrashAsyncStackKeywords(const string& filePath, const pid_t& pid)
+static bool CheckCppCrashAsyncStackEnableKeywords(const string& filePath, const pid_t& pid)
 {
     string log[] = {
         "Timestamp:", "Pid:" + to_string(pid), "Uid:", "Process", "Reason:", "Fault", "thread", "info:",
@@ -301,6 +301,24 @@ static bool CheckCppCrashAsyncStackKeywords(const string& filePath, const pid_t&
     int minRegIdx = 11; // 11 : index of first REGISTERS - 1
     int expectNum = sizeof(log) / sizeof(log[0]);
     return CheckKeyWords(filePath, log, expectNum, minRegIdx) == expectNum;
+}
+
+static bool CheckCppCrashAsyncStackDisableKeywords(const string& filePath, const pid_t& pid)
+{
+    string log[] = {
+        "Timestamp:", "Pid:" + to_string(pid), "Uid:", "Process", "Reason:", "Fault", "thread", "info:",
+        "Tid:", "#00", "Registers:", REGISTERS, "Memory", "near", "registers:",
+        "FaultStack:", "Maps:", "/crasher"
+    };
+    int minRegIdx = 10; // 10 : index of first REGISTERS - 1
+    int expectNum = sizeof(log) / sizeof(log[0]);
+    if (CheckKeyWords(filePath, log, expectNum, minRegIdx) != expectNum) {
+        return false;
+    }
+    string key[] = {
+        "SubmitterStacktrace"
+    };
+    return CheckKeyWords(filePath, key, 1, -1) == 0;
 }
 #endif
 
@@ -1383,7 +1401,7 @@ HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest113, TestSize.Level2)
 #if defined(__aarch64__)
 /**
 * @tc.name: FaultLoggerdSystemTest114
-* @tc.desc: Test async stacktrace in nomal thread crash case
+* @tc.desc: Test async stacktrace enable in nomal thread crash case
 * @tc.type: FUNC
 */
 HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest114, TestSize.Level2)
@@ -1397,19 +1415,19 @@ HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest114, TestSize.Level2)
         GTEST_LOG_(ERROR) << "Trigger Crash Failed.";
         FAIL();
     }
-    EXPECT_TRUE(CheckCppCrashAsyncStackKeywords(fileName, pid)) << "FaultLoggerdSystemTest114 Failed";
+    EXPECT_TRUE(CheckCppCrashAsyncStackEnableKeywords(fileName, pid)) << "FaultLoggerdSystemTest114 Failed";
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest114: end.";
 }
 
 /**
 * @tc.name: FaultLoggerdSystemTest115
-* @tc.desc: Test async-stacktrace api in ffrt crash case
+* @tc.desc: Test async-stacktrace api enable in ffrt crash case
 * @tc.type: FUNC
 */
 HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest115, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest115: start.";
-    string cmd = "CrashInFFRT";
+    string cmd = "CrashInFFRT true";
     string fileName;
     pid_t pid = TriggerCrasherAndGetFileName(cmd, CRASHER_CPP, fileName);
     GTEST_LOG_(INFO) << "test pid(" << pid << ")"  << " cppcrash file name : " << fileName;
@@ -1417,19 +1435,19 @@ HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest115, TestSize.Level2)
         GTEST_LOG_(ERROR) << "Trigger Crash Failed.";
         FAIL();
     }
-    EXPECT_TRUE(CheckCppCrashAsyncStackKeywords(fileName, pid)) << "FaultLoggerdSystemTest115 Failed";
+    EXPECT_TRUE(CheckCppCrashAsyncStackEnableKeywords(fileName, pid)) << "FaultLoggerdSystemTest115 Failed";
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest115: end.";
 }
 
 /**
 * @tc.name: FaultLoggerdSystemTest116
-* @tc.desc: Test async-stacktrace api in work callback crash case
+* @tc.desc: Test async-stacktrace api enable in work callback crash case
 * @tc.type: FUNC
 */
 HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest116, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest116: start.";
-    string cmd = "CrashInLibuvWork";
+    string cmd = "CrashInLibuvWork true";
     string fileName;
     pid_t pid = TriggerCrasherAndGetFileName(cmd, CRASHER_CPP, fileName);
     GTEST_LOG_(INFO) << "test pid(" << pid << ")"  << " cppcrash file name : " << fileName;
@@ -1437,19 +1455,19 @@ HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest116, TestSize.Level2)
         GTEST_LOG_(ERROR) << "Trigger Crash Failed.";
         FAIL();
     }
-    EXPECT_TRUE(CheckCppCrashAsyncStackKeywords(fileName, pid)) << "FaultLoggerdSystemTest116 Failed";
+    EXPECT_TRUE(CheckCppCrashAsyncStackEnableKeywords(fileName, pid)) << "FaultLoggerdSystemTest116 Failed";
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest116: end.";
 }
 
 /**
 * @tc.name: FaultLoggerdSystemTest117
-* @tc.desc: Test async-stacktrace api in timer callback crash case
+* @tc.desc: Test async-stacktrace api enable in timer callback crash case
 * @tc.type: FUNC
 */
 HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest117, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest117: start.";
-    string cmd = "CrashInLibuvTimer";
+    string cmd = "CrashInLibuvTimer true";
     string fileName;
     pid_t pid = TriggerCrasherAndGetFileName(cmd, CRASHER_CPP, fileName);
     GTEST_LOG_(INFO) << "test pid(" << pid << ")"  << " cppcrash file name : " << fileName;
@@ -1457,19 +1475,19 @@ HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest117, TestSize.Level2)
         GTEST_LOG_(ERROR) << "Trigger Crash Failed.";
         FAIL();
     }
-    EXPECT_TRUE(CheckCppCrashAsyncStackKeywords(fileName, pid)) << "FaultLoggerdSystemTest117 Failed";
+    EXPECT_TRUE(CheckCppCrashAsyncStackEnableKeywords(fileName, pid)) << "FaultLoggerdSystemTest117 Failed";
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest117: end.";
 }
 
 /**
 * @tc.name: FaultLoggerdSystemTest118
-* @tc.desc: Test async-stacktrace api in work callback done crash case
+* @tc.desc: Test async-stacktrace api enalbe in work callback done crash case
 * @tc.type: FUNC
 */
 HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest118, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest118: start.";
-    string cmd = "CrashInLibuvWorkDone";
+    string cmd = "CrashInLibuvWorkDone true";
     string fileName;
     pid_t pid = TriggerCrasherAndGetFileName(cmd, CRASHER_CPP, fileName);
     GTEST_LOG_(INFO) << "test pid(" << pid << ")"  << " cppcrash file name : " << fileName;
@@ -1477,8 +1495,88 @@ HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest118, TestSize.Level2)
         GTEST_LOG_(ERROR) << "Trigger Crash Failed.";
         FAIL();
     }
-    EXPECT_TRUE(CheckCppCrashAsyncStackKeywords(fileName, pid)) << "FaultLoggerdSystemTest118 Failed";
+    EXPECT_TRUE(CheckCppCrashAsyncStackEnableKeywords(fileName, pid)) << "FaultLoggerdSystemTest118 Failed";
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest118: end.";
+}
+
+/**
+* @tc.name: FaultLoggerdSystemTest119
+* @tc.desc: Test async-stacktrace api disable in ffrt crash case
+* @tc.type: FUNC
+*/
+HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest119, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest119: start.";
+    string cmd = "CrashInFFRT false";
+    string fileName;
+    pid_t pid = TriggerCrasherAndGetFileName(cmd, CRASHER_CPP, fileName);
+    GTEST_LOG_(INFO) << "test pid(" << pid << ")"  << " cppcrash file name : " << fileName;
+    if (pid < 0 || fileName.size() < CPPCRASH_FILENAME_MIN_LENGTH) {
+        GTEST_LOG_(ERROR) << "Trigger Crash Failed.";
+        FAIL();
+    }
+    EXPECT_TRUE(CheckCppCrashAsyncStackDisableKeywords(fileName, pid)) << "FaultLoggerdSystemTest119 Failed";
+    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest119: end.";
+}
+
+/**
+* @tc.name: FaultLoggerdSystemTest120
+* @tc.desc: Test async-stacktrace api disable in work callback crash case
+* @tc.type: FUNC
+*/
+HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest120, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest120: start.";
+    string cmd = "CrashInLibuvWork false";
+    string fileName;
+    pid_t pid = TriggerCrasherAndGetFileName(cmd, CRASHER_CPP, fileName);
+    GTEST_LOG_(INFO) << "test pid(" << pid << ")"  << " cppcrash file name : " << fileName;
+    if (pid < 0 || fileName.size() < CPPCRASH_FILENAME_MIN_LENGTH) {
+        GTEST_LOG_(ERROR) << "Trigger Crash Failed.";
+        FAIL();
+    }
+    EXPECT_TRUE(CheckCppCrashAsyncStackDisableKeywords(fileName, pid)) << "FaultLoggerdSystemTest120 Failed";
+    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest120: end.";
+}
+
+/**
+* @tc.name: FaultLoggerdSystemTest121
+* @tc.desc: Test async-stacktrace api disable in timer callback crash case
+* @tc.type: FUNC
+*/
+HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest121, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest121: start.";
+    string cmd = "CrashInLibuvTimer false";
+    string fileName;
+    pid_t pid = TriggerCrasherAndGetFileName(cmd, CRASHER_CPP, fileName);
+    GTEST_LOG_(INFO) << "test pid(" << pid << ")"  << " cppcrash file name : " << fileName;
+    if (pid < 0 || fileName.size() < CPPCRASH_FILENAME_MIN_LENGTH) {
+        GTEST_LOG_(ERROR) << "Trigger Crash Failed.";
+        FAIL();
+    }
+    EXPECT_TRUE(CheckCppCrashAsyncStackDisableKeywords(fileName, pid)) << "FaultLoggerdSystemTest121 Failed";
+    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest121: end.";
+}
+
+/**
+* @tc.name: FaultLoggerdSystemTest122
+* @tc.desc: Test async-stacktrace api disable in work callback done crash case
+* @tc.type: FUNC
+*/
+HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest122, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest122: start.";
+    string cmd = "CrashInLibuvWorkDone false";
+    string fileName;
+    pid_t pid = TriggerCrasherAndGetFileName(cmd, CRASHER_CPP, fileName);
+    GTEST_LOG_(INFO) << "test pid(" << pid << ")"  << " cppcrash file name : " << fileName;
+    if (pid < 0 || fileName.size() < CPPCRASH_FILENAME_MIN_LENGTH) {
+        GTEST_LOG_(ERROR) << "Trigger Crash Failed.";
+        FAIL();
+    }
+    EXPECT_TRUE(CheckCppCrashAsyncStackDisableKeywords(fileName, pid)) << "FaultLoggerdSystemTest122 Failed";
+    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest122: end.";
 }
 #endif
 } // namespace HiviewDFX
