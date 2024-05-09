@@ -39,6 +39,9 @@ public:
     void TearDown() {}
 };
 
+static constexpr int32_t TEST_PROCESS_ID = 1234;
+static constexpr int32_t TEST_UID = 5678;
+
 /**
  * @tc.name: CrashExceptionTest001
  * @tc.desc: test ReportCrashException
@@ -47,8 +50,6 @@ public:
 HWTEST_F(CrashExceptionTest, CrashExceptionTest001, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "CrashExceptionTest001: start.";
-    int32_t testProcessId = 1234;
-    int32_t testUId = 5678;
     char testProcessName[] = "process_name_ptr";
     std::shared_ptr<CrashExceptionListener> crashListener = std::make_shared<CrashExceptionListener>();
     ListenerRule tagRule("RELIABILITY", "CPP_CRASH_EXCEPTION", RuleType::WHOLE_WORD);
@@ -56,7 +57,7 @@ HWTEST_F(CrashExceptionTest, CrashExceptionTest001, TestSize.Level2)
     sysRules.push_back(tagRule);
     HiSysEventManager::AddListener(crashListener, sysRules);
     crashListener->SetKeyWord(testProcessName);
-    ReportCrashException(testProcessName, testProcessId, testUId, CrashExceptionCode::CRASH_UNKNOWN);
+    ReportCrashException(testProcessName, TEST_PROCESS_ID, TEST_UID, CrashExceptionCode::CRASH_UNKNOWN);
     ASSERT_TRUE(crashListener->CheckKeywordInReasons());
     HiSysEventManager::RemoveListener(crashListener);
     GTEST_LOG_(INFO) << "CrashExceptionTest001: end.";
@@ -70,8 +71,6 @@ HWTEST_F(CrashExceptionTest, CrashExceptionTest001, TestSize.Level2)
 HWTEST_F(CrashExceptionTest, CrashExceptionTest002, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "CrashExceptionTest002: start.";
-    int32_t testProcessId = 1234;
-    int32_t testUId = 5678;
     char testProcessName[] = "process_name_ptr";
     std::shared_ptr<CrashExceptionListener> crashListener = std::make_shared<CrashExceptionListener>();
     ListenerRule tagRule("RELIABILITY", "CPP_CRASH_EXCEPTION", RuleType::WHOLE_WORD);
@@ -79,7 +78,7 @@ HWTEST_F(CrashExceptionTest, CrashExceptionTest002, TestSize.Level2)
     sysRules.push_back(tagRule);
     HiSysEventManager::AddListener(crashListener, sysRules);
     crashListener->SetKeyWord(testProcessName);
-    ReportCrashException(testProcessName, testProcessId, testUId, CrashExceptionCode::CRASH_ESUCCESS);
+    ReportCrashException(testProcessName, TEST_PROCESS_ID, TEST_UID, CrashExceptionCode::CRASH_ESUCCESS);
     ASSERT_FALSE(crashListener->CheckKeywordInReasons());
     HiSysEventManager::RemoveListener(crashListener);
     GTEST_LOG_(INFO) << "CrashExceptionTest002: end.";
@@ -93,8 +92,6 @@ HWTEST_F(CrashExceptionTest, CrashExceptionTest002, TestSize.Level2)
 HWTEST_F(CrashExceptionTest, CrashExceptionTest003, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "CrashExceptionTest003: start.";
-    int32_t testProcessId = 1234;
-    int32_t testUId = 5678;
     char testProcessName[] = "process_name_ptr_1111111111111111111111111111111111111"
     "11111111111111111111111111111111111111111111111111111111111111111111111111111111"
     "11111111111111111111111111111111111111111111111111111111111111111111111111111111";
@@ -104,7 +101,7 @@ HWTEST_F(CrashExceptionTest, CrashExceptionTest003, TestSize.Level2)
     sysRules.push_back(tagRule);
     HiSysEventManager::AddListener(crashListener, sysRules);
     crashListener->SetKeyWord(testProcessName);
-    ReportCrashException(testProcessName, testProcessId, testUId, CrashExceptionCode::CRASH_UNKNOWN);
+    ReportCrashException(testProcessName, TEST_PROCESS_ID, TEST_UID, CrashExceptionCode::CRASH_UNKNOWN);
     ASSERT_FALSE(crashListener->CheckKeywordInReasons());
     HiSysEventManager::RemoveListener(crashListener);
     GTEST_LOG_(INFO) << "CrashExceptionTest003: end.";
@@ -118,8 +115,6 @@ HWTEST_F(CrashExceptionTest, CrashExceptionTest003, TestSize.Level2)
 HWTEST_F(CrashExceptionTest, CrashExceptionTest004, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "CrashExceptionTest004: start.";
-    int32_t testProcessId = 1234;
-    int32_t testUId = 5678;
     std::string keyWord = "process_name_string";
     std::shared_ptr<CrashExceptionListener> crashListener = std::make_shared<CrashExceptionListener>();
     ListenerRule tagRule("RELIABILITY", "CPP_CRASH_EXCEPTION", RuleType::WHOLE_WORD);
@@ -127,7 +122,7 @@ HWTEST_F(CrashExceptionTest, CrashExceptionTest004, TestSize.Level2)
     sysRules.push_back(tagRule);
     HiSysEventManager::AddListener(crashListener, sysRules);
     crashListener->SetKeyWord(keyWord);
-    ReportCrashException(keyWord, testProcessId, testUId, CrashExceptionCode::CRASH_UNKNOWN);
+    ReportCrashException(keyWord, TEST_PROCESS_ID, TEST_UID, CrashExceptionCode::CRASH_UNKNOWN);
     ASSERT_TRUE(crashListener->CheckKeywordInReasons());
     HiSysEventManager::RemoveListener(crashListener);
     GTEST_LOG_(INFO) << "CrashExceptionTest004: end.";
@@ -141,8 +136,6 @@ HWTEST_F(CrashExceptionTest, CrashExceptionTest004, TestSize.Level2)
 HWTEST_F(CrashExceptionTest, CrashExceptionTest005, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "CrashExceptionTest005: start.";
-    int32_t testProcessId = 1234;
-    int32_t testUId = 5678;
     std::string keyWord = "process_name_string";
     std::shared_ptr<CrashExceptionListener> crashListener = std::make_shared<CrashExceptionListener>();
     ListenerRule tagRule("RELIABILITY", "CPP_CRASH_EXCEPTION", RuleType::WHOLE_WORD);
@@ -150,7 +143,7 @@ HWTEST_F(CrashExceptionTest, CrashExceptionTest005, TestSize.Level2)
     sysRules.push_back(tagRule);
     HiSysEventManager::AddListener(crashListener, sysRules);
     crashListener->SetKeyWord(keyWord);
-    ReportCrashException(keyWord, testProcessId, testUId, CrashExceptionCode::CRASH_ESUCCESS);
+    ReportCrashException(keyWord, TEST_PROCESS_ID, TEST_UID, CrashExceptionCode::CRASH_ESUCCESS);
     ASSERT_FALSE(crashListener->CheckKeywordInReasons());
     HiSysEventManager::RemoveListener(crashListener);
     GTEST_LOG_(INFO) << "CrashExceptionTest005: end.";
@@ -164,8 +157,6 @@ HWTEST_F(CrashExceptionTest, CrashExceptionTest005, TestSize.Level2)
 HWTEST_F(CrashExceptionTest, CrashExceptionTest006, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "CrashExceptionTest006: start.";
-    int32_t testProcessId = 1234;
-    int32_t testUId = 5678;
     std::string keyWord = "process_name_unwind";
     std::shared_ptr<CrashExceptionListener> crashListener = std::make_shared<CrashExceptionListener>();
     ListenerRule tagRule("RELIABILITY", "CPP_CRASH_EXCEPTION", RuleType::WHOLE_WORD);
@@ -173,7 +164,7 @@ HWTEST_F(CrashExceptionTest, CrashExceptionTest006, TestSize.Level2)
     sysRules.push_back(tagRule);
     HiSysEventManager::AddListener(crashListener, sysRules);
     crashListener->SetKeyWord(keyWord);
-    SetCrashProcInfo(keyWord, testProcessId, testUId);
+    SetCrashProcInfo(keyWord, TEST_PROCESS_ID, TEST_UID);
     ReportUnwinderException(UnwindErrorCode::UNW_ERROR_STEP_ARK_FRAME);
     ASSERT_TRUE(crashListener->CheckKeywordInReasons());
     HiSysEventManager::RemoveListener(crashListener);
@@ -188,8 +179,6 @@ HWTEST_F(CrashExceptionTest, CrashExceptionTest006, TestSize.Level2)
 HWTEST_F(CrashExceptionTest, CrashExceptionTest007, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "CrashExceptionTest007: start.";
-    int32_t testProcessId = 1234;
-    int32_t testUId = 5678;
     std::string keyWord = "process_name_unwind";
     std::shared_ptr<CrashExceptionListener> crashListener = std::make_shared<CrashExceptionListener>();
     ListenerRule tagRule("RELIABILITY", "CPP_CRASH_EXCEPTION", RuleType::WHOLE_WORD);
@@ -197,7 +186,7 @@ HWTEST_F(CrashExceptionTest, CrashExceptionTest007, TestSize.Level2)
     sysRules.push_back(tagRule);
     HiSysEventManager::AddListener(crashListener, sysRules);
     crashListener->SetKeyWord(keyWord);
-    SetCrashProcInfo(keyWord, testProcessId, testUId);
+    SetCrashProcInfo(keyWord, TEST_PROCESS_ID, TEST_UID);
     ReportUnwinderException(0);
     ASSERT_FALSE(crashListener->CheckKeywordInReasons());
     HiSysEventManager::RemoveListener(crashListener);
