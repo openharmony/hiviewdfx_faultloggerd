@@ -16,6 +16,7 @@ import("//base/hiviewdfx/faultloggerd/faultloggerd.gni")
 backtrace_local_sources = [
   "backtrace_local.cpp",
   "backtrace_local_thread.cpp",
+  "dfx_kernel_stack.cpp",
 ]
 
 if (defined(ohos_lite)) {

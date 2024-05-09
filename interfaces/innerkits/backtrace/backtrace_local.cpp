@@ -24,6 +24,7 @@
 
 #include "backtrace_local_thread.h"
 #include "dfx_frame_formatter.h"
+#include "dfx_kernel_stack.h"
 #include "dfx_log.h"
 #include "dfx_util.h"
 #include "directory_ex.h"
@@ -62,7 +63,12 @@ bool GetBacktraceStringByTid(std::string& out, int32_t tid, size_t skipFrameNum,
     std::vector<DfxFrame> frames;
     bool ret = GetBacktraceFramesByTid(frames, tid, skipFrameNum + 1, fast, maxFrameNums);
     out.clear();
-    out = DfxFrameFormatter::GetFramesStr(frames);
+    if (ret) {
+        out = DfxFrameFormatter::GetFramesStr(frames);
+    } else if (DfxGetKernelStack(tid, out) == 0) {
+        ret = true;
+        DFXLOG_INFO("Failed to get user stack, try kernel:%s", out.c_str());
+    }
     return ret;
 }
 

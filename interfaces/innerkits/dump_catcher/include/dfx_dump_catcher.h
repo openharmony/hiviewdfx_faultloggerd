@@ -27,7 +27,6 @@
 namespace OHOS {
 namespace HiviewDFX {
 static const size_t DEFAULT_MAX_FRAME_NUM = 256;
-
 class DfxDumpCatcher {
 public:
     DfxDumpCatcher() {}
@@ -85,14 +84,21 @@ private:
     bool DoDumpLocalLocked(int pid, int tid, std::string& msg, size_t maxFrameNums);
     bool DoDumpRemoteLocked(int pid, int tid, std::string& msg, bool isJson = false);
     bool DoDumpCatchRemote(int pid, int tid, std::string& msg, bool isJson = false);
-    int DoDumpRemotePid(int pid, std::string& msg, bool isJson = false);
+    int DoDumpRemotePid(int pid, std::string& msg, bool isJson = false, int32_t timeout = DUMPCATCHER_REMOTE_TIMEOUT);
     int DoDumpRemotePoll(int bufFd, int resFd, int timeout, std::string& msg, bool isJson = false);
     bool DoReadBuf(int fd, std::string& msg);
     bool DoReadRes(int fd, bool &ret, std::string& msg);
     bool IsValidJson(const std::string& json);
+    void CollectKernelInfo();
 
 private:
+    static const int DUMPCATCHER_REMOTE_P90_TIMEOUT = 1000;
+    static const int DUMPCATCHER_REMOTE_TIMEOUT = 10000;
     std::mutex mutex_;
+    int32_t pid_ = -1;
+    std::string halfProcStatus_ = "";
+    std::string halfProcWchan_ = "";
+    std::string halfKernelStack_ = "";
 };
 } // namespace HiviewDFX
 } // namespace OHOS
