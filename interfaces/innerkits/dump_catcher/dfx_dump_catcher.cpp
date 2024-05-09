@@ -29,6 +29,7 @@
 #include "backtrace_local.h"
 #include "dfx_define.h"
 #include "dfx_dump_res.h"
+#include "dfx_kernel_stack.h"
 #include "dfx_log.h"
 #include "dfx_util.h"
 #include "faultloggerd_client.h"
@@ -48,9 +49,7 @@ namespace {
 #define LOG_TAG "DfxDumpCatcher"
 #endif
 static const int DUMP_CATCHE_WORK_TIME_S = 60;
-static const int BACK_TRACE_DUMP_CPP_TIMEOUT_MS = 10000;
 static const std::string DFXDUMPCATCHER_TAG = "DfxDumpCatcher";
-
 enum DfxDumpPollRes : int32_t {
     DUMP_POLL_INIT = -1,
     DUMP_POLL_OK,
@@ -275,10 +274,12 @@ bool DfxDumpCatcher::DoDumpCatchRemote(int pid, int tid, std::string& msg, bool 
         case DUMP_POLL_OK:
             ret = true;
             break;
-        case DUMP_POLL_TIMEOUT:
-            ReadProcessStatus(msg, pid);
-            ReadProcessWchan(msg, pid, false, true);
+        case DUMP_POLL_TIMEOUT: {
+            msg.append(halfProcStatus_);
+            msg.append(halfProcWchan_);
+            msg.append(halfKernelStack_);
             break;
+        }
         default:
             break;
     }
@@ -291,10 +292,11 @@ bool DfxDumpCatcher::DoDumpCatchRemote(int pid, int tid, std::string& msg, bool 
     return ret;
 }
 
-int DfxDumpCatcher::DoDumpRemotePid(int pid, std::string& msg, bool isJson)
+int DfxDumpCatcher::DoDumpRemotePid(int pid, std::string& msg, bool isJson, int32_t timeout)
 {
     int readBufFd = -1;
     int readResFd = -1;
+    pid_ = pid;
     if (isJson) {
         readBufFd = RequestPipeFd(pid, FaultLoggerPipeType::PIPE_FD_JSON_READ_BUF);
         readResFd = RequestPipeFd(pid, FaultLoggerPipeType::PIPE_FD_JSON_READ_RES);
@@ -303,8 +305,6 @@ int DfxDumpCatcher::DoDumpRemotePid(int pid, std::string& msg, bool isJson)
         readResFd = RequestPipeFd(pid, FaultLoggerPipeType::PIPE_FD_READ_RES);
     }
     DFXLOG_DEBUG("read res fd: %d", readResFd);
-
-    int timeout = BACK_TRACE_DUMP_CPP_TIMEOUT_MS;
     int ret = DoDumpRemotePoll(readBufFd, readResFd, timeout, msg, isJson);
     // request close fds in faultloggerd
     RequestDelPipeFd(pid);
@@ -318,6 +318,15 @@ int DfxDumpCatcher::DoDumpRemotePid(int pid, std::string& msg, bool isJson)
     }
     DFXLOG_INFO("%s :: %s :: pid(%d) poll ret: %d", DFXDUMPCATCHER_TAG.c_str(), __func__, pid, ret);
     return ret;
+}
+
+void DfxDumpCatcher::CollectKernelInfo()
+{
+    DFXLOG_INFO("start collect kernel info for pid(%d) ", pid_);
+    DfxGetKernelStack(pid_, halfKernelStack_);
+    DFXLOG_INFO("finish collect kernel info for pid(%d) ", pid_);
+    ReadProcessStatus(halfProcStatus_, pid_);
+    ReadProcessWchan(halfProcWchan_, pid_, false, true);
 }
 
 int DfxDumpCatcher::DoDumpRemotePoll(int bufFd, int resFd, int timeout, std::string& msg, bool isJson)
@@ -334,18 +343,24 @@ int DfxDumpCatcher::DoDumpRemotePoll(int bufFd, int resFd, int timeout, std::str
     readfds[1].events = POLLIN;
     int fdsSize = sizeof(readfds) / sizeof(readfds[0]);
     bool bPipeConnect = false;
+    int realTimeout = DUMPCATCHER_REMOTE_P90_TIMEOUT;
     while (true) {
         if (bufFd < 0 || resFd < 0) {
             ret = DUMP_POLL_FD;
             resMsg.append("Result: bufFd or resFd < 0.\n");
             break;
         }
-        int pollRet = OHOS_TEMP_FAILURE_RETRY(poll(readfds, fdsSize, timeout));
+        int pollRet = OHOS_TEMP_FAILURE_RETRY(poll(readfds, fdsSize, realTimeout));
         if (pollRet < 0) {
             ret = DUMP_POLL_FAILED;
             resMsg.append("Result: poll error, errno(" + std::to_string(errno) + ")\n");
             break;
         } else if (pollRet == 0) {
+            if (realTimeout == DUMPCATCHER_REMOTE_P90_TIMEOUT) {
+                CollectKernelInfo();
+                realTimeout = timeout - DUMPCATCHER_REMOTE_P90_TIMEOUT;
+                continue;
+            }
             ret = DUMP_POLL_TIMEOUT;
             resMsg.append("Result: poll timeout.\n");
             break;
