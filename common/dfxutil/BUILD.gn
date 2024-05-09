@@ -67,8 +67,21 @@ if (defined(ohos_lite)) {
     defines = [ "DFX_LOG_HILOG_BASE" ]
     deps = [ "$faultloggerd_path/common/dfxlog:dfx_hilog_base" ]
     external_deps = [
-      "c_utils:utilsbase",
+      "c_utils:utils",
       "hilog:libhilog_base",
+    ]
+    part_name = "faultloggerd"
+    subsystem_name = "hiviewdfx"
+  }
+
+  ohos_static_library("dfx_util_static_real") {
+    sources = dfx_util_sources
+    public_configs = [ ":dfx_util_config" ]
+    defines = [ "DFX_LOG_HILOG_BASE" ]
+    deps = [ "$faultloggerd_path/common/dfxlog:dfx_hilog_base" ]
+    external_deps = [
+      "c_utils:utilsbase_static",
+      "hilog:libhilog_base_static",
     ]
     part_name = "faultloggerd"
     subsystem_name = "hiviewdfx"

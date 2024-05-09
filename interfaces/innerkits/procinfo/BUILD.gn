@@ -77,7 +77,23 @@ if (defined(ohos_lite)) {
 
     external_deps = [
       "bounds_checking_function:libsec_static",
-      "c_utils:utilsbase",
+      "c_utils:utils",
+    ]
+
+    part_name = "faultloggerd"
+    subsystem_name = "hiviewdfx"
+  }
+
+  ohos_static_library("dfx_procinfo_static") {
+    public_configs = [ ":dfx_procinfo_config" ]
+
+    sources = [ "procinfo.cpp" ]
+
+    deps = [ "$faultloggerd_path/common/dfxutil:dfx_util_static_real" ]
+
+    external_deps = [
+      "bounds_checking_function:libsec_static",
+      "c_utils:utilsbase_static",
     ]
 
     part_name = "faultloggerd"
