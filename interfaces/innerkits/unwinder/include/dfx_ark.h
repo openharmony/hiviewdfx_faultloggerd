@@ -56,6 +56,21 @@ struct JsFunction {
         return std::string(buff);
     }
 };
+
+struct ArkUnwindParam {
+    void *ctx;
+    ReadMemFunc readMem;
+    uintptr_t *fp;
+    uintptr_t *sp;
+    uintptr_t *pc;
+    uintptr_t *methodId;
+    bool *isJsFrame;
+    std::vector<uintptr_t>& jitCache;
+    ArkUnwindParam(void *ctx, ReadMemFunc readMem, uintptr_t *fp, uintptr_t *sp, uintptr_t *pc,
+        uintptr_t *methodId, bool *isJsFrame, std::vector<uintptr_t>& jitCache)
+        : ctx(ctx), readMem(readMem), fp(fp), sp(sp), pc(pc),
+          methodId(methodId), isJsFrame(isJsFrame), jitCache(jitCache) {}
+};
 }
 }
 
@@ -64,6 +79,7 @@ namespace HiviewDFX {
 using JsFrame = panda::ecmascript::JsFrame;
 using JsFunction = panda::ecmascript::JsFunction;
 using ReadMemFunc = panda::ecmascript::ReadMemFunc;
+using ArkUnwindParam = panda::ecmascript::ArkUnwindParam;
 
 class DfxArk {
 public:
@@ -75,6 +91,11 @@ public:
 
     static int StepArkFrame(void *obj, OHOS::HiviewDFX::ReadMemFunc readMemFn,
         uintptr_t *fp, uintptr_t *sp, uintptr_t *pc, uintptr_t* methodid, bool *isJsFrame);
+
+    static int StepArkFrameWithJit(OHOS::HiviewDFX::ArkUnwindParam* arkPrama);
+
+    static int JitCodeWriteFile(void* ctx, OHOS::HiviewDFX::ReadMemFunc readMemFn, int fd,
+        const uintptr_t* const jitCodeArray, const size_t jitSize);
 
     static int ParseArkFileInfo(uintptr_t byteCodePc, uintptr_t methodid, uintptr_t mapBase, const char* name,
         uintptr_t extractorPtr, JsFunction *jsFunction);

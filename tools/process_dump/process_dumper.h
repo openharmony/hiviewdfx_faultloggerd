@@ -53,6 +53,7 @@ private:
     static int GetLogTypeBySignal(int sig);
     void ReportSigDumpStats(std::shared_ptr<ProcessDumpRequest> request);
     void ReportCrashInfo(const std::string& jsonInfo);
+    void UnwindWriteJit(std::shared_ptr<ProcessDumpRequest> request);
 
 private:
     std::shared_ptr<DfxProcess> process_ = nullptr;

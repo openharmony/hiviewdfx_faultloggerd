@@ -343,6 +343,34 @@ bool ProcessDumper::IsTargetProcessAlive(std::shared_ptr<ProcessDumpRequest> req
     return true;
 }
 
+void ProcessDumper::UnwindWriteJit(std::shared_ptr<ProcessDumpRequest> request)
+{
+    if (!isCrash_) {
+        return;
+    }
+
+    const auto& jitCache = unwinder_->GetJitCache();
+    if (jitCache.size() == 0) {
+        return;
+    }
+    struct FaultLoggerdRequest jitRequest;
+    (void)memset_s(&jitRequest, sizeof(jitRequest), 0, sizeof(jitRequest));
+    jitRequest.type = FaultLoggerType::JIT_CODE_LOG;
+    jitRequest.pid = request->pid;
+    jitRequest.tid = request->tid;
+    jitRequest.uid = request->uid;
+    jitRequest.time = OHOS::HiviewDFX::GetTimeMilliSeconds();
+    int32_t fd = RequestFileDescriptorEx(&jitRequest);
+    if (fd == -1) {
+        DFXLOG_ERROR("%s", "request jitlog fd failed.");
+        return;
+    }
+    if (unwinder_->ArkWriteJitCodeToFile(fd) < 0) {
+        DFXLOG_ERROR("%s", "jit code write file failed.");
+    }
+    (void)close(fd);
+}
+
 bool ProcessDumper::Unwind(std::shared_ptr<ProcessDumpRequest> request, int &dumpRes)
 {
     pid_t realPid = 0;
@@ -362,6 +390,7 @@ bool ProcessDumper::Unwind(std::shared_ptr<ProcessDumpRequest> request, int &dum
         return false;
     }
 
+    UnwindWriteJit(request);
     return true;
 }
 
@@ -488,7 +517,7 @@ bool ProcessDumper::InitUnwinder(std::shared_ptr<ProcessDumpRequest> request, pi
         unwinder_ = std::make_shared<Unwinder>(vmPid,  realPid, isCrash_);
     } else {
         if (isCrash_) {
-            unwinder_ = std::make_shared<Unwinder>(process_->vmThread_->threadInfo_.pid);
+            unwinder_ = std::make_shared<Unwinder>(process_->vmThread_->threadInfo_.pid, isCrash_);
         } else {
             unwinder_ = std::make_shared<Unwinder>(process_->processInfo_.pid, false);
         }

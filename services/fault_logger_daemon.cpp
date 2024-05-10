@@ -83,6 +83,8 @@ static std::string GetRequestTypeName(int32_t type)
             return "leakstack";
         case (int32_t)FaultLoggerType::FFRT_CRASH_LOG:
             return "ffrtlog";
+        case (int32_t)FaultLoggerType::JIT_CODE_LOG:
+            return "jitcode";
         default:
             return "unsupported";
     }

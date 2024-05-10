@@ -43,6 +43,8 @@ enum FaultLoggerType {
     LEAK_STACKTRACE,
     /** ffrt crash log */
     FFRT_CRASH_LOG,
+    /** jit code log */
+    JIT_CODE_LOG,
 };
 
 /**

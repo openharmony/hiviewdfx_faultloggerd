@@ -108,6 +108,7 @@ void DfxUnwindRemote::UnwindKeyThread(std::shared_ptr<ProcessDumpRequest> reques
         DFXLOG_WARN("%s::request is not initialized.", __func__);
         return;
     }
+    unwinder->SetIsJitCrashFlag(ProcessDumper::GetInstance().IsCrash());
     auto unwindAsyncThread = std::make_shared<DfxUnwindAsyncThread>(unwThread, unwinder, request->stackId);
     if ((vmPid != 0)) {
         if (DfxPtrace::Attach(vmPid, PTRACE_ATTATCH_KEY_THREAD_TIMEOUT)) {
@@ -147,7 +148,7 @@ void DfxUnwindRemote::UnwindOtherThread(std::shared_ptr<DfxProcess> process, std
             return;
         }
     }
-
+    unwinder->SetIsJitCrashFlag(false);
     size_t index = 0;
     for (auto &thread : process->GetOtherThreads()) {
         if ((index == 0) && ProcessDumper::GetInstance().IsCrash()) {
