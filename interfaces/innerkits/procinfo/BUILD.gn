@@ -84,7 +84,7 @@ if (defined(ohos_lite)) {
     subsystem_name = "hiviewdfx"
   }
 
-  ohos_static_library("dfx_procinfo_static") {
+  ohos_static_library("dfx_procinfo_static_real") {
     public_configs = [ ":dfx_procinfo_config" ]
 
     sources = [ "procinfo.cpp" ]
