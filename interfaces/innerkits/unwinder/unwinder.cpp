@@ -478,7 +478,7 @@ bool Unwinder::FpStep(uintptr_t& fp, uintptr_t& pc, void *ctx)
     if (memory_->ReadUptr(ptr, &fp, true) &&
         memory_->ReadUptr(ptr, &pc, false)) {
         if (fp == prevFp || fp == 0) {
-            LOGW("-fp: %lx is same", (uint64_t)fp);
+            LOGU("-fp: %lx is same", (uint64_t)fp);
             return false;
         }
         regs_->SetReg(REG_FP, &fp);
@@ -528,7 +528,7 @@ bool Unwinder::StepInner(const bool isSigFrame, StepFrame& frame, void *ctx)
     MAYBE_UNUSED int mapRet = acc_->GetMapByPc(frame.pc, map, ctx);
     if (mapRet != UNW_ERROR_NONE) {
         if (frames_.size() > 2) { //2, least 2 frame
-            LOGE("Failed to get map, frames size: %zu", frames_.size());
+            LOGU("Failed to get map, frames size: %zu", frames_.size());
             lastErrorData_.SetAddrAndCode(frame.pc, mapRet);
             return false;
         }
