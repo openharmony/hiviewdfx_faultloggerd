@@ -550,7 +550,7 @@ int ProcessDumper::GetLogTypeBySignal(int sig)
     }
 }
 
-static int32_t CreateFileForCrash(int32_t pid, uint64_t time)
+int32_t ProcessDumper::CreateFileForCrash(int32_t pid, uint64_t time) const
 {
     const std::string logFilePath = "/log/crash";
     const std::string logFileType = "cppcrash";
