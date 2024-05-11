@@ -69,9 +69,6 @@ public:
                 return 0;
             }
         }
-#if defined(ENABLE_MIXSTACK)
-        MAYBE_UNUSED bool isGetArkRange = GetArkStackRange(arkMapStart_, arkMapEnd_);
-#endif
         uintptr_t firstFp = fp;
         size_t index = 0;
         MAYBE_UNUSED uintptr_t sp = 0;
@@ -81,15 +78,6 @@ public:
                 pcs[index - skipFrameNum] = pc;
             }
             index++;
-#if defined(ENABLE_MIXSTACK)
-            if (isGetArkRange && (pc >= arkMapStart_) && (pc < arkMapEnd_)) {
-                if (DfxArk::StepArkFrame(FpUnwinder::GetPtr(), &(FpUnwinder::AccessMem),
-                    &fp, &sp, &pc, nullptr, &isJsFrame) < 0) {
-                    break;
-                }
-                continue;
-            }
-#endif
             uintptr_t prevFp = fp;
             if ((!ReadUptr(prevFp, fp)) ||
                 (!ReadUptr(prevFp + sizeof(uintptr_t), pc))) {
@@ -107,9 +95,6 @@ public:
         if (pcs == nullptr) {
             return 0;
         }
-#if defined(ENABLE_MIXSTACK)
-        MAYBE_UNUSED bool isGetArkRange = GetArkStackRange(arkMapStart_, arkMapEnd_);
-#endif
         size_t index = 0;
         MAYBE_UNUSED uintptr_t sp = 0;
         MAYBE_UNUSED bool isJsFrame = false;
@@ -118,15 +103,6 @@ public:
                 pcs[index - skipFrameNum] = pc;
             }
             index++;
-#if defined(ENABLE_MIXSTACK)
-            if (isGetArkRange && (pc >= arkMapStart_) && (pc < arkMapEnd_)) {
-                if (DfxArk::StepArkFrame(FpUnwinder::GetPtr(), &(FpUnwinder::AccessMemSafe),
-                    &fp, &sp, &pc, nullptr, &isJsFrame) < 0) {
-                    break;
-                }
-                continue;
-            }
-#endif
             uintptr_t prevFp = fp;
             if ((!ReadUptrSafe(prevFp, fp)) ||
                 (!ReadUptrSafe(prevFp + sizeof(uintptr_t), pc))) {
@@ -151,18 +127,6 @@ public:
         : "x12", "memory");
 #endif
     }
-
-#if defined(ENABLE_MIXSTACK)
-    static bool AccessMem(void* ptr, uintptr_t addr, uintptr_t *val)
-    {
-        return reinterpret_cast<FpUnwinder*>(ptr)->ReadUptr(addr, *val);
-    }
-
-    static bool AccessMemSafe(void* ptr, uintptr_t addr, uintptr_t *val)
-    {
-        return reinterpret_cast<FpUnwinder*>(ptr)->ReadUptrSafe(addr, *val);
-    }
-#endif
 
 private:
     FpUnwinder()

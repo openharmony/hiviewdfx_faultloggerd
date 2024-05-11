@@ -229,6 +229,7 @@ void LocalThreadContext::InitSignalHandler()
 {
     static std::once_flag flag;
     std::call_once(flag, [&]() {
+        FpUnwinder::GetPtr();
         struct signal_chain_action sigchain = {
             .sca_sigaction = LocalThreadContext::CopyContextAndWaitTimeout,
             .sca_mask = {},
