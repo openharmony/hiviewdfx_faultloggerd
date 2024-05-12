@@ -95,7 +95,6 @@ Unwinder::Unwinder(std::shared_ptr<UnwindAccessors> accessors, bool local)
 
 void Unwinder::Init()
 {
-    LOGI("Unwinder init");
     Destroy();
     memory_ = std::make_shared<DfxMemory>(acc_);
 #if defined(__arm__)
@@ -106,6 +105,8 @@ void Unwinder::Init()
     InitParam();
 #if defined(ENABLE_MIXSTACK)
     LOGI("Unwinder mixstack enable: %d", enableMixstack_);
+#else
+    LOGI("Unwinder init");
 #endif
 }
 
@@ -168,7 +169,7 @@ bool Unwinder::UnwindLocalWithTid(const pid_t tid, size_t maxFrameNum, size_t sk
         LOGE("tid(%d) is not in current pid", tid);
         return false;
     }
-    LOGI("UnwindLocalWithTid:: tid: %d", tid);
+    LOGD("UnwindLocalWithTid:: tid: %d", tid);
     auto threadContext = LocalThreadContext::GetInstance().CollectThreadContext(tid);
 #if defined(__aarch64__)
     if (threadContext != nullptr && threadContext->frameSz > 0) {
