@@ -53,7 +53,7 @@ bool UniqueStackTable::Init()
     }
     tableBufMMap_ = retBufMMap;
     prctl(PR_SET_VMA, PR_SET_VMA_ANON_NAME, tableBufMMap_, tableSize_, "async_stack_table");
-    LOGW(
+    LOGD(
         "Init totalNodes_: %u, availableNodes_: %u, availableIndex_: %u \
         hashStep_: %" PRIu64 ", hashModulus_: %u",
         totalNodes_, availableNodes_, availableIndex_, hashStep_, hashModulus_);

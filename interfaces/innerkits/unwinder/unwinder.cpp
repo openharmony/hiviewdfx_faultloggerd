@@ -95,7 +95,6 @@ Unwinder::Unwinder(std::shared_ptr<UnwindAccessors> accessors, bool local)
 
 void Unwinder::Init()
 {
-    LOGI("Unwinder init");
     Destroy();
     memory_ = std::make_shared<DfxMemory>(acc_);
 #if defined(__arm__)
@@ -105,7 +104,9 @@ void Unwinder::Init()
 
     InitParam();
 #if defined(ENABLE_MIXSTACK)
-    LOGI("Unwinder mixstack enable: %d", enableMixstack_);
+    LOGD("Unwinder mixstack enable: %d", enableMixstack_);
+#else
+    LOGD("Unwinder init");
 #endif
 }
 
