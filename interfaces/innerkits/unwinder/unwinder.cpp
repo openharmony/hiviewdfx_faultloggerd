@@ -104,9 +104,9 @@ void Unwinder::Init()
 
     InitParam();
 #if defined(ENABLE_MIXSTACK)
-    LOGI("Unwinder mixstack enable: %d", enableMixstack_);
+    LOGD("Unwinder mixstack enable: %d", enableMixstack_);
 #else
-    LOGI("Unwinder init");
+    LOGD("Unwinder init");
 #endif
 }
 
