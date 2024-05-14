@@ -209,7 +209,7 @@ int GetKeywordsNum(const std::string& msg, std::string *keywords, int length)
     return count;
 }
 
-std::string GetCppCrashFileName(const pid_t pid)
+std::string GetCppCrashFileName(const pid_t pid, const std::string& tempPath)
 {
     std::string filePath = "";
     if (pid <= 0) {
@@ -217,7 +217,7 @@ std::string GetCppCrashFileName(const pid_t pid)
     }
     std::string fileNamePrefix = "cppcrash-" + std::to_string(pid);
     std::vector<std::string> files;
-    OHOS::GetDirFiles("/data/log/faultlog/temp/", files);
+    OHOS::GetDirFiles(tempPath, files);
     for (const auto& file : files) {
         if (file.find(fileNamePrefix) != std::string::npos) {
             filePath = file;

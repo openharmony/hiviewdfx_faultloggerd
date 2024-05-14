@@ -42,6 +42,7 @@
 #define REGISTERS_NUM       33
 #define REGISTER_FORMAT_LENGTH    16
 #endif
+const char* const TEMP_DIR = "/data/log/faultlog/temp/";
 
 namespace OHOS {
 namespace HiviewDFX {
@@ -78,7 +79,7 @@ bool CheckProcessComm(int pid, const std::string& name);
 int CheckKeyWords(const std::string& filePath, std::string *keywords, int length, int minRegIdx);
 bool CheckContent(const std::string& content, const std::string& keyContent, bool checkExist);
 int GetKeywordsNum(const std::string& msg, std::string *keywords, int length);
-std::string GetCppCrashFileName(const pid_t pid);
+std::string GetCppCrashFileName(const pid_t pid, const std::string& tempPath = TEMP_DIR);
 uint32_t GetSelfFdCount();
 uint32_t GetSelfMapsCount();
 uint64_t GetSelfMemoryCount();
