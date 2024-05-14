@@ -36,6 +36,7 @@ if (defined(ohos_lite)) {
       "HAVE_ELF_H",
       "HAVE_LINK_H",
       "is_ohos_lite",
+      "HISYSEVENT_DISABLE"
     ]
 
     include_dirs = [
