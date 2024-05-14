@@ -56,6 +56,7 @@ void SignalHandlerTest::TearDown()
 extern "C" void SetThreadInfoCallback(ThreadInfoCallBack func) __attribute__((weak));
 extern "C" void DFX_InstallSignalHandler(void) __attribute__((weak));
 extern "C" void SetAsyncStackCallbackFunc(void* func) __attribute__((weak));
+extern "C" int DFX_SetAppRunningUniqueId(const char* appRunningId, size_t len) __attribute__((weak));
 static bool CheckThreadCrashKeyWords(const string& filePath, pid_t pid, int sig)
 {
     if (filePath.empty() || pid <= 0) {
@@ -532,6 +533,69 @@ HWTEST_F(SignalHandlerTest, SignalHandlerTest014, TestSize.Level2)
         SetAsyncStackCallbackFunc(reinterpret_cast<void*>(TestCallbackFunc));
     }
     GTEST_LOG_(INFO) << "SignalHandlerTest014: end.";
+}
+
+/**
+ * @tc.name: SignalHandlerTest015
+ * @tc.desc: test DFX_SetAppRunningUniqueId
+ * @tc.type: FUNC
+ */
+HWTEST_F(SignalHandlerTest, SignalHandlerTest015, TestSize.Level2)
+{
+    if (DFX_SetAppRunningUniqueId == nullptr) {
+        return;
+    }
+
+    /**
+     * @tc.steps: step1.
+     *            case: appRunningId == nullptr, len= 0
+     * @tc.expected: ret == -1
+     * */
+    int ret = DFX_SetAppRunningUniqueId(nullptr, 0);
+    ASSERT_EQ(ret, -1);
+
+    /**
+     * @tc.steps: step2.
+     *            case: appRunningId == nullptr, len= MAX_APP_RUNNING_UNIQUE_ID_LEN
+     * @tc.expected: ret == -1
+     * */
+    ret = DFX_SetAppRunningUniqueId(nullptr, MAX_APP_RUNNING_UNIQUE_ID_LEN);
+    ASSERT_EQ(ret, -1);
+
+    /**
+     * @tc.steps: step3.
+     *            case: appRunningId != nullptr, len= 0
+     * @tc.expected: ret == 0
+     * */
+    constexpr char testId1[] = "App running unique test id";
+    ret = DFX_SetAppRunningUniqueId(testId1, 0);
+    ASSERT_EQ(ret, 0);
+
+    /**
+     * @tc.steps: step4.
+     *            case: appRunningId != nullptr, len= strleng(appRunningId)
+     * @tc.expected: ret == 0
+     * */
+    ret = DFX_SetAppRunningUniqueId(testId1, strlen(testId1));
+    ASSERT_EQ(ret, 0);
+
+    /**
+     * @tc.steps: step5.
+     *            case: appRunningId != nullptr, len= MAX_APP_RUNNING_UNIQUE_ID_LEN + 1
+     * @tc.expected: ret == -1
+     * */
+    constexpr size_t testLen = MAX_APP_RUNNING_UNIQUE_ID_LEN + 1;
+    ret = DFX_SetAppRunningUniqueId(testId1, testLen);
+    ASSERT_EQ(ret, -1);
+
+    /**
+     * @tc.steps: step6.
+     *            case: appRunningId != nullptr, len= MAX_APP_RUNNING_UNIQUE_ID_LEN
+     * @tc.expected: ret == 0
+     * */
+    constexpr char testId2[MAX_APP_RUNNING_UNIQUE_ID_LEN] = "App running unique test id";
+    ret = DFX_SetAppRunningUniqueId(testId2, MAX_APP_RUNNING_UNIQUE_ID_LEN);
+    ASSERT_EQ(ret, -1);
 }
 } // namespace HiviewDFX
 } // namepsace OHOS
