@@ -47,7 +47,9 @@ struct FaultLogInfoInner {
 static const char FOUNDATION_PROCESS_NAME[] = "foundation";
 static const char HIVIEW_PROCESS_NAME[] = "/system/bin/hiview";
 static const char REGS_KEY_WORD[] = "Registers:\n";
-static const char KILL_REASON_CPP_CRASH[] = "Kill Reason:Cpp Crash";
+#ifndef HISYSEVENT_DISABLE
+    static const char KILL_REASON_CPP_CRASH[] = "Kill Reason:Cpp Crash";
+#endif
 
 using AddFaultLog = void (*)(FaultLogInfoInner* info);
 using RecordAppExitReason = int (*)(int reason, const char *exitMsg);
