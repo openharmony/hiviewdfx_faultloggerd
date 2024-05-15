@@ -24,7 +24,6 @@
 #include <unistd.h>
 
 #include "backtrace_local.h"
-#include "dfx_log.h"
 #include "dfx_test_util.h"
 #include "file_util.h"
 
@@ -76,7 +75,6 @@ uint64_t BacktraceUtilsTest::memCountTotal = 0;
 
 void BacktraceUtilsTest::SetUpTestCase()
 {
-    DFXLOG_INFO("%s", "DfxSetUpTestCase");
     // get memory/fd/maps
     BacktraceUtilsTest::fdCountTotal = GetSelfFdCount();
     BacktraceUtilsTest::mapsCountTotal = GetSelfMapsCount();

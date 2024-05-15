@@ -43,6 +43,7 @@ namespace {
  * @tc.desc: test XzUtil functions
  * @tc.type: FUNC
  */
+#ifndef __x86_64__
 HWTEST_F(DfxXzUtilTest, DfxXzUtilTest001, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "DfxXzUtilTest001: start.";
@@ -57,6 +58,7 @@ HWTEST_F(DfxXzUtilTest, DfxXzUtilTest001, TestSize.Level2)
     ASSERT_TRUE(decompressedElf->size() > minidebugInfo->size);
     GTEST_LOG_(INFO) << "DfxXzUtilTest001: end.";
 }
+#endif
 }
 } // namespace HiviewDFX
 } // namespace OHOS

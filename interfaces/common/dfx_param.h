@@ -25,7 +25,7 @@
 namespace OHOS {
 namespace HiviewDFX {
 namespace {
-[[maybe_unused]] constexpr char BETA_ENABLED_KEY[] = "const.logsystemversion.type";
+[[maybe_unused]] constexpr char BETA_ENABLED_KEY[] = "const.logsystem.versiontype";
 [[maybe_unused]] constexpr char ASYNCSTACK_ENABLED_KEY[] = "persist.faultloggerd.priv.asyncstack.enabled";
 [[maybe_unused]] constexpr char MIXSTACK_ENABLED_KEY[] = "persist.faultloggerd.priv.mixstack.enabled";
 }

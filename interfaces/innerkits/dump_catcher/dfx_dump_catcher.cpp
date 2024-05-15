@@ -408,6 +408,7 @@ int DfxDumpCatcher::DoDumpRemotePoll(int bufFd, int resFd, int timeout, std::str
     } else {
         msg = resMsg + bufMsg;
     }
+
     if (res) {
         ret = DUMP_POLL_OK;
     }
