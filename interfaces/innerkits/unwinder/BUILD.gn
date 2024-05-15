@@ -272,6 +272,7 @@ if (defined(ohos_lite)) {
     subsystem_name = "hiviewdfx"
   }
 
+  # just for updater subsystem, use libunwinder_base first
   ohos_static_library("libunwinder_base_static") {
     public_configs = [
       ":dfx_unwinder_config",

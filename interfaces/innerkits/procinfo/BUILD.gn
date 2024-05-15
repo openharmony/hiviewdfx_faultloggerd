@@ -84,6 +84,7 @@ if (defined(ohos_lite)) {
     subsystem_name = "hiviewdfx"
   }
 
+  # just for updater subsystem, use dfx_procinfo_static first
   ohos_static_library("dfx_procinfo_static_real") {
     public_configs = [ ":dfx_procinfo_config" ]
 

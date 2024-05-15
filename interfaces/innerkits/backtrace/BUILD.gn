@@ -130,6 +130,7 @@ if (defined(ohos_lite)) {
     subsystem_name = "hiviewdfx"
   }
 
+  # just for updater subsystem, use backtrace_local first
   ohos_static_library("backtrace_local_static") {
     public_configs = [ ":dfx_backtrace_config" ]
     defines = [ "DFX_LOG_HILOG_BASE" ]

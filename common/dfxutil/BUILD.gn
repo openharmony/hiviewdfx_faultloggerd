@@ -74,6 +74,7 @@ if (defined(ohos_lite)) {
     subsystem_name = "hiviewdfx"
   }
 
+  # just for updater subsystem, use dfx_util_static first
   ohos_static_library("dfx_util_static_real") {
     sources = dfx_util_sources
     public_configs = [ ":dfx_util_config" ]
