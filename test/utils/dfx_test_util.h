@@ -41,6 +41,11 @@
                             "x25:","x26:","x27:","x28:","x29:","lr:","sp:","pc:"
 #define REGISTERS_NUM       33
 #define REGISTER_FORMAT_LENGTH    16
+#elif defined(__x86_64__)
+#define REGISTERS           "rax:","rdx:","rcx:","rbx:","rsi:","rdi:","rbp:","rsp:",\
+                            "r8:","r9:","r10:","r11:","r12:","r13:","r14:","r15:","rip:"
+#define REGISTERS_NUM       17
+#define REGISTER_FORMAT_LENGTH    16
 #endif
 const char* const TEMP_DIR = "/data/log/faultlog/temp/";
 

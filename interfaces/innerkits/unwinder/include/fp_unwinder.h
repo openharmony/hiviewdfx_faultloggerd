@@ -166,7 +166,7 @@ private:
         uintptr_t dummy;
         value = *reinterpret_cast<uintptr_t *>(addr);
         return OHOS_TEMP_FAILURE_RETRY(syscall(SYS_read, pfd_[PIPE_READ], &dummy, sizeof(uintptr_t))) ==
-        sizeof(uintptr_t);
+            sizeof(uintptr_t);
     }
 
 private:

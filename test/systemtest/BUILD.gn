@@ -84,8 +84,6 @@ if (defined(ohos_lite)) {
       "$faultloggerd_path/common/build:coverage_flags",
     ]
 
-    defines = [ "ENABLE_PARAMETER" ]
-
     deps = [
       "$faultloggerd_path/common/dfxutil:dfx_util",
       "$faultloggerd_path/interfaces/innerkits/dump_catcher:libdfx_dumpcatcher",

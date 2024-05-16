@@ -11,6 +11,5 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-persist.faultloggerd.priv.mixstack.enabled="faultloggerd:shell:775"
-persist.faultloggerd.priv.asyncstack.enabled="faultloggerd:shell:775"
-persist.faultloggerd.priv.block_crash_process.enabled="faultloggerd:shell:775"
+persist.faultloggerd.priv.mixstack.enabled="faultloggerd:shell:770"
+faultloggerd.priv.block_crash_process.enabled="faultloggerd:shell:770"
