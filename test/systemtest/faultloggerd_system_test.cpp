@@ -100,7 +100,7 @@ static pid_t ForkAndExecuteCrasher(const string& option, const CrasherType type)
 }
 
 static pid_t TriggerCrasherAndGetFileName(const string& option, const CrasherType type, string& crashFileName,
-                                          int waitSec = 1, const string& tempPath = TEMP_DIR)
+                                          int waitSec = 1, const std::string& tempPath = TEMP_DIR)
 {
     auto pid = ForkAndExecuteCrasher(option, type);
     int recheckCount = 0;

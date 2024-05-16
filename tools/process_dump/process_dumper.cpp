@@ -93,7 +93,9 @@ void WriteData(int fd, const std::string& data, size_t blockSize)
     DFXLOG_INFO("%s :: needWriteDataSize: %zu, writeDataSize: %zu", __func__, dataSize, index);
 }
 
+#if !defined(__x86_64__)
 const int ARG_MAX_NUM = 131072;
+#endif
 using OpenFilesList = std::map<int, FDInfo>;
 
 bool ReadLink(std::string &src, std::string &dst)
@@ -135,6 +137,7 @@ void CollectOpenFiles(OpenFilesList &list, pid_t pid)
     }
 }
 
+#if !defined(__x86_64__)
 void FillFdsaninfo(OpenFilesList &list, pid_t nsPid, uint64_t fdTableAddr)
 {
     constexpr size_t fds = sizeof(FdTable::entries) / sizeof(*FdTable::entries);
@@ -180,6 +183,7 @@ void FillFdsaninfo(OpenFilesList &list, pid_t nsPid, uint64_t fdTableAddr)
         }
     }
 }
+#endif
 
 std::string DumpOpenFiles(OpenFilesList &files)
 {
@@ -307,7 +311,9 @@ std::string GetOpenFiles(int32_t pid, int nsPid, uint64_t fdTableAddr)
 {
     OpenFilesList openFies;
     CollectOpenFiles(openFies, pid);
+#if !defined(__x86_64__)
     FillFdsaninfo(openFies, nsPid, fdTableAddr);
+#endif
     std::string fds = DumpOpenFiles(openFies);
     return fds;
 }
@@ -485,7 +491,7 @@ bool ProcessDumper::InitKeyThread(std::shared_ptr<ProcessDumpRequest> request)
 bool ProcessDumper::InitUnwinder(std::shared_ptr<ProcessDumpRequest> request, pid_t vmPid, pid_t realPid)
 {
     if (request->dumpMode == FUSION_MODE) {
-        unwinder_ = std::make_shared<Unwinder>(vmPid,  realPid, isCrash_);
+        unwinder_ = std::make_shared<Unwinder>(vmPid, realPid, isCrash_);
     } else {
         if (isCrash_) {
             unwinder_ = std::make_shared<Unwinder>(process_->vmThread_->threadInfo_.pid);
@@ -594,7 +600,6 @@ int ProcessDumper::InitPrintThread(std::shared_ptr<ProcessDumpRequest> request)
         DfxRingBufferWrapper::GetInstance().SetWriteFunc(ProcessDumper::WriteDumpBuf);
     } else {
         jsonFd_ = RequestPipeFd(request->pid, FaultLoggerPipeType::PIPE_FD_JSON_WRITE_BUF);
-
         if (jsonFd_ < 0) {
             // If fd returns -1, we try to obtain the fd that needs to return JSON style
             fd = RequestPipeFd(request->pid, FaultLoggerPipeType::PIPE_FD_WRITE_BUF);
