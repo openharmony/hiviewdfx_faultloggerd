@@ -65,9 +65,9 @@ if (defined(ohos_lite)) {
     sources = dfx_util_sources
     public_configs = [ ":dfx_util_config" ]
     defines = [ "DFX_LOG_HILOG_BASE" ]
-    deps = [ "$faultloggerd_path/common/dfxlog:dfx_hilog_base" ]
+    deps = [ "$faultloggerd_path/common/dfxlog:dfx_hilog_base_static" ]
     external_deps = [
-      "c_utils:utils",
+      "c_utils:utilsbase",
       "hilog:libhilog_base",
     ]
     part_name = "faultloggerd"

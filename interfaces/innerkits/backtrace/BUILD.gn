@@ -112,7 +112,7 @@ if (defined(ohos_lite)) {
     ]
 
     deps = [
-      "$faultloggerd_common_path/dfxlog:dfx_hilog_base",
+      "$faultloggerd_common_path/dfxlog:dfx_hilog_base_static",
       "$faultloggerd_interfaces_path/innerkits/procinfo:dfx_procinfo_static",
       "$faultloggerd_interfaces_path/innerkits/unwinder:libunwinder_base",
     ]

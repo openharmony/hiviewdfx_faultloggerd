@@ -255,7 +255,7 @@ if (defined(ohos_lite)) {
     sources += dfx_dwarf_sources
 
     deps = [
-      "$faultloggerd_common_path/dfxlog:dfx_hilog_base",
+      "$faultloggerd_common_path/dfxlog:dfx_hilog_base_static",
       "$faultloggerd_common_path/dfxutil:dfx_util_static",
     ]
 
