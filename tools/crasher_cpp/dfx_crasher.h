@@ -72,10 +72,10 @@ public:
     static int PrintFatalMessageInLibc();
 #ifndef is_ohos_lite
     static int AsyncStacktrace();
-    static int CrashInFFRT(std::string debug);
-    static int CrashInLibuvWork(std::string debug);
-    static int CrashInLibuvTimer(std::string debug);
-    static int CrashInLibuvWorkDone(std::string debug);
+    static int CrashInFFRT(const std::string &debug);
+    static int CrashInLibuvWork(const std::string &debug);
+    static int CrashInLibuvTimer(const std::string &debug);
+    static int CrashInLibuvWorkDone(const std::string &debug);
 #endif
 
 private:

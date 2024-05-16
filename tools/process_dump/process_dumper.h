@@ -52,7 +52,7 @@ private:
     bool InitVmThread(std::shared_ptr<ProcessDumpRequest> request);
     bool InitUnwinder(std::shared_ptr<ProcessDumpRequest> request, pid_t vmPid, pid_t realPid);
     static int GetLogTypeBySignal(int sig);
-    void ReportSigDumpStats(std::shared_ptr<ProcessDumpRequest> request);
+    void ReportSigDumpStats(const std::shared_ptr<ProcessDumpRequest> &request);
     void ReportCrashInfo(const std::string& jsonInfo);
 
 private:

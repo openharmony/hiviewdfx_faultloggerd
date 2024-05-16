@@ -657,7 +657,7 @@ bool ProcessDumper::IsCrash() const
     return isCrash_;
 }
 
-void ProcessDumper::ReportSigDumpStats(std::shared_ptr<ProcessDumpRequest> request)
+void ProcessDumper::ReportSigDumpStats(const std::shared_ptr<ProcessDumpRequest> &request)
 {
     if (isCrash_) {
         return;
