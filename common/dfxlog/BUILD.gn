@@ -91,8 +91,8 @@ if (defined(ohos_lite)) {
     public_configs = [ ":dfx_log_config" ]
     defines = [ "DFX_LOG_HILOG_BASE" ]
     external_deps = [
-      "c_utils:utilsbase_static",
-      "hilog:libhilog_base_static",
+      "c_utils:utilsbase",
+      "hilog:libhilog_base",
     ]
     part_name = "faultloggerd"
     subsystem_name = "hiviewdfx"
