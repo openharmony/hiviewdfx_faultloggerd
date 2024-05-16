@@ -77,24 +77,7 @@ if (defined(ohos_lite)) {
 
     external_deps = [
       "bounds_checking_function:libsec_static",
-      "c_utils:utils",
-    ]
-
-    part_name = "faultloggerd"
-    subsystem_name = "hiviewdfx"
-  }
-
-  # just for updater subsystem, use dfx_procinfo_static first
-  ohos_static_library("dfx_procinfo_static_real") {
-    public_configs = [ ":dfx_procinfo_config" ]
-
-    sources = [ "procinfo.cpp" ]
-
-    deps = [ "$faultloggerd_path/common/dfxutil:dfx_util_static_real" ]
-
-    external_deps = [
-      "bounds_checking_function:libsec_static",
-      "c_utils:utilsbase_static",
+      "c_utils:utilsbase",
     ]
 
     part_name = "faultloggerd"

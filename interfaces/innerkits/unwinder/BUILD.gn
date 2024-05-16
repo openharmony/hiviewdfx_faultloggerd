@@ -255,7 +255,7 @@ if (defined(ohos_lite)) {
     sources += dfx_dwarf_sources
 
     deps = [
-      "$faultloggerd_common_path/dfxlog:dfx_hilog_base",
+      "$faultloggerd_common_path/dfxlog:dfx_hilog_base_static",
       "$faultloggerd_common_path/dfxutil:dfx_util_static",
     ]
 
@@ -267,40 +267,6 @@ if (defined(ohos_lite)) {
       "bounds_checking_function:libsec_static",
       "c_utils:utilsbase",
       "hilog:libhilog_base",
-    ]
-    part_name = "faultloggerd"
-    subsystem_name = "hiviewdfx"
-  }
-
-  # just for updater subsystem, use libunwinder_base first
-  ohos_static_library("libunwinder_base_static") {
-    public_configs = [
-      ":dfx_unwinder_config",
-      ":lzma_config",
-      ":offline_mixstack_config",
-    ]
-    defines = [ "DFX_LOG_HILOG_BASE" ]
-
-    if (target_cpu != "x86_64") {
-      dfx_unwinder_sources -= [ "getcontext_x86_64.S" ]
-    }
-    sources = dfx_unwinder_sources
-    sources += dfx_exidx_sources
-    sources += dfx_dwarf_sources
-
-    deps = [
-      "$faultloggerd_common_path/dfxlog:dfx_hilog_base_static",
-      "$faultloggerd_common_path/dfxutil:dfx_util_static_real",
-    ]
-
-    if (is_ohos && !is_mingw && !is_emulator) {
-      sources += [ "dfx_xz_utils.cpp" ]
-    }
-    public_external_deps = [ "lzma:lzma_static" ]
-    external_deps = [
-      "bounds_checking_function:libsec_static",
-      "c_utils:utilsbase_static",
-      "hilog:libhilog_base_static",
     ]
     part_name = "faultloggerd"
     subsystem_name = "hiviewdfx"
