@@ -48,7 +48,7 @@ static const char FOUNDATION_PROCESS_NAME[] = "foundation";
 static const char HIVIEW_PROCESS_NAME[] = "/system/bin/hiview";
 static const char REGS_KEY_WORD[] = "Registers:\n";
 #ifndef HISYSEVENT_DISABLE
-    static const char KILL_REASON_CPP_CRASH[] = "Kill Reason:Cpp Crash";
+static const char KILL_REASON_CPP_CRASH[] = "Kill Reason:Cpp Crash";
 #endif
 
 using AddFaultLog = void (*)(FaultLogInfoInner* info);
@@ -193,12 +193,13 @@ void CppCrashReporter::ReportToAbilityManagerService()
     const int cppCrashExitReason = 2;
     recordAppExitReason(cppCrashExitReason, reason_.c_str());
     dlclose(handle);
-    #ifndef HISYSEVENT_DISABLE
-        int result = HiSysEventWrite(HiSysEvent::Domain::FRAMEWORK, "PROCESS_KILL", HiSysEvent::EventType::FAULT,
-            "PID", pid_, "PROCESS_NAME", cmdline_.c_str(), "MSG", KILL_REASON_CPP_CRASH);
-        DFXLOG_INFO("hisysevent write result=%d, send event [FRAMEWORK,PROCESS_KILL], pid=%d processName=%s, msg=%s",
-            result, pid_, cmdline_.c_str(), KILL_REASON_CPP_CRASH);
-    #endif
+
+#ifndef HISYSEVENT_DISABLE
+    int result = HiSysEventWrite(HiSysEvent::Domain::FRAMEWORK, "PROCESS_KILL", HiSysEvent::EventType::FAULT,
+        "PID", pid_, "PROCESS_NAME", cmdline_.c_str(), "MSG", KILL_REASON_CPP_CRASH);
+    DFXLOG_INFO("hisysevent write result=%d, send event [FRAMEWORK,PROCESS_KILL], pid=%d processName=%s, msg=%s",
+        result, pid_, cmdline_.c_str(), KILL_REASON_CPP_CRASH);
+#endif
 }
 
 std::string CppCrashReporter::GetRegsString(std::shared_ptr<DfxThread> thread)
