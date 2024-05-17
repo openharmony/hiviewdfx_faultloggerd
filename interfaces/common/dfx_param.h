@@ -25,9 +25,7 @@
 namespace OHOS {
 namespace HiviewDFX {
 namespace {
-[[maybe_unused]] constexpr char BETA_ENABLED_KEY[] = "const.logsystem.versiontype";
-[[maybe_unused]] constexpr char ASYNCSTACK_ENABLED_KEY[] = "persist.faultloggerd.priv.asyncstack.enabled";
-[[maybe_unused]] constexpr char MIXSTACK_ENABLED_KEY[] = "persist.faultloggerd.priv.mixstack.enabled";
+[[maybe_unused]] constexpr char MIXSTACK_ENABLED_KEY[] = "faultloggerd.priv.mixstack.enabled";
 }
 
 #if defined(ENABLE_PARAMETER)
@@ -55,8 +53,6 @@ namespace {
 
 class DfxParam {
 public:
-    GEN_ENABLE_PARAM_FUNC(EnableBeta, BETA_ENABLED_KEY, "commercial", "beta");
-    GEN_ENABLE_PARAM_FUNC(EnableAsyncStack, ASYNCSTACK_ENABLED_KEY, "true", "true");
     GEN_ENABLE_PARAM_FUNC(EnableMixstack, MIXSTACK_ENABLED_KEY, "true", "true");
 };
 } // namespace HiviewDFX
