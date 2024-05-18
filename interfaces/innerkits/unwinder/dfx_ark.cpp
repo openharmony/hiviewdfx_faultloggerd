@@ -41,6 +41,8 @@ int (*g_getArkNativeFrameInfoFn)(int, uintptr_t*, uintptr_t*, uintptr_t*, JsFram
 int (*g_stepArkManagedNativeFrameFn)(int, uintptr_t*, uintptr_t*, uintptr_t*, char*, size_t);
 int (*g_getArkJsHeapCrashInfoFn)(int, uintptr_t*, uintptr_t*, int, char*, size_t);
 int (*g_stepArkFn)(void*, OHOS::HiviewDFX::ReadMemFunc, uintptr_t*, uintptr_t*, uintptr_t*, uintptr_t*, bool*);
+int (*g_stepArkWithJitFn)(OHOS::HiviewDFX::ArkUnwindParam*);
+int (*g_jitCodeWriteFileFn)(void*, OHOS::HiviewDFX::ReadMemFunc, int, const uintptr_t* const, const size_t);
 int (*g_parseArkFileInfoFn)(uintptr_t, uintptr_t, uintptr_t, const char*, uintptr_t, JsFunction*);
 int (*g_parseArkFrameInfoLocalFn)(uintptr_t, uintptr_t, uintptr_t, JsFunction*);
 int (*g_parseArkFrameInfoFn)(uintptr_t, uintptr_t, uintptr_t, uintptr_t, uint8_t*, uint64_t, uintptr_t, JsFunction*);
@@ -208,6 +210,37 @@ int DfxArk::StepArkFrame(void *obj, OHOS::HiviewDFX::ReadMemFunc readMemFn,
 
     if (g_stepArkFn != nullptr) {
         return g_stepArkFn(obj, readMemFn, fp, sp, pc, methodid, isJsFrame);
+    }
+    return -1;
+}
+
+int DfxArk::StepArkFrameWithJit(OHOS::HiviewDFX::ArkUnwindParam* arkPrama)
+{
+    if (g_stepArkWithJitFn != nullptr) {
+        return g_stepArkWithJitFn(arkPrama);
+    }
+
+    const char* const arkFuncName = "step_ark_with_record_jit";
+    DLSYM_ARK_FUNC(arkFuncName, g_stepArkWithJitFn)
+
+    if (g_stepArkWithJitFn != nullptr) {
+        return g_stepArkWithJitFn(arkPrama);
+    }
+    return -1;
+}
+
+int DfxArk::JitCodeWriteFile(void* ctx, OHOS::HiviewDFX::ReadMemFunc readMemFn, int fd,
+    const uintptr_t* const jitCodeArray, const size_t jitSize)
+{
+    if (g_jitCodeWriteFileFn != nullptr) {
+        return g_jitCodeWriteFileFn(ctx, readMemFn, fd, jitCodeArray, jitSize);
+    }
+
+    const char* const arkFuncName = "ark_write_jit_code";
+    DLSYM_ARK_FUNC(arkFuncName, g_jitCodeWriteFileFn)
+
+    if (g_jitCodeWriteFileFn != nullptr) {
+        return g_jitCodeWriteFileFn(ctx, readMemFn, fd, jitCodeArray, jitSize);
     }
     return -1;
 }

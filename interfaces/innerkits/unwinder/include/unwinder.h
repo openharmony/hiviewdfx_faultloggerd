@@ -91,7 +91,6 @@ public:
     void FillJsFrame(DfxFrame& frame);
     bool GetFrameByPc(uintptr_t pc, std::shared_ptr<DfxMaps> maps, DfxFrame& frame);
     void GetFramesByPcs(std::vector<DfxFrame>& frames, std::vector<uintptr_t> pcs);
-
     static bool GetSymbolByPc(uintptr_t pc, std::shared_ptr<DfxMaps> maps,
         std::string& funcName, uint64_t& funcOffset);
     static void GetLocalFramesByPcs(std::vector<DfxFrame>& frames, std::vector<uintptr_t> pcs);
@@ -102,7 +101,12 @@ public:
     {
         return reinterpret_cast<DfxMemory*>(memory)->ReadMem(addr, val);
     }
-
+    void SetIsJitCrashFlag(bool isCrash);
+    int ArkWriteJitCodeToFile(int fd);
+    inline std::vector<uintptr_t>& GetJitCache(void)
+    {
+        return jitCache_;
+    }
 private:
     struct StepFrame {
         uintptr_t pc = 0;
@@ -152,9 +156,11 @@ private:
     MAYBE_UNUSED bool enableMixstack_ = true;
     MAYBE_UNUSED bool ignoreMixstack_ = false;
     MAYBE_UNUSED bool stopWhenArkFrame_ = false;
+    MAYBE_UNUSED bool IsJitCrash_ = false;
 
     int32_t pid_ = 0;
     uintptr_t pacMask_ = 0;
+    std::vector<uintptr_t> jitCache_ = {};
     std::shared_ptr<DfxAccessors> acc_ = nullptr;
     std::shared_ptr<DfxMemory> memory_ = nullptr;
     std::unordered_map<uintptr_t, std::shared_ptr<RegLocState>> rsCache_ {};
