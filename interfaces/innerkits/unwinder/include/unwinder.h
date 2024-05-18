@@ -103,7 +103,7 @@ public:
     }
     void SetIsJitCrashFlag(bool isCrash);
     int ArkWriteJitCodeToFile(int fd);
-    inline std::vector<uintptr_t>& GetJitCache(void)
+    inline const std::vector<uintptr_t>& GetJitCache(void)
     {
         return jitCache_;
     }

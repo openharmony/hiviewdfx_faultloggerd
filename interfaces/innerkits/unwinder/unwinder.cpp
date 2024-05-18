@@ -61,7 +61,6 @@ Unwinder::Unwinder(int pid, bool crash) : pid_(pid)
     maps_ = DfxMaps::Create(pid, crash);
     acc_ = std::make_shared<DfxAccessorsRemote>();
     enableFpCheckMapExec_ = true;
-    IsJitCrash_ = crash;
     Init();
 }
 
@@ -74,7 +73,6 @@ Unwinder::Unwinder(int pid, int nspid, bool crash) : pid_(nspid)
     maps_ = DfxMaps::Create(pid, crash);
     acc_ = std::make_shared<DfxAccessorsRemote>();
     enableFpCheckMapExec_ = true;
-    IsJitCrash_ = crash;
     Init();
 }
 
@@ -309,9 +307,7 @@ void Unwinder::SetIsJitCrashFlag(bool isCrash)
 int Unwinder::ArkWriteJitCodeToFile(int fd)
 {
 #if defined(ENABLE_MIXSTACK)
-    const uintptr_t* const jitArray = jitCache_.data();
-    const size_t jitSize = jitCache_.size();
-    return DfxArk::JitCodeWriteFile(memory_.get(), &(Unwinder::AccessMem), fd, jitArray, jitSize);
+    return DfxArk::JitCodeWriteFile(memory_.get(), &(Unwinder::AccessMem), fd, jitCache_.data(), jitCache_.size());
 #else
     return -1;
 #endif
@@ -359,7 +355,7 @@ bool Unwinder::StepArkJsFrame(StepFrame& frame)
     uintptr_t *methodId = pid_ > 0 ? (&frame.methodid) : nullptr;
     if (IsJitCrash_) {
         ArkUnwindParam arkParam(memory_.get(), &(Unwinder::AccessMem), &frame.fp, &frame.sp, &frame.pc,
-            methodId, &frame.isJsFrame, jitCache_, &jitSize_);
+            methodId, &frame.isJsFrame, jitCache_);
         ret = DfxArk::StepArkFrameWithJit(&arkParam);
     } else {
         ret = DfxArk::StepArkFrame(memory_.get(), &(Unwinder::AccessMem), &frame.fp, &frame.sp, &frame.pc,
