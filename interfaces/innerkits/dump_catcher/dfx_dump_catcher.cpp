@@ -157,7 +157,7 @@ static void ReportDumpCatcherStats(int32_t pid,
     stat->requestTime = requestTime;
     stat->dumpCatcherFinishTime = GetTimeMilliSeconds();
     stat->result = ret ? 0 : -1; // we need more detailed failure info
-    size_t copyLen = 0;
+    size_t copyLen;
     if (!ret) {
         copyLen = std::min(sizeof(stat->summary) - 1, msg.size());
         if (memcpy_s(stat->summary, sizeof(stat->summary) - 1, msg.c_str(), copyLen) != 0) {

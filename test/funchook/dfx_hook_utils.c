@@ -53,8 +53,6 @@ void LogBacktrace(void)
     int index = 0;
     unw_word_t pc;
     unw_word_t prevPc;
-    uint64_t start;
-    uint64_t end;
     bool shouldContinue = true;
     while (true) {
         if (index > MAX_FRAME) {

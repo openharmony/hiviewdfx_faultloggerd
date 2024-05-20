@@ -25,13 +25,13 @@ namespace OHOS {
 namespace HiviewDFX {
 class DumpStats {
 public:
-    int32_t pid;
-    uint64_t requestTime;
-    uint64_t signalTime;
-    uint64_t processdumpStartTime;
-    uint64_t processdumpFinishTime;
-    uint64_t dumpCatcherFinishTime;
-    int32_t result;
+    int32_t pid = 0;
+    uint64_t requestTime = 0;
+    uint64_t signalTime = 0;
+    uint64_t processdumpStartTime = 0;
+    uint64_t processdumpFinishTime = 0;
+    uint64_t dumpCatcherFinishTime = 0;
+    int32_t result = 0;
     std::string summary;
     std::string callerProcessName;
     std::string callerElfName;

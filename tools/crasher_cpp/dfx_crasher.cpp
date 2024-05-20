@@ -73,7 +73,7 @@ static const int NUMBER_ONE = 1;
 
 using namespace OHOS::HiviewDFX;
 using CommandFunc = int(*)();
-using CommandFuncParam = int(*)(std::string);
+using CommandFuncParam = int(*)(const std::string &);
 struct CrasherCommandLine {
     char cmdline[CMD_SZ];
     char description[CMD_DESC_SZ];
@@ -545,7 +545,7 @@ NOINLINE static int FFRTTaskSubmit0(int i)
     return FFRTTaskSubmit1(i);
 }
 
-NOINLINE int DfxCrasher::CrashInFFRT(std::string debug)
+NOINLINE int DfxCrasher::CrashInFFRT(const std::string &debug)
 {
     if (debug == "true") {
         setenv("HAP_DEBUGGABLE", "true", 1);
@@ -578,7 +578,7 @@ static void TimerCallback(uv_timer_t* handle)
     g_done = true;
 }
 
-NOINLINE int DfxCrasher::CrashInLibuvWork(std::string debug)
+NOINLINE int DfxCrasher::CrashInLibuvWork(const std::string &debug)
 {
     if (debug == "true") {
         setenv("HAP_DEBUGGABLE", "true", 1);
@@ -600,7 +600,7 @@ static void TimerCallback2(uv_timer_t* handle)
     raise(SIGSEGV);
 }
 
-NOINLINE int DfxCrasher::CrashInLibuvTimer(std::string debug)
+NOINLINE int DfxCrasher::CrashInLibuvTimer(const std::string &debug)
 {
     if (debug == "true") {
         setenv("HAP_DEBUGGABLE", "true", 1);
@@ -627,7 +627,7 @@ NOINLINE static void CrashAfterWorkCallback(uv_work_t* req, int status)
     raise(SIGSEGV);
 }
 
-NOINLINE int DfxCrasher::CrashInLibuvWorkDone(std::string debug)
+NOINLINE int DfxCrasher::CrashInLibuvWorkDone(const std::string &debug)
 {
     if (debug == "true") {
         setenv("HAP_DEBUGGABLE", "true", 1);
