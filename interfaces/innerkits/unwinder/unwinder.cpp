@@ -15,9 +15,13 @@
 
 #include "unwinder.h"
 
+#include <unordered_map>
 #include <dlfcn.h>
 #include <link.h>
 
+#if defined(__arm__)
+#include "arm_exidx.h"
+#endif
 #include "dfx_ark.h"
 #include "dfx_define.h"
 #include "dfx_errors.h"
@@ -25,8 +29,10 @@
 #include "dfx_hap.h"
 #include "dfx_instructions.h"
 #include "dfx_log.h"
+#include "dfx_param.h"
 #include "dfx_regs_get.h"
 #include "dfx_symbols.h"
+#include "dwarf_section.h"
 #include "fp_unwinder.h"
 #include "stack_util.h"
 #include "string_printf.h"
@@ -35,65 +41,376 @@
 
 namespace OHOS {
 namespace HiviewDFX {
-namespace {
 #undef LOG_DOMAIN
 #undef LOG_TAG
 #define LOG_DOMAIN 0xD002D11
 #define LOG_TAG "DfxUnwinder"
-}
 
-Unwinder::Unwinder(bool needMaps) : pid_(UNWIND_TYPE_LOCAL)
-{
-    if (needMaps) {
-        maps_ = DfxMaps::Create();
+class Unwinder::Impl {
+public:
+    // for local
+    Impl(bool needMaps) : pid_(UNWIND_TYPE_LOCAL)
+    {
+        if (needMaps) {
+            maps_ = DfxMaps::Create();
+        }
+        acc_ = std::make_shared<DfxAccessorsLocal>();
+        enableFpCheckMapExec_ = true;
+        Init();
     }
-    acc_ = std::make_shared<DfxAccessorsLocal>();
-    enableFpCheckMapExec_ = true;
-    Init();
-}
 
-Unwinder::Unwinder(int pid, bool crash) : pid_(pid)
-{
-    if (pid <= 0) {
-        LOGE("pid(%d) error", pid);
-        return;
+    // for remote
+    Impl(int pid, bool crash) : pid_(pid)
+    {
+        if (pid <= 0) {
+            LOGE("pid(%d) error", pid);
+            return;
+        }
+        maps_ = DfxMaps::Create(pid, crash);
+        acc_ = std::make_shared<DfxAccessorsRemote>();
+        enableFpCheckMapExec_ = true;
+        Init();
     }
-    maps_ = DfxMaps::Create(pid, crash);
-    acc_ = std::make_shared<DfxAccessorsRemote>();
-    enableFpCheckMapExec_ = true;
-    Init();
-}
 
-Unwinder::Unwinder(int pid, int nspid, bool crash) : pid_(nspid)
-{
-    if (pid <= 0 || nspid <= 0) {
-        LOGE("pid(%d) or nspid(%d) error", pid, nspid);
-        return;
+    Impl(int pid, int nspid, bool crash) : pid_(nspid)
+    {
+        if (pid <= 0 || nspid <= 0) {
+            LOGE("pid(%d) or nspid(%d) error", pid, nspid);
+            return;
+        }
+        maps_ = DfxMaps::Create(pid, crash);
+        acc_ = std::make_shared<DfxAccessorsRemote>();
+        enableFpCheckMapExec_ = true;
+        Init();
     }
-    maps_ = DfxMaps::Create(pid, crash);
-    acc_ = std::make_shared<DfxAccessorsRemote>();
-    enableFpCheckMapExec_ = true;
-    Init();
-}
 
-Unwinder::Unwinder(std::shared_ptr<UnwindAccessors> accessors, bool local)
-{
-    if (local) {
-        pid_ = UNWIND_TYPE_CUSTOMIZE_LOCAL;
-    } else {
-        pid_ = UNWIND_TYPE_CUSTOMIZE;
+    // for customized
+    Impl(const std::shared_ptr<UnwindAccessors> &accessors, bool local)
+    {
+        if (local) {
+            pid_ = UNWIND_TYPE_CUSTOMIZE_LOCAL;
+        } else {
+            pid_ = UNWIND_TYPE_CUSTOMIZE;
+        }
+        acc_ = std::make_shared<DfxAccessorsCustomize>(accessors);
+        enableLrFallback_ = false;
+        enableFpCheckMapExec_ = false;
+        enableFillFrames_ = false;
+    #if defined(__aarch64__)
+        pacMask_ = pacMaskDefault_;
+    #endif
+        Init();
     }
-    acc_ = std::make_shared<DfxAccessorsCustomize>(accessors);
-    enableLrFallback_ = false;
-    enableFpCheckMapExec_ = false;
-    enableFillFrames_ = false;
-#if defined(__aarch64__)
-    pacMask_ = pacMaskDefault_;
+
+    ~Impl()
+    {
+        Destroy();
+    }
+
+    inline void EnableUnwindCache(bool enableCache)
+    {
+        enableCache_ = enableCache;
+    }
+    inline void EnableFpCheckMapExec(bool enableFpCheckMapExec)
+    {
+        enableFpCheckMapExec_ = enableFpCheckMapExec;
+    }
+    inline void EnableFillFrames(bool enableFillFrames)
+    {
+        enableFillFrames_ = enableFillFrames;
+    }
+    inline void IgnoreMixstack(bool ignoreMixstack)
+    {
+        ignoreMixstack_ = ignoreMixstack;
+    }
+
+    inline void SetRegs(const std::shared_ptr<DfxRegs> &regs)
+    {
+        regs_ = regs;
+    }
+    inline const std::shared_ptr<DfxRegs>& GetRegs() const
+    {
+        return regs_;
+    }
+
+    inline const std::shared_ptr<DfxMaps>& GetMaps() const
+    {
+        return maps_;
+    }
+
+    inline uint16_t GetLastErrorCode()
+    {
+        return lastErrorData_.GetCode();
+    }
+    inline uint64_t GetLastErrorAddr()
+    {
+        return lastErrorData_.GetAddr();
+    }
+
+    bool GetStackRange(uintptr_t& stackBottom, uintptr_t& stackTop);
+
+    bool UnwindLocalWithContext(const ucontext_t& context, size_t maxFrameNum, size_t skipFrameNum);
+    bool UnwindLocalWithTid(pid_t tid, size_t maxFrameNum, size_t skipFrameNum);
+    bool UnwindLocal(bool withRegs, bool fpUnwind, size_t maxFrameNum, size_t skipFrameNum);
+    bool UnwindRemote(pid_t tid, bool withRegs, size_t maxFrameNum, size_t skipFrameNum);
+    bool Unwind(void *ctx, size_t maxFrameNum, size_t skipFrameNum);
+    bool UnwindByFp(void *ctx, size_t maxFrameNum, size_t skipFrameNum);
+
+    bool Step(uintptr_t& pc, uintptr_t& sp, void *ctx);
+    bool FpStep(uintptr_t& fp, uintptr_t& pc, void *ctx);
+
+    void AddFrame(DfxFrame& frame);
+    const std::vector<DfxFrame>& GetFrames();
+    inline const std::vector<uintptr_t>& GetPcs() const
+    {
+        return pcs_;
+    }
+    void FillFrames(std::vector<DfxFrame>& frames);
+    void FillFrame(DfxFrame& frame);
+    void FillJsFrame(DfxFrame& frame);
+    bool GetFrameByPc(uintptr_t pc, std::shared_ptr<DfxMaps> maps, DfxFrame& frame);
+    void GetFramesByPcs(std::vector<DfxFrame>& frames, std::vector<uintptr_t> pcs);
+    inline void SetIsJitCrashFlag(bool isCrash)
+    {
+        IsJitCrash_ = isCrash;
+    }
+    int ArkWriteJitCodeToFile(int fd);
+    inline const std::vector<uintptr_t>& GetJitCache(void) const
+    {
+        return jitCache_;
+    }
+    static int DlPhdrCallback(struct dl_phdr_info *info, size_t size, void *data);
+private:
+    struct StepFrame {
+        uintptr_t pc = 0;
+        uintptr_t methodid = 0;
+        uintptr_t sp = 0;
+        uintptr_t fp = 0;
+        bool isJsFrame {false};
+    };
+    void Init();
+    void Clear();
+    void Destroy();
+    void InitParam()
+    {
+#if defined(ENABLE_MIXSTACK)
+        enableMixstack_ = DfxParam::EnableMixstack();
 #endif
-    Init();
+    }
+    bool GetMainStackRangeInner(uintptr_t& stackBottom, uintptr_t& stackTop);
+    bool CheckAndReset(void* ctx);
+    void DoPcAdjust(uintptr_t& pc);
+    void AddFrame(const StepFrame& frame, std::shared_ptr<DfxMap> map);
+    bool StepInner(const bool isSigFrame, StepFrame& frame, void *ctx);
+    bool Apply(std::shared_ptr<DfxRegs> regs, std::shared_ptr<RegLocState> rs);
+#if defined(ENABLE_MIXSTACK)
+    bool StepArkJsFrame(StepFrame& frame);
+#endif
+    static uintptr_t StripPac(uintptr_t inAddr, uintptr_t pacMask);
+    inline void SetLocalStackCheck(void* ctx, bool check)
+    {
+        if ((pid_ == UNWIND_TYPE_LOCAL) && (ctx != nullptr)) {
+            UnwindContext* uctx = reinterpret_cast<UnwindContext *>(ctx);
+            uctx->stackCheck = check;
+        }
+    }
+
+#if defined(__aarch64__)
+    MAYBE_UNUSED const uintptr_t pacMaskDefault_ = static_cast<uintptr_t>(0xFFFFFF8000000000);
+#endif
+    bool enableCache_ = true;
+    bool enableFillFrames_ = true;
+    bool enableLrFallback_ = true;
+    bool enableFpCheckMapExec_ = false;
+    bool isFpStep_ = false;
+    MAYBE_UNUSED bool enableMixstack_ = true;
+    MAYBE_UNUSED bool ignoreMixstack_ = false;
+    MAYBE_UNUSED bool stopWhenArkFrame_ = false;
+    MAYBE_UNUSED bool IsJitCrash_ = false;
+
+    int32_t pid_ = 0;
+    uintptr_t pacMask_ = 0;
+    std::vector<uintptr_t> jitCache_ = {};
+    std::shared_ptr<DfxAccessors> acc_ = nullptr;
+    std::shared_ptr<DfxMemory> memory_ = nullptr;
+    std::unordered_map<uintptr_t, std::shared_ptr<RegLocState>> rsCache_ {};
+    std::shared_ptr<DfxRegs> regs_ = nullptr;
+    std::shared_ptr<DfxMaps> maps_ = nullptr;
+    std::vector<uintptr_t> pcs_ {};
+    std::vector<DfxFrame> frames_ {};
+    UnwindErrorData lastErrorData_ {};
+#if defined(__arm__)
+    std::shared_ptr<ArmExidx> armExidx_ = nullptr;
+#endif
+    std::shared_ptr<DwarfSection> dwarfSection_ = nullptr;
+};
+
+// for local
+Unwinder::Unwinder(bool needMaps) : impl_(std::make_shared<Impl>(needMaps))
+{
 }
 
-void Unwinder::Init()
+// for remote
+Unwinder::Unwinder(int pid, bool crash) : impl_(std::make_shared<Impl>(pid, crash))
+{
+}
+
+Unwinder::Unwinder(int pid, int nspid, bool crash) : impl_(std::make_shared<Impl>(pid, nspid, crash))
+{
+}
+
+// for customized
+Unwinder::Unwinder(std::shared_ptr<UnwindAccessors> accessors, bool local)
+    : impl_(std::make_shared<Impl>(accessors, local))
+{
+}
+
+void Unwinder::EnableUnwindCache(bool enableCache)
+{
+    impl_->EnableUnwindCache(enableCache);
+}
+
+void Unwinder::EnableFpCheckMapExec(bool enableFpCheckMapExec)
+{
+    impl_->EnableFpCheckMapExec(enableFpCheckMapExec);
+}
+
+void Unwinder::EnableFillFrames(bool enableFillFrames)
+{
+    impl_->EnableFillFrames(enableFillFrames);
+}
+
+void Unwinder::IgnoreMixstack(bool ignoreMixstack)
+{
+    impl_->IgnoreMixstack(ignoreMixstack);
+}
+
+void Unwinder::SetRegs(std::shared_ptr<DfxRegs> regs)
+{
+    impl_->SetRegs(regs);
+}
+
+const std::shared_ptr<DfxRegs>& Unwinder::GetRegs() const
+{
+    return impl_->GetRegs();
+}
+
+const std::shared_ptr<DfxMaps>& Unwinder::GetMaps() const
+{
+    return impl_->GetMaps();
+}
+
+uint16_t Unwinder::GetLastErrorCode() const
+{
+    return impl_->GetLastErrorCode();
+}
+
+uint64_t Unwinder::GetLastErrorAddr() const
+{
+    return impl_->GetLastErrorAddr();
+}
+
+bool Unwinder::GetStackRange(uintptr_t& stackBottom, uintptr_t& stackTop)
+{
+    return impl_->GetStackRange(stackBottom, stackTop);
+}
+
+bool Unwinder::UnwindLocalWithContext(const ucontext_t& context, size_t maxFrameNum, size_t skipFrameNum)
+{
+    return impl_->UnwindLocalWithContext(context, maxFrameNum, skipFrameNum);
+}
+
+bool Unwinder::UnwindLocalWithTid(pid_t tid, size_t maxFrameNum, size_t skipFrameNum)
+{
+    return impl_->UnwindLocalWithTid(tid, maxFrameNum, skipFrameNum);
+}
+
+bool Unwinder::UnwindLocal(bool withRegs, bool fpUnwind, size_t maxFrameNum, size_t skipFrameNum)
+{
+    return impl_->UnwindLocal(withRegs, fpUnwind, maxFrameNum, skipFrameNum);
+}
+
+bool Unwinder::UnwindRemote(pid_t tid, bool withRegs, size_t maxFrameNum, size_t skipFrameNum)
+{
+    return impl_->UnwindRemote(tid, withRegs, maxFrameNum, skipFrameNum);
+}
+
+bool Unwinder::Unwind(void *ctx, size_t maxFrameNum, size_t skipFrameNum)
+{
+    return impl_->Unwind(ctx, maxFrameNum, skipFrameNum);
+}
+
+bool Unwinder::UnwindByFp(void *ctx, size_t maxFrameNum, size_t skipFrameNum)
+{
+    return impl_->UnwindByFp(ctx, maxFrameNum, skipFrameNum);
+}
+
+bool Unwinder::Step(uintptr_t& pc, uintptr_t& sp, void *ctx)
+{
+    return impl_->Step(pc, sp, ctx);
+}
+
+bool Unwinder::FpStep(uintptr_t& fp, uintptr_t& pc, void *ctx)
+{
+    return impl_->FpStep(fp, pc, ctx);
+}
+
+void Unwinder::AddFrame(DfxFrame& frame)
+{
+    impl_->AddFrame(frame);
+}
+
+const std::vector<DfxFrame>& Unwinder::GetFrames() const
+{
+    return impl_->GetFrames();
+}
+
+const std::vector<uintptr_t>& Unwinder::GetPcs() const
+{
+    return impl_->GetPcs();
+}
+
+void Unwinder::FillFrames(std::vector<DfxFrame>& frames)
+{
+    impl_->FillFrames(frames);
+}
+
+void Unwinder::FillFrame(DfxFrame& frame)
+{
+    impl_->FillFrame(frame);
+}
+
+void Unwinder::FillJsFrame(DfxFrame& frame)
+{
+    impl_->FillJsFrame(frame);
+}
+
+bool Unwinder::GetFrameByPc(uintptr_t pc, std::shared_ptr<DfxMaps> maps, DfxFrame& frame)
+{
+    return impl_->GetFrameByPc(pc, maps, frame);
+}
+
+void Unwinder::GetFramesByPcs(std::vector<DfxFrame>& frames, std::vector<uintptr_t> pcs)
+{
+    impl_->GetFramesByPcs(frames, pcs);
+}
+
+void Unwinder::SetIsJitCrashFlag(bool isCrash)
+{
+    impl_->SetIsJitCrashFlag(isCrash);
+}
+
+int Unwinder::ArkWriteJitCodeToFile(int fd)
+{
+    return impl_->ArkWriteJitCodeToFile(fd);
+}
+
+const std::vector<uintptr_t>& Unwinder::GetJitCache()
+{
+    return impl_->GetJitCache();
+}
+
+void Unwinder::Impl::Init()
 {
     Destroy();
     memory_ = std::make_shared<DfxMemory>(acc_);
@@ -110,7 +427,7 @@ void Unwinder::Init()
 #endif
 }
 
-void Unwinder::Clear()
+void Unwinder::Impl::Clear()
 {
     isFpStep_ = false;
     enableMixstack_ = true;
@@ -121,7 +438,7 @@ void Unwinder::Clear()
     }
 }
 
-void Unwinder::Destroy()
+void Unwinder::Impl::Destroy()
 {
     Clear();
     rsCache_.clear();
@@ -130,7 +447,7 @@ void Unwinder::Destroy()
     }
 }
 
-bool Unwinder::CheckAndReset(void* ctx)
+bool Unwinder::Impl::CheckAndReset(void* ctx)
 {
     if ((ctx == nullptr) || (memory_ == nullptr)) {
         return false;
@@ -139,7 +456,7 @@ bool Unwinder::CheckAndReset(void* ctx)
     return true;
 }
 
-bool Unwinder::GetMainStackRangeInner(uintptr_t& stackBottom, uintptr_t& stackTop)
+bool Unwinder::Impl::GetMainStackRangeInner(uintptr_t& stackBottom, uintptr_t& stackTop)
 {
     if (maps_ != nullptr && !maps_->GetStackRange(stackBottom, stackTop)) {
         return false;
@@ -149,7 +466,7 @@ bool Unwinder::GetMainStackRangeInner(uintptr_t& stackBottom, uintptr_t& stackTo
     return true;
 }
 
-bool Unwinder::GetStackRange(uintptr_t& stackBottom, uintptr_t& stackTop)
+bool Unwinder::Impl::GetStackRange(uintptr_t& stackBottom, uintptr_t& stackTop)
 {
     if (gettid() == getpid()) {
         return GetMainStackRangeInner(stackBottom, stackTop);
@@ -157,7 +474,7 @@ bool Unwinder::GetStackRange(uintptr_t& stackBottom, uintptr_t& stackTop)
     return GetSelfStackRange(stackBottom, stackTop);
 }
 
-bool Unwinder::UnwindLocalWithTid(const pid_t tid, size_t maxFrameNum, size_t skipFrameNum)
+bool Unwinder::Impl::UnwindLocalWithTid(const pid_t tid, size_t maxFrameNum, size_t skipFrameNum)
 {
     if (tid < 0) {
         LOGE("params is nullptr, tid: %d", tid);
@@ -215,7 +532,7 @@ bool Unwinder::UnwindLocalWithTid(const pid_t tid, size_t maxFrameNum, size_t sk
 #endif
 }
 
-bool Unwinder::UnwindLocalWithContext(const ucontext_t& context, size_t maxFrameNum, size_t skipFrameNum)
+bool Unwinder::Impl::UnwindLocalWithContext(const ucontext_t& context, size_t maxFrameNum, size_t skipFrameNum)
 {
     if (regs_ == nullptr) {
         regs_ = DfxRegs::CreateFromUcontext(context);
@@ -225,7 +542,7 @@ bool Unwinder::UnwindLocalWithContext(const ucontext_t& context, size_t maxFrame
     return UnwindLocal(true, false, maxFrameNum, skipFrameNum);
 }
 
-bool Unwinder::UnwindLocal(bool withRegs, bool fpUnwind, size_t maxFrameNum, size_t skipFrameNum)
+bool Unwinder::Impl::UnwindLocal(bool withRegs, bool fpUnwind, size_t maxFrameNum, size_t skipFrameNum)
 {
     LOGI("UnwindLocal:: fpUnwind: %d", fpUnwind);
     uintptr_t stackBottom = 1;
@@ -272,7 +589,7 @@ bool Unwinder::UnwindLocal(bool withRegs, bool fpUnwind, size_t maxFrameNum, siz
     return Unwind(&context, maxFrameNum, skipFrameNum);
 }
 
-bool Unwinder::UnwindRemote(pid_t tid, bool withRegs, size_t maxFrameNum, size_t skipFrameNum)
+bool Unwinder::Impl::UnwindRemote(pid_t tid, bool withRegs, size_t maxFrameNum, size_t skipFrameNum)
 {
     if ((maps_ == nullptr) || (pid_ <= 0) || (tid < 0)) {
         LOGE("params is nullptr, pid: %d, tid: %d", pid_, tid);
@@ -299,12 +616,7 @@ bool Unwinder::UnwindRemote(pid_t tid, bool withRegs, size_t maxFrameNum, size_t
     return ret;
 }
 
-void Unwinder::SetIsJitCrashFlag(bool isCrash)
-{
-    IsJitCrash_ = isCrash;
-}
-
-int Unwinder::ArkWriteJitCodeToFile(int fd)
+int Unwinder::Impl::ArkWriteJitCodeToFile(int fd)
 {
 #if defined(ENABLE_MIXSTACK)
     return DfxArk::JitCodeWriteFile(memory_.get(), &(Unwinder::AccessMem), fd, jitCache_.data(), jitCache_.size());
@@ -312,9 +624,8 @@ int Unwinder::ArkWriteJitCodeToFile(int fd)
     return -1;
 #endif
 }
-
 #if defined(ENABLE_MIXSTACK)
-bool Unwinder::StepArkJsFrame(StepFrame& frame)
+bool Unwinder::Impl::StepArkJsFrame(StepFrame& frame)
 {
     if (pid_ != UNWIND_TYPE_CUSTOMIZE) {
         LOGI("+++ark pc: %p, fp: %p, sp: %p, isJsFrame: %d.", reinterpret_cast<void *>(frame.pc),
@@ -377,7 +688,7 @@ bool Unwinder::StepArkJsFrame(StepFrame& frame)
 }
 #endif
 
-bool Unwinder::Unwind(void *ctx, size_t maxFrameNum, size_t skipFrameNum)
+bool Unwinder::Impl::Unwind(void *ctx, size_t maxFrameNum, size_t skipFrameNum)
 {
     if ((regs_ == nullptr) || (!CheckAndReset(ctx))) {
         LOGE("%s", "params is nullptr?");
@@ -442,7 +753,7 @@ bool Unwinder::Unwind(void *ctx, size_t maxFrameNum, size_t skipFrameNum)
     return (frames_.size() > 0);
 }
 
-bool Unwinder::UnwindByFp(void *ctx, size_t maxFrameNum, size_t skipFrameNum)
+bool Unwinder::Impl::UnwindByFp(void *ctx, size_t maxFrameNum, size_t skipFrameNum)
 {
     if (regs_ == nullptr) {
         LOGE("%s", "params is nullptr?");
@@ -478,7 +789,7 @@ bool Unwinder::UnwindByFp(void *ctx, size_t maxFrameNum, size_t skipFrameNum)
     return (pcs_.size() > 0);
 }
 
-bool Unwinder::FpStep(uintptr_t& fp, uintptr_t& pc, void *ctx)
+bool Unwinder::Impl::FpStep(uintptr_t& fp, uintptr_t& pc, void *ctx)
 {
 #if defined(__aarch64__)
     LOGU("+fp: %lx, pc: %lx", (uint64_t)fp, (uint64_t)pc);
@@ -508,7 +819,7 @@ bool Unwinder::FpStep(uintptr_t& fp, uintptr_t& pc, void *ctx)
     return false;
 }
 
-bool Unwinder::Step(uintptr_t& pc, uintptr_t& sp, void *ctx)
+bool Unwinder::Impl::Step(uintptr_t& pc, uintptr_t& sp, void *ctx)
 {
     if ((regs_ == nullptr) || (!CheckAndReset(ctx))) {
         LOGE("%s", "params is nullptr?");
@@ -531,7 +842,7 @@ bool Unwinder::Step(uintptr_t& pc, uintptr_t& sp, void *ctx)
     return ret;
 }
 
-bool Unwinder::StepInner(const bool isSigFrame, StepFrame& frame, void *ctx)
+bool Unwinder::Impl::StepInner(const bool isSigFrame, StepFrame& frame, void *ctx)
 {
     if ((regs_ == nullptr) || (!CheckAndReset(ctx))) {
         LOGE("%s", "params is nullptr");
@@ -670,7 +981,7 @@ bool Unwinder::StepInner(const bool isSigFrame, StepFrame& frame, void *ctx)
     }
 
 #if defined(__aarch64__)
-    if (!ret && enableFpFallback_) {
+    if (!ret) { // try fp
         ret = FpStep(frame.fp, frame.pc, ctx);
         if (ret && !isFpStep_) {
             if (pid_ != UNWIND_TYPE_CUSTOMIZE) {
@@ -692,7 +1003,7 @@ bool Unwinder::StepInner(const bool isSigFrame, StepFrame& frame, void *ctx)
     return ret;
 }
 
-bool Unwinder::Apply(std::shared_ptr<DfxRegs> regs, std::shared_ptr<RegLocState> rs)
+bool Unwinder::Impl::Apply(std::shared_ptr<DfxRegs> regs, std::shared_ptr<RegLocState> rs)
 {
     if (rs == nullptr || regs == nullptr) {
         return false;
@@ -715,7 +1026,7 @@ bool Unwinder::Apply(std::shared_ptr<DfxRegs> regs, std::shared_ptr<RegLocState>
     return ret;
 }
 
-void Unwinder::DoPcAdjust(uintptr_t& pc)
+void Unwinder::Impl::DoPcAdjust(uintptr_t& pc)
 {
     if (pc <= 0x4) {
         return;
@@ -735,7 +1046,7 @@ void Unwinder::DoPcAdjust(uintptr_t& pc)
     pc -= sz;
 }
 
-uintptr_t Unwinder::StripPac(uintptr_t inAddr, uintptr_t pacMask)
+uintptr_t Unwinder::Impl::StripPac(uintptr_t inAddr, uintptr_t pacMask)
 {
     uintptr_t outAddr = inAddr;
 #if defined(__aarch64__)
@@ -755,7 +1066,7 @@ uintptr_t Unwinder::StripPac(uintptr_t inAddr, uintptr_t pacMask)
     return outAddr;
 }
 
-std::vector<DfxFrame>& Unwinder::GetFrames()
+const std::vector<DfxFrame>& Unwinder::Impl::GetFrames()
 {
     if (enableFillFrames_) {
         FillFrames(frames_);
@@ -763,7 +1074,7 @@ std::vector<DfxFrame>& Unwinder::GetFrames()
     return frames_;
 }
 
-void Unwinder::AddFrame(const StepFrame& frame, std::shared_ptr<DfxMap> map)
+void Unwinder::Impl::AddFrame(const StepFrame& frame, std::shared_ptr<DfxMap> map)
 {
 #if defined(OFFLINE_MIXSTACK)
     if (ignoreMixstack_ && frame.isJsFrame) {
@@ -785,9 +1096,14 @@ void Unwinder::AddFrame(const StepFrame& frame, std::shared_ptr<DfxMap> map)
     frames_.emplace_back(dfxFrame);
 }
 
-void Unwinder::AddFrame(DfxFrame& frame)
+void Unwinder::Impl::AddFrame(DfxFrame& frame)
 {
     frames_.emplace_back(frame);
+}
+
+bool Unwinder::AccessMem(void* memory, uintptr_t addr, uintptr_t *val)
+{
+    return reinterpret_cast<DfxMemory*>(memory)->ReadMem(addr, val);
 }
 
 void Unwinder::FillLocalFrames(std::vector<DfxFrame>& frames)
@@ -797,7 +1113,7 @@ void Unwinder::FillLocalFrames(std::vector<DfxFrame>& frames)
     }
     auto it = frames.begin();
     while (it != frames.end()) {
-        if (dl_iterate_phdr(Unwinder::DlPhdrCallback, &(*it)) != 1) {
+        if (dl_iterate_phdr(Unwinder::Impl::DlPhdrCallback, &(*it)) != 1) {
             // clean up frames after first invalid frame
             frames.erase(it, frames.end());
             break;
@@ -806,7 +1122,7 @@ void Unwinder::FillLocalFrames(std::vector<DfxFrame>& frames)
     }
 }
 
-void Unwinder::FillFrames(std::vector<DfxFrame>& frames)
+void Unwinder::Impl::FillFrames(std::vector<DfxFrame>& frames)
 {
     for (size_t i = 0; i < frames.size(); ++i) {
         auto& frame = frames[i];
@@ -820,7 +1136,7 @@ void Unwinder::FillFrames(std::vector<DfxFrame>& frames)
     }
 }
 
-void Unwinder::FillFrame(DfxFrame& frame)
+void Unwinder::Impl::FillFrame(DfxFrame& frame)
 {
     if (frame.map == nullptr) {
         frame.relPc = frame.pc;
@@ -845,7 +1161,7 @@ void Unwinder::FillFrame(DfxFrame& frame)
     frame.buildId = elf->GetBuildId();
 }
 
-void Unwinder::FillJsFrame(DfxFrame& frame)
+void Unwinder::Impl::FillJsFrame(DfxFrame& frame)
 {
     if (frame.map == nullptr) {
         LOGU("%s", "Current js frame is not map.");
@@ -881,7 +1197,7 @@ void Unwinder::FillJsFrame(DfxFrame& frame)
         frame.mapName.c_str(), frame.funcName.c_str(), frame.line, frame.column);
 }
 
-bool Unwinder::GetFrameByPc(uintptr_t pc, std::shared_ptr<DfxMaps> maps, DfxFrame &frame)
+bool Unwinder::Impl::GetFrameByPc(uintptr_t pc, std::shared_ptr<DfxMaps> maps, DfxFrame &frame)
 {
     frame.pc = static_cast<uint64_t>(StripPac(pc, 0));
     std::shared_ptr<DfxMap> map = nullptr;
@@ -895,7 +1211,7 @@ bool Unwinder::GetFrameByPc(uintptr_t pc, std::shared_ptr<DfxMaps> maps, DfxFram
     return true;
 }
 
-void Unwinder::GetFramesByPcs(std::vector<DfxFrame>& frames, std::vector<uintptr_t> pcs)
+void Unwinder::Impl::GetFramesByPcs(std::vector<DfxFrame>& frames, std::vector<uintptr_t> pcs)
 {
     frames.clear();
     std::shared_ptr<DfxMap> map = nullptr;
@@ -952,7 +1268,7 @@ std::string Unwinder::GetFramesStr(const std::vector<DfxFrame>& frames)
     return DfxFrameFormatter::GetFramesStr(frames);
 }
 
-int Unwinder::DlPhdrCallback(struct dl_phdr_info *info, size_t size, void *data)
+int Unwinder::Impl::DlPhdrCallback(struct dl_phdr_info *info, size_t size, void *data)
 {
     auto frame = reinterpret_cast<DfxFrame *>(data);
     const ElfW(Phdr) *phdr = info->dlpi_phdr;
