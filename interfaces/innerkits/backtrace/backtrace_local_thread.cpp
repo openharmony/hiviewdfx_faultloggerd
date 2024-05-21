@@ -20,7 +20,6 @@
 #include <unistd.h>
 
 #include "dfx_define.h"
-#include "dfx_frame_formatter.h"
 #include "procinfo.h"
 
 namespace OHOS {
@@ -96,7 +95,7 @@ std::string BacktraceLocalThread::GetFormattedStr(bool withThreadName)
         ReadThreadName(tid_, threadName);
         ss << "Tid:" << tid_ << ", Name:" << threadName << std::endl;
     }
-    ss << DfxFrameFormatter::GetFramesStr(frames_);
+    ss << Unwinder::GetFramesStr(frames_);
     return ss.str();
 }
 } // namespace HiviewDFX

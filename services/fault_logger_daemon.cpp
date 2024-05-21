@@ -186,9 +186,30 @@ void FaultLoggerDaemon::HandleAccept(int32_t epollFd, int32_t socketFd)
 }
 
 #ifdef FAULTLOGGERD_FUZZER
-void FaultLoggerDaemon::HandleRequestForFuzzer(int32_t epollFd, int32_t connectionFd)
+void FaultLoggerDaemon::HandleRequestForFuzzer(int32_t epollFd, int32_t connectionFd,
+                                               const FaultLoggerdRequest *requestConst, FaultLoggerdRequest *request)
 {
     HandleRequest(epollFd, connectionFd);
+    switch (requestConst->clientType) {
+        case static_cast<int32_t>(FaultLoggerClientType::LOG_FILE_DES_CLIENT):
+            HandleLogFileDesClientRequest(connectionFd, requestConst);
+            break;
+        case static_cast<int32_t>(FaultLoggerClientType::PRINT_T_HILOG_CLIENT):
+            HandlePrintTHilogClientRequest(connectionFd, request);
+            break;
+        case static_cast<int32_t>(FaultLoggerClientType::PERMISSION_CLIENT):
+            HandlePermissionRequest(connectionFd, request);
+            break;
+        case static_cast<int32_t>(FaultLoggerClientType::SDK_DUMP_CLIENT):
+            HandleSdkDumpRequest(connectionFd, request);
+            break;
+        case static_cast<int32_t>(FaultLoggerClientType::REPORT_EXCEPTION_CLIENT):
+            HandleExceptionRequest(connectionFd, request);
+            break;
+        default:
+            DFXLOG_ERROR("%s :: unknown clientType(%d).\n", FAULTLOGGERD_TAG.c_str(), requestConst->clientType);
+            break;
+    }
 }
 #endif
 
@@ -220,16 +241,13 @@ void FaultLoggerDaemon::HandleRequest(int32_t epollFd, int32_t connectionFd)
             HandleDumpStats(connectionFd, reinterpret_cast<FaultLoggerdStatsRequest *>(buf.data()));
             break;
         }
-
         if (!CheckReadRequest(nread, sizeof(FaultLoggerdRequest))) {
             break;
         }
-
         auto request = reinterpret_cast<FaultLoggerdRequest *>(buf.data());
         if (!CheckRequestCredential(connectionFd, request)) {
             break;
         }
-
         DFXLOG_DEBUG("%s :: clientType(%d).\n", FAULTLOGGERD_TAG.c_str(), request->clientType);
         switch (request->clientType) {
             case static_cast<int32_t>(FaultLoggerClientType::DEFAULT_CLIENT):
