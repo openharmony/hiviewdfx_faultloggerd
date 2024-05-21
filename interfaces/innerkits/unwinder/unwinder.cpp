@@ -172,7 +172,7 @@ public:
     void GetFramesByPcs(std::vector<DfxFrame>& frames, std::vector<uintptr_t> pcs);
     inline void SetIsJitCrashFlag(bool isCrash)
     {
-        IsJitCrash_ = isCrash;
+        isJitCrash_ = isCrash;
     }
     int ArkWriteJitCodeToFile(int fd);
     inline const std::vector<uintptr_t>& GetJitCache(void) const
@@ -226,7 +226,7 @@ private:
     MAYBE_UNUSED bool enableMixstack_ = true;
     MAYBE_UNUSED bool ignoreMixstack_ = false;
     MAYBE_UNUSED bool stopWhenArkFrame_ = false;
-    MAYBE_UNUSED bool IsJitCrash_ = false;
+    MAYBE_UNUSED bool isJitCrash_ = false;
 
     int32_t pid_ = 0;
     uintptr_t pacMask_ = 0;
@@ -668,7 +668,7 @@ bool Unwinder::Impl::StepArkJsFrame(StepFrame& frame)
 #else
     int ret = -1;
     uintptr_t *methodId = pid_ > 0 ? (&frame.methodid) : nullptr;
-    if (IsJitCrash_) {
+    if (isJitCrash_) {
         ArkUnwindParam arkParam(memory_.get(), &(Unwinder::AccessMem), &frame.fp, &frame.sp, &frame.pc,
             methodId, &frame.isJsFrame, jitCache_);
         ret = DfxArk::StepArkFrameWithJit(&arkParam);
