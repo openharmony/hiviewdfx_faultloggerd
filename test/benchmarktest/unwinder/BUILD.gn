@@ -32,6 +32,7 @@ if (!defined(ohos_lite)) {
       "-Wno-reorder-init-list",
       "-Wno-header-hygiene",
     ]
+    ldflags = [ "-rdynamic" ]
     defines = [ "LOCK_TO_CPU" ]
     if (libunwinder_debug) {
       defines += [
@@ -44,6 +45,7 @@ if (!defined(ohos_lite)) {
       "elf_benchmark.cpp",
       "maps_benchmark.cpp",
       "unwind_local_benchmark.cpp",
+      "unwind_local_tid_benchmark.cpp",
       "unwind_remote_benchmark.cpp",
     ]
     deps = [
