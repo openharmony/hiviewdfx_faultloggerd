@@ -85,9 +85,6 @@ class DfxArk {
 public:
     static int GetArkNativeFrameInfo(int pid, uintptr_t& pc, uintptr_t& fp, uintptr_t& sp,
                                      JsFrame* frames, size_t& size);
-    static int StepArkManagedNativeFrame(int pid, uintptr_t& pc, uintptr_t& fp, uintptr_t& sp,
-                                         char* buf, size_t bufSize);
-    static int GetArkJsHeapCrashInfo(int pid, uintptr_t& x20, uintptr_t& fp, int outJsInfo, char* buf, size_t bufSize);
 
     static int StepArkFrame(void *obj, OHOS::HiviewDFX::ReadMemFunc readMemFn,
         uintptr_t *fp, uintptr_t *sp, uintptr_t *pc, uintptr_t* methodid, bool *isJsFrame);
@@ -109,8 +106,6 @@ public:
 
     static int ArkCreateJsSymbolExtractor(uintptr_t* extractorPtr);
     static int ArkDestoryJsSymbolExtractor(uintptr_t extractorPtr);
-
-    static int ArkDestoryLocal();
 };
 } // namespace HiviewDFX
 } // namespace OHOS

@@ -28,6 +28,7 @@ ohos_unittest("test_unwind") {
   defines = [ "DFX_LOG_UNWIND" ]
   sources = [
     "accessors_test.cpp",
+    "ark_test.cpp",
     "elf_imitate.cpp",
     "elf_test.cpp",
     "fp_unwinder_test.cpp",
