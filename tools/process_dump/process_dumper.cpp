@@ -67,7 +67,7 @@ namespace {
 #undef LOG_TAG
 #define LOG_DOMAIN 0xD002D11
 #define LOG_TAG "DfxProcessDump"
-const char *const BLOCK_CRASH_PROCESS = "persist.faultloggerd.priv.block_crash_process.enabled";
+const char *const BLOCK_CRASH_PROCESS = "faultloggerd.priv.block_crash_process.enabled";
 
 static bool IsBlockCrashProcess()
 {
