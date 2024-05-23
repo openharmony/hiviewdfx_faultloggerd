@@ -377,5 +377,25 @@ HWTEST_F(DumpCatcherCommandTest, DumpCatcherCommandTest013, TestSize.Level2)
     EXPECT_EQ(count, expectNum) << "DumpCatcherCommandTest013 Failed";
     GTEST_LOG_(INFO) << "DumpCatcherCommandTest013: end.";
 }
+
+/**
+ * @tc.name: DumpCatcherCommandTest014
+ * @tc.desc: test dumpcatcher command: -p 1 tid 1
+ * @tc.type: FUNC
+ * @tc.require: issueI5PJ9O
+ */
+HWTEST_F(DumpCatcherCommandTest, DumpCatcherCommandTest014, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "DumpCatcherCommandTest014: start.";
+    string systemui = "init";
+    string procCMD = "dumpcatcher -p 1 -t 1";
+    string procDumpLog = ExecuteCommands(procCMD);
+    GTEST_LOG_(INFO) << "procDumpLog: " << procDumpLog;
+    string log[] = {"Pid:1", "Name:init", "#00", "#01", "#02"};
+    int len = sizeof(log) / sizeof(log[0]);
+    int count = GetKeywordsNum(procDumpLog, log, len);
+    EXPECT_EQ(count, len) << "DumpCatcherCommandTest014 Failed";
+    GTEST_LOG_(INFO) << "DumpCatcherCommandTest014: end.";
+}
 } // namespace HiviewDFX
 } // namepsace OHOS
