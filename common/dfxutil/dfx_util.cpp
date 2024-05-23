@@ -94,6 +94,14 @@ uint64_t GetTimeMilliSeconds(void)
         (((uint64_t)ts.tv_nsec) / NUMBER_ONE_MILLION); // 1000000 : nanosecond to millisecond convert ratio
 }
 
+uint64_t GetAbsTimeMilliSeconds(void)
+{
+    struct timespec ts;
+    (void)clock_gettime(CLOCK_MONOTONIC, &ts);
+    return (static_cast<uint64_t>(ts.tv_sec) * NUMBER_ONE_THOUSAND) +
+        (static_cast<uint64_t>(ts.tv_nsec) / NUMBER_ONE_MILLION);
+}
+
 std::string GetCurrentTimeStr(uint64_t current)
 {
     time_t now = time(nullptr);
