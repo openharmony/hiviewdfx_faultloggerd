@@ -605,12 +605,12 @@ static int CloneAndDoProcessDump(void* arg)
     return ForkAndExecProcessDump();
 }
 
-static void StartProcessdump(void)
+static bool StartProcessdump(void)
 {
     pid_t pid = ForkBySyscall();
     if (pid < 0) {
         DFXLOG_ERROR("Failed to fork dummy processdump(%d)", errno);
-        return;
+        return false;
     } else if (pid == 0) {
         pid_t processDumpPid = ForkBySyscall();
         if (processDumpPid < 0) {
@@ -625,15 +625,17 @@ static void StartProcessdump(void)
 
     if (waitpid(pid, NULL, 0) <= 0) {
         DFXLOG_ERROR("failed to wait dummy processdump(%d)", errno);
+        return false;
     }
+    return true;
 }
 
-static void StartVMProcessUnwind(void)
+static bool StartVMProcessUnwind(void)
 {
     pid_t pid = ForkBySyscall();
     if (pid < 0) {
         DFXLOG_ERROR("Failed to fork vm process(%d)", errno);
-        return;
+        return false;
     } else if (pid == 0) {
         pid_t vmPid = ForkBySyscall();
         if (vmPid == 0) {
@@ -659,7 +661,9 @@ static void StartVMProcessUnwind(void)
 
     if (waitpid(pid, NULL, 0) <= 0) {
         DFXLOG_ERROR("failed to wait dummy vm process(%d)", errno);
+        return false;
     }
+    return true;
 }
 
 static void CleanFd(int *pipeFd)
@@ -705,17 +709,28 @@ static int ProcessDump(int sig)
     }
     g_request.dumpMode = FUSION_MODE;
 
-    StartProcessdump();
+    if (!StartProcessdump()) {
+        DFXLOG_ERROR("start processdump fail");
+        CleanPipe();
+        RestoreDumpState(prevDumpableStatus, isTracerStatusModified);
+        return -1;
+    }
     uint32_t isFinishGetRegs = OPE_FAIL;
     close(g_pipeFds[READ_FROM_DUMP_TO_MAIN][1]);
+    g_pipeFds[READ_FROM_DUMP_TO_MAIN][1] = -1;
     int ret = OHOS_TEMP_FAILURE_RETRY(read(g_pipeFds[READ_FROM_DUMP_TO_MAIN][0],
         &isFinishGetRegs, sizeof(isFinishGetRegs)));
     if (ret < 0 || ret != sizeof(isFinishGetRegs) || isFinishGetRegs != OPE_SUCCESS) {
         DFXLOG_INFO("Failed to read resgs(%d).", errno);
     }
-    DFXLOG_INFO("processdump have get all resgs");
+    DFXLOG_INFO("processdump have get all resgs .");
 
-    StartVMProcessUnwind();
+    if (!StartVMProcessUnwind()) {
+        DFXLOG_ERROR("start vm process unwind fail");
+        CleanPipe();
+        RestoreDumpState(prevDumpableStatus, isTracerStatusModified);
+        return -1;
+    }
     uint32_t isExitAfterUnwind = OPE_CONTINUE;
     if (sig != SIGDUMP) {
         read(g_pipeFds[READ_FROM_DUMP_TO_MAIN][0], &isExitAfterUnwind, sizeof(isExitAfterUnwind));
