@@ -65,7 +65,7 @@ bool GetBacktraceStringByTid(std::string& out, int32_t tid, size_t skipFrameNum,
     bool ret = GetBacktraceFramesByTid(frames, tid, skipFrameNum + 1, fast, maxFrameNums);
     out.clear();
     if (ret) {
-        out = DfxFrameFormatter::GetFramesStr(frames);
+        out = Unwinder::GetFramesStr(frames);
     } else if (DfxGetKernelStack(tid, out) == 0) {
         ret = true;
         DFXLOG_INFO("Failed to get user stack, try kernel:%s", out.c_str());
