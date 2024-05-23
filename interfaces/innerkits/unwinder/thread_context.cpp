@@ -45,20 +45,24 @@ const std::chrono::seconds g_timeOut = std::chrono::seconds(1);
 
 void CreateContext(std::shared_ptr<ThreadContext>& threadContext)
 {
+#ifndef __aarch64__
     std::unique_lock<std::mutex> lock(threadContext->mtx);
     if (threadContext->ctx == nullptr) {
         threadContext->ctx = new ucontext_t;
     }
     (void)memset_s(threadContext->ctx, sizeof(ucontext_t), 0, sizeof(ucontext_t));
+#endif
 }
 
 void ReleaseContext(std::shared_ptr<ThreadContext> threadContext)
 {
+#ifndef __aarch64__
     std::unique_lock<std::mutex> lock(threadContext->mtx);
     if (threadContext->ctx != nullptr) {
         delete threadContext->ctx;
         threadContext->ctx = nullptr;
     }
+#endif
 }
 
 std::shared_ptr<ThreadContext> GetContextLocked(int32_t tid)
@@ -198,12 +202,16 @@ bool LocalThreadContext::CopyContextAndWaitTimeout(int sig, siginfo_t *si, void 
         ctxPtr->tid = static_cast<int32_t>(ThreadContextStatus::CONTEXT_UNUSED);
         return true;
     }
-
-    if (memcpy_s(ctxPtr->ctx, sizeof(ucontext_t), context, sizeof(ucontext_t)) != 0) {
+    ucontext_t* ucontext = reinterpret_cast<ucontext_t*>(context);
+    if (memcpy_s(&ctxPtr->ctx->uc_mcontext, sizeof(ucontext->uc_mcontext),
+        &ucontext->uc_mcontext, sizeof(ucontext->uc_mcontext)) != 0) {
         LOGW("Failed to copy local ucontext with tid(%d)", tid);
     }
-    if (!GetSelfStackRange(ctxPtr->stackBottom, ctxPtr->stackTop)) {
-        LOGW("Failed to get stack range with tid(%d)", tid);
+
+    if (tid != getpid()) {
+        if (!GetSelfStackRange(ctxPtr->stackBottom, ctxPtr->stackTop)) {
+            LOGW("Failed to get stack range with tid(%d)", tid);
+        }
     }
 
     ctxPtr->tid = static_cast<int32_t>(ThreadContextStatus::CONTEXT_READY);

@@ -476,14 +476,9 @@ bool Unwinder::Impl::GetStackRange(uintptr_t& stackBottom, uintptr_t& stackTop)
 
 bool Unwinder::Impl::UnwindLocalWithTid(const pid_t tid, size_t maxFrameNum, size_t skipFrameNum)
 {
-    if (tid < 0) {
+    if (tid < 0 || tid == gettid()) {
+        lastErrorData_.SetCode(UNW_ERROR_NOT_SUPPORT);
         LOGE("params is nullptr, tid: %d", tid);
-        return false;
-    }
-    char path[PATH_LEN] = {0};
-    if ((snprintf_s(path, sizeof(path), sizeof(path) - 1, "/proc/self/task/%d", tid) <= 0) ||
-        (access(path, F_OK) != 0)) {
-        LOGE("tid(%d) is not in current pid", tid);
         return false;
     }
     LOGD("UnwindLocalWithTid:: tid: %d", tid);
