@@ -33,6 +33,8 @@ if (defined(ohos_lite)) {
 
     sources = dumpcatcher_sources
 
+    cflags = [ "-fstack-protector-strong" ]
+
     deps = [
       "$faultloggerd_common_path/dfxlog:dfx_hilog",
       "$faultloggerd_common_path/dfxutil:dfx_util",
@@ -56,6 +58,7 @@ if (defined(ohos_lite)) {
       "$faultloggerd_path/common/build:coverage_flags",
     ]
     sources = dumpcatcher_sources
+    cflags = [ "-fstack-protector-strong" ]
     include_dirs = [ "$faultloggerd_interfaces_path/common" ]
     version_script = "libdfx_dumpcatcher.map"
     deps = [
