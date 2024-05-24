@@ -119,6 +119,10 @@ public:
     {
         enableFillFrames_ = enableFillFrames;
     }
+    inline void EnableMethodIdLocal(bool enableMethodIdLocal)
+    {
+        enableMethodIdLocal_ = enableMethodIdLocal;
+    }
     inline void IgnoreMixstack(bool ignoreMixstack)
     {
         ignoreMixstack_ = ignoreMixstack;
@@ -222,6 +226,7 @@ private:
     bool enableFillFrames_ = true;
     bool enableLrFallback_ = true;
     bool enableFpCheckMapExec_ = false;
+    bool enableMethodIdLocal_ = false;
     bool isFpStep_ = false;
     MAYBE_UNUSED bool enableMixstack_ = true;
     MAYBE_UNUSED bool ignoreMixstack_ = false;
@@ -279,7 +284,10 @@ void Unwinder::EnableFillFrames(bool enableFillFrames)
 {
     impl_->EnableFillFrames(enableFillFrames);
 }
-
+void Unwinder::EnableMethodIdLocal(bool enableMethodIdLocal)
+{
+    impl_->EnableMethodIdLocal(enableMethodIdLocal);
+}
 void Unwinder::IgnoreMixstack(bool ignoreMixstack)
 {
     impl_->IgnoreMixstack(ignoreMixstack);
@@ -662,7 +670,7 @@ bool Unwinder::Impl::StepArkJsFrame(StepFrame& frame)
     }
 #else
     int ret = -1;
-    uintptr_t *methodId = pid_ > 0 ? (&frame.methodid) : nullptr;
+    uintptr_t *methodId = (pid_ > 0 || enableMethodIdLocal_) ? (&frame.methodid) : nullptr;
     if (isJitCrash_) {
         ArkUnwindParam arkParam(memory_.get(), &(Unwinder::AccessMem), &frame.fp, &frame.sp, &frame.pc,
             methodId, &frame.isJsFrame, jitCache_);
@@ -1174,9 +1182,9 @@ void Unwinder::Impl::FillJsFrame(DfxFrame& frame)
         return;
     }
     JsFunction jsFunction;
-    if ((pid_ == UNWIND_TYPE_LOCAL) || (pid_ == UNWIND_TYPE_CUSTOMIZE_LOCAL)) {
-        if (DfxArk::ParseArkFrameInfoLocal(static_cast<uintptr_t>(frame.pc), static_cast<uintptr_t>(frame.map->begin),
-            static_cast<uintptr_t>(frame.map->offset), &jsFunction) < 0) {
+    if ((pid_ == UNWIND_TYPE_LOCAL) || (pid_ == UNWIND_TYPE_CUSTOMIZE_LOCAL) || enableMethodIdLocal_) {
+        if (DfxArk::ParseArkFrameInfoLocal(static_cast<uintptr_t>(frame.pc), static_cast<uintptr_t>(frame.funcOffset),
+            static_cast<uintptr_t>(frame.map->begin), static_cast<uintptr_t>(frame.map->offset), &jsFunction) < 0) {
             LOGW("Failed to parse ark frame info local, pc: %p, begin: %p",
                 reinterpret_cast<void *>(frame.pc), reinterpret_cast<void *>(frame.map->begin));
             return;
