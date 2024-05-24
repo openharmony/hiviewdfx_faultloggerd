@@ -331,10 +331,17 @@ void DfxDumpCatcher::CollectKernelInfo()
 
 int DfxDumpCatcher::DoDumpRemotePoll(int bufFd, int resFd, int timeout, std::string& msg, bool isJson)
 {
+    if (bufFd < 0 || resFd < 0) {
+        if (!isJson) {
+            msg = "Result: bufFd or resFd < 0.\n";
+        }
+        DFXLOG_ERROR("%s", "invalid bufFd or resFd");
+        return DUMP_POLL_FD;
+    }
     int ret = DUMP_POLL_INIT;
+    std::string resMsg;
     bool res = false;
     std::string bufMsg;
-    std::string resMsg;
     struct pollfd readfds[2];
     (void)memset_s(readfds, sizeof(readfds), 0, sizeof(readfds));
     readfds[0].fd = bufFd;
@@ -343,22 +350,34 @@ int DfxDumpCatcher::DoDumpRemotePoll(int bufFd, int resFd, int timeout, std::str
     readfds[1].events = POLLIN;
     int fdsSize = sizeof(readfds) / sizeof(readfds[0]);
     bool bPipeConnect = false;
-    int realTimeout = DUMPCATCHER_REMOTE_P90_TIMEOUT;
+    int remainTime = DUMPCATCHER_REMOTE_P90_TIMEOUT;
+    bool collectKernelInfo = false;
+    uint64_t startTime = GetAbsTimeMilliSeconds();
+    uint64_t endTime = startTime + timeout;
     while (true) {
-        if (bufFd < 0 || resFd < 0) {
-            ret = DUMP_POLL_FD;
-            resMsg.append("Result: bufFd or resFd < 0.\n");
-            break;
-        }
-        int pollRet = OHOS_TEMP_FAILURE_RETRY(poll(readfds, fdsSize, realTimeout));
-        if (pollRet < 0) {
+        int pollRet = poll(readfds, fdsSize, remainTime);
+        if (pollRet < 0 && errno == EINTR) {
+            uint64_t now = GetAbsTimeMilliSeconds();
+            if (now >= endTime) {
+                ret = DUMP_POLL_TIMEOUT;
+                resMsg.append("Result: poll timeout.\n");
+                break;
+            }
+            if (!collectKernelInfo && (remainTime == DUMPCATCHER_REMOTE_P90_TIMEOUT)) {
+                CollectKernelInfo();
+                collectKernelInfo = true;
+            }
+            remainTime = endTime - now;
+            continue;
+        } else if (pollRet < 0) {
             ret = DUMP_POLL_FAILED;
             resMsg.append("Result: poll error, errno(" + std::to_string(errno) + ")\n");
             break;
         } else if (pollRet == 0) {
-            if (realTimeout == DUMPCATCHER_REMOTE_P90_TIMEOUT) {
+            if (!collectKernelInfo && (remainTime == DUMPCATCHER_REMOTE_P90_TIMEOUT)) {
                 CollectKernelInfo();
-                realTimeout = timeout - DUMPCATCHER_REMOTE_P90_TIMEOUT;
+                remainTime = timeout - DUMPCATCHER_REMOTE_P90_TIMEOUT;
+                collectKernelInfo = true;
                 continue;
             }
             ret = DUMP_POLL_TIMEOUT;
@@ -400,19 +419,18 @@ int DfxDumpCatcher::DoDumpRemotePoll(int bufFd, int resFd, int timeout, std::str
             ret = DUMP_POLL_RETURN;
             break;
         }
+        uint64_t now = GetAbsTimeMilliSeconds();
+        if (now >= endTime) {
+            ret = DUMP_POLL_TIMEOUT;
+            resMsg.append("Result: poll timeout.\n");
+            break;
+        }
+        remainTime = endTime - now;
     }
 
     DFXLOG_INFO("%s :: %s :: %s", DFXDUMPCATCHER_TAG.c_str(), __func__, resMsg.c_str());
-    if (isJson) {
-        msg = bufMsg;
-    } else {
-        msg = resMsg + bufMsg;
-    }
-
-    if (res) {
-        ret = DUMP_POLL_OK;
-    }
-    return ret;
+    msg = isJson ? bufMsg : (resMsg + bufMsg);
+    return res ? DUMP_POLL_OK : ret;
 }
 
 bool DfxDumpCatcher::DoReadBuf(int fd, std::string& msg)
