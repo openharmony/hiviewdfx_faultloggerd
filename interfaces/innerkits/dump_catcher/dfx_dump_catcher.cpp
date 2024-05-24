@@ -261,6 +261,7 @@ bool DfxDumpCatcher::DoDumpCatchRemote(int pid, int tid, std::string& msg, bool 
             msg.append("Result: pid(" + std::to_string(pid) + ") check permission error.\n");
         } else if (sdkdumpRet == static_cast<int>(FaultLoggerSdkDumpResp::SDK_DUMP_NOPROC)) {
             msg.append("Result: pid(" + std::to_string(pid) + ") syscall SIGDUMP error.\n");
+            msg.append(GetAllTidKernelStack(pid));
             RequestDelPipeFd(pid);
         } else if (sdkdumpRet == static_cast<int>(FaultLoggerSdkDumpResp::SDK_PROCESS_CRASHED)) {
             msg.append("Result: pid(" + std::to_string(pid) + ") has been crashed.\n");
@@ -327,6 +328,31 @@ void DfxDumpCatcher::CollectKernelInfo()
     DFXLOG_INFO("finish collect kernel info for pid(%d) ", pid_);
     ReadProcessStatus(halfProcStatus_, pid_);
     ReadProcessWchan(halfProcWchan_, pid_, false, true);
+}
+
+std::string DfxDumpCatcher::GetAllTidKernelStack(int pid)
+{
+    std::string kernelStackInfo;
+    std::string statusPath = StringPrintf("/proc/%d/status", pid);
+    if (access(statusPath.c_str(), F_OK) != 0) {
+        DFXLOG_WARN("No process(%d) status file exist!", pid_);
+        return kernelStackInfo;
+    }
+    std::vector<int> tids = {};
+    std::vector<int> nstids = {};
+    if (GetTidsByPid(pid, tids, nstids) == false) {
+        DFXLOG_ERROR("Process(%d) Get Tids fail!", pid_);
+        return kernelStackInfo;
+    }
+    for (int tid : tids) {
+        std::string tidKernelStackInfo;
+        if (DfxGetKernelStack(tid, tidKernelStackInfo) != 0) {
+            DFXLOG_ERROR("tid(%d) Get kernel stack fail!", tid);
+            continue;
+        }
+        kernelStackInfo.append(tidKernelStackInfo);
+    }
+    return kernelStackInfo;
 }
 
 int DfxDumpCatcher::DoDumpRemotePoll(int bufFd, int resFd, int timeout, std::string& msg, bool isJson)
