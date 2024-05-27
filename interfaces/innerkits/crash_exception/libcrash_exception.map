@@ -1,0 +1,12 @@
+{
+  global:
+    extern "C++" {
+      OHOS::HiviewDFX::GetTimeMillisec*;
+      OHOS::HiviewDFX::SetCrashProcInfo*;
+      OHOS::HiviewDFX::ReportCrashException*;
+      OHOS::HiviewDFX::ReportUnwinderException*;
+      OHOS::HiviewDFX::CheckCrashLogValid*;
+    };
+  local:
+    *;
+};
