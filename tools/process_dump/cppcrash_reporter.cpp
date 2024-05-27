@@ -70,9 +70,9 @@ bool CppCrashReporter::Format()
     if (!msg.empty()) {
         stack_ = "LastFatalMessage:" + msg + "\n";
     }
-
-    if (process_->vmThread_ != nullptr) {
-        std::string threadInfo = process_->vmThread_->ToString();
+    std::shared_ptr<DfxThread> thread = dumpMode_ == FUSION_MODE ? process_->keyThread_ : process_->vmThread_;
+    if (thread != nullptr) {
+        std::string threadInfo = thread->ToString();
         auto iterator = threadInfo.begin();
         while (iterator != threadInfo.end() && *iterator != '\n') {
             if (isdigit(*iterator)) {
@@ -84,7 +84,7 @@ bool CppCrashReporter::Format()
         stack_ += threadInfo;
 
         // regs
-        registers_ = GetRegsString(process_->vmThread_);
+        registers_ = GetRegsString(thread);
     }
     return true;
 }
