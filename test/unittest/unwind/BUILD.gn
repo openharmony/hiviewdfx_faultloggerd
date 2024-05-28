@@ -157,7 +157,10 @@ ohos_unittest("test_exidx") {
 ohos_unittest("test_dwarf") {
   module_out_path = module_output_path
   visibility = [ "*:*" ]
-  defines = [ "DFX_LOG_UNWIND" ]
+  defines = [
+    "DFX_LOG_UNWIND",
+    "DFX_LOG_HILOG_BASE",
+  ]
   include_dirs = [
     "$faultloggerd_interfaces_path/common",
     "$faultloggerd_interfaces_path/innerkits/unwinder/include",
@@ -166,9 +169,9 @@ ohos_unittest("test_dwarf") {
   sources = [ "dwarf_test.cpp" ]
 
   deps = [
-    "$faultloggerd_common_path/dfxlog:dfx_hilog",
+    "$faultloggerd_common_path/dfxlog:dfx_hilog_base",
     "$faultloggerd_common_path/dfxutil:dfx_util",
-    "$faultloggerd_interfaces_path/innerkits/unwinder:libunwinder_src",
+    "$faultloggerd_interfaces_path/innerkits/unwinder:libunwinder_base",
     "//third_party/bounds_checking_function:libsec_shared",
     "//third_party/googletest:gtest_main",
   ]
@@ -176,7 +179,7 @@ ohos_unittest("test_dwarf") {
   resource_config_file = "$faultloggerd_path/test/resource/ohos_test.xml"
   external_deps = [
     "c_utils:utils",
-    "hilog:libhilog",
+    "hilog:libhilog_base",
   ]
 }
 
