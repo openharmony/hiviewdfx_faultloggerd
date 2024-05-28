@@ -27,6 +27,7 @@
 #include "dfx_config.h"
 #include "dfx_define.h"
 #include "dfx_frame_formatter.h"
+#include "dfx_kernel_stack.h"
 #include "dfx_logger.h"
 #include "dfx_maps.h"
 #include "dfx_process.h"
@@ -160,14 +161,21 @@ void DfxUnwindRemote::UnwindOtherThread(std::shared_ptr<DfxProcess> process, std
             auto regs = thread->GetThreadRegs();
             unwinder->SetRegs(regs);
             bool withRegs = regs != nullptr;
+            if (isVmProcAttach && !withRegs) {
+                std::string kernelStack;
+                if (DfxGetKernelStack(thread->threadInfo_.nsTid, kernelStack) == 0) {
+                    DFXLOG_INFO("tid(%d) kernel stack %s", thread->threadInfo_.nsTid, kernelStack.c_str());
+                }
+                continue;
+            }
             auto pid = (vmPid != 0 && isVmProcAttach) ? vmPid : thread->threadInfo_.nsTid;
-            unwinder->UnwindRemote(pid, withRegs, DfxConfig::GetConfig().maxFrameNums);
+            bool ret = unwinder->UnwindRemote(pid, withRegs, DfxConfig::GetConfig().maxFrameNums);
             thread->Detach();
             thread->SetFrames(unwinder->GetFrames());
             if (ProcessDumper::GetInstance().IsCrash()) {
                 ReportUnwinderException(unwinder->GetLastErrorCode());
             }
-            DFXLOG_INFO("%s, unwind tid(%d) finish.", __func__, thread->threadInfo_.nsTid);
+            DFXLOG_INFO("%s, unwind tid(%d) finish, ret %d.", __func__, thread->threadInfo_.nsTid, ret);
             Printer::PrintThreadBacktraceByConfig(thread);
         }
         index++;

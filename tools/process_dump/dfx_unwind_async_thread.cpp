@@ -61,7 +61,7 @@ void DfxUnwindAsyncThread::UnwindStack(pid_t vmPid)
         thread_->Detach();
         thread_->SetFrames(unwinder_->GetFrames());
     }
-    DFXLOG_INFO("%s, unwind tid(%d) finish.", __func__, thread_->threadInfo_.nsTid);
+    DFXLOG_INFO("%s, unwind tid(%d) finish. ret %d", __func__, thread_->threadInfo_.nsTid, ret);
 }
 
 void DfxUnwindAsyncThread::GetSubmitterStack(std::vector<DfxFrame> &submitterFrames)

@@ -597,7 +597,6 @@ bool Unwinder::Impl::UnwindRemote(pid_t tid, bool withRegs, size_t maxFrameNum, 
     if (tid == 0) {
         tid = pid_;
     }
-    LOGI("UnwindRemote:: tid: %d", tid);
     if (!withRegs) {
         regs_ = DfxRegs::CreateRemoteRegs(tid);
     }
@@ -611,7 +610,6 @@ bool Unwinder::Impl::UnwindRemote(pid_t tid, bool withRegs, size_t maxFrameNum, 
     context.regs = regs_;
     context.maps = maps_;
     bool ret = Unwind(&context, maxFrameNum, skipFrameNum);
-    LOGI("tid: %d, ret: %d", tid, ret);
     return ret;
 }
 
