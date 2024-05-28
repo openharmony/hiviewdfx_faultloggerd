@@ -3,6 +3,7 @@
     extern "C++" {
       OHOS::HiviewDFX::Unwinder::Unwinder*;
       OHOS::HiviewDFX::Unwinder::EnableUnwindCache*;
+      OHOS::HiviewDFX::Unwinder::EnableMethodIdLocal*;
       OHOS::HiviewDFX::Unwinder::EnableFpCheckMapExec*;
       OHOS::HiviewDFX::Unwinder::EnableFillFrames*;
       OHOS::HiviewDFX::Unwinder::IgnoreMixstack*;
