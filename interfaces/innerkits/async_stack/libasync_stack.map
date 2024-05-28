@@ -1,0 +1,13 @@
+{
+  global:
+    extern "C++" {
+      OHOS::HiviewDFX::UniqueStackTable*;
+    };
+    extern "C" {
+      CollectAsyncStack;
+      SetStackId;
+      GetStackId;
+    };
+  local:
+    *;
+};

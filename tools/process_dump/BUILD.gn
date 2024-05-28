@@ -171,7 +171,7 @@ if (defined(ohos_lite)) {
       "init:libbegetutil",
       "jsoncpp:jsoncpp",
     ]
-
+    version_script = "processdump.map"
     install_images = [
       "system",
       "updater",

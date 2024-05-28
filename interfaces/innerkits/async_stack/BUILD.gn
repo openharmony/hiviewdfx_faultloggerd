@@ -66,7 +66,7 @@ if (defined(ohos_lite)) {
       "hilog:libhilog",
       "init:libbegetutil",
     ]
-
+    version_script = "libasync_stack.map"
     install_images = [
       "system",
       "updater",

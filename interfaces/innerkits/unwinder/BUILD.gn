@@ -188,6 +188,7 @@ if (defined(ohos_lite)) {
     if (is_ohos && !is_mingw && !is_emulator) {
       sources += [ "dfx_xz_utils.cpp" ]
     }
+    version_script = "libunwinder.map"
     public_external_deps = [ "lzma:lzma_shared" ]
     external_deps = [
       "bounds_checking_function:libsec_shared",
