@@ -315,6 +315,7 @@ std::string GetOpenFiles(int32_t pid, int nsPid, uint64_t fdTableAddr)
     FillFdsaninfo(openFies, nsPid, fdTableAddr);
 #endif
     std::string fds = DumpOpenFiles(openFies);
+    DFXLOG_INFO("%s", "get open files info finish");
     return fds;
 }
 
@@ -332,6 +333,7 @@ void ProcessDumper::InitRegs(std::shared_ptr<ProcessDumpRequest> request, int &d
         if (process_->keyThread_ != nullptr && !isCrash_) {
             process_->keyThread_->Detach();
         }
+        DFXLOG_INFO("%s", "get all tid regs finish");
     }
 }
 
@@ -430,6 +432,8 @@ int ProcessDumper::DumpProcess(std::shared_ptr<ProcessDumpRequest> request)
             dumpRes = DumpErrorCode::DUMP_EATTACH;
             break;
         }
+        InitRegs(request, dumpRes);
+
         if (isCrash_ && !isLeakDump) {
             process_->openFiles = GetOpenFiles(request->pid, request->nsPid, request->fdTableAddr);
         }
@@ -437,8 +441,6 @@ int ProcessDumper::DumpProcess(std::shared_ptr<ProcessDumpRequest> request)
             DFXLOG_ERROR("%s", "Failed to init print thread.");
             dumpRes = DumpErrorCode::DUMP_EGETFD;
         }
-
-        InitRegs(request, dumpRes);
         if (isCrash_ && !isLeakDump) {
             reporter_ = std::make_shared<CppCrashReporter>(request->timeStamp, process_, request->dumpMode);
         }
