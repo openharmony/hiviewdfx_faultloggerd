@@ -55,7 +55,7 @@ private:
     bool IsTargetProcessAlive(std::shared_ptr<ProcessDumpRequest> request, int &dumpRes);
     bool Unwind(std::shared_ptr<ProcessDumpRequest> request, int &dumpRes);
     static int GetLogTypeBySignal(int sig);
-    void ReportSigDumpStats(const std::shared_ptr<ProcessDumpRequest> &request);
+    void ReportSigDumpStats(const std::shared_ptr<ProcessDumpRequest> &request) const;
     void ReportCrashInfo(const std::string& jsonInfo);
     void UnwindWriteJit(const ProcessDumpRequest &request);
 

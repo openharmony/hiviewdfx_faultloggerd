@@ -120,7 +120,7 @@ static void PrintTimeStamp(const int fd)
     }
     (void)strftime(secBuf, sizeof(secBuf) - 1, "%Y-%m-%d %H:%M:%S", t);
     if (snprintf_s(printBuf, sizeof(printBuf), sizeof(printBuf) - 1,
-            "%s.%03u\n", secBuf, millisec) < 0) {
+            "%s.%03" PRIx64 "\n", secBuf, millisec) < 0) {
         DFXLOG_ERROR("snprintf timestamp fail\n");
         return;
     }
