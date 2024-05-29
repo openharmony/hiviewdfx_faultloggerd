@@ -84,7 +84,7 @@ bool CppCrashReporter::Format()
         stack_ += threadInfo;
 
         // regs
-        registers_ = GetRegsString(thread);
+        registers_ = GetRegsString(process_->regs_);
     }
     return true;
 }
@@ -201,13 +201,9 @@ void CppCrashReporter::ReportToAbilityManagerService()
 #endif
 }
 
-std::string CppCrashReporter::GetRegsString(std::shared_ptr<DfxThread> thread)
+std::string CppCrashReporter::GetRegsString(std::shared_ptr<DfxRegs> regs)
 {
     std::string regsString = "";
-    if (thread == nullptr) {
-        return regsString;
-    }
-    std::shared_ptr<DfxRegs> regs = thread->GetThreadRegs();
     if (regs == nullptr) {
         return regsString;
     }

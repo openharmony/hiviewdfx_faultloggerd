@@ -132,7 +132,8 @@ void DfxUnwindRemote::UnwindKeyThread(std::shared_ptr<ProcessDumpRequest> reques
     Printer::PrintThreadBacktraceByConfig(unwThread);
     if (ProcessDumper::GetInstance().IsCrash()) {
         // Registers of unwThread has been changed, we should print regs from request context.
-        Printer::PrintRegsByConfig(DfxRegs::CreateFromUcontext(request->context));
+        process->regs_ = DfxRegs::CreateFromUcontext(request->context);
+        Printer::PrintRegsByConfig(process->regs_);
     }
 }
 
