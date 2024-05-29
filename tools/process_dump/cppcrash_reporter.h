@@ -58,7 +58,7 @@ public:
 
 private:
     bool Format();
-    static std::string GetRegsString(std::shared_ptr<DfxThread> thread);
+    static std::string GetRegsString(std::shared_ptr<DfxRegs> regs);
     int32_t WriteCppCrashInfoByPipe();
 
 private:

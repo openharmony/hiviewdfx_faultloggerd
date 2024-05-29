@@ -21,6 +21,7 @@
 #include <memory>
 #include <string>
 
+#include "dfx_regs.h"
 #include "dfx_thread.h"
 
 namespace OHOS {
@@ -55,6 +56,7 @@ public:
     std::shared_ptr<DfxThread> vmThread_ = nullptr; // comment: vm thread object in crash scenario
     std::string reason = "";
     std::string openFiles = "";
+    std::shared_ptr<DfxRegs> regs_;
 private:
     DfxProcess() = default;
     void InitProcessInfo(pid_t pid, pid_t nsPid);
