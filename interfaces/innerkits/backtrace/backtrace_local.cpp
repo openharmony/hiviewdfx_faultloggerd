@@ -129,7 +129,15 @@ static std::string GetStacktraceHeader()
     ss << "Uid:" << getuid() << std::endl;
     std::string processName;
     ReadProcessName(pid, processName);
-    ss << "Process name::" << processName << std::endl;
+    std::string processNameNoNul;
+    for (char c : processName) {
+        if (c != '\0') {
+            processNameNoNul += c;
+        } else {
+            break;
+        }
+    }
+    ss << "Process name::" << processNameNoNul << std::endl;
     return ss.str();
 }
 

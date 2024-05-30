@@ -29,7 +29,6 @@
 
 #include "backtrace_local.h"
 #include "backtrace_local_thread.h"
-#include "dfx_frame_formatter.h"
 #include "dfx_test_util.h"
 #include "elapsed_time.h"
 
@@ -103,9 +102,7 @@ HWTEST_F(BacktraceLocalTest, BacktraceLocalTest001, TestSize.Level2)
     GTEST_LOG_(INFO) << "UnwindCurrentCost:" << counter.Elapsed();
     const auto& frames = thread.GetFrames();
     ASSERT_GT(frames.size(), 0);
-    for (const auto& frame : frames) {
-        GTEST_LOG_(INFO) << DfxFrameFormatter::GetFrameStr(frame);
-    }
+    GTEST_LOG_(INFO) << thread.GetFormattedStr();
     GTEST_LOG_(INFO) << "BacktraceLocalTest001: end.";
 }
 
@@ -184,6 +181,9 @@ HWTEST_F(BacktraceLocalTest, BacktraceLocalTest005, TestSize.Level2)
 
     if (stacktrace.find("backtrace_local_test") == std::string::npos) {
         FAIL() << "Failed to find pid key word.\n";
+    }
+    if (stacktrace.find("#01") == std::string::npos) {
+        FAIL() << "Failed to find stack key word.\n";
     }
 
     g_mutex.unlock();
