@@ -292,6 +292,8 @@ void ProcessDumper::Dump()
     if ((request->dumpMode == FUSION_MODE) && isCrash_) {
         InfoRemoteProcessResult(request, OPE_CONTINUE, MAIN_PROCESS);
     }
+
+    _exit(0);
 }
 
 static int32_t ReadRequestAndCheck(std::shared_ptr<ProcessDumpRequest> request)
