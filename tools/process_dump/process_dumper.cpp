@@ -507,11 +507,11 @@ bool ProcessDumper::InitKeyThread(std::shared_ptr<ProcessDumpRequest> request)
             return false;
         }
     }
-    if (request->dumpMode == FUSION_MODE) {
+    if ((process_->keyThread_ != nullptr) && request->dumpMode == FUSION_MODE) {
         ptrace(PTRACE_CONT, process_->keyThread_->threadInfo_.nsTid, 0, 0);
     }
 
-    if ((request->dumpMode == SPLIT_MODE) && !isCrash_) {
+    if ((process_->keyThread_ != nullptr) && (request->dumpMode == SPLIT_MODE) && !isCrash_) {
         process_->keyThread_->SetThreadRegs(DfxRegs::CreateFromUcontext(request->context));
     }
 
@@ -695,7 +695,7 @@ bool ProcessDumper::IsCrash() const
     return isCrash_;
 }
 
-void ProcessDumper::ReportSigDumpStats(const std::shared_ptr<ProcessDumpRequest> &request)
+void ProcessDumper::ReportSigDumpStats(const std::shared_ptr<ProcessDumpRequest> &request) const
 {
     if (isCrash_) {
         return;

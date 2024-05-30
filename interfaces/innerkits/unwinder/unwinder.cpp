@@ -211,7 +211,7 @@ private:
     bool StepArkJsFrame(StepFrame& frame);
 #endif
     static uintptr_t StripPac(uintptr_t inAddr, uintptr_t pacMask);
-    inline void SetLocalStackCheck(void* ctx, bool check)
+    inline void SetLocalStackCheck(void* ctx, bool check) const
     {
         if ((pid_ == UNWIND_TYPE_LOCAL) && (ctx != nullptr)) {
             UnwindContext* uctx = reinterpret_cast<UnwindContext *>(ctx);
