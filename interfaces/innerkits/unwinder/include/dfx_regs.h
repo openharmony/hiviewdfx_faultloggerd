@@ -125,6 +125,21 @@ public:
     bool StepIfSignalFrame(uintptr_t pc, std::shared_ptr<DfxMemory> memory) override;
 };
 #endif
+
+#if defined(__loongarch_lp64)
+class DfxRegsLoongArch64 : public DfxRegs {
+public:
+    DfxRegsLoongArch64() = default;
+    ~DfxRegsLoongArch64() = default;
+    void SetFromUcontext(const ucontext_t& context) override;
+    void SetFromFpMiniRegs(const uintptr_t* regs, const size_t size) override;
+    void SetFromQutMiniRegs(const uintptr_t* regs, const size_t size) override;
+    std::string PrintRegs() const override;
+    bool SetPcFromReturnAddress(std::shared_ptr<DfxMemory> memory) override;
+    bool StepIfSignalFrame(uintptr_t pc, std::shared_ptr<DfxMemory> memory) override;
+};
+#endif
+
 } // namespace HiviewDFX
 } // namespace OHOS
 #endif

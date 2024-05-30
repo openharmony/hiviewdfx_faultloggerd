@@ -42,6 +42,8 @@
 # define __WORDSIZE	64
 #elif defined(__riscv) && defined(__riscv_xlen) && __riscv_xlen == 64
 # define __WORDSIZE	64
+#elif defined (__loongarch_lp64)
+# define __WORDSIZE	64
 #else
 # define __WORDSIZE	32
 #endif
@@ -57,6 +59,8 @@
 #define EM_X86_64	62 // AMD x86-64 architecture
 #define EM_AARCH64	183 // ARM AARCH64
 #define EM_RISCV	243 // RISCV
+#define EM_LOONGARCH	258 // LOONGARCH
+
 
 #define PT_LOAD		1 // Loadable program segment
 #define PT_DYNAMIC	2 // Dynamic linking information

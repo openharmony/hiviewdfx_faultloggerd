@@ -26,6 +26,8 @@
 #include "unwind_riscv64_define.h"
 #elif defined(__x86_64__)
 #include "unwind_x86_64_define.h"
+#elif defined(__loongarch_lp64)
+#include "unwind_loongarch64_define.h"
 #else
 #error "Unsupported architecture"
 #endif
@@ -49,6 +51,7 @@ enum ArchType : uint8_t {
     ARCH_RISCV64,
     ARCH_X86,
     ARCH_X86_64,
+    ARCH_LOONGARCH,
 };
 
 enum UnwindType : int8_t {

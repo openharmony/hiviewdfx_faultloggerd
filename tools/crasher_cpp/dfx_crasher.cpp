@@ -282,6 +282,9 @@ NOINLINE int DfxCrasher::IllegalInstructionException(void)
     __asm__ volatile(".word 0xe7f0def0\n");
 #elif defined(__x86_64__)
     __asm__ volatile("ud2\n");
+#elif defined(__loongarch_lp64)
+    // Effective illegal instruction on LoongArch64: amswap.w $zero, $ra, $zero
+    __asm__ volatile(".word 0x38600400\n");
 #else
 #error
 #endif

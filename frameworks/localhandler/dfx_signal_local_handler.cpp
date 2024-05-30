@@ -115,7 +115,7 @@ void DFX_SignalLocalHandler(int sig, siginfo_t *si, void *context)
     if (ret < 0) {
         DFXLOGE("memcpy_s context fail, ret=%{public}d", ret);
     }
-#ifdef __aarch64__
+#if  defined(__aarch64__) || defined(__loongarch_lp64)
     DoCrashHandler(NULL);
 #else
     int pseudothreadTid = -1;

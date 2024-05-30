@@ -101,6 +101,8 @@ bool ElfParser::ParseElfHeaders(const EhdrType& ehdr)
         archType_ = ARCH_RISCV64;
     } else if (machine == EM_X86_64) {
         archType_ = ARCH_X86_64;
+    } else if (machine == EM_LOONGARCH) {
+        archType_ = ARCH_LOONGARCH;
     } else {
         DFXLOGW("Failed the machine = %{public}d", machine);
     }

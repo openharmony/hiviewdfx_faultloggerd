@@ -44,6 +44,8 @@ std::shared_ptr<DfxRegs> DfxRegs::Create()
     auto dfxregs = std::make_shared<DfxRegsRiscv64>();
 #elif defined(__x86_64__)
     auto dfxregs = std::make_shared<DfxRegsX86_64>();
+#elif defined(__loongarch_lp64)
+    auto dfxregs = std::make_shared<DfxRegsLoongArch64>();
 #else
 #error "Unsupported architecture"
 #endif
@@ -154,7 +156,7 @@ void DfxRegs::SetReg(const int idx, const uintptr_t* val)
 
 void DfxRegs::GetSpecialRegs(uintptr_t& fp, uintptr_t& lr, uintptr_t& sp, uintptr_t& pc) const
 {
-#if defined(__arm__) || defined(__aarch64__) || defined(__riscv)
+#if defined(__arm__) || defined(__aarch64__) || defined(__riscv) || defined(__loongarch_lp64)
     fp = regsData_[REG_FP];
     lr = regsData_[REG_LR];
 #endif
@@ -164,7 +166,7 @@ void DfxRegs::GetSpecialRegs(uintptr_t& fp, uintptr_t& lr, uintptr_t& sp, uintpt
 
 void DfxRegs::SetSpecialRegs(uintptr_t fp, uintptr_t lr, uintptr_t sp, uintptr_t pc)
 {
-#if defined(__arm__) || defined(__aarch64__) || defined(__riscv)
+#if defined(__arm__) || defined(__aarch64__) || defined(__riscv) || defined(__loongarch_lp64)
     regsData_[REG_FP] = fp;
     regsData_[REG_LR] = lr;
 #endif
@@ -194,7 +196,7 @@ void DfxRegs::SetPc(uintptr_t pc)
 
 uintptr_t DfxRegs::GetFp() const
 {
-#if defined(__arm__) || defined(__aarch64__)
+#if defined(__arm__) || defined(__aarch64__) || defined(__loongarch_lp64)
     return regsData_[REG_FP];
 #else
     return 0;
@@ -203,7 +205,7 @@ uintptr_t DfxRegs::GetFp() const
 
 void DfxRegs::SetFp(uintptr_t fp)
 {
-#if defined(__arm__) || defined(__aarch64__)  || defined(__riscv)
+#if defined(__arm__) || defined(__aarch64__)  || defined(__riscv) || defined(__loongarch_lp64)
     regsData_[REG_FP] = fp;
 #endif
 }
