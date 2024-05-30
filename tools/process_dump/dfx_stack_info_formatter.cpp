@@ -86,9 +86,19 @@ void DfxStackInfoFormatter::GetNativeCrashInfo(Json::Value& jsonInfo) const
     jsonInfo["uid"] = process_->processInfo_.uid;
     jsonInfo["app_running_unique_id"] = request_->appRunningId;
 
+    DfxSignal dfxSignal(request_->siginfo.si_signo);
     Json::Value signal;
     signal["signo"] = request_->siginfo.si_signo;
     signal["code"] = request_->siginfo.si_code;
+    if (dfxSignal.IsAddrAvailable()) {
+#if defined(__LP64__)
+        signal["address"] = StringPrintf("%#018lx", reinterpret_cast<uint64_t>(request_->siginfo.si_addr));
+#else
+        signal["address"] = StringPrintf("%#010llx", reinterpret_cast<uint64_t>(request_->siginfo.si_addr));
+#endif
+    } else {
+        signal["address"] = "";
+    }
     Json::Value exception;
     exception["signal"] = signal;
     exception["message"] = process_->GetFatalMessage();
