@@ -99,7 +99,7 @@ public:
 
     static int ParseArkFileInfo(uintptr_t byteCodePc, uintptr_t methodid, uintptr_t mapBase, const char* name,
         uintptr_t extractorPtr, JsFunction *jsFunction);
-    static int ParseArkFrameInfoLocal(uintptr_t byteCodePc, uintptr_t mapBase, uintptr_t loadOffset,
+    static int ParseArkFrameInfoLocal(uintptr_t byteCodePc, uintptr_t methodid, uintptr_t mapBase, uintptr_t loadOffset,
         JsFunction *jsFunction);
     static int ParseArkFrameInfo(uintptr_t byteCodePc, uintptr_t mapBase, uintptr_t loadOffset,
         uint8_t *data, uint64_t dataSize, uintptr_t extractorPtr, JsFunction *jsFunction);

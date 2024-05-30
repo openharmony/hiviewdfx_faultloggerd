@@ -47,6 +47,7 @@ public:
 
     void EnableFpCheckMapExec(bool enableFpCheckMapExec);
     void EnableFillFrames(bool enableFillFrames);
+    void EnableMethodIdLocal(bool enableMethodIdLocal);
     void IgnoreMixstack(bool ignoreMixstack);
 
     void SetRegs(std::shared_ptr<DfxRegs> regs);

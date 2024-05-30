@@ -111,6 +111,7 @@ HWTEST_F(UnwinderTest, UnwinderLocalTest001, TestSize.Level2)
     auto unwinder = std::make_shared<Unwinder>();
     ElapsedTime counter;
     MAYBE_UNUSED bool unwRet = unwinder->UnwindLocal();
+    unwinder->EnableMethodIdLocal(true);
     time_t elapsed1 = counter.Elapsed();
     EXPECT_EQ(true, unwRet) << "UnwinderLocalTest001: Unwind:" << unwRet;
     auto frames = unwinder->GetFrames();
