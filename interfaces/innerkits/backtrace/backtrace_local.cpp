@@ -147,12 +147,7 @@ std::string GetProcessStacktrace(size_t maxFrameNums)
             ss << thread.GetFormattedStr(true) << std::endl;
         } else {
             std::string msg = "";
-            if (tid == getprocpid()) {
-                ReadProcessStatus(msg, tid);
-                ss << msg << std::endl;
-                msg = "";
-            }
-            ReadThreadWchan(msg, tid, true);
+            DfxGetKernelStack(tid, msg);
             ss << msg << std::endl;
         }
         return true;
