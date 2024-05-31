@@ -146,30 +146,6 @@ bool ReadDirFiles(const std::string& path, std::vector<std::string>& files)
     return (files.size() > 0);
 }
 
-bool ReadDirFilesByPid(const int& pid, std::vector<std::string>& files)
-{
-    char path[PATH_LEN] = {0};
-#if is_ohos
-    if (pid == getprocpid()) {
-#else
-    if (pid == getpid()) {
-#endif
-        if (snprintf_s(path, sizeof(path), sizeof(path) - 1, PROC_SELF_TASK_PATH) <= 0) {
-            return false;
-        }
-    } else {
-        if (snprintf_s(path, sizeof(path), sizeof(path) - 1, "/proc/%d/task", pid) <= 0) {
-            return false;
-        }
-    }
-
-    char realPath[PATH_MAX];
-    if (!realpath(path, realPath)) {
-        return false;
-    }
-    return ReadDirFiles(realPath, files);
-}
-
 bool VerifyFilePath(const std::string& filePath, const std::vector<const std::string>& validPaths)
 {
     if (validPaths.size() == 0) {

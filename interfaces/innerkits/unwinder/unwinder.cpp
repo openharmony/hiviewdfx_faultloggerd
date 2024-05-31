@@ -1026,7 +1026,7 @@ bool Unwinder::Impl::Apply(std::shared_ptr<DfxRegs> regs, std::shared_ptr<RegLoc
     }
     if (!ret) {
         lastErrorData_.SetCode(errCode);
-        LOGE("%s", "Failed to apply reg state");
+        LOGE("Failed to apply reg state, errCode: %d", static_cast<int>(errCode));
     }
 
     regs->SetPc(StripPac(regs_->GetPc(), pacMask_));
