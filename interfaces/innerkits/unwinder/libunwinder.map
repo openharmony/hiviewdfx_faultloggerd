@@ -75,6 +75,7 @@
       OHOS::HiviewDFX::DfxPtrace::Attach*;
       OHOS::HiviewDFX::DfxMemory::ReadProcMemByPid*;
       OHOS::HiviewDFX::DfxSignal::PrintSignal*;
+      OHOS::HiviewDFX::DfxSignal::IsAddrAvailable*;
       "vtable for OHOS::HiviewDFX::DfxRegsArm";
       "vtable for OHOS::HiviewDFX::DfxRegsArm64";
       "vtable for OHOS::HiviewDFX::DfxRegsRiscv64";

@@ -47,6 +47,7 @@ public:
 
     void EnableFpCheckMapExec(bool enableFpCheckMapExec);
     void EnableFillFrames(bool enableFillFrames);
+    void EnableMethodIdLocal(bool enableMethodIdLocal);
     void IgnoreMixstack(bool ignoreMixstack);
 
     void SetRegs(std::shared_ptr<DfxRegs> regs);
@@ -65,7 +66,7 @@ public:
         size_t maxFrameNum = DEFAULT_MAX_FRAME_NUM, size_t skipFrameNum = 0);
     bool UnwindLocal(bool withRegs = false, bool fpUnwind = false,
         size_t maxFrameNum = DEFAULT_MAX_FRAME_NUM, size_t skipFrameNum = 0);
-    bool UnwindRemote(pid_t tid = 0, bool withRegs = false,
+    bool UnwindRemote(pid_t vmPid, pid_t tid = 0, bool withRegs = false,
         size_t maxFrameNum = DEFAULT_MAX_FRAME_NUM, size_t skipFrameNum = 0);
     bool Unwind(void *ctx,
         size_t maxFrameNum = DEFAULT_MAX_FRAME_NUM, size_t skipFrameNum = 0);

@@ -63,7 +63,7 @@ static bool GetProcStatusByPath(struct ProcInfo& procInfo, const std::string& pa
         if (strncmp(buf, PID_STR_NAME, strlen(PID_STR_NAME)) == 0) {
             // Pid:   1892
             if (sscanf_s(buf, "%*[^0-9]%d", &pid) != ARGS_COUNT_ONE) {
-#if is_ohos
+#if defined(is_ohos) && is_ohos
                 procInfo.pid = getprocpid();
 #else
                 procInfo.pid = getpid();
@@ -119,7 +119,7 @@ bool TidToNstid(const int pid, const int tid, int& nstid)
 
 bool GetProcStatusByPid(int realPid, struct ProcInfo& procInfo)
 {
-#if is_ohos
+#if defined(is_ohos) && is_ohos
     if (realPid == getprocpid()) {
 #else
     if (realPid == getpid()) {
@@ -138,7 +138,7 @@ bool GetProcStatus(struct ProcInfo& procInfo)
 bool IsThreadInPid(int32_t pid, int32_t tid)
 {
     std::string path;
-#if is_ohos
+#if defined(is_ohos) && is_ohos
     if (pid == getprocpid()) {
 #else
     if (pid == getpid()) {
@@ -152,8 +152,19 @@ bool IsThreadInPid(int32_t pid, int32_t tid)
 
 bool GetTidsByPidWithFunc(const int pid, std::vector<int>& tids, std::function<bool(int)> const& func)
 {
+    std::string path;
+#if defined(is_ohos) && is_ohos
+    if (pid == getprocpid()) {
+#else
+    if (pid == getpid()) {
+#endif
+        path = std::string(PROC_SELF_TASK_PATH);
+    } else {
+        path = StringPrintf("/proc/%d/task", pid);
+    }
+
     std::vector<std::string> files;
-    if (ReadDirFilesByPid(pid, files)) {
+    if (ReadDirFiles(path, files)) {
         for (size_t i = 0; i < files.size(); ++i) {
             pid_t tid = atoi(files[i].c_str());
             if (tid == 0) {
@@ -209,7 +220,7 @@ void ReadThreadNameByPidAndTid(const int pid, const int tid, std::string& str)
 void ReadProcessName(const int pid, std::string& str)
 {
     std::string path;
-#if is_ohos
+#if defined(is_ohos) && is_ohos
     if (pid == getprocpid()) {
 #else
     if (pid == getpid()) {
@@ -220,7 +231,6 @@ void ReadProcessName(const int pid, std::string& str)
     }
     std::string name;
     OHOS::HiviewDFX::LoadStringFromFile(path, name);
-    std::cout << name << std::endl;
     TrimAndDupStr(name, str);
 }
 

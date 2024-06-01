@@ -37,10 +37,8 @@ void DfxUnwindAsyncThread::UnwindStack(pid_t vmPid)
     // unwinding with context passed by dump request, only for crash thread or target thread.
     auto regs = thread_->GetThreadRegs();
     unwinder_->SetRegs(regs);
-    auto tmpPid = vmPid != 0 ? vmPid : thread_->threadInfo_.nsTid;
-    MAYBE_UNUSED bool ret = unwinder_->UnwindRemote(tmpPid,
-                                                    regs != nullptr,
-                                                    DfxConfig::GetConfig().maxFrameNums);
+    MAYBE_UNUSED bool ret = unwinder_->UnwindRemote(vmPid, thread_->threadInfo_.nsTid,
+                                                    regs != nullptr, DfxConfig::GetConfig().maxFrameNums);
     if (ProcessDumper::GetInstance().IsCrash()) {
         ReportUnwinderException(unwinder_->GetLastErrorCode());
     }
@@ -61,7 +59,7 @@ void DfxUnwindAsyncThread::UnwindStack(pid_t vmPid)
         thread_->Detach();
         thread_->SetFrames(unwinder_->GetFrames());
     }
-    DFXLOG_INFO("%s, unwind tid(%d) finish. ret %d", __func__, thread_->threadInfo_.nsTid, ret);
+    DFXLOG_INFO("%s, unwind tid(%d) finish.", __func__, thread_->threadInfo_.nsTid);
 }
 
 void DfxUnwindAsyncThread::GetSubmitterStack(std::vector<DfxFrame> &submitterFrames)

@@ -44,7 +44,7 @@ int (*g_stepArkFn)(void*, OHOS::HiviewDFX::ReadMemFunc, uintptr_t*, uintptr_t*, 
 int (*g_stepArkWithJitFn)(OHOS::HiviewDFX::ArkUnwindParam*);
 int (*g_jitCodeWriteFileFn)(void*, OHOS::HiviewDFX::ReadMemFunc, int, const uintptr_t* const, const size_t);
 int (*g_parseArkFileInfoFn)(uintptr_t, uintptr_t, uintptr_t, const char*, uintptr_t, JsFunction*);
-int (*g_parseArkFrameInfoLocalFn)(uintptr_t, uintptr_t, uintptr_t, JsFunction*);
+int (*g_parseArkFrameInfoLocalFn)(uintptr_t, uintptr_t, uintptr_t, uintptr_t, JsFunction*);
 int (*g_parseArkFrameInfoFn)(uintptr_t, uintptr_t, uintptr_t, uintptr_t, uint8_t*, uint64_t, uintptr_t, JsFunction*);
 int (*g_translateArkFrameInfoFn)(uint8_t*, uint64_t, JsFunction*);
 int (*g_arkCreateJsSymbolExtractorFn)(uintptr_t*);
@@ -144,17 +144,18 @@ int DfxArk::ParseArkFileInfo(uintptr_t byteCodePc, uintptr_t methodid, uintptr_t
     return -1;
 }
 
-int DfxArk::ParseArkFrameInfoLocal(uintptr_t byteCodePc, uintptr_t mapBase, uintptr_t offset, JsFunction *jsFunction)
+int DfxArk::ParseArkFrameInfoLocal(uintptr_t byteCodePc, uintptr_t methodid, uintptr_t mapBase,
+    uintptr_t offset, JsFunction *jsFunction)
 {
     if (g_parseArkFrameInfoLocalFn != nullptr) {
-        return g_parseArkFrameInfoLocalFn(byteCodePc, mapBase, offset, jsFunction);
+        return g_parseArkFrameInfoLocalFn(byteCodePc, methodid, mapBase, offset, jsFunction);
     }
 
     const char* arkFuncName = "ark_parse_js_frame_info_local";
     DLSYM_ARK_FUNC(arkFuncName, g_parseArkFrameInfoLocalFn)
 
     if (g_parseArkFrameInfoLocalFn != nullptr) {
-        return g_parseArkFrameInfoLocalFn(byteCodePc, mapBase, offset, jsFunction);
+        return g_parseArkFrameInfoLocalFn(byteCodePc, methodid, mapBase, offset, jsFunction);
     }
     return -1;
 }

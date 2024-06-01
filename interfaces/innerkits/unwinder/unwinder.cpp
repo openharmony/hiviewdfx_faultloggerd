@@ -119,6 +119,10 @@ public:
     {
         enableFillFrames_ = enableFillFrames;
     }
+    inline void EnableMethodIdLocal(bool enableMethodIdLocal)
+    {
+        enableMethodIdLocal_ = enableMethodIdLocal;
+    }
     inline void IgnoreMixstack(bool ignoreMixstack)
     {
         ignoreMixstack_ = ignoreMixstack;
@@ -152,7 +156,7 @@ public:
     bool UnwindLocalWithContext(const ucontext_t& context, size_t maxFrameNum, size_t skipFrameNum);
     bool UnwindLocalWithTid(pid_t tid, size_t maxFrameNum, size_t skipFrameNum);
     bool UnwindLocal(bool withRegs, bool fpUnwind, size_t maxFrameNum, size_t skipFrameNum);
-    bool UnwindRemote(pid_t tid, bool withRegs, size_t maxFrameNum, size_t skipFrameNum);
+    bool UnwindRemote(pid_t vmPid, pid_t tid, bool withRegs, size_t maxFrameNum, size_t skipFrameNum);
     bool Unwind(void *ctx, size_t maxFrameNum, size_t skipFrameNum);
     bool UnwindByFp(void *ctx, size_t maxFrameNum, size_t skipFrameNum);
 
@@ -207,7 +211,7 @@ private:
     bool StepArkJsFrame(StepFrame& frame);
 #endif
     static uintptr_t StripPac(uintptr_t inAddr, uintptr_t pacMask);
-    inline void SetLocalStackCheck(void* ctx, bool check)
+    inline void SetLocalStackCheck(void* ctx, bool check) const
     {
         if ((pid_ == UNWIND_TYPE_LOCAL) && (ctx != nullptr)) {
             UnwindContext* uctx = reinterpret_cast<UnwindContext *>(ctx);
@@ -222,6 +226,7 @@ private:
     bool enableFillFrames_ = true;
     bool enableLrFallback_ = true;
     bool enableFpCheckMapExec_ = false;
+    bool enableMethodIdLocal_ = false;
     bool isFpStep_ = false;
     MAYBE_UNUSED bool enableMixstack_ = true;
     MAYBE_UNUSED bool ignoreMixstack_ = false;
@@ -279,7 +284,10 @@ void Unwinder::EnableFillFrames(bool enableFillFrames)
 {
     impl_->EnableFillFrames(enableFillFrames);
 }
-
+void Unwinder::EnableMethodIdLocal(bool enableMethodIdLocal)
+{
+    impl_->EnableMethodIdLocal(enableMethodIdLocal);
+}
 void Unwinder::IgnoreMixstack(bool ignoreMixstack)
 {
     impl_->IgnoreMixstack(ignoreMixstack);
@@ -330,9 +338,9 @@ bool Unwinder::UnwindLocal(bool withRegs, bool fpUnwind, size_t maxFrameNum, siz
     return impl_->UnwindLocal(withRegs, fpUnwind, maxFrameNum, skipFrameNum);
 }
 
-bool Unwinder::UnwindRemote(pid_t tid, bool withRegs, size_t maxFrameNum, size_t skipFrameNum)
+bool Unwinder::UnwindRemote(pid_t vmPid, pid_t tid, bool withRegs, size_t maxFrameNum, size_t skipFrameNum)
 {
-    return impl_->UnwindRemote(tid, withRegs, maxFrameNum, skipFrameNum);
+    return impl_->UnwindRemote(vmPid, tid, withRegs, maxFrameNum, skipFrameNum);
 }
 
 bool Unwinder::Unwind(void *ctx, size_t maxFrameNum, size_t skipFrameNum)
@@ -588,15 +596,16 @@ bool Unwinder::Impl::UnwindLocal(bool withRegs, bool fpUnwind, size_t maxFrameNu
     return Unwind(&context, maxFrameNum, skipFrameNum);
 }
 
-bool Unwinder::Impl::UnwindRemote(pid_t tid, bool withRegs, size_t maxFrameNum, size_t skipFrameNum)
+bool Unwinder::Impl::UnwindRemote(pid_t vmPid, pid_t tid, bool withRegs, size_t maxFrameNum, size_t skipFrameNum)
 {
     if ((maps_ == nullptr) || (pid_ <= 0) || (tid < 0)) {
         LOGE("params is nullptr, pid: %d, tid: %d", pid_, tid);
         return false;
     }
-    if (tid == 0) {
-        tid = pid_;
+    if (vmPid == 0) {
+        vmPid = pid_;
     }
+    LOGI("UnwindRemote:: tid: %d", tid);
     if (!withRegs) {
         regs_ = DfxRegs::CreateRemoteRegs(tid);
     }
@@ -606,10 +615,11 @@ bool Unwinder::Impl::UnwindRemote(pid_t tid, bool withRegs, size_t maxFrameNum, 
     }
 
     UnwindContext context;
-    context.pid = tid;
+    context.pid = vmPid;
     context.regs = regs_;
     context.maps = maps_;
     bool ret = Unwind(&context, maxFrameNum, skipFrameNum);
+    LOGI("tid: %d, ret: %d", tid, ret);
     return ret;
 }
 
@@ -660,7 +670,7 @@ bool Unwinder::Impl::StepArkJsFrame(StepFrame& frame)
     }
 #else
     int ret = -1;
-    uintptr_t *methodId = pid_ > 0 ? (&frame.methodid) : nullptr;
+    uintptr_t *methodId = (pid_ > 0 || enableMethodIdLocal_) ? (&frame.methodid) : nullptr;
     if (isJitCrash_) {
         ArkUnwindParam arkParam(memory_.get(), &(Unwinder::AccessMem), &frame.fp, &frame.sp, &frame.pc,
             methodId, &frame.isJsFrame, jitCache_);
@@ -1016,7 +1026,7 @@ bool Unwinder::Impl::Apply(std::shared_ptr<DfxRegs> regs, std::shared_ptr<RegLoc
     }
     if (!ret) {
         lastErrorData_.SetCode(errCode);
-        LOGE("%s", "Failed to apply reg state");
+        LOGE("Failed to apply reg state, errCode: %d", static_cast<int>(errCode));
     }
 
     regs->SetPc(StripPac(regs_->GetPc(), pacMask_));
@@ -1172,9 +1182,9 @@ void Unwinder::Impl::FillJsFrame(DfxFrame& frame)
         return;
     }
     JsFunction jsFunction;
-    if ((pid_ == UNWIND_TYPE_LOCAL) || (pid_ == UNWIND_TYPE_CUSTOMIZE_LOCAL)) {
-        if (DfxArk::ParseArkFrameInfoLocal(static_cast<uintptr_t>(frame.pc), static_cast<uintptr_t>(frame.map->begin),
-            static_cast<uintptr_t>(frame.map->offset), &jsFunction) < 0) {
+    if ((pid_ == UNWIND_TYPE_LOCAL) || (pid_ == UNWIND_TYPE_CUSTOMIZE_LOCAL) || enableMethodIdLocal_) {
+        if (DfxArk::ParseArkFrameInfoLocal(static_cast<uintptr_t>(frame.pc), static_cast<uintptr_t>(frame.funcOffset),
+            static_cast<uintptr_t>(frame.map->begin), static_cast<uintptr_t>(frame.map->offset), &jsFunction) < 0) {
             LOGW("Failed to parse ark frame info local, pc: %p, begin: %p",
                 reinterpret_cast<void *>(frame.pc), reinterpret_cast<void *>(frame.map->begin));
             return;

@@ -261,7 +261,11 @@ void Printer::PrintThreadFaultStackByConfig(std::shared_ptr<DfxProcess> process,
         if (faultStack == nullptr) {
             return;
         }
-        faultStack->CollectRegistersBlock(thread->GetThreadRegs(), unwinder->GetMaps());
+        if (process->regs_ == nullptr) {
+            DFXLOG_ERROR("%s", "process regs is nullptr");
+            return;
+        }
+        faultStack->CollectRegistersBlock(process->regs_, unwinder->GetMaps());
         faultStack->Print();
     }
 }

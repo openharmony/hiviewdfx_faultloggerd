@@ -42,6 +42,19 @@
 
 namespace OHOS {
 namespace HiviewDFX {
+namespace {
+bool IsValidThreadStatus(bool isVmProcAttach, bool withRegs, pid_t tid)
+{
+    if (isVmProcAttach && !withRegs) {
+        std::string kernelStack;
+        if (DfxGetKernelStack(tid, kernelStack) == 0) {
+            DFXLOG_INFO("tid(%d) kernel stack %s", tid, kernelStack.c_str());
+        }
+        return false;
+    }
+    return true;
+}
+}
 
 DfxUnwindRemote &DfxUnwindRemote::GetInstance()
 {
@@ -133,7 +146,8 @@ void DfxUnwindRemote::UnwindKeyThread(std::shared_ptr<ProcessDumpRequest> reques
     Printer::PrintThreadBacktraceByConfig(unwThread);
     if (ProcessDumper::GetInstance().IsCrash()) {
         // Registers of unwThread has been changed, we should print regs from request context.
-        Printer::PrintRegsByConfig(DfxRegs::CreateFromUcontext(request->context));
+        process->regs_ = DfxRegs::CreateFromUcontext(request->context);
+        Printer::PrintRegsByConfig(process->regs_);
     }
 }
 
@@ -144,10 +158,8 @@ void DfxUnwindRemote::UnwindOtherThread(std::shared_ptr<DfxProcess> process, std
         return;
     }
 
-    if (vmPid != 0) {
-        if (!isVmProcAttach) {
-            return;
-        }
+    if (vmPid != 0 && !isVmProcAttach) {
+        return;
     }
     unwinder->SetIsJitCrashFlag(false);
     size_t index = 0;
@@ -161,21 +173,16 @@ void DfxUnwindRemote::UnwindOtherThread(std::shared_ptr<DfxProcess> process, std
             auto regs = thread->GetThreadRegs();
             unwinder->SetRegs(regs);
             bool withRegs = regs != nullptr;
-            if (isVmProcAttach && !withRegs) {
-                std::string kernelStack;
-                if (DfxGetKernelStack(thread->threadInfo_.nsTid, kernelStack) == 0) {
-                    DFXLOG_INFO("tid(%d) kernel stack %s", thread->threadInfo_.nsTid, kernelStack.c_str());
-                }
+            if (!IsValidThreadStatus(isVmProcAttach, withRegs, thread->threadInfo_.nsTid)) {
                 continue;
             }
-            auto pid = (vmPid != 0 && isVmProcAttach) ? vmPid : thread->threadInfo_.nsTid;
-            bool ret = unwinder->UnwindRemote(pid, withRegs, DfxConfig::GetConfig().maxFrameNums);
+            unwinder->UnwindRemote(vmPid, thread->threadInfo_.nsTid, withRegs, DfxConfig::GetConfig().maxFrameNums);
             thread->Detach();
             thread->SetFrames(unwinder->GetFrames());
             if (ProcessDumper::GetInstance().IsCrash()) {
                 ReportUnwinderException(unwinder->GetLastErrorCode());
             }
-            DFXLOG_INFO("%s, unwind tid(%d) finish, ret %d.", __func__, thread->threadInfo_.nsTid, ret);
+            DFXLOG_INFO("%s, unwind tid(%d) finish.", __func__, thread->threadInfo_.nsTid);
             Printer::PrintThreadBacktraceByConfig(thread);
         }
         index++;

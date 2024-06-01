@@ -292,6 +292,8 @@ void ProcessDumper::Dump()
     if ((request->dumpMode == FUSION_MODE) && isCrash_) {
         InfoRemoteProcessResult(request, OPE_CONTINUE, MAIN_PROCESS);
     }
+
+    _exit(0);
 }
 
 static int32_t ReadRequestAndCheck(std::shared_ptr<ProcessDumpRequest> request)
@@ -315,6 +317,7 @@ std::string GetOpenFiles(int32_t pid, int nsPid, uint64_t fdTableAddr)
     FillFdsaninfo(openFies, nsPid, fdTableAddr);
 #endif
     std::string fds = DumpOpenFiles(openFies);
+    DFXLOG_INFO("%s", "get open files info finish");
     return fds;
 }
 
@@ -332,6 +335,7 @@ void ProcessDumper::InitRegs(std::shared_ptr<ProcessDumpRequest> request, int &d
         if (process_->keyThread_ != nullptr && !isCrash_) {
             process_->keyThread_->Detach();
         }
+        DFXLOG_INFO("%s", "get all tid regs finish");
     }
 }
 
@@ -430,6 +434,8 @@ int ProcessDumper::DumpProcess(std::shared_ptr<ProcessDumpRequest> request)
             dumpRes = DumpErrorCode::DUMP_EATTACH;
             break;
         }
+        InitRegs(request, dumpRes);
+
         if (isCrash_ && !isLeakDump) {
             process_->openFiles = GetOpenFiles(request->pid, request->nsPid, request->fdTableAddr);
         }
@@ -437,8 +443,6 @@ int ProcessDumper::DumpProcess(std::shared_ptr<ProcessDumpRequest> request)
             DFXLOG_ERROR("%s", "Failed to init print thread.");
             dumpRes = DumpErrorCode::DUMP_EGETFD;
         }
-
-        InitRegs(request, dumpRes);
         if (isCrash_ && !isLeakDump) {
             reporter_ = std::make_shared<CppCrashReporter>(request->timeStamp, process_, request->dumpMode);
         }
@@ -503,11 +507,11 @@ bool ProcessDumper::InitKeyThread(std::shared_ptr<ProcessDumpRequest> request)
             return false;
         }
     }
-    if (request->dumpMode == FUSION_MODE) {
+    if ((process_->keyThread_ != nullptr) && request->dumpMode == FUSION_MODE) {
         ptrace(PTRACE_CONT, process_->keyThread_->threadInfo_.nsTid, 0, 0);
     }
 
-    if ((request->dumpMode == SPLIT_MODE) && !isCrash_) {
+    if ((process_->keyThread_ != nullptr) && (request->dumpMode == SPLIT_MODE) && !isCrash_) {
         process_->keyThread_->SetThreadRegs(DfxRegs::CreateFromUcontext(request->context));
     }
 
@@ -691,7 +695,7 @@ bool ProcessDumper::IsCrash() const
     return isCrash_;
 }
 
-void ProcessDumper::ReportSigDumpStats(const std::shared_ptr<ProcessDumpRequest> &request)
+void ProcessDumper::ReportSigDumpStats(const std::shared_ptr<ProcessDumpRequest> &request) const
 {
     if (isCrash_) {
         return;

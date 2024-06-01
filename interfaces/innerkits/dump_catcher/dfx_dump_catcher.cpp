@@ -379,7 +379,7 @@ int DfxDumpCatcher::DoDumpRemotePoll(int bufFd, int resFd, int timeout, std::str
     int remainTime = DUMPCATCHER_REMOTE_P90_TIMEOUT;
     bool collectKernelInfo = false;
     uint64_t startTime = GetAbsTimeMilliSeconds();
-    uint64_t endTime = startTime + timeout;
+    uint64_t endTime = startTime + static_cast<uint64_t>(timeout);
     while (true) {
         int pollRet = poll(readfds, fdsSize, remainTime);
         if (pollRet < 0 && errno == EINTR) {
@@ -393,7 +393,7 @@ int DfxDumpCatcher::DoDumpRemotePoll(int bufFd, int resFd, int timeout, std::str
                 CollectKernelInfo();
                 collectKernelInfo = true;
             }
-            remainTime = endTime - now;
+            remainTime = static_cast<int>(endTime - now);
             continue;
         } else if (pollRet < 0) {
             ret = DUMP_POLL_FAILED;
@@ -451,7 +451,7 @@ int DfxDumpCatcher::DoDumpRemotePoll(int bufFd, int resFd, int timeout, std::str
             resMsg.append("Result: poll timeout.\n");
             break;
         }
-        remainTime = endTime - now;
+        remainTime = static_cast<int>(endTime - now);
     }
 
     DFXLOG_INFO("%s :: %s :: %s", DFXDUMPCATCHER_TAG.c_str(), __func__, resMsg.c_str());
