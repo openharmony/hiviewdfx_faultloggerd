@@ -19,6 +19,7 @@
 #endif
 
 #include <fcntl.h>
+#include <poll.h>
 #include <pthread.h>
 #include <sched.h>
 #include <signal.h>
@@ -619,6 +620,7 @@ static bool StartProcessdump(void)
         } else if (processDumpPid > 0) {
             _exit(0);
         } else {
+            DFXLOG_INFO("%s", "ready to start processdump");
             DFX_ExecDump();
         }
     }
@@ -639,6 +641,7 @@ static bool StartVMProcessUnwind(void)
     } else if (pid == 0) {
         pid_t vmPid = ForkBySyscall();
         if (vmPid == 0) {
+            DFXLOG_INFO("%s", "ready to start vm process");
             close(g_pipeFds[WRITE_TO_DUMP][0]);
             pid_t pids[PID_MAX] = {0};
             pids[REAL_PROCESS_PID] = GetRealPid();
@@ -699,46 +702,89 @@ static bool InitPipe(void)
     return true;
 }
 
-static int ProcessDump(int sig)
+static bool ReadProcessDumpGetRegsRes()
+{
+    uint32_t isFinishGetRegs = OPE_FAIL;
+    close(g_pipeFds[READ_FROM_DUMP_TO_MAIN][1]);
+    g_pipeFds[READ_FROM_DUMP_TO_MAIN][1] = -1;
+    struct pollfd pfds[1];
+    pfds[0].fd = g_pipeFds[READ_FROM_DUMP_TO_MAIN][0];
+    pfds[0].events = POLLIN;
+
+    const int readRegsTimeOut = 5000; // 5s
+    DFXLOG_INFO("%s", "start wait processdump read registers");
+    int ret = poll(pfds, 1, readRegsTimeOut);
+    if (ret > 0) {
+        if (pfds[0].revents && POLLIN) {
+            ret = read(g_pipeFds[READ_FROM_DUMP_TO_MAIN][0], &isFinishGetRegs, sizeof(isFinishGetRegs));
+            if (ret != sizeof(isFinishGetRegs) || isFinishGetRegs != OPE_SUCCESS) {
+                DFXLOG_INFO("Failed to read resgs(%d).", errno);
+            } else {
+                DFXLOG_INFO("processdump have get all registers .");
+                return true;
+            }
+        }
+    }
+    DFXLOG_ERROR("%s", "wait processdump read registers fail");
+    return false;
+}
+
+static void ReadUnwindFinishInfo(int sig)
+{
+    if (sig == SIGDUMP) {
+        return;
+    }
+    struct pollfd pfds[1];
+    pfds[0].fd = g_pipeFds[READ_FROM_DUMP_TO_MAIN][0];
+    pfds[0].events = POLLIN;
+    const int unwindTimeOut = 20000; // 20s
+    int ret = poll(pfds, 1, unwindTimeOut);
+
+    uint32_t isExitAfterUnwind = OPE_CONTINUE;
+    if (ret > 0) {
+        if (pfds[0].revents && POLLIN) {
+            read(g_pipeFds[READ_FROM_DUMP_TO_MAIN][0], &isExitAfterUnwind, sizeof(isExitAfterUnwind));
+        }
+    } else {
+        DFXLOG_ERROR("%s", "wait unwind finish timeout");
+    }
+}
+
+static bool ProcessDump(int sig)
 {
     int prevDumpableStatus = prctl(PR_GET_DUMPABLE);
     bool isTracerStatusModified = SetDumpState();
 
     if (!InitPipe()) {
-        return -1;
+        return false;
     }
     g_request.dumpMode = FUSION_MODE;
+    bool ret = true;
 
-    if (!StartProcessdump()) {
-        DFXLOG_ERROR("start processdump fail");
-        CleanPipe();
-        RestoreDumpState(prevDumpableStatus, isTracerStatusModified);
-        return -1;
-    }
-    uint32_t isFinishGetRegs = OPE_FAIL;
-    close(g_pipeFds[READ_FROM_DUMP_TO_MAIN][1]);
-    g_pipeFds[READ_FROM_DUMP_TO_MAIN][1] = -1;
-    int ret = OHOS_TEMP_FAILURE_RETRY(read(g_pipeFds[READ_FROM_DUMP_TO_MAIN][0],
-        &isFinishGetRegs, sizeof(isFinishGetRegs)));
-    if (ret < 0 || ret != sizeof(isFinishGetRegs) || isFinishGetRegs != OPE_SUCCESS) {
-        DFXLOG_INFO("Failed to read resgs(%d).", errno);
-    }
-    DFXLOG_INFO("processdump have get all resgs .");
+    do {
+        if (!StartProcessdump()) {
+            DFXLOG_ERROR("start processdump fail");
+            ret = false;
+            break;
+        }
 
-    if (!StartVMProcessUnwind()) {
-        DFXLOG_ERROR("start vm process unwind fail");
-        CleanPipe();
-        RestoreDumpState(prevDumpableStatus, isTracerStatusModified);
-        return -1;
-    }
-    uint32_t isExitAfterUnwind = OPE_CONTINUE;
-    if (sig != SIGDUMP) {
-        read(g_pipeFds[READ_FROM_DUMP_TO_MAIN][0], &isExitAfterUnwind, sizeof(isExitAfterUnwind));
-    }
+        if (!ReadProcessDumpGetRegsRes()) {
+            ret = false;
+            break;
+        }
+
+        if (!StartVMProcessUnwind()) {
+            DFXLOG_ERROR("start vm process unwind fail");
+            ret = false;
+            break;
+        }
+        ReadUnwindFinishInfo(sig);
+    } while (false);
+
     CleanPipe();
     DFXLOG_INFO("process dump end");
     RestoreDumpState(prevDumpableStatus, isTracerStatusModified);
-    return 0;
+    return ret;
 }
 
 static void ForkAndDoProcessDump(int sig)
@@ -809,7 +855,7 @@ static bool DFX_SigchainHandler(int sig, siginfo_t *si, void *context)
     FillDumpRequest(sig, si, context);
     DFXLOG_INFO("DFX_SigchainHandler :: sig(%d), pid(%d), processName(%s), threadName(%s).",
         sig, g_request.pid, g_request.processName, g_request.threadName);
-    if (ProcessDump(sig) == 0) {
+    if (ProcessDump(sig)) {
         ret = sig == SIGDUMP || sig == SIGLEAK_STACK;
         DFXLOG_INFO("Finish handle signal(%d) in %d:%d", sig, g_request.pid, g_request.tid);
         pthread_mutex_unlock(&g_signalHandlerMutex);
