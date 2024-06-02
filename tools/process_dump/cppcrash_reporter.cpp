@@ -38,7 +38,6 @@ struct FaultLogInfoInner {
     std::string summary;
     std::string logPath;
     std::string registers;
-    std::string otherThreadInfo;
     std::map<std::string, std::string> sectionMaps;
 };
 static const char FOUNDATION_PROCESS_NAME[] = "foundation";
@@ -155,7 +154,7 @@ int32_t CppCrashReporter::WriteCppCrashInfoByPipe()
     ssize_t realWriteSize = -1;
     realWriteSize = OHOS_TEMP_FAILURE_RETRY(write(pipeFd[PIPE_WRITE], cppCrashInfo_.c_str(), sz));
     close(pipeFd[PIPE_WRITE]);
-    if ((ssize_t)cppCrashInfo_.size() != realWriteSize) {
+    if (static_cast<ssize_t>(cppCrashInfo_.size()) != realWriteSize) {
         DFXLOG_ERROR("Failed to write pipe. realWriteSize %zd, json size %zd", realWriteSize, sz);
         close(pipeFd[PIPE_READ]);
         return -1;

@@ -23,15 +23,17 @@
         "ability_base",
         "bounds_checking_function",
         "c_utils",
+        "ffrt",
         "hilog",
         "hisysevent",
         "hitrace",
         "init",
         "ipc",
         "jsoncpp",
-        "lzma",
-        "libunwind"
-      ]
+        "libunwind",
+        "lzma"
+      ],
+      "third_party": [ "libuv" ]
     },
     "build": {
       "sub_component": [

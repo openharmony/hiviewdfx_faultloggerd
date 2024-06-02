@@ -568,7 +568,6 @@ bool Unwinder::StepInner(const bool isSigFrame, StepFrame& frame, void *ctx)
             }
             break;
         }
-
         if (enableCache_) {
             // 1. find cache rs
             auto iter = rsCache_.find(frame.pc);

@@ -58,7 +58,8 @@ bool GetBacktraceFramesByTid(std::vector<DfxFrame>& frames, int32_t tid, size_t 
     return ret;
 }
 
-bool GetBacktraceStringByTid(std::string& out, int32_t tid, size_t skipFrameNum, bool fast, size_t maxFrameNums)
+bool GetBacktraceStringByTid(std::string& out, int32_t tid, size_t skipFrameNum, bool fast,
+                             size_t maxFrameNums)
 {
     std::vector<DfxFrame> frames;
     bool ret = GetBacktraceFramesByTid(frames, tid, skipFrameNum + 1, fast, maxFrameNums);

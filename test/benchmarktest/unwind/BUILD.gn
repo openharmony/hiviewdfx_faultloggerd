@@ -26,9 +26,6 @@ if (!defined(ohos_lite)) {
       "$faultloggerd_interfaces_path/common",
       "$faultloggerd_interfaces_path/innerkits/unwinder/include",
       "$faultloggerd_path/test/utils",
-      "//third_party/libunwind/include",
-      "//third_party/libunwind/include/tdep/",
-      "//third_party/libunwind/src",
     ]
     cflags = [
       "-O0",

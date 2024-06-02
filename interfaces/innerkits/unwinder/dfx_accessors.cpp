@@ -107,7 +107,6 @@ int DfxAccessorsLocal::FindUnwindTable(uintptr_t pc, UnwindTableInfo& uti, void 
 {
     UnwindContext *ctx = reinterpret_cast<UnwindContext *>(arg);
     if (ctx == nullptr) {
-        LOGE("%s", "ctx is null");
         return UNW_ERROR_INVALID_CONTEXT;
     }
 
