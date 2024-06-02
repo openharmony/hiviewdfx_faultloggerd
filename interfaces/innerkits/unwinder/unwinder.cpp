@@ -169,7 +169,7 @@ bool Unwinder::UnwindLocalWithTid(const pid_t tid, size_t maxFrameNum, size_t sk
         LOGE("tid(%d) is not in current pid", tid);
         return false;
     }
-    LOGI("UnwindLocalWithTid:: tid: %d", tid);
+    LOGD("UnwindLocalWithTid:: tid: %d", tid);
     auto threadContext = LocalThreadContext::GetInstance().CollectThreadContext(tid);
 #if defined(__aarch64__)
     if (threadContext != nullptr && threadContext->frameSz > 0) {
