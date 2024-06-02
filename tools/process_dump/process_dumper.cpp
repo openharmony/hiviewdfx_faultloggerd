@@ -411,7 +411,7 @@ int ProcessDumper::DumpProcess(std::shared_ptr<ProcessDumpRequest> request)
 
         InitRegs(request, dumpRes);
         if (isCrash_ && !isLeakDump) {
-            reporter_ = std::make_shared<CppCrashReporter>(request->timeStamp, process_);
+            reporter_ = std::make_shared<CppCrashReporter>(request->timeStamp, process_, request->dumpMode);
         }
 
         if (!Unwind(request, dumpRes)) {
