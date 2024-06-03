@@ -67,7 +67,7 @@ extern "C" uint64_t CollectAsyncStack(void)
     if (!InitAsyncStack()) {
         return 0;
     }
-    const int32_t maxSize = 32;
+    const int32_t maxSize = 16;
     uintptr_t pcs[maxSize] = {0};
     int32_t skipFrameNum = 2;
     size_t sz = static_cast<size_t>(OHOS::HiviewDFX::FpUnwinder::Unwind(pcs, maxSize, skipFrameNum));

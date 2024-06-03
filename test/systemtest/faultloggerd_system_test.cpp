@@ -100,7 +100,7 @@ static pid_t ForkAndExecuteCrasher(const string& option, const CrasherType type)
 }
 
 static pid_t TriggerCrasherAndGetFileName(const string& option, const CrasherType type, string& crashFileName,
-                                          int waitSec = 1)
+                                          int waitSec = 1, const std::string& tempPath = TEMP_DIR)
 {
     auto pid = ForkAndExecuteCrasher(option, type);
     int recheckCount = 0;
@@ -108,7 +108,7 @@ static pid_t TriggerCrasherAndGetFileName(const string& option, const CrasherTyp
     // 6: means recheck times
     while (recheckCount < 6) {
         sleep(waitSec);
-        crashFileName = GetCppCrashFileName(pid);
+        crashFileName = GetCppCrashFileName(pid, tempPath);
         if (crashFileName.size() > 0) {
             GTEST_LOG_(INFO) << "get crash file:" << crashFileName;
             break;
@@ -1577,6 +1577,36 @@ HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest122, TestSize.Level2)
     }
     EXPECT_TRUE(CheckCppCrashAsyncStackDisableKeywords(fileName, pid)) << "FaultLoggerdSystemTest122 Failed";
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest122: end.";
+}
+
+/**
+* @tc.name: FaultLoggerdSystemTest123
+* @tc.desc: Test crash log to /log/crash when faultloggerd unstart case
+* @tc.type: FUNC
+*/
+HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest123, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest123: start.";
+    string clearCrashFilesCmd = "rm -rf /log/crash/*";
+    system(clearCrashFilesCmd.c_str());
+
+    string stopFaultLoggerd = "service_control stop faultloggerd";
+    (void)ExecuteCommands(stopFaultLoggerd);
+
+    string cmd = "SIGABRT";
+    string fileName;
+    string crashDir = "/log/crash/";
+    pid_t pid = TriggerCrasherAndGetFileName(cmd, CRASHER_CPP, fileName, 1, crashDir);
+
+    string startFaultLoggerd = "service_control start faultloggerd";
+    (void)ExecuteCommands(startFaultLoggerd);
+    GTEST_LOG_(INFO) << "test pid(" << pid << ")"  << " cppcrash file name : " << fileName;
+    if (pid < 0 || fileName.size() < CPPCRASH_FILENAME_MIN_LENGTH) {
+        GTEST_LOG_(ERROR) << "Trigger Crash Failed.";
+        FAIL();
+    }
+    EXPECT_TRUE(CheckCountNum(fileName, pid, cmd)) << "FaultLoggerdSystemTest123 Failed";
+    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest123: end.";
 }
 #endif
 } // namespace HiviewDFX

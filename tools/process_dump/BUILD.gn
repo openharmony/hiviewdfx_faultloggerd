@@ -35,6 +35,7 @@ if (defined(ohos_lite)) {
       "HAVE_CONFIG_H",
       "HAVE_ELF_H",
       "HAVE_LINK_H",
+      "HISYSEVENT_DISABLE",
       "is_ohos_lite",
     ]
 

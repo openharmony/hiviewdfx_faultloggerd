@@ -93,7 +93,9 @@ void WriteData(int fd, const std::string& data, size_t blockSize)
     DFXLOG_INFO("%s :: needWriteDataSize: %zu, writeDataSize: %zu", __func__, dataSize, index);
 }
 
+#if !defined(__x86_64__)
 const int ARG_MAX_NUM = 131072;
+#endif
 using OpenFilesList = std::map<int, FDInfo>;
 
 bool ReadLink(std::string &src, std::string &dst)
@@ -135,6 +137,7 @@ void CollectOpenFiles(OpenFilesList &list, pid_t pid)
     }
 }
 
+#if !defined(__x86_64__)
 void FillFdsaninfo(OpenFilesList &list, pid_t nsPid, uint64_t fdTableAddr)
 {
     constexpr size_t fds = sizeof(FdTable::entries) / sizeof(*FdTable::entries);
@@ -180,6 +183,7 @@ void FillFdsaninfo(OpenFilesList &list, pid_t nsPid, uint64_t fdTableAddr)
         }
     }
 }
+#endif
 
 std::string DumpOpenFiles(OpenFilesList &files)
 {
@@ -307,7 +311,9 @@ std::string GetOpenFiles(int32_t pid, int nsPid, uint64_t fdTableAddr)
 {
     OpenFilesList openFies;
     CollectOpenFiles(openFies, pid);
+#if !defined(__x86_64__)
     FillFdsaninfo(openFies, nsPid, fdTableAddr);
+#endif
     std::string fds = DumpOpenFiles(openFies);
     return fds;
 }
@@ -405,7 +411,7 @@ int ProcessDumper::DumpProcess(std::shared_ptr<ProcessDumpRequest> request)
 
         InitRegs(request, dumpRes);
         if (isCrash_ && !isLeakDump) {
-            reporter_ = std::make_shared<CppCrashReporter>(request->timeStamp, process_);
+            reporter_ = std::make_shared<CppCrashReporter>(request->timeStamp, process_, request->dumpMode);
         }
 
         if (!Unwind(request, dumpRes)) {
@@ -485,7 +491,7 @@ bool ProcessDumper::InitKeyThread(std::shared_ptr<ProcessDumpRequest> request)
 bool ProcessDumper::InitUnwinder(std::shared_ptr<ProcessDumpRequest> request, pid_t vmPid, pid_t realPid)
 {
     if (request->dumpMode == FUSION_MODE) {
-        unwinder_ = std::make_shared<Unwinder>(vmPid,  realPid, isCrash_);
+        unwinder_ = std::make_shared<Unwinder>(vmPid, realPid, isCrash_);
     } else {
         if (isCrash_) {
             unwinder_ = std::make_shared<Unwinder>(process_->vmThread_->threadInfo_.pid);
@@ -550,7 +556,7 @@ int ProcessDumper::GetLogTypeBySignal(int sig)
     }
 }
 
-static int32_t CreateFileForCrash(int32_t pid, uint64_t time)
+int32_t ProcessDumper::CreateFileForCrash(int32_t pid, uint64_t time) const
 {
     const std::string logFilePath = "/log/crash";
     const std::string logFileType = "cppcrash";

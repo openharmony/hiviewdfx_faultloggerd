@@ -26,6 +26,9 @@
 #include "dfx_process.h"
 #include "dfx_signal.h"
 #include "dfx_thread.h"
+#ifndef HISYSEVENT_DISABLE
+#include "hisysevent.h"
+#endif
 
 struct FaultLogInfoInner {
     uint64_t time {0};
@@ -38,12 +41,14 @@ struct FaultLogInfoInner {
     std::string summary;
     std::string logPath;
     std::string registers;
-    std::string otherThreadInfo;
     std::map<std::string, std::string> sectionMaps;
 };
 static const char FOUNDATION_PROCESS_NAME[] = "foundation";
 static const char HIVIEW_PROCESS_NAME[] = "/system/bin/hiview";
 static const char REGS_KEY_WORD[] = "Registers:\n";
+#ifndef HISYSEVENT_DISABLE
+static const char KILL_REASON_CPP_CRASH[] = "Kill Reason:Cpp Crash";
+#endif
 
 using AddFaultLog = void (*)(FaultLogInfoInner* info);
 using RecordAppExitReason = int (*)(int reason, const char *exitMsg);
@@ -65,9 +70,9 @@ bool CppCrashReporter::Format()
     if (!msg.empty()) {
         stack_ = "LastFatalMessage:" + msg + "\n";
     }
-
-    if (process_->vmThread_ != nullptr) {
-        std::string threadInfo = process_->vmThread_->ToString();
+    std::shared_ptr<DfxThread> thread = dumpMode_ == FUSION_MODE ? process_->keyThread_ : process_->vmThread_;
+    if (thread != nullptr) {
+        std::string threadInfo = thread->ToString();
         auto iterator = threadInfo.begin();
         while (iterator != threadInfo.end() && *iterator != '\n') {
             if (isdigit(*iterator)) {
@@ -79,7 +84,7 @@ bool CppCrashReporter::Format()
         stack_ += threadInfo;
 
         // regs
-        registers_ = GetRegsString(process_->vmThread_);
+        registers_ = GetRegsString(thread);
     }
     return true;
 }
@@ -155,7 +160,7 @@ int32_t CppCrashReporter::WriteCppCrashInfoByPipe()
     ssize_t realWriteSize = -1;
     realWriteSize = OHOS_TEMP_FAILURE_RETRY(write(pipeFd[PIPE_WRITE], cppCrashInfo_.c_str(), sz));
     close(pipeFd[PIPE_WRITE]);
-    if ((ssize_t)cppCrashInfo_.size() != realWriteSize) {
+    if (static_cast<ssize_t>(cppCrashInfo_.size()) != realWriteSize) {
         DFXLOG_ERROR("Failed to write pipe. realWriteSize %zd, json size %zd", realWriteSize, sz);
         close(pipeFd[PIPE_READ]);
         return -1;
@@ -187,6 +192,13 @@ void CppCrashReporter::ReportToAbilityManagerService()
     const int cppCrashExitReason = 2;
     recordAppExitReason(cppCrashExitReason, reason_.c_str());
     dlclose(handle);
+
+#ifndef HISYSEVENT_DISABLE
+    int result = HiSysEventWrite(HiSysEvent::Domain::FRAMEWORK, "PROCESS_KILL", HiSysEvent::EventType::FAULT,
+        "PID", pid_, "PROCESS_NAME", cmdline_.c_str(), "MSG", KILL_REASON_CPP_CRASH);
+    DFXLOG_INFO("hisysevent write result=%d, send event [FRAMEWORK,PROCESS_KILL], pid=%d processName=%s, msg=%s",
+        result, pid_, cmdline_.c_str(), KILL_REASON_CPP_CRASH);
+#endif
 }
 
 std::string CppCrashReporter::GetRegsString(std::shared_ptr<DfxThread> thread)

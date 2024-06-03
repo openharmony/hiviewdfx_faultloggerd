@@ -587,8 +587,10 @@ HWTEST_F(UnwinderTest, StepTest005, TestSize.Level2)
 
     uintptr_t lr = *(regs->GetReg(REG_LR));
     uintptr_t pc = regs->GetPc();
-    uintptr_t failSp = stackTop + 1;
+    uintptr_t failSp = stackTop + 1; // arm cfa get from sp
     regs->SetSp(failSp);
+    uintptr_t failFp = stackTop + 1; // arm64 cfa get from fp
+    regs->SetFp(failFp);
     bool unwRet = unwinder->Step(pc, failSp, &context);
     ASSERT_TRUE(unwRet) << "StepTest005: unwRet:" << unwRet;
     ASSERT_EQ(lr, pc) << "StepTest005: lr callback";
@@ -835,7 +837,7 @@ HWTEST_F(UnwinderTest, UnwindLocalWithTidTest001, TestSize.Level2)
 static _Unwind_Reason_Code TraceFunc(_Unwind_Context *ctx, void *d)
 {
     int *depth = (int*)d;
-    printf("\t#%d: program counter at %p\n", *depth, static_cast<void *>(_Unwind_GetIP(ctx)));
+    printf("\t#%d: program counter at %p\n", *depth, reinterpret_cast<void *>(_Unwind_GetIP(ctx)));
     (*depth)++;
     return _URC_NO_REASON;
 }

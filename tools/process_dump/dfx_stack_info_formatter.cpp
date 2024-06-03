@@ -161,7 +161,7 @@ void DfxStackInfoFormatter::FillNativeFrame(const DfxFrame& frame, Json::Value& 
     frameJson["pc"] = StringPrintf("%08llx", frame.relPc);
 #endif
     if (frame.funcName.length() > MAX_FUNC_NAME_LEN) {
-        DFXLOG_WARN("%s", "length of funcName greater than 256 byte, do not report it");
+        DFXLOG_DEBUG("%s", "length of funcName greater than 256 byte, do not report it");
         frameJson["symbol"] = "";
     } else {
         frameJson["symbol"] = frame.funcName;

@@ -145,7 +145,7 @@ HWTEST_F(DfxRegsTest, DfxRegsTest003, TestSize.Level2)
     }
     context.uc_mcontext.sp = 31; // 31 : the 32st register of aarch64
     context.uc_mcontext.pc = 32; // 32 : the 33st register of aarch64
-#elif defined(___x86_64__)
+#elif defined(__x86_64__)
     context.uc_mcontext.gregs[REG_RAX] = 0; // 0 : the 1st register of x86_64
     context.uc_mcontext.gregs[REG_RDX] = 1; // 1 : the 2st register of x86_64
     context.uc_mcontext.gregs[REG_RCX] = 2; // 2 : the 3st register of x86_64

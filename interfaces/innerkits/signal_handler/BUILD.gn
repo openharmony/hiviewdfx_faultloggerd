@@ -155,6 +155,7 @@ if (defined(ohos_lite)) {
       "dfx_signalhandler_exception.c",
       "musl_log.c",
     ]
+
     configs -= inherited_configs
     configs += [
       "//build/config/compiler:compiler",
