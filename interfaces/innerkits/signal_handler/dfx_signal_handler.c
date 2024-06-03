@@ -733,7 +733,8 @@ static int ProcessDump(int sig)
     }
     uint32_t isExitAfterUnwind = OPE_CONTINUE;
     if (sig != SIGDUMP) {
-        read(g_pipeFds[READ_FROM_DUMP_TO_MAIN][0], &isExitAfterUnwind, sizeof(isExitAfterUnwind));
+        OHOS_TEMP_FAILURE_RETRY(read(g_pipeFds[READ_FROM_DUMP_TO_MAIN][0],
+            &isExitAfterUnwind, sizeof(isExitAfterUnwind)));
     }
     CleanPipe();
     DFXLOG_INFO("process dump end");

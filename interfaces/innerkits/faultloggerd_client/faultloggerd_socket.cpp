@@ -45,8 +45,8 @@ bool StartConnect(int& sockfd, const char* path, const int timeout)
                 0
             };
             void* pTimev = &timev;
-            if (setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, \
-                static_cast<const char*>(pTimev), sizeof(timev)) != 0) {
+            if (OHOS_TEMP_FAILURE_RETRY(setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, \
+                static_cast<const char*>(pTimev), sizeof(timev))) != 0) {
                     DFXLOG_ERROR("setsockopt(%d) SO_RCVTIMEO error", sockfd);
             }
         }
@@ -63,7 +63,7 @@ bool StartConnect(int& sockfd, const char* path, const int timeout)
         }
 
         int len = static_cast<int>(offsetof(struct sockaddr_un, sun_path) + strlen(server.sun_path) + 1);
-        int connected = connect(sockfd, reinterpret_cast<struct sockaddr *>(&server), len);
+        int connected = OHOS_TEMP_FAILURE_RETRY(connect(sockfd, reinterpret_cast<struct sockaddr *>(&server), len));
         if (connected < 0) {
             DFXLOG_ERROR("%s :: connect failed, errno = %d.", __func__, errno);
             break;
@@ -99,7 +99,7 @@ static bool GetServerSocket(int& sockfd, const char* name)
     unlink(path.c_str());
 
     int optval = 1;
-    int ret = setsockopt(sockfd, SOL_SOCKET, SO_PASSCRED, &optval, sizeof(optval));
+    int ret = OHOS_TEMP_FAILURE_RETRY(setsockopt(sockfd, SOL_SOCKET, SO_PASSCRED, &optval, sizeof(optval)));
     if (ret < 0) {
         DFXLOG_ERROR("%s :: Failed to set socket option, errno(%d)", __func__, errno);
         return false;
@@ -161,7 +161,7 @@ static bool RecvMsgFromSocket(int sockfd, unsigned char* data, size_t& len)
         msgh.msg_control = ctlBuffer;
         msgh.msg_controllen = sizeof(ctlBuffer);
 
-        if (recvmsg(sockfd, &msgh, 0) < 0) {
+        if (OHOS_TEMP_FAILURE_RETRY(recvmsg(sockfd, &msgh, 0) < 0)) {
             DFXLOG_ERROR("%s :: Failed to recv message, errno(%d)\n", __func__, errno);
             break;
         }
@@ -214,7 +214,7 @@ bool RecvMsgCredFromSocket(int sockfd, struct ucred* pucred)
         msgh.msg_control = controlMsg.buf;
         msgh.msg_controllen = sizeof(controlMsg.buf);
 
-        if (recvmsg(sockfd, &msgh, 0) < 0) {
+        if (OHOS_TEMP_FAILURE_RETRY(recvmsg(sockfd, &msgh, 0) < 0)) {
             DFXLOG_ERROR("%s :: Failed to recv message, errno(%d)\n", __func__, errno);
             break;
         }
@@ -255,7 +255,7 @@ bool SendMsgIovToSocket(int sockfd, void *iovBase, const int iovLen)
     msgh.msg_control = nullptr;
     msgh.msg_controllen = 0;
 
-    if (sendmsg(sockfd, &msgh, 0) < 0) {
+    if (OHOS_TEMP_FAILURE_RETRY(sendmsg(sockfd, &msgh, 0) < 0)) {
         DFXLOG_ERROR("%s :: Failed to send message, errno(%d).", __func__, errno);
         return false;
     }
@@ -293,7 +293,7 @@ static bool SendMsgCtlToSocket(int sockfd, const void *cmsg, const int cmsgLen)
         DFXLOG_ERROR("%s :: memcpy error\n", __func__);
     }
 
-    if (sendmsg(sockfd, &msgh, 0) < 0) {
+    if (OHOS_TEMP_FAILURE_RETRY(sendmsg(sockfd, &msgh, 0) < 0)) {
         DFXLOG_ERROR("%s :: Failed to send message, errno(%d)", __func__, errno);
         return false;
     }

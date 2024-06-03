@@ -67,13 +67,13 @@ static __attribute__((noinline)) void PrintLog(int fd, const char *format, ...)
     if (size == -1) {
         if (fd > 0) {
             const char* error = "PrintLog vsnprintf_s fail\n";
-            (void)write(fd, error, strlen(error));
+            (void)OHOS_TEMP_FAILURE_RETRY(write(fd, error, strlen(error)));
         }
         return;
     }
     DFXLOG_ERROR("%s", buf);
     if (fd > 0) {
-        (void)write(fd, buf, strlen(buf));
+        (void)OHOS_TEMP_FAILURE_RETRY(write(fd, buf, strlen(buf)));
     }
 }
 

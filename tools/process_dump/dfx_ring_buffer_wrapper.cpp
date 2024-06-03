@@ -164,7 +164,7 @@ int DfxRingBufferWrapper::DefaultWrite(int32_t fd, const char *buf, const int le
     }
     WriteLog(UNUSED_FD, "%s", buf);
     if (fd > 0) {
-        return write(fd, buf, len);
+        return OHOS_TEMP_FAILURE_RETRY(write(fd, buf, len));
     }
     return 0;
 }
