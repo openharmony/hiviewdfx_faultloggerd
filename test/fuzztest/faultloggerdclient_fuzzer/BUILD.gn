@@ -35,7 +35,7 @@ if (defined(ohos_lite)) {
       "$faultloggerd_path/common/dfxlog",
       "$faultloggerd_path/common/dfxutil",
     ]
-    defines = [ "FAULTLOGGERD_CLIENT_FUZZER" ]
+    defines = [ "FAULTLOGGERD_FUZZER" ]
     sources = [ "faultloggerdclient_fuzzer.cpp" ]
     deps = [
       "$faultloggerd_path/common/dfxlog:dfx_hilog",
