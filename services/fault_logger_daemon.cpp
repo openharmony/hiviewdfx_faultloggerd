@@ -918,6 +918,7 @@ void FaultLoggerDaemon::HandleDumpStats(int32_t connectionFd, FaultLoggerdStatsR
         stats.result = request->result;
         stats.callerProcessName = request->callerProcess;
         stats.summary = request->summary;
+        stats.targetProcessName = request->targetProcess;
         ReportDumpStats(stats);
     }
     RemoveTimeoutDumpStats();

@@ -158,6 +158,14 @@ static void ReportDumpCatcherStats(int32_t pid,
     stat->dumpCatcherFinishTime = GetTimeMilliSeconds();
     stat->result = ret ? 0 : -1; // we need more detailed failure info
     size_t copyLen;
+    std::string processName;
+    ReadProcessName(pid, processName);
+    copyLen = std::min(sizeof(stat->targetProcess) - 1, processName.size());
+    if (memcpy_s(stat->targetProcess, sizeof(stat->targetProcess) - 1, processName.c_str(), copyLen) != 0) {
+        DFXLOG_ERROR("%s::Failed to copy target process", DFXDUMPCATCHER_TAG.c_str());
+        return;
+    }
+
     if (!ret) {
         copyLen = std::min(sizeof(stat->summary) - 1, msg.size());
         if (memcpy_s(stat->summary, sizeof(stat->summary) - 1, msg.c_str(), copyLen) != 0) {
