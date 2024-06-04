@@ -223,10 +223,10 @@ void InfoRemoteProcessResult(std::shared_ptr<ProcessDumpRequest> request, int re
     }
     switch (type) {
         case MAIN_PROCESS:
-            write(request->pmPipeFd[1], &result, sizeof(result));
+            OHOS_TEMP_FAILURE_RETRY(write(request->pmPipeFd[1], &result, sizeof(result)));
             break;
         case VIRTUAL_PROCESS:
-            write(request->vmPipeFd[1], &result, sizeof(result));
+            OHOS_TEMP_FAILURE_RETRY(write(request->vmPipeFd[1], &result, sizeof(result)));
             break;
         default:
             break;
@@ -298,7 +298,7 @@ void ProcessDumper::Dump()
 
 static int32_t ReadRequestAndCheck(std::shared_ptr<ProcessDumpRequest> request)
 {
-    ssize_t readCount = read(STDIN_FILENO, request.get(), sizeof(ProcessDumpRequest));
+    ssize_t readCount = OHOS_TEMP_FAILURE_RETRY(read(STDIN_FILENO, request.get(), sizeof(ProcessDumpRequest)));
     if (readCount != static_cast<long>(sizeof(ProcessDumpRequest))) {
         DFXLOG_ERROR("Failed to read DumpRequest(%d).", errno);
         ReportCrashException(request->processName, request->pid, request->uid,

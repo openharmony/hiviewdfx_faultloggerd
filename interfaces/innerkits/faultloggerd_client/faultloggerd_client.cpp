@@ -80,7 +80,7 @@ int32_t RequestFileDescriptorEx(const struct FaultLoggerdRequest *request)
         return -1;
     }
 
-    write(sockfd, request, sizeof(struct FaultLoggerdRequest));
+    OHOS_TEMP_FAILURE_RETRY(write(sockfd, request, sizeof(struct FaultLoggerdRequest)));
     int fd = ReadFileDescriptorFromSocket(sockfd);
     DFXLOG_DEBUG("RequestFileDescriptorEx(%d).", fd);
     close(sockfd);
@@ -92,7 +92,7 @@ static bool CheckReadResp(int sockfd)
     char ControlBuffer[SOCKET_BUFFER_SIZE] = {0};
     (void)memset_s(&ControlBuffer, sizeof(ControlBuffer), 0, SOCKET_BUFFER_SIZE);
 
-    ssize_t nread = read(sockfd, ControlBuffer, sizeof(ControlBuffer) - 1);
+    ssize_t nread = OHOS_TEMP_FAILURE_RETRY(read(sockfd, ControlBuffer, sizeof(ControlBuffer) - 1));
     if (nread != static_cast<ssize_t>(strlen(FAULTLOGGER_DAEMON_RESP))) {
         DFXLOG_ERROR("nread: %zd.", nread);
         return false;
@@ -116,7 +116,7 @@ static int32_t RequestFileDescriptorByCheck(const struct FaultLoggerdRequest *re
             break;
         }
 
-        write(sockfd, request, sizeof(struct FaultLoggerdRequest));
+        OHOS_TEMP_FAILURE_RETRY(write(sockfd, request, sizeof(struct FaultLoggerdRequest)));
 
         if (!CheckReadResp(sockfd)) {
             break;
@@ -146,7 +146,7 @@ static int SendUidToServer(int sockfd)
     }
 
     char recvbuf[SOCKET_BUFFER_SIZE] = {'\0'};
-    ssize_t count = recv(sockfd, recvbuf, sizeof(recvbuf), 0);
+    ssize_t count = OHOS_TEMP_FAILURE_RETRY(recv(sockfd, recvbuf, sizeof(recvbuf), 0));
     if (count < 0) {
         DFXLOG_ERROR("%s :: Failed to recv.", __func__);
         return mRsp;
@@ -181,7 +181,8 @@ static int SendRequestToServer(const FaultLoggerdRequest &request)
             DFXLOG_ERROR("StartConnect(%d) failed", sockfd);
             break;
         }
-        if (write(sockfd, &request, sizeof(struct FaultLoggerdRequest)) != static_cast<long>(sizeof(request))) {
+        if (OHOS_TEMP_FAILURE_RETRY(write(sockfd, &request,
+            sizeof(struct FaultLoggerdRequest))) != static_cast<long>(sizeof(request))) {
             DFXLOG_ERROR("%s", "write failed.");
             break;
         }
@@ -262,7 +263,8 @@ int RequestPrintTHilog(const char *msg, int length)
             break;
         }
 
-        if (write(sockfd, &request, sizeof(struct FaultLoggerdRequest)) != static_cast<long>(sizeof(request))) {
+        if (OHOS_TEMP_FAILURE_RETRY(write(sockfd, &request,
+            sizeof(struct FaultLoggerdRequest))) != static_cast<long>(sizeof(request))) {
             break;
         }
 
@@ -270,7 +272,7 @@ int RequestPrintTHilog(const char *msg, int length)
             break;
         }
 
-        int nwrite = write(sockfd, msg, strlen(msg));
+        int nwrite = OHOS_TEMP_FAILURE_RETRY(write(sockfd, msg, strlen(msg)));
         if (nwrite != static_cast<long>(strlen(msg))) {
             DFXLOG_ERROR("nwrite: %d.", nwrite);
             break;
@@ -327,7 +329,7 @@ int32_t RequestDelPipeFd(int32_t pid)
         return -1;
     }
 
-    write(sockfd, &request, sizeof(struct FaultLoggerdRequest));
+    OHOS_TEMP_FAILURE_RETRY(write(sockfd, &request, sizeof(struct FaultLoggerdRequest)));
     close(sockfd);
     return 0;
 }
@@ -341,7 +343,8 @@ int ReportDumpStats(const struct FaultLoggerdStatsRequest *request)
         return -1;
     }
 
-    if (write(sockfd, request, sizeof(struct FaultLoggerdStatsRequest)) != sizeof(struct FaultLoggerdStatsRequest)) {
+    if (OHOS_TEMP_FAILURE_RETRY(write(sockfd, request,
+        sizeof(struct FaultLoggerdStatsRequest))) != sizeof(struct FaultLoggerdStatsRequest)) {
         DFXLOG_ERROR("%s", "ReportDumpCatcherStats: failed to write stats.");
         close(sockfd);
         return -1;
