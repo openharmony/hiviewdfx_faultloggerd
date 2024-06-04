@@ -32,6 +32,7 @@ if (defined(ohos_lite)) {
       "faultloggerd_client.cpp",
       "faultloggerd_socket.cpp",
     ]
+    cflags = [ "-fstack-protector-strong" ]
     sources += [ "$c_utils_src_path/directory_ex.cpp" ]
 
     deps = [
@@ -62,6 +63,7 @@ if (defined(ohos_lite)) {
       "faultloggerd_client.cpp",
       "faultloggerd_socket.cpp",
     ]
+    cflags = [ "-fstack-protector-strong" ]
     include_dirs = [ "." ]
     version_script = "libfaultloggerd.map"
     deps = [
