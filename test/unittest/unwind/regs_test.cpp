@@ -109,6 +109,12 @@ HWTEST_F(DfxRegsTest, DfxRegsTest002, TestSize.Level2)
     ASSERT_EQ(pc, pcGet);
     ASSERT_FALSE(dfxRegs->PrintRegs().empty());
     ASSERT_FALSE(dfxRegs->PrintSpecialRegs().empty());
+#if defined(__arm__) || defined(__aarch64__) || defined(__riscv)
+    ASSERT_EQ(dfxRegs->GetSpecialRegsNameByIndex(REG_FP), "fp");
+    ASSERT_EQ(dfxRegs->GetSpecialRegsNameByIndex(REG_LR), "lr");
+#endif
+    ASSERT_EQ(dfxRegs->GetSpecialRegsNameByIndex(REG_PC), "pc");
+    ASSERT_EQ(dfxRegs->GetSpecialRegsNameByIndex(REG_SP), "sp");
     GTEST_LOG_(INFO) << "DfxRegsTest002: end.";
 }
 

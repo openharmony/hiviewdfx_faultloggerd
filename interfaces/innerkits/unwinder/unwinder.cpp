@@ -156,7 +156,7 @@ public:
     bool UnwindLocalWithContext(const ucontext_t& context, size_t maxFrameNum, size_t skipFrameNum);
     bool UnwindLocalWithTid(pid_t tid, size_t maxFrameNum, size_t skipFrameNum);
     bool UnwindLocal(bool withRegs, bool fpUnwind, size_t maxFrameNum, size_t skipFrameNum);
-    bool UnwindRemote(pid_t tid, bool withRegs, size_t maxFrameNum, size_t skipFrameNum);
+    bool UnwindRemote(pid_t vmPid, pid_t tid, bool withRegs, size_t maxFrameNum, size_t skipFrameNum);
     bool Unwind(void *ctx, size_t maxFrameNum, size_t skipFrameNum);
     bool UnwindByFp(void *ctx, size_t maxFrameNum, size_t skipFrameNum);
 
@@ -338,9 +338,9 @@ bool Unwinder::UnwindLocal(bool withRegs, bool fpUnwind, size_t maxFrameNum, siz
     return impl_->UnwindLocal(withRegs, fpUnwind, maxFrameNum, skipFrameNum);
 }
 
-bool Unwinder::UnwindRemote(pid_t tid, bool withRegs, size_t maxFrameNum, size_t skipFrameNum)
+bool Unwinder::UnwindRemote(pid_t vmPid, pid_t tid, bool withRegs, size_t maxFrameNum, size_t skipFrameNum)
 {
-    return impl_->UnwindRemote(tid, withRegs, maxFrameNum, skipFrameNum);
+    return impl_->UnwindRemote(vmPid, tid, withRegs, maxFrameNum, skipFrameNum);
 }
 
 bool Unwinder::Unwind(void *ctx, size_t maxFrameNum, size_t skipFrameNum)
@@ -596,14 +596,14 @@ bool Unwinder::Impl::UnwindLocal(bool withRegs, bool fpUnwind, size_t maxFrameNu
     return Unwind(&context, maxFrameNum, skipFrameNum);
 }
 
-bool Unwinder::Impl::UnwindRemote(pid_t tid, bool withRegs, size_t maxFrameNum, size_t skipFrameNum)
+bool Unwinder::Impl::UnwindRemote(pid_t vmPid, pid_t tid, bool withRegs, size_t maxFrameNum, size_t skipFrameNum)
 {
     if ((maps_ == nullptr) || (pid_ <= 0) || (tid < 0)) {
         LOGE("params is nullptr, pid: %d, tid: %d", pid_, tid);
         return false;
     }
-    if (tid == 0) {
-        tid = pid_;
+    if (vmPid == 0) {
+        vmPid = pid_;
     }
     LOGI("UnwindRemote:: tid: %d", tid);
     if (!withRegs) {
@@ -615,7 +615,7 @@ bool Unwinder::Impl::UnwindRemote(pid_t tid, bool withRegs, size_t maxFrameNum, 
     }
 
     UnwindContext context;
-    context.pid = tid;
+    context.pid = vmPid;
     context.regs = regs_;
     context.maps = maps_;
     bool ret = Unwind(&context, maxFrameNum, skipFrameNum);

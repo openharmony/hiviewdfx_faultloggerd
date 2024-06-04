@@ -224,6 +224,25 @@ std::string DfxRegs::GetSpecialRegsName(uintptr_t val) const
     return "";
 }
 
+std::string DfxRegs::GetSpecialRegsNameByIndex(int index) const
+{
+    switch (index) {
+#if defined(__arm__) || defined(__aarch64__) || defined(__riscv)
+        case REG_FP:
+            return "fp";
+        case REG_LR:
+            return "lr";
+#endif
+        case REG_SP:
+            return "sp";
+        case REG_PC:
+            return "pc";
+        default:
+            return "";
+    }
+    return "";
+}
+
 std::string DfxRegs::PrintSpecialRegs() const
 {
     uintptr_t fp = 0, lr = 0, sp = 0, pc = 0;

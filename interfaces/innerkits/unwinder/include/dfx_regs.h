@@ -64,6 +64,7 @@ public:
     void GetSpecialRegs(uintptr_t& fp, uintptr_t& lr, uintptr_t& sp, uintptr_t& pc) const;
     void SetSpecialRegs(uintptr_t fp, uintptr_t lr, uintptr_t sp, uintptr_t pc);
     std::string GetSpecialRegsName(uintptr_t val) const;
+    std::string GetSpecialRegsNameByIndex(int index) const;
     std::string PrintSpecialRegs() const;
 protected:
     std::vector<uintptr_t> regsData_ {};
