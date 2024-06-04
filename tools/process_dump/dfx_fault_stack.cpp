@@ -223,7 +223,7 @@ void FaultStack::CollectRegistersBlock(std::shared_ptr<DfxRegs> regs, std::share
             continue;
         }
 
-        std::string name = regs->GetSpecialRegsName(data);
+        std::string name = regs->GetSpecialRegsNameByIndex(index - 1);
         if (name.empty()) {
 #if defined(__arm__)
 #define NAME_PREFIX "r"
