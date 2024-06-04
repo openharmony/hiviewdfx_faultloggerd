@@ -27,6 +27,7 @@
 #include "dfx_config.h"
 #include "dfx_define.h"
 #include "dfx_frame_formatter.h"
+#include "dfx_kernel_stack.h"
 #include "dfx_logger.h"
 #include "dfx_maps.h"
 #include "dfx_process.h"
@@ -41,6 +42,19 @@
 
 namespace OHOS {
 namespace HiviewDFX {
+namespace {
+bool IsValidThreadStatus(bool isVmProcAttach, bool withRegs, pid_t tid)
+{
+    if (isVmProcAttach && !withRegs) {
+        std::string kernelStack;
+        if (DfxGetKernelStack(tid, kernelStack) == 0) {
+            DFXLOG_INFO("tid(%d) kernel stack %s", tid, kernelStack.c_str());
+        }
+        return false;
+    }
+    return true;
+}
+}
 
 DfxUnwindRemote &DfxUnwindRemote::GetInstance()
 {
@@ -144,10 +158,8 @@ void DfxUnwindRemote::UnwindOtherThread(std::shared_ptr<DfxProcess> process, std
         return;
     }
 
-    if (vmPid != 0) {
-        if (!isVmProcAttach) {
-            return;
-        }
+    if (vmPid != 0 && !isVmProcAttach) {
+        return;
     }
     unwinder->SetIsJitCrashFlag(false);
     size_t index = 0;
@@ -161,8 +173,10 @@ void DfxUnwindRemote::UnwindOtherThread(std::shared_ptr<DfxProcess> process, std
             auto regs = thread->GetThreadRegs();
             unwinder->SetRegs(regs);
             bool withRegs = regs != nullptr;
-            auto pid = (vmPid != 0 && isVmProcAttach) ? vmPid : thread->threadInfo_.nsTid;
-            unwinder->UnwindRemote(pid, withRegs, DfxConfig::GetConfig().maxFrameNums);
+            if (!IsValidThreadStatus(isVmProcAttach, withRegs, thread->threadInfo_.nsTid)) {
+                continue;
+            }
+            unwinder->UnwindRemote(vmPid, thread->threadInfo_.nsTid, withRegs, DfxConfig::GetConfig().maxFrameNums);
             thread->Detach();
             thread->SetFrames(unwinder->GetFrames());
             if (ProcessDumper::GetInstance().IsCrash()) {
