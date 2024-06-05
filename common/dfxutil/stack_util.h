@@ -95,7 +95,9 @@ AT_UNUSED static bool GetSelfStackRange(uintptr_t& stackBottom, uintptr_t& stack
     pthread_attr_t tattr;
     void *base = nullptr;
     size_t size = 0;
-    pthread_getattr_np(pthread_self(), &tattr);
+    if (pthread_getattr_np(pthread_self(), &tattr) != 0) {
+        return ret;
+    }
     if (pthread_attr_getstack(&tattr, &base, &size) == 0) {
         stackBottom = reinterpret_cast<uintptr_t>(base);
         stackTop = reinterpret_cast<uintptr_t>(base) + size;

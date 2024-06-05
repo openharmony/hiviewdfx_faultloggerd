@@ -198,7 +198,11 @@ bool Unwinder::UnwindLocalWithTid(const pid_t tid, size_t maxFrameNum, size_t sk
             return false;
         }
     } else if (!LocalThreadContext::GetInstance().GetStackRange(tid, stackBottom, stackTop)) {
-        LOGE("Failed to get stack range with tid(%d)", tid);
+        LOGE("Failed to get stack range with tid(%d), err(%d)", tid, errno);
+        return false;
+    }
+    if (stackBottom == 0 || stackTop == 0) {
+        LOGE("Invalid stack range, err(%d)", errno);
         return false;
     }
     LOGU("stackBottom: %" PRIx64 ", stackTop: %" PRIx64 "", (uint64_t)stackBottom, (uint64_t)stackTop);
