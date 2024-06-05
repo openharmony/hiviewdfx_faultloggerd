@@ -62,7 +62,8 @@ static int ConnectSocket(const char* path, const int timeout)
                 0
             };
             void* pTimev = &timev;
-            if (setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO,  (const void*)(pTimev), sizeof(timev)) != 0) {
+            if (OHOS_TEMP_FAILURE_RETRY(setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO,
+                (const void*)(pTimev), sizeof(timev))) != 0) {
                 DFXLOG_ERROR("setsockopt SO_RCVTIMEO error.");
                 syscall(SYS_close, fd);
                 fd = -1;
@@ -74,7 +75,7 @@ static int ConnectSocket(const char* path, const int timeout)
         server.sun_family = AF_LOCAL;
         (void)strncpy(server.sun_path, path, sizeof(server.sun_path) - 1);
         int len = sizeof(server.sun_family) + strlen(server.sun_path);
-        int connected = connect(fd, (struct sockaddr*)(&server), len);
+        int connected = OHOS_TEMP_FAILURE_RETRY(connect(fd, (struct sockaddr*)(&server), len));
         if (connected < 0) {
             DFXLOG_ERROR("Failed to connect to faultloggerd socket, errno = %d.", errno);
             syscall(SYS_close, fd);
@@ -89,7 +90,7 @@ static bool CheckReadResp(int fd)
 {
     char controlBuffer[MAX_FUNC_NAME_LEN] = {0};
     (void)memset(controlBuffer, 0, MAX_FUNC_NAME_LEN);
-    ssize_t nread = read(fd, controlBuffer, sizeof(controlBuffer) - 1);
+    ssize_t nread = OHOS_TEMP_FAILURE_RETRY(read(fd, controlBuffer, sizeof(controlBuffer) - 1));
     if (nread != (ssize_t)(strlen(FAULTLOGGER_DAEMON_RESP))) {
         DFXLOG_ERROR("Failed to read expected length, nread: %zd.", nread);
         return false;
@@ -111,7 +112,7 @@ int ReportException(struct CrashDumpException exception)
         return ret;
     }
     do {
-        if (write(fd, &request, sizeof(request)) != (long)sizeof(request)) {
+        if (OHOS_TEMP_FAILURE_RETRY(write(fd, &request, sizeof(request))) != (long)sizeof(request)) {
             DFXLOG_ERROR("Failed to write request message to socket.");
             break;
         }
@@ -121,7 +122,8 @@ int ReportException(struct CrashDumpException exception)
             break;
         }
 
-        if (write(fd, &exception, sizeof(exception)) != (long)sizeof(exception)) {
+        if (OHOS_TEMP_FAILURE_RETRY(write(fd, &exception,
+            sizeof(exception))) != (long)sizeof(exception)) {
             DFXLOG_ERROR("Failed to write exception message to socket.");
             break;
         }

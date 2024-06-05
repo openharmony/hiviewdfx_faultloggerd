@@ -175,7 +175,8 @@ void FaultLoggerDaemon::HandleAccept(int32_t epollFd, int32_t socketFd)
     struct sockaddr_un clientAddr;
     socklen_t clientAddrSize = static_cast<socklen_t>(sizeof(clientAddr));
 
-    int connectionFd = accept(socketFd, reinterpret_cast<struct sockaddr *>(&clientAddr), &clientAddrSize);
+    int connectionFd = OHOS_TEMP_FAILURE_RETRY(accept(socketFd,
+        reinterpret_cast<struct sockaddr *>(&clientAddr), &clientAddrSize));
     if (connectionFd < 0) {
         DFXLOG_WARN("%s :: Failed to accept connection", FAULTLOGGERD_TAG.c_str());
         return;
@@ -236,7 +237,7 @@ void FaultLoggerDaemon::HandleRequest(int32_t epollFd, int32_t connectionFd)
 
     std::vector<uint8_t> buf(REQUEST_BUF_SIZE, 0);
     do {
-        ssize_t nread = read(connectionFd, buf.data(), REQUEST_BUF_SIZE);
+        ssize_t nread = OHOS_TEMP_FAILURE_RETRY(read(connectionFd, buf.data(), REQUEST_BUF_SIZE));
         if (CheckReadRequest(nread, sizeof(FaultLoggerdStatsRequest))) {
             HandleDumpStats(connectionFd, reinterpret_cast<FaultLoggerdStatsRequest *>(buf.data()));
             break;
@@ -330,13 +331,14 @@ void FaultLoggerDaemon::HandleLogFileDesClientRequest(int32_t connectionFd, cons
 
 void FaultLoggerDaemon::HandleExceptionRequest(int32_t connectionFd, FaultLoggerdRequest * request)
 {
-    if (write(connectionFd, DAEMON_RESP.c_str(), DAEMON_RESP.length()) != static_cast<ssize_t>(DAEMON_RESP.length())) {
+    if (OHOS_TEMP_FAILURE_RETRY(write(connectionFd,
+        DAEMON_RESP.c_str(), DAEMON_RESP.length())) != static_cast<ssize_t>(DAEMON_RESP.length())) {
         DFXLOG_ERROR("%s :: Failed to write DAEMON_RESP.", FAULTLOGGERD_TAG.c_str());
     }
 
     CrashDumpException exception;
     (void)memset_s(&exception, sizeof(CrashDumpException), 0, sizeof(CrashDumpException));
-    ssize_t nread = read(connectionFd, &exception, sizeof(CrashDumpException));
+    ssize_t nread = OHOS_TEMP_FAILURE_RETRY(read(connectionFd, &exception, sizeof(CrashDumpException)));
     if (!CheckReadRequest(nread, sizeof(CrashDumpException))) {
         return;
     }
@@ -437,11 +439,12 @@ void FaultLoggerDaemon::HandlePrintTHilogClientRequest(int32_t const connectionF
 {
     char buf[LINE_BUF_SIZE] = {0};
 
-    if (write(connectionFd, DAEMON_RESP.c_str(), DAEMON_RESP.length()) != static_cast<ssize_t>(DAEMON_RESP.length())) {
+    if (OHOS_TEMP_FAILURE_RETRY(write(connectionFd,
+        DAEMON_RESP.c_str(), DAEMON_RESP.length())) != static_cast<ssize_t>(DAEMON_RESP.length())) {
         DFXLOG_ERROR("%s :: Failed to write DAEMON_RESP.", FAULTLOGGERD_TAG.c_str());
     }
 
-    int nread = read(connectionFd, buf, sizeof(buf) - 1);
+    int nread = OHOS_TEMP_FAILURE_RETRY(read(connectionFd, buf, sizeof(buf) - 1));
     if (nread < 0) {
         DFXLOG_ERROR("%s :: Failed to read message, errno(%d)", FAULTLOGGERD_TAG.c_str(), errno);
     } else if (nread == 0) {
@@ -458,12 +461,13 @@ FaultLoggerCheckPermissionResp FaultLoggerDaemon::SecurityCheck(int32_t connecti
     struct ucred rcred;
     do {
         int optval = 1;
-        if (setsockopt(connectionFd, SOL_SOCKET, SO_PASSCRED, &optval, sizeof(optval)) == -1) {
+        if (OHOS_TEMP_FAILURE_RETRY(setsockopt(connectionFd,
+            SOL_SOCKET, SO_PASSCRED, &optval, sizeof(optval))) == -1) {
             DFXLOG_ERROR("%s :: setsockopt SO_PASSCRED error, errno(%d)", FAULTLOGGERD_TAG.c_str(), errno);
             break;
         }
 
-        if (write(connectionFd, DAEMON_RESP.c_str(), DAEMON_RESP.length()) !=
+        if (OHOS_TEMP_FAILURE_RETRY(write(connectionFd, DAEMON_RESP.c_str(), DAEMON_RESP.length())) !=
             static_cast<ssize_t>(DAEMON_RESP.length())) {
             DFXLOG_ERROR("%s :: Failed to write DAEMON_RESP, errno(%d)", FAULTLOGGERD_TAG.c_str(), errno);
         }
@@ -499,10 +503,10 @@ void FaultLoggerDaemon::HandlePermissionRequest(int32_t connectionFd, FaultLogge
 {
     FaultLoggerCheckPermissionResp resSecurityCheck = SecurityCheck(connectionFd, request);
     if (FaultLoggerCheckPermissionResp::CHECK_PERMISSION_PASS == resSecurityCheck) {
-        send(connectionFd, "1", strlen("1"), 0);
+        OHOS_TEMP_FAILURE_RETRY(send(connectionFd, "1", strlen("1"), 0));
     }
     if (FaultLoggerCheckPermissionResp::CHECK_PERMISSION_REJECT == resSecurityCheck) {
-        send(connectionFd, "2", strlen("2"), 0);
+        OHOS_TEMP_FAILURE_RETRY(send(connectionFd, "2", strlen("2"), 0));
     }
 }
 
@@ -589,7 +593,7 @@ void FaultLoggerDaemon::HandleSdkDumpRequest(int32_t connectionFd, FaultLoggerdR
         }
     } while (false);
     auto retMsg = std::to_string(resSdkDump);
-    send(connectionFd, retMsg.data(), retMsg.length(), 0);
+    OHOS_TEMP_FAILURE_RETRY(send(connectionFd, retMsg.data(), retMsg.length(), 0));
 }
 
 void FaultLoggerDaemon::RecordFileCreation(int32_t type, int32_t pid)

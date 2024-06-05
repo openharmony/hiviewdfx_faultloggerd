@@ -240,7 +240,7 @@ bool DfxDumpCatcher::DumpCatchFd(int pid, int tid, std::string& msg, int fd, siz
     bool ret = false;
     ret = DumpCatch(pid, tid, msg, maxFrameNums);
     if (fd > 0) {
-        ret = write(fd, msg.c_str(), msg.length());
+        ret = OHOS_TEMP_FAILURE_RETRY(write(fd, msg.c_str(), msg.length()));
     }
     return ret;
 }

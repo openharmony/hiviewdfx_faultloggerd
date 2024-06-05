@@ -331,14 +331,14 @@ void DoServerProcess(const std::string& socketFileName)
         0
     };
     void* pTimev = &timev;
-    int retOpt = setsockopt(serverSocketFd, SOL_SOCKET, SO_RCVTIMEO, static_cast<const char*>(pTimev),
-        sizeof(struct timeval));
+    int retOpt = OHOS_TEMP_FAILURE_RETRY(setsockopt(serverSocketFd, SOL_SOCKET, SO_RCVTIMEO,
+        static_cast<const char*>(pTimev), sizeof(struct timeval)));
     ASSERT_NE(retOpt, -1);
 
     struct sockaddr_un clientAddr;
     socklen_t clientAddrSize = static_cast<socklen_t>(sizeof(clientAddr));
-    int32_t connectionFd = accept(serverSocketFd, reinterpret_cast<struct sockaddr *>(&clientAddr),
-        &clientAddrSize);
+    int32_t connectionFd = OHOS_TEMP_FAILURE_RETRY(accept(serverSocketFd,
+        reinterpret_cast<struct sockaddr *>(&clientAddr), &clientAddrSize));
     ASSERT_GT(connectionFd, 0);
     GTEST_LOG_(INFO) << "server accept fd:" << connectionFd;
 
