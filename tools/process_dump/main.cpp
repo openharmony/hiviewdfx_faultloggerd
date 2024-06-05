@@ -74,5 +74,6 @@ int main(int argc, char *argv[])
     if (isSignalHdlr) {
         OHOS::HiviewDFX::ProcessDumper::GetInstance().Dump();
     }
+    _exit(0);
     return 0;
 }
