@@ -46,14 +46,6 @@ public:
         }
         return ptr.get();
     }
-    ~FpUnwinder()
-    {
-        if (initPipe_) {
-            close(pfd_[PIPE_WRITE]);
-            close(pfd_[PIPE_READ]);
-            initPipe_ = false;
-        }
-    }
 
     size_t Unwind(uintptr_t pc, uintptr_t fp, uintptr_t* pcs, size_t maxSize, size_t skipFrameNum = 0)
     {
@@ -95,6 +87,10 @@ public:
         if (pcs == nullptr) {
             return 0;
         }
+        int32_t pfd[PIPE_NUM_SZ] = {-1, -1};
+        if (pipe2(pfd, O_CLOEXEC | O_NONBLOCK) != 0) {
+            return 0;
+        }
         size_t index = 0;
         MAYBE_UNUSED uintptr_t sp = 0;
         MAYBE_UNUSED bool isJsFrame = false;
@@ -104,14 +100,16 @@ public:
             }
             index++;
             uintptr_t prevFp = fp;
-            if ((!ReadUptrSafe(prevFp, fp)) ||
-                (!ReadUptrSafe(prevFp + sizeof(uintptr_t), pc))) {
+            if ((!ReadUptrSafe(prevFp, pfd[PIPE_WRITE], fp)) ||
+                (!ReadUptrSafe(prevFp + sizeof(uintptr_t), pfd[PIPE_WRITE], pc))) {
                 break;
             }
             if (fp <= prevFp || fp == 0) {
                 break;
             }
         }
+        close(pfd[PIPE_WRITE]);
+        close(pfd[PIPE_READ]);
         return (index - skipFrameNum);
     }
 
@@ -129,12 +127,7 @@ public:
     }
 
 private:
-    FpUnwinder()
-    {
-        if (pipe2(pfd_, O_CLOEXEC | O_NONBLOCK) == 0) {
-            initPipe_ = true;
-        }
-    }
+    FpUnwinder() = default;
     DISALLOW_COPY_AND_MOVE(FpUnwinder);
 
 #if defined(__has_feature) && __has_feature(address_sanitizer)
@@ -151,22 +144,17 @@ private:
     }
 
 #if defined(__has_feature) && __has_feature(address_sanitizer)
-    __attribute__((no_sanitize("address"))) bool ReadUptrSafe(uintptr_t addr, uintptr_t& value)
+    __attribute__((no_sanitize("address"))) bool ReadUptrSafe(uintptr_t addr, uint32_t fd, uintptr_t& value)
 #else
-    bool ReadUptrSafe(uintptr_t addr, uintptr_t& value)
+    bool ReadUptrSafe(uintptr_t addr, uint32_t fd, uintptr_t& value)
 #endif
     {
-        if (pfd_[PIPE_WRITE] < 0) {
-            return false;
-        }
-        if (OHOS_TEMP_FAILURE_RETRY(syscall(SYS_write, pfd_[PIPE_WRITE], addr, sizeof(uintptr_t))) == -1) {
+        if (OHOS_TEMP_FAILURE_RETRY(syscall(SYS_write, fd, addr, sizeof(uintptr_t))) == -1) {
             return false;
         }
 
-        uintptr_t dummy;
         value = *reinterpret_cast<uintptr_t *>(addr);
-        return OHOS_TEMP_FAILURE_RETRY(syscall(SYS_read, pfd_[PIPE_READ], &dummy, sizeof(uintptr_t))) ==
-            static_cast<long int>(sizeof(uintptr_t));
+        return true;
     }
 
 private:
@@ -175,8 +163,6 @@ private:
     uintptr_t stackTop_ = 0;
     MAYBE_UNUSED uintptr_t arkMapStart_ = 0;
     MAYBE_UNUSED uintptr_t arkMapEnd_ = 0;
-    int32_t pfd_[PIPE_NUM_SZ] = {-1, -1};
-    bool initPipe_ = false;
 };
 }
 } // namespace OHOS
