@@ -24,7 +24,6 @@
 #include <cstring>
 #include <dirent.h>
 #include <fcntl.h>
-#include <future>
 #include <iostream>
 #include <memory>
 #include <pthread.h>
@@ -244,16 +243,7 @@ void ProcessDumper::Dump()
 {
     startTime_ = GetTimeMillisec();
     std::shared_ptr<ProcessDumpRequest> request = std::make_shared<ProcessDumpRequest>();
-    std::future<int> future = std::async(std::launch::async, &ProcessDumper::DumpProcess, &GetInstance(), request);
-    std::future_status status = future.wait_for(std::chrono::seconds(DUMPPROCESS_MAX_SECOND));
-    if (status == std::future_status::timeout) {
-        DFXLOG_INFO("%s :: processDump time bigger than 6s!", __func__);
-        resDump_ = DUMP_ESUCCESS;
-    } else if (status == std::future_status::ready) {
-        resDump_ = future.get();
-    } else {
-        DFXLOG_ERROR("%s", "DumpProcess future status is deferred.");
-    }
+    resDump_ = DumpProcess(request);
     if (process_ == nullptr) {
         DFXLOG_ERROR("%s", "Dump process failed, please check permission and whether pid is valid.");
     } else {
