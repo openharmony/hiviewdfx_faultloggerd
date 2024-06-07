@@ -288,7 +288,7 @@ static int32_t ReadRequestAndCheck(std::shared_ptr<ProcessDumpRequest> request)
 {
     ssize_t readCount = OHOS_TEMP_FAILURE_RETRY(read(STDIN_FILENO, request.get(), sizeof(ProcessDumpRequest)));
     if (readCount != static_cast<long>(sizeof(ProcessDumpRequest))) {
-        DFXLOG_ERROR("Failed to read DumpRequest(%d).", errno);
+        DFXLOG_ERROR("Failed to read DumpRequest(%d), readCount(%zd).", errno, readCount);
         ReportCrashException(request->processName, request->pid, request->uid,
                              CrashExceptionCode::CRASH_DUMP_EREADREQ);
         return DumpErrorCode::DUMP_EREADREQUEST;
