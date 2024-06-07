@@ -278,7 +278,9 @@ void ProcessDumper::Dump()
     DfxRingBufferWrapper::GetInstance().StopThread();
     DFXLOG_INFO("Finish dump stacktrace for %s(%d:%d).", request->processName, request->pid, request->tid);
     CloseDebugLog();
-    ReportCrashInfo(jsonInfo);
+    if (resDump_ != DumpErrorCode::DUMP_ENOMAP) {
+        ReportCrashInfo(jsonInfo);
+    }
     if ((request->dumpMode == FUSION_MODE) && isCrash_) {
         InfoRemoteProcessResult(request, OPE_CONTINUE, MAIN_PROCESS);
     }
@@ -379,6 +381,13 @@ bool ProcessDumper::Unwind(std::shared_ptr<ProcessDumpRequest> request, int &dum
 
     if (!InitUnwinder(request, realPid, vmPid)) {
         DFXLOG_ERROR("%s", "Failed to create unwinder");
+        return false;
+    }
+    if (unwinder_ != nullptr && unwinder_->GetMaps() == nullptr) {
+        ReportCrashException(request->processName, request->pid, request->uid,
+                             CrashExceptionCode::CRASH_LOG_EMAPLOS);
+        DFXLOG_ERROR("%s", "Mapinfo of crashed process is not exist!");
+        dumpRes = DumpErrorCode::DUMP_ENOMAP;
         return false;
     }
 
