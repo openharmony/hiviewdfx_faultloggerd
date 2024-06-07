@@ -17,8 +17,10 @@
 
 #include <algorithm>
 #include <elf.h>
+#include <fcntl.h>
 #include <securec.h>
 #include <sys/ptrace.h>
+#include <sys/syscall.h>
 #include <sys/uio.h>
 #include "dfx_define.h"
 #include "dfx_errors.h"
@@ -63,12 +65,36 @@ bool DfxAccessors::GetMapByPcAndCtx(uintptr_t pc, std::shared_ptr<DfxMap>& map, 
     return true;
 }
 
+DfxAccessorsLocal::DfxAccessorsLocal(void)
+{
+    if (pipe2(pfd_, O_CLOEXEC | O_NONBLOCK) == 0) {
+        initPipe_ = true;
+    }
+}
+
+DfxAccessorsLocal::~DfxAccessorsLocal(void)
+{
+    if (initPipe_) {
+        close(pfd_[PIPE_WRITE]);
+        close(pfd_[PIPE_READ]);
+        initPipe_ = false;
+    }
+}
+
 bool DfxAccessorsLocal::IsValidFrame(uintptr_t addr, uintptr_t stackBottom, uintptr_t stackTop)
 {
     if (UNLIKELY(stackTop < stackBottom)) {
         return false;
     }
-    return ((addr >= stackBottom) && (addr < stackTop - sizeof(uintptr_t)));
+    if ((addr >= stackBottom) && (addr + sizeof(uintptr_t) < stackTop)) {
+        return true;
+    }
+
+    if (initPipe_) {
+        return OHOS_TEMP_FAILURE_RETRY(syscall(SYS_write, pfd_[PIPE_WRITE], addr, sizeof(uintptr_t))) != -1;
+    }
+
+    return false;
 }
 
 #if defined(__has_feature) && __has_feature(address_sanitizer)
