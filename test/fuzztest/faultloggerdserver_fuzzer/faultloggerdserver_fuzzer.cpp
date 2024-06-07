@@ -52,7 +52,6 @@ bool FaultloggerdServerTest(const uint8_t* data, size_t size)
     if (!GetValueFromData(&data, &epollFd)) {
         return false;
     }
-    data += sizeof(int32_t);
     if (!GetValueFromData(&data, &connectionFd)) {
         return false;
     }
@@ -70,7 +69,6 @@ bool FaultloggerdServerTest(const uint8_t* data, size_t size)
     }
     struct FaultLoggerdRequest request;
     (void)memset_s(&request, sizeof(request), 0, sizeof(request));
-    request.clientType = type % 10; // 10 : random a number between 1 and 10
     request.type = type;
     request.pid = pid;
     request.tid = tid;

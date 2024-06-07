@@ -191,26 +191,11 @@ void FaultLoggerDaemon::HandleRequestForFuzzer(int32_t epollFd, int32_t connecti
                                                const FaultLoggerdRequest *requestConst, FaultLoggerdRequest *request)
 {
     HandleRequest(epollFd, connectionFd);
-    switch (requestConst->clientType) {
-        case static_cast<int32_t>(FaultLoggerClientType::LOG_FILE_DES_CLIENT):
-            HandleLogFileDesClientRequest(connectionFd, requestConst);
-            break;
-        case static_cast<int32_t>(FaultLoggerClientType::PRINT_T_HILOG_CLIENT):
-            HandlePrintTHilogClientRequest(connectionFd, request);
-            break;
-        case static_cast<int32_t>(FaultLoggerClientType::PERMISSION_CLIENT):
-            HandlePermissionRequest(connectionFd, request);
-            break;
-        case static_cast<int32_t>(FaultLoggerClientType::SDK_DUMP_CLIENT):
-            HandleSdkDumpRequest(connectionFd, request);
-            break;
-        case static_cast<int32_t>(FaultLoggerClientType::REPORT_EXCEPTION_CLIENT):
-            HandleExceptionRequest(connectionFd, request);
-            break;
-        default:
-            DFXLOG_ERROR("%s :: unknown clientType(%d).\n", FAULTLOGGERD_TAG.c_str(), requestConst->clientType);
-            break;
-    }
+    HandleLogFileDesClientRequest(connectionFd, requestConst);
+    HandlePrintTHilogClientRequest(connectionFd, request);
+    HandlePermissionRequest(connectionFd, request);
+    HandleSdkDumpRequest(connectionFd, request);
+    HandleExceptionRequest(connectionFd, request);
 }
 #endif
 
