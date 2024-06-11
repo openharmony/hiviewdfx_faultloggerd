@@ -556,11 +556,12 @@ int ProcessDumper::InitProcessInfo(std::shared_ptr<ProcessDumpRequest> request)
         return -1;
     }
 
-    if (isCrash_) {
+    bool isLeakDump = request->siginfo.si_signo == SIGLEAK_STACK;
+    if (isCrash_ && !isLeakDump) {
         process_->InitOtherThreads();
         process_->Attach();
     } else {
-        if (request->siginfo.si_value.sival_int == 0) {
+        if (request->siginfo.si_value.sival_int == 0 && !isLeakDump) {
             process_->InitOtherThreads();
             if (request->dumpMode == FUSION_MODE) {
                 process_->Attach();
