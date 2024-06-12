@@ -111,18 +111,8 @@ static bool GetUnwinder(pid_t pid, void* data, std::shared_ptr<Unwinder>& unwind
 
     UnwindData* dataPtr = reinterpret_cast<UnwindData*>(data);
     if ((dataPtr != nullptr) && (unwinder != nullptr)) {
-        if (dataPtr->isFillFrames) {
-            unwinder->EnableFillFrames(true);
-        } else {
-            unwinder->EnableFillFrames(false);
-        }
-
-        if (dataPtr->isCache) {
-            unwinder->EnableUnwindCache(true);
-        } else {
-            unwinder->EnableUnwindCache(false);
-        }
-
+        unwinder->EnableFillFrames(dataPtr->isFillFrames);
+        unwinder->EnableUnwindCache(dataPtr->isCache);
         isFp = dataPtr->isFp;
     }
     return true;
