@@ -69,9 +69,9 @@ public:
     std::shared_ptr<std::vector<uint8_t>> shmmData = nullptr;
 #endif
     // use for find
-    inline bool operator==(const std::string &name) const
+    inline bool operator==(const std::string &sname) const
     {
-        return this->name == name;
+        return this->name == sname;
     }
 
     inline bool operator<(const DfxMap &other) const

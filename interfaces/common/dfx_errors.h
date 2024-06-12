@@ -27,7 +27,7 @@ struct UnwindErrorData {
     inline const uint64_t& GetAddr() { return addr_; }
 
     template <typename T1, typename T2>
-    inline void SetAddrAndCode(T1 addr, T2 code)
+    inline void SetAddrAndCode([[maybe_unused]] T1 addr, [[maybe_unused]] T2 code)
     {
 #ifdef DFX_UNWIND_ERROR
         addr_ = static_cast<uint64_t>(addr);
@@ -36,7 +36,7 @@ struct UnwindErrorData {
     }
 
     template <typename T>
-    inline void SetCode(T code)
+    inline void SetCode([[maybe_unused]] T code)
     {
 #ifdef DFX_UNWIND_ERROR
         code_ = static_cast<uint16_t>(code);
@@ -44,7 +44,7 @@ struct UnwindErrorData {
     }
 
     template <typename T>
-    inline void SetAddr(T addr)
+    inline void SetAddr([[maybe_unused]] T addr)
     {
 #ifdef DFX_UNWIND_ERROR
         addr_ = static_cast<uint64_t>(addr);
