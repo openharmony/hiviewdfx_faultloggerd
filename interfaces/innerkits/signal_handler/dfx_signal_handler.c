@@ -734,7 +734,7 @@ static bool ReadPipeTimeout(int fd, uint64_t timeout, uint32_t* value)
     return false;
 }
 
-static bool ReadProcessDumpGetRegsMsg()
+static bool ReadProcessDumpGetRegsMsg(void)
 {
     CleanFd(&g_pipeFds[READ_FROM_DUMP_TO_MAIN][1]);
 

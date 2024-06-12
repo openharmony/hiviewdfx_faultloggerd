@@ -344,7 +344,8 @@ int ReportDumpStats(const struct FaultLoggerdStatsRequest *request)
     }
 
     if (OHOS_TEMP_FAILURE_RETRY(write(sockfd, request,
-        sizeof(struct FaultLoggerdStatsRequest))) != sizeof(struct FaultLoggerdStatsRequest)) {
+        sizeof(struct FaultLoggerdStatsRequest))) !=
+        static_cast<long int>(sizeof(struct FaultLoggerdStatsRequest))) {
         DFXLOG_ERROR("%s", "ReportDumpCatcherStats: failed to write stats.");
         close(sockfd);
         return -1;
