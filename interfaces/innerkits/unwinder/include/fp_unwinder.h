@@ -88,7 +88,7 @@ public:
             return 0;
         }
         int32_t pfd[PIPE_NUM_SZ] = {-1, -1};
-        if (pipe2(pfd, O_CLOEXEC | O_NONBLOCK) != 0) {
+        if (syscall(SYS_pipe2, pfd, O_CLOEXEC | O_NONBLOCK) != 0) {
             return 0;
         }
         size_t index = 0;
@@ -108,8 +108,8 @@ public:
                 break;
             }
         }
-        close(pfd[PIPE_WRITE]);
-        close(pfd[PIPE_READ]);
+        syscall(SYS_close, pfd[PIPE_WRITE]);
+        syscall(SYS_close, pfd[PIPE_READ]);
         return (index - skipFrameNum);
     }
 

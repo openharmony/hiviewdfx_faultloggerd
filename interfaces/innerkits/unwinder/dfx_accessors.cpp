@@ -67,7 +67,7 @@ bool DfxAccessors::GetMapByPcAndCtx(uintptr_t pc, std::shared_ptr<DfxMap>& map, 
 
 DfxAccessorsLocal::DfxAccessorsLocal(void)
 {
-    if (pipe2(pfd_, O_CLOEXEC | O_NONBLOCK) == 0) {
+    if (syscall(SYS_pipe2, pfd_, O_CLOEXEC | O_NONBLOCK) == 0) {
         initPipe_ = true;
     }
 }
@@ -75,8 +75,8 @@ DfxAccessorsLocal::DfxAccessorsLocal(void)
 DfxAccessorsLocal::~DfxAccessorsLocal(void)
 {
     if (initPipe_) {
-        close(pfd_[PIPE_WRITE]);
-        close(pfd_[PIPE_READ]);
+        syscall(SYS_close, pfd_[PIPE_WRITE]);
+        syscall(SYS_close, pfd_[PIPE_READ]);
         initPipe_ = false;
     }
 }

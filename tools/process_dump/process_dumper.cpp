@@ -24,7 +24,6 @@
 #include <cstring>
 #include <dirent.h>
 #include <fcntl.h>
-#include <future>
 #include <iostream>
 #include <memory>
 #include <pthread.h>
@@ -244,16 +243,7 @@ void ProcessDumper::Dump()
 {
     startTime_ = GetTimeMillisec();
     std::shared_ptr<ProcessDumpRequest> request = std::make_shared<ProcessDumpRequest>();
-    std::future<int> future = std::async(std::launch::async, &ProcessDumper::DumpProcess, &GetInstance(), request);
-    std::future_status status = future.wait_for(std::chrono::seconds(DUMPPROCESS_MAX_SECOND));
-    if (status == std::future_status::timeout) {
-        DFXLOG_INFO("%s :: processDump time bigger than 6s!", __func__);
-        resDump_ = DUMP_ESUCCESS;
-    } else if (status == std::future_status::ready) {
-        resDump_ = future.get();
-    } else {
-        DFXLOG_ERROR("%s", "DumpProcess future status is deferred.");
-    }
+    resDump_ = DumpProcess(request);
     if (process_ == nullptr) {
         DFXLOG_ERROR("%s", "Dump process failed, please check permission and whether pid is valid.");
     } else {
@@ -288,7 +278,9 @@ void ProcessDumper::Dump()
     DfxRingBufferWrapper::GetInstance().StopThread();
     DFXLOG_INFO("Finish dump stacktrace for %s(%d:%d).", request->processName, request->pid, request->tid);
     CloseDebugLog();
-    ReportCrashInfo(jsonInfo);
+    if (resDump_ != DumpErrorCode::DUMP_ENOMAP) {
+        ReportCrashInfo(jsonInfo);
+    }
     if ((request->dumpMode == FUSION_MODE) && isCrash_) {
         InfoRemoteProcessResult(request, OPE_CONTINUE, MAIN_PROCESS);
     }
@@ -298,7 +290,7 @@ static int32_t ReadRequestAndCheck(std::shared_ptr<ProcessDumpRequest> request)
 {
     ssize_t readCount = OHOS_TEMP_FAILURE_RETRY(read(STDIN_FILENO, request.get(), sizeof(ProcessDumpRequest)));
     if (readCount != static_cast<long>(sizeof(ProcessDumpRequest))) {
-        DFXLOG_ERROR("Failed to read DumpRequest(%d).", errno);
+        DFXLOG_ERROR("Failed to read DumpRequest(%d), readCount(%zd).", errno, readCount);
         ReportCrashException(request->processName, request->pid, request->uid,
                              CrashExceptionCode::CRASH_DUMP_EREADREQ);
         return DumpErrorCode::DUMP_EREADREQUEST;
@@ -389,6 +381,13 @@ bool ProcessDumper::Unwind(std::shared_ptr<ProcessDumpRequest> request, int &dum
 
     if (!InitUnwinder(request, realPid, vmPid)) {
         DFXLOG_ERROR("%s", "Failed to create unwinder");
+        return false;
+    }
+    if (unwinder_ != nullptr && unwinder_->GetMaps() == nullptr) {
+        ReportCrashException(request->processName, request->pid, request->uid,
+                             CrashExceptionCode::CRASH_LOG_EMAPLOS);
+        DFXLOG_ERROR("%s", "Mapinfo of crashed process is not exist!");
+        dumpRes = DumpErrorCode::DUMP_ENOMAP;
         return false;
     }
 

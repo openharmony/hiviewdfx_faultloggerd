@@ -98,25 +98,28 @@ pid_t GetRealPid(void)
         return pid;
     }
 
-    char buf[LINE_BUF_SIZE];
+    char buf[LINE_BUF_SIZE] = {0};
     int i = 0;
     char b;
     ssize_t nRead = 0;
     while (1) {
         nRead = OHOS_TEMP_FAILURE_RETRY(read(fd, &b, sizeof(char)));
         if (nRead <= 0 || b == '\0') {
-            DFXLOG_ERROR("GetRealPid:: read failed! pid:(%ld), errno:(%d).", pid, errno);
+            DFXLOG_ERROR("GetRealPid:: read failed! pid:(%ld), errno:(%d), nRead(%zd), readchar(%02X).",
+                pid, errno, nRead, b);
             break;
         }
 
         if (b == '\n' || i == LINE_BUF_SIZE) {
-            if (strncmp(buf, PID_STR_NAME, strlen(PID_STR_NAME)) == 0) {
-                (void)sscanf(buf, "%*[^0-9]%d", &pid);
-                break;
+            if (strncmp(buf, PID_STR_NAME, strlen(PID_STR_NAME)) != 0) {
+                i = 0;
+                (void)memset(buf, '\0', sizeof(buf));
+                continue;
             }
-            i = 0;
-            (void)memset(buf, '\0', sizeof(buf));
-            continue;
+            if (sscanf(buf, "%*[^0-9]%d", &pid) < 0) {
+                DFXLOG_ERROR("GetRealPid:: sscanf failed! pid:(%ld), errno:(%d), buf(%s).", pid, errno, buf);
+            }
+            break;
         }
         buf[i] = b;
         i++;
