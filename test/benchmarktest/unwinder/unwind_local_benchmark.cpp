@@ -184,7 +184,6 @@ static size_t FpUnwinderLocalSafe(MAYBE_UNUSED void* data) {
         Unwinder::FillLocalFrames(frames);
         LOGU("%s", Unwinder::GetFramesStr(frames).c_str());
     }
-    FpUnwinder::GetPtr()->ClosePipe();
     return unwSize;
 }
 #endif
