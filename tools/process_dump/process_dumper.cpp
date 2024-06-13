@@ -339,13 +339,12 @@ void ProcessDumper::InitRegs(std::shared_ptr<ProcessDumpRequest> request, int &d
     }
 }
 
-bool ProcessDumper::IsTargetProcessAlive(std::shared_ptr<ProcessDumpRequest> request, int &dumpRes)
+bool ProcessDumper::IsTargetProcessAlive(std::shared_ptr<ProcessDumpRequest> request)
 {
     if ((request->dumpMode == SPLIT_MODE) && ((!isCrash_ && (syscall(SYS_getppid) != request->nsPid)) ||
         (isCrash_ && (syscall(SYS_getppid) != request->vmNsPid)))) {
         DfxRingBufferWrapper::GetInstance().AppendMsg(
             "Target process has been killed, the crash log may not be fully generated.");
-        dumpRes = DumpErrorCode::DUMP_EGETPPID;
         ReportCrashException(request->processName, request->pid, request->uid,
                              CrashExceptionCode::CRASH_DUMP_EKILLED);
         return false;
@@ -381,26 +380,8 @@ void ProcessDumper::UnwindWriteJit(const ProcessDumpRequest &request)
     (void)close(fd);
 }
 
-bool ProcessDumper::Unwind(std::shared_ptr<ProcessDumpRequest> request, int &dumpRes)
+bool ProcessDumper::Unwind(std::shared_ptr<ProcessDumpRequest> request, int &dumpRes, pid_t &vmPid)
 {
-    pid_t realPid = 0;
-    pid_t vmPid = 0;
-    if (request->dumpMode == FUSION_MODE) {
-        ReadPids(realPid, vmPid);
-    }
-
-    if (!InitUnwinder(request, realPid, vmPid)) {
-        DFXLOG_ERROR("%s", "Failed to create unwinder");
-        return false;
-    }
-    if (unwinder_ != nullptr && unwinder_->GetMaps() == nullptr) {
-        ReportCrashException(request->processName, request->pid, request->uid,
-                             CrashExceptionCode::CRASH_LOG_EMAPLOS);
-        DFXLOG_ERROR("%s", "Mapinfo of crashed process is not exist!");
-        dumpRes = DumpErrorCode::DUMP_ENOMAP;
-        return false;
-    }
-
     if (!DfxUnwindRemote::GetInstance().UnwindProcess(request, process_, unwinder_, vmPid)) {
         DFXLOG_ERROR("%s", "Failed to unwind process.");
         dumpRes = DumpErrorCode::DUMP_ESTOPUNWIND;
@@ -419,7 +400,6 @@ int ProcessDumper::DumpProcess(std::shared_ptr<ProcessDumpRequest> request)
         if ((dumpRes = ReadRequestAndCheck(request)) != DumpErrorCode::DUMP_ESUCCESS) {
             break;
         }
-
         isCrash_ = request->siginfo.si_signo != SIGDUMP;
         bool isLeakDump = request->siginfo.si_signo == SIGLEAK_STACK;
         // We need check pid is same with getppid().
@@ -442,28 +422,30 @@ int ProcessDumper::DumpProcess(std::shared_ptr<ProcessDumpRequest> request)
             break;
         }
         InitRegs(request, dumpRes);
-
-        if (isCrash_ && !isLeakDump) {
-            process_->openFiles = GetOpenFiles(request->pid, request->nsPid, request->fdTableAddr);
+        pid_t vmPid = 0;
+        bool ret = InitUnwinder(request, vmPid, dumpRes);
+        if (!ret && (isCrash_ && !isLeakDump)) {
+            opeResult = OPE_FAIL;
+            break;
         }
         if (InitPrintThread(request) < 0) {
             DFXLOG_ERROR("%s", "Failed to init print thread.");
             dumpRes = DumpErrorCode::DUMP_EGETFD;
         }
         if (isCrash_ && !isLeakDump) {
+            process_->openFiles = GetOpenFiles(request->pid, request->nsPid, request->fdTableAddr);
             reporter_ = std::make_shared<CppCrashReporter>(request->timeStamp, process_, request->dumpMode);
         }
-
-        if (!Unwind(request, dumpRes)) {
+        if (!Unwind(request, dumpRes, vmPid)) {
             opeResult = OPE_FAIL;
         }
-        if (request->dumpMode == FUSION_MODE) {
-            InfoRemoteProcessResult(request, opeResult, VIRTUAL_PROCESS);
-        }
-        if (!IsTargetProcessAlive(request, dumpRes)) {
-            break;
-        }
     } while (false);
+    if (request->dumpMode == FUSION_MODE) {
+        InfoRemoteProcessResult(request, opeResult, VIRTUAL_PROCESS);
+    }
+    if (dumpRes == DumpErrorCode::DUMP_ESUCCESS && !IsTargetProcessAlive(request)) {
+        dumpRes = DumpErrorCode::DUMP_EGETPPID;
+    }
     return dumpRes;
 }
 
@@ -528,10 +510,12 @@ bool ProcessDumper::InitKeyThread(std::shared_ptr<ProcessDumpRequest> request)
     return true;
 }
 
-bool ProcessDumper::InitUnwinder(std::shared_ptr<ProcessDumpRequest> request, pid_t vmPid, pid_t realPid)
+bool ProcessDumper::InitUnwinder(std::shared_ptr<ProcessDumpRequest> request, pid_t &vmPid, int &dumpRes)
 {
+    pid_t realPid = 0;
     if (request->dumpMode == FUSION_MODE) {
-        unwinder_ = std::make_shared<Unwinder>(vmPid, realPid, isCrash_);
+        ReadPids(realPid, vmPid);
+        unwinder_ = std::make_shared<Unwinder>(realPid, vmPid, isCrash_);
     } else {
         if (isCrash_) {
             unwinder_ = std::make_shared<Unwinder>(process_->vmThread_->threadInfo_.pid);
@@ -539,7 +523,18 @@ bool ProcessDumper::InitUnwinder(std::shared_ptr<ProcessDumpRequest> request, pi
             unwinder_ = std::make_shared<Unwinder>(process_->processInfo_.pid, false);
         }
     }
-    return unwinder_ != nullptr;
+    if (unwinder_ == nullptr) {
+        DFXLOG_ERROR("%s", "unwinder_ is nullptr!");
+        return false;
+    }
+    if (unwinder_->GetMaps() == nullptr) {
+        ReportCrashException(request->processName, request->pid, request->uid,
+            CrashExceptionCode::CRASH_LOG_EMAPLOS);
+        DFXLOG_ERROR("%s", "Mapinfo of crashed process is not exist!");
+        dumpRes = DumpErrorCode::DUMP_ENOMAP;
+        return false;
+    }
+    return true;
 }
 
 int ProcessDumper::InitProcessInfo(std::shared_ptr<ProcessDumpRequest> request)

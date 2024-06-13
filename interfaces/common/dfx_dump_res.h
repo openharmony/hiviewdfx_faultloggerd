@@ -87,6 +87,7 @@ private:
             case DUMP_EINVAL:       cp = "unsupported operation or bad value"; break;
             case DUMP_EBADVERSION:  cp = "unwind info has unsupported version"; break;
             case DUMP_ENOINFO:      cp = "no unwind info found"; break;
+            case DUMP_ENOMAP:       cp = "mapinfo is not exist"; break;
             default:                cp = "invalid error code"; break;
         }
         return cp;
