@@ -49,14 +49,19 @@ public:
 
 class DfxAccessorsLocal : public DfxAccessors {
 public:
-    DfxAccessorsLocal() = default;
-    virtual ~DfxAccessorsLocal() = default;
-    static bool IsValidFrame(uintptr_t addr, uintptr_t stackBottom, uintptr_t stackTop);
+    DfxAccessorsLocal();
+    ~DfxAccessorsLocal();
+    bool IsValidFrame(uintptr_t addr, uintptr_t stackBottom, uintptr_t stackTop);
 
     int AccessMem(uintptr_t addr, uintptr_t *val, void *arg) override;
     int AccessReg(int regIdx, uintptr_t *val, void *arg) override;
     int FindUnwindTable(uintptr_t pc, UnwindTableInfo& uti, void *arg) override;
     int GetMapByPc(uintptr_t pc, std::shared_ptr<DfxMap>& map, void *arg) override;
+private:
+    DfxAccessorsLocal(const DfxAccessorsLocal&) = delete;
+    DfxAccessorsLocal& operator= (const DfxAccessorsLocal&) = delete;
+    int32_t pfd_[PIPE_NUM_SZ] = {-1, -1};
+    bool initPipe_ = false;
 };
 
 class DfxAccessorsRemote : public DfxAccessors {
