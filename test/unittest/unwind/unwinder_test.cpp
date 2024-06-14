@@ -937,6 +937,28 @@ HWTEST_F(UnwinderTest, AccessMemTest001, TestSize.Level2)
     EXPECT_FALSE(unwinder->AccessMem(&memory, addr, nullptr));
     GTEST_LOG_(INFO) << "AccessMemTest001: end.";
 }
+
+/**
+ * @tc.name: UnwinderTest001
+ * @tc.desc: test Unwinder::xxxx interface
+ * @tc.type: FUNC
+ */
+HWTEST_F(UnwinderTest, UnwinderTest001, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "UnwinderTest001: start.";
+    auto unwinder = std::make_shared<Unwinder>(getpid());
+    unwinder->EnableUnwindCache(false);
+    unwinder->EnableFpCheckMapExec(false);
+    auto regs = unwinder->GetRegs();
+    ASSERT_EQ(regs, nullptr);
+    DfxFrame frame;
+    unwinder->FillFrame(frame);
+    unwinder->AddFrame(frame);
+    unwinder->ArkWriteJitCodeToFile(1);
+    auto jitCache = unwinder->GetJitCache();
+    ASSERT_EQ(jitCache.size(), 0);
+    GTEST_LOG_(INFO) << "UnwinderTest001: end.";
+}
 } // namespace HiviewDFX
 } // namepsace OHOS
 
