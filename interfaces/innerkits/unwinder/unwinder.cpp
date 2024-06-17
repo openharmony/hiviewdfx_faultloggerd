@@ -1149,6 +1149,9 @@ void Unwinder::Impl::FillFrame(DfxFrame& frame)
         return;
     }
     frame.relPc = frame.map->GetRelPc(frame.pc);
+    frame.mapName = frame.map->GetElfName();
+    frame.mapOffset = frame.map->offset;
+    LOGU("mapName: %s, mapOffset: %" PRIx64 "", frame.mapName.c_str(), frame.mapOffset);
     auto elf = frame.map->GetElf();
     if (elf == nullptr) {
         if (pid_ == UNWIND_TYPE_LOCAL || pid_ == UNWIND_TYPE_CUSTOMIZE_LOCAL) {
@@ -1156,9 +1159,6 @@ void Unwinder::Impl::FillFrame(DfxFrame& frame)
         }
         return;
     }
-    frame.mapName = frame.map->GetElfName();
-    frame.mapOffset = frame.map->offset;
-    LOGU("mapName: %s, mapOffset: %" PRIx64 "", frame.mapName.c_str(), frame.mapOffset);
     if (!DfxSymbols::GetFuncNameAndOffsetByPc(frame.relPc, elf, frame.funcName, frame.funcOffset)) {
         LOGU("Failed to get symbol, relPc: %" PRIx64 ", mapName: %s", frame.relPc, frame.mapName.c_str());
     }
