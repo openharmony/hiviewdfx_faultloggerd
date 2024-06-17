@@ -43,6 +43,7 @@ public:
     bool Parse(const std::string buf, size_t size);
     bool IsMapExec();
     bool IsArkExecutable();
+    bool IsVdsoMap();
     const std::shared_ptr<DfxHap> GetHap();
     const std::shared_ptr<DfxElf> GetElf(pid_t pid = 0);
     std::string GetElfName();

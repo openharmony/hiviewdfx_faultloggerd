@@ -32,12 +32,14 @@ const string MAPS_FILE = "/data/test/resource/testdata/testmaps_32";
 const string VALID_MAP_NAME = "/system/lib/init/libinit_context.z.so";
 const string VALID_MAP_ITEM = "f6d83000-f6d84000 r--p 00001000 b3:07 1892 /system/lib/init/libinit_context.z.so";
 const string INVALID_MAP_ITEM = "f6d83000-f6d84000 r--p 00001000 b3:07 1892 /system/lib/init/libinit_context111.z.so";
+const string VDSO_MAP_NAME = "f7c21000-f7c22000 r-xp 00000000 00:00 0                                  [vdso]";
 #else
 const string MAPS_FILE = "/data/test/resource/testdata/testmaps_64";
 const string VALID_MAP_NAME = "/system/lib64/init/libinit_context.z.so";
 const string VALID_MAP_ITEM = "7f0ab40000-7f0ab41000 r--p 00000000 b3:07 1882 /system/lib64/init/libinit_context.z.so";
 const string INVALID_MAP_ITEM = "7f0ab40000-7f0ab41000 r--p 00000000 b3:07 1882 \
     /system/lib64/init/libinit_context111.z.so";
+const string VDSO_MAP_NAME = "7f8b9df000-7f8b9e0000 r-xp 00000000 00:00 0                              [vdso]";
 #endif
 }
 
@@ -217,6 +219,19 @@ HWTEST_F(MapsTest, IsArkExecutedMapTest, TestSize.Level2)
     ASSERT_FALSE(maps_->IsArkExecutedMap(addr));
     maps_->Sort(false);
     GTEST_LOG_(INFO) << "IsArkExecutedMapTest: end.";
+}
+
+/**
+ * @tc.name: IsVdsoMapTest
+ * @tc.desc: test IsVdsoMap
+ * @tc.type: FUNC
+ */
+HWTEST_F(MapsTest, IsVdsoMapTest, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "IsVdsoMapTest: start.";
+    shared_ptr<DfxMap> map = DfxMap::Create(VDSO_MAP_NAME, sizeof(VDSO_MAP_NAME));
+    ASSERT_TRUE(map->IsVdsoMap());
+    GTEST_LOG_(INFO) << "IsVdsoMapTest: end.";
 }
 }
 } // namespace HiviewDFX

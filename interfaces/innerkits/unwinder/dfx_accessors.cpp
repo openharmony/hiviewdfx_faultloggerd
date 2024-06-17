@@ -137,7 +137,7 @@ int DfxAccessorsLocal::FindUnwindTable(uintptr_t pc, UnwindTableInfo& uti, void 
     }
 
     int ret = UNW_ERROR_INVALID_ELF;
-    if (ctx->map != nullptr && ctx->map->name == "shmm" && ctx->map->IsMapExec()) {
+    if (ctx->map != nullptr && ctx->map->IsVdsoMap()) {
         auto elf = ctx->map->GetElf(getpid());
         if (elf == nullptr) {
             LOGU("%s", "FindUnwindTable elf is null");

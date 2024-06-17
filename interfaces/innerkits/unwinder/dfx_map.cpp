@@ -99,6 +99,14 @@ bool DfxMap::IsArkExecutable()
     return true;
 }
 
+bool DfxMap::IsVdsoMap()
+{
+    if ((name == "shmm" || name == "[vdso]") && IsMapExec()) {
+        return true;
+    }
+    return false;
+}
+
 uint64_t DfxMap::GetRelPc(uint64_t pc)
 {
     if (GetElf() != nullptr) {
@@ -158,7 +166,7 @@ const std::shared_ptr<DfxElf> DfxMap::GetElf(pid_t pid)
         LOGU("GetElf name: %s", name.c_str());
         if (EndsWith(name, ".hap")) {
             elf = DfxElf::CreateFromHap(name, prevMap, offset);
-        } else if (name == "shmm" && IsMapExec()) {
+        } else if (IsVdsoMap()) {
 #if is_ohos && !is_mingw
             size_t size = end - begin;
             shmmData = std::make_shared<std::vector<uint8_t>>(size);
