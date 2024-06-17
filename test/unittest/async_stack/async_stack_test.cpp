@@ -80,5 +80,24 @@ HWTEST_F(AsyncStackTest, AsyncStackTest001, TestSize.Level2)
 
     GTEST_LOG_(INFO) << "AsyncStackTest001: end.";
 }
+
+/**
+ * @tc.name: AsyncStackTest002
+ * @tc.desc: test CollectAsyncStack()
+ * @tc.type: FUNC
+ */
+HWTEST_F(AsyncStackTest, AsyncStackTest002, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "AsyncStackTest002: start.";
+    auto ret = CollectAsyncStack();
+#if defined(__aarch64__)
+    ASSERT_NQ(0, ret);
+#else
+    ASSERT_EQ(0, ret);
+#endif
+    GTEST_LOG_(INFO) << "AsyncStackTest002: end.";
+}
+
+
 } // namespace HiviewDFX
 } // namepsace OHOS

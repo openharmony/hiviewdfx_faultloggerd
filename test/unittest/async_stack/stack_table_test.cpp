@@ -55,7 +55,8 @@ HWTEST_F(StackTableTest, StackTableTest001, TestSize.Level2)
     size_t functionsSize = stackTable->GetWriteSize();
     uint32_t oldSize = stackTable->GetTabelSize();
     uint32_t usedNodes = stackTable->GetUsedIndexes().size();
-    size_t resultSize = sizeof(stackTable->GetPid()) + sizeof(stackTable->GetTabelSize());
+    auto pid = stackTable->GetPid();
+    size_t resultSize = sizeof(pid) + sizeof(stackTable->GetTabelSize());
     size_t usedNodesSize = sizeof(usedNodes) + usedNodes * sizeof(uint32_t) + usedNodes * sizeof(uint64_t);
     ASSERT_EQ(usedNodesSize + resultSize, functionsSize);
     ASSERT_EQ(stackTable->Resize(), true);
