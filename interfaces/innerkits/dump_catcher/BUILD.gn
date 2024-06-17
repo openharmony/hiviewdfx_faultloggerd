@@ -42,8 +42,11 @@ if (defined(ohos_lite)) {
       "$faultloggerd_interfaces_path/innerkits/backtrace:libbacktrace_local",
       "$faultloggerd_interfaces_path/innerkits/faultloggerd_client:libfaultloggerd",
       "$faultloggerd_interfaces_path/innerkits/procinfo:libdfx_procinfo",
-      "//base/hiviewdfx/hilog_lite/frameworks/featured:hilog_shared",
-      "//third_party/bounds_checking_function:libsec_shared",
+    ]
+
+    external_deps = [
+      "bounds_checking_function:libsec_shared",
+      "hilog_lite:hilog_shared",
     ]
   }
 } else {

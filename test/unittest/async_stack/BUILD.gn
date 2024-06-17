@@ -32,10 +32,10 @@ ohos_unittest("async_stack_test") {
     "$faultloggerd_common_path/dfxutil:dfx_util",
     "$faultloggerd_interfaces_path/innerkits/async_stack:libasync_stack",
     "$faultloggerd_path/test/utils:dfx_test_util",
-    "//third_party/googletest:gtest_main",
   ]
   external_deps = [
     "c_utils:utils",
+    "googletest:gtest_main",
     "hilog:libhilog",
   ]
 }

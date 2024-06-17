@@ -39,16 +39,16 @@ ohos_unittest("test_faultloggerd_client") {
     "$faultloggerd_path/test/utils:dfx_test_util",
   ]
 
-  if (build_selinux) {
-    deps += [ "//third_party/selinux:libselinux" ]
-    cflags_cc = [ "-DHAS_LIB_SELINUX" ]
-  }
-
   external_deps = [
     "c_utils:utils",
     "hilog:libhilog",
     "init:libbegetutil",
   ]
+
+  if (build_selinux) {
+    external_deps += [ "selinux:libselinux" ]
+    cflags_cc = [ "-DHAS_LIB_SELINUX" ]
+  }
 }
 
 group("unittest") {

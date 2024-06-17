@@ -43,8 +43,9 @@ if (defined(ohos_lite)) {
         "$faultloggerd_path/interfaces/innerkits/dump_catcher:libdfx_dumpcatcher",
         "$faultloggerd_path/interfaces/innerkits/procinfo:libdfx_procinfo",
         "$faultloggerd_path/test/utils:dfx_test_util",
-        "//base/hiviewdfx/hilog_lite/frameworks/featured:hilog_shared",
       ]
+
+      external_deps = [ "hilog_lite:hilog_shared" ]
     }
   }
 
@@ -91,11 +92,13 @@ if (defined(ohos_lite)) {
       "$faultloggerd_path/test/utils:dfx_test_util",
       "$faultloggerd_path/tools/crasher_c:crasher_c",
       "$faultloggerd_path/tools/crasher_cpp:crasher_cpp",
-      "//third_party/googletest:gtest_main",
     ]
     resource_config_file = "$faultloggerd_path/test/resource/ohos_test.xml"
 
-    external_deps = [ "c_utils:utils" ]
+    external_deps = [
+      "c_utils:utils",
+      "googletest:gtest_main",
+    ]
   }
 
   group("systemtest") {

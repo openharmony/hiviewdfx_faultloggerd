@@ -30,7 +30,6 @@ if (defined(ohos_lite)) {
         "$faultloggerd_interfaces_path/innerkits/unwinder/include",
         "$faultloggerd_path/test/utils",
         "$faultloggerd_path/tools/process_dump",
-        "//third_party/googletest/googlemock/include",
         "$hilog_lite_include_path",
       ]
 
@@ -46,8 +45,9 @@ if (defined(ohos_lite)) {
         "$faultloggerd_interfaces_path/innerkits/unwinder:libunwinder",
         "$faultloggerd_path/test/utils:dfx_test_util",
         "$faultloggerd_path/tools/process_dump:process_info_src",
-        "//base/hiviewdfx/hilog_lite/frameworks/featured:hilog_shared",
       ]
+
+      external_deps = [ "hilog_lite:hilog_shared" ]
     }
   }
 
@@ -83,7 +83,6 @@ if (defined(ohos_lite)) {
     configs = [
       ":module_private_config",
       "$faultloggerd_path/common/build:coverage_flags",
-      "//third_party/jsoncpp:jsoncpp_public_config",
     ]
 
     defines = [ "UNITTEST" ]
@@ -92,13 +91,13 @@ if (defined(ohos_lite)) {
       "$faultloggerd_path/interfaces/innerkits/unwinder:libunwinder_static",
       "$faultloggerd_path/test/utils:dfx_test_util",
       "$faultloggerd_path/tools/process_dump:process_info_src",
-      "//third_party/googletest:gmock_main",
-      "//third_party/googletest:gtest_main",
-      "//third_party/jsoncpp:jsoncpp",
     ]
     external_deps = [
       "c_utils:utils",
+      "googletest:gmock_main",
+      "googletest:gtest_main",
       "hilog:libhilog",
+      "jsoncpp:jsoncpp",
     ]
     if (support_jsapi) {
       deps += [ "$faultloggerd_path/test/resource:FaultloggerdJsTest" ]
@@ -113,7 +112,6 @@ if (defined(ohos_lite)) {
     configs = [
       ":module_private_config",
       "$faultloggerd_path/common/build:coverage_flags",
-      "//third_party/jsoncpp:jsoncpp_public_config",
     ]
 
     defines = [ "UNITTEST" ]
@@ -121,14 +119,14 @@ if (defined(ohos_lite)) {
     deps = [
       "$faultloggerd_path/interfaces/innerkits/unwinder:libunwinder_static",
       "$faultloggerd_path/tools/process_dump:process_info_src",
-      "//third_party/googletest:gmock_main",
-      "//third_party/googletest:gtest_main",
-      "//third_party/jsoncpp:jsoncpp",
     ]
 
     external_deps = [
       "c_utils:utils",
+      "googletest:gmock_main",
+      "googletest:gtest_main",
       "hilog:libhilog",
+      "jsoncpp:jsoncpp",
     ]
   }
 
