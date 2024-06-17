@@ -17,6 +17,7 @@
 #include <fstream>
 #include <map>
 #include <csignal>
+#include <dlfcn.h>
 #include <string>
 #include <unistd.h>
 #include <vector>
@@ -32,6 +33,8 @@
 using namespace OHOS::HiviewDFX;
 using namespace testing::ext;
 using namespace std;
+
+using RecordAppExitReason = int (*)(int reason, const char *exitMsg);
 
 namespace OHOS {
 namespace HiviewDFX {
@@ -384,5 +387,65 @@ HWTEST_F(DfxProcessDumpTest, DfxProcessDumpTest013, TestSize.Level2)
     int minRegIdx = -1; // -1 : no not check register value
     ASSERT_TRUE(CheckCppCrashExtraKeyWords(filename, keywords, length, minRegIdx));
     GTEST_LOG_(INFO) << "DfxProcessDumpTest013: end.";
+}
+
+/**
+ * @tc.name: DfxProcessDumpTest014
+ * @tc.desc: Testing dlopen and dlsym interfaces
+ * @tc.type: FUNC
+ */
+HWTEST_F(DfxProcessDumpTest, DfxProcessDumpTest014, TestSize.Level2)
+{
+    struct FaultLogInfoInner {
+        uint64_t time {0};
+        uint32_t id {0};
+        int32_t pid {-1};
+        int32_t pipeFd {-1};
+        int32_t faultLogType {0};
+        std::string module;
+        std::string reason;
+        std::string summary;
+        std::string logPath;
+        std::string registers;
+        std::map<std::string, std::string> sectionMaps;
+    };
+    using AddFaultLog = void (*)(FaultLogInfoInner* info);
+    GTEST_LOG_(INFO) << "DfxProcessDumpTest014: start.";
+    void* handle = dlopen("libfaultlogger.z.so", RTLD_LAZY | RTLD_NODELETE);
+    ASSERT_TRUE(handle) << "Failed to dlopen libfaultlogger";
+    AddFaultLog addFaultLog = (AddFaultLog)dlsym(handle, "AddFaultLog");
+    ASSERT_TRUE(addFaultLog) << "Failed to dlsym addFaultLog";
+    FaultLogInfoInner info;
+    info.time = time(NULL);
+    info.id = 0;
+    info.pid = 1;
+    info.pipeFd = -1;
+    info.faultLogType = 2; // 2 : CPP_CRASH_TYPE
+    info.module = "";
+    info.reason = "";
+    info.summary = "";
+    info.registers = "";
+    addFaultLog(&info);
+    dlclose(handle);
+    GTEST_LOG_(INFO) << "DfxProcessDumpTest01: end.";
+}
+
+/**
+ * @tc.name: DfxProcessDumpTest015
+ * @tc.desc: Testing dlopen and dlsym RecordAppExitReason
+ * @tc.type: FUNC
+ */
+HWTEST_F(DfxProcessDumpTest, DfxProcessDumpTest015, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "DfxProcessDumpTest015: start.";
+    void* handle = dlopen("libability_manager_c.z.so", RTLD_LAZY | RTLD_NODELETE);
+    ASSERT_TRUE(handle) << "Failed to dlopen libability_manager_c";
+    RecordAppExitReason recordAppExitReason = (RecordAppExitReason)dlsym(handle, "RecordAppExitReason");
+    ASSERT_TRUE(recordAppExitReason) << "Failed to dlsym RecordAppExitReason";
+    string reason_ = "reason";
+    const int cppCrashExitReason = 2;
+    recordAppExitReason(cppCrashExitReason, reason_.c_str());
+    dlclose(handle);
+    GTEST_LOG_(INFO) << "DfxProcessDumpTest015: end.";
 }
 }
