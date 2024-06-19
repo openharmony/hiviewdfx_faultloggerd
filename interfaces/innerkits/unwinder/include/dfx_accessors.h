@@ -19,6 +19,7 @@
 #include <atomic>
 #include <cstdint>
 #include <memory>
+#include <mutex>
 #include <string>
 #include "dfx_define.h"
 #include "unwind_context.h"
@@ -49,7 +50,7 @@ public:
 
 class DfxAccessorsLocal : public DfxAccessors {
 public:
-    DfxAccessorsLocal();
+    DfxAccessorsLocal() = default;
     ~DfxAccessorsLocal();
     bool IsValidFrame(uintptr_t addr, uintptr_t stackBottom, uintptr_t stackTop);
 
@@ -60,6 +61,9 @@ public:
 private:
     DfxAccessorsLocal(const DfxAccessorsLocal&) = delete;
     DfxAccessorsLocal& operator= (const DfxAccessorsLocal&) = delete;
+    bool CreatePipe();
+
+    std::mutex mutex_;
     int32_t pfd_[PIPE_NUM_SZ] = {-1, -1};
     bool initPipe_ = false;
 };
