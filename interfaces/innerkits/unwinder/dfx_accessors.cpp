@@ -54,22 +54,24 @@ bool DfxAccessors::GetMapByPcAndCtx(uintptr_t pc, std::shared_ptr<DfxMap>& map, 
         return true;
     }
 
-    if (ctx->maps == nullptr) {
-        return false;
-    }
-
-    if (!ctx->maps->FindMapByAddr(pc, map) || (map == nullptr)) {
+    if (ctx->maps == nullptr || !ctx->maps->FindMapByAddr(pc, map) || (map == nullptr)) {
         return false;
     }
     ctx->map = map;
     return true;
 }
 
-DfxAccessorsLocal::DfxAccessorsLocal(void)
+bool DfxAccessorsLocal::CreatePipe()
 {
-    if (syscall(SYS_pipe2, pfd_, O_CLOEXEC | O_NONBLOCK) == 0) {
+    if (initPipe_) {
+        return true;
+    }
+
+    std::lock_guard<std::mutex> lock(mutex_);
+    if (!initPipe_ && syscall(SYS_pipe2, pfd_, O_CLOEXEC | O_NONBLOCK) == 0) {
         initPipe_ = true;
     }
+    return initPipe_;
 }
 
 DfxAccessorsLocal::~DfxAccessorsLocal(void)
@@ -90,10 +92,9 @@ bool DfxAccessorsLocal::IsValidFrame(uintptr_t addr, uintptr_t stackBottom, uint
         return true;
     }
 
-    if (initPipe_) {
+    if (CreatePipe()) {
         return OHOS_TEMP_FAILURE_RETRY(syscall(SYS_write, pfd_[PIPE_WRITE], addr, sizeof(uintptr_t))) != -1;
     }
-
     return false;
 }
 
