@@ -74,6 +74,8 @@ int main(int argc, char *argv[])
     if (isSignalHdlr) {
         OHOS::HiviewDFX::ProcessDumper::GetInstance().Dump();
     }
+#ifndef CLANG_COVERAGE
     _exit(0);
+#endif
     return 0;
 }
