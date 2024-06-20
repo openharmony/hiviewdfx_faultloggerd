@@ -55,6 +55,7 @@ bool DfxAccessors::GetMapByPcAndCtx(uintptr_t pc, std::shared_ptr<DfxMap>& map, 
     }
 
     if (ctx->maps == nullptr || !ctx->maps->FindMapByAddr(pc, map) || (map == nullptr)) {
+        ctx->map = nullptr;
         return false;
     }
     ctx->map = map;
@@ -174,6 +175,15 @@ int DfxAccessorsRemote::AccessMem(uintptr_t addr, uintptr_t *val, void *arg)
     if ((ctx == nullptr) || (ctx->pid <= 0)) {
         return UNW_ERROR_INVALID_CONTEXT;
     }
+
+    if (ctx->map != nullptr && ctx->map->elf != nullptr) {
+        uintptr_t pos = ctx->map->GetRelPc(addr);
+        if (ctx->map->elf->Read(pos, val, sizeof(uintptr_t))) {
+            LOGU("Read elf mmap pos: %p", (void *)pos);
+            return UNW_ERROR_NONE;
+        }
+    }
+
     int i, end;
     if (sizeof(long) == FOUR_BYTES && sizeof(uintptr_t) == EIGHT_BYTES) {
         end = 2; // 2 : read two times
