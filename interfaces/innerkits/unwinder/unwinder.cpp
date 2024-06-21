@@ -192,6 +192,10 @@ private:
         uintptr_t fp = 0;
         bool isJsFrame {false};
     };
+    struct StepCache {
+        std::shared_ptr<DfxMap> map = nullptr;
+        std::shared_ptr<RegLocState> rs = nullptr;
+    };
     void Init();
     void Clear();
     void Destroy();
@@ -238,7 +242,7 @@ private:
     std::vector<uintptr_t> jitCache_ = {};
     std::shared_ptr<DfxAccessors> acc_ = nullptr;
     std::shared_ptr<DfxMemory> memory_ = nullptr;
-    std::unordered_map<uintptr_t, std::shared_ptr<RegLocState>> rsCache_ {};
+    std::unordered_map<uintptr_t, StepCache> stepCache_ {};
     std::shared_ptr<DfxRegs> regs_ = nullptr;
     std::shared_ptr<DfxMaps> maps_ = nullptr;
     std::vector<uintptr_t> pcs_ {};
@@ -449,7 +453,7 @@ void Unwinder::Impl::Clear()
 void Unwinder::Impl::Destroy()
 {
     Clear();
-    rsCache_.clear();
+    stepCache_.clear();
     if (pid_ == UNWIND_TYPE_LOCAL) {
         LocalThreadContext::GetInstance().CleanUp();
     }
@@ -856,23 +860,39 @@ bool Unwinder::Impl::StepInner(const bool isSigFrame, StepFrame& frame, void *ct
     LOGU("+pc: %p, sp: %p, fp: %p", reinterpret_cast<void *>(frame.pc),
         reinterpret_cast<void *>(frame.sp), reinterpret_cast<void *>(frame.fp));
 
-    std::shared_ptr<DfxMap> map = nullptr;
-    MAYBE_UNUSED int mapRet = acc_->GetMapByPc(frame.pc, map, ctx);
-    if (mapRet != UNW_ERROR_NONE) {
-        if (frames_.size() > 2) { //2, least 2 frame
-            LOGU("Failed to get map, frames size: %zu", frames_.size());
-            lastErrorData_.SetAddrAndCode(frame.pc, mapRet);
-            return false;
-        }
-    }
-    AddFrame(frame, map);
-    if (isSigFrame) {
-        return true;
-    }
-
     bool ret = false;
     std::shared_ptr<RegLocState> rs = nullptr;
+    std::shared_ptr<DfxMap> map = nullptr;
     do {
+        if (enableCache_) {
+            // 1. find cache rs
+            auto iter = stepCache_.find(frame.pc);
+            if (iter != stepCache_.end()) {
+                if (pid_ != UNWIND_TYPE_CUSTOMIZE) {
+                    LOGU("Find rs cache, pc: %p", reinterpret_cast<void *>(frame.pc));
+                }
+                rs = iter->second.rs;
+                map = iter->second.map;
+                AddFrame(frame, map);
+                ret = true;
+                break;
+            }
+        }
+
+        // 2. find map
+        MAYBE_UNUSED int mapRet = acc_->GetMapByPc(frame.pc, map, ctx);
+        if (mapRet != UNW_ERROR_NONE) {
+            if (frames_.size() > 2) { //2, least 2 frame
+                LOGU("Failed to get map, frames size: %zu", frames_.size());
+                lastErrorData_.SetAddrAndCode(frame.pc, mapRet);
+                return false;
+            }
+        }
+        AddFrame(frame, map);
+        if (isSigFrame) {
+            return true;
+        }
+
 #if defined(ENABLE_MIXSTACK)
         if (stopWhenArkFrame_ && (map != nullptr && map->IsArkExecutable())) {
             LOGU("Stop by ark frame");
@@ -900,20 +920,8 @@ bool Unwinder::Impl::StepInner(const bool isSigFrame, StepFrame& frame, void *ct
             }
             break;
         }
-        if (enableCache_) {
-            // 1. find cache rs
-            auto iter = rsCache_.find(frame.pc);
-            if (iter != rsCache_.end()) {
-                if (pid_ != UNWIND_TYPE_CUSTOMIZE) {
-                    LOGU("Find rs cache, pc: %p", reinterpret_cast<void *>(frame.pc));
-                }
-                rs = iter->second;
-                ret = true;
-                break;
-            }
-        }
 
-        // 2. find unwind table and entry
+        // 3. find unwind table and entry
         UnwindTableInfo uti;
         MAYBE_UNUSED int utiRet = acc_->FindUnwindTable(frame.pc, uti, ctx);
         if (utiRet != UNW_ERROR_NONE) {
@@ -922,7 +930,7 @@ bool Unwinder::Impl::StepInner(const bool isSigFrame, StepFrame& frame, void *ct
             break;
         }
 
-        // 3. parse instructions and get cache rs
+        // 4. parse instructions and get cache rs
         struct UnwindEntryInfo uei;
         rs = std::make_shared<RegLocState>();
 #if defined(__arm__)
@@ -957,8 +965,11 @@ bool Unwinder::Impl::StepInner(const bool isSigFrame, StepFrame& frame, void *ct
         }
 
         if (ret && enableCache_) {
-            // 4. update rs cache
-            rsCache_.emplace(frame.pc, rs);
+            // 5. update rs cache
+            StepCache cache;
+            cache.map = map;
+            cache.rs = rs;
+            stepCache_.emplace(frame.pc, cache);
             break;
         }
     } while (false);

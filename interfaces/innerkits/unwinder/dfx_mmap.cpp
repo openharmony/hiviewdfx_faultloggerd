@@ -77,7 +77,7 @@ size_t DfxMmap::Read(uintptr_t& addr, void* val, size_t size, bool incre)
 
     size_t ptr = static_cast<size_t>(addr);
     if (ptr >= size_) {
-        LOGE("pos: %zu, size: %zu", ptr, size_);
+        LOGU("pos: %zu, size: %zu", ptr, size_);
         return 0;
     }
 
