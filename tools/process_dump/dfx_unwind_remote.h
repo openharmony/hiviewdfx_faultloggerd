@@ -38,8 +38,7 @@ public:
 
     bool UnwindProcess(std::shared_ptr<ProcessDumpRequest> request, std::shared_ptr<DfxProcess> process,
                        std::shared_ptr<Unwinder> unwinder, pid_t vmPid = 0);
-    bool InitProcessAllThreadRegs(std::shared_ptr<ProcessDumpRequest> request, std::shared_ptr<DfxProcess> process,
-        bool isCrash);
+    bool InitProcessAllThreadRegs(std::shared_ptr<ProcessDumpRequest> request, std::shared_ptr<DfxProcess> process);
 
 private:
     DfxUnwindRemote() = default;
@@ -50,7 +49,7 @@ private:
 
     DISALLOW_COPY_AND_MOVE(DfxUnwindRemote);
     bool InitTargetKeyThreadRegs(std::shared_ptr<ProcessDumpRequest> request, std::shared_ptr<DfxProcess> process);
-    void InitOtherThreadRegs(std::shared_ptr<DfxProcess> process, bool isCrash);
+    void InitOtherThreadRegs(std::shared_ptr<DfxProcess> process);
     bool isVmProcAttach = false;
 };
 }   // namespace HiviewDFX

@@ -848,12 +848,6 @@ static bool DFX_SigchainHandler(int sig, siginfo_t *si, void *context)
                         sig, si->si_code);
             return true;
         }
-
-        if ((si->si_value.sival_int == 0) && (pid != tid)) {
-            DFXLOG_INFO("DFX_SigchainHandler :: mismatch request(%d), pid(%d), tid(%d).",
-                si->si_value.sival_int, pid, tid);
-            return true;
-        }
     }
 
     // crash signal should never be skipped

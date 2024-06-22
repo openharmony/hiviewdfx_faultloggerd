@@ -111,7 +111,7 @@ pid_t DfxProcess::ChangeTid(pid_t tid, bool ns)
     return tid;
 }
 
-std::vector<std::shared_ptr<DfxThread>> DfxProcess::GetOtherThreads() const
+std::vector<std::shared_ptr<DfxThread>>& DfxProcess::GetOtherThreads()
 {
     return otherThreads_;
 }
