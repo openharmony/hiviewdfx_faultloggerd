@@ -38,6 +38,18 @@ namespace {
 #undef LOG_TAG
 #define LOG_TAG "DfxBacktrace"
 #define LOG_DOMAIN 0xD002D11
+
+std::string GetThreadHead(int32_t tid)
+{
+    std::stringstream threadHead;
+    std::string threadName;
+    if (tid == BACKTRACE_CURRENT_THREAD) {
+        tid = gettid();
+    }
+    ReadThreadName(tid, threadName);
+    threadHead << "Tid:" << tid << ", Name:" << threadName << "\n";
+    return threadHead.str();
+}
 }
 
 bool GetBacktraceFramesByTid(std::vector<DfxFrame>& frames, int32_t tid, size_t skipFrameNum, bool fast,
@@ -65,7 +77,8 @@ bool GetBacktraceStringByTid(std::string& out, int32_t tid, size_t skipFrameNum,
     bool ret = GetBacktraceFramesByTid(frames, tid, skipFrameNum + 1, fast, maxFrameNums);
     out.clear();
     if (ret) {
-        out = Unwinder::GetFramesStr(frames);
+        std::string threadHead = GetThreadHead(tid);
+        out = threadHead + Unwinder::GetFramesStr(frames);
     } else if (DfxGetKernelStack(tid, out) == 0) {
         ret = true;
         DFXLOG_INFO("Failed to get user stack, try kernel:%s", out.c_str());
