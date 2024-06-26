@@ -95,17 +95,21 @@ bool DfxDumpCatcher::DoDumpLocalPid(int pid, std::string& msg, size_t maxFrameNu
         DFXLOG_ERROR("%s :: DoDumpLocalPid :: return false as param error.", DFXDUMPCATCHER_TAG.c_str());
         return ret;
     }
-    size_t skipFramNum = 3; // 3: skip 3 frame
+    size_t skipFramNum = 5; // 5: skip 5 frame
 
+    msg = GetStacktraceHeader();
     std::function<bool(int)> func = [&](int tid) {
         if (tid <= 0) {
             return false;
         }
-
+        std::string threadMsg;
         if (tid == getproctid()) {
-            return DoDumpCurrTid(skipFramNum, msg, maxFrameNums);
+            ret = DoDumpCurrTid(skipFramNum, threadMsg, maxFrameNums);
+        } else {
+            ret = DoDumpLocalTid(tid, threadMsg, maxFrameNums);
         }
-        return DoDumpLocalTid(tid, msg, maxFrameNums);
+        msg += threadMsg;
+        return ret;
     };
     std::vector<int> tids;
 #if defined(is_ohos) && is_ohos

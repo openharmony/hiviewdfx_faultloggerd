@@ -1289,6 +1289,78 @@ HWTEST_F(DumpCatcherSystemTest,  DumpCatcherSystemTest048, TestSize.Level2)
     GTEST_LOG_(INFO) << "DumpCatcherSystemTest048: end.";
 }
 
+NOINLINE int TestFunc6(std::atomic_int* tid, std::atomic_bool* done)
+{
+    tid->store(gettid());
+    while (!done->load()) {
+        usleep(100); // 100 : pause for 100 microseconds to avoid excessive CPU resource consumption in the loop.
+    }
+    return 1;
+}
+
+NOINLINE int TestFunc5(std::atomic_int* tid, std::atomic_bool* done)
+{
+    int val = TestFunc6(tid, done);
+    return val * val + 1;
+}
+
+NOINLINE int TestFunc4(std::atomic_int* tid, std::atomic_bool* done)
+{
+    int val = TestFunc5(tid, done);
+    return val * val + 1;
+}
+
+NOINLINE int TestFunc3(std::atomic_int* tid, std::atomic_bool* done)
+{
+    int val = TestFunc4(tid, done);
+    return val * val + 1;
+}
+
+NOINLINE int TestFunc2(std::atomic_int* tid, std::atomic_bool* done)
+{
+    int val = TestFunc3(tid, done);
+    return val * val + 1;
+}
+
+NOINLINE int TestFunc1(std::atomic_int* tid, std::atomic_bool* done)
+{
+    int val = TestFunc2(tid, done);
+    return val * val + 1;
+}
+
+/**
+ * @tc.name: DumpCatcherSystemTest049
+ * @tc.desc: test DumpCatch API: PID(getpid), unsigned TID(0)
+ * @tc.type: FUNC
+ */
+HWTEST_F(DumpCatcherSystemTest,  DumpCatcherSystemTest049, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "DumpCatcherSystemTest049: start.";
+    std::atomic_int otherTid;
+    std::atomic_bool done(false);
+    std::thread th1([&otherTid, &done] {
+        otherTid = gettid();
+        TestFunc1(&otherTid, &done);
+    });
+    sleep(1);
+    DfxDumpCatcher dumplog;
+    string msg = "";
+    int32_t pid = getpid();
+    bool ret = dumplog.DumpCatch(pid, 0, msg);
+    GTEST_LOG_(INFO) << "ret: " << ret;
+    GTEST_LOG_(INFO) << "msg:\n" << msg;
+    string log[] = {"#00", "test_faultloggerd", "Tid:", "Name", "Tid:"};
+    log[2].append(std::to_string(pid));
+    log[4].append(std::to_string(otherTid));
+    int logSize = sizeof(log) / sizeof(log[0]);
+    int count = GetKeywordsNum(msg, log, logSize);
+    GTEST_LOG_(INFO) << count;
+    EXPECT_EQ(count, logSize) << "DumpCatcherSystemTest049 Failed";
+    done.store(true);
+    th1.join();
+    GTEST_LOG_(INFO) << "DumpCatcherSystemTest049: end.";
+}
+
 /**
  * @tc.name: DumpCatcherSystemTest101
  * @tc.desc: test using dumpcatcher command tools to dump the signal stop process
