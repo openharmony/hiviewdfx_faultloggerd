@@ -38,35 +38,130 @@ namespace {
 #undef LOG_TAG
 #define LOG_DOMAIN 0xD002D11
 #define LOG_TAG "DfxMap"
+
+MAYBE_UNUSED constexpr int BASE_HEX = 16;
 }
 
-std::shared_ptr<DfxMap> DfxMap::Create(const std::string buf, size_t size)
+std::shared_ptr<DfxMap> DfxMap::Create(std::string buf, size_t size)
 {
+    if (buf.empty() || size == 0) {
+        return nullptr;
+    }
     auto map = std::make_shared<DfxMap>();
-    if (map->Parse(buf, size) == false) {
+    if (!map->Parse(&buf[0], size)) {
+        LOGW("Failed to parse map: %s", buf.c_str());
         return nullptr;
     }
     return map;
 }
 
-bool DfxMap::Parse(const std::string buf, size_t size)
+bool DfxMap::Parse(char* buf, size_t size)
 {
 #if defined(is_ohos) && is_ohos
-    if (buf.empty() || size == 0) {
+    if (buf == nullptr || size == 0) {
         return false;
     }
-    uint32_t pos = 0;
-    char permChs[5] = {0}; // 5:rwxp
+    char* p;
+    auto PassSpace = [&]() {
+        if (*p != ' ') {
+            return false;
+        }
+        while (*p == ' ') {
+            p++;
+        }
+        return true;
+    };
 
     // 7658d38000-7658d40000 rw-p 00000000 00:00 0                              [anon:thread signal stack]
-    if (sscanf_s(buf.c_str(), "%" SCNxPTR "-%" SCNxPTR " %4s %" SCNxPTR " %x:%x %" SCNxPTR " %n",
-        &begin, &end, &permChs, sizeof(permChs), &offset, &major, &minor, &inode, &pos) != 7) { // 7:scan size
-        LOGW("Failed to parse map info: %s.", buf.c_str());
+    p = buf;
+    char* pe;
+    begin = strtoull(p, &pe, BASE_HEX);
+    if (pe == p || *pe != '-') {
         return false;
     }
-    this->perms = std::string(permChs, sizeof(permChs));
-    PermsToProts(this->perms, this->prots, this->flag);
-    TrimAndDupStr(buf.substr(pos), this->name);
+    p = pe + 1;
+
+    end = strtoull(p, &pe, BASE_HEX);
+    if (pe == p) {
+        return false;
+    }
+    p = pe;
+    if (!PassSpace()) {
+        return false;
+    }
+
+    perms = perms + *p;
+    if (*p == 'r') {
+        prots |= PROT_READ;
+    } else if (*p != '-') {
+        return false;
+    }
+    p++;
+    perms = perms + *p;
+    if (*p == 'w') {
+        prots |= PROT_WRITE;
+    } else if (*p != '-') {
+        return false;
+    }
+    p++;
+    perms = perms + *p;
+    if (*p == 'x') {
+        prots |= PROT_EXEC;
+    } else if (*p != '-') {
+        return false;
+    }
+    p++;
+    perms = perms + *p;
+    if (*p == 'p') {
+        flag = MAP_PRIVATE;
+    } else if (*p == 's') {
+        flag = MAP_SHARED;
+    } else {
+        return false;
+    }
+    p++;
+    if (!PassSpace()) {
+        return false;
+    }
+
+    offset = strtoull(p, &pe, BASE_HEX);
+    if (pe == p) {
+        return false;
+    }
+    p = pe;
+    if (!PassSpace()) {
+        return false;
+    }
+
+    major = strtoull(p, &pe, BASE_HEX);
+    if (pe == p || *pe != ':') {
+        return false;
+    }
+    p = pe + 1;
+    minor = strtoull(p, &pe, BASE_HEX);
+    if (pe == p) {
+        return false;
+    }
+    p = pe;
+    if (!PassSpace()) {
+        return false;
+    }
+
+    inode = strtoull(p, &pe, BASE_HEX);
+    if (pe == p) {
+        return false;
+    }
+    p = pe;
+
+    if (!PassSpace() || *p == '\0') {
+        return false;
+    }
+
+    size_t len = strlen(p);
+    while (len > 0 && isspace(p[len - 1])) {
+        p[--len] = '\0';
+    }
+    name = std::string(p);
     return true;
 #else
     return false;
