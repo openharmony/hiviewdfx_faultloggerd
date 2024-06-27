@@ -207,7 +207,7 @@ int DfxAccessorsRemote::AccessMem(uintptr_t addr, uintptr_t *val, void *arg)
         *val |= (i == 0 && end == 2 ? tmpVal << THIRTY_TWO_BITS : tmpVal); // 2 : read two times
 #endif
         if (errno) {
-            LOGE("errno: %d", errno);
+            LOGD("errno: %d", errno);
             return UNW_ERROR_ILLEGAL_VALUE;
         }
     }
