@@ -110,13 +110,14 @@ bool DfxMaps::Parse(const pid_t pid, const std::string& path)
     int fgetCount = 0;
     while (fgets(mapBuf, sizeof(mapBuf), fp) != nullptr) {
         fgetCount++;
-        std::shared_ptr<DfxMap> map = DfxMap::Create(mapBuf, sizeof(mapBuf));
-        if (map == nullptr) {
-            LOGW("Failed to init map info: %s", mapBuf);
+        auto map = std::make_shared<DfxMap>();
+        if (!map->Parse(mapBuf, sizeof(mapBuf))) {
+            LOGU("Failed to parse map: %s", mapBuf);
             continue;
         }
+
         FormatMapName(pid, map->name);
-        if (IsArkMapItem(map->name)) {
+        if (IsArkHapMapItem(map->name) || IsArkCodeMapItem(map->name)) {
             AddMap(map, enableMapIndex_);
             continue;
         }
@@ -165,9 +166,23 @@ void DfxMaps::UnFormatMapName(std::string& mapName)
     }
 }
 
-bool DfxMaps::IsArkMapItem(const std::string& name)
+bool DfxMaps::IsArkHapMapItem(const std::string& name)
 {
-    if (StartsWith(name, "[anon:ArkTS Code") || EndsWith(name, ".hap") || EndsWith(name, ".hsp")) {
+    if (name.empty()) {
+        return false;
+    }
+    if (EndsWith(name, ".hap") || EndsWith(name, ".hsp")) {
+        return true;
+    }
+    return false;
+}
+
+bool DfxMaps::IsArkCodeMapItem(const std::string& name)
+{
+    if (name.empty()) {
+        return false;
+    }
+    if (StartsWith(name, "[anon:ArkTS Code") || EndsWith(name, ".abc")) {
         return true;
     }
     return false;
@@ -176,7 +191,7 @@ bool DfxMaps::IsArkMapItem(const std::string& name)
 bool DfxMaps::IsLegalMapItem(const std::string& name, bool withArk)
 {
     // some special
-    if (withArk && IsArkMapItem(name)) {
+    if (withArk && (IsArkHapMapItem(name) || IsArkCodeMapItem(name))) {
         return true;
     }
     if (EndsWith(name, "[vdso]")) {
@@ -194,7 +209,7 @@ bool DfxMaps::IsLegalMapItem(const std::string& name, bool withArk)
 
 void DfxMaps::AddMap(std::shared_ptr<DfxMap> map, bool enableMapIndex)
 {
-    maps_.emplace_back(map);
+    maps_.emplace_back(std::move(map));
     if (enableMapIndex && !maps_.empty()) {
         mapIndex_.emplace_back(maps_.size() - 1);
     }

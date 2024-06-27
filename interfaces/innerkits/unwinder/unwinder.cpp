@@ -882,7 +882,10 @@ bool Unwinder::Impl::StepInner(const bool isSigFrame, StepFrame& frame, void *ct
         // 2. find map
         MAYBE_UNUSED int mapRet = acc_->GetMapByPc(frame.pc, map, ctx);
         if (mapRet != UNW_ERROR_NONE) {
-            if (frames_.size() > 2) { //2, least 2 frame
+            if (frame.isJsFrame) {
+                LOGW("Failed to get map with ark, frames size: %zu", frames_.size());
+            }
+            if (frames_.size() > 2) { // 2, least 2 frame
                 LOGU("Failed to get map, frames size: %zu", frames_.size());
                 lastErrorData_.SetAddrAndCode(frame.pc, mapRet);
                 return false;
@@ -898,7 +901,7 @@ bool Unwinder::Impl::StepInner(const bool isSigFrame, StepFrame& frame, void *ct
             LOGU("Stop by ark frame");
             return false;
         }
-        if ((enableMixstack_) && (map != nullptr && map->IsArkExecutable() || frame.isJsFrame)) {
+        if ((enableMixstack_) && ((map != nullptr && map->IsArkExecutable()) || frame.isJsFrame)) {
             if (!StepArkJsFrame(frame)) {
                 LOGE("Failed to step ark Js frame, pc: %p", reinterpret_cast<void *>(frame.pc));
                 lastErrorData_.SetAddrAndCode(frame.pc, UNW_ERROR_STEP_ARK_FRAME);

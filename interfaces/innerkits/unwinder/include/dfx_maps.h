@@ -33,7 +33,8 @@ public:
     static std::shared_ptr<DfxMaps> Create(pid_t pid, const std::string& path);
     static bool Create(const pid_t pid, std::vector<std::shared_ptr<DfxMap>>& maps, std::vector<int>& mapIndex);
 
-    static bool IsArkMapItem(const std::string& name);
+    static bool IsArkHapMapItem(const std::string& name);
+    static bool IsArkCodeMapItem(const std::string& name);
     static bool IsLegalMapItem(const std::string& name, bool withArk = true);
     static void FormatMapName(pid_t pid, std::string& mapName);
     static void UnFormatMapName(std::string& mapName);
