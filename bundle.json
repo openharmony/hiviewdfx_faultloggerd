@@ -152,6 +152,15 @@
             ],
             "header_base": "//base/hiviewdfx/faultloggerd/interfaces/innerkits/crash_exception"
           }
+        },
+        {
+          "name": "//base/hiviewdfx/faultloggerd/interfaces/innerkits/sigdump_handler:dfx_sigdump_handler",
+          "header": {
+            "header_files": [
+              "dfx_sigdump_handler.h"
+            ],
+            "header_base": "//base/hiviewdfx/faultloggerd/interfaces/innerkits/sigdump_handler/include"
+          }
         }
       ],
       "test": [
