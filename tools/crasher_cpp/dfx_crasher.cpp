@@ -182,7 +182,7 @@ int DfxCrasher::TestDeadlock()
     printf("mutex owner before lock:%d\n", mutexInt[lockOnwerIdx] & lockOwnerMask);
     pthread_mutex_lock(&mutex);
     printf("mutex owner after lock:%d\n", mutexInt[lockOnwerIdx] & lockOwnerMask);
-    std::thread t1([&] {
+    std::thread t1([&mutex] {
         pthread_mutex_lock(&mutex);
     });
     t1.join();
