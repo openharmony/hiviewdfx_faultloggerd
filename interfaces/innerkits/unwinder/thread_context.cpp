@@ -176,10 +176,10 @@ std::shared_ptr<ThreadContext> LocalThreadContext::CollectThreadContext(int32_t 
     return threadContext;
 }
 
-bool LocalThreadContext::CopyContextAndWaitTimeout(int sig, siginfo_t *si, void *context)
+void LocalThreadContext::CopyContextAndWaitTimeout(int sig, siginfo_t *si, void *context)
 {
     if (si == nullptr || si->si_code != DUMP_TYPE_LOCAL || context == nullptr) {
-        return false;
+        return;
     }
 
     int tid = gettid();
@@ -187,20 +187,20 @@ bool LocalThreadContext::CopyContextAndWaitTimeout(int sig, siginfo_t *si, void 
     auto ctxPtr = LocalThreadContext::GetInstance().GetThreadContext(tid);
 #if defined(__aarch64__)
     if (ctxPtr == nullptr) {
-        return true;
+        return;
     }
     uintptr_t fp = reinterpret_cast<ucontext_t*>(context)->uc_mcontext.regs[REG_FP];
     uintptr_t pc = reinterpret_cast<ucontext_t*>(context)->uc_mcontext.pc;
     ctxPtr->frameSz = FpUnwinder::GetPtr()->UnwindSafe(pc, fp, ctxPtr->pcs, DEFAULT_MAX_LOCAL_FRAME_NUM);
     ctxPtr->cv.notify_all();
     ctxPtr->tid = static_cast<int32_t>(ThreadContextStatus::CONTEXT_UNUSED);
-    return true;
+    return;
 #else
 
     std::unique_lock<std::mutex> lock(ctxPtr->mtx);
     if (ctxPtr->ctx == nullptr) {
         ctxPtr->tid = static_cast<int32_t>(ThreadContextStatus::CONTEXT_UNUSED);
-        return true;
+        return;
     }
     ucontext_t* ucontext = reinterpret_cast<ucontext_t*>(context);
     if (memcpy_s(&ctxPtr->ctx->uc_mcontext, sizeof(ucontext->uc_mcontext),
@@ -218,7 +218,6 @@ bool LocalThreadContext::CopyContextAndWaitTimeout(int sig, siginfo_t *si, void 
     ctxPtr->cv.notify_all();
     ctxPtr->cv.wait_for(lock, g_timeOut);
     ctxPtr->tid = static_cast<int32_t>(ThreadContextStatus::CONTEXT_UNUSED);
-    return true;
 #endif
 }
 
@@ -238,13 +237,14 @@ void LocalThreadContext::InitSignalHandler()
     static std::once_flag flag;
     std::call_once(flag, [&]() {
         FpUnwinder::GetPtr();
-        struct signal_chain_action sigchain = {
-            .sca_sigaction = LocalThreadContext::CopyContextAndWaitTimeout,
-            .sca_mask = {},
-            .sca_flags = 0,
-        };
+        struct sigaction action;
+        (void)memset_s(&action, sizeof(action), 0, sizeof(action));
+        sigemptyset(&action.sa_mask);
+        sigaddset(&action.sa_mask, SIGLOCAL_DUMP);
+        action.sa_flags = SA_RESTART | SA_SIGINFO;
+        action.sa_sigaction = LocalThreadContext::CopyContextAndWaitTimeout;
         LOGU("Install local signal handler: %d", SIGLOCAL_DUMP);
-        add_special_signal_handler(SIGLOCAL_DUMP, &sigchain);
+        sigaction(SIGLOCAL_DUMP, &action, nullptr);
     });
 }
 
