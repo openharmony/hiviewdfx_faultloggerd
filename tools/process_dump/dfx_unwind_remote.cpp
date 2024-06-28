@@ -37,6 +37,9 @@
 #include "dfx_symbols.h"
 #include "dfx_thread.h"
 #include "dfx_util.h"
+#ifdef PARSE_LOCK_OWNER
+#include "lock_parser.h"
+#endif
 #include "process_dumper.h"
 #include "printer.h"
 
@@ -179,8 +182,13 @@ void DfxUnwindRemote::UnwindOtherThread(std::shared_ptr<DfxProcess> process, std
             DFXLOG_INFO("%s, unwind tid(%d) start", __func__, thread->threadInfo_.nsTid);
             auto pid = (vmPid != 0 && isVmProcAttach) ? vmPid : thread->threadInfo_.nsTid;
             bool ret = unwinder->UnwindRemote(pid, withRegs, DfxConfig::GetConfig().maxFrameNums);
+#ifdef PARSE_LOCK_OWNER
+            thread->SetFrames(unwinder->GetFrames());
+            LockParser::ParseLockInfo(unwinder, tmpPid, thread->threadInfo_.nsTid);
+#else
             thread->Detach();
             thread->SetFrames(unwinder->GetFrames());
+#endif
             if (ProcessDumper::GetInstance().IsCrash()) {
                 ReportUnwinderException(unwinder->GetLastErrorCode());
             }

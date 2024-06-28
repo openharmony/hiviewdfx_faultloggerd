@@ -108,6 +108,34 @@ std的集合为非线程安全，如果多线程添加删除，容易出现SIGSE
 11.提前释放了使用dlsym的函数所在的动态库\
 这时可能导致pc、lr以及sp均为无效值
 
+## 解析pthread_mutex_t的持有者
+一些死锁类问题仅靠调用栈很难定位根因，但由于processdump无法在release版本中活动锁的结构，无法按照规则(debuginfo)直接打印。\
+这里采用取巧的方式打印锁的持有者。\
+1.使用minidebuginfo获得栈顶的函数名。\
+2.如果栈顶函数为futex等待函数，则根据固定偏移找到锁的地址。\
+3.按pthread_impl.h中的结构解析锁的内容。
+
+### 使用
+1.将faultloggerd.gni中的processdump_parse_lock_owner_enable设置成true \
+2.重新编译processdump，替换到/system/bin/目录中 \
+3.复现问题
+
+### 接口
+在unwinder中提供了ParseLockInfo的接口，在调用后，如果满足以上条件会输出以下日志： 
+```
+08-05 19:24:34.776 11366 11366 I C02d11/DfxFaultLogger: Thread(11387) is waiting a lock with type 0 held by 16
+08-05 19:24:35.815 11366 11366 I C02d11/DfxFaultLogger: Thread(11396) is waiting a lock with type 2 held by 11366
+```
+### 验证
+由于硬编码偏移的方式受编译优化的影响，用例(test_lock_parser)使用默认的编译选项。\
+用于校验获取的锁的地址是否正确。符合预期的timedwait_cp的汇编片段(ARM64)如下：
+```
+SUB SP, SP, #0x50
+STP x29, x30, [SP, #0x10]
+STP x23, x22, [SP, #0x10]
+STP x21, x20, [SP, #0x10] // lock的地址保存在x20中，当然也可以根据x0加固定偏移的方式计算
+```
+
 ## 常见问题指引
 Q1.崩溃问题的分析步骤 \
 1)查看信号值，sigabort查看调用abort的代码，sigsegv,sigill以及sigbus查看寄存器 \
