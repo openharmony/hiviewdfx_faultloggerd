@@ -77,6 +77,7 @@ public:
     static int CrashInLibuvTimer(const std::string &debug);
     static int CrashInLibuvWorkDone(const std::string &debug);
 #endif
+    static int TestDeadlock();
 
 private:
     DfxCrasher();

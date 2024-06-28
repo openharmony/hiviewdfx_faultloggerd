@@ -21,6 +21,9 @@
 #include "dfx_maps.h"
 #include "dfx_regs.h"
 #include "dfx_ring_buffer_wrapper.h"
+#ifdef PARSE_LOCK_OWNER
+#include "lock_parser.h"
+#endif
 #include "process_dumper.h"
 #include "printer.h"
 #include "unique_stack_table.h"
@@ -59,8 +62,13 @@ void DfxUnwindAsyncThread::UnwindStack(pid_t vmPid)
         // 3: merge two stack
         MergeStack(submmiterFrames);
     } else {
+#ifdef PARSE_LOCK_OWNER
+        thread_->SetFrames(unwinder_->GetFrames());
+        LockParser::ParseLockInfo(unwinder_, tmpPid, thread_->threadInfo_.nsTid);
+#else
         thread_->Detach();
         thread_->SetFrames(unwinder_->GetFrames());
+#endif
     }
     DFXLOG_INFO("%s, unwind tid(%d) finish ret(%d).", __func__, thread_->threadInfo_.nsTid, ret);
 }

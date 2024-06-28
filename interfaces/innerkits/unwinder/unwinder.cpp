@@ -29,6 +29,7 @@
 #include "dfx_hap.h"
 #include "dfx_instructions.h"
 #include "dfx_log.h"
+#include "dfx_memory.h"
 #include "dfx_param.h"
 #include "dfx_regs_get.h"
 #include "dfx_symbols.h"
@@ -131,7 +132,9 @@ public:
     inline void SetRegs(const std::shared_ptr<DfxRegs> &regs)
     {
         regs_ = regs;
+        firstFrameSp_ = regs_->GetSp();
     }
+
     inline const std::shared_ptr<DfxRegs>& GetRegs() const
     {
         return regs_;
@@ -179,6 +182,11 @@ public:
         isJitCrash_ = isCrash;
     }
     int ArkWriteJitCodeToFile(int fd);
+    bool GetLockInfo(int32_t tid, char* buf, size_t sz);
+    void SetFrames(std::vector<DfxFrame>& frames)
+    {
+        frames_ = frames;
+    }
     inline const std::vector<uintptr_t>& GetJitCache(void) const
     {
         return jitCache_;
@@ -252,6 +260,7 @@ private:
     std::shared_ptr<ArmExidx> armExidx_ = nullptr;
 #endif
     std::shared_ptr<DwarfSection> dwarfSection_ = nullptr;
+    uintptr_t firstFrameSp_ {0};
 };
 
 // for local
@@ -422,6 +431,16 @@ const std::vector<uintptr_t>& Unwinder::GetJitCache()
     return impl_->GetJitCache();
 }
 
+bool Unwinder::GetLockInfo(int32_t tid, char* buf, size_t sz)
+{
+    return impl_->GetLockInfo(tid, buf, sz);
+}
+
+void Unwinder::SetFrames(std::vector<DfxFrame>& frames)
+{
+    impl_->SetFrames(frames);
+}
+
 void Unwinder::Impl::Init()
 {
     Destroy();
@@ -501,6 +520,7 @@ bool Unwinder::Impl::UnwindLocalWithTid(const pid_t tid, size_t maxFrameNum, siz
         for (size_t i = 0; i < threadContext->frameSz; i++) {
             pcs_.emplace_back(threadContext->pcs[i]);
         }
+        firstFrameSp_ = threadContext->firstFrameSp;
         return true;
     }
     return false;
@@ -617,6 +637,7 @@ bool Unwinder::Impl::UnwindRemote(pid_t tid, bool withRegs, size_t maxFrameNum, 
         return false;
     }
 
+    firstFrameSp_ = regs_->GetSp();
     UnwindContext context;
     context.pid = tid;
     context.regs = regs_;
@@ -1227,6 +1248,37 @@ bool Unwinder::Impl::GetFrameByPc(uintptr_t pc, std::shared_ptr<DfxMaps> maps, D
     frame.map = map;
     FillFrame(frame);
     return true;
+}
+
+bool Unwinder::Impl::GetLockInfo(int32_t tid, char* buf, size_t sz)
+{
+#ifdef __aarch64__
+    if (frames_.empty()) {
+        return false;
+    }
+
+    if (frames_[0].funcName.find("__timedwait_cp") == std::string::npos) {
+        return false;
+    }
+
+    uintptr_t lockPtrAddr = firstFrameSp_ + 56; // 56 : sp + 0x38
+    uintptr_t lockAddr;
+    UnwindContext context;
+    context.pid = tid;
+    if (acc_->AccessMem(lockPtrAddr, &lockAddr, &context) != UNW_ERROR_NONE) {
+        LOGW("%s", "Failed to find lock addr.");
+        return false;
+    }
+
+    size_t rsize = DfxMemory::ReadProcMemByPid(tid, lockAddr, buf, sz);
+    if (rsize != sz) {
+        LOGW("Failed to fetch lock content, read size:%zu expected size:%zu", rsize, sz);
+        return false;
+    }
+    return true;
+#else
+    return false;
+#endif
 }
 
 void Unwinder::Impl::GetFramesByPcs(std::vector<DfxFrame>& frames, std::vector<uintptr_t> pcs)

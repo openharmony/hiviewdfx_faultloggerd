@@ -139,6 +139,8 @@ constexpr static CrasherCommandLine CMDLINE_TABLE[] = {
     {"AsyncStack", "Test async stacktrace in nomal thread crash case",
         &DfxCrasher::AsyncStacktrace},
 #endif
+    {"Deadlock", "Test deadlock and parse lock owner",
+        &DfxCrasher::TestDeadlock},
 };
 
 constexpr static CrasherCommandLineParam CMDLINE_TABLE_PARAM[] = {
@@ -161,6 +163,30 @@ DfxCrasher &DfxCrasher::GetInstance()
 {
     static DfxCrasher instance;
     return instance;
+}
+
+int DfxCrasher::TestDeadlock()
+{
+    pthread_mutexattr_t mutexAttr;
+    pthread_mutexattr_init(&mutexAttr);
+    pthread_mutexattr_settype(&mutexAttr, PTHREAD_MUTEX_ERRORCHECK);
+
+    pthread_mutex_t mutex;
+    pthread_mutex_init(&mutex, &mutexAttr);
+    pthread_mutexattr_destroy(&mutexAttr);
+
+    int lockOnwerIdx = 1;
+    int lockOwnerMask = 0x3fffffff;
+    auto mutexInt = reinterpret_cast<int*>(&mutex);
+    printf("mutex address:%llx\n", reinterpret_cast<long long>(&mutex));
+    printf("mutex owner before lock:%d\n", mutexInt[lockOnwerIdx] & lockOwnerMask);
+    pthread_mutex_lock(&mutex);
+    printf("mutex owner after lock:%d\n", mutexInt[lockOnwerIdx] & lockOwnerMask);
+    std::thread t1([&] {
+        pthread_mutex_lock(&mutex);
+    });
+    t1.join();
+    return 0;
 }
 
 static NOINLINE int RecursiveHelperFunction(int curLevel, int targetLevel, int midLevel)

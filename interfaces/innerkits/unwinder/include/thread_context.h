@@ -50,6 +50,8 @@ struct ThreadContext {
     uintptr_t pcs[DEFAULT_MAX_LOCAL_FRAME_NUM] {0};
 #endif
     std::atomic<size_t> frameSz {0};
+    // first stack pointer
+    uintptr_t firstFrameSp;
 
     ~ThreadContext()
     {

@@ -112,6 +112,10 @@ if (defined(ohos_lite)) {
     if (processdump_minidebuginfo_enable) {
       defines = [ "PROCESSDUMP_MINIDEBUGINFO" ]
     }
+
+    if (processdump_parse_lock_owner_enable) {
+      defines += [ "PARSE_LOCK_OWNER" ]
+    }
   }
 
   ohos_source_set("process_info_src") {
@@ -154,7 +158,9 @@ if (defined(ohos_lite)) {
       "cppcrash_reporter.cpp",
       "main.cpp",
     ]
-
+    if (processdump_parse_lock_owner_enable) {
+      sources += [ "lock_parser.cpp" ]
+    }
     cflags_cc = [ "-DDEBUG_CRASH_LOCAL_HANDLER" ]
     defines = [ "DFX_LOG_HILOG_BASE" ]
     if (use_clang_coverage) {

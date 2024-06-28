@@ -87,6 +87,8 @@ public:
     void SetIsJitCrashFlag(bool isCrash);
     int ArkWriteJitCodeToFile(int fd);
     const std::vector<uintptr_t>& GetJitCache(void);
+    bool GetLockInfo(int32_t tid, char* buf, size_t sz);
+    void SetFrames(std::vector<DfxFrame>& frames);
 
     static bool GetSymbolByPc(uintptr_t pc, std::shared_ptr<DfxMaps> maps,
         std::string& funcName, uint64_t& funcOffset);
