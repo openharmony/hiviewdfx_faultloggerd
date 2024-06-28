@@ -945,7 +945,7 @@ void DFX_InstallSignalHandler(void)
     }
     for (size_t i = 0; i < sizeof(SIGCHAIN_CRASH_SIGNAL_LIST) / sizeof(SIGCHAIN_CRASH_SIGNAL_LIST[0]); i++) {
         int32_t sig = SIGCHAIN_CRASH_SIGNAL_LIST[i];
-        if (sig == SIGILL) {
+        if (sig == SIGILL || sig == SIGSYS) {
             InstallSigActionHandler(sig);
         } else {
             sigfillset(&sigchain.sca_mask);
