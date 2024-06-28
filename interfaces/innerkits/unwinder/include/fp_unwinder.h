@@ -130,11 +130,7 @@ private:
     FpUnwinder() = default;
     DISALLOW_COPY_AND_MOVE(FpUnwinder);
 
-#if defined(__has_feature) && __has_feature(address_sanitizer)
-    __attribute__((no_sanitize("address"))) bool ReadUptr(uintptr_t addr, uintptr_t& value)
-#else
-    bool ReadUptr(uintptr_t addr, uintptr_t& value)
-#endif
+    NO_SANITIZE bool ReadUptr(uintptr_t addr, uintptr_t& value)
     {
         if ((addr < stackBottom_) || (addr + sizeof(uintptr_t) >= stackTop_)) {
             return false;
@@ -143,11 +139,7 @@ private:
         return true;
     }
 
-#if defined(__has_feature) && __has_feature(address_sanitizer)
-    __attribute__((no_sanitize("address"))) bool ReadUptrSafe(uintptr_t addr, uint32_t fd, uintptr_t& value)
-#else
-    bool ReadUptrSafe(uintptr_t addr, uint32_t fd, uintptr_t& value)
-#endif
+    NO_SANITIZE bool ReadUptrSafe(uintptr_t addr, uint32_t fd, uintptr_t& value)
     {
         if (OHOS_TEMP_FAILURE_RETRY(syscall(SYS_write, fd, addr, sizeof(uintptr_t))) == -1) {
             return false;

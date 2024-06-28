@@ -101,11 +101,7 @@ int32_t FpUnwinder::UnwindFallback(uintptr_t* pcs, int32_t sz, int32_t skipFrame
     return realSz;
 }
 
-#if defined(__has_feature) && __has_feature(address_sanitizer)
-__attribute__((no_sanitize("address"))) bool FpUnwinder::ReadUintptrSafe(uintptr_t addr, uintptr_t& value)
-#else
-bool FpUnwinder::ReadUintptrSafe(uintptr_t addr, uintptr_t& value)
-#endif
+NO_SANITIZE bool FpUnwinder::ReadUintptrSafe(uintptr_t addr, uintptr_t& value)
 {
     if (OHOS_TEMP_FAILURE_RETRY(syscall(SYS_write, g_validPipe[PIPE_WRITE], addr, sizeof(uintptr_t))) == -1) {
         LOGE("%s", "Failed to write addr to pipe, it is a invalid addr");

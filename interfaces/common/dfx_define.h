@@ -82,6 +82,7 @@ static const char PROC_SELF_EXE_PATH[] = "/proc/self/exe";
 #define AT_WARN_UNUSED          __attribute__((warn_unused_result))
 #define AT_UNUSED               __attribute__((unused))
 #define MAYBE_UNUSED            [[maybe_unused]]
+#define NO_SANITIZE __attribute__((no_sanitize("address"), no_sanitize("hwaddress")))
 
 #ifndef FALLTHROUGH_INTENDED
 #define FALLTHROUGH_INTENDED [[clang::fallthrough]]  // NOLINT

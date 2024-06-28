@@ -99,11 +99,7 @@ bool DfxAccessorsLocal::IsValidFrame(uintptr_t addr, uintptr_t stackBottom, uint
     return false;
 }
 
-#if defined(__has_feature) && __has_feature(address_sanitizer)
-__attribute__((no_sanitize("address"))) int DfxAccessorsLocal::AccessMem(uintptr_t addr, uintptr_t *val, void *arg)
-#else
-int DfxAccessorsLocal::AccessMem(uintptr_t addr, uintptr_t *val, void *arg)
-#endif
+NO_SANITIZE int DfxAccessorsLocal::AccessMem(uintptr_t addr, uintptr_t *val, void *arg)
 {
     if (val == nullptr) {
         return UNW_ERROR_INVALID_MEMORY;
