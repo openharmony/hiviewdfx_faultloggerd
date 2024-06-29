@@ -23,8 +23,8 @@ namespace OHOS {
 namespace HiviewDFX {
 namespace {
 // defined in alltypes.h
-#define DfxMutexType u.i[0]
-#define DFxMutexLock u.vi[1]
+#define DFX_MUTEX_TYPE u.i[0]
+#define DFX_MUTEX_OWNER u.vi[1]
 typedef struct {
     union {
         int i[sizeof(long) == 8 ? 10 : 6];
@@ -41,8 +41,8 @@ bool LockParser::ParseLockInfo(std::shared_ptr<Unwinder> unwinder, int32_t vmPid
         auto mutexInfo = reinterpret_cast<DfxMutex*>(buffer.data());
         // only PTHREAD_MUTEX_ERRORCHECK(2) type lock contains lock holder thread-id
         // the normal type only store EBUSY in owner section
-        int type = mutexInfo->DfxMutexType;
-        int owner = mutexInfo->DFxMutexLock & 0x3fffffff;
+        int type = mutexInfo->DFX_MUTEX_TYPE;
+        int owner = mutexInfo->DFX_MUTEX_OWNER & 0x3fffffff;
         DFXLOG_INFO("Thread(%d) is waiting a lock with type %d held by %d", tid, type, owner);
         return true;
     }
