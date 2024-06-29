@@ -136,11 +136,9 @@ bool DfxMaps::Parse(const pid_t pid, const std::string& path)
         LOGE("Failed to get maps(%s), err(%d).", path.c_str(), errno);
         return false;
     }
-    if (GetMapsSize() == 0) {
-        LOGE("Failed to parse maps(%s), size is empty. count(%d)", path.c_str(), fgetCount);
-        return false;
-    }
-    return true;
+    size_t mapsSize = GetMapsSize();
+    LOGI("parse maps(%s) completed, map size: (%zu), count: (%d)", path.c_str(), mapsSize, fgetCount);
+    return mapsSize > 0;
 }
 
 void DfxMaps::FormatMapName(pid_t pid, std::string& mapName)
