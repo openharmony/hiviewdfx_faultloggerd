@@ -29,6 +29,7 @@
 #include "dfx_hap.h"
 #include "dfx_instructions.h"
 #include "dfx_log.h"
+#include "dfx_memory.h"
 #include "dfx_param.h"
 #include "dfx_regs_get.h"
 #include "dfx_symbols.h"
@@ -131,7 +132,9 @@ public:
     inline void SetRegs(const std::shared_ptr<DfxRegs> &regs)
     {
         regs_ = regs;
+        firstFrameSp_ = regs_->GetSp();
     }
+
     inline const std::shared_ptr<DfxRegs>& GetRegs() const
     {
         return regs_;
@@ -179,6 +182,11 @@ public:
         isJitCrash_ = isCrash;
     }
     int ArkWriteJitCodeToFile(int fd);
+    bool GetLockInfo(int32_t tid, char* buf, size_t sz);
+    void SetFrames(std::vector<DfxFrame>& frames)
+    {
+        frames_ = frames;
+    }
     inline const std::vector<uintptr_t>& GetJitCache(void) const
     {
         return jitCache_;
@@ -191,6 +199,10 @@ private:
         uintptr_t sp = 0;
         uintptr_t fp = 0;
         bool isJsFrame {false};
+    };
+    struct StepCache {
+        std::shared_ptr<DfxMap> map = nullptr;
+        std::shared_ptr<RegLocState> rs = nullptr;
     };
     void Init();
     void Clear();
@@ -238,7 +250,7 @@ private:
     std::vector<uintptr_t> jitCache_ = {};
     std::shared_ptr<DfxAccessors> acc_ = nullptr;
     std::shared_ptr<DfxMemory> memory_ = nullptr;
-    std::unordered_map<uintptr_t, std::shared_ptr<RegLocState>> rsCache_ {};
+    std::unordered_map<uintptr_t, StepCache> stepCache_ {};
     std::shared_ptr<DfxRegs> regs_ = nullptr;
     std::shared_ptr<DfxMaps> maps_ = nullptr;
     std::vector<uintptr_t> pcs_ {};
@@ -248,6 +260,7 @@ private:
     std::shared_ptr<ArmExidx> armExidx_ = nullptr;
 #endif
     std::shared_ptr<DwarfSection> dwarfSection_ = nullptr;
+    uintptr_t firstFrameSp_ {0};
 };
 
 // for local
@@ -418,6 +431,16 @@ const std::vector<uintptr_t>& Unwinder::GetJitCache()
     return impl_->GetJitCache();
 }
 
+bool Unwinder::GetLockInfo(int32_t tid, char* buf, size_t sz)
+{
+    return impl_->GetLockInfo(tid, buf, sz);
+}
+
+void Unwinder::SetFrames(std::vector<DfxFrame>& frames)
+{
+    impl_->SetFrames(frames);
+}
+
 void Unwinder::Impl::Init()
 {
     Destroy();
@@ -449,7 +472,7 @@ void Unwinder::Impl::Clear()
 void Unwinder::Impl::Destroy()
 {
     Clear();
-    rsCache_.clear();
+    stepCache_.clear();
     if (pid_ == UNWIND_TYPE_LOCAL) {
         LocalThreadContext::GetInstance().CleanUp();
     }
@@ -497,6 +520,7 @@ bool Unwinder::Impl::UnwindLocalWithTid(const pid_t tid, size_t maxFrameNum, siz
         for (size_t i = 0; i < threadContext->frameSz; i++) {
             pcs_.emplace_back(threadContext->pcs[i]);
         }
+        firstFrameSp_ = threadContext->firstFrameSp;
         return true;
     }
     return false;
@@ -613,6 +637,7 @@ bool Unwinder::Impl::UnwindRemote(pid_t tid, bool withRegs, size_t maxFrameNum, 
         return false;
     }
 
+    firstFrameSp_ = regs_->GetSp();
     UnwindContext context;
     context.pid = tid;
     context.regs = regs_;
@@ -856,29 +881,48 @@ bool Unwinder::Impl::StepInner(const bool isSigFrame, StepFrame& frame, void *ct
     LOGU("+pc: %p, sp: %p, fp: %p", reinterpret_cast<void *>(frame.pc),
         reinterpret_cast<void *>(frame.sp), reinterpret_cast<void *>(frame.fp));
 
-    std::shared_ptr<DfxMap> map = nullptr;
-    MAYBE_UNUSED int mapRet = acc_->GetMapByPc(frame.pc, map, ctx);
-    if (mapRet != UNW_ERROR_NONE) {
-        if (frames_.size() > 2) { //2, least 2 frame
-            LOGU("Failed to get map, frames size: %zu", frames_.size());
-            lastErrorData_.SetAddrAndCode(frame.pc, mapRet);
-            return false;
-        }
-    }
-    AddFrame(frame, map);
-    if (isSigFrame) {
-        return true;
-    }
-
     bool ret = false;
     std::shared_ptr<RegLocState> rs = nullptr;
+    std::shared_ptr<DfxMap> map = nullptr;
     do {
+        if (enableCache_) {
+            // 1. find cache rs
+            auto iter = stepCache_.find(frame.pc);
+            if (iter != stepCache_.end()) {
+                if (pid_ != UNWIND_TYPE_CUSTOMIZE) {
+                    LOGU("Find rs cache, pc: %p", reinterpret_cast<void *>(frame.pc));
+                }
+                rs = iter->second.rs;
+                map = iter->second.map;
+                AddFrame(frame, map);
+                ret = true;
+                break;
+            }
+        }
+
+        // 2. find map
+        MAYBE_UNUSED int mapRet = acc_->GetMapByPc(frame.pc, map, ctx);
+        if (mapRet != UNW_ERROR_NONE) {
+            if (frame.isJsFrame) {
+                LOGW("Failed to get map with ark, frames size: %zu", frames_.size());
+            }
+            if (frames_.size() > 2) { // 2, least 2 frame
+                LOGU("Failed to get map, frames size: %zu", frames_.size());
+                lastErrorData_.SetAddrAndCode(frame.pc, mapRet);
+                return false;
+            }
+        }
+        AddFrame(frame, map);
+        if (isSigFrame) {
+            return true;
+        }
+
 #if defined(ENABLE_MIXSTACK)
         if (stopWhenArkFrame_ && (map != nullptr && map->IsArkExecutable())) {
             LOGU("Stop by ark frame");
             return false;
         }
-        if ((enableMixstack_) && (map != nullptr && map->IsArkExecutable() || frame.isJsFrame)) {
+        if ((enableMixstack_) && ((map != nullptr && map->IsArkExecutable()) || frame.isJsFrame)) {
             if (!StepArkJsFrame(frame)) {
                 LOGE("Failed to step ark Js frame, pc: %p", reinterpret_cast<void *>(frame.pc));
                 lastErrorData_.SetAddrAndCode(frame.pc, UNW_ERROR_STEP_ARK_FRAME);
@@ -900,20 +944,8 @@ bool Unwinder::Impl::StepInner(const bool isSigFrame, StepFrame& frame, void *ct
             }
             break;
         }
-        if (enableCache_) {
-            // 1. find cache rs
-            auto iter = rsCache_.find(frame.pc);
-            if (iter != rsCache_.end()) {
-                if (pid_ != UNWIND_TYPE_CUSTOMIZE) {
-                    LOGU("Find rs cache, pc: %p", reinterpret_cast<void *>(frame.pc));
-                }
-                rs = iter->second;
-                ret = true;
-                break;
-            }
-        }
 
-        // 2. find unwind table and entry
+        // 3. find unwind table and entry
         UnwindTableInfo uti;
         MAYBE_UNUSED int utiRet = acc_->FindUnwindTable(frame.pc, uti, ctx);
         if (utiRet != UNW_ERROR_NONE) {
@@ -922,7 +954,7 @@ bool Unwinder::Impl::StepInner(const bool isSigFrame, StepFrame& frame, void *ct
             break;
         }
 
-        // 3. parse instructions and get cache rs
+        // 4. parse instructions and get cache rs
         struct UnwindEntryInfo uei;
         rs = std::make_shared<RegLocState>();
 #if defined(__arm__)
@@ -957,8 +989,11 @@ bool Unwinder::Impl::StepInner(const bool isSigFrame, StepFrame& frame, void *ct
         }
 
         if (ret && enableCache_) {
-            // 4. update rs cache
-            rsCache_.emplace(frame.pc, rs);
+            // 5. update rs cache
+            StepCache cache;
+            cache.map = map;
+            cache.rs = rs;
+            stepCache_.emplace(frame.pc, cache);
             break;
         }
     } while (false);
@@ -1149,6 +1184,9 @@ void Unwinder::Impl::FillFrame(DfxFrame& frame)
         return;
     }
     frame.relPc = frame.map->GetRelPc(frame.pc);
+    frame.mapName = frame.map->GetElfName();
+    frame.mapOffset = frame.map->offset;
+    LOGU("mapName: %s, mapOffset: %" PRIx64 "", frame.mapName.c_str(), frame.mapOffset);
     auto elf = frame.map->GetElf();
     if (elf == nullptr) {
         if (pid_ == UNWIND_TYPE_LOCAL || pid_ == UNWIND_TYPE_CUSTOMIZE_LOCAL) {
@@ -1156,9 +1194,6 @@ void Unwinder::Impl::FillFrame(DfxFrame& frame)
         }
         return;
     }
-    frame.mapName = frame.map->GetElfName();
-    frame.mapOffset = frame.map->offset;
-    LOGU("mapName: %s, mapOffset: %" PRIx64 "", frame.mapName.c_str(), frame.mapOffset);
     if (!DfxSymbols::GetFuncNameAndOffsetByPc(frame.relPc, elf, frame.funcName, frame.funcOffset)) {
         LOGU("Failed to get symbol, relPc: %" PRIx64 ", mapName: %s", frame.relPc, frame.mapName.c_str());
     }
@@ -1213,6 +1248,37 @@ bool Unwinder::Impl::GetFrameByPc(uintptr_t pc, std::shared_ptr<DfxMaps> maps, D
     frame.map = map;
     FillFrame(frame);
     return true;
+}
+
+bool Unwinder::Impl::GetLockInfo(int32_t tid, char* buf, size_t sz)
+{
+#ifdef __aarch64__
+    if (frames_.empty()) {
+        return false;
+    }
+
+    if (frames_[0].funcName.find("__timedwait_cp") == std::string::npos) {
+        return false;
+    }
+
+    uintptr_t lockPtrAddr = firstFrameSp_ + 56; // 56 : sp + 0x38
+    uintptr_t lockAddr;
+    UnwindContext context;
+    context.pid = tid;
+    if (acc_->AccessMem(lockPtrAddr, &lockAddr, &context) != UNW_ERROR_NONE) {
+        LOGW("%s", "Failed to find lock addr.");
+        return false;
+    }
+
+    size_t rsize = DfxMemory::ReadProcMemByPid(tid, lockAddr, buf, sz);
+    if (rsize != sz) {
+        LOGW("Failed to fetch lock content, read size:%zu expected size:%zu", rsize, sz);
+        return false;
+    }
+    return true;
+#else
+    return false;
+#endif
 }
 
 void Unwinder::Impl::GetFramesByPcs(std::vector<DfxFrame>& frames, std::vector<uintptr_t> pcs)

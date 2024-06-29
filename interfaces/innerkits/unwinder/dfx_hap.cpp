@@ -17,7 +17,7 @@
 
 #include "dfx_define.h"
 #include "dfx_log.h"
-#include "dfx_map.h"
+#include "dfx_maps.h"
 #include "dfx_memory.h"
 #include "string_util.h"
 
@@ -54,7 +54,7 @@ bool DfxHap::ParseHapInfo(pid_t pid, uint64_t pc, uintptr_t methodid, std::share
         }
     }
 
-    if ((!map->name.empty()) && (EndsWith(map->name, ".hap") || EndsWith(map->name, ".hsp"))) {
+    if (DfxMaps::IsArkHapMapItem(map->name)) {
         if (!ParseHapFileInfo(pc, methodid, map, jsFunction)) {
             LOGW("%s", "Failed to parse hap file info");
             return false;

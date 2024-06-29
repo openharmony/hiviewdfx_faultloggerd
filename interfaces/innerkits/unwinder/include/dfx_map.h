@@ -29,7 +29,7 @@ class DfxHap;
 
 class DfxMap {
 public:
-    static std::shared_ptr<DfxMap> Create(const std::string buf, size_t size);
+    static std::shared_ptr<DfxMap> Create(std::string buf, size_t size);
     static void PermsToProts(const std::string perms, uint32_t& prots, uint32_t& flag);
 
     DfxMap() = default;
@@ -40,9 +40,10 @@ public:
         uint32_t prots, const std::string& name)
         : begin(begin), end(end), offset(offset), prots(prots), name(name) {}
 
-    bool Parse(const std::string buf, size_t size);
+    bool Parse(char* buf, size_t size);
     bool IsMapExec();
     bool IsArkExecutable();
+    bool IsVdsoMap();
     const std::shared_ptr<DfxHap> GetHap();
     const std::shared_ptr<DfxElf> GetElf(pid_t pid = 0);
     std::string GetElfName();

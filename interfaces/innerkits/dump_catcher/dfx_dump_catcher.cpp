@@ -32,6 +32,7 @@
 #include "dfx_kernel_stack.h"
 #include "dfx_log.h"
 #include "dfx_util.h"
+#include "elapsed_time.h"
 #include "faultloggerd_client.h"
 #include "file_ex.h"
 #include "procinfo.h"
@@ -262,7 +263,6 @@ bool DfxDumpCatcher::DoDumpCatchRemote(int pid, int tid, std::string& msg, bool 
         return ret;
     }
     pid_ = pid;
-    CollectMainKernelInfo();
     int sdkdumpRet = RequestSdkDumpJson(pid, tid, isJson);
     if (sdkdumpRet != static_cast<int>(FaultLoggerSdkDumpResp::SDK_DUMP_PASS)) {
         if (sdkdumpRet == static_cast<int>(FaultLoggerSdkDumpResp::SDK_DUMP_REPEAT)) {
@@ -271,7 +271,7 @@ bool DfxDumpCatcher::DoDumpCatchRemote(int pid, int tid, std::string& msg, bool 
             msg.append("Result: pid(" + std::to_string(pid) + ") check permission error.\n");
         } else if (sdkdumpRet == static_cast<int>(FaultLoggerSdkDumpResp::SDK_DUMP_NOPROC)) {
             msg.append("Result: pid(" + std::to_string(pid) + ") syscall SIGDUMP error.\n");
-            msg.append(GetAllTidKernelStack(pid, false));
+            msg.append(GetAllTidKernelStack(pid));
             RequestDelPipeFd(pid);
         } else if (sdkdumpRet == static_cast<int>(FaultLoggerSdkDumpResp::SDK_PROCESS_CRASHED)) {
             msg.append("Result: pid(" + std::to_string(pid) + ") has been crashed.\n");
@@ -280,6 +280,7 @@ bool DfxDumpCatcher::DoDumpCatchRemote(int pid, int tid, std::string& msg, bool 
         return ret;
     }
 
+    CollectMainKernelInfo();
     int pollRet = DoDumpRemotePid(pid, msg, isJson);
     switch (pollRet) {
         case DUMP_POLL_OK:
@@ -289,6 +290,7 @@ bool DfxDumpCatcher::DoDumpCatchRemote(int pid, int tid, std::string& msg, bool 
             msg.append(halfProcStatus_);
             msg.append(halfProcWchan_);
             msg.append(halfKernelStack_);
+            halfKernelStack_.clear();
             break;
         }
         default:
@@ -332,17 +334,18 @@ int DfxDumpCatcher::DoDumpRemotePid(int pid, std::string& msg, bool isJson, int3
 
 void DfxDumpCatcher::CollectMainKernelInfo()
 {
-    DFXLOG_INFO("start collect kernel info for pid(%d) ", pid_);
+    ElapsedTime timer;
     halfKernelStack_ = "";
     DfxGetKernelStack(pid_, halfKernelStack_);
-    DFXLOG_INFO("finish collect kernel info for pid(%d) ", pid_);
+    DFXLOG_INFO("finish collect kernel info for pid(%d) time(%lld)ms", pid_,
+        timer.Elapsed<std::chrono::milliseconds>());
     ReadProcessStatus(halfProcStatus_, pid_);
     ReadProcessWchan(halfProcWchan_, pid_, false, true);
 }
 
 std::string DfxDumpCatcher::GetAllTidKernelStack(int pid, bool excludeMain)
 {
-    DFXLOG_INFO("start collect all tid info for pid(%d) execlueMian(%d)", pid_, excludeMain);
+    ElapsedTime timer;
     std::string kernelStackInfo;
     std::string statusPath = StringPrintf("/proc/%d/status", pid);
     if (access(statusPath.c_str(), F_OK) != 0) {
@@ -360,13 +363,12 @@ std::string DfxDumpCatcher::GetAllTidKernelStack(int pid, bool excludeMain)
             continue;
         }
         std::string tidKernelStackInfo;
-        if (DfxGetKernelStack(tid, tidKernelStackInfo) != 0) {
-            DFXLOG_ERROR("tid(%d) Get kernel stack fail!", tid);
-            continue;
+        if (DfxGetKernelStack(tid, tidKernelStackInfo) == 0) {
+            kernelStackInfo.append(tidKernelStackInfo);
         }
-        kernelStackInfo.append(tidKernelStackInfo);
     }
-    DFXLOG_INFO("finish collect all tid info for pid(%d) execlueMian(%d)", pid_, excludeMain);
+    DFXLOG_INFO("finish collect all tid info for pid(%d) execlueMian(%d) time(%lld)ms", pid_, excludeMain,
+        timer.Elapsed<std::chrono::milliseconds>());
     halfKernelStack_.append(kernelStackInfo);
     return kernelStackInfo;
 }
@@ -485,7 +487,7 @@ bool DfxDumpCatcher::DoReadBuf(int fd, std::string& msg)
             DFXLOG_WARN("%s :: %s :: read error", DFXDUMPCATCHER_TAG.c_str(), __func__);
             break;
         }
-        DFXLOG_INFO("%s :: %s :: nread: %zu", DFXDUMPCATCHER_TAG.c_str(), __func__, nread);
+        DFXLOG_DEBUG("%s :: %s :: nread: %zu", DFXDUMPCATCHER_TAG.c_str(), __func__, nread);
         ret = true;
         msg.append(buffer);
     } while (false);

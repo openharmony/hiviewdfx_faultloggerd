@@ -17,8 +17,10 @@
 
 #include <algorithm>
 #include <elf.h>
+#include <fcntl.h>
 #include <securec.h>
 #include <sys/ptrace.h>
+#include <sys/syscall.h>
 #include <sys/uio.h>
 #include "dfx_define.h"
 #include "dfx_errors.h"
@@ -52,15 +54,34 @@ bool DfxAccessors::GetMapByPcAndCtx(uintptr_t pc, std::shared_ptr<DfxMap>& map, 
         return true;
     }
 
-    if (ctx->maps == nullptr) {
-        return false;
-    }
-
-    if (!ctx->maps->FindMapByAddr(pc, map) || (map == nullptr)) {
+    if (ctx->maps == nullptr || !ctx->maps->FindMapByAddr(pc, map) || (map == nullptr)) {
+        ctx->map = nullptr;
         return false;
     }
     ctx->map = map;
     return true;
+}
+
+bool DfxAccessorsLocal::CreatePipe()
+{
+    if (initPipe_) {
+        return true;
+    }
+
+    std::lock_guard<std::mutex> lock(mutex_);
+    if (!initPipe_ && syscall(SYS_pipe2, pfd_, O_CLOEXEC | O_NONBLOCK) == 0) {
+        initPipe_ = true;
+    }
+    return initPipe_;
+}
+
+DfxAccessorsLocal::~DfxAccessorsLocal(void)
+{
+    if (initPipe_) {
+        syscall(SYS_close, pfd_[PIPE_WRITE]);
+        syscall(SYS_close, pfd_[PIPE_READ]);
+        initPipe_ = false;
+    }
 }
 
 bool DfxAccessorsLocal::IsValidFrame(uintptr_t addr, uintptr_t stackBottom, uintptr_t stackTop)
@@ -68,7 +89,14 @@ bool DfxAccessorsLocal::IsValidFrame(uintptr_t addr, uintptr_t stackBottom, uint
     if (UNLIKELY(stackTop < stackBottom)) {
         return false;
     }
-    return ((addr >= stackBottom) && (addr < stackTop - sizeof(uintptr_t)));
+    if ((addr >= stackBottom) && (addr + sizeof(uintptr_t) < stackTop)) {
+        return true;
+    }
+
+    if (CreatePipe()) {
+        return OHOS_TEMP_FAILURE_RETRY(syscall(SYS_write, pfd_[PIPE_WRITE], addr, sizeof(uintptr_t))) != -1;
+    }
+    return false;
 }
 
 #if defined(__has_feature) && __has_feature(address_sanitizer)
@@ -111,7 +139,7 @@ int DfxAccessorsLocal::FindUnwindTable(uintptr_t pc, UnwindTableInfo& uti, void 
     }
 
     int ret = UNW_ERROR_INVALID_ELF;
-    if (ctx->map != nullptr && ctx->map->name == "shmm" && ctx->map->IsMapExec()) {
+    if (ctx->map != nullptr && ctx->map->IsVdsoMap()) {
         auto elf = ctx->map->GetElf(getpid());
         if (elf == nullptr) {
             LOGU("%s", "FindUnwindTable elf is null");
@@ -147,6 +175,15 @@ int DfxAccessorsRemote::AccessMem(uintptr_t addr, uintptr_t *val, void *arg)
     if ((ctx == nullptr) || (ctx->pid <= 0)) {
         return UNW_ERROR_INVALID_CONTEXT;
     }
+
+    if (ctx->map != nullptr && ctx->map->elf != nullptr) {
+        uintptr_t pos = ctx->map->GetRelPc(addr);
+        if (ctx->map->elf->Read(pos, val, sizeof(uintptr_t))) {
+            LOGU("Read elf mmap pos: %p", (void *)pos);
+            return UNW_ERROR_NONE;
+        }
+    }
+
     int i, end;
     if (sizeof(long) == FOUR_BYTES && sizeof(uintptr_t) == EIGHT_BYTES) {
         end = 2; // 2 : read two times
@@ -170,7 +207,7 @@ int DfxAccessorsRemote::AccessMem(uintptr_t addr, uintptr_t *val, void *arg)
         *val |= (i == 0 && end == 2 ? tmpVal << THIRTY_TWO_BITS : tmpVal); // 2 : read two times
 #endif
         if (errno) {
-            LOGE("errno: %d", errno);
+            LOGU("errno: %d", errno);
             return UNW_ERROR_ILLEGAL_VALUE;
         }
     }

@@ -332,6 +332,16 @@ void DfxElf::SetLoadBase(uint64_t base)
     loadBase_ = base;
 }
 
+void DfxElf::SetBaseOffset(uint64_t offset)
+{
+    baseOffset_ = offset;
+}
+
+uint64_t DfxElf::GetBaseOffset()
+{
+    return baseOffset_;
+}
+
 uint64_t DfxElf::GetStartPc()
 {
     if (startPc_ == static_cast<uint64_t>(-1)) {
@@ -344,16 +354,6 @@ uint64_t DfxElf::GetStartPc()
         }
     }
     return startPc_;
-}
-
-void DfxElf::SetBaseOffset(uint64_t offset)
-{
-    baseOffset_ = offset;
-}
-
-uint64_t DfxElf::GetBaseOffset()
-{
-    return baseOffset_;
 }
 
 uint64_t DfxElf::GetStartVaddr()
@@ -696,7 +696,7 @@ bool DfxElf::FillUnwindTableByEhhdrLocal(struct DwarfEhFrameHdr* hdr, struct Unw
         }
         if (hdr->ehFramePtrEnc == DW_EH_PE_omit) {
             LOGE("ehFramePtrEnc(%x) error", hdr->ehFramePtrEnc);
-            return 0;
+            return false;
         }
         uti->isLinear = true;
         uti->tableLen = fdeCount;
@@ -742,7 +742,7 @@ bool DfxElf::FillUnwindTableByEhhdr(struct DwarfEhFrameHdr* hdr, uintptr_t shdrB
         }
         if (hdr->ehFramePtrEnc == DW_EH_PE_omit) {
             LOGE("ehFramePtrEnc(%x) error", hdr->ehFramePtrEnc);
-            return 0;
+            return false;
         }
         uti->isLinear = true;
         uti->tableLen = fdeCount;
@@ -774,8 +774,8 @@ int DfxElf::FindUnwindTableInfo(uintptr_t pc, std::shared_ptr<DfxMap> map, struc
     uintptr_t loadBase = GetLoadBase(map->begin, map->offset);
     uti.startPc = GetStartPc();
     uti.endPc = GetEndPc();
-    LOGU("Elf startPc: %" PRIx64 ", endPc: %" PRIx64 "", (uint64_t)uti.startPc, (uint64_t)uti.endPc);
-    if (pc < uti.startPc && pc >= uti.endPc) {
+    if (pc < uti.startPc || pc >= uti.endPc) {
+        LOGW("Elf startPc: %" PRIx64 ", endPc: %" PRIx64 "", (uint64_t)uti.startPc, (uint64_t)uti.endPc);
         return UNW_ERROR_PC_NOT_IN_UNWIND_INFO;
     }
 

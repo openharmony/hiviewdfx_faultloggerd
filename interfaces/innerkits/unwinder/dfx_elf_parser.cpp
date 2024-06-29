@@ -142,14 +142,14 @@ bool ElfParser::ParseProgramHeaders(const EhdrType& ehdr)
                 }
                 firstLoadHeader = false;
 
-                if (phdr.p_vaddr < startVaddr_) {
-                    startVaddr_ = phdr.p_vaddr;
-                    startOffset_ = phdr.p_offset;
+                if (static_cast<uint64_t>(phdr.p_vaddr) < static_cast<uint64_t>(startVaddr_)) {
+                    startVaddr_ = static_cast<uint64_t>(phdr.p_vaddr);
+                    startOffset_ = static_cast<uint64_t>(phdr.p_offset);
                 }
-                if (phdr.p_vaddr + phdr.p_memsz > endVaddr_) {
-                    endVaddr_ = phdr.p_vaddr + phdr.p_memsz;
+                if (static_cast<uint64_t>(phdr.p_vaddr + phdr.p_memsz) > static_cast<uint64_t>(endVaddr_)) {
+                    endVaddr_ = static_cast<uint64_t>(phdr.p_vaddr + phdr.p_memsz);
                 }
-                LOGU("Elf startVaddr: %" PRIx64 ", endVaddr: %" PRIx64 "", (uint64_t)startVaddr_, (uint64_t)endVaddr_);
+                LOGU("Elf startVaddr: %" PRIx64 ", endVaddr: %" PRIx64 "", startVaddr_, endVaddr_);
                 break;
             }
             case PT_DYNAMIC: {

@@ -38,8 +38,6 @@ const char ARK_LIB_NAME[] = "libark_jsruntime.so";
 void* g_handle = nullptr;
 pthread_mutex_t g_mutex;
 int (*g_getArkNativeFrameInfoFn)(int, uintptr_t*, uintptr_t*, uintptr_t*, JsFrame*, size_t&);
-int (*g_stepArkManagedNativeFrameFn)(int, uintptr_t*, uintptr_t*, uintptr_t*, char*, size_t);
-int (*g_getArkJsHeapCrashInfoFn)(int, uintptr_t*, uintptr_t*, int, char*, size_t);
 int (*g_stepArkFn)(void*, OHOS::HiviewDFX::ReadMemFunc, uintptr_t*, uintptr_t*, uintptr_t*, uintptr_t*, bool*);
 int (*g_stepArkWithJitFn)(OHOS::HiviewDFX::ArkUnwindParam*);
 int (*g_jitCodeWriteFileFn)(void*, OHOS::HiviewDFX::ReadMemFunc, int, const uintptr_t* const, const size_t);
@@ -49,7 +47,6 @@ int (*g_parseArkFrameInfoFn)(uintptr_t, uintptr_t, uintptr_t, uintptr_t, uint8_t
 int (*g_translateArkFrameInfoFn)(uint8_t*, uint64_t, JsFunction*);
 int (*g_arkCreateJsSymbolExtractorFn)(uintptr_t*);
 int (*g_arkDestoryJsSymbolExtractorFn)(uintptr_t);
-int (*g_arkDestoryLocalFn)();
 
 bool GetLibArkHandle()
 {
@@ -109,21 +106,6 @@ int DfxArk::ArkDestoryJsSymbolExtractor(uintptr_t extractorPtr)
 
     if (g_arkDestoryJsSymbolExtractorFn != nullptr) {
         return g_arkDestoryJsSymbolExtractorFn(extractorPtr);
-    }
-    return -1;
-}
-
-int DfxArk::ArkDestoryLocal()
-{
-    if (g_arkDestoryLocalFn != nullptr) {
-        return g_arkDestoryLocalFn();
-    }
-
-    const char* arkFuncName = "ark_destory_local";
-    DLSYM_ARK_FUNC(arkFuncName, g_arkDestoryLocalFn)
-
-    if (g_arkDestoryLocalFn != nullptr) {
-        return g_arkDestoryLocalFn();
     }
     return -1;
 }
@@ -257,36 +239,6 @@ int DfxArk::GetArkNativeFrameInfo(int pid, uintptr_t& pc, uintptr_t& fp, uintptr
 
     if (g_getArkNativeFrameInfoFn != nullptr) {
         return g_getArkNativeFrameInfoFn(pid, &pc, &fp, &sp, frames, size);
-    }
-    return -1;
-}
-
-int DfxArk::StepArkManagedNativeFrame(int pid, uintptr_t& pc, uintptr_t& fp, uintptr_t& sp, char* buf, size_t bufSize)
-{
-    if (g_stepArkManagedNativeFrameFn != nullptr) {
-        return g_stepArkManagedNativeFrameFn(pid, &pc, &fp, &sp, buf, bufSize);
-    }
-
-    const char* arkFuncName = "step_ark_managed_native_frame";
-    DLSYM_ARK_FUNC(arkFuncName, g_stepArkManagedNativeFrameFn)
-
-    if (g_stepArkManagedNativeFrameFn != nullptr) {
-        return g_stepArkManagedNativeFrameFn(pid, &pc, &fp, &sp, buf, bufSize);
-    }
-    return -1;
-}
-
-int DfxArk::GetArkJsHeapCrashInfo(int pid, uintptr_t& x20, uintptr_t& fp, int outJsInfo, char* buf, size_t bufSize)
-{
-    if (g_getArkJsHeapCrashInfoFn != nullptr) {
-        return g_getArkJsHeapCrashInfoFn(pid, &x20, &fp, outJsInfo, buf, bufSize);
-    }
-
-    const char* arkFuncName = "get_ark_js_heap_crash_info";
-    DLSYM_ARK_FUNC(arkFuncName, g_getArkJsHeapCrashInfoFn)
-
-    if (g_getArkJsHeapCrashInfoFn != nullptr) {
-        return g_getArkJsHeapCrashInfoFn(pid, &x20, &fp, outJsInfo, buf, bufSize);
     }
     return -1;
 }

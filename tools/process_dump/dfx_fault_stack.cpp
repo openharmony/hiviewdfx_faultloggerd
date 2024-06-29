@@ -207,19 +207,20 @@ MemoryBlockInfo FaultStack::CreateMemoryBlock(
 void FaultStack::CollectRegistersBlock(std::shared_ptr<DfxRegs> regs, std::shared_ptr<DfxMaps> maps)
 {
     if (regs == nullptr || maps == nullptr) {
+        DFXLOG_ERROR("%s : regs or maps is null.", __func__);
         return;
     }
 
-    auto regData = regs->GetRegsData();
+    auto regsData = regs->GetRegsData();
     int index = 0;
-    for (auto data : regData) {
+    for (auto data : regsData) {
         index++;
         std::shared_ptr<DfxMap> map;
         if (!maps->FindMapByAddr(data, map)) {
             continue;
         }
 
-        if (map->perms.find("r") == std::string::npos) {
+        if ((map->prots & PROT_READ) == 0) {
             continue;
         }
 
@@ -280,7 +281,7 @@ bool FaultStack::ParseUnwindStack(std::shared_ptr<DfxMaps> maps, std::vector<Dfx
         std::shared_ptr<DfxMap> map;
         for (size_t i = 0; i < block.content.size(); i++) {
             if (!maps->FindMapByAddr(block.content[i], map) ||
-                map->perms.find("x") == std::string::npos) {
+                (map->prots & PROT_EXEC) == 0) {
                 continue;
             }
             DfxFrame frame;
