@@ -80,7 +80,11 @@ bool DfxUnwindRemote::UnwindProcess(std::shared_ptr<ProcessDumpRequest> request,
     // print keythread base info to hilog when carsh
     DfxRingBufferWrapper::GetInstance().PrintBaseInfo();
 
-    UnwindOtherThread(process, unwinder, vmPid);
+    // dumpt -p -t will not unwind other thread
+    if (ProcessDumper::GetInstance().IsCrash() || request->siginfo.si_value.sival_int == 0) {
+        UnwindOtherThread(process, unwinder, vmPid);
+    }
+
     ret = true;
     if (ProcessDumper::GetInstance().IsCrash()) {
         if (request->dumpMode == SPLIT_MODE) {
@@ -210,7 +214,7 @@ bool DfxUnwindRemote::InitTargetKeyThreadRegs(std::shared_ptr<ProcessDumpRequest
     return true;
 }
 
-void DfxUnwindRemote::InitOtherThreadRegs(std::shared_ptr<DfxProcess> process, bool isCrash)
+void DfxUnwindRemote::InitOtherThreadRegs(std::shared_ptr<DfxProcess> process)
 {
     if (!DfxConfig::GetConfig().dumpOtherThreads) {
         return;
@@ -219,22 +223,18 @@ void DfxUnwindRemote::InitOtherThreadRegs(std::shared_ptr<DfxProcess> process, b
     for (auto &thread : process->GetOtherThreads()) {
         if (thread->Attach(PTRACE_ATTATCH_OTHER_THREAD_TIMEOUT)) {
             thread->SetThreadRegs(DfxRegs::CreateRemoteRegs(thread->threadInfo_.nsTid));
-            // crash after finish unwind detach
-            if (!isCrash) {
-                thread->Detach();
-            }
         }
     }
 }
 
 bool DfxUnwindRemote::InitProcessAllThreadRegs(std::shared_ptr<ProcessDumpRequest> request,
-    std::shared_ptr<DfxProcess> process, bool isCrash)
+    std::shared_ptr<DfxProcess> process)
 {
     if (!InitTargetKeyThreadRegs(request, process)) {
         DFXLOG_ERROR("%s", "get key thread regs fail");
         return false;
     }
-    InitOtherThreadRegs(process, isCrash);
+    InitOtherThreadRegs(process);
     return true;
 }
 } // namespace HiviewDFX

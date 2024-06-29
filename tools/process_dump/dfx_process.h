@@ -42,7 +42,7 @@ public:
     void Detach();
 
     bool InitOtherThreads(bool attach = false);
-    std::vector<std::shared_ptr<DfxThread>> GetOtherThreads() const;
+    std::vector<std::shared_ptr<DfxThread>>& GetOtherThreads();
     void ClearOtherThreads();
     pid_t ChangeTid(pid_t tid, bool ns);
 
