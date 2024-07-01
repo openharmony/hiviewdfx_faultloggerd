@@ -131,6 +131,9 @@ public:
 
     inline void SetRegs(const std::shared_ptr<DfxRegs> &regs)
     {
+        if (regs == nullptr) {
+            return;
+        }
         regs_ = regs;
         firstFrameSp_ = regs_->GetSp();
     }
