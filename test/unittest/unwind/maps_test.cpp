@@ -173,8 +173,12 @@ HWTEST_F(MapsTest, ToStringTest, TestSize.Level2)
 HWTEST_F(MapsTest, CreateMapsTest, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "CreateMapsTest: start.";
-    shared_ptr<DfxMaps> maps = DfxMaps::Create(getpid());
-    EXPECT_NE(maps, nullptr);
+    std::shared_ptr<DfxMaps> dfxMaps = DfxMaps::Create(getpid());
+    ASSERT_TRUE(dfxMaps != nullptr);
+    auto maps = dfxMaps->GetMaps();
+    for (auto map : maps) {
+        std::cout << map->ToString();
+    }
     GTEST_LOG_(INFO) << "CreateMapsTest: end.";
 }
 

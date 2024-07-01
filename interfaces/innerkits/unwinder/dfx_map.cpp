@@ -39,7 +39,158 @@ namespace {
 #define LOG_DOMAIN 0xD002D11
 #define LOG_TAG "DfxMap"
 
-MAYBE_UNUSED constexpr int BASE_HEX = 16;
+#if defined(is_ohos) && is_ohos
+AT_ALWAYS_INLINE const char* SkipWhiteSpace(const char *cp)
+{
+    if (cp == nullptr) {
+        return nullptr;
+    }
+
+    while (*cp == ' ' || *cp == '\t') {
+        ++cp;
+    }
+    return cp;
+}
+
+AT_ALWAYS_INLINE const char* ScanHex(const char *cp, unsigned long &valp)
+{
+    cp = SkipWhiteSpace(cp);
+    if (cp == nullptr) {
+        return nullptr;
+    }
+
+    unsigned long cnt = 0;
+    unsigned long digit = 0;
+    unsigned long val = 0;
+    while (1) {
+        digit = *cp;
+        if ((digit - '0') <= 9) { // 9 : max 9
+            digit -= '0';
+        } else if ((digit - 'a') < 6) { // 6 : 16 - 10
+            digit -= 'a' - 10; // 10 : base 10
+        } else if ((digit - 'A') < 6) { // 6 : 16 - 10
+            digit -= 'A' - 10; // 10 : base 10
+        } else {
+            break;
+        }
+        val = (val << 4) | digit; // 4 : hex
+        ++cnt;
+        ++cp;
+    }
+    if (cnt == 0) {
+        return nullptr;
+    }
+
+    valp = val;
+    return cp;
+}
+
+AT_ALWAYS_INLINE const char* ScanDec(const char *cp, unsigned long &valp)
+{
+    cp = SkipWhiteSpace(cp);
+    if (cp == nullptr) {
+        return nullptr;
+    }
+
+    unsigned long cnt = 0;
+    unsigned long digit = 0;
+    unsigned long val = 0;
+    while (1) {
+        digit = *cp;
+        if ((digit - '0') <= 9) { // 9 : max 9
+            digit -= '0';
+            ++cp;
+        } else {
+            break;
+        }
+
+        val = (10 * val) + digit; // 10 : base 10
+        ++cnt;
+    }
+    if (cnt == 0) {
+        return nullptr;
+    }
+
+    valp = val;
+    return cp;
+}
+
+AT_ALWAYS_INLINE const char* ScanChar(const char *cp, char &valp)
+{
+    cp = SkipWhiteSpace(cp);
+    if (cp == nullptr) {
+        return nullptr;
+    }
+
+    valp = *cp;
+
+    /* don't step over NUL terminator */
+    if (*cp) {
+        ++cp;
+    }
+    return cp;
+}
+
+AT_ALWAYS_INLINE const char* ScanString(const char *cp, char *valp, size_t size)
+{
+    cp = SkipWhiteSpace(cp);
+    if (cp == nullptr) {
+        return nullptr;
+    }
+
+    size_t i = 0;
+    while (*cp != ' ' && *cp != '\t' && *cp != '\0') {
+        if ((valp != nullptr) && (i < size - 1)) {
+            valp[i++] = *cp;
+        }
+        ++cp;
+    }
+    if (i == 0 || i >= size) {
+        return nullptr;
+    }
+    valp[i] = '\0';
+    return cp;
+}
+
+AT_ALWAYS_INLINE bool PermsToProtsAndFlag(const char* permChs, const size_t sz, uint32_t& prots, uint32_t& flag)
+{
+    if (permChs == nullptr || sz < 4) { // 4 : min perms size
+        return false;
+    }
+
+    size_t i = 0;
+    if (permChs[i] == 'r') {
+        prots |= PROT_READ;
+    } else if (permChs[i] != '-') {
+        return false;
+    }
+    i++;
+
+    if (permChs[i] == 'w') {
+        prots |= PROT_WRITE;
+    } else if (permChs[i] != '-') {
+        return false;
+    }
+    i++;
+
+    if (permChs[i] == 'x') {
+        prots |= PROT_EXEC;
+    } else if (permChs[i] != '-') {
+        return false;
+    }
+    i++;
+
+    if (permChs[i] == 'p') {
+        flag = MAP_PRIVATE;
+    } else if (permChs[i] == 's') {
+        flag = MAP_SHARED;
+    } else {
+        return false;
+    }
+
+    return true;
+}
+#endif
 }
 
 std::shared_ptr<DfxMap> DfxMap::Create(std::string buf, size_t size)
@@ -61,107 +212,44 @@ bool DfxMap::Parse(char* buf, size_t size)
     if (buf == nullptr || size == 0) {
         return false;
     }
-    char* p;
-    auto PassSpace = [&]() {
-        if (*p != ' ') {
-            return false;
-        }
-        while (*p == ' ') {
-            p++;
-        }
-        return true;
-    };
+
+    char permChs[5] = {0}; // 5 : rwxp
+    char dash = 0;
+    char colon = 0;
+    unsigned long tmp = 0;
+    const char *path = nullptr;
+    const char* cp = buf;
 
     // 7658d38000-7658d40000 rw-p 00000000 00:00 0                              [anon:thread signal stack]
-    p = buf;
-    char* pe;
-    begin = strtoull(p, &pe, BASE_HEX);
-    if (pe == p || *pe != '-') {
+    /* scan: "begin-end perms offset major:minor inum path" */
+    cp = ScanHex(cp, tmp);
+    begin = static_cast<uint64_t>(tmp);
+    cp = ScanChar(cp, dash);
+    if (dash != '-') {
         return false;
     }
-    p = pe + 1;
+    cp = ScanHex(cp, tmp);
+    end = static_cast<uint64_t>(tmp);
+    cp = ScanString(cp, permChs, sizeof(permChs));
+    if (!PermsToProtsAndFlag(permChs, sizeof(permChs), prots, flag)) {
+        return false;
+    }
+    cp = ScanHex(cp, tmp);
+    offset = static_cast<uint64_t>(tmp);
+    cp = ScanHex(cp, tmp);
+    major = static_cast<uint64_t>(tmp);
+    cp = ScanChar(cp, colon);
+    if (colon != ':') {
+        return false;
+    }
+    cp = ScanHex(cp, tmp);
+    minor = static_cast<uint64_t>(tmp);
+    cp = ScanDec(cp, tmp);
+    inode = static_cast<ino_t>(tmp);
+    path = SkipWhiteSpace(cp);
 
-    end = strtoull(p, &pe, BASE_HEX);
-    if (pe == p) {
-        return false;
-    }
-    p = pe;
-    if (!PassSpace()) {
-        return false;
-    }
-
-    perms = perms + *p;
-    if (*p == 'r') {
-        prots |= PROT_READ;
-    } else if (*p != '-') {
-        return false;
-    }
-    p++;
-    perms = perms + *p;
-    if (*p == 'w') {
-        prots |= PROT_WRITE;
-    } else if (*p != '-') {
-        return false;
-    }
-    p++;
-    perms = perms + *p;
-    if (*p == 'x') {
-        prots |= PROT_EXEC;
-    } else if (*p != '-') {
-        return false;
-    }
-    p++;
-    perms = perms + *p;
-    if (*p == 'p') {
-        flag = MAP_PRIVATE;
-    } else if (*p == 's') {
-        flag = MAP_SHARED;
-    } else {
-        return false;
-    }
-    p++;
-    if (!PassSpace()) {
-        return false;
-    }
-
-    offset = strtoull(p, &pe, BASE_HEX);
-    if (pe == p) {
-        return false;
-    }
-    p = pe;
-    if (!PassSpace()) {
-        return false;
-    }
-
-    major = strtoull(p, &pe, BASE_HEX);
-    if (pe == p || *pe != ':') {
-        return false;
-    }
-    p = pe + 1;
-    minor = strtoull(p, &pe, BASE_HEX);
-    if (pe == p) {
-        return false;
-    }
-    p = pe;
-    if (!PassSpace()) {
-        return false;
-    }
-
-    inode = strtoull(p, &pe, BASE_HEX);
-    if (pe == p) {
-        return false;
-    }
-    p = pe;
-
-    if (!PassSpace() || *p == '\0') {
-        return false;
-    }
-
-    size_t len = strlen(p);
-    while (len > 0 && isspace(p[len - 1])) {
-        p[--len] = '\0';
-    }
-    name = std::string(p);
+    perms = std::string(permChs, sizeof(permChs));
+    TrimAndDupStr(path, name);
     return true;
 #else
     return false;
