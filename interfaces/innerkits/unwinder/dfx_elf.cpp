@@ -128,7 +128,7 @@ DfxElf::DfxElf(const std::string& file)
         std::string realPath = file;
         if (!StartsWith(file, "/proc/")) { // sandbox file should not be check by realpath function
             if (!RealPath(file, realPath)) {
-                LOGW("Failed to realpath %s", file.c_str());
+                LOGW("Failed to realpath %s, errno(%d)", file.c_str(), errno);
                 return;
             }
         }
