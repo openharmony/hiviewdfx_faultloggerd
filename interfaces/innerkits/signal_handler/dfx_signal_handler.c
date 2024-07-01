@@ -717,7 +717,7 @@ static bool ReadPipeTimeout(int fd, uint64_t timeout, uint32_t* value)
     do {
         pollRet = poll(pfds, 1, timeout);
         if ((pollRet > 0) && (pfds[0].revents && POLLIN)) {
-            if (read(fd, value, sizeof(uint32_t)) == sizeof(uint32_t)) {
+            if (OHOS_TEMP_FAILURE_RETRY(read(fd, value, sizeof(uint32_t))) == sizeof(uint32_t)) {
                 return true;
             }
         }
