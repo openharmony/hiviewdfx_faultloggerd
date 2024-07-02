@@ -418,8 +418,12 @@ NOINLINE int DfxCrasher::MultiThreadCrash()
 {
     std::cout << "test MultiThreadCrash" << std::endl;
 
-    std::thread (SleepThread, NUMBER_ONE).detach();
-    std::thread (SleepThread, NUMBER_TWO).detach();
+    std::thread ([] {
+        SleepThread(NUMBER_ONE);
+    }).detach();
+    std::thread ([] {
+        SleepThread(NUMBER_TWO);
+    }).detach();
     sleep(1);
 
     raise(SIGSEGV);
@@ -494,7 +498,9 @@ NOINLINE int DfxCrasher::CrashInLambda()
 
 NOINLINE int DfxCrasher::DoDumpCrash()
 {
-    std::thread t(TestFunc1);
+    std::thread t([] {
+        TestFunc1();
+    });
     raise(SIGDUMP);
     t.join();
     return 0;
