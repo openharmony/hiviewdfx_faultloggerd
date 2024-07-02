@@ -837,7 +837,7 @@ bool Unwinder::Impl::FpStep(uintptr_t& fp, uintptr_t& pc, void *ctx)
     uintptr_t ptr = fp;
     if (memory_->ReadUptr(ptr, &fp, true) &&
         memory_->ReadUptr(ptr, &pc, false)) {
-        if (fp == prevFp || fp == 0) {
+        if (fp <= prevFp || fp == 0) {
             LOGU("-fp: %lx is same", (uint64_t)fp);
             return false;
         }
