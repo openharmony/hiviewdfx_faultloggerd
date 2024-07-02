@@ -110,6 +110,10 @@ bool UniqueStackTable::Resize()
 uint64_t UniqueStackTable::PutPcInSlot(uint64_t thisPc, uint64_t prevIdx)
 {
     Node *tableHead = reinterpret_cast<Node *>(tableBufMMap_);
+    if (hashModulus_ == 0) {
+        LOGW("%s", "The value of the hashModulus_ is zero\n");
+        return 0;
+    }
     uint64_t curPcIdx = (((thisPc >> 2) ^ (prevIdx << 4)) % hashModulus_) + availableIndex_;
     uint8_t currentDeconflictTimes_ = deconflictTimes_;
 
