@@ -91,7 +91,7 @@ HWTEST_F(AsyncStackTest, AsyncStackTest002, TestSize.Level2)
     GTEST_LOG_(INFO) << "AsyncStackTest002: start.";
     auto ret = CollectAsyncStack();
 #if defined(__aarch64__)
-    ASSERT_NQ(0, ret);
+    ASSERT_NE(0, ret);
 #else
     ASSERT_EQ(0, ret);
 #endif

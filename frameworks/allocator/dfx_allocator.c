@@ -203,7 +203,7 @@ static void MempoolFree(DfxMempool* mempool, void* ptr)
 {
     PageInfo * const page = (PageInfo*)(PageStart((uintptr_t)(ptr)));
 
-    if (mempool == NULL || ptr == NULL ||
+    if (mempool == NULL || ptr == NULL || mempool->blockSize == 0 ||
         ((uintptr_t)(ptr)) % (mempool->blockSize) != 0) {
         DFXLOG_ERROR("MempoolFree Invalid mempool or address!");
         return;
