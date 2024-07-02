@@ -162,7 +162,8 @@ void DfxUnwindAsyncThread::UnwindThreadByParseStackIfNeed()
     auto frames = thread_->GetFrames();
     constexpr int minFramesNum = 3;
     size_t initSize = frames.size();
-    if (initSize < minFramesNum || frames[minFramesNum - 1].mapName.find("Not mapped") != std::string::npos) {
+    if (initSize < minFramesNum || frames[minFramesNum - 1].mapName.find("Not mapped") != std::string::npos ||
+        frames[minFramesNum - 1].mapName.find("[Unknown]") != std::string::npos) {
         bool needParseStack = true;
         thread_->InitFaultStack(needParseStack);
         auto faultStack = thread_->GetFaultStack();
