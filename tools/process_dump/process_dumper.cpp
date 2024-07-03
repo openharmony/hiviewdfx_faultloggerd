@@ -507,13 +507,6 @@ bool ProcessDumper::InitUnwinder(std::shared_ptr<ProcessDumpRequest> request, pi
     pid_t realPid = 0;
     if (request->dumpMode == FUSION_MODE) {
         ReadPids(realPid, vmPid);
-        unwinder_ = std::make_shared<Unwinder>(realPid, vmPid, isCrash_);
-    } else {
-        if (isCrash_) {
-            unwinder_ = std::make_shared<Unwinder>(process_->vmThread_->threadInfo_.pid);
-        } else {
-            unwinder_ = std::make_shared<Unwinder>(process_->processInfo_.pid, false);
-        }
     }
     // frezze detach after vm process create
     if (!isCrash_) {
@@ -522,6 +515,16 @@ bool ProcessDumper::InitUnwinder(std::shared_ptr<ProcessDumpRequest> request, pi
         }
         process_->Detach();
         DFXLOG_INFO("%s", "ptrace detach all tids");
+    }
+
+    if (request->dumpMode == FUSION_MODE) {
+        unwinder_ = std::make_shared<Unwinder>(realPid, vmPid, isCrash_);
+    } else {
+        if (isCrash_) {
+            unwinder_ = std::make_shared<Unwinder>(process_->vmThread_->threadInfo_.pid);
+        } else {
+            unwinder_ = std::make_shared<Unwinder>(process_->processInfo_.pid, false);
+        }
     }
     if (unwinder_ == nullptr) {
         DFXLOG_ERROR("%s", "unwinder_ is nullptr!");

@@ -46,16 +46,12 @@
 namespace OHOS {
 namespace HiviewDFX {
 namespace {
-bool IsValidThreadStatus(bool isVmProcAttach, bool withRegs, pid_t tid)
+void PrintTidKernelStack(pid_t tid)
 {
-    if (isVmProcAttach && !withRegs) {
-        std::string kernelStack;
-        if (DfxGetKernelStack(tid, kernelStack) == 0) {
-            DFXLOG_INFO("tid(%d) kernel stack %s", tid, kernelStack.c_str());
-        }
-        return false;
+    std::string kernelStack;
+    if (DfxGetKernelStack(tid, kernelStack) == 0) {
+        DFXLOG_INFO("tid(%d) kernel stack %s", tid, kernelStack.c_str());
     }
-    return true;
 }
 }
 
@@ -134,7 +130,11 @@ void DfxUnwindRemote::UnwindKeyThread(std::shared_ptr<ProcessDumpRequest> reques
     if ((vmPid != 0)) {
         if (DfxPtrace::Attach(vmPid, PTRACE_ATTATCH_KEY_THREAD_TIMEOUT)) {
             isVmProcAttach = true;
-            unwindAsyncThread->UnwindStack(vmPid);
+            if (unwThread->GetThreadRegs() != nullptr) {
+                unwindAsyncThread->UnwindStack(vmPid);
+            } else {
+                PrintTidKernelStack(unwThread->threadInfo_.nsTid);
+            }
         }
     } else {
         unwindAsyncThread->UnwindStack();
@@ -180,7 +180,8 @@ void DfxUnwindRemote::UnwindOtherThread(std::shared_ptr<DfxProcess> process, std
             auto regs = thread->GetThreadRegs();
             unwinder->SetRegs(regs);
             bool withRegs = regs != nullptr;
-            if (!IsValidThreadStatus(isVmProcAttach, withRegs, thread->threadInfo_.nsTid)) {
+            if (isVmProcAttach && !withRegs) {
+                PrintTidKernelStack(thread->threadInfo_.nsTid);
                 continue;
             }
             DFXLOG_INFO("%s, unwind tid(%d) start", __func__, thread->threadInfo_.nsTid);

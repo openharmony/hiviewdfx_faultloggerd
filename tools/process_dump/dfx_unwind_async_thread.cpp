@@ -47,13 +47,9 @@ void DfxUnwindAsyncThread::UnwindStack(pid_t vmPid)
                                                     DfxConfig::GetConfig().maxFrameNums);
     if (ProcessDumper::GetInstance().IsCrash()) {
         ReportUnwinderException(unwinder_->GetLastErrorCode());
-    }
-
-    if (!ret && ProcessDumper::GetInstance().IsCrash()) {
-        UnwindThreadFallback();
-    }
-
-    if (ProcessDumper::GetInstance().IsCrash()) {
+        if (!ret) {
+            UnwindThreadFallback();
+        }
         thread_->SetFrames(unwinder_->GetFrames());
         UnwindThreadByParseStackIfNeed();
         // 2: get submitterStack
