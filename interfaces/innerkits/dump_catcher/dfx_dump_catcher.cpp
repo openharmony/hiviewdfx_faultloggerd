@@ -32,6 +32,7 @@
 #include "dfx_kernel_stack.h"
 #include "dfx_log.h"
 #include "dfx_util.h"
+#include "elapsed_time.h"
 #include "faultloggerd_client.h"
 #include "file_ex.h"
 #include "procinfo.h"
@@ -261,6 +262,7 @@ bool DfxDumpCatcher::DoDumpCatchRemote(int pid, int tid, std::string& msg, bool 
         DFXLOG_WARN("%s :: %s :: %s", DFXDUMPCATCHER_TAG.c_str(), __func__, msg.c_str());
         return ret;
     }
+    pid_ = pid;
     int sdkdumpRet = RequestSdkDumpJson(pid, tid, isJson);
     if (sdkdumpRet != static_cast<int>(FaultLoggerSdkDumpResp::SDK_DUMP_PASS)) {
         if (sdkdumpRet == static_cast<int>(FaultLoggerSdkDumpResp::SDK_DUMP_REPEAT)) {
@@ -278,6 +280,7 @@ bool DfxDumpCatcher::DoDumpCatchRemote(int pid, int tid, std::string& msg, bool 
         return ret;
     }
 
+    CollectMainKernelInfo();
     int pollRet = DoDumpRemotePid(pid, msg, isJson);
     switch (pollRet) {
         case DUMP_POLL_OK:
@@ -287,6 +290,7 @@ bool DfxDumpCatcher::DoDumpCatchRemote(int pid, int tid, std::string& msg, bool 
             msg.append(halfProcStatus_);
             msg.append(halfProcWchan_);
             msg.append(halfKernelStack_);
+            halfKernelStack_.clear();
             break;
         }
         default:
@@ -305,7 +309,6 @@ int DfxDumpCatcher::DoDumpRemotePid(int pid, std::string& msg, bool isJson, int3
 {
     int readBufFd = -1;
     int readResFd = -1;
-    pid_ = pid;
     if (isJson) {
         readBufFd = RequestPipeFd(pid, FaultLoggerPipeType::PIPE_FD_JSON_READ_BUF);
         readResFd = RequestPipeFd(pid, FaultLoggerPipeType::PIPE_FD_JSON_READ_RES);
@@ -329,17 +332,20 @@ int DfxDumpCatcher::DoDumpRemotePid(int pid, std::string& msg, bool isJson, int3
     return ret;
 }
 
-void DfxDumpCatcher::CollectKernelInfo()
+void DfxDumpCatcher::CollectMainKernelInfo()
 {
-    DFXLOG_INFO("start collect kernel info for pid(%d) ", pid_);
+    ElapsedTime timer;
+    halfKernelStack_ = "";
     DfxGetKernelStack(pid_, halfKernelStack_);
-    DFXLOG_INFO("finish collect kernel info for pid(%d) ", pid_);
+    DFXLOG_INFO("finish collect kernel info for pid(%d) time(%lld)ms", pid_,
+        timer.Elapsed<std::chrono::milliseconds>());
     ReadProcessStatus(halfProcStatus_, pid_);
     ReadProcessWchan(halfProcWchan_, pid_, false, true);
 }
 
-std::string DfxDumpCatcher::GetAllTidKernelStack(int pid)
+std::string DfxDumpCatcher::GetAllTidKernelStack(int pid, bool excludeMain)
 {
+    ElapsedTime timer;
     std::string kernelStackInfo;
     std::string statusPath = StringPrintf("/proc/%d/status", pid);
     if (access(statusPath.c_str(), F_OK) != 0) {
@@ -353,13 +359,17 @@ std::string DfxDumpCatcher::GetAllTidKernelStack(int pid)
         return kernelStackInfo;
     }
     for (int tid : tids) {
-        std::string tidKernelStackInfo;
-        if (DfxGetKernelStack(tid, tidKernelStackInfo) != 0) {
-            DFXLOG_ERROR("tid(%d) Get kernel stack fail!", tid);
+        if (excludeMain && tid == pid) {
             continue;
         }
-        kernelStackInfo.append(tidKernelStackInfo);
+        std::string tidKernelStackInfo;
+        if (DfxGetKernelStack(tid, tidKernelStackInfo) == 0) {
+            kernelStackInfo.append(tidKernelStackInfo);
+        }
     }
+    DFXLOG_INFO("finish collect all tid info for pid(%d) execlueMian(%d) time(%lld)ms", pid_, excludeMain,
+        timer.Elapsed<std::chrono::milliseconds>());
+    halfKernelStack_.append(kernelStackInfo);
     return kernelStackInfo;
 }
 
@@ -385,7 +395,7 @@ int DfxDumpCatcher::DoDumpRemotePoll(int bufFd, int resFd, int timeout, std::str
     int fdsSize = sizeof(readfds) / sizeof(readfds[0]);
     bool bPipeConnect = false;
     int remainTime = DUMPCATCHER_REMOTE_P90_TIMEOUT;
-    bool collectKernelInfo = false;
+    bool collectAllTidStack = false;
     uint64_t startTime = GetAbsTimeMilliSeconds();
     uint64_t endTime = startTime + static_cast<uint64_t>(timeout);
     while (true) {
@@ -397,9 +407,9 @@ int DfxDumpCatcher::DoDumpRemotePoll(int bufFd, int resFd, int timeout, std::str
                 resMsg.append("Result: poll timeout.\n");
                 break;
             }
-            if (!collectKernelInfo && (remainTime == DUMPCATCHER_REMOTE_P90_TIMEOUT)) {
-                CollectKernelInfo();
-                collectKernelInfo = true;
+            if (!collectAllTidStack && (remainTime == DUMPCATCHER_REMOTE_P90_TIMEOUT)) {
+                GetAllTidKernelStack(pid_, true);
+                collectAllTidStack = true;
             }
             remainTime = static_cast<int>(endTime - now);
             continue;
@@ -408,10 +418,10 @@ int DfxDumpCatcher::DoDumpRemotePoll(int bufFd, int resFd, int timeout, std::str
             resMsg.append("Result: poll error, errno(" + std::to_string(errno) + ")\n");
             break;
         } else if (pollRet == 0) {
-            if (!collectKernelInfo && (remainTime == DUMPCATCHER_REMOTE_P90_TIMEOUT)) {
-                CollectKernelInfo();
+            if (!collectAllTidStack && (remainTime == DUMPCATCHER_REMOTE_P90_TIMEOUT)) {
+                GetAllTidKernelStack(pid_, true);
                 remainTime = timeout - DUMPCATCHER_REMOTE_P90_TIMEOUT;
-                collectKernelInfo = true;
+                collectAllTidStack = true;
                 continue;
             }
             ret = DUMP_POLL_TIMEOUT;

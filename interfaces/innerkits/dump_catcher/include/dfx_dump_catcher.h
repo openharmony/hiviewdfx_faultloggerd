@@ -89,8 +89,8 @@ private:
     bool DoReadBuf(int fd, std::string& msg);
     bool DoReadRes(int fd, bool &ret, std::string& msg);
     bool IsValidJson(const std::string& json);
-    void CollectKernelInfo();
-    std::string GetAllTidKernelStack(int pid);
+    void CollectMainKernelInfo();
+    std::string GetAllTidKernelStack(int pid, bool excludeMain = false);
 
 private:
     static const int DUMPCATCHER_REMOTE_P90_TIMEOUT = 1000;
