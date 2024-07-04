@@ -141,17 +141,18 @@ void FillFdsaninfo(OpenFilesList &list, pid_t nsPid, uint64_t fdTableAddr)
 {
     constexpr size_t fds = sizeof(FdTable::entries) / sizeof(*FdTable::entries);
     size_t entryOffset = offsetof(FdTable, entries);
+    uint64_t addr = fdTableAddr + entryOffset;
+    FdEntry entrys[fds];
+    if (DfxMemory::ReadProcMemByPid(nsPid, addr, entrys, sizeof(FdEntry) * fds) != sizeof(FdEntry) * fds) {
+        DFXLOG_ERROR("read nsPid mem error %s", strerror(errno));
+        return;
+    }
     for (size_t i = 0; i < fds; i++) {
-        uint64_t addr = fdTableAddr + entryOffset + sizeof(FdEntry) * i;
-        FdEntry entry;
-        if (DfxMemory::ReadProcMemByPid(nsPid, addr, &entry, sizeof(entry)) != sizeof(entry)) {
-            DFXLOG_ERROR("read nsPid mem error %s", strerror(errno));
-            return;
-        }
-        if (entry.close_tag) {
-            list[i].fdsanOwner = entry.close_tag;
+        if (entrys[i].close_tag) {
+            list[i].fdsanOwner = entrys[i].close_tag;
         }
     }
+
     size_t overflowOffset = offsetof(FdTable, overflow);
     uintptr_t overflow = 0;
     uint64_t tmp = fdTableAddr + overflowOffset;
@@ -170,15 +171,18 @@ void FillFdsaninfo(OpenFilesList &list, pid_t nsPid, uint64_t fdTableAddr)
     if (overflowLength > ARG_MAX_NUM) {
         return;
     }
+
+    std::vector<FdEntry> overflowFdEntrys(overflowLength);
+    uint64_t address = overflow + offsetof(FdTableOverflow, entries);
+    if (DfxMemory::ReadProcMemByPid(nsPid, address, overflowFdEntrys.data(), sizeof(FdEntry) * overflowLength) !=
+        sizeof(FdEntry) * overflowLength) {
+        DFXLOG_ERROR("read nsPid mem error %s", strerror(errno));
+        return;
+    }
+    size_t fdIndex = fds;
     for (size_t i = 0; i < overflowLength; i++) {
-        size_t fd = i + fds;
-        uint64_t address = overflow + offsetof(FdTableOverflow, entries) + sizeof(FdEntry) * i;
-        FdEntry entry;
-        if (DfxMemory::ReadProcMemByPid(nsPid, address, &entry, sizeof(entry)) != sizeof(entry)) {
-            return;
-        }
-        if (entry.close_tag) {
-            list[fd].fdsanOwner = entry.close_tag;
+        if (overflowFdEntrys[i].close_tag) {
+            list[fdIndex++].fdsanOwner = overflowFdEntrys[i].close_tag;
         }
     }
 }
