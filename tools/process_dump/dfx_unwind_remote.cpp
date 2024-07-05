@@ -73,8 +73,6 @@ bool DfxUnwindRemote::UnwindProcess(std::shared_ptr<ProcessDumpRequest> request,
     SetCrashProcInfo(process->processInfo_.processName, process->processInfo_.pid,
                      process->processInfo_.uid);
     UnwindKeyThread(request, process, unwinder, vmPid);
-    // print keythread base info to hilog when carsh
-    DfxRingBufferWrapper::GetInstance().PrintBaseInfo();
 
     // dumpt -p -t will not unwind other thread
     if (ProcessDumper::GetInstance().IsCrash() || request->siginfo.si_value.sival_int == 0) {
@@ -149,8 +147,8 @@ void DfxUnwindRemote::UnwindKeyThread(std::shared_ptr<ProcessDumpRequest> reques
     }
     process->SetFatalMessage(fatalMsg);
     Printer::PrintDumpHeader(request, process, unwinder);
-    Printer::PrintThreadHeaderByConfig(process->keyThread_);
-    Printer::PrintThreadBacktraceByConfig(unwThread);
+    Printer::PrintThreadHeaderByConfig(process->keyThread_, true);
+    Printer::PrintThreadBacktraceByConfig(unwThread, true);
     if (ProcessDumper::GetInstance().IsCrash()) {
         // Registers of unwThread has been changed, we should print regs from request context.
         process->regs_ = DfxRegs::CreateFromUcontext(request->context);
@@ -176,7 +174,7 @@ void DfxUnwindRemote::UnwindOtherThread(std::shared_ptr<DfxProcess> process, std
         }
 
         if (isVmProcAttach || thread->Attach(PTRACE_ATTATCH_OTHER_THREAD_TIMEOUT)) {
-            Printer::PrintThreadHeaderByConfig(thread);
+            Printer::PrintThreadHeaderByConfig(thread, false);
             auto regs = thread->GetThreadRegs();
             unwinder->SetRegs(regs);
             bool withRegs = regs != nullptr;
@@ -198,7 +196,7 @@ void DfxUnwindRemote::UnwindOtherThread(std::shared_ptr<DfxProcess> process, std
                 ReportUnwinderException(unwinder->GetLastErrorCode());
             }
             DFXLOG_INFO("%s, unwind tid(%d) finish ret(%d).", __func__, thread->threadInfo_.nsTid, ret);
-            Printer::PrintThreadBacktraceByConfig(thread);
+            Printer::PrintThreadBacktraceByConfig(thread, false);
         }
         index++;
     }

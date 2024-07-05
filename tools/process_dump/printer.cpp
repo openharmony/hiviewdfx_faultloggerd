@@ -157,7 +157,7 @@ void Printer::PrintOtherThreadHeaderByConfig()
     }
 }
 
-void Printer::PrintThreadHeaderByConfig(std::shared_ptr<DfxThread> thread)
+void Printer::PrintThreadHeaderByConfig(std::shared_ptr<DfxThread> thread, bool isKeyThread)
 {
     std::stringstream headerInfo;
     if (DfxConfig::GetConfig().displayBacktrace && thread != nullptr) {
@@ -165,7 +165,9 @@ void Printer::PrintThreadHeaderByConfig(std::shared_ptr<DfxThread> thread)
             thread->threadInfo_.tid, thread->threadInfo_.threadName.c_str());
         headerInfo << "Tid:" << thread->threadInfo_.tid << ", Name:" << thread->threadInfo_.threadName << "\n";
     }
-    DfxRingBufferWrapper::GetInstance().AppendBaseInfo(headerInfo.str());
+    if (isKeyThread) {
+        DfxRingBufferWrapper::GetInstance().AppendBaseInfo(headerInfo.str());
+    }
 }
 
 bool Printer::IsLastValidFrame(const DfxFrame& frame)
@@ -192,7 +194,7 @@ bool Printer::IsLastValidFrame(const DfxFrame& frame)
     return false;
 }
 
-void Printer::PrintThreadBacktraceByConfig(std::shared_ptr<DfxThread> thread)
+void Printer::PrintThreadBacktraceByConfig(std::shared_ptr<DfxThread> thread, bool isKeyThread)
 {
     if (DfxConfig::GetConfig().displayBacktrace && thread != nullptr) {
         const auto& frames = thread->GetFrames();
@@ -215,7 +217,9 @@ void Printer::PrintThreadBacktraceByConfig(std::shared_ptr<DfxThread> thread)
                 continue;
             }
             DfxRingBufferWrapper::GetInstance().AppendMsg(DfxFrameFormatter::GetFrameStr(frame));
-            DfxRingBufferWrapper::GetInstance().AppendBaseInfo(DfxFrameFormatter::GetFrameStr(frame));
+            if (isKeyThread) {
+                DfxRingBufferWrapper::GetInstance().AppendBaseInfo(DfxFrameFormatter::GetFrameStr(frame));
+            }
 #if defined(__aarch64__)
             if (IsLastValidFrame(frame)) {
                 needSkip = true;
