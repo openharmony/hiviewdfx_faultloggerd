@@ -474,5 +474,66 @@ HWTEST_F(CrashExceptionTest, CrashExceptionTest014, TestSize.Level2)
     ASSERT_FALSE(ret == CrashExceptionCode::CRASH_ESUCCESS);
     GTEST_LOG_(INFO) << "CrashExceptionTest014: end.";
 }
+
+/**
+ * @tc.name: CrashExceptionTest015
+ * @tc.desc: test CheckFaultSummaryValid, valid Fault Summary.
+ * @tc.type: FUNC
+ */
+HWTEST_F(CrashExceptionTest, CrashExceptionTest015, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "CrashExceptionTest015: start.";
+    std::string summary = std::string("Thread name:sensors\n") +
+        "#00 pc 000c5738 /system/lib/ld-musl-arm.so.1(ioctl+72)(b985d2b9b22c3e542388f5803bac6a56)\n" +
+        "#01 pc 00007fcf /system/lib/chipset-pub-sdk/libipc_common.z.so(OHOS::BinderConnector::WriteBinder(\n" +
+        "#02 pc 00034f35 /system/lib/platformsdk/libipc_core.z.so(OHOS::BinderInvoker::TransactWithDriver(\n" +
+        "#03 pc 000350a5 /system/lib/platformsdk/libipc_core.z.so(OHOS::BinderInvoker::StartWorkLoop(\n" +
+        "#04 pc 000363df /system/lib/platformsdk/libipc_core.z.so(OHOS::BinderInvoker::JoinThread(\n" +
+        "#05 pc 00010955 /system/lib/platformsdk/libsystem_ability_fwk.z.so(\n" +
+        "#06 pc 0000391b /system/bin/sa_main(main.cfi+1986)(c626ef160394bf644c17e6769318dc7d)\n" +
+        "#07 pc 00073560 /system/lib/ld-musl-arm.so.1(libc_start_main_stage2+56)(\n" +
+        "#08 pc 00003078 /system/bin/sa_main(_start_c+84)(c626ef160394bf644c17e6769318dc7d)\n" +
+        "#09 pc 0000301c /system/bin/sa_main(c626ef160394bf644c17e6769318dc7d)\n";
+    ASSERT_TRUE(CheckFaultSummaryValid(summary));
+    GTEST_LOG_(INFO) << "CrashExceptionTest015: end.";
+}
+
+/**
+ * @tc.name: CrashExceptionTest016
+ * @tc.desc: test CheckFaultSummaryValid, valid Fault Summary.
+ * @tc.type: FUNC
+ */
+HWTEST_F(CrashExceptionTest, CrashExceptionTest016, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "CrashExceptionTest016: start.";
+    std::string summary = std::string("Thread name:sensors\n") +
+        "#00 pc 000c5738 /system/lib/ld-musl-arm.so.1(ioctl+72)(b985d2b9b22c3e542388f5803bac6a56)\n" +
+        "#01 pc 00007fcf Not mapped\n" +
+        "#02 pc 00034f35 /system/lib/platformsdk/libipc_core.z.so(OHOS::BinderInvoker::TransactWithDriver(\n" +
+        "#03 pc 000350a5 /system/lib/platformsdk/libipc_core.z.so(OHOS::BinderInvoker::StartWorkLoop(\n" +
+        "#04 pc 000363df /system/lib/platformsdk/libipc_core.z.so(OHOS::BinderInvoker::JoinThread(\n" +
+        "#05 pc 00010955 /system/lib/platformsdk/libsystem_ability_fwk.z.so(\n" +
+        "#06 pc 0000391b /system/bin/sa_main(main.cfi+1986)(c626ef160394bf644c17e6769318dc7d)\n" +
+        "#07 pc 00073560 /system/lib/ld-musl-arm.so.1(libc_start_main_stage2+56)(\n" +
+        "#08 pc 00003078 /system/bin/sa_main(_start_c+84)(c626ef160394bf644c17e6769318dc7d)\n" +
+        "#09 pc 0000301c /system/bin/sa_main(c626ef160394bf644c17e6769318dc7d)\n";
+    ASSERT_TRUE(CheckFaultSummaryValid(summary));
+    GTEST_LOG_(INFO) << "CrashExceptionTest016: end.";
+}
+
+/**
+ * @tc.name: CrashExceptionTest017
+ * @tc.desc: test CheckFaultSummaryValid, invalid Fault Summary.
+ * @tc.type: FUNC
+ */
+HWTEST_F(CrashExceptionTest, CrashExceptionTest017, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "CrashExceptionTest017: start.";
+    std::string summary = std::string("Thread name:sensors\n") +
+        "#00 pc 000c5738 /system/lib/ld-musl-arm.so.1(ioctl+72)(b985d2b9b22c3e542388f5803bac6a56)\n" +
+        "#01 pc 00007fcf /system/lib/chipset-pub-sdk/libipc_common.z.so(OHOS::BinderConnector::WriteBinder(\n";
+    ASSERT_FALSE(CheckFaultSummaryValid(summary));
+    GTEST_LOG_(INFO) << "CrashExceptionTest017: end.";
+}
 } // namespace HiviewDFX
 } // namespace OHOS

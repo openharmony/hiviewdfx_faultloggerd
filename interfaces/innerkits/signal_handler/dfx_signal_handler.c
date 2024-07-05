@@ -690,6 +690,7 @@ static bool InitPipe(void)
     for (int i = 0; i < PIPE_MAX; i++) {
         if (pipe(g_pipeFds[i]) == -1) {
             DFXLOG_ERROR("create pipe fail");
+            FillCrashExceptionAndReport(CRASH_SIGNAL_ECREATEPIPE);
             CleanPipe();
             return false;
         }
@@ -729,7 +730,7 @@ static bool ReadPipeTimeout(int fd, uint64_t timeout, uint32_t* value)
             timeout = endTime - now;
         }
     } while (pollRet < 0 && errno == EINTR);
-
+    FillCrashExceptionAndReport(CRASH_SIGNAL_EREADPIPE);
     DFXLOG_ERROR("read pipe failed %d", errno);
     return false;
 }
