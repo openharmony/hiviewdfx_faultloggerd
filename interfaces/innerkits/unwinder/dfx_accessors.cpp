@@ -26,6 +26,7 @@
 #include "dfx_errors.h"
 #include "dfx_log.h"
 #include "dfx_regs.h"
+#include "dfx_trace_dlsym.h"
 #include "dfx_elf.h"
 #include "dfx_maps.h"
 
@@ -226,6 +227,7 @@ int DfxAccessorsRemote::AccessReg(int reg, uintptr_t *val, void *arg)
 
 int DfxAccessorsRemote::FindUnwindTable(uintptr_t pc, UnwindTableInfo& uti, void *arg)
 {
+    DFX_TRACE_SCOPED_DLSYM("FindUnwindTable");
     UnwindContext *ctx = reinterpret_cast<UnwindContext *>(arg);
     if (ctx == nullptr || ctx->map == nullptr) {
         return UNW_ERROR_INVALID_CONTEXT;

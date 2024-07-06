@@ -36,6 +36,7 @@
 #include "dfx_ring_buffer_wrapper.h"
 #include "dfx_symbols.h"
 #include "dfx_thread.h"
+#include "dfx_trace.h"
 #include "dfx_util.h"
 #ifdef PARSE_LOCK_OWNER
 #include "lock_parser.h"
@@ -64,6 +65,7 @@ DfxUnwindRemote &DfxUnwindRemote::GetInstance()
 bool DfxUnwindRemote::UnwindProcess(std::shared_ptr<ProcessDumpRequest> request, std::shared_ptr<DfxProcess> process,
                                     std::shared_ptr<Unwinder> unwinder, pid_t vmPid)
 {
+    DFX_TRACE_SCOPED("UnwindProcess");
     bool ret = false;
     if (process == nullptr || unwinder == nullptr) {
         DFXLOG_WARN("%s::process or unwinder is not initialized.", __func__);
@@ -180,24 +182,31 @@ void DfxUnwindRemote::UnwindOtherThread(std::shared_ptr<DfxProcess> process, std
             auto regs = thread->GetThreadRegs();
             unwinder->SetRegs(regs);
             bool withRegs = regs != nullptr;
+            pid_t tid = thread->threadInfo_.nsTid;
             if (isVmProcAttach && !withRegs) {
-                PrintTidKernelStack(thread->threadInfo_.nsTid);
+                PrintTidKernelStack(tid);
                 continue;
             }
-            DFXLOG_INFO("%s, unwind tid(%d) start", __func__, thread->threadInfo_.nsTid);
-            auto pid = (vmPid != 0 && isVmProcAttach) ? vmPid : thread->threadInfo_.nsTid;
+            DFXLOG_INFO("%s, unwind tid(%d) start", __func__, tid);
+            auto pid = (vmPid != 0 && isVmProcAttach) ? vmPid : tid;
+            DFX_TRACE_START("OtherThreadUnwindRemote:%d", tid);
             bool ret = unwinder->UnwindRemote(pid, withRegs, DfxConfig::GetConfig().maxFrameNums);
+            DFX_TRACE_FINISH();
 #ifdef PARSE_LOCK_OWNER
+            DFX_TRACE_START("OtherThreadGetFrames:%d", tid);
             thread->SetFrames(unwinder->GetFrames());
-            LockParser::ParseLockInfo(unwinder, tmpPid, thread->threadInfo_.nsTid);
+            DFX_TRACE_FINISH();
+            LockParser::ParseLockInfo(unwinder, tmpPid, tid);
 #else
             thread->Detach();
+            DFX_TRACE_START("OtherThreadGetFrames:%d", tid);
             thread->SetFrames(unwinder->GetFrames());
+            DFX_TRACE_FINISH();
 #endif
             if (ProcessDumper::GetInstance().IsCrash()) {
                 ReportUnwinderException(unwinder->GetLastErrorCode());
             }
-            DFXLOG_INFO("%s, unwind tid(%d) finish ret(%d).", __func__, thread->threadInfo_.nsTid, ret);
+            DFXLOG_INFO("%s, unwind tid(%d) finish ret(%d).", __func__, tid, ret);
             Printer::PrintThreadBacktraceByConfig(thread);
         }
         index++;

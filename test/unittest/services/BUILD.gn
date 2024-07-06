@@ -45,6 +45,7 @@ if (defined(ohos_lite)) {
       sources += [ "$c_utils_src_path/directory_ex.cpp" ]
 
       deps = [
+        "$faultloggerd_common_path/trace:dfx_trace",
         "$faultloggerd_path/common/dfxlog:dfx_hilog",
         "$faultloggerd_path/common/dfxutil:dfx_util",
         "$faultloggerd_path/interfaces/innerkits/faultloggerd_client:libfaultloggerd",
@@ -94,6 +95,7 @@ if (defined(ohos_lite)) {
     ]
 
     deps = [
+      "$faultloggerd_common_path/trace:dfx_trace",
       "$faultloggerd_path/common/dfxutil:dfx_util",
       "$faultloggerd_path/interfaces/innerkits/faultloggerd_client:libfaultloggerd",
       "//third_party/googletest:gmock_main",

@@ -13,6 +13,7 @@
  * limitations under the License.
  */
 #include "dfx_xz_utils.h"
+#include "dfx_trace_dlsym.h"
 #include "7zCrc.h"
 #include "Xz.h"
 #include "XzCrc64.h"
@@ -35,6 +36,7 @@ static void XzFree(ISzAllocPtr, void *address)
 
 bool XzDecompress(const uint8_t *src, size_t srcLen, std::shared_ptr<std::vector<uint8_t>> out)
 {
+    DFX_TRACE_SCOPED_DLSYM("XzDecompress");
     ISzAlloc alloc;
     CXzUnpacker state;
     alloc.Alloc = XzAlloc;

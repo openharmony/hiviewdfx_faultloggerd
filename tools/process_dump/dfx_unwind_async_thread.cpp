@@ -21,6 +21,7 @@
 #include "dfx_maps.h"
 #include "dfx_regs.h"
 #include "dfx_ring_buffer_wrapper.h"
+#include "dfx_trace.h"
 #ifdef PARSE_LOCK_OWNER
 #include "lock_parser.h"
 #endif
@@ -40,17 +41,22 @@ void DfxUnwindAsyncThread::UnwindStack(pid_t vmPid)
     // unwinding with context passed by dump request, only for crash thread or target thread.
     auto regs = thread_->GetThreadRegs();
     unwinder_->SetRegs(regs);
-    DFXLOG_INFO("%s, unwind tid(%d) start.", __func__, thread_->threadInfo_.nsTid);
-    auto tmpPid = vmPid != 0 ? vmPid : thread_->threadInfo_.nsTid;
+    pid_t tid = thread_->threadInfo_.nsTid;
+    DFXLOG_INFO("%s, unwind tid(%d) start.", __func__, tid);
+    auto tmpPid = vmPid != 0 ? vmPid : tid;
+    DFX_TRACE_START("KeyThreadUnwindRemote:%d", tid);
     MAYBE_UNUSED bool ret = unwinder_->UnwindRemote(tmpPid,
                                                     regs != nullptr,
                                                     DfxConfig::GetConfig().maxFrameNums);
+    DFX_TRACE_FINISH();
     if (ProcessDumper::GetInstance().IsCrash()) {
         ReportUnwinderException(unwinder_->GetLastErrorCode());
         if (!ret) {
             UnwindThreadFallback();
         }
+        DFX_TRACE_START("KeyThreadGetFrames:%d", tid);
         thread_->SetFrames(unwinder_->GetFrames());
+        DFX_TRACE_FINISH();
         UnwindThreadByParseStackIfNeed();
         // 2: get submitterStack
         std::vector<DfxFrame> submmiterFrames;
@@ -59,14 +65,19 @@ void DfxUnwindAsyncThread::UnwindStack(pid_t vmPid)
         MergeStack(submmiterFrames);
     } else {
 #ifdef PARSE_LOCK_OWNER
+        DFX_TRACE_START("KeyThreadGetFrames:%d", tid);
         thread_->SetFrames(unwinder_->GetFrames());
+        DFX_TRACE_FINISH();
         LockParser::ParseLockInfo(unwinder_, tmpPid, thread_->threadInfo_.nsTid);
 #else
         thread_->Detach();
+        DFX_TRACE_START("KeyThreadGetFrames:%d", tid);
         thread_->SetFrames(unwinder_->GetFrames());
+        DFX_TRACE_FINISH();
 #endif
     }
-    DFXLOG_INFO("%s, unwind tid(%d) finish ret(%d).", __func__, thread_->threadInfo_.nsTid, ret);
+
+    DFXLOG_INFO("%s, unwind tid(%d) finish ret(%d).", __func__, tid, ret);
 }
 
 void DfxUnwindAsyncThread::GetSubmitterStack(std::vector<DfxFrame> &submitterFrames)

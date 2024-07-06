@@ -24,6 +24,7 @@
 
 #include "dfx_define.h"
 #include "dfx_log.h"
+#include "dfx_trace_dlsym.h"
 #include "string_util.h"
 
 namespace OHOS {
@@ -120,6 +121,7 @@ bool DfxSymbols::GetFuncNameAndOffsetByPc(uint64_t relPc, std::shared_ptr<DfxElf
 
 std::string DfxSymbols::Demangle(const std::string& buf)
 {
+    DFX_TRACE_SCOPED_DLSYM("Demangle");
     if ((buf.length() < 2) || (buf[0] != '_')) { // 2 : min buf length
         return buf;
     }

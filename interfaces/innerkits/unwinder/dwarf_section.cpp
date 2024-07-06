@@ -16,6 +16,7 @@
 #include "dwarf_section.h"
 #include <securec.h>
 #include "dfx_log.h"
+#include "dfx_trace_dlsym.h"
 #include "dwarf_cfa_instructions.h"
 
 namespace OHOS {
@@ -34,6 +35,7 @@ DwarfSection::DwarfSection(std::shared_ptr<DfxMemory> memory) : memory_(memory)
 
 bool DwarfSection::LinearSearchEntry(uintptr_t pc, struct UnwindTableInfo uti, struct UnwindEntryInfo& uei)
 {
+    DFX_TRACE_SCOPED_DLSYM("DwarfSectionLinearSearchEntry");
     uintptr_t fdeCount = uti.tableLen;
     uintptr_t tableData = uti.tableData;
     LOGU("LinearSearchEntry tableData:%p, tableLen: %u", (void*)tableData, (uint32_t)fdeCount);
@@ -57,6 +59,7 @@ bool DwarfSection::LinearSearchEntry(uintptr_t pc, struct UnwindTableInfo uti, s
 
 bool DwarfSection::SearchEntry(uintptr_t pc, struct UnwindTableInfo uti, struct UnwindEntryInfo& uei)
 {
+    DFX_TRACE_SCOPED_DLSYM("DwarfSectionSearchEntry");
     MAYBE_UNUSED auto segbase = uti.segbase;
     uintptr_t fdeCount = uti.tableLen;
     uintptr_t tableData = uti.tableData;
@@ -94,8 +97,7 @@ bool DwarfSection::SearchEntry(uintptr_t pc, struct UnwindTableInfo uti, struct 
 
     if (entry == 0) {
         if (high != 0) {
-            ptr = (uintptr_t) tableData + (high - 1) * sizeof(DwarfTableEntry);
-            ptr += 4; // 4 : four bytes
+            ptr = static_cast<uintptr_t>(tableData) + (high - 1) * sizeof(DwarfTableEntry) + 4; // 4 : four bytes
             if (!memory_->ReadS32(ptr, &dwarfTableEntry.fdeOffset, true)) {
                 lastErrorData_.SetAddrAndCode(ptr, UNW_ERROR_INVALID_MEMORY);
                 return false;
@@ -114,6 +116,7 @@ bool DwarfSection::SearchEntry(uintptr_t pc, struct UnwindTableInfo uti, struct 
 
 bool DwarfSection::Step(uintptr_t pc, uintptr_t fdeAddr, std::shared_ptr<RegLocState> rs)
 {
+    DFX_TRACE_SCOPED_DLSYM("DwarfSectionStep");
     FrameDescEntry fdeInfo;
     if (!ParseFde(fdeAddr, fdeAddr, fdeInfo)) {
         LOGE("%s", "Failed to parse fde?");
