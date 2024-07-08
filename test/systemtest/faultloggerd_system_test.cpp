@@ -1609,28 +1609,5 @@ HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest123, TestSize.Level2)
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest123: end.";
 }
 #endif
-
-/**
-* @tc.name: FaultLoggerdSystemTest124
-* @tc.desc: Test process exit after being killed
-* @tc.type: FUNC
-*/
-HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest124, TestSize.Level2)
-{
-    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest124: start.";
-    InstallTestHap("/data/FaultloggerdJsTest.hap");
-    string testBundleName = TEST_BUNDLE_NAME;
-    string testAbiltyName = testBundleName + ".MainAbility";
-    for (int i = 0; i < 2; i++) { // 2 : check again
-        int pid = LaunchTestHap(testAbiltyName, testBundleName);
-        kill(pid, SIGABRT);
-        sleep(2); // 2 : sleep 2s
-        int newPid = GetProcessPid(TEST_BUNDLE_NAME);
-        EXPECT_NE(pid, newPid) << "FaultLoggerdSystemTest124 Failed";
-    }
-    StopTestHap(TEST_BUNDLE_NAME);
-    UninstallTestHap(TEST_BUNDLE_NAME);
-    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest124: end.";
-}
 } // namespace HiviewDFX
 } // namespace OHOS

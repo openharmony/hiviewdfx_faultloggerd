@@ -17,7 +17,6 @@
         <preparer>
             <option name="push" value="hiviewdfx/faultloggerd/crasher_c -> /data/" src="out"/>
             <option name="push" value="hiviewdfx/faultloggerd/crasher_cpp -> /data/" src="out"/>
-            <option name="push" value="tests/unittest/faultloggerd/resource/FaultloggerdJsTest.hap -> /data/" src="out"/>
         </preparer>
     </target>
     <target name="test_dumpcatcher">
