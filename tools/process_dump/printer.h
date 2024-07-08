@@ -37,8 +37,8 @@ public:
                                 std::shared_ptr<Unwinder> unwinder);
     static void PrintProcessMapsByConfig(std::shared_ptr<DfxMaps> maps);
     static void PrintOtherThreadHeaderByConfig();
-    static void PrintThreadHeaderByConfig(std::shared_ptr<DfxThread> thread);
-    static void PrintThreadBacktraceByConfig(std::shared_ptr<DfxThread> thread);
+    static void PrintThreadHeaderByConfig(std::shared_ptr<DfxThread> thread, bool isKeyThread);
+    static void PrintThreadBacktraceByConfig(std::shared_ptr<DfxThread> thread, bool isKeyThread);
     static void PrintThreadRegsByConfig(std::shared_ptr<DfxThread> thread);
     static void PrintRegsByConfig(std::shared_ptr<DfxRegs> regs);
     static void PrintThreadFaultStackByConfig(std::shared_ptr<DfxProcess> process, std::shared_ptr<DfxThread> thread,

@@ -280,6 +280,8 @@ void ProcessDumper::Dump()
     ReportSigDumpStats(request);
 
     WriteDumpRes(resDump_);
+    // print keythread base info to hilog when carsh
+    DfxRingBufferWrapper::GetInstance().PrintBaseInfo();
     DfxRingBufferWrapper::GetInstance().StopThread();
     DFXLOG_INFO("Finish dump stacktrace for %s(%d:%d).", request->processName, request->pid, request->tid);
     CloseDebugLog();
