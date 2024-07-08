@@ -94,7 +94,7 @@ if (defined(ohos_lite)) {
 
     output_extension = "so"
     innerapi_tags = [
-      "chipsetsdk_indirect",
+      "chipsetsdk",
       "platformsdk_indirect",
     ]
     part_name = "faultloggerd"
