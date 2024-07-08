@@ -31,6 +31,7 @@
 #include "dfx_dump_res.h"
 #include "dfx_kernel_stack.h"
 #include "dfx_log.h"
+#include "dfx_trace_dlsym.h"
 #include "dfx_util.h"
 #include "elapsed_time.h"
 #include "faultloggerd_client.h"
@@ -205,7 +206,7 @@ bool DfxDumpCatcher::DumpCatch(int pid, int tid, std::string& msg, size_t maxFra
         DFXLOG_ERROR("%s :: dump_catch :: param error.", DFXDUMPCATCHER_TAG.c_str());
         return ret;
     }
-
+    DfxEnableTraceDlsym(true);
     std::unique_lock<std::mutex> lck(mutex_);
     int currentPid = getprocpid();
     bool reportStat = false;
@@ -241,6 +242,7 @@ bool DfxDumpCatcher::DumpCatch(int pid, int tid, std::string& msg, size_t maxFra
 
     DFXLOG_INFO("%s :: dump_catch :: msgLength: %zu",  DFXDUMPCATCHER_TAG.c_str(), msg.size());
     DFXLOG_DEBUG("%s :: dump_catch :: ret: %d, msg: %s", DFXDUMPCATCHER_TAG.c_str(), ret, msg.c_str());
+    DfxEnableTraceDlsym(false);
     return ret;
 }
 
@@ -256,6 +258,7 @@ bool DfxDumpCatcher::DumpCatchFd(int pid, int tid, std::string& msg, int fd, siz
 
 bool DfxDumpCatcher::DoDumpCatchRemote(int pid, int tid, std::string& msg, bool isJson)
 {
+    DFX_TRACE_SCOPED_DLSYM("DoDumpCatchRemote");
     bool ret = false;
     if (pid <= 0 || tid < 0) {
         msg.append("Result: pid(" + std::to_string(pid) + ") param error.\n");
@@ -307,6 +310,7 @@ bool DfxDumpCatcher::DoDumpCatchRemote(int pid, int tid, std::string& msg, bool 
 
 int DfxDumpCatcher::DoDumpRemotePid(int pid, std::string& msg, bool isJson, int32_t timeout)
 {
+    DFX_TRACE_SCOPED_DLSYM("DoDumpRemotePid");
     int readBufFd = -1;
     int readResFd = -1;
     if (isJson) {
@@ -375,6 +379,7 @@ std::string DfxDumpCatcher::GetAllTidKernelStack(int pid, bool excludeMain)
 
 int DfxDumpCatcher::DoDumpRemotePoll(int bufFd, int resFd, int timeout, std::string& msg, bool isJson)
 {
+    DFX_TRACE_SCOPED_DLSYM("DoDumpRemotePoll");
     if (bufFd < 0 || resFd < 0) {
         if (!isJson) {
             msg = "Result: bufFd or resFd < 0.\n";

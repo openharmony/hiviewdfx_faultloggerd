@@ -33,6 +33,7 @@
 #include "dfx_param.h"
 #include "dfx_regs_get.h"
 #include "dfx_symbols.h"
+#include "dfx_trace_dlsym.h"
 #include "dwarf_section.h"
 #include "fp_unwinder.h"
 #include "stack_util.h"
@@ -67,6 +68,7 @@ public:
             LOGE("pid(%d) error", pid);
             return;
         }
+        DfxEnableTraceDlsym(true);
         maps_ = DfxMaps::Create(pid, crash);
         acc_ = std::make_shared<DfxAccessorsRemote>();
         enableFpCheckMapExec_ = true;
@@ -79,6 +81,7 @@ public:
             LOGE("pid(%d) or nspid(%d) error", pid, nspid);
             return;
         }
+        DfxEnableTraceDlsym(true);
         maps_ = DfxMaps::Create(pid, crash);
         acc_ = std::make_shared<DfxAccessorsRemote>();
         enableFpCheckMapExec_ = true;
@@ -105,6 +108,7 @@ public:
 
     ~Impl()
     {
+        DfxEnableTraceDlsym(false);
         Destroy();
     }
 
@@ -659,6 +663,7 @@ int Unwinder::Impl::ArkWriteJitCodeToFile(int fd)
 #if defined(ENABLE_MIXSTACK)
 bool Unwinder::Impl::StepArkJsFrame(StepFrame& frame)
 {
+    DFX_TRACE_SCOPED_DLSYM("StepArkJsFrame pc: %p", reinterpret_cast<void *>(frame.pc));
     if (pid_ != UNWIND_TYPE_CUSTOMIZE) {
         LOGI("+++ark pc: %p, fp: %p, sp: %p, isJsFrame: %d.", reinterpret_cast<void *>(frame.pc),
             reinterpret_cast<void *>(frame.fp), reinterpret_cast<void *>(frame.sp), frame.isJsFrame);
@@ -853,6 +858,7 @@ bool Unwinder::Impl::FpStep(uintptr_t& fp, uintptr_t& pc, void *ctx)
 
 bool Unwinder::Impl::Step(uintptr_t& pc, uintptr_t& sp, void *ctx)
 {
+    DFX_TRACE_SCOPED_DLSYM("Step pc:%p", reinterpret_cast<void *>(pc));
     if ((regs_ == nullptr) || (!CheckAndReset(ctx))) {
         LOGE("%s", "params is nullptr?");
         return false;
@@ -1186,8 +1192,9 @@ void Unwinder::Impl::FillFrame(DfxFrame& frame)
         LOGU("%s", "Current frame is not mapped.");
         return;
     }
-    frame.relPc = frame.map->GetRelPc(frame.pc);
     frame.mapName = frame.map->GetElfName();
+    DFX_TRACE_SCOPED_DLSYM("FillFrame:%s", frame.mapName.c_str());
+    frame.relPc = frame.map->GetRelPc(frame.pc);
     frame.mapOffset = frame.map->offset;
     LOGU("mapName: %s, mapOffset: %" PRIx64 "", frame.mapName.c_str(), frame.mapOffset);
     auto elf = frame.map->GetElf();
@@ -1209,7 +1216,7 @@ void Unwinder::Impl::FillJsFrame(DfxFrame& frame)
         LOGU("%s", "Current js frame is not map.");
         return;
     }
-
+    DFX_TRACE_SCOPED_DLSYM("FillJsFrame:%s", frame.map->name.c_str());
     LOGU("Fill js frame, map name: %s", frame.map->name.c_str());
     auto hap = frame.map->GetHap();
     if (hap == nullptr) {

@@ -81,6 +81,7 @@ if (defined(ohos_lite)) {
     deps = [
       "$faultloggerd_common_path/dfxlog:dfx_hilog",
       "$faultloggerd_common_path/dfxutil:dfx_util",
+      "$faultloggerd_common_path/trace:dfx_trace_dlsym",
       "$hilog_lite_deps_path",
     ]
 
@@ -110,6 +111,7 @@ if (defined(ohos_lite)) {
     deps = [
       "$faultloggerd_common_path/dfxlog:dfx_hilog",
       "$faultloggerd_common_path/dfxutil:dfx_util",
+      "$faultloggerd_common_path/trace:dfx_trace_dlsym",
       "$hilog_lite_deps_path",
     ]
     external_deps = [ "bounds_checking_function:libsec_shared" ]
@@ -168,7 +170,10 @@ if (defined(ohos_lite)) {
       ":offline_mixstack_config",
       "$faultloggerd_common_path/build:coverage_flags",
     ]
-    defines = [ "DFX_UNWIND_ERROR" ]
+    defines = [
+      "DFX_UNWIND_ERROR",
+      "DFX_ENABLE_TRACE",
+    ]
     if (target_cpu == "arm64") {
       defines += [ "ENABLE_PARAMETER" ]
     }
@@ -183,6 +188,7 @@ if (defined(ohos_lite)) {
     deps = [
       "$faultloggerd_common_path/dfxlog:dfx_hilog",
       "$faultloggerd_common_path/dfxutil:dfx_util",
+      "$faultloggerd_common_path/trace:dfx_trace_dlsym",
     ]
 
     if (is_ohos && !is_mingw && !is_emulator) {
@@ -225,6 +231,7 @@ if (defined(ohos_lite)) {
     deps = [
       "$faultloggerd_common_path/dfxlog:dfx_hilog",
       "$faultloggerd_common_path/dfxutil:dfx_util",
+      "$faultloggerd_common_path/trace:dfx_trace_dlsym",
     ]
 
     if (is_ohos && !is_mingw && !is_emulator) {
@@ -258,6 +265,7 @@ if (defined(ohos_lite)) {
     deps = [
       "$faultloggerd_common_path/dfxlog:dfx_hilog_base_static",
       "$faultloggerd_common_path/dfxutil:dfx_util_static",
+      "$faultloggerd_common_path/trace:dfx_trace_dlsym",
     ]
 
     if (is_ohos && !is_mingw && !is_emulator) {
@@ -295,6 +303,7 @@ if (defined(ohos_lite)) {
     deps = [
       "$faultloggerd_common_path/dfxlog:dfx_hilog",
       "$faultloggerd_common_path/dfxutil:dfx_util",
+      "$faultloggerd_common_path/trace:dfx_trace_dlsym",
     ]
 
     if (is_ohos && !is_mingw && !is_emulator) {
@@ -347,7 +356,10 @@ if (defined(ohos_lite)) {
       sources += [ "dfx_xz_utils.cpp" ]
       public_external_deps = [ "lzma:lzma_static" ]
     }
-    deps = [ "$faultloggerd_common_path/dfxutil:dfx_util_host" ]
+    deps = [
+      "$faultloggerd_common_path/dfxutil:dfx_util_host",
+      "$faultloggerd_common_path/trace:dfx_trace_dlsym",
+    ]
     external_deps = [ "bounds_checking_function:libsec_static" ]
     if (is_ohos) {
       external_deps += [ "c_utils:utils" ]

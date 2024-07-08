@@ -39,6 +39,7 @@
 #include "dfx_define.h"
 #include "dfx_exception.h"
 #include "dfx_log.h"
+#include "dfx_trace.h"
 #include "dfx_util.h"
 #include "directory_ex.h"
 #include "fault_logger_config.h"
@@ -172,6 +173,7 @@ int32_t FaultLoggerDaemon::StartServer()
 
 void FaultLoggerDaemon::HandleAccept(int32_t epollFd, int32_t socketFd)
 {
+    DFX_TRACE_SCOPED("HandleAccept");
     struct sockaddr_un clientAddr;
     socklen_t clientAddrSize = static_cast<socklen_t>(sizeof(clientAddr));
 
@@ -289,6 +291,7 @@ bool FaultLoggerDaemon::InitEnvironment()
 
 void FaultLoggerDaemon::HandleDefaultClientRequest(int32_t connectionFd, const FaultLoggerdRequest * request)
 {
+    DFX_TRACE_SCOPED("HandleDefaultClientRequest");
     RemoveTempFileIfNeed();
 
     int fd = CreateFileForRequest(request->type, request->pid, request->tid, request->time, false);
@@ -333,6 +336,7 @@ void FaultLoggerDaemon::HandleExceptionRequest(int32_t connectionFd, FaultLogger
 
 void FaultLoggerDaemon::HandlePipeFdClientRequest(int32_t connectionFd, FaultLoggerdRequest * request)
 {
+    DFX_TRACE_SCOPED("HandlePipeFdClientRequest");
     DFXLOG_DEBUG("%s :: pid(%d), pipeType(%d).\n", FAULTLOGGERD_TAG.c_str(), request->pid, request->pipeType);
     int fd = -1;
     FaultLoggerPipe2* faultLoggerPipe = faultLoggerPipeMap_->Get(request->pid);
@@ -497,6 +501,7 @@ void FaultLoggerDaemon::HandlePermissionRequest(int32_t connectionFd, FaultLogge
 
 void FaultLoggerDaemon::HandleSdkDumpRequest(int32_t connectionFd, FaultLoggerdRequest * request)
 {
+    DFX_TRACE_SCOPED("HandleSdkDumpRequest");
     DFXLOG_INFO("Receive dump request for pid:%d tid:%d.", request->pid, request->tid);
     FaultLoggerSdkDumpResp resSdkDump = FaultLoggerSdkDumpResp::SDK_DUMP_PASS;
     FaultLoggerCheckPermissionResp resSecurityCheck = SecurityCheck(connectionFd, request);
@@ -595,6 +600,7 @@ void FaultLoggerDaemon::ClearTimeOutRecords()
 
 bool FaultLoggerDaemon::IsCrashed(int32_t pid)
 {
+    DFX_TRACE_SCOPED("IsCrashed");
     ClearTimeOutRecords();
     return crashTimeMap_.find(pid) != crashTimeMap_.end();
 }
@@ -812,11 +818,9 @@ void FaultLoggerDaemon::WaitForRequest()
     epoll_event events[MAX_CONNECTION];
     DFXLOG_DEBUG("%s :: %s: start epoll wait.", FAULTLOGGERD_TAG.c_str(), __func__);
     do {
-        int epollNum = epoll_wait(eventFd_, events, MAX_CONNECTION, -1);
+        int epollNum = OHOS_TEMP_FAILURE_RETRY(epoll_wait(eventFd_, events, MAX_CONNECTION, -1));
         if (epollNum < 0) {
-            if (errno != EINTR) {
-                DFXLOG_ERROR("%s :: %s: epoll wait error, errno(%d).", FAULTLOGGERD_TAG.c_str(), __func__, errno);
-            }
+            DFXLOG_ERROR("%s :: %s: epoll wait error, errno(%d).", FAULTLOGGERD_TAG.c_str(), __func__, errno);
             continue;
         }
         for (int i = 0; i < epollNum; i++) {
