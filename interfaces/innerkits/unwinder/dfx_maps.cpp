@@ -27,6 +27,7 @@
 #include "dfx_define.h"
 #include "dfx_elf.h"
 #include "dfx_log.h"
+#include "dfx_trace_dlsym.h"
 #include "string_printf.h"
 #include "string_util.h"
 
@@ -94,6 +95,7 @@ bool DfxMaps::Create(const pid_t pid, std::vector<std::shared_ptr<DfxMap>>& maps
 
 bool DfxMaps::Parse(const pid_t pid, const std::string& path)
 {
+    DFX_TRACE_SCOPED_DLSYM("ParseMaps");
     if ((pid < 0) || (path == "")) {
         LOGE("param is error");
         return false;

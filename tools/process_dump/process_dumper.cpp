@@ -51,6 +51,7 @@
 #include "dfx_unwind_remote.h"
 #include "dfx_util.h"
 #include "faultloggerd_client.h"
+#include "dfx_trace.h"
 #include "printer.h"
 #include "procinfo.h"
 #include "unwinder_config.h"
@@ -294,6 +295,7 @@ void ProcessDumper::Dump()
 
 static int32_t ReadRequestAndCheck(std::shared_ptr<ProcessDumpRequest> request)
 {
+    DFX_TRACE_SCOPED("ReadRequestAndCheck");
     ssize_t readCount = OHOS_TEMP_FAILURE_RETRY(read(STDIN_FILENO, request.get(), sizeof(ProcessDumpRequest)));
     if (readCount != static_cast<long>(sizeof(ProcessDumpRequest))) {
         DFXLOG_ERROR("Failed to read DumpRequest(%d), readCount(%zd).", errno, readCount);
@@ -307,6 +309,7 @@ static int32_t ReadRequestAndCheck(std::shared_ptr<ProcessDumpRequest> request)
 
 std::string GetOpenFiles(int32_t pid, int nsPid, uint64_t fdTableAddr)
 {
+    DFX_TRACE_SCOPED("GetOpenFiles");
     OpenFilesList openFies;
     CollectOpenFiles(openFies, pid);
 #if !defined(__x86_64__)
@@ -319,6 +322,7 @@ std::string GetOpenFiles(int32_t pid, int nsPid, uint64_t fdTableAddr)
 
 void ProcessDumper::InitRegs(std::shared_ptr<ProcessDumpRequest> request, int &dumpRes)
 {
+    DFX_TRACE_SCOPED("InitRegs");
     uint32_t opeResult = OPE_SUCCESS;
     if (request->dumpMode == FUSION_MODE) {
         if (!DfxUnwindRemote::GetInstance().InitProcessAllThreadRegs(request, process_)) {
@@ -399,6 +403,7 @@ bool ProcessDumper::Unwind(std::shared_ptr<ProcessDumpRequest> request, int &dum
 
 int ProcessDumper::DumpProcess(std::shared_ptr<ProcessDumpRequest> request)
 {
+    DFX_TRACE_SCOPED("DumpProcess");
     int dumpRes = DumpErrorCode::DUMP_ESUCCESS;
     uint32_t opeResult = OPE_SUCCESS;
     do {
@@ -428,8 +433,7 @@ int ProcessDumper::DumpProcess(std::shared_ptr<ProcessDumpRequest> request)
         }
         InitRegs(request, dumpRes);
         pid_t vmPid = 0;
-        bool ret = InitUnwinder(request, vmPid, dumpRes);
-        if (!ret && (isCrash_ && !isLeakDump)) {
+        if (!InitUnwinder(request, vmPid, dumpRes) && (isCrash_ && !isLeakDump)) {
             opeResult = OPE_FAIL;
             break;
         }
@@ -510,6 +514,7 @@ bool ProcessDumper::InitKeyThread(std::shared_ptr<ProcessDumpRequest> request)
 
 bool ProcessDumper::InitUnwinder(std::shared_ptr<ProcessDumpRequest> request, pid_t &vmPid, int &dumpRes)
 {
+    DFX_TRACE_SCOPED("InitUnwinder");
     pid_t realPid = 0;
     if (request->dumpMode == FUSION_MODE) {
         ReadPids(realPid, vmPid);
@@ -548,6 +553,7 @@ bool ProcessDumper::InitUnwinder(std::shared_ptr<ProcessDumpRequest> request, pi
 
 int ProcessDumper::InitProcessInfo(std::shared_ptr<ProcessDumpRequest> request)
 {
+    DFX_TRACE_SCOPED("InitProcessInfo");
     if (request->pid <= 0) {
         return -1;
     }
@@ -625,6 +631,7 @@ int32_t ProcessDumper::CreateFileForCrash(int32_t pid, uint64_t time) const
 
 int ProcessDumper::InitPrintThread(std::shared_ptr<ProcessDumpRequest> request)
 {
+    DFX_TRACE_SCOPED("InitPrintThread");
     int fd = -1;
     struct FaultLoggerdRequest faultloggerdRequest;
     (void)memset_s(&faultloggerdRequest, sizeof(faultloggerdRequest), 0, sizeof(struct FaultLoggerdRequest));
@@ -649,9 +656,8 @@ int ProcessDumper::InitPrintThread(std::shared_ptr<ProcessDumpRequest> request)
         if (jsonFd_ < 0) {
             // If fd returns -1, we try to obtain the fd that needs to return JSON style
             fd = RequestPipeFd(request->pid, FaultLoggerPipeType::PIPE_FD_WRITE_BUF);
-            DFXLOG_DEBUG("write buf fd: %d", fd);
             resFd_ = RequestPipeFd(request->pid, FaultLoggerPipeType::PIPE_FD_WRITE_RES);
-            DFXLOG_DEBUG("write res fd: %d", resFd_);
+            DFXLOG_DEBUG("write buf fd: %d, write res fd: %d", fd, resFd_);
         } else {
             resFd_ = RequestPipeFd(request->pid, FaultLoggerPipeType::PIPE_FD_JSON_WRITE_RES);
             DFXLOG_DEBUG("write json fd: %d, res fd: %d", jsonFd_, resFd_);
@@ -665,16 +671,11 @@ int ProcessDumper::InitPrintThread(std::shared_ptr<ProcessDumpRequest> request)
         ReportCrashException(request->processName, request->pid, request->uid,
                              CrashExceptionCode::CRASH_DUMP_EWRITEFD);
     }
-
     if (!isJsonDump_) {
         DfxRingBufferWrapper::GetInstance().SetWriteBufFd(fd);
     }
     DfxRingBufferWrapper::GetInstance().StartThread();
-    if (isJsonDump_) {
-        return jsonFd_;
-    } else {
-        return fd;
-    }
+    return isJsonDump_ ? jsonFd_ : fd;
 }
 
 int ProcessDumper::WriteDumpBuf(int fd, const char* buf, const int len)

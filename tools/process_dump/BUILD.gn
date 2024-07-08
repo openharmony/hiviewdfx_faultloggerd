@@ -62,6 +62,7 @@ if (defined(ohos_lite)) {
     deps = [
       "$faultloggerd_common_path/dfxlog:dfx_hilog",
       "$faultloggerd_common_path/dfxutil:dfx_util",
+      "$faultloggerd_common_path/trace:dfx_trace",
       "$faultloggerd_interfaces_path/innerkits/async_stack:libasync_stack",
       "$faultloggerd_interfaces_path/innerkits/backtrace:libbacktrace_local",
       "$faultloggerd_interfaces_path/innerkits/crash_exception",
@@ -83,6 +84,7 @@ if (defined(ohos_lite)) {
     deps = [
       "$faultloggerd_common_path/dfxlog:dfx_hilog",
       "$faultloggerd_common_path/dfxutil:dfx_util",
+      "$faultloggerd_common_path/trace:dfx_trace",
       "$faultloggerd_interfaces_path/innerkits/async_stack:libasync_stack",
       "$faultloggerd_interfaces_path/innerkits/backtrace:libbacktrace_local",
       "$faultloggerd_interfaces_path/innerkits/crash_exception",
@@ -128,6 +130,7 @@ if (defined(ohos_lite)) {
     deps = [
       "$faultloggerd_common_path/dfxlog:dfx_hilog",
       "$faultloggerd_common_path/dfxutil:dfx_util",
+      "$faultloggerd_common_path/trace:dfx_trace",
       "$faultloggerd_interfaces_path/innerkits/async_stack:libasync_stack",
       "$faultloggerd_interfaces_path/innerkits/backtrace:libbacktrace_local",
       "$faultloggerd_interfaces_path/innerkits/crash_exception",
@@ -162,7 +165,10 @@ if (defined(ohos_lite)) {
       sources += [ "lock_parser.cpp" ]
     }
     cflags_cc = [ "-DDEBUG_CRASH_LOCAL_HANDLER" ]
-    defines = [ "DFX_LOG_HILOG_BASE" ]
+    defines = [
+      "DFX_LOG_HILOG_BASE",
+      "DFX_ENABLE_TRACE",
+    ]
     if (use_clang_coverage) {
       defines += [ "CLANG_COVERAGE" ]
     }
@@ -170,6 +176,7 @@ if (defined(ohos_lite)) {
     deps = [
       "$faultloggerd_common_path/dfxlog:dfx_hilog_base",
       "$faultloggerd_common_path/dfxutil:dfx_util",
+      "$faultloggerd_common_path/trace:dfx_trace",
       "$faultloggerd_frameworks_path/localhandler:dfx_local_handler_src",
       "$faultloggerd_interfaces_path/innerkits/async_stack:libasync_stack",
       "$faultloggerd_interfaces_path/innerkits/backtrace:libbacktrace_local",
@@ -183,6 +190,7 @@ if (defined(ohos_lite)) {
       "c_utils:utils",
       "hilog:libhilog_base",
       "hisysevent:libhisysevent",
+      "hitrace:hitrace_meter",
       "init:libbegetutil",
       "jsoncpp:jsoncpp",
     ]

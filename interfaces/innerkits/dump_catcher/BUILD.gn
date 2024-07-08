@@ -38,6 +38,7 @@ if (defined(ohos_lite)) {
     deps = [
       "$faultloggerd_common_path/dfxlog:dfx_hilog",
       "$faultloggerd_common_path/dfxutil:dfx_util",
+      "$faultloggerd_common_path/trace:dfx_trace_dlsym",
       "$faultloggerd_interfaces_path/innerkits/backtrace:libbacktrace_local",
       "$faultloggerd_interfaces_path/innerkits/faultloggerd_client:libfaultloggerd",
       "$faultloggerd_interfaces_path/innerkits/procinfo:libdfx_procinfo",
@@ -48,7 +49,6 @@ if (defined(ohos_lite)) {
 } else {
   config("dfx_dump_catcher_config") {
     visibility = [ "*:*" ]
-
     include_dirs = [ "include" ]
   }
 
@@ -64,6 +64,7 @@ if (defined(ohos_lite)) {
     deps = [
       "$faultloggerd_common_path/dfxlog:dfx_hilog",
       "$faultloggerd_common_path/dfxutil:dfx_util",
+      "$faultloggerd_common_path/trace:dfx_trace_dlsym",
       "$faultloggerd_interfaces_path/innerkits/backtrace:libbacktrace_local",
       "$faultloggerd_interfaces_path/innerkits/faultloggerd_client:libfaultloggerd",
       "$faultloggerd_interfaces_path/innerkits/procinfo:libdfx_procinfo",

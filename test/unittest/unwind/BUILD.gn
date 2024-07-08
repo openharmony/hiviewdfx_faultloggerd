@@ -144,6 +144,7 @@ ohos_unittest("test_exidx") {
   deps = [
     "$faultloggerd_common_path/dfxlog:dfx_hilog",
     "$faultloggerd_common_path/dfxutil:dfx_util",
+    "$faultloggerd_common_path/trace:dfx_trace_dlsym",
     "//third_party/bounds_checking_function:libsec_shared",
     "//third_party/googletest:gtest_main",
     "//third_party/jsoncpp:jsoncpp",

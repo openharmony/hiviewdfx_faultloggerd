@@ -1,0 +1,62 @@
+# Copyright (c) 2024 Huawei Device Co., Ltd.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import("//base/hiviewdfx/faultloggerd/faultloggerd.gni")
+if (defined(ohos_lite)) {
+  config("dfx_trace_config") {
+    visibility = [ "*:*" ]
+    include_dirs = [ "include" ]
+  }
+  source_set("dfx_trace_dlsym") {
+    public_configs = [ ":dfx_trace_config" ]
+    sources = [ "dfx_trace_dlsym.cpp" ]
+  }
+
+  source_set("dfx_trace") {
+    public_configs = [ ":dfx_trace_config" ]
+    sources = [ "dfx_trace.cpp" ]
+  }
+} else {
+  config("dfx_trace_config") {
+    visibility = [ "*:*" ]
+    include_dirs = [ "include" ]
+  }
+  ohos_source_set("dfx_trace_dlsym") {
+    public_configs = [ ":dfx_trace_config" ]
+    defines = [
+      "DFX_ENABLE_TRACE",
+      "is_ohos=${is_ohos}",
+      "is_mingw=${is_mingw}",
+    ]
+    sources = [ "dfx_trace_dlsym.cpp" ]
+    cflags = [ "-fstack-protector-strong" ]
+    if (is_ohos && !is_mingw) {
+      external_deps = [ "bounds_checking_function:libsec_shared" ]
+    }
+    part_name = "faultloggerd"
+    subsystem_name = "hiviewdfx"
+  }
+
+  ohos_source_set("dfx_trace") {
+    public_configs = [ ":dfx_trace_config" ]
+    defines = [ "DFX_ENABLE_TRACE" ]
+    sources = [ "dfx_trace.cpp" ]
+    cflags = [ "-fstack-protector-strong" ]
+    external_deps = [
+      "bounds_checking_function:libsec_shared",
+      "hitrace:hitrace_meter",
+    ]
+    part_name = "faultloggerd"
+    subsystem_name = "hiviewdfx"
+  }
+}

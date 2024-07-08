@@ -36,6 +36,7 @@
 #include "dfx_instr_statistic.h"
 #include "dfx_util.h"
 #include "dfx_maps.h"
+#include "dfx_trace_dlsym.h"
 #include "dwarf_define.h"
 #if defined(ENABLE_MINIDEBUGINFO)
 #include "dfx_xz_utils.h"
@@ -218,6 +219,7 @@ std::shared_ptr<MiniDebugInfo> DfxElf::GetMiniDebugInfo()
 bool DfxElf::InitEmbeddedElf()
 {
 #if defined(ENABLE_MINIDEBUGINFO)
+    DFX_TRACE_SCOPED_DLSYM("InitEmbeddedElf");
     if (!UnwinderConfig::GetEnableMiniDebugInfo() || miniDebugInfo_ == nullptr || GetMmapPtr() == nullptr) {
         return false;
     }
@@ -585,6 +587,7 @@ const std::vector<ElfSymbol>& DfxElf::GetFuncSymbols()
 
 bool DfxElf::GetFuncInfoLazily(uint64_t addr, ElfSymbol& elfSymbol)
 {
+    DFX_TRACE_SCOPED_DLSYM("GetFuncInfoLazily");
     if (FindFuncSymbol(addr, funcSymbols_, elfSymbol)) {
         return true;
     }
@@ -627,6 +630,7 @@ bool DfxElf::GetFuncInfo(uint64_t addr, ElfSymbol& elfSymbol)
 
 bool DfxElf::FindFuncSymbol(uint64_t addr, const std::vector<ElfSymbol>& symbols, ElfSymbol& elfSymbol)
 {
+    DFX_TRACE_SCOPED_DLSYM("FindFuncSymbol");
     if (symbols.empty()) {
         return false;
     }
