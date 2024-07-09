@@ -145,5 +145,11 @@ int32_t CheckCrashLogValid(std::string& file)
     return CrashExceptionCode::CRASH_ESUCCESS;
 }
 
+bool CheckFaultSummaryValid(const std::string &summary)
+{
+    return (summary.find("#00 pc") != std::string::npos) && (summary.find("#01 pc") != std::string::npos) &&
+           (summary.find("#02 pc") != std::string::npos);
+}
+
 } // namespace HiviewDFX
 } // namesapce OHOS

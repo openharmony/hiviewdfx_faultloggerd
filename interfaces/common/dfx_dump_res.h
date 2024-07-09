@@ -57,6 +57,8 @@ enum DumpErrorCode : int32_t {
     DUMP_ENOINFO,
     /** no map info found */
     DUMP_ENOMAP,
+    /** fail to read real pid */
+    DUMP_EREADPID,
 };
 
 class DfxDumpRes {
@@ -88,6 +90,7 @@ private:
             case DUMP_EBADVERSION:  cp = "unwind info has unsupported version"; break;
             case DUMP_ENOINFO:      cp = "no unwind info found"; break;
             case DUMP_ENOMAP:       cp = "mapinfo is not exist"; break;
+            case DUMP_EREADPID:     cp = "fail to read real pid"; break;
             default:                cp = "invalid error code"; break;
         }
         return cp;

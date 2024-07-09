@@ -33,6 +33,8 @@ enum CrashExceptionCode : int32_t {
     CRASH_SIGNAL_EINHERITCAP,           /* Failed to inherit capabilities */
     CRASH_SIGNAL_EEXECL,                /* Failed to execl processdump */
     CRASH_SIGNAL_EWAITEXIT,             /* Failed to wait vm process exit */
+    CRASH_SIGNAL_EREADPIPE,             /* Failed to read pipe due to timeout */
+    CRASH_SIGNAL_ECREATEPIPE,           /* Failed to init create pipe */
 
     CRASH_DUMP_EREADREQ = 201,          /* Failed to read dump request */
     CRASH_DUMP_EPARENTPID,              /* Failed to check parent pid */
@@ -40,6 +42,7 @@ enum CrashExceptionCode : int32_t {
     CRASH_DUMP_EWRITEFD,                /* Failed to request writen fd */
     CRASH_DUMP_EKILLED,                 /* Tagert process has been killed */
     CRASH_DUMP_LOCAL_REPORT,            /* Local Handler DumpInfo Report*/
+    CRASH_DUMP_EREADPID,                /* Failed to read real pid*/
 
     CRASH_UNWIND_ECONTEXT = 301,        /* Unwind context illegal */
     CRASH_UNWIND_EFRAME,                /* Failed to step ark js frame */
@@ -52,6 +55,7 @@ enum CrashExceptionCode : int32_t {
     CRASH_LOG_ESTACKMEMLOS,             /* Fault stack not found */
     CRASH_LOG_EMAPLOS,                  /* Maps not found */
     CRASH_LOG_EHILOGLOS,                /* Hilog not found */
+    CRASH_LOG_ESUMMARYLOS,              /* Fault Summary not found */
 
     CRASH_UNKNOWN = 500,                /* Unknown reason */
 };
@@ -71,11 +75,14 @@ static struct ErrCodeToStr g_crashExceptionMap[] = {
     {CRASH_SIGNAL_EINHERITCAP,  "Failed to inherit capabilities." },
     {CRASH_SIGNAL_EEXECL,       "Failed to execl processdump." },
     {CRASH_SIGNAL_EWAITEXIT,    "Failed to wait vm process exit." },
+    {CRASH_SIGNAL_EREADPIPE,    "Failed to read pipe due to timeout."},
+    {CRASH_SIGNAL_ECREATEPIPE,  "Failed to init create pipe."},
     {CRASH_DUMP_EREADREQ,       "Failed to read dump request." },
     {CRASH_DUMP_EPARENTPID,     "Failed to check parent pid." },
     {CRASH_DUMP_EATTACH,        "Failed to attach target process." },
     {CRASH_DUMP_EWRITEFD,       "Failed to request writen fd." },
     {CRASH_DUMP_EKILLED,        "Tagert process has been killed." },
+    {CRASH_DUMP_EREADPID,       "Failed to read real pid."},
     {CRASH_UNWIND_ECONTEXT,     "Unwind context illegal." },
     {CRASH_UNWIND_EFRAME,       "Failed to step ark js frame." },
     {CRASH_UNWIND_ESTACK,       "Stack corruption." },
@@ -86,6 +93,7 @@ static struct ErrCodeToStr g_crashExceptionMap[] = {
     {CRASH_LOG_ESTACKMEMLOS,    "Fault stack not found." },
     {CRASH_LOG_EMAPLOS,         "Maps not found." },
     {CRASH_LOG_EHILOGLOS,       "Hilog not found." },
+    {CRASH_LOG_ESUMMARYLOS,     "Fault Summary not found."},
     {CRASH_UNKNOWN,             "Unknown reason." },
 };
 

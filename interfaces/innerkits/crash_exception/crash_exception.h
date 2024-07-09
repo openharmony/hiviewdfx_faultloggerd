@@ -68,6 +68,14 @@ void ReportUnwinderException(uint16_t unwError);
  * @return if available return CrashExceptionCode::CRASH_ESUCCESS, otherwise return errCode
 */
 int32_t CheckCrashLogValid(std::string& file);
+
+/**
+ * @brief Check summary valid,The valid is if the string contains stack information for the first three frames
+ *
+ * @param summary Stack information in the fault info
+ * @return if check valid return true, otherwise return false
+*/
+bool CheckFaultSummaryValid(const std::string &summary);
 }
 }
 #endif
