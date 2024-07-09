@@ -138,8 +138,8 @@ bool DfxSigDumpHandler::Init()
         return false;
     }
     isThreadRunning_ = true;
-    std::thread catchThread_ = std::thread(&DfxSigDumpHandler::RunThread);
-    catchThread_.detach();
+    std::thread catchThread = std::thread(&DfxSigDumpHandler::RunThread);
+    catchThread.detach();
     return true;
 }
 
