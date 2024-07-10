@@ -192,7 +192,6 @@ void CppCrashReporter::ReportToAbilityManagerService()
     const int cppCrashExitReason = 2;
     recordAppExitReason(cppCrashExitReason, reason_.c_str());
     dlclose(handle);
-
 #ifndef HISYSEVENT_DISABLE
     int result = HiSysEventWrite(HiSysEvent::Domain::FRAMEWORK, "PROCESS_KILL", HiSysEvent::EventType::FAULT,
         "PID", pid_, "PROCESS_NAME", cmdline_.c_str(), "MSG", KILL_REASON_CPP_CRASH);
