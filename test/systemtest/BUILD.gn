@@ -93,6 +93,9 @@ if (defined(ohos_lite)) {
       "$faultloggerd_path/tools/crasher_cpp:crasher_cpp",
       "//third_party/googletest:gtest_main",
     ]
+    if (support_jsapi) {
+      deps += [ "$faultloggerd_path/test/resource:FaultloggerdJsTest" ]
+    }
     resource_config_file = "$faultloggerd_path/test/resource/ohos_test.xml"
 
     external_deps = [ "c_utils:utils" ]
