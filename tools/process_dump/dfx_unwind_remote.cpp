@@ -51,7 +51,11 @@ void PrintTidKernelStack(pid_t tid)
 {
     std::string kernelStack;
     if (DfxGetKernelStack(tid, kernelStack) == 0) {
-        DFXLOG_INFO("tid(%d) kernel stack %s", tid, kernelStack.c_str());
+        DFXLOG_INFO("tid(%d) kernel stack", tid);
+        size_t step = LOG_BUF_LEN - 1;
+        for (size_t i = 0;  i < kernelStack.length(); i += step) {
+            DFXLOG_INFO("%s", kernelStack.substr(i, step).c_str());
+        }
     }
 }
 }
@@ -181,11 +185,11 @@ void DfxUnwindRemote::UnwindOtherThread(std::shared_ptr<DfxProcess> process, std
             unwinder->SetRegs(regs);
             bool withRegs = regs != nullptr;
             pid_t tid = thread->threadInfo_.nsTid;
+            DFXLOG_INFO("%s, unwind tid(%d) start", __func__, tid);
             if (isVmProcAttach && !withRegs) {
                 PrintTidKernelStack(tid);
                 continue;
             }
-            DFXLOG_INFO("%s, unwind tid(%d) start", __func__, tid);
             auto pid = (vmPid != 0 && isVmProcAttach) ? vmPid : tid;
             DFX_TRACE_START("OtherThreadUnwindRemote:%d", tid);
             bool ret = unwinder->UnwindRemote(pid, withRegs, DfxConfig::GetConfig().maxFrameNums);
