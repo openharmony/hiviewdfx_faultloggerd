@@ -88,7 +88,6 @@ private:
     int DoDumpRemotePoll(int bufFd, int resFd, int timeout, std::string& msg, bool isJson = false);
     bool DoReadBuf(int fd, std::string& msg);
     bool DoReadRes(int fd, bool &ret, std::string& msg);
-    bool IsValidJson(const std::string& json);
     void CollectMainKernelInfo();
     std::string GetAllTidKernelStack(int pid, bool excludeMain = false);
 
