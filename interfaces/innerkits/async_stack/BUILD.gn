@@ -33,9 +33,8 @@ if (defined(ohos_lite)) {
     deps = [
       "$faultloggerd_path/common/cutil:dfx_cutil",
       "$faultloggerd_path/common/dfxlog:dfx_hilog",
+      "//third_party/bounds_checking_function:libsec_static",
     ]
-
-    external_deps = [ "bounds_checking_function:libsec_static" ]
   }
 } else {
   config("async_stack_config") {

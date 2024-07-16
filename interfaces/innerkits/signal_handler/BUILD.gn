@@ -29,9 +29,10 @@ if (defined(ohos_lite)) {
       "musl_log.c",
     ]
 
-    deps = [ "$faultloggerd_path/common/cutil:dfx_cutil" ]
-
-    external_deps = [ "bounds_checking_function:libsec_shared" ]
+    deps = [
+      "$faultloggerd_path/common/cutil:dfx_cutil",
+      "//third_party/bounds_checking_function:libsec_shared",
+    ]
 
     cflags = [
       "-fPIC",

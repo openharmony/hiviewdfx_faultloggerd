@@ -21,7 +21,7 @@ if (defined(ohos_lite)) {
       "$faultloggerd_interfaces_path/common",
     ]
     sources = [ "dfx_cutil.c" ]
-    external_deps = [ "bounds_checking_function:libsec_static" ]
+    deps = [ "//third_party/bounds_checking_function:libsec_static" ]
   }
 } else {
   config("dfx_cutil_config") {

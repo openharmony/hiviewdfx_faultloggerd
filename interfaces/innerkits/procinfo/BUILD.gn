@@ -32,9 +32,8 @@ if (defined(ohos_lite)) {
     deps = [
       "$faultloggerd_path/common/dfxutil:dfx_util",
       "$hilog_lite_deps_path",
+      "//third_party/bounds_checking_function:libsec_shared",
     ]
-
-    external_deps = [ "bounds_checking_function:libsec_shared" ]
   }
 } else {
   config("dfx_procinfo_config") {
