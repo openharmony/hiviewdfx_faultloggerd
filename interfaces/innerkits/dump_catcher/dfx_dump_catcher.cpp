@@ -223,18 +223,6 @@ bool DfxDumpCatcher::DumpCatch(int pid, int tid, std::string& msg, size_t maxFra
         ret = DoDumpRemoteLocked(pid, tid, msg, isJson);
     }
 
-    if (ret && isJson && !IsValidJson(msg)) {
-        DFXLOG_INFO("%s :: dump_catch :: json stack info is invalid, try to dump stack again.",
-            DFXDUMPCATCHER_TAG.c_str());
-        msg.clear();
-        if (pid == currentPid) {
-            ret = DoDumpLocalLocked(pid, tid, msg, maxFrameNums);
-        } else {
-            reportStat = true;
-            ret = DoDumpRemoteLocked(pid, tid, msg, false);
-        }
-    }
-
     if (reportStat) {
         void* retAddr = __builtin_return_address(0);
         ReportDumpCatcherStats(pid, requestTime, ret, msg, retAddr);
@@ -300,10 +288,6 @@ bool DfxDumpCatcher::DoDumpCatchRemote(int pid, int tid, std::string& msg, bool 
             break;
     }
 
-    if (!ret && isJson && msg != "") {
-        DFXLOG_INFO("%s :: %s json msg not empty!", DFXDUMPCATCHER_TAG.c_str(), __func__);
-        ret = true;
-    }
     DFXLOG_INFO("%s :: %s :: pid(%d) ret: %d", DFXDUMPCATCHER_TAG.c_str(), __func__, pid, ret);
     return ret;
 }
@@ -564,31 +548,6 @@ bool DfxDumpCatcher::DumpCatchMultiPid(const std::vector<int> pidV, std::string&
         ret = true;
     }
     return ret;
-}
-
-bool DfxDumpCatcher::IsValidJson(const std::string& json)
-{
-    int squareBrackets = 0;
-    int braces = 0;
-    for (const auto& ch : json) {
-        switch (ch) {
-            case '[':
-                squareBrackets++;
-                break;
-            case ']':
-                squareBrackets--;
-                break;
-            case '{':
-                braces++;
-                break;
-            case '}':
-                braces--;
-                break;
-            default:
-                break;
-        }
-    }
-    return squareBrackets == 0 && braces == 0;
 }
 } // namespace HiviewDFX
 } // namespace OHOS
