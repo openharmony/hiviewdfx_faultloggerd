@@ -60,7 +60,7 @@ void DfxSigDumpHandlerTest::TearDown()
 
 void DfxSigDumpHandlerTest::TestThreadRunTask()
 {
-    sleep(TEST_SLEEP_SEC);
+    std::this_thread::sleep_for(std::chrono::seconds(TEST_SLEEP_SEC));
 }
 /**
  * @tc.name: DfxSigDumpHandlerTest
