@@ -190,7 +190,7 @@ public:
     }
     int ArkWriteJitCodeToFile(int fd);
     bool GetLockInfo(int32_t tid, char* buf, size_t sz);
-    void SetFrames(std::vector<DfxFrame>& frames)
+    void SetFrames(const std::vector<DfxFrame>& frames)
     {
         frames_ = frames;
     }

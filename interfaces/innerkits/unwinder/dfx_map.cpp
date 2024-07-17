@@ -60,10 +60,9 @@ AT_ALWAYS_INLINE const char* ScanHex(const char *cp, unsigned long &valp)
     }
 
     unsigned long cnt = 0;
-    unsigned long digit = 0;
     unsigned long val = 0;
     while (1) {
-        digit = *cp;
+        unsigned long digit = *cp;
         if ((digit - '0') <= 9) { // 9 : max 9
             digit -= '0';
         } else if ((digit - 'a') < 6) { // 6 : 16 - 10
