@@ -775,7 +775,7 @@ bool FaultLoggerDaemon::CreateSockets()
         defaultSocketFd_ = -1;
         return false;
     }
-
+#ifndef is_ohos_lite
     if (!StartListen(sdkdumpSocketFd_, SERVER_SDKDUMP_SOCKET_NAME, MAX_CONNECTION)) {
         close(defaultSocketFd_);
         defaultSocketFd_ = -1;
@@ -783,7 +783,7 @@ bool FaultLoggerDaemon::CreateSockets()
         crashSocketFd_ = -1;
         return false;
     }
-
+#endif
     return true;
 }
 
