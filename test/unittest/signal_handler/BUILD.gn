@@ -46,14 +46,19 @@ if (defined(ohos_lite)) {
 
     cflags_cc = [ "-Wno-free-nonheap-object" ]
     sources = [ "signal_handler_test.cpp" ]
+    sources += [ "$faultloggerd_interfaces_path/innerkits/signal_handler/dfx_signalhandler_exception.c" ]
 
     deps = [
+      "$faultloggerd_frameworks_path/allocator:dfx_allocator_src",
       "$faultloggerd_path/common/cutil:dfx_cutil",
       "$faultloggerd_path/test/utils:dfx_test_util",
       "//third_party/googletest:gtest_main",
     ]
 
-    external_deps = [ "c_utils:utils" ]
+    external_deps = [
+      "c_utils:utils",
+      "hilog:libhilog_base",
+    ]
   }
 
   ohos_unittest("test_signalchain") {
