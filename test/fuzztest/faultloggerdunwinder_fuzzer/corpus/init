@@ -11,16 +11,4 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import("//base/hiviewdfx/faultloggerd/faultloggerd.gni")
-
-group("fuzztest") {
-  if (!defined(ohos_lite)) {
-    testonly = true
-    deps = [
-      "faultloggerdclient_fuzzer:FaultloggerdClientFuzzTest",
-      "faultloggerddumpcatcher_fuzzer:FaultloggerdDumpCatcherFuzzTest",
-      "faultloggerdserver_fuzzer:FaultloggerdServerFuzzTest",
-      "faultloggerdunwinder_fuzzer:FaultloggerdUnwinderFuzzTest",
-    ]
-  }
-}
+FUZZ

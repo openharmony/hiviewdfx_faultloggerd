@@ -192,6 +192,10 @@ void FaultLoggerDaemon::HandleAccept(int32_t epollFd, int32_t socketFd)
 void FaultLoggerDaemon::HandleRequestForFuzzer(int32_t epollFd, int32_t connectionFd,
                                                const FaultLoggerdRequest *requestConst, FaultLoggerdRequest *request)
 {
+    if (faultLoggerConfig_ == nullptr) {
+        faultLoggerConfig_ = std::make_shared<FaultLoggerConfig>(LOG_FILE_NUMBER, LOG_FILE_SIZE,
+            LOG_FILE_PATH, DEBUG_LOG_FILE_PATH);
+    }
     HandleRequest(epollFd, connectionFd);
     HandleLogFileDesClientRequest(connectionFd, requestConst);
     HandlePrintTHilogClientRequest(connectionFd, request);

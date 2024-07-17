@@ -17,48 +17,40 @@
 
 #include <cstddef>
 #include <cstdint>
-#include <iostream>
 #include "dfx_dump_catcher.h"
 #include "faultloggerd_client.h"
 #include "fault_logger_daemon.h"
-#include "securec.h"
+#include "faultloggerd_fuzzertest_common.h"
 
 namespace OHOS {
 namespace HiviewDFX {
-static const int PID_SIZE = 4;
-static const int RAND_BUF_LIMIT = 9;
-
-bool DumpStackTraceTest(const uint8_t* data, size_t size)
+void DumpStackTraceTest(const uint8_t* data, size_t size)
 {
-    if (size < RAND_BUF_LIMIT) {
-        return true;
+    int pid;
+    int tid;
+    int offsetTotalLength = sizeof(pid) + sizeof(tid) +
+                            (2 * HiviewDFX::FAULTLOGGER_FUZZTEST_MAX_STRING_LENGTH); // 2 : Offset by 2 string length
+    if (offsetTotalLength > size) {
+        return;
     }
-    std::shared_ptr<DfxDumpCatcher> catcher = std::make_shared<DfxDumpCatcher>();
-    std::string msg;
-    int pid[1];
-    int tid[1];
-    errno_t err = memcpy_s(pid, sizeof(pid), data, PID_SIZE);
-    if (err != 0) {
-        std::cout << "memcpy_s return value is abnormal" << std::endl;
-        return false;
-    }
-    data += PID_SIZE;
-    err = memcpy_s(tid, sizeof(tid), data, PID_SIZE);
-    if (err != 0) {
-        std::cout << "memcpy_s return value is abnormal" << std::endl;
-        return false;
-    }
-    data += PID_SIZE;
-    char invalidOption = *data;
-    catcher->DumpCatch(pid[0], tid[0], msg, DEFAULT_MAX_FRAME_NUM, false);
 
-    std::string processdumpCmd = "dumpcatcher -p " + std::to_string(pid[0]) + " -t " + std::to_string(tid[0]);
+    STREAM_TO_VALUEINFO(data, pid);
+    STREAM_TO_VALUEINFO(data, tid);
+
+    std::string msg((const char*)data, HiviewDFX::FAULTLOGGER_FUZZTEST_MAX_STRING_LENGTH);
+    data += HiviewDFX::FAULTLOGGER_FUZZTEST_MAX_STRING_LENGTH;
+    std::string invalidOption((const char*)data, HiviewDFX::FAULTLOGGER_FUZZTEST_MAX_STRING_LENGTH);
+    data += HiviewDFX::FAULTLOGGER_FUZZTEST_MAX_STRING_LENGTH;
+
+    std::shared_ptr<DfxDumpCatcher> catcher = std::make_shared<DfxDumpCatcher>();
+    catcher->DumpCatch(pid, tid, msg, DEFAULT_MAX_FRAME_NUM, false);
+
+    std::string processdumpCmd = "dumpcatcher -p " + std::to_string(pid) + " -t " + std::to_string(tid);
     system(processdumpCmd.c_str());
 
-    std::string processdumpInvalidCmd = "dumpcatcher -" + std::to_string(invalidOption) + " -p " +
-        std::to_string(pid[0]) + " -t " + std::to_string(tid[0]);
+    std::string processdumpInvalidCmd = "dumpcatcher -" + invalidOption + " -p " +
+        std::to_string(pid) + " -t " + std::to_string(tid);
     system(processdumpInvalidCmd.c_str());
-    return true;
 }
 } // namespace HiviewDFX
 } // namespace OHOS
@@ -67,7 +59,6 @@ bool DumpStackTraceTest(const uint8_t* data, size_t size)
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size)
 {
     if (data == nullptr || size == 0) {
-        std::cout << "invalid data" << std::endl;
         return 0;
     }
 
