@@ -21,7 +21,6 @@ if (defined(ohos_lite)) {
       ".",
       "include",
       "$c_utils_include_path",
-      "//base/startup/init/interfaces/innerkits/include",
       "$faultloggerd_common_path/cutil",
       "$faultloggerd_common_path/dfxlog",
       "$faultloggerd_common_path/dfxutil",
@@ -39,8 +38,11 @@ if (defined(ohos_lite)) {
       "$faultloggerd_path/common/cutil:dfx_cutil",
       "$faultloggerd_path/common/dfxlog:dfx_hilog",
       "$faultloggerd_path/common/dfxutil:dfx_util",
-      "//base/hiviewdfx/hilog_lite/frameworks/featured:hilog_shared",
-      "//base/startup/init/interfaces/innerkits:libbegetutil",
+    ]
+
+    external_deps = [
+      "hilog_lite:hilog_shared",
+      "init:libbegetutil",
     ]
   }
 } else {
