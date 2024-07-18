@@ -80,7 +80,6 @@ bool DfxSigDumpHandler::IsThreadRunning()
 
 int DfxSigDumpHandler::GetRunThreadId()
 {
-    DFXLOG_INFO("Get Tid %d", runThreadId_);
     return runThreadId_;
 }
 
