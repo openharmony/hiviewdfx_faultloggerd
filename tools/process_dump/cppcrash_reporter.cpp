@@ -26,23 +26,11 @@
 #include "dfx_process.h"
 #include "dfx_signal.h"
 #include "dfx_thread.h"
+#include "faultlogger_client_msg.h"
 #ifndef HISYSEVENT_DISABLE
 #include "hisysevent.h"
 #endif
 
-struct FaultLogInfoInner {
-    uint64_t time {0};
-    uint32_t id {0};
-    int32_t pid {-1};
-    int32_t pipeFd {-1};
-    int32_t faultLogType {0};
-    std::string module;
-    std::string reason;
-    std::string summary;
-    std::string logPath;
-    std::string registers;
-    std::map<std::string, std::string> sectionMaps;
-};
 static const char FOUNDATION_PROCESS_NAME[] = "foundation";
 static const char HIVIEW_PROCESS_NAME[] = "/system/bin/hiview";
 static const char REGS_KEY_WORD[] = "Registers:\n";
@@ -50,7 +38,6 @@ static const char REGS_KEY_WORD[] = "Registers:\n";
 static const char KILL_REASON_CPP_CRASH[] = "Kill Reason:Cpp Crash";
 #endif
 
-using AddFaultLog = void (*)(FaultLogInfoInner* info);
 using RecordAppExitReason = int (*)(int reason, const char *exitMsg);
 
 namespace OHOS {
@@ -106,7 +93,7 @@ void CppCrashReporter::ReportToHiview()
         return;
     }
 
-    AddFaultLog addFaultLog = (AddFaultLog)dlsym(handle, "AddFaultLog");
+    auto addFaultLog = (void (*)(FaultLogInfoInner*))dlsym(handle, "AddFaultLog");
     if (addFaultLog == nullptr) {
         DFXLOG_WARN("Failed to dlsym AddFaultLog, %s\n", dlerror());
         dlclose(handle);

@@ -29,6 +29,7 @@
 #include "directory_ex.h"
 #include "multithread_constructor.h"
 #include "process_dumper.h"
+#include "faultlogger_client_msg.h"
 
 using namespace OHOS::HiviewDFX;
 using namespace testing::ext;
@@ -396,24 +397,10 @@ HWTEST_F(DfxProcessDumpTest, DfxProcessDumpTest013, TestSize.Level2)
  */
 HWTEST_F(DfxProcessDumpTest, DfxProcessDumpTest014, TestSize.Level2)
 {
-    struct FaultLogInfoInner {
-        uint64_t time {0};
-        uint32_t id {0};
-        int32_t pid {-1};
-        int32_t pipeFd {-1};
-        int32_t faultLogType {0};
-        std::string module;
-        std::string reason;
-        std::string summary;
-        std::string logPath;
-        std::string registers;
-        std::map<std::string, std::string> sectionMaps;
-    };
-    using AddFaultLog = void (*)(FaultLogInfoInner* info);
     GTEST_LOG_(INFO) << "DfxProcessDumpTest014: start.";
     void* handle = dlopen("libfaultlogger.z.so", RTLD_LAZY | RTLD_NODELETE);
     ASSERT_TRUE(handle) << "Failed to dlopen libfaultlogger";
-    AddFaultLog addFaultLog = (AddFaultLog)dlsym(handle, "AddFaultLog");
+    auto addFaultLog = (void (*)(FaultLogInfoInner*))dlsym(handle, "AddFaultLog");
     ASSERT_TRUE(addFaultLog) << "Failed to dlsym addFaultLog";
     FaultLogInfoInner info;
     info.time = time(NULL);
