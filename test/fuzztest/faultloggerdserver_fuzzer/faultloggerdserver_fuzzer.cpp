@@ -17,56 +17,39 @@
 
 #include <cstddef>
 #include <cstdint>
-#include <iostream>
-
 #include "dfx_util.h"
 #include "faultloggerd_client.h"
 #include "fault_logger_daemon.h"
-#include "securec.h"
+#include "faultloggerd_fuzzertest_common.h"
 
 namespace OHOS {
 namespace HiviewDFX {
-
-bool GetValueFromData(const uint8_t** data, int32_t* key)
+void FaultloggerdServerTest(const uint8_t* data, size_t size)
 {
-    errno_t err = memcpy_s(key, sizeof(int32_t), data, sizeof(int32_t));
-    if (err != 0) {
-        std::cout << "memcpy_s return value is abnormal!errno:" << errno << std::endl;
-        return false;
-    }
-    *data += sizeof(int32_t);
-    return true;
-}
-
-bool FaultloggerdServerTest(const uint8_t* data, size_t size)
-{
-    if (size < sizeof(int32_t) * 2) { // 2 : construct two int32_t parameters
-        return true;
-    }
     int32_t epollFd;
     int32_t connectionFd;
     int32_t type;
     int32_t pid;
     int32_t tid;
     int32_t uid;
-    if (!GetValueFromData(&data, &epollFd)) {
-        return false;
+
+    int offsetTotalLength = sizeof(epollFd) + sizeof(connectionFd) + sizeof(type) + sizeof(pid) +
+                            sizeof(tid) + sizeof(uid);
+    if (offsetTotalLength > size) {
+        return;
     }
-    if (!GetValueFromData(&data, &connectionFd)) {
-        return false;
+
+    STREAM_TO_VALUEINFO(data, epollFd);
+    STREAM_TO_VALUEINFO(data, connectionFd);
+    STREAM_TO_VALUEINFO(data, type);
+    STREAM_TO_VALUEINFO(data, pid);
+    STREAM_TO_VALUEINFO(data, tid);
+    STREAM_TO_VALUEINFO(data, uid);
+
+    if (epollFd < 0 || connectionFd < 3) { // 3: not allow fd = 0,1,2 because they are reserved by system
+        return;
     }
-    if (!GetValueFromData(&data, &type)) {
-        return false;
-    }
-    if (!GetValueFromData(&data, &pid)) {
-        return false;
-    }
-    if (!GetValueFromData(&data, &tid)) {
-        return false;
-    }
-    if (!GetValueFromData(&data, &uid)) {
-        return false;
-    }
+
     struct FaultLoggerdRequest request;
     (void)memset_s(&request, sizeof(request), 0, sizeof(request));
     request.type = type;
@@ -78,7 +61,6 @@ bool FaultloggerdServerTest(const uint8_t* data, size_t size)
     std::shared_ptr<FaultLoggerDaemon> daemon = std::make_shared<FaultLoggerDaemon>();
     daemon->HandleRequestForFuzzer(epollFd, connectionFd, &request, &request);
 #endif
-    return true;
 }
 } // namespace HiviewDFX
 } // namespace OHOS
@@ -87,7 +69,6 @@ bool FaultloggerdServerTest(const uint8_t* data, size_t size)
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size)
 {
     if (data == nullptr || size == 0) {
-        std::cout << "invalid data" << std::endl;
         return 0;
     }
 

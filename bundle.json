@@ -11,7 +11,7 @@
     "name": "faultloggerd",
     "subsystem": "hiviewdfx",
     "syscap": [],
-    "features": [ "faultloggerd_feature_coverage = false" ],
+    "features": [ "faultloggerd_feature_coverage" ],
     "adapted_system_type": [
       "small",
       "standard"

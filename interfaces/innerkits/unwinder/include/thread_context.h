@@ -77,7 +77,7 @@ private:
     LocalThreadContext() = default;
     DISALLOW_COPY_AND_MOVE(LocalThreadContext);
 
-    static bool CopyContextAndWaitTimeout(int sig, siginfo_t *si, void *context);
+    static void CopyContextAndWaitTimeout(int sig, siginfo_t *si, void *context);
     bool SignalRequestThread(int32_t tid, ThreadContext* ctx);
     void InitSignalHandler();
 

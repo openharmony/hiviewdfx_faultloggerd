@@ -20,6 +20,7 @@
 #include <ctime>
 #include <mutex>
 #include <sigchain.h>
+#include <sys/syscall.h>
 #include <thread>
 #include <unistd.h>
 
@@ -54,12 +55,16 @@ public:
     bool Init(void);
     void Deinit(void);
     bool IsThreadRunning(void);
+    int GetRunThreadId(void);
+    void SetRunThreadId(int tid);
 private:
     DfxSigDumpHandler() = default;
     DfxSigDumpHandler(DfxSigDumpHandler&) = delete;
     DfxSigDumpHandler& operator=(const DfxSigDumpHandler&)=delete;
     static void RunThread(void);
+    static void SignalDumpRetranHandler(int signo, siginfo_t* si, void* context);
     bool isThreadRunning_{false};
+    int runThreadId_{0};
 };
 
 DfxSigDumpHandler& DfxSigDumpHandler::GetInstance()
@@ -73,11 +78,37 @@ bool DfxSigDumpHandler::IsThreadRunning()
     return isThreadRunning_;
 }
 
+int DfxSigDumpHandler::GetRunThreadId()
+{
+    DFXLOG_INFO("Get Tid %d", runThreadId_);
+    return runThreadId_;
+}
+
+void DfxSigDumpHandler::SetRunThreadId(int tid)
+{
+    runThreadId_ = tid;
+}
+
+void DfxSigDumpHandler::SignalDumpRetranHandler(int signo, siginfo_t* si, void* context)
+{
+    int tid = DfxSigDumpHandler::GetInstance().GetRunThreadId();
+    if (tid == 0) {
+        return;
+    }
+    if (syscall(SYS_tkill, tid, SIGDUMP) != 0) {
+        return;
+    }
+}
+
 void DfxSigDumpHandler::RunThread()
 {
     sigset_t set;
     sigemptyset(&set);
     sigaddset(&set, SIGDUMP);
+    if (pthread_sigmask(SIG_BLOCK, &set, nullptr) != 0) {
+        DFXLOG_ERROR("pthread sigmask failed, err(%d)", errno);
+    }
+    DfxSigDumpHandler::GetInstance().SetRunThreadId(gettid());
     while (DfxSigDumpHandler::GetInstance().IsThreadRunning()) {
         siginfo_t si;
         if (OHOS_TEMP_FAILURE_RETRY(sigtimedwait(&set, &si, &SIG_WAIT_TIMEOUT)) == -1) {
@@ -127,19 +158,17 @@ bool DfxSigDumpHandler::Init()
         return true;
     }
     remove_all_special_handler(SIGDUMP);
-    sigset_t set;
-    if (pthread_sigmask(SIG_BLOCK, nullptr, &set) != 0) {
-        DFXLOG_ERROR("pthread sigmask failed, err(%d)", errno);
-        return false;
-    }
-    sigaddset(&set, SIGDUMP);
-    if (pthread_sigmask(SIG_BLOCK, &set, nullptr) != 0) {
-        DFXLOG_ERROR("pthread sigmask failed, err(%d)", errno);
-        return false;
-    }
+    struct sigaction action;
+    (void)memset_s(&action, sizeof(action), 0, sizeof(action));
+    sigemptyset(&action.sa_mask);
+    sigaddset(&action.sa_mask, SIGDUMP);
+    action.sa_flags = SA_RESTART | SA_SIGINFO;
+    action.sa_sigaction = DfxSigDumpHandler::SignalDumpRetranHandler;
+    DFXLOG_ERROR("%s", "Init Install signal handler");
+    sigaction(SIGDUMP, &action, nullptr);
     isThreadRunning_ = true;
-    std::thread catchThread_ = std::thread(&DfxSigDumpHandler::RunThread);
-    catchThread_.detach();
+    std::thread catchThread = std::thread(&DfxSigDumpHandler::RunThread);
+    catchThread.detach();
     return true;
 }
 

@@ -30,6 +30,7 @@ if (defined(ohos_lite)) {
         "$faultloggerd_path/test/fuzztest/faultloggerdclient_fuzzer"
     include_dirs = [
       "./",
+      "../common/include",
       "$faultloggerd_path/services",
       "$faultloggerd_interfaces_path/common",
       "$faultloggerd_path/common/dfxlog",

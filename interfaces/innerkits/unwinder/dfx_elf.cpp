@@ -74,7 +74,7 @@ std::shared_ptr<DfxElf> DfxElf::CreateFromHap(const std::string& file, std::shar
         LOGE("%s", "current hap mapitem has no prev mapitem, maybe pc is wrong?");
         return nullptr;
     }
-    if (!StartsWith(file, "/proc") || !EndsWith(file, ".hap")) {
+    if (!EndsWith(file, ".hap")) {
         LOGE("Illegal file path, please check file: %s", file.c_str());
         return nullptr;
     }

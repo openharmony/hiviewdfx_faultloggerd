@@ -61,10 +61,11 @@ if (defined(ohos_lite)) {
 
     external_deps = [ "hilog_lite:hilog_shared" ]
 
+    defines = [ "is_ohos_lite" ]
     if (faultloggerd_hisysevent_enable) {
       deps += [ "hisysevent:libhisysevent" ]
     } else {
-      defines = [ "HISYSEVENT_DISABLE" ]
+      defines += [ "HISYSEVENT_DISABLE" ]
     }
   }
 } else {

@@ -16,48 +16,34 @@
 #include "faultloggerdclient_fuzzer.h"
 
 #include <cstddef>
-#include <cstdint>
 #include <iostream>
 #include "faultloggerd_client.h"
 #include "fault_logger_daemon.h"
-#include "securec.h"
+#include "faultloggerd_fuzzertest_common.h"
 
 namespace OHOS {
 namespace HiviewDFX {
 
-bool FaultloggerdClientTest(const uint8_t* data, size_t size)
+void FaultloggerdClientTest(const uint8_t* data, size_t size)
 {
-    std::cout << "enter FaultloggerdClientTest, size:" << size << std::endl;
-    if (size < sizeof(int32_t) * 3) { // 3 : construct three int32_t parameters
-        return true;
-    }
-    int32_t type[1];
-    int32_t pid[1];
-    int32_t tid[1];
-    errno_t err = memcpy_s(type, sizeof(type), data, sizeof(int32_t));
-    if (err != 0) {
-        std::cout << "memcpy_s return value is abnormal" << std::endl;
-        return false;
-    }
-    data += sizeof(int32_t);
-    err = memcpy_s(tid, sizeof(tid), data, sizeof(int32_t));
-    if (err != 0) {
-        std::cout << "memcpy_s return value is abnormal" << std::endl;
-        return false;
-    }
-    data += sizeof(int32_t);
-    err = memcpy_s(pid, sizeof(pid), data, sizeof(int32_t));
-    if (err != 0) {
-        std::cout << "memcpy_s return value is abnormal" << std::endl;
-        return false;
+    int32_t type;
+    int32_t pid;
+    int32_t tid;
+
+    int offsetTotalLength = sizeof(type) + sizeof(pid) + sizeof(tid);
+    if (offsetTotalLength > size) {
+        return;
     }
 
-    RequestFileDescriptor(type[0]);
-    RequestPipeFd(pid[0], type[0]);
-    RequestDelPipeFd(pid[0]);
-    RequestCheckPermission(pid[0]);
-    RequestSdkDump(pid[0], tid[0]);
-    return true;
+    STREAM_TO_VALUEINFO(data, type);
+    STREAM_TO_VALUEINFO(data, pid);
+    STREAM_TO_VALUEINFO(data, tid);
+
+    RequestFileDescriptor(type);
+    RequestPipeFd(pid, type);
+    RequestDelPipeFd(pid);
+    RequestCheckPermission(pid);
+    RequestSdkDump(pid, tid);
 }
 } // namespace HiviewDFX
 } // namespace OHOS
@@ -66,7 +52,6 @@ bool FaultloggerdClientTest(const uint8_t* data, size_t size)
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size)
 {
     if (data == nullptr || size == 0) {
-        std::cout << "invalid data" << std::endl;
         return 0;
     }
 

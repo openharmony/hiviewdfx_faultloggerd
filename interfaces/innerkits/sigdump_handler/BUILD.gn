@@ -40,7 +40,7 @@ if (defined(ohos_lite)) {
 
     deps = [
       "$faultloggerd_common_path/dfxlog:dfx_hilog",
-      "$faultloggerd_interfaces_path/innerkits/backtrace:backtrace_local",
+      "$faultloggerd_interfaces_path/innerkits/backtrace:libbacktrace_local",
       "$faultloggerd_interfaces_path/innerkits/faultloggerd_client:libfaultloggerd",
     ]
 

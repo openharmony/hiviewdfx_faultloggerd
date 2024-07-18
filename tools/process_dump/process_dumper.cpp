@@ -285,7 +285,7 @@ void ProcessDumper::Dump()
     DfxRingBufferWrapper::GetInstance().StopThread();
     DFXLOG_INFO("Finish dump stacktrace for %s(%d:%d).", request->processName, request->pid, request->tid);
     CloseDebugLog();
-    if (resDump_ != DumpErrorCode::DUMP_ENOMAP) {
+    if (resDump_ != DumpErrorCode::DUMP_ENOMAP && resDump_ != DumpErrorCode::DUMP_EREADPID) {
         ReportCrashInfo(jsonInfo);
     }
     if ((request->dumpMode == FUSION_MODE) && isCrash_) {
@@ -518,6 +518,13 @@ bool ProcessDumper::InitUnwinder(std::shared_ptr<ProcessDumpRequest> request, pi
     pid_t realPid = 0;
     if (request->dumpMode == FUSION_MODE) {
         ReadPids(realPid, vmPid);
+        if (realPid == 0 || vmPid == 0) {
+            ReportCrashException(request->processName, request->pid, request->uid,
+                CrashExceptionCode::CRASH_DUMP_EREADPID);
+            DFXLOG_ERROR("%s", "Failed to read real pid!");
+            dumpRes = DumpErrorCode::DUMP_EREADPID;
+            return false;
+        }
     }
     // frezze detach after vm process create
     if (!isCrash_) {
