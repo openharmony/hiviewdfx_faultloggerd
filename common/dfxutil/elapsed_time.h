@@ -17,7 +17,7 @@
 #define ELAPSED_TIME_H
 
 #include <chrono>
-
+#include "dfx_log.h"
 namespace OHOS {
 namespace HiviewDFX {
 class ElapsedTime {
@@ -27,7 +27,21 @@ public:
         begin_ = std::chrono::high_resolution_clock::now();
     };
 
-    ~ElapsedTime() {};
+    ElapsedTime(std::string printContent, time_t limitCostMilliseconds)
+        : limitCostMilliseconds_(limitCostMilliseconds), printContent_(std::move(printContent))
+    {
+        Reset();
+    }
+
+    ~ElapsedTime()
+    {
+        if (limitCostMilliseconds_ != 0) {
+            time_t costTime = Elapsed<std::chrono::milliseconds>();
+            if (costTime > limitCostMilliseconds_) {
+                DFXLOG_WARN("%s running %lld ms", printContent_.c_str(), costTime);
+            }
+        }
+    }
 
     void Reset()
     {
@@ -42,6 +56,8 @@ public:
 
 private:
     std::chrono::time_point<std::chrono::high_resolution_clock> begin_;
+    time_t limitCostMilliseconds_ = 0;
+    std::string printContent_ = "";
 };
 }
 }

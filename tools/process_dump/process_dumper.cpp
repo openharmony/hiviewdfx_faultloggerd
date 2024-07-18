@@ -50,8 +50,9 @@
 #include "dfx_thread.h"
 #include "dfx_unwind_remote.h"
 #include "dfx_util.h"
-#include "faultloggerd_client.h"
 #include "dfx_trace.h"
+#include "elapsed_time.h"
+#include "faultloggerd_client.h"
 #include "printer.h"
 #include "procinfo.h"
 #include "unwinder_config.h"
@@ -296,7 +297,12 @@ void ProcessDumper::Dump()
 static int32_t ReadRequestAndCheck(std::shared_ptr<ProcessDumpRequest> request)
 {
     DFX_TRACE_SCOPED("ReadRequestAndCheck");
+    ElapsedTime counter("ReadRequestAndCheck", 20); // 20 : limit cost time 20 ms
     ssize_t readCount = OHOS_TEMP_FAILURE_RETRY(read(STDIN_FILENO, request.get(), sizeof(ProcessDumpRequest)));
+    request->threadName[NAME_BUF_LEN - 1] = '\0';
+    request->processName[NAME_BUF_LEN - 1] = '\0';
+    request->lastFatalMessage[MAX_FATAL_MSG_SIZE - 1] = '\0';
+    request->appRunningId[MAX_APP_RUNNING_UNIQUE_ID_LEN - 1] = '\0';
     if (readCount != static_cast<long>(sizeof(ProcessDumpRequest))) {
         DFXLOG_ERROR("Failed to read DumpRequest(%d), readCount(%zd).", errno, readCount);
         ReportCrashException(request->processName, request->pid, request->uid,
