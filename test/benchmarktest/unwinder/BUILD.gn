@@ -53,10 +53,10 @@ if (!defined(ohos_lite)) {
       "$faultloggerd_common_path/dfxutil:dfx_util",
       "$faultloggerd_interfaces_path/innerkits/unwinder:libunwinder_static",
       "$faultloggerd_path/test/utils:dfx_test_util",
-      "//third_party/benchmark:benchmark",
     ]
 
     external_deps = [
+      "benchmark:benchmark",
       "c_utils:utils",
       "hilog:libhilog",
     ]

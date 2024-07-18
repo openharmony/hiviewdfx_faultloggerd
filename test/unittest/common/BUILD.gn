@@ -74,11 +74,11 @@ if (defined(ohos_lite)) {
     deps = [
       "$faultloggerd_path/common/cutil:dfx_cutil",
       "$faultloggerd_path/common/dfxutil:dfx_util",
-      "//third_party/googletest:gmock_main",
-      "//third_party/googletest:gtest_main",
     ]
     external_deps = [
       "c_utils:utils",
+      "googletest:gmock_main",
+      "googletest:gtest_main",
       "hilog:libhilog",
     ]
   }
@@ -90,12 +90,10 @@ if (defined(ohos_lite)) {
 
     defines = [ "ENABLE_PARAMETER" ]
 
-    deps = [
-      "//third_party/googletest:gmock_main",
-      "//third_party/googletest:gtest_main",
-    ]
     external_deps = [
       "c_utils:utils",
+      "googletest:gmock_main",
+      "googletest:gtest_main",
       "init:libbegetutil",
     ]
   }

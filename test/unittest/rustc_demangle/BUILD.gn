@@ -41,12 +41,13 @@ if (defined(ohos_lite)) {
 
     sources = [ "rustc_demangle_test.cpp" ]
 
-    deps = [
-      "$faultloggerd_path/interfaces/rust/rustc_demangle:rustc_demangle",
-      "//third_party/googletest:gtest_main",
-    ]
+    deps =
+        [ "$faultloggerd_path/interfaces/rust/rustc_demangle:rustc_demangle" ]
 
-    external_deps = [ "c_utils:utils" ]
+    external_deps = [
+      "c_utils:utils",
+      "googletest:gtest_main",
+    ]
   }
 
   group("unittest") {

@@ -89,10 +89,12 @@ if (!defined(ohos_lite)) {
     deps = [
       ":dfxexithook",
       ":dfxsighook",
-      "//third_party/googletest:gtest_main",
     ]
 
-    external_deps = [ "c_utils:utils" ]
+    external_deps = [
+      "c_utils:utils",
+      "googletest:gtest_main",
+    ]
 
     if (use_musl) {
       resource_config_file =
