@@ -377,7 +377,7 @@ void ProcessDumper::UnwindWriteJit(const ProcessDumpRequest &request)
     (void)close(fd);
 }
 
-bool ProcessDumper::Unwind(std::shared_ptr<ProcessDumpRequest> request, int &dumpRes, pid_t &vmPid)
+bool ProcessDumper::Unwind(std::shared_ptr<ProcessDumpRequest> request, int &dumpRes, pid_t vmPid)
 {
     // dump unwind should still keep main thread or aim thread is frist unwind
     if (!isCrash_) {

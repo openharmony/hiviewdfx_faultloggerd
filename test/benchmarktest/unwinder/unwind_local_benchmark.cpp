@@ -126,7 +126,7 @@ static size_t UnwinderLocalFp(MAYBE_UNUSED void* data) {
     auto unwSize = dataPtr->unwinder->GetPcs().size();
     LOGU("%s frames.size: %zu", __func__, unwSize);
 
-    if (dataPtr != nullptr && dataPtr->isFillFrames) {
+    if (dataPtr->isFillFrames) {
         auto& pcs = dataPtr->unwinder->GetPcs();
         std::vector<DfxFrame> frames;
         for (size_t i = 0; i < unwSize; ++i) {
