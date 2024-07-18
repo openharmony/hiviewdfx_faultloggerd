@@ -54,6 +54,7 @@ static bool ParseParameters(int argc, char *argv[], bool &isSignalHdlr)
 
 int main(int argc, char *argv[])
 {
+    DFXLOG_INFO("%s", "Start main function of processdump");
 #if defined(DEBUG_CRASH_LOCAL_HANDLER)
     DFX_InstallLocalSignalHandler();
 #endif
@@ -64,6 +65,7 @@ int main(int argc, char *argv[])
     bool isSignalHdlr = false;
 
     alarm(PROCESSDUMP_TIMEOUT);
+    DFXLOG_INFO("Start alarm %d seconds for processdump", PROCESSDUMP_TIMEOUT);
     setsid();
 
     if (!ParseParameters(argc, argv, isSignalHdlr)) {

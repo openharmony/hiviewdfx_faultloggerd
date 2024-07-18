@@ -331,6 +331,7 @@ void FaultLoggerDaemon::HandleExceptionRequest(int32_t connectionFd, FaultLogger
     CrashDumpException exception;
     (void)memset_s(&exception, sizeof(CrashDumpException), 0, sizeof(CrashDumpException));
     ssize_t nread = OHOS_TEMP_FAILURE_RETRY(read(connectionFd, &exception, sizeof(CrashDumpException)));
+    exception.message[LINE_BUF_SIZE - 1] = '\0';
     if (!CheckReadRequest(nread, sizeof(CrashDumpException))) {
         return;
     }
