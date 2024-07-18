@@ -25,6 +25,7 @@
 
 #include "dfx_define.h"
 #include "dfx_signal_handler.h"
+#include "dfx_signalhandler_exception.h"
 #include "dfx_test_util.h"
 
 using namespace testing;
@@ -596,6 +597,23 @@ HWTEST_F(SignalHandlerTest, SignalHandlerTest015, TestSize.Level2)
     constexpr char testId2[MAX_APP_RUNNING_UNIQUE_ID_LEN] = "App running unique test id";
     ret = DFX_SetAppRunningUniqueId(testId2, MAX_APP_RUNNING_UNIQUE_ID_LEN);
     ASSERT_EQ(ret, -1);
+}
+
+/**
+ * @tc.name: SignalHandlerTest016
+ * @tc.desc: test ReportException
+ * @tc.type: FUNC
+ */
+HWTEST_F(SignalHandlerTest, SignalHandlerTest016, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "SignalHandlerTest016: start.";
+    struct CrashDumpException exception;
+    exception.pid = 1;
+    exception.uid = 1;
+    exception.error = CRASH_SIGNAL_EMASKED;
+    int ret = ReportException(exception);
+    ASSERT_NE(ret, -1);
+    GTEST_LOG_(INFO) << "SignalHandlerTest016: end.";
 }
 } // namespace HiviewDFX
 } // namepsace OHOS
