@@ -144,7 +144,7 @@ void TestParseArkFrameInfoLocal(const uint8_t* data, size_t size)
 void TestArkCreateJsSymbolExtractor(const uint8_t* data, size_t size)
 {
     uintptr_t extractorPtr;
-    if (sizeof(extractorPtr) > size) {
+    if (size < sizeof(extractorPtr)) {
         return;
     }
 
@@ -156,7 +156,7 @@ void TestArkCreateJsSymbolExtractor(const uint8_t* data, size_t size)
 void TestArkDestoryJsSymbolExtractor(const uint8_t* data, size_t size)
 {
     uintptr_t extractorPtr;
-    if (sizeof(extractorPtr) > size) {
+    if (size < sizeof(extractorPtr)) {
         return;
     }
 
@@ -201,11 +201,11 @@ void TestDfxHap(const uint8_t* data, size_t size)
 void TestSetFromFpMiniRegs(const uint8_t* data, size_t size)
 {
     uintptr_t regs;
-    if (sizeof(regs) > size) {
+    if (size < sizeof(regs)) {
         return;
     }
 
-    STREAM_TO_VALUEINFO(&data, &regs);
+    STREAM_TO_VALUEINFO(data, regs);
 
     auto dfxregs = std::make_shared<DfxRegsArm64>();
     dfxregs->SetFromFpMiniRegs(&regs, size);
@@ -216,11 +216,11 @@ void TestSetFromFpMiniRegs(const uint8_t* data, size_t size)
 void TestSetFromQutMiniRegs(const uint8_t* data, size_t size)
 {
     uintptr_t regs;
-    if (sizeof(regs) > size) {
+    if (size < sizeof(regs)) {
         return;
     }
 
-    STREAM_TO_VALUEINFO(&data, &regs);
+    STREAM_TO_VALUEINFO(data, regs);
 
     auto dfxregs = std::make_shared<DfxRegsArm64>();
     dfxregs->SetFromQutMiniRegs(&regs, size);
@@ -291,7 +291,7 @@ void TestDfxInstrStatistic(const uint8_t* data, size_t size)
 void TestDfxXzUtils(const uint8_t* data, size_t size)
 {
     uint8_t src;
-    if (sizeof(src) > size) {
+    if (size < sizeof(src)) {
         return;
     }
 

@@ -30,11 +30,15 @@ if (defined(ohos_lite)) {
         "$faultloggerd_path/interfaces/innerkits/faultloggerd_client/include",
         "$faultloggerd_path/interfaces/innerkits/faultloggerd_client",
         "$faultloggerd_interfaces_path/common",
+        "$faultloggerd_path/common/cutil",
         "$faultloggerd_path/common/dfxlog",
         "$faultloggerd_path/common/dfxutil",
       ]
 
       sources = [
+        "$faultloggerd_interfaces_path/innerkits/faultloggerd_client/faultloggerd_client.cpp",
+        "$faultloggerd_interfaces_path/innerkits/faultloggerd_client/faultloggerd_socket.cpp",
+        "$faultloggerd_path/common/cutil/dfx_cutil.c",
         "$faultloggerd_path/services/fault_logger_config.cpp",
         "$faultloggerd_path/services/fault_logger_daemon.cpp",
         "$faultloggerd_path/services/fault_logger_pipe.cpp",
@@ -49,9 +53,13 @@ if (defined(ohos_lite)) {
         "$faultloggerd_path/common/dfxlog:dfx_hilog",
         "$faultloggerd_path/common/dfxutil:dfx_util",
         "$faultloggerd_path/interfaces/innerkits/faultloggerd_client:libfaultloggerd",
+        "//base/hiviewdfx/hilog_lite/frameworks/featured:hilog_shared",
       ]
 
-      external_deps = [ "hilog_lite:hilog_shared" ]
+      external_deps = [
+        "hilog_lite:hilog_shared",
+        "init:libbegetutil",
+      ]
 
       if (faultloggerd_hisysevent_enable) {
         deps += [ "hisysevent:libhisysevent" ]
@@ -72,16 +80,27 @@ if (defined(ohos_lite)) {
     visibility = [ ":*" ]
 
     include_dirs = [
+      "$faultloggerd_interfaces_path/innerkits/faultloggerd_client/faultloggerd_socket.h",
+      "$faultloggerd_interfaces_path/innerkits/faultloggerd_client/",
       "$faultloggerd_path/services",
+      "$faultloggerd_path/common/cutil",
       "$faultloggerd_path/common/dfxlog",
       "$faultloggerd_path/common/dfxutil",
-      "$faultloggerd_path/interfaces/innerkits/faultloggerd_client",
     ]
   }
 
   ohos_unittest("test_service") {
     module_out_path = "faultloggerd/services"
+
+    include_dirs = [
+      "$faultloggerd_interfaces_path/innerkits/faultloggerd_client/include",
+      "$faultloggerd_interfaces_path/innerkits/faultloggerd_client/faultloggerd_socket.h",
+    ]
+
     sources = [
+      "$faultloggerd_interfaces_path/innerkits/faultloggerd_client/faultloggerd_client.cpp",
+      "$faultloggerd_interfaces_path/innerkits/faultloggerd_client/faultloggerd_socket.cpp",
+      "$faultloggerd_path/common/cutil/dfx_cutil.c",
       "$faultloggerd_path/services/fault_logger_config.cpp",
       "$faultloggerd_path/services/fault_logger_daemon.cpp",
       "$faultloggerd_path/services/fault_logger_pipe.cpp",
@@ -107,6 +126,7 @@ if (defined(ohos_lite)) {
       "googletest:gtest_main",
       "hilog:libhilog",
       "hisysevent:libhisysevent",
+      "init:libbegetutil",
     ]
   }
 
