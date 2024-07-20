@@ -25,8 +25,10 @@
 
 #include "dfx_define.h"
 #include "dfx_signal_local_handler.h"
+#include "dfx_socket_request.h"
 #include "dfx_test_util.h"
 #include "dfx_allocator.h"
+#include "faultloggerd_client.h"
 
 #define MALLOC_TEST_TIMES  1000
 #define MALLOC_TEST_SMALL_SIZE 16
@@ -214,6 +216,56 @@ HWTEST_F(LocalHandlerTest, LocalHandlerTest005, TestSize.Level2)
         ASSERT_TRUE(ret);
     }
     GTEST_LOG_(INFO) << "LocalHandlerTest005: end.";
+}
+
+/**
+ * @tc.name: LocalHandlerTest006
+ * @tc.desc: test crashlocalhandler signo(SIGSEGV) by execl
+ * @tc.type: FUNC
+ */
+HWTEST_F(LocalHandlerTest, LocalHandlerTest006, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "LocalHandlerTest006: start.";
+    pid_t pid = fork();
+    if (pid < 0) {
+        GTEST_LOG_(ERROR) << "Failed to fork new test process.";
+    } else if (pid == 0) {
+        siginfo_t siginfo {
+            .si_signo = SIGSEGV
+        };
+        DFX_SignalLocalHandler(SIGSEGV, &siginfo, nullptr);
+    } else {
+        GTEST_LOG_(INFO) << "process(" << getpid() << ") is ready to wait process(" << pid << ")";
+        sleep(2); // 2 : wait for cppcrash generating
+        ASSERT_TRUE(CheckLocalCrashKeyWords(GetCppCrashFileName(pid), pid, SIGSEGV));
+    }
+    GTEST_LOG_(INFO) << "LocalHandlerTest006: end.";
+}
+
+/**
+ * @tc.name: LocalHandlerTest007
+ * @tc.desc: test crashlocalhandler signo(SIGSEGV) by execl
+ * @tc.type: FUNC
+ */
+HWTEST_F(LocalHandlerTest, LocalHandlerTest007, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "LocalHandlerTest005: start.";
+    pid_t pid = fork();
+    if (pid < 0) {
+        GTEST_LOG_(ERROR) << "Failed to fork new test process.";
+    } else if (pid == 0) {
+        siginfo_t siginfo {
+            .si_signo = SIGSEGV
+        };
+        DFX_GetCrashFdFunc([]{return RequestFileDescriptor((int)FaultLoggerType::CPP_CRASH);});
+        DFX_SignalLocalHandler(SIGSEGV, &siginfo, nullptr);
+    } else {
+        GTEST_LOG_(INFO) << "process(" << getpid() << ") is ready to wait process(" << pid << ")";
+        sleep(2); // 2 : wait for cppcrash generating
+        bool ret = CheckLocalCrashKeyWords(GetCppCrashFileName(pid), pid, SIGSEGV);
+        ASSERT_TRUE(ret);
+    }
+    GTEST_LOG_(INFO) << "LocalHandlerTest007: end.";
 }
 
 /**

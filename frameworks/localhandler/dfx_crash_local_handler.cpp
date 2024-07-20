@@ -94,10 +94,6 @@ __attribute__((noinline)) void CrashLocalUnwind(const int fd, const ucontext_t* 
     for (unsigned int i = 0; i < logContext.length(); i += BUF_SZ_SMALL) {
         PrintLog(fd, "%s", logContext.substr(i, BUF_SZ_SMALL).c_str());
     }
-
-    if (fd >= 0) {
-        close(fd);
-    }
 }
 
 // currently, only stacktrace is logged to faultloggerd
@@ -105,6 +101,9 @@ void CrashLocalHandler(const struct ProcessDumpRequest* request)
 {
     int fd = RequestOutputLogFile(request);
     CrashLocalHandlerFd(fd, request);
+    if (fd >= 0) {
+        close(fd);
+    }
 }
 
 static void PrintTimeStamp(const int fd)

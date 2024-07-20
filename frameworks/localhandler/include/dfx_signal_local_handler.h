@@ -31,6 +31,15 @@ extern "C" {
 typedef int (*CrashFdFunc) (void);
 
 /**
+ * the function to resolve sig of the process
+ *
+ * @param sig sig of process
+ * @param si the pointer tp siginfo
+ * @param context context
+ */
+void DFX_SignalLocalHandler(int sig, siginfo_t *si, void *context);
+
+/**
  * @brief get CrashFdFunc
  * @param fn function name of CrashFdFunc
  *

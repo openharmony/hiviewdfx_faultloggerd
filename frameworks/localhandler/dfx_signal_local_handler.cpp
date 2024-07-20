@@ -81,6 +81,9 @@ static int DoCrashHandler(void* arg)
     } else {
         int fd = g_crashFdFn();
         CrashLocalHandlerFd(fd, &g_request);
+        if (fd >= 0) {
+            close(fd);
+        }
     }
     UnregisterAllocator();
     pthread_mutex_unlock(&g_signalHandlerMutex);
@@ -88,7 +91,7 @@ static int DoCrashHandler(void* arg)
     return 0;
 }
 
-static void DFX_SignalLocalHandler(int sig, siginfo_t * si, void * context)
+void DFX_SignalLocalHandler(int sig, siginfo_t *si, void *context)
 {
     pthread_mutex_lock(&g_signalHandlerMutex);
     (void)memset_s(&g_request, sizeof(g_request), 0, sizeof(g_request));
