@@ -467,7 +467,7 @@ FaultLoggerCheckPermissionResp FaultLoggerDaemon::SecurityCheck(int32_t connecti
         }
 
         if (!RecvMsgCredFromSocket(connectionFd, &rcred)) {
-            DFXLOG_ERROR("%s :: Recv msg ucred error.", FAULTLOGGERD_TAG.c_str());
+            DFXLOG_ERROR("%s :: Recv msg ucred error, errno(%d)", FAULTLOGGERD_TAG.c_str(), errno);
             break;
         }
 
