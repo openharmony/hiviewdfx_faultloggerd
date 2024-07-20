@@ -185,7 +185,7 @@ void DfxUnwindRemote::UnwindOtherThread(std::shared_ptr<DfxProcess> process, std
             unwinder->SetRegs(regs);
             bool withRegs = regs != nullptr;
             pid_t tid = thread->threadInfo_.nsTid;
-            DFXLOG_INFO("%s, unwind tid(%d) start", __func__, tid);
+            DFXLOG_DEBUG("%s, unwind tid(%d) start", __func__, tid);
             if (isVmProcAttach && !withRegs) {
                 PrintTidKernelStack(tid);
                 continue;
@@ -208,7 +208,7 @@ void DfxUnwindRemote::UnwindOtherThread(std::shared_ptr<DfxProcess> process, std
             if (ProcessDumper::GetInstance().IsCrash()) {
                 ReportUnwinderException(unwinder->GetLastErrorCode());
             }
-            DFXLOG_INFO("%s, unwind tid(%d) finish ret(%d).", __func__, tid, ret);
+            DFXLOG_DEBUG("%s, unwind tid(%d) finish ret(%d).", __func__, tid, ret);
             Printer::PrintThreadBacktraceByConfig(thread, false);
         }
         index++;
