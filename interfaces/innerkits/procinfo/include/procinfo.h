@@ -23,9 +23,6 @@
 #include <string>
 #include <vector>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
 namespace OHOS {
 namespace HiviewDFX {
 /**
@@ -135,9 +132,10 @@ void ReadProcessWchan(std::string& result, const int pid, bool onlyPid = false, 
  * @param withThreadName whether output thread name or not
 */
 void ReadThreadWchan(std::string& result, const int tid, bool withThreadName = false);
+/**
+ * @brief Get stacktrace head info
+*/
+std::string GetStacktraceHeader();
 } // nameapace HiviewDFX
 } // nameapace OHOS
-#ifdef __cplusplus
-}
-#endif
 #endif

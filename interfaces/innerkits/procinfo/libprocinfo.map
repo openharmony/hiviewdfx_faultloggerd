@@ -1,11 +1,11 @@
 {
   global:
-    extern "C" {
-      ProcInfo*;
-      Get*;
-      Read*;
-      TidToNstid*;
-      IsThreadInPid*;
+    extern "C++" {
+      OHOS::HiviewDFX::ProcInfo*;
+      OHOS::HiviewDFX::Get*;
+      OHOS::HiviewDFX::Read*;
+      OHOS::HiviewDFX::TidToNstid*;
+      OHOS::HiviewDFX::IsThreadInPid*;
     };
   local:
     *;

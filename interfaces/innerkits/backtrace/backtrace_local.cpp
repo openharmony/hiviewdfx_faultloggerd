@@ -108,7 +108,7 @@ bool PrintBacktrace(int32_t fd, bool fast, size_t maxFrameNums)
 
 bool GetBacktrace(std::string& out, bool fast, size_t maxFrameNums)
 {
-    DFXLOG_INFO("%s", "Receive GetBacktrace request.");
+    DFXLOG_INFO("%s", "Receive GetBacktrace request with skip current frame.");
     return GetBacktraceStringByTid(out, BACKTRACE_CURRENT_THREAD, 1, fast, maxFrameNums); // 1: skip current frame
 }
 
@@ -131,27 +131,6 @@ const char* GetTrace(size_t skipFrameNum, size_t maxFrameNums)
         DFXLOG_ERROR("%s", "Failed to get trace string");
     }
     return trace.c_str();
-}
-
-static std::string GetStacktraceHeader()
-{
-    pid_t pid = getprocpid();
-    std::ostringstream ss;
-    ss << "" << std::endl << "Timestamp:" << GetCurrentTimeStr();
-    ss << "Pid:" << pid << std::endl;
-    ss << "Uid:" << getuid() << std::endl;
-    std::string processName;
-    ReadProcessName(pid, processName);
-    std::string processNameNoNul;
-    for (char c : processName) {
-        if (c != '\0') {
-            processNameNoNul += c;
-        } else {
-            break;
-        }
-    }
-    ss << "Process name::" << processNameNoNul << std::endl;
-    return ss.str();
 }
 
 std::string GetProcessStacktrace(size_t maxFrameNums)

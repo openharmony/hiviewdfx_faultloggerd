@@ -164,6 +164,38 @@ HWTEST_F(BacktraceLocalTest, BacktraceLocalTest003, TestSize.Level2)
 }
 
 /**
+ * @tc.name: BacktraceLocalTest004
+ * @tc.desc: test get backtrace of a child thread
+ * @tc.type: FUNC
+ */
+HWTEST_F(BacktraceLocalTest, BacktraceLocalTest004, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "BacktraceLocalTest004: start.";
+    g_mutex.lock();
+    std::thread backtraceThread(Test001);
+    sleep(1);
+    if (g_tid <= 0) {
+        FAIL() << "Failed to create child thread.\n";
+    }
+
+    std::string str;
+    auto ret = GetBacktraceStringByTid(str, g_tid, 0, false);
+    ASSERT_TRUE(ret);
+    string log[] = {"#00", "backtrace_local", "Tid:", "Name"};
+    log[2] = log[2] + std::to_string(g_tid);
+    int logSize = sizeof(log) / sizeof(log[0]);
+    int count = GetKeywordsNum(str, log, logSize);
+    EXPECT_EQ(count, logSize) << "BacktraceLocalTest004 Failed";
+    GTEST_LOG_(INFO) << "GetBacktraceStringByTid:\n" << str;
+    g_mutex.unlock();
+    g_tid = 0;
+    if (backtraceThread.joinable()) {
+        backtraceThread.join();
+    }
+    GTEST_LOG_(INFO) << "BacktraceLocalTest004: end.";
+}
+
+/**
  * @tc.name: BacktraceLocalTest005
  * @tc.desc: test get backtrace of current process
  * @tc.type: FUNC

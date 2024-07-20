@@ -201,6 +201,27 @@ bool GetTidsByPid(const int pid, std::vector<int>& tids, std::vector<int>& nstid
     return (nstids.size() > 0);
 }
 
+std::string GetStacktraceHeader()
+{
+    pid_t pid = getprocpid();
+    std::ostringstream ss;
+    ss << "" << std::endl << "Timestamp:" << GetCurrentTimeStr();
+    ss << "Pid:" << pid << std::endl;
+    ss << "Uid:" << getuid() << std::endl;
+    std::string processName;
+    ReadProcessName(pid, processName);
+    std::string processNameNoNul;
+    for (char c : processName) {
+        if (c != '\0') {
+            processNameNoNul += c;
+        } else {
+            break;
+        }
+    }
+    ss << "Process name::" << processNameNoNul << std::endl;
+    return ss.str();
+}
+
 void ReadThreadName(const int tid, std::string& str)
 {
     std::string path = StringPrintf("/proc/%d/comm", tid);
