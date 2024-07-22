@@ -631,7 +631,7 @@ bool Unwinder::Impl::UnwindLocal(bool withRegs, bool fpUnwind, size_t maxFrameNu
 bool Unwinder::Impl::UnwindRemote(pid_t tid, bool withRegs, size_t maxFrameNum, size_t skipFrameNum)
 {
     std::string timeLimitCheck =
-        "Check cost time limit for Unwinder::Impl::UnwindRemote, tid: " + std::to_string(tid);
+        "Unwinder::Impl::UnwindRemote, tid: " + std::to_string(tid);
     ElapsedTime counter(std::move(timeLimitCheck), 20); // 20 : limit cost time 20 ms
     if ((maps_ == nullptr) || (pid_ <= 0) || (tid < 0)) {
         LOGE("params is nullptr, pid: %d, tid: %d", pid_, tid);
@@ -668,12 +668,11 @@ int Unwinder::Impl::ArkWriteJitCodeToFile(int fd)
 bool Unwinder::Impl::StepArkJsFrame(StepFrame& frame)
 {
     DFX_TRACE_SCOPED_DLSYM("StepArkJsFrame pc: %p", reinterpret_cast<void *>(frame.pc));
-    std::string timeLimitCheck =
-        "Check cost time limit for StepArkJsFrame, ark pc: " + std::to_string(reinterpret_cast<void *>(frame.pc)) +
-        ", fp:" + std::to_string(reinterpret_cast<void *>(frame.fp)) +
-        ", sp:" + std::to_string(reinterpret_cast<void *>(frame.sp)) +
-        ", isJsFrame:" + std::to_string(frame.isJsFrame);
-    ElapsedTime counter(std::move(timeLimitCheck), 20); // 20 : limit cost time 20 ms
+    std::stringstream timeLimitCheck;
+    timeLimitCheck << "StepArkJsFrame, ark pc: " << reinterpret_cast<void *>(frame.pc) <<
+        ", fp:" << reinterpret_cast<void *>(frame.fp) << ", sp:" << reinterpret_cast<void *>(frame.sp) <<
+        ", isJsFrame:" << frame.isJsFrame;
+    ElapsedTime counter(timeLimitCheck.str(), 20); // 20 : limit cost time 20 ms
     if (pid_ != UNWIND_TYPE_CUSTOMIZE) {
         LOGD("+++ark pc: %p, fp: %p, sp: %p, isJsFrame: %d.", reinterpret_cast<void *>(frame.pc),
             reinterpret_cast<void *>(frame.fp), reinterpret_cast<void *>(frame.sp), frame.isJsFrame);
