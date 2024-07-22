@@ -60,6 +60,7 @@ void FaultloggerdServerTest(const uint8_t* data, size_t size)
 #ifdef FAULTLOGGERD_FUZZER
     std::shared_ptr<FaultLoggerDaemon> daemon = std::make_shared<FaultLoggerDaemon>();
     daemon->HandleRequestForFuzzer(epollFd, connectionFd, &request, &request);
+    sleep(1);
 #endif
 }
 } // namespace HiviewDFX
