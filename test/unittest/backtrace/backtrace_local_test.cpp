@@ -342,7 +342,11 @@ HWTEST_F(BacktraceLocalTest, BacktraceLocalTest010, TestSize.Level2)
     std::string str = frame.substr(start, end - start);
     GTEST_LOG_(INFO) << "frame" << frame;
     GTEST_LOG_(INFO) << "str" << str;
-    ASSERT_TRUE(str.find("libbacktrace_local.so(OHOS::HiviewDFX::GetBacktrace") != std::string::npos);
+    std::string keyword = "libbacktrace_local.so";
+#if defined(BACKTRACE_LOCAL_TEST_STATIC)
+    keyword = "backtrace_local_test_static";
+#endif
+    ASSERT_TRUE(str.find(keyword) != std::string::npos);
     GTEST_LOG_(INFO) << "BacktraceLocalTest010: end.";
 }
 } // namespace HiviewDFX
