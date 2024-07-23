@@ -98,7 +98,6 @@ public:
             pid_ = UNWIND_TYPE_CUSTOMIZE;
         }
         acc_ = std::make_shared<DfxAccessorsCustomize>(accessors);
-        enableLrFallback_ = false;
         enableFpCheckMapExec_ = false;
         enableFillFrames_ = false;
     #if defined(__aarch64__)
@@ -903,6 +902,7 @@ bool Unwinder::Impl::StepInner(const bool isSigFrame, StepFrame& frame, void *ct
     std::shared_ptr<RegLocState> rs = nullptr;
     std::shared_ptr<DfxMap> map = nullptr;
     do {
+        ret = false;
         if (enableCache_) {
             // 1. find cache rs
             auto iter = stepCache_.find(frame.pc);
