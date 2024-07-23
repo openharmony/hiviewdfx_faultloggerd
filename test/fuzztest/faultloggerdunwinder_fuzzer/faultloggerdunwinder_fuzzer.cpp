@@ -312,6 +312,7 @@ void FaultloggerdUnwinderTest(const uint8_t* data, size_t size)
     TestThreadContext(data, size);
     TestDfxInstrStatistic(data, size);
     TestDfxXzUtils(data, size);
+    sleep(1);
 }
 } // namespace HiviewDFX
 } // namespace OHOS
