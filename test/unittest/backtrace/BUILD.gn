@@ -102,7 +102,10 @@ ohos_unittest("backtrace_local_test_static") {
     "$faultloggerd_path/test/utils",
     "$faultloggerd_interfaces_path/innerkits/backtrace",
   ]
-  defines = [ "DFX_LOG_HILOG_BASE" ]
+  defines = [
+    "BACKTRACE_LOCAL_TEST_STATIC",
+    "DFX_LOG_HILOG_BASE",
+  ]
   sources = [ "backtrace_local_test.cpp" ]
   deps = [
     "$faultloggerd_common_path/dfxlog:dfx_hilog_base",
