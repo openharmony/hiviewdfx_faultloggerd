@@ -769,12 +769,10 @@ bool Unwinder::Impl::Unwind(void *ctx, size_t maxFrameNum, size_t skipFrameNum)
             continue;
         }
 
-        if (pid_ != UNWIND_TYPE_CUSTOMIZE) {
-            if (!frame.isJsFrame && needAdjustPc) {
-                DoPcAdjust(frame.pc);
-            }
-            needAdjustPc = true;
+        if (!frame.isJsFrame && needAdjustPc) {
+            DoPcAdjust(frame.pc);
         }
+        needAdjustPc = true;
 
         uintptr_t prevPc = frame.pc;
         uintptr_t prevSp = frame.sp;
@@ -848,10 +846,11 @@ bool Unwinder::Impl::FpStep(uintptr_t& fp, uintptr_t& pc, void *ctx)
 
     uintptr_t prevFp = fp;
     uintptr_t ptr = fp;
-    if (memory_->ReadUptr(ptr, &fp, true) &&
+    if (ptr != 0 && memory_->ReadUptr(ptr, &fp, true) &&
         memory_->ReadUptr(ptr, &pc, false)) {
-        if (fp <= prevFp || fp == 0) {
-            LOGU("-fp: %lx is same", (uint64_t)fp);
+        if (fp != 0 && fp <= prevFp) {
+            LOGU("Illegal or same fp value");
+            lastErrorData_.SetAddrAndCode(pc, UNW_ERROR_ILLEGAL_VALUE);
             return false;
         }
         regs_->SetReg(REG_FP, &fp);
@@ -897,13 +896,13 @@ bool Unwinder::Impl::StepInner(const bool isSigFrame, StepFrame& frame, void *ct
     SetLocalStackCheck(ctx, false);
     LOGU("+pc: %p, sp: %p, fp: %p", reinterpret_cast<void *>(frame.pc),
         reinterpret_cast<void *>(frame.sp), reinterpret_cast<void *>(frame.fp));
+    uintptr_t prevSp = frame.sp;
 
     bool ret = false;
     std::shared_ptr<RegLocState> rs = nullptr;
     std::shared_ptr<DfxMap> map = nullptr;
     do {
-        ret = false;
-        if (enableCache_) {
+        if (enableCache_ && !isFpStep_) {
             // 1. find cache rs
             auto iter = stepCache_.find(frame.pc);
             if (iter != stepCache_.end()) {
@@ -923,6 +922,7 @@ bool Unwinder::Impl::StepInner(const bool isSigFrame, StepFrame& frame, void *ct
         if (mapRet != UNW_ERROR_NONE) {
             if (frame.isJsFrame) {
                 LOGW("Failed to get map with ark, frames size: %zu", frames_.size());
+                mapRet = UNW_ERROR_UNKNOWN_ARK_MAP;
             }
             if (frames_.size() > 2) { // 2, least 2 frame
                 LOGU("Failed to get map, frames size: %zu", frames_.size());
@@ -1052,6 +1052,11 @@ bool Unwinder::Impl::StepInner(const bool isSigFrame, StepFrame& frame, void *ct
     frame.pc = regs_->GetPc();
     frame.sp = regs_->GetSp();
     frame.fp = regs_->GetFp();
+    if (!isFpStep_ && (map != nullptr) && (!map->IsVdsoMap()) && (frame.sp < prevSp)) {
+        LOGU("Illegal sp value");
+        lastErrorData_.SetAddrAndCode(frame.pc, UNW_ERROR_ILLEGAL_VALUE);
+        ret = false;
+    }
     if (ret && (frame.pc == 0)) {
         ret = false;
     }
@@ -1069,7 +1074,7 @@ bool Unwinder::Impl::Apply(std::shared_ptr<DfxRegs> regs, std::shared_ptr<RegLoc
     uint16_t errCode = 0;
     bool ret = DfxInstructions::Apply(memory_, *(regs.get()), *(rs.get()), errCode);
     uintptr_t tmp = 0;
-    auto sp = regs_->GetSp();
+    auto sp = regs->GetSp();
     if (ret && (!memory_->ReadUptr(sp, &tmp, false))) {
         errCode = UNW_ERROR_UNREADABLE_SP;
         ret = false;
@@ -1079,7 +1084,7 @@ bool Unwinder::Impl::Apply(std::shared_ptr<DfxRegs> regs, std::shared_ptr<RegLoc
         LOGE("Failed to apply reg state, errCode: %d", static_cast<int>(errCode));
     }
 
-    regs->SetPc(StripPac(regs_->GetPc(), pacMask_));
+    regs->SetPc(StripPac(regs->GetPc(), pacMask_));
     return ret;
 }
 
