@@ -20,6 +20,7 @@
 #include <string>
 
 #include "faultloggerd_client.h"
+#include "fault_logger_pipe.h"
 
 namespace OHOS {
 namespace HiviewDFX {
@@ -67,7 +68,10 @@ private:
     void HandlePermissionRequest(int32_t connectionFd, FaultLoggerdRequest* request);
     void HandleSdkDumpRequest(int32_t connectionFd, FaultLoggerdRequest* request);
     void HandlePipeFdClientRequest(int32_t connectionFd, FaultLoggerdRequest* request);
+    void HandleRequestByPipeType(int& fd, int32_t connectionFd, FaultLoggerdRequest* request,
+                                 FaultLoggerPipe2* faultLoggerPipe);
     void HandleExceptionRequest(int32_t connectionFd, FaultLoggerdRequest* request);
+    void HandleRequestByClientType(int32_t connectionFd, FaultLoggerdRequest* request);
     bool CheckRequestCredential(int32_t connectionFd, FaultLoggerdRequest* request);
     bool CreateSockets();
     bool CreateEventFd();

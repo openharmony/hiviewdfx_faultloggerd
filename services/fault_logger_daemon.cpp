@@ -43,7 +43,6 @@
 #include "dfx_util.h"
 #include "directory_ex.h"
 #include "fault_logger_config.h"
-#include "fault_logger_pipe.h"
 #include "faultloggerd_socket.h"
 #ifndef HISYSEVENT_DISABLE
 #include "hisysevent.h"
@@ -219,6 +218,36 @@ static bool CheckReadRequest(ssize_t nread, ssize_t size)
     return true;
 }
 
+void FaultLoggerDaemon::HandleRequestByClientType(int32_t connectionFd, FaultLoggerdRequest* request)
+{
+    switch (request->clientType) {
+        case static_cast<int32_t>(FaultLoggerClientType::DEFAULT_CLIENT):
+            HandleDefaultClientRequest(connectionFd, request);
+            break;
+        case static_cast<int32_t>(FaultLoggerClientType::LOG_FILE_DES_CLIENT):
+            HandleLogFileDesClientRequest(connectionFd, request);
+            break;
+        case static_cast<int32_t>(FaultLoggerClientType::PRINT_T_HILOG_CLIENT):
+            HandlePrintTHilogClientRequest(connectionFd, request);
+            break;
+        case static_cast<int32_t>(FaultLoggerClientType::PERMISSION_CLIENT):
+            HandlePermissionRequest(connectionFd, request);
+            break;
+        case static_cast<int32_t>(FaultLoggerClientType::SDK_DUMP_CLIENT):
+            HandleSdkDumpRequest(connectionFd, request);
+            break;
+        case static_cast<int32_t>(FaultLoggerClientType::PIPE_FD_CLIENT):
+            HandlePipeFdClientRequest(connectionFd, request);
+            break;
+        case static_cast<int32_t>(FaultLoggerClientType::REPORT_EXCEPTION_CLIENT):
+            HandleExceptionRequest(connectionFd, request);
+            break;
+        default:
+            DFXLOG_ERROR("%s :: unknown clientType(%d).\n", FAULTLOGGERD_TAG.c_str(), request->clientType);
+            break;
+        }
+}
+
 void FaultLoggerDaemon::HandleRequest(int32_t epollFd, int32_t connectionFd)
 {
     if (epollFd < 0 || connectionFd < 3) { // 3: not allow fd = 0,1,2 because they are reserved by system
@@ -240,33 +269,8 @@ void FaultLoggerDaemon::HandleRequest(int32_t epollFd, int32_t connectionFd)
         if (!CheckRequestCredential(connectionFd, request)) {
             break;
         }
-        DFXLOG_DEBUG("%s :: clientType(%d).\n", FAULTLOGGERD_TAG.c_str(), request->clientType);
-        switch (request->clientType) {
-            case static_cast<int32_t>(FaultLoggerClientType::DEFAULT_CLIENT):
-                HandleDefaultClientRequest(connectionFd, request);
-                break;
-            case static_cast<int32_t>(FaultLoggerClientType::LOG_FILE_DES_CLIENT):
-                HandleLogFileDesClientRequest(connectionFd, request);
-                break;
-            case static_cast<int32_t>(FaultLoggerClientType::PRINT_T_HILOG_CLIENT):
-                HandlePrintTHilogClientRequest(connectionFd, request);
-                break;
-            case static_cast<int32_t>(FaultLoggerClientType::PERMISSION_CLIENT):
-                HandlePermissionRequest(connectionFd, request);
-                break;
-            case static_cast<int32_t>(FaultLoggerClientType::SDK_DUMP_CLIENT):
-                HandleSdkDumpRequest(connectionFd, request);
-                break;
-            case static_cast<int32_t>(FaultLoggerClientType::PIPE_FD_CLIENT):
-                HandlePipeFdClientRequest(connectionFd, request);
-                break;
-            case static_cast<int32_t>(FaultLoggerClientType::REPORT_EXCEPTION_CLIENT):
-                HandleExceptionRequest(connectionFd, request);
-                break;
-            default:
-                DFXLOG_ERROR("%s :: unknown clientType(%d).\n", FAULTLOGGERD_TAG.c_str(), request->clientType);
-                break;
-        }
+        DFXLOG_DEBUG("%s :: clientType(%d).", FAULTLOGGERD_TAG.c_str(), request->clientType);
+        HandleRequestByClientType(connectionFd, request);
     } while (false);
     DelEvent(eventFd_, connectionFd, EPOLLIN);
     connectionMap_.erase(connectionFd);
@@ -339,16 +343,9 @@ void FaultLoggerDaemon::HandleExceptionRequest(int32_t connectionFd, FaultLogger
     ReportExceptionToSysEvent(exception);
 }
 
-void FaultLoggerDaemon::HandlePipeFdClientRequest(int32_t connectionFd, FaultLoggerdRequest * request)
+void FaultLoggerDaemon::HandleRequestByPipeType(int& fd, int32_t connectionFd, FaultLoggerdRequest* request,
+                                                FaultLoggerPipe2* faultLoggerPipe)
 {
-    DFX_TRACE_SCOPED("HandlePipeFdClientRequest");
-    DFXLOG_DEBUG("%s :: pid(%d), pipeType(%d).\n", FAULTLOGGERD_TAG.c_str(), request->pid, request->pipeType);
-    int fd = -1;
-    FaultLoggerPipe2* faultLoggerPipe = faultLoggerPipeMap_->Get(request->pid);
-    if (faultLoggerPipe == nullptr) {
-        DFXLOG_ERROR("%s :: cannot find pipe fd for pid(%d).\n", FAULTLOGGERD_TAG.c_str(), request->pid);
-        return;
-    }
     switch (request->pipeType) {
         case (int32_t)FaultLoggerPipeType::PIPE_FD_READ_BUF: {
             FaultLoggerCheckPermissionResp resSecurityCheck = SecurityCheck(connectionFd, request);
@@ -422,6 +419,19 @@ void FaultLoggerDaemon::HandlePipeFdClientRequest(int32_t connectionFd, FaultLog
             DFXLOG_ERROR("%s :: unknown pipeType(%d).", FAULTLOGGERD_TAG.c_str(), request->pipeType);
             return;
     }
+}
+
+void FaultLoggerDaemon::HandlePipeFdClientRequest(int32_t connectionFd, FaultLoggerdRequest * request)
+{
+    DFX_TRACE_SCOPED("HandlePipeFdClientRequest");
+    DFXLOG_DEBUG("%s :: pid(%d), pipeType(%d).", FAULTLOGGERD_TAG.c_str(), request->pid, request->pipeType);
+    int fd = -1;
+    FaultLoggerPipe2* faultLoggerPipe = faultLoggerPipeMap_->Get(request->pid);
+    if (faultLoggerPipe == nullptr) {
+        DFXLOG_ERROR("%s :: cannot find pipe fd for pid(%d).", FAULTLOGGERD_TAG.c_str(), request->pid);
+        return;
+    }
+    HandleRequestByPipeType(fd, connectionFd, request, faultLoggerPipe);
     if (fd < 0) {
         DFXLOG_ERROR("%s :: Failed to get pipe fd, pipeType(%d)", FAULTLOGGERD_TAG.c_str(), request->pipeType);
         return;
