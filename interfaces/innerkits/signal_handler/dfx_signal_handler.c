@@ -622,6 +622,7 @@ static bool StartProcessdump(void)
         } else {
             DFXLOG_INFO("ready to start processdump");
             DFX_ExecDump();
+            _exit(0);
         }
     }
 
