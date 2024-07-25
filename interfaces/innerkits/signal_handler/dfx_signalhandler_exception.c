@@ -51,7 +51,7 @@ static int ConnectSocket(const char* path, const int timeout)
 {
     int fd = -1;
     if ((fd = socket(AF_LOCAL, SOCK_STREAM, 0)) < 0) {
-        DFXLOG_ERROR("Failed to create a socket.");
+        DFXLOG_ERROR("Failed to create a socket, errno(%d).", errno);
         return -1;
     }
 
@@ -64,7 +64,7 @@ static int ConnectSocket(const char* path, const int timeout)
             void* pTimev = &timev;
             if (OHOS_TEMP_FAILURE_RETRY(setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO,
                 (const void*)(pTimev), sizeof(timev))) != 0) {
-                DFXLOG_ERROR("setsockopt SO_RCVTIMEO error.");
+                DFXLOG_ERROR("setsockopt SO_RCVTIMEO error, errno(%d).", errno);
                 syscall(SYS_close, fd);
                 fd = -1;
                 break;
@@ -92,7 +92,7 @@ static bool CheckReadResp(int fd)
     (void)memset(controlBuffer, 0, MAX_FUNC_NAME_LEN);
     ssize_t nread = OHOS_TEMP_FAILURE_RETRY(read(fd, controlBuffer, sizeof(controlBuffer) - 1));
     if (nread != (ssize_t)(strlen(FAULTLOGGER_DAEMON_RESP))) {
-        DFXLOG_ERROR("Failed to read expected length, nread: %zd.", nread);
+        DFXLOG_ERROR("Failed to read expected length, nread: %zd, errno(%d).", nread, errno);
         return false;
     }
     return true;
@@ -113,7 +113,7 @@ int ReportException(struct CrashDumpException exception)
     }
     do {
         if (OHOS_TEMP_FAILURE_RETRY(write(fd, &request, sizeof(request))) != (long)sizeof(request)) {
-            DFXLOG_ERROR("Failed to write request message to socket.");
+            DFXLOG_ERROR("Failed to write request message to socket, errno(%d).", errno);
             break;
         }
 
@@ -124,7 +124,7 @@ int ReportException(struct CrashDumpException exception)
 
         if (OHOS_TEMP_FAILURE_RETRY(write(fd, &exception,
             sizeof(exception))) != (long)sizeof(exception)) {
-            DFXLOG_ERROR("Failed to write exception message to socket.");
+            DFXLOG_ERROR("Failed to write exception message to socket, errno(%d).", errno);
             break;
         }
 

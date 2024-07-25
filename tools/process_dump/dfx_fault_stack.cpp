@@ -46,6 +46,10 @@ bool FaultStack::ReadTargetMemory(uintptr_t addr, uintptr_t &value) const
     for (size_t i = 0; i < sizeof(uintptr_t) / sizeof(long); i++) {
         *retAddr = ptrace(PTRACE_PEEKTEXT, tid_, reinterpret_cast<void*>(targetAddr), nullptr);
         if (*retAddr == -1) {
+            if (errno != prevErrno_) {
+                DFXLOG_ERROR("read target mem by ptrace failed, errno(%s).", strerror(errno));
+                prevErrno_ = errno;
+            }
             return false;
         }
         targetAddr += sizeof(long);

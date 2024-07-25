@@ -303,7 +303,7 @@ static int32_t InheritCapabilities(void)
     capData[0].inheritable = capData[0].permitted;
     capData[1].inheritable = capData[1].permitted;
     if (capset(&capHeader, &capData[0]) == -1) {
-        DFXLOG_ERROR("Failed to set cap data");
+        DFXLOG_ERROR("Failed to set cap data, errno(%d)", errno);
         return -1;
     }
 
@@ -311,7 +311,9 @@ static int32_t InheritCapabilities(void)
     ambCap = ambCap | (((uint64_t)capData[1].inheritable) << INHERITABLE_OFFSET);
     for (size_t i = 0; i < NUMBER_SIXTYFOUR; i++) {
         if (ambCap & ((uint64_t)1)) {
-            (void)prctl(PR_CAP_AMBIENT, PR_CAP_AMBIENT_RAISE, i, 0, 0);
+            if (prctl(PR_CAP_AMBIENT, PR_CAP_AMBIENT_RAISE, i, 0, 0) < 0) {
+                DFXLOG_ERROR("Failed to change the ambient capability set, errno(%d)", errno);
+            }
         }
         ambCap = ambCap >> 1;
     }
@@ -383,7 +385,7 @@ static int DFX_ExecDump(void)
     // create pipe for passing request to processdump
     if (g_request.dumpMode == SPLIT_MODE) {
         if (pipe(pipefd) != 0) {
-            DFXLOG_ERROR("Failed to create pipe for transfering context.");
+            DFXLOG_ERROR("Failed to create pipe for transfering context, errno(%d)", errno);
             return CREATE_PIPE_FAIL;
         }
     } else {
@@ -393,7 +395,7 @@ static int DFX_ExecDump(void)
 
     ssize_t writeLen = (long)(sizeof(struct ProcessDumpRequest));
     if (fcntl(pipefd[1], F_SETPIPE_SZ, writeLen) < writeLen) {
-        DFXLOG_ERROR("Failed to set pipe buffer size.");
+        DFXLOG_ERROR("Failed to set pipe buffer size, errno(%d).", errno);
         return SET_PIPE_LEN_FAIL;
     }
 
@@ -403,13 +405,12 @@ static int DFX_ExecDump(void)
             .iov_len = sizeof(struct ProcessDumpRequest)
         },
     };
-    ssize_t realWriteSize = OHOS_TEMP_FAILURE_RETRY(writev(pipefd[1], iovs, 1));
-    if ((ssize_t)writeLen != realWriteSize) {
-        DFXLOG_ERROR("Failed to write pipe.");
+    if (OHOS_TEMP_FAILURE_RETRY(writev(pipefd[1], iovs, 1)) != writeLen) {
+        DFXLOG_ERROR("Failed to write pipe, errno(%d)", errno);
         return WRITE_PIPE_FAIL;
     }
-    OHOS_TEMP_FAILURE_RETRY(dup2(pipefd[0], STDIN_FILENO));
-    if (pipefd[0] != STDIN_FILENO) {
+    if (OHOS_TEMP_FAILURE_RETRY(dup2(pipefd[0], STDIN_FILENO)) == -1) {
+        DFXLOG_ERROR("Dup to standard input failed, errno(%d)", errno);
         syscall(SYS_close, pipefd[0]);
     }
     syscall(SYS_close, pipefd[1]);
@@ -425,7 +426,7 @@ static int DFX_ExecDump(void)
 #else
     execl("/bin/processdump", "processdump", "-signalhandler", NULL);
 #endif
-    DFXLOG_ERROR("Failed to execl processdump, errno: %d(%s)", errno, strerror(errno));
+    DFXLOG_ERROR("Failed to execl processdump, errno(%d)", errno);
     FillCrashExceptionAndReport(CRASH_SIGNAL_EEXECL);
     return errno;
 }
@@ -690,7 +691,7 @@ static bool InitPipe(void)
 {
     for (int i = 0; i < PIPE_MAX; i++) {
         if (pipe(g_pipeFds[i]) == -1) {
-            DFXLOG_ERROR("create pipe fail");
+            DFXLOG_ERROR("create pipe fail, errno(%d)", errno);
             FillCrashExceptionAndReport(CRASH_SIGNAL_ECREATEPIPE);
             CleanPipe();
             return false;
@@ -733,7 +734,7 @@ static bool ReadPipeTimeout(int fd, uint64_t timeout, uint32_t* value)
         }
     } while (pollRet < 0 && errno == EINTR);
     FillCrashExceptionAndReport(CRASH_SIGNAL_EREADPIPE);
-    DFXLOG_ERROR("read pipe failed %d", errno);
+    DFXLOG_ERROR("read pipe failed , errno(%d)", errno);
     return false;
 }
 
