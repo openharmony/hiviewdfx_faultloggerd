@@ -30,7 +30,7 @@ ohos_unittest("backtrace_utils_test") {
     "$faultloggerd_interfaces_path/innerkits/backtrace:libbacktrace_local",
     "$faultloggerd_path/test/utils:dfx_test_util",
   ]
-  if (use_musl && use_jemalloc && use_jemalloc_dfx_intf) {
+  if (use_musl && musl_use_jemalloc && musl_use_jemalloc_dfx_intf) {
     defines = [ "USE_JEMALLOC_DFX_INTF" ]
   }
   branch_protector_ret = "pac_ret"
@@ -82,7 +82,7 @@ ohos_unittest("backtrace_utils_test_static") {
     "$faultloggerd_interfaces_path/innerkits/backtrace:backtrace_local",
     "$faultloggerd_path/test/utils:dfx_test_util",
   ]
-  if (use_musl && use_jemalloc && use_jemalloc_dfx_intf) {
+  if (use_musl && musl_use_jemalloc && musl_use_jemalloc_dfx_intf) {
     defines += [ "USE_JEMALLOC_DFX_INTF" ]
   }
   branch_protector_ret = "pac_ret"
