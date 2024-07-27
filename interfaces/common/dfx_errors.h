@@ -20,42 +20,6 @@
 namespace OHOS {
 namespace HiviewDFX {
 /**
- * @brief Unwind error data
- */
-struct UnwindErrorData {
-    inline const uint16_t& GetCode() { return code_; }
-    inline const uint64_t& GetAddr() { return addr_; }
-
-    template <typename T1, typename T2>
-    inline void SetAddrAndCode([[maybe_unused]] T1 addr, [[maybe_unused]] T2 code)
-    {
-#ifdef DFX_UNWIND_ERROR
-        addr_ = static_cast<uint64_t>(addr);
-        code_ = static_cast<uint16_t>(code);
-#endif
-    }
-
-    template <typename T>
-    inline void SetCode([[maybe_unused]] T code)
-    {
-#ifdef DFX_UNWIND_ERROR
-        code_ = static_cast<uint16_t>(code);
-#endif
-    }
-
-    template <typename T>
-    inline void SetAddr([[maybe_unused]] T addr)
-    {
-#ifdef DFX_UNWIND_ERROR
-        addr_ = static_cast<uint64_t>(addr);
-#endif
-    }
-private:
-    uint16_t code_ = 0;
-    uint64_t addr_ = 0;
-};
-
-/**
  * @brief Unwind error code
  */
 enum UnwindErrorCode : uint16_t {
@@ -111,6 +75,8 @@ enum UnwindErrorCode : uint16_t {
     UNW_ERROR_DWARF_INVALID_INSTR,
     /** step ark frame error */
     UNW_ERROR_STEP_ARK_FRAME,
+    /** Unknown ark map */
+    UNW_ERROR_UNKNOWN_ARK_MAP,
     /** Unsupported qut reg */
     UNW_ERROR_UNSUPPORTED_QUT_REG,
     /** Unsupported version */
@@ -120,39 +86,39 @@ enum UnwindErrorCode : uint16_t {
 };
 
 /**
- * @brief Quick unwind table file error code
+ * @brief Unwind error data
  */
-enum QutFileError : uint16_t {
-    /** File not found */
-    QUT_FILE_NONE = 0,
-    /** File not init */
-    QUT_FILE_NOT_INIT,
-    /** File not warmed up */
-    QUT_FILE_NOT_WARMEDUP,
-    /** File load requesting */
-    QUT_FILE_LOAD_REQUESTING,
-    /** File open failed */
-    QUT_FILE_OPEN_FILE_FAILED,
-    /** File state error */
-    QUT_FILE_FILE_STATE_ERROR,
-    /** File too short */
-    QUT_FILE_FILE_TOO_SHORT,
-    /** File mmap failed */
-    QUT_FILE_MMAP_FAILED,
-    /** Version dismatched */
-    QUT_FILE_QUTVERSION_NOT_MATCH,
-    /** Archtecture not matched */
-    QUT_FILE_ARCH_NOT_MATCH,
-    /** File build id dismatched */
-    QUT_FILE_BUILDID_NOT_MATCH,
-    /** File length dismatched */
-    QUT_FILE_FILE_LENGTH_NOT_MATCH,
-    /** Insert new quick unwind table failed */
-    QUT_FILE_INSERT_NEW_QUT_FAILED,
-    /** Try invode request generete */
-    QUT_FILE_TRY_INVOKE_REQUEST_GENERATE,
-    /** File load failed */
-    QUT_FILE_LOAD_FAILED,
+struct UnwindErrorData {
+    inline const uint16_t& GetCode() { return code_; }
+    inline const uint64_t& GetAddr() { return addr_; }
+
+    template <typename T1, typename T2>
+    inline void SetAddrAndCode([[maybe_unused]] T1 addr, [[maybe_unused]] T2 code)
+    {
+#ifdef DFX_UNWIND_ERROR
+        addr_ = static_cast<uint64_t>(addr);
+        code_ = static_cast<uint16_t>(code);
+#endif
+    }
+
+    template <typename T>
+    inline void SetCode([[maybe_unused]] T code)
+    {
+#ifdef DFX_UNWIND_ERROR
+        code_ = static_cast<uint16_t>(code);
+#endif
+    }
+
+    template <typename T>
+    inline void SetAddr([[maybe_unused]] T addr)
+    {
+#ifdef DFX_UNWIND_ERROR
+        addr_ = static_cast<uint64_t>(addr);
+#endif
+    }
+private:
+    uint16_t code_ = 0;
+    uint64_t addr_ = 0;
 };
 } // namespace HiviewDFX
 } // namespace OHOS

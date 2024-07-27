@@ -88,7 +88,7 @@ public:
     static size_t ReadProcMemByPid(const pid_t pid, const uint64_t addr, void* data, size_t size);
 #endif
 private:
-    std::shared_ptr<DfxAccessors> acc_;
+    std::shared_ptr<DfxAccessors> acc_ = nullptr;
     void* ctx_ = nullptr;
     bool alignAddr_ = false;
     int alignBytes_ = 0;
