@@ -55,6 +55,7 @@ private:
     int32_t tid_;
     std::vector<MemoryBlockInfo> blocks_;
     std::vector<MemoryBlockInfo> registerBlocks_;
+    mutable int prevErrno_ = 0;
 };
 } // namespace HiviewDFX
 } // namespace OHOS
