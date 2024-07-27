@@ -439,7 +439,7 @@ HWTEST_F (FaultLoggerDaemonTest, FaultLoggerDaemonTest009, TestSize.Level2)
 
 /**
  * @tc.name: FaultLoggerDaemonTest010
- * @tc.desc: test HandleAccept abnormal branch
+ * @tc.desc: test HandleRequest and HandleRequestByClientType abnormal branch
  * @tc.type: FUNC
  */
 HWTEST_F (FaultLoggerDaemonTest, FaultLoggerDaemonTest010, TestSize.Level2)
@@ -448,11 +448,13 @@ HWTEST_F (FaultLoggerDaemonTest, FaultLoggerDaemonTest010, TestSize.Level2)
     std::shared_ptr<FaultLoggerDaemon> daemon = std::make_shared<FaultLoggerDaemon>();
     bool ret = daemon->InitEnvironment();
     ASSERT_TRUE(ret);
+
     int32_t epollFd = 1;
     int32_t connectionFd = 4; // 4 : simulate an fd greater than 3
     daemon->HandleRequest(epollFd, connectionFd);
     connectionFd = 1;
     daemon->HandleRequest(epollFd, connectionFd);
+
     FaultLoggerdRequest request;
     request.clientType = FaultLoggerClientType::DEFAULT_CLIENT;
     daemon->HandleRequestByClientType(connectionFd, &request);
@@ -470,7 +472,24 @@ HWTEST_F (FaultLoggerDaemonTest, FaultLoggerDaemonTest010, TestSize.Level2)
     daemon->HandleRequestByClientType(connectionFd, &request);
     request.clientType = -1;
     daemon->HandleRequestByClientType(connectionFd, &request);
+    GTEST_LOG_(INFO) << "FaultLoggerDaemonTest010: end.";
+}
+
+/**
+ * @tc.name: FaultLoggerDaemonTest011
+ * @tc.desc: test HandleRequestByPipeType abnormal branch
+ * @tc.type: FUNC
+ */
+HWTEST_F (FaultLoggerDaemonTest, FaultLoggerDaemonTest011, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "FaultLoggerDaemonTest011: start.";
+    std::shared_ptr<FaultLoggerDaemon> daemon = std::make_shared<FaultLoggerDaemon>();
+    bool ret = daemon->InitEnvironment();
+    ASSERT_TRUE(ret);
+
     int fd = -1;
+    int32_t connectionFd = 1;
+    FaultLoggerdRequest request;
     FaultLoggerPipe2* faultLoggerPipe = new FaultLoggerPipe2(GetTimeMilliSeconds());
     request.pipeType = FaultLoggerPipeType::PIPE_FD_READ_BUF;
     daemon->HandleRequestByPipeType(fd, connectionFd, &request, faultLoggerPipe);
@@ -492,7 +511,7 @@ HWTEST_F (FaultLoggerDaemonTest, FaultLoggerDaemonTest010, TestSize.Level2)
     daemon->HandleRequestByPipeType(fd, connectionFd, &request, faultLoggerPipe);
     request.pipeType = -1;
     daemon->HandleRequestByPipeType(fd, connectionFd, &request, faultLoggerPipe);
-    GTEST_LOG_(INFO) << "FaultLoggerDaemonTest010: end.";
+    GTEST_LOG_(INFO) << "FaultLoggerDaemonTest011: end.";
 }
 
 }

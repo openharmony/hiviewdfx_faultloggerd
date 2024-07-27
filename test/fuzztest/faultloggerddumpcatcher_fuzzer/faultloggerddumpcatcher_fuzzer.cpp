@@ -24,12 +24,14 @@
 
 namespace OHOS {
 namespace HiviewDFX {
+const int FAULTLOGGER_FUZZTEST_MAX_STRING_LENGTH = 50;
+
 void DumpStackTraceTest(const uint8_t* data, size_t size)
 {
     int pid;
     int tid;
     int offsetTotalLength = sizeof(pid) + sizeof(tid) +
-                            (2 * HiviewDFX::FAULTLOGGER_FUZZTEST_MAX_STRING_LENGTH); // 2 : Offset by 2 string length
+                            (2 * FAULTLOGGER_FUZZTEST_MAX_STRING_LENGTH); // 2 : Offset by 2 string length
     if (offsetTotalLength > size) {
         return;
     }
@@ -37,10 +39,10 @@ void DumpStackTraceTest(const uint8_t* data, size_t size)
     STREAM_TO_VALUEINFO(data, pid);
     STREAM_TO_VALUEINFO(data, tid);
 
-    std::string msg((const char*)data, HiviewDFX::FAULTLOGGER_FUZZTEST_MAX_STRING_LENGTH);
-    data += HiviewDFX::FAULTLOGGER_FUZZTEST_MAX_STRING_LENGTH;
-    std::string invalidOption((const char*)data, HiviewDFX::FAULTLOGGER_FUZZTEST_MAX_STRING_LENGTH);
-    data += HiviewDFX::FAULTLOGGER_FUZZTEST_MAX_STRING_LENGTH;
+    std::string msg(reinterpret_cast<const char*>(data), FAULTLOGGER_FUZZTEST_MAX_STRING_LENGTH);
+    data += FAULTLOGGER_FUZZTEST_MAX_STRING_LENGTH;
+    std::string invalidOption(reinterpret_cast<const char*>(data), FAULTLOGGER_FUZZTEST_MAX_STRING_LENGTH);
+    data += FAULTLOGGER_FUZZTEST_MAX_STRING_LENGTH;
 
     std::shared_ptr<DfxDumpCatcher> catcher = std::make_shared<DfxDumpCatcher>();
     catcher->DumpCatch(pid, tid, msg, DEFAULT_MAX_FRAME_NUM, false);
