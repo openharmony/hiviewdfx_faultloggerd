@@ -30,6 +30,7 @@
 
 namespace OHOS {
 namespace HiviewDFX {
+const int FAULTLOGGER_FUZZTEST_MAX_STRING_LENGTH = 50;
 
 void TestDfxConfig()
 {
@@ -261,8 +262,7 @@ void TestDfxInstrStatistic(const uint8_t* data, size_t size)
     uint32_t type;
     uint64_t val;
     uint64_t errInfo;
-    int offsetTotalLength = sizeof(type) + sizeof(val) + sizeof(errInfo) +
-                            HiviewDFX::FAULTLOGGER_FUZZTEST_MAX_STRING_LENGTH;
+    int offsetTotalLength = sizeof(type) + sizeof(val) + sizeof(errInfo) +FAULTLOGGER_FUZZTEST_MAX_STRING_LENGTH;
     if (offsetTotalLength > size) {
         return;
     }
@@ -272,8 +272,8 @@ void TestDfxInstrStatistic(const uint8_t* data, size_t size)
     STREAM_TO_VALUEINFO(data, val);
     STREAM_TO_VALUEINFO(data, errInfo);
 
-    std::string soName((const char*)data, HiviewDFX::FAULTLOGGER_FUZZTEST_MAX_STRING_LENGTH);
-    data += HiviewDFX::FAULTLOGGER_FUZZTEST_MAX_STRING_LENGTH;
+    std::string soName(reinterpret_cast<const char*>(data), FAULTLOGGER_FUZZTEST_MAX_STRING_LENGTH);
+    data += FAULTLOGGER_FUZZTEST_MAX_STRING_LENGTH;
 
     InstrStatisticType statisticType;
     if (type == 0) {

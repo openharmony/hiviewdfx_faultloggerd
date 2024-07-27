@@ -22,8 +22,6 @@
 namespace OHOS {
 namespace HiviewDFX {
 
-const int FAULTLOGGER_FUZZTEST_MAX_STRING_LENGTH = 50;
-
 #define STREAM_TO_VALUEINFO(data, value) \
     do { \
         errno_t err = memcpy_s(&(value), sizeof(value), (data), sizeof(value)); \
