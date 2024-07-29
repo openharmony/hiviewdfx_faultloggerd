@@ -34,7 +34,7 @@ bool StartConnect(int& sockfd, const char* path, const int timeout)
 {
     bool ret = false;
     if ((sockfd = socket(AF_LOCAL, SOCK_STREAM, 0)) < 0) {
-        DFXLOG_ERROR("%s :: Failed to socket", __func__);
+        DFXLOG_ERROR("%s :: Failed to socket, errno(%d)", __func__, errno);
         return ret;
     }
 
@@ -47,7 +47,11 @@ bool StartConnect(int& sockfd, const char* path, const int timeout)
             void* pTimev = &timev;
             if (OHOS_TEMP_FAILURE_RETRY(setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, \
                 static_cast<const char*>(pTimev), sizeof(timev))) != 0) {
-                    DFXLOG_ERROR("setsockopt(%d) SO_RCVTIMEO error", sockfd);
+                    DFXLOG_ERROR("setsockopt(%d) SO_RCVTIMEO error, errno(%d).", sockfd, errno);
+            }
+            if (OHOS_TEMP_FAILURE_RETRY(setsockopt(sockfd, SOL_SOCKET, SO_SNDTIMEO, \
+                static_cast<const char*>(pTimev), sizeof(timev))) != 0) {
+                    DFXLOG_ERROR("setsockopt(%d) SO_SNDTIMEO error, errno(%d).", sockfd, errno);
             }
         }
 
@@ -161,7 +165,7 @@ static bool RecvMsgFromSocket(int sockfd, unsigned char* data, size_t& len)
         msgh.msg_control = ctlBuffer;
         msgh.msg_controllen = sizeof(ctlBuffer);
 
-        if (OHOS_TEMP_FAILURE_RETRY(recvmsg(sockfd, &msgh, 0) < 0)) {
+        if (OHOS_TEMP_FAILURE_RETRY(recvmsg(sockfd, &msgh, 0)) < 0) {
             DFXLOG_ERROR("%s :: Failed to recv message, errno(%d)\n", __func__, errno);
             break;
         }
@@ -214,7 +218,7 @@ bool RecvMsgCredFromSocket(int sockfd, struct ucred* pucred)
         msgh.msg_control = controlMsg.buf;
         msgh.msg_controllen = sizeof(controlMsg.buf);
 
-        if (OHOS_TEMP_FAILURE_RETRY(recvmsg(sockfd, &msgh, 0) < 0)) {
+        if (OHOS_TEMP_FAILURE_RETRY(recvmsg(sockfd, &msgh, 0)) < 0) {
             DFXLOG_ERROR("%s :: Failed to recv message, errno(%d)\n", __func__, errno);
             break;
         }
@@ -255,7 +259,7 @@ bool SendMsgIovToSocket(int sockfd, void *iovBase, const int iovLen)
     msgh.msg_control = nullptr;
     msgh.msg_controllen = 0;
 
-    if (OHOS_TEMP_FAILURE_RETRY(sendmsg(sockfd, &msgh, 0) < 0)) {
+    if (OHOS_TEMP_FAILURE_RETRY(sendmsg(sockfd, &msgh, 0)) < 0) {
         DFXLOG_ERROR("%s :: Failed to send message, errno(%d).", __func__, errno);
         return false;
     }
@@ -293,7 +297,7 @@ static bool SendMsgCtlToSocket(int sockfd, const void *cmsg, const int cmsgLen)
         DFXLOG_ERROR("%s :: memcpy error\n", __func__);
     }
 
-    if (OHOS_TEMP_FAILURE_RETRY(sendmsg(sockfd, &msgh, 0) < 0)) {
+    if (OHOS_TEMP_FAILURE_RETRY(sendmsg(sockfd, &msgh, 0)) < 0) {
         DFXLOG_ERROR("%s :: Failed to send message, errno(%d)", __func__, errno);
         return false;
     }

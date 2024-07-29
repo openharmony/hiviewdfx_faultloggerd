@@ -474,6 +474,7 @@ FaultLoggerCheckPermissionResp FaultLoggerDaemon::SecurityCheck(int32_t connecti
         if (OHOS_TEMP_FAILURE_RETRY(write(connectionFd, DAEMON_RESP.c_str(), DAEMON_RESP.length())) !=
             static_cast<ssize_t>(DAEMON_RESP.length())) {
             DFXLOG_ERROR("%s :: Failed to write DAEMON_RESP, errno(%d)", FAULTLOGGERD_TAG.c_str(), errno);
+            break;
         }
 
         if (!RecvMsgCredFromSocket(connectionFd, &rcred)) {
@@ -554,6 +555,7 @@ void FaultLoggerDaemon::HandleSdkDumpRequest(int32_t connectionFd, FaultLoggerdR
             resSdkDump = FaultLoggerSdkDumpResp::SDK_DUMP_REJECT;
             break;
         }
+        DFXLOG_INFO("Sdk dump pid(%d) request pass permission verification.", request->pid);
         if (IsCrashed(request->pid)) {
             resSdkDump = FaultLoggerSdkDumpResp::SDK_PROCESS_CRASHED;
             DFXLOG_WARN("%s :: pid(%d) has been crashed, break.\n", FAULTLOGGERD_TAG.c_str(), request->pid);
@@ -589,7 +591,10 @@ void FaultLoggerDaemon::HandleSdkDumpRequest(int32_t connectionFd, FaultLoggerdR
         }
     } while (false);
     auto retMsg = std::to_string(resSdkDump);
-    OHOS_TEMP_FAILURE_RETRY(send(connectionFd, retMsg.data(), retMsg.length(), 0));
+    if (OHOS_TEMP_FAILURE_RETRY(send(connectionFd, retMsg.data(), retMsg.length(), 0)) !=
+        static_cast<ssize_t>(retMsg.length())) {
+        DFXLOG_ERROR("Failed to send result message to client, errno(%d).", errno);
+    }
 }
 
 void FaultLoggerDaemon::RecordFileCreation(int32_t type, int32_t pid)

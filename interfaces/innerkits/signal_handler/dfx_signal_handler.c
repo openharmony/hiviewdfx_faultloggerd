@@ -409,8 +409,8 @@ static int DFX_ExecDump(void)
         DFXLOG_ERROR("Failed to write pipe, errno(%d)", errno);
         return WRITE_PIPE_FAIL;
     }
-    if (OHOS_TEMP_FAILURE_RETRY(dup2(pipefd[0], STDIN_FILENO)) == -1) {
-        DFXLOG_ERROR("Dup to standard input failed, errno(%d)", errno);
+    OHOS_TEMP_FAILURE_RETRY(dup2(pipefd[0], STDIN_FILENO));
+    if (pipefd[0] != STDIN_FILENO) {
         syscall(SYS_close, pipefd[0]);
     }
     syscall(SYS_close, pipefd[1]);
