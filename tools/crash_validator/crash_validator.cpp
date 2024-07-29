@@ -84,7 +84,9 @@ bool CrashValidator::InitSysEventListener()
         return false;
     }
 
-    kmsgReaderThread_ = std::make_unique<std::thread>(&CrashValidator::ReadServiceCrashStatus, this);
+    kmsgReaderThread_ = std::make_unique<std::thread>([this] {
+        ReadServiceCrashStatus();
+    });
     kmsgReaderThread_->detach();
     return true;
 }
