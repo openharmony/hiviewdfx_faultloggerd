@@ -60,7 +60,7 @@ static void LogToDmesg(const LogLevel logLevel, const char *tag, const char *inf
     }
 #endif
 
-    if (OHOS_TEMP_FAILURE_RETRY(write(g_dmesgFd, buf, strlen(buf)) < 0)) {
+    if (OHOS_TEMP_FAILURE_RETRY(write(g_dmesgFd, buf, strlen(buf))) < 0) {
         CloseDmesg();
     }
 }

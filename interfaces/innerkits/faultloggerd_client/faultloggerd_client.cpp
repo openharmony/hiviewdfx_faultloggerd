@@ -160,7 +160,7 @@ bool CheckConnectStatus()
 {
     int sockfd = -1;
     std::string name = GetSocketConnectionName();
-    if (StartConnect(sockfd, name.c_str(), -1)) {
+    if (StartConnect(sockfd, name.c_str(), SOCKET_TIMEOUT)) {
         close(sockfd);
         return true;
     }
@@ -177,7 +177,7 @@ static int SendRequestToServer(const FaultLoggerdRequest &request)
             name = std::string(SERVER_SDKDUMP_SOCKET_NAME);
         }
 
-        if (!StartConnect(sockfd, name.c_str(), -1)) {
+        if (!StartConnect(sockfd, name.c_str(), SOCKET_TIMEOUT)) {
             DFXLOG_ERROR("StartConnect(%d) failed", sockfd);
             break;
         }
@@ -258,7 +258,7 @@ int RequestPrintTHilog(const char *msg, int length)
     int sockfd = -1;
     do {
         std::string name = GetSocketConnectionName();
-        if (!StartConnect(sockfd, name.c_str(), -1)) {
+        if (!StartConnect(sockfd, name.c_str(), SOCKET_TIMEOUT)) {
             DFXLOG_ERROR("StartConnect(%d) failed", sockfd);
             break;
         }
@@ -338,7 +338,7 @@ int ReportDumpStats(const struct FaultLoggerdStatsRequest *request)
 {
     int sockfd = -1;
     std::string name = GetSocketConnectionName();
-    if (!StartConnect(sockfd, name.c_str(), -1)) {
+    if (!StartConnect(sockfd, name.c_str(), SOCKET_TIMEOUT)) {
         DFXLOG_ERROR("%s", "ReportDumpCatcherStats: failed to connect to faultloggerd");
         return -1;
     }
