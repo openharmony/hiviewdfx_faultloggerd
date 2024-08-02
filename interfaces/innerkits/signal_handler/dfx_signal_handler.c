@@ -629,7 +629,6 @@ static bool StartProcessdump(void)
 
     if (waitpid(pid, NULL, 0) <= 0) {
         DFXLOG_ERROR("failed to wait dummy processdump(%d)", errno);
-        return false;
     }
     return true;
 }
@@ -666,7 +665,6 @@ static bool StartVMProcessUnwind(void)
 
     if (waitpid(pid, NULL, 0) <= 0) {
         DFXLOG_ERROR("failed to wait dummy vm process(%d)", errno);
-        return false;
     }
     return true;
 }
