@@ -188,6 +188,12 @@ void FaultLoggerDaemon::HandleAccept(int32_t epollFd, int32_t socketFd)
 }
 
 #ifdef FAULTLOGGERD_FUZZER
+void FaultLoggerDaemon::HandleStaticForFuzzer(int32_t type, uint32_t callerUid)
+{
+    GetRequestTypeName(type);
+    CheckCallerUID(callerUid);
+}
+
 void FaultLoggerDaemon::HandleRequestForFuzzer(int32_t epollFd, int32_t connectionFd,
                                                const FaultLoggerdRequest *requestConst, FaultLoggerdRequest *request)
 {
