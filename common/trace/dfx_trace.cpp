@@ -32,12 +32,16 @@ void DfxStartTrace(const char *fmt, ...)
 
 void FormatTraceName(char *name, size_t size, const char *fmt, ...)
 {
+    if (size < 1 || name == nullptr) {
+        return;
+    }
     va_list args;
     va_start(args, fmt);
     int ret = vsnprintf_s(name, size, size - 1, fmt, args);
     va_end(args);
-    if (ret == -1) {
-        strcpy_s(name, size, "DefaultTraceName");
+    std::string traceName = "DefaultTraceName";
+    if (ret == -1 && size > traceName.length()) {
+        strcpy_s(name, size, traceName.c_str());
     }
 }
 #endif
