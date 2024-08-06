@@ -88,8 +88,8 @@ private:
     int DoDumpRemotePoll(int bufFd, int resFd, int timeout, std::string& msg, bool isJson = false);
     bool DoReadBuf(int fd, std::string& msg);
     bool DoReadRes(int fd, bool &ret, std::string& msg);
-    void CollectMainKernelInfo();
-    std::string GetAllTidKernelStack(int pid, bool excludeMain = false);
+    static void CollectKernelStack(pid_t pid);
+    void AsyncGetAllTidKernelStack(pid_t pid);
 
 private:
     static const int DUMPCATCHER_REMOTE_P90_TIMEOUT = 1000;
@@ -98,7 +98,6 @@ private:
     int32_t pid_ = -1;
     std::string halfProcStatus_ = "";
     std::string halfProcWchan_ = "";
-    std::string halfKernelStack_ = "";
 };
 } // namespace HiviewDFX
 } // namespace OHOS
