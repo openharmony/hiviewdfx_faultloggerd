@@ -93,7 +93,7 @@ void CppCrashReporter::ReportToHiview()
         return;
     }
 
-    auto addFaultLog = (void (*)(FaultLogInfoInner*))dlsym(handle, "AddFaultLog");
+    auto addFaultLog = reinterpret_cast<void (*)(FaultLogInfoInner*)>(dlsym(handle, "AddFaultLog"));
     if (addFaultLog == nullptr) {
         DFXLOG_WARN("Failed to dlsym AddFaultLog, %s\n", dlerror());
         dlclose(handle);

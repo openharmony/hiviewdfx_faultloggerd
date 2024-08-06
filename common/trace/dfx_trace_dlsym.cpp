@@ -101,7 +101,10 @@ void FormatTraceName(char *name, size_t size, const char *fmt, ...)
     va_end(args);
     std::string traceName = "DefaultTraceName";
     if (ret == -1 && size > traceName.length()) {
-        strcpy_s(name, size, traceName.c_str());
+        ret = strcpy_s(name, size, traceName.c_str());
+        if (ret != 0) {
+            return;
+        }
     }
 }
 #endif

@@ -54,8 +54,8 @@ public:
     static DfxSigDumpHandler& GetInstance(void);
     bool Init(void);
     void Deinit(void);
-    bool IsThreadRunning(void);
-    int GetRunThreadId(void);
+    bool IsThreadRunning(void) const;
+    int GetRunThreadId(void) const;
     void SetRunThreadId(int tid);
 private:
     DfxSigDumpHandler() = default;
@@ -73,12 +73,12 @@ DfxSigDumpHandler& DfxSigDumpHandler::GetInstance()
     return sigDumperHandler;
 }
 
-bool DfxSigDumpHandler::IsThreadRunning()
+bool DfxSigDumpHandler::IsThreadRunning() const
 {
     return isThreadRunning_;
 }
 
-int DfxSigDumpHandler::GetRunThreadId()
+int DfxSigDumpHandler::GetRunThreadId() const
 {
     return runThreadId_;
 }
