@@ -51,7 +51,7 @@ static struct ProcessDumpRequest g_request;
 static pthread_mutex_t g_signalHandlerMutex = PTHREAD_MUTEX_INITIALIZER;
 
 static int g_platformSignals[] = {
-    SIGABRT, SIGBUS, SIGILL, SIGSEGV,
+    SIGABRT, SIGBUS, SIGILL, SIGSEGV, SIGALRM,
 };
 
 static void ReserveChildThreadSignalStack(void)
