@@ -50,6 +50,7 @@ public:
 
     int32_t CreateFileForRequest(int32_t type, int32_t pid, int32_t tid, uint64_t time, bool debugFlag) const;
 #ifdef FAULTLOGGERD_FUZZER
+    void HandleStaticForFuzzer(int32_t type, uint32_t callerUid);
     void HandleRequestForFuzzer(int32_t epollFd, int32_t connectionFd,
                                 const FaultLoggerdRequest *requestConst, FaultLoggerdRequest *request);
 #endif
