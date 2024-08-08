@@ -171,7 +171,7 @@ bool DfxMaps::IsArkHapMapItem(const std::string& name)
     if (name.empty()) {
         return false;
     }
-    if (EndsWith(name, ".hap") || EndsWith(name, ".hsp") || EndsWith(name, "hqf")) {
+    if (EndsWith(name, ".hap") || EndsWith(name, ".hsp") || EndsWith(name, ".hqf")) {
         return true;
     }
     return false;
