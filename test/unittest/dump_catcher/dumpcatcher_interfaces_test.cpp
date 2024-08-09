@@ -740,5 +740,41 @@ HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest031, TestSize.Level
     msg = "";
     EXPECT_TRUE(dumplog.DumpCatchMix(getpid(), gettid(), msg));
 }
+
+#ifndef is_ohos_lite
+/**
+ * @tc.name: DumpCatcherInterfacesTest032
+ * @tc.desc: test DfxJsonFormatter
+ * @tc.type: FUNC
+ */
+HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest032, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest032: start.";
+    DfxJsonFormatter format;
+    string outStackStr = "";
+    string errorJsonMsg = "{\"test\"}";
+    bool formatRet = format.FormatJsonStack(errorJsonMsg, outStackStr);
+    EXPECT_FALSE(formatRet);
+
+    outStackStr = "";
+    string noThreadJsonMsg = "[{\"tid\" : \"1\"}]";
+    formatRet = format.FormatJsonStack(noThreadJsonMsg, outStackStr);
+    EXPECT_TRUE(formatRet);
+
+    outStackStr = "";
+    string noTidJsonMsg = "[{\"thread_name\" : \"test\"}]";
+    formatRet = format.FormatJsonStack(noTidJsonMsg, outStackStr);
+    EXPECT_TRUE(formatRet);
+
+    outStackStr = "";
+    string jsJsonMsg = R"~([{"frames":[{"buildId":"", "file":"/system/lib/ld-musl-arm.so.1",
+        "offset":0, "pc":"000fdf4c", "symbol":""}, {"line":"1", "file":"/system/lib/ld-musl-arm.so.1",
+        "offset":628, "pc":"000ff7f4", "symbol":"__pthread_cond_timedwait_time64"}],
+        "thread_name":"OS_SignalHandle", "tid":1608}])~";
+    formatRet = format.FormatJsonStack(jsJsonMsg, outStackStr);
+    EXPECT_TRUE(formatRet);
+    GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest032: end.";
+}
+#endif
 } // namespace HiviewDFX
 } // namepsace OHOS
