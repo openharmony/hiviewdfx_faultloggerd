@@ -68,6 +68,7 @@ if (defined(ohos_lite)) {
     defines = [ "DFX_LOG_HILOG_BASE" ]
     deps = [ "$faultloggerd_path/common/dfxlog:dfx_hilog_base_static" ]
     external_deps = [
+      "bounds_checking_function:libsec_static",
       "c_utils:utilsbase",
       "hilog:libhilog_base",
     ]

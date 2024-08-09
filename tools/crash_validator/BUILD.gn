@@ -29,6 +29,7 @@ if (!defined(ohos_lite)) {
 
     external_deps = [
       "bounds_checking_function:libsec_shared",
+      "c_utils:utils",
       "hisysevent:libhisysevent",
       "hisysevent:libhisyseventmanager",
       "ipc:ipc_core",
