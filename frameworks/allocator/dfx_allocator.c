@@ -338,8 +338,8 @@ static size_t GetChunkSize(void* ptr)
         return 0;
     }
     PageInfo* page = GetPage(ptr);
-    if (page == NULL || page->tag.type < DFX_MEMPOOL_MIN_TYPE ||
-        page->tag.type > DFX_MEMPOOL_MAX_TYPE) {
+    if (page == NULL || (page->tag.type != DFX_MMAP_TYPE &&
+        (page->tag.type < DFX_MEMPOOL_MIN_TYPE || page->tag.type > DFX_MEMPOOL_MAX_TYPE))) {
         DFXLOG_ERROR("GetChunkSize Invalid page!");
         return 0;
     }
