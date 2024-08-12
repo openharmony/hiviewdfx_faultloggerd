@@ -35,7 +35,7 @@ constexpr int32_t FAULTLOGGERD_FUZZ_READ_BUFF = 1024;
 
 void *ReadThread1(void *param)
 {
-    int fd = reinterpret_cast<int>(param);
+    int fd = static_cast<int>(reinterpret_cast<long>(param));
     char buff[FAULTLOGGERD_FUZZ_READ_BUFF];
     OHOS_TEMP_FAILURE_RETRY(read(fd, buff, sizeof(buff)));
     char msg[] = "any test str";
@@ -45,7 +45,7 @@ void *ReadThread1(void *param)
 
 void *ReadThread2(void *param)
 {
-    int fd = reinterpret_cast<int>(param);
+    int fd = static_cast<int>(reinterpret_cast<long>(param));
     char buff[FAULTLOGGERD_FUZZ_READ_BUFF];
     OHOS_TEMP_FAILURE_RETRY(read(fd, buff, sizeof(buff)));
     CrashDumpException test;
@@ -56,7 +56,7 @@ void *ReadThread2(void *param)
 
 void *ReadThread3(void *param)
 {
-    int fd = reinterpret_cast<int>(param);
+    int fd = static_cast<int>(reinterpret_cast<long>(param));
     char buff[FAULTLOGGERD_FUZZ_READ_BUFF];
     OHOS_TEMP_FAILURE_RETRY(read(fd, buff, sizeof(buff)));
     CrashDumpException test{};
