@@ -84,15 +84,16 @@ int RequestPrintTHilog(const char *msg, int length);
  * @param tid thread id, if equal 0 means dump all the threads in a process.
  * @return if succeed return 0 , otherwise return -1
 */
-int RequestSdkDump(int32_t pid, int32_t tid);
+int RequestSdkDump(int32_t pid, int32_t tid, int timeout = 10000); // 10000 : dump timeout ms
 
 /**
  * @brief request dump stack about process
  * @param pid process id
  * @param tid thread id, if equal 0 means dump all the threads in a process.
+ * @param timeout ms
  * @return if succeed return 0 , otherwise return -1
 */
-int RequestSdkDumpJson(int32_t pid, int32_t tid, bool isJson);
+int RequestSdkDumpJson(int32_t pid, int32_t tid, bool isJson, int timeout);
 
 /**
  * @brief report sdk dump result to faultloggerd for stats collection

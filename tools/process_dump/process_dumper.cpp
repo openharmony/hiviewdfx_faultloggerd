@@ -30,6 +30,7 @@
 #include <securec.h>
 #include <string>
 #include <syscall.h>
+#include <sys/time.h>
 #include <sys/types.h>
 #include <sys/ptrace.h>
 #include <ucontext.h>
@@ -237,6 +238,48 @@ void InfoRemoteProcessResult(std::shared_ptr<ProcessDumpRequest> request, int re
             break;
     }
 }
+
+void SetProcessdumpTimeout(int endTime, bool isCrash)
+{
+    if (isCrash) {
+        return;
+    }
+
+    bool isTimeout = false;
+    int diffTime = 0;
+    // calclulate diff time, care value rolling-over
+    int curAbsTime = static_cast<int>(GetAbsTimeMilliSeconds() % NUMBER_ONE_MILLION);
+    if (endTime <= curAbsTime) {
+        diffTime = endTime + NUMBER_ONE_MILLION - curAbsTime;
+        // not happen tooling-over, trigger timeout
+        if (diffTime >= PROCESSDUMP_TIMEOUT * NUMBER_ONE_THOUSAND) {
+            isTimeout = true;
+        }
+    }
+    if (endTime > curAbsTime) {
+        diffTime = endTime - curAbsTime;
+        // curAbsTime rolling-over
+        if (diffTime > PROCESSDUMP_TIMEOUT * NUMBER_ONE_THOUSAND) {
+            isTimeout = true;
+        }
+    }
+
+    if (isTimeout) {
+        DFXLOG_INFO("%s", "now has timeout, processdump exit now");
+#ifndef CLANG_COVERAGE
+        _exit(0);
+#endif
+    }
+    struct itimerval timer;
+    timer.it_value.tv_sec = diffTime / NUMBER_ONE_THOUSAND;
+    timer.it_value.tv_usec = diffTime * NUMBER_ONE_THOUSAND % NUMBER_ONE_MILLION;
+    timer.it_interval.tv_sec = 0;
+    timer.it_interval.tv_usec = 0;
+
+    if (setitimer(ITIMER_REAL, &timer, nullptr) != 0) {
+        DFXLOG_ERROR("start processdump timer fail %d", errno);
+    }
+}
 }
 
 ProcessDumper &ProcessDumper::GetInstance()
@@ -417,6 +460,7 @@ int ProcessDumper::DumpProcess(std::shared_ptr<ProcessDumpRequest> request)
             break;
         }
         isCrash_ = request->siginfo.si_signo != SIGDUMP;
+        SetProcessdumpTimeout(request->siginfo.si_errno, isCrash_);
         bool isLeakDump = request->siginfo.si_signo == SIGLEAK_STACK;
         // We need check pid is same with getppid().
         // As in signal handler, current process is a child process, and target pid is our parent process.

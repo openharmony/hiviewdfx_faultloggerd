@@ -218,12 +218,12 @@ bool RequestCheckPermission(int32_t pid)
     return ret;
 }
 
-int RequestSdkDump(int32_t pid, int32_t tid)
+int RequestSdkDump(int32_t pid, int32_t tid, int timeout)
 {
-    return RequestSdkDumpJson(pid, tid, false);
+    return RequestSdkDumpJson(pid, tid, false, timeout);
 }
 
-int RequestSdkDumpJson(int32_t pid, int32_t tid, bool isJson)
+int RequestSdkDumpJson(int32_t pid, int32_t tid, bool isJson, int timeout)
 {
     DFXLOG_INFO("RequestSdkDumpJson :: pid(%d), tid(%d).", pid, tid);
     if (pid <= 0 || tid < 0) {
@@ -240,6 +240,7 @@ int RequestSdkDumpJson(int32_t pid, int32_t tid, bool isJson)
     request.callerTid = getproctid();
     request.clientType = (int32_t)FaultLoggerClientType::SDK_DUMP_CLIENT;
     request.time = OHOS::HiviewDFX::GetTimeMilliSeconds();
+    request.endTime = static_cast<int>(OHOS::HiviewDFX::GetAbsTimeMilliSeconds() % NUMBER_ONE_MILLION) + timeout;
 
     return SendRequestToServer(request);
 }
