@@ -223,6 +223,7 @@ bool DfxDumpCatcher::DumpCatch(int pid, int tid, std::string& msg, size_t maxFra
         return ret;
     }
     DfxEnableTraceDlsym(true);
+    ElapsedTime counter;
     std::unique_lock<std::mutex> lck(mutex_);
     int currentPid = getprocpid();
     bool reportStat = false;
@@ -244,8 +245,8 @@ bool DfxDumpCatcher::DumpCatch(int pid, int tid, std::string& msg, size_t maxFra
         ReportDumpCatcherStats(pid, requestTime, ret, msg, retAddr);
     }
 
-    DFXLOG_INFO("%s :: dump_catch :: msgLength: %zu",  DFXDUMPCATCHER_TAG.c_str(), msg.size());
-    DFXLOG_DEBUG("%s :: dump_catch :: ret: %d, msg: %s", DFXDUMPCATCHER_TAG.c_str(), ret, msg.c_str());
+    DFXLOG_INFO("dump_catch : pid = %d, elapsed time = %ld ms, ret = %d, msgLength = %zu",
+        pid, counter.Elapsed<std::chrono::milliseconds>(), ret, msg.size());
     DfxEnableTraceDlsym(false);
     return ret;
 }
