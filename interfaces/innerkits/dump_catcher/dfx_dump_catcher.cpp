@@ -216,6 +216,12 @@ bool DfxDumpCatcher::DumpCatch(int pid, int tid, std::string& msg, size_t maxFra
         DFXLOG_ERROR("%s :: dump_catch :: param error.", DFXDUMPCATCHER_TAG.c_str());
         return ret;
     }
+    std::string statusPath = StringPrintf("/proc/%d/status", pid);
+    if (access(statusPath.c_str(), F_OK) != 0 && errno != EACCES) {
+        DFXLOG_ERROR("DumpCatch:: the pid(%d) process has exited, errno(%d)", pid, errno);
+        msg.append("Result: pid(" + std::to_string(pid) + ") process has exited.\n");
+        return ret;
+    }
     DfxEnableTraceDlsym(true);
     std::unique_lock<std::mutex> lck(mutex_);
     int currentPid = getprocpid();
@@ -271,7 +277,7 @@ bool DfxDumpCatcher::DoDumpCatchRemote(int pid, int tid, std::string& msg, bool 
         } else if (sdkdumpRet == static_cast<int>(FaultLoggerSdkDumpResp::SDK_DUMP_REJECT)) {
             msg.append("Result: pid(" + std::to_string(pid) + ") check permission error.\n");
         } else if (sdkdumpRet == static_cast<int>(FaultLoggerSdkDumpResp::SDK_DUMP_NOPROC)) {
-            msg.append("Result: pid(" + std::to_string(pid) + ") syscall SIGDUMP error.\n");
+            msg.append("Result: pid(" + std::to_string(pid) + ") process has exited.\n");
             RequestDelPipeFd(pid);
         } else if (sdkdumpRet == static_cast<int>(FaultLoggerSdkDumpResp::SDK_PROCESS_CRASHED)) {
             msg.append("Result: pid(" + std::to_string(pid) + ") has been crashed.\n");
