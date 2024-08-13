@@ -79,6 +79,7 @@ if (defined(ohos_lite)) {
       "multithread_constructor.c",
       "process_dump_test.cpp",
     ]
+    cflags_cc = [ "-Dprivate=public" ]
 
     configs = [
       ":module_private_config",
