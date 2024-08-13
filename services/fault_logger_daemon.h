@@ -41,9 +41,9 @@ public:
 class FaultLoggerDaemon {
 public:
     FaultLoggerDaemon();
-    ~FaultLoggerDaemon() {};
+    virtual ~FaultLoggerDaemon() {};
     int32_t StartServer();
-    bool InitEnvironment();
+    virtual bool InitEnvironment();
     void RecordFileCreation(int32_t type, int32_t pid);
     void ClearTimeOutRecords();
     bool IsCrashed(int32_t pid);
@@ -87,10 +87,10 @@ private:
     void HandleExceptionRequest(int32_t connectionFd, FaultLoggerdRequest* request);
     void HandleRequestByClientType(int32_t connectionFd, FaultLoggerdRequest* request);
     bool CheckRequestCredential(int32_t connectionFd, FaultLoggerdRequest* request);
-    bool CreateSockets();
-    bool CreateEventFd();
+    virtual bool CreateSockets();
+    virtual bool CreateEventFd();
     void CleanupSockets();
-    void WaitForRequest();
+    virtual void WaitForRequest();
     void CleanupEventFd();
     void HandleDumpStats(int32_t connectionFd, FaultLoggerdStatsRequest* request);
     void RemoveTimeoutDumpStats();
