@@ -242,7 +242,7 @@ static const char* GetCrashDescription(const int32_t errCode)
             return g_crashExceptionMap[i].str;
         }
     }
-    return g_crashExceptionMap[i].str;    /* the end of map is "unknown reason" */
+    return g_crashExceptionMap[i - 1].str;    /* the end of map is "unknown reason" */
 }
 
 static void FillCrashExceptionAndReport(const int err)
