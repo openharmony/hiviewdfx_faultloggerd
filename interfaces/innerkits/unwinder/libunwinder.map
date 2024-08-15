@@ -96,7 +96,7 @@
       OHOS::HiviewDFX::DfxMap::IsMapExec*;
       OHOS::HiviewDFX::DfxArk::ArkCreateJsSymbolExtractor*;
       OHOS::HiviewDFX::DfxMaps::IsLegalMapItem*;
-      OHOS::HiviewDFX::DfxMaps::GetMmapPtr*;
+      OHOS::HiviewDFX::DfxElf::GetMmapPtr*;
     };
   local:
     *;
