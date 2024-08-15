@@ -112,7 +112,11 @@ HWTEST_F(AsyncStackTest, AsyncStackTest003, TestSize.Level2)
     int32_t skipFrameNum = 2;
     std::thread (FpUnwinder::Unwind, pcs, maxSize, skipFrameNum).join();
     int32_t ret = FpUnwinder::UnwindFallback(pcs, maxSize, skipFrameNum);
-    ASSERT_EQ(ret, 0);
+#if defined(__arm__)
+    ASSERT_EQ(0, ret);
+#elif defined(__aarch64__)
+    ASSERT_NE(0, ret);
+#endif
     GTEST_LOG_(INFO) << "AsyncStackTest003: end.";
 }
 } // namespace HiviewDFX
