@@ -164,7 +164,6 @@ int32_t FaultLoggerDaemon::StartServer()
 
     // loop in WaitForRequest
     WaitForRequest();
-
     CleanupEventFd();
     CleanupSockets();
     return 0;

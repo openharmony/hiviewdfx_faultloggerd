@@ -24,9 +24,11 @@
 
 #include "dfx_config.h"
 #include "dfx_define.h"
+#include "dfx_logger.h"
 #include "dfx_test_util.h"
 #include "dfx_util.h"
 #include "directory_ex.h"
+#include "dfx_socket_request.h"
 #include "multithread_constructor.h"
 #include "process_dumper.h"
 #include "faultlogger_client_msg.h"
@@ -434,5 +436,26 @@ HWTEST_F(DfxProcessDumpTest, DfxProcessDumpTest015, TestSize.Level2)
     recordAppExitReason(cppCrashExitReason, reason_.c_str());
     dlclose(handle);
     GTEST_LOG_(INFO) << "DfxProcessDumpTest015: end.";
+}
+
+/**
+ * @tc.name: DfxProcessDumpTest016
+ * @tc.desc: Testing InitDebugLog Function
+ * @tc.type: FUNC
+ */
+HWTEST_F(DfxProcessDumpTest, DfxProcessDumpTest016, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "DfxProcessDumpTest016: start.";
+    pid_t pid = fork();
+    ASSERT_TRUE(pid >= 0);
+    if (pid == 0) {
+        sleep(3); // 3 : sleep 3 seconds
+    }
+    char msg[] = "test log";
+    DfxLogToSocket(msg);
+    kill(pid, SIGSEGV);
+    InitDebugLog(FaultLoggerType::CPP_CRASH, pid, pid, 0);
+    CloseDebugLog();
+    GTEST_LOG_(INFO) << "DfxProcessDumpTest016: end.";
 }
 }

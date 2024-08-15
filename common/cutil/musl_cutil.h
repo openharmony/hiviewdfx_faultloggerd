@@ -136,6 +136,41 @@ uint64_t GetTimeMilliseconds(void)
         (((uint64_t)ts.tv_nsec) / NUMBER_ONE_MILLION); // 1000000 : nanosecond to millisecond convert ratio
 }
 
+uint64_t GetAbsTimeMilliSeconds(void)
+{
+    struct timespec ts;
+    (void)clock_gettime(CLOCK_MONOTONIC, &ts);
+    return ((uint64_t)(ts.tv_sec) * NUMBER_ONE_THOUSAND) +
+        ((uint64_t)(ts.tv_nsec) / NUMBER_ONE_MILLION);
+}
+
+int GetTimeDiff(int curTime, int endTime)
+{
+    const int validTimeBits = 0x3FFFFFF;
+    const int validTimeHead = 0x3000000;
+    const int tmp = 0x1000000;
+
+    curTime = curTime & validTimeBits;
+    endTime = endTime & validTimeBits;
+
+    if ((curTime & validTimeHead) == (endTime & validTimeHead)) {
+        return endTime - curTime;
+    }
+    if ((endTime & validTimeHead) == 0) {
+        return  tmp + endTime - curTime;
+    }
+    return endTime - curTime - tmp;
+}
+
+int GetDumpRemainTime(int signo, int endTime)
+{
+    if (signo != SIGDUMP) {
+        return INT32_MAX;
+    }
+
+    return GetTimeDiff((int)GetAbsTimeMilliSeconds(), endTime);
+}
+
 #endif
 #ifdef __cplusplus
 }

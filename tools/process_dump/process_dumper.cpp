@@ -239,36 +239,40 @@ void InfoRemoteProcessResult(std::shared_ptr<ProcessDumpRequest> request, int re
     }
 }
 
-void SetProcessdumpTimeout(int endTime, bool isCrash)
+int GetTimeDiff(int curTime, int endTime)
 {
-    if (isCrash) {
+    const int validTimeBits = 0x3FFFFFF;
+    const int validTimeHead = 0x3000000;
+    const int tmp = 0x1000000;
+
+    curTime = curTime & validTimeBits;
+    endTime = endTime & validTimeBits;
+
+    if ((curTime & validTimeHead) == (endTime & validTimeHead)) {
+        return endTime - curTime;
+    }
+    if ((endTime & validTimeHead) == 0) {
+        return  tmp + endTime - curTime;
+    }
+    return endTime - curTime - tmp;
+}
+
+void SetProcessdumpTimeout(int signo, int endTime)
+{
+    if (signo != SIGDUMP) {
         return;
     }
 
-    bool isTimeout = false;
-    int diffTime = 0;
-    // calclulate diff time, care value rolling-over
-    int curAbsTime = static_cast<int>(GetAbsTimeMilliSeconds() % NUMBER_ONE_MILLION);
-    if (endTime <= curAbsTime) {
-        diffTime = endTime + NUMBER_ONE_MILLION - curAbsTime;
-        // not happen tooling-over, trigger timeout
-        if (diffTime >= PROCESSDUMP_TIMEOUT * NUMBER_ONE_THOUSAND) {
-            isTimeout = true;
-        }
-    }
-    if (endTime > curAbsTime) {
-        diffTime = endTime - curAbsTime;
-        // curAbsTime rolling-over
-        if (diffTime > PROCESSDUMP_TIMEOUT * NUMBER_ONE_THOUSAND) {
-            isTimeout = true;
-        }
-    }
-
-    if (isTimeout) {
+    int diffTime = GetTimeDiff(static_cast<int>(GetAbsTimeMilliSeconds()), endTime);
+    if (diffTime <= 0) {
         DFXLOG_INFO("%s", "now has timeout, processdump exit now");
 #ifndef CLANG_COVERAGE
         _exit(0);
 #endif
+    }
+    if (diffTime > PROCESSDUMP_TIMEOUT * NUMBER_ONE_THOUSAND) {
+        DFXLOG_INFO("%s", "dump remain time is invalid, not set timer");
+        return;
     }
     struct itimerval timer;
     timer.it_value.tv_sec = diffTime / NUMBER_ONE_THOUSAND;
@@ -459,8 +463,8 @@ int ProcessDumper::DumpProcess(std::shared_ptr<ProcessDumpRequest> request)
         if ((dumpRes = ReadRequestAndCheck(request)) != DumpErrorCode::DUMP_ESUCCESS) {
             break;
         }
+        SetProcessdumpTimeout(request->siginfo.si_signo, request->siginfo.si_errno);
         isCrash_ = request->siginfo.si_signo != SIGDUMP;
-        SetProcessdumpTimeout(request->siginfo.si_errno, isCrash_);
         bool isLeakDump = request->siginfo.si_signo == SIGLEAK_STACK;
         // We need check pid is same with getppid().
         // As in signal handler, current process is a child process, and target pid is our parent process.

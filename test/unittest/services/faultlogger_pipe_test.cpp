@@ -81,4 +81,32 @@ HWTEST_F (FaultLoggerPipeTest, FaultLoggerPipeTest002, TestSize.Level2)
     EXPECT_EQ(true, ret == nullptr) << "FaultLoggerPipeTest002 Del failed";
     GTEST_LOG_(INFO) << "FaultLoggerPipeTest002: end.";
 }
+
+/**
+ * @tc.name: FaultLoggerPipeTest003
+ * @tc.desc: test FaultLoggerPipeMap Del func
+ * @tc.type: FUNC
+ */
+HWTEST_F (FaultLoggerPipeTest, FaultLoggerPipeTest003, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "FaultLoggerPipeTest003: start.";
+    FaultLoggerPipe faultLoggerPipe;
+    faultLoggerPipe.init_ = false;
+    bool ret = faultLoggerPipe.SetSize(1);
+    EXPECT_FALSE(ret);
+    ret = faultLoggerPipe.Init();
+    EXPECT_TRUE(ret);
+    ret = faultLoggerPipe.SetSize(1);
+    EXPECT_TRUE(ret);
+    int result = faultLoggerPipe.GetWriteFd();
+    EXPECT_NE(-1, result);
+
+    FaultLoggerPipe2 faultLoggerPipe2(time(nullptr), true);
+
+    FaultLoggerPipeMap faultLoggerPipeMap;
+    ret = faultLoggerPipeMap.Check(1, time(nullptr));
+    EXPECT_FALSE(ret);
+
+    GTEST_LOG_(INFO) << "FaultLoggerPipeTest003: end.";
+}
 }

@@ -35,7 +35,7 @@ constexpr int32_t FAULTLOGGERD_FUZZ_READ_BUFF = 1024;
 
 void *ReadThread1(void *param)
 {
-    int fd = reinterpret_cast<int>(param);
+    int fd = static_cast<int>(reinterpret_cast<long>(param));
     char buff[FAULTLOGGERD_FUZZ_READ_BUFF];
     OHOS_TEMP_FAILURE_RETRY(read(fd, buff, sizeof(buff)));
     char msg[] = "any test str";
@@ -45,7 +45,7 @@ void *ReadThread1(void *param)
 
 void *ReadThread2(void *param)
 {
-    int fd = reinterpret_cast<int>(param);
+    int fd = static_cast<int>(reinterpret_cast<long>(param));
     char buff[FAULTLOGGERD_FUZZ_READ_BUFF];
     OHOS_TEMP_FAILURE_RETRY(read(fd, buff, sizeof(buff)));
     CrashDumpException test;
@@ -56,7 +56,7 @@ void *ReadThread2(void *param)
 
 void *ReadThread3(void *param)
 {
-    int fd = reinterpret_cast<int>(param);
+    int fd = static_cast<int>(reinterpret_cast<long>(param));
     char buff[FAULTLOGGERD_FUZZ_READ_BUFF];
     OHOS_TEMP_FAILURE_RETRY(read(fd, buff, sizeof(buff)));
     CrashDumpException test{};
@@ -208,10 +208,10 @@ void HandleRequestByPipeTypeCommon(std::shared_ptr<FaultLoggerDaemon> daemon, in
     int fd = -1;
     FaultLoggerdRequest request;
     request.pipeType = pipeType;
-    FaultLoggerPipe2* faultLoggerPipe = new FaultLoggerPipe2(GetTimeMilliSeconds(), isJson);
+    std::unique_ptr<FaultLoggerPipe2> ptr = std::make_unique<FaultLoggerPipe2>(GetTimeMilliSeconds(), isJson);
 
     if (!isPassCheck) {
-        daemon->HandleRequestByPipeType(fd, 1, &request, faultLoggerPipe);
+        daemon->HandleRequestByPipeType(fd, 1, &request, ptr.get());
         close(fd);
         return;
     }
@@ -227,7 +227,7 @@ void HandleRequestByPipeTypeCommon(std::shared_ptr<FaultLoggerDaemon> daemon, in
             }
         } else if (pid > 0) {
             daemon->connectionMap_[socketFd[0]] = socketFd[0];
-            daemon->HandleRequestByPipeType(fd, socketFd[0], &request, faultLoggerPipe);
+            daemon->HandleRequestByPipeType(fd, socketFd[0], &request, ptr.get());
             close(fd);
             close(socketFd[1]);
         }

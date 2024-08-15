@@ -43,8 +43,6 @@ if (defined(ohos_lite)) {
         "$faultloggerd_path/services/fault_logger_daemon.cpp",
         "$faultloggerd_path/services/fault_logger_pipe.cpp",
         "faultlogger_config_test.cpp",
-        "faultlogger_daemon_test.cpp",
-        "faultlogger_pipe_test.cpp",
       ]
       sources += [ "$c_utils_src_path/directory_ex.cpp" ]
 
@@ -96,6 +94,7 @@ if (defined(ohos_lite)) {
       "$faultloggerd_interfaces_path/innerkits/faultloggerd_client/include",
       "$faultloggerd_interfaces_path/innerkits/faultloggerd_client/faultloggerd_socket.h",
     ]
+    defines = [ "FAULTLOGGERD_FUZZER" ]
 
     sources = [
       "$faultloggerd_interfaces_path/innerkits/faultloggerd_client/faultloggerd_client.cpp",
@@ -109,6 +108,7 @@ if (defined(ohos_lite)) {
       "faultlogger_pipe_test.cpp",
     ]
 
+    cflags = [ "-Dprivate=public" ]
     configs = [
       ":module_private_config",
       "$faultloggerd_path/common/build:coverage_flags",

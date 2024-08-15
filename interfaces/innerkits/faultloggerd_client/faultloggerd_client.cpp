@@ -240,7 +240,7 @@ int RequestSdkDumpJson(int32_t pid, int32_t tid, bool isJson, int timeout)
     request.callerTid = getproctid();
     request.clientType = (int32_t)FaultLoggerClientType::SDK_DUMP_CLIENT;
     request.time = OHOS::HiviewDFX::GetTimeMilliSeconds();
-    request.endTime = static_cast<int>(OHOS::HiviewDFX::GetAbsTimeMilliSeconds() % NUMBER_ONE_MILLION) + timeout;
+    request.endTime = static_cast<int>(OHOS::HiviewDFX::GetAbsTimeMilliSeconds() + timeout);
 
     return SendRequestToServer(request);
 }
