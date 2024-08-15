@@ -108,6 +108,58 @@ bool DfxJsonFormatter::FormatJsonStack(std::string jsonStack, std::string& outSt
     }
     return true;
 }
+
+bool DfxJsonFormatter::FormatKernelStack(const std::string& kernelStack, std::string& formattedStack, bool jsonFormat)
+{
+#ifdef __aarch64__
+    std::regex splitPatten("Thread info:");
+    std::vector<std::string> threadKernelStackVec{std::sregex_token_iterator(kernelStack.begin(),
+        kernelStack.end(), splitPatten, -1), std::sregex_token_iterator()};
+    if (threadKernelStackVec.size() == 1) {
+        return false;
+    }
+    Json::Value jsonInfo;
+    for (const std::string& threadKernelStack : threadKernelStackVec) {
+        std::regex headerPattern(R"(.*name=(.*),\s+tid=(\d+).*, pid=(\d+), ppid=)");
+        std::smatch result;
+        if (!regex_search(threadKernelStack, result, headerPattern)) {
+            continue;
+        }
+        Json::Value threadInfo;
+        threadInfo["thread_name"] = result[1].str();
+        threadInfo["tid"] = std::stoi(result[2].str()); // 2 : second of searched element
+        auto pos = threadKernelStack.rfind("pid=" + result[3].str()); // 3 : third of searched element is pid
+        if (pos == std::string::npos) {
+            continue;
+        }
+        Json::Value frames(Json::arrayValue);
+        std::regex framePattern(R"(\[(\w{16})\]\<.*\> \((.*)\))");
+        for (std::sregex_iterator it = std::sregex_iterator(threadKernelStack.begin() + pos,
+            threadKernelStack.end(), framePattern); it != std::sregex_iterator(); ++it) {
+            if ((*it)[2].str().rfind(".elf") != std::string::npos) { // 2 : second of searched element is map name
+                continue;
+            }
+            Json::Value frameJson;
+            frameJson["pc"] = (*it)[1].str();
+            frameJson["symbol"] = "";
+            frameJson["offset"] = "";
+            frameJson["file"] = (*it)[2].str(); // 2 : second of searched element is map name
+            frameJson["buildId"] = "";
+            frames.append(frameJson);
+        }
+        threadInfo["frames"] = frames;
+        jsonInfo.append(threadInfo);
+    }
+    if (jsonFormat) {
+        formattedStack = Json::FastWriter().write(jsonInfo);
+    } else {
+        return FormatJsonStack(Json::FastWriter().write(jsonInfo), formattedStack);
+    }
+    return true;
+#else
+    return false;
+#endif
+}
 #endif
 } // namespace HiviewDFX
 } // namespace OHOS
