@@ -17,6 +17,7 @@
 
 #include <dlfcn.h>
 #include <fcntl.h>
+#include <regex>
 #include <sys/ioctl.h>
 #include <unistd.h>
 
@@ -59,6 +60,39 @@ int DfxGetKernelStack(int32_t pid, std::string& kernelStack)
     }
     close(fd);
     return ret;
+}
+
+bool FormatThreadKernelStack(const std::string& kernelStack, std::vector<DfxFrame> &fomattedStack)
+{
+#ifdef __aarch64__
+    std::regex headerPattern(R"(.*name=(.*),\s+tid=(\d+).*, pid=(\d+), ppid=)");
+    std::smatch result;
+    if (!regex_search(kernelStack, result, headerPattern)) {
+        DFXLOG_INFO("%s", "search thread name failed");
+        return false;
+    }
+    auto pos = kernelStack.rfind("pid=" + result[3].str()); // 3 : third of searched element is pid
+    if (pos == std::string::npos) {
+        return false;
+    }
+    size_t index = 0;
+    std::regex framePattern(R"(\[(\w{16})\]\<.*\> \((.*)\))");
+    for (std::sregex_iterator it = std::sregex_iterator(kernelStack.begin() + pos, kernelStack.end(), framePattern);
+        it != std::sregex_iterator(); ++it) {
+        if ((*it)[2].str().rfind(".elf") != std::string::npos) { // 2 : second of searched element is map name
+            continue;
+        }
+        DfxFrame frame;
+        frame.index = index++;
+        constexpr int base {16};
+        frame.relPc = static_cast<uint64_t>(std::stoull((*it)[1].str(), nullptr, base));
+        frame.mapName = (*it)[2].str(); // 2 : second of searched element is map name
+        fomattedStack.emplace_back(frame);
+    }
+    return true;
+#else
+    return false;
+#endif
 }
 }
 }

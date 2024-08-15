@@ -74,6 +74,11 @@ bool BacktraceLocalThread::Unwind(bool fast, size_t maxFrameNum, size_t skipFram
     return ret;
 }
 
+void BacktraceLocalThread::SetFrames(const std::vector<DfxFrame>& frames)
+{
+    frames_ = frames;
+}
+
 const std::vector<DfxFrame>& BacktraceLocalThread::GetFrames() const
 {
     return frames_;

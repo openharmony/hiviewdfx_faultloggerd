@@ -35,6 +35,7 @@ public:
     bool Unwind(bool fast = false, size_t maxFrameNum = DEFAULT_MAX_FRAME_NUM, size_t skipFrameNum = 0);
 
     const std::vector<DfxFrame>& GetFrames() const;
+    void SetFrames(const std::vector<DfxFrame>& frames);
     std::string GetFormattedStr(bool withThreadName = false);
 
 private:
