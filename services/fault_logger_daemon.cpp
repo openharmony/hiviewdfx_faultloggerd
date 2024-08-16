@@ -81,6 +81,7 @@ static std::string GetRequestTypeName(int32_t type)
         case (int32_t)FaultLoggerType::JS_STACKTRACE:
             return "jsstack";
         case (int32_t)FaultLoggerType::JS_HEAP_SNAPSHOT:
+        case (int32_t)FaultLoggerType::JS_RAW_SNAPSHOT:
             return "jsheap";
         case (int32_t)FaultLoggerType::LEAK_STACKTRACE:
             return "leakstack";
@@ -653,10 +654,13 @@ int32_t FaultLoggerDaemon::CreateFileForRequest(int32_t type, int32_t pid, int32
 
     std::stringstream ss;
     ss << folderPath << "/" << typeStr << "-" << pid;
-    if (type == FaultLoggerType::JS_HEAP_SNAPSHOT) {
+    if (type == FaultLoggerType::JS_HEAP_SNAPSHOT || type == FaultLoggerType::JS_RAW_SNAPSHOT) {
         ss << "-" << tid;
     }
     ss << "-" << time;
+    if (type == FaultLoggerType::JS_RAW_SNAPSHOT) {
+        ss << ".rawheap";
+    }
     const std::string path = ss.str();
     DFXLOG_INFO("%s :: file path(%s).\n", FAULTLOGGERD_TAG.c_str(), path.c_str());
     if (!VerifyFilePath(path, VALID_FILE_PATH)) {

@@ -80,6 +80,10 @@ HWTEST_F(FaultloggerdClientTest, FaultloggerdClientTest001, TestSize.Level2)
     fd = RequestFileDescriptor(FaultLoggerType::JS_HEAP_SNAPSHOT);
     ASSERT_GT(fd, 0);
     close(fd);
+
+    fd = RequestFileDescriptor(FaultLoggerType::JS_RAW_SNAPSHOT);
+    ASSERT_GT(fd, 0);
+    close(fd);
     GTEST_LOG_(INFO) << "FaultloggerdClientTest001: end.";
 }
 
@@ -93,20 +97,31 @@ HWTEST_F(FaultloggerdClientTest, FaultloggerdClientTest002, TestSize.Level2)
     GTEST_LOG_(INFO) << "FaultloggerdClientTest002: start.";
     int32_t pid = fork();
     if (pid == 0) {
-        int ret = -1;
+        int ret = 0;
         constexpr int32_t appUid = 100068;
         setuid(appUid);
-        int32_t fd = RequestFileDescriptor(FaultLoggerType::CPP_CRASH);
-        if (fd >= 0) {
+        do {
+            int32_t fd = RequestFileDescriptor(FaultLoggerType::CPP_CRASH);
+            if (fd < 0) {
+                ret = -1;
+                break;
+            }
             close(fd);
-            ret = 0;
-        }
 
-        fd = RequestFileDescriptor(FaultLoggerType::JS_HEAP_SNAPSHOT);
-        if (fd >= 0) {
+            fd = RequestFileDescriptor(FaultLoggerType::JS_HEAP_SNAPSHOT);
+            if (fd < 0) {
+                ret = -1;
+                break;
+            }
             close(fd);
-            ret += 0;
-        }
+
+            fd = RequestFileDescriptor(FaultLoggerType::JS_RAW_SNAPSHOT);
+            if (fd < 0) {
+                ret = -1;
+                break;
+            }
+            close(fd);
+        } while (false);
         exit(ret);
     } else if (pid > 0) {
         int status;
