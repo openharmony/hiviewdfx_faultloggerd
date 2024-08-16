@@ -1,10 +1,7 @@
 {
   global:
     extern "C" {
-        SetThreadInfoCallback;
-        DFX_InstallSignalHandler;
-        ThreadInfoCallBack;
-        SetAsyncStackCallbackFunc;
+        DfxDumpRequest;
     };
   local:
     *;

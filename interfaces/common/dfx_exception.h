@@ -35,6 +35,7 @@ enum CrashExceptionCode : int32_t {
     CRASH_SIGNAL_EWAITEXIT,             /* Failed to wait vm process exit */
     CRASH_SIGNAL_EREADPIPE,             /* Failed to read pipe due to timeout */
     CRASH_SIGNAL_ECREATEPIPE,           /* Failed to init create pipe */
+    CRASH_SIGNAL_EDUMPREQUEST,          /* Failed to find symbol to dump request */
 
     CRASH_DUMP_EREADREQ = 201,          /* Failed to read dump request */
     CRASH_DUMP_EPARENTPID,              /* Failed to check parent pid */
@@ -77,6 +78,7 @@ static struct ErrCodeToStr g_crashExceptionMap[] = {
     {CRASH_SIGNAL_EWAITEXIT,    "Failed to wait vm process exit." },
     {CRASH_SIGNAL_EREADPIPE,    "Failed to read pipe due to timeout."},
     {CRASH_SIGNAL_ECREATEPIPE,  "Failed to init create pipe."},
+    {CRASH_SIGNAL_EDUMPREQUEST, "Failed to find symbol to dump request."},
     {CRASH_DUMP_EREADREQ,       "Failed to read dump request." },
     {CRASH_DUMP_EPARENTPID,     "Failed to check parent pid." },
     {CRASH_DUMP_EATTACH,        "Failed to attach target process." },

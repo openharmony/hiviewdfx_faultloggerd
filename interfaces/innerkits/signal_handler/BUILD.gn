@@ -15,6 +15,10 @@ import("//base/hiviewdfx/faultloggerd/faultloggerd.gni")
 
 if (defined(ohos_lite)) {
   shared_library("dfx_signalhandler") {
+    defines = [
+      "is_ohos=${is_ohos}",
+      "is_ohos_lite",
+    ]
     visibility = [ "*:*" ]
     include_dirs = [
       "include",
@@ -24,9 +28,9 @@ if (defined(ohos_lite)) {
       "$faultloggerd_path/common/dfxlog",
     ]
     sources = [
+      "dfx_dumprequest.c",
       "dfx_signal_handler.c",
       "dfx_signalhandler_exception.c",
-      "musl_log.c",
     ]
 
     deps = [ "$faultloggerd_path/common/cutil:dfx_cutil" ]
@@ -112,9 +116,8 @@ if (defined(ohos_lite)) {
     defines = [ "DFX_LOG_HILOG_BASE" ]
     version_script = "libdfx_signalhandler.map"
     sources = [
-      "dfx_signal_handler.c",
+      "dfx_dumprequest.c",
       "dfx_signalhandler_exception.c",
-      "musl_log.c",
     ]
 
     deps = [
@@ -131,12 +134,7 @@ if (defined(ohos_lite)) {
       "chipsetsdk_indirect",
       "platformsdk_indirect",
     ]
-    if (use_musl) {
-      install_enable = false
-    } else {
-      install_enable = true
-    }
-
+    install_enable = true
     install_images = [
       "system",
       "updater",
@@ -144,6 +142,7 @@ if (defined(ohos_lite)) {
 
     part_name = "faultloggerd"
     subsystem_name = "hiviewdfx"
+    kernel_permission_path = "./encaps.json"
   }
 
   static_library("dfxsignalhandler") {
