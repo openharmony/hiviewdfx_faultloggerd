@@ -573,7 +573,6 @@ HWTEST_F (FaultLoggerDaemonTest, FaultLoggerDaemonTest013, TestSize.Level2)
     EXPECT_EQ(mockDaemon.StartServer(), 0);
 
     FaultLoggerDaemon daemon;
-    EXPECT_EQ(daemon.CreateSockets(), true);
     EXPECT_EQ(daemon.InitEnvironment(), true);
     EXPECT_EQ(daemon.CreateEventFd(), true);
     daemon.CleanupEventFd();

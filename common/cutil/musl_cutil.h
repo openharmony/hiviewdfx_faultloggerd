@@ -144,22 +144,28 @@ uint64_t GetAbsTimeMilliSeconds(void)
         ((uint64_t)(ts.tv_nsec) / NUMBER_ONE_MILLION);
 }
 
-int GetTimeDiff(int curTime, int endTime)
+int CalDumpTimeDiff(int curTime, int endTime)
 {
-    const int validTimeBits = 0x3FFFFFF;
-    const int validTimeHead = 0x3000000;
-    const int tmp = 0x1000000;
 
-    curTime = curTime & validTimeBits;
-    endTime = endTime & validTimeBits;
+    int diff = -1;
 
-    if ((curTime & validTimeHead) == (endTime & validTimeHead)) {
-        return endTime - curTime;
+    // case1: 999 997
+    // case2: 999 1
+    if (endTime > curTime) {
+        diff = endTime - curTime;
     }
-    if ((endTime & validTimeHead) == 0) {
-        return  tmp + endTime - curTime;
+
+    // case1: 1 999
+    // case2: 997 999
+    if (endTime < curTime) {
+        diff = endTime + NUMBER_ONE_MILLION - curTime;
     }
-    return endTime - curTime - tmp;
+
+    if (diff >= NUMBER_ONE_MILLION / 2) {
+        return -1;
+    }
+
+    return diff;
 }
 
 int GetDumpRemainTime(int signo, int endTime)
@@ -168,7 +174,7 @@ int GetDumpRemainTime(int signo, int endTime)
         return INT32_MAX;
     }
 
-    return GetTimeDiff((int)GetAbsTimeMilliSeconds(), endTime);
+    return CalDumpTimeDiff((int)(GetAbsTimeMilliSeconds() % NUMBER_ONE_MILLION), endTime);
 }
 
 #endif

@@ -159,6 +159,31 @@ bool VerifyFilePath(const std::string& filePath, const std::vector<const std::st
     }
     return false;
 }
+
+// time diff is small than 1h, if endTime is realy bigger than curtime, return diff, otherwise reutrn -1.
+int CalDumpTimeDiff(int curTime, int endTime)
+{
+
+    int diff = -1;
+
+    // case1: 999 997
+    // case2: 999 1
+    if (endTime > curTime) {
+        diff = endTime - curTime;
+    }
+
+    // case1: 1 999
+    // case2: 997 999
+    if (endTime < curTime) {
+        diff = endTime + NUMBER_ONE_MILLION - curTime;
+    }
+
+    if (diff >= NUMBER_ONE_MILLION / 2) {
+        return -1;
+    }
+
+    return diff;
+}
 #endif
 
 off_t GetFileSize(const int& fd)

@@ -239,31 +239,13 @@ void InfoRemoteProcessResult(std::shared_ptr<ProcessDumpRequest> request, int re
     }
 }
 
-int GetTimeDiff(int curTime, int endTime)
-{
-    const int validTimeBits = 0x3FFFFFF;
-    const int validTimeHead = 0x3000000;
-    const int tmp = 0x1000000;
-
-    curTime = curTime & validTimeBits;
-    endTime = endTime & validTimeBits;
-
-    if ((curTime & validTimeHead) == (endTime & validTimeHead)) {
-        return endTime - curTime;
-    }
-    if ((endTime & validTimeHead) == 0) {
-        return  tmp + endTime - curTime;
-    }
-    return endTime - curTime - tmp;
-}
-
 void SetProcessdumpTimeout(int signo, int endTime)
 {
     if (signo != SIGDUMP) {
         return;
     }
 
-    int diffTime = GetTimeDiff(static_cast<int>(GetAbsTimeMilliSeconds()), endTime);
+    int diffTime = CalDumpTimeDiff(static_cast<int>(GetAbsTimeMilliSeconds()), endTime);
     if (diffTime <= 0) {
         DFXLOG_INFO("%s", "now has timeout, processdump exit now");
 #ifndef CLANG_COVERAGE
