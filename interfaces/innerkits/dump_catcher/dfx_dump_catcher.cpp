@@ -209,6 +209,20 @@ static void ReportDumpCatcherStats(int32_t pid,
     ReportDumpStats(stat);
 }
 
+int DfxDumpCatcher::DumpCatchProcess(int pid, std::string& msg, size_t maxFrameNums, bool isJson)
+{
+    if (DumpCatch(pid, 0, msg, maxFrameNums, isJson)) {
+        return 0;
+    }
+    if (pid == g_kernelStackPid && !g_asyncThreadRunning) {
+        msg.append(g_kernelStackInfo);
+        g_kernelStackInfo.clear();
+        g_kernelStackPid = 0;
+        return 1;
+    }
+    return -1;
+}
+
 bool DfxDumpCatcher::DumpCatch(int pid, int tid, std::string& msg, size_t maxFrameNums, bool isJson)
 {
     bool ret = false;
@@ -295,11 +309,6 @@ bool DfxDumpCatcher::DoDumpCatchRemote(int pid, int tid, std::string& msg, bool 
         case DUMP_POLL_TIMEOUT: {
             msg.append(halfProcStatus_);
             msg.append(halfProcWchan_);
-            if (pid == g_kernelStackPid && !g_asyncThreadRunning) {
-                msg.append(g_kernelStackInfo);
-                g_kernelStackInfo.clear();
-                g_kernelStackPid = 0;
-            }
             break;
         }
         default:
