@@ -100,6 +100,19 @@ HWTEST_F (FaultLoggerPipeTest, FaultLoggerPipeTest003, TestSize.Level2)
     EXPECT_TRUE(ret);
     int result = faultLoggerPipe.GetWriteFd();
     EXPECT_NE(-1, result);
+    faultLoggerPipe.write_ = true;
+    result = faultLoggerPipe.GetWriteFd();
+    EXPECT_EQ(-1, result);
+
+    faultLoggerPipe.init_ = false;
+    faultLoggerPipe.Destroy();
+    EXPECT_FALSE(faultLoggerPipe.init_);
+    faultLoggerPipe.init_ = true;
+    faultLoggerPipe.Destroy();
+    EXPECT_FALSE(faultLoggerPipe.init_);
+
+    faultLoggerPipe.Close(-1);
+    faultLoggerPipe.Close(1);
 
     FaultLoggerPipe2 faultLoggerPipe2(time(nullptr), true);
 

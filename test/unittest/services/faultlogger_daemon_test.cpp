@@ -63,6 +63,7 @@ static constexpr uint32_t BMS_UID = 1000;
 static constexpr uint32_t HIVIEW_UID = 1201;
 static constexpr uint32_t HIDUMPER_SERVICE_UID = 1212;
 static constexpr uint32_t FOUNDATION_UID = 5523;
+static constexpr uint32_t PIPE_TYPE_COUNT = 8;
 
 /**
  * @tc.name: FaultLoggerDaemonTest001
@@ -489,6 +490,19 @@ HWTEST_F (FaultLoggerDaemonTest, FaultLoggerDaemonTest010, TestSize.Level2)
     GTEST_LOG_(INFO) << "FaultLoggerDaemonTest010: end.";
 }
 
+void TestHandleRequestByPipeType(std::shared_ptr<FaultLoggerDaemon> daemon, FaultLoggerPipe2* faultLoggerPipe,
+    FaultLoggerdRequest request, int32_t pipeType, bool isChangeFd)
+{
+    int fd = -1;
+    request.pipeType = pipeType;
+    daemon->HandleRequestByPipeType(fd, 1, &request, faultLoggerPipe);
+    if (isChangeFd) {
+        ASSERT_NE(fd, -1);
+    } else {
+        ASSERT_EQ(fd, -1);
+    }
+}
+
 /**
  * @tc.name: FaultLoggerDaemonTest011
  * @tc.desc: test HandleRequestByPipeType abnormal branch
@@ -501,30 +515,20 @@ HWTEST_F (FaultLoggerDaemonTest, FaultLoggerDaemonTest011, TestSize.Level2)
     bool ret = daemon->InitEnvironment();
     ASSERT_TRUE(ret);
 
-    int fd = -1;
-    int32_t connectionFd = 1;
     FaultLoggerdRequest request;
     FaultLoggerPipe2* faultLoggerPipe = new FaultLoggerPipe2(GetTimeMilliSeconds());
-    request.pipeType = FaultLoggerPipeType::PIPE_FD_READ_BUF;
-    daemon->HandleRequestByPipeType(fd, connectionFd, &request, faultLoggerPipe);
-    request.pipeType = FaultLoggerPipeType::PIPE_FD_WRITE_BUF;
-    daemon->HandleRequestByPipeType(fd, connectionFd, &request, faultLoggerPipe);
-    request.pipeType = FaultLoggerPipeType::PIPE_FD_READ_RES;
-    daemon->HandleRequestByPipeType(fd, connectionFd, &request, faultLoggerPipe);
-    request.pipeType = FaultLoggerPipeType::PIPE_FD_WRITE_RES;
-    daemon->HandleRequestByPipeType(fd, connectionFd, &request, faultLoggerPipe);
-    request.pipeType = FaultLoggerPipeType::PIPE_FD_JSON_READ_BUF;
-    daemon->HandleRequestByPipeType(fd, connectionFd, &request, faultLoggerPipe);
-    request.pipeType = FaultLoggerPipeType::PIPE_FD_JSON_WRITE_BUF;
-    daemon->HandleRequestByPipeType(fd, connectionFd, &request, faultLoggerPipe);
-    request.pipeType = FaultLoggerPipeType::PIPE_FD_JSON_READ_RES;
-    daemon->HandleRequestByPipeType(fd, connectionFd, &request, faultLoggerPipe);
-    request.pipeType = FaultLoggerPipeType::PIPE_FD_JSON_WRITE_RES;
-    daemon->HandleRequestByPipeType(fd, connectionFd, &request, faultLoggerPipe);
-    request.pipeType = FaultLoggerPipeType::PIPE_FD_DELETE;
-    daemon->HandleRequestByPipeType(fd, connectionFd, &request, faultLoggerPipe);
-    request.pipeType = -1;
-    daemon->HandleRequestByPipeType(fd, connectionFd, &request, faultLoggerPipe);
+    bool isChangeFds4Pipe[PIPE_TYPE_COUNT] = {false, true, false, true, false, false, false, false};
+    for (int i = 0; i < PIPE_TYPE_COUNT; i++) {
+        TestHandleRequestByPipeType(daemon, faultLoggerPipe, request, i, isChangeFds4Pipe[i]);
+    }
+    delete(faultLoggerPipe);
+
+    FaultLoggerPipe2* faultLoggerJsonPipe = new FaultLoggerPipe2(GetTimeMilliSeconds(), true);
+    bool isChangeFds4JsonPipe[PIPE_TYPE_COUNT] = {false, false, false, false, false, true, false, true};
+    for (int i = 0; i < PIPE_TYPE_COUNT; i++) {
+        TestHandleRequestByPipeType(daemon, faultLoggerJsonPipe, request, i, isChangeFds4JsonPipe[i]);
+    }
+    delete(faultLoggerJsonPipe);
     GTEST_LOG_(INFO) << "FaultLoggerDaemonTest011: end.";
 }
 
@@ -537,13 +541,21 @@ HWTEST_F (FaultLoggerDaemonTest, FaultLoggerDaemonTest011, TestSize.Level2)
 HWTEST_F (FaultLoggerDaemonTest, FaultLoggerDaemonTest012, TestSize.Level2)
 {
     std::shared_ptr<FaultLoggerDaemon> daemon = std::make_shared<FaultLoggerDaemon>();
-    GTEST_LOG_(INFO) << "FaultLoggerDaemonTest012: start.";
-    daemon->HandleStaticForFuzzer(FaultLoggerType::CPP_STACKTRACE, ROOT_UID);
-    daemon->HandleStaticForFuzzer(FaultLoggerType::JS_STACKTRACE, BMS_UID);
-    daemon->HandleStaticForFuzzer(FaultLoggerType::LEAK_STACKTRACE, HIVIEW_UID);
-    daemon->HandleStaticForFuzzer(FaultLoggerType::FFRT_CRASH_LOG, HIDUMPER_SERVICE_UID);
-    daemon->HandleStaticForFuzzer(FaultLoggerType::JIT_CODE_LOG, FOUNDATION_UID);
-    daemon->HandleStaticForFuzzer(-1, 1);
+    int params[][2] = {
+        {FaultLoggerType::CPP_STACKTRACE, ROOT_UID},
+        {FaultLoggerType::JS_STACKTRACE, BMS_UID},
+        {FaultLoggerType::LEAK_STACKTRACE, HIVIEW_UID},
+        {FaultLoggerType::FFRT_CRASH_LOG, HIDUMPER_SERVICE_UID},
+        {FaultLoggerType::JIT_CODE_LOG, FOUNDATION_UID},
+        {FaultLoggerType::JS_HEAP_LEAK_LIST, FOUNDATION_UID},
+    };
+    bool ret = false;
+    for (int i = 0; i < sizeof(params) / sizeof(params[0]); i++) {
+        ret = daemon->HandleStaticForFuzzer(params[i][0], params[i][1]);
+        EXPECT_TRUE(ret);
+    }
+    ret = daemon->HandleStaticForFuzzer(-1, 1);
+    EXPECT_FALSE(ret);
     GTEST_LOG_(INFO) << "FaultLoggerDaemonTest012: end.";
 }
 
@@ -593,7 +605,7 @@ bool CheckReadResp(int sockfd)
 }
 
 void HandleRequestByPipeTypeCommon(std::shared_ptr<FaultLoggerDaemon> daemon, int32_t pipeType,
-    bool isPassCheck = false, bool isJson = false)
+    bool isPassCheck = false, bool isJson = false, bool isChangeFd = false)
 {
     int fd = -1;
     FaultLoggerdRequest request;
@@ -602,6 +614,11 @@ void HandleRequestByPipeTypeCommon(std::shared_ptr<FaultLoggerDaemon> daemon, in
 
     if (!isPassCheck) {
         daemon->HandleRequestByPipeType(fd, 1, &request, ptr.get());
+        if (!isChangeFd) {
+            EXPECT_EQ(fd, -1);
+        } else {
+            EXPECT_NE(fd, -1);
+        }
         close(fd);
         return;
     }
@@ -618,6 +635,11 @@ void HandleRequestByPipeTypeCommon(std::shared_ptr<FaultLoggerDaemon> daemon, in
         } else if (pid > 0) {
             daemon->connectionMap_[socketFd[0]] = socketFd[0];
             daemon->HandleRequestByPipeType(fd, socketFd[0], &request, ptr.get());
+            if (!isChangeFd) {
+                EXPECT_EQ(fd, -1);
+            } else {
+                EXPECT_NE(fd, -1);
+            }
             close(fd);
             close(socketFd[1]);
         }
@@ -634,22 +656,22 @@ HWTEST_F (FaultLoggerDaemonTest, FaultLoggerDaemonTest014, TestSize.Level4)
     GTEST_LOG_(INFO) << "FaultLoggerDaemonTest014: start.";
     std::shared_ptr<FaultLoggerDaemon> daemon = std::make_shared<FaultLoggerDaemon>();
     daemon->InitEnvironment();
-    HandleRequestByPipeTypeCommon(daemon, FaultLoggerPipeType::PIPE_FD_READ_BUF, true, false);
+    HandleRequestByPipeTypeCommon(daemon, FaultLoggerPipeType::PIPE_FD_READ_BUF, true, false, true);
     sleep(2);
-    HandleRequestByPipeTypeCommon(daemon, FaultLoggerPipeType::PIPE_FD_READ_RES, true, false);
+    HandleRequestByPipeTypeCommon(daemon, FaultLoggerPipeType::PIPE_FD_READ_RES, true, false, true);
     sleep(2);
-    HandleRequestByPipeTypeCommon(daemon, FaultLoggerPipeType::PIPE_FD_JSON_READ_BUF, true, true);
+    HandleRequestByPipeTypeCommon(daemon, FaultLoggerPipeType::PIPE_FD_JSON_READ_BUF, true, true, true);
     sleep(2);
-    HandleRequestByPipeTypeCommon(daemon, FaultLoggerPipeType::PIPE_FD_JSON_READ_RES, true, true);
+    HandleRequestByPipeTypeCommon(daemon, FaultLoggerPipeType::PIPE_FD_JSON_READ_RES, true, true, true);
     sleep(2);
-    HandleRequestByPipeTypeCommon(daemon, FaultLoggerPipeType::PIPE_FD_READ_BUF);
-    HandleRequestByPipeTypeCommon(daemon, FaultLoggerPipeType::PIPE_FD_WRITE_BUF);
-    HandleRequestByPipeTypeCommon(daemon, FaultLoggerPipeType::PIPE_FD_READ_RES);
-    HandleRequestByPipeTypeCommon(daemon, FaultLoggerPipeType::PIPE_FD_WRITE_RES);
-    HandleRequestByPipeTypeCommon(daemon, FaultLoggerPipeType::PIPE_FD_JSON_READ_BUF, false, true);
-    HandleRequestByPipeTypeCommon(daemon, FaultLoggerPipeType::PIPE_FD_JSON_WRITE_BUF, false, true);
-    HandleRequestByPipeTypeCommon(daemon, FaultLoggerPipeType::PIPE_FD_JSON_READ_RES, false, true);
-    HandleRequestByPipeTypeCommon(daemon, FaultLoggerPipeType::PIPE_FD_JSON_WRITE_RES, false, true);
+    HandleRequestByPipeTypeCommon(daemon, FaultLoggerPipeType::PIPE_FD_READ_BUF, false, false, false);
+    HandleRequestByPipeTypeCommon(daemon, FaultLoggerPipeType::PIPE_FD_WRITE_BUF, false, false, true);
+    HandleRequestByPipeTypeCommon(daemon, FaultLoggerPipeType::PIPE_FD_READ_RES, false, false, false);
+    HandleRequestByPipeTypeCommon(daemon, FaultLoggerPipeType::PIPE_FD_WRITE_RES, false, false, true);
+    HandleRequestByPipeTypeCommon(daemon, FaultLoggerPipeType::PIPE_FD_JSON_READ_BUF, false, true, false);
+    HandleRequestByPipeTypeCommon(daemon, FaultLoggerPipeType::PIPE_FD_JSON_WRITE_BUF, false, true, true);
+    HandleRequestByPipeTypeCommon(daemon, FaultLoggerPipeType::PIPE_FD_JSON_READ_RES, false, true, false);
+    HandleRequestByPipeTypeCommon(daemon, FaultLoggerPipeType::PIPE_FD_JSON_WRITE_RES, false, true, true);
     GTEST_LOG_(INFO) << "FaultLoggerDaemonTest014: end.";
 }
 
@@ -673,6 +695,7 @@ void HandleRequestTestCommon(std::shared_ptr<FaultLoggerDaemon> daemon, char* bu
             }
 
             daemon->HandleRequest(0, socketFd[0]);
+            EXPECT_NE(socketFd[0], -1);
 
             pthread_join(threadId, nullptr);
         }
@@ -781,9 +804,15 @@ HWTEST_F (FaultLoggerDaemonTest, FaultLoggerDaemonTest015, TestSize.Level4)
         int32_t epollFd = 1;
         int32_t connectionFd = 4; // 4 : simulate an fd greater than 3
         daemon->HandleRequest(epollFd, connectionFd);
-        epollFd = -1;
-        connectionFd = 1;
+        connectionFd = 2;
         daemon->HandleRequest(epollFd, connectionFd);
+        EXPECT_EQ(epollFd, 1);
+        epollFd = -1;
+        daemon->HandleRequest(epollFd, connectionFd);
+        EXPECT_EQ(epollFd, -1);
+        connectionFd = 4;
+        daemon->HandleRequest(epollFd, connectionFd);
+        EXPECT_EQ(epollFd, -1);
     }
     {
         int socketFd[2]; // 2 : the length of the array
@@ -800,6 +829,7 @@ HWTEST_F (FaultLoggerDaemonTest, FaultLoggerDaemonTest015, TestSize.Level4)
             daemon->HandleRequest(0, socketFd[0]);
             close(socketFd[1]);
         }
+        EXPECT_NE(socketFd[1], -1);
     }
 
     if (!daemon->InitEnvironment()) {
