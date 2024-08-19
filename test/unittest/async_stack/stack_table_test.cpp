@@ -157,6 +157,51 @@ HWTEST_F(StackTableTest, StackTableTest007, TestSize.Level2)
     ASSERT_EQ(ret, false);
     GTEST_LOG_(INFO) << "StackTableTest007: end.";
 }
+
+/**
+ * @tc.name: StackTableTest008
+ * @tc.desc: test StackTable functions
+ * @tc.type: FUNC
+ */
+HWTEST_F(StackTableTest, StackTableTest008, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "StackTableTest008: start.";
+    std::shared_ptr<UniqueStackTable> stackTable = make_shared<UniqueStackTable>(0, 0);
+    uint64_t ret = stackTable->PutPcInSlot(0, 0);
+    ASSERT_EQ(ret, 0);
+    GTEST_LOG_(INFO) << "StackTableTest008: end.";
+}
+
+/**
+ * @tc.name: StackTableTest009
+ * @tc.desc: test StackTable functions
+ * @tc.type: FUNC
+ */
+HWTEST_F(StackTableTest, StackTableTest009, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "StackTableTest009: start.";
+    std::shared_ptr<UniqueStackTable> stackTable = make_shared<UniqueStackTable>(0, 0);
+    Node* ret = stackTable->GetFrame(MAX_NODES_CNT);
+    ASSERT_EQ(ret, nullptr);
+    GTEST_LOG_(INFO) << "StackTableTest009: end.";
+}
+
+
+/**
+ * @tc.name: StackTableTest010
+ * @tc.desc: test StackTable functions
+ * @tc.type: FUNC
+ */
+HWTEST_F(StackTableTest, StackTableTest010, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "StackTableTest010: start.";
+    const size_t size = (MAX_NODES_CNT + 10) * sizeof(Node);
+    std::shared_ptr<UniqueStackTable> stackTable = make_shared<UniqueStackTable>(nullptr,
+                                                                                 size);
+    bool ret = stackTable->Init();
+    ASSERT_EQ(ret, false);
+    GTEST_LOG_(INFO) << "StackTableTest010: end.";
+}
 }
 } // namespace HiviewDFX
 } // namespace OHOS

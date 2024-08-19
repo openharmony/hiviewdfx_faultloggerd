@@ -19,6 +19,7 @@
 #include <vector>
 #include "dfx_cutil.h"
 #include "dfx_define.h"
+#include "dfx_trace_dlsym.h"
 
 using namespace testing::ext;
 using namespace std;
@@ -103,6 +104,27 @@ HWTEST_F(CommonCutilTest, DfxCutilTest005, TestSize.Level2)
     GTEST_LOG_(INFO) << "dst:" << dst;
     ASSERT_EQ(strncmp(dst, "abcd", 5), 0); // 5:length of "abcd"
     GTEST_LOG_(INFO) << "DfxCutilTest005: end.";
+}
+
+/**
+ * @tc.name: TraceTest001
+ * @tc.desc: test Trace functions DfxStartTraceDlsym
+ * @tc.type: FUNC
+ */
+HWTEST_F(CommonCutilTest, TraceTest001, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "TraceTest001: start.";
+    DfxEnableTraceDlsym(true);
+    char *name = nullptr;
+    DfxStartTraceDlsym(name);
+    FormatTraceName(nullptr, 0, nullptr);
+    const size_t size = 2;
+    FormatTraceName(nullptr, size, nullptr);
+    ASSERT_EQ(name, nullptr);
+    DfxEnableTraceDlsym(false);
+    DfxStartTraceDlsym(name);
+    ASSERT_EQ(name, nullptr);
+    GTEST_LOG_(INFO) << "TraceTest001: end.";
 }
 
 /**
