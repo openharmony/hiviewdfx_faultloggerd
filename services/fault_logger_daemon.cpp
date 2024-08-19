@@ -629,7 +629,7 @@ void FaultLoggerDaemon::HandleSdkDumpRequest(int32_t connectionFd, FaultLoggerdR
         // defined in out/hi3516dv300/obj/third_party/musl/intermidiates/linux/musl_src_ported/include/signal.h
         siginfo_t si {0};
         si.si_signo = SIGDUMP;
-        si.si_errno = 0;
+        si.si_errno = request->endTime;
         si.si_value.sival_int = request->tid;
         si.si_code = request->sigCode;
         si.si_pid = request->callerPid;

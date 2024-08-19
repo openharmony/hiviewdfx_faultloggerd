@@ -30,6 +30,7 @@
 #include <securec.h>
 #include <string>
 #include <syscall.h>
+#include <sys/time.h>
 #include <sys/types.h>
 #include <sys/ptrace.h>
 #include <ucontext.h>
@@ -237,6 +238,34 @@ void InfoRemoteProcessResult(std::shared_ptr<ProcessDumpRequest> request, int re
             break;
     }
 }
+
+void SetProcessdumpTimeout(int signo, int endTime)
+{
+    if (signo != SIGDUMP) {
+        return;
+    }
+
+    int diffTime = CalDumpTimeDiff(static_cast<int>(GetAbsTimeMilliSeconds()), endTime);
+    if (diffTime <= 0) {
+        DFXLOG_INFO("%s", "now has timeout, processdump exit now");
+#ifndef CLANG_COVERAGE
+        _exit(0);
+#endif
+    }
+    if (diffTime > PROCESSDUMP_TIMEOUT * NUMBER_ONE_THOUSAND) {
+        DFXLOG_INFO("%s", "dump remain time is invalid, not set timer");
+        return;
+    }
+    struct itimerval timer;
+    timer.it_value.tv_sec = diffTime / NUMBER_ONE_THOUSAND;
+    timer.it_value.tv_usec = diffTime * NUMBER_ONE_THOUSAND % NUMBER_ONE_MILLION;
+    timer.it_interval.tv_sec = 0;
+    timer.it_interval.tv_usec = 0;
+
+    if (setitimer(ITIMER_REAL, &timer, nullptr) != 0) {
+        DFXLOG_ERROR("start processdump timer fail %d", errno);
+    }
+}
 }
 
 ProcessDumper &ProcessDumper::GetInstance()
@@ -416,6 +445,7 @@ int ProcessDumper::DumpProcess(std::shared_ptr<ProcessDumpRequest> request)
         if ((dumpRes = ReadRequestAndCheck(request)) != DumpErrorCode::DUMP_ESUCCESS) {
             break;
         }
+        SetProcessdumpTimeout(request->siginfo.si_signo, request->siginfo.si_errno);
         isCrash_ = request->siginfo.si_signo != SIGDUMP;
         bool isLeakDump = request->siginfo.si_signo == SIGLEAK_STACK;
         // We need check pid is same with getppid().
