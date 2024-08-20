@@ -1027,13 +1027,17 @@ bool Unwinder::Impl::StepInner(const bool isSigFrame, StepFrame& frame, void *ct
         if (!ret && enableLrFallback_ && (frames_.size() == 1)) {
             regs_->SetPc(lr);
             ret = true;
-            LOGW("%s", "Failed to apply first frame, lr fallback");
+            if (pid_ != UNWIND_TYPE_CUSTOMIZE) {
+                LOGW("%s", "Failed to apply first frame, lr fallback");
+            }
         }
 #endif
     } else {
         if (enableLrFallback_ && (frames_.size() == 1) && regs_->SetPcFromReturnAddress(memory_)) {
             ret = true;
-            LOGW("%s", "Failed to step first frame, lr fallback");
+            if (pid_ != UNWIND_TYPE_CUSTOMIZE) {
+                LOGW("%s", "Failed to step first frame, lr fallback");
+            }
         }
     }
 
