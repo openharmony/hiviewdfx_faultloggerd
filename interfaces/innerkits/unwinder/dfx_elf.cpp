@@ -94,7 +94,7 @@ std::shared_ptr<DfxElf> DfxElf::CreateFromHap(const std::string& file, std::shar
         }
 
         elfSize = GetElfSize(mmap->Get());
-        if (elfSize <= 0 || elfSize > static_cast<uint64_t>(fileSize) - prevMap->offset) {
+        if (elfSize <= 0 || elfSize + prevMap->offset > static_cast<uint64_t>(fileSize)) {
             LOGE("Invalid elf size? elf size: %d, hap size: %d", (int)elfSize, (int)fileSize);
             elfSize = 0;
             break;
