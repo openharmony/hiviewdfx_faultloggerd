@@ -308,7 +308,14 @@ void ProcessDumper::Dump()
 
     finishTime_ = GetTimeMillisec();
     ReportSigDumpStats(request);
-
+    // After skipping InitPrintThread due to ptrace failure or other reasons,
+    // request resFd_ to write back the result to dumpcatch
+    if (request->siginfo.si_signo == SIGDUMP && resFd_ == -1) {
+        resFd_ = RequestPipeFd(request->pid, FaultLoggerPipeType::PIPE_FD_JSON_WRITE_RES);
+        if (resFd_ < 0) {
+            resFd_ = RequestPipeFd(request->pid, FaultLoggerPipeType::PIPE_FD_WRITE_RES);
+        }
+    }
     WriteDumpRes(resDump_);
     // print keythread base info to hilog when carsh
     DfxRingBufferWrapper::GetInstance().PrintBaseInfo();
