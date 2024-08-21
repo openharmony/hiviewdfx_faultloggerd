@@ -66,11 +66,7 @@ ElfImitate::~ElfImitate()
 static const std::string GetNextLine(FILE *fp, int *status)
 {
     constexpr int bufSize {128};
-    char buf[bufSize];
-    if (memset_s(buf, sizeof(buf), '\0', sizeof(buf)) != EOK) {
-        DFXLOG_ERROR("%s", "memset_s() failed");
-        return "";
-    }
+    char buf[bufSize] = {0};
     if (fgets(buf, bufSize, fp) == nullptr) {
         DFXLOG_ERROR("%s", "fgets() failed");
         *status = -1;
