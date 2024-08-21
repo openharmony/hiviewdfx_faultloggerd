@@ -90,8 +90,6 @@ int32_t RequestFileDescriptorEx(const struct FaultLoggerdRequest *request)
 static bool CheckReadResp(int sockfd)
 {
     char ControlBuffer[SOCKET_BUFFER_SIZE] = {0};
-    (void)memset_s(&ControlBuffer, sizeof(ControlBuffer), 0, SOCKET_BUFFER_SIZE);
-
     ssize_t nread = OHOS_TEMP_FAILURE_RETRY(read(sockfd, ControlBuffer, sizeof(ControlBuffer) - 1));
     if (nread != static_cast<ssize_t>(strlen(FAULTLOGGER_DAEMON_RESP))) {
         DFXLOG_ERROR("nread: %zd.", nread);
