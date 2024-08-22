@@ -80,7 +80,6 @@ int DfxRingBufferWrapper::AppendBuf(const char *format, ...)
 {
     int ret = -1;
     char buf[LINE_BUF_SIZE] = {0};
-    (void)memset_s(&buf, sizeof(buf), 0, sizeof(buf));
     va_list args;
     va_start(args, format);
     ret = vsnprintf_s(buf, sizeof(buf), sizeof(buf) - 1, format, args);
