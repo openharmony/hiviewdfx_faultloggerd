@@ -407,7 +407,6 @@ static int CloneAndDoProcessDump(void* arg)
 
 static bool StartProcessdump(void)
 {
-    uint64_t startTime = GetAbsTimeMilliSeconds();
     pid_t pid = ForkBySyscall();
     if (pid < 0) {
         DFXLOG_ERROR("Failed to fork dummy processdump(%d)", errno);
@@ -420,12 +419,8 @@ static bool StartProcessdump(void)
         } else if (processDumpPid > 0) {
             _exit(0);
         } else {
-            int remainTime = GetDumpRemainTime(g_request->type, g_request->siginfo.si_errno);
-            DFXLOG_INFO("ready to start processdump, fork spend time %llu ms, remain time %d ms",
-                GetAbsTimeMilliSeconds() - startTime, remainTime);
-            if (remainTime > 0) {
-                DFX_ExecDump();
-            }
+            DFXLOG_INFO("ready to start processdump");
+            DFX_ExecDump();
             _exit(0);
         }
     }
@@ -438,7 +433,6 @@ static bool StartProcessdump(void)
 
 static bool StartVMProcessUnwind(void)
 {
-    uint64_t startTime = GetAbsTimeMilliSeconds();
     pid_t pid = ForkBySyscall();
     if (pid < 0) {
         DFXLOG_ERROR("Failed to fork vm process(%d)", errno);
@@ -446,7 +440,7 @@ static bool StartVMProcessUnwind(void)
     } else if (pid == 0) {
         pid_t vmPid = ForkBySyscall();
         if (vmPid == 0) {
-            DFXLOG_INFO("ready to start vm process, fork spend time %llu ms", GetAbsTimeMilliSeconds() - startTime);
+            DFXLOG_INFO("ready to start vm process");
             close(g_pipeFds[WRITE_TO_DUMP][0]);
             pid_t pids[PID_MAX] = {0};
             pids[REAL_PROCESS_PID] = GetRealPid();
@@ -584,11 +578,6 @@ static int ProcessDump(int sig)
     g_request->dumpMode = FUSION_MODE;
 
     do {
-        int remainTime = GetDumpRemainTime(sig, g_request->siginfo.si_errno);
-        if (remainTime <= 0) {
-            DFXLOG_INFO("%s", "enter procesdump has spend all time, exit");
-            break;
-        }
         if (!StartProcessdump()) {
             DFXLOG_ERROR("start processdump fail");
             break;

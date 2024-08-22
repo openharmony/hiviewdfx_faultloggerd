@@ -152,36 +152,3 @@ bool TrimAndDupStr(const char* src, char* dst)
     }
     return true;
 }
-
-uint64_t GetAbsTimeMilliSeconds(void)
-{
-    struct timespec ts;
-    (void)clock_gettime(CLOCK_MONOTONIC, &ts);
-    return ((uint64_t)(ts.tv_sec) * NUMBER_ONE_THOUSAND) +
-        ((uint64_t)(ts.tv_nsec) / NUMBER_ONE_MILLION);
-}
-
-static int CalDumpTimeDiff(int curTime, int endTime)
-{
-    int diff = -1;
-    if (endTime >= curTime) {
-        diff = endTime - curTime;
-    } else {
-        diff = endTime + NUMBER_ONE_MILLION - curTime;
-    }
-
-    if (diff >= NUMBER_ONE_MILLION / 2) { // 2 : diff should smaller than half of NUMBER_ONE_MILLION
-        return -1;
-    }
-
-    return diff;
-}
-
-int GetDumpRemainTime(int signo, int endTime)
-{
-    if (signo != SIGDUMP) {
-        return INT32_MAX;
-    }
-
-    return CalDumpTimeDiff((int)(GetAbsTimeMilliSeconds() % NUMBER_ONE_MILLION), endTime);
-}
