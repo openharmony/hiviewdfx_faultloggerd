@@ -65,18 +65,18 @@ int DfxGetKernelStack(int32_t pid, std::string& kernelStack)
 bool FormatThreadKernelStack(const std::string& kernelStack, std::vector<DfxFrame> &fomattedStack)
 {
 #ifdef __aarch64__
-    std::regex headerPattern(R"(.*name=(.*),\s+tid=(\d+).*, pid=(\d+), ppid=)");
+    std::regex headerPattern(R"(name=(.{1,20}), tid=(\d{1,10}), ([\w\=\.]{1,256}, ){4}pid=(\d{1,10}))");
     std::smatch result;
     if (!regex_search(kernelStack, result, headerPattern)) {
         DFXLOG_INFO("%s", "search thread name failed");
         return false;
     }
-    auto pos = kernelStack.rfind("pid=" + result[3].str()); // 3 : third of searched element is pid
+    auto pos = kernelStack.rfind("pid=" + result[result.size() - 1].str());
     if (pos == std::string::npos) {
         return false;
     }
     size_t index = 0;
-    std::regex framePattern(R"(\[(\w{16})\]\<.*\> \((.*)\))");
+    std::regex framePattern(R"(\[(\w{16})\]\<[\w\?+/]{1,1024}\> \(([\w\-./]{1,1024})\))");
     for (std::sregex_iterator it = std::sregex_iterator(kernelStack.begin() + pos, kernelStack.end(), framePattern);
         it != std::sregex_iterator(); ++it) {
         if ((*it)[2].str().rfind(".elf") != std::string::npos) { // 2 : second of searched element is map name
