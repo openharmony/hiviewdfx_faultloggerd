@@ -126,32 +126,6 @@ HWTEST_F(CommonTest, StringUtilTest001, TestSize.Level2)
     EXPECT_TRUE(ret);
     GTEST_LOG_(INFO) << "StringUtilTest001: end.";
 }
-
-/**
- * @tc.name: TestCalDumpTimeDiff001
- * @tc.desc: test CalDumpTimeDiff
- * @tc.type: FUNC
- */
-HWTEST_F(CommonTest, TestCalDumpTimeDiff001, TestSize.Level2)
-{
-    GTEST_LOG_(INFO) << "TestCalDumpTimeDiff001: start.";
-
-    // curTime endTime result
-    std::vector<vector<int>> testData = {
-        {10, 10, 0},
-        {100, 5, -1},
-        {NUMBER_ONE_MILLION - 1, 100, 101},
-        {5, 100, 95},
-        {100, NUMBER_ONE_MILLION - 1, -1}
-    };
-
-    for (const auto& data : testData) {
-        EXPECT_EQ(CalDumpTimeDiff(data[0], data[1]), data[2]) << "cal diff error start " << data[0] <<
-            ",end " << data[1] << ",expectedDiff " << data[2];
-    }
-
-    GTEST_LOG_(INFO) << "TestCalDumpTimeDiff001: end.";
-}
 }
 } // namespace HiviewDFX
 } // namespace OHOS

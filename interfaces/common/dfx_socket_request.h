@@ -145,8 +145,6 @@ struct FaultLoggerdRequest {
     uint64_t time;
     /** ture output json string, false output default string */
     bool isJson;
-    /** dumpcatcher remote unwind endtime ms */
-    int endTime;
 } __attribute__((packed));
 
 /**
