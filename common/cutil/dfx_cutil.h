@@ -37,10 +37,6 @@ AT_SYMBOL_HIDDEN uint64_t GetTimeMilliseconds(void);
 
 AT_SYMBOL_HIDDEN bool TrimAndDupStr(const char* src, char* dst);
 
-AT_SYMBOL_HIDDEN uint64_t GetAbsTimeMilliSeconds(void);
-
-AT_SYMBOL_HIDDEN int GetDumpRemainTime(int signo, int endTime);
-
 #ifdef __cplusplus
 }
 #endif
