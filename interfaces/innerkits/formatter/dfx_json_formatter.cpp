@@ -120,7 +120,7 @@ bool DfxJsonFormatter::FormatKernelStack(const std::string& kernelStack, std::st
     }
     Json::Value jsonInfo;
     for (const std::string& threadKernelStack : threadKernelStackVec) {
-        std::regex headerPattern(R"(.*name=(.*),\s+tid=(\d+).*, pid=(\d+), ppid=)");
+        std::regex headerPattern(R"(name=(.{1,20}), tid=(\d{1,10}), ([\w\=\.]{1,256}, ){4}pid=(\d{1,10}))");
         std::smatch result;
         if (!regex_search(threadKernelStack, result, headerPattern)) {
             continue;
@@ -128,12 +128,12 @@ bool DfxJsonFormatter::FormatKernelStack(const std::string& kernelStack, std::st
         Json::Value threadInfo;
         threadInfo["thread_name"] = result[1].str();
         threadInfo["tid"] = std::stoi(result[2].str()); // 2 : second of searched element
-        auto pos = threadKernelStack.rfind("pid=" + result[3].str()); // 3 : third of searched element is pid
+        auto pos = threadKernelStack.rfind("pid=" + result[result.size() - 1].str());
         if (pos == std::string::npos) {
             continue;
         }
         Json::Value frames(Json::arrayValue);
-        std::regex framePattern(R"(\[(\w{16})\]\<.*\> \((.*)\))");
+        std::regex framePattern(R"(\[(\w{16})\]\<[\w\?+/]{1,1024}\> \(([\w\-./]{1,1024})\))");
         for (std::sregex_iterator it = std::sregex_iterator(threadKernelStack.begin() + pos,
             threadKernelStack.end(), framePattern); it != std::sregex_iterator(); ++it) {
             if ((*it)[2].str().rfind(".elf") != std::string::npos) { // 2 : second of searched element is map name
