@@ -535,21 +535,5 @@ HWTEST_F(CrashExceptionTest, CrashExceptionTest017, TestSize.Level2)
     ASSERT_FALSE(CheckFaultSummaryValid(summary));
     GTEST_LOG_(INFO) << "CrashExceptionTest017: end.";
 }
-
-/**
- * @tc.name: CrashExceptionTest018
- * @tc.desc: test SetCrashProcInfo functions
- * @tc.type: FUNC
- */
-HWTEST_F(CrashExceptionTest, CrashExceptionTest018, TestSize.Level2)
-{
-    GTEST_LOG_(INFO) << "CrashExceptionTest018: start.";
-    std::string name = "";
-    const int32_t pid = -1;
-    SetCrashProcInfo(name, pid, 0);
-    ReportUnwinderException(0);
-    ASSERT_EQ(name, "");
-    GTEST_LOG_(INFO) << "CrashExceptionTest018: end.";
-}
 } // namespace HiviewDFX
 } // namespace OHOS

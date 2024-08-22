@@ -170,7 +170,6 @@ ohos_unittest("test_dwarf") {
     "$faultloggerd_interfaces_path/innerkits/unwinder/dwarf_cfa_instructions.cpp",
     "dwarf_test.cpp",
   ]
-  cflags_cc = [ "-Dprivate=public" ]
 
   deps = [
     "$faultloggerd_common_path/dfxlog:dfx_hilog_base",

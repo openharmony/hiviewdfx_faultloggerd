@@ -56,7 +56,6 @@ if (defined(ohos_lite)) {
       "$faultloggerd_path/common/cutil",
       "$faultloggerd_path/common/dfxlog",
       "$faultloggerd_path/common/dfxutil",
-      "$faultloggerd_path/common/trace/include",
     ]
   }
 
@@ -69,14 +68,10 @@ if (defined(ohos_lite)) {
       "common_cutil_test.cpp",
       "common_test.cpp",
     ]
-    defines = [
-      "DFX_ENABLE_TRACE",
-      "DFX_LOG_DMESG",
-    ]
+    defines = [ "DFX_LOG_DMESG" ]
     configs = [ ":module_private_config" ]
 
     deps = [
-      "$faultloggerd_common_path/trace:dfx_trace_dlsym",
       "$faultloggerd_path/common/cutil:dfx_cutil",
       "$faultloggerd_path/common/dfxutil:dfx_util",
     ]
@@ -90,23 +85,15 @@ if (defined(ohos_lite)) {
 
   ohos_unittest("test_param") {
     module_out_path = module_output_path
-    sources = [
-      "$faultloggerd_path/common/trace/dfx_trace.cpp",
-      "param_test.cpp",
-    ]
+    sources = [ "param_test.cpp" ]
     configs = [ ":module_private_config" ]
 
-    defines = [
-      "DFX_ENABLE_TRACE",
-      "ENABLE_PARAMETER",
-    ]
+    defines = [ "ENABLE_PARAMETER" ]
 
-    deps = [ "$faultloggerd_path/common/dfxutil:dfx_util" ]
     external_deps = [
       "c_utils:utils",
       "googletest:gmock_main",
       "googletest:gtest_main",
-      "hitrace:hitrace_meter",
       "init:libbegetutil",
     ]
   }

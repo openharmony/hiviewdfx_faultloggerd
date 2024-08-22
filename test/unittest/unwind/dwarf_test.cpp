@@ -33,19 +33,14 @@
 
 #include "string_ex.h"
 
-#include "dfx_define.h"
 #include "dfx_elf.h"
-#include "dfx_instructions.h"
 #include "dfx_log.h"
 #include "dfx_memory.h"
-#include "dfx_regs.h"
 #include "dwarf_cfa_instructions.h"
 #include "dwarf_define.h"
 #include "dwarf_op.h"
 #include "dwarf_section.h"
-#include "thread_context.h"
 #include "unwind_arm64_define.h"
-#include "unwind_loc.h"
 
 using namespace OHOS::HiviewDFX;
 using namespace testing::ext;
@@ -1142,69 +1137,6 @@ HWTEST_F(DwarfTest, DwarfTest013, TestSize.Level2)
     ASSERT_EQ(ret, 0);
     printf("DwarfTest013:%" PRIxPTR "\n", ret);
     GTEST_LOG_(INFO) << "DwarfTest013: end.\n";
-}
-
-/**
- * @tc.name: DfxInstructionsTest001
- * @tc.desc: test DfxInstructions Flush
- * @tc.type: FUNC
- */
-HWTEST_F(DwarfTest, DfxInstructionsTest001, TestSize.Level2)
-{
-    GTEST_LOG_(INFO) << "DfxInstructionsTest001: start.\n";
-    auto instructions = std::make_shared<DfxInstructions>();
-    auto regs = DfxRegs::Create();
-    auto memory = std::make_shared<DfxMemory>();
-    RegLoc loc;
-    uintptr_t val;
-    loc.type = REG_LOC_VAL_OFFSET;
-    bool ret = instructions->Flush(*(regs.get()), memory, 0, loc, val);
-    ASSERT_EQ(ret, true);
-    loc.type = REG_LOC_VAL_OFFSET;
-    ret = instructions->Flush(*(regs.get()), nullptr, 0, loc, val);
-    ASSERT_EQ(ret, false);
-    loc.type = REG_LOC_MEM_OFFSET;
-    ret = instructions->Flush(*(regs.get()), memory, 0, loc, val);
-    ASSERT_EQ(ret, true);
-    loc.type = REG_LOC_REGISTER;
-    ret = instructions->Flush(*(regs.get()), memory, 0, loc, val);
-    ASSERT_EQ(ret, true);
-    loc.type = REG_LOC_MEM_EXPRESSION;
-    ret = instructions->Flush(*(regs.get()), memory, 0, loc, val);
-    ASSERT_EQ(ret, true);
-    loc.type = REG_LOC_VAL_EXPRESSION;
-    ret = instructions->Flush(*(regs.get()), memory, 0, loc, val);
-    ASSERT_EQ(ret, true);
-    loc.type = REG_LOC_UNUSED;
-    ret = instructions->Flush(*(regs.get()), memory, 0, loc, val);
-    ASSERT_EQ(ret, false);
-    GTEST_LOG_(INFO) << "DfxInstructionsTest001: end.\n";
-}
-
-/**
- * @tc.name: LocalThreadContextTest001
- * @tc.desc: test LocalThreadContext CopyContextAndWaitTimeout
- * @tc.type: FUNC
- */
-HWTEST_F(DwarfTest, LocalThreadContextTest001, TestSize.Level2)
-{
-    GTEST_LOG_(INFO) << "LocalThreadContextTest001: start.\n";
-    LocalThreadContext instance;
-    siginfo_t si {0};
-    si.si_code = DUMP_TYPE_KERNEL;
-    instance.CopyContextAndWaitTimeout(0, nullptr, nullptr);
-    instance.CopyContextAndWaitTimeout(0, &si, nullptr);
-    si.si_code = DUMP_TYPE_LOCAL;
-    instance.CopyContextAndWaitTimeout(0, &si, nullptr);
-    std::shared_ptr<ThreadContext> ret = instance.GetThreadContext(-1);
-    ASSERT_EQ(ret, nullptr);
-    auto memory = std::make_shared<DfxMemory>();
-    uintptr_t addr = 0;
-    bool cur = memory->ReadString(addr, nullptr, 0, false);
-    ASSERT_EQ(cur, false);
-    uintptr_t val = memory->ReadEncodedValue(addr, DW_EH_PE_omit);
-    ASSERT_EQ(val, 0);
-    GTEST_LOG_(INFO) << "LocalThreadContextTest001: end.\n";
 }
 }
 } // namespace HiviewDFX

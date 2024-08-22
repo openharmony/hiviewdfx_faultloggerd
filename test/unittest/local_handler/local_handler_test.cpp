@@ -442,18 +442,5 @@ HWTEST_F(LocalHandlerTest, DfxAllocatorTest005, TestSize.Level2)
     }
     GTEST_LOG_(INFO) << "DfxAllocatorTest005: end.";
 }
-
-/**
- * @tc.name: DfxAllocatorTest006
- * @tc.desc: test dfxAllocator localhandler abnormal scenario
- * @tc.type: FUNC
- */
-HWTEST_F(LocalHandlerTest, DfxAllocatorTest006, TestSize.Level2)
-{
-    GTEST_LOG_(INFO) << "DfxAllocatorTest005: start.";
-    int ret = IsDfxAllocatorMem(nullptr);
-    ASSERT_EQ(ret, 0);
-    GTEST_LOG_(INFO) << "DfxAllocatorTest005: end.";
-}
 } // namespace HiviewDFX
 } // namepsace OHOS

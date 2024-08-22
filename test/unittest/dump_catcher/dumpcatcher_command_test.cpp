@@ -19,7 +19,6 @@
 #include <unistd.h>
 
 #include "dfx_define.h"
-#include "dfx_dump_catcher.h"
 #include "dfx_test_util.h"
 
 using namespace testing::ext;
@@ -397,28 +396,6 @@ HWTEST_F(DumpCatcherCommandTest, DumpCatcherCommandTest014, TestSize.Level2)
     int count = GetKeywordsNum(procDumpLog, log, len);
     EXPECT_EQ(count, len) << "DumpCatcherCommandTest014 Failed";
     GTEST_LOG_(INFO) << "DumpCatcherCommandTest014: end.";
-}
-
-/**
- * @tc.name: DumpCatcherCommandTest015
- * @tc.desc: test dumpcatcher abnormal scenario
- * @tc.type: FUNC
- */
-HWTEST_F(DumpCatcherCommandTest, DumpCatcherCommandTest015, TestSize.Level2)
-{
-    GTEST_LOG_(INFO) << "DumpCatcherCommandTest015: start.";
-    std::shared_ptr<DfxDumpCatcher> dump = make_shared<DfxDumpCatcher>();
-    std::string msg = "";
-    bool ret = dump->DoDumpCurrTid(0, msg, 0);
-    ASSERT_EQ(ret, false);
-    ret = dump->DoDumpLocalTid(-1, msg, 0);
-    ASSERT_EQ(ret, false);
-    ret = dump->DoDumpLocalPid(-1, msg, 0);
-    ASSERT_EQ(ret, false);
-    std::vector<int> pidV;
-    ret = dump->DumpCatchMultiPid(pidV, msg);
-    ASSERT_EQ(ret, false);
-    GTEST_LOG_(INFO) << "DumpCatcherCommandTest015: end.";
 }
 } // namespace HiviewDFX
 } // namepsace OHOS

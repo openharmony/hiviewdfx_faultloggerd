@@ -26,7 +26,6 @@ ohos_unittest("async_stack_test") {
   ]
   sources = [
     "$faultloggerd_interfaces_path/innerkits/async_stack/fp_unwinder.cpp",
-    "$faultloggerd_interfaces_path/innerkits/async_stack/unique_stack_table.cpp",
     "async_stack_test.cpp",
     "stack_table_test.cpp",
   ]

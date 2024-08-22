@@ -75,7 +75,6 @@ if (defined(ohos_lite)) {
       "dumpcatcher_command_test.cpp",
       "dumpcatcher_interfaces_test.cpp",
     ]
-    cflags_cc = [ "-Dprivate=public" ]
 
     deps = [
       "$faultloggerd_interfaces_path/innerkits/backtrace:libbacktrace_local",
