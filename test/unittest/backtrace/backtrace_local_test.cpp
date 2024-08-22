@@ -375,5 +375,27 @@ HWTEST_F(BacktraceLocalTest, BacktraceLocalTest011, TestSize.Level2)
     }
     GTEST_LOG_(INFO) << "BacktraceLocalTest011: end.";
 }
+
+/**
+ * @tc.name: BacktraceLocalTest012
+ * @tc.desc: test BacktraceLocal abnormal scenario
+ * @tc.type: FUNC
+ */
+HWTEST_F(BacktraceLocalTest, BacktraceLocalTest012, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "BacktraceLocalTest012: start.";
+    std::shared_ptr<Unwinder> unwinder1 = nullptr;
+    const int tid = -2;
+    BacktraceLocalThread backtrace1(tid, unwinder1);
+    bool ret = backtrace1.Unwind(false, 0, 0);
+    ASSERT_EQ(ret, false);
+    std::shared_ptr<Unwinder> unwinder2 = std::make_shared<Unwinder>();
+    BacktraceLocalThread backtrace2(tid, unwinder2);
+    ret = backtrace2.Unwind(false, 0, 0);
+    ASSERT_EQ(ret, false);
+    std::string str = backtrace2.GetFormattedStr(false);
+    ASSERT_EQ(str, "");
+    GTEST_LOG_(INFO) << "BacktraceLocalTest012: end.";
+}
 } // namespace HiviewDFX
 } // namepsace OHOS
