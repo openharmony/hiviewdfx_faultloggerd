@@ -632,6 +632,9 @@ void FaultLoggerDaemon::HandleSdkDumpRequest(int32_t connectionFd, FaultLoggerdR
         si.si_signo = SIGDUMP;
         si.si_errno = 0;
         si.si_value.sival_int = request->tid;
+        if (request->tid == 0 && sizeof(void *) == 8) { // 8 : platform 64
+            si.si_value.sival_ptr = reinterpret_cast<void *>(request->endTime | (1ULL << 63)); // 63 : platform 64
+        }
         si.si_code = request->sigCode;
         si.si_pid = request->callerPid;
         si.si_uid = static_cast<uid_t>(request->callerTid);

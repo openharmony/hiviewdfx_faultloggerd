@@ -93,8 +93,10 @@ private:
     bool DoDumpLocalTid(const int tid, std::string& msg, size_t maxFrameNums);
     bool DoDumpLocalPid(int pid, std::string& msg, size_t maxFrameNums);
     bool DoDumpLocalLocked(int pid, int tid, std::string& msg, size_t maxFrameNums);
-    bool DoDumpRemoteLocked(int pid, int tid, std::string& msg, bool isJson = false);
-    bool DoDumpCatchRemote(int pid, int tid, std::string& msg, bool isJson = false);
+    bool DoDumpRemoteLocked(int pid, int tid, std::string& msg, bool isJson = false,
+        int timeout = DUMPCATCHER_REMOTE_TIMEOUT);
+    bool DoDumpCatchRemote(int pid, int tid, std::string& msg, bool isJson = false,
+        int timeout = DUMPCATCHER_REMOTE_TIMEOUT);
     int DoDumpRemotePid(int pid, std::string& msg, bool isJson = false, int32_t timeout = DUMPCATCHER_REMOTE_TIMEOUT);
     int DoDumpRemotePoll(int bufFd, int resFd, int timeout, std::string& msg, bool isJson = false);
     bool DoReadBuf(int fd, std::string& msg);
