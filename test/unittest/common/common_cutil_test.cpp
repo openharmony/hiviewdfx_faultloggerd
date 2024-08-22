@@ -104,6 +104,52 @@ HWTEST_F(CommonCutilTest, DfxCutilTest005, TestSize.Level2)
     ASSERT_EQ(strncmp(dst, "abcd", 5), 0); // 5:length of "abcd"
     GTEST_LOG_(INFO) << "DfxCutilTest005: end.";
 }
+
+/**
+ * @tc.name: ParseSiValueTest001
+ * @tc.desc: test StartsWith functions
+ * @tc.type: FUNC
+ */
+HWTEST_F(CommonCutilTest, ParseSiValueTest001, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "ParseSiValueTest001: start.";
+    siginfo_t si = {0};
+    const int flagOffset = 63;
+    uint64_t timeout;
+    int tid;
+
+    uint64_t data = 100;
+    si.si_value.sival_int = data;
+    ParseSiValue(&si, &timeout, &tid);
+    ASSERT_EQ(tid, 100);
+    ASSERT_EQ(timeout, 0);
+
+    data |= 1ULL << flagOffset;
+    si.si_value.sival_ptr = (void*)(data);
+    ParseSiValue(&si, &timeout, &tid);
+
+    if (sizeof(void *) == sizeof(int)) {
+        ASSERT_EQ(tid, 100);
+        ASSERT_EQ(timeout, 0);
+        GTEST_LOG_(INFO) << "ParseSiValueTest001: end.";
+        return;
+    }
+
+    ASSERT_EQ(tid, 0);
+    ASSERT_EQ(timeout, 100);
+
+    data = 0xFFFFFFFAAAAAAAA;
+    si.si_value.sival_ptr = (void*)(data);
+    ParseSiValue(&si, &timeout, &tid);
+    ASSERT_EQ(tid, 0XAAAAAAAA);
+    ASSERT_EQ(timeout, 0);
+
+    data |= 1ULL << flagOffset;
+    si.si_value.sival_ptr = (void*)(data);
+    ParseSiValue(&si, &timeout, &tid);
+    ASSERT_EQ(tid, 0);
+    ASSERT_EQ(timeout, data & ~(1ULL << flagOffset));
+}
 }
 } // namespace HiviewDFX
 } // namespace OHOS

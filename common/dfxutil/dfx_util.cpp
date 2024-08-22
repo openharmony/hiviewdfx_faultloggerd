@@ -159,6 +159,18 @@ bool VerifyFilePath(const std::string& filePath, const std::vector<const std::st
     }
     return false;
 }
+
+void ParseSiValue(siginfo_t& si, uint64_t& endTime, int& tid)
+{
+    const int flagOffset = 63;
+    if ((reinterpret_cast<uint64_t>(si.si_value.sival_ptr) & (1ULL << flagOffset)) != 0) {
+        endTime = reinterpret_cast<uint64_t>(si.si_value.sival_ptr) & (~(1ULL << flagOffset));
+        tid = 0;
+    } else {
+        endTime = 0;
+        tid = si.si_value.sival_int;
+    }
+}
 #endif
 
 off_t GetFileSize(const int& fd)

@@ -129,9 +129,9 @@ bool DfxDumpCatcher::DoDumpLocalPid(int pid, std::string& msg, size_t maxFrameNu
     return ret;
 }
 
-bool DfxDumpCatcher::DoDumpRemoteLocked(int pid, int tid, std::string& msg, bool isJson)
+bool DfxDumpCatcher::DoDumpRemoteLocked(int pid, int tid, std::string& msg, bool isJson, int timeout)
 {
-    return DoDumpCatchRemote(pid, tid, msg, isJson);
+    return DoDumpCatchRemote(pid, tid, msg, isJson, timeout);
 }
 
 bool DfxDumpCatcher::DoDumpLocalLocked(int pid, int tid, std::string& msg, size_t maxFrameNums)
@@ -251,7 +251,8 @@ bool DfxDumpCatcher::DumpCatch(int pid, int tid, std::string& msg, size_t maxFra
                 DFXDUMPCATCHER_TAG.c_str());
         }
         reportStat = true;
-        ret = DoDumpRemoteLocked(pid, tid, msg, isJson);
+        int timeout = (tid == 0 ? 3 : 10) * 1000; // when tid not zero, timeout is 10s
+        ret = DoDumpRemoteLocked(pid, tid, msg, isJson, timeout);
     }
 
     if (reportStat) {
@@ -275,7 +276,7 @@ bool DfxDumpCatcher::DumpCatchFd(int pid, int tid, std::string& msg, int fd, siz
     return ret;
 }
 
-bool DfxDumpCatcher::DoDumpCatchRemote(int pid, int tid, std::string& msg, bool isJson)
+bool DfxDumpCatcher::DoDumpCatchRemote(int pid, int tid, std::string& msg, bool isJson, int timeout)
 {
     DFX_TRACE_SCOPED_DLSYM("DoDumpCatchRemote");
     bool ret = false;
@@ -285,7 +286,7 @@ bool DfxDumpCatcher::DoDumpCatchRemote(int pid, int tid, std::string& msg, bool 
         return ret;
     }
     pid_ = pid;
-    int sdkdumpRet = RequestSdkDumpJson(pid, tid, isJson);
+    int sdkdumpRet = RequestSdkDumpJson(pid, tid, isJson, timeout);
     if (sdkdumpRet != static_cast<int>(FaultLoggerSdkDumpResp::SDK_DUMP_PASS)) {
         if (sdkdumpRet == static_cast<int>(FaultLoggerSdkDumpResp::SDK_DUMP_REPEAT)) {
             msg.append("Result: pid(" + std::to_string(pid) + ") is dumping.\n");
@@ -301,7 +302,7 @@ bool DfxDumpCatcher::DoDumpCatchRemote(int pid, int tid, std::string& msg, bool 
         return ret;
     }
 
-    int pollRet = DoDumpRemotePid(pid, msg, isJson);
+    int pollRet = DoDumpRemotePid(pid, msg, isJson, timeout);
     switch (pollRet) {
         case DUMP_POLL_OK:
             ret = true;
