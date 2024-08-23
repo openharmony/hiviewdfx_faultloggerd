@@ -355,12 +355,16 @@ void DfxDumpCatcher::CollectKernelStack(pid_t pid)
     std::string statusPath = StringPrintf("/proc/%d/status", pid);
     if (access(statusPath.c_str(), F_OK) != 0) {
         DFXLOG_WARN("No process(%d) status file exist!", pid);
+        g_asyncThreadRunning = false;
+        g_kernelStackPid = 0;
         return;
     }
     std::vector<int> tids = {};
     std::vector<int> nstids = {};
     if (GetTidsByPid(pid, tids, nstids) == false) {
         DFXLOG_ERROR("Process(%d) Get Tids fail!", pid);
+        g_asyncThreadRunning = false;
+        g_kernelStackPid = 0;
         return;
     }
     for (int tid : tids) {
