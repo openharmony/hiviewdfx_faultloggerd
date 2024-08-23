@@ -60,7 +60,7 @@ private:
     void HandleAccept(int32_t epollFd, int32_t socketFd);
     void HandleRequest(int32_t epollFd, int32_t connectionFd);
 
-    void RemoveTempFileIfNeed();
+    void RemoveTempFileIfNeed() const;
     void HandleDefaultClientRequest(int32_t connectionFd, const FaultLoggerdRequest* request);
     void HandleLogFileDesClientRequest(int32_t connectionFd, const FaultLoggerdRequest* request);
     void HandlePrintTHilogClientRequest(int32_t const connectionFd, FaultLoggerdRequest* request);
@@ -87,6 +87,7 @@ private:
     int32_t crashSocketFd_ = -1;
     int32_t sdkdumpSocketFd_ = -1;
     int32_t eventFd_ = -1;
+    bool isBeta_ = false;
     std::map<int32_t, int32_t> connectionMap_;
     std::map<int32_t, int64_t> crashTimeMap_;
     std::vector<DumpStats> stats_;

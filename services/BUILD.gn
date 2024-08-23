@@ -151,6 +151,7 @@ if (defined(ohos_lite)) {
       "hilog:libhilog_base",
       "hisysevent:libhisysevent",
       "hitrace:hitrace_meter",
+      "init:libbegetutil",
     ]
     version_script = "faultloggerd.map"
     install_images = [
@@ -184,6 +185,7 @@ if (defined(ohos_lite)) {
       "hilog:libhilog_base",
       "hisysevent:libhisysevent",
       "hitrace:hitrace_meter",
+      "init:libbegetutil",
     ]
     part_name = "faultloggerd"
     subsystem_name = "hiviewdfx"
