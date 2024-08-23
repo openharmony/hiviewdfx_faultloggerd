@@ -15,6 +15,7 @@
 #ifndef DFX_COMMON_CUTIL_H
 #define DFX_COMMON_CUTIL_H
 
+#include <signal.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -36,6 +37,10 @@ AT_SYMBOL_HIDDEN bool GetProcessName(char* buffer, size_t bufferSz);
 AT_SYMBOL_HIDDEN uint64_t GetTimeMilliseconds(void);
 
 AT_SYMBOL_HIDDEN bool TrimAndDupStr(const char* src, char* dst);
+
+AT_SYMBOL_HIDDEN uint64_t GetAbsTimeMilliSeconds(void);
+
+AT_SYMBOL_HIDDEN void ParseSiValue(siginfo_t* si, uint64_t* endTime, int* tid);
 
 #ifdef __cplusplus
 }
