@@ -44,6 +44,9 @@
 #include "directory_ex.h"
 #include "fault_logger_config.h"
 #include "faultloggerd_socket.h"
+#ifndef is_ohos_lite
+#include "parameters.h"
+#endif
 #ifndef HISYSEVENT_DISABLE
 #include "hisysevent.h"
 #endif
@@ -143,6 +146,9 @@ static void ReportExceptionToSysEvent(CrashDumpException& exception)
 
 FaultLoggerDaemon::FaultLoggerDaemon()
 {
+#ifndef is_ohos_lite
+    isBeta_ = OHOS::system::GetParameter("const.logsystem.versiontype", "false") == "beta";
+#endif
 }
 
 int32_t FaultLoggerDaemon::StartServer()
@@ -164,7 +170,7 @@ int32_t FaultLoggerDaemon::StartServer()
         CleanupSockets();
         return -1;
     }
-
+    RemoveTempFileIfNeed();
     // loop in WaitForRequest
     WaitForRequest();
     CleanupEventFd();
@@ -308,8 +314,6 @@ bool FaultLoggerDaemon::InitEnvironment()
 void FaultLoggerDaemon::HandleDefaultClientRequest(int32_t connectionFd, const FaultLoggerdRequest * request)
 {
     DFX_TRACE_SCOPED("HandleDefaultClientRequest");
-    RemoveTempFileIfNeed();
-
     int fd = CreateFileForRequest(request->type, request->pid, request->tid, request->time, false);
     if (fd < 0) {
         DFXLOG_ERROR("%s :: Failed to create log file, errno(%d)", FAULTLOGGERD_TAG.c_str(), errno);
@@ -688,6 +692,7 @@ bool FaultLoggerDaemon::IsCrashed(int32_t pid)
 int32_t FaultLoggerDaemon::CreateFileForRequest(int32_t type, int32_t pid, int32_t tid,
     uint64_t time, bool debugFlag) const
 {
+    RemoveTempFileIfNeed();
     std::string typeStr = GetRequestTypeName(type);
     if (typeStr == "unsupported") {
         DFXLOG_ERROR("Unsupported request type(%d)", type);
@@ -730,15 +735,21 @@ int32_t FaultLoggerDaemon::CreateFileForRequest(int32_t type, int32_t pid, int32
     return fd;
 }
 
-void FaultLoggerDaemon::RemoveTempFileIfNeed()
+void FaultLoggerDaemon::RemoveTempFileIfNeed() const
 {
     int maxFileCount = 50;
     int currentLogCounts = 0;
 
+    std::string logFilePath = faultLoggerConfig_->GetLogFilePath();
     std::vector<std::string> files;
-    OHOS::GetDirFiles(faultLoggerConfig_->GetLogFilePath(), files);
+    OHOS::GetDirFiles(logFilePath, files);
+    constexpr uint64_t maxFileSize = 1lu << 31; // 2GB
+    if (!isBeta_ && OHOS::GetFolderSize(logFilePath) > maxFileSize) {
+        DFXLOG_ERROR("%s :: current file size is over limit, clear all files", FAULTLOGGERD_TAG.c_str());
+        std::for_each(files.begin(), files.end(), OHOS::RemoveFile);
+        return;
+    }
     currentLogCounts = (int)files.size();
-
     maxFileCount = faultLoggerConfig_->GetLogFileMaxNumber();
     if (currentLogCounts < maxFileCount) {
         return;
