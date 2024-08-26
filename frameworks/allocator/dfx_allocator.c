@@ -428,7 +428,7 @@ static void HookFree(void* ptr)
     return DfxFree(ptr);
 }
 
-void RegisterAllocator()
+void RegisterAllocator(void)
 {
 #ifndef DFX_ALLOCATE_ASAN
     if (memcpy_s(&g_dfxCustomMallocDispatch, sizeof(g_dfxCustomMallocDispatch),
@@ -457,7 +457,7 @@ void UnregisterAllocator(void)
 #endif
 }
 
-DfxAllocator* GetDfxAllocator()
+DfxAllocator* GetDfxAllocator(void)
 {
     return &g_dfxAllocator;
 }
