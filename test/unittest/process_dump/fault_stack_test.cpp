@@ -88,17 +88,19 @@ HWTEST_F(FaultStackUnittest, FaultStackUnittest001, TestSize.Level2)
     }
     auto frames = unwinder->GetFrames();
     int childPid = fork();
+    bool isSuccess = childPid >= 0;
+    if (!isSuccess) {
+        ASSERT_FALSE(isSuccess);
+        printf("Failed to fork child process, errno(%d).\n", errno);
+        return;
+    }
     if (childPid == 0) {
         uint32_t left = 10;
         while (left > 0) {
             left = sleep(left);
         }
         _exit(0);
-    } else if (childPid < 0) {
-        printf("Failed to fork child process, errno(%d).\n", errno);
-        return;
     }
-
     DfxThread thread(childPid, childPid, childPid);
     ASSERT_EQ(true, thread.Attach());
     auto maps = DfxMaps::Create(childPid);

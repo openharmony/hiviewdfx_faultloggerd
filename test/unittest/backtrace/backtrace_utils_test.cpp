@@ -181,17 +181,13 @@ HWTEST_F(BacktraceUtilsTest, BacktraceUtilsTest001, TestSize.Level2)
     ASSERT_EQ(true, PrintBacktrace(STDERR_FILENO));
     ASSERT_EQ(true, PrintBacktrace());
     int fd = open(TEST_TEMP_FILE, O_CREAT | O_WRONLY, S_IRUSR | S_IWUSR);
-    if (fd < 0) {
-        FAIL();
-        return;
-    }
+    ASSERT_TRUE(fd >= 0);
     ASSERT_EQ(true, PrintBacktrace(fd));
     close(fd);
     std::string content;
     if (!OHOS::HiviewDFX::LoadStringFromFile(TEST_TEMP_FILE, content)) {
         FAIL();
     }
-
     ASSERT_EQ(CheckBacktraceContent(content), true);
     GTEST_LOG_(INFO) << "BacktraceUtilsTest001: end.";
 }
@@ -264,10 +260,7 @@ HWTEST_F(BacktraceUtilsTest, BacktraceUtilsTest005, TestSize.Level2)
     ASSERT_EQ(true, PrintTrace(STDERR_FILENO));
     ASSERT_EQ(true, PrintTrace());
     int fd = open(TEST_TEMP_FILE, O_CREAT | O_WRONLY, S_IRUSR | S_IWUSR);
-    if (fd < 0) {
-        FAIL();
-        return;
-    }
+    ASSERT_TRUE(fd >= 0);
     ASSERT_EQ(true, PrintTrace(fd));
     close(fd);
     std::string content;

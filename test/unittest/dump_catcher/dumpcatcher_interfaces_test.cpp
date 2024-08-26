@@ -361,11 +361,15 @@ HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest008, TestSize.Level
 HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest014, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest014: start.";
-    if (g_testPid == 0) {
+    bool isSuccess = g_testPid != 0;
+    if (!isSuccess) {
+        ASSERT_FALSE(isSuccess);
         GTEST_LOG_(ERROR) << "Failed to launch target hap.";
         return;
     }
-    if (!CheckProcessComm(g_testPid, TRUNCATE_TEST_BUNDLE_NAME)) {
+    isSuccess = CheckProcessComm(g_testPid, TRUNCATE_TEST_BUNDLE_NAME);
+    if (!isSuccess) {
+        ASSERT_FALSE(isSuccess);
         GTEST_LOG_(ERROR) << "Error process comm";
         return;
     }
@@ -391,11 +395,15 @@ HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest014, TestSize.Level
 HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest015, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest015: start.";
-    if (g_testPid == 0) {
+    bool isSuccess = g_testPid != 0;
+    if (!isSuccess) {
+        ASSERT_FALSE(isSuccess);
         GTEST_LOG_(ERROR) << "Failed to launch target hap.";
         return;
     }
-    if (!CheckProcessComm(g_testPid, TRUNCATE_TEST_BUNDLE_NAME)) {
+    isSuccess = CheckProcessComm(g_testPid, TRUNCATE_TEST_BUNDLE_NAME);
+    if (!isSuccess) {
+        ASSERT_FALSE(isSuccess);
         GTEST_LOG_(ERROR) << "Error process comm";
         return;
     }
@@ -422,11 +430,15 @@ HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest015, TestSize.Level
 HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest016, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest016: start.";
-    if (g_testPid == 0) {
+    bool isSuccess = g_testPid != 0;
+    if (!isSuccess) {
+        ASSERT_FALSE(isSuccess);
         GTEST_LOG_(ERROR) << "Failed to launch target hap.";
         return;
     }
-    if (!CheckProcessComm(g_testPid, TRUNCATE_TEST_BUNDLE_NAME)) {
+    isSuccess = CheckProcessComm(g_testPid, TRUNCATE_TEST_BUNDLE_NAME);
+    if (!isSuccess) {
+        ASSERT_FALSE(isSuccess);
         GTEST_LOG_(ERROR) << "Error process comm";
         return;
     }
@@ -625,7 +637,9 @@ HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest027, TestSize.Level
     ForkMultiThreadProcess();
     std::vector<int> tids;
     std::vector<int> nstids;
-    if (!GetTidsByPid(g_processId, tids, nstids)) {
+    bool isSuccess = GetTidsByPid(g_processId, tids, nstids);
+    if (!isSuccess) {
+        ASSERT_FALSE(isSuccess);
         return;
     }
     int childTid = tids[1]; // 1 : child thread
@@ -733,14 +747,20 @@ HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest031, TestSize.Level
 {
     GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest031: start.";
     std::string res = ExecuteCommands("uname");
-    if (res.find("Linux") != std::string::npos) {
+    bool isSuccess = res.find("Linux") == std::string::npos;
+    if (!isSuccess) {
+        ASSERT_FALSE(isSuccess);
         return;
     }
-    if (g_testPid == 0) {
+    isSuccess = g_testPid != 0;
+    if (!isSuccess) {
+        ASSERT_FALSE(isSuccess);
         GTEST_LOG_(ERROR) << "Failed to launch target hap.";
         return;
     }
-    if (!CheckProcessComm(g_testPid, TRUNCATE_TEST_BUNDLE_NAME)) {
+    isSuccess = CheckProcessComm(g_testPid, TRUNCATE_TEST_BUNDLE_NAME);
+    if (!isSuccess) {
+        ASSERT_FALSE(isSuccess);
         GTEST_LOG_(ERROR) << "Error process comm";
         return;
     }

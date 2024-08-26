@@ -54,8 +54,7 @@ HWTEST_F (FaultLoggerPipeTest, FaultLoggerPipeTest001, TestSize.Level2)
     auto ret = ptr->Get(pid);
     EXPECT_EQ(true, ret != nullptr) << "FaultLoggerPipeTest001 Get failed";
 
-    sleep(11); // sleep 11 seconds
-    time = OHOS::HiviewDFX::GetTimeMilliSeconds();
+    time = time + 11000; // 11000 : add 11 seconds
     check = ptr->Check(pid, time);
     EXPECT_EQ(check, false) << "FaultLoggerPipeTest001 Check failed";
 

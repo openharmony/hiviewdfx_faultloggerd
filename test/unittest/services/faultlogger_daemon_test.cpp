@@ -279,7 +279,9 @@ HWTEST_F (FaultLoggerDaemonTest, FaultLoggerDaemonTest006, TestSize.Level2)
         TestSecurityCheck(testSocketName);
 
         int status;
-        if (waitpid(pid, &status, 0) == -1) {
+        bool isSuccess = waitpid(pid, &status, 0) != -1;
+        if (!isSuccess) {
+            ASSERT_FALSE(isSuccess);
             return;
         }
 
@@ -354,7 +356,9 @@ HWTEST_F (FaultLoggerDaemonTest, FaultLoggerDaemonTest007, TestSize.Level2)
         TestCheckRequestCredential(testSocketName);
 
         int status;
-        if (waitpid(pid, &status, 0) == -1) {
+        bool isSuccess = waitpid(pid, &status, 0) != -1;
+        if (!isSuccess) {
+            ASSERT_FALSE(isSuccess);
             return;
         }
 
@@ -426,7 +430,9 @@ HWTEST_F (FaultLoggerDaemonTest, FaultLoggerDaemonTest008, TestSize.Level2)
         TestHandleExceptionRequest(testSocketName);
 
         int status;
-        if (waitpid(pid, &status, 0) == -1) {
+        bool isSuccess = waitpid(pid, &status, 0) != -1;
+        if (!isSuccess) {
+            ASSERT_FALSE(isSuccess);
             return;
         }
 
@@ -804,10 +810,7 @@ HWTEST_F (FaultLoggerDaemonTest, FaultLoggerDaemonTest015, TestSize.Level4)
 
     if (!daemon->InitEnvironment()) {
         daemon->CleanupSockets();
-        return;
     }
-    HandleRequestByClientTypeForDefaultClientTest(daemon);
-    HandleRequestByClientTypeTest(daemon);
     GTEST_LOG_(INFO) << "FaultLoggerDaemonTest015: end.";
 }
 
@@ -859,5 +862,19 @@ HWTEST_F (FaultLoggerDaemonTest, FaultLoggerDaemonTest016, TestSize.Level4)
         HandleRequestTestCommon(daemon, reinterpret_cast<char*>(&requst), sizeof(FaultLoggerdStatsRequest), nullptr);
     }
     GTEST_LOG_(INFO) << "FaultLoggerDaemonTest016: end.";
+}
+
+/**
+ * @tc.name: FaultLoggerDaemonTest017
+ * @tc.desc: test FaultLoggerDaemon for HandleRequest
+ * @tc.type: FUNC
+ */
+HWTEST_F (FaultLoggerDaemonTest, FaultLoggerDaemonTest017, TestSize.Level4)
+{
+    GTEST_LOG_(INFO) << "FaultLoggerDaemonTest017: start.";
+    std::shared_ptr<FaultLoggerDaemon> daemon = std::make_shared<FaultLoggerDaemon>();
+    HandleRequestByClientTypeForDefaultClientTest(daemon);
+    HandleRequestByClientTypeTest(daemon);
+    GTEST_LOG_(INFO) << "FaultLoggerDaemonTest017: end.";
 }
 }

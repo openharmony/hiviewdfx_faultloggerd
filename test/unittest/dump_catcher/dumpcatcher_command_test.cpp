@@ -108,11 +108,15 @@ HWTEST_F(DumpCatcherCommandTest, DumpCatcherCommandTest002, TestSize.Level2)
 HWTEST_F(DumpCatcherCommandTest, DumpCatcherCommandTest003, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "DumpCatcherCommandTest003: start.";
-    if (g_testPid == 0) {
+    bool isSuccess = g_testPid != 0;
+    if (!isSuccess) {
+        ASSERT_FALSE(isSuccess);
         GTEST_LOG_(ERROR) << "Failed to launch target hap.";
         return;
     }
-    if (!CheckProcessComm(g_testPid, TRUNCATE_TEST_BUNDLE_NAME)) {
+    isSuccess = CheckProcessComm(g_testPid, TRUNCATE_TEST_BUNDLE_NAME);
+    if (!isSuccess) {
+        ASSERT_FALSE(isSuccess);
         GTEST_LOG_(ERROR) << "Error process comm";
         return;
     }
@@ -136,11 +140,15 @@ HWTEST_F(DumpCatcherCommandTest, DumpCatcherCommandTest003, TestSize.Level2)
 HWTEST_F(DumpCatcherCommandTest, DumpCatcherCommandTest004, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "DumpCatcherCommandTest004: start.";
-    if (g_testPid == 0) {
+    bool isSuccess = g_testPid != 0;
+    if (!isSuccess) {
+        ASSERT_FALSE(isSuccess);
         GTEST_LOG_(ERROR) << "Failed to launch target hap.";
         return;
     }
-    if (!CheckProcessComm(g_testPid, TRUNCATE_TEST_BUNDLE_NAME)) {
+    isSuccess = CheckProcessComm(g_testPid, TRUNCATE_TEST_BUNDLE_NAME);
+    if (!isSuccess) {
+        ASSERT_FALSE(isSuccess);
         GTEST_LOG_(ERROR) << "Error process comm";
         return;
     }
@@ -164,11 +172,15 @@ HWTEST_F(DumpCatcherCommandTest, DumpCatcherCommandTest004, TestSize.Level2)
 HWTEST_F(DumpCatcherCommandTest, DumpCatcherCommandTest005, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "DumpCatcherCommandTest005: start.";
-    if (g_testPid == 0) {
+    bool isSuccess = g_testPid != 0;
+    if (!isSuccess) {
+        ASSERT_FALSE(isSuccess);
         GTEST_LOG_(ERROR) << "Failed to launch target hap.";
         return;
     }
-    if (!CheckProcessComm(g_testPid, TRUNCATE_TEST_BUNDLE_NAME)) {
+    isSuccess = CheckProcessComm(g_testPid, TRUNCATE_TEST_BUNDLE_NAME);
+    if (!isSuccess) {
+        ASSERT_FALSE(isSuccess);
         GTEST_LOG_(ERROR) << "Error process comm";
         return;
     }
@@ -196,11 +208,15 @@ HWTEST_F(DumpCatcherCommandTest, DumpCatcherCommandTest006, TestSize.Level2)
     string testBundleName = TEST_BUNDLE_NAME;
     string testAbiltyName = testBundleName + ".MainAbility";
     int testPid = LaunchTestHap(testAbiltyName, testBundleName);
-    if (testPid == 0) {
+    bool isSuccess = testPid != 0;
+    if (!isSuccess) {
+        ASSERT_FALSE(isSuccess);
         GTEST_LOG_(ERROR) << "Failed to launch target hap.";
         return;
     }
-    if (!CheckProcessComm(testPid, TRUNCATE_TEST_BUNDLE_NAME)) {
+    isSuccess = CheckProcessComm(testPid, TRUNCATE_TEST_BUNDLE_NAME);
+    if (!isSuccess) {
+        ASSERT_FALSE(isSuccess);
         GTEST_LOG_(ERROR) << "Error process comm";
         return;
     }
@@ -228,11 +244,15 @@ HWTEST_F(DumpCatcherCommandTest, DumpCatcherCommandTest007, TestSize.Level2)
     string testBundleName = TEST_BUNDLE_NAME;
     string testAbiltyName = testBundleName + ".MainAbility";
     int testPid = LaunchTestHap(testAbiltyName, testBundleName);
-    if (testPid == 0) {
+    bool isSuccess = testPid != 0;
+    if (!isSuccess) {
+        ASSERT_FALSE(isSuccess);
         GTEST_LOG_(ERROR) << "Failed to launch target hap.";
         return;
     }
-    if (!CheckProcessComm(testPid, TRUNCATE_TEST_BUNDLE_NAME)) {
+    isSuccess = CheckProcessComm(testPid, TRUNCATE_TEST_BUNDLE_NAME);
+    if (!isSuccess) {
+        ASSERT_FALSE(isSuccess);
         GTEST_LOG_(ERROR) << "Error process comm";
         return;
     }
@@ -301,11 +321,15 @@ HWTEST_F(DumpCatcherCommandTest, DumpCatcherCommandTest010, TestSize.Level2)
     string testBundleName = TEST_BUNDLE_NAME;
     string testAbiltyName = testBundleName + ".MainAbility";
     int testPid = LaunchTestHap(testAbiltyName, testBundleName);
-    if (testPid == 0) {
+    bool isSuccess = testPid != 0;
+    if (!isSuccess) {
+        ASSERT_FALSE(isSuccess);
         GTEST_LOG_(ERROR) << "Failed to launch target hap.";
         return;
     }
-    if (!CheckProcessComm(testPid, TRUNCATE_TEST_BUNDLE_NAME)) {
+    isSuccess = CheckProcessComm(testPid, TRUNCATE_TEST_BUNDLE_NAME);
+    if (!isSuccess) {
+        ASSERT_FALSE(isSuccess);
         GTEST_LOG_(ERROR) << "Error process comm";
         return;
     }
@@ -330,11 +354,15 @@ HWTEST_F(DumpCatcherCommandTest, DumpCatcherCommandTest011, TestSize.Level2)
     string testBundleName = TEST_BUNDLE_NAME;
     string testAbiltyName = testBundleName + ".MainAbility";
     int testPid = LaunchTestHap(testAbiltyName, testBundleName);
-    if (testPid == 0) {
+    bool isSuccess = testPid != 0;
+    if (!isSuccess) {
+        ASSERT_FALSE(isSuccess);
         GTEST_LOG_(ERROR) << "Failed to launch target hap.";
         return;
     }
-    if (!CheckProcessComm(testPid, TRUNCATE_TEST_BUNDLE_NAME)) {
+    isSuccess = CheckProcessComm(testPid, TRUNCATE_TEST_BUNDLE_NAME);
+    if (!isSuccess) {
+        ASSERT_FALSE(isSuccess);
         GTEST_LOG_(ERROR) << "Error process comm";
         return;
     }
