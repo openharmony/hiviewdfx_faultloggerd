@@ -89,7 +89,6 @@ static int ConnectSocket(const char* path, const int timeout)
 static bool CheckReadResp(int fd)
 {
     char controlBuffer[MAX_FUNC_NAME_LEN] = {0};
-    (void)memset(controlBuffer, 0, MAX_FUNC_NAME_LEN);
     ssize_t nread = OHOS_TEMP_FAILURE_RETRY(read(fd, controlBuffer, sizeof(controlBuffer) - 1));
     if (nread != (ssize_t)(strlen(FAULTLOGGER_DAEMON_RESP))) {
         DFXLOG_ERROR("Failed to read expected length, nread: %zd, errno(%d).", nread, errno);

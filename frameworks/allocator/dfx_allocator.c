@@ -128,8 +128,12 @@ static void MempoolAllocPage(DfxMempool* mempool)
     }
     PageInfo* page = (PageInfo*)(mptr);
     // fill PageInfo
-    (void)memcpy_s(page->tag.tagInfo, sizeof(page->tag.tagInfo),
-        DFX_MEM_PAGE_SIGN, sizeof(DFX_MEM_PAGE_SIGN));
+    if (memcpy_s(page->tag.tagInfo, sizeof(page->tag.tagInfo),
+        DFX_MEM_PAGE_SIGN, sizeof(DFX_MEM_PAGE_SIGN)) != EOK) {
+        munmap(mptr, DFX_PAGE_SIZE);
+        DFXLOG_ERROR("Mempool AllocPage fill tag failed!");
+        return;
+    }
     page->tag.type = mempool->type;
     page->tag.mempool = mempool;
     page->freeBlocksCnt = mempool->blocksPerPage;
@@ -291,7 +295,12 @@ static void* AllocMmap(size_t align, size_t size)
     }
     void* result = (void*)((char*)(mptr) + headSize);
     PageInfo* page = GetPageUnchecked(result);
-    (void)memcpy_s(page->tag.tagInfo, sizeof(page->tag.tagInfo), DFX_MEM_PAGE_SIGN, sizeof(DFX_MEM_PAGE_SIGN));
+    if (memcpy_s(page->tag.tagInfo, sizeof(page->tag.tagInfo),
+        DFX_MEM_PAGE_SIGN, sizeof(DFX_MEM_PAGE_SIGN)) != EOK) {
+        munmap(mptr, allocSize);
+        DFXLOG_ERROR("AllocMmap fill tag failed!");
+        return NULL;
+    }
     page->tag.type = DFX_MMAP_TYPE;
     page->tag.mMapAllocSize = allocSize;
     page->prev = NULL;
@@ -422,8 +431,10 @@ static void HookFree(void* ptr)
 void RegisterAllocator()
 {
 #ifndef DFX_ALLOCATE_ASAN
-    (void)memcpy_s(&g_dfxCustomMallocDispatch, sizeof(g_dfxCustomMallocDispatch),
-        &(__libc_malloc_default_dispatch), sizeof(__libc_malloc_default_dispatch));
+    if (memcpy_s(&g_dfxCustomMallocDispatch, sizeof(g_dfxCustomMallocDispatch),
+        &(__libc_malloc_default_dispatch), sizeof(__libc_malloc_default_dispatch)) != EOK) {
+        DFXLOG_ERROR("RegisterAllocator memcpy fail");
+    }
 #endif
     g_dfxCustomMallocDispatch.malloc = HookMalloc;
     g_dfxCustomMallocDispatch.calloc = HookCalloc;
