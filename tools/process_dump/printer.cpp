@@ -29,6 +29,10 @@
 #include "dfx_signal.h"
 #include "dfx_util.h"
 #include "string_util.h"
+#ifndef is_ohos_lite
+#include "parameter.h"
+#include "parameters.h"
+#endif
 
 #ifndef PAGE_SIZE
 constexpr size_t PAGE_SIZE = 4096;
@@ -45,6 +49,11 @@ void Printer::PrintDumpHeader(std::shared_ptr<ProcessDumpRequest> request, std::
     std::stringstream headerInfo;
     bool isCrash = (request->siginfo.si_signo != SIGDUMP);
     if (isCrash) {
+#ifndef is_ohos_lite
+        std::string buildInfo = OHOS::system::GetParameter("const.product.software.version", "Unknown");
+        headerInfo << "Build info:" << buildInfo << "\n";
+        DfxRingBufferWrapper::GetInstance().AppendMsg("Build info:" + buildInfo + "\n");
+#endif
         headerInfo << "Timestamp:" << GetCurrentTimeStr(request->timeStamp);
         DfxRingBufferWrapper::GetInstance().AppendMsg("Timestamp:" + GetCurrentTimeStr(request->timeStamp));
     } else {
