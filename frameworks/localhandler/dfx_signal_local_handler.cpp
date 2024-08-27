@@ -98,6 +98,7 @@ void DFX_SignalLocalHandler(int sig, siginfo_t *si, void *context)
     g_request.type = static_cast<ProcessDumpType>(sig);
     g_request.tid = gettid();
     g_request.pid = getpid();
+    g_request.uid = getuid();
     g_request.timeStamp = GetTimeMilliseconds();
     DFXLOG_INFO("DFX_SignalLocalHandler :: sig(%d), pid(%d), tid(%d).", sig, g_request.pid, g_request.tid);
 
