@@ -64,7 +64,7 @@ public:
 
             AbilityBase::ZipPos offset = 0;
             uint32_t length = 0;
-            if (!zipFile_->GetDataOffsetRelative(fileName, offset, length)) {
+            if (!zipFile_->GetDataOffsetRelative(entry.second, offset, length)) {
                 break;
             }
 
@@ -97,7 +97,7 @@ public:
 
             AbilityBase::ZipPos offset = 0;
             uint32_t length = 0;
-            if (!zipFile_->GetDataOffsetRelative(fileName, offset, length)) {
+            if (!zipFile_->GetDataOffsetRelative(entry.second, offset, length)) {
                 break;
             }
 
