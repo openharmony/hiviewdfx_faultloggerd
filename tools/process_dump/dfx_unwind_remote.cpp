@@ -55,8 +55,8 @@ void GetThreadKernelStack(std::shared_ptr<DfxThread> thread)
 {
     std::string threadKernelStack;
     pid_t tid = thread->threadInfo_.nsTid;
-    std::vector<DfxFrame> frames;
-    if (DfxGetKernelStack(tid, threadKernelStack) == 0 && FormatThreadKernelStack(threadKernelStack, frames)) {
+    DfxThreadStack threadStack;
+    if (DfxGetKernelStack(tid, threadKernelStack) == 0 && FormatThreadKernelStack(threadKernelStack, threadStack)) {
         DFXLOG_INFO("Failed to get tid(%d) user stack, try kernel", tid);
 #ifndef is_ohos_lite
         if (OHOS::system::GetParameter("const.logsystem.versiontype", "false") == "beta") {
@@ -66,7 +66,7 @@ void GetThreadKernelStack(std::shared_ptr<DfxThread> thread)
             }
         }
 #endif
-        thread->SetFrames(frames);
+        thread->SetFrames(threadStack.frames);
     }
 }
 }

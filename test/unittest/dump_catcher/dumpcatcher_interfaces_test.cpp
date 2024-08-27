@@ -749,6 +749,7 @@ HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest031, TestSize.Level
     ASSERT_GT(formattedStack.size(), 0);
     ASSERT_NE(formattedStack.find("#"), std::string::npos) << formattedStack;
     ASSERT_TRUE(DfxJsonFormatter::FormatKernelStack(msg, formattedStack, true));
+    GTEST_LOG_(INFO) << formattedStack;
     GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest031: end.";
 }
 #endif
