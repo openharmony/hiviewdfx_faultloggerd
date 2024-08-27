@@ -275,8 +275,8 @@ void SetProcessdumpTimeout(siginfo_t &si)
     }
 
     struct itimerval timer;
-    timer.it_value.tv_sec = diffTime / NUMBER_ONE_THOUSAND;
-    timer.it_value.tv_usec = diffTime * NUMBER_ONE_THOUSAND % NUMBER_ONE_MILLION;
+    timer.it_value.tv_sec = static_cast<int64_t>(diffTime / NUMBER_ONE_THOUSAND);
+    timer.it_value.tv_usec = static_cast<int64_t>(diffTime * NUMBER_ONE_THOUSAND % NUMBER_ONE_MILLION);
     timer.it_interval.tv_sec = 0;
     timer.it_interval.tv_usec = 0;
 
