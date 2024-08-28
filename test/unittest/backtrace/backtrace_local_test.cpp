@@ -365,10 +365,10 @@ HWTEST_F(BacktraceLocalTest, BacktraceLocalTest011, TestSize.Level2)
     }
     std::string kernelStack;
     ASSERT_EQ(DfxGetKernelStack(gettid(), kernelStack), 0);
-    std::vector<DfxFrame> frames;
-    ASSERT_TRUE(FormatThreadKernelStack(kernelStack, frames));
-    ASSERT_GT(frames.size(), 0);
-    for (auto const& frame : frames) {
+    DfxThreadStack threadStack;
+    ASSERT_TRUE(FormatThreadKernelStack(kernelStack, threadStack));
+    ASSERT_GT(threadStack.frames.size(), 0);
+    for (auto const& frame : threadStack.frames) {
         auto line = DfxFrameFormatter::GetFrameStr(frame);
         ASSERT_NE(line.find("#"), std::string::npos);
         GTEST_LOG_(INFO) << line;

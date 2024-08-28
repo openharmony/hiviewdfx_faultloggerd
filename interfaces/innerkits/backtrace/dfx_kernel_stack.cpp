@@ -18,6 +18,7 @@
 #include <dlfcn.h>
 #include <fcntl.h>
 #include <regex>
+#include <string_ex.h>
 #include <sys/ioctl.h>
 #include <unistd.h>
 
@@ -62,7 +63,7 @@ int DfxGetKernelStack(int32_t pid, std::string& kernelStack)
     return ret;
 }
 
-bool FormatThreadKernelStack(const std::string& kernelStack, std::vector<DfxFrame> &fomattedStack)
+bool FormatThreadKernelStack(const std::string& kernelStack, DfxThreadStack& threadStack)
 {
 #ifdef __aarch64__
     std::regex headerPattern(R"(name=(.{1,20}), tid=(\d{1,10}), ([\w\=\.]{1,256}, ){4}pid=(\d{1,10}))");
@@ -71,6 +72,9 @@ bool FormatThreadKernelStack(const std::string& kernelStack, std::vector<DfxFram
         DFXLOG_INFO("%s", "search thread name failed");
         return false;
     }
+    threadStack.threadName = result[1].str();
+    int base {10};
+    threadStack.tid = strtol(result[2].str().c_str(), nullptr, base); // 2 : second of searched element
     auto pos = kernelStack.rfind("pid=" + result[result.size() - 1].str());
     if (pos == std::string::npos) {
         return false;
@@ -84,10 +88,30 @@ bool FormatThreadKernelStack(const std::string& kernelStack, std::vector<DfxFram
         }
         DfxFrame frame;
         frame.index = index++;
-        constexpr int base {16};
-        frame.relPc = static_cast<uint64_t>(std::stoull((*it)[1].str(), nullptr, base));
+        base = 16; // 16 : Hexadecimal
+        frame.relPc = strtoull((*it)[1].str().c_str(), nullptr, base);
         frame.mapName = (*it)[2].str(); // 2 : second of searched element is map name
-        fomattedStack.emplace_back(frame);
+        threadStack.frames.emplace_back(frame);
+    }
+    return true;
+#else
+    return false;
+#endif
+}
+
+bool FormatProcessKernelStack(const std::string& kernelStack, std::vector<DfxThreadStack>& processStack)
+{
+#ifdef __aarch64__
+    std::vector<std::string> threadKernelStackVec;
+    OHOS::SplitStr(kernelStack, "Thread info:", threadKernelStackVec);
+    if (threadKernelStackVec.size() == 1) {
+        return false;
+    }
+    for (const std::string& threadKernelStack : threadKernelStackVec) {
+        DfxThreadStack threadStack;
+        if (FormatThreadKernelStack(threadKernelStack, threadStack)) {
+            processStack.emplace_back(threadStack);
+        }
     }
     return true;
 #else

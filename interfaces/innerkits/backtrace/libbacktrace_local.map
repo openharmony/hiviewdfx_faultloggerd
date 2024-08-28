@@ -10,6 +10,7 @@
       OHOS::HiviewDFX::BacktraceLocalThread::GetFormattedStr*;
       OHOS::HiviewDFX::DfxGetKernelStack*;
       OHOS::HiviewDFX::FormatThreadKernelStack*;
+      OHOS::HiviewDFX::FormatProcessKernelStack*;
     };
     extern "C" {
       PrintTrace*;

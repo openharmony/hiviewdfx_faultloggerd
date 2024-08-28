@@ -77,8 +77,9 @@ bool GetBacktraceStringByTid(std::string& out, int32_t tid, size_t skipFrameNum,
     bool ret = GetBacktraceFramesByTid(frames, tid, skipFrameNum + 1, fast, maxFrameNums);
     if (!ret) {
         std::string msg = "";
-        frames.clear();
-        if (DfxGetKernelStack(tid, msg) == 0 && FormatThreadKernelStack(msg, frames)) {
+        DfxThreadStack threadStack;
+        if (DfxGetKernelStack(tid, msg) == 0 && FormatThreadKernelStack(msg, threadStack)) {
+            frames = threadStack.frames;
             ret = true;
             DFXLOG_INFO("Failed to get tid(%d) user stack, try kernel", tid);
         }
@@ -152,9 +153,9 @@ std::string GetProcessStacktrace(size_t maxFrameNums)
             ss << thread.GetFormattedStr(true) << std::endl;
         } else {
             std::string msg = "";
-            std::vector<DfxFrame> frames;
-            if (DfxGetKernelStack(tid, msg) == 0 && FormatThreadKernelStack(msg, frames)) {
-                thread.SetFrames(frames);
+            DfxThreadStack threadStack;
+            if (DfxGetKernelStack(tid, msg) == 0 && FormatThreadKernelStack(msg, threadStack)) {
+                thread.SetFrames(threadStack.frames);
                 ss << thread.GetFormattedStr(true) << std::endl;
                 DFXLOG_INFO("Failed to get tid(%d) user stack, try kernel", tid);
             }
