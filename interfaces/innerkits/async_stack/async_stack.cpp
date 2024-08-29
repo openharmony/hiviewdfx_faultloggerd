@@ -23,6 +23,7 @@
 
 #include "dfx_log.h"
 
+#if defined(__aarch64__)
 static pthread_key_t g_stackidKey;
 static bool g_init = false;
 
@@ -57,6 +58,7 @@ static bool InitAsyncStack(void)
     call_once(&onceFlag, InitAsyncStackInner);
     return g_init;
 }
+#endif
 
 extern "C" uint64_t CollectAsyncStack(void)
 {
@@ -79,16 +81,24 @@ extern "C" uint64_t CollectAsyncStack(void)
 
 extern "C" void SetStackId(uint64_t stackId)
 {
+#if defined(__aarch64__)
     if (!InitAsyncStack()) {
         return;
     }
     pthread_setspecific(g_stackidKey, reinterpret_cast<void *>(stackId));
+#else
+    return;
+#endif
 }
 
 extern "C" uint64_t GetStackId()
 {
+#if defined(__aarch64__)
     if (!InitAsyncStack()) {
         return 0;
     }
     return reinterpret_cast<uint64_t>(pthread_getspecific(g_stackidKey));
+#else
+    return 0;
+#endif
 }
