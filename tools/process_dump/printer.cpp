@@ -48,18 +48,15 @@ void Printer::PrintDumpHeader(std::shared_ptr<ProcessDumpRequest> request, std::
     }
     std::stringstream headerInfo;
     bool isCrash = (request->siginfo.si_signo != SIGDUMP);
-    if (isCrash) {
 #ifndef is_ohos_lite
+    if (isCrash) {
         std::string buildInfo = OHOS::system::GetParameter("const.product.software.version", "Unknown");
         headerInfo << "Build info:" << buildInfo << "\n";
         DfxRingBufferWrapper::GetInstance().AppendMsg("Build info:" + buildInfo + "\n");
-#endif
-        headerInfo << "Timestamp:" << GetCurrentTimeStr(request->timeStamp);
-        DfxRingBufferWrapper::GetInstance().AppendMsg("Timestamp:" + GetCurrentTimeStr(request->timeStamp));
-    } else {
-        headerInfo << "Timestamp:" << GetCurrentTimeStr();
-        DfxRingBufferWrapper::GetInstance().AppendMsg("Timestamp:" + GetCurrentTimeStr());
     }
+#endif
+    headerInfo << "Timestamp:" << GetCurrentTimeStr(request->timeStamp);
+    DfxRingBufferWrapper::GetInstance().AppendMsg("Timestamp:" + GetCurrentTimeStr(request->timeStamp));
     headerInfo << "Pid:" << process->processInfo_.pid << "\n" <<
                   "Uid:" << process->processInfo_.uid << "\n" <<
                   "Process name:" << process->processInfo_.processName << "\n";
