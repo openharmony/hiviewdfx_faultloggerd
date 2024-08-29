@@ -17,6 +17,7 @@
 #define DFX_DUMPCATCH_H
 
 #include <cinttypes>
+#include <condition_variable>
 #include <cstring>
 #include <memory>
 #include <mutex>
@@ -101,8 +102,8 @@ private:
     int DoDumpRemotePoll(int bufFd, int resFd, int timeout, std::string& msg, bool isJson = false);
     bool DoReadBuf(int fd, std::string& msg);
     bool DoReadRes(int fd, bool &ret, std::string& msg);
-    static void CollectKernelStack(pid_t pid);
-    void AsyncGetAllTidKernelStack(pid_t pid);
+    static void CollectKernelStack(pid_t pid, int waitMilliSeconds = 0);
+    void AsyncGetAllTidKernelStack(pid_t pid, int waitMilliSeconds = 0);
 
 private:
     static const int DUMPCATCHER_REMOTE_P90_TIMEOUT = 1000;
