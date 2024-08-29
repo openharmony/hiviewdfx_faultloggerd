@@ -163,7 +163,7 @@ bool DfxSigDumpHandler::Init()
     sigaddset(&action.sa_mask, SIGDUMP);
     action.sa_flags = SA_RESTART | SA_SIGINFO;
     action.sa_sigaction = DfxSigDumpHandler::SignalDumpRetranHandler;
-    DFXLOG_ERROR("%s", "Init Install signal handler");
+    DFXLOG_INFO("%s", "Init Install signal handler");
     sigaction(SIGDUMP, &action, nullptr);
     isThreadRunning_ = true;
     std::thread catchThread = std::thread(&DfxSigDumpHandler::RunThread);
