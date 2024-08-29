@@ -33,6 +33,7 @@
 #include "dfx_kernel_stack.h"
 #include "dfx_test_util.h"
 #include "elapsed_time.h"
+#include "ffrt_inner.h"
 
 using namespace testing;
 using namespace testing::ext;
@@ -102,7 +103,7 @@ HWTEST_F(BacktraceLocalTest, BacktraceLocalTest001, TestSize.Level2)
     ElapsedTime counter;
     auto unwinder = std::make_shared<Unwinder>();
     BacktraceLocalThread thread(BACKTRACE_CURRENT_THREAD, unwinder);
-    ASSERT_EQ(true, thread.Unwind(0));
+    ASSERT_EQ(true, thread.Unwind(false));
     GTEST_LOG_(INFO) << "UnwindCurrentCost:" << counter.Elapsed();
     const auto& frames = thread.GetFrames();
     ASSERT_GT(frames.size(), 0);
@@ -144,7 +145,7 @@ HWTEST_F(BacktraceLocalTest, BacktraceLocalTest003, TestSize.Level2)
     ElapsedTime counter;
     auto unwinder = std::make_shared<Unwinder>();
     BacktraceLocalThread thread(g_tid, unwinder);
-    ASSERT_EQ(true, thread.Unwind(0));
+    ASSERT_EQ(true, thread.Unwind(false));
     GTEST_LOG_(INFO) << "UnwindCurrentCost:" << counter.Elapsed();
     const auto& frames = thread.GetFrames();
     ASSERT_GT(frames.size(), 0);
@@ -258,14 +259,14 @@ HWTEST_F(BacktraceLocalTest, BacktraceLocalTest007, TestSize.Level2)
     ElapsedTime counter;
     auto unwinder = std::make_shared<Unwinder>();
     BacktraceLocalThread oldthread(BACKTRACE_CURRENT_THREAD, unwinder);
-    ASSERT_EQ(true, oldthread.Unwind(0));
+    ASSERT_EQ(true, oldthread.Unwind(false));
     GTEST_LOG_(INFO) << "UnwindCurrentCost:" << counter.Elapsed();
     const auto& oldframes = oldthread.GetFrames();
     ASSERT_GT(oldframes.size(), MIN_FRAME_NUM);
     std::string oldframe = DfxFrameFormatter::GetFrameStr(oldframes[MIN_FRAME_NUM]);
     GTEST_LOG_(INFO) << oldthread.GetFormattedStr();
     BacktraceLocalThread newthread(BACKTRACE_CURRENT_THREAD, unwinder);
-    ASSERT_EQ(true, newthread.Unwind(0, DEFAULT_MAX_FRAME_NUM, MIN_FRAME_NUM));
+    ASSERT_EQ(true, newthread.Unwind(false, DEFAULT_MAX_FRAME_NUM, MIN_FRAME_NUM));
     GTEST_LOG_(INFO) << "UnwindCurrentCost:" << counter.Elapsed();
     const auto& newframes = newthread.GetFrames();
     GTEST_LOG_(INFO) << newthread.GetFormattedStr();
@@ -287,14 +288,14 @@ HWTEST_F(BacktraceLocalTest, BacktraceLocalTest008, TestSize.Level2)
     ElapsedTime counter;
     auto unwinder = std::make_shared<Unwinder>();
     BacktraceLocalThread oldthread(BACKTRACE_CURRENT_THREAD, unwinder);
-    ASSERT_EQ(true, oldthread.Unwind(0));
+    ASSERT_EQ(true, oldthread.Unwind(false));
     GTEST_LOG_(INFO) << "UnwindCurrentCost:" << counter.Elapsed();
     const auto& oldframes = oldthread.GetFrames();
     ASSERT_GT(oldframes.size(), 0);
     size_t oldsize = oldframes.size() - 1;
     GTEST_LOG_(INFO) << oldthread.GetFormattedStr();
     BacktraceLocalThread newthread(BACKTRACE_CURRENT_THREAD, unwinder);
-    ASSERT_EQ(true, newthread.Unwind(0, DEFAULT_MAX_FRAME_NUM, oldsize));
+    ASSERT_EQ(true, newthread.Unwind(false, DEFAULT_MAX_FRAME_NUM, oldsize));
     GTEST_LOG_(INFO) << "UnwindCurrentCost:" << counter.Elapsed();
     const auto& newframes = newthread.GetFrames();
     GTEST_LOG_(INFO) << newthread.GetFormattedStr();
@@ -314,13 +315,13 @@ HWTEST_F(BacktraceLocalTest, BacktraceLocalTest009, TestSize.Level2)
     ElapsedTime counter;
     auto unwinder = std::make_shared<Unwinder>();
     BacktraceLocalThread oldthread(BACKTRACE_CURRENT_THREAD, unwinder);
-    ASSERT_EQ(true, oldthread.Unwind(0, DEFAULT_MAX_FRAME_NUM, -1));
+    ASSERT_EQ(true, oldthread.Unwind(false, DEFAULT_MAX_FRAME_NUM, -1));
     GTEST_LOG_(INFO) << "UnwindCurrentCost:" << counter.Elapsed();
     const auto& oldframes = oldthread.GetFrames();
     ASSERT_GT(oldframes.size(), MIN_FRAME_NUM);
     GTEST_LOG_(INFO) << oldthread.GetFormattedStr();
     BacktraceLocalThread newthread(BACKTRACE_CURRENT_THREAD, unwinder);
-    ASSERT_EQ(true, newthread.Unwind(0, DEFAULT_MAX_FRAME_NUM, DEFAULT_MAX_FRAME_NUM));
+    ASSERT_EQ(true, newthread.Unwind(false, DEFAULT_MAX_FRAME_NUM, DEFAULT_MAX_FRAME_NUM));
     GTEST_LOG_(INFO) << "UnwindCurrentCost:" << counter.Elapsed();
     const auto& newframes = newthread.GetFrames();
     GTEST_LOG_(INFO) << newthread.GetFormattedStr();
@@ -396,6 +397,73 @@ HWTEST_F(BacktraceLocalTest, BacktraceLocalTest012, TestSize.Level2)
     std::string str = backtrace2.GetFormattedStr(false);
     ASSERT_EQ(str, "");
     GTEST_LOG_(INFO) << "BacktraceLocalTest012: end.";
+}
+
+/**
+ * @tc.name: BacktraceLocalTest013
+ * @tc.desc: Test async-stacktrace api enable in ffrt backtrace
+ * @tc.type: FUNC
+ */
+HWTEST_F(BacktraceLocalTest, BacktraceLocalTest013, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "BacktraceLocalTest013: start.";
+    ElapsedTime counter;
+    int x = 1;
+    const int num = 100;
+    auto unwinder = std::make_shared<Unwinder>();
+    BacktraceLocalThread thread(BACKTRACE_CURRENT_THREAD, unwinder);
+    ffrt::submit([&]{x = num; thread.Unwind(false, DEFAULT_MAX_FRAME_NUM, 0);}, {}, {&x});
+    ffrt::wait();
+    GTEST_LOG_(INFO) << "UnwindCurrentCost:" << counter.Elapsed();
+    const auto& frames = thread.GetFrames();
+    ASSERT_GT(frames.size(), MIN_FRAME_NUM);
+    GTEST_LOG_(INFO) << thread.GetFormattedStr();
+    bool ret = false;
+    for (auto const& frame : frames) {
+        auto line = DfxFrameFormatter::GetFrameStr(frame);
+        if (line.find("libffrt.so") != std::string::npos) {
+            ret = true;
+            break;
+        }
+        GTEST_LOG_(INFO) << line;
+    }
+    ASSERT_TRUE(ret);
+    GTEST_LOG_(INFO) << "BacktraceLocalTest013: end.";
+}
+
+/**
+ * @tc.name: BacktraceLocalTest014
+ * @tc.desc: Test async-stacktrace api enable in ffrt backtrace
+ * @tc.type: FUNC
+ */
+HWTEST_F(BacktraceLocalTest, BacktraceLocalTest014, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "BacktraceLocalTest014: start.";
+    ElapsedTime counter;
+    int x = 1;
+    const int num = 100;
+    auto unwinder = std::make_shared<Unwinder>();
+    int tid = -1;
+    ffrt::submit([&]{x = num; tid = gettid();}, {}, {&x});
+    ffrt::wait();
+    ASSERT_GT(tid, 0);
+    BacktraceLocalThread thread(tid, unwinder);
+    thread.Unwind(false, DEFAULT_MAX_FRAME_NUM, 0);
+    GTEST_LOG_(INFO) << "UnwindCurrentCost:" << counter.Elapsed();
+    const auto& frames = thread.GetFrames();
+    ASSERT_GT(frames.size(), MIN_FRAME_NUM);
+    GTEST_LOG_(INFO) << thread.GetFormattedStr();
+    bool ret = false;
+    for (auto const& frame : frames) {
+        auto line = DfxFrameFormatter::GetFrameStr(frame);
+        if (line.find("libffrt.so") != std::string::npos) {
+            ret = true;
+            break;
+        }
+        GTEST_LOG_(INFO) << line;
+    }
+    ASSERT_TRUE(ret);
+    GTEST_LOG_(INFO) << "BacktraceLocalTest014: end.";
 }
 } // namespace HiviewDFX
 } // namepsace OHOS
