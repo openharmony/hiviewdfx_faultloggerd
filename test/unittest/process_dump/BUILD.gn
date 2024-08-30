@@ -34,7 +34,6 @@ if (defined(ohos_lite)) {
       ]
 
       sources = [
-        "dfx_processdump_test.cpp",
         "multithread_constructor.c",
         "process_dump_test.cpp",
       ]

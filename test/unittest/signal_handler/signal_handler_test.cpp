@@ -523,20 +523,6 @@ void TestCallbackFunc()
 {}
 
 /**
- * @tc.name: SignalHandlerTest014
- * @tc.desc: test SetAsumcStaclCallbackFunc
- * @tc.type: FUNC
- */
-HWTEST_F(SignalHandlerTest, SignalHandlerTest014, TestSize.Level2)
-{
-    GTEST_LOG_(INFO) << "SignalHandlerTest014: start.";
-    if (SetAsyncStackCallbackFunc != nullptr) {
-        SetAsyncStackCallbackFunc(reinterpret_cast<void*>(TestCallbackFunc));
-    }
-    GTEST_LOG_(INFO) << "SignalHandlerTest014: end.";
-}
-
-/**
  * @tc.name: SignalHandlerTest015
  * @tc.desc: test DFX_SetAppRunningUniqueId
  * @tc.type: FUNC
@@ -607,6 +593,10 @@ HWTEST_F(SignalHandlerTest, SignalHandlerTest015, TestSize.Level2)
 HWTEST_F(SignalHandlerTest, SignalHandlerTest016, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "SignalHandlerTest016: start.";
+    if (SetAsyncStackCallbackFunc != nullptr) {
+        SetAsyncStackCallbackFunc(reinterpret_cast<void*>(TestCallbackFunc));
+    }
+
     struct CrashDumpException exception;
     exception.pid = 1;
     exception.uid = 1;

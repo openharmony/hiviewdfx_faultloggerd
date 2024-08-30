@@ -19,6 +19,7 @@
 #include <csignal>
 #include <dlfcn.h>
 #include <string>
+#include <syscall.h>
 #include <unistd.h>
 #include <vector>
 
@@ -457,5 +458,175 @@ HWTEST_F(DfxProcessDumpTest, DfxProcessDumpTest016, TestSize.Level2)
     InitDebugLog(FaultLoggerType::CPP_CRASH, pid, pid, 0);
     CloseDebugLog();
     GTEST_LOG_(INFO) << "DfxProcessDumpTest016: end.";
+}
+
+/**
+ * @tc.name: DfxProcessDumpTest017
+ * @tc.desc: Testing InitProcessInfo、InitKeyThread、InitRegs exception
+ * @tc.type: FUNC
+ */
+HWTEST_F(DfxProcessDumpTest, DfxProcessDumpTest017, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "DfxProcessDumpTest017: start.";
+    ProcessDumper& ins = ProcessDumper::GetInstance();
+    std::shared_ptr<ProcessDumpRequest> request = std::make_shared<ProcessDumpRequest>();
+    int result = ins.InitProcessInfo(request);
+    ASSERT_EQ(result, -1);
+
+    request->pid = 1;
+    request->nsPid = 1;
+    result = ins.InitProcessInfo(request);
+    ASSERT_EQ(result, -1);
+    ins.isCrash_ = true;
+    result = ins.InitProcessInfo(request);
+    ASSERT_EQ(result, 0);
+
+    ins.process_ = nullptr;
+    bool ret = ins.InitKeyThread(nullptr);
+    ASSERT_FALSE(ret);
+    ins.InitKeyThread(request);
+    ASSERT_FALSE(ret);
+
+    ins.process_ = DfxProcess::Create(request->pid, request->nsPid);
+    ret = ins.InitKeyThread(nullptr);
+    ASSERT_FALSE(ret);
+    ret = ins.InitKeyThread(request);
+    ASSERT_TRUE(ret);
+    ins.process_->keyThread_ = nullptr;
+    ret = ins.InitKeyThread(request);
+    ASSERT_TRUE(ret);
+
+    ins.process_->keyThread_  = std::make_shared<DfxThread>();
+    request->dumpMode = FUSION_MODE;
+    ret = ins.InitKeyThread(request);
+    ASSERT_TRUE(ret);
+    request->dumpMode = SPLIT_MODE;
+    ret = ins.InitKeyThread(request);
+    ASSERT_TRUE(ret);
+    ins.process_->keyThread_ = nullptr;
+    request->dumpMode = FUSION_MODE;
+    ret = ins.InitKeyThread(request);
+    ASSERT_TRUE(ret);
+    request->dumpMode = SPLIT_MODE;
+    ret = ins.InitKeyThread(request);
+    ins.process_->keyThread_->threadInfo_.threadName = "";
+    ASSERT_TRUE(ret);
+    request->dumpMode  = FUSION_MODE;
+    int dumpRes = 1;
+    ins.InitRegs(request, dumpRes);
+    GTEST_LOG_(INFO) << "DfxProcessDumpTest017: end.";
+}
+
+/**
+ * @tc.name: DfxProcessDumpTest018
+ * @tc.desc: Testing IsTargetProcessAlive exception
+ * @tc.type: FUNC
+ */
+HWTEST_F(DfxProcessDumpTest, DfxProcessDumpTest018, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "DfxProcessDumpTest018: start.";
+    ProcessDumper& ins = ProcessDumper::GetInstance();
+    std::shared_ptr<ProcessDumpRequest> request = std::make_shared<ProcessDumpRequest>();
+    request->dumpMode = SPLIT_MODE;
+    ins.isCrash_ = true;
+    request->nsPid = syscall(SYS_getppid);
+    request->vmNsPid = 1;
+    bool ret = ins.IsTargetProcessAlive(request);
+    ASSERT_FALSE(ret);
+
+    request->dumpMode = SPLIT_MODE;
+    ins.isCrash_ = true;
+    request->nsPid = 1;
+    request->vmNsPid = 1;
+    ret = ins.IsTargetProcessAlive(request);
+    ASSERT_FALSE(ret);
+
+    request->dumpMode = SPLIT_MODE;
+    ins.isCrash_ = false;
+    request->nsPid = 1;
+    request->vmNsPid = syscall(SYS_getppid);
+    ret = ins.IsTargetProcessAlive(request);
+    ASSERT_FALSE(ret);
+
+    request->dumpMode = SPLIT_MODE;
+    ins.isCrash_ = false;
+    request->nsPid = 1;
+    request->vmNsPid = 1;
+    ret = ins.IsTargetProcessAlive(request);
+    ASSERT_FALSE(ret);
+    GTEST_LOG_(INFO) << "DfxProcessDumpTest018: end.";
+}
+
+/**
+ * @tc.name: DfxProcessDumpTest019
+ * @tc.desc: Testing InitVmThread exception
+ * @tc.type: FUNC
+ */
+HWTEST_F(DfxProcessDumpTest, DfxProcessDumpTest019, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "DfxProcessDumpTest019: start.";
+    ProcessDumper& ins = ProcessDumper::GetInstance();
+    std::shared_ptr<ProcessDumpRequest> request = std::make_shared<ProcessDumpRequest>();
+    ins.process_ = nullptr;
+    bool ret = ins.InitVmThread(nullptr);
+    ASSERT_FALSE(ret);
+    ret = ins.InitVmThread(request);
+    ASSERT_FALSE(ret);
+
+    ins.process_ = DfxProcess::Create(request->pid, request->nsPid);
+    ret = ins.InitVmThread(nullptr);
+    ASSERT_FALSE(ret);
+    ret = ins.InitVmThread(request);
+    ASSERT_TRUE(ret);
+    ins.isCrash_ = true;
+    request->vmPid = 1;
+    ret = ins.InitVmThread(request);
+    ASSERT_FALSE(ret);
+    request->vmNsPid = getppid();
+    ret = ins.InitVmThread(request);
+    ASSERT_TRUE(ret);
+    ins.process_->vmThread_ = nullptr;
+    ret = ins.InitVmThread(request);
+    ASSERT_FALSE(ret);
+
+    ins.process_->vmThread_ = std::make_shared<DfxThread>();
+    ret = ins.InitVmThread(request);
+    ASSERT_FALSE(ret);
+    GTEST_LOG_(INFO) << "DfxProcessDumpTest019: end.";
+}
+
+/**
+ * @tc.name: DfxProcessDumpTest020
+ * @tc.desc: Testing InitProcessInfo Function
+ * @tc.type: FUNC
+ */
+HWTEST_F(DfxProcessDumpTest, DfxProcessDumpTest020, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "DfxProcessDumpTest020: start.";
+    ProcessDumper& ins = ProcessDumper::GetInstance();
+    std::shared_ptr<ProcessDumpRequest> request = std::make_shared<ProcessDumpRequest>();
+    ins.isCrash_ = true;
+    request->siginfo.si_signo = SIGLEAK_STACK;
+    int result = ins.InitPrintThread(request);
+    ASSERT_NE(result, -1);
+    ins.isCrash_ = true;
+    request->siginfo.si_signo = CPP_CRASH;
+    result = ins.InitPrintThread(request);
+    ASSERT_NE(result, -1);
+    ins.isCrash_ = false;
+    request->siginfo.si_signo = SIGLEAK_STACK;
+    result = ins.InitPrintThread(request);
+    ASSERT_NE(result, -1);
+    ins.isCrash_ = false;
+    request->siginfo.si_signo = CPP_CRASH;
+    result = ins.InitPrintThread(request);
+    ASSERT_EQ(result, -1);
+
+    result = ins.WriteDumpBuf(1, nullptr, 1);
+    ASSERT_EQ(result, -1);
+    ins.resFd_ = -1;
+    ins.WriteDumpRes(1);
+    ASSERT_EQ(ins.resFd_, -1);
+    GTEST_LOG_(INFO) << "DfxProcessDumpTest020: end.";
 }
 }

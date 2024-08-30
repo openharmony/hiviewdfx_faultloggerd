@@ -93,7 +93,8 @@ HWTEST_F(CommonTest, DfxDumpResTest001, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "DfxDumpResTest001: start.";
     int32_t res = DUMP_ESUCCESS;
-    GTEST_LOG_(INFO) << DfxDumpRes::ToString(res);
+    std::string result = DfxDumpRes::ToString(res);
+    ASSERT_EQ(result, "0 ( no error )");
     GTEST_LOG_(INFO) << "DfxDumpResTest001: end.";
 }
 

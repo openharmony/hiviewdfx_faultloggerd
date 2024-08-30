@@ -863,6 +863,7 @@ HWTEST_F(UnwinderTest, UnwindLocalX86_64Test001, TestSize.Level2)
         printf("Unwinder frame size: %zu\n", frames.size());
         auto framesStr = Unwinder::GetFramesStr(frames);
         printf("Unwinder frames:\n%s\n", framesStr.c_str());
+        ASSERT_GT(frames.size(), 0);
     }
 
     PrintUnwindBacktrace();
@@ -885,6 +886,7 @@ HWTEST_F(UnwinderTest, UnwindRemoteX86_64Test001, TestSize.Level2)
         printf("Unwinder frame size: %zu\n", frames.size());
         auto framesStr = Unwinder::GetFramesStr(frames);
         printf("Unwinder frames:\n%s\n", framesStr.c_str());
+        ASSERT_GT(frames.size(), 0);
     }
     DfxPtrace::Detach(initPid);
 

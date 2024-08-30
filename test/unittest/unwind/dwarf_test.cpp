@@ -564,9 +564,9 @@ HWTEST_F(DwarfTest, DwarfTest001, TestSize.Level2)
     ASSERT_EQ(cie.pointerEncoding, 0x1b);
 
     /*
-        DW_CFA_advance_loc: 20 to 0000000000003680
-        DW_CFA_def_cfa_offset: 80
-        DW_CFA_advance_loc: 12 to 000000000000368c
+        DW_CFA_advance_loc: 20 to 0000000000002ea8
+        DW_CFA_def_cfa_offset: 96
+        DW_CFA_advance_loc: 12 to 0000000000002eb4
         DW_CFA_def_cfa: r29 (x29) ofs 32
         DW_CFA_offset: r15 (x15) at cfa-8
         DW_CFA_offset: r19 (x19) at cfa-16
@@ -597,7 +597,7 @@ HWTEST_F(DwarfTest, DwarfTest001, TestSize.Level2)
     RegLocState rsState3;
     ASSERT_EQ(true, instructions.Parse(reinterpret_cast<uintptr_t>(requestFdFunc) + 24, fde, rsState3));
     ASSERT_EQ(rsState3.cfaReg, REG_AARCH64_X31);
-    ASSERT_EQ(rsState3.cfaRegOffset, 80); // DW_CFA_def_cfa_offset: 80
+    ASSERT_EQ(rsState3.cfaRegOffset, 96); // DW_CFA_def_cfa_offset: 96
     GTEST_LOG_(INFO) << "DwarfTest001: end.";
 }
 
