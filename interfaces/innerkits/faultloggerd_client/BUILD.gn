@@ -56,6 +56,7 @@ if (defined(ohos_lite)) {
   }
 
   ohos_shared_library("libfaultloggerd") {
+    branch_protector_ret = "pac_ret"
     public_configs = [
       ":faultloggerd_client_config",
       "$faultloggerd_path/common/build:coverage_flags",
