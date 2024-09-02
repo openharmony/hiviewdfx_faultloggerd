@@ -119,8 +119,7 @@ void Printer::PrintReason(std::shared_ptr<ProcessDumpRequest> request, std::shar
             DFXLOG_WARN("%s", "Thread_ is nullptr");
             return;
         }
-        auto regs = DfxRegs::CreateFromUcontext(request->context);
-        if (regs == nullptr) {
+        if (DfxRegs::CreateFromUcontext(request->context) == nullptr) {
             DFXLOG_WARN("%s", "regs is nullptr");
             return;
         }
@@ -136,6 +135,8 @@ void Printer::PrintReason(std::shared_ptr<ProcessDumpRequest> request, std::shar
                     map[0]->begin);
             }
         }
+    } else if (request->siginfo.si_signo == SIGSYS && request->siginfo.si_code == SYS_SECCOMP) {
+        process->reason += StringPrintf(" syscall nr is %d", request->siginfo.si_syscall);
     }
     process->reason += "\n";
     DfxRingBufferWrapper::GetInstance().AppendMsg(process->reason);
