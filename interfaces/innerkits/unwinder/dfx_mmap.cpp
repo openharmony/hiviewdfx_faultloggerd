@@ -38,7 +38,7 @@ bool DfxMmap::Init(const int fd, const size_t size, const off_t offset)
     if (fd < 0) {
         return false;
     }
-    mmap_ = mmap(nullptr, size, PROT_READ | PROT_WRITE, MAP_PRIVATE, fd, offset);
+    mmap_ = mmap(nullptr, size, PROT_READ, MAP_PRIVATE, fd, offset);
     if (mmap_ == MAP_FAILED) {
         LOGE("Failed to mmap, errno(%d)", errno);
         size_ = 0;
