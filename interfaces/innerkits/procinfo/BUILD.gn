@@ -44,6 +44,7 @@ if (defined(ohos_lite)) {
   }
 
   ohos_shared_library("libdfx_procinfo") {
+    branch_protector_ret = "pac_ret"
     public_configs = [
       ":dfx_procinfo_config",
       "$faultloggerd_path/common/build:coverage_flags",
