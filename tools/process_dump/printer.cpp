@@ -104,7 +104,8 @@ void Printer::PrintReason(std::shared_ptr<ProcessDumpRequest> request, std::shar
     }
     process->reason += DfxSignal::PrintSignal(request->siginfo);
     uint64_t addr = (uint64_t)(request->siginfo.si_addr);
-    if (request->siginfo.si_signo == SIGSEGV && (request->siginfo.si_code == SEGV_MAPERR || request->siginfo.si_code == SEGV_ACCERR)) {
+    if (request->siginfo.si_signo == SIGSEGV &&
+        (request->siginfo.si_code == SEGV_MAPERR || request->siginfo.si_code == SEGV_ACCERR)) {
         if (addr < PAGE_SIZE) {
             process->reason += " probably caused by NULL pointer dereference\n";
             DfxRingBufferWrapper::GetInstance().AppendMsg(process->reason);
@@ -121,8 +122,7 @@ void Printer::PrintReason(std::shared_ptr<ProcessDumpRequest> request, std::shar
             DFXLOG_WARN("%s", "Thread_ is nullptr");
             return;
         }
-        auto regs = DfxRegs::CreateFromUcontext(request->context);
-        if (regs == nullptr) {
+        if (DfxRegs::CreateFromUcontext(request->context) == nullptr) {
             DFXLOG_WARN("%s", "regs is nullptr");
             return;
         }
