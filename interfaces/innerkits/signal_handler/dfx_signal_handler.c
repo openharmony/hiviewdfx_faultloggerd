@@ -358,8 +358,7 @@ static void BlockMainThreadIfNeed(int sig)
 }
 
 #ifndef is_ohos_lite
-int DfxDumpRequest(int sig, struct ProcessDumpRequest *request, void *reservedChildStack,
-    pthread_mutex_t *signalHandlerMutex) __attribute__((weak));
+int DfxDumpRequest(int sig, struct ProcessDumpRequest *request, void *reservedChildStack) __attribute__((weak));
 #endif
 static int DumpRequest(int sig)
 {
@@ -369,7 +368,7 @@ static int DumpRequest(int sig)
         FillCrashExceptionAndReport(CRASH_SIGNAL_EDUMPREQUEST);
         return ret;
     }
-    ret = DfxDumpRequest(sig, &g_request, g_reservedChildStack, &g_signalHandlerMutex);
+    ret = DfxDumpRequest(sig, &g_request, g_reservedChildStack);
     return ret;
 }
 
@@ -402,6 +401,7 @@ static bool DFX_SigchainHandler(int sig, siginfo_t *si, void *context)
     DFXLOG_INFO("DFX_SigchainHandler :: sig(%d), pid(%d), processName(%s), threadName(%s).",
         sig, g_request.pid, g_request.processName, g_request.threadName);
     ret = DumpRequest(sig);
+    pthread_mutex_unlock(&g_signalHandlerMutex);
     DFXLOG_INFO("Finish handle signal(%d) in %d:%d.", sig, g_request.pid, g_request.tid);
     return ret;
 }

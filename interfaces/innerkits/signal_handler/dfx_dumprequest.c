@@ -87,7 +87,6 @@
 
 static struct ProcessDumpRequest *g_request = NULL;
 static void *g_reservedChildStack = NULL;
-static pthread_mutex_t *g_signalHandlerMutex = NULL;
 
 enum PIPE_FD_TYPE {
     WRITE_TO_DUMP,
@@ -393,7 +392,6 @@ static int ForkAndExecProcessDump(void)
     WaitProcessExit(childPid, "processdump");
 out:
     RestoreDumpState(prevDumpableStatus, isTracerStatusModified);
-    pthread_mutex_unlock(g_signalHandlerMutex);
     return 0;
 }
 
@@ -652,23 +650,19 @@ static void ForkAndDoProcessDump(int sig)
     }
 
     RestoreDumpState(prevDumpableStatus, isTracerStatusModified);
-    pthread_mutex_unlock(g_signalHandlerMutex);
 }
 
-int DfxDumpRequest(int sig, struct ProcessDumpRequest *request, void *reservedChildStack,
-    pthread_mutex_t *signalHandlerMutex)
+int DfxDumpRequest(int sig, struct ProcessDumpRequest *request, void *reservedChildStack)
 {
     int ret = 0;
-    if (request == NULL || reservedChildStack == NULL || signalHandlerMutex == NULL) {
+    if (request == NULL || reservedChildStack == NULL) {
         DFXLOG_ERROR("Failed to DumpRequest because of error parameters!");
         return ret;
     }
     g_request = request;
     g_reservedChildStack = reservedChildStack;
-    g_signalHandlerMutex = signalHandlerMutex;
     if (ProcessDump(sig) == 0) {
         ret = sig == SIGDUMP || sig == SIGLEAK_STACK;
-        pthread_mutex_unlock(g_signalHandlerMutex);
         return ret;
     }
 
@@ -681,7 +675,6 @@ int DfxDumpRequest(int sig, struct ProcessDumpRequest *request, void *reservedCh
             CLONE_THREAD | CLONE_SIGHAND | CLONE_VM, NULL);
         if (recycleTid == -1) {
             DFXLOG_ERROR("Failed to clone thread for recycle dump process, errno(%d)", errno);
-            pthread_mutex_unlock(g_signalHandlerMutex);
         }
     }
     return ret;
