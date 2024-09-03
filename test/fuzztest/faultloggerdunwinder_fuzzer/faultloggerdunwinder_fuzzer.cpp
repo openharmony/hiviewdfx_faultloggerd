@@ -182,7 +182,7 @@ void TestDfxHap(const uint8_t* data, size_t size)
     uint64_t pc;
     uintptr_t methodid;
     uintptr_t offset;
-    unsigned int offsetTotalLength = sizeof(pid) + sizeof(pc) + sizeof(methodid) + sizeof(offset);
+    int offsetTotalLength = sizeof(pid) + sizeof(pc) + sizeof(methodid) + sizeof(offset);
     if (offsetTotalLength > size) {
         return;
     }
@@ -241,7 +241,7 @@ void TestThreadContext(const uint8_t* data, size_t size)
     int32_t tid;
     uintptr_t stackBottom;
     uintptr_t stackTop;
-    unsigned int offsetTotalLength = sizeof(tid) + sizeof(stackBottom) + sizeof(stackTop);
+    int offsetTotalLength = sizeof(tid) + sizeof(stackBottom) + sizeof(stackTop);
     if (offsetTotalLength > size) {
         return;
     }
@@ -262,7 +262,7 @@ void TestDfxInstrStatistic(const uint8_t* data, size_t size)
     uint32_t type;
     uint64_t val;
     uint64_t errInfo;
-    unsigned int offsetTotalLength = sizeof(type) + sizeof(val) + sizeof(errInfo) +
+    int offsetTotalLength = sizeof(type) + sizeof(val) + sizeof(errInfo) +
                                      FAULTLOGGER_FUZZTEST_MAX_STRING_LENGTH;
     if (offsetTotalLength > size) {
         return;

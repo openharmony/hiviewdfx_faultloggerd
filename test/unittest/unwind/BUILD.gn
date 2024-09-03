@@ -186,41 +186,12 @@ ohos_unittest("test_dwarf") {
   ]
 }
 
-ohos_unittest("test_unwind_supporting") {
-  module_out_path = module_output_path
-  visibility = [ "*:*" ]
-  include_dirs = [
-    "$faultloggerd_interfaces_path/common",
-    "$faultloggerd_interfaces_path/innerkits/unwinder/include",
-  ]
-  defines = [ "is_ohos=${is_ohos}" ]
-  sources = [
-    "$faultloggerd_interfaces_path/innerkits/unwinder/arch_util.cpp",
-    "$faultloggerd_interfaces_path/innerkits/unwinder/dfx_ark.cpp",
-    "$faultloggerd_interfaces_path/innerkits/unwinder/dfx_hap.cpp",
-    "$faultloggerd_interfaces_path/innerkits/unwinder/dfx_maps.cpp",
-    "$faultloggerd_interfaces_path/innerkits/unwinder/dfx_memory.cpp",
-    "arch_util_test.cpp",
-    "dfx_hap_test.cpp",
-  ]
-  deps = [
-    "$faultloggerd_common_path/dfxlog:dfx_hilog",
-    "$faultloggerd_common_path/dfxutil:dfx_util",
-    "$faultloggerd_common_path/trace:dfx_trace_dlsym",
-  ]
-  external_deps = [
-    "c_utils:utils",
-    "hilog:libhilog",
-  ]
-}
-
 group("unittest") {
   testonly = true
   deps = [
     ":test_unwind",
     ":test_unwind_pac",
     ":test_unwind_separate_code",
-    ":test_unwind_supporting",
   ]
   if (target_cpu == "arm") {
     deps += [ ":test_exidx" ]

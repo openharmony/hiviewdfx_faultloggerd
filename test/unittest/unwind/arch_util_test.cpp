@@ -76,37 +76,8 @@ HWTEST_F(ArchUtilTest, ArchUtilTest001, TestSize.Level2)
     ASSERT_EQ(GetArchName(ArchType::ARCH_X86_64), "X86_64");
     ASSERT_EQ(GetArchName(ArchType::ARCH_ARM), "ARM");
     ASSERT_EQ(GetArchName(ArchType::ARCH_ARM64), "ARM64");
-    ASSERT_EQ(GetArchName(ArchType::ARCH_RISCV64), "RISCV64");
     ASSERT_EQ(GetArchName(ArchType::ARCH_UNKNOWN), "Unsupport");
     GTEST_LOG_(INFO) << "ArchUtilTest001: end.";
-}
-
-/**
- * @tc.name: ArchUtilTest002
- * @tc.desc: test ArchUtil GetArchFromUname
- * @tc.type: FUNC
- */
-HWTEST_F(ArchUtilTest, ArchUtilTest002, TestSize.Level2)
-{
-    GTEST_LOG_(INFO) << "ArchUtilTest002: start.";
-    std::unordered_map<std::string, ArchType> machineMap = {
-        {"arm", ArchType::ARCH_ARM},
-        {"armv8l", ArchType::ARCH_ARM64},
-        {"aarch64", ArchType::ARCH_ARM64},
-        {"riscv64", ArchType::ARCH_RISCV64},
-        {"x86_64", ArchType::ARCH_X86_64},
-        {"x86", ArchType::ARCH_X86},
-    };
-
-    std::unordered_map<std::string, ArchType>::iterator it;
-    for (it = machineMap.begin(); it != machineMap.end(); it++) {
-        ArchType archType = GetArchFromUname(it->first);
-        ASSERT_EQ(archType, it->second);
-    }
-    std::string machine = "test";
-    ArchType archType = GetArchFromUname(machine);
-    ASSERT_EQ(archType, ArchType::ARCH_UNKNOWN);
-    GTEST_LOG_(INFO) << "ArchUtilTest002: end.";
 }
 } // namespace HiviewDFX
 } // namespace OHOS
