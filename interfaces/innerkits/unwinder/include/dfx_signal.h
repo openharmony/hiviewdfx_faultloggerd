@@ -47,6 +47,7 @@ private:
     static std::string FormatSIGFPECodeName(const int32_t signalCode);
     static std::string FormatSIGSEGVCodeName(const int32_t signalCode);
     static std::string FormatSIGTRAPCodeName(const int32_t signalCode);
+    static std::string FormatSIGSYSCodeName(const int32_t signalCode);
     static std::string FormatCommonSignalCodeName(const int32_t signalCode);
 private:
     int32_t signal_ = 0;
