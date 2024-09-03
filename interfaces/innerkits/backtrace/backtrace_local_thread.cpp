@@ -64,11 +64,8 @@ bool BacktraceLocalThread::Unwind(bool fast, size_t maxFrameNum, size_t skipFram
         }
         return ret;
     }
-    int nsTid = 0;
-    if (!(TidToNstid(getprocpid(), tid_, nsTid))) {
-        nsTid = tid_;
-    }
-    ret = unwinder_->UnwindLocalWithTid(nsTid, maxFrameNum, skipFrameNum + 1);
+
+    ret = unwinder_->UnwindLocalWithTid(tid_, maxFrameNum, skipFrameNum + 1);
 #ifdef __aarch64__
     Unwinder::GetLocalFramesByPcs(frames_, unwinder_->GetPcs());
 #else
