@@ -484,7 +484,9 @@ HWTEST_F(DfxMemoryTest, DfxMemoryTest014, TestSize.Level2)
     pid_t pid = GetProcessPid(FOUNDATION_NAME);
     auto maps = DfxMaps::Create(pid);
     std::vector<std::shared_ptr<DfxMap>> shmmMaps;
-    if (!maps->FindMapsByName("shmm", shmmMaps)) {
+    bool isSuccess = maps->FindMapsByName("shmm", shmmMaps);
+    if (!isSuccess) {
+        ASSERT_FALSE(isSuccess);
         GTEST_LOG_(INFO) << "DfxMemoryTest014: Failed to find shmm";
         return;
     }

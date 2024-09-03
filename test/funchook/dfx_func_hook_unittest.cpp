@@ -52,10 +52,11 @@ HWTEST_F(DfxFuncHookUnitTest, FuncHookTest001, TestSize.Level3)
     GTEST_LOG_(INFO) << "FuncHookTest001: start.";
     const int retCode = 99;
     pid_t pid = fork();
-    if (pid < 0) {
+    bool isSuccess = pid >= 0;
+    if (!isSuccess) {
+        ASSERT_FALSE(isSuccess);
         return;
     }
-
     if (pid == 0) {
         exit(retCode);
     } else {
@@ -80,10 +81,11 @@ HWTEST_F(DfxFuncHookUnitTest, FuncHookTest002, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "FuncHookTest002: start.";
     pid_t pid = fork();
-    if (pid < 0) {
+    bool isSuccess = pid >= 0;
+    if (!isSuccess) {
+        ASSERT_FALSE(isSuccess);
         return;
     }
-
     if (pid == 0) {
         while (true) {
             sleep(1);

@@ -50,6 +50,22 @@ void CheckFdRequestFunction(FaultLoggerType type, bool isValidFd)
 }
 
 /**
+ * @tc.name: FaultloggerdClientPipeFdRquestTest001
+ * @tc.desc: check faultloggerd RequestPipeFd function
+ * @tc.type: FUNC
+ */
+HWTEST_F(FaultloggerdModuleTest, FaultloggerdClientPipeFdRquestTest001, TestSize.Level0)
+{
+    RequestSdkDump(getpid(), getpid());
+    int32_t pipeFd = RequestPipeFd(getpid(), FaultLoggerPipeType::PIPE_FD_READ_BUF);
+    ASSERT_NE(pipeFd, -1);
+    int32_t ret = RequestDelPipeFd(getpid());
+    ASSERT_EQ(ret, 0);
+    pipeFd = RequestPipeFd(getpid(), FaultLoggerPipeType::PIPE_FD_READ_BUF);
+    ASSERT_EQ(pipeFd, -1);
+}
+
+/**
  * @tc.name: FaultloggerdServiceTest001
  * @tc.desc: check faultloggerd running status and ensure it has been started
  * @tc.type: FUNC
@@ -95,9 +111,7 @@ HWTEST_F(FaultloggerdModuleTest, FaultloggerdClientFdRquestTest001, TestSize.Lev
 HWTEST_F(FaultloggerdModuleTest, FaultloggerdClientFdRquestTest002, TestSize.Level0)
 {
     struct FaultLoggerdRequest testRequest;
-    if (memset_s(&testRequest, sizeof(testRequest), 0, sizeof(struct FaultLoggerdRequest)) != 0) {
-        return;
-    }
+    (void)memset_s(&testRequest, sizeof(testRequest), 0, sizeof(testRequest));
     testRequest.type = (int)FaultLoggerType::CPP_CRASH;
     testRequest.pid = getpid();
     testRequest.tid = gettid();
@@ -129,9 +143,7 @@ HWTEST_F(FaultloggerdModuleTest, FaultloggerdClientFdRquestTest003, TestSize.Lev
 HWTEST_F(FaultloggerdModuleTest, FaultloggerdClientFdRquestTest004, TestSize.Level0)
 {
     struct FaultLoggerdRequest testRequest;
-    if (memset_s(&testRequest, sizeof(testRequest), 0, sizeof(struct FaultLoggerdRequest)) != 0) {
-        return;
-    }
+    (void)memset_s(&testRequest, sizeof(testRequest), 0, sizeof(testRequest));
     testRequest.type = (int)FaultLoggerType::CPP_CRASH;
     testRequest.pid = getpid();
     testRequest.tid = gettid();
@@ -141,23 +153,6 @@ HWTEST_F(FaultloggerdModuleTest, FaultloggerdClientFdRquestTest004, TestSize.Lev
     if (fd >= 0) {
         close(fd);
     }
-}
-
-/**
- * @tc.name: FaultloggerdClientPipeFdRquestTest001
- * @tc.desc: check faultloggerd RequestPipeFd function
- * @tc.type: FUNC
- */
-HWTEST_F(FaultloggerdModuleTest, FaultloggerdClientPipeFdRquestTest001, TestSize.Level0)
-{
-    sleep(8); // 8 ：Wait 8s to ensure the last request to complete.
-    RequestSdkDump(getpid(), getpid());
-    int32_t pipeFd = RequestPipeFd(getpid(), FaultLoggerPipeType::PIPE_FD_READ_BUF);
-    ASSERT_NE(pipeFd, -1);
-    int32_t ret = RequestDelPipeFd(getpid());
-    ASSERT_EQ(ret, 0);
-    pipeFd = RequestPipeFd(getpid(), FaultLoggerPipeType::PIPE_FD_READ_BUF);
-    ASSERT_EQ(pipeFd, -1);
 }
 
 /**

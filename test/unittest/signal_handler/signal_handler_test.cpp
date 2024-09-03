@@ -529,10 +529,11 @@ void TestCallbackFunc()
  */
 HWTEST_F(SignalHandlerTest, SignalHandlerTest015, TestSize.Level2)
 {
-    if (DFX_SetAppRunningUniqueId == nullptr) {
+    bool isSuccess = DFX_SetAppRunningUniqueId != nullptr;
+    if (!isSuccess) {
+        ASSERT_FALSE(isSuccess);
         return;
     }
-
     /**
      * @tc.steps: step1.
      *            case: appRunningId == nullptr, len= 0

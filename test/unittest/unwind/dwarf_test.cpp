@@ -511,14 +511,17 @@ HWTEST_F(DwarfTest, DwarfTest001, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "DwarfTest001: start.";
     void* handle = dlopen("libfaultloggerd.z.so", RTLD_LAZY | RTLD_NODELETE);
-    if (handle == nullptr) {
+    bool isSuccess = handle != nullptr;
+    if (!isSuccess) {
+        ASSERT_FALSE(isSuccess);
         printf("Failed to dlopen libfaultloggerd, %s\n", dlerror());
         return;
     }
-
     // 00000000000037e4   156 FUNC    GLOBAL DEFAULT   14 RequestFileDescriptor
     RequestFdFunc requestFdFunc = (RequestFdFunc)dlsym(handle, "RequestFileDescriptor");
-    if (requestFdFunc == nullptr) {
+    bool isSuccess = requestFdFunc != nullptr;
+    if (!isSuccess) {
+        ASSERT_FALSE(isSuccess);
         printf("Failed to find RequestFdFunc, %s\n", dlerror());
         return;
     }

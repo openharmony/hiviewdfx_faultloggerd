@@ -1041,6 +1041,14 @@ HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest036, TestSize.Level2)
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest036: end.";
 }
 
+void GenerateCrashLogFiles()
+{
+    for (int i = 0; i < SIGNAL_TEST_NUM; i++) {
+        system("/data/crasher_c CrashTest &");
+    }
+    sleep(10); // 10 : sleep for 10 seconds
+}
+
 /**
  * @tc.name: FaultLoggerdSystemTest101
  * @tc.desc: test C crasher application: 50 Abnormal signal
@@ -1051,10 +1059,7 @@ HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest101, TestSize.Level2)
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest0009: start.";
     string clearTempFilesCmd = "rm -rf /data/log/faultlog/temp/*";
     system(clearTempFilesCmd.c_str());
-    for (int i = 0; i < SIGNAL_TEST_NUM; i++) {
-        system("/data/crasher_c CrashTest &");
-    }
-    sleep(10); // 10 : sleep for 10 seconds
+    GenerateCrashLogFiles();
     vector<string> files;
     OHOS::GetDirFiles("/data/log/faultlog/temp/", files);
     GTEST_LOG_(INFO) << files.size();
@@ -1097,12 +1102,14 @@ HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest102, TestSize.Level2)
     }
     cloneStack = static_cast<void *>(static_cast<uint8_t *>(cloneStack) + stackSz - 1);
     int childPid = clone(RunInNewPidNs, cloneStack, CLONE_NEWPID | SIGCHLD, nullptr);
-    if (childPid <= 0) {
+    bool isSuccess = childPid > 0;
+    if (!isSuccess) {
+        ASSERT_FALSE(isSuccess);
         GTEST_LOG_(INFO) << "FaultLoggerdSystemTest102: Failed to clone new process. errno:" << errno;
         return;
     }
     // wait for log generation
-    sleep(4); // 4 : sleep 4s
+    sleep(3); // 3 : sleep 3s
     int readPid = ReadRealPid();
     string fileName = GetCppCrashFileName(readPid);
     EXPECT_NE(0, fileName.size());

@@ -79,7 +79,9 @@ HWTEST_F (ProcessDumpTest, DfxProcessTest002, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "DfxProcessTest002: start.";
     pid_t accountmgrPid = GetProcessPid(ACCOUNTMGR_NAME);
-    if (accountmgrPid == 0) {
+    bool isSuccess = accountmgrPid != 0;
+    if (!isSuccess) {
+        ASSERT_FALSE(isSuccess);
         GTEST_LOG_(INFO) << "DfxProcessTest002: get pid failed.";
         return;
     }

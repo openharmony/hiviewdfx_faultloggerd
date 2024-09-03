@@ -125,7 +125,9 @@ HWTEST_F(FaultloggerdClientTest, FaultloggerdClientTest002, TestSize.Level2)
         exit(ret);
     } else if (pid > 0) {
         int status;
-        if (waitpid(pid, &status, 0) == -1) {
+        bool isSuccess = waitpid(pid, &status, 0) != -1;
+        if (!isSuccess) {
+            ASSERT_FALSE(isSuccess);
             return;
         }
 
@@ -163,7 +165,9 @@ HWTEST_F(FaultloggerdClientTest, FaultloggerdClientTest003, TestSize.Level2)
         exit(ret);
     } else if (pid > 0) {
         int status;
-        if (waitpid(pid, &status, 0) == -1) {
+        bool isSuccess = waitpid(pid, &status, 0) != -1;
+        if (!isSuccess) {
+            ASSERT_FALSE(isSuccess);
             return;
         }
 
@@ -187,7 +191,9 @@ HWTEST_F(FaultloggerdClientTest, FaultloggerdClientTest004, TestSize.Level2)
     GTEST_LOG_(INFO) << "FaultloggerdClientTest004: start.";
 
     // If selinux is not opened, skip this test item
-    if (!IsSelinuxEnforced()) {
+    bool isSuccess = IsSelinuxEnforced();
+    if (!isSuccess) {
+        ASSERT_FALSE(isSuccess);
         GTEST_LOG_(INFO) << "Selinux is not opened, skip FaultloggerdClientTest004";
         return;
     }
@@ -208,7 +214,9 @@ HWTEST_F(FaultloggerdClientTest, FaultloggerdClientTest004, TestSize.Level2)
         exit(ret);
     } else if (pid > 0) {
         int status;
-        if (waitpid(pid, &status, 0) == -1) {
+        bool isSuccess = waitpid(pid, &status, 0) != -1;
+        if (!isSuccess) {
+            ASSERT_FALSE(isSuccess);
             return;
         }
 
@@ -232,10 +240,13 @@ HWTEST_F(FaultloggerdClientTest, FaultloggerdClientTest005, TestSize.Level2)
     GTEST_LOG_(INFO) << "FaultloggerdClientTest005: start.";
 
     // If selinux is not opened, skip this test item
-    if (!IsSelinuxEnforced()) {
+    bool isSuccess = IsSelinuxEnforced();
+    if (!isSuccess) {
+        ASSERT_FALSE(isSuccess);
         GTEST_LOG_(INFO) << "Selinux is not opened, skip FaultloggerdClientTest005";
         return;
     }
+
     int32_t pid = fork();
     if (pid == 0) {
         int ret = 1;
@@ -249,7 +260,9 @@ HWTEST_F(FaultloggerdClientTest, FaultloggerdClientTest005, TestSize.Level2)
         exit(ret);
     } else if (pid > 0) {
         int status;
-        if (waitpid(pid, &status, 0) == -1) {
+        bool isSuccess = waitpid(pid, &status, 0) != -1;
+        if (!isSuccess) {
+            ASSERT_FALSE(isSuccess);
             return;
         }
 
@@ -273,7 +286,9 @@ HWTEST_F(FaultloggerdClientTest, FaultloggerdClientTest006, TestSize.Level2)
     GTEST_LOG_(INFO) << "FaultloggerdClientTest006: start.";
 
     // If selinux is not opened, skip this test item
-    if (!IsSelinuxEnforced()) {
+    bool isSuccess = IsSelinuxEnforced();
+    if (!isSuccess) {
+        ASSERT_FALSE(isSuccess);
         GTEST_LOG_(INFO) << "Selinux is not opened, skip FaultloggerdClientTest006";
         return;
     }
@@ -290,7 +305,9 @@ HWTEST_F(FaultloggerdClientTest, FaultloggerdClientTest006, TestSize.Level2)
         exit(ret);
     } else if (pid > 0) {
         int status;
-        if (waitpid(pid, &status, 0) == -1) {
+        bool isSuccess = waitpid(pid, &status, 0) != -1;
+        if (!isSuccess) {
+            ASSERT_FALSE(isSuccess);
             return;
         }
 
@@ -428,7 +445,9 @@ HWTEST_F(FaultloggerdClientTest, FaultloggerdSocketTest001, TestSize.Level2)
         DoServerProcess(testSocketName);
 
         int status;
-        if (waitpid(pid, &status, 0) == -1) {
+        bool isSuccess = waitpid(pid, &status, 0) != -1;
+        if (!isSuccess) {
+            ASSERT_FALSE(isSuccess);
             return;
         }
 
