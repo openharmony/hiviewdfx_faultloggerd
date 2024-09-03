@@ -123,6 +123,8 @@ std::string DfxSignal::FormatCodeName(const int32_t signal, const int32_t signal
             return FormatSIGSEGVCodeName(signalCode);
         case SIGTRAP:
             return FormatSIGTRAPCodeName(signalCode);
+        case SIGSYS:
+            return FormatSIGSYSCodeName(signalCode);
         default:
             break;
     }
@@ -218,6 +220,16 @@ std::string DfxSignal::FormatSIGTRAPCodeName(const int32_t signalCode)
             return "TRAP_BRANCH";
         case TRAP_HWBKPT:
             return "TRAP_HWBKPT";
+        default:
+            return FormatCommonSignalCodeName(signalCode);
+    }
+}
+
+std::string DfxSignal::FormatSIGSYSCodeName(const int32_t signalCode)
+{
+    switch (signalCode) {
+        case SYS_SECCOMP:
+            return "SYS_SECCOMP";
         default:
             return FormatCommonSignalCodeName(signalCode);
     }
