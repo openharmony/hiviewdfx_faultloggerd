@@ -54,10 +54,12 @@ private:
     void InitRegs(std::shared_ptr<ProcessDumpRequest> request, int &dumpRes);
     bool IsTargetProcessAlive(std::shared_ptr<ProcessDumpRequest> request);
     bool Unwind(std::shared_ptr<ProcessDumpRequest> request, int &dumpRes, pid_t vmPid);
-    static int GetLogTypeBySignal(int sig);
+    static int GetLogTypeByRequest(const ProcessDumpRequest &request);
     void ReportSigDumpStats(const std::shared_ptr<ProcessDumpRequest> &request) const;
     void ReportCrashInfo(const std::string& jsonInfo);
     void UnwindWriteJit(const ProcessDumpRequest &request);
+    void Report(std::shared_ptr<ProcessDumpRequest> request, std::string &jsonInfo);
+    void ReadFdTable(const ProcessDumpRequest &request);
 
 private:
     std::shared_ptr<DfxProcess> process_ = nullptr;

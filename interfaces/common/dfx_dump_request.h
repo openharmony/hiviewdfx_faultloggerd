@@ -85,6 +85,17 @@ typedef struct TraceInfo {
 #endif
 } TraceInfo;
 
+typedef enum {
+    NONE = 0,
+    MESSAGE_FATAL, // hilog last fatal log message
+    MESSAGE_FDSAN_DEBUG, // fdsan debug message
+} MessageType;
+
+typedef struct {
+    MessageType type;
+    char body[MAX_FATAL_MSG_SIZE];
+} Message;
+
 /**
  * @brief ProcessDump request information
  * It is used to save and transfer the current process context from signalhandler to processdump,
@@ -119,8 +130,8 @@ struct ProcessDumpRequest {
     char threadName[NAME_BUF_LEN];
     /** process name */
     char processName[NAME_BUF_LEN];
-    /** hilog last fatal log message */
-    char lastFatalMessage[MAX_FATAL_MSG_SIZE];
+    /** Storing different types of messages */
+    Message msg;
     /** process trace info */
     TraceInfo traceInfo;
     /** current porcess fd table address*/

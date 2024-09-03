@@ -50,7 +50,7 @@ static const char FAULTLOGGERD_SOCKET_NAME[] = "/dev/unix/socket/faultloggerd.se
 static int ConnectSocket(const char* path, const int timeout)
 {
     int fd = -1;
-    if ((fd = socket(AF_LOCAL, SOCK_STREAM, 0)) < 0) {
+    if ((fd = syscall(SYS_socket, AF_LOCAL, SOCK_STREAM, 0)) < 0) {
         DFXLOG_ERROR("Failed to create a socket, errno(%d).", errno);
         return -1;
     }
@@ -62,7 +62,7 @@ static int ConnectSocket(const char* path, const int timeout)
                 0
             };
             void* pTimev = &timev;
-            if (OHOS_TEMP_FAILURE_RETRY(setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO,
+            if (OHOS_TEMP_FAILURE_RETRY(syscall(SYS_setsockopt, fd, SOL_SOCKET, SO_RCVTIMEO,
                 (const void*)(pTimev), sizeof(timev))) != 0) {
                 DFXLOG_ERROR("setsockopt SO_RCVTIMEO error, errno(%d).", errno);
                 syscall(SYS_close, fd);

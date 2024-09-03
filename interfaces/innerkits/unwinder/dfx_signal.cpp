@@ -75,11 +75,7 @@ std::string DfxSignal::PrintSignal(const siginfo_t &info)
 
     DfxSignal signal(info.si_signo);
     if (signal.IsAddrAvailable()) {
-#if defined(__LP64__)
-        sigString = sigString + StringPrintf("@%#018lx ", (uint64_t)info.si_addr);
-#else
-        sigString = sigString + StringPrintf("@%#010llx ", (uint64_t)info.si_addr);
-#endif
+        sigString = sigString + StringPrintf("@%" PRIX64_ADDR " ", (uint64_t)info.si_addr);
     }
 
     if ((info.si_code <= 0) && (info.si_pid != 0)) {

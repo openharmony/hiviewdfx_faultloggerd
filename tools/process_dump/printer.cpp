@@ -99,7 +99,11 @@ void Printer::PrintReason(std::shared_ptr<ProcessDumpRequest> request, std::shar
         DFXLOG_WARN("%s", "process is nullptr");
         return;
     }
-    process->reason += DfxSignal::PrintSignal(request->siginfo);
+    if (request->msg.type != MESSAGE_FDSAN_DEBUG) {
+        process->reason += DfxSignal::PrintSignal(request->siginfo);
+    } else {
+        process->reason += "DEBUG SIGNAL";
+    }
     uint64_t addr = (uint64_t)(request->siginfo.si_addr);
     if (request->siginfo.si_signo == SIGSEGV &&
         (request->siginfo.si_code == SEGV_MAPERR || request->siginfo.si_code == SEGV_ACCERR)) {
@@ -109,16 +113,14 @@ void Printer::PrintReason(std::shared_ptr<ProcessDumpRequest> request, std::shar
             reasonInfo += process->reason;
             return;
         }
-        if (unwinder == nullptr) {
-            DFXLOG_WARN("%s", "unwinder is nullptr");
+        bool keyThreadEmpty = (request->dumpMode == SPLIT_MODE && process->vmThread_ == nullptr) ||
+            process->keyThread_ == nullptr;
+        if (unwinder == nullptr || keyThreadEmpty) {
+            DFXLOG_WARN("%s is nullptr", unwinder == nullptr ? "unwinder" : "keyThread_");
             return;
         }
         std::shared_ptr<DfxMaps> maps = unwinder->GetMaps();
         std::vector<std::shared_ptr<DfxMap>> map;
-        if ((request->dumpMode == SPLIT_MODE && process->vmThread_ == nullptr) || process->keyThread_ == nullptr) {
-            DFXLOG_WARN("%s", "Thread_ is nullptr");
-            return;
-        }
         if (DfxRegs::CreateFromUcontext(request->context) == nullptr) {
             DFXLOG_WARN("%s", "regs is nullptr");
             return;
@@ -127,11 +129,7 @@ void Printer::PrintReason(std::shared_ptr<ProcessDumpRequest> request, std::shar
         if (maps != nullptr && maps->FindMapsByName(elfName, map)) {
             if (map[0] != nullptr && (addr < map[0]->begin && map[0]->begin - addr <= PAGE_SIZE)) {
                 process->reason += StringPrintf(
-#if defined(__LP64__)
-                    " current thread stack low address = %#018lx, probably caused by stack-buffer-overflow",
-#else
-                    " current thread stack low address = %#010llx, probably caused by stack-buffer-overflow",
-#endif
+                    " current thread stack low address = %" PRIX64_ADDR ", probably caused by stack-buffer-overflow",
                     map[0]->begin);
             }
         }
@@ -283,7 +281,7 @@ void Printer::PrintThreadFaultStackByConfig(std::shared_ptr<DfxProcess> process,
 
 void Printer::PrintThreadOpenFiles(std::shared_ptr<DfxProcess> process)
 {
-    if (process == nullptr) {
+    if (process == nullptr || process->openFiles.empty()) {
         return;
     }
 
