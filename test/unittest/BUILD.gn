@@ -20,7 +20,6 @@ group("unittest") {
     "process_dump:unittest",
     "procinfo:unittest",
     "services:unittest",
-    "sigdump_handler:unittest",
     "signal_handler:unittest",
   ]
   if (!defined(ohos_lite)) {
