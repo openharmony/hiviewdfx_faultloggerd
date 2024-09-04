@@ -79,6 +79,15 @@ __attribute__ ((visibility("hidden"))) int DfxLogPrint(
 #define DFXLOG_ERROR(...) DFXLOG_PRINT(LOG_ERROR, ##__VA_ARGS__)
 #define DFXLOG_FATAL(...) DFXLOG_PRINT(LOG_FATAL, ##__VA_ARGS__)
 
+// replace the old interface, and delete the old interface after the replacement is complete
+#define DFXMUSL_PRINT(prio, ...) MuslHiLogPrinter(LOG_CORE, prio, LOG_DOMAIN, LOG_TAG, __VA_ARGS__)
+
+#define DFXLOGD(...) DFXMUSL_PRINT(LOG_DEBUG, __VA_ARGS__)
+#define DFXLOGI(...) DFXMUSL_PRINT(LOG_INFO, __VA_ARGS__)
+#define DFXLOGW(...) DFXMUSL_PRINT(LOG_WARN, __VA_ARGS__)
+#define DFXLOGE(...) DFXMUSL_PRINT(LOG_ERROR, __VA_ARGS__)
+#define DFXLOGF(...) DFXMUSL_PRINT(LOG_FATAL, __VA_ARGS__)
+
 #else
 
 #define DFXLOG_PRINT(prio, ...)
@@ -88,6 +97,14 @@ __attribute__ ((visibility("hidden"))) int DfxLogPrint(
 #define DFXLOG_WARN(...)
 #define DFXLOG_ERROR(...)
 #define DFXLOG_FATAL(...)
+
+// replace the old interface, and delete the old interface after the replacement is complete
+#define DFXLOGD(...)
+#define DFXLOGI(...)
+#define DFXLOGW(...)
+#define DFXLOGE(...)
+#define DFXLOGF(...)
+
 #endif
 
 #ifdef __cplusplus
