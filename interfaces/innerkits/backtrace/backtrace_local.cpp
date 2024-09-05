@@ -145,7 +145,7 @@ std::string GetProcessStacktrace(size_t maxFrameNums)
     std::ostringstream ss;
     ss << std::endl << GetStacktraceHeader();
     std::function<bool(int)> func = [&](int tid) {
-        if (tid <= 0 || tid == getproctid()) {
+        if (tid <= 0 || tid == gettid()) {
             return false;
         }
         BacktraceLocalThread thread(tid, unwinder);
@@ -164,7 +164,7 @@ std::string GetProcessStacktrace(size_t maxFrameNums)
     };
 
     std::vector<int> tids;
-    GetTidsByPidWithFunc(getprocpid(), tids, func);
+    GetTidsByPidWithFunc(getpid(), tids, func);
 
     return ss.str();
 }

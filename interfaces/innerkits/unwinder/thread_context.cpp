@@ -255,11 +255,7 @@ bool LocalThreadContext::SignalRequestThread(int32_t tid, ThreadContext* threadC
     si.si_signo = SIGLOCAL_DUMP;
     si.si_errno = 0;
     si.si_code = DUMP_TYPE_LOCAL;
-#if defined(is_ohos) && is_ohos
-    if (syscall(SYS_rt_tgsigqueueinfo, getprocpid(), tid, si.si_signo, &si) != 0) {
-#else
     if (syscall(SYS_rt_tgsigqueueinfo, getpid(), tid, si.si_signo, &si) != 0) {
-#endif
         LOGW("Failed to send signal(%d) to tid(%d), errno(%d).", si.si_signo, tid, errno);
         threadContext->tid = static_cast<int32_t>(ThreadContextStatus::CONTEXT_UNUSED);
         return false;
