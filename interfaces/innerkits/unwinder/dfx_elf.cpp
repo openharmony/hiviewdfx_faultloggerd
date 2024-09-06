@@ -779,7 +779,7 @@ int DfxElf::FindUnwindTableInfo(uintptr_t pc, std::shared_ptr<DfxMap> map, struc
     uti.startPc = GetStartPc();
     uti.endPc = GetEndPc();
     if (pc < uti.startPc || pc >= uti.endPc) {
-        LOGW("Elf startPc: %" PRIx64 ", endPc: %" PRIx64 "", (uint64_t)uti.startPc, (uint64_t)uti.endPc);
+        LOGU("Elf startPc: %" PRIx64 ", endPc: %" PRIx64 "", (uint64_t)uti.startPc, (uint64_t)uti.endPc);
         return UNW_ERROR_PC_NOT_IN_UNWIND_INFO;
     }
 
