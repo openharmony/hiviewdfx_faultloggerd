@@ -201,15 +201,9 @@ static ThreadInfoCallBack GetCallbackLocked()
     return NULL;
 }
 
-static void FillLastFatalMessageLocked(int32_t sig, void *context)
+static void FillLastFatalMessageLocked(int32_t sig)
 {
     if (sig != SIGABRT) {
-        ThreadInfoCallBack callback = GetCallbackLocked();
-        if (callback != NULL) {
-            DFXLOG_INFO("Start collect crash thread info.");
-            callback(g_request.lastFatalMessage, sizeof(g_request.lastFatalMessage), context);
-            DFXLOG_INFO("Finish collect crash thread info.");
-        }
         return;
     }
 
@@ -233,7 +227,28 @@ static void FillLastFatalMessageLocked(int32_t sig, void *context)
         return;
     }
 
-    (void)strncpy(g_request.lastFatalMessage, lastFatalMessage, sizeof(g_request.lastFatalMessage) - 1);
+    g_request.msg.type = MESSAGE_FATAL;
+    (void)strncpy(g_request.msg.body, lastFatalMessage, sizeof(g_request.msg.body) - 1);
+}
+
+static bool FillDebugMessageLocked(int32_t sig, siginfo_t *si)
+{
+    if (sig != SIGLEAK_STACK || si == NULL || si->si_signo != SIGLEAK_STACK || si->si_code != SIGLEAK_STACK_FDSAN) {
+        return true;
+    }
+    debug_msg_t* dMsg = (debug_msg_t*)si->si_value.sival_ptr;
+    if (dMsg == NULL || dMsg->msg == NULL) {
+        return true;
+    }
+
+    if (g_request.timeStamp > dMsg->timestamp + PROCESSDUMP_TIMEOUT * NUMBER_ONE_THOUSAND) {
+        DFXLOG_ERROR("The event has timed out since it was triggered");
+        return false;
+    }
+
+    g_request.msg.type = MESSAGE_FDSAN_DEBUG;
+    (void)strncpy(g_request.msg.body, dMsg->msg, sizeof(g_request.msg.body) - 1);
+    return true;
 }
 
 static const char* GetCrashDescription(const int32_t errCode)
@@ -265,7 +280,7 @@ static bool IsDumpSignal(int sig)
     return sig == SIGDUMP || sig == SIGLEAK_STACK;
 }
 
-static void FillDumpRequest(int sig, siginfo_t *si, void *context)
+static bool FillDumpRequest(int sig, siginfo_t *si, void *context)
 {
     memset(&g_request, 0, sizeof(g_request));
     g_request.type = sig;
@@ -289,7 +304,27 @@ static void FillDumpRequest(int sig, siginfo_t *si, void *context)
     memcpy(&(g_request.context), context, sizeof(ucontext_t));
 
     FillTraceIdLocked(&g_request);
-    FillLastFatalMessageLocked(sig, context);
+    bool ret = true;
+    switch (sig) {
+        case SIGABRT:
+            FillLastFatalMessageLocked(sig);
+            break;
+        case SIGLEAK_STACK:
+            ret = FillDebugMessageLocked(sig, si);
+            /* fall-through */
+        default: {
+            ThreadInfoCallBack callback = GetCallbackLocked();
+            if (callback != NULL) {
+                DFXLOG_INFO("Start collect crash thread info.");
+                g_request.msg.type = MESSAGE_FATAL;
+                callback(g_request.msg.body, sizeof(g_request.msg.body), context);
+                DFXLOG_INFO("Finish collect crash thread info.");
+            }
+            break;
+        }
+    }
+
+    return ret;
 }
 
 static const int SIGCHAIN_DUMP_SIGNAL_LIST[] = {
@@ -397,7 +432,12 @@ static bool DFX_SigchainHandler(int sig, siginfo_t *si, void *context)
     BlockMainThreadIfNeed(sig);
     g_prevHandledSignal = sig;
 
-    FillDumpRequest(sig, si, context);
+    if (!FillDumpRequest(sig, si, context)) {
+        pthread_mutex_unlock(&g_signalHandlerMutex);
+        DFXLOG_ERROR("DFX_SigchainHandler :: signal(%d) in %d:%d fill dump request faild.",
+            sig, g_request.pid, g_request.tid);
+        return ret;
+    }
     DFXLOG_INFO("DFX_SigchainHandler :: sig(%d), pid(%d), processName(%s), threadName(%s).",
         sig, g_request.pid, g_request.processName, g_request.threadName);
     ret = DumpRequest(sig);

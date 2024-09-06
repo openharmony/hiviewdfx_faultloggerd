@@ -21,6 +21,7 @@
 #define SIGDUMP 35
 #define SIGLOCAL_DUMP 38
 #define SIGLEAK_STACK 42
+#define SIGLEAK_STACK_FDSAN 1 // When sig = 42, use si_code = 1 mark the event as fdsan
 #define PROCESSDUMP_TIMEOUT 8
 #define DUMPCATCHER_TIMEOUT 15
 
@@ -96,5 +97,11 @@ static const char PROC_SELF_EXE_PATH[] = "/proc/self/exe";
     } while ((_rc == -1) && (errno == EINTR));  \
     _rc;                                        \
     })
+
+#if defined(__LP64__)
+#define PRIX64_ADDR "#018" PRIx64
+#else
+#define PRIX64_ADDR "#010" PRIx64
+#endif
 
 #endif
