@@ -5,7 +5,6 @@
       OHOS::HiviewDFX::SetCrashProcInfo*;
       OHOS::HiviewDFX::ReportCrashException*;
       OHOS::HiviewDFX::ReportUnwinderException*;
-      OHOS::HiviewDFX::CheckCrashLogValid*;
       OHOS::HiviewDFX::CheckFaultSummaryValid*;
     };
   local:

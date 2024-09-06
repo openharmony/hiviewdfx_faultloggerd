@@ -194,295 +194,13 @@ HWTEST_F(CrashExceptionTest, CrashExceptionTest007, TestSize.Level2)
 }
 
 /**
- * @tc.name: CrashExceptionTest008
- * @tc.desc: test CheckCrashLogValid, valid fault log.
- * @tc.type: FUNC
- */
-HWTEST_F(CrashExceptionTest, CrashExceptionTest008, TestSize.Level2)
-{
-    GTEST_LOG_(INFO) << "CrashExceptionTest008: start.";
-    std::string file = std::string("Module name:sensors\n") +
-        "Fault thread info:\n" +
-        "Tid:667, Name:sensors\n" +
-        "#00 pc 000c1f0c /system/lib/ld-musl-arm.so.1(ioctl+72)(1b29d22c50bcb2ceee39f8a2bbb936dc)\n" +
-        "#01 pc 0000efdf /system/lib/chipset-pub-sdk/libipc_common.z.so(OHOS::BinderConnector::Write\n" +
-        "#02 pc 00032a49 /system/lib/platformsdk/libipc_core.z.so(OHOS::BinderInvoker::TransactWithDr\n" +
-        "#03 pc 00032b43 /system/lib/platformsdk/libipc_core.z.so(OHOS::BinderInvoker::StartWorkLoop(\n" +
-        "Registers:\n" +
-        "r0:00000006 r1:c0306201 r2:ffe08e08 r3:00000009\n" +
-        "r4:00000100 r5:f755a010 r6:00000000 r7:00000036\n" +
-        "r8:00000006 r9:c0306201 r10:0000000c\n" +
-        "fp:ffe08db8 ip:f6cdf360 sp:ffe08c90 lr:f6ccefe3 pc:f7e5cf0c\n" +
-        "Other thread info:\n" +
-        "Tid:875, Name:OS_IPC_0_875\n" +
-        "#00 pc 000c1f0c /system/lib/ld-musl-arm.so.1(ioctl+72)(1b29d22c50bcb2ceee39f8a2bbb936dc)\n" +
-        "#01 pc 0000efdf /system/lib/chipset-pub-sdk/libipc_common.z.so(OHOS::BinderConnector::WriteBinder\n" +
-        "#02 pc 00032a49 /system/lib/platformsdk/libipc_core.z.so(OHOS::BinderInvoker::TransactWithDriver\n" +
-        "#03 pc 00032b43 /system/lib/platformsdk/libipc_core.z.so(OHOS::BinderInvoker::StartWorkLoop()+34)\n" +
-        "Memory near registers:\n" +
-        "r2([stack]):\n" +
-        "    ffe08e00 80407202\n" +
-        "    ffe08e04 f755a038\n" +
-        "FaultStack:\n" +
-        "    ffe08c50 00000040\n" +
-        "Maps:\n" +
-        "4d0000-4d3000 r--p 00000000 /system/bin/sa_main\n" +
-        "4d3000-4d6000 r-xp 00003000 /system/bin/sa_main\n" +
-        "4d6000-4d7000 r--p 00006000 /system/bin/sa_main\n" +
-        "HiLog:\n" +
-        "08-05 18:30:41.876   667   667 E C03f00/MUSL-SIGCHAIN: signal_chain_handler call\n";
-    int32_t ret = CheckCrashLogValid(file);
-    ASSERT_TRUE(ret == CrashExceptionCode::CRASH_ESUCCESS);
-    GTEST_LOG_(INFO) << "CrashExceptionTest008: end.";
-}
-
-/**
- * @tc.name: CrashExceptionTest009
- * @tc.desc: test CheckCrashLogValid, invalid Fault thread info.
- * @tc.type: FUNC
- */
-HWTEST_F(CrashExceptionTest, CrashExceptionTest009, TestSize.Level2)
-{
-    GTEST_LOG_(INFO) << "CrashExceptionTest009: start.";
-    std::string file = std::string("Module name:sensors\n") +
-        "Fault thread info:\n" +
-        "Tid:667, Name:sensors\n" +
-        "#00 pc 000c1f0c /system/lib/ld-musl-arm.so.1(ioctl+72)(1b29d22c50bcb2ceee39f8a2bbb936dc)\n" +
-        "#01 pc 0000efdf /system/lib/chipset-pub-sdk/libipc_common.z.so(OHOS::BinderConnector::Write\n" +
-        "Registers:\n" +
-        "r0:00000006 r1:c0306201 r2:ffe08e08 r3:00000009\n" +
-        "r4:00000100 r5:f755a010 r6:00000000 r7:00000036\n" +
-        "r8:00000006 r9:c0306201 r10:0000000c\n" +
-        "fp:ffe08db8 ip:f6cdf360 sp:ffe08c90 lr:f6ccefe3 pc:f7e5cf0c\n" +
-        "Other thread info:\n" +
-        "Tid:875, Name:OS_IPC_0_875\n" +
-        "#00 pc 000c1f0c /system/lib/ld-musl-arm.so.1(ioctl+72)(1b29d22c50bcb2ceee39f8a2bbb936dc)\n" +
-        "#01 pc 0000efdf /system/lib/chipset-pub-sdk/libipc_common.z.so(OHOS::BinderConnector::WriteBinder\n" +
-        "#02 pc 00032a49 /system/lib/platformsdk/libipc_core.z.so(OHOS::BinderInvoker::TransactWithDriver\n" +
-        "#03 pc 00032b43 /system/lib/platformsdk/libipc_core.z.so(OHOS::BinderInvoker::StartWorkLoop()+34)\n" +
-        "Memory near registers:\n" +
-        "r2([stack]):\n" +
-        "    ffe08e00 80407202\n" +
-        "    ffe08e04 f755a038\n" +
-        "FaultStack:\n" +
-        "    ffe08c50 00000040\n" +
-        "Maps:\n" +
-        "4d0000-4d3000 r--p 00000000 /system/bin/sa_main\n" +
-        "4d3000-4d6000 r-xp 00003000 /system/bin/sa_main\n" +
-        "4d6000-4d7000 r--p 00006000 /system/bin/sa_main\n" +
-        "HiLog:\n" +
-        "08-05 18:30:41.876   667   667 E C03f00/MUSL-SIGCHAIN: signal_chain_handler call\n";
-    int32_t ret = CheckCrashLogValid(file);
-    ASSERT_FALSE(ret == CrashExceptionCode::CRASH_ESUCCESS);
-    GTEST_LOG_(INFO) << "CrashExceptionTest009: end.";
-}
-
-/**
- * @tc.name: CrashExceptionTest010
- * @tc.desc: test CheckCrashLogValid, invalid Registers.
- * @tc.type: FUNC
- */
-HWTEST_F(CrashExceptionTest, CrashExceptionTest010, TestSize.Level2)
-{
-    GTEST_LOG_(INFO) << "CrashExceptionTest010: start.";
-    std::string file = std::string("Module name:sensors\n") +
-        "Fault thread info:\n" +
-        "Tid:667, Name:sensors\n" +
-        "#00 pc 000c1f0c /system/lib/ld-musl-arm.so.1(ioctl+72)(1b29d22c50bcb2ceee39f8a2bbb936dc)\n" +
-        "#01 pc 0000efdf /system/lib/chipset-pub-sdk/libipc_common.z.so(OHOS::BinderConnector::Write\n" +
-        "#02 pc 00032a49 /system/lib/platformsdk/libipc_core.z.so(OHOS::BinderInvoker::TransactWithDr\n" +
-        "#03 pc 00032b43 /system/lib/platformsdk/libipc_core.z.so(OHOS::BinderInvoker::StartWorkLoop(\n" +
-        "Other thread info:\n" +
-        "Tid:875, Name:OS_IPC_0_875\n" +
-        "#00 pc 000c1f0c /system/lib/ld-musl-arm.so.1(ioctl+72)(1b29d22c50bcb2ceee39f8a2bbb936dc)\n" +
-        "#01 pc 0000efdf /system/lib/chipset-pub-sdk/libipc_common.z.so(OHOS::BinderConnector::WriteBinder\n" +
-        "#02 pc 00032a49 /system/lib/platformsdk/libipc_core.z.so(OHOS::BinderInvoker::TransactWithDriver\n" +
-        "#03 pc 00032b43 /system/lib/platformsdk/libipc_core.z.so(OHOS::BinderInvoker::StartWorkLoop()+34)\n" +
-        "Memory near registers:\n" +
-        "r2([stack]):\n" +
-        "    ffe08e00 80407202\n" +
-        "    ffe08e04 f755a038\n" +
-        "FaultStack:\n" +
-        "    ffe08c50 00000040\n" +
-        "Maps:\n" +
-        "4d0000-4d3000 r--p 00000000 /system/bin/sa_main\n" +
-        "4d3000-4d6000 r-xp 00003000 /system/bin/sa_main\n" +
-        "4d6000-4d7000 r--p 00006000 /system/bin/sa_main\n" +
-        "HiLog:\n" +
-        "08-05 18:30:41.876   667   667 E C03f00/MUSL-SIGCHAIN: signal_chain_handler call\n";
-    int32_t ret = CheckCrashLogValid(file);
-    ASSERT_FALSE(ret == CrashExceptionCode::CRASH_ESUCCESS);
-    GTEST_LOG_(INFO) << "CrashExceptionTest010: end.";
-}
-
-/**
- * @tc.name: CrashExceptionTest011
- * @tc.desc: test CheckCrashLogValid, invalid Other thread info.
- * @tc.type: FUNC
- */
-HWTEST_F(CrashExceptionTest, CrashExceptionTest011, TestSize.Level2)
-{
-    GTEST_LOG_(INFO) << "CrashExceptionTest011: start.";
-    std::string file = std::string("Module name:sensors\n") +
-        "Fault thread info:\n" +
-        "Tid:667, Name:sensors\n" +
-        "#00 pc 000c1f0c /system/lib/ld-musl-arm.so.1(ioctl+72)(1b29d22c50bcb2ceee39f8a2bbb936dc)\n" +
-        "#01 pc 0000efdf /system/lib/chipset-pub-sdk/libipc_common.z.so(OHOS::BinderConnector::Write\n" +
-        "#02 pc 00032a49 /system/lib/platformsdk/libipc_core.z.so(OHOS::BinderInvoker::TransactWithDr\n" +
-        "#03 pc 00032b43 /system/lib/platformsdk/libipc_core.z.so(OHOS::BinderInvoker::StartWorkLoop(\n" +
-        "Registers:\n" +
-        "r0:00000006 r1:c0306201 r2:ffe08e08 r3:00000009\n" +
-        "r4:00000100 r5:f755a010 r6:00000000 r7:00000036\n" +
-        "r8:00000006 r9:c0306201 r10:0000000c\n" +
-        "fp:ffe08db8 ip:f6cdf360 sp:ffe08c90 lr:f6ccefe3 pc:f7e5cf0c\n" +
-        "Other thread info:\n" +
-        "Tid:875, Name:OS_IPC_0_875\n" +
-        "#00 pc 000c1f0c /system/lib/ld-musl-arm.so.1(ioctl+72)(1b29d22c50bcb2ceee39f8a2bbb936dc)\n" +
-        "#01 pc 0000efdf /system/lib/chipset-pub-sdk/libipc_common.z.so(OHOS::BinderConnector::WriteBinder\n" +
-        "Memory near registers:\n" +
-        "r2([stack]):\n" +
-        "    ffe08e00 80407202\n" +
-        "    ffe08e04 f755a038\n" +
-        "FaultStack:\n" +
-        "    ffe08c50 00000040\n" +
-        "Maps:\n" +
-        "4d0000-4d3000 r--p 00000000 /system/bin/sa_main\n" +
-        "4d3000-4d6000 r-xp 00003000 /system/bin/sa_main\n" +
-        "4d6000-4d7000 r--p 00006000 /system/bin/sa_main\n" +
-        "HiLog:\n" +
-        "08-05 18:30:41.876   667   667 E C03f00/MUSL-SIGCHAIN: signal_chain_handler call\n";
-    int32_t ret = CheckCrashLogValid(file);
-    ASSERT_FALSE(ret == CrashExceptionCode::CRASH_ESUCCESS);
-    GTEST_LOG_(INFO) << "CrashExceptionTest011: end.";
-}
-
-/**
- * @tc.name: CrashExceptionTest012
- * @tc.desc: test CheckCrashLogValid, invalid Memory near registers.
- * @tc.type: FUNC
- */
-HWTEST_F(CrashExceptionTest, CrashExceptionTest012, TestSize.Level2)
-{
-    GTEST_LOG_(INFO) << "CrashExceptionTest012: start.";
-    std::string file = std::string("Module name:sensors\n") +
-        "Fault thread info:\n" +
-        "Tid:667, Name:sensors\n" +
-        "#00 pc 000c1f0c /system/lib/ld-musl-arm.so.1(ioctl+72)(1b29d22c50bcb2ceee39f8a2bbb936dc)\n" +
-        "#01 pc 0000efdf /system/lib/chipset-pub-sdk/libipc_common.z.so(OHOS::BinderConnector::Write\n" +
-        "#02 pc 00032a49 /system/lib/platformsdk/libipc_core.z.so(OHOS::BinderInvoker::TransactWithDr\n" +
-        "#03 pc 00032b43 /system/lib/platformsdk/libipc_core.z.so(OHOS::BinderInvoker::StartWorkLoop(\n" +
-        "Registers:\n" +
-        "r0:00000006 r1:c0306201 r2:ffe08e08 r3:00000009\n" +
-        "r4:00000100 r5:f755a010 r6:00000000 r7:00000036\n" +
-        "r8:00000006 r9:c0306201 r10:0000000c\n" +
-        "fp:ffe08db8 ip:f6cdf360 sp:ffe08c90 lr:f6ccefe3 pc:f7e5cf0c\n" +
-        "Other thread info:\n" +
-        "Tid:875, Name:OS_IPC_0_875\n" +
-        "#00 pc 000c1f0c /system/lib/ld-musl-arm.so.1(ioctl+72)(1b29d22c50bcb2ceee39f8a2bbb936dc)\n" +
-        "#01 pc 0000efdf /system/lib/chipset-pub-sdk/libipc_common.z.so(OHOS::BinderConnector::WriteBinder\n" +
-        "#02 pc 00032a49 /system/lib/platformsdk/libipc_core.z.so(OHOS::BinderInvoker::TransactWithDriver\n" +
-        "#03 pc 00032b43 /system/lib/platformsdk/libipc_core.z.so(OHOS::BinderInvoker::StartWorkLoop()+34)\n" +
-        "FaultStack:\n" +
-        "    ffe08c50 00000040\n" +
-        "Maps:\n" +
-        "4d0000-4d3000 r--p 00000000 /system/bin/sa_main\n" +
-        "4d3000-4d6000 r-xp 00003000 /system/bin/sa_main\n" +
-        "4d6000-4d7000 r--p 00006000 /system/bin/sa_main\n" +
-        "HiLog:\n" +
-        "08-05 18:30:41.876   667   667 E C03f00/MUSL-SIGCHAIN: signal_chain_handler call\n";
-    int32_t ret = CheckCrashLogValid(file);
-    ASSERT_FALSE(ret == CrashExceptionCode::CRASH_ESUCCESS);
-    GTEST_LOG_(INFO) << "CrashExceptionTest012: end.";
-}
-
-/**
- * @tc.name: CrashExceptionTest013
- * @tc.desc: test CheckCrashLogValid, invalid FaultStack.
- * @tc.type: FUNC
- */
-HWTEST_F(CrashExceptionTest, CrashExceptionTest013, TestSize.Level2)
-{
-    GTEST_LOG_(INFO) << "CrashExceptionTest013: start.";
-    std::string file = std::string("Module name:sensors\n") +
-        "Fault thread info:\n" +
-        "Tid:667, Name:sensors\n" +
-        "#00 pc 000c1f0c /system/lib/ld-musl-arm.so.1(ioctl+72)(1b29d22c50bcb2ceee39f8a2bbb936dc)\n" +
-        "#01 pc 0000efdf /system/lib/chipset-pub-sdk/libipc_common.z.so(OHOS::BinderConnector::Write\n" +
-        "#02 pc 00032a49 /system/lib/platformsdk/libipc_core.z.so(OHOS::BinderInvoker::TransactWithDr\n" +
-        "#03 pc 00032b43 /system/lib/platformsdk/libipc_core.z.so(OHOS::BinderInvoker::StartWorkLoop(\n" +
-        "Registers:\n" +
-        "r0:00000006 r1:c0306201 r2:ffe08e08 r3:00000009\n" +
-        "r4:00000100 r5:f755a010 r6:00000000 r7:00000036\n" +
-        "r8:00000006 r9:c0306201 r10:0000000c\n" +
-        "fp:ffe08db8 ip:f6cdf360 sp:ffe08c90 lr:f6ccefe3 pc:f7e5cf0c\n" +
-        "Other thread info:\n" +
-        "Tid:875, Name:OS_IPC_0_875\n" +
-        "#00 pc 000c1f0c /system/lib/ld-musl-arm.so.1(ioctl+72)(1b29d22c50bcb2ceee39f8a2bbb936dc)\n" +
-        "#01 pc 0000efdf /system/lib/chipset-pub-sdk/libipc_common.z.so(OHOS::BinderConnector::WriteBinder\n" +
-        "#02 pc 00032a49 /system/lib/platformsdk/libipc_core.z.so(OHOS::BinderInvoker::TransactWithDriver\n" +
-        "#03 pc 00032b43 /system/lib/platformsdk/libipc_core.z.so(OHOS::BinderInvoker::StartWorkLoop()+34)\n" +
-        "Memory near registers:\n" +
-        "r2([stack]):\n" +
-        "    ffe08e00 80407202\n" +
-        "    ffe08e04 f755a038\n" +
-        "Maps:\n" +
-        "4d0000-4d3000 r--p 00000000 /system/bin/sa_main\n" +
-        "4d3000-4d6000 r-xp 00003000 /system/bin/sa_main\n" +
-        "4d6000-4d7000 r--p 00006000 /system/bin/sa_main\n" +
-        "HiLog:\n" +
-        "08-05 18:30:41.876   667   667 E C03f00/MUSL-SIGCHAIN: signal_chain_handler call\n";
-    int32_t ret = CheckCrashLogValid(file);
-    ASSERT_FALSE(ret == CrashExceptionCode::CRASH_ESUCCESS);
-    GTEST_LOG_(INFO) << "CrashExceptionTest013: end.";
-}
-
-/**
- * @tc.name: CrashExceptionTest014
- * @tc.desc: test CheckCrashLogValid, invalid Maps.
- * @tc.type: FUNC
- */
-HWTEST_F(CrashExceptionTest, CrashExceptionTest014, TestSize.Level2)
-{
-    GTEST_LOG_(INFO) << "CrashExceptionTest014: start.";
-    std::string file = std::string("Module name:sensors\n") +
-        "Fault thread info:\n" +
-        "Tid:667, Name:sensors\n" +
-        "#00 pc 000c1f0c /system/lib/ld-musl-arm.so.1(ioctl+72)(1b29d22c50bcb2ceee39f8a2bbb936dc)\n" +
-        "#01 pc 0000efdf /system/lib/chipset-pub-sdk/libipc_common.z.so(OHOS::BinderConnector::Write\n" +
-        "#02 pc 00032a49 /system/lib/platformsdk/libipc_core.z.so(OHOS::BinderInvoker::TransactWithDr\n" +
-        "#03 pc 00032b43 /system/lib/platformsdk/libipc_core.z.so(OHOS::BinderInvoker::StartWorkLoop(\n" +
-        "Registers:\n" +
-        "r0:00000006 r1:c0306201 r2:ffe08e08 r3:00000009\n" +
-        "r4:00000100 r5:f755a010 r6:00000000 r7:00000036\n" +
-        "r8:00000006 r9:c0306201 r10:0000000c\n" +
-        "fp:ffe08db8 ip:f6cdf360 sp:ffe08c90 lr:f6ccefe3 pc:f7e5cf0c\n" +
-        "Other thread info:\n" +
-        "Tid:875, Name:OS_IPC_0_875\n" +
-        "#00 pc 000c1f0c /system/lib/ld-musl-arm.so.1(ioctl+72)(1b29d22c50bcb2ceee39f8a2bbb936dc)\n" +
-        "#01 pc 0000efdf /system/lib/chipset-pub-sdk/libipc_common.z.so(OHOS::BinderConnector::WriteBinder\n" +
-        "#02 pc 00032a49 /system/lib/platformsdk/libipc_core.z.so(OHOS::BinderInvoker::TransactWithDriver\n" +
-        "#03 pc 00032b43 /system/lib/platformsdk/libipc_core.z.so(OHOS::BinderInvoker::StartWorkLoop()+34)\n" +
-        "Memory near registers:\n" +
-        "r2([stack]):\n" +
-        "    ffe08e00 80407202\n" +
-        "    ffe08e04 f755a038\n" +
-        "FaultStack:\n" +
-        "    ffe08c50 00000040\n" +
-        "HiLog:\n" +
-        "08-05 18:30:41.876   667   667 E C03f00/MUSL-SIGCHAIN: signal_chain_handler call\n";
-    int32_t ret = CheckCrashLogValid(file);
-    ASSERT_FALSE(ret == CrashExceptionCode::CRASH_ESUCCESS);
-    GTEST_LOG_(INFO) << "CrashExceptionTest014: end.";
-}
-
-/**
- * @tc.name: CrashExceptionTest015
+ * @tc.name: CrashExceptionTest08
  * @tc.desc: test CheckFaultSummaryValid, valid Fault Summary.
  * @tc.type: FUNC
  */
-HWTEST_F(CrashExceptionTest, CrashExceptionTest015, TestSize.Level2)
+HWTEST_F(CrashExceptionTest, CrashExceptionTest08, TestSize.Level2)
 {
-    GTEST_LOG_(INFO) << "CrashExceptionTest015: start.";
+    GTEST_LOG_(INFO) << "CrashExceptionTest08: start.";
     std::string summary = std::string("Thread name:sensors\n") +
         "#00 pc 000c5738 /system/lib/ld-musl-arm.so.1(ioctl+72)(b985d2b9b22c3e542388f5803bac6a56)\n" +
         "#01 pc 00007fcf /system/lib/chipset-pub-sdk/libipc_common.z.so(OHOS::BinderConnector::WriteBinder(\n" +
@@ -495,17 +213,17 @@ HWTEST_F(CrashExceptionTest, CrashExceptionTest015, TestSize.Level2)
         "#08 pc 00003078 /system/bin/sa_main(_start_c+84)(c626ef160394bf644c17e6769318dc7d)\n" +
         "#09 pc 0000301c /system/bin/sa_main(c626ef160394bf644c17e6769318dc7d)\n";
     ASSERT_TRUE(CheckFaultSummaryValid(summary));
-    GTEST_LOG_(INFO) << "CrashExceptionTest015: end.";
+    GTEST_LOG_(INFO) << "CrashExceptionTest08: end.";
 }
 
 /**
- * @tc.name: CrashExceptionTest016
+ * @tc.name: CrashExceptionTest09
  * @tc.desc: test CheckFaultSummaryValid, valid Fault Summary.
  * @tc.type: FUNC
  */
-HWTEST_F(CrashExceptionTest, CrashExceptionTest016, TestSize.Level2)
+HWTEST_F(CrashExceptionTest, CrashExceptionTest09, TestSize.Level2)
 {
-    GTEST_LOG_(INFO) << "CrashExceptionTest016: start.";
+    GTEST_LOG_(INFO) << "CrashExceptionTest09: start.";
     std::string summary = std::string("Thread name:sensors\n") +
         "#00 pc 000c5738 /system/lib/ld-musl-arm.so.1(ioctl+72)(b985d2b9b22c3e542388f5803bac6a56)\n" +
         "#01 pc 00007fcf Not mapped\n" +
@@ -518,38 +236,38 @@ HWTEST_F(CrashExceptionTest, CrashExceptionTest016, TestSize.Level2)
         "#08 pc 00003078 /system/bin/sa_main(_start_c+84)(c626ef160394bf644c17e6769318dc7d)\n" +
         "#09 pc 0000301c /system/bin/sa_main(c626ef160394bf644c17e6769318dc7d)\n";
     ASSERT_TRUE(CheckFaultSummaryValid(summary));
-    GTEST_LOG_(INFO) << "CrashExceptionTest016: end.";
+    GTEST_LOG_(INFO) << "CrashExceptionTest09: end.";
 }
 
 /**
- * @tc.name: CrashExceptionTest017
+ * @tc.name: CrashExceptionTest010
  * @tc.desc: test CheckFaultSummaryValid, invalid Fault Summary.
  * @tc.type: FUNC
  */
-HWTEST_F(CrashExceptionTest, CrashExceptionTest017, TestSize.Level2)
+HWTEST_F(CrashExceptionTest, CrashExceptionTest010, TestSize.Level2)
 {
-    GTEST_LOG_(INFO) << "CrashExceptionTest017: start.";
+    GTEST_LOG_(INFO) << "CrashExceptionTest010: start.";
     std::string summary = std::string("Thread name:sensors\n") +
         "#00 pc 000c5738 /system/lib/ld-musl-arm.so.1(ioctl+72)(b985d2b9b22c3e542388f5803bac6a56)\n" +
         "#01 pc 00007fcf /system/lib/chipset-pub-sdk/libipc_common.z.so(OHOS::BinderConnector::WriteBinder(\n";
     ASSERT_FALSE(CheckFaultSummaryValid(summary));
-    GTEST_LOG_(INFO) << "CrashExceptionTest017: end.";
+    GTEST_LOG_(INFO) << "CrashExceptionTest010: end.";
 }
 
 /**
- * @tc.name: CrashExceptionTest018
+ * @tc.name: CrashExceptionTest011
  * @tc.desc: test SetCrashProcInfo functions
  * @tc.type: FUNC
  */
-HWTEST_F(CrashExceptionTest, CrashExceptionTest018, TestSize.Level2)
+HWTEST_F(CrashExceptionTest, CrashExceptionTest011, TestSize.Level2)
 {
-    GTEST_LOG_(INFO) << "CrashExceptionTest018: start.";
+    GTEST_LOG_(INFO) << "CrashExceptionTest011: start.";
     std::string name = "";
     const int32_t pid = -1;
     SetCrashProcInfo(name, pid, 0);
     ReportUnwinderException(0);
     ASSERT_EQ(name, "");
-    GTEST_LOG_(INFO) << "CrashExceptionTest018: end.";
+    GTEST_LOG_(INFO) << "CrashExceptionTest011: end.";
 }
 } // namespace HiviewDFX
 } // namespace OHOS
