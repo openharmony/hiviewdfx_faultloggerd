@@ -41,9 +41,13 @@ if (defined(ohos_lite)) {
     external_deps = [
       "c_utils:utils",
       "googletest:gtest_main",
-      "hisysevent:libhisysevent",
-      "hisysevent:libhisyseventmanager",
     ]
+    defines = []
+    if (defined(global_parts_info.hiviewdfx_hisysevent)) {
+      external_deps += [ "hisysevent:libhisysevent" ]
+      external_deps += [ "hisysevent:libhisyseventmanager" ]
+      defines += [ "HISYSEVENT_ENABLE" ]
+    }
   }
 
   group("unittest") {

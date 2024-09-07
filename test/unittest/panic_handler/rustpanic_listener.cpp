@@ -17,7 +17,7 @@
 
 #include <cstring>
 #include <iostream>
-
+#ifdef HISYSEVENT_ENABLE
 namespace OHOS {
 namespace HiviewDFX {
 void RustPanicListener::SetKeyWord(const std::string& keyWord)
@@ -82,3 +82,4 @@ bool RustPanicListener::CheckKeywordInReasons()
 }
 } // namespace HiviewDFX
 } // namespace OHOS
+#endif

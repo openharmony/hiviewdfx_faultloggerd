@@ -19,7 +19,7 @@
 #include <memory>
 #include <mutex>
 #include <thread>
-
+#ifdef HISYSEVENT_ENABLE
 #include "crash_validator.h"
 #include "ipc_skeleton.h"
 
@@ -57,3 +57,4 @@ int main(int argc, char *argv[])
     } while (ret == 0);
     return 0;
 }
+#endif

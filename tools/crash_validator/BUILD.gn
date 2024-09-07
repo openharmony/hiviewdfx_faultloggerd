@@ -30,11 +30,14 @@ if (!defined(ohos_lite)) {
     external_deps = [
       "bounds_checking_function:libsec_shared",
       "c_utils:utils",
-      "hisysevent:libhisysevent",
-      "hisysevent:libhisyseventmanager",
       "ipc:ipc_core",
     ]
-
+    defines = []
+    if (defined(global_parts_info.hiviewdfx_hisysevent)) {
+      external_deps += [ "hisysevent:libhisysevent" ]
+      external_deps += [ "hisysevent:libhisyseventmanager" ]
+      defines += [ "HISYSEVENT_ENABLE" ]
+    }
     part_name = "faultloggerd"
     subsystem_name = "hiviewdfx"
   }
