@@ -109,42 +109,6 @@ void ReportUnwinderException(uint16_t unwError)
     ReportCrashException(g_crashProcessName, g_crashProcessPid, g_crashProcessUid, errCode);
 }
 
-int32_t CheckCrashLogValid(std::string& file)
-{
-    struct LogValidCheckInfo checkMap[] = {
-        { "Fault thread info:", "Tid:\\d+, Name:\\S+\\s(#(\\d{2})( \\S+){0,10}\\s){3,}", 0,
-          CrashExceptionCode::CRASH_LOG_ESTACKLOS },
-        { "Registers:", "", 0, CrashExceptionCode::CRASH_LOG_EREGLOS }, /* 32bit and 64bit system not same */
-        { "Other thread info:", "Tid:\\d+, Name:\\S+\\s(#(\\d{2})( \\S+){0,10}\\s){3,}", 0,
-          CrashExceptionCode::CRASH_LOG_ECHILDSTACK },
-        { "Memory near registers:", "", 0, CrashExceptionCode::CRASH_LOG_EMEMLOS },
-        { "FaultStack:", "", 0, CrashExceptionCode::CRASH_LOG_ESTACKMEMLOS },
-        { "Maps:", "", 0, CrashExceptionCode::CRASH_LOG_EMAPLOS },
-    };
-
-    int32_t keySize = sizeof(checkMap) / sizeof(checkMap[0]);
-    for (int i = 0; i < keySize; i++) {
-        checkMap[i].start = file.find(checkMap[i].key);
-        if ((checkMap[i].start == std::string::npos) ||
-            (checkMap[i].start + checkMap[i].key.length() + sizeof(char) >= file.length())) {
-                return checkMap[i].errCode;
-            }
-    }
-
-    for (int i = 0; i < keySize; i++) {
-        size_t end = (i == (keySize - 1) ? file.length() : checkMap[i + 1].start);
-        if (end - checkMap[i].start > MAX_FATAL_MSG_SIZE) {
-            end = checkMap[i].start + MAX_FATAL_MSG_SIZE;
-        }
-        std::string tmp = file.substr(checkMap[i].start, end - checkMap[i].start);
-        std::smatch result;
-        if (!std::regex_search(tmp, result, std::regex(checkMap[i].regx))) {
-            return checkMap[i].errCode;
-        }
-    }
-    return CrashExceptionCode::CRASH_ESUCCESS;
-}
-
 bool CheckFaultSummaryValid(const std::string &summary)
 {
     return (summary.find("#00 pc") != std::string::npos) && (summary.find("#01 pc") != std::string::npos) &&

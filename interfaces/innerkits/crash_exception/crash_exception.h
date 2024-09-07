@@ -63,13 +63,6 @@ void ReportCrashException(std::string name, int32_t pid, int32_t uid, int32_t er
 void ReportUnwinderException(uint16_t unwError);
 
 /**
- * @brief Check fault log available
- *
- * @return if available return CrashExceptionCode::CRASH_ESUCCESS, otherwise return errCode
-*/
-int32_t CheckCrashLogValid(std::string& file);
-
-/**
  * @brief Check summary valid,The valid is if the string contains stack information for the first three frames
  *
  * @param summary Stack information in the fault info
