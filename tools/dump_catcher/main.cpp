@@ -15,9 +15,8 @@
 
 #include <cstdio>
 #include <cstdlib>
-#include <cstring>
-#include <iostream>
 #include <securec.h>
+#include <string>
 #include <unistd.h>
 #include <getopt.h>
 #include "dfx_define.h"
@@ -33,16 +32,15 @@ static const std::string DUMP_STACK_TAG_FAILED = "Failed:";
 
 static void PrintCommandHelp()
 {
-    std::cout << DUMP_STACK_TAG_USAGE << std::endl;
-    std::cout << "-p pid -t tid    dump the stacktrace of the thread with given tid." << std::endl;
-    std::cout << "-p pid    dump the stacktrace of all the threads with given pid." << std::endl;
-    std::cout << "[-c -m -k]    optional parameter, -c(cpp) -m(mix) -k(kernel)." << std::endl;
+    printf("%s\n", DUMP_STACK_TAG_USAGE.c_str());
+    printf("-p pid -t tid    dump the stacktrace of the thread with given tid.\n");
+    printf("-p pid    dump the stacktrace of all the threads with given pid.\n");
+    printf("[-c -m -k]    optional parameter, -c(cpp) -m(mix) -k(kernel).\n");
 }
 
 static void PrintCommandFailed()
 {
-    std::cout << DUMP_STACK_TAG_FAILED << std::endl;
-    std::cout << "pid and tid must > 0." << std::endl;
+    printf("%s\npid and tid must > 0.\n", DUMP_STACK_TAG_FAILED.c_str());
 }
 
 static int ParseParamters(int argc, char *argv[], int &type, int32_t &pid, int32_t &tid)

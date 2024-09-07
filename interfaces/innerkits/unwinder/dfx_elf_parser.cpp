@@ -17,7 +17,6 @@
 
 #include <algorithm>
 #include <cstdlib>
-#include <iostream>
 #include <securec.h>
 #include <string>
 #include <sys/types.h>

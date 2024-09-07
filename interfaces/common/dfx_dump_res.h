@@ -17,7 +17,6 @@
 
 #include <cinttypes>
 #include <string>
-#include <sstream>
 
 namespace OHOS {
 namespace HiviewDFX {
@@ -65,9 +64,8 @@ class DfxDumpRes {
 public:
     inline static std::string ToString(const int32_t& res)
     {
-        std::stringstream ss;
-        ss << std::to_string(res) << " ( " << GetResStr(res) << " )";
-        return ss.str();
+        std::string ss = std::to_string(res) + " ( " + GetResStr(res) + " )";
+        return ss;
     }
 
 private:

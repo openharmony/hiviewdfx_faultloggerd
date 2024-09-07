@@ -667,11 +667,11 @@ int Unwinder::Impl::ArkWriteJitCodeToFile(int fd)
 bool Unwinder::Impl::StepArkJsFrame(StepFrame& frame)
 {
     DFX_TRACE_SCOPED_DLSYM("StepArkJsFrame pc: %p", reinterpret_cast<void *>(frame.pc));
-    std::stringstream timeLimitCheck;
-    timeLimitCheck << "StepArkJsFrame, ark pc: " << reinterpret_cast<void *>(frame.pc) <<
-        ", fp:" << reinterpret_cast<void *>(frame.fp) << ", sp:" << reinterpret_cast<void *>(frame.sp) <<
-        ", isJsFrame:" << frame.isJsFrame;
-    ElapsedTime counter(timeLimitCheck.str(), 20); // 20 : limit cost time 20 ms
+    std::string timeLimitCheck;
+    timeLimitCheck += "StepArkJsFrame, ark pc: " + std::to_string(frame.pc) +
+        ", fp:" + std::to_string(frame.fp) + ", sp:" + std::to_string(frame.sp) +
+        ", isJsFrame:" + std::to_string(frame.isJsFrame);
+    ElapsedTime counter(timeLimitCheck, 20); // 20 : limit cost time 20 ms
     if (pid_ != UNWIND_TYPE_CUSTOMIZE) {
         LOGD("+++ark pc: %p, fp: %p, sp: %p, isJsFrame: %d.", reinterpret_cast<void *>(frame.pc),
             reinterpret_cast<void *>(frame.fp), reinterpret_cast<void *>(frame.sp), frame.isJsFrame);

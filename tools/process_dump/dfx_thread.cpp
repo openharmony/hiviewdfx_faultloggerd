@@ -20,7 +20,6 @@
 #include <climits>
 #include <cstring>
 #include <securec.h>
-#include <sstream>
 #include <sys/wait.h>
 #include <unistd.h>
 
@@ -86,8 +85,7 @@ std::string DfxThread::ToString() const
         return "No frame info";
     }
 
-    std::stringstream ss;
-    ss << "Thread name:" << threadInfo_.threadName << "" << std::endl;
+    std::string ss = "Thread name:" + threadInfo_.threadName + "\n";
     bool needSkip = false;
     bool isSubmitter = true;
     for (const auto& frame : frames_) {
@@ -95,21 +93,21 @@ std::string DfxThread::ToString() const
             isSubmitter = !isSubmitter;
         }
         if (isSubmitter) {
-            ss << "========SubmitterStacktrace========" << std::endl;
+            ss += "========SubmitterStacktrace========\n";
             isSubmitter = false;
             needSkip = false;
         }
         if (needSkip) {
             continue;
         }
-        ss << DfxFrameFormatter::GetFrameStr(frame);
+        ss += DfxFrameFormatter::GetFrameStr(frame);
 #if defined(__aarch64__)
         if (Printer::IsLastValidFrame(frame)) {
             needSkip = true;
         }
 #endif
     }
-    return ss.str();
+    return ss;
 }
 
 void DfxThread::Detach()

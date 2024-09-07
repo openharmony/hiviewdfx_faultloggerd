@@ -41,6 +41,7 @@
 #include "dfx_log.h"
 #include "dfx_trace.h"
 #include "dfx_util.h"
+#include "string_printf.h"
 #include "directory_ex.h"
 #include "fault_logger_config.h"
 #include "faultloggerd_socket.h"
@@ -716,16 +717,15 @@ int32_t FaultLoggerDaemon::CreateFileForRequest(int32_t type, int32_t pid, int32
             (std::chrono::system_clock::now().time_since_epoch()).count());
     }
 
-    std::stringstream ss;
-    ss << folderPath << "/" << typeStr << "-" << pid;
+    std::string ss = folderPath + "/" + typeStr + "-" + std::to_string(pid);
     if (type == FaultLoggerType::JS_HEAP_SNAPSHOT || type == FaultLoggerType::JS_RAW_SNAPSHOT) {
-        ss << "-" << tid;
+        ss += "-" + std::to_string(tid);
     }
-    ss << "-" << time;
+    ss += "-" + std::to_string(time);
     if (type == FaultLoggerType::JS_RAW_SNAPSHOT) {
-        ss << ".rawheap";
+        ss += ".rawheap";
     }
-    const std::string path = ss.str();
+    const std::string path = ss;
     DFXLOG_INFO("%s :: file path(%s).\n", FAULTLOGGERD_TAG.c_str(), path.c_str());
     if (!VerifyFilePath(path, VALID_FILE_PATH)) {
         DFXLOG_ERROR("%s :: Open %s fail, please check it under valid path.\n", FAULTLOGGERD_TAG.c_str(), path.c_str());
@@ -956,12 +956,8 @@ std::string GetElfName(FaultLoggerdStatsRequest* request)
         return "";
     }
 
-    std::stringstream stream;
-    stream << std::string(request->callerElf, strlen(request->callerElf));
-    stream << "(";
-    stream << std::hex << request->offset;
-    stream << ")";
-    return stream.str();
+    std::string ss = StringPrintf("%s(%p)", request->callerElf, reinterpret_cast<void *>(request->offset));
+    return ss;
 }
 
 void FaultLoggerDaemon::HandleDumpStats(int32_t connectionFd, FaultLoggerdStatsRequest* request)

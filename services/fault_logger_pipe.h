@@ -20,7 +20,6 @@
 #include <memory>
 #include <mutex>
 #include <string>
-#include <iostream>
 
 namespace OHOS {
 namespace HiviewDFX {

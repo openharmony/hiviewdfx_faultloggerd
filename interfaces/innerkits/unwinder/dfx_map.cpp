@@ -17,7 +17,6 @@
 
 #include <algorithm>
 #include <securec.h>
-#include <sstream>
 #if is_mingw
 #include "dfx_nonlinux_define.h"
 #else

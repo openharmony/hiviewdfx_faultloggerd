@@ -19,7 +19,6 @@
 #include <dlfcn.h>
 #include <fcntl.h>
 #include <map>
-#include <sstream>
 #include <string>
 #include "dfx_define.h"
 #include "dfx_logger.h"

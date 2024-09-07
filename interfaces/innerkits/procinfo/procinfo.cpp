@@ -20,8 +20,6 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
-#include <iostream>
-#include <sstream>
 #include <securec.h>
 #include <fcntl.h>
 #include <unistd.h>
@@ -30,7 +28,6 @@
 #include "file_util.h"
 #include "string_printf.h"
 #include "string_util.h"
-#include <iostream>
 
 namespace OHOS {
 namespace HiviewDFX {
@@ -188,10 +185,8 @@ bool GetTidsByPid(const int pid, std::vector<int>& tids, std::vector<int>& nstid
 std::string GetStacktraceHeader()
 {
     pid_t pid = getpid();
-    std::ostringstream ss;
-    ss << "" << std::endl << "Timestamp:" << GetCurrentTimeStr();
-    ss << "Pid:" << pid << std::endl;
-    ss << "Uid:" << getuid() << std::endl;
+    std::string ss = "\nTimestamp:" + GetCurrentTimeStr() + "Pid:" + std::to_string(pid) + "\n" +
+        "Uid:" + std::to_string(getuid()) + "\n";
     std::string processName;
     ReadProcessName(pid, processName);
     std::string processNameNoNul;
@@ -202,8 +197,8 @@ std::string GetStacktraceHeader()
             break;
         }
     }
-    ss << "Process name::" << processNameNoNul << std::endl;
-    return ss.str();
+    ss += "Process name::" + processNameNoNul + "\n";
+    return ss;
 }
 
 void ReadThreadName(const int tid, std::string& str)
@@ -257,19 +252,18 @@ void ReadProcessWchan(std::string& result, const int pid, bool onlyPid, bool wit
         result.append(StringPrintf("Failed to access path(%s), errno(%d).\n", path.c_str(), errno));
         return;
     }
-    std::ostringstream ss;
+    std::string ss;
     std::string content;
     OHOS::HiviewDFX::LoadStringFromFile(path, content);
     if (!content.empty()) {
-        ss << "Process wchan:\n";
-        ss << StringPrintf("%s\n", content.c_str());
+        ss = StringPrintf("Process wchan:\n%s\n", content.c_str());
     }
     if (onlyPid) {
-        result.append(ss.str());
+        result.append(ss);
         return;
     }
-    ss << "\nProcess threads wchan:\n";
-    ss << "=======================================\n";
+    ss += "\nProcess threads wchan:\n";
+    ss += "=======================================\n";
     bool flag = false;
     std::string comm = "";
     std::string wchan = "";
@@ -285,35 +279,35 @@ void ReadProcessWchan(std::string& result, const int pid, bool onlyPid, bool wit
         if (!comm.empty() && !wchan.empty()) {
             flag = true;
             if (withThreadName) {
-                ss << "Tid:" << tidStr << ", Name:" << comm;
+                ss += "Tid:" + tidStr + ", Name:" + comm;
             }
-            ss << "wchan:" << wchan << std::endl;
+            ss += "wchan:" + wchan + "\n";
         }
     }
 
     if (!flag) {
-        ss << "Failed to access path: " << taskPath << std::endl;
+        ss += "Failed to access path: " + taskPath + "\n";
     }
-    ss << "=======================================\n";
-    result.append(ss.str());
+    ss += "=======================================\n";
+    result.append(ss);
 }
 
 void ReadThreadWchan(std::string& result, const int tid, bool withThreadName)
 {
-    std::ostringstream ss;
+    std::string ss;
     if (withThreadName) {
         std::string threadName;
         ReadThreadName(tid, threadName);
-        ss << "Tid:" << tid << ", Name:" << threadName << std::endl;
+        ss = "Tid:" + std::to_string(tid) + ", Name:" + threadName + "\n";
     }
     std::string wchanPath = StringPrintf("%s/%d/wchan", PROC_SELF_TASK_PATH, tid);
     std::string wchan;
     if (OHOS::HiviewDFX::LoadStringFromFile(wchanPath, wchan)) {
-        ss << "wchan:" << wchan << std::endl;
+        ss += "wchan:" + wchan + "\n";
     } else {
-        ss << "Load thread wchan failed." << std::endl;
+        ss += "Load thread wchan failed.\n";
     }
-    result = ss.str();
+    result = ss;
 }
 }   // namespace HiviewDFX
 }   // namespace OHOS

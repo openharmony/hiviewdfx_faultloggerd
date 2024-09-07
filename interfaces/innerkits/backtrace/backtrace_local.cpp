@@ -18,7 +18,6 @@
 #include <cstring>
 #include <dirent.h>
 #include <mutex>
-#include <sstream>
 #include <unistd.h>
 #include <vector>
 
@@ -41,14 +40,13 @@ namespace {
 
 std::string GetThreadHead(int32_t tid)
 {
-    std::stringstream threadHead;
     std::string threadName;
     if (tid == BACKTRACE_CURRENT_THREAD) {
         tid = gettid();
     }
     ReadThreadName(tid, threadName);
-    threadHead << "Tid:" << tid << ", Name:" << threadName << "\n";
-    return threadHead.str();
+    std::string threadHead = "Tid:" + std::to_string(tid) + ", Name:" + threadName + "\n";
+    return threadHead;
 }
 }
 
@@ -142,21 +140,20 @@ const char* GetTrace(size_t skipFrameNum, size_t maxFrameNums)
 std::string GetProcessStacktrace(size_t maxFrameNums)
 {
     auto unwinder = std::make_shared<Unwinder>();
-    std::ostringstream ss;
-    ss << std::endl << GetStacktraceHeader();
+    std::string ss = "\n" + GetStacktraceHeader();
     std::function<bool(int)> func = [&](int tid) {
         if (tid <= 0 || tid == gettid()) {
             return false;
         }
         BacktraceLocalThread thread(tid, unwinder);
         if (thread.Unwind(false, maxFrameNums, 0)) {
-            ss << thread.GetFormattedStr(true) << std::endl;
+            ss += thread.GetFormattedStr(true) + "\n";
         } else {
             std::string msg = "";
             DfxThreadStack threadStack;
             if (DfxGetKernelStack(tid, msg) == 0 && FormatThreadKernelStack(msg, threadStack)) {
                 thread.SetFrames(threadStack.frames);
-                ss << thread.GetFormattedStr(true) << std::endl;
+                ss += thread.GetFormattedStr(true) + "\n";
                 DFXLOG_INFO("Failed to get tid(%d) user stack, try kernel", tid);
             }
         }
@@ -166,7 +163,7 @@ std::string GetProcessStacktrace(size_t maxFrameNums)
     std::vector<int> tids;
     GetTidsByPidWithFunc(getpid(), tids, func);
 
-    return ss.str();
+    return ss;
 }
 } // namespace HiviewDFX
 } // namespace OHOS
