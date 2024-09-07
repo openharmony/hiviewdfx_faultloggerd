@@ -17,7 +17,7 @@
 #define RUSTPANIC_LISTENER_H
 
 #include "hisysevent_listener.h"
-
+#ifdef HISYSEVENT_ENABLE
 namespace OHOS {
 namespace HiviewDFX {
 class RustPanicListener : public HiSysEventListener {
@@ -39,4 +39,5 @@ private:
 };
 } // namespace HiviewDFX
 } // namespace OHOS
+#endif
 #endif

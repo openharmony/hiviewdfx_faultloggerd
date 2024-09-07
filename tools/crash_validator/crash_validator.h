@@ -14,7 +14,7 @@
  */
 #ifndef FAULTLOGGERD_CRASH_VALIDATOR_H
 #define FAULTLOGGERD_CRASH_VALIDATOR_H
-
+#ifdef HISYSEVENT_ENABLE
 #include <memory>
 #include <mutex>
 #include <vector>
@@ -70,3 +70,4 @@ private:
 } // namespace HiviewDFX
 } // namespace OHOS
 #endif // FAULTLOGGERD_CRASH_VALIDATOR_H
+#endif

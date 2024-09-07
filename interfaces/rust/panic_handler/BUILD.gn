@@ -23,10 +23,12 @@ if (defined(ohos_lite)) {
     cflags_cc = [ "-DRUSTC_DEMANGLE" ]
     rustflags = [ "-Zstack-protector=all" ]
     deps = [ "$faultloggerd_path/interfaces/rust/stacktrace:stacktrace_rust" ]
-    external_deps = [
-      "hilog:hilog_rust",
-      "hisysevent:hisysevent_rust",
-    ]
+    external_deps = [ "hilog:hilog_rust" ]
+    defines = []
+    if (defined(global_parts_info.hiviewdfx_hisysevent)) {
+      external_deps += [ "hisysevent:hisysevent_rust" ]
+      defines += [ "HISYSEVENT_ENABLE" ]
+    }
     crate_name = "panic_handler"
     crate_type = "dylib"
     part_name = "faultloggerd"

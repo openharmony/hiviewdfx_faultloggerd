@@ -17,7 +17,7 @@
 #include <gtest/gtest.h>
 #include <unistd.h>
 #include <vector>
-
+#ifdef HISYSEVENT_ENABLE
 #include "hisysevent_manager.h"
 #include "rustpanic_listener.h"
 
@@ -116,3 +116,4 @@ HWTEST_F(PanicHandlerTest, PanicHandlerTest002, TestSize.Level2)
 }
 } // namespace HiviewDFX
 } // namespace OHOS
+#endif
