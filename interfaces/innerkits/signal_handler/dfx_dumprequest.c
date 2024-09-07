@@ -64,20 +64,6 @@
 #define LOG_TAG "DfxSignalHandler"
 #endif
 
-#if defined (__LP64__)
-#define RESERVED_CHILD_STACK_SIZE (32 * 1024)  // 32K
-#else
-#define RESERVED_CHILD_STACK_SIZE (16 * 1024)  // 16K
-#endif
-
-#define BOOL int
-#define TRUE 1
-#define FALSE 0
-
-#ifndef NSIG
-#define NSIG 64
-#endif
-
 #ifndef F_SETPIPE_SZ
 #define F_SETPIPE_SZ 1031
 #endif
@@ -126,19 +112,23 @@ static const char* GetCrashDescription(const int32_t errCode)
 static void FillCrashExceptionAndReport(const int err)
 {
     struct CrashDumpException exception;
-    memset(&exception, 0, sizeof(struct CrashDumpException));
+    (void)memset_s(&exception, sizeof(struct CrashDumpException), 0, sizeof(struct CrashDumpException));
     exception.pid = g_request->pid;
     exception.uid = (int32_t)(g_request->uid);
     exception.error = err;
     exception.time = (int64_t)(GetTimeMilliseconds());
-    (void)strncpy(exception.message, GetCrashDescription(err), sizeof(exception.message) - 1);
+    if (strncpy_s(exception.message, sizeof(exception.message), GetCrashDescription(err),
+        sizeof(exception.message) - 1) != 0) {
+        DFXLOG_ERROR("strcpy exception message fail");
+        return;
+    }
     ReportException(exception);
 }
 
 static int32_t InheritCapabilities(void)
 {
     struct __user_cap_header_struct capHeader;
-    memset(&capHeader, 0, sizeof(capHeader));
+    (void)memset_s(&capHeader, sizeof(capHeader), 0, sizeof(capHeader));
 
     capHeader.version = _LINUX_CAPABILITY_VERSION_3;
     capHeader.pid = 0;
