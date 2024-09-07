@@ -77,7 +77,7 @@ bool DfxDumpCatcher::DoDumpCurrTid(const size_t skipFrameNum, std::string& msg, 
 
     ret = GetBacktrace(msg, skipFrameNum + 1, false, maxFrameNums);
     if (!ret) {
-        int currTid = getproctid();
+        int currTid = gettid();
         msg.append("Failed to dump curr thread:" + std::to_string(currTid) + ".\n");
     }
     DFXLOG_DEBUG("%s :: DoDumpCurrTid :: return %d.", DFXDUMPCATCHER_TAG.c_str(), ret);
@@ -114,7 +114,7 @@ bool DfxDumpCatcher::DoDumpLocalPid(int pid, std::string& msg, size_t maxFrameNu
             return false;
         }
         std::string threadMsg;
-        if (tid == getproctid()) {
+        if (tid == gettid()) {
             ret = DoDumpCurrTid(skipFramNum, threadMsg, maxFrameNums);
         } else {
             ret = DoDumpLocalTid(tid, threadMsg, maxFrameNums);
@@ -123,11 +123,7 @@ bool DfxDumpCatcher::DoDumpLocalPid(int pid, std::string& msg, size_t maxFrameNu
         return ret;
     };
     std::vector<int> tids;
-#if defined(is_ohos) && is_ohos
-    ret = GetTidsByPidWithFunc(getprocpid(), tids, func);
-#else
     ret = GetTidsByPidWithFunc(getpid(), tids, func);
-#endif
     DFXLOG_DEBUG("%s :: DoDumpLocalPid :: return %d.", DFXDUMPCATCHER_TAG.c_str(), ret);
     return ret;
 }
@@ -140,7 +136,7 @@ bool DfxDumpCatcher::DoDumpRemoteLocked(int pid, int tid, std::string& msg, bool
 bool DfxDumpCatcher::DoDumpLocalLocked(int pid, int tid, std::string& msg, size_t maxFrameNums)
 {
     bool ret = false;
-    if (tid == getproctid()) {
+    if (tid == gettid()) {
         size_t skipFramNum = 4; // 4: skip 4 frame
         ret = DoDumpCurrTid(skipFramNum, msg, maxFrameNums);
     } else if (tid == 0) {
@@ -242,7 +238,7 @@ bool DfxDumpCatcher::DumpCatch(int pid, int tid, std::string& msg, size_t maxFra
     DfxEnableTraceDlsym(true);
     ElapsedTime counter;
     std::unique_lock<std::mutex> lck(mutex_);
-    int currentPid = getprocpid();
+    int currentPid = getpid();
     bool reportStat = false;
     uint64_t requestTime = GetTimeMilliSeconds();
     DFXLOG_INFO("Receive DumpCatch request for cPid:(%d), pid(%d), tid:(%d).", currentPid, pid, tid);
@@ -572,13 +568,8 @@ bool DfxDumpCatcher::DumpCatchMultiPid(const std::vector<int> pidV, std::string&
     }
 
     std::unique_lock<std::mutex> lck(mutex_);
-#if defined(is_ohos) && is_ohos
-    int currentPid = getprocpid();
-    int currentTid = getproctid();
-#else
     int currentPid = getpid();
     int currentTid = gettid();
-#endif
     DFXLOG_DEBUG("%s :: %s :: cPid(%d), cTid(%d), pidSize(%d).", DFXDUMPCATCHER_TAG.c_str(), \
         __func__, currentPid, currentTid, pidSize);
 
