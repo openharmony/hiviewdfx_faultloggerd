@@ -69,6 +69,7 @@ if (defined(ohos_lite)) {
   }
 
   ohos_shared_library("libbacktrace_local") {
+    branch_protector_ret = "pac_ret"
     public_configs = [
       ":dfx_backtrace_config",
       "$faultloggerd_common_path/build:coverage_flags",

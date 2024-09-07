@@ -56,6 +56,7 @@ if (defined(ohos_lite)) {
   }
 
   ohos_shared_library("libdfx_dumpcatcher") {
+    branch_protector_ret = "pac_ret"
     public_configs = [
       ":dfx_dump_catcher_config",
       "$faultloggerd_path/common/build:coverage_flags",

@@ -164,6 +164,7 @@ if (defined(ohos_lite)) {
   }
 
   ohos_shared_library("libunwinder") {
+    branch_protector_ret = "pac_ret"
     public_configs = [
       ":dfx_unwinder_config",
       ":lzma_config",
