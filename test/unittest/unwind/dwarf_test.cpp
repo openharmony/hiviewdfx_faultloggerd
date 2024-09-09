@@ -519,7 +519,7 @@ HWTEST_F(DwarfTest, DwarfTest001, TestSize.Level2)
     }
     // 00000000000037e4   156 FUNC    GLOBAL DEFAULT   14 RequestFileDescriptor
     RequestFdFunc requestFdFunc = (RequestFdFunc)dlsym(handle, "RequestFileDescriptor");
-    bool isSuccess = requestFdFunc != nullptr;
+    isSuccess = requestFdFunc != nullptr;
     if (!isSuccess) {
         ASSERT_FALSE(isSuccess);
         printf("Failed to find RequestFdFunc, %s\n", dlerror());
