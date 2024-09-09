@@ -66,7 +66,7 @@ int DfxGetKernelStack(int32_t pid, std::string& kernelStack)
 bool FormatThreadKernelStack(const std::string& kernelStack, DfxThreadStack& threadStack)
 {
 #ifdef __aarch64__
-    std::regex headerPattern(R"(name=(.{1,20}), tid=(\d{1,10}), ([\w\=\.]{1,256}, ){4}pid=(\d{1,10}))");
+    std::regex headerPattern(R"(name=(.{1,20}), tid=(\d{1,10}), ([\w\=\.]{1,256}, ){3}pid=(\d{1,10}))");
     std::smatch result;
     if (!regex_search(kernelStack, result, headerPattern)) {
         DFXLOG_INFO("%s", "search thread name failed");
