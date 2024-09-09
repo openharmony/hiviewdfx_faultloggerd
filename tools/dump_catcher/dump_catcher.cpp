@@ -15,7 +15,6 @@
 
 #include "dump_catcher.h"
 
-#include <iostream>
 #include "dfx_define.h"
 #include "dfx_dump_catcher.h"
 #include "dfx_log.h"
@@ -49,13 +48,13 @@ void DumpCatcher::Dump(int32_t type, int32_t pid, int32_t tid) const
     }
 
     if (!dumpRet) {
-        std::cout << "Dump Failed." << std::endl;
+        printf("Dump Failed.\n");
     }
 
     if (!msg.empty()) {
-        std::cout << msg << std::endl;
+        printf("%s\n", msg.c_str());
     } else {
-        std::cout << "Dump msg empty." << std::endl;
+        printf("Dump msg empty.\n");
     }
 }
 } // namespace HiviewDFX

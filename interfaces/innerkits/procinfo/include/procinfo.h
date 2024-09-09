@@ -17,7 +17,6 @@
 #define DFX_PROCINFO_H
 
 #include <cstdio>
-#include <iostream>
 #include <functional>
 #include <memory>
 #include <string>

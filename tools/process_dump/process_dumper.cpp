@@ -25,7 +25,6 @@
 #include <cstring>
 #include <dirent.h>
 #include <fcntl.h>
-#include <iostream>
 #include <memory>
 #include <pthread.h>
 #include <securec.h>
@@ -719,9 +718,7 @@ int32_t ProcessDumper::CreateFileForCrash(int32_t pid, uint64_t time) const
         DFXLOG_ERROR("%s is not exist.", logFilePath.c_str());
         return INVALID_FD;
     }
-    std::stringstream ss;
-    ss << logFilePath << "/" << logFileType << "-" << pid << "-" << time;
-    std::string logPath = ss.str();
+    std::string logPath = logFilePath + "/" + logFileType + "-" + std::to_string(pid) + "-" + std::to_string(time);
     int32_t fd = OHOS_TEMP_FAILURE_RETRY(open(logPath.c_str(), O_RDWR | O_CREAT, logcrashFileProp));
     if (fd == INVALID_FD) {
         DFXLOG_ERROR("create %s failed, errno=%d", logPath.c_str(), errno);

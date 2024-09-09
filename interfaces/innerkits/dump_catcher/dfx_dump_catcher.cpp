@@ -59,7 +59,7 @@ static std::atomic_bool g_asyncThreadRunning;
 static pid_t g_kernelStackPid = 0;
 static std::condition_variable g_cv;
 static std::mutex g_kernelStackMutex;
-static constexpr int  WAIT_GET_KERNEL_STACK_TIMEOUT = 1000; // 1000 : time out 1000 ms
+static constexpr int WAIT_GET_KERNEL_STACK_TIMEOUT = 1000; // 1000 : time out 1000 ms
 
 enum DfxDumpPollRes : int32_t {
     DUMP_POLL_INIT = -1,

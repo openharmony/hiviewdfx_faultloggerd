@@ -21,7 +21,6 @@
 #include <fcntl.h>
 #include <memory>
 #include <string>
-#include <sstream>
 #include <sys/stat.h>
 #include <unistd.h>
 #include <vector>

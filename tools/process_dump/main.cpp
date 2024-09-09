@@ -16,7 +16,6 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
-#include <iostream>
 #include <securec.h>
 #include <unistd.h>
 
@@ -34,8 +33,7 @@ static const std::string DUMP_STACK_TAG_FAILED = "failed:";
 
 static void PrintCommandHelp()
 {
-    std::cout << DUMP_STACK_TAG_USAGE << std::endl;
-    std::cout << "please use dumpcatcher" << std::endl;
+    printf("%s\nplease use dumpcatcher\n", DUMP_STACK_TAG_USAGE.c_str());
 }
 
 static bool ParseParameters(int argc, char *argv[], bool &isSignalHdlr)

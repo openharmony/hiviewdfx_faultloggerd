@@ -16,7 +16,6 @@
 #include "backtrace_local_thread.h"
 
 #include <securec.h>
-#include <sstream>
 #include <unistd.h>
 
 #include "dfx_define.h"
@@ -90,15 +89,15 @@ std::string BacktraceLocalThread::GetFormattedStr(bool withThreadName)
         return "";
     }
 
-    std::ostringstream ss;
+    std::string ss;
     if (withThreadName && (tid_ > 0)) {
         std::string threadName;
         // Tid:1676, Name:IPC_3_1676
         ReadThreadName(tid_, threadName);
-        ss << "Tid:" << tid_ << ", Name:" << threadName << std::endl;
+        ss = "Tid:" + std::to_string(tid_) + ", Name:" + threadName + "\n";
     }
-    ss << Unwinder::GetFramesStr(frames_);
-    return ss.str();
+    ss += Unwinder::GetFramesStr(frames_);
+    return ss;
 }
 } // namespace HiviewDFX
 } // namespace OHOS

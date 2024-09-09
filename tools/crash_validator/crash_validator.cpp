@@ -16,7 +16,6 @@
 
 #include <cinttypes>
 #include <csignal>
-#include <iostream>
 #ifdef HISYSEVENT_ENABLE
 #include <fcntl.h>
 #include <hisysevent.h>

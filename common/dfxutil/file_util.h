@@ -17,7 +17,6 @@
 #define FILE_UTIL_H
 
 #include <fstream>
-#include <iostream>
 #include <algorithm>
 #include <string>
 

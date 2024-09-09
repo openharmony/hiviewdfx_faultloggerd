@@ -22,7 +22,6 @@
 #include <sys/syscall.h>
 #include <unistd.h>
 #include <fcntl.h>
-#include <fstream>
 #include <pthread.h>
 #include "dfx_log.h"
 #include "stack_util.h"

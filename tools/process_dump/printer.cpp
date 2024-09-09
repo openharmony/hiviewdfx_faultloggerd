@@ -28,6 +28,7 @@
 #include "dfx_ring_buffer_wrapper.h"
 #include "dfx_signal.h"
 #include "dfx_util.h"
+#include "string_printf.h"
 #include "string_util.h"
 #ifndef is_ohos_lite
 #include "parameter.h"
@@ -46,20 +47,20 @@ void Printer::PrintDumpHeader(std::shared_ptr<ProcessDumpRequest> request, std::
     if (process == nullptr || request == nullptr) {
         return;
     }
-    std::stringstream headerInfo;
+    std::string headerInfo;
     bool isCrash = (request->siginfo.si_signo != SIGDUMP);
 #ifndef is_ohos_lite
     if (isCrash) {
         std::string buildInfo = OHOS::system::GetParameter("const.product.software.version", "Unknown");
-        headerInfo << "Build info:" << buildInfo << "\n";
+        headerInfo = "Build info:" + buildInfo + "\n";
         DfxRingBufferWrapper::GetInstance().AppendMsg("Build info:" + buildInfo + "\n");
     }
 #endif
-    headerInfo << "Timestamp:" << GetCurrentTimeStr(request->timeStamp);
+    headerInfo += "Timestamp:" + GetCurrentTimeStr(request->timeStamp);
     DfxRingBufferWrapper::GetInstance().AppendMsg("Timestamp:" + GetCurrentTimeStr(request->timeStamp));
-    headerInfo << "Pid:" << process->processInfo_.pid << "\n" <<
-                  "Uid:" << process->processInfo_.uid << "\n" <<
-                  "Process name:" << process->processInfo_.processName << "\n";
+    headerInfo += "Pid:" + std::to_string(process->processInfo_.pid) + "\n" +
+                  "Uid:" + std::to_string(process->processInfo_.uid) + "\n" +
+                  "Process name:" + process->processInfo_.processName + "\n";
     DfxRingBufferWrapper::GetInstance().AppendBuf("Pid:%d\n", process->processInfo_.pid);
     DfxRingBufferWrapper::GetInstance().AppendBuf("Uid:%d\n", process->processInfo_.uid);
     DfxRingBufferWrapper::GetInstance().AppendBuf("Process name:%s\n", process->processInfo_.processName.c_str());
@@ -69,25 +70,24 @@ void Printer::PrintDumpHeader(std::shared_ptr<ProcessDumpRequest> request, std::
 
         std::string reasonInfo;
         PrintReason(request, process, unwinder, reasonInfo);
-        headerInfo << reasonInfo << "\n";
+        headerInfo += reasonInfo + "\n";
         auto msg = process->GetFatalMessage();
         if (!msg.empty()) {
-            headerInfo << "LastFatalMessage:" << msg.c_str() << "\n";
+            headerInfo += "LastFatalMessage:" + msg + "\n";
             DfxRingBufferWrapper::GetInstance().AppendBuf("LastFatalMessage:%s\n", msg.c_str());
         }
 
         auto traceId = request->traceInfo;
         if (traceId.chainId != 0) {
-            headerInfo << "TraceId:" << std::hex << std::uppercase <<
-                          static_cast<unsigned long long>(traceId.chainId) << "\n";
+            headerInfo += StringPrintf("TraceId:%" PRIX64"\n", traceId.chainId);
             DfxRingBufferWrapper::GetInstance().AppendBuf("TraceId:%llx\n",
                 static_cast<unsigned long long>(traceId.chainId));
         }
 
-        headerInfo << "Fault thread info:\n";
+        headerInfo += "Fault thread info:\n";
         DfxRingBufferWrapper::GetInstance().AppendMsg("Fault thread info:\n");
     }
-    DfxRingBufferWrapper::GetInstance().AppendBaseInfo(headerInfo.str());
+    DfxRingBufferWrapper::GetInstance().AppendBaseInfo(headerInfo);
 }
 
 void Printer::PrintReason(std::shared_ptr<ProcessDumpRequest> request, std::shared_ptr<DfxProcess> process,
@@ -164,14 +164,15 @@ void Printer::PrintOtherThreadHeaderByConfig()
 
 void Printer::PrintThreadHeaderByConfig(std::shared_ptr<DfxThread> thread, bool isKeyThread)
 {
-    std::stringstream headerInfo;
+    std::string headerInfo;
     if (DfxConfig::GetConfig().displayBacktrace && thread != nullptr) {
         DfxRingBufferWrapper::GetInstance().AppendBuf("Tid:%d, Name:%s\n",\
             thread->threadInfo_.tid, thread->threadInfo_.threadName.c_str());
-        headerInfo << "Tid:" << thread->threadInfo_.tid << ", Name:" << thread->threadInfo_.threadName << "\n";
+        headerInfo = "Tid:" + std::to_string(thread->threadInfo_.tid) +
+            ", Name:" + thread->threadInfo_.threadName + "\n";
     }
     if (isKeyThread) {
-        DfxRingBufferWrapper::GetInstance().AppendBaseInfo(headerInfo.str());
+        DfxRingBufferWrapper::GetInstance().AppendBaseInfo(headerInfo);
     }
 }
 

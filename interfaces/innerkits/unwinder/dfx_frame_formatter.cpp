@@ -15,7 +15,6 @@
 
 #include "dfx_frame_formatter.h"
 
-#include <sstream>
 #include <securec.h>
 
 #include "dfx_define.h"
@@ -86,11 +85,11 @@ std::string DfxFrameFormatter::GetFramesStr(const std::vector<DfxFrame>& frames)
     if (frames.size() == 0) {
         return "";
     }
-    std::ostringstream ss;
+    std::string ss;
     for (const auto& f : frames) {
-        ss << GetFrameStr(f);
+        ss += GetFrameStr(f);
     }
-    return ss.str();
+    return ss;
 }
 
 std::string DfxFrameFormatter::GetFramesStr(const std::vector<std::shared_ptr<DfxFrame>>& frames)
@@ -98,11 +97,11 @@ std::string DfxFrameFormatter::GetFramesStr(const std::vector<std::shared_ptr<Df
     if (frames.size() == 0) {
         return "";
     }
-    std::ostringstream ss;
+    std::string ss;
     for (const auto& pf : frames) {
-        ss << GetFrameStr(pf);
+        ss += GetFrameStr(pf);
     }
-    return ss.str();
+    return ss;
 }
 
 std::vector<std::shared_ptr<DfxFrame>> DfxFrameFormatter::ConvertFrames(const std::vector<DfxFrame>& frames)

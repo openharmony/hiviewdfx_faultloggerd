@@ -16,10 +16,7 @@
 #include "dfx_json_formatter.h"
 
 #include <cstdlib>
-#include <iostream>
-#include <ostream>
 #include <securec.h>
-#include <sstream>
 #include "dfx_kernel_stack.h"
 #ifndef is_ohos_lite
 #include "json/json.h"
@@ -81,11 +78,11 @@ bool DfxJsonFormatter::FormatJsonStack(std::string jsonStack, std::string& outSt
     }
 
     for (uint32_t i = 0; i < threads.size(); ++i) {
-        std::ostringstream ss;
+        std::string ss;
         Json::Value thread = threads[i];
         if (thread["tid"].isConvertibleTo(Json::stringValue) &&
             thread["thread_name"].isConvertibleTo(Json::stringValue)) {
-            ss << "Tid:" << thread["tid"].asString() << ", Name:" << thread["thread_name"].asString() << std::endl;
+            ss += "Tid:" + thread["tid"].asString() + ", Name:" + thread["thread_name"].asString() + "\n";
         }
         const Json::Value frames = thread["frames"];
         for (uint32_t j = 0; j < frames.size(); ++j) {
@@ -97,14 +94,14 @@ bool DfxJsonFormatter::FormatJsonStack(std::string jsonStack, std::string& outSt
                 formatStatus = FormatJsFrame(frames, j, frameStr);
             }
             if (formatStatus) {
-                ss << frameStr << std::endl;
+                ss += frameStr + "\n";
             } else {
                 // Shall we try to print more information?
                 outStackStr.append("Frame info is illegal.");
                 return false;
             }
         }
-        outStackStr.append(ss.str());
+        outStackStr.append(ss);
     }
     return true;
 }
@@ -117,9 +114,8 @@ static bool FormatKernelStackStr(const std::vector<DfxThreadStack>& processStack
     }
     formattedStack = "";
     for (const auto &threadStack : processStack) {
-        std::ostringstream ss;
-        ss << "Tid:" << threadStack.tid << ", Name:" << threadStack.threadName << std::endl;
-        formattedStack.append(ss.str());
+        std::string ss = "Tid:" + std::to_string(threadStack.tid) + ", Name:" + threadStack.threadName + "\n";
+        formattedStack.append(ss);
         for (size_t frameIdx = 0; frameIdx < threadStack.frames.size(); ++frameIdx) {
             std::string file = threadStack.frames[frameIdx].mapName;
             char buf[FRAME_BUF_LEN] = {0};
