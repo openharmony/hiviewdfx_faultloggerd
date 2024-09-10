@@ -348,16 +348,24 @@ void ProcessDumper::Dump()
 
 void ProcessDumper::Report(std::shared_ptr<ProcessDumpRequest> request, std::string &jsonInfo)
 {
+    if (request == nullptr) {
+        DFXLOG_ERROR("%s", "request is nullptr.");
+        return;
+    }
     if (request->msg.type == MESSAGE_FDSAN_DEBUG && strlen(request->msg.body) > 0) {
 #ifndef HISYSEVENT_DISABLE
-        auto frames = process_->keyThread_->GetFrames();
-        frames.erase(std::remove_if(frames.begin(), frames.end(), [](const DfxFrame& frame) {
-            return frame.mapName.find("ld-musl-", 0) != std::string::npos;
-        }));
         std::string fingerPrint = request->processName;
-        constexpr size_t MAX_FRAME_CNT = 3;
-        for (size_t index = 0; index < MAX_FRAME_CNT && index < frames.size(); index++) {
-            fingerPrint = fingerPrint + frames[index].funcName;
+        if (process_ != nullptr && process_->keyThread_ != nullptr) {
+            auto frames = process_->keyThread_->GetFrames();
+            frames.erase(std::remove_if(frames.begin(), frames.end(),
+                [](const DfxFrame& frame) {
+                    return frame.mapName.find("ld-musl-", 0) != std::string::npos;
+                }),
+                frames.end());
+            constexpr size_t MAX_FRAME_CNT = 3;
+            for (size_t index = 0; index < MAX_FRAME_CNT && index < frames.size(); index++) {
+                fingerPrint = fingerPrint + frames[index].funcName;
+            }
         }
         size_t hashVal = std::hash<std::string>()(fingerPrint);
         HiSysEventWrite(OHOS::HiviewDFX::HiSysEvent::Domain::RELIABILITY, "ADDR_SANITIZER",
