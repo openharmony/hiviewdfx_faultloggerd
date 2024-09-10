@@ -47,6 +47,7 @@ int (*g_parseArkFrameInfoFn)(uintptr_t, uintptr_t, uintptr_t, uintptr_t, uint8_t
 int (*g_translateArkFrameInfoFn)(uint8_t*, uint64_t, JsFunction*);
 int (*g_arkCreateJsSymbolExtractorFn)(uintptr_t*);
 int (*g_arkDestoryJsSymbolExtractorFn)(uintptr_t);
+int (*g_arkDestoryLocalFn)();
 
 bool GetLibArkHandle()
 {
@@ -106,6 +107,29 @@ int DfxArk::ArkDestoryJsSymbolExtractor(uintptr_t extractorPtr)
 
     if (g_arkDestoryJsSymbolExtractorFn != nullptr) {
         return g_arkDestoryJsSymbolExtractorFn(extractorPtr);
+    }
+    return -1;
+}
+
+int DfxArk::ArkDestoryLocal()
+{
+    if (g_arkDestoryLocalFn != nullptr) {
+        return g_arkDestoryLocalFn();
+    }
+
+    if (g_handle == nullptr) {
+        return -1;
+    }
+    const char* arkFuncName = "ark_destory_local";
+    pthread_mutex_lock(&g_mutex);
+    if (g_arkDestoryLocalFn != nullptr) {
+        pthread_mutex_unlock(&g_mutex);
+        return g_arkDestoryLocalFn();
+    }
+    *(void**)(&(g_arkDestoryLocalFn)) = dlsym(g_handle, arkFuncName);
+    pthread_mutex_unlock(&g_mutex);
+    if (g_arkDestoryLocalFn != nullptr) {
+        return g_arkDestoryLocalFn();
     }
     return -1;
 }
