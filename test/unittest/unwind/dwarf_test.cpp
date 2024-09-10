@@ -510,15 +510,15 @@ namespace {
 HWTEST_F(DwarfTest, DwarfTest001, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "DwarfTest001: start.";
-    void* handle = dlopen("libfaultloggerd.z.so", RTLD_LAZY | RTLD_NODELETE);
+    void* handle = dlopen("libjson_stack_formatter.z.so", RTLD_LAZY | RTLD_NODELETE);
     bool isSuccess = handle != nullptr;
     if (!isSuccess) {
         ASSERT_FALSE(isSuccess);
         printf("Failed to dlopen libfaultloggerd, %s\n", dlerror());
         return;
     }
-    // 00000000000037e4   156 FUNC    GLOBAL DEFAULT   14 RequestFileDescriptor
-    RequestFdFunc requestFdFunc = (RequestFdFunc)dlsym(handle, "RequestFileDescriptor");
+    RequestFdFunc requestFdFunc = (RequestFdFunc)dlsym(handle, "_ZN4OHOS9HiviewDFX16DfxJsonFormatter15FormatJsonStack" \
+        "ENSt3__h12basic_stringIcNS2_11char_traitsIcEENS2_9allocatorIcEEEERS8_");
     isSuccess = requestFdFunc != nullptr;
     if (!isSuccess) {
         ASSERT_FALSE(isSuccess);
@@ -526,7 +526,7 @@ HWTEST_F(DwarfTest, DwarfTest001, TestSize.Level2)
         return;
     }
 
-    const uintptr_t pcOffset = 32;
+    const uintptr_t pcOffset = 48;
     uintptr_t pc = reinterpret_cast<uintptr_t>(requestFdFunc) + pcOffset;
     struct UnwindTableInfo uti;
     ASSERT_EQ(DfxElf::FindUnwindTableLocal(pc, uti), 0);
@@ -567,29 +567,38 @@ HWTEST_F(DwarfTest, DwarfTest001, TestSize.Level2)
     ASSERT_EQ(cie.pointerEncoding, 0x1b);
 
     /*
-        DW_CFA_advance_loc: 20 to 0000000000002ea8
-        DW_CFA_def_cfa_offset: 96
-        DW_CFA_advance_loc: 12 to 0000000000002eb4
-        DW_CFA_def_cfa: r29 (x29) ofs 32
+        DW_CFA_advance_loc: 20 to 0000000000002718
+        DW_CFA_def_cfa_offset: 112
+        DW_CFA_advance_loc: 28 to 0000000000002734
+        DW_CFA_def_cfa: r29 (x29) ofs 112
         DW_CFA_offset: r15 (x15) at cfa-8
         DW_CFA_offset: r19 (x19) at cfa-16
-        DW_CFA_offset: r30 (x30) at cfa-24
-        DW_CFA_offset: r29 (x29) at cfa-32
+        DW_CFA_offset: r20 (x20) at cfa-24
+        DW_CFA_offset: r21 (x21) at cfa-32
+        DW_CFA_offset: r22 (x22) at cfa-40
+        DW_CFA_offset: r23 (x23) at cfa-48
+        DW_CFA_offset: r24 (x24) at cfa-56
+        DW_CFA_offset: r25 (x25) at cfa-64
+        DW_CFA_offset: r26 (x26) at cfa-72
+        DW_CFA_offset: r27 (x27) at cfa-80
+        DW_CFA_offset: r28 (x28) at cfa-96
+        DW_CFA_offset: r30 (x30) at cfa-104
+        DW_CFA_offset: r29 (x29) at cfa-112
     */
     ASSERT_EQ(fde.pcStart, reinterpret_cast<uintptr_t>(requestFdFunc));
     ASSERT_EQ(rsState.cfaReg, REG_AARCH64_X29);
-    ASSERT_EQ(rsState.cfaRegOffset, 32); // 32 : DW_CFA_def_cfa: r29 (x29) ofs 32
+    ASSERT_EQ(rsState.cfaRegOffset, 112); // 112 : DW_CFA_def_cfa: r29 (x29) ofs 112
 
     size_t qutIdx = 0;
     if (DfxRegsQut::IsQutReg(static_cast<uint16_t>(REG_AARCH64_X30), qutIdx)) {
         ASSERT_EQ(static_cast<uint8_t>(rsState.locs[qutIdx].type),
             static_cast<uint8_t>(REG_LOC_MEM_OFFSET));
-        ASSERT_EQ(rsState.locs[qutIdx].val, -24); // -24: r30 (x30) at cfa-24
+        ASSERT_EQ(rsState.locs[qutIdx].val, -104); // -104: r30 (x30) at cfa-104
     }
     if (DfxRegsQut::IsQutReg(static_cast<uint16_t>(REG_AARCH64_X29), qutIdx)) {
         ASSERT_EQ(static_cast<uint8_t>(rsState.locs[qutIdx].type),
             static_cast<uint8_t>(REG_LOC_MEM_OFFSET));
-        ASSERT_EQ(rsState.locs[qutIdx].val, -32); // -32: r29 (x29) at cfa-32
+        ASSERT_EQ(rsState.locs[qutIdx].val, -112); // -112: r29 (x29) at cfa-112
     }
 
     RegLocState rsState2;
@@ -600,7 +609,7 @@ HWTEST_F(DwarfTest, DwarfTest001, TestSize.Level2)
     RegLocState rsState3;
     ASSERT_EQ(true, instructions.Parse(reinterpret_cast<uintptr_t>(requestFdFunc) + 24, fde, rsState3));
     ASSERT_EQ(rsState3.cfaReg, REG_AARCH64_X31);
-    ASSERT_EQ(rsState3.cfaRegOffset, 96); // DW_CFA_def_cfa_offset: 96
+    ASSERT_EQ(rsState3.cfaRegOffset, 112); // 112 : DW_CFA_def_cfa_offset: 112
     GTEST_LOG_(INFO) << "DwarfTest001: end.";
 }
 
