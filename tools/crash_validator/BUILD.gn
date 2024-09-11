@@ -30,7 +30,6 @@ if (!defined(ohos_lite)) {
     external_deps = [
       "bounds_checking_function:libsec_shared",
       "c_utils:utils",
-      "ipc:ipc_core",
     ]
     defines = []
     if (defined(global_parts_info.hiviewdfx_hisysevent)) {

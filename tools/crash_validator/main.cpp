@@ -21,7 +21,6 @@
 #include <thread>
 #ifdef HISYSEVENT_ENABLE
 #include "crash_validator.h"
-#include "ipc_skeleton.h"
 
 static std::shared_ptr<OHOS::HiviewDFX::CrashValidator> g_validator = nullptr;
 static void SigIntHandler()
