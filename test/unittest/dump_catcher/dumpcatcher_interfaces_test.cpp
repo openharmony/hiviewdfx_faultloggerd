@@ -26,6 +26,7 @@
 #include "dfx_json_formatter.h"
 #include "dfx_test_util.h"
 #include "faultloggerd_client.h"
+#include "procinfo.h"
 
 using namespace testing;
 using namespace testing::ext;
@@ -129,8 +130,6 @@ static void ForkMultiThreadProcess(void)
     } else {
         g_processId = pid;
         GTEST_LOG_(INFO) << "ForkMultiThreadProcess success, pid: " << pid;
-        usleep(CREATE_THREAD_TIMEOUT);
-        GTEST_LOG_(INFO) << "ForkMultiThreadProcess success, thread id: " << g_threadId;
     }
 }
 
@@ -624,12 +623,18 @@ HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest027, TestSize.Level
 {
     GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest027: start.";
     ForkMultiThreadProcess();
-    GTEST_LOG_(INFO) << "dump remote process, "  << " pid:" << g_processId << ", tid:" << g_threadId;
+    std::vector<int> tids;
+    std::vector<int> nstids;
+    if (!GetTidsByPid(g_processId, tids, nstids)) {
+        return;
+    }
+    int childTid = tids[1]; // 1 : child thread
+    GTEST_LOG_(INFO) << "dump remote process, "  << " pid:" << g_processId << ", tid:" << childTid;
     DfxDumpCatcher dumplog;
     std::string msg = "";
-    bool ret = dumplog.DumpCatchFd(g_processId, g_threadId, msg, 1);
+    bool ret = dumplog.DumpCatchFd(g_processId, childTid, msg, 1);
     GTEST_LOG_(INFO) << ret;
-    EXPECT_EQ(ret, true) << "DumpCatcherInterfacesTest027 Failed";
+    EXPECT_TRUE(ret) << "DumpCatcherInterfacesTest027 Failed";
     GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest027: end.";
 }
 
@@ -718,16 +723,51 @@ HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest030, TestSize.Level
     EXPECT_EQ(stackMsg == msg, true) << "stackMsg != msg";
     GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest030: end.";
 }
-#endif
 
 /**
  * @tc.name: DumpCatcherInterfacesTest031
- * @tc.desc: testDump after crashed
+ * @tc.desc: test DumpCatchProcess
  * @tc.type: FUNC
  */
 HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest031, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest031: start.";
+    std::string res = ExecuteCommands("uname");
+    if (res.find("Linux") != std::string::npos) {
+        return;
+    }
+    if (g_testPid == 0) {
+        GTEST_LOG_(ERROR) << "Failed to launch target hap.";
+        return;
+    }
+    if (!CheckProcessComm(g_testPid, TRUNCATE_TEST_BUNDLE_NAME)) {
+        GTEST_LOG_(ERROR) << "Error process comm";
+        return;
+    }
+    std::string stopProcessCmd = "kill -s SIGSTOP $(pidof com.example.myapplication)";
+    ExecuteCommands(stopProcessCmd);
+    DfxDumpCatcher dumplog;
+    std::string msg = "";
+    ASSERT_EQ(dumplog.DumpCatchProcess(g_testPid, msg), 1); //kernel stack
+    GTEST_LOG_(INFO) << msg;
+    std::string formattedStack = "";
+    ASSERT_TRUE(DfxJsonFormatter::FormatKernelStack(msg, formattedStack, false));
+    ASSERT_GT(formattedStack.size(), 0);
+    GTEST_LOG_(INFO) << formattedStack;
+    ASSERT_NE(formattedStack.find("#"), std::string::npos);
+    ASSERT_TRUE(DfxJsonFormatter::FormatKernelStack(msg, formattedStack, true));
+    GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest031: end.";
+}
+#endif
+
+/**
+ * @tc.name: DumpCatcherInterfacesTest033
+ * @tc.desc: testDump after crashed
+ * @tc.type: FUNC
+ */
+HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest033, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest033: start.";
     GTEST_LOG_(INFO) << "dump remote process, "  << " pid:" << getpid() << ", tid:" << gettid();
     int32_t fd = RequestFileDescriptor(FaultLoggerType::CPP_CRASH);
     ASSERT_GT(fd, 0);

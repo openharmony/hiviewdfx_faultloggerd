@@ -30,6 +30,7 @@
 #include "backtrace_local.h"
 #include "backtrace_local_thread.h"
 #include "dfx_frame_formatter.h"
+#include "dfx_kernel_stack.h"
 #include "dfx_test_util.h"
 #include "elapsed_time.h"
 
@@ -348,6 +349,31 @@ HWTEST_F(BacktraceLocalTest, BacktraceLocalTest010, TestSize.Level2)
 #endif
     ASSERT_TRUE(str.find(keyword) != std::string::npos);
     GTEST_LOG_(INFO) << "BacktraceLocalTest010: end.";
+}
+
+/**
+ * @tc.name: BacktraceLocalTest011
+ * @tc.desc: test get thread kernel stack
+ * @tc.type: FUNC
+ */
+HWTEST_F(BacktraceLocalTest, BacktraceLocalTest011, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "BacktraceLocalTest011: start.";
+    std::string res = ExecuteCommands("uname");
+    if (res.find("Linux") != std::string::npos) {
+        return;
+    }
+    std::string kernelStack;
+    ASSERT_EQ(DfxGetKernelStack(gettid(), kernelStack), 0);
+    std::vector<DfxFrame> frames;
+    ASSERT_TRUE(FormatThreadKernelStack(kernelStack, frames));
+    ASSERT_GT(frames.size(), 0);
+    for (auto const& frame : frames) {
+        auto line = DfxFrameFormatter::GetFrameStr(frame);
+        ASSERT_NE(line.find("#"), std::string::npos);
+        GTEST_LOG_(INFO) << line;
+    }
+    GTEST_LOG_(INFO) << "BacktraceLocalTest011: end.";
 }
 } // namespace HiviewDFX
 } // namepsace OHOS
