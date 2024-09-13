@@ -75,13 +75,18 @@ bool GetBacktraceStringByTid(std::string& out, int32_t tid, size_t skipFrameNum,
 {
     std::vector<DfxFrame> frames;
     bool ret = GetBacktraceFramesByTid(frames, tid, skipFrameNum + 1, fast, maxFrameNums);
-    out.clear();
+    if (!ret) {
+        std::string msg = "";
+        frames.clear();
+        if (DfxGetKernelStack(tid, msg) == 0 && FormatThreadKernelStack(msg, frames)) {
+            ret = true;
+            DFXLOG_INFO("Failed to get tid(%d) user stack, try kernel", tid);
+        }
+    }
     if (ret) {
+        out.clear();
         std::string threadHead = GetThreadHead(tid);
         out = threadHead + Unwinder::GetFramesStr(frames);
-    } else if (DfxGetKernelStack(tid, out) == 0) {
-        ret = true;
-        DFXLOG_INFO("Failed to get user stack, try kernel:%s", out.c_str());
     }
     return ret;
 }
@@ -147,8 +152,12 @@ std::string GetProcessStacktrace(size_t maxFrameNums)
             ss << thread.GetFormattedStr(true) << std::endl;
         } else {
             std::string msg = "";
-            DfxGetKernelStack(tid, msg);
-            ss << msg << std::endl;
+            std::vector<DfxFrame> frames;
+            if (DfxGetKernelStack(tid, msg) == 0 && FormatThreadKernelStack(msg, frames)) {
+                thread.SetFrames(frames);
+                ss << thread.GetFormattedStr(true) << std::endl;
+                DFXLOG_INFO("Failed to get tid(%d) user stack, try kernel", tid);
+            }
         }
         return true;
     };

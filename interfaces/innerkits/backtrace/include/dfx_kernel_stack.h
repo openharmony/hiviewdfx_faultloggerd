@@ -17,10 +17,12 @@
 
 #include <cinttypes>
 #include <string>
+#include "dfx_frame.h"
 
 namespace OHOS {
 namespace HiviewDFX {
 int32_t DfxGetKernelStack(int32_t pid, std::string& kernelStack);
+bool FormatThreadKernelStack(const std::string& kernelStack, std::vector<DfxFrame> &fomattedStack);
 }
 }
 #endif
