@@ -41,6 +41,7 @@ int (*g_parseArkFrameInfoLocalFn)(uintptr_t, uintptr_t, uintptr_t, uintptr_t, Js
 int (*g_parseArkFrameInfoFn)(uintptr_t, uintptr_t, uintptr_t, uintptr_t, uint8_t*, uint64_t, uintptr_t, JsFunction*);
 int (*g_arkCreateJsSymbolExtractorFn)(uintptr_t*);
 int (*g_arkDestoryJsSymbolExtractorFn)(uintptr_t);
+int (*g_arkDestoryLocalFn)();
 using RustDemangleFn = char*(*)(const char *);
 RustDemangleFn g_rustDemangleFn = nullptr;
 
@@ -187,19 +188,44 @@ HWTEST_F(ArkTest, ArkTest005, TestSize.Level2)
 HWTEST_F(ArkTest, ArkTest006, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "ArkTest006: start.";
-    uintptr_t zero = 0;
-    void *obj = nullptr;
-    OHOS::HiviewDFX::ReadMemFunc readMemFn = nullptr;
-    uintptr_t *fp = &zero;
-    uintptr_t *sp = &zero;
-    uintptr_t *pc = &zero;
-    uintptr_t* methodid = &zero;
-    bool *isJsFrame = nullptr;
-    const char* arkFuncName = "step_ark";
-    DLSYM_ARK_FUNC(arkFuncName, g_stepArkFn)
-    ASSERT_NE(g_stepArkFn, nullptr);
-    g_stepArkFn(obj, readMemFn, fp, sp, pc, methodid, isJsFrame);
-    g_stepArkFn = nullptr;
+    pid_t pid = fork();
+    if (pid == 0) {
+        uintptr_t zero = 0;
+        void *obj = nullptr;
+        OHOS::HiviewDFX::ReadMemFunc readMemFn = nullptr;
+        uintptr_t *fp = &zero;
+        uintptr_t *sp = &zero;
+        uintptr_t *pc = &zero;
+        uintptr_t* methodid = &zero;
+        bool *isJsFrame = nullptr;
+        const char* arkFuncName = "step_ark";
+        DLSYM_ARK_FUNC(arkFuncName, g_stepArkFn)
+        ASSERT_NE(g_stepArkFn, nullptr);
+        g_stepArkFn(obj, readMemFn, fp, sp, pc, methodid, isJsFrame);
+        g_stepArkFn = nullptr;
+        ASSERT_NE(g_handle, nullptr);
+        const char* arkFuncName1 = "ark_destory_local";
+        pthread_mutex_lock(&g_mutex);
+        *reinterpret_cast<void**>(&(g_arkDestoryLocalFn)) = dlsym(g_handle, arkFuncName1);
+        pthread_mutex_unlock(&g_mutex);
+        ASSERT_NE(g_arkDestoryLocalFn, nullptr);
+        g_arkDestoryLocalFn();
+        g_arkDestoryLocalFn = nullptr;
+        exit(0);
+    }
+    int status;
+    bool isSuccess = waitpid(pid, &status, 0) != -1;
+    if (!isSuccess) {
+        ASSERT_FALSE(isSuccess);
+        return;
+    }
+
+    int exitCode = -1;
+    if (WIFEXITED(status)) {
+        exitCode = WEXITSTATUS(status);
+        printf("Exit status was %d\n", exitCode);
+    }
+    ASSERT_EQ(exitCode, 0);
     GTEST_LOG_(INFO) << "ArkTest006: end.";
 }
 
