@@ -142,7 +142,7 @@ bool DfxJsonFormatter::FormatKernelStack(const std::string& kernelStack, std::st
             Json::Value frameJson;
             frameJson["pc"] = (*it)[1].str();
             frameJson["symbol"] = "";
-            frameJson["offset"] = "";
+            frameJson["offset"] = 0;
             frameJson["file"] = (*it)[2].str(); // 2 : second of searched element is map name
             frameJson["buildId"] = "";
             frames.append(frameJson);
