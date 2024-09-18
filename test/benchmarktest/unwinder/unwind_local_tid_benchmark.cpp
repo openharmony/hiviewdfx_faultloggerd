@@ -105,7 +105,7 @@ static void BenchmarkUnwinderLocalWithTid(benchmark::State& state)
             continue;
         }
         auto unwSize = unwinder->GetPcs().size();
-        //rk 64 frames size is 14, rk 32 frames size is 4
+        //rk 64 frames size is 14, rk 32 frames size is 9
         LOGU("%s, frames.size: %zu", __func__, unwSize);
         if (unwSize < TEST_MIN_UNWIND_FRAMES) {
             state.SkipWithError("Failed to unwind.");
