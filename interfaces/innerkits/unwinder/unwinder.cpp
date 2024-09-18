@@ -947,7 +947,7 @@ bool Unwinder::Impl::StepInner(const bool isSigFrame, StepFrame& frame, void *ct
                 ret = false;
                 break;
             }
-            regs_->SetPc(frame.pc);
+            regs_->SetPc(StripPac(frame.pc, pacMask_));
             regs_->SetSp(frame.sp);
             regs_->SetFp(frame.fp);
 #if defined(OFFLINE_MIXSTACK)
@@ -1040,6 +1040,7 @@ bool Unwinder::Impl::StepInner(const bool isSigFrame, StepFrame& frame, void *ct
             }
         }
     }
+    regs_->SetPc(StripPac(regs_->GetPc(), pacMask_));
 
 #if defined(__aarch64__)
     if (!ret) { // try fp
@@ -1087,8 +1088,6 @@ bool Unwinder::Impl::Apply(std::shared_ptr<DfxRegs> regs, std::shared_ptr<RegLoc
         lastErrorData_.SetCode(errCode);
         LOGE("Failed to apply reg state, errCode: %d", static_cast<int>(errCode));
     }
-
-    regs->SetPc(StripPac(regs->GetPc(), pacMask_));
     return ret;
 }
 

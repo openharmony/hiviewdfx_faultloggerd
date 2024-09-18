@@ -375,24 +375,29 @@ void DfxDumpCatcher::CollectKernelStack(pid_t pid, int waitMilliSeconds)
         finishCollect();
         return;
     }
-    std::vector<int> tids = {};
-    std::vector<int> nstids = {};
-    if (GetTidsByPid(pid, tids, nstids) == false) {
+
+    std::function<bool(int)> func = [&](int tid) {
+        if (tid <= 0) {
+            return false;
+        }
+        std::string tidKernelStackInfo;
+        if (DfxGetKernelStack(tid, tidKernelStackInfo) == 0) {
+            kernelStackInfo.append(tidKernelStackInfo);
+        }
+        return true;
+    };
+    std::vector<int> tids;
+    bool ret = GetTidsByPidWithFunc(pid, tids, func);
+    if (ret == false) {
         DFXLOG_ERROR("Process(%d) Get Tids fail!", pid);
         finishCollect();
         return;
     }
     g_kernelStackPid = pid;
-    for (int tid : tids) {
-        std::string tidKernelStackInfo;
-        if (DfxGetKernelStack(tid, tidKernelStackInfo) == 0) {
-            kernelStackInfo.append(tidKernelStackInfo);
-        }
-    }
-    DFXLOG_INFO("finish collect all tid info for pid(%d) time(%lld)ms", pid,
-        timer.Elapsed<std::chrono::milliseconds>());
     g_kernelStackInfo = kernelStackInfo;
     finishCollect();
+    DFXLOG_INFO("finish collect all tid info for pid(%d), time(%lld)ms", pid,
+        timer.Elapsed<std::chrono::milliseconds>());
 }
 
 void DfxDumpCatcher::AsyncGetAllTidKernelStack(pid_t pid, int waitMilliSeconds)
