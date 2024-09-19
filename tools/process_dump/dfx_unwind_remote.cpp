@@ -143,13 +143,11 @@ void DfxUnwindRemote::UnwindKeyThread(std::shared_ptr<ProcessDumpRequest> reques
     unwinder->SetIsJitCrashFlag(ProcessDumper::GetInstance().IsCrash());
     auto unwindAsyncThread = std::make_shared<DfxUnwindAsyncThread>(unwThread, unwinder, request->stackId);
     if ((vmPid != 0)) {
-        if (DfxPtrace::Attach(vmPid, PTRACE_ATTATCH_KEY_THREAD_TIMEOUT)) {
-            isVmProcAttach = true;
-            if (unwThread->GetThreadRegs() != nullptr) {
-                unwindAsyncThread->UnwindStack(vmPid);
-            } else {
-                GetThreadKernelStack(unwThread);
-            }
+        isVmProcAttach = true;
+        if (unwThread->GetThreadRegs() != nullptr) {
+            unwindAsyncThread->UnwindStack(vmPid);
+        } else {
+            GetThreadKernelStack(unwThread);
         }
     } else {
         unwindAsyncThread->UnwindStack();
