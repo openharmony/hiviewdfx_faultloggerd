@@ -247,7 +247,9 @@ bool DfxMap::Parse(char* buf, size_t size)
     path = SkipWhiteSpace(cp);
 
     perms = std::string(permChs, sizeof(permChs));
-    TrimAndDupStr(path, name);
+    if (path != nullptr) { // Prevent null pointer dereference when using TrimAndDupStr
+        TrimAndDupStr(path, name);
+    }
     return true;
 #else
     return false;
