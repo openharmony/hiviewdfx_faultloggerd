@@ -100,19 +100,6 @@ static struct ProcessDumpRequest g_request;
 static void *g_reservedChildStack = NULL;
 static pthread_mutex_t g_signalHandlerMutex = PTHREAD_MUTEX_INITIALIZER;
 
-enum PIPE_FD_TYPE {
-    WRITE_TO_DUMP,
-    READ_FROM_DUMP_TO_MAIN,
-    READ_FORM_DUMP_TO_VIRTUAL,
-    PIPE_MAX,
-};
-
-static int g_pipeFds[PIPE_MAX][2] = {
-    {-1, -1},
-    {-1, -1},
-    {-1, -1}
-};
-
 static BOOL g_hasInit = FALSE;
 static const int SIGNALHANDLER_TIMEOUT = 10000; // 10000 us
 static const int ALARM_TIME_S = 10;
