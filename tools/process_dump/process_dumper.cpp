@@ -261,8 +261,8 @@ void ReadPids(std::shared_ptr<ProcessDumpRequest> request, int& realPid, int& vm
     WaitForFork(childPid, sonPid);
     vmPid = sonPid;
 
+    ptrace(PTRACE_DETACH, childPid, 0, 0);
     ReadVmRealPid(request, sonPid, realPid);
-    ptrace(PTRACE_CONT, childPid, 0, 0);
 
     DFXLOG_INFO("procecdump get real pid is %d vm pid is %d", realPid, vmPid);
 }
