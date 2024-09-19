@@ -42,7 +42,7 @@ void DumpCatcher::Dump(int32_t type, int32_t pid, int32_t tid) const
         case DUMP_TYPE_KERNEL:
             break;
         default:
-            DFXLOG_WARN("type(%d) invalid, must %d(native), %d(mix), %d(kernel)", \
+            LOGWARN("type(%{public}d) invalid, must %{public}d(native), %{public}d(mix), %{public}d(kernel)", \
                 type, DUMP_TYPE_NATIVE, DUMP_TYPE_MIX, DUMP_TYPE_KERNEL);
             break;
     }

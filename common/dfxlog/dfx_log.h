@@ -62,6 +62,7 @@ int DfxLogPrintV(const LogLevel logLevel, const unsigned int domain, const char*
 #define DFXLOG_ERROR(fmt, ...) DFXLOG_PRINT(LOG_ERROR, fmt, ##__VA_ARGS__)
 #define DFXLOG_FATAL(fmt, ...) DFXLOG_PRINT(LOG_FATAL, fmt, ##__VA_ARGS__)
 
+#ifdef DFX_LOG_HILOG_BASE
 // replace the old interface, and delete the old interface after the replacement is complete
 #define LOGDEBUG(fmt, ...) \
     HILOG_BASE_DEBUG(LOG_CORE, "[%{public}s:%{public}d] " fmt, (__FILE_NAME__), (__LINE__), ##__VA_ARGS__)
@@ -73,6 +74,19 @@ int DfxLogPrintV(const LogLevel logLevel, const unsigned int domain, const char*
     HILOG_BASE_ERROR(LOG_CORE, "[%{public}s:%{public}d] " fmt, (__FILE_NAME__), (__LINE__), ##__VA_ARGS__)
 #define LOGFATAL(fmt, ...) \
     HILOG_BASE_FATAL(LOG_CORE, "[%{public}s:%{public}d] " fmt, (__FILE_NAME__), (__LINE__), ##__VA_ARGS__)
+#else
+// replace the old interface, and delete the old interface after the replacement is complete
+#define LOGDEBUG(fmt, ...) \
+    HILOG_DEBUG(LOG_CORE, "[%{public}s:%{public}d] " fmt, (__FILE_NAME__), (__LINE__), ##__VA_ARGS__)
+#define LOGINFO(fmt, ...) \
+    HILOG_INFO(LOG_CORE, "[%{public}s:%{public}d] " fmt, (__FILE_NAME__), (__LINE__), ##__VA_ARGS__)
+#define LOGWARN(fmt, ...) \
+    HILOG_WARN(LOG_CORE, "[%{public}s:%{public}d] " fmt, (__FILE_NAME__), (__LINE__), ##__VA_ARGS__)
+#define LOGERROR(fmt, ...) \
+    HILOG_ERROR(LOG_CORE, "[%{public}s:%{public}d] " fmt, (__FILE_NAME__), (__LINE__), ##__VA_ARGS__)
+#define LOGFATAL(fmt, ...) \
+    HILOG_FATAL(LOG_CORE, "[%{public}s:%{public}d] " fmt, (__FILE_NAME__), (__LINE__), ##__VA_ARGS__)
+#endif
 
 
 #ifdef DFX_LOG_UNWIND

@@ -49,7 +49,7 @@ static int ParseParamters(int argc, char *argv[], int &type, int32_t &pid, int32
     if (argc <= 1) {
         return ret;
     }
-    DFXLOG_DEBUG("argc: %d, argv1: %s", argc, argv[1]);
+    LOGDEBUG("argc: %{public}d, argv1: %{public}s", argc, argv[1]);
 
     int optRet;
     const char *optString = "cmkp:t:";
@@ -119,7 +119,7 @@ int main(int argc, char *argv[])
         return 0;
     }
 
-    DFXLOG_DEBUG("type: %d, pid: %d, tid: %d", type, pid, tid);
+    LOGDEBUG("type: %{public}d, pid: %{public}d, tid: %{public}d", type, pid, tid);
     OHOS::HiviewDFX::DumpCatcher::GetInstance().Dump(type, pid, tid);
     return 0;
 }

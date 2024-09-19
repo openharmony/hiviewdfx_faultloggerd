@@ -47,7 +47,7 @@ bool FaultStack::ReadTargetMemory(uintptr_t addr, uintptr_t &value) const
         *retAddr = ptrace(PTRACE_PEEKTEXT, tid_, reinterpret_cast<void*>(targetAddr), nullptr);
         if (*retAddr == -1) {
             if (errno != prevErrno_) {
-                DFXLOG_ERROR("read target mem by ptrace failed, errno(%s).", strerror(errno));
+                LOGERROR("read target mem by ptrace failed, errno(%{public}s).", strerror(errno));
                 prevErrno_ = errno;
             }
             return false;
@@ -82,7 +82,7 @@ uintptr_t FaultStack::AdjustAndCreateMemoryBlock(size_t index, uintptr_t prevSp,
 bool FaultStack::CollectStackInfo(const std::vector<DfxFrame>& frames, bool needParseStack)
 {
     if (frames.empty()) {
-        DFXLOG_WARN("%s", "null frames.");
+        LOGWARN("%{public}s", "null frames.");
         return false;
     }
 
@@ -211,7 +211,7 @@ MemoryBlockInfo FaultStack::CreateMemoryBlock(
 void FaultStack::CollectRegistersBlock(std::shared_ptr<DfxRegs> regs, std::shared_ptr<DfxMaps> maps)
 {
     if (regs == nullptr || maps == nullptr) {
-        DFXLOG_ERROR("%s : regs or maps is null.", __func__);
+        LOGERROR("%{public}s : regs or maps is null.", __func__);
         return;
     }
 
@@ -277,7 +277,7 @@ void FaultStack::PrintRegisterMemory() const
 bool FaultStack::ParseUnwindStack(std::shared_ptr<DfxMaps> maps, std::vector<DfxFrame>& frames)
 {
     if (maps == nullptr) {
-        DFXLOG_ERROR("%s : maps is null.", __func__);
+        LOGERROR("%{public}s : maps is null.", __func__);
         return false;
     }
     size_t index = frames.size();
@@ -298,13 +298,14 @@ bool FaultStack::ParseUnwindStack(std::shared_ptr<DfxMaps> maps, std::vector<Dfx
             if (stat(map->name.c_str(), &st) == 0 && (st.st_mode & S_IFREG)) {
                 auto elf = DfxElf::Create(frame.mapName);
                 if (elf == nullptr || !elf->IsValid()) {
-                    DFXLOG_ERROR("%s : Failed to create DfxElf, elf path(%s).", __func__, frame.mapName.c_str());
+                    LOGERROR("%{public}s : Failed to create DfxElf, elf path(%{public}s).", __func__,
+                        frame.mapName.c_str());
                     return false;
                 }
                 loadBias = elf->GetLoadBias();
                 frame.buildId = elf->GetBuildId();
             } else {
-                DFXLOG_WARN("%s : mapName(%s) is not file.", __func__, frame.mapName.c_str());
+                LOGWARN("%{public}s : mapName(%{public}s) is not file.", __func__, frame.mapName.c_str());
             }
 
             frame.relPc = frame.pc - map->begin + map->offset + static_cast<uint64_t>(loadBias);

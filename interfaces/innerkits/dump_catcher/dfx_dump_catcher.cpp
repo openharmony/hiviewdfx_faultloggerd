@@ -80,7 +80,7 @@ bool DfxDumpCatcher::DoDumpCurrTid(const size_t skipFrameNum, std::string& msg, 
         int currTid = gettid();
         msg.append("Failed to dump curr thread:" + std::to_string(currTid) + ".\n");
     }
-    DFXLOG_DEBUG("%s :: DoDumpCurrTid :: return %d.", DFXDUMPCATCHER_TAG.c_str(), ret);
+    LOGDEBUG("%{public}s :: DoDumpCurrTid :: return %{public}d.", DFXDUMPCATCHER_TAG.c_str(), ret);
     return ret;
 }
 
@@ -88,14 +88,14 @@ bool DfxDumpCatcher::DoDumpLocalTid(const int tid, std::string& msg, size_t maxF
 {
     bool ret = false;
     if (tid <= 0) {
-        DFXLOG_ERROR("%s :: DoDumpLocalTid :: return false as param error.", DFXDUMPCATCHER_TAG.c_str());
+        LOGERROR("%{public}s :: DoDumpLocalTid :: return false as param error.", DFXDUMPCATCHER_TAG.c_str());
         return ret;
     }
     ret = GetBacktraceStringByTid(msg, tid, 0, false, maxFrameNums);
     if (!ret) {
         msg.append("Failed to dump thread:" + std::to_string(tid) + ".\n");
     }
-    DFXLOG_DEBUG("%s :: DoDumpLocalTid :: return %d.", DFXDUMPCATCHER_TAG.c_str(), ret);
+    LOGDEBUG("%{public}s :: DoDumpLocalTid :: return %{public}d.", DFXDUMPCATCHER_TAG.c_str(), ret);
     return ret;
 }
 
@@ -103,7 +103,7 @@ bool DfxDumpCatcher::DoDumpLocalPid(int pid, std::string& msg, size_t maxFrameNu
 {
     bool ret = false;
     if (pid <= 0) {
-        DFXLOG_ERROR("%s :: DoDumpLocalPid :: return false as param error.", DFXDUMPCATCHER_TAG.c_str());
+        LOGERROR("%{public}s :: DoDumpLocalPid :: return false as param error.", DFXDUMPCATCHER_TAG.c_str());
         return ret;
     }
     size_t skipFramNum = 5; // 5: skip 5 frame
@@ -124,7 +124,7 @@ bool DfxDumpCatcher::DoDumpLocalPid(int pid, std::string& msg, size_t maxFrameNu
     };
     std::vector<int> tids;
     ret = GetTidsByPidWithFunc(getpid(), tids, func);
-    DFXLOG_DEBUG("%s :: DoDumpLocalPid :: return %d.", DFXDUMPCATCHER_TAG.c_str(), ret);
+    LOGDEBUG("%{public}s :: DoDumpLocalPid :: return %{public}d.", DFXDUMPCATCHER_TAG.c_str(), ret);
     return ret;
 }
 
@@ -149,7 +149,7 @@ bool DfxDumpCatcher::DoDumpLocalLocked(int pid, int tid, std::string& msg, size_
         }
     }
 
-    DFXLOG_DEBUG("%s :: DoDumpLocal :: ret(%d).", DFXDUMPCATCHER_TAG.c_str(), ret);
+    LOGDEBUG("%{public}s :: DoDumpLocal :: ret(%{public}d).", DFXDUMPCATCHER_TAG.c_str(), ret);
     return ret;
 }
 
@@ -173,14 +173,14 @@ static void ReportDumpCatcherStats(int32_t pid,
     ReadProcessName(pid, processName);
     copyLen = std::min(sizeof(stat->targetProcess) - 1, processName.size());
     if (memcpy_s(stat->targetProcess, sizeof(stat->targetProcess) - 1, processName.c_str(), copyLen) != 0) {
-        DFXLOG_ERROR("%s::Failed to copy target process", DFXDUMPCATCHER_TAG.c_str());
+        LOGERROR("%{public}s::Failed to copy target process", DFXDUMPCATCHER_TAG.c_str());
         return;
     }
 
     if (!ret) {
         copyLen = std::min(sizeof(stat->summary) - 1, msg.size());
         if (memcpy_s(stat->summary, sizeof(stat->summary) - 1, msg.c_str(), copyLen) != 0) {
-            DFXLOG_ERROR("%s::Failed to copy dumpcatcher summary", DFXDUMPCATCHER_TAG.c_str());
+            LOGERROR("%{public}s::Failed to copy dumpcatcher summary", DFXDUMPCATCHER_TAG.c_str());
             return;
         }
     }
@@ -189,7 +189,7 @@ static void ReportDumpCatcherStats(int32_t pid,
     if (dladdr(retAddr, &info) != 0) {
         copyLen = std::min(sizeof(stat->callerElf) - 1, strlen(info.dli_fname));
         if (memcpy_s(stat->callerElf, sizeof(stat->callerElf) - 1, info.dli_fname, copyLen) != 0) {
-            DFXLOG_ERROR("%s::Failed to copy caller elf info", DFXDUMPCATCHER_TAG.c_str());
+            LOGERROR("%{public}s::Failed to copy caller elf info", DFXDUMPCATCHER_TAG.c_str());
             return;
         }
         stat->offset = reinterpret_cast<uintptr_t>(retAddr) - reinterpret_cast<uintptr_t>(info.dli_fbase);
@@ -200,7 +200,7 @@ static void ReportDumpCatcherStats(int32_t pid,
         copyLen = std::min(sizeof(stat->callerProcess) - 1, cmdline.size());
         if (memcpy_s(stat->callerProcess, sizeof(stat->callerProcess) - 1,
             cmdline.c_str(), copyLen) != 0) {
-            DFXLOG_ERROR("%s::Failed to copy caller cmdline", DFXDUMPCATCHER_TAG.c_str());
+            LOGERROR("%{public}s::Failed to copy caller cmdline", DFXDUMPCATCHER_TAG.c_str());
             return;
         }
     }
@@ -226,12 +226,12 @@ bool DfxDumpCatcher::DumpCatch(int pid, int tid, std::string& msg, size_t maxFra
 {
     bool ret = false;
     if (pid <= 0 || tid < 0) {
-        DFXLOG_ERROR("%s :: dump_catch :: param error.", DFXDUMPCATCHER_TAG.c_str());
+        LOGERROR("%{public}s :: dump_catch :: param error.", DFXDUMPCATCHER_TAG.c_str());
         return ret;
     }
     std::string statusPath = StringPrintf("/proc/%d/status", pid);
     if (access(statusPath.c_str(), F_OK) != 0 && errno != EACCES) {
-        DFXLOG_ERROR("DumpCatch:: the pid(%d) process has exited, errno(%d)", pid, errno);
+        LOGERROR("DumpCatch:: the pid(%{public}d) process has exited, errno(%{public}d)", pid, errno);
         msg.append("Result: pid(" + std::to_string(pid) + ") process has exited.\n");
         return ret;
     }
@@ -241,13 +241,14 @@ bool DfxDumpCatcher::DumpCatch(int pid, int tid, std::string& msg, size_t maxFra
     int currentPid = getpid();
     bool reportStat = false;
     uint64_t requestTime = GetTimeMilliSeconds();
-    DFXLOG_INFO("Receive DumpCatch request for cPid:(%d), pid(%d), tid:(%d).", currentPid, pid, tid);
+    LOGINFO("Receive DumpCatch request for cPid:(%{public}d), pid(%{public}d), \
+        tid:(%{public}d).", currentPid, pid, tid);
     if (pid == currentPid) {
         ret = DoDumpLocalLocked(pid, tid, msg, maxFrameNums);
     } else {
         if (maxFrameNums != DEFAULT_MAX_FRAME_NUM) {
-            DFXLOG_INFO("%s :: dump_catch :: maxFrameNums does not support setting when pid is not equal to caller pid",
-                DFXDUMPCATCHER_TAG.c_str());
+            LOGINFO("%{public}s :: dump_catch :: maxFrameNums does not support setting \
+                when pid is not equal to caller pid", DFXDUMPCATCHER_TAG.c_str());
         }
         reportStat = true;
         int timeout = (tid == 0 ? 3 : 10) * 1000; // when tid not zero, timeout is 10s
@@ -259,7 +260,8 @@ bool DfxDumpCatcher::DumpCatch(int pid, int tid, std::string& msg, size_t maxFra
         ReportDumpCatcherStats(pid, requestTime, ret, msg, retAddr);
     }
 
-    DFXLOG_INFO("dump_catch : pid = %d, elapsed time = %ld ms, ret = %d, msgLength = %zu",
+    LOGINFO("dump_catch : pid = %{public}d, elapsed time = %{public}" PRId64 " ms, ret = %{public}d, \
+        msgLength = %{public}zu",
         pid, counter.Elapsed<std::chrono::milliseconds>(), ret, msg.size());
     DfxEnableTraceDlsym(false);
     return ret;
@@ -281,7 +283,7 @@ bool DfxDumpCatcher::DoDumpCatchRemote(int pid, int tid, std::string& msg, bool 
     bool ret = false;
     if (pid <= 0 || tid < 0) {
         msg.append("Result: pid(" + std::to_string(pid) + ") param error.\n");
-        DFXLOG_WARN("%s :: %s :: %s", DFXDUMPCATCHER_TAG.c_str(), __func__, msg.c_str());
+        LOGWARN("%{public}s :: %{public}s :: %{public}s", DFXDUMPCATCHER_TAG.c_str(), __func__, msg.c_str());
         return ret;
     }
     pid_ = pid;
@@ -299,7 +301,7 @@ bool DfxDumpCatcher::DoDumpCatchRemote(int pid, int tid, std::string& msg, bool 
             AsyncGetAllTidKernelStack(pid, WAIT_GET_KERNEL_STACK_TIMEOUT);
             msg.append("Result: pid(" + std::to_string(pid) + ") has been crashed.\n");
         }
-        DFXLOG_WARN("%s :: %s :: %s", DFXDUMPCATCHER_TAG.c_str(), __func__, msg.c_str());
+        LOGWARN("%{public}s :: %{public}s :: %{public}s", DFXDUMPCATCHER_TAG.c_str(), __func__, msg.c_str());
         msg.append(halfProcStatus_);
         msg.append(halfProcWchan_);
         return ret;
@@ -323,7 +325,8 @@ bool DfxDumpCatcher::DoDumpCatchRemote(int pid, int tid, std::string& msg, bool 
             msg.append(halfProcWchan_);
             break;
     }
-    DFXLOG_INFO("%s :: %s :: pid(%d) ret: %d", DFXDUMPCATCHER_TAG.c_str(), __func__, pid, ret);
+    LOGINFO("%{public}s :: %{public}s :: pid(%{public}d) ret: %{public}d", DFXDUMPCATCHER_TAG.c_str(),
+        __func__, pid, ret);
     return ret;
 }
 
@@ -339,7 +342,7 @@ int DfxDumpCatcher::DoDumpRemotePid(int pid, std::string& msg, bool isJson, int3
         readBufFd = RequestPipeFd(pid, FaultLoggerPipeType::PIPE_FD_READ_BUF);
         readResFd = RequestPipeFd(pid, FaultLoggerPipeType::PIPE_FD_READ_RES);
     }
-    DFXLOG_DEBUG("read res fd: %d", readResFd);
+    LOGDEBUG("read res fd: %{public}d", readResFd);
     int ret = DoDumpRemotePoll(readBufFd, readResFd, timeout, msg, isJson);
     // request close fds in faultloggerd
     RequestDelPipeFd(pid);
@@ -351,7 +354,8 @@ int DfxDumpCatcher::DoDumpRemotePid(int pid, std::string& msg, bool isJson, int3
         close(readResFd);
         readResFd = -1;
     }
-    DFXLOG_INFO("%s :: %s :: pid(%d) poll ret: %d", DFXDUMPCATCHER_TAG.c_str(), __func__, pid, ret);
+    LOGINFO("%{public}s :: %{public}s :: pid(%{public}d) poll ret: %{public}d",
+        DFXDUMPCATCHER_TAG.c_str(), __func__, pid, ret);
     return ret;
 }
 
@@ -371,7 +375,7 @@ void DfxDumpCatcher::CollectKernelStack(pid_t pid, int waitMilliSeconds)
     };
     std::string statusPath = StringPrintf("/proc/%d/status", pid);
     if (access(statusPath.c_str(), F_OK) != 0) {
-        DFXLOG_WARN("No process(%d) status file exist!", pid);
+        LOGWARN("No process(%{public}d) status file exist!", pid);
         finishCollect();
         return;
     }
@@ -389,14 +393,14 @@ void DfxDumpCatcher::CollectKernelStack(pid_t pid, int waitMilliSeconds)
     std::vector<int> tids;
     bool ret = GetTidsByPidWithFunc(pid, tids, func);
     if (ret == false) {
-        DFXLOG_ERROR("Process(%d) Get Tids fail!", pid);
+        LOGERROR("Process(%{public}d) Get Tids fail!", pid);
         finishCollect();
         return;
     }
     g_kernelStackPid = pid;
     g_kernelStackInfo = kernelStackInfo;
     finishCollect();
-    DFXLOG_INFO("finish collect all tid info for pid(%d), time(%lld)ms", pid,
+    LOGINFO("finish collect all tid info for pid(%{public}d) time(%{public}" PRId64 ")ms", pid,
         timer.Elapsed<std::chrono::milliseconds>());
 }
 
@@ -405,7 +409,7 @@ void DfxDumpCatcher::AsyncGetAllTidKernelStack(pid_t pid, int waitMilliSeconds)
     ReadProcessStatus(halfProcStatus_, pid);
     ReadProcessWchan(halfProcWchan_, pid, false, true);
     if (g_asyncThreadRunning) {
-        DFXLOG_INFO("pid(%d) get kernel stack thread is running, not get pid(%d)", g_kernelStackPid, pid);
+        LOGINFO("pid(%{public}d) get kernel stack thread is running, not get pid(%{public}d)", g_kernelStackPid, pid);
         return;
     }
     g_asyncThreadRunning = true;
@@ -432,7 +436,7 @@ int DfxDumpCatcher::DoDumpRemotePoll(int bufFd, int resFd, int timeout, std::str
         if (!isJson) {
             msg = "Result: bufFd or resFd < 0.\n";
         }
-        DFXLOG_ERROR("%s", "invalid bufFd or resFd");
+        LOGERROR("%{public}s", "invalid bufFd or resFd");
         return DUMP_POLL_FD;
     }
     int ret = DUMP_POLL_INIT;
@@ -511,8 +515,8 @@ int DfxDumpCatcher::DoDumpRemotePoll(int bufFd, int resFd, int timeout, std::str
         }
 
         if ((eventRet == false) || (bufRet == false) || (resRet == true)) {
-            DFXLOG_INFO("%s :: %s :: eventRet(%d) bufRet: %d resRet: %d", DFXDUMPCATCHER_TAG.c_str(), __func__,
-                eventRet, bufRet, resRet);
+            LOGINFO("%{public}s :: %{public}s :: eventRet(%{public}d) bufRet: %{public}d resRet: %{public}d",
+                DFXDUMPCATCHER_TAG.c_str(), __func__, eventRet, bufRet, resRet);
             ret = DUMP_POLL_RETURN;
             break;
         }
@@ -525,7 +529,7 @@ int DfxDumpCatcher::DoDumpRemotePoll(int bufFd, int resFd, int timeout, std::str
         remainTime = static_cast<int>(endTime - now);
     }
 
-    DFXLOG_INFO("%s :: %s :: %s", DFXDUMPCATCHER_TAG.c_str(), __func__, resMsg.c_str());
+    LOGINFO("%{public}s :: %{public}s :: %{public}s", DFXDUMPCATCHER_TAG.c_str(), __func__, resMsg.c_str());
     msg = isJson && res ? bufMsg : (resMsg + bufMsg);
     return res ? DUMP_POLL_OK : ret;
 }
@@ -537,10 +541,10 @@ bool DfxDumpCatcher::DoReadBuf(int fd, std::string& msg)
     do {
         ssize_t nread = OHOS_TEMP_FAILURE_RETRY(read(fd, buffer, MAX_PIPE_SIZE));
         if (nread <= 0) {
-            DFXLOG_WARN("%s :: %s :: read error", DFXDUMPCATCHER_TAG.c_str(), __func__);
+            LOGWARN("%{public}s :: %{public}s :: read error", DFXDUMPCATCHER_TAG.c_str(), __func__);
             break;
         }
-        DFXLOG_DEBUG("%s :: %s :: nread: %zu", DFXDUMPCATCHER_TAG.c_str(), __func__, nread);
+        LOGDEBUG("%{public}s :: %{public}s :: nread: %{public}zu", DFXDUMPCATCHER_TAG.c_str(), __func__, nread);
         ret = true;
         msg.append(buffer);
     } while (false);
@@ -553,7 +557,7 @@ bool DfxDumpCatcher::DoReadRes(int fd, bool &ret, std::string& msg)
     int32_t res = DumpErrorCode::DUMP_ESUCCESS;
     ssize_t nread = OHOS_TEMP_FAILURE_RETRY(read(fd, &res, sizeof(res)));
     if (nread <= 0 || nread != sizeof(res)) {
-        DFXLOG_WARN("%s :: %s :: read error", DFXDUMPCATCHER_TAG.c_str(), __func__);
+        LOGWARN("%{public}s :: %{public}s :: read error", DFXDUMPCATCHER_TAG.c_str(), __func__);
         return false;
     }
     if (res == DumpErrorCode::DUMP_ESUCCESS) {
@@ -568,19 +572,22 @@ bool DfxDumpCatcher::DumpCatchMultiPid(const std::vector<int> pidV, std::string&
     bool ret = false;
     int pidSize = (int)pidV.size();
     if (pidSize <= 0) {
-        DFXLOG_ERROR("%s :: %s :: param error, pidSize(%d).", DFXDUMPCATCHER_TAG.c_str(), __func__, pidSize);
+        LOGERROR("%{public}s :: %{public}s :: param error, pidSize(%{public}d).",
+            DFXDUMPCATCHER_TAG.c_str(), __func__, pidSize);
         return ret;
     }
 
     std::unique_lock<std::mutex> lck(mutex_);
     int currentPid = getpid();
     int currentTid = gettid();
-    DFXLOG_DEBUG("%s :: %s :: cPid(%d), cTid(%d), pidSize(%d).", DFXDUMPCATCHER_TAG.c_str(), \
+    LOGDEBUG("%{public}s :: %{public}s :: cPid(%{public}d), cTid(%{public}d), pidSize(%{public}d).",
+        DFXDUMPCATCHER_TAG.c_str(), \
         __func__, currentPid, currentTid, pidSize);
 
     time_t startTime = time(nullptr);
     if (startTime > 0) {
-        DFXLOG_DEBUG("%s :: %s :: startTime(%" PRId64 ").", DFXDUMPCATCHER_TAG.c_str(), __func__, startTime);
+        LOGDEBUG("%{public}s :: %{public}s :: startTime(%{public}" PRId64 ").",
+            DFXDUMPCATCHER_TAG.c_str(), __func__, startTime);
     }
 
     for (int i = 0; i < pidSize; i++) {
@@ -594,7 +601,8 @@ bool DfxDumpCatcher::DumpCatchMultiPid(const std::vector<int> pidV, std::string&
 
         time_t currentTime = time(nullptr);
         if (currentTime > 0) {
-            DFXLOG_DEBUG("%s :: %s :: startTime(%" PRId64 "), currentTime(%" PRId64 ").", DFXDUMPCATCHER_TAG.c_str(), \
+            LOGDEBUG("%{public}s :: %{public}s :: startTime(%{public}" PRId64 "), currentTime(%{public}" PRId64 ").",
+                DFXDUMPCATCHER_TAG.c_str(), \
                 __func__, startTime, currentTime);
             if (currentTime > startTime + DUMP_CATCHE_WORK_TIME_S) {
                 break;
@@ -602,7 +610,7 @@ bool DfxDumpCatcher::DumpCatchMultiPid(const std::vector<int> pidV, std::string&
         }
     }
 
-    DFXLOG_DEBUG("%s :: %s :: msg(%s).", DFXDUMPCATCHER_TAG.c_str(), __func__, msg.c_str());
+    LOGDEBUG("%{public}s :: %{public}s :: msg(%{public}s).", DFXDUMPCATCHER_TAG.c_str(), __func__, msg.c_str());
     if (msg.find("Tid:") != std::string::npos) {
         ret = true;
     }

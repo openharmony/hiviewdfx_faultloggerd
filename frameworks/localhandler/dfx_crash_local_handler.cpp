@@ -71,7 +71,7 @@ static __attribute__((noinline)) void PrintLog(int fd, const char *format, ...)
         }
         return;
     }
-    DFXLOG_ERROR("%s", buf);
+    LOGERROR("%{public}s", buf);
     if (fd > 0) {
         (void)OHOS_TEMP_FAILURE_RETRY(write(fd, buf, strlen(buf)));
     }
@@ -120,7 +120,7 @@ static void PrintTimeStamp(const int fd)
     (void)strftime(secBuf, sizeof(secBuf) - 1, "%Y-%m-%d %H:%M:%S", t);
     if (snprintf_s(printBuf, sizeof(printBuf), sizeof(printBuf) - 1,
             "%s.%03" PRIx64 "\n", secBuf, millisec) < 0) {
-        DFXLOG_ERROR("snprintf timestamp fail");
+        LOGERROR("snprintf timestamp fail");
         return;
     }
     PrintLog(fd, "Timestamp:%s", printBuf);
@@ -135,7 +135,7 @@ static void ReportToHiview(const char* logPath, const struct ProcessDumpRequest*
     exception.error = CRASH_DUMP_LOCAL_REPORT;
     exception.time = static_cast<int64_t>(GetTimeMilliseconds());
     if (strncpy_s(exception.message, sizeof(exception.message) - 1, logPath, strlen(logPath)) != 0) {
-        DFXLOG_ERROR("strcpy exception msg fail");
+        LOGERROR("strcpy exception msg fail");
         return;
     }
     ReportException(exception);
@@ -161,7 +161,7 @@ void CrashLocalHandlerFd(const int fd, const struct ProcessDumpRequest* request)
     char logFileName[BUF_SZ] = {0};
     if (snprintf_s(logFileName, sizeof(logFileName), sizeof(logFileName) - 1,
         "/data/log/faultlog/temp/cppcrash-%d-%llu", request->pid, request->timeStamp + 1) < 0) {
-        DFXLOG_ERROR("snprintf logFileName fail");
+        LOGERROR("snprintf logFileName fail");
         return;
     }
     ReportToHiview(logFileName, request);

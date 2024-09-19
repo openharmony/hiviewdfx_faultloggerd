@@ -34,7 +34,7 @@ namespace HiviewDFX {
 void DfxUnwindAsyncThread::UnwindStack(pid_t vmPid)
 {
     if (unwinder_ == nullptr || thread_ == nullptr) {
-        DFXLOG_ERROR("%s::thread or unwinder is not initialized.", __func__);
+        LOGERROR("%{public}s::thread or unwinder is not initialized.", __func__);
         return;
     }
     // 1: get crash stack
@@ -42,7 +42,7 @@ void DfxUnwindAsyncThread::UnwindStack(pid_t vmPid)
     auto regs = thread_->GetThreadRegs();
     unwinder_->SetRegs(regs);
     pid_t tid = thread_->threadInfo_.nsTid;
-    DFXLOG_INFO("%s, unwind tid(%d) start.", __func__, tid);
+    LOGINFO("%{public}s, unwind tid(%{public}d) start.", __func__, tid);
     auto tmpPid = vmPid != 0 ? vmPid : tid;
     DFX_TRACE_START("KeyThreadUnwindRemote:%d", tid);
     MAYBE_UNUSED bool ret = unwinder_->UnwindRemote(tmpPid,
@@ -77,7 +77,7 @@ void DfxUnwindAsyncThread::UnwindStack(pid_t vmPid)
 #endif
     }
 
-    DFXLOG_INFO("%s, unwind tid(%d) finish ret(%d).", __func__, tid, ret);
+    LOGINFO("%{public}s, unwind tid(%{public}d) finish ret(%{public}d).", __func__, tid, ret);
 }
 
 void DfxUnwindAsyncThread::GetSubmitterStack(std::vector<DfxFrame> &submitterFrames)
@@ -91,7 +91,7 @@ void DfxUnwindAsyncThread::GetSubmitterStack(std::vector<DfxFrame> &submitterFra
     }
     std::vector<std::shared_ptr<DfxMap>> mapVec;
     if (!maps->FindMapsByName("[anon:async_stack_table]", mapVec)) {
-        DFXLOG_ERROR("%s::Can not find map of async stack table", __func__);
+        LOGERROR("%{public}s::Can not find map of async stack table", __func__);
         return;
     }
     auto map = mapVec.front();
@@ -99,7 +99,7 @@ void DfxUnwindAsyncThread::GetSubmitterStack(std::vector<DfxFrame> &submitterFra
     auto tableData = std::make_shared<std::vector<uint8_t>>(size);
     size_t byte = DfxMemory::ReadProcMemByPid(thread_->threadInfo_.nsTid, map->begin, tableData->data(), size);
     if (byte != size) {
-        DFXLOG_ERROR("%s", "Failed to read unique_table from target");
+        LOGERROR("%{public}s", "Failed to read unique_table from target");
         return;
     }
     auto table = std::make_shared<UniqueStackTable>(tableData->data(), size, false);
@@ -109,7 +109,7 @@ void DfxUnwindAsyncThread::GetSubmitterStack(std::vector<DfxFrame> &submitterFra
     if (table->GetPcsByStackId(id, pcs)) {
         unwinder_->GetFramesByPcs(submitterFrames, pcs);
     } else {
-        DFXLOG_WARN("%s::Failed to get pcs", __func__);
+        LOGWARN("%{public}s::Failed to get pcs", __func__);
     }
 }
 
@@ -175,7 +175,7 @@ void DfxUnwindAsyncThread::UnwindThreadByParseStackIfNeed()
         thread_->InitFaultStack(needParseStack);
         auto faultStack = thread_->GetFaultStack();
         if (faultStack == nullptr || !faultStack->ParseUnwindStack(unwinder_->GetMaps(), frames)) {
-            DFXLOG_ERROR("%s : Failed to parse unwind stack.", __func__);
+            LOGERROR("%{public}s : Failed to parse unwind stack.", __func__);
             return;
         }
         thread_->SetFrames(frames);
