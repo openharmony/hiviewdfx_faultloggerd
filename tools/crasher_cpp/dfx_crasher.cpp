@@ -135,6 +135,8 @@ constexpr static CrasherCommandLine CMDLINE_TABLE[] = {
 #endif
     {"FatalMessage", "PrintFatalMessageInLibc",
         &DfxCrasher::PrintFatalMessageInLibc},
+    {"TestGetCrashObj", "Test get object when crash",
+        &DfxCrasher::TestGetCrashObj},
 #ifndef is_ohos_lite
     {"AsyncStack", "Test async stacktrace in nomal thread crash case",
         &DfxCrasher::AsyncStacktrace},
@@ -155,6 +157,9 @@ constexpr static CrasherCommandLineParam CMDLINE_TABLE_PARAM[] = {
         &DfxCrasher::CrashInLibuvWorkDone},
 #endif
 };
+
+extern "C" uintptr_t DFX_SetCrashObj(uint8_t type, uintptr_t addr) __attribute__((weak));
+extern "C" void DFX_ResetCrashObj(uintptr_t crashObj) __attribute__((weak));
 
 DfxCrasher::DfxCrasher() {}
 DfxCrasher::~DfxCrasher() {}
@@ -527,6 +532,35 @@ NOINLINE int DfxCrasher::PrintFatalMessageInLibc()
 {
     set_fatal_message("TestPrintFatalMessageInLibc");
     RaiseAbort();
+    return 0;
+}
+
+NOINLINE static void TestGetCrashObjInner()
+{
+    uintptr_t type = 0;
+    uintptr_t val = 0;
+    std::string msg = "test get crashObjectInner.";
+    if (DFX_SetCrashObj != nullptr) {
+        val = DFX_SetCrashObj(type, reinterpret_cast<uintptr_t>(msg.c_str()));
+    }
+    if (DFX_ResetCrashObj != nullptr) {
+        DFX_ResetCrashObj(val);
+    }
+}
+
+NOINLINE int DfxCrasher::TestGetCrashObj()
+{
+    uint8_t type = 0;
+    uintptr_t crashObj = 0;
+    std::string msg = "test get crashObject.";
+    if (DFX_SetCrashObj != nullptr) {
+        crashObj = DFX_SetCrashObj(type, reinterpret_cast<uintptr_t>(msg.c_str()));
+    }
+    TestGetCrashObjInner();
+    RaiseAbort();
+    if (DFX_ResetCrashObj != nullptr) {
+        DFX_ResetCrashObj(crashObj);
+    }
     return 0;
 }
 

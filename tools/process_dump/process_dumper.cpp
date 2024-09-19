@@ -511,6 +511,46 @@ void ProcessDumper::UnwindWriteJit(const ProcessDumpRequest &request)
     (void)close(fd);
 }
 
+std::string ProcessDumper::ReadStringByPtrace(pid_t tid, uintptr_t addr)
+{
+    constexpr int bufLen = 256;
+    long buffer[bufLen] = {0};
+    for (int i = 0; i < bufLen - 1; i++) {
+        long ret = ptrace(PTRACE_PEEKTEXT, tid, reinterpret_cast<void*>(addr + sizeof(long) * i), nullptr);
+        if (ret == -1) {
+            DFXLOGE("read target mem by ptrace failed, errno(%{public}s).", strerror(errno));
+            break;
+        }
+        buffer[i] = ret;
+        if (ret == 0) {
+            break;
+        }
+    }
+    char* val = reinterpret_cast<char*>(buffer);
+    return std::string(val);
+}
+
+void ProcessDumper::GetCrashObj(std::shared_ptr<ProcessDumpRequest> request)
+{
+#ifdef __LP64__
+    if (!isCrash_ || request->crashObj == 0) {
+        return;
+    }
+    uintptr_t type = request->crashObj >> 56; // 56 :: Move 56 bit to the right
+    uintptr_t addr = request->crashObj & 0xffffffffffffff;
+    switch (type) {
+        case 0: {
+            if (process_ != nullptr) {
+                process_->SetFatalMessage(process_->GetFatalMessage() + ReadStringByPtrace(request->nsPid, addr));
+            }
+            break;
+        }
+        default:
+            break;
+    }
+#endif
+}
+
 bool ProcessDumper::Unwind(std::shared_ptr<ProcessDumpRequest> request, int &dumpRes, pid_t vmPid)
 {
     // dump unwind should still keep main thread or aim thread is frist unwind
@@ -524,7 +564,7 @@ bool ProcessDumper::Unwind(std::shared_ptr<ProcessDumpRequest> request, int &dum
             }
         }
     }
-
+    GetCrashObj(request);
     if (!DfxUnwindRemote::GetInstance().UnwindProcess(request, process_, unwinder_, vmPid)) {
         LOGERROR("Failed to unwind process.");
         dumpRes = DumpErrorCode::DUMP_ESTOPUNWIND;

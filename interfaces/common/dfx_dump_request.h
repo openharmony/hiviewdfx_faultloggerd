@@ -137,6 +137,7 @@ struct ProcessDumpRequest {
     intptr_t vmProcRealPid;
     /** whether block source process pid */
     intptr_t isBlockCrash;
+    uintptr_t crashObj;
 };
 
 static const int CRASH_BLOCK_EXIT_FLAG  = 0x13579BDF;
