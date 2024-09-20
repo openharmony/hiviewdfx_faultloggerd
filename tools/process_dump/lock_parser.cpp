@@ -43,7 +43,7 @@ bool LockParser::ParseLockInfo(std::shared_ptr<Unwinder> unwinder, int32_t vmPid
         // the normal type only store EBUSY in owner section
         int type = mutexInfo->DFX_MUTEX_TYPE;
         int owner = mutexInfo->DFX_MUTEX_OWNER & 0x3fffffff;
-        DFXLOG_INFO("Thread(%d) is waiting a lock with type %d held by %d", tid, type, owner);
+        LOGINFO("Thread(%{public}d) is waiting a lock with type %d held by %d", tid, type, owner);
         return true;
     }
     return false;

@@ -35,7 +35,7 @@ int WriteLog(int32_t fd, const char *format, ...)
     va_start(args, format);
     ret = vsnprintf_s(buf, sizeof(buf), sizeof(buf) - 1, format, args);
     if (ret == -1) {
-        DFXLOG_WARN("%s", "WriteLog: vsnprintf_s fail");
+        LOGWARN("%{public}s", "WriteLog: vsnprintf_s fail");
     }
     va_end(args);
 
@@ -48,12 +48,12 @@ int WriteLog(int32_t fd, const char *format, ...)
     if (fd >= 0) {
         ret = dprintf(fd, "%s", buf);
         if (ret < 0) {
-            DFXLOG_ERROR("WriteLog :: write msg(%s) to fd(%d) failed, ret(%d).", buf, fd, ret);
+            LOGERROR("WriteLog :: write msg(%{public}s) to fd(%{public}d) failed, ret(%{public}d).", buf, fd, ret);
         }
     } else if (fd == INVALID_FD) {
-        DFXLOG_WARN("%s", buf);
+        LOGWARN("%{public}s", buf);
     } else {
-        DFXLOG_DEBUG("%s", buf);
+        LOGDEBUG("%{public}s", buf);
     }
 
     return ret;
@@ -71,14 +71,15 @@ void DfxLogToSocket(const char *msg)
     }
     int ret = RequestPrintTHilog(msg, length);
     if (ret < 0) {
-        DFXLOG_ERROR("DfxLogToSocket :: request print msg(%s) failed, ret(%d).", msg, ret);
+        LOGERROR("DfxLogToSocket :: request print msg(%{public}s) failed, ret(%{public}d).", msg, ret);
     }
 }
 
 void InitDebugLog(int type, int pid, int tid, unsigned int uid)
 {
 #ifndef is_ohos_lite
-    DFXLOG_INFO("InitDebugLog :: type(%d), pid(%d), tid(%d), uid(%d).", type, pid, tid, uid);
+    LOGINFO("InitDebugLog :: type(%{public}d), pid(%{public}d), tid(%{public}d), uid(%{public}d).",
+        type, pid, tid, uid);
     if (g_DebugLogFd != INVALID_FD) {
         return;
     }
@@ -92,13 +93,13 @@ void InitDebugLog(int type, int pid, int tid, unsigned int uid)
 
     g_DebugLogFd = RequestLogFileDescriptor(&faultloggerdRequest);
     if (g_DebugLogFd <= 0) {
-        DFXLOG_ERROR("%s", "InitDebugLog :: RequestLogFileDescriptor failed.");
+        LOGERROR("%{public}s", "InitDebugLog :: RequestLogFileDescriptor failed.");
         g_DebugLogFd = INVALID_FD;
     } else {
         g_StdErrFd = dup(STDERR_FILENO);
 
         if (dup2(g_DebugLogFd, STDERR_FILENO) == -1) {
-            DFXLOG_ERROR("%s", "InitDebugLog :: dup2 failed.");
+            LOGERROR("%{public}s", "InitDebugLog :: dup2 failed.");
             close(g_DebugLogFd);
             g_DebugLogFd = INVALID_FD;
             g_StdErrFd = INVALID_FD;

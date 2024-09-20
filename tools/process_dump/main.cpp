@@ -41,7 +41,7 @@ static bool ParseParameters(int argc, char *argv[], bool &isSignalHdlr)
     if (argc <= DUMP_ARG_ONE) {
         return false;
     }
-    DFXLOG_DEBUG("argc: %d, argv1: %s", argc, argv[1]);
+    LOGDEBUG("argc: %{public}d, argv1: %{public}s", argc, argv[1]);
 
     if (!strcmp("-signalhandler", argv[DUMP_ARG_ONE])) {
         isSignalHdlr = true;
@@ -52,18 +52,18 @@ static bool ParseParameters(int argc, char *argv[], bool &isSignalHdlr)
 
 int main(int argc, char *argv[])
 {
-    DFXLOG_INFO("%s", "Start main function of processdump");
+    LOGINFO("%{public}s", "Start main function of processdump");
 #if defined(DEBUG_CRASH_LOCAL_HANDLER)
     DFX_InstallLocalSignalHandler();
 #endif
     if (signal(SIGCHLD, SIG_IGN) == SIG_ERR) {
-        DFXLOG_ERROR("%s", "Processdump ignore SIGCHLD failed.");
+        LOGERROR("%{public}s", "Processdump ignore SIGCHLD failed.");
     }
 
     bool isSignalHdlr = false;
 
     alarm(PROCESSDUMP_TIMEOUT);
-    DFXLOG_INFO("Start alarm %d seconds for processdump", PROCESSDUMP_TIMEOUT);
+    LOGINFO("Start alarm %{public}d seconds for processdump", PROCESSDUMP_TIMEOUT);
     setsid();
 
     if (!ParseParameters(argc, argv, isSignalHdlr)) {

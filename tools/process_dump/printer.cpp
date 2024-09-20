@@ -96,7 +96,7 @@ void Printer::PrintReason(std::shared_ptr<ProcessDumpRequest> request, std::shar
     reasonInfo += "Reason:";
     DfxRingBufferWrapper::GetInstance().AppendMsg("Reason:");
     if (process == nullptr) {
-        DFXLOG_WARN("%s", "process is nullptr");
+        LOGWARN("%{public}s", "process is nullptr");
         return;
     }
     if (request->msg.type != MESSAGE_FDSAN_DEBUG) {
@@ -116,13 +116,13 @@ void Printer::PrintReason(std::shared_ptr<ProcessDumpRequest> request, std::shar
         bool keyThreadEmpty = (request->dumpMode == SPLIT_MODE && process->vmThread_ == nullptr) ||
             process->keyThread_ == nullptr;
         if (unwinder == nullptr || keyThreadEmpty) {
-            DFXLOG_WARN("%s is nullptr", unwinder == nullptr ? "unwinder" : "keyThread_");
+            LOGWARN("%{public}s is nullptr", unwinder == nullptr ? "unwinder" : "keyThread_");
             return;
         }
         std::shared_ptr<DfxMaps> maps = unwinder->GetMaps();
         std::vector<std::shared_ptr<DfxMap>> map;
         if (DfxRegs::CreateFromUcontext(request->context) == nullptr) {
-            DFXLOG_WARN("%s", "regs is nullptr");
+            LOGWARN("%{public}s", "regs is nullptr");
             return;
         }
         std::string elfName = StringPrintf("[anon:stack:%d]", process->keyThread_->threadInfo_.tid);
@@ -272,7 +272,7 @@ void Printer::PrintThreadFaultStackByConfig(std::shared_ptr<DfxProcess> process,
             return;
         }
         if (process->regs_ == nullptr) {
-            DFXLOG_ERROR("%s", "process regs is nullptr");
+            LOGERROR("%{public}s", "process regs is nullptr");
             return;
         }
         faultStack->CollectRegistersBlock(process->regs_, unwinder->GetMaps());

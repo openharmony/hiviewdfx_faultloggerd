@@ -92,11 +92,11 @@ void WriteData(int fd, const std::string& data, size_t blockSize)
         size_t writeLength = (index + blockSize) <= dataSize ? blockSize : (dataSize - index);
         ssize_t nwrite = OHOS_TEMP_FAILURE_RETRY(write(fd, data.substr(index, writeLength).c_str(), writeLength));
         if (nwrite != static_cast<ssize_t>(writeLength)) {
-            DFXLOG_INFO("%s :: nwrite: %zd, writeLength: %zu", __func__, nwrite, writeLength);
+            LOGINFO("%{public}s :: nwrite: %{public}zd, writeLength: %{public}zu", __func__, nwrite, writeLength);
         }
         index += writeLength;
     }
-    DFXLOG_INFO("%s :: needWriteDataSize: %zu, writeDataSize: %zu", __func__, dataSize, index);
+    LOGINFO("%{public}s :: needWriteDataSize: %{public}zu, writeDataSize: %{public}zu", __func__, dataSize, index);
 }
 
 #if !defined(__x86_64__)
@@ -121,7 +121,7 @@ void CollectOpenFiles(OpenFilesList &list, pid_t pid)
     std::string fdDirName = "/proc/" + std::to_string(pid) + "/fd";
     std::unique_ptr<DIR, int (*)(DIR *)> dir(opendir(fdDirName.c_str()), closedir);
     if (dir == nullptr) {
-        DFXLOG_ERROR("failed to open directory %s: %s", fdDirName.c_str(), strerror(errno));
+        LOGERROR("failed to open directory %{public}s: %{public}s", fdDirName.c_str(), strerror(errno));
         return;
     }
 
@@ -138,7 +138,7 @@ void CollectOpenFiles(OpenFilesList &list, pid_t pid)
             list[fd].path = target;
         } else {
             list[fd].path = "???";
-            DFXLOG_ERROR("failed to readlink %s: %s", path.c_str(), strerror(errno));
+            LOGERROR("failed to readlink %{public}s: %{public}s", path.c_str(), strerror(errno));
         }
     }
 }
@@ -151,7 +151,7 @@ void FillFdsaninfo(OpenFilesList &list, pid_t nsPid, uint64_t fdTableAddr)
     uint64_t addr = fdTableAddr + entryOffset;
     FdEntry entrys[fds];
     if (DfxMemory::ReadProcMemByPid(nsPid, addr, entrys, sizeof(FdEntry) * fds) != sizeof(FdEntry) * fds) {
-        DFXLOG_ERROR("read nsPid mem error %s", strerror(errno));
+        LOGERROR("read nsPid mem error %{public}s", strerror(errno));
         return;
     }
     for (size_t i = 0; i < fds; i++) {
@@ -183,7 +183,7 @@ void FillFdsaninfo(OpenFilesList &list, pid_t nsPid, uint64_t fdTableAddr)
     uint64_t address = overflow + offsetof(FdTableOverflow, entries);
     if (DfxMemory::ReadProcMemByPid(nsPid, address, overflowFdEntrys.data(), sizeof(FdEntry) * overflowLength) !=
         sizeof(FdEntry) * overflowLength) {
-        DFXLOG_ERROR("read nsPid mem error %s", strerror(errno));
+        LOGERROR("read nsPid mem error %{public}s", strerror(errno));
         return;
     }
     size_t fdIndex = fds;
@@ -232,11 +232,11 @@ void ReadVmRealPid(std::shared_ptr<ProcessDumpRequest> request, unsigned long vm
     ptrace(PTRACE_CONT, vmPid, NULL, NULL);
 
     long data = 0;
-    DFXLOG_INFO("%s", "start wait exit event happen");
+    LOGINFO("%{public}s", "start wait exit event happen");
     waitpid(vmPid, &waitStatus, 0); // wait exit stop
     data = ptrace(PTRACE_PEEKDATA, vmPid, reinterpret_cast<void *>(request->vmProcRealPid), NULL);
     if (data < 0) {
-        DFXLOG_INFO("ptrace peek data error %lu %d", vmPid, errno);
+        LOGINFO("ptrace peek data error %{public}lu %{public}d", vmPid, errno);
     }
     realPid = static_cast<int>(data);
 }
@@ -254,7 +254,7 @@ void ReadPids(std::shared_ptr<ProcessDumpRequest> request, int& realPid, int& vm
             proc->keyThread_->Detach();
         }
         proc->Detach();
-        DFXLOG_INFO("%s", "ptrace detach all tids");
+        LOGINFO("%{public}s", "ptrace detach all tids");
     }
 
     unsigned long sonPid = 0;
@@ -264,7 +264,7 @@ void ReadPids(std::shared_ptr<ProcessDumpRequest> request, int& realPid, int& vm
     ptrace(PTRACE_DETACH, childPid, 0, 0);
     ReadVmRealPid(request, sonPid, realPid);
 
-    DFXLOG_INFO("procecdump get real pid is %d vm pid is %d", realPid, vmPid);
+    LOGINFO("procecdump get real pid is %{public}d vm pid is %{public}d", realPid, vmPid);
 }
 
 void InfoRemoteProcessResult(std::shared_ptr<ProcessDumpRequest> request, int result)
@@ -292,27 +292,27 @@ void SetProcessdumpTimeout(siginfo_t &si)
     ParseSiValue(si, endTime, tid);
 
     if (tid == 0) {
-        DFXLOG_INFO("%s", "reset, prevent incorrect reading sival_int for tid");
+        LOGINFO("%{public}s", "reset, prevent incorrect reading sival_int for tid");
         si.si_value.sival_int = 0;
     }
 
     if (endTime == 0) {
-        DFXLOG_INFO("%s", "end time is zero, not set new alarm");
+        LOGINFO("%{public}s", "end time is zero, not set new alarm");
         return;
     }
 
     uint64_t curTime = GetAbsTimeMilliSeconds();
     if (curTime >= endTime) {
-        DFXLOG_INFO("%s", "now has timeout, processdump exit");
+        LOGINFO("%{public}s", "now has timeout, processdump exit");
 #ifndef CLANG_COVERAGE
         _exit(0);
 #endif
     }
     uint64_t diffTime = endTime - curTime;
 
-    DFXLOG_INFO("processdump remain time%" PRIu64 "ms", diffTime);
+    LOGINFO("processdump remain time%{public}" PRIu64 "ms", diffTime);
     if (diffTime > PROCESSDUMP_TIMEOUT * NUMBER_ONE_THOUSAND) {
-        DFXLOG_ERROR("%s", "dump remain time is invalid, not set timer");
+        LOGERROR("%{public}s", "dump remain time is invalid, not set timer");
         return;
     }
 
@@ -323,7 +323,7 @@ void SetProcessdumpTimeout(siginfo_t &si)
     timer.it_interval.tv_usec = 0;
 
     if (setitimer(ITIMER_REAL, &timer, nullptr) != 0) {
-        DFXLOG_ERROR("start processdump timer fail %d", errno);
+        LOGERROR("start processdump timer fail %{public}d", errno);
     }
 }
 }
@@ -340,7 +340,7 @@ void ProcessDumper::Dump()
     std::shared_ptr<ProcessDumpRequest> request = std::make_shared<ProcessDumpRequest>();
     resDump_ = DumpProcess(request);
     if (process_ == nullptr) {
-        DFXLOG_ERROR("%s", "Dump process failed, please check permission and whether pid is valid.");
+        LOGERROR("%{public}s", "Dump process failed, please check permission and whether pid is valid.");
     } else {
         if (isCrash_ && process_->vmThread_ != nullptr) {
             process_->vmThread_->Detach();
@@ -360,7 +360,7 @@ void ProcessDumper::Dump()
     if (isJsonDump_ || isCrash_) {
         DfxStackInfoFormatter formatter(process_, request);
         formatter.GetStackInfo(isJsonDump_, jsonInfo);
-        DFXLOG_INFO("Finish GetStackInfo len %" PRIuPTR "", jsonInfo.length());
+        LOGINFO("Finish GetStackInfo len %{public}" PRIuPTR "", jsonInfo.length());
         if (isJsonDump_) {
             WriteData(jsonFd_, jsonInfo, MAX_PIPE_SIZE);
         }
@@ -380,7 +380,8 @@ void ProcessDumper::Dump()
     // print keythread base info to hilog when carsh
     DfxRingBufferWrapper::GetInstance().PrintBaseInfo();
     DfxRingBufferWrapper::GetInstance().StopThread();
-    DFXLOG_INFO("Finish dump stacktrace for %s(%d:%d).", request->processName, request->pid, request->tid);
+    LOGINFO("Finish dump stacktrace for %{public}s(%{public}d:%{public}d).",
+        request->processName, request->pid, request->tid);
     CloseDebugLog();
     Report(request, jsonInfo);
 }
@@ -388,7 +389,7 @@ void ProcessDumper::Dump()
 void ProcessDumper::Report(std::shared_ptr<ProcessDumpRequest> request, std::string &jsonInfo)
 {
     if (request == nullptr) {
-        DFXLOG_ERROR("%s", "request is nullptr.");
+        LOGERROR("%{public}s", "request is nullptr.");
         return;
     }
     if (request->msg.type == MESSAGE_FDSAN_DEBUG && strlen(request->msg.body) > 0) {
@@ -414,9 +415,9 @@ void ProcessDumper::Report(std::shared_ptr<ProcessDumpRequest> request, std::str
                         "HAPPEN_TIME", request->timeStamp,
                         "REASON", "DEBUG SIGNAL",
                         "FINGERPRINT", std::to_string(hashVal));
-        DFXLOG_INFO("%s", "Report fdsan event done.");
+        LOGINFO("%{public}s", "Report fdsan event done.");
 #else
-        DFXLOG_INFO("%s", "Not supported for fdsan reporting.");
+        LOGINFO("%{public}s", "Not supported for fdsan reporting.");
 #endif
         return;
     }
@@ -435,7 +436,7 @@ static int32_t ReadRequestAndCheck(std::shared_ptr<ProcessDumpRequest> request)
     request->msg.body[MAX_FATAL_MSG_SIZE - 1] = '\0';
     request->appRunningId[MAX_APP_RUNNING_UNIQUE_ID_LEN - 1] = '\0';
     if (readCount != static_cast<long>(sizeof(ProcessDumpRequest))) {
-        DFXLOG_ERROR("Failed to read DumpRequest(%d), readCount(%zd).", errno, readCount);
+        LOGERROR("Failed to read DumpRequest(%{public}d), readCount(%{public}zd).", errno, readCount);
         ReportCrashException(request->processName, request->pid, request->uid,
                              CrashExceptionCode::CRASH_DUMP_EREADREQ);
         return DumpErrorCode::DUMP_EREADREQUEST;
@@ -453,7 +454,7 @@ std::string GetOpenFiles(int32_t pid, int nsPid, uint64_t fdTableAddr)
     FillFdsaninfo(openFies, nsPid, fdTableAddr);
 #endif
     std::string fds = DumpOpenFiles(openFies);
-    DFXLOG_INFO("%s", "get open files info finish");
+    LOGINFO("%{public}s", "get open files info finish");
     return fds;
 }
 
@@ -462,7 +463,7 @@ void ProcessDumper::InitRegs(std::shared_ptr<ProcessDumpRequest> request, int &d
     DFX_TRACE_SCOPED("InitRegs");
     if (request->dumpMode == FUSION_MODE) {
         if (!DfxUnwindRemote::GetInstance().InitProcessAllThreadRegs(request, process_)) {
-            DFXLOG_ERROR("%s", "Failed to init process regs.");
+            LOGERROR("%{public}s", "Failed to init process regs.");
             dumpRes = DumpErrorCode::DUMP_ESTOPUNWIND;
         }
 
@@ -502,11 +503,11 @@ void ProcessDumper::UnwindWriteJit(const ProcessDumpRequest &request)
     jitRequest.time = OHOS::HiviewDFX::GetTimeMilliSeconds();
     int32_t fd = RequestFileDescriptorEx(&jitRequest);
     if (fd == -1) {
-        DFXLOG_ERROR("%s", "request jitlog fd failed.");
+        LOGERROR("%{public}s", "request jitlog fd failed.");
         return;
     }
     if (unwinder_->ArkWriteJitCodeToFile(fd) < 0) {
-        DFXLOG_ERROR("%s", "jit code write file failed.");
+        LOGERROR("%{public}s", "jit code write file failed.");
     }
     (void)close(fd);
 }
@@ -526,7 +527,7 @@ bool ProcessDumper::Unwind(std::shared_ptr<ProcessDumpRequest> request, int &dum
     }
 
     if (!DfxUnwindRemote::GetInstance().UnwindProcess(request, process_, unwinder_, vmPid)) {
-        DFXLOG_ERROR("%s", "Failed to unwind process.");
+        LOGERROR("%{public}s", "Failed to unwind process.");
         dumpRes = DumpErrorCode::DUMP_ESTOPUNWIND;
         return false;
     }
@@ -552,16 +553,18 @@ int ProcessDumper::DumpProcess(std::shared_ptr<ProcessDumpRequest> request)
         // In this case, we have to parse /proc/self/status
         if ((request->dumpMode == SPLIT_MODE) && (((!isCrash_) && (syscall(SYS_getppid) != request->nsPid)) ||
             ((isCrash_ || isLeakDump) && (syscall(SYS_getppid) != request->vmNsPid)))) {
-            DFXLOG_ERROR("Target process(%s:%d) is not parent pid(%ld), exit processdump for signal(%d).",
+            LOGERROR("Target process(%{public}s:%{public}d) is not parent pid(%{public}ld), \
+                exit processdump for signal(%{public}d).",
                 request->processName, request->nsPid, syscall(SYS_getppid), request->siginfo.si_signo);
             dumpRes = DumpErrorCode::DUMP_EGETPPID;
             break;
         }
-        DFXLOG_INFO("Processdump SigVal(%d), TargetPid(%d:%d), TargetTid(%d), threadname(%s).",
+        LOGINFO("Processdump SigVal(%{public}d), TargetPid(%{public}d:%{public}d), TargetTid(%{public}d), \
+            threadname(%{public}s).",
             request->siginfo.si_value.sival_int, request->pid, request->nsPid, request->tid, request->threadName);
 
         if (InitProcessInfo(request) < 0) {
-            DFXLOG_ERROR("%s", "Failed to init crash process info.");
+            LOGERROR("%{public}s", "Failed to init crash process info.");
             dumpRes = DumpErrorCode::DUMP_EATTACH;
             break;
         }
@@ -571,7 +574,7 @@ int ProcessDumper::DumpProcess(std::shared_ptr<ProcessDumpRequest> request)
             break;
         }
         if (InitPrintThread(request) < 0) {
-            DFXLOG_ERROR("%s", "Failed to init print thread.");
+            LOGERROR("%{public}s", "Failed to init print thread.");
             dumpRes = DumpErrorCode::DUMP_EGETFD;
         }
         ReadFdTable(*request);
@@ -592,14 +595,14 @@ bool ProcessDumper::InitVmThread(std::shared_ptr<ProcessDumpRequest> request)
     }
     if (isCrash_ && request->vmPid != 0) {
         if (getppid() != request->vmNsPid) {
-            DFXLOG_ERROR("VM process(%d) should be parent pid.", request->vmNsPid);
+            LOGERROR("VM process(%{public}d) should be parent pid.", request->vmNsPid);
             ReportCrashException(request->processName, request->pid, request->uid,
                                  CrashExceptionCode::CRASH_DUMP_EPARENTPID);
             return false;
         }
         process_->vmThread_ = DfxThread::Create(request->vmPid, request->vmPid, request->vmNsPid);
         if ((process_->vmThread_ == nullptr) || (!process_->vmThread_->Attach(PTRACE_ATTATCH_KEY_THREAD_TIMEOUT))) {
-            DFXLOG_ERROR("Failed to attach vm thread(%d).", request->vmNsPid);
+            LOGERROR("Failed to attach vm thread(%{public}d).", request->vmNsPid);
             return false;
         }
 
@@ -618,7 +621,7 @@ bool ProcessDumper::InitKeyThread(std::shared_ptr<ProcessDumpRequest> request)
     pid_t tid = process_->ChangeTid(nsTid, true);
     process_->keyThread_ = DfxThread::Create(process_->processInfo_.pid, tid, nsTid);
     if ((process_->keyThread_ == nullptr) || (!process_->keyThread_->Attach(PTRACE_ATTATCH_KEY_THREAD_TIMEOUT))) {
-        DFXLOG_ERROR("Failed to attach key thread(%d).", nsTid);
+        LOGERROR("Failed to attach key thread(%{public}d).", nsTid);
         ReportCrashException(request->processName, request->pid, request->uid,
                              CrashExceptionCode::CRASH_DUMP_EATTACH);
         if (!isCrash_) {
@@ -650,7 +653,7 @@ bool ProcessDumper::InitUnwinder(std::shared_ptr<ProcessDumpRequest> request, pi
         if (realPid == 0 || vmPid == 0) {
             ReportCrashException(request->processName, request->pid, request->uid,
                 CrashExceptionCode::CRASH_DUMP_EREADPID);
-            DFXLOG_ERROR("%s", "Failed to read real pid!");
+            LOGERROR("%{public}s", "Failed to read real pid!");
             dumpRes = DumpErrorCode::DUMP_EREADPID;
             return false;
         }
@@ -666,13 +669,13 @@ bool ProcessDumper::InitUnwinder(std::shared_ptr<ProcessDumpRequest> request, pi
         }
     }
     if (unwinder_ == nullptr) {
-        DFXLOG_ERROR("%s", "unwinder_ is nullptr!");
+        LOGERROR("%{public}s", "unwinder_ is nullptr!");
         return false;
     }
     if (unwinder_->GetMaps() == nullptr) {
         ReportCrashException(request->processName, request->pid, request->uid,
             CrashExceptionCode::CRASH_LOG_EMAPLOS);
-        DFXLOG_ERROR("%s", "Mapinfo of crashed process is not exist!");
+        LOGERROR("%{public}s", "Mapinfo of crashed process is not exist!");
         dumpRes = DumpErrorCode::DUMP_ENOMAP;
         return false;
     }
@@ -704,7 +707,7 @@ int ProcessDumper::InitProcessInfo(std::shared_ptr<ProcessDumpRequest> request)
         return -1;
     }
 
-    DFXLOG_INFO("%s", "ptrace attach all tids");
+    LOGINFO("%{public}s", "ptrace attach all tids");
     bool isLeakDump = request->siginfo.si_signo == SIGLEAK_STACK;
     if (isCrash_ && !isLeakDump) {
         process_->InitOtherThreads();
@@ -745,15 +748,15 @@ int32_t ProcessDumper::CreateFileForCrash(int32_t pid, uint64_t time) const
     const std::string logFileType = "cppcrash";
     const int32_t logcrashFileProp = 0640; // 0640:-rw-r-----
     if (access(logFilePath.c_str(), F_OK) != 0) {
-        DFXLOG_ERROR("%s is not exist.", logFilePath.c_str());
+        LOGERROR("%{public}s is not exist.", logFilePath.c_str());
         return INVALID_FD;
     }
     std::string logPath = logFilePath + "/" + logFileType + "-" + std::to_string(pid) + "-" + std::to_string(time);
     int32_t fd = OHOS_TEMP_FAILURE_RETRY(open(logPath.c_str(), O_RDWR | O_CREAT, logcrashFileProp));
     if (fd == INVALID_FD) {
-        DFXLOG_ERROR("create %s failed, errno=%d", logPath.c_str(), errno);
+        LOGERROR("create %{public}s failed, errno=%{public}d", logPath.c_str(), errno);
     } else {
-        DFXLOG_INFO("create crash path %s succ.", logPath.c_str());
+        LOGINFO("create crash path %{public}s succ.", logPath.c_str());
     }
     return fd;
 }
@@ -786,17 +789,17 @@ int ProcessDumper::InitPrintThread(std::shared_ptr<ProcessDumpRequest> request)
             // If fd returns -1, we try to obtain the fd that needs to return JSON style
             fd = RequestPipeFd(request->pid, FaultLoggerPipeType::PIPE_FD_WRITE_BUF);
             resFd_ = RequestPipeFd(request->pid, FaultLoggerPipeType::PIPE_FD_WRITE_RES);
-            DFXLOG_DEBUG("write buf fd: %d, write res fd: %d", fd, resFd_);
+            LOGDEBUG("write buf fd: %{public}d, write res fd: %{public}d", fd, resFd_);
         } else {
             resFd_ = RequestPipeFd(request->pid, FaultLoggerPipeType::PIPE_FD_JSON_WRITE_RES);
-            DFXLOG_DEBUG("write json fd: %d, res fd: %d", jsonFd_, resFd_);
+            LOGDEBUG("write json fd: %{public}d, res fd: %{public}d", jsonFd_, resFd_);
         }
     }
     if (jsonFd_ > 0) {
         isJsonDump_ = true;
     }
     if ((fd < 0) && (jsonFd_ < 0)) {
-        DFXLOG_WARN("%s", "Failed to request fd from faultloggerd.");
+        LOGWARN("%{public}s", "Failed to request fd from faultloggerd.");
         ReportCrashException(request->processName, request->pid, request->uid,
                              CrashExceptionCode::CRASH_DUMP_EWRITEFD);
     }
@@ -817,11 +820,11 @@ int ProcessDumper::WriteDumpBuf(int fd, const char* buf, const int len)
 
 void ProcessDumper::WriteDumpRes(int32_t res)
 {
-    DFXLOG_INFO("%s :: res: %d", __func__, res);
+    LOGINFO("%{public}s :: res: %{public}d", __func__, res);
     if (resFd_ > 0) {
         ssize_t nwrite = OHOS_TEMP_FAILURE_RETRY(write(resFd_, &res, sizeof(res)));
         if (nwrite < 0) {
-            DFXLOG_ERROR("%s write fail, err:%d", __func__, errno);
+            LOGERROR("%{public}s write fail, err:%{public}d", __func__, errno);
         }
         close(resFd_);
         resFd_ = -1;
@@ -853,7 +856,7 @@ void ProcessDumper::ReportSigDumpStats(const std::shared_ptr<ProcessDumpRequest>
     stat->processdumpFinishTime = finishTime_;
     if (memcpy_s(stat->targetProcess, sizeof(stat->targetProcess),
         request->processName, sizeof(request->processName)) != 0) {
-        DFXLOG_ERROR("Failed to copy target processName (%d)", errno);
+        LOGERROR("Failed to copy target processName (%{public}d)", errno);
         return;
     }
 

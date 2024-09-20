@@ -66,7 +66,7 @@ std::string DfxFrameFormatter::GetFrameStr(const std::shared_ptr<DfxFrame>& fram
             data += " [Unknown]";
         }
         if (frame->funcName.length() > MAX_FUNC_NAME_LEN) {
-            DFXLOG_DEBUG("%s", "length of funcName greater than 256 byte, do not display it");
+            LOGDEBUG("%{public}s", "length of funcName greater than 256 byte, do not display it");
         } else if (!frame->funcName.empty()) {
             data += "(" + frame->funcName;
             data += StringPrintf("+%" PRId64, frame->funcOffset);

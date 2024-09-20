@@ -34,7 +34,7 @@ bool StartConnect(int& sockfd, const char* path, const int timeout)
 {
     bool ret = false;
     if ((sockfd = socket(AF_LOCAL, SOCK_STREAM, 0)) < 0) {
-        DFXLOG_ERROR("%s :: Failed to socket, errno(%d)", __func__, errno);
+        LOGERROR("%{public}s :: Failed to socket, errno(%{public}d)", __func__, errno);
         return ret;
     }
 
@@ -47,11 +47,11 @@ bool StartConnect(int& sockfd, const char* path, const int timeout)
             void* pTimev = &timev;
             if (OHOS_TEMP_FAILURE_RETRY(setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, \
                 static_cast<const char*>(pTimev), sizeof(timev))) != 0) {
-                    DFXLOG_ERROR("setsockopt(%d) SO_RCVTIMEO error, errno(%d).", sockfd, errno);
+                    LOGERROR("setsockopt(%{public}d) SO_RCVTIMEO error, errno(%{public}d).", sockfd, errno);
             }
             if (OHOS_TEMP_FAILURE_RETRY(setsockopt(sockfd, SOL_SOCKET, SO_SNDTIMEO, \
                 static_cast<const char*>(pTimev), sizeof(timev))) != 0) {
-                    DFXLOG_ERROR("setsockopt(%d) SO_SNDTIMEO error, errno(%d).", sockfd, errno);
+                    LOGERROR("setsockopt(%{public}d) SO_SNDTIMEO error, errno(%{public}d).", sockfd, errno);
             }
         }
 
@@ -62,14 +62,14 @@ bool StartConnect(int& sockfd, const char* path, const int timeout)
         errno_t err = strncpy_s(server.sun_path, sizeof(server.sun_path), fullPath.c_str(),
             sizeof(server.sun_path) - 1);
         if (err != EOK) {
-            DFXLOG_ERROR("%s :: strncpy failed, err = %d.", __func__, (int)err);
+            LOGERROR("%{public}s :: strncpy failed, err = %{public}d.", __func__, (int)err);
             break;
         }
 
         int len = static_cast<int>(offsetof(struct sockaddr_un, sun_path) + strlen(server.sun_path) + 1);
         int connected = OHOS_TEMP_FAILURE_RETRY(connect(sockfd, reinterpret_cast<struct sockaddr *>(&server), len));
         if (connected < 0) {
-            DFXLOG_ERROR("%s :: connect failed, errno = %d.", __func__, errno);
+            LOGERROR("%{public}s :: connect failed, errno = %{public}d.", __func__, errno);
             break;
         }
 
@@ -86,7 +86,7 @@ static bool GetServerSocket(int& sockfd, const char* name)
 {
     sockfd = OHOS_TEMP_FAILURE_RETRY(socket(AF_LOCAL, SOCK_STREAM, 0));
     if (sockfd < 0) {
-        DFXLOG_ERROR("%s :: Failed to create socket, errno(%d)", __func__, errno);
+        LOGERROR("%{public}s :: Failed to create socket, errno(%{public}d)", __func__, errno);
         return false;
     }
 
@@ -95,7 +95,7 @@ static bool GetServerSocket(int& sockfd, const char* name)
     (void)memset_s(&server, sizeof(server), 0, sizeof(server));
     server.sun_family = AF_LOCAL;
     if (strncpy_s(server.sun_path, sizeof(server.sun_path), path.c_str(), sizeof(server.sun_path) - 1) != 0) {
-        DFXLOG_ERROR("%s :: strncpy failed.", __func__);
+        LOGERROR("%{public}s :: strncpy failed.", __func__);
         return false;
     }
 
@@ -105,13 +105,13 @@ static bool GetServerSocket(int& sockfd, const char* name)
     int optval = 1;
     int ret = OHOS_TEMP_FAILURE_RETRY(setsockopt(sockfd, SOL_SOCKET, SO_PASSCRED, &optval, sizeof(optval)));
     if (ret < 0) {
-        DFXLOG_ERROR("%s :: Failed to set socket option, errno(%d)", __func__, errno);
+        LOGERROR("%{public}s :: Failed to set socket option, errno(%{public}d)", __func__, errno);
         return false;
     }
 
     if (bind(sockfd, reinterpret_cast<struct sockaddr *>(&server),
         offsetof(struct sockaddr_un, sun_path) + strlen(server.sun_path)) < 0) {
-        DFXLOG_ERROR("%s :: Failed to bind socket, errno(%d)", __func__, errno);
+        LOGERROR("%{public}s :: Failed to bind socket, errno(%{public}d)", __func__, errno);
         return false;
     }
 
@@ -125,21 +125,21 @@ bool StartListen(int& sockfd, const char* name, const int listenCnt)
     }
     sockfd = GetControlSocket(name);
     if (sockfd < 0) {
-        DFXLOG_WARN("%s :: Failed to get socket fd by cfg", __func__);
+        LOGWARN("%{public}s :: Failed to get socket fd by cfg", __func__);
         if (GetServerSocket(sockfd, name) == false) {
-            DFXLOG_ERROR("%s :: Failed to get socket fd by path", __func__);
+            LOGERROR("%{public}s :: Failed to get socket fd by path", __func__);
             return false;
         }
     }
 
     if (listen(sockfd, listenCnt) < 0) {
-        DFXLOG_ERROR("%s :: Failed to listen socket, errno(%d)", __func__, errno);
+        LOGERROR("%{public}s :: Failed to listen socket, errno(%{public}d)", __func__, errno);
         close(sockfd);
         sockfd = -1;
         return false;
     }
 
-    DFXLOG_INFO("%s :: success to listen socket", __func__);
+    LOGINFO("%{public}s :: success to listen socket", __func__);
     return true;
 }
 
@@ -166,19 +166,19 @@ static bool RecvMsgFromSocket(int sockfd, unsigned char* data, size_t& len)
         msgh.msg_controllen = sizeof(ctlBuffer);
 
         if (OHOS_TEMP_FAILURE_RETRY(recvmsg(sockfd, &msgh, 0)) < 0) {
-            DFXLOG_ERROR("%s :: Failed to recv message, errno(%d)\n", __func__, errno);
+            LOGERROR("%{public}s :: Failed to recv message, errno(%{public}d)\n", __func__, errno);
             break;
         }
 
         struct cmsghdr *cmsg = CMSG_FIRSTHDR(&msgh);
         if (cmsg == nullptr) {
-            DFXLOG_ERROR("%s :: Invalid message\n", __func__);
+            LOGERROR("%{public}s :: Invalid message\n", __func__);
             break;
         }
 
         len = cmsg->cmsg_len - sizeof(struct cmsghdr);
         if (memcpy_s(data, len, CMSG_DATA(cmsg), len) != 0) {
-            DFXLOG_ERROR("%s :: memcpy error\n", __func__);
+            LOGERROR("%{public}s :: memcpy error\n", __func__);
             break;
         }
 
@@ -219,18 +219,18 @@ bool RecvMsgCredFromSocket(int sockfd, struct ucred* pucred)
         msgh.msg_controllen = sizeof(controlMsg.buf);
 
         if (OHOS_TEMP_FAILURE_RETRY(recvmsg(sockfd, &msgh, 0)) < 0) {
-            DFXLOG_ERROR("%s :: Failed to recv message, errno(%d)\n", __func__, errno);
+            LOGERROR("%{public}s :: Failed to recv message, errno(%{public}d)\n", __func__, errno);
             break;
         }
 
         struct cmsghdr *cmsg = CMSG_FIRSTHDR(&msgh);
         if (cmsg == nullptr) {
-            DFXLOG_ERROR("%s :: Invalid message\n", __func__);
+            LOGERROR("%{public}s :: Invalid message\n", __func__);
             break;
         }
 
         if (memcpy_s(pucred, sizeof(struct ucred), CMSG_DATA(cmsg), sizeof(struct ucred)) != 0) {
-            DFXLOG_ERROR("%s :: memcpy error\n", __func__);
+            LOGERROR("%{public}s :: memcpy error\n", __func__);
             break;
         }
 
@@ -260,7 +260,7 @@ bool SendMsgIovToSocket(int sockfd, void *iovBase, const int iovLen)
     msgh.msg_controllen = 0;
 
     if (OHOS_TEMP_FAILURE_RETRY(sendmsg(sockfd, &msgh, 0)) < 0) {
-        DFXLOG_ERROR("%s :: Failed to send message, errno(%d).", __func__, errno);
+        LOGERROR("%{public}s :: Failed to send message, errno(%{public}d).", __func__, errno);
         return false;
     }
     return true;
@@ -294,11 +294,11 @@ static bool SendMsgCtlToSocket(int sockfd, const void *cmsg, const int cmsgLen)
         cmsgh->cmsg_len = CMSG_LEN(cmsgLen);
     }
     if (memcpy_s(CMSG_DATA(cmsgh), cmsgLen, cmsg, cmsgLen) != 0) {
-        DFXLOG_ERROR("%s :: memcpy error\n", __func__);
+        LOGERROR("%{public}s :: memcpy error\n", __func__);
     }
 
     if (OHOS_TEMP_FAILURE_RETRY(sendmsg(sockfd, &msgh, 0)) < 0) {
-        DFXLOG_ERROR("%s :: Failed to send message, errno(%d)", __func__, errno);
+        LOGERROR("%{public}s :: Failed to send message, errno(%{public}d)", __func__, errno);
         return false;
     }
     return true;
@@ -314,15 +314,15 @@ int ReadFileDescriptorFromSocket(int sockfd)
     size_t len = sizeof(int);
     unsigned char data[len + 1];
     if (!RecvMsgFromSocket(sockfd, data, len)) {
-        DFXLOG_ERROR("%s :: Failed to recv message", __func__);
+        LOGERROR("%{public}s :: Failed to recv message", __func__);
         return -1;
     }
 
     if (len != sizeof(int)) {
-        DFXLOG_ERROR("%s :: data is null or len is %zu", __func__, len);
+        LOGERROR("%{public}s :: data is null or len is %{public}zu", __func__, len);
         return -1;
     }
     int fd = *(reinterpret_cast<int *>(data));
-    DFXLOG_DEBUG("%s :: fd: %d", __func__, fd);
+    LOGDEBUG("%{public}s :: fd: %{public}d", __func__, fd);
     return fd;
 }

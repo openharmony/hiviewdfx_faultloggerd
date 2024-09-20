@@ -38,7 +38,7 @@ public:
         if (limitCostMilliseconds_ != 0) {
             time_t costTime = Elapsed<std::chrono::milliseconds>();
             if (costTime > limitCostMilliseconds_) {
-                DFXLOG_WARN("%s running %" PRId64 " ms", printContent_.c_str(), costTime);
+                LOGWARN("%{public}s running %{public}" PRId64 " ms", printContent_.c_str(), costTime);
             }
         }
     }
