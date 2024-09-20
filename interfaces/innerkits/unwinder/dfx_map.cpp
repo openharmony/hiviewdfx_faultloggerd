@@ -283,7 +283,7 @@ bool DfxMap::IsArkExecutable()
 
 bool DfxMap::IsVdsoMap()
 {
-    if ((name == "shmm" || name == "[vdso]") && IsMapExec()) {
+    if ((name == "[shmm]" || name == "[vdso]") && IsMapExec()) {
         return true;
     }
     return false;
