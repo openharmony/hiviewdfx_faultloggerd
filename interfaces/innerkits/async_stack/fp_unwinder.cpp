@@ -56,7 +56,8 @@ int32_t FpUnwinder::Unwind(uintptr_t* pcs, int32_t sz, int32_t skipFrameNum)
             break;
         }
         if ((++index) >= skipFrameNum) {
-            pcs[index - skipFrameNum] = *reinterpret_cast<uintptr_t*>(fp + sizeof(uintptr_t));
+            uintptr_t pc = *reinterpret_cast<uintptr_t*>(fp + sizeof(uintptr_t));
+            pcs[index - skipFrameNum] = pc > 0x4 ? pc - 0x4 : pc; // adjust pc in Arm64 architecture
             realSz = static_cast<uint32_t>(index - skipFrameNum + 1);
         }
         uintptr_t nextFp = *reinterpret_cast<uintptr_t*>(fp);

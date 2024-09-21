@@ -37,10 +37,7 @@ public:
     static int32_t Unwind(uintptr_t* pcs, int32_t sz, int32_t skipFrameNum);
 private:
     static int32_t UnwindFallback(uintptr_t* pcs, int32_t sz, int32_t skipFrameNum);
-    static void GetStackRange(uintptr_t& stackBottom, uintptr_t& stackTop);
     static bool ReadUintptrSafe(uintptr_t addr, uintptr_t& value);
-    static void GetMainThreadStackRange();
-    static void GetSignalAltStackRange(uintptr_t& stackBottom, uintptr_t& stackTop);
 };
 }
 } // namespace OHOS
