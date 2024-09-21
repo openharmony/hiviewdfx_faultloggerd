@@ -104,6 +104,7 @@ public:
                 (!ReadUptrSafe(prevFp + sizeof(uintptr_t), pfd[PIPE_WRITE], pc))) {
                 break;
             }
+            pc = pc > 0x4 ? pc - 0x4 : pc; // adjust pc in Arm64 architecture
             if (fp <= prevFp || fp == 0) {
                 break;
             }
