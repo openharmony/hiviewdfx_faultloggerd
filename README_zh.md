@@ -81,7 +81,7 @@ faultloggerd/
 
 目前已默认开启，进程因上述异常信号崩溃将会在设备 `/data/log/faultlog/temp` 目录下生成完整的崩溃日志，可基于该崩溃日志进行问题定位可分析。
 
-> 崩溃日志介绍和和常见问题指南参看：[faultloggerd FAQ](docs/usage.md)
+> 崩溃日志介绍和常见问题指南参见：[faultloggerd FAQ](docs/usage.md)
 
 ### DumpCatcher 接口
 
@@ -90,8 +90,7 @@ DumpCatcher是提供给第三方模块使用的抓取调用栈基础库，其中
 接口类名：`DfxDumpCatcher`
 
 接口定义：
-* 默认：`bool DumpCatch(int pid, int tid, std::string& msg);`
-* 支持混合栈：`bool DumpCatchMix(int pid, int tid, std::string& msg);`
+* 默认（支持混合栈）：`bool DumpCatch(int pid, int tid, std::string& msg);`
 * 支持输出到指定文件：`bool DumpCatchFd(int pid, int tid, std::string& msg, int fd);`
 * 支持批量抓栈：`bool DumpCatchMultiPid(const std::vector<int> pidV, std::string& msg);`
 
@@ -250,7 +249,6 @@ DumpCatcher 是指提供给用户的一个抓取调用栈命令行工具，由 D
 
 * `-p [pid]`：打印指定进程下面的所有线程栈信息；
 * `-p [pid] -t [tid]`：打印指定进程下面的指定线程信息。
-* `[-c -m -k]`：可选参数, 指定打印 `-c(pp)`C++调用栈、`-m(ix)`C++ JS混合调用栈、`-k(ernel)`调用栈类型。
 
 返回打印说明：如果栈信息解析成功，则将信息显示到标准输出。
 
