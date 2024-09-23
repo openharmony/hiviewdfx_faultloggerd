@@ -24,7 +24,6 @@ struct DfxConfigInfo {
     bool displayRegister = true;
     bool displayMaps = true;
     bool displayFaultStack = true;
-    bool logPersist = false;
     bool dumpOtherThreads = false;
     unsigned int lowAddressStep = 16;
     unsigned int highAddressStep = 64;

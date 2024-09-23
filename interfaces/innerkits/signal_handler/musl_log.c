@@ -28,17 +28,4 @@ __attribute__ ((visibility("hidden"))) int MuslHiLogPrinter(
     va_end(ap);
     return ret;
 }
-
-__attribute__ ((visibility("hidden"))) int DfxLogPrint(
-    const LogLevel logLevel, const unsigned int domain, const char* tag, const char *fmt, ...)
-{
-    int ret;
-    char buf[LOG_BUF_LEN] = {0};
-    va_list args;
-    va_start(args, fmt);
-    ret = vsnprintfp_s(buf, sizeof(buf), sizeof(buf) - 1, false, fmt, args);
-    va_end(args);
-    MuslHiLogPrinter(LOG_CORE, logLevel, domain, tag, "%{public}s", buf);
-    return ret;
-}
 #endif

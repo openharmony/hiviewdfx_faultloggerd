@@ -50,18 +50,18 @@ bool DfxHap::ParseHapInfo(pid_t pid, uint64_t pc, uintptr_t methodid, std::share
 
     if (arkSymbolExtractorPtr_ == 0) {
         if (DfxArk::ArkCreateJsSymbolExtractor(&arkSymbolExtractorPtr_) < 0) {
-            LOGU("%s", "Failed to create ark js symbol extractor");
+            LOGUNWIND("Failed to create ark js symbol extractor");
         }
     }
 
     if (DfxMaps::IsArkHapMapItem(map->name)) {
         if (!ParseHapFileInfo(pc, methodid, map, jsFunction)) {
-            LOGW("%s", "Failed to parse hap file info");
+            LOGWARN("Failed to parse hap file info");
             return false;
         }
     } else {
         if (!ParseHapMemInfo(pid, pc, methodid, map, jsFunction)) {
-            LOGW("%s", "Failed to parse hap mem info");
+            LOGWARN("Failed to parse hap mem info");
             return false;
         }
     }
@@ -80,7 +80,7 @@ bool DfxHap::ParseHapFileInfo(uint64_t pc, uintptr_t methodid, std::shared_ptr<D
 
     if (DfxArk::ParseArkFileInfo(static_cast<uintptr_t>(pc), methodid, static_cast<uintptr_t>(map->begin),
         map->name.c_str(), arkSymbolExtractorPtr_, jsFunction) < 0) {
-        LOGW("Failed to parse ark file info, pc: %p, begin: %p",
+        LOGWARN("Failed to parse ark file info, pc: %{public}p, begin: %{public}p",
             reinterpret_cast<void *>(pc), reinterpret_cast<void *>(map->begin));
         return false;
     }
@@ -98,12 +98,12 @@ bool DfxHap::ParseHapMemInfo(pid_t pid, uint64_t pc, uintptr_t methodid, std::sh
     }
 
     if (!ParseHapMemData(pid, map)) {
-        LOGW("Failed to parse hap mem data, pid: %d", pid);
+        LOGWARN("Failed to parse hap mem data, pid: %{public}d", pid);
         return false;
     }
     if (DfxArk::ParseArkFrameInfo(static_cast<uintptr_t>(pc), methodid, static_cast<uintptr_t>(map->begin),
         abcLoadOffset_, abcDataPtr_.get(), abcDataSize_, arkSymbolExtractorPtr_, jsFunction) < 0) {
-        LOGW("Failed to parse ark frame info, pc: %p, begin: %p",
+        LOGWARN("Failed to parse ark frame info, pc: %{public}p, begin: %{public}p",
             reinterpret_cast<void *>(pc), reinterpret_cast<void *>(map->begin));
         return false;
     }
@@ -121,18 +121,18 @@ bool DfxHap::ParseHapFileData(const std::string& name)
     if (abcDataPtr_ != nullptr) {
         return true;
     }
-    LOGU("name: %s", name.c_str());
+    LOGUNWIND("name: %{public}s", name.c_str());
     if (extractor_ == nullptr) {
         extractor_ = std::make_unique<DfxExtractor>(name);
     }
     if (!extractor_->GetHapAbcInfo(abcLoadOffset_, abcDataPtr_, abcDataSize_)) {
-        LOGW("Failed to get hap abc info: %s", name.c_str());
+        LOGWARN("Failed to get hap abc info: %{public}s", name.c_str());
         abcDataPtr_ = nullptr;
         return false;
     }
 
     if (!extractor_->GetHapSourceMapInfo(srcMapLoadOffset_, srcMapDataPtr_, srcMapDataSize_)) {
-        LOGU("Failed to get hap source map info: %s", name.c_str());
+        LOGUNWIND("Failed to get hap source map info: %{public}s", name.c_str());
     }
     return true;
 #endif
@@ -149,13 +149,14 @@ bool DfxHap::ParseHapMemData(const pid_t pid, std::shared_ptr<DfxMap> map)
     if (abcDataPtr_ != nullptr) {
         return true;
     }
-    LOGU("pid: %d", pid);
+    LOGUNWIND("pid: %{public}d", pid);
     abcLoadOffset_ = map->offset;
     abcDataSize_ = map->end - map->begin;
     abcDataPtr_ = std::make_unique<uint8_t[]>(abcDataSize_);
     auto size = DfxMemory::ReadProcMemByPid(pid, map->begin, abcDataPtr_.get(), abcDataSize_);
     if (size != abcDataSize_) {
-        LOGW("ReadProcMemByPid(%d) return size(%zu), real size(%zu)", pid, size, abcDataSize_);
+        LOGWARN("ReadProcMemByPid(%{public}d) return size(%{public}zu), real size(%{public}zu)",
+            pid, size, abcDataSize_);
         abcDataPtr_ = nullptr;
         return false;
     }

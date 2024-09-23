@@ -32,36 +32,6 @@ extern "C" {
 
 #ifndef DFX_NO_PRINT_LOG
 
-bool CheckDebugLevel(void);
-void InitDebugFd(int fd);
-void SetLogLevel(const LogLevel logLevel);
-LogLevel GetLogLevel(void);
-
-#if defined(DFX_LOG_HILOG_BASE) || defined(is_ohos_lite)
-int DfxLogPrint(const LogLevel logLevel, const unsigned int domain, const char* tag, \
-                const char *fmt, ...) __attribute__((format(printf, 4, 5)));
-int DfxLogPrintV(const LogLevel logLevel, const unsigned int domain, const char* tag, const char *fmt, va_list ap);
-
-#define DFXLOG_PRINT(prio, ...) DfxLogPrint(prio, LOG_DOMAIN, LOG_TAG, ##__VA_ARGS__)
-
-#define LOGD(fmt, ...) DFXLOG_PRINT(LOG_DEBUG, "[%s:%d] " fmt, (__FILE_NAME__), (__LINE__), ##__VA_ARGS__)
-#define LOGI(fmt, ...) DFXLOG_PRINT(LOG_INFO, "[%s:%d] " fmt, (__FILE_NAME__), (__LINE__), ##__VA_ARGS__)
-#define LOGW(fmt, ...) DFXLOG_PRINT(LOG_WARN, "[%s:%d] " fmt, (__FILE_NAME__), (__LINE__), ##__VA_ARGS__)
-#define LOGE(fmt, ...) DFXLOG_PRINT(LOG_ERROR, "[%s:%d] " fmt, (__FILE_NAME__), (__LINE__), ##__VA_ARGS__)
-#define LOGF(fmt, ...) DFXLOG_PRINT(LOG_FATAL, "[%s:%d] " fmt, (__FILE_NAME__), (__LINE__), ##__VA_ARGS__)
-
-#ifdef DFX_LOG_UNWIND
-#define LOGU(fmt, ...) DFXLOG_PRINT(LOG_INFO, "[%s:%d] " fmt, (__FILE_NAME__), (__LINE__), ##__VA_ARGS__)
-#else
-#define LOGU(fmt, ...)
-#endif
-
-#define DFXLOG_DEBUG(fmt, ...) DFXLOG_PRINT(LOG_DEBUG, fmt, ##__VA_ARGS__)
-#define DFXLOG_INFO(fmt, ...) DFXLOG_PRINT(LOG_INFO, fmt, ##__VA_ARGS__)
-#define DFXLOG_WARN(fmt, ...) DFXLOG_PRINT(LOG_WARN, fmt, ##__VA_ARGS__)
-#define DFXLOG_ERROR(fmt, ...) DFXLOG_PRINT(LOG_ERROR, fmt, ##__VA_ARGS__)
-#define DFXLOG_FATAL(fmt, ...) DFXLOG_PRINT(LOG_FATAL, fmt, ##__VA_ARGS__)
-
 #ifdef DFX_LOG_HILOG_BASE
 // replace the old interface, and delete the old interface after the replacement is complete
 #define LOGDEBUG(fmt, ...) \
@@ -74,20 +44,6 @@ int DfxLogPrintV(const LogLevel logLevel, const unsigned int domain, const char*
     HILOG_BASE_ERROR(LOG_CORE, "[%{public}s:%{public}d] " fmt, (__FILE_NAME__), (__LINE__), ##__VA_ARGS__)
 #define LOGFATAL(fmt, ...) \
     HILOG_BASE_FATAL(LOG_CORE, "[%{public}s:%{public}d] " fmt, (__FILE_NAME__), (__LINE__), ##__VA_ARGS__)
-#else
-// replace the old interface, and delete the old interface after the replacement is complete
-#define LOGDEBUG(fmt, ...) \
-    HILOG_DEBUG(LOG_CORE, "[%{public}s:%{public}d] " fmt, (__FILE_NAME__), (__LINE__), ##__VA_ARGS__)
-#define LOGINFO(fmt, ...) \
-    HILOG_INFO(LOG_CORE, "[%{public}s:%{public}d] " fmt, (__FILE_NAME__), (__LINE__), ##__VA_ARGS__)
-#define LOGWARN(fmt, ...) \
-    HILOG_WARN(LOG_CORE, "[%{public}s:%{public}d] " fmt, (__FILE_NAME__), (__LINE__), ##__VA_ARGS__)
-#define LOGERROR(fmt, ...) \
-    HILOG_ERROR(LOG_CORE, "[%{public}s:%{public}d] " fmt, (__FILE_NAME__), (__LINE__), ##__VA_ARGS__)
-#define LOGFATAL(fmt, ...) \
-    HILOG_FATAL(LOG_CORE, "[%{public}s:%{public}d] " fmt, (__FILE_NAME__), (__LINE__), ##__VA_ARGS__)
-#endif
-
 
 #ifdef DFX_LOG_UNWIND
 #define LOGUNWIND(fmt, ...) \
@@ -96,59 +52,7 @@ int DfxLogPrintV(const LogLevel logLevel, const unsigned int domain, const char*
 #define LOGUNWIND(fmt, ...)
 #endif
 
-#define DFXLOGD(...) HILOG_BASE_DEBUG(LOG_CORE, __VA_ARGS__)
-#define DFXLOGI(...) HILOG_BASE_INFO(LOG_CORE, __VA_ARGS__)
-#define DFXLOGW(...) HILOG_BASE_WARN(LOG_CORE, __VA_ARGS__)
-#define DFXLOGE(...) HILOG_BASE_ERROR(LOG_CORE, __VA_ARGS__)
-#define DFXLOGF(...) HILOG_BASE_FATAL(LOG_CORE, __VA_ARGS__)
-
 #else
-
-#ifdef HILOG_FMTID
-#define DFXLOG_STD_ARRAY(level, fmt, ...) \
-do { \
-    constexpr HILOG_FMT_IN_SECTION static auto hilogFmt = fmt ## _DfxToPublic; \
-    FmtId fmtid { HILOG_UUID, HILOG_FMT_OFFSET(hilogFmt.data()) }; \
-    HiLogPrintDict(LOG_CORE, level, LOG_DOMAIN, LOG_TAG, &fmtid, hilogFmt.data(), ##__VA_ARGS__); \
-} while (0)
-#define DFXLOG_STD_ARRAY_FILE(level, fmt, ...) \
-do { \
-    constexpr HILOG_FMT_IN_SECTION static auto hilogFmt = OHOS::HiviewDFX::ConcatStr("[%{public}s:%{public}d] ", \
-        fmt ## _DfxToPublic); \
-    FmtId fmtid { HILOG_UUID, HILOG_FMT_OFFSET(hilogFmt.data()) }; \
-    HiLogPrintDict(LOG_CORE, level, LOG_DOMAIN, LOG_TAG, \
-        &fmtid, hilogFmt.data(), (__FILE_NAME__), (__LINE__), ##__VA_ARGS__); \
-} while (0)
-#else
-#define DFXLOG_STD_ARRAY(level, fmt, ...) \
-do { \
-    HiLogPrint(LOG_CORE, level, LOG_DOMAIN, LOG_TAG, fmt ## _DfxToPublic.data(), ##__VA_ARGS__); \
-} while (0)
-#define DFXLOG_STD_ARRAY_FILE(level, fmt, ...) \
-do { \
-    constexpr auto hilogFmt = OHOS::HiviewDFX::ConcatStr("[%{public}s:%{public}d] ", fmt ## _DfxToPublic); \
-    HiLogPrint(LOG_CORE, level, LOG_DOMAIN, LOG_TAG, hilogFmt.data(), (__FILE_NAME__), (__LINE__), ##__VA_ARGS__); \
-} while (0)
-#endif
-
-#define LOGD(fmt, ...) DFXLOG_STD_ARRAY_FILE(LOG_DEBUG, fmt, ##__VA_ARGS__)
-#define LOGI(fmt, ...) DFXLOG_STD_ARRAY_FILE(LOG_INFO, fmt, ##__VA_ARGS__)
-#define LOGW(fmt, ...) DFXLOG_STD_ARRAY_FILE(LOG_WARN, fmt, ##__VA_ARGS__)
-#define LOGE(fmt, ...) DFXLOG_STD_ARRAY_FILE(LOG_ERROR, fmt, ##__VA_ARGS__)
-#define LOGF(fmt, ...) DFXLOG_STD_ARRAY_FILE(LOG_FATAL, fmt, ##__VA_ARGS__)
-
-#ifdef DFX_LOG_UNWIND
-#define LOGU(fmt, ...) DFXLOG_STD_ARRAY_FILE(LOG_INFO, fmt, ##__VA_ARGS__)
-#else
-#define LOGU(fmt, ...)
-#endif
-
-#define DFXLOG_DEBUG(fmt, ...) DFXLOG_STD_ARRAY(LOG_DEBUG, fmt, ##__VA_ARGS__)
-#define DFXLOG_INFO(fmt, ...) DFXLOG_STD_ARRAY(LOG_INFO, fmt, ##__VA_ARGS__)
-#define DFXLOG_WARN(fmt, ...) DFXLOG_STD_ARRAY(LOG_WARN, fmt, ##__VA_ARGS__)
-#define DFXLOG_ERROR(fmt, ...) DFXLOG_STD_ARRAY(LOG_ERROR, fmt, ##__VA_ARGS__)
-#define DFXLOG_FATAL(fmt, ...) DFXLOG_STD_ARRAY(LOG_FATAL, fmt, ##__VA_ARGS__)
-
 // replace the old interface, and delete the old interface after the replacement is complete
 #define LOGDEBUG(fmt, ...) \
     HILOG_DEBUG(LOG_CORE, "[%{public}s:%{public}d] " fmt, (__FILE_NAME__), (__LINE__), ##__VA_ARGS__)
@@ -168,29 +72,16 @@ do { \
 #define LOGUNWIND(fmt, ...)
 #endif
 
-#define DFXLOGD(...) HILOG_DEBUG(LOG_CORE, __VA_ARGS__)
-#define DFXLOGI(...) HILOG_INFO(LOG_CORE, __VA_ARGS__)
-#define DFXLOGW(...) HILOG_WARN(LOG_CORE, __VA_ARGS__)
-#define DFXLOGE(...) HILOG_ERROR(LOG_CORE, __VA_ARGS__)
-#define DFXLOGF(...) HILOG_FATAL(LOG_CORE, __VA_ARGS__)
-
 #endif
 
 #else
-#define DFXLOG_PRINT(prio, ...)
 
-#define DFXLOG_DEBUG(fmt, ...)
-#define DFXLOG_INFO(fmt, ...)
-#define DFXLOG_WARN(fmt, ...)
-#define DFXLOG_ERROR(fmt, ...)
-#define DFXLOG_FATAL(fmt, ...)
-
-#define LOGD(fmt, ...)
-#define LOGI(fmt, ...)
-#define LOGW(fmt, ...)
-#define LOGE(fmt, ...)
-#define LOGF(fmt, ...)
-#define LOGU(fmt, ...)
+#define LOGDEBUG(fmt, ...)
+#define LOGINFO(fmt, ...)
+#define LOGWARN(fmt, ...)
+#define LOGERROR(fmt, ...)
+#define LOGFATAL(fmt, ...)
+#define LOGUNWIND(fmt, ...)
 #endif
 
 #ifdef __cplusplus

@@ -254,7 +254,7 @@ bool DfxUnwindRemote::InitProcessAllThreadRegs(std::shared_ptr<ProcessDumpReques
     std::shared_ptr<DfxProcess> process)
 {
     if (!InitTargetKeyThreadRegs(request, process)) {
-        LOGERROR("%{public}s", "get key thread regs fail");
+        LOGERROR("get key thread regs fail");
         return false;
     }
     InitOtherThreadRegs(process);

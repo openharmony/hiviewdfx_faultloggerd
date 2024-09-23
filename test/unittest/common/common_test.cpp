@@ -139,19 +139,6 @@ HWTEST_F(CommonTest, DfxDumpResTest001, TestSize.Level2)
 }
 
 /**
- * @tc.name: DfxLogTest001
- * @tc.desc: test DfxLog functions
- * @tc.type: FUNC
- */
-HWTEST_F(CommonTest, DfxLogTest001, TestSize.Level2)
-{
-    GTEST_LOG_(INFO) << "DfxLogTest001: start.";
-    InitDebugFd(STDERR_FILENO);
-    EXPECT_FALSE(CheckDebugLevel());
-    GTEST_LOG_(INFO) << "DfxLogTest001: end.";
-}
-
-/**
  * @tc.name: StringUtilTest001
  * @tc.desc: test StartsWith functions
  * @tc.type: FUNC

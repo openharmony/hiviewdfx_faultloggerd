@@ -198,7 +198,7 @@ std::shared_ptr<DfxMap> DfxMap::Create(std::string buf, size_t size)
     }
     auto map = std::make_shared<DfxMap>();
     if (!map->Parse(&buf[0], size)) {
-        LOGW("Failed to parse map: %s", buf.c_str());
+        LOGWARN("Failed to parse map: %{public}s", buf.c_str());
         return nullptr;
     }
     return map;
@@ -275,10 +275,10 @@ bool DfxMap::IsArkExecutable()
     }
 
     if (!IsMapExec()) {
-        LOGU("Current ark map(%s) is not exec", name.c_str());
+        LOGUNWIND("Current ark map(%{public}s) is not exec", name.c_str());
         return false;
     }
-    LOGU("Current ark map: %s", name.c_str());
+    LOGUNWIND("Current ark map: %{public}s", name.c_str());
     return true;
 }
 
@@ -304,7 +304,7 @@ std::string DfxMap::ToString()
     int ret = snprintf_s(buf, sizeof(buf), sizeof(buf) - 1, "%" PRIx64 "-%" PRIx64 " %s %08" PRIx64 " %s\n", \
         begin, end, perms.c_str(), offset, name.c_str());
     if (ret <= 0) {
-        LOGE("%s :: snprintf_s failed, line: %d.", __func__, __LINE__);
+        LOGERROR("%{public}s :: snprintf_s failed, line: %{public}d.", __func__, __LINE__);
     }
     return std::string(buf);
 }
@@ -343,10 +343,10 @@ const std::shared_ptr<DfxElf> DfxMap::GetElf(pid_t pid)
 {
     if (elf == nullptr) {
         if (name.empty()) {
-            LOGE("%s", "Invalid map, name empty.");
+            LOGERROR("Invalid map, name empty.");
             return nullptr;
         }
-        LOGU("GetElf name: %s", name.c_str());
+        LOGUNWIND("GetElf name: %{public}s", name.c_str());
         if (EndsWith(name, ".hap")) {
             elf = DfxElf::CreateFromHap(name, prevMap, offset);
         } else if (IsVdsoMap()) {
@@ -355,7 +355,7 @@ const std::shared_ptr<DfxElf> DfxMap::GetElf(pid_t pid)
             shmmData = std::make_shared<std::vector<uint8_t>>(size);
             size_t byte = DfxMemory::ReadProcMemByPid(pid, begin, shmmData->data(), size);
             if (byte != size) {
-                LOGE("%s", "Failed to read shmm data");
+                LOGERROR("Failed to read shmm data");
                 return nullptr;
             }
             elf = std::make_shared<DfxElf>(shmmData->data(), byte);

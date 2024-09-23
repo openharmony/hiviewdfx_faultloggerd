@@ -59,7 +59,7 @@ int32_t RequestFileDescriptor(int32_t type)
 int32_t RequestLogFileDescriptor(struct FaultLoggerdRequest *request)
 {
     if (request == nullptr) {
-        LOGERROR("%{public}s", "nullptr request");
+        LOGERROR("nullptr request");
         return -1;
     }
     request->clientType = (int32_t)FaultLoggerClientType::LOG_FILE_DES_CLIENT;
@@ -69,7 +69,7 @@ int32_t RequestLogFileDescriptor(struct FaultLoggerdRequest *request)
 int32_t RequestFileDescriptorEx(const struct FaultLoggerdRequest *request)
 {
     if (request == nullptr) {
-        LOGERROR("%{public}s", "nullptr request");
+        LOGERROR("nullptr request");
         return -1;
     }
 
@@ -102,7 +102,7 @@ static int32_t RequestFileDescriptorByCheck(const struct FaultLoggerdRequest *re
 {
     int32_t fd = -1;
     if (request == nullptr) {
-        LOGERROR("%{public}s", "nullptr request");
+        LOGERROR("nullptr request");
         return -1;
     }
 
@@ -181,7 +181,7 @@ static int SendRequestToServer(const FaultLoggerdRequest &request)
         }
         if (OHOS_TEMP_FAILURE_RETRY(write(sockfd, &request,
             sizeof(struct FaultLoggerdRequest))) != static_cast<long>(sizeof(request))) {
-            LOGERROR("%{public}s", "write failed.");
+            LOGERROR("write failed.");
             break;
         }
 
@@ -338,13 +338,13 @@ int ReportDumpStats(const struct FaultLoggerdStatsRequest *request)
     int sockfd = -1;
     std::string name = GetSocketConnectionName();
     if (!StartConnect(sockfd, name.c_str(), SOCKET_TIMEOUT)) {
-        LOGERROR("%{public}s", "ReportDumpCatcherStats: failed to connect to faultloggerd");
+        LOGERROR("ReportDumpCatcherStats: failed to connect to faultloggerd");
         return -1;
     }
 
     if (OHOS_TEMP_FAILURE_RETRY(write(sockfd, request,
         sizeof(struct FaultLoggerdStatsRequest))) != static_cast<long int>(sizeof(struct FaultLoggerdStatsRequest))) {
-        LOGERROR("%{public}s", "ReportDumpCatcherStats: failed to write stats.");
+        LOGERROR("ReportDumpCatcherStats: failed to write stats.");
         close(sockfd);
         return -1;
     }

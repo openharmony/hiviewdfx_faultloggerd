@@ -144,7 +144,7 @@ bool DfxRegsRiscv64::StepIfSignalFrame(uintptr_t pc, std::shared_ptr<DfxMemory> 
     if (!memory->ReadU64(pc, &data, false)) {
         return false;
     }
-    LOGU("data: %llx", data);
+    LOGUNWIND("data: %{public}llx", data);
 
     // Look for the kernel sigreturn function.
     // __kernel_rt_sigreturn:
@@ -157,7 +157,7 @@ bool DfxRegsRiscv64::StepIfSignalFrame(uintptr_t pc, std::shared_ptr<DfxMemory> 
     }
     // SP + sizeof(siginfo_t) + uc_mcontext offset + X0 offset.
     uintptr_t scAddr = regsData_[REG_SP] + sizeof(siginfo_t) + 0xb0 + 0x00;
-    LOGU("scAddr: %llx", scAddr);
+    LOGUNWIND("scAddr: %{public}llx", scAddr);
     memory->Read(scAddr, regsData_.data(), sizeof(uint64_t) * REG_LAST, false);
     return true;
 }

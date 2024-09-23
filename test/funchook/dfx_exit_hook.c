@@ -57,7 +57,7 @@ static void __attribute__((constructor)) InitExitHook(void)
 
 int kill(pid_t pid, int sig)
 {
-    LOGF("%d send signal(%d) to %d", getpid(), sig, pid);
+    LOGFATAL("%{public}d send signal(%{public}d) to %{public}d", getpid(), sig, pid);
     if ((sig == SIGKILL) && (pid == getpid())) {
         abort();
     } else if (sig == SIGKILL) {
@@ -65,7 +65,7 @@ int kill(pid_t pid, int sig)
     }
 
     if (g_hookedKill == NULL) {
-        LOGE("hooked kill is NULL?\n");
+        LOGERROR("hooked kill is NULL?\n");
         return syscall(SYS_kill, pid, sig);
     }
     return g_hookedKill(pid, sig);
@@ -73,7 +73,7 @@ int kill(pid_t pid, int sig)
 
 void exit(int code)
 {
-    LOGF("%d call exit with code %d", getpid(), code);
+    LOGFATAL("%{public}d call exit with code %{public}d", getpid(), code);
     if (!g_abortWhenExit) {
         LogBacktrace();
     }
@@ -89,7 +89,7 @@ void exit(int code)
 
 void _exit(int code)
 {
-    LOGF("%d call exit with code %d", getpid(), code);
+    LOGFATAL("%{public}d call exit with code %{public}d", getpid(), code);
     if (!g_abortWhenExit) {
         LogBacktrace();
     }

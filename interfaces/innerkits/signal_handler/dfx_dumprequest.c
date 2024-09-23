@@ -126,7 +126,7 @@ static void FillCrashExceptionAndReport(const int err)
     exception.time = (int64_t)(GetTimeMilliseconds());
     if (strncpy_s(exception.message, sizeof(exception.message), GetCrashDescription(err),
         sizeof(exception.message) - 1) != 0) {
-        DFXLOG_ERROR("strcpy exception message fail");
+        LOGERROR("strcpy exception message fail");
         return;
     }
     ReportException(exception);
@@ -141,14 +141,14 @@ static int32_t InheritCapabilities(void)
     capHeader.pid = 0;
     struct __user_cap_data_struct capData[2];
     if (capget(&capHeader, &capData[0]) == -1) {
-        DFXLOG_ERROR("Failed to get origin cap data");
+        LOGERROR("Failed to get origin cap data");
         return -1;
     }
 
     capData[0].inheritable = capData[0].permitted;
     capData[1].inheritable = capData[1].permitted;
     if (capset(&capHeader, &capData[0]) == -1) {
-        DFXLOG_ERROR("Failed to set cap data, errno(%d)", errno);
+        LOGERROR("Failed to set cap data, errno(%{public}d)", errno);
         return -1;
     }
 
@@ -157,7 +157,7 @@ static int32_t InheritCapabilities(void)
     for (size_t i = 0; i < NUMBER_SIXTYFOUR; i++) {
         if (ambCap & ((uint64_t)1)) {
             if (prctl(PR_CAP_AMBIENT, PR_CAP_AMBIENT_RAISE, i, 0, 0) < 0) {
-                DFXLOG_ERROR("Failed to change the ambient capability set, errno(%d)", errno);
+                LOGERROR("Failed to change the ambient capability set, errno(%{public}d)", errno);
             }
         }
         ambCap = ambCap >> 1;
@@ -200,7 +200,7 @@ static void DFX_SetUpEnvironment(void)
     // clear stdout and stderr
     int devNull = OHOS_TEMP_FAILURE_RETRY(open("/dev/null", O_RDWR));
     if (devNull < 0) {
-        DFXLOG_ERROR("Failed to open dev/null.");
+        LOGERROR("Failed to open dev/null.");
         return;
     }
 
@@ -213,7 +213,7 @@ static void DFX_SetUpEnvironment(void)
 static void DFX_SetUpSigAlarmAction(void)
 {
     if (signal(SIGALRM, SIG_DFL) == SIG_ERR) {
-        DFXLOG_WARN("Default signal alarm error!");
+        LOGWARN("Default signal alarm error!");
     }
     sigset_t set;
     sigemptyset(&set);
@@ -230,7 +230,7 @@ static int DFX_ExecDump(void)
     // create pipe for passing request to processdump
     if (g_request->dumpMode == SPLIT_MODE) {
         if (syscall(SYS_pipe2, pipefd, 0) != 0) {
-            DFXLOG_ERROR("Failed to create pipe for transfering context, errno(%d)", errno);
+            LOGERROR("Failed to create pipe for transfering context, errno(%{public}d)", errno);
             return CREATE_PIPE_FAIL;
         }
     } else {
@@ -240,7 +240,7 @@ static int DFX_ExecDump(void)
 
     ssize_t writeLen = (long)(sizeof(struct ProcessDumpRequest));
     if (fcntl(pipefd[1], F_SETPIPE_SZ, writeLen) < writeLen) {
-        DFXLOG_ERROR("Failed to set pipe buffer size, errno(%d).", errno);
+        LOGERROR("Failed to set pipe buffer size, errno(%{public}d).", errno);
         return SET_PIPE_LEN_FAIL;
     }
 
@@ -251,7 +251,7 @@ static int DFX_ExecDump(void)
         },
     };
     if (OHOS_TEMP_FAILURE_RETRY(writev(pipefd[1], iovs, 1)) != writeLen) {
-        DFXLOG_ERROR("Failed to write pipe, errno(%d)", errno);
+        LOGERROR("Failed to write pipe, errno(%{public}d)", errno);
         return WRITE_PIPE_FAIL;
     }
     OHOS_TEMP_FAILURE_RETRY(dup2(pipefd[0], STDIN_FILENO));
@@ -261,17 +261,17 @@ static int DFX_ExecDump(void)
     syscall(SYS_close, pipefd[1]);
 
     if (InheritCapabilities() != 0) {
-        DFXLOG_ERROR("Failed to inherit Capabilities from parent.");
+        LOGERROR("Failed to inherit Capabilities from parent.");
         FillCrashExceptionAndReport(CRASH_SIGNAL_EINHERITCAP);
         return INHERIT_CAP_FAIL;
     }
-    DFXLOG_INFO("execl processdump.");
+    LOGINFO("execl processdump.");
 #ifdef DFX_LOG_HILOG_BASE
     execl("/system/bin/processdump", "processdump", "-signalhandler", NULL);
 #else
     execl("/bin/processdump", "processdump", "-signalhandler", NULL);
 #endif
-    DFXLOG_ERROR("Failed to execl processdump, errno(%d)", errno);
+    LOGERROR("Failed to execl processdump, errno(%{public}d)", errno);
     FillCrashExceptionAndReport(CRASH_SIGNAL_EEXECL);
     return errno;
 }
@@ -288,13 +288,13 @@ static pid_t ForkBySyscall(void)
 static bool SetDumpState(void)
 {
     if (prctl(PR_SET_DUMPABLE, 1) != 0) {
-        DFXLOG_ERROR("Failed to set dumpable, errno(%d).", errno);
+        LOGERROR("Failed to set dumpable, errno(%{public}d).", errno);
         return false;
     }
 
     if (prctl(PR_SET_PTRACER, PR_SET_PTRACER_ANY) != 0) {
         if (errno != EINVAL) {
-            DFXLOG_ERROR("Failed to set ptracer, errno(%d).", errno);
+            LOGERROR("Failed to set ptracer, errno(%{public}d).", errno);
             return false;
         }
     }
@@ -323,12 +323,12 @@ static bool WaitProcessExit(int childPid, const char* name)
     int status = 0;
     int startTime = (int)time(NULL);
     bool isSuccess = false;
-    DFXLOG_INFO("(%ld) wait %s(%d) exit.", syscall(SYS_gettid), name, childPid);
+    LOGINFO("(%{public}ld) wait %{public}s(%{public}d) exit.", syscall(SYS_gettid), name, childPid);
     do {
         errno = 0;
         ret = waitpid(childPid, &status, WNOHANG);
         if (ret < 0) {
-            DFXLOG_ERROR("Failed to wait child process terminated, errno(%d)", errno);
+            LOGERROR("Failed to wait child process terminated, errno(%{public}d)", errno);
             return isSuccess;
         }
 
@@ -338,21 +338,21 @@ static bool WaitProcessExit(int childPid, const char* name)
         }
 
         if ((int)time(NULL) - startTime > PROCESSDUMP_TIMEOUT) {
-            DFXLOG_INFO("(%ld) wait for (%d) timeout", syscall(SYS_gettid), childPid);
+            LOGINFO("(%{public}ld) wait for (%{public}d) timeout", syscall(SYS_gettid), childPid);
             isSuccess = false;
             break;
         }
         usleep(SIGNALHANDLER_TIMEOUT); // sleep 10ms
     } while (1);
 
-    DFXLOG_INFO("(%ld) wait for %s(%d) return with ret(%d), status(%d)",
+    LOGINFO("(%{public}ld) wait for %{public}s(%{public}d) return with ret(%{public}d), status(%{public}d)",
         syscall(SYS_gettid), name, childPid, ret, status);
     if (WIFEXITED(status)) {
         int exitCode = WEXITSTATUS(status);
-        DFXLOG_INFO("wait %s(%d) exit code: %d", name, childPid, exitCode);
+        LOGINFO("wait %{public}s(%{public}d) exit code: %{public}d", name, childPid, exitCode);
     } else if (WIFSIGNALED(status)) {
         int sigNum = WTERMSIG(status);
-        DFXLOG_INFO("wait %s(%d) exit with sig: %d", name, childPid, sigNum);
+        LOGINFO("wait %{public}s(%{public}d) exit with sig: %{public}d", name, childPid, sigNum);
     }
     return isSuccess;
 }
@@ -379,10 +379,10 @@ static int ForkAndExecProcessDump(void)
     childPid = ForkBySyscall();
     if (childPid == 0) {
         g_request->dumpMode = SPLIT_MODE;
-        DFXLOG_INFO("The exec processdump pid(%ld).", syscall(SYS_getpid));
+        LOGINFO("The exec processdump pid(%{public}ld).", syscall(SYS_getpid));
         Exit(DFX_ExecDump());
     } else if (childPid < 0) {
-        DFXLOG_ERROR("Failed to fork child process, errno(%d).", errno);
+        LOGERROR("Failed to fork child process, errno(%{public}d).", errno);
         FillCrashExceptionAndReport(CRASH_SIGNAL_EFORK);
         goto out;
     }
@@ -395,7 +395,7 @@ out:
 static int CloneAndDoProcessDump(void* arg)
 {
     (void)arg;
-    DFXLOG_INFO("The clone thread(%ld).", syscall(SYS_gettid));
+    LOGINFO("The clone thread(%{public}ld).", syscall(SYS_gettid));
     g_request->recycleTid = syscall(SYS_gettid);
     return ForkAndExecProcessDump();
 }
@@ -405,16 +405,16 @@ static bool StartProcessdump(void)
     uint64_t startTime = GetAbsTimeMilliSeconds();
     pid_t pid = ForkBySyscall();
     if (pid < 0) {
-        DFXLOG_ERROR("Failed to fork dummy processdump(%d)", errno);
+        LOGERROR("Failed to fork dummy processdump(%{public}d)", errno);
         return false;
     } else if (pid == 0) {
         if (!InitPipe()) {
-            DFXLOG_ERROR("%s", "init pipe fail");
+            LOGERROR("init pipe fail");
             _exit(0);
         }
         pid_t processDumpPid = ForkBySyscall();
         if (processDumpPid < 0) {
-            DFXLOG_ERROR("Failed to fork processdump(%d)", errno);
+            LOGERROR("Failed to fork processdump(%{public}d)", errno);
             _exit(0);
         } else if (processDumpPid > 0) {
             ReadProcessDumpGetRegsMsg();
@@ -424,23 +424,23 @@ static bool StartProcessdump(void)
             int tid;
             ParseSiValue(&g_request->siginfo, &endTime, &tid);
             uint64_t curTime = GetAbsTimeMilliSeconds();
-            DFXLOG_INFO("start processdump, fork spend time %" PRIu64 "ms", curTime - startTime);
+            LOGINFO("start processdump, fork spend time %{public}" PRIu64 "ms", curTime - startTime);
             if (endTime != 0) {
-                DFXLOG_INFO("dump remain %" PRId64 "ms", endTime - curTime);
+                LOGINFO("dump remain %{public}" PRId64 "ms", endTime - curTime);
             }
             if (endTime == 0 || endTime > curTime) {
                 g_request->isBlockCrash = (intptr_t)&g_blockFlag;
                 g_request->vmProcRealPid = (intptr_t)&g_vmRealPid;
                 DFX_ExecDump();
             } else {
-                DFXLOG_INFO("%s", "current has spend all time, not execl processdump");
+                LOGINFO("current has spend all time, not execl processdump");
             }
             _exit(0);
         }
     }
 
     if (waitpid(pid, NULL, 0) <= 0) {
-        DFXLOG_ERROR("failed to wait dummy processdump(%d)", errno);
+        LOGERROR("failed to wait dummy processdump(%{public}d)", errno);
     }
     return true;
 }
@@ -450,23 +450,23 @@ static bool StartVMProcessUnwind(void)
     uint32_t startTime = GetAbsTimeMilliSeconds();
     pid_t pid = ForkBySyscall();
     if (pid < 0) {
-        DFXLOG_ERROR("Failed to fork vm process(%d)", errno);
+        LOGERROR("Failed to fork vm process(%{public}d)", errno);
         return false;
     } else if (pid == 0) {
         pid_t vmPid = ForkBySyscall();
         if (vmPid == 0) {
-            DFXLOG_INFO("start vm process, fork spend time %" PRIu64 "ms", GetAbsTimeMilliSeconds() - startTime);
+            LOGINFO("start vm process, fork spend time %{public}" PRIu64 "ms", GetAbsTimeMilliSeconds() - startTime);
             g_vmRealPid = GetRealPid();
-            DFXLOG_INFO("vm prorcecc read pid = %ld", g_vmRealPid);
+            LOGINFO("vm prorcecc read pid = %{public}ld", g_vmRealPid);
             _exit(0);
         } else {
-            DFXLOG_INFO("exit dummy vm process");
+            LOGINFO("exit dummy vm process");
             _exit(0);
         }
     }
 
     if (waitpid(pid, NULL, 0) <= 0) {
-        DFXLOG_ERROR("failed to wait dummy vm process(%d)", errno);
+        LOGERROR("failed to wait dummy vm process(%{public}d)", errno);
     }
     return true;
 }
@@ -492,7 +492,7 @@ static void CleanPipe(void)
     bool ret = true;
     for (int i = 0; i < PIPE_MAX; i++) {
         if (syscall(SYS_pipe2, g_pipeFds[i], 0) == -1) {
-            DFXLOG_ERROR("create pipe fail, errno(%d)", errno);
+            LOGERROR("create pipe fail, errno(%{public}d)", errno);
             ret = false;
             CleanPipe();
             break;
@@ -502,7 +502,7 @@ static void CleanPipe(void)
         CloseFds();
         for (int i = 0; i < PIPE_MAX; i++) {
             if (syscall(SYS_pipe2, g_pipeFds[i], 0) == -1) {
-                DFXLOG_ERROR("create pipe fail again, errno(%d)", errno);
+                LOGERROR("create pipe fail again, errno(%{public}d)", errno);
                 FillCrashExceptionAndReport(CRASH_SIGNAL_ECREATEPIPE);
                 CleanPipe();
                 return false;
@@ -544,7 +544,7 @@ static bool ReadPipeTimeout(int fd, uint64_t timeout, uint32_t* value)
         }
     } while (pollRet < 0 && errno == EINTR);
     FillCrashExceptionAndReport(CRASH_SIGNAL_EREADPIPE);
-    DFXLOG_ERROR("read pipe failed , errno(%d)", errno);
+    LOGERROR("read pipe failed , errno(%{public}d)", errno);
     return false;
 }
 
@@ -552,12 +552,12 @@ static bool ReadProcessDumpGetRegsMsg(void)
 {
     CleanFd(&g_pipeFds[READ_FROM_DUMP_TO_CHILD][1]);
 
-    DFXLOG_INFO("start wait processdump read registers");
+    LOGINFO("start wait processdump read registers");
     const uint64_t readRegsTimeout = 5000; // 5s
     uint32_t isFinishGetRegs = OPE_FAIL;
     if (ReadPipeTimeout(g_pipeFds[READ_FROM_DUMP_TO_CHILD][0], readRegsTimeout, &isFinishGetRegs)) {
         if (isFinishGetRegs == OPE_SUCCESS) {
-            DFXLOG_INFO("processdump have get all registers .");
+            LOGINFO("processdump have get all registers .");
             return true;
         }
     }
@@ -571,7 +571,7 @@ static void ReadUnwindFinishMsg(int sig)
         return;
     }
 
-    DFXLOG_INFO("crash processdump unwind finish, blockFlag %ld", g_blockFlag);
+    LOGINFO("crash processdump unwind finish, blockFlag %{public}ld", g_blockFlag);
     if (g_blockFlag == CRASH_BLOCK_EXIT_FLAG) {
         syscall(SYS_tgkill, g_request->nsPid, g_request->tid, SIGSTOP);
     }
@@ -589,22 +589,22 @@ static int ProcessDump(int sig)
         int tid;
         ParseSiValue(&g_request->siginfo, &endTime, &tid);
         if (endTime != 0 && endTime <= GetAbsTimeMilliSeconds()) {
-            DFXLOG_INFO("%s", "enter processdump has coat all time, just exit");
+            LOGINFO("enter processdump has coat all time, just exit");
             break;
         }
         if (!StartProcessdump()) {
-            DFXLOG_ERROR("start processdump fail");
+            LOGERROR("start processdump fail");
             break;
         }
 
         if (!StartVMProcessUnwind()) {
-            DFXLOG_ERROR("start vm process unwind fail");
+            LOGERROR("start vm process unwind fail");
             break;
         }
         ReadUnwindFinishMsg(sig);
     } while (false);
 
-    DFXLOG_INFO("process dump end");
+    LOGINFO("process dump end");
     RestoreDumpState(prevDumpableStatus, isTracerStatusModified);
     return 0;
 }
@@ -618,23 +618,23 @@ static void ForkAndDoProcessDump(int sig)
         CloseFds();
         g_request->vmNsPid = syscall(SYS_getpid);
         g_request->vmPid = GetRealPid();
-        DFXLOG_INFO("The vm pid(%d:%d).", g_request->vmPid, g_request->vmNsPid);
+        LOGINFO("The vm pid(%{public}d:%{public}d).", g_request->vmPid, g_request->vmNsPid);
         DFX_SetUpSigAlarmAction();
         alarm(ALARM_TIME_S);
         _exit(ForkAndExecProcessDump());
     } else if (childPid < 0) {
-        DFXLOG_ERROR("Failed to fork child process, errno(%d).", errno);
+        LOGERROR("Failed to fork child process, errno(%{public}d).", errno);
         RestoreDumpState(prevDumpableStatus, isTracerStatusModified);
         ForkAndExecProcessDump();
         return;
     }
 
-    DFXLOG_INFO("Start wait for VmProcess(%d) exit.", childPid);
+    LOGINFO("Start wait for VmProcess(%{public}d) exit.", childPid);
     errno = 0;
     if (!WaitProcessExit(childPid, "VmProcess") &&
         sig != SIGDUMP &&
         sig != SIGLEAK_STACK) {
-        DFXLOG_INFO("Wait VmProcess(%d) exit timeout in handling critical signal.", childPid);
+        LOGINFO("Wait VmProcess(%{public}d) exit timeout in handling critical signal.", childPid);
         FillCrashExceptionAndReport(CRASH_SIGNAL_EWAITEXIT);
         // do not left vm process
         kill(childPid, SIGKILL);
@@ -647,7 +647,7 @@ int DfxDumpRequest(int sig, struct ProcessDumpRequest *request, void *reservedCh
 {
     int ret = 0;
     if (request == NULL || reservedChildStack == NULL) {
-        DFXLOG_ERROR("Failed to DumpRequest because of error parameters!");
+        LOGERROR("Failed to DumpRequest because of error parameters!");
         return ret;
     }
     g_request = request;
@@ -665,7 +665,7 @@ int DfxDumpRequest(int sig, struct ProcessDumpRequest *request, void *reservedCh
         int recycleTid = clone(CloneAndDoProcessDump, reservedChildStack,\
             CLONE_THREAD | CLONE_SIGHAND | CLONE_VM, NULL);
         if (recycleTid == -1) {
-            DFXLOG_ERROR("Failed to clone thread for recycle dump process, errno(%d)", errno);
+            LOGERROR("Failed to clone thread for recycle dump process, errno(%{public}d)", errno);
         }
     }
     return ret;

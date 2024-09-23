@@ -22,9 +22,6 @@ extern "C" {
 #endif
 int WriteLog(int fd, const char *format, ...);
 void DfxLogToSocket(const char *msg);
-
-void InitDebugLog(int type, int pid, int tid, unsigned int uid);
-void CloseDebugLog(void);
 #ifdef __cplusplus
 }
 #endif

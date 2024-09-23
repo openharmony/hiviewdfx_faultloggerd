@@ -100,7 +100,7 @@ bool DfxRegsX86_64::StepIfSignalFrame(uintptr_t pc, std::shared_ptr<DfxMemory> m
     if (!memory->ReadU64(pc, &data, false)) {
         return false;
     }
-    LOGU("data: %llx", data);
+    LOGUNWIND("data: %{public}llx", data);
 
     // __restore_rt:
     // 0x48 0xc7 0xc0 0x0f 0x00 0x00 0x00   mov $0xf,%rax
@@ -113,7 +113,7 @@ bool DfxRegsX86_64::StepIfSignalFrame(uintptr_t pc, std::shared_ptr<DfxMemory> m
     uint16_t data2;
     pc += sizeof(uint64_t);
     if (!memory->ReadU16(pc, &data2, false) || (data2 != 0x0f05)) {
-        LOGU("data2: %x", data2);
+        LOGUNWIND("data2: %{public}x", data2);
         return false;
     }
 
@@ -121,7 +121,7 @@ bool DfxRegsX86_64::StepIfSignalFrame(uintptr_t pc, std::shared_ptr<DfxMemory> m
     // sp points to the ucontext data structure, read only the mcontext part.
     ucontext_t ucontext;
     uintptr_t scAddr = regsData_[REG_SP] + 0x28;
-    LOGU("scAddr: %llx", scAddr);
+    LOGUNWIND("scAddr: %{public}llx", scAddr);
     memory->Read(scAddr, &ucontext.uc_mcontext, sizeof(ucontext.uc_mcontext), false);
     SetFromUcontext(ucontext);
     return true;

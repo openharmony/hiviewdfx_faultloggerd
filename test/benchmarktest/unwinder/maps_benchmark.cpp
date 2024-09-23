@@ -37,7 +37,7 @@ static void BenchmarkMapsCreateAll(benchmark::State& state)
 {
     for (const auto& _ : state) {
         auto dfxMaps = DfxMaps::Create();
-        LOGU("%s:: maps.size: %zu", __func__, dfxMaps->GetMapsSize());
+        LOGUNWIND("%{public}s:: maps.size: %{public}zu", __func__, dfxMaps->GetMapsSize());
     }
 }
 BENCHMARK(BenchmarkMapsCreateAll);
@@ -51,7 +51,7 @@ static void BenchmarkMapsCreateOnlyExec(benchmark::State& state)
 {
     for (const auto& _ : state) {
         auto dfxMaps = DfxMaps::Create(0, false);
-        LOGU("%s:: maps.size: %zu", __func__, dfxMaps->GetMapsSize());
+        LOGUNWIND("%{public}s:: maps.size: %{public}zu", __func__, dfxMaps->GetMapsSize());
     }
 }
 BENCHMARK(BenchmarkMapsCreateOnlyExec);
@@ -67,7 +67,7 @@ static void BenchmarkMapsCreateMapIndex(benchmark::State& state)
     std::vector<int> mapIndex {};
     for (const auto& _ : state) {
         if (DfxMaps::Create(0, maps, mapIndex)) {
-            LOGU("%s:: maps.size: %zu", __func__, maps.size());
+            LOGUNWIND("%{public}s:: maps.size: %{public}zu", __func__, maps.size());
         }
     }
 }

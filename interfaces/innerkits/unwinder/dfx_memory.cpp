@@ -59,7 +59,7 @@ size_t DfxMemory::Read(uintptr_t& addr, void* val, size_t size, bool incre)
     uintptr_t tmpAddr = addr;
     uint64_t maxSize;
     if (val == nullptr || __builtin_add_overflow(tmpAddr, size, &maxSize)) {
-        LOGE("val is nullptr or size(%zu) overflow", size);
+        LOGERROR("val is nullptr or size(%{public}zu) overflow", size);
         return 0;
     }
     size_t bytesRead = 0;
@@ -68,7 +68,8 @@ size_t DfxMemory::Read(uintptr_t& addr, void* val, size_t size, bool incre)
         size_t alignBytes = tmpAddr & (static_cast<size_t>(alignBytes_) - 1);
         if (alignBytes != 0) {
             uintptr_t alignedAddr = tmpAddr & (~(static_cast<uintptr_t>(alignBytes_)) - 1);
-            LOGU("alignBytes: %zu, alignedAddr: %" PRIx64 "", alignBytes, static_cast<uint64_t>(alignedAddr));
+            LOGUNWIND("alignBytes: %{public}zu, alignedAddr: %{public}" PRIx64 "", alignBytes,
+                static_cast<uint64_t>(alignedAddr));
             if (!ReadMem(alignedAddr, &tmpVal)) {
                 return bytesRead;
             }
@@ -323,7 +324,7 @@ uintptr_t DfxMemory::ReadEncodedValue(uintptr_t& addr, uint8_t encoding)
         }
             break;
         default:
-            LOGW("Unexpected encoding format 0x%x", encoding & DW_EH_PE_FORMAT_MASK);
+            LOGWARN("Unexpected encoding format 0x%{public}x", encoding & DW_EH_PE_FORMAT_MASK);
             break;
     }
 
@@ -332,7 +333,7 @@ uintptr_t DfxMemory::ReadEncodedValue(uintptr_t& addr, uint8_t encoding)
             val += startAddr;
             break;
         case DW_EH_PE_textrel:
-            LOGE("%s", "XXX For now we don't support text-rel values");
+            LOGERROR("XXX For now we don't support text-rel values");
             break;
         case DW_EH_PE_datarel:
             val += dataOffset_;

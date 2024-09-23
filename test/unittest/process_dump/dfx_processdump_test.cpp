@@ -441,7 +441,7 @@ HWTEST_F(DfxProcessDumpTest, DfxProcessDumpTest015, TestSize.Level2)
 
 /**
  * @tc.name: DfxProcessDumpTest016
- * @tc.desc: Testing InitDebugLog Function
+ * @tc.desc: Testing DfxLogToSocket Function
  * @tc.type: FUNC
  */
 HWTEST_F(DfxProcessDumpTest, DfxProcessDumpTest016, TestSize.Level2)
@@ -455,8 +455,6 @@ HWTEST_F(DfxProcessDumpTest, DfxProcessDumpTest016, TestSize.Level2)
     char msg[] = "test log";
     DfxLogToSocket(msg);
     kill(pid, SIGSEGV);
-    InitDebugLog(FaultLoggerType::CPP_CRASH, pid, pid, 0);
-    CloseDebugLog();
     GTEST_LOG_(INFO) << "DfxProcessDumpTest016: end.";
 }
 

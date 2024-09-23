@@ -45,11 +45,11 @@ static bool Exited(pid_t pid)
     }
 
     if (WIFEXITED(status)) {
-        LOGE("%d died: Process exited with code %d", pid, WEXITSTATUS(status));
+        LOGERROR("%{public}d died: Process exited with code %{public}d", pid, WEXITSTATUS(status));
     } else if (WIFSIGNALED(status)) {
-        LOGE("%d died: Process exited due to signal %d", pid, WTERMSIG(status));
+        LOGERROR("%{public}d died: Process exited due to signal %{public}d", pid, WTERMSIG(status));
     } else {
-        LOGE("%d died: Process finished for unknown reason", pid);
+        LOGERROR("%{public}d died: Process finished for unknown reason", pid);
     }
     return true;
 }
@@ -64,7 +64,7 @@ bool PidUtils::Quiesce(pid_t pid)
         }
         if (errno != ESRCH) {
             if (errno != EINVAL) {
-                LOGE("ptrace getsiginfo failed");
+                LOGERROR("ptrace getsiginfo failed");
                 return false;
             }
             // The process is in group-stop state, so try and kick the process out of that state.
@@ -75,7 +75,7 @@ bool PidUtils::Quiesce(pid_t pid)
         }
         usleep(USLEEP_TIME);
     }
-    LOGE("%d: Did not quiesce in 10 seconds", pid);
+    LOGERROR("%{public}d: Did not quiesce in 10 seconds", pid);
     return false;
 }
 
@@ -87,7 +87,7 @@ bool PidUtils::Attach(pid_t pid)
             break;
         }
         if (errno != ESRCH) {
-            LOGE("Failed to attach");
+            LOGERROR("Failed to attach");
             return false;
         }
         usleep(USLEEP_TIME);
@@ -98,7 +98,7 @@ bool PidUtils::Attach(pid_t pid)
     }
 
     if (ptrace(PTRACE_DETACH, pid, 0, 0) == -1) {
-        LOGE("Failed to detach");
+        LOGERROR("Failed to detach");
     }
     return false;
 }
@@ -106,7 +106,7 @@ bool PidUtils::Attach(pid_t pid)
 bool PidUtils::Detach(pid_t pid)
 {
     if (ptrace(PTRACE_DETACH, pid, 0, 0) == -1) {
-        LOGE("ptrace detach failed");
+        LOGERROR("ptrace detach failed");
         return false;
     }
     return true;
@@ -132,7 +132,7 @@ bool PidUtils::WaitForPidState(pid_t pid, const std::function<PidRunEnum()>& sta
         usleep(USLEEP_TIME);
     }
     if (status == PID_RUN_KEEP_GOING) {
-        LOGE("Timed out waiting for pid %d to be ready", pid);
+        LOGERROR("Timed out waiting for pid %{public}d to be ready", pid);
     }
     return status == PID_RUN_PASS;
 }
@@ -152,7 +152,7 @@ bool PidUtils::WaitForPidStateAfterAttach(pid_t pid, const std::function<PidRunE
         usleep(USLEEP_TIME);
     } while (time(nullptr) - startTime < MAX_WAIT_TIME_SECONDS && status == PID_RUN_KEEP_GOING && Attach(pid));
     if (status == PID_RUN_KEEP_GOING) {
-        LOGE("Timed out waiting for pid %d to be ready", pid);
+        LOGERROR("Timed out waiting for pid %{public}d to be ready", pid);
     }
     return status == PID_RUN_PASS;
 }

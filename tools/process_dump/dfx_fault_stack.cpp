@@ -82,7 +82,7 @@ uintptr_t FaultStack::AdjustAndCreateMemoryBlock(size_t index, uintptr_t prevSp,
 bool FaultStack::CollectStackInfo(const std::vector<DfxFrame>& frames, bool needParseStack)
 {
     if (frames.empty()) {
-        LOGWARN("%{public}s", "null frames.");
+        LOGWARN("null frames.");
         return false;
     }
 

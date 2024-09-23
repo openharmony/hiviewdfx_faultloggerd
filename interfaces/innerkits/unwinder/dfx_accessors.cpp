@@ -51,7 +51,7 @@ bool DfxAccessors::GetMapByPcAndCtx(uintptr_t pc, std::shared_ptr<DfxMap>& map, 
     UnwindContext* ctx = reinterpret_cast<UnwindContext *>(arg);
     if (ctx->map != nullptr && ctx->map->Contain(static_cast<uint64_t>(pc))) {
         map = ctx->map;
-        LOGU("map had matched by ctx, map name: %s", map->name.c_str());
+        LOGUNWIND("map had matched by ctx, map name: %{public}s", map->name.c_str());
         return true;
     }
 
@@ -107,7 +107,7 @@ NO_SANITIZE int DfxAccessorsLocal::AccessMem(uintptr_t addr, uintptr_t *val, voi
     }
     UnwindContext* ctx = reinterpret_cast<UnwindContext *>(arg);
     if ((ctx != nullptr) && (ctx->stackCheck == true) && (!IsValidFrame(addr, ctx->stackBottom, ctx->stackTop))) {
-        LOGU("%s", "Failed to access addr");
+        LOGUNWIND("Failed to access addr");
         return UNW_ERROR_INVALID_MEMORY;
     }
     *val = *reinterpret_cast<uintptr_t *>(addr);
@@ -139,7 +139,7 @@ int DfxAccessorsLocal::FindUnwindTable(uintptr_t pc, UnwindTableInfo& uti, void 
     if (ctx->map != nullptr && ctx->map->IsVdsoMap()) {
         auto elf = ctx->map->GetElf(getpid());
         if (elf == nullptr) {
-            LOGU("%s", "FindUnwindTable elf is null");
+            LOGUNWIND("FindUnwindTable elf is null");
             return ret;
         }
         ret = elf->FindUnwindTableInfo(pc, ctx->map, uti);
@@ -176,7 +176,7 @@ int DfxAccessorsRemote::AccessMem(uintptr_t addr, uintptr_t *val, void *arg)
     if (ctx->map != nullptr && ctx->map->elf != nullptr) {
         uintptr_t pos = ctx->map->GetRelPc(addr);
         if (ctx->map->elf->Read(pos, val, sizeof(uintptr_t))) {
-            LOGU("Read elf mmap pos: %p", (void *)pos);
+            LOGUNWIND("Read elf mmap pos: %{public}p", (void *)pos);
             return UNW_ERROR_NONE;
         }
     }
@@ -204,7 +204,7 @@ int DfxAccessorsRemote::AccessMem(uintptr_t addr, uintptr_t *val, void *arg)
         *val |= (i == 0 && end == 2 ? tmpVal << THIRTY_TWO_BITS : tmpVal); // 2 : read two times
 #endif
         if (errno) {
-            LOGU("errno: %d", errno);
+            LOGUNWIND("errno: %{public}d", errno);
             return UNW_ERROR_ILLEGAL_VALUE;
         }
     }
@@ -233,14 +233,14 @@ int DfxAccessorsRemote::FindUnwindTable(uintptr_t pc, UnwindTableInfo& uti, void
         return UNW_ERROR_INVALID_CONTEXT;
     }
     if (pc >= ctx->di.startPc && pc < ctx->di.endPc) {
-        LOGU("%s", "FindUnwindTable had pc matched");
+        LOGUNWIND("FindUnwindTable had pc matched");
         uti = ctx->di;
         return UNW_ERROR_NONE;
     }
 
     auto elf = ctx->map->GetElf(ctx->pid);
     if (elf == nullptr) {
-        LOGU("%s", "FindUnwindTable elf is null");
+        LOGUNWIND("FindUnwindTable elf is null");
         return UNW_ERROR_INVALID_ELF;
     }
     int ret = elf->FindUnwindTableInfo(pc, ctx->map, uti);

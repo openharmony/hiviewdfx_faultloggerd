@@ -78,11 +78,11 @@ bool CppCrashReporter::Format()
 void CppCrashReporter::ReportToHiview()
 {
     if (!Format()) {
-        LOGWARN("%{public}s", "Failed to format crash report.");
+        LOGWARN("Failed to format crash report.");
         return;
     }
     if (process_->processInfo_.processName.find(HIVIEW_PROCESS_NAME) != std::string::npos) {
-        LOGWARN("%{public}s", "Failed to report, hiview is crashed.");
+        LOGWARN("Failed to report, hiview is crashed.");
         return;
     }
 
@@ -157,7 +157,7 @@ int32_t CppCrashReporter::WriteCppCrashInfoByPipe()
 void CppCrashReporter::ReportToAbilityManagerService()
 {
     if (process_->processInfo_.processName.find(FOUNDATION_PROCESS_NAME) != std::string::npos) {
-        LOGWARN("%{public}s", "Do not to report to AbilityManagerService, foundation is crashed.");
+        LOGWARN("Do not to report to AbilityManagerService, foundation is crashed.");
         return;
     }
 
@@ -181,8 +181,8 @@ void CppCrashReporter::ReportToAbilityManagerService()
 #ifndef HISYSEVENT_DISABLE
     int result = HiSysEventWrite(HiSysEvent::Domain::FRAMEWORK, "PROCESS_KILL", HiSysEvent::EventType::FAULT,
         "PID", pid_, "PROCESS_NAME", cmdline_.c_str(), "MSG", KILL_REASON_CPP_CRASH);
-    LOGINFO("hisysevent write result=%{public}d, send event [FRAMEWORK,PROCESS_KILL], \
-        pid=%{public}d processName=%{public}s, msg=%{public}s",
+    LOGINFO("hisysevent write result=%{public}d, send event [FRAMEWORK,PROCESS_KILL], " \
+        "pid=%{public}d processName=%{public}s, msg=%{public}s",
         result, pid_, cmdline_.c_str(), KILL_REASON_CPP_CRASH);
 #endif
 }

@@ -34,14 +34,14 @@ static bool LockToCpu(int lockCpu)
     CPU_SET(lockCpu, &cpuSet);
     if (sched_setaffinity(0, sizeof(cpuSet), &cpuSet) != 0) {
         if (errno == EINVAL) {
-            LOGW("Invalid cpu %d", lockCpu);
+            LOGWARN("Invalid cpu %{public}d", lockCpu);
         } else {
-            LOGE("sched_setaffinity failed");
+            LOGERROR("sched_setaffinity failed");
         }
         return false;
     }
 
-    LOGI("Locked to cpu %d\n", lockCpu);
+    LOGINFO("Locked to cpu %{public}d\n", lockCpu);
     return true;
 }
 
@@ -56,7 +56,7 @@ int main(int argc, char** argv)
             char* endptr = nullptr;
             long cpu = strtol(&argv[i][16], &endptr, 10);
             if (endptr == nullptr || *endptr != '\0' || cpu > INT_MAX || cpu < 0) {
-                LOGW("Malformed value for --benchmark_cpu, requires a valid positive number.");
+                LOGWARN("Malformed value for --benchmark_cpu, requires a valid positive number.");
                 return 1;
             }
             lockCpu = cpu;
