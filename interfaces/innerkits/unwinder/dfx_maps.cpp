@@ -194,7 +194,7 @@ bool DfxMaps::IsLegalMapItem(const std::string& name, bool withArk)
     if (withArk && (IsArkHapMapItem(name) || IsArkCodeMapItem(name))) {
         return true;
     }
-    if (EndsWith(name, "[vdso]")) {
+    if (EndsWith(name, "[vdso]") || EndsWith(name, "[shmm]")) {
         return true;
     }
     if (name.empty() || name.find(':') != std::string::npos || name.front() == '[' ||
