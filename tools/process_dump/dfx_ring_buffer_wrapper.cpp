@@ -120,7 +120,7 @@ void DfxRingBufferWrapper::AppendBaseInfo(const std::string& info)
 void DfxRingBufferWrapper::PrintBaseInfo()
 {
     if (crashBaseInfo_.empty()) {
-        LOGERROR("%{public}s", "crash base info is empty");
+        LOGERROR("crash base info is empty");
     }
     for (const auto& item : crashBaseInfo_) {
         std::vector<std::string> itemVec = SplitDumpInfo(item, "\n");

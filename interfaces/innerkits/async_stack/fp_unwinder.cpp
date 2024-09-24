@@ -72,7 +72,7 @@ int32_t FpUnwinder::Unwind(uintptr_t* pcs, int32_t sz, int32_t skipFrameNum)
 int32_t FpUnwinder::UnwindFallback(uintptr_t* pcs, int32_t sz, int32_t skipFrameNum)
 {
     if (pipe2(g_validPipe, O_CLOEXEC | O_NONBLOCK) != 0) {
-        LOGE("Failed to init pipe, errno(%d)", errno);
+        LOGERROR("Failed to init pipe, errno(%{public}d)", errno);
         return 0;
     }
     uintptr_t firstFp = pcs[1];
@@ -104,7 +104,7 @@ int32_t FpUnwinder::UnwindFallback(uintptr_t* pcs, int32_t sz, int32_t skipFrame
 NO_SANITIZE bool FpUnwinder::ReadUintptrSafe(uintptr_t addr, uintptr_t& value)
 {
     if (OHOS_TEMP_FAILURE_RETRY(syscall(SYS_write, g_validPipe[PIPE_WRITE], addr, sizeof(uintptr_t))) == -1) {
-        LOGE("%s", "Failed to write addr to pipe, it is a invalid addr");
+        LOGERROR("Failed to write addr to pipe, it is a invalid addr");
         return false;
     }
     value = *reinterpret_cast<uintptr_t *>(addr);

@@ -68,7 +68,7 @@ static const std::string GetNextLine(FILE *fp, int *status)
     constexpr int bufSize {128};
     char buf[bufSize] = {0};
     if (fgets(buf, bufSize, fp) == nullptr) {
-        LOGERROR("%{public}s", "fgets() failed");
+        LOGERROR("fgets() failed");
         *status = -1;
         return "";
     }
@@ -106,54 +106,54 @@ bool ElfImitate::ParseAllHeaders(ElfFileType fileType)
     if (fileType == ElfFileType::ELF32) {
         ehdrFP_ = std::fopen(EHDR_32.c_str(), "rb");
         if (ehdrFP_ == nullptr) {
-            LOGERROR("%{public}s", "fopen(EHDR_32, \"r\") failed");
+            LOGERROR("fopen(EHDR_32, \"r\") failed");
         }
         shdrFP_ = fopen(SHDRS_32.c_str(), "rb");
         if (shdrFP_ == nullptr) {
-            LOGERROR("%{public}s", "fopen(SHDRS_32, \"r\") failed");
+            LOGERROR("fopen(SHDRS_32, \"r\") failed");
         }
         phdrFP_ = fopen(PHDRS_32.c_str(), "rb");
         if (phdrFP_ == nullptr) {
-            LOGERROR("%{public}s", "fopen(PHDRS_32, \"r\") failed");
+            LOGERROR("fopen(PHDRS_32, \"r\") failed");
         }
         symTabFP_ = fopen(SYMS_32.c_str(), "rb");
         if (symTabFP_ == nullptr) {
-            LOGERROR("%{public}s", "fopen(SYMS_32, \"r\") failed");
+            LOGERROR("fopen(SYMS_32, \"r\") failed");
         }
     } else if (fileType == ElfFileType::ELF64) {
         ehdrFP_ = fopen(EHDR_64.c_str(), "rb");
         if (ehdrFP_ == nullptr) {
-            LOGERROR("%{public}s", "fopen(EHDR_64, \"r\") failed");
+            LOGERROR("fopen(EHDR_64, \"r\") failed");
         }
         shdrFP_ = fopen(SHDRS_64.c_str(), "rb");
         if (shdrFP_ == nullptr) {
-            LOGERROR("%{public}s", "fopen(SHDRS_64, \"r\") failed");
+            LOGERROR("fopen(SHDRS_64, \"r\") failed");
         }
         phdrFP_ = fopen(PHDRS_64.c_str(), "rb");
         if (phdrFP_ == nullptr) {
-            LOGERROR("%{public}s", "fopen(PHDRS_64, \"r\") failed");
+            LOGERROR("fopen(PHDRS_64, \"r\") failed");
         }
         symTabFP_ = fopen(SYMS_64.c_str(), "rb");
         if (symTabFP_ == nullptr) {
-            LOGERROR("%{public}s", "fopen(SYMS_64, \"r\") failed");
+            LOGERROR("fopen(SYMS_64, \"r\") failed");
         }
     }
     if (!ParseElfHeaders()) {
-        LOGWARN("%{public}s", "ParseElfHeaders failed");
+        LOGWARN("ParseElfHeaders failed");
         return false;
     }
 
     if (!ParseProgramHeaders(fileType)) {
-        LOGWARN("%{public}s", "ParseProgramHeaders failed");
+        LOGWARN("ParseProgramHeaders failed");
         return false;
     }
 
     if (!ParseSectionHeaders(fileType)) {
-        LOGWARN("%{public}s", "ReadSectionHeaders failed");
+        LOGWARN("ReadSectionHeaders failed");
         return false;
     }
     if (!ParseElfSymbols()) {
-        LOGWARN("%{public}s", "ParseElfSymbols failed");
+        LOGWARN("ParseElfSymbols failed");
         return false;
     }
     return true;
@@ -162,18 +162,18 @@ bool ElfImitate::ParseAllHeaders(ElfFileType fileType)
 bool ElfImitate::ParseElfHeaders()
 {
     if (ehdrFP_ == nullptr) {
-        LOGERROR("%{public}s", "param is null");
+        LOGERROR("param is null");
         return false;
     }
     int status {0};
     // drop header line
     GetNextLine(ehdrFP_, &status);
     if (!GetMagic(ehdrFP_)) {
-        LOGERROR("%{public}s", "ElfImitate::InitMagic(ehdrFP_) failed:");
+        LOGERROR("ElfImitate::InitMagic(ehdrFP_) failed:");
         return false;
     }
     if (!GetClass(ehdrFP_)) {
-        LOGERROR("%{public}s", "ElfImitate::InitClass(ehdrFP_) failed:");
+        LOGERROR("ElfImitate::InitClass(ehdrFP_) failed:");
         return false;
     }
     constexpr int numSkip {6};
@@ -182,7 +182,7 @@ bool ElfImitate::ParseElfHeaders()
         GetNextLine(ehdrFP_, &status);
     }
     if (!GetMachine(ehdrFP_)) {
-        LOGERROR("%{public}s", "ElfImitate::InitMachine(ehdrFP_) failed:");
+        LOGERROR("ElfImitate::InitMachine(ehdrFP_) failed:");
     }
 
     if (machine_ == "ARM") {
@@ -198,43 +198,43 @@ bool ElfImitate::ParseElfHeaders()
     }
 
     if (!GetEntryAddr(ehdrFP_)) {
-        LOGERROR("%{public}s", "ElfImitate::InitEntryAddr(ehdrFP_) failed:");
+        LOGERROR("ElfImitate::InitEntryAddr(ehdrFP_) failed:");
         return false;
     }
     if (!GetPrgOffset(ehdrFP_)) {
-        LOGERROR("%{public}s", "ElfImitate::InitPrgOffset(ehdrFP_) failed:");
+        LOGERROR("ElfImitate::InitPrgOffset(ehdrFP_) failed:");
         return false;
     }
     if (!GetSecOffset(ehdrFP_)) {
-        LOGERROR("%{public}s", "ElfImitate::InitSecOffset(ehdrFP_) failed:");
+        LOGERROR("ElfImitate::InitSecOffset(ehdrFP_) failed:");
         return false;
     }
     if (!GetFlag(ehdrFP_)) {
-        LOGERROR("%{public}s", "ElfImitate::InitFlag(ehdrFP_) failed:");
+        LOGERROR("ElfImitate::InitFlag(ehdrFP_) failed:");
         return false;
     }
     if (!GetEhdrSize(ehdrFP_)) {
-        LOGERROR("%{public}s", "ElfImitate::InitEhdrSize(ehdrFP_) failed:");
+        LOGERROR("ElfImitate::InitEhdrSize(ehdrFP_) failed:");
         return false;
     }
     if (!GetPhdrSize(ehdrFP_)) {
-        LOGERROR("%{public}s", "ElfImitate::InitPhdrSize(ehdrFP_) failed:");
+        LOGERROR("ElfImitate::InitPhdrSize(ehdrFP_) failed:");
         return false;
     }
     if (!GetNumPhdrs(ehdrFP_)) {
-        LOGERROR("%{public}s", "ElfImitate::InitNumPhdrs(ehdrFP_) failed:");
+        LOGERROR("ElfImitate::InitNumPhdrs(ehdrFP_) failed:");
         return false;
     }
     if (!GetShdrSize(ehdrFP_)) {
-        LOGERROR("%{public}s", "ElfImitate::InitShdrSize(ehdrFP_) failed:");
+        LOGERROR("ElfImitate::InitShdrSize(ehdrFP_) failed:");
         return false;
     }
     if (!GetNumShdrs(ehdrFP_)) {
-        LOGERROR("%{public}s", "ElfImitate::InitNumShdrs(ehdrFP_) failed:");
+        LOGERROR("ElfImitate::InitNumShdrs(ehdrFP_) failed:");
         return false;
     }
     if (!GetShdrStrTabIdx(ehdrFP_)) {
-        LOGERROR("%{public}s", "ElfImitate::InitShdrStrTabIdx(ehdrFP_) failed:");
+        LOGERROR("ElfImitate::InitShdrStrTabIdx(ehdrFP_) failed:");
         return false;
     }
     elfSize_ = shdrOffset_ + shdrEntSize_ * shdrNumEnts_;
@@ -243,19 +243,19 @@ bool ElfImitate::ParseElfHeaders()
 bool ElfImitate::GetMagic(FILE * const fp)
 {
     if (fp == nullptr) {
-        LOGERROR("%{public}s", "param is null");
+        LOGERROR("param is null");
         return false;
     }
     int status {0};
     std::string magicLine = GetNextLine(fp, &status);
     if (status == -1) {
-        LOGERROR("%{public}s", "early end");
+        LOGERROR("early end");
         return false;
     }
     auto tmp = StringSplit(magicLine, " ");
     std::vector<std::string> strVec {tmp.begin() + 1, tmp.end()};
     if (strVec.size() != EI_NIDENT) {
-        LOGERROR("%{public}s", "line format incorrect:");
+        LOGERROR("line format incorrect:");
         LOGERROR("    line = %{public}s", magicLine.c_str());
         return false;
     }
@@ -270,19 +270,19 @@ bool ElfImitate::GetMagic(FILE * const fp)
 bool ElfImitate::GetClass(FILE * const fp)
 {
     if (fp == nullptr) {
-        LOGERROR("%{public}s", "param is null");
+        LOGERROR("param is null");
         return false;
     }
     int status {0};
     std::string classLine = GetNextLine(fp, &status);
     if (status == -1) {
-        LOGERROR("%{public}s", "early end");
+        LOGERROR("early end");
         return false;
     }
     auto strVec = StringSplit(classLine, " ");
     constexpr int len {2};
     if (strVec.size() != len) {
-        LOGERROR("%{public}s", "line format incorrect:");
+        LOGERROR("line format incorrect:");
         LOGERROR("    line = %{public}s", classLine.c_str());
         return false;
     }
@@ -299,13 +299,13 @@ bool ElfImitate::GetMachine(FILE * const fp)
     int status {0};
     std::string machineLine = GetNextLine(fp, &status);
     if (status == -1) {
-        LOGERROR("%{public}s", "early end");
+        LOGERROR("early end");
         return false;
     }
     auto strVec = StringSplit(machineLine, " ");
     constexpr int len {2};
     if (strVec.size() != len) {
-        LOGERROR("%{public}s", "line format incorrect:");
+        LOGERROR("line format incorrect:");
         LOGERROR("    line = %{public}s", machineLine.c_str());
         return false;
     }
@@ -317,13 +317,13 @@ bool ElfImitate::GetEntryAddr(FILE * const fp)
     int status {0};
     std::string entryLine = GetNextLine(fp, &status);
     if (status == -1) {
-        LOGERROR("%{public}s", "early end");
+        LOGERROR("early end");
         return false;
     }
     auto strVec = StringSplit(entryLine, " ");
     constexpr int len {2};
     if (strVec.size() != len) {
-        LOGERROR("%{public}s", "line format incorrect:");
+        LOGERROR("line format incorrect:");
         LOGERROR("    line = %{public}s", entryLine.c_str());
         return false;
     }
@@ -338,13 +338,13 @@ bool ElfImitate::GetPrgOffset(FILE * const fp)
     int status {0};
     std::string line = GetNextLine(fp, &status);
     if (status == -1) {
-        LOGERROR("%{public}s", "early end");
+        LOGERROR("early end");
         return false;
     }
     auto strVec = StringSplit(line, " ");
     constexpr int len {5};
     if (strVec.size() != len) {
-        LOGERROR("%{public}s", "line format incorrect:");
+        LOGERROR("line format incorrect:");
         LOGERROR("    line = %{public}s", line.c_str());
         return false;
     }
@@ -359,13 +359,13 @@ bool ElfImitate::GetSecOffset(FILE * const fp)
     int status {0};
     std::string line = GetNextLine(fp, &status);
     if (status == -1) {
-        LOGERROR("%{public}s", "early end");
+        LOGERROR("early end");
         return false;
     }
     auto strVec = StringSplit(line, " ");
     constexpr int len {8};
     if (strVec.size() != len) {
-        LOGERROR("%{public}s", "line format incorrect:");
+        LOGERROR("line format incorrect:");
         LOGERROR("    line = %{public}s", line.c_str());
         return false;
     }
@@ -380,13 +380,13 @@ bool ElfImitate::GetFlag(FILE * const fp)
     int status {0};
     std::string line = GetNextLine(fp, &status);
     if (status == -1) {
-        LOGERROR("%{public}s", "early end");
+        LOGERROR("early end");
         return false;
     }
     auto strVec = StringSplit(line, " ");
     constexpr int len {2};
     if (strVec.size() != len) {
-        LOGERROR("%{public}s", "line format incorrect:");
+        LOGERROR("line format incorrect:");
         LOGERROR("    line = %{public}s", line.c_str());
         return false;
     }
@@ -401,13 +401,13 @@ bool ElfImitate::GetEhdrSize(FILE * const fp)
     int status {0};
     std::string line = GetNextLine(fp, &status);
     if (status == -1) {
-        LOGERROR("%{public}s", "early end");
+        LOGERROR("early end");
         return false;
     }
     auto strVec = StringSplit(line, " ");
     constexpr int len {6};
     if (strVec.size() != len) {
-        LOGERROR("%{public}s", "line format incorrect:");
+        LOGERROR("line format incorrect:");
         LOGERROR("    line = %{public}s", line.c_str());
         return false;
     }
@@ -422,13 +422,13 @@ bool ElfImitate::GetPhdrSize(FILE * const fp)
     int status {0};
     std::string line = GetNextLine(fp, &status);
     if (status == -1) {
-        LOGERROR("%{public}s", "early end");
+        LOGERROR("early end");
         return false;
     }
     auto strVec = StringSplit(line, " ");
     constexpr int len {6};
     if (strVec.size() != len) {
-        LOGERROR("%{public}s", "line format incorrect:");
+        LOGERROR("line format incorrect:");
         LOGERROR("    line = %{public}s", line.c_str());
         return false;
     }
@@ -443,13 +443,13 @@ bool ElfImitate::GetNumPhdrs(FILE * const fp)
     int status {0};
     std::string line = GetNextLine(fp, &status);
     if (status == -1) {
-        LOGERROR("%{public}s", "early end");
+        LOGERROR("early end");
         return false;
     }
     auto strVec = StringSplit(line, " ");
     constexpr int len {5};
     if (strVec.size() != len) {
-        LOGERROR("%{public}s", "line format incorrect:");
+        LOGERROR("line format incorrect:");
         LOGERROR("    line = %{public}s", line.c_str());
         return false;
     }
@@ -464,13 +464,13 @@ bool ElfImitate::GetShdrSize(FILE * const fp)
     int status {0};
     std::string line = GetNextLine(fp, &status);
     if (status == -1) {
-        LOGERROR("%{public}s", "early end");
+        LOGERROR("early end");
         return false;
     }
     auto strVec = StringSplit(line, " ");
     constexpr int len {6};
     if (strVec.size() != len) {
-        LOGERROR("%{public}s", "line format incorrect:");
+        LOGERROR("line format incorrect:");
         LOGERROR("    line = %{public}s", line.c_str());
         return false;
     }
@@ -485,13 +485,13 @@ bool ElfImitate::GetNumShdrs(FILE * const fp)
     int status {0};
     std::string line = GetNextLine(fp, &status);
     if (status == -1) {
-        LOGERROR("%{public}s", "early end");
+        LOGERROR("early end");
         return false;
     }
     auto strVec = StringSplit(line, " ");
     constexpr int len {5};
     if (strVec.size() != len) {
-        LOGERROR("%{public}s", "line format incorrect:");
+        LOGERROR("line format incorrect:");
         LOGERROR("    line = %{public}s", line.c_str());
         return false;
     }
@@ -506,13 +506,13 @@ bool ElfImitate::GetShdrStrTabIdx(FILE * const fp)
     int status {0};
     std::string line = GetNextLine(fp, &status);
     if (status == -1) {
-        LOGERROR("%{public}s", "early end");
+        LOGERROR("early end");
         return false;
     }
     auto strVec = StringSplit(line, " ");
     constexpr int len {6};
     if (strVec.size() != len) {
-        LOGERROR("%{public}s", "line format incorrect:");
+        LOGERROR("line format incorrect:");
         LOGERROR("    line = %{public}s", line.c_str());
         return false;
     }
@@ -530,18 +530,18 @@ bool ElfImitate::ParseProgramHeaders(ElfFileType fileType)
         line = GetNextPhdrLine();
         if (line.empty()) {
             break;
-            LOGINFO("%{public}s", "no more program lines");
+            LOGINFO("no more program lines");
         }
         if (fileType == ElfFileType::ELF64) {
             int status = 0;
             std::string lineAppend = GetNextLine(phdrFP_, &status);
             if (status == -1) {
-                LOGERROR("%{public}s", "GetNextLine(phdrFP_, &status) error:");
+                LOGERROR("GetNextLine(phdrFP_, &status) error:");
                 break;
             }
             if (lineAppend.empty()) {
                 break;
-                LOGINFO("%{public}s", "no more program lines");
+                LOGINFO("no more program lines");
             }
             line += lineAppend;
         }
@@ -589,13 +589,13 @@ bool ElfImitate::ParseSectionHeaders(ElfFileType fileType)
         line = GetNextShdrLine();
         if (line.empty()) {
             break;
-            LOGINFO("%{public}s", "no more section lines");
+            LOGINFO("no more section lines");
         }
         if (fileType == ElfFileType::ELF64) {
             std::string lineAppend = GetNextLine(shdrFP_, &status);
             if (lineAppend.empty()) {
                 break;
-                LOGINFO("%{public}s", "no more section lines");
+                LOGINFO("no more section lines");
             }
             line += lineAppend;
         }
@@ -658,7 +658,7 @@ const std::string ElfImitate::GetNextPhdrLine()
     while (true) {
         line = GetNextLine(phdrFP_, &status);
         if (status == -1) {
-            LOGERROR("%{public}s", "GetNextLine(phdrFP_, &status) error:");
+            LOGERROR("GetNextLine(phdrFP_, &status) error:");
             line = "";
             break;
         }
@@ -678,7 +678,7 @@ const std::string ElfImitate::GetNextShdrLine()
     while (true) {
         line = GetNextLine(shdrFP_, &status);
         if (status == -1) {
-            LOGERROR("%{public}s", "GetNextLine(phdrFP_, &status) error:");
+            LOGERROR("GetNextLine(phdrFP_, &status) error:");
             line = "";
             break;
         }
@@ -738,7 +738,7 @@ bool ElfImitate::ParseElfSymbols()
         std::string line {};
         line = GetNextSymLine();
         if (line.empty()) {
-            LOGINFO("%{public}s", "no more symbol lines");
+            LOGINFO("no more symbol lines");
             break;
         }
         auto strVec = StringSplit(line, " ");
@@ -768,7 +768,7 @@ const std::string ElfImitate::GetNextSymLine()
     while (true) {
         line = GetNextLine(symTabFP_, &status);
         if (status == -1) {
-            LOGINFO("%{public}s", "GetNextLine(phdrFP_, &status) error:");
+            LOGINFO("GetNextLine(phdrFP_, &status) error:");
             line = "";
             break;
         }

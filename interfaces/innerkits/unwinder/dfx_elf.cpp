@@ -71,16 +71,16 @@ std::shared_ptr<DfxElf> DfxElf::CreateFromHap(const std::string& file, std::shar
     // c3945000-c394b000 r--p 00277000 /data/storage/el1/bundle/entry.hap
     // c394b000-c394c000 rw-p 0027c000 /data/storage/el1/bundle/entry.hap
     if (prevMap == nullptr) {
-        LOGE("%s", "current hap mapitem has no prev mapitem, maybe pc is wrong?");
+        LOGERROR("current hap mapitem has no prev mapitem, maybe pc is wrong?");
         return nullptr;
     }
     if (!StartsWith(file, "/proc") || !EndsWith(file, ".hap")) {
-        LOGD("Illegal file path, please check file: %s", file.c_str());
+        LOGDEBUG("Illegal file path, please check file: %{public}s", file.c_str());
         return nullptr;
     }
     int fd = OHOS_TEMP_FAILURE_RETRY(open(file.c_str(), O_RDONLY));
     if (fd < 0) {
-        LOGE("Failed to open hap file, errno(%d)", errno);
+        LOGERROR("Failed to open hap file, errno(%{public}d)", errno);
         return nullptr;
     }
     auto fileSize = GetFileSize(fd);
@@ -89,13 +89,13 @@ std::shared_ptr<DfxElf> DfxElf::CreateFromHap(const std::string& file, std::shar
     do {
         auto mmap = std::make_shared<DfxMmap>();
         if (!mmap->Init(fd, size, (off_t)prevMap->offset)) {
-            LOGE("%s", "Failed to mmap program header in hap.");
+            LOGERROR("Failed to mmap program header in hap.");
             break;
         }
 
         elfSize = GetElfSize(mmap->Get());
         if (elfSize <= 0 || elfSize + prevMap->offset > static_cast<uint64_t>(fileSize)) {
-            LOGE("Invalid elf size? elf size: %d, hap size: %d", (int)elfSize, (int)fileSize);
+            LOGERROR("Invalid elf size? elf size: %{public}d, hap size: %{public}d", (int)elfSize, (int)fileSize);
             elfSize = 0;
             break;
         }
@@ -104,7 +104,7 @@ std::shared_ptr<DfxElf> DfxElf::CreateFromHap(const std::string& file, std::shar
     } while (false);
 
     if (elfSize != 0) {
-        LOGU("elfSize: %zu", elfSize);
+        LOGUNWIND("elfSize: %{public}zu", elfSize);
         auto elf = std::make_shared<DfxElf>(fd, elfSize, prevMap->offset);
         if (elf->IsValid()) {
             close(fd);
@@ -119,17 +119,17 @@ std::shared_ptr<DfxElf> DfxElf::CreateFromHap(const std::string& file, std::shar
 DfxElf::DfxElf(const std::string& file)
 {
     if (mmap_ == nullptr && (!file.empty())) {
-        LOGU("file: %s", file.c_str());
+        LOGUNWIND("file: %{public}s", file.c_str());
 #if defined(is_ohos) && is_ohos
         if (!DfxMaps::IsLegalMapItem(file)) {
-            LOGD("Illegal map file, please check file: %s", file.c_str());
+            LOGDEBUG("Illegal map file, please check file: %{public}s", file.c_str());
             return;
         }
 #endif
         std::string realPath = file;
         if (!StartsWith(file, "/proc/")) { // sandbox file should not be check by realpath function
             if (!RealPath(file, realPath)) {
-                LOGW("Failed to realpath %s, errno(%d)", file.c_str(), errno);
+                LOGWARN("Failed to realpath %{public}s, errno(%{public}d)", file.c_str(), errno);
                 return;
             }
         }
@@ -142,11 +142,11 @@ DfxElf::DfxElf(const std::string& file)
             auto size = static_cast<size_t>(GetFileSize(fd));
             mmap_ = std::make_shared<DfxMmap>();
             if (!mmap_->Init(fd, size, 0)) {
-                LOGE("%s", "Failed to mmap init.");
+                LOGERROR("Failed to mmap init.");
             }
             close(fd);
         } else {
-            LOGE("Failed to open file: %s", file.c_str());
+            LOGERROR("Failed to open file: %{public}s", file.c_str());
         }
     }
     Init();
@@ -157,7 +157,7 @@ DfxElf::DfxElf(const int fd, const size_t elfSz, const off_t offset)
     if (mmap_ == nullptr) {
         mmap_ = std::make_shared<DfxMmap>();
         if (!mmap_->Init(fd, elfSz, offset)) {
-            LOGE("%s", "Failed to mmap init elf in hap.");
+            LOGERROR("Failed to mmap init elf in hap.");
         }
     }
     Init();
@@ -226,7 +226,7 @@ bool DfxElf::InitEmbeddedElf()
     uint8_t *addr = miniDebugInfo_->offset + const_cast<uint8_t*>(GetMmapPtr());
     embeddedElfData_ = std::make_shared<std::vector<uint8_t>>();
     if (embeddedElfData_ == nullptr) {
-        LOGE("%s", "Create embeddedElfData failed.");
+        LOGERROR("Create embeddedElfData failed.");
         return false;
     }
     if (XzDecompress(addr, miniDebugInfo_->size, embeddedElfData_)) {
@@ -236,10 +236,10 @@ bool DfxElf::InitEmbeddedElf()
         if (embeddedElf_ != nullptr && embeddedElf_->IsValid()) {
             return true;
         } else {
-            LOGE("%s", "Failed to parse Embedded Elf.");
+            LOGERROR("Failed to parse Embedded Elf.");
         }
     } else {
-        LOGE("%s", "Failed to decompressed .gnu_debugdata seciton.");
+        LOGERROR("Failed to decompressed .gnu_debugdata seciton.");
     }
 #endif
     return false;
@@ -269,7 +269,7 @@ bool DfxElf::InitHeaders()
     } else if (classType_ == ELFCLASS64) {
         elfParse_ = std::unique_ptr<ElfParser>(new ElfParser64(mmap_));
     } else {
-        LOGW("InitHeaders failed, classType: %d", classType_);
+        LOGWARN("InitHeaders failed, classType: %{public}d", classType_);
         return false;
     }
     if (elfParse_ != nullptr) {
@@ -311,7 +311,7 @@ int64_t DfxElf::GetLoadBias()
     if (loadBias_ == 0) {
         if (IsValid()) {
             loadBias_ = elfParse_->GetLoadBias();
-            LOGU("Elf loadBias: %" PRIx64 "", (uint64_t)loadBias_);
+            LOGUNWIND("Elf loadBias: %{public}" PRIx64 "", (uint64_t)loadBias_);
         }
     }
     return loadBias_;
@@ -321,9 +321,10 @@ uint64_t DfxElf::GetLoadBase(uint64_t mapStart, uint64_t mapOffset)
 {
     if (loadBase_ == static_cast<uint64_t>(-1)) {
         if (IsValid()) {
-            LOGU("mapStart: %" PRIx64 ", mapOffset: %" PRIx64 "", (uint64_t)mapStart, (uint64_t)mapOffset);
+            LOGUNWIND("mapStart: %{public}" PRIx64 ", mapOffset: %{public}" PRIx64 "",
+                (uint64_t)mapStart, (uint64_t)mapOffset);
             loadBase_ = mapStart - mapOffset - static_cast<uint64_t>(GetLoadBias());
-            LOGU("Elf loadBase: %" PRIx64 "", (uint64_t)loadBase_);
+            LOGUNWIND("Elf loadBase: %{public}" PRIx64 "", (uint64_t)loadBase_);
         }
     }
     return loadBase_;
@@ -351,7 +352,7 @@ uint64_t DfxElf::GetStartPc()
             auto startVaddr = elfParse_->GetStartVaddr();
             if (loadBase_ != static_cast<uint64_t>(-1) && startVaddr != static_cast<uint64_t>(-1)) {
                 startPc_ = startVaddr + loadBase_;
-                LOGU("Elf startPc: %" PRIx64 "", (uint64_t)startPc_);
+                LOGUNWIND("Elf startPc: %{public}" PRIx64 "", (uint64_t)startPc_);
             }
         }
     }
@@ -373,7 +374,7 @@ uint64_t DfxElf::GetEndPc()
             auto endVaddr = elfParse_->GetEndVaddr();
             if (loadBase_ != static_cast<uint64_t>(-1) && endVaddr != 0) {
                 endPc_ = endVaddr + loadBase_;
-                LOGU("Elf endPc: %" PRIx64 "", (uint64_t)endPc_);
+                LOGUNWIND("Elf endPc: %{public}" PRIx64 "", (uint64_t)endPc_);
             }
         }
     }
@@ -433,7 +434,7 @@ std::string DfxElf::GetBuildId()
             std::string buildIdHex = GetBuildId((uint64_t)((char*)GetMmapPtr() + shdr.offset), shdr.size);
             if (!buildIdHex.empty()) {
                 buildId_ = ToReadableBuildId(buildIdHex);
-                LOGU("Elf buildId: %s", buildId_.c_str());
+                LOGUNWIND("Elf buildId: %{public}s", buildId_.c_str());
             }
         }
     }
@@ -444,7 +445,7 @@ std::string DfxElf::GetBuildId(uint64_t noteAddr, uint64_t noteSize)
 {
     uint64_t tmp;
     if (__builtin_add_overflow(noteAddr, noteSize, &tmp)) {
-        LOGE("%s", "noteAddr overflow");
+        LOGERROR("noteAddr overflow");
         return "";
     }
     uint64_t offset = 0;
@@ -456,7 +457,7 @@ std::string DfxElf::GetBuildId(uint64_t noteAddr, uint64_t noteSize)
         }
         ptr = noteAddr + offset;
         if (memcpy_s(&nhdr, sizeof(nhdr), reinterpret_cast<void*>(ptr), sizeof(nhdr)) != 0) {
-            LOGE("%s", "memcpy_s nhdr failed");
+            LOGERROR("memcpy_s nhdr failed");
             return "";
         }
         offset += sizeof(nhdr);
@@ -467,7 +468,7 @@ std::string DfxElf::GetBuildId(uint64_t noteAddr, uint64_t noteSize)
             std::string name(nhdr.n_namesz, '\0');
             ptr = noteAddr + offset;
             if (memcpy_s(&(name[0]), nhdr.n_namesz, reinterpret_cast<void*>(ptr), nhdr.n_namesz) != 0) {
-                LOGE("%s", "memcpy_s note name failed");
+                LOGERROR("memcpy_s note name failed");
                 return "";
             }
             // Trim trailing \0 as GNU is stored as a C string in the ELF file.
@@ -548,7 +549,7 @@ const std::vector<ElfSymbol>& DfxElf::GetElfSymbols()
 #if defined(ENABLE_MINIDEBUGINFO)
     if (IsEmbeddedElfValid()) {
         auto symbols = embeddedElf_->elfParse_->GetElfSymbols(false);
-        LOGU("Get EmbeddedElf ElfSymbols, size: %zu", symbols.size());
+        LOGUNWIND("Get EmbeddedElf ElfSymbols, size: %{public}zu", symbols.size());
         elfSymbols_.insert(elfSymbols_.end(), symbols.begin(), symbols.end());
     }
 #endif
@@ -558,7 +559,7 @@ const std::vector<ElfSymbol>& DfxElf::GetElfSymbols()
     auto pred = [](ElfSymbol a, ElfSymbol b) { return a.value == b.value; };
     elfSymbols_.erase(std::unique(elfSymbols_.begin(), elfSymbols_.end(), pred), elfSymbols_.end());
     elfSymbols_.shrink_to_fit();
-    LOGU("GetElfSymbols, size: %zu", elfSymbols_.size());
+    LOGUNWIND("GetElfSymbols, size: %{public}zu", elfSymbols_.size());
     return elfSymbols_;
 }
 
@@ -571,7 +572,7 @@ const std::vector<ElfSymbol>& DfxElf::GetFuncSymbols()
 #if defined(ENABLE_MINIDEBUGINFO)
     if (IsEmbeddedElfValid()) {
         auto symbols = embeddedElf_->elfParse_->GetElfSymbols(true);
-        LOGU("Get EmbeddedElf FuncSymbols, size: %zu", symbols.size());
+        LOGUNWIND("Get EmbeddedElf FuncSymbols, size: %{public}zu", symbols.size());
         funcSymbols_.insert(funcSymbols_.end(), symbols.begin(), symbols.end());
     }
 #endif
@@ -581,7 +582,7 @@ const std::vector<ElfSymbol>& DfxElf::GetFuncSymbols()
     auto pred = [](ElfSymbol a, ElfSymbol b) { return a.value == b.value; };
     funcSymbols_.erase(std::unique(funcSymbols_.begin(), funcSymbols_.end(), pred), funcSymbols_.end());
     funcSymbols_.shrink_to_fit();
-    LOGU("GetFuncSymbols, size: %zu", funcSymbols_.size());
+    LOGUNWIND("GetFuncSymbols, size: %{public}zu", funcSymbols_.size());
     return funcSymbols_;
 }
 
@@ -612,7 +613,7 @@ bool DfxElf::GetFuncInfoLazily(uint64_t addr, ElfSymbol& elfSymbol)
         auto pred = [](ElfSymbol a, ElfSymbol b) { return a.value == b.value; };
         funcSymbols_.erase(std::unique(funcSymbols_.begin(), funcSymbols_.end(), pred), funcSymbols_.end());
         funcSymbols_.shrink_to_fit();
-        LOGU("GetFuncInfoLazily, size: %zu", funcSymbols_.size());
+        LOGUNWIND("GetFuncInfoLazily, size: %{public}zu", funcSymbols_.size());
         return true;
     }
     return false;
@@ -666,7 +667,7 @@ bool DfxElf::FillUnwindTableByExidx(ShdrInfo shdr, uintptr_t loadBase, struct Un
     uti->tableLen = shdr.size;
     INSTR_STATISTIC(InstructionEntriesArmExidx, shdr.size, 0);
     uti->format = UNW_INFO_FORMAT_ARM_EXIDX;
-    LOGU("tableData: %" PRIx64 ", tableLen: %d", (uint64_t)uti->tableData, (int)uti->tableLen);
+    LOGUNWIND("tableData: %{public}" PRIx64 ", tableLen: %{public}d", (uint64_t)uti->tableData, (int)uti->tableLen);
     return true;
 }
 
@@ -677,29 +678,29 @@ bool DfxElf::FillUnwindTableByEhhdrLocal(struct DwarfEhFrameHdr* hdr, struct Unw
         return false;
     }
     if (hdr->version != DW_EH_VERSION) {
-        LOGE("version(%d) error", hdr->version);
+        LOGERROR("version(%{public}d) error", hdr->version);
         return false;
     }
 
     uintptr_t ptr = (uintptr_t)(&(hdr->ehFrame));
-    LOGU("hdr: %" PRIx64 ", ehFrame: %" PRIx64 "", (uint64_t)hdr, (uint64_t)ptr);
+    LOGUNWIND("hdr: %{public}" PRIx64 ", ehFrame: %{public}" PRIx64 "", (uint64_t)hdr, (uint64_t)ptr);
 
     auto acc = std::make_shared<DfxAccessorsLocal>();
     auto memory = std::make_shared<DfxMemory>(acc);
-    LOGU("gp: %" PRIx64 ", ehFramePtrEnc: %x, fdeCountEnc: %x",
+    LOGUNWIND("gp: %{public}" PRIx64 ", ehFramePtrEnc: %{public}x, fdeCountEnc: %{public}x",
         (uint64_t)uti->gp, hdr->ehFramePtrEnc, hdr->fdeCountEnc);
     memory->SetDataOffset(uti->gp);
     MAYBE_UNUSED uintptr_t ehFrameStart = memory->ReadEncodedValue(ptr, hdr->ehFramePtrEnc);
     uintptr_t fdeCount = memory->ReadEncodedValue(ptr, hdr->fdeCountEnc);
-    LOGU("ehFrameStart: %" PRIx64 ", fdeCount: %d", (uint64_t)ehFrameStart, (int)fdeCount);
+    LOGUNWIND("ehFrameStart: %{public}" PRIx64 ", fdeCount: %{public}d", (uint64_t)ehFrameStart, (int)fdeCount);
 
     if (hdr->tableEnc != (DW_EH_PE_datarel | DW_EH_PE_sdata4)) {
-        LOGU("tableEnc: %x", hdr->tableEnc);
+        LOGUNWIND("tableEnc: %{public}x", hdr->tableEnc);
         if (hdr->fdeCountEnc == DW_EH_PE_omit) {
             fdeCount = ~0UL;
         }
         if (hdr->ehFramePtrEnc == DW_EH_PE_omit) {
-            LOGE("ehFramePtrEnc(%x) error", hdr->ehFramePtrEnc);
+            LOGERROR("ehFramePtrEnc(%{public}x) error", hdr->ehFramePtrEnc);
             return false;
         }
         uti->isLinear = true;
@@ -712,7 +713,7 @@ bool DfxElf::FillUnwindTableByEhhdrLocal(struct DwarfEhFrameHdr* hdr, struct Unw
         uti->segbase = (uintptr_t)hdr;
     }
     uti->format = UNW_INFO_FORMAT_REMOTE_TABLE;
-    LOGU("tableData: %" PRIx64 ", tableLen: %d", (uint64_t)uti->tableData, (int)uti->tableLen);
+    LOGUNWIND("tableData: %{public}" PRIx64 ", tableLen: %{public}d", (uint64_t)uti->tableData, (int)uti->tableLen);
     return true;
 }
 #endif
@@ -723,29 +724,29 @@ bool DfxElf::FillUnwindTableByEhhdr(struct DwarfEhFrameHdr* hdr, uintptr_t shdrB
         return false;
     }
     if (hdr->version != DW_EH_VERSION) {
-        LOGE("version(%d) error", hdr->version);
+        LOGERROR("version(%{public}d) error", hdr->version);
         return false;
     }
     uintptr_t ptr = (uintptr_t)(&(hdr->ehFrame));
-    LOGU("hdr: %" PRIx64 ", ehFrame: %" PRIx64 "", (uint64_t)hdr, (uint64_t)ptr);
+    LOGUNWIND("hdr: %{public}" PRIx64 ", ehFrame: %{public}" PRIx64 "", (uint64_t)hdr, (uint64_t)ptr);
 
     uti->gp = GetGlobalPointer();
-    LOGU("gp: %" PRIx64 ", ehFramePtrEnc: %x, fdeCountEnc: %x",
+    LOGUNWIND("gp: %{public}" PRIx64 ", ehFramePtrEnc: %{public}x, fdeCountEnc: %{public}x",
         (uint64_t)uti->gp, hdr->ehFramePtrEnc, hdr->fdeCountEnc);
     mmap_->SetDataOffset(uti->gp);
     auto ptrOffset = ptr - reinterpret_cast<uintptr_t>(GetMmapPtr());
     MAYBE_UNUSED uintptr_t ehFrameStart = mmap_->ReadEncodedValue(ptrOffset, hdr->ehFramePtrEnc);
     uintptr_t fdeCount = mmap_->ReadEncodedValue(ptrOffset, hdr->fdeCountEnc);
-    LOGU("ehFrameStart: %" PRIx64 ", fdeCount: %d", (uint64_t)ehFrameStart, (int)fdeCount);
+    LOGUNWIND("ehFrameStart: %{public}" PRIx64 ", fdeCount: %{public}d", (uint64_t)ehFrameStart, (int)fdeCount);
     ptr = reinterpret_cast<uintptr_t>(GetMmapPtr()) + ptrOffset;
 
     if (hdr->tableEnc != (DW_EH_PE_datarel | DW_EH_PE_sdata4)) {
-        LOGU("tableEnc: %x", hdr->tableEnc);
+        LOGUNWIND("tableEnc: %{public}x", hdr->tableEnc);
         if (hdr->fdeCountEnc == DW_EH_PE_omit) {
             fdeCount = ~0UL;
         }
         if (hdr->ehFramePtrEnc == DW_EH_PE_omit) {
-            LOGE("ehFramePtrEnc(%x) error", hdr->ehFramePtrEnc);
+            LOGERROR("ehFramePtrEnc(%{public}x) error", hdr->ehFramePtrEnc);
             return false;
         }
         uti->isLinear = true;
@@ -759,18 +760,16 @@ bool DfxElf::FillUnwindTableByEhhdr(struct DwarfEhFrameHdr* hdr, uintptr_t shdrB
         uti->segbase = shdrBase;
     }
     uti->format = UNW_INFO_FORMAT_REMOTE_TABLE;
-    LOGU("tableData: %" PRIx64 ", tableLen: %d", (uint64_t)uti->tableData, (int)uti->tableLen);
+    LOGUNWIND("tableData: %{public}" PRIx64 ", tableLen: %{public}d", (uint64_t)uti->tableData, (int)uti->tableLen);
     return true;
 }
 
 int DfxElf::FindUnwindTableInfo(uintptr_t pc, std::shared_ptr<DfxMap> map, struct UnwindTableInfo& uti)
 {
-    if (hasTableInfo_) {
-        if (pc >= uti_.startPc && pc < uti_.endPc) {
-            uti = uti_;
-            LOGU("%s", "FindUnwindTableInfo had found");
-            return UNW_ERROR_NONE;
-        }
+    if (hasTableInfo_ && pc >= uti_.startPc && pc < uti_.endPc) {
+        uti = uti_;
+        LOGUNWIND("FindUnwindTableInfo had found");
+        return UNW_ERROR_NONE;
     }
     if (map == nullptr) {
         return UNW_ERROR_INVALID_MAP;
@@ -779,7 +778,8 @@ int DfxElf::FindUnwindTableInfo(uintptr_t pc, std::shared_ptr<DfxMap> map, struc
     uti.startPc = GetStartPc();
     uti.endPc = GetEndPc();
     if (pc < uti.startPc || pc >= uti.endPc) {
-        LOGU("Elf startPc: %" PRIx64 ", endPc: %" PRIx64 "", (uint64_t)uti.startPc, (uint64_t)uti.endPc);
+        LOGUNWIND("Elf startPc: %{public}" PRIx64 ", endPc: %{public}" PRIx64 "",
+            (uint64_t)uti.startPc, (uint64_t)uti.endPc);
         return UNW_ERROR_PC_NOT_IN_UNWIND_INFO;
     }
 
@@ -797,7 +797,8 @@ int DfxElf::FindUnwindTableInfo(uintptr_t pc, std::shared_ptr<DfxMap> map, struc
             INSTR_STATISTIC(InstructionEntriesEhFrame, shdr.size, 0);
             hdr = (struct DwarfEhFrameHdr *) (shdr.offset + (char *)GetMmapPtr());
         } else if (GetSectionInfo(shdr, EH_FRAME) && GetMmapPtr() != nullptr) {
-            LOGW("Elf(%s) no found .eh_frame_hdr section, using synthetic .eh_frame section", map->name.c_str());
+            LOGWARN("Elf(%{public}s) no found .eh_frame_hdr section, using synthetic .eh_frame section",
+                map->name.c_str());
             INSTR_STATISTIC(InstructionEntriesEhFrame, shdr.size, 0);
             synthHdr.version = DW_EH_VERSION;
             synthHdr.ehFramePtrEnc = DW_EH_PE_absptr |
@@ -906,7 +907,7 @@ int DfxElf::DlPhdrCb(struct dl_phdr_info *info, size_t size, void *data)
     }
     uti->startPc = pText->p_vaddr + loadBase;
     uti->endPc = uti->startPc + pText->p_memsz;
-    LOGU("Elf name: %s", info->dlpi_name);
+    LOGUNWIND("Elf name: %{public}s", info->dlpi_name);
     uti->namePtr = (uintptr_t) info->dlpi_name;
 
 #if defined(__arm__)
@@ -941,7 +942,8 @@ int DfxElf::DlPhdrCb(struct dl_phdr_info *info, size_t size, void *data)
     } else {
         ShdrInfo shdr;
         if (FindSection(info, EH_FRAME, shdr)) {
-            LOGW("Elf(%s) no found .eh_frame_hdr section, using synthetic .eh_frame section", info->dlpi_name);
+            LOGWARN("Elf(%{public}s) no found .eh_frame_hdr section, using synthetic .eh_frame section",
+                info->dlpi_name);
             INSTR_STATISTIC(InstructionEntriesEhFrame, shdr.size, 0);
             synthHdr.version = DW_EH_VERSION;
             synthHdr.ehFramePtrEnc = DW_EH_PE_absptr |
@@ -987,7 +989,7 @@ bool DfxElf::IsValidElf(const void* ptr, size_t size)
     }
 
     if (memcmp(ptr, ELFMAG, size) != 0) {
-        LOGD("%s", "Invalid elf hdr?");
+        LOGDEBUG("Invalid elf hdr?");
         return false;
     }
     return true;
@@ -1008,7 +1010,7 @@ size_t DfxElf::GetElfSize(const void* ptr)
         Elf64_Ehdr *ehdr = (Elf64_Ehdr *)data;
         return static_cast<size_t>(ehdr->e_shoff + (ehdr->e_shentsize * ehdr->e_shnum));
     }
-    LOGW("classType(%d) error", classType);
+    LOGWARN("classType(%{public}d) error", classType);
     return 0;
 }
 } // namespace HiviewDFX

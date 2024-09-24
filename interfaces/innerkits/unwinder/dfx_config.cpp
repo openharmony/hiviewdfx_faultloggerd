@@ -49,14 +49,6 @@ DfxConfigInfo& DfxConfig::GetConfig()
 void DfxConfig::ParserConfig(DfxConfigInfo& config, const std::string& key, const std::string& value)
 {
     do {
-        if ((key.compare("faultlogLogPersist") == 0)) {
-            if (value.compare("false") == 0) {
-                config.logPersist = false;
-            } else {
-                config.logPersist = true;
-            }
-            break;
-        }
         if (key.compare("displayRigister") == 0) {
             if (value.compare("false") == 0) {
                 config.displayRegister = false;

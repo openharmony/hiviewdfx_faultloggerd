@@ -29,7 +29,7 @@ namespace {
 template <typename AddressType>
 AddressType DwarfOp<AddressType>::Eval(DfxRegs& regs, AddressType initStackValue, AddressType startPtr)
 {
-    LOGU("Eval: initStackValue=%" PRIuPTR ", startPtr=%" PRIuPTR "", initStackValue, startPtr);
+    LOGUNWIND("Eval: initStackValue=%{public}" PRIuPTR ", startPtr=%{public}" PRIuPTR "", initStackValue, startPtr);
     StackReset(initStackValue);
 
     uintptr_t addr = startPtr;
@@ -42,7 +42,7 @@ AddressType DwarfOp<AddressType>::Eval(DfxRegs& regs, AddressType initStackValue
     }
 
     if (stack_.empty()) {
-        LOGE("%s", "Eval: stack empty");
+        LOGERROR("Eval: stack empty");
         return 0;
     }
     return static_cast<AddressType>(StackPop());
@@ -55,194 +55,194 @@ bool DwarfOp<AddressType>::Decode(DfxRegs& regs, uintptr_t& addr)
     memory_->ReadU8(addr, &opcode, true);
     switch (opcode) {
         case DW_OP_addr: {
-            LOGU("%s", "DW_OP_addr");
+            LOGUNWIND("DW_OP_addr");
             uintptr_t val;
             memory_->ReadUptr(addr, &val, true);
             OpPush(val);
         }
             break;
         case DW_OP_deref:
-            LOGU("%s", "DW_OP_deref");
+            LOGUNWIND("DW_OP_deref");
             OpDeref();
             break;
         case DW_OP_const1u: {
-            LOGU("%s", "DW_OP_const1u");
+            LOGUNWIND("DW_OP_const1u");
             uint8_t val;
             memory_->ReadU8(addr, &val, true);
             OpPush(val);
         }
             break;
         case DW_OP_const1s: {
-            LOGU("%s", "DW_OP_const1s");
+            LOGUNWIND("DW_OP_const1s");
             int8_t val;
             memory_->ReadS8(addr, &val, true);
             OpPush(val);
         }
             break;
         case DW_OP_const2u: {
-            LOGU("%s", "DW_OP_const2u");
+            LOGUNWIND("DW_OP_const2u");
             uint16_t val;
             memory_->ReadU16(addr, &val, true);
             OpPush(val);
         }
             break;
         case DW_OP_const2s: {
-            LOGU("%s", "DW_OP_const2s");
+            LOGUNWIND("DW_OP_const2s");
             int16_t val;
             memory_->ReadS16(addr, &val, true);
             OpPush(val);
         }
             break;
         case DW_OP_const4u: {
-            LOGU("%s", "DW_OP_const4u");
+            LOGUNWIND("DW_OP_const4u");
             uint32_t val;
             memory_->ReadU32(addr, &val, true);
             OpPush(val);
         }
             break;
         case DW_OP_const4s: {
-            LOGU("%s", "DW_OP_const4s");
+            LOGUNWIND("DW_OP_const4s");
             int32_t val;
             memory_->ReadS32(addr, &val, true);
             OpPush(val);
         }
             break;
         case DW_OP_const8u: {
-            LOGU("%s", "DW_OP_const8u");
+            LOGUNWIND("DW_OP_const8u");
             uint64_t val;
             memory_->ReadU64(addr, &val, true);
             OpPush(val);
         }
             break;
         case DW_OP_const8s: {
-            LOGU("%s", "DW_OP_const8s");
+            LOGUNWIND("DW_OP_const8s");
             int64_t val;
             memory_->ReadS64(addr, &val, true);
             OpPush(val);
         }
             break;
         case DW_OP_constu:
-            LOGU("%s", "DW_OP_constu");
+            LOGUNWIND("DW_OP_constu");
             OpPush(memory_->ReadUleb128(addr));
             break;
         case DW_OP_consts:
-            LOGU("%s", "DW_OP_consts");
+            LOGUNWIND("DW_OP_consts");
             OpPush(memory_->ReadSleb128(addr));
             break;
         case DW_OP_dup:
-            LOGU("%s", "DW_OP_dup");
+            LOGUNWIND("DW_OP_dup");
             OpDup();
             break;
         case DW_OP_drop:
-            LOGU("%s", "DW_OP_drop");
+            LOGUNWIND("DW_OP_drop");
             OpDrop();
             break;
         case DW_OP_over:
-            LOGU("%s", "DW_OP_over");
+            LOGUNWIND("DW_OP_over");
             OpOver();
             break;
         case DW_OP_pick:
-            LOGU("%s", "DW_OP_pick");
+            LOGUNWIND("DW_OP_pick");
             OpPick(addr);
             break;
         case DW_OP_swap:
-            LOGU("%s", "DW_OP_swap");
+            LOGUNWIND("DW_OP_swap");
             OpSwap();
             break;
         case DW_OP_rot:
-            LOGU("%s", "DW_OP_rot");
+            LOGUNWIND("DW_OP_rot");
             OpRot();
             break;
         case DW_OP_abs:
-            LOGU("%s", "DW_OP_abs");
+            LOGUNWIND("DW_OP_abs");
             OpAbs();
             break;
         case DW_OP_and:
-            LOGU("%s", "DW_OP_and");
+            LOGUNWIND("DW_OP_and");
             OpAnd();
             break;
         case DW_OP_div:
-            LOGU("%s", "DW_OP_div");
+            LOGUNWIND("DW_OP_div");
             OpDiv();
             break;
         case DW_OP_minus:
-            LOGU("%s", "DW_OP_minus");
+            LOGUNWIND("DW_OP_minus");
             OpMinus();
             break;
         case DW_OP_mod:
-            LOGU("%s", "DW_OP_mod");
+            LOGUNWIND("DW_OP_mod");
             OpMod();
             break;
         case DW_OP_mul:
-            LOGU("%s", "DW_OP_mul");
+            LOGUNWIND("DW_OP_mul");
             OpMul();
             break;
         case DW_OP_neg:
-            LOGU("%s", "DW_OP_neg");
+            LOGUNWIND("DW_OP_neg");
             OpNeg();
             break;
         case DW_OP_not:
-            LOGU("%s", "DW_OP_not");
+            LOGUNWIND("DW_OP_not");
             OpNot();
             break;
         case DW_OP_or:
-            LOGU("%s", "DW_OP_or");
+            LOGUNWIND("DW_OP_or");
             OpOr();
             break;
         case DW_OP_plus:
-            LOGU("%s", "DW_OP_plus");
+            LOGUNWIND("DW_OP_plus");
             OpPlus();
             break;
         case DW_OP_plus_uconst:
-            LOGU("%s", "DW_OP_plus_uconst");
+            LOGUNWIND("DW_OP_plus_uconst");
             OpPlusULEBConst(addr);
             break;
         case DW_OP_shl:
-            LOGU("%s", "DW_OP_shl");
+            LOGUNWIND("DW_OP_shl");
             OpShl();
             break;
         case DW_OP_shr:
-            LOGU("%s", "DW_OP_shr");
+            LOGUNWIND("DW_OP_shr");
             OpShr();
             break;
         case DW_OP_shra:
-            LOGU("%s", "DW_OP_shra");
+            LOGUNWIND("DW_OP_shra");
             OpShra();
             break;
         case DW_OP_xor:
-            LOGU("%s", "DW_OP_xor");
+            LOGUNWIND("DW_OP_xor");
             OpXor();
             break;
         case DW_OP_skip:
-            LOGU("%s", "DW_OP_skip");
+            LOGUNWIND("DW_OP_skip");
             OpSkip(addr);
             break;
         case DW_OP_bra:
-            LOGU("%s", "DW_OP_bra");
+            LOGUNWIND("DW_OP_bra");
             OpBra(addr);
             break;
         case DW_OP_eq:
-            LOGU("%s", "DW_OP_eq");
+            LOGUNWIND("DW_OP_eq");
             OpEQ();
             break;
         case DW_OP_ge:
-            LOGU("%s", "DW_OP_ge");
+            LOGUNWIND("DW_OP_ge");
             OpGE();
             break;
         case DW_OP_gt:
-            LOGU("%s", "DW_OP_gt");
+            LOGUNWIND("DW_OP_gt");
             OpGT();
             break;
         case DW_OP_le:
-            LOGU("%s", "DW_OP_le");
+            LOGUNWIND("DW_OP_le");
             OpLE();
             break;
         case DW_OP_lt:
-            LOGU("%s", "DW_OP_lt");
+            LOGUNWIND("DW_OP_lt");
             OpLT();
             break;
         case DW_OP_ne:
-            LOGU("%s", "DW_OP_ne");
+            LOGUNWIND("DW_OP_ne");
             OpNE();
             break;
         case DW_OP_lit0:
@@ -277,7 +277,7 @@ bool DwarfOp<AddressType>::Decode(DfxRegs& regs, uintptr_t& addr)
         case DW_OP_lit29:
         case DW_OP_lit30:
         case DW_OP_lit31:
-            LOGU("%s", "DW_OP_litXX");
+            LOGUNWIND("DW_OP_litXX");
             OpLit(opcode);
             break;
         case DW_OP_reg0:
@@ -312,11 +312,11 @@ bool DwarfOp<AddressType>::Decode(DfxRegs& regs, uintptr_t& addr)
         case DW_OP_reg29:
         case DW_OP_reg30:
         case DW_OP_reg31:
-            LOGU("%s", "DW_OP_regXX");
+            LOGUNWIND("DW_OP_regXX");
             OpReg(opcode, regs);
             break;
         case DW_OP_regx:
-            LOGU("%s", "DW_OP_regx");
+            LOGUNWIND("DW_OP_regx");
             OpRegx(addr, regs);
             break;
         case DW_OP_breg0:
@@ -351,15 +351,15 @@ bool DwarfOp<AddressType>::Decode(DfxRegs& regs, uintptr_t& addr)
         case DW_OP_breg29:
         case DW_OP_breg30:
         case DW_OP_breg31:
-            LOGU("%s", "DW_OP_bregXX");
+            LOGUNWIND("DW_OP_bregXX");
             OpBReg(opcode, addr, regs);
             break;
         case DW_OP_bregx:
-            LOGU("%s", "DW_OP_bregx");
+            LOGUNWIND("DW_OP_bregx");
             OpBRegx(addr, regs);
             break;
         case DW_OP_deref_size:
-            LOGU("%s", "DW_OP_deref_size");
+            LOGUNWIND("DW_OP_deref_size");
             OpDerefSize(addr);
             break;
         case DW_OP_fbreg:
@@ -371,11 +371,11 @@ bool DwarfOp<AddressType>::Decode(DfxRegs& regs, uintptr_t& addr)
         case DW_OP_call2:
         case DW_OP_call4:
         case DW_OP_call_ref:
-            LOGE("DWARF OpNop opcode: %x", opcode);
+            LOGERROR("DWARF OpNop opcode: %{public}x", opcode);
             OpNop(opcode);
             break;
         default:
-            LOGE("DWARF Unexpected opcode: %x", opcode);
+            LOGERROR("DWARF Unexpected opcode: %{public}x", opcode);
             return false;
     }
     return true;

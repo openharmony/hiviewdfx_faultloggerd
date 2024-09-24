@@ -644,7 +644,6 @@ HWTEST_F(UnwinderTest, StepTest006, TestSize.Level2)
 HWTEST_F(UnwinderTest, DfxConfigTest001, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "DfxConfigTest001: start.";
-    ASSERT_EQ(DfxConfig::GetConfig().logPersist, false);
     ASSERT_EQ(DfxConfig::GetConfig().displayRegister, true);
     ASSERT_EQ(DfxConfig::GetConfig().displayBacktrace, true);
     ASSERT_EQ(DfxConfig::GetConfig().displayMaps, true);

@@ -56,13 +56,13 @@ bool DfxSymbols::FindRustDemangleFunction()
     g_hasTryLoadRustDemangleLib = true;
     void* rustDemangleLibHandle = dlopen("librustc_demangle.z.so", RTLD_LAZY | RTLD_NODELETE);
     if (rustDemangleLibHandle == nullptr) {
-        LOGW("Failed to dlopen librustc_demangle, %s", dlerror());
+        LOGWARN("Failed to dlopen librustc_demangle, %{public}s", dlerror());
         return false;
     }
 
     g_rustDemangleFn = (RustDemangleFn)dlsym(rustDemangleLibHandle, "rustc_demangle");
     if (g_rustDemangleFn == nullptr) {
-        LOGW("Failed to dlsym rustc_demangle, %s", dlerror());
+        LOGWARN("Failed to dlsym rustc_demangle, %{public}s", dlerror());
         dlclose(rustDemangleLibHandle);
         return false;
     }
@@ -107,13 +107,14 @@ bool DfxSymbols::GetFuncNameAndOffsetByPc(uint64_t relPc, std::shared_ptr<DfxElf
 #endif
     ElfSymbol elfSymbol;
     if ((elf != nullptr) && elf->GetFuncInfo(relPc, elfSymbol)) {
-        LOGU("nameStr: %s", elfSymbol.nameStr.c_str());
+        LOGUNWIND("nameStr: %{public}s", elfSymbol.nameStr.c_str());
         funcName = Demangle(elfSymbol.nameStr);
         funcOffset = relPc - elfSymbol.value;
 #if defined(__arm__)
         funcOffset &= ~1;
 #endif
-        LOGU("Symbol relPc: %" PRIx64 ", funcName: %s, funcOffset: %" PRIx64 "", relPc, funcName.c_str(), funcOffset);
+        LOGUNWIND("Symbol relPc: %{public}" PRIx64 ", funcName: %{public}s, funcOffset: %{public}" PRIx64 "",
+            relPc, funcName.c_str(), funcOffset);
         return true;
     }
     return false;

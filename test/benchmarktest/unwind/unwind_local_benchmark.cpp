@@ -75,19 +75,19 @@ static size_t UnwindLocal()
         prevPc = pc;
         index++;
     } while (unw_step(&cursor) > 0);
-    LOGU("%s pcs.size: %zu", __func__, pcs.size());
+    LOGUNWIND("%{public}s pcs.size: %{public}zu", __func__, pcs.size());
     return pcs.size();
 }
 
 static void Run(benchmark::State& state, size_t (*func)(void))
 {
-    LOGU("++++++pid: %d", getpid());
+    LOGUNWIND("++++++pid: %{public}d", getpid());
     for (const auto& _ : state) {
         if (TestFunc1(func) < TEST_MIN_UNWIND_FRAMES) {
             state.SkipWithError("Failed to unwind.");
         }
     }
-    LOGU("------pid: %d", getpid());
+    LOGUNWIND("------pid: %{public}d", getpid());
 }
 
 /**

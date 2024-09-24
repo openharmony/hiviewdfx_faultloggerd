@@ -99,7 +99,7 @@ void DfxUnwindAsyncThread::GetSubmitterStack(std::vector<DfxFrame> &submitterFra
     auto tableData = std::make_shared<std::vector<uint8_t>>(size);
     size_t byte = DfxMemory::ReadProcMemByPid(thread_->threadInfo_.nsTid, map->begin, tableData->data(), size);
     if (byte != size) {
-        LOGERROR("%{public}s", "Failed to read unique_table from target");
+        LOGERROR("Failed to read unique_table from target");
         return;
     }
     auto table = std::make_shared<UniqueStackTable>(tableData->data(), size, false);

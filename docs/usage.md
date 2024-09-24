@@ -49,7 +49,6 @@ Maps:   <- 虚拟内存空间
 日志文件展示的字段可由配置文件配置，在源码仓的路径为 services/config/faultlogger.conf \
 版本的路径为 system/etc/faultlogger.conf
 ```
-faultlogLogPersist=false  <- 是否持久化调试日志，包含代码流程日志以及调试日志
 displayRigister=true  <- 是否展示故障寄存器信息
 displayBacktrace=true
 displayMaps=true  <- 是否展示虚拟内存空间映射

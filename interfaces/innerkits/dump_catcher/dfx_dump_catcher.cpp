@@ -241,14 +241,14 @@ bool DfxDumpCatcher::DumpCatch(int pid, int tid, std::string& msg, size_t maxFra
     int currentPid = getpid();
     bool reportStat = false;
     uint64_t requestTime = GetTimeMilliSeconds();
-    LOGINFO("Receive DumpCatch request for cPid:(%{public}d), pid(%{public}d), \
-        tid:(%{public}d).", currentPid, pid, tid);
+    LOGINFO("Receive DumpCatch request for cPid:(%{public}d), pid(%{public}d), " \
+        "tid:(%{public}d).", currentPid, pid, tid);
     if (pid == currentPid) {
         ret = DoDumpLocalLocked(pid, tid, msg, maxFrameNums);
     } else {
         if (maxFrameNums != DEFAULT_MAX_FRAME_NUM) {
-            LOGINFO("%{public}s :: dump_catch :: maxFrameNums does not support setting \
-                when pid is not equal to caller pid", DFXDUMPCATCHER_TAG.c_str());
+            LOGINFO("%{public}s :: dump_catch :: maxFrameNums does not support setting " \
+                "when pid is not equal to caller pid", DFXDUMPCATCHER_TAG.c_str());
         }
         reportStat = true;
         int timeout = (tid == 0 ? 3 : 10) * 1000; // when tid not zero, timeout is 10s
@@ -260,8 +260,8 @@ bool DfxDumpCatcher::DumpCatch(int pid, int tid, std::string& msg, size_t maxFra
         ReportDumpCatcherStats(pid, requestTime, ret, msg, retAddr);
     }
 
-    LOGINFO("dump_catch : pid = %{public}d, elapsed time = %{public}" PRId64 " ms, ret = %{public}d, \
-        msgLength = %{public}zu",
+    LOGINFO("dump_catch : pid = %{public}d, elapsed time = %{public}" PRId64 " ms, ret = %{public}d, " \
+        "msgLength = %{public}zu",
         pid, counter.Elapsed<std::chrono::milliseconds>(), ret, msg.size());
     DfxEnableTraceDlsym(false);
     return ret;
@@ -436,7 +436,7 @@ int DfxDumpCatcher::DoDumpRemotePoll(int bufFd, int resFd, int timeout, std::str
         if (!isJson) {
             msg = "Result: bufFd or resFd < 0.\n";
         }
-        LOGERROR("%{public}s", "invalid bufFd or resFd");
+        LOGERROR("invalid bufFd or resFd");
         return DUMP_POLL_FD;
     }
     int ret = DUMP_POLL_INIT;

@@ -861,8 +861,8 @@ bool FaultLoggerDaemon::CheckRequestCredential(int32_t connectionFd, FaultLogger
         isCredentialMatched = (creds.uid == request->uid);   /* check uid when report exception */
     }
     if (!isCredentialMatched) {
-        LOGWARN("Failed to check request credential request:%{public}d:\
-            %{public}d cred:%{public}d:%{public}d fd:%{public}d:%{public}d",
+        LOGWARN("Failed to check request credential request:%{public}d:" \
+            "%{public}d cred:%{public}d:%{public}d fd:%{public}d:%{public}d",
             request->pid, request->uid, creds.pid, creds.uid, it->second, crashSocketFd_);
     }
     return isCredentialMatched;

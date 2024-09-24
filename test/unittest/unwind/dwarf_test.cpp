@@ -57,11 +57,6 @@ namespace OHOS {
 namespace HiviewDFX {
 class DwarfTest : public testing::Test {
 public:
-    static void SetUpTestCase(void)
-    {
-        InitDebugFd(STDOUT_FILENO);
-    };
-
     static void TearDownTestCase(void) {}
     void SetUp() {}
     void TearDown() {}
@@ -517,7 +512,8 @@ HWTEST_F(DwarfTest, DwarfTest001, TestSize.Level2)
         printf("Failed to dlopen libfaultloggerd, %s\n", dlerror());
         return;
     }
-    RequestFdFunc requestFdFunc = (RequestFdFunc)dlsym(handle, "_ZN4OHOS9HiviewDFX16DfxJsonFormatter15FormatJsonStack" \
+    RequestFdFunc requestFdFunc = (RequestFdFunc)dlsym(handle,
+        "_ZN4OHOS9HiviewDFX16DfxJsonFormatter15FormatJsonStack" \
         "ENSt3__h12basic_stringIcNS2_11char_traitsIcEENS2_9allocatorIcEEEERS8_");
     isSuccess = requestFdFunc != nullptr;
     if (!isSuccess) {

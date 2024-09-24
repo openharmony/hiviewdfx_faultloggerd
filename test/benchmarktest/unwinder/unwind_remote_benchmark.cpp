@@ -43,7 +43,7 @@ struct UnwindData {
 NOINLINE static void TestFunc6(MAYBE_UNUSED void (*func)(void*), MAYBE_UNUSED void* data)
 {
     while (true) {};
-    LOGE("Not be run here!!!");
+    LOGERROR("Not be run here!!!");
 }
 
 NOINLINE static void TestFunc5(void (*func)(void*), void* data)
@@ -78,7 +78,7 @@ static size_t UnwinderRemote(std::shared_ptr<Unwinder> unwinder, const pid_t tid
     }
     MAYBE_UNUSED bool unwRet = unwinder->UnwindRemote(tid);
     auto frames = unwinder->GetFrames();
-    LOGU("%s frames.size: %zu", __func__, frames.size());
+    LOGUNWIND("%{public}s frames.size: %{public}zu", __func__, frames.size());
     return frames.size();
 }
 
@@ -94,7 +94,7 @@ static size_t UnwinderRemoteFp(std::shared_ptr<Unwinder> unwinder, const pid_t t
     unwinder->EnableFpCheckMapExec(false);
     unwinder->UnwindByFp(&context);
     auto frames = unwinder->GetPcs();
-    LOGU("%s frames.size: %zu", __func__, frames.size());
+    LOGUNWIND("%{public}s frames.size: %{public}zu", __func__, frames.size());
     return frames.size();
 }
 
@@ -128,11 +128,11 @@ static void Run(benchmark::State& state, void* data)
         return;
     }
     if (!DfxPtrace::Attach(pid)) {
-        LOGE("Failed to attach pid: %d", pid);
+        LOGERROR("Failed to attach pid: %{public}d", pid);
         TestScopedPidReaper::Kill(pid);
         return;
     }
-    LOGU("pid: %d", pid);
+    LOGUNWIND("pid: %{public}d", pid);
     TestScopedPidReaper reap(pid);
 
     std::shared_ptr<Unwinder> unwinder = nullptr;
@@ -154,7 +154,7 @@ static void Run(benchmark::State& state, void* data)
             state.SkipWithError("Failed to unwind.");
         }
     }
-    LOGU("Detach pid: %d", pid);
+    LOGUNWIND("Detach pid: %{public}d", pid);
     DfxPtrace::Detach(pid);
 }
 

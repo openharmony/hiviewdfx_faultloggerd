@@ -52,7 +52,7 @@ bool GetLibArkHandle()
     }
     g_handle = dlopen(ARK_LIB_NAME, RTLD_LAZY);
     if (g_handle == nullptr) {
-        LOGU("Failed to load library(%s).", dlerror());
+        LOGUNWIND("Failed to load library(%{public}s).", dlerror());
         return false;
     }
     return true;

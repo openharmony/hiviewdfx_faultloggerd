@@ -92,7 +92,7 @@ bool GetBacktraceStringByTid(std::string& out, int32_t tid, size_t skipFrameNum,
 
 bool PrintBacktrace(int32_t fd, bool fast, size_t maxFrameNums)
 {
-    LOGINFO("%{public}s", "Receive PrintBacktrace request.");
+    LOGINFO("Receive PrintBacktrace request.");
     std::vector<DfxFrame> frames;
     bool ret = GetBacktraceFramesByTid(frames,
         BACKTRACE_CURRENT_THREAD, 1, fast, maxFrameNums); // 1: skip current frame
@@ -112,13 +112,13 @@ bool PrintBacktrace(int32_t fd, bool fast, size_t maxFrameNums)
 
 bool GetBacktrace(std::string& out, bool fast, size_t maxFrameNums)
 {
-    LOGINFO("%{public}s", "Receive GetBacktrace request with skip current frame.");
+    LOGINFO("Receive GetBacktrace request with skip current frame.");
     return GetBacktraceStringByTid(out, BACKTRACE_CURRENT_THREAD, 1, fast, maxFrameNums); // 1: skip current frame
 }
 
 bool GetBacktrace(std::string& out, size_t skipFrameNum, bool fast, size_t maxFrameNums)
 {
-    LOGINFO("%{public}s", "Receive GetBacktrace request.");
+    LOGINFO("Receive GetBacktrace request.");
     return GetBacktraceStringByTid(out, BACKTRACE_CURRENT_THREAD, skipFrameNum + 1, fast, maxFrameNums);
 }
 
@@ -132,7 +132,7 @@ const char* GetTrace(size_t skipFrameNum, size_t maxFrameNums)
     static std::string trace;
     trace.clear();
     if (!GetBacktrace(trace, skipFrameNum, false, maxFrameNums)) {
-        LOGERROR("%{public}s", "Failed to get trace string");
+        LOGERROR("Failed to get trace string");
     }
     return trace.c_str();
 }

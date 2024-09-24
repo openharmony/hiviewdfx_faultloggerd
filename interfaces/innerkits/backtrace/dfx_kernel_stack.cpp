@@ -69,7 +69,7 @@ bool FormatThreadKernelStack(const std::string& kernelStack, DfxThreadStack& thr
     std::regex headerPattern(R"(name=(.{1,20}), tid=(\d{1,10}), ([\w\=\.]{1,256}, ){3}pid=(\d{1,10}))");
     std::smatch result;
     if (!regex_search(kernelStack, result, headerPattern)) {
-        LOGINFO("%{public}s", "search thread name failed");
+        LOGINFO("search thread name failed");
         return false;
     }
     threadStack.threadName = result[1].str();

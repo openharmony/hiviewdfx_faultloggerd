@@ -52,12 +52,12 @@ static bool ParseParameters(int argc, char *argv[], bool &isSignalHdlr)
 
 int main(int argc, char *argv[])
 {
-    LOGINFO("%{public}s", "Start main function of processdump");
+    LOGINFO("Start main function of processdump");
 #if defined(DEBUG_CRASH_LOCAL_HANDLER)
     DFX_InstallLocalSignalHandler();
 #endif
     if (signal(SIGCHLD, SIG_IGN) == SIG_ERR) {
-        LOGERROR("%{public}s", "Processdump ignore SIGCHLD failed.");
+        LOGERROR("Processdump ignore SIGCHLD failed.");
     }
 
     bool isSignalHdlr = false;

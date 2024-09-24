@@ -61,7 +61,8 @@ bool DwarfCfaInstructions::Iterate(uintptr_t pc, FrameDescEntry fde,
             break;
         }
     }
-    LOGU("rsState pcStart=%" PRIx64 ", pcEnd=%" PRIx64 "", (uint64_t)rsState.pcStart, (uint64_t)rsState.pcEnd);
+    LOGUNWIND("rsState pcStart=%{public}" PRIx64 ", pcEnd=%{public}" PRIx64 "",
+        (uint64_t)rsState.pcStart, (uint64_t)rsState.pcEnd);
     return true;
 }
 
@@ -76,33 +77,33 @@ bool DwarfCfaInstructions::DecodeDwCfa(uint8_t opCode, CommonInfoEntry cie,
 
     switch (opCode) {
         case DW_CFA_nop:
-            LOGU("%s", "DW_CFA_nop");
+            LOGUNWIND("DW_CFA_nop");
             break;
         case DW_CFA_set_loc:
             value = memory_->ReadEncodedValue(instPtr, (DwarfEncoding)cie.pointerEncoding);
             pcOffset = value;
-            LOGU("DW_CFA_set_loc: new offset=%" PRIu64 "", static_cast<uint64_t>(pcOffset));
+            LOGUNWIND("DW_CFA_set_loc: new offset=%{public}" PRIu64 "", static_cast<uint64_t>(pcOffset));
             break;
         case DW_CFA_advance_loc1:
             value = memory_->ReadEncodedValue(instPtr, (DwarfEncoding)DW_EH_PE_udata1);
             pcOffset += (value * cie.codeAlignFactor);
-            LOGU("DW_CFA_advance_loc1: new offset=%" PRIu64 "", static_cast<uint64_t>(pcOffset));
+            LOGUNWIND("DW_CFA_advance_loc1: new offset=%{public}" PRIu64 "", static_cast<uint64_t>(pcOffset));
             break;
         case DW_CFA_advance_loc2:
             value = memory_->ReadEncodedValue(instPtr, (DwarfEncoding)DW_EH_PE_udata2);
             pcOffset += (value * cie.codeAlignFactor);
-            LOGU("DW_CFA_advance_loc2: %" PRIu64 " to %" PRIx64 "",
+            LOGUNWIND("DW_CFA_advance_loc2: %{public}" PRIu64 " to %{public}" PRIx64 "",
                   static_cast<uint64_t>(value * cie.codeAlignFactor), static_cast<uint64_t>(pcOffset));
             break;
         case DW_CFA_advance_loc4:
             value = memory_->ReadEncodedValue(instPtr, (DwarfEncoding)DW_EH_PE_udata4);
             pcOffset += (value * cie.codeAlignFactor);
-            LOGU("DW_CFA_advance_loc4: new offset=%" PRIu64 "", static_cast<uint64_t>(pcOffset));
+            LOGUNWIND("DW_CFA_advance_loc4: new offset=%{public}" PRIu64 "", static_cast<uint64_t>(pcOffset));
             break;
         case DW_CFA_offset_extended:
             reg = memory_->ReadUleb128(instPtr);
             offset = (int64_t)(memory_->ReadUleb128(instPtr) * cie.codeAlignFactor);
-            LOGU("DW_CFA_offset_extended: reg=%d", (int)reg);
+            LOGUNWIND("DW_CFA_offset_extended: reg=%{public}d", (int)reg);
             if (!DfxRegsQut::IsQutReg(static_cast<uint16_t>(reg), qutIdx)) {
                 INSTR_STATISTIC(UnsupportedDwCfaOffset, reg, UNW_ERROR_UNSUPPORTED_QUT_REG);
                 break;
@@ -112,7 +113,7 @@ bool DwarfCfaInstructions::DecodeDwCfa(uint8_t opCode, CommonInfoEntry cie,
             break;
         case DW_CFA_restore_extended:
             reg = memory_->ReadUleb128(instPtr);
-            LOGU("DW_CFA_restore_extended: reg=%d", (int)reg);
+            LOGUNWIND("DW_CFA_restore_extended: reg=%{public}d", (int)reg);
             if (!DfxRegsQut::IsQutReg(static_cast<uint16_t>(reg), qutIdx)) {
                 INSTR_STATISTIC(UnsupportedDwCfaRestore, reg, UNW_ERROR_UNSUPPORTED_QUT_REG);
                 break;
@@ -121,7 +122,7 @@ bool DwarfCfaInstructions::DecodeDwCfa(uint8_t opCode, CommonInfoEntry cie,
             break;
         case DW_CFA_undefined:
             reg = memory_->ReadUleb128(instPtr);
-            LOGU("DW_CFA_undefined: reg=%d", (int)reg);
+            LOGUNWIND("DW_CFA_undefined: reg=%{public}d", (int)reg);
             if (reg == rsState.returnAddressRegister) {
                 rsState.returnAddressUndefined = true;
             }
@@ -133,7 +134,7 @@ bool DwarfCfaInstructions::DecodeDwCfa(uint8_t opCode, CommonInfoEntry cie,
             break;
         case DW_CFA_same_value:
             reg = memory_->ReadUleb128(instPtr);
-            LOGU("DW_CFA_same_value: reg=%d", (int)reg);
+            LOGUNWIND("DW_CFA_same_value: reg=%{public}d", (int)reg);
             if (reg == rsState.returnAddressRegister) {
                 rsState.returnAddressSame = true;
             }
@@ -146,7 +147,7 @@ bool DwarfCfaInstructions::DecodeDwCfa(uint8_t opCode, CommonInfoEntry cie,
         case DW_CFA_register:
             reg = memory_->ReadUleb128(instPtr);
             reg2 = memory_->ReadUleb128(instPtr);
-            LOGU("DW_CFA_register: reg=%d, reg2=%d", (int)reg, (int)reg2);
+            LOGUNWIND("DW_CFA_register: reg=%{public}d, reg2=%{public}d", (int)reg, (int)reg2);
             if (!DfxRegsQut::IsQutReg(static_cast<uint16_t>(reg2), qutIdx) ||
                 !DfxRegsQut::IsQutReg(static_cast<uint16_t>(reg), qutIdx)) {
                 INSTR_STATISTIC(UnsupportedDwCfaRegister, reg, UNW_ERROR_UNSUPPORTED_QUT_REG);
@@ -157,15 +158,15 @@ bool DwarfCfaInstructions::DecodeDwCfa(uint8_t opCode, CommonInfoEntry cie,
             break;
         case DW_CFA_remember_state:
             saveRsStates_.push(rsState);
-            LOGU("%s", "DW_CFA_remember_state");
+            LOGUNWIND("DW_CFA_remember_state");
             break;
         case DW_CFA_restore_state:
             if (saveRsStates_.size() == 0) {
-                LOGU("%s", "DW_CFA_restore_state: Attempt to restore without remember");
+                LOGUNWIND("DW_CFA_restore_state: Attempt to restore without remember");
             } else {
                 rsState = saveRsStates_.top();
                 saveRsStates_.pop();
-                LOGU("%s", "DW_CFA_restore_state");
+                LOGUNWIND("DW_CFA_restore_state");
             }
             break;
         case DW_CFA_def_cfa:
@@ -173,16 +174,16 @@ bool DwarfCfaInstructions::DecodeDwCfa(uint8_t opCode, CommonInfoEntry cie,
             offset = (int64_t)memory_->ReadUleb128(instPtr);
             rsState.cfaReg = (uint32_t)reg;
             rsState.cfaRegOffset = (int32_t)offset;
-            LOGU("DW_CFA_def_cfa: reg=%d, offset=%" PRIu64 "", (int)reg, offset);
+            LOGUNWIND("DW_CFA_def_cfa: reg=%{public}d, offset=%{public}" PRIu64 "", (int)reg, offset);
             break;
         case DW_CFA_def_cfa_register:
             reg = memory_->ReadUleb128(instPtr);
             rsState.cfaReg = (uint32_t)reg;
-            LOGU("DW_CFA_def_cfa_register: reg=%d", (int)reg);
+            LOGUNWIND("DW_CFA_def_cfa_register: reg=%{public}d", (int)reg);
             break;
         case DW_CFA_def_cfa_offset:
             rsState.cfaRegOffset = (int32_t)memory_->ReadUleb128(instPtr);
-            LOGU("DW_CFA_def_cfa_offset: cfaRegOffset=%d", rsState.cfaRegOffset);
+            LOGUNWIND("DW_CFA_def_cfa_offset: cfaRegOffset=%{public}d", rsState.cfaRegOffset);
             break;
         case DW_CFA_offset_extended_sf:
             reg = memory_->ReadUleb128(instPtr);
@@ -197,19 +198,19 @@ bool DwarfCfaInstructions::DecodeDwCfa(uint8_t opCode, CommonInfoEntry cie,
         case DW_CFA_def_cfa_sf:
             reg = memory_->ReadUleb128(instPtr);
             offset = (int64_t)(memory_->ReadSleb128(instPtr)) * cie.dataAlignFactor;
-            LOGU("DW_CFA_def_cfa_sf: reg=%d, offset=%d", rsState.cfaReg, rsState.cfaRegOffset);
+            LOGUNWIND("DW_CFA_def_cfa_sf: reg=%{public}d, offset=%{public}d", rsState.cfaReg, rsState.cfaRegOffset);
             rsState.cfaReg = (uint32_t)reg;
             rsState.cfaRegOffset = (int32_t)offset;
             break;
         case DW_CFA_def_cfa_offset_sf:
             offset = (int64_t)(memory_->ReadSleb128(instPtr)) * cie.dataAlignFactor;
             rsState.cfaRegOffset = (int32_t)offset;
-            LOGU("DW_CFA_def_cfa_offset_sf: offset=%d", rsState.cfaRegOffset);
+            LOGUNWIND("DW_CFA_def_cfa_offset_sf: offset=%{public}d", rsState.cfaRegOffset);
             break;
         case DW_CFA_val_offset:
             reg = memory_->ReadUleb128(instPtr);
             offset = (int64_t)(memory_->ReadUleb128(instPtr) * cie.codeAlignFactor);
-            LOGU("DW_CFA_val_offset: reg=%d, offset=%" PRIu64 "", (int)reg, offset);
+            LOGUNWIND("DW_CFA_val_offset: reg=%{public}d, offset=%{public}" PRIu64 "", (int)reg, offset);
             if (!DfxRegsQut::IsQutReg(static_cast<uint16_t>(reg), qutIdx)) {
                 INSTR_STATISTIC(UnsupportedDwCfaValOffset, reg, UNW_ERROR_UNSUPPORTED_QUT_REG);
                 break;
@@ -220,7 +221,7 @@ bool DwarfCfaInstructions::DecodeDwCfa(uint8_t opCode, CommonInfoEntry cie,
         case DW_CFA_val_offset_sf:
             reg = memory_->ReadUleb128(instPtr);
             offset = memory_->ReadSleb128(instPtr) * static_cast<int64_t>(cie.codeAlignFactor);
-            LOGU("DW_CFA_val_offset_sf: reg=%d, offset=%" PRIu64 "", (int)reg, offset);
+            LOGUNWIND("DW_CFA_val_offset_sf: reg=%{public}d, offset=%{public}" PRIu64 "", (int)reg, offset);
             if (!DfxRegsQut::IsQutReg(static_cast<uint16_t>(reg), qutIdx)) {
                 INSTR_STATISTIC(UnsupportedDwCfaValOffset, reg, UNW_ERROR_UNSUPPORTED_QUT_REG);
                 break;
@@ -255,13 +256,14 @@ bool DwarfCfaInstructions::DecodeDwCfa(uint8_t opCode, CommonInfoEntry cie,
             break;
 #if defined(__aarch64__)
         case DW_CFA_AARCH64_negate_ra_state:
-            LOGU("%s", "DW_CFA_AARCH64_negate_ra_state");
+            LOGUNWIND("DW_CFA_AARCH64_negate_ra_state");
             break;
 #endif
         case DW_CFA_GNU_negative_offset_extended:
             reg = memory_->ReadUleb128(instPtr);
             offset = -(int64_t)memory_->ReadUleb128(instPtr);
-            LOGU("DW_CFA_GNU_negative_offset_extended: reg=%d, offset=%" PRIu64 "", (int)reg, offset);
+            LOGUNWIND("DW_CFA_GNU_negative_offset_extended: reg=%{public}d, offset=%{public}" PRIu64 "",
+                (int)reg, offset);
             if (!DfxRegsQut::IsQutReg(static_cast<uint16_t>(reg), qutIdx)) {
                 INSTR_STATISTIC(UnsupportedDwCfaOffset, reg, UNW_ERROR_UNSUPPORTED_QUT_REG);
                 break;
@@ -276,12 +278,12 @@ bool DwarfCfaInstructions::DecodeDwCfa(uint8_t opCode, CommonInfoEntry cie,
             switch (opCode & 0xC0) {
                 case DW_CFA_advance_loc:
                     pcOffset += operand * cie.codeAlignFactor;
-                    LOGU("DW_CFA_advance_loc: pcOffset=%" PRIu64 "", static_cast<uint64_t>(pcOffset));
+                    LOGUNWIND("DW_CFA_advance_loc: pcOffset=%{public}" PRIu64 "", static_cast<uint64_t>(pcOffset));
                     break;
                 case DW_CFA_offset:
                     reg = operand;
                     offset = (int64_t)memory_->ReadUleb128(instPtr) * cie.dataAlignFactor;
-                    LOGU("DW_CFA_offset: reg=%d, offset=%" PRId64 "", (int)reg, offset);
+                    LOGUNWIND("DW_CFA_offset: reg=%{public}d, offset=%{public}" PRId64 "", (int)reg, offset);
                     if (!DfxRegsQut::IsQutReg(static_cast<uint16_t>(reg), qutIdx)) {
                         INSTR_STATISTIC(UnsupportedDwCfaOffset, reg, UNW_ERROR_UNSUPPORTED_QUT_REG);
                         break;
@@ -291,7 +293,7 @@ bool DwarfCfaInstructions::DecodeDwCfa(uint8_t opCode, CommonInfoEntry cie,
                     break;
                 case DW_CFA_restore:
                     reg = operand;
-                    LOGU("DW_CFA_restore: reg=%d", (int)reg);
+                    LOGUNWIND("DW_CFA_restore: reg=%{public}d", (int)reg);
                     if (!DfxRegsQut::IsQutReg(static_cast<uint16_t>(reg), qutIdx)) {
                         INSTR_STATISTIC(UnsupportedDwCfaRestore, reg, UNW_ERROR_UNSUPPORTED_QUT_REG);
                         break;
@@ -299,7 +301,7 @@ bool DwarfCfaInstructions::DecodeDwCfa(uint8_t opCode, CommonInfoEntry cie,
                     rsState.locs[qutIdx] = backupRsState_.locs[qutIdx];
                     break;
                 default:
-                    LOGU("DW_CFA_unknown: opcode=0x%02x", opCode);
+                    LOGUNWIND("DW_CFA_unknown: opcode=0x%{public}02x", opCode);
                     break;
             }
     }
@@ -311,15 +313,15 @@ bool DwarfCfaInstructions::Parse(uintptr_t pc, FrameDescEntry fde, RegLocState &
     const auto& cie = fde.cie;
     rsState.returnAddressRegister = cie.returnAddressRegister;
 
-    LOGU("%s", "Iterate cie operations");
+    LOGUNWIND("Iterate cie operations");
     if (!Iterate(pc, fde, cie.instructionsOff, cie.instructionsEnd, rsState)) {
-        LOGE("%s", "Failed to run cie inst");
+        LOGERROR("Failed to run cie inst");
         return false;
     }
 
-    LOGU("%s", "Iterate fde operations");
+    LOGUNWIND("Iterate fde operations");
     if (!Iterate(pc, fde, fde.instructionsOff, fde.instructionsEnd, rsState)) {
-        LOGE("%s", "Failed to run fde inst");
+        LOGERROR("Failed to run fde inst");
         return false;
     }
     return true;

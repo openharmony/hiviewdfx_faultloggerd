@@ -43,7 +43,7 @@ NOINLINE static void TestFunc6(MAYBE_UNUSED void (*func)(void*), MAYBE_UNUSED vo
 {
     *ready = true;
     while (true) {};
-    LOGE("Not be run here!!!");
+    LOGERROR("Not be run here!!!");
 }
 
 NOINLINE static void TestFunc5(void (*func)(void*), volatile bool* ready)
@@ -97,7 +97,7 @@ static pid_t RemoteFork()
     }
 
     if (!WaitForRemote(pid, &ready)) {
-        LOGE("Failed to wait pid: %d", pid);
+        LOGERROR("Failed to wait pid: %{public}d", pid);
         TestScopedPidReaper::Kill(pid);
         return -1;
     }
@@ -111,11 +111,11 @@ static size_t UnwindRemote(unwindstack::Unwinder unwinder, MAYBE_UNUSED UnwindDa
     }
     unwinder.Unwind();
     auto unwSize = unwinder.NumFrames();
-    LOGU("%s frames.size: %zu", __func__, unwSize);
+    LOGUNWIND("%{public}s frames.size: %{public}zu", __func__, unwSize);
     if (dataPtr != nullptr && dataPtr->isFillFrames) {
         for (size_t i = 0; i < unwSize; ++i) {
             auto str = unwinder.FormatFrame(i);
-            LOGU("%s frames: %s", __func__, str.c_str());
+            LOGUNWIND("%{public}s frames: %{public}s", __func__, str.c_str());
         }
     }
     return unwSize;
@@ -134,7 +134,7 @@ static void Run(benchmark::State& state, void* data)
         state.SkipWithError("Failed to fork remote process.");
         return;
     }
-    LOGU("pid: %d", pid);
+    LOGUNWIND("pid: %{public}d", pid);
     TestScopedPidReaper reap(pid);
 
     std::shared_ptr<unwindstack::Memory> processMemory;
@@ -156,7 +156,7 @@ static void Run(benchmark::State& state, void* data)
             state.SkipWithError("Failed to unwind.");
         }
     }
-    LOGU("Detach pid: %d", pid);
+    LOGUNWIND("Detach pid: %{public}d", pid);
     ptrace(PTRACE_DETACH, pid, 0, 0);
 }
 

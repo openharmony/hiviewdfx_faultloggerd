@@ -63,7 +63,7 @@ std::shared_ptr<DfxRegs> DfxRegs::CreateFromRegs(const UnwindMode mode, const ui
     auto dfxregs = DfxRegs::Create();
     if ((mode == UnwindMode::FRAMEPOINTER_UNWIND && size < FP_MINI_REGS_SIZE) ||
         (mode == UnwindMode::MINIMAL_UNWIND && size < QUT_MINI_REGS_SIZE)) {
-        LOGE("The number of long groups is too short");
+        LOGERROR("The number of long groups is too short");
         return dfxregs;
     }
     if (mode == UnwindMode::DWARF_UNWIND) {
@@ -88,7 +88,7 @@ std::shared_ptr<DfxRegs> DfxRegs::CreateRemoteRegs(pid_t pid)
     iov.iov_len = sizeof(regs);
     // must be attach first
     if (ptrace(PTRACE_GETREGSET, pid, NT_PRSTATUS, &iov) == -1) {
-        LOGE("Failed to ptrace pid(%d), errno=%d", pid, errno);
+        LOGERROR("Failed to ptrace pid(%{public}d), errno=%{public}d", pid, errno);
         return nullptr;
     }
 #if defined(__x86_64__)
@@ -111,7 +111,7 @@ std::shared_ptr<DfxRegs> DfxRegs::CreateRemoteRegs(pid_t pid)
     dfxregs->regsData_[REG_X86_64_RIP] = regs[RIP];
 #else
     if (memcpy_s(dfxregs->regsData_.data(), REG_LAST * sizeof(uintptr_t), &regs, REG_LAST * sizeof(uintptr_t)) != 0) {
-        LOGE("Failed to memcpy regs data, errno=%d", errno);
+        LOGERROR("Failed to memcpy regs data, errno=%{public}d", errno);
         return nullptr;
     }
 #endif
@@ -132,7 +132,7 @@ void DfxRegs::SetRegsData(const uintptr_t* regs, const size_t size)
 {
     size_t cpySize = (size > RegsSize()) ? RegsSize() : size;
     if (memcpy_s(RawData(), cpySize * sizeof(uintptr_t), regs, cpySize * sizeof(uintptr_t)) != 0) {
-        LOGE("Failed to set regs data, errno=%d", errno);
+        LOGERROR("Failed to set regs data, errno=%{public}d", errno);
     }
 }
 
