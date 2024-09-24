@@ -63,7 +63,7 @@ bool GetBacktraceStringByTid(std::string& out, int32_t tid, size_t skipFrameNum,
 bool PrintBacktrace(int32_t fd = -1, bool fast = false, size_t maxFrameNums = DEFAULT_MAX_FRAME_NUM);
 
 /**
- * @brief Get backtrace string of the current process
+ * @brief Get backtrace string of the current thread
  *
  * @param out  backtrace string(output parameter)
  * @param fast flag for using fp backtrace(true) or dwarf backtrace(false)
@@ -73,7 +73,7 @@ bool PrintBacktrace(int32_t fd = -1, bool fast = false, size_t maxFrameNums = DE
 bool GetBacktrace(std::string& out, bool fast = false, size_t maxFrameNums = DEFAULT_MAX_FRAME_NUM);
 
 /**
- * @brief Get backtrace string of the current process
+ * @brief Get backtrace string of the current thread
  *
  * @param out  backtrace string(output parameter)
  * @param skipFrameNum the number of frames to skip

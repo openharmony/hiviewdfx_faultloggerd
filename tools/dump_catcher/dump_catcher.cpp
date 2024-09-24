@@ -27,30 +27,14 @@ DumpCatcher &DumpCatcher::GetInstance()
     return ins;
 }
 
-void DumpCatcher::Dump(int32_t type, int32_t pid, int32_t tid) const
+void DumpCatcher::Dump(int32_t pid, int32_t tid) const
 {
     DfxDumpCatcher dfxDump;
     std::string msg = "";
-    bool dumpRet = false;
-    switch (type) {
-        case DUMP_TYPE_NATIVE:
-            dumpRet = dfxDump.DumpCatch(pid, tid, msg);
-            break;
-        case DUMP_TYPE_MIX:
-            dumpRet = dfxDump.DumpCatchMix(pid, tid, msg);
-            break;
-        case DUMP_TYPE_KERNEL:
-            break;
-        default:
-            LOGWARN("type(%{public}d) invalid, must %{public}d(native), %{public}d(mix), %{public}d(kernel)", \
-                type, DUMP_TYPE_NATIVE, DUMP_TYPE_MIX, DUMP_TYPE_KERNEL);
-            break;
-    }
-
+    bool dumpRet = dfxDump.DumpCatch(pid, tid, msg);
     if (!dumpRet) {
         printf("Dump Failed.\n");
     }
-
     if (!msg.empty()) {
         printf("%s\n", msg.c_str());
     } else {
