@@ -31,8 +31,7 @@ void DumpCatcher::Dump(int32_t pid, int32_t tid) const
 {
     DfxDumpCatcher dfxDump;
     std::string msg = "";
-    bool dumpRet = false;
-    dumpRet = dfxDump.DumpCatch(pid, tid, msg);
+    bool dumpRet = dfxDump.DumpCatch(pid, tid, msg);
     if (!dumpRet) {
         printf("Dump Failed.\n");
     }

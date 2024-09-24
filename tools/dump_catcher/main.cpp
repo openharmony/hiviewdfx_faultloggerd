@@ -53,11 +53,11 @@ static int ParseParamters(int argc, char *argv[], int32_t &pid, int32_t &tid)
     int optRet;
     const char *optString = "cmkp:t:";
     while ((optRet = getopt(argc, argv, optString)) != -1) {
-        if (optarg != nullptr) {
-            continue;
-        }
         switch (optRet) {
             case 'p':
+                if (optarg == nullptr) {
+                    break;
+                }
                 if (atoi(optarg) > 0) {
                     ret = 1;
                     pid = atoi(optarg);
@@ -67,6 +67,9 @@ static int ParseParamters(int argc, char *argv[], int32_t &pid, int32_t &tid)
                 }
                 break;
             case 't':
+                if (optarg == nullptr) {
+                    break;
+                }
                 if (atoi(optarg) > 0) {
                     tid = atoi(optarg);
                 } else {
