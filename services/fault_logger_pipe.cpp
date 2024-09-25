@@ -55,13 +55,13 @@ FaultLoggerPipe::~FaultLoggerPipe()
 
 int FaultLoggerPipe::GetReadFd(void)
 {
-    LOGDEBUG("%{public}s :: pipe read fd: %{public}d", __func__, fds_[PIPE_READ]);
+    DFXLOGD("%{public}s :: pipe read fd: %{public}d", __func__, fds_[PIPE_READ]);
     return fds_[PIPE_READ];
 }
 
 int FaultLoggerPipe::GetWriteFd(void)
 {
-    LOGDEBUG("%{public}s :: pipe write fd: %{public}d", __func__, fds_[PIPE_WRITE]);
+    DFXLOGD("%{public}s :: pipe write fd: %{public}d", __func__, fds_[PIPE_WRITE]);
     if (!write_) {
         write_ = true;
         return fds_[PIPE_WRITE];
@@ -73,14 +73,14 @@ bool FaultLoggerPipe::Init(void)
 {
     if (!init_) {
         if (pipe2(fds_, O_NONBLOCK) != 0) {
-            LOGERROR("%{public}s :: Failed to create pipe.", __func__);
+            DFXLOGE("%{public}s :: Failed to create pipe.", __func__);
             return false;
         }
-        LOGDEBUG("%{public}s :: create pipe.", __func__);
+        DFXLOGD("%{public}s :: create pipe.", __func__);
     }
     init_ = true;
     if (!SetSize(MAX_PIPE_SIZE)) {
-        LOGERROR("%{public}s :: Failed to set pipe size.", __func__);
+        DFXLOGE("%{public}s :: Failed to set pipe size.", __func__);
     }
     return true;
 }
@@ -102,7 +102,7 @@ bool FaultLoggerPipe::SetSize(long sz)
 void FaultLoggerPipe::Destroy(void)
 {
     if (init_) {
-        LOGDEBUG("%{public}s :: close pipe.", __func__);
+        DFXLOGD("%{public}s :: close pipe.", __func__);
         Close(fds_[PIPE_READ]);
         Close(fds_[PIPE_WRITE]);
     }

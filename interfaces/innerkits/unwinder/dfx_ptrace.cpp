@@ -45,12 +45,12 @@ bool DfxPtrace::Attach(pid_t tid, int timeout)
     }
 
     if (ptrace(PTRACE_SEIZE, tid, 0, 0) != 0) {
-        LOGWARN("Failed to seize tid(%{public}d), errno=%{public}d", tid, errno);
+        DFXLOGW("Failed to seize tid(%{public}d), errno=%{public}d", tid, errno);
         return false;
     }
 
     if (ptrace(PTRACE_INTERRUPT, tid, 0, 0) != 0) {
-        LOGWARN("Failed to interrupt tid(%{public}d), errno=%{public}d", tid, errno);
+        DFXLOGW("Failed to interrupt tid(%{public}d), errno=%{public}d", tid, errno);
         ptrace(PTRACE_DETACH, tid, nullptr, nullptr);
         return false;
     }
@@ -65,7 +65,7 @@ bool DfxPtrace::Attach(pid_t tid, int timeout)
             std::chrono::system_clock::now().time_since_epoch()).count();
         if (curTime - startTime > timeout) {
             ptrace(PTRACE_DETACH, tid, nullptr, nullptr);
-            LOGWARN("Failed to wait tid(%{public}d) attached.", tid);
+            DFXLOGW("Failed to wait tid(%{public}d) attached.", tid);
             return false;
         }
         usleep(5); // 5 : sleep 5us

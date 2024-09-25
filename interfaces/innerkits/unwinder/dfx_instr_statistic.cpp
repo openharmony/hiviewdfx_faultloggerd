@@ -41,9 +41,9 @@ void DfxInstrStatistic::SetCurrentStatLib(const std::string soName)
 void DfxInstrStatistic::AddInstrStatistic(InstrStatisticType type, uint64_t val, uint64_t err)
 {
     if (err != 0) {
-        LOGERROR("type: %{public}u, val: %{public}" PRIx64 ", err: %{public}" PRIx64 "", type, val, err);
+        DFXLOGE("type: %{public}u, val: %{public}" PRIx64 ", err: %{public}" PRIx64 "", type, val, err);
     } else {
-        LOGUNWIND("type: %{public}u, val: %{public}" PRIx64 "", type, val);
+        DFXLOGU("type: %{public}u, val: %{public}" PRIx64 "", type, val);
     }
     std::shared_ptr<std::vector<std::pair<uint64_t, uint64_t>>> stats;
     auto iter = statisticInfo_.find(static_cast<uint32_t>(type));
@@ -61,7 +61,7 @@ void DfxInstrStatistic::AddInstrStatistic(InstrStatisticType type, uint64_t val,
 void DfxInstrStatistic::DumpInstrStatResult(std::vector<std::pair<uint32_t, uint32_t>> &result)
 {
     auto iter = statisticInfo_.begin();
-    LOGUNWIND("++++++Dump Instr Statistic for elf file: %{public}s", soName_.c_str());
+    DFXLOGU("++++++Dump Instr Statistic for elf file: %{public}s", soName_.c_str());
     while (iter != statisticInfo_.end()) {
         InstrStatisticType type = static_cast<InstrStatisticType>(iter->first);
         std::shared_ptr<std::vector<std::pair<uint64_t, uint64_t>>> stats = iter->second;
@@ -73,20 +73,20 @@ void DfxInstrStatistic::DumpInstrStatResult(std::vector<std::pair<uint32_t, uint
             case InstructionEntriesArmExidx:
             case InstructionEntriesEhFrame:
             case InstructionEntriesDebugFrame:
-                LOGUNWIND("\t Type: %{public}u, Count: %{public}" PRIu64 "", type, (uint64_t) stats->size());
+                DFXLOGU("\t Type: %{public}u, Count: %{public}" PRIu64 "", type, (uint64_t) stats->size());
                 for (size_t i = 0; i < stats->size(); ++i) {
-                    LOGUNWIND("\t Value: %{public}" PRIx64 "", (uint64_t) stats->at(i).first);
+                    DFXLOGU("\t Value: %{public}" PRIx64 "", (uint64_t) stats->at(i).first);
                     result.push_back(std::make_pair(type, static_cast<uint32_t>(stats->at(i).first)));
                 }
                 break;
             default:
-                LOGUNWIND("\t Type: %{public}u, Count: %{public}" PRIu64 "", type, (uint64_t) stats->size());
+                DFXLOGU("\t Type: %{public}u, Count: %{public}" PRIu64 "", type, (uint64_t) stats->size());
                 result.push_back(std::make_pair(type, static_cast<uint32_t>(stats->size())));
                 break;
         }
         iter++;
     }
-    LOGUNWIND("------Dump Instr Statistic End.");
+    DFXLOGU("------Dump Instr Statistic End.");
 }
 } // namespace HiviewDFX
 } // namespace OHOS

@@ -132,7 +132,7 @@ bool DfxRegsArm::StepIfSignalFrame(uintptr_t pc, std::shared_ptr<DfxMemory> memo
     if (!memory->ReadU32(pc, &data, false)) {
         return false;
     }
-    LOGUNWIND("data: %{public}x", data);
+    DFXLOGU("data: %{public}x", data);
 
     uintptr_t scAddr = 0;
     if (data == MOV_R7_SIGRETURN || data == ARM_SIGRETURN
@@ -191,7 +191,7 @@ bool DfxRegsArm::StepIfSignalFrame(uintptr_t pc, std::shared_ptr<DfxMemory> memo
     if (scAddr == 0) {
         return false;
     }
-    LOGUNWIND("scAddr: %{public}x", scAddr);
+    DFXLOGU("scAddr: %{public}x", scAddr);
     memory->Read(scAddr, regsData_.data(), sizeof(uint32_t) * REG_LAST, false);
     return true;
 }

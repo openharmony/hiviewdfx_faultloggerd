@@ -83,7 +83,7 @@ std::shared_ptr<ThreadContext> GetContextLocked(int32_t tid)
         CreateContext(it->second);
         return it->second;
     }
-    LOGERROR("GetContextLocked nullptr, tid: %{public}d", tid);
+    DFXLOGE("GetContextLocked nullptr, tid: %{public}d", tid);
     return nullptr;
 }
 
@@ -91,7 +91,7 @@ AT_UNUSED bool RemoveContextLocked(int32_t tid)
 {
     auto it = g_contextMap.find(tid);
     if (it == g_contextMap.end()) {
-        LOGWARN("Context of tid(%{public}d) is already removed.", tid);
+        DFXLOGW("Context of tid(%{public}d) is already removed.", tid);
         return true;
     }
     if (it->second == nullptr) {
@@ -105,7 +105,7 @@ AT_UNUSED bool RemoveContextLocked(int32_t tid)
         return true;
     }
 
-    LOGWARN("Failed to release context of tid(%{public}d), still using?", tid);
+    DFXLOGW("Failed to release context of tid(%{public}d), still using?", tid);
     return false;
 }
 
@@ -139,7 +139,7 @@ std::shared_ptr<ThreadContext> LocalThreadContext::GetThreadContext(int32_t tid)
     if (it != g_contextMap.end()) {
         return it->second;
     }
-    LOGWARN("Failed to get context of tid(%{public}d)", tid);
+    DFXLOGW("Failed to get context of tid(%{public}d)", tid);
     return nullptr;
 }
 
@@ -164,7 +164,7 @@ std::shared_ptr<ThreadContext> LocalThreadContext::CollectThreadContext(int32_t 
     std::unique_lock<std::mutex> lock(localMutex_);
     auto threadContext = GetContextLocked(tid);
     if (threadContext == nullptr) {
-        LOGWARN("Failed to get context of tid(%{public}d), still using?", tid);
+        DFXLOGW("Failed to get context of tid(%{public}d), still using?", tid);
         return nullptr;
     }
 
@@ -183,7 +183,7 @@ void LocalThreadContext::CopyContextAndWaitTimeout(int sig, siginfo_t *si, void 
     }
 
     int tid = gettid();
-    LOGUNWIND("tid(%{public}d) recv sig(%{public}d)", tid, sig);
+    DFXLOGU("tid(%{public}d) recv sig(%{public}d)", tid, sig);
     auto ctxPtr = LocalThreadContext::GetInstance().GetThreadContext(tid);
 #if defined(__aarch64__)
     if (ctxPtr == nullptr) {
@@ -206,12 +206,12 @@ void LocalThreadContext::CopyContextAndWaitTimeout(int sig, siginfo_t *si, void 
     ucontext_t* ucontext = reinterpret_cast<ucontext_t*>(context);
     if (memcpy_s(&ctxPtr->ctx->uc_mcontext, sizeof(ucontext->uc_mcontext),
         &ucontext->uc_mcontext, sizeof(ucontext->uc_mcontext)) != 0) {
-        LOGWARN("Failed to copy local ucontext with tid(%{public}d)", tid);
+        DFXLOGW("Failed to copy local ucontext with tid(%{public}d)", tid);
     }
 
     if (tid != getpid()) {
         if (!GetSelfStackRange(ctxPtr->stackBottom, ctxPtr->stackTop)) {
-            LOGWARN("Failed to get stack range with tid(%{public}d)", tid);
+            DFXLOGW("Failed to get stack range with tid(%{public}d)", tid);
         }
     }
 
@@ -244,7 +244,7 @@ void LocalThreadContext::InitSignalHandler()
         sigaddset(&action.sa_mask, SIGLOCAL_DUMP);
         action.sa_flags = SA_RESTART | SA_SIGINFO;
         action.sa_sigaction = LocalThreadContext::CopyContextAndWaitTimeout;
-        LOGUNWIND("Install local signal handler: %{public}d", SIGLOCAL_DUMP);
+        DFXLOGU("Install local signal handler: %{public}d", SIGLOCAL_DUMP);
         sigaction(SIGLOCAL_DUMP, &action, nullptr);
     });
 }
@@ -256,7 +256,7 @@ bool LocalThreadContext::SignalRequestThread(int32_t tid, ThreadContext* threadC
     si.si_errno = 0;
     si.si_code = DUMP_TYPE_LOCAL;
     if (syscall(SYS_rt_tgsigqueueinfo, getpid(), tid, si.si_signo, &si) != 0) {
-        LOGWARN("Failed to send signal(%{public}d) to tid(%{public}d), errno(%{public}d).", si.si_signo, tid, errno);
+        DFXLOGW("Failed to send signal(%{public}d) to tid(%{public}d), errno(%{public}d).", si.si_signo, tid, errno);
         threadContext->tid = static_cast<int32_t>(ThreadContextStatus::CONTEXT_UNUSED);
         return false;
     }

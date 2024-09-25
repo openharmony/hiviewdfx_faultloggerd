@@ -67,17 +67,17 @@ bool ElfParser::ParseAllHeaders()
     }
 
     if (!ParseElfHeaders<EhdrType>(ehdr)) {
-        LOGWARN("ParseElfHeaders failed");
+        DFXLOGW("ParseElfHeaders failed");
         return false;
     }
 
     if (!ParseProgramHeaders<EhdrType, PhdrType>(ehdr)) {
-        LOGWARN("ParseProgramHeaders failed");
+        DFXLOGW("ParseProgramHeaders failed");
         return false;
     }
 
     if (!ParseSectionHeaders<EhdrType, ShdrType>(ehdr)) {
-        LOGWARN("ParseSectionHeaders failed");
+        DFXLOGW("ParseSectionHeaders failed");
         return false;
     }
     return true;
@@ -102,7 +102,7 @@ bool ElfParser::ParseElfHeaders(const EhdrType& ehdr)
     } else if (machine == EM_X86_64) {
         archType_ = ARCH_X86_64;
     } else {
-        LOGWARN("Failed the machine = %{public}d", machine);
+        DFXLOGW("Failed the machine = %{public}d", machine);
     }
     elfSize_ = ehdr.e_shoff + ehdr.e_shentsize * ehdr.e_shnum;
     return true;
@@ -148,7 +148,7 @@ bool ElfParser::ParseProgramHeaders(const EhdrType& ehdr)
                 if (static_cast<uint64_t>(phdr.p_vaddr + phdr.p_memsz) > static_cast<uint64_t>(endVaddr_)) {
                     endVaddr_ = static_cast<uint64_t>(phdr.p_vaddr + phdr.p_memsz);
                 }
-                LOGUNWIND("Elf startVaddr: %{public}" PRIx64 ", endVaddr: %{public}" PRIx64 "",
+                DFXLOGU("Elf startVaddr: %{public}" PRIx64 ", endVaddr: %{public}" PRIx64 "",
                     startVaddr_, endVaddr_);
                 break;
             }
@@ -180,7 +180,7 @@ bool ElfParser::ParseSectionHeaders(const EhdrType& ehdr)
         uint64_t secSize = 0;
         uint64_t shNdxOffset = offset + ehdr.e_shstrndx * ehdr.e_shentsize;
         if (!Read((uintptr_t)shNdxOffset, &shdr, sizeof(shdr))) {
-            LOGERROR("Read section header string table failed");
+            DFXLOGE("Read section header string table failed");
             return false;
         }
         secOffset = shdr.sh_offset;
@@ -189,7 +189,7 @@ bool ElfParser::ParseSectionHeaders(const EhdrType& ehdr)
             return false;
         }
     } else {
-        LOGERROR("e_shstrndx(%{public}u) cannot greater than or equal e_shnum(%{public}u)",
+        DFXLOGE("e_shstrndx(%{public}u) cannot greater than or equal e_shnum(%{public}u)",
             ehdr.e_shstrndx, ehdr.e_shnum);
         return false;
     }
@@ -205,7 +205,7 @@ bool ElfParser::ParseSectionHeaders(const EhdrType& ehdr)
 
         std::string secName;
         if (!GetSectionNameByIndex(secName, shdr.sh_name)) {
-            LOGERROR("Failed to get section name");
+            DFXLOGE("Failed to get section name");
             continue;
         }
 
@@ -284,7 +284,7 @@ bool ElfParser::ParseElfName()
     uint64_t sonameOffsetMax = shdrInfo.offset + dtStrtabSize_;
     size_t maxStrSize = static_cast<size_t>(sonameOffsetMax - sonameOffset);
     mmap_->ReadString(sonameOffset, &soname_, maxStrSize);
-    LOGUNWIND("parse current elf file soname is %{public}s.", soname_.c_str());
+    DFXLOGU("parse current elf file soname is %{public}s.", soname_.c_str());
     return true;
 }
 
@@ -337,7 +337,7 @@ bool ElfParser::ParseElfSymbols(ElfShdr shdr, bool isFunc)
         elfSymbol.name = static_cast<uint32_t>(sym.st_name);
         elfSymbols_.emplace_back(elfSymbol);
     }
-    LOGUNWIND("elfSymbols.size: %{public}" PRIuPTR "", elfSymbols_.size());
+    DFXLOGU("elfSymbols.size: %{public}" PRIuPTR "", elfSymbols_.size());
     return true;
 }
 
@@ -381,7 +381,7 @@ bool ElfParser::ParseElfSymbolByAddr(uint64_t addr, ElfSymbol& elfSymbol)
                 elfSymbol.value = static_cast<uint64_t>(sym.st_value);
                 elfSymbol.size = static_cast<uint64_t>(sym.st_size);
                 elfSymbol.name = static_cast<uint32_t>(sym.st_name);
-                LOGUNWIND("Parse elf symbol nameStr: %{public}s", elfSymbol.nameStr.c_str());
+                DFXLOGU("Parse elf symbol nameStr: %{public}s", elfSymbol.nameStr.c_str());
                 return true;
             }
         }
@@ -392,7 +392,7 @@ bool ElfParser::ParseElfSymbolByAddr(uint64_t addr, ElfSymbol& elfSymbol)
 bool ElfParser::GetSectionNameByIndex(std::string& nameStr, const uint32_t name)
 {
     if (sectionNames_.empty() || name >= sectionNames_.size()) {
-        LOGERROR("name index(%{public}u) out of range, size: %{public}" PRIuPTR "", name, sectionNames_.size());
+        DFXLOGE("name index(%{public}u) out of range, size: %{public}" PRIuPTR "", name, sectionNames_.size());
         return false;
     }
 
@@ -407,17 +407,17 @@ bool ElfParser::GetSectionNameByIndex(std::string& nameStr, const uint32_t name)
 bool ElfParser::ParseStrTab(std::string& nameStr, const uint64_t offset, const uint64_t size)
 {
     if (size > MmapSize()) {
-        LOGERROR("size(%{public}" PRIu64 ") is too large.", size);
+        DFXLOGE("size(%{public}" PRIu64 ") is too large.", size);
         return false;
     }
     char *namesBuf = new char[size];
     if (namesBuf == nullptr) {
-        LOGERROR("New failed");
+        DFXLOGE("New failed");
         return false;
     }
     (void)memset_s(namesBuf, size, '\0', size);
     if (!Read((uintptr_t)offset, namesBuf, size)) {
-        LOGERROR("Read failed");
+        DFXLOGE("Read failed");
         delete[] namesBuf;
         namesBuf = nullptr;
         return false;
@@ -460,7 +460,7 @@ bool ElfParser::GetSectionData(unsigned char *buf, uint64_t size, std::string se
             return true;
         }
     } else {
-        LOGERROR("Failed to get data from secName %{public}s", secName.c_str());
+        DFXLOGE("Failed to get data from secName %{public}s", secName.c_str());
     }
     return false;
 }

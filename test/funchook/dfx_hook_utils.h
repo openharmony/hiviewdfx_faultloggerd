@@ -22,12 +22,12 @@ static void GenFuncName(void) \
     if (RealFuncName != NULL) { \
         return; \
     } \
-    LOGERROR("Failed to find hooked %{public}s use RTLD_NEXT\n", FuncName); \
+    DFXLOGE("Failed to find hooked %{public}s use RTLD_NEXT\n", FuncName); \
     RealFuncName = (RealHookFunc)dlsym(RTLD_DEFAULT, FuncName); \
     if (RealFuncName != NULL) { \
         return; \
     } \
-    LOGERROR("Failed to find hooked %{public}s use RTLD_DEFAULT\n", FuncName); \
+    DFXLOGE("Failed to find hooked %{public}s use RTLD_DEFAULT\n", FuncName); \
 }
 
 #ifdef __cplusplus

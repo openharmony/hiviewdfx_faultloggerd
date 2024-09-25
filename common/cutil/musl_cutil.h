@@ -94,7 +94,7 @@ pid_t GetRealPid(void)
     pid_t pid = syscall(SYS_getpid);
     int fd = OHOS_TEMP_FAILURE_RETRY(open(PROC_SELF_STATUS_PATH, O_RDONLY));
     if (fd < 0) {
-        LOGERROR("GetRealPid:: open failed! pid:(%{public}ld), errno:(%{public}d).", pid, errno);
+        DFXLOGE("GetRealPid:: open failed! pid:(%{public}ld), errno:(%{public}d).", pid, errno);
         return pid;
     }
 
@@ -105,7 +105,7 @@ pid_t GetRealPid(void)
     while (1) {
         nRead = OHOS_TEMP_FAILURE_RETRY(read(fd, &b, sizeof(char)));
         if (nRead <= 0 || b == '\0') {
-            LOGERROR("GetRealPid:: read failed! pid:(%{public}ld), errno:(%{public}d), " \
+            DFXLOGE("GetRealPid:: read failed! pid:(%{public}ld), errno:(%{public}d), " \
                 "nRead(%{public}zd), readchar(%{public}02X).",
                 pid, errno, nRead, b);
             break;
@@ -118,7 +118,7 @@ pid_t GetRealPid(void)
                 continue;
             }
             if (sscanf(buf, "%*[^0-9]%d", &pid) < 0) {
-                LOGERROR("GetRealPid:: sscanf failed! pid:(%{public}ld), errno:(%{public}d), buf(%{public}s).",
+                DFXLOGE("GetRealPid:: sscanf failed! pid:(%{public}ld), errno:(%{public}d), buf(%{public}s).",
                     pid, errno, buf);
             }
             break;

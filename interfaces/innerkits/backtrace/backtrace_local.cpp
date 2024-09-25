@@ -79,7 +79,7 @@ bool GetBacktraceStringByTid(std::string& out, int32_t tid, size_t skipFrameNum,
         if (DfxGetKernelStack(tid, msg) == 0 && FormatThreadKernelStack(msg, threadStack)) {
             frames = threadStack.frames;
             ret = true;
-            LOGINFO("Failed to get tid(%{public}d) user stack, try kernel", tid);
+            DFXLOGI("Failed to get tid(%{public}d) user stack, try kernel", tid);
         }
     }
     if (ret) {
@@ -92,7 +92,7 @@ bool GetBacktraceStringByTid(std::string& out, int32_t tid, size_t skipFrameNum,
 
 bool PrintBacktrace(int32_t fd, bool fast, size_t maxFrameNums)
 {
-    LOGINFO("Receive PrintBacktrace request.");
+    DFXLOGI("Receive PrintBacktrace request.");
     std::vector<DfxFrame> frames;
     bool ret = GetBacktraceFramesByTid(frames,
         BACKTRACE_CURRENT_THREAD, 1, fast, maxFrameNums); // 1: skip current frame
@@ -105,20 +105,20 @@ bool PrintBacktrace(int32_t fd, bool fast, size_t maxFrameNums)
         if (fd >= 0) {
             dprintf(fd, "    %s", line.c_str());
         }
-        LOGINFO(" %{public}s", line.c_str());
+        DFXLOGI(" %{public}s", line.c_str());
     }
     return ret;
 }
 
 bool GetBacktrace(std::string& out, bool fast, size_t maxFrameNums)
 {
-    LOGINFO("Receive GetBacktrace request with skip current frame.");
+    DFXLOGI("Receive GetBacktrace request with skip current frame.");
     return GetBacktraceStringByTid(out, BACKTRACE_CURRENT_THREAD, 1, fast, maxFrameNums); // 1: skip current frame
 }
 
 bool GetBacktrace(std::string& out, size_t skipFrameNum, bool fast, size_t maxFrameNums)
 {
-    LOGINFO("Receive GetBacktrace request.");
+    DFXLOGI("Receive GetBacktrace request.");
     return GetBacktraceStringByTid(out, BACKTRACE_CURRENT_THREAD, skipFrameNum + 1, fast, maxFrameNums);
 }
 
@@ -132,7 +132,7 @@ const char* GetTrace(size_t skipFrameNum, size_t maxFrameNums)
     static std::string trace;
     trace.clear();
     if (!GetBacktrace(trace, skipFrameNum, false, maxFrameNums)) {
-        LOGERROR("Failed to get trace string");
+        DFXLOGE("Failed to get trace string");
     }
     return trace.c_str();
 }
@@ -154,7 +154,7 @@ std::string GetProcessStacktrace(size_t maxFrameNums)
             if (DfxGetKernelStack(tid, msg) == 0 && FormatThreadKernelStack(msg, threadStack)) {
                 thread.SetFrames(threadStack.frames);
                 ss += thread.GetFormattedStr(true) + "\n";
-                LOGINFO("Failed to get tid(%{public}d) user stack, try kernel", tid);
+                DFXLOGI("Failed to get tid(%{public}d) user stack, try kernel", tid);
             }
         }
         return true;

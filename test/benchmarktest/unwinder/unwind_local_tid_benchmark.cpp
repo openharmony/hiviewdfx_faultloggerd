@@ -90,9 +90,9 @@ static void BenchmarkUnwinderLocalWithTid(benchmark::State& state)
     std::thread th([&tid, &done] { TestFunc1(&tid, &done); });
     while (tid.load() == 0) {
         usleep(waitThreadTime);
-        LOGUNWIND("wait thread");
+        DFXLOGU("wait thread");
     }
-    LOGUNWIND("+++tid: %{public}d", tid.load());
+    DFXLOGU("+++tid: %{public}d", tid.load());
 #if defined(__aarch64__)
     auto unwinder = std::make_shared<Unwinder>(false);
 #else
@@ -106,14 +106,14 @@ static void BenchmarkUnwinderLocalWithTid(benchmark::State& state)
         }
         auto unwSize = unwinder->GetPcs().size();
         //rk 64 frames size is 14, rk 32 frames size is 9
-        LOGUNWIND("%{public}s, frames.size: %{public}zu", __func__, unwSize);
+        DFXLOGU("%{public}s, frames.size: %{public}zu", __func__, unwSize);
         if (unwSize < TEST_MIN_UNWIND_FRAMES) {
             state.SkipWithError("Failed to unwind.");
         }
     }
 
     done.store(true);
-    LOGUNWIND("---tid: %{public}d", tid.load());
+    DFXLOGU("---tid: %{public}d", tid.load());
     th.join();
 }
 BENCHMARK(BenchmarkUnwinderLocalWithTid);

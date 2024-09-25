@@ -79,14 +79,14 @@ int pthread_sigmask(int how, const sigset_t *restrict set, sigset_t *restrict ol
         for (int i = 1; i < MAX_SIGNO; i++) {
             if (sigismember(set, i) && (IsPlatformHandleSignal(i)) &&
                 ((how == SIG_BLOCK) || (how == SIG_SETMASK))) {
-                LOGINFO("%{public}d:%{public}d pthread_sigmask signal(%{public}d)\n", getpid(), gettid(), i);
+                DFXLOGI("%{public}d:%{public}d pthread_sigmask signal(%{public}d)\n", getpid(), gettid(), i);
                 LogBacktrace();
             }
         }
     }
 
     if (g_hookedPthreadSigmask == NULL) {
-        LOGERROR("hooked procmask is NULL?\n");
+        DFXLOGE("hooked procmask is NULL?\n");
         return -1;
     }
     return g_hookedPthreadSigmask(how, set, oldset);
@@ -98,12 +98,12 @@ int sigprocmask(int how, const sigset_t *restrict set, sigset_t *restrict oldset
         for (int i = 1; i < MAX_SIGNO; i++) {
             if (sigismember(set, i) && (IsPlatformHandleSignal(i)) &&
                 ((how == SIG_BLOCK) || (how == SIG_SETMASK))) {
-                LOGINFO("%{public}d:%{public}d sigprocmask signal(%{public}d)\n", getpid(), gettid(), i);
+                DFXLOGI("%{public}d:%{public}d sigprocmask signal(%{public}d)\n", getpid(), gettid(), i);
             }
         }
     }
     if (g_hookedSigprocmask == NULL) {
-        LOGERROR("hooked procmask is NULL?\n");
+        DFXLOGE("hooked procmask is NULL?\n");
         return -1;
     }
     return g_hookedSigprocmask(how, set, oldset);
@@ -112,12 +112,12 @@ int sigprocmask(int how, const sigset_t *restrict set, sigset_t *restrict oldset
 sighandler_t signal(int signum, sighandler_t handler)
 {
     if (IsPlatformHandleSignal(signum)) {
-        LOGINFO("%{public}d register signal handler for signal(%{public}d)\n", getpid(), signum);
+        DFXLOGI("%{public}d register signal handler for signal(%{public}d)\n", getpid(), signum);
         LogBacktrace();
     }
 
     if (g_hookedSignal == NULL) {
-        LOGERROR("hooked signal is NULL?\n");
+        DFXLOGE("hooked signal is NULL?\n");
         return NULL;
     }
     return g_hookedSignal(signum, handler);
@@ -128,13 +128,13 @@ static bool IsSigactionAddr(uintptr_t sigactionAddr)
     bool ret = false;
     char path[NAME_BUF_LEN] = {0};
     if (snprintf_s(path, sizeof(path), sizeof(path) - 1, PROC_SELF_MAPS_PATH) <= 0) {
-        LOGWARN("Fail to print path.");
+        DFXLOGW("Fail to print path.");
         return false;
     }
 
     FILE *fp = fopen(path, "r");
     if (fp == NULL) {
-        LOGWARN("Fail to open maps info.");
+        DFXLOGW("Fail to open maps info.");
         return false;
     }
 
@@ -148,12 +148,12 @@ static bool IsSigactionAddr(uintptr_t sigactionAddr)
         // f79d6000-f7a62000 r-xp 0004b000 b3:06 1605                               /system/lib/ld-musl-arm.so.1
         if (sscanf_s(mapInfo, "%" SCNxPTR "-%" SCNxPTR " %4s %" SCNxPTR " %*x:%*x %*d%n", &begin, &end,
             &perms, sizeof(perms), &offset, &pos) != 4) { // 4:scan size
-            LOGWARN("Fail to parse maps info.");
+            DFXLOGW("Fail to parse maps info.");
             continue;
         }
 
         if ((strstr(mapInfo, "r-xp") != NULL) && (strstr(mapInfo, "ld-musl") != NULL)) {
-            LOGINFO("begin: %{public}" PRIu64 ", end: %{public}" PRIu64 ", sigactionAddr: %{public}" PRIuPTR  "",
+            DFXLOGI("begin: %{public}" PRIu64 ", end: %{public}" PRIu64 ", sigactionAddr: %{public}" PRIuPTR  "",
                 begin, end, sigactionAddr);
             if ((sigactionAddr >= begin) && (sigactionAddr <= end)) {
                 ret = true;
@@ -164,7 +164,7 @@ static bool IsSigactionAddr(uintptr_t sigactionAddr)
         }
     }
     if (fclose(fp) != 0) {
-        LOGWARN("Fail to close maps info.");
+        DFXLOGW("Fail to close maps info.");
     }
     return ret;
 }
@@ -172,12 +172,12 @@ static bool IsSigactionAddr(uintptr_t sigactionAddr)
 int sigaction(int sig, const struct sigaction *restrict act, struct sigaction *restrict oact)
 {
     if (g_hookedSigaction == NULL) {
-        LOGERROR("hooked sigaction is NULL?");
+        DFXLOGE("hooked sigaction is NULL?");
         return -1;
     }
 
     if (IsPlatformHandleSignal(sig) && (act == NULL || !IsSigactionAddr((uintptr_t)(act->sa_sigaction)))) {
-        LOGINFO("%{public}d call sigaction and signo is %{public}d\n", getpid(), sig);
+        DFXLOGI("%{public}d call sigaction and signo is %{public}d\n", getpid(), sig);
         LogBacktrace();
     }
 

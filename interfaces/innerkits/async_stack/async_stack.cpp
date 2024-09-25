@@ -31,20 +31,20 @@ extern "C" void SetAsyncStackCallbackFunc(void* func) __attribute__((weak));
 static void InitAsyncStackInner(void)
 {
     if (SetAsyncStackCallbackFunc == nullptr) {
-        LOGERROR("failed to init async stack, could not find SetAsyncStackCallbackFunc.");
+        DFXLOGE("failed to init async stack, could not find SetAsyncStackCallbackFunc.");
         return;
     }
 
     // init unique stack table
     if (!OHOS::HiviewDFX::UniqueStackTable::Instance()->Init()) {
-        LOGERROR("failed to init unique stack table?.");
+        DFXLOGE("failed to init unique stack table?.");
         return;
     }
 
     if (pthread_key_create(&g_stackidKey, nullptr) == 0) {
         g_init = true;
     } else {
-        LOGERROR("failed to create key for stackId.");
+        DFXLOGE("failed to create key for stackId.");
         return;
     }
 

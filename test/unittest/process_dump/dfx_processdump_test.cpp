@@ -403,9 +403,9 @@ HWTEST_F(DfxProcessDumpTest, DfxProcessDumpTest014, TestSize.Level2)
     GTEST_LOG_(INFO) << "DfxProcessDumpTest014: start.";
     void* handle = dlopen("libfaultlogger.z.so", RTLD_LAZY | RTLD_NODELETE);
     ASSERT_TRUE(handle) << "Failed to dlopen libfaultlogger";
-    auto addFaultLog = reinterpret_cast<void (*)(FaultLogInfoInner*)>(dlsym(handle, "AddFaultLog"));
+    auto addFaultLog = reinterpret_cast<void (*)(FaultDFXLOGIInner*)>(dlsym(handle, "AddFaultLog"));
     ASSERT_TRUE(addFaultLog) << "Failed to dlsym addFaultLog";
-    FaultLogInfoInner info;
+    FaultDFXLOGIInner info;
     info.time = time(NULL);
     info.id = 0;
     info.pid = 1;

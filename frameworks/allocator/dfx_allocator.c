@@ -103,7 +103,7 @@ static void RemovePage(PageInfo** pageList, PageInfo* page)
 static void MempoolAddPage(DfxMempool* mempool, PageInfo* page)
 {
     if (mempool == NULL) {
-        LOGERROR("MempoolAddPage Invalid mempool!");
+        DFXLOGE("MempoolAddPage Invalid mempool!");
         return;
     }
     return AddPage(&(mempool->pageList), page);
@@ -112,7 +112,7 @@ static void MempoolAddPage(DfxMempool* mempool, PageInfo* page)
 static void MempoolRemovePage(DfxMempool* mempool, PageInfo* page)
 {
     if (mempool == NULL) {
-        LOGERROR("MempoolRemovePage Invalid mempool!");
+        DFXLOGE("MempoolRemovePage Invalid mempool!");
         return;
     }
     return RemovePage(&(mempool->pageList), page);
@@ -123,7 +123,7 @@ static void MempoolAllocPage(DfxMempool* mempool)
     void* mptr = mmap(NULL, DFX_PAGE_SIZE, PROT_READ | PROT_WRITE,
         MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
     if (mptr == MAP_FAILED) {
-        LOGERROR("Mempool AllocPage mmap failed!");
+        DFXLOGE("Mempool AllocPage mmap failed!");
         return;
     }
     PageInfo* page = (PageInfo*)(mptr);
@@ -131,7 +131,7 @@ static void MempoolAllocPage(DfxMempool* mempool)
     if (memcpy_s(page->tag.tagInfo, sizeof(page->tag.tagInfo),
         DFX_MEM_PAGE_SIGN, sizeof(DFX_MEM_PAGE_SIGN)) != EOK) {
         munmap(mptr, DFX_PAGE_SIZE);
-        LOGERROR("Mempool AllocPage fill tag failed!");
+        DFXLOGE("Mempool AllocPage fill tag failed!");
         return;
     }
     page->tag.type = mempool->type;
@@ -150,7 +150,7 @@ static void MempoolAllocPage(DfxMempool* mempool)
 static void MempoolFreePage(DfxMempool* mempool, PageInfo* page)
 {
     if (page->freeBlocksCnt != mempool->blocksPerPage) {
-        LOGERROR("MempoolFreePage Invalid Page free cnt!");
+        DFXLOGE("MempoolFreePage Invalid Page free cnt!");
         return;
     }
     MempoolRemovePage(mempool, page);
@@ -169,7 +169,7 @@ static void* MempoolAlloc(DfxMempool* mempool)
     }
     PageInfo* page = mempool->pageList;
     if (page == NULL || page->freeBlockList == NULL) {
-        LOGERROR("MempoolAlloc Alloc Page Failed or Invalid blocklist!");
+        DFXLOGE("MempoolAlloc Alloc Page Failed or Invalid blocklist!");
         return NULL;
     }
     BlockInfo* block = page->freeBlockList;
@@ -209,7 +209,7 @@ static void MempoolFree(DfxMempool* mempool, void* ptr)
 
     if (mempool == NULL || ptr == NULL || mempool->blockSize == 0 ||
         ((uintptr_t)(ptr)) % (mempool->blockSize) != 0) {
-        LOGERROR("MempoolFree Invalid mempool or address!");
+        DFXLOGE("MempoolFree Invalid mempool or address!");
         return;
     }
     // find ptr's page,and page's freeblocklist
@@ -269,7 +269,7 @@ static inline PageInfo* GetPage(void* ptr)
 {
     PageInfo* page = GetPageUnchecked(ptr);
     if (memcmp(page->tag.tagInfo, DFX_MEM_PAGE_SIGN, sizeof(DFX_MEM_PAGE_SIGN)) != 0) {
-        LOGERROR("GetPage untagged address!");
+        DFXLOGE("GetPage untagged address!");
         return NULL;
     }
     return page;
@@ -283,14 +283,14 @@ static void* AllocMmap(size_t align, size_t size)
     // mmap size page allign
     if (__builtin_add_overflow(headSize, size, &allocSize) ||
         PageEnd(allocSize) < allocSize) {
-        LOGERROR("Invalid mmap size!");
+        DFXLOGE("Invalid mmap size!");
         return NULL;
     }
     allocSize = PageEnd(allocSize);
     void* mptr = mmap(NULL, allocSize, PROT_READ | PROT_WRITE,
         MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
     if (mptr == MAP_FAILED) {
-        LOGERROR("AllocMmap failed!");
+        DFXLOGE("AllocMmap failed!");
         return NULL;
     }
     void* result = (void*)((char*)(mptr) + headSize);
@@ -298,7 +298,7 @@ static void* AllocMmap(size_t align, size_t size)
     if (memcpy_s(page->tag.tagInfo, sizeof(page->tag.tagInfo),
         DFX_MEM_PAGE_SIGN, sizeof(DFX_MEM_PAGE_SIGN)) != EOK) {
         munmap(mptr, allocSize);
-        LOGERROR("AllocMmap fill tag failed!");
+        DFXLOGE("AllocMmap fill tag failed!");
         return NULL;
     }
     page->tag.type = DFX_MMAP_TYPE;
@@ -343,13 +343,13 @@ static void* DfxAlloc(size_t size)
 static size_t GetChunkSize(void* ptr)
 {
     if (ptr == NULL) {
-        LOGERROR("GetChunkSize Invalid ptr!");
+        DFXLOGE("GetChunkSize Invalid ptr!");
         return 0;
     }
     PageInfo* page = GetPage(ptr);
     if (page == NULL || (page->tag.type != DFX_MMAP_TYPE &&
         (page->tag.type < DFX_MEMPOOL_MIN_TYPE || page->tag.type > DFX_MEMPOOL_MAX_TYPE))) {
-        LOGERROR("GetChunkSize Invalid page!");
+        DFXLOGE("GetChunkSize Invalid page!");
         return 0;
     }
     if (page->tag.type == DFX_MMAP_TYPE) {
@@ -368,7 +368,7 @@ static void DfxFree(void* ptr)
     }
     PageInfo* page = GetPage(ptr);
     if (page == NULL) {
-        LOGERROR("DfxFree Invalid page!");
+        DFXLOGE("DfxFree Invalid page!");
         return;
     }
     if (page->tag.type == DFX_MMAP_TYPE) {
@@ -399,7 +399,7 @@ static void* DfxRealloc(void* ptr, size_t size)
         void* res = DfxAlloc(size);
         if (res) {
             if (memcpy_s(res, size, ptr, oldsize) != EOK) {
-                LOGERROR("DfxRealloc memcpy fail");
+                DFXLOGE("DfxRealloc memcpy fail");
             }
             DfxFree(ptr);
             return res;
@@ -433,7 +433,7 @@ void RegisterAllocator(void)
 #ifndef DFX_ALLOCATE_ASAN
     if (memcpy_s(&g_dfxCustomMallocDispatch, sizeof(g_dfxCustomMallocDispatch),
         &(__libc_malloc_default_dispatch), sizeof(__libc_malloc_default_dispatch)) != EOK) {
-        LOGERROR("RegisterAllocator memcpy fail");
+        DFXLOGE("RegisterAllocator memcpy fail");
     }
 #endif
     g_dfxCustomMallocDispatch.malloc = HookMalloc;

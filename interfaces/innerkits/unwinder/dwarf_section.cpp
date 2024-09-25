@@ -38,14 +38,14 @@ bool DwarfSection::LinearSearchEntry(uintptr_t pc, struct UnwindTableInfo uti, s
     DFX_TRACE_SCOPED_DLSYM("DwarfSectionLinearSearchEntry");
     uintptr_t fdeCount = uti.tableLen;
     uintptr_t tableData = uti.tableData;
-    LOGUNWIND("LinearSearchEntry tableData:%{public}p, tableLen: %{public}u", (void*)tableData, (uint32_t)fdeCount);
+    DFXLOGU("LinearSearchEntry tableData:%{public}p, tableLen: %{public}u", (void*)tableData, (uint32_t)fdeCount);
     uintptr_t i = 0, ptr = tableData;
     FrameDescEntry fdeInfo;
     while (i++ < fdeCount && ptr < uti.endPc) {
         uintptr_t fdeAddr = ptr;
         if (GetCieOrFde(ptr, fdeInfo)) {
             if (pc >= fdeInfo.pcStart && pc < fdeInfo.pcEnd) {
-                LOGUNWIND("Fde entry addr: %{public}" PRIx64 "", (uint64_t)fdeAddr);
+                DFXLOGU("Fde entry addr: %{public}" PRIx64 "", (uint64_t)fdeAddr);
                 uei.unwindInfo = (void *)(fdeAddr);
                 uei.format = UNW_INFO_FORMAT_REMOTE_TABLE;
                 return true;
@@ -63,7 +63,7 @@ bool DwarfSection::SearchEntry(uintptr_t pc, struct UnwindTableInfo uti, struct 
     MAYBE_UNUSED auto segbase = uti.segbase;
     uintptr_t fdeCount = uti.tableLen;
     uintptr_t tableData = uti.tableData;
-    LOGUNWIND("SearchEntry pc: %{public}p segbase:%{public}p, tableData:%{public}p, tableLen: %{public}u",
+    DFXLOGU("SearchEntry pc: %{public}p segbase:%{public}p, tableData:%{public}p, tableLen: %{public}u",
         (void*)pc, (void*)segbase, (void*)tableData, (uint32_t)fdeCount);
 
     // do binary search, encode is stored in symbol file, we have no means to find?
@@ -108,7 +108,7 @@ bool DwarfSection::SearchEntry(uintptr_t pc, struct UnwindTableInfo uti, struct 
         }
     }
 
-    LOGUNWIND("Fde entry addr: %{public}" PRIx64 "", (uint64_t)entry);
+    DFXLOGU("Fde entry addr: %{public}" PRIx64 "", (uint64_t)entry);
     uei.unwindInfo = (void *)(entry);
     uei.format = UNW_INFO_FORMAT_REMOTE_TABLE;
     return true;
@@ -119,19 +119,19 @@ bool DwarfSection::Step(uintptr_t pc, uintptr_t fdeAddr, std::shared_ptr<RegLocS
     DFX_TRACE_SCOPED_DLSYM("DwarfSectionStep");
     FrameDescEntry fdeInfo;
     if (!ParseFde(fdeAddr, fdeAddr, fdeInfo)) {
-        LOGERROR("Failed to parse fde?");
+        DFXLOGE("Failed to parse fde?");
         lastErrorData_.SetAddrAndCode(fdeAddr, UNW_ERROR_DWARF_INVALID_FDE);
         return false;
     }
 
     if (pc < fdeInfo.pcStart || pc >= fdeInfo.pcEnd) {
-        LOGUNWIND("pc: %{public}p, FDE start: %{public}p, end: %{public}p",
+        DFXLOGU("pc: %{public}p, FDE start: %{public}p, end: %{public}p",
             (void*)pc, (void*)fdeInfo.pcStart, (void*)fdeInfo.pcEnd);
         return false;
     }
     DwarfCfaInstructions dwarfInstructions(memory_);
     if (!dwarfInstructions.Parse(pc, fdeInfo, *(rs.get()))) {
-        LOGERROR("Failed to parse dwarf instructions?");
+        DFXLOGE("Failed to parse dwarf instructions?");
         lastErrorData_.SetAddrAndCode(pc, UNW_ERROR_DWARF_INVALID_INSTR);
         return false;
     }
@@ -146,13 +146,13 @@ bool DwarfSection::GetCieOrFde(uintptr_t &addr, FrameDescEntry &fdeInfo)
 
     if (isCieEntry) {
         if (!ParseCie(addr, ptr, fdeInfo.cie)) {
-            LOGERROR("Failed to Parse CIE?");
+            DFXLOGE("Failed to Parse CIE?");
             return false;
         }
         addr = fdeInfo.cie.instructionsEnd;
     } else {
         if (!ParseFde(addr, ptr, fdeInfo)) {
-            LOGERROR("Failed to Parse FDE?");
+            DFXLOGE("Failed to Parse FDE?");
             return false;
         }
         addr = fdeInfo.instructionsEnd;
@@ -200,7 +200,7 @@ void DwarfSection::ParseCieOrFdeHeader(uintptr_t& ptr, FrameDescEntry &fdeInfo, 
 
 bool DwarfSection::ParseFde(uintptr_t fdeAddr, uintptr_t fdePtr, FrameDescEntry &fdeInfo)
 {
-    LOGUNWIND("fdeAddr: %{public}" PRIx64 "", (uint64_t)fdeAddr);
+    DFXLOGU("fdeAddr: %{public}" PRIx64 "", (uint64_t)fdeAddr);
     if (!fdeEntries_.empty()) {
         auto iter = fdeEntries_.find(fdeAddr);
         if (iter != fdeEntries_.end()) {
@@ -213,12 +213,12 @@ bool DwarfSection::ParseFde(uintptr_t fdeAddr, uintptr_t fdePtr, FrameDescEntry 
         bool isCieEntry = false;
         ParseCieOrFdeHeader(fdePtr, fdeInfo, isCieEntry);
         if (isCieEntry) {
-            LOGERROR("ParseFde error, is Cie Entry?");
+            DFXLOGE("ParseFde error, is Cie Entry?");
             return false;
         }
     }
     if (!FillInFde(fdePtr, fdeInfo)) {
-        LOGERROR("ParseFde error, failed to fill FDE?");
+        DFXLOGE("ParseFde error, failed to fill FDE?");
         fdeEntries_.erase(fdeAddr);
         return false;
     }
@@ -229,7 +229,7 @@ bool DwarfSection::ParseFde(uintptr_t fdeAddr, uintptr_t fdePtr, FrameDescEntry 
 bool DwarfSection::FillInFde(uintptr_t ptr, FrameDescEntry &fdeInfo)
 {
     if (!ParseCie(fdeInfo.cieAddr, fdeInfo.cieAddr, fdeInfo.cie)) {
-        LOGERROR("Failed to parse CIE?");
+        DFXLOGE("Failed to parse CIE?");
         return false;
     }
 
@@ -238,7 +238,7 @@ bool DwarfSection::FillInFde(uintptr_t ptr, FrameDescEntry &fdeInfo)
         ptr += fdeInfo.cie.segmentSize;
     }
     // Parse pc begin and range.
-    LOGUNWIND("pointerEncoding: %{public}02x", fdeInfo.cie.pointerEncoding);
+    DFXLOGU("pointerEncoding: %{public}02x", fdeInfo.cie.pointerEncoding);
     uintptr_t pcStart = memory_->ReadEncodedValue(ptr, fdeInfo.cie.pointerEncoding);
     uintptr_t pcRange = memory_->ReadEncodedValue(ptr, (fdeInfo.cie.pointerEncoding & 0x0F));
 
@@ -259,13 +259,13 @@ bool DwarfSection::FillInFde(uintptr_t ptr, FrameDescEntry &fdeInfo)
     fdeInfo.instructionsOff = ptr;
     fdeInfo.pcStart = pcStart;
     fdeInfo.pcEnd = pcStart + pcRange;
-    LOGUNWIND("FDE pcStart: %{public}p, pcEnd: %{public}p", (void*)(fdeInfo.pcStart), (void*)(fdeInfo.pcEnd));
+    DFXLOGU("FDE pcStart: %{public}p, pcEnd: %{public}p", (void*)(fdeInfo.pcStart), (void*)(fdeInfo.pcEnd));
     return true;
 }
 
 bool DwarfSection::ParseCie(uintptr_t cieAddr, uintptr_t ciePtr, CommonInfoEntry &cieInfo)
 {
-    LOGUNWIND("cieAddr: %{public}" PRIx64 "", (uint64_t)cieAddr);
+    DFXLOGU("cieAddr: %{public}" PRIx64 "", (uint64_t)cieAddr);
     if (!cieEntries_.empty()) {
         auto iter = cieEntries_.find(cieAddr);
         if (iter != cieEntries_.end()) {
@@ -279,13 +279,13 @@ bool DwarfSection::ParseCie(uintptr_t cieAddr, uintptr_t ciePtr, CommonInfoEntry
         FrameDescEntry fdeInfo;
         ParseCieOrFdeHeader(ciePtr, fdeInfo, isCieEntry);
         if (!isCieEntry) {
-            LOGERROR("ParseCie error, is not Cie Entry?");
+            DFXLOGE("ParseCie error, is not Cie Entry?");
             return false;
         }
         cieInfo = fdeInfo.cie;
     }
     if (!FillInCie(ciePtr, cieInfo)) {
-        LOGERROR("ParseCie error, failed to fill Cie?");
+        DFXLOGE("ParseCie error, failed to fill Cie?");
         cieEntries_.erase(cieAddr);
         return false;
     }
@@ -297,9 +297,9 @@ bool DwarfSection::FillInCie(uintptr_t ptr, CommonInfoEntry &cieInfo)
 {
     uint8_t version;
     memory_->ReadU8(ptr, &version, true);
-    LOGUNWIND("Cie version: %{public}d", version);
+    DFXLOGU("Cie version: %{public}d", version);
     if (version != DW_EH_VERSION && version != 3 && version != 4 && version != 5) { // 3 4 5 : cie version
-        LOGERROR("Invalid cie version: %{public}d", version);
+        DFXLOGE("Invalid cie version: %{public}d", version);
         lastErrorData_.SetAddrAndCode(ptr, UNW_ERROR_UNSUPPORTED_VERSION);
         return false;
     }
@@ -327,11 +327,11 @@ bool DwarfSection::FillInCie(uintptr_t ptr, CommonInfoEntry &cieInfo)
 
     // parse code alignment factor
     cieInfo.codeAlignFactor = (uint32_t)memory_->ReadUleb128(ptr);
-    LOGUNWIND("codeAlignFactor: %{public}d", cieInfo.codeAlignFactor);
+    DFXLOGU("codeAlignFactor: %{public}d", cieInfo.codeAlignFactor);
 
     // parse data alignment factor
     cieInfo.dataAlignFactor = (int32_t)memory_->ReadSleb128(ptr);
-    LOGUNWIND("dataAlignFactor: %{public}d", cieInfo.dataAlignFactor);
+    DFXLOGU("dataAlignFactor: %{public}d", cieInfo.dataAlignFactor);
 
     // parse return address register
     if (version == DW_EH_VERSION) {
@@ -341,7 +341,7 @@ bool DwarfSection::FillInCie(uintptr_t ptr, CommonInfoEntry &cieInfo)
     } else {
         cieInfo.returnAddressRegister = (uintptr_t)memory_->ReadUleb128(ptr);
     }
-    LOGUNWIND("returnAddressRegister: %{public}d", (int)cieInfo.returnAddressRegister);
+    DFXLOGU("returnAddressRegister: %{public}d", (int)cieInfo.returnAddressRegister);
 
     // parse augmentation data based on augmentation string
     if (augStr.empty() || augStr[0] != 'z') {
@@ -351,7 +351,7 @@ bool DwarfSection::FillInCie(uintptr_t ptr, CommonInfoEntry &cieInfo)
     cieInfo.hasAugmentationData = true;
     // parse augmentation data length
     MAYBE_UNUSED uintptr_t augSize = memory_->ReadUleb128(ptr);
-    LOGUNWIND("augSize: %{public}" PRIxPTR "", augSize);
+    DFXLOGU("augSize: %{public}" PRIxPTR "", augSize);
     cieInfo.instructionsOff = ptr + augSize;
 
     for (size_t i = 1; i < augStr.size(); ++i) {
@@ -363,11 +363,11 @@ bool DwarfSection::FillInCie(uintptr_t ptr, CommonInfoEntry &cieInfo)
                 break;
             case 'L':
                 memory_->ReadU8(ptr, &cieInfo.lsdaEncoding, true);
-                LOGUNWIND("cieInfo.lsdaEncoding: %{public}x", cieInfo.lsdaEncoding);
+                DFXLOGU("cieInfo.lsdaEncoding: %{public}x", cieInfo.lsdaEncoding);
                 break;
             case 'R':
                 memory_->ReadU8(ptr, &cieInfo.pointerEncoding, true);
-                LOGUNWIND("cieInfo.pointerEncoding: %{public}x", cieInfo.pointerEncoding);
+                DFXLOGU("cieInfo.pointerEncoding: %{public}x", cieInfo.pointerEncoding);
                 break;
             case 'S':
                 cieInfo.isSignalFrame = true;

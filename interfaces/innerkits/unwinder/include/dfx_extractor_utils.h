@@ -68,11 +68,11 @@ public:
                 break;
             }
 
-            LOGUNWIND("Hap entry file: %{public}s, offset: 0x%{public}016" PRIx64 "",
+            DFXLOGU("Hap entry file: %{public}s, offset: 0x%{public}016" PRIx64 "",
                 fileName.c_str(), (uint64_t)offset);
             loadOffset = static_cast<uintptr_t>(offset);
             if (zipFile_->ExtractToBufByName(fileName, abcDataPtr, abcDataSize)) {
-                LOGUNWIND("Hap abc: %{public}s, size: %{public}zu", fileName.c_str(), abcDataSize);
+                DFXLOGU("Hap abc: %{public}s, size: %{public}zu", fileName.c_str(), abcDataSize);
                 ret = true;
                 break;
             }
@@ -102,11 +102,11 @@ public:
                 break;
             }
 
-            LOGUNWIND("Hap entry file: %{public}s, offset: 0x%{public}016" PRIx64 "",
+            DFXLOGU("Hap entry file: %{public}s, offset: 0x%{public}016" PRIx64 "",
                 fileName.c_str(), (uint64_t)offset);
             loadOffset = static_cast<uintptr_t>(offset);
             if (zipFile_->ExtractToBufByName(fileName, sourceMapPtr, sourceMapSize)) {
-                LOGUNWIND("Hap sourcemap: %{public}s, size: %{public}zu", fileName.c_str(), sourceMapSize);
+                DFXLOGU("Hap sourcemap: %{public}s, size: %{public}zu", fileName.c_str(), sourceMapSize);
                 ret = true;
                 break;
             }
@@ -123,11 +123,11 @@ protected:
             zipFile_ = std::make_shared<AbilityBase::ZipFile>(file);
         }
         if ((zipFile_ == nullptr) || (!zipFile_->Open())) {
-            LOGERROR("Failed to open zip file(%{public}s)", file.c_str());
+            DFXLOGE("Failed to open zip file(%{public}s)", file.c_str());
             zipFile_ = nullptr;
             return false;
         }
-        LOGUNWIND("Done load zip file %{public}s", file.c_str());
+        DFXLOGU("Done load zip file %{public}s", file.c_str());
         return true;
 #endif
         return false;
