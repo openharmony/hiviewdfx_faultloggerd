@@ -57,12 +57,12 @@ void GetThreadKernelStack(std::shared_ptr<DfxThread> thread)
     pid_t tid = thread->threadInfo_.nsTid;
     DfxThreadStack threadStack;
     if (DfxGetKernelStack(tid, threadKernelStack) == 0 && FormatThreadKernelStack(threadKernelStack, threadStack)) {
-        LOGINFO("Failed to get tid(%{public}d) user stack, try kernel", tid);
+        DFXLOGI("Failed to get tid(%{public}d) user stack, try kernel", tid);
 #ifndef is_ohos_lite
         if (OHOS::system::GetParameter("const.logsystem.versiontype", "false") == "beta") {
             size_t step = LOG_BUF_LEN - 1;
             for (size_t i = 0;  i < threadKernelStack.length(); i += step) {
-                LOGINFO("%{public}s", threadKernelStack.substr(i, step).c_str());
+                DFXLOGI("%{public}s", threadKernelStack.substr(i, step).c_str());
             }
         }
 #endif
@@ -83,7 +83,7 @@ bool DfxUnwindRemote::UnwindProcess(std::shared_ptr<ProcessDumpRequest> request,
     DFX_TRACE_SCOPED("UnwindProcess");
     bool ret = false;
     if (process == nullptr || unwinder == nullptr) {
-        LOGWARN("%{public}s::process or unwinder is not initialized.", __func__);
+        DFXLOGW("%{public}s::process or unwinder is not initialized.", __func__);
         return ret;
     }
 
@@ -100,13 +100,13 @@ bool DfxUnwindRemote::UnwindProcess(std::shared_ptr<ProcessDumpRequest> request,
     if (ProcessDumper::GetInstance().IsCrash()) {
         if (request->dumpMode == SPLIT_MODE) {
             if (process->vmThread_ == nullptr) {
-                LOGWARN("%{public}s::unwind vm thread is not initialized.", __func__);
+                DFXLOGW("%{public}s::unwind vm thread is not initialized.", __func__);
             } else {
                 Printer::PrintThreadFaultStackByConfig(process, process->vmThread_, unwinder);
             }
         } else {
             if (process->keyThread_ == nullptr) {
-                LOGWARN("%{public}s::unwind key thread is not initialized.", __func__);
+                DFXLOGW("%{public}s::unwind key thread is not initialized.", __func__);
             } else {
                 pid_t nsTid = process->keyThread_->threadInfo_.nsTid;
                 process->keyThread_->threadInfo_.nsTid = vmPid; // read registers from vm process
@@ -133,11 +133,11 @@ void DfxUnwindRemote::UnwindKeyThread(std::shared_ptr<ProcessDumpRequest> reques
         unwThread = process->vmThread_;
     }
     if (unwThread == nullptr) {
-        LOGWARN("%{public}s::unwind thread is not initialized.", __func__);
+        DFXLOGW("%{public}s::unwind thread is not initialized.", __func__);
         return;
     }
     if (request == nullptr) {
-        LOGWARN("%{public}s::request is not initialized.", __func__);
+        DFXLOGW("%{public}s::request is not initialized.", __func__);
         return;
     }
     unwinder->SetIsJitCrashFlag(ProcessDumper::GetInstance().IsCrash());
@@ -174,11 +174,7 @@ void DfxUnwindRemote::UnwindKeyThread(std::shared_ptr<ProcessDumpRequest> reques
 void DfxUnwindRemote::UnwindOtherThread(std::shared_ptr<DfxProcess> process, std::shared_ptr<Unwinder> unwinder,
     pid_t vmPid)
 {
-    if (!DfxConfig::GetConfig().dumpOtherThreads) {
-        return;
-    }
-
-    if (vmPid != 0 && !isVmProcAttach) {
+    if ((!DfxConfig::GetConfig().dumpOtherThreads) || (vmPid != 0 && !isVmProcAttach)) {
         return;
     }
     unwinder->SetIsJitCrashFlag(false);
@@ -194,7 +190,7 @@ void DfxUnwindRemote::UnwindOtherThread(std::shared_ptr<DfxProcess> process, std
             unwinder->SetRegs(regs);
             bool withRegs = regs != nullptr;
             pid_t tid = thread->threadInfo_.nsTid;
-            LOGDEBUG("%{public}s, unwind tid(%{public}d) start", __func__, tid);
+            DFXLOGD("%{public}s, unwind tid(%{public}d) start", __func__, tid);
             if (isVmProcAttach && !withRegs) {
                 GetThreadKernelStack(thread);
                 Printer::PrintThreadBacktraceByConfig(thread, false);
@@ -219,7 +215,9 @@ void DfxUnwindRemote::UnwindOtherThread(std::shared_ptr<DfxProcess> process, std
             if (ProcessDumper::GetInstance().IsCrash()) {
                 ReportUnwinderException(unwinder->GetLastErrorCode());
             }
-            LOGDEBUG("%{public}s, unwind tid(%{public}d) finish ret(%{public}d).", __func__, tid, ret);
+            if (!ret) {
+                DFXLOGW("%{public}s, unwind tid(%{public}d) finish ret(%{public}d).", __func__, tid, ret);
+            }
             Printer::PrintThreadBacktraceByConfig(thread, false);
         }
         index++;
@@ -254,7 +252,7 @@ bool DfxUnwindRemote::InitProcessAllThreadRegs(std::shared_ptr<ProcessDumpReques
     std::shared_ptr<DfxProcess> process)
 {
     if (!InitTargetKeyThreadRegs(request, process)) {
-        LOGERROR("get key thread regs fail");
+        DFXLOGE("get key thread regs fail");
         return false;
     }
     InitOtherThreadRegs(process);

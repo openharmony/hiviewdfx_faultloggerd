@@ -31,19 +31,19 @@ int WriteLog(int32_t fd, const char *format, ...)
     va_start(args, format);
     ret = vsnprintf_s(buf, sizeof(buf), sizeof(buf) - 1, format, args);
     if (ret == -1) {
-        LOGWARN("WriteLog: vsnprintf_s fail");
+        DFXLOGW("WriteLog: vsnprintf_s fail");
     }
     va_end(args);
 
     if (fd >= 0) {
         ret = dprintf(fd, "%s", buf);
         if (ret < 0) {
-            LOGERROR("WriteLog :: write msg(%{public}s) to fd(%{public}d) failed, ret(%{public}d).", buf, fd, ret);
+            DFXLOGE("WriteLog :: write msg(%{public}s) to fd(%{public}d) failed, ret(%{public}d).", buf, fd, ret);
         }
     } else if (fd == INVALID_FD) {
-        LOGWARN("%{public}s", buf);
+        DFXLOGW("%{public}s", buf);
     } else {
-        LOGDEBUG("%{public}s", buf);
+        DFXLOGD("%{public}s", buf);
     }
 
     return ret;
@@ -57,6 +57,6 @@ void DfxLogToSocket(const char *msg)
     }
     int ret = RequestPrintTHilog(msg, length);
     if (ret < 0) {
-        LOGERROR("DfxLogToSocket :: request print msg(%{public}s) failed, ret(%{public}d).", msg, ret);
+        DFXLOGE("DfxLogToSocket :: request print msg(%{public}s) failed, ret(%{public}d).", msg, ret);
     }
 }

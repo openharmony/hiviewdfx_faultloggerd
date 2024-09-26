@@ -51,7 +51,7 @@ static int ConnectSocket(const char* path, const int timeout)
 {
     int fd = -1;
     if ((fd = syscall(SYS_socket, AF_LOCAL, SOCK_STREAM, 0)) < 0) {
-        LOGERROR("Failed to create a socket, errno(%{public}d).", errno);
+        DFXLOGE("Failed to create a socket, errno(%{public}d).", errno);
         return -1;
     }
 
@@ -64,7 +64,7 @@ static int ConnectSocket(const char* path, const int timeout)
             void* pTimev = &timev;
             if (OHOS_TEMP_FAILURE_RETRY(syscall(SYS_setsockopt, fd, SOL_SOCKET, SO_RCVTIMEO,
                 (const void*)(pTimev), sizeof(timev))) != 0) {
-                LOGERROR("setsockopt SO_RCVTIMEO error, errno(%{public}d).", errno);
+                DFXLOGE("setsockopt SO_RCVTIMEO error, errno(%{public}d).", errno);
                 syscall(SYS_close, fd);
                 fd = -1;
                 break;
@@ -77,7 +77,7 @@ static int ConnectSocket(const char* path, const int timeout)
         int len = sizeof(server.sun_family) + strlen(server.sun_path);
         int connected = OHOS_TEMP_FAILURE_RETRY(connect(fd, (struct sockaddr*)(&server), len));
         if (connected < 0) {
-            LOGERROR("Failed to connect to faultloggerd socket, errno = %{public}d.", errno);
+            DFXLOGE("Failed to connect to faultloggerd socket, errno = %{public}d.", errno);
             syscall(SYS_close, fd);
             fd = -1;
             break;
@@ -91,7 +91,7 @@ static bool CheckReadResp(int fd)
     char controlBuffer[MAX_FUNC_NAME_LEN] = {0};
     ssize_t nread = OHOS_TEMP_FAILURE_RETRY(read(fd, controlBuffer, sizeof(controlBuffer) - 1));
     if (nread != (ssize_t)(strlen(FAULTLOGGER_DAEMON_RESP))) {
-        LOGERROR("Failed to read expected length, nread: %{public}zd, errno(%{public}d).", nread, errno);
+        DFXLOGE("Failed to read expected length, nread: %{public}zd, errno(%{public}d).", nread, errno);
         return false;
     }
     return true;
@@ -107,23 +107,23 @@ int ReportException(struct CrashDumpException exception)
     int ret = -1;
     int fd = ConnectSocket(FAULTLOGGERD_SOCKET_NAME, TIME_OUT); // connect timeout
     if (fd == -1) {
-        LOGERROR("Failed to connect socket.");
+        DFXLOGE("Failed to connect socket.");
         return ret;
     }
     do {
         if (OHOS_TEMP_FAILURE_RETRY(write(fd, &request, sizeof(request))) != (long)sizeof(request)) {
-            LOGERROR("Failed to write request message to socket, errno(%{public}d).", errno);
+            DFXLOGE("Failed to write request message to socket, errno(%{public}d).", errno);
             break;
         }
 
         if (!CheckReadResp(fd)) {
-            LOGERROR("Failed to receive socket responces.");
+            DFXLOGE("Failed to receive socket responces.");
             break;
         }
 
         if (OHOS_TEMP_FAILURE_RETRY(write(fd, &exception,
             sizeof(exception))) != (long)sizeof(exception)) {
-            LOGERROR("Failed to write exception message to socket, errno(%{public}d).", errno);
+            DFXLOGE("Failed to write exception message to socket, errno(%{public}d).", errno);
             break;
         }
 

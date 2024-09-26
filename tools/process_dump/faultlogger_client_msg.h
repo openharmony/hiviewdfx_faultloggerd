@@ -24,7 +24,7 @@
 * @brief  information of fault log
 *
 */
-struct FaultLogInfoInner {
+struct FaultDFXLOGIInner {
     uint64_t time{0};
     uint32_t id{0};
     int32_t pid{-1};

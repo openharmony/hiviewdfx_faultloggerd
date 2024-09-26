@@ -59,7 +59,7 @@ std::shared_ptr<DfxMaps> DfxMaps::Create(pid_t pid, bool crash)
     }
     auto dfxMaps = std::make_shared<DfxMaps>();
     if (!crash) {
-        LOGUNWIND("Create maps(%{public}s) with not crash, will only parse exec map", path.c_str());
+        DFXLOGU("Create maps(%{public}s) with not crash, will only parse exec map", path.c_str());
         dfxMaps->EnableOnlyExec(true);
     }
     if (dfxMaps->Parse(pid, path)) {
@@ -97,14 +97,14 @@ bool DfxMaps::Parse(const pid_t pid, const std::string& path)
 {
     DFX_TRACE_SCOPED_DLSYM("ParseMaps");
     if ((pid < 0) || (path == "")) {
-        LOGERROR("param is error");
+        DFXLOGE("param is error");
         return false;
     }
 
     FILE* fp = nullptr;
     fp = fopen(path.c_str(), "r");
     if (fp == nullptr) {
-        LOGERROR("Failed to open %{public}s, err=%{public}d", path.c_str(), errno);
+        DFXLOGE("Failed to open %{public}s, err=%{public}d", path.c_str(), errno);
         return false;
     }
 
@@ -114,7 +114,7 @@ bool DfxMaps::Parse(const pid_t pid, const std::string& path)
         fgetCount++;
         auto map = std::make_shared<DfxMap>();
         if (!map->Parse(mapBuf, sizeof(mapBuf))) {
-            LOGUNWIND("Failed to parse map: %{public}s", mapBuf);
+            DFXLOGU("Failed to parse map: %{public}s", mapBuf);
             continue;
         }
 
@@ -136,11 +136,11 @@ bool DfxMaps::Parse(const pid_t pid, const std::string& path)
     }
     (void)fclose(fp);
     if (fgetCount == 0) {
-        LOGERROR("Failed to get maps(%{public}s), err(%{public}d).", path.c_str(), errno);
+        DFXLOGE("Failed to get maps(%{public}s), err(%{public}d).", path.c_str(), errno);
         return false;
     }
     size_t mapsSize = GetMapsSize();
-    LOGINFO("parse maps(%{public}s) completed, map size: (%{public}zu), count: (%{public}d)",
+    DFXLOGI("parse maps(%{public}s) completed, map size: (%{public}zu), count: (%{public}d)",
         path.c_str(), mapsSize, fgetCount);
     return mapsSize > 0;
 }
@@ -253,7 +253,7 @@ bool DfxMaps::FindMapByFileInfo(std::string name, uint64_t offset, std::shared_p
         }
 
         if (offset >= iter->offset && (offset - iter->offset) < (iter->end - iter->begin)) {
-            LOGINFO("Found name: %{public}s, offset 0x%{public}" PRIx64 " in map " \
+            DFXLOGI("Found name: %{public}s, offset 0x%{public}" PRIx64 " in map " \
                 "(%{public}" PRIx64 "-%{public}" PRIx64 " offset 0x%{public}" PRIx64 ")",
                 name.c_str(), offset, iter->begin, iter->end, iter->offset);
             map = iter;
@@ -318,7 +318,7 @@ bool DfxMaps::IsArkExecutedMap(uintptr_t addr)
 {
     std::shared_ptr<DfxMap> map = nullptr;
     if (!FindMapByAddr(addr, map)) {
-        LOGUNWIND("Not mapped map for current addr.");
+        DFXLOGU("Not mapped map for current addr.");
         return false;
     }
     return map->IsArkExecutable();

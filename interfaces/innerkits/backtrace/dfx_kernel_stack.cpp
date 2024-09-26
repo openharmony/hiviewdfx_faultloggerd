@@ -42,20 +42,20 @@ int DfxGetKernelStack(int32_t pid, std::string& kernelStack)
 {
     auto kstackBuf = std::make_shared<HstackVal>();
     if (kstackBuf == nullptr) {
-        LOGWARN("Failed create HstackVal, errno:%{public}d", errno);
+        DFXLOGW("Failed create HstackVal, errno:%{public}d", errno);
         return -1;
     }
     kstackBuf->pid = pid;
     kstackBuf->magic = MAGIC_NUM;
     int fd = open(BBOX_PATH, O_WRONLY | O_CLOEXEC);
     if (fd < 0) {
-        LOGWARN("Failed to open bbox, errno:%{public}d", errno);
+        DFXLOGW("Failed to open bbox, errno:%{public}d", errno);
         return -1;
     }
 
     int ret = ioctl(fd, LOGGER_GET_STACK, kstackBuf.get());
     if (ret != 0) {
-        LOGWARN("Failed to get kernel stack, errno:%{public}d", errno);
+        DFXLOGW("Failed to get kernel stack, errno:%{public}d", errno);
     } else {
         kernelStack = std::string(kstackBuf->hstackLogBuff);
     }
@@ -69,7 +69,7 @@ bool FormatThreadKernelStack(const std::string& kernelStack, DfxThreadStack& thr
     std::regex headerPattern(R"(name=(.{1,20}), tid=(\d{1,10}), ([\w\=\.]{1,256}, ){3}pid=(\d{1,10}))");
     std::smatch result;
     if (!regex_search(kernelStack, result, headerPattern)) {
-        LOGINFO("search thread name failed");
+        DFXLOGI("search thread name failed");
         return false;
     }
     threadStack.threadName = result[1].str();

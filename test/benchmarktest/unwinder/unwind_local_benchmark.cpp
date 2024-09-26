@@ -77,7 +77,7 @@ static bool GetUnwinder(void* data, std::shared_ptr<Unwinder>& unwinder, bool& i
         isFp = dataPtr->isFp;
         return true;
     }
-    LOGERROR("Failed to get unwinder");
+    DFXLOGE("Failed to get unwinder");
     return false;
 }
 
@@ -95,7 +95,7 @@ static size_t UnwinderLocal(MAYBE_UNUSED void* data)
     } else {
         unwSize = unwinder->GetFrames().size();
     }
-    LOGUNWIND("%{public}s frames.size: %{public}zu", __func__, unwSize);
+    DFXLOGU("%{public}s frames.size: %{public}zu", __func__, unwSize);
     return unwSize;
 }
 
@@ -124,7 +124,7 @@ static size_t UnwinderLocalFp(MAYBE_UNUSED void* data) {
     dataPtr->unwinder->EnableFpCheckMapExec(false);
     dataPtr->unwinder->UnwindByFp(&context);
     auto unwSize = dataPtr->unwinder->GetPcs().size();
-    LOGUNWIND("%{public}s frames.size: %{public}zu", __func__, unwSize);
+    DFXLOGU("%{public}s frames.size: %{public}zu", __func__, unwSize);
 
     if (dataPtr->isFillFrames) {
         auto& pcs = dataPtr->unwinder->GetPcs();
@@ -136,7 +136,7 @@ static size_t UnwinderLocalFp(MAYBE_UNUSED void* data) {
             frames.emplace_back(frame);
         }
         Unwinder::FillLocalFrames(frames);
-        LOGUNWIND(Unwinder::GetFramesStr(frames).c_str());
+        DFXLOGU(Unwinder::GetFramesStr(frames).c_str());
     }
     return unwSize;
 }
@@ -147,7 +147,7 @@ static size_t FpUnwinderLocal(MAYBE_UNUSED void* data) {
     const size_t maxSize = 32;
     uintptr_t pcs[maxSize] = {0};
     auto unwSize = FpUnwinder::GetPtr()->Unwind(regs[0], regs[1], pcs, maxSize);
-    LOGUNWIND("%{public}s frames.size: %{public}zu", __func__, unwSize);
+    DFXLOGU("%{public}s frames.size: %{public}zu", __func__, unwSize);
 
     UnwindData* dataPtr = reinterpret_cast<UnwindData*>(data);
     if (dataPtr != nullptr && dataPtr->isFillFrames) {
@@ -159,7 +159,7 @@ static size_t FpUnwinderLocal(MAYBE_UNUSED void* data) {
             frames.emplace_back(frame);
         }
         Unwinder::FillLocalFrames(frames);
-        LOGUNWIND(Unwinder::GetFramesStr(frames).c_str());
+        DFXLOGU(Unwinder::GetFramesStr(frames).c_str());
     }
     return unwSize;
 }
@@ -170,7 +170,7 @@ static size_t FpUnwinderLocalSafe(MAYBE_UNUSED void* data) {
     const size_t maxSize = 32;
     uintptr_t pcs[maxSize] = {0};
     auto unwSize = FpUnwinder::GetPtr()->UnwindSafe(regs[0], regs[1], pcs, maxSize);
-    LOGUNWIND("%{public}s frames.size: %{public}zu", __func__, unwSize);
+    DFXLOGU("%{public}s frames.size: %{public}zu", __func__, unwSize);
 
     UnwindData* dataPtr = reinterpret_cast<UnwindData*>(data);
     if (dataPtr != nullptr && dataPtr->isFillFrames) {
@@ -182,7 +182,7 @@ static size_t FpUnwinderLocalSafe(MAYBE_UNUSED void* data) {
             frames.emplace_back(frame);
         }
         Unwinder::FillLocalFrames(frames);
-        LOGUNWIND(Unwinder::GetFramesStr(frames).c_str());
+        DFXLOGU(Unwinder::GetFramesStr(frames).c_str());
     }
     return unwSize;
 }
@@ -190,13 +190,13 @@ static size_t FpUnwinderLocalSafe(MAYBE_UNUSED void* data) {
 
 static void Run(benchmark::State& state, size_t (*func)(void*), void* data)
 {
-    LOGUNWIND("++++++pid: %{public}d", getpid());
+    DFXLOGU("++++++pid: %{public}d", getpid());
     for (const auto& _ : state) {
         if (TestFunc1(func, data) < TEST_MIN_UNWIND_FRAMES) {
             state.SkipWithError("Failed to unwind.");
         }
     }
-    LOGUNWIND("------pid: %{public}d", getpid());
+    DFXLOGU("------pid: %{public}d", getpid());
 }
 
 /**

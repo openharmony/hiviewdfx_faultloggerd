@@ -56,7 +56,7 @@ bool GetLibArkHandle()
     }
     g_handle = dlopen(ARK_LIB_NAME, RTLD_LAZY);
     if (g_handle == nullptr) {
-        LOGUNWIND("Failed to load library(%{public}s).", dlerror());
+        DFXLOGU("Failed to load library(%{public}s).", dlerror());
         return false;
     }
     return true;
@@ -74,7 +74,7 @@ bool GetLibArkHandle()
         } \
         *(void**)(&(DlsymFuncName)) = dlsym(g_handle, (FuncName)); \
         if ((DlsymFuncName) == NULL) { \
-            LOGERROR("Failed to dlsym(%{public}s), error: %{public}s", (FuncName), dlerror()); \
+            DFXLOGE("Failed to dlsym(%{public}s), error: %{public}s", (FuncName), dlerror()); \
             break; \
         } \
     } while (false); \

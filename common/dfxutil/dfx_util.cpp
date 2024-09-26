@@ -60,7 +60,7 @@ bool TrimAndDupStr(const std::string &source, std::string &str)
     const char *begin = source.data();
     const char *end = begin + source.size();
     if (begin == end) {
-        LOGERROR("Source is empty");
+        DFXLOGE("Source is empty");
         return false;
     }
 
@@ -223,18 +223,18 @@ void *mmap(void *addr, size_t length, int prot, int flags, int fd, size_t offset
         return MMAP_FAILED;
     }
 
-    LOGDEBUG("fd is %{public}d", fd);
+    DFXLOGD("fd is %{public}d", fd);
 
     HANDLE FileMappingHandle = ::CreateFileMappingW(FileHandle, 0, PAGE_READONLY, 0, 0, 0);
     if (FileMappingHandle == nullptr) {
-        LOGERROR("CreateFileMappingW %{public}zu Failed with %{public}ld:%{public}s",
+        DFXLOGE("CreateFileMappingW %{public}zu Failed with %{public}ld:%{public}s",
             length, GetLastError(), GetLastErrorString().c_str());
         return MMAP_FAILED;
     }
 
     void *mapAddr = ::MapViewOfFile(FileMappingHandle, FILE_MAP_READ, 0, 0, 0);
     if (mapAddr == nullptr) {
-        LOGERROR("MapViewOfFile %{public}zu Failed with %{public}ld:%{public}s",
+        DFXLOGE("MapViewOfFile %{public}zu Failed with %{public}ld:%{public}s",
             length, GetLastError(), GetLastErrorString().c_str());
         return MMAP_FAILED;
     }

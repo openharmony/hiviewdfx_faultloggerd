@@ -67,20 +67,20 @@ __attribute__ ((visibility("hidden"))) int MuslHiLogPrinter(
 // replace the old interface, and delete the old interface after the replacement is complete
 #define DFXMUSL_PRINT(prio, ...) MuslHiLogPrinter(LOG_CORE, prio, LOG_DOMAIN, LOG_TAG, __VA_ARGS__)
 
-#define LOGDEBUG(...) DFXMUSL_PRINT(LOG_DEBUG, __VA_ARGS__)
-#define LOGINFO(...) DFXMUSL_PRINT(LOG_INFO, __VA_ARGS__)
-#define LOGWARN(...) DFXMUSL_PRINT(LOG_WARN, __VA_ARGS__)
-#define LOGERROR(...) DFXMUSL_PRINT(LOG_ERROR, __VA_ARGS__)
-#define LOGFATAL(...) DFXMUSL_PRINT(LOG_FATAL, __VA_ARGS__)
+#define DFXLOGD(...) DFXMUSL_PRINT(LOG_DEBUG, __VA_ARGS__)
+#define DFXLOGI(...) DFXMUSL_PRINT(LOG_INFO, __VA_ARGS__)
+#define DFXLOGW(...) DFXMUSL_PRINT(LOG_WARN, __VA_ARGS__)
+#define DFXLOGE(...) DFXMUSL_PRINT(LOG_ERROR, __VA_ARGS__)
+#define DFXLOGF(...) DFXMUSL_PRINT(LOG_FATAL, __VA_ARGS__)
 
 #else
 
 // replace the old interface, and delete the old interface after the replacement is complete
-#define LOGDEBUG(...)
-#define LOGINFO(...)
-#define LOGWARN(...)
-#define LOGERROR(...)
-#define LOGFATAL(...)
+#define DFXLOGD(...)
+#define DFXLOGI(...)
+#define DFXLOGW(...)
+#define DFXLOGE(...)
+#define DFXLOGF(...)
 
 #endif
 

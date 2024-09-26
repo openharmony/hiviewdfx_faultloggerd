@@ -36,7 +36,7 @@ bool UniqueStackTable::Init()
     availableIndex_ = 1;
     totalNodes_ = ((tableSize_ / sizeof(Node)) >> 1) << 1; // make it even.
     if (totalNodes_ > MAX_NODES_CNT) {
-        LOGWARN("Hashtable size limit, initial value too large!\n");
+        DFXLOGW("Hashtable size limit, initial value too large!\n");
         return false;
     }
 
@@ -48,12 +48,12 @@ bool UniqueStackTable::Init()
     hashStep_ = (totalNodes_ / (deconflictTimes_ * 2 + 1)); // 2 : double times
     auto retBufMMap = mmap(NULL, tableSize_, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
     if (retBufMMap == MAP_FAILED) {
-        LOGWARN("Failed to mmap!\n");
+        DFXLOGW("Failed to mmap!\n");
         return false;
     }
     tableBufMMap_ = retBufMMap;
     prctl(PR_SET_VMA, PR_SET_VMA_ANON_NAME, tableBufMMap_, tableSize_, "async_stack_table");
-    LOGDEBUG(
+    DFXLOGD(
         "Init totalNodes_: %{public}u, availableNodes_: %{public}u, availableIndex_: %{public}u \
         hashStep_: %{public}" PRIu64 ", hashModulus_: %{public}u",
         totalNodes_, availableNodes_, availableIndex_, hashStep_, hashModulus_);
@@ -64,17 +64,17 @@ bool UniqueStackTable::Resize()
 {
     std::lock_guard<std::mutex> guard(stackTableMutex_);
     if (tableBufMMap_ == nullptr) {
-        LOGWARN("Hashtable not exist, fatal error!");
+        DFXLOGW("Hashtable not exist, fatal error!");
         return false;
     }
 
     uint32_t oldNumNodes = totalNodes_;
-    LOGWARN("Before resize, totalNodes_: %{public}u, availableNodes_: %{public}u, " \
+    DFXLOGW("Before resize, totalNodes_: %{public}u, availableNodes_: %{public}u, " \
         "availableIndex_: %{public}u  hashStep_: %{public}" PRIu64 "",
         totalNodes_, availableNodes_, availableIndex_, hashStep_);
 
     if ((totalNodes_ << RESIZE_MULTIPLE) > MAX_NODES_CNT) {
-        LOGWARN("Hashtable size limit, resize failed current cnt: %{public}u, max cnt: %{public}u",
+        DFXLOGW("Hashtable size limit, resize failed current cnt: %{public}u, max cnt: %{public}u",
             totalNodes_,
             MAX_NODES_CNT);
         return false;
@@ -87,7 +87,7 @@ bool UniqueStackTable::Resize()
     }
     prctl(PR_SET_VMA, PR_SET_VMA_ANON_NAME, newTableBuf, newtableSize, "async_stack_table");
     if (memcpy_s(newTableBuf, newtableSize, tableBufMMap_, tableSize_) != 0) {
-        LOGERROR("Failed to memcpy table buffer");
+        DFXLOGE("Failed to memcpy table buffer");
     }
     munmap(tableBufMMap_, tableSize_);
     tableBufMMap_ = newTableBuf;
@@ -101,7 +101,7 @@ bool UniqueStackTable::Resize()
     }
     hashModulus_ = availableNodes_ - 1;
     hashStep_ = availableNodes_ / (deconflictTimes_ * 2 + 1); // 2: double times
-    LOGWARN("After resize, totalNodes_: %{public}u, availableNodes_: %{public}u, " \
+    DFXLOGW("After resize, totalNodes_: %{public}u, availableNodes_: %{public}u, " \
         "availableIndex_: %{public}u hashStep_: %{public}" PRIu64 "",
         totalNodes_, availableNodes_, availableIndex_, hashStep_);
     return true;
@@ -111,7 +111,7 @@ uint64_t UniqueStackTable::PutPcInSlot(uint64_t thisPc, uint64_t prevIdx)
 {
     Node *tableHead = reinterpret_cast<Node *>(tableBufMMap_);
     if (hashModulus_ == 0) {
-        LOGWARN("The value of the hashModulus_ is zero\n");
+        DFXLOGW("The value of the hashModulus_ is zero\n");
         return 0;
     }
     uint64_t curPcIdx = (((thisPc >> 2) ^ (prevIdx << 4)) % hashModulus_) + availableIndex_;
@@ -145,7 +145,7 @@ uint64_t UniqueStackTable::PutPcInSlot(uint64_t thisPc, uint64_t prevIdx)
         }
     }
 
-    LOGWARN("Collison unresolved, need resize, usedSlots_.size(): %{public}zu, curPcIdx: %{public}" PRIu64 "",
+    DFXLOGW("Collison unresolved, need resize, usedSlots_.size(): %{public}zu, curPcIdx: %{public}" PRIu64 "",
         usedSlots_.size(), curPcIdx);
     return 0;
 }
@@ -154,7 +154,7 @@ uint64_t UniqueStackTable::PutPcInSlot(uint64_t thisPc, uint64_t prevIdx)
 uint64_t UniqueStackTable::PutPcsInTable(StackId *stackId, uintptr_t* pcs, size_t nr)
 {
     if (!Init()) {
-        LOGWARN("init Hashtable failed, fatal error!");
+        DFXLOGW("init Hashtable failed, fatal error!");
         return 0;
     }
     std::lock_guard<std::mutex> guard(stackTableMutex_);
@@ -181,7 +181,7 @@ size_t UniqueStackTable::GetWriteSize()
 {
     std::lock_guard<std::mutex> guard(stackTableMutex_);
     if (tableBufMMap_ == nullptr) {
-        LOGWARN("Hashtable not exist, fatal error!");
+        DFXLOGW("Hashtable not exist, fatal error!");
         return 0;
     }
     size_t size = 0;
@@ -199,7 +199,7 @@ Node* UniqueStackTable::GetFrame(uint64_t stackId)
     Node *tableHead = reinterpret_cast<Node *>(tableBufMMap_);
     if (stackId >= totalNodes_) {
         // should not occur
-        LOGWARN("Failed to find frame by index: %{public}" PRIu64 "", stackId);
+        DFXLOGW("Failed to find frame by index: %{public}" PRIu64 "", stackId);
         return nullptr;
     }
 
@@ -210,7 +210,7 @@ bool UniqueStackTable::GetPcsByStackId(StackId stackId, std::vector<uintptr_t>& 
 {
     std::lock_guard<std::mutex> guard(stackTableMutex_);
     if (tableBufMMap_ == nullptr) {
-        LOGWARN("Hashtable not exist, failed to find frame!");
+        DFXLOGW("Hashtable not exist, failed to find frame!");
         return false;
     }
     uint64_t nr = stackId.section.nr;

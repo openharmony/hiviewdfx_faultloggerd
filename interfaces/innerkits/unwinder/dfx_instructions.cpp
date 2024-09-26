@@ -52,7 +52,7 @@ bool DfxInstructions::Flush(DfxRegs& regs, std::shared_ptr<DfxMemory> memory, ui
         case REG_LOC_REGISTER:
             location = static_cast<uintptr_t>(loc.val);
             if (location >= regs.RegsSize()) {
-                LOGERROR("Illegal register location");
+                DFXLOGE("Illegal register location");
                 return false;
             }
             val = regs[location];
@@ -69,7 +69,7 @@ bool DfxInstructions::Flush(DfxRegs& regs, std::shared_ptr<DfxMemory> memory, ui
             break;
         }
         default:
-            LOGERROR("Failed to save register.");
+            DFXLOGE("Failed to save register.");
             return false;
     }
     return true;
@@ -85,21 +85,21 @@ bool DfxInstructions::Apply(std::shared_ptr<DfxMemory> memory, DfxRegs& regs, Re
         cfaLoc.type = REG_LOC_VAL_EXPRESSION;
         cfaLoc.val = static_cast<intptr_t>(rsState.cfaExprPtr);
         if (!Flush(regs, memory, 0, cfaLoc, cfa)) {
-            LOGERROR("Failed to update cfa.");
+            DFXLOGE("Failed to update cfa.");
             return false;
         }
     } else {
-        LOGERROR("no cfa info exist?");
+        DFXLOGE("no cfa info exist?");
         INSTR_STATISTIC(UnsupportedDefCfa, rsState.cfaReg, UNW_ERROR_NOT_SUPPORT);
         return false;
     }
-    LOGUNWIND("Update cfa : %{public}" PRIx64 "", (uint64_t)cfa);
+    DFXLOGU("Update cfa : %{public}" PRIx64 "", (uint64_t)cfa);
 
     for (size_t i = 0; i < rsState.locs.size(); i++) {
         if (rsState.locs[i].type != REG_LOC_UNUSED) {
             size_t reg = DfxRegsQut::GetQutRegs()[i];
             if (Flush(regs, memory, cfa, rsState.locs[i], regs[reg])) {
-                LOGUNWIND("Update reg[%{public}zu] : %{public}" PRIx64 "", reg, (uint64_t)regs[reg]);
+                DFXLOGU("Update reg[%{public}zu] : %{public}" PRIx64 "", reg, (uint64_t)regs[reg]);
             }
         }
     }
@@ -112,10 +112,10 @@ bool DfxInstructions::Apply(std::shared_ptr<DfxMemory> memory, DfxRegs& regs, Re
         return false;
     } else {
         if (rsState.returnAddressRegister >= REG_EH && rsState.returnAddressRegister < REG_LAST) {
-            LOGUNWIND("returnAddressRegister: %{public}d", (int)rsState.returnAddressRegister);
+            DFXLOGU("returnAddressRegister: %{public}d", (int)rsState.returnAddressRegister);
             regs.SetPc(regs[rsState.returnAddressRegister]);
         } else {
-            LOGERROR("returnAddressRegister: %{public}d error", (int)rsState.returnAddressRegister);
+            DFXLOGE("returnAddressRegister: %{public}d error", (int)rsState.returnAddressRegister);
             errCode = UNW_ERROR_ILLEGAL_VALUE;
             return false;
         }

@@ -78,11 +78,11 @@ static size_t UnwindLocal(MAYBE_UNUSED void* data)
     unwinder.SetResolveNames(dataPtr->isFillFrames);
     unwinder.Unwind();
     auto unwSize = unwinder.NumFrames();
-    LOGUNWIND("%{public}s frames.size: %{public}zu", __func__, unwSize);
+    DFXLOGU("%{public}s frames.size: %{public}zu", __func__, unwSize);
     if (dataPtr->isFillFrames) {
         for (size_t i = 0; i < unwSize; ++i) {
             auto str = unwinder.FormatFrame(i);
-            LOGUNWIND("%{public}s frames: %{public}s", __func__, str.c_str());
+            DFXLOGU("%{public}s frames: %{public}s", __func__, str.c_str());
         }
     }
     return unwSize;
@@ -90,13 +90,13 @@ static size_t UnwindLocal(MAYBE_UNUSED void* data)
 
 static void Run(benchmark::State& state, size_t (*func)(void*), void* data)
 {
-    LOGUNWIND("++++++pid: %{public}d", getpid());
+    DFXLOGU("++++++pid: %{public}d", getpid());
     for (const auto& _ : state) {
         if (TestFunc1(func, data) < TEST_MIN_UNWIND_FRAMES) {
             state.SkipWithError("Failed to unwind.");
         }
     }
-    LOGUNWIND("------pid: %{public}d", getpid());
+    DFXLOGU("------pid: %{public}d", getpid());
 }
 
 /**

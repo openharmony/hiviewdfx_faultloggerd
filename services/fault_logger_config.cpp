@@ -28,7 +28,7 @@ FaultLoggerConfig::FaultLoggerConfig(const int number, const long size,
                                      const std::string& path, const std::string& debugPath)
     :logFileNumber_(number), logFileSize_(size), logFilePath_(path), debugLogFilePath_(debugPath)
 {
-    LOGDEBUG("%{public}s :: %{public}d, %{public}ld, %{public}s, %{public}s.",
+    DFXLOGD("%{public}s :: %{public}d, %{public}ld, %{public}s, %{public}s.",
         FAULTLOGGER_CONFIG_TAG.c_str(), number, size, path.c_str(), debugPath.c_str());
 }
 
@@ -38,7 +38,7 @@ FaultLoggerConfig::~FaultLoggerConfig()
 
 int FaultLoggerConfig::GetLogFileMaxNumber() const
 {
-    LOGDEBUG("%{public}s :: GetLogFileMaxNumber(%{public}d).",
+    DFXLOGD("%{public}s :: GetLogFileMaxNumber(%{public}d).",
         FAULTLOGGER_CONFIG_TAG.c_str(), logFileNumber_);
     return logFileNumber_;
 }
@@ -46,14 +46,14 @@ int FaultLoggerConfig::GetLogFileMaxNumber() const
 bool FaultLoggerConfig::SetLogFileMaxNumber(const int number)
 {
     logFileNumber_ = number;
-    LOGDEBUG("%{public}s :: SetLogFileMaxNumber(%{public}d).",
+    DFXLOGD("%{public}s :: SetLogFileMaxNumber(%{public}d).",
         FAULTLOGGER_CONFIG_TAG.c_str(), logFileNumber_);
     return true;
 }
 
 long FaultLoggerConfig::GetLogFileMaxSize() const
 {
-    LOGDEBUG("%{public}s :: GetLogFileMaxSize(%{public}ld).",
+    DFXLOGD("%{public}s :: GetLogFileMaxSize(%{public}ld).",
         FAULTLOGGER_CONFIG_TAG.c_str(), logFileSize_);
     return logFileSize_;
 }
@@ -61,14 +61,14 @@ long FaultLoggerConfig::GetLogFileMaxSize() const
 bool FaultLoggerConfig::SetLogFileMaxSize(const long size)
 {
     logFileSize_ = size;
-    LOGDEBUG("%{public}s :: SetLogFileMaxSize(%{public}ld).",
+    DFXLOGD("%{public}s :: SetLogFileMaxSize(%{public}ld).",
         FAULTLOGGER_CONFIG_TAG.c_str(), logFileSize_);
     return true;
 }
 
 std::string FaultLoggerConfig::GetLogFilePath() const
 {
-    LOGDEBUG("%{public}s :: GetLogFilePath(%{public}s).",
+    DFXLOGD("%{public}s :: GetLogFilePath(%{public}s).",
         FAULTLOGGER_CONFIG_TAG.c_str(), logFilePath_.c_str());
     return logFilePath_;
 }
@@ -76,14 +76,14 @@ std::string FaultLoggerConfig::GetLogFilePath() const
 bool FaultLoggerConfig::SetLogFilePath(const std::string& path)
 {
     logFilePath_ = path;
-    LOGDEBUG("%{public}s :: SetLogFilePath(%{public}s).",
+    DFXLOGD("%{public}s :: SetLogFilePath(%{public}s).",
         FAULTLOGGER_CONFIG_TAG.c_str(), logFilePath_.c_str());
     return true;
 }
 
 std::string FaultLoggerConfig::GetDebugLogFilePath() const
 {
-    LOGDEBUG("%{public}s :: GetDebugLogFilePath(%{public}s).",
+    DFXLOGD("%{public}s :: GetDebugLogFilePath(%{public}s).",
         FAULTLOGGER_CONFIG_TAG.c_str(), debugLogFilePath_.c_str());
     return debugLogFilePath_;
 }
@@ -91,7 +91,7 @@ std::string FaultLoggerConfig::GetDebugLogFilePath() const
 bool FaultLoggerConfig::SetDebugLogFilePath(const std::string& path)
 {
     debugLogFilePath_ = path;
-    LOGDEBUG("%{public}s :: SetDebugLogFilePath(%{public}s).",
+    DFXLOGD("%{public}s :: SetDebugLogFilePath(%{public}s).",
         FAULTLOGGER_CONFIG_TAG.c_str(), debugLogFilePath_.c_str());
     return true;
 }

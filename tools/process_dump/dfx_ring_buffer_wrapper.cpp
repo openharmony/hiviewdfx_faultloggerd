@@ -59,7 +59,7 @@ void DfxRingBufferWrapper::LoopPrintRingBuffer()
             DfxRingBufferWrapper::GetInstance().ringBuffer_.Skip(item.Length());
         } else {
             if (DfxRingBufferWrapper::GetInstance().hasFinished_) {
-                LOGDEBUG("%{public}s :: print finished, exit loop.\n", __func__);
+                DFXLOGD("%{public}s :: print finished, exit loop.\n", __func__);
                 break;
             }
 
@@ -85,7 +85,7 @@ int DfxRingBufferWrapper::AppendBuf(const char *format, ...)
     ret = vsnprintf_s(buf, sizeof(buf), sizeof(buf) - 1, format, args);
     va_end(args);
     if (ret < 0) {
-        LOGERROR("%{public}s :: vsnprintf_s failed, line: %{public}d.", __func__, __LINE__);
+        DFXLOGE("%{public}s :: vsnprintf_s failed, line: %{public}d.", __func__, __LINE__);
     }
 
     AppendMsg(std::string(buf));
@@ -120,12 +120,12 @@ void DfxRingBufferWrapper::AppendBaseInfo(const std::string& info)
 void DfxRingBufferWrapper::PrintBaseInfo()
 {
     if (crashBaseInfo_.empty()) {
-        LOGERROR("crash base info is empty");
+        DFXLOGE("crash base info is empty");
     }
     for (const auto& item : crashBaseInfo_) {
         std::vector<std::string> itemVec = SplitDumpInfo(item, "\n");
         for (size_t i = 0; i < itemVec.size(); i++) {
-            LOGINFO("%{public}s", itemVec[i].c_str());
+            DFXLOGI("%{public}s", itemVec[i].c_str());
         }
     }
 }
@@ -147,7 +147,7 @@ void DfxRingBufferWrapper::SetWriteBufFd(int32_t fd)
 {
     fd_ = fd;
     if (fd_ < 0) {
-        LOGWARN("%{public}s :: Failed to set fd.\n", __func__);
+        DFXLOGW("%{public}s :: Failed to set fd.\n", __func__);
     }
 }
 

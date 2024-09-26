@@ -40,12 +40,12 @@ bool DfxMmap::Init(const int fd, const size_t size, const off_t offset)
     }
     mmap_ = mmap(nullptr, size, PROT_READ, MAP_PRIVATE, fd, offset);
     if (mmap_ == MAP_FAILED) {
-        LOGERROR("Failed to mmap, errno(%{public}d)", errno);
+        DFXLOGE("Failed to mmap, errno(%{public}d)", errno);
         size_ = 0;
         return false;
     }
     size_ = size;
-    LOGDEBUG("mmap size %{public}zu", size_);
+    DFXLOGD("mmap size %{public}zu", size_);
     return true;
 }
 
@@ -77,7 +77,7 @@ size_t DfxMmap::Read(uintptr_t& addr, void* val, size_t size, bool incre)
 
     size_t ptr = static_cast<size_t>(addr);
     if (ptr >= size_) {
-        LOGUNWIND("pos: %{public}zu, size: %{public}zu", ptr, size_);
+        DFXLOGU("pos: %{public}zu, size: %{public}zu", ptr, size_);
         return 0;
     }
 
@@ -85,7 +85,7 @@ size_t DfxMmap::Read(uintptr_t& addr, void* val, size_t size, bool incre)
     const uint8_t* actualBase = static_cast<const uint8_t*>(mmap_) + ptr;
     size_t actualLen = std::min(left, size);
     if (memcpy_s(val, actualLen, actualBase, actualLen) != 0) {
-        LOGERROR("Failed to memcpy_s");
+        DFXLOGE("Failed to memcpy_s");
         return 0;
     }
     if (incre) {

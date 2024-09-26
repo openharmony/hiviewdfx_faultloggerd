@@ -210,7 +210,7 @@ static void FillLastFatalMessageLocked(int32_t sig)
 
     size_t len = strlen(lastFatalMessage);
     if (len > MAX_FATAL_MSG_SIZE) {
-        LOGERROR("Last message is longer than MAX_FATAL_MSG_SIZE");
+        DFXLOGE("Last message is longer than MAX_FATAL_MSG_SIZE");
         return;
     }
 
@@ -229,7 +229,7 @@ static bool FillDebugMessageLocked(int32_t sig, siginfo_t *si)
     }
 
     if (g_request.timeStamp > dMsg->timestamp + PROCESSDUMP_TIMEOUT * NUMBER_ONE_THOUSAND) {
-        LOGERROR("The event has timed out since it was triggered");
+        DFXLOGE("The event has timed out since it was triggered");
         return false;
     }
 
@@ -281,7 +281,7 @@ static bool FillDumpRequest(int sig, siginfo_t *si, void *context)
     memcpy(g_request.appRunningId, g_appRunningId, sizeof(g_request.appRunningId));
     if (!IsDumpSignal(sig) && g_GetStackIdFunc!= NULL) {
         g_request.stackId = g_GetStackIdFunc();
-        LOGINFO("g_GetStackIdFunc %{public}p.", (void*)g_request.stackId);
+        DFXLOGI("g_GetStackIdFunc %{public}p.", (void*)g_request.stackId);
     }
 
     GetThreadNameByTid(g_request.tid, g_request.threadName, sizeof(g_request.threadName));
@@ -302,10 +302,10 @@ static bool FillDumpRequest(int sig, siginfo_t *si, void *context)
         default: {
             ThreadInfoCallBack callback = GetCallbackLocked();
             if (callback != NULL) {
-                LOGINFO("Start collect crash thread info.");
+                DFXLOGI("Start collect crash thread info.");
                 g_request.msg.type = MESSAGE_FATAL;
                 callback(g_request.msg.body, sizeof(g_request.msg.body), context);
-                LOGINFO("Finish collect crash thread info.");
+                DFXLOGI("Finish collect crash thread info.");
             }
             break;
         }
@@ -346,24 +346,24 @@ static void ResetAndRethrowSignalIfNeed(int sig, siginfo_t *si)
     if (g_oldSigactionList[sig].sa_sigaction == NULL) {
         signal(sig, SIG_DFL);
     } else if (sigaction(sig, &(g_oldSigactionList[sig]), NULL) != 0) {
-        LOGERROR("Failed to reset sig(%{public}d).", sig);
+        DFXLOGE("Failed to reset sig(%{public}d).", sig);
         signal(sig, SIG_DFL);
     }
 
     if (syscall(SYS_rt_tgsigqueueinfo, syscall(SYS_getpid), syscall(SYS_gettid), sig, si) != 0) {
-        LOGERROR("Failed to rethrow sig(%{public}d), errno(%{public}d).", sig, errno);
+        DFXLOGE("Failed to rethrow sig(%{public}d), errno(%{public}d).", sig, errno);
     } else {
-        LOGINFO("Current process(%{public}ld) rethrow sig(%{public}d).", syscall(SYS_getpid), sig);
+        DFXLOGI("Current process(%{public}ld) rethrow sig(%{public}d).", syscall(SYS_getpid), sig);
     }
 }
 
 static void PauseMainThreadHandler(int sig)
 {
-    LOGINFO("Crash(%{public}d) in child thread(%{public}ld), lock main thread.", sig, syscall(SYS_gettid));
+    DFXLOGI("Crash(%{public}d) in child thread(%{public}ld), lock main thread.", sig, syscall(SYS_gettid));
     // only work when subthread crash and send SIGDUMP to mainthread.
     pthread_mutex_lock(&g_signalHandlerMutex);
     pthread_mutex_unlock(&g_signalHandlerMutex);
-    LOGINFO("Crash in child thread(%{public}ld), exit main thread.", syscall(SYS_gettid));
+    DFXLOGI("Crash in child thread(%{public}ld), exit main thread.", syscall(SYS_gettid));
 }
 
 static void BlockMainThreadIfNeed(int sig)
@@ -372,10 +372,10 @@ static void BlockMainThreadIfNeed(int sig)
         return;
     }
 
-    LOGINFO("Try block main thread.");
+    DFXLOGI("Try block main thread.");
     (void)signal(SIGQUIT, PauseMainThreadHandler);
     if (syscall(SYS_tgkill, syscall(SYS_getpid), syscall(SYS_getpid), SIGQUIT) != 0) {
-        LOGERROR("Failed to send SIGQUIT to main thread, errno(%{public}d).", errno);
+        DFXLOGE("Failed to send SIGQUIT to main thread, errno(%{public}d).", errno);
     }
 }
 
@@ -386,7 +386,7 @@ static int DumpRequest(int sig)
 {
     int ret = false;
     if (DfxDumpRequest == NULL) {
-        LOGERROR("DumpRequest fail, the DfxDumpRequest is NULL");
+        DFXLOGE("DumpRequest fail, the DfxDumpRequest is NULL");
         FillCrashExceptionAndReport(CRASH_SIGNAL_EDUMPREQUEST);
         return ret;
     }
@@ -400,11 +400,11 @@ static bool DFX_SigchainHandler(int sig, siginfo_t *si, void *context)
     int pid = syscall(SYS_getpid);
     int tid = syscall(SYS_gettid);
 
-    LOGINFO("DFX_SigchainHandler :: sig(%{public}d), pid(%{public}d), tid(%{public}d).", sig, pid, tid);
+    DFXLOGI("DFX_SigchainHandler :: sig(%{public}d), pid(%{public}d), tid(%{public}d).", sig, pid, tid);
     bool ret = false;
     if (sig == SIGDUMP) {
         if (si->si_code != DUMP_TYPE_REMOTE) {
-            LOGWARN("DFX_SigchainHandler :: sig(%{public}d:%{public}d) is not remote dump type, return directly",
+            DFXLOGW("DFX_SigchainHandler :: sig(%{public}d:%{public}d) is not remote dump type, return directly",
                 sig, si->si_code);
             return true;
         }
@@ -421,15 +421,15 @@ static bool DFX_SigchainHandler(int sig, siginfo_t *si, void *context)
 
     if (!FillDumpRequest(sig, si, context)) {
         pthread_mutex_unlock(&g_signalHandlerMutex);
-        LOGERROR("DFX_SigchainHandler :: signal(%{public}d) in %{public}d:%{public}d fill dump request faild.",
+        DFXLOGE("DFX_SigchainHandler :: signal(%{public}d) in %{public}d:%{public}d fill dump request faild.",
             sig, g_request.pid, g_request.tid);
         return ret;
     }
-    LOGINFO("DFX_SigchainHandler :: sig(%{public}d), pid(%{public}d), processName(%{public}s), threadName(%{public}s).",
+    DFXLOGI("DFX_SigchainHandler :: sig(%{public}d), pid(%{public}d), processName(%{public}s), threadName(%{public}s).",
         sig, g_request.pid, g_request.processName, g_request.threadName);
     ret = DumpRequest(sig);
     pthread_mutex_unlock(&g_signalHandlerMutex);
-    LOGINFO("Finish handle signal(%{public}d) in %{public}d:%{public}d.", sig, g_request.pid, g_request.tid);
+    DFXLOGI("Finish handle signal(%{public}d) in %{public}d:%{public}d.", sig, g_request.pid, g_request.tid);
     return ret;
 }
 
@@ -448,7 +448,7 @@ static void InstallSigActionHandler(int sig)
     action.sa_sigaction = DFX_SignalHandler;
     action.sa_flags = SA_RESTART | SA_SIGINFO | SA_ONSTACK;
     if (sigaction(sig, &action, &(g_oldSigactionList[sig])) != 0) {
-        LOGERROR("Failed to register signal(%{public}d)", sig);
+        DFXLOGE("Failed to register signal(%{public}d)", sig);
     }
 }
 
@@ -463,7 +463,7 @@ void DFX_InstallSignalHandler(void)
     g_reservedChildStack = mmap(NULL, RESERVED_CHILD_STACK_SIZE, \
         PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_STACK, 1, 0);
     if (g_reservedChildStack == NULL) {
-        LOGERROR("Failed to alloc memory for child stack.");
+        DFXLOGE("Failed to alloc memory for child stack.");
         return;
     }
     g_reservedChildStack = (void *)(((uint8_t *)g_reservedChildStack) + RESERVED_CHILD_STACK_SIZE - 1);
@@ -500,7 +500,7 @@ int DFX_SetAppRunningUniqueId(const char* appRunningId, size_t len)
 {
     size_t appRunningIdMaxLen = sizeof(g_appRunningId);
     if (appRunningId == NULL || appRunningIdMaxLen <= len) {
-        LOGERROR("param error. appRunningId is NULL or length overflow");
+        DFXLOGE("param error. appRunningId is NULL or length overflow");
         return -1;
     }
     memset(g_appRunningId, 0, appRunningIdMaxLen);

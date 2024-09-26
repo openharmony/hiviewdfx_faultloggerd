@@ -65,12 +65,12 @@ bool DfxProcess::InitOtherThreads(bool attach)
 
     for (size_t i = 0; i < nstids.size(); ++i) {
         if ((recycleTid_ > 0) && (nstids[i] == static_cast<int>(recycleTid_))) {
-            LOGDEBUG("skip recycle thread:%{public}d.", nstids[i]);
+            DFXLOGD("skip recycle thread:%{public}d.", nstids[i]);
             continue;
         }
 
         if ((keyThread_ != nullptr) && nstids[i] == keyThread_->threadInfo_.nsTid) {
-            LOGDEBUG("skip key thread:%{public}d.", nstids[i]);
+            DFXLOGD("skip key thread:%{public}d.", nstids[i]);
             continue;
         }
 
