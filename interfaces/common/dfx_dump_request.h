@@ -78,6 +78,8 @@ typedef enum {
     NONE = 0,
     MESSAGE_FATAL, // hilog last fatal log message
     MESSAGE_FDSAN_DEBUG, // fdsan debug message
+    MESSAGE_JEMALLOC, // jemalloc message
+    MESSAGE_BADFD, // badfd message
 } MessageType;
 
 typedef struct {

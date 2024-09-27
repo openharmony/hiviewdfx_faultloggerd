@@ -22,6 +22,8 @@
 #define SIGLOCAL_DUMP 38
 #define SIGLEAK_STACK 42
 #define SIGLEAK_STACK_FDSAN 1 // When sig = 42, use si_code = 1 mark the event as fdsan
+#define SIGLEAK_STACK_JEMALLOC 2 // When sig = 42, use si_code = 2 mark the event as jemalloc
+#define SIGLEAK_STACK_BADFD 0xbadfd // When sig = 42, use si_code = 0xbadfd mark the event as badfd
 #define PROCESSDUMP_TIMEOUT 8
 #define DUMPCATCHER_TIMEOUT 15
 
