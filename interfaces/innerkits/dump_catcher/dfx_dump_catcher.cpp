@@ -153,11 +153,6 @@ bool DfxDumpCatcher::DoDumpLocalLocked(int pid, int tid, std::string& msg, size_
     return ret;
 }
 
-bool DfxDumpCatcher::DumpCatchMix(int pid, int tid, std::string& msg)
-{
-    return DoDumpCatchRemote(pid, tid, msg);
-}
-
 static void ReportDumpCatcherStats(int32_t pid,
     uint64_t requestTime, bool ret, std::string& msg, void* retAddr)
 {
