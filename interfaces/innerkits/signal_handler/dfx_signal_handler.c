@@ -219,12 +219,8 @@ static void FillLastFatalMessageLocked(int32_t sig)
     (void)strncpy(g_request.msg.body, lastFatalMessage, sizeof(g_request.msg.body) - 1);
 }
 
-static bool FillDebugMessageLocked(int32_t sig, siginfo_t *si)
+static bool FillMessageBodyLocked(MessageType type, debug_msg_t* dMsg)
 {
-    if (sig != SIGLEAK_STACK || si == NULL || si->si_signo != SIGLEAK_STACK || si->si_code != SIGLEAK_STACK_FDSAN) {
-        return true;
-    }
-    debug_msg_t* dMsg = (debug_msg_t*)si->si_value.sival_ptr;
     if (dMsg == NULL || dMsg->msg == NULL) {
         return true;
     }
@@ -234,8 +230,29 @@ static bool FillDebugMessageLocked(int32_t sig, siginfo_t *si)
         return false;
     }
 
-    g_request.msg.type = MESSAGE_FDSAN_DEBUG;
+    g_request.msg.type = type;
     (void)strncpy(g_request.msg.body, dMsg->msg, sizeof(g_request.msg.body) - 1);
+    return true;
+}
+
+static bool FillDebugMessageLocked(int32_t sig, siginfo_t *si)
+{
+    if (sig != SIGLEAK_STACK || si == NULL || si->si_signo != SIGLEAK_STACK) {
+        return true;
+    }
+    switch (si->si_code) {
+        case SIGLEAK_STACK_FDSAN: {
+            return FillMessageBodyLocked(MESSAGE_FDSAN_DEBUG, (debug_msg_t*)si->si_value.sival_ptr);
+        }
+        case SIGLEAK_STACK_JEMALLOC: {
+            return FillMessageBodyLocked(MESSAGE_JEMALLOC, (debug_msg_t*)si->si_value.sival_ptr);
+        }
+        case SIGLEAK_STACK_BADFD:
+            g_request.msg.type = MESSAGE_BADFD;
+            break;
+        default:
+            break;
+    }
     return true;
 }
 

@@ -90,6 +90,24 @@ void Printer::PrintDumpHeader(std::shared_ptr<ProcessDumpRequest> request, std::
     DfxRingBufferWrapper::GetInstance().AppendBaseInfo(headerInfo);
 }
 
+static void FillReasonAccordingMsgType(const ProcessDumpRequest &request, std::string& reason)
+{
+    switch (request.msg.type) {
+        case MESSAGE_FDSAN_DEBUG:
+            reason += "DEBUG SIGNAL(FDSAN)";
+            break;
+        case MESSAGE_JEMALLOC:
+            reason += "DEBUG SIGNAL(JEMALLOC)";
+            break;
+        case MESSAGE_BADFD:
+            reason += "DEBUG SIGNAL(BADFD)";
+            break;
+        default:
+            reason += DfxSignal::PrintSignal(request.siginfo);
+            break;
+    }
+}
+
 void Printer::PrintReason(std::shared_ptr<ProcessDumpRequest> request, std::shared_ptr<DfxProcess> process,
                           std::shared_ptr<Unwinder> unwinder, std::string& reasonInfo)
 {
@@ -99,11 +117,7 @@ void Printer::PrintReason(std::shared_ptr<ProcessDumpRequest> request, std::shar
         DFXLOGW("process is nullptr");
         return;
     }
-    if (request->msg.type != MESSAGE_FDSAN_DEBUG) {
-        process->reason += DfxSignal::PrintSignal(request->siginfo);
-    } else {
-        process->reason += "DEBUG SIGNAL";
-    }
+    FillReasonAccordingMsgType(*request, process->reason);
     uint64_t addr = (uint64_t)(request->siginfo.si_addr);
     if (request->siginfo.si_signo == SIGSEGV &&
         (request->siginfo.si_code == SEGV_MAPERR || request->siginfo.si_code == SEGV_ACCERR)) {
