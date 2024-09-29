@@ -74,6 +74,7 @@ ohos_unittest("backtrace_utils_test_static") {
     "$faultloggerd_interfaces_path/common",
     "$faultloggerd_path/test/utils",
     "$faultloggerd_interfaces_path/innerkits/backtrace",
+    "$faultloggerd_interfaces_path/innerkits/unwinder/include",
   ]
   defines = [ "DFX_LOG_HILOG_BASE" ]
   sources = [ "backtrace_utils_test.cpp" ]

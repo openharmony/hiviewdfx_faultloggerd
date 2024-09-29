@@ -34,6 +34,7 @@
 #include "dfx_test_util.h"
 #include "elapsed_time.h"
 #include "ffrt_inner.h"
+#include "unwinder_config.h"
 
 using namespace testing;
 using namespace testing::ext;
@@ -337,6 +338,7 @@ HWTEST_F(BacktraceLocalTest, BacktraceLocalTest009, TestSize.Level2)
 HWTEST_F(BacktraceLocalTest, BacktraceLocalTest010, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "BacktraceLocalTest010: start.";
+    UnwinderConfig::SetEnableMiniDebugInfo(true);
     std::string frame;
     ASSERT_EQ(true, GetBacktrace(frame, 0, false, DEFAULT_MAX_FRAME_NUM));
     int start = frame.find("#00");
@@ -344,11 +346,7 @@ HWTEST_F(BacktraceLocalTest, BacktraceLocalTest010, TestSize.Level2)
     std::string str = frame.substr(start, end - start);
     GTEST_LOG_(INFO) << "frame" << frame;
     GTEST_LOG_(INFO) << "str" << str;
-    std::string keyword = "libbacktrace_local.so";
-#if defined(BACKTRACE_LOCAL_TEST_STATIC)
-    keyword = "backtrace_local_test_static";
-#endif
-    ASSERT_TRUE(str.find(keyword) != std::string::npos);
+    ASSERT_TRUE(str.find("OHOS::HiviewDFX::GetBacktrace(") != std::string::npos);
     GTEST_LOG_(INFO) << "BacktraceLocalTest010: end.";
 }
 

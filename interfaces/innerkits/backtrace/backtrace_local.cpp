@@ -22,6 +22,7 @@
 #include <vector>
 
 #include "backtrace_local_thread.h"
+#include "elapsed_time.h"
 #include "dfx_frame_formatter.h"
 #include "dfx_kernel_stack.h"
 #include "dfx_log.h"
@@ -112,14 +113,18 @@ bool PrintBacktrace(int32_t fd, bool fast, size_t maxFrameNums)
 
 bool GetBacktrace(std::string& out, bool fast, size_t maxFrameNums)
 {
-    DFXLOGI("Receive GetBacktrace request with skip current frame.");
-    return GetBacktraceStringByTid(out, BACKTRACE_CURRENT_THREAD, 1, fast, maxFrameNums); // 1: skip current frame
+    ElapsedTime et;
+    bool ret = GetBacktraceStringByTid(out, BACKTRACE_CURRENT_THREAD, 1, fast, maxFrameNums); // 1: skip current frame
+    DFXLOGI("GetBacktrace elapsed time: %{public}" PRId64 " ms", et.Elapsed<std::chrono::microseconds>());
+    return ret;
 }
 
 bool GetBacktrace(std::string& out, size_t skipFrameNum, bool fast, size_t maxFrameNums)
 {
-    DFXLOGI("Receive GetBacktrace request.");
-    return GetBacktraceStringByTid(out, BACKTRACE_CURRENT_THREAD, skipFrameNum + 1, fast, maxFrameNums);
+    ElapsedTime et;
+    bool ret = GetBacktraceStringByTid(out, BACKTRACE_CURRENT_THREAD, skipFrameNum + 1, fast, maxFrameNums);
+    DFXLOGI("GetBacktrace with skip, elapsed time: %{public}" PRId64 " ms", et.Elapsed<std::chrono::microseconds>());
+    return ret;
 }
 
 bool PrintTrace(int32_t fd, size_t maxFrameNums)
