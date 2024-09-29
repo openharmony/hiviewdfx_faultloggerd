@@ -63,18 +63,18 @@ bool GetLibArkHandle()
 }
 }
 
-#define DLSYM_ARK_FUNC(FuncName, DlsymFuncName) { \
+#define DLSYM_ARK_FUNC(funcName, dlsymFuncName) { \
     pthread_mutex_lock(&g_mutex); \
     do { \
-        if ((DlsymFuncName) != nullptr) { \
+        if ((dlsymFuncName) != nullptr) { \
             break; \
         } \
         if (!GetLibArkHandle()) { \
             break; \
         } \
-        *(void**)(&(DlsymFuncName)) = dlsym(g_handle, (FuncName)); \
-        if ((DlsymFuncName) == NULL) { \
-            DFXLOGE("Failed to dlsym(%{public}s), error: %{public}s", (FuncName), dlerror()); \
+        (dlsymFuncName) = reinterpret_cast<decltype(dlsymFuncName)>(dlsym(g_handle, (funcName))); \
+        if ((dlsymFuncName) == nullptr) { \
+            DFXLOGE("Failed to dlsym(%{public}s), error: %{public}s", (funcName), dlerror()); \
             break; \
         } \
     } while (false); \
@@ -126,7 +126,7 @@ int DfxArk::ArkDestoryLocal()
         pthread_mutex_unlock(&g_mutex);
         return g_arkDestoryLocalFn();
     }
-    *(void**)(&(g_arkDestoryLocalFn)) = dlsym(g_handle, arkFuncName);
+    g_arkDestoryLocalFn = reinterpret_cast<decltype(g_arkDestoryLocalFn)>(dlsym(g_handle, arkFuncName));
     pthread_mutex_unlock(&g_mutex);
     if (g_arkDestoryLocalFn != nullptr) {
         return g_arkDestoryLocalFn();
