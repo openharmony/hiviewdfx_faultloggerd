@@ -353,6 +353,121 @@ HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest008, TestSize.Level
 }
 
 /**
+ * @tc.name: DumpCatcherInterfacesTest014
+ * @tc.desc: test DumpCatch API: PID(test hap), TID(0)
+ * @tc.type: FUNC
+ * @tc.require: issueI5PJ9O
+ */
+HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest014, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest014: start.";
+    bool isSuccess = g_testPid != 0;
+    if (!isSuccess) {
+        ASSERT_FALSE(isSuccess);
+        GTEST_LOG_(ERROR) << "Failed to launch target hap.";
+        return;
+    }
+    isSuccess = CheckProcessComm(g_testPid, TRUNCATE_TEST_BUNDLE_NAME);
+    if (!isSuccess) {
+        ASSERT_FALSE(isSuccess);
+        GTEST_LOG_(ERROR) << "Error process comm";
+        return;
+    }
+    DfxDumpCatcher dumplog;
+    std::string msg = "";
+    bool ret = dumplog.DumpCatch(g_testPid, 0, msg);
+    GTEST_LOG_(INFO) << ret;
+    string log[] = { "Tid:", "Name:", "#00", "/system/bin/appspawn", "Name:OS_DfxWatchdog" };
+    log[0] += std::to_string(g_testPid);
+    log[1] += TRUNCATE_TEST_BUNDLE_NAME;
+    int len = sizeof(log) / sizeof(log[0]);
+    int count = GetKeywordsNum(msg, log, len);
+    EXPECT_EQ(count, len) << msg << "DumpCatcherInterfacesTest014 Failed";
+    GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest014: end.";
+}
+
+/**
+ * @tc.name: DumpCatcherInterfacesTest015
+ * @tc.desc: test DumpCatch API: PID(test hap), TID(test hap main thread)
+ * @tc.type: FUNC
+ * @tc.require: issueI5PJ9O
+ */
+HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest015, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest015: start.";
+    bool isSuccess = g_testPid != 0;
+    if (!isSuccess) {
+        ASSERT_FALSE(isSuccess);
+        GTEST_LOG_(ERROR) << "Failed to launch target hap.";
+        return;
+    }
+    isSuccess = CheckProcessComm(g_testPid, TRUNCATE_TEST_BUNDLE_NAME);
+    if (!isSuccess) {
+        ASSERT_FALSE(isSuccess);
+        GTEST_LOG_(ERROR) << "Error process comm";
+        return;
+    }
+    DfxDumpCatcher dumplog;
+    std::string msg = "";
+    bool ret = dumplog.DumpCatch(g_testPid, g_testPid, msg);
+    GTEST_LOG_(INFO) << ret;
+    string log[] = { "Tid:", "Name:", "#00", "/system/bin/appspawn"};
+    log[0] += std::to_string(g_testPid);
+    log[1] += TRUNCATE_TEST_BUNDLE_NAME;
+    int len = sizeof(log) / sizeof(log[0]);
+    int count = GetKeywordsNum(msg, log, len);
+    GTEST_LOG_(INFO) << msg;
+    EXPECT_EQ(count, len) << msg << "DumpCatcherInterfacesTest015 Failed";
+    GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest015: end.";
+}
+
+/**
+ * @tc.name: DumpCatcherInterfacesTest016
+ * @tc.desc: test DumpCatch API: PID(test hap), TID(-1)
+ * @tc.type: FUNC
+ * @tc.require: issueI5PJ9O
+ */
+HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest016, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest016: start.";
+    bool isSuccess = g_testPid != 0;
+    if (!isSuccess) {
+        ASSERT_FALSE(isSuccess);
+        GTEST_LOG_(ERROR) << "Failed to launch target hap.";
+        return;
+    }
+    isSuccess = CheckProcessComm(g_testPid, TRUNCATE_TEST_BUNDLE_NAME);
+    if (!isSuccess) {
+        ASSERT_FALSE(isSuccess);
+        GTEST_LOG_(ERROR) << "Error process comm";
+        return;
+    }
+    DfxDumpCatcher dumplog;
+    std::string msg = "";
+    bool ret = dumplog.DumpCatch(g_testPid, -1, msg);
+    GTEST_LOG_(INFO) << ret;
+    EXPECT_EQ(ret, false) << "DumpCatcherInterfacesTest016 Failed";
+    GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest016: end.";
+}
+
+/**
+ * @tc.name: DumpCatcherInterfacesTest017
+ * @tc.desc: test DumpCatch API: PID(-1), TID(-1)
+ * @tc.type: FUNC
+ * @tc.require: issueI5PJ9O
+ */
+HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest017, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest017: start.";
+    DfxDumpCatcher dumplog;
+    std::string msg = "";
+    bool ret = dumplog.DumpCatch(-1, -1, msg);
+    GTEST_LOG_(INFO) << ret;
+    EXPECT_EQ(ret, false) << "DumpCatcherInterfacesTest017 Failed";
+    GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest017: end.";
+}
+
+/**
  * @tc.name: DumpCatcherInterfacesTest018
  * @tc.desc: test DumpCatchFd API: PID(getpid()), TID(gettid())
  * @tc.type: FUNC
