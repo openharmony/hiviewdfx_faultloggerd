@@ -58,6 +58,8 @@ private:
     void ReportSigDumpStats(const std::shared_ptr<ProcessDumpRequest> &request) const;
     void ReportCrashInfo(const std::string& jsonInfo);
     void UnwindWriteJit(const ProcessDumpRequest &request);
+    std::string ReadStringByPtrace(pid_t tid, uintptr_t addr);
+    void GetCrashObj(std::shared_ptr<ProcessDumpRequest> request);
 
 private:
     std::shared_ptr<DfxProcess> process_ = nullptr;
