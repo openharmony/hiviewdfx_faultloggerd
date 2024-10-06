@@ -180,7 +180,7 @@ void DfxUnwindAsyncThread::UnwindThreadByParseStackIfNeed()
         }
         thread_->SetFrames(frames);
         tip = StringPrintf(
-            " Failed to unwind stack, try to get unreliable call stack from #%02zu by reparsing thread stack",
+            " Failed to unwind stack, try to get unreliable call stack from #%02zu by reparsing thread stack.",
             initSize);
     }
 }

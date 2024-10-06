@@ -135,6 +135,7 @@ struct ProcessDumpRequest {
     int vmPipeFd[2];
     /** is integrate crash dump flow 0:false 1:true */
     int32_t dumpMode;
+    uintptr_t crashObj;
 };
 #ifdef __cplusplus
 }

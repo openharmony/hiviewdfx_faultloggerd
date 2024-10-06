@@ -109,6 +109,8 @@ static int g_pipeFds[PIPE_MAX][2] = {
     {-1, -1}
 };
 
+static pthread_key_t g_crashObjKey;
+static bool g_crashObjInit = false;
 static BOOL g_hasInit = FALSE;
 static const int SIGNALHANDLER_TIMEOUT = 10000; // 10000 us
 static const int ALARM_TIME_S = 10;
@@ -284,7 +286,9 @@ static void FillDumpRequest(int sig, siginfo_t *si, void *context)
     memcpy(&(g_request.context), context, sizeof(ucontext_t));
 
     FillTraceIdLocked(&g_request);
+
     FillLastFatalMessageLocked(sig, context);
+    g_request.crashObj = (uintptr_t)pthread_getspecific(g_crashObjKey);
 }
 
 static int32_t InheritCapabilities(void)
@@ -952,6 +956,9 @@ void DFX_InstallSignalHandler(void)
     }
 
     g_hasInit = TRUE;
+    if (pthread_key_create(&g_crashObjKey, NULL) == 0) {
+        g_crashObjInit = true;
+    }
 }
 
 int DFX_SetAppRunningUniqueId(const char* appRunningId, size_t len)
@@ -964,4 +971,34 @@ int DFX_SetAppRunningUniqueId(const char* appRunningId, size_t len)
     memset(g_appRunningId, 0, appRunningIdMaxLen);
     memcpy(g_appRunningId, appRunningId, len);
     return 0;
+}
+
+uintptr_t DFX_SetCrashObj(uint8_t type, uintptr_t addr)
+{
+    if (!g_crashObjInit) {
+        return 0;
+    }
+#if defined __LP64__
+    uintptr_t origin = (uintptr_t)pthread_getspecific(g_crashObjKey);
+    uintptr_t crashObj = 0;
+    const int moveBit = 56;
+    if ((addr >> moveBit) != 0) {
+        DFXLOG_ERROR("crash object address can not greater than 2^56, set crash object equal 0!");
+    } else {
+        crashObj = ((uintptr_t)type << moveBit) | addr;
+    }
+    pthread_setspecific(g_crashObjKey, (void*)(crashObj));
+    return origin;
+#endif
+    return 0;
+}
+
+void DFX_ResetCrashObj(uintptr_t crashObj)
+{
+    if (!g_crashObjInit) {
+        return;
+    }
+#if defined __LP64__
+    pthread_setspecific(g_crashObjKey, (void*)(crashObj));
+#endif
 }

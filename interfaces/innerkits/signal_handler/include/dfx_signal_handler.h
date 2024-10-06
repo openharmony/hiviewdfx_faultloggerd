@@ -49,6 +49,21 @@ void SetAsyncStackCallbackFunc(void* func);
 
 int DFX_SetAppRunningUniqueId(const char* appRunningId, size_t len);
 
+/**
+ * @brief set crash object which is measurement information of crash
+ *
+ * @param type  type of object, eg 0 represent string type
+ * @param addr  addr of object
+ * @return return crash Object which set up last time
+*/
+uintptr_t DFX_SetCrashObj(uint8_t type, uintptr_t addr);
+
+/**
+ * @brief reset crash object
+ *
+ * @param crashObj return of DFX_SetCrashObj
+*/
+void DFX_ResetCrashObj(uintptr_t crashObj);
 #ifdef __cplusplus
 }
 #endif

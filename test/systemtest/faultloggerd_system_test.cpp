@@ -320,6 +320,17 @@ static bool CheckCppCrashAsyncStackDisableKeywords(const string& filePath, const
     };
     return CheckKeyWords(filePath, key, 1, -1) == 0;
 }
+
+static bool CheckTestGetCrashObj(const string& filePath, const pid_t& pid)
+{
+    string log[] = {
+        "Pid:" + to_string(pid), "Uid", ":crasher", "SIGABRT", "LastFatalMessage:", "crashObject.",
+        "Tid:", "#00", "Registers:", REGISTERS, "FaultStack:", "Maps:", "/crasher"
+    };
+    int minRegIdx = 8; // 8 : index of first REGISTERS - 1
+    int expectNum = sizeof(log) / sizeof(log[0]);
+    return CheckKeyWords(filePath, log, expectNum, minRegIdx) == expectNum;
+}
 #endif
 
 /**
@@ -1608,16 +1619,36 @@ HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest123, TestSize.Level2)
     EXPECT_TRUE(CheckCountNum(fileName, pid, cmd)) << "FaultLoggerdSystemTest123 Failed";
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest123: end.";
 }
-#endif
 
 /**
 * @tc.name: FaultLoggerdSystemTest124
-* @tc.desc: Test process exit after being killed
+* @tc.desc: Test get crash object
 * @tc.type: FUNC
 */
 HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest124, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest124: start.";
+    string cmd = "TestGetCrashObj";
+    string fileName;
+    pid_t pid = TriggerCrasherAndGetFileName(cmd, CRASHER_CPP, fileName);
+    GTEST_LOG_(INFO) << "test pid(" << pid << ")"  << " cppcrash file name : " << fileName;
+    if (pid < 0 || fileName.size() < CPPCRASH_FILENAME_MIN_LENGTH) {
+        GTEST_LOG_(ERROR) << "Trigger Crash Failed.";
+        FAIL();
+    }
+    EXPECT_TRUE(CheckTestGetCrashObj(fileName, pid)) << "FaultLoggerdSystemTest124 Failed";
+    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest124: end.";
+}
+#endif
+
+/**
+* @tc.name: FaultLoggerdSystemTest125
+* @tc.desc: Test process exit after being killed
+* @tc.type: FUNC
+*/
+HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest125, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest125: start.";
     InstallTestHap("/data/FaultloggerdJsTest.hap");
     string testBundleName = TEST_BUNDLE_NAME;
     string testAbiltyName = testBundleName + ".MainAbility";
@@ -1630,11 +1661,11 @@ HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest124, TestSize.Level2)
         kill(pid, SIGABRT);
         sleep(2); // 2 : sleep 2s
         int newPid = GetProcessPid(TEST_BUNDLE_NAME);
-        EXPECT_NE(pid, newPid) << "FaultLoggerdSystemTest124 Failed";
+        EXPECT_NE(pid, newPid) << "FaultLoggerdSystemTest125 Failed";
     }
     StopTestHap(TEST_BUNDLE_NAME);
     UninstallTestHap(TEST_BUNDLE_NAME);
-    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest124: end.";
+    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest125: end.";
 }
 } // namespace HiviewDFX
 } // namespace OHOS
