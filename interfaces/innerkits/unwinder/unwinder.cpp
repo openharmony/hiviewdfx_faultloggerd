@@ -110,6 +110,9 @@ public:
     {
         DfxEnableTraceDlsym(false);
         Destroy();
+        if (pid_ == UNWIND_TYPE_LOCAL) {
+            LocalThreadContext::GetInstance().CleanUp();
+        }
     }
 
     inline void EnableUnwindCache(bool enableCache)
@@ -480,9 +483,6 @@ void Unwinder::Impl::Destroy()
 {
     Clear();
     stepCache_.clear();
-    if (pid_ == UNWIND_TYPE_LOCAL) {
-        LocalThreadContext::GetInstance().CleanUp();
-    }
 }
 
 bool Unwinder::Impl::CheckAndReset(void* ctx)
