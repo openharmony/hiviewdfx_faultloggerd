@@ -11,7 +11,7 @@ Faultloggerd部件是OpenHarmony中C/C++运行时崩溃临时日志的生成及�
 * Native InnerKits 接口
   * SignalHandler：信号处理器，接收系统异常信号，触发抓取进程异常时的现场信息。
   * BackTrace：本地回栈库，提供进程内本地回栈能力。
-  * DumpCatcher：堆栈信息抓取工具库，提供了抓取指定进程和线程的堆栈栈信息的能力。
+  * DumpCatcher：堆栈信息抓取工具库，提供了抓取指定进程和线程的堆栈信息的能力。
   * FaultloggerdClient：崩溃临时日志管理客户端，接收申请文件描述符、堆栈导出等请求。
 * Rust 接口
   * PanicHandler：Rust PANIC故障处理器，封装faultloggerd回栈能力支持rust模块PANIC故障回栈。
@@ -79,7 +79,7 @@ faultloggerd/
 
 ### 进程崩溃日志生成
 
-目前已默认开启，进程因上述异常信号崩溃将会在设备 `/data/log/faultlog/temp` 目录下生成完整的崩溃日志，可基于该崩溃日志进行问题定位可分析。
+目前已默认开启，进程因上述异常信号崩溃将会在设备 `/data/log/faultlog/temp` 目录下生成完整的崩溃日志，可基于该崩溃日志进行问题定位和分析。
 
 > 崩溃日志介绍和常见问题指南参见：[faultloggerd FAQ](docs/usage.md)
 
@@ -239,7 +239,7 @@ ohos_executable("dumpcatcherdemo") {
 
 ### DumpCatcher 命令行工具
 
-DumpCatcher 是指提供给用户的一个抓取调用栈命令行工具，由 DumpCatcher innerkits 接口封装实现，该工具通过 `-p`、`-t` 参数指定进程和线程，以及 `[-c -m -k]` 可选参数指定抓栈的类型，命令执行后在命令行窗口打印指定的进程的线程栈信息。
+DumpCatcher 是指提供给用户的一个抓取调用栈命令行工具，由 DumpCatcher innerkits 接口封装实现，该工具通过 `-p`、`-t` 参数指定进程和线程，命令执行后在命令行窗口打印指定的进程的线程栈信息。
 
 工具名称：`dumpcatcher`
 
@@ -277,7 +277,7 @@ DumpCatcher 是指提供给用户的一个抓取调用栈命令行工具，由 D
 
 1. 进程A调用`DumpCatcher`库提供的系列接口（1B），或通过 `DumpCatcher` 命令行工具(1A)，申请dump指定进程和线程的堆栈信息；
 2. 如果目前进程是当前进程，则直接调用 `BackTrace Local` 提供的能力进行本地回栈输出（2B）；如果不是，则向 `Faultloggerd` 服务发送抓栈请求（2A）；
-3. `Faultloggerd` 接收到抓栈请求，鉴通过权和管道申请等操作后，向目标进程发送 `SIGDUMP(35)` 信号触发主动抓栈（3）；
+3. `Faultloggerd` 接收到抓栈请求，通过鉴权和管道申请等操作后，向目标进程发送 `SIGDUMP(35)` 信号触发主动抓栈（3）；
 4. 目前进程接收到 `SIGDUMP(35)` 抓栈信号后，保存当前进程上下文，fork出子进程执行 `ProcessDump` 二进制进行抓栈，通过 `Faultloggerd` 申请到的管道返回调用栈数据（4）。
 
 ### Rust Panic 故障日志收集流程

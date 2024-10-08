@@ -47,16 +47,6 @@ public:
                    bool isJson = false);
 
     /**
-     * @brief Dump native and js mixed-stack by specify pid and tid
-     *
-     * @param pid  process id
-     * @param tid  thread id
-     * @param msg  message of native and js mixed-stack
-     * @return if succeed return true, otherwise return false
-    */
-    bool DumpCatchMix(int pid, int tid, std::string& msg);
-
-    /**
      * @brief Dump native stack by specify pid and tid to file
      *
      * @param pid  process id

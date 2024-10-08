@@ -354,7 +354,7 @@ HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest008, TestSize.Level
 
 /**
  * @tc.name: DumpCatcherInterfacesTest014
- * @tc.desc: test DumpCatchMix API: PID(test hap), TID(0)
+ * @tc.desc: test DumpCatch API: PID(test hap), TID(0)
  * @tc.type: FUNC
  * @tc.require: issueI5PJ9O
  */
@@ -375,7 +375,7 @@ HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest014, TestSize.Level
     }
     DfxDumpCatcher dumplog;
     std::string msg = "";
-    bool ret = dumplog.DumpCatchMix(g_testPid, 0, msg);
+    bool ret = dumplog.DumpCatch(g_testPid, 0, msg);
     GTEST_LOG_(INFO) << ret;
     string log[] = { "Tid:", "Name:", "#00", "/system/bin/appspawn", "Name:OS_DfxWatchdog" };
     log[0] += std::to_string(g_testPid);
@@ -388,7 +388,7 @@ HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest014, TestSize.Level
 
 /**
  * @tc.name: DumpCatcherInterfacesTest015
- * @tc.desc: test DumpCatchMix API: PID(test hap), TID(test hap main thread)
+ * @tc.desc: test DumpCatch API: PID(test hap), TID(test hap main thread)
  * @tc.type: FUNC
  * @tc.require: issueI5PJ9O
  */
@@ -409,7 +409,7 @@ HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest015, TestSize.Level
     }
     DfxDumpCatcher dumplog;
     std::string msg = "";
-    bool ret = dumplog.DumpCatchMix(g_testPid, g_testPid, msg);
+    bool ret = dumplog.DumpCatch(g_testPid, g_testPid, msg);
     GTEST_LOG_(INFO) << ret;
     string log[] = { "Tid:", "Name:", "#00", "/system/bin/appspawn"};
     log[0] += std::to_string(g_testPid);
@@ -423,7 +423,7 @@ HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest015, TestSize.Level
 
 /**
  * @tc.name: DumpCatcherInterfacesTest016
- * @tc.desc: test DumpCatchMix API: PID(test hap), TID(-1)
+ * @tc.desc: test DumpCatch API: PID(test hap), TID(-1)
  * @tc.type: FUNC
  * @tc.require: issueI5PJ9O
  */
@@ -444,7 +444,7 @@ HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest016, TestSize.Level
     }
     DfxDumpCatcher dumplog;
     std::string msg = "";
-    bool ret = dumplog.DumpCatchMix(g_testPid, -1, msg);
+    bool ret = dumplog.DumpCatch(g_testPid, -1, msg);
     GTEST_LOG_(INFO) << ret;
     EXPECT_EQ(ret, false) << "DumpCatcherInterfacesTest016 Failed";
     GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest016: end.";
@@ -452,7 +452,7 @@ HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest016, TestSize.Level
 
 /**
  * @tc.name: DumpCatcherInterfacesTest017
- * @tc.desc: test DumpCatchMix API: PID(-1), TID(-1)
+ * @tc.desc: test DumpCatch API: PID(-1), TID(-1)
  * @tc.type: FUNC
  * @tc.require: issueI5PJ9O
  */
@@ -461,7 +461,7 @@ HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest017, TestSize.Level
     GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest017: start.";
     DfxDumpCatcher dumplog;
     std::string msg = "";
-    bool ret = dumplog.DumpCatchMix(-1, -1, msg);
+    bool ret = dumplog.DumpCatch(-1, -1, msg);
     GTEST_LOG_(INFO) << ret;
     EXPECT_EQ(ret, false) << "DumpCatcherInterfacesTest017 Failed";
     GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest017: end.";
@@ -780,27 +780,6 @@ HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest031, TestSize.Level
     GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest031: end.";
 }
 #endif
-
-/**
- * @tc.name: DumpCatcherInterfacesTest033
- * @tc.desc: testDump after crashed
- * @tc.type: FUNC
- */
-HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest033, TestSize.Level2)
-{
-    GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest033: start.";
-    GTEST_LOG_(INFO) << "dump remote process, "  << " pid:" << getpid() << ", tid:" << gettid();
-    int32_t fd = RequestFileDescriptor(FaultLoggerType::CPP_CRASH);
-    ASSERT_GT(fd, 0);
-    close(fd);
-    DfxDumpCatcher dumplog;
-    string msg = "";
-    EXPECT_FALSE(dumplog.DumpCatchMix(getpid(), gettid(), msg));
-    constexpr int validTime = 8;
-    sleep(validTime);
-    msg = "";
-    EXPECT_TRUE(dumplog.DumpCatchMix(getpid(), gettid(), msg));
-}
 
 #ifndef is_ohos_lite
 /**
