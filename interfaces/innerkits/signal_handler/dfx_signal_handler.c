@@ -525,7 +525,7 @@ uintptr_t DFX_SetCrashObj(uint8_t type, uintptr_t addr)
     if ((addr >> moveBit) != 0) {
         DFXLOGE("crash object address can not greater than 2^56, set crash object equal 0!");
     } else {
-        crashObj = (type << moveBit) | addr;
+        crashObj = ((uintptr_t)type << moveBit) | addr;
     }
     pthread_setspecific(g_crashObjKey, (void*)(crashObj));
     return origin;
