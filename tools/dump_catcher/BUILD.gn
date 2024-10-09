@@ -51,7 +51,11 @@ if (defined(ohos_lite)) {
   }
 
   ohos_executable("dumpcatcher") {
-    install_enable = true
+    if (build_variant == "root") {
+      install_enable = true
+    } else {
+      install_enable = false
+    }
     configs = [
       ":dumpcatcher_config",
       "$faultloggerd_path/common/build:coverage_flags",
