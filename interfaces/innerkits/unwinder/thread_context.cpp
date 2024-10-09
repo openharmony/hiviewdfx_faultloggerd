@@ -132,7 +132,7 @@ LocalThreadContext& LocalThreadContext::GetInstance()
     return instance;
 }
 
-std::shared_ptr<ThreadContext> LocalThreadContext::GetThreadContext(int32_t tid)
+NO_SANITIZE std::shared_ptr<ThreadContext> LocalThreadContext::GetThreadContext(int32_t tid)
 {
     std::unique_lock<std::mutex> lock(localMutex_);
     auto it = g_contextMap.find(tid);
@@ -176,7 +176,7 @@ std::shared_ptr<ThreadContext> LocalThreadContext::CollectThreadContext(int32_t 
     return threadContext;
 }
 
-void LocalThreadContext::CopyContextAndWaitTimeout(int sig, siginfo_t *si, void *context)
+NO_SANITIZE void LocalThreadContext::CopyContextAndWaitTimeout(int sig, siginfo_t *si, void *context)
 {
     if (si == nullptr || si->si_code != DUMP_TYPE_LOCAL || context == nullptr) {
         return;

@@ -82,7 +82,7 @@ public:
         return (index - skipFrameNum);
     }
 
-    size_t UnwindSafe(uintptr_t pc, uintptr_t fp, uintptr_t* pcs, size_t maxSize, size_t skipFrameNum = 0)
+    NO_SANITIZE size_t UnwindSafe(uintptr_t pc, uintptr_t fp, uintptr_t* pcs, size_t maxSize, size_t skipFrameNum = 0)
     {
         if (pcs == nullptr) {
             return 0;
