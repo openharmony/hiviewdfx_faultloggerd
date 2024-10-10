@@ -118,7 +118,7 @@ bool DfxMaps::Parse(const pid_t pid, const std::string& path)
             continue;
         }
 
-        FormatMapName(pid, map->name);
+        DfxMap::FormatMapName(pid, map->name);
         if (IsArkHapMapItem(map->name) || IsArkCodeMapItem(map->name)) {
             AddMap(map, enableMapIndex_);
             continue;
@@ -143,28 +143,6 @@ bool DfxMaps::Parse(const pid_t pid, const std::string& path)
     DFXLOGI("parse maps(%{public}s) completed, map size: (%{public}zu), count: (%{public}d)",
         path.c_str(), mapsSize, fgetCount);
     return mapsSize > 0;
-}
-
-void DfxMaps::FormatMapName(pid_t pid, std::string& mapName)
-{
-    if (pid <= 0 || pid == getpid()) {
-        return;
-    }
-    // format sandbox file path, add '/proc/xxx/root' prefix
-    if (StartsWith(mapName, "/data/storage/")) {
-        mapName = "/proc/" + std::to_string(pid) + "/root" + mapName;
-    }
-}
-
-void DfxMaps::UnFormatMapName(std::string& mapName)
-{
-    // unformat sandbox file path, drop '/proc/xxx/root' prefix
-    if (StartsWith(mapName, "/proc/")) {
-        auto startPos = mapName.find("/data/storage/");
-        if (startPos != std::string::npos) {
-            mapName = mapName.substr(startPos);
-        }
-    }
 }
 
 bool DfxMaps::IsArkHapMapItem(const std::string& name)

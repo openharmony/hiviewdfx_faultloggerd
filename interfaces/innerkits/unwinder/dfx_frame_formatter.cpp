@@ -60,7 +60,7 @@ std::string DfxFrameFormatter::GetFrameStr(const std::shared_ptr<DfxFrame>& fram
         data = StringPrintf("#%02zu pc %08" PRIx64, frame->index, pc);
 #endif
         if (!frame->mapName.empty()) {
-            DfxMaps::UnFormatMapName(frame->mapName);
+            DfxMap::UnFormatMapName(frame->mapName);
             data += " " + frame->mapName;
         } else {
             data += " [Unknown]";
