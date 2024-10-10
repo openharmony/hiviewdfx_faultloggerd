@@ -60,7 +60,7 @@ static void ReserveChildThreadSignalStack(void)
     g_reservedChildStack = mmap(nullptr, LOCAL_HANDLER_STACK_SIZE, \
         PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_STACK, 1, 0);
     if (g_reservedChildStack == MAP_FAILED) {
-        DFXLOGE("Failed to alloc memory for child stack.");
+        DFXLOGE("[%{public}d]: Failed to alloc memory for child stack.", __LINE__);
         return;
     }
     g_reservedChildStack = static_cast<void *>(static_cast<uint8_t *>(g_reservedChildStack) +

@@ -129,11 +129,11 @@ int32_t CppCrashReporter::WriteCppCrashInfoByPipe()
     }
     if (fcntl(pipeFd[PIPE_READ], F_SETPIPE_SZ, sz) < 0 ||
         fcntl(pipeFd[PIPE_WRITE], F_SETPIPE_SZ, sz) < 0) {
-        DFXLOGE("Failed to set pipe size.");
+        DFXLOGE("[%{public}d]: failed to set pipe size.", __LINE__);
         return -1;
     }
     if (fcntl(pipeFd[PIPE_READ], F_GETFL) < 0) {
-        DFXLOGE("Failed to set pipe size.");
+        DFXLOGE("[%{public}d]: failed to set pipe size.", __LINE__);
         return -1;
     } else {
         uint32_t flags = static_cast<uint32_t>(fcntl(pipeFd[PIPE_READ], F_GETFL));

@@ -59,7 +59,7 @@ int32_t RequestFileDescriptor(int32_t type)
 int32_t RequestLogFileDescriptor(struct FaultLoggerdRequest *request)
 {
     if (request == nullptr) {
-        DFXLOGE("nullptr request");
+        DFXLOGE("[%{public}d]: nullptr request", __LINE__);
         return -1;
     }
     request->clientType = (int32_t)FaultLoggerClientType::LOG_FILE_DES_CLIENT;
@@ -69,14 +69,14 @@ int32_t RequestLogFileDescriptor(struct FaultLoggerdRequest *request)
 int32_t RequestFileDescriptorEx(const struct FaultLoggerdRequest *request)
 {
     if (request == nullptr) {
-        DFXLOGE("nullptr request");
+        DFXLOGE("[%{public}d]: nullptr request", __LINE__);
         return -1;
     }
 
     int sockfd;
     std::string name = GetSocketConnectionName();
     if (!StartConnect(sockfd, name.c_str(), SOCKET_TIMEOUT)) {
-        DFXLOGE("StartConnect(%{public}d) failed", sockfd);
+        DFXLOGE("[%{public}d]: StartConnect(%{public}d) failed", __LINE__, sockfd);
         return -1;
     }
 
@@ -102,7 +102,7 @@ static int32_t RequestFileDescriptorByCheck(const struct FaultLoggerdRequest *re
 {
     int32_t fd = -1;
     if (request == nullptr) {
-        DFXLOGE("nullptr request");
+        DFXLOGE("[%{public}d]: nullptr request", __LINE__);
         return -1;
     }
 
@@ -110,7 +110,7 @@ static int32_t RequestFileDescriptorByCheck(const struct FaultLoggerdRequest *re
     do {
         std::string name = GetSocketConnectionName();
         if (!StartConnect(sockfd, name.c_str(), SOCKET_TIMEOUT)) {
-            DFXLOGE("StartConnect(%{public}d) failed", sockfd);
+            DFXLOGE("[%{public}d]: StartConnect(%{public}d) failed", __LINE__, sockfd);
             break;
         }
 
@@ -176,7 +176,7 @@ static int SendRequestToServer(const FaultLoggerdRequest &request)
         }
 
         if (!StartConnect(sockfd, name.c_str(), SOCKET_TIMEOUT)) {
-            DFXLOGE("StartConnect(%{public}d) failed", sockfd);
+            DFXLOGE("[%{public}d]: StartConnect(%{public}d) failed", __LINE__, sockfd);
             break;
         }
         if (OHOS_TEMP_FAILURE_RETRY(write(sockfd, &request,
@@ -258,7 +258,7 @@ int RequestPrintTHilog(const char *msg, int length)
     do {
         std::string name = GetSocketConnectionName();
         if (!StartConnect(sockfd, name.c_str(), SOCKET_TIMEOUT)) {
-            DFXLOGE("StartConnect(%{public}d) failed", sockfd);
+            DFXLOGE("[%{public}d]: StartConnect(%{public}d) failed", __LINE__, sockfd);
             break;
         }
 
@@ -324,7 +324,7 @@ int32_t RequestDelPipeFd(int32_t pid)
     int sockfd;
     std::string name = GetSocketConnectionName();
     if (!StartConnect(sockfd, name.c_str(), SOCKET_TIMEOUT)) {
-        DFXLOGE("StartConnect(%{public}d) failed", sockfd);
+        DFXLOGE("[%{public}d]: StartConnect(%{public}d) failed", __LINE__, sockfd);
         return -1;
     }
 
@@ -338,7 +338,7 @@ int ReportDumpStats(const struct FaultLoggerdStatsRequest *request)
     int sockfd = -1;
     std::string name = GetSocketConnectionName();
     if (!StartConnect(sockfd, name.c_str(), SOCKET_TIMEOUT)) {
-        DFXLOGE("ReportDumpCatcherStats: failed to connect to faultloggerd");
+        DFXLOGE("[%{public}d]: StartConnect(%{public}d) failed", __LINE__, sockfd);
         return -1;
     }
 

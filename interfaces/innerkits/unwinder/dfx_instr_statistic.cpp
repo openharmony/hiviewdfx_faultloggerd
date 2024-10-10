@@ -73,14 +73,16 @@ void DfxInstrStatistic::DumpInstrStatResult(std::vector<std::pair<uint32_t, uint
             case InstructionEntriesArmExidx:
             case InstructionEntriesEhFrame:
             case InstructionEntriesDebugFrame:
-                DFXLOGU("\t Type: %{public}u, Count: %{public}" PRIu64 "", type, (uint64_t) stats->size());
+                DFXLOGU("\t [%{public}d]: Type: %{public}u, Count: %{public}" PRIu64 "", __LINE__,
+                    type, (uint64_t) stats->size());
                 for (size_t i = 0; i < stats->size(); ++i) {
                     DFXLOGU("\t Value: %{public}" PRIx64 "", (uint64_t) stats->at(i).first);
                     result.push_back(std::make_pair(type, static_cast<uint32_t>(stats->at(i).first)));
                 }
                 break;
             default:
-                DFXLOGU("\t Type: %{public}u, Count: %{public}" PRIu64 "", type, (uint64_t) stats->size());
+                DFXLOGU("\t [%{public}d]: Type: %{public}u, Count: %{public}" PRIu64 "", __LINE__,
+                    type, (uint64_t) stats->size());
                 result.push_back(std::make_pair(type, static_cast<uint32_t>(stats->size())));
                 break;
         }

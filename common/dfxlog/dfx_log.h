@@ -21,7 +21,6 @@
 #include <hilog_base/log_base.h>
 #else
 #include <hilog/log.h>
-#include "dfx_log_public.h"
 #endif
 #include "dfx_log_define.h"
 #endif
@@ -35,37 +34,35 @@ extern "C" {
 #ifdef DFX_LOG_HILOG_BASE
 // replace the old interface, and delete the old interface after the replacement is complete
 #ifdef DFX_LOG_UNWIND
-#define DFXLOGD(fmt, ...) \
-    HILOG_BASE_DEBUG(LOG_CORE, fmt, ##__VA_ARGS__)
+#define DFXLOGD(fmt, ...) HILOG_BASE_DEBUG(LOG_CORE, fmt, ##__VA_ARGS__)
 #else
 #define DFXLOGD(fmt, ...)
 #endif
-#define DFXLOGI(fmt, ...) \
-    HILOG_BASE_INFO(LOG_CORE, fmt, ##__VA_ARGS__)
-#define DFXLOGW(fmt, ...) \
-    HILOG_BASE_WARN(LOG_CORE, fmt, ##__VA_ARGS__)
-#define DFXLOGE(fmt, ...) \
-    HILOG_BASE_ERROR(LOG_CORE, fmt, ##__VA_ARGS__)
+#define DFXLOGI(fmt, ...) HILOG_BASE_INFO(LOG_CORE, fmt, ##__VA_ARGS__)
+#define DFXLOGW(fmt, ...) HILOG_BASE_WARN(LOG_CORE, fmt, ##__VA_ARGS__)
+#define DFXLOGE(fmt, ...) HILOG_BASE_ERROR(LOG_CORE, fmt, ##__VA_ARGS__)
 #define DFXLOGF(fmt, ...) \
     HILOG_BASE_FATAL(LOG_CORE, "[%{public}s:%{public}d] " fmt, (__FILE_NAME__), (__LINE__), ##__VA_ARGS__)
 
 #ifdef DFX_LOG_UNWIND
+#ifdef ALLOW_TO_STDERR
+#define DFXLOGU(fmt, ...) \
+    HILOG_BASE_INFO(LOG_CORE, "[%{public}s:%{public}d] " fmt, (__FILE_NAME__), (__LINE__), ##__VA_ARGS__); \
+    fprintf(stderr, "%s\n", fmt)
+#else
 #define DFXLOGU(fmt, ...) \
     HILOG_BASE_INFO(LOG_CORE, "[%{public}s:%{public}d] " fmt, (__FILE_NAME__), (__LINE__), ##__VA_ARGS__)
+#endif
 #else
 #define DFXLOGU(fmt, ...)
 #endif
 
 #else
 // replace the old interface, and delete the old interface after the replacement is complete
-#define DFXLOGD(fmt, ...) \
-    HILOG_DEBUG(LOG_CORE, fmt, ##__VA_ARGS__)
-#define DFXLOGI(fmt, ...) \
-    HILOG_INFO(LOG_CORE, fmt, ##__VA_ARGS__)
-#define DFXLOGW(fmt, ...) \
-    HILOG_WARN(LOG_CORE, fmt, ##__VA_ARGS__)
-#define DFXLOGE(fmt, ...) \
-    HILOG_ERROR(LOG_CORE, fmt, ##__VA_ARGS__)
+#define DFXLOGD(fmt, ...) HILOG_DEBUG(LOG_CORE, fmt, ##__VA_ARGS__)
+#define DFXLOGI(fmt, ...) HILOG_INFO(LOG_CORE, fmt, ##__VA_ARGS__)
+#define DFXLOGW(fmt, ...) HILOG_WARN(LOG_CORE, fmt, ##__VA_ARGS__)
+#define DFXLOGE(fmt, ...) HILOG_ERROR(LOG_CORE, fmt, ##__VA_ARGS__)
 #define DFXLOGF(fmt, ...) \
     HILOG_FATAL(LOG_CORE, "[%{public}s:%{public}d] " fmt, (__FILE_NAME__), (__LINE__), ##__VA_ARGS__)
 

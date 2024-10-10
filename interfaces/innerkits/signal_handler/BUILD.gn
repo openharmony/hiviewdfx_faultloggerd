@@ -152,7 +152,6 @@ if (defined(ohos_lite)) {
     sources = [
       "dfx_signal_handler.c",
       "dfx_signalhandler_exception.c",
-      "musl_log.c",
     ]
 
     configs -= inherited_configs

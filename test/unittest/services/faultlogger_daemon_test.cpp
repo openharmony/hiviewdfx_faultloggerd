@@ -170,7 +170,7 @@ HWTEST_F (FaultLoggerDaemonTest, FaultLoggerDaemonTest004, TestSize.Level2)
     int32_t type = (int32_t)FaultLoggerType::CPP_CRASH;
     int32_t pid = getpid();
     uint64_t time = GetTimeMilliSeconds();
-    int fd = daemon->CreateFileForRequest(type, pid, 0, time, false);
+    int fd = daemon->CreateFileForRequest(type, pid, 0, time);
     ASSERT_NE(fd, -1);
     close(fd);
     GTEST_LOG_(INFO) << "FaultLoggerDaemonTest004: end.";
@@ -191,10 +191,10 @@ HWTEST_F (FaultLoggerDaemonTest, FaultLoggerDaemonTest005, TestSize.Level2)
     int32_t pid = getpid();
     uint64_t time = GetTimeMilliSeconds();
     int32_t type = static_cast<int32_t>(FaultLoggerType::JIT_CODE_LOG);
-    int fd = daemon->CreateFileForRequest(type, pid, 0, time, false);
+    int fd = daemon->CreateFileForRequest(type, pid, 0, time);
     ASSERT_NE(fd, -1);
     type = static_cast<int32_t>(FaultLoggerType::FFRT_CRASH_LOG);
-    fd = daemon->CreateFileForRequest(type, pid, 0, time, false);
+    fd = daemon->CreateFileForRequest(type, pid, 0, time);
     ASSERT_NE(fd, -1);
     close(fd);
     GTEST_LOG_(INFO) << "FaultLoggerDaemonTest005: end.";

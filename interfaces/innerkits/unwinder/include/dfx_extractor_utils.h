@@ -68,7 +68,7 @@ public:
                 break;
             }
 
-            DFXLOGU("Hap entry file: %{public}s, offset: 0x%{public}016" PRIx64 "",
+            DFXLOGU("[%{public}d]: Hap entry file: %{public}s, offset: 0x%{public}016" PRIx64 "", __LINE__,
                 fileName.c_str(), (uint64_t)offset);
             loadOffset = static_cast<uintptr_t>(offset);
             if (zipFile_->ExtractToBufByName(fileName, abcDataPtr, abcDataSize)) {
@@ -102,7 +102,7 @@ public:
                 break;
             }
 
-            DFXLOGU("Hap entry file: %{public}s, offset: 0x%{public}016" PRIx64 "",
+            DFXLOGU("[%{public}d]: Hap entry file: %{public}s, offset: 0x%{public}016" PRIx64 "", __LINE__,
                 fileName.c_str(), (uint64_t)offset);
             loadOffset = static_cast<uintptr_t>(offset);
             if (zipFile_->ExtractToBufByName(fileName, sourceMapPtr, sourceMapSize)) {

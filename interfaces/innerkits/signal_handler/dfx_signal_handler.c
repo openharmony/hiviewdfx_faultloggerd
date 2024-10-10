@@ -482,7 +482,7 @@ void DFX_InstallSignalHandler(void)
     g_reservedChildStack = mmap(NULL, RESERVED_CHILD_STACK_SIZE, \
         PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_STACK, 1, 0);
     if (g_reservedChildStack == NULL) {
-        DFXLOGE("Failed to alloc memory for child stack.");
+        DFXLOGE("[%{public}d]: Failed to alloc memory for child stack.", __LINE__);
         return;
     }
     g_reservedChildStack = (void *)(((uint8_t *)g_reservedChildStack) + RESERVED_CHILD_STACK_SIZE - 1);

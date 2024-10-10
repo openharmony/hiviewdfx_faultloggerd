@@ -166,19 +166,19 @@ static bool RecvMsgFromSocket(int sockfd, unsigned char* data, size_t& len)
         msgh.msg_controllen = sizeof(ctlBuffer);
 
         if (OHOS_TEMP_FAILURE_RETRY(recvmsg(sockfd, &msgh, 0)) < 0) {
-            DFXLOGE("%{public}s :: Failed to recv message, errno(%{public}d)\n", __func__, errno);
+            DFXLOGE("%{public}s :: Failed to recv message, errno(%{public}d)", __func__, errno);
             break;
         }
 
         struct cmsghdr *cmsg = CMSG_FIRSTHDR(&msgh);
         if (cmsg == nullptr) {
-            DFXLOGE("%{public}s :: Invalid message\n", __func__);
+            DFXLOGE("%{public}s :: Invalid message", __func__);
             break;
         }
 
         len = cmsg->cmsg_len - sizeof(struct cmsghdr);
         if (memcpy_s(data, len, CMSG_DATA(cmsg), len) != 0) {
-            DFXLOGE("%{public}s :: memcpy error\n", __func__);
+            DFXLOGE("%{public}s :: memcpy error", __func__);
             break;
         }
 
@@ -219,18 +219,18 @@ bool RecvMsgCredFromSocket(int sockfd, struct ucred* pucred)
         msgh.msg_controllen = sizeof(controlMsg.buf);
 
         if (OHOS_TEMP_FAILURE_RETRY(recvmsg(sockfd, &msgh, 0)) < 0) {
-            DFXLOGE("%{public}s :: Failed to recv message, errno(%{public}d)\n", __func__, errno);
+            DFXLOGE("%{public}s :: Failed to recv message, errno(%{public}d)", __func__, errno);
             break;
         }
 
         struct cmsghdr *cmsg = CMSG_FIRSTHDR(&msgh);
         if (cmsg == nullptr) {
-            DFXLOGE("%{public}s :: Invalid message\n", __func__);
+            DFXLOGE("%{public}s :: Invalid message", __func__);
             break;
         }
 
         if (memcpy_s(pucred, sizeof(struct ucred), CMSG_DATA(cmsg), sizeof(struct ucred)) != 0) {
-            DFXLOGE("%{public}s :: memcpy error\n", __func__);
+            DFXLOGE("%{public}s :: memcpy error", __func__);
             break;
         }
 
@@ -294,7 +294,7 @@ static bool SendMsgCtlToSocket(int sockfd, const void *cmsg, const int cmsgLen)
         cmsgh->cmsg_len = CMSG_LEN(cmsgLen);
     }
     if (memcpy_s(CMSG_DATA(cmsgh), cmsgLen, cmsg, cmsgLen) != 0) {
-        DFXLOGE("%{public}s :: memcpy error\n", __func__);
+        DFXLOGE("%{public}s :: memcpy error", __func__);
     }
 
     if (OHOS_TEMP_FAILURE_RETRY(sendmsg(sockfd, &msgh, 0)) < 0) {

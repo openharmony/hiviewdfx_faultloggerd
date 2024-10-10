@@ -80,20 +80,5 @@ bool FaultLoggerConfig::SetLogFilePath(const std::string& path)
         FAULTLOGGER_CONFIG_TAG.c_str(), logFilePath_.c_str());
     return true;
 }
-
-std::string FaultLoggerConfig::GetDebugLogFilePath() const
-{
-    DFXLOGD("%{public}s :: GetDebugLogFilePath(%{public}s).",
-        FAULTLOGGER_CONFIG_TAG.c_str(), debugLogFilePath_.c_str());
-    return debugLogFilePath_;
-}
-
-bool FaultLoggerConfig::SetDebugLogFilePath(const std::string& path)
-{
-    debugLogFilePath_ = path;
-    DFXLOGD("%{public}s :: SetDebugLogFilePath(%{public}s).",
-        FAULTLOGGER_CONFIG_TAG.c_str(), debugLogFilePath_.c_str());
-    return true;
-}
 } // namespace HiviewDFX
 } // namespace OHOS

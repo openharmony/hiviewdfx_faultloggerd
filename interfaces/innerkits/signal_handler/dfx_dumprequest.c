@@ -382,7 +382,7 @@ static int ForkAndExecProcessDump(void)
         DFXLOGI("The exec processdump pid(%{public}ld).", syscall(SYS_getpid));
         Exit(DFX_ExecDump());
     } else if (childPid < 0) {
-        DFXLOGE("Failed to fork child process, errno(%{public}d).", errno);
+        DFXLOGE("[%{public}d]: Failed to fork child process, errno(%{public}d).", __LINE__, errno);
         FillCrashExceptionAndReport(CRASH_SIGNAL_EFORK);
         goto out;
     }
@@ -623,7 +623,7 @@ static void ForkAndDoProcessDump(int sig)
         alarm(ALARM_TIME_S);
         _exit(ForkAndExecProcessDump());
     } else if (childPid < 0) {
-        DFXLOGE("Failed to fork child process, errno(%{public}d).", errno);
+        DFXLOGE("[%{public}d]: Failed to fork child process, errno(%{public}d).", __LINE__, errno);
         RestoreDumpState(prevDumpableStatus, isTracerStatusModified);
         ForkAndExecProcessDump();
         return;

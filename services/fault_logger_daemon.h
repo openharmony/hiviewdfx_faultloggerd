@@ -48,7 +48,7 @@ public:
     void ClearTimeOutRecords();
     bool IsCrashed(int32_t pid);
 
-    int32_t CreateFileForRequest(int32_t type, int32_t pid, int32_t tid, uint64_t time, bool debugFlag) const;
+    int32_t CreateFileForRequest(int32_t type, int32_t pid, int32_t tid, uint64_t time) const;
 #ifdef FAULTLOGGERD_FUZZER
     bool HandleStaticForFuzzer(int32_t type, uint32_t callerUid);
     void HandleRequestForFuzzer(int32_t epollFd, int32_t connectionFd,
