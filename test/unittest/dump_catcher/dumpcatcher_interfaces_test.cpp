@@ -833,7 +833,7 @@ HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest033, TestSize.Level
         std::this_thread::sleep_for(std::chrono::seconds(10));
         _exit(0);
     } else if (pid < 0) {
-        GTEST_LOG(INFO) << "Error in fork.";
+        GTEST_LOG_(INFO) << "Fail in fork.";
     } else {
         GTEST_LOG_(INFO) << "dump remote process, " << "pid:" << pid << ", tid:" << 0;
         DfxDumpCatcher dumplog;
