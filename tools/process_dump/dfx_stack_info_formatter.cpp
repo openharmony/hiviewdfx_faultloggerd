@@ -174,7 +174,7 @@ void DfxStackInfoFormatter::FillNativeFrame(const DfxFrame& frame, Json::Value& 
     }
     frameJson["offset"] = frame.funcOffset;
     std::string strippedMapName = frame.mapName;
-    DfxMaps::UnFormatMapName(strippedMapName);
+    DfxMap::UnFormatMapName(strippedMapName);
     frameJson["file"] = strippedMapName;
     frameJson["buildId"] = frame.buildId;
     jsonInfo.append(frameJson);

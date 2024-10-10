@@ -36,8 +36,6 @@ public:
     static bool IsArkHapMapItem(const std::string& name);
     static bool IsArkCodeMapItem(const std::string& name);
     static bool IsLegalMapItem(const std::string& name, bool withArk = true);
-    static void FormatMapName(pid_t pid, std::string& mapName);
-    static void UnFormatMapName(std::string& mapName);
 
     void AddMap(std::shared_ptr<DfxMap> map, bool enableMapIndex = false);
     void Sort(bool less = true);

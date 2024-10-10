@@ -54,10 +54,10 @@
       OHOS::HiviewDFX::DfxMap::GetElf*;
       OHOS::HiviewDFX::DfxMap::Create*;
       OHOS::HiviewDFX::DfxMap::GetRelPc*;
+      OHOS::HiviewDFX::DfxMap::UnFormatMapName*;
       OHOS::HiviewDFX::DfxMaps::Create*;
       OHOS::HiviewDFX::DfxMaps::ToString*;
       OHOS::HiviewDFX::DfxMaps::FindMapByAddr*;
-      OHOS::HiviewDFX::DfxMaps::UnFormatMapName*;
       OHOS::HiviewDFX::DfxMaps::FindMapsByName*;
       OHOS::HiviewDFX::DfxMaps::GetStackRange*;
       OHOS::HiviewDFX::DfxRegs::CreateRemoteRegs*;
