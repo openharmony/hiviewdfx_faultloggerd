@@ -787,9 +787,9 @@ bool Unwinder::Impl::Unwind(void *ctx, size_t maxFrameNum, size_t skipFrameNum)
         if (frame.pc == prevPc && frame.sp == prevSp) {
             if (pid_ >= 0) {
                 MAYBE_UNUSED UnwindContext* uctx = reinterpret_cast<UnwindContext *>(ctx);
-                DFXLOGU("pc and sp is same, tid: %{public}d", uctx->pid);
+                DFXLOGU("Failed to update pc and sp, tid: %{public}d", uctx->pid);
             } else {
-                DFXLOGU("pc and sp is same");
+                DFXLOGU("Failed to update pc and sp");
             }
             lastErrorData_.SetAddrAndCode(frame.pc, UNW_ERROR_REPEATED_FRAME);
             break;
@@ -1082,12 +1082,18 @@ bool Unwinder::Impl::Apply(std::shared_ptr<DfxRegs> regs, std::shared_ptr<RegLoc
         return false;
     }
 
+    uintptr_t prevPc = regs->GetPc();
+    uintptr_t prevSp = regs->GetSp();
     uint16_t errCode = 0;
     bool ret = DfxInstructions::Apply(memory_, *(regs.get()), *(rs.get()), errCode);
     uintptr_t tmp = 0;
-    auto sp = regs->GetSp();
+    uintptr_t sp = regs->GetSp();
     if (ret && (!memory_->ReadUptr(sp, &tmp, false))) {
         errCode = UNW_ERROR_UNREADABLE_SP;
+        ret = false;
+    }
+    if (regs->GetPc() == prevPc && regs->GetSp() == prevSp) {
+        errCode = UNW_ERROR_REPEATED_FRAME;
         ret = false;
     }
     if (!ret) {
