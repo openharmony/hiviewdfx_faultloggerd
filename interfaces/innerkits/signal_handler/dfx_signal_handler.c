@@ -242,7 +242,7 @@ static const char* GetCrashDescription(const int32_t errCode)
             return g_crashExceptionMap[i].str;
         }
     }
-    return g_crashExceptionMap[i].str;    /* the end of map is "unknown reason" */
+    return g_crashExceptionMap[i - 1].str;    /* the end of map is "unknown reason" */
 }
 
 static void FillCrashExceptionAndReport(const int err)
@@ -613,6 +613,7 @@ static int CloneAndDoProcessDump(void* arg)
 
 static bool StartProcessdump(void)
 {
+    uint64_t startTime = GetAbsTimeMilliSeconds();
     pid_t pid = ForkBySyscall();
     if (pid < 0) {
         DFXLOG_ERROR("Failed to fork dummy processdump(%d)", errno);
@@ -625,8 +626,19 @@ static bool StartProcessdump(void)
         } else if (processDumpPid > 0) {
             _exit(0);
         } else {
-            DFXLOG_INFO("ready to start processdump");
-            DFX_ExecDump();
+            uint64_t endTime;
+            int tid;
+            ParseSiValue(&g_request.siginfo, &endTime, &tid);
+            uint64_t curTime = GetAbsTimeMilliSeconds();
+            DFXLOG_INFO("start processdump, fork spend time %" PRIu64 "ms", curTime - startTime);
+            if (endTime != 0) {
+                DFXLOG_INFO("dump remain %" PRId64 "ms", endTime - curTime);
+            }
+            if (endTime == 0 || endTime > curTime) {
+                DFX_ExecDump();
+            } else {
+                DFXLOG_INFO("%s", "current has spend all time, not execl processdump");
+            }
             _exit(0);
         }
     }
@@ -640,6 +652,7 @@ static bool StartProcessdump(void)
 
 static bool StartVMProcessUnwind(void)
 {
+    uint32_t startTime = GetAbsTimeMilliSeconds();
     pid_t pid = ForkBySyscall();
     if (pid < 0) {
         DFXLOG_ERROR("Failed to fork vm process(%d)", errno);
@@ -647,7 +660,7 @@ static bool StartVMProcessUnwind(void)
     } else if (pid == 0) {
         pid_t vmPid = ForkBySyscall();
         if (vmPid == 0) {
-            DFXLOG_INFO("ready to start vm process");
+            DFXLOG_INFO("start vm process, fork spend time %" PRIu64 "ms", GetAbsTimeMilliSeconds() - startTime);
             close(g_pipeFds[WRITE_TO_DUMP][0]);
             pid_t pids[PID_MAX] = {0};
             pids[REAL_PROCESS_PID] = GetRealPid();
@@ -786,6 +799,13 @@ static int ProcessDump(int sig)
     g_request.dumpMode = FUSION_MODE;
 
     do {
+        uint64_t endTime;
+        int tid;
+        ParseSiValue(&g_request.siginfo, &endTime, &tid);
+        if (endTime != 0 && endTime <= GetAbsTimeMilliSeconds()) {
+            DFXLOG_INFO("%s", "enter processdump has coat all time, just exit");
+            break;
+        }
         if (!StartProcessdump()) {
             DFXLOG_ERROR("start processdump fail");
             break;

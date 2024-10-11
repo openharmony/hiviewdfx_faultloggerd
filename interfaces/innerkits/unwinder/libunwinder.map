@@ -82,6 +82,21 @@
       "vtable for OHOS::HiviewDFX::DfxRegsRiscv64";
       OHOS::HiviewDFX::DfxFrameFormatter::GetFrameStr*;
       OHOS::HiviewDFX::DfxFrameFormatter::GetFramesStr*;
+      OHOS::HiviewDFX::DfxElf::GetStartVaddr*;
+      OHOS::HiviewDFX::DfxElf::GetStartOffset*;
+      OHOS::HiviewDFX::DfxElf::GetSectionInfo*;
+      OHOS::HiviewDFX::DfxElf::GetSectionData*;
+      OHOS::HiviewDFX::DfxElf::GetElfName*;
+      OHOS::HiviewDFX::DfxSymbols::ParseSymbols*;
+      OHOS::HiviewDFX::DfxSymbols::AddSymbolsByPlt*;
+      OHOS::HiviewDFX::DfxArk::ArkDestoryJsSymbolExtractor*;
+      OHOS::HiviewDFX::DfxArk::ParseArkFrameInfo*;
+      OHOS::HiviewDFX::DfxArk::ArkDestoryJsSymbolExtractor*;
+      OHOS::HiviewDFX::DfxArk::ParseArkFrameInfo*;
+      OHOS::HiviewDFX::DfxMap::IsMapExec*;
+      OHOS::HiviewDFX::DfxArk::ArkCreateJsSymbolExtractor*;
+      OHOS::HiviewDFX::DfxMaps::IsLegalMapItem*;
+      OHOS::HiviewDFX::DfxElf::GetMmapPtr*;
     };
   local:
     *;

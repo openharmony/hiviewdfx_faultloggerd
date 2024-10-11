@@ -50,6 +50,7 @@ public:
 
     int32_t CreateFileForRequest(int32_t type, int32_t pid, int32_t tid, uint64_t time, bool debugFlag) const;
 #ifdef FAULTLOGGERD_FUZZER
+    void HandleStaticForFuzzer(int32_t type, uint32_t callerUid);
     void HandleRequestForFuzzer(int32_t epollFd, int32_t connectionFd,
                                 const FaultLoggerdRequest *requestConst, FaultLoggerdRequest *request);
 #endif
@@ -68,8 +69,21 @@ private:
     void HandlePermissionRequest(int32_t connectionFd, FaultLoggerdRequest* request);
     void HandleSdkDumpRequest(int32_t connectionFd, FaultLoggerdRequest* request);
     void HandlePipeFdClientRequest(int32_t connectionFd, FaultLoggerdRequest* request);
+    void HandleReadBuf(int& fd, int32_t connectionFd, FaultLoggerdRequest* request,
+        FaultLoggerPipe2* faultLoggerPipe);
+    void HandleWriteBuf(int& fd, FaultLoggerPipe2* faultLoggerPipe);
+    void HandleReadRes(int& fd, int32_t connectionFd, FaultLoggerdRequest* request,
+        FaultLoggerPipe2* faultLoggerPipe);
+    void HandleWriteRes(int& fd, FaultLoggerPipe2* faultLoggerPipe);
+    void HandleJsonReadBuf(int& fd, int32_t connectionFd, FaultLoggerdRequest* request,
+        FaultLoggerPipe2* faultLoggerPipe);
+    void HandleJsonWriteBuf(int& fd, FaultLoggerPipe2* faultLoggerPipe);
+    void HandleJsonReadRes(int& fd, int32_t connectionFd, FaultLoggerdRequest* request,
+        FaultLoggerPipe2* faultLoggerPipe);
+    void HandleJsonWriteRes(int& fd, FaultLoggerPipe2* faultLoggerPipe);
+    void HandleDelete(FaultLoggerdRequest* request);
     void HandleRequestByPipeType(int& fd, int32_t connectionFd, FaultLoggerdRequest* request,
-                                 FaultLoggerPipe2* faultLoggerPipe);
+        FaultLoggerPipe2* faultLoggerPipe);
     void HandleExceptionRequest(int32_t connectionFd, FaultLoggerdRequest* request);
     void HandleRequestByClientType(int32_t connectionFd, FaultLoggerdRequest* request);
     bool CheckRequestCredential(int32_t connectionFd, FaultLoggerdRequest* request);

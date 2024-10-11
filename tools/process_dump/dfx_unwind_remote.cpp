@@ -41,21 +41,32 @@
 #ifdef PARSE_LOCK_OWNER
 #include "lock_parser.h"
 #endif
+#ifndef is_ohos_lite
+#include "parameter.h"
+#include "parameters.h"
+#endif // !is_ohos_lite
 #include "process_dumper.h"
 #include "printer.h"
 
 namespace OHOS {
 namespace HiviewDFX {
 namespace {
-void PrintTidKernelStack(pid_t tid)
+void GetThreadKernelStack(std::shared_ptr<DfxThread> thread)
 {
-    std::string kernelStack;
-    if (DfxGetKernelStack(tid, kernelStack) == 0) {
-        DFXLOG_INFO("tid(%d) kernel stack", tid);
-        size_t step = LOG_BUF_LEN - 1;
-        for (size_t i = 0;  i < kernelStack.length(); i += step) {
-            DFXLOG_INFO("%s", kernelStack.substr(i, step).c_str());
+    std::string threadKernelStack;
+    pid_t tid = thread->threadInfo_.nsTid;
+    DfxThreadStack threadStack;
+    if (DfxGetKernelStack(tid, threadKernelStack) == 0 && FormatThreadKernelStack(threadKernelStack, threadStack)) {
+        DFXLOG_INFO("Failed to get tid(%d) user stack, try kernel", tid);
+#ifndef is_ohos_lite
+        if (OHOS::system::GetParameter("const.logsystem.versiontype", "false") == "beta") {
+            size_t step = LOG_BUF_LEN - 1;
+            for (size_t i = 0;  i < threadKernelStack.length(); i += step) {
+                DFXLOG_INFO("%s", threadKernelStack.substr(i, step).c_str());
+            }
         }
+#endif
+        thread->SetFrames(threadStack.frames);
     }
 }
 }
@@ -137,7 +148,7 @@ void DfxUnwindRemote::UnwindKeyThread(std::shared_ptr<ProcessDumpRequest> reques
             if (unwThread->GetThreadRegs() != nullptr) {
                 unwindAsyncThread->UnwindStack(vmPid);
             } else {
-                PrintTidKernelStack(unwThread->threadInfo_.nsTid);
+                GetThreadKernelStack(unwThread);
             }
         }
     } else {
@@ -187,7 +198,9 @@ void DfxUnwindRemote::UnwindOtherThread(std::shared_ptr<DfxProcess> process, std
             pid_t tid = thread->threadInfo_.nsTid;
             DFXLOG_DEBUG("%s, unwind tid(%d) start", __func__, tid);
             if (isVmProcAttach && !withRegs) {
-                PrintTidKernelStack(tid);
+                GetThreadKernelStack(thread);
+                Printer::PrintThreadBacktraceByConfig(thread, false);
+                thread->Detach();
                 continue;
             }
             auto pid = (vmPid != 0 && isVmProcAttach) ? vmPid : tid;

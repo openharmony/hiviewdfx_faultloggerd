@@ -44,14 +44,14 @@ int DfxLogPrintV(const LogLevel logLevel, const unsigned int domain, const char*
 
 #define DFXLOG_PRINT(prio, ...) DfxLogPrint(prio, LOG_DOMAIN, LOG_TAG, ##__VA_ARGS__)
 
-#define LOGD(fmt, ...) DFXLOG_PRINT(LOG_DEBUG, "[%s:%d] " fmt, (FILENAME_), (__LINE__), ##__VA_ARGS__)
-#define LOGI(fmt, ...) DFXLOG_PRINT(LOG_INFO, "[%s:%d] " fmt, (FILENAME_), (__LINE__), ##__VA_ARGS__)
-#define LOGW(fmt, ...) DFXLOG_PRINT(LOG_WARN, "[%s:%d] " fmt, (FILENAME_), (__LINE__), ##__VA_ARGS__)
-#define LOGE(fmt, ...) DFXLOG_PRINT(LOG_ERROR, "[%s:%d] " fmt, (FILENAME_), (__LINE__), ##__VA_ARGS__)
-#define LOGF(fmt, ...) DFXLOG_PRINT(LOG_FATAL, "[%s:%d] " fmt, (FILENAME_), (__LINE__), ##__VA_ARGS__)
+#define LOGD(fmt, ...) DFXLOG_PRINT(LOG_DEBUG, "[%s:%d] " fmt, (__FILE_NAME__), (__LINE__), ##__VA_ARGS__)
+#define LOGI(fmt, ...) DFXLOG_PRINT(LOG_INFO, "[%s:%d] " fmt, (__FILE_NAME__), (__LINE__), ##__VA_ARGS__)
+#define LOGW(fmt, ...) DFXLOG_PRINT(LOG_WARN, "[%s:%d] " fmt, (__FILE_NAME__), (__LINE__), ##__VA_ARGS__)
+#define LOGE(fmt, ...) DFXLOG_PRINT(LOG_ERROR, "[%s:%d] " fmt, (__FILE_NAME__), (__LINE__), ##__VA_ARGS__)
+#define LOGF(fmt, ...) DFXLOG_PRINT(LOG_FATAL, "[%s:%d] " fmt, (__FILE_NAME__), (__LINE__), ##__VA_ARGS__)
 
 #ifdef DFX_LOG_UNWIND
-#define LOGU(fmt, ...) DFXLOG_PRINT(LOG_INFO, "[%s:%d] " fmt, (FILENAME_), (__LINE__), ##__VA_ARGS__)
+#define LOGU(fmt, ...) DFXLOG_PRINT(LOG_INFO, "[%s:%d] " fmt, (__FILE_NAME__), (__LINE__), ##__VA_ARGS__)
 #else
 #define LOGU(fmt, ...)
 #endif
@@ -76,7 +76,7 @@ do { \
         fmt ## _DfxToPublic); \
     FmtId fmtid { HILOG_UUID, HILOG_FMT_OFFSET(hilogFmt.data()) }; \
     HiLogPrintDict(LOG_CORE, level, LOG_DOMAIN, LOG_TAG, \
-        &fmtid, hilogFmt.data(), (FILENAME_), (__LINE__), ##__VA_ARGS__); \
+        &fmtid, hilogFmt.data(), (__FILE_NAME__), (__LINE__), ##__VA_ARGS__); \
 } while (0)
 #else
 #define DFXLOG_STD_ARRAY(level, fmt, ...) \
@@ -86,7 +86,7 @@ do { \
 #define DFXLOG_STD_ARRAY_FILE(level, fmt, ...) \
 do { \
     constexpr auto hilogFmt = OHOS::HiviewDFX::ConcatStr("[%{public}s:%{public}d] ", fmt ## _DfxToPublic); \
-    HiLogPrint(LOG_CORE, level, LOG_DOMAIN, LOG_TAG, hilogFmt.data(), (FILENAME_), (__LINE__), ##__VA_ARGS__); \
+    HiLogPrint(LOG_CORE, level, LOG_DOMAIN, LOG_TAG, hilogFmt.data(), (__FILE_NAME__), (__LINE__), ##__VA_ARGS__); \
 } while (0)
 #endif
 

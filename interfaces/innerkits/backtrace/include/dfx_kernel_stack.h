@@ -17,10 +17,18 @@
 
 #include <cinttypes>
 #include <string>
+#include "dfx_frame.h"
 
 namespace OHOS {
 namespace HiviewDFX {
+struct DfxThreadStack {
+    std::string threadName = "";
+    long int tid = 0;
+    std::vector<DfxFrame> frames;
+};
 int32_t DfxGetKernelStack(int32_t pid, std::string& kernelStack);
+bool FormatThreadKernelStack(const std::string& kernelStack, DfxThreadStack& threadStack);
+bool FormatProcessKernelStack(const std::string& kernelStack, std::vector<DfxThreadStack>& processStack);
 }
 }
 #endif

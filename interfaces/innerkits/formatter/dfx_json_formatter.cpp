@@ -18,9 +18,9 @@
 #include <cstdlib>
 #include <iostream>
 #include <ostream>
-#include <regex>
 #include <securec.h>
 #include <sstream>
+#include "dfx_kernel_stack.h"
 #ifndef is_ohos_lite
 #include "json/json.h"
 #endif
@@ -107,6 +107,81 @@ bool DfxJsonFormatter::FormatJsonStack(std::string jsonStack, std::string& outSt
         outStackStr.append(ss.str());
     }
     return true;
+}
+
+#ifdef __aarch64__
+static bool FormatKernelStackStr(const std::vector<DfxThreadStack>& processStack, std::string& formattedStack)
+{
+    if (processStack.empty()) {
+        return false;
+    }
+    formattedStack = "";
+    for (const auto &threadStack : processStack) {
+        std::ostringstream ss;
+        ss << "Tid:" << threadStack.tid << ", Name:" << threadStack.threadName << std::endl;
+        formattedStack.append(ss.str());
+        for (size_t frameIdx = 0; frameIdx < threadStack.frames.size(); ++frameIdx) {
+            std::string file = threadStack.frames[frameIdx].mapName;
+            char buf[FRAME_BUF_LEN] = {0};
+            char format[] = "#%02zu pc %016" PRIx64 " %s";
+            if (snprintf_s(buf, sizeof(buf), sizeof(buf) - 1, format, frameIdx, threadStack.frames[frameIdx].relPc,
+                file.empty() ? "Unknown" : file.c_str()) <= 0) {
+                continue;
+            }
+            formattedStack.append(std::string(buf, strlen(buf)) + "\n");
+        }
+    }
+    return true;
+}
+
+static bool FormatKernelStackJson(std::vector<DfxThreadStack> processStack, std::string& formattedStack)
+{
+    if (processStack.empty()) {
+        return false;
+    }
+    Json::Value jsonInfo;
+    for (const auto &threadStack : processStack) {
+        Json::Value threadInfo;
+        threadInfo["thread_name"] = threadStack.threadName;
+        threadInfo["tid"] = threadStack.tid;
+        Json::Value frames(Json::arrayValue);
+        for (const auto& frame : threadStack.frames) {
+            Json::Value frameJson;
+            char buf[FRAME_BUF_LEN] = {0};
+            char format[] = "%016" PRIx64;
+            if (snprintf_s(buf, sizeof(buf), sizeof(buf) - 1, format, frame.relPc) <= 0) {
+                continue;
+            }
+            frameJson["pc"] = std::string(buf, strlen(buf));
+            frameJson["symbol"] = "";
+            frameJson["offset"] = 0;
+            frameJson["file"] = frame.mapName.empty() ? "Unknown" : frame.mapName;
+            frameJson["buildId"] = "";
+            frames.append(frameJson);
+        }
+        threadInfo["frames"] = frames;
+        jsonInfo.append(threadInfo);
+    }
+    formattedStack = Json::FastWriter().write(jsonInfo);
+    return true;
+}
+#endif
+
+bool DfxJsonFormatter::FormatKernelStack(const std::string& kernelStack, std::string& formattedStack, bool jsonFormat)
+{
+#ifdef __aarch64__
+    std::vector<DfxThreadStack> processStack;
+    if (!FormatProcessKernelStack(kernelStack, processStack)) {
+        return false;
+    }
+    if (jsonFormat) {
+        return FormatKernelStackJson(processStack, formattedStack);
+    } else {
+        return FormatKernelStackStr(processStack, formattedStack);
+    }
+#else
+    return false;
+#endif
 }
 #endif
 } // namespace HiviewDFX

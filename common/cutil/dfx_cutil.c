@@ -152,3 +152,23 @@ bool TrimAndDupStr(const char* src, char* dst)
     }
     return true;
 }
+
+uint64_t GetAbsTimeMilliSeconds(void)
+{
+    struct timespec ts;
+    (void)clock_gettime(CLOCK_MONOTONIC, &ts);
+    return ((uint64_t)(ts.tv_sec) * NUMBER_ONE_THOUSAND) +
+        ((uint64_t)(ts.tv_nsec) / NUMBER_ONE_MILLION);
+}
+
+void ParseSiValue(siginfo_t* si, uint64_t* endTime, int* tid)
+{
+    const int flagOffset = 63;
+    if (((uint64_t)si->si_value.sival_ptr & (1ULL << flagOffset)) != 0) {
+        *endTime = (uint64_t)si->si_value.sival_ptr & (~(1ULL << flagOffset));
+        *tid = 0;
+    } else {
+        *endTime = 0;
+        *tid = si->si_value.sival_int;
+    }
+}

@@ -19,9 +19,13 @@
 
 #include "dfx_regs.h"
 #include "dfx_regs_get.h"
+#include "dfx_ring_buffer_wrapper.h"
 #include "dfx_dump_request.h"
 #include "dfx_thread.h"
+#include <pthread.h>
+#include "printer.h"
 #include "process_dumper.h"
+#include "dfx_unwind_async_thread.h"
 #include "dfx_unwind_remote.h"
 #include "dfx_util.h"
 #include "dfx_test_util.h"
@@ -43,6 +47,16 @@ public:
 } // namespace OHOS
 
 namespace {
+void *SleepThread(void *argv)
+{
+    int threadID = *(int*)argv;
+    printf("create MultiThread %d", threadID);
+
+    const int sleepTime = 10;
+    sleep(sleepTime);
+
+    return nullptr;
+}
 /**
  * @tc.name: DfxProcessTest001
  * @tc.desc: test DfxProcess Create
@@ -113,6 +127,32 @@ HWTEST_F (ProcessDumpTest, DfxProcessTest004, TestSize.Level2)
 }
 
 /**
+ * @tc.name: DfxProcessTest005
+ * @tc.desc: test DfxProcess ChangeTid
+ * @tc.type: FUNC
+ */
+HWTEST_F (ProcessDumpTest, DfxProcessTest005, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "DfxProcessTest005: start.";
+    pid_t pid = getpid();
+    std::shared_ptr<DfxProcess> process1 = DfxProcess::Create(pid, pid);
+    pid_t ret = process1->ChangeTid(pid, false);
+    process1->Attach();
+    process1->Detach();
+    ASSERT_EQ(ret, pid);
+    pthread_t tid;
+    int threadID[1] = {1};
+    pthread_create(&tid, NULL, SleepThread, &threadID[0]);
+    std::shared_ptr<DfxProcess> process2 = DfxProcess::Create(pid, tid);
+    ret = process2->ChangeTid(pid, false);
+    pthread_join(tid, NULL);
+    process2->Attach();
+    process2->Detach();
+    ASSERT_EQ(ret, pid);
+    GTEST_LOG_(INFO) << "DfxProcessTest005: end.";
+}
+
+/**
  * @tc.name: DfxThreadTest001
  * @tc.desc: test DfxThread Create
  * @tc.type: FUNC
@@ -165,4 +205,121 @@ HWTEST_F (ProcessDumpTest, DfxUnwindRemoteTest001, TestSize.Level2)
     EXPECT_EQ(true, ret) << "DfxUnwindRemoteTest001 Failed";
     GTEST_LOG_(INFO) << "DfxUnwindRemoteTest001: end.";
 }
+
+#ifdef UNITTEST
+/**
+ * @tc.name: DfxUnwindRemoteTest002
+ * @tc.desc: test DfxUnwindRemote UnwindProcess
+ * @tc.type: FUNC
+ */
+HWTEST_F (ProcessDumpTest, DfxUnwindRemoteTest002, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "DfxUnwindRemoteTest002: start.";
+    pid_t pid = GetProcessPid(ACCOUNTMGR_NAME);
+    pid_t tid = pid;
+    std::shared_ptr<DfxProcess> process = DfxProcess::Create(pid, pid);
+    auto unwinder = std::make_shared<Unwinder>(pid);
+    auto remote = std::make_shared<DfxUnwindRemote>();
+    std::shared_ptr<ProcessDumpRequest> request = std::make_shared<ProcessDumpRequest>();
+    bool ret = remote->UnwindProcess(request, nullptr, unwinder, 0);
+    ASSERT_EQ(ret, false);
+    ret = remote->UnwindProcess(request, process, unwinder, 0);
+    ASSERT_EQ(ret, true);
+    std::shared_ptr<DfxThread> thread = DfxThread::Create(pid, tid, tid);
+    process->keyThread_ = thread;
+    ret = remote->UnwindProcess(request, process, unwinder, 0);
+    ASSERT_EQ(ret, true);
+    GTEST_LOG_(INFO) << "DfxUnwindRemoteTest002: end.";
+}
+
+/**
+ * @tc.name: DfxRingBufferWrapperTest001
+ * @tc.desc: test DfxRingBufferWrapper SetWriteBufFd
+ * @tc.type: FUNC
+ */
+HWTEST_F (ProcessDumpTest, DfxRingBufferWrapperTest001, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "DfxRingBufferWrapperTest001: start.";
+    auto wrapper = std::make_shared<DfxRingBufferWrapper>();
+    wrapper->SetWriteBufFd(-1);
+    int ret = wrapper->DefaultWrite(0, nullptr, 0);
+    ASSERT_EQ(ret, -1);
+    const size_t bufsize = 10;
+    char buf[bufsize];
+    ret = wrapper->DefaultWrite(1, buf, bufsize);
+    ASSERT_NE(ret, -1);
+    ret = wrapper->DefaultWrite(-1, buf, bufsize);
+    ASSERT_EQ(ret, 0);
+    GTEST_LOG_(INFO) << "DfxRingBufferWrapperTest001: end.";
+}
+
+/**
+ * @tc.name: DfxRingBufferWrapperTest002
+ * @tc.desc: test DfxRingBufferWrapper SetWriteBufFd
+ * @tc.type: FUNC
+ */
+HWTEST_F (ProcessDumpTest, DfxRingBufferWrapperTest002, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "DfxRingBufferWrapperTest002: start.";
+    auto wrapper = std::make_shared<DfxRingBufferWrapper>();
+    wrapper->PrintBaseInfo();
+    wrapper->SetWriteBufFd(-1);
+    int ret = wrapper->DefaultWrite(0, nullptr, 0);
+    ASSERT_EQ(ret, -1);
+    GTEST_LOG_(INFO) << "DfxRingBufferWrapperTest002: end.";
+}
+
+/**
+ * @tc.name: DfxUnwindAsyncThreadTest001
+ * @tc.desc: test DfxUnwindAsyncThread GetSubmitterStack
+ * @tc.type: FUNC
+ */
+HWTEST_F (ProcessDumpTest, DfxUnwindAsyncThreadTest001, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "DfxUnwindAsyncThreadTest001: start.";
+    Printer printer;
+    printer.PrintDumpHeader(nullptr, nullptr, nullptr);
+    printer.PrintThreadRegsByConfig(nullptr);
+    printer.PrintRegsByConfig(nullptr);
+    printer.PrintThreadOpenFiles(nullptr);
+    pid_t pid = GetProcessPid(ACCOUNTMGR_NAME);
+    pid_t tid = pid;
+    std::shared_ptr<DfxThread> thread = DfxThread::Create(pid, tid, tid);
+    auto unwinder = std::make_shared<Unwinder>(pid);
+    DfxUnwindAsyncThread asyncThread1(thread, unwinder, 0);
+    std::vector<DfxFrame> submitterFrames;
+    asyncThread1.GetSubmitterStack(submitterFrames);
+    ASSERT_EQ(asyncThread1.stackId_, 0);
+    DfxUnwindAsyncThread asyncThread2(thread, unwinder, 1);
+    asyncThread2.GetSubmitterStack(submitterFrames);
+    asyncThread2.UnwindThreadFallback();
+    asyncThread2.UnwindThreadByParseStackIfNeed();
+    ASSERT_EQ(asyncThread2.stackId_, 1);
+    DfxUnwindAsyncThread asyncThread3(nullptr, unwinder, 1);
+    asyncThread3.UnwindThreadByParseStackIfNeed();
+    ASSERT_EQ(asyncThread3.stackId_, 1);
+    GTEST_LOG_(INFO) << "DfxUnwindAsyncThreadTest001: end.";
+}
+
+/**
+ * @tc.name: DfxUnwindAsyncThreadTest002
+ * @tc.desc: test DfxUnwindAsyncThread GetSubmitterStack
+ * @tc.type: FUNC
+ */
+HWTEST_F (ProcessDumpTest, DfxUnwindAsyncThreadTest002, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "DfxUnwindAsyncThreadTest002: start.";
+    pid_t pid = GetProcessPid(ACCOUNTMGR_NAME);
+    auto unwinder = std::make_shared<Unwinder>(pid);
+    DfxUnwindAsyncThread asyncThread1(nullptr, nullptr, 0);
+    asyncThread1.UnwindStack(0);
+    ASSERT_EQ(asyncThread1.stackId_, 0);
+    DfxUnwindAsyncThread asyncThread2(nullptr, unwinder, 0);
+    asyncThread2.UnwindStack(0);
+    std::vector<DfxFrame> submitterFrames;
+    asyncThread2.GetSubmitterStack(submitterFrames);
+    ASSERT_EQ(asyncThread2.stackId_, 0);
+    GTEST_LOG_(INFO) << "DfxUnwindAsyncThreadTest002: end.";
+}
+#endif
 }

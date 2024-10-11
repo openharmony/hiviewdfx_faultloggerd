@@ -481,13 +481,16 @@ HWTEST_F(DfxMemoryTest, DfxMemoryTest013, TestSize.Level2)
 HWTEST_F(DfxMemoryTest, DfxMemoryTest014, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "DfxMemoryTest014: start.";
+    std::string res = ExecuteCommands("uname");
+    bool linuxKernel = res.find("Linux") != std::string::npos;
+    if (linuxKernel) {
+        ASSERT_TRUE(linuxKernel);
+        return;
+    }
     pid_t pid = GetProcessPid(FOUNDATION_NAME);
     auto maps = DfxMaps::Create(pid);
     std::vector<std::shared_ptr<DfxMap>> shmmMaps;
-    if (!maps->FindMapsByName("shmm", shmmMaps)) {
-        GTEST_LOG_(INFO) << "DfxMemoryTest014: Failed to find shmm";
-        return;
-    }
+    ASSERT_TRUE(maps->FindMapsByName("[shmm]", shmmMaps));
     std::shared_ptr<DfxMap> shmmMap = nullptr;
     for (auto map : shmmMaps) {
         if (map->IsMapExec()) {

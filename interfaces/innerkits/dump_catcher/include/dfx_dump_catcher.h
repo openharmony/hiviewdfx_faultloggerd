@@ -17,6 +17,7 @@
 #define DFX_DUMPCATCH_H
 
 #include <cinttypes>
+#include <condition_variable>
 #include <cstring>
 #include <memory>
 #include <mutex>
@@ -76,20 +77,33 @@ public:
      * @return if succeed return true, otherwise return false
     */
     bool DumpCatchMultiPid(const std::vector<int> pidV, std::string& msg);
-
+    /**
+     * @brief Dump stack of process
+     *
+     * @param pid  process id
+     * @param msg  message of stack
+     * @param maxFrameNums the maximum number of frames to dump,
+     *  if pid is not equal to caller pid then it does not support setting
+     * @param isJson whether message of stack is json formatted
+     * @return -1: dump catch failed 0:msg is normal stack 1:msg is kernel stack(not json format)
+    */
+    int DumpCatchProcess(int pid, std::string& msg, size_t maxFrameNums = DEFAULT_MAX_FRAME_NUM,
+        bool isJson = false);
 private:
     bool DoDumpCurrTid(const size_t skipFrameNum, std::string& msg, size_t maxFrameNums);
     bool DoDumpLocalTid(const int tid, std::string& msg, size_t maxFrameNums);
     bool DoDumpLocalPid(int pid, std::string& msg, size_t maxFrameNums);
     bool DoDumpLocalLocked(int pid, int tid, std::string& msg, size_t maxFrameNums);
-    bool DoDumpRemoteLocked(int pid, int tid, std::string& msg, bool isJson = false);
-    bool DoDumpCatchRemote(int pid, int tid, std::string& msg, bool isJson = false);
+    bool DoDumpRemoteLocked(int pid, int tid, std::string& msg, bool isJson = false,
+        int timeout = DUMPCATCHER_REMOTE_TIMEOUT);
+    bool DoDumpCatchRemote(int pid, int tid, std::string& msg, bool isJson = false,
+        int timeout = DUMPCATCHER_REMOTE_TIMEOUT);
     int DoDumpRemotePid(int pid, std::string& msg, bool isJson = false, int32_t timeout = DUMPCATCHER_REMOTE_TIMEOUT);
     int DoDumpRemotePoll(int bufFd, int resFd, int timeout, std::string& msg, bool isJson = false);
     bool DoReadBuf(int fd, std::string& msg);
     bool DoReadRes(int fd, bool &ret, std::string& msg);
-    static void CollectKernelStack(pid_t pid);
-    void AsyncGetAllTidKernelStack(pid_t pid);
+    static void CollectKernelStack(pid_t pid, int waitMilliSeconds = 0);
+    void AsyncGetAllTidKernelStack(pid_t pid, int waitMilliSeconds = 0);
 
 private:
     static const int DUMPCATCHER_REMOTE_P90_TIMEOUT = 1000;
