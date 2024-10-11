@@ -80,7 +80,7 @@ bool FormatThreadKernelStack(const std::string& kernelStack, DfxThreadStack& thr
         return false;
     }
     size_t index = 0;
-    std::regex framePattern(R"(\[(\w{16})\]\<.*\> \((.*)\))");
+    std::regex framePattern(R"(\[(\w{16})\]\<[\w\?+/]{1,1024}\> \(([\w\-./]{1,1024})\))");
     for (std::sregex_iterator it = std::sregex_iterator(kernelStack.begin() + pos, kernelStack.end(), framePattern);
         it != std::sregex_iterator(); ++it) {
         if ((*it)[2].str().rfind(".elf") != std::string::npos) { // 2 : second of searched element is map name

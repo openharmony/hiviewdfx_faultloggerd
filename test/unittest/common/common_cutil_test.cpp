@@ -107,27 +107,6 @@ HWTEST_F(CommonCutilTest, DfxCutilTest005, TestSize.Level2)
 }
 
 /**
- * @tc.name: TraceTest001
- * @tc.desc: test Trace functions DfxStartTraceDlsym
- * @tc.type: FUNC
- */
-HWTEST_F(CommonCutilTest, TraceTest001, TestSize.Level2)
-{
-    GTEST_LOG_(INFO) << "TraceTest001: start.";
-    DfxEnableTraceDlsym(true);
-    char *name = nullptr;
-    DfxStartTraceDlsym(name);
-    FormatTraceName(nullptr, 0, nullptr);
-    const size_t size = 2;
-    FormatTraceName(nullptr, size, nullptr);
-    ASSERT_EQ(name, nullptr);
-    DfxEnableTraceDlsym(false);
-    DfxStartTraceDlsym(name);
-    ASSERT_EQ(name, nullptr);
-    GTEST_LOG_(INFO) << "TraceTest001: end.";
-}
-
-/**
  * @tc.name: ParseSiValueTest001
  * @tc.desc: test StartsWith functions
  * @tc.type: FUNC
@@ -171,6 +150,27 @@ HWTEST_F(CommonCutilTest, ParseSiValueTest001, TestSize.Level2)
     ParseSiValue(&si, &timeout, &tid);
     ASSERT_EQ(tid, 0);
     ASSERT_EQ(timeout, data & ~(1ULL << flagOffset));
+}
+
+/**
+ * @tc.name: TraceTest001
+ * @tc.desc: test Trace functions DfxStartTraceDlsym
+ * @tc.type: FUNC
+ */
+HWTEST_F(CommonCutilTest, TraceTest001, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "TraceTest001: start.";
+    DfxEnableTraceDlsym(true);
+    char *name = nullptr;
+    DfxStartTraceDlsym(name);
+    FormatTraceName(nullptr, 0, nullptr);
+    const size_t size = 2;
+    FormatTraceName(nullptr, size, nullptr);
+    ASSERT_EQ(name, nullptr);
+    DfxEnableTraceDlsym(false);
+    DfxStartTraceDlsym(name);
+    ASSERT_EQ(name, nullptr);
+    GTEST_LOG_(INFO) << "TraceTest001: end.";
 }
 }
 } // namespace HiviewDFX
