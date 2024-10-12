@@ -48,6 +48,8 @@ bool GetBacktraceFramesByTid(std::vector<DfxFrame>& frames, int32_t tid, size_t 
  * @param fast flag for using fp backtrace(true) or dwarf backtrace(false)
  * @param maxFrameNums the maximum number of frames to backtrace
  * @return if succeed return true, otherwise return false
+ * @warning This interface requires that the caller process has ioctl system call permission,
+ *          otherwise it may cause the calling process to crash.
 */
 bool GetBacktraceStringByTid(std::string& out, int32_t tid, size_t skipFrameNum, bool fast,
                              size_t maxFrameNums = DEFAULT_MAX_FRAME_NUM);
@@ -69,6 +71,8 @@ bool PrintBacktrace(int32_t fd = -1, bool fast = false, size_t maxFrameNums = DE
  * @param fast flag for using fp backtrace(true) or dwarf backtrace(false)
  * @param maxFrameNums the maximum number of frames to backtrace
  * @return if succeed return true, otherwise return false
+ * @warning This interface requires that the caller process has ioctl system call permission,
+ *          otherwise it may cause the calling process to crash.
 */
 bool GetBacktrace(std::string& out, bool fast = false, size_t maxFrameNums = DEFAULT_MAX_FRAME_NUM);
 
@@ -80,6 +84,8 @@ bool GetBacktrace(std::string& out, bool fast = false, size_t maxFrameNums = DEF
  * @param fast flag for using fp backtrace(true) or dwarf backtrace(false)
  * @param maxFrameNums the maximum number of frames to backtrace
  * @return if succeed return true, otherwise return false
+ * @warning This interface requires that the caller process has ioctl system call permission,
+ *          otherwise it may cause the calling process to crash.
 */
 bool GetBacktrace(std::string& out, size_t skipFrameNum, bool fast = false,
                   size_t maxFrameNums = DEFAULT_MAX_FRAME_NUM);
@@ -92,6 +98,8 @@ bool GetBacktrace(std::string& out, size_t skipFrameNum, bool fast = false,
  * @param maxFrameNums the maximum number of frames to backtrace
  * @param isJson whether message of native stack is json formatted
  * @return formatted stacktrace string
+ * @warning This interface requires that the caller process has ioctl system call permission,
+ *          otherwise it may cause the calling process to crash.
 */
 std::string GetProcessStacktrace(size_t maxFrameNums = DEFAULT_MAX_FRAME_NUM);
 
@@ -111,6 +119,8 @@ extern "C" {
      * @param skipFrameNum the number of frames to skip
      * @param maxFrameNums the maximum number of frames to backtrace
      * @return backtrace of the current process
+     * @warning This interface requires that the caller process has ioctl system call permission,
+     *          otherwise it may cause the calling process to crash.
     */
     const char* GetTrace(size_t skipFrameNum = 0, size_t maxFrameNums = DEFAULT_MAX_FRAME_NUM);
 }
