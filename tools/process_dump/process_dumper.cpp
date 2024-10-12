@@ -30,6 +30,7 @@
 #include <securec.h>
 #include <string>
 #include <syscall.h>
+#include <sys/time.h>
 #include <sys/types.h>
 #include <sys/ptrace.h>
 #include <ucontext.h>
@@ -237,6 +238,52 @@ void InfoRemoteProcessResult(std::shared_ptr<ProcessDumpRequest> request, int re
             break;
     }
 }
+
+void SetProcessdumpTimeout(siginfo_t &si)
+{
+    if (si.si_signo != SIGDUMP) {
+        return;
+    }
+
+    uint64_t endTime;
+    int tid;
+    ParseSiValue(si, endTime, tid);
+
+    if (tid == 0) {
+        DFXLOG_INFO("%s", "reset, prevent incorrect reading sival_int for tid");
+        si.si_value.sival_int = 0;
+    }
+
+    if (endTime == 0) {
+        DFXLOG_INFO("%s", "end time is zero, not set new alarm");
+        return;
+    }
+
+    uint64_t curTime = GetAbsTimeMilliSeconds();
+    if (curTime >= endTime) {
+        DFXLOG_INFO("%s", "now has timeout, processdump exit");
+#ifndef CLANG_COVERAGE
+        _exit(0);
+#endif
+    }
+    uint64_t diffTime = endTime - curTime;
+
+    DFXLOG_INFO("processdump remain time%" PRIu64 "ms", diffTime);
+    if (diffTime > PROCESSDUMP_TIMEOUT * NUMBER_ONE_THOUSAND) {
+        DFXLOG_ERROR("%s", "dump remain time is invalid, not set timer");
+        return;
+    }
+
+    struct itimerval timer;
+    timer.it_value.tv_sec = static_cast<int64_t>(diffTime / NUMBER_ONE_THOUSAND);
+    timer.it_value.tv_usec = static_cast<int64_t>(diffTime * NUMBER_ONE_THOUSAND % NUMBER_ONE_MILLION);
+    timer.it_interval.tv_sec = 0;
+    timer.it_interval.tv_usec = 0;
+
+    if (setitimer(ITIMER_REAL, &timer, nullptr) != 0) {
+        DFXLOG_ERROR("start processdump timer fail %d", errno);
+    }
+}
 }
 
 ProcessDumper &ProcessDumper::GetInstance()
@@ -279,7 +326,14 @@ void ProcessDumper::Dump()
 
     finishTime_ = GetTimeMillisec();
     ReportSigDumpStats(request);
-
+    // After skipping InitPrintThread due to ptrace failure or other reasons,
+    // request resFd_ to write back the result to dumpcatch
+    if (request->siginfo.si_signo == SIGDUMP && resFd_ == -1) {
+        resFd_ = RequestPipeFd(request->pid, FaultLoggerPipeType::PIPE_FD_JSON_WRITE_RES);
+        if (resFd_ < 0) {
+            resFd_ = RequestPipeFd(request->pid, FaultLoggerPipeType::PIPE_FD_WRITE_RES);
+        }
+    }
     WriteDumpRes(resDump_);
     // print keythread base info to hilog when carsh
     DfxRingBufferWrapper::GetInstance().PrintBaseInfo();
@@ -456,6 +510,7 @@ int ProcessDumper::DumpProcess(std::shared_ptr<ProcessDumpRequest> request)
         if ((dumpRes = ReadRequestAndCheck(request)) != DumpErrorCode::DUMP_ESUCCESS) {
             break;
         }
+        SetProcessdumpTimeout(request->siginfo);
         isCrash_ = request->siginfo.si_signo != SIGDUMP;
         bool isLeakDump = request->siginfo.si_signo == SIGLEAK_STACK;
         // We need check pid is same with getppid().

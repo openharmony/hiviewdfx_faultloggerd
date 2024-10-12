@@ -34,6 +34,17 @@ public:
      * @return bool
      */
     static bool FormatJsonStack(std::string jsonStack, std::string& outStackStr);
+
+    /**
+     * @brief Format kernel stack
+     *
+     * @param kernelStack kernel stack
+     * @param formattedStack formatted stack, eg #00 pc xxxx xxxxx.so
+     * @param jsonFormat whether return json format stack, default false
+     * @return if succeed return true, otherwise return false
+     */
+    static bool FormatKernelStack(const std::string& kernelStack,
+        std::string& formattedStack, bool jsonFormat = false);
 #endif
 };
 } // namespace HiviewDFX

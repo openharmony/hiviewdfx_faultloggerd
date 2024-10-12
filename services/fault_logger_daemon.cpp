@@ -197,6 +197,12 @@ void FaultLoggerDaemon::HandleAccept(int32_t epollFd, int32_t socketFd)
 }
 
 #ifdef FAULTLOGGERD_FUZZER
+void FaultLoggerDaemon::HandleStaticForFuzzer(int32_t type, uint32_t callerUid)
+{
+    GetRequestTypeName(type);
+    CheckCallerUID(callerUid);
+}
+
 void FaultLoggerDaemon::HandleRequestForFuzzer(int32_t epollFd, int32_t connectionFd,
                                                const FaultLoggerdRequest *requestConst, FaultLoggerdRequest *request)
 {
@@ -350,76 +356,125 @@ void FaultLoggerDaemon::HandleExceptionRequest(int32_t connectionFd, FaultLogger
     ReportExceptionToSysEvent(exception);
 }
 
+void FaultLoggerDaemon::HandleReadBuf(int& fd, int32_t connectionFd, FaultLoggerdRequest* request,
+    FaultLoggerPipe2* faultLoggerPipe)
+{
+    FaultLoggerCheckPermissionResp resSecurityCheck = SecurityCheck(connectionFd, request);
+    if (FaultLoggerCheckPermissionResp::CHECK_PERMISSION_PASS != resSecurityCheck) {
+        return;
+    }
+    if ((faultLoggerPipe->faultLoggerPipeBuf_) != nullptr) {
+        fd = faultLoggerPipe->faultLoggerPipeBuf_->GetReadFd();
+    }
+}
+
+void FaultLoggerDaemon::HandleWriteBuf(int& fd, FaultLoggerPipe2* faultLoggerPipe)
+{
+    if ((faultLoggerPipe->faultLoggerPipeBuf_) != nullptr) {
+        fd = faultLoggerPipe->faultLoggerPipeBuf_->GetWriteFd();
+    }
+}
+
+void FaultLoggerDaemon::HandleReadRes(int& fd, int32_t connectionFd, FaultLoggerdRequest* request,
+    FaultLoggerPipe2* faultLoggerPipe)
+{
+    FaultLoggerCheckPermissionResp resSecurityCheck = SecurityCheck(connectionFd, request);
+    if (FaultLoggerCheckPermissionResp::CHECK_PERMISSION_PASS != resSecurityCheck) {
+        return;
+    }
+    if ((faultLoggerPipe->faultLoggerPipeRes_) != nullptr) {
+        fd = faultLoggerPipe->faultLoggerPipeRes_->GetReadFd();
+    }
+}
+
+void FaultLoggerDaemon::HandleWriteRes(int& fd, FaultLoggerPipe2* faultLoggerPipe)
+{
+    if ((faultLoggerPipe->faultLoggerPipeRes_) != nullptr) {
+        fd = faultLoggerPipe->faultLoggerPipeRes_->GetWriteFd();
+    }
+}
+
+void FaultLoggerDaemon::HandleDelete(FaultLoggerdRequest* request)
+{
+    faultLoggerPipeMap_->Del(request->pid);
+}
+
+void FaultLoggerDaemon::HandleJsonReadBuf(int& fd, int32_t connectionFd, FaultLoggerdRequest* request,
+    FaultLoggerPipe2* faultLoggerPipe)
+{
+    FaultLoggerCheckPermissionResp resSecurityCheck = SecurityCheck(connectionFd, request);
+    if (FaultLoggerCheckPermissionResp::CHECK_PERMISSION_PASS != resSecurityCheck) {
+        return;
+    }
+    if ((faultLoggerPipe->faultLoggerJsonPipeBuf_) != nullptr) {
+        fd = faultLoggerPipe->faultLoggerJsonPipeBuf_->GetReadFd();
+    }
+}
+
+void FaultLoggerDaemon::HandleJsonWriteBuf(int& fd, FaultLoggerPipe2* faultLoggerPipe)
+{
+    if ((faultLoggerPipe->faultLoggerJsonPipeBuf_) != nullptr) {
+        fd = faultLoggerPipe->faultLoggerJsonPipeBuf_->GetWriteFd();
+    }
+}
+
+void FaultLoggerDaemon::HandleJsonReadRes(int& fd, int32_t connectionFd, FaultLoggerdRequest* request,
+    FaultLoggerPipe2* faultLoggerPipe)
+{
+    FaultLoggerCheckPermissionResp resSecurityCheck = SecurityCheck(connectionFd, request);
+    if (FaultLoggerCheckPermissionResp::CHECK_PERMISSION_PASS != resSecurityCheck) {
+        return;
+    }
+    if ((faultLoggerPipe->faultLoggerJsonPipeRes_) != nullptr) {
+        fd = faultLoggerPipe->faultLoggerJsonPipeRes_->GetReadFd();
+    }
+}
+
+void FaultLoggerDaemon::HandleJsonWriteRes(int& fd, FaultLoggerPipe2* faultLoggerPipe)
+{
+    if ((faultLoggerPipe->faultLoggerJsonPipeRes_) != nullptr) {
+        fd = faultLoggerPipe->faultLoggerJsonPipeRes_->GetWriteFd();
+    }
+}
+
 void FaultLoggerDaemon::HandleRequestByPipeType(int& fd, int32_t connectionFd, FaultLoggerdRequest* request,
                                                 FaultLoggerPipe2* faultLoggerPipe)
 {
     switch (request->pipeType) {
         case (int32_t)FaultLoggerPipeType::PIPE_FD_READ_BUF: {
-            FaultLoggerCheckPermissionResp resSecurityCheck = SecurityCheck(connectionFd, request);
-            if (FaultLoggerCheckPermissionResp::CHECK_PERMISSION_PASS != resSecurityCheck) {
-                return;
-            }
-            if ((faultLoggerPipe->faultLoggerPipeBuf_) != nullptr) {
-                fd = faultLoggerPipe->faultLoggerPipeBuf_->GetReadFd();
-            }
+            HandleReadBuf(fd, connectionFd, request, faultLoggerPipe);
             break;
         }
         case (int32_t)FaultLoggerPipeType::PIPE_FD_WRITE_BUF: {
-            if ((faultLoggerPipe->faultLoggerPipeBuf_) != nullptr) {
-                fd = faultLoggerPipe->faultLoggerPipeBuf_->GetWriteFd();
-            }
+            HandleWriteBuf(fd, faultLoggerPipe);
             break;
         }
         case (int32_t)FaultLoggerPipeType::PIPE_FD_READ_RES: {
-            FaultLoggerCheckPermissionResp resSecurityCheck = SecurityCheck(connectionFd, request);
-            if (FaultLoggerCheckPermissionResp::CHECK_PERMISSION_PASS != resSecurityCheck) {
-                return;
-            }
-            if ((faultLoggerPipe->faultLoggerPipeRes_) != nullptr) {
-                fd = faultLoggerPipe->faultLoggerPipeRes_->GetReadFd();
-            }
+            HandleReadRes(fd, connectionFd, request, faultLoggerPipe);
             break;
         }
         case (int32_t)FaultLoggerPipeType::PIPE_FD_WRITE_RES: {
-            if ((faultLoggerPipe->faultLoggerPipeRes_) != nullptr) {
-                fd = faultLoggerPipe->faultLoggerPipeRes_->GetWriteFd();
-            }
+            HandleWriteRes(fd, faultLoggerPipe);
             break;
         }
         case (int32_t)FaultLoggerPipeType::PIPE_FD_DELETE: {
-            faultLoggerPipeMap_->Del(request->pid);
+            HandleDelete(request);
             return;
         }
         case (int32_t)FaultLoggerPipeType::PIPE_FD_JSON_READ_BUF: {
-            FaultLoggerCheckPermissionResp resSecurityCheck = SecurityCheck(connectionFd, request);
-            if (FaultLoggerCheckPermissionResp::CHECK_PERMISSION_PASS != resSecurityCheck) {
-                return;
-            }
-            if ((faultLoggerPipe->faultLoggerJsonPipeBuf_) != nullptr) {
-                fd = faultLoggerPipe->faultLoggerJsonPipeBuf_->GetReadFd();
-            }
+            HandleJsonReadBuf(fd, connectionFd, request, faultLoggerPipe);
             break;
         }
         case (int32_t)FaultLoggerPipeType::PIPE_FD_JSON_WRITE_BUF: {
-            if ((faultLoggerPipe->faultLoggerJsonPipeBuf_) != nullptr) {
-                fd = faultLoggerPipe->faultLoggerJsonPipeBuf_->GetWriteFd();
-            }
+            HandleJsonWriteBuf(fd, faultLoggerPipe);
             break;
         }
         case (int32_t)FaultLoggerPipeType::PIPE_FD_JSON_READ_RES: {
-            FaultLoggerCheckPermissionResp resSecurityCheck = SecurityCheck(connectionFd, request);
-            if (FaultLoggerCheckPermissionResp::CHECK_PERMISSION_PASS != resSecurityCheck) {
-                return;
-            }
-            if ((faultLoggerPipe->faultLoggerJsonPipeRes_) != nullptr) {
-                fd = faultLoggerPipe->faultLoggerJsonPipeRes_->GetReadFd();
-            }
+            HandleJsonReadRes(fd, connectionFd, request, faultLoggerPipe);
             break;
         }
         case (int32_t)FaultLoggerPipeType::PIPE_FD_JSON_WRITE_RES: {
-            if ((faultLoggerPipe->faultLoggerJsonPipeRes_) != nullptr) {
-                fd = faultLoggerPipe->faultLoggerJsonPipeRes_->GetWriteFd();
-            }
+            HandleJsonWriteRes(fd, faultLoggerPipe);
             break;
         }
         default:
@@ -582,6 +637,9 @@ void FaultLoggerDaemon::HandleSdkDumpRequest(int32_t connectionFd, FaultLoggerdR
         si.si_signo = SIGDUMP;
         si.si_errno = 0;
         si.si_value.sival_int = request->tid;
+        if (request->tid == 0 && sizeof(void *) == 8) { // 8 : platform 64
+            si.si_value.sival_ptr = reinterpret_cast<void *>(request->endTime | (1ULL << 63)); // 63 : platform 64
+        }
         si.si_code = request->sigCode;
         si.si_pid = request->callerPid;
         si.si_uid = static_cast<uid_t>(request->callerTid);

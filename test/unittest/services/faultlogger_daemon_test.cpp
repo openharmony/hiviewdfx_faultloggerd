@@ -513,5 +513,4 @@ HWTEST_F (FaultLoggerDaemonTest, FaultLoggerDaemonTest011, TestSize.Level2)
     daemon->HandleRequestByPipeType(fd, connectionFd, &request, faultLoggerPipe);
     GTEST_LOG_(INFO) << "FaultLoggerDaemonTest011: end.";
 }
-
 }

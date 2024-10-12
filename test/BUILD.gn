@@ -19,6 +19,27 @@ if (defined(ohos_lite)) {
   import("//build/test.gni")
 }
 
+group("faultloggerd_tests") {
+  deps = [
+    ":faultloggerd_moduletest",
+    ":faultloggerd_systemtest",
+    ":faultloggerd_unittest",
+    "../tools/crasher_c:crasher_c",
+    "../tools/crasher_cpp:crasher_cpp",
+  ]
+  if (!defined(ohos_lite)) {
+    testonly = true
+    deps += [
+      ":faultloggerd_benchmarktest",
+      ":faultloggerd_funchook",
+      ":faultloggerd_fuzzertest",
+      ":faultloggerd_performancetest",
+      "../example:dumpcatcherdemo",
+      "../tools/panic_maker:panic_maker",
+    ]
+  }
+}
+
 group("faultloggerd_benchmarktest") {
   if (!defined(ohos_lite)) {
     testonly = true

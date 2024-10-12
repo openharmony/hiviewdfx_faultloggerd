@@ -171,7 +171,7 @@ bool DfxMaps::IsArkHapMapItem(const std::string& name)
     if (name.empty()) {
         return false;
     }
-    if (EndsWith(name, ".hap") || EndsWith(name, ".hsp")) {
+    if (EndsWith(name, ".hap") || EndsWith(name, ".hsp") || EndsWith(name, ".hqf")) {
         return true;
     }
     return false;
@@ -194,7 +194,7 @@ bool DfxMaps::IsLegalMapItem(const std::string& name, bool withArk)
     if (withArk && (IsArkHapMapItem(name) || IsArkCodeMapItem(name))) {
         return true;
     }
-    if (EndsWith(name, "[vdso]")) {
+    if (EndsWith(name, "[vdso]") || EndsWith(name, "[shmm]")) {
         return true;
     }
     if (name.empty() || name.find(':') != std::string::npos || name.front() == '[' ||

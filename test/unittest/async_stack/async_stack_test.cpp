@@ -30,6 +30,7 @@
 #include "async_stack.h"
 #include "dfx_test_util.h"
 #include "elapsed_time.h"
+#include "fp_unwinder.h"
 
 using namespace testing;
 using namespace testing::ext;
@@ -98,6 +99,25 @@ HWTEST_F(AsyncStackTest, AsyncStackTest002, TestSize.Level2)
     GTEST_LOG_(INFO) << "AsyncStackTest002: end.";
 }
 
-
+/**
+ * @tc.name: AsyncStackTest003
+ * @tc.desc: test UnwindFallback Function
+ * @tc.type: FUNC
+ */
+HWTEST_F(AsyncStackTest, AsyncStackTest003, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "AsyncStackTest003: start.";
+    const int32_t maxSize = 16;
+    uintptr_t pcs[maxSize] = {0};
+    int32_t skipFrameNum = 2;
+    std::thread (FpUnwinder::Unwind, pcs, maxSize, skipFrameNum).join();
+    int32_t ret = FpUnwinder::UnwindFallback(pcs, maxSize, skipFrameNum);
+#if defined(__arm__)
+    ASSERT_EQ(0, ret);
+#elif defined(__aarch64__)
+    ASSERT_NE(0, ret);
+#endif
+    GTEST_LOG_(INFO) << "AsyncStackTest003: end.";
+}
 } // namespace HiviewDFX
 } // namepsace OHOS

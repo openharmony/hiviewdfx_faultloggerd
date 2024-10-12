@@ -30,6 +30,7 @@
 #include "backtrace_local.h"
 #include "backtrace_local_thread.h"
 #include "dfx_frame_formatter.h"
+#include "dfx_kernel_stack.h"
 #include "dfx_test_util.h"
 #include "elapsed_time.h"
 
@@ -348,6 +349,53 @@ HWTEST_F(BacktraceLocalTest, BacktraceLocalTest010, TestSize.Level2)
 #endif
     ASSERT_TRUE(str.find(keyword) != std::string::npos);
     GTEST_LOG_(INFO) << "BacktraceLocalTest010: end.";
+}
+
+/**
+ * @tc.name: BacktraceLocalTest011
+ * @tc.desc: test get thread kernel stack
+ * @tc.type: FUNC
+ */
+HWTEST_F(BacktraceLocalTest, BacktraceLocalTest011, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "BacktraceLocalTest011: start.";
+    std::string res = ExecuteCommands("uname");
+    if (res.find("Linux") != std::string::npos) {
+        return;
+    }
+    std::string kernelStack;
+    ASSERT_EQ(DfxGetKernelStack(gettid(), kernelStack), 0);
+    DfxThreadStack threadStack;
+    ASSERT_TRUE(FormatThreadKernelStack(kernelStack, threadStack));
+    ASSERT_GT(threadStack.frames.size(), 0);
+    for (auto const& frame : threadStack.frames) {
+        auto line = DfxFrameFormatter::GetFrameStr(frame);
+        ASSERT_NE(line.find("#"), std::string::npos);
+        GTEST_LOG_(INFO) << line;
+    }
+    GTEST_LOG_(INFO) << "BacktraceLocalTest011: end.";
+}
+
+/**
+ * @tc.name: BacktraceLocalTest012
+ * @tc.desc: test BacktraceLocal abnormal scenario
+ * @tc.type: FUNC
+ */
+HWTEST_F(BacktraceLocalTest, BacktraceLocalTest012, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "BacktraceLocalTest012: start.";
+    std::shared_ptr<Unwinder> unwinder1 = nullptr;
+    const int tid = -2;
+    BacktraceLocalThread backtrace1(tid, unwinder1);
+    bool ret = backtrace1.Unwind(false, 0, 0);
+    ASSERT_EQ(ret, false);
+    std::shared_ptr<Unwinder> unwinder2 = std::make_shared<Unwinder>();
+    BacktraceLocalThread backtrace2(tid, unwinder2);
+    ret = backtrace2.Unwind(false, 0, 0);
+    ASSERT_EQ(ret, false);
+    std::string str = backtrace2.GetFormattedStr(false);
+    ASSERT_EQ(str, "");
+    GTEST_LOG_(INFO) << "BacktraceLocalTest012: end.";
 }
 } // namespace HiviewDFX
 } // namepsace OHOS

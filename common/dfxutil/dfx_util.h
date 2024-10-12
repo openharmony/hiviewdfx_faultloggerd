@@ -16,6 +16,7 @@
 #ifndef DFX_UTIL_H
 #define DFX_UTIL_H
 
+#include <csignal>
 #include <cstdio>
 #include <fcntl.h>
 #include <memory>
@@ -35,6 +36,7 @@ AT_SYMBOL_HIDDEN uint64_t GetAbsTimeMilliSeconds(void);
 AT_SYMBOL_DEFAULT std::string GetCurrentTimeStr(uint64_t current = 0);
 AT_SYMBOL_HIDDEN bool ReadDirFiles(const std::string& path, std::vector<std::string>& files);
 AT_SYMBOL_HIDDEN bool VerifyFilePath(const std::string& filePath, const std::vector<const std::string>& validPaths);
+AT_SYMBOL_HIDDEN void ParseSiValue(siginfo_t& si, uint64_t& endTime, int& tid);
 #endif
 AT_SYMBOL_HIDDEN off_t GetFileSize(const int& fd);
 AT_SYMBOL_HIDDEN bool ReadFdToString(int fd, std::string& content);
