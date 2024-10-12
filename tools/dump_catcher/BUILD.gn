@@ -51,29 +51,33 @@ if (defined(ohos_lite)) {
   }
 
   ohos_executable("dumpcatcher") {
-    install_enable = true
-    configs = [
-      ":dumpcatcher_config",
-      "$faultloggerd_path/common/build:coverage_flags",
-    ]
-    sources = [
-      "dump_catcher.cpp",
-      "main.cpp",
-    ]
+    if (build_variant == "root") {
+      install_enable = true
+      configs = [
+        ":dumpcatcher_config",
+        "$faultloggerd_path/common/build:coverage_flags",
+      ]
+      sources = [
+        "dump_catcher.cpp",
+        "main.cpp",
+      ]
 
-    cflags_cc = [ "-DDEBUG_CRASH_LOCAL_HANDLER" ]
+      cflags_cc = [ "-DDEBUG_CRASH_LOCAL_HANDLER" ]
 
-    deps = [
-      "$faultloggerd_frameworks_path/localhandler:dfx_local_handler_src",
-      "$faultloggerd_path/common/dfxlog:dfx_hilog",
-      "$faultloggerd_path/common/dfxutil:dfx_util",
-      "$faultloggerd_path/interfaces/innerkits/dump_catcher:libdfx_dumpcatcher",
-    ]
+      deps = [
+        "$faultloggerd_frameworks_path/localhandler:dfx_local_handler_src",
+        "$faultloggerd_path/common/dfxlog:dfx_hilog",
+        "$faultloggerd_path/common/dfxutil:dfx_util",
+        "$faultloggerd_path/interfaces/innerkits/dump_catcher:libdfx_dumpcatcher",
+      ]
 
-    external_deps = [
-      "c_utils:utils",
-      "hilog:libhilog",
-    ]
+      external_deps = [
+        "c_utils:utils",
+        "hilog:libhilog",
+      ]
+    } else {
+      sources = [ "dummy_dumpcatcher.cpp" ]
+    }
 
     install_images = [
       "system",
