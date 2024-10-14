@@ -78,7 +78,7 @@ HWTEST_F(DfxSigDumpHandlerTest, DfxSigDumpHandlerTest001, TestSize.Level2)
         sleep(1);
         DfxDumpCatcher dumplog;
         std::string msg = "";
-        bool ret = dumplog.DumpCatch(targetPid, 0, msg);
+        bool ret = dumplog.DumpCatchMix(targetPid, 0, msg);
         EXPECT_EQ(ret, true) << "DfxSigDumpHandlerTest001 Failed";
         std::string log[] = {"Pid:", "Timestamp", "test_sigdump_handler", "#00"};
         log[0] = log[0] + std::to_string(targetPid);
