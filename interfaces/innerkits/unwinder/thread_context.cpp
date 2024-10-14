@@ -117,9 +117,11 @@ bool RemoveAllContextLocked()
             it = g_contextMap.erase(it);
             continue;
         }
+#ifndef __aarch64__
         if (it->second->tid == ThreadContextStatus::CONTEXT_UNUSED) {
             ReleaseContext(it->second);
         }
+#endif
         it++;
     }
     return true;
@@ -172,7 +174,10 @@ std::shared_ptr<ThreadContext> LocalThreadContext::CollectThreadContext(int32_t 
     if (!SignalRequestThread(tid, threadContext.get())) {
         return nullptr;
     }
-    threadContext->cv.wait_for(lock, g_timeOut);
+    if (threadContext->cv.wait_for(lock, g_timeOut) == std::cv_status::timeout) {
+        LOGE("wait_for timeout. tid = %d", tid);
+        return nullptr;
+    }
     return threadContext;
 }
 
