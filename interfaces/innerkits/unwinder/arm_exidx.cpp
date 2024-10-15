@@ -194,14 +194,14 @@ bool ArmExidx::ExtractEntryData(uintptr_t entryOffset)
     ops_.clear();
     uint32_t data = 0;
     if (entryOffset & 1) {
-        DFXLOGE("entryOffset: %{public}llx error.", (uint64_t)entryOffset);
+        DFXLOGE("[%{public}d]: entryOffset: %{public}llx error.", __LINE__, (uint64_t)entryOffset);
         lastErrorData_.SetAddrAndCode(entryOffset, UNW_ERROR_INVALID_ALIGNMENT);
         return false;
     }
 
     entryOffset += FOUR_BYTE_OFFSET;
     if (!memory_->ReadU32(entryOffset, &data, false)) {
-        DFXLOGE("entryOffset: %{public}llx error.", (uint64_t)entryOffset);
+        DFXLOGE("[%{public}d]: entryOffset: %{public}llx error.", __LINE__, (uint64_t)entryOffset);
         lastErrorData_.SetAddrAndCode(entryOffset, UNW_ERROR_ILLEGAL_VALUE);
         return false;
     }

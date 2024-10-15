@@ -48,7 +48,7 @@ static int ParseParamters(int argc, char *argv[], int32_t &pid, int32_t &tid)
     if (argc <= 1) {
         return ret;
     }
-    DFXLOGD("argc: %{public}d, argv1: %{public}s", argc, argv[1]);
+    DFXLOGD("[%{public}d]: argc: %{public}d, argv1: %{public}s", __LINE__, argc, argv[1]);
 
     int optRet;
     const char *optString = "cmkp:t:";

@@ -41,7 +41,7 @@ static bool ParseParameters(int argc, char *argv[], bool &isSignalHdlr)
     if (argc <= DUMP_ARG_ONE) {
         return false;
     }
-    DFXLOGD("argc: %{public}d, argv1: %{public}s", argc, argv[1]);
+    DFXLOGD("[%{public}d]: argc: %{public}d, argv1: %{public}s", __LINE__, argc, argv[1]);
 
     if (!strcmp("-signalhandler", argv[DUMP_ARG_ONE])) {
         isSignalHdlr = true;

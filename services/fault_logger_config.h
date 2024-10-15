@@ -36,9 +36,6 @@ public:
     bool SetLogFileMaxSize(const long size);
     std::string GetLogFilePath() const;
     bool SetLogFilePath(const std::string& path);
-    bool SetDebugLogFilePath(const std::string& path);
-    std::string GetDebugLogFilePath() const;
-
 private:
     int logFileNumber_;
     long logFileSize_;

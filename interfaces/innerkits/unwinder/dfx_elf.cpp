@@ -667,7 +667,8 @@ bool DfxElf::FillUnwindTableByExidx(ShdrInfo shdr, uintptr_t loadBase, struct Un
     uti->tableLen = shdr.size;
     INSTR_STATISTIC(InstructionEntriesArmExidx, shdr.size, 0);
     uti->format = UNW_INFO_FORMAT_ARM_EXIDX;
-    DFXLOGU("tableData: %{public}" PRIx64 ", tableLen: %{public}d", (uint64_t)uti->tableData, (int)uti->tableLen);
+    DFXLOGU("[%{public}d]: tableData: %{public}" PRIx64 ", tableLen: %{public}d", __LINE__,
+        (uint64_t)uti->tableData, (int)uti->tableLen);
     return true;
 }
 
@@ -678,29 +679,31 @@ bool DfxElf::FillUnwindTableByEhhdrLocal(struct DwarfEhFrameHdr* hdr, struct Unw
         return false;
     }
     if (hdr->version != DW_EH_VERSION) {
-        DFXLOGE("version(%{public}d) error", hdr->version);
+        DFXLOGE("[%{public}d]: version(%{public}d) error", __LINE__, hdr->version);
         return false;
     }
 
     uintptr_t ptr = (uintptr_t)(&(hdr->ehFrame));
-    DFXLOGU("hdr: %{public}" PRIx64 ", ehFrame: %{public}" PRIx64 "", (uint64_t)hdr, (uint64_t)ptr);
+    DFXLOGU("[%{public}d]: hdr: %{public}" PRIx64 ", ehFrame: %{public}" PRIx64 "", __LINE__,
+        (uint64_t)hdr, (uint64_t)ptr);
 
     auto acc = std::make_shared<DfxAccessorsLocal>();
     auto memory = std::make_shared<DfxMemory>(acc);
-    DFXLOGU("gp: %{public}" PRIx64 ", ehFramePtrEnc: %{public}x, fdeCountEnc: %{public}x",
+    DFXLOGU("[%{public}d]: gp: %{public}" PRIx64 ", ehFramePtrEnc: %{public}x, fdeCountEnc: %{public}x", __LINE__,
         (uint64_t)uti->gp, hdr->ehFramePtrEnc, hdr->fdeCountEnc);
     memory->SetDataOffset(uti->gp);
     MAYBE_UNUSED uintptr_t ehFrameStart = memory->ReadEncodedValue(ptr, hdr->ehFramePtrEnc);
     uintptr_t fdeCount = memory->ReadEncodedValue(ptr, hdr->fdeCountEnc);
-    DFXLOGU("ehFrameStart: %{public}" PRIx64 ", fdeCount: %{public}d", (uint64_t)ehFrameStart, (int)fdeCount);
+    DFXLOGU("[%{public}d]: ehFrameStart: %{public}" PRIx64 ", fdeCount: %{public}d", __LINE__,
+        (uint64_t)ehFrameStart, (int)fdeCount);
 
     if (hdr->tableEnc != (DW_EH_PE_datarel | DW_EH_PE_sdata4)) {
-        DFXLOGU("tableEnc: %{public}x", hdr->tableEnc);
+        DFXLOGU("[%{public}d]: tableEnc: %{public}x", __LINE__, hdr->tableEnc);
         if (hdr->fdeCountEnc == DW_EH_PE_omit) {
             fdeCount = ~0UL;
         }
         if (hdr->ehFramePtrEnc == DW_EH_PE_omit) {
-            DFXLOGE("ehFramePtrEnc(%{public}x) error", hdr->ehFramePtrEnc);
+            DFXLOGE("[%{public}d]: ehFramePtrEnc(%{public}x) error", __LINE__, hdr->ehFramePtrEnc);
             return false;
         }
         uti->isLinear = true;
@@ -713,7 +716,8 @@ bool DfxElf::FillUnwindTableByEhhdrLocal(struct DwarfEhFrameHdr* hdr, struct Unw
         uti->segbase = (uintptr_t)hdr;
     }
     uti->format = UNW_INFO_FORMAT_REMOTE_TABLE;
-    DFXLOGU("tableData: %{public}" PRIx64 ", tableLen: %{public}d", (uint64_t)uti->tableData, (int)uti->tableLen);
+    DFXLOGU("[%{public}d]: tableData: %{public}" PRIx64 ", tableLen: %{public}d", __LINE__,
+        (uint64_t)uti->tableData, (int)uti->tableLen);
     return true;
 }
 #endif
@@ -724,29 +728,31 @@ bool DfxElf::FillUnwindTableByEhhdr(struct DwarfEhFrameHdr* hdr, uintptr_t shdrB
         return false;
     }
     if (hdr->version != DW_EH_VERSION) {
-        DFXLOGE("version(%{public}d) error", hdr->version);
+        DFXLOGE("[%{public}d]: version(%{public}d) error", __LINE__, hdr->version);
         return false;
     }
     uintptr_t ptr = (uintptr_t)(&(hdr->ehFrame));
-    DFXLOGU("hdr: %{public}" PRIx64 ", ehFrame: %{public}" PRIx64 "", (uint64_t)hdr, (uint64_t)ptr);
+    DFXLOGU("[%{public}d]: hdr: %{public}" PRIx64 ", ehFrame: %{public}" PRIx64 "", __LINE__,
+        (uint64_t)hdr, (uint64_t)ptr);
 
     uti->gp = GetGlobalPointer();
-    DFXLOGU("gp: %{public}" PRIx64 ", ehFramePtrEnc: %{public}x, fdeCountEnc: %{public}x",
+    DFXLOGU("[%{public}d]: gp: %{public}" PRIx64 ", ehFramePtrEnc: %{public}x, fdeCountEnc: %{public}x", __LINE__,
         (uint64_t)uti->gp, hdr->ehFramePtrEnc, hdr->fdeCountEnc);
     mmap_->SetDataOffset(uti->gp);
     auto ptrOffset = ptr - reinterpret_cast<uintptr_t>(GetMmapPtr());
     MAYBE_UNUSED uintptr_t ehFrameStart = mmap_->ReadEncodedValue(ptrOffset, hdr->ehFramePtrEnc);
     uintptr_t fdeCount = mmap_->ReadEncodedValue(ptrOffset, hdr->fdeCountEnc);
-    DFXLOGU("ehFrameStart: %{public}" PRIx64 ", fdeCount: %{public}d", (uint64_t)ehFrameStart, (int)fdeCount);
+    DFXLOGU("[%{public}d]: ehFrameStart: %{public}" PRIx64 ", fdeCount: %{public}d", __LINE__,
+        (uint64_t)ehFrameStart, (int)fdeCount);
     ptr = reinterpret_cast<uintptr_t>(GetMmapPtr()) + ptrOffset;
 
     if (hdr->tableEnc != (DW_EH_PE_datarel | DW_EH_PE_sdata4)) {
-        DFXLOGU("tableEnc: %{public}x", hdr->tableEnc);
+        DFXLOGU("[%{public}d]: tableEnc: %{public}x", __LINE__, hdr->tableEnc);
         if (hdr->fdeCountEnc == DW_EH_PE_omit) {
             fdeCount = ~0UL;
         }
         if (hdr->ehFramePtrEnc == DW_EH_PE_omit) {
-            DFXLOGE("ehFramePtrEnc(%{public}x) error", hdr->ehFramePtrEnc);
+            DFXLOGE("[%{public}d]: ehFramePtrEnc(%{public}x) error", __LINE__, hdr->ehFramePtrEnc);
             return false;
         }
         uti->isLinear = true;
@@ -760,7 +766,8 @@ bool DfxElf::FillUnwindTableByEhhdr(struct DwarfEhFrameHdr* hdr, uintptr_t shdrB
         uti->segbase = shdrBase;
     }
     uti->format = UNW_INFO_FORMAT_REMOTE_TABLE;
-    DFXLOGU("tableData: %{public}" PRIx64 ", tableLen: %{public}d", (uint64_t)uti->tableData, (int)uti->tableLen);
+    DFXLOGU("[%{public}d]: tableData: %{public}" PRIx64 ", tableLen: %{public}d", __LINE__,
+        (uint64_t)uti->tableData, (int)uti->tableLen);
     return true;
 }
 
@@ -797,8 +804,8 @@ int DfxElf::FindUnwindTableInfo(uintptr_t pc, std::shared_ptr<DfxMap> map, struc
             INSTR_STATISTIC(InstructionEntriesEhFrame, shdr.size, 0);
             hdr = (struct DwarfEhFrameHdr *) (shdr.offset + (char *)GetMmapPtr());
         } else if (GetSectionInfo(shdr, EH_FRAME) && GetMmapPtr() != nullptr) {
-            DFXLOGW("Elf(%{public}s) no found .eh_frame_hdr section, using synthetic .eh_frame section",
-                map->name.c_str());
+            DFXLOGW("[%{public}d]: Elf(%{public}s) no found .eh_frame_hdr section, " \
+                "using synthetic .eh_frame section", __LINE__, map->name.c_str());
             INSTR_STATISTIC(InstructionEntriesEhFrame, shdr.size, 0);
             synthHdr.version = DW_EH_VERSION;
             synthHdr.ehFramePtrEnc = DW_EH_PE_absptr |
@@ -942,8 +949,8 @@ int DfxElf::DlPhdrCb(struct dl_phdr_info *info, size_t size, void *data)
     } else {
         ShdrInfo shdr;
         if (FindSection(info, EH_FRAME, shdr)) {
-            DFXLOGW("Elf(%{public}s) no found .eh_frame_hdr section, using synthetic .eh_frame section",
-                info->dlpi_name);
+            DFXLOGW("[%{public}d]: Elf(%{public}s) no found .eh_frame_hdr section, " \
+                "using synthetic .eh_frame section", __LINE__, info->dlpi_name);
             INSTR_STATISTIC(InstructionEntriesEhFrame, shdr.size, 0);
             synthHdr.version = DW_EH_VERSION;
             synthHdr.ehFramePtrEnc = DW_EH_PE_absptr |

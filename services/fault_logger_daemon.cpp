@@ -308,11 +308,6 @@ bool FaultLoggerDaemon::InitEnvironment()
         return false;
     }
 
-    if (!OHOS::ForceCreateDirectory(faultLoggerConfig_->GetDebugLogFilePath())) {
-        DFXLOGE("%{public}s :: Failed to ForceCreateDirectory GetDebugLogFilePath", FAULTLOGGERD_TAG.c_str());
-        return false;
-    }
-
     signal(SIGCHLD, SIG_IGN);
     signal(SIGPIPE, SIG_IGN);
     return true;
@@ -321,9 +316,10 @@ bool FaultLoggerDaemon::InitEnvironment()
 void FaultLoggerDaemon::HandleDefaultClientRequest(int32_t connectionFd, const FaultLoggerdRequest * request)
 {
     DFX_TRACE_SCOPED("HandleDefaultClientRequest");
-    int fd = CreateFileForRequest(request->type, request->pid, request->tid, request->time, false);
+    int fd = CreateFileForRequest(request->type, request->pid, request->tid, request->time);
     if (fd < 0) {
-        DFXLOGE("%{public}s :: Failed to create log file, errno(%{public}d)", FAULTLOGGERD_TAG.c_str(), errno);
+        DFXLOGE("[%{public}d]: %{public}s :: Failed to create log file, errno(%{public}d)", __LINE__,
+            FAULTLOGGERD_TAG.c_str(), errno);
         return;
     }
     RecordFileCreation(request->type, request->pid);
@@ -334,9 +330,10 @@ void FaultLoggerDaemon::HandleDefaultClientRequest(int32_t connectionFd, const F
 
 void FaultLoggerDaemon::HandleLogFileDesClientRequest(int32_t connectionFd, const FaultLoggerdRequest * request)
 {
-    int fd = CreateFileForRequest(request->type, request->pid, request->tid, request->time, true);
+    int fd = CreateFileForRequest(request->type, request->pid, request->tid, request->time);
     if (fd < 0) {
-        DFXLOGE("%{public}s :: Failed to create log file, errno(%{public}d)", FAULTLOGGERD_TAG.c_str(), errno);
+        DFXLOGE("[%{public}d]: %{public}s :: Failed to create log file, errno(%{public}d)", __LINE__,
+            FAULTLOGGERD_TAG.c_str(), errno);
         return;
     }
     SendFileDescriptorToSocket(connectionFd, fd);
@@ -348,7 +345,7 @@ void FaultLoggerDaemon::HandleExceptionRequest(int32_t connectionFd, FaultLogger
 {
     if (OHOS_TEMP_FAILURE_RETRY(write(connectionFd,
         DAEMON_RESP.c_str(), DAEMON_RESP.length())) != static_cast<ssize_t>(DAEMON_RESP.length())) {
-        DFXLOGE("%{public}s :: Failed to write DAEMON_RESP.", FAULTLOGGERD_TAG.c_str());
+        DFXLOGE("[%{public}d]: %{public}s :: Failed to write DAEMON_RESP.", __LINE__, FAULTLOGGERD_TAG.c_str());
     }
 
     CrashDumpException exception;
@@ -515,7 +512,7 @@ void FaultLoggerDaemon::HandlePrintTHilogClientRequest(int32_t const connectionF
 
     if (OHOS_TEMP_FAILURE_RETRY(write(connectionFd,
         DAEMON_RESP.c_str(), DAEMON_RESP.length())) != static_cast<ssize_t>(DAEMON_RESP.length())) {
-        DFXLOGE("%{public}s :: Failed to write DAEMON_RESP.", FAULTLOGGERD_TAG.c_str());
+        DFXLOGE("[%{public}d]: %{public}s :: Failed to write DAEMON_RESP.", __LINE__, FAULTLOGGERD_TAG.c_str());
     }
 
     int nread = OHOS_TEMP_FAILURE_RETRY(read(connectionFd, buf, sizeof(buf) - 1));
@@ -700,8 +697,7 @@ bool FaultLoggerDaemon::IsCrashed(int32_t pid)
     return crashTimeMap_.find(pid) != crashTimeMap_.end();
 }
 
-int32_t FaultLoggerDaemon::CreateFileForRequest(int32_t type, int32_t pid, int32_t tid,
-    uint64_t time, bool debugFlag) const
+int32_t FaultLoggerDaemon::CreateFileForRequest(int32_t type, int32_t pid, int32_t tid, uint64_t time) const
 {
     RemoveTempFileIfNeed();
     std::string typeStr = GetRequestTypeName(type);
@@ -711,11 +707,7 @@ int32_t FaultLoggerDaemon::CreateFileForRequest(int32_t type, int32_t pid, int32
     }
 
     std::string folderPath = "";
-    if (debugFlag == false) {
-        folderPath = faultLoggerConfig_->GetLogFilePath();
-    } else {
-        folderPath = faultLoggerConfig_->GetDebugLogFilePath();
-    }
+    folderPath = faultLoggerConfig_->GetLogFilePath();
 
     if (time == 0) {
         time = static_cast<uint64_t>(std::chrono::duration_cast<std::chrono::milliseconds>\

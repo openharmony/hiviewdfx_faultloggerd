@@ -31,7 +31,7 @@ static int DoGetCrashFd(void)
     int32_t type = (int32_t)FaultLoggerType::CPP_CRASH;
     int32_t pid = getpid();
     uint64_t time = OHOS::HiviewDFX::GetTimeMilliSeconds();
-    int fd = daemon.CreateFileForRequest(type, pid, gettid(), time, false);
+    int fd = daemon.CreateFileForRequest(type, pid, gettid(), time);
     return fd;
 }
 #endif

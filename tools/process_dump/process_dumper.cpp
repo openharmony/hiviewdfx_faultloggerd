@@ -151,7 +151,7 @@ void FillFdsaninfo(OpenFilesList &list, pid_t nsPid, uint64_t fdTableAddr)
     uint64_t addr = fdTableAddr + entryOffset;
     FdEntry entrys[fds];
     if (DfxMemory::ReadProcMemByPid(nsPid, addr, entrys, sizeof(FdEntry) * fds) != sizeof(FdEntry) * fds) {
-        DFXLOGE("read nsPid mem error %{public}s", strerror(errno));
+        DFXLOGE("[%{public}d]: read nsPid mem error %{public}s", __LINE__, strerror(errno));
         return;
     }
     for (size_t i = 0; i < fds; i++) {
@@ -183,7 +183,7 @@ void FillFdsaninfo(OpenFilesList &list, pid_t nsPid, uint64_t fdTableAddr)
     uint64_t address = overflow + offsetof(FdTableOverflow, entries);
     if (DfxMemory::ReadProcMemByPid(nsPid, address, overflowFdEntrys.data(), sizeof(FdEntry) * overflowLength) !=
         sizeof(FdEntry) * overflowLength) {
-        DFXLOGE("read nsPid mem error %{public}s", strerror(errno));
+        DFXLOGE("[%{public}d]: read nsPid mem error %{public}s", __LINE__, strerror(errno));
         return;
     }
     size_t fdIndex = fds;

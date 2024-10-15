@@ -149,7 +149,7 @@ bool DfxHap::ParseHapMemData(const pid_t pid, std::shared_ptr<DfxMap> map)
     if (abcDataPtr_ != nullptr) {
         return true;
     }
-    DFXLOGU("pid: %{public}d", pid);
+    DFXLOGU("[%{public}d]: pid: %{public}d", __LINE__, pid);
     abcLoadOffset_ = map->offset;
     abcDataSize_ = map->end - map->begin;
     abcDataPtr_ = std::make_unique<uint8_t[]>(abcDataSize_);

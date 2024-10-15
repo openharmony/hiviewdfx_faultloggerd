@@ -64,7 +64,7 @@ bool UniqueStackTable::Resize()
 {
     std::lock_guard<std::mutex> guard(stackTableMutex_);
     if (tableBufMMap_ == nullptr) {
-        DFXLOGW("Hashtable not exist, fatal error!");
+        DFXLOGW("[%{public}d]: Hashtable not exist, fatal error!", __LINE__);
         return false;
     }
 
@@ -181,7 +181,7 @@ size_t UniqueStackTable::GetWriteSize()
 {
     std::lock_guard<std::mutex> guard(stackTableMutex_);
     if (tableBufMMap_ == nullptr) {
-        DFXLOGW("Hashtable not exist, fatal error!");
+        DFXLOGW("[%{public}d]: Hashtable not exist, fatal error!", __LINE__);
         return 0;
     }
     size_t size = 0;

@@ -20,6 +20,7 @@
 #include <stddef.h>
 
 #include "dfx_log_define.h"
+#include "stdbool.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -61,11 +62,8 @@ typedef enum {
     LOG_LEVEL_MAX,
 } LogLevel;
 
-__attribute__ ((visibility("hidden"))) int MuslHiLogPrinter(
-    LogType type, LogLevel level, unsigned int domain, const char *tag, const char *fmt, ...);
-
 // replace the old interface, and delete the old interface after the replacement is complete
-#define DFXMUSL_PRINT(prio, ...) MuslHiLogPrinter(LOG_CORE, prio, LOG_DOMAIN, LOG_TAG, __VA_ARGS__)
+#define DFXMUSL_PRINT(prio, ...) HiLogAdapterPrint(LOG_CORE, prio, LOG_DOMAIN, LOG_TAG, __VA_ARGS__)
 
 #define DFXLOGD(...) DFXMUSL_PRINT(LOG_DEBUG, __VA_ARGS__)
 #define DFXLOGI(...) DFXMUSL_PRINT(LOG_INFO, __VA_ARGS__)

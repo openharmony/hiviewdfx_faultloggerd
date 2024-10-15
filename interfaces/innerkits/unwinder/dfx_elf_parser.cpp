@@ -67,12 +67,12 @@ bool ElfParser::ParseAllHeaders()
     }
 
     if (!ParseElfHeaders<EhdrType>(ehdr)) {
-        DFXLOGW("ParseElfHeaders failed");
+        DFXLOGW("[%{public}d]: ParseElfHeaders failed", __LINE__);
         return false;
     }
 
     if (!ParseProgramHeaders<EhdrType, PhdrType>(ehdr)) {
-        DFXLOGW("ParseProgramHeaders failed");
+        DFXLOGW("[%{public}d]: ParseProgramHeaders failed", __LINE__);
         return false;
     }
 

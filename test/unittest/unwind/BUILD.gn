@@ -158,6 +158,7 @@ ohos_unittest("test_dwarf") {
   module_out_path = module_output_path
   visibility = [ "*:*" ]
   defines = [
+    "ALLOW_TO_STDERR",
     "DFX_LOG_UNWIND",
     "DFX_LOG_HILOG_BASE",
   ]

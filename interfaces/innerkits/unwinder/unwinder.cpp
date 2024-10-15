@@ -556,7 +556,7 @@ bool Unwinder::Impl::UnwindLocalWithTid(const pid_t tid, size_t maxFrameNum, siz
         DFXLOGE("Invalid stack range, err(%{public}d)", errno);
         return false;
     }
-    DFXLOGU("stackBottom: %{public}" PRIx64 ", stackTop: %{public}" PRIx64 "",
+    DFXLOGU("[%{public}d]: stackBottom: %{public}" PRIx64 ", stackTop: %{public}" PRIx64 "", __LINE__,
         (uint64_t)stackBottom, (uint64_t)stackTop);
     UnwindContext context;
     context.pid = UNWIND_TYPE_LOCAL;
@@ -590,7 +590,7 @@ bool Unwinder::Impl::UnwindLocal(bool withRegs, bool fpUnwind, size_t maxFrameNu
         DFXLOGE("Get stack range error");
         return false;
     }
-    DFXLOGU("stackBottom: %{public}" PRIx64 ", stackTop: %{public}" PRIx64 "",
+    DFXLOGU("[%{public}d]: stackBottom: %{public}" PRIx64 ", stackTop: %{public}" PRIx64 "", __LINE__,
         (uint64_t)stackBottom, (uint64_t)stackTop);
 
     if (!withRegs) {
@@ -607,7 +607,7 @@ bool Unwinder::Impl::UnwindLocal(bool withRegs, bool fpUnwind, size_t maxFrameNu
             regs_ = DfxRegs::Create();
             auto regsData = regs_->RawData();
             if (regsData == nullptr) {
-                DFXLOGE("params is nullptr");
+                DFXLOGE("[%{public}d]: params is nullptr", __LINE__);
                 return false;
             }
             GetLocalRegs(regsData);
@@ -740,7 +740,7 @@ bool Unwinder::Impl::StepArkJsFrame(StepFrame& frame)
 bool Unwinder::Impl::Unwind(void *ctx, size_t maxFrameNum, size_t skipFrameNum)
 {
     if ((regs_ == nullptr) || (!CheckAndReset(ctx))) {
-        DFXLOGE("params is nullptr?");
+        DFXLOGE("[%{public}d]: params is nullptr?", __LINE__);
         lastErrorData_.SetCode(UNW_ERROR_INVALID_CONTEXT);
         return false;
     }
@@ -805,7 +805,7 @@ bool Unwinder::Impl::Unwind(void *ctx, size_t maxFrameNum, size_t skipFrameNum)
 bool Unwinder::Impl::UnwindByFp(void *ctx, size_t maxFrameNum, size_t skipFrameNum)
 {
     if (regs_ == nullptr) {
-        DFXLOGE("params is nullptr?");
+        DFXLOGE("[%{public}d]: params is nullptr?", __LINE__);
         return false;
     }
     pcs_.clear();
@@ -843,7 +843,7 @@ bool Unwinder::Impl::FpStep(uintptr_t& fp, uintptr_t& pc, void *ctx)
 #if defined(__aarch64__)
     DFXLOGU("+fp: %{public}lx, pc: %{public}lx", (uint64_t)fp, (uint64_t)pc);
     if ((regs_ == nullptr) || (memory_ == nullptr)) {
-        DFXLOGE("params is nullptr");
+        DFXLOGE("[%{public}d]: params is nullptr", __LINE__);
         return false;
     }
     if (ctx != nullptr) {
@@ -873,7 +873,7 @@ bool Unwinder::Impl::Step(uintptr_t& pc, uintptr_t& sp, void *ctx)
 {
     DFX_TRACE_SCOPED_DLSYM("Step pc:%p", reinterpret_cast<void *>(pc));
     if ((regs_ == nullptr) || (!CheckAndReset(ctx))) {
-        DFXLOGE("params is nullptr?");
+        DFXLOGE("[%{public}d]: params is nullptr?", __LINE__);
         return false;
     }
     bool ret = false;
@@ -896,7 +896,7 @@ bool Unwinder::Impl::Step(uintptr_t& pc, uintptr_t& sp, void *ctx)
 bool Unwinder::Impl::StepInner(const bool isSigFrame, StepFrame& frame, void *ctx)
 {
     if ((regs_ == nullptr) || (!CheckAndReset(ctx))) {
-        DFXLOGE("params is nullptr");
+        DFXLOGE("[%{public}d]: params is nullptr", __LINE__);
         return false;
     }
     SetLocalStackCheck(ctx, false);
