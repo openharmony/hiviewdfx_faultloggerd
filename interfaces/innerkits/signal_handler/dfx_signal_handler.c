@@ -442,7 +442,7 @@ static bool DFX_SigchainHandler(int sig, siginfo_t *si, void *context)
         pthread_mutex_unlock(&g_signalHandlerMutex);
         DFXLOGE("DFX_SigchainHandler :: signal(%{public}d) in %{public}d:%{public}d fill dump request faild.",
             sig, g_request.pid, g_request.tid);
-        return ret;
+        return sig == SIGLEAK_STACK;
     }
     DFXLOGI("DFX_SigchainHandler :: sig(%{public}d), pid(%{public}d), processName(%{public}s), threadName(%{public}s).",
         sig, g_request.pid, g_request.processName, g_request.threadName);
