@@ -69,6 +69,12 @@ enum DfxDumpPollRes : int32_t {
     DUMP_POLL_TIMEOUT,
     DUMP_POLL_RETURN,
 };
+
+enum DfxDumpStatRes : int32_t {
+    DUMP_RES_NO_KERNELSTACK = -2,
+    DUMP_RES_WITH_KERNELSTACK = -1,
+    DUMP_RES_WITH_USERSTACK = 0,
+};
 }
 
 bool DfxDumpCatcher::DoDumpCurrTid(const size_t skipFrameNum, std::string& msg, size_t maxFrameNums)
@@ -162,7 +168,10 @@ static void ReportDumpCatcherStats(int32_t pid,
     stat->pid = pid;
     stat->requestTime = requestTime;
     stat->dumpCatcherFinishTime = GetTimeMilliSeconds();
-    stat->result = ret ? 0 : -1; // we need more detailed failure info
+    stat->result = ret ? DUMP_RES_WITH_USERSTACK : DUMP_RES_WITH_KERNELSTACK; // we need more detailed failure info
+    if (!ret && g_kernelStackInfo.empty()) {
+        stat->result = DUMP_RES_NO_KERNELSTACK;
+    }
     size_t copyLen;
     std::string processName;
     ReadProcessName(pid, processName);
