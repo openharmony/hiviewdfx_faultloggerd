@@ -455,5 +455,43 @@ HWTEST_F(LocalHandlerTest, DfxAllocatorTest006, TestSize.Level2)
     ASSERT_EQ(ret, 0);
     GTEST_LOG_(INFO) << "DfxAllocatorTest005: end.";
 }
+
+/**
+ * @tc.name: DfxAllocatorTest007
+ * @tc.desc: test dfxAllocator localhandler crash log
+ * @tc.type: FUNC
+ */
+HWTEST_F(LocalHandlerTest, DfxAllocatorTest007, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "DfxAllocatorTest007: start.";
+    pid_t pid = fork();
+    if (pid < 0) {
+        GTEST_LOG_(ERROR) << "Failed to fork new test process.";
+    } else if (pid == 0) {
+        sleep(1);
+        // alloc a buffer
+        int32_t initAllocSz = 10;
+        int32_t reallocSz = 20;
+        int8_t* addr = reinterpret_cast<int8_t*>(malloc(initAllocSz));
+        // overwrite the control block
+        int8_t* newAddr = addr - initAllocSz;
+        (void)memset_s(newAddr, initAllocSz, 0, initAllocSz);
+        addr = reinterpret_cast<int8_t*>(realloc(reinterpret_cast<void*>(addr), reallocSz));
+        free(addr);
+        // force crash if not crash in realloc
+        abort();
+    } else {
+        usleep(10000); // 10000 : sleep 10ms
+        GTEST_LOG_(INFO) << "process(" << getpid() << ") is ready to wait process(" << pid << ")";
+        sleep(2); // 2 : wait for cppcrash generating
+#ifdef __aarch64__
+        bool ret = CheckLocalCrashKeyWords(GetCppCrashFileName(pid), pid, SIGABRT);
+#else
+        bool ret = CheckLocalCrashKeyWords(GetCppCrashFileName(pid), pid, SIGSEGV);
+#endif
+        ASSERT_TRUE(ret);
+    }
+    GTEST_LOG_(INFO) << "DfxAllocatorTest007: end.";
+}
 } // namespace HiviewDFX
 } // namepsace OHOS

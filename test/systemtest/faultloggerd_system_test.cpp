@@ -333,6 +333,21 @@ static bool CheckTestGetCrashObj(const string& filePath, const pid_t& pid)
 }
 #endif
 
+static void ShmCpy(char* msg)
+{
+    const size_t count = 5;
+    for (size_t i = 0; i < count; i++) {
+        usleep(2000); // 2000 : sleep 2ms
+        const int32_t initAllocSz = 11;
+        void* p = malloc(initAllocSz);
+        int ret = memcpy_s(p, initAllocSz, msg, initAllocSz - 1);
+        if (ret < 0) {
+            ASSERT_GT(ret, 0);
+        }
+    free(p);
+    }
+}
+
 /**
  * @tc.name: FaultLoggerdSystemTest001
  * @tc.desc: test C crasher application: SIGFPE
@@ -1673,6 +1688,82 @@ HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest125, TestSize.Level2)
     StopTestHap(TEST_BUNDLE_NAME);
     UninstallTestHap(TEST_BUNDLE_NAME);
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest125: end.";
+}
+
+/**
+* @tc.name: FaultLoggerdSystemTest126
+* @tc.desc: Test /log/crash files max num when faultloggerd unstart case
+* @tc.type: FUNC
+*/
+HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest126, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest126: start.";
+    string clearCrashFilesCmd = "rm -rf /log/crash/*";
+    system(clearCrashFilesCmd.c_str());
+
+    string stopFaultLoggerd = "service_control stop faultloggerd";
+    string startFaultLoggerd = "service_control start faultloggerd";
+    (void)ExecuteCommands(stopFaultLoggerd);
+
+    string cmd = "SIGABRT";
+    string fileName;
+    string crashDir = "/log/crash/";
+    pid_t pid = -1;
+    int maxFilesNum = 5;
+
+    for (int i = 0; i < (maxFilesNum + 1); ++i) {
+        pid = TriggerCrasherAndGetFileName(cmd, CRASHER_CPP, fileName, 1, crashDir);
+        GTEST_LOG_(INFO) << "test pid(" << pid << ")"  << " cppcrash file name : " << fileName;
+        if (pid < 0 || fileName.size() < CPPCRASH_FILENAME_MIN_LENGTH) {
+            GTEST_LOG_(ERROR) << "Trigger Crash Failed.";
+            (void)ExecuteCommands(startFaultLoggerd);
+            FAIL();
+        }
+    }
+    (void)ExecuteCommands(startFaultLoggerd);
+    std::vector<std::string> files;
+    ReadDirFiles(crashDir, files);
+    EXPECT_TRUE(files.size() <= maxFilesNum) << "FaultLoggerdSystemTest126 Failed";
+    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest126: end.";
+}
+
+/**
+* @tc.name: FaultLoggerdSystemTest127
+* @tc.desc: Test lock exit after being killed
+* @tc.type: FUNC
+*/
+HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest127, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest127: start.";
+    const size_t count = 50;
+    const size_t threadSize = 10;
+    const size_t msgSize = 10;
+    char msg[msgSize] = {'a', 'b', 'c', 'd'};
+    size_t sleepTime = 5000; // 5000 : sleep 5ms
+    const size_t deviation = 50;
+    for (size_t i = 0; i < count; i++) {
+        GTEST_LOG_(INFO) << i;
+        pid_t pid = fork();
+        ASSERT_NE(pid, -1);
+        if (pid == 0) {
+            for (size_t j = 0; j < threadSize; j++) {
+                std::thread shmThread(ShmCpy, msg);
+                shmThread.detach();
+                ShmCpy(msg);
+            }
+        } else {
+            usleep(sleepTime);
+            kill(pid, SIGKILL);
+            sleep(2);
+            int status = 0;
+            waitpid(pid, &status, 0);
+            ASSERT_TRUE(WIFSIGNALED(status));
+            int signal = WTERMSIG(status);
+            ASSERT_EQ(signal, SIGKILL);
+            sleepTime = sleepTime + deviation;
+        }
+    }
+    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest127: end.";
 }
 } // namespace HiviewDFX
 } // namespace OHOS
