@@ -55,7 +55,7 @@ int DfxGetKernelStack(int32_t pid, std::string& kernelStack)
 
     int ret = ioctl(fd, LOGGER_GET_STACK, kstackBuf.get());
     if (ret != 0) {
-        DFXLOGW("Failed to get kernel stack, errno:%{public}d", errno);
+        DFXLOGW("Failed to get pid(%{public}d) kernel stack, errno:%{public}d", pid, errno);
     } else {
         kernelStack = std::string(kstackBuf->hstackLogBuff);
     }
