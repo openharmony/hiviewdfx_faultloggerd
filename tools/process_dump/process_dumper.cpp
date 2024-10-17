@@ -185,8 +185,9 @@ void FillFdsaninfo(OpenFilesList &list, pid_t nsPid, uint64_t fdTableAddr)
     size_t fdIndex = fds;
     for (size_t i = 0; i < overflowLength; i++) {
         if (overflowFdEntrys[i].close_tag) {
-            list[fdIndex++].fdsanOwner = overflowFdEntrys[i].close_tag;
+            list[fdIndex].fdsanOwner = overflowFdEntrys[i].close_tag;
         }
+        fdIndex++;
     }
 }
 #endif
