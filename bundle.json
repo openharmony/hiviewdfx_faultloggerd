@@ -105,6 +105,9 @@
           "name": "//base/hiviewdfx/faultloggerd/interfaces/innerkits/signal_handler:dfxsignalhandler"
         },
         {
+          "name": "//base/hiviewdfx/faultloggerd/interfaces/innerkits/signal_handler:dfxsignalhandler_noflto"
+        },
+        {
           "name": "//base/hiviewdfx/faultloggerd/interfaces/innerkits/unwinder:libunwinder",
           "header": {
             "header_files": [
