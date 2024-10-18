@@ -22,6 +22,7 @@
 #include "dfx_ring_buffer_wrapper.h"
 #include "dfx_dump_request.h"
 #include "dfx_thread.h"
+#include "lock_parser.h"
 #include <pthread.h>
 #include "printer.h"
 #include "process_dumper.h"

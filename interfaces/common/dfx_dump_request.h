@@ -135,8 +135,6 @@ struct ProcessDumpRequest {
     int childPipeFd[2];
     /** is integrate crash dump flow 0:false 1:true */
     int32_t dumpMode;
-    /** vm process pid addr */
-    intptr_t vmProcRealPid;
     /** whether block source process pid */
     intptr_t isBlockCrash;
     uintptr_t crashObj;
