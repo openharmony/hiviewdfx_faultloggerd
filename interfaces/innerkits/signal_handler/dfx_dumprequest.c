@@ -258,7 +258,7 @@ static int DFX_ExecDump(void)
         FillCrashExceptionAndReport(CRASH_SIGNAL_EINHERITCAP);
         return INHERIT_CAP_FAIL;
     }
-    DFXLOGI("execl processdump.");
+    DFXLOGW("execl processdump.");
 #ifdef DFX_LOG_HILOG_BASE
     execl("/system/bin/processdump", "processdump", "-signalhandler", NULL);
 #else
@@ -412,14 +412,14 @@ static bool StartProcessdump(void)
             int tid;
             ParseSiValue(&g_request->siginfo, &endTime, &tid);
             uint64_t curTime = GetAbsTimeMilliSeconds();
-            DFXLOGI("start processdump, fork spend time %{public}" PRIu64 "ms", curTime - startTime);
+            DFXLOGW("start processdump, fork spend time %{public}" PRIu64 "ms", curTime - startTime);
             if (endTime != 0) {
-                DFXLOGI("dump remain %{public}" PRId64 "ms", endTime - curTime);
+                DFXLOGW("dump remain %{public}" PRId64 "ms", endTime - curTime);
             }
             if (endTime == 0 || endTime > curTime) {
                 DFX_ExecDump();
             } else {
-                DFXLOGI("current has spend all time, not execl processdump");
+                DFXLOGW("current has spend all time, not execl processdump");
             }
             _exit(0);
         }
@@ -441,7 +441,7 @@ static bool StartVMProcessUnwind(void)
     } else if (pid == 0) {
         pid_t vmPid = ForkBySyscall();
         if (vmPid == 0) {
-            DFXLOGI("start vm process, fork spend time %{public}" PRIu64 "ms", GetAbsTimeMilliSeconds() - startTime);
+            DFXLOGW("start vm process, fork spend time %{public}" PRIu64 "ms", GetAbsTimeMilliSeconds() - startTime);
             syscall(SYS_close, g_pipeFds[WRITE_TO_DUMP][0]);
             pid_t pids[PID_MAX] = {0};
             pids[REAL_PROCESS_PID] = GetRealPid();
@@ -582,7 +582,7 @@ static int ProcessDump(int sig)
         int tid;
         ParseSiValue(&g_request->siginfo, &endTime, &tid);
         if (endTime != 0 && endTime <= GetAbsTimeMilliSeconds()) {
-            DFXLOGI("enter processdump has coat all time, just exit");
+            DFXLOGW("enter processdump has coat all time, just exit");
             break;
         }
         if (!StartProcessdump()) {
@@ -602,7 +602,6 @@ static int ProcessDump(int sig)
     } while (false);
 
     CleanPipe();
-    DFXLOGI("process dump end");
     RestoreDumpState(prevDumpableStatus, isTracerStatusModified);
     return 0;
 }
