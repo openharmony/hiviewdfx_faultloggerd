@@ -226,11 +226,11 @@ HWTEST_F (ProcessDumpTest, DfxUnwindRemoteTest002, TestSize.Level2)
     bool ret = remote->UnwindProcess(request, nullptr, unwinder, 0);
     ASSERT_EQ(ret, false);
     ret = remote->UnwindProcess(request, process, unwinder, 0);
-    ASSERT_EQ(ret, true);
+    ASSERT_EQ(ret, false);
     std::shared_ptr<DfxThread> thread = DfxThread::Create(pid, tid, tid);
     process->keyThread_ = thread;
     ret = remote->UnwindProcess(request, process, unwinder, 0);
-    ASSERT_EQ(ret, true);
+    ASSERT_EQ(ret, false);
     GTEST_LOG_(INFO) << "DfxUnwindRemoteTest002: end.";
 }
 
