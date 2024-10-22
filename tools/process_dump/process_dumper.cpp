@@ -218,7 +218,7 @@ void ReadPids(int& realPid, int& vmPid)
     OHOS_TEMP_FAILURE_RETRY(read(STDIN_FILENO, pids, sizeof(pids)));
     realPid = pids[REAL_PROCESS_PID];
     vmPid = pids[VIRTUAL_PROCESS_PID];
-    DFXLOGI("procecdump get real pid is %{public}d vm pid is %{public}d", realPid, vmPid);
+    DFXLOGW("procecdump get real pid is %{public}d vm pid is %{public}d", realPid, vmPid);
 }
 
 void InfoRemoteProcessResult(std::shared_ptr<ProcessDumpRequest> request, int result, int type)
@@ -341,7 +341,7 @@ void ProcessDumper::Dump()
     // print keythread base info to hilog when carsh
     DfxRingBufferWrapper::GetInstance().PrintBaseInfo();
     DfxRingBufferWrapper::GetInstance().StopThread();
-    DFXLOGI("Finish dump stacktrace for %{public}s(%{public}d:%{public}d).",
+    DFXLOGW("Finish dump stacktrace for %{public}s(%{public}d:%{public}d).",
         request->processName, request->pid, request->tid);
     Report(request, jsonInfo);
 }
@@ -543,7 +543,7 @@ int ProcessDumper::DumpProcess(std::shared_ptr<ProcessDumpRequest> request)
             dumpRes = DumpErrorCode::DUMP_EGETPPID;
             break;
         }
-        DFXLOGI("Processdump SigVal(%{public}d), TargetPid(%{public}d:%{public}d), TargetTid(%{public}d), " \
+        DFXLOGW("Processdump SigVal(%{public}d), TargetPid(%{public}d:%{public}d), TargetTid(%{public}d), " \
             "threadname(%{public}s).",
             request->siginfo.si_value.sival_int, request->pid, request->nsPid, request->tid, request->threadName);
 

@@ -81,6 +81,7 @@ bool DfxUnwindRemote::UnwindProcess(std::shared_ptr<ProcessDumpRequest> request,
                                     std::shared_ptr<Unwinder> unwinder, pid_t vmPid)
 {
     DFX_TRACE_SCOPED("UnwindProcess");
+    DFXLOGW("start unwind process.");
     if (process == nullptr || unwinder == nullptr) {
         DFXLOGW("%{public}s::process or unwinder is not initialized.", __func__);
         return false;
@@ -119,7 +120,7 @@ bool DfxUnwindRemote::UnwindProcess(std::shared_ptr<ProcessDumpRequest> request,
     if (isVmProcAttach) {
         DfxPtrace::Detach(vmPid);
     }
-    DFXLOGI("success unwind thread cnt is %{public}d", unwCnt);
+    DFXLOGW("success unwind thread cnt is %{public}d", unwCnt);
     return unwCnt > 0;
 }
 

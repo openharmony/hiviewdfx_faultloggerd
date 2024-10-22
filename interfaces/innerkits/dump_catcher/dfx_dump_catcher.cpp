@@ -245,7 +245,7 @@ bool DfxDumpCatcher::DumpCatch(int pid, int tid, std::string& msg, size_t maxFra
     int currentPid = getpid();
     bool reportStat = false;
     uint64_t requestTime = GetTimeMilliSeconds();
-    DFXLOGI("Receive DumpCatch request for cPid:(%{public}d), pid(%{public}d), " \
+    DFXLOGW("Receive DumpCatch request for cPid:(%{public}d), pid(%{public}d), " \
         "tid:(%{public}d).", currentPid, pid, tid);
     if (pid == currentPid) {
         ret = DoDumpLocalLocked(pid, tid, msg, maxFrameNums);
@@ -264,7 +264,7 @@ bool DfxDumpCatcher::DumpCatch(int pid, int tid, std::string& msg, size_t maxFra
         ReportDumpCatcherStats(pid, requestTime, ret, msg, retAddr);
     }
 
-    DFXLOGI("dump_catch : pid = %{public}d, elapsed time = %{public}" PRId64 " ms, ret = %{public}d, " \
+    DFXLOGW("dump_catch : pid = %{public}d, elapsed time = %{public}" PRId64 " ms, ret = %{public}d, " \
         "msgLength = %{public}zu",
         pid, counter.Elapsed<std::chrono::milliseconds>(), ret, msg.size());
     DfxEnableTraceDlsym(false);
@@ -326,7 +326,7 @@ bool DfxDumpCatcher::DoDumpCatchRemote(int pid, int tid, std::string& msg, bool 
             msg.append(halfProcWchan_);
             break;
     }
-    DFXLOGI("%{public}s :: %{public}s :: pid(%{public}d) ret: %{public}d", DFXDUMPCATCHER_TAG.c_str(),
+    DFXLOGW("%{public}s :: %{public}s :: pid(%{public}d) ret: %{public}d", DFXDUMPCATCHER_TAG.c_str(),
         __func__, pid, ret);
     return ret;
 }
@@ -531,7 +531,7 @@ int DfxDumpCatcher::DoDumpRemotePoll(int bufFd, int resFd, int timeout, std::str
         remainTime = static_cast<int>(endTime - now);
     }
 
-    DFXLOGI("%{public}s :: %{public}s :: %{public}s", DFXDUMPCATCHER_TAG.c_str(), __func__, resMsg.c_str());
+    DFXLOGW("%{public}s :: %{public}s :: %{public}s", DFXDUMPCATCHER_TAG.c_str(), __func__, resMsg.c_str());
     msg = isJson && res ? bufMsg : (resMsg + bufMsg);
     return res ? DUMP_POLL_OK : ret;
 }
