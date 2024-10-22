@@ -110,13 +110,6 @@ void DfxConfig::ParserConfig(DfxConfigInfo& config, const std::string& key, cons
             }
             break;
         }
-        if (key.compare("writeSleepTime") == 0) {
-            unsigned int writeSleepTime = static_cast<unsigned int>(atoi(value.data()));
-            if (writeSleepTime != 0) {
-                config.writeSleepTime = writeSleepTime;
-            }
-            break;
-        }
     } while (0);
 }
 
