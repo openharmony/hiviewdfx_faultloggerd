@@ -542,8 +542,9 @@ uintptr_t DFX_SetCrashObj(uint8_t type, uintptr_t addr)
     crashObj = ((uintptr_t)type << moveBit) | (addr & 0x00ffffffffffffff);
     pthread_setspecific(g_crashObjKey, (void*)(crashObj));
     return origin;
-#endif
+#else
     return 0;
+#endif
 }
 
 void DFX_ResetCrashObj(uintptr_t crashObj)
