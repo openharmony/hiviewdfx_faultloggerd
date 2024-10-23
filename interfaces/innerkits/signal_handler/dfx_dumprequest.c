@@ -74,16 +74,15 @@
 static struct ProcessDumpRequest *g_request = NULL;
 static void *g_reservedChildStack = NULL;
 
-static long g_blockFlag = 0;
-static long g_vmRealPid = 0;
-
 enum PIPE_FD_TYPE {
     WRITE_TO_DUMP,
-    READ_FROM_DUMP_TO_CHILD,
+    READ_FROM_DUMP_TO_MAIN,
+    READ_FORM_DUMP_TO_VIRTUAL,
     PIPE_MAX,
 };
 
 static int g_pipeFds[PIPE_MAX][2] = {
+    {-1, -1},
     {-1, -1},
     {-1, -1}
 };
@@ -97,12 +96,6 @@ enum DumpPreparationStage {
     INHERIT_CAP_FAIL,
     EXEC_FAIL,
 };
-
-static void CleanFd(int *pipeFd);
-static void CleanPipe(void);
-static bool InitPipe(void);
-static bool ReadPipeTimeout(int fd, uint64_t timeout, uint32_t* value);
-static bool ReadProcessDumpGetRegsMsg(void);
 
 static const char* GetCrashDescription(const int32_t errCode)
 {
@@ -265,7 +258,7 @@ static int DFX_ExecDump(void)
         FillCrashExceptionAndReport(CRASH_SIGNAL_EINHERITCAP);
         return INHERIT_CAP_FAIL;
     }
-    DFXLOGI("execl processdump.");
+    DFXLOGW("execl processdump.");
 #ifdef DFX_LOG_HILOG_BASE
     execl("/system/bin/processdump", "processdump", "-signalhandler", NULL);
 #else
@@ -408,32 +401,25 @@ static bool StartProcessdump(void)
         DFXLOGE("Failed to fork dummy processdump(%{public}d)", errno);
         return false;
     } else if (pid == 0) {
-        if (!InitPipe()) {
-            DFXLOGE("init pipe fail");
-            _exit(0);
-        }
         pid_t processDumpPid = ForkBySyscall();
         if (processDumpPid < 0) {
             DFXLOGE("Failed to fork processdump(%{public}d)", errno);
             _exit(0);
         } else if (processDumpPid > 0) {
-            ReadProcessDumpGetRegsMsg();
             _exit(0);
         } else {
             uint64_t endTime;
             int tid;
             ParseSiValue(&g_request->siginfo, &endTime, &tid);
             uint64_t curTime = GetAbsTimeMilliSeconds();
-            DFXLOGI("start processdump, fork spend time %{public}" PRIu64 "ms", curTime - startTime);
+            DFXLOGW("start processdump, fork spend time %{public}" PRIu64 "ms", curTime - startTime);
             if (endTime != 0) {
-                DFXLOGI("dump remain %{public}" PRId64 "ms", endTime - curTime);
+                DFXLOGW("dump remain %{public}" PRId64 "ms", endTime - curTime);
             }
             if (endTime == 0 || endTime > curTime) {
-                g_request->isBlockCrash = (intptr_t)&g_blockFlag;
-                g_request->vmProcRealPid = (intptr_t)&g_vmRealPid;
                 DFX_ExecDump();
             } else {
-                DFXLOGI("current has spend all time, not execl processdump");
+                DFXLOGW("current has spend all time, not execl processdump");
             }
             _exit(0);
         }
@@ -455,9 +441,19 @@ static bool StartVMProcessUnwind(void)
     } else if (pid == 0) {
         pid_t vmPid = ForkBySyscall();
         if (vmPid == 0) {
-            DFXLOGI("start vm process, fork spend time %{public}" PRIu64 "ms", GetAbsTimeMilliSeconds() - startTime);
-            g_vmRealPid = GetRealPid();
-            DFXLOGI("vm prorcecc read pid = %{public}ld", g_vmRealPid);
+            DFXLOGW("start vm process, fork spend time %{public}" PRIu64 "ms", GetAbsTimeMilliSeconds() - startTime);
+            syscall(SYS_close, g_pipeFds[WRITE_TO_DUMP][0]);
+            pid_t pids[PID_MAX] = {0};
+            pids[REAL_PROCESS_PID] = GetRealPid();
+            pids[VIRTUAL_PROCESS_PID] = syscall(SYS_getpid);
+            OHOS_TEMP_FAILURE_RETRY(write(g_pipeFds[WRITE_TO_DUMP][1], pids, sizeof(pids)));
+            syscall(SYS_close, g_pipeFds[WRITE_TO_DUMP][1]);
+
+            uint32_t finishUnwind = OPE_FAIL;
+            syscall(SYS_close, g_pipeFds[READ_FORM_DUMP_TO_VIRTUAL][1]);
+            OHOS_TEMP_FAILURE_RETRY(read(g_pipeFds[READ_FORM_DUMP_TO_VIRTUAL][0], &finishUnwind, sizeof(finishUnwind)));
+            syscall(SYS_close, g_pipeFds[READ_FORM_DUMP_TO_VIRTUAL][0]);
+            DFXLOGI("processdump unwind finish, exit vm pid = %{public}d", pids[VIRTUAL_PROCESS_PID]);
             _exit(0);
         } else {
             DFXLOGI("exit dummy vm process");
@@ -489,29 +485,19 @@ static void CleanPipe(void)
 
 static bool InitPipe(void)
 {
-    bool ret = true;
     for (int i = 0; i < PIPE_MAX; i++) {
         if (syscall(SYS_pipe2, g_pipeFds[i], 0) == -1) {
             DFXLOGE("create pipe fail, errno(%{public}d)", errno);
-            ret = false;
+            FillCrashExceptionAndReport(CRASH_SIGNAL_ECREATEPIPE);
             CleanPipe();
-            break;
-        }
-    }
-    if (!ret) {
-        CloseFds();
-        for (int i = 0; i < PIPE_MAX; i++) {
-            if (syscall(SYS_pipe2, g_pipeFds[i], 0) == -1) {
-                DFXLOGE("create pipe fail again, errno(%{public}d)", errno);
-                FillCrashExceptionAndReport(CRASH_SIGNAL_ECREATEPIPE);
-                CleanPipe();
-                return false;
-            }
+            return false;
         }
     }
 
-    g_request->childPipeFd[0] = g_pipeFds[READ_FROM_DUMP_TO_CHILD][0];
-    g_request->childPipeFd[1] = g_pipeFds[READ_FROM_DUMP_TO_CHILD][1];
+    g_request->pmPipeFd[0] = g_pipeFds[READ_FROM_DUMP_TO_MAIN][0];
+    g_request->pmPipeFd[1] = g_pipeFds[READ_FROM_DUMP_TO_MAIN][1];
+    g_request->vmPipeFd[0] = g_pipeFds[READ_FORM_DUMP_TO_VIRTUAL][0];
+    g_request->vmPipeFd[1] = g_pipeFds[READ_FORM_DUMP_TO_VIRTUAL][1];
     return true;
 }
 
@@ -550,12 +536,12 @@ static bool ReadPipeTimeout(int fd, uint64_t timeout, uint32_t* value)
 
 static bool ReadProcessDumpGetRegsMsg(void)
 {
-    CleanFd(&g_pipeFds[READ_FROM_DUMP_TO_CHILD][1]);
+    CleanFd(&g_pipeFds[READ_FROM_DUMP_TO_MAIN][1]);
 
     DFXLOGI("start wait processdump read registers");
     const uint64_t readRegsTimeout = 5000; // 5s
     uint32_t isFinishGetRegs = OPE_FAIL;
-    if (ReadPipeTimeout(g_pipeFds[READ_FROM_DUMP_TO_CHILD][0], readRegsTimeout, &isFinishGetRegs)) {
+    if (ReadPipeTimeout(g_pipeFds[READ_FROM_DUMP_TO_MAIN][0], readRegsTimeout, &isFinishGetRegs)) {
         if (isFinishGetRegs == OPE_SUCCESS) {
             DFXLOGI("processdump have get all registers .");
             return true;
@@ -571,9 +557,13 @@ static void ReadUnwindFinishMsg(int sig)
         return;
     }
 
-    DFXLOGI("crash processdump unwind finish, blockFlag %{public}ld", g_blockFlag);
-    if (g_blockFlag == CRASH_BLOCK_EXIT_FLAG) {
-        syscall(SYS_tgkill, g_request->nsPid, g_request->tid, SIGSTOP);
+    DFXLOGI("start wait processdump unwind");
+    const uint64_t unwindTimeout = 10000; // 10s
+    uint32_t isExitAfterUnwind = OPE_CONTINUE;
+    if (ReadPipeTimeout(g_pipeFds[READ_FROM_DUMP_TO_MAIN][0], unwindTimeout, &isExitAfterUnwind)) {
+        DFXLOGI("processdump unwind finish");
+    } else {
+        DFXLOGE("wait processdump unwind finish timeout");
     }
 }
 
@@ -582,6 +572,9 @@ static int ProcessDump(int sig)
     int prevDumpableStatus = prctl(PR_GET_DUMPABLE);
     bool isTracerStatusModified = SetDumpState();
 
+    if (!InitPipe()) {
+        return -1;
+    }
     g_request->dumpMode = FUSION_MODE;
 
     do {
@@ -589,11 +582,15 @@ static int ProcessDump(int sig)
         int tid;
         ParseSiValue(&g_request->siginfo, &endTime, &tid);
         if (endTime != 0 && endTime <= GetAbsTimeMilliSeconds()) {
-            DFXLOGI("enter processdump has coat all time, just exit");
+            DFXLOGW("enter processdump has coat all time, just exit");
             break;
         }
         if (!StartProcessdump()) {
             DFXLOGE("start processdump fail");
+            break;
+        }
+
+        if (!ReadProcessDumpGetRegsMsg()) {
             break;
         }
 
@@ -604,7 +601,7 @@ static int ProcessDump(int sig)
         ReadUnwindFinishMsg(sig);
     } while (false);
 
-    DFXLOGI("process dump end");
+    CleanPipe();
     RestoreDumpState(prevDumpableStatus, isTracerStatusModified);
     return 0;
 }

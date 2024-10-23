@@ -245,7 +245,7 @@ bool DfxDumpCatcher::DumpCatch(int pid, int tid, std::string& msg, size_t maxFra
     int currentPid = getpid();
     bool reportStat = false;
     uint64_t requestTime = GetTimeMilliSeconds();
-    DFXLOGI("Receive DumpCatch request for cPid:(%{public}d), pid(%{public}d), " \
+    DFXLOGW("Receive DumpCatch request for cPid:(%{public}d), pid(%{public}d), " \
         "tid:(%{public}d).", currentPid, pid, tid);
     if (pid == currentPid) {
         ret = DoDumpLocalLocked(pid, tid, msg, maxFrameNums);
@@ -264,7 +264,7 @@ bool DfxDumpCatcher::DumpCatch(int pid, int tid, std::string& msg, size_t maxFra
         ReportDumpCatcherStats(pid, requestTime, ret, msg, retAddr);
     }
 
-    DFXLOGI("dump_catch : pid = %{public}d, elapsed time = %{public}" PRId64 " ms, ret = %{public}d, " \
+    DFXLOGW("dump_catch : pid = %{public}d, elapsed time = %{public}" PRId64 " ms, ret = %{public}d, " \
         "msgLength = %{public}zu",
         pid, counter.Elapsed<std::chrono::milliseconds>(), ret, msg.size());
     DfxEnableTraceDlsym(false);
@@ -295,19 +295,16 @@ bool DfxDumpCatcher::DoDumpCatchRemote(int pid, int tid, std::string& msg, bool 
     if (sdkdumpRet != static_cast<int>(FaultLoggerSdkDumpResp::SDK_DUMP_PASS)) {
         if (sdkdumpRet == static_cast<int>(FaultLoggerSdkDumpResp::SDK_DUMP_REPEAT)) {
             AsyncGetAllTidKernelStack(pid, WAIT_GET_KERNEL_STACK_TIMEOUT);
-            msg.append("Result: pid(" + std::to_string(pid) + ") is dumping.\n");
+            msg.append("Result: pid(" + std::to_string(pid) + ") process is dumping.\n");
         } else if (sdkdumpRet == static_cast<int>(FaultLoggerSdkDumpResp::SDK_DUMP_REJECT)) {
-            msg.append("Result: pid(" + std::to_string(pid) + ") check permission error.\n");
+            msg.append("Result: pid(" + std::to_string(pid) + ") process check permission error.\n");
         } else if (sdkdumpRet == static_cast<int>(FaultLoggerSdkDumpResp::SDK_DUMP_NOPROC)) {
             msg.append("Result: pid(" + std::to_string(pid) + ") process has exited.\n");
             RequestDelPipeFd(pid);
         } else if (sdkdumpRet == static_cast<int>(FaultLoggerSdkDumpResp::SDK_PROCESS_CRASHED)) {
-            AsyncGetAllTidKernelStack(pid, WAIT_GET_KERNEL_STACK_TIMEOUT);
-            msg.append("Result: pid(" + std::to_string(pid) + ") has been crashed.\n");
+            msg.append("Result: pid(" + std::to_string(pid) + ") process has been crashed.\n");
         }
         DFXLOGW("%{public}s :: %{public}s :: %{public}s", DFXDUMPCATCHER_TAG.c_str(), __func__, msg.c_str());
-        msg.append(halfProcStatus_);
-        msg.append(halfProcWchan_);
         return ret;
     }
 
@@ -329,7 +326,7 @@ bool DfxDumpCatcher::DoDumpCatchRemote(int pid, int tid, std::string& msg, bool 
             msg.append(halfProcWchan_);
             break;
     }
-    DFXLOGI("%{public}s :: %{public}s :: pid(%{public}d) ret: %{public}d", DFXDUMPCATCHER_TAG.c_str(),
+    DFXLOGW("%{public}s :: %{public}s :: pid(%{public}d) ret: %{public}d", DFXDUMPCATCHER_TAG.c_str(),
         __func__, pid, ret);
     return ret;
 }
@@ -417,6 +414,7 @@ void DfxDumpCatcher::AsyncGetAllTidKernelStack(pid_t pid, int waitMilliSeconds)
         return;
     }
     g_asyncThreadRunning = true;
+    g_kernelStackPid = 0;
     g_kernelStackInfo.clear();
     auto func = [pid, waitMilliSeconds] {
         CollectKernelStack(pid, waitMilliSeconds);
@@ -533,7 +531,7 @@ int DfxDumpCatcher::DoDumpRemotePoll(int bufFd, int resFd, int timeout, std::str
         remainTime = static_cast<int>(endTime - now);
     }
 
-    DFXLOGI("%{public}s :: %{public}s :: %{public}s", DFXDUMPCATCHER_TAG.c_str(), __func__, resMsg.c_str());
+    DFXLOGW("%{public}s :: %{public}s :: %{public}s", DFXDUMPCATCHER_TAG.c_str(), __func__, resMsg.c_str());
     msg = isJson && res ? bufMsg : (resMsg + bufMsg);
     return res ? DUMP_POLL_OK : ret;
 }

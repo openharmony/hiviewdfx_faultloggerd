@@ -42,9 +42,9 @@ public:
 
 private:
     DfxUnwindRemote() = default;
-    void UnwindKeyThread(std::shared_ptr<ProcessDumpRequest> request, std::shared_ptr<DfxProcess> process,
+    bool UnwindKeyThread(std::shared_ptr<ProcessDumpRequest> request, std::shared_ptr<DfxProcess> process,
                                       std::shared_ptr<Unwinder> unwinder, pid_t vmPid = 0);
-    void UnwindOtherThread(std::shared_ptr<DfxProcess> process, std::shared_ptr<Unwinder> unwinder,
+    int UnwindOtherThread(std::shared_ptr<DfxProcess> process, std::shared_ptr<Unwinder> unwinder,
         pid_t vmPid = 0);
 
     DISALLOW_COPY_AND_MOVE(DfxUnwindRemote);
