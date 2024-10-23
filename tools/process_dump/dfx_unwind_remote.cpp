@@ -209,7 +209,7 @@ int DfxUnwindRemote::UnwindOtherThread(std::shared_ptr<DfxProcess> process, std:
             DFX_TRACE_START("OtherThreadGetFrames:%d", tid);
             thread->SetFrames(unwinder->GetFrames());
             DFX_TRACE_FINISH();
-            LockParser::ParseLockInfo(unwinder, tmpPid, tid);
+            LockParser::ParseLockInfo(unwinder, pid, tid);
 #else
             thread->Detach();
             DFX_TRACE_START("OtherThreadGetFrames:%d", tid);

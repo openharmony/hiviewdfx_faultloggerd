@@ -483,8 +483,8 @@ static void CleanPipe(void)
     }
 }
 
- static bool InitPipe(void)
- {
+static bool InitPipe(void)
+{
     for (int i = 0; i < PIPE_MAX; i++) {
         if (syscall(SYS_pipe2, g_pipeFds[i], 0) == -1) {
             DFXLOGE("create pipe fail, errno(%{public}d)", errno);

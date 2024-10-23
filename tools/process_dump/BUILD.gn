@@ -57,6 +57,9 @@ if (defined(ohos_lite)) {
 
   source_set("process_info_src") {
     sources = processdump_sources
+    if (processdump_parse_lock_owner_enable) {
+      sources += [ "lock_parser.cpp" ]
+    }
     public_configs = [ ":processdump_config" ]
 
     deps = [
@@ -123,6 +126,9 @@ if (defined(ohos_lite)) {
 
   ohos_source_set("process_info_src") {
     sources = processdump_sources
+    if (processdump_parse_lock_owner_enable) {
+      sources += [ "lock_parser.cpp" ]
+    }
     configs = [
       ":processdump_config",
       "$faultloggerd_common_path/build:coverage_flags",

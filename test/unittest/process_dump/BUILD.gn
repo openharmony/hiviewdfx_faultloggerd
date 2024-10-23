@@ -132,10 +132,7 @@ if (defined(ohos_lite)) {
 
   ohos_unittest("test_lock_parser") {
     module_out_path = module_output_path
-    sources = [
-      "$faultloggerd_path/tools/process_dump/lock_parser.cpp",
-      "lock_parser_test.cpp",
-    ]
+    sources = [ "lock_parser_test.cpp" ]
     configs = [
       ":module_private_config",
       "$faultloggerd_path/common/build:coverage_flags",
