@@ -31,9 +31,9 @@
         "ipc",
         "jsoncpp",
         "libunwind",
+        "libuv",
         "lzma"
-      ],
-      "third_party": [ "libuv" ]
+      ]
     },
     "build": {
       "sub_component": [

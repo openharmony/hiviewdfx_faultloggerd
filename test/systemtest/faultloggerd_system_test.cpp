@@ -1674,5 +1674,42 @@ HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest125, TestSize.Level2)
     UninstallTestHap(TEST_BUNDLE_NAME);
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest125: end.";
 }
+
+/**
+* @tc.name: FaultLoggerdSystemTest126
+* @tc.desc: Test /log/crash files max num when faultloggerd unstart case
+* @tc.type: FUNC
+*/
+HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest126, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest126: start.";
+    string clearCrashFilesCmd = "rm -rf /log/crash/*";
+    system(clearCrashFilesCmd.c_str());
+
+    string stopFaultLoggerd = "service_control stop faultloggerd";
+    string startFaultLoggerd = "service_control start faultloggerd";
+    (void)ExecuteCommands(stopFaultLoggerd);
+
+    string cmd = "SIGABRT";
+    string fileName;
+    string crashDir = "/log/crash/";
+    pid_t pid = -1;
+    int maxFilesNum = 5;
+
+    for (int i = 0; i < (maxFilesNum + 1); ++i) {
+        pid = TriggerCrasherAndGetFileName(cmd, CRASHER_CPP, fileName, 1, crashDir);
+        GTEST_LOG_(INFO) << "test pid(" << pid << ")"  << " cppcrash file name : " << fileName;
+        if (pid < 0 || fileName.size() < CPPCRASH_FILENAME_MIN_LENGTH) {
+            GTEST_LOG_(ERROR) << "Trigger Crash Failed.";
+            (void)ExecuteCommands(startFaultLoggerd);
+            FAIL();
+        }
+    }
+    (void)ExecuteCommands(startFaultLoggerd);
+    std::vector<std::string> files;
+    ReadDirFiles(crashDir, files);
+    EXPECT_TRUE(files.size() <= maxFilesNum) << "FaultLoggerdSystemTest126 Failed";
+    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest126: end.";
+}
 } // namespace HiviewDFX
 } // namespace OHOS
