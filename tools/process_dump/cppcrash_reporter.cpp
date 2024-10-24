@@ -181,9 +181,8 @@ void CppCrashReporter::ReportToAbilityManagerService()
 #ifndef HISYSEVENT_DISABLE
     int result = HiSysEventWrite(HiSysEvent::Domain::FRAMEWORK, "PROCESS_KILL", HiSysEvent::EventType::FAULT,
         "PID", pid_, "PROCESS_NAME", cmdline_.c_str(), "MSG", KILL_REASON_CPP_CRASH);
-    DFXLOGI("hisysevent write result=%{public}d, send event [FRAMEWORK,PROCESS_KILL], " \
-        "pid=%{public}d processName=%{public}s, msg=%{public}s",
-        result, pid_, cmdline_.c_str(), KILL_REASON_CPP_CRASH);
+    DFXLOGW("hisysevent write result=%{public}d, send event [FRAMEWORK,PROCESS_KILL], pid=%{public}d,"
+        " processName=%{public}s, msg=%{public}s", result, pid_, cmdline_.c_str(), KILL_REASON_CPP_CRASH);
 #endif
 }
 
