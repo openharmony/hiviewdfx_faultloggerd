@@ -537,10 +537,10 @@ NOINLINE int DfxCrasher::PrintFatalMessageInLibc()
 
 NOINLINE static void TestGetCrashObjInner()
 {
-    uintptr_t type = 0;
     uintptr_t val = 0;
-    std::string msg = "test get crashObjectInner.";
     if (DFX_SetCrashObj != nullptr) {
+        uintptr_t type = 0;
+        std::string msg = "test get crashObjectInner.";
         val = DFX_SetCrashObj(type, reinterpret_cast<uintptr_t>(msg.c_str()));
     }
     if (DFX_ResetCrashObj != nullptr) {
@@ -550,10 +550,10 @@ NOINLINE static void TestGetCrashObjInner()
 
 NOINLINE int DfxCrasher::TestGetCrashObj()
 {
-    uint8_t type = 0;
     uintptr_t crashObj = 0;
-    std::string msg = "test get crashObject.";
     if (DFX_SetCrashObj != nullptr) {
+        uint8_t type = 0;
+        std::string msg = "test get crashObject.";
         crashObj = DFX_SetCrashObj(type, reinterpret_cast<uintptr_t>(msg.c_str()));
     }
     TestGetCrashObjInner();
