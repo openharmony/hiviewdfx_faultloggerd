@@ -60,10 +60,7 @@ void GetThreadKernelStack(std::shared_ptr<DfxThread> thread)
         DFXLOGI("Failed to get tid(%{public}d) user stack, try kernel", tid);
 #ifndef is_ohos_lite
         if (OHOS::system::GetParameter("const.logsystem.versiontype", "false") == "beta") {
-            size_t step = LOG_BUF_LEN - 1;
-            for (size_t i = 0;  i < threadKernelStack.length(); i += step) {
-                DFXLOGI("%{public}s", threadKernelStack.substr(i, step).c_str());
-            }
+            DFXLOGI("%{public}s", threadKernelStack.c_str());
         }
 #endif
         thread->SetFrames(threadStack.frames);
