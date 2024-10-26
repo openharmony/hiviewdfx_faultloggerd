@@ -877,25 +877,25 @@ void DfxElf::ParsePhdr(struct dl_phdr_info *info, std::vector<const ElfW(Phdr) *
                 ElfW(Addr) vaddr = phdr->p_vaddr + info->dlpi_addr;
                 if (pc >= vaddr && pc < vaddr + phdr->p_memsz) {
                     // .text section
-                    pHdrSections[0] = phdr;
+                    pHdrSections[TEXT] = phdr;
                 }
                 break;
             }
 #if defined(__arm__)
             case PT_ARM_EXIDX: {
                 // .arm_exidx section
-                pHdrSections[1] = phdr;
+                pHdrSections[ARMEXIDX] = phdr;
                 break;
             }
 #endif
             case PT_GNU_EH_FRAME: {
                 // .dynamic section
-                pHdrSections[2] = phdr;
+                pHdrSections[DYNAMIC] = phdr;
                 break;
             }
             case PT_DYNAMIC: {
                 // .eh_frame_hdr section
-                pHdrSections[3] = phdr;
+                pHdrSections[EHFRAMEHDR] = phdr;
                 break;
             }
             default:
@@ -954,33 +954,26 @@ int DfxElf::DlPhdrCb(struct dl_phdr_info *info, size_t size, void *data)
     std::vector<const ElfW(Phdr) *> pHdrSections(numOfPhdrSections);
     ParsePhdr(info, pHdrSections, pc);
 
-    const ElfW(Phdr) *pText = pHdrSections[0];
-#if defined(__arm__)
-    const ElfW(Phdr) *pArmExidx = pHdrSections[1];
-#endif
-    const ElfW(Phdr) *pDynamic = pHdrSections[2];
-    const ElfW(Phdr) *pEhHdr = pHdrSections[3];
-
-    if (pText == nullptr) {
+    if (pHdrSections[TEXT] == nullptr) {
         return 0;
     }
     ElfW(Addr) loadBase = info->dlpi_addr;
-    uti->startPc = pText->p_vaddr + loadBase;
-    uti->endPc = uti->startPc + pText->p_memsz;
+    uti->startPc = pHdrSections[TEXT]->p_vaddr + loadBase;
+    uti->endPc = uti->startPc + pHdrSections[TEXT]->p_memsz;
     DFXLOGU("Elf name: %{public}s", info->dlpi_name);
     uti->namePtr = (uintptr_t) info->dlpi_name;
 
 #if defined(__arm__)
-    if (pArmExidx) {
+    if (pHdrSections[ARMEXIDX]) {
         ShdrInfo shdr;
-        shdr.addr = pArmExidx->p_vaddr;
-        shdr.size = pArmExidx->p_memsz;
+        shdr.addr = pHdrSections[ARMEXIDX]->p_vaddr;
+        shdr.size = pHdrSections[ARMEXIDX]->p_memsz;
         return FillUnwindTableByExidx(shdr, loadBase, uti);
     }
 #endif
 
-    if (pDynamic) {
-        if (!ProccessDynamic(pDynamic, loadBase, uti)) {
+    if (pHdrSections[DYNAMIC]) {
+        if (!ProccessDynamic(pHdrSections[DYNAMIC], loadBase, uti)) {
             return 0;
         }
     } else {
@@ -989,7 +982,7 @@ int DfxElf::DlPhdrCb(struct dl_phdr_info *info, size_t size, void *data)
 
     struct DwarfEhFrameHdr *hdr = nullptr;
     struct DwarfEhFrameHdr synthHdr;
-    InitHdr(&hdr, synthHdr, info, loadBase, pEhHdr);
+    InitHdr(&hdr, synthHdr, info, loadBase, pHdrSections[EHFRAMEHDR]);
 
     return FillUnwindTableByEhhdrLocal(hdr, uti);
 }

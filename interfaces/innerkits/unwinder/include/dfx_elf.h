@@ -29,6 +29,15 @@ struct DlCbData {
     bool singleFde = false;
 };
 
+#if is_ohos && !is_mingw
+enum HdrSection {
+    TEXT = 0,
+    ARMEXIDX = 1,
+    DYNAMIC = 2,
+    EHFRAMEHDR = 3
+};
+#endif
+
 class DfxElf final {
 public:
     static std::shared_ptr<DfxElf> Create(const std::string& file);

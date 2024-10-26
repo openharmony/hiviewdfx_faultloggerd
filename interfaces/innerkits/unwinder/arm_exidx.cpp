@@ -200,7 +200,7 @@ bool ArmExidx::ExtractEntryData(uintptr_t entryOffset)
     }
 
     entryOffset += FOUR_BYTE_OFFSET;
-    if (!memory_->ReadU32(entryOffset, &data, false)) {
+    if (!memory_->Read<uint32_t>(entryOffset, &data, false)) {
         DFXLOGE("[%{public}d]: entryOffset: %{public}llx error.", __LINE__, (uint64_t)entryOffset);
         lastErrorData_.SetAddrAndCode(entryOffset, UNW_ERROR_ILLEGAL_VALUE);
         return false;
@@ -256,7 +256,7 @@ bool ArmExidx::ExtractEntryTabByPersonality(uintptr_t& tabOffset, uint32_t& data
 
         tabOffset += FOUR_BYTE_OFFSET;
         // Skip four bytes, because dont have unwind data to read
-        if (!memory_->ReadU32(tabOffset, &data, false)) {
+        if (!memory_->Read<uint32_t>(tabOffset, &data, false)) {
             lastErrorData_.SetAddrAndCode(tabOffset, UNW_ERROR_INVALID_MEMORY);
             return false;
         }
@@ -296,7 +296,7 @@ bool ArmExidx::ExtractEntryTab(uintptr_t tabOffset)
 {
     uint32_t data = 0;
     DFXLOGU("Exidx tabOffset: %{public}llx", (uint64_t)tabOffset);
-    if (!memory_->ReadU32(tabOffset, &data, false)) {
+    if (!memory_->Read<uint32_t>(tabOffset, &data, false)) {
         lastErrorData_.SetAddrAndCode(tabOffset, UNW_ERROR_INVALID_MEMORY);
         return false;
     }
@@ -312,7 +312,7 @@ bool ArmExidx::ExtractEntryTab(uintptr_t tabOffset)
     }
 
     for (size_t i = 0; i < tableCount; i++) {
-        if (!memory_->ReadU32(tabOffset, &data, false)) {
+        if (!memory_->Read<uint32_t>(tabOffset, &data, false)) {
             return false;
         }
         tabOffset += FOUR_BYTE_OFFSET;

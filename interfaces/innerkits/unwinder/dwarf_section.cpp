@@ -76,13 +76,13 @@ bool DwarfSection::SearchEntry(uintptr_t pc, struct UnwindTableInfo uti, struct 
     while (low < high) {
         uintptr_t cur = (low + high) / 2; // 2 : binary search divided parameter
         ptr = (uintptr_t) tableData + cur * sizeof(DwarfTableEntry);
-        if (!memory_->ReadS32(ptr, &dwarfTableEntry.startPc, true)) {
+        if (!memory_->Read<int32_t>(ptr, &dwarfTableEntry.startPc, true)) {
             lastErrorData_.SetAddrAndCode(ptr, UNW_ERROR_INVALID_MEMORY);
             return false;
         }
         uintptr_t startPc = static_cast<uintptr_t>(dwarfTableEntry.startPc) + segbase;
         if (startPc == pc) {
-            if (!memory_->ReadS32(ptr, &dwarfTableEntry.fdeOffset, true)) {
+            if (!memory_->Read<int32_t>(ptr, &dwarfTableEntry.fdeOffset, true)) {
                 lastErrorData_.SetAddrAndCode(ptr, UNW_ERROR_INVALID_MEMORY);
                 return false;
             }
@@ -98,7 +98,7 @@ bool DwarfSection::SearchEntry(uintptr_t pc, struct UnwindTableInfo uti, struct 
     if (entry == 0) {
         if (high != 0) {
             ptr = static_cast<uintptr_t>(tableData) + (high - 1) * sizeof(DwarfTableEntry) + 4; // 4 : four bytes
-            if (!memory_->ReadS32(ptr, &dwarfTableEntry.fdeOffset, true)) {
+            if (!memory_->Read<int32_t>(ptr, &dwarfTableEntry.fdeOffset, true)) {
                 lastErrorData_.SetAddrAndCode(ptr, UNW_ERROR_INVALID_MEMORY);
                 return false;
             }
@@ -163,15 +163,15 @@ bool DwarfSection::GetCieOrFde(uintptr_t &addr, FrameDescEntry &fdeInfo)
 void DwarfSection::ParseCieOrFdeHeader(uintptr_t& ptr, FrameDescEntry &fdeInfo, bool& isCieEntry)
 {
     uint32_t value32 = 0;
-    memory_->ReadU32(ptr, &value32, true);
+    memory_->Read<uint32_t>(ptr, &value32, true);
     uintptr_t ciePtr = 0;
     uintptr_t instructionsEnd = 0;
     if (value32 == static_cast<uint32_t>(-1)) {
         uint64_t value64;
-        memory_->ReadU64(ptr, &value64, true);
+        memory_->Read<uint64_t>(ptr, &value64, true);
         instructionsEnd = ptr + value64;
 
-        memory_->ReadU64(ptr, &value64, true);
+        memory_->Read<uint64_t>(ptr, &value64, true);
         ciePtr = static_cast<uintptr_t>(value64);
         if (ciePtr == cie64Value_) {
             isCieEntry = true;
@@ -184,7 +184,7 @@ void DwarfSection::ParseCieOrFdeHeader(uintptr_t& ptr, FrameDescEntry &fdeInfo, 
         ptr += sizeof(uint64_t);
     } else {
         instructionsEnd = ptr + value32;
-        memory_->ReadU32(ptr, &value32, false);
+        memory_->Read<uint32_t>(ptr, &value32, false);
         ciePtr = static_cast<uintptr_t>(value32);
         if (ciePtr == cie32Value_) {
             isCieEntry = true;
@@ -297,11 +297,7 @@ void DwarfSection::SaveAugStr(uintptr_t& ptr, std::vector<char>& augStr)
 {
     uint8_t ch;
     augStr.clear();
-    while (true) {
-        memory_->Read<uint8_t>(ptr, &ch, true);
-        if (ch == '\0') {
-            break;
-        }
+    while (memory_->Read<uint8_t>(ptr, &ch, true) && ch == '\0') {
         augStr.push_back(ch);
     }
 }
@@ -339,7 +335,7 @@ void DwarfSection::ParseAugData(uintptr_t& ptr, CommonInfoEntry &cieInfo, const 
 bool DwarfSection::FillInCie(uintptr_t ptr, CommonInfoEntry &cieInfo)
 {
     uint8_t version;
-    memory_->ReadU8(ptr, &version, true);
+    memory_->Read<uint8_t>(ptr, &version, true);
     DFXLOGU("Cie version: %{public}d", version);
     if (version != DW_EH_VERSION && version != 3 && version != 4 && version != 5) { // 3 4 5 : cie version
         DFXLOGE("Invalid cie version: %{public}d", version);
@@ -355,7 +351,7 @@ bool DwarfSection::FillInCie(uintptr_t ptr, CommonInfoEntry &cieInfo)
     if (version == 4 || version == 5) { // 4 5 : cie version
         // Skip the Address Size field since we only use it for validation.
         ptr += 1;
-        memory_->ReadU8(ptr, &cieInfo.segmentSize, true);
+        memory_->Read<uint8_t>(ptr, &cieInfo.segmentSize, true);
     } else {
         cieInfo.segmentSize = 0;
     }
@@ -371,7 +367,7 @@ bool DwarfSection::FillInCie(uintptr_t ptr, CommonInfoEntry &cieInfo)
     // parse return address register
     if (version == DW_EH_VERSION) {
         uint8_t val;
-        memory_->ReadU8(ptr, &val, true);
+        memory_->Read<uint8_t>(ptr, &val, true);
         cieInfo.returnAddressRegister = static_cast<uintptr_t>(val);
     } else {
         cieInfo.returnAddressRegister = (uintptr_t)memory_->ReadUleb128(ptr);

@@ -52,12 +52,12 @@ template <typename AddressType>
 bool DwarfOp<AddressType>::Decode(DfxRegs& regs, uintptr_t& addr)
 {
     uint8_t opcode;
-    memory_->ReadU8(addr, &opcode, true);
+    memory_->Read<uint8_t>(addr, &opcode, true);
     switch (opcode) {
         case DW_OP_addr: {
             DFXLOGU("DW_OP_addr");
             uintptr_t val;
-            memory_->ReadUptr(addr, &val, true);
+            memory_->Read<uintptr_t>(addr, &val, true);
             OpPush(val);
         }
             break;
@@ -68,56 +68,56 @@ bool DwarfOp<AddressType>::Decode(DfxRegs& regs, uintptr_t& addr)
         case DW_OP_const1u: {
             DFXLOGU("DW_OP_const1u");
             uint8_t val;
-            memory_->ReadU8(addr, &val, true);
+            memory_->Read<uint8_t>(addr, &val, true);
             OpPush(val);
         }
             break;
         case DW_OP_const1s: {
             DFXLOGU("DW_OP_const1s");
             int8_t val;
-            memory_->ReadS8(addr, &val, true);
+            memory_->Read<int8_t>(addr, &val, true);
             OpPush(val);
         }
             break;
         case DW_OP_const2u: {
             DFXLOGU("DW_OP_const2u");
             uint16_t val;
-            memory_->ReadU16(addr, &val, true);
+            memory_->Read<uint16_t>(addr, &val, true);
             OpPush(val);
         }
             break;
         case DW_OP_const2s: {
             DFXLOGU("DW_OP_const2s");
             int16_t val;
-            memory_->ReadS16(addr, &val, true);
+            memory_->Read<int16_t>(addr, &val, true);
             OpPush(val);
         }
             break;
         case DW_OP_const4u: {
             DFXLOGU("DW_OP_const4u");
             uint32_t val;
-            memory_->ReadU32(addr, &val, true);
+            memory_->Read<uint32_t>(addr, &val, true);
             OpPush(val);
         }
             break;
         case DW_OP_const4s: {
             DFXLOGU("DW_OP_const4s");
             int32_t val;
-            memory_->ReadS32(addr, &val, true);
+            memory_->Read<int32_t>(addr, &val, true);
             OpPush(val);
         }
             break;
         case DW_OP_const8u: {
             DFXLOGU("DW_OP_const8u");
             uint64_t val;
-            memory_->ReadU64(addr, &val, true);
+            memory_->Read<uint64_t>(addr, &val, true);
             OpPush(val);
         }
             break;
         case DW_OP_const8s: {
             DFXLOGU("DW_OP_const8s");
             int64_t val;
-            memory_->ReadS64(addr, &val, true);
+            memory_->Read<int64_t>(addr, &val, true);
             OpPush(val);
         }
             break;
