@@ -30,7 +30,10 @@ namespace HiviewDFX {
  * @brief Get a thread of backtrace frames by specify tid
  *
  * @param frames  backtrace frames(output parameter)
- * @param tid  the id of thread
+ * @param tid  the id of thread.
+ *             notice: the value can not equal to tid of the caller thread,
+ *             if you want to get stack of the caller thread,
+ *             please use interface of "GetBacktrace" or "PrintBacktrace".
  * @param skipFrameNum the number of frames to skip
  * @param fast flag for using fp backtrace(true) or dwarf backtrace(false)
  * @param maxFrameNums the maximum number of frames to backtrace
@@ -43,14 +46,20 @@ bool GetBacktraceFramesByTid(std::vector<DfxFrame>& frames, int32_t tid, size_t 
  * @brief Get a thread of backtrace string  by specify tid
  *
  * @param out  backtrace string(output parameter)
- * @param tid  the id of thread
+ * @param tid  the id of thread.
+ *             notice: the value can not equal to tid of the caller thread,
+ *             if you want to get stack of the caller thread,
+ *             please use interface of "GetBacktrace" or "PrintBacktrace".
  * @param skipFrameNum the number of frames to skip
  * @param fast flag for using fp backtrace(true) or dwarf backtrace(false)
  * @param maxFrameNums the maximum number of frames to backtrace
+ * @param enableKernelStack if set to true, when failed to get user stack, try to get kernel stack.
  * @return if succeed return true, otherwise return false
+ * @warning If enableKernelStack set to true,  this interface requires that the caller process
+ *          has ioctl system call permission, otherwise it may cause the calling process to crash.
 */
 bool GetBacktraceStringByTid(std::string& out, int32_t tid, size_t skipFrameNum, bool fast,
-                             size_t maxFrameNums = DEFAULT_MAX_FRAME_NUM);
+                             size_t maxFrameNums = DEFAULT_MAX_FRAME_NUM, bool enableKernelStack = true);
 
 /**
  * @brief Print backtrace information to fd
@@ -68,7 +77,7 @@ bool PrintBacktrace(int32_t fd = -1, bool fast = false, size_t maxFrameNums = DE
  * @param out  backtrace string(output parameter)
  * @param fast flag for using fp backtrace(true) or dwarf backtrace(false)
  * @param maxFrameNums the maximum number of frames to backtrace
- * @return if succeed return true, otherwise return false
+ * @return if succeed return true, otherwise return false.
 */
 bool GetBacktrace(std::string& out, bool fast = false, size_t maxFrameNums = DEFAULT_MAX_FRAME_NUM);
 
@@ -90,10 +99,12 @@ bool GetBacktrace(std::string& out, size_t skipFrameNum, bool fast = false,
  * This API is used to get formatted stacktrace string of current process
  *
  * @param maxFrameNums the maximum number of frames to backtrace
- * @param isJson whether message of native stack is json formatted
+ * @param enableKernelStack if set to true, when failed to get user stack, try to get kernel stack.
  * @return formatted stacktrace string
+ * @warning If enableKernelStack set to true,  this interface requires that the caller process
+ *          has ioctl system call permission, otherwise it may cause the calling process to crash.
 */
-std::string GetProcessStacktrace(size_t maxFrameNums = DEFAULT_MAX_FRAME_NUM);
+std::string GetProcessStacktrace(size_t maxFrameNums = DEFAULT_MAX_FRAME_NUM, bool enableKernelStack = true);
 
 extern "C" {
     /**

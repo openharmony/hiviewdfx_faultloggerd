@@ -134,7 +134,7 @@ LocalThreadContext& LocalThreadContext::GetInstance()
     return instance;
 }
 
-std::shared_ptr<ThreadContext> LocalThreadContext::GetThreadContext(int32_t tid)
+NO_SANITIZE std::shared_ptr<ThreadContext> LocalThreadContext::GetThreadContext(int32_t tid)
 {
     std::unique_lock<std::mutex> lock(localMutex_);
     auto it = g_contextMap.find(tid);
@@ -181,15 +181,14 @@ std::shared_ptr<ThreadContext> LocalThreadContext::CollectThreadContext(int32_t 
     return threadContext;
 }
 
-void LocalThreadContext::CopyContextAndWaitTimeout(int sig, siginfo_t *si, void *context)
+NO_SANITIZE void LocalThreadContext::CopyContextAndWaitTimeout(int sig, siginfo_t *si, void *context)
 {
-    if (si == nullptr || si->si_code != DUMP_TYPE_LOCAL || context == nullptr) {
+    if (si == nullptr || si->si_code != DUMP_TYPE_LOCAL || si->si_value.sival_ptr == nullptr || context == nullptr) {
         return;
     }
 
-    int tid = gettid();
-    LOGU("tid(%d) recv sig(%d)", tid, sig);
-    auto ctxPtr = LocalThreadContext::GetInstance().GetThreadContext(tid);
+    LOGU("tid(%d) recv sig(%d)", gettid(), sig);
+    auto ctxPtr = static_cast<ThreadContext *>(si->si_value.sival_ptr);
 #if defined(__aarch64__)
     if (ctxPtr == nullptr) {
         return;
@@ -209,6 +208,7 @@ void LocalThreadContext::CopyContextAndWaitTimeout(int sig, siginfo_t *si, void 
         return;
     }
     ucontext_t* ucontext = reinterpret_cast<ucontext_t*>(context);
+    int tid = gettid();
     if (memcpy_s(&ctxPtr->ctx->uc_mcontext, sizeof(ucontext->uc_mcontext),
         &ucontext->uc_mcontext, sizeof(ucontext->uc_mcontext)) != 0) {
         LOGW("Failed to copy local ucontext with tid(%d)", tid);
@@ -260,6 +260,7 @@ bool LocalThreadContext::SignalRequestThread(int32_t tid, ThreadContext* threadC
     si.si_signo = SIGLOCAL_DUMP;
     si.si_errno = 0;
     si.si_code = DUMP_TYPE_LOCAL;
+    si.si_value.sival_ptr = reinterpret_cast<void *>(threadContext);
 #if defined(is_ohos) && is_ohos
     if (syscall(SYS_rt_tgsigqueueinfo, getprocpid(), tid, si.si_signo, &si) != 0) {
 #else

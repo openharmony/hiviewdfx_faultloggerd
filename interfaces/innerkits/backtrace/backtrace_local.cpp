@@ -71,11 +71,11 @@ bool GetBacktraceFramesByTid(std::vector<DfxFrame>& frames, int32_t tid, size_t 
 }
 
 bool GetBacktraceStringByTid(std::string& out, int32_t tid, size_t skipFrameNum, bool fast,
-                             size_t maxFrameNums)
+                             size_t maxFrameNums, bool enableKernelStack)
 {
     std::vector<DfxFrame> frames;
     bool ret = GetBacktraceFramesByTid(frames, tid, skipFrameNum + 1, fast, maxFrameNums);
-    if (!ret) {
+    if (!ret && enableKernelStack) {
         std::string msg = "";
         DfxThreadStack threadStack;
         if (DfxGetKernelStack(tid, msg) == 0 && FormatThreadKernelStack(msg, threadStack)) {
@@ -115,13 +115,14 @@ bool PrintBacktrace(int32_t fd, bool fast, size_t maxFrameNums)
 bool GetBacktrace(std::string& out, bool fast, size_t maxFrameNums)
 {
     DFXLOG_INFO("%s", "Receive GetBacktrace request with skip current frame.");
-    return GetBacktraceStringByTid(out, BACKTRACE_CURRENT_THREAD, 1, fast, maxFrameNums); // 1: skip current frame
+    return GetBacktraceStringByTid(out, BACKTRACE_CURRENT_THREAD, 1,
+                                   fast, maxFrameNums, false); // 1: skip current frame
 }
 
 bool GetBacktrace(std::string& out, size_t skipFrameNum, bool fast, size_t maxFrameNums)
 {
     DFXLOG_INFO("%s", "Receive GetBacktrace request.");
-    return GetBacktraceStringByTid(out, BACKTRACE_CURRENT_THREAD, skipFrameNum + 1, fast, maxFrameNums);
+    return GetBacktraceStringByTid(out, BACKTRACE_CURRENT_THREAD, skipFrameNum + 1, fast, maxFrameNums, false);
 }
 
 bool PrintTrace(int32_t fd, size_t maxFrameNums)
@@ -139,7 +140,7 @@ const char* GetTrace(size_t skipFrameNum, size_t maxFrameNums)
     return trace.c_str();
 }
 
-std::string GetProcessStacktrace(size_t maxFrameNums)
+std::string GetProcessStacktrace(size_t maxFrameNums, bool enableKernelStack)
 {
     auto unwinder = std::make_shared<Unwinder>();
     std::ostringstream ss;
@@ -151,7 +152,7 @@ std::string GetProcessStacktrace(size_t maxFrameNums)
         BacktraceLocalThread thread(tid, unwinder);
         if (thread.Unwind(false, maxFrameNums, 0)) {
             ss << thread.GetFormattedStr(true) << std::endl;
-        } else {
+        } else if (enableKernelStack) {
             std::string msg = "";
             DfxThreadStack threadStack;
             if (DfxGetKernelStack(tid, msg) == 0 && FormatThreadKernelStack(msg, threadStack)) {
