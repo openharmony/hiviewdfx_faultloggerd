@@ -419,7 +419,7 @@ static bool DFX_SigchainHandler(int sig, siginfo_t *si, void *context)
     int pid = syscall(SYS_getpid);
     int tid = syscall(SYS_gettid);
 
-    DFXLOGW("DFX_SigchainHandler :: sig(%{public}d), pid(%{public}d), tid(%{public}d).", sig, pid, tid);
+    DFXLOGI("DFX_SigchainHandler :: sig(%{public}d), pid(%{public}d), tid(%{public}d).", sig, pid, tid);
     bool ret = false;
     if (sig == SIGDUMP) {
         if (si->si_code != DUMP_TYPE_REMOTE) {
@@ -448,7 +448,7 @@ static bool DFX_SigchainHandler(int sig, siginfo_t *si, void *context)
         sig, g_request.pid, g_request.processName, g_request.threadName);
     ret = DumpRequest(sig);
     pthread_mutex_unlock(&g_signalHandlerMutex);
-    DFXLOGW("Finish handle signal(%{public}d) in %{public}d:%{public}d.", sig, g_request.pid, g_request.tid);
+    DFXLOGI("Finish handle signal(%{public}d) in %{public}d:%{public}d.", sig, g_request.pid, g_request.tid);
     return ret;
 }
 
