@@ -205,9 +205,7 @@ int DfxUnwindRemote::UnwindOtherThread(std::shared_ptr<DfxProcess> process, std:
             DFX_TRACE_START("OtherThreadUnwindRemote:%d", tid);
             bool ret = unwinder->UnwindRemote(pid, withRegs, DfxConfig::GetConfig().maxFrameNums);
             DFX_TRACE_FINISH();
-#ifndef PARSE_LOCK_OWNER
             thread->Detach();
-#endif
             DFX_TRACE_START("OtherThreadGetFrames:%d", tid);
             thread->SetFrames(unwinder->GetFrames());
             DFX_TRACE_FINISH();
