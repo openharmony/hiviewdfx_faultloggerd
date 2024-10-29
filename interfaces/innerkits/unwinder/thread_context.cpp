@@ -190,9 +190,6 @@ NO_SANITIZE void LocalThreadContext::CopyContextAndWaitTimeout(int sig, siginfo_
     LOGU("tid(%d) recv sig(%d)", gettid(), sig);
     auto ctxPtr = static_cast<ThreadContext *>(si->si_value.sival_ptr);
 #if defined(__aarch64__)
-    if (ctxPtr == nullptr) {
-        return;
-    }
     uintptr_t fp = reinterpret_cast<ucontext_t*>(context)->uc_mcontext.regs[REG_FP];
     uintptr_t pc = reinterpret_cast<ucontext_t*>(context)->uc_mcontext.pc;
     ctxPtr->firstFrameSp = reinterpret_cast<ucontext_t*>(context)->uc_mcontext.sp;
