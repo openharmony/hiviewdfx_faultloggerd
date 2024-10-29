@@ -71,6 +71,8 @@ protected:
     template <typename EhdrType, typename PhdrType>
     bool ParseProgramHeaders(const EhdrType& ehdr);
     template <typename EhdrType, typename ShdrType>
+    bool ExtractSectionHeadersInfo(const EhdrType& ehdr, ShdrType& shdr);
+    template <typename EhdrType, typename ShdrType>
     bool ParseSectionHeaders(const EhdrType& ehdr);
     template <typename SymType>
     bool IsFunc(const SymType sym);

@@ -169,31 +169,9 @@ std::shared_ptr<MiniDebugInfo> ElfParser::GetMiniDebugInfo()
 }
 
 template <typename EhdrType, typename ShdrType>
-bool ElfParser::ParseSectionHeaders(const EhdrType& ehdr)
+bool ElfParser::ExtractSectionHeadersInfo(const EhdrType& ehdr, ShdrType& shdr)
 {
     uint64_t offset = ehdr.e_shoff;
-
-    ShdrType shdr;
-    //section header string table index. include section header table with section name string table.
-    if (ehdr.e_shstrndx < ehdr.e_shnum) {
-        uint64_t secOffset = 0;
-        uint64_t secSize = 0;
-        uint64_t shNdxOffset = offset + ehdr.e_shstrndx * ehdr.e_shentsize;
-        if (!Read((uintptr_t)shNdxOffset, &shdr, sizeof(shdr))) {
-            DFXLOGE("Read section header string table failed");
-            return false;
-        }
-        secOffset = shdr.sh_offset;
-        secSize = shdr.sh_size;
-        if (!ParseStrTab(sectionNames_, secOffset, secSize)) {
-            return false;
-        }
-    } else {
-        DFXLOGE("e_shstrndx(%{public}u) cannot greater than or equal e_shnum(%{public}u)",
-            ehdr.e_shstrndx, ehdr.e_shnum);
-        return false;
-    }
-
     offset += ehdr.e_shentsize;
     for (size_t i = 1; i < ehdr.e_shnum; i++, offset += ehdr.e_shentsize) {
         if (i == ehdr.e_shstrndx) {
@@ -240,6 +218,37 @@ bool ElfParser::ParseSectionHeaders(const EhdrType& ehdr)
             symShdrs_.emplace_back(elfShdr);
         }
     }
+    return true;
+}
+
+template <typename EhdrType, typename ShdrType>
+bool ElfParser::ParseSectionHeaders(const EhdrType& ehdr)
+{
+    ShdrType shdr;
+    //section header string table index. include section header table with section name string table.
+    if (ehdr.e_shstrndx < ehdr.e_shnum) {
+        uint64_t secOffset = 0;
+        uint64_t secSize = 0;
+        uint64_t shNdxOffset = ehdr.e_shoff + ehdr.e_shstrndx * ehdr.e_shentsize;
+        if (!Read((uintptr_t)shNdxOffset, &shdr, sizeof(shdr))) {
+            DFXLOGE("Read section header string table failed");
+            return false;
+        }
+        secOffset = shdr.sh_offset;
+        secSize = shdr.sh_size;
+        if (!ParseStrTab(sectionNames_, secOffset, secSize)) {
+            return false;
+        }
+    } else {
+        DFXLOGE("e_shstrndx(%{public}u) cannot greater than or equal e_shnum(%{public}u)",
+            ehdr.e_shstrndx, ehdr.e_shnum);
+        return false;
+    }
+
+    if(!ExtractSectionHeadersInfo(ehdr, shdr)) {
+        return false;
+    }
+    
     return true;
 }
 
