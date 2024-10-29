@@ -241,16 +241,8 @@ bool ArmExidx::ExtractEntryData(uintptr_t entryOffset)
     return ExtractEntryTab(extabAddr);
 }
 
-bool ArmExidx::ExtractEntryTab(uintptr_t tabOffset)
+bool ArmExidx::ExtractEntryTabByPersonality(uintptr_t& tabOffset, uint32_t& data, uint8_t& tableCount)
 {
-    uint32_t data = 0;
-    DFXLOGU("Exidx tabOffset: %{public}llx", (uint64_t)tabOffset);
-    if (!memory_->ReadU32(tabOffset, &data, false)) {
-        lastErrorData_.SetAddrAndCode(tabOffset, UNW_ERROR_INVALID_MEMORY);
-        return false;
-    }
-
-    uint8_t tableCount = 0;
     if ((data & ARM_EXIDX_COMPACT) == 0) {
         DFXLOGU("Arm generic personality, data: %{public}x.", data);
 #ifndef TEST_ARM_EXIDX
@@ -297,6 +289,23 @@ bool ArmExidx::ExtractEntryTab(uintptr_t tabOffset)
         ops_.push_back((data >> EIGHT_BIT_OFFSET) & 0xff);
         ops_.push_back(data & 0xff);
     }
+    return true;
+}
+
+bool ArmExidx::ExtractEntryTab(uintptr_t tabOffset)
+{
+    uint32_t data = 0;
+    DFXLOGU("Exidx tabOffset: %{public}llx", (uint64_t)tabOffset);
+    if (!memory_->ReadU32(tabOffset, &data, false)) {
+        lastErrorData_.SetAddrAndCode(tabOffset, UNW_ERROR_INVALID_MEMORY);
+        return false;
+    }
+
+    uint8_t tableCount = 0;
+    if (!ExtractEntryTabByPersonality(tabOffset, data, tableCount)) {
+        return false;
+    }
+    
     if (tableCount > 5) { // 5 : 5 operators
         lastErrorData_.SetCode(UNW_ERROR_NOT_SUPPORT);
         return false;
