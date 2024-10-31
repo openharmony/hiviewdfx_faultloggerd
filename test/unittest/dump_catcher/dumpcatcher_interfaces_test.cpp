@@ -15,7 +15,6 @@
 
 #include <gtest/gtest.h>
 
-#include <sched.h>
 #include <string>
 #include <thread>
 #include <vector>
