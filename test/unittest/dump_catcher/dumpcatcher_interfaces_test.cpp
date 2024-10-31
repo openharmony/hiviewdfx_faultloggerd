@@ -842,7 +842,7 @@ HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest033, TestSize.Level
     } else if (pid < 0) {
         GTEST_LOG_(INFO) << "Fail in fork.";
     } else {
-        std::this_thread::sleep_for(std::chrono::seconds(10));
+        waitpid(pid, nullptr, 0);
     }
     GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest033: end.";
 }
