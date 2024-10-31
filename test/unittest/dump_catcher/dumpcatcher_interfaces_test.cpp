@@ -15,6 +15,7 @@
 
 #include <gtest/gtest.h>
 
+#include <sched.h>
 #include <string>
 #include <thread>
 #include <vector>
@@ -825,25 +826,25 @@ HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest032, TestSize.Level
 HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest033, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest033: start.";
+    int32_t fd = RequestFileDescriptor(FaultLoggerType::CPP_CRASH);
+    ASSERT_GT(fd, 0);
+    close(fd);
+    pid_t cpid = getpid();
     pid_t pid = fork();
     if (pid == 0) {
-        int32_t fd = RequestFileDescriptor(FaultLoggerType::CPP_CRASH);
-        ASSERT_GT(fd, 0);
-        close(fd);
-        std::this_thread::sleep_for(std::chrono::seconds(11));
+        GTEST_LOG_(INFO) << "dump remote process, " << "pid:" << cpid << ", tid:" << 0;
+        DfxDumpCatcher dumplog;
+        string msg = "";
+        EXPECT_FALSE(dumplog.DumpCatch(cpid, 0, msg));
+        constexpr int validTime = 8;
+        sleep(validTime);
+        msg = "";
+        EXPECT_TRUE(dumplog.DumpCatch(cpid, 0, msg));
         _exit(0);
     } else if (pid < 0) {
         GTEST_LOG_(INFO) << "Fail in fork.";
     } else {
-        std::this_thread::sleep_for(std::chrono::seconds(1));
-        GTEST_LOG_(INFO) << "dump remote process, " << "pid:" << pid << ", tid:" << 0;
-        DfxDumpCatcher dumplog;
-        string msg = "";
-        EXPECT_FALSE(dumplog.DumpCatch(pid, 0, msg));
-        constexpr int validTime = 8;
-        sleep(validTime);
-        msg = "";
-        EXPECT_TRUE(dumplog.DumpCatch(pid, 0, msg));
+        std::this_thread::sleep_for(std::chrono::seconds(10));
     }
     GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest033: end.";
 }
