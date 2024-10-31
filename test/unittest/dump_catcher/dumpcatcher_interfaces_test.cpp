@@ -828,17 +828,16 @@ HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest033, TestSize.Level
     int32_t fd = RequestFileDescriptor(FaultLoggerType::CPP_CRASH);
     ASSERT_GT(fd, 0);
     close(fd);
-    pid_t cpid = getpid();
     pid_t pid = fork();
     if (pid == 0) {
-        GTEST_LOG_(INFO) << "dump remote process, " << "pid:" << cpid << ", tid:" << 0;
+        GTEST_LOG_(INFO) << "dump remote process, " << "pid:" << getppid() << ", tid:" << 0;
         DfxDumpCatcher dumplog;
         string msg = "";
-        EXPECT_FALSE(dumplog.DumpCatch(cpid, 0, msg));
+        EXPECT_FALSE(dumplog.DumpCatch(getppid(), 0, msg));
         constexpr int validTime = 8;
         sleep(validTime);
         msg = "";
-        EXPECT_TRUE(dumplog.DumpCatch(cpid, 0, msg));
+        EXPECT_TRUE(dumplog.DumpCatch(getppid(), 0, msg));
         _exit(0);
     } else if (pid < 0) {
         GTEST_LOG_(INFO) << "Fail in fork.";
