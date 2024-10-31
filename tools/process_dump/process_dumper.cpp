@@ -783,7 +783,7 @@ void ProcessDumper::RemoveFileIfNeed() const
         return lhs.substr(lhsSplitPos).compare(rhs.substr(rhsSplitPos)) < 0;
     });
 
-    int deleteNum = files.size() - (MAX_FILE_COUNT - 1);
+    int deleteNum = static_cast<int>(files.size()) - (MAX_FILE_COUNT - 1);
     for (int index = 0; index < deleteNum; index++) {
         DFXLOGI("Now we delete file(%{public}s) due to exceed file max count.", files[index].c_str());
         OHOS::RemoveFile(files[index]);
