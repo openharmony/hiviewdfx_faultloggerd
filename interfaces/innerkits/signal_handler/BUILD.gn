@@ -13,6 +13,37 @@
 
 import("//base/hiviewdfx/faultloggerd/faultloggerd.gni")
 
+declare_args() {
+  dfxsignalhandler_use_flto = false
+}
+
+template("lib_dfxsignalhandler_template") {
+  __use_flto = invoker.dfxsignalhandler_use_flto
+  __inherited_configs = invoker.dfxsignalhandler_inherited_config
+  if (defined(invoker.configs)) {
+    __static_sighandler_config = invoker.configs
+  } else {
+    __static_sighandler_config = []
+  }
+  if (!defined(ohos_lite)) {
+    static_library(target_name) {
+      cflags = [ "-DDFX_SIGNAL_LIBC" ]
+      if (!__use_flto) {
+        cflags_c = [ "-fno-lto" ]
+      }
+
+      sources = [
+        "dfx_signal_handler.c",
+        "dfx_signalhandler_exception.c",
+        "musl_log.c",
+      ]
+      configs -= __inherited_configs
+      configs += __static_sighandler_config
+      configs += [ "//build/config/compiler:compiler" ]
+    }
+  }
+}
+
 if (defined(ohos_lite)) {
   shared_library("dfx_signalhandler") {
     defines = [
@@ -146,19 +177,14 @@ if (defined(ohos_lite)) {
     kernel_permission_path = "./encaps.json"
   }
 
-  static_library("dfxsignalhandler") {
-    cflags = [ "-DDFX_SIGNAL_LIBC" ]
-
-    sources = [
-      "dfx_signal_handler.c",
-      "dfx_signalhandler_exception.c",
-      "musl_log.c",
-    ]
-
-    configs -= inherited_configs
-    configs += [
-      "//build/config/compiler:compiler",
-      ":static_sighandler_config",
-    ]
+  lib_dfxsignalhandler_template("dfxsignalhandler") {
+    dfxsignalhandler_use_flto = true
+    dfxsignalhandler_inherited_config = inherited_configs
+    configs = [ ":static_sighandler_config" ]
+  }
+  lib_dfxsignalhandler_template("dfxsignalhandler_noflto") {
+    dfxsignalhandler_use_flto = false
+    dfxsignalhandler_inherited_config = inherited_configs
+    configs = [ ":static_sighandler_config" ]
   }
 }
