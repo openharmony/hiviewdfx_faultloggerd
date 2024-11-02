@@ -392,9 +392,9 @@ void DfxDumpCatcher::CollectKernelStack(pid_t pid, int waitMilliSeconds)
         return true;
     };
     std::vector<int> tids;
-    bool ret = GetTidsByPidWithFunc(pid, tids, func);
-    if (ret == false) {
-        DFXLOGE("Process(%{public}d) Get Tids fail!", pid);
+    MAYBE_UNUSED bool ret = GetTidsByPidWithFunc(pid, tids, func);
+    if (kernelStackInfo.empty()) {
+        DFXLOGE("Process(%{public}d) collect kernel stack fail!", pid);
         finishCollect();
         return;
     }
