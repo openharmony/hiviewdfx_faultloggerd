@@ -358,6 +358,7 @@ void ProcessDumper::Report(std::shared_ptr<ProcessDumpRequest> request, std::str
         request->msg.type == MESSAGE_JEMALLOC ||
         request->msg.type == MESSAGE_BADFD) {
         ReportAddrSanitizer(*request, jsonInfo);
+        InfoRemoteProcessResult(request, OPE_CONTINUE, MAIN_PROCESS);
         return;
     }
     if (resDump_ != DumpErrorCode::DUMP_ENOMAP && resDump_ != DumpErrorCode::DUMP_EREADPID) {
