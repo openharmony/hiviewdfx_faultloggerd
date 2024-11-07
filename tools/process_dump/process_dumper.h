@@ -45,7 +45,7 @@ private:
     DISALLOW_COPY_AND_MOVE(ProcessDumper);
     static int WriteDumpBuf(int fd, const char* buf, const int len);
     int32_t CreateFileForCrash(int32_t pid, uint64_t time) const;
-    void RemoveFileIfNeed() const;
+    static void RemoveFileIfNeed();
     int DumpProcess(std::shared_ptr<ProcessDumpRequest> request);
     bool InitKeyThread(std::shared_ptr<ProcessDumpRequest> request);
     int InitPrintThread(std::shared_ptr<ProcessDumpRequest> request);

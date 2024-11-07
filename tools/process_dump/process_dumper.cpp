@@ -764,7 +764,7 @@ int32_t ProcessDumper::CreateFileForCrash(int32_t pid, uint64_t time) const
     return fd;
 }
 
-void ProcessDumper::RemoveFileIfNeed() const
+void ProcessDumper::RemoveFileIfNeed()
 {
     const std::string logFilePath = "/log/crash";
     std::vector<std::string> files;
@@ -806,7 +806,7 @@ int ProcessDumper::InitPrintThread(std::shared_ptr<ProcessDumpRequest> request)
     if (isCrash_ || faultloggerdRequest.type == FaultLoggerType::LEAK_STACKTRACE) {
         fd = RequestFileDescriptorEx(&faultloggerdRequest);
         if (fd == -1) {
-            RemoveFileIfNeed();
+            ProcessDumper::RemoveFileIfNeed();
             fd = CreateFileForCrash(request->pid, request->timeStamp);
         }
         DfxRingBufferWrapper::GetInstance().SetWriteFunc(ProcessDumper::WriteDumpBuf);
