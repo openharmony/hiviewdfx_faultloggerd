@@ -116,24 +116,6 @@ static bool CheckCallerUID(uint32_t callerUid)
 static void ReportExceptionToSysEvent(CrashDumpException& exception)
 {
 #ifndef HISYSEVENT_DISABLE
-    std::string errMessage;
-    if (exception.error == CRASH_DUMP_LOCAL_REPORT) {
-        std::ifstream rfile;
-        if (strlen(exception.message) == 0) {
-            return;
-        }
-        rfile.open(exception.message, std::ios::binary | std::ios::ate);
-        if (!rfile.is_open()) {
-            return;
-        }
-        std::streamsize size = rfile.tellg();
-        rfile.seekg(0, std::ios::beg);
-        std::vector<char> buf(size);
-        rfile.read(buf.data(), size);
-        errMessage = std::string(buf.begin(), buf.end());
-    } else {
-        errMessage = exception.message;
-    }
     HiSysEventWrite(
         HiSysEvent::Domain::RELIABILITY,
         "CPP_CRASH_EXCEPTION",
@@ -142,7 +124,7 @@ static void ReportExceptionToSysEvent(CrashDumpException& exception)
         "UID", exception.uid,
         "HAPPEN_TIME", exception.time,
         "ERROR_CODE", exception.error,
-        "ERROR_MSG", errMessage);
+        "ERROR_MSG", exception.message);
 #endif
 }
 
