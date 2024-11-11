@@ -52,6 +52,7 @@
 #include "dfx_unwind_remote.h"
 #include "dfx_util.h"
 #include "dfx_trace.h"
+#include "directory_ex.h"
 #include "elapsed_time.h"
 #include "faultloggerd_client.h"
 #include "printer.h"
@@ -70,6 +71,7 @@ namespace {
 #define LOG_DOMAIN 0xD002D11
 #define LOG_TAG "DfxProcessDump"
 const char *const BLOCK_CRASH_PROCESS = "faultloggerd.priv.block_crash_process.enabled";
+const int MAX_FILE_COUNT = 5;
 
 static bool IsBlockCrashProcess()
 {
@@ -721,7 +723,7 @@ int32_t ProcessDumper::CreateFileForCrash(int32_t pid, uint64_t time) const
 {
     const std::string logFilePath = "/log/crash";
     const std::string logFileType = "cppcrash";
-    const int32_t logcrashFileProp = 0640; // 0640:-rw-r-----
+    const int32_t logcrashFileProp = 0644; // 0644:-rw-r--r--
     if (access(logFilePath.c_str(), F_OK) != 0) {
         DFXLOG_ERROR("%s is not exist.", logFilePath.c_str());
         return INVALID_FD;
@@ -736,6 +738,32 @@ int32_t ProcessDumper::CreateFileForCrash(int32_t pid, uint64_t time) const
         DFXLOG_INFO("create crash path %s succ.", logPath.c_str());
     }
     return fd;
+}
+
+void ProcessDumper::RemoveFileIfNeed()
+{
+    const std::string logFilePath = "/log/crash";
+    std::vector<std::string> files;
+    OHOS::GetDirFiles(logFilePath, files);
+    if (files.size() < MAX_FILE_COUNT) {
+        return;
+    }
+
+    std::sort(files.begin(), files.end(),
+        [](const std::string& lhs, const std::string& rhs) {
+        auto lhsSplitPos = lhs.find_last_of("-");
+        auto rhsSplitPos = rhs.find_last_of("-");
+        if (lhsSplitPos == std::string::npos || rhsSplitPos == std::string::npos) {
+            return lhs.compare(rhs) < 0;
+        }
+        return lhs.substr(lhsSplitPos).compare(rhs.substr(rhsSplitPos)) < 0;
+    });
+
+    int deleteNum = files.size() - (MAX_FILE_COUNT - 1);
+    for (int index = 0; index < deleteNum; index++) {
+        DFXLOG_INFO("Now we delete file(%s) due to exceed file max count.", files[index].c_str());
+        OHOS::RemoveFile(files[index]);
+    }
 }
 
 int ProcessDumper::InitPrintThread(std::shared_ptr<ProcessDumpRequest> request)
@@ -757,6 +785,7 @@ int ProcessDumper::InitPrintThread(std::shared_ptr<ProcessDumpRequest> request)
         }
         fd = RequestFileDescriptorEx(&faultloggerdRequest);
         if (fd == -1) {
+            ProcessDumper::RemoveFileIfNeed();
             fd = CreateFileForCrash(request->pid, request->timeStamp);
         }
         DfxRingBufferWrapper::GetInstance().SetWriteFunc(ProcessDumper::WriteDumpBuf);
