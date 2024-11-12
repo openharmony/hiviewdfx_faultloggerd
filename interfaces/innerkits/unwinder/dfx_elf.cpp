@@ -865,6 +865,83 @@ bool DfxElf::FindSection(struct dl_phdr_info *info, const std::string secName, S
     return elf->GetSectionInfo(shdr, secName);
 }
 
+void DfxElf::ParsePhdr(struct dl_phdr_info *info, std::vector<const ElfW(Phdr) *>& pHdrSections, const uintptr_t pc)
+{
+    for(auto& section : pHdrSections) {
+        section = nullptr;
+    }
+    const ElfW(Phdr) *phdr = info->dlpi_phdr;
+    for (size_t i = 0; i < info->dlpi_phnum && phdr != nullptr; i++, phdr++) {
+        switch (phdr->p_type) {
+            case PT_LOAD: {
+                ElfW(Addr) vaddr = phdr->p_vaddr + info->dlpi_addr;
+                if (pc >= vaddr && pc < vaddr + phdr->p_memsz) {
+                    // .text section
+                    pHdrSections[0] = phdr;
+                }
+                break;
+            }
+#if defined(__arm__)
+            case PT_ARM_EXIDX: {
+                // .arm_exidx section
+                pHdrSections[1] = phdr;
+                break;
+            }
+#endif
+            case PT_GNU_EH_FRAME: {
+                // .dynamic section
+                pHdrSections[2] = phdr;
+                break;
+            }
+            case PT_DYNAMIC: {
+                // .eh_frame_hdr section
+                pHdrSections[3] = phdr;
+                break;
+            }
+            default:
+                break;
+        }
+    }
+}
+
+bool DfxElf::ProccessDynamic(const ElfW(Phdr) *pDynamic, ElfW(Addr) loadBase, UnwindTableInfo *uti)
+{
+    ElfW(Dyn) *dyn = (ElfW(Dyn) *)(pDynamic->p_vaddr + loadBase);
+    if (dyn == nullptr) {
+        return false;
+    }
+    for (; dyn->d_tag != DT_NULL; ++dyn) {
+        if (dyn->d_tag == DT_PLTGOT) {
+            uti->gp = dyn->d_un.d_ptr;
+            break;
+        }
+    }
+    return true;
+}
+
+void DfxElf::InitHdr(struct DwarfEhFrameHdr **hdr, struct DwarfEhFrameHdr& synthHdr,
+                     struct dl_phdr_info *info, ElfW(Addr) loadBase, const ElfW(Phdr) *pEhHdr)
+{
+    if (pEhHdr) {
+        INSTR_STATISTIC(InstructionEntriesEhFrame, pEhHdr->p_memsz, 0);
+        *hdr = (struct DwarfEhFrameHdr *) (pEhHdr->p_vaddr + loadBase);
+    } else {
+        ShdrInfo shdr;
+        if (FindSection(info, EH_FRAME, shdr)) {
+            DFXLOGW("[%{public}d]: Elf(%{public}s) no found .eh_frame_hdr section, " \
+                "using synthetic .eh_frame section", __LINE__, info->dlpi_name);
+            INSTR_STATISTIC(InstructionEntriesEhFrame, shdr.size, 0);
+            synthHdr.version = DW_EH_VERSION;
+            synthHdr.ehFramePtrEnc = DW_EH_PE_absptr |
+                ((sizeof(ElfW(Addr)) == 4) ? DW_EH_PE_udata4 : DW_EH_PE_udata8); // 4 : four bytes
+            synthHdr.fdeCountEnc = DW_EH_PE_omit;
+            synthHdr.tableEnc = DW_EH_PE_omit;
+            synthHdr.ehFrame = (ElfW(Addr))(shdr.addr + info->dlpi_addr);
+            *hdr = &synthHdr;
+        }
+    }
+}
+
 int DfxElf::DlPhdrCb(struct dl_phdr_info *info, size_t size, void *data)
 {
     struct DlCbData *cbData = (struct DlCbData *)data;
@@ -873,45 +950,22 @@ int DfxElf::DlPhdrCb(struct dl_phdr_info *info, size_t size, void *data)
     }
     UnwindTableInfo* uti = &cbData->uti;
     uintptr_t pc = cbData->pc;
-    const ElfW(Phdr) *pText = nullptr;
-    const ElfW(Phdr) *pDynamic = nullptr;
-#if defined(__arm__)
-    const ElfW(Phdr) *pArmExidx = nullptr;
-#endif
-    const ElfW(Phdr) *pEhHdr = nullptr;
+    const int numOfPhdrSections = 4;
+    std::vector<const ElfW(Phdr) *> pHdrSections(numOfPhdrSections);
+    ParsePhdr(info, pHdrSections, pc);
 
-    const ElfW(Phdr) *phdr = info->dlpi_phdr;
-    ElfW(Addr) loadBase = info->dlpi_addr;
-    for (size_t i = 0; i < info->dlpi_phnum && phdr != nullptr; i++, phdr++) {
-        switch (phdr->p_type) {
-            case PT_LOAD: {
-                ElfW(Addr) vaddr = phdr->p_vaddr + loadBase;
-                if (pc >= vaddr && pc < vaddr + phdr->p_memsz) {
-                    pText = phdr;
-                }
-                break;
-            }
+    const ElfW(Phdr) *pText = pHdrSections[0];
 #if defined(__arm__)
-            case PT_ARM_EXIDX: {
-                pArmExidx = phdr;
-                break;
-            }
+    const ElfW(Phdr) *pArmExidx = pHdrSections[1];
 #endif
-            case PT_GNU_EH_FRAME: {
-                pEhHdr = phdr;
-                break;
-            }
-            case PT_DYNAMIC: {
-                pDynamic = phdr;
-                break;
-            }
-            default:
-                break;
-        }
-    }
+    const ElfW(Phdr) *pDynamic = pHdrSections[2];
+    const ElfW(Phdr) *pEhHdr = pHdrSections[3];
+
+
     if (pText == nullptr) {
         return 0;
     }
+    ElfW(Addr) loadBase = info->dlpi_addr;
     uti->startPc = pText->p_vaddr + loadBase;
     uti->endPc = uti->startPc + pText->p_memsz;
     DFXLOGU("Elf name: %{public}s", info->dlpi_name);
@@ -927,15 +981,8 @@ int DfxElf::DlPhdrCb(struct dl_phdr_info *info, size_t size, void *data)
 #endif
 
     if (pDynamic) {
-        ElfW(Dyn) *dyn = (ElfW(Dyn) *)(pDynamic->p_vaddr + loadBase);
-        if (dyn == nullptr) {
+        if(!ProccessDynamic(pDynamic, loadBase, uti)) {
             return 0;
-        }
-        for (; dyn->d_tag != DT_NULL; ++dyn) {
-            if (dyn->d_tag == DT_PLTGOT) {
-                uti->gp = dyn->d_un.d_ptr;
-                break;
-            }
         }
     } else {
         uti->gp = 0;
@@ -943,24 +990,8 @@ int DfxElf::DlPhdrCb(struct dl_phdr_info *info, size_t size, void *data)
 
     struct DwarfEhFrameHdr *hdr = nullptr;
     struct DwarfEhFrameHdr synthHdr;
-    if (pEhHdr) {
-        INSTR_STATISTIC(InstructionEntriesEhFrame, pEhHdr->p_memsz, 0);
-        hdr = (struct DwarfEhFrameHdr *) (pEhHdr->p_vaddr + loadBase);
-    } else {
-        ShdrInfo shdr;
-        if (FindSection(info, EH_FRAME, shdr)) {
-            DFXLOGW("[%{public}d]: Elf(%{public}s) no found .eh_frame_hdr section, " \
-                "using synthetic .eh_frame section", __LINE__, info->dlpi_name);
-            INSTR_STATISTIC(InstructionEntriesEhFrame, shdr.size, 0);
-            synthHdr.version = DW_EH_VERSION;
-            synthHdr.ehFramePtrEnc = DW_EH_PE_absptr |
-                ((sizeof(ElfW(Addr)) == 4) ? DW_EH_PE_udata4 : DW_EH_PE_udata8); // 4 : four bytes
-            synthHdr.fdeCountEnc = DW_EH_PE_omit;
-            synthHdr.tableEnc = DW_EH_PE_omit;
-            synthHdr.ehFrame = (ElfW(Addr))(shdr.addr + info->dlpi_addr);
-            hdr = &synthHdr;
-        }
-    }
+    InitHdr(&hdr, synthHdr, info, loadBase, pEhHdr);
+
     return FillUnwindTableByEhhdrLocal(hdr, uti);
 }
 #endif
