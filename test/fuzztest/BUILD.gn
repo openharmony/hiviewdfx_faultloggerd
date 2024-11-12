@@ -17,7 +17,6 @@ group("fuzztest") {
   if (!defined(ohos_lite)) {
     testonly = true
     deps = [
-      "faultloggerdclient_fuzzer:FaultloggerdClientFuzzTest",
       "faultloggerddumpcatcher_fuzzer:FaultloggerdDumpCatcherFuzzTest",
       "faultloggerdserver_fuzzer:FaultloggerdServerFuzzTest",
       "faultloggerdunwinder_fuzzer:FaultloggerdUnwinderFuzzTest",

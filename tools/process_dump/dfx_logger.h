@@ -21,7 +21,6 @@
 extern "C" {
 #endif
 int WriteLog(int fd, const char *format, ...);
-void DfxLogToSocket(const char *msg);
 #ifdef __cplusplus
 }
 #endif

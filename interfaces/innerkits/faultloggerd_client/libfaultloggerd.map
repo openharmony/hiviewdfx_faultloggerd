@@ -6,8 +6,12 @@
       CheckConnectStatus;
       StartListen*;
       SendFileDescriptorToSocket*;
-      RecvMsgCredFromSocket*;
       ReportDumpStats*;
+      SendMsgToSocket*;
+      GetMsgFromSocket*;
+    };
+    extern "C++" {
+      SmartFd::*
     };
   local:
     *;

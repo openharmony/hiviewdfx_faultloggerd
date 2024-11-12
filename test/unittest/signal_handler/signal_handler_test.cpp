@@ -713,7 +713,7 @@ HWTEST_F(SignalHandlerTest, SignalHandlerTest016, TestSize.Level2)
     exception.pid = 1;
     exception.uid = 1;
     exception.error = CRASH_SIGNAL_EMASKED;
-    int ret = ReportException(exception);
+    int ret = ReportException(&exception);
     ASSERT_NE(ret, -1);
     GTEST_LOG_(INFO) << "SignalHandlerTest016: end.";
 }

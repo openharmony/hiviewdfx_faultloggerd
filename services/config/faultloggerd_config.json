@@ -1,0 +1,81 @@
+{
+  "tempFilePath": "/data/log/faultlog/temp",
+  "maxTempFilesSize": 2097152,
+  "fileClearTimeAfterBoot": 60,
+  "tempFiles": [
+    {
+      "type": 2,
+      "fileNamePrefix": "cppcrash",
+      "maxSingleFileSize": 2048,
+      "keepFileCount": 20,
+      "maxFileCount": 40
+    },
+    {
+      "type": 101,
+      "fileNamePrefix": "stacktrace",
+      "maxSingleFileSize": 2048,
+      "keepFileCount": 20,
+      "maxFileCount": 40
+    },
+    {
+      "type": 102,
+      "fileNamePrefix": "jsstack",
+      "maxSingleFileSize": 2097152,
+      "overFileSizeAction": "DELETE",
+      "keepFileCount": 20,
+      "fileExistTime": 60,
+      "overTimeFileDeleteType": "ACTIVE"
+    },
+    {
+      "type": 103,
+      "fileNamePrefix": "jsheap",
+      "maxSingleFileSize": 2097152,
+      "overFileSizeAction": "DELETE",
+      "keepFileCount": 20,
+      "fileExistTime": 60,
+      "overTimeFileDeleteType": "ACTIVE"
+    },
+    {
+      "type": 104,
+      "fileNamePrefix": "jsheap",
+      "maxSingleFileSize": 2097152,
+      "overFileSizeAction": "DELETE",
+      "keepFileCount": 20,
+      "fileExistTime": 60,
+      "overTimeFileDeleteType": "ACTIVE"
+    },
+    {
+      "type": 105,
+      "fileNamePrefix": "leaklist",
+      "maxSingleFileSize": 2097152,
+      "overFileSizeAction": "DELETE",
+      "keepFileCount": 20,
+      "fileExistTime": 60,
+      "overTimeFileDeleteType": "ACTIVE"
+    },
+    {
+      "type": 106,
+      "fileNamePrefix": "leakstack",
+      "maxSingleFileSize": 512,
+      "keepFileCount": 20,
+      "maxFileCount": 40,
+      "fileExistTime": 60
+    },
+    {
+      "type": 107,
+      "fileNamePrefix": "ffrtlog",
+      "maxSingleFileSize": 128,
+      "keepFileCount": 20,
+      "maxFileCount": 40,
+      "fileExistTime": 60
+    },
+    {
+      "type": 108,
+      "fileNamePrefix": "jitcode",
+      "maxSingleFileSize": 128,
+      "keepFileCount": 20,
+      "maxFileCount": 40,
+      "fileExistTime": 60
+    }
+  ]
+}

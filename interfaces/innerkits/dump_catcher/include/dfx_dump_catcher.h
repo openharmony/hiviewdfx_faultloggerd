@@ -30,11 +30,9 @@
 
 namespace OHOS {
 namespace HiviewDFX {
-static const size_t DEFAULT_MAX_FRAME_NUM = 256;
 class DfxDumpCatcher {
 public:
-    DfxDumpCatcher() {}
-    ~DfxDumpCatcher() {}
+    DfxDumpCatcher() = default;
 
     /**
      * @brief Dump native stack by specify pid and tid
@@ -97,6 +95,7 @@ public:
     std::pair<int, std::string> DumpCatchWithTimeout(int pid, std::string& msg, int timeout = 3000,
         int tid = 0, bool isJson = false);
 private:
+    static constexpr size_t DEFAULT_MAX_FRAME_NUM = 256;
     bool DoDumpCurrTid(const size_t skipFrameNum, std::string& msg, size_t maxFrameNums);
     bool DoDumpLocalTid(const int tid, std::string& msg, size_t maxFrameNums);
     bool DoDumpLocalPid(int pid, std::string& msg, size_t maxFrameNums);

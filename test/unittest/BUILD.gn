@@ -16,10 +16,10 @@ import("//base/hiviewdfx/faultloggerd/faultloggerd.gni")
 group("unittest") {
   deps = [
     "common:unittest",
+    "faultloggerd:unittest",
     "local_handler:unittest",
     "process_dump:unittest",
     "procinfo:unittest",
-    "services:unittest",
     "sigdump_handler:unittest",
     "signal_handler:unittest",
   ]
@@ -30,7 +30,6 @@ group("unittest") {
       "backtrace:unittest",
       "crash_exception:unittest",
       "dump_catcher:unittest",
-      "faultloggerd_client:unittest",
       "panic_handler:unittest",
       "rustc_demangle:unittest",
       "stacktrace_rust:unittest",

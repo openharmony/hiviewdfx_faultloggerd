@@ -44,6 +44,11 @@ if (defined(ohos_lite)) {
       "hilog_lite:hilog_shared",
       "init:libbegetutil",
     ]
+
+    defines = [ "is_ohos_lite" ]
+    if (!faultloggerd_hisysevent_enable) {
+      defines += [ "HISYSEVENT_DISABLE" ]
+    }
   }
 } else {
   config("faultloggerd_client_config") {

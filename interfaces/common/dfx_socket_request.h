@@ -26,7 +26,7 @@ extern "C" {
  * @brief  type of request
  *
 */
-enum FaultLoggerType {
+typedef enum FaultLoggerType : int32_t {
     /** C/C++ crash at runtime */
     CPP_CRASH = 2,
     /** js crash at runtime */
@@ -49,100 +49,42 @@ enum FaultLoggerType {
     FFRT_CRASH_LOG,
     /** jit code log */
     JIT_CODE_LOG,
-};
+} FaultLoggerType;
 
 /**
  * @brief  type of faultlogger client
  *
 */
-enum FaultLoggerClientType {
-    /** For original request crash info temp file */
-    DEFAULT_CLIENT = 0,
+typedef enum FaultLoggerClientType : int8_t {
     /** For request a debug file to record nornal unwind and process dump logs */
     LOG_FILE_DES_CLIENT,
-    /** For request to record nornal unwind and process dump to hilog */
-    PRINT_T_HILOG_CLIENT,
-    /** For request to check permission */
-    PERMISSION_CLIENT,
     /** For request to dump stack */
     SDK_DUMP_CLIENT,
     /** For request file descriptor of pipe */
     PIPE_FD_CLIENT,
     /** For report crash dump exception */
     REPORT_EXCEPTION_CLIENT,
-};
+    /** For report dump stats */
+    DUMP_STATS_CLIENT,
+} FaultLoggerClientType;
 
-/**
- * @brief  type of request about pipe
-*/
-enum FaultLoggerPipeType {
-    /** For request file descriptor of pipe to read buffer  */
-    PIPE_FD_READ_BUF = 0,
-    /** For request file descriptor of pipe to write buffer  */
-    PIPE_FD_WRITE_BUF,
-    /** For request file descriptor of pipe to read result  */
-    PIPE_FD_READ_RES,
-    /** For request file descriptor of pipe to write result  */
-    PIPE_FD_WRITE_RES,
-    /** For request file descriptor of pipe to json read buffer  */
-    PIPE_FD_JSON_READ_BUF,
-    /** For request file descriptor of pipe to json write buffer  */
-    PIPE_FD_JSON_WRITE_BUF,
-    /** For request file descriptor of pipe to json read result  */
-    PIPE_FD_JSON_READ_RES,
-    /** For request file descriptor of pipe to json write result  */
-    PIPE_FD_JSON_WRITE_RES,
-    /** For request to delete file descriptor of pipe */
-    PIPE_FD_DELETE,
-};
-/**
- * @brief  type of responding check permission request
-*/
-enum FaultLoggerCheckPermissionResp {
-    /** pass */
-    CHECK_PERMISSION_PASS = 1,
-    /** reject */
-    CHECK_PERMISSION_REJECT,
-};
-/**
- * @brief  type of responding sdk dump request
-*/
-enum FaultLoggerSdkDumpResp {
-    /** pass */
-    SDK_DUMP_PASS = 1,
-    /** reject */
-    SDK_DUMP_REJECT,
-    /** repeat request */
-    SDK_DUMP_REPEAT,
-    /** process not exist */
-    SDK_DUMP_NOPROC,
-    /** process has crashed */
-    SDK_PROCESS_CRASHED,
-    /** connect faultloggerd fail */
-    SDK_CONNECT_FAIL,
-    /** write data to faultloggerd fail */
-    SDK_WRITE_FAIL,
-};
-/**
- * @brief  request information
-*/
-struct FaultLoggerdRequest {
-    /** type of resquest */
-    int32_t type;
+typedef struct RequestDataHead {
     /** type of faultlogger client */
-    int32_t clientType;
-    /** type of pipe */
-    int32_t pipeType;
-    /** signal code */
-    int32_t sigCode;
+    int8_t clientType;
+    /** target process id outside sandbox */
+    int32_t clientPid;
+} __attribute__((packed)) RequestDataHead;
+
+#ifdef __cplusplus
+typedef struct SdkDumpRequestData {
+    /** request data head **/
+    RequestDataHead head;
     /** process id */
     int32_t pid;
+    /** signal code */
+    int32_t sigCode;
     /** thread id */
     int32_t tid;
-    /** user id */
-    uint32_t uid;
-    /** process id of calling sdk dump ,only for sdk dump client */
-    int32_t callerPid;
     /** thread id of calling sdk dump ,only for sdk dump client */
     int32_t callerTid;
     /** time of current request */
@@ -151,22 +93,73 @@ struct FaultLoggerdRequest {
     bool isJson;
     /** dumpcatcher remote unwind endtime ms */
     uint64_t endTime;
-} __attribute__((packed));
+} __attribute__((packed)) SdkDumpRequestData;
+#endif
+/**
+ * @brief  type of request about pipe
+*/
+typedef enum FaultLoggerPipeType : int8_t {
+    /** For request file descriptor of pipe to read buffer  */
+    PIPE_FD_READ_BUF = 0b00,
+    /** For request file descriptor of pipe to write buffer  */
+    PIPE_FD_WRITE_BUF = 0b01,
+    /** For request file descriptor of pipe to read result  */
+    PIPE_FD_READ_RES = 0b10,
+    /** For request file descriptor of pipe to write result  */
+    PIPE_FD_WRITE_RES = 0b11,
+    /** For request file descriptor of pipe to json read buffer  */
+    PIPE_FD_JSON_READ_BUF = 0b100,
+    /** For request file descriptor of pipe to json write buffer  */
+    PIPE_FD_JSON_WRITE_BUF = 0b101,
+    /** For request file descriptor of pipe to json read result  */
+    PIPE_FD_JSON_READ_RES = 0b110,
+    /** For request file descriptor of pipe to json write result  */
+    PIPE_FD_JSON_WRITE_RES = 0b111,
+    /** For request to delete file descriptor of pipe */
+    PIPE_FD_DELETE,
+} FaultLoggerPipeType;
+
+typedef struct PipFdRequestData {
+    /** request data head **/
+    RequestDataHead head;
+    /** process id */
+    int32_t pid;
+    /** type of pipe */
+    int8_t pipeType;
+} __attribute__((packed)) PipFdRequestData;
+
+/**
+ * @brief  request information
+*/
+typedef struct FaultLoggerdRequest {
+    /** request data head **/
+    RequestDataHead head;
+    /** process id */
+    int32_t pid;
+    /** type of resquest */
+    int32_t type;
+    /** thread id */
+    int32_t tid;
+    /** time of current request */
+    uint64_t time;
+} __attribute__((packed)) FaultLoggerdRequest;
 
 /**
  * @brief  type of faultloggerd stats request
 */
-enum FaultLoggerdStatType {
+typedef enum FaultLoggerdStatType : int32_t {
     /** dump catcher stats */
     DUMP_CATCHER = 0,
     /** processdump stats */
     PROCESS_DUMP
-};
+} FaultLoggerdStatType;
 
 /**
  * @brief  struct of faultloggerd stats request
 */
-struct FaultLoggerdStatsRequest {
+typedef struct FaultLoggerdStatsRequest {
+    /** request data head **/
+    RequestDataHead head;
     /** type of resquest */
     int32_t type;
     /** target process id outside sandbox */
@@ -192,7 +185,33 @@ struct FaultLoggerdStatsRequest {
     char callerProcess[128]; // 128 : max function name size
     /** the target processName */
     char targetProcess[128]; // 128 : max function name size
-} __attribute__((packed));
+} __attribute__((packed)) FaultLoggerdStatsRequest;
+
+typedef enum ResponseCode : int32_t {
+    /** failed receive msg form server */
+    RECEIVE_DATA_FAILED = -3,
+    /** failed send msg to server */
+    SEND_DATA_FAILED = -2,
+    /** failed connect to server */
+    CONNECT_FAILED = -1,
+    /** request success */
+    REQUEST_SUCCESS = 0,
+    /** unknown client type */
+    UNKNOWN_CLIENT_TYPE = 1,
+    /** the data size is not matched to client type */
+    INVALID_REQUEST_DATA = 2,
+    /** reject to resolve the request */
+    REQUEST_REJECT = 3,
+    /** abnormal service */
+    ABNORMAL_SERVICE = 4,
+    /** repeat dump */
+    SDK_DUMP_REPEAT,
+    /** the process to dump not exist */
+    SDK_DUMP_NOPROC,
+    /** the process to dump has crashed */
+    SDK_PROCESS_CRASHED,
+} ResponseCode;
+
 #ifdef __cplusplus
 }
 #endif

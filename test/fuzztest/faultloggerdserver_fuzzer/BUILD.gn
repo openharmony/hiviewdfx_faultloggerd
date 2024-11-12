@@ -29,25 +29,40 @@ if (defined(ohos_lite)) {
     fuzz_config_file =
         "$faultloggerd_path/test/fuzztest/faultloggerdserver_fuzzer"
     include_dirs = [
-      "./",
-      "../common/include",
-      "$faultloggerd_path/services",
       "$faultloggerd_interfaces_path/common",
+      "$faultloggerd_interfaces_path/innerkits/faultloggerd_client",
+      "$faultloggerd_interfaces_path/innerkits/faultloggerd_client/include",
       "$faultloggerd_path/common/dfxlog",
-      "$faultloggerd_path/common/dfxutil",
+      "$faultloggerd_path/services",
+      "$faultloggerd_path/test/utils",
     ]
-    defines = [ "FAULTLOGGERD_FUZZER" ]
-    sources = [ "faultloggerdserver_fuzzer.cpp" ]
+
+    defines = [ "FAULTLOGGERD_TEST" ]
+
+    sources = [
+      "$faultloggerd_path/interfaces/innerkits/faultloggerd_client/faultloggerd_client.cpp",
+      "$faultloggerd_path/interfaces/innerkits/faultloggerd_client/faultloggerd_socket.cpp",
+      "faultloggerd_test.cpp",
+      "faultloggerdserver_fuzzer.cpp",
+    ]
+
     deps = [
-      "$faultloggerd_path/common/dfxlog:dfx_hilog",
+      "$faultloggerd_frameworks_path/localhandler:dfx_local_handler_src",
+      "$faultloggerd_path/common/dfxlog:dfx_hilog_base",
       "$faultloggerd_path/common/dfxutil:dfx_util",
-      "$faultloggerd_path/interfaces/innerkits/faultloggerd_client:libfaultloggerd",
-      "$faultloggerd_path/services:faultloggerd_fuzzer_src",
+      "$faultloggerd_path/common/trace:dfx_trace",
+      "$faultloggerd_path/services:faultloggerd_test_src",
     ]
 
     external_deps = [
+      "bounds_checking_function:libsec_shared",
       "c_utils:utils",
-      "hilog:libhilog",
+      "ffrt:libffrt",
+      "hilog:libhilog_base",
+      "hisysevent:libhisysevent",
+      "hitrace:hitrace_meter",
+      "init:libbegetutil",
+      "jsoncpp:jsoncpp",
     ]
   }
 

@@ -1,3 +1,20 @@
+# Copyright (c) 2023 Huawei Device Co., Ltd.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import("//base/hiviewdfx/faultloggerd/faultloggerd.gni")
+import("//build/config/features.gni")
+import("//build/test.gni")
+
 # Copyright (c) 2021-2024 Huawei Device Co., Ltd.
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,7 +33,6 @@ import("//base/hiviewdfx/faultloggerd/faultloggerd.gni")
 if (defined(ohos_lite)) {
   import("//build/lite/config/component/lite_component.gni")
   import("//build/lite/config/test.gni")
-
   if (ohos_build_type == "debug") {
     unittest("test_service") {
       output_extension = "bin"
@@ -36,21 +52,24 @@ if (defined(ohos_lite)) {
       ]
 
       sources = [
+        "$c_utils_src_path/directory_ex.cpp",
         "$faultloggerd_interfaces_path/innerkits/faultloggerd_client/faultloggerd_client.cpp",
         "$faultloggerd_interfaces_path/innerkits/faultloggerd_client/faultloggerd_socket.cpp",
-        "$faultloggerd_path/common/cutil/dfx_cutil.c",
+        "$faultloggerd_path/services/epoll_manager.cpp",
         "$faultloggerd_path/services/fault_logger_config.cpp",
         "$faultloggerd_path/services/fault_logger_daemon.cpp",
-        "$faultloggerd_path/services/fault_logger_pipe.cpp",
-        "faultlogger_config_test.cpp",
+        "$faultloggerd_path/services/fault_logger_server.cpp",
+        "$faultloggerd_path/services/fault_logger_service.cpp",
+        "$faultloggerd_path/services/temp_file_manager.cpp",
+        "faultlogger_server_test.cpp",
+        "faultloggerd_test.cpp",
+        "temp_file_manager_test.cpp",
       ]
-      sources += [ "$c_utils_src_path/directory_ex.cpp" ]
 
       deps = [
         "$faultloggerd_common_path/trace:dfx_trace",
         "$faultloggerd_path/common/dfxlog:dfx_hilog",
         "$faultloggerd_path/common/dfxutil:dfx_util",
-        "$faultloggerd_path/interfaces/innerkits/faultloggerd_client:libfaultloggerd",
         "//base/hiviewdfx/hilog_lite/frameworks/featured:hilog_shared",
       ]
 
@@ -59,10 +78,15 @@ if (defined(ohos_lite)) {
         "init:libbegetutil",
       ]
 
+      defines = [
+        "is_ohos_lite",
+        "FAULTLOGGERD_TEST",
+      ]
+
       if (faultloggerd_hisysevent_enable) {
         deps += [ "hisysevent:libhisysevent" ]
       } else {
-        defines = [ "HISYSEVENT_DISABLE" ]
+        defines += [ "HISYSEVENT_DISABLE" ]
       }
     }
   }
@@ -74,60 +98,49 @@ if (defined(ohos_lite)) {
   import("//build/config/features.gni")
   import("//build/test.gni")
 
-  config("module_private_config") {
-    visibility = [ ":*" ]
-
-    include_dirs = [
-      "$faultloggerd_interfaces_path/innerkits/faultloggerd_client/faultloggerd_socket.h",
-      "$faultloggerd_interfaces_path/innerkits/faultloggerd_client/",
-      "$faultloggerd_path/services",
-      "$faultloggerd_path/common/cutil",
-      "$faultloggerd_path/common/dfxlog",
-      "$faultloggerd_path/common/dfxutil",
-    ]
-  }
-
   ohos_unittest("test_service") {
     module_out_path = "faultloggerd/services"
-
+    visibility = [ "*:*" ]
     include_dirs = [
-      "$faultloggerd_interfaces_path/innerkits/faultloggerd_client/include",
-      "$faultloggerd_interfaces_path/innerkits/faultloggerd_client/faultloggerd_socket.h",
+      "$faultloggerd_interfaces_path/common",
+      "$faultloggerd_path/common/dfxlog",
+      "$faultloggerd_path/interfaces/innerkits/faultloggerd_client",
+      "$faultloggerd_path/interfaces/innerkits/faultloggerd_client/include",
+      "$faultloggerd_path/services",
+      "$faultloggerd_path/test/utils",
     ]
-    defines = [ "FAULTLOGGERD_FUZZER" ]
-
     sources = [
-      "$faultloggerd_interfaces_path/innerkits/faultloggerd_client/faultloggerd_client.cpp",
-      "$faultloggerd_interfaces_path/innerkits/faultloggerd_client/faultloggerd_socket.cpp",
-      "$faultloggerd_path/common/cutil/dfx_cutil.c",
-      "$faultloggerd_path/services/fault_logger_config.cpp",
-      "$faultloggerd_path/services/fault_logger_daemon.cpp",
-      "$faultloggerd_path/services/fault_logger_pipe.cpp",
-      "faultlogger_config_test.cpp",
-      "faultlogger_daemon_test.cpp",
-      "faultlogger_pipe_test.cpp",
+      "$faultloggerd_path/interfaces/innerkits/faultloggerd_client/faultloggerd_client.cpp",
+      "$faultloggerd_path/interfaces/innerkits/faultloggerd_client/faultloggerd_socket.cpp",
+      "faultlogger_server_test.cpp",
+      "faultloggerd_client_test.cpp",
+      "faultloggerd_test.cpp",
+      "temp_file_manager_test.cpp",
     ]
-
-    cflags = [ "-Dprivate=public" ]
-    configs = [
-      ":module_private_config",
-      "$faultloggerd_path/common/build:coverage_flags",
-    ]
-
+    defines = [ "FAULTLOGGERD_TEST" ]
     deps = [
-      "$faultloggerd_common_path/trace:dfx_trace",
+      "$faultloggerd_frameworks_path/localhandler:dfx_local_handler_src",
+      "$faultloggerd_path/common/dfxlog:dfx_hilog_base",
       "$faultloggerd_path/common/dfxutil:dfx_util",
-      "$faultloggerd_path/interfaces/innerkits/faultloggerd_client:libfaultloggerd",
+      "$faultloggerd_path/common/trace:dfx_trace",
+      "$faultloggerd_path/services:faultloggerd_test_src",
     ]
 
     external_deps = [
+      "bounds_checking_function:libsec_shared",
       "c_utils:utils",
-      "googletest:gmock_main",
-      "googletest:gtest_main",
-      "hilog:libhilog",
+      "ffrt:libffrt",
+      "hilog:libhilog_base",
       "hisysevent:libhisysevent",
+      "hitrace:hitrace_meter",
       "init:libbegetutil",
+      "jsoncpp:jsoncpp",
     ]
+
+    if (build_selinux) {
+      external_deps += [ "selinux:libselinux" ]
+      cflags_cc = [ "-DHAS_LIB_SELINUX" ]
+    }
   }
 
   group("unittest") {
