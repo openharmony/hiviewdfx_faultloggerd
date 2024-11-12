@@ -24,6 +24,7 @@
 #include <cerrno>
 #include "dfx_log.h"
 #include "dfx_cutil.h"
+#include "dfx_signal.h"
 #include "dfx_signalhandler_exception.h"
 #include "faultloggerd_client.h"
 #include "hisysevent.h"
@@ -55,7 +56,7 @@ static __attribute__((noinline)) int RequestOutputLogFile(const struct ProcessDu
     faultloggerdRequest.pid = request->pid;
     faultloggerdRequest.tid = request->tid;
     faultloggerdRequest.uid = request->uid;
-    faultloggerdRequest.time = request->timeStamp + 1;
+    faultloggerdRequest.time = request->timeStamp;
     return RequestFileDescriptorEx(&faultloggerdRequest);
 }
 
@@ -104,7 +105,7 @@ __attribute__((noinline)) void CrashLocalUnwind(const int fd,
 }
 
 // currently, only stacktrace is logged to faultloggerd
-void CrashLocalHandler(const struct ProcessDumpRequest* request)
+void CrashLocalHandler(struct ProcessDumpRequest* request)
 {
     int fd = RequestOutputLogFile(request);
     CrashLocalHandlerFd(fd, request);
@@ -126,14 +127,14 @@ static void PrintTimeStamp(const int fd, const struct ProcessDumpRequest* reques
     }
     (void)strftime(secBuf, sizeof(secBuf) - 1, "%Y-%m-%d %H:%M:%S", t);
     if (snprintf_s(printBuf, sizeof(printBuf), sizeof(printBuf) - 1,
-            "%s.%03" PRIx64 "\n", secBuf, millisec) < 0) {
+            "%s.%03u\n", secBuf, millisec) < 0) {
         DFXLOGE("snprintf timestamp fail");
         return;
     }
     PrintLog(fd, "Timestamp:%s", printBuf);
 }
 
-void CrashLocalHandlerFd(const int fd, const struct ProcessDumpRequest* request)
+void CrashLocalHandlerFd(const int fd, struct ProcessDumpRequest* request)
 {
     if (request == nullptr) {
         return;
@@ -142,13 +143,10 @@ void CrashLocalHandlerFd(const int fd, const struct ProcessDumpRequest* request)
     PrintLog(fd, "Pid:%d\n", request->pid);
     PrintLog(fd, "Uid:%d\n", request->uid);
     PrintLog(fd, "Process name:%s\n", request->processName);
-    std::string reason = OHOS::HiviewDFX::StringPrintf(
-#if defined(__LP64__)
-        "Reason:Signal(%d)@%18p\n",
-#else
-        "Reason:Signal(%d)@%10p\n",
-#endif
-        request->siginfo.si_signo, request->siginfo.si_addr);
+    if (request->siginfo.si_pid == request->pid) {
+        request->siginfo.si_uid = request->uid;
+    }
+    std::string reason = OHOS::HiviewDFX::DfxSignal::PrintSignal(request->siginfo) + "\n";
     std::string errMessage = reason;
     PrintLog(fd, reason.c_str());
     PrintLog(fd, "Fault thread info:\n");
@@ -160,7 +158,7 @@ void CrashLocalHandlerFd(const int fd, const struct ProcessDumpRequest* request)
         "PROCESS_NAME", request->processName,
         "PID", request->pid,
         "UID", request->uid,
-        "HAPPEN_TIME", request->timeStamp + 1,
+        "HAPPEN_TIME", request->timeStamp,
         "ERROR_CODE", CRASH_DUMP_LOCAL_REPORT,
         "ERROR_MSG", errMessage);
 }
