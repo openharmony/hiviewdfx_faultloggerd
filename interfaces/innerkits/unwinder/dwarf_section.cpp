@@ -293,6 +293,49 @@ bool DwarfSection::ParseCie(uintptr_t cieAddr, uintptr_t ciePtr, CommonInfoEntry
     return true;
 }
 
+void DwarfSection::SaveAugStr(uintptr_t& ptr, std::vector<char>& augStr)
+{
+    uint8_t ch;
+    augStr.clear();
+    while (true) {
+        memory_->Read<uint8_t>(ptr, &ch, true);
+        if (ch == '\0') {
+            break;
+        }
+        augStr.push_back(ch);
+    }
+}
+
+void DwarfSection::ParseAugData(uintptr_t& ptr, CommonInfoEntry &cieInfo, const std::vector<char>& augStr)
+{
+    MAYBE_UNUSED uintptr_t augSize = memory_->ReadUleb128(ptr);
+    DFXLOGU("augSize: %{public}" PRIxPTR "", augSize);
+    cieInfo.instructionsOff = ptr + augSize;
+
+    for (size_t i = 1; i < augStr.size(); ++i) {
+        switch (augStr[i]) {
+            case 'P':
+                uint8_t personalityEncoding;
+                memory_->Read<uint8_t>(ptr, &personalityEncoding, true);
+                cieInfo.personality = memory_->ReadEncodedValue(ptr, personalityEncoding);
+                break;
+            case 'L':
+                memory_->Read<uint8_t>(ptr, &cieInfo.lsdaEncoding, true);
+                DFXLOGU("cieInfo.lsdaEncoding: %{public}x", cieInfo.lsdaEncoding);
+                break;
+            case 'R':
+                memory_->Read<uint8_t>(ptr, &cieInfo.pointerEncoding, true);
+                DFXLOGU("cieInfo.pointerEncoding: %{public}x", cieInfo.pointerEncoding);
+                break;
+            case 'S':
+                cieInfo.isSignalFrame = true;
+                break;
+            default:
+                break;
+        }
+    }
+}
+
 bool DwarfSection::FillInCie(uintptr_t ptr, CommonInfoEntry &cieInfo)
 {
     uint8_t version;
@@ -305,16 +348,8 @@ bool DwarfSection::FillInCie(uintptr_t ptr, CommonInfoEntry &cieInfo)
     }
 
     // save augmentation string
-    uint8_t ch;
     std::vector<char> augStr;
-    augStr.clear();
-    while (true) {
-        memory_->ReadU8(ptr, &ch, true);
-        if (ch == '\0') {
-            break;
-        }
-        augStr.push_back(ch);
-    }
+    SaveAugStr(ptr, augStr);
 
     // Segment Size
     if (version == 4 || version == 5) { // 4 5 : cie version
@@ -349,33 +384,8 @@ bool DwarfSection::FillInCie(uintptr_t ptr, CommonInfoEntry &cieInfo)
         return true;
     }
     cieInfo.hasAugmentationData = true;
-    // parse augmentation data length
-    MAYBE_UNUSED uintptr_t augSize = memory_->ReadUleb128(ptr);
-    DFXLOGU("augSize: %{public}" PRIxPTR "", augSize);
-    cieInfo.instructionsOff = ptr + augSize;
-
-    for (size_t i = 1; i < augStr.size(); ++i) {
-        switch (augStr[i]) {
-            case 'P':
-                uint8_t personalityEncoding;
-                memory_->ReadU8(ptr, &personalityEncoding, true);
-                cieInfo.personality = memory_->ReadEncodedValue(ptr, personalityEncoding);
-                break;
-            case 'L':
-                memory_->ReadU8(ptr, &cieInfo.lsdaEncoding, true);
-                DFXLOGU("cieInfo.lsdaEncoding: %{public}x", cieInfo.lsdaEncoding);
-                break;
-            case 'R':
-                memory_->ReadU8(ptr, &cieInfo.pointerEncoding, true);
-                DFXLOGU("cieInfo.pointerEncoding: %{public}x", cieInfo.pointerEncoding);
-                break;
-            case 'S':
-                cieInfo.isSignalFrame = true;
-                break;
-            default:
-                break;
-        }
-    }
+    ParseAugData(ptr, cieInfo, augStr);
+    
     return true;
 }
 }   // namespace HiviewDFX
