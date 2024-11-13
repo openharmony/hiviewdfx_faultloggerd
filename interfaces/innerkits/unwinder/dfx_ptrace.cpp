@@ -33,7 +33,6 @@ namespace {
 void DfxPtrace::Detach(pid_t tid)
 {
     if (tid > 0) {
-        ptrace(PTRACE_CONT, tid, 0, 0);
         ptrace(PTRACE_DETACH, tid, nullptr, nullptr);
     }
 }
@@ -57,9 +56,15 @@ bool DfxPtrace::Attach(pid_t tid, int timeout)
 
     int64_t startTime = std::chrono::duration_cast<std::chrono::milliseconds>(
         std::chrono::system_clock::now().time_since_epoch()).count();
+    int waitStatus = 0;
     do {
-        if (waitpid(tid, nullptr, WNOHANG) > 0) {
-            break;
+        if (waitpid(tid, &waitStatus, WNOHANG) > 0) {
+            if ((waitStatus >> 16) == PTRACE_EVENT_STOP) { // 16 : stop event flag
+                break;
+            } else {
+                ptrace(PTRACE_CONT, tid, 0, 0); // clear old event
+                continue;
+            }
         }
         int64_t curTime = std::chrono::duration_cast<std::chrono::milliseconds>(
             std::chrono::system_clock::now().time_since_epoch()).count();
