@@ -292,9 +292,9 @@ static bool SendMsgCtlToSocket(int sockfd, const void *cmsg, const int cmsgLen)
         cmsgh->cmsg_level = SOL_SOCKET;
         cmsgh->cmsg_type = SCM_RIGHTS;
         cmsgh->cmsg_len = CMSG_LEN(cmsgLen);
-    }
-    if (memcpy_s(CMSG_DATA(cmsgh), cmsgLen, cmsg, cmsgLen) != 0) {
-        DFXLOGE("%{public}s :: memcpy error", __func__);
+        if (memcpy_s(CMSG_DATA(cmsgh), cmsgLen, cmsg, cmsgLen) != 0) {
+            DFXLOGE("%{public}s :: memcpy error", __func__);
+        }
     }
 
     if (OHOS_TEMP_FAILURE_RETRY(sendmsg(sockfd, &msgh, 0)) < 0) {
