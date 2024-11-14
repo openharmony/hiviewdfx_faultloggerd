@@ -70,7 +70,7 @@ void DfxRegsArm64::SetFromUcontext(const ucontext_t &context)
 
 void DfxRegsArm64::SetFromFpMiniRegs(const uintptr_t* regs, const size_t size)
 {
-    if (size < FP_MINI_REGS_SIZE) {
+    if (regs == nullptr || size < FP_MINI_REGS_SIZE) {
         return;
     }
     regsData_[REG_FP] = regs[0]; // 0 : fp offset
@@ -81,7 +81,7 @@ void DfxRegsArm64::SetFromFpMiniRegs(const uintptr_t* regs, const size_t size)
 
 void DfxRegsArm64::SetFromQutMiniRegs(const uintptr_t* regs, const size_t size)
 {
-    if (size < QUT_MINI_REGS_SIZE) {
+    if (regs == nullptr || size < QUT_MINI_REGS_SIZE) {
         return;
     }
     regsData_[REG_AARCH64_X20] = regs[1]; // 1 : X20 offset
