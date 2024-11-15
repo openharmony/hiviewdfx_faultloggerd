@@ -189,8 +189,9 @@ static void SetInterestedSignalMasks(int how)
 
 static void CloseFds(void)
 {
+    const int startIndex = 124;  // 124 : avoid set pipe fail
     const int closeFdCount = 1024;
-    for (int i = 0; i < closeFdCount; i++) {
+    for (int i = startIndex; i < closeFdCount; i++) {
         syscall(SYS_close, i);
     }
 }
