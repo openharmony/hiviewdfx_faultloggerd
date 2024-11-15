@@ -45,6 +45,7 @@ private:
     DISALLOW_COPY_AND_MOVE(ProcessDumper);
     static int WriteDumpBuf(int fd, const char* buf, const int len);
     int32_t CreateFileForCrash(int32_t pid, uint64_t time) const;
+    static void RemoveFileIfNeed();
     int DumpProcess(std::shared_ptr<ProcessDumpRequest> request);
     bool InitKeyThread(std::shared_ptr<ProcessDumpRequest> request);
     int InitPrintThread(std::shared_ptr<ProcessDumpRequest> request);
@@ -60,7 +61,7 @@ private:
     void UnwindWriteJit(const ProcessDumpRequest &request);
     void Report(std::shared_ptr<ProcessDumpRequest> request, std::string &jsonInfo);
     void ReadFdTable(const ProcessDumpRequest &request);
-    std::string ReadStringByPtrace(pid_t tid, uintptr_t addr);
+    static std::string ReadStringByPtrace(pid_t tid, uintptr_t addr);
     void GetCrashObj(std::shared_ptr<ProcessDumpRequest> request);
     void ReportAddrSanitizer(ProcessDumpRequest &request, std::string &jsonInfo);
 

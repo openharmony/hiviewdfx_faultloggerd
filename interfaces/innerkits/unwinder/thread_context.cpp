@@ -183,17 +183,13 @@ std::shared_ptr<ThreadContext> LocalThreadContext::CollectThreadContext(int32_t 
 
 NO_SANITIZE void LocalThreadContext::CopyContextAndWaitTimeout(int sig, siginfo_t *si, void *context)
 {
-    if (si == nullptr || si->si_code != DUMP_TYPE_LOCAL || context == nullptr) {
+    if (si == nullptr || si->si_code != DUMP_TYPE_LOCAL || si->si_value.sival_ptr == nullptr || context == nullptr) {
         return;
     }
 
-    int tid = gettid();
-    DFXLOGU("tid(%{public}d) recv sig(%{public}d)", tid, sig);
-    auto ctxPtr = LocalThreadContext::GetInstance().GetThreadContext(tid);
+    DFXLOGU("tid(%{public}d) recv sig(%{public}d)", gettid(), sig);
+    auto ctxPtr = static_cast<ThreadContext *>(si->si_value.sival_ptr);
 #if defined(__aarch64__)
-    if (ctxPtr == nullptr) {
-        return;
-    }
     uintptr_t fp = reinterpret_cast<ucontext_t*>(context)->uc_mcontext.regs[REG_FP];
     uintptr_t pc = reinterpret_cast<ucontext_t*>(context)->uc_mcontext.pc;
     ctxPtr->firstFrameSp = reinterpret_cast<ucontext_t*>(context)->uc_mcontext.sp;
@@ -209,6 +205,7 @@ NO_SANITIZE void LocalThreadContext::CopyContextAndWaitTimeout(int sig, siginfo_
         return;
     }
     ucontext_t* ucontext = reinterpret_cast<ucontext_t*>(context);
+    int tid = gettid();
     if (memcpy_s(&ctxPtr->ctx->uc_mcontext, sizeof(ucontext->uc_mcontext),
         &ucontext->uc_mcontext, sizeof(ucontext->uc_mcontext)) != 0) {
         DFXLOGW("Failed to copy local ucontext with tid(%{public}d)", tid);
@@ -260,6 +257,7 @@ bool LocalThreadContext::SignalRequestThread(int32_t tid, ThreadContext* threadC
     si.si_signo = SIGLOCAL_DUMP;
     si.si_errno = 0;
     si.si_code = DUMP_TYPE_LOCAL;
+    si.si_value.sival_ptr = reinterpret_cast<void *>(threadContext);
     if (syscall(SYS_rt_tgsigqueueinfo, getpid(), tid, si.si_signo, &si) != 0) {
         DFXLOGW("Failed to send signal(%{public}d) to tid(%{public}d), errno(%{public}d).", si.si_signo, tid, errno);
         threadContext->tid = static_cast<int32_t>(ThreadContextStatus::CONTEXT_UNUSED);

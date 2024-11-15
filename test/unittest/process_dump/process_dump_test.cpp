@@ -22,6 +22,7 @@
 #include "dfx_ring_buffer_wrapper.h"
 #include "dfx_dump_request.h"
 #include "dfx_thread.h"
+#include "lock_parser.h"
 #include <pthread.h>
 #include "printer.h"
 #include "process_dumper.h"
@@ -226,11 +227,11 @@ HWTEST_F (ProcessDumpTest, DfxUnwindRemoteTest002, TestSize.Level2)
     bool ret = remote->UnwindProcess(request, nullptr, unwinder, 0);
     ASSERT_EQ(ret, false);
     ret = remote->UnwindProcess(request, process, unwinder, 0);
-    ASSERT_EQ(ret, true);
+    ASSERT_EQ(ret, false);
     std::shared_ptr<DfxThread> thread = DfxThread::Create(pid, tid, tid);
     process->keyThread_ = thread;
     ret = remote->UnwindProcess(request, process, unwinder, 0);
-    ASSERT_EQ(ret, true);
+    ASSERT_EQ(ret, false);
     GTEST_LOG_(INFO) << "DfxUnwindRemoteTest002: end.";
 }
 

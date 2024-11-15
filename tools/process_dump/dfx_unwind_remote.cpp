@@ -60,10 +60,7 @@ void GetThreadKernelStack(std::shared_ptr<DfxThread> thread)
         DFXLOGI("Failed to get tid(%{public}d) user stack, try kernel", tid);
 #ifndef is_ohos_lite
         if (OHOS::system::GetParameter("const.logsystem.versiontype", "false") == "beta") {
-            size_t step = LOG_BUF_LEN - 1;
-            for (size_t i = 0;  i < threadKernelStack.length(); i += step) {
-                DFXLOGI("%{public}s", threadKernelStack.substr(i, step).c_str());
-            }
+            DFXLOGI("%{public}s", threadKernelStack.c_str());
         }
 #endif
         thread->SetFrames(threadStack.frames);
@@ -81,22 +78,20 @@ bool DfxUnwindRemote::UnwindProcess(std::shared_ptr<ProcessDumpRequest> request,
                                     std::shared_ptr<Unwinder> unwinder, pid_t vmPid)
 {
     DFX_TRACE_SCOPED("UnwindProcess");
-    bool ret = false;
     if (process == nullptr || unwinder == nullptr) {
         DFXLOGW("%{public}s::process or unwinder is not initialized.", __func__);
-        return ret;
+        return false;
     }
 
     SetCrashProcInfo(process->processInfo_.processName, process->processInfo_.pid,
                      process->processInfo_.uid);
-    UnwindKeyThread(request, process, unwinder, vmPid);
+    int unwCnt = UnwindKeyThread(request, process, unwinder, vmPid) ? 1 : 0;
 
     // dumpt -p -t will not unwind other thread
     if (ProcessDumper::GetInstance().IsCrash() || request->siginfo.si_value.sival_int == 0) {
-        UnwindOtherThread(process, unwinder, vmPid);
+        unwCnt += UnwindOtherThread(process, unwinder, vmPid);
     }
 
-    ret = true;
     if (ProcessDumper::GetInstance().IsCrash()) {
         if (request->dumpMode == SPLIT_MODE) {
             if (process->vmThread_ == nullptr) {
@@ -121,36 +116,39 @@ bool DfxUnwindRemote::UnwindProcess(std::shared_ptr<ProcessDumpRequest> request,
     if (isVmProcAttach) {
         DfxPtrace::Detach(vmPid);
     }
-
-    return ret;
+    DFXLOGI("success unwind thread cnt is %{public}d", unwCnt);
+    return unwCnt > 0;
 }
 
-void DfxUnwindRemote::UnwindKeyThread(std::shared_ptr<ProcessDumpRequest> request, std::shared_ptr<DfxProcess> process,
+bool DfxUnwindRemote::UnwindKeyThread(std::shared_ptr<ProcessDumpRequest> request, std::shared_ptr<DfxProcess> process,
                                       std::shared_ptr<Unwinder> unwinder, pid_t vmPid)
 {
+    bool result = false;
     std::shared_ptr<DfxThread> unwThread = process->keyThread_;
     if (ProcessDumper::GetInstance().IsCrash() && (process->vmThread_ != nullptr)) {
         unwThread = process->vmThread_;
     }
     if (unwThread == nullptr) {
         DFXLOGW("%{public}s::unwind thread is not initialized.", __func__);
-        return;
+        return false;
     }
     if (request == nullptr) {
         DFXLOGW("%{public}s::request is not initialized.", __func__);
-        return;
+        return false;
     }
     unwinder->SetIsJitCrashFlag(ProcessDumper::GetInstance().IsCrash());
     auto unwindAsyncThread = std::make_shared<DfxUnwindAsyncThread>(unwThread, unwinder, request->stackId);
     if ((vmPid != 0)) {
-        isVmProcAttach = true;
-        if (unwThread->GetThreadRegs() != nullptr) {
-            unwindAsyncThread->UnwindStack(vmPid);
-        } else {
-            GetThreadKernelStack(unwThread);
+        if (DfxPtrace::Attach(vmPid, PTRACE_ATTATCH_KEY_THREAD_TIMEOUT)) {
+            isVmProcAttach = true;
+            if (unwThread->GetThreadRegs() != nullptr) {
+                result = unwindAsyncThread->UnwindStack(vmPid);
+            } else {
+                GetThreadKernelStack(unwThread);
+            }
         }
     } else {
-        unwindAsyncThread->UnwindStack();
+        result = unwindAsyncThread->UnwindStack();
     }
 
     std::string fatalMsg = process->GetFatalMessage() + unwindAsyncThread->tip;
@@ -169,16 +167,18 @@ void DfxUnwindRemote::UnwindKeyThread(std::shared_ptr<ProcessDumpRequest> reques
         process->regs_ = DfxRegs::CreateFromUcontext(request->context);
         Printer::PrintRegsByConfig(process->regs_);
     }
+    return result;
 }
 
-void DfxUnwindRemote::UnwindOtherThread(std::shared_ptr<DfxProcess> process, std::shared_ptr<Unwinder> unwinder,
+int DfxUnwindRemote::UnwindOtherThread(std::shared_ptr<DfxProcess> process, std::shared_ptr<Unwinder> unwinder,
     pid_t vmPid)
 {
     if ((!DfxConfig::GetConfig().dumpOtherThreads) || (vmPid != 0 && !isVmProcAttach)) {
-        return;
+        return 0;
     }
     unwinder->SetIsJitCrashFlag(false);
     size_t index = 0;
+    int unwCnt = 0;
     for (auto &thread : process->GetOtherThreads()) {
         if ((index == 0) && ProcessDumper::GetInstance().IsCrash()) {
             Printer::PrintOtherThreadHeaderByConfig();
@@ -201,27 +201,26 @@ void DfxUnwindRemote::UnwindOtherThread(std::shared_ptr<DfxProcess> process, std
             DFX_TRACE_START("OtherThreadUnwindRemote:%d", tid);
             bool ret = unwinder->UnwindRemote(pid, withRegs, DfxConfig::GetConfig().maxFrameNums);
             DFX_TRACE_FINISH();
-#ifdef PARSE_LOCK_OWNER
-            DFX_TRACE_START("OtherThreadGetFrames:%d", tid);
-            thread->SetFrames(unwinder->GetFrames());
-            DFX_TRACE_FINISH();
-            LockParser::ParseLockInfo(unwinder, tmpPid, tid);
-#else
             thread->Detach();
             DFX_TRACE_START("OtherThreadGetFrames:%d", tid);
             thread->SetFrames(unwinder->GetFrames());
             DFX_TRACE_FINISH();
+#ifdef PARSE_LOCK_OWNER
+            LockParser::ParseLockInfo(unwinder, pid, tid);
 #endif
             if (ProcessDumper::GetInstance().IsCrash()) {
                 ReportUnwinderException(unwinder->GetLastErrorCode());
             }
             if (!ret) {
                 DFXLOGW("%{public}s, unwind tid(%{public}d) finish ret(%{public}d).", __func__, tid, ret);
+            } else {
+                unwCnt++;
             }
             Printer::PrintThreadBacktraceByConfig(thread, false);
         }
         index++;
     }
+    return unwCnt;
 }
 
 bool DfxUnwindRemote::InitTargetKeyThreadRegs(std::shared_ptr<ProcessDumpRequest> request,

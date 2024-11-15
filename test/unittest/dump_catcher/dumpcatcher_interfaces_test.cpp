@@ -816,5 +816,35 @@ HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest032, TestSize.Level
     GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest032: end.";
 }
 #endif
+
+/**
+@tc.name: DumpCatcherInterfacesTest033
+@tc.desc: testDump after crashed
+@tc.type: FUNC
+*/
+HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest033, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest033: start.";
+    int32_t fd = RequestFileDescriptor(FaultLoggerType::CPP_CRASH);
+    ASSERT_GT(fd, 0);
+    close(fd);
+    pid_t pid = fork();
+    if (pid == 0) {
+        GTEST_LOG_(INFO) << "dump remote process, " << "pid:" << getppid() << ", tid:" << 0;
+        DfxDumpCatcher dumplog;
+        string msg = "";
+        EXPECT_FALSE(dumplog.DumpCatch(getppid(), 0, msg));
+        constexpr int validTime = 8;
+        sleep(validTime);
+        msg = "";
+        EXPECT_TRUE(dumplog.DumpCatch(getppid(), 0, msg));
+        _exit(0);
+    } else if (pid < 0) {
+        GTEST_LOG_(INFO) << "Fail in fork.";
+    } else {
+        waitpid(pid, nullptr, 0);
+    }
+    GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest033: end.";
+}
 } // namespace HiviewDFX
 } // namepsace OHOS

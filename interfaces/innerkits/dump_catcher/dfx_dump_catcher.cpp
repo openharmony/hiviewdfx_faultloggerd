@@ -69,6 +69,12 @@ enum DfxDumpPollRes : int32_t {
     DUMP_POLL_TIMEOUT,
     DUMP_POLL_RETURN,
 };
+
+enum DfxDumpStatRes : int32_t {
+    DUMP_RES_NO_KERNELSTACK = -2,
+    DUMP_RES_WITH_KERNELSTACK = -1,
+    DUMP_RES_WITH_USERSTACK = 0,
+};
 }
 
 bool DfxDumpCatcher::DoDumpCurrTid(const size_t skipFrameNum, std::string& msg, size_t maxFrameNums)
@@ -162,7 +168,10 @@ static void ReportDumpCatcherStats(int32_t pid,
     stat->pid = pid;
     stat->requestTime = requestTime;
     stat->dumpCatcherFinishTime = GetTimeMilliSeconds();
-    stat->result = ret ? 0 : -1; // we need more detailed failure info
+    stat->result = ret ? DUMP_RES_WITH_USERSTACK : DUMP_RES_WITH_KERNELSTACK; // we need more detailed failure info
+    if (!ret && g_kernelStackInfo.empty()) {
+        stat->result = DUMP_RES_NO_KERNELSTACK;
+    }
     size_t copyLen;
     std::string processName;
     ReadProcessName(pid, processName);
@@ -286,19 +295,16 @@ bool DfxDumpCatcher::DoDumpCatchRemote(int pid, int tid, std::string& msg, bool 
     if (sdkdumpRet != static_cast<int>(FaultLoggerSdkDumpResp::SDK_DUMP_PASS)) {
         if (sdkdumpRet == static_cast<int>(FaultLoggerSdkDumpResp::SDK_DUMP_REPEAT)) {
             AsyncGetAllTidKernelStack(pid, WAIT_GET_KERNEL_STACK_TIMEOUT);
-            msg.append("Result: pid(" + std::to_string(pid) + ") is dumping.\n");
+            msg.append("Result: pid(" + std::to_string(pid) + ") process is dumping.\n");
         } else if (sdkdumpRet == static_cast<int>(FaultLoggerSdkDumpResp::SDK_DUMP_REJECT)) {
-            msg.append("Result: pid(" + std::to_string(pid) + ") check permission error.\n");
+            msg.append("Result: pid(" + std::to_string(pid) + ") process check permission error.\n");
         } else if (sdkdumpRet == static_cast<int>(FaultLoggerSdkDumpResp::SDK_DUMP_NOPROC)) {
             msg.append("Result: pid(" + std::to_string(pid) + ") process has exited.\n");
             RequestDelPipeFd(pid);
         } else if (sdkdumpRet == static_cast<int>(FaultLoggerSdkDumpResp::SDK_PROCESS_CRASHED)) {
-            AsyncGetAllTidKernelStack(pid, WAIT_GET_KERNEL_STACK_TIMEOUT);
-            msg.append("Result: pid(" + std::to_string(pid) + ") has been crashed.\n");
+            msg.append("Result: pid(" + std::to_string(pid) + ") process has been crashed.\n");
         }
         DFXLOGW("%{public}s :: %{public}s :: %{public}s", DFXDUMPCATCHER_TAG.c_str(), __func__, msg.c_str());
-        msg.append(halfProcStatus_);
-        msg.append(halfProcWchan_);
         return ret;
     }
 
@@ -386,9 +392,9 @@ void DfxDumpCatcher::CollectKernelStack(pid_t pid, int waitMilliSeconds)
         return true;
     };
     std::vector<int> tids;
-    bool ret = GetTidsByPidWithFunc(pid, tids, func);
-    if (ret == false) {
-        DFXLOGE("Process(%{public}d) Get Tids fail!", pid);
+    MAYBE_UNUSED bool ret = GetTidsByPidWithFunc(pid, tids, func);
+    if (kernelStackInfo.empty()) {
+        DFXLOGE("Process(%{public}d) collect kernel stack fail!", pid);
         finishCollect();
         return;
     }
@@ -408,6 +414,7 @@ void DfxDumpCatcher::AsyncGetAllTidKernelStack(pid_t pid, int waitMilliSeconds)
         return;
     }
     g_asyncThreadRunning = true;
+    g_kernelStackPid = 0;
     g_kernelStackInfo.clear();
     auto func = [pid, waitMilliSeconds] {
         CollectKernelStack(pid, waitMilliSeconds);

@@ -66,10 +66,10 @@ static bool CheckLocalCrashKeyWords(const string& filePath, pid_t pid, int sig)
         return false;
     }
     map<int, string> sigKey = {
-        { SIGILL, string("Signal(4)") },
-        { SIGABRT, string("Signal(6)") },
-        { SIGBUS, string("Signal(7)") },
-        { SIGSEGV, string("Signal(11)") },
+        { SIGILL, string("SIGILL") },
+        { SIGABRT, string("SIGABRT") },
+        { SIGBUS, string("SIGBUS") },
+        { SIGSEGV, string("SIGSEGV") },
     };
     string sigKeyword = "";
     map<int, string>::iterator iter = sigKey.find(sig);
@@ -257,7 +257,8 @@ HWTEST_F(LocalHandlerTest, LocalHandlerTest007, TestSize.Level2)
         siginfo_t siginfo {
             .si_signo = SIGSEGV
         };
-        DFX_GetCrashFdFunc([]{return RequestFileDescriptor((int)FaultLoggerType::CPP_CRASH);});
+        DFX_GetCrashFdFunc([](const struct ProcessDumpRequest* request)
+            {return RequestFileDescriptor((int)FaultLoggerType::CPP_CRASH);});
         DFX_SignalLocalHandler(SIGSEGV, &siginfo, nullptr);
     } else {
         GTEST_LOG_(INFO) << "process(" << getpid() << ") is ready to wait process(" << pid << ")";

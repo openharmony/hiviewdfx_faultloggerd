@@ -31,9 +31,9 @@
         "ipc",
         "jsoncpp",
         "libunwind",
+        "libuv",
         "lzma"
-      ],
-      "third_party": [ "libuv" ]
+      ]
     },
     "build": {
       "sub_component": [
@@ -103,6 +103,9 @@
         },
         {
           "name": "//base/hiviewdfx/faultloggerd/interfaces/innerkits/signal_handler:dfxsignalhandler"
+        },
+        {
+          "name": "//base/hiviewdfx/faultloggerd/interfaces/innerkits/signal_handler:dfxsignalhandler_noflto"
         },
         {
           "name": "//base/hiviewdfx/faultloggerd/interfaces/innerkits/unwinder:libunwinder",

@@ -1430,7 +1430,7 @@ static void TestDumpCatch(const int targetPid, const string& processName, const 
         }
     } else {
         GTEST_LOG_(INFO) << "threadIdx(" << threadIdx << ") dump failed.";
-        if (msg.find("Result: pid(" + to_string(targetPid) + ") is dumping.") == string::npos) {
+        if (msg.find("Result: pid(" + to_string(targetPid) + ") process is dumping.") == string::npos) {
             GTEST_LOG_(ERROR) << "threadIdx(" << threadIdx << ") dump error message is unexpectly.";
             FAIL();
         }

@@ -41,7 +41,8 @@ int (*g_parseArkFrameInfoLocalFn)(uintptr_t, uintptr_t, uintptr_t, uintptr_t, Js
 int (*g_parseArkFrameInfoFn)(uintptr_t, uintptr_t, uintptr_t, uintptr_t, uint8_t*, uint64_t, uintptr_t, JsFunction*);
 int (*g_arkCreateJsSymbolExtractorFn)(uintptr_t*);
 int (*g_arkDestoryJsSymbolExtractorFn)(uintptr_t);
-int (*g_arkDestoryLocalFn)();
+int (*g_arkCreateLocalFn)();
+int (*g_arkDestroyLocalFn)();
 using RustDemangleFn = char*(*)(const char *);
 RustDemangleFn g_rustDemangleFn = nullptr;
 
@@ -204,13 +205,20 @@ HWTEST_F(ArkTest, ArkTest006, TestSize.Level2)
         g_stepArkFn(obj, readMemFn, fp, sp, pc, methodid, isJsFrame);
         g_stepArkFn = nullptr;
         ASSERT_NE(g_handle, nullptr);
-        const char* arkFuncName1 = "ark_destory_local";
+        const char* arkCreateFuncName = "ark_create_local";
         pthread_mutex_lock(&g_mutex);
-        *reinterpret_cast<void**>(&(g_arkDestoryLocalFn)) = dlsym(g_handle, arkFuncName1);
+        *reinterpret_cast<void**>(&(g_arkCreateLocalFn)) = dlsym(g_handle, arkCreateFuncName);
         pthread_mutex_unlock(&g_mutex);
-        ASSERT_NE(g_arkDestoryLocalFn, nullptr);
-        g_arkDestoryLocalFn();
-        g_arkDestoryLocalFn = nullptr;
+        ASSERT_NE(g_arkCreateLocalFn, nullptr);
+        g_arkCreateLocalFn();
+        g_arkCreateLocalFn = nullptr;
+        const char* arkDestroyFuncName = "ark_destroy_local";
+        pthread_mutex_lock(&g_mutex);
+        *reinterpret_cast<void**>(&(g_arkDestroyLocalFn)) = dlsym(g_handle, arkDestroyFuncName);
+        pthread_mutex_unlock(&g_mutex);
+        ASSERT_NE(g_arkDestroyLocalFn, nullptr);
+        g_arkDestroyLocalFn();
+        g_arkDestroyLocalFn = nullptr;
         exit(0);
     }
     int status;
