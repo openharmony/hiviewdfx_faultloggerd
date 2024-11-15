@@ -93,6 +93,18 @@ void BacktraceLocalTest::TearDown()
     CheckResourceUsage(fdCount, mapsCount, memCount);
 }
 
+static void ShmCpy(char* msg)
+{
+    usleep(2000); // 2000 : sleep 2ms
+    const int32_t initAllocSz = 11;
+    void* p = malloc(initAllocSz);
+    int ret = memcpy_s(p, initAllocSz, msg, initAllocSz - 1);
+    if (ret < 0) {
+        ASSERT_GT(ret, 0);
+    }
+    free(p);
+}
+
 /**
  * @tc.name: BacktraceLocalTest001
  * @tc.desc: test get backtrace of current thread
@@ -462,6 +474,27 @@ HWTEST_F(BacktraceLocalTest, BacktraceLocalTest014, TestSize.Level2)
     }
     ASSERT_TRUE(ret);
     GTEST_LOG_(INFO) << "BacktraceLocalTest014: end.";
+}
+
+/**
+* @tc.name: BacktraceLocalTest015
+* @tc.desc: Test lock exit after being loacl
+* @tc.type: FUNC
+*/
+HWTEST_F(BacktraceLocalTest, BacktraceLocalTest015, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "BacktraceLocalTest015: start.";
+    const size_t count = 50;
+    const size_t msgSize = 10;
+    char msg[msgSize] = {'a', 'b', 'c', 'd'};
+    for (size_t i = 0; i < count; i++) {
+        std::thread shmThread(ShmCpy, msg);
+        std::string stacktrace = GetProcessStacktrace();
+        ASSERT_GT(stacktrace.size(), 0);
+        GTEST_LOG_(INFO) << stacktrace;
+        shmThread.detach();
+    }
+    GTEST_LOG_(INFO) << "BacktraceLocalTest015: end.";
 }
 } // namespace HiviewDFX
 } // namepsace OHOS
