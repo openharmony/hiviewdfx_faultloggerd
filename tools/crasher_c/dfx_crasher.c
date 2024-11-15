@@ -56,7 +56,7 @@ NOINLINE int RaiseAbort(void)
     HILOG_FATAL(LOG_CORE, "Test Trigger ABORT!");
     int ret = raise(SIGABRT);
     if (ret != 0) {
-        printf("raise failed!");
+        printf("raise SIGABRT failed!");
     }
     return 0;
 }
@@ -71,7 +71,7 @@ NOINLINE int RaiseBusError(void)
 {
     int ret = raise(SIGBUS);
     if (ret != 0) {
-        printf("remove failed!");
+        printf("raise SIGBUS failed!");
     }
     return 0;
 }
@@ -80,7 +80,7 @@ NOINLINE int RaiseFloatingPointException(void)
 {
     int ret = raise(SIGFPE);
     if (ret != 0) {
-        printf("remove failed!");
+        printf("raise SIGFPE failed!");
     }
     return 0;
 }
@@ -89,7 +89,7 @@ NOINLINE int RaiseIllegalInstructionException(void)
 {
     int ret = raise(SIGILL);
     if (ret != 0) {
-        printf("ramove failed!");
+        printf("raise SIGILL failed!");
     }
     return 0;
 }
@@ -113,7 +113,7 @@ NOINLINE int RaiseSegmentFaultException(void)
     printf("call RaiseSegmentFaultException \n");
     int ret = raise(SIGSEGV);
     if (ret != 0) {
-        printf("remove failed!");
+        printf("raise SIGSEGV failed!");
     }
     return 0;
 }
@@ -130,7 +130,7 @@ NOINLINE int RaiseTrapException(void)
 {
     int ret = raise(SIGTRAP);
     if (ret != 0) {
-        printf("remove failed!");
+        printf("raise SIGTRAP failed!");
     }
     return 0;
 }
@@ -150,7 +150,7 @@ NOINLINE int MaxMethodNameTest12345678901234567890123456789012345678901234567890
     printf("call MaxMethodNameTest12345678901234567890123456789012345678901234567890ABC \n");
     int ret = raise(SIGSEGV);
     if (ret != 0) {
-        printf("remove failed!");
+        printf("raise SIGSEGV failed!");
     }
     return 0;
 }
@@ -243,7 +243,7 @@ NOINLINE int MultiThreadCrash(void)
 
     int ret = raise(SIGSEGV);
     if (ret != 0) {
-        printf("remove failed!");
+        printf("raise SIGSEGV failed!");
     }
 
     return 0;
@@ -456,7 +456,7 @@ NOINLINE int TestFunc70(void)
 {
     int ret = raise(SIGSEGV);
     if (ret != 0) {
-        printf("raise failed!");
+        printf("raise SIGSEGV failed!");
     }
     return 0;
 }
@@ -467,7 +467,7 @@ NOINLINE int CrashTest(void)
     sleep(sleepTime);
     int ret = raise(SIGSEGV);
     if (ret != 0) {
-        printf("raise failed!");
+        printf("raise SIGSEGV failed!");
     }
     return 0;
 }
