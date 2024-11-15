@@ -233,12 +233,14 @@ bool DfxDumpCatcher::DumpCatch(int pid, int tid, std::string& msg, size_t maxFra
         DFXLOGE("%{public}s :: dump_catch :: param error.", DFXDUMPCATCHER_TAG.c_str());
         return ret;
     }
+#if !defined(IS_EMULATOR) && defined(__aarch64__)
     std::string statusPath = StringPrintf("/proc/%d/status", pid);
     if (access(statusPath.c_str(), F_OK) != 0 && errno != EACCES) {
         DFXLOGE("DumpCatch:: the pid(%{public}d) process has exited, errno(%{public}d)", pid, errno);
         msg.append("Result: pid(" + std::to_string(pid) + ") process has exited.\n");
         return ret;
     }
+#endif
     DfxEnableTraceDlsym(true);
     ElapsedTime counter;
     std::unique_lock<std::mutex> lck(mutex_);
