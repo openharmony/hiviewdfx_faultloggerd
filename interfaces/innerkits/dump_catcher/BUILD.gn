@@ -53,6 +53,9 @@ if (defined(ohos_lite)) {
   config("dfx_dump_catcher_config") {
     visibility = [ "*:*" ]
     include_dirs = [ "include" ]
+    if (is_emulator) {
+      defines = [ "IS_EMULATOR" ]
+    }
   }
 
   ohos_shared_library("libdfx_dumpcatcher") {
