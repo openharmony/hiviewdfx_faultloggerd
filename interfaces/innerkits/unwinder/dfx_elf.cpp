@@ -865,9 +865,9 @@ bool DfxElf::FindSection(struct dl_phdr_info *info, const std::string secName, S
     return elf->GetSectionInfo(shdr, secName);
 }
 
-void DfxElf::ParsePhdr(struct dl_phdr_info *info, std::vector<const ElfW(Phdr) *>& pHdrSections, const uintptr_t pc)
+void DfxElf::ParsePhdr(struct dl_phdr_info *info, std::vector<const ElfW(Phdr) *> &pHdrSections, const uintptr_t pc)
 {
-    for(auto& section : pHdrSections) {
+    for (auto &section : pHdrSections) {
         section = nullptr;
     }
     const ElfW(Phdr) *phdr = info->dlpi_phdr;
@@ -961,7 +961,6 @@ int DfxElf::DlPhdrCb(struct dl_phdr_info *info, size_t size, void *data)
     const ElfW(Phdr) *pDynamic = pHdrSections[2];
     const ElfW(Phdr) *pEhHdr = pHdrSections[3];
 
-
     if (pText == nullptr) {
         return 0;
     }
@@ -981,7 +980,7 @@ int DfxElf::DlPhdrCb(struct dl_phdr_info *info, size_t size, void *data)
 #endif
 
     if (pDynamic) {
-        if(!ProccessDynamic(pDynamic, loadBase, uti)) {
+        if (!ProccessDynamic(pDynamic, loadBase, uti)) {
             return 0;
         }
     } else {

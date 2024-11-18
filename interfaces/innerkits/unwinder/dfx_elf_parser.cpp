@@ -245,7 +245,7 @@ bool ElfParser::ParseSectionHeaders(const EhdrType& ehdr)
         return false;
     }
 
-    if(!ExtractSectionHeadersInfo(ehdr, shdr)) {
+    if (!ExtractSectionHeadersInfo(ehdr, shdr)) {
         return false;
     }
     

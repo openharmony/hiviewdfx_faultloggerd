@@ -36,11 +36,11 @@ namespace {
 const char FAULTLOGGER_CONF_PATH[] = "/system/etc/faultlogger.conf";
 const int CONF_LINE_SIZE = 256;
 
-auto boolConfigParser = [](bool* configProp, const std::string& value) {
+auto g_boolConfigParser = [](bool* configProp, const std::string& value) {
     *configProp = (value != "false");
 };
 
-auto uintConfigParser = [](unsigned int* configProp, const std::string& value) {
+auto g_uintConfigParser = [](unsigned int* configProp, const std::string& value) {
     unsigned int propValue = static_cast<unsigned int>(atoi(value.data()));
     if (propValue != 0) {
         *configProp = propValue;
@@ -60,51 +60,49 @@ DfxConfigInfo& DfxConfig::GetConfig()
 
 void DfxConfig::ReadAndParseConfig(DfxConfigInfo& config)
 {
-    do {
-        FILE *fp = nullptr;
-        char codeBuffer[CONF_LINE_SIZE] = {0};
-        fp = fopen(FAULTLOGGER_CONF_PATH, "r");
-        if (fp == nullptr) {
-            DFXLOGW("Failed to open %{public}s. Reason: %{public}s.", FAULTLOGGER_CONF_PATH, strerror(errno));
-            break;
+    FILE *fp = nullptr;
+    char codeBuffer[CONF_LINE_SIZE] = {0};
+    fp = fopen(FAULTLOGGER_CONF_PATH, "r");
+    if (fp == nullptr) {
+        DFXLOGW("Failed to open %{public}s. Reason: %{public}s.", FAULTLOGGER_CONF_PATH, strerror(errno));
+        return;
+    }
+    std::map<const std::string, bool*> boolConfig = {
+        {std::string("displayRegister"), &(config.displayRegister)},
+        {std::string("displayBacktrace"), &(config.displayBacktrace)},
+        {std::string("displayMaps"), &(config.displayMaps)},
+        {std::string("displayFaultStack.switch"), &(config.displayFaultStack)},
+        {std::string("dumpOtherThreads"), &(config.dumpOtherThreads)},
+    };
+    std::map<const std::string, unsigned int*> uintConfig = {
+        {std::string("displayFaultStack.lowAddressStep"), &(config.lowAddressStep)},
+        {std::string("displayFaultStack.highAddressStep"), &(config.highAddressStep)},
+        {std::string("maxFrameNums"), &(config.maxFrameNums)},
+    };
+    while (!feof(fp)) {
+        (void)memset_s(codeBuffer, sizeof(codeBuffer), '\0', sizeof(codeBuffer));
+        if (fgets(codeBuffer, CONF_LINE_SIZE - 1, fp) == nullptr) {
+            continue;
         }
-        std::map<const std::string, bool*> boolConfig = {
-            {std::string("displayRegister"), &(config.displayRegister)},
-            {std::string("displayBacktrace"), &(config.displayBacktrace)},
-            {std::string("displayMaps"), &(config.displayMaps)},
-            {std::string("displayFaultStack.switch"), &(config.displayFaultStack)},
-            {std::string("dumpOtherThreads"), &(config.dumpOtherThreads)},
-        };
-        std::map<const std::string, unsigned int*> uintConfig = {
-            {std::string("displayFaultStack.lowAddressStep"), &(config.lowAddressStep)},
-            {std::string("displayFaultStack.highAddressStep"), &(config.highAddressStep)},
-            {std::string("maxFrameNums"), &(config.maxFrameNums)},
-        };
-        while (!feof(fp)) {
-            (void)memset_s(codeBuffer, sizeof(codeBuffer), '\0', sizeof(codeBuffer));
-            if (fgets(codeBuffer, CONF_LINE_SIZE - 1, fp) == nullptr) {
-                continue;
-            }
-            std::string line(codeBuffer);
-            std::string::size_type newLinePos = line.find_first_of("\n");
-            if (newLinePos != line.npos) {
-                line.resize(newLinePos);
-            }
-            std::string::size_type equalSignPos = line.find_first_of("=");
-            if (equalSignPos != line.npos) {
-                std::string key = line.substr(0, equalSignPos);
-                std::string value = line.substr(equalSignPos + 1);
-                Trim(key);
-                Trim(value);
-                if (boolConfig.find(key) != boolConfig.end()) {
-                    boolConfigParser(boolConfig[key], value);
-                } else if (uintConfig.find(key) != uintConfig.end()) {
-                    uintConfigParser(uintConfig[key], value);
-                }
+        std::string line(codeBuffer);
+        std::string::size_type newLinePos = line.find_first_of("\n");
+        if (newLinePos != line.npos) {
+            line.resize(newLinePos);
+        }
+        std::string::size_type equalSignPos = line.find_first_of("=");
+        if (equalSignPos != line.npos) {
+            std::string key = line.substr(0, equalSignPos);
+            std::string value = line.substr(equalSignPos + 1);
+            Trim(key);
+            Trim(value);
+            if (boolConfig.find(key) != boolConfig.end()) {
+                g_boolConfigParser(boolConfig[key], value);
+            } else if (uintConfig.find(key) != uintConfig.end()) {
+                g_uintConfigParser(uintConfig[key], value);
             }
         }
-        (void)fclose(fp);
-    } while (0);
+    }
+    (void)fclose(fp);
 }
 } // namespace HiviewDFX
 } // namespace OHOS
