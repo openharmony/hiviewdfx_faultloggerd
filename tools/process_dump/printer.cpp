@@ -77,13 +77,6 @@ void Printer::PrintDumpHeader(std::shared_ptr<ProcessDumpRequest> request, std::
             DfxRingBufferWrapper::GetInstance().AppendBuf("LastFatalMessage:%s\n", msg.c_str());
         }
 
-        auto traceId = request->traceInfo;
-        if (traceId.chainId != 0) {
-            headerInfo += StringPrintf("TraceId:%" PRIX64"\n", traceId.chainId);
-            DfxRingBufferWrapper::GetInstance().AppendBuf("TraceId:%llx\n",
-                static_cast<unsigned long long>(traceId.chainId));
-        }
-
         headerInfo += "Fault thread info:\n";
         DfxRingBufferWrapper::GetInstance().AppendMsg("Fault thread info:\n");
     }
