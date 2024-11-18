@@ -59,32 +59,6 @@ enum PidType : int32_t {
     PID_MAX,
 };
 
-/**
- * @brief Process trace information
- * keep sync with the definition in hitracec.h
- */
-typedef struct TraceInfo {
-#if __BYTE_ORDER == __LITTLE_ENDIAN
-    uint64_t valid : 1;
-    uint64_t ver : 3;
-    uint64_t chainId : 60;
-
-    uint64_t flags : 12;
-    uint64_t spanId : 26;
-    uint64_t parentSpanId : 26;
-#elif __BYTE_ORDER == __BIG_ENDIAN
-    uint64_t chainId : 60;
-    uint64_t ver : 3;
-    uint64_t valid : 1;
-
-    uint64_t parentSpanId : 26;
-    uint64_t spanId : 26;
-    uint64_t flags : 12;
-#else
-#error "ERROR: No BIG_LITTLE_ENDIAN defines."
-#endif
-} TraceInfo;
-
 typedef enum {
     NONE = 0,
     MESSAGE_FATAL, // hilog last fatal log message
@@ -134,8 +108,6 @@ struct ProcessDumpRequest {
     char processName[NAME_BUF_LEN];
     /** Storing different types of messages */
     Message msg;
-    /** process trace info */
-    TraceInfo traceInfo;
     /** current porcess fd table address*/
     uint64_t fdTableAddr;
     /** stackId for async-stack */

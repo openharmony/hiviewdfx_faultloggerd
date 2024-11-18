@@ -35,7 +35,11 @@ static void InitializeBuildId(benchmark::State& state, DfxMaps* dfxMaps, DfxMap*
     // Find the libc.so share library and use that for benchmark purposes.
     *buildIdMap = nullptr;
     for (auto& map : maps) {
-        if (map->offset == 0 && map->GetElf()->GetBuildId() != "") {
+        auto elf = map->GetElf();
+        if (elf == nullptr) {
+            continue;
+        }
+        if (map->offset == 0 && elf->GetBuildId() != "") {
             *buildIdMap = map.get();
             break;
         }
@@ -58,6 +62,9 @@ static void BenchmarkElfGetBuildIdFromObj(benchmark::State& state)
     InitializeBuildId(state, dfxMaps.get(), &buildIdMap);
 
     auto elf = buildIdMap->GetElf();
+    if (elf == nullptr) {
+        return;
+    }
     if (!elf->IsValid()) {
         state.SkipWithError("Cannot get valid elf from map.");
     }
