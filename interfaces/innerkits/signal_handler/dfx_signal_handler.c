@@ -419,7 +419,8 @@ static bool DFX_SigchainHandler(int sig, siginfo_t *si, void *context)
     int pid = syscall(SYS_getpid);
     int tid = syscall(SYS_gettid);
 
-    DFXLOGI("DFX_SigchainHandler :: sig(%{public}d), pid(%{public}d), tid(%{public}d).", sig, pid, tid);
+    DFXLOGI("DFX_SigchainHandler :: sig(%{public}d), si_code(%{public}d), pid(%{public}d), tid(%{public}d).",
+            sig, si != NULL ? si->si_code : 0, pid, tid);
     bool ret = false;
     if (sig == SIGDUMP) {
         if (si->si_code != DUMP_TYPE_REMOTE) {
@@ -495,6 +496,10 @@ void DFX_InstallSignalHandler(void)
 
     for (size_t i = 0; i < sizeof(SIGCHAIN_DUMP_SIGNAL_LIST) / sizeof(SIGCHAIN_DUMP_SIGNAL_LIST[0]); i++) {
         int32_t sig = SIGCHAIN_DUMP_SIGNAL_LIST[i];
+        if (sig == SIGLEAK_STACK) {
+            InstallSigActionHandler(sig);
+            continue;
+        }
         sigfillset(&sigchain.sca_mask);
         // dump signal not mask crash signal
         for (size_t j = 0; j < sizeof(SIGCHAIN_CRASH_SIGNAL_LIST) / sizeof(SIGCHAIN_CRASH_SIGNAL_LIST[0]); j++) {
