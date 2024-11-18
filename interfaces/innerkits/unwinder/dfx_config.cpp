@@ -17,6 +17,7 @@
 
 #include <cstdio>
 #include <cstdlib>
+#include <map>
 #include <mutex>
 #include <securec.h>
 #include <string>
@@ -34,6 +35,17 @@ namespace {
 
 const char FAULTLOGGER_CONF_PATH[] = "/system/etc/faultlogger.conf";
 const int CONF_LINE_SIZE = 256;
+
+auto boolConfigParser = [](bool* configProp, const std::string& value) {
+    *configProp = (value != "false");
+};
+
+auto uintConfigParser = [](unsigned int* configProp, const std::string& value) {
+    unsigned int propValue = static_cast<unsigned int>(atoi(value.data()));
+    if (propValue != 0) {
+        *configProp = propValue;
+    }
+};
 }
 
 DfxConfigInfo& DfxConfig::GetConfig()
@@ -41,87 +53,33 @@ DfxConfigInfo& DfxConfig::GetConfig()
     static DfxConfigInfo config;
     static std::once_flag flag;
     std::call_once(flag, [&] {
-        ReadConfig(config);
+        ReadAndParseConfig(config);
     });
     return config;
 }
 
-void DfxConfig::ParserConfig(DfxConfigInfo& config, const std::string& key, const std::string& value)
-{
-    do {
-        if (key.compare("displayRigister") == 0) {
-            if (value.compare("false") == 0) {
-                config.displayRegister = false;
-            } else {
-                config.displayRegister = true;
-            }
-            break;
-        }
-        if (key.compare("displayBacktrace") == 0) {
-            if (value.compare("false") == 0) {
-                config.displayBacktrace = false;
-            } else {
-                config.displayBacktrace = true;
-            }
-            break;
-        }
-        if (key.compare("displayMaps") == 0) {
-            if (value.compare("false") == 0) {
-                config.displayMaps = false;
-            } else {
-                config.displayMaps = true;
-            }
-            break;
-        }
-        if (key.compare("displayFaultStack.switch") == 0) {
-            if (value.compare("false") == 0) {
-                config.displayFaultStack = false;
-            } else {
-                config.displayFaultStack = true;
-            }
-            break;
-        }
-        if (key.compare("dumpOtherThreads") == 0) {
-            if (value.compare("false") == 0) {
-                config.dumpOtherThreads = false;
-            } else {
-                config.dumpOtherThreads = true;
-            }
-            break;
-        }
-        if (key.compare("displayFaultStack.lowAddressStep") == 0) {
-            unsigned int lowAddressStep = static_cast<unsigned int>(atoi(value.data()));
-            if (lowAddressStep != 0) {
-                config.lowAddressStep = lowAddressStep;
-            }
-            break;
-        }
-        if (key.compare("displayFaultStack.highAddressStep") == 0) {
-            unsigned int highAddressStep = static_cast<unsigned int>(atoi(value.data()));
-            if (highAddressStep != 0) {
-                config.highAddressStep = highAddressStep;
-            }
-            break;
-        }
-        if (key.compare("maxFrameNums") == 0) {
-            unsigned int maxFrameNums = static_cast<unsigned int>(atoi(value.data()));
-            if (maxFrameNums != 0) {
-                config.maxFrameNums = maxFrameNums;
-            }
-            break;
-        }
-    } while (0);
-}
-
-void DfxConfig::ReadConfig(DfxConfigInfo& config)
+void DfxConfig::ReadAndParseConfig(DfxConfigInfo& config)
 {
     do {
         FILE *fp = nullptr;
         char codeBuffer[CONF_LINE_SIZE] = {0};
         fp = fopen(FAULTLOGGER_CONF_PATH, "r");
         if (fp == nullptr) {
+            DFXLOGW("Failed to open %{public}s. Reason: %{public}s.", FAULTLOGGER_CONF_PATH, strerror(errno));
             break;
         }
+        std::map<const std::string, bool*> boolConfig = {
+            {std::string("displayRegister"), &(config.displayRegister)},
+            {std::string("displayBacktrace"), &(config.displayBacktrace)},
+            {std::string("displayMaps"), &(config.displayMaps)},
+            {std::string("displayFaultStack.switch"), &(config.displayFaultStack)},
+            {std::string("dumpOtherThreads"), &(config.dumpOtherThreads)},
+        };
+        std::map<const std::string, unsigned int*> uintConfig = {
+            {std::string("displayFaultStack.lowAddressStep"), &(config.lowAddressStep)},
+            {std::string("displayFaultStack.highAddressStep"), &(config.highAddressStep)},
+            {std::string("maxFrameNums"), &(config.maxFrameNums)},
+        };
         while (!feof(fp)) {
             (void)memset_s(codeBuffer, sizeof(codeBuffer), '\0', sizeof(codeBuffer));
             if (fgets(codeBuffer, CONF_LINE_SIZE - 1, fp) == nullptr) {
@@ -138,7 +96,11 @@ void DfxConfig::ReadConfig(DfxConfigInfo& config)
                 std::string value = line.substr(equalSignPos + 1);
                 Trim(key);
                 Trim(value);
-                ParserConfig(config, key, value);
+                if (boolConfig.find(key) != boolConfig.end()) {
+                    boolConfigParser(boolConfig[key], value);
+                } else if (uintConfig.find(key) != uintConfig.end()) {
+                    uintConfigParser(uintConfig[key], value);
+                }
             }
         }
         (void)fclose(fp);

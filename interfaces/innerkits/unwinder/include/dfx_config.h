@@ -15,8 +15,6 @@
 #ifndef DFX_CONFIG_H
 #define DFX_CONFIG_H
 
-#include <string>
-
 namespace OHOS {
 namespace HiviewDFX {
 struct DfxConfigInfo {
@@ -33,10 +31,8 @@ struct DfxConfigInfo {
 class DfxConfig {
 public:
     static DfxConfigInfo& GetConfig();
-
 private:
-    static void ReadConfig(DfxConfigInfo& config);
-    static void ParserConfig(DfxConfigInfo& config, const std::string& key, const std::string& value);
+    static void ReadAndParseConfig(DfxConfigInfo& config);
 private:
     DfxConfig() = default;
     ~DfxConfig() = default;
