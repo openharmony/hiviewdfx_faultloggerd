@@ -833,8 +833,8 @@ bool Unwinder::Impl::FpStep(uintptr_t& fp, uintptr_t& pc, void *ctx)
 
     uintptr_t prevFp = fp;
     uintptr_t ptr = fp;
-    if (ptr != 0 && memory_->ReadUptr(ptr, &fp, true) &&
-        memory_->ReadUptr(ptr, &pc, false)) {
+    if (ptr != 0 && memory_->Read<uintptr_t>(ptr, &fp, true) &&
+        memory_->Read<uintptr_t>(ptr, &pc, false)) {
         if (fp != 0 && fp <= prevFp) {
             DFXLOGU("Illegal or same fp value");
             lastErrorData_.SetAddrAndCode(pc, UNW_ERROR_ILLEGAL_VALUE);
@@ -1067,7 +1067,7 @@ bool Unwinder::Impl::Apply(std::shared_ptr<DfxRegs> regs, std::shared_ptr<RegLoc
     bool ret = DfxInstructions::Apply(memory_, *(regs.get()), *(rs.get()), errCode);
     uintptr_t tmp = 0;
     uintptr_t sp = regs->GetSp();
-    if (ret && (!memory_->ReadUptr(sp, &tmp, false))) {
+    if (ret && (!memory_->Read<uintptr_t>(sp, &tmp, false))) {
         errCode = UNW_ERROR_UNREADABLE_SP;
         ret = false;
     }

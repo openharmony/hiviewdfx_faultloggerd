@@ -51,6 +51,15 @@ namespace {
 #undef LOG_TAG
 #define LOG_DOMAIN 0xD002D11
 #define LOG_TAG "DfxElf"
+
+#if is_ohos && !is_mingw
+enum HdrSection {
+    SECTION_TEXT = 0,
+    SECTION_ARMEXIDX = 1,
+    SECTION_DYNAMIC = 2,
+    SECTION_EHFRAMEHDR = 3
+};
+#endif
 }
 
 std::shared_ptr<DfxElf> DfxElf::Create(const std::string& path)
@@ -163,7 +172,7 @@ DfxElf::DfxElf(const int fd, const size_t elfSz, const off_t offset)
     Init();
 }
 
-DfxElf::DfxElf(uint8_t *decompressedData, size_t size)
+DfxElf::DfxElf(uint8_t* decompressedData, size_t size)
 {
     if (mmap_ == nullptr) {
         mmap_ = std::make_shared<DfxMmap>();
@@ -223,7 +232,7 @@ bool DfxElf::InitEmbeddedElf()
     if (!UnwinderConfig::GetEnableMiniDebugInfo() || miniDebugInfo_ == nullptr || GetMmapPtr() == nullptr) {
         return false;
     }
-    uint8_t *addr = miniDebugInfo_->offset + const_cast<uint8_t*>(GetMmapPtr());
+    uint8_t* addr = miniDebugInfo_->offset + const_cast<uint8_t*>(GetMmapPtr());
     embeddedElfData_ = std::make_shared<std::vector<uint8_t>>();
     if (embeddedElfData_ == nullptr) {
         DFXLOGE("Create embeddedElfData failed.");
@@ -449,13 +458,12 @@ std::string DfxElf::GetBuildId(uint64_t noteAddr, uint64_t noteSize)
         return "";
     }
     uint64_t offset = 0;
-    uint64_t ptr = noteAddr;
     while (offset < noteSize) {
         ElfW(Nhdr) nhdr;
         if (noteSize - offset < sizeof(nhdr)) {
             return "";
         }
-        ptr = noteAddr + offset;
+        uint64_t ptr = noteAddr + offset;
         if (memcpy_s(&nhdr, sizeof(nhdr), reinterpret_cast<void*>(ptr), sizeof(nhdr)) != 0) {
             DFXLOGE("memcpy_s nhdr failed");
             return "";
@@ -532,7 +540,7 @@ bool DfxElf::GetSectionInfo(ShdrInfo& shdr, const std::string secName)
     return elfParse_->GetSectionInfo(shdr, secName);
 }
 
-bool DfxElf::GetSectionData(unsigned char *buf, uint64_t size, std::string secName)
+bool DfxElf::GetSectionData(unsigned char* buf, uint64_t size, std::string secName)
 {
     if (!IsValid()) {
         return false;
@@ -847,12 +855,12 @@ int DfxElf::FindUnwindTableLocal(uintptr_t pc, struct UnwindTableInfo& uti)
 }
 
 #if is_ohos && !is_mingw
-bool DfxElf::FindSection(struct dl_phdr_info *info, const std::string secName, ShdrInfo& shdr)
+bool DfxElf::FindSection(struct dl_phdr_info* info, const std::string secName, ShdrInfo& shdr)
 {
     if (info == nullptr) {
         return false;
     }
-    const char *file = info->dlpi_name;
+    const char* file = info->dlpi_name;
     if (strlen(file) == 0) {
         file = PROC_SELF_EXE_PATH;
     }
@@ -865,87 +873,60 @@ bool DfxElf::FindSection(struct dl_phdr_info *info, const std::string secName, S
     return elf->GetSectionInfo(shdr, secName);
 }
 
-int DfxElf::DlPhdrCb(struct dl_phdr_info *info, size_t size, void *data)
+void DfxElf::ParsePhdr(struct dl_phdr_info* info, const ElfW(Phdr)* (&pHdrSections)[4], const uintptr_t pc)
 {
-    struct DlCbData *cbData = (struct DlCbData *)data;
-    if ((info == nullptr) || (cbData == nullptr)) {
-        return -1;
-    }
-    UnwindTableInfo* uti = &cbData->uti;
-    uintptr_t pc = cbData->pc;
-    const ElfW(Phdr) *pText = nullptr;
-    const ElfW(Phdr) *pDynamic = nullptr;
-#if defined(__arm__)
-    const ElfW(Phdr) *pArmExidx = nullptr;
-#endif
-    const ElfW(Phdr) *pEhHdr = nullptr;
-
-    const ElfW(Phdr) *phdr = info->dlpi_phdr;
-    ElfW(Addr) loadBase = info->dlpi_addr;
+    const ElfW(Phdr)* phdr = info->dlpi_phdr;
     for (size_t i = 0; i < info->dlpi_phnum && phdr != nullptr; i++, phdr++) {
         switch (phdr->p_type) {
             case PT_LOAD: {
-                ElfW(Addr) vaddr = phdr->p_vaddr + loadBase;
+                ElfW(Addr) vaddr = phdr->p_vaddr + info->dlpi_addr;
                 if (pc >= vaddr && pc < vaddr + phdr->p_memsz) {
-                    pText = phdr;
+                    pHdrSections[SECTION_TEXT] = phdr;
                 }
                 break;
             }
 #if defined(__arm__)
             case PT_ARM_EXIDX: {
-                pArmExidx = phdr;
+                pHdrSections[SECTION_ARMEXIDX] = phdr;
                 break;
             }
 #endif
             case PT_GNU_EH_FRAME: {
-                pEhHdr = phdr;
+                pHdrSections[SECTION_EHFRAMEHDR] = phdr;
                 break;
             }
             case PT_DYNAMIC: {
-                pDynamic = phdr;
+                pHdrSections[SECTION_DYNAMIC] = phdr;
                 break;
             }
             default:
                 break;
         }
     }
-    if (pText == nullptr) {
-        return 0;
-    }
-    uti->startPc = pText->p_vaddr + loadBase;
-    uti->endPc = uti->startPc + pText->p_memsz;
-    DFXLOGU("Elf name: %{public}s", info->dlpi_name);
-    uti->namePtr = (uintptr_t) info->dlpi_name;
+}
 
-#if defined(__arm__)
-    if (pArmExidx) {
-        ShdrInfo shdr;
-        shdr.addr = pArmExidx->p_vaddr;
-        shdr.size = pArmExidx->p_memsz;
-        return FillUnwindTableByExidx(shdr, loadBase, uti);
+bool DfxElf::ProccessDynamic(const ElfW(Phdr)* pDynamic, ElfW(Addr) loadBase, UnwindTableInfo* uti)
+{
+    ElfW(Dyn)* dyn = (ElfW(Dyn) *)(pDynamic->p_vaddr + loadBase);
+    if (dyn == nullptr) {
+        return false;
     }
-#endif
-
-    if (pDynamic) {
-        ElfW(Dyn) *dyn = (ElfW(Dyn) *)(pDynamic->p_vaddr + loadBase);
-        if (dyn == nullptr) {
-            return 0;
+    for (; dyn->d_tag != DT_NULL; ++dyn) {
+        if (dyn->d_tag == DT_PLTGOT) {
+            uti->gp = dyn->d_un.d_ptr;
+            break;
         }
-        for (; dyn->d_tag != DT_NULL; ++dyn) {
-            if (dyn->d_tag == DT_PLTGOT) {
-                uti->gp = dyn->d_un.d_ptr;
-                break;
-            }
-        }
-    } else {
-        uti->gp = 0;
     }
+    return true;
+}
 
-    struct DwarfEhFrameHdr *hdr = nullptr;
-    struct DwarfEhFrameHdr synthHdr;
+struct DwarfEhFrameHdr* DfxElf::InitHdr(struct DwarfEhFrameHdr& synthHdr,
+    struct dl_phdr_info* info, const ElfW(Phdr)* pEhHdr)
+{
+    struct DwarfEhFrameHdr* hdr = nullptr;
     if (pEhHdr) {
         INSTR_STATISTIC(InstructionEntriesEhFrame, pEhHdr->p_memsz, 0);
-        hdr = (struct DwarfEhFrameHdr *) (pEhHdr->p_vaddr + loadBase);
+        hdr = (struct DwarfEhFrameHdr *) (pEhHdr->p_vaddr + info->dlpi_addr);
     } else {
         ShdrInfo shdr;
         if (FindSection(info, EH_FRAME, shdr)) {
@@ -961,11 +942,55 @@ int DfxElf::DlPhdrCb(struct dl_phdr_info *info, size_t size, void *data)
             hdr = &synthHdr;
         }
     }
+    return hdr;
+}
+
+int DfxElf::DlPhdrCb(struct dl_phdr_info* info, size_t size, void* data)
+{
+    struct DlCbData* cbData = (struct DlCbData *)data;
+    if ((info == nullptr) || (cbData == nullptr)) {
+        return -1;
+    }
+    UnwindTableInfo* uti = &cbData->uti;
+    uintptr_t pc = cbData->pc;
+    const int numOfPhdrSections = 4;
+    const ElfW(Phdr)* pHdrSections[numOfPhdrSections] = {nullptr};
+    ParsePhdr(info, pHdrSections, pc);
+
+    if (pHdrSections[SECTION_TEXT] == nullptr) {
+        return 0;
+    }
+    ElfW(Addr) loadBase = info->dlpi_addr;
+    uti->startPc = pHdrSections[SECTION_TEXT]->p_vaddr + loadBase;
+    uti->endPc = uti->startPc + pHdrSections[SECTION_TEXT]->p_memsz;
+    DFXLOGU("Elf name: %{public}s", info->dlpi_name);
+    uti->namePtr = (uintptr_t) info->dlpi_name;
+
+#if defined(__arm__)
+    if (pHdrSections[SECTION_ARMEXIDX]) {
+        ShdrInfo shdr;
+        shdr.addr = pHdrSections[SECTION_ARMEXIDX]->p_vaddr;
+        shdr.size = pHdrSections[SECTION_ARMEXIDX]->p_memsz;
+        return FillUnwindTableByExidx(shdr, loadBase, uti);
+    }
+#endif
+
+    if (pHdrSections[SECTION_DYNAMIC]) {
+        if (!ProccessDynamic(pHdrSections[SECTION_DYNAMIC], loadBase, uti)) {
+            return 0;
+        }
+    } else {
+        uti->gp = 0;
+    }
+
+    struct DwarfEhFrameHdr synthHdr;
+    struct DwarfEhFrameHdr* hdr = InitHdr(synthHdr, info, pHdrSections[SECTION_EHFRAMEHDR]);
+
     return FillUnwindTableByEhhdrLocal(hdr, uti);
 }
 #endif
 
-bool DfxElf::Read(uintptr_t pos, void *buf, size_t size)
+bool DfxElf::Read(uintptr_t pos, void* buf, size_t size)
 {
     if ((mmap_ != nullptr) && (mmap_->Read(pos, buf, size) == size)) {
         return true;
@@ -1011,10 +1036,10 @@ size_t DfxElf::GetElfSize(const void* ptr)
     const uint8_t* data = static_cast<const uint8_t*>(ptr);
     uint8_t classType = data[EI_CLASS];
     if (classType == ELFCLASS32) {
-        Elf32_Ehdr *ehdr = (Elf32_Ehdr *)data;
+        Elf32_Ehdr* ehdr = (Elf32_Ehdr *)data;
         return static_cast<size_t>(ehdr->e_shoff + (ehdr->e_shentsize * ehdr->e_shnum));
     } else if (classType == ELFCLASS64) {
-        Elf64_Ehdr *ehdr = (Elf64_Ehdr *)data;
+        Elf64_Ehdr* ehdr = (Elf64_Ehdr *)data;
         return static_cast<size_t>(ehdr->e_shoff + (ehdr->e_shentsize * ehdr->e_shnum));
     }
     DFXLOGW("classType(%{public}d) error", classType);

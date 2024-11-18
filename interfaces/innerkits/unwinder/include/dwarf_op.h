@@ -78,7 +78,7 @@ protected:
     {
         auto addr = static_cast<uintptr_t>(StackPop());
         uintptr_t val;
-        memory_->ReadUptr(addr, &val);
+        memory_->Read<uintptr_t>(addr, &val);
         StackPush(static_cast<AddressType>(val));
     };
 
@@ -88,24 +88,24 @@ protected:
         auto addr = static_cast<uintptr_t>(StackPop());
         AddressType value = 0;
         uint8_t operand;
-        memory_->ReadU8(exprPtr, &operand, true);
+        memory_->Read<uint8_t>(exprPtr, &operand, true);
         switch (operand) {
             case 1: { // 1 : read one byte length
                 uint8_t u8;
-                memory_->ReadU8(addr, &u8, true);
+                memory_->Read<uint8_t>(addr, &u8, true);
                 value = static_cast<AddressType>(u8);
             }
                 break;
             case 2: { // 2 : read two bytes length
                 uint16_t u16;
-                memory_->ReadU16(addr, &u16, true);
+                memory_->Read<uint16_t>(addr, &u16, true);
                 value = static_cast<AddressType>(u16);
             }
                 break;
             case 3: // 3 : read four bytes length
             case 4: { // 4 : read four bytes length
                 uint32_t u32;
-                memory_->ReadU32(addr, &u32, true);
+                memory_->Read<uint32_t>(addr, &u32, true);
                 value = static_cast<AddressType>(u32);
             }
                 break;
@@ -114,7 +114,7 @@ protected:
             case 7: // 7 : read eight bytes length
             case 8: { // 8 : read eight bytes length
                 uint64_t u64;
-                memory_->ReadU64(addr, &u64, true);
+                memory_->Read<uint64_t>(addr, &u64, true);
                 value = static_cast<AddressType>(u64);
             }
                 break;
@@ -146,7 +146,7 @@ protected:
     inline void OpPick(AddressType& exprPtr)
     {
         uint8_t reg;
-        memory_->ReadU8(exprPtr, &reg, true);
+        memory_->Read<uint8_t>(exprPtr, &reg, true);
         if (reg > StackSize()) {
             return;
         }
@@ -280,7 +280,7 @@ protected:
     inline void OpSkip(AddressType& exprPtr)
     {
         int16_t offset;
-        memory_->ReadS16(exprPtr, &offset, true);
+        memory_->Read<int16_t>(exprPtr, &offset, true);
         exprPtr = static_cast<AddressType>(exprPtr + offset);
     };
 
@@ -289,7 +289,7 @@ protected:
     {
         AddressType top = StackPop();
         int16_t offset;
-        memory_->ReadS16(exprPtr, &offset, true);
+        memory_->Read<int16_t>(exprPtr, &offset, true);
         if (top != 0) {
             exprPtr = exprPtr + offset;
         }

@@ -37,46 +37,31 @@ public:
         alignBytes_ = alignBytes;
     }
 
-    bool ReadReg(int regIdx, uintptr_t *val);
-    bool ReadMem(uintptr_t addr, uintptr_t *val);
+    bool ReadReg(int regIdx, uintptr_t* val);
+    bool ReadMem(uintptr_t addr, uintptr_t* val);
 
     virtual size_t Read(uintptr_t& addr, void* val, size_t size, bool incre = false);
-    virtual bool ReadU8(uintptr_t& addr, uint8_t *val, bool incre = false);
-    virtual bool ReadS8(uintptr_t& addr, int8_t *val, bool incre = false)
+
+    template <typename T>
+    bool Read(uintptr_t& addr, T* val, bool incre = false)
     {
-        uint8_t valp = 0;
-        bool ret = ReadU8(addr, &valp, incre);
-        *val = static_cast<int8_t>(valp);
-        return ret;
+        if (Read(addr, val, sizeof(T), incre) == sizeof(T)) {
+            return true;
+        }
+        return false;
     }
-    virtual bool ReadU16(uintptr_t& addr, uint16_t *val, bool incre = false);
-    virtual bool ReadS16(uintptr_t& addr, int16_t *val, bool incre = false)
+
+    template <typename T>
+    inline T ReadValue(uintptr_t& addr, bool incre = false)
     {
-        uint16_t valp = 0;
-        bool ret = ReadU16(addr, &valp, incre);
-        *val = static_cast<int16_t>(valp);
-        return ret;
+        T tmp = 0;
+        Read<T>(addr, &tmp, incre);
+        return tmp;
     }
-    virtual bool ReadU32(uintptr_t& addr, uint32_t *val, bool incre = false);
-    virtual bool ReadS32(uintptr_t& addr, int32_t *val, bool incre = false)
-    {
-        uint32_t valp = 0;
-        bool ret = ReadU32(addr, &valp, incre);
-        *val = static_cast<int32_t>(valp);
-        return ret;
-    }
-    virtual bool ReadU64(uintptr_t& addr, uint64_t *val, bool incre = false);
-    virtual bool ReadS64(uintptr_t& addr, int64_t *val, bool incre = false)
-    {
-        uint64_t valp = 0;
-        bool ret = ReadU64(addr, &valp, incre);
-        *val = static_cast<int64_t>(valp);
-        return ret;
-    }
-    virtual bool ReadUptr(uintptr_t& addr, uintptr_t *val, bool incre = false);
+
     virtual bool ReadString(uintptr_t& addr, std::string* str, size_t maxSize, bool incre = false);
 
-    virtual bool ReadPrel31(uintptr_t& addr, uintptr_t *val);
+    virtual bool ReadPrel31(uintptr_t& addr, uintptr_t* val);
 
     virtual uint64_t ReadUleb128(uintptr_t& addr);
     virtual int64_t ReadSleb128(uintptr_t& addr);
@@ -84,6 +69,7 @@ public:
     virtual void SetFuncOffset(uintptr_t offset) { funcOffset_ = offset; }
     virtual size_t GetEncodedSize(uint8_t encoding);
     virtual uintptr_t ReadEncodedValue(uintptr_t& addr, uint8_t encoding);
+    void ReadFormatEncodedValue(uintptr_t& addr, uintptr_t& val, uint8_t formatEncoding);
 #if is_ohos && !is_mingw
     static size_t ReadProcMemByPid(const pid_t pid, const uint64_t addr, void* data, size_t size);
 #endif
