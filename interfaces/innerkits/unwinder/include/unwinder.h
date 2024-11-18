@@ -64,6 +64,8 @@ public:
         size_t maxFrameNum = DEFAULT_MAX_FRAME_NUM, size_t skipFrameNum = 0);
     bool UnwindLocalWithTid(const pid_t tid,
         size_t maxFrameNum = DEFAULT_MAX_FRAME_NUM, size_t skipFrameNum = 0);
+    bool UnwindLocalByOtherTid(const pid_t tid, bool fast = false,
+        size_t maxFrameNum = DEFAULT_MAX_FRAME_NUM, size_t skipFrameNum = 0);
     bool UnwindLocal(bool withRegs = false, bool fpUnwind = false,
         size_t maxFrameNum = DEFAULT_MAX_FRAME_NUM, size_t skipFrameNum = 0);
     bool UnwindRemote(pid_t tid = 0, bool withRegs = false,

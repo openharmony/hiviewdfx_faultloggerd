@@ -28,6 +28,7 @@
 #include <unistd.h>
 
 #include "backtrace_local.h"
+#include "backtrace_local_mix.h"
 #include "backtrace_local_thread.h"
 #include "dfx_frame_formatter.h"
 #include "dfx_kernel_stack.h"
@@ -495,6 +496,86 @@ HWTEST_F(BacktraceLocalTest, BacktraceLocalTest015, TestSize.Level2)
         shmThread.detach();
     }
     GTEST_LOG_(INFO) << "BacktraceLocalTest015: end.";
+}
+
+/**
+ * @tc.name: BacktraceLocalTest016
+ * @tc.desc: test get backtrace of current thread dwarf in arm32
+ * @tc.type: FUNC
+ */
+HWTEST_F(BacktraceLocalTest, BacktraceLocalTest016, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "BacktraceLocalTest016: start.";
+    int32_t tid = gettid();
+    std::string str;
+    GetBacktraceStringByTidWithMix(str, tid, 0, false);
+    GTEST_LOG_(INFO) << "BacktraceLocalTest016     : end.";
+}
+
+/**
+ * @tc.name: BacktraceLocalTest017
+ * @tc.desc: test get backtrace of other thread dwarf in arm32
+ * @tc.type: FUNC
+ */
+HWTEST_F(BacktraceLocalTest, BacktraceLocalTest017, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "BacktraceLocalTest017: start.";
+    g_mutex.lock();
+    std::thread backtraceThread(Test001);
+    sleep(1);
+    if (g_tid <= 0) {
+        FAIL() << "Failed to create child thread.\n";
+    }
+    std::string str;
+    auto ret = GetBacktraceStringByTidWithMix(str, g_tid, 0, false);
+    ASSERT_TRUE(ret);
+    GTEST_LOG_(INFO) << "GetBacktraceStringByTid:\n" << str;
+    g_mutex.unlock();
+    g_tid = 0;
+    if (backtraceThread.joinable()) {
+        backtraceThread.join();
+    }
+    GTEST_LOG_(INFO) << "BacktraceLocalTest017: end.";
+}
+
+/**
+ * @tc.name: BacktraceLocalTest018
+ * @tc.desc: test get backtrace of current thread dwarf in arm32
+ * @tc.type: FUNC
+ */
+HWTEST_F(BacktraceLocalTest, BacktraceLocalTest018, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "BacktraceLocalTest018: start.";
+    int32_t tid = gettid();
+    std::string str;
+    GetBacktraceStringByTidWithMix(str, tid, 0, true);
+    GTEST_LOG_(INFO) << "BacktraceLocalTest018: end.";
+}
+
+/**
+ * @tc.name: BacktraceLocalTest019
+ * @tc.desc: test get backtrace of other thread dwarf in arm32
+ * @tc.type: FUNC
+ */
+HWTEST_F(BacktraceLocalTest, BacktraceLocalTest019, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "BacktraceLocalTest019: start.";
+    g_mutex.lock();
+    std::thread backtraceThread(Test001);
+    sleep(1);
+    if (g_tid <= 0) {
+        FAIL() << "Failed to create child thread.\n";
+    }
+    std::string str;
+    auto ret = GetBacktraceStringByTidWithMix(str, g_tid, 0, true);
+    ASSERT_TRUE(ret);
+    GTEST_LOG_(INFO) << "GetBacktraceStringByTid:\n" << str;
+    g_mutex.unlock();
+    g_tid = 0;
+    if (backtraceThread.joinable()) {
+        backtraceThread.join();
+    }
+    GTEST_LOG_(INFO) << "BacktraceLocalTest019: end.";
 }
 } // namespace HiviewDFX
 } // namepsace OHOS

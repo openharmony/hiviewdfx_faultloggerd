@@ -15,6 +15,7 @@ import("//base/hiviewdfx/faultloggerd/faultloggerd.gni")
 
 backtrace_local_sources = [
   "backtrace_local.cpp",
+  "backtrace_local_mix.cpp",
   "backtrace_local_thread.cpp",
   "dfx_kernel_stack.cpp",
 ]
@@ -30,7 +31,6 @@ if (defined(ohos_lite)) {
       "$faultloggerd_common_path/dfxutil",
       "$faultloggerd_interfaces_path/common",
       "$faultloggerd_interfaces_path/innerkits/procinfo/include",
-      "$faultloggerd_interfaces_path/innerkits/unwinder/include",
     ]
 
     sources = backtrace_local_sources

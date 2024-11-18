@@ -40,6 +40,7 @@
 #include "string_printf.h"
 #include "string_util.h"
 #include "thread_context.h"
+#include "thread_context_mix.h"
 #include "elapsed_time.h"
 
 namespace OHOS {
@@ -175,6 +176,7 @@ public:
 
     bool UnwindLocalWithContext(const ucontext_t& context, size_t maxFrameNum, size_t skipFrameNum);
     bool UnwindLocalWithTid(pid_t tid, size_t maxFrameNum, size_t skipFrameNum);
+    bool UnwindLocalByOtherTid(pid_t tid, bool fast, size_t maxFrameNum, size_t skipFrameNum);
     bool UnwindLocal(bool withRegs, bool fpUnwind, size_t maxFrameNum, size_t skipFrameNum);
     bool UnwindRemote(pid_t tid, bool withRegs, size_t maxFrameNum, size_t skipFrameNum);
     bool Unwind(void *ctx, size_t maxFrameNum, size_t skipFrameNum);
@@ -372,6 +374,11 @@ bool Unwinder::UnwindLocalWithContext(const ucontext_t& context, size_t maxFrame
 bool Unwinder::UnwindLocalWithTid(pid_t tid, size_t maxFrameNum, size_t skipFrameNum)
 {
     return impl_->UnwindLocalWithTid(tid, maxFrameNum, skipFrameNum);
+}
+
+bool Unwinder::UnwindLocalByOtherTid(pid_t tid, bool fast, size_t maxFrameNum, size_t skipFrameNum)
+{
+    return impl_->UnwindLocalByOtherTid(tid, fast, maxFrameNum, skipFrameNum);
 }
 
 bool Unwinder::UnwindLocal(bool withRegs, bool fpUnwind, size_t maxFrameNum, size_t skipFrameNum)
@@ -805,6 +812,7 @@ bool Unwinder::Impl::UnwindByFp(void *ctx, size_t maxFrameNum, size_t skipFrameN
     bool needAdjustPc = false;
 
     bool resetFrames = false;
+    bool isJsFrame = false;
     do {
         if (!resetFrames && skipFrameNum != 0 && (pcs_.size() == skipFrameNum)) {
             DFXLOGU("pcs size: %{public}zu, will be reset pcs", pcs_.size());
@@ -818,14 +826,38 @@ bool Unwinder::Impl::UnwindByFp(void *ctx, size_t maxFrameNum, size_t skipFrameN
 
         uintptr_t pc = regs_->GetPc();
         uintptr_t fp = regs_->GetFp();
+        uintptr_t sp = regs_->GetSp();
+
+        uintptr_t arkMapStart = 0;
+        uintptr_t arkMapEnd = 0;
+        bool isGetArkRange = false;
+        if (GetArkStackRange(arkMapStart, arkMapEnd)) {
+            isGetArkRange = true;
+        }
+        // isJsFrame: Identify whether the current frame is an ark frame.
+        if ((isGetArkRange && (pc >= arkMapStart) && (pc < arkMapEnd)) || isJsFrame) {
+            // isJsFrame: Identify whether the next frame is an ark frame.
+            auto ret = DfxArk::StepArkFrame(memory_.get(), &(Unwinder::AccessMem), &fp, &sp, &pc, nullptr, &isJsFrame);
+            if (ret < 0) {
+                DFXLOGE("Failed to step ark frame");
+                break;;
+            }
+            regs_->SetPc(StripPac(pc, pacMask_));
+            regs_->SetFp(fp);
+            regs_->SetSp(sp);
+            pcs_.emplace_back(pc);
+            continue;
+        }
+
         if (needAdjustPc) {
             DoPcAdjust(pc);
         }
         needAdjustPc = true;
-        pcs_.emplace_back(pc);
 
         if (!FpStep(fp, pc, ctx) || (pc == 0)) {
             break;
+        } else {
+            pcs_.emplace_back(pc);
         }
     } while (true);
     return (pcs_.size() > 0);
@@ -1450,6 +1482,56 @@ int Unwinder::Impl::DlPhdrCallback(struct dl_phdr_info *info, size_t size, void 
         }
     }
     return 0;
+}
+
+bool Unwinder::Impl::UnwindLocalByOtherTid(const pid_t tid, bool fast, size_t maxFrameNum, size_t skipFrameNum)
+{
+    bool ret = false;
+    if (tid < 0 || tid == gettid()) {
+        lastErrorData_.SetCode(UNW_ERROR_NOT_SUPPORT);
+        return false;
+    }
+    maps_ = DfxMaps::Create();
+    std::shared_ptr<ThreadContextSupportMix> ctx = std::make_shared<ThreadContextSupportMix>();
+
+    uintptr_t stackBottom = 1;
+    uintptr_t stackTop = static_cast<uintptr_t>(-1);
+    if (tid == getpid()) {
+        if (!GetMainStackRangeInner(stackBottom, stackTop)) {
+            return false;
+        } else {
+            ctx->stackTop = stackTop;
+            ctx->stackBottom = stackBottom;
+        }
+    }
+
+    auto& instance = LocalThreadContextSupportMix::GetInstance();
+    bool isSuccess = instance.CollectThreadContext(tid, ctx);
+    if (!isSuccess) {
+        instance.SetTid(-1);
+        instance.SetStatus(SyncStatus::INIT);
+        return false;
+    }
+    UnwindContextMix unwindContextMix = {
+        .context = ctx,
+        .maps = maps_,
+    };
+
+    static std::shared_ptr<DfxRegs> regs = DfxRegs::Create();
+    regs->SetSp(unwindContextMix.context->sp);
+    regs->SetPc(unwindContextMix.context->pc);
+    regs->SetFp(unwindContextMix.context->fp);
+    regs->SetReg(REG_LR, &(unwindContextMix.context->lr));
+    SetRegs(regs);
+    EnableFillFrames(true);
+    if (fast) {
+        ret = UnwindByFp(&unwindContextMix, maxFrameNum, 0);
+    } else {
+        ret = Unwind(&unwindContextMix, maxFrameNum, skipFrameNum);
+    }
+    instance.SetTid(-1);
+    instance.SetStatus(SyncStatus::INIT);
+    return ret;
 }
 } // namespace HiviewDFX
 } // namespace OHOS

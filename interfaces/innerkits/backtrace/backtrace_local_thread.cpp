@@ -99,5 +99,30 @@ std::string BacktraceLocalThread::GetFormattedStr(bool withThreadName)
     ss += Unwinder::GetFramesStr(frames_);
     return ss;
 }
+
+bool BacktraceLocalThread::UnwindSupportMix(bool fast, size_t maxFrameNum, size_t skipFrameNum)
+{
+    static std::mutex mutex;
+    std::unique_lock<std::mutex> lock(mutex);
+    bool ret = false;
+
+    if (unwinder_ == nullptr || tid_ < BACKTRACE_CURRENT_THREAD) {
+        return ret;
+    }
+    if (tid_ == BACKTRACE_CURRENT_THREAD || tid_ == gettid()) {
+        ret = unwinder_->UnwindLocal(false, fast, maxFrameNum, skipFrameNum + 1);
+    } else {
+        ret = unwinder_->UnwindLocalByOtherTid(tid_, fast, maxFrameNum, skipFrameNum + 1);
+    }
+#ifdef __aarch64__
+    if (ret && fast) {
+        Unwinder::GetFramesByPcs(frames_, unwinder_->GetPcs());
+    }
+#endif
+    if (frames_.empty()) {
+        frames_ = unwinder_->GetFrames();
+    }
+    return ret;
+}
 } // namespace HiviewDFX
 } // namespace OHOS
