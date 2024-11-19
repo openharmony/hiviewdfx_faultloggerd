@@ -64,7 +64,7 @@ void DfxRegsX86_64::SetFromQutMiniRegs(const uintptr_t* regs, const size_t size)
 bool DfxRegsX86_64::SetPcFromReturnAddress(std::shared_ptr<DfxMemory> memory)
 {
     uintptr_t newPc;
-    if (!memory->ReadUptr(regsData_[REG_SP], &newPc, false) ||
+    if (!memory->Read<uintptr_t>(regsData_[REG_SP], &newPc, false) ||
         newPc == regsData_[REG_PC]) {
         return false;
     }
@@ -97,7 +97,7 @@ std::string DfxRegsX86_64::PrintRegs() const
 bool DfxRegsX86_64::StepIfSignalFrame(uintptr_t pc, std::shared_ptr<DfxMemory> memory)
 {
     uint64_t data;
-    if (!memory->ReadU64(pc, &data, false)) {
+    if (!memory->Read<uint64_t>(pc, &data, false)) {
         return false;
     }
     DFXLOGU("[%{public}d]: data: %{public}llx", __LINE__, data);
@@ -112,7 +112,7 @@ bool DfxRegsX86_64::StepIfSignalFrame(uintptr_t pc, std::shared_ptr<DfxMemory> m
 
     uint16_t data2;
     pc += sizeof(uint64_t);
-    if (!memory->ReadU16(pc, &data2, false) || (data2 != 0x0f05)) {
+    if (!memory->Read<uint16_t>(pc, &data2, false) || (data2 != 0x0f05)) {
         DFXLOGU("data2: %{public}x", data2);
         return false;
     }
