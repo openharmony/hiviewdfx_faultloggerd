@@ -93,7 +93,7 @@ void BacktraceLocalTest::TearDown()
     CheckResourceUsage(fdCount, mapsCount, memCount);
 }
 
-static void ShmCpy(char* msg)
+static void RequestMemory(char* msg)
 {
     usleep(2000); // 2000 : sleep 2ms
     const int32_t initAllocSz = 11;
@@ -488,7 +488,7 @@ HWTEST_F(BacktraceLocalTest, BacktraceLocalTest015, TestSize.Level2)
     const size_t msgSize = 10;
     char msg[msgSize] = {'a', 'b', 'c', 'd'};
     for (size_t i = 0; i < count; i++) {
-        std::thread shmThread(ShmCpy, msg);
+        std::thread shmThread(RequestMemory, msg);
         std::string stacktrace = GetProcessStacktrace();
         ASSERT_GT(stacktrace.size(), 0);
         GTEST_LOG_(INFO) << stacktrace;

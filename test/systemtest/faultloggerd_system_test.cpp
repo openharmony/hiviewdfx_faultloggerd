@@ -333,7 +333,7 @@ static bool CheckTestGetCrashObj(const string& filePath, const pid_t& pid)
 }
 #endif
 
-static void ShmCpy(char* msg)
+static void RequestMemory(char* msg)
 {
     const size_t count = 5;
     for (size_t i = 0; i < count; i++) {
@@ -344,7 +344,7 @@ static void ShmCpy(char* msg)
         if (ret < 0) {
             ASSERT_GT(ret, 0);
         }
-    free(p);
+        free(p);
     }
 }
 
@@ -1747,9 +1747,9 @@ HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest127, TestSize.Level2)
         ASSERT_NE(pid, -1);
         if (pid == 0) {
             for (size_t j = 0; j < threadSize; j++) {
-                std::thread shmThread(ShmCpy, msg);
+                std::thread shmThread(RequestMemory, msg);
                 shmThread.detach();
-                ShmCpy(msg);
+                RequestMemory(msg);
             }
         } else {
             usleep(sleepTime);
