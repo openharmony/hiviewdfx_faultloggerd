@@ -433,6 +433,125 @@ void DfxDumpCatcher::AsyncGetAllTidKernelStack(pid_t pid, int waitMilliSeconds)
     }
 }
 
+bool DfxDumpCatcher::DoPollRetLEZero(std::string &resMsg, const uint64_t endTime, int &remainTime,
+                                     bool &collectAllTidStack, int &ret)
+{
+    if (errno == EINTR) {
+        uint64_t now = GetAbsTimeMilliSeconds();
+        if (now >= endTime) {
+            ret = DUMP_POLL_TIMEOUT;
+            resMsg.append("Result: poll timeout.\n");
+            return false;
+        }
+        if (!collectAllTidStack && (remainTime == DUMPCATCHER_REMOTE_P90_TIMEOUT)) {
+            AsyncGetAllTidKernelStack(pid_);
+            collectAllTidStack = true;
+        }
+        remainTime = static_cast<int>(endTime - now);
+        return true;
+    } else {
+        ret = DUMP_POLL_FAILED;
+        resMsg.append("Result: poll error, errno(" + std::to_string(errno) + ")\n");
+        return false;
+    }
+}
+
+bool DfxDumpCatcher::DoPollRetEQZero(std::string &resMsg, const int timeout, int &remainTime,
+                                     bool &collectAllTidStack, int &ret)
+{
+    if (!collectAllTidStack && (remainTime == DUMPCATCHER_REMOTE_P90_TIMEOUT)) {
+        AsyncGetAllTidKernelStack(pid_);
+        remainTime = timeout - DUMPCATCHER_REMOTE_P90_TIMEOUT;
+        collectAllTidStack = true;
+        return true;
+    }
+    ret = DUMP_POLL_TIMEOUT;
+    resMsg.append("Result: poll timeout.\n");
+    return false;
+}
+
+bool DfxDumpCatcher::DoEventsPoll(std::vector<int> fds, std::vector<std::string> &messages,
+                                  std::vector<struct pollfd> &readfds, bool &bPipeConnect, bool &res)
+{
+    bool bufRet = true;
+    bool resRet = false;
+    bool eventRet = true;
+    for (auto readfd : readfds) {
+        if (!bPipeConnect && ((uint32_t)readfd.revents & POLLIN)) {
+            bPipeConnect = true;
+        }
+
+        if (bPipeConnect &&
+            (((uint32_t)readfd.revents & POLLERR) || ((uint32_t)readfd.revents & POLLHUP))) {
+            eventRet = false;
+            // messages[1]: resMsg
+            (messages[1]).append("Result: poll events error.\n");
+            break;
+        }
+
+        if (((uint32_t)readfd.revents & POLLIN) != POLLIN) {
+            continue;
+        }
+
+        if (readfd.fd == fds[0]) {
+            // fds[0]: bufFd
+            // messages[0]: bufMsg
+            bufRet = DoReadBuf(fds[0], messages[0]);
+        } else if (readfd.fd == fds[1]) {
+            // fds[1]: resFd
+            // messages[1]: resMsg
+            resRet = DoReadRes(fds[1], res, messages[1]);
+        }
+    }
+
+    if ((eventRet == false) || (bufRet == false) || (resRet == true)) {
+        DFXLOGI("%{public}s :: %{public}s :: eventRet(%{public}d) bufRet: %{public}d resRet: %{public}d",
+            DFXDUMPCATCHER_TAG.c_str(), __func__, eventRet, bufRet, resRet);
+        return false;
+    }
+    return true;
+}
+
+void DfxDumpCatcher::DumpRemotePoll(std::vector<int> fds, std::vector<std::string> &messages,
+                                    const int timeout, bool &res, int &ret)
+{
+    std::vector<struct pollfd> readfds;
+    for (auto fd : fds) {
+        readfds.push_back({fd, POLLIN, 0});
+    }
+    bool bPipeConnect = false;
+    int remainTime = DUMPCATCHER_REMOTE_P90_TIMEOUT;
+    bool collectAllTidStack = false;
+    uint64_t startTime = GetAbsTimeMilliSeconds();
+    uint64_t endTime = startTime + static_cast<uint64_t>(timeout);
+    bool isContinue = true;
+    while (isContinue) {
+        int pollRet = poll(readfds.data(), readfds.size(), remainTime);
+        if (pollRet < 0) {
+            // messages[1]: resMsg
+            isContinue = DoPollRetLEZero(messages[1], endTime, remainTime, collectAllTidStack, ret);
+            continue;
+        } else if (pollRet == 0) {
+            // messages[1]: resMsg
+            isContinue = DoPollRetEQZero(messages[1], timeout, remainTime, collectAllTidStack, ret);
+            continue;
+        }
+
+        if (!DoEventsPoll(fds, messages, readfds, bPipeConnect, res)) {
+            ret = DUMP_POLL_RETURN;
+            break;
+        }
+        uint64_t now = GetAbsTimeMilliSeconds();
+        if (now >= endTime) {
+            ret = DUMP_POLL_TIMEOUT;
+            // messages[1]: resMsg
+            messages[1].append("Result: poll timeout.\n");
+            break;
+        }
+        remainTime = static_cast<int>(endTime - now);
+    }
+}
+
 int DfxDumpCatcher::DoDumpRemotePoll(int bufFd, int resFd, int timeout, std::string& msg, bool isJson)
 {
     DFX_TRACE_SCOPED_DLSYM("DoDumpRemotePoll");
@@ -444,97 +563,15 @@ int DfxDumpCatcher::DoDumpRemotePoll(int bufFd, int resFd, int timeout, std::str
         return DUMP_POLL_FD;
     }
     int ret = DUMP_POLL_INIT;
-    std::string resMsg;
     bool res = false;
-    std::string bufMsg;
-    struct pollfd readfds[2];
-    (void)memset_s(readfds, sizeof(readfds), 0, sizeof(readfds));
-    readfds[0].fd = bufFd;
-    readfds[0].events = POLLIN;
-    readfds[1].fd = resFd;
-    readfds[1].events = POLLIN;
-    int fdsSize = sizeof(readfds) / sizeof(readfds[0]);
-    bool bPipeConnect = false;
-    int remainTime = DUMPCATCHER_REMOTE_P90_TIMEOUT;
-    bool collectAllTidStack = false;
-    uint64_t startTime = GetAbsTimeMilliSeconds();
-    uint64_t endTime = startTime + static_cast<uint64_t>(timeout);
-    while (true) {
-        int pollRet = poll(readfds, fdsSize, remainTime);
-        if (pollRet < 0 && errno == EINTR) {
-            uint64_t now = GetAbsTimeMilliSeconds();
-            if (now >= endTime) {
-                ret = DUMP_POLL_TIMEOUT;
-                resMsg.append("Result: poll timeout.\n");
-                break;
-            }
-            if (!collectAllTidStack && (remainTime == DUMPCATCHER_REMOTE_P90_TIMEOUT)) {
-                AsyncGetAllTidKernelStack(pid_);
-                collectAllTidStack = true;
-            }
-            remainTime = static_cast<int>(endTime - now);
-            continue;
-        } else if (pollRet < 0) {
-            ret = DUMP_POLL_FAILED;
-            resMsg.append("Result: poll error, errno(" + std::to_string(errno) + ")\n");
-            break;
-        } else if (pollRet == 0) {
-            if (!collectAllTidStack && (remainTime == DUMPCATCHER_REMOTE_P90_TIMEOUT)) {
-                AsyncGetAllTidKernelStack(pid_);
-                remainTime = timeout - DUMPCATCHER_REMOTE_P90_TIMEOUT;
-                collectAllTidStack = true;
-                continue;
-            }
-            ret = DUMP_POLL_TIMEOUT;
-            resMsg.append("Result: poll timeout.\n");
-            break;
-        }
+    std::vector<int> fds = {bufFd, resFd};
+    // messages[0]: bufMsg
+    // messages[1]: resMsg
+    std::vector<std::string> messages(fds.size(), "");
+    DumpRemotePoll(fds, messages, timeout, res, ret);
 
-        bool bufRet = true;
-        bool resRet = false;
-        bool eventRet = true;
-        for (int i = 0; i < fdsSize; ++i) {
-            if (!bPipeConnect && ((uint32_t)readfds[i].revents & POLLIN)) {
-                bPipeConnect = true;
-            }
-            if (bPipeConnect &&
-                (((uint32_t)readfds[i].revents & POLLERR) || ((uint32_t)readfds[i].revents & POLLHUP))) {
-                eventRet = false;
-                resMsg.append("Result: poll events error.\n");
-                break;
-            }
-
-            if (((uint32_t)readfds[i].revents & POLLIN) != POLLIN) {
-                continue;
-            }
-
-            if (readfds[i].fd == bufFd) {
-                bufRet = DoReadBuf(bufFd, bufMsg);
-                continue;
-            }
-
-            if (readfds[i].fd == resFd) {
-                resRet = DoReadRes(resFd, res, resMsg);
-            }
-        }
-
-        if ((eventRet == false) || (bufRet == false) || (resRet == true)) {
-            DFXLOGI("%{public}s :: %{public}s :: eventRet(%{public}d) bufRet: %{public}d resRet: %{public}d",
-                DFXDUMPCATCHER_TAG.c_str(), __func__, eventRet, bufRet, resRet);
-            ret = DUMP_POLL_RETURN;
-            break;
-        }
-        uint64_t now = GetAbsTimeMilliSeconds();
-        if (now >= endTime) {
-            ret = DUMP_POLL_TIMEOUT;
-            resMsg.append("Result: poll timeout.\n");
-            break;
-        }
-        remainTime = static_cast<int>(endTime - now);
-    }
-
-    DFXLOGI("%{public}s :: %{public}s :: %{public}s", DFXDUMPCATCHER_TAG.c_str(), __func__, resMsg.c_str());
-    msg = isJson && res ? bufMsg : (resMsg + bufMsg);
+    DFXLOGI("%{public}s :: %{public}s :: %{public}s", DFXDUMPCATCHER_TAG.c_str(), __func__, messages[1].c_str());
+    msg = isJson && res ? messages[0] : (messages[1] + messages[0]);
     return res ? DUMP_POLL_OK : ret;
 }
 

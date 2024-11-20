@@ -21,6 +21,7 @@
 #include <cstring>
 #include <memory>
 #include <mutex>
+#include <poll.h>
 #include <string>
 #include <unistd.h>
 #include <vector>
@@ -89,6 +90,14 @@ private:
     bool DoDumpCatchRemote(int pid, int tid, std::string& msg, bool isJson = false,
         int timeout = DUMPCATCHER_REMOTE_TIMEOUT);
     int DoDumpRemotePid(int pid, std::string& msg, bool isJson = false, int32_t timeout = DUMPCATCHER_REMOTE_TIMEOUT);
+    bool DoPollRetLEZero(std::string &resMsg, const uint64_t endTime,
+                         int &remainTime, bool &collectAllTidStack, int &ret);
+    bool DoPollRetEQZero(std::string &resMsg, const int timeout,
+                         int &remainTime, bool &collectAllTidStack, int &ret);
+    bool DoEventsPoll(std::vector<int> fds, std::vector<std::string> &messages,
+                      std::vector<struct pollfd> &readfds, bool &bPipeConnect, bool &res);
+    void DumpRemotePoll(std::vector<int> fds, std::vector<std::string> &messages,
+                        const int timeout, bool &res, int &ret);
     int DoDumpRemotePoll(int bufFd, int resFd, int timeout, std::string& msg, bool isJson = false);
     bool DoReadBuf(int fd, std::string& msg);
     bool DoReadRes(int fd, bool &ret, std::string& msg);
