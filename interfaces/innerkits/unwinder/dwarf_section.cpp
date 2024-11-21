@@ -297,7 +297,7 @@ void DwarfSection::SaveAugStr(uintptr_t& ptr, std::vector<char>& augStr)
 {
     uint8_t ch;
     augStr.clear();
-    while (memory_->Read<uint8_t>(ptr, &ch, true) && ch == '\0') {
+    while (memory_->Read<uint8_t>(ptr, &ch, true) && ch != '\0') {
         augStr.push_back(ch);
     }
 }
