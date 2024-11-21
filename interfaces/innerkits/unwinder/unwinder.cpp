@@ -112,7 +112,7 @@ public:
         Destroy();
 #if defined(OFFLINE_MIXSTACK)
         if (isArkCreateLocal_) {
-            if (DfxArk::ArkDestroyLocal() < 0) {
+            if (DfxArk::Instance().ArkDestroyLocal() < 0) {
                 DFXLOGU("Failed to ark destroy local.");
             }
         }
@@ -671,7 +671,8 @@ bool Unwinder::Impl::UnwindRemote(pid_t tid, bool withRegs, size_t maxFrameNum, 
 int Unwinder::Impl::ArkWriteJitCodeToFile(int fd)
 {
 #if defined(ENABLE_MIXSTACK)
-    return DfxArk::JitCodeWriteFile(memory_.get(), &(Unwinder::AccessMem), fd, jitCache_.data(), jitCache_.size());
+    return DfxArk::Instance().JitCodeWriteFile(memory_.get(), &(Unwinder::AccessMem), fd,
+        jitCache_.data(), jitCache_.size());
 #else
     return -1;
 #endif
@@ -703,7 +704,7 @@ bool Unwinder::Impl::StepArkJsFrame(StepFrame& frame)
     if (pid_ == UNWIND_TYPE_LOCAL) {
         pid = getpid();
     }
-    if (DfxArk::GetArkNativeFrameInfo(pid, frame.pc, frame.fp, frame.sp, jsFrames, size) < 0) {
+    if (DfxArk::Instance().GetArkNativeFrameInfo(pid, frame.pc, frame.fp, frame.sp, jsFrames, size) < 0) {
         DFXLOGE("Failed to get ark frame info");
         return false;
     }
@@ -727,9 +728,9 @@ bool Unwinder::Impl::StepArkJsFrame(StepFrame& frame)
     if (isJitCrash_) {
         ArkUnwindParam arkParam(memory_.get(), &(Unwinder::AccessMem), &frame.fp, &frame.sp, &frame.pc,
             methodId, &frame.isJsFrame, jitCache_);
-        ret = DfxArk::StepArkFrameWithJit(&arkParam);
+        ret = DfxArk::Instance().StepArkFrameWithJit(&arkParam);
     } else {
-        ret = DfxArk::StepArkFrame(memory_.get(), &(Unwinder::AccessMem), &frame.fp, &frame.sp, &frame.pc,
+        ret = DfxArk::Instance().StepArkFrame(memory_.get(), &(Unwinder::AccessMem), &frame.fp, &frame.sp, &frame.pc,
             methodId, &frame.isJsFrame);
     }
     if (ret < 0) {
@@ -1289,14 +1290,15 @@ void Unwinder::Impl::FillJsFrame(DfxFrame& frame)
 bool Unwinder::Impl::FillJsFrameLocal(DfxFrame& frame, JsFunction* jsFunction)
 {
     if (!isArkCreateLocal_) {
-        if (DfxArk::ArkCreateLocal() < 0) {
+        if (DfxArk::Instance().ArkCreateLocal() < 0) {
             DFXLOGW("Failed to ark create local.");
             return false;
         }
         isArkCreateLocal_ = true;
     }
 
-    if (DfxArk::ParseArkFrameInfoLocal(static_cast<uintptr_t>(frame.pc), static_cast<uintptr_t>(frame.funcOffset),
+    if (DfxArk::Instance().ParseArkFrameInfoLocal(static_cast<uintptr_t>(frame.pc),
+        static_cast<uintptr_t>(frame.funcOffset),
         static_cast<uintptr_t>(frame.map->begin), static_cast<uintptr_t>(frame.map->offset), jsFunction) < 0) {
         DFXLOGW("Failed to parse ark frame info local, pc: %{public}p, begin: %{public}p",
             reinterpret_cast<void *>(frame.pc), reinterpret_cast<void *>(frame.map->begin));

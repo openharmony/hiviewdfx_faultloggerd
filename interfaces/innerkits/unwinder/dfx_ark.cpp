@@ -34,110 +34,102 @@ namespace {
 #define LOG_TAG "DfxArk"
 
 const char ARK_LIB_NAME[] = "libark_jsruntime.so";
+}
 
-void* g_handle = nullptr;
-pthread_mutex_t g_mutex;
-int (*g_getArkNativeFrameInfoFn)(int, uintptr_t*, uintptr_t*, uintptr_t*, JsFrame*, size_t&);
-int (*g_stepArkFn)(void*, OHOS::HiviewDFX::ReadMemFunc, uintptr_t*, uintptr_t*, uintptr_t*, uintptr_t*, bool*);
-int (*g_stepArkWithJitFn)(OHOS::HiviewDFX::ArkUnwindParam*);
-int (*g_jitCodeWriteFileFn)(void*, OHOS::HiviewDFX::ReadMemFunc, int, const uintptr_t* const, const size_t);
-int (*g_parseArkFileInfoFn)(uintptr_t, uintptr_t, uintptr_t, const char*, uintptr_t, JsFunction*);
-int (*g_parseArkFrameInfoLocalFn)(uintptr_t, uintptr_t, uintptr_t, uintptr_t, JsFunction*);
-int (*g_parseArkFrameInfoFn)(uintptr_t, uintptr_t, uintptr_t, uintptr_t, uint8_t*, uint64_t, uintptr_t, JsFunction*);
-int (*g_translateArkFrameInfoFn)(uint8_t*, uint64_t, JsFunction*);
-int (*g_arkCreateJsSymbolExtractorFn)(uintptr_t*);
-int (*g_arkDestoryJsSymbolExtractorFn)(uintptr_t);
-int (*g_arkCreateLocalFn)();
-int (*g_arkDestroyLocalFn)();
-
-bool GetLibArkHandle()
+bool DfxArk::GetLibArkHandle()
 {
-    if (g_handle != nullptr) {
+    if (handle_ != nullptr) {
         return true;
     }
-    g_handle = dlopen(ARK_LIB_NAME, RTLD_LAZY);
-    if (g_handle == nullptr) {
+    handle_ = dlopen(ARK_LIB_NAME, RTLD_LAZY);
+    if (handle_ == nullptr) {
         DFXLOGU("Failed to load library(%{public}s).", dlerror());
         return false;
     }
     return true;
 }
+
+DfxArk& DfxArk::Instance()
+{
+    static DfxArk instance;
+    return instance;
 }
 
-#define DLSYM_ARK_FUNC(funcName, dlsymFuncName) { \
-    pthread_mutex_lock(&g_mutex); \
-    do { \
-        if ((dlsymFuncName) != nullptr) { \
-            break; \
-        } \
-        if (!GetLibArkHandle()) { \
-            break; \
-        } \
-        (dlsymFuncName) = reinterpret_cast<decltype(dlsymFuncName)>(dlsym(g_handle, (funcName))); \
-        if ((dlsymFuncName) == nullptr) { \
-            DFXLOGE("Failed to dlsym(%{public}s), error: %{public}s", (funcName), dlerror()); \
-            break; \
-        } \
-    } while (false); \
-    pthread_mutex_unlock(&g_mutex); \
+template <typename FuncName>
+void DfxArk::DlsymArkFunc(const char* funcName, FuncName& dlsymFuncName)
+{
+    std::unique_lock<std::mutex> lock(arkMutex_);
+    do {
+        if (dlsymFuncName != nullptr) {
+            break;
+        }
+        if (!GetLibArkHandle()) {
+            break;
+        }
+        (dlsymFuncName) = reinterpret_cast<FuncName>(dlsym(handle_, (funcName)));
+        if (dlsymFuncName == nullptr) {
+            DFXLOGE("Failed to dlsym(%{public}s), error: %{public}s", funcName, dlerror());
+            break;
+        }
+    } while (false);
 }
 
 int DfxArk::ArkCreateJsSymbolExtractor(uintptr_t* extractorPtr)
 {
-    if (g_arkCreateJsSymbolExtractorFn != nullptr) {
-        return g_arkCreateJsSymbolExtractorFn(extractorPtr);
+    if (arkCreateJsSymbolExtractorFn_ != nullptr) {
+        return arkCreateJsSymbolExtractorFn_(extractorPtr);
     }
 
     const char* arkFuncName = "ark_create_js_symbol_extractor";
-    DLSYM_ARK_FUNC(arkFuncName, g_arkCreateJsSymbolExtractorFn)
+    DlsymArkFunc(arkFuncName, arkCreateJsSymbolExtractorFn_);
 
-    if (g_arkCreateJsSymbolExtractorFn != nullptr) {
-        return g_arkCreateJsSymbolExtractorFn(extractorPtr);
+    if (arkCreateJsSymbolExtractorFn_ != nullptr) {
+        return arkCreateJsSymbolExtractorFn_(extractorPtr);
     }
     return -1;
 }
 
 int DfxArk::ArkDestoryJsSymbolExtractor(uintptr_t extractorPtr)
 {
-    if (g_arkDestoryJsSymbolExtractorFn != nullptr) {
-        return g_arkDestoryJsSymbolExtractorFn(extractorPtr);
+    if (arkDestoryJsSymbolExtractorFn_ != nullptr) {
+        return arkDestoryJsSymbolExtractorFn_(extractorPtr);
     }
 
     const char* arkFuncName = "ark_destory_js_symbol_extractor";
-    DLSYM_ARK_FUNC(arkFuncName, g_arkDestoryJsSymbolExtractorFn)
+    DlsymArkFunc(arkFuncName, arkDestoryJsSymbolExtractorFn_);
 
-    if (g_arkDestoryJsSymbolExtractorFn != nullptr) {
-        return g_arkDestoryJsSymbolExtractorFn(extractorPtr);
+    if (arkDestoryJsSymbolExtractorFn_ != nullptr) {
+        return arkDestoryJsSymbolExtractorFn_(extractorPtr);
     }
     return -1;
 }
 
 int DfxArk::ArkCreateLocal()
 {
-    if (g_arkCreateLocalFn != nullptr) {
-        return g_arkCreateLocalFn();
+    if (arkCreateLocalFn_ != nullptr) {
+        return arkCreateLocalFn_();
     }
 
     const char* arkFuncName = "ark_create_local";
-    DLSYM_ARK_FUNC(arkFuncName, g_arkCreateLocalFn)
+    DlsymArkFunc(arkFuncName, arkCreateLocalFn_);
 
-    if (g_arkCreateLocalFn != nullptr) {
-        return g_arkCreateLocalFn();
+    if (arkCreateLocalFn_ != nullptr) {
+        return arkCreateLocalFn_();
     }
     return -1;
 }
 
 int DfxArk::ArkDestroyLocal()
 {
-    if (g_arkDestroyLocalFn != nullptr) {
-        return g_arkDestroyLocalFn();
+    if (arkDestroyLocalFn_ != nullptr) {
+        return arkDestroyLocalFn_();
     }
 
     const char* arkFuncName = "ark_destroy_local";
-    DLSYM_ARK_FUNC(arkFuncName, g_arkDestroyLocalFn)
+    DlsymArkFunc(arkFuncName, arkDestroyLocalFn_);
 
-    if (g_arkDestroyLocalFn != nullptr) {
-        return g_arkDestroyLocalFn();
+    if (arkDestroyLocalFn_ != nullptr) {
+        return arkDestroyLocalFn_();
     }
     return -1;
 }
@@ -145,15 +137,15 @@ int DfxArk::ArkDestroyLocal()
 int DfxArk::ParseArkFileInfo(uintptr_t byteCodePc, uintptr_t methodid, uintptr_t mapBase, const char* name,
     uintptr_t extractorPtr, JsFunction *jsFunction)
 {
-    if (g_parseArkFileInfoFn != nullptr) {
-        return g_parseArkFileInfoFn(byteCodePc, methodid, mapBase, name, extractorPtr, jsFunction);
+    if (parseArkFileInfoFn_ != nullptr) {
+        return parseArkFileInfoFn_(byteCodePc, methodid, mapBase, name, extractorPtr, jsFunction);
     }
 
     const char* arkFuncName = "ark_parse_js_file_info";
-    DLSYM_ARK_FUNC(arkFuncName, g_parseArkFileInfoFn)
+    DlsymArkFunc(arkFuncName, parseArkFileInfoFn_);
 
-    if (g_parseArkFileInfoFn != nullptr) {
-        return g_parseArkFileInfoFn(byteCodePc, methodid, mapBase, name, extractorPtr, jsFunction);
+    if (parseArkFileInfoFn_ != nullptr) {
+        return parseArkFileInfoFn_(byteCodePc, methodid, mapBase, name, extractorPtr, jsFunction);
     }
     return -1;
 }
@@ -161,15 +153,15 @@ int DfxArk::ParseArkFileInfo(uintptr_t byteCodePc, uintptr_t methodid, uintptr_t
 int DfxArk::ParseArkFrameInfoLocal(uintptr_t byteCodePc, uintptr_t methodid, uintptr_t mapBase,
     uintptr_t offset, JsFunction *jsFunction)
 {
-    if (g_parseArkFrameInfoLocalFn != nullptr) {
-        return g_parseArkFrameInfoLocalFn(byteCodePc, methodid, mapBase, offset, jsFunction);
+    if (parseArkFrameInfoLocalFn_ != nullptr) {
+        return parseArkFrameInfoLocalFn_(byteCodePc, methodid, mapBase, offset, jsFunction);
     }
 
     const char* arkFuncName = "ark_parse_js_frame_info_local";
-    DLSYM_ARK_FUNC(arkFuncName, g_parseArkFrameInfoLocalFn)
+    DlsymArkFunc(arkFuncName, parseArkFrameInfoLocalFn_);
 
-    if (g_parseArkFrameInfoLocalFn != nullptr) {
-        return g_parseArkFrameInfoLocalFn(byteCodePc, methodid, mapBase, offset, jsFunction);
+    if (parseArkFrameInfoLocalFn_ != nullptr) {
+        return parseArkFrameInfoLocalFn_(byteCodePc, methodid, mapBase, offset, jsFunction);
     }
     return -1;
 }
@@ -183,16 +175,16 @@ int DfxArk::ParseArkFrameInfo(uintptr_t byteCodePc, uintptr_t mapBase, uintptr_t
 int DfxArk::ParseArkFrameInfo(uintptr_t byteCodePc, uintptr_t methodid, uintptr_t mapBase, uintptr_t loadOffset,
     uint8_t *data, uint64_t dataSize, uintptr_t extractorPtr, JsFunction *jsFunction)
 {
-    if (g_parseArkFrameInfoFn != nullptr) {
-        return g_parseArkFrameInfoFn(byteCodePc, methodid, mapBase, loadOffset, data, dataSize,
+    if (parseArkFrameInfoFn_ != nullptr) {
+        return parseArkFrameInfoFn_(byteCodePc, methodid, mapBase, loadOffset, data, dataSize,
             extractorPtr, jsFunction);
     }
 
     const char* arkFuncName = "ark_parse_js_frame_info";
-    DLSYM_ARK_FUNC(arkFuncName, g_parseArkFrameInfoFn)
+    DlsymArkFunc(arkFuncName, parseArkFrameInfoFn_);
 
-    if (g_parseArkFrameInfoFn != nullptr) {
-        return g_parseArkFrameInfoFn(byteCodePc, methodid, mapBase, loadOffset, data, dataSize,
+    if (parseArkFrameInfoFn_ != nullptr) {
+        return parseArkFrameInfoFn_(byteCodePc, methodid, mapBase, loadOffset, data, dataSize,
             extractorPtr, jsFunction);
     }
     return -1;
@@ -200,15 +192,15 @@ int DfxArk::ParseArkFrameInfo(uintptr_t byteCodePc, uintptr_t methodid, uintptr_
 
 int DfxArk::TranslateArkFrameInfo(uint8_t *data, uint64_t dataSize, JsFunction *jsFunction)
 {
-    if (g_translateArkFrameInfoFn != nullptr) {
-        return g_translateArkFrameInfoFn(data, dataSize, jsFunction);
+    if (translateArkFrameInfoFn_ != nullptr) {
+        return translateArkFrameInfoFn_(data, dataSize, jsFunction);
     }
 
     const char* arkFuncName = "ark_translate_js_frame_info";
-    DLSYM_ARK_FUNC(arkFuncName, g_translateArkFrameInfoFn)
+    DlsymArkFunc(arkFuncName, translateArkFrameInfoFn_);
 
-    if (g_translateArkFrameInfoFn != nullptr) {
-        return g_translateArkFrameInfoFn(data, dataSize, jsFunction);
+    if (translateArkFrameInfoFn_ != nullptr) {
+        return translateArkFrameInfoFn_(data, dataSize, jsFunction);
     }
     return -1;
 }
@@ -216,30 +208,30 @@ int DfxArk::TranslateArkFrameInfo(uint8_t *data, uint64_t dataSize, JsFunction *
 int DfxArk::StepArkFrame(void *obj, OHOS::HiviewDFX::ReadMemFunc readMemFn,
     uintptr_t *fp, uintptr_t *sp, uintptr_t *pc, uintptr_t* methodid, bool *isJsFrame)
 {
-    if (g_stepArkFn != nullptr) {
-        return g_stepArkFn(obj, readMemFn, fp, sp, pc, methodid, isJsFrame);
+    if (stepArkFn_ != nullptr) {
+        return stepArkFn_(obj, readMemFn, fp, sp, pc, methodid, isJsFrame);
     }
 
     const char* arkFuncName = "step_ark";
-    DLSYM_ARK_FUNC(arkFuncName, g_stepArkFn)
+    DlsymArkFunc(arkFuncName, stepArkFn_);
 
-    if (g_stepArkFn != nullptr) {
-        return g_stepArkFn(obj, readMemFn, fp, sp, pc, methodid, isJsFrame);
+    if (stepArkFn_ != nullptr) {
+        return stepArkFn_(obj, readMemFn, fp, sp, pc, methodid, isJsFrame);
     }
     return -1;
 }
 
 int DfxArk::StepArkFrameWithJit(OHOS::HiviewDFX::ArkUnwindParam* arkPrama)
 {
-    if (g_stepArkWithJitFn != nullptr) {
-        return g_stepArkWithJitFn(arkPrama);
+    if (stepArkWithJitFn_ != nullptr) {
+        return stepArkWithJitFn_(arkPrama);
     }
 
     const char* const arkFuncName = "step_ark_with_record_jit";
-    DLSYM_ARK_FUNC(arkFuncName, g_stepArkWithJitFn)
+    DlsymArkFunc(arkFuncName, stepArkWithJitFn_);
 
-    if (g_stepArkWithJitFn != nullptr) {
-        return g_stepArkWithJitFn(arkPrama);
+    if (stepArkWithJitFn_ != nullptr) {
+        return stepArkWithJitFn_(arkPrama);
     }
     return -1;
 }
@@ -247,30 +239,30 @@ int DfxArk::StepArkFrameWithJit(OHOS::HiviewDFX::ArkUnwindParam* arkPrama)
 int DfxArk::JitCodeWriteFile(void* ctx, OHOS::HiviewDFX::ReadMemFunc readMemFn, int fd,
     const uintptr_t* const jitCodeArray, const size_t jitSize)
 {
-    if (g_jitCodeWriteFileFn != nullptr) {
-        return g_jitCodeWriteFileFn(ctx, readMemFn, fd, jitCodeArray, jitSize);
+    if (jitCodeWriteFileFn_ != nullptr) {
+        return jitCodeWriteFileFn_(ctx, readMemFn, fd, jitCodeArray, jitSize);
     }
 
     const char* const arkFuncName = "ark_write_jit_code";
-    DLSYM_ARK_FUNC(arkFuncName, g_jitCodeWriteFileFn)
+    DlsymArkFunc(arkFuncName, jitCodeWriteFileFn_);
 
-    if (g_jitCodeWriteFileFn != nullptr) {
-        return g_jitCodeWriteFileFn(ctx, readMemFn, fd, jitCodeArray, jitSize);
+    if (jitCodeWriteFileFn_ != nullptr) {
+        return jitCodeWriteFileFn_(ctx, readMemFn, fd, jitCodeArray, jitSize);
     }
     return -1;
 }
 
 int DfxArk::GetArkNativeFrameInfo(int pid, uintptr_t& pc, uintptr_t& fp, uintptr_t& sp, JsFrame* frames, size_t& size)
 {
-    if (g_getArkNativeFrameInfoFn != nullptr) {
-        return g_getArkNativeFrameInfoFn(pid, &pc, &fp, &sp, frames, size);
+    if (getArkNativeFrameInfoFn_ != nullptr) {
+        return getArkNativeFrameInfoFn_(pid, &pc, &fp, &sp, frames, size);
     }
 
     const char* arkFuncName = "get_ark_native_frame_info";
-    DLSYM_ARK_FUNC(arkFuncName, g_getArkNativeFrameInfoFn)
+    DlsymArkFunc(arkFuncName, getArkNativeFrameInfoFn_);
 
-    if (g_getArkNativeFrameInfoFn != nullptr) {
-        return g_getArkNativeFrameInfoFn(pid, &pc, &fp, &sp, frames, size);
+    if (getArkNativeFrameInfoFn_ != nullptr) {
+        return getArkNativeFrameInfoFn_(pid, &pc, &fp, &sp, frames, size);
     }
     return -1;
 }

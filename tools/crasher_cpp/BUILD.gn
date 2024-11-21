@@ -25,6 +25,7 @@ if (defined(ohos_lite)) {
       ".",
       "$faultloggerd_interfaces_path/common",
       "$faultloggerd_interfaces_path/innerkits/async_stack/include",
+      "$faultloggerd_path/example",
       "$hilog_lite_include_path",
     ]
     sources = [ "dfx_crasher.cpp" ]
@@ -42,6 +43,7 @@ if (defined(ohos_lite)) {
     include_dirs = [
       ".",
       "$faultloggerd_interfaces_path/common",
+      "$faultloggerd_path/example",
     ]
 
     cflags = [

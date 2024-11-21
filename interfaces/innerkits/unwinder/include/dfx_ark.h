@@ -84,32 +84,69 @@ using ArkUnwindParam = panda::ecmascript::ArkUnwindParam;
 
 class DfxArk {
 public:
-    static int GetArkNativeFrameInfo(int pid, uintptr_t& pc, uintptr_t& fp, uintptr_t& sp,
+    static DfxArk& Instance();
+    int GetArkNativeFrameInfo(int pid, uintptr_t& pc, uintptr_t& fp, uintptr_t& sp,
                                      JsFrame* frames, size_t& size);
 
-    static int StepArkFrame(void *obj, OHOS::HiviewDFX::ReadMemFunc readMemFn,
+    int StepArkFrame(void *obj, OHOS::HiviewDFX::ReadMemFunc readMemFn,
         uintptr_t *fp, uintptr_t *sp, uintptr_t *pc, uintptr_t* methodid, bool *isJsFrame);
 
-    static int StepArkFrameWithJit(OHOS::HiviewDFX::ArkUnwindParam* arkPrama);
+    int StepArkFrameWithJit(OHOS::HiviewDFX::ArkUnwindParam* arkPrama);
 
-    static int JitCodeWriteFile(void* ctx, OHOS::HiviewDFX::ReadMemFunc readMemFn, int fd,
+    int JitCodeWriteFile(void* ctx, OHOS::HiviewDFX::ReadMemFunc readMemFn, int fd,
         const uintptr_t* const jitCodeArray, const size_t jitSize);
 
-    static int ParseArkFileInfo(uintptr_t byteCodePc, uintptr_t methodid, uintptr_t mapBase, const char* name,
+    int ParseArkFileInfo(uintptr_t byteCodePc, uintptr_t methodid, uintptr_t mapBase, const char* name,
         uintptr_t extractorPtr, JsFunction *jsFunction);
-    static int ParseArkFrameInfoLocal(uintptr_t byteCodePc, uintptr_t methodid, uintptr_t mapBase, uintptr_t loadOffset,
+    int ParseArkFrameInfoLocal(uintptr_t byteCodePc, uintptr_t methodid, uintptr_t mapBase, uintptr_t loadOffset,
         JsFunction *jsFunction);
-    static int ParseArkFrameInfo(uintptr_t byteCodePc, uintptr_t mapBase, uintptr_t loadOffset,
+    int ParseArkFrameInfo(uintptr_t byteCodePc, uintptr_t mapBase, uintptr_t loadOffset,
         uint8_t *data, uint64_t dataSize, uintptr_t extractorPtr, JsFunction *jsFunction);
-    static int ParseArkFrameInfo(uintptr_t byteCodePc, uintptr_t methodid, uintptr_t mapBase, uintptr_t loadOffset,
+    int ParseArkFrameInfo(uintptr_t byteCodePc, uintptr_t methodid, uintptr_t mapBase, uintptr_t loadOffset,
         uint8_t *data, uint64_t dataSize, uintptr_t extractorPtr, JsFunction *jsFunction);
-    static int TranslateArkFrameInfo(uint8_t *data, uint64_t dataSize, JsFunction *jsFunction);
+    int TranslateArkFrameInfo(uint8_t *data, uint64_t dataSize, JsFunction *jsFunction);
 
-    static int ArkCreateJsSymbolExtractor(uintptr_t* extractorPtr);
-    static int ArkDestoryJsSymbolExtractor(uintptr_t extractorPtr);
+    int ArkCreateJsSymbolExtractor(uintptr_t* extractorPtr);
+    int ArkDestoryJsSymbolExtractor(uintptr_t extractorPtr);
 
-    static int ArkCreateLocal();
-    static int ArkDestroyLocal();
+    int ArkCreateLocal();
+    int ArkDestroyLocal();
+private:
+    DfxArk() = default;
+    ~DfxArk() = default;
+    DfxArk(const DfxArk&) = delete;
+    DfxArk& operator=(const DfxArk&) = delete;
+    bool GetLibArkHandle(void);
+    template <typename FuncName>
+    void DlsymArkFunc(const char* funcName, FuncName& dlsymFuncName);
+    void* handle_ = nullptr;
+    using GetArkNativeFrameInfoFn = int (*)(int, uintptr_t*, uintptr_t*, uintptr_t*, JsFrame*, size_t&);
+    using StepArkFn = int (*)(void*, OHOS::HiviewDFX::ReadMemFunc, uintptr_t*, uintptr_t*, uintptr_t*,
+                              uintptr_t*, bool*);
+    using StepArkWithJitFn = int (*)(OHOS::HiviewDFX::ArkUnwindParam*);
+    using JitCodeWriteFileFn = int (*)(void*, OHOS::HiviewDFX::ReadMemFunc, int, const uintptr_t* const, const size_t);
+    using ParseArkFileInfoFn = int (*)(uintptr_t, uintptr_t, uintptr_t, const char*, uintptr_t, JsFunction*);
+    using ParseArkFrameInfoLocalFn = int (*)(uintptr_t, uintptr_t, uintptr_t, uintptr_t, JsFunction*);
+    using ParseArkFrameInfoFn = int (*)(uintptr_t, uintptr_t, uintptr_t, uintptr_t, uint8_t*,
+                                        uint64_t, uintptr_t, JsFunction*);
+    using TranslateArkFrameInfoFn = int (*)(uint8_t*, uint64_t, JsFunction*);
+    using ArkCreateJsSymbolExtractorFn = int (*)(uintptr_t*);
+    using ArkDestoryJsSymbolExtractorFn = int (*)(uintptr_t);
+    using ArkCreateLocalFn = int (*)();
+    using ArkDestroyLocalFn = int (*)();
+    std::mutex arkMutex_;
+    GetArkNativeFrameInfoFn getArkNativeFrameInfoFn_ = nullptr;
+    StepArkFn stepArkFn_ = nullptr;
+    StepArkWithJitFn stepArkWithJitFn_ = nullptr;
+    JitCodeWriteFileFn jitCodeWriteFileFn_ = nullptr;
+    ParseArkFileInfoFn parseArkFileInfoFn_ = nullptr;
+    ParseArkFrameInfoLocalFn parseArkFrameInfoLocalFn_ = nullptr;
+    ParseArkFrameInfoFn parseArkFrameInfoFn_ = nullptr;
+    TranslateArkFrameInfoFn translateArkFrameInfoFn_ = nullptr;
+    ArkCreateJsSymbolExtractorFn arkCreateJsSymbolExtractorFn_ = nullptr;
+    ArkDestoryJsSymbolExtractorFn arkDestoryJsSymbolExtractorFn_ = nullptr;
+    ArkDestroyLocalFn arkDestroyLocalFn_ = nullptr;
+    ArkCreateLocalFn arkCreateLocalFn_ = nullptr;
 };
 } // namespace HiviewDFX
 } // namespace OHOS
