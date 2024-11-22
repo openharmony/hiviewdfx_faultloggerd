@@ -89,6 +89,7 @@
       OHOS::HiviewDFX::DfxElf::GetElfName*;
       OHOS::HiviewDFX::DfxSymbols::ParseSymbols*;
       OHOS::HiviewDFX::DfxSymbols::AddSymbolsByPlt*;
+      OHOS::HiviewDFX::DfxArk::Instance*;
       OHOS::HiviewDFX::DfxArk::ArkCreateJsSymbolExtractor*;
       OHOS::HiviewDFX::DfxArk::ArkDestoryJsSymbolExtractor*;
       OHOS::HiviewDFX::DfxArk::ParseArkFrameInfo*;

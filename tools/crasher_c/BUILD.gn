@@ -24,6 +24,7 @@ if (defined(ohos_lite)) {
     include_dirs = [
       ".",
       "$faultloggerd_interfaces_path/common",
+      "$faultloggerd_path/example",
       "$hilog_lite_include_path",
     ]
     sources = [ "dfx_crasher.c" ]
@@ -38,6 +39,7 @@ if (defined(ohos_lite)) {
     include_dirs = [
       ".",
       "$faultloggerd_interfaces_path/common",
+      "$faultloggerd_path/example",
     ]
     cflags = [ "-Wno-frame-larger-than" ]
     cflags_c = [ "-Wno-frame-larger-than" ]

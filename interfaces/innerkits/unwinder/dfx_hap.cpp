@@ -34,7 +34,7 @@ DfxHap::~DfxHap()
 {
 #if is_ohos && !is_mingw
     if (arkSymbolExtractorPtr_ != 0) {
-        DfxArk::ArkDestoryJsSymbolExtractor(arkSymbolExtractorPtr_);
+        DfxArk::Instance().ArkDestoryJsSymbolExtractor(arkSymbolExtractorPtr_);
         arkSymbolExtractorPtr_ = 0;
     }
 #endif
@@ -49,7 +49,7 @@ bool DfxHap::ParseHapInfo(pid_t pid, uint64_t pc, uintptr_t methodid, std::share
     }
 
     if (arkSymbolExtractorPtr_ == 0) {
-        if (DfxArk::ArkCreateJsSymbolExtractor(&arkSymbolExtractorPtr_) < 0) {
+        if (DfxArk::Instance().ArkCreateJsSymbolExtractor(&arkSymbolExtractorPtr_) < 0) {
             DFXLOGU("Failed to create ark js symbol extractor");
         }
     }
@@ -78,7 +78,7 @@ bool DfxHap::ParseHapFileInfo(uint64_t pc, uintptr_t methodid, std::shared_ptr<D
         return false;
     }
 
-    if (DfxArk::ParseArkFileInfo(static_cast<uintptr_t>(pc), methodid, static_cast<uintptr_t>(map->begin),
+    if (DfxArk::Instance().ParseArkFileInfo(static_cast<uintptr_t>(pc), methodid, static_cast<uintptr_t>(map->begin),
         map->name.c_str(), arkSymbolExtractorPtr_, jsFunction) < 0) {
         DFXLOGW("Failed to parse ark file info, pc: %{public}p, begin: %{public}p",
             reinterpret_cast<void *>(pc), reinterpret_cast<void *>(map->begin));
@@ -101,7 +101,7 @@ bool DfxHap::ParseHapMemInfo(pid_t pid, uint64_t pc, uintptr_t methodid, std::sh
         DFXLOGW("Failed to parse hap mem data, pid: %{public}d", pid);
         return false;
     }
-    if (DfxArk::ParseArkFrameInfo(static_cast<uintptr_t>(pc), methodid, static_cast<uintptr_t>(map->begin),
+    if (DfxArk::Instance().ParseArkFrameInfo(static_cast<uintptr_t>(pc), methodid, static_cast<uintptr_t>(map->begin),
         abcLoadOffset_, abcDataPtr_.get(), abcDataSize_, arkSymbolExtractorPtr_, jsFunction) < 0) {
         DFXLOGW("Failed to parse ark frame info, pc: %{public}p, begin: %{public}p",
             reinterpret_cast<void *>(pc), reinterpret_cast<void *>(map->begin));
