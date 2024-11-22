@@ -65,6 +65,7 @@ typedef enum {
     MESSAGE_FDSAN_DEBUG, // fdsan debug message
     MESSAGE_JEMALLOC, // jemalloc message
     MESSAGE_BADFD, // badfd message
+    MESSAGE_CALLBACK, // call back memssage
 } MessageType;
 
 typedef struct {

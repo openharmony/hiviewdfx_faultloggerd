@@ -49,10 +49,24 @@ void SetAsyncStackCallbackFunc(void* func);
 
 int DFX_SetAppRunningUniqueId(const char* appRunningId, size_t len);
 
+enum CrashObjType : uint8_t {
+    /* string type */
+    OBJ_STRING = 0,
+    /* 64 byte memory */
+    OBJ_MEMORY_64B,
+    /* 256 byte memory */
+    OBJ_MEMORY_256B,
+    /* 1024 byte memory */
+    OBJ_MEMORY_1024B,
+    /* 2048 byte memory */
+    OBJ_MEMORY_2048B,
+    /* 4096 byte memory */
+    OBJ_MEMORY_4096B,
+};
 /**
  * @brief set crash object which is measurement information of crash
  *
- * @param type  type of object, eg 0 represent string type
+ * @param type  type of object, using enum CrashObjType
  * @param addr  addr of object
  * @return return crash Object which set up last time
 */

@@ -61,7 +61,8 @@ private:
     void UnwindWriteJit(const ProcessDumpRequest &request);
     void Report(std::shared_ptr<ProcessDumpRequest> request, std::string &jsonInfo);
     void ReadFdTable(const ProcessDumpRequest &request);
-    static std::string ReadStringByPtrace(pid_t tid, uintptr_t addr);
+    std::string ReadCrashObjString(pid_t tid, uintptr_t addr);
+    std::string ReadCrashObjMemory(pid_t tid, uintptr_t addr, size_t length);
     void GetCrashObj(std::shared_ptr<ProcessDumpRequest> request);
     void ReportAddrSanitizer(ProcessDumpRequest &request, std::string &jsonInfo);
 

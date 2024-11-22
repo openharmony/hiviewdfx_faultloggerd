@@ -110,7 +110,7 @@ bool DfxUnwindRemote::UnwindProcess(std::shared_ptr<ProcessDumpRequest> request,
             }
         }
         Printer::PrintProcessMapsByConfig(unwinder->GetMaps());
-        Printer::PrintThreadOpenFiles(process);
+        Printer::PrintLongInformation(process->openFiles);
     }
 
     if (isVmProcAttach) {
@@ -151,14 +151,12 @@ bool DfxUnwindRemote::UnwindKeyThread(std::shared_ptr<ProcessDumpRequest> reques
         result = unwindAsyncThread->UnwindStack();
     }
 
-    std::string fatalMsg = process->GetFatalMessage() + unwindAsyncThread->tip;
-    if (!unwindAsyncThread->tip.empty()) {
-        if (ProcessDumper::GetInstance().IsCrash()) {
-            ReportCrashException(process->processInfo_.processName, process->processInfo_.pid,
-                                 process->processInfo_.uid, CrashExceptionCode::CRASH_UNWIND_ESTACK);
-        }
+    if (!unwindAsyncThread->unwindFailTip.empty()) {
+        ReportCrashException(process->processInfo_.processName, process->processInfo_.pid,
+                             process->processInfo_.uid, CrashExceptionCode::CRASH_UNWIND_ESTACK);
+        process->extraCrashInfo += ("ExtraCrashInfo(Unwindstack):\n" + unwindAsyncThread->unwindFailTip);
     }
-    process->SetFatalMessage(fatalMsg);
+
     Printer::PrintDumpHeader(request, process, unwinder);
     Printer::PrintThreadHeaderByConfig(process->keyThread_, true);
     Printer::PrintThreadBacktraceByConfig(unwThread, true);
@@ -166,6 +164,7 @@ bool DfxUnwindRemote::UnwindKeyThread(std::shared_ptr<ProcessDumpRequest> reques
         // Registers of unwThread has been changed, we should print regs from request context.
         process->regs_ = DfxRegs::CreateFromUcontext(request->context);
         Printer::PrintRegsByConfig(process->regs_);
+        Printer::PrintLongInformation(process->extraCrashInfo);
     }
     return result;
 }

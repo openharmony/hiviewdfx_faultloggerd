@@ -43,7 +43,7 @@ public:
     static void PrintRegsByConfig(std::shared_ptr<DfxRegs> regs);
     static void PrintThreadFaultStackByConfig(std::shared_ptr<DfxProcess> process, std::shared_ptr<DfxThread> thread,
                                               std::shared_ptr<Unwinder> unwinder);
-    static void PrintThreadOpenFiles(std::shared_ptr<DfxProcess> process);
+    static void PrintLongInformation(std::string& info);
     static bool IsLastValidFrame(const DfxFrame& frame);
 private:
     static void PrintReason(std::shared_ptr<ProcessDumpRequest> request, std::shared_ptr<DfxProcess> process,

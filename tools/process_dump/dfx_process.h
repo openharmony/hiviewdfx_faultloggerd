@@ -57,6 +57,7 @@ public:
     std::string reason = "";
     std::string openFiles = "";
     std::shared_ptr<DfxRegs> regs_;
+    std::string extraCrashInfo = "";
 private:
     DfxProcess() = default;
     void InitProcessInfo(pid_t pid, pid_t nsPid);

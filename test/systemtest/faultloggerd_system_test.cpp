@@ -324,14 +324,36 @@ static bool CheckCppCrashAsyncStackDisableKeywords(const string& filePath, const
 static bool CheckTestGetCrashObj(const string& filePath, const pid_t& pid)
 {
     string log[] = {
-        "Pid:" + to_string(pid), "Uid", ":crasher", "SIGABRT", "LastFatalMessage:", "crashObject.",
-        "Tid:", "#00", "Registers:", REGISTERS, "FaultStack:", "Maps:", "/crasher"
+        "Pid:" + to_string(pid), "Uid", ":crasher", "SIGSEGV", "Tid:", "#00", "Registers:",
+        REGISTERS, "ExtraCrashInfo(String):", "crashObject.", "FaultStack:", "Maps:", "/crasher"
     };
-    int minRegIdx = 8; // 8 : index of first REGISTERS - 1
+    int minRegIdx = 6; // 6 : index of first REGISTERS - 1
+    int expectNum = sizeof(log) / sizeof(log[0]);
+    return CheckKeyWords(filePath, log, expectNum, minRegIdx) == expectNum;
+}
+
+static bool CheckTestGetCrashObjMemory(const string& filePath, const pid_t& pid)
+{
+    string log[] = {
+        "Pid:" + to_string(pid), "Uid", ":crasher", "SIGSEGV", "Tid:", "#00", "Registers:",
+        REGISTERS, "ExtraCrashInfo(Memory", "FaultStack:", "Maps:", "/crasher"
+    };
+    int minRegIdx = 6; // 6 : index of first REGISTERS - 1
     int expectNum = sizeof(log) / sizeof(log[0]);
     return CheckKeyWords(filePath, log, expectNum, minRegIdx) == expectNum;
 }
 #endif
+
+static bool CheckTestStackCorruption(const string& filePath, const pid_t& pid)
+{
+    string log[] = {
+        "Pid:" + to_string(pid), "Uid", ":crasher", "SIGSEGV", "Tid:", "#00", "Registers:",
+        REGISTERS, "ExtraCrashInfo(Unwindstack):", "reparsing", "FaultStack:", "Maps:", "/crasher"
+    };
+    int minRegIdx = 6; // 6 : index of first REGISTERS - 1
+    int expectNum = sizeof(log) / sizeof(log[0]);
+    return CheckKeyWords(filePath, log, expectNum, minRegIdx) == expectNum;
+}
 
 static void ShmCpy(char* msg)
 {
@@ -1304,7 +1326,7 @@ HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest108, TestSize.Level2)
         GTEST_LOG_(ERROR) << "Trigger Crash Failed.";
         FAIL();
     }
-    EXPECT_TRUE(CheckCppCrashAllLabelKeywords(fileName, pid)) << "FaultLoggerdSystemTest108 Failed";
+    EXPECT_TRUE(CheckTestStackCorruption(fileName, pid)) << "FaultLoggerdSystemTest108 Failed";
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest108: end.";
 }
 
@@ -1659,6 +1681,15 @@ HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest124, TestSize.Level2)
         FAIL();
     }
     EXPECT_TRUE(CheckTestGetCrashObj(fileName, pid)) << "FaultLoggerdSystemTest124 Failed";
+
+    cmd = "TestGetCrashObjMemory";
+    pid = TriggerCrasherAndGetFileName(cmd, CRASHER_CPP, fileName);
+    GTEST_LOG_(INFO) << "test pid(" << pid << ")"  << " cppcrash file name : " << fileName;
+    if (pid < 0 || fileName.size() < CPPCRASH_FILENAME_MIN_LENGTH) {
+        GTEST_LOG_(ERROR) << "Trigger Crash Failed.";
+        FAIL();
+    }
+    EXPECT_TRUE(CheckTestGetCrashObjMemory(fileName, pid)) << "FaultLoggerdSystemTest124 Failed";
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest124: end.";
 }
 #endif

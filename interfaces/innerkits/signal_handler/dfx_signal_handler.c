@@ -309,7 +309,7 @@ static bool FillDumpRequest(int sig, siginfo_t *si, void *context)
             ThreadInfoCallBack callback = GetCallbackLocked();
             if (callback != NULL) {
                 DFXLOGI("Start collect crash thread info.");
-                g_request.msg.type = MESSAGE_FATAL;
+                g_request.msg.type = MESSAGE_CALLBACK;
                 callback(g_request.msg.body, sizeof(g_request.msg.body), context);
                 DFXLOGI("Finish collect crash thread info.");
             }
