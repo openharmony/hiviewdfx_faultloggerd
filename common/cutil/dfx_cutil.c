@@ -30,7 +30,7 @@ static const char PID_STR_NAME[] = "Pid:";
 
 static bool ReadStringFromFile(const char* path, char* dst, size_t dstSz)
 {
-    if ((dst == NULL) || (path == NULL)) {
+    if ((dst == NULL) || (path == NULL) || (dstSz == 0)) {
         return false;
     }
     char name[NAME_BUF_LEN];
