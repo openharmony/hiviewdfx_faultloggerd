@@ -64,6 +64,7 @@ public:
     static int RecursiveFunc(int curLevel, int targetLevel, int midLevel);
     static int PrintFatalMessageInLibc();
     static int TestGetCrashObj();
+    static int TestGetCrashObjMemory();
 #ifndef is_ohos_lite
     static int AsyncStacktrace();
     static int CrashInFFRT(const std::string &debug);

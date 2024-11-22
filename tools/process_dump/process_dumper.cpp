@@ -199,7 +199,7 @@ void FillFdsaninfo(OpenFilesList &list, pid_t nsPid, uint64_t fdTableAddr)
 
 std::string DumpOpenFiles(OpenFilesList &files)
 {
-    std::string openFiles;
+    std::string openFiles = "OpenFiles:\n";
     for (auto &[fd, entry]: files) {
         const std::string path = entry.path;
         uint64_t tag = entry.fdsanOwner;
@@ -458,8 +458,9 @@ void ProcessDumper::UnwindWriteJit(const ProcessDumpRequest &request)
     (void)close(fd);
 }
 
-std::string ProcessDumper::ReadStringByPtrace(pid_t tid, uintptr_t addr)
+std::string ProcessDumper::ReadCrashObjString(pid_t tid, uintptr_t addr)
 {
+    std::string stringContent = "ExtraCrashInfo(String):\n";
     constexpr int bufLen = 256;
     long buffer[bufLen] = {0};
     for (int i = 0; i < bufLen - 1; i++) {
@@ -474,26 +475,46 @@ std::string ProcessDumper::ReadStringByPtrace(pid_t tid, uintptr_t addr)
         }
     }
     char* val = reinterpret_cast<char*>(buffer);
-    return std::string(val);
+    stringContent += (std::string(val) + "\n");
+    return stringContent;
+}
+
+std::string ProcessDumper::ReadCrashObjMemory(pid_t tid, uintptr_t addr, size_t length)
+{
+    constexpr size_t step = sizeof(uintptr_t);
+    std::string memoryContent = StringPrintf("ExtraCrashInfo(Memory start address %018" PRIx64 "):",
+        static_cast<uint64_t>(addr));
+    size_t size = length / step;
+    uintptr_t memory[size];
+    if (DfxMemory::ReadProcMemByPid(tid, addr, memory, length) != length) {
+        DFXLOGE("[%{public}d]: read target mem error %{public}s", __LINE__, strerror(errno));
+        memoryContent += "\n";
+        return memoryContent;
+    }
+    for (size_t index = 0; index < size; index++) {
+        size_t offset = index * step;
+        if (offset % 0x20 == 0) {  // Print offset every 32 bytes
+            memoryContent += StringPrintf("\n+0x%03" PRIx64 ":", static_cast<uint64_t>(offset));
+        }
+        memoryContent += StringPrintf(" %018" PRIx64, static_cast<uint64_t>(memory[index]));
+    }
+    memoryContent += "\n";
+    return memoryContent;
 }
 
 void ProcessDumper::GetCrashObj(std::shared_ptr<ProcessDumpRequest> request)
 {
 #ifdef __LP64__
-    if (!isCrash_ || request->crashObj == 0) {
+    if (!isCrash_ || request->crashObj == 0 || process_ == nullptr) {
         return;
     }
     uintptr_t type = request->crashObj >> 56; // 56 :: Move 56 bit to the right
     uintptr_t addr = request->crashObj & 0xffffffffffffff;
-    switch (type) {
-        case 0: {
-            if (process_ != nullptr) {
-                process_->SetFatalMessage(process_->GetFatalMessage() + ReadStringByPtrace(request->nsPid, addr));
-            }
-            break;
-        }
-        default:
-            break;
+    std::vector<size_t> memorylengthTable = {0, 64, 256, 1024, 2048, 4096};
+    if (type == 0) {
+        process_->extraCrashInfo += ReadCrashObjString(request->nsPid, addr);
+    } else if (type < memorylengthTable.size()) {
+        process_->extraCrashInfo += ReadCrashObjMemory(request->nsPid, addr, memorylengthTable[type]);
     }
 #endif
 }
@@ -695,7 +716,11 @@ int ProcessDumper::InitProcessInfo(std::shared_ptr<ProcessDumpRequest> request)
     }
     process_->processInfo_.uid = request->uid;
     process_->recycleTid_ = request->recycleTid;
-    process_->SetFatalMessage(request->msg.body);
+    if (request->msg.type == MESSAGE_FATAL) {
+        process_->SetFatalMessage(request->msg.body);
+    } else if (request->msg.type == MESSAGE_CALLBACK) {
+        process_->extraCrashInfo += StringPrintf("ExtraCrashInfo(Callback):\n%s\n", request->msg.body);
+    }
 
     if (!InitVmThread(request)) {
         return -1;
