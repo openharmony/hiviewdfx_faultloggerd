@@ -58,6 +58,7 @@
 #ifndef HISYSEVENT_DISABLE
 #include "hisysevent.h"
 #endif
+#include "info/fatal_message.h"
 #include "printer.h"
 #include "procinfo.h"
 #include "unwinder_config.h"
@@ -458,11 +459,14 @@ void ProcessDumper::UnwindWriteJit(const ProcessDumpRequest &request)
     (void)close(fd);
 }
 
-std::string ProcessDumper::ReadStringByPtrace(pid_t tid, uintptr_t addr)
+std::string ProcessDumper::ReadStringByPtrace(pid_t tid, uintptr_t addr, size_t maxLen)
 {
-    constexpr int bufLen = 256;
-    long buffer[bufLen] = {0};
-    for (int i = 0; i < bufLen - 1; i++) {
+    if (maxLen == 0) {
+        return "";
+    }
+    size_t bufLen = (maxLen + sizeof(long) - 1) / sizeof(long);
+    std::vector<long> buffer(bufLen, 0);
+    for (size_t i = 0; i < bufLen; i++) {
         long ret = ptrace(PTRACE_PEEKTEXT, tid, reinterpret_cast<void*>(addr + sizeof(long) * i), nullptr);
         if (ret == -1) {
             DFXLOGE("read target mem by ptrace failed, errno(%{public}s).", strerror(errno));
@@ -473,8 +477,31 @@ std::string ProcessDumper::ReadStringByPtrace(pid_t tid, uintptr_t addr)
             break;
         }
     }
-    char* val = reinterpret_cast<char*>(buffer);
+    char* val = reinterpret_cast<char*>(buffer.data());
+    val[maxLen - 1] = '\0';
     return std::string(val);
+}
+
+void ProcessDumper::UpdateFatalMessageWhenDebugSignal(const ProcessDumpRequest& request)
+{
+    if (process_ == nullptr || request.siginfo.si_signo != SIGLEAK_STACK ||
+        !(request.siginfo.si_code == SIGLEAK_STACK_FDSAN || request.siginfo.si_code == SIGLEAK_STACK_JEMALLOC)) {
+        return;
+    }
+
+    auto debugMsgPtr = reinterpret_cast<uintptr_t>(request.siginfo.si_value.sival_ptr);
+    debug_msg_t dMsg = {0};
+    if (DfxMemory::ReadProcMemByPid(request.nsPid, debugMsgPtr, &dMsg, sizeof(dMsg)) != sizeof(debug_msg_t)) {
+        DFXLOGE("Get debug_msg_t failed.");
+        return;
+    }
+    auto msgPtr = reinterpret_cast<uintptr_t>(dMsg.msg);
+    auto lastMsg = ReadStringByPtrace(request.nsPid, msgPtr, MAX_FATAL_MSG_SIZE);
+    if (lastMsg.empty()) {
+        DFXLOGE("Get debug_msg_t.msg failed.");
+        return;
+    }
+    process_->SetFatalMessage(lastMsg);
 }
 
 void ProcessDumper::GetCrashObj(std::shared_ptr<ProcessDumpRequest> request)
@@ -512,6 +539,7 @@ bool ProcessDumper::Unwind(std::shared_ptr<ProcessDumpRequest> request, int &dum
         }
     }
     GetCrashObj(request);
+    UpdateFatalMessageWhenDebugSignal(*request);
     if (!DfxUnwindRemote::GetInstance().UnwindProcess(request, process_, unwinder_, vmPid)) {
         DFXLOGE("Failed to unwind process.");
         dumpRes = DumpErrorCode::DUMP_ESTOPUNWIND;
