@@ -36,11 +36,11 @@ namespace {
 const char FAULTLOGGER_CONF_PATH[] = "/system/etc/faultlogger.conf";
 const int CONF_LINE_SIZE = 256;
 
-auto g_boolConfigParser = [](bool* configProp, const std::string& value) {
+auto g_boolConfigParser = [](bool *configProp, const std::string &value) {
     *configProp = (value != "false");
 };
 
-auto g_uintConfigParser = [](unsigned int* configProp, const std::string& value) {
+auto g_uintConfigParser = [](unsigned int *configProp, const std::string &value) {
     unsigned int propValue = static_cast<unsigned int>(atoi(value.data()));
     if (propValue != 0) {
         *configProp = propValue;
@@ -48,7 +48,7 @@ auto g_uintConfigParser = [](unsigned int* configProp, const std::string& value)
 };
 }
 
-DfxConfigInfo& DfxConfig::GetConfig()
+DfxConfigInfo &DfxConfig::GetConfig()
 {
     static DfxConfigInfo config;
     static std::once_flag flag;
@@ -58,7 +58,7 @@ DfxConfigInfo& DfxConfig::GetConfig()
     return config;
 }
 
-void DfxConfig::ReadAndParseConfig(DfxConfigInfo& config)
+void DfxConfig::ReadAndParseConfig(DfxConfigInfo &config)
 {
     FILE *fp = nullptr;
     char codeBuffer[CONF_LINE_SIZE] = {0};
@@ -67,14 +67,14 @@ void DfxConfig::ReadAndParseConfig(DfxConfigInfo& config)
         DFXLOGW("Failed to open %{public}s. Reason: %{public}s.", FAULTLOGGER_CONF_PATH, strerror(errno));
         return;
     }
-    std::map<const std::string, bool*> boolConfig = {
+    std::map<const std::string, bool *> boolConfig = {
         {std::string("displayRegister"), &(config.displayRegister)},
         {std::string("displayBacktrace"), &(config.displayBacktrace)},
         {std::string("displayMaps"), &(config.displayMaps)},
         {std::string("displayFaultStack.switch"), &(config.displayFaultStack)},
         {std::string("dumpOtherThreads"), &(config.dumpOtherThreads)},
     };
-    std::map<const std::string, unsigned int*> uintConfig = {
+    std::map<const std::string, unsigned int *> uintConfig = {
         {std::string("displayFaultStack.lowAddressStep"), &(config.lowAddressStep)},
         {std::string("displayFaultStack.highAddressStep"), &(config.highAddressStep)},
         {std::string("maxFrameNums"), &(config.maxFrameNums)},

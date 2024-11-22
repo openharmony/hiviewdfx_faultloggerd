@@ -293,7 +293,7 @@ bool DwarfSection::ParseCie(uintptr_t cieAddr, uintptr_t ciePtr, CommonInfoEntry
     return true;
 }
 
-void DwarfSection::SaveAugStr(uintptr_t& ptr, std::vector<char>& augStr)
+void DwarfSection::SaveAugStr(uintptr_t &ptr, std::vector<char> &augStr)
 {
     uint8_t ch;
     augStr.clear();
@@ -302,7 +302,7 @@ void DwarfSection::SaveAugStr(uintptr_t& ptr, std::vector<char>& augStr)
     }
 }
 
-void DwarfSection::ParseAugData(uintptr_t& ptr, CommonInfoEntry &cieInfo, const std::vector<char>& augStr)
+void DwarfSection::ParseAugData(uintptr_t &ptr, CommonInfoEntry &cieInfo, const std::vector<char> &augStr)
 {
     MAYBE_UNUSED uintptr_t augSize = memory_->ReadUleb128(ptr);
     DFXLOGU("augSize: %{public}" PRIxPTR "", augSize);

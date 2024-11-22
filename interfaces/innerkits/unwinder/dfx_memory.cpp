@@ -210,7 +210,7 @@ size_t DfxMemory::GetEncodedSize(uint8_t encoding)
     }
 }
 
-void DfxMemory::ReadFormatEncodedValue(uintptr_t& addr, uintptr_t& val, uint8_t formatEncoding)
+void DfxMemory::ReadFormatEncodedValue(uintptr_t &addr, uintptr_t &val, uint8_t formatEncoding)
 {
     switch (formatEncoding) {
         case DW_EH_PE_uleb128:
@@ -249,7 +249,7 @@ void DfxMemory::ReadFormatEncodedValue(uintptr_t& addr, uintptr_t& val, uint8_t 
     }
 }
 
-uintptr_t DfxMemory::ReadEncodedValue(uintptr_t& addr, uint8_t encoding)
+uintptr_t DfxMemory::ReadEncodedValue(uintptr_t &addr, uint8_t encoding)
 {
     uintptr_t startAddr = addr;
     uintptr_t val = 0;

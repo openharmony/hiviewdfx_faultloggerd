@@ -169,7 +169,7 @@ std::shared_ptr<MiniDebugInfo> ElfParser::GetMiniDebugInfo()
 }
 
 template <typename EhdrType, typename ShdrType>
-bool ElfParser::ExtractSectionHeadersInfo(const EhdrType& ehdr, ShdrType& shdr)
+bool ElfParser::ExtractSectionHeadersInfo(const EhdrType &ehdr, ShdrType &shdr)
 {
     uint64_t offset = ehdr.e_shoff;
     offset += ehdr.e_shentsize;
@@ -222,7 +222,7 @@ bool ElfParser::ExtractSectionHeadersInfo(const EhdrType& ehdr, ShdrType& shdr)
 }
 
 template <typename EhdrType, typename ShdrType>
-bool ElfParser::ParseSectionHeaders(const EhdrType& ehdr)
+bool ElfParser::ParseSectionHeaders(const EhdrType &ehdr)
 {
     ShdrType shdr;
     //section header string table index. include section header table with section name string table.

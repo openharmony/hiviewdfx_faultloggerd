@@ -32,7 +32,7 @@ class DfxConfig {
 public:
     static DfxConfigInfo& GetConfig();
 private:
-    static void ReadAndParseConfig(DfxConfigInfo& config);
+    static void ReadAndParseConfig(DfxConfigInfo &config);
 private:
     DfxConfig() = default;
     ~DfxConfig() = default;

@@ -916,7 +916,7 @@ bool DfxElf::ProccessDynamic(const ElfW(Phdr) *pDynamic, ElfW(Addr) loadBase, Un
     return true;
 }
 
-void DfxElf::InitHdr(struct DwarfEhFrameHdr **hdr, struct DwarfEhFrameHdr& synthHdr,
+void DfxElf::InitHdr(struct DwarfEhFrameHdr **hdr, struct DwarfEhFrameHdr &synthHdr,
                      struct dl_phdr_info *info, const ElfW(Phdr) *pEhHdr)
 {
     if (pEhHdr) {

@@ -241,7 +241,7 @@ bool ArmExidx::ExtractEntryData(uintptr_t entryOffset)
     return ExtractEntryTab(extabAddr);
 }
 
-bool ArmExidx::ExtractEntryTabByPersonality(uintptr_t& tabOffset, uint32_t& data, uint8_t& tableCount)
+bool ArmExidx::ExtractEntryTabByPersonality(uintptr_t &tabOffset, uint32_t &data, uint8_t &tableCount)
 {
     if ((data & ARM_EXIDX_COMPACT) == 0) {
         DFXLOGU("Arm generic personality, data: %{public}x.", data);
