@@ -3,6 +3,7 @@
     extern "C++" {
       OHOS::HiviewDFX::DfxDumpCatcher::Dump*;
       OHOS::HiviewDFX::DfxDumpCatcher::Do*;
+      OHOS::HiviewDFX::DfxDumpCatchError::ToString*;
     };
   local:
     *;

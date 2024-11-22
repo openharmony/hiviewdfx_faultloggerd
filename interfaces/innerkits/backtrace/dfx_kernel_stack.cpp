@@ -38,29 +38,31 @@ typedef struct HstackVal {
     char hstackLogBuff[BUFF_STACK_SIZE] {0};
 } HstackVal;
 }
-int DfxGetKernelStack(int32_t pid, std::string& kernelStack)
+int32_t DfxGetKernelStack(int32_t pid, std::string& kernelStack)
 {
     auto kstackBuf = std::make_shared<HstackVal>();
     if (kstackBuf == nullptr) {
-        DFXLOGW("Failed create HstackVal, errno:%{public}d", errno);
-        return -1;
+        DFXLOGW("Failed create HstackVal, pid:%{public}d, errno:%{public}d", pid, errno);
+        return KERNELSTACK_ECREATE;
     }
     kstackBuf->pid = pid;
     kstackBuf->magic = MAGIC_NUM;
     int fd = open(BBOX_PATH, O_WRONLY | O_CLOEXEC);
     if (fd < 0) {
-        DFXLOGW("Failed to open bbox, errno:%{public}d", errno);
-        return -1;
+        DFXLOGW("Failed to open bbox, pid:%{public}d, errno:%{public}d", pid, errno);
+        return KERNELSTACK_EOPEN;
     }
 
     int ret = ioctl(fd, LOGGER_GET_STACK, kstackBuf.get());
+    int32_t res = KERNELSTACK_ESUCCESS;
     if (ret != 0) {
         DFXLOGW("Failed to get pid(%{public}d) kernel stack, errno:%{public}d", pid, errno);
+        res = KERNELSTACK_EIOCTL;
     } else {
         kernelStack = std::string(kstackBuf->hstackLogBuff);
     }
     close(fd);
-    return ret;
+    return res;
 }
 
 bool FormatThreadKernelStack(const std::string& kernelStack, DfxThreadStack& threadStack)

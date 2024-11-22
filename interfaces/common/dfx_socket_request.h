@@ -118,6 +118,10 @@ enum FaultLoggerSdkDumpResp {
     SDK_DUMP_NOPROC,
     /** process has crashed */
     SDK_PROCESS_CRASHED,
+    /** connect faultloggerd fail */
+    SDK_CONNECT_FAIL,
+    /** write data to faultloggerd fail */
+    SDK_WRITE_FAIL,
 };
 /**
  * @brief  request information

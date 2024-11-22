@@ -13,7 +13,10 @@
 
 import("//base/hiviewdfx/faultloggerd/faultloggerd.gni")
 
-dumpcatcher_sources = [ "dfx_dump_catcher.cpp" ]
+dumpcatcher_sources = [
+  "dfx_dump_catcher.cpp",
+  "dfx_dump_catcher_errno.cpp",
+]
 
 if (defined(ohos_lite)) {
   shared_library("libdfx_dumpcatcher") {
