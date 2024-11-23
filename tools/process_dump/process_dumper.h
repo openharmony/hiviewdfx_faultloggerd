@@ -61,7 +61,8 @@ private:
     void UnwindWriteJit(const ProcessDumpRequest &request);
     void Report(std::shared_ptr<ProcessDumpRequest> request, std::string &jsonInfo);
     void ReadFdTable(const ProcessDumpRequest &request);
-    static std::string ReadStringByPtrace(pid_t tid, uintptr_t addr);
+    static std::string ReadStringByPtrace(pid_t tid, uintptr_t addr, size_t maxLen = DEFAULT_MAX_STRING_LEN);
+    void UpdateFatalMessageWhenDebugSignal(const ProcessDumpRequest& request);
     void GetCrashObj(std::shared_ptr<ProcessDumpRequest> request);
     void ReportAddrSanitizer(ProcessDumpRequest &request, std::string &jsonInfo);
 
@@ -78,6 +79,7 @@ private:
 
     uint64_t startTime_ = 0;
     uint64_t finishTime_ = 0;
+    static constexpr size_t DEFAULT_MAX_STRING_LEN = 2048;
 };
 } // namespace HiviewDFX
 } // namespace OHOS
