@@ -458,7 +458,7 @@ void ProcessDumper::UnwindWriteJit(const ProcessDumpRequest &request)
     (void)close(fd);
 }
 
-std::string ProcessDumper::ReadCrashObjString(pid_t tid, uintptr_t addr)
+std::string ProcessDumper::ReadCrashObjString(pid_t tid, uintptr_t addr) const
 {
     std::string stringContent = "ExtraCrashInfo(String):\n";
     constexpr int bufLen = 256;
@@ -479,14 +479,14 @@ std::string ProcessDumper::ReadCrashObjString(pid_t tid, uintptr_t addr)
     return stringContent;
 }
 
-std::string ProcessDumper::ReadCrashObjMemory(pid_t tid, uintptr_t addr, size_t length)
+std::string ProcessDumper::ReadCrashObjMemory(pid_t tid, uintptr_t addr, size_t length) const
 {
     constexpr size_t step = sizeof(uintptr_t);
     std::string memoryContent = StringPrintf("ExtraCrashInfo(Memory start address %018" PRIx64 "):",
         static_cast<uint64_t>(addr));
     size_t size = length / step;
-    uintptr_t memory[size];
-    if (DfxMemory::ReadProcMemByPid(tid, addr, memory, length) != length) {
+    std::vector<uintptr_t> memory(size, 0);
+    if (DfxMemory::ReadProcMemByPid(tid, addr, memory.data(), length) != length) {
         DFXLOGE("[%{public}d]: read target mem error %{public}s", __LINE__, strerror(errno));
         memoryContent += "\n";
         return memoryContent;
