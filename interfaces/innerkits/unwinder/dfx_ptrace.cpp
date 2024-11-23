@@ -33,6 +33,19 @@ namespace {
 void DfxPtrace::Detach(pid_t tid)
 {
     if (tid > 0) {
+        if (ptrace(PTRACE_DETACH, tid, nullptr, nullptr) == 0) {
+            return;
+        }
+        DFXLOGW("Failed to detach tid(%{public}d), errno=%{public}d", tid, errno);
+        if (ptrace(PTRACE_INTERRUPT, tid, 0, 0) != 0) {
+            DFXLOGW("Failed to ptrace interrupt tid(%{public}d), errno=%{public}d", tid, errno);
+            return;
+        }
+        if (waitpid(tid, nullptr, 0) < 0) {
+            DFXLOGW("Failed to waitpid tid(%{public}d), errno=%{public}d", tid, errno);
+            return;
+        }
+
         ptrace(PTRACE_DETACH, tid, nullptr, nullptr);
     }
 }
