@@ -33,6 +33,7 @@
 #include <sys/time.h>
 #include <sys/types.h>
 #include <sys/ptrace.h>
+#include <sys/wait.h>
 #include <ucontext.h>
 #include <unistd.h>
 
@@ -215,33 +216,72 @@ std::string DumpOpenFiles(OpenFilesList &files)
     return openFiles;
 }
 
-void ReadPids(int& realPid, int& vmPid)
+void WaitForFork(unsigned long pid, unsigned long& childPid)
 {
-    pid_t pids[PID_MAX] = {0};
-    OHOS_TEMP_FAILURE_RETRY(read(STDIN_FILENO, pids, sizeof(pids)));
-    realPid = pids[REAL_PROCESS_PID];
-    vmPid = pids[VIRTUAL_PROCESS_PID];
+    DFXLOGI("start wait fork event happen");
+    int waitStatus = 0;
+    waitpid(pid, &waitStatus, 0); // wait fork event
+    DFXLOGI("wait for fork status %{public}d", waitStatus);
+    if (waitStatus >> 8 == (SIGTRAP | (PTRACE_EVENT_FORK << 8))) { // 8 : get fork  event flag
+        ptrace(PTRACE_GETEVENTMSG, pid, NULL, &childPid);
+        DFXLOGI("next child pid %{public}lu", childPid);
+        waitpid(childPid, &waitStatus, 0); // wait child stop event
+    }
+}
+
+void ReadVmRealPid(std::shared_ptr<ProcessDumpRequest> request, unsigned long vmPid, int& realPid)
+{
+    int waitStatus = 0;
+    ptrace(PTRACE_SETOPTIONS, vmPid, NULL, PTRACE_O_TRACEEXIT); // block son exit
+    ptrace(PTRACE_CONT, vmPid, NULL, NULL);
+
+    long data = 0;
+    DFXLOGI("start wait exit event happen");
+    waitpid(vmPid, &waitStatus, 0); // wait exit stop
+    data = ptrace(PTRACE_PEEKDATA, vmPid, reinterpret_cast<void *>(request->vmProcRealPid), NULL);
+    if (data < 0) {
+        DFXLOGI("ptrace peek data error %{public}lu %{public}d", vmPid, errno);
+    }
+    realPid = static_cast<int>(data);
+}
+
+void ReadPids(std::shared_ptr<ProcessDumpRequest> request, int& realPid, int& vmPid, std::shared_ptr<DfxProcess> proc)
+{
+    unsigned long childPid = 0;
+
+    WaitForFork(request->tid, childPid);
+    ptrace(PTRACE_CONT, childPid, NULL, NULL);
+
+    // frezze detach after fork child to fork vm process
+    if (request->siginfo.si_signo == SIGDUMP) {
+        if (proc->keyThread_ != nullptr) {
+            proc->keyThread_->Detach();
+        }
+        proc->Detach();
+        DFXLOGI("ptrace detach all tids");
+    }
+
+    unsigned long sonPid = 0;
+    WaitForFork(childPid, sonPid);
+    vmPid = sonPid;
+
+    ptrace(PTRACE_DETACH, childPid, 0, 0);
+    ReadVmRealPid(request, sonPid, realPid);
+
     DFXLOGI("procecdump get real pid is %{public}d vm pid is %{public}d", realPid, vmPid);
 }
 
-void InfoRemoteProcessResult(std::shared_ptr<ProcessDumpRequest> request, int result, int type)
+void InfoRemoteProcessResult(std::shared_ptr<ProcessDumpRequest> request, int result)
 {
     if (request == nullptr) {
         return;
     }
-    if (request->pmPipeFd[0] != -1) {
-        close(request->pmPipeFd[0]);
-        request->pmPipeFd[0] = -1;
+    if (request->childPipeFd[0] != -1) {
+        close(request->childPipeFd[0]);
+        request->childPipeFd[0] = -1;
     }
-    switch (type) {
-        case MAIN_PROCESS:
-            OHOS_TEMP_FAILURE_RETRY(write(request->pmPipeFd[1], &result, sizeof(result)));
-            break;
-        case VIRTUAL_PROCESS:
-            OHOS_TEMP_FAILURE_RETRY(write(request->vmPipeFd[1], &result, sizeof(result)));
-            break;
-        default:
-            break;
+    if (OHOS_TEMP_FAILURE_RETRY(write(request->childPipeFd[1], &result, sizeof(result))) < 0) {
+        DFXLOGE("write to child process fail %{public}d", errno);
     }
 }
 
@@ -309,14 +349,14 @@ void ProcessDumper::Dump()
         if (isCrash_ && process_->vmThread_ != nullptr) {
             process_->vmThread_->Detach();
         }
-        if (process_->keyThread_ != nullptr) {
-            process_->keyThread_->Detach();
-        }
         if (isCrash_ && (request->dumpMode == FUSION_MODE) && IsBlockCrashProcess()) {
             DFXLOGI("start block crash process pid %{public}d nspid %{public}d", request->pid, request->nsPid);
-            if (syscall(SYS_tgkill, request->nsPid, request->tid, SIGSTOP) != 0) {
-                DFXLOGE("send signal stop to nsPid %{public}d fail %{public}s", request->nsPid, strerror(errno));
+            if (ptrace(PTRACE_POKEDATA, request->nsPid, (void*)request->isBlockCrash, CRASH_BLOCK_EXIT_FLAG) < 0) {
+                DFXLOGE("pok block falg to nsPid %{public}d fail %{public}s", request->nsPid, strerror(errno));
             }
+        }
+        if (process_->keyThread_ != nullptr) {
+            process_->keyThread_->Detach();
         }
     }
 
@@ -359,14 +399,10 @@ void ProcessDumper::Report(std::shared_ptr<ProcessDumpRequest> request, std::str
         request->msg.type == MESSAGE_JEMALLOC ||
         request->msg.type == MESSAGE_BADFD) {
         ReportAddrSanitizer(*request, jsonInfo);
-        InfoRemoteProcessResult(request, OPE_CONTINUE, MAIN_PROCESS);
         return;
     }
     if (resDump_ != DumpErrorCode::DUMP_ENOMAP && resDump_ != DumpErrorCode::DUMP_EREADPID) {
         ReportCrashInfo(jsonInfo);
-    }
-    if ((request->dumpMode == FUSION_MODE) && isCrash_) {
-        InfoRemoteProcessResult(request, OPE_CONTINUE, MAIN_PROCESS);
     }
 }
 
@@ -405,15 +441,12 @@ std::string GetOpenFiles(int32_t pid, int nsPid, uint64_t fdTableAddr)
 void ProcessDumper::InitRegs(std::shared_ptr<ProcessDumpRequest> request, int &dumpRes)
 {
     DFX_TRACE_SCOPED("InitRegs");
-    uint32_t opeResult = OPE_SUCCESS;
     if (request->dumpMode == FUSION_MODE) {
         if (!DfxUnwindRemote::GetInstance().InitProcessAllThreadRegs(request, process_)) {
             DFXLOGE("Failed to init process regs.");
             dumpRes = DumpErrorCode::DUMP_ESTOPUNWIND;
-            opeResult = OPE_FAIL;
         }
 
-        InfoRemoteProcessResult(request, opeResult, MAIN_PROCESS);
         DFXLOGI("get all tid regs finish");
     }
 }
@@ -554,7 +587,6 @@ int ProcessDumper::DumpProcess(std::shared_ptr<ProcessDumpRequest> request)
 {
     DFX_TRACE_SCOPED("DumpProcess");
     int dumpRes = DumpErrorCode::DUMP_ESUCCESS;
-    uint32_t opeResult = OPE_SUCCESS;
     do {
         if ((dumpRes = ReadRequestAndCheck(request)) != DumpErrorCode::DUMP_ESUCCESS) {
             break;
@@ -586,7 +618,6 @@ int ProcessDumper::DumpProcess(std::shared_ptr<ProcessDumpRequest> request)
         InitRegs(request, dumpRes);
         pid_t vmPid = 0;
         if (!InitUnwinder(request, vmPid, dumpRes) && (isCrash_ && !isLeakDump)) {
-            opeResult = OPE_FAIL;
             break;
         }
         if (InitPrintThread(request) < 0) {
@@ -595,12 +626,9 @@ int ProcessDumper::DumpProcess(std::shared_ptr<ProcessDumpRequest> request)
         }
         ReadFdTable(*request);
         if (!Unwind(request, dumpRes, vmPid)) {
-            opeResult = OPE_FAIL;
+            DFXLOGE("unwind fail.");
         }
     } while (false);
-    if (request->dumpMode == FUSION_MODE) {
-        InfoRemoteProcessResult(request, opeResult, VIRTUAL_PROCESS);
-    }
     if (dumpRes == DumpErrorCode::DUMP_ESUCCESS && !IsTargetProcessAlive(request)) {
         dumpRes = DumpErrorCode::DUMP_EGETPPID;
     }
@@ -648,6 +676,8 @@ bool ProcessDumper::InitKeyThread(std::shared_ptr<ProcessDumpRequest> request)
         }
     }
     if ((process_->keyThread_ != nullptr) && request->dumpMode == FUSION_MODE) {
+        InfoRemoteProcessResult(request, OPE_SUCCESS);
+        ptrace(PTRACE_SETOPTIONS, process_->keyThread_->threadInfo_.nsTid, NULL, PTRACE_O_TRACEFORK);
         ptrace(PTRACE_CONT, process_->keyThread_->threadInfo_.nsTid, 0, 0);
     }
 
@@ -666,7 +696,7 @@ bool ProcessDumper::InitUnwinder(std::shared_ptr<ProcessDumpRequest> request, pi
     DFX_TRACE_SCOPED("InitUnwinder");
     pid_t realPid = 0;
     if (request->dumpMode == FUSION_MODE) {
-        ReadPids(realPid, vmPid);
+        ReadPids(request, realPid, vmPid, process_);
         if (realPid == 0 || vmPid == 0) {
             ReportCrashException(request->processName, request->pid, request->uid,
                 CrashExceptionCode::CRASH_DUMP_EREADPID);
@@ -674,15 +704,6 @@ bool ProcessDumper::InitUnwinder(std::shared_ptr<ProcessDumpRequest> request, pi
             dumpRes = DumpErrorCode::DUMP_EREADPID;
             return false;
         }
-    }
-
-    // frezze detach after vm process create
-    if (!isCrash_) {
-        if (process_->keyThread_ != nullptr) {
-            process_->keyThread_->Detach();
-        }
-        process_->Detach();
-        DFXLOGI("ptrace detach all tids");
     }
 
     if (request->dumpMode == FUSION_MODE) {
