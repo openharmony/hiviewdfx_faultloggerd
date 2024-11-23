@@ -484,7 +484,7 @@ std::string ProcessDumper::ReadCrashObjMemory(pid_t tid, uintptr_t addr, size_t 
     constexpr size_t step = sizeof(uintptr_t);
     std::string memoryContent = StringPrintf("ExtraCrashInfo(Memory start address %018" PRIx64 "):",
         static_cast<uint64_t>(addr));
-    size_t size = length / step;
+    size_t size = (length + step - 1) / step;
     std::vector<uintptr_t> memory(size, 0);
     if (DfxMemory::ReadProcMemByPid(tid, addr, memory.data(), length) != length) {
         DFXLOGE("[%{public}d]: read target mem error %{public}s", __LINE__, strerror(errno));
