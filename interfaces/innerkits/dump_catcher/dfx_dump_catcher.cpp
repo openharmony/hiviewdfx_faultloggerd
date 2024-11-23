@@ -219,7 +219,7 @@ static bool IsBitOn(const std::string& content, const std::string& filed, int si
     if (content.find(filed) == std::string::npos) {
         return false;
     }
-    //SigBlk:   0000000000000000
+    // SigBlk:   0000000000000000
     std::string num = content.substr(content.find(filed) + filed.size() + 2, 16);
     uint64_t hexValue = strtol(num.c_str(), nullptr, 16);
     uint64_t mask = 1ULL << (signal - 1);
@@ -242,19 +242,20 @@ static bool IsSignalBlocked(int pid, int32_t &ret)
             break;
         }
     }
-    if (targetTid != -1) {
-        std::string threadStatusPath = StringPrintf("/proc/%d/task/%d/status", pid, targetTid);
-        if (!LoadStringFromFile(threadStatusPath, content) || content.empty()) {
-            DFXLOGE("the pid(%{public}d)thread(%{public}d) read status fail, errno(%{public}d)", pid, targetTid, errno);
-            ret = DUMPCATCH_UNKNOWN;
-            return true;
-        }
+    if (targetTid == -1) {
+        return false;
+    }
+    std::string threadStatusPath = StringPrintf("/proc/%d/task/%d/status", pid, targetTid);
+    if (!LoadStringFromFile(threadStatusPath, content) || content.empty()) {
+        DFXLOGE("the pid(%{public}d)thread(%{public}d) read status fail, errno(%{public}d)", pid, targetTid, errno);
+        ret = DUMPCATCH_UNKNOWN;
+        return true;
+    }
 
-        if (IsBitOn(content, "SigBlk", SIGDUMP) || IsBitOn(content, "SigIgn", SIGDUMP)) {
-            DFXLOGI("the pid(%{public}d)thread(%{public}d) signal has been blocked by target process", pid, targetTid);
-            ret = DUMPCATCH_TIMEOUT_SIGNAL_BLOCK;
-            return true;
-        }
+    if (IsBitOn(content, "SigBlk", SIGDUMP) || IsBitOn(content, "SigIgn", SIGDUMP)) {
+        DFXLOGI("the pid(%{public}d)thread(%{public}d) signal has been blocked by target process", pid, targetTid);
+        ret = DUMPCATCH_TIMEOUT_SIGNAL_BLOCK;
+        return true;
     }
     return false;
 }
@@ -363,10 +364,10 @@ int32_t DfxDumpCatcher::DumpCatchWithTimeout(int pid, std::string& msg, int time
     }
 
     if (ret != DUMPCATCH_ESUCCESS) {
-        if (g_kernelStackRet == DUMPCATCH_ESUCCESS) {
+        if (pid == g_kernelStackPid && !g_asyncThreadRunning) {
             msg.append(g_kernelStackInfo);
         } else {
-            ret = g_kernelStackRet;
+            ret = g_kernelStackRet == DUMPCATCH_ESUCCESS ? ret : g_kernelStackRet;
         }
         g_kernelStackInfo.clear();
         g_kernelStackPid = 0;
@@ -388,7 +389,7 @@ int DfxDumpCatcher::DumpCatchProcess(int pid, std::string& msg, size_t maxFrameN
     if (DumpCatch(pid, 0, msg, maxFrameNums, isJson)) {
         return 0;
     }
-    if (g_kernelStackRet == DUMPCATCH_ESUCCESS) {
+    if (pid == g_kernelStackPid && !g_asyncThreadRunning) {
         msg.append(g_kernelStackInfo);
         g_kernelStackInfo.clear();
         g_kernelStackPid = 0;
