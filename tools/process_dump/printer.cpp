@@ -287,7 +287,7 @@ void Printer::PrintThreadFaultStackByConfig(std::shared_ptr<DfxProcess> process,
     }
 }
 
-void Printer::PrintLongInformation(std::string& info)
+void Printer::PrintLongInformation(const std::string& info)
 {
     constexpr size_t step = 1024;
     for (size_t i = 0; i < info.size(); i += step) {
