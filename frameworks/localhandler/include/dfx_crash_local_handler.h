@@ -30,7 +30,7 @@ extern "C" {
  *   only use for collecting crash signal
  * @param request info about process dump request
 */
-void CrashLocalHandler(const struct ProcessDumpRequest* request);
+void CrashLocalHandler(struct ProcessDumpRequest* request);
 
 /**
  * @brief handle processdump crash and print log to file
@@ -38,7 +38,7 @@ void CrashLocalHandler(const struct ProcessDumpRequest* request);
  * @param fd file descriptor
  * @param request info about process dump request
 */
-void CrashLocalHandlerFd(const int fd, const struct ProcessDumpRequest* request);
+void CrashLocalHandlerFd(const int fd, struct ProcessDumpRequest* request);
 #ifdef __cplusplus
 }
 #endif

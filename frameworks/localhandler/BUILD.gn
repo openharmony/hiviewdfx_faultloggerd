@@ -27,6 +27,7 @@ if (!defined(ohos_lite)) {
       "$faultloggerd_interfaces_path/common",
       "$faultloggerd_path/common/cutil",
       "$faultloggerd_path/common/dfxlog",
+      "$faultloggerd_path/common/dfx_util",
       "$faultloggerd_interfaces_path/innerkits/unwinder",
       "$faultloggerd_interfaces_path/innerkits/signal_handler/include",
     ]
@@ -40,6 +41,7 @@ if (!defined(ohos_lite)) {
     sources += [ "$faultloggerd_interfaces_path/innerkits/signal_handler/dfx_signalhandler_exception.c" ]
     deps = [
       "$faultloggerd_common_path/cutil:dfx_cutil",
+      "$faultloggerd_common_path/dfxutil:dfx_util",
       "$faultloggerd_frameworks_path/allocator:dfx_allocator_src",
       "$faultloggerd_interfaces_path/innerkits/faultloggerd_client:libfaultloggerd",
       "$faultloggerd_interfaces_path/innerkits/unwinder:libunwinder",
@@ -49,6 +51,7 @@ if (!defined(ohos_lite)) {
     external_deps = [
       "c_utils:utils",
       "hilog:libhilog_base",
+      "hisysevent:libhisysevent",
     ]
     part_name = "faultloggerd"
     subsystem_name = "hiviewdfx"
