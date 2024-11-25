@@ -293,15 +293,6 @@ bool DwarfSection::ParseCie(uintptr_t cieAddr, uintptr_t ciePtr, CommonInfoEntry
     return true;
 }
 
-void DwarfSection::SaveAugStr(uintptr_t &ptr, std::vector<char> &augStr)
-{
-    uint8_t ch;
-    augStr.clear();
-    while (memory_->Read<uint8_t>(ptr, &ch, true) && ch != '\0') {
-        augStr.push_back(ch);
-    }
-}
-
 void DwarfSection::ParseAugData(uintptr_t &ptr, CommonInfoEntry &cieInfo, const std::vector<char> &augStr)
 {
     MAYBE_UNUSED uintptr_t augSize = memory_->ReadUleb128(ptr);
@@ -345,7 +336,11 @@ bool DwarfSection::FillInCie(uintptr_t ptr, CommonInfoEntry &cieInfo)
 
     // save augmentation string
     std::vector<char> augStr;
-    SaveAugStr(ptr, augStr);
+    augStr.clear();
+    uint8_t ch;
+    while (memory_->Read<uint8_t>(ptr, &ch, true) && ch != '\0') {
+        augStr.push_back(ch);
+    }
 
     // Segment Size
     if (version == 4 || version == 5) { // 4 5 : cie version

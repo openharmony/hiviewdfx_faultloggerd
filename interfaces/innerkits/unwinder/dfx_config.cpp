@@ -35,17 +35,6 @@ namespace {
 
 const char FAULTLOGGER_CONF_PATH[] = "/system/etc/faultlogger.conf";
 const int CONF_LINE_SIZE = 256;
-
-auto g_boolConfigParser = [](bool *configProp, const std::string &value) {
-    *configProp = (value != "false");
-};
-
-auto g_uintConfigParser = [](unsigned int *configProp, const std::string &value) {
-    unsigned int propValue = static_cast<unsigned int>(atoi(value.data()));
-    if (propValue != 0) {
-        *configProp = propValue;
-    }
-};
 }
 
 DfxConfigInfo &DfxConfig::GetConfig()
@@ -58,27 +47,45 @@ DfxConfigInfo &DfxConfig::GetConfig()
     return config;
 }
 
-void DfxConfig::ReadAndParseConfig(DfxConfigInfo &config)
+void DfxConfig::InitConfigMaps(DfxConfigInfo &config, std::map<std::string, bool *> &boolConfig,
+                               std::map<std::string, unsigned int *> &uintConfig)
 {
-    FILE *fp = nullptr;
-    char codeBuffer[CONF_LINE_SIZE] = {0};
-    fp = fopen(FAULTLOGGER_CONF_PATH, "r");
-    if (fp == nullptr) {
-        DFXLOGW("Failed to open %{public}s. Reason: %{public}s.", FAULTLOGGER_CONF_PATH, strerror(errno));
-        return;
-    }
-    std::map<const std::string, bool *> boolConfig = {
+    boolConfig = {
         {std::string("displayRegister"), &(config.displayRegister)},
         {std::string("displayBacktrace"), &(config.displayBacktrace)},
         {std::string("displayMaps"), &(config.displayMaps)},
         {std::string("displayFaultStack.switch"), &(config.displayFaultStack)},
         {std::string("dumpOtherThreads"), &(config.dumpOtherThreads)},
     };
-    std::map<const std::string, unsigned int *> uintConfig = {
+    uintConfig = {
         {std::string("displayFaultStack.lowAddressStep"), &(config.lowAddressStep)},
         {std::string("displayFaultStack.highAddressStep"), &(config.highAddressStep)},
         {std::string("maxFrameNums"), &(config.maxFrameNums)},
     };
+}
+
+void DfxConfig::ReadAndParseConfig(DfxConfigInfo &config)
+{
+    char codeBuffer[CONF_LINE_SIZE] = {0};
+    FILE *fp = fopen(FAULTLOGGER_CONF_PATH, "r");
+    if (fp == nullptr) {
+        DFXLOGW("Failed to open %{public}s. Reason: %{public}s.", FAULTLOGGER_CONF_PATH, strerror(errno));
+        return;
+    }
+    std::map<std::string, bool *> boolConfig;
+    std::map<std::string, unsigned int *> uintConfig;
+    InitConfigMaps(config, boolConfig, uintConfig);
+
+    auto boolConfigParser = [](bool *configProp, const std::string &value) {
+        *configProp = (value != "false");
+    };
+    auto uintConfigParser = [](unsigned int *configProp, const std::string &value) {
+        unsigned int propValue = static_cast<unsigned int>(atoi(value.data()));
+        if (propValue != 0) {
+            *configProp = propValue;
+        }
+    };
+
     while (!feof(fp)) {
         (void)memset_s(codeBuffer, sizeof(codeBuffer), '\0', sizeof(codeBuffer));
         if (fgets(codeBuffer, CONF_LINE_SIZE - 1, fp) == nullptr) {
@@ -96,9 +103,9 @@ void DfxConfig::ReadAndParseConfig(DfxConfigInfo &config)
             Trim(key);
             Trim(value);
             if (boolConfig.find(key) != boolConfig.end()) {
-                g_boolConfigParser(boolConfig[key], value);
+                boolConfigParser(boolConfig[key], value);
             } else if (uintConfig.find(key) != uintConfig.end()) {
-                g_uintConfigParser(uintConfig[key], value);
+                uintConfigParser(uintConfig[key], value);
             }
         }
     }

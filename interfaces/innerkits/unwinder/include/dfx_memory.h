@@ -69,7 +69,7 @@ public:
     virtual void SetFuncOffset(uintptr_t offset) { funcOffset_ = offset; }
     virtual size_t GetEncodedSize(uint8_t encoding);
     virtual uintptr_t ReadEncodedValue(uintptr_t &addr, uint8_t encoding);
-    virtual void ReadFormatEncodedValue(uintptr_t &addr, uintptr_t &val, uint8_t formatEncoding);
+    void ReadFormatEncodedValue(uintptr_t &addr, uintptr_t &val, uint8_t formatEncoding);
 #if is_ohos && !is_mingw
     static size_t ReadProcMemByPid(const pid_t pid, const uint64_t addr, void* data, size_t size);
 #endif

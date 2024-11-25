@@ -15,6 +15,9 @@
 #ifndef DFX_CONFIG_H
 #define DFX_CONFIG_H
 
+#include <map>
+#include <string>
+
 namespace OHOS {
 namespace HiviewDFX {
 struct DfxConfigInfo {
@@ -33,6 +36,8 @@ public:
     static DfxConfigInfo& GetConfig();
 private:
     static void ReadAndParseConfig(DfxConfigInfo &config);
+    static void InitConfigMaps(DfxConfigInfo &config, std::map<std::string, bool *> &boolConfig,
+                               std::map<std::string, unsigned int *> &uintConfig);
 private:
     DfxConfig() = default;
     ~DfxConfig() = default;

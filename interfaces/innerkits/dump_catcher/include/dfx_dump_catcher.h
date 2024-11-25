@@ -94,11 +94,11 @@ private:
                          int &remainTime, bool &collectAllTidStack, int &ret);
     bool HandlePollTimeout(std::string &resMsg, const int timeout,
                            int &remainTime, bool &collectAllTidStack, int &ret);
-    bool DoEventsPoll(std::vector<int> fds, std::vector<std::string> &messages,
-                      std::vector<struct pollfd> readfds, bool &bPipeConnect, bool &res);
-    void DumpRemotePoll(std::vector<int> fds, std::vector<std::string> &messages,
-                        const int timeout, bool &res, int &ret);
-    int DoDumpRemotePoll(int bufFd, int resFd, int timeout, std::string& msg, bool isJson = false);
+    bool HandlePollEvents(std::pair<int, std::string> &bufState, std::pair<int, std::string> &resState,
+                          const struct pollfd (&readFds)[2], bool &bPipeConnect, bool &res);
+    std::pair<bool, int> DumpRemotePoll(std::pair<int, std::string> &bufState,
+                                        std::pair<int, std::string> &resState, const int timeout);
+    int DoDumpRemotePoll(int bufFd, int resFd, int timeout, std::string &msg, bool isJson = false);
     bool DoReadBuf(int fd, std::string& msg);
     bool DoReadRes(int fd, bool &ret, std::string& msg);
     static void CollectKernelStack(pid_t pid, int waitMilliSeconds = 0);

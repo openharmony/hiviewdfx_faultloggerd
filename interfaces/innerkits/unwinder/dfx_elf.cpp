@@ -51,6 +51,15 @@ namespace {
 #undef LOG_TAG
 #define LOG_DOMAIN 0xD002D11
 #define LOG_TAG "DfxElf"
+
+#if is_ohos && !is_mingw
+enum HdrSection {
+    SECTION_TEXT = 0,
+    SECTION_ARMEXIDX = 1,
+    SECTION_DYNAMIC = 2,
+    SECTION_EHFRAMEHDR = 3
+};
+#endif
 }
 
 std::shared_ptr<DfxElf> DfxElf::Create(const std::string& path)
@@ -449,13 +458,12 @@ std::string DfxElf::GetBuildId(uint64_t noteAddr, uint64_t noteSize)
         return "";
     }
     uint64_t offset = 0;
-    uint64_t ptr = noteAddr;
     while (offset < noteSize) {
         ElfW(Nhdr) nhdr;
         if (noteSize - offset < sizeof(nhdr)) {
             return "";
         }
-        ptr = noteAddr + offset;
+        uint64_t ptr = noteAddr + offset;
         if (memcpy_s(&nhdr, sizeof(nhdr), reinterpret_cast<void*>(ptr), sizeof(nhdr)) != 0) {
             DFXLOGE("memcpy_s nhdr failed");
             return "";
@@ -865,7 +873,7 @@ bool DfxElf::FindSection(struct dl_phdr_info *info, const std::string secName, S
     return elf->GetSectionInfo(shdr, secName);
 }
 
-void DfxElf::ParsePhdr(struct dl_phdr_info *info, std::vector<const ElfW(Phdr) *> &pHdrSections, const uintptr_t pc)
+void DfxElf::ParsePhdr(struct dl_phdr_info *info, const ElfW(Phdr) *(&pHdrSections)[4], const uintptr_t pc)
 {
     const ElfW(Phdr) *phdr = info->dlpi_phdr;
     for (size_t i = 0; i < info->dlpi_phnum && phdr != nullptr; i++, phdr++) {
@@ -873,26 +881,22 @@ void DfxElf::ParsePhdr(struct dl_phdr_info *info, std::vector<const ElfW(Phdr) *
             case PT_LOAD: {
                 ElfW(Addr) vaddr = phdr->p_vaddr + info->dlpi_addr;
                 if (pc >= vaddr && pc < vaddr + phdr->p_memsz) {
-                    // .text section
-                    pHdrSections[TEXT] = phdr;
+                    pHdrSections[SECTION_TEXT] = phdr;
                 }
                 break;
             }
 #if defined(__arm__)
             case PT_ARM_EXIDX: {
-                // .arm_exidx section
-                pHdrSections[ARMEXIDX] = phdr;
+                pHdrSections[SECTION_ARMEXIDX] = phdr;
                 break;
             }
 #endif
             case PT_GNU_EH_FRAME: {
-                // .eh_frame_hdr section
-                pHdrSections[EHFRAMEHDR] = phdr;
+                pHdrSections[SECTION_EHFRAMEHDR] = phdr;
                 break;
             }
             case PT_DYNAMIC: {
-                // .dynamic section
-                pHdrSections[DYNAMIC] = phdr;
+                pHdrSections[SECTION_DYNAMIC] = phdr;
                 break;
             }
             default:
@@ -916,12 +920,13 @@ bool DfxElf::ProccessDynamic(const ElfW(Phdr) *pDynamic, ElfW(Addr) loadBase, Un
     return true;
 }
 
-void DfxElf::InitHdr(struct DwarfEhFrameHdr **hdr, struct DwarfEhFrameHdr &synthHdr,
-                     struct dl_phdr_info *info, const ElfW(Phdr) *pEhHdr)
+struct DwarfEhFrameHdr *DfxElf::InitHdr(struct DwarfEhFrameHdr &synthHdr,
+                                        struct dl_phdr_info *info, const ElfW(Phdr) *pEhHdr)
 {
+    struct DwarfEhFrameHdr *hdr = nullptr;
     if (pEhHdr) {
         INSTR_STATISTIC(InstructionEntriesEhFrame, pEhHdr->p_memsz, 0);
-        *hdr = (struct DwarfEhFrameHdr *) (pEhHdr->p_vaddr + info->dlpi_addr);
+        hdr = (struct DwarfEhFrameHdr *) (pEhHdr->p_vaddr + info->dlpi_addr);
     } else {
         ShdrInfo shdr;
         if (FindSection(info, EH_FRAME, shdr)) {
@@ -934,9 +939,10 @@ void DfxElf::InitHdr(struct DwarfEhFrameHdr **hdr, struct DwarfEhFrameHdr &synth
             synthHdr.fdeCountEnc = DW_EH_PE_omit;
             synthHdr.tableEnc = DW_EH_PE_omit;
             synthHdr.ehFrame = (ElfW(Addr))(shdr.addr + info->dlpi_addr);
-            *hdr = &synthHdr;
+            hdr = &synthHdr;
         }
     }
+    return hdr;
 }
 
 int DfxElf::DlPhdrCb(struct dl_phdr_info *info, size_t size, void *data)
@@ -948,38 +954,37 @@ int DfxElf::DlPhdrCb(struct dl_phdr_info *info, size_t size, void *data)
     UnwindTableInfo* uti = &cbData->uti;
     uintptr_t pc = cbData->pc;
     const int numOfPhdrSections = 4;
-    std::vector<const ElfW(Phdr) *> pHdrSections(numOfPhdrSections, nullptr);
+    const ElfW(Phdr) *pHdrSections[numOfPhdrSections] = {nullptr};
     ParsePhdr(info, pHdrSections, pc);
 
-    if (pHdrSections[TEXT] == nullptr) {
+    if (pHdrSections[SECTION_TEXT] == nullptr) {
         return 0;
     }
     ElfW(Addr) loadBase = info->dlpi_addr;
-    uti->startPc = pHdrSections[TEXT]->p_vaddr + loadBase;
-    uti->endPc = uti->startPc + pHdrSections[TEXT]->p_memsz;
+    uti->startPc = pHdrSections[SECTION_TEXT]->p_vaddr + loadBase;
+    uti->endPc = uti->startPc + pHdrSections[SECTION_TEXT]->p_memsz;
     DFXLOGU("Elf name: %{public}s", info->dlpi_name);
     uti->namePtr = (uintptr_t) info->dlpi_name;
 
 #if defined(__arm__)
-    if (pHdrSections[ARMEXIDX]) {
+    if (pHdrSections[SECTION_ARMEXIDX]) {
         ShdrInfo shdr;
-        shdr.addr = pHdrSections[ARMEXIDX]->p_vaddr;
-        shdr.size = pHdrSections[ARMEXIDX]->p_memsz;
+        shdr.addr = pHdrSections[SECTION_ARMEXIDX]->p_vaddr;
+        shdr.size = pHdrSections[SECTION_ARMEXIDX]->p_memsz;
         return FillUnwindTableByExidx(shdr, loadBase, uti);
     }
 #endif
 
-    if (pHdrSections[DYNAMIC]) {
-        if (!ProccessDynamic(pHdrSections[DYNAMIC], loadBase, uti)) {
+    if (pHdrSections[SECTION_DYNAMIC]) {
+        if (!ProccessDynamic(pHdrSections[SECTION_DYNAMIC], loadBase, uti)) {
             return 0;
         }
     } else {
         uti->gp = 0;
     }
 
-    struct DwarfEhFrameHdr *hdr = nullptr;
     struct DwarfEhFrameHdr synthHdr;
-    InitHdr(&hdr, synthHdr, info, pHdrSections[EHFRAMEHDR]);
+    struct DwarfEhFrameHdr *hdr = InitHdr(synthHdr, info, pHdrSections[SECTION_EHFRAMEHDR]);
 
     return FillUnwindTableByEhhdrLocal(hdr, uti);
 }

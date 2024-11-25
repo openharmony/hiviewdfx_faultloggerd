@@ -29,15 +29,6 @@ struct DlCbData {
     bool singleFde = false;
 };
 
-#if is_ohos && !is_mingw
-enum HdrSection {
-    TEXT = 0,
-    ARMEXIDX = 1,
-    DYNAMIC = 2,
-    EHFRAMEHDR = 3
-};
-#endif
-
 class DfxElf final {
 public:
     static std::shared_ptr<DfxElf> Create(const std::string& file);
@@ -95,10 +86,10 @@ protected:
     bool InitEmbeddedElf();
 #if is_ohos && !is_mingw
     static int DlPhdrCb(struct dl_phdr_info *info, size_t size, void *data);
-    static void ParsePhdr(struct dl_phdr_info *info, std::vector<const ElfW(Phdr) *> &pHdrSections, const uintptr_t pc);
+    static void ParsePhdr(struct dl_phdr_info *info, const ElfW(Phdr) *(&pHdrSections)[4], const uintptr_t pc);
     static bool ProccessDynamic(const ElfW(Phdr) *pDynamic, ElfW(Addr) loadBase, UnwindTableInfo *uti);
-    static void InitHdr(struct DwarfEhFrameHdr **hdr, struct DwarfEhFrameHdr &synthHdr,
-                        struct dl_phdr_info *info, const ElfW(Phdr) *pEhHdr);
+    static struct DwarfEhFrameHdr *InitHdr(struct DwarfEhFrameHdr &synthHdr,
+                                           struct dl_phdr_info *info, const ElfW(Phdr) *pEhHdr);
     static bool FindSection(struct dl_phdr_info *info, const std::string secName, ShdrInfo& shdr);
     static bool FillUnwindTableByEhhdrLocal(struct DwarfEhFrameHdr* hdr, struct UnwindTableInfo* uti);
 #endif
