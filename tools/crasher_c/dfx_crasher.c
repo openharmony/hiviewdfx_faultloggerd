@@ -381,44 +381,37 @@ uint64_t ParseAndDoCrash(const char *arg)
     }
 
     // Action
-    if (!strcasecmp(arg, "SIGFPE")) {
-        return RaiseFloatingPointException();
-    }
+    struct ActionStruct {
+        const char *action;
+        int (*handler)(void);
+    };
+    const struct ActionStruct actions[] = {
+        {"SIGFPE", RaiseFloatingPointException},
+        {"SIGILL", RaiseIllegalInstructionException},
+        {"triSIGILL", IllegalInstructionException},
+        {"SIGSEGV", RaiseSegmentFaultException},
+        {"SIGTRAP", RaiseTrapException},
+        {"SIGABRT", RaiseAbort},
+        {"triSIGABRT", Abort},
+        {"triSIGSEGV", SegmentFaultException},
+        {"SIGBUS", RaiseBusError},
+        {"triSIGTRAP", TriggerTrapException},
+        {"MaxStack", MaxStackDepth},
+        {"MaxMethod", MaxMethodNameTest12345678901234567890123456789012345678901234567890ABC},
+        {"STACKOF", StackOverflow},
+        {"OOM", Oom},
+        {"PCZero", ProgramCounterZero},
+        {"MTCrash", MultiThreadCrash},
+        {"StackOver64", StackOver64},
+        {"StackTop", StackTop},
+        {"CrashTest", CrashTest},
+    };
 
-    if (!strcasecmp(arg, "SIGILL")) {
-        return RaiseIllegalInstructionException();
-    }
-
-    if (!strcasecmp(arg, "triSIGILL")) {
-        return IllegalInstructionException();
-    }
-
-    if (!strcasecmp(arg, "SIGSEGV")) {
-        return RaiseSegmentFaultException();
-    }
-
-    if (!strcasecmp(arg, "SIGTRAP")) {
-        return RaiseTrapException();
-    }
-
-    if (!strcasecmp(arg, "SIGABRT")) {
-        return RaiseAbort();
-    }
-
-    if (!strcasecmp(arg, "triSIGABRT")) {
-        return Abort();
-    }
-
-    if (!strcasecmp(arg, "triSIGSEGV")) {
-        return SegmentFaultException();
-    }
-
-    if (!strcasecmp(arg, "SIGBUS")) {
-        return RaiseBusError();
-    }
-
-    if (!strcasecmp(arg, "triSIGTRAP")) {
-        return TriggerTrapException();
+    int length = sizeof(actions) / sizeof(actions[0]);
+    for (int i = 0; i < length; i++) {
+        if (!strcasecmp(arg, actions[i].action)) {
+            return actions[i].handler();
+        }
     }
 
     if (!strcasecmp(arg, "Loop")) {
@@ -428,43 +421,6 @@ uint64_t ParseAndDoCrash(const char *arg)
             i++;
         }
     }
-
-    if (!strcasecmp(arg, "MaxStack")) {
-        return MaxStackDepth();
-    }
-
-    if (!strcasecmp(arg, "MaxMethod")) {
-        return MaxMethodNameTest12345678901234567890123456789012345678901234567890ABC();
-    }
-
-    if (!strcasecmp(arg, "STACKOF")) {
-        return StackOverflow();
-    }
-
-    if (!strcasecmp(arg, "OOM")) {
-        return Oom();
-    }
-
-    if (!strcasecmp(arg, "PCZero")) {
-        return ProgramCounterZero();
-    }
-
-    if (!strcasecmp(arg, "MTCrash")) {
-        return MultiThreadCrash();
-    }
-
-    if (!strcasecmp(arg, "StackOver64")) {
-        return StackOver64();
-    }
-
-    if (!strcasecmp(arg, "StackTop")) {
-        return StackTop();
-    }
-
-    if (!strcasecmp(arg, "CrashTest")) {
-        return CrashTest();
-    }
-
     return 0;
 }
 
