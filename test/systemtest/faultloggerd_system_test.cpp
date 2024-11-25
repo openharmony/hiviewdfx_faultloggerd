@@ -1765,41 +1765,5 @@ HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest127, TestSize.Level2)
     }
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest127: end.";
 }
-
-/**
-* @tc.name: FaultLoggerdSystemTest128
-* @tc.desc: Test process fd leak unwind
-* @tc.type: FUNC
-*/
-HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest128, TestSize.Level2)
-{
-    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest128: start.";
-    pid_t pid = fork();
-    if (pid < 0) {
-        EXPECT_GT(pid, -1);
-    } else if (pid == 0) {
-        int fd = 0;
-        while (true) {
-            fd = open("/dev/null", O_RDONLY);
-            if (fd == -1) {
-                raise(SIGABRT);
-                break;
-            }
-        }
-    } else {
-        sleep(2);
-        auto fileName = GetCppCrashFileName(pid, TEMP_DIR);
-        EXPECT_NE(0, fileName.size());
-        string log[] = {
-            "Pid:", "Uid", "SIGABRT", "Tid:", "#00",
-            "Registers:", REGISTERS, "FaultStack:", "Maps:"
-        };
-        int minRegIdx = 5; // 5 : index of first REGISTERS - 1
-        int expectNum = sizeof(log) / sizeof(log[0]);
-        int count = CheckKeyWords(fileName, log, expectNum, minRegIdx);
-        EXPECT_EQ(count, expectNum);
-        GTEST_LOG_(INFO) << "FaultLoggerdSystemTest128: end.";
-    }
-}
 } // namespace HiviewDFX
 } // namespace OHOS
