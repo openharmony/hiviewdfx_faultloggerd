@@ -48,17 +48,6 @@ enum ProcessFlowMode : int32_t {
     FUSION_MODE,
 };
 
-enum RemoteProcessType : int32_t {
-    MAIN_PROCESS,
-    VIRTUAL_PROCESS
-};
-
-enum PidType : int32_t {
-    REAL_PROCESS_PID,
-    VIRTUAL_PROCESS_PID,
-    PID_MAX,
-};
-
 typedef enum {
     NONE = 0,
     MESSAGE_FATAL, // hilog last fatal log message
@@ -115,14 +104,18 @@ struct ProcessDumpRequest {
     uint64_t stackId;
     /** application runing unique Id */
     char appRunningId[MAX_APP_RUNNING_UNIQUE_ID_LEN];
-    /** source process with processdump pipe */
-    int pmPipeFd[2];
-    /** vm process with proceeesump pipe */
-    int vmPipeFd[2];
+    /** source child process with processdump pipe */
+    int childPipeFd[2];
     /** is integrate crash dump flow 0:false 1:true */
     int32_t dumpMode;
+    /** vm process pid addr */
+    intptr_t vmProcRealPid;
+    /** whether block source process pid */
+    intptr_t isBlockCrash;
     uintptr_t crashObj;
 };
+
+static const int CRASH_BLOCK_EXIT_FLAG  = 0x13579BDF;
 #ifdef __cplusplus
 }
 #endif
