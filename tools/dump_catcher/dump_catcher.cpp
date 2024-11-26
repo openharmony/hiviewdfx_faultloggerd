@@ -27,19 +27,20 @@ DumpCatcher &DumpCatcher::GetInstance()
     return ins;
 }
 
-void DumpCatcher::Dump(int32_t pid, int32_t tid) const
+void DumpCatcher::Dump(int32_t pid, int32_t tid, int timeout) const
 {
     DfxDumpCatcher dfxDump;
     std::string msg = "";
-    bool dumpRet = dfxDump.DumpCatch(pid, tid, msg);
-    if (!dumpRet) {
-        printf("Dump Failed.\n");
+    auto dumpResult = dfxDump.DumpCatchWithTimeout(pid, msg, timeout, tid);
+    if (dumpResult.first == -1) {
+        printf("Result:dump failed.\n");
+    } else if (dumpResult.first == 0) {
+        printf("Result:dump normal stack success.\n");
+    } else if (dumpResult.first == 1) {
+        printf("Result:dump kernel stack success.\n");
     }
-    if (!msg.empty()) {
-        printf("%s\n", msg.c_str());
-    } else {
-        printf("Dump msg empty.\n");
-    }
+    printf("%s", dumpResult.second.c_str());
+    printf("%s\n", msg.c_str());
 }
 } // namespace HiviewDFX
 } // namespace OHOS
