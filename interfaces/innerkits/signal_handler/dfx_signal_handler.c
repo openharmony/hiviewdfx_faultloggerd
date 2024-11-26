@@ -210,14 +210,8 @@ static void FillLastFatalMessageLocked(int32_t sig)
 
 static bool FillDebugMessageLocked(int32_t sig, siginfo_t *si)
 {
-    if (sig != SIGLEAK_STACK || si == NULL || si->si_signo != SIGLEAK_STACK ||
-        (si->si_code != SIGLEAK_STACK_FDSAN && si->si_code != SIGLEAK_STACK_JEMALLOC)) {
+    if (sig != SIGLEAK_STACK || si == NULL) {
         return true;
-    }
-    debug_msg_t *dMsg = (debug_msg_t*)si->si_value.sival_ptr;
-    if (g_request.timeStamp > dMsg->timestamp + PROCESSDUMP_TIMEOUT * NUMBER_ONE_THOUSAND) {
-        DFXLOGE("The event has timed out since it was triggered");
-        return false;
     }
     switch (si->si_code) {
         case SIGLEAK_STACK_FDSAN: {
@@ -230,9 +224,15 @@ static bool FillDebugMessageLocked(int32_t sig, siginfo_t *si)
         }
         case SIGLEAK_STACK_BADFD:
             g_request.msg.type = MESSAGE_BADFD;
-            break;
+            /* fall-through */
         default:
-            break;
+            return true;
+    }
+
+    debug_msg_t *dMsg = (debug_msg_t*)si->si_value.sival_ptr;
+    if (dMsg == NULL || g_request.timeStamp > dMsg->timestamp + PROCESSDUMP_TIMEOUT * NUMBER_ONE_THOUSAND) {
+        DFXLOGE("The event has timed out since it was triggered");
+        return false;
     }
     return true;
 }
