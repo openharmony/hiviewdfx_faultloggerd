@@ -44,6 +44,7 @@
 #endif
 
 #define LOCAL_HANDLER_STACK_SIZE (128 * 1024) // 128K
+constexpr uint32_t FAULTLOGGERD_UID = 1202;
 
 static CrashFdFunc g_crashFdFn = nullptr;
 static void *g_reservedChildStack = nullptr;
@@ -79,7 +80,7 @@ static int DoCrashHandler(void* arg)
     if (g_crashFdFn == nullptr) {
         CrashLocalHandler(&g_request);
     } else {
-        int fd = g_crashFdFn();
+        int fd = g_crashFdFn(&g_request);
         CrashLocalHandlerFd(fd, &g_request);
         if (fd >= 0) {
             close(fd);
@@ -98,7 +99,7 @@ void DFX_SignalLocalHandler(int sig, siginfo_t *si, void *context)
     g_request.type = static_cast<ProcessDumpType>(sig);
     g_request.tid = gettid();
     g_request.pid = getpid();
-    g_request.uid = getuid();
+    g_request.uid = FAULTLOGGERD_UID;
     g_request.timeStamp = GetTimeMilliseconds();
     DFXLOG_INFO("DFX_SignalLocalHandler :: sig(%d), pid(%d), tid(%d).", sig, g_request.pid, g_request.tid);
 

@@ -24,8 +24,11 @@
 #include <cerrno>
 #include "dfx_log.h"
 #include "dfx_cutil.h"
+#include "dfx_signal.h"
 #include "dfx_signalhandler_exception.h"
 #include "faultloggerd_client.h"
+#include "hisysevent.h"
+#include "string_printf.h"
 #include "unwinder.h"
 
 #ifdef LOG_DOMAIN
@@ -53,7 +56,7 @@ static __attribute__((noinline)) int RequestOutputLogFile(const struct ProcessDu
     faultloggerdRequest.pid = request->pid;
     faultloggerdRequest.tid = request->tid;
     faultloggerdRequest.uid = request->uid;
-    faultloggerdRequest.time = request->timeStamp + 1;
+    faultloggerdRequest.time = request->timeStamp;
     return RequestFileDescriptorEx(&faultloggerdRequest);
 }
 
@@ -77,15 +80,20 @@ static __attribute__((noinline)) void PrintLog(int fd, const char *format, ...)
     }
 }
 
-__attribute__((noinline)) void CrashLocalUnwind(const int fd, const ucontext_t* uc)
+__attribute__((noinline)) void CrashLocalUnwind(const int fd,
+                                                const struct ProcessDumpRequest* request,
+                                                std::string& errMessage)
 {
-    if (uc == nullptr) {
+    if (request == nullptr) {
         return;
     }
+    std::string logContext = OHOS::HiviewDFX::StringPrintf("Tid:%d, Name:%s\n", request->tid, request->threadName);
     OHOS::HiviewDFX::Unwinder unwind;
-    unwind.UnwindLocalWithContext(*uc);
-    auto regs = OHOS::HiviewDFX::DfxRegs::CreateFromUcontext(*uc);
-    std::string logContext = unwind.GetFramesStr(unwind.GetFrames()) + regs->PrintRegs();
+    unwind.UnwindLocalWithContext(request->context);
+    logContext.append(unwind.GetFramesStr(unwind.GetFrames()));
+    errMessage += logContext;
+    auto regs = OHOS::HiviewDFX::DfxRegs::CreateFromUcontext(request->context);
+    logContext.append(regs->PrintRegs());
     logContext.append("\nMaps:\n");
     for (const auto &map : unwind.GetMaps()->GetMaps()) {
         logContext.append(map->ToString());
@@ -97,7 +105,7 @@ __attribute__((noinline)) void CrashLocalUnwind(const int fd, const ucontext_t* 
 }
 
 // currently, only stacktrace is logged to faultloggerd
-void CrashLocalHandler(const struct ProcessDumpRequest* request)
+void CrashLocalHandler(struct ProcessDumpRequest* request)
 {
     int fd = RequestOutputLogFile(request);
     CrashLocalHandlerFd(fd, request);
@@ -106,9 +114,9 @@ void CrashLocalHandler(const struct ProcessDumpRequest* request)
     }
 }
 
-static void PrintTimeStamp(const int fd)
+static void PrintTimeStamp(const int fd, const struct ProcessDumpRequest* request)
 {
-    uint64_t currentTime = GetTimeMilliseconds();
+    uint64_t currentTime = request->timeStamp;
     char secBuf[BUF_SZ] = {0};
     char printBuf[BUF_SZ] = {0};
     time_t sec = static_cast<time_t>(currentTime / TIME_DIV);
@@ -119,50 +127,38 @@ static void PrintTimeStamp(const int fd)
     }
     (void)strftime(secBuf, sizeof(secBuf) - 1, "%Y-%m-%d %H:%M:%S", t);
     if (snprintf_s(printBuf, sizeof(printBuf), sizeof(printBuf) - 1,
-            "%s.%03" PRIx64 "\n", secBuf, millisec) < 0) {
+            "%s.%03u\n", secBuf, millisec) < 0) {
         DFXLOG_ERROR("snprintf timestamp fail");
         return;
     }
     PrintLog(fd, "Timestamp:%s", printBuf);
 }
 
-static void ReportToHiview(const char* logPath, const struct ProcessDumpRequest* request)
-{
-    struct CrashDumpException exception;
-    (void)memset_s(&exception, sizeof(struct CrashDumpException), 0, sizeof(struct CrashDumpException));
-    exception.pid = request->pid;
-    exception.uid = request->uid;
-    exception.error = CRASH_DUMP_LOCAL_REPORT;
-    exception.time = static_cast<int64_t>(GetTimeMilliseconds());
-    if (strncpy_s(exception.message, sizeof(exception.message) - 1, logPath, strlen(logPath)) != 0) {
-        DFXLOG_ERROR("strcpy exception msg fail");
-        return;
-    }
-    ReportException(exception);
-}
-
-void CrashLocalHandlerFd(const int fd, const struct ProcessDumpRequest* request)
+void CrashLocalHandlerFd(const int fd, struct ProcessDumpRequest* request)
 {
     if (request == nullptr) {
         return;
     }
-    PrintTimeStamp(fd);
+    PrintTimeStamp(fd, request);
     PrintLog(fd, "Pid:%d\n", request->pid);
     PrintLog(fd, "Uid:%d\n", request->uid);
     PrintLog(fd, "Process name:%s\n", request->processName);
-#if defined(__LP64__)
-    PrintLog(fd, "Reason:Signal(%d)@%018p\n", request->siginfo.si_signo, request->siginfo.si_addr);
-#else
-    PrintLog(fd, "Reason:Signal(%d)@%010p\n", request->siginfo.si_signo, request->siginfo.si_addr);
-#endif
-    PrintLog(fd, "Fault thread info:\n");
-    PrintLog(fd, "Tid:%d, Name:%s\n", request->tid, request->threadName);
-    CrashLocalUnwind(fd, &(request->context));
-    char logFileName[BUF_SZ] = {0};
-    if (snprintf_s(logFileName, sizeof(logFileName), sizeof(logFileName) - 1,
-        "/data/log/faultlog/temp/cppcrash-%d-%llu", request->pid, request->timeStamp + 1) < 0) {
-        DFXLOG_ERROR("snprintf logFileName fail");
-        return;
+    if (request->siginfo.si_pid == request->pid) {
+        request->siginfo.si_uid = request->uid;
     }
-    ReportToHiview(logFileName, request);
+    std::string reason = OHOS::HiviewDFX::DfxSignal::PrintSignal(request->siginfo) + "\n";
+    std::string errMessage = reason;
+    PrintLog(fd, reason.c_str());
+    PrintLog(fd, "Fault thread info:\n");
+    CrashLocalUnwind(fd, request, errMessage);
+    HiSysEventWrite(
+        OHOS::HiviewDFX::HiSysEvent::Domain::RELIABILITY,
+        "CPP_CRASH_EXCEPTION",
+        OHOS::HiviewDFX::HiSysEvent::EventType::FAULT,
+        "PROCESS_NAME", request->processName,
+        "PID", request->pid,
+        "UID", request->uid,
+        "HAPPEN_TIME", request->timeStamp,
+        "ERROR_CODE", CRASH_DUMP_LOCAL_REPORT,
+        "ERROR_MSG", errMessage);
 }

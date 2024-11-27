@@ -17,6 +17,7 @@
 #include <cstdint>
 #include <unistd.h>
 #include "dfx_log.h"
+#include "dfx_dump_request.h"
 #include "fault_logger_daemon.h"
 #include "faultloggerd_client.h"
 #include "securec.h"
@@ -25,13 +26,11 @@
 #include "dfx_signal_local_handler.h"
 #include "dfx_util.h"
 
-static int DoGetCrashFd(void)
+static int DoGetCrashFd(const struct ProcessDumpRequest* request)
 {
     OHOS::HiviewDFX::FaultLoggerDaemon daemon;
     int32_t type = (int32_t)FaultLoggerType::CPP_CRASH;
-    int32_t pid = getpid();
-    uint64_t time = OHOS::HiviewDFX::GetTimeMilliSeconds();
-    int fd = daemon.CreateFileForRequest(type, pid, getproctid(), time, false);
+    int fd = daemon.CreateFileForRequest(type, request->pid, request->tid, request->timeStamp, false);
     return fd;
 }
 #endif
