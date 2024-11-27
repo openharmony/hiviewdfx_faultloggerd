@@ -433,8 +433,8 @@ void DfxDumpCatcher::AsyncGetAllTidKernelStack(pid_t pid, int waitMilliSeconds)
     }
 }
 
-bool DfxDumpCatcher::HandlePollError(std::string &resMsg, const uint64_t endTime,
-                                     int &remainTime, bool &collectAllTidStack, int &ret)
+bool DfxDumpCatcher::HandlePollError(const uint64_t endTime, int &remainTime,
+                                     bool &collectAllTidStack, std::string &resMsg, int &ret)
 {
     if (errno == EINTR) {
         uint64_t now = GetAbsTimeMilliSeconds();
@@ -455,8 +455,8 @@ bool DfxDumpCatcher::HandlePollError(std::string &resMsg, const uint64_t endTime
     return false;
 }
 
-bool DfxDumpCatcher::HandlePollTimeout(std::string &resMsg, const int timeout,
-                                       int &remainTime, bool &collectAllTidStack, int &ret)
+bool DfxDumpCatcher::HandlePollTimeout(const int timeout, int &remainTime,
+                                       bool &collectAllTidStack, std::string &resMsg, int &ret)
 {
     if (!collectAllTidStack && (remainTime == DUMPCATCHER_REMOTE_P90_TIMEOUT)) {
         AsyncGetAllTidKernelStack(pid_);
@@ -506,8 +506,8 @@ bool DfxDumpCatcher::HandlePollEvents(std::pair<int, std::string> &bufState, std
     return true;
 }
 
-std::pair<bool, int> DfxDumpCatcher::DumpRemotePoll(std::pair<int, std::string> &bufState,
-                                                    std::pair<int, std::string> &resState, const int timeout)
+std::pair<bool, int> DfxDumpCatcher::DumpRemotePoll(const int timeout, std::pair<int, std::string> &bufState,
+                                                    std::pair<int, std::string> &resState)
 {
     int ret = DUMP_POLL_INIT;
     bool res = false;
@@ -527,10 +527,10 @@ std::pair<bool, int> DfxDumpCatcher::DumpRemotePoll(std::pair<int, std::string> 
     do {
         int pollRet = poll(readFds, fdsSize, remainTime);
         if (pollRet < 0) {
-            isContinue = HandlePollError(resState.second, endTime, remainTime, collectAllTidStack, ret);
+            isContinue = HandlePollError(endTime, remainTime, collectAllTidStack, resState.second, ret);
             continue;
         } else if (pollRet == 0) {
-            isContinue = HandlePollTimeout(resState.second, timeout, remainTime, collectAllTidStack, ret);
+            isContinue = HandlePollTimeout(timeout, remainTime, collectAllTidStack, resState.second, ret);
             continue;
         }
         if (!HandlePollEvents(bufState, resState, readFds, bPipeConnect, res)) {
@@ -560,7 +560,7 @@ int DfxDumpCatcher::DoDumpRemotePoll(int bufFd, int resFd, int timeout, std::str
     }
     std::pair<int, std::string> bufState = std::make_pair(bufFd, "");
     std::pair<int, std::string> resState = std::make_pair(resFd, "");
-    std::pair<bool, int> result = DumpRemotePoll(bufState, resState, timeout);
+    std::pair<bool, int> result = DumpRemotePoll(timeout, bufState, resState);
 
     DFXLOGI("%{public}s :: %{public}s :: %{public}s", DFXDUMPCATCHER_TAG.c_str(), __func__, resState.second.c_str());
     msg = isJson && result.first ? bufState.second : (resState.second + bufState.second);

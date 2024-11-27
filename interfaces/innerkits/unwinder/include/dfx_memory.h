@@ -43,7 +43,7 @@ public:
     virtual size_t Read(uintptr_t& addr, void* val, size_t size, bool incre = false);
 
     template <typename T>
-    bool Read(uintptr_t& addr, T *val, bool incre = false)
+    bool Read(uintptr_t &addr, T *val, bool incre = false)
     {
         if (Read(addr, val, sizeof(T), incre) == sizeof(T)) {
             return true;
@@ -52,7 +52,7 @@ public:
     }
 
     template <typename T>
-    inline T ReadValue(uintptr_t& addr, bool incre = false)
+    inline T ReadValue(uintptr_t &addr, bool incre = false)
     {
         T tmp = 0;
         Read<T>(addr, &tmp, incre);

@@ -90,14 +90,14 @@ private:
     bool DoDumpCatchRemote(int pid, int tid, std::string& msg, bool isJson = false,
         int timeout = DUMPCATCHER_REMOTE_TIMEOUT);
     int DoDumpRemotePid(int pid, std::string& msg, bool isJson = false, int32_t timeout = DUMPCATCHER_REMOTE_TIMEOUT);
-    bool HandlePollError(std::string &resMsg, const uint64_t endTime,
-                         int &remainTime, bool &collectAllTidStack, int &ret);
-    bool HandlePollTimeout(std::string &resMsg, const int timeout,
-                           int &remainTime, bool &collectAllTidStack, int &ret);
+    bool HandlePollError(const uint64_t endTime, int &remainTime,
+                         bool &collectAllTidStack, std::string &resMsg, int &ret);
+    bool HandlePollTimeout(const int timeout, int &remainTime,
+                           bool &collectAllTidStack, std::string &resMsg, int &ret);
     bool HandlePollEvents(std::pair<int, std::string> &bufState, std::pair<int, std::string> &resState,
                           const struct pollfd (&readFds)[2], bool &bPipeConnect, bool &res);
-    std::pair<bool, int> DumpRemotePoll(std::pair<int, std::string> &bufState,
-                                        std::pair<int, std::string> &resState, const int timeout);
+    std::pair<bool, int> DumpRemotePoll(const int timeout, std::pair<int, std::string> &bufState,
+                                        std::pair<int, std::string> &resState);
     int DoDumpRemotePoll(int bufFd, int resFd, int timeout, std::string &msg, bool isJson = false);
     bool DoReadBuf(int fd, std::string& msg);
     bool DoReadRes(int fd, bool &ret, std::string& msg);

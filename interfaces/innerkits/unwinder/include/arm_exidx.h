@@ -62,7 +62,7 @@ private:
     void LogRawData();
     bool ExtractEntryData(uintptr_t entryOffset);
     bool ExtractEntryTab(uintptr_t tabOffset);
-    bool ExtractEntryTabByPersonality(uintptr_t& tabOffset, uint32_t& data, uint8_t& tableCount);
+    bool ExtractEntryTabByPersonality(uintptr_t &tabOffset, uint32_t &data, uint8_t &tableCount);
     bool GetOpCode();
     bool Decode(DecodeTable decodeTable[], size_t size);
     bool Decode00xxxxxx();
