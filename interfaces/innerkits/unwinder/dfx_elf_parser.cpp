@@ -31,6 +31,11 @@
 #define PAGE_SIZE 4096
 #endif
 
+// workaround for non mingw build
+#ifndef EM_LOONGARCH
+#define EM_LOONGARCH	258 // LOONGARCH
+#endif
+
 namespace OHOS {
 namespace HiviewDFX {
 namespace {
