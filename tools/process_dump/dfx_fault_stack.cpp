@@ -276,6 +276,7 @@ void FaultStack::PrintRegisterMemory() const
 
 bool FaultStack::ParseUnwindStack(std::shared_ptr<DfxMaps> maps, std::vector<DfxFrame>& frames)
 {
+    bool hasAddFrame = false;
     if (maps == nullptr) {
         DFXLOGE("%{public}s : maps is null.", __func__);
         return false;
@@ -300,7 +301,7 @@ bool FaultStack::ParseUnwindStack(std::shared_ptr<DfxMaps> maps, std::vector<Dfx
                 if (elf == nullptr || !elf->IsValid()) {
                     DFXLOGE("%{public}s : Failed to create DfxElf, elf path(%{public}s).", __func__,
                         frame.mapName.c_str());
-                    return false;
+                    continue;
                 }
                 loadBias = elf->GetLoadBias();
                 frame.buildId = elf->GetBuildId();
@@ -310,13 +311,14 @@ bool FaultStack::ParseUnwindStack(std::shared_ptr<DfxMaps> maps, std::vector<Dfx
 
             frame.relPc = frame.pc - map->begin + map->offset + static_cast<uint64_t>(loadBias);
             frames.emplace_back(frame);
+            hasAddFrame = true;
             constexpr int MAX_VALID_ADDRESS_NUM = 32;
             if (++index >= MAX_VALID_ADDRESS_NUM) {
                 return true;
             }
         }
     }
-    return true;
+    return hasAddFrame;
 }
 } // namespace HiviewDFX
 } // namespace OHOS
