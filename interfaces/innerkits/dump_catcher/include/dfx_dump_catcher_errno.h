@@ -28,7 +28,7 @@ namespace HiviewDFX {
  * It describes the error status of dumpcatch.
  */
 enum DumpCatchErrorCode : int32_t {
-    DUMPCATCH_ESUCCESS = 0,                           /* no error */
+    DUMPCATCH_ESUCCESS = 0,                           /* success */
 
     DUMPCATCH_EPARAM = 101,                           /* param error */
     DUMPCATCH_NO_PROCESS,                             /* process has exited */
@@ -54,6 +54,7 @@ enum DumpCatchErrorCode : int32_t {
     DUMPCATCH_KERNELSTACK_ECREATE = 401,              /* kernelstack fail due to create hstackval fail */
     DUMPCATCH_KERNELSTACK_EOPEN,                      /* kernelstack fail due to open bbox fail */
     DUMPCATCH_KERNELSTACK_EIOCTL,                     /* kernelstack fail due to ioctl fail */
+    DUMPCATCH_KERNELSTACK_NONEED,                     /* no need to dump kernelstack */
 };
 
 class DfxDumpCatchError {

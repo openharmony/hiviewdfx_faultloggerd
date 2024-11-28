@@ -19,7 +19,7 @@ namespace OHOS {
 namespace HiviewDFX {
 
 const std::map<int32_t, std::string> ERROR_CODE_MAP = {
-    { DUMPCATCH_ESUCCESS, std::string("no error") },
+    { DUMPCATCH_ESUCCESS, std::string("success") },
     { DUMPCATCH_EPARAM, std::string("param error") },
     { DUMPCATCH_NO_PROCESS, std::string("process has exited") },
     { DUMPCATCH_IS_DUMPING, std::string("process is dumping") },
@@ -39,6 +39,7 @@ const std::map<int32_t, std::string> ERROR_CODE_MAP = {
     { DUMPCATCH_KERNELSTACK_ECREATE, std::string("kernelstack fail due to create hstackval fail") },
     { DUMPCATCH_KERNELSTACK_EOPEN, std::string("kernelstack fail due to open bbox fail") },
     { DUMPCATCH_KERNELSTACK_EIOCTL, std::string("kernelstack fail due to ioctl fail") },
+    { DUMPCATCH_KERNELSTACK_NONEED, std::string("no need to dump kernelstack") },
     { DUMPCATCH_UNKNOWN, std::string("unknown reason") }
 };
 
