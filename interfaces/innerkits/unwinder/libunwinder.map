@@ -96,6 +96,10 @@
       OHOS::HiviewDFX::DfxMap::IsMapExec*;
       OHOS::HiviewDFX::DfxMaps::IsLegalMapItem*;
       OHOS::HiviewDFX::DfxElf::GetMmapPtr*;
+      OHOS::HiviewDFX::LocalThreadContextMix::GetInstance*;
+      OHOS::HiviewDFX::LocalThreadContextMix::GetMapByPc*;
+      OHOS::HiviewDFX::LocalThreadContextMix::FindUnwindTable*;
+      OHOS::HiviewDFX::LocalThreadContextMix::AccessMem*;
     };
   local:
     *;

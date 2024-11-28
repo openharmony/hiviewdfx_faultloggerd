@@ -27,13 +27,15 @@ namespace OHOS {
 namespace HiviewDFX {
 constexpr int32_t BACKTRACE_CURRENT_THREAD = -1;
 
+std::string GetThreadHead(int32_t tid);
+
 class BacktraceLocalThread {
 public:
     explicit BacktraceLocalThread(int32_t tid, std::shared_ptr<Unwinder> unwinder);
     ~BacktraceLocalThread();
 
     bool Unwind(bool fast = false, size_t maxFrameNum = DEFAULT_MAX_FRAME_NUM, size_t skipFrameNum = 0);
-    bool UnwindSupportMix(bool fast, size_t maxFrameNum = DEFAULT_MAX_FRAME_NUM, size_t skipFrameNum = 0);
+    bool UnwindOtherThreadMix(bool fast, size_t maxFrameNum = DEFAULT_MAX_FRAME_NUM, size_t skipFrameNum = 0);
 
     const std::vector<DfxFrame>& GetFrames() const;
     void SetFrames(const std::vector<DfxFrame>& frames);

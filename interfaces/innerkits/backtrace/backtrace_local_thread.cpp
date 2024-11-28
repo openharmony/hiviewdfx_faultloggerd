@@ -30,6 +30,17 @@ namespace {
 #define LOG_TAG "DfxBacktraceLocal"
 }
 
+std::string GetThreadHead(int32_t tid)
+{
+    std::string threadName;
+    if (tid == BACKTRACE_CURRENT_THREAD) {
+        tid = gettid();
+    }
+    ReadThreadName(tid, threadName);
+    std::string threadHead = "Tid:" + std::to_string(tid) + ", Name:" + threadName + "\n";
+    return threadHead;
+}
+
 BacktraceLocalThread::BacktraceLocalThread(int32_t tid, std::shared_ptr<Unwinder> unwinder)
     : tid_(tid), unwinder_(unwinder)
 {
@@ -100,7 +111,7 @@ std::string BacktraceLocalThread::GetFormattedStr(bool withThreadName)
     return ss;
 }
 
-bool BacktraceLocalThread::UnwindSupportMix(bool fast, size_t maxFrameNum, size_t skipFrameNum)
+bool BacktraceLocalThread::UnwindOtherThreadMix(bool fast, size_t maxFrameNum, size_t skipFrameNum)
 {
     static std::mutex mutex;
     std::unique_lock<std::mutex> lock(mutex);
@@ -110,7 +121,7 @@ bool BacktraceLocalThread::UnwindSupportMix(bool fast, size_t maxFrameNum, size_
         return ret;
     }
     if (tid_ == BACKTRACE_CURRENT_THREAD || tid_ == gettid()) {
-        ret = unwinder_->UnwindLocal(false, fast, maxFrameNum, skipFrameNum + 1);
+        ret = unwinder_->UnwindLocal(false, fast, maxFrameNum, skipFrameNum + 1, true);
     } else {
         ret = unwinder_->UnwindLocalByOtherTid(tid_, fast, maxFrameNum, skipFrameNum + 1);
     }

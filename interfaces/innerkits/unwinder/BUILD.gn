@@ -38,7 +38,6 @@ dfx_unwinder_sources = [
   "dfx_symbols.cpp",
   "getcontext_x86_64.S",
   "thread_context.cpp",
-  "thread_context_mix.cpp",
   "unwinder.cpp",
   "unwinder_config.cpp",
 ]

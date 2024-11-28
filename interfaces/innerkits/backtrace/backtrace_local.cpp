@@ -16,10 +16,10 @@
 #include "backtrace_local.h"
 
 #include <cstring>
-#include <dirent.h>
 #include <mutex>
-#include <unistd.h>
 #include <vector>
+
+#include <unistd.h>
 
 #include "backtrace_local_thread.h"
 #include "elapsed_time.h"
@@ -38,17 +38,6 @@ namespace {
 #undef LOG_TAG
 #define LOG_TAG "DfxBacktrace"
 #define LOG_DOMAIN 0xD002D11
-
-std::string GetThreadHead(int32_t tid)
-{
-    std::string threadName;
-    if (tid == BACKTRACE_CURRENT_THREAD) {
-        tid = gettid();
-    }
-    ReadThreadName(tid, threadName);
-    std::string threadHead = "Tid:" + std::to_string(tid) + ", Name:" + threadName + "\n";
-    return threadHead;
-}
 }
 
 bool GetBacktraceFramesByTid(std::vector<DfxFrame>& frames, int32_t tid, size_t skipFrameNum, bool fast,

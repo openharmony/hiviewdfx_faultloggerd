@@ -13,12 +13,12 @@
  * limitations under the License.
  */
 
-#include "backtrace_local_mix.h"
+#include "backtrace_local.h"
 
 #include <cstring>
-#include <dirent.h>
-#include <mutex>
 #include <unistd.h>
+
+#include <mutex>
 #include <vector>
 
 #include "backtrace_local_thread.h"
@@ -28,7 +28,7 @@
 #include "dfx_util.h"
 #include "directory_ex.h"
 #include "procinfo.h"
-#include "thread_context_mix.h"
+#include "thread_context.h"
 #include "unwinder.h"
 
 namespace OHOS {
@@ -38,85 +38,34 @@ namespace {
 #undef LOG_TAG
 #define LOG_TAG "DfxBacktrace"
 #define LOG_DOMAIN 0xD002D11
-
-std::string GetThreadHead(int32_t tid)
-{
-    std::string threadName;
-    if (tid == BACKTRACE_CURRENT_THREAD) {
-        tid = gettid();
-    }
-    ReadThreadName(tid, threadName);
-    std::string threadHead = "Tid:" + std::to_string(tid) + ", Name:" + threadName + "\n";
-    return threadHead;
 }
 
-int GetMapByPcForOtherThread(uintptr_t pc, std::shared_ptr<DfxMap>& map, void *arg)
+namespace OtherThread {
+int GetMapByPc(uintptr_t pc, std::shared_ptr<DfxMap>& map, void *arg)
 {
-    UnwindContextMix* unwindContextMix = static_cast<UnwindContextMix *>(arg);
-    if (unwindContextMix == nullptr) {
-        return -1;
-    }
-    return unwindContextMix->maps->FindMapByAddr(pc, map) ? 0 : -1;
+    auto& instance = LocalThreadContextMix::GetInstance();
+    return instance.GetMapByPc(pc, map);
 }
 
-int FindUnwindTableForOtherThread(uintptr_t pc, UnwindTableInfo& outTableInfo, void *arg)
+int FindUnwindTable(uintptr_t pc, UnwindTableInfo& outTableInfo, void *arg)
 {
-    UnwindContextMix* unwindContextMix = static_cast<UnwindContextMix *>(arg);
-    if (unwindContextMix == nullptr) {
-        return -1;
-    }
-
-    std::shared_ptr<DfxMap> dfxMap;
-    if (unwindContextMix->maps->FindMapByAddr(pc, dfxMap)) {
-        if (dfxMap == nullptr) {
-            return -1;
-        }
-        auto elf = dfxMap->GetElf(getpid());
-        if (elf != nullptr) {
-            return elf->FindUnwindTableInfo(pc, dfxMap, outTableInfo);
-        }
-    }
-    return -1;
+    auto& instance = LocalThreadContextMix::GetInstance();
+    return instance.FindUnwindTable(pc, outTableInfo);
 }
 
-int AccessMemForOtherThread(uintptr_t addr, uintptr_t *val, void *arg)
+int AccessMem(uintptr_t addr, uintptr_t *val, void *arg)
 {
-    UnwindContextMix* unwindContextMix = static_cast<UnwindContextMix *>(arg);
-    if (unwindContextMix == nullptr) {
-        return -1;
-    }
-
-    *val = 0;
-    if (addr < unwindContextMix->context->sp ||
-        addr + sizeof(uintptr_t) >= unwindContextMix->context->sp + STACK_BUFFER_SIZE) {
-        std::shared_ptr<DfxMap> map;
-        if (unwindContextMix->maps->FindMapByAddr(addr, map)) {
-            if (map == nullptr) {
-                return -1;
-            }
-            auto elf = map->GetElf(getpid());
-            if (elf != nullptr) {
-                uint64_t foff = addr - map->begin + map->offset - elf->GetBaseOffset();
-                if (elf->Read(foff, val, sizeof(uintptr_t))) {
-                    return 0;
-                }
-            }
-        }
-        return -1;
-    } else {
-        size_t stackOffset = addr - unwindContextMix->context->sp;
-        if (stackOffset >= STACK_BUFFER_SIZE) {
-            return -1;
-        }
-        *val = *(reinterpret_cast<uintptr_t *>(&unwindContextMix->context->buffer[stackOffset]));
-    }
-    return 0;
+    auto& instance = LocalThreadContextMix::GetInstance();
+    return instance.AccessMem(addr, val);
 }
 }
 
 bool GetBacktraceStringByTidWithMix(std::string& out, int32_t tid, size_t skipFrameNum, bool fast,
-                             size_t maxFrameNums, bool enableKernelStack)
+    size_t maxFrameNums, bool enableKernelStack)
 {
+#if defined(__arm__)
+    fast = false;
+#endif
     std::vector<DfxFrame> frames;
     std::shared_ptr<Unwinder> unwinder = nullptr;
     if ((tid == gettid()) || (tid == BACKTRACE_CURRENT_THREAD)) {
@@ -124,13 +73,13 @@ bool GetBacktraceStringByTidWithMix(std::string& out, int32_t tid, size_t skipFr
     } else {
         std::shared_ptr<UnwindAccessors> accssors = std::make_shared<UnwindAccessors>();
         accssors->AccessReg = nullptr;
-        accssors->AccessMem = &AccessMemForOtherThread;
-        accssors->GetMapByPc = &GetMapByPcForOtherThread;
-        accssors->FindUnwindTable = &FindUnwindTableForOtherThread;
+        accssors->AccessMem = &OtherThread::AccessMem;
+        accssors->GetMapByPc = &OtherThread::GetMapByPc;
+        accssors->FindUnwindTable = &OtherThread::FindUnwindTable;
         unwinder = std::make_shared<Unwinder>(accssors, true);
     }
     BacktraceLocalThread thread(tid, unwinder);
-    bool ret = thread.UnwindSupportMix(fast, maxFrameNums, skipFrameNum + 1);
+    bool ret = thread.UnwindOtherThreadMix(fast, maxFrameNums, skipFrameNum + 1);
     frames = thread.GetFrames();
 
     if (!ret && enableKernelStack) {
@@ -143,7 +92,6 @@ bool GetBacktraceStringByTidWithMix(std::string& out, int32_t tid, size_t skipFr
         }
     }
     if (ret) {
-        out.clear();
         std::string threadHead = GetThreadHead(tid);
         out = threadHead + Unwinder::GetFramesStr(frames);
     }

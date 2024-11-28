@@ -28,7 +28,6 @@
 #include <unistd.h>
 
 #include "backtrace_local.h"
-#include "backtrace_local_mix.h"
 #include "backtrace_local_thread.h"
 #include "dfx_frame_formatter.h"
 #include "dfx_kernel_stack.h"
@@ -277,7 +276,7 @@ HWTEST_F(BacktraceLocalTest, BacktraceLocalTest007, TestSize.Level2)
     GTEST_LOG_(INFO) << "UnwindCurrentCost:" << counter.Elapsed();
     const auto& oldframes = oldthread.GetFrames();
     ASSERT_GT(oldframes.size(), MIN_FRAME_NUM);
-    std::string oldframe = DfxFrameFormatter::GetFrameStr(oldframes[MIN_FRAME_NUM]);
+    std::string oldframe = DfxFrameFormatter::GetFrameStr(oldframes[MIN_FRAME_NUM + 1]);
     GTEST_LOG_(INFO) << oldthread.GetFormattedStr();
     BacktraceLocalThread newthread(BACKTRACE_CURRENT_THREAD, unwinder);
     ASSERT_EQ(true, newthread.Unwind(false, DEFAULT_MAX_FRAME_NUM, MIN_FRAME_NUM));
@@ -285,7 +284,7 @@ HWTEST_F(BacktraceLocalTest, BacktraceLocalTest007, TestSize.Level2)
     const auto& newframes = newthread.GetFrames();
     GTEST_LOG_(INFO) << newthread.GetFormattedStr();
     ASSERT_EQ(oldframes.size(), newframes.size() + MIN_FRAME_NUM);
-    std::string newframe = DfxFrameFormatter::GetFrameStr(newframes[0]);
+    std::string newframe = DfxFrameFormatter::GetFrameStr(newframes[1]);
     size_t skip = 3; // skip #0x
     ASSERT_EQ(oldframe.erase(0, skip), newframe.erase(0, skip));
     GTEST_LOG_(INFO) << "BacktraceLocalTest007: end.";
@@ -359,7 +358,7 @@ HWTEST_F(BacktraceLocalTest, BacktraceLocalTest010, TestSize.Level2)
     std::string str = frame.substr(start, end - start);
     GTEST_LOG_(INFO) << "frame" << frame;
     GTEST_LOG_(INFO) << "str" << str;
-    ASSERT_TRUE(str.find("OHOS::HiviewDFX::GetBacktrace(") != std::string::npos);
+    ASSERT_TRUE(str.find("OHOS::HiviewDFX::GetBacktrace") != std::string::npos);
     GTEST_LOG_(INFO) << "BacktraceLocalTest010: end.";
 }
 
@@ -498,84 +497,101 @@ HWTEST_F(BacktraceLocalTest, BacktraceLocalTest015, TestSize.Level2)
     GTEST_LOG_(INFO) << "BacktraceLocalTest015: end.";
 }
 
+std::vector<std::string> GetLastLineAddr(const std::string& inputStr, bool isGetFromTop, int keepLine, int colNumber)
+{
+    std::istringstream iss(inputStr);
+    std::string line;
+    std::vector<std::string> lines;
+    std::vector<std::string> results;
+    // get lines
+    while (std::getline(iss, line)) {
+        lines.push_back(line);
+        if (lines.size() > keepLine) {
+            if (isGetFromTop) { // 0 : cut from top to bottom
+                lines.pop_back();
+            } else {
+                lines.erase(lines.begin());
+            }
+        }
+    }
+    // get column
+    for (const auto& stackLine : lines) {
+        std::istringstream lineIss(stackLine);
+        std::string token;
+        int tokenCount = 0;
+        while (lineIss >> token) {
+            tokenCount++;
+            if (tokenCount == colNumber) {
+                results.push_back(token);
+                break;
+            }
+        }
+    }
+    return results;
+}
+
+void Compare(const std::string& oldStr, const std::string& mixStr, bool isGetFromTop, int endLine, int colNumber)
+{
+    std::vector<std::string> oldStrAddrs = GetLastLineAddr(oldStr, isGetFromTop, endLine, colNumber);
+    std::vector<std::string> mixStrAddrs = GetLastLineAddr(mixStr, isGetFromTop, endLine, colNumber);
+    ASSERT_EQ(oldStrAddrs, mixStrAddrs);
+}
+
+void CallMixLast(int tid, bool fast, bool isGetFromTop, int keepLine, int colNumber)
+{
+    std::string oldStr;
+    bool ret = GetBacktraceStringByTid(oldStr, tid, 0, fast);
+    ASSERT_TRUE(ret) << "GetBacktraceStringByTid failed";
+    std::string mixStr;
+    ret = GetBacktraceStringByTidWithMix(mixStr, tid, 0, fast);
+    ASSERT_TRUE(ret) << "GetBacktraceStringByTidWithMix failed";
+    GTEST_LOG_(INFO) << "oldStr:" << oldStr;
+    GTEST_LOG_(INFO) << "mixStr:" << mixStr;
+    Compare(oldStr, mixStr, isGetFromTop, keepLine, colNumber);
+}
+
+void CallMixFirst(int tid, bool fast, bool isGetFromTop, int keepLine, int colNumber)
+{
+    std::string mixStr;
+    bool ret = GetBacktraceStringByTidWithMix(mixStr, tid, 0, fast);
+    ASSERT_TRUE(ret) << "GetBacktraceStringByTidWithMix failed";
+    std::string oldStr;
+    ret = GetBacktraceStringByTid(oldStr, tid, 0, fast);
+    ASSERT_TRUE(ret) << "GetBacktraceStringByTid failed";
+    GTEST_LOG_(INFO) << "oldStr:" << oldStr;
+    GTEST_LOG_(INFO) << "mixStr:" << mixStr;
+    Compare(oldStr, mixStr, isGetFromTop, keepLine, colNumber);
+}
+
 /**
  * @tc.name: BacktraceLocalTest016
- * @tc.desc: test get backtrace of current thread dwarf in arm32
+ * @tc.desc: test backtrace other thread
  * @tc.type: FUNC
  */
 HWTEST_F(BacktraceLocalTest, BacktraceLocalTest016, TestSize.Level2)
 {
-    GTEST_LOG_(INFO) << "BacktraceLocalTest016: start.";
-    int32_t tid = gettid();
-    std::string str;
-    GetBacktraceStringByTidWithMix(str, tid, 0, false);
-    GTEST_LOG_(INFO) << "BacktraceLocalTest016     : end.";
-}
-
-/**
- * @tc.name: BacktraceLocalTest017
- * @tc.desc: test get backtrace of other thread dwarf in arm32
- * @tc.type: FUNC
- */
-HWTEST_F(BacktraceLocalTest, BacktraceLocalTest017, TestSize.Level2)
-{
-    GTEST_LOG_(INFO) << "BacktraceLocalTest017: start.";
     g_mutex.lock();
-    std::thread backtraceThread(Test001);
+    std::thread backtraceTread(Test001);
     sleep(1);
     if (g_tid <= 0) {
         FAIL() << "Failed to create child thread.\n";
     }
-    std::string str;
-    auto ret = GetBacktraceStringByTidWithMix(str, g_tid, 0, false);
-    ASSERT_TRUE(ret);
-    GTEST_LOG_(INFO) << "GetBacktraceStringByTid:\n" << str;
+#ifdef __aarch64__
+    CallMixLast(g_tid, false, false, 4, 3);
+    CallMixFirst(g_tid, false, false, 4, 3);
+    CallMixLast(g_tid, true, false, 4, 3);
+    CallMixFirst(g_tid, true, false, 4, 3);
+#else
+    CallMixLast(g_tid, false, true, 5, 3);
+    CallMixFirst(g_tid, false, true, 5, 3);
+    CallMixLast(g_tid, true, true, 5, 3);
+    CallMixFirst(g_tid, true, true, 5, 3);
+#endif
     g_mutex.unlock();
     g_tid = 0;
-    if (backtraceThread.joinable()) {
-        backtraceThread.join();
+    if (backtraceTread.joinable()) {
+        backtraceTread.join();
     }
-    GTEST_LOG_(INFO) << "BacktraceLocalTest017: end.";
-}
-
-/**
- * @tc.name: BacktraceLocalTest018
- * @tc.desc: test get backtrace of current thread dwarf in arm32
- * @tc.type: FUNC
- */
-HWTEST_F(BacktraceLocalTest, BacktraceLocalTest018, TestSize.Level2)
-{
-    GTEST_LOG_(INFO) << "BacktraceLocalTest018: start.";
-    int32_t tid = gettid();
-    std::string str;
-    GetBacktraceStringByTidWithMix(str, tid, 0, true);
-    GTEST_LOG_(INFO) << "BacktraceLocalTest018: end.";
-}
-
-/**
- * @tc.name: BacktraceLocalTest019
- * @tc.desc: test get backtrace of other thread dwarf in arm32
- * @tc.type: FUNC
- */
-HWTEST_F(BacktraceLocalTest, BacktraceLocalTest019, TestSize.Level2)
-{
-    GTEST_LOG_(INFO) << "BacktraceLocalTest019: start.";
-    g_mutex.lock();
-    std::thread backtraceThread(Test001);
-    sleep(1);
-    if (g_tid <= 0) {
-        FAIL() << "Failed to create child thread.\n";
-    }
-    std::string str;
-    auto ret = GetBacktraceStringByTidWithMix(str, g_tid, 0, true);
-    ASSERT_TRUE(ret);
-    GTEST_LOG_(INFO) << "GetBacktraceStringByTid:\n" << str;
-    g_mutex.unlock();
-    g_tid = 0;
-    if (backtraceThread.joinable()) {
-        backtraceThread.join();
-    }
-    GTEST_LOG_(INFO) << "BacktraceLocalTest019: end.";
 }
 } // namespace HiviewDFX
 } // namepsace OHOS
