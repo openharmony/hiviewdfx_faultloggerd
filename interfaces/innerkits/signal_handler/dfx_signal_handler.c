@@ -226,21 +226,16 @@ static bool FillMessageBodyLocked(MessageType type, debug_msg_t* dMsg)
 
 static bool FillDebugMessageLocked(int32_t sig, siginfo_t *si)
 {
-    if (sig != SIGLEAK_STACK || si == NULL || si->si_signo != SIGLEAK_STACK) {
+    if (sig != SIGLEAK_STACK || si == NULL ||
+        (si->si_code != SIGLEAK_STACK_FDSAN && si->si_code != SIGLEAK_STACK_JEMALLOC)) {
         return true;
     }
-    switch (si->si_code) {
-        case SIGLEAK_STACK_FDSAN: {
-            return FillMessageBodyLocked(MESSAGE_FDSAN_DEBUG, (debug_msg_t*)si->si_value.sival_ptr);
-        }
-        case SIGLEAK_STACK_JEMALLOC: {
-            return FillMessageBodyLocked(MESSAGE_JEMALLOC, (debug_msg_t*)si->si_value.sival_ptr);
-        }
-        case SIGLEAK_STACK_BADFD:
-            g_request.msg.type = MESSAGE_BADFD;
-            break;
-        default:
-            break;
+
+    // The pointer received by the Linux kernel must be NULL
+    debug_msg_t *dMsg = (debug_msg_t*)si->si_value.sival_ptr;
+    if (dMsg == NULL || g_request.timeStamp > dMsg->timestamp + PROCESSDUMP_TIMEOUT * NUMBER_ONE_THOUSAND) {
+        DFXLOGE("The event has timed out since it was triggered");
+        return false;
     }
     return true;
 }

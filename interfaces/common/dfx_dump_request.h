@@ -49,11 +49,8 @@ enum ProcessFlowMode : int32_t {
 };
 
 typedef enum {
-    NONE = 0,
-    MESSAGE_FATAL, // hilog last fatal log message
-    MESSAGE_FDSAN_DEBUG, // fdsan debug message
-    MESSAGE_JEMALLOC, // jemalloc message
-    MESSAGE_BADFD, // badfd message
+    MESSAGE_NONE = 0,
+    MESSAGE_FATAL, // Need to write LastFatalMessage
     MESSAGE_CALLBACK, // call back memssage
 } MessageType;
 
