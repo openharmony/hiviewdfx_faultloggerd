@@ -141,7 +141,7 @@ std::string DfxRegsRiscv64::PrintRegs() const
 bool DfxRegsRiscv64::StepIfSignalFrame(uintptr_t pc, std::shared_ptr<DfxMemory> memory)
 {
     uint64_t data;
-    if (!memory->ReadU64(pc, &data, false)) {
+    if (!memory->Read<uint64_t>(pc, &data, false)) {
         return false;
     }
     DFXLOGU("[%{public}d]: data: %{public}llx", __LINE__, data);

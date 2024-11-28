@@ -47,7 +47,7 @@ bool DfxInstructions::Flush(DfxRegs& regs, std::shared_ptr<DfxMemory> memory, ui
             break;
         case REG_LOC_MEM_OFFSET:
             location = cfa + static_cast<uintptr_t>(loc.val);
-            memory->ReadUptr(location, &val);
+            memory->Read<uintptr_t>(location, &val);
             break;
         case REG_LOC_REGISTER:
             location = static_cast<uintptr_t>(loc.val);
@@ -60,7 +60,7 @@ bool DfxInstructions::Flush(DfxRegs& regs, std::shared_ptr<DfxMemory> memory, ui
         case REG_LOC_MEM_EXPRESSION: {
             DwarfOp<uintptr_t> dwarfOp(memory);
             location = dwarfOp.Eval(regs, cfa, loc.val);
-            memory->ReadUptr(location, &val);
+            memory->Read<uintptr_t>(location, &val);
             break;
         }
         case REG_LOC_VAL_EXPRESSION: {

@@ -80,7 +80,7 @@ HWTEST_F(DfxMemoryTest, DfxMemoryTest002, TestSize.Level2)
     uintptr_t value;
     auto acc = std::make_shared<DfxAccessorsLocal>();
     auto memory = std::make_shared<DfxMemory>(acc);
-    bool ret = memory->ReadUptr(addr, &value, false);
+    bool ret = memory->Read<uintptr_t>(addr, &value, false);
     EXPECT_EQ(true, ret) << "DfxMemoryTest002: ret:" << ret;
 
 
@@ -116,7 +116,7 @@ HWTEST_F(DfxMemoryTest, DfxMemoryTest003, TestSize.Level2)
     memory->SetCtx(&ctx);
     uintptr_t addr = reinterpret_cast<uintptr_t>(&values[0]);
     uintptr_t value;
-    ASSERT_TRUE(memory->ReadUptr(addr, &value, false));
+    ASSERT_TRUE(memory->Read<uintptr_t>(addr, &value, false));
 #if defined(__arm__)
     ASSERT_EQ(value, 0x04030201);
 #elif defined(__aarch64__)
@@ -155,16 +155,16 @@ HWTEST_F(DfxMemoryTest, DfxMemoryTest004, TestSize.Level2)
     memory->SetCtx(&ctx);
     uintptr_t addr = reinterpret_cast<uintptr_t>(&values[0]);
     uint8_t tmp8;
-    ASSERT_TRUE(memory->ReadU8(addr, &tmp8, false));
+    ASSERT_TRUE(memory->Read<uint8_t>(addr, &tmp8, false));
     ASSERT_EQ(tmp8, 0x01);
     uint16_t tmp16;
-    ASSERT_TRUE(memory->ReadU16(addr, &tmp16, false));
+    ASSERT_TRUE(memory->Read<uint16_t>(addr, &tmp16, false));
     ASSERT_EQ(tmp16, 0x0201);
     uint32_t tmp32;
-    ASSERT_TRUE(memory->ReadU32(addr, &tmp32, false));
+    ASSERT_TRUE(memory->Read<uint32_t>(addr, &tmp32, false));
     ASSERT_EQ(tmp32, 0x04030201);
     uint64_t tmp64;
-    ASSERT_TRUE(memory->ReadU64(addr, &tmp64, false));
+    ASSERT_TRUE(memory->Read<uint64_t>(addr, &tmp64, false));
     ASSERT_EQ(tmp64, 0x0807060504030201);
     GTEST_LOG_(INFO) << "DfxMemoryTest004: end.";
 }
@@ -259,7 +259,7 @@ HWTEST_F(DfxMemoryTest, DfxMemoryTest008, TestSize.Level2)
         auto memory = std::make_shared<DfxMemory>(acc);
         memory->SetCtx(&ctx);
         uintptr_t addr = reinterpret_cast<uintptr_t>(&values[0]);
-        bool ret = memory->ReadUptr(addr, &value, false);
+        bool ret = memory->Read<uintptr_t>(addr, &value, false);
         EXPECT_EQ(true, ret) << "DfxMemoryTest008: ret:" << ret;
         uint64_t tmp;
         memory->Read(addr, &tmp, sizeof(uint8_t), false);
@@ -303,7 +303,7 @@ HWTEST_F(DfxMemoryTest, DfxMemoryTest009, TestSize.Level2)
         memory->SetCtx(&ctx);
         uintptr_t addr = reinterpret_cast<uintptr_t>(&values[0]);
         uintptr_t value;
-        ASSERT_TRUE(memory->ReadUptr(addr, &value, false));
+        ASSERT_TRUE(memory->Read<uintptr_t>(addr, &value, false));
 #if defined(__arm__)
         ASSERT_EQ(value, 0x04030201);
 #elif defined(__aarch64__)
@@ -353,16 +353,16 @@ HWTEST_F(DfxMemoryTest, DfxMemoryTest010, TestSize.Level2)
         memory->SetCtx(&ctx);
         uintptr_t addr = reinterpret_cast<uintptr_t>(&values[0]);
         uint8_t tmp8;
-        ASSERT_TRUE(memory->ReadU8(addr, &tmp8, false));
+        ASSERT_TRUE(memory->Read<uint8_t>(addr, &tmp8, false));
         ASSERT_EQ(tmp8, 0x01);
         uint16_t tmp16;
-        ASSERT_TRUE(memory->ReadU16(addr, &tmp16, false));
+        ASSERT_TRUE(memory->Read<uint16_t>(addr, &tmp16, false));
         ASSERT_EQ(tmp16, 0x0201);
         uint32_t tmp32;
-        ASSERT_TRUE(memory->ReadU32(addr, &tmp32, false));
+        ASSERT_TRUE(memory->Read<uint32_t>(addr, &tmp32, false));
         ASSERT_EQ(tmp32, 0x04030201);
         uint64_t tmp64;
-        ASSERT_TRUE(memory->ReadU64(addr, &tmp64, false));
+        ASSERT_TRUE(memory->Read<uint64_t>(addr, &tmp64, false));
         ASSERT_EQ(tmp64, 0x0807060504030201);
         DfxPtrace::Detach(pid);
         _exit(0);
@@ -464,12 +464,12 @@ HWTEST_F(DfxMemoryTest, DfxMemoryTest013, TestSize.Level2)
     uint8_t values[] = {0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8};
     uintptr_t addr = reinterpret_cast<uintptr_t>(&values[0]);
     EXPECT_FALSE(memory->ReadMem(addr, nullptr));
-    EXPECT_FALSE(memory->ReadUptr(addr, nullptr, false));
+    EXPECT_FALSE(memory->Read<uintptr_t>(addr, nullptr, false));
     EXPECT_FALSE(memory->Read(addr, nullptr, sizeof(uint8_t), false));
-    EXPECT_FALSE(memory->ReadU8(addr, nullptr, false));
-    EXPECT_FALSE(memory->ReadU16(addr, nullptr, false));
-    EXPECT_FALSE(memory->ReadU32(addr, nullptr, false));
-    EXPECT_FALSE(memory->ReadU64(addr, nullptr, false));
+    EXPECT_FALSE(memory->Read<uint8_t>(addr, nullptr, false));
+    EXPECT_FALSE(memory->Read<uint16_t>(addr, nullptr, false));
+    EXPECT_FALSE(memory->Read<uint32_t>(addr, nullptr, false));
+    EXPECT_FALSE(memory->Read<uint64_t>(addr, nullptr, false));
     GTEST_LOG_(INFO) << "DfxMemoryTest013: end.";
 }
 

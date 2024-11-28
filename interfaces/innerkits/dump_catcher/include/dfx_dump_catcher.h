@@ -21,6 +21,7 @@
 #include <cstring>
 #include <memory>
 #include <mutex>
+#include <poll.h>
 #include <string>
 #include <unistd.h>
 #include <vector>
@@ -105,7 +106,15 @@ private:
     int32_t DoDumpCatchRemote(int pid, int tid, std::string& msg, bool isJson = false,
         int timeout = DUMPCATCHER_REMOTE_TIMEOUT);
     int DoDumpRemotePid(int pid, std::string& msg, bool isJson = false, int32_t timeout = DUMPCATCHER_REMOTE_TIMEOUT);
-    int DoDumpRemotePoll(int bufFd, int resFd, int timeout, std::string& msg, bool isJson = false);
+    bool HandlePollError(const uint64_t endTime, int &remainTime,
+                         bool &collectAllTidStack, std::string &resMsg, int &ret);
+    bool HandlePollTimeout(const int timeout, int &remainTime,
+                           bool &collectAllTidStack, std::string &resMsg, int &ret);
+    bool HandlePollEvents(std::pair<int, std::string> &bufState, std::pair<int, std::string> &resState,
+                          const struct pollfd (&readFds)[2], bool &bPipeConnect, bool &res);
+    std::pair<bool, int> DumpRemotePoll(const int timeout, std::pair<int, std::string> &bufState,
+                                        std::pair<int, std::string> &resState);
+    int DoDumpRemotePoll(int bufFd, int resFd, int timeout, std::string &msg, bool isJson = false);
     bool DoReadBuf(int fd, std::string& msg);
     bool DoReadRes(int fd, bool &ret, std::string& msg);
     static void CollectKernelStack(pid_t pid, int waitMilliSeconds = 0);
