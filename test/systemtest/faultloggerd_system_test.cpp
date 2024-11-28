@@ -1765,5 +1765,34 @@ HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest127, TestSize.Level2)
     }
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest127: end.";
 }
+
+/**
+* @tc.name: FaultLoggerdSystemTest128
+* @tc.desc: Test block process exit debug function
+* @tc.type: FUNC
+*/
+HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest128, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest128: start.";
+    InstallTestHap("/data/FaultloggerdJsTest.hap");
+    string testBundleName = TEST_BUNDLE_NAME;
+    string testAbiltyName = testBundleName + ".MainAbility";
+
+    int pid = LaunchTestHap(testAbiltyName, testBundleName);
+    if (pid > 0) {
+        system("param set faultloggerd.priv.block_crash_process.enabled true");
+        kill(pid, SIGABRT);
+        sleep(3); // 3 : sleep 3s
+        int newPid = GetProcessPid(TEST_BUNDLE_NAME);
+        system("param set faultloggerd.priv.block_crash_process.enabled false");
+        kill(pid, SIGKILL);
+        EXPECT_TRUE(pid == newPid) << "FaultLoggerdSystemTest128 Failed";
+    } else {
+        EXPECT_TRUE(pid <= 0) << "FaultLoggerdSystemTest128 Failed";
+    }
+    StopTestHap(TEST_BUNDLE_NAME);
+    UninstallTestHap(TEST_BUNDLE_NAME);
+    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest128: end.";
+}
 } // namespace HiviewDFX
 } // namespace OHOS

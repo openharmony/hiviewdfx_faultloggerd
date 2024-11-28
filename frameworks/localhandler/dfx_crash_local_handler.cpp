@@ -80,9 +80,9 @@ static __attribute__((noinline)) void PrintLog(int fd, const char *format, ...)
     }
 }
 
-__attribute__((noinline)) void CrashLocalUnwind(const int fd,
-                                                const struct ProcessDumpRequest* request,
-                                                std::string& errMessage)
+static __attribute__((noinline)) void CrashLocalUnwind(const int fd,
+                                                       const struct ProcessDumpRequest* request,
+                                                       std::string& errMessage)
 {
     if (request == nullptr) {
         return;
