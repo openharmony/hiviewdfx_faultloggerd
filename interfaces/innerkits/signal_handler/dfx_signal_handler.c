@@ -210,25 +210,12 @@ static void FillLastFatalMessageLocked(int32_t sig)
 
 static bool FillDebugMessageLocked(int32_t sig, siginfo_t *si)
 {
-    if (sig != SIGLEAK_STACK || si == NULL) {
+    if (sig != SIGLEAK_STACK || si == NULL ||
+        (si->si_code != SIGLEAK_STACK_FDSAN && si->si_code != SIGLEAK_STACK_JEMALLOC)) {
         return true;
     }
-    switch (si->si_code) {
-        case SIGLEAK_STACK_FDSAN: {
-            g_request.msg.type = MESSAGE_FDSAN_DEBUG;
-            break;
-        }
-        case SIGLEAK_STACK_JEMALLOC: {
-            g_request.msg.type = MESSAGE_JEMALLOC;
-            break;
-        }
-        case SIGLEAK_STACK_BADFD:
-            g_request.msg.type = MESSAGE_BADFD;
-            /* fall-through */
-        default:
-            return true;
-    }
 
+    // The pointer received by the Linux kernel must be NULL
     debug_msg_t *dMsg = (debug_msg_t*)si->si_value.sival_ptr;
     if (dMsg == NULL || g_request.timeStamp > dMsg->timestamp + PROCESSDUMP_TIMEOUT * NUMBER_ONE_THOUSAND) {
         DFXLOGE("The event has timed out since it was triggered");

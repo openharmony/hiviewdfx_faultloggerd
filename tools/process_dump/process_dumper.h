@@ -57,7 +57,7 @@ private:
     bool Unwind(std::shared_ptr<ProcessDumpRequest> request, int &dumpRes, pid_t vmPid);
     static int GetLogTypeByRequest(const ProcessDumpRequest &request);
     void ReportSigDumpStats(const std::shared_ptr<ProcessDumpRequest> &request) const;
-    void ReportCrashInfo(const std::string& jsonInfo);
+    void ReportCrashInfo(const std::string& jsonInfo, const ProcessDumpRequest &request);
     void UnwindWriteJit(const ProcessDumpRequest &request);
     void Report(std::shared_ptr<ProcessDumpRequest> request, std::string &jsonInfo);
     void ReadFdTable(const ProcessDumpRequest &request);
@@ -70,7 +70,6 @@ private:
 
 private:
     std::shared_ptr<DfxProcess> process_ = nullptr;
-    std::shared_ptr<CppCrashReporter> reporter_ = nullptr;
     std::shared_ptr<Unwinder> unwinder_ = nullptr;
 
     bool isCrash_ = false;

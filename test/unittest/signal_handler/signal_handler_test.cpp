@@ -16,17 +16,21 @@
 #include <gtest/gtest.h>
 #include <csignal>
 #include <map>
+#include <malloc.h>
+#include <fcntl.h>
 #include <securec.h>
 #include <string>
 #include <thread>
 #include <unistd.h>
 #include <vector>
 #include <sys/prctl.h>
+#include <sys/syscall.h>
 
 #include "dfx_define.h"
 #include "dfx_signal_handler.h"
 #include "dfx_signalhandler_exception.h"
 #include "dfx_test_util.h"
+#include "info/fatal_message.h"
 
 using namespace testing;
 using namespace testing::ext;
@@ -110,6 +114,30 @@ static bool CheckCrashKeyWords(const string& filePath, pid_t pid, int sig)
     return CheckKeyWords(filePath, keywords, length, minRegIdx) == length;
 }
 
+static bool CheckDebugSignalWords(const string& filePath, pid_t pid, int siCode)
+{
+    if (filePath.empty() || pid <= 0) {
+        return false;
+    }
+    map<int, string> sigKey = {
+        { SIGLEAK_STACK_FDSAN, string("SIGNAL(FDSAN)") },
+        { SIGLEAK_STACK_JEMALLOC, string("SIGNAL(JEMALLOC)") },
+        { SIGLEAK_STACK_BADFD, string("SIGNAL(BADFD)") },
+    };
+    string sigKeyword = "";
+    map<int, string>::iterator iter = sigKey.find(siCode);
+    if (iter != sigKey.end()) {
+        sigKeyword = iter->second;
+    }
+    string keywords[] = {
+        "Pid:" + to_string(pid), "Uid:", "name:./test_signalhandler", sigKeyword,
+        "Tid:", "#00", "Registers:", "FaultStack:", "Maps:", "test_signalhandler"
+    };
+    int length = sizeof(keywords) / sizeof(keywords[0]);
+    int minRegIdx = -1;
+    return CheckKeyWords(filePath, keywords, length, minRegIdx) == length;
+}
+
 void ThreadInfo(char* buf, size_t len, void* context __attribute__((unused)))
 {
     char mes[] = "this is extraCrashInfo of test thread";
@@ -131,6 +159,89 @@ int TestThread(int threadId, int sig)
         raise(sig);
     }
     return 0;
+}
+
+static void SaveDebugMessage(int siCode, int64_t diffMs, const char *msg)
+{
+    if (msg == nullptr) {
+        GTEST_LOG_(INFO) << "debug msg is NULL";
+        return;
+    }
+
+    const int numberOneThousand = 1000; // 1000 : second to millisecond convert ratio
+    const int numberOneMillion = 1000000; // 1000000 : nanosecond to millisecond convert ratio
+    struct timespec ts;
+    (void)clock_gettime(CLOCK_REALTIME, &ts);
+
+    uint64_t timestamp = static_cast<uint64_t>(ts.tv_sec) * numberOneThousand +
+        static_cast<uint64_t>(ts.tv_sec) / numberOneMillion;
+    if (diffMs < 0  && timestamp < -diffMs) {
+        timestamp = 0;
+    } else if (UINT64_MAX - timestamp < diffMs) {
+        timestamp = UINT64_MAX;
+    } else {
+        timestamp += diffMs;
+    }
+
+    debug_msg_t debug_message = {0, NULL};
+    debug_message.timestamp = timestamp;
+    debug_message.msg = msg;
+
+    const int signo = 42; // Custom stack capture signal and leak reuse
+    siginfo_t info;
+    info.si_signo = signo;
+    info.si_code = siCode;
+    info.si_value.sival_ptr = &debug_message;
+    if (syscall(SYS_rt_tgsigqueueinfo, getpid(), syscall(SYS_gettid), signo, &info) == -1) {
+        GTEST_LOG_(ERROR) << "send failed errno=" << errno;
+    }
+}
+
+static bool SendSigTestDebugSignal(int siCode)
+{
+    pid_t pid = fork();
+    if (pid < 0) {
+        GTEST_LOG_(ERROR) << "Failed to fork new test process.";
+        return false;
+    }
+
+    if (pid == 0) {
+        if (DFX_InstallSignalHandler != nullptr) {
+            DFX_InstallSignalHandler();
+        }
+        SaveDebugMessage(siCode, 0, "test123");
+        sleep(5); // 5: wait for stacktrace generating
+        _exit(0);
+    }
+
+    sleep(2); // 2 : wait for cppcrash generating
+    return CheckDebugSignalWords(GetDumpLogFileName("stacktrace", pid, TEMP_DIR), pid, siCode);
+}
+
+static void TestFdsan()
+{
+    fdsan_set_error_level(FDSAN_ERROR_LEVEL_WARN_ONCE);
+    FILE *fp = fopen("/dev/null", "w+");
+    if (fp == nullptr) {
+        GTEST_LOG_(ERROR) << "fp is nullptr";
+        return;
+    }
+    close(fileno(fp));
+    uint64_t tag = fdsan_create_owner_tag(FDSAN_OWNER_TYPE_FILE, reinterpret_cast<uint64_t>(fp));
+    fdsan_exchange_owner_tag(fileno(fp), tag, 0);
+    return;
+}
+
+static void TestBadfd()
+{
+    int fd = open("/dev/null", O_WRONLY);
+    if (fd < 0) {
+        GTEST_LOG_(ERROR) << "fd is " << fd;
+        return;
+    }
+    close(fd);
+    close(fd);
+    return;
 }
 
 /**
@@ -605,6 +716,158 @@ HWTEST_F(SignalHandlerTest, SignalHandlerTest016, TestSize.Level2)
     int ret = ReportException(exception);
     ASSERT_NE(ret, -1);
     GTEST_LOG_(INFO) << "SignalHandlerTest016: end.";
+}
+
+/**
+ * @tc.name: SignalHandlerTest017
+ * @tc.desc: send sig SIGLEAK_STACK_FDSAN
+ * @tc.type: FUNC
+ */
+HWTEST_F(SignalHandlerTest, SignalHandlerTest017, TestSize.Level2)
+{
+    std::string res = ExecuteCommands("uname");
+    bool linuxKernel = res.find("Linux") != std::string::npos;
+    if (linuxKernel) {
+        ASSERT_TRUE(linuxKernel);
+        return;
+    }
+
+    bool ret = SendSigTestDebugSignal(SIGLEAK_STACK_FDSAN);
+    ASSERT_TRUE(ret);
+}
+
+/**
+ * @tc.name: SignalHandlerTest018
+ * @tc.desc: send sig SIGLEAK_STACK_JEMALLOC
+ * @tc.type: FUNC
+ */
+HWTEST_F(SignalHandlerTest, SignalHandlerTest018, TestSize.Level2)
+{
+    std::string res = ExecuteCommands("uname");
+    bool linuxKernel = res.find("Linux") != std::string::npos;
+    if (linuxKernel) {
+        ASSERT_TRUE(linuxKernel);
+        return;
+    }
+
+    bool ret = SendSigTestDebugSignal(SIGLEAK_STACK_JEMALLOC);
+    ASSERT_TRUE(ret);
+}
+
+/**
+ * @tc.name: SignalHandlerTest019
+ * @tc.desc: send sig SIGLEAK_STACK_BADFD
+ * @tc.type: FUNC
+ */
+HWTEST_F(SignalHandlerTest, SignalHandlerTest019, TestSize.Level2)
+{
+    std::string res = ExecuteCommands("uname");
+    bool linuxKernel = res.find("Linux") != std::string::npos;
+    if (linuxKernel) {
+        ASSERT_TRUE(linuxKernel);
+        return;
+    }
+
+    bool ret = SendSigTestDebugSignal(SIGLEAK_STACK_BADFD);
+    ASSERT_TRUE(ret);
+}
+
+/**
+ * @tc.name: SignalHandlerTest020
+ * @tc.desc: test DEBUG SIGNAL time out, BADFD no timeout
+ * @tc.type: FUNC
+ */
+HWTEST_F(SignalHandlerTest, SignalHandlerTest020, TestSize.Level2)
+{
+    std::string res = ExecuteCommands("uname");
+    bool linuxKernel = res.find("Linux") != std::string::npos;
+    if (linuxKernel) {
+        ASSERT_TRUE(linuxKernel);
+        return;
+    }
+    int interestedSiCodeList[] = {
+        SIGLEAK_STACK_FDSAN, SIGLEAK_STACK_JEMALLOC
+    };
+    for (int siCode : interestedSiCodeList) {
+        pid_t pid = fork();
+        if (pid < 0) {
+            GTEST_LOG_(ERROR) << "Failed to fork new test process.";
+        } else if (pid == 0) {
+            if (DFX_InstallSignalHandler != nullptr) {
+                DFX_InstallSignalHandler();
+            }
+            constexpr int diffMs = -10000; // 10s
+            SaveDebugMessage(siCode, diffMs, "test123");
+            sleep(5); // 5: wait for stacktrace generating
+            _exit(0);
+        } else {
+            sleep(2); // 2 : wait for stacktrace generating
+            auto fileName = GetDumpLogFileName("stacktrace", pid, TEMP_DIR);
+            ASSERT_TRUE(fileName.empty());
+        }
+    }
+}
+
+/**
+ * @tc.name: SignalHandlerTest021
+ * @tc.desc: test FDSAN
+ * @tc.type: FUNC
+ */
+HWTEST_F(SignalHandlerTest, SignalHandlerTest021, TestSize.Level2)
+{
+    std::string res = ExecuteCommands("uname");
+    bool linuxKernel = res.find("Linux") != std::string::npos;
+    if (linuxKernel) {
+        ASSERT_TRUE(linuxKernel);
+        return;
+    }
+    pid_t pid = fork();
+    if (pid < 0) {
+        GTEST_LOG_(ERROR) << "Failed to fork new test process.";
+    } else if (pid == 0) {
+        if (DFX_InstallSignalHandler != nullptr) {
+            DFX_InstallSignalHandler();
+        }
+        TestFdsan();
+        sleep(5); // 5: wait for stacktrace generating
+        _exit(0);
+    } else {
+        sleep(2); // 2 : wait for stacktrace generating
+        constexpr int siCode = SIGLEAK_STACK_FDSAN;
+        bool ret = CheckDebugSignalWords(GetDumpLogFileName("stacktrace", pid, TEMP_DIR), pid, siCode);
+        ASSERT_TRUE(ret);
+    }
+}
+
+/**
+ * @tc.name: SignalHandlerTest022
+ * @tc.desc: test BADFD
+ * @tc.type: FUNC
+ */
+HWTEST_F(SignalHandlerTest, SignalHandlerTest022, TestSize.Level2)
+{
+    std::string res = ExecuteCommands("uname");
+    bool linuxKernel = res.find("Linux") != std::string::npos;
+    if (linuxKernel) {
+        ASSERT_TRUE(linuxKernel);
+        return;
+    }
+    pid_t pid = fork();
+    if (pid < 0) {
+        GTEST_LOG_(ERROR) << "Failed to fork new test process.";
+    } else if (pid == 0) {
+        if (DFX_InstallSignalHandler != nullptr) {
+            DFX_InstallSignalHandler();
+        }
+        TestBadfd();
+        sleep(5); // 5: wait for stacktrace generating
+        _exit(0);
+    } else {
+        sleep(2); // 2 : wait for stacktrace generating
+        constexpr int siCode = SIGLEAK_STACK_BADFD;
+        bool ret = CheckDebugSignalWords(GetDumpLogFileName("stacktrace", pid, TEMP_DIR), pid, siCode);
+        ASSERT_TRUE(ret);
+    }
 }
 } // namespace HiviewDFX
 } // namepsace OHOS

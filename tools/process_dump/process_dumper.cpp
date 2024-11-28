@@ -66,6 +66,7 @@
 #ifndef is_ohos_lite
 #include "parameters.h"
 #endif // !is_ohos_lite
+#include "info/fatal_message.h"
 
 namespace OHOS {
 namespace HiviewDFX {
@@ -352,6 +353,24 @@ void SetProcessdumpTimeout(siginfo_t &si)
         DFXLOGE("start processdump timer fail %{public}d", errno);
     }
 }
+
+static bool IsDebugSignal(const siginfo_t& siginfo)
+{
+    if (siginfo.si_signo != SIGLEAK_STACK) {
+        return false;
+    }
+
+    switch (siginfo.si_code) {
+        case SIGLEAK_STACK_FDSAN:
+            FALLTHROUGH_INTENDED;
+        case SIGLEAK_STACK_JEMALLOC:
+            FALLTHROUGH_INTENDED;
+        case SIGLEAK_STACK_BADFD:
+            return true;
+        default:
+            return false;
+    }
+}
 }
 
 ProcessDumper &ProcessDumper::GetInstance()
@@ -415,14 +434,16 @@ void ProcessDumper::Report(std::shared_ptr<ProcessDumpRequest> request, std::str
         DFXLOGE("request is nullptr.");
         return;
     }
-    if (request->msg.type == MESSAGE_FDSAN_DEBUG ||
-        request->msg.type == MESSAGE_JEMALLOC ||
-        request->msg.type == MESSAGE_BADFD) {
+    if (resDump_ == DumpErrorCode::DUMP_ENOMAP || resDump_ == DumpErrorCode::DUMP_EREADPID) {
+        DFXLOGE("resDump_ is %{public}d.", resDump_);
+        return;
+    }
+    if (IsDebugSignal(request->siginfo)) {
         ReportAddrSanitizer(*request, jsonInfo);
         return;
     }
-    if (resDump_ != DumpErrorCode::DUMP_ENOMAP && resDump_ != DumpErrorCode::DUMP_EREADPID) {
-        ReportCrashInfo(jsonInfo);
+    if (isCrash_ && request->siginfo.si_signo != SIGLEAK_STACK) {
+        ReportCrashInfo(jsonInfo, *request);
     }
 }
 
@@ -514,7 +535,9 @@ void ProcessDumper::UnwindWriteJit(const ProcessDumpRequest &request)
 
 std::string ProcessDumper::ReadStringByPtrace(pid_t tid, uintptr_t addr, size_t maxLen)
 {
-    if (maxLen == 0) {
+    constexpr size_t maxReadLen = 1024 * 1024 * 1; // 1M
+    if (maxLen == 0 || maxLen > maxReadLen) {
+        DFXLOGE("maxLen(%{public}zu) is invalid value.", maxLen);
         return "";
     }
     size_t bufLen = (maxLen + sizeof(long) - 1) / sizeof(long);
@@ -836,12 +859,12 @@ int ProcessDumper::GetLogTypeByRequest(const ProcessDumpRequest &request)
 {
     switch (request.siginfo.si_signo) {
         case SIGLEAK_STACK:
-            switch (request.msg.type) {
-                case MESSAGE_FDSAN_DEBUG:
+            switch (request.siginfo.si_code) {
+                case SIGLEAK_STACK_FDSAN:
                     FALLTHROUGH_INTENDED;
-                case MESSAGE_JEMALLOC:
+                case SIGLEAK_STACK_JEMALLOC:
                     FALLTHROUGH_INTENDED;
-                case MESSAGE_BADFD:
+                case SIGLEAK_STACK_BADFD:
                     return FaultLoggerType::CPP_STACKTRACE;
                 default:
                     return FaultLoggerType::LEAK_STACKTRACE;
@@ -994,40 +1017,30 @@ void ProcessDumper::ReportSigDumpStats(const std::shared_ptr<ProcessDumpRequest>
     ReportDumpStats(stat);
 }
 
-void ProcessDumper::ReportCrashInfo(const std::string& jsonInfo)
+void ProcessDumper::ReportCrashInfo(const std::string& jsonInfo, const ProcessDumpRequest &request)
 {
-    if (reporter_ != nullptr) {
-        reporter_->SetCppCrashInfo(jsonInfo);
-        reporter_->ReportToHiview();
-        reporter_->ReportToAbilityManagerService();
-    }
+    auto reporter = CppCrashReporter(request.timeStamp, process_, request.dumpMode);
+    reporter.SetCppCrashInfo(jsonInfo);
+    reporter.ReportToHiview();
+    reporter.ReportToAbilityManagerService();
 }
 
 void ProcessDumper::ReportAddrSanitizer(ProcessDumpRequest &request, std::string &jsonInfo)
 {
 #ifndef HISYSEVENT_DISABLE
-    std::string fingerPrint = request.processName;
     std::string reason = "DEBUG SIGNAL";
+    std::string summary;
     if (process_ != nullptr && process_->keyThread_ != nullptr) {
-        constexpr size_t maxFrameCnt = 3;
-        auto& frames = process_->keyThread_->GetFrames();
-        for (size_t index = 0, cnt = 0; cnt < maxFrameCnt && index < frames.size(); index++) {
-            if (frames[index].mapName.find("ld-musl-", 0) != std::string::npos) {
-                continue;
-            }
-            fingerPrint = fingerPrint + frames[index].funcName;
-            cnt++;
-        }
         reason = process_->reason;
+        summary = process_->keyThread_->ToString();
     }
-    size_t hashVal = std::hash<std::string>()(fingerPrint);
     HiSysEventWrite(OHOS::HiviewDFX::HiSysEvent::Domain::RELIABILITY, "ADDR_SANITIZER",
                     OHOS::HiviewDFX::HiSysEvent::EventType::FAULT,
                     "MODULE", request.processName,
                     "PID", request.pid,
                     "HAPPEN_TIME", request.timeStamp,
                     "REASON", reason,
-                    "FINGERPRINT", std::to_string(hashVal));
+                    "SUMMARY", summary);
     DFXLOGI("%{public}s", "Report fdsan event done.");
 #else
     DFXLOGI("%{public}s", "Not supported for fdsan reporting.");
@@ -1039,13 +1052,11 @@ void ProcessDumper::ReadFdTable(const ProcessDumpRequest &request)
     // Non crash, leak, jemalloc do not read fdtable
     if (!isCrash_ ||
         (request.siginfo.si_signo == SIGLEAK_STACK &&
-         (request.msg.type == NONE ||
-          request.msg.type == MESSAGE_FATAL ||
-          request.msg.type == MESSAGE_JEMALLOC))) {
+         request.siginfo.si_code != SIGLEAK_STACK_FDSAN &&
+         request.siginfo.si_code != SIGLEAK_STACK_BADFD)) {
         return;
     }
     process_->openFiles = GetOpenFiles(request.pid, request.nsPid, request.fdTableAddr);
-    reporter_ = std::make_shared<CppCrashReporter>(request.timeStamp, process_, request.dumpMode);
 }
 } // namespace HiviewDFX
 } // namespace OHOS
