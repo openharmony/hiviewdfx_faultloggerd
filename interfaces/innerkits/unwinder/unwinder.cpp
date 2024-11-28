@@ -237,13 +237,12 @@ private:
     bool CheckAndReset(void* ctx);
     void DoPcAdjust(uintptr_t& pc);
     void AddFrame(const StepFrame& frame, std::shared_ptr<DfxMap> map);
-    bool FindCacheRs(StepFrame& frame, std::shared_ptr<DfxMap>& map, std::shared_ptr<RegLocState>& rs, bool& ret);
+    bool FindCache(uintptr_t pc, std::shared_ptr<DfxMap>& map, std::shared_ptr<RegLocState>& rs);
     bool AddFrameMap(StepFrame& frame, std::shared_ptr<DfxMap>& map, void* ctx);
-    bool UnwindArkFrame(StepFrame& frame, std::shared_ptr<DfxMap>& map, bool& isReturn, bool& ret);
-    bool FindAndParseUnwindTable(StepFrame& frame, std::shared_ptr<RegLocState>& rs, void* ctx, bool& ret);
-    void StackTraceback(
-        StepFrame& frame, std::shared_ptr<DfxMap>& map, void* ctx, bool& ret, std::shared_ptr<RegLocState>& rs);
-    void UpdateRegsState(StepFrame& frame, std::shared_ptr<DfxMap>& map, void* ctx, bool& ret, uintptr_t& prevSp);
+    bool UnwindArkFrame(StepFrame& frame, std::shared_ptr<DfxMap>& map, bool& stopUnwind);
+    bool ParseUnwindTable(uintptr_t pc, std::shared_ptr<RegLocState>& rs, void* ctx, bool& unwinderResult);
+    void UpdateRegsState(StepFrame& frame, void* ctx, bool& ret, std::shared_ptr<RegLocState>& rs);
+    void CheckValid(StepFrame& frame, std::shared_ptr<DfxMap>& map, uintptr_t& prevSp);
     bool StepInner(const bool isSigFrame, StepFrame& frame, void *ctx);
     bool Apply(std::shared_ptr<DfxRegs> regs, std::shared_ptr<RegLocState> rs);
     bool UnwindFrame(void *ctx, StepFrame& frame, bool& needAdjustPc);
@@ -887,23 +886,20 @@ bool Unwinder::Impl::Step(uintptr_t& pc, uintptr_t& sp, void *ctx)
     return ret;
 }
 
-bool Unwinder::Impl::FindCacheRs(
-    StepFrame& frame, std::shared_ptr<DfxMap>& map, std::shared_ptr<RegLocState>& rs, bool& ret)
+bool Unwinder::Impl::FindCache(uintptr_t pc, std::shared_ptr<DfxMap>& map, std::shared_ptr<RegLocState>& rs)
 {
     if (enableCache_ && !isFpStep_) {
-        auto iter = stepCache_.find(frame.pc);
+        auto iter = stepCache_.find(pc);
         if (iter != stepCache_.end()) {
             if (pid_ != UNWIND_TYPE_CUSTOMIZE) {
-                DFXLOGU("Find rs cache, pc: %{public}p", reinterpret_cast<void *>(frame.pc));
+                DFXLOGU("Find rs cache, pc: %{public}p", reinterpret_cast<void *>(pc));
             }
             rs = iter->second.rs;
             map = iter->second.map;
-            AddFrame(frame, map);
-            ret = true;
-            return false;
+            return true;
         }
     }
-    return true;
+    return false;
 }
 
 bool Unwinder::Impl::AddFrameMap(StepFrame& frame, std::shared_ptr<DfxMap>& map, void* ctx)
@@ -924,38 +920,37 @@ bool Unwinder::Impl::AddFrameMap(StepFrame& frame, std::shared_ptr<DfxMap>& map,
     return true;
 }
 
-bool Unwinder::Impl::UnwindArkFrame(StepFrame& frame, std::shared_ptr<DfxMap>& map, bool& isReturn, bool& ret)
+bool Unwinder::Impl::UnwindArkFrame(StepFrame& frame, std::shared_ptr<DfxMap>& map, bool& stopUnwind)
 {
 #if defined(ENABLE_MIXSTACK)
     if (stopWhenArkFrame_ && (map != nullptr && map->IsArkExecutable())) {
         DFXLOGU("Stop by ark frame");
-        isReturn = true;
+        stopUnwind = true;
         return false;
     }
     if ((enableMixstack_) && ((map != nullptr && map->IsArkExecutable()) || frame.isJsFrame)) {
         if (!StepArkJsFrame(frame)) {
             DFXLOGE("Failed to step ark Js frame, pc: %{public}p", reinterpret_cast<void *>(frame.pc));
             lastErrorData_.SetAddrAndCode(frame.pc, UNW_ERROR_STEP_ARK_FRAME);
-            ret = false;
             return false;
         }
         regs_->SetPc(StripPac(frame.pc, pacMask_));
         regs_->SetSp(frame.sp);
         regs_->SetFp(frame.fp);
-        isReturn = true;
+        stopUnwind = true;
         return true;
     }
 #endif
     return true;
 }
 
-bool Unwinder::Impl::FindAndParseUnwindTable(StepFrame& frame, std::shared_ptr<RegLocState>& rs, void* ctx, bool& ret)
+bool Unwinder::Impl::ParseUnwindTable(uintptr_t pc, std::shared_ptr<RegLocState>& rs, void* ctx, bool& unwinderResult)
 {
     // find unwind table and entry
     UnwindTableInfo uti;
-    MAYBE_UNUSED int utiRet = acc_->FindUnwindTable(frame.pc, uti, ctx);
+    int utiRet = acc_->FindUnwindTable(pc, uti, ctx);
     if (utiRet != UNW_ERROR_NONE) {
-        lastErrorData_.SetAddrAndCode(frame.pc, utiRet);
+        lastErrorData_.SetAddrAndCode(pc, utiRet);
         DFXLOGU("Failed to find unwind table ret: %{public}d", utiRet);
         return false;
     }
@@ -963,8 +958,8 @@ bool Unwinder::Impl::FindAndParseUnwindTable(StepFrame& frame, std::shared_ptr<R
     struct UnwindEntryInfo uei;
     rs = std::make_shared<RegLocState>();
 #if defined(__arm__)
-    if (!ret && uti.format == UNW_INFO_FORMAT_ARM_EXIDX) {
-        if (!armExidx_->SearchEntry(frame.pc, uti, uei)) {
+    if (!unwinderResult && uti.format == UNW_INFO_FORMAT_ARM_EXIDX) {
+        if (!armExidx_->SearchEntry(pc, uti, uei)) {
             lastErrorData_.SetAddrAndCode(armExidx_->GetLastErrorAddr(), armExidx_->GetLastErrorCode());
             DFXLOGE("Failed to search unwind entry?");
             return false;
@@ -973,30 +968,29 @@ bool Unwinder::Impl::FindAndParseUnwindTable(StepFrame& frame, std::shared_ptr<R
             lastErrorData_.SetAddrAndCode(armExidx_->GetLastErrorAddr(), armExidx_->GetLastErrorCode());
             DFXLOGU("Step exidx section error?");
         } else {
-            ret = true;
+            unwinderResult = true;
         }
     }
 #endif
-    if (!ret && uti.format == UNW_INFO_FORMAT_REMOTE_TABLE) {
-        if ((uti.isLinear == false && !dwarfSection_->SearchEntry(frame.pc, uti, uei)) ||
-            (uti.isLinear == true && !dwarfSection_->LinearSearchEntry(frame.pc, uti, uei))) {
+    if (!unwinderResult && uti.format == UNW_INFO_FORMAT_REMOTE_TABLE) {
+        if ((uti.isLinear == false && !dwarfSection_->SearchEntry(pc, uti, uei)) ||
+            (uti.isLinear == true && !dwarfSection_->LinearSearchEntry(pc, uti, uei))) {
             lastErrorData_.SetAddrAndCode(dwarfSection_->GetLastErrorAddr(), dwarfSection_->GetLastErrorCode());
             DFXLOGU("Failed to search unwind entry?");
             return false;
         }
         memory_->SetDataOffset(uti.segbase);
-        if (!dwarfSection_->Step(frame.pc, (uintptr_t)uei.unwindInfo, rs)) {
+        if (!dwarfSection_->Step(pc, (uintptr_t)uei.unwindInfo, rs)) {
             lastErrorData_.SetAddrAndCode(dwarfSection_->GetLastErrorAddr(), dwarfSection_->GetLastErrorCode());
             DFXLOGU("Step dwarf section error?");
         } else {
-            ret = true;
+            unwinderResult = true;
         }
     }
     return true;
 }
 
-void Unwinder::Impl::StackTraceback(
-    StepFrame& frame, std::shared_ptr<DfxMap>& map, void* ctx, bool& ret, std::shared_ptr<RegLocState>& rs)
+void Unwinder::Impl::UpdateRegsState(StepFrame& frame, void* ctx, bool& ret, std::shared_ptr<RegLocState>& rs)
 {
     SetLocalStackCheck(ctx, true);
     if (ret) {
@@ -1034,24 +1028,24 @@ void Unwinder::Impl::StackTraceback(
         }
     }
 #endif
-}
-
-void Unwinder::Impl::UpdateRegsState(
-    StepFrame& frame, std::shared_ptr<DfxMap>& map, void* ctx, bool& ret, uintptr_t& prevSp)
-{
     frame.pc = regs_->GetPc();
     frame.sp = regs_->GetSp();
     frame.fp = regs_->GetFp();
+}
+
+void Unwinder::Impl::CheckValid(StepFrame& frame, std::shared_ptr<DfxMap>& map, uintptr_t& prevSp)
+{
+    DFXLOGU("-pc: %{public}p, sp: %{public}p, fp: %{public}p, prevSp: %{public}d", reinterpret_cast<void *>(frame.pc),
+        reinterpret_cast<void *>(frame.sp), reinterpret_cast<void *>(frame.fp), prevSp);
     if (!isFpStep_ && (map != nullptr) && (!map->IsVdsoMap()) && (frame.sp < prevSp)) {
         DFXLOGU("Illegal sp value");
         lastErrorData_.SetAddrAndCode(frame.pc, UNW_ERROR_ILLEGAL_VALUE);
-        ret = false;
+        return false;
     }
-    if (ret && (frame.pc == 0)) {
-        ret = false;
+    if (frame.pc == 0) {
+        return false;
     }
-    DFXLOGU("-pc: %{public}p, sp: %{public}p, fp: %{public}p, ret: %{public}d", reinterpret_cast<void *>(frame.pc),
-        reinterpret_cast<void *>(frame.sp), reinterpret_cast<void *>(frame.fp), ret);
+    return true;
 }
 
 bool Unwinder::Impl::StepInner(const bool isSigFrame, StepFrame& frame, void *ctx)
@@ -1065,12 +1059,13 @@ bool Unwinder::Impl::StepInner(const bool isSigFrame, StepFrame& frame, void *ct
         reinterpret_cast<void *>(frame.sp), reinterpret_cast<void *>(frame.fp));
     uintptr_t prevSp = frame.sp;
     bool ret = false;
-    bool isReturn = false;
     std::shared_ptr<RegLocState> rs = nullptr;
     std::shared_ptr<DfxMap> map = nullptr;
     do {
         // 1. find cache rs
-        if (!FindCacheRs(frame, map, rs, ret)) {
+        ret = FindCacheRs(frame.pc, map, rs);
+        if (ret) {
+            AddFrame(frame, map);
             break;
         }
 
@@ -1081,8 +1076,9 @@ bool Unwinder::Impl::StepInner(const bool isSigFrame, StepFrame& frame, void *ct
         if (isSigFrame) {
             return true;
         }
-        bool processFrameResult = UnwindArkFrame(frame, map, isReturn, ret);
-        if (isReturn) {
+        bool stopUnwind = false;
+        bool processFrameResult = UnwindArkFrame(frame, map, stopUnwind);
+        if (stopUnwind) {
             return processFrameResult;
         } else if (!processFrameResult) {
             break;
@@ -1096,7 +1092,7 @@ bool Unwinder::Impl::StepInner(const bool isSigFrame, StepFrame& frame, void *ct
         }
 
         // 3. find unwind table and entry, parse instructions and get cache rs
-        if (!FindAndParseUnwindTable(frame, rs, ctx, ret)) {
+        if (!ParseUnwindTable(frame.pc, rs, ctx, ret)) {
             break;
         }
 
@@ -1106,13 +1102,12 @@ bool Unwinder::Impl::StepInner(const bool isSigFrame, StepFrame& frame, void *ct
             cache.map = map;
             cache.rs = rs;
             stepCache_.emplace(frame.pc, cache);
-            break;
         }
     } while (false);
 
     // 5. update regs and regs state
-    StackTraceback(frame, map, ctx, ret, rs);
-    UpdateRegsState(frame, map, ctx, ret, prevSp);
+    UpdateRegsState(frame, ctx, ret, rs);
+    ret = CheckValid(frame, map, prevSp) ? ret : false;
 
     return ret;
 }
