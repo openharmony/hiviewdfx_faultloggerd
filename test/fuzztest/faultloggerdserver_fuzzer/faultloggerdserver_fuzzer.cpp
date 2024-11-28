@@ -238,7 +238,7 @@ void HandleRequestByPipeTypeTest(std::shared_ptr<FaultLoggerDaemon> daemon)
 {
     HandleRequestByPipeTypeCommon(daemon, FaultLoggerPipeType::PIPE_FD_READ_BUF, true, false);
     HandleRequestByPipeTypeCommon(daemon, FaultLoggerPipeType::PIPE_FD_READ_RES, true, false);
-    HandleRequestByPipeTypeCommon(daemon, FaultLoggerPipeType::PIPE_FD_DELETE, true, false);
+    HandleRequestByPipeTypeCommon(daemon, FaultLoggerPipeType::PIPE_FD_DELETE);
     HandleRequestByPipeTypeCommon(daemon, FaultLoggerPipeType::PIPE_FD_JSON_READ_BUF, true, true);
     HandleRequestByPipeTypeCommon(daemon, FaultLoggerPipeType::PIPE_FD_JSON_READ_RES, true, true);
 
