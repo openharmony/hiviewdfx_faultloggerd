@@ -242,7 +242,7 @@ private:
     bool UnwindArkFrame(StepFrame& frame, std::shared_ptr<DfxMap>& map, bool& stopUnwind);
     bool ParseUnwindTable(uintptr_t pc, std::shared_ptr<RegLocState>& rs, void* ctx, bool& unwinderResult);
     void UpdateRegsState(StepFrame& frame, void* ctx, bool& ret, std::shared_ptr<RegLocState>& rs);
-    void CheckValid(StepFrame& frame, std::shared_ptr<DfxMap>& map, uintptr_t& prevSp);
+    bool CheckValid(StepFrame& frame, std::shared_ptr<DfxMap>& map, uintptr_t& prevSp);
     bool StepInner(const bool isSigFrame, StepFrame& frame, void *ctx);
     bool Apply(std::shared_ptr<DfxRegs> regs, std::shared_ptr<RegLocState> rs);
     bool UnwindFrame(void *ctx, StepFrame& frame, bool& needAdjustPc);
@@ -1033,7 +1033,7 @@ void Unwinder::Impl::UpdateRegsState(StepFrame& frame, void* ctx, bool& ret, std
     frame.fp = regs_->GetFp();
 }
 
-void Unwinder::Impl::CheckValid(StepFrame& frame, std::shared_ptr<DfxMap>& map, uintptr_t& prevSp)
+bool Unwinder::Impl::CheckValid(StepFrame& frame, std::shared_ptr<DfxMap>& map, uintptr_t& prevSp)
 {
     DFXLOGU("-pc: %{public}p, sp: %{public}p, fp: %{public}p, prevSp: %{public}d", reinterpret_cast<void *>(frame.pc),
         reinterpret_cast<void *>(frame.sp), reinterpret_cast<void *>(frame.fp), prevSp);
