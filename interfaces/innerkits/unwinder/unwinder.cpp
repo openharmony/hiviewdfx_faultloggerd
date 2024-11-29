@@ -238,11 +238,11 @@ private:
     void DoPcAdjust(uintptr_t& pc);
     void AddFrame(const StepFrame& frame, std::shared_ptr<DfxMap> map);
     bool FindCache(uintptr_t pc, std::shared_ptr<DfxMap>& map, std::shared_ptr<RegLocState>& rs);
-    bool AddFrameMap(StepFrame& frame, std::shared_ptr<DfxMap>& map, void* ctx);
-    bool UnwindArkFrame(StepFrame& frame, std::shared_ptr<DfxMap>& map, bool& stopUnwind);
+    bool AddFrameMap(const StepFrame& frame, std::shared_ptr<DfxMap>& map, void* ctx);
+    bool UnwindArkFrame(StepFrame& frame, const std::shared_ptr<DfxMap>& map, bool& stopUnwind);
     bool ParseUnwindTable(uintptr_t pc, std::shared_ptr<RegLocState>& rs, void* ctx, bool& unwinderResult);
-    void UpdateRegsState(StepFrame& frame, void* ctx, bool& ret, std::shared_ptr<RegLocState>& rs);
-    bool CheckValid(StepFrame& frame, std::shared_ptr<DfxMap>& map, uintptr_t& prevSp);
+    void UpdateRegsState(StepFrame& frame, void* ctx, bool& unwinderResult, std::shared_ptr<RegLocState>& rs);
+    bool CheckFrameValid(const StepFrame& frame, const std::shared_ptr<DfxMap>& map, uintptr_t prevSp);
     bool StepInner(const bool isSigFrame, StepFrame& frame, void *ctx);
     bool Apply(std::shared_ptr<DfxRegs> regs, std::shared_ptr<RegLocState> rs);
     bool UnwindFrame(void *ctx, StepFrame& frame, bool& needAdjustPc);
@@ -902,7 +902,7 @@ bool Unwinder::Impl::FindCache(uintptr_t pc, std::shared_ptr<DfxMap>& map, std::
     return false;
 }
 
-bool Unwinder::Impl::AddFrameMap(StepFrame& frame, std::shared_ptr<DfxMap>& map, void* ctx)
+bool Unwinder::Impl::AddFrameMap(const StepFrame& frame, std::shared_ptr<DfxMap>& map, void* ctx)
 {
     MAYBE_UNUSED int mapRet = acc_->GetMapByPc(frame.pc, map, ctx);
     if (mapRet != UNW_ERROR_NONE) {
@@ -920,7 +920,7 @@ bool Unwinder::Impl::AddFrameMap(StepFrame& frame, std::shared_ptr<DfxMap>& map,
     return true;
 }
 
-bool Unwinder::Impl::UnwindArkFrame(StepFrame& frame, std::shared_ptr<DfxMap>& map, bool& stopUnwind)
+bool Unwinder::Impl::UnwindArkFrame(StepFrame& frame, const std::shared_ptr<DfxMap>& map, bool& stopUnwind)
 {
 #if defined(ENABLE_MIXSTACK)
     if (stopWhenArkFrame_ && (map != nullptr && map->IsArkExecutable())) {
@@ -961,12 +961,12 @@ bool Unwinder::Impl::ParseUnwindTable(uintptr_t pc, std::shared_ptr<RegLocState>
     if (!unwinderResult && uti.format == UNW_INFO_FORMAT_ARM_EXIDX) {
         if (!armExidx_->SearchEntry(pc, uti, uei)) {
             lastErrorData_.SetAddrAndCode(armExidx_->GetLastErrorAddr(), armExidx_->GetLastErrorCode());
-            DFXLOGE("Failed to search unwind entry?");
+            DFXLOGE("Failed to search unwind entry");
             return false;
         }
         if (!armExidx_->Step((uintptr_t)uei.unwindInfo, rs)) {
             lastErrorData_.SetAddrAndCode(armExidx_->GetLastErrorAddr(), armExidx_->GetLastErrorCode());
-            DFXLOGU("Step exidx section error?");
+            DFXLOGU("Step exidx section error");
         } else {
             unwinderResult = true;
         }
@@ -976,13 +976,13 @@ bool Unwinder::Impl::ParseUnwindTable(uintptr_t pc, std::shared_ptr<RegLocState>
         if ((uti.isLinear == false && !dwarfSection_->SearchEntry(pc, uti, uei)) ||
             (uti.isLinear == true && !dwarfSection_->LinearSearchEntry(pc, uti, uei))) {
             lastErrorData_.SetAddrAndCode(dwarfSection_->GetLastErrorAddr(), dwarfSection_->GetLastErrorCode());
-            DFXLOGU("Failed to search unwind entry?");
+            DFXLOGU("Failed to search unwind entry");
             return false;
         }
         memory_->SetDataOffset(uti.segbase);
         if (!dwarfSection_->Step(pc, (uintptr_t)uei.unwindInfo, rs)) {
             lastErrorData_.SetAddrAndCode(dwarfSection_->GetLastErrorAddr(), dwarfSection_->GetLastErrorCode());
-            DFXLOGU("Step dwarf section error?");
+            DFXLOGU("Step dwarf section error");
         } else {
             unwinderResult = true;
         }
@@ -990,18 +990,18 @@ bool Unwinder::Impl::ParseUnwindTable(uintptr_t pc, std::shared_ptr<RegLocState>
     return true;
 }
 
-void Unwinder::Impl::UpdateRegsState(StepFrame& frame, void* ctx, bool& ret, std::shared_ptr<RegLocState>& rs)
+void Unwinder::Impl::UpdateRegsState(StepFrame& frame, void* ctx, bool& unwinderResult, std::shared_ptr<RegLocState>& rs)
 {
     SetLocalStackCheck(ctx, true);
-    if (ret) {
+    if (unwinderResult) {
 #if defined(__arm__) || defined(__aarch64__)
     auto lr = *(regs_->GetReg(REG_LR));
 #endif
-    ret = Apply(regs_, rs);
+    unwinderResult = Apply(regs_, rs);
 #if defined(__arm__) || defined(__aarch64__)
-    if (!ret && enableLrFallback_ && (frames_.size() == 1)) {
+    if (!unwinderResult && enableLrFallback_ && (frames_.size() == 1)) {
         regs_->SetPc(lr);
-        ret = true;
+        unwinderResult = true;
         if (pid_ != UNWIND_TYPE_CUSTOMIZE) {
             DFXLOGW("Failed to apply first frame, lr fallback");
         }
@@ -1018,9 +1018,9 @@ void Unwinder::Impl::UpdateRegsState(StepFrame& frame, void* ctx, bool& ret, std
     regs_->SetPc(StripPac(regs_->GetPc(), pacMask_));
 
 #if defined(__aarch64__)
-    if (!ret) { // try fp
-        ret = FpStep(frame.fp, frame.pc, ctx);
-        if (ret && !isFpStep_) {
+    if (!unwinderResult) { // try fp
+        unwinderResult = FpStep(frame.fp, frame.pc, ctx);
+        if (unwinderResult && !isFpStep_) {
             if (pid_ != UNWIND_TYPE_CUSTOMIZE) {
                 DFXLOGI("First enter fp step, pc: %{public}p", reinterpret_cast<void *>(frame.pc));
             }
@@ -1033,7 +1033,7 @@ void Unwinder::Impl::UpdateRegsState(StepFrame& frame, void* ctx, bool& ret, std
     frame.fp = regs_->GetFp();
 }
 
-bool Unwinder::Impl::CheckValid(StepFrame& frame, std::shared_ptr<DfxMap>& map, uintptr_t& prevSp)
+bool Unwinder::Impl::CheckFrameValid(const StepFrame& frame, const std::shared_ptr<DfxMap>& map, uintptr_t prevSp)
 {
     DFXLOGU("-pc: %{public}p, sp: %{public}p, fp: %{public}p, prevSp: %{public}d", reinterpret_cast<void *>(frame.pc),
         reinterpret_cast<void *>(frame.sp), reinterpret_cast<void *>(frame.fp), prevSp);
@@ -1107,7 +1107,7 @@ bool Unwinder::Impl::StepInner(const bool isSigFrame, StepFrame& frame, void *ct
 
     // 5. update regs and regs state
     UpdateRegsState(frame, ctx, ret, rs);
-    ret = CheckValid(frame, map, prevSp) ? ret : false;
+    ret = CheckFrameValid(frame, map, prevSp) ? ret : false;
 
     return ret;
 }
