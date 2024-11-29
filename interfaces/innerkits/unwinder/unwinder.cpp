@@ -990,7 +990,8 @@ bool Unwinder::Impl::ParseUnwindTable(uintptr_t pc, std::shared_ptr<RegLocState>
     return true;
 }
 
-void Unwinder::Impl::UpdateRegsState(StepFrame& frame, void* ctx, bool& unwinderResult, std::shared_ptr<RegLocState>& rs)
+void Unwinder::Impl::UpdateRegsState(
+    StepFrame& frame, void* ctx, bool& unwinderResult, std::shared_ptr<RegLocState>& rs)
 {
     SetLocalStackCheck(ctx, true);
     if (unwinderResult) {
@@ -1009,7 +1010,7 @@ void Unwinder::Impl::UpdateRegsState(StepFrame& frame, void* ctx, bool& unwinder
 #endif
     } else {
         if (enableLrFallback_ && (frames_.size() == 1) && regs_->SetPcFromReturnAddress(memory_)) {
-            ret = true;
+            unwinderResult = true;
             if (pid_ != UNWIND_TYPE_CUSTOMIZE) {
                 DFXLOGW("Failed to step first frame, lr fallback");
             }
