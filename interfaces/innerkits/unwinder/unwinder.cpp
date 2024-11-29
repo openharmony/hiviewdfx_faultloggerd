@@ -1063,7 +1063,7 @@ bool Unwinder::Impl::StepInner(const bool isSigFrame, StepFrame& frame, void *ct
     std::shared_ptr<DfxMap> map = nullptr;
     do {
         // 1. find cache rs
-        ret = FindCacheRs(frame.pc, map, rs);
+        ret = FindCache(frame.pc, map, rs);
         if (ret) {
             AddFrame(frame, map);
             break;
