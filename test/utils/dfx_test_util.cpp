@@ -209,13 +209,13 @@ int GetKeywordsNum(const std::string& msg, std::string *keywords, int length)
     return count;
 }
 
-std::string GetCppCrashFileName(const pid_t pid, const std::string& tempPath)
+std::string GetDumpLogFileName(const std::string& prefix, const pid_t pid, const std::string& tempPath)
 {
     std::string filePath = "";
     if (pid <= 0) {
         return filePath;
     }
-    std::string fileNamePrefix = "cppcrash-" + std::to_string(pid);
+    std::string fileNamePrefix = prefix + "-" + std::to_string(pid);
     std::vector<std::string> files;
     OHOS::GetDirFiles(tempPath, files);
     for (const auto& file : files) {
@@ -225,6 +225,11 @@ std::string GetCppCrashFileName(const pid_t pid, const std::string& tempPath)
         }
     }
     return filePath;
+}
+
+std::string GetCppCrashFileName(const pid_t pid, const std::string& tempPath)
+{
+    return GetDumpLogFileName("cppcrash", pid, tempPath);
 }
 
 uint64_t GetSelfMemoryCount()

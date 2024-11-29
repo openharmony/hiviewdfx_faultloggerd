@@ -66,6 +66,7 @@
 #include "parameter.h"
 #include "parameters.h"
 #endif // !is_ohos_lite
+#include "info/fatal_message.h"
 
 namespace OHOS {
 namespace HiviewDFX {
@@ -394,9 +395,10 @@ void ProcessDumper::Report(std::shared_ptr<ProcessDumpRequest> request, std::str
         DFXLOGE("request is nullptr.");
         return;
     }
-    if (request->msg.type == MESSAGE_FDSAN_DEBUG ||
-        request->msg.type == MESSAGE_JEMALLOC ||
-        request->msg.type == MESSAGE_BADFD) {
+    if (request->siginfo.si_signo == SIGLEAK_STACK &&
+        (request->siginfo.si_code == SIGLEAK_STACK_FDSAN ||
+        request->siginfo.si_code == SIGLEAK_STACK_JEMALLOC ||
+        request->siginfo.si_code == SIGLEAK_STACK_BADFD)) {
         ReportAddrSanitizer(*request, jsonInfo);
         return;
     }
@@ -737,10 +739,10 @@ int ProcessDumper::InitProcessInfo(std::shared_ptr<ProcessDumpRequest> request)
     }
     process_->processInfo_.uid = request->uid;
     process_->recycleTid_ = request->recycleTid;
-    if (request->msg.type == MESSAGE_FATAL) {
-        process_->SetFatalMessage(request->msg.body);
-    } else if (request->msg.type == MESSAGE_CALLBACK) {
+    if (request->msg.type == MESSAGE_CALLBACK) {
         process_->extraCrashInfo += StringPrintf("ExtraCrashInfo(Callback):\n%s\n", request->msg.body);
+    } else {
+        process_->SetFatalMessage(request->msg.body);
     }
 
     if (!InitVmThread(request)) {
@@ -775,12 +777,12 @@ int ProcessDumper::GetLogTypeByRequest(const ProcessDumpRequest &request)
 {
     switch (request.siginfo.si_signo) {
         case SIGLEAK_STACK:
-            switch (request.msg.type) {
-                case MESSAGE_FDSAN_DEBUG:
+            switch (request.siginfo.si_code) {
+                case SIGLEAK_STACK_FDSAN:
                     FALLTHROUGH_INTENDED;
-                case MESSAGE_JEMALLOC:
+                case SIGLEAK_STACK_JEMALLOC:
                     FALLTHROUGH_INTENDED;
-                case MESSAGE_BADFD:
+                case SIGLEAK_STACK_BADFD:
                     return FaultLoggerType::CPP_STACKTRACE;
                 default:
                     return FaultLoggerType::LEAK_STACKTRACE;
@@ -949,28 +951,19 @@ void ProcessDumper::ReportCrashInfo(const std::string& jsonInfo)
 void ProcessDumper::ReportAddrSanitizer(ProcessDumpRequest &request, std::string &jsonInfo)
 {
 #ifndef HISYSEVENT_DISABLE
-    std::string fingerPrint = request.processName;
     std::string reason = "DEBUG SIGNAL";
+    std::string summary;
     if (process_ != nullptr && process_->keyThread_ != nullptr) {
-        constexpr size_t MAX_FRAME_CNT = 3;
-        auto& frames = process_->keyThread_->GetFrames();
-        for (size_t index = 0, cnt = 0; cnt < MAX_FRAME_CNT && index < frames.size(); index++) {
-            if (frames[index].mapName.find("ld-musl-", 0) != std::string::npos) {
-                continue;
-            }
-            fingerPrint = fingerPrint + frames[index].funcName;
-            cnt++;
-        }
         reason = process_->reason;
+        summary = process_->keyThread_->ToString();
     }
-    size_t hashVal = std::hash<std::string>()(fingerPrint);
     HiSysEventWrite(OHOS::HiviewDFX::HiSysEvent::Domain::RELIABILITY, "ADDR_SANITIZER",
                     OHOS::HiviewDFX::HiSysEvent::EventType::FAULT,
                     "MODULE", request.processName,
                     "PID", request.pid,
                     "HAPPEN_TIME", request.timeStamp,
                     "REASON", reason,
-                    "FINGERPRINT", std::to_string(hashVal));
+                    "SUMMARY", summary);
     DFXLOGI("%{public}s", "Report fdsan event done.");
 #else
     DFXLOGI("%{public}s", "Not supported for fdsan reporting.");
@@ -981,10 +974,7 @@ void ProcessDumper::ReadFdTable(const ProcessDumpRequest &request)
 {
     // Non crash, leak, jemalloc do not read fdtable
     if (!isCrash_ ||
-        (request.siginfo.si_signo == SIGLEAK_STACK &&
-         (request.msg.type == NONE ||
-          request.msg.type == MESSAGE_FATAL ||
-          request.msg.type == MESSAGE_JEMALLOC))) {
+        (request.siginfo.si_signo == SIGLEAK_STACK && request.siginfo.si_code != SIGLEAK_STACK_FDSAN)) {
         return;
     }
     process_->openFiles = GetOpenFiles(request.pid, request.nsPid, request.fdTableAddr);
