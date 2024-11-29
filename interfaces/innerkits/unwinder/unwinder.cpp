@@ -717,6 +717,7 @@ bool Unwinder::Impl::StepArkJsFrame(StepFrame& frame)
             dfxFrame.index = frames_.size();
             dfxFrame.mapName = std::string(jsFrames[i].url);
             dfxFrame.funcName = std::string(jsFrames[i].functionName);
+            dfxFrame.packageName = std::string(jsFrames[i].packageName);
             dfxFrame.line = jsFrames[i].line;
             dfxFrame.column = jsFrames[i].column;
             AddFrame(dfxFrame);
@@ -1281,6 +1282,7 @@ void Unwinder::Impl::FillJsFrame(DfxFrame& frame)
     }
     frame.mapName = std::string(jsFunction.url);
     frame.funcName = std::string(jsFunction.functionName);
+    frame.packageName = std::string(jsFunction.packageName);
     frame.line = static_cast<int32_t>(jsFunction.line);
     frame.column = jsFunction.column;
     DFXLOGU("Js frame mapName: %{public}s, funcName: %{public}s, line: %{public}d, column: %{public}d",
