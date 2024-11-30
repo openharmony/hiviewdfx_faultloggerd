@@ -94,7 +94,8 @@ void WriteData(int fd, const std::string& data, size_t blockSize)
         size_t writeLength = (index + blockSize) <= dataSize ? blockSize : (dataSize - index);
         ssize_t nwrite = OHOS_TEMP_FAILURE_RETRY(write(fd, data.substr(index, writeLength).c_str(), writeLength));
         if (nwrite != static_cast<ssize_t>(writeLength)) {
-            DFXLOGI("%{public}s :: nwrite: %{public}zd, writeLength: %{public}zu", __func__, nwrite, writeLength);
+            DFXLOGI("%{public}s :: nwrite: %{public}zd, writeLength: %{public}zu, errno:%{public}d", __func__, nwrite,
+                writeLength, errno);
         }
         index += writeLength;
     }

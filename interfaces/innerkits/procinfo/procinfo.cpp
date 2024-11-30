@@ -95,6 +95,14 @@ static bool GetProcStatusByPath(struct ProcInfo& procInfo, const std::string& pa
     return true;
 }
 
+static void MoveMainThreadToHead(const int pid, std::vector<std::string>& tids)
+{
+    auto it = std::find(tids.begin(), tids.end(), std::to_string(pid));
+    if (it != tids.end()) {
+        std::swap(*it, tids.front());
+    }
+}
+
 bool TidToNstid(const int pid, const int tid, int& nstid)
 {
     std::string path = StringPrintf("/proc/%d/task/%d/status", pid, tid);
@@ -146,6 +154,7 @@ bool GetTidsByPidWithFunc(const int pid, std::vector<int>& tids, std::function<b
 
     std::vector<std::string> files;
     if (ReadDirFiles(path, files)) {
+        MoveMainThreadToHead(pid, files);
         for (size_t i = 0; i < files.size(); ++i) {
             pid_t tid = atoi(files[i].c_str());
             if (tid == 0) {
