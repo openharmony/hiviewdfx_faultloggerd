@@ -431,29 +431,43 @@ static bool StartProcessdump(void)
     return true;
 }
 
-static bool StartVMProcessUnwind(void)
+static void InfoVmPidsToProcdump(pid_t realPid, pid_t vmPid)
+{
+    if (g_pipeFds[WRITE_TO_DUMP][0] != -1) {
+        pid_t pids[PID_MAX] = {realPid, vmPid};
+        syscall(SYS_close, g_pipeFds[WRITE_TO_DUMP][0]);
+        g_pipeFds[WRITE_TO_DUMP][0] = -1;
+        if (OHOS_TEMP_FAILURE_RETRY(write(g_pipeFds[WRITE_TO_DUMP][1], pids, sizeof(pids))) != sizeof(pids)) {
+            DFXLOGE("Failed to write vm process to processdump %{public}d", errno);
+        }
+    }
+}
+
+static void StartVMProcessUnwind(void)
 {
     uint32_t startTime = GetAbsTimeMilliSeconds();
     pid_t pid = ForkBySyscall();
     if (pid < 0) {
         DFXLOGE("Failed to fork vm process(%{public}d)", errno);
-        return false;
-    } else if (pid == 0) {
+        InfoVmPidsToProcdump(0, 0);
+        return;
+    }
+    if (pid == 0) {
         pid_t vmPid = ForkBySyscall();
+        if (vmPid < 0) {
+            InfoVmPidsToProcdump(0, 0);
+            DFXLOGE("Child failed to create vm process(%{public}d)", errno);
+            _exit(0);
+        }
         if (vmPid == 0) {
             DFXLOGI("start vm process, fork spend time %{public}" PRIu64 "ms", GetAbsTimeMilliSeconds() - startTime);
-            syscall(SYS_close, g_pipeFds[WRITE_TO_DUMP][0]);
-            pid_t pids[PID_MAX] = {0};
-            pids[REAL_PROCESS_PID] = GetRealPid();
-            pids[VIRTUAL_PROCESS_PID] = syscall(SYS_getpid);
-            OHOS_TEMP_FAILURE_RETRY(write(g_pipeFds[WRITE_TO_DUMP][1], pids, sizeof(pids)));
-            syscall(SYS_close, g_pipeFds[WRITE_TO_DUMP][1]);
+            InfoVmPidsToProcdump(GetRealPid(), syscall(SYS_getpid));
 
             uint32_t finishUnwind = OPE_FAIL;
             syscall(SYS_close, g_pipeFds[READ_FORM_DUMP_TO_VIRTUAL][1]);
             OHOS_TEMP_FAILURE_RETRY(read(g_pipeFds[READ_FORM_DUMP_TO_VIRTUAL][0], &finishUnwind, sizeof(finishUnwind)));
             syscall(SYS_close, g_pipeFds[READ_FORM_DUMP_TO_VIRTUAL][0]);
-            DFXLOGI("processdump unwind finish, exit vm pid = %{public}d", pids[VIRTUAL_PROCESS_PID]);
+            DFXLOGI("processdump unwind finish, exit vm process");
             _exit(0);
         } else {
             DFXLOGI("exit dummy vm process");
@@ -464,7 +478,6 @@ static bool StartVMProcessUnwind(void)
     if (waitpid(pid, NULL, 0) <= 0) {
         DFXLOGE("failed to wait dummy vm process(%{public}d)", errno);
     }
-    return true;
 }
 
 static void CleanFd(int *pipeFd)
@@ -594,10 +607,7 @@ static int ProcessDump(int sig)
             break;
         }
 
-        if (!StartVMProcessUnwind()) {
-            DFXLOGE("start vm process unwind fail");
-            break;
-        }
+        StartVMProcessUnwind();
         ReadUnwindFinishMsg(sig);
     } while (false);
 
