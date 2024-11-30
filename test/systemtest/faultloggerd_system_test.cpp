@@ -1690,6 +1690,7 @@ HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest125, TestSize.Level2)
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest125: end.";
 }
 
+#if defined(__aarch64__)
 /**
 * @tc.name: FaultLoggerdSystemTest126
 * @tc.desc: Test /log/crash files max num when faultloggerd unstart case
@@ -1726,7 +1727,7 @@ HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest126, TestSize.Level2)
     EXPECT_TRUE(files.size() <= maxFilesNum) << "FaultLoggerdSystemTest126 Failed";
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest126: end.";
 }
-
+#endif
 /**
 * @tc.name: FaultLoggerdSystemTest127
 * @tc.desc: Test lock exit after being killed

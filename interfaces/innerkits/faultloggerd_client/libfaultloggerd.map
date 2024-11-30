@@ -8,6 +8,7 @@
       SendFileDescriptorToSocket*;
       RecvMsgCredFromSocket*;
       ReportDumpStats*;
+      SendMsgCtlToSocket*;
     };
   local:
     *;

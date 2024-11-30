@@ -200,6 +200,14 @@ bool ReadFdToString(int fd, std::string& content)
     }
     return (n == 0);
 }
+
+void CloseFd(int &fd)
+{
+    if (fd > 0) {
+        close(fd);
+        fd = -1;
+    }
+}
 }   // namespace HiviewDFX
 }   // namespace OHOS
 

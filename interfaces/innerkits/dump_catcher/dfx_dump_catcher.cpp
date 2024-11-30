@@ -293,7 +293,8 @@ bool DfxDumpCatcher::DoDumpCatchRemote(int pid, int tid, std::string& msg, bool 
         return ret;
     }
     pid_ = pid;
-    int sdkdumpRet = RequestSdkDumpJson(pid, tid, isJson, timeout);
+    int pipeReadFd[] = { -1, -1 };
+    int sdkdumpRet = RequestSdkDump(pid, tid, pipeReadFd, isJson, timeout);
     if (sdkdumpRet != static_cast<int>(FaultLoggerSdkDumpResp::SDK_DUMP_PASS)) {
         if (sdkdumpRet == static_cast<int>(FaultLoggerSdkDumpResp::SDK_DUMP_REPEAT)) {
             AsyncGetAllTidKernelStack(pid, WAIT_GET_KERNEL_STACK_TIMEOUT);
@@ -310,7 +311,7 @@ bool DfxDumpCatcher::DoDumpCatchRemote(int pid, int tid, std::string& msg, bool 
         return ret;
     }
 
-    int pollRet = DoDumpRemotePid(pid, msg, isJson, timeout);
+    int pollRet = DoDumpRemotePid(pid, msg, pipeReadFd, isJson, timeout);
     switch (pollRet) {
         case DUMP_POLL_OK:
             ret = true;
@@ -333,30 +334,14 @@ bool DfxDumpCatcher::DoDumpCatchRemote(int pid, int tid, std::string& msg, bool 
     return ret;
 }
 
-int DfxDumpCatcher::DoDumpRemotePid(int pid, std::string& msg, bool isJson, int32_t timeout)
+int DfxDumpCatcher::DoDumpRemotePid(int pid, std::string& msg, int (&pipeReadFd)[2], bool isJson, int32_t timeout)
 {
     DFX_TRACE_SCOPED_DLSYM("DoDumpRemotePid");
-    int readBufFd = -1;
-    int readResFd = -1;
-    if (isJson) {
-        readBufFd = RequestPipeFd(pid, FaultLoggerPipeType::PIPE_FD_JSON_READ_BUF);
-        readResFd = RequestPipeFd(pid, FaultLoggerPipeType::PIPE_FD_JSON_READ_RES);
-    } else {
-        readBufFd = RequestPipeFd(pid, FaultLoggerPipeType::PIPE_FD_READ_BUF);
-        readResFd = RequestPipeFd(pid, FaultLoggerPipeType::PIPE_FD_READ_RES);
-    }
-    DFXLOGD("read res fd: %{public}d", readResFd);
-    int ret = DoDumpRemotePoll(readBufFd, readResFd, timeout, msg, isJson);
+    int ret = DoDumpRemotePoll(timeout, msg, pipeReadFd, isJson);
     // request close fds in faultloggerd
     RequestDelPipeFd(pid);
-    if (readBufFd >= 0) {
-        close(readBufFd);
-        readBufFd = -1;
-    }
-    if (readResFd >= 0) {
-        close(readResFd);
-        readResFd = -1;
-    }
+    CloseFd(pipeReadFd[PIPE_BUF_INDEX]);
+    CloseFd(pipeReadFd[PIPE_RES_INDEX]);
     DFXLOGI("%{public}s :: %{public}s :: pid(%{public}d) poll ret: %{public}d",
         DFXDUMPCATCHER_TAG.c_str(), __func__, pid, ret);
     return ret;
@@ -433,10 +418,10 @@ void DfxDumpCatcher::AsyncGetAllTidKernelStack(pid_t pid, int waitMilliSeconds)
     }
 }
 
-int DfxDumpCatcher::DoDumpRemotePoll(int bufFd, int resFd, int timeout, std::string& msg, bool isJson)
+int DfxDumpCatcher::DoDumpRemotePoll(int timeout, std::string& msg, const int pipeReadFd[2], bool isJson)
 {
     DFX_TRACE_SCOPED_DLSYM("DoDumpRemotePoll");
-    if (bufFd < 0 || resFd < 0) {
+    if (pipeReadFd[PIPE_BUF_INDEX] < 0 || pipeReadFd[PIPE_RES_INDEX] < 0) {
         if (!isJson) {
             msg = "Result: bufFd or resFd < 0.\n";
         }
@@ -449,9 +434,9 @@ int DfxDumpCatcher::DoDumpRemotePoll(int bufFd, int resFd, int timeout, std::str
     std::string bufMsg;
     struct pollfd readfds[2];
     (void)memset_s(readfds, sizeof(readfds), 0, sizeof(readfds));
-    readfds[0].fd = bufFd;
+    readfds[0].fd = pipeReadFd[PIPE_BUF_INDEX];
     readfds[0].events = POLLIN;
-    readfds[1].fd = resFd;
+    readfds[1].fd = pipeReadFd[PIPE_RES_INDEX];
     readfds[1].events = POLLIN;
     int fdsSize = sizeof(readfds) / sizeof(readfds[0]);
     bool bPipeConnect = false;
@@ -508,13 +493,13 @@ int DfxDumpCatcher::DoDumpRemotePoll(int bufFd, int resFd, int timeout, std::str
                 continue;
             }
 
-            if (readfds[i].fd == bufFd) {
-                bufRet = DoReadBuf(bufFd, bufMsg);
+            if (readfds[i].fd == pipeReadFd[PIPE_BUF_INDEX]) {
+                bufRet = DoReadBuf(pipeReadFd[PIPE_BUF_INDEX], bufMsg);
                 continue;
             }
 
-            if (readfds[i].fd == resFd) {
-                resRet = DoReadRes(resFd, res, resMsg);
+            if (readfds[i].fd == pipeReadFd[PIPE_RES_INDEX]) {
+                resRet = DoReadRes(pipeReadFd[PIPE_RES_INDEX], res, resMsg);
             }
         }
 

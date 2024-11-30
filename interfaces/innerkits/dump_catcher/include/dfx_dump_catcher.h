@@ -88,8 +88,9 @@ private:
         int timeout = DUMPCATCHER_REMOTE_TIMEOUT);
     bool DoDumpCatchRemote(int pid, int tid, std::string& msg, bool isJson = false,
         int timeout = DUMPCATCHER_REMOTE_TIMEOUT);
-    int DoDumpRemotePid(int pid, std::string& msg, bool isJson = false, int32_t timeout = DUMPCATCHER_REMOTE_TIMEOUT);
-    int DoDumpRemotePoll(int bufFd, int resFd, int timeout, std::string& msg, bool isJson = false);
+    int DoDumpRemotePid(int pid, std::string& msg, int (&pipeReadFd)[2],
+        bool isJson = false, int32_t timeout = DUMPCATCHER_REMOTE_TIMEOUT);
+    int DoDumpRemotePoll(int timeout, std::string& msg, const int pipeReadFd[2], bool isJson = false);
     bool DoReadBuf(int fd, std::string& msg);
     bool DoReadRes(int fd, bool &ret, std::string& msg);
     static void CollectKernelStack(pid_t pid, int waitMilliSeconds = 0);

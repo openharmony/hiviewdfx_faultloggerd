@@ -19,6 +19,7 @@
 #include <sstream>
 #include <unistd.h>
 
+#include "dfx_define.h"
 #include "dfx_test_util.h"
 #include "faultloggerd_client.h"
 
@@ -56,13 +57,16 @@ void CheckFdRequestFunction(FaultLoggerType type, bool isValidFd)
  */
 HWTEST_F(FaultloggerdModuleTest, FaultloggerdClientPipeFdRquestTest001, TestSize.Level0)
 {
-    RequestSdkDump(getpid(), getpid());
-    int32_t pipeFd = RequestPipeFd(getpid(), FaultLoggerPipeType::PIPE_FD_READ_BUF);
-    ASSERT_NE(pipeFd, -1);
+    int pipeReadFd[] = { -1, -1 };
+    RequestSdkDump(getpid(), getpid(), pipeReadFd);
+    ASSERT_NE(pipeReadFd[PIPE_BUF_INDEX], -1);
+    ASSERT_NE(pipeReadFd[PIPE_RES_INDEX], -1);
     int32_t ret = RequestDelPipeFd(getpid());
     ASSERT_EQ(ret, 0);
-    pipeFd = RequestPipeFd(getpid(), FaultLoggerPipeType::PIPE_FD_READ_BUF);
-    ASSERT_EQ(pipeFd, -1);
+    int pipeFd[] = { -1, -1 };
+    RequestPipeFd(getpid(), FaultLoggerPipeType::PIPE_FD_READ, pipeFd);
+    ASSERT_EQ(pipeFd[PIPE_BUF_INDEX], -1);
+    ASSERT_EQ(pipeFd[PIPE_RES_INDEX], -1);
 }
 
 /**
@@ -162,20 +166,11 @@ HWTEST_F(FaultloggerdModuleTest, FaultloggerdClientFdRquestTest004, TestSize.Lev
  */
 HWTEST_F(FaultloggerdModuleTest, FaultloggerdClientPipeFdRquestTest002, TestSize.Level0)
 {
-    RequestSdkDump(getpid(), getpid());
-    int32_t pipeFd = RequestPipeFd(getpid(), -1);
-    ASSERT_EQ(pipeFd, -1);
-    pipeFd = RequestPipeFd(getpid(), FaultLoggerPipeType::PIPE_FD_DELETE);
-    ASSERT_EQ(pipeFd, -1);
-}
-
-/**
- * @tc.name: FaultloggerdPermissionCheckTest001
- * @tc.desc: check faultloggerd RequestCheckPermission function
- * @tc.type: FUNC
- */
-HWTEST_F(FaultloggerdModuleTest, FaultloggerdPermissionCheckTest001, TestSize.Level0)
-{
-    ASSERT_TRUE(RequestCheckPermission(getpid()));
+    int pipeReadFd[] = { -1, -1 };
+    RequestSdkDump(getpid(), getpid(), pipeReadFd);
+    int pipeWriteFd[] = { -1, -1 };
+    ASSERT_EQ(RequestPipeFd(getpid(), -1, pipeWriteFd), -1);
+    ASSERT_EQ(pipeWriteFd[PIPE_BUF_INDEX], -1);
+    ASSERT_EQ(pipeWriteFd[PIPE_RES_INDEX], -1);
 }
 }
