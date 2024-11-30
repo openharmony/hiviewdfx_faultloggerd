@@ -72,7 +72,7 @@ bool DfxPtrace::Attach(pid_t tid, int timeout)
     int waitStatus = 0;
     do {
         if (waitpid(tid, &waitStatus, WNOHANG) > 0) {
-            if ((waitStatus >> 16) == PTRACE_EVENT_STOP) { // 16 : stop event flag
+            if (((waitStatus >> 16U) & 0xffU) == PTRACE_EVENT_STOP) { // 16 : stop event flag
                 break;
             } else {
                 ptrace(PTRACE_CONT, tid, 0, 0); // clear old event
