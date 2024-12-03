@@ -904,7 +904,7 @@ bool Unwinder::Impl::FindCache(uintptr_t pc, std::shared_ptr<DfxMap>& map, std::
 
 bool Unwinder::Impl::AddFrameMap(const StepFrame& frame, std::shared_ptr<DfxMap>& map, void* ctx)
 {
-    MAYBE_UNUSED int mapRet = acc_->GetMapByPc(frame.pc, map, ctx);
+    int mapRet = acc_->GetMapByPc(frame.pc, map, ctx);
     if (mapRet != UNW_ERROR_NONE) {
         if (frame.isJsFrame) {
             DFXLOGW("Failed to get map with ark, frames size: %{public}zu", frames_.size());
@@ -1059,13 +1059,13 @@ bool Unwinder::Impl::StepInner(const bool isSigFrame, StepFrame& frame, void *ct
     DFXLOGU("+pc: %{public}p, sp: %{public}p, fp: %{public}p", reinterpret_cast<void *>(frame.pc),
         reinterpret_cast<void *>(frame.sp), reinterpret_cast<void *>(frame.fp));
     uintptr_t prevSp = frame.sp;
-    bool ret = false;
+    bool hasRegLocState = false;
     std::shared_ptr<RegLocState> rs = nullptr;
     std::shared_ptr<DfxMap> map = nullptr;
     do {
         // 1. find cache rs
-        ret = FindCache(frame.pc, map, rs);
-        if (ret) {
+        hasRegLocState = FindCache(frame.pc, map, rs);
+        if (hasRegLocState) {
             AddFrame(frame, map);
             break;
         }
@@ -1093,12 +1093,12 @@ bool Unwinder::Impl::StepInner(const bool isSigFrame, StepFrame& frame, void *ct
         }
 
         // 3. find unwind table and entry, parse instructions and get cache rs
-        if (!ParseUnwindTable(frame.pc, rs, ctx, ret)) {
+        if (!ParseUnwindTable(frame.pc, rs, ctx, hasRegLocState)) {
             break;
         }
 
         // 4. update rs cache
-        if (ret && enableCache_) {
+        if (hasRegLocState && enableCache_) {
             StepCache cache;
             cache.map = map;
             cache.rs = rs;
@@ -1107,10 +1107,8 @@ bool Unwinder::Impl::StepInner(const bool isSigFrame, StepFrame& frame, void *ct
     } while (false);
 
     // 5. update regs and regs state
-    UpdateRegsState(frame, ctx, ret, rs);
-    ret = CheckFrameValid(frame, map, prevSp) ? ret : false;
-
-    return ret;
+    UpdateRegsState(frame, ctx, hasRegLocState, rs);
+    return CheckFrameValid(frame, map, prevSp) ? hasRegLocState : false;
 }
 
 bool Unwinder::Impl::Apply(std::shared_ptr<DfxRegs> regs, std::shared_ptr<RegLocState> rs)
