@@ -106,46 +106,6 @@ size_t DfxMemory::Read(uintptr_t& addr, void* val, size_t size, bool incre)
     return bytesRead;
 }
 
-bool DfxMemory::ReadU8(uintptr_t& addr, uint8_t *val, bool incre)
-{
-    if (Read(addr, val, sizeof(uint8_t), incre) == sizeof(uint8_t)) {
-        return true;
-    }
-    return false;
-}
-
-bool DfxMemory::ReadU16(uintptr_t& addr, uint16_t *val, bool incre)
-{
-    if (Read(addr, val, sizeof(uint16_t), incre) == sizeof(uint16_t)) {
-        return true;
-    }
-    return false;
-}
-
-bool DfxMemory::ReadU32(uintptr_t& addr, uint32_t *val, bool incre)
-{
-    if (Read(addr, val, sizeof(uint32_t), incre) == sizeof(uint32_t)) {
-        return true;
-    }
-    return false;
-}
-
-bool DfxMemory::ReadU64(uintptr_t& addr, uint64_t *val, bool incre)
-{
-    if (Read(addr, val, sizeof(uint64_t), incre) == sizeof(uint64_t)) {
-        return true;
-    }
-    return false;
-}
-
-bool DfxMemory::ReadUptr(uintptr_t& addr, uintptr_t *val, bool incre)
-{
-    if (Read(addr, val, sizeof(uintptr_t), incre) == sizeof(uintptr_t)) {
-        return true;
-    }
-    return false;
-}
-
 bool DfxMemory::ReadString(uintptr_t& addr, std::string* str, size_t maxSize, bool incre)
 {
     if (str == nullptr) {
@@ -182,7 +142,7 @@ bool DfxMemory::ReadString(uintptr_t& addr, std::string* str, size_t maxSize, bo
 bool DfxMemory::ReadPrel31(uintptr_t& addr, uintptr_t *val)
 {
     uintptr_t offset;
-    if (!ReadUptr(addr, &offset, false)) {
+    if (!Read<uintptr_t>(addr, &offset, false)) {
         return false;
     }
     offset = static_cast<uintptr_t>(static_cast<int32_t>(offset << 1) >> 1);
@@ -196,7 +156,7 @@ uint64_t DfxMemory::ReadUleb128(uintptr_t& addr)
     uint64_t shift = 0;
     uint8_t u8 = 0;
     do {
-        if (!ReadU8(addr, &u8, true)) {
+        if (!Read<uint8_t>(addr, &u8, true)) {
             break;
         }
 
@@ -212,7 +172,7 @@ int64_t DfxMemory::ReadSleb128(uintptr_t& addr)
     uint64_t shift = 0;
     uint8_t byte = 0;
     do {
-        if (!ReadU8(addr, &byte, true)) {
+        if (!Read<uint8_t>(addr, &byte, true)) {
             break;
         }
 
@@ -250,7 +210,46 @@ size_t DfxMemory::GetEncodedSize(uint8_t encoding)
     }
 }
 
-uintptr_t DfxMemory::ReadEncodedValue(uintptr_t& addr, uint8_t encoding)
+void DfxMemory::ReadFormatEncodedValue(uintptr_t &addr, uintptr_t &val, uint8_t formatEncoding)
+{
+    switch (formatEncoding) {
+        case DW_EH_PE_uleb128:
+            val = static_cast<uintptr_t>(ReadUleb128(addr));
+            break;
+        case DW_EH_PE_sleb128:
+            val = static_cast<uintptr_t>(ReadSleb128(addr));
+            break;
+        case DW_EH_PE_udata1:
+            val = static_cast<uintptr_t>(ReadValue<uint8_t>(addr, true));
+            break;
+        case DW_EH_PE_sdata1:
+            val = static_cast<uintptr_t>(ReadValue<int8_t>(addr, true));
+            break;
+        case DW_EH_PE_udata2:
+            val = static_cast<uintptr_t>(ReadValue<uint16_t>(addr, true));
+            break;
+        case DW_EH_PE_sdata2:
+            val = static_cast<uintptr_t>(ReadValue<int16_t>(addr, true));
+            break;
+        case DW_EH_PE_udata4:
+            val = static_cast<uintptr_t>(ReadValue<uint32_t>(addr, true));
+            break;
+        case DW_EH_PE_sdata4:
+            val = static_cast<uintptr_t>(ReadValue<int32_t>(addr, true));
+            break;
+        case DW_EH_PE_udata8:
+            val = static_cast<uintptr_t>(ReadValue<uint64_t>(addr, true));
+            break;
+        case DW_EH_PE_sdata8:
+            val = static_cast<uintptr_t>(ReadValue<int64_t>(addr, true));
+            break;
+        default:
+            DFXLOGW("Unexpected encoding format 0x%{public}x", formatEncoding);
+            break;
+    }
+}
+
+uintptr_t DfxMemory::ReadEncodedValue(uintptr_t &addr, uint8_t encoding)
 {
     uintptr_t startAddr = addr;
     uintptr_t val = 0;
@@ -261,71 +260,16 @@ uintptr_t DfxMemory::ReadEncodedValue(uintptr_t& addr, uint8_t encoding)
             return val;
         }
         addr &= -sizeof(uintptr_t);
-        ReadUptr(addr, &val, true);
+        Read<uintptr_t>(addr, &val, true);
         return val;
     }
 
-    switch (encoding & DW_EH_PE_FORMAT_MASK) {
-        case DW_EH_PE_absptr:
-            ReadUptr(addr, &val, true);
-            return val;
-        case DW_EH_PE_uleb128:
-            val = static_cast<uintptr_t>(ReadUleb128(addr));
-            break;
-        case DW_EH_PE_sleb128:
-            val = static_cast<uintptr_t>(ReadSleb128(addr));
-            break;
-        case DW_EH_PE_udata1: {
-            uint8_t tmp = 0;
-            ReadU8(addr, &tmp, true);
-            val = static_cast<uintptr_t>(tmp);
-        }
-            break;
-        case DW_EH_PE_sdata1: {
-            int8_t tmp = 0;
-            ReadS8(addr, &tmp, true);
-            val = static_cast<uintptr_t>(tmp);
-        }
-            break;
-        case DW_EH_PE_udata2: {
-            uint16_t tmp = 0;
-            ReadU16(addr, &tmp, true);
-            val = static_cast<uintptr_t>(tmp);
-        }
-            break;
-        case DW_EH_PE_sdata2: {
-            int16_t tmp = 0;
-            ReadS16(addr, &tmp, true);
-            val = static_cast<uintptr_t>(tmp);
-        }
-            break;
-        case DW_EH_PE_udata4: {
-            uint32_t tmp = 0;
-            ReadU32(addr, &tmp, true);
-            val = static_cast<uintptr_t>(tmp);
-        }
-            break;
-        case DW_EH_PE_sdata4: {
-            int32_t tmp = 0;
-            ReadS32(addr, &tmp, true);
-            val = static_cast<uintptr_t>(tmp);
-        }
-            break;
-        case DW_EH_PE_udata8: {
-            uint64_t tmp = 0;
-            ReadU64(addr, &tmp, true);
-            val = static_cast<uintptr_t>(tmp);
-        }
-            break;
-        case DW_EH_PE_sdata8: {
-            int64_t tmp = 0;
-            ReadS64(addr, &tmp, true);
-            val = static_cast<uintptr_t>(tmp);
-        }
-            break;
-        default:
-            DFXLOGW("Unexpected encoding format 0x%{public}x", encoding & DW_EH_PE_FORMAT_MASK);
-            break;
+    uint8_t formatEncoding = encoding & DW_EH_PE_FORMAT_MASK;
+    if (formatEncoding == DW_EH_PE_absptr) {
+        Read<uintptr_t>(addr, &val, true);
+        return val;
+    } else {
+        ReadFormatEncodedValue(addr, val, formatEncoding);
     }
 
     switch (encoding & DW_EH_PE_APPL_MASK) {
@@ -347,7 +291,7 @@ uintptr_t DfxMemory::ReadEncodedValue(uintptr_t& addr, uint8_t encoding)
 
     if (encoding & DW_EH_PE_indirect) {
         uintptr_t indirectAddr = val;
-        ReadUptr(indirectAddr, &val, true);
+        Read<uintptr_t>(indirectAddr, &val, true);
     }
     return val;
 }

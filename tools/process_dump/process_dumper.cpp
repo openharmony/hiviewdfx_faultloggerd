@@ -33,6 +33,7 @@
 #include <sys/time.h>
 #include <sys/types.h>
 #include <sys/ptrace.h>
+#include <sys/wait.h>
 #include <ucontext.h>
 #include <unistd.h>
 
@@ -47,7 +48,7 @@
 #include "dfx_process.h"
 #include "dfx_regs.h"
 #include "dfx_ring_buffer_wrapper.h"
-#include "dfx_stack_info_formatter.h"
+#include "dfx_stack_info_json_formatter.h"
 #include "dfx_thread.h"
 #include "dfx_unwind_remote.h"
 #include "dfx_util.h"
@@ -58,6 +59,7 @@
 #ifndef HISYSEVENT_DISABLE
 #include "hisysevent.h"
 #endif
+#include "info/fatal_message.h"
 #include "printer.h"
 #include "procinfo.h"
 #include "unwinder_config.h"
@@ -65,6 +67,7 @@
 #include "parameter.h"
 #include "parameters.h"
 #endif // !is_ohos_lite
+#include "info/fatal_message.h"
 
 namespace OHOS {
 namespace HiviewDFX {
@@ -214,33 +217,72 @@ std::string DumpOpenFiles(OpenFilesList &files)
     return openFiles;
 }
 
-void ReadPids(int& realPid, int& vmPid)
+void WaitForFork(unsigned long pid, unsigned long& childPid)
 {
-    pid_t pids[PID_MAX] = {0};
-    OHOS_TEMP_FAILURE_RETRY(read(STDIN_FILENO, pids, sizeof(pids)));
-    realPid = pids[REAL_PROCESS_PID];
-    vmPid = pids[VIRTUAL_PROCESS_PID];
+    DFXLOGI("start wait fork event happen");
+    int waitStatus = 0;
+    waitpid(pid, &waitStatus, 0); // wait fork event
+    DFXLOGI("wait for fork status %{public}d", waitStatus);
+    if (waitStatus >> 8 == (SIGTRAP | (PTRACE_EVENT_FORK << 8))) { // 8 : get fork  event flag
+        ptrace(PTRACE_GETEVENTMSG, pid, NULL, &childPid);
+        DFXLOGI("next child pid %{public}lu", childPid);
+        waitpid(childPid, &waitStatus, 0); // wait child stop event
+    }
+}
+
+void ReadVmRealPid(std::shared_ptr<ProcessDumpRequest> request, unsigned long vmPid, int& realPid)
+{
+    int waitStatus = 0;
+    ptrace(PTRACE_SETOPTIONS, vmPid, NULL, PTRACE_O_TRACEEXIT); // block son exit
+    ptrace(PTRACE_CONT, vmPid, NULL, NULL);
+
+    long data = 0;
+    DFXLOGI("start wait exit event happen");
+    waitpid(vmPid, &waitStatus, 0); // wait exit stop
+    data = ptrace(PTRACE_PEEKDATA, vmPid, reinterpret_cast<void *>(request->vmProcRealPid), NULL);
+    if (data < 0) {
+        DFXLOGI("ptrace peek data error %{public}lu %{public}d", vmPid, errno);
+    }
+    realPid = static_cast<int>(data);
+}
+
+void ReadPids(std::shared_ptr<ProcessDumpRequest> request, int& realPid, int& vmPid, std::shared_ptr<DfxProcess> proc)
+{
+    unsigned long childPid = 0;
+
+    WaitForFork(request->tid, childPid);
+    ptrace(PTRACE_CONT, childPid, NULL, NULL);
+
+    // frezze detach after fork child to fork vm process
+    if (request->siginfo.si_signo == SIGDUMP) {
+        if (proc->keyThread_ != nullptr) {
+            proc->keyThread_->Detach();
+        }
+        proc->Detach();
+        DFXLOGI("ptrace detach all tids");
+    }
+
+    unsigned long sonPid = 0;
+    WaitForFork(childPid, sonPid);
+    vmPid = sonPid;
+
+    ptrace(PTRACE_DETACH, childPid, 0, 0);
+    ReadVmRealPid(request, sonPid, realPid);
+
     DFXLOGI("procecdump get real pid is %{public}d vm pid is %{public}d", realPid, vmPid);
 }
 
-void InfoRemoteProcessResult(std::shared_ptr<ProcessDumpRequest> request, int result, int type)
+void InfoRemoteProcessResult(std::shared_ptr<ProcessDumpRequest> request, int result)
 {
     if (request == nullptr) {
         return;
     }
-    if (request->pmPipeFd[0] != -1) {
-        close(request->pmPipeFd[0]);
-        request->pmPipeFd[0] = -1;
+    if (request->childPipeFd[0] != -1) {
+        close(request->childPipeFd[0]);
+        request->childPipeFd[0] = -1;
     }
-    switch (type) {
-        case MAIN_PROCESS:
-            OHOS_TEMP_FAILURE_RETRY(write(request->pmPipeFd[1], &result, sizeof(result)));
-            break;
-        case VIRTUAL_PROCESS:
-            OHOS_TEMP_FAILURE_RETRY(write(request->vmPipeFd[1], &result, sizeof(result)));
-            break;
-        default:
-            break;
+    if (OHOS_TEMP_FAILURE_RETRY(write(request->childPipeFd[1], &result, sizeof(result))) < 0) {
+        DFXLOGE("write to child process fail %{public}d", errno);
     }
 }
 
@@ -308,22 +350,22 @@ void ProcessDumper::Dump()
         if (isCrash_ && process_->vmThread_ != nullptr) {
             process_->vmThread_->Detach();
         }
-        if (process_->keyThread_ != nullptr) {
-            process_->keyThread_->Detach();
-        }
         if (isCrash_ && (request->dumpMode == FUSION_MODE) && IsBlockCrashProcess()) {
             DFXLOGI("start block crash process pid %{public}d nspid %{public}d", request->pid, request->nsPid);
-            if (syscall(SYS_tgkill, request->nsPid, request->tid, SIGSTOP) != 0) {
-                DFXLOGE("send signal stop to nsPid %{public}d fail %{public}s", request->nsPid, strerror(errno));
+            if (ptrace(PTRACE_POKEDATA, request->nsPid, (void*)request->isBlockCrash, CRASH_BLOCK_EXIT_FLAG) < 0) {
+                DFXLOGE("pok block falg to nsPid %{public}d fail %{public}s", request->nsPid, strerror(errno));
             }
+        }
+        if (process_->keyThread_ != nullptr) {
+            process_->keyThread_->Detach();
         }
     }
 
     std::string jsonInfo;
     if (isJsonDump_ || isCrash_) {
-        DfxStackInfoFormatter formatter(process_, request);
-        formatter.GetStackInfo(isJsonDump_, jsonInfo);
-        DFXLOGI("Finish GetStackInfo len %{public}" PRIuPTR "", jsonInfo.length());
+        DfxStackInfoJsonFormatter formatter(process_, request);
+        formatter.GetJsonFormatInfo(isJsonDump_, jsonInfo);
+        DFXLOGI("Finish GetJsonFormatInfo len %{public}" PRIuPTR "", jsonInfo.length());
         if (isJsonDump_) {
             WriteData(jsonFd_, jsonInfo, MAX_PIPE_SIZE);
         }
@@ -354,18 +396,15 @@ void ProcessDumper::Report(std::shared_ptr<ProcessDumpRequest> request, std::str
         DFXLOGE("request is nullptr.");
         return;
     }
-    if (request->msg.type == MESSAGE_FDSAN_DEBUG ||
-        request->msg.type == MESSAGE_JEMALLOC ||
-        request->msg.type == MESSAGE_BADFD) {
+    if (request->siginfo.si_signo == SIGLEAK_STACK &&
+        (request->siginfo.si_code == SIGLEAK_STACK_FDSAN ||
+        request->siginfo.si_code == SIGLEAK_STACK_JEMALLOC ||
+        request->siginfo.si_code == SIGLEAK_STACK_BADFD)) {
         ReportAddrSanitizer(*request, jsonInfo);
-        InfoRemoteProcessResult(request, OPE_CONTINUE, MAIN_PROCESS);
         return;
     }
     if (resDump_ != DumpErrorCode::DUMP_ENOMAP && resDump_ != DumpErrorCode::DUMP_EREADPID) {
         ReportCrashInfo(jsonInfo);
-    }
-    if ((request->dumpMode == FUSION_MODE) && isCrash_) {
-        InfoRemoteProcessResult(request, OPE_CONTINUE, MAIN_PROCESS);
     }
 }
 
@@ -404,15 +443,12 @@ std::string GetOpenFiles(int32_t pid, int nsPid, uint64_t fdTableAddr)
 void ProcessDumper::InitRegs(std::shared_ptr<ProcessDumpRequest> request, int &dumpRes)
 {
     DFX_TRACE_SCOPED("InitRegs");
-    uint32_t opeResult = OPE_SUCCESS;
     if (request->dumpMode == FUSION_MODE) {
         if (!DfxUnwindRemote::GetInstance().InitProcessAllThreadRegs(request, process_)) {
             DFXLOGE("Failed to init process regs.");
             dumpRes = DumpErrorCode::DUMP_ESTOPUNWIND;
-            opeResult = OPE_FAIL;
         }
 
-        InfoRemoteProcessResult(request, opeResult, MAIN_PROCESS);
         DFXLOGI("get all tid regs finish");
     }
 }
@@ -458,12 +494,16 @@ void ProcessDumper::UnwindWriteJit(const ProcessDumpRequest &request)
     (void)close(fd);
 }
 
-std::string ProcessDumper::ReadCrashObjString(pid_t tid, uintptr_t addr) const
+std::string ProcessDumper::ReadStringByPtrace(pid_t tid, uintptr_t addr, size_t maxLen)
 {
-    std::string stringContent = "ExtraCrashInfo(String):\n";
-    constexpr int bufLen = 256;
-    long buffer[bufLen] = {0};
-    for (int i = 0; i < bufLen - 1; i++) {
+    constexpr size_t maxReadLen = 1024 * 1024 * 1; // 1M
+    if (maxLen == 0 || maxLen > maxReadLen) {
+        DFXLOGE("maxLen(%{public}zu) is invalid value.", maxLen);
+        return "";
+    }
+    size_t bufLen = (maxLen + sizeof(long) - 1) / sizeof(long);
+    std::vector<long> buffer(bufLen, 0);
+    for (size_t i = 0; i < bufLen; i++) {
         long ret = ptrace(PTRACE_PEEKTEXT, tid, reinterpret_cast<void*>(addr + sizeof(long) * i), nullptr);
         if (ret == -1) {
             DFXLOGE("read target mem by ptrace failed, errno(%{public}s).", strerror(errno));
@@ -474,8 +514,39 @@ std::string ProcessDumper::ReadCrashObjString(pid_t tid, uintptr_t addr) const
             break;
         }
     }
-    char* val = reinterpret_cast<char*>(buffer);
-    stringContent += (std::string(val) + "\n");
+    char* val = reinterpret_cast<char*>(buffer.data());
+    val[maxLen - 1] = '\0';
+    return std::string(val);
+}
+
+void ProcessDumper::UpdateFatalMessageWhenDebugSignal(const ProcessDumpRequest& request)
+{
+    if (process_ == nullptr || request.siginfo.si_signo != SIGLEAK_STACK ||
+        !(request.siginfo.si_code == SIGLEAK_STACK_FDSAN || request.siginfo.si_code == SIGLEAK_STACK_JEMALLOC)) {
+        return;
+    }
+
+    auto debugMsgPtr = reinterpret_cast<uintptr_t>(request.siginfo.si_value.sival_ptr);
+    debug_msg_t dMsg = {0};
+    if (DfxMemory::ReadProcMemByPid(request.nsPid, debugMsgPtr, &dMsg, sizeof(dMsg)) != sizeof(debug_msg_t)) {
+        DFXLOGE("Get debug_msg_t failed.");
+        return;
+    }
+    auto msgPtr = reinterpret_cast<uintptr_t>(dMsg.msg);
+    auto lastMsg = ReadStringByPtrace(request.nsPid, msgPtr, MAX_FATAL_MSG_SIZE);
+    if (lastMsg.empty()) {
+        DFXLOGE("Get debug_msg_t.msg failed.");
+        return;
+    }
+    process_->SetFatalMessage(lastMsg);
+}
+
+std::string ProcessDumper::ReadCrashObjString(pid_t tid, uintptr_t addr) const
+{
+    std::string stringContent = "ExtraCrashInfo(String):\n";
+    constexpr int bufLen = 256;
+    auto readStr = ReadStringByPtrace(tid, addr, sizeof(long) * bufLen);
+    stringContent += (readStr + "\n");
     return stringContent;
 }
 
@@ -533,6 +604,7 @@ bool ProcessDumper::Unwind(std::shared_ptr<ProcessDumpRequest> request, int &dum
         }
     }
     GetCrashObj(request);
+    UpdateFatalMessageWhenDebugSignal(*request);
     if (!DfxUnwindRemote::GetInstance().UnwindProcess(request, process_, unwinder_, vmPid)) {
         DFXLOGE("Failed to unwind process.");
         dumpRes = DumpErrorCode::DUMP_ESTOPUNWIND;
@@ -547,7 +619,6 @@ int ProcessDumper::DumpProcess(std::shared_ptr<ProcessDumpRequest> request)
 {
     DFX_TRACE_SCOPED("DumpProcess");
     int dumpRes = DumpErrorCode::DUMP_ESUCCESS;
-    uint32_t opeResult = OPE_SUCCESS;
     do {
         if ((dumpRes = ReadRequestAndCheck(request)) != DumpErrorCode::DUMP_ESUCCESS) {
             break;
@@ -579,7 +650,6 @@ int ProcessDumper::DumpProcess(std::shared_ptr<ProcessDumpRequest> request)
         InitRegs(request, dumpRes);
         pid_t vmPid = 0;
         if (!InitUnwinder(request, vmPid, dumpRes) && (isCrash_ && !isLeakDump)) {
-            opeResult = OPE_FAIL;
             break;
         }
         if (InitPrintThread(request) < 0) {
@@ -588,12 +658,9 @@ int ProcessDumper::DumpProcess(std::shared_ptr<ProcessDumpRequest> request)
         }
         ReadFdTable(*request);
         if (!Unwind(request, dumpRes, vmPid)) {
-            opeResult = OPE_FAIL;
+            DFXLOGE("unwind fail.");
         }
     } while (false);
-    if (request->dumpMode == FUSION_MODE) {
-        InfoRemoteProcessResult(request, opeResult, VIRTUAL_PROCESS);
-    }
     if (dumpRes == DumpErrorCode::DUMP_ESUCCESS && !IsTargetProcessAlive(request)) {
         dumpRes = DumpErrorCode::DUMP_EGETPPID;
     }
@@ -641,6 +708,8 @@ bool ProcessDumper::InitKeyThread(std::shared_ptr<ProcessDumpRequest> request)
         }
     }
     if ((process_->keyThread_ != nullptr) && request->dumpMode == FUSION_MODE) {
+        InfoRemoteProcessResult(request, OPE_SUCCESS);
+        ptrace(PTRACE_SETOPTIONS, process_->keyThread_->threadInfo_.nsTid, NULL, PTRACE_O_TRACEFORK);
         ptrace(PTRACE_CONT, process_->keyThread_->threadInfo_.nsTid, 0, 0);
     }
 
@@ -659,7 +728,7 @@ bool ProcessDumper::InitUnwinder(std::shared_ptr<ProcessDumpRequest> request, pi
     DFX_TRACE_SCOPED("InitUnwinder");
     pid_t realPid = 0;
     if (request->dumpMode == FUSION_MODE) {
-        ReadPids(realPid, vmPid);
+        ReadPids(request, realPid, vmPid, process_);
         if (realPid == 0 || vmPid == 0) {
             ReportCrashException(request->processName, request->pid, request->uid,
                 CrashExceptionCode::CRASH_DUMP_EREADPID);
@@ -667,15 +736,6 @@ bool ProcessDumper::InitUnwinder(std::shared_ptr<ProcessDumpRequest> request, pi
             dumpRes = DumpErrorCode::DUMP_EREADPID;
             return false;
         }
-    }
-
-    // frezze detach after vm process create
-    if (!isCrash_) {
-        if (process_->keyThread_ != nullptr) {
-            process_->keyThread_->Detach();
-        }
-        process_->Detach();
-        DFXLOGI("ptrace detach all tids");
     }
 
     if (request->dumpMode == FUSION_MODE) {
@@ -716,10 +776,10 @@ int ProcessDumper::InitProcessInfo(std::shared_ptr<ProcessDumpRequest> request)
     }
     process_->processInfo_.uid = request->uid;
     process_->recycleTid_ = request->recycleTid;
-    if (request->msg.type == MESSAGE_FATAL) {
-        process_->SetFatalMessage(request->msg.body);
-    } else if (request->msg.type == MESSAGE_CALLBACK) {
+    if (request->msg.type == MESSAGE_CALLBACK) {
         process_->extraCrashInfo += StringPrintf("ExtraCrashInfo(Callback):\n%s\n", request->msg.body);
+    } else {
+        process_->SetFatalMessage(request->msg.body);
     }
 
     if (!InitVmThread(request)) {
@@ -754,12 +814,12 @@ int ProcessDumper::GetLogTypeByRequest(const ProcessDumpRequest &request)
 {
     switch (request.siginfo.si_signo) {
         case SIGLEAK_STACK:
-            switch (request.msg.type) {
-                case MESSAGE_FDSAN_DEBUG:
+            switch (request.siginfo.si_code) {
+                case SIGLEAK_STACK_FDSAN:
                     FALLTHROUGH_INTENDED;
-                case MESSAGE_JEMALLOC:
+                case SIGLEAK_STACK_JEMALLOC:
                     FALLTHROUGH_INTENDED;
-                case MESSAGE_BADFD:
+                case SIGLEAK_STACK_BADFD:
                     return FaultLoggerType::CPP_STACKTRACE;
                 default:
                     return FaultLoggerType::LEAK_STACKTRACE;
@@ -928,28 +988,19 @@ void ProcessDumper::ReportCrashInfo(const std::string& jsonInfo)
 void ProcessDumper::ReportAddrSanitizer(ProcessDumpRequest &request, std::string &jsonInfo)
 {
 #ifndef HISYSEVENT_DISABLE
-    std::string fingerPrint = request.processName;
     std::string reason = "DEBUG SIGNAL";
+    std::string summary;
     if (process_ != nullptr && process_->keyThread_ != nullptr) {
-        constexpr size_t MAX_FRAME_CNT = 3;
-        auto& frames = process_->keyThread_->GetFrames();
-        for (size_t index = 0, cnt = 0; cnt < MAX_FRAME_CNT && index < frames.size(); index++) {
-            if (frames[index].mapName.find("ld-musl-", 0) != std::string::npos) {
-                continue;
-            }
-            fingerPrint = fingerPrint + frames[index].funcName;
-            cnt++;
-        }
         reason = process_->reason;
+        summary = process_->keyThread_->ToString();
     }
-    size_t hashVal = std::hash<std::string>()(fingerPrint);
     HiSysEventWrite(OHOS::HiviewDFX::HiSysEvent::Domain::RELIABILITY, "ADDR_SANITIZER",
                     OHOS::HiviewDFX::HiSysEvent::EventType::FAULT,
                     "MODULE", request.processName,
                     "PID", request.pid,
                     "HAPPEN_TIME", request.timeStamp,
                     "REASON", reason,
-                    "FINGERPRINT", std::to_string(hashVal));
+                    "SUMMARY", summary);
     DFXLOGI("%{public}s", "Report fdsan event done.");
 #else
     DFXLOGI("%{public}s", "Not supported for fdsan reporting.");
@@ -960,10 +1011,7 @@ void ProcessDumper::ReadFdTable(const ProcessDumpRequest &request)
 {
     // Non crash, leak, jemalloc do not read fdtable
     if (!isCrash_ ||
-        (request.siginfo.si_signo == SIGLEAK_STACK &&
-         (request.msg.type == NONE ||
-          request.msg.type == MESSAGE_FATAL ||
-          request.msg.type == MESSAGE_JEMALLOC))) {
+        (request.siginfo.si_signo == SIGLEAK_STACK && request.siginfo.si_code != SIGLEAK_STACK_FDSAN)) {
         return;
     }
     process_->openFiles = GetOpenFiles(request.pid, request.nsPid, request.fdTableAddr);

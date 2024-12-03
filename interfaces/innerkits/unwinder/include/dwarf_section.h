@@ -45,6 +45,7 @@ protected:
     bool FillInFde(uintptr_t ptr, FrameDescEntry &fdeInfo);
     bool ParseCie(uintptr_t cieAddr, uintptr_t ciePtr, CommonInfoEntry &cieInfo);
     bool FillInCie(uintptr_t ptr, CommonInfoEntry &cieInfo);
+    void ParseAugData(uintptr_t &ptr, CommonInfoEntry &cieInfo, const std::vector<char> &augStr);
 
 protected:
     std::shared_ptr<DfxMemory> memory_;

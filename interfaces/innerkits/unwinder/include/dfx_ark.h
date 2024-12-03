@@ -28,6 +28,7 @@
 namespace panda {
 namespace ecmascript {
 constexpr uint16_t FUNCTIONNAME_MAX = 1024;
+constexpr uint16_t PACKAGENAME_MAX = 1024;
 constexpr uint16_t URL_MAX = 1024;
 constexpr uint16_t BUF_SIZE_MAX = FUNCTIONNAME_MAX + 32;
 
@@ -35,6 +36,7 @@ typedef bool (*ReadMemFunc)(void *, uintptr_t, uintptr_t *);
 
 struct JsFrame {
     char functionName[FUNCTIONNAME_MAX];
+    char packageName[PACKAGENAME_MAX];
     char url[URL_MAX];
     int32_t line;
     int32_t column;
@@ -42,6 +44,7 @@ struct JsFrame {
 
 struct JsFunction {
     char functionName[FUNCTIONNAME_MAX];
+    char packageName[PACKAGENAME_MAX];
     char url[URL_MAX];
     int32_t line = 0;
     int32_t column = 0;

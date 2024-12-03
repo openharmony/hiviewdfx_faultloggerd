@@ -53,7 +53,7 @@ bool DwarfCfaInstructions::Iterate(uintptr_t pc, FrameDescEntry fde,
 
         // Read the cfa information.
         uint8_t opCode;
-        if (!memory_->ReadU8(instPtr, &opCode, true)) {
+        if (!memory_->Read<uint8_t>(instPtr, &opCode, true)) {
             break;
         }
 

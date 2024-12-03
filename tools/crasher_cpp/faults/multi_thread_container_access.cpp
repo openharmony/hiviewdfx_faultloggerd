@@ -30,18 +30,17 @@ static constexpr int MAP_INDEX_LEN = 10;
 static constexpr int MAX_LOOP_SIZE = 10000;
 static constexpr int THREAD_SIZE = 10;
 
-int MultiThreadVectorAccess()
+using TaskFunction = std::function<void(std::shared_ptr<MultiThreadContainerAccess>)>;
+
+int MultiThreadAccess(const TaskFunction &manipulate)
 {
     auto testcase = std::make_shared<MultiThreadContainerAccess>();
     testcase->Print();
     std::vector<std::thread> threads;
     for (int i = 0; i < THREAD_SIZE; i++) {
         std::thread th(
-            [testcase] {
-                for (int i = 0; i < MAX_LOOP_SIZE; i++) {
-                    testcase->ManipulateVector();
-                }
-                testcase->Print();
+            [testcase, manipulate] {
+                manipulate(testcase);
             });
         threads.push_back(std::move(th));
     }
@@ -50,52 +49,42 @@ int MultiThreadVectorAccess()
         th.join();
     }
     return 0;
+}
+
+int MultiThreadVectorAccess()
+{
+    auto multiThreadVectorAccess = [](std::shared_ptr<MultiThreadContainerAccess> testcase) {
+        for (int i = 0; i < MAX_LOOP_SIZE; i++) {
+            testcase->ManipulateVector();
+        }
+        testcase->Print();
+    };
+    return MultiThreadAccess(multiThreadVectorAccess);
 }
 
 int MultiThreadMapAccess()
 {
-    auto testcase = std::make_shared<MultiThreadContainerAccess>();
-    testcase->Print();
-    std::vector<std::thread> threads;
-    for (int i = 0; i < THREAD_SIZE; i++) {
-        std::thread th(
-            [testcase] {
-                for (int i = 0; i < MAX_LOOP_SIZE; i++) {
-                    testcase->ManipulateMap();
-                }
-                testcase->Print();
-            });
-        threads.push_back(std::move(th));
-    }
-
-    for (auto& th : threads) {
-        th.join();
-    }
-    return 0;
+    auto multiThreadMapAccess = [](std::shared_ptr<MultiThreadContainerAccess> testcase) {
+        for (int i = 0; i < MAX_LOOP_SIZE; i++) {
+            testcase->ManipulateMap();
+        }
+        testcase->Print();
+    };
+    return MultiThreadAccess(multiThreadMapAccess);
 }
 
 int MultiThreadListAccess()
 {
-    auto testcase = std::make_shared<MultiThreadContainerAccess>();
-    testcase->Print();
-    std::vector<std::thread> threads;
-    for (int i = 0; i < THREAD_SIZE; i++) {
-        std::thread th(
-            [testcase] {
-                for (int i = 0; i < MAX_LOOP_SIZE; i++) {
-                    // may crash inside loop
-                    testcase->ManipulateList();
-                    testcase->Print();
-                }
-            });
-        threads.push_back(std::move(th));
-    }
-
-    for (auto& th : threads) {
-        th.join();
-    }
-    return 0;
+    auto multiThreadListAccess = [](std::shared_ptr<MultiThreadContainerAccess> testcase) {
+        for (int i = 0; i < MAX_LOOP_SIZE; i++) {
+            // may crash inside loop
+            testcase->ManipulateList();
+            testcase->Print();
+        }
+    };
+    return MultiThreadAccess(multiThreadListAccess);
 }
+
 namespace OHOS {
 namespace HiviewDFX {
 std::string MultiThreadContainerAccess::GenerateStr()

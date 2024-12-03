@@ -15,6 +15,7 @@
 #ifndef DFX_CONFIG_H
 #define DFX_CONFIG_H
 
+#include <map>
 #include <string>
 
 namespace OHOS {
@@ -33,10 +34,10 @@ struct DfxConfigInfo {
 class DfxConfig {
 public:
     static DfxConfigInfo& GetConfig();
-
 private:
-    static void ReadConfig(DfxConfigInfo& config);
-    static void ParserConfig(DfxConfigInfo& config, const std::string& key, const std::string& value);
+    static void ReadAndParseConfig(DfxConfigInfo &config);
+    static void InitConfigMaps(DfxConfigInfo &config, std::map<std::string, bool *> &boolConfig,
+                               std::map<std::string, unsigned int *> &uintConfig);
 private:
     DfxConfig() = default;
     ~DfxConfig() = default;

@@ -18,7 +18,7 @@ processdump_sources = [
   "dfx_logger.cpp",
   "dfx_process.cpp",
   "dfx_ring_buffer_wrapper.cpp",
-  "dfx_stack_info_formatter.cpp",
+  "dfx_stack_info_json_formatter.cpp",
   "dfx_thread.cpp",
   "dfx_unwind_async_thread.cpp",
   "dfx_unwind_remote.cpp",

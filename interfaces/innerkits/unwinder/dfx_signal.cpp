@@ -98,6 +98,7 @@ std::string DfxSignal::FormatSignalName(const int32_t signal)
         { SIGSTKFLT, std::string("SIGSTKFLT") },
         { SIGSYS, std::string("SIGSYS") },
         { SIGDUMP, std::string("SIGDUMP") },
+        { SIGLEAK_STACK, std::string("DEBUG SIGNAL") },
     };
 
     if (sigMaps.find(signal) != sigMaps.end()) {
@@ -121,6 +122,8 @@ std::string DfxSignal::FormatCodeName(const int32_t signal, const int32_t signal
             return FormatSIGTRAPCodeName(signalCode);
         case SIGSYS:
             return FormatSIGSYSCodeName(signalCode);
+        case SIGLEAK_STACK:
+            return FormatSIGLEAKCodeName(signalCode);
         default:
             break;
     }
@@ -226,6 +229,20 @@ std::string DfxSignal::FormatSIGSYSCodeName(const int32_t signalCode)
     switch (signalCode) {
         case SYS_SECCOMP:
             return "SYS_SECCOMP";
+        default:
+            return FormatCommonSignalCodeName(signalCode);
+    }
+}
+
+std::string DfxSignal::FormatSIGLEAKCodeName(const int32_t signalCode)
+{
+    switch (signalCode) {
+        case SIGLEAK_STACK_FDSAN:
+            return "FDSAN";
+        case SIGLEAK_STACK_JEMALLOC:
+            return "JEMALLOC";
+        case SIGLEAK_STACK_BADFD:
+            return "BADFD";
         default:
             return FormatCommonSignalCodeName(signalCode);
     }

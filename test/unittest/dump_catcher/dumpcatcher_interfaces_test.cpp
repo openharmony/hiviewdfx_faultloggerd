@@ -740,7 +740,7 @@ HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest030, TestSize.Level
 
 /**
  * @tc.name: DumpCatcherInterfacesTest031
- * @tc.desc: test DumpCatchProcess
+ * @tc.desc: test DumpCatchProcess get kenerl stack
  * @tc.type: FUNC
  */
 HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest031, TestSize.Level2)
@@ -776,9 +776,18 @@ HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest031, TestSize.Level
     ASSERT_TRUE(DfxJsonFormatter::FormatKernelStack(msg, formattedStack, false));
     ASSERT_GT(formattedStack.size(), 0);
     GTEST_LOG_(INFO) << formattedStack;
-    ASSERT_NE(formattedStack.find("#"), std::string::npos);
+    string log[] = { "Tid:", "Name:", "#00", "/system/bin/appspawn", "Name:OS_DfxWatchdog" };
+    log[0] += std::to_string(g_testPid);
+    log[1] += TRUNCATE_TEST_BUNDLE_NAME;
+    int len = sizeof(log) / sizeof(log[0]);
+    int count = GetKeywordsNum(formattedStack, log, len);
+    EXPECT_EQ(count, len) << formattedStack << "DumpCatcherInterfacesTest031 Failed";
     ASSERT_TRUE(DfxJsonFormatter::FormatKernelStack(msg, formattedStack, true));
-    GTEST_LOG_(INFO) << formattedStack;
+    string logJson[] = { "\"tid\":", TRUNCATE_TEST_BUNDLE_NAME, "/system/bin/appspawn", "OS_DfxWatchdog" };
+    logJson[0] += std::to_string(g_testPid);
+    len = sizeof(logJson) / sizeof(logJson[0]);
+    count = GetKeywordsNum(formattedStack, logJson, len);
+    EXPECT_EQ(count, len) << formattedStack << "DumpCatcherInterfacesTest031 Failed";
     GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest031: end.";
 }
 #endif
@@ -872,9 +881,9 @@ HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest034, TestSize.Level
     }
     DfxDumpCatcher dumplog;
     std::string msg = "";
-    int32_t ret = dumplog.DumpCatchWithTimeout(g_testPid, msg);
-    EXPECT_EQ(ret, 0) << "DumpCatcherInterfacesTest034 Failed";
-    GTEST_LOG_(INFO) << ret;
+    auto result = dumplog.DumpCatchWithTimeout(g_testPid, msg);
+    GTEST_LOG_(INFO) << result.second;
+    EXPECT_TRUE(result.first == 0) << "DumpCatcherInterfacesTest034 Failed";
     string log[] = { "Tid:", "Name:", "#00", "/system/bin/appspawn", "Name:OS_DfxWatchdog" };
     log[0] += std::to_string(g_testPid);
     log[1] += TRUNCATE_TEST_BUNDLE_NAME;
@@ -908,8 +917,9 @@ HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest035, TestSize.Level
     DfxDumpCatcher dumplog;
     std::string msg = "";
     int timeout = 1000;
-    int32_t ret = dumplog.DumpCatchWithTimeout(g_testPid, msg, timeout);
-    EXPECT_TRUE(ret == DUMPCATCH_EPARAM);
+    auto result = dumplog.DumpCatchWithTimeout(g_testPid, msg, timeout);
+    GTEST_LOG_(INFO) << result.second;
+    EXPECT_TRUE(result.first == -1) << "DumpCatcherInterfacesTest035 Failed";
     GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest035: end.";
 }
 
@@ -937,8 +947,9 @@ HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest036, TestSize.Level
     DfxDumpCatcher dumplog;
     std::string msg = "";
     int nonexistPid = 123456;
-    int32_t ret = dumplog.DumpCatchWithTimeout(nonexistPid, msg);
-    EXPECT_TRUE(ret == DUMPCATCH_NO_PROCESS);
+    auto result = dumplog.DumpCatchWithTimeout(nonexistPid, msg);
+    GTEST_LOG_(INFO) << result.second;
+    EXPECT_TRUE(result.first == -1) << "DumpCatcherInterfacesTest036 Failed";
     GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest036: end.";
 }
 
@@ -966,9 +977,9 @@ HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest037, TestSize.Level
     DfxDumpCatcher dumplog;
     std::string msg = "";
     int timeout = 2000;
-    int32_t ret = dumplog.DumpCatchWithTimeout(g_testPid, msg, timeout);
-    EXPECT_EQ(ret, 0) << "DumpCatcherInterfacesTest037 Failed";
-    GTEST_LOG_(INFO) << ret;
+    auto result = dumplog.DumpCatchWithTimeout(g_testPid, msg, timeout);
+    GTEST_LOG_(INFO) << result.second;
+    EXPECT_TRUE(result.first == 0) << "DumpCatcherInterfacesTest037 Failed";
     string log[] = { "Tid:", "Name:", "#00", "/system/bin/appspawn", "Name:OS_DfxWatchdog" };
     log[0] += std::to_string(g_testPid);
     log[1] += TRUNCATE_TEST_BUNDLE_NAME;
@@ -1009,11 +1020,11 @@ HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest038, TestSize.Level
     ExecuteCommands(stopProcessCmd);
     DfxDumpCatcher dumplog;
     std::string msg = "";
-    int32_t ret = dumplog.DumpCatchWithTimeout(g_testPid, msg);
+    auto result = dumplog.DumpCatchWithTimeout(g_testPid, msg);
     std::string startProcessCmd = "kill -s SIGCONT $(pidof com.example.myapplication)";
     ExecuteCommands(startProcessCmd);
-    GTEST_LOG_(INFO) << ret;
-    ASSERT_TRUE(ret == DUMPCATCH_TIMEOUT_SIGNAL_BLOCK);
+    GTEST_LOG_(INFO) << result.second;
+    ASSERT_TRUE(result.first == 1);
 
     GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest038: end.";
 }
@@ -1027,7 +1038,13 @@ HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest038, TestSize.Level
 HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest039, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest039: start.";
-    bool isSuccess = g_testPid != 0;
+    std::string res = ExecuteCommands("uname");
+    bool isSuccess = res.find("Linux") == std::string::npos;
+    if (!isSuccess) {
+        ASSERT_FALSE(isSuccess);
+        return;
+    }
+    isSuccess = g_testPid != 0;
     if (!isSuccess) {
         ASSERT_FALSE(isSuccess);
         GTEST_LOG_(ERROR) << "Failed to launch target hap.";
@@ -1043,11 +1060,44 @@ HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest039, TestSize.Level
     std::string msg = "";
     std::string stopFaultloggerdCmd = "service_control stop faultloggerd";
     ExecuteCommands(stopFaultloggerdCmd);
-    int32_t ret = dumplog.DumpCatchWithTimeout(g_testPid, msg);
+    auto result = dumplog.DumpCatchWithTimeout(g_testPid, msg);
     std::string startFaultloggerdCmd = "service_control start faultloggerd";
     ExecuteCommands(startFaultloggerdCmd);
-    EXPECT_TRUE(ret == DUMPCATCH_ECONNECT);
+    GTEST_LOG_(INFO) << result.second;
+    EXPECT_TRUE(result.first == -1);
     GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest039: end.";
+}
+
+/**
+ * @tc.name: DumpCatcherInterfacesTest040
+ * @tc.desc: test DumpCatchProcess get user stack
+ * @tc.type: FUNC
+ */
+HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest040, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest040: start.";
+    bool isSuccess = g_testPid != 0;
+    if (!isSuccess) {
+        ASSERT_FALSE(isSuccess);
+        GTEST_LOG_(ERROR) << "Failed to launch target hap.";
+        return;
+    }
+    isSuccess = CheckProcessComm(g_testPid, TRUNCATE_TEST_BUNDLE_NAME);
+    if (!isSuccess) {
+        ASSERT_FALSE(isSuccess);
+        GTEST_LOG_(ERROR) << "Error process comm";
+        return;
+    }
+    DfxDumpCatcher dumplog;
+    std::string msg = "";
+    ASSERT_EQ(dumplog.DumpCatchProcess(g_testPid, msg), 0); //user stack
+    string log[] = { "Tid:", "Name:", "#00", "/system/bin/appspawn", "Name:OS_DfxWatchdog" };
+    log[0] += std::to_string(g_testPid);
+    log[1] += TRUNCATE_TEST_BUNDLE_NAME;
+    int len = sizeof(log) / sizeof(log[0]);
+    int count = GetKeywordsNum(msg, log, len);
+    EXPECT_EQ(count, len) << msg << "DumpCatcherInterfacesTest040 Failed";
+    GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest040: end.";
 }
 } // namespace HiviewDFX
 } // namepsace OHOS

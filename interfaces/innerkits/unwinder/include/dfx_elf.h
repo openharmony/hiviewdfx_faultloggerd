@@ -86,6 +86,10 @@ protected:
     bool InitEmbeddedElf();
 #if is_ohos && !is_mingw
     static int DlPhdrCb(struct dl_phdr_info *info, size_t size, void *data);
+    static void ParsePhdr(struct dl_phdr_info *info, const ElfW(Phdr) *(&pHdrSections)[4], const uintptr_t pc);
+    static bool ProccessDynamic(const ElfW(Phdr) *pDynamic, ElfW(Addr) loadBase, UnwindTableInfo *uti);
+    static struct DwarfEhFrameHdr *InitHdr(struct DwarfEhFrameHdr &synthHdr,
+                                           struct dl_phdr_info *info, const ElfW(Phdr) *pEhHdr);
     static bool FindSection(struct dl_phdr_info *info, const std::string secName, ShdrInfo& shdr);
     static bool FillUnwindTableByEhhdrLocal(struct DwarfEhFrameHdr* hdr, struct UnwindTableInfo* uti);
 #endif

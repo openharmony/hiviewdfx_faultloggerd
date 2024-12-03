@@ -268,5 +268,28 @@ HWTEST_F(DumpCatcherCommandTest, DumpCatcherCommandTest015, TestSize.Level2)
     ASSERT_EQ(ret, false);
     GTEST_LOG_(INFO) << "DumpCatcherCommandTest015: end.";
 }
+
+/**
+ * @tc.name: DumpCatcherCommandTest016
+ * @tc.desc: test dumpcatcher command: -p [accountmgr] -t [main thread] -T [1500]
+ * @tc.type: FUNC
+ */
+HWTEST_F(DumpCatcherCommandTest, DumpCatcherCommandTest016, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "DumpCatcherCommandTest016: start.";
+    int testPid = GetProcessPid("accountmgr");
+    int timeout = 1500;
+    string testCommand = "dumpcatcher -p " + to_string(testPid) + " -t " + to_string(testPid);
+    testCommand += " -T " + to_string(timeout);
+    string dumpRes = ExecuteCommands(testCommand);
+    GTEST_LOG_(INFO) << dumpRes;
+    string log[] = {"Pid:", "Name:", "#00", "#01", "#02"};
+    log[0] = log[0] + to_string(testPid);
+    log[1] = log[1] + "accountmgr";
+    int len = sizeof(log) / sizeof(log[0]);
+    int count = GetKeywordsNum(dumpRes, log, len);
+    EXPECT_EQ(count, len) << "DumpCatcherCommandTest016 Failed";
+    GTEST_LOG_(INFO) << "DumpCatcherCommandTest016: end.";
+}
 } // namespace HiviewDFX
 } // namepsace OHOS
