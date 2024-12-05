@@ -76,14 +76,14 @@ namespace {
 #define LOG_DOMAIN 0xD002D11
 #define LOG_TAG "DfxProcessDump"
 const char *const BLOCK_CRASH_PROCESS = "faultloggerd.priv.block_crash_process.enabled";
-const char *const GLOBAL_LOCALE = "const.global.locale";
+const char *const GLOBAL_REGION = "const.global.region";
 const char *const LOGSYSTEM_VERSION_TYPE = "const.logsystem.versiontype";
 const int MAX_FILE_COUNT = 5;
 
 static bool IsOversea()
 {
 #ifndef is_ohos_lite
-    static bool isOversea = OHOS::system::GetParameter(GLOBAL_LOCALE, "") != "zh-Hans-CN";
+    static bool isOversea = OHOS::system::GetParameter(GLOBAL_REGION, "CN") != "CN";
 #else
     static bool isOversea = false;
 #endif
