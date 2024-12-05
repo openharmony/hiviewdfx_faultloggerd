@@ -64,7 +64,6 @@
 #include "procinfo.h"
 #include "unwinder_config.h"
 #ifndef is_ohos_lite
-#include "parameter.h"
 #include "parameters.h"
 #endif // !is_ohos_lite
 #include "info/fatal_message.h"
@@ -77,7 +76,29 @@ namespace {
 #define LOG_DOMAIN 0xD002D11
 #define LOG_TAG "DfxProcessDump"
 const char *const BLOCK_CRASH_PROCESS = "faultloggerd.priv.block_crash_process.enabled";
+const char *const GLOBAL_LOCALE = "const.global.locale";
+const char *const LOGSYSTEM_VERSION_TYPE = "const.logsystem.versiontype";
 const int MAX_FILE_COUNT = 5;
+
+static bool IsOversea()
+{
+#ifndef is_ohos_lite
+    static bool isOversea = OHOS::system::GetParameter(GLOBAL_LOCALE, "") != "zh-Hans-CN";
+#else
+    static bool isOversea = false;
+#endif
+    return isOversea;
+}
+
+static bool IsBetaVersion()
+{
+#ifndef is_ohos_lite
+    static bool isBetaVersion = OHOS::system::GetParameter(LOGSYSTEM_VERSION_TYPE, "") == "beta";
+#else
+    static bool isBetaVersion = true;
+#endif
+    return isBetaVersion;
+}
 
 static bool IsBlockCrashProcess()
 {
@@ -604,7 +625,9 @@ bool ProcessDumper::Unwind(std::shared_ptr<ProcessDumpRequest> request, int &dum
         }
     }
     GetCrashObj(request);
-    UpdateFatalMessageWhenDebugSignal(*request);
+    if (!IsOversea() || IsBetaVersion()) {
+        UpdateFatalMessageWhenDebugSignal(*request);
+    }
     if (!DfxUnwindRemote::GetInstance().UnwindProcess(request, process_, unwinder_, vmPid)) {
         DFXLOGE("Failed to unwind process.");
         dumpRes = DumpErrorCode::DUMP_ESTOPUNWIND;
@@ -779,7 +802,9 @@ int ProcessDumper::InitProcessInfo(std::shared_ptr<ProcessDumpRequest> request)
     if (request->msg.type == MESSAGE_CALLBACK) {
         process_->extraCrashInfo += StringPrintf("ExtraCrashInfo(Callback):\n%s\n", request->msg.body);
     } else {
-        process_->SetFatalMessage(request->msg.body);
+        if (!IsOversea() || IsBetaVersion()) {
+            process_->SetFatalMessage(request->msg.body);
+        }
     }
 
     if (!InitVmThread(request)) {
