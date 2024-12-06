@@ -98,12 +98,18 @@ void DfxStackInfoFormatter::GetNativeCrashInfo(Json::Value& jsonInfo) const
     Json::Value exception;
     exception["signal"] = signal;
     exception["message"] = process_->GetFatalMessage();
-    exception["thread_name"] = process_->keyThread_->threadInfo_.threadName;
-    exception["tid"] = process_->keyThread_->threadInfo_.tid;
+    if (process_->keyThread_ == nullptr) {
+        exception["thread_name"] = "";
+        exception["tid"] = 0;
+    } else {
+        exception["thread_name"] = process_->keyThread_->threadInfo_.threadName;
+        exception["tid"] = process_->keyThread_->threadInfo_.tid;
+    }
+
     Json::Value frames(Json::arrayValue);
     if (process_->vmThread_ != nullptr) {
         FillFrames(process_->vmThread_, frames);
-    } else {
+    } else if (process_->keyThread_ != nullptr) {
         FillFrames(process_->keyThread_, frames);
     }
     exception["frames"] = frames;
@@ -121,10 +127,15 @@ void DfxStackInfoFormatter::GetNativeCrashInfo(Json::Value& jsonInfo) const
 void DfxStackInfoFormatter::GetDumpInfo(Json::Value& jsonInfo) const
 {
     Json::Value thread;
-    thread["thread_name"] = process_->keyThread_->threadInfo_.threadName;
-    thread["tid"] = process_->keyThread_->threadInfo_.tid;
     Json::Value frames(Json::arrayValue);
-    FillFrames(process_->keyThread_, frames);
+    if (process_->keyThread_ == nullptr) {
+        thread["thread_name"] = "";
+        thread["tid"] = 0;
+    } else {
+        thread["thread_name"] = process_->keyThread_->threadInfo_.threadName;
+        thread["tid"] = process_->keyThread_->threadInfo_.tid;
+        FillFrames(process_->keyThread_, frames);
+    }
     thread["frames"] = frames;
     jsonInfo.append(thread);
 
