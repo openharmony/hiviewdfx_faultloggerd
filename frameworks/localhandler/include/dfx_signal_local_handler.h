@@ -28,7 +28,7 @@ extern "C" {
  * @param request info about process dump request
  * @return file descriptor
 */
-typedef int (*CrashFdFunc) (const struct ProcessDumpRequest* requst);
+typedef int (*CrashFdFunc) (const struct ProcessDumpRequest* request);
 
 /**
  * the function to resolve sig of the process
