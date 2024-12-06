@@ -22,6 +22,7 @@
 #include <sys/socket.h>
 #include <sys/un.h>
 #include <unistd.h>
+#include "dfx_define.h"
 #include "dfx_exception.h"
 #include "dfx_util.h"
 #include "faultloggerd_client.h"
@@ -63,7 +64,7 @@ static constexpr uint32_t BMS_UID = 1000;
 static constexpr uint32_t HIVIEW_UID = 1201;
 static constexpr uint32_t HIDUMPER_SERVICE_UID = 1212;
 static constexpr uint32_t FOUNDATION_UID = 5523;
-static constexpr uint32_t PIPE_TYPE_COUNT = 8;
+static constexpr uint32_t PIPE_TYPE_COUNT = 3;
 
 /**
  * @tc.name: FaultLoggerDaemonTest001
@@ -119,13 +120,9 @@ HWTEST_F (FaultLoggerDaemonTest, FaultLoggerDaemonTest002, TestSize.Level2)
     faultloggerdRequest.tid = gettid();
     faultloggerdRequest.uid = getuid();
     daemon->HandleSdkDumpRequest(-1, &faultloggerdRequest);
-    faultloggerdRequest.pipeType = FaultLoggerPipeType::PIPE_FD_READ_BUF;
+    faultloggerdRequest.pipeType = FaultLoggerPipeType::PIPE_FD_READ;
     daemon->HandlePipeFdClientRequest(-1, &faultloggerdRequest);
-    faultloggerdRequest.pipeType = FaultLoggerPipeType::PIPE_FD_WRITE_BUF;
-    daemon->HandlePipeFdClientRequest(-1, &faultloggerdRequest);
-    faultloggerdRequest.pipeType = FaultLoggerPipeType::PIPE_FD_READ_RES;
-    daemon->HandlePipeFdClientRequest(-1, &faultloggerdRequest);
-    faultloggerdRequest.pipeType = FaultLoggerPipeType::PIPE_FD_WRITE_RES;
+    faultloggerdRequest.pipeType = FaultLoggerPipeType::PIPE_FD_WRITE;
     daemon->HandlePipeFdClientRequest(-1, &faultloggerdRequest);
     faultloggerdRequest.pipeType = FaultLoggerPipeType::PIPE_FD_DELETE;
     daemon->HandlePipeFdClientRequest(-1, &faultloggerdRequest);
@@ -256,7 +253,7 @@ void TestSecurityCheck(const std::string& socketFileName)
     faultloggerdRequest.uid = getuid();
 
     FaultLoggerCheckPermissionResp resp = daemon->SecurityCheck(connectionFd, &faultloggerdRequest);
-    ASSERT_EQ(resp, FaultLoggerCheckPermissionResp::CHECK_PERMISSION_REJECT);
+    ASSERT_EQ(resp, FaultLoggerCheckPermissionResp::CHECK_PERMISSION_PASS);
 
     close(connectionFd);
     close(serverSocketFd);
@@ -499,13 +496,13 @@ HWTEST_F (FaultLoggerDaemonTest, FaultLoggerDaemonTest010, TestSize.Level2)
 void TestHandleRequestByPipeType(std::shared_ptr<FaultLoggerDaemon> daemon, FaultLoggerPipe2* faultLoggerPipe,
     FaultLoggerdRequest request, int32_t pipeType, bool isChangeFd)
 {
-    int fd = -1;
+    int pipeFd[PIPE_NUM_SZ] = { -1, -1 };
     request.pipeType = pipeType;
-    daemon->HandleRequestByPipeType(fd, 1, &request, faultLoggerPipe);
+    daemon->HandleRequestByPipeType(pipeFd, 1, &request, faultLoggerPipe);
     if (isChangeFd) {
-        ASSERT_NE(fd, -1);
+        ASSERT_NE(pipeFd[PIPE_BUF_INDEX], -1);
     } else {
-        ASSERT_EQ(fd, -1);
+        ASSERT_EQ(pipeFd[PIPE_BUF_INDEX], -1);
     }
 }
 
@@ -523,18 +520,11 @@ HWTEST_F (FaultLoggerDaemonTest, FaultLoggerDaemonTest011, TestSize.Level2)
 
     FaultLoggerdRequest request;
     FaultLoggerPipe2* faultLoggerPipe = new FaultLoggerPipe2(GetTimeMilliSeconds());
-    bool isChangeFds4Pipe[PIPE_TYPE_COUNT] = {false, true, false, true, false, false, false, false};
+    bool isChangeFds4Pipe[PIPE_TYPE_COUNT] = { false, true, false };
     for (int i = 0; i < PIPE_TYPE_COUNT; i++) {
         TestHandleRequestByPipeType(daemon, faultLoggerPipe, request, i, isChangeFds4Pipe[i]);
     }
     delete(faultLoggerPipe);
-
-    FaultLoggerPipe2* faultLoggerJsonPipe = new FaultLoggerPipe2(GetTimeMilliSeconds(), true);
-    bool isChangeFds4JsonPipe[PIPE_TYPE_COUNT] = {false, false, false, false, false, true, false, true};
-    for (int i = 0; i < PIPE_TYPE_COUNT; i++) {
-        TestHandleRequestByPipeType(daemon, faultLoggerJsonPipe, request, i, isChangeFds4JsonPipe[i]);
-    }
-    delete(faultLoggerJsonPipe);
     GTEST_LOG_(INFO) << "FaultLoggerDaemonTest011: end.";
 }
 
@@ -611,21 +601,22 @@ bool CheckReadResp(int sockfd)
 }
 
 void HandleRequestByPipeTypeCommon(std::shared_ptr<FaultLoggerDaemon> daemon, int32_t pipeType,
-    bool isPassCheck = false, bool isJson = false, bool isChangeFd = false)
+    bool isPassCheck = false, bool isChangeFd = false)
 {
-    int fd = -1;
+    int pipeFd[PIPE_NUM_SZ] = { -1, -1 };
     FaultLoggerdRequest request;
     request.pipeType = pipeType;
-    std::unique_ptr<FaultLoggerPipe2> ptr = std::make_unique<FaultLoggerPipe2>(GetTimeMilliSeconds(), isJson);
+    std::unique_ptr<FaultLoggerPipe2> ptr = std::make_unique<FaultLoggerPipe2>(GetTimeMilliSeconds());
 
     if (!isPassCheck) {
-        daemon->HandleRequestByPipeType(fd, 1, &request, ptr.get());
+        daemon->HandleRequestByPipeType(pipeFd, 1, &request, ptr.get());
         if (!isChangeFd) {
-            EXPECT_EQ(fd, -1);
+            EXPECT_EQ(pipeFd[PIPE_BUF_INDEX], -1);
         } else {
-            EXPECT_NE(fd, -1);
+            EXPECT_NE(pipeFd[PIPE_BUF_INDEX], -1);
         }
-        close(fd);
+        CloseFd(pipeFd[PIPE_BUF_INDEX]);
+        CloseFd(pipeFd[PIPE_RES_INDEX]);
         return;
     }
 
@@ -640,13 +631,14 @@ void HandleRequestByPipeTypeCommon(std::shared_ptr<FaultLoggerDaemon> daemon, in
             }
         } else if (pid > 0) {
             daemon->connectionMap_[socketFd[0]] = socketFd[0];
-            daemon->HandleRequestByPipeType(fd, socketFd[0], &request, ptr.get());
+            daemon->HandleRequestByPipeType(pipeFd, socketFd[0], &request, ptr.get());
             if (!isChangeFd) {
-                EXPECT_EQ(fd, -1);
+                EXPECT_EQ(pipeFd[PIPE_BUF_INDEX], -1);
             } else {
-                EXPECT_NE(fd, -1);
+                EXPECT_NE(pipeFd[PIPE_BUF_INDEX], -1);
             }
-            close(fd);
+            CloseFd(pipeFd[PIPE_BUF_INDEX]);
+            CloseFd(pipeFd[PIPE_RES_INDEX]);
             close(socketFd[1]);
         }
     }
@@ -662,22 +654,10 @@ HWTEST_F (FaultLoggerDaemonTest, FaultLoggerDaemonTest014, TestSize.Level4)
     GTEST_LOG_(INFO) << "FaultLoggerDaemonTest014: start.";
     std::shared_ptr<FaultLoggerDaemon> daemon = std::make_shared<FaultLoggerDaemon>();
     daemon->InitEnvironment();
-    HandleRequestByPipeTypeCommon(daemon, FaultLoggerPipeType::PIPE_FD_READ_BUF, true, false, true);
+    HandleRequestByPipeTypeCommon(daemon, FaultLoggerPipeType::PIPE_FD_READ, true, true);
     sleep(2);
-    HandleRequestByPipeTypeCommon(daemon, FaultLoggerPipeType::PIPE_FD_READ_RES, true, false, true);
-    sleep(2);
-    HandleRequestByPipeTypeCommon(daemon, FaultLoggerPipeType::PIPE_FD_JSON_READ_BUF, true, true, true);
-    sleep(2);
-    HandleRequestByPipeTypeCommon(daemon, FaultLoggerPipeType::PIPE_FD_JSON_READ_RES, true, true, true);
-    sleep(2);
-    HandleRequestByPipeTypeCommon(daemon, FaultLoggerPipeType::PIPE_FD_READ_BUF, false, false, false);
-    HandleRequestByPipeTypeCommon(daemon, FaultLoggerPipeType::PIPE_FD_WRITE_BUF, false, false, true);
-    HandleRequestByPipeTypeCommon(daemon, FaultLoggerPipeType::PIPE_FD_READ_RES, false, false, false);
-    HandleRequestByPipeTypeCommon(daemon, FaultLoggerPipeType::PIPE_FD_WRITE_RES, false, false, true);
-    HandleRequestByPipeTypeCommon(daemon, FaultLoggerPipeType::PIPE_FD_JSON_READ_BUF, false, true, false);
-    HandleRequestByPipeTypeCommon(daemon, FaultLoggerPipeType::PIPE_FD_JSON_WRITE_BUF, false, true, true);
-    HandleRequestByPipeTypeCommon(daemon, FaultLoggerPipeType::PIPE_FD_JSON_READ_RES, false, true, false);
-    HandleRequestByPipeTypeCommon(daemon, FaultLoggerPipeType::PIPE_FD_JSON_WRITE_RES, false, true, true);
+    HandleRequestByPipeTypeCommon(daemon, FaultLoggerPipeType::PIPE_FD_READ, false, false);
+    HandleRequestByPipeTypeCommon(daemon, FaultLoggerPipeType::PIPE_FD_WRITE, false, true);
     GTEST_LOG_(INFO) << "FaultLoggerDaemonTest014: end.";
 }
 

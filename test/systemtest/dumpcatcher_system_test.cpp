@@ -1446,6 +1446,7 @@ HWTEST_F(DumpCatcherSystemTest, DumpCatcherSystemTest201, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "DumpCatcherSystemTest201: start.";
     int accountmgrPid = GetProcessPid(ACCOUNTMGR_NAME);
+    setuid(ROOT_UID);
     g_checkCnt = 0;
     for (int threadIdx = 0; threadIdx < MULTITHREAD_TEST_COUNT; threadIdx++) {
         thread(TestDumpCatch, accountmgrPid, ACCOUNTMGR_NAME, threadIdx).detach();

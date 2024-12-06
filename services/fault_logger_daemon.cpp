@@ -69,7 +69,6 @@ static constexpr uint32_t HIVIEW_UID = 1201;
 static constexpr uint32_t HIDUMPER_SERVICE_UID = 1212;
 static constexpr uint32_t FOUNDATION_UID = 5523;
 static const std::string FAULTLOGGERD_TAG = "FaultLoggerd";
-static const std::string DAEMON_RESP = "RESP:COMPLETE";
 static const int DAEMON_REMOVE_FILE_TIME_S = 60;
 
 static std::string GetRequestTypeName(int32_t type)
@@ -325,9 +324,10 @@ void FaultLoggerDaemon::HandleLogFileDesClientRequest(int32_t connectionFd, cons
 
 void FaultLoggerDaemon::HandleExceptionRequest(int32_t connectionFd, FaultLoggerdRequest * request)
 {
-    if (OHOS_TEMP_FAILURE_RETRY(write(connectionFd,
-        DAEMON_RESP.c_str(), DAEMON_RESP.length())) != static_cast<ssize_t>(DAEMON_RESP.length())) {
-        DFXLOGE("[%{public}d]: %{public}s :: Failed to write DAEMON_RESP.", __LINE__, FAULTLOGGERD_TAG.c_str());
+    if (OHOS_TEMP_FAILURE_RETRY(write(connectionFd, FAULTLOGGER_DAEMON_RESP, strlen(FAULTLOGGER_DAEMON_RESP))) !=
+        static_cast<ssize_t>(strlen(FAULTLOGGER_DAEMON_RESP))) {
+        DFXLOGE("[%{public}d]: %{public}s :: Failed to write FAULTLOGGER_DAEMON_RESP.",
+            __LINE__, FAULTLOGGERD_TAG.c_str());
     }
 
     CrashDumpException exception;
@@ -384,83 +384,23 @@ void FaultLoggerDaemon::HandleDelete(FaultLoggerdRequest* request)
     faultLoggerPipeMap_->Del(request->pid);
 }
 
-void FaultLoggerDaemon::HandleJsonReadBuf(int& fd, int32_t connectionFd, FaultLoggerdRequest* request,
-    FaultLoggerPipe2* faultLoggerPipe)
-{
-    FaultLoggerCheckPermissionResp resSecurityCheck = SecurityCheck(connectionFd, request);
-    if (FaultLoggerCheckPermissionResp::CHECK_PERMISSION_PASS != resSecurityCheck) {
-        return;
-    }
-    if ((faultLoggerPipe->faultLoggerJsonPipeBuf_) != nullptr) {
-        fd = faultLoggerPipe->faultLoggerJsonPipeBuf_->GetReadFd();
-    }
-}
-
-void FaultLoggerDaemon::HandleJsonWriteBuf(int& fd, FaultLoggerPipe2* faultLoggerPipe)
-{
-    if ((faultLoggerPipe->faultLoggerJsonPipeBuf_) != nullptr) {
-        fd = faultLoggerPipe->faultLoggerJsonPipeBuf_->GetWriteFd();
-    }
-}
-
-void FaultLoggerDaemon::HandleJsonReadRes(int& fd, int32_t connectionFd, FaultLoggerdRequest* request,
-    FaultLoggerPipe2* faultLoggerPipe)
-{
-    FaultLoggerCheckPermissionResp resSecurityCheck = SecurityCheck(connectionFd, request);
-    if (FaultLoggerCheckPermissionResp::CHECK_PERMISSION_PASS != resSecurityCheck) {
-        return;
-    }
-    if ((faultLoggerPipe->faultLoggerJsonPipeRes_) != nullptr) {
-        fd = faultLoggerPipe->faultLoggerJsonPipeRes_->GetReadFd();
-    }
-}
-
-void FaultLoggerDaemon::HandleJsonWriteRes(int& fd, FaultLoggerPipe2* faultLoggerPipe)
-{
-    if ((faultLoggerPipe->faultLoggerJsonPipeRes_) != nullptr) {
-        fd = faultLoggerPipe->faultLoggerJsonPipeRes_->GetWriteFd();
-    }
-}
-
-void FaultLoggerDaemon::HandleRequestByPipeType(int& fd, int32_t connectionFd, FaultLoggerdRequest* request,
+void FaultLoggerDaemon::HandleRequestByPipeType(int (&fd)[2], int32_t connectionFd, FaultLoggerdRequest* request,
                                                 FaultLoggerPipe2* faultLoggerPipe)
 {
     switch (request->pipeType) {
-        case (int32_t)FaultLoggerPipeType::PIPE_FD_READ_BUF: {
-            HandleReadBuf(fd, connectionFd, request, faultLoggerPipe);
+        case (int32_t)FaultLoggerPipeType::PIPE_FD_READ: {
+            HandleReadBuf(fd[PIPE_BUF_INDEX], connectionFd, request, faultLoggerPipe);
+            HandleReadRes(fd[PIPE_RES_INDEX], connectionFd, request, faultLoggerPipe);
             break;
         }
-        case (int32_t)FaultLoggerPipeType::PIPE_FD_WRITE_BUF: {
-            HandleWriteBuf(fd, faultLoggerPipe);
-            break;
-        }
-        case (int32_t)FaultLoggerPipeType::PIPE_FD_READ_RES: {
-            HandleReadRes(fd, connectionFd, request, faultLoggerPipe);
-            break;
-        }
-        case (int32_t)FaultLoggerPipeType::PIPE_FD_WRITE_RES: {
-            HandleWriteRes(fd, faultLoggerPipe);
+        case (int32_t)FaultLoggerPipeType::PIPE_FD_WRITE: {
+            HandleWriteBuf(fd[PIPE_BUF_INDEX], faultLoggerPipe);
+            HandleWriteRes(fd[PIPE_RES_INDEX], faultLoggerPipe);
             break;
         }
         case (int32_t)FaultLoggerPipeType::PIPE_FD_DELETE: {
             HandleDelete(request);
             return;
-        }
-        case (int32_t)FaultLoggerPipeType::PIPE_FD_JSON_READ_BUF: {
-            HandleJsonReadBuf(fd, connectionFd, request, faultLoggerPipe);
-            break;
-        }
-        case (int32_t)FaultLoggerPipeType::PIPE_FD_JSON_WRITE_BUF: {
-            HandleJsonWriteBuf(fd, faultLoggerPipe);
-            break;
-        }
-        case (int32_t)FaultLoggerPipeType::PIPE_FD_JSON_READ_RES: {
-            HandleJsonReadRes(fd, connectionFd, request, faultLoggerPipe);
-            break;
-        }
-        case (int32_t)FaultLoggerPipeType::PIPE_FD_JSON_WRITE_RES: {
-            HandleJsonWriteRes(fd, faultLoggerPipe);
-            break;
         }
         default:
             DFXLOGE("%{public}s :: unknown pipeType(%{public}d).", FAULTLOGGERD_TAG.c_str(), request->pipeType);
@@ -473,28 +413,30 @@ void FaultLoggerDaemon::HandlePipeFdClientRequest(int32_t connectionFd, FaultLog
     DFX_TRACE_SCOPED("HandlePipeFdClientRequest");
     DFXLOGD("%{public}s :: pid(%{public}d), pipeType(%{public}d).", FAULTLOGGERD_TAG.c_str(),
         request->pid, request->pipeType);
-    int fd = -1;
+    int pipeFd[] = { -1, -1 };
     FaultLoggerPipe2* faultLoggerPipe = faultLoggerPipeMap_->Get(request->pid);
     if (faultLoggerPipe == nullptr) {
         DFXLOGE("%{public}s :: cannot find pipe fd for pid(%{public}d).", FAULTLOGGERD_TAG.c_str(), request->pid);
         return;
     }
-    HandleRequestByPipeType(fd, connectionFd, request, faultLoggerPipe);
-    if (fd < 0) {
+    HandleRequestByPipeType(pipeFd, connectionFd, request, faultLoggerPipe);
+    if (pipeFd[PIPE_BUF_INDEX] < 0 || pipeFd[PIPE_RES_INDEX] < 0) {
         DFXLOGE("%{public}s :: Failed to get pipe fd, pipeType(%{public}d)",
             FAULTLOGGERD_TAG.c_str(), request->pipeType);
         return;
     }
-    SendFileDescriptorToSocket(connectionFd, fd);
+    int32_t replyCode = FaultLoggerCheckPermissionResp::CHECK_PERMISSION_PASS;
+    SendMsgCtlToSocket(connectionFd, reinterpret_cast<void *>(&pipeFd), sizeof(pipeFd), replyCode);
 }
 
 void FaultLoggerDaemon::HandlePrintTHilogClientRequest(int32_t const connectionFd, FaultLoggerdRequest * request)
 {
     char buf[LINE_BUF_SIZE] = {0};
 
-    if (OHOS_TEMP_FAILURE_RETRY(write(connectionFd,
-        DAEMON_RESP.c_str(), DAEMON_RESP.length())) != static_cast<ssize_t>(DAEMON_RESP.length())) {
-        DFXLOGE("[%{public}d]: %{public}s :: Failed to write DAEMON_RESP.", __LINE__, FAULTLOGGERD_TAG.c_str());
+    if (OHOS_TEMP_FAILURE_RETRY(write(connectionFd, FAULTLOGGER_DAEMON_RESP, strlen(FAULTLOGGER_DAEMON_RESP))) !=
+        static_cast<ssize_t>(strlen(FAULTLOGGER_DAEMON_RESP))) {
+        DFXLOGE("[%{public}d]: %{public}s :: Failed to write FAULTLOGGER_DAEMON_RESP.",
+            __LINE__, FAULTLOGGERD_TAG.c_str());
     }
 
     int nread = OHOS_TEMP_FAILURE_RETRY(read(connectionFd, buf, sizeof(buf) - 1));
@@ -521,9 +463,10 @@ FaultLoggerCheckPermissionResp FaultLoggerDaemon::SecurityCheck(int32_t connecti
             break;
         }
 
-        if (OHOS_TEMP_FAILURE_RETRY(write(connectionFd, DAEMON_RESP.c_str(), DAEMON_RESP.length())) !=
-            static_cast<ssize_t>(DAEMON_RESP.length())) {
-            DFXLOGE("%{public}s :: Failed to write DAEMON_RESP, errno(%{public}d)", FAULTLOGGERD_TAG.c_str(), errno);
+        if (OHOS_TEMP_FAILURE_RETRY(write(connectionFd, FAULTLOGGER_DAEMON_RESP, strlen(FAULTLOGGER_DAEMON_RESP))) !=
+            static_cast<ssize_t>(strlen(FAULTLOGGER_DAEMON_RESP))) {
+            DFXLOGE("%{public}s :: Failed to write FAULTLOGGER_DAEMON_RESP, errno(%{public}d)",
+                FAULTLOGGERD_TAG.c_str(), errno);
             break;
         }
 
@@ -534,17 +477,6 @@ FaultLoggerCheckPermissionResp FaultLoggerDaemon::SecurityCheck(int32_t connecti
 
         request->uid = rcred.uid;
         request->callerPid = static_cast<int32_t>(rcred.pid);
-
-        auto it = connectionMap_.find(connectionFd);
-        if (it == connectionMap_.end()) {
-            break;
-        }
-
-        if (it->second == sdkdumpSocketFd_) {
-            resCheckPermission = FaultLoggerCheckPermissionResp::CHECK_PERMISSION_PASS;
-            break;
-        }
-
         bool res = CheckCallerUID(request->uid);
         if (res) {
             resCheckPermission = FaultLoggerCheckPermissionResp::CHECK_PERMISSION_PASS;
@@ -569,7 +501,7 @@ void FaultLoggerDaemon::HandleSdkDumpRequest(int32_t connectionFd, FaultLoggerdR
 {
     DFX_TRACE_SCOPED("HandleSdkDumpRequest");
     DFXLOGI("Receive dump request for pid:%{public}d tid:%{public}d.", request->pid, request->tid);
-    FaultLoggerSdkDumpResp resSdkDump = FaultLoggerSdkDumpResp::SDK_DUMP_PASS;
+    int32_t resSdkDump = FaultLoggerSdkDumpResp::SDK_DUMP_PASS;
     FaultLoggerCheckPermissionResp resSecurityCheck = SecurityCheck(connectionFd, request);
 
     /*
@@ -597,10 +529,10 @@ void FaultLoggerDaemon::HandleSdkDumpRequest(int32_t connectionFd, FaultLoggerdR
      * in local back trace, all unwind stack will save to signal_handler global var.(mutex lock in signal handler.)
      * in remote back trace, all unwind stack will save to file, and read in dump_catcher, then return.
      */
-
+    int pipeReadFd[] = { -1, -1 };
     do {
         if ((request->pid <= 0) || (FaultLoggerCheckPermissionResp::CHECK_PERMISSION_REJECT == resSecurityCheck)) {
-            DFXLOGE("%{public}s :: HandleSdkDumpRequest :: pid(%{public}d) or resSecurityCheck(%{public}d) fail.\n", \
+            DFXLOGE("%{public}s :: HandleSdkDumpRequest :: pid(%{public}d) or resSecurityCheck(%{public}d) fail.", \
                 FAULTLOGGERD_TAG.c_str(), request->pid, (int)resSecurityCheck);
             resSdkDump = FaultLoggerSdkDumpResp::SDK_DUMP_REJECT;
             break;
@@ -608,17 +540,23 @@ void FaultLoggerDaemon::HandleSdkDumpRequest(int32_t connectionFd, FaultLoggerdR
         DFXLOGI("Sdk dump pid(%{public}d) request pass permission verification.", request->pid);
         if (IsCrashed(request->pid)) {
             resSdkDump = FaultLoggerSdkDumpResp::SDK_PROCESS_CRASHED;
-            DFXLOGW("%{public}s :: pid(%{public}d) has been crashed, break.\n",
-                FAULTLOGGERD_TAG.c_str(), request->pid);
+            DFXLOGW("pid(%{public}d) has been crashed, break.\n", request->pid);
             break;
         }
         if (faultLoggerPipeMap_->Check(request->pid, request->time)) {
             resSdkDump = FaultLoggerSdkDumpResp::SDK_DUMP_REPEAT;
-            DFXLOGE("%{public}s :: pid(%{public}d) is dumping, break.\n", FAULTLOGGERD_TAG.c_str(), request->pid);
+            DFXLOGE("pid(%{public}d) is dumping, break.\n", request->pid);
             break;
         }
-        faultLoggerPipeMap_->Set(request->pid, request->time, request->isJson);
+        faultLoggerPipeMap_->Set(request->pid, request->time);
 
+        FaultLoggerPipe2* faultLoggerPipe = faultLoggerPipeMap_->Get(request->pid);
+        if (faultLoggerPipe == nullptr) {
+            DFXLOGE("cannot find pipe fd for pid(%{public}d).", request->pid);
+            break;
+        }
+        pipeReadFd[PIPE_BUF_INDEX] = faultLoggerPipe->faultLoggerPipeBuf_->GetReadFd();
+        pipeReadFd[PIPE_RES_INDEX] = faultLoggerPipe->faultLoggerPipeRes_->GetReadFd();
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Winitializer-overrides"
         // defined in out/hi3516dv300/obj/third_party/musl/intermidiates/linux/musl_src_ported/include/signal.h
@@ -644,11 +582,7 @@ void FaultLoggerDaemon::HandleSdkDumpRequest(int32_t connectionFd, FaultLoggerdR
             resSdkDump = FaultLoggerSdkDumpResp::SDK_DUMP_NOPROC;
         }
     } while (false);
-    auto retMsg = std::to_string(resSdkDump);
-    if (OHOS_TEMP_FAILURE_RETRY(send(connectionFd, retMsg.data(), retMsg.length(), 0)) !=
-        static_cast<ssize_t>(retMsg.length())) {
-        DFXLOGE("Failed to send result message to client, errno(%{public}d).", errno);
-    }
+    SendMsgCtlToSocket(connectionFd, reinterpret_cast<void *>(&pipeReadFd), sizeof(pipeReadFd), resSdkDump);
 }
 
 void FaultLoggerDaemon::RecordFileCreation(int32_t type, int32_t pid)

@@ -46,9 +46,11 @@ int32_t RequestLogFileDescriptor(struct FaultLoggerdRequest *request);
  * @brief request pipe file descriptor
  * @param pid process id of request pipe
  * @param pipeType type of request about pipe
- * @return if succeed return file descriptor, otherwise return -1
+ * @param pipeFd pipeFd[0] to transfer call stack message and
+ *               pipeFd[1] to transfer backtrace result
+ * @return if succeed return 0, otherwise return -1
 */
-int32_t RequestPipeFd(int32_t pid, int32_t pipeType);
+int RequestPipeFd(int32_t pid, int32_t pipeType, int (&pipeFd)[2]);
 
 /**
  * @brief request delete file descriptor
@@ -65,12 +67,6 @@ int32_t RequestDelPipeFd(int32_t pid);
 int RequestFileDescriptorEx(const struct FaultLoggerdRequest *request);
 
 /**
- * @brief request checking permission of process
- * @param pid process id
- * @return if pass return true , otherwise return false
-*/
-bool RequestCheckPermission(int32_t pid);
-/**
  * @brief request printing message to hilog
  * @param msg message
  * @param length length of message
@@ -82,17 +78,13 @@ int RequestPrintTHilog(const char *msg, int length);
  * @brief request dump stack about process
  * @param pid process id
  * @param tid thread id, if equal 0 means dump all the threads in a process.
+ * @param pipeReadFd if pass sdkdump, will get pipeReadFd[0] to read call stack message and
+ *                   pipeReadFd[1] to read backtrace result
+ * @param isJson if set true, will get json format result, else get string result
  * @return if succeed return 0 , otherwise return -1
 */
-int RequestSdkDump(int32_t pid, int32_t tid, int timeout = 10000); // 10000 : dump timeout ms
-
-/**
- * @brief request dump stack about process
- * @param pid process id
- * @param tid thread id, if equal 0 means dump all the threads in a process.
- * @return if succeed return 0 , otherwise return -1
-*/
-int RequestSdkDumpJson(int32_t pid, int32_t tid, bool isJson, int timeout);
+int RequestSdkDump(int32_t pid, int32_t tid, int (&pipeReadFd)[2],
+                   bool isjson = false, int timeout = 10000); // 10000 : dump timeout ms
 
 /**
  * @brief report sdk dump result to faultloggerd for stats collection

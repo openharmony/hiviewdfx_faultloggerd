@@ -20,6 +20,7 @@
 #include <unistd.h>
 #include <sys/socket.h>
 
+#include "dfx_define.h"
 #include "dfx_exception.h"
 #include "dfx_util.h"
 #include "faultloggerd_client.h"
@@ -203,16 +204,17 @@ bool CheckReadResp(int sockfd)
 }
 
 void HandleRequestByPipeTypeCommon(std::shared_ptr<FaultLoggerDaemon> daemon, int32_t pipeType,
-    bool isPassCheck = false, bool isJson = false)
+    bool isPassCheck = false)
 {
-    int fd = -1;
+    int pipeFd[PIPE_NUM_SZ] = { -1, -1 };
     FaultLoggerdRequest request;
     request.pipeType = pipeType;
-    std::unique_ptr<FaultLoggerPipe2> ptr = std::make_unique<FaultLoggerPipe2>(GetTimeMilliSeconds(), isJson);
+    std::unique_ptr<FaultLoggerPipe2> ptr = std::make_unique<FaultLoggerPipe2>(GetTimeMilliSeconds());
 
     if (!isPassCheck) {
-        daemon->HandleRequestByPipeType(fd, 1, &request, ptr.get());
-        close(fd);
+        daemon->HandleRequestByPipeType(pipeFd, 1, &request, ptr.get());
+        CloseFd(pipeFd[PIPE_BUF_INDEX]);
+        CloseFd(pipeFd[PIPE_RES_INDEX]);
         return;
     }
 
@@ -227,8 +229,9 @@ void HandleRequestByPipeTypeCommon(std::shared_ptr<FaultLoggerDaemon> daemon, in
             }
         } else if (pid > 0) {
             daemon->connectionMap_[socketFd[0]] = socketFd[0];
-            daemon->HandleRequestByPipeType(fd, socketFd[0], &request, ptr.get());
-            close(fd);
+            daemon->HandleRequestByPipeType(pipeFd, socketFd[0], &request, ptr.get());
+            CloseFd(pipeFd[PIPE_BUF_INDEX]);
+            CloseFd(pipeFd[PIPE_RES_INDEX]);
             close(socketFd[1]);
         }
     }
@@ -236,20 +239,11 @@ void HandleRequestByPipeTypeCommon(std::shared_ptr<FaultLoggerDaemon> daemon, in
 
 void HandleRequestByPipeTypeTest(std::shared_ptr<FaultLoggerDaemon> daemon)
 {
-    HandleRequestByPipeTypeCommon(daemon, FaultLoggerPipeType::PIPE_FD_READ_BUF, true, false);
-    HandleRequestByPipeTypeCommon(daemon, FaultLoggerPipeType::PIPE_FD_READ_RES, true, false);
+    HandleRequestByPipeTypeCommon(daemon, FaultLoggerPipeType::PIPE_FD_READ, true);
     HandleRequestByPipeTypeCommon(daemon, FaultLoggerPipeType::PIPE_FD_DELETE);
-    HandleRequestByPipeTypeCommon(daemon, FaultLoggerPipeType::PIPE_FD_JSON_READ_BUF, true, true);
-    HandleRequestByPipeTypeCommon(daemon, FaultLoggerPipeType::PIPE_FD_JSON_READ_RES, true, true);
 
-    HandleRequestByPipeTypeCommon(daemon, FaultLoggerPipeType::PIPE_FD_READ_BUF);
-    HandleRequestByPipeTypeCommon(daemon, FaultLoggerPipeType::PIPE_FD_WRITE_BUF);
-    HandleRequestByPipeTypeCommon(daemon, FaultLoggerPipeType::PIPE_FD_READ_RES);
-    HandleRequestByPipeTypeCommon(daemon, FaultLoggerPipeType::PIPE_FD_WRITE_RES);
-    HandleRequestByPipeTypeCommon(daemon, FaultLoggerPipeType::PIPE_FD_JSON_READ_BUF, false, true);
-    HandleRequestByPipeTypeCommon(daemon, FaultLoggerPipeType::PIPE_FD_JSON_WRITE_BUF, false, true);
-    HandleRequestByPipeTypeCommon(daemon, FaultLoggerPipeType::PIPE_FD_JSON_READ_RES, false, true);
-    HandleRequestByPipeTypeCommon(daemon, FaultLoggerPipeType::PIPE_FD_JSON_WRITE_RES, false, true);
+    HandleRequestByPipeTypeCommon(daemon, FaultLoggerPipeType::PIPE_FD_READ);
+    HandleRequestByPipeTypeCommon(daemon, FaultLoggerPipeType::PIPE_FD_WRITE);
     HandleRequestByPipeTypeCommon(daemon, -1);
 }
 

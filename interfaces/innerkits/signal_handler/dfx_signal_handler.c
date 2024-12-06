@@ -403,7 +403,7 @@ static bool DFX_SigchainHandler(int sig, siginfo_t *si, void *context)
             sig, si != NULL ? si->si_code : 0, pid, tid);
     bool ret = false;
     if (sig == SIGDUMP) {
-        if (si->si_code != DUMP_TYPE_REMOTE) {
+        if (si->si_code != DUMP_TYPE_REMOTE && si->si_code != DUMP_TYPE_REMOTE_JSON) {
             DFXLOGW("DFX_SigchainHandler :: sig(%{public}d:%{public}d) is not remote dump type, return directly",
                 sig, si->si_code);
             return true;

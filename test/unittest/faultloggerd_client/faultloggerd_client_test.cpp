@@ -253,7 +253,8 @@ HWTEST_F(FaultloggerdClientTest, FaultloggerdClientTest005, TestSize.Level2)
         constexpr int32_t appUid = 100068;
         setcon("u:r:hiview:s0");
         setuid(appUid);
-        int resp = RequestSdkDump(1, 1);
+        int pipeReadFd[] = { -1, -1 };
+        int resp = RequestSdkDump(1, 1, pipeReadFd);
         if (resp == FaultLoggerCheckPermissionResp::CHECK_PERMISSION_PASS) {
             ret = 0;
         }
@@ -298,7 +299,8 @@ HWTEST_F(FaultloggerdClientTest, FaultloggerdClientTest006, TestSize.Level2)
         constexpr int32_t appUid = 100068;
         setcon("u:r:wifi_host:s0");
         setuid(appUid);
-        int resp = RequestSdkDump(1, 1);
+        int pipeReadFd[] = { -1, -1 };
+        int resp = RequestSdkDump(1, 1, pipeReadFd);
         if (resp == FaultLoggerCheckPermissionResp::CHECK_PERMISSION_REJECT) {
             ret = 0;
         }
@@ -335,20 +337,20 @@ HWTEST_F(FaultloggerdClientTest, FaultloggerdClientTest007, TestSize.Level2)
     fd = RequestFileDescriptorEx(nullptr);
     ASSERT_EQ(fd, -1);
 
-    bool ret = RequestCheckPermission(-1);
-    ASSERT_FALSE(ret);
-
     int result = RequestPrintTHilog(nullptr, LINE_BUF_SIZE + 1);
     ASSERT_EQ(result, -1);
 
     int timeout = 10000; // 10000 : dump timeout ms
-    result = RequestSdkDumpJson(-1, -1, false, timeout);
+    int pipeReadFd[] = { -1, -1 };
+    result = RequestSdkDump(-1, -1, pipeReadFd, false, timeout);
     ASSERT_EQ(result, -1);
-    RequestSdkDumpJson(-1, 1, false, timeout);
+    ASSERT_EQ(pipeReadFd[PIPE_BUF_INDEX], -1);
+    ASSERT_EQ(pipeReadFd[PIPE_RES_INDEX], -1);
+    RequestSdkDump(-1, 1, pipeReadFd, false, timeout);
     ASSERT_EQ(result, -1);
-    RequestSdkDumpJson(1, -1, false, timeout);
+    RequestSdkDump(1, -1, pipeReadFd, false, timeout);
     ASSERT_EQ(result, -1);
-    RequestSdkDumpJson(1, 1, false, timeout);
+    RequestSdkDump(1, 1, pipeReadFd, false, timeout);
     ASSERT_EQ(result, -1);
 
     GTEST_LOG_(INFO) << "FaultloggerdClientTest007: end.";

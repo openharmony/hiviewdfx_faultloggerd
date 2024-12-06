@@ -18,7 +18,6 @@
 
 #include <cinttypes>
 #include <sys/types.h>
-
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -26,10 +25,10 @@ bool StartConnect(int& sockfd, const char* path, const int timeout);
 bool StartListen(int& sockfd, const char* name, const int listenCnt);
 
 bool RecvMsgCredFromSocket(int sockfd, struct ucred* pucred);
-
+bool RecvMsgFromSocket(int sockfd, void* fd, size_t& fdLen, int32_t& replyCode);
 bool SendMsgIovToSocket(int sockfd, void *iovBase, const int iovLen);
-
-bool SendFileDescriptorToSocket(int sockfd, int fd);
+void SendMsgCtlToSocket(int sockfd, const void *cmsg, const size_t cmsgLen, int32_t replyCode);
+void SendFileDescriptorToSocket(int sockfd, int fd);
 int ReadFileDescriptorFromSocket(int sockfd);
 #ifdef __cplusplus
 }

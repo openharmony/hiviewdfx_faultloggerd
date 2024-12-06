@@ -113,25 +113,16 @@ void DfxSigDumpHandler::RunThread()
         if (OHOS_TEMP_FAILURE_RETRY(sigtimedwait(&set, &si, &SIG_WAIT_TIMEOUT)) == -1) {
             continue;
         }
-        int32_t resFd = -1;
+
         int res = DUMP_ESUCCESS;
         int32_t pid = getpid();
-        FaultLoggerPipeType jsonType = FaultLoggerPipeType::PIPE_FD_JSON_WRITE_RES;
-        int32_t fd = RequestPipeFd(pid, FaultLoggerPipeType::PIPE_FD_JSON_WRITE_BUF);
-        if (fd < 0) {
-            fd = RequestPipeFd(pid, FaultLoggerPipeType::PIPE_FD_WRITE_BUF);
-            jsonType = FaultLoggerPipeType::PIPE_FD_WRITE_RES;
-        }
-        if (fd < 0) {
-            DFXLOGE("Pid %{public}d GetPipeFd Failed", pid);
+        int pipeWriteFd[] = { -1, -1 };
+        if (RequestPipeFd(pid, FaultLoggerPipeType::PIPE_FD_WRITE, pipeWriteFd) == -1) {
+            DFXLOGE("Pid %{public}d RequestPipeFd Failed", pid);
             continue;
         }
-        resFd = RequestPipeFd(pid, jsonType);
-        if (resFd < 0) {
-            DFXLOGE("Pid %{public}d GetPipeResFd Failed", pid);
-            close(fd);
-            continue;
-        }
+        int fd = pipeWriteFd[0];
+        int resFd = pipeWriteFd[1];
         std::string dumpInfo = OHOS::HiviewDFX::GetProcessStacktrace();
         const ssize_t nwrite = static_cast<ssize_t>(dumpInfo.length());
         if (!dumpInfo.empty() &&

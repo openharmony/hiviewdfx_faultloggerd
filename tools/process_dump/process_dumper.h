@@ -37,7 +37,7 @@ public:
     ~ProcessDumper() = default;
 
     void Dump();
-    void WriteDumpRes(int32_t res);
+    void WriteDumpRes(int32_t res, pid_t pid);
     bool IsCrash() const;
 
 private:
@@ -74,7 +74,7 @@ private:
     bool isCrash_ = false;
     bool isJsonDump_ = false;
     int32_t resFd_ = -1;
-    int32_t jsonFd_ = -1;
+    int32_t bufferFd_ = -1;
     int32_t resDump_ = 0;
 
     uint64_t startTime_ = 0;

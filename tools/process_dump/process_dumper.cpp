@@ -327,21 +327,17 @@ void ProcessDumper::Dump()
         formatter.GetStackInfo(isJsonDump_, jsonInfo);
         DFXLOGI("Finish GetStackInfo len %{public}" PRIuPTR "", jsonInfo.length());
         if (isJsonDump_) {
-            WriteData(jsonFd_, jsonInfo, MAX_PIPE_SIZE);
+            WriteData(bufferFd_, jsonInfo, MAX_PIPE_SIZE);
         }
     }
 
     finishTime_ = GetTimeMillisec();
     ReportSigDumpStats(request);
-    // After skipping InitPrintThread due to ptrace failure or other reasons,
-    // request resFd_ to write back the result to dumpcatch
-    if (request->siginfo.si_signo == SIGDUMP && resFd_ == -1) {
-        resFd_ = RequestPipeFd(request->pid, FaultLoggerPipeType::PIPE_FD_JSON_WRITE_RES);
-        if (resFd_ < 0) {
-            resFd_ = RequestPipeFd(request->pid, FaultLoggerPipeType::PIPE_FD_WRITE_RES);
-        }
+
+    if (request->siginfo.si_signo == SIGDUMP) {
+        WriteDumpRes(resDump_, request->pid);
     }
-    WriteDumpRes(resDump_);
+
     // print keythread base info to hilog when carsh
     DfxRingBufferWrapper::GetInstance().PrintBaseInfo();
     DfxRingBufferWrapper::GetInstance().StopThread();
@@ -823,7 +819,6 @@ void ProcessDumper::RemoveFileIfNeed()
 int ProcessDumper::InitPrintThread(std::shared_ptr<ProcessDumpRequest> request)
 {
     DFX_TRACE_SCOPED("InitPrintThread");
-    int fd = -1;
     struct FaultLoggerdRequest faultloggerdRequest;
     (void)memset_s(&faultloggerdRequest, sizeof(faultloggerdRequest), 0, sizeof(struct FaultLoggerdRequest));
     faultloggerdRequest.type = ProcessDumper::GetLogTypeByRequest(*request);
@@ -831,40 +826,32 @@ int ProcessDumper::InitPrintThread(std::shared_ptr<ProcessDumpRequest> request)
     faultloggerdRequest.tid = request->tid;
     faultloggerdRequest.uid = request->uid;
     faultloggerdRequest.time = request->timeStamp;
-    isJsonDump_ = false;
-    jsonFd_ = -1;
     if (isCrash_ || faultloggerdRequest.type == FaultLoggerType::LEAK_STACKTRACE) {
-        fd = RequestFileDescriptorEx(&faultloggerdRequest);
-        if (fd == -1) {
+        bufferFd_ = RequestFileDescriptorEx(&faultloggerdRequest);
+        if (bufferFd_ == -1) {
             ProcessDumper::RemoveFileIfNeed();
-            fd = CreateFileForCrash(request->pid, request->timeStamp);
+            bufferFd_ = CreateFileForCrash(request->pid, request->timeStamp);
         }
         DfxRingBufferWrapper::GetInstance().SetWriteFunc(ProcessDumper::WriteDumpBuf);
     } else {
-        jsonFd_ = RequestPipeFd(request->pid, FaultLoggerPipeType::PIPE_FD_JSON_WRITE_BUF);
-        if (jsonFd_ < 0) {
-            // If fd returns -1, we try to obtain the fd that needs to return JSON style
-            fd = RequestPipeFd(request->pid, FaultLoggerPipeType::PIPE_FD_WRITE_BUF);
-            resFd_ = RequestPipeFd(request->pid, FaultLoggerPipeType::PIPE_FD_WRITE_RES);
-            DFXLOGD("write buf fd: %{public}d, write res fd: %{public}d", fd, resFd_);
-        } else {
-            resFd_ = RequestPipeFd(request->pid, FaultLoggerPipeType::PIPE_FD_JSON_WRITE_RES);
-            DFXLOGD("write json fd: %{public}d, res fd: %{public}d", jsonFd_, resFd_);
+        isJsonDump_ = request->siginfo.si_code == DUMP_TYPE_REMOTE_JSON;
+        int pipeWriteFd[] = { -1, -1 };
+        if (RequestPipeFd(request->pid, FaultLoggerPipeType::PIPE_FD_WRITE, pipeWriteFd) == 0) {
+            bufferFd_ = pipeWriteFd[PIPE_BUF_INDEX];
+            resFd_ = pipeWriteFd[PIPE_RES_INDEX];
         }
     }
-    if (jsonFd_ > 0) {
-        isJsonDump_ = true;
-    }
-    if ((fd < 0) && (jsonFd_ < 0)) {
+
+    if (bufferFd_ < 0) {
         DFXLOGW("Failed to request fd from faultloggerd.");
         ReportCrashException(request->processName, request->pid, request->uid,
                              CrashExceptionCode::CRASH_DUMP_EWRITEFD);
     }
     if (!isJsonDump_) {
-        DfxRingBufferWrapper::GetInstance().SetWriteBufFd(fd);
+        DfxRingBufferWrapper::GetInstance().SetWriteBufFd(bufferFd_);
     }
     DfxRingBufferWrapper::GetInstance().StartThread();
-    return isJsonDump_ ? jsonFd_ : fd;
+    return bufferFd_;
 }
 
 int ProcessDumper::WriteDumpBuf(int fd, const char* buf, const int len)
@@ -875,22 +862,27 @@ int ProcessDumper::WriteDumpBuf(int fd, const char* buf, const int len)
     return WriteLog(fd, "%s", buf);
 }
 
-void ProcessDumper::WriteDumpRes(int32_t res)
+void ProcessDumper::WriteDumpRes(int32_t res, pid_t pid)
 {
-    DFXLOGI("%{public}s :: res: %{public}d", __func__, res);
-    if (resFd_ > 0) {
-        ssize_t nwrite = OHOS_TEMP_FAILURE_RETRY(write(resFd_, &res, sizeof(res)));
-        if (nwrite < 0) {
-            DFXLOGE("%{public}s write fail, err:%{public}d", __func__, errno);
+    DFXLOGI("%{public}s :: res: %{public}s", __func__, DfxDumpRes::ToString(res).c_str());
+    // After skipping InitPrintThread due to ptrace failure or other reasons,
+    // retry request resFd_ to write back the result to dumpcatch
+    if (resFd_ < 0) {
+        int pipeWriteFd[] = { -1, -1 };
+        if (RequestPipeFd(pid, FaultLoggerPipeType::PIPE_FD_WRITE, pipeWriteFd) == -1) {
+            DFXLOGE("%{public}s request pipe failed, err:%{public}d", __func__, errno);
+            return;
         }
-        close(resFd_);
-        resFd_ = -1;
-    } else {
-        if (res != DUMP_ESUCCESS) {
-            DfxRingBufferWrapper::GetInstance().AppendMsg("Result:\n");
-            DfxRingBufferWrapper::GetInstance().AppendMsg(DfxDumpRes::ToString(res) + "\n");
-        }
+        bufferFd_ = pipeWriteFd[0];
+        resFd_ = pipeWriteFd[1];
     }
+
+    ssize_t nwrite = OHOS_TEMP_FAILURE_RETRY(write(resFd_, &res, sizeof(res)));
+    if (nwrite < 0) {
+        DFXLOGE("%{public}s write fail, err:%{public}d", __func__, errno);
+    }
+    CloseFd(bufferFd_);
+    CloseFd(resFd_);
 }
 
 bool ProcessDumper::IsCrash() const

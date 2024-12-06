@@ -75,14 +75,8 @@ private:
     void HandleReadRes(int& fd, int32_t connectionFd, FaultLoggerdRequest* request,
         FaultLoggerPipe2* faultLoggerPipe);
     void HandleWriteRes(int& fd, FaultLoggerPipe2* faultLoggerPipe);
-    void HandleJsonReadBuf(int& fd, int32_t connectionFd, FaultLoggerdRequest* request,
-        FaultLoggerPipe2* faultLoggerPipe);
-    void HandleJsonWriteBuf(int& fd, FaultLoggerPipe2* faultLoggerPipe);
-    void HandleJsonReadRes(int& fd, int32_t connectionFd, FaultLoggerdRequest* request,
-        FaultLoggerPipe2* faultLoggerPipe);
-    void HandleJsonWriteRes(int& fd, FaultLoggerPipe2* faultLoggerPipe);
     void HandleDelete(FaultLoggerdRequest* request);
-    void HandleRequestByPipeType(int& fd, int32_t connectionFd, FaultLoggerdRequest* request,
+    void HandleRequestByPipeType(int (&fd)[2], int32_t connectionFd, FaultLoggerdRequest* request,
         FaultLoggerPipe2* faultLoggerPipe);
     void HandleExceptionRequest(int32_t connectionFd, FaultLoggerdRequest* request);
     void HandleRequestByClientType(int32_t connectionFd, FaultLoggerdRequest* request);

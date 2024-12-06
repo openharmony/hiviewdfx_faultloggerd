@@ -77,28 +77,16 @@ enum FaultLoggerClientType {
 */
 enum FaultLoggerPipeType {
     /** For request file descriptor of pipe to read buffer  */
-    PIPE_FD_READ_BUF = 0,
+    PIPE_FD_READ = 0,
     /** For request file descriptor of pipe to write buffer  */
-    PIPE_FD_WRITE_BUF,
-    /** For request file descriptor of pipe to read result  */
-    PIPE_FD_READ_RES,
-    /** For request file descriptor of pipe to write result  */
-    PIPE_FD_WRITE_RES,
-    /** For request file descriptor of pipe to json read buffer  */
-    PIPE_FD_JSON_READ_BUF,
-    /** For request file descriptor of pipe to json write buffer  */
-    PIPE_FD_JSON_WRITE_BUF,
-    /** For request file descriptor of pipe to json read result  */
-    PIPE_FD_JSON_READ_RES,
-    /** For request file descriptor of pipe to json write result  */
-    PIPE_FD_JSON_WRITE_RES,
+    PIPE_FD_WRITE,
     /** For request to delete file descriptor of pipe */
     PIPE_FD_DELETE,
 };
 /**
  * @brief  type of responding check permission request
 */
-enum FaultLoggerCheckPermissionResp {
+enum FaultLoggerCheckPermissionResp : int32_t {
     /** pass */
     CHECK_PERMISSION_PASS = 1,
     /** reject */
@@ -107,7 +95,7 @@ enum FaultLoggerCheckPermissionResp {
 /**
  * @brief  type of responding sdk dump request
 */
-enum FaultLoggerSdkDumpResp {
+enum FaultLoggerSdkDumpResp : int32_t {
     /** pass */
     SDK_DUMP_PASS = 1,
     /** reject */
@@ -143,8 +131,6 @@ struct FaultLoggerdRequest {
     int32_t callerTid;
     /** time of current request */
     uint64_t time;
-    /** ture output json string, false output default string */
-    bool isJson;
     /** dumpcatcher remote unwind endtime ms */
     uint64_t endTime;
 } __attribute__((packed));

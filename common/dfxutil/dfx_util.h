@@ -39,6 +39,7 @@ AT_SYMBOL_HIDDEN void ParseSiValue(siginfo_t& si, uint64_t& endTime, int& tid);
 #endif
 AT_SYMBOL_HIDDEN off_t GetFileSize(const int& fd);
 AT_SYMBOL_HIDDEN bool ReadFdToString(int fd, std::string& content);
+AT_SYMBOL_HIDDEN void CloseFd(int& fd);
 } // nameapace HiviewDFX
 } // nameapace OHOS
 

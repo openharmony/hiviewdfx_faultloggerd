@@ -1199,7 +1199,7 @@ HWTEST_F(DwarfTest, LocalThreadContextTest001, TestSize.Level2)
     GTEST_LOG_(INFO) << "LocalThreadContextTest001: start.\n";
     LocalThreadContext instance;
     siginfo_t si {0};
-    si.si_code = DUMP_TYPE_KERNEL;
+    si.si_code = DUMP_TYPE_REMOTE;
     instance.CopyContextAndWaitTimeout(0, nullptr, nullptr);
     instance.CopyContextAndWaitTimeout(0, &si, nullptr);
     si.si_code = DUMP_TYPE_LOCAL;

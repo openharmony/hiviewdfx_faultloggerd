@@ -116,15 +116,10 @@ void FaultLoggerPipe::Close(int fd) const
     }
 }
 
-FaultLoggerPipe2::FaultLoggerPipe2(uint64_t time, bool isJson)
+FaultLoggerPipe2::FaultLoggerPipe2(uint64_t time)
 {
-    if (isJson) {
-        faultLoggerJsonPipeBuf_ = std::unique_ptr<FaultLoggerPipe>(new FaultLoggerPipe());
-        faultLoggerJsonPipeRes_ = std::unique_ptr<FaultLoggerPipe>(new FaultLoggerPipe());
-    } else {
-        faultLoggerPipeBuf_ = std::unique_ptr<FaultLoggerPipe>(new FaultLoggerPipe());
-        faultLoggerPipeRes_ = std::unique_ptr<FaultLoggerPipe>(new FaultLoggerPipe());
-    }
+    faultLoggerPipeBuf_ = std::unique_ptr<FaultLoggerPipe>(new FaultLoggerPipe());
+    faultLoggerPipeRes_ = std::unique_ptr<FaultLoggerPipe>(new FaultLoggerPipe());
     time_ = time;
 }
 
@@ -132,8 +127,6 @@ FaultLoggerPipe2::~FaultLoggerPipe2()
 {
     faultLoggerPipeBuf_.reset();
     faultLoggerPipeRes_.reset();
-    faultLoggerJsonPipeBuf_.reset();
-    faultLoggerJsonPipeRes_.reset();
     time_ = 0;
 }
 
@@ -152,11 +145,11 @@ FaultLoggerPipeMap::~FaultLoggerPipeMap()
     }
 }
 
-void FaultLoggerPipeMap::Set(int pid, uint64_t time, bool isJson)
+void FaultLoggerPipeMap::Set(int pid, uint64_t time)
 {
     std::lock_guard<std::mutex> lck(pipeMapsMutex_);
     if (!Find(pid)) {
-        std::unique_ptr<FaultLoggerPipe2> ptr = std::unique_ptr<FaultLoggerPipe2>(new FaultLoggerPipe2(time, isJson));
+        std::unique_ptr<FaultLoggerPipe2> ptr = std::unique_ptr<FaultLoggerPipe2>(new FaultLoggerPipe2(time));
         faultLoggerPipes_.emplace(pid, std::move(ptr));
     }
 }

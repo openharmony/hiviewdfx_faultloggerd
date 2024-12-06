@@ -40,10 +40,11 @@ void FaultloggerdClientTest(const uint8_t* data, size_t size)
     STREAM_TO_VALUEINFO(data, tid);
 
     RequestFileDescriptor(type);
-    RequestPipeFd(pid, type);
+    int pipeFd[] = { pid, tid };
+    RequestPipeFd(pid, type, pipeFd);
     RequestDelPipeFd(pid);
-    RequestCheckPermission(pid);
-    RequestSdkDump(pid, tid);
+    int pipeReadFd[] = { pid, tid };
+    RequestSdkDump(pid, tid, pipeReadFd);
 }
 } // namespace HiviewDFX
 } // namespace OHOS

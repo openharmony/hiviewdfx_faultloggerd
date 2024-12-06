@@ -113,7 +113,7 @@ HWTEST_F (FaultLoggerPipeTest, FaultLoggerPipeTest003, TestSize.Level2)
     faultLoggerPipe.Close(-1);
     faultLoggerPipe.Close(1);
 
-    FaultLoggerPipe2 faultLoggerPipe2(time(nullptr), true);
+    FaultLoggerPipe2 faultLoggerPipe2(time(nullptr));
 
     FaultLoggerPipeMap faultLoggerPipeMap;
     ret = faultLoggerPipeMap.Check(1, time(nullptr));

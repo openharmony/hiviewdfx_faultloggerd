@@ -616,6 +616,7 @@ HWTEST_F(DfxProcessDumpTest, DfxProcessDumpTest020, TestSize.Level2)
     result = ins.InitPrintThread(request);
     ASSERT_NE(result, -1);
     ins.isCrash_ = false;
+    ins.bufferFd_ = -1;
     request->siginfo.si_signo = CPP_CRASH;
     result = ins.InitPrintThread(request);
     ASSERT_EQ(result, -1);
@@ -623,7 +624,7 @@ HWTEST_F(DfxProcessDumpTest, DfxProcessDumpTest020, TestSize.Level2)
     result = ins.WriteDumpBuf(1, nullptr, 1);
     ASSERT_EQ(result, -1);
     ins.resFd_ = -1;
-    ins.WriteDumpRes(1);
+    ins.WriteDumpRes(1, getpid());
     ASSERT_EQ(ins.resFd_, -1);
     GTEST_LOG_(INFO) << "DfxProcessDumpTest020: end.";
 }

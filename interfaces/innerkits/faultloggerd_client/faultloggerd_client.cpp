@@ -90,22 +90,24 @@ int32_t RequestFileDescriptorEx(const struct FaultLoggerdRequest *request)
 static bool CheckReadResp(int sockfd)
 {
     char ControlBuffer[SOCKET_BUFFER_SIZE] = {0};
-    ssize_t nread = OHOS_TEMP_FAILURE_RETRY(read(sockfd, ControlBuffer, sizeof(ControlBuffer) - 1));
-    if (nread != static_cast<ssize_t>(strlen(FAULTLOGGER_DAEMON_RESP))) {
-        DFXLOGE("nread: %{public}zd.", nread);
+    if (OHOS_TEMP_FAILURE_RETRY(read(sockfd, ControlBuffer, sizeof(ControlBuffer) - 1)) !=
+        strlen(FAULTLOGGER_DAEMON_RESP)) {
+        DFXLOGE("read count not equal expect count, %{public}d", errno);
+        return false;
+    }
+    if (std::string(ControlBuffer) != FAULTLOGGER_DAEMON_RESP) {
+        DFXLOGE("response is not complete");
         return false;
     }
     return true;
 }
 
-static int32_t RequestFileDescriptorByCheck(const struct FaultLoggerdRequest *request)
+static void RequestPipeFdEx(const struct FaultLoggerdRequest *request, int (&pipeFd)[2], bool needCheck)
 {
-    int32_t fd = -1;
     if (request == nullptr) {
         DFXLOGE("[%{public}d]: nullptr request", __LINE__);
-        return -1;
+        return;
     }
-
     int sockfd = -1;
     do {
         std::string name = GetSocketConnectionName();
@@ -113,44 +115,44 @@ static int32_t RequestFileDescriptorByCheck(const struct FaultLoggerdRequest *re
             DFXLOGE("[%{public}d]: StartConnect(%{public}d) failed", __LINE__, sockfd);
             break;
         }
-
         OHOS_TEMP_FAILURE_RETRY(write(sockfd, request, sizeof(struct FaultLoggerdRequest)));
-
-        if (!CheckReadResp(sockfd)) {
-            break;
+        if (needCheck) {
+            if (!CheckReadResp(sockfd)) {
+                break;
+            }
+            int data = 12345;
+            if (!SendMsgIovToSocket(sockfd, reinterpret_cast<void *>(&data), sizeof(data))) {
+                DFXLOGE("%{public}s :: Failed to sendmsg.", __func__);
+                break;
+            }
         }
-
-        int data = 12345;
-        if (!SendMsgIovToSocket(sockfd, reinterpret_cast<void *>(&data), sizeof(data))) {
-            DFXLOGE("%{public}s :: Failed to sendmsg.", __func__);
-            break;
+        size_t len = sizeof(pipeFd);
+        int replyCode = 0;
+        if (!RecvMsgFromSocket(sockfd, reinterpret_cast<void *>(pipeFd), len, replyCode) || len != sizeof(pipeFd)) {
+            DFXLOGE("RecvMsgFromSocket failed, errno(%{public}d)", errno);
         }
-
-        fd = ReadFileDescriptorFromSocket(sockfd);
-        DFXLOGD("RequestFileDescriptorByCheck(%{public}d).", fd);
     } while (false);
-    close(sockfd);
-    return fd;
+    OHOS::HiviewDFX::CloseFd(sockfd);
 }
 
-static int SendUidToServer(int sockfd)
+static int RecvPipeReadFd(int sockfd, int (&pipeReadFd)[2])
 {
-    int mRsp = (int)FaultLoggerCheckPermissionResp::CHECK_PERMISSION_REJECT;
+    int32_t mRsp = FaultLoggerCheckPermissionResp::CHECK_PERMISSION_REJECT;
 
     int data = 12345;
     if (!SendMsgIovToSocket(sockfd, reinterpret_cast<void *>(&data), sizeof(data))) {
         DFXLOGE("%{public}s :: Failed to sendmsg.", __func__);
         return mRsp;
     }
-
-    char recvbuf[SOCKET_BUFFER_SIZE] = {'\0'};
-    ssize_t count = OHOS_TEMP_FAILURE_RETRY(recv(sockfd, recvbuf, sizeof(recvbuf), 0));
-    if (count < 0) {
-        DFXLOGE("%{public}s :: Failed to recv.", __func__);
-        return mRsp;
+    size_t len = sizeof(pipeReadFd);
+    if (!RecvMsgFromSocket(sockfd, reinterpret_cast<void *>(pipeReadFd), len, mRsp)) {
+        DFXLOGE("%{public}s :: Failed to recv message", __func__);
+        return FaultLoggerCheckPermissionResp::CHECK_PERMISSION_REJECT;
     }
-
-    mRsp = atoi(recvbuf);
+    if (len != sizeof(pipeReadFd)) {
+        DFXLOGE("data is null or len is %{public}zu", len);
+        return FaultLoggerCheckPermissionResp::CHECK_PERMISSION_REJECT;
+    }
     return mRsp;
 }
 
@@ -165,10 +167,10 @@ bool CheckConnectStatus()
     return false;
 }
 
-static int SendRequestToServer(const FaultLoggerdRequest &request)
+static int SendSdkDumpRequestToServer(const FaultLoggerdRequest &request, int (&pipeReadFd)[2])
 {
     int sockfd = -1;
-    int resRsp = (int)FaultLoggerCheckPermissionResp::CHECK_PERMISSION_REJECT;
+    int resRsp = FaultLoggerCheckPermissionResp::CHECK_PERMISSION_REJECT;
     do {
         std::string name = GetSocketConnectionName();
         if (request.clientType == FaultLoggerClientType::SDK_DUMP_CLIENT) {
@@ -188,50 +190,28 @@ static int SendRequestToServer(const FaultLoggerdRequest &request)
         if (!CheckReadResp(sockfd)) {
             break;
         }
-        resRsp = SendUidToServer(sockfd);
+        resRsp = RecvPipeReadFd(sockfd, pipeReadFd);
     } while (false);
-
-    close(sockfd);
-    DFXLOGI("SendRequestToServer :: resRsp(%{public}d).", resRsp);
+    if (resRsp != FaultLoggerCheckPermissionResp::CHECK_PERMISSION_PASS) {
+        OHOS::HiviewDFX::CloseFd(pipeReadFd[PIPE_BUF_INDEX]);
+        OHOS::HiviewDFX::CloseFd(pipeReadFd[PIPE_RES_INDEX]);
+    }
+    OHOS::HiviewDFX::CloseFd(sockfd);
+    DFXLOGI("SendSdkDumpRequestToServer :: resRsp(%{public}d).", resRsp);
     return resRsp;
 }
 
-bool RequestCheckPermission(int32_t pid)
+int RequestSdkDump(int32_t pid, int32_t tid, int (&pipeReadFd)[2], bool isJson, int timeout)
 {
-    DFXLOGI("RequestCheckPermission :: %{public}d.", pid);
-    if (pid <= 0) {
-        return false;
-    }
-
-    struct FaultLoggerdRequest request;
-    (void)memset_s(&request, sizeof(request), 0, sizeof(request));
-
-    request.pid = pid;
-    request.clientType = (int32_t)FaultLoggerClientType::PERMISSION_CLIENT;
-
-    bool ret = false;
-    if (SendRequestToServer(request) == (int)FaultLoggerCheckPermissionResp::CHECK_PERMISSION_PASS) {
-        ret = true;
-    }
-    return ret;
-}
-
-int RequestSdkDump(int32_t pid, int32_t tid, int timeout)
-{
-    return RequestSdkDumpJson(pid, tid, false, timeout);
-}
-
-int RequestSdkDumpJson(int32_t pid, int32_t tid, bool isJson, int timeout)
-{
-    DFXLOGI("RequestSdkDumpJson :: pid(%{public}d), tid(%{public}d).", pid, tid);
+    DFXLOGI("RequestSdkDump :: pid(%{public}d), tid(%{public}d), isJson(%{public}s).",
+        pid, tid, isJson ? "true" : "false");
     if (pid <= 0 || tid < 0) {
         return -1;
     }
 
     struct FaultLoggerdRequest request;
     (void)memset_s(&request, sizeof(request), 0, sizeof(request));
-    request.isJson = isJson;
-    request.sigCode = DUMP_TYPE_REMOTE;
+    request.sigCode = isJson ? DUMP_TYPE_REMOTE_JSON : DUMP_TYPE_REMOTE;
     request.pid = pid;
     request.tid = tid;
     request.callerPid = getpid();
@@ -239,8 +219,9 @@ int RequestSdkDumpJson(int32_t pid, int32_t tid, bool isJson, int timeout)
     request.clientType = (int32_t)FaultLoggerClientType::SDK_DUMP_CLIENT;
     request.time = OHOS::HiviewDFX::GetTimeMilliSeconds();
     request.endTime = GetAbsTimeMilliSeconds() + static_cast<uint64_t>(timeout);
-
-    return SendRequestToServer(request);
+    pipeReadFd[PIPE_BUF_INDEX] = -1;
+    pipeReadFd[PIPE_RES_INDEX] = -1;
+    return SendSdkDumpRequestToServer(request, pipeReadFd);
 }
 
 int RequestPrintTHilog(const char *msg, int length)
@@ -283,34 +264,31 @@ int RequestPrintTHilog(const char *msg, int length)
     return -1;
 }
 
-int32_t RequestPipeFd(int32_t pid, int32_t pipeType)
+int RequestPipeFd(int32_t pid, int32_t pipeType, int (&pipeFd)[2])
 {
-    if (pipeType < static_cast<int32_t>(FaultLoggerPipeType::PIPE_FD_READ_BUF) ||
-        pipeType > static_cast<int32_t>(FaultLoggerPipeType::PIPE_FD_DELETE)) {
+    if (pipeType < static_cast<int32_t>(FaultLoggerPipeType::PIPE_FD_READ) ||
+        pipeType > static_cast<int32_t>(FaultLoggerPipeType::PIPE_FD_WRITE)) {
         DFXLOGE("%{public}s :: pipeType(%{public}d) failed.", __func__, pipeType);
         return -1;
     }
     struct FaultLoggerdRequest request;
     (void)memset_s(&request, sizeof(request), 0, sizeof(struct FaultLoggerdRequest));
 
-    if ((pipeType == static_cast<int32_t>(FaultLoggerPipeType::PIPE_FD_JSON_READ_BUF)) ||
-        (pipeType == static_cast<int32_t>(FaultLoggerPipeType::PIPE_FD_JSON_READ_RES))) {
-        request.isJson = true;
-    } else {
-        request.isJson = false;
-    }
     request.pipeType = pipeType;
     request.pid = pid;
     request.callerPid = getpid();
     request.callerTid = gettid();
     request.clientType = (int32_t)FaultLoggerClientType::PIPE_FD_CLIENT;
-    if ((pipeType == static_cast<int32_t>(FaultLoggerPipeType::PIPE_FD_READ_BUF)) ||
-        (pipeType == static_cast<int32_t>(FaultLoggerPipeType::PIPE_FD_READ_RES)) ||
-        (pipeType == static_cast<int32_t>(FaultLoggerPipeType::PIPE_FD_JSON_READ_BUF)) ||
-        (pipeType == static_cast<int32_t>(FaultLoggerPipeType::PIPE_FD_JSON_READ_RES))) {
-        return RequestFileDescriptorByCheck(&request);
+    bool needCheck = pipeType == static_cast<int32_t>(FaultLoggerPipeType::PIPE_FD_READ);
+    pipeFd[PIPE_BUF_INDEX] = -1;
+    pipeFd[PIPE_RES_INDEX] = -1;
+    RequestPipeFdEx(&request, pipeFd, needCheck);
+    if (pipeFd[PIPE_BUF_INDEX] > 0 && pipeFd[PIPE_RES_INDEX] > 0) {
+        return 0;
     }
-    return RequestFileDescriptorEx(&request);
+    OHOS::HiviewDFX::CloseFd(pipeFd[PIPE_BUF_INDEX]);
+    OHOS::HiviewDFX::CloseFd(pipeFd[PIPE_RES_INDEX]);
+    return -1;
 }
 
 int32_t RequestDelPipeFd(int32_t pid)
