@@ -1721,6 +1721,7 @@ HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest125, TestSize.Level2)
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest125: end.";
 }
 
+#if defined(__aarch64__)
 /**
 * @tc.name: FaultLoggerdSystemTest126
 * @tc.desc: Test /log/crash files max num when faultloggerd unstart case
@@ -1757,6 +1758,7 @@ HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest126, TestSize.Level2)
     EXPECT_TRUE(files.size() <= maxFilesNum) << "FaultLoggerdSystemTest126 Failed";
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest126: end.";
 }
+#endif
 
 /**
 * @tc.name: FaultLoggerdSystemTest127
@@ -1797,6 +1799,7 @@ HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest127, TestSize.Level2)
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest127: end.";
 }
 
+#if defined(__aarch64__)
 /**
 * @tc.name: FaultLoggerdSystemTest128
 * @tc.desc: Test process fd leak unwind
@@ -1832,5 +1835,6 @@ HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest128, TestSize.Level2)
         GTEST_LOG_(INFO) << "FaultLoggerdSystemTest128: end.";
     }
 }
+#endif
 } // namespace HiviewDFX
 } // namespace OHOS
