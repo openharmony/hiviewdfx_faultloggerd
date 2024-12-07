@@ -126,6 +126,93 @@ bool RemoveAllContextLocked()
     }
     return true;
 }
+
+NO_SANITIZE void CopyContextAndWaitTimeoutMix(int sig, siginfo_t *si, void *context)
+{
+    if (si == nullptr || context == nullptr) {
+        return;
+    }
+    auto& instance = LocalThreadContextMix::GetInstance();
+    if (!instance.CheckStatusValidate(SyncStatus::WAIT_CTX, gettid())) {
+        return;
+    }
+    if ((gettid() != getpid()) && !instance.GetSelfStackRangeInSignal()) {
+        return;
+    }
+    instance.CopyRegister(context);
+    instance.CopyStackBuf();
+}
+
+NO_SANITIZE void CopyContextAndWaitTimeout(int sig, siginfo_t *si, void *context)
+{
+    if (si == nullptr || si->si_value.sival_ptr == nullptr || context == nullptr) {
+        return;
+    }
+
+    DFXLOGU("tid(%{public}d) recv sig(%{public}d)", gettid(), sig);
+    auto ctxPtr = static_cast<ThreadContext *>(si->si_value.sival_ptr);
+#if defined(__aarch64__)
+    uintptr_t fp = reinterpret_cast<ucontext_t*>(context)->uc_mcontext.regs[REG_FP];
+    uintptr_t pc = reinterpret_cast<ucontext_t*>(context)->uc_mcontext.pc;
+    ctxPtr->firstFrameSp = reinterpret_cast<ucontext_t*>(context)->uc_mcontext.sp;
+    ctxPtr->frameSz = FpUnwinder::GetPtr()->UnwindSafe(pc, fp, ctxPtr->pcs, DEFAULT_MAX_LOCAL_FRAME_NUM);
+    ctxPtr->cv.notify_all();
+    ctxPtr->tid = static_cast<int32_t>(ThreadContextStatus::CONTEXT_UNUSED);
+    return;
+#else
+
+    std::unique_lock<std::mutex> lock(ctxPtr->mtx);
+    if (ctxPtr->ctx == nullptr) {
+        ctxPtr->tid = static_cast<int32_t>(ThreadContextStatus::CONTEXT_UNUSED);
+        return;
+    }
+    ucontext_t* ucontext = reinterpret_cast<ucontext_t*>(context);
+    int tid = gettid();
+    if (memcpy_s(&ctxPtr->ctx->uc_mcontext, sizeof(ucontext->uc_mcontext),
+        &ucontext->uc_mcontext, sizeof(ucontext->uc_mcontext)) != 0) {
+        DFXLOGW("Failed to copy local ucontext with tid(%{public}d)", tid);
+    }
+
+    if (tid != getpid()) {
+        if (!GetSelfStackRange(ctxPtr->stackBottom, ctxPtr->stackTop)) {
+            DFXLOGW("Failed to get stack range with tid(%{public}d)", tid);
+        }
+    }
+
+    ctxPtr->tid = static_cast<int32_t>(ThreadContextStatus::CONTEXT_READY);
+    ctxPtr->cv.notify_all();
+    ctxPtr->cv.wait_for(lock, g_timeOut);
+    ctxPtr->tid = static_cast<int32_t>(ThreadContextStatus::CONTEXT_UNUSED);
+#endif
+}
+
+void DfxBacktraceLocalSignalHandler(int sig, siginfo_t *si, void *context)
+{
+    if (si == nullptr) {
+        return;
+    }
+    if (si->si_code == DUMP_TYPE_LOCAL || si->si_code == DUMP_TYPE_KERNEL) {
+        CopyContextAndWaitTimeout(sig, si, context);
+    } else if (si->si_code == DUMP_TYPE_LOCAL_MIX) {
+        CopyContextAndWaitTimeoutMix(sig, si, context);
+    }
+}
+
+void InitSignalHandler()
+{
+    static std::once_flag flag;
+    std::call_once(flag, [&]() {
+        FpUnwinder::GetPtr();
+        struct sigaction action;
+        (void)memset_s(&action, sizeof(action), 0, sizeof(action));
+        sigemptyset(&action.sa_mask);
+        sigaddset(&action.sa_mask, SIGLOCAL_DUMP);
+        action.sa_flags = SA_RESTART | SA_SIGINFO;
+        action.sa_sigaction = DfxBacktraceLocalSignalHandler;
+        DFXLOGU("Install local signal handler: %{public}d", SIGLOCAL_DUMP);
+        sigaction(SIGLOCAL_DUMP, &action, nullptr);
+    });
+}
 }
 
 LocalThreadContext& LocalThreadContext::GetInstance()
@@ -181,49 +268,6 @@ std::shared_ptr<ThreadContext> LocalThreadContext::CollectThreadContext(int32_t 
     return threadContext;
 }
 
-NO_SANITIZE void LocalThreadContext::CopyContextAndWaitTimeout(int sig, siginfo_t *si, void *context)
-{
-    if (si == nullptr || si->si_code != DUMP_TYPE_LOCAL || si->si_value.sival_ptr == nullptr || context == nullptr) {
-        return;
-    }
-
-    DFXLOGU("tid(%{public}d) recv sig(%{public}d)", gettid(), sig);
-    auto ctxPtr = static_cast<ThreadContext *>(si->si_value.sival_ptr);
-#if defined(__aarch64__)
-    uintptr_t fp = reinterpret_cast<ucontext_t*>(context)->uc_mcontext.regs[REG_FP];
-    uintptr_t pc = reinterpret_cast<ucontext_t*>(context)->uc_mcontext.pc;
-    ctxPtr->firstFrameSp = reinterpret_cast<ucontext_t*>(context)->uc_mcontext.sp;
-    ctxPtr->frameSz = FpUnwinder::GetPtr()->UnwindSafe(pc, fp, ctxPtr->pcs, DEFAULT_MAX_LOCAL_FRAME_NUM);
-    ctxPtr->cv.notify_all();
-    ctxPtr->tid = static_cast<int32_t>(ThreadContextStatus::CONTEXT_UNUSED);
-    return;
-#else
-
-    std::unique_lock<std::mutex> lock(ctxPtr->mtx);
-    if (ctxPtr->ctx == nullptr) {
-        ctxPtr->tid = static_cast<int32_t>(ThreadContextStatus::CONTEXT_UNUSED);
-        return;
-    }
-    ucontext_t* ucontext = reinterpret_cast<ucontext_t*>(context);
-    int tid = gettid();
-    if (memcpy_s(&ctxPtr->ctx->uc_mcontext, sizeof(ucontext->uc_mcontext),
-        &ucontext->uc_mcontext, sizeof(ucontext->uc_mcontext)) != 0) {
-        DFXLOGW("Failed to copy local ucontext with tid(%{public}d)", tid);
-    }
-
-    if (tid != getpid()) {
-        if (!GetSelfStackRange(ctxPtr->stackBottom, ctxPtr->stackTop)) {
-            DFXLOGW("Failed to get stack range with tid(%{public}d)", tid);
-        }
-    }
-
-    ctxPtr->tid = static_cast<int32_t>(ThreadContextStatus::CONTEXT_READY);
-    ctxPtr->cv.notify_all();
-    ctxPtr->cv.wait_for(lock, g_timeOut);
-    ctxPtr->tid = static_cast<int32_t>(ThreadContextStatus::CONTEXT_UNUSED);
-#endif
-}
-
 bool LocalThreadContext::GetStackRange(int32_t tid, uintptr_t& stackBottom, uintptr_t& stackTop)
 {
     auto ctxPtr = LocalThreadContext::GetInstance().GetThreadContext(tid);
@@ -233,22 +277,6 @@ bool LocalThreadContext::GetStackRange(int32_t tid, uintptr_t& stackBottom, uint
     stackBottom = ctxPtr->stackBottom;
     stackTop = ctxPtr->stackTop;
     return true;
-}
-
-void LocalThreadContext::InitSignalHandler()
-{
-    static std::once_flag flag;
-    std::call_once(flag, [&]() {
-        FpUnwinder::GetPtr();
-        struct sigaction action;
-        (void)memset_s(&action, sizeof(action), 0, sizeof(action));
-        sigemptyset(&action.sa_mask);
-        sigaddset(&action.sa_mask, SIGLOCAL_DUMP);
-        action.sa_flags = SA_RESTART | SA_SIGINFO;
-        action.sa_sigaction = LocalThreadContext::CopyContextAndWaitTimeout;
-        DFXLOGU("Install local signal handler: %{public}d", SIGLOCAL_DUMP);
-        sigaction(SIGLOCAL_DUMP, &action, nullptr);
-    });
 }
 
 bool LocalThreadContext::SignalRequestThread(int32_t tid, ThreadContext* threadContext)
@@ -264,6 +292,182 @@ bool LocalThreadContext::SignalRequestThread(int32_t tid, ThreadContext* threadC
         return false;
     }
     return true;
+}
+
+NO_SANITIZE LocalThreadContextMix& LocalThreadContextMix::GetInstance()
+{
+    static LocalThreadContextMix instance;
+    return instance;
+}
+
+bool LocalThreadContextMix::CollectThreadContext(int32_t tid)
+{
+    maps_ = DfxMaps::Create();
+    StartCollectThreadContext(tid);
+    InitSignalHandler();
+    if (!SignalRequestThread(tid)) {
+        return false;
+    }
+    {
+        std::unique_lock<std::mutex> lock(mtx_);
+        if (cv_.wait_for(lock, std::chrono::seconds(1)) == std::cv_status::timeout) {
+            DFXLOGE("wait_for timeout. tid = %{public}d", tid);
+            return false;
+        }
+    }
+    return CheckStatusValidate(SyncStatus::COPY_SUCCESS, tid);
+}
+
+bool LocalThreadContextMix::SignalRequestThread(int32_t tid)
+{
+    siginfo_t si {0};
+    si.si_signo = SIGLOCAL_DUMP;
+    si.si_errno = 0;
+    si.si_code = DUMP_TYPE_LOCAL_MIX;
+    if (syscall(SYS_rt_tgsigqueueinfo, getpid(), tid, si.si_signo, &si) != 0) {
+        return false;
+    }
+    return true;
+}
+
+void LocalThreadContextMix::StartCollectThreadContext(int32_t tid)
+{
+    std::unique_lock<std::mutex> lock(mtx_);
+    tid_ = tid;
+    status_ = SyncStatus::WAIT_CTX;
+    stackBuf_.resize(STACK_BUFFER_SIZE, 0);
+}
+
+void LocalThreadContextMix::ReleaseCollectThreadContext()
+{
+    std::unique_lock<std::mutex> lock(mtx_);
+    pc_ = 0;
+    sp_ = 0;
+    fp_ = 0;
+    lr_ = 0;
+    stackBottom_ = 0;
+    stackTop_ = 0;
+    stackBuf_ = {};
+    tid_ = -1;
+    status_ = SyncStatus::INIT;
+    maps_ = nullptr;
+}
+
+NO_SANITIZE bool LocalThreadContextMix::CheckStatusValidate(int status, int32_t tid)
+{
+    std::unique_lock<std::mutex> lock(mtx_);
+    return status_ == status && tid_ == tid;
+}
+
+NO_SANITIZE bool LocalThreadContextMix::GetSelfStackRangeInSignal()
+{
+    std::unique_lock<std::mutex> lock(mtx_);
+    return GetSelfStackRange(stackBottom_, stackTop_);
+}
+
+NO_SANITIZE void LocalThreadContextMix::CopyRegister(void *context)
+{
+    std::unique_lock<std::mutex> lock(mtx_);
+#if defined(__arm__)
+    fp_ = static_cast<ucontext_t*>(context)->uc_mcontext.arm_fp;
+    lr_ = static_cast<ucontext_t*>(context)->uc_mcontext.arm_lr;
+    sp_ = static_cast<ucontext_t*>(context)->uc_mcontext.arm_sp;
+    pc_ = static_cast<ucontext_t*>(context)->uc_mcontext.arm_pc;
+#elif defined(__aarch64__)
+    fp_ = static_cast<ucontext_t*>(context)->uc_mcontext.regs[RegsEnumArm64::REG_FP];
+    lr_ = static_cast<ucontext_t*>(context)->uc_mcontext.regs[RegsEnumArm64::REG_LR];
+    sp_ = static_cast<ucontext_t*>(context)->uc_mcontext.sp;
+    pc_ = static_cast<ucontext_t*>(context)->uc_mcontext.pc;
+#else
+    fp = static_cast<ucontext_t*>(context)->uc_mcontext.gregs[REG_RBP];
+    lr = static_cast<ucontext_t*>(context)->uc_mcontext.gregs[REG_RIP];
+    sp = static_cast<ucontext_t*>(context)->uc_mcontext.gregs[REG_RSP];
+    pc = static_cast<ucontext_t*>(context)->uc_mcontext.gregs[REG_RIP];
+#endif
+}
+
+NO_SANITIZE void LocalThreadContextMix::CopyStackBuf()
+{
+    int curStackSz = stackTop_ - sp_;
+    int cpySz = std::min(curStackSz, STACK_BUFFER_SIZE);
+    if (stackBuf_.size() == 0) {
+        return;
+    }
+    std::unique_lock<std::mutex> lock(mtx_);
+    auto cpyRet = memcpy_s(stackBuf_.data(), stackBuf_.size(),
+        reinterpret_cast<void *>(sp_), cpySz);
+    status_ = (cpyRet == 0 ? SyncStatus::COPY_SUCCESS : SyncStatus::COPY_FAILED);
+    cv_.notify_all();
+}
+
+void LocalThreadContextMix::SetRegister(std::shared_ptr<DfxRegs> regs)
+{
+    std::unique_lock<std::mutex> lock(mtx_);
+    regs->SetSp(sp_);
+    regs->SetPc(pc_);
+    regs->SetFp(fp_);
+    regs->SetReg(REG_LR, &(lr_));
+}
+
+void LocalThreadContextMix::SetStackRang(uintptr_t stackTop, uintptr_t stackBottom)
+{
+    std::unique_lock<std::mutex> lock(mtx_);
+    stackTop_ = stackTop;
+    stackBottom_ = stackBottom;
+}
+
+int LocalThreadContextMix::GetMapByPc(uintptr_t pc, std::shared_ptr<DfxMap>& map) const
+{
+    if (maps_ == nullptr) {
+        DFXLOGE("maps_ is nullptr.");
+        return -1;
+    }
+    return maps_->FindMapByAddr(pc, map) ? 0 : -1;
+}
+
+int LocalThreadContextMix::FindUnwindTable(uintptr_t pc, UnwindTableInfo& outTableInfo) const
+{
+    std::shared_ptr<DfxMap> dfxMap;
+    if (maps_->FindMapByAddr(pc, dfxMap)) {
+        if (dfxMap == nullptr) {
+            return -1;
+        }
+        auto elf = dfxMap->GetElf(getpid());
+        if (elf != nullptr) {
+            return elf->FindUnwindTableInfo(pc, dfxMap, outTableInfo);
+        }
+    }
+    return -1;
+}
+
+int LocalThreadContextMix::AccessMem(uintptr_t addr, uintptr_t *val)
+{
+    if (val == nullptr) {
+        return -1;
+    }
+    *val = 0;
+    if (addr < sp_ || addr + sizeof(uintptr_t) >= sp_ + STACK_BUFFER_SIZE) {
+        std::shared_ptr<DfxMap> map;
+        if (!(maps_->FindMapByAddr(addr, map)) || map == nullptr) {
+            return -1;
+        }
+        auto elf = map->GetElf(getpid());
+        if (elf != nullptr) {
+            uint64_t foff = addr - map->begin + map->offset - elf->GetBaseOffset();
+            if (elf->Read(foff, val, sizeof(uintptr_t))) {
+                return 0;
+            }
+        }
+        return -1;
+    }
+    size_t stackOffset = addr - sp_;
+    *val = *(reinterpret_cast<uintptr_t *>(&stackBuf_[stackOffset]));
+    return 0;
+}
+
+std::shared_ptr<DfxMaps> LocalThreadContextMix::GetMaps() const
+{
+    return maps_;
 }
 } // namespace HiviewDFX
 } // namespace OHOS

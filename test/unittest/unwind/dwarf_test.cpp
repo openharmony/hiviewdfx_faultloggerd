@@ -1191,7 +1191,7 @@ HWTEST_F(DwarfTest, DfxInstructionsTest001, TestSize.Level2)
 
 /**
  * @tc.name: LocalThreadContextTest001
- * @tc.desc: test LocalThreadContext CopyContextAndWaitTimeout
+ * @tc.desc: test LocalThreadContext DfxBacktraceLocalSignalHandler
  * @tc.type: FUNC
  */
 HWTEST_F(DwarfTest, LocalThreadContextTest001, TestSize.Level2)
@@ -1200,10 +1200,10 @@ HWTEST_F(DwarfTest, LocalThreadContextTest001, TestSize.Level2)
     LocalThreadContext instance;
     siginfo_t si {0};
     si.si_code = DUMP_TYPE_KERNEL;
-    instance.CopyContextAndWaitTimeout(0, nullptr, nullptr);
-    instance.CopyContextAndWaitTimeout(0, &si, nullptr);
+    instance.DfxBacktraceLocalSignalHandler(0, nullptr, nullptr);
+    instance.DfxBacktraceLocalSignalHandler(0, &si, nullptr);
     si.si_code = DUMP_TYPE_LOCAL;
-    instance.CopyContextAndWaitTimeout(0, &si, nullptr);
+    instance.DfxBacktraceLocalSignalHandler(0, &si, nullptr);
     std::shared_ptr<ThreadContext> ret = instance.GetThreadContext(-1);
     ASSERT_EQ(ret, nullptr);
     auto memory = std::make_shared<DfxMemory>();

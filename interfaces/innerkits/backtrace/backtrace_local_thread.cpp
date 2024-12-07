@@ -30,6 +30,17 @@ namespace {
 #define LOG_TAG "DfxBacktraceLocal"
 }
 
+std::string GetThreadHead(int32_t tid)
+{
+    std::string threadName;
+    if (tid == BACKTRACE_CURRENT_THREAD) {
+        tid = gettid();
+    }
+    ReadThreadName(tid, threadName);
+    std::string threadHead = "Tid:" + std::to_string(tid) + ", Name:" + threadName + "\n";
+    return threadHead;
+}
+
 BacktraceLocalThread::BacktraceLocalThread(int32_t tid, std::shared_ptr<Unwinder> unwinder)
     : tid_(tid), unwinder_(unwinder)
 {
@@ -98,6 +109,31 @@ std::string BacktraceLocalThread::GetFormattedStr(bool withThreadName)
     }
     ss += Unwinder::GetFramesStr(frames_);
     return ss;
+}
+
+bool BacktraceLocalThread::UnwindOtherThreadMix(bool fast, size_t maxFrameNum, size_t skipFrameNum)
+{
+    static std::mutex mutex;
+    std::unique_lock<std::mutex> lock(mutex);
+    bool ret = false;
+
+    if (unwinder_ == nullptr || tid_ < BACKTRACE_CURRENT_THREAD) {
+        return ret;
+    }
+    if (tid_ == BACKTRACE_CURRENT_THREAD || tid_ == gettid()) {
+        ret = unwinder_->UnwindLocal(false, fast, maxFrameNum, skipFrameNum + 1, true);
+    } else {
+        ret = unwinder_->UnwindLocalByOtherTid(tid_, fast, maxFrameNum, skipFrameNum + 1);
+    }
+#ifdef __aarch64__
+    if (ret && fast) {
+        Unwinder::GetFramesByPcs(frames_, unwinder_->GetPcs());
+    }
+#endif
+    if (frames_.empty()) {
+        frames_ = unwinder_->GetFrames();
+    }
+    return ret;
 }
 } // namespace HiviewDFX
 } // namespace OHOS
