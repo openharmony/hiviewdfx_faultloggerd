@@ -50,11 +50,15 @@
       OHOS::HiviewDFX::DfxElf::FindUnwindTableInfo*;
       OHOS::HiviewDFX::DfxElf::GetBaseOffset*;
       OHOS::HiviewDFX::DfxElf::Read*;
+      OHOS::HiviewDFX::DfxElf::GetPtLoads*;
       OHOS::HiviewDFX::DfxMap::ToString*;
       OHOS::HiviewDFX::DfxMap::GetElf*;
       OHOS::HiviewDFX::DfxMap::Create*;
       OHOS::HiviewDFX::DfxMap::GetRelPc*;
       OHOS::HiviewDFX::DfxMap::UnFormatMapName*;
+      OHOS::HiviewDFX::DfxMap::Parse*;
+      OHOS::HiviewDFX::DfxMap::PermsToProts*;
+      OHOS::HiviewDFX::DfxMap::IsVdsoMap*;
       OHOS::HiviewDFX::DfxMaps::Create*;
       OHOS::HiviewDFX::DfxMaps::ToString*;
       OHOS::HiviewDFX::DfxMaps::FindMapByAddr*;
@@ -95,6 +99,9 @@
       OHOS::HiviewDFX::DfxMap::IsMapExec*;
       OHOS::HiviewDFX::DfxMaps::IsLegalMapItem*;
       OHOS::HiviewDFX::DfxElf::GetMmapPtr*;
+      OHOS::HiviewDFX::GetFileSize*;
+      OHOS::HiviewDFX::TrimAndDupStr*;
+      OHOS::HiviewDFX::DfxEnableTraceDlsym*;
     };
   local:
     *;
