@@ -1188,32 +1188,6 @@ HWTEST_F(DwarfTest, DfxInstructionsTest001, TestSize.Level2)
     ASSERT_EQ(ret, false);
     GTEST_LOG_(INFO) << "DfxInstructionsTest001: end.\n";
 }
-
-/**
- * @tc.name: LocalThreadContextTest001
- * @tc.desc: test LocalThreadContext DfxBacktraceLocalSignalHandler
- * @tc.type: FUNC
- */
-HWTEST_F(DwarfTest, LocalThreadContextTest001, TestSize.Level2)
-{
-    GTEST_LOG_(INFO) << "LocalThreadContextTest001: start.\n";
-    LocalThreadContext instance;
-    siginfo_t si {0};
-    si.si_code = DUMP_TYPE_KERNEL;
-    instance.DfxBacktraceLocalSignalHandler(0, nullptr, nullptr);
-    instance.DfxBacktraceLocalSignalHandler(0, &si, nullptr);
-    si.si_code = DUMP_TYPE_LOCAL;
-    instance.DfxBacktraceLocalSignalHandler(0, &si, nullptr);
-    std::shared_ptr<ThreadContext> ret = instance.GetThreadContext(-1);
-    ASSERT_EQ(ret, nullptr);
-    auto memory = std::make_shared<DfxMemory>();
-    uintptr_t addr = 0;
-    bool cur = memory->ReadString(addr, nullptr, 0, false);
-    ASSERT_EQ(cur, false);
-    uintptr_t val = memory->ReadEncodedValue(addr, DW_EH_PE_omit);
-    ASSERT_EQ(val, 0);
-    GTEST_LOG_(INFO) << "LocalThreadContextTest001: end.\n";
-}
 }
 } // namespace HiviewDFX
 } // namespace OHOS

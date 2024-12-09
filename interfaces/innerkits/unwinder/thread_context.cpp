@@ -378,11 +378,6 @@ NO_SANITIZE void LocalThreadContextMix::CopyRegister(void *context)
     lr_ = static_cast<ucontext_t*>(context)->uc_mcontext.regs[RegsEnumArm64::REG_LR];
     sp_ = static_cast<ucontext_t*>(context)->uc_mcontext.sp;
     pc_ = static_cast<ucontext_t*>(context)->uc_mcontext.pc;
-#else
-    fp = static_cast<ucontext_t*>(context)->uc_mcontext.gregs[REG_RBP];
-    lr = static_cast<ucontext_t*>(context)->uc_mcontext.gregs[REG_RIP];
-    sp = static_cast<ucontext_t*>(context)->uc_mcontext.gregs[REG_RSP];
-    pc = static_cast<ucontext_t*>(context)->uc_mcontext.gregs[REG_RIP];
 #endif
 }
 
@@ -402,11 +397,13 @@ NO_SANITIZE void LocalThreadContextMix::CopyStackBuf()
 
 void LocalThreadContextMix::SetRegister(std::shared_ptr<DfxRegs> regs)
 {
+#if defined(__arm__) || defined(__aarch64__)
     std::unique_lock<std::mutex> lock(mtx_);
     regs->SetSp(sp_);
     regs->SetPc(pc_);
     regs->SetFp(fp_);
     regs->SetReg(REG_LR, &(lr_));
+#endif
 }
 
 void LocalThreadContextMix::SetStackRang(uintptr_t stackTop, uintptr_t stackBottom)

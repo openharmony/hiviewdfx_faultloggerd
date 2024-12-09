@@ -1515,6 +1515,7 @@ bool Unwinder::Impl::UnwindLocalByOtherTid(const pid_t tid, bool fast, size_t ma
 
     bool ret = false;
     if (fast) {
+        maps_ = instance.GetMaps();
         ret = UnwindByFp(&instance, maxFrameNum, 0, true);
     } else {
         ret = Unwind(&instance, maxFrameNum, skipFrameNum);
