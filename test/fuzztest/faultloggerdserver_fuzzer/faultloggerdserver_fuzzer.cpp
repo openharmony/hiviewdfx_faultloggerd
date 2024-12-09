@@ -225,7 +225,7 @@ void HandleRequestByPipeTypeCommon(std::shared_ptr<FaultLoggerDaemon> daemon, in
             sleep(1);
             if (CheckReadResp(socketFd[1])) {
                 std::string test = "test";
-                OHOS_TEMP_FAILURE_RETRY(write(socketFd[1], test.c_str(), sizeof(test)));
+                OHOS_TEMP_FAILURE_RETRY(write(socketFd[1], test.c_str(), strlen(test.c_str())));
             }
         } else if (pid > 0) {
             daemon->connectionMap_[socketFd[0]] = socketFd[0];
