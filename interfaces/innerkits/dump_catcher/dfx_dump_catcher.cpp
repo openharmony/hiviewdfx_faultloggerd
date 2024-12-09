@@ -310,6 +310,7 @@ bool DfxDumpCatcher::DoDumpCatchRemote(int pid, int tid, std::string& msg, bool 
     }
     pid_ = pid;
     int pipeReadFd[] = { -1, -1 };
+    uint64_t sdkDumpStartTime = GetAbsTimeMilliSeconds();
     int sdkdumpRet = RequestSdkDump(pid, tid, pipeReadFd, isJson, timeout);
     if (sdkdumpRet != static_cast<int>(FaultLoggerSdkDumpResp::SDK_DUMP_PASS)) {
         if (sdkdumpRet == static_cast<int>(FaultLoggerSdkDumpResp::SDK_DUMP_REPEAT)) {
@@ -326,7 +327,8 @@ bool DfxDumpCatcher::DoDumpCatchRemote(int pid, int tid, std::string& msg, bool 
         DFXLOGW("%{public}s :: %{public}s :: %{public}s", DFXDUMPCATCHER_TAG.c_str(), __func__, msg.c_str());
         return ret;
     }
-
+    // timeout sub the cost time of sdkdump
+    timeout -= static_cast<int>(GetAbsTimeMilliSeconds() - sdkDumpStartTime);
     int pollRet = DoDumpRemotePid(pid, msg, pipeReadFd, isJson, timeout);
     switch (pollRet) {
         case DUMP_POLL_OK:
@@ -353,6 +355,17 @@ bool DfxDumpCatcher::DoDumpCatchRemote(int pid, int tid, std::string& msg, bool 
 int DfxDumpCatcher::DoDumpRemotePid(int pid, std::string& msg, int (&pipeReadFd)[2], bool isJson, int32_t timeout)
 {
     DFX_TRACE_SCOPED_DLSYM("DoDumpRemotePid");
+    if (timeout <= 0) {
+        DFXLOGW("timeout less than 0, try to get kernel stack and return directly!");
+        AsyncGetAllTidKernelStack(pid, WAIT_GET_KERNEL_STACK_TIMEOUT);
+        RequestDelPipeFd(pid);
+        CloseFd(pipeReadFd[PIPE_BUF_INDEX]);
+        CloseFd(pipeReadFd[PIPE_RES_INDEX]);
+        return DUMP_POLL_TIMEOUT;
+    } else if (timeout < 1000) { // 1000 : one thousand milliseconds
+        DFXLOGW("timeout less than 1 seconds, get kernel stack directly!");
+        AsyncGetAllTidKernelStack(pid);
+    }
     int ret = DoDumpRemotePoll(timeout, msg, pipeReadFd, isJson);
     // request close fds in faultloggerd
     RequestDelPipeFd(pid);
@@ -456,7 +469,7 @@ int DfxDumpCatcher::DoDumpRemotePoll(int timeout, std::string& msg, const int pi
     readfds[1].events = POLLIN;
     int fdsSize = sizeof(readfds) / sizeof(readfds[0]);
     bool bPipeConnect = false;
-    int remainTime = DUMPCATCHER_REMOTE_P90_TIMEOUT;
+    int remainTime = std::min(DUMPCATCHER_REMOTE_P90_TIMEOUT, timeout);
     bool collectAllTidStack = false;
     uint64_t startTime = GetAbsTimeMilliSeconds();
     uint64_t endTime = startTime + static_cast<uint64_t>(timeout);
