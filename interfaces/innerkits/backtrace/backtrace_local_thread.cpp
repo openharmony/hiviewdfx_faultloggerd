@@ -127,7 +127,7 @@ bool BacktraceLocalThread::UnwindOtherThreadMix(bool fast, size_t maxFrameNum, s
     }
 #ifdef __aarch64__
     if (ret && fast) {
-        Unwinder::GetFramesByPcs(frames_, unwinder_->GetPcs());
+        unwinder_->GetFramesByPcs(frames_, unwinder_->GetPcs());
     }
 #endif
     if (frames_.empty()) {

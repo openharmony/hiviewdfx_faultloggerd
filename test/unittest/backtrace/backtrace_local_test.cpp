@@ -497,7 +497,7 @@ HWTEST_F(BacktraceLocalTest, BacktraceLocalTest015, TestSize.Level2)
     GTEST_LOG_(INFO) << "BacktraceLocalTest015: end.";
 }
 
-std::vector<std::string> GetLastLineAddr(const std::string& inputStr, bool isGetFromTop, int keepLine, int colNumber)
+std::vector<std::string> GetLastLineAddr(const std::string& inputStr, int colNumber)
 {
     std::istringstream iss(inputStr);
     std::string line;
@@ -505,13 +505,8 @@ std::vector<std::string> GetLastLineAddr(const std::string& inputStr, bool isGet
     std::vector<std::string> results;
     // get lines
     while (std::getline(iss, line)) {
-        lines.push_back(line);
-        if (lines.size() > keepLine) {
-            if (isGetFromTop) { // 0 : cut from top to bottom
-                lines.pop_back();
-            } else {
-                lines.erase(lines.begin());
-            }
+        if (line.find("backtrace_local_test") != std::string::npos) {
+            lines.push_back(line);
         }
     }
     // get column
@@ -530,14 +525,14 @@ std::vector<std::string> GetLastLineAddr(const std::string& inputStr, bool isGet
     return results;
 }
 
-void Compare(const std::string& oldStr, const std::string& mixStr, bool isGetFromTop, int endLine, int colNumber)
+void Compare(const std::string& oldStr, const std::string& mixStr, int colNumber)
 {
-    std::vector<std::string> oldStrAddrs = GetLastLineAddr(oldStr, isGetFromTop, endLine, colNumber);
-    std::vector<std::string> mixStrAddrs = GetLastLineAddr(mixStr, isGetFromTop, endLine, colNumber);
+    std::vector<std::string> oldStrAddrs = GetLastLineAddr(oldStr, colNumber);
+    std::vector<std::string> mixStrAddrs = GetLastLineAddr(mixStr, colNumber);
     ASSERT_EQ(oldStrAddrs, mixStrAddrs);
 }
 
-void CallMixLast(int tid, bool fast, bool isGetFromTop, int keepLine, int colNumber)
+void CallMixLast(int tid, bool fast, int colNumber)
 {
     std::string oldStr;
     bool ret = GetBacktraceStringByTid(oldStr, tid, 0, fast);
@@ -547,10 +542,10 @@ void CallMixLast(int tid, bool fast, bool isGetFromTop, int keepLine, int colNum
     ASSERT_TRUE(ret) << "GetBacktraceStringByTidWithMix failed";
     GTEST_LOG_(INFO) << "oldStr:" << oldStr;
     GTEST_LOG_(INFO) << "mixStr:" << mixStr;
-    Compare(oldStr, mixStr, isGetFromTop, keepLine, colNumber);
+    Compare(oldStr, mixStr, colNumber);
 }
 
-void CallMixFirst(int tid, bool fast, bool isGetFromTop, int keepLine, int colNumber)
+void CallMixFirst(int tid, bool fast, int colNumber)
 {
     std::string mixStr;
     bool ret = GetBacktraceStringByTidWithMix(mixStr, tid, 0, fast);
@@ -560,7 +555,7 @@ void CallMixFirst(int tid, bool fast, bool isGetFromTop, int keepLine, int colNu
     ASSERT_TRUE(ret) << "GetBacktraceStringByTid failed";
     GTEST_LOG_(INFO) << "oldStr:" << oldStr;
     GTEST_LOG_(INFO) << "mixStr:" << mixStr;
-    Compare(oldStr, mixStr, isGetFromTop, keepLine, colNumber);
+    Compare(oldStr, mixStr, colNumber);
 }
 
 /**
@@ -576,17 +571,10 @@ HWTEST_F(BacktraceLocalTest, BacktraceLocalTest016, TestSize.Level2)
     if (g_tid <= 0) {
         FAIL() << "Failed to create child thread.\n";
     }
-#ifdef __aarch64__
-    CallMixLast(g_tid, false, false, 4, 3);
-    CallMixFirst(g_tid, false, false, 4, 3);
-    CallMixLast(g_tid, true, false, 4, 3);
-    CallMixFirst(g_tid, true, false, 4, 3);
-#else
-    CallMixLast(g_tid, false, true, 5, 3);
-    CallMixFirst(g_tid, false, true, 5, 3);
-    CallMixLast(g_tid, true, true, 5, 3);
-    CallMixFirst(g_tid, true, true, 5, 3);
-#endif
+    CallMixLast(g_tid, false, 3);
+    CallMixFirst(g_tid, false, 3);
+    CallMixLast(g_tid, true, 3);
+    CallMixFirst(g_tid, true, 3);
     g_mutex.unlock();
     g_tid = 0;
     if (backtraceTread.joinable()) {
