@@ -1070,8 +1070,8 @@ void Unwinder::Impl::UpdateRegsState(
 
 bool Unwinder::Impl::CheckFrameValid(const StepFrame& frame, const std::shared_ptr<DfxMap>& map, uintptr_t prevSp)
 {
-    DFXLOGU("-pc: %{public}p, sp: %{public}p, fp: %{public}p, prevSp: %{public}d", reinterpret_cast<void *>(frame.pc),
-        reinterpret_cast<void *>(frame.sp), reinterpret_cast<void *>(frame.fp), prevSp);
+    DFXLOGU("-pc: %{public}p, sp: %{public}p, fp: %{public}p, prevSp: %{public}p", reinterpret_cast<void *>(frame.pc),
+        reinterpret_cast<void *>(frame.sp), reinterpret_cast<void *>(frame.fp), reinterpret_cast<void *>(prevSp));
     if (!isFpStep_ && (map != nullptr) && (!map->IsVdsoMap()) && (frame.sp < prevSp)) {
         DFXLOGU("Illegal sp value");
         lastErrorData_.SetAddrAndCode(frame.pc, UNW_ERROR_ILLEGAL_VALUE);
