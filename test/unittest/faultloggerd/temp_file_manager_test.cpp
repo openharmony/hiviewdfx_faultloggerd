@@ -86,9 +86,10 @@ SmartFd TempFileManagerTest::CreateTestFile(const string& fileName, uint32_t fil
     if (fd < 0 || fileSize == 0) {
         return fd;
     }
-    char testContent[1024] = "";
+    constexpr int oneKb = 1024;
+    char testContent[oneKb] = "";
     for (uint32_t i = 0; i < fileSize; ++i) {
-        write(fd, testContent, 1024);
+        write(fd, testContent, oneKb);
     }
     return fd;
 }
