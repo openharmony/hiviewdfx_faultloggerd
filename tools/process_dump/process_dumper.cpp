@@ -328,6 +328,7 @@ void ProcessDumper::Dump()
         DFXLOGI("Finish GetStackInfo len %{public}" PRIuPTR "", jsonInfo.length());
         if (isJsonDump_) {
             WriteData(bufferFd_, jsonInfo, MAX_PIPE_SIZE);
+            CloseFd(bufferFd_);
         }
     }
 
@@ -336,9 +337,10 @@ void ProcessDumper::Dump()
 
     if (request->siginfo.si_signo == SIGDUMP) {
         WriteDumpRes(resDump_, request->pid);
+        CloseFd(resFd_);
     }
 
-    // print keythread base info to hilog when carsh
+    // print keythread base info to hilog
     DfxRingBufferWrapper::GetInstance().PrintBaseInfo();
     DfxRingBufferWrapper::GetInstance().StopThread();
     DFXLOGI("Finish dump stacktrace for %{public}s(%{public}d:%{public}d).",
@@ -847,11 +849,13 @@ int ProcessDumper::InitPrintThread(std::shared_ptr<ProcessDumpRequest> request)
         ReportCrashException(request->processName, request->pid, request->uid,
                              CrashExceptionCode::CRASH_DUMP_EWRITEFD);
     }
+    int result = bufferFd_;
     if (!isJsonDump_) {
         DfxRingBufferWrapper::GetInstance().SetWriteBufFd(bufferFd_);
+        bufferFd_ = INVALID_FD; // bufferFd_ set to INVALID_FD to prevent double close fd
     }
     DfxRingBufferWrapper::GetInstance().StartThread();
-    return bufferFd_;
+    return result;
 }
 
 int ProcessDumper::WriteDumpBuf(int fd, const char* buf, const int len)
@@ -873,7 +877,7 @@ void ProcessDumper::WriteDumpRes(int32_t res, pid_t pid)
             DFXLOGE("%{public}s request pipe failed, err:%{public}d", __func__, errno);
             return;
         }
-        bufferFd_ = pipeWriteFd[0];
+        CloseFd(pipeWriteFd[0]);
         resFd_ = pipeWriteFd[1];
     }
 
@@ -881,8 +885,6 @@ void ProcessDumper::WriteDumpRes(int32_t res, pid_t pid)
     if (nwrite < 0) {
         DFXLOGE("%{public}s write fail, err:%{public}d", __func__, errno);
     }
-    CloseFd(bufferFd_);
-    CloseFd(resFd_);
 }
 
 bool ProcessDumper::IsCrash() const
