@@ -96,7 +96,7 @@ bool PrintBacktrace(int32_t fd, bool fast, size_t maxFrameNums)
     DFXLOGI("Receive PrintBacktrace request.");
     std::vector<DfxFrame> frames;
     bool ret = GetBacktraceFramesByTid(frames,
-        BACKTRACE_CURRENT_THREAD, 1, fast, maxFrameNums); // 1: skip current frame
+        BACKTRACE_CURRENT_THREAD, 2, fast, maxFrameNums); // 2: skip current frame and PrintBacktrace frame
     if (!ret) {
         return false;
     }
@@ -114,8 +114,8 @@ bool PrintBacktrace(int32_t fd, bool fast, size_t maxFrameNums)
 bool GetBacktrace(std::string& out, bool fast, size_t maxFrameNums)
 {
     ElapsedTime et;
-    bool ret = GetBacktraceStringByTid(out, BACKTRACE_CURRENT_THREAD, 1,
-                                       fast, maxFrameNums, false); // 1: skip current frame
+    bool ret = GetBacktraceStringByTid(out, BACKTRACE_CURRENT_THREAD, 2,
+                                       fast, maxFrameNums, false); // 2: skip current frame and GetBacktrace frame
     DFXLOGI("GetBacktrace elapsed time: %{public}" PRId64 " ms", et.Elapsed<std::chrono::milliseconds>());
     return ret;
 }
