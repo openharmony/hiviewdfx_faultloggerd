@@ -440,25 +440,6 @@ HWTEST_F(DfxProcessDumpTest, DfxProcessDumpTest015, TestSize.Level2)
 }
 
 /**
- * @tc.name: DfxProcessDumpTest016
- * @tc.desc: Testing DfxLogToSocket Function
- * @tc.type: FUNC
- */
-HWTEST_F(DfxProcessDumpTest, DfxProcessDumpTest016, TestSize.Level2)
-{
-    GTEST_LOG_(INFO) << "DfxProcessDumpTest016: start.";
-    pid_t pid = fork();
-    ASSERT_TRUE(pid >= 0);
-    if (pid == 0) {
-        sleep(3); // 3 : sleep 3 seconds
-    }
-    char msg[] = "test log";
-    DfxLogToSocket(msg);
-    kill(pid, SIGSEGV);
-    GTEST_LOG_(INFO) << "DfxProcessDumpTest016: end.";
-}
-
-/**
  * @tc.name: DfxProcessDumpTest017
  * @tc.desc: Testing InitProcessInfo、InitKeyThread、InitRegs exception
  * @tc.type: FUNC

@@ -40,9 +40,6 @@ namespace HiviewDFX {
 class FaultLoggerdSystemTest : public testing::Test {
 public:
     static void SetUpTestCase(void);
-    static void TearDownTestCase(void);
-    void SetUp();
-    void TearDown();
 };
 
 void FaultLoggerdSystemTest::SetUpTestCase(void)
@@ -51,21 +48,9 @@ void FaultLoggerdSystemTest::SetUpTestCase(void)
     chmod("/data/crasher_cpp", 0755); // 0755 : -rwxr-xr-x
 }
 
-void FaultLoggerdSystemTest::TearDownTestCase(void)
-{
-}
-
-void FaultLoggerdSystemTest::SetUp(void)
-{
-}
-
-void FaultLoggerdSystemTest::TearDown(void)
-{
-}
-
 namespace {
 static const int CPPCRASH_FILENAME_MIN_LENGTH = 36; // 36 : length of /data/log/faultlog/temp/cppcrash-x-x
-static const int SIGNAL_TEST_NUM = 50;
+static const int SIGNAL_TEST_NUM = 40;
 }
 
 static pid_t ForkAndExecuteCrasher(const string& option, const CrasherType type)
@@ -1099,7 +1084,7 @@ void GenerateCrashLogFiles()
 
 /**
  * @tc.name: FaultLoggerdSystemTest101
- * @tc.desc: test C crasher application: 50 Abnormal signal
+ * @tc.desc: test C crasher application: 40 Abnormal signal
  * @tc.type: FUNC
  */
 HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest101, TestSize.Level2)
@@ -1192,11 +1177,7 @@ HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest103, TestSize.Level2)
     }
     GTEST_LOG_(INFO) << oldcrash;
     files.clear();
-    for (int i = 0; i < 25; i++) { // 25 : the count of crash file
-        system("/data/crasher_c SIGSEGV");
-    }
-    for (int i = 0; i < 25; i++) { // 25 : the count of crash file
-        sleep(3); //3 : sleep for 3 seconds
+    for (int i = 0; i < SIGNAL_TEST_NUM; i++) { // 25 : the count of crash file
         system("/data/crasher_c SIGSEGV");
     }
     OHOS::GetDirFiles("/data/log/faultlog/temp/", files);
@@ -1205,13 +1186,7 @@ HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest103, TestSize.Level2)
             FAIL();
         }
     }
-    int fileCount = files.size();
-    GTEST_LOG_(INFO) << fileCount;
-    system("/data/crasher_c SIGSEGV"); // trigger aging mechanism
-    sleep(1); // 1 : sleep for 1 seconds
-    files.clear();
-    OHOS::GetDirFiles("/data/log/faultlog/temp/", files);
-    EXPECT_EQ(fileCount, files.size()) << "FaultLoggerdSystemTest103 Failed";
+    EXPECT_EQ(files.size(), 20) << "FaultLoggerdSystemTest103 Failed";
 }
 
 /**

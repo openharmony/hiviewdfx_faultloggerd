@@ -15,11 +15,7 @@
 
 #include "faultloggerddumpcatcher_fuzzer.h"
 
-#include <cstddef>
-#include <cstdint>
 #include "dfx_dump_catcher.h"
-#include "faultloggerd_client.h"
-#include "fault_logger_daemon.h"
 #include "faultloggerd_fuzzertest_common.h"
 
 namespace OHOS {
@@ -45,7 +41,7 @@ void DumpStackTraceTest(const uint8_t* data, size_t size)
     data += FAULTLOGGER_FUZZTEST_MAX_STRING_LENGTH;
 
     std::shared_ptr<DfxDumpCatcher> catcher = std::make_shared<DfxDumpCatcher>();
-    catcher->DumpCatch(pid, tid, msg, DEFAULT_MAX_FRAME_NUM, false);
+    catcher->DumpCatch(pid, tid, msg);
 
     std::string processdumpCmd = "dumpcatcher -p " + std::to_string(pid) + " -t " + std::to_string(tid);
     system(processdumpCmd.c_str());

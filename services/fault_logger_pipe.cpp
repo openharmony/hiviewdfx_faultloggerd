@@ -36,10 +36,6 @@
 
 namespace OHOS {
 namespace HiviewDFX {
-namespace {
-const std::string FAULTLOGGER_PIPE_TAG = "FaultLoggerPipe";
-const int PIPE_TIMEOUT = 10000; // 10 seconds
-}
 
 FaultLoggerPipe::FaultLoggerPipe()
 {
@@ -116,90 +112,15 @@ void FaultLoggerPipe::Close(int fd) const
     }
 }
 
-FaultLoggerPipe2::FaultLoggerPipe2(uint64_t time, bool isJson)
+FaultLoggerPipePair::FaultLoggerPipePair(uint64_t time, bool isJson) : isJson_(isJson), time_(time) {}
+
+int FaultLoggerPipePair::GetPipFd(bool isWritePip, bool isResPip, bool isJson)
 {
-    if (isJson) {
-        faultLoggerJsonPipeBuf_ = std::unique_ptr<FaultLoggerPipe>(new FaultLoggerPipe());
-        faultLoggerJsonPipeRes_ = std::unique_ptr<FaultLoggerPipe>(new FaultLoggerPipe());
-    } else {
-        faultLoggerPipeBuf_ = std::unique_ptr<FaultLoggerPipe>(new FaultLoggerPipe());
-        faultLoggerPipeRes_ = std::unique_ptr<FaultLoggerPipe>(new FaultLoggerPipe());
+    if (isJson_ != isJson) {
+        return -1;
     }
-    time_ = time;
-}
-
-FaultLoggerPipe2::~FaultLoggerPipe2()
-{
-    faultLoggerPipeBuf_.reset();
-    faultLoggerPipeRes_.reset();
-    faultLoggerJsonPipeBuf_.reset();
-    faultLoggerJsonPipeRes_.reset();
-    time_ = 0;
-}
-
-FaultLoggerPipeMap::FaultLoggerPipeMap()
-{
-    std::lock_guard<std::mutex> lck(pipeMapsMutex_);
-    faultLoggerPipes_.clear();
-}
-
-FaultLoggerPipeMap::~FaultLoggerPipeMap()
-{
-    std::lock_guard<std::mutex> lck(pipeMapsMutex_);
-    std::map<int, std::unique_ptr<FaultLoggerPipe2> >::iterator iter = faultLoggerPipes_.begin();
-    while (iter != faultLoggerPipes_.end()) {
-        faultLoggerPipes_.erase(iter++);
-    }
-}
-
-void FaultLoggerPipeMap::Set(int pid, uint64_t time, bool isJson)
-{
-    std::lock_guard<std::mutex> lck(pipeMapsMutex_);
-    if (!Find(pid)) {
-        std::unique_ptr<FaultLoggerPipe2> ptr = std::unique_ptr<FaultLoggerPipe2>(new FaultLoggerPipe2(time, isJson));
-        faultLoggerPipes_.emplace(pid, std::move(ptr));
-    }
-}
-
-bool FaultLoggerPipeMap::Check(int pid, uint64_t time)
-{
-    std::lock_guard<std::mutex> lck(pipeMapsMutex_);
-    std::map<int, std::unique_ptr<FaultLoggerPipe2> >::const_iterator iter = faultLoggerPipes_.find(pid);
-    if (iter != faultLoggerPipes_.end()) {
-        if ((time > faultLoggerPipes_[pid]->time_) && (time - faultLoggerPipes_[pid]->time_) > PIPE_TIMEOUT) {
-            faultLoggerPipes_.erase(iter);
-            return false;
-        }
-        return true;
-    }
-    return false;
-}
-
-FaultLoggerPipe2* FaultLoggerPipeMap::Get(int pid)
-{
-    std::lock_guard<std::mutex> lck(pipeMapsMutex_);
-    if (!Find(pid)) {
-        return nullptr;
-    }
-    return faultLoggerPipes_[pid].get();
-}
-
-void FaultLoggerPipeMap::Del(int pid)
-{
-    std::lock_guard<std::mutex> lck(pipeMapsMutex_);
-    std::map<int, std::unique_ptr<FaultLoggerPipe2> >::const_iterator iter = faultLoggerPipes_.find(pid);
-    if (iter != faultLoggerPipes_.end()) {
-        faultLoggerPipes_.erase(iter);
-    }
-}
-
-bool FaultLoggerPipeMap::Find(int pid) const
-{
-    std::map<int, std::unique_ptr<FaultLoggerPipe2> >::const_iterator iter = faultLoggerPipes_.find(pid);
-    if (iter != faultLoggerPipes_.end()) {
-        return true;
-    }
-    return false;
+    FaultLoggerPipe& targetPip = isResPip ? faultLoggerPipeRes_ : faultLoggerPipeBuf_;
+    return isWritePip ? targetPip.GetWriteFd() : targetPip.GetReadFd();
 }
 } // namespace HiviewDfx
 } // namespace OHOS

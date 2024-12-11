@@ -48,15 +48,3 @@ int WriteLog(int32_t fd, const char *format, ...)
 
     return ret;
 }
-
-void DfxLogToSocket(const char *msg)
-{
-    size_t length = strlen(msg);
-    if (length >= LOG_BUF_LEN) {
-        return;
-    }
-    int ret = RequestPrintTHilog(msg, length);
-    if (ret < 0) {
-        DFXLOGE("DfxLogToSocket :: request print msg(%{public}s) failed, ret(%{public}d).", msg, ret);
-    }
-}

@@ -23,24 +23,11 @@ extern "C" {
 #endif
 
 /**
- * @brief Check connection status of client
- *
- * @return if available return true, otherwise return false
-*/
-bool CheckConnectStatus();
-/**
  * @brief request file descriptor
  * @param type type of resqust
  * @return if succeed return file descriptor, otherwise return -1
 */
 int32_t RequestFileDescriptor(int32_t type);
-
-/**
- * @brief request log file descriptor
- * @param request struct of request information
- * @return if succeed return file descriptor, otherwise return -1
-*/
-int32_t RequestLogFileDescriptor(struct FaultLoggerdRequest *request);
 
 /**
  * @brief request pipe file descriptor
@@ -62,43 +49,24 @@ int32_t RequestDelPipeFd(int32_t pid);
  * @param request struct of request information
  * @return if succeed return file descriptor, otherwise return -1
 */
-int RequestFileDescriptorEx(const struct FaultLoggerdRequest *request);
-
-/**
- * @brief request checking permission of process
- * @param pid process id
- * @return if pass return true , otherwise return false
-*/
-bool RequestCheckPermission(int32_t pid);
-/**
- * @brief request printing message to hilog
- * @param msg message
- * @param length length of message
- * @return if succeed return 0 , otherwise return -1
-*/
-int RequestPrintTHilog(const char *msg, int length);
+int RequestFileDescriptorEx(struct FaultLoggerdRequest *request);
 
 /**
  * @brief request dump stack about process
  * @param pid process id
  * @param tid thread id, if equal 0 means dump all the threads in a process.
+ * @param isJson whether the result formatted as json.
+ * @param timeout time out for the interface in milliseconds, default 10s.
  * @return if succeed return 0 , otherwise return -1
 */
-int RequestSdkDump(int32_t pid, int32_t tid, int timeout = 10000); // 10000 : dump timeout ms
-
-/**
- * @brief request dump stack about process
- * @param pid process id
- * @param tid thread id, if equal 0 means dump all the threads in a process.
- * @return if succeed return 0 , otherwise return -1
-*/
-int RequestSdkDumpJson(int32_t pid, int32_t tid, bool isJson, int timeout);
+int RequestSdkDumpJson(int32_t pid, int32_t tid, bool isJson = false, int timeout = 10000); // 10s
 
 /**
  * @brief report sdk dump result to faultloggerd for stats collection
  * @param request dump request result
+ * @return if succeed return 0 , otherwise return -1
 */
-int ReportDumpStats(const struct FaultLoggerdStatsRequest *request);
+int ReportDumpStats(struct FaultLoggerdStatsRequest *request);
 #ifdef __cplusplus
 }
 #endif
