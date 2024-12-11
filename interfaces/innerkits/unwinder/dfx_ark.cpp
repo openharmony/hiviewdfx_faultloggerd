@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2023-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -23,7 +23,6 @@
 
 #include "dfx_define.h"
 #include "dfx_log.h"
-#include "string_util.h"
 
 namespace OHOS {
 namespace HiviewDFX {
@@ -37,14 +36,12 @@ const char ARK_LIB_NAME[] = "libark_jsruntime.so";
 
 void* g_handle = nullptr;
 pthread_mutex_t g_mutex;
-int (*g_getArkNativeFrameInfoFn)(int, uintptr_t*, uintptr_t*, uintptr_t*, JsFrame*, size_t&);
 int (*g_stepArkFn)(void*, OHOS::HiviewDFX::ReadMemFunc, uintptr_t*, uintptr_t*, uintptr_t*, uintptr_t*, bool*);
 int (*g_stepArkWithJitFn)(OHOS::HiviewDFX::ArkUnwindParam*);
 int (*g_jitCodeWriteFileFn)(void*, OHOS::HiviewDFX::ReadMemFunc, int, const uintptr_t* const, const size_t);
 int (*g_parseArkFileInfoFn)(uintptr_t, uintptr_t, uintptr_t, const char*, uintptr_t, JsFunction*);
 int (*g_parseArkFrameInfoLocalFn)(uintptr_t, uintptr_t, uintptr_t, uintptr_t, JsFunction*);
 int (*g_parseArkFrameInfoFn)(uintptr_t, uintptr_t, uintptr_t, uintptr_t, uint8_t*, uint64_t, uintptr_t, JsFunction*);
-int (*g_translateArkFrameInfoFn)(uint8_t*, uint64_t, JsFunction*);
 int (*g_arkCreateJsSymbolExtractorFn)(uintptr_t*);
 int (*g_arkDestoryJsSymbolExtractorFn)(uintptr_t);
 int (*g_arkCreateLocalFn)();
@@ -198,21 +195,6 @@ int DfxArk::ParseArkFrameInfo(uintptr_t byteCodePc, uintptr_t methodid, uintptr_
     return -1;
 }
 
-int DfxArk::TranslateArkFrameInfo(uint8_t *data, uint64_t dataSize, JsFunction *jsFunction)
-{
-    if (g_translateArkFrameInfoFn != nullptr) {
-        return g_translateArkFrameInfoFn(data, dataSize, jsFunction);
-    }
-
-    const char* arkFuncName = "ark_translate_js_frame_info";
-    DLSYM_ARK_FUNC(arkFuncName, g_translateArkFrameInfoFn)
-
-    if (g_translateArkFrameInfoFn != nullptr) {
-        return g_translateArkFrameInfoFn(data, dataSize, jsFunction);
-    }
-    return -1;
-}
-
 int DfxArk::StepArkFrame(void *obj, OHOS::HiviewDFX::ReadMemFunc readMemFn,
     uintptr_t *fp, uintptr_t *sp, uintptr_t *pc, uintptr_t* methodid, bool *isJsFrame)
 {
@@ -229,17 +211,17 @@ int DfxArk::StepArkFrame(void *obj, OHOS::HiviewDFX::ReadMemFunc readMemFn,
     return -1;
 }
 
-int DfxArk::StepArkFrameWithJit(OHOS::HiviewDFX::ArkUnwindParam* arkPrama)
+int DfxArk::StepArkFrameWithJit(OHOS::HiviewDFX::ArkUnwindParam* arkParam)
 {
     if (g_stepArkWithJitFn != nullptr) {
-        return g_stepArkWithJitFn(arkPrama);
+        return g_stepArkWithJitFn(arkParam);
     }
 
     const char* const arkFuncName = "step_ark_with_record_jit";
     DLSYM_ARK_FUNC(arkFuncName, g_stepArkWithJitFn)
 
     if (g_stepArkWithJitFn != nullptr) {
-        return g_stepArkWithJitFn(arkPrama);
+        return g_stepArkWithJitFn(arkParam);
     }
     return -1;
 }
@@ -256,21 +238,6 @@ int DfxArk::JitCodeWriteFile(void* ctx, OHOS::HiviewDFX::ReadMemFunc readMemFn, 
 
     if (g_jitCodeWriteFileFn != nullptr) {
         return g_jitCodeWriteFileFn(ctx, readMemFn, fd, jitCodeArray, jitSize);
-    }
-    return -1;
-}
-
-int DfxArk::GetArkNativeFrameInfo(int pid, uintptr_t& pc, uintptr_t& fp, uintptr_t& sp, JsFrame* frames, size_t& size)
-{
-    if (g_getArkNativeFrameInfoFn != nullptr) {
-        return g_getArkNativeFrameInfoFn(pid, &pc, &fp, &sp, frames, size);
-    }
-
-    const char* arkFuncName = "get_ark_native_frame_info";
-    DLSYM_ARK_FUNC(arkFuncName, g_getArkNativeFrameInfoFn)
-
-    if (g_getArkNativeFrameInfoFn != nullptr) {
-        return g_getArkNativeFrameInfoFn(pid, &pc, &fp, &sp, frames, size);
     }
     return -1;
 }

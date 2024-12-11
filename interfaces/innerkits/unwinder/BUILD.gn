@@ -146,14 +146,6 @@ if (defined(ohos_lite)) {
   config("mixstack_config") {
     if (target_cpu == "arm64") {
       defines = [ "ENABLE_MIXSTACK" ]
-      defines += [ "ONLINE_MIXSTACK" ]
-    }
-  }
-
-  config("offline_mixstack_config") {
-    if (target_cpu == "arm64") {
-      defines = [ "ENABLE_MIXSTACK" ]
-      defines += [ "OFFLINE_MIXSTACK" ]
     }
   }
 
@@ -168,7 +160,7 @@ if (defined(ohos_lite)) {
     public_configs = [
       ":dfx_unwinder_config",
       ":lzma_config",
-      ":offline_mixstack_config",
+      ":mixstack_config",
       "$faultloggerd_common_path/build:coverage_flags",
     ]
     defines = [
@@ -219,7 +211,7 @@ if (defined(ohos_lite)) {
     public_configs = [
       ":dfx_unwinder_config",
       ":lzma_config",
-      ":offline_mixstack_config",
+      ":mixstack_config",
     ]
 
     if (target_cpu != "x86_64") {
@@ -252,7 +244,7 @@ if (defined(ohos_lite)) {
     public_configs = [
       ":dfx_unwinder_config",
       ":lzma_config",
-      ":offline_mixstack_config",
+      ":mixstack_config",
     ]
     defines = [ "DFX_LOG_HILOG_BASE" ]
 

@@ -17,13 +17,8 @@
 #define DFX_ARK_H
 
 #include <cstdint>
-#include <mutex>
 #include <securec.h>
 #include <string>
-
-#include "dfx_frame.h"
-#include "dfx_map.h"
-#include "dfx_memory.h"
 
 namespace panda {
 namespace ecmascript {
@@ -84,31 +79,113 @@ using ArkUnwindParam = panda::ecmascript::ArkUnwindParam;
 
 class DfxArk {
 public:
-    static int GetArkNativeFrameInfo(int pid, uintptr_t& pc, uintptr_t& fp, uintptr_t& sp,
-                                     JsFrame* frames, size_t& size);
-
+    /**
+     * @brief step ark frame
+     *
+     * @param obj memory pointer object
+     * @param readMemFn read memory function
+     * @param fp fp register
+     * @param sp sp register
+     * @param pc pc register
+     * @param methodid methodid variable
+     * @param isJsFrame isJsFrame variable
+     * @return if succeed return 1, otherwise return -1
+    */
     static int StepArkFrame(void *obj, OHOS::HiviewDFX::ReadMemFunc readMemFn,
         uintptr_t *fp, uintptr_t *sp, uintptr_t *pc, uintptr_t* methodid, bool *isJsFrame);
 
-    static int StepArkFrameWithJit(OHOS::HiviewDFX::ArkUnwindParam* arkPrama);
+    /**
+     * @brief step ark frame with jit
+     *
+     * @param arkPrama ark param
+     * @return if succeed return 1, otherwise return -1
+    */
+    static int StepArkFrameWithJit(OHOS::HiviewDFX::ArkUnwindParam* arkParam);
 
+    /**
+     * @brief jit code write file
+     *
+     * @param ctx memory pointer object
+     * @param readMemFn read memory function
+     * @param fd file descriptor
+     * @param jitCodeArray jit code array
+     * @param jitSize jit size
+     * @return if succeed return 1, otherwise return -1
+    */
     static int JitCodeWriteFile(void* ctx, OHOS::HiviewDFX::ReadMemFunc readMemFn, int fd,
         const uintptr_t* const jitCodeArray, const size_t jitSize);
 
+    /**
+     * @brief parse ark file info
+     *
+     * @param byteCodePc byteCode Pc
+     * @param methodid method id
+     * @param mapBase map base address
+     * @param name map name
+     * @param extractorPtr extractorPtr from ArkCreateJsSymbolExtractor
+     * @param jsFunction jsFunction variable
+     * @return if succeed return 1, otherwise return -1
+    */
     static int ParseArkFileInfo(uintptr_t byteCodePc, uintptr_t methodid, uintptr_t mapBase, const char* name,
         uintptr_t extractorPtr, JsFunction *jsFunction);
-    static int ParseArkFrameInfoLocal(uintptr_t byteCodePc, uintptr_t methodid, uintptr_t mapBase, uintptr_t loadOffset,
-        JsFunction *jsFunction);
+
+    /**
+     * @brief parse ark file info by local
+     *
+     * @param byteCodePc byteCode Pc
+     * @param methodid method id
+     * @param mapBase map base address
+     * @param loadOffset map offset
+     * @param jsFunction jsFunction variable
+     * @return if succeed return 1, otherwise return -1
+    */
+    static int ParseArkFrameInfoLocal(uintptr_t byteCodePc, uintptr_t methodid,
+        uintptr_t mapBase, uintptr_t loadOffset, JsFunction *jsFunction);
+
+    /**
+     * @brief Parse Ark Frame Info, for hiperf/hiProfile
+     *
+     * @param byteCodePc byteCode Pc
+     * @param methodid method id
+     * @param mapBase map base address
+     * @param loadOffset map offset
+     * @param data abc data
+     * @param dataSize abc data size
+     * @param extractorPtr extractorPtr from ArkCreateJsSymbolExtractor
+     * @param jsFunction jsFunction variable
+     * @return if succeed return 1, otherwise return -1
+    */
     static int ParseArkFrameInfo(uintptr_t byteCodePc, uintptr_t mapBase, uintptr_t loadOffset,
         uint8_t *data, uint64_t dataSize, uintptr_t extractorPtr, JsFunction *jsFunction);
     static int ParseArkFrameInfo(uintptr_t byteCodePc, uintptr_t methodid, uintptr_t mapBase, uintptr_t loadOffset,
         uint8_t *data, uint64_t dataSize, uintptr_t extractorPtr, JsFunction *jsFunction);
-    static int TranslateArkFrameInfo(uint8_t *data, uint64_t dataSize, JsFunction *jsFunction);
 
+    /**
+     * @brief create ark js symbol extracrot
+     *
+     * @param extractorPtr extractorPtr variable
+     * @return if succeed return 1, otherwise return -1
+    */
     static int ArkCreateJsSymbolExtractor(uintptr_t* extractorPtr);
+    /**
+     * @brief destory ark js symbol extracrot
+     *
+     * @param extractorPtr extractorPtr from ArkCreateJsSymbolExtractor
+     * @return if succeed return 1, otherwise return -1
+    */
     static int ArkDestoryJsSymbolExtractor(uintptr_t extractorPtr);
 
+    /**
+     * @brief create ark object by local
+     *
+     * @return if succeed return 1, otherwise return -1
+    */
     static int ArkCreateLocal();
+    /**
+     * @brief destory ark object by local
+     *
+     * @return if succeed return 1, otherwise return -1
+    */
     static int ArkDestroyLocal();
 };
 } // namespace HiviewDFX

@@ -37,28 +37,6 @@ void TestDfxConfig()
     DfxConfig::GetConfig();
 }
 
-void TestGetArkNativeFrameInfo(const uint8_t* data, size_t size)
-{
-    int pid;
-    uintptr_t pc;
-    uintptr_t fp;
-    uintptr_t sp;
-    int offsetTotalLength = sizeof(pid) + sizeof(pc) + sizeof(fp) + sizeof(sp);
-    if (offsetTotalLength > size) {
-        return;
-    }
-
-    STREAM_TO_VALUEINFO(data, pid);
-    STREAM_TO_VALUEINFO(data, pc);
-    STREAM_TO_VALUEINFO(data, fp);
-    STREAM_TO_VALUEINFO(data, sp);
-
-    const size_t jSFRAME_MAX = 64;
-    JsFrame jsFrames[jSFRAME_MAX];
-
-    DfxArk::GetArkNativeFrameInfo(pid, pc, fp, sp, jsFrames, size);
-}
-
 void TestStepArkFrame(const uint8_t* data, size_t size)
 {
     uintptr_t pc;
@@ -168,7 +146,6 @@ void TestArkDestoryJsSymbolExtractor(const uint8_t* data, size_t size)
 
 void TestDfxArk(const uint8_t* data, size_t size)
 {
-    TestGetArkNativeFrameInfo(data, size);
     TestStepArkFrame(data, size);
     TestStepArkFrameWithJit(data, size);
     TestJitCodeWriteFile(data, size);

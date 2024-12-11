@@ -110,7 +110,7 @@ public:
     {
         DfxEnableTraceDlsym(false);
         Destroy();
-#if defined(OFFLINE_MIXSTACK)
+#if defined(ENABLE_MIXSTACK)
         if (isArkCreateLocal_) {
             if (DfxArk::ArkDestroyLocal() < 0) {
                 DFXLOGU("Failed to ark destroy local.");
@@ -691,37 +691,7 @@ bool Unwinder::Impl::StepArkJsFrame(StepFrame& frame)
             reinterpret_cast<void *>(frame.pc),
             reinterpret_cast<void *>(frame.fp), reinterpret_cast<void *>(frame.sp), frame.isJsFrame);
     }
-#if defined(ONLINE_MIXSTACK)
-    const size_t JSFRAME_MAX = 64;
-    JsFrame jsFrames[JSFRAME_MAX];
-    size_t size = JSFRAME_MAX;
-    if (memset_s(jsFrames, sizeof(JsFrame) * JSFRAME_MAX, 0, sizeof(JsFrame) * JSFRAME_MAX) != 0) {
-        DFXLOGE("Failed to memset_s jsFrames.");
-        return false;
-    }
-    int32_t pid = pid_;
-    if (pid_ == UNWIND_TYPE_LOCAL) {
-        pid = getpid();
-    }
-    if (DfxArk::GetArkNativeFrameInfo(pid, frame.pc, frame.fp, frame.sp, jsFrames, size) < 0) {
-        DFXLOGE("Failed to get ark frame info");
-        return false;
-    }
 
-    if (!ignoreMixstack_) {
-        DFXLOGI("---ark js frame size: %{public}zu.", size);
-        for (size_t i = 0; i < size; ++i) {
-            DfxFrame dfxFrame;
-            dfxFrame.isJsFrame = true;
-            dfxFrame.index = frames_.size();
-            dfxFrame.mapName = std::string(jsFrames[i].url);
-            dfxFrame.funcName = std::string(jsFrames[i].functionName);
-            dfxFrame.line = jsFrames[i].line;
-            dfxFrame.column = jsFrames[i].column;
-            AddFrame(dfxFrame);
-        }
-    }
-#else
     int ret = -1;
     uintptr_t *methodId = (pid_ > 0 || enableMethodIdLocal_) ? (&frame.methodid) : nullptr;
     if (isJitCrash_) {
@@ -739,7 +709,6 @@ bool Unwinder::Impl::StepArkJsFrame(StepFrame& frame)
     if (pid_ > 0) {
         DFXLOGI("---ark js frame methodid: %{public}" PRIx64 "", (uint64_t)frame.methodid);
     }
-#endif
     if (pid_ != UNWIND_TYPE_CUSTOMIZE) {
         DFXLOGD("---ark pc: %{public}p, fp: %{public}p, sp: %{public}p, isJsFrame: %{public}d.",
             reinterpret_cast<void *>(frame.pc),
@@ -968,9 +937,7 @@ bool Unwinder::Impl::StepInner(const bool isSigFrame, StepFrame& frame, void *ct
             regs_->SetPc(StripPac(frame.pc, pacMask_));
             regs_->SetSp(frame.sp);
             regs_->SetFp(frame.fp);
-#if defined(OFFLINE_MIXSTACK)
             return true;
-#endif
         }
 #endif
         if (isFpStep_) {
@@ -1165,7 +1132,7 @@ const std::vector<DfxFrame>& Unwinder::Impl::GetFrames()
 
 void Unwinder::Impl::AddFrame(const StepFrame& frame, std::shared_ptr<DfxMap> map)
 {
-#if defined(OFFLINE_MIXSTACK)
+#if defined(ENABLE_MIXSTACK)
     if (ignoreMixstack_ && frame.isJsFrame) {
         return;
     }
@@ -1176,11 +1143,9 @@ void Unwinder::Impl::AddFrame(const StepFrame& frame, std::shared_ptr<DfxMap> ma
     dfxFrame.index = frames_.size();
     dfxFrame.pc = static_cast<uint64_t>(frame.pc);
     dfxFrame.sp = static_cast<uint64_t>(frame.sp);
-#if defined(OFFLINE_MIXSTACK)
     if (frame.isJsFrame) {
         dfxFrame.funcOffset = static_cast<uint64_t>(frame.methodid);
     }
-#endif
     dfxFrame.map = map;
     frames_.emplace_back(dfxFrame);
 }
@@ -1216,7 +1181,7 @@ void Unwinder::Impl::FillFrames(std::vector<DfxFrame>& frames)
     for (size_t i = 0; i < frames.size(); ++i) {
         auto& frame = frames[i];
         if (frame.isJsFrame) {
-#if defined(OFFLINE_MIXSTACK)
+#if defined(ENABLE_MIXSTACK)
             FillJsFrame(frame);
 #endif
         } else {
@@ -1240,7 +1205,7 @@ void Unwinder::Impl::FillFrame(DfxFrame& frame)
     DFXLOGU("mapName: %{public}s, mapOffset: %{public}" PRIx64 "", frame.mapName.c_str(), frame.mapOffset);
     auto elf = frame.map->GetElf();
     if (elf == nullptr) {
-#if defined(OFFLINE_MIXSTACK)
+#if defined(ENABLE_MIXSTACK)
         if (pid_ == UNWIND_TYPE_LOCAL || pid_ == UNWIND_TYPE_CUSTOMIZE_LOCAL) {
             FillJsFrame(frame);
         }

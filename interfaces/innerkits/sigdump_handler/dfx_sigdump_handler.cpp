@@ -19,6 +19,7 @@
 #include <csignal>
 #include <ctime>
 #include <mutex>
+#include <securec.h>
 #include <sigchain.h>
 #include <sys/syscall.h>
 #include <thread>
