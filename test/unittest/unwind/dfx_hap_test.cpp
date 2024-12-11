@@ -18,6 +18,7 @@
 #define private public
 #include "dfx_hap.h"
 #undef private
+#include "dfx_map.h"
 
 using namespace OHOS::HiviewDFX;
 using namespace testing::ext;

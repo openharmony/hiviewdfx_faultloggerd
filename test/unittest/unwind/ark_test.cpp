@@ -32,7 +32,6 @@ const char ARK_LIB_NAME[] = "libark_jsruntime.so";
 
 void* g_handle = nullptr;
 pthread_mutex_t g_mutex;
-int (*g_getArkNativeFrameInfoFn)(int, uintptr_t*, uintptr_t*, uintptr_t*, JsFrame*, size_t&);
 int (*g_stepArkFn)(void*, OHOS::HiviewDFX::ReadMemFunc, uintptr_t*, uintptr_t*, uintptr_t*, uintptr_t*, bool*);
 int (*g_stepArkWithJitFn)(OHOS::HiviewDFX::ArkUnwindParam*);
 int (*g_jitCodeWriteFileFn)(void*, OHOS::HiviewDFX::ReadMemFunc, int, const uintptr_t* const, const size_t);
@@ -288,35 +287,12 @@ HWTEST_F(ArkTest, ArkTest008, TestSize.Level2)
 
 /**
  * @tc.name: ArkTest009
- * @tc.desc: test GetArkNativeFrameInfo functions
+ * @tc.desc: test rustc_demangle functions
  * @tc.type: FUNC
  */
 HWTEST_F(ArkTest, ArkTest009, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "ArkTest009: start.";
-    int pid = 0;
-    uintptr_t zero = 0;
-    uintptr_t& pc = zero;
-    uintptr_t& fp = zero;
-    uintptr_t& sp = zero;
-    JsFrame* frames = nullptr;
-    size_t& size = zero;
-    const char* arkFuncName = "get_ark_native_frame_info";
-    DLSYM_ARK_FUNC(arkFuncName, g_getArkNativeFrameInfoFn)
-    ASSERT_NE(g_getArkNativeFrameInfoFn, nullptr);
-    g_getArkNativeFrameInfoFn(pid, &pc, &fp, &sp, frames, size);
-    g_getArkNativeFrameInfoFn = nullptr;
-    GTEST_LOG_(INFO) << "ArkTest009: end.";
-}
-
-/**
- * @tc.name: ArkTest010
- * @tc.desc: test rustc_demangle functions
- * @tc.type: FUNC
- */
-HWTEST_F(ArkTest, ArkTest010, TestSize.Level2)
-{
-    GTEST_LOG_(INFO) << "ArkTest010: start.";
     void* handle = dlopen("librustc_demangle.z.so", RTLD_LAZY | RTLD_NODELETE);
     ASSERT_TRUE(handle) << "Failed to dlopen librustc_demangle";
     g_rustDemangleFn = (RustDemangleFn)dlsym(handle, "rustc_demangle");
@@ -325,7 +301,7 @@ HWTEST_F(ArkTest, ArkTest010, TestSize.Level2)
     const char *bufStr = reason.c_str();
     g_rustDemangleFn(bufStr);
     g_rustDemangleFn = nullptr;
-    GTEST_LOG_(INFO) << "ArkTest010: end.";
+    GTEST_LOG_(INFO) << "ArkTest009: end.";
 }
 }
 }
