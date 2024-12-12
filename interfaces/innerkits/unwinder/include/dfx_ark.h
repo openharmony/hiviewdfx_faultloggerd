@@ -19,6 +19,7 @@
 #include <cstdint>
 #include <securec.h>
 #include <string>
+#include <vector>
 
 namespace panda {
 namespace ecmascript {

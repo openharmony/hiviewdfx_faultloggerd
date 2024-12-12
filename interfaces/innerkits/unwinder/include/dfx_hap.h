@@ -17,6 +17,7 @@
 
 #include <cstdint>
 #include <memory>
+#include <unistd.h>
 #include "dfx_ark.h"
 #include "dfx_extractor_utils.h"
 
