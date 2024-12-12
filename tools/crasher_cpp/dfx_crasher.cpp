@@ -583,7 +583,7 @@ NOINLINE int DfxCrasher::AsyncStacktrace()
     pthread_create(&thread, NULL, CrashInSubThread, (void*)&stackId);
     void *result = nullptr;
     pthread_join(thread, &result);
-    return (uint64_t)(result);
+    return reinterpret_cast<uint64_t>(result);
 #else
     printf("Unsupported arch.\n");
     return 0;
@@ -720,7 +720,7 @@ uint64_t DfxCrasher::DoActionOnSubThread(const char *arg) const
     pthread_create(&t, nullptr, DfxCrasher::DoCrashInThread, const_cast<char*>(arg));
     void *result = nullptr;
     pthread_join(t, &result);
-    return (uint64_t)(result);
+    return reinterpret_cast<uint64_t>(result);
 }
 
 int DfxCrasher::Loop()
