@@ -1077,7 +1077,7 @@ bool Unwinder::Impl::Apply(std::shared_ptr<DfxRegs> regs, std::shared_ptr<RegLoc
     }
     if (!ret) {
         lastErrorData_.SetCode(errCode);
-        DFXLOGE("Failed to apply reg state, errCode: %{public}d", static_cast<int>(errCode));
+        DFXLOGU("Failed to apply reg state, errCode: %{public}d", static_cast<int>(errCode));
     }
     return ret;
 }
