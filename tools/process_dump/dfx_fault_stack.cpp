@@ -98,9 +98,9 @@ bool FaultStack::CollectStackInfo(const std::vector<DfxFrame>& frames, bool need
 
     auto firstFrame = frames.at(0);
     prevSp = static_cast<uintptr_t>(firstFrame.sp);
-    constexpr size_t MAX_FAULT_STACK_SZ = 4;
+    constexpr size_t maxFaultStackSz = 4;
     for (index = 1; index < frames.size(); index++) {
-        if (index > MAX_FAULT_STACK_SZ) {
+        if (index > maxFaultStackSz) {
             break;
         }
 
@@ -118,7 +118,7 @@ bool FaultStack::CollectStackInfo(const std::vector<DfxFrame>& frames, bool need
         prevSp = curSp;
     }
 
-    if ((blocks_.size() < MAX_FAULT_STACK_SZ) && (prevSp > minAddr)) {
+    if ((blocks_.size() < maxFaultStackSz) && (prevSp > minAddr)) {
         size = highAddrLength;
         prevEndAddr = AdjustAndCreateMemoryBlock(index, prevSp, prevEndAddr, size);
     }

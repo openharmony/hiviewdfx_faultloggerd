@@ -41,7 +41,7 @@ namespace {
 
 std::mutex g_localMutex;
 std::map<int32_t, std::shared_ptr<ThreadContext>> g_contextMap {};
-const std::chrono::seconds g_timeOut = std::chrono::seconds(1);
+constexpr std::chrono::seconds TIME_OUT = std::chrono::seconds(1);
 
 void CreateContext(std::shared_ptr<ThreadContext>& threadContext)
 {
@@ -174,7 +174,7 @@ std::shared_ptr<ThreadContext> LocalThreadContext::CollectThreadContext(int32_t 
     if (!SignalRequestThread(tid, threadContext.get())) {
         return nullptr;
     }
-    if (threadContext->cv.wait_for(lock, g_timeOut) == std::cv_status::timeout) {
+    if (threadContext->cv.wait_for(lock, TIME_OUT) == std::cv_status::timeout) {
         DFXLOGE("wait_for timeout. tid = %{public}d", tid);
         return nullptr;
     }
@@ -219,7 +219,7 @@ NO_SANITIZE void LocalThreadContext::CopyContextAndWaitTimeout(int sig, siginfo_
 
     ctxPtr->tid = static_cast<int32_t>(ThreadContextStatus::CONTEXT_READY);
     ctxPtr->cv.notify_all();
-    ctxPtr->cv.wait_for(lock, g_timeOut);
+    ctxPtr->cv.wait_for(lock, TIME_OUT);
     ctxPtr->tid = static_cast<int32_t>(ThreadContextStatus::CONTEXT_UNUSED);
 #endif
 }

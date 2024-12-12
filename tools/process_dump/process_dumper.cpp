@@ -929,9 +929,9 @@ void ProcessDumper::ReportAddrSanitizer(ProcessDumpRequest &request, std::string
     std::string fingerPrint = request.processName;
     std::string reason = "DEBUG SIGNAL";
     if (process_ != nullptr && process_->keyThread_ != nullptr) {
-        constexpr size_t MAX_FRAME_CNT = 3;
+        constexpr size_t maxFrameCnt = 3;
         auto& frames = process_->keyThread_->GetFrames();
-        for (size_t index = 0, cnt = 0; cnt < MAX_FRAME_CNT && index < frames.size(); index++) {
+        for (size_t index = 0, cnt = 0; cnt < maxFrameCnt && index < frames.size(); index++) {
             if (frames[index].mapName.find("ld-musl-", 0) != std::string::npos) {
                 continue;
             }
