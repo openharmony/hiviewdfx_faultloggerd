@@ -140,7 +140,7 @@ bool DfxMaps::Parse(const pid_t pid, const std::string& path)
         return false;
     }
     size_t mapsSize = GetMapsSize();
-    LOGI("parse maps(%s) completed, map size: (%zu), count: (%d)", path.c_str(), mapsSize, fgetCount);
+    LOGU("parse maps(%s) completed, map size: (%zu), count: (%d)", path.c_str(), mapsSize, fgetCount);
     return mapsSize > 0;
 }
 

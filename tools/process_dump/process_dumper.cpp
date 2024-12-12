@@ -723,7 +723,7 @@ int32_t ProcessDumper::CreateFileForCrash(int32_t pid, uint64_t time) const
 {
     const std::string logFilePath = "/log/crash";
     const std::string logFileType = "cppcrash";
-    const int32_t logcrashFileProp = 0644; // 0644:-rw-r--r--
+    const int32_t logcrashFileProp = 0644; // 0640:-rw-r--r--
     if (access(logFilePath.c_str(), F_OK) != 0) {
         DFXLOG_ERROR("%s is not exist.", logFilePath.c_str());
         return INVALID_FD;
@@ -759,7 +759,7 @@ void ProcessDumper::RemoveFileIfNeed()
         return lhs.substr(lhsSplitPos).compare(rhs.substr(rhsSplitPos)) < 0;
     });
 
-    int deleteNum = files.size() - (MAX_FILE_COUNT - 1);
+    int deleteNum = static_cast<int>(files.size()) - (MAX_FILE_COUNT - 1);
     for (int index = 0; index < deleteNum; index++) {
         DFXLOG_INFO("Now we delete file(%s) due to exceed file max count.", files[index].c_str());
         OHOS::RemoveFile(files[index]);
