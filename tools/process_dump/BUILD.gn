@@ -102,7 +102,6 @@ if (defined(ohos_lite)) {
       "$faultloggerd_interfaces_path/innerkits/procinfo:libdfx_procinfo",
       "$faultloggerd_interfaces_path/innerkits/unwinder:libunwinder",
       "//base/hiviewdfx/hilog_lite/frameworks/featured:hilog_shared",
-      "//third_party/libunwind:libunwind",
     ]
   }
 } else {
