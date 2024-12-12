@@ -18,6 +18,7 @@
 #include <unistd.h>
 #include "dfx_log.h"
 #include "dfx_dump_request.h"
+#include "fault_kernel_snapshot.h"
 #include "fault_logger_daemon.h"
 #include "temp_file_manager.h"
 
@@ -43,6 +44,8 @@ int main(int argc, char *argv[])
     DFX_GetCrashFdFunc(DoGetCrashFd);
     DFX_InstallLocalSignalHandler();
 #endif
+    OHOS::HiviewDFX::FaultKernelSnapshot snapshot;
+    snapshot.StartMonitor();
     auto& faultLoggerDaemon = OHOS::HiviewDFX::FaultLoggerDaemon::GetInstance();
     faultLoggerDaemon.StartServer();
     return 0;
