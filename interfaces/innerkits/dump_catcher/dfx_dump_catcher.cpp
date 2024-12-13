@@ -77,6 +77,22 @@ enum DfxDumpStatRes : int32_t {
 };
 }
 
+static bool IsLinuxKernel()
+{
+    static bool isLinux = [] {
+        std::string content;
+        LoadStringFromFile("/proc/version", content);
+        if (content.empty()) {
+            return true;
+        }
+        if (content.find("Linux") != std::string::npos) {
+            return true;
+        }
+        return false;
+    }();
+    return isLinux;
+}
+
 bool DfxDumpCatcher::DoDumpCurrTid(const size_t skipFrameNum, std::string& msg, size_t maxFrameNums)
 {
     bool ret = false;
@@ -242,11 +258,13 @@ bool DfxDumpCatcher::DumpCatch(int pid, int tid, std::string& msg, size_t maxFra
         DFXLOG_ERROR("%s :: dump_catch :: param error.", DFXDUMPCATCHER_TAG.c_str());
         return ret;
     }
-    std::string statusPath = StringPrintf("/proc/%d/status", pid);
-    if (access(statusPath.c_str(), F_OK) != 0 && errno != EACCES) {
-        DFXLOG_ERROR("DumpCatch:: the pid(%d) process has exited, errno(%d)", pid, errno);
-        msg.append("Result: pid(" + std::to_string(pid) + ") process has exited.\n");
-        return ret;
+    if (!IsLinuxKernel()) {
+        std::string statusPath = StringPrintf("/proc/%d/status", pid);
+        if (access(statusPath.c_str(), F_OK) != 0 && errno != EACCES) {
+            DFXLOG_ERROR("DumpCatch:: the pid(%d) process has exited, errno(%d)", pid, errno);
+            msg.append("Result: pid(" + std::to_string(pid) + ") process has exited.\n");
+            return ret;
+        }
     }
     DfxEnableTraceDlsym(true);
     ElapsedTime counter;
