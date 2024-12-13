@@ -109,10 +109,13 @@ struct ProcessDumpRequest {
     intptr_t vmProcRealPid;
     /** whether block source process pid */
     intptr_t isBlockCrash;
+    /** whether processdump unwind crash success */
+    intptr_t isUnwindSuccess;
     uintptr_t crashObj;
 };
 
 static const int CRASH_BLOCK_EXIT_FLAG  = 0x13579BDF;
+static const int CRASH_UNWIND_SUCCESS_FLAG = 0x2468ACEF;
 #ifdef __cplusplus
 }
 #endif
