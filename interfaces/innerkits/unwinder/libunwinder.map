@@ -51,6 +51,7 @@
       OHOS::HiviewDFX::DfxElf::GetBaseOffset*;
       OHOS::HiviewDFX::DfxElf::Read*;
       OHOS::HiviewDFX::DfxElf::GetPtLoads*;
+      OHOS::HiviewDFX::DfxElf::GetMmapSize*;
       OHOS::HiviewDFX::DfxMap::ToString*;
       OHOS::HiviewDFX::DfxMap::GetElf*;
       OHOS::HiviewDFX::DfxMap::Create*;
