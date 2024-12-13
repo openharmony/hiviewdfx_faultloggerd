@@ -398,9 +398,12 @@ static bool DFX_SigchainHandler(int sig, siginfo_t *si, void *context)
 {
     int pid = syscall(SYS_getpid);
     int tid = syscall(SYS_gettid);
+    if (si == NULL) {
+        return IsDumpSignal(sig);
+    }
 
     DFXLOGI("DFX_SigchainHandler :: sig(%{public}d), si_code(%{public}d), pid(%{public}d), tid(%{public}d).",
-            sig, si != NULL ? si->si_code : 0, pid, tid);
+            sig, si->si_code, pid, tid);
     bool ret = false;
     if (sig == SIGDUMP) {
         if (si->si_code != DUMP_TYPE_REMOTE && si->si_code != DUMP_TYPE_REMOTE_JSON) {
