@@ -46,7 +46,7 @@ static bool ReadStringFromFile(const char* path, char* dst, size_t dstSz)
 
     ssize_t nRead = OHOS_TEMP_FAILURE_RETRY(read(fd, name, NAME_BUF_LEN - 1));
     if (nRead <= 0) {
-        close(fd);
+        syscall(SYS_close, fd);
         return false;
     }
 
@@ -62,11 +62,11 @@ static bool ReadStringFromFile(const char* path, char* dst, size_t dstSz)
     nameFilter[NAME_BUF_LEN - 1] = '\0';
 
     if (memcpy_s(dst, dstSz, nameFilter, strlen(nameFilter) + 1) != 0) {
-        close(fd);
+        syscall(SYS_close, fd);
         return false;
     }
 
-    close(fd);
+    syscall(SYS_close, fd);
     return true;
 }
 
@@ -118,7 +118,7 @@ pid_t GetRealPid(void)
         buf[i] = b;
         i++;
     }
-    close(fd);
+    syscall(SYS_close, fd);
     return pid;
 }
 
