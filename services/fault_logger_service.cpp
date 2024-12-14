@@ -324,6 +324,9 @@ int32_t FaultLoggedFileDesService::OnRequest(const std::string& socketName,
 bool FaultLoggedFileDesService::Filter(const std::string& socketName, int32_t connectionFd,
                                        const FaultLoggerdRequest& requestData)
 {
+    if (requestData.type < 0) {
+        return false;
+    }
     switch (requestData.type) {
         case FaultLoggerType::CPP_CRASH:
         case FaultLoggerType::CPP_STACKTRACE:
