@@ -77,6 +77,14 @@
       "keepFileCount": 20,
       "maxFileCount": 40,
       "fileExistTime": 60
+    },
+    {
+      "type": -1,
+      "fileNamePrefix": "snapshot",
+      "maxSingleFileSize": 128,
+      "keepFileCount": 20,
+      "maxFileCount": 40,
+      "fileExistTime": 60
     }
   ]
 }

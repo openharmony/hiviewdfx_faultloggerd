@@ -400,7 +400,7 @@ void CreateOutputFile(CrashMap &output)
 
     std::string fileName = std::string(KBOX_SNAPSHOT_DUMP_PATH) + "snapshot-" +
                            output[CrashSection::PID] + "-" +
-                           output[CrashSection::TIME_STAMP];
+                           output[CrashSection::TIME_STAMP] + "000";
     std::ofstream file(fileName, std::ios::out | std::ios::trunc);
     output[CrashSection::BUILD_INFO]  = GetBuildInfo();
     if (file.is_open()) {
