@@ -287,17 +287,11 @@ void Printer::PrintThreadFaultStackByConfig(std::shared_ptr<DfxProcess> process,
     }
 }
 
-void Printer::PrintThreadOpenFiles(std::shared_ptr<DfxProcess> process)
+void Printer::PrintLongInformation(const std::string& info)
 {
-    if (process == nullptr || process->openFiles.empty()) {
-        return;
-    }
-
-    DfxRingBufferWrapper::GetInstance().AppendMsg("OpenFiles:\n");
-    std::string infos = process->openFiles;
     constexpr size_t step = 1024;
-    for (size_t i = 0; i < infos.size(); i += step) {
-        DfxRingBufferWrapper::GetInstance().AppendMsg(infos.substr(i, step));
+    for (size_t i = 0; i < info.size(); i += step) {
+        DfxRingBufferWrapper::GetInstance().AppendMsg(info.substr(i, step));
     }
 }
 } // namespace HiviewDFX
