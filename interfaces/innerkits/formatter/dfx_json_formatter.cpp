@@ -31,16 +31,25 @@ static bool FormatJsFrame(const Json::Value& frames, const uint32_t& frameIdx, s
 {
     const int jsIdxLen = 10;
     char buf[jsIdxLen] = { 0 };
-    char idxFmt[] = "#%02u at ";
+    char idxFmt[] = "#%02u at";
     if (snprintf_s(buf, sizeof(buf), sizeof(buf) - 1, idxFmt, frameIdx) <= 0) {
         return false;
     }
     outStr = std::string(buf, strlen(buf));
     std::string symbol = frames[frameIdx]["symbol"].asString();
+    if (!symbol.empty()) {
+        outStr.append(" " + symbol);
+    }
+    std::string packageName = frames[frameIdx]["packageName"].asString();
+    if (!packageName.empty()) {
+        outStr.append(" " + packageName);
+    }
     std::string file = frames[frameIdx]["file"].asString();
-    std::string line = frames[frameIdx]["line"].asString();
-    std::string column = frames[frameIdx]["column"].asString();
-    outStr.append(symbol + " (" + file + ":" + line + ":" + column + ")");
+    if (!file.empty()) {
+        std::string line = frames[frameIdx]["line"].asString();
+        std::string column = frames[frameIdx]["column"].asString();
+        outStr.append(" (" + file + ":" + line + ":" + column + ")");
+    }
     return true;
 }
 

@@ -31,19 +31,18 @@
 namespace OHOS {
 namespace HiviewDFX {
 
-class DfxStackInfoFormatter {
+class DfxStackInfoJsonFormatter {
 public:
-    DfxStackInfoFormatter(std::shared_ptr<DfxProcess> process, std::shared_ptr<ProcessDumpRequest> request)
+    DfxStackInfoJsonFormatter(std::shared_ptr<DfxProcess> process, std::shared_ptr<ProcessDumpRequest> request)
         : process_(process), request_(request) {};
-    virtual ~DfxStackInfoFormatter() {};
-    bool GetStackInfo(bool isJsonDump, std::string& jsonStringInfo) const;
+    virtual ~DfxStackInfoJsonFormatter() {};
+    bool GetJsonFormatInfo(bool isDump, std::string& jsonStringInfo) const;
 
 private:
-    DfxStackInfoFormatter() = delete;
+    DfxStackInfoJsonFormatter() = delete;
 #ifndef is_ohos_lite
-    bool GetStackInfo(bool isJsonDump, Json::Value& jsonInfo) const;
-    void GetNativeCrashInfo(Json::Value& jsonInfo) const;
-    void GetDumpInfo(Json::Value& jsonInfo) const;
+    void GetCrashJsonFormatInfo(Json::Value& jsonInfo) const;
+    void GetDumpJsonFormatInfo(Json::Value& jsonInfo) const;
     bool FillFrames(const std::shared_ptr<DfxThread>& thread, Json::Value& jsonInfo) const;
     void FillNativeFrame(const DfxFrame& frame, Json::Value& jsonInfo) const;
     void AppendThreads(const std::vector<std::shared_ptr<DfxThread>>& threads, Json::Value& jsonInfo) const;

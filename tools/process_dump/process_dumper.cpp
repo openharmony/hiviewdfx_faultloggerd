@@ -47,7 +47,7 @@
 #include "dfx_process.h"
 #include "dfx_regs.h"
 #include "dfx_ring_buffer_wrapper.h"
-#include "dfx_stack_info_formatter.h"
+#include "dfx_stack_info_json_formatter.h"
 #include "dfx_thread.h"
 #include "dfx_unwind_remote.h"
 #include "dfx_util.h"
@@ -323,9 +323,9 @@ void ProcessDumper::Dump()
 
     std::string jsonInfo;
     if (isJsonDump_ || isCrash_) {
-        DfxStackInfoFormatter formatter(process_, request);
-        formatter.GetStackInfo(isJsonDump_, jsonInfo);
-        DFXLOGI("Finish GetStackInfo len %{public}" PRIuPTR "", jsonInfo.length());
+        DfxStackInfoJsonFormatter formatter(process_, request);
+        formatter.GetJsonFormatInfo(isJsonDump_, jsonInfo);
+        DFXLOGI("Finish GetJsonFormatInfo len %{public}" PRIuPTR "", jsonInfo.length());
         if (isJsonDump_) {
             WriteData(bufferFd_, jsonInfo, MAX_PIPE_SIZE);
             CloseFd(bufferFd_);
