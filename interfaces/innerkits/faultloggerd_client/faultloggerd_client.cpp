@@ -179,11 +179,13 @@ static int SendSdkDumpRequestToServer(const FaultLoggerdRequest &request, int (&
 
         if (!StartConnect(sockfd, name.c_str(), SOCKET_TIMEOUT)) {
             DFXLOGE("[%{public}d]: StartConnect(%{public}d) failed", __LINE__, sockfd);
+            resRsp = static_cast<int>(SDK_CONNECT_FAIL);
             break;
         }
         if (OHOS_TEMP_FAILURE_RETRY(write(sockfd, &request,
             sizeof(struct FaultLoggerdRequest))) != static_cast<long>(sizeof(request))) {
             DFXLOGE("write failed.");
+            resRsp = static_cast<int>(SDK_WRITE_FAIL);
             break;
         }
 

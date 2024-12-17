@@ -26,6 +26,12 @@ struct DfxThreadStack {
     long int tid = 0;
     std::vector<DfxFrame> frames;
 };
+enum KernelStackErrorCode : int32_t {
+    KERNELSTACK_ESUCCESS = 0,
+    KERNELSTACK_ECREATE,
+    KERNELSTACK_EOPEN,
+    KERNELSTACK_EIOCTL,
+};
 int32_t DfxGetKernelStack(int32_t pid, std::string& kernelStack);
 bool FormatThreadKernelStack(const std::string& kernelStack, DfxThreadStack& threadStack);
 bool FormatProcessKernelStack(const std::string& kernelStack, std::vector<DfxThreadStack>& processStack);

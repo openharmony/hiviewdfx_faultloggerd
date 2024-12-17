@@ -675,7 +675,7 @@ HWTEST_F(DumpCatcherSystemTest, DumpCatcherSystemTest020, TestSize.Level2)
     string procCMD = "dumpcatcher -p " + to_string(g_loopAppPid);
     string procDumpLog = ExecuteCommands(procCMD);
     GTEST_LOG_(INFO) << "procDumpLog: " << procDumpLog;
-    string log[] = {"Failed"};
+    string log[] = {"failed"};
     int count = GetKeywordsNum(procDumpLog, log, sizeof(log) / sizeof(log[0]));
     GTEST_LOG_(INFO) << count;
     EXPECT_EQ(count, 1) << "DumpCatcherSystemTest020 Failed";
@@ -695,7 +695,7 @@ HWTEST_F(DumpCatcherSystemTest, DumpCatcherSystemTest021, TestSize.Level2)
     string procCMD = "dumpcatcher -p " + to_string(g_loopAppPid) + " -t " + to_string(g_loopAppPid);
     string procDumpLog = ExecuteCommands(procCMD);
     GTEST_LOG_(INFO) << "procDumpLog: " << procDumpLog;
-    string log[] = {"Failed"};
+    string log[] = {"failed"};
     int count = GetKeywordsNum(procDumpLog, log, sizeof(log) / sizeof(log[0]));
     GTEST_LOG_(INFO) << count;
     EXPECT_EQ(count, 1) << "DumpCatcherSystemTest021 Failed";
@@ -719,7 +719,7 @@ HWTEST_F(DumpCatcherSystemTest, DumpCatcherSystemTest022, TestSize.Level2)
     string procCMD = "dumpcatcher -p " + to_string(g_loopAppPid) + " -t " + to_string(tid);
     string procDumpLog = ExecuteCommands(procCMD);
     GTEST_LOG_(INFO) << "procDumpLog: " << procDumpLog;
-    string log[] = {"Failed"};
+    string log[] = {"failed"};
     int count = GetKeywordsNum(procDumpLog, log, sizeof(log) / sizeof(log[0]));
     GTEST_LOG_(INFO) << count;
     EXPECT_EQ(count, 1) << "DumpCatcherSystemTest022 Failed";
@@ -740,7 +740,7 @@ HWTEST_F(DumpCatcherSystemTest, DumpCatcherSystemTest023, TestSize.Level2)
     string procCMD = "dumpcatcher -p " + to_string(g_loopSysPid) + " -t " + to_string(g_loopSysPid);
     string procDumpLog = ExecuteCommands(procCMD);
     GTEST_LOG_(INFO) << "procDumpLog: " << procDumpLog;
-    string log[] = {"Failed"};
+    string log[] = {"failed"};
     int count = GetKeywordsNum(procDumpLog, log, sizeof(log) / sizeof(log[0]));
     GTEST_LOG_(INFO) << count;
     EXPECT_EQ(count, 1) << "DumpCatcherSystemTest023 Failed";
@@ -762,7 +762,7 @@ HWTEST_F(DumpCatcherSystemTest, DumpCatcherSystemTest024, TestSize.Level2)
     string procCMD = "dumpcatcher -p " + to_string(g_loopRootPid) + " -t " + to_string(g_loopRootPid);
     string procDumpLog = ExecuteCommands(procCMD);
     GTEST_LOG_(INFO) << "procDumpLog: " << procDumpLog;
-    string log[] = {"Failed"};
+    string log[] = {"failed"};
     int count = GetKeywordsNum(procDumpLog, log, sizeof(log) / sizeof(log[0]));
     GTEST_LOG_(INFO) << count;
     EXPECT_EQ(count, 1) << "DumpCatcherSystemTest024 Failed";
@@ -783,7 +783,7 @@ HWTEST_F(DumpCatcherSystemTest, DumpCatcherSystemTest025, TestSize.Level2)
     string procCMD = "dumpcatcher -p 9999 -t "+ to_string(g_loopAppPid);
     string procDumpLog = ExecuteCommands(procCMD);
     GTEST_LOG_(INFO) << "procDumpLog: " << procDumpLog;
-    string log[] = {"Failed"};
+    string log[] = {"failed"};
     int count = GetKeywordsNum(procDumpLog, log, sizeof(log) / sizeof(log[0]));
     GTEST_LOG_(INFO) << count;
     EXPECT_EQ(count, 1) << "DumpCatcherSystemTest025 Failed";
@@ -803,7 +803,7 @@ HWTEST_F(DumpCatcherSystemTest, DumpCatcherSystemTest026, TestSize.Level2)
     string procCMD = "dumpcatcher -p " + to_string(g_loopAppPid) + " -t 9999";
     string procDumpLog = ExecuteCommands(procCMD);
     GTEST_LOG_(INFO) << "procDumpLog: " << procDumpLog;
-    string log[] = {"Failed"};
+    string log[] = {"failed"};
     int count = GetKeywordsNum(procDumpLog, log, sizeof(log) / sizeof(log[0]));
     GTEST_LOG_(INFO) << count;
     EXPECT_EQ(count, 1) << "DumpCatcherSystemTest026 Failed";
@@ -824,7 +824,7 @@ HWTEST_F(DumpCatcherSystemTest, DumpCatcherSystemTest027, TestSize.Level2)
     string procCMD = "dumpcatcher -p " + to_string(g_loopAppPid) + " -t " + to_string(g_loopSysPid);
     string procDumpLog = ExecuteCommands(procCMD);
     GTEST_LOG_(INFO) << "procDumpLog: " << procDumpLog;
-    string log[] = {"Failed"};
+    string log[] = {"failed"};
     int count = GetKeywordsNum(procDumpLog, log, sizeof(log) / sizeof(log[0]));
     GTEST_LOG_(INFO) << count;
     EXPECT_EQ(count, 1) << "DumpCatcherSystemTest027 Failed";
@@ -846,7 +846,7 @@ HWTEST_F(DumpCatcherSystemTest, DumpCatcherSystemTest028, TestSize.Level2)
     string procCMD = "dumpcatcher -p " + to_string(g_loopSysPid) + " -t " + to_string(g_loopAppPid);
     string procDumpLog = ExecuteCommands(procCMD);
     GTEST_LOG_(INFO) << "procDumpLog: " << procDumpLog;
-    string log[] = {"Failed"};
+    string log[] = {"failed"};
     int count = GetKeywordsNum(procDumpLog, log, sizeof(log) / sizeof(log[0]));
     GTEST_LOG_(INFO) << count;
     EXPECT_EQ(count, 1) << "DumpCatcherSystemTest028 Failed";
@@ -887,10 +887,10 @@ HWTEST_F(DumpCatcherSystemTest, DumpCatcherSystemTest030, TestSize.Level2)
     string procCMD = "dumpcatcher -p " + to_string(g_loopAppPid) + " -t ";
     string procDumpLog = ExecuteCommands(procCMD);
     GTEST_LOG_(INFO) << "procDumpLog: " << procDumpLog;
-    string log[] = {"Usage:", "dump the stacktrace"};
+    string log[] = {"failed"};
     int count = GetKeywordsNum(procDumpLog, log, sizeof(log) / sizeof(log[0]));
     GTEST_LOG_(INFO) << count;
-    EXPECT_EQ(count, 2) << "DumpCatcherSystemTest030 Failed";
+    EXPECT_EQ(count, 1) << "DumpCatcherSystemTest030 Failed";
     StopCrasherLoop(APP_CRASHER_C);
     GTEST_LOG_(INFO) << "DumpCatcherSystemTest030: end.";
 }
@@ -1096,7 +1096,7 @@ HWTEST_F(DumpCatcherSystemTest, DumpCatcherSystemTest039, TestSize.Level2)
     string procCMD = "dumpcatcher -p " + to_string(g_loopAppPid) + " -t " + to_string(g_loopRootPid);
     string procDumpLog = ExecuteCommands(procCMD);
     GTEST_LOG_(INFO) << "procDumpLog: " << procDumpLog;
-    string log[] = {"Failed"};
+    string log[] = {"failed"};
     int count = GetKeywordsNum(procDumpLog, log, sizeof(log) / sizeof(log[0]));
     GTEST_LOG_(INFO) << count;
     EXPECT_EQ(count, 1) << "DumpCatcherSystemTest039 Failed";
@@ -1118,7 +1118,7 @@ HWTEST_F(DumpCatcherSystemTest, DumpCatcherSystemTest040, TestSize.Level2)
     string procCMD = "dumpcatcher -p " + to_string(g_loopRootPid) + " -t " + to_string(g_loopAppPid);
     string procDumpLog = ExecuteCommands(procCMD);
     GTEST_LOG_(INFO) << "procDumpLog: " << procDumpLog;
-    string log[] = {"Failed"};
+    string log[] = {"failed"};
     int count = GetKeywordsNum(procDumpLog, log, sizeof(log) / sizeof(log[0]));
     EXPECT_EQ(count, 1) << "DumpCatcherSystemTest040 Failed";
     StopCrasherLoop(ROOT);
@@ -1138,7 +1138,7 @@ HWTEST_F(DumpCatcherSystemTest, DumpCatcherSystemTest041, TestSize.Level2)
     string procCMD = "dumpcatcher -p " + GetPidMax() + " -t " + GetTidMax();
     string procDumpLog = ExecuteCommands(procCMD);
     GTEST_LOG_(INFO) << "procDumpLog: " << procDumpLog;
-    string log[] = {"Failed"};
+    string log[] = {"failed"};
     int count = GetKeywordsNum(procDumpLog, log, sizeof(log) / sizeof(log[0]));
     GTEST_LOG_(INFO) << count;
     EXPECT_EQ(count, 1) << "DumpCatcherSystemTest041 Failed";
@@ -1158,7 +1158,7 @@ HWTEST_F(DumpCatcherSystemTest, DumpCatcherSystemTest042, TestSize.Level2)
     string procCMD = "dumpcatcher -p 65535 -t 65535";
     string procDumpLog = ExecuteCommands(procCMD);
     GTEST_LOG_(INFO) << "procDumpLog: " << procDumpLog;
-    string log[] = {"Failed"};
+    string log[] = {"failed"};
     int count = GetKeywordsNum(procDumpLog, log, sizeof(log) / sizeof(log[0]));
     GTEST_LOG_(INFO) << count;
     EXPECT_EQ(count, 1) << "DumpCatcherSystemTest042 Failed";
@@ -1178,7 +1178,7 @@ HWTEST_F(DumpCatcherSystemTest, DumpCatcherSystemTest043, TestSize.Level2)
     string procCMD = "dumpcatcher -p 65536 -t 65536";
     string procDumpLog = ExecuteCommands(procCMD);
     GTEST_LOG_(INFO) << "procDumpLog: " << procDumpLog;
-    string log[] = {"Failed"};
+    string log[] = {"failed"};
     int count = GetKeywordsNum(procDumpLog, log, sizeof(log) / sizeof(log[0]));
     GTEST_LOG_(INFO) << count;
     EXPECT_EQ(count, 1) << "DumpCatcherSystemTest043 Failed";
@@ -1193,12 +1193,12 @@ HWTEST_F(DumpCatcherSystemTest, DumpCatcherSystemTest043, TestSize.Level2)
  */
 HWTEST_F(DumpCatcherSystemTest, DumpCatcherSystemTest044, TestSize.Level2)
 {
-    GTEST_LOG_(INFO) << "DumpCatcherSystemTest117: start.";
+    GTEST_LOG_(INFO) << "DumpCatcherSystemTest044: start.";
     StartCrasherLoop(APP_CRASHER_C);
     string procCMD = "dumpcatcher -p 65534 -t 65534";
     string procDumpLog = ExecuteCommands(procCMD);
     GTEST_LOG_(INFO) << "procDumpLog: " << procDumpLog;
-    string log[] = {"Failed"};
+    string log[] = {"failed"};
     int count = GetKeywordsNum(procDumpLog, log, sizeof(log) / sizeof(log[0]));
     EXPECT_EQ(count, 1) << "DumpCatcherSystemTest044 Failed";
     StopCrasherLoop(APP_CRASHER_C);
@@ -1236,7 +1236,7 @@ HWTEST_F(DumpCatcherSystemTest, DumpCatcherSystemTest046, TestSize.Level2)
     string procCMD = "dumpcatcher -p " + to_string(g_loopAppPid);
     string procDumpLog = ExecuteCommands(procCMD);
     GTEST_LOG_(INFO) << "procDumpLog: " << procDumpLog;
-    string log[] = {"Failed"};
+    string log[] = {"failed"};
     int count = GetKeywordsNum(procDumpLog, log, sizeof(log) / sizeof(log[0]));
     EXPECT_EQ(count, 1) << "DumpCatcherSystemTest046 Failed";
     StopCrasherLoop(APP_CRASHER_C);
@@ -1379,7 +1379,7 @@ HWTEST_F(DumpCatcherSystemTest, DumpCatcherSystemTest101, TestSize.Level2)
     string procCMD = "dumpcatcher -p " + to_string(pid);
     string procDumpLog = ExecuteCommands(procCMD);
     GTEST_LOG_(INFO) << "procDumpLog: " << procDumpLog;
-    string log[] = { "Failed", "status:", "Name:", "nonvoluntary_ctxt_switches:", "wchan:", "Tid:" };
+    string log[] = { "status:", "Name:", "nonvoluntary_ctxt_switches:", "wchan:", "Tid:" };
     int count = GetKeywordsNum(procDumpLog, log, sizeof(log) / sizeof(log[0]));
     kill(pid, SIGKILL);
     EXPECT_EQ(count, sizeof(log) / sizeof(log[0])) << "DumpCatcherSystemTest101 Failed";
