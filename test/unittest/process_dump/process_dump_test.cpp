@@ -284,7 +284,6 @@ HWTEST_F (ProcessDumpTest, DfxUnwindAsyncThreadTest001, TestSize.Level2)
     printer.PrintDumpHeader(nullptr, nullptr, nullptr);
     printer.PrintThreadRegsByConfig(nullptr);
     printer.PrintRegsByConfig(nullptr);
-    printer.PrintThreadOpenFiles(nullptr);
     pid_t pid = GetProcessPid(ACCOUNTMGR_NAME);
     pid_t tid = pid;
     std::shared_ptr<DfxThread> thread = DfxThread::Create(pid, tid, tid);

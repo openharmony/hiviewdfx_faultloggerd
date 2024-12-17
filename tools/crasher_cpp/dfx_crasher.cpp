@@ -137,6 +137,8 @@ constexpr static CrasherCommandLine CMDLINE_TABLE[] = {
         &DfxCrasher::PrintFatalMessageInLibc},
     {"TestGetCrashObj", "Test get object when crash",
         &DfxCrasher::TestGetCrashObj},
+    {"TestGetCrashObjMemory", "Test get memory info when crash",
+        &DfxCrasher::TestGetCrashObjMemory},
 #ifndef is_ohos_lite
     {"AsyncStack", "Test async stacktrace in nomal thread crash case",
         &DfxCrasher::AsyncStacktrace},
@@ -539,7 +541,7 @@ NOINLINE static void TestGetCrashObjInner()
 {
     uintptr_t val = 0;
     if (DFX_SetCrashObj != nullptr) {
-        uintptr_t type = 0;
+        uint8_t type = 0;
         std::string msg = "test get crashObjectInner.";
         val = DFX_SetCrashObj(type, reinterpret_cast<uintptr_t>(msg.c_str()));
     }
@@ -557,7 +559,41 @@ NOINLINE int DfxCrasher::TestGetCrashObj()
         crashObj = DFX_SetCrashObj(type, reinterpret_cast<uintptr_t>(msg.c_str()));
     }
     TestGetCrashObjInner();
-    RaiseAbort();
+    raise(SIGSEGV);
+    if (DFX_ResetCrashObj != nullptr) {
+        DFX_ResetCrashObj(crashObj);
+    }
+    return 0;
+}
+
+NOINLINE static void TestGetCrashObjMemoryInner()
+{
+    uint8_t type = 1;
+    uintptr_t val = 0;
+    constexpr size_t bufSize = 4096;
+    uintptr_t memory[bufSize] = {2};
+    if (DFX_SetCrashObj != nullptr) {
+        val = DFX_SetCrashObj(type, reinterpret_cast<uintptr_t>(memory));
+    }
+    if (DFX_ResetCrashObj != nullptr) {
+        DFX_ResetCrashObj(val);
+    }
+}
+
+NOINLINE int DfxCrasher::TestGetCrashObjMemory()
+{
+    uint8_t type = 5;
+    uintptr_t crashObj = 0;
+    constexpr size_t bufSize = 4096;
+    uintptr_t memory[bufSize];
+    for (size_t i = 0; i < bufSize; i++) {
+        memory[i] = i;
+    }
+    if (DFX_SetCrashObj != nullptr) {
+        crashObj = DFX_SetCrashObj(type, reinterpret_cast<uintptr_t>(memory));
+    }
+    TestGetCrashObjMemoryInner();
+    raise(SIGSEGV);
     if (DFX_ResetCrashObj != nullptr) {
         DFX_ResetCrashObj(crashObj);
     }

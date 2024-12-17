@@ -31,7 +31,7 @@ public:
     DfxUnwindAsyncThread(std::shared_ptr<DfxThread> thread, std::shared_ptr<Unwinder> unwinder, uint64_t stackId)
         : thread_(thread), unwinder_(unwinder), stackId_(stackId) {}
     bool UnwindStack(pid_t vmPid = 0);
-    std::string tip = "";
+    std::string unwindFailTip = "";
 private:
     void GetSubmitterStack(std::vector<DfxFrame> &submitterFrames);
     void UnwindThreadFallback();

@@ -58,7 +58,7 @@ extern "C" void SetThreadInfoCallback(ThreadInfoCallBack func) __attribute__((we
 extern "C" void DFX_InstallSignalHandler(void) __attribute__((weak));
 extern "C" void SetAsyncStackCallbackFunc(void* func) __attribute__((weak));
 extern "C" int DFX_SetAppRunningUniqueId(const char* appRunningId, size_t len) __attribute__((weak));
-static bool CheckThreadCrashKeyWords(const string& filePath, pid_t pid, int sig)
+static bool CheckCallbackCrashKeyWords(const string& filePath, pid_t pid, int sig)
 {
     if (filePath.empty() || pid <= 0) {
         return false;
@@ -74,8 +74,8 @@ static bool CheckThreadCrashKeyWords(const string& filePath, pid_t pid, int sig)
         sigKeyword = iter->second;
     }
     string keywords[] = {
-        "Pid:" + to_string(pid), "Uid:", "name:./test_signalhandler", sigKeyword,
-        "Tid:", "#00", "Registers:", "FaultStack:", "Maps:", "test_signalhandler"
+        "Pid:" + to_string(pid), "Uid:", "name:./test_signalhandler", sigKeyword, "Tid:", "#00", "Registers:",
+        "ExtraCrashInfo(Callback):", "extraCrashInfo", "FaultStack:", "Maps:", "test_signalhandler"
     };
     int length = sizeof(keywords) / sizeof(keywords[0]);
     int minRegIdx = -1;
@@ -112,7 +112,7 @@ static bool CheckCrashKeyWords(const string& filePath, pid_t pid, int sig)
 
 void ThreadInfo(char* buf, size_t len, void* context __attribute__((unused)))
 {
-    char mes[] = "this is cash information of test thread";
+    char mes[] = "this is extraCrashInfo of test thread";
     if (memcpy_s(buf, len, mes, sizeof(mes)) != 0) {
         GTEST_LOG_(INFO) << "Failed to set thread info";
     }
@@ -154,7 +154,7 @@ HWTEST_F(SignalHandlerTest, SignalHandlerTest001, TestSize.Level2)
         GTEST_LOG_(INFO) << "process(" << getpid() << ") is ready to kill process(" << pid << ")";
         kill(pid, SIGILL);
         sleep(2); // 2 : wait for cppcrash generating
-        bool ret = CheckThreadCrashKeyWords(GetCppCrashFileName(pid), pid, SIGILL);
+        bool ret = CheckCallbackCrashKeyWords(GetCppCrashFileName(pid), pid, SIGILL);
         ASSERT_TRUE(ret);
     }
     GTEST_LOG_(INFO) << "SignalHandlerTest001: end.";
@@ -181,7 +181,7 @@ HWTEST_F(SignalHandlerTest, SignalHandlerTest002, TestSize.Level2)
         GTEST_LOG_(INFO) << "process(" << getpid() << ") is ready to kill process(" << pid << ")";
         kill(pid, SIGBUS);
         sleep(2); // 2 : wait for cppcrash generating
-        bool ret = CheckThreadCrashKeyWords(GetCppCrashFileName(pid), pid, SIGBUS);
+        bool ret = CheckCallbackCrashKeyWords(GetCppCrashFileName(pid), pid, SIGBUS);
         ASSERT_TRUE(ret);
     }
     GTEST_LOG_(INFO) << "SignalHandlerTest002: end.";
@@ -208,7 +208,7 @@ HWTEST_F(SignalHandlerTest, SignalHandlerTest003, TestSize.Level2)
         GTEST_LOG_(INFO) << "process(" << getpid() << ") is ready to kill process(" << pid << ")";
         kill(pid, SIGSEGV);
         sleep(2); // 2 : wait for cppcrash generating
-        bool ret = CheckThreadCrashKeyWords(GetCppCrashFileName(pid), pid, SIGSEGV);
+        bool ret = CheckCallbackCrashKeyWords(GetCppCrashFileName(pid), pid, SIGSEGV);
         ASSERT_TRUE(ret);
     }
     GTEST_LOG_(INFO) << "SignalHandlerTest003: end.";
@@ -231,7 +231,7 @@ HWTEST_F(SignalHandlerTest, SignalHandlerTest004, TestSize.Level2)
         _exit(0);
     } else {
         sleep(2); // 2 : wait for cppcrash generating
-        bool ret = CheckThreadCrashKeyWords(GetCppCrashFileName(pid), pid, SIGILL);
+        bool ret = CheckCallbackCrashKeyWords(GetCppCrashFileName(pid), pid, SIGILL);
         ASSERT_TRUE(ret);
     }
     GTEST_LOG_(INFO) << "SignalHandlerTest004: end.";
@@ -254,7 +254,7 @@ HWTEST_F(SignalHandlerTest, SignalHandlerTest005, TestSize.Level2)
         _exit(0);
     } else {
         sleep(2); // 2 : wait for cppcrash generating
-        bool ret = CheckThreadCrashKeyWords(GetCppCrashFileName(pid), pid, SIGBUS);
+        bool ret = CheckCallbackCrashKeyWords(GetCppCrashFileName(pid), pid, SIGBUS);
         ASSERT_TRUE(ret);
     }
     GTEST_LOG_(INFO) << "SignalHandlerTest005: end.";
@@ -277,7 +277,7 @@ HWTEST_F(SignalHandlerTest, SignalHandlerTest006, TestSize.Level2)
         _exit(0);
     } else {
         sleep(2); // 2 : wait for cppcrash generating
-        bool ret = CheckThreadCrashKeyWords(GetCppCrashFileName(pid), pid, SIGSEGV);
+        bool ret = CheckCallbackCrashKeyWords(GetCppCrashFileName(pid), pid, SIGSEGV);
         ASSERT_TRUE(ret);
     }
     GTEST_LOG_(INFO) << "SignalHandlerTest006: end.";
