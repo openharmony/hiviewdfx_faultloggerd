@@ -469,7 +469,7 @@ int DfxDumpCatcher::DoDumpRemotePoll(int timeout, std::string& msg, const int pi
     readfds[1].events = POLLIN;
     int fdsSize = sizeof(readfds) / sizeof(readfds[0]);
     bool bPipeConnect = false;
-    int remainTime = std::min(DUMPCATCHER_REMOTE_P90_TIMEOUT, timeout);
+    int remainTime = DUMPCATCHER_REMOTE_P90_TIMEOUT < timeout ? DUMPCATCHER_REMOTE_P90_TIMEOUT : timeout;
     bool collectAllTidStack = false;
     uint64_t startTime = GetAbsTimeMilliSeconds();
     uint64_t endTime = startTime + static_cast<uint64_t>(timeout);
