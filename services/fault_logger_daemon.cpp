@@ -344,10 +344,6 @@ void FaultLoggerDaemon::HandleExceptionRequest(int32_t connectionFd, FaultLogger
 void FaultLoggerDaemon::HandleReadBuf(int& fd, int32_t connectionFd, FaultLoggerdRequest* request,
     FaultLoggerPipe2* faultLoggerPipe)
 {
-    FaultLoggerCheckPermissionResp resSecurityCheck = SecurityCheck(connectionFd, request);
-    if (FaultLoggerCheckPermissionResp::CHECK_PERMISSION_PASS != resSecurityCheck) {
-        return;
-    }
     if ((faultLoggerPipe->faultLoggerPipeBuf_) != nullptr) {
         fd = faultLoggerPipe->faultLoggerPipeBuf_->GetReadFd();
     }
@@ -363,10 +359,6 @@ void FaultLoggerDaemon::HandleWriteBuf(int& fd, FaultLoggerPipe2* faultLoggerPip
 void FaultLoggerDaemon::HandleReadRes(int& fd, int32_t connectionFd, FaultLoggerdRequest* request,
     FaultLoggerPipe2* faultLoggerPipe)
 {
-    FaultLoggerCheckPermissionResp resSecurityCheck = SecurityCheck(connectionFd, request);
-    if (FaultLoggerCheckPermissionResp::CHECK_PERMISSION_PASS != resSecurityCheck) {
-        return;
-    }
     if ((faultLoggerPipe->faultLoggerPipeRes_) != nullptr) {
         fd = faultLoggerPipe->faultLoggerPipeRes_->GetReadFd();
     }
@@ -389,6 +381,10 @@ void FaultLoggerDaemon::HandleRequestByPipeType(int (&fd)[2], int32_t connection
 {
     switch (request->pipeType) {
         case (int32_t)FaultLoggerPipeType::PIPE_FD_READ: {
+            FaultLoggerCheckPermissionResp resSecurityCheck = SecurityCheck(connectionFd, request);
+            if (FaultLoggerCheckPermissionResp::CHECK_PERMISSION_PASS != resSecurityCheck) {
+                break;
+            }
             HandleReadBuf(fd[PIPE_BUF_INDEX], connectionFd, request, faultLoggerPipe);
             HandleReadRes(fd[PIPE_RES_INDEX], connectionFd, request, faultLoggerPipe);
             break;

@@ -615,8 +615,6 @@ void HandleRequestByPipeTypeCommon(std::shared_ptr<FaultLoggerDaemon> daemon, in
         } else {
             EXPECT_NE(pipeFd[PIPE_BUF_INDEX], -1);
         }
-        CloseFd(pipeFd[PIPE_BUF_INDEX]);
-        CloseFd(pipeFd[PIPE_RES_INDEX]);
         return;
     }
 
@@ -637,8 +635,6 @@ void HandleRequestByPipeTypeCommon(std::shared_ptr<FaultLoggerDaemon> daemon, in
             } else {
                 EXPECT_NE(pipeFd[PIPE_BUF_INDEX], -1);
             }
-            CloseFd(pipeFd[PIPE_BUF_INDEX]);
-            CloseFd(pipeFd[PIPE_RES_INDEX]);
             close(socketFd[1]);
         }
     }

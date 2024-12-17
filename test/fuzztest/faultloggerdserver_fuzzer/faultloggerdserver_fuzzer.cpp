@@ -213,8 +213,6 @@ void HandleRequestByPipeTypeCommon(std::shared_ptr<FaultLoggerDaemon> daemon, in
 
     if (!isPassCheck) {
         daemon->HandleRequestByPipeType(pipeFd, 1, &request, ptr.get());
-        CloseFd(pipeFd[PIPE_BUF_INDEX]);
-        CloseFd(pipeFd[PIPE_RES_INDEX]);
         return;
     }
 
@@ -225,13 +223,12 @@ void HandleRequestByPipeTypeCommon(std::shared_ptr<FaultLoggerDaemon> daemon, in
             sleep(1);
             if (CheckReadResp(socketFd[1])) {
                 std::string test = "test";
-                OHOS_TEMP_FAILURE_RETRY(write(socketFd[1], test.c_str(), strlen(test.c_str())));
+                OHOS_TEMP_FAILURE_RETRY(write(socketFd[1], test.c_str(), test.length()));
+                OHOS_TEMP_FAILURE_RETRY(write(socketFd[0], test.c_str(), test.length()));
             }
         } else if (pid > 0) {
             daemon->connectionMap_[socketFd[0]] = socketFd[0];
             daemon->HandleRequestByPipeType(pipeFd, socketFd[0], &request, ptr.get());
-            CloseFd(pipeFd[PIPE_BUF_INDEX]);
-            CloseFd(pipeFd[PIPE_RES_INDEX]);
             close(socketFd[1]);
         }
     }
