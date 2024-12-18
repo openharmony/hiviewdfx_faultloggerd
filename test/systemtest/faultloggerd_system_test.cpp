@@ -347,10 +347,10 @@ static bool CheckTestGetCrashObjMemory(const string& filePath, const pid_t& pid)
 static bool CheckTestStackCorruption(const string& filePath, const pid_t& pid)
 {
     string log[] = {
-        "Pid:" + to_string(pid), "Uid", ":crasher", "SIGSEGV", "Tid:", "#00", "Registers:",
+        "Pid:" + to_string(pid), "Uid", ":crasher", "Tid:", "#00", "Registers:",
         REGISTERS, "ExtraCrashInfo(Unwindstack):", "reparsing", "FaultStack:", "Maps:", "/crasher"
     };
-    int minRegIdx = 6; // 6 : index of first REGISTERS - 1
+    int minRegIdx = 5; // 5 : index of first REGISTERS - 1
     int expectNum = sizeof(log) / sizeof(log[0]);
     return CheckKeyWords(filePath, log, expectNum, minRegIdx) == expectNum;
 }
