@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-#include "dfx_stack_info_formatter.h"
+#include "dfx_stack_info_json_formatter.h"
 
 #include <cinttypes>
 #include <string>
@@ -39,6 +39,7 @@ void FillJsFrame(const DfxFrame& frame, Json::Value& jsonInfo)
 {
     Json::Value frameJson;
     frameJson["file"] = frame.mapName;
+    frameJson["packageName"] = frame.packageName;
     frameJson["symbol"] = frame.funcName;
     frameJson["line"] = frame.line;
     frameJson["column"] = frame.column;
@@ -47,37 +48,27 @@ void FillJsFrame(const DfxFrame& frame, Json::Value& jsonInfo)
 #endif
 }
 
-bool DfxStackInfoFormatter::GetStackInfo(bool isJsonDump, std::string& jsonStringInfo) const
+bool DfxStackInfoJsonFormatter::GetJsonFormatInfo(bool isDump, std::string& jsonStringInfo) const
 {
-    bool result = false;
 #ifndef is_ohos_lite
-    DFXLOGD("GetStackInfo isJsonDump:%{public}d", isJsonDump);
     Json::Value jsonInfo;
-    if (!GetStackInfo(isJsonDump, jsonInfo)) {
-        return result;
-    }
-    jsonStringInfo.append(Json::FastWriter().write(jsonInfo));
-    result = true;
-#endif
-    return result;
-}
-
-#ifndef is_ohos_lite
-bool DfxStackInfoFormatter::GetStackInfo(bool isJsonDump, Json::Value& jsonInfo) const
-{
     if ((process_ == nullptr) || (request_ == nullptr)) {
         DFXLOGE("GetStackInfo var is null");
         return false;
     }
-    if (isJsonDump) {
-        GetDumpInfo(jsonInfo);
+    if (isDump) {
+        GetDumpJsonFormatInfo(jsonInfo);
     } else {
-        GetNativeCrashInfo(jsonInfo);
+        GetCrashJsonFormatInfo(jsonInfo);
     }
+    jsonStringInfo.append(Json::FastWriter().write(jsonInfo));
     return true;
+#endif
+    return false;
 }
 
-void DfxStackInfoFormatter::GetNativeCrashInfo(Json::Value& jsonInfo) const
+#ifndef is_ohos_lite
+void DfxStackInfoJsonFormatter::GetCrashJsonFormatInfo(Json::Value& jsonInfo) const
 {
     jsonInfo["time"] = request_->timeStamp;
     jsonInfo["uuid"] = "";
@@ -124,7 +115,7 @@ void DfxStackInfoFormatter::GetNativeCrashInfo(Json::Value& jsonInfo) const
     }
 }
 
-void DfxStackInfoFormatter::GetDumpInfo(Json::Value& jsonInfo) const
+void DfxStackInfoJsonFormatter::GetDumpJsonFormatInfo(Json::Value& jsonInfo) const
 {
     Json::Value thread;
     Json::Value frames(Json::arrayValue);
@@ -146,8 +137,8 @@ void DfxStackInfoFormatter::GetDumpInfo(Json::Value& jsonInfo) const
     }
 }
 
-bool DfxStackInfoFormatter::FillFrames(const std::shared_ptr<DfxThread>& thread,
-                                       Json::Value& jsonInfo) const
+bool DfxStackInfoJsonFormatter::FillFrames(const std::shared_ptr<DfxThread>& thread,
+                                           Json::Value& jsonInfo) const
 {
     if (thread == nullptr) {
         DFXLOGE("FillFrames thread is null");
@@ -169,7 +160,7 @@ bool DfxStackInfoFormatter::FillFrames(const std::shared_ptr<DfxThread>& thread,
     return true;
 }
 
-void DfxStackInfoFormatter::FillNativeFrame(const DfxFrame& frame, Json::Value& jsonInfo) const
+void DfxStackInfoJsonFormatter::FillNativeFrame(const DfxFrame& frame, Json::Value& jsonInfo) const
 {
     Json::Value frameJson;
 #ifdef __LP64__
@@ -191,8 +182,8 @@ void DfxStackInfoFormatter::FillNativeFrame(const DfxFrame& frame, Json::Value& 
     jsonInfo.append(frameJson);
 }
 
-void DfxStackInfoFormatter::AppendThreads(const std::vector<std::shared_ptr<DfxThread>>& threads,
-                                          Json::Value& jsonInfo) const
+void DfxStackInfoJsonFormatter::AppendThreads(const std::vector<std::shared_ptr<DfxThread>>& threads,
+                                              Json::Value& jsonInfo) const
 {
     for (auto const& oneThread : threads) {
         Json::Value threadJson;

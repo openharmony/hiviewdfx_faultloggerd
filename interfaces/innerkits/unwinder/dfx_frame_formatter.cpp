@@ -44,12 +44,18 @@ std::string DfxFrameFormatter::GetFrameStr(const std::shared_ptr<DfxFrame>& fram
     std::string data;
     if (frame->isJsFrame) {
 #if defined(ENABLE_MIXSTACK)
-        if (frame->funcName.empty()) {
-            std::string mapName = frame->map == nullptr ? "" : frame->map->name;
-            data = StringPrintf("#%02zu at %s", frame->index, mapName.c_str());
+        data = StringPrintf("#%02zu at", frame->index);
+        if (!frame->funcName.empty()) {
+            data.append(" " + frame->funcName);
+        }
+        if (!frame->packageName.empty()) {
+            data.append(" " + frame->packageName);
+        }
+        if (!frame->mapName.empty()) {
+            data += StringPrintf(" (%s:%d:%d)", frame->mapName.c_str(), frame->line, frame->column);
         } else {
-            data = StringPrintf("#%02zu at %s (%s:%d:%d)", frame->index, frame->funcName.c_str(),
-                frame->mapName.c_str(), frame->line, frame->column);
+            std::string mapName = frame->map == nullptr ? "" : frame->map->name;
+            data.append(" " + mapName);
         }
 #endif
     } else {

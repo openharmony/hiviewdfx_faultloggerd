@@ -1245,6 +1245,7 @@ void Unwinder::Impl::FillJsFrame(DfxFrame& frame)
     }
     frame.mapName = std::string(jsFunction.url);
     frame.funcName = std::string(jsFunction.functionName);
+    frame.packageName = std::string(jsFunction.packageName);
     frame.line = static_cast<int32_t>(jsFunction.line);
     frame.column = jsFunction.column;
     DFXLOGU("Js frame mapName: %{public}s, funcName: %{public}s, line: %{public}d, column: %{public}d",
