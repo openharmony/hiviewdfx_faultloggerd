@@ -208,6 +208,23 @@ void CloseFd(int &fd)
         fd = -1;
     }
 }
+
+uintptr_t StripPac(uintptr_t inAddr, uintptr_t pacMask)
+{
+    uintptr_t outAddr = inAddr;
+#if defined(__aarch64__)
+    if (outAddr != 0) {
+        if (pacMask != 0) {
+            outAddr &= ~pacMask;
+        } else {
+            register uint64_t x30 __asm("x30") = inAddr;
+            asm("hint 0x7" : "+r"(x30));
+            outAddr = x30;
+        }
+    }
+#endif
+    return outAddr;
+}
 }   // namespace HiviewDFX
 }   // namespace OHOS
 

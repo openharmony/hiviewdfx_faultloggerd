@@ -24,6 +24,7 @@
 #include <fcntl.h>
 #include <pthread.h>
 #include "dfx_log.h"
+#include "dfx_util.h"
 #include "stack_util.h"
 
 namespace OHOS {
@@ -56,7 +57,7 @@ int32_t FpUnwinder::Unwind(uintptr_t* pcs, int32_t sz, int32_t skipFrameNum)
             break;
         }
         if ((++index) >= skipFrameNum) {
-            uintptr_t pc = *reinterpret_cast<uintptr_t*>(fp + sizeof(uintptr_t));
+            uintptr_t pc = StripPac(*reinterpret_cast<uintptr_t*>(fp + sizeof(uintptr_t)), 0);
             pcs[index - skipFrameNum] = pc > 0x4 ? pc - 0x4 : pc; // adjust pc in Arm64 architecture
             realSz = static_cast<uint32_t>(index - skipFrameNum + 1);
         }
