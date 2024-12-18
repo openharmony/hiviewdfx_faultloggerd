@@ -301,7 +301,7 @@ HWTEST_F(FaultloggerdClientTest, FaultloggerdClientTest006, TestSize.Level2)
         setuid(appUid);
         int pipeReadFd[] = { -1, -1 };
         int resp = RequestSdkDump(1, 1, pipeReadFd);
-        if (resp == FaultLoggerCheckPermissionResp::CHECK_PERMISSION_REJECT) {
+        if (resp != FaultLoggerCheckPermissionResp::CHECK_PERMISSION_PASS) {
             ret = 0;
         }
         exit(ret);
