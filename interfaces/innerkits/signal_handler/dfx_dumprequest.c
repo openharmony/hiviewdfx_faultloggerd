@@ -74,15 +74,16 @@
 static struct ProcessDumpRequest *g_request = NULL;
 static void *g_reservedChildStack = NULL;
 
+static long g_blockFlag = 0;
+static long g_vmRealPid = 0;
+
 enum PIPE_FD_TYPE {
     WRITE_TO_DUMP,
-    READ_FROM_DUMP_TO_MAIN,
-    READ_FORM_DUMP_TO_VIRTUAL,
+    READ_FROM_DUMP_TO_CHILD,
     PIPE_MAX,
 };
 
 static int g_pipeFds[PIPE_MAX][2] = {
-    {-1, -1},
     {-1, -1},
     {-1, -1}
 };
@@ -96,6 +97,12 @@ enum DumpPreparationStage {
     INHERIT_CAP_FAIL,
     EXEC_FAIL,
 };
+
+static void CleanFd(int *pipeFd);
+static void CleanPipe(void);
+static bool InitPipe(void);
+static bool ReadPipeTimeout(int fd, uint64_t timeout, uint32_t* value);
+static bool ReadProcessDumpGetRegsMsg(void);
 
 static const char* GetCrashDescription(const int32_t errCode)
 {
@@ -182,8 +189,9 @@ static void SetInterestedSignalMasks(int how)
 
 static void CloseFds(void)
 {
+    const int startIndex = 128;  // 128 : avoid set pipe fail
     const int closeFdCount = 1024;
-    for (int i = 0; i < closeFdCount; i++) {
+    for (int i = startIndex; i < closeFdCount; i++) {
         syscall(SYS_close, i);
     }
 }
@@ -401,11 +409,16 @@ static bool StartProcessdump(void)
         DFXLOGE("Failed to fork dummy processdump(%{public}d)", errno);
         return false;
     } else if (pid == 0) {
+        if (!InitPipe()) {
+            DFXLOGE("init pipe fail");
+            _exit(0);
+        }
         pid_t processDumpPid = ForkBySyscall();
         if (processDumpPid < 0) {
             DFXLOGE("Failed to fork processdump(%{public}d)", errno);
             _exit(0);
         } else if (processDumpPid > 0) {
+            ReadProcessDumpGetRegsMsg();
             _exit(0);
         } else {
             uint64_t endTime;
@@ -417,6 +430,8 @@ static bool StartProcessdump(void)
                 DFXLOGI("dump remain %{public}" PRId64 "ms", endTime - curTime);
             }
             if (endTime == 0 || endTime > curTime) {
+                g_request->isBlockCrash = (intptr_t)&g_blockFlag;
+                g_request->vmProcRealPid = (intptr_t)&g_vmRealPid;
                 DFX_ExecDump();
             } else {
                 DFXLOGI("current has spend all time, not execl processdump");
@@ -431,43 +446,20 @@ static bool StartProcessdump(void)
     return true;
 }
 
-static void InfoVmPidsToProcdump(pid_t realPid, pid_t vmPid)
-{
-    if (g_pipeFds[WRITE_TO_DUMP][0] != -1) {
-        pid_t pids[PID_MAX] = {realPid, vmPid};
-        syscall(SYS_close, g_pipeFds[WRITE_TO_DUMP][0]);
-        g_pipeFds[WRITE_TO_DUMP][0] = -1;
-        if (OHOS_TEMP_FAILURE_RETRY(write(g_pipeFds[WRITE_TO_DUMP][1], pids, sizeof(pids))) != sizeof(pids)) {
-            DFXLOGE("Failed to write vm process to processdump %{public}d", errno);
-        }
-    }
-}
-
-static void StartVMProcessUnwind(void)
+static bool StartVMProcessUnwind(void)
 {
     uint32_t startTime = GetAbsTimeMilliSeconds();
     pid_t pid = ForkBySyscall();
     if (pid < 0) {
         DFXLOGE("Failed to fork vm process(%{public}d)", errno);
-        InfoVmPidsToProcdump(0, 0);
-        return;
+        return false;
     }
     if (pid == 0) {
         pid_t vmPid = ForkBySyscall();
-        if (vmPid < 0) {
-            InfoVmPidsToProcdump(0, 0);
-            DFXLOGE("Child failed to create vm process(%{public}d)", errno);
-            _exit(0);
-        }
         if (vmPid == 0) {
             DFXLOGI("start vm process, fork spend time %{public}" PRIu64 "ms", GetAbsTimeMilliSeconds() - startTime);
-            InfoVmPidsToProcdump(GetRealPid(), syscall(SYS_getpid));
-
-            uint32_t finishUnwind = OPE_FAIL;
-            syscall(SYS_close, g_pipeFds[READ_FORM_DUMP_TO_VIRTUAL][1]);
-            OHOS_TEMP_FAILURE_RETRY(read(g_pipeFds[READ_FORM_DUMP_TO_VIRTUAL][0], &finishUnwind, sizeof(finishUnwind)));
-            syscall(SYS_close, g_pipeFds[READ_FORM_DUMP_TO_VIRTUAL][0]);
-            DFXLOGI("processdump unwind finish, exit vm process");
+            g_vmRealPid = GetRealPid();
+            DFXLOGI("vm prorcecc read pid = %{public}ld", g_vmRealPid);
             _exit(0);
         } else {
             DFXLOGI("exit dummy vm process");
@@ -478,6 +470,7 @@ static void StartVMProcessUnwind(void)
     if (waitpid(pid, NULL, 0) <= 0) {
         DFXLOGE("failed to wait dummy vm process(%{public}d)", errno);
     }
+    return true;
 }
 
 static void CleanFd(int *pipeFd)
@@ -496,21 +489,31 @@ static void CleanPipe(void)
     }
 }
 
-static bool InitPipe(void)
-{
+ static bool InitPipe(void)
+ {
+    bool ret = true;
     for (int i = 0; i < PIPE_MAX; i++) {
         if (syscall(SYS_pipe2, g_pipeFds[i], 0) == -1) {
             DFXLOGE("create pipe fail, errno(%{public}d)", errno);
-            FillCrashExceptionAndReport(CRASH_SIGNAL_ECREATEPIPE);
+            ret = false;
             CleanPipe();
-            return false;
+            break;
+        }
+    }
+    if (!ret) {
+        CloseFds();
+        for (int i = 0; i < PIPE_MAX; i++) {
+            if (syscall(SYS_pipe2, g_pipeFds[i], 0) == -1) {
+                DFXLOGE("create pipe fail again, errno(%{public}d)", errno);
+                FillCrashExceptionAndReport(CRASH_SIGNAL_ECREATEPIPE);
+                CleanPipe();
+                return false;
+            }
         }
     }
 
-    g_request->pmPipeFd[0] = g_pipeFds[READ_FROM_DUMP_TO_MAIN][0];
-    g_request->pmPipeFd[1] = g_pipeFds[READ_FROM_DUMP_TO_MAIN][1];
-    g_request->vmPipeFd[0] = g_pipeFds[READ_FORM_DUMP_TO_VIRTUAL][0];
-    g_request->vmPipeFd[1] = g_pipeFds[READ_FORM_DUMP_TO_VIRTUAL][1];
+    g_request->childPipeFd[0] = g_pipeFds[READ_FROM_DUMP_TO_CHILD][0];
+    g_request->childPipeFd[1] = g_pipeFds[READ_FROM_DUMP_TO_CHILD][1];
     return true;
 }
 
@@ -549,12 +552,12 @@ static bool ReadPipeTimeout(int fd, uint64_t timeout, uint32_t* value)
 
 static bool ReadProcessDumpGetRegsMsg(void)
 {
-    CleanFd(&g_pipeFds[READ_FROM_DUMP_TO_MAIN][1]);
+    CleanFd(&g_pipeFds[READ_FROM_DUMP_TO_CHILD][1]);
 
     DFXLOGI("start wait processdump read registers");
     const uint64_t readRegsTimeout = 5000; // 5s
     uint32_t isFinishGetRegs = OPE_FAIL;
-    if (ReadPipeTimeout(g_pipeFds[READ_FROM_DUMP_TO_MAIN][0], readRegsTimeout, &isFinishGetRegs)) {
+    if (ReadPipeTimeout(g_pipeFds[READ_FROM_DUMP_TO_CHILD][0], readRegsTimeout, &isFinishGetRegs)) {
         if (isFinishGetRegs == OPE_SUCCESS) {
             DFXLOGI("processdump have get all registers .");
             return true;
@@ -570,13 +573,9 @@ static void ReadUnwindFinishMsg(int sig)
         return;
     }
 
-    DFXLOGI("start wait processdump unwind");
-    const uint64_t unwindTimeout = 10000; // 10s
-    uint32_t isExitAfterUnwind = OPE_CONTINUE;
-    if (ReadPipeTimeout(g_pipeFds[READ_FROM_DUMP_TO_MAIN][0], unwindTimeout, &isExitAfterUnwind)) {
-        DFXLOGI("processdump unwind finish");
-    } else {
-        DFXLOGE("wait processdump unwind finish timeout");
+    DFXLOGI("crash processdump unwind finish, blockFlag %{public}ld", g_blockFlag);
+    if (g_blockFlag == CRASH_BLOCK_EXIT_FLAG) {
+        syscall(SYS_tgkill, g_request->nsPid, g_request->tid, SIGSTOP);
     }
 }
 
@@ -585,9 +584,6 @@ static int ProcessDump(int sig)
     int prevDumpableStatus = prctl(PR_GET_DUMPABLE);
     bool isTracerStatusModified = SetDumpState();
 
-    if (!InitPipe()) {
-        return -1;
-    }
     g_request->dumpMode = FUSION_MODE;
 
     do {
@@ -603,15 +599,13 @@ static int ProcessDump(int sig)
             break;
         }
 
-        if (!ReadProcessDumpGetRegsMsg()) {
+        if (!StartVMProcessUnwind()) {
+            DFXLOGE("start vm process unwind fail");
             break;
         }
-
-        StartVMProcessUnwind();
         ReadUnwindFinishMsg(sig);
     } while (false);
 
-    CleanPipe();
     DFXLOGI("process dump end");
     RestoreDumpState(prevDumpableStatus, isTracerStatusModified);
     return 0;
