@@ -23,8 +23,11 @@
 #include <mutex>
 #include <nocopyable.h>
 #include <string>
+#include <vector>
 
 #include "dfx_define.h"
+#include "dfx_maps.h"
+#include "dfx_regs.h"
 
 namespace OHOS {
 namespace HiviewDFX {
@@ -77,12 +80,58 @@ private:
     LocalThreadContext() = default;
     DISALLOW_COPY_AND_MOVE(LocalThreadContext);
 
-    static void CopyContextAndWaitTimeout(int sig, siginfo_t *si, void *context);
     bool SignalRequestThread(int32_t tid, ThreadContext* ctx);
-    void InitSignalHandler();
 
 private:
     std::mutex localMutex_;
+};
+
+constexpr int STACK_BUFFER_SIZE = 64 * 1024;
+enum SyncStatus : int32_t {
+    INIT = -1,
+    WAIT_CTX = 0,
+    COPY_START,
+    COPY_SUCCESS,
+    COPY_FAILED,
+};
+
+class LocalThreadContextMix {
+public:
+    LocalThreadContextMix(const LocalThreadContextMix&) = delete;
+    LocalThreadContextMix& operator=(const LocalThreadContextMix&) = delete;
+    static LocalThreadContextMix& GetInstance();
+    void ReleaseCollectThreadContext();
+    bool CollectThreadContext(int32_t tid);
+    bool CheckStatusValidate(int status, int32_t tid);
+    bool GetSelfStackRangeInSignal();
+    void CopyRegister(void *context);
+    void CopyStackBuf();
+    void SetRegister(std::shared_ptr<DfxRegs> regs);
+    void SetStackRang(uintptr_t stackTop, uintptr_t stackBottom);
+    int GetMapByPc(uintptr_t pc, std::shared_ptr<DfxMap>& map) const;
+    int FindUnwindTable(uintptr_t pc, UnwindTableInfo& outTableInfo) const;
+    int AccessMem(uintptr_t addr, uintptr_t *val);
+    std::shared_ptr<DfxMaps> GetMaps() const;
+
+private:
+    LocalThreadContextMix() = default;
+    ~LocalThreadContextMix() = default;
+    bool SignalRequestThread(int32_t tid);
+    void StartCollectThreadContext(int32_t tid);
+
+private:
+    std::mutex mtx_;
+    std::condition_variable cv_;
+    uintptr_t pc_ {0};
+    uintptr_t sp_ {0};
+    uintptr_t fp_ {0};
+    uintptr_t lr_ {0};
+    uintptr_t stackBottom_ {0};
+    uintptr_t stackTop_ {0};
+    std::vector<uint8_t> stackBuf_;
+    int32_t tid_ = -1;
+    int status_ = SyncStatus::INIT;
+    std::shared_ptr<DfxMaps> maps_ = nullptr;
 };
 } // namespace Dfx
 } // namespace OHOS

@@ -50,6 +50,7 @@ static const int INVALID_FD = -1;
 static const int DUMP_TYPE_REMOTE = -1;
 static const int DUMP_TYPE_REMOTE_JSON = -2;
 static const int DUMP_TYPE_LOCAL = -3;
+static const int DUMP_TYPE_LOCAL_MIX = -5;
 static const int PIPE_BUF_INDEX = 0;
 static const int PIPE_RES_INDEX = 1;
 

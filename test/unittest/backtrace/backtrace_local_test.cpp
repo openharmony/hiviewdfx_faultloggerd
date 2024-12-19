@@ -496,5 +496,90 @@ HWTEST_F(BacktraceLocalTest, BacktraceLocalTest015, TestSize.Level2)
     }
     GTEST_LOG_(INFO) << "BacktraceLocalTest015: end.";
 }
+
+std::vector<std::string> GetLastLineAddr(const std::string& inputStr, int colNumber)
+{
+    std::istringstream iss(inputStr);
+    std::string line;
+    std::vector<std::string> lines;
+    std::vector<std::string> results;
+    // get lines
+    while (std::getline(iss, line)) {
+        if (line.find("backtrace_local_test") != std::string::npos) {
+            lines.push_back(line);
+        }
+    }
+    // get column
+    for (const auto& stackLine : lines) {
+        std::istringstream lineIss(stackLine);
+        std::string token;
+        int tokenCount = 0;
+        while (lineIss >> token) {
+            tokenCount++;
+            if (tokenCount == colNumber) {
+                results.push_back(token);
+                break;
+            }
+        }
+    }
+    return results;
+}
+
+void Compare(const std::string& oldStr, const std::string& mixStr, int colNumber)
+{
+    std::vector<std::string> oldStrAddrs = GetLastLineAddr(oldStr, colNumber);
+    std::vector<std::string> mixStrAddrs = GetLastLineAddr(mixStr, colNumber);
+    ASSERT_EQ(oldStrAddrs, mixStrAddrs);
+}
+
+void CallMixLast(int tid, bool fast, int colNumber)
+{
+    std::string oldStr;
+    bool ret = GetBacktraceStringByTid(oldStr, tid, 0, fast);
+    ASSERT_TRUE(ret) << "GetBacktraceStringByTid failed";
+    std::string mixStr;
+    ret = GetBacktraceStringByTidWithMix(mixStr, tid, 0, fast);
+    ASSERT_TRUE(ret) << "GetBacktraceStringByTidWithMix failed";
+    GTEST_LOG_(INFO) << "oldStr:" << oldStr;
+    GTEST_LOG_(INFO) << "mixStr:" << mixStr;
+    Compare(oldStr, mixStr, colNumber);
+}
+
+void CallMixFirst(int tid, bool fast, int colNumber)
+{
+    std::string mixStr;
+    bool ret = GetBacktraceStringByTidWithMix(mixStr, tid, 0, fast);
+    ASSERT_TRUE(ret) << "GetBacktraceStringByTidWithMix failed";
+    std::string oldStr;
+    ret = GetBacktraceStringByTid(oldStr, tid, 0, fast);
+    ASSERT_TRUE(ret) << "GetBacktraceStringByTid failed";
+    GTEST_LOG_(INFO) << "oldStr:" << oldStr;
+    GTEST_LOG_(INFO) << "mixStr:" << mixStr;
+    Compare(oldStr, mixStr, colNumber);
+}
+
+/**
+ * @tc.name: BacktraceLocalTest016
+ * @tc.desc: test backtrace other thread
+ * @tc.type: FUNC
+ */
+HWTEST_F(BacktraceLocalTest, BacktraceLocalTest016, TestSize.Level2)
+{
+    g_mutex.lock();
+    std::thread backtraceTread(Test001);
+    sleep(1);
+    if (g_tid <= 0) {
+        FAIL() << "Failed to create child thread.\n";
+    }
+    CallMixLast(g_tid, false, 3);
+    CallMixFirst(g_tid, false, 3);
+    CallMixLast(g_tid, true, 3);
+    CallMixFirst(g_tid, true, 3);
+    g_mutex.unlock();
+    g_tid = 0;
+    if (backtraceTread.joinable()) {
+        backtraceTread.join();
+    }
+}
 } // namespace HiviewDFX
 } // namepsace OHOS
