@@ -31,6 +31,7 @@ if (defined(ohos_lite)) {
       "is_ohos_lite",
     ]
     deps = [
+      "$faultloggerd_common_path/dfxutil:dfx_util",
       "$faultloggerd_path/common/cutil:dfx_cutil",
       "$faultloggerd_path/common/dfxlog:dfx_hilog",
     ]
@@ -61,7 +62,10 @@ if (defined(ohos_lite)) {
       "fp_unwinder.cpp",
       "unique_stack_table.cpp",
     ]
-    deps = [ "$faultloggerd_common_path/dfxlog:dfx_hilog" ]
+    deps = [
+      "$faultloggerd_common_path/dfxlog:dfx_hilog",
+      "$faultloggerd_common_path/dfxutil:dfx_util",
+    ]
     external_deps = [
       "c_utils:utils",
       "hilog:libhilog",

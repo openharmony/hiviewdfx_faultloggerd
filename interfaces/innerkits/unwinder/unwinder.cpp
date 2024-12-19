@@ -34,6 +34,7 @@
 #include "dfx_regs_get.h"
 #include "dfx_symbols.h"
 #include "dfx_trace_dlsym.h"
+#include "dfx_util.h"
 #include "dwarf_section.h"
 #include "fp_unwinder.h"
 #include "stack_util.h"
@@ -244,7 +245,6 @@ private:
 #if defined(ENABLE_MIXSTACK)
     bool StepArkJsFrame(StepFrame& frame);
 #endif
-    static uintptr_t StripPac(uintptr_t inAddr, uintptr_t pacMask);
     inline void SetLocalStackCheck(void* ctx, bool check) const
     {
         if ((pid_ == UNWIND_TYPE_LOCAL) && (ctx != nullptr)) {
@@ -1136,26 +1136,6 @@ void Unwinder::Impl::DoPcAdjust(uintptr_t& pc)
     pc -= sz;
 }
 
-uintptr_t Unwinder::Impl::StripPac(uintptr_t inAddr, uintptr_t pacMask)
-{
-    uintptr_t outAddr = inAddr;
-#if defined(__aarch64__)
-    if (outAddr != 0) {
-        if (pacMask != 0) {
-            outAddr &= ~pacMask;
-        } else {
-            register uint64_t x30 __asm("x30") = inAddr;
-            asm("hint 0x7" : "+r"(x30));
-            outAddr = x30;
-        }
-        if (outAddr != inAddr) {
-            DFXLOGU("Strip pac in addr: %{public}lx, out addr: %{public}lx", (uint64_t)inAddr, (uint64_t)outAddr);
-        }
-    }
-#endif
-    return outAddr;
-}
-
 const std::vector<DfxFrame>& Unwinder::Impl::GetFrames()
 {
     if (enableFillFrames_) {
@@ -1353,18 +1333,22 @@ bool Unwinder::Impl::GetLockInfo(int32_t tid, char* buf, size_t sz)
 
 void Unwinder::Impl::GetFramesByPcs(std::vector<DfxFrame>& frames, std::vector<uintptr_t> pcs)
 {
+    if (maps_ == nullptr) {
+        DFXLOGE("maps_ is null, return directly!");
+        return;
+    }
     frames.clear();
     std::shared_ptr<DfxMap> map = nullptr;
     for (size_t i = 0; i < pcs.size(); ++i) {
         DfxFrame frame;
         frame.index = i;
-        frame.pc = static_cast<uint64_t>(StripPac(pcs[i], 0));
+        pcs[i] = StripPac(pcs[i], 0);
+        frame.pc = static_cast<uint64_t>(pcs[i]);
         if ((map != nullptr) && map->Contain(frame.pc)) {
             DFXLOGU("map had matched");
-        } else {
-            if ((maps_ == nullptr) || !maps_->FindMapByAddr(pcs[i], map) || (map == nullptr)) {
-                DFXLOGE("Find map error");
-            }
+        } else if (!maps_->FindMapByAddr(pcs[i], map)) {
+            map = nullptr;
+            DFXLOGE("Find map error");
         }
         frame.map = map;
         FillFrame(frame);
