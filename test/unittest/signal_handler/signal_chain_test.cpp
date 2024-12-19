@@ -235,6 +235,8 @@ HWTEST_F(SignalChainTest, SignalChainTest001, TestSize.Level2)
         GTEST_LOG_(ERROR) << "Failed to fork new test process.";
     } else if (pid == 0) {
         GTEST_LOG_(INFO) << "SignalChainTest001: pid:" << getpid();
+        remove_all_special_handler(SIGDUMP);
+        remove_all_special_handler(SIGSEGV);
         signal(SIGSEGV, SignalSegvHandler);
         usleep(SLEEP_1000_MS);
         usleep(SLEEP_1000_MS);
@@ -260,6 +262,8 @@ HWTEST_F(SignalChainTest, SignalChainTest002, TestSize.Level2)
         GTEST_LOG_(ERROR) << "Failed to fork new test process.";
     } else if (pid == 0) {
         GTEST_LOG_(INFO) << "SignalChainTest002: pid:" << getpid();
+        remove_all_special_handler(SIGDUMP);
+        remove_all_special_handler(SIGSEGV);
         struct sigaction sigsegv = {
             .sa_handler = SignalSegvSigaction,
         };
@@ -288,6 +292,8 @@ HWTEST_F(SignalChainTest, SignalChainTest003, TestSize.Level2)
         GTEST_LOG_(ERROR) << "Failed to fork new test process.";
     } else if (pid == 0) {
         GTEST_LOG_(INFO) << "SignalChainTest003: pid:" << getpid();
+        remove_all_special_handler(SIGDUMP);
+        remove_all_special_handler(SIGSEGV);
         struct signal_chain_action sigchain1 = {
             .sca_sigaction = SigchainSpecialHandlerDumpTrue,
             .sca_mask = {},
@@ -326,6 +332,8 @@ HWTEST_F(SignalChainTest, SignalChainTest004, TestSize.Level2)
         GTEST_LOG_(ERROR) << "Failed to fork new test process.";
     } else if (pid == 0) {
         GTEST_LOG_(INFO) << "SignalChainTest004: pid:" << getpid();
+        remove_all_special_handler(SIGDUMP);
+        remove_all_special_handler(SIGSEGV);
         signal(SIGSEGV, SignalSegvHandler);
 
         struct signal_chain_action sigchain1 = {
