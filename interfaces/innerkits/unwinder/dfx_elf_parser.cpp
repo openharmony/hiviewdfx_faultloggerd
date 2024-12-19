@@ -31,6 +31,11 @@
 #define PAGE_SIZE 4096
 #endif
 
+// workaround for non mingw build
+#ifndef EM_LOONGARCH
+#define EM_LOONGARCH	258 // LOONGARCH
+#endif
+
 namespace OHOS {
 namespace HiviewDFX {
 namespace {
@@ -101,6 +106,8 @@ bool ElfParser::ParseElfHeaders(const EhdrType& ehdr)
         archType_ = ARCH_RISCV64;
     } else if (machine == EM_X86_64) {
         archType_ = ARCH_X86_64;
+    } else if (machine == EM_LOONGARCH) {
+        archType_ = ARCH_LOONGARCH;
     } else {
         DFXLOGW("Failed the machine = %{public}d", machine);
     }

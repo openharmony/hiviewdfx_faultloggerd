@@ -35,6 +35,8 @@ ArchType GetCurrentArch()
     curArch = ArchType::ARCH_X86;
 #elif defined(__x86_64__)
     curArch = ArchType::ARCH_X86_64;
+#elif defined(__loongarch__)
+    curArch = ArchType::ARCH_LOONGARCH;
 #else
 #error "Unsupported architecture"
 #endif
@@ -56,6 +58,8 @@ ArchType GetArchFromUname(const std::string& machine)
         return ArchType::ARCH_X86_64;
     } else if (machine == "x86" || machine == "i686") {
         return ArchType::ARCH_X86;
+    } else if (machine == "loongarch64") {
+        return ArchType::ARCH_LOONGARCH;
     } else {
         return ArchType::ARCH_UNKNOWN;
     }
@@ -74,6 +78,8 @@ const std::string GetArchName(ArchType arch)
             return "ARM64";
         case ArchType::ARCH_RISCV64:
             return "RISCV64";
+        case ArchType::ARCH_LOONGARCH:
+            return "LOONGARCH";
         default:
             return "Unsupport";
     }

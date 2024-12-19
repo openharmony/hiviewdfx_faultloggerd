@@ -45,8 +45,11 @@ static const int ARG128 = 128;
 
 NOINLINE int TriggerTrapException(void)
 {
-#ifndef __x86_64__
+#if defined(__arm__) || defined(__aarch64__)
     __asm__ volatile(".inst 0xde01");
+#elif defined(__loongarch_lp64)
+    // Effective illegal instruction on LoongArch64: amswap.w $zero, $ra, $zero
+    __asm__ volatile(".word 0x38600400\n");
 #endif
     return 0;
 }
@@ -102,6 +105,9 @@ NOINLINE int IllegalInstructionException(void)
     __asm__ volatile(".word 0xe7f0def0\n");
 #elif defined(__x86_64__)
     __asm__ volatile("ud2\n");
+#elif defined(__loongarch_lp64)
+    // Effective illegal instruction on LoongArch64: amswap.w $zero, $ra, $zero
+    __asm__ volatile(".word 0x38600400\n");
 #else
 #error
 #endif
@@ -225,6 +231,11 @@ static NOINLINE int ProgramCounterZero(void)
         "adr x30, .\n"
         "br x0\n"
     );
+#elif defined(__loongarch_lp64)
+    __asm__ volatile (
+        "pcaddi $ra, 0\n"
+        "jr $zero\n"
+    );
 #endif
     return 0;
 }
@@ -277,6 +288,9 @@ NOINLINE int StackTop(void)
 #elif defined(__aarch64__)
     __asm__ volatile ("mov %0, sp":"=r"(stackTop)::);
     printf("crasher_c: stack top is = %16llx\n", (unsigned long long)stackTop);
+#elif defined(__loongarch_lp64)
+    __asm__ volatile ("move %0, $sp":"=r"(stackTop)::);
+    printf("crasher_c: stack top is = %16llx\n", (unsigned long long)stackTop);
 #else
     return 0;
 #endif
@@ -291,7 +305,7 @@ NOINLINE int StackTop(void)
     int ret = 0; // for fixing compile error on x64
 #if defined(__arm__)
     ret = fprintf(fp, "%08x", (unsigned int)stackTop);
-#elif defined(__aarch64__)
+#elif defined(__aarch64__) || defined(__loongarch_lp64)
     ret = fprintf(fp, "%16llx", (unsigned long long)stackTop);
 #endif
     if (ret == EOF) {
@@ -306,6 +320,8 @@ NOINLINE int StackTop(void)
     __asm__ volatile ("mov r1, #0\nldr r2, [r1]\n");
 #elif defined(__aarch64__)
     __asm__ volatile ("mov x1, #0\nldr x2, [x1]\n");
+#elif defined(__loongarch_lp64)
+    __asm__ volatile ("move $a1, $zero\nld.d $a2, $a1, 0\n");
 #endif
     return ret;
 }

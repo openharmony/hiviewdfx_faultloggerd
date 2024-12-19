@@ -182,6 +182,76 @@ inline AT_ALWAYS_INLINE void GetQuickenMiniRegsAsm(void *regs)
 {
 }
 
+#elif defined(__loongarch_lp64)
+
+inline AT_ALWAYS_INLINE void GetLocalRegs(void* regs)
+{
+    asm volatile(
+        "st.d $r0, %[base], 0\n"
+        "st.d $r1, %[base], 8\n"
+        "st.d $r2, %[base], 16\n"
+        "st.d $r3, %[base], 24\n"
+        "st.d $r4, %[base], 32\n"
+        "st.d $r5, %[base], 40\n"
+        "st.d $r6, %[base], 48\n"
+        "st.d $r7, %[base], 56\n"
+        "st.d $r8, %[base], 64\n"
+        "st.d $r9, %[base], 72\n"
+        "st.d $r10, %[base], 80\n"
+        "st.d $r11, %[base], 88\n"
+        "st.d $r12, %[base], 96\n"
+        "st.d $r13, %[base], 104\n"
+        "st.d $r14, %[base], 112\n"
+        "st.d $r15, %[base], 120\n"
+        "st.d $r16, %[base], 128\n"
+        "st.d $r17, %[base], 136\n"
+        "st.d $r18, %[base], 144\n"
+        "st.d $r19, %[base], 152\n"
+        "st.d $r20, %[base], 160\n"
+        "st.d $r21, %[base], 168\n"
+        "st.d $r22, %[base], 176\n"
+        "st.d $r23, %[base], 184\n"
+        "st.d $r24, %[base], 192\n"
+        "st.d $r25, %[base], 200\n"
+        "st.d $r26, %[base], 208\n"
+        "st.d $r27, %[base], 216\n"
+        "st.d $r28, %[base], 224\n"
+        "st.d $r29, %[base], 232\n"
+        "st.d $r30, %[base], 240\n"
+        "st.d $r31, %[base], 248\n"
+        "pcaddi $t0, -32\n"
+        "st.d $t0, %[base], 256\n"
+        : [base] "+r"(regs)
+        :
+        : "$t0", "memory");
+}
+
+inline AT_ALWAYS_INLINE void GetFramePointerMiniRegs(void *regs)
+{
+    asm volatile(
+        "st.d $fp, %[base], 0\n"
+        "st.d $ra, %[base], 8\n"
+        "st.d $sp, %[base], 16\n"
+        "pcaddi $t0, -3\n"
+        "st.d $t0, %[base], 24\n"
+        : [base] "+r"(regs)
+        :
+        : "$t0", "memory");
+}
+
+inline AT_ALWAYS_INLINE void GetQuickenMiniRegsAsm(void *regs)
+{
+    asm volatile(
+        "st.d $fp, %[base], 24\n"
+        "st.d $sp, %[base], 32\n"
+        "pcaddi $t0, -2\n"
+        "st.d $t0, %[base], 40\n"
+        "st.d $ra, %[base], 48\n"
+        : [base] "+r"(regs)
+        :
+        : "$t0", "memory");
+}
+
 #endif
 } // namespace HiviewDFX
 } // namespace OHOS

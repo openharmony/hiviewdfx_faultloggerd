@@ -55,7 +55,7 @@ bool GetBacktraceFramesByTid(std::vector<DfxFrame>& frames, int32_t tid, size_t 
                              size_t maxFrameNums)
 {
     std::shared_ptr<Unwinder> unwinder = nullptr;
-#ifdef __aarch64__
+#if (defined(__aarch64__) || defined(__loongarch_lp64))
     if (fast || (tid != BACKTRACE_CURRENT_THREAD)) {
         unwinder = std::make_shared<Unwinder>(false);
     }

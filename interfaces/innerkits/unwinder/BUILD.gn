@@ -32,6 +32,7 @@ dfx_unwinder_sources = [
   "dfx_regs.cpp",
   "dfx_regs_arm.cpp",
   "dfx_regs_arm64.cpp",
+  "dfx_regs_loongarch64.cpp",
   "dfx_regs_riscv64.cpp",
   "dfx_regs_x86_64.cpp",
   "dfx_signal.cpp",

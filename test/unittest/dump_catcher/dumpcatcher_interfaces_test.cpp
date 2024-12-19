@@ -688,7 +688,7 @@ HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest029, TestSize.Level
     bool ret = dumplog.DumpCatchFd(getpid(), g_threadId, msg, 1);
     GTEST_LOG_(INFO) << "message:"  << msg;
     GTEST_LOG_(INFO) << ret;
-#if defined(__aarch64__)
+#if (defined(__aarch64__) || defined(__loongarch_lp64))
     std::string stackKeyword = std::string("#") + std::to_string(DEFAULT_MAX_LOCAL_FRAME_NUM - 1);
 #else
     std::string stackKeyword = std::string("#") + std::to_string(DEFAULT_MAX_FRAME_NUM - 1);
