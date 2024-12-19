@@ -59,6 +59,10 @@ static bool ParseSelfMaps()
                 &perms, sizeof(perms), &offset, &pos) != 4) { // 4:scan size
                 continue;
             }
+            if (strcmp(perms, "r-xp") != 0) {
+                continue;
+            }
+
             g_arkMapStart = static_cast<uintptr_t>(begin);
             g_arkMapEnd = static_cast<uintptr_t>(end);
             ret = true;

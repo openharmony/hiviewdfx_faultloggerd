@@ -62,6 +62,22 @@ bool GetBacktraceStringByTid(std::string& out, int32_t tid, size_t skipFrameNum,
                              size_t maxFrameNums = DEFAULT_MAX_FRAME_NUM, bool enableKernelStack = true);
 
 /**
+ * @brief Get a thread of backtrace string  by specify tid enable mix
+ *
+ * @param out  backtrace string(output parameter)
+ * @param tid  the id of thread
+ * @param skipFrameNum the number of frames to skip
+ * @param fast flag for using fp backtrace(true) or dwarf backtrace(false)
+ * @param maxFrameNums the maximum number of frames to backtrace
+ * @param enableKernelStack if set to true, when failed to get user stack, try to get kernel stack.
+ * @return if succeed return true, otherwise return false
+ * @warning If enableKernelStack set to true,  this interface requires that the caller process
+ *          has ioctl system call permission, otherwise it may cause the calling process to crash.
+*/
+bool GetBacktraceStringByTidWithMix(std::string& out, int32_t tid, size_t skipFrameNum, bool fast,
+    size_t maxFrameNums = DEFAULT_MAX_FRAME_NUM, bool enableKernelStack = true);
+
+/**
  * @brief Print backtrace information to fd
  *
  * @param fd  file descriptor
