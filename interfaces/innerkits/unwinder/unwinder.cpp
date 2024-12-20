@@ -183,7 +183,6 @@ public:
     bool UnwindByFp(void *ctx, size_t maxFrameNum, size_t skipFrameNum, bool enableArk);
 
     bool Step(uintptr_t& pc, uintptr_t& sp, void *ctx);
-    bool StepArkFrame(uintptr_t& fp, uintptr_t& sp, uintptr_t& pc, bool& isJsFrame);
     bool FpStep(uintptr_t& fp, uintptr_t& pc, void *ctx);
 
     void AddFrame(DfxFrame& frame);
@@ -237,6 +236,7 @@ private:
 #endif
     }
     bool GetMainStackRangeInner(uintptr_t& stackBottom, uintptr_t& stackTop);
+    bool GetArkStackRangeInner(uintptr_t& arkMapStart, uintptr_t& arkMapEnd);
     bool CheckAndReset(void* ctx);
     void DoPcAdjust(uintptr_t& pc);
     void AddFrame(const StepFrame& frame, std::shared_ptr<DfxMap> map);
@@ -522,6 +522,16 @@ bool Unwinder::Impl::GetMainStackRangeInner(uintptr_t& stackBottom, uintptr_t& s
     return true;
 }
 
+bool Unwinder::Impl::GetArkStackRangeInner(uintptr_t& arkMapStart, uintptr_t& arkMapEnd)
+{
+    if (maps_ != nullptr && !maps_->GetArkStackRange(arkMapStart, arkMapEnd)) {
+        return false;
+    } else if (maps_ == nullptr && !GetArkStackRange(arkMapStart, arkMapEnd)) {
+        return false;
+    }
+    return true;
+}
+
 bool Unwinder::Impl::GetStackRange(uintptr_t& stackBottom, uintptr_t& stackTop)
 {
     if (gettid() == getpid()) {
@@ -721,6 +731,9 @@ bool Unwinder::Impl::StepArkJsFrame(StepFrame& frame)
             reinterpret_cast<void *>(frame.pc),
             reinterpret_cast<void *>(frame.fp), reinterpret_cast<void *>(frame.sp), frame.isJsFrame);
     }
+    regs_->SetPc(StripPac(frame.pc, pacMask_));
+    regs_->SetSp(frame.sp);
+    regs_->SetFp(frame.fp);
     return true;
 }
 #endif
@@ -799,13 +812,14 @@ bool Unwinder::Impl::UnwindByFp(void *ctx, size_t maxFrameNum, size_t skipFrameN
     pcs_.clear();
     bool needAdjustPc = false;
     bool resetFrames = false;
-    bool isJsFrame = false;
-    bool isGetArkRange = false;
-    uintptr_t arkMapStart = 0;
-    uintptr_t arkMapEnd = 0;
+    MAYBE_UNUSED bool isGetArkRange = false;
+    MAYBE_UNUSED uintptr_t arkMapStart = 0;
+    MAYBE_UNUSED uintptr_t arkMapEnd = 0;
     if (enableArk) {
-        isGetArkRange = GetArkStackRange(arkMapStart, arkMapEnd);
+        isGetArkRange = GetArkStackRangeInner(arkMapStart, arkMapEnd);
     }
+
+    StepFrame frame;
     do {
         if (!resetFrames && skipFrameNum != 0 && (pcs_.size() == skipFrameNum)) {
             DFXLOGU("pcs size: %{public}zu, will be reset pcs", pcs_.size());
@@ -816,41 +830,29 @@ bool Unwinder::Impl::UnwindByFp(void *ctx, size_t maxFrameNum, size_t skipFrameN
             lastErrorData_.SetCode(UNW_ERROR_MAX_FRAMES_EXCEEDED);
             break;
         }
-        uintptr_t pc = regs_->GetPc();
-        uintptr_t fp = regs_->GetFp();
-        uintptr_t sp = regs_->GetSp();
-        if (enableArk && isGetArkRange && ((pc >= arkMapStart && pc < arkMapEnd) || isJsFrame)) {
-            if (StepArkFrame(fp, sp, pc, isJsFrame)) {
+
+        frame.pc = regs_->GetPc();
+        frame.sp = regs_->GetSp();
+        frame.fp = regs_->GetFp();
+        if (!frame.isJsFrame && needAdjustPc) {
+            DoPcAdjust(frame.pc);
+        }
+        needAdjustPc = true;
+        pcs_.emplace_back(frame.pc);
+#if defined(ENABLE_MIXSTACK)
+        if (enableArk && isGetArkRange && ((frame.pc >= arkMapStart && frame.pc < arkMapEnd) || frame.isJsFrame)) {
+            if (StepArkJsFrame(frame)) {
                 continue;
             }
             break;
         }
-        if (needAdjustPc) {
-            DoPcAdjust(pc);
-        }
-        needAdjustPc = true;
-        pcs_.emplace_back(pc);
+#endif
 
-        if (!FpStep(fp, pc, ctx) || (pc == 0)) {
+        if (!FpStep(frame.fp, frame.pc, ctx) || (frame.pc == 0)) {
             break;
         }
     } while (true);
     return (pcs_.size() > 0);
-}
-
-bool Unwinder::Impl::StepArkFrame(uintptr_t& fp, uintptr_t& sp, uintptr_t& pc, bool& isJsFrame)
-{
-    auto ret = DfxArk::StepArkFrame(memory_.get(), &(Unwinder::AccessMem),
-        &fp, &sp, &pc, nullptr, &isJsFrame);
-    if (ret < 0) {
-        DFXLOGE("Failed to step ark frame in pc : %{public}p.", reinterpret_cast<void *>(pc));
-        return false;
-    }
-    regs_->SetPc(StripPac(pc, pacMask_));
-    regs_->SetFp(fp);
-    regs_->SetSp(sp);
-    pcs_.emplace_back(pc);
-    return true;
 }
 
 bool Unwinder::Impl::FpStep(uintptr_t& fp, uintptr_t& pc, void *ctx)
@@ -968,9 +970,6 @@ bool Unwinder::Impl::StepInner(const bool isSigFrame, StepFrame& frame, void *ct
                 ret = false;
                 break;
             }
-            regs_->SetPc(StripPac(frame.pc, pacMask_));
-            regs_->SetSp(frame.sp);
-            regs_->SetFp(frame.fp);
             return true;
         }
 #endif
