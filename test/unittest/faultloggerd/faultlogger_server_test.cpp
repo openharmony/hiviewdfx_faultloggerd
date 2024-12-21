@@ -13,21 +13,23 @@
  * limitations under the License.
  */
 
+#include <filesystem>
+#include <functional>
 #include <gtest/gtest.h>
-
+#include <securec.h>
 #include <sys/socket.h>
 #include <sys/un.h>
+#include <thread>
 #include <unistd.h>
-#include <filesystem>
-#include <securec.h>
 
 #include "dfx_exception.h"
-#include "dfx_util.h"
-#include "dfx_define.h"
+#include "dfx_log.h"
 #include "dfx_socket_request.h"
-#include "fault_logger_daemon.h"
+#include "dfx_util.h"
+#include "faultloggerd_client.h"
 #include "faultloggerd_socket.h"
 #include "faultloggerd_test.h"
+#include "smart_fd.h"
 
 using namespace OHOS::HiviewDFX;
 using namespace testing::ext;
@@ -37,27 +39,51 @@ namespace OHOS {
 namespace HiviewDFX {
 namespace {
 constexpr int32_t SOCKET_TIMEOUT = 5;
+constexpr int32_t FD_PAIR_NUM = 2;
+constexpr const char* const FAULTLOGGERD_SERVER_TEST_TAG = "FAULTLOGGERD_SERVER_TEST";
 void FillRequestHeadData(RequestDataHead& head, int8_t clientType)
 {
     head.clientType = clientType;
     head.clientPid = getpid();
 }
 
-template<typename REQ>
-void SendRequestToServer(const std::string& socketName, const REQ& requestData, int32_t& responseData)
+int32_t SendRequestToSocket(int32_t sockFd, const std::string& socketName, const void* requestData, size_t requestSize)
 {
-    SmartFd sockFd(GetConnectSocketFd(socketName.c_str(), SOCKET_TIMEOUT));
-    SendMsgToSocket(sockFd, &requestData, sizeof (requestData));
-    GetMsgFromSocket(sockFd, &responseData, sizeof (responseData));
+    if (!StartConnect(sockFd, socketName.c_str(), SOCKET_TIMEOUT)) {
+        return ResponseCode::CONNECT_FAILED;
+    }
+    if (!SendMsgToSocket(sockFd, requestData, requestSize)) {
+        return ResponseCode::SEND_DATA_FAILED;
+    }
+    int32_t responseCode{ResponseCode::RECEIVE_DATA_FAILED};
+    GetMsgFromSocket(sockFd, &responseCode, sizeof (responseCode));
+    return responseCode;
 }
 
-template<typename REQ>
-int32_t RequestFileDescriptorFromServer(const std::string& socketName, const REQ& requestData, int32_t& responseData)
+int32_t SendRequestToServer(const std::string& socketName, const void* requestData, size_t requestSize,
+    std::function<void(int32_t, int32_t&)> callback = nullptr)
 {
-    SmartFd sockFd(GetConnectSocketFd(socketName.c_str(), SOCKET_TIMEOUT));
-    SendMsgToSocket(sockFd, &requestData, sizeof (requestData));
-    GetMsgFromSocket(sockFd, &responseData, sizeof (responseData));
-    return responseData == 0 ? ReadFileDescriptorFromSocket(sockFd) : -1;
+    SmartFd sockFd = CreateSocketFd();
+    int responseCode = SendRequestToSocket(sockFd, socketName, requestData, requestSize);
+    if (callback) {
+        callback(sockFd, responseCode);
+    }
+    if (responseCode != ResponseCode::REQUEST_SUCCESS) {
+        DFXLOGE("%{public}s :: failed to get filedescriptor from Server and response code %{public}d",
+            FAULTLOGGERD_SERVER_TEST_TAG, responseCode);
+    }
+    return responseCode;
+}
+
+int32_t RequestFileDescriptorFromServer(const std::string& socketName, const void* requestData,
+    size_t requestSize, int* fds, uint32_t nfds = 1)
+{
+    return SendRequestToServer(socketName, requestData, requestSize, [fds, nfds] (int32_t socketFd, int32_t& retCode) {
+        if (retCode == ResponseCode::REQUEST_SUCCESS) {
+            retCode = ReadFileDescriptorFromSocket(socketFd, fds, nfds) ?
+                ResponseCode::REQUEST_SUCCESS : ResponseCode::RECEIVE_DATA_FAILED;
+        }
+    });
 }
 }
 
@@ -77,43 +103,22 @@ void FaultLoggerdServiceTest::SetUpTestCase()
     FaultLoggerdTestServer::GetInstance();
 }
 
-#ifndef is_ohos_lite
 /**
- * @tc.name: FaultloggerdClientTest001
- * @tc.desc: request a file descriptor for logging crash
+ * @tc.name: FaultloggerdServerTest01
+ * @tc.desc: test for invalid request data.
  * @tc.type: FUNC
  */
-HWTEST_F(FaultLoggerdServiceTest, SdkDumpClientTest01, TestSize.Level2)
+HWTEST_F(FaultLoggerdServiceTest, FaultloggerdServerTest01, TestSize.Level2)
 {
-    SdkDumpRequestData requestData;
-    int32_t responseData(-1);
-    FillRequestHeadData(requestData.head, FaultLoggerClientType::SDK_DUMP_CLIENT);
-    requestData.pid = requestData.head.clientPid;
-    SendRequestToServer(SERVER_SDKDUMP_SOCKET_NAME, requestData, responseData);
-    ASSERT_EQ(responseData, ResponseCode ::REQUEST_SUCCESS);
-    SendRequestToServer(SERVER_SDKDUMP_SOCKET_NAME, requestData, responseData);
-    ASSERT_EQ(responseData, ResponseCode::SDK_DUMP_REPEAT);
-}
+    FaultLoggerdStatsRequest requestData;
+    FillRequestHeadData(requestData.head, FaultLoggerClientType::REPORT_EXCEPTION_CLIENT);
+    int32_t retCode = SendRequestToServer(SERVER_CRASH_SOCKET_NAME, &requestData, sizeof(requestData));
+    ASSERT_EQ(retCode, ResponseCode::INVALID_REQUEST_DATA);
 
-/**
- * @tc.name: SdkDumpClientTest02
- * @tc.desc: request sdk dump with invalid request data.
- * @tc.type: FUNC
- */
-HWTEST_F(FaultLoggerdServiceTest, SdkDumpClientTest02, TestSize.Level2)
-{
-    SdkDumpRequestData requestData;
-    int32_t responseData(-1);
-    FillRequestHeadData(requestData.head, FaultLoggerClientType::SDK_DUMP_CLIENT);
-    requestData.pid = 0;
-    SendRequestToServer(SERVER_SDKDUMP_SOCKET_NAME, requestData, responseData);
-    ASSERT_EQ(responseData, ResponseCode::REQUEST_REJECT);
-
-    requestData.pid = requestData.head.clientPid;
-    SendRequestToServer(SERVER_CRASH_SOCKET_NAME, requestData, responseData);
-    ASSERT_EQ(responseData, ResponseCode::REQUEST_REJECT);
+    FillRequestHeadData(requestData.head, -1);
+    retCode = SendRequestToServer(SERVER_CRASH_SOCKET_NAME, &requestData, sizeof(requestData));
+    ASSERT_EQ(retCode, ResponseCode::UNKNOWN_CLIENT_TYPE);
 }
-#endif
 
 /**
  * @tc.name: LogFileDesClientTest01
@@ -123,12 +128,13 @@ HWTEST_F(FaultLoggerdServiceTest, SdkDumpClientTest02, TestSize.Level2)
 HWTEST_F(FaultLoggerdServiceTest, LogFileDesClientTest01, TestSize.Level2)
 {
     FaultLoggerdRequest requestData;
-    int32_t responseData(-1);
     FillRequestHeadData(requestData.head, FaultLoggerClientType::LOG_FILE_DES_CLIENT);
     requestData.type = FaultLoggerType::CPP_CRASH;
     requestData.pid = requestData.head.clientPid;
-    SmartFd fileFd(RequestFileDescriptorFromServer(SERVER_CRASH_SOCKET_NAME, requestData, responseData));
-    ASSERT_GE(fileFd, 0);
+    int32_t fd{-1};
+    RequestFileDescriptorFromServer(SERVER_CRASH_SOCKET_NAME, &requestData, sizeof(requestData), &fd);
+    SmartFd sFd(fd);
+    ASSERT_GE(sFd, 0);
 }
 
 /**
@@ -139,12 +145,11 @@ HWTEST_F(FaultLoggerdServiceTest, LogFileDesClientTest01, TestSize.Level2)
 HWTEST_F(FaultLoggerdServiceTest, LogFileDesClientTest02, TestSize.Level2)
 {
     FaultLoggerdRequest requestData;
-    int32_t responseData(-1);
     FillRequestHeadData(requestData.head, FaultLoggerClientType::LOG_FILE_DES_CLIENT);
     requestData.type = FaultLoggerType::CPP_CRASH;
     requestData.pid = requestData.head.clientPid;
-    SendRequestToServer(SERVER_SOCKET_NAME, requestData, responseData);
-    ASSERT_EQ(responseData, ResponseCode::REQUEST_REJECT);
+    int32_t retCode = SendRequestToServer(SERVER_SOCKET_NAME, &requestData, sizeof(requestData));
+    ASSERT_EQ(retCode, ResponseCode::REQUEST_REJECT);
 }
 
 /**
@@ -158,27 +163,70 @@ HWTEST_F(FaultLoggerdServiceTest, LogFileDesClientTest03, TestSize.Level2)
     FillRequestHeadData(requestData.head, FaultLoggerClientType::LOG_FILE_DES_CLIENT);
     requestData.type = FaultLoggerType::JIT_CODE_LOG;
     requestData.pid = requestData.head.clientPid;
-    int32_t responseData(-1);
-    SendRequestToServer(SERVER_SOCKET_NAME, requestData, responseData);
-    ASSERT_EQ(responseData, ResponseCode::REQUEST_REJECT);
+    int32_t retCode = SendRequestToServer(SERVER_SOCKET_NAME, &requestData, sizeof(requestData));
+    ASSERT_EQ(retCode, ResponseCode::REQUEST_REJECT);
 }
 
 #ifndef is_ohos_lite
 /**
- * @tc.name: SdkDumpClientTest04
+ * @tc.name: FaultloggerdClientTest001
+ * @tc.desc: request a file descriptor for logging crash
+ * @tc.type: FUNC
+ */
+HWTEST_F(FaultLoggerdServiceTest, SdkDumpClientTest01, TestSize.Level2)
+{
+    constexpr int waitTime = 1500; // 1.5s;
+    std::this_thread::sleep_for(std::chrono::milliseconds(waitTime));
+    SdkDumpRequestData requestData;
+    FillRequestHeadData(requestData.head, FaultLoggerClientType::SDK_DUMP_CLIENT);
+    requestData.pid = requestData.head.clientPid;
+    int32_t fds[FD_PAIR_NUM] = {-1, -1};
+    RequestFileDescriptorFromServer(SERVER_SDKDUMP_SOCKET_NAME, &requestData, sizeof(requestData), fds, FD_PAIR_NUM);
+    SmartFd buffReadFd = fds[0];
+    SmartFd resReadFd = fds[FD_PAIR_NUM - 1];
+    ASSERT_GE(buffReadFd, 0);
+    ASSERT_GE(resReadFd, 0);
+
+    int32_t retCode = SendRequestToServer(SERVER_SDKDUMP_SOCKET_NAME, &requestData, sizeof(requestData));
+    ASSERT_EQ(retCode, ResponseCode::SDK_DUMP_REPEAT);
+    constexpr int pipeTimeOut = 11000;
+    requestData.time = pipeTimeOut;
+    retCode = SendRequestToServer(SERVER_SDKDUMP_SOCKET_NAME, &requestData, sizeof(requestData));
+    ASSERT_EQ(retCode, ResponseCode::REQUEST_SUCCESS);
+    RequestDelPipeFd(requestData.pid);
+}
+
+/**
+ * @tc.name: SdkDumpClientTest02
+ * @tc.desc: request sdk dump with invalid request data.
+ * @tc.type: FUNC
+ */
+HWTEST_F(FaultLoggerdServiceTest, SdkDumpClientTest02, TestSize.Level2)
+{
+    SdkDumpRequestData requestData;
+    FillRequestHeadData(requestData.head, FaultLoggerClientType::SDK_DUMP_CLIENT);
+    requestData.pid = 0;
+    int32_t retCode = SendRequestToServer(SERVER_SDKDUMP_SOCKET_NAME, &requestData, sizeof(requestData));
+    ASSERT_EQ(retCode, ResponseCode::REQUEST_REJECT);
+
+    requestData.pid = requestData.head.clientPid;
+    retCode = SendRequestToServer(SERVER_CRASH_SOCKET_NAME, &requestData, sizeof(requestData));
+    ASSERT_EQ(retCode, ResponseCode::REQUEST_REJECT);
+}
+    /**
+ * @tc.name: SdkDumpClientTest03
  * @tc.desc: request sdk dumpJson after request a fd for cppcrash.
  * @tc.type: FUNC
  */
-HWTEST_F(FaultLoggerdServiceTest, SdkDumpClientTest04, TestSize.Level2)
+HWTEST_F(FaultLoggerdServiceTest, SdkDumpClientTest03, TestSize.Level2)
 {
+    RequestFileDescriptor(FaultLoggerType::CPP_CRASH);
     SdkDumpRequestData requestData;
-    int32_t responseData(-1);
     FillRequestHeadData(requestData.head, FaultLoggerClientType::SDK_DUMP_CLIENT);
     requestData.pid = requestData.head.clientPid;
-    SendRequestToServer(SERVER_SDKDUMP_SOCKET_NAME, requestData, responseData);
-    ASSERT_EQ(responseData, ResponseCode::SDK_PROCESS_CRASHED);
+    int32_t retCode = SendRequestToServer(SERVER_SDKDUMP_SOCKET_NAME, &requestData, sizeof(requestData));
+    ASSERT_EQ(retCode, ResponseCode::SDK_PROCESS_CRASHED);
 }
-
 /**
  * @tc.name: PipeFdClientTest01
  * @tc.desc: request a pip fd.
@@ -186,30 +234,44 @@ HWTEST_F(FaultLoggerdServiceTest, SdkDumpClientTest04, TestSize.Level2)
  */
 HWTEST_F(FaultLoggerdServiceTest, PipeFdClientTest01, TestSize.Level2)
 {
+    constexpr int waitTime = 1500; // 1.5s;
+    std::this_thread::sleep_for(std::chrono::milliseconds(waitTime));
+    SdkDumpRequestData sdkDumpRequestData;
+    FillRequestHeadData(sdkDumpRequestData.head, FaultLoggerClientType::SDK_DUMP_CLIENT);
+    sdkDumpRequestData.pid = sdkDumpRequestData.head.clientPid;
+    int32_t readFds[FD_PAIR_NUM] = {-1, -1};
+    RequestFileDescriptorFromServer(SERVER_SDKDUMP_SOCKET_NAME, &sdkDumpRequestData, sizeof(sdkDumpRequestData),
+        readFds, FD_PAIR_NUM);
+    SmartFd buffReadFd = readFds[0];
+    SmartFd resReadFd = readFds[FD_PAIR_NUM - 1];
+    ASSERT_GE(buffReadFd, 0);
+    ASSERT_GE(resReadFd, 0);
+
     PipFdRequestData requestData;
-    int32_t responseData(-1);
     FillRequestHeadData(requestData.head, FaultLoggerClientType::PIPE_FD_CLIENT);
     requestData.pid = requestData.head.clientPid;
 
-    requestData.pipeType = FaultLoggerPipeType::PIPE_FD_READ_BUF;
-    SmartFd readBuff(RequestFileDescriptorFromServer(SERVER_SOCKET_NAME, requestData, responseData));
-    requestData.pipeType = FaultLoggerPipeType::PIPE_FD_WRITE_BUF;
-    SmartFd writeBuff(RequestFileDescriptorFromServer(SERVER_SOCKET_NAME, requestData, responseData));
+    requestData.pipeType = FaultLoggerPipeType::PIPE_FD_WRITE;
+    int32_t writeFds[FD_PAIR_NUM] = {-1, -1};
+    RequestFileDescriptorFromServer(SERVER_CRASH_SOCKET_NAME, &requestData, sizeof(requestData), writeFds, FD_PAIR_NUM);
+    int32_t retCode = SendRequestToServer(SERVER_CRASH_SOCKET_NAME, &requestData, sizeof(requestData));
+    ASSERT_EQ(retCode, ResponseCode::ABNORMAL_SERVICE);
+
+    SmartFd buffWriteFd = writeFds[0];
+    SmartFd resWriteFd = writeFds[FD_PAIR_NUM - 1];
+    ASSERT_GE(buffWriteFd, 0);
+    ASSERT_GE(resWriteFd, 0);
+
     int sendMsg = 10;
-    ASSERT_TRUE(SendMsgToSocket(writeBuff, &sendMsg, sizeof (sendMsg)));
     int recvMsg = 0;
-    ASSERT_TRUE(GetMsgFromSocket(readBuff, &recvMsg, sizeof (recvMsg)));
+    ASSERT_TRUE(SendMsgToSocket(buffWriteFd, &sendMsg, sizeof (sendMsg)));
+    ASSERT_TRUE(GetMsgFromSocket(buffReadFd, &recvMsg, sizeof (recvMsg)));
     ASSERT_EQ(sendMsg, recvMsg);
 
-    requestData.pipeType = FaultLoggerPipeType::PIPE_FD_READ_RES;
-    SmartFd readResult(RequestFileDescriptorFromServer(SERVER_SOCKET_NAME, requestData, responseData));
-
-    requestData.pipeType = FaultLoggerPipeType::PIPE_FD_WRITE_RES;
-    SmartFd writeResult(RequestFileDescriptorFromServer(SERVER_SOCKET_NAME, requestData, responseData));
-
-    ASSERT_TRUE(SendMsgToSocket(writeBuff, &sendMsg, sizeof (sendMsg)));
-    ASSERT_TRUE(GetMsgFromSocket(readBuff, &recvMsg, sizeof (recvMsg)));
+    ASSERT_TRUE(SendMsgToSocket(resWriteFd, &sendMsg, sizeof (sendMsg)));
+    ASSERT_TRUE(GetMsgFromSocket(resReadFd, &recvMsg, sizeof (recvMsg)));
     ASSERT_EQ(sendMsg, recvMsg);
+    RequestDelPipeFd(requestData.pid);
 }
 
 /**
@@ -220,33 +282,20 @@ HWTEST_F(FaultLoggerdServiceTest, PipeFdClientTest01, TestSize.Level2)
 HWTEST_F(FaultLoggerdServiceTest, PipeFdClientTest02, TestSize.Level2)
 {
     PipFdRequestData requestData;
-    int32_t responseData(-1);
     FillRequestHeadData(requestData.head, FaultLoggerClientType::PIPE_FD_CLIENT);
 
-    requestData.pipeType = FaultLoggerPipeType::PIPE_FD_JSON_READ_BUF;
-    SendRequestToServer(SERVER_SOCKET_NAME, requestData, responseData);
-    ASSERT_EQ(responseData, ResponseCode::ABNORMAL_SERVICE);
-
+    requestData.pipeType = FaultLoggerPipeType::PIPE_FD_READ;
     requestData.pid = requestData.head.clientPid;
-    requestData.pipeType = FaultLoggerPipeType::PIPE_FD_JSON_READ_BUF;
-    SendRequestToServer(SERVER_SOCKET_NAME, requestData, responseData);
-    ASSERT_EQ(responseData, ResponseCode::ABNORMAL_SERVICE);
-
-    requestData.pipeType = FaultLoggerPipeType::PIPE_FD_JSON_WRITE_BUF;
-    SendRequestToServer(SERVER_SOCKET_NAME, requestData, responseData);
-    ASSERT_EQ(responseData, ResponseCode::ABNORMAL_SERVICE);
-
-    requestData.pipeType = FaultLoggerPipeType::PIPE_FD_JSON_READ_RES;
-    SendRequestToServer(SERVER_SOCKET_NAME, requestData, responseData);
-    ASSERT_EQ(responseData, ResponseCode::ABNORMAL_SERVICE);
-
-    requestData.pipeType = FaultLoggerPipeType::PIPE_FD_JSON_WRITE_RES;
-    SendRequestToServer(SERVER_SOCKET_NAME, requestData, responseData);
-    ASSERT_EQ(responseData, ResponseCode::ABNORMAL_SERVICE);
+    int32_t retCode = SendRequestToServer(SERVER_SOCKET_NAME, &requestData, sizeof(requestData));
+    ASSERT_EQ(retCode, ResponseCode::ABNORMAL_SERVICE);
 
     requestData.pipeType = -1;
-    SendRequestToServer(SERVER_SOCKET_NAME, requestData, responseData);
-    ASSERT_EQ(responseData, ResponseCode::REQUEST_REJECT);
+    retCode = SendRequestToServer(SERVER_SOCKET_NAME, &requestData, sizeof(requestData));
+    ASSERT_EQ(retCode, ResponseCode::REQUEST_REJECT);
+
+    requestData.pipeType = 3;
+    retCode = SendRequestToServer(SERVER_SOCKET_NAME, &requestData, sizeof(requestData));
+    ASSERT_EQ(retCode, ResponseCode::REQUEST_REJECT);
 }
 
 /**
@@ -257,13 +306,12 @@ HWTEST_F(FaultLoggerdServiceTest, PipeFdClientTest02, TestSize.Level2)
 HWTEST_F(FaultLoggerdServiceTest, PipeFdClientTest03, TestSize.Level2)
 {
     PipFdRequestData requestData;
-    int32_t responseData(-1);
     FillRequestHeadData(requestData.head, FaultLoggerClientType::PIPE_FD_CLIENT);
     requestData.pid = requestData.head.clientPid;
 
     requestData.pipeType = FaultLoggerPipeType::PIPE_FD_DELETE;
-    SendRequestToServer(SERVER_CRASH_SOCKET_NAME, requestData, responseData);
-    ASSERT_EQ(responseData, ResponseCode::REQUEST_SUCCESS);
+    int32_t retCode = SendRequestToServer(SERVER_CRASH_SOCKET_NAME, &requestData, sizeof(requestData));
+    ASSERT_EQ(retCode, ResponseCode::REQUEST_SUCCESS);
 }
 #endif
 
@@ -276,18 +324,17 @@ HWTEST_F(FaultLoggerdServiceTest, PipeFdClientTest03, TestSize.Level2)
 HWTEST_F(FaultLoggerdServiceTest, ReportExceptionClientTest01, TestSize.Level2)
 {
     CrashDumpException requestData;
-    int32_t responseData(-1);
     FillRequestHeadData(requestData.head, FaultLoggerClientType::REPORT_EXCEPTION_CLIENT);
     requestData.pid = requestData.head.clientPid;
     requestData.uid = getuid();
-    SendRequestToServer(SERVER_SDKDUMP_SOCKET_NAME, requestData, responseData);
-    ASSERT_EQ(responseData, ResponseCode::REQUEST_REJECT);
+    int32_t retCode = SendRequestToServer(SERVER_SDKDUMP_SOCKET_NAME, &requestData, sizeof(requestData));
+    ASSERT_EQ(retCode, ResponseCode::REQUEST_REJECT);
     if (strcpy_s(requestData.message, sizeof(requestData.message) / sizeof(requestData.message[0]), "Test")) {
         return;
     }
     requestData.uid = -1;
-    SendRequestToServer(SERVER_SDKDUMP_SOCKET_NAME, requestData, responseData);
-    ASSERT_EQ(responseData, ResponseCode::REQUEST_REJECT);
+    retCode = SendRequestToServer(SERVER_SDKDUMP_SOCKET_NAME, &requestData, sizeof(requestData));
+    ASSERT_EQ(retCode, ResponseCode::REQUEST_REJECT);
 }
 
 /**
@@ -298,15 +345,15 @@ HWTEST_F(FaultLoggerdServiceTest, ReportExceptionClientTest01, TestSize.Level2)
 HWTEST_F(FaultLoggerdServiceTest, ReportExceptionClientTest02, TestSize.Level2)
 {
     CrashDumpException requestData;
-    int32_t responseData(-1);
     FillRequestHeadData(requestData.head, FaultLoggerClientType::REPORT_EXCEPTION_CLIENT);
     requestData.pid = requestData.head.clientPid;
     if (strcpy_s(requestData.message, sizeof(requestData.message), "Test")) {
         return;
     }
     requestData.uid = getuid();
-    SmartFd sockFd(GetConnectSocketFd(SERVER_SDKDUMP_SOCKET_NAME, SOCKET_TIMEOUT));
-    ASSERT_TRUE(SendMsgToSocket(sockFd, &requestData, sizeof (requestData)));
+    SmartFd socketFd = CreateSocketFd();
+    StartConnect(socketFd, SERVER_SDKDUMP_SOCKET_NAME, SOCKET_TIMEOUT);
+    ASSERT_TRUE(SendMsgToSocket(socketFd, &requestData, sizeof (requestData)));
 }
 
 /**
@@ -317,16 +364,15 @@ HWTEST_F(FaultLoggerdServiceTest, ReportExceptionClientTest02, TestSize.Level2)
 HWTEST_F(FaultLoggerdServiceTest, ReportExceptionClientTest03, TestSize.Level2)
 {
     CrashDumpException requestData;
-    int32_t responseData(-1);
     FillRequestHeadData(requestData.head, FaultLoggerClientType::REPORT_EXCEPTION_CLIENT);
     requestData.pid = requestData.head.clientPid;
     requestData.error = CrashExceptionCode::CRASH_DUMP_LOCAL_REPORT;
-    SendRequestToServer(SERVER_SDKDUMP_SOCKET_NAME, requestData, responseData);
-    ASSERT_EQ(responseData, ResponseCode::REQUEST_REJECT);
+    int32_t retCode = SendRequestToServer(SERVER_SDKDUMP_SOCKET_NAME, &requestData, sizeof(requestData));
+    ASSERT_EQ(retCode, ResponseCode::REQUEST_REJECT);
 
     requestData.uid = -1;
-    SendRequestToServer(SERVER_SDKDUMP_SOCKET_NAME, requestData, responseData);
-    ASSERT_EQ(responseData, ResponseCode::REQUEST_REJECT);
+    retCode = SendRequestToServer(SERVER_SDKDUMP_SOCKET_NAME, &requestData, sizeof(requestData));
+    ASSERT_EQ(retCode, ResponseCode::REQUEST_REJECT);
 }
 
 /**
@@ -337,55 +383,24 @@ HWTEST_F(FaultLoggerdServiceTest, ReportExceptionClientTest03, TestSize.Level2)
 HWTEST_F(FaultLoggerdServiceTest, StatsClientTest01, TestSize.Level2)
 {
     FaultLoggerdStatsRequest requestData;
-    int32_t responseData(-1);
     FillRequestHeadData(requestData.head, FaultLoggerClientType::DUMP_STATS_CLIENT);
     requestData.type = FaultLoggerdStatType::DUMP_CATCHER;
 
-    SendRequestToServer(SERVER_CRASH_SOCKET_NAME, requestData, responseData);
-    ASSERT_EQ(responseData, ResponseCode::REQUEST_SUCCESS);
+    int32_t retCode = SendRequestToServer(SERVER_CRASH_SOCKET_NAME, &requestData, sizeof(requestData));
+    ASSERT_EQ(retCode, ResponseCode::REQUEST_SUCCESS);
 
     requestData.type = FaultLoggerdStatType::PROCESS_DUMP;
-    SendRequestToServer(SERVER_CRASH_SOCKET_NAME, requestData, responseData);
-    ASSERT_EQ(responseData, ResponseCode::REQUEST_SUCCESS);
+    retCode = SendRequestToServer(SERVER_CRASH_SOCKET_NAME, &requestData, sizeof(requestData));
+    ASSERT_EQ(retCode, ResponseCode::REQUEST_SUCCESS);
 
-    SendRequestToServer(SERVER_CRASH_SOCKET_NAME, requestData, responseData);
-    ASSERT_EQ(responseData, ResponseCode::REQUEST_SUCCESS);
+    retCode = SendRequestToServer(SERVER_CRASH_SOCKET_NAME, &requestData, sizeof(requestData));
+    ASSERT_EQ(retCode, ResponseCode::REQUEST_SUCCESS);
 
     requestData.type = FaultLoggerdStatType::DUMP_CATCHER;
-    SendRequestToServer(SERVER_CRASH_SOCKET_NAME, requestData, responseData);
-    ASSERT_EQ(responseData, ResponseCode::REQUEST_SUCCESS);
+    retCode = SendRequestToServer(SERVER_CRASH_SOCKET_NAME, &requestData, sizeof(requestData));
+    ASSERT_EQ(retCode, ResponseCode::REQUEST_SUCCESS);
 }
 #endif
-
-/**
- * @tc.name: FaultloggerdServerTest01
- * @tc.desc: test for invalid request data.
- * @tc.type: FUNC
- */
-HWTEST_F(FaultLoggerdServiceTest, FaultloggerdServerTest01, TestSize.Level2)
-{
-    FaultLoggerdStatsRequest requestData;
-    int32_t responseData(-1);
-    FillRequestHeadData(requestData.head, FaultLoggerClientType::REPORT_EXCEPTION_CLIENT);
-
-    SendRequestToServer(SERVER_CRASH_SOCKET_NAME, requestData, responseData);
-    ASSERT_EQ(responseData, ResponseCode::INVALID_REQUEST_DATA);
-
-    FillRequestHeadData(requestData.head, -1);
-    SendRequestToServer(SERVER_CRASH_SOCKET_NAME, requestData, responseData);
-    ASSERT_EQ(responseData, ResponseCode::UNKNOWN_CLIENT_TYPE);
-}
-
-/**
- * @tc.name: FaultloggerdDaemonTest01
- * @tc.desc: request a file descriptor for logging crash
- * @tc.type: FUNC
- */
-HWTEST_F(FaultLoggerdServiceTest, FaultloggerdDaemonTest01, TestSize.Level2)
-{
-    SmartFd crashFd(TempFileManager::CreateFileDescriptor(FaultLoggerType::CPP_CRASH, getpid(), gettid(), 0));
-    ASSERT_GE(crashFd, 0);
-}
 } // namespace HiviewDFX
 } // namespace OHOS
 

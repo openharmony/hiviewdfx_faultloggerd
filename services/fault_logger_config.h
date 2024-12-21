@@ -23,17 +23,17 @@
 namespace OHOS {
 namespace HiviewDFX {
 
-enum OverFileSizeAction {
+enum class OverFileSizeAction {
     CROP = 0, // default
     DELETE,
 };
 
-enum OverTimeFileDeleteType {
+enum class OverTimeFileDeleteType {
     PASSIVE = 0, // default
     ACTIVE,
 };
 
-struct TempFileConfig {
+struct SingleFileConfig {
     int32_t type;
     std::string fileNamePrefix;
     uint64_t maxSingleFileSize;
@@ -44,11 +44,11 @@ struct TempFileConfig {
     int32_t maxFileCount;
 };
 
-struct TempFilesConfig {
+struct DirectoryConfig {
     std::string tempFilePath;
     uint64_t maxTempFilesSize;
     int32_t fileClearTimeAfterBoot;
-    std::vector<TempFileConfig> tempFileConfigs;
+    std::vector<SingleFileConfig> singleFileConfigs;
 };
 
 class FaultLoggerConfig {
@@ -59,11 +59,11 @@ public:
     FaultLoggerConfig &operator=(const FaultLoggerConfig&) = delete;
     FaultLoggerConfig &operator=(FaultLoggerConfig&&) = delete;
     static FaultLoggerConfig& GetInstance();
-    const TempFilesConfig& GetTempFileConfig() const;
+    [[nodiscard]] const DirectoryConfig& GetTempFileConfig() const;
 private:
     FaultLoggerConfig();
     ~FaultLoggerConfig() = default;
-    TempFilesConfig tempFilesConfig_;
+    DirectoryConfig directoryConfig_;
 };
 } // namespace HiviewDFX
 } // namespace OHOS

@@ -16,8 +16,6 @@
 #ifndef FAULTLOGGERD_TEST_H
 #define FAULTLOGGERD_TEST_H
 
-#include <cstdint>
-
 class FaultLoggerdTestServer {
 public:
     static FaultLoggerdTestServer& GetInstance();

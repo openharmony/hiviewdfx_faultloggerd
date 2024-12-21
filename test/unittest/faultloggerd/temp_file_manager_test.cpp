@@ -20,11 +20,11 @@
 #include <thread>
 
 #include "directory_ex.h"
-#include "faultloggerd_socket.h"
 #include "faultloggerd_test.h"
 
 #define private public
 #include "fault_logger_daemon.h"
+#include "smart_fd.h"
 #include "temp_file_manager.h"
 
 namespace OHOS {
@@ -34,7 +34,7 @@ constexpr const char* const CPP_CRASH_FILE = "cppcrash";
 constexpr const char* const JS_HEAP = "jsheap";
 constexpr const char* const LEAK_STACK = "leakstack";
 
-TempFileManager& tempFileManager = *FaultLoggerDaemon::GetInstance().tempFileManager_;
+TempFileManager& tempFileManager = FaultLoggerDaemon::GetInstance().tempFileManager_;
 }
 using namespace OHOS::HiviewDFX;
 using namespace testing::ext;

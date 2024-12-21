@@ -15,20 +15,21 @@
 
 #include "fault_logger_daemon.h"
 
+#include <csignal>
 #include <memory>
 #include <thread>
+
+#include "dfx_log.h"
+#include "dfx_util.h"
 #include "epoll_manager.h"
 #include "fault_logger_server.h"
-#include "dfx_log.h"
-#include "csignal"
-#include "dfx_util.h"
 
 namespace OHOS {
 namespace HiviewDFX {
 
 namespace {
+constexpr const char* const FAULTLOGGERD_DAEMON_TAG = "FAULT_LOGGER_DAEMON";
 constexpr int32_t MAX_CONNECTION = 30;
-constexpr const char* const FAULTLOGGERD_DAEMON_TAG = "FAULTLOGGERD_DAEMON";
 constexpr int32_t MAX_EPOLL_EVENT = 1024;
 }
 
@@ -38,28 +39,27 @@ FaultLoggerDaemon& FaultLoggerDaemon::GetInstance()
     return faultLoggerDaemon;
 }
 
-FaultLoggerDaemon::FaultLoggerDaemon()
+FaultLoggerDaemon::FaultLoggerDaemon() : mainServer_(mainEpollManager_), tempFileManager_(secondaryEpollManager_)
 {
-    if (!mainEpollManager_.CreateEpoll(MAX_EPOLL_EVENT)) {
+    if (!mainEpollManager_.Init(MAX_EPOLL_EVENT)) {
         DFXLOGE("%{public}s :: Failed to init main epollManager", FAULTLOGGERD_DAEMON_TAG);
         return;
     }
-    mainServer_ = std::unique_ptr<SocketServer>(new (std::nothrow) SocketServer(mainEpollManager_));
-    if (!mainServer_ || !mainServer_->Init()) {
-        DFXLOGE("%{public}s :: Failed to init Faultloggerd Server", FAULTLOGGERD_DAEMON_TAG);
-        return;
-    }
-
-    if (!secondaryEpollManager_.CreateEpoll(MAX_EPOLL_EVENT)) {
+    if (!secondaryEpollManager_.Init(MAX_EPOLL_EVENT)) {
         DFXLOGE("%{public}s :: Failed to init secondary epollManager", FAULTLOGGERD_DAEMON_TAG);
         return;
     }
-    tempFileManager_ = std::unique_ptr<TempFileManager>(new (std::nothrow) TempFileManager(secondaryEpollManager_));
-    if (!tempFileManager_->Init()) {
+    if (!mainServer_.Init()) {
+        DFXLOGE("%{public}s :: Failed to init Faultloggerd Server", FAULTLOGGERD_DAEMON_TAG);
+        return;
+    }
+    if (!tempFileManager_.Init()) {
         DFXLOGE("%{public}s :: Failed to init tempFileManager", FAULTLOGGERD_DAEMON_TAG);
+        return;
     }
     if (signal(SIGCHLD, SIG_IGN) == SIG_ERR || signal(SIGPIPE, SIG_IGN) == SIG_ERR) {
-        DFXLOGE("%{public}s :: Failed to signal SIGCHLD or SIGPIPE", FAULTLOGGERD_DAEMON_TAG);
+        DFXLOGE("%{public}s :: Failed to signal SIGCHLD or SIGPIPE, errno: %{public}d",
+            FAULTLOGGERD_DAEMON_TAG, errno);
     }
 }
 

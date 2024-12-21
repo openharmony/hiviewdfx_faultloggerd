@@ -33,26 +33,15 @@ const char* const SERVER_CRASH_SOCKET_NAME = "faultloggerd.crash.server";
 const char* const SERVER_SDKDUMP_SOCKET_NAME = "faultloggerd.sdkdump.server";
 #endif
 
-bool StartListen(int& sockfd, const char* name, const int listenCnt);
-int32_t GetConnectSocketFd(const char* socketName, const int timeout);
-bool SendFileDescriptorToSocket(int sockfd, int fd);
-int ReadFileDescriptorFromSocket(int sockfd);
+bool StartListen(int32_t& sockFd, const char* name, uint32_t listenCnt);
+bool StartConnect(int32_t sockFd, const char* socketName, uint32_t timeout);
+int32_t CreateSocketFd();
+bool SendFileDescriptorToSocket(int32_t sockFd, const int32_t* fds, uint32_t nFds);
+bool ReadFileDescriptorFromSocket(int32_t sockFd, int32_t* fds, uint32_t nFds);
 
-bool SendMsgToSocket(int sockfd, const void* data, const unsigned int dataLength);
-bool GetMsgFromSocket(int sockfd, void* data, const unsigned int dataLength);
+bool SendMsgToSocket(int32_t sockFd, const void* data, uint32_t dataLength);
+bool GetMsgFromSocket(int32_t sockFd, void* data, uint32_t dataLength);
 #ifdef __cplusplus
 }
-class SmartFd {
-public:
-    SmartFd(int32_t fd) : fd_(fd) {};
-    ~SmartFd();
-    SmartFd(const SmartFd& smartSocket) = delete;
-    SmartFd(SmartFd&& smartSocket) noexcept ;
-    const SmartFd &operator=(const SmartFd &) = delete;
-    SmartFd& operator=(SmartFd &&rhs) noexcept ;
-    operator int32_t() const;
-private:
-    int32_t fd_;
-};
 #endif
 #endif

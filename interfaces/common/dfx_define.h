@@ -60,12 +60,12 @@ static const int PIPE_NUM_SZ = 2;
 static const int PIPE_READ = 0;
 static const int PIPE_WRITE = 1;
 
-static const char PROC_SELF_STATUS_PATH[] = "/proc/self/status";
-static const char PROC_SELF_TASK_PATH[] = "/proc/self/task";
-static const char PROC_SELF_CMDLINE_PATH[] = "/proc/self/cmdline";
-static const char PROC_SELF_COMM_PATH[] = "/proc/self/comm";
-static const char PROC_SELF_MAPS_PATH[] = "/proc/self/maps";
-static const char PROC_SELF_EXE_PATH[] = "/proc/self/exe";
+static const char* const PROC_SELF_STATUS_PATH = "/proc/self/status";
+static const char* const PROC_SELF_TASK_PATH = "/proc/self/task";
+static const char* const PROC_SELF_CMDLINE_PATH = "/proc/self/cmdline";
+static const char* const PROC_SELF_COMM_PATH = "/proc/self/comm";
+static const char* const PROC_SELF_MAPS_PATH = "/proc/self/maps";
+static const char* const PROC_SELF_EXE_PATH = "/proc/self/exe";
 
 #ifndef LIKELY
 #define LIKELY(exp)       (__builtin_expect(!!(exp), true))

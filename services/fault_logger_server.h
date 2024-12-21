@@ -17,8 +17,8 @@
 #define FAULT_LOGGER_SERVER_H_
 
 #include "epoll_manager.h"
+
 #include "fault_logger_service.h"
-#include "dfx_socket_request.h"
 
 namespace OHOS {
 namespace HiviewDFX {
@@ -44,7 +44,7 @@ private:
         SocketServerListener& socketServerListener_;
 
     private:
-        IFaultLoggerService* GetTargetService(int32_t faultLoggerClientType);
+        IFaultLoggerService* GetTargetService(int32_t faultLoggerClientType) const;
     };
     EpollManager& epollManager_;
     std::vector<std::pair<int32_t, std::unique_ptr<IFaultLoggerService>>> faultLoggerServices_{};

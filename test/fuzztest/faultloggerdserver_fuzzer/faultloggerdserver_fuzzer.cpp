@@ -16,26 +16,30 @@
 
 #include <cstddef>
 #include <cstdint>
-#include <unistd.h>
 #include <sys/socket.h>
+#include <unistd.h>
 
 #include "dfx_exception.h"
+#include "dfx_socket_request.h"
 #include "dfx_util.h"
 #include "faultloggerd_client.h"
 #include "fault_logger_daemon.h"
+#include "faultloggerd_socket.h"
 #include "faultloggerd_test.h"
-#include "dfx_socket_request.h"
+#include "smart_fd.h"
 
 namespace OHOS {
 namespace HiviewDFX {
 
 namespace {
-int32_t GetRandomSocketFd()
+void SendMsgToServer(int32_t socketFd, const void* data, size_t msgLen)
 {
     std::string socketNames[] = { SERVER_SOCKET_NAME, SERVER_SDKDUMP_SOCKET_NAME, SERVER_CRASH_SOCKET_NAME };
     srand(static_cast<unsigned>(time(nullptr)));
     int randomSocketIndex = rand() % 3;
-    return GetConnectSocketFd(socketNames[randomSocketIndex].c_str(), 0);
+    if (StartConnect(socketFd, socketNames[randomSocketIndex].c_str(), 0)) {
+        SendMsgToSocket(socketFd, data, msgLen);
+    }
 }
 void FillRequestHeadData(RequestDataHead& head, FaultLoggerClientType clientType)
 {
@@ -63,8 +67,8 @@ void FaultLoggerdServerTest(const uint8_t* data, size_t size)
     if (size < sizeof(FaultLoggerdRequest)) {
         return;
     }
-    SmartFd socketFd(GetRandomSocketFd());
-    SendMsgToSocket(socketFd, data, size);
+    SmartFd socketFd(CreateSocketFd());
+    SendMsgToServer(socketFd, data, size);
 }
 
 void FileDesServiceTest(const uint8_t* data, size_t size)
@@ -74,8 +78,8 @@ void FileDesServiceTest(const uint8_t* data, size_t size)
     }
     FaultLoggerdRequest requestData = *reinterpret_cast<const FaultLoggerdRequest*>(data);
     FillRequestHeadData(requestData.head, FaultLoggerClientType::LOG_FILE_DES_CLIENT);
-    SmartFd socketFd(GetRandomSocketFd());
-    SendMsgToSocket(socketFd, &requestData, sizeof(FaultLoggerdRequest));
+    SmartFd socketFd(CreateSocketFd());
+    SendMsgToServer(socketFd, &requestData, sizeof(FaultLoggerdRequest));
 }
 
 void ExceptionReportServiceTest(const uint8_t* data, size_t size)
@@ -85,8 +89,8 @@ void ExceptionReportServiceTest(const uint8_t* data, size_t size)
     }
     CrashDumpException requestData = *reinterpret_cast<const CrashDumpException*>(data);
     FillRequestHeadData(requestData.head, FaultLoggerClientType::REPORT_EXCEPTION_CLIENT);
-    SmartFd socketFd(GetRandomSocketFd());
-    SendMsgToSocket(socketFd, &requestData, sizeof(CrashDumpException));
+    SmartFd socketFd(CreateSocketFd());
+    SendMsgToServer(socketFd, &requestData, sizeof(CrashDumpException));
 }
 
 void DumpStatsServiceTest(const uint8_t* data, size_t size)
@@ -96,8 +100,8 @@ void DumpStatsServiceTest(const uint8_t* data, size_t size)
     }
     FaultLoggerdStatsRequest requestData = *reinterpret_cast<const FaultLoggerdStatsRequest*>(data);
     FillRequestHeadData(requestData.head, FaultLoggerClientType::DUMP_STATS_CLIENT);
-    SmartFd socketFd(GetRandomSocketFd());
-    SendMsgToSocket(socketFd, &requestData, sizeof(FaultLoggerdStatsRequest));
+    SmartFd socketFd(CreateSocketFd());
+    SendMsgToServer(socketFd, &requestData, sizeof(FaultLoggerdStatsRequest));
 }
 
 void SdkDumpServiceTest(const uint8_t* data, size_t size)
@@ -107,8 +111,8 @@ void SdkDumpServiceTest(const uint8_t* data, size_t size)
     }
     SdkDumpRequestData requestData = *reinterpret_cast<const SdkDumpRequestData*>(data);
     FillRequestHeadData(requestData.head, FaultLoggerClientType::SDK_DUMP_CLIENT);
-    SmartFd socketFd(GetRandomSocketFd());
-    SendMsgToSocket(socketFd, &requestData, sizeof(SdkDumpRequestData));
+    SmartFd socketFd(CreateSocketFd());
+    SendMsgToServer(socketFd, &requestData, sizeof(SdkDumpRequestData));
 }
 
 void PipServiceTest(const uint8_t* data, size_t size)
@@ -118,8 +122,8 @@ void PipServiceTest(const uint8_t* data, size_t size)
     }
     PipFdRequestData requestData = *reinterpret_cast<const PipFdRequestData*>(data);
     FillRequestHeadData(requestData.head, FaultLoggerClientType::PIPE_FD_CLIENT);
-    SmartFd socketFd(GetRandomSocketFd());
-    SendMsgToSocket(socketFd, &requestData, sizeof(PipFdRequestData));
+    SmartFd socketFd(CreateSocketFd());
+    SendMsgToServer(socketFd, &requestData, sizeof(PipFdRequestData));
 }
 
 void TempFileManagerTest(const uint8_t* data, size_t size)

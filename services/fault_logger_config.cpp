@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -15,23 +15,23 @@
 
 #include "fault_logger_config.h"
 
-#include <limits>
 #include <algorithm>
-
-#include "dfx_log.h"
-#include "dfx_socket_request.h"
-#include "file_ex.h"
+#include <limits>
 
 #ifndef is_ohos_lite
 #include "cJSON.h"
 #endif
+
+#include "dfx_log.h"
+#include "dfx_socket_request.h"
+#include "file_ex.h"
 
 namespace OHOS {
 namespace HiviewDFX {
 
 namespace {
 #ifndef is_ohos_lite
-constexpr const char* FAULTLOGGER_CONFIG_TAG = "FaultLoggerConfig";
+constexpr const char* FAULTLOGGER_CONFIG_TAG = "FAULT_LOGGER_CONFIG";
 constexpr const char* const CONFIG_FILE_PATH = "/system/etc/faultloggerd_config.json";
 constexpr int32_t KB_TO_B = 10;
 constexpr int32_t MAX_NUM_INT32 = std::numeric_limits<int32_t>::max();
@@ -49,64 +49,65 @@ int32_t GetInt32ValueFromJson(const cJSON* json, int32_t defaultValue = 0)
     return json == nullptr ? defaultValue : json->valueint;
 }
 
-void ParseTempFileConfig(const cJSON* tempFile,  std::vector<TempFileConfig>& tempFileConfigs)
+void ParseSingleFileConfig(const cJSON* tempFile,  std::vector<SingleFileConfig>& singleFileConfigs)
 {
     if (tempFile == nullptr) {
         DFXLOGE("%{public}s :: failed to Parse TempFileConfig", FAULTLOGGER_CONFIG_TAG);
         return;
     }
-    auto& tempFileConfig = tempFileConfigs.emplace_back();
+    auto& tempFileConfig = singleFileConfigs.emplace_back();
     tempFileConfig.type = GetInt32ValueFromJson(cJSON_GetObjectItem(tempFile, "type"));
     tempFileConfig.fileNamePrefix = GetStringValueFromJson(cJSON_GetObjectItem(tempFile, "fileNamePrefix"));
-    int32_t maxFileSize = std::clamp(GetInt32ValueFromJson(cJSON_GetObjectItem(tempFile, "maxSingleFileSize")),
+    int32_t maxFileSize = std::clamp(GetInt32ValueFromJson(cJSON_GetObjectItem(tempFile, "maxSingleFileSizeInKB")),
                                      0, MAX_NUM_INT32);
     tempFileConfig.maxSingleFileSize = static_cast<uint64_t>(maxFileSize) << KB_TO_B;
-    int32_t fileExistTime = GetInt32ValueFromJson(cJSON_GetObjectItem(tempFile, "fileExistTime"), -1);
+    int32_t fileExistTime = GetInt32ValueFromJson(cJSON_GetObjectItem(tempFile, "fileExistTimeInSecond"), -1);
     tempFileConfig.fileExistTime = std::clamp(fileExistTime, -1, MAX_NUM_INT32);
     int32_t keeFileCount = GetInt32ValueFromJson(cJSON_GetObjectItem(tempFile, "keepFileCount"), -1);
     tempFileConfig.keepFileCount = std::clamp(keeFileCount, -1, MAX_NUM_INT32);
     int32_t maxFileCount = GetInt32ValueFromJson(cJSON_GetObjectItem(tempFile, "maxFileCount"), -1);
     tempFileConfig.maxFileCount = std::clamp(maxFileCount, tempFileConfig.keepFileCount, MAX_NUM_INT32);
-    if (GetStringValueFromJson(cJSON_GetObjectItem(tempFile, "overTimeFileDeleteType"))
-        == OVER_TIME_FILE_DELETE_ACTIVE) {
+    if (GetStringValueFromJson(cJSON_GetObjectItem(tempFile, "overTimeFileDeleteType")) ==
+        OVER_TIME_FILE_DELETE_ACTIVE) {
         tempFileConfig.overTimeFileDeleteType = OverTimeFileDeleteType::ACTIVE;
     }
-    if (GetStringValueFromJson(cJSON_GetObjectItem(tempFile, "overFileSizeAction"))
-        == OVER_SIZE_ACTION_DELETE) {
+    if (GetStringValueFromJson(cJSON_GetObjectItem(tempFile, "overFileSizeAction")) ==
+        OVER_SIZE_ACTION_DELETE) {
         tempFileConfig.overFileSizeAction = OverFileSizeAction::DELETE;
     }
 }
 
-void ParseTempFilesConfig(const cJSON* json, TempFilesConfig& tempFilesConfig)
+void ParseDirectoryConfig(const cJSON* json, DirectoryConfig& directoryConfig)
 {
     if (json == nullptr) {
-        DFXLOGE("%{public}s :: failed to Parse TempFilesConfig", FAULTLOGGER_CONFIG_TAG);
+        DFXLOGE("%{public}s :: failed to Parse directoryConfig", FAULTLOGGER_CONFIG_TAG);
         return;
     }
-    tempFilesConfig.tempFilePath = GetStringValueFromJson(cJSON_GetObjectItem(json, "tempFilePath"));
-    int32_t maxFileSize = std::clamp(GetInt32ValueFromJson(cJSON_GetObjectItem(json, "maxTempFilesSize")),
+    directoryConfig.tempFilePath = GetStringValueFromJson(cJSON_GetObjectItem(json, "tempFilePath"));
+    int32_t maxFileSize = std::clamp(GetInt32ValueFromJson(cJSON_GetObjectItem(json, "maxTempFilesSizeInKB")),
                                      0, MAX_NUM_INT32);
-    tempFilesConfig.maxTempFilesSize = static_cast<uint64_t>(maxFileSize) << KB_TO_B;
-    int32_t configClearTime = GetInt32ValueFromJson(cJSON_GetObjectItem(json, "fileClearTimeAfterBoot"));
-    tempFilesConfig.fileClearTimeAfterBoot = std::clamp(configClearTime, 0, MAX_NUM_INT32);
+    directoryConfig.maxTempFilesSize = static_cast<uint64_t>(maxFileSize) << KB_TO_B;
+    int32_t configClearTime = GetInt32ValueFromJson(cJSON_GetObjectItem(json, "fileClearTimeAfterBootInSecond"));
+    directoryConfig.fileClearTimeAfterBoot = std::clamp(configClearTime, 0, MAX_NUM_INT32);
     auto* tempFiles = cJSON_GetObjectItem(json, "tempFiles");
     if (tempFiles != nullptr && cJSON_IsArray(tempFiles)) {
         int arraySize = cJSON_GetArraySize(tempFiles);
         for (int i = 0; i < arraySize; i++) {
-            ParseTempFileConfig(cJSON_GetArrayItem(tempFiles, i), tempFilesConfig.tempFileConfigs);
+            ParseSingleFileConfig(cJSON_GetArrayItem(tempFiles, i), directoryConfig.singleFileConfigs);
         }
     }
 }
 #endif
-void InitFaultloggerConfig(TempFilesConfig& tempFilesConfig)
-{
+
 #ifdef FAULTLOGGERD_TEST
-    tempFilesConfig.tempFilePath = "/data/test/faultloggerd/temp";
+void InitFaultloggerTestConfig(DirectoryConfig& directoryConfig)
+{
+    directoryConfig.tempFilePath = "/data/test/faultloggerd/temp";
     constexpr uint64_t maxTempFilesSize = 4ull << 10; // 4KB
-    tempFilesConfig.maxTempFilesSize = maxTempFilesSize;
+    directoryConfig.maxTempFilesSize = maxTempFilesSize;
     constexpr int32_t fileClearTimeAfterBoot = 3; // 3S
-    tempFilesConfig.fileClearTimeAfterBoot = fileClearTimeAfterBoot;
-    tempFilesConfig.tempFileConfigs = {
+    directoryConfig.fileClearTimeAfterBoot = fileClearTimeAfterBoot;
+    directoryConfig.singleFileConfigs = {
         {
             .type = FaultLoggerType::CPP_CRASH,
             .fileNamePrefix = "cppcrash",
@@ -133,8 +134,8 @@ void InitFaultloggerConfig(TempFilesConfig& tempFilesConfig)
             .maxFileCount = 2,
         }
     };
-#endif
 }
+#endif
 }
 
 FaultLoggerConfig& FaultLoggerConfig::GetInstance()
@@ -150,23 +151,25 @@ FaultLoggerConfig::FaultLoggerConfig()
     OHOS::LoadStringFromFile(CONFIG_FILE_PATH, content);
     cJSON* json = cJSON_Parse(content.c_str());
     if (json == nullptr) {
-        DFXLOGE("%{public}s :: failed to parse json from the content of file(%{public}s).\n",
+        DFXLOGE("%{public}s :: failed to parse json from the content of file(%{public}s).",
                 FAULTLOGGER_CONFIG_TAG, CONFIG_FILE_PATH);
         return;
     }
-    ParseTempFilesConfig(json, tempFilesConfig_);
+    ParseDirectoryConfig(json, directoryConfig_);
     cJSON_Delete(json);
-    InitFaultloggerConfig(tempFilesConfig_);
+#ifdef FAULTLOGGERD_TEST
+    InitFaultloggerTestConfig(directoryConfig_);
+#endif
 }
 #else
 FaultLoggerConfig::FaultLoggerConfig()
 {
-    tempFilesConfig_.tempFilePath = "/data/log/faultlog/temp";
+    directoryConfig_.tempFilePath = "/data/log/faultlog/temp";
     constexpr uint64_t maxTempFilesSize = 2ull << 30; // 2GB
-    tempFilesConfig_.maxTempFilesSize = maxTempFilesSize;
-    constexpr int32_t fileClearTimeAfterBoot = 60; // 60s
-    tempFilesConfig_.fileClearTimeAfterBoot = fileClearTimeAfterBoot;
-    tempFilesConfig_.tempFileConfigs = {
+    directoryConfig_.maxTempFilesSize = maxTempFilesSize;
+    constexpr int32_t fileClearTimeAfterBoot = 300; // 300s
+    directoryConfig_.fileClearTimeAfterBoot = fileClearTimeAfterBoot;
+    directoryConfig_.singleFileConfigs = {
         {
             .type = FaultLoggerType::CPP_CRASH,
             .fileNamePrefix = "cppcrash",
@@ -198,13 +201,15 @@ FaultLoggerConfig::FaultLoggerConfig()
             .maxFileCount = 40
         }
     };
-    InitFaultloggerConfig(tempFilesConfig_);
+#ifdef FAULTLOGGERD_TEST
+    InitFaultloggerTestConfig(directoryConfig_);
+#endif
 }
 #endif
 
-const TempFilesConfig& FaultLoggerConfig::GetTempFileConfig() const
+const DirectoryConfig& FaultLoggerConfig::GetTempFileConfig() const
 {
-    return tempFilesConfig_;
+    return directoryConfig_;
 }
 } // namespace HiviewDFX
 } // namespace OHOS

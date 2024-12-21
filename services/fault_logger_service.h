@@ -22,8 +22,6 @@
 #include "dfx_socket_request.h"
 #include "temp_file_manager.h"
 #include "dfx_exception.h"
-#include "dfx_socket_request.h"
-#include "faultloggerd_socket.h"
 
 namespace OHOS {
 namespace HiviewDFX {
@@ -51,7 +49,7 @@ protected:
     virtual int32_t OnRequest(const std::string& socketName, int32_t connectionFd, const T& requestData) = 0;
 };
 
-class FaultLoggedFileDesService : public FaultLoggerService<FaultLoggerdRequest> {
+class FileDesService : public FaultLoggerService<FaultLoggerdRequest> {
 public:
     int32_t OnRequest(const std::string& socketName, int32_t connectionFd,
                       const FaultLoggerdRequest& requestData) override;
@@ -60,7 +58,7 @@ private:
 };
 
 #ifndef HISYSEVENT_DISABLE
-class FaultLoggeExceptionReportService : public FaultLoggerService<CrashDumpException> {
+class ExceptionReportService : public FaultLoggerService<CrashDumpException> {
 public:
     int32_t OnRequest(const std::string& socketName, int32_t connectionFd,
                       const CrashDumpException& requestData) override;
@@ -68,8 +66,7 @@ private:
     static bool Filter(int32_t connectionFd, const CrashDumpException& requestData);
 };
 
-class DumpStats {
-public:
+struct DumpStats {
     int32_t pid = 0;
     uint64_t requestTime = 0;
     uint64_t signalTime = 0;
@@ -83,7 +80,7 @@ public:
     std::string targetProcessName;
 };
 
-class FaultLoggerdStatsService : public FaultLoggerService<FaultLoggerdStatsRequest> {
+class StatsService : public FaultLoggerService<FaultLoggerdStatsRequest> {
 public:
     int32_t OnRequest(const std::string& socketName, int32_t connectionFd,
                       const FaultLoggerdStatsRequest& requestData) override;
@@ -91,12 +88,12 @@ private:
     void RemoveTimeoutDumpStats();
     void ReportDumpStats(const DumpStats& stat);
     static std::string GetElfName(const FaultLoggerdStatsRequest& request);
-    std::vector<DumpStats> stats_{};
+    std::list<DumpStats> stats_{};
 };
 #endif
 
 #ifndef is_ohos_lite
-class FaultloggerdSdkDumpService : public FaultLoggerService<SdkDumpRequestData> {
+class SdkDumpService : public FaultLoggerService<SdkDumpRequestData> {
 public:
 
     int32_t OnRequest(const std::string& socketName, int32_t connectionFd,
@@ -105,7 +102,7 @@ private:
     static int32_t Filter(const std::string& socketName, const SdkDumpRequestData& requestData, uint32_t uid);
 };
 
-class FaultLoggerdPipService : public FaultLoggerService<PipFdRequestData> {
+class PipeService : public FaultLoggerService<PipFdRequestData> {
 public:
     int32_t OnRequest(const std::string& socketName, int32_t connectionFd,
                       const PipFdRequestData& requestData) override;

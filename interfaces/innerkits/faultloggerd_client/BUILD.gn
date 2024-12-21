@@ -72,7 +72,7 @@ if (defined(ohos_lite)) {
       "faultloggerd_socket.cpp",
     ]
     cflags = [ "-fstack-protector-strong" ]
-    include_dirs = [ "." ]
+    include_dirs = [ "$faultloggerd_common_path/dfxutil" ]
     version_script = "libfaultloggerd.map"
     deps = [
       "$faultloggerd_common_path/cutil:dfx_cutil",

@@ -75,7 +75,6 @@ typedef struct RequestDataHead {
     int32_t clientPid;
 } __attribute__((packed)) RequestDataHead;
 
-#ifdef __cplusplus
 typedef struct SdkDumpRequestData {
     /** request data head **/
     RequestDataHead head;
@@ -89,34 +88,18 @@ typedef struct SdkDumpRequestData {
     int32_t callerTid;
     /** time of current request */
     uint64_t time;
-    /** ture output json string, false output default string */
-    bool isJson;
     /** dumpcatcher remote unwind endtime ms */
     uint64_t endTime;
 } __attribute__((packed)) SdkDumpRequestData;
-#endif
+
 /**
  * @brief  type of request about pipe
 */
 typedef enum FaultLoggerPipeType : int8_t {
-    PIPE_FD_READ,
-    PIPE_FD_WRITE,
     /** For request file descriptor of pipe to read buffer  */
-    PIPE_FD_READ_BUF = 0b00,
+    PIPE_FD_READ = 0,
     /** For request file descriptor of pipe to write buffer  */
-    PIPE_FD_WRITE_BUF = 0b01,
-    /** For request file descriptor of pipe to read result  */
-    PIPE_FD_READ_RES = 0b10,
-    /** For request file descriptor of pipe to write result  */
-    PIPE_FD_WRITE_RES = 0b11,
-    /** For request file descriptor of pipe to json read buffer  */
-    PIPE_FD_JSON_READ_BUF = 0b100,
-    /** For request file descriptor of pipe to json write buffer  */
-    PIPE_FD_JSON_WRITE_BUF = 0b101,
-    /** For request file descriptor of pipe to json read result  */
-    PIPE_FD_JSON_READ_RES = 0b110,
-    /** For request file descriptor of pipe to json write result  */
-    PIPE_FD_JSON_WRITE_RES = 0b111,
+    PIPE_FD_WRITE,
     /** For request to delete file descriptor of pipe */
     PIPE_FD_DELETE,
 } FaultLoggerPipeType;
@@ -191,11 +174,13 @@ typedef struct FaultLoggerdStatsRequest {
 
 typedef enum ResponseCode : int32_t {
     /** failed receive msg form server */
-    RECEIVE_DATA_FAILED = -3,
+    RECEIVE_DATA_FAILED = -4,
     /** failed send msg to server */
-    SEND_DATA_FAILED = -2,
+    SEND_DATA_FAILED = -3,
     /** failed connect to server */
-    CONNECT_FAILED = -1,
+    CONNECT_FAILED = -2,
+    /** default code **/
+    DEFAULT_ERROR_CODE = -1,
     /** request success */
     REQUEST_SUCCESS = 0,
     /** unknown client type */

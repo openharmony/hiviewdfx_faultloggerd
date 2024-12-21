@@ -16,6 +16,7 @@
 #define DFX_FAULTLOGGERD_CLIENT_H
 
 #include <inttypes.h>
+
 #include "dfx_socket_request.h"
 
 #ifdef __cplusplus
@@ -37,12 +38,12 @@ int32_t RequestFileDescriptor(int32_t type);
  *               pipeFd[1] to transfer backtrace result
  * @return if succeed return 0, otherwise return -1
 */
-int RequestPipeFd(int32_t pid, int32_t pipeType, int (&pipeFd)[2]);
+int32_t RequestPipeFd(int32_t pid, int32_t pipeType, int (&pipeFd)[2]);
 
 /**
  * @brief request delete file descriptor
  * @param pid process id of request pipe
- * @return if succeed return 0, otherwise return -1
+ * @return if succeed return 0, otherwise return the error code
 */
 int32_t RequestDelPipeFd(int32_t pid);
 
@@ -51,7 +52,7 @@ int32_t RequestDelPipeFd(int32_t pid);
  * @param request struct of request information
  * @return if succeed return file descriptor, otherwise return -1
 */
-int RequestFileDescriptorEx(struct FaultLoggerdRequest *request);
+int32_t RequestFileDescriptorEx(struct FaultLoggerdRequest* request);
 
 /**
  * @brief request dump stack about process
@@ -60,17 +61,17 @@ int RequestFileDescriptorEx(struct FaultLoggerdRequest *request);
  * @param pipeReadFd if pass sdkdump, will get pipeReadFd[0] to read call stack message and
  *                   pipeReadFd[1] to read backtrace result
  * @param isJson if set true, will get json format result, else get string result
- * @return if succeed return 0 , otherwise return -1
+ * @return if succeed return 0 , otherwise return the error code
 */
-int RequestSdkDump(int32_t pid, int32_t tid, int (&pipeReadFd)[2],
-                   bool isjson = false, int timeout = 10000); // 10000 : dump timeout ms
+int32_t RequestSdkDump(int32_t pid, int32_t tid, int (&pipeReadFd)[2],
+    bool isjson = false, int timeout = 10000); // 10000 : dump timeout ms
 
 /**
  * @brief report sdk dump result to faultloggerd for stats collection
  * @param request dump request result
- * @return if succeed return 0 , otherwise return -1
+ * @return if succeed return 0 , otherwise return the error code
 */
-int ReportDumpStats(struct FaultLoggerdStatsRequest *request);
+int32_t ReportDumpStats(struct FaultLoggerdStatsRequest *request);
 #ifdef __cplusplus
 }
 #endif

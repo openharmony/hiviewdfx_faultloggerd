@@ -27,27 +27,27 @@ namespace OHOS {
 namespace HiviewDFX {
 
 namespace {
-constexpr const char* const FAULTLOGGERD_SERVER_TAG = "FAULTLOGGERD_SERVER";
+constexpr const char* const FAULTLOGGERD_SERVER_TAG = "FAULT_LOGGER_SERVER";
 }
 
-SocketServer::SocketServer(OHOS::HiviewDFX::EpollManager& epollManager) : epollManager_(epollManager) {}
+SocketServer::SocketServer(EpollManager& epollManager) : epollManager_(epollManager) {}
 
 bool SocketServer::Init()
 {
-    std::unique_ptr<IFaultLoggerService> logFileDesService(new (std::nothrow) FaultLoggedFileDesService());
+    std::unique_ptr<IFaultLoggerService> logFileDesService(new (std::nothrow) FileDesService());
     AddService(LOG_FILE_DES_CLIENT, std::move(logFileDesService));
 #ifndef HISYSEVENT_DISABLE
-    std::unique_ptr<IFaultLoggerService> reportExceptionService(new (std::nothrow) FaultLoggeExceptionReportService());
+    std::unique_ptr<IFaultLoggerService> reportExceptionService(new (std::nothrow) ExceptionReportService());
     AddService(REPORT_EXCEPTION_CLIENT, std::move(reportExceptionService));
-    std::unique_ptr<IFaultLoggerService> statsClientService(new (std::nothrow) FaultLoggerdStatsService());
+    std::unique_ptr<IFaultLoggerService> statsClientService(new (std::nothrow) StatsService());
     AddService(DUMP_STATS_CLIENT, std::move(statsClientService));
 #endif
     if (!AddServerListener(SERVER_SOCKET_NAME) || !AddServerListener(SERVER_CRASH_SOCKET_NAME)) {
         return false;
     }
 #ifndef is_ohos_lite
-    AddService(PIPE_FD_CLIENT, std::make_unique<FaultLoggerdPipService>());
-    AddService(SDK_DUMP_CLIENT, std::make_unique<FaultloggerdSdkDumpService>());
+    AddService(PIPE_FD_CLIENT, std::make_unique<PipeService>());
+    AddService(SDK_DUMP_CLIENT, std::make_unique<SdkDumpService>());
     if (!AddServerListener(SERVER_SDKDUMP_SOCKET_NAME)) {
         return false;
     }
@@ -73,13 +73,14 @@ bool SocketServer::AddServerListener(const char* socketName)
     return epollManager_.AddListener(std::move(serverListener));
 }
 
-SocketServer::SocketServerListener::SocketServerListener(SocketServer& socketServer, int32_t fd, std::string socketName)
-    : EpollListener(fd), socketServer_(socketServer), socketName_(std::move(socketName)) {}
+SocketServer::SocketServerListener::SocketServerListener(SocketServer& socketServer,
+    const int32_t fd, std::string socketName) : EpollListener(fd), socketServer_(socketServer),
+    socketName_(std::move(socketName)) {}
 
-SocketServer::ClientRequestListener::ClientRequestListener(SocketServerListener& socketServerListener, int32_t fd)
+SocketServer::ClientRequestListener::ClientRequestListener(SocketServerListener& socketServerListener, const int32_t fd)
     : EpollListener(fd), socketServerListener_(socketServerListener) {}
 
-IFaultLoggerService* SocketServer::ClientRequestListener::GetTargetService(int32_t faultLoggerClientType)
+IFaultLoggerService* SocketServer::ClientRequestListener::GetTargetService(const int32_t faultLoggerClientType) const
 {
     for (const auto& faultLoggerServicePair : socketServerListener_.socketServer_.faultLoggerServices_) {
         if (faultLoggerServicePair.first == faultLoggerClientType) {
@@ -93,28 +94,21 @@ void SocketServer::ClientRequestListener::OnEventPoll()
 {
     constexpr int32_t maxBuffSize = 2048;
     std::vector<uint8_t> buf(maxBuffSize, 0);
-    do {
-        ssize_t nread = OHOS_TEMP_FAILURE_RETRY(read(GetFd(), buf.data(), maxBuffSize));
-        if (nread <= 0) {
-            break;
-        }
+    ssize_t nread = OHOS_TEMP_FAILURE_RETRY(read(GetFd(), buf.data(), maxBuffSize));
+    if (nread > 0) {
         auto dataHead = reinterpret_cast<RequestDataHead*>(buf.data());
         DFXLOGI("%{public}s :: %{public}s receive request from pid: %{public}d, clientType: %{public}d",
                 FAULTLOGGERD_SERVER_TAG, socketServerListener_.socketName_.c_str(),
                 dataHead->clientPid, dataHead->clientType);
         IFaultLoggerService* service = GetTargetService(dataHead->clientType);
-        int32_t retCode = ResponseCode::REQUEST_SUCCESS;
-        if (service == nullptr) {
-            retCode = ResponseCode::UNKNOWN_CLIENT_TYPE;
-        } else {
-            retCode = service->OnReceiveMsg(socketServerListener_.socketName_, GetFd(), nread, buf);
-        }
+        int32_t retCode = service ? service->OnReceiveMsg(socketServerListener_.socketName_, GetFd(), nread, buf)
+            : ResponseCode::UNKNOWN_CLIENT_TYPE;
         if (retCode != ResponseCode::REQUEST_SUCCESS) {
             DFXLOGW("%{public}s :: Failed to resolve the request for clientType: %{public}d, "
                     "and retCode %{public}d", FAULTLOGGERD_SERVER_TAG, dataHead->clientType, retCode);
             SendMsgToSocket(GetFd(), &retCode, sizeof(retCode));
         }
-    } while (false);
+    }
     socketServerListener_.socketServer_.epollManager_.RemoveListener(GetFd());
 }
 

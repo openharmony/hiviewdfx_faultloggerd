@@ -17,8 +17,9 @@
 
 #include <cstddef>
 #include <cstdio>
-#include <securec.h>
 #include <string>
+
+#include <securec.h>
 #include <unistd.h>
 
 #include <sys/socket.h>
@@ -32,96 +33,55 @@
 
 namespace {
 constexpr int SOCKET_BUFFER_SIZE = 32;
+}
 
-bool StartConnect(int sockfd, const std::string& serverSocketPath, const int timeout)
+bool StartConnect(int32_t sockFd, const char* socketName, uint32_t timeout)
 {
+    if (UNLIKELY(sockFd < 0 || socketName == nullptr)) {
+        return false;
+    }
     if (timeout > 0) {
-        struct timeval timev = {
-            timeout,
-            0
-        };
-        void* pTimev = &timev;
-        if (OHOS_TEMP_FAILURE_RETRY(setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, \
-            static_cast<const char*>(pTimev), sizeof(timev))) != 0) {
-            DFXLOGE("setsockopt(%{public}d) SO_RCVTIMEO error, errno(%{public}d).", sockfd, errno);
+        struct timeval timev = { timeout, 0 };
+        if (OHOS_TEMP_FAILURE_RETRY(setsockopt(sockFd, SOL_SOCKET, SO_RCVTIMEO, &timev, sizeof(timev))) != 0) {
+            DFXLOGE("setsockopt(%{public}d) SO_RCVTIMEO error, errno(%{public}d).", sockFd, errno);
         }
-        if (OHOS_TEMP_FAILURE_RETRY(setsockopt(sockfd, SOL_SOCKET, SO_SNDTIMEO, \
-            static_cast<const char*>(pTimev), sizeof(timev))) != 0) {
-            DFXLOGE("setsockopt(%{public}d) SO_SNDTIMEO error, errno(%{public}d).", sockfd, errno);
+        if (OHOS_TEMP_FAILURE_RETRY(setsockopt(sockFd, SOL_SOCKET, SO_SNDTIMEO, &timev, sizeof(timev))) != 0) {
+            DFXLOGE("setsockopt(%{public}d) SO_SNDTIMEO error, errno(%{public}d).", sockFd, errno);
         }
     }
 
     struct sockaddr_un server{};
     server.sun_family = AF_LOCAL;
-    errno_t err = strncpy_s(server.sun_path, sizeof(server.sun_path), serverSocketPath.c_str(),
-                            sizeof(server.sun_path) - 1);
+    std::string fullPath = std::string(FAULTLOGGERD_SOCK_BASE_PATH) + std::string(socketName);
+    errno_t err = strncpy_s(server.sun_path, sizeof(server.sun_path), fullPath.c_str(), sizeof(server.sun_path) - 1);
     if (err != EOK) {
         DFXLOGE("%{public}s :: strncpy failed, err = %{public}d.", __func__, (int)err);
         return false;
     }
 
     int len = static_cast<int>(offsetof(struct sockaddr_un, sun_path) + strlen(server.sun_path) + 1);
-    int connected = OHOS_TEMP_FAILURE_RETRY(connect(sockfd, reinterpret_cast<struct sockaddr *>(&server), len));
+    int connected = OHOS_TEMP_FAILURE_RETRY(connect(sockFd, reinterpret_cast<struct sockaddr *>(&server), len));
     if (connected < 0) {
         DFXLOGE("%{public}s :: connect failed, errno = %{public}d.", __func__, errno);
         return false;
     }
     return true;
 }
-}
 
-SmartFd::~SmartFd()
+int32_t CreateSocketFd()
 {
-    if (fd_ >= 0) {
-        close(fd_);
-        fd_ = -1;
-    }
-}
-
-SmartFd::SmartFd(SmartFd&& smartSocket) noexcept : fd_(smartSocket.fd_)
-{
-    smartSocket.fd_ = -1;
-}
-
-SmartFd& SmartFd::operator=(SmartFd&& rhs) noexcept
-{
-    if (this != &rhs) {
-        if (fd_ >= 0) {
-            close(fd_);
-        }
-        fd_ = rhs.fd_;
-        rhs.fd_ = -1;
-    }
-    return *this;
-}
-
-SmartFd::operator int32_t() const
-{
-    return fd_;
-}
-
-int32_t GetConnectSocketFd(const char* socketName, const int timeout)
-{
-    if (socketName == nullptr) {
-        return -1;
-    }
     int32_t socketFd = socket(AF_LOCAL, SOCK_STREAM, 0);
     if (socketFd < 0) {
         DFXLOGE("%{public}s :: Failed to create socket, errno(%{public}d)", __func__, errno);
         return -1;
     }
-    std::string fullPath = std::string(FAULTLOGGERD_SOCK_BASE_PATH) + std::string(socketName);
-    if (!StartConnect(socketFd, fullPath, timeout)) {
-        close(socketFd);
-        return -1;
-    }
     return socketFd;
 }
 
-static bool GetServerSocket(int& sockfd, const char* name)
+static bool GetServerSocket(int32_t& sockFd, const char* name)
 {
-    sockfd = OHOS_TEMP_FAILURE_RETRY(socket(AF_LOCAL, SOCK_STREAM, 0));
-    if (sockfd < 0) {
+    sockFd = OHOS_TEMP_FAILURE_RETRY(socket(AF_LOCAL, SOCK_STREAM, 0));
+    if (sockFd < 0) {
         DFXLOGE("%{public}s :: Failed to create socket, errno(%{public}d)", __func__, errno);
         return false;
     }
@@ -139,13 +99,13 @@ static bool GetServerSocket(int& sockfd, const char* name)
     unlink(path.c_str());
 
     int optval = 1;
-    int ret = OHOS_TEMP_FAILURE_RETRY(setsockopt(sockfd, SOL_SOCKET, SO_PASSCRED, &optval, sizeof(optval)));
+    int ret = OHOS_TEMP_FAILURE_RETRY(setsockopt(sockFd, SOL_SOCKET, SO_PASSCRED, &optval, sizeof(optval)));
     if (ret < 0) {
         DFXLOGE("%{public}s :: Failed to set socket option, errno(%{public}d)", __func__, errno);
         return false;
     }
 
-    if (bind(sockfd, reinterpret_cast<struct sockaddr *>(&server),
+    if (bind(sockFd, reinterpret_cast<struct sockaddr *>(&server),
         offsetof(struct sockaddr_un, sun_path) + strlen(server.sun_path)) < 0) {
         DFXLOGE("%{public}s :: Failed to bind socket, errno(%{public}d)", __func__, errno);
         return false;
@@ -154,24 +114,24 @@ static bool GetServerSocket(int& sockfd, const char* name)
     return true;
 }
 
-bool StartListen(int& sockfd, const char* name, const int listenCnt)
+bool StartListen(int32_t& sockFd, const char* name, uint32_t listenCnt)
 {
     if (name == nullptr) {
         return false;
     }
-    sockfd = GetControlSocket(name);
-    if (sockfd < 0) {
+    sockFd = GetControlSocket(name);
+    if (sockFd < 0) {
         DFXLOGW("%{public}s :: Failed to get socket fd by cfg", __func__);
-        if (!GetServerSocket(sockfd, name)) {
+        if (!GetServerSocket(sockFd, name)) {
             DFXLOGE("%{public}s :: Failed to get socket fd by path", __func__);
             return false;
         }
     }
 
-    if (listen(sockfd, listenCnt) < 0) {
+    if (listen(sockFd, listenCnt) < 0) {
         DFXLOGE("%{public}s :: Failed to listen socket, errno(%{public}d)", __func__, errno);
-        close(sockfd);
-        sockfd = -1;
+        close(sockFd);
+        sockFd = -1;
         return false;
     }
 
@@ -179,67 +139,59 @@ bool StartListen(int& sockfd, const char* name, const int listenCnt)
     return true;
 }
 
-static bool RecvMsgFromSocket(int sockfd, unsigned char* data, size_t& len)
+static bool RecvMsgFromSocket(int sockFd, void* data, const size_t dataLength)
 {
-    bool ret = false;
-    if ((sockfd < 0) || (data == nullptr)) {
-        return ret;
-    }
-
-    do {
-        struct msghdr msgh;
-        (void)memset_s(&msgh, sizeof(msgh), 0, sizeof(msgh));
-        char msgBuffer[SOCKET_BUFFER_SIZE] = { 0 };
-        struct iovec iov = {
-            .iov_base = msgBuffer,
-            .iov_len = sizeof(msgBuffer)
-        };
-        msgh.msg_iov = &iov;
-        msgh.msg_iovlen = 1;
-
-        char ctlBuffer[SOCKET_BUFFER_SIZE] = { 0 };
-        msgh.msg_control = ctlBuffer;
-        msgh.msg_controllen = sizeof(ctlBuffer);
-
-        if (OHOS_TEMP_FAILURE_RETRY(recvmsg(sockfd, &msgh, 0)) < 0) {
-            DFXLOGE("%{public}s :: Failed to recv message, errno(%{public}d)", __func__, errno);
-            break;
-        }
-
-        struct cmsghdr *cmsg = CMSG_FIRSTHDR(&msgh);
-        if (cmsg == nullptr) {
-            DFXLOGE("%{public}s :: Invalid message", __func__);
-            break;
-        }
-
-        len = cmsg->cmsg_len - sizeof(struct cmsghdr);
-        if (memcpy_s(data, len, CMSG_DATA(cmsg), len) != 0) {
-            DFXLOGE("%{public}s :: memcpy error", __func__);
-            break;
-        }
-
-        ret = true;
-    } while (false);
-    return ret;
-}
-
-static bool SendMsgCtlToSocket(int sockfd, const void *cmsg, const int cmsgLen)
-{
-    if ((sockfd < 0) || (cmsg == nullptr) || (cmsgLen == 0)) {
+    if (sockFd < 0 || data == nullptr) {
         return false;
     }
 
-    struct msghdr msgh;
-    (void)memset_s(&msgh, sizeof(msgh), 0, sizeof(msgh));
-    char iovBase[] = "";
+    struct msghdr msgh{};
+    char msgBuffer[SOCKET_BUFFER_SIZE] = { 0 };
     struct iovec iov = {
-        .iov_base = reinterpret_cast<void *>(iovBase),
-        .iov_len = 1
+        .iov_base = msgBuffer,
+        .iov_len = sizeof(msgBuffer)
     };
     msgh.msg_iov = &iov;
     msgh.msg_iovlen = 1;
 
-    int controlBufLen = CMSG_SPACE(static_cast<unsigned int>(cmsgLen));
+    char ctlBuffer[SOCKET_BUFFER_SIZE] = { 0 };
+    msgh.msg_control = ctlBuffer;
+    msgh.msg_controllen = sizeof(ctlBuffer);
+
+    if (OHOS_TEMP_FAILURE_RETRY(recvmsg(sockFd, &msgh, 0)) < 0) {
+        DFXLOGE("%{public}s :: Failed to recv message, errno(%{public}d)", __func__, errno);
+        return false;
+    }
+
+    struct cmsghdr *cmsg = CMSG_FIRSTHDR(&msgh);
+    if (cmsg == nullptr) {
+        DFXLOGE("%{public}s :: Invalid message", __func__);
+        return false;
+    }
+    if (dataLength != cmsg->cmsg_len - sizeof(struct cmsghdr)) {
+        DFXLOGE("%{public}s :: msg length is not matched", __func__);
+        return false;
+    }
+    if (memcpy_s(data, dataLength, CMSG_DATA(cmsg), dataLength) != 0) {
+        DFXLOGE("%{public}s :: memcpy error", __func__);
+        return false;
+    }
+    return  true;
+}
+
+static bool SendMsgCtlToSocket(int sockFd, const void *cmsg, uint32_t cmsgLen)
+{
+    if ((sockFd < 0) || (cmsg == nullptr) || (cmsgLen == 0)) {
+        return false;
+    }
+
+    struct msghdr msgh;
+    char iovBase[] = "";
+    struct iovec iov = {.iov_base = iovBase, .iov_len = 1};
+    msgh.msg_iov = &iov;
+    msgh.msg_iovlen = 1;
+
+    int controlBufLen = CMSG_SPACE(cmsgLen);
     char controlBuf[controlBufLen];
     msgh.msg_control = controlBuf;
     msgh.msg_controllen = sizeof(controlBuf);
@@ -254,56 +206,53 @@ static bool SendMsgCtlToSocket(int sockfd, const void *cmsg, const int cmsgLen)
         }
     }
 
-    if (OHOS_TEMP_FAILURE_RETRY(sendmsg(sockfd, &msgh, 0)) < 0) {
+    if (OHOS_TEMP_FAILURE_RETRY(sendmsg(sockFd, &msgh, 0)) < 0) {
         DFXLOGE("%{public}s :: Failed to send message, errno(%{public}d)", __func__, errno);
         return false;
     }
     return true;
 }
 
-bool SendFileDescriptorToSocket(int sockfd, int fd)
+bool SendFileDescriptorToSocket(int32_t sockFd, const int32_t* fds, uint32_t nFds)
 {
-    return SendMsgCtlToSocket(sockfd, reinterpret_cast<void *>(&fd), sizeof(fd));
-}
-
-int ReadFileDescriptorFromSocket(int sockfd)
-{
-    size_t len = sizeof(int);
-    unsigned char data[len + 1];
-    if (!RecvMsgFromSocket(sockfd, data, len)) {
-        DFXLOGE("%{public}s :: Failed to recv message", __func__);
-        return -1;
-    }
-
-    if (len != sizeof(int)) {
-        DFXLOGE("%{public}s :: data is null or len is %{public}zu", __func__, len);
-        return -1;
-    }
-    int fd = *(reinterpret_cast<int *>(data));
-    DFXLOGD("%{public}s :: fd: %{public}d", __func__, fd);
-    return fd;
-}
-
-bool SendMsgToSocket(int sockfd, const void* data, const unsigned int dataLength)
-{
-    if (data == nullptr || sockfd < 0 || dataLength == 0) {
-        DFXLOGE("Failed to write request message to socket, invalid data or socket fd %{public}d.", sockfd);
+    if (nFds == 0 || fds == nullptr) {
         return false;
     }
-    if (OHOS_TEMP_FAILURE_RETRY(write(sockfd, data, dataLength)) != dataLength) {
+    return SendMsgCtlToSocket(sockFd, fds, sizeof(int32_t) * nFds);
+}
+
+bool ReadFileDescriptorFromSocket(int32_t sockFd, int32_t* fds, uint32_t nFds)
+{
+    if (nFds == 0 || fds == nullptr) {
+        return false;
+    }
+    if (!RecvMsgFromSocket(sockFd, fds, sizeof(int32_t) * nFds)) {
+        DFXLOGE("%{public}s :: Failed to recv message", __func__);
+        return false;
+    }
+    return true;
+}
+
+bool SendMsgToSocket(int32_t sockFd, const void* data, uint32_t dataLength)
+{
+    if (data == nullptr || sockFd < 0 || dataLength == 0) {
+        DFXLOGE("Failed to write request message to socket, invalid data or socket fd %{public}d.", sockFd);
+        return false;
+    }
+    if (OHOS_TEMP_FAILURE_RETRY(write(sockFd, data, dataLength)) != dataLength) {
         DFXLOGE("Failed to write request message to socket, errno(%{public}d).", errno);
         return false;
     }
     return true;
 }
 
-bool GetMsgFromSocket(int sockfd, void* data, const unsigned int dataLength)
+bool GetMsgFromSocket(int32_t sockFd, void* data, uint32_t dataLength)
 {
-    if (data == nullptr || sockfd < 0 || dataLength == 0) {
-        DFXLOGE("Failed to read message from socket, invalid data or socket fd %{public}d.", sockfd);
+    if (data == nullptr || sockFd < 0 || dataLength == 0) {
+        DFXLOGE("Failed to read message from socket, invalid data or socket fd %{public}d.", sockFd);
         return false;
     }
-    ssize_t nread = OHOS_TEMP_FAILURE_RETRY(read(sockfd, data, dataLength));
+    ssize_t nread = OHOS_TEMP_FAILURE_RETRY(read(sockFd, data, dataLength));
     if (nread <= 0) {
         DFXLOGE("Failed to get message from socket, %{public}zd.", nread);
         return false;

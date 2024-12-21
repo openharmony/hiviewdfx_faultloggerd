@@ -38,8 +38,8 @@ private:
     ~FaultLoggerDaemon();
     EpollManager mainEpollManager_;
     EpollManager secondaryEpollManager_;
-    std::unique_ptr<SocketServer> mainServer_;
-    std::unique_ptr<TempFileManager> tempFileManager_;
+    SocketServer mainServer_;
+    TempFileManager tempFileManager_;
 };
 } // namespace HiviewDFX
 } // namespace OHOS

@@ -17,11 +17,11 @@
 #define EPOLL_MANAGER_H_
 
 #include <cstdint>
-#include <memory>
 #include <list>
+#include <memory>
 #include <mutex>
 
-#include "faultloggerd_socket.h"
+#include "smart_fd.h"
 
 namespace OHOS {
 namespace HiviewDFX {
@@ -39,7 +39,11 @@ class EpollManager {
 public:
     EpollManager() = default;
     ~EpollManager();
-    bool CreateEpoll(int maxPollEvent);
+    EpollManager(const EpollManager&) = delete;
+    EpollManager& operator=(const EpollManager&) = delete;
+    EpollManager(EpollManager&&) noexcept = delete;
+    EpollManager& operator=(EpollManager&&) noexcept = delete;
+    bool Init(int maxPollEvent);
     void StartEpoll(int maxConnection);
     void StopEpoll();
     bool AddListener(std::unique_ptr<EpollListener> epollListener);

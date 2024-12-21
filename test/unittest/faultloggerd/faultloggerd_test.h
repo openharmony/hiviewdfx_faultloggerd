@@ -16,7 +16,7 @@
 #ifndef FAULTLOGGERD_TEST_H
 #define FAULTLOGGERD_TEST_H
 
-#include "cstdint"
+#include <cstdint>
 
 constexpr const char* const TEST_TEMP_FILE_PATH = "/data/test/faultloggerd/temp/";
 

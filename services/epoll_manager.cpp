@@ -16,10 +16,12 @@
 #include "epoll_manager.h"
 
 #include <algorithm>
-#include <sys/epoll.h>
 #include <thread>
-#include <unistd.h>
 #include <vector>
+
+#include <unistd.h>
+
+#include <sys/epoll.h>
 
 #include "dfx_define.h"
 #include "dfx_log.h"
@@ -51,8 +53,7 @@ bool EpollManager::AddEpollEvent(EpollListener& epollListener) const
     epoll_event ev{};
     ev.events = EPOLLIN;
     ev.data.fd = epollListener.GetFd();
-    int ret = epoll_ctl(eventFd_, EPOLL_CTL_ADD, ev.data.fd, &ev);
-    if (ret < 0) {
+    if (epoll_ctl(eventFd_, EPOLL_CTL_ADD, ev.data.fd, &ev) < 0) {
         DFXLOGE("%s :: Failed to epoll ctl add fd(%d), errno(%d)", EPOLL_MANAGER, epollListener.GetFd(), errno);
         return false;
     }
@@ -67,8 +68,7 @@ bool EpollManager::DelEpollEvent(int32_t fd) const
     epoll_event ev{};
     ev.events = EPOLLIN;
     ev.data.fd = fd;
-    int32_t ret = epoll_ctl(eventFd_, EPOLL_CTL_DEL, fd, &ev);
-    if (ret < 0) {
+    if (epoll_ctl(eventFd_, EPOLL_CTL_DEL, fd, &ev) < 0) {
         DFXLOGW("%s :: Failed to epoll ctl delete Fd(%d), errno(%d)", EPOLL_MANAGER, fd, errno);
         return false;
     }
@@ -89,10 +89,9 @@ bool EpollManager::RemoveListener(int32_t fd)
     if (fd < 0 || !DelEpollEvent(fd)) {
         return false;
     }
-    listeners_.erase(std::remove_if(listeners_.begin(), listeners_.end(),
-        [fd](const std::unique_ptr<EpollListener>& epollLister) {
-            return epollLister->GetFd() == fd;
-        }), listeners_.end());
+    listeners_.remove_if([fd](const std::unique_ptr<EpollListener>& epollLister) {
+        return epollLister->GetFd() == fd;
+    });
     return true;
 }
 
@@ -105,7 +104,7 @@ EpollListener* EpollManager::GetTargetListener(int32_t fd)
     return iter == listeners_.end() ? nullptr : iter->get();
 }
 
-bool EpollManager::CreateEpoll(int maxPollEvent)
+bool EpollManager::Init(int maxPollEvent)
 {
     eventFd_ = epoll_create(maxPollEvent);
     if (eventFd_ < 0) {

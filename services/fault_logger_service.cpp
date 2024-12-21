@@ -15,42 +15,41 @@
 
 #include "fault_logger_service.h"
 
+#include <algorithm>
 #include <fstream>
 #include <sys/wait.h>
 #include <sys/socket.h>
 #include <sys/syscall.h>
-#include <unistd.h>
-#include <memory>
 
 #include "dfx_define.h"
-#include "faultloggerd_socket.h"
-#include "dfx_trace.h"
-#include "temp_file_manager.h"
 #include "dfx_log.h"
-#include "string_printf.h"
+#include "dfx_trace.h"
 #include "dfx_util.h"
+#include "faultloggerd_socket.h"
+
+#ifndef is_ohos_lite
+#include "fault_logger_pipe.h"
+#endif
 
 #ifndef HISYSEVENT_DISABLE
 #include "hisysevent.h"
 #endif
 
-#ifndef is_ohos_lite
-#include "fault_logger_pipe.h"
-#endif
+#include "string_printf.h"
+#include "temp_file_manager.h"
+#include "smart_fd.h"
 
 namespace OHOS {
 namespace HiviewDFX {
 
 namespace {
 
-constexpr const char* const FAULTLOGGERD_SERVICE_TAG = "FAULTLOGGERD_SERVICE";
-
+constexpr const char* const FAULTLOGGERD_SERVICE_TAG = "FAULT_LOGGER_SERVICE";
 bool GetUcredByPeerCred(struct ucred& rcred, int32_t connectionFd)
 {
     socklen_t credSize = sizeof(rcred);
-    int err = getsockopt(connectionFd, SOL_SOCKET, SO_PEERCRED, &rcred, &credSize);
-    if (err != 0) {
-        DFXLOGE("%{public}s :: Failed to GetCredential, errno(%{public}d)", FAULTLOGGERD_SERVICE_TAG, errno);
+    if (getsockopt(connectionFd, SOL_SOCKET, SO_PEERCRED, &rcred, &credSize) != 0) {
+        DFXLOGE("%{public}s :: Failed to GetCredential, errno: %{public}d", FAULTLOGGERD_SERVICE_TAG, errno);
         return false;
     }
     return true;
@@ -58,100 +57,20 @@ bool GetUcredByPeerCred(struct ucred& rcred, int32_t connectionFd)
 
 bool CheckCallerUID(uint32_t callerUid)
 {
-    constexpr uint32_t rootUid = 0;
-    constexpr uint32_t bmsUid = 1000;
-    constexpr uint32_t hiviewUid = 1201;
-    constexpr uint32_t hidumperServiceUid = 1212;
-    constexpr uint32_t foundationUid = 5523;
-    // If caller's is BMS / root or caller's uid/pid is validate, just return true
-    if ((callerUid == bmsUid) ||
-        (callerUid == rootUid) ||
-        (callerUid == hiviewUid) ||
-        (callerUid == hidumperServiceUid) ||
-        (callerUid == foundationUid)) {
-        return true;
+    const uint32_t whitelist[] = {
+        0, // rootUid
+        1000, // bmsUid
+        1201, // hiviewUid
+        1212, // hidumperServiceUid
+        5523 // foundationUid
+    };
+    if (std::find(std::begin(whitelist), std::end(whitelist), callerUid) == std::end(whitelist)) {
+        DFXLOGW("%{public}s :: CheckCallerUID :: Caller Uid(%{public}d) is unexpectly.",
+                FAULTLOGGERD_SERVICE_TAG, callerUid);
+        return false;
     }
-    DFXLOGW("%{public}s :: CheckCallerUID :: Caller Uid(%{public}d) is unexpectly.\n",
-            FAULTLOGGERD_SERVICE_TAG, callerUid);
-    return false;
+    return true;
 }
-
-#ifndef is_ohos_lite
-
-std::map<int32_t, int64_t> crashTimeMap_{};
-
-void ClearTimeOutRecords()
-{
-#ifdef FAULTLOGGERD_TEST
-    constexpr int validTime = 1;
-#else
-    constexpr int validTime = 8;
-#endif
-    auto currentTime = time(nullptr);
-    for (auto it = crashTimeMap_.begin(); it != crashTimeMap_.end();) {
-        if ((it->second + validTime) <= currentTime) {
-            crashTimeMap_.erase(it++);
-        } else {
-            it++;
-        }
-    }
-}
-
-bool IsCrashed(int32_t pid)
-{
-    DFX_TRACE_SCOPED("IsCrashed");
-    ClearTimeOutRecords();
-    return crashTimeMap_.find(pid) != crashTimeMap_.end();
-}
-
-void RecordFileCreation(int32_t type, int32_t pid)
-{
-    if (type == static_cast<int32_t>(FaultLoggerType::CPP_CRASH)) {
-        ClearTimeOutRecords();
-        crashTimeMap_[pid] = time(nullptr);
-    }
-}
-
-std::map<int, std::unique_ptr<FaultLoggerPipePair>> sdkDumpPipesRecord_{};
-
-void RecordSdkDumpPipe(int pid, uint64_t time, bool isJson)
-{
-    if (sdkDumpPipesRecord_.find(pid) == sdkDumpPipesRecord_.end()) {
-        sdkDumpPipesRecord_.emplace(pid, std::make_unique<FaultLoggerPipePair>(time, isJson));
-    }
-}
-
-bool CheckSdkDumpRecord(int pid, uint64_t time)
-{
-    auto iter = sdkDumpPipesRecord_.find(pid);
-    if (iter != sdkDumpPipesRecord_.end()) {
-        const int pipTimeOut = 10000;
-        if (iter->second && time > iter->second->time_ && time - iter->second->time_ > pipTimeOut) {
-            sdkDumpPipesRecord_.erase(iter);
-            return false;
-        }
-        return true;
-    }
-    return false;
-}
-
-FaultLoggerPipePair* GetSdkDumpPipePair(int pid)
-{
-    auto iter = sdkDumpPipesRecord_.find(pid);
-    if (iter == sdkDumpPipesRecord_.end()) {
-        return nullptr;
-    }
-    return iter->second.get();
-}
-
-void DelSdkDumpPipePair(int pid)
-{
-    auto iter = sdkDumpPipesRecord_.find(pid);
-    if (iter != sdkDumpPipesRecord_.end()) {
-        sdkDumpPipesRecord_.erase(iter);
-    }
-}
-#endif
 
 bool CheckRequestCredential(int32_t connectionFd, int32_t requestPid)
 {
@@ -163,8 +82,7 @@ bool CheckRequestCredential(int32_t connectionFd, int32_t requestPid)
         return true;
     }
     if (creds.pid != requestPid) {
-        DFXLOGW("Failed to check request credential request:%{public}d:" \
-            " cred:%{public}d fd:%{public}d",
+        DFXLOGW("Failed to check request credential request:%{public}d: cred:%{public}d fd:%{public}d",
                 requestPid, creds.pid, connectionFd);
         return false;
     }
@@ -173,24 +91,22 @@ bool CheckRequestCredential(int32_t connectionFd, int32_t requestPid)
 }
 
 #ifndef HISYSEVENT_DISABLE
-bool FaultLoggeExceptionReportService::Filter(int32_t connectionFd, const CrashDumpException& requestData)
+bool ExceptionReportService::Filter(int32_t connectionFd, const CrashDumpException& requestData)
 {
     if (strlen(requestData.message) == 0) {
         return false;
     }
     struct ucred creds{};
-    if (!GetUcredByPeerCred(creds, connectionFd) || creds.uid != static_cast<uid_t>(requestData.uid)) {
-        DFXLOGW("Failed to check request credential request uid:%{public}d:" \
-            " cred uid:%{public}d fd:%{public}d",
+    if (!GetUcredByPeerCred(creds, connectionFd) || creds.uid != static_cast<uint32_t>(requestData.uid)) {
+        DFXLOGW("Failed to check request credential request uid:%{public}d: cred uid:%{public}d fd:%{public}d",
                 requestData.uid, creds.uid, connectionFd);
         return false;
     }
     return true;
 }
 
-int32_t FaultLoggeExceptionReportService::OnRequest(const std::string& socketName,
-                                                    int32_t connectionFd,
-                                                    const CrashDumpException& requestData)
+int32_t ExceptionReportService::OnRequest(const std::string& socketName, int32_t connectionFd,
+    const CrashDumpException& requestData)
 {
     if (!Filter(connectionFd, requestData)) {
         return ResponseCode::REQUEST_REJECT;
@@ -207,21 +123,17 @@ int32_t FaultLoggeExceptionReportService::OnRequest(const std::string& socketNam
     return ResponseCode::REQUEST_SUCCESS;
 }
 
-void FaultLoggerdStatsService::RemoveTimeoutDumpStats()
+void StatsService::RemoveTimeoutDumpStats()
 {
-    constexpr uint64_t timeout = 10000;
+    constexpr uint64_t timeout = 10000; // 10s
     uint64_t now = GetTimeMilliSeconds();
-    for (auto it = stats_.begin(); it != stats_.end();) {
-        if (((now > it->signalTime) && (now - it->signalTime > timeout)) ||
-            (now <= it->signalTime)) {
-            it = stats_.erase(it);
-        } else {
-            ++it;
-        }
-    }
+    stats_.remove_if([&now, &timeout](const auto& stats) {
+        return (now > stats.signalTime && now - stats.signalTime > timeout) ||
+            now <= stats.signalTime;
+    });
 }
 
-void FaultLoggerdStatsService::ReportDumpStats(const DumpStats& stat)
+void StatsService::ReportDumpStats(const DumpStats& stat)
 {
     HiSysEventWrite(
         HiSysEvent::Domain::HIVIEWDFX,
@@ -240,7 +152,7 @@ void FaultLoggerdStatsService::ReportDumpStats(const DumpStats& stat)
         "UNWIND_TIME", stat.processdumpFinishTime - stat.processdumpStartTime);
 }
 
-std::string FaultLoggerdStatsService::GetElfName(const FaultLoggerdStatsRequest& request)
+std::string StatsService::GetElfName(const FaultLoggerdStatsRequest& request)
 {
     if (strlen(request.callerElf) > NAME_BUF_LEN) {
         return "";
@@ -248,37 +160,31 @@ std::string FaultLoggerdStatsService::GetElfName(const FaultLoggerdStatsRequest&
     return StringPrintf("%s(%p)", request.callerElf, reinterpret_cast<void*>(request.offset));
 }
 
-int32_t FaultLoggerdStatsService::OnRequest(const std::string& socketName, int32_t connectionFd,
-                                            const FaultLoggerdStatsRequest& requestData)
+int32_t StatsService::OnRequest(const std::string& socketName, int32_t connectionFd,
+    const FaultLoggerdStatsRequest& requestData)
 {
     DFXLOGI("%{public}s :: %{public}s: HandleDumpStats", FAULTLOGGERD_SERVICE_TAG, __func__);
-    size_t index = 0;
-    bool hasRecord = false;
-    for (index = 0; index < stats_.size(); index++) {
-        if (stats_[index].pid == requestData.pid) {
-            hasRecord = true;
-            break;
-        }
-    }
-
-    DumpStats stats;
-    if (requestData.type == PROCESS_DUMP && !hasRecord) {
+    auto iter = std::find_if(stats_.begin(), stats_.end(), [&requestData](const DumpStats& dumpStats) {
+        return dumpStats.pid == requestData.pid;
+    });
+    if (requestData.type == PROCESS_DUMP && iter == stats_.end()) {
+        auto& stats = stats_.emplace_back();
         stats.pid = requestData.pid;
         stats.signalTime = requestData.signalTime;
         stats.processdumpStartTime = requestData.processdumpStartTime;
         stats.processdumpFinishTime = requestData.processdumpFinishTime;
         stats.targetProcessName = requestData.targetProcess;
-        stats_.emplace_back(stats);
-    } else if (requestData.type == DUMP_CATCHER && hasRecord) {
-        stats_[index].requestTime = requestData.requestTime;
-        stats_[index].dumpCatcherFinishTime = requestData.dumpCatcherFinishTime;
-        stats_[index].callerElfName = GetElfName(requestData);
-        stats_[index].callerProcessName = requestData.callerProcess;
-        stats_[index].result = requestData.result;
-        stats_[index].summary = requestData.summary;
-        ReportDumpStats(stats_[index]);
-        stats_.erase(stats_.begin() + index);
+    } else if (requestData.type == DUMP_CATCHER && iter != stats_.end()) {
+        iter->requestTime = requestData.requestTime;
+        iter->dumpCatcherFinishTime = requestData.dumpCatcherFinishTime;
+        iter->callerElfName = GetElfName(requestData);
+        iter->callerProcessName = requestData.callerProcess;
+        iter->result = requestData.result;
+        iter->summary = requestData.summary;
+        ReportDumpStats(*iter);
+        stats_.erase(iter);
     } else if (requestData.type == DUMP_CATCHER) {
+        DumpStats stats;
         stats.pid = requestData.pid;
         stats.requestTime = requestData.requestTime;
         stats.dumpCatcherFinishTime = requestData.dumpCatcherFinishTime;
@@ -296,33 +202,31 @@ int32_t FaultLoggerdStatsService::OnRequest(const std::string& socketName, int32
 }
 #endif
 
-int32_t FaultLoggedFileDesService::OnRequest(const std::string& socketName,
-                                             int32_t connectionFd,
-                                             const FaultLoggerdRequest& requestData)
+int32_t FileDesService::OnRequest(const std::string& socketName, int32_t connectionFd,
+    const FaultLoggerdRequest& requestData)
 {
-    DFX_TRACE_SCOPED("HandleDefaultClientRequest");
+    DFX_TRACE_SCOPED("FileDesServiceOnRequest");
     if (!Filter(socketName, connectionFd, requestData)) {
         return ResponseCode::REQUEST_REJECT;
     }
 
-    SmartFd sFd(TempFileManager::CreateFileDescriptor(requestData.type, requestData.pid,
-                                                      requestData.tid, requestData.time));
-    if (sFd < 0) {
-        DFXLOGE("[%{public}d]: FaultLoggedFileDesService :: Failed to create log file, errno(%{public}d)", __LINE__,
-                errno);
+    int32_t fd = TempFileManager::CreateFileDescriptor(requestData.type,
+        requestData.pid, requestData.tid, requestData.time);
+    if (fd < 0) {
         return ResponseCode::ABNORMAL_SERVICE;
     }
+#ifndef is_ohos_lite
+    TempFileManager::RecordFileCreation(requestData.type, requestData.pid);
+#endif
     int32_t responseData = ResponseCode::REQUEST_SUCCESS;
     SendMsgToSocket(connectionFd, &responseData, sizeof(responseData));
-#ifndef is_ohos_lite
-    RecordFileCreation(requestData.type, requestData.pid);
-#endif
-    SendFileDescriptorToSocket(connectionFd, sFd);
+    SendFileDescriptorToSocket(connectionFd, &fd, 1);
+    close(fd);
     return responseData;
 }
 
-bool FaultLoggedFileDesService::Filter(const std::string& socketName, int32_t connectionFd,
-                                       const FaultLoggerdRequest& requestData)
+bool FileDesService::Filter(const std::string& socketName, int32_t connectionFd,
+    const FaultLoggerdRequest& requestData)
 {
     switch (requestData.type) {
         case FaultLoggerType::CPP_CRASH:
@@ -336,31 +240,29 @@ bool FaultLoggedFileDesService::Filter(const std::string& socketName, int32_t co
 }
 
 #ifndef is_ohos_lite
-int32_t FaultloggerdSdkDumpService::Filter(const std::string& socketName,
-    const SdkDumpRequestData& requestData, uint32_t uid)
+int32_t SdkDumpService::Filter(const std::string& socketName, const SdkDumpRequestData& requestData, uint32_t uid)
 {
     if (requestData.pid <= 0 || socketName != SERVER_SDKDUMP_SOCKET_NAME || !CheckCallerUID(uid)) {
         DFXLOGE("%{public}s :: HandleSdkDumpRequest :: pid(%{public}d) or socketName(%{public}s) fail.",
             FAULTLOGGERD_SERVICE_TAG, requestData.pid, socketName.c_str());
         return ResponseCode::REQUEST_REJECT;
     }
-    if (IsCrashed(requestData.pid)) {
-        DFXLOGW("%{public}s :: pid(%{public}d) has been crashed, break.\n",
+    if (TempFileManager::CheckCrashFileRecord(requestData.pid)) {
+        DFXLOGW("%{public}s :: pid(%{public}d) has been crashed, break.",
                 FAULTLOGGERD_SERVICE_TAG, requestData.pid);
         return ResponseCode::SDK_PROCESS_CRASHED;
     }
-    if (CheckSdkDumpRecord(requestData.pid, requestData.time)) {
-        DFXLOGE("%{public}s :: pid(%{public}d) is dumping, break.\n", FAULTLOGGERD_SERVICE_TAG, requestData.pid);
+    if (FaultLoggerPipePair::CheckSdkDumpRecord(requestData.pid, requestData.time)) {
+        DFXLOGE("%{public}s :: pid(%{public}d) is dumping, break.", FAULTLOGGERD_SERVICE_TAG, requestData.pid);
         return ResponseCode::SDK_DUMP_REPEAT;
     }
     return ResponseCode::REQUEST_SUCCESS;
 }
 
-int32_t FaultloggerdSdkDumpService::OnRequest(const std::string& socketName,
-                                              int32_t connectionFd,
-                                              const SdkDumpRequestData& requestData)
+int32_t SdkDumpService::OnRequest(const std::string& socketName, int32_t connectionFd,
+    const SdkDumpRequestData& requestData)
 {
-    DFX_TRACE_SCOPED("HandleSdkDumpRequest");
+    DFX_TRACE_SCOPED("SdkDumpServiceOnRequest");
     DFXLOGI("Receive dump request for pid:%{public}d tid:%{public}d.", requestData.pid, requestData.tid);
     struct ucred creds;
     if (!GetUcredByPeerCred(creds, connectionFd)) {
@@ -418,24 +320,33 @@ int32_t FaultloggerdSdkDumpService::OnRequest(const std::string& socketName,
      * Accroding to the linux manual, A process-directed signal may be delivered to any one of the
      * threads that does not currently have the signal blocked.
      */
-    RecordSdkDumpPipe(requestData.pid, requestData.time, requestData.isJson);
+    auto& faultLoggerPipe = FaultLoggerPipePair::CreateSdkDumpPipePair(requestData.pid, requestData.time);
 #ifndef FAULTLOGGERD_TEST
     if (syscall(SYS_rt_sigqueueinfo, requestData.pid, si.si_signo, &si) != 0) {
-        DFXLOGE("Failed to SYS_rt_sigqueueinfo signal(%{public}d), errno(%{public}d).", si.si_signo, errno);
-        DelSdkDumpPipePair(requestData.pid);
+        DFXLOGE("%{public}s :: Failed to SYS_rt_sigqueueinfo signal(%{public}d), errno(%{public}d).",
+            FAULTLOGGERD_SERVICE_TAG, si.si_signo, errno);
+        FaultLoggerPipePair::DelSdkDumpPipePair(requestData.pid);
         return ResponseCode::SDK_DUMP_NOPROC;
     }
 #endif
+
+    int32_t fds[PIPE_NUM_SZ] = {
+        faultLoggerPipe.GetPipeFd(PipeFdUsage::BUFFER_FD, FaultLoggerPipeType::PIPE_FD_READ),
+        faultLoggerPipe.GetPipeFd(PipeFdUsage::RESULT_FD, FaultLoggerPipeType::PIPE_FD_READ)
+    };
+    if (fds[PIPE_BUF_INDEX] < 0 || fds[PIPE_RES_INDEX] < 0) {
+        return ResponseCode::ABNORMAL_SERVICE;
+    }
     int32_t res = ResponseCode::REQUEST_SUCCESS;
     SendMsgToSocket(connectionFd, &res, sizeof(res));
+    SendFileDescriptorToSocket(connectionFd, fds, PIPE_NUM_SZ);
     return res;
 }
 
-bool FaultLoggerdPipService::Filter(const std::string &socketName, int32_t connectionFd,
-                                    const PipFdRequestData &requestData)
+bool PipeService::Filter(const std::string &socketName, int32_t connectionFd, const PipFdRequestData &requestData)
 {
-    if (requestData.pipeType < FaultLoggerPipeType::PIPE_FD_READ_BUF ||
-        requestData.pipeType > FaultLoggerPipeType::PIPE_FD_DELETE) {
+    if (requestData.pipeType > FaultLoggerPipeType::PIPE_FD_DELETE ||
+        requestData.pipeType < FaultLoggerPipeType::PIPE_FD_READ) {
         return false;
     }
     if (socketName == SERVER_CRASH_SOCKET_NAME) {
@@ -444,40 +355,34 @@ bool FaultLoggerdPipService::Filter(const std::string &socketName, int32_t conne
     return CheckRequestCredential(connectionFd, requestData.pid);
 }
 
-int32_t FaultLoggerdPipService::OnRequest(const std::string& socketName,
-                                          int32_t connectionFd,
-                                          const PipFdRequestData& requestData)
+int32_t PipeService::OnRequest(const std::string& socketName, int32_t connectionFd, const PipFdRequestData& requestData)
 {
-    DFX_TRACE_SCOPED("HandlePipeFdClientRequest");
+    DFX_TRACE_SCOPED("PipeServiceOnRequest");
     if (!Filter(socketName, connectionFd, requestData)) {
         return ResponseCode::REQUEST_REJECT;
     }
     int32_t responseData = ResponseCode::REQUEST_SUCCESS;
     if (requestData.pipeType == FaultLoggerPipeType::PIPE_FD_DELETE) {
-        DelSdkDumpPipePair(requestData.pid);
+        FaultLoggerPipePair::DelSdkDumpPipePair(requestData.pid);
         SendMsgToSocket(connectionFd, &responseData, sizeof(responseData));
         return responseData;
     }
-    DFXLOGD("%{public}s :: pid(%{public}d), pipeType(%{public}d).", FAULTLOGGERD_SERVICE_TAG,
-            requestData.pid, requestData.pipeType);
-
-    FaultLoggerPipePair* faultLoggerPipe = GetSdkDumpPipePair(requestData.pid);
+    FaultLoggerPipePair* faultLoggerPipe = FaultLoggerPipePair::GetSdkDumpPipePair(requestData.pid);
     if (faultLoggerPipe == nullptr) {
         DFXLOGE("%{public}s :: cannot find pipe fd for pid(%{public}d).", FAULTLOGGERD_SERVICE_TAG, requestData.pid);
         return ResponseCode::ABNORMAL_SERVICE;
     }
-    constexpr int32_t pipTypeMask = 0b1;
-    constexpr int32_t pipUsageMask = 0b10;
-    constexpr int32_t isJsonMask = 0b100;
-    int fd = faultLoggerPipe->GetPipFd(requestData.pipeType & pipTypeMask, requestData.pipeType & pipUsageMask,
-        requestData.pipeType & isJsonMask);
-    if (fd < 0) {
-        DFXLOGE("%{public}s :: Failed to get pipe fd, pipeType(%{public}d)",
-                FAULTLOGGERD_SERVICE_TAG, requestData.pipeType);
+    int32_t fds[PIPE_NUM_SZ] = {
+        faultLoggerPipe->GetPipeFd(PipeFdUsage::BUFFER_FD, FaultLoggerPipeType::PIPE_FD_WRITE),
+        faultLoggerPipe->GetPipeFd(PipeFdUsage::RESULT_FD, FaultLoggerPipeType::PIPE_FD_WRITE)
+    };
+    if (fds[PIPE_BUF_INDEX] < 0 || fds[PIPE_RES_INDEX] < 0) {
+        DFXLOGE("%{public}s :: failed to get fds for pipeType(%{public}d).", FAULTLOGGERD_SERVICE_TAG,
+            requestData.pipeType);
         return ResponseCode::ABNORMAL_SERVICE;
     }
     SendMsgToSocket(connectionFd, &responseData, sizeof(responseData));
-    SendFileDescriptorToSocket(connectionFd, fd);
+    SendFileDescriptorToSocket(connectionFd, fds, PIPE_NUM_SZ);
     return responseData;
 }
 #endif

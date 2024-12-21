@@ -13,26 +13,25 @@
  * limitations under the License.
  */
 
+
 #include <fcntl.h>
+#include <filesystem>
 #include <gtest/gtest.h>
+
+#if defined(HAS_LIB_SELINUX)
+#include <selinux/selinux.h>
+#endif
+
 #include <sys/socket.h>
 #include <sys/un.h>
 #include <thread>
 #include <unistd.h>
 
-#include "dfx_define.h"
-
-
 #include "dfx_util.h"
 #include "faultloggerd_client.h"
-#include "faultloggerd_socket.h"
 #include "faultloggerd_test.h"
 #include "fault_logger_daemon.h"
-#include "filesystem"
-
-#if defined(HAS_LIB_SELINUX)
-#include <selinux/selinux.h>
-#endif
+#include "smart_fd.h"
 
 using namespace testing;
 using namespace testing::ext;
@@ -140,7 +139,7 @@ HWTEST_F(FaultloggerdClientTest, RequestSdkDumpTest002, TestSize.Level2)
     int pipeFds[] = { -1, -1 };
     ASSERT_EQ(RequestSdkDump(0, 0, pipeFds), -1);
     ASSERT_EQ(RequestSdkDump(1, -1, pipeFds), -1);
-    ASSERT_EQ(RequestSdkDump(getpid(), gettid(), pipeFds), SDK_PROCESS_CRASHED);
+    ASSERT_EQ(RequestSdkDump(getpid(), gettid(), pipeFds), ResponseCode::SDK_PROCESS_CRASHED);
     GTEST_LOG_(INFO) << "RequestSdkDumpTest002: end.";
 }
 
@@ -153,10 +152,13 @@ HWTEST_F(FaultloggerdClientTest, RequestPipeFdTest001, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "RequestPipeFd001: start.";
     int pipeFds[] = { -1, -1 };
-    ASSERT_EQ(RequestPipeFd(0, PIPE_FD_READ_BUF, pipeFds), -1);
+    ASSERT_EQ(RequestPipeFd(0, PIPE_FD_READ - 1, pipeFds), -1);
     ASSERT_EQ(RequestPipeFd(0, PIPE_FD_DELETE + 1, pipeFds), -1);
-    SmartFd sFd(RequestPipeFd(getpid(), PIPE_FD_READ_BUF, pipeFds));
-    ASSERT_GE(sFd, 0);
+    ASSERT_EQ(RequestPipeFd(getpid(), PIPE_FD_READ, pipeFds), ResponseCode::REQUEST_SUCCESS);
+    SmartFd buffFd = pipeFds[0];
+    SmartFd resFd = pipeFds[1];
+    ASSERT_GE(buffFd, 0);
+    ASSERT_GE(resFd, 0);
     GTEST_LOG_(INFO) << "RequestPipeFd001: end.";
 }
 
