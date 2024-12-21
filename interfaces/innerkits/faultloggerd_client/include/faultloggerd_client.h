@@ -23,24 +23,11 @@ extern "C" {
 #endif
 
 /**
- * @brief Check connection status of client
- *
- * @return if available return true, otherwise return false
-*/
-bool CheckConnectStatus();
-/**
  * @brief request file descriptor
  * @param type type of resqust
  * @return if succeed return file descriptor, otherwise return -1
 */
 int32_t RequestFileDescriptor(int32_t type);
-
-/**
- * @brief request log file descriptor
- * @param request struct of request information
- * @return if succeed return file descriptor, otherwise return -1
-*/
-int32_t RequestLogFileDescriptor(struct FaultLoggerdRequest *request);
 
 /**
  * @brief request pipe file descriptor
@@ -64,15 +51,7 @@ int32_t RequestDelPipeFd(int32_t pid);
  * @param request struct of request information
  * @return if succeed return file descriptor, otherwise return -1
 */
-int RequestFileDescriptorEx(const struct FaultLoggerdRequest *request);
-
-/**
- * @brief request printing message to hilog
- * @param msg message
- * @param length length of message
- * @return if succeed return 0 , otherwise return -1
-*/
-int RequestPrintTHilog(const char *msg, int length);
+int RequestFileDescriptorEx(struct FaultLoggerdRequest *request);
 
 /**
  * @brief request dump stack about process
@@ -89,8 +68,9 @@ int RequestSdkDump(int32_t pid, int32_t tid, int (&pipeReadFd)[2],
 /**
  * @brief report sdk dump result to faultloggerd for stats collection
  * @param request dump request result
+ * @return if succeed return 0 , otherwise return -1
 */
-int ReportDumpStats(const struct FaultLoggerdStatsRequest *request);
+int ReportDumpStats(struct FaultLoggerdStatsRequest *request);
 #ifdef __cplusplus
 }
 #endif

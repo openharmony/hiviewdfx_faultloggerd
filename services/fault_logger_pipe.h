@@ -42,32 +42,15 @@ private:
     bool write_;
 };
 
-class FaultLoggerPipe2 {
+class FaultLoggerPipePair {
 public:
-    explicit FaultLoggerPipe2(uint64_t time);
-    ~FaultLoggerPipe2();
-    std::unique_ptr<FaultLoggerPipe> faultLoggerPipeBuf_;
-    std::unique_ptr<FaultLoggerPipe> faultLoggerPipeRes_;
+    explicit FaultLoggerPipePair(uint64_t time, bool isJson = false);
+    int GetPipFd(bool isWritePip, bool isResPip, bool isJson);
+    bool isJson_;
     uint64_t time_;
-};
-
-class FaultLoggerPipeMap {
-public:
-    FaultLoggerPipeMap();
-    ~FaultLoggerPipeMap();
-
-    bool Check(int pid, uint64_t time);
-    void Set(int pid, uint64_t time);
-    FaultLoggerPipe2* Get(int pid);
-    void Del(int pid);
-
-private:
-    bool Find(int pid) const;
-
-private:
-    std::map<int, std::unique_ptr<FaultLoggerPipe2> > faultLoggerPipes_;
-    std::mutex pipeMapsMutex_;
+    FaultLoggerPipe faultLoggerPipeBuf_;
+    FaultLoggerPipe faultLoggerPipeRes_;
 };
 } // namespace HiviewDFX
 } // namespace OHOS
-#endif
+#endif // FAULT_LOGGER_PIPE_H

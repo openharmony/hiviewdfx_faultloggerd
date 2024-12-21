@@ -18,29 +18,52 @@
 
 #include <string>
 #include <vector>
+#include <cstdint>
+
 namespace OHOS {
 namespace HiviewDFX {
-constexpr int LOG_FILE_NUMBER = 50;
-constexpr long LOG_FILE_SIZE = 1 * 1024 * 1024;
-const std::string LOG_FILE_PATH = "/data/log/faultlog/temp";
-const std::string DEBUG_LOG_FILE_PATH = "/data/log/faultlog/debug";
-const std::vector<const std::string> VALID_FILE_PATH = { LOG_FILE_PATH, DEBUG_LOG_FILE_PATH };
+
+enum OverFileSizeAction {
+    CROP = 0, // default
+    DELETE,
+};
+
+enum OverTimeFileDeleteType {
+    PASSIVE = 0, // default
+    ACTIVE,
+};
+
+struct TempFileConfig {
+    int32_t type;
+    std::string fileNamePrefix;
+    uint64_t maxSingleFileSize;
+    OverFileSizeAction overFileSizeAction;
+    int32_t fileExistTime;
+    OverTimeFileDeleteType overTimeFileDeleteType;
+    int32_t keepFileCount;
+    int32_t maxFileCount;
+};
+
+struct TempFilesConfig {
+    std::string tempFilePath;
+    uint64_t maxTempFilesSize;
+    int32_t fileClearTimeAfterBoot;
+    std::vector<TempFileConfig> tempFileConfigs;
+};
 
 class FaultLoggerConfig {
 public:
-    FaultLoggerConfig(const int number, const long size, const std::string& path, const std::string& debugPath);
-    ~FaultLoggerConfig();
-    int GetLogFileMaxNumber() const;
-    bool SetLogFileMaxNumber(const int number);
-    long GetLogFileMaxSize() const;
-    bool SetLogFileMaxSize(const long size);
-    std::string GetLogFilePath() const;
-    bool SetLogFilePath(const std::string& path);
+    FaultLoggerConfig(const FaultLoggerConfig&) = delete;
+    FaultLoggerConfig(FaultLoggerConfig&&) = delete;
+
+    FaultLoggerConfig &operator=(const FaultLoggerConfig&) = delete;
+    FaultLoggerConfig &operator=(FaultLoggerConfig&&) = delete;
+    static FaultLoggerConfig& GetInstance();
+    const TempFilesConfig& GetTempFileConfig() const;
 private:
-    int logFileNumber_;
-    long logFileSize_;
-    std::string logFilePath_;
-    std::string debugLogFilePath_;
+    FaultLoggerConfig();
+    ~FaultLoggerConfig() = default;
+    TempFilesConfig tempFilesConfig_;
 };
 } // namespace HiviewDFX
 } // namespace OHOS

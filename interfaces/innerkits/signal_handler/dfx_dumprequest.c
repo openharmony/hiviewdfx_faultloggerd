@@ -129,7 +129,7 @@ static void FillCrashExceptionAndReport(const int err)
         DFXLOGE("strcpy exception message fail");
         return;
     }
-    ReportException(exception);
+    ReportException(&exception);
 }
 
 static int32_t InheritCapabilities(void)

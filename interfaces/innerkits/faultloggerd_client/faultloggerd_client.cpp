@@ -31,303 +31,162 @@
 #include "dfx_log.h"
 #include "dfx_util.h"
 #include "faultloggerd_socket.h"
+#include "dfx_socket_request.h"
 
-static const int32_t SOCKET_TIMEOUT = 5;
+namespace {
+constexpr int32_t SOCKET_TIMEOUT = 5;
 
-static std::string GetSocketConnectionName()
+std::string GetSocketName()
 {
     char content[NAME_BUF_LEN];
     GetProcessName(content, sizeof(content));
-    if (std::string(content).find("processdump") != std::string::npos) {
-        return std::string(SERVER_CRASH_SOCKET_NAME);
+    return strcmp(content, "processdump") == 0 ? SERVER_CRASH_SOCKET_NAME : SERVER_SOCKET_NAME;
+}
+
+void FillRequestHeadData(RequestDataHead& head, FaultLoggerClientType clientType)
+{
+    head.clientType = clientType;
+    head.clientPid = getpid();
+}
+
+template<typename REQ>
+int32_t SendRequestToSocket(const SmartFd& sockFd, const REQ& requestData)
+{
+    if (!SendMsgToSocket(sockFd, &requestData, sizeof (REQ))) {
+        return ResponseCode::SEND_DATA_FAILED;
     }
-    return std::string(SERVER_SOCKET_NAME);
+    int32_t responseCode{ResponseCode::RECEIVE_DATA_FAILED};
+    if (!GetMsgFromSocket(sockFd, &responseCode, sizeof (responseCode))) {
+        return ResponseCode::RECEIVE_DATA_FAILED;
+    }
+    if (responseCode != ResponseCode::REQUEST_SUCCESS) {
+        DFXLOGE("[%{public}d]: failed to request for clientType %{public}d and response %{public}d",
+                __LINE__, requestData.head.clientType, responseCode);
+    }
+    return responseCode;
+}
+
+template<typename REQ>
+int32_t SendRequestToServer(const std::string& socketName, const REQ& requestData, int timeout)
+{
+    SmartFd sockFd(GetConnectSocketFd(socketName.c_str(), timeout));
+    if (sockFd < 0) {
+        return ResponseCode::CONNECT_FAILED;
+    }
+    return SendRequestToSocket(sockFd, requestData);
+}
+
+template<typename REQ>
+int32_t RequestFileDescriptorFromServer(const std::string& socketName, const REQ& requestData, const int timeout)
+{
+    SmartFd sockFd(GetConnectSocketFd(socketName.c_str(), timeout));
+    if (SendRequestToSocket(sockFd, requestData) == ResponseCode::REQUEST_SUCCESS) {
+        return ReadFileDescriptorFromSocket(sockFd);
+    }
+    return -1;
+}
+
+int32_t RequestFileDescriptor(const struct FaultLoggerdRequest &request)
+{
+    switch (request.type) {
+        case CPP_CRASH:
+        case CPP_STACKTRACE:
+        case LEAK_STACKTRACE:
+        case JIT_CODE_LOG:
+            return RequestFileDescriptorFromServer(SERVER_CRASH_SOCKET_NAME, request, SOCKET_TIMEOUT);
+        default:
+            return RequestFileDescriptorFromServer(SERVER_SOCKET_NAME, request, SOCKET_TIMEOUT);
+    }
+}
 }
 
 int32_t RequestFileDescriptor(int32_t type)
 {
-    struct FaultLoggerdRequest request;
-    (void)memset_s(&request, sizeof(request), 0, sizeof(request));
+    struct FaultLoggerdRequest request{};
+    FillRequestHeadData(request.head, FaultLoggerClientType::LOG_FILE_DES_CLIENT);
     request.type = type;
-    request.pid = getpid();
+    request.pid = request.head.clientPid;
     request.tid = gettid();
-    request.uid = getuid();
     request.time = OHOS::HiviewDFX::GetTimeMilliSeconds();
-    return RequestFileDescriptorEx(&request);
+    return RequestFileDescriptor(request);
 }
 
-int32_t RequestLogFileDescriptor(struct FaultLoggerdRequest *request)
+int32_t RequestFileDescriptorEx(struct FaultLoggerdRequest *request)
 {
     if (request == nullptr) {
         DFXLOGE("[%{public}d]: nullptr request", __LINE__);
         return -1;
     }
-    request->clientType = (int32_t)FaultLoggerClientType::LOG_FILE_DES_CLIENT;
-    return RequestFileDescriptorEx(request);
-}
-
-int32_t RequestFileDescriptorEx(const struct FaultLoggerdRequest *request)
-{
-    if (request == nullptr) {
-        DFXLOGE("[%{public}d]: nullptr request", __LINE__);
-        return -1;
-    }
-
-    int sockfd;
-    std::string name = GetSocketConnectionName();
-    if (!StartConnect(sockfd, name.c_str(), SOCKET_TIMEOUT)) {
-        DFXLOGE("[%{public}d]: StartConnect(%{public}d) failed", __LINE__, sockfd);
-        return -1;
-    }
-
-    OHOS_TEMP_FAILURE_RETRY(write(sockfd, request, sizeof(struct FaultLoggerdRequest)));
-    int fd = ReadFileDescriptorFromSocket(sockfd);
-    DFXLOGD("RequestFileDescriptorEx(%{public}d).", fd);
-    close(sockfd);
-    return fd;
-}
-
-static bool CheckReadResp(int sockfd)
-{
-    char ControlBuffer[SOCKET_BUFFER_SIZE] = {0};
-    if (OHOS_TEMP_FAILURE_RETRY(read(sockfd, ControlBuffer, sizeof(ControlBuffer) - 1)) !=
-        strlen(FAULTLOGGER_DAEMON_RESP)) {
-        DFXLOGE("read count not equal expect count, %{public}d", errno);
-        return false;
-    }
-    if (std::string(ControlBuffer) != FAULTLOGGER_DAEMON_RESP) {
-        DFXLOGE("response is not complete");
-        return false;
-    }
-    return true;
-}
-
-static void RequestPipeFdEx(const struct FaultLoggerdRequest *request, int (&pipeFd)[2], bool needCheck)
-{
-    if (request == nullptr) {
-        DFXLOGE("[%{public}d]: nullptr request", __LINE__);
-        return;
-    }
-    int sockfd = -1;
-    do {
-        std::string name = GetSocketConnectionName();
-        if (!StartConnect(sockfd, name.c_str(), SOCKET_TIMEOUT)) {
-            DFXLOGE("[%{public}d]: StartConnect(%{public}d) failed", __LINE__, sockfd);
-            return;
-        }
-        OHOS_TEMP_FAILURE_RETRY(write(sockfd, request, sizeof(struct FaultLoggerdRequest)));
-        if (needCheck) {
-            if (!CheckReadResp(sockfd)) {
-                break;
-            }
-            int data = 12345;
-            if (!SendMsgIovToSocket(sockfd, reinterpret_cast<void *>(&data), sizeof(data))) {
-                DFXLOGE("%{public}s :: Failed to sendmsg.", __func__);
-                break;
-            }
-        }
-        size_t len = sizeof(pipeFd);
-        int replyCode = 0;
-        if (!RecvMsgFromSocket(sockfd, reinterpret_cast<void *>(pipeFd), len, replyCode) || len != sizeof(pipeFd)) {
-            DFXLOGE("RecvMsgFromSocket failed, errno(%{public}d)", errno);
-        }
-    } while (false);
-    OHOS::HiviewDFX::CloseFd(sockfd);
-}
-
-static int RecvPipeReadFd(int sockfd, int (&pipeReadFd)[2])
-{
-    int32_t mRsp = FaultLoggerCheckPermissionResp::CHECK_PERMISSION_REJECT;
-
-    int data = 12345;
-    if (!SendMsgIovToSocket(sockfd, reinterpret_cast<void *>(&data), sizeof(data))) {
-        DFXLOGE("%{public}s :: Failed to sendmsg.", __func__);
-        return mRsp;
-    }
-    size_t len = sizeof(pipeReadFd);
-    if (!RecvMsgFromSocket(sockfd, reinterpret_cast<void *>(pipeReadFd), len, mRsp)) {
-        DFXLOGE("%{public}s :: Failed to recv message", __func__);
-        return FaultLoggerCheckPermissionResp::CHECK_PERMISSION_REJECT;
-    }
-    if (len != sizeof(pipeReadFd)) {
-        DFXLOGE("data is null or len is %{public}zu", len);
-        return FaultLoggerCheckPermissionResp::CHECK_PERMISSION_REJECT;
-    }
-    return mRsp;
-}
-
-bool CheckConnectStatus()
-{
-    int sockfd = -1;
-    std::string name = GetSocketConnectionName();
-    if (StartConnect(sockfd, name.c_str(), SOCKET_TIMEOUT)) {
-        close(sockfd);
-        return true;
-    }
-    return false;
-}
-
-static int SendSdkDumpRequestToServer(const FaultLoggerdRequest &request, int (&pipeReadFd)[2])
-{
-    int sockfd = -1;
-    int resRsp = FaultLoggerCheckPermissionResp::CHECK_PERMISSION_REJECT;
-    do {
-        std::string name = GetSocketConnectionName();
-        if (request.clientType == FaultLoggerClientType::SDK_DUMP_CLIENT) {
-            name = std::string(SERVER_SDKDUMP_SOCKET_NAME);
-        }
-
-        if (!StartConnect(sockfd, name.c_str(), SOCKET_TIMEOUT)) {
-            DFXLOGE("[%{public}d]: StartConnect(%{public}d) failed", __LINE__, sockfd);
-            resRsp = static_cast<int>(SDK_CONNECT_FAIL);
-            return resRsp;
-        }
-        if (OHOS_TEMP_FAILURE_RETRY(write(sockfd, &request,
-            sizeof(struct FaultLoggerdRequest))) != static_cast<long>(sizeof(request))) {
-            DFXLOGE("write failed.");
-            resRsp = static_cast<int>(SDK_WRITE_FAIL);
-            break;
-        }
-
-        if (!CheckReadResp(sockfd)) {
-            break;
-        }
-        resRsp = RecvPipeReadFd(sockfd, pipeReadFd);
-    } while (false);
-    if (resRsp != FaultLoggerCheckPermissionResp::CHECK_PERMISSION_PASS) {
-        OHOS::HiviewDFX::CloseFd(pipeReadFd[PIPE_BUF_INDEX]);
-        OHOS::HiviewDFX::CloseFd(pipeReadFd[PIPE_RES_INDEX]);
-    }
-    OHOS::HiviewDFX::CloseFd(sockfd);
-    DFXLOGI("SendSdkDumpRequestToServer :: resRsp(%{public}d).", resRsp);
-    return resRsp;
+    FillRequestHeadData(request->head, FaultLoggerClientType::LOG_FILE_DES_CLIENT);
+    return RequestFileDescriptor(*request);
 }
 
 int RequestSdkDump(int32_t pid, int32_t tid, int (&pipeReadFd)[2], bool isJson, int timeout)
 {
     DFXLOGI("RequestSdkDump :: pid(%{public}d), tid(%{public}d), isJson(%{public}s).",
         pid, tid, isJson ? "true" : "false");
+#ifndef is_ohos_lite
     if (pid <= 0 || tid < 0) {
         return -1;
     }
 
-    struct FaultLoggerdRequest request;
-    (void)memset_s(&request, sizeof(request), 0, sizeof(request));
-    request.sigCode = isJson ? DUMP_TYPE_REMOTE_JSON : DUMP_TYPE_REMOTE;
+    struct SdkDumpRequestData request{};
+    FillRequestHeadData(request.head, FaultLoggerClientType::SDK_DUMP_CLIENT);
+    request.isJson = isJson;
+    request.sigCode = DUMP_TYPE_REMOTE;
     request.pid = pid;
     request.tid = tid;
-    request.callerPid = getpid();
     request.callerTid = gettid();
-    request.clientType = (int32_t)FaultLoggerClientType::SDK_DUMP_CLIENT;
     request.time = OHOS::HiviewDFX::GetTimeMilliSeconds();
     request.endTime = GetAbsTimeMilliSeconds() + static_cast<uint64_t>(timeout);
-    pipeReadFd[PIPE_BUF_INDEX] = -1;
-    pipeReadFd[PIPE_RES_INDEX] = -1;
-    return SendSdkDumpRequestToServer(request, pipeReadFd);
-}
-
-int RequestPrintTHilog(const char *msg, int length)
-{
-    if (length >= LINE_BUF_SIZE) {
-        return -1;
-    }
-
-    struct FaultLoggerdRequest request;
-    (void)memset_s(&request, sizeof(request), 0, sizeof(request));
-    request.clientType = (int32_t)FaultLoggerClientType::PRINT_T_HILOG_CLIENT;
-    request.pid = getpid();
-    request.uid = getuid();
-    int sockfd = -1;
-    do {
-        std::string name = GetSocketConnectionName();
-        if (!StartConnect(sockfd, name.c_str(), SOCKET_TIMEOUT)) {
-            DFXLOGE("[%{public}d]: StartConnect(%{public}d) failed", __LINE__, sockfd);
-            return -1;
-        }
-
-        if (OHOS_TEMP_FAILURE_RETRY(write(sockfd, &request,
-            sizeof(struct FaultLoggerdRequest))) != static_cast<long>(sizeof(request))) {
-            break;
-        }
-
-        if (!CheckReadResp(sockfd)) {
-            break;
-        }
-
-        int nwrite = OHOS_TEMP_FAILURE_RETRY(write(sockfd, msg, strlen(msg)));
-        if (nwrite != static_cast<long>(strlen(msg))) {
-            DFXLOGE("nwrite: %{public}d.", nwrite);
-            break;
-        }
-        close(sockfd);
-        return 0;
-    } while (false);
-    close(sockfd);
+    return SendRequestToServer(SERVER_SDKDUMP_SOCKET_NAME, request, SOCKET_TIMEOUT);
+#else
     return -1;
+#endif
 }
 
 int RequestPipeFd(int32_t pid, int32_t pipeType, int (&pipeFd)[2])
 {
-    if (pipeType < static_cast<int32_t>(FaultLoggerPipeType::PIPE_FD_READ) ||
-        pipeType > static_cast<int32_t>(FaultLoggerPipeType::PIPE_FD_WRITE)) {
+#ifndef is_ohos_lite
+    if (pipeType < FaultLoggerPipeType::PIPE_FD_READ_BUF || pipeType > FaultLoggerPipeType::PIPE_FD_DELETE) {
         DFXLOGE("%{public}s :: pipeType(%{public}d) failed.", __func__, pipeType);
         return -1;
     }
-    struct FaultLoggerdRequest request;
-    (void)memset_s(&request, sizeof(request), 0, sizeof(struct FaultLoggerdRequest));
-
-    request.pipeType = pipeType;
+    PipFdRequestData request{};
+    FillRequestHeadData(request.head, FaultLoggerClientType::PIPE_FD_CLIENT);
+    request.pipeType = static_cast<int8_t>(pipeType);
     request.pid = pid;
-    request.callerPid = getpid();
-    request.callerTid = gettid();
-    request.clientType = (int32_t)FaultLoggerClientType::PIPE_FD_CLIENT;
-    bool needCheck = pipeType == static_cast<int32_t>(FaultLoggerPipeType::PIPE_FD_READ);
-    pipeFd[PIPE_BUF_INDEX] = -1;
-    pipeFd[PIPE_RES_INDEX] = -1;
-    RequestPipeFdEx(&request, pipeFd, needCheck);
-    if (pipeFd[PIPE_BUF_INDEX] > 0 && pipeFd[PIPE_RES_INDEX] > 0) {
-        return 0;
-    }
-    OHOS::HiviewDFX::CloseFd(pipeFd[PIPE_BUF_INDEX]);
-    OHOS::HiviewDFX::CloseFd(pipeFd[PIPE_RES_INDEX]);
+    return RequestFileDescriptorFromServer(GetSocketName(), request, SOCKET_TIMEOUT);
+#else
     return -1;
+#endif
 }
 
 int32_t RequestDelPipeFd(int32_t pid)
 {
-    struct FaultLoggerdRequest request;
-    (void)memset_s(&request, sizeof(request), 0, sizeof(struct FaultLoggerdRequest));
+#ifndef is_ohos_lite
+    PipFdRequestData request{};
+    FillRequestHeadData(request.head, FaultLoggerClientType::PIPE_FD_CLIENT);
     request.pipeType = FaultLoggerPipeType::PIPE_FD_DELETE;
     request.pid = pid;
-    request.clientType = (int32_t)FaultLoggerClientType::PIPE_FD_CLIENT;
-
-    int sockfd;
-    std::string name = GetSocketConnectionName();
-    if (!StartConnect(sockfd, name.c_str(), SOCKET_TIMEOUT)) {
-        DFXLOGE("[%{public}d]: StartConnect(%{public}d) failed", __LINE__, sockfd);
-        return -1;
-    }
-
-    OHOS_TEMP_FAILURE_RETRY(write(sockfd, &request, sizeof(struct FaultLoggerdRequest)));
-    close(sockfd);
-    return 0;
+    return SendRequestToServer(GetSocketName(), request, SOCKET_TIMEOUT);
+#else
+    return -1;
+#endif
 }
 
-int ReportDumpStats(const struct FaultLoggerdStatsRequest *request)
+int ReportDumpStats(struct FaultLoggerdStatsRequest *request)
 {
-    int sockfd = -1;
-    std::string name = GetSocketConnectionName();
-    if (!StartConnect(sockfd, name.c_str(), SOCKET_TIMEOUT)) {
-        DFXLOGE("[%{public}d]: StartConnect(%{public}d) failed", __LINE__, sockfd);
+#ifndef HISYSEVENT_DISABLE
+    if (request == nullptr) {
         return -1;
     }
-
-    if (OHOS_TEMP_FAILURE_RETRY(write(sockfd, request,
-        sizeof(struct FaultLoggerdStatsRequest))) != static_cast<long int>(sizeof(struct FaultLoggerdStatsRequest))) {
+    FillRequestHeadData(request->head, FaultLoggerClientType::DUMP_STATS_CLIENT);
+    SmartFd sockFd(GetConnectSocketFd(GetSocketName().c_str(), SOCKET_TIMEOUT));
+    if (!SendMsgToSocket(sockFd, request, sizeof (FaultLoggerdStatsRequest))) {
         DFXLOGE("ReportDumpCatcherStats: failed to write stats.");
-        close(sockfd);
         return -1;
     }
-    close(sockfd);
+#endif
     return 0;
 }
