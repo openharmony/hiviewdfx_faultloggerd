@@ -113,7 +113,7 @@ static void RequestPipeFdEx(const struct FaultLoggerdRequest *request, int (&pip
         std::string name = GetSocketConnectionName();
         if (!StartConnect(sockfd, name.c_str(), SOCKET_TIMEOUT)) {
             DFXLOGE("[%{public}d]: StartConnect(%{public}d) failed", __LINE__, sockfd);
-            break;
+            return;
         }
         OHOS_TEMP_FAILURE_RETRY(write(sockfd, request, sizeof(struct FaultLoggerdRequest)));
         if (needCheck) {
@@ -180,7 +180,7 @@ static int SendSdkDumpRequestToServer(const FaultLoggerdRequest &request, int (&
         if (!StartConnect(sockfd, name.c_str(), SOCKET_TIMEOUT)) {
             DFXLOGE("[%{public}d]: StartConnect(%{public}d) failed", __LINE__, sockfd);
             resRsp = static_cast<int>(SDK_CONNECT_FAIL);
-            break;
+            return resRsp;
         }
         if (OHOS_TEMP_FAILURE_RETRY(write(sockfd, &request,
             sizeof(struct FaultLoggerdRequest))) != static_cast<long>(sizeof(request))) {
@@ -242,7 +242,7 @@ int RequestPrintTHilog(const char *msg, int length)
         std::string name = GetSocketConnectionName();
         if (!StartConnect(sockfd, name.c_str(), SOCKET_TIMEOUT)) {
             DFXLOGE("[%{public}d]: StartConnect(%{public}d) failed", __LINE__, sockfd);
-            break;
+            return -1;
         }
 
         if (OHOS_TEMP_FAILURE_RETRY(write(sockfd, &request,

@@ -61,8 +61,8 @@ static pid_t g_kernelStackPid = 0;
 static std::condition_variable g_cv;
 static std::mutex g_kernelStackMutex;
 static constexpr int WAIT_GET_KERNEL_STACK_TIMEOUT = 1000; // 1000 : time out 1000 ms
-static constexpr int32_t HIVIEW_UID = 1201;
-static constexpr int32_t FOUNDATION_UID = 5523;
+static constexpr uint32_t HIVIEW_UID = 1201;
+static constexpr uint32_t FOUNDATION_UID = 5523;
 
 enum DfxDumpPollRes : int32_t {
     DUMP_POLL_INIT = -1,
@@ -246,7 +246,7 @@ static bool IsBitOn(const std::string& content, const std::string& filed, int si
     }
     //SigBlk:   0000000000000000
     std::string num = content.substr(content.find(filed) + filed.size() + 2, 16);
-    uint64_t hexValue = strtol(num.c_str(), nullptr, 16);
+    uint64_t hexValue = strtoul(num.c_str(), nullptr, 16);
     uint64_t mask = 1ULL << (signal - 1);
 
     return (hexValue & mask) != 0;
@@ -363,7 +363,7 @@ void DfxDumpCatcher::DealWithPollRet(int pollRet, int pid, int32_t& ret, std::st
 
 void DfxDumpCatcher::DealWithSdkDumpRet(int sdkdumpRet, int pid, int32_t& ret, std::string& msg)
 {
-    int32_t uid = getuid();
+    uint32_t uid = getuid();
     if (sdkdumpRet == static_cast<int>(FaultLoggerSdkDumpResp::SDK_DUMP_REPEAT)) {
         AsyncGetAllTidKernelStack(pid, WAIT_GET_KERNEL_STACK_TIMEOUT);
         msg.append("Result: pid(" + std::to_string(pid) + ") process is dumping.\n");
