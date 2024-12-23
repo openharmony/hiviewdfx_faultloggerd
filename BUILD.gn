@@ -13,24 +13,26 @@
 
 import("//base/hiviewdfx/faultloggerd/faultloggerd.gni")
 group("faultloggerd_targets") {
-  deps = [
-    "interfaces/innerkits/crash_exception:crash_exception",
-    "interfaces/innerkits/dump_catcher:libdfx_dumpcatcher",
-    "interfaces/innerkits/faultloggerd_client:libfaultloggerd",
-    "interfaces/innerkits/signal_handler:dfx_signalhandler",
-    "services:faultloggerd",
-    "tools/process_dump:processdump",
-  ]
-  if (!defined(ohos_lite)) {
-    deps += [
-      "interfaces/innerkits/backtrace:libbacktrace_local",
-      "interfaces/innerkits/formatter:libjson_stack_formatter",
-      "interfaces/innerkits/unwinder:libunwinder",
-      "interfaces/rust:faultloggerd_rust",
-      "tools/dump_catcher:dumpcatcher",
+  if (faultloggerd_enable_build_targets) {
+    deps = [
+      "interfaces/innerkits/crash_exception:crash_exception",
+      "interfaces/innerkits/dump_catcher:libdfx_dumpcatcher",
+      "interfaces/innerkits/faultloggerd_client:libfaultloggerd",
+      "interfaces/innerkits/signal_handler:dfx_signalhandler",
+      "services:faultloggerd",
+      "tools/process_dump:processdump",
     ]
-    if (faultloggerd_hisysevent_enable) {
-      deps += [ "tools/crash_validator:crash_validator" ]
+    if (!defined(ohos_lite)) {
+      deps += [
+        "interfaces/innerkits/backtrace:libbacktrace_local",
+        "interfaces/innerkits/formatter:libjson_stack_formatter",
+        "interfaces/innerkits/unwinder:libunwinder",
+        "interfaces/rust:faultloggerd_rust",
+        "tools/dump_catcher:dumpcatcher",
+      ]
+      if (faultloggerd_hisysevent_enable) {
+        deps += [ "tools/crash_validator:crash_validator" ]
+      }
     }
   }
 }
