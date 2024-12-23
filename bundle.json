@@ -32,7 +32,8 @@
         "jsoncpp",
         "libunwind",
         "libuv",
-        "lzma"
+        "lzma",
+        "selinux"
       ]
     },
     "build": {
