@@ -48,11 +48,13 @@ public:
     const std::vector<int>& GetMapIndexVec() const { return mapIndex_; }
     size_t GetMapsSize() const { return maps_.size(); }
     bool GetStackRange(uintptr_t& bottom, uintptr_t& top);
+    bool GetArkStackRange(uintptr_t& start, uintptr_t& end);
 
     bool IsArkExecutedMap(uintptr_t addr);
     uint32_t filePathId_ {0}; // for maps item filePath id
 private:
     bool Parse(const pid_t pid, const std::string& path);
+    void HandleSpecialMap(const std::shared_ptr<DfxMap>& map);
 
 protected:
     std::vector<std::shared_ptr<DfxMap>> maps_ {};
@@ -62,6 +64,8 @@ private:
     bool onlyExec_ = false;
     uintptr_t stackBottom_ = 0;
     uintptr_t stackTop_ = 0;
+    uintptr_t ArkStackStart_ = 0;
+    uintptr_t ArkStackEnd_ = 0;
 };
 } // namespace HiviewDFX
 } // namespace OHOS

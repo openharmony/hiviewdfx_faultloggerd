@@ -123,10 +123,8 @@ bool DfxMaps::Parse(const pid_t pid, const std::string& path)
             AddMap(map, enableMapIndex_);
             continue;
         }
-        if (map->name == "[stack]") {
-            stackBottom_ = static_cast<uintptr_t>(map->begin);
-            stackTop_ = static_cast<uintptr_t>(map->end);
-        }
+        HandleSpecialMap(map);
+
         if (onlyExec_ && !map->IsMapExec()) {
             continue;
         }
@@ -143,6 +141,21 @@ bool DfxMaps::Parse(const pid_t pid, const std::string& path)
     DFXLOGU("parse maps(%{public}s) completed, map size: (%{public}zu), count: (%{public}d)",
         path.c_str(), mapsSize, fgetCount);
     return mapsSize > 0;
+}
+
+void DfxMaps::HandleSpecialMap(const std::shared_ptr<DfxMap>& map)
+{
+    if (map == nullptr) {
+        return;
+    }
+    if (map->name == "[stack]") {
+        stackBottom_ = static_cast<uintptr_t>(map->begin);
+        stackTop_ = static_cast<uintptr_t>(map->end);
+    }
+    if (map->IsArkExecutable()) {
+        ArkStackStart_ = static_cast<uintptr_t>(map->begin);
+        ArkStackEnd_ = static_cast<uintptr_t>(map->end);
+    }
 }
 
 bool DfxMaps::IsArkHapMapItem(const std::string& name)
@@ -289,6 +302,16 @@ bool DfxMaps::GetStackRange(uintptr_t& bottom, uintptr_t& top)
     }
     bottom = stackBottom_;
     top = stackTop_;
+    return true;
+}
+
+bool DfxMaps::GetArkStackRange(uintptr_t& start, uintptr_t& end)
+{
+    if (ArkStackStart_ == 0 || ArkStackEnd_ == 0) {
+        return false;
+    }
+    start = ArkStackStart_;
+    end = ArkStackEnd_;
     return true;
 }
 

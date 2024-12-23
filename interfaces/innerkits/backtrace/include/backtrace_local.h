@@ -21,27 +21,9 @@
 #include <vector>
 
 #include "dfx_define.h"
-#include "dfx_frame.h"
 
 namespace OHOS {
 namespace HiviewDFX {
-
-/**
- * @brief Get a thread of backtrace frames by specify tid
- *
- * @param frames  backtrace frames(output parameter)
- * @param tid  the id of thread.
- *             notice: the value can not equal to tid of the caller thread,
- *             if you want to get stack of the caller thread,
- *             please use interface of "GetBacktrace" or "PrintBacktrace".
- * @param skipFrameNum the number of frames to skip
- * @param fast flag for using fp backtrace(true) or dwarf backtrace(false)
- * @param maxFrameNums the maximum number of frames to backtrace
- * @return if succeed return true, otherwise return false
-*/
-bool GetBacktraceFramesByTid(std::vector<DfxFrame>& frames, int32_t tid, size_t skipFrameNum, bool fast,
-                             size_t maxFrameNums = DEFAULT_MAX_FRAME_NUM);
-
 /**
  * @brief Get a thread of backtrace string  by specify tid
  *

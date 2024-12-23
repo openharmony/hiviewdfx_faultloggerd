@@ -22,12 +22,13 @@
 #include <unistd.h>
 
 #include "backtrace_local_thread.h"
-#include "elapsed_time.h"
+#include "dfx_frame.h"
 #include "dfx_frame_formatter.h"
 #include "dfx_kernel_stack.h"
 #include "dfx_log.h"
 #include "dfx_util.h"
 #include "directory_ex.h"
+#include "elapsed_time.h"
 #include "procinfo.h"
 #include "unwinder.h"
 
@@ -38,7 +39,6 @@ namespace {
 #undef LOG_TAG
 #define LOG_TAG "DfxBacktrace"
 #define LOG_DOMAIN 0xD002D11
-}
 
 bool GetBacktraceFramesByTid(std::vector<DfxFrame>& frames, int32_t tid, size_t skipFrameNum, bool fast,
                              size_t maxFrameNums)
@@ -56,6 +56,7 @@ bool GetBacktraceFramesByTid(std::vector<DfxFrame>& frames, int32_t tid, size_t 
     bool ret = thread.Unwind(fast, maxFrameNums, skipFrameNum + 1);
     frames = thread.GetFrames();
     return ret;
+}
 }
 
 bool GetBacktraceStringByTid(std::string& out, int32_t tid, size_t skipFrameNum, bool fast,
