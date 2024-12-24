@@ -295,7 +295,7 @@ bool ArmExidx::ExtractEntryTabByPersonality(uintptr_t& tabOffset, uint32_t& data
 bool ArmExidx::ExtractEntryTab(uintptr_t tabOffset)
 {
     uint32_t data = 0;
-    DFXLOGU("Exidx tabOffset: %{public}llx", (uint64_t)tabOffset);
+    DFXLOGU("Exidx tabOffset: %{public}llx", static_cast<uint64_t>(tabOffset));
     if (!memory_->Read<uint32_t>(tabOffset, &data, false)) {
         lastErrorData_.SetAddrAndCode(tabOffset, UNW_ERROR_INVALID_MEMORY);
         return false;

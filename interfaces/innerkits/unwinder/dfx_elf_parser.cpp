@@ -230,7 +230,7 @@ bool ElfParser::ParseSectionHeaders(const EhdrType& ehdr)
         uint64_t secOffset = 0;
         uint64_t secSize = 0;
         uint64_t shNdxOffset = ehdr.e_shoff + ehdr.e_shstrndx * ehdr.e_shentsize;
-        if (!Read((uintptr_t)shNdxOffset, &shdr, sizeof(shdr))) {
+        if (!Read(static_cast<uintptr_t>(shNdxOffset), &shdr, sizeof(shdr))) {
             DFXLOGE("Read section header string table failed");
             return false;
         }
@@ -259,7 +259,7 @@ bool ElfParser::ParseElfDynamic()
         return false;
     }
 
-    DynType* dyn = (DynType *)(dynamicOffset_ + static_cast<char*>(mmap_->Get()));
+    DynType* dyn = reinterpret_cast<DynType *>(dynamicOffset_ + static_cast<char *>(mmap_->Get()));
     if (dyn == nullptr) {
         return false;
     }

@@ -99,7 +99,7 @@ private:
         const struct pollfd (&readFds)[2], bool& bPipeConnect, bool& res);
     std::pair<bool, int> DumpRemotePoll(const int timeout, std::pair<int, std::string>& bufState,
         std::pair<int, std::string>& resState);
-    int DoDumpRemotePoll(int timeout, std::string& msg, const int pipeReadFd[2], bool isJson = false);
+    int DoDumpRemotePoll(int timeout, std::string& msg, const int (&pipeReadFd)[2], bool isJson = false);
     bool DoReadBuf(int fd, std::string& msg);
     bool DoReadRes(int fd, bool& ret, std::string& msg);
     static void CollectKernelStack(pid_t pid, int waitMilliSeconds = 0);

@@ -352,11 +352,11 @@ bool DwarfSection::FillInCie(uintptr_t ptr, CommonInfoEntry& cieInfo)
     }
 
     // parse code alignment factor
-    cieInfo.codeAlignFactor = (uint32_t)memory_->ReadUleb128(ptr);
+    cieInfo.codeAlignFactor = static_cast<uint32_t>(memory_->ReadUleb128(ptr));
     DFXLOGU("codeAlignFactor: %{public}d", cieInfo.codeAlignFactor);
 
     // parse data alignment factor
-    cieInfo.dataAlignFactor = (int32_t)memory_->ReadSleb128(ptr);
+    cieInfo.dataAlignFactor = static_cast<int32_t>(memory_->ReadSleb128(ptr));
     DFXLOGU("dataAlignFactor: %{public}d", cieInfo.dataAlignFactor);
 
     // parse return address register
@@ -365,9 +365,9 @@ bool DwarfSection::FillInCie(uintptr_t ptr, CommonInfoEntry& cieInfo)
         memory_->Read<uint8_t>(ptr, &val, true);
         cieInfo.returnAddressRegister = static_cast<uintptr_t>(val);
     } else {
-        cieInfo.returnAddressRegister = (uintptr_t)memory_->ReadUleb128(ptr);
+        cieInfo.returnAddressRegister = static_cast<uintptr_t>(memory_->ReadUleb128(ptr));
     }
-    DFXLOGU("returnAddressRegister: %{public}d", (int)cieInfo.returnAddressRegister);
+    DFXLOGU("returnAddressRegister: %{public}d", static_cast<int>(cieInfo.returnAddressRegister));
 
     // parse augmentation data based on augmentation string
     if (augStr.empty() || augStr[0] != 'z') {

@@ -907,7 +907,7 @@ void DfxElf::ParsePhdr(struct dl_phdr_info* info, const ElfW(Phdr)* (&pHdrSectio
 
 bool DfxElf::ProccessDynamic(const ElfW(Phdr)* pDynamic, ElfW(Addr) loadBase, UnwindTableInfo* uti)
 {
-    ElfW(Dyn)* dyn = (ElfW(Dyn) *)(pDynamic->p_vaddr + loadBase);
+    ElfW(Dyn)* dyn = reinterpret_cast<ElfW(Dyn) *>(pDynamic->p_vaddr + loadBase);
     if (dyn == nullptr) {
         return false;
     }
@@ -926,7 +926,7 @@ struct DwarfEhFrameHdr* DfxElf::InitHdr(struct DwarfEhFrameHdr& synthHdr,
     struct DwarfEhFrameHdr* hdr = nullptr;
     if (pEhHdr) {
         INSTR_STATISTIC(InstructionEntriesEhFrame, pEhHdr->p_memsz, 0);
-        hdr = (struct DwarfEhFrameHdr *) (pEhHdr->p_vaddr + info->dlpi_addr);
+        hdr = reinterpret_cast<struct DwarfEhFrameHdr *>(pEhHdr->p_vaddr + info->dlpi_addr);
     } else {
         ShdrInfo shdr;
         if (FindSection(info, EH_FRAME, shdr)) {
@@ -947,7 +947,7 @@ struct DwarfEhFrameHdr* DfxElf::InitHdr(struct DwarfEhFrameHdr& synthHdr,
 
 int DfxElf::DlPhdrCb(struct dl_phdr_info* info, size_t size, void* data)
 {
-    struct DlCbData* cbData = (struct DlCbData *)data;
+    struct DlCbData* cbData = reinterpret_cast<struct DlCbData *>(data);
     if ((info == nullptr) || (cbData == nullptr)) {
         return -1;
     }
@@ -964,7 +964,7 @@ int DfxElf::DlPhdrCb(struct dl_phdr_info* info, size_t size, void* data)
     uti->startPc = pHdrSections[SECTION_TEXT]->p_vaddr + loadBase;
     uti->endPc = uti->startPc + pHdrSections[SECTION_TEXT]->p_memsz;
     DFXLOGU("Elf name: %{public}s", info->dlpi_name);
-    uti->namePtr = (uintptr_t) info->dlpi_name;
+    uti->namePtr = reinterpret_cast<uintptr_t>(info->dlpi_name);
 
 #if defined(__arm__)
     if (pHdrSections[SECTION_ARMEXIDX]) {
@@ -1036,10 +1036,10 @@ size_t DfxElf::GetElfSize(const void* ptr)
     const uint8_t* data = static_cast<const uint8_t*>(ptr);
     uint8_t classType = data[EI_CLASS];
     if (classType == ELFCLASS32) {
-        Elf32_Ehdr* ehdr = (Elf32_Ehdr *)data;
+        const Elf32_Ehdr* ehdr = reinterpret_cast<const Elf32_Ehdr *>(data);
         return static_cast<size_t>(ehdr->e_shoff + (ehdr->e_shentsize * ehdr->e_shnum));
     } else if (classType == ELFCLASS64) {
-        Elf64_Ehdr* ehdr = (Elf64_Ehdr *)data;
+        const Elf64_Ehdr* ehdr = reinterpret_cast<const Elf64_Ehdr *>(data);
         return static_cast<size_t>(ehdr->e_shoff + (ehdr->e_shentsize * ehdr->e_shnum));
     }
     DFXLOGW("classType(%{public}d) error", classType);

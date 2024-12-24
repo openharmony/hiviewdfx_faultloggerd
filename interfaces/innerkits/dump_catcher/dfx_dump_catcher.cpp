@@ -490,18 +490,18 @@ bool DfxDumpCatcher::HandlePollEvents(std::pair<int, std::string>& bufState, std
     bool resRet = false;
     bool eventRet = true;
     for (auto& readFd : readFds) {
-        if (!bPipeConnect && ((uint32_t)readFd.revents & POLLIN)) {
+        if (!bPipeConnect && (static_cast<uint32_t>(readFd.revents) & POLLIN)) {
             bPipeConnect = true;
         }
 
         if (bPipeConnect &&
-            (((uint32_t)readFd.revents & POLLERR) || ((uint32_t)readFd.revents & POLLHUP))) {
+            ((static_cast<uint32_t>(readFd.revents) & POLLERR) || (static_cast<uint32_t>(readFd.revents) & POLLHUP))) {
             eventRet = false;
             resState.second.append("Result: poll events error.\n");
             break;
         }
 
-        if (((uint32_t)readFd.revents & POLLIN) != POLLIN) {
+        if ((static_cast<uint32_t>(readFd.revents) & POLLIN) != POLLIN) {
             continue;
         }
 
@@ -562,7 +562,7 @@ std::pair<bool, int> DfxDumpCatcher::DumpRemotePoll(const int timeout,
     return std::make_pair(res, ret);
 }
 
-int DfxDumpCatcher::DoDumpRemotePoll(int timeout, std::string& msg, const int pipeReadFd[2], bool isJson)
+int DfxDumpCatcher::DoDumpRemotePoll(int timeout, std::string& msg, const int (&pipeReadFd)[2], bool isJson)
 {
     DFX_TRACE_SCOPED_DLSYM("DoDumpRemotePoll");
     if (pipeReadFd[PIPE_BUF_INDEX] < 0 || pipeReadFd[PIPE_RES_INDEX] < 0) {
