@@ -1362,6 +1362,72 @@ HWTEST_F(DumpCatcherSystemTest,  DumpCatcherSystemTest049, TestSize.Level2)
 }
 
 /**
+ * @tc.name: DumpCatcherSystemTest050
+ * @tc.desc: test dumpcatcher command for system sandbox process
+ * @tc.type: FUNC
+ */
+HWTEST_F(DumpCatcherSystemTest,  DumpCatcherSystemTest050, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "DumpCatcherSystemTest050: start.";
+    string getPidCMD = "pidof netmanager";
+    string pid = ExecuteCommands(getPidCMD);
+    GTEST_LOG_(INFO) << "The pid of netmanager process: " << pid;
+    string procCMD = "dumpcatcher -p " + pid;
+    string procDumpLog = ExecuteCommands(procCMD);
+    GTEST_LOG_(INFO) << "procDumpLog: " << procDumpLog;
+    string keyword = "#00 pc";
+    int numOfTid = GetKeywordCount(procDumpLog, keyword);
+    // The target process contains multiple threads,
+    // so the result of dumpcatcher should contain more than one keyword "#00 pc"
+    EXPECT_GT(numOfTid, 1) << "DumpCatcherSystemTest050 Failed";
+    GTEST_LOG_(INFO) << "DumpCatcherSystemTest050: end.";
+}
+
+/**
+ * @tc.name: DumpCatcherSystemTest051
+ * @tc.desc: test dumpcatcher command for chipset sandbox process
+ * @tc.type: FUNC
+ */
+HWTEST_F(DumpCatcherSystemTest,  DumpCatcherSystemTest051, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "DumpCatcherSystemTest051: start.";
+    string getPidCMD = "pidof wifi_host";
+    string pid = ExecuteCommands(getPidCMD);
+    GTEST_LOG_(INFO) << "The pid of wifi_host process: " << pid;
+    string procCMD = "dumpcatcher -p " + pid;
+    string procDumpLog = ExecuteCommands(procCMD);
+    GTEST_LOG_(INFO) << "procDumpLog: " << procDumpLog;
+    string keyword = "#00 pc";
+    int numOfTid = GetKeywordCount(procDumpLog, keyword);
+    // The target process contains multiple threads,
+    // so the result of dumpcatcher should contain more than one keyword "#00 pc"
+    EXPECT_GT(numOfTid, 1) << "DumpCatcherSystemTest051 Failed";
+    GTEST_LOG_(INFO) << "DumpCatcherSystemTest051: end.";
+}
+
+/**
+ * @tc.name: DumpCatcherSystemTest052
+ * @tc.desc: test dumpcatcher command for appdata sandbox process
+ * @tc.type: FUNC
+ */
+HWTEST_F(DumpCatcherSystemTest,  DumpCatcherSystemTest052, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "DumpCatcherSystemTest052: start.";
+    string getPidCMD = "pidof com.ohos.medialibrary.medialibrarydata";
+    string pid = ExecuteCommands(getPidCMD);
+    GTEST_LOG_(INFO) << "The pid of com.ohos.medialibrary.medialibrarydata process: " << pid;
+    string procCMD = "dumpcatcher -p " + pid;
+    string procDumpLog = ExecuteCommands(procCMD);
+    GTEST_LOG_(INFO) << "procDumpLog: " << procDumpLog;
+    string keyword = "#00 pc";
+    int numOfTid = GetKeywordCount(procDumpLog, keyword);
+    // The target process contains multiple threads,
+    // so the result of dumpcatcher should contain more than one keyword "#00 pc"
+    EXPECT_GT(numOfTid, 1) << "DumpCatcherSystemTest052 Failed";
+    GTEST_LOG_(INFO) << "DumpCatcherSystemTest052: end.";
+}
+
+/**
  * @tc.name: DumpCatcherSystemTest101
  * @tc.desc: test using dumpcatcher command tools to dump the signal stop process
  * @tc.type: FUNC
