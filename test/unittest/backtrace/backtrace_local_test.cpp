@@ -328,7 +328,7 @@ HWTEST_F(BacktraceLocalTest, BacktraceLocalTest009, TestSize.Level2)
     ElapsedTime counter;
     auto unwinder = std::make_shared<Unwinder>();
     BacktraceLocalThread oldthread(BACKTRACE_CURRENT_THREAD, unwinder);
-    ASSERT_EQ(true, oldthread.Unwind(false, DEFAULT_MAX_FRAME_NUM, -1));
+    ASSERT_EQ(true, oldthread.Unwind(false, DEFAULT_MAX_FRAME_NUM, -2));
     GTEST_LOG_(INFO) << "UnwindCurrentCost:" << counter.Elapsed();
     const auto& oldframes = oldthread.GetFrames();
     ASSERT_GT(oldframes.size(), MIN_FRAME_NUM);

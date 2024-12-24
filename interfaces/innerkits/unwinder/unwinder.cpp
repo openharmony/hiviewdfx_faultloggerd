@@ -374,9 +374,10 @@ bool Unwinder::UnwindLocalByOtherTid(pid_t tid, bool fast, size_t maxFrameNum, s
     return impl_->UnwindLocalByOtherTid(tid, fast, maxFrameNum, skipFrameNum);
 }
 
-bool Unwinder::UnwindLocal(bool withRegs, bool fpUnwind, size_t maxFrameNum, size_t skipFrameNum, bool enableArk)
+bool __attribute__((optnone)) Unwinder::UnwindLocal(bool withRegs, bool fpUnwind, size_t maxFrameNum,
+    size_t skipFrameNum, bool enableArk)
 {
-    return impl_->UnwindLocal(withRegs, fpUnwind, maxFrameNum, skipFrameNum, enableArk);
+    return impl_->UnwindLocal(withRegs, fpUnwind, maxFrameNum, skipFrameNum + 1, enableArk);
 }
 
 bool Unwinder::UnwindRemote(pid_t tid, bool withRegs, size_t maxFrameNum, size_t skipFrameNum)
