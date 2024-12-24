@@ -45,7 +45,7 @@ namespace {
 #define LOG_TAG "DfxElfParser"
 }
 
-bool ElfParser::Read(uintptr_t pos, void *buf, size_t size)
+bool ElfParser::Read(uintptr_t pos, void* buf, size_t size)
 {
     if (mmap_->Read(pos, buf, size) == size) {
         return true;
@@ -176,31 +176,9 @@ std::shared_ptr<MiniDebugInfo> ElfParser::GetMiniDebugInfo()
 }
 
 template <typename EhdrType, typename ShdrType>
-bool ElfParser::ParseSectionHeaders(const EhdrType& ehdr)
+bool ElfParser::ExtractSectionHeadersInfo(const EhdrType& ehdr, ShdrType& shdr)
 {
     uint64_t offset = ehdr.e_shoff;
-
-    ShdrType shdr;
-    //section header string table index. include section header table with section name string table.
-    if (ehdr.e_shstrndx < ehdr.e_shnum) {
-        uint64_t secOffset = 0;
-        uint64_t secSize = 0;
-        uint64_t shNdxOffset = offset + ehdr.e_shstrndx * ehdr.e_shentsize;
-        if (!Read((uintptr_t)shNdxOffset, &shdr, sizeof(shdr))) {
-            DFXLOGE("Read section header string table failed");
-            return false;
-        }
-        secOffset = shdr.sh_offset;
-        secSize = shdr.sh_size;
-        if (!ParseStrTab(sectionNames_, secOffset, secSize)) {
-            return false;
-        }
-    } else {
-        DFXLOGE("e_shstrndx(%{public}u) cannot greater than or equal e_shnum(%{public}u)",
-            ehdr.e_shstrndx, ehdr.e_shnum);
-        return false;
-    }
-
     offset += ehdr.e_shentsize;
     for (size_t i = 1; i < ehdr.e_shnum; i++, offset += ehdr.e_shentsize) {
         if (i == ehdr.e_shstrndx) {
@@ -250,6 +228,37 @@ bool ElfParser::ParseSectionHeaders(const EhdrType& ehdr)
     return true;
 }
 
+template <typename EhdrType, typename ShdrType>
+bool ElfParser::ParseSectionHeaders(const EhdrType& ehdr)
+{
+    ShdrType shdr;
+    //section header string table index. include section header table with section name string table.
+    if (ehdr.e_shstrndx < ehdr.e_shnum) {
+        uint64_t secOffset = 0;
+        uint64_t secSize = 0;
+        uint64_t shNdxOffset = ehdr.e_shoff + ehdr.e_shstrndx * ehdr.e_shentsize;
+        if (!Read(static_cast<uintptr_t>(shNdxOffset), &shdr, sizeof(shdr))) {
+            DFXLOGE("Read section header string table failed");
+            return false;
+        }
+        secOffset = shdr.sh_offset;
+        secSize = shdr.sh_size;
+        if (!ParseStrTab(sectionNames_, secOffset, secSize)) {
+            return false;
+        }
+    } else {
+        DFXLOGE("e_shstrndx(%{public}u) cannot greater than or equal e_shnum(%{public}u)",
+            ehdr.e_shstrndx, ehdr.e_shnum);
+        return false;
+    }
+
+    if (!ExtractSectionHeadersInfo(ehdr, shdr)) {
+        return false;
+    }
+    
+    return true;
+}
+
 template <typename DynType>
 bool ElfParser::ParseElfDynamic()
 {
@@ -257,7 +266,7 @@ bool ElfParser::ParseElfDynamic()
         return false;
     }
 
-    DynType *dyn = (DynType *)(dynamicOffset_ + static_cast<char*>(mmap_->Get()));
+    DynType* dyn = reinterpret_cast<DynType *>(dynamicOffset_ + static_cast<char *>(mmap_->Get()));
     if (dyn == nullptr) {
         return false;
     }
@@ -310,8 +319,8 @@ bool ElfParser::ParseElfSymbols(bool isFunc)
     }
 
     elfSymbols_.clear();
-    for (const auto &iter : symShdrs_) {
-        const auto &shdr = iter;
+    for (const auto& iter : symShdrs_) {
+        const auto& shdr = iter;
         ParseElfSymbols<SymType>(shdr, isFunc);
     }
     return (elfSymbols_.size() > 0);
@@ -366,7 +375,7 @@ bool ElfParser::ParseElfSymbolByAddr(uint64_t addr, ElfSymbol& elfSymbol)
         return false;
     }
 
-    for (const auto &shdr : symShdrs_) {
+    for (const auto& shdr : symShdrs_) {
         ShdrInfo linkShdrInfo;
         if (!GetSectionInfo(linkShdrInfo, shdr.link)) {
             return false;
@@ -417,7 +426,7 @@ bool ElfParser::ParseStrTab(std::string& nameStr, const uint64_t offset, const u
         DFXLOGE("size(%{public}" PRIu64 ") is too large.", size);
         return false;
     }
-    char *namesBuf = new char[size];
+    char* namesBuf = new char[size];
     if (namesBuf == nullptr) {
         DFXLOGE("New failed");
         return false;
@@ -437,7 +446,7 @@ bool ElfParser::ParseStrTab(std::string& nameStr, const uint64_t offset, const u
 
 bool ElfParser::GetSectionInfo(ShdrInfo& shdr, const uint32_t idx)
 {
-    for (const auto &iter: shdrInfoPairs_) {
+    for (const auto& iter: shdrInfoPairs_) {
         auto tmpPair = iter.first;
         if (tmpPair.first == idx) {
             shdr = iter.second;
@@ -449,7 +458,7 @@ bool ElfParser::GetSectionInfo(ShdrInfo& shdr, const uint32_t idx)
 
 bool ElfParser::GetSectionInfo(ShdrInfo& shdr, const std::string& secName)
 {
-    for (const auto &iter: shdrInfoPairs_) {
+    for (const auto& iter: shdrInfoPairs_) {
         auto tmpPair = iter.first;
         if (tmpPair.second == secName) {
             shdr = iter.second;
@@ -459,7 +468,7 @@ bool ElfParser::GetSectionInfo(ShdrInfo& shdr, const std::string& secName)
     return false;
 }
 
-bool ElfParser::GetSectionData(unsigned char *buf, uint64_t size, std::string secName)
+bool ElfParser::GetSectionData(unsigned char* buf, uint64_t size, std::string secName)
 {
     ShdrInfo shdr;
     if (GetSectionInfo(shdr, secName)) {

@@ -129,7 +129,7 @@ bool DfxRegsArm::StepIfSignalFrame(uintptr_t pc, std::shared_ptr<DfxMemory> memo
     pc = pc & ~0x1;
 
     uint32_t data;
-    if (!memory->ReadU32(pc, &data, false)) {
+    if (!memory->Read<uint32_t>(pc, &data, false)) {
         return false;
     }
     DFXLOGU("data: %{public}x", data);
@@ -151,7 +151,7 @@ bool DfxRegsArm::StepIfSignalFrame(uintptr_t pc, std::shared_ptr<DfxMemory> memo
         // Form 3 (thumb):
         // 0x77 0x27              movs r7, #77
         // 0x00 0xdf              svc 0
-        if (!memory->ReadU32(spAddr, &data, false)) {
+        if (!memory->Read<uint32_t>(spAddr, &data, false)) {
             return false;
         }
         if (data == 0x5ac3c35a) {
@@ -177,7 +177,7 @@ bool DfxRegsArm::StepIfSignalFrame(uintptr_t pc, std::shared_ptr<DfxMemory> memo
         // Form 3 (thumb):
         // 0xad 0x27              movs r7, #ad
         // 0x00 0xdf              svc 0
-        if (!memory->ReadU32(spAddr, &data, false)) {
+        if (!memory->Read<uint32_t>(spAddr, &data, false)) {
             return false;
         }
         if (data == spAddr + 8) { // 8 : eight bytes offset

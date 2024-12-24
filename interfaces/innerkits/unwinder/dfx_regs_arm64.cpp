@@ -144,7 +144,7 @@ bool DfxRegsArm64::StepIfSignalFrame(uintptr_t pc, std::shared_ptr<DfxMemory> me
         return false;
     }
     uint64_t data;
-    if (!memory->ReadU64(pc, &data, false)) {
+    if (!memory->Read<uint64_t>(pc, &data, false)) {
         return false;
     }
     DFXLOGU("data: %{public}lx", data);

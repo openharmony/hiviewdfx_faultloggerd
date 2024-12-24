@@ -36,7 +36,7 @@ public:
                                                  uint64_t& offset);
     explicit DfxElf(const std::string& file);
     explicit DfxElf(const int fd, const size_t elfSz, const off_t offset);
-    DfxElf(uint8_t *decompressedData, size_t size);
+    DfxElf(uint8_t* decompressedData, size_t size);
     ~DfxElf() { Clear(); }
 
     static bool IsValidElf(const void* ptr, size_t size);
@@ -64,14 +64,14 @@ public:
     uint64_t GetRelPc(uint64_t pc, uint64_t mapStart, uint64_t mapOffset);
     const uint8_t* GetMmapPtr();
     size_t GetMmapSize();
-    bool Read(uintptr_t pos, void *buf, size_t size);
+    bool Read(uintptr_t pos, void* buf, size_t size);
     const std::unordered_map<uint64_t, ElfLoadInfo>& GetPtLoads();
     const std::vector<ElfSymbol>& GetElfSymbols();
     const std::vector<ElfSymbol>& GetFuncSymbols();
     bool GetFuncInfo(uint64_t addr, ElfSymbol& elfSymbol);
     bool GetFuncInfoLazily(uint64_t addr, ElfSymbol& elfSymbol);
     bool GetSectionInfo(ShdrInfo& shdr, const std::string secName);
-    bool GetSectionData(unsigned char *buf, uint64_t size, std::string secName);
+    bool GetSectionData(unsigned char* buf, uint64_t size, std::string secName);
     int FindUnwindTableInfo(uintptr_t pc, std::shared_ptr<DfxMap> map, struct UnwindTableInfo& uti);
     static int FindUnwindTableLocal(uintptr_t pc, struct UnwindTableInfo& uti);
     static std::string ToReadableBuildId(const std::string& buildIdHex);
@@ -85,8 +85,12 @@ protected:
     bool InitHeaders();
     bool InitEmbeddedElf();
 #if is_ohos && !is_mingw
-    static int DlPhdrCb(struct dl_phdr_info *info, size_t size, void *data);
-    static bool FindSection(struct dl_phdr_info *info, const std::string secName, ShdrInfo& shdr);
+    static int DlPhdrCb(struct dl_phdr_info* info, size_t size, void* data);
+    static void ParsePhdr(struct dl_phdr_info* info, const ElfW(Phdr)* (&pHdrSections)[4], const uintptr_t pc);
+    static bool ProccessDynamic(const ElfW(Phdr)* pDynamic, ElfW(Addr) loadBase, UnwindTableInfo* uti);
+    static struct DwarfEhFrameHdr* InitHdr(struct DwarfEhFrameHdr& synthHdr,
+        struct dl_phdr_info* info, const ElfW(Phdr)* pEhHdr);
+    static bool FindSection(struct dl_phdr_info* info, const std::string secName, ShdrInfo& shdr);
     static bool FillUnwindTableByEhhdrLocal(struct DwarfEhFrameHdr* hdr, struct UnwindTableInfo* uti);
 #endif
     bool FillUnwindTableByEhhdr(struct DwarfEhFrameHdr* hdr, uintptr_t shdrBase, struct UnwindTableInfo* uti);

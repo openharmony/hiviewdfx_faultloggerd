@@ -39,12 +39,13 @@ public:
     const uint64_t& GetLastErrorAddr() { return lastErrorData_.GetAddr(); }
 
 protected:
-    bool GetCieOrFde(uintptr_t &addr, FrameDescEntry &fdeInfo);
+    bool GetCieOrFde(uintptr_t& addr, FrameDescEntry& fdeInfo);
     void ParseCieOrFdeHeader(uintptr_t& ptr, FrameDescEntry& fdeInfo, bool& isCieEntry);
-    bool ParseFde(uintptr_t fdeAddr, uintptr_t fdePtr, FrameDescEntry &fdeInfo);
-    bool FillInFde(uintptr_t ptr, FrameDescEntry &fdeInfo);
-    bool ParseCie(uintptr_t cieAddr, uintptr_t ciePtr, CommonInfoEntry &cieInfo);
-    bool FillInCie(uintptr_t ptr, CommonInfoEntry &cieInfo);
+    bool ParseFde(uintptr_t fdeAddr, uintptr_t fdePtr, FrameDescEntry& fdeInfo);
+    bool FillInFde(uintptr_t ptr, FrameDescEntry& fdeInfo);
+    bool ParseCie(uintptr_t cieAddr, uintptr_t ciePtr, CommonInfoEntry& cieInfo);
+    bool FillInCie(uintptr_t ptr, CommonInfoEntry& cieInfo);
+    void ParseAugData(uintptr_t& ptr, CommonInfoEntry& cieInfo, const std::vector<char>& augStr);
 
 protected:
     std::shared_ptr<DfxMemory> memory_;
