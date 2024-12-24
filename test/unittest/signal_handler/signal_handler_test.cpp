@@ -25,6 +25,9 @@
 #include <vector>
 #include <sys/prctl.h>
 #include <sys/syscall.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 
 #include "dfx_define.h"
 #include "dfx_signal_handler.h"
@@ -868,6 +871,91 @@ HWTEST_F(SignalHandlerTest, SignalHandlerTest022, TestSize.Level2)
         bool ret = CheckDebugSignalWords(GetDumpLogFileName("stacktrace", pid, TEMP_DIR), pid, siCode);
         ASSERT_TRUE(ret);
     }
+}
+
+/**
+ * @tc.name: FdTableTest001
+ * @tc.desc: Verify the fdtable structure
+ * @tc.type: FUNC
+ */
+HWTEST_F(SignalHandlerTest, FdTableTest001, TestSize.Level2)
+{
+    std::string res = ExecuteCommands("uname");
+    bool linuxKernel = res.find("Linux") != std::string::npos;
+    if (linuxKernel) {
+        ASSERT_TRUE(linuxKernel);
+        return;
+    }
+    /**
+     * @tc.steps: step1. open 128 fd files
+     *            case: open success
+     * @tc.expected: fp != nullptr
+     * */
+    constexpr int maxOpenNum = 128; // open fd table
+    FILE* fdList[maxOpenNum] = {nullptr};
+    for (int i = 0; i < maxOpenNum; i++) {
+        fdList[i] = fopen("/dev/null", "r");
+        ASSERT_NE(fdList[i], nullptr);
+    }
+
+    /**
+     * @tc.steps: step2. open test fd
+     *            case: open success
+     * @tc.expected: fp != nullptr
+     * */
+    FILE *fp = fopen("/dev/null", "r");
+    ASSERT_NE(fp, nullptr);
+
+    /**
+     * @tc.steps: step3. Clean up resources
+     * */
+    for (int i = 0; i < maxOpenNum; i++) {
+        if (fdList[i] != nullptr) {
+            fclose(fdList[i]);
+            fdList[i] = nullptr;
+        }
+    }
+
+    /**
+     * @tc.steps: step4. Get fd tag
+     * */
+    uint64_t ownerTag = fdsan_get_owner_tag(fileno(fp));
+    uint64_t tag = fdsan_get_tag_value(ownerTag);
+
+    pid_t pid = fork();
+    if (pid < 0) {
+        GTEST_LOG_(ERROR) << "Failed to fork new process.";
+    } else if (pid == 0) {
+        // The child process has disabled fdsan detection by default
+        fdsan_set_error_level(FDSAN_ERROR_LEVEL_WARN_ONCE);
+        /**
+         * @tc.steps: step5. Trigger fdsan
+         * */
+        close(fileno(fp));
+    } else {
+        /**
+         * @tc.steps: step6. Waiting for the completion of stack grabbing
+         * */
+        sleep(3);
+
+        string keywords[] = {
+            to_string(fileno(fp)) + "->/dev/null", to_string(tag)
+        };
+        fclose(fp);
+
+        /**
+         * @tc.steps: step7. Check key words
+         * @tc.expected: check success
+         * */
+        auto filePath = GetDumpLogFileName("stacktrace", pid, TEMP_DIR);
+        ASSERT_FALSE(filePath.empty());
+
+        int length = sizeof(keywords) / sizeof(keywords[0]);
+        int minRegIdx = -1;
+        ASSERT_EQ(CheckKeyWords(filePath, keywords, length, minRegIdx), length);
+    }
+
+    return;
 }
 } // namespace HiviewDFX
 } // namepsace OHOS
