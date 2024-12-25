@@ -209,6 +209,17 @@ int GetKeywordsNum(const std::string& msg, std::string *keywords, int length)
     return count;
 }
 
+int GetKeywordCount(const std::string& msg, const std::string& keyword)
+{
+    int count = 0;
+    auto position = msg.find(keyword);
+    while (position != std::string::npos) {
+        ++count;
+        position = msg.find(keyword, position + 1);
+    }
+    return count;
+}
+
 std::string GetDumpLogFileName(const std::string& prefix, const pid_t pid, const std::string& tempPath)
 {
     std::string filePath = "";
