@@ -73,14 +73,13 @@ bool SocketServer::AddServerListener(const char* socketName)
     return epollManager_.AddListener(std::move(serverListener));
 }
 
-SocketServer::SocketServerListener::SocketServerListener(SocketServer& socketServer,
-    const int32_t fd, std::string socketName) : EpollListener(fd), socketServer_(socketServer),
-    socketName_(std::move(socketName)) {}
+SocketServer::SocketServerListener::SocketServerListener(SocketServer& socketServer, int32_t fd, std::string socketName)
+    : EpollListener(fd), socketServer_(socketServer), socketName_(std::move(socketName)) {}
 
-SocketServer::ClientRequestListener::ClientRequestListener(SocketServerListener& socketServerListener, const int32_t fd)
+SocketServer::ClientRequestListener::ClientRequestListener(SocketServerListener& socketServerListener, int32_t fd)
     : EpollListener(fd), socketServerListener_(socketServerListener) {}
 
-IFaultLoggerService* SocketServer::ClientRequestListener::GetTargetService(const int32_t faultLoggerClientType) const
+IFaultLoggerService* SocketServer::ClientRequestListener::GetTargetService(int32_t faultLoggerClientType) const
 {
     for (const auto& faultLoggerServicePair : socketServerListener_.socketServer_.faultLoggerServices_) {
         if (faultLoggerServicePair.first == faultLoggerClientType) {
@@ -95,7 +94,7 @@ void SocketServer::ClientRequestListener::OnEventPoll()
     constexpr int32_t maxBuffSize = 2048;
     std::vector<uint8_t> buf(maxBuffSize, 0);
     ssize_t nread = OHOS_TEMP_FAILURE_RETRY(read(GetFd(), buf.data(), maxBuffSize));
-    if (nread > 0) {
+    if (nread >= sizeof(RequestDataHead)) {
         auto dataHead = reinterpret_cast<RequestDataHead*>(buf.data());
         DFXLOGI("%{public}s :: %{public}s receive request from pid: %{public}d, clientType: %{public}d",
                 FAULTLOGGERD_SERVER_TAG, socketServerListener_.socketName_.c_str(),
