@@ -111,7 +111,7 @@ static int32_t RequestFileDescriptorByCheck(const struct FaultLoggerdRequest *re
         std::string name = GetSocketConnectionName();
         if (!StartConnect(sockfd, name.c_str(), SOCKET_TIMEOUT)) {
             DFXLOG_ERROR("StartConnect(%d) failed", sockfd);
-            break;
+            return fd;
         }
 
         OHOS_TEMP_FAILURE_RETRY(write(sockfd, request, sizeof(struct FaultLoggerdRequest)));
@@ -177,7 +177,7 @@ static int SendRequestToServer(const FaultLoggerdRequest &request)
 
         if (!StartConnect(sockfd, name.c_str(), SOCKET_TIMEOUT)) {
             DFXLOG_ERROR("StartConnect(%d) failed", sockfd);
-            break;
+            return resRsp;
         }
         if (OHOS_TEMP_FAILURE_RETRY(write(sockfd, &request,
             sizeof(struct FaultLoggerdRequest))) != static_cast<long>(sizeof(request))) {
@@ -259,7 +259,7 @@ int RequestPrintTHilog(const char *msg, int length)
         std::string name = GetSocketConnectionName();
         if (!StartConnect(sockfd, name.c_str(), SOCKET_TIMEOUT)) {
             DFXLOG_ERROR("StartConnect(%d) failed", sockfd);
-            break;
+            return -1;
         }
 
         if (OHOS_TEMP_FAILURE_RETRY(write(sockfd, &request,
