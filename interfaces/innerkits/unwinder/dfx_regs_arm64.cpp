@@ -22,8 +22,8 @@
 #include <sys/ptrace.h>
 #include <sys/uio.h>
 #include "dfx_define.h"
-#include "dfx_log.h"
 #include "dfx_elf.h"
+#include "dfx_log.h"
 #include "string_printf.h"
 
 namespace OHOS {

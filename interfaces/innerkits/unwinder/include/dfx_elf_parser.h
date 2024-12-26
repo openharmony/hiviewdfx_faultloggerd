@@ -90,6 +90,8 @@ protected:
     bool ParseElfName();
     bool ParseStrTab(std::string& nameStr, const uint64_t offset, const uint64_t size);
     bool GetSectionNameByIndex(std::string& nameStr, const uint32_t name);
+    template <typename SymType>
+    bool ReadSymType(const ElfShdr& shdr, const uint32_t idx, SymType& sym);
 
 protected:
     std::vector<ElfSymbol> elfSymbols_;

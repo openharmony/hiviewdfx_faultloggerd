@@ -327,6 +327,19 @@ bool ElfParser::ParseElfSymbols(bool isFunc)
 }
 
 template <typename SymType>
+bool ElfParser::ReadSymType(const ElfShdr& shdr, const uint32_t idx, SymType& sym)
+{
+    uintptr_t offset = static_cast<uintptr_t>(shdr.offset + idx * shdr.entSize);
+    if (!Read(offset, &sym, sizeof(sym))) {
+        return false;
+    }
+    if (sym.st_value == 0 || sym.st_size == 0) {
+        return false;
+    }
+    return true;
+}
+
+template <typename SymType>
 bool ElfParser::ParseElfSymbols(ElfShdr shdr, bool isFunc)
 {
     ShdrInfo linkShdrInfo;
@@ -336,12 +349,8 @@ bool ElfParser::ParseElfSymbols(ElfShdr shdr, bool isFunc)
 
     uint32_t count = static_cast<uint32_t>((shdr.entSize != 0) ? (shdr.size / shdr.entSize) : 0);
     for (uint32_t idx = 0; idx < count; ++idx) {
-        uintptr_t offset = static_cast<uintptr_t>(shdr.offset + idx * shdr.entSize);
         SymType sym;
-        if (!Read(offset, &sym, sizeof(sym))) {
-            continue;
-        }
-        if (sym.st_value == 0 || sym.st_size == 0) {
+        if (!ReadSymType(shdr, idx, sym)) {
             continue;
         }
         ElfSymbol elfSymbol;
@@ -383,12 +392,8 @@ bool ElfParser::ParseElfSymbolByAddr(uint64_t addr, ElfSymbol& elfSymbol)
 
         uint32_t count = static_cast<uint32_t>((shdr.entSize != 0) ? (shdr.size / shdr.entSize) : 0);
         for (uint32_t idx = 0; idx < count; ++idx) {
-            uintptr_t offset = static_cast<uintptr_t>(shdr.offset + idx * shdr.entSize);
             SymType sym;
-            if (!Read(offset, &sym, sizeof(sym))) { // todo inplace search
-                continue;
-            }
-            if (sym.st_value == 0 || sym.st_size == 0) {
+            if (!ReadSymType(shdr, idx, sym)) {
                 continue;
             }
 
