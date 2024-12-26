@@ -521,10 +521,10 @@ bool DfxDumpCatcher::DumpCatch(int pid, int tid, std::string& msg, size_t maxFra
         }
         int timeout = (tid == 0 ? 3 : 10) * 1000; // when tid not zero, timeout is 10s
         int32_t res = DoDumpRemoteLocked(pid, tid, msg, isJson, timeout);
-        void* retAddr = __builtin_return_address(0);
         if (res != DUMPCATCH_ESUCCESS && g_kernelStackRet != DUMPCATCH_ESUCCESS && g_kernelStackRet != -1) {
             res = g_kernelStackRet;
         }
+        void* retAddr = __builtin_return_address(0);
         ReportDumpCatcherStats(pid, requestTime, res, retAddr);
         ret = res == DUMPCATCH_ESUCCESS;
     }
