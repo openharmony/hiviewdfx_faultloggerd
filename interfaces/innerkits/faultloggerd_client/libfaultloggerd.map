@@ -6,9 +6,9 @@
       CheckConnectStatus;
       StartListen*;
       SendFileDescriptorToSocket*;
-      RecvMsgCredFromSocket*;
       ReportDumpStats*;
-      SendMsgCtlToSocket*;
+      SendMsgToSocket*;
+      GetMsgFromSocket*;
     };
   local:
     *;

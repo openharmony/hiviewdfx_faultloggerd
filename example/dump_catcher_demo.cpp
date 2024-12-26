@@ -34,7 +34,8 @@ static NOINLINE int TestFuncDump(int32_t pid, int32_t tid, bool isJson)
     isJson = false;
 #endif
     OHOS::HiviewDFX::ElapsedTime counter;
-    bool ret = dumplog.DumpCatch(pid, tid, msg, OHOS::HiviewDFX::DEFAULT_MAX_FRAME_NUM, isJson);
+    constexpr size_t defaultMaxFrameNum = 256;
+    bool ret = dumplog.DumpCatch(pid, tid, msg, defaultMaxFrameNum, isJson);
     time_t elapsed1 = counter.Elapsed();
     if (ret) {
         std::cout << msg << std::endl;

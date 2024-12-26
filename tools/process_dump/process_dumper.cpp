@@ -520,7 +520,6 @@ void ProcessDumper::UnwindWriteJit(const ProcessDumpRequest &request)
     jitRequest.type = FaultLoggerType::JIT_CODE_LOG;
     jitRequest.pid = request.pid;
     jitRequest.tid = request.tid;
-    jitRequest.uid = request.uid;
     jitRequest.time = OHOS::HiviewDFX::GetTimeMilliSeconds();
     int32_t fd = RequestFileDescriptorEx(&jitRequest);
     if (fd == -1) {
@@ -929,7 +928,6 @@ int ProcessDumper::InitPrintThread(std::shared_ptr<ProcessDumpRequest> request)
     faultloggerdRequest.type = ProcessDumper::GetLogTypeByRequest(*request);
     faultloggerdRequest.pid = request->pid;
     faultloggerdRequest.tid = request->tid;
-    faultloggerdRequest.uid = request->uid;
     faultloggerdRequest.time = request->timeStamp;
     if (isCrash_ || faultloggerdRequest.type == FaultLoggerType::LEAK_STACKTRACE) {
         bufferFd_ = RequestFileDescriptorEx(&faultloggerdRequest);

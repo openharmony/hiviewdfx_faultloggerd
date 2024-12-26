@@ -44,6 +44,11 @@ if (defined(ohos_lite)) {
       "hilog_lite:hilog_shared",
       "init:libbegetutil",
     ]
+
+    defines = [ "is_ohos_lite" ]
+    if (!faultloggerd_hisysevent_enable) {
+      defines += [ "HISYSEVENT_DISABLE" ]
+    }
   }
 } else {
   config("faultloggerd_client_config") {
@@ -67,7 +72,7 @@ if (defined(ohos_lite)) {
       "faultloggerd_socket.cpp",
     ]
     cflags = [ "-fstack-protector-strong" ]
-    include_dirs = [ "." ]
+    include_dirs = [ "$faultloggerd_common_path/dfxutil" ]
     version_script = "libfaultloggerd.map"
     deps = [
       "$faultloggerd_common_path/cutil:dfx_cutil",

@@ -245,7 +245,7 @@ static void FillCrashExceptionAndReport(const int err)
     exception.error = err;
     exception.time = (int64_t)(GetTimeMilliseconds());
     (void)strncpy(exception.message, GetCrashDescription(err), sizeof(exception.message) - 1);
-    ReportException(exception);
+    ReportException(&exception);
 }
 
 static bool IsDumpSignal(int sig)

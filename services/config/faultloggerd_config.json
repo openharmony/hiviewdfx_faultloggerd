@@ -1,0 +1,82 @@
+{
+  "tempFilePath": "/data/log/faultlog/temp",
+  "maxTempFilesSizeInKB": 2097152,
+  "fileClearTimeAfterBootInSecond": 300,
+  "tempFiles": [
+    {
+      "type": 2,
+      "fileNamePrefix": "cppcrash",
+      "maxSingleFileSizeInKB": 2048,
+      "keepFileCount": 20,
+      "maxFileCount": 40
+    },
+    {
+      "type": 101,
+      "fileNamePrefix": "stacktrace",
+      "maxSingleFileSizeInKB": 2048,
+      "keepFileCount": 20,
+      "maxFileCount": 40
+    },
+    {
+      "type": 102,
+      "fileNamePrefix": "jsstack",
+      "maxSingleFileSizeInKB": 2048,
+      "keepFileCount": 20,
+      "maxFileCount": 40
+    },
+    {
+      "type": 103,
+      "fileNamePrefix": "jsheap",
+      "maxSingleFileSizeInKB": 2097152,
+      "overFileSizeAction": "DELETE",
+      "keepFileCount": 12,
+      "maxFileCount": 24,
+      "fileExistTimeInSecond": 120,
+      "overTimeFileDeleteType": "ACTIVE"
+    },
+    {
+      "type": 104,
+      "fileNamePrefix": "jsheap",
+      "maxSingleFileSizeInKB": 2097152,
+      "overFileSizeAction": "DELETE",
+      "keepFileCount": 12,
+      "maxFileCount": 24,
+      "fileExistTimeInSecond": 120,
+      "overTimeFileDeleteType": "ACTIVE"
+    },
+    {
+      "type": 105,
+      "fileNamePrefix": "leaklist",
+      "maxSingleFileSizeInKB": 2097152,
+      "overFileSizeAction": "DELETE",
+      "keepFileCount": 12,
+      "maxFileCount": 24,
+      "fileExistTimeInSecond": 120,
+      "overTimeFileDeleteType": "ACTIVE"
+    },
+    {
+      "type": 106,
+      "fileNamePrefix": "leakstack",
+      "maxSingleFileSizeInKB": 512,
+      "keepFileCount": 20,
+      "maxFileCount": 40,
+      "fileExistTimeInSecond": 60
+    },
+    {
+      "type": 107,
+      "fileNamePrefix": "ffrtlog",
+      "maxSingleFileSizeInKB": 128,
+      "keepFileCount": 20,
+      "maxFileCount": 40,
+      "fileExistTimeInSecond": 60
+    },
+    {
+      "type": 108,
+      "fileNamePrefix": "jitcode",
+      "maxSingleFileSizeInKB": 128,
+      "keepFileCount": 20,
+      "maxFileCount": 40,
+      "fileExistTimeInSecond": 60
+    }
+  ]
+}

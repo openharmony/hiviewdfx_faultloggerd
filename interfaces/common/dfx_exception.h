@@ -18,6 +18,7 @@
 
 #include <inttypes.h>
 #include "dfx_define.h"
+#include "dfx_socket_request.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -102,7 +103,9 @@ static struct ErrCodeToStr g_crashExceptionMap[] = {
 /**
  * @brief Process crash dump exception description
 */
-struct CrashDumpException {
+typedef struct CrashDumpException {
+    /** request data head **/
+    RequestDataHead head;
     /** Crash process id */
     int32_t pid;
     /** Crash process user id */
@@ -113,7 +116,7 @@ struct CrashDumpException {
     int32_t error;
     /** Crash exception message */
     char message[LINE_BUF_SIZE];
-};
+} __attribute__((packed)) CrashDumpException;;
 
 #ifdef __cplusplus
 }

@@ -16,10 +16,10 @@
 #ifndef FAULT_LOGGER_PIPE_H
 #define FAULT_LOGGER_PIPE_H
 
-#include <map>
-#include <memory>
-#include <mutex>
-#include <string>
+#include <cstdint>
+#include <list>
+
+#include "dfx_socket_request.h"
 
 namespace OHOS {
 namespace HiviewDFX {
@@ -27,47 +27,44 @@ class FaultLoggerPipe {
 public:
     FaultLoggerPipe();
     ~FaultLoggerPipe();
-
-    int GetReadFd(void);
-    int GetWriteFd(void);
-
-    void Close(int fd) const;
+    FaultLoggerPipe(const FaultLoggerPipe&) = delete;
+    FaultLoggerPipe& operator=(const FaultLoggerPipe&) = delete;
+    FaultLoggerPipe(FaultLoggerPipe&& rhs) noexcept;
+    FaultLoggerPipe& operator=(FaultLoggerPipe&& rhs) noexcept;
+    int GetReadFd() const;
+    int GetWriteFd();
 private:
-    bool Init(void);
-    bool SetSize(long sz);
-    void Destroy(void);
-
-    int fds_[2] = {-1, -1};
-    bool init_;
-    bool write_;
+    static void Close(int& fd);
+    bool write_{false};
+    int readFd_{-1};
+    int writeFd_{-1};
 };
 
-class FaultLoggerPipe2 {
-public:
-    explicit FaultLoggerPipe2(uint64_t time);
-    ~FaultLoggerPipe2();
-    std::unique_ptr<FaultLoggerPipe> faultLoggerPipeBuf_;
-    std::unique_ptr<FaultLoggerPipe> faultLoggerPipeRes_;
-    uint64_t time_;
+enum class PipeFdUsage {
+    BUFFER_FD = 0,
+    RESULT_FD = 1,
 };
 
-class FaultLoggerPipeMap {
+class FaultLoggerPipePair {
 public:
-    FaultLoggerPipeMap();
-    ~FaultLoggerPipeMap();
-
-    bool Check(int pid, uint64_t time);
-    void Set(int pid, uint64_t time);
-    FaultLoggerPipe2* Get(int pid);
-    void Del(int pid);
-
+    int32_t GetPipeFd(PipeFdUsage usage, FaultLoggerPipeType pipeType);
+    FaultLoggerPipePair(int32_t pid, uint64_t requestTime);
+    FaultLoggerPipePair(FaultLoggerPipePair&&) noexcept = default;
+    FaultLoggerPipePair& operator=(FaultLoggerPipePair&&) noexcept = default;
+    static FaultLoggerPipePair& CreateSdkDumpPipePair(int pid, uint64_t requestTime);
+    static bool CheckSdkDumpRecord(int pid, uint64_t checkTime);
+    static FaultLoggerPipePair* GetSdkDumpPipePair(int pid);
+    static void DelSdkDumpPipePair(int pid);
 private:
-    bool Find(int pid) const;
-
-private:
-    std::map<int, std::unique_ptr<FaultLoggerPipe2> > faultLoggerPipes_;
-    std::mutex pipeMapsMutex_;
+    FaultLoggerPipePair(const FaultLoggerPipePair&) = delete;
+    FaultLoggerPipePair& operator=(const FaultLoggerPipePair&) = delete;
+    bool IsValid(uint64_t checkTime) const;
+    int32_t pid_;
+    uint64_t requestTime_;
+    FaultLoggerPipe faultLoggerPipeBuf_;
+    FaultLoggerPipe faultLoggerPipeRes_;
+    static std::list<FaultLoggerPipePair> sdkDumpPipes_;
 };
 } // namespace HiviewDFX
 } // namespace OHOS
-#endif
+#endif // FAULT_LOGGER_PIPE_H

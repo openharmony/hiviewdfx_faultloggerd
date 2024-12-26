@@ -59,19 +59,13 @@ static const int DEFAULT_MAX_LOCAL_FRAME_NUM = 32;
 static const int PIPE_NUM_SZ = 2;
 static const int PIPE_READ = 0;
 static const int PIPE_WRITE = 1;
-static const int SOCKET_BUFFER_SIZE = 32;
-static const char FAULTLOGGER_DAEMON_RESP[] =  "RESP:COMPLETE";
-static const char FAULTLOGGERD_SOCK_BASE_PATH[] = "/dev/unix/socket/";
-static const char SERVER_SOCKET_NAME[] = "faultloggerd.server";
-static const char SERVER_CRASH_SOCKET_NAME[] = "faultloggerd.crash.server";
-static const char SERVER_SDKDUMP_SOCKET_NAME[] = "faultloggerd.sdkdump.server";
 
-static const char PROC_SELF_STATUS_PATH[] = "/proc/self/status";
-static const char PROC_SELF_TASK_PATH[] = "/proc/self/task";
-static const char PROC_SELF_CMDLINE_PATH[] = "/proc/self/cmdline";
-static const char PROC_SELF_COMM_PATH[] = "/proc/self/comm";
-static const char PROC_SELF_MAPS_PATH[] = "/proc/self/maps";
-static const char PROC_SELF_EXE_PATH[] = "/proc/self/exe";
+static const char* const PROC_SELF_STATUS_PATH = "/proc/self/status";
+static const char* const PROC_SELF_TASK_PATH = "/proc/self/task";
+static const char* const PROC_SELF_CMDLINE_PATH = "/proc/self/cmdline";
+static const char* const PROC_SELF_COMM_PATH = "/proc/self/comm";
+static const char* const PROC_SELF_MAPS_PATH = "/proc/self/maps";
+static const char* const PROC_SELF_EXE_PATH = "/proc/self/exe";
 
 #ifndef LIKELY
 #define LIKELY(exp)       (__builtin_expect(!!(exp), true))

@@ -38,12 +38,11 @@ void WaitForServiceReady(const std::string& serviceName)
         pid = GetProcessPid(serviceName);
     }
     ASSERT_GT(pid, 0);
-    ASSERT_TRUE(CheckConnectStatus());
 }
 
-void CheckFdRequestFunction(FaultLoggerType type, bool isValidFd)
+void CheckFdRequestFunction(int32_t type, bool isValidFd)
 {
-    int32_t fd = RequestFileDescriptor(static_cast<int32_t>(type));
+    int32_t fd = RequestFileDescriptor(type);
     ASSERT_EQ((fd >= 0), isValidFd);
     if (fd >= 0) {
         close(fd);
@@ -108,38 +107,6 @@ HWTEST_F(FaultloggerdModuleTest, FaultloggerdClientFdRquestTest001, TestSize.Lev
 }
 
 /**
- * @tc.name: FaultloggerdClientFdRquestTest002
- * @tc.desc: check faultloggerd RequestLogFileDescriptor function
- * @tc.type: FUNC
- */
-HWTEST_F(FaultloggerdModuleTest, FaultloggerdClientFdRquestTest002, TestSize.Level0)
-{
-    struct FaultLoggerdRequest testRequest;
-    (void)memset_s(&testRequest, sizeof(testRequest), 0, sizeof(testRequest));
-    testRequest.type = (int)FaultLoggerType::CPP_CRASH;
-    testRequest.pid = getpid();
-    testRequest.tid = gettid();
-    testRequest.uid = getuid();
-    int32_t fd = RequestLogFileDescriptor(&testRequest);
-    ASSERT_TRUE(fd >= 0);
-    if (fd >= 0) {
-        close(fd);
-    }
-}
-
-/**
- * @tc.name: FaultloggerdClientFdRquestTest003
- * @tc.desc: check faultloggerd RequestPrintTHilog function
- * @tc.type: FUNC
- */
-HWTEST_F(FaultloggerdModuleTest, FaultloggerdClientFdRquestTest003, TestSize.Level0)
-{
-    char msg[] = "test log";
-    size_t len = strlen(msg);
-    ASSERT_EQ(RequestPrintTHilog(msg, len), 0);
-}
-
-/**
  * @tc.name: FaultloggerdClientFdRquestTest004
  * @tc.desc: check faultloggerd RequestFileDescriptorEx function
  * @tc.type: FUNC
@@ -148,10 +115,9 @@ HWTEST_F(FaultloggerdModuleTest, FaultloggerdClientFdRquestTest004, TestSize.Lev
 {
     struct FaultLoggerdRequest testRequest;
     (void)memset_s(&testRequest, sizeof(testRequest), 0, sizeof(testRequest));
-    testRequest.type = (int)FaultLoggerType::CPP_CRASH;
+    testRequest.type = FaultLoggerType::CPP_CRASH;
     testRequest.pid = getpid();
     testRequest.tid = gettid();
-    testRequest.uid = getuid();
     int32_t fd = RequestFileDescriptorEx(&testRequest);
     ASSERT_TRUE(fd >= 0);
     if (fd >= 0) {

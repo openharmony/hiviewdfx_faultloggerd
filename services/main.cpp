@@ -13,25 +13,21 @@
  * limitations under the License.
  */
 
-#include <csignal>
-#include <cstdint>
-#include <unistd.h>
-#include "dfx_log.h"
-#include "dfx_dump_request.h"
 #include "fault_logger_daemon.h"
-#include "faultloggerd_client.h"
-#include "securec.h"
 
 #if defined(DEBUG_CRASH_LOCAL_HANDLER)
+#include "dfx_dump_request.h"
 #include "dfx_signal_local_handler.h"
 #include "dfx_util.h"
+#include "temp_file_manager.h"
 
 static int DoGetCrashFd(const struct ProcessDumpRequest* request)
 {
-    OHOS::HiviewDFX::FaultLoggerDaemon daemon;
-    int32_t type = (int32_t)FaultLoggerType::CPP_CRASH;
-    int fd = daemon.CreateFileForRequest(type, request->pid, request->tid, request->timeStamp);
-    return fd;
+    if (request == nullptr) {
+        return -1;
+    }
+    return OHOS::HiviewDFX::TempFileManager::CreateFileDescriptor(FaultLoggerType::CPP_CRASH,
+                                                                  request->pid, request->tid, request->timeStamp);
 }
 #endif
 
@@ -41,7 +37,7 @@ int main(int argc, char *argv[])
     DFX_GetCrashFdFunc(DoGetCrashFd);
     DFX_InstallLocalSignalHandler();
 #endif
-    OHOS::HiviewDFX::FaultLoggerDaemon daemon;
-    daemon.StartServer();
+    auto& faultLoggerDaemon = OHOS::HiviewDFX::FaultLoggerDaemon::GetInstance();
+    faultLoggerDaemon.StartServer();
     return 0;
 }

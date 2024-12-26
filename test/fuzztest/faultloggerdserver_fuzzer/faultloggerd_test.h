@@ -13,9 +13,19 @@
  * limitations under the License.
  */
 
-#ifndef FAULTLOGGERD_CLIENT_FUZZER_H
-#define FAULTLOGGERD_CLIENT_FUZZER_H
+#ifndef FAULTLOGGERD_TEST_H
+#define FAULTLOGGERD_TEST_H
 
-#define FUZZ_PROJECT_NAME "faultloggerdclient_fuzzer"
+class FaultLoggerdTestServer {
+public:
+    static FaultLoggerdTestServer& GetInstance();
+    FaultLoggerdTestServer(const FaultLoggerdTestServer &) = delete;
+    FaultLoggerdTestServer(FaultLoggerdTestServer &&) = delete;
+    FaultLoggerdTestServer &operator=(const FaultLoggerdTestServer &) = delete;
+    FaultLoggerdTestServer &operator=(FaultLoggerdTestServer &&) = delete;
+private:
+    FaultLoggerdTestServer();
+    ~FaultLoggerdTestServer() = default;
+};
 
 #endif
