@@ -489,8 +489,8 @@ static void CleanPipe(void)
     }
 }
 
- static bool InitPipe(void)
- {
+static bool InitPipe(void)
+{
     bool ret = true;
     for (int i = 0; i < PIPE_MAX; i++) {
         if (syscall(SYS_pipe2, g_pipeFds[i], 0) == -1) {
