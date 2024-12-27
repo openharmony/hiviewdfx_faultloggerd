@@ -74,8 +74,9 @@
 static struct ProcessDumpRequest *g_request = NULL;
 static void *g_reservedChildStack = NULL;
 
-static long g_blockFlag = 0;
+static long g_blockExit = 0;
 static long g_vmRealPid = 0;
+static long g_unwindResult = 0;
 
 enum PIPE_FD_TYPE {
     WRITE_TO_DUMP,
@@ -90,6 +91,7 @@ static int g_pipeFds[PIPE_MAX][2] = {
 
 static const int SIGNALHANDLER_TIMEOUT = 10000; // 10000 us
 static const int ALARM_TIME_S = 10;
+static const uint32_t CRASH_SNAPSHOT_FLAG = 0x8;
 enum DumpPreparationStage {
     CREATE_PIPE_FAIL = 1,
     SET_PIPE_LEN_FAIL,
@@ -103,6 +105,17 @@ static void CleanPipe(void);
 static bool InitPipe(void);
 static bool ReadPipeTimeout(int fd, uint64_t timeout, uint32_t* value);
 static bool ReadProcessDumpGetRegsMsg(void);
+
+static void ResetFlags(void)
+{
+    g_unwindResult = 0;
+    g_blockExit = 0;
+}
+
+static bool IsDumpSignal(int signo)
+{
+    return signo == SIGDUMP || signo == SIGLEAK_STACK;
+}
 
 static const char* GetCrashDescription(const int32_t errCode)
 {
@@ -430,8 +443,9 @@ static bool StartProcessdump(void)
                 DFXLOGI("dump remain %{public}" PRId64 "ms", endTime - curTime);
             }
             if (endTime == 0 || endTime > curTime) {
-                g_request->isBlockCrash = (intptr_t)&g_blockFlag;
-                g_request->vmProcRealPid = (intptr_t)&g_vmRealPid;
+                g_request->blockCrashExitAddr = (intptr_t)&g_blockExit;
+                g_request->vmProcRealPidAddr = (intptr_t)&g_vmRealPid;
+                g_request->unwindResultAddr = (intptr_t)&g_unwindResult;
                 DFX_ExecDump();
             } else {
                 DFXLOGI("current has spend all time, not execl processdump");
@@ -567,14 +581,63 @@ static bool ReadProcessDumpGetRegsMsg(void)
     return false;
 }
 
-static void ReadUnwindFinishMsg(int sig)
+static void SetKernelSnapshot(bool enable)
 {
-    if (sig == SIGDUMP) {
+    const char *filePath = "/proc/self/unexpected_die_catch";
+    if (access(filePath, F_OK) < 0) {
+        return;
+    }
+    int dieCatchFd = open(filePath, O_RDWR);
+    if (dieCatchFd < 0) {
+        DFXLOGE("Failed to open unexpecterd_die_catch %{public}d", errno);
+        return;
+    }
+    do {
+        char val[10] = {0}; // 10 : to save diecatch val
+        if (read(dieCatchFd, val, sizeof(val)) < 0) {
+            DFXLOGE("Failed to read unexpecterd_die_catch %{public}d", errno);
+            break;
+        }
+        if (lseek(dieCatchFd, 0, SEEK_SET) < 0) {
+            DFXLOGE("Failed to lseek unexpecterd_die_catch %{public}d", errno);
+            break;
+        }
+
+        uint32_t num = (uint32_t)strtoul(val, NULL, 16); // 16 : val is hex
+        if (errno == ERANGE) {
+            DFXLOGE("Failed to cast unexpecterd_die_catch val to int %{public}d", errno);
+            break;
+        }
+        if (enable) {
+            num |= CRASH_SNAPSHOT_FLAG;
+        } else {
+            num &= (~CRASH_SNAPSHOT_FLAG);
+        }
+
+        (void)memset_s(val, sizeof(val), 0, sizeof(val));
+        if (snprintf_s(val, sizeof(val), sizeof(val) - 1, "%x", num) < 0) {
+            DFXLOGE("Failed to format unexpecterd_die_catch val %{public}d", errno);
+            break;
+        }
+        if (write(dieCatchFd, val, sizeof(val)) < 0) {
+            DFXLOGE("Failed to write unexpecterd_die_catch %{public}d", errno);
+        }
+    } while (false);
+    syscall(SYS_close, dieCatchFd);
+}
+
+static void ReadUnwindFinishMsg(int signo)
+{
+    if (IsDumpSignal(signo)) {
         return;
     }
 
-    DFXLOGI("crash processdump unwind finish, blockFlag %{public}ld", g_blockFlag);
-    if (g_blockFlag == CRASH_BLOCK_EXIT_FLAG) {
+    DFXLOGI("crash processdump unwind finish, unwind success Flag %{public}ld, blockFlag %{public}ld",
+        g_unwindResult, g_blockExit);
+    if (g_unwindResult == CRASH_UNWIND_SUCCESS_FLAG) {
+        SetKernelSnapshot(false);
+    }
+    if (g_blockExit == CRASH_BLOCK_EXIT_FLAG) {
         syscall(SYS_tgkill, g_request->nsPid, g_request->tid, SIGSTOP);
     }
 }
@@ -583,6 +646,10 @@ static int ProcessDump(int sig)
 {
     int prevDumpableStatus = prctl(PR_GET_DUMPABLE);
     bool isTracerStatusModified = SetDumpState();
+    if (!IsDumpSignal(sig)) {
+        ResetFlags();
+        SetKernelSnapshot(true);
+    }
 
     g_request->dumpMode = FUSION_MODE;
 
