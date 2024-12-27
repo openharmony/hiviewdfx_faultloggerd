@@ -261,7 +261,7 @@ void ReadVmRealPid(std::shared_ptr<ProcessDumpRequest> request, unsigned long vm
     long data = 0;
     DFXLOGI("start wait exit event happen");
     waitpid(vmPid, &waitStatus, 0); // wait exit stop
-    data = ptrace(PTRACE_PEEKDATA, vmPid, reinterpret_cast<void *>(request->vmProcRealPid), NULL);
+    data = ptrace(PTRACE_PEEKDATA, vmPid, reinterpret_cast<void *>(request->vmProcRealPidAddr), nullptr);
     if (data < 0) {
         DFXLOGI("ptrace peek data error %{public}lu %{public}d", vmPid, errno);
     }
@@ -371,6 +371,34 @@ static bool IsDebugSignal(const siginfo_t& siginfo)
             return false;
     }
 }
+
+void InfoCrashUnwindResult(const std::shared_ptr<ProcessDumpRequest> request, bool isUnwindSucc)
+{
+    if (!isUnwindSucc) {
+        return;
+    }
+    if (ptrace(PTRACE_POKEDATA, request->nsPid, reinterpret_cast<void*>(request->unwindResultAddr),
+        CRASH_UNWIND_SUCCESS_FLAG) < 0) {
+        DFXLOGE("pok unwind success flag to nsPid %{public}d fail %{public}s", request->nsPid, strerror(errno));
+    }
+}
+
+void BlockCrashProcExit(const std::shared_ptr<ProcessDumpRequest> request)
+{
+    if (!IsBlockCrashProcess()) {
+        return;
+    }
+    DFXLOGI("start block crash process pid %{public}d nspid %{public}d", request->pid, request->nsPid);
+    if (ptrace(PTRACE_POKEDATA, request->nsPid, reinterpret_cast<void*>(request->blockCrashExitAddr),
+        CRASH_BLOCK_EXIT_FLAG) < 0) {
+        DFXLOGE("pok block falg to nsPid %{public}d fail %{public}s", request->nsPid, strerror(errno));
+    }
+}
+
+bool IsDumpSignal(int signo)
+{
+    return signo == SIGDUMP || signo == SIGLEAK_STACK;
+}
 }
 
 ProcessDumper &ProcessDumper::GetInstance()
@@ -390,11 +418,9 @@ void ProcessDumper::Dump()
         if (isCrash_ && process_->vmThread_ != nullptr) {
             process_->vmThread_->Detach();
         }
-        if (isCrash_ && (request->dumpMode == FUSION_MODE) && IsBlockCrashProcess()) {
-            DFXLOGI("start block crash process pid %{public}d nspid %{public}d", request->pid, request->nsPid);
-            if (ptrace(PTRACE_POKEDATA, request->nsPid, (void*)request->isBlockCrash, CRASH_BLOCK_EXIT_FLAG) < 0) {
-                DFXLOGE("pok block falg to nsPid %{public}d fail %{public}s", request->nsPid, strerror(errno));
-            }
+        if (!IsDumpSignal(request->siginfo.si_signo) && (request->dumpMode == FUSION_MODE)) {
+            InfoCrashUnwindResult(request, resDump_ == DumpErrorCode::DUMP_ESUCCESS);
+            BlockCrashProcExit(request);
         }
         if (process_->keyThread_ != nullptr) {
             process_->keyThread_->Detach();
