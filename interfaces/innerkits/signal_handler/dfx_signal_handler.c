@@ -404,7 +404,7 @@ static bool DFX_SigchainHandler(int sig, siginfo_t *si, void *context)
     pthread_mutex_lock(&g_signalHandlerMutex);
     if (!IsDumpSignal(g_prevHandledSignal)) {
         pthread_mutex_unlock(&g_signalHandlerMutex);
-        return ret;
+        return IsDumpSignal(sig);
     }
     BlockMainThreadIfNeed(sig);
     g_prevHandledSignal = sig;
@@ -413,7 +413,7 @@ static bool DFX_SigchainHandler(int sig, siginfo_t *si, void *context)
         pthread_mutex_unlock(&g_signalHandlerMutex);
         DFXLOGE("DFX_SigchainHandler :: signal(%{public}d) in %{public}d:%{public}d fill dump request faild.",
             sig, g_request.pid, g_request.tid);
-        return sig == SIGLEAK_STACK;
+        return IsDumpSignal(sig);
     }
     DFXLOGI("DFX_SigchainHandler :: sig(%{public}d), pid(%{public}d), processName(%{public}s), threadName(%{public}s).",
         sig, g_request.pid, g_request.processName, g_request.threadName);
