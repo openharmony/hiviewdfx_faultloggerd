@@ -71,6 +71,16 @@ struct ArkUnwindParam {
         : ctx(ctx), readMem(readMem), fp(fp), sp(sp), pc(pc),
           methodId(methodId), isJsFrame(isJsFrame), jitCache(jitCache) {}
 };
+
+struct ArkStepParam {
+    uintptr_t *fp;
+    uintptr_t *sp;
+    uintptr_t *pc;
+    bool *isJsFrame;
+
+    ArkStepParam(uintptr_t *fp, uintptr_t *sp, uintptr_t *pc, bool *isJsFrame)
+        : fp(fp), sp(sp), pc(pc), isJsFrame(isJsFrame) {}
+};
 }
 }
 
@@ -80,6 +90,7 @@ using JsFrame = panda::ecmascript::JsFrame;
 using JsFunction = panda::ecmascript::JsFunction;
 using ReadMemFunc = panda::ecmascript::ReadMemFunc;
 using ArkUnwindParam = panda::ecmascript::ArkUnwindParam;
+using ArkStepParam = panda::ecmascript::ArkStepParam;
 
 class DfxArk {
 public:
@@ -91,12 +102,11 @@ public:
      * @param fp fp register
      * @param sp sp register
      * @param pc pc register
-     * @param methodid methodid variable
      * @param isJsFrame isJsFrame variable
      * @return if succeed return 1, otherwise return -1
     */
     static int StepArkFrame(void *obj, OHOS::HiviewDFX::ReadMemFunc readMemFn,
-        uintptr_t *fp, uintptr_t *sp, uintptr_t *pc, uintptr_t* methodid, bool *isJsFrame);
+        OHOS::HiviewDFX::ArkStepParam* arkParam);
 
     /**
      * @brief step ark frame with jit
@@ -123,34 +133,31 @@ public:
      * @brief parse ark file info
      *
      * @param byteCodePc byteCode Pc
-     * @param methodid method id
      * @param mapBase map base address
      * @param name map name
      * @param extractorPtr extractorPtr from ArkCreateJsSymbolExtractor
      * @param jsFunction jsFunction variable
      * @return if succeed return 1, otherwise return -1
     */
-    static int ParseArkFileInfo(uintptr_t byteCodePc, uintptr_t methodid, uintptr_t mapBase, const char* name,
+    static int ParseArkFileInfo(uintptr_t byteCodePc, uintptr_t mapBase, const char* name,
         uintptr_t extractorPtr, JsFunction *jsFunction);
 
     /**
      * @brief parse ark file info by local
      *
      * @param byteCodePc byteCode Pc
-     * @param methodid method id
      * @param mapBase map base address
      * @param loadOffset map offset
      * @param jsFunction jsFunction variable
      * @return if succeed return 1, otherwise return -1
     */
-    static int ParseArkFrameInfoLocal(uintptr_t byteCodePc, uintptr_t methodid,
-        uintptr_t mapBase, uintptr_t loadOffset, JsFunction *jsFunction);
+    static int ParseArkFrameInfoLocal(uintptr_t byteCodePc, uintptr_t mapBase, uintptr_t loadOffset,
+        JsFunction *jsFunction);
 
     /**
      * @brief Parse Ark Frame Info, for hiperf/hiProfile
      *
      * @param byteCodePc byteCode Pc
-     * @param methodid method id
      * @param mapBase map base address
      * @param loadOffset map offset
      * @param data abc data
@@ -160,8 +167,6 @@ public:
      * @return if succeed return 1, otherwise return -1
     */
     static int ParseArkFrameInfo(uintptr_t byteCodePc, uintptr_t mapBase, uintptr_t loadOffset,
-        uint8_t *data, uint64_t dataSize, uintptr_t extractorPtr, JsFunction *jsFunction);
-    static int ParseArkFrameInfo(uintptr_t byteCodePc, uintptr_t methodid, uintptr_t mapBase, uintptr_t loadOffset,
         uint8_t *data, uint64_t dataSize, uintptr_t extractorPtr, JsFunction *jsFunction);
 
     /**

@@ -32,12 +32,12 @@ const char ARK_LIB_NAME[] = "libark_jsruntime.so";
 
 void* g_handle = nullptr;
 pthread_mutex_t g_mutex;
-int (*g_stepArkFn)(void*, OHOS::HiviewDFX::ReadMemFunc, uintptr_t*, uintptr_t*, uintptr_t*, uintptr_t*, bool*);
+int (*g_stepArkFn)(void*, OHOS::HiviewDFX::ReadMemFunc, OHOS::HiviewDFX::ArkStepParam*);
 int (*g_stepArkWithJitFn)(OHOS::HiviewDFX::ArkUnwindParam*);
 int (*g_jitCodeWriteFileFn)(void*, OHOS::HiviewDFX::ReadMemFunc, int, const uintptr_t* const, const size_t);
-int (*g_parseArkFileInfoFn)(uintptr_t, uintptr_t, uintptr_t, const char*, uintptr_t, JsFunction*);
-int (*g_parseArkFrameInfoLocalFn)(uintptr_t, uintptr_t, uintptr_t, uintptr_t, JsFunction*);
-int (*g_parseArkFrameInfoFn)(uintptr_t, uintptr_t, uintptr_t, uintptr_t, uint8_t*, uint64_t, uintptr_t, JsFunction*);
+int (*g_parseArkFileInfoFn)(uintptr_t, uintptr_t, const char*, uintptr_t, JsFunction*);
+int (*g_parseArkFrameInfoLocalFn)(uintptr_t, uintptr_t, uintptr_t, JsFunction*);
+int (*g_parseArkFrameInfoFn)(uintptr_t, uintptr_t, uintptr_t, uint8_t*, uint64_t, uintptr_t, JsFunction*);
 int (*g_arkCreateJsSymbolExtractorFn)(uintptr_t*);
 int (*g_arkDestoryJsSymbolExtractorFn)(uintptr_t);
 int (*g_arkCreateLocalFn)();
@@ -122,7 +122,6 @@ HWTEST_F(ArkTest, ArkTest003, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "ArkTest003: start.";
     uintptr_t byteCodePc = 0;
-    uintptr_t methodid = 0;
     uintptr_t mapBase = 0;
     const char* name = nullptr;
     uintptr_t extractorPtr = 0;
@@ -130,7 +129,7 @@ HWTEST_F(ArkTest, ArkTest003, TestSize.Level2)
     const char* arkFuncName = "ark_parse_js_file_info";
     DLSYM_ARK_FUNC(arkFuncName, g_parseArkFileInfoFn)
     ASSERT_NE(g_parseArkFileInfoFn, nullptr);
-    g_parseArkFileInfoFn(byteCodePc, methodid, mapBase, name, extractorPtr, jsFunction);
+    g_parseArkFileInfoFn(byteCodePc, mapBase, name, extractorPtr, jsFunction);
     g_parseArkFileInfoFn = nullptr;
     GTEST_LOG_(INFO) << "ArkTest003: end.";
 }
@@ -144,14 +143,13 @@ HWTEST_F(ArkTest, ArkTest004, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "ArkTest004: start.";
     uintptr_t byteCodePc = 0;
-    uintptr_t methodid = 0;
     uintptr_t mapBase = 0;
     uintptr_t offset = 0;
     JsFunction *jsFunction = nullptr;
     const char* arkFuncName = "ark_parse_js_frame_info_local";
     DLSYM_ARK_FUNC(arkFuncName, g_parseArkFrameInfoLocalFn)
     ASSERT_NE(g_parseArkFrameInfoLocalFn, nullptr);
-    g_parseArkFrameInfoLocalFn(byteCodePc, methodid, mapBase, offset, jsFunction);
+    g_parseArkFrameInfoLocalFn(byteCodePc, mapBase, offset, jsFunction);
     g_parseArkFrameInfoLocalFn = nullptr;
     GTEST_LOG_(INFO) << "ArkTest004: end.";
 }
@@ -165,7 +163,6 @@ HWTEST_F(ArkTest, ArkTest005, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "ArkTest005: start.";
     uintptr_t byteCodePc = 0;
-    uintptr_t methodid = 0;
     uintptr_t mapBase = 0;
     uintptr_t loadOffset = 0;
     uint8_t *data = nullptr;
@@ -175,7 +172,7 @@ HWTEST_F(ArkTest, ArkTest005, TestSize.Level2)
     const char* arkFuncName = "ark_parse_js_frame_info";
     DLSYM_ARK_FUNC(arkFuncName, g_parseArkFrameInfoFn)
     ASSERT_NE(g_parseArkFrameInfoFn, nullptr);
-    g_parseArkFrameInfoFn(byteCodePc, methodid, mapBase, loadOffset, data, dataSize, extractorPtr, jsFunction);
+    g_parseArkFrameInfoFn(byteCodePc, mapBase, loadOffset, data, dataSize, extractorPtr, jsFunction);
     g_parseArkFrameInfoFn = nullptr;
     GTEST_LOG_(INFO) << "ArkTest005: end.";
 }
@@ -196,12 +193,12 @@ HWTEST_F(ArkTest, ArkTest006, TestSize.Level2)
         uintptr_t *fp = &zero;
         uintptr_t *sp = &zero;
         uintptr_t *pc = &zero;
-        uintptr_t* methodid = &zero;
         bool *isJsFrame = nullptr;
+        ArkStepParam arkParam(fp, sp, pc, isJsFrame);
         const char* arkFuncName = "step_ark";
         DLSYM_ARK_FUNC(arkFuncName, g_stepArkFn)
         ASSERT_NE(g_stepArkFn, nullptr);
-        g_stepArkFn(obj, readMemFn, fp, sp, pc, methodid, isJsFrame);
+        g_stepArkFn(obj, readMemFn, &arkParam);
         g_stepArkFn = nullptr;
         ASSERT_NE(g_handle, nullptr);
         const char* arkCreateFuncName = "ark_create_local";
@@ -254,12 +251,11 @@ HWTEST_F(ArkTest, ArkTest007, TestSize.Level2)
     bool *isJsFrame = nullptr;
     std::vector<uintptr_t> vec;
     std::vector<uintptr_t>& jitCache = vec;
-    OHOS::HiviewDFX::ArkUnwindParam ark(ctx, readMem, fp, sp, pc, methodId, isJsFrame, jitCache);
-    OHOS::HiviewDFX::ArkUnwindParam* arkPrama = &ark;
+    OHOS::HiviewDFX::ArkUnwindParam arkParam(ctx, readMem, fp, sp, pc, methodId, isJsFrame, jitCache);
     const char* const arkFuncName = "step_ark_with_record_jit";
     DLSYM_ARK_FUNC(arkFuncName, g_stepArkWithJitFn)
     ASSERT_NE(g_stepArkWithJitFn, nullptr);
-    g_stepArkWithJitFn(arkPrama);
+    g_stepArkWithJitFn(&arkParam);
     g_stepArkWithJitFn = nullptr;
     GTEST_LOG_(INFO) << "ArkTest007: end.";
 }
