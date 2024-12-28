@@ -1043,6 +1043,9 @@ void ProcessDumper::ReportSigDumpStats(const std::shared_ptr<ProcessDumpRequest>
 
 void ProcessDumper::ReportCrashInfo(const std::string& jsonInfo, const ProcessDumpRequest &request)
 {
+    if (process_ == nullptr) {
+        return;
+    }
     auto reporter = CppCrashReporter(request.timeStamp, process_, request.dumpMode);
     reporter.SetCppCrashInfo(jsonInfo);
     reporter.ReportToHiview();
