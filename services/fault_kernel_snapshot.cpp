@@ -182,10 +182,10 @@ std::string GetBuildInfo()
 #endif
 }
 
-bool IsDevMode()
+bool IsBetaVersion()
 {
 #ifndef is_ohos_lite
-    return OHOS::system::GetParameter("const.security.developermode.state", "") == "true";
+    return OHOS::system::GetParameter("const.logsystem.versiontype", "") == "beta";
 #else
     return false;
 #endif
@@ -254,6 +254,12 @@ void ParseThreadInfo(const std::vector<std::string>& lines, int start, int end, 
     if (start + 1 > end) {
         return;
     }
+    /**
+     * kernel crash snapshot thread info format:
+     * Thread info:
+     *   name=ei.hmsapp.music, tid=5601, state=RUNNING, sctime=40.362389062, tcb_cref=502520008108a, pid=5601,
+     *   ppid=656, pgid=1, uid=20020048, cpu=7, cur_rq=7
+     */
     std::string info = lines[start + 1];
     DFXLOGI("kenel snapshot thread info : %{public}s", info.c_str());
     auto pairs = ConvertThreadInfoToPairs(info);
@@ -525,7 +531,7 @@ void MonitorCrashKernelSnapshot()
 void FaultKernelSnapshot::StartMonitor()
 {
     DFXLOGI("monitor kernel crash snapshot start!");
-    if (!IsDevMode()) {
+    if (!IsBetaVersion()) {
         DFXLOGW("monitor kernel crash snapshot func not support");
         return;
     }
