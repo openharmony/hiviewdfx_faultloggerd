@@ -156,6 +156,9 @@ int32_t CppCrashReporter::WriteCppCrashInfoByPipe()
 
 void CppCrashReporter::ReportToAbilityManagerService()
 {
+    if (process_ == nullptr) {
+        return;
+    }
     if (process_->processInfo_.processName.find(FOUNDATION_PROCESS_NAME) != std::string::npos) {
         DFXLOGW("Do not to report to AbilityManagerService, foundation is crashed.");
         return;
