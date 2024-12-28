@@ -24,10 +24,13 @@
 #include <directory_ex.h>
 #include "file_util.h"
 #include <string_ex.h>
+#include <sys/inotify.h>
 
 namespace OHOS {
 namespace HiviewDFX {
 namespace {
+#define EVENT_SIZE (sizeof(struct inotify_event))
+#define EVENT_BUF_LEN (1024 * (EVENT_SIZE + 16))
 const int BUF_LEN = 128;
 }
 
@@ -310,6 +313,57 @@ void CheckResourceUsage(uint32_t fdCount, uint32_t mapsCount, uint64_t memCount)
     auto curMemSize = GetSelfMemoryCount();
     printf("AfterTest Memory New: %lu\n", static_cast<unsigned long>(curMemSize));
     printf("Memory Old: %lu\n", static_cast<unsigned long>(memCount));
+}
+
+std::string WaitCreateCrashFile(const std::string& prefix, const pid_t pid)
+{
+    std::string fileName = GetDumpLogFileName(prefix, pid, TEMP_DIR);
+    if (!fileName.empty()) {
+        return fileName;
+    }
+    int fd = inotify_init();
+    if (fd < 0) {
+        return fileName;
+    }
+    int wd = inotify_add_watch(fd, TEMP_DIR, IN_CLOSE_WRITE);
+    if (wd < 0) {
+        close(fd);
+        return fileName;
+    }
+    struct timeval timeoutVal;
+    timeoutVal.tv_sec = 1;
+    timeoutVal.tv_usec = 0;
+    fd_set rfds;
+    FD_ZERO(&rfds);
+    FD_SET(fd, &rfds);
+    int retryCnt = 3;
+    std::string fileNamePrefix = prefix + "-" + std::to_string(pid);
+    while (retryCnt > 0) {
+        int ret = select(fd + 1, &rfds, nullptr, nullptr, &timeoutVal);
+        retryCnt--;
+        if (ret <= 0 || !FD_ISSET(fd, &rfds)) {
+            FD_SET(fd, &rfds);
+            continue;
+        }
+        char buffer[EVENT_BUF_LEN] = {0};
+        int length = read(fd, buffer, EVENT_BUF_LEN);
+        int eventCnt = 0;
+        while (length > 0 && eventCnt < length) {
+            struct inotify_event *event = reinterpret_cast<struct inotify_event*>(&buffer[eventCnt]);
+            if ((event->len) && (event->mask & IN_CLOSE_WRITE) &&
+                    strncmp(event->name, fileNamePrefix.c_str(), strlen(fileNamePrefix.c_str())) == 0) {
+                fileName = TEMP_DIR;
+                fileName.append(event->name);
+                retryCnt = 0;
+                break;
+            }
+            eventCnt += EVENT_SIZE + event->len;
+        }
+        FD_SET(fd, &rfds);
+    }
+    inotify_rm_watch(fd, wd);
+    close(fd);
+    return fileName;
 }
 } // namespace HiviewDFX
 } // namespace OHOS

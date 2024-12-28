@@ -154,8 +154,7 @@ HWTEST_F(DfxProcessDumpTest, DfxProcessDumpTest001, TestSize.Level2)
     sleep(1);
     auto curTime = GetTimeMilliSeconds();
     kill(testProcess, SIGILL);
-    sleep(3); // 3 : wait 3s to generate cpp crash file
-    auto filename = GetCppCrashFileName(testProcess);
+    auto filename = WaitCreateCrashFile("cppcrash", testProcess);
     ASSERT_EQ(std::to_string(curTime).length(), filename.length() - filename.find_last_of('-') - 1);
     ASSERT_TRUE(CheckCppCrashKeyWords(filename, testProcess, SIGILL));
     GTEST_LOG_(INFO) << "DfxProcessDumpTest001: end.";
@@ -173,8 +172,7 @@ HWTEST_F(DfxProcessDumpTest, DfxProcessDumpTest002, TestSize.Level2)
     sleep(1);
     auto curTime = GetTimeMilliSeconds();
     kill(testProcess, SIGTRAP);
-    sleep(3); // 3 : wait 3s to generate cpp crash file
-    auto filename = GetCppCrashFileName(testProcess);
+    auto filename = WaitCreateCrashFile("cppcrash", testProcess);
     ASSERT_EQ(std::to_string(curTime).length(), filename.length() - filename.find_last_of('-') - 1);
     ASSERT_TRUE(CheckCppCrashKeyWords(filename, testProcess, SIGTRAP));
     GTEST_LOG_(INFO) << "DfxProcessDumpTest002: end.";
@@ -192,8 +190,7 @@ HWTEST_F(DfxProcessDumpTest, DfxProcessDumpTest003, TestSize.Level2)
     sleep(1);
     auto curTime = GetTimeMilliSeconds();
     kill(testProcess, SIGABRT);
-    sleep(3); // 3 : wait 3s to generate cpp crash file
-    auto filename = GetCppCrashFileName(testProcess);
+    auto filename = WaitCreateCrashFile("cppcrash", testProcess);
     ASSERT_EQ(std::to_string(curTime).length(), filename.length() - filename.find_last_of('-') - 1);
     ASSERT_TRUE(CheckCppCrashKeyWords(filename, testProcess, SIGABRT));
     GTEST_LOG_(INFO) << "DfxProcessDumpTest003: end.";
@@ -211,8 +208,7 @@ HWTEST_F(DfxProcessDumpTest, DfxProcessDumpTest004, TestSize.Level2)
     sleep(1);
     auto curTime = GetTimeMilliSeconds();
     kill(testProcess, SIGBUS);
-    sleep(3); // 3 : wait 3s to generate cpp crash file
-    auto filename = GetCppCrashFileName(testProcess);
+    auto filename = WaitCreateCrashFile("cppcrash", testProcess);
     ASSERT_EQ(std::to_string(curTime).length(), filename.length() - filename.find_last_of('-') - 1);
     ASSERT_TRUE(CheckCppCrashKeyWords(filename, testProcess, SIGBUS));
     GTEST_LOG_(INFO) << "DfxProcessDumpTest004: end.";
@@ -230,8 +226,7 @@ HWTEST_F(DfxProcessDumpTest, DfxProcessDumpTest005, TestSize.Level2)
     sleep(1);
     auto curTime = GetTimeMilliSeconds();
     kill(testProcess, SIGFPE);
-    sleep(3); // 3 : wait 3s to generate cpp crash file
-    auto filename = GetCppCrashFileName(testProcess);
+    auto filename = WaitCreateCrashFile("cppcrash", testProcess);
     ASSERT_EQ(std::to_string(curTime).length(), filename.length() - filename.find_last_of('-') - 1);
     ASSERT_TRUE(CheckCppCrashKeyWords(filename, testProcess, SIGFPE));
     GTEST_LOG_(INFO) << "DfxProcessDumpTest005: end.";
@@ -250,8 +245,7 @@ HWTEST_F(DfxProcessDumpTest, DfxProcessDumpTest006, TestSize.Level2)
     sleep(1);
     auto curTime = GetTimeMilliSeconds();
     kill(testProcess, SIGSEGV);
-    sleep(3); // 3 : wait 3s to generate cpp crash file
-    auto filename = GetCppCrashFileName(testProcess);
+    auto filename = WaitCreateCrashFile("cppcrash", testProcess);
     ASSERT_EQ(std::to_string(curTime).length(), filename.length() - filename.find_last_of('-') - 1);
     ASSERT_TRUE(CheckCppCrashKeyWords(filename, testProcess, SIGSEGV));
     GTEST_LOG_(INFO) << "DfxProcessDumpTest006: end.";
@@ -269,8 +263,7 @@ HWTEST_F(DfxProcessDumpTest, DfxProcessDumpTest007, TestSize.Level2)
     sleep(1);
     auto curTime = GetTimeMilliSeconds();
     kill(testProcess, SIGSTKFLT);
-    sleep(3); // 3 : wait 3s to generate cpp crash file
-    auto filename = GetCppCrashFileName(testProcess);
+    auto filename = WaitCreateCrashFile("cppcrash", testProcess);
     ASSERT_EQ(std::to_string(curTime).length(), filename.length() - filename.find_last_of('-') - 1);
     ASSERT_TRUE(CheckCppCrashKeyWords(filename, testProcess, SIGSTKFLT));
     GTEST_LOG_(INFO) << "DfxProcessDumpTest007: end.";
@@ -288,8 +281,7 @@ HWTEST_F(DfxProcessDumpTest, DfxProcessDumpTest008, TestSize.Level2)
     sleep(1);
     auto curTime = GetTimeMilliSeconds();
     kill(testProcess, SIGSYS);
-    sleep(3); // 3 : wait 3s to generate cpp crash file
-    auto filename = GetCppCrashFileName(testProcess);
+    auto filename = WaitCreateCrashFile("cppcrash", testProcess);
     ASSERT_EQ(std::to_string(curTime).length(), filename.length() - filename.find_last_of('-') - 1);
     ASSERT_TRUE(CheckCppCrashKeyWords(filename, testProcess, SIGSYS));
     GTEST_LOG_(INFO) << "DfxProcessDumpTest008: end.";
@@ -341,8 +333,7 @@ HWTEST_F(DfxProcessDumpTest, DfxProcessDumpTest011, TestSize.Level2)
     GTEST_LOG_(INFO) << "DfxProcessDumpTest011: start.";
     pid_t testProcess = CreateMultiThreadForThreadCrash(10); // 10 : create a process with ten threads
     GTEST_LOG_(INFO) << "process pid:" << testProcess;
-    sleep(3); // 3 : wait 3s to generate cpp crash file
-    auto filename = GetCppCrashFileName(testProcess);
+    auto filename = WaitCreateCrashFile("cppcrash", testProcess);
     ASSERT_TRUE(CheckCppCrashKeyWords(filename, testProcess, SIGSEGV));
     GTEST_LOG_(INFO) << "DfxProcessDumpTest011: end.";
 }
@@ -358,8 +349,7 @@ HWTEST_F(DfxProcessDumpTest, DfxProcessDumpTest012, TestSize.Level2)
     GTEST_LOG_(INFO) << "DfxProcessDumpTest012: start.";
     pid_t testProcess = CreateMultiThreadForThreadCrash(10); // 10 : create a process with ten threads
     GTEST_LOG_(INFO) << "process pid:" << testProcess;
-    sleep(3); // 3 : wait 3s to generate cpp crash file
-    auto filename = GetCppCrashFileName(testProcess);
+    auto filename = WaitCreateCrashFile("cppcrash", testProcess);
     string keywords[] = {
         "time", "OpenFiles:"
     };
@@ -380,8 +370,7 @@ HWTEST_F(DfxProcessDumpTest, DfxProcessDumpTest013, TestSize.Level2)
     int openNum = 128;
     pid_t testProcess = CreateMultiThreadForThreadCrashWithOpen(10, openNum); // 10 : create a process with ten threads
     GTEST_LOG_(INFO) << "process pid:" << testProcess;
-    sleep(3); // 3 : wait 3s to generate cpp crash file
-    auto filename = GetCppCrashFileName(testProcess);
+    auto filename = WaitCreateCrashFile("cppcrash", testProcess);
     string keywords[openNum];
     string str = "FILE*";
     for (int i = 0; i < openNum; ++i) {

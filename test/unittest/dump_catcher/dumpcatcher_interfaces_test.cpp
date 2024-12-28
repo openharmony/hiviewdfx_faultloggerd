@@ -845,7 +845,7 @@ HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest033, TestSize.Level
         DfxDumpCatcher dumplog;
         string msg = "";
         EXPECT_FALSE(dumplog.DumpCatch(getppid(), 0, msg));
-        constexpr int validTime = 8;
+        constexpr int validTime = 1;
         sleep(validTime);
         msg = "";
         EXPECT_TRUE(dumplog.DumpCatch(getppid(), 0, msg));
