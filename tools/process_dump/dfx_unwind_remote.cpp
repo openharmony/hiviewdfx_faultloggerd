@@ -191,14 +191,12 @@ int DfxUnwindRemote::UnwindOtherThread(std::shared_ptr<DfxProcess> process, std:
             if (isVmProcAttach && !withRegs) {
                 GetThreadKernelStack(thread);
                 Printer::PrintThreadBacktraceByConfig(thread, false);
-                thread->Detach();
                 continue;
             }
             auto pid = (vmPid != 0 && isVmProcAttach) ? vmPid : tid;
             DFX_TRACE_START("OtherThreadUnwindRemote:%d", tid);
             bool ret = unwinder->UnwindRemote(pid, withRegs, DfxConfig::GetConfig().maxFrameNums);
             DFX_TRACE_FINISH();
-            thread->Detach();
             DFX_TRACE_START("OtherThreadGetFrames:%d", tid);
             thread->SetFrames(unwinder->GetFrames());
             DFX_TRACE_FINISH();

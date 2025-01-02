@@ -70,7 +70,6 @@ bool DfxUnwindAsyncThread::UnwindStack(pid_t vmPid)
         DFX_TRACE_FINISH();
         LockParser::ParseLockInfo(unwinder_, tmpPid, thread_->threadInfo_.nsTid);
 #else
-        thread_->Detach();
         DFX_TRACE_START("KeyThreadGetFrames:%d", tid);
         thread_->SetFrames(unwinder_->GetFrames());
         DFX_TRACE_FINISH();
