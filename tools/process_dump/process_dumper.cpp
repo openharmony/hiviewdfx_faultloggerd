@@ -425,6 +425,7 @@ void ProcessDumper::Dump()
         if (process_->keyThread_ != nullptr) {
             process_->keyThread_->Detach();
         }
+        process_->Detach();
     }
 
     std::string jsonInfo;
