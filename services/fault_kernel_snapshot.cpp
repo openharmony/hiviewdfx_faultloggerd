@@ -116,7 +116,7 @@ public:
     std::string ToString(int count) const
     {
         std::string data = std::string("#") + (count < 10 ? "0" : "") + std::to_string(count);
-        data += " pc " + pc + " " + elf + " " + funcNameOffset;
+        data += " pc " + pc + " " + elf;
         return data;
     }
 
