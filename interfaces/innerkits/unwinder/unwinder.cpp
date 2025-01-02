@@ -135,10 +135,6 @@ public:
     {
         enableFillFrames_ = enableFillFrames;
     }
-    inline void EnableMethodIdLocal(bool enableMethodIdLocal)
-    {
-        enableMethodIdLocal_ = enableMethodIdLocal;
-    }
     inline void IgnoreMixstack(bool ignoreMixstack)
     {
         ignoreMixstack_ = ignoreMixstack;
@@ -217,7 +213,6 @@ private:
 private:
     struct StepFrame {
         uintptr_t pc = 0;
-        uintptr_t methodid = 0;
         uintptr_t sp = 0;
         uintptr_t fp = 0;
         bool isJsFrame {false};
@@ -267,7 +262,6 @@ private:
     bool enableFillFrames_ = true;
     bool enableLrFallback_ = true;
     bool enableFpCheckMapExec_ = false;
-    bool enableMethodIdLocal_ = false;
     bool isFpStep_ = false;
     bool isArkCreateLocal_ = false;
     MAYBE_UNUSED bool enableMixstack_ = true;
@@ -327,10 +321,7 @@ void Unwinder::EnableFillFrames(bool enableFillFrames)
 {
     impl_->EnableFillFrames(enableFillFrames);
 }
-void Unwinder::EnableMethodIdLocal(bool enableMethodIdLocal)
-{
-    impl_->EnableMethodIdLocal(enableMethodIdLocal);
-}
+
 void Unwinder::IgnoreMixstack(bool ignoreMixstack)
 {
     impl_->IgnoreMixstack(ignoreMixstack);
@@ -718,21 +709,18 @@ bool Unwinder::Impl::StepArkJsFrame(StepFrame& frame)
     }
 
     int ret = -1;
-    uintptr_t *methodId = (pid_ > 0 || enableMethodIdLocal_) ? (&frame.methodid) : nullptr;
     if (isJitCrash_) {
+        MAYBE_UNUSED uintptr_t methodId = 0;
         ArkUnwindParam arkParam(memory_.get(), &(Unwinder::AccessMem), &frame.fp, &frame.sp, &frame.pc,
-            methodId, &frame.isJsFrame, jitCache_);
+            &methodId, &frame.isJsFrame, jitCache_);
         ret = DfxArk::StepArkFrameWithJit(&arkParam);
     } else {
-        ret = DfxArk::StepArkFrame(memory_.get(), &(Unwinder::AccessMem), &frame.fp, &frame.sp, &frame.pc,
-            methodId, &frame.isJsFrame);
+        ArkStepParam arkParam(&frame.fp, &frame.sp, &frame.pc, &frame.isJsFrame);
+        ret = DfxArk::StepArkFrame(memory_.get(), &(Unwinder::AccessMem), &arkParam);
     }
     if (ret < 0) {
         DFXLOGE("Failed to step ark frame");
         return false;
-    }
-    if (pid_ > 0) {
-        DFXLOGI("---ark js frame methodid: %{public}" PRIx64 "", (uint64_t)frame.methodid);
     }
     if (pid_ != UNWIND_TYPE_CUSTOMIZE) {
         DFXLOGD("---ark pc: %{public}p, fp: %{public}p, sp: %{public}p, isJsFrame: %{public}d.",
@@ -1213,9 +1201,6 @@ void Unwinder::Impl::AddFrame(const StepFrame& frame, std::shared_ptr<DfxMap> ma
     dfxFrame.index = frames_.size();
     dfxFrame.pc = static_cast<uint64_t>(frame.pc);
     dfxFrame.sp = static_cast<uint64_t>(frame.sp);
-    if (frame.isJsFrame) {
-        dfxFrame.funcOffset = static_cast<uint64_t>(frame.methodid);
-    }
     dfxFrame.map = map;
     frames_.emplace_back(dfxFrame);
 }
@@ -1298,7 +1283,7 @@ void Unwinder::Impl::FillJsFrame(DfxFrame& frame)
     DFX_TRACE_SCOPED_DLSYM("FillJsFrame:%s", frame.map->name.c_str());
     DFXLOGU("Fill js frame, map name: %{public}s", frame.map->name.c_str());
     JsFunction jsFunction;
-    if ((pid_ == UNWIND_TYPE_LOCAL) || (pid_ == UNWIND_TYPE_CUSTOMIZE_LOCAL) || enableMethodIdLocal_) {
+    if ((pid_ == UNWIND_TYPE_LOCAL) || (pid_ == UNWIND_TYPE_CUSTOMIZE_LOCAL)) {
         if (!FillJsFrameLocal(frame, &jsFunction)) {
             return;
         }
@@ -1308,7 +1293,7 @@ void Unwinder::Impl::FillJsFrame(DfxFrame& frame)
             DFXLOGW("Get hap error, name: %{public}s", frame.map->name.c_str());
             return;
         }
-        if (!hap->ParseHapInfo(pid_, frame.pc, static_cast<uintptr_t>(frame.funcOffset), frame.map, &jsFunction)) {
+        if (!hap->ParseHapInfo(pid_, frame.pc, frame.map, &jsFunction)) {
             DFXLOGW("Failed to parse hap info, pid: %{public}d", pid_);
             return;
         }
@@ -1332,7 +1317,7 @@ bool Unwinder::Impl::FillJsFrameLocal(DfxFrame& frame, JsFunction* jsFunction)
         isArkCreateLocal_ = true;
     }
 
-    if (DfxArk::ParseArkFrameInfoLocal(static_cast<uintptr_t>(frame.pc), static_cast<uintptr_t>(frame.funcOffset),
+    if (DfxArk::ParseArkFrameInfoLocal(static_cast<uintptr_t>(frame.pc),
         static_cast<uintptr_t>(frame.map->begin), static_cast<uintptr_t>(frame.map->offset), jsFunction) < 0) {
         DFXLOGW("Failed to parse ark frame info local, pc: %{public}p, begin: %{public}p",
             reinterpret_cast<void *>(frame.pc), reinterpret_cast<void *>(frame.map->begin));

@@ -30,12 +30,11 @@ public:
     DfxHap() = default;
     ~DfxHap();
 
-    bool ParseHapInfo(pid_t pid, uint64_t pc, uintptr_t methodid, std::shared_ptr<DfxMap> map,
-        JsFunction *jsFunction);
+    bool ParseHapInfo(pid_t pid, uint64_t pc, std::shared_ptr<DfxMap> map, JsFunction *jsFunction);
 
 private:
-    bool ParseHapFileInfo(uint64_t pc, uintptr_t methodid, std::shared_ptr<DfxMap> map, JsFunction *jsFunction);
-    bool ParseHapMemInfo(pid_t pid, uint64_t pc, uintptr_t methodid, std::shared_ptr<DfxMap> map,
+    bool ParseHapFileInfo(uint64_t pc, std::shared_ptr<DfxMap> map, JsFunction *jsFunction);
+    bool ParseHapMemInfo(pid_t pid, uint64_t pc, std::shared_ptr<DfxMap> map,
         JsFunction *jsFunction);
 
     bool ParseHapFileData(const std::string& name);
