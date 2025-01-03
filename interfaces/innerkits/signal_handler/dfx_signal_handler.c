@@ -97,7 +97,6 @@ void __attribute__((constructor)) InitHandler(void)
 #endif
 
 static struct ProcessDumpRequest g_request;
-static void *g_reservedChildStack = NULL;
 static pthread_mutex_t g_signalHandlerMutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_key_t g_crashObjKey;
 static bool g_crashObjInit = false;
@@ -178,9 +177,9 @@ static ThreadInfoCallBack GetCallbackLocked()
     return NULL;
 }
 
-static void FillLastFatalMessageLocked(int32_t sig)
+static void FillLastFatalMessageLocked(int32_t signo)
 {
-    if (sig != SIGABRT) {
+    if (signo != SIGABRT) {
         return;
     }
 
@@ -208,9 +207,9 @@ static void FillLastFatalMessageLocked(int32_t sig)
     (void)strncpy(g_request.msg.body, lastFatalMessage, sizeof(g_request.msg.body) - 1);
 }
 
-static bool FillDebugMessageLocked(int32_t sig, siginfo_t *si)
+static bool FillDebugMessageLocked(int32_t signo, siginfo_t *si)
 {
-    if (sig != SIGLEAK_STACK || si == NULL ||
+    if (signo != SIGLEAK_STACK || si == NULL ||
         (si->si_code != SIGLEAK_STACK_FDSAN && si->si_code != SIGLEAK_STACK_JEMALLOC)) {
         return true;
     }
@@ -248,15 +247,15 @@ static void FillCrashExceptionAndReport(const int err)
     ReportException(&exception);
 }
 
-static bool IsDumpSignal(int sig)
+static bool IsDumpSignal(int signo)
 {
-    return sig == SIGDUMP || sig == SIGLEAK_STACK;
+    return signo == SIGDUMP || signo == SIGLEAK_STACK;
 }
 
-static bool FillDumpRequest(int sig, siginfo_t *si, void *context)
+static bool FillDumpRequest(int signo, siginfo_t *si, void *context)
 {
     memset(&g_request, 0, sizeof(g_request));
-    g_request.type = sig;
+    g_request.type = signo;
     g_request.pid = GetRealPid();
     g_request.nsPid = syscall(SYS_getpid);
     g_request.tid = syscall(SYS_gettid);
@@ -265,7 +264,7 @@ static bool FillDumpRequest(int sig, siginfo_t *si, void *context)
     g_request.timeStamp = GetTimeMilliseconds();
     g_request.fdTableAddr = (uint64_t)fdsan_get_fd_table();
     memcpy(g_request.appRunningId, g_appRunningId, sizeof(g_request.appRunningId));
-    if (!IsDumpSignal(sig) && g_GetStackIdFunc!= NULL) {
+    if (!IsDumpSignal(signo) && g_GetStackIdFunc!= NULL) {
         g_request.stackId = g_GetStackIdFunc();
         DFXLOGI("g_GetStackIdFunc %{public}p.", (void*)g_request.stackId);
     }
@@ -277,12 +276,12 @@ static bool FillDumpRequest(int sig, siginfo_t *si, void *context)
     memcpy(&(g_request.context), context, sizeof(ucontext_t));
 
     bool ret = true;
-    switch (sig) {
+    switch (signo) {
         case SIGABRT:
-            FillLastFatalMessageLocked(sig);
+            FillLastFatalMessageLocked(signo);
             break;
         case SIGLEAK_STACK:
-            ret = FillDebugMessageLocked(sig, si);
+            ret = FillDebugMessageLocked(signo, si);
             /* fall-through */
         default: {
             ThreadInfoCallBack callback = GetCallbackLocked();
@@ -323,80 +322,54 @@ static bool IsMainThread(void)
     return false;
 }
 
-static void ResetAndRethrowSignalIfNeed(int sig, siginfo_t *si)
+static void ResetAndRethrowSignalIfNeed(int signo, siginfo_t *si)
 {
-    if (IsDumpSignal(sig)) {
+    if (IsDumpSignal(signo)) {
         return;
     }
 
-    if (g_oldSigactionList[sig].sa_sigaction == NULL) {
-        signal(sig, SIG_DFL);
-    } else if (sigaction(sig, &(g_oldSigactionList[sig]), NULL) != 0) {
-        DFXLOGE("Failed to reset sig(%{public}d).", sig);
-        signal(sig, SIG_DFL);
+    if (g_oldSigactionList[signo].sa_sigaction == NULL) {
+        signal(signo, SIG_DFL);
+    } else if (sigaction(signo, &(g_oldSigactionList[signo]), NULL) != 0) {
+        DFXLOGE("Failed to reset signo(%{public}d).", signo);
+        signal(signo, SIG_DFL);
     }
 
-    if (syscall(SYS_rt_tgsigqueueinfo, syscall(SYS_getpid), syscall(SYS_gettid), sig, si) != 0) {
-        DFXLOGE("Failed to rethrow sig(%{public}d), errno(%{public}d).", sig, errno);
+    if (syscall(SYS_rt_tgsigqueueinfo, syscall(SYS_getpid), syscall(SYS_gettid), signo, si) != 0) {
+        DFXLOGE("Failed to rethrow signo(%{public}d), errno(%{public}d).", signo, errno);
     } else {
-        DFXLOGI("Current process(%{public}ld) rethrow sig(%{public}d).", syscall(SYS_getpid), sig);
-    }
-}
-
-static void PauseMainThreadHandler(int sig)
-{
-    DFXLOGI("Crash(%{public}d) in child thread(%{public}ld), lock main thread.", sig, syscall(SYS_gettid));
-    // only work when subthread crash and send SIGDUMP to mainthread.
-    pthread_mutex_lock(&g_signalHandlerMutex);
-    pthread_mutex_unlock(&g_signalHandlerMutex);
-    DFXLOGI("Crash in child thread(%{public}ld), exit main thread.", syscall(SYS_gettid));
-}
-
-static void BlockMainThreadIfNeed(int sig)
-{
-    if (IsMainThread() || IsDumpSignal(sig)) {
-        return;
-    }
-
-    DFXLOGI("Try block main thread.");
-    (void)signal(SIGQUIT, PauseMainThreadHandler);
-    if (syscall(SYS_tgkill, syscall(SYS_getpid), syscall(SYS_getpid), SIGQUIT) != 0) {
-        DFXLOGE("Failed to send SIGQUIT to main thread, errno(%{public}d).", errno);
+        DFXLOGI("Current process(%{public}ld) rethrow signo(%{public}d).", syscall(SYS_getpid), signo);
     }
 }
 
 #ifndef is_ohos_lite
-int DfxDumpRequest(int sig, struct ProcessDumpRequest *request, void *reservedChildStack) __attribute__((weak));
+void DfxDumpRequest(int signo, struct ProcessDumpRequest *request) __attribute__((weak));
 #endif
-static int DumpRequest(int sig)
+static void DumpRequest(int signo)
 {
-    int ret = false;
     if (DfxDumpRequest == NULL) {
         DFXLOGE("DumpRequest fail, the DfxDumpRequest is NULL");
         FillCrashExceptionAndReport(CRASH_SIGNAL_EDUMPREQUEST);
-        return ret;
+        return;
     }
-    ret = DfxDumpRequest(sig, &g_request, g_reservedChildStack);
-    return ret;
+    DfxDumpRequest(signo, &g_request);
 }
 
-
-static bool DFX_SigchainHandler(int sig, siginfo_t *si, void *context)
+static bool DFX_SigchainHandler(int signo, siginfo_t *si, void *context)
 {
     int pid = syscall(SYS_getpid);
     int tid = syscall(SYS_gettid);
     if (si == NULL) {
-        return IsDumpSignal(sig);
+        return IsDumpSignal(signo);
     }
 
-    DFXLOGI("DFX_SigchainHandler :: sig(%{public}d), si_code(%{public}d), pid(%{public}d), tid(%{public}d).",
-            sig, si->si_code, pid, tid);
-    bool ret = false;
-    if (sig == SIGDUMP) {
+    DFXLOGI("DFX_SigchainHandler :: signo(%{public}d), si_code(%{public}d), pid(%{public}d), tid(%{public}d).",
+            signo, si->si_code, pid, tid);
+    if (signo == SIGDUMP) {
         if (si->si_code != DUMP_TYPE_REMOTE && si->si_code != DUMP_TYPE_REMOTE_JSON) {
-            DFXLOGW("DFX_SigchainHandler :: sig(%{public}d:%{public}d) is not remote dump type, return directly",
-                sig, si->si_code);
-            return true;
+            DFXLOGW("DFX_SigchainHandler :: signo(%{public}d:%{public}d) is not remote dump type, return directly",
+                signo, si->si_code);
+            return IsDumpSignal(signo);
         }
     }
 
@@ -404,32 +377,31 @@ static bool DFX_SigchainHandler(int sig, siginfo_t *si, void *context)
     pthread_mutex_lock(&g_signalHandlerMutex);
     if (!IsDumpSignal(g_prevHandledSignal)) {
         pthread_mutex_unlock(&g_signalHandlerMutex);
-        return IsDumpSignal(sig);
+        return IsDumpSignal(signo);
     }
-    BlockMainThreadIfNeed(sig);
-    g_prevHandledSignal = sig;
+    g_prevHandledSignal = signo;
 
-    if (!FillDumpRequest(sig, si, context)) {
+    if (!FillDumpRequest(signo, si, context)) {
         pthread_mutex_unlock(&g_signalHandlerMutex);
         DFXLOGE("DFX_SigchainHandler :: signal(%{public}d) in %{public}d:%{public}d fill dump request faild.",
-            sig, g_request.pid, g_request.tid);
-        return IsDumpSignal(sig);
+            signo, g_request.pid, g_request.tid);
+        return IsDumpSignal(signo);
     }
-    DFXLOGI("DFX_SigchainHandler :: sig(%{public}d), pid(%{public}d), processName(%{public}s), threadName(%{public}s).",
-        sig, g_request.pid, g_request.processName, g_request.threadName);
-    ret = DumpRequest(sig);
+    DFXLOGI("DFX_SigchainHandler :: signo(%{public}d), pid(%{public}d), processName(%{public}s), \
+        threadName(%{public}s).", signo, g_request.pid, g_request.processName, g_request.threadName);
+    DumpRequest(signo);
     pthread_mutex_unlock(&g_signalHandlerMutex);
-    DFXLOGI("Finish handle signal(%{public}d) in %{public}d:%{public}d.", sig, g_request.pid, g_request.tid);
-    return ret;
+    DFXLOGI("Finish handle signal(%{public}d) in %{public}d:%{public}d.", signo, g_request.pid, g_request.tid);
+    return IsDumpSignal(signo);
 }
 
-static void DFX_SignalHandler(int sig, siginfo_t *si, void *context)
+static void DFX_SignalHandler(int signo, siginfo_t *si, void *context)
 {
-    DFX_SigchainHandler(sig, si, context);
-    ResetAndRethrowSignalIfNeed(sig, si);
+    DFX_SigchainHandler(signo, si, context);
+    ResetAndRethrowSignalIfNeed(signo, si);
 }
 
-static void InstallSigActionHandler(int sig)
+static void InstallSigActionHandler(int signo)
 {
     struct sigaction action;
     memset(&action, 0, sizeof(action));
@@ -437,8 +409,8 @@ static void InstallSigActionHandler(int sig)
     sigfillset(&action.sa_mask);
     action.sa_sigaction = DFX_SignalHandler;
     action.sa_flags = SA_RESTART | SA_SIGINFO | SA_ONSTACK;
-    if (sigaction(sig, &action, &(g_oldSigactionList[sig])) != 0) {
-        DFXLOGE("Failed to register signal(%{public}d)", sig);
+    if (sigaction(signo, &action, &(g_oldSigactionList[signo])) != 0) {
+        DFXLOGE("Failed to register signal(%{public}d)", signo);
     }
 }
 
@@ -449,15 +421,6 @@ void DFX_InstallSignalHandler(void)
     }
 
     InitCallbackItems();
-    // reserve stack for fork
-    g_reservedChildStack = mmap(NULL, RESERVED_CHILD_STACK_SIZE, \
-        PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_STACK, 1, 0);
-    if (g_reservedChildStack == NULL) {
-        DFXLOGE("[%{public}d]: Failed to alloc memory for child stack.", __LINE__);
-        return;
-    }
-    g_reservedChildStack = (void *)(((uint8_t *)g_reservedChildStack) + RESERVED_CHILD_STACK_SIZE - 1);
-
     struct signal_chain_action sigchain = {
         .sca_sigaction = DFX_SigchainHandler,
         .sca_mask = {},
@@ -465,21 +428,21 @@ void DFX_InstallSignalHandler(void)
     };
 
     for (size_t i = 0; i < sizeof(SIGCHAIN_DUMP_SIGNAL_LIST) / sizeof(SIGCHAIN_DUMP_SIGNAL_LIST[0]); i++) {
-        int32_t sig = SIGCHAIN_DUMP_SIGNAL_LIST[i];
+        int32_t signo = SIGCHAIN_DUMP_SIGNAL_LIST[i];
         sigfillset(&sigchain.sca_mask);
         // dump signal not mask crash signal
         for (size_t j = 0; j < sizeof(SIGCHAIN_CRASH_SIGNAL_LIST) / sizeof(SIGCHAIN_CRASH_SIGNAL_LIST[0]); j++) {
             sigdelset(&sigchain.sca_mask, SIGCHAIN_CRASH_SIGNAL_LIST[j]);
         }
-        add_special_handler_at_last(sig, &sigchain);
+        add_special_handler_at_last(signo, &sigchain);
     }
     for (size_t i = 0; i < sizeof(SIGCHAIN_CRASH_SIGNAL_LIST) / sizeof(SIGCHAIN_CRASH_SIGNAL_LIST[0]); i++) {
-        int32_t sig = SIGCHAIN_CRASH_SIGNAL_LIST[i];
-        if (sig == SIGILL || sig == SIGSYS) {
-            InstallSigActionHandler(sig);
+        int32_t signo = SIGCHAIN_CRASH_SIGNAL_LIST[i];
+        if (signo == SIGILL || signo == SIGSYS) {
+            InstallSigActionHandler(signo);
         } else {
             sigfillset(&sigchain.sca_mask);
-            add_special_handler_at_last(sig, &sigchain);
+            add_special_handler_at_last(signo, &sigchain);
         }
     }
 

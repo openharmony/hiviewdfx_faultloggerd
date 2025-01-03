@@ -53,7 +53,6 @@ public:
     DfxProcessInfo processInfo_;
     pid_t recycleTid_ = 0;
     std::shared_ptr<DfxThread> keyThread_ = nullptr; // comment: crash thread or dump target thread
-    std::shared_ptr<DfxThread> vmThread_ = nullptr; // comment: vm thread object in crash scenario
     std::string reason = "";
     std::string openFiles = "";
     std::shared_ptr<DfxRegs> regs_;

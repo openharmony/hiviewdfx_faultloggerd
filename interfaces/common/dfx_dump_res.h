@@ -30,8 +30,6 @@ enum DumpErrorCode : int32_t {
     DUMP_ESUCCESS = 0,
     /** read request error */
     DUMP_EREADREQUEST,
-    /** ppid is crash */
-    DUMP_EGETPPID,
     /** ptrace attach thread failed */
     DUMP_EATTACH,
     /** get fd error */
@@ -75,7 +73,6 @@ private:
         switch (res) {
             case DUMP_ESUCCESS:     cp = "no error"; break;
             case DUMP_EREADREQUEST: cp = "read dump request error"; break;
-            case DUMP_EGETPPID:     cp = "ppid is crashed before unwind"; break;
             case DUMP_EATTACH:      cp = "ptrace attach thread failed"; break;
             case DUMP_EGETFD:       cp = "get fd error"; break;
             case DUMP_ENOMEM:       cp = "out of memory"; break;

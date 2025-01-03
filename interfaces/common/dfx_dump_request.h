@@ -43,11 +43,6 @@ enum OperateResult : int32_t {
     OPE_CONTINUE = 2,
 };
 
-enum ProcessFlowMode : int32_t {
-    SPLIT_MODE,
-    FUSION_MODE,
-};
-
 typedef enum {
     MESSAGE_NONE = 0,
     MESSAGE_FATAL, // Need to write LastFatalMessage

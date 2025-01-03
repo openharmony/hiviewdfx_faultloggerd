@@ -72,7 +72,6 @@
 #define INHERITABLE_OFFSET 32
 
 static struct ProcessDumpRequest *g_request = NULL;
-static void *g_reservedChildStack = NULL;
 
 static long g_blockExit = 0;
 static long g_vmRealPid = 0;
@@ -89,7 +88,6 @@ static int g_pipeFds[PIPE_MAX][2] = {
     {-1, -1}
 };
 
-static const int SIGNALHANDLER_TIMEOUT = 10000; // 10000 us
 static const int ALARM_TIME_S = 10;
 static const uint32_t CRASH_SNAPSHOT_FLAG = 0x8;
 enum DumpPreparationStage {
@@ -242,15 +240,8 @@ static int DFX_ExecDump(void)
     alarm(ALARM_TIME_S);
     int pipefd[2] = {-1, -1};
     // create pipe for passing request to processdump
-    if (g_request->dumpMode == SPLIT_MODE) {
-        if (syscall(SYS_pipe2, pipefd, 0) != 0) {
-            DFXLOGE("Failed to create pipe for transfering context, errno(%{public}d)", errno);
-            return CREATE_PIPE_FAIL;
-        }
-    } else {
-        pipefd[0] = g_pipeFds[WRITE_TO_DUMP][0];
-        pipefd[1] = g_pipeFds[WRITE_TO_DUMP][1];
-    }
+    pipefd[0] = g_pipeFds[WRITE_TO_DUMP][0];
+    pipefd[1] = g_pipeFds[WRITE_TO_DUMP][1];
 
     ssize_t writeLen = (long)(sizeof(struct ProcessDumpRequest));
     if (fcntl(pipefd[1], F_SETPIPE_SZ, writeLen) < writeLen) {
@@ -321,97 +312,6 @@ static void RestoreDumpState(int prevState, bool isTracerStatusModified)
     if (isTracerStatusModified == true) {
         prctl(PR_SET_PTRACER, 0);
     }
-}
-
-static void SetSelfThreadParam(const char* name, int priority)
-{
-    pthread_setname_np(pthread_self(), name);
-    struct sched_param schedParam;
-    schedParam.sched_priority = priority;
-    pthread_setschedparam(pthread_self(), SCHED_FIFO, &schedParam);
-}
-
-static bool WaitProcessExit(int childPid, const char* name)
-{
-    int ret = -1;
-    int status = 0;
-    int startTime = (int)time(NULL);
-    bool isSuccess = false;
-    DFXLOGI("(%{public}ld) wait %{public}s(%{public}d) exit.", syscall(SYS_gettid), name, childPid);
-    do {
-        errno = 0;
-        ret = waitpid(childPid, &status, WNOHANG);
-        if (ret < 0) {
-            DFXLOGE("Failed to wait child process terminated, errno(%{public}d)", errno);
-            return isSuccess;
-        }
-
-        if (ret == childPid) {
-            isSuccess = true;
-            break;
-        }
-
-        if ((int)time(NULL) - startTime > PROCESSDUMP_TIMEOUT) {
-            DFXLOGI("(%{public}ld) wait for (%{public}d) timeout", syscall(SYS_gettid), childPid);
-            isSuccess = false;
-            break;
-        }
-        usleep(SIGNALHANDLER_TIMEOUT); // sleep 10ms
-    } while (1);
-
-    DFXLOGI("(%{public}ld) wait for %{public}s(%{public}d) return with ret(%{public}d), status(%{public}d)",
-        syscall(SYS_gettid), name, childPid, ret, status);
-    if (WIFEXITED(status)) {
-        int exitCode = WEXITSTATUS(status);
-        DFXLOGI("wait %{public}s(%{public}d) exit code: %{public}d", name, childPid, exitCode);
-    } else if (WIFSIGNALED(status)) {
-        int sigNum = WTERMSIG(status);
-        DFXLOGI("wait %{public}s(%{public}d) exit with sig: %{public}d", name, childPid, sigNum);
-    }
-    return isSuccess;
-}
-
-static void Exit(int flag)
-{
-    _exit(flag); // Avoid crashes that occur when directly using the _exit()
-}
-
-static int ForkAndExecProcessDump(void)
-{
-    int childPid = -1;
-    SetSelfThreadParam("dump_tmp_thread", 0);
-
-    // set privilege for dump ourself
-    int prevDumpableStatus = prctl(PR_GET_DUMPABLE);
-    bool isTracerStatusModified = SetDumpState();
-    if (!isTracerStatusModified) {
-        FillCrashExceptionAndReport(CRASH_SIGNAL_ESETSTATE);
-        goto out;
-    }
-
-    // fork a child process that could ptrace us
-    childPid = ForkBySyscall();
-    if (childPid == 0) {
-        g_request->dumpMode = SPLIT_MODE;
-        DFXLOGI("The exec processdump pid(%{public}ld).", syscall(SYS_getpid));
-        Exit(DFX_ExecDump());
-    } else if (childPid < 0) {
-        DFXLOGE("[%{public}d]: Failed to fork child process, errno(%{public}d).", __LINE__, errno);
-        FillCrashExceptionAndReport(CRASH_SIGNAL_EFORK);
-        goto out;
-    }
-    WaitProcessExit(childPid, "processdump");
-out:
-    RestoreDumpState(prevDumpableStatus, isTracerStatusModified);
-    return 0;
-}
-
-static int CloneAndDoProcessDump(void* arg)
-{
-    (void)arg;
-    DFXLOGI("The clone thread(%{public}ld).", syscall(SYS_gettid));
-    g_request->recycleTid = syscall(SYS_gettid);
-    return ForkAndExecProcessDump();
 }
 
 static bool StartProcessdump(void)
@@ -642,16 +542,14 @@ static void ReadUnwindFinishMsg(int signo)
     }
 }
 
-static int ProcessDump(int sig)
+static int ProcessDump(int signo)
 {
     int prevDumpableStatus = prctl(PR_GET_DUMPABLE);
     bool isTracerStatusModified = SetDumpState();
-    if (!IsDumpSignal(sig)) {
+    if (!IsDumpSignal(signo)) {
         ResetFlags();
         SetKernelSnapshot(true);
     }
-
-    g_request->dumpMode = FUSION_MODE;
 
     do {
         uint64_t endTime;
@@ -670,72 +568,19 @@ static int ProcessDump(int sig)
             DFXLOGE("start vm process unwind fail");
             break;
         }
-        ReadUnwindFinishMsg(sig);
+        ReadUnwindFinishMsg(signo);
     } while (false);
 
-    DFXLOGI("process dump end");
     RestoreDumpState(prevDumpableStatus, isTracerStatusModified);
     return 0;
 }
 
-static void ForkAndDoProcessDump(int sig)
+void DfxDumpRequest(int signo, struct ProcessDumpRequest *request)
 {
-    int prevDumpableStatus = prctl(PR_GET_DUMPABLE);
-    bool isTracerStatusModified = SetDumpState();
-    int childPid = ForkBySyscall();
-    if (childPid == 0) {
-        CloseFds();
-        g_request->vmNsPid = syscall(SYS_getpid);
-        g_request->vmPid = GetRealPid();
-        DFXLOGI("The vm pid(%{public}d:%{public}d).", g_request->vmPid, g_request->vmNsPid);
-        DFX_SetUpSigAlarmAction();
-        alarm(ALARM_TIME_S);
-        _exit(ForkAndExecProcessDump());
-    } else if (childPid < 0) {
-        DFXLOGE("[%{public}d]: Failed to fork child process, errno(%{public}d).", __LINE__, errno);
-        RestoreDumpState(prevDumpableStatus, isTracerStatusModified);
-        ForkAndExecProcessDump();
+    if (request == NULL) {
+        DFXLOGE("Failed to DumpRequest because of error parameters!");
         return;
     }
-
-    DFXLOGI("Start wait for VmProcess(%{public}d) exit.", childPid);
-    errno = 0;
-    if (!WaitProcessExit(childPid, "VmProcess") &&
-        sig != SIGDUMP &&
-        sig != SIGLEAK_STACK) {
-        DFXLOGI("Wait VmProcess(%{public}d) exit timeout in handling critical signal.", childPid);
-        FillCrashExceptionAndReport(CRASH_SIGNAL_EWAITEXIT);
-        // do not left vm process
-        kill(childPid, SIGKILL);
-    }
-
-    RestoreDumpState(prevDumpableStatus, isTracerStatusModified);
-}
-
-int DfxDumpRequest(int sig, struct ProcessDumpRequest *request, void *reservedChildStack)
-{
-    int ret = 0;
-    if (request == NULL || reservedChildStack == NULL) {
-        DFXLOGE("Failed to DumpRequest because of error parameters!");
-        return ret;
-    }
     g_request = request;
-    g_reservedChildStack = reservedChildStack;
-    if (ProcessDump(sig) == 0) {
-        ret = sig == SIGDUMP || sig == SIGLEAK_STACK;
-        return ret;
-    }
-
-    if (sig != SIGDUMP) {
-        ret = sig == SIGLEAK_STACK ? true : false;
-        ForkAndDoProcessDump(sig);
-    } else {
-        ret = true;
-        int recycleTid = clone(CloneAndDoProcessDump, reservedChildStack,\
-            CLONE_THREAD | CLONE_SIGHAND | CLONE_VM, NULL);
-        if (recycleTid == -1) {
-            DFXLOGE("Failed to clone thread for recycle dump process, errno(%{public}d)", errno);
-        }
-    }
-    return ret;
+    ProcessDump(signo);
 }

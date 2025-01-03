@@ -23,7 +23,7 @@
 extern "C" {
 #endif
 
-int DfxDumpRequest(int sig, struct ProcessDumpRequest *request, void *reservedChildStack);
+void DfxDumpRequest(int signo, struct ProcessDumpRequest *request);
 
 #ifdef __cplusplus
 }
