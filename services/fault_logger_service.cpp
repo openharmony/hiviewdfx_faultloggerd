@@ -196,9 +196,11 @@ int32_t StatsService::OnRequest(const std::string& socketName, int32_t connectio
         ReportDumpStats(stats);
     }
     RemoveTimeoutDumpStats();
+#ifdef FAULTLOGGERD_TEST
     int32_t responseData = ResponseCode::REQUEST_SUCCESS;
     SendMsgToSocket(connectionFd, &responseData, sizeof(responseData));
-    return responseData;
+#endif
+    return ResponseCode::REQUEST_SUCCESS;
 }
 #endif
 
