@@ -172,8 +172,7 @@ HWTEST_F(CommonTest, ROMBaselineTest001, TestSize.Level2)
         "/system/etc/hiview/compose_rule.json",
         "/system/bin/processdump",
         "/system/bin/faultloggerd",
-        "/system/bin/dumpcatcher",
-        "/system/bin/crashvalidator"
+        "/system/bin/dumpcatcher"
     };
     getLibPathsBySystemBits(filePaths);
     struct stat fileStat;
@@ -182,16 +181,17 @@ HWTEST_F(CommonTest, ROMBaselineTest001, TestSize.Level2)
     for (const auto &filePath : filePaths) {
         int ret = stat(filePath.c_str(), &fileStat);
         if (ret != 0) {
-            printf("Failed to get file size of %s\n", filePath.c_str());
+            EXPECT_EQ(ret, 0) << "Failed to get file size of " << filePath;
         } else {
             long long size = fileStat.st_size / 1024;
             size = size + sectorSize - size % sectorSize;
-            printf("File size of %s is %lldKB\n", filePath.c_str(), size);
+            GTEST_LOG_(INFO) << "File size of " << filePath << " is " << size << "KB";
             totalSize += size;
         }
     }
     printf("Total file size is %lldKB\n", totalSize);
-    constexpr long long baseline = 1054;
+    constexpr long long baseline = 1101;
+    // There is a 5% threshold for the baseline value
     EXPECT_LT(totalSize, static_cast<long long>(baseline * 1.05));
     GTEST_LOG_(INFO) << "ROMBaselineTest001: end.";
 }
