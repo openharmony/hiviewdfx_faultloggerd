@@ -45,6 +45,7 @@ constexpr const char * const KERNEL_SNAPSHOT_REASON = "CppCrashKernelSnapshot";
 constexpr int MIN_CHECK_INTERVAL = 3;
 constexpr int BUFFER_LEN = 1024;
 constexpr int SEQUENCE_LEN = 7;
+constexpr bool IS_REPORT_CRASH = false;
 
 enum class CrashSection {
     TIME_STAMP,
@@ -140,6 +141,9 @@ private:
 
 void ReportCrashEvent(CrashMap& output)
 {
+    if (!IS_REPORT_CRASH) {
+        return;
+    }
     if (output[CrashSection::UID].empty()) {
         DFXLOGE("uid is empty, not report");
         return;
