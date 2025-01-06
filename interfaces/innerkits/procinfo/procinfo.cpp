@@ -170,7 +170,7 @@ bool GetTidsByPidWithFunc(const int pid, std::vector<int>& tids, std::function<b
             if (tid == 0) {
                 continue;
             }
-            tids.push_back(tid);
+            tids.emplace_back(tid);
 
             if (func != nullptr) {
                 func(tid);
@@ -190,7 +190,7 @@ bool GetTidsByPid(const int pid, std::vector<int>& tids, std::vector<int>& nstid
         func = [&](int tid) {
             pid_t nstid = tid;
             TidToNstid(pid, tid, nstid);
-            nstids.push_back(nstid);
+            nstids.emplace_back(nstid);
             return true;
         };
     }

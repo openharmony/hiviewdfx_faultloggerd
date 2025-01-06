@@ -107,6 +107,8 @@ public:
 
     static int ArkCreateJsSymbolExtractor(uintptr_t* extractorPtr);
     static int ArkDestoryJsSymbolExtractor(uintptr_t extractorPtr);
+    static int ArkCreateLocal();
+    static int ArkDestroyLocal();
 };
 } // namespace HiviewDFX
 } // namespace OHOS
