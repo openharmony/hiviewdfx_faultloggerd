@@ -77,8 +77,8 @@ bool DfxHap::ParseHapFileInfo(uint64_t pc, std::shared_ptr<DfxMap> map, JsFuncti
         return false;
     }
 
-    if (DfxArk::Instance().ParseArkFileInfo(static_cast<uintptr_t>(pc), static_cast<uintptr_t>(map->begin), map->name.c_str(),
-        arkSymbolExtractorPtr_, jsFunction) < 0) {
+    if (DfxArk::Instance().ParseArkFileInfo(static_cast<uintptr_t>(pc), static_cast<uintptr_t>(map->begin),
+        map->name.c_str(), arkSymbolExtractorPtr_, jsFunction) < 0) {
         DFXLOGW("Failed to parse ark file info, pc: %{public}p, begin: %{public}p",
             reinterpret_cast<void *>(pc), reinterpret_cast<void *>(map->begin));
         return false;
