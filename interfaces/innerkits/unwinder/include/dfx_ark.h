@@ -207,13 +207,12 @@ private:
     template <typename FuncName>
     void DlsymArkFunc(const char* funcName, FuncName& dlsymFuncName);
     void* handle_ = nullptr;
-    using StepArkFn = int (*)(void*, OHOS::HiviewDFX::ReadMemFunc, uintptr_t*, uintptr_t*, uintptr_t*,
-                              uintptr_t*, bool*);
+    using StepArkFn = int (*)(void*, OHOS::HiviewDFX::ReadMemFunc, OHOS::HiviewDFX::ArkStepParam*);
     using StepArkWithJitFn = int (*)(OHOS::HiviewDFX::ArkUnwindParam*);
     using JitCodeWriteFileFn = int (*)(void*, OHOS::HiviewDFX::ReadMemFunc, int, const uintptr_t* const, const size_t);
     using ParseArkFileInfoFn = int (*)(uintptr_t, uintptr_t, const char*, uintptr_t, JsFunction*);
     using ParseArkFrameInfoLocalFn = int (*)(uintptr_t, uintptr_t, uintptr_t, JsFunction*);
-    using ParseArkFrameInfoFn = int (*)(uintptr_t, uintptr_t, uintptr_t, uintptr_t, uint8_t*,
+    using ParseArkFrameInfoFn = int (*)(uintptr_t, uintptr_t, uintptr_t, uint8_t*,
                                         uint64_t, uintptr_t, JsFunction*);
     using ArkCreateJsSymbolExtractorFn = int (*)(uintptr_t*);
     using ArkDestoryJsSymbolExtractorFn = int (*)(uintptr_t);
