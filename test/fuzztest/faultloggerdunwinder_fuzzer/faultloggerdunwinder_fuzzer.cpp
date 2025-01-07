@@ -55,7 +55,8 @@ void TestStepArkFrame(const uint8_t* data, size_t size)
     bool isJsFrame = methodid % 2;
 
     DfxMemory dfxMemory;
-    DfxArk::Instance().StepArkFrame(&dfxMemory, &(Unwinder::AccessMem), &fp, &sp, &pc, &methodid, &isJsFrame);
+    ArkStepParam arkParam(&fp, &sp, &pc, &isJsFrame);
+    DfxArk::Instance().StepArkFrame(&dfxMemory, &(Unwinder::AccessMem), &arkParam);
 }
 
 void TestStepArkFrameWithJit(const uint8_t* data, size_t size)
@@ -102,21 +103,19 @@ void TestJitCodeWriteFile(const uint8_t* data, size_t size)
 void TestParseArkFrameInfoLocal(const uint8_t* data, size_t size)
 {
     uintptr_t pc;
-    uintptr_t funcOffset;
     uintptr_t mapBegin;
     uintptr_t offset;
-    int offsetTotalLength = sizeof(pc) + sizeof(funcOffset) + sizeof(mapBegin) + sizeof(offset);
+    int offsetTotalLength = sizeof(pc) + sizeof(mapBegin) + sizeof(offset);
     if (offsetTotalLength > size) {
         return;
     }
 
     STREAM_TO_VALUEINFO(data, pc);
-    STREAM_TO_VALUEINFO(data, funcOffset);
     STREAM_TO_VALUEINFO(data, mapBegin);
     STREAM_TO_VALUEINFO(data, offset);
 
     JsFunction jsFunction;
-    DfxArk::Instance().ParseArkFrameInfoLocal(static_cast<uintptr_t>(pc), static_cast<uintptr_t>(funcOffset),
+    DfxArk::Instance().ParseArkFrameInfoLocal(static_cast<uintptr_t>(pc),
         static_cast<uintptr_t>(mapBegin), static_cast<uintptr_t>(offset), &jsFunction);
 }
 
@@ -157,22 +156,20 @@ void TestDfxHap(const uint8_t* data, size_t size)
 {
     pid_t pid;
     uint64_t pc;
-    uintptr_t methodid;
     uintptr_t offset;
-    unsigned int offsetTotalLength = sizeof(pid) + sizeof(pc) + sizeof(methodid) + sizeof(offset);
+    unsigned int offsetTotalLength = sizeof(pid) + sizeof(pc) + sizeof(offset);
     if (offsetTotalLength > size) {
         return;
     }
 
     STREAM_TO_VALUEINFO(data, pid);
     STREAM_TO_VALUEINFO(data, pc);
-    STREAM_TO_VALUEINFO(data, methodid);
     STREAM_TO_VALUEINFO(data, offset);
 
     auto map = std::make_shared<DfxMap>();
     JsFunction jsFunction;
     DfxHap dfxHap;
-    dfxHap.ParseHapInfo(pid, pc, methodid, map, &jsFunction);
+    dfxHap.ParseHapInfo(pid, pc, map, &jsFunction);
 }
 
 #if defined(__aarch64__)

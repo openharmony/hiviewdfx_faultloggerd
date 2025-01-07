@@ -134,34 +134,34 @@ int DfxArk::ArkDestroyLocal()
     return -1;
 }
 
-int DfxArk::ParseArkFileInfo(uintptr_t byteCodePc, uintptr_t methodid, uintptr_t mapBase, const char* name,
+int DfxArk::ParseArkFileInfo(uintptr_t byteCodePc, uintptr_t mapBase, const char* name,
     uintptr_t extractorPtr, JsFunction *jsFunction)
 {
     if (parseArkFileInfoFn_ != nullptr) {
-        return parseArkFileInfoFn_(byteCodePc, methodid, mapBase, name, extractorPtr, jsFunction);
+        return parseArkFileInfoFn_(byteCodePc, mapBase, name, extractorPtr, jsFunction);
     }
 
     const char* arkFuncName = "ark_parse_js_file_info";
     DlsymArkFunc(arkFuncName, parseArkFileInfoFn_);
 
     if (parseArkFileInfoFn_ != nullptr) {
-        return parseArkFileInfoFn_(byteCodePc, methodid, mapBase, name, extractorPtr, jsFunction);
+        return parseArkFileInfoFn_(byteCodePc, mapBase, name, extractorPtr, jsFunction);
     }
     return -1;
 }
 
-int DfxArk::ParseArkFrameInfoLocal(uintptr_t byteCodePc, uintptr_t methodid, uintptr_t mapBase,
+int DfxArk::ParseArkFrameInfoLocal(uintptr_t byteCodePc, uintptr_t mapBase,
     uintptr_t offset, JsFunction *jsFunction)
 {
     if (parseArkFrameInfoLocalFn_ != nullptr) {
-        return parseArkFrameInfoLocalFn_(byteCodePc, methodid, mapBase, offset, jsFunction);
+        return parseArkFrameInfoLocalFn_(byteCodePc, mapBase, offset, jsFunction);
     }
 
     const char* arkFuncName = "ark_parse_js_frame_info_local";
     DlsymArkFunc(arkFuncName, parseArkFrameInfoLocalFn_);
 
     if (parseArkFrameInfoLocalFn_ != nullptr) {
-        return parseArkFrameInfoLocalFn_(byteCodePc, methodid, mapBase, offset, jsFunction);
+        return parseArkFrameInfoLocalFn_(byteCodePc, mapBase, offset, jsFunction);
     }
     return -1;
 }
@@ -169,14 +169,8 @@ int DfxArk::ParseArkFrameInfoLocal(uintptr_t byteCodePc, uintptr_t methodid, uin
 int DfxArk::ParseArkFrameInfo(uintptr_t byteCodePc, uintptr_t mapBase, uintptr_t loadOffset,
     uint8_t *data, uint64_t dataSize, uintptr_t extractorPtr, JsFunction *jsFunction)
 {
-    return ParseArkFrameInfo(byteCodePc, 0, mapBase, loadOffset, data, dataSize, extractorPtr, jsFunction);
-}
-
-int DfxArk::ParseArkFrameInfo(uintptr_t byteCodePc, uintptr_t methodid, uintptr_t mapBase, uintptr_t loadOffset,
-    uint8_t *data, uint64_t dataSize, uintptr_t extractorPtr, JsFunction *jsFunction)
-{
     if (parseArkFrameInfoFn_ != nullptr) {
-        return parseArkFrameInfoFn_(byteCodePc, methodid, mapBase, loadOffset, data, dataSize,
+        return parseArkFrameInfoFn_(byteCodePc, mapBase, loadOffset, data, dataSize,
             extractorPtr, jsFunction);
     }
 
@@ -184,24 +178,24 @@ int DfxArk::ParseArkFrameInfo(uintptr_t byteCodePc, uintptr_t methodid, uintptr_
     DlsymArkFunc(arkFuncName, parseArkFrameInfoFn_);
 
     if (parseArkFrameInfoFn_ != nullptr) {
-        return parseArkFrameInfoFn_(byteCodePc, methodid, mapBase, loadOffset, data, dataSize,
+        return parseArkFrameInfoFn_(byteCodePc, mapBase, loadOffset, data, dataSize,
             extractorPtr, jsFunction);
     }
     return -1;
 }
 
 int DfxArk::StepArkFrame(void *obj, OHOS::HiviewDFX::ReadMemFunc readMemFn,
-    uintptr_t *fp, uintptr_t *sp, uintptr_t *pc, uintptr_t* methodid, bool *isJsFrame)
+    OHOS::HiviewDFX::ArkStepParam* arkParam)
 {
     if (stepArkFn_ != nullptr) {
-        return stepArkFn_(obj, readMemFn, fp, sp, pc, methodid, isJsFrame);
+        return stepArkFn_(obj, readMemFn, arkParam);
     }
 
     const char* arkFuncName = "step_ark";
     DlsymArkFunc(arkFuncName, stepArkFn_);
 
     if (stepArkFn_ != nullptr) {
-        return stepArkFn_(obj, readMemFn, fp, sp, pc, methodid, isJsFrame);
+        return stepArkFn_(obj, readMemFn, arkParam);
     }
     return -1;
 }

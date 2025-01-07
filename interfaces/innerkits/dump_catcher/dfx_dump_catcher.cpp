@@ -37,6 +37,7 @@
 #include "dfx_util.h"
 #include "elapsed_time.h"
 #include "faultloggerd_client.h"
+#include "dfx_socket_request.h"
 #include "file_ex.h"
 #include "procinfo.h"
 
@@ -364,27 +365,26 @@ void DfxDumpCatcher::DealWithPollRet(int pollRet, int pid, int32_t& ret, std::st
 void DfxDumpCatcher::DealWithSdkDumpRet(int sdkdumpRet, int pid, int32_t& ret, std::string& msg)
 {
     uint32_t uid = getuid();
-    if (sdkdumpRet == static_cast<int>(FaultLoggerSdkDumpResp::SDK_DUMP_REPEAT)) {
+    if (sdkdumpRet == ResponseCode::SDK_DUMP_REPEAT) {
         AsyncGetAllTidKernelStack(pid, WAIT_GET_KERNEL_STACK_TIMEOUT);
         msg.append("Result: pid(" + std::to_string(pid) + ") process is dumping.\n");
         ret = DUMPCATCH_IS_DUMPING;
-    } else if (sdkdumpRet == static_cast<int>(FaultLoggerSdkDumpResp::SDK_DUMP_REJECT)) {
+    } else if (sdkdumpRet == ResponseCode::REQUEST_REJECT) {
         msg.append("Result: pid(" + std::to_string(pid) + ") process check permission error.\n");
         ret = DUMPCATCH_EPERMISSION;
-    } else if (sdkdumpRet == static_cast<int>(FaultLoggerSdkDumpResp::SDK_DUMP_NOPROC)) {
+    } else if (sdkdumpRet == ResponseCode::SDK_DUMP_NOPROC) {
         msg.append("Result: pid(" + std::to_string(pid) + ") process has exited.\n");
-        RequestDelPipeFd(pid);
         ret = DUMPCATCH_NO_PROCESS;
-    } else if (sdkdumpRet == static_cast<int>(FaultLoggerSdkDumpResp::SDK_PROCESS_CRASHED)) {
+    } else if (sdkdumpRet == ResponseCode::SDK_PROCESS_CRASHED) {
         msg.append("Result: pid(" + std::to_string(pid) + ") process has been crashed.\n");
         ret = DUMPCATCH_HAS_CRASHED;
-    } else if (sdkdumpRet == static_cast<int>(FaultLoggerSdkDumpResp::SDK_CONNECT_FAIL)) {
+    } else if (sdkdumpRet == ResponseCode::CONNECT_FAILED) {
         if (uid == HIVIEW_UID || uid == FOUNDATION_UID) {
             AsyncGetAllTidKernelStack(pid, WAIT_GET_KERNEL_STACK_TIMEOUT);
         }
         msg.append("Result: pid(" + std::to_string(pid) + ") process fail to conntect faultloggerd.\n");
         ret = DUMPCATCH_ECONNECT;
-    } else if (sdkdumpRet == static_cast<int>(FaultLoggerSdkDumpResp::SDK_WRITE_FAIL)) {
+    } else if (sdkdumpRet == ResponseCode::SEND_DATA_FAILED) {
         if (uid == HIVIEW_UID || uid == FOUNDATION_UID) {
             AsyncGetAllTidKernelStack(pid, WAIT_GET_KERNEL_STACK_TIMEOUT);
         }
@@ -521,10 +521,10 @@ bool DfxDumpCatcher::DumpCatch(int pid, int tid, std::string& msg, size_t maxFra
         }
         int timeout = (tid == 0 ? 3 : 10) * 1000; // when tid not zero, timeout is 10s
         int32_t res = DoDumpRemoteLocked(pid, tid, msg, isJson, timeout);
-        void* retAddr = __builtin_return_address(0);
         if (res != DUMPCATCH_ESUCCESS && g_kernelStackRet != DUMPCATCH_ESUCCESS && g_kernelStackRet != -1) {
             res = g_kernelStackRet;
         }
+        void* retAddr = __builtin_return_address(0);
         ReportDumpCatcherStats(pid, requestTime, res, retAddr);
         ret = res == DUMPCATCH_ESUCCESS;
     }
@@ -559,7 +559,7 @@ int32_t DfxDumpCatcher::DoDumpCatchRemote(int pid, int tid, std::string& msg, bo
     int pipeReadFd[] = { -1, -1 };
     uint64_t sdkDumpStartTime = GetAbsTimeMilliSeconds();
     int sdkdumpRet = RequestSdkDump(pid, tid, pipeReadFd, isJson, timeout);
-    if (sdkdumpRet != static_cast<int>(FaultLoggerSdkDumpResp::SDK_DUMP_PASS)) {
+    if (sdkdumpRet != ResponseCode::REQUEST_SUCCESS) {
         DealWithSdkDumpRet(sdkdumpRet, pid, ret, msg);
         return ret;
     }

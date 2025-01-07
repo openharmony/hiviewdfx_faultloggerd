@@ -52,10 +52,9 @@ static __attribute__((noinline)) int RequestOutputLogFile(const struct ProcessDu
     struct FaultLoggerdRequest faultloggerdRequest;
     (void)memset_s(&faultloggerdRequest, sizeof(faultloggerdRequest), 0, sizeof(struct FaultLoggerdRequest));
 
-    faultloggerdRequest.type = (int32_t)CPP_CRASH;
+    faultloggerdRequest.type = FaultLoggerType::CPP_CRASH;
     faultloggerdRequest.pid = request->pid;
     faultloggerdRequest.tid = request->tid;
-    faultloggerdRequest.uid = request->uid;
     faultloggerdRequest.time = request->timeStamp;
     return RequestFileDescriptorEx(&faultloggerdRequest);
 }

@@ -734,7 +734,7 @@ HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest030, TestSize.Level
     } else {
         msg = msg.erase(0, msg.find("\n") + 1);
     }
-    EXPECT_EQ(stackMsg == msg, true) << "stackMsg != msg";
+    EXPECT_EQ(stackMsg == msg, true) << "stackMsg: " << stackMsg << "msg: " << msg << "stackMsg != msg";
     GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest030: end.";
 }
 

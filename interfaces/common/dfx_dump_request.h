@@ -106,13 +106,16 @@ struct ProcessDumpRequest {
     /** is integrate crash dump flow 0:false 1:true */
     int32_t dumpMode;
     /** vm process pid addr */
-    intptr_t vmProcRealPid;
+    intptr_t vmProcRealPidAddr;
     /** whether block source process pid */
-    intptr_t isBlockCrash;
+    intptr_t blockCrashExitAddr;
+    /** whether processdump unwind crash success */
+    intptr_t unwindResultAddr;
     uintptr_t crashObj;
 };
 
 static const int CRASH_BLOCK_EXIT_FLAG  = 0x13579BDF;
+static const int CRASH_UNWIND_SUCCESS_FLAG = 0x2468ACEF;
 #ifdef __cplusplus
 }
 #endif

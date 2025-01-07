@@ -135,10 +135,6 @@ public:
     {
         enableFillFrames_ = enableFillFrames;
     }
-    inline void EnableMethodIdLocal(bool enableMethodIdLocal)
-    {
-        enableMethodIdLocal_ = enableMethodIdLocal;
-    }
     inline void IgnoreMixstack(bool ignoreMixstack)
     {
         ignoreMixstack_ = ignoreMixstack;
@@ -217,7 +213,6 @@ private:
 private:
     struct StepFrame {
         uintptr_t pc = 0;
-        uintptr_t methodid = 0;
         uintptr_t sp = 0;
         uintptr_t fp = 0;
         bool isJsFrame {false};
@@ -240,8 +235,15 @@ private:
     bool CheckAndReset(void* ctx);
     void DoPcAdjust(uintptr_t& pc);
     void AddFrame(const StepFrame& frame, std::shared_ptr<DfxMap> map);
+    bool FindCache(uintptr_t pc, std::shared_ptr<DfxMap>& map, std::shared_ptr<RegLocState>& rs);
+    bool AddFrameMap(const StepFrame& frame, std::shared_ptr<DfxMap>& map, void* ctx);
+    bool UnwindArkFrame(StepFrame& frame, const std::shared_ptr<DfxMap>& map, bool& stopUnwind);
+    bool ParseUnwindTable(uintptr_t pc, std::shared_ptr<RegLocState>& rs, void* ctx, bool& unwinderResult);
+    void UpdateRegsState(StepFrame& frame, void* ctx, bool& unwinderResult, std::shared_ptr<RegLocState>& rs);
+    bool CheckFrameValid(const StepFrame& frame, const std::shared_ptr<DfxMap>& map, uintptr_t prevSp);
     bool StepInner(const bool isSigFrame, StepFrame& frame, void *ctx);
     bool Apply(std::shared_ptr<DfxRegs> regs, std::shared_ptr<RegLocState> rs);
+    bool UnwindFrame(void *ctx, StepFrame& frame, bool& needAdjustPc);
 #if defined(ENABLE_MIXSTACK)
     bool StepArkJsFrame(StepFrame& frame);
 #endif
@@ -260,7 +262,6 @@ private:
     bool enableFillFrames_ = true;
     bool enableLrFallback_ = true;
     bool enableFpCheckMapExec_ = false;
-    bool enableMethodIdLocal_ = false;
     bool isFpStep_ = false;
     bool isArkCreateLocal_ = false;
     MAYBE_UNUSED bool enableMixstack_ = true;
@@ -320,10 +321,7 @@ void Unwinder::EnableFillFrames(bool enableFillFrames)
 {
     impl_->EnableFillFrames(enableFillFrames);
 }
-void Unwinder::EnableMethodIdLocal(bool enableMethodIdLocal)
-{
-    impl_->EnableMethodIdLocal(enableMethodIdLocal);
-}
+
 void Unwinder::IgnoreMixstack(bool ignoreMixstack)
 {
     impl_->IgnoreMixstack(ignoreMixstack);
@@ -712,21 +710,18 @@ bool Unwinder::Impl::StepArkJsFrame(StepFrame& frame)
     }
 
     int ret = -1;
-    uintptr_t *methodId = (pid_ > 0 || enableMethodIdLocal_) ? (&frame.methodid) : nullptr;
     if (isJitCrash_) {
+        MAYBE_UNUSED uintptr_t methodId = 0;
         ArkUnwindParam arkParam(memory_.get(), &(Unwinder::AccessMem), &frame.fp, &frame.sp, &frame.pc,
-            methodId, &frame.isJsFrame, jitCache_);
+            &methodId, &frame.isJsFrame, jitCache_);
         ret = DfxArk::Instance().StepArkFrameWithJit(&arkParam);
     } else {
-        ret = DfxArk::Instance().StepArkFrame(memory_.get(), &(Unwinder::AccessMem), &frame.fp, &frame.sp, &frame.pc,
-            methodId, &frame.isJsFrame);
+        ArkStepParam arkParam(&frame.fp, &frame.sp, &frame.pc, &frame.isJsFrame);
+        ret = DfxArk::Instance().StepArkFrame(memory_.get(), &(Unwinder::AccessMem), &arkParam);
     }
     if (ret < 0) {
         DFXLOGE("Failed to step ark frame");
         return false;
-    }
-    if (pid_ > 0) {
-        DFXLOGI("---ark js frame methodid: %{public}" PRIx64 "", (uint64_t)frame.methodid);
     }
     if (pid_ != UNWIND_TYPE_CUSTOMIZE) {
         DFXLOGD("---ark pc: %{public}p, fp: %{public}p, sp: %{public}p, isJsFrame: %{public}d.",
@@ -739,6 +734,40 @@ bool Unwinder::Impl::StepArkJsFrame(StepFrame& frame)
     return true;
 }
 #endif
+
+bool Unwinder::Impl::UnwindFrame(void *ctx, StepFrame& frame, bool& needAdjustPc)
+{
+    frame.pc = regs_->GetPc();
+    frame.sp = regs_->GetSp();
+    frame.fp = regs_->GetFp();
+    // Check if this is a signal frame.
+    if (pid_ != UNWIND_TYPE_LOCAL && pid_ != UNWIND_TYPE_CUSTOMIZE_LOCAL &&
+        regs_->StepIfSignalFrame(static_cast<uintptr_t>(frame.pc), memory_)) {
+        DFXLOGW("Step signal frame, pc: %{public}p", reinterpret_cast<void *>(frame.pc));
+        StepInner(true, frame, ctx);
+        return true;
+    }
+    if (!frame.isJsFrame && needAdjustPc) {
+        DoPcAdjust(frame.pc);
+    }
+    needAdjustPc = true;
+    uintptr_t prevPc = frame.pc;
+    uintptr_t prevSp = frame.sp;
+    if (!StepInner(false, frame, ctx)) {
+        return false;
+    }
+    if (frame.pc == prevPc && frame.sp == prevSp) {
+        if (pid_ >= 0) {
+            MAYBE_UNUSED UnwindContext* uctx = reinterpret_cast<UnwindContext *>(ctx);
+            DFXLOGU("pc and sp is same, tid: %{public}d", uctx->pid);
+        } else {
+            DFXLOGU("pc and sp is same");
+        }
+        lastErrorData_.SetAddrAndCode(frame.pc, UNW_ERROR_REPEATED_FRAME);
+        return false;
+    }
+    return true;
+}
 
 bool Unwinder::Impl::Unwind(void *ctx, size_t maxFrameNum, size_t skipFrameNum)
 {
@@ -765,36 +794,7 @@ bool Unwinder::Impl::Unwind(void *ctx, size_t maxFrameNum, size_t skipFrameNum)
             break;
         }
 
-        frame.pc = regs_->GetPc();
-        frame.sp = regs_->GetSp();
-        frame.fp = regs_->GetFp();
-        // Check if this is a signal frame.
-        if (pid_ != UNWIND_TYPE_LOCAL && pid_ != UNWIND_TYPE_CUSTOMIZE_LOCAL &&
-            regs_->StepIfSignalFrame(static_cast<uintptr_t>(frame.pc), memory_)) {
-            DFXLOGW("Step signal frame, pc: %{public}p", reinterpret_cast<void *>(frame.pc));
-            StepInner(true, frame, ctx);
-            continue;
-        }
-
-        if (!frame.isJsFrame && needAdjustPc) {
-            DoPcAdjust(frame.pc);
-        }
-        needAdjustPc = true;
-
-        uintptr_t prevPc = frame.pc;
-        uintptr_t prevSp = frame.sp;
-        if (!StepInner(false, frame, ctx)) {
-            break;
-        }
-
-        if (frame.pc == prevPc && frame.sp == prevSp) {
-            if (pid_ >= 0) {
-                MAYBE_UNUSED UnwindContext* uctx = reinterpret_cast<UnwindContext *>(ctx);
-                DFXLOGU("Failed to update pc and sp, tid: %{public}d", uctx->pid);
-            } else {
-                DFXLOGU("Failed to update pc and sp");
-            }
-            lastErrorData_.SetAddrAndCode(frame.pc, UNW_ERROR_REPEATED_FRAME);
+        if (!UnwindFrame(ctx, frame, needAdjustPc)) {
             break;
         }
     } while (true);
@@ -912,149 +912,128 @@ bool Unwinder::Impl::Step(uintptr_t& pc, uintptr_t& sp, void *ctx)
     return ret;
 }
 
-bool Unwinder::Impl::StepInner(const bool isSigFrame, StepFrame& frame, void *ctx)
+bool Unwinder::Impl::FindCache(uintptr_t pc, std::shared_ptr<DfxMap>& map, std::shared_ptr<RegLocState>& rs)
 {
-    if ((regs_ == nullptr) || (!CheckAndReset(ctx))) {
-        DFXLOGE("[%{public}d]: params is nullptr", __LINE__);
-        return false;
-    }
-    SetLocalStackCheck(ctx, false);
-    DFXLOGU("+pc: %{public}p, sp: %{public}p, fp: %{public}p", reinterpret_cast<void *>(frame.pc),
-        reinterpret_cast<void *>(frame.sp), reinterpret_cast<void *>(frame.fp));
-    uintptr_t prevSp = frame.sp;
-
-    bool ret = false;
-    std::shared_ptr<RegLocState> rs = nullptr;
-    std::shared_ptr<DfxMap> map = nullptr;
-    do {
-        if (enableCache_ && !isFpStep_) {
-            // 1. find cache rs
-            auto iter = stepCache_.find(frame.pc);
-            if (iter != stepCache_.end()) {
-                if (pid_ != UNWIND_TYPE_CUSTOMIZE) {
-                    DFXLOGU("Find rs cache, pc: %{public}p", reinterpret_cast<void *>(frame.pc));
-                }
-                rs = iter->second.rs;
-                map = iter->second.map;
-                AddFrame(frame, map);
-                ret = true;
-                break;
+    if (enableCache_ && !isFpStep_) {
+        auto iter = stepCache_.find(pc);
+        if (iter != stepCache_.end()) {
+            if (pid_ != UNWIND_TYPE_CUSTOMIZE) {
+                DFXLOGU("Find rs cache, pc: %{public}p", reinterpret_cast<void *>(pc));
             }
-        }
-
-        // 2. find map
-        MAYBE_UNUSED int mapRet = acc_->GetMapByPc(frame.pc, map, ctx);
-        if (mapRet != UNW_ERROR_NONE) {
-            if (frame.isJsFrame) {
-                DFXLOGW("Failed to get map with ark, frames size: %{public}zu", frames_.size());
-                mapRet = UNW_ERROR_UNKNOWN_ARK_MAP;
-            }
-            if (frames_.size() > 2) { // 2, least 2 frame
-                DFXLOGU("Failed to get map, frames size: %{public}zu", frames_.size());
-                lastErrorData_.SetAddrAndCode(frame.pc, mapRet);
-                return false;
-            }
-        }
-        AddFrame(frame, map);
-        if (isSigFrame) {
+            rs = iter->second.rs;
+            map = iter->second.map;
             return true;
         }
+    }
+    return false;
+}
 
-#if defined(ENABLE_MIXSTACK)
-        if (stopWhenArkFrame_ && (map != nullptr && map->IsArkExecutable())) {
-            DFXLOGU("Stop by ark frame");
+bool Unwinder::Impl::AddFrameMap(const StepFrame& frame, std::shared_ptr<DfxMap>& map, void* ctx)
+{
+    int mapRet = acc_->GetMapByPc(frame.pc, map, ctx);
+    if (mapRet != UNW_ERROR_NONE) {
+        if (frame.isJsFrame) {
+            DFXLOGW("Failed to get map with ark, frames size: %{public}zu", frames_.size());
+            mapRet = UNW_ERROR_UNKNOWN_ARK_MAP;
+        }
+        if (frames_.size() > 2) { // 2, least 2 frame
+            DFXLOGU("Failed to get map, frames size: %{public}zu", frames_.size());
+            lastErrorData_.SetAddrAndCode(frame.pc, mapRet);
             return false;
         }
-        if ((enableMixstack_) && ((map != nullptr && map->IsArkExecutable()) || frame.isJsFrame)) {
-            if (!StepArkJsFrame(frame)) {
-                DFXLOGE("Failed to step ark Js frame, pc: %{public}p", reinterpret_cast<void *>(frame.pc));
-                lastErrorData_.SetAddrAndCode(frame.pc, UNW_ERROR_STEP_ARK_FRAME);
-                ret = false;
-                break;
-            }
-            return true;
+    }
+    AddFrame(frame, map);
+    return true;
+}
+
+bool Unwinder::Impl::UnwindArkFrame(StepFrame& frame, const std::shared_ptr<DfxMap>& map, bool& stopUnwind)
+{
+#if defined(ENABLE_MIXSTACK)
+    if (stopWhenArkFrame_ && (map != nullptr && map->IsArkExecutable())) {
+        DFXLOGU("Stop by ark frame");
+        stopUnwind = true;
+        return false;
+    }
+    if ((enableMixstack_) && ((map != nullptr && map->IsArkExecutable()) || frame.isJsFrame)) {
+        if (!StepArkJsFrame(frame)) {
+            DFXLOGE("Failed to step ark Js frame, pc: %{public}p", reinterpret_cast<void *>(frame.pc));
+            lastErrorData_.SetAddrAndCode(frame.pc, UNW_ERROR_STEP_ARK_FRAME);
+            return false;
         }
+        stopUnwind = true;
+        return true;
+    }
 #endif
-        if (isFpStep_) {
-            if (enableFpCheckMapExec_ && (map != nullptr && !map->IsMapExec())) {
-                DFXLOGE("Fp step check map is not exec");
-                return false;
-            }
-            break;
-        }
+    return true;
+}
 
-        // 3. find unwind table and entry
-        UnwindTableInfo uti;
-        MAYBE_UNUSED int utiRet = acc_->FindUnwindTable(frame.pc, uti, ctx);
-        if (utiRet != UNW_ERROR_NONE) {
-            lastErrorData_.SetAddrAndCode(frame.pc, utiRet);
-            DFXLOGU("Failed to find unwind table ret: %{public}d", utiRet);
-            break;
-        }
-
-        // 4. parse instructions and get cache rs
-        struct UnwindEntryInfo uei;
-        rs = std::make_shared<RegLocState>();
+bool Unwinder::Impl::ParseUnwindTable(uintptr_t pc, std::shared_ptr<RegLocState>& rs, void* ctx, bool& unwinderResult)
+{
+    // find unwind table and entry
+    UnwindTableInfo uti;
+    int utiRet = acc_->FindUnwindTable(pc, uti, ctx);
+    if (utiRet != UNW_ERROR_NONE) {
+        lastErrorData_.SetAddrAndCode(pc, utiRet);
+        DFXLOGU("Failed to find unwind table ret: %{public}d", utiRet);
+        return false;
+    }
+    // parse instructions and get cache rs
+    struct UnwindEntryInfo uei;
+    rs = std::make_shared<RegLocState>();
 #if defined(__arm__)
-        if (!ret && uti.format == UNW_INFO_FORMAT_ARM_EXIDX) {
-            if (!armExidx_->SearchEntry(frame.pc, uti, uei)) {
-                lastErrorData_.SetAddrAndCode(armExidx_->GetLastErrorAddr(), armExidx_->GetLastErrorCode());
-                DFXLOGE("Failed to search unwind entry?");
-                break;
-            }
-            if (!armExidx_->Step((uintptr_t)uei.unwindInfo, rs)) {
-                lastErrorData_.SetAddrAndCode(armExidx_->GetLastErrorAddr(), armExidx_->GetLastErrorCode());
-                DFXLOGU("Step exidx section error?");
-            } else {
-                ret = true;
-            }
+    if (!unwinderResult && uti.format == UNW_INFO_FORMAT_ARM_EXIDX) {
+        if (!armExidx_->SearchEntry(pc, uti, uei)) {
+            lastErrorData_.SetAddrAndCode(armExidx_->GetLastErrorAddr(), armExidx_->GetLastErrorCode());
+            DFXLOGE("Failed to search unwind entry");
+            return false;
         }
+        if (!armExidx_->Step((uintptr_t)uei.unwindInfo, rs)) {
+            lastErrorData_.SetAddrAndCode(armExidx_->GetLastErrorAddr(), armExidx_->GetLastErrorCode());
+            DFXLOGU("Step exidx section error");
+        } else {
+            unwinderResult = true;
+        }
+    }
 #endif
-        if (!ret && uti.format == UNW_INFO_FORMAT_REMOTE_TABLE) {
-            if ((uti.isLinear == false && !dwarfSection_->SearchEntry(frame.pc, uti, uei)) ||
-                (uti.isLinear == true && !dwarfSection_->LinearSearchEntry(frame.pc, uti, uei))) {
-                lastErrorData_.SetAddrAndCode(dwarfSection_->GetLastErrorAddr(), dwarfSection_->GetLastErrorCode());
-                DFXLOGU("Failed to search unwind entry?");
-                break;
-            }
-            memory_->SetDataOffset(uti.segbase);
-            if (!dwarfSection_->Step(frame.pc, (uintptr_t)uei.unwindInfo, rs)) {
-                lastErrorData_.SetAddrAndCode(dwarfSection_->GetLastErrorAddr(), dwarfSection_->GetLastErrorCode());
-                DFXLOGU("Step dwarf section error?");
-            } else {
-                ret = true;
-            }
+    if (!unwinderResult && uti.format == UNW_INFO_FORMAT_REMOTE_TABLE) {
+        if ((uti.isLinear == false && !dwarfSection_->SearchEntry(pc, uti, uei)) ||
+            (uti.isLinear == true && !dwarfSection_->LinearSearchEntry(pc, uti, uei))) {
+            lastErrorData_.SetAddrAndCode(dwarfSection_->GetLastErrorAddr(), dwarfSection_->GetLastErrorCode());
+            DFXLOGU("Failed to search unwind entry");
+            return false;
         }
-
-        if (ret && enableCache_) {
-            // 5. update rs cache
-            StepCache cache;
-            cache.map = map;
-            cache.rs = rs;
-            stepCache_.emplace(frame.pc, cache);
-            break;
+        memory_->SetDataOffset(uti.segbase);
+        if (!dwarfSection_->Step(pc, (uintptr_t)uei.unwindInfo, rs)) {
+            lastErrorData_.SetAddrAndCode(dwarfSection_->GetLastErrorAddr(), dwarfSection_->GetLastErrorCode());
+            DFXLOGU("Step dwarf section error");
+        } else {
+            unwinderResult = true;
         }
-    } while (false);
+    }
+    return true;
+}
 
-    // 5. update regs and regs state
+void Unwinder::Impl::UpdateRegsState(
+    StepFrame& frame, void* ctx, bool& unwinderResult, std::shared_ptr<RegLocState>& rs)
+{
     SetLocalStackCheck(ctx, true);
-    if (ret) {
+    if (unwinderResult) {
 #if defined(__arm__) || defined(__aarch64__)
-        auto lr = *(regs_->GetReg(REG_LR));
+    auto lr = *(regs_->GetReg(REG_LR));
 #endif
-        ret = Apply(regs_, rs);
+    unwinderResult = Apply(regs_, rs);
 #if defined(__arm__) || defined(__aarch64__)
-        if (!ret && enableLrFallback_ && (frames_.size() == 1)) {
-            regs_->SetPc(lr);
-            ret = true;
-            if (pid_ != UNWIND_TYPE_CUSTOMIZE) {
-                DFXLOGW("Failed to apply first frame, lr fallback");
-            }
+    if (!unwinderResult && enableLrFallback_ && (frames_.size() == 1)) {
+        regs_->SetPc(lr);
+        unwinderResult = true;
+        if (pid_ != UNWIND_TYPE_CUSTOMIZE) {
+            DFXLOGW("Failed to apply first frame, lr fallback");
         }
+    }
 #endif
     } else {
         if (enableLrFallback_ && (frames_.size() == 1) && regs_->SetPcFromReturnAddress(memory_)) {
-            ret = true;
+            unwinderResult = true;
             if (pid_ != UNWIND_TYPE_CUSTOMIZE) {
                 DFXLOGW("Failed to step first frame, lr fallback");
             }
@@ -1063,9 +1042,9 @@ bool Unwinder::Impl::StepInner(const bool isSigFrame, StepFrame& frame, void *ct
     regs_->SetPc(StripPac(regs_->GetPc(), pacMask_));
 
 #if defined(__aarch64__)
-    if (!ret) { // try fp
-        ret = FpStep(frame.fp, frame.pc, ctx);
-        if (ret && !isFpStep_) {
+    if (!unwinderResult) { // try fp
+        unwinderResult = FpStep(frame.fp, frame.pc, ctx);
+        if (unwinderResult && !isFpStep_) {
             if (pid_ != UNWIND_TYPE_CUSTOMIZE) {
                 DFXLOGI("First enter fp step, pc: %{public}p", reinterpret_cast<void *>(frame.pc));
             }
@@ -1073,21 +1052,86 @@ bool Unwinder::Impl::StepInner(const bool isSigFrame, StepFrame& frame, void *ct
         }
     }
 #endif
-
     frame.pc = regs_->GetPc();
     frame.sp = regs_->GetSp();
     frame.fp = regs_->GetFp();
+}
+
+bool Unwinder::Impl::CheckFrameValid(const StepFrame& frame, const std::shared_ptr<DfxMap>& map, uintptr_t prevSp)
+{
+    DFXLOGU("-pc: %{public}p, sp: %{public}p, fp: %{public}p, prevSp: %{public}p", reinterpret_cast<void *>(frame.pc),
+        reinterpret_cast<void *>(frame.sp), reinterpret_cast<void *>(frame.fp), reinterpret_cast<void *>(prevSp));
     if (!isFpStep_ && (map != nullptr) && (!map->IsVdsoMap()) && (frame.sp < prevSp)) {
         DFXLOGU("Illegal sp value");
         lastErrorData_.SetAddrAndCode(frame.pc, UNW_ERROR_ILLEGAL_VALUE);
-        ret = false;
+        return false;
     }
-    if (ret && (frame.pc == 0)) {
-        ret = false;
+    if (frame.pc == 0) {
+        return false;
     }
-    DFXLOGU("-pc: %{public}p, sp: %{public}p, fp: %{public}p, ret: %{public}d", reinterpret_cast<void *>(frame.pc),
-        reinterpret_cast<void *>(frame.sp), reinterpret_cast<void *>(frame.fp), ret);
-    return ret;
+    return true;
+}
+
+bool Unwinder::Impl::StepInner(const bool isSigFrame, StepFrame& frame, void *ctx)
+{
+    if ((regs_ == nullptr) || (!CheckAndReset(ctx))) {
+        DFXLOGE("params is nullptr");
+        return false;
+    }
+    SetLocalStackCheck(ctx, false);
+    DFXLOGU("+pc: %{public}p, sp: %{public}p, fp: %{public}p", reinterpret_cast<void *>(frame.pc),
+        reinterpret_cast<void *>(frame.sp), reinterpret_cast<void *>(frame.fp));
+    uintptr_t prevSp = frame.sp;
+    bool hasRegLocState = false;
+    std::shared_ptr<RegLocState> rs = nullptr;
+    std::shared_ptr<DfxMap> map = nullptr;
+    do {
+        // 1. find cache rs
+        hasRegLocState = FindCache(frame.pc, map, rs);
+        if (hasRegLocState) {
+            AddFrame(frame, map);
+            break;
+        }
+
+        // 2. find map and process frame
+        if (!AddFrameMap(frame, map, ctx)) {
+            return false;
+        }
+        if (isSigFrame) {
+            return true;
+        }
+        bool stopUnwind = false;
+        bool processFrameResult = UnwindArkFrame(frame, map, stopUnwind);
+        if (stopUnwind) {
+            return processFrameResult;
+        } else if (!processFrameResult) {
+            break;
+        }
+        if (isFpStep_) {
+            if (enableFpCheckMapExec_ && (map != nullptr && !map->IsMapExec())) {
+                DFXLOGE("Fp step check map is not exec");
+                return false;
+            }
+            break;
+        }
+
+        // 3. find unwind table and entry, parse instructions and get cache rs
+        if (!ParseUnwindTable(frame.pc, rs, ctx, hasRegLocState)) {
+            break;
+        }
+
+        // 4. update rs cache
+        if (hasRegLocState && enableCache_) {
+            StepCache cache;
+            cache.map = map;
+            cache.rs = rs;
+            stepCache_.emplace(frame.pc, cache);
+        }
+    } while (false);
+
+    // 5. update regs and regs state
+    UpdateRegsState(frame, ctx, hasRegLocState, rs);
+    return CheckFrameValid(frame, map, prevSp) ? hasRegLocState : false;
 }
 
 bool Unwinder::Impl::Apply(std::shared_ptr<DfxRegs> regs, std::shared_ptr<RegLocState> rs)
@@ -1158,9 +1202,6 @@ void Unwinder::Impl::AddFrame(const StepFrame& frame, std::shared_ptr<DfxMap> ma
     dfxFrame.index = frames_.size();
     dfxFrame.pc = static_cast<uint64_t>(frame.pc);
     dfxFrame.sp = static_cast<uint64_t>(frame.sp);
-    if (frame.isJsFrame) {
-        dfxFrame.funcOffset = static_cast<uint64_t>(frame.methodid);
-    }
     dfxFrame.map = map;
     frames_.emplace_back(dfxFrame);
 }
@@ -1243,7 +1284,7 @@ void Unwinder::Impl::FillJsFrame(DfxFrame& frame)
     DFX_TRACE_SCOPED_DLSYM("FillJsFrame:%s", frame.map->name.c_str());
     DFXLOGU("Fill js frame, map name: %{public}s", frame.map->name.c_str());
     JsFunction jsFunction;
-    if ((pid_ == UNWIND_TYPE_LOCAL) || (pid_ == UNWIND_TYPE_CUSTOMIZE_LOCAL) || enableMethodIdLocal_) {
+    if ((pid_ == UNWIND_TYPE_LOCAL) || (pid_ == UNWIND_TYPE_CUSTOMIZE_LOCAL)) {
         if (!FillJsFrameLocal(frame, &jsFunction)) {
             return;
         }
@@ -1253,7 +1294,7 @@ void Unwinder::Impl::FillJsFrame(DfxFrame& frame)
             DFXLOGW("Get hap error, name: %{public}s", frame.map->name.c_str());
             return;
         }
-        if (!hap->ParseHapInfo(pid_, frame.pc, static_cast<uintptr_t>(frame.funcOffset), frame.map, &jsFunction)) {
+        if (!hap->ParseHapInfo(pid_, frame.pc, frame.map, &jsFunction)) {
             DFXLOGW("Failed to parse hap info, pid: %{public}d", pid_);
             return;
         }
@@ -1278,7 +1319,6 @@ bool Unwinder::Impl::FillJsFrameLocal(DfxFrame& frame, JsFunction* jsFunction)
     }
 
     if (DfxArk::Instance().ParseArkFrameInfoLocal(static_cast<uintptr_t>(frame.pc),
-        static_cast<uintptr_t>(frame.funcOffset),
         static_cast<uintptr_t>(frame.map->begin), static_cast<uintptr_t>(frame.map->offset), jsFunction) < 0) {
         DFXLOGW("Failed to parse ark frame info local, pc: %{public}p, begin: %{public}p",
             reinterpret_cast<void *>(frame.pc), reinterpret_cast<void *>(frame.map->begin));

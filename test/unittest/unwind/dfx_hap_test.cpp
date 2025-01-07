@@ -45,16 +45,15 @@ HWTEST_F(DfxHapTest, DfxHapTest001, TestSize.Level2)
     DfxHap dfxHap;
     pid_t pid = 1;
     uint64_t pc = 1;
-    uintptr_t methodid = 1;
     auto map = std::make_shared<DfxMap>();
     JsFunction jsFunction;
 
-    bool res = dfxHap.ParseHapInfo(pid, pc, methodid, map, nullptr);
+    bool res = dfxHap.ParseHapInfo(pid, pc, map, nullptr);
     ASSERT_EQ(res, false);
-    res = dfxHap.ParseHapInfo(pid, pc, methodid, map, &jsFunction);
+    res = dfxHap.ParseHapInfo(pid, pc, map, &jsFunction);
     ASSERT_EQ(res, false);
     map->name = "test.hap";
-    res = dfxHap.ParseHapInfo(pid, pc, methodid, map, &jsFunction);
+    res = dfxHap.ParseHapInfo(pid, pc, map, &jsFunction);
     ASSERT_EQ(res, false);
     GTEST_LOG_(INFO) << "DfxHapTest001: end.";
 }
@@ -116,12 +115,11 @@ HWTEST_F(DfxHapTest, DfxHapTest004, TestSize.Level2)
     GTEST_LOG_(INFO) << "DfxHapTest004: start.";
     pid_t pid = 1;
     uint64_t pc = 1;
-    uintptr_t methodid = 1;
     auto map = std::make_shared<DfxMap>();
     JsFunction jsFunction;
-    auto res = dfxHap.ParseHapMemInfo(pid, pc, methodid, map, nullptr);
+    auto res = dfxHap.ParseHapMemInfo(pid, pc, map, nullptr);
     ASSERT_EQ(res, false);
-    res = dfxHap.ParseHapMemInfo(pid, pc, methodid, map, &jsFunction);
+    res = dfxHap.ParseHapMemInfo(pid, pc, map, &jsFunction);
     ASSERT_EQ(res, false);
     GTEST_LOG_(INFO) << "DfxHapTest004: end.";
 }

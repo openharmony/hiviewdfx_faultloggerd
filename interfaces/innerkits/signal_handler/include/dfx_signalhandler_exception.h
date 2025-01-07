@@ -19,6 +19,7 @@
 #include <inttypes.h>
 
 #include "dfx_exception.h"
+#include "dfx_socket_request.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -27,7 +28,7 @@ extern "C" {
 /**
  * @brief report signal handler exception to faultloggerd
 */
-int ReportException(struct CrashDumpException exception);
+int ReportException(struct CrashDumpException* exception);
 
 #ifdef __cplusplus
 }

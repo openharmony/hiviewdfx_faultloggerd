@@ -40,8 +40,7 @@ DfxHap::~DfxHap()
 #endif
 }
 
-bool DfxHap::ParseHapInfo(pid_t pid, uint64_t pc, uintptr_t methodid, std::shared_ptr<DfxMap> map,
-    JsFunction *jsFunction)
+bool DfxHap::ParseHapInfo(pid_t pid, uint64_t pc, std::shared_ptr<DfxMap> map, JsFunction *jsFunction)
 {
 #if is_ohos && !is_mingw
     if (jsFunction == nullptr || map == nullptr) {
@@ -55,12 +54,12 @@ bool DfxHap::ParseHapInfo(pid_t pid, uint64_t pc, uintptr_t methodid, std::share
     }
 
     if (DfxMaps::IsArkHapMapItem(map->name)) {
-        if (!ParseHapFileInfo(pc, methodid, map, jsFunction)) {
+        if (!ParseHapFileInfo(pc, map, jsFunction)) {
             DFXLOGW("Failed to parse hap file info");
             return false;
         }
     } else {
-        if (!ParseHapMemInfo(pid, pc, methodid, map, jsFunction)) {
+        if (!ParseHapMemInfo(pid, pc, map, jsFunction)) {
             DFXLOGW("Failed to parse hap mem info");
             return false;
         }
@@ -71,15 +70,15 @@ bool DfxHap::ParseHapInfo(pid_t pid, uint64_t pc, uintptr_t methodid, std::share
 #endif
 }
 
-bool DfxHap::ParseHapFileInfo(uint64_t pc, uintptr_t methodid, std::shared_ptr<DfxMap> map, JsFunction *jsFunction)
+bool DfxHap::ParseHapFileInfo(uint64_t pc, std::shared_ptr<DfxMap> map, JsFunction *jsFunction)
 {
 #if is_ohos && !is_mingw
     if (jsFunction == nullptr || map == nullptr || map->name.empty()) {
         return false;
     }
 
-    if (DfxArk::Instance().ParseArkFileInfo(static_cast<uintptr_t>(pc), methodid, static_cast<uintptr_t>(map->begin),
-        map->name.c_str(), arkSymbolExtractorPtr_, jsFunction) < 0) {
+    if (DfxArk::Instance().ParseArkFileInfo(static_cast<uintptr_t>(pc), static_cast<uintptr_t>(map->begin), map->name.c_str(),
+        arkSymbolExtractorPtr_, jsFunction) < 0) {
         DFXLOGW("Failed to parse ark file info, pc: %{public}p, begin: %{public}p",
             reinterpret_cast<void *>(pc), reinterpret_cast<void *>(map->begin));
         return false;
@@ -89,7 +88,7 @@ bool DfxHap::ParseHapFileInfo(uint64_t pc, uintptr_t methodid, std::shared_ptr<D
     return false;
 }
 
-bool DfxHap::ParseHapMemInfo(pid_t pid, uint64_t pc, uintptr_t methodid, std::shared_ptr<DfxMap> map,
+bool DfxHap::ParseHapMemInfo(pid_t pid, uint64_t pc, std::shared_ptr<DfxMap> map,
     JsFunction *jsFunction)
 {
 #if is_ohos && !is_mingw
@@ -101,7 +100,7 @@ bool DfxHap::ParseHapMemInfo(pid_t pid, uint64_t pc, uintptr_t methodid, std::sh
         DFXLOGW("Failed to parse hap mem data, pid: %{public}d", pid);
         return false;
     }
-    if (DfxArk::Instance().ParseArkFrameInfo(static_cast<uintptr_t>(pc), methodid, static_cast<uintptr_t>(map->begin),
+    if (DfxArk::Instance().ParseArkFrameInfo(static_cast<uintptr_t>(pc), static_cast<uintptr_t>(map->begin),
         abcLoadOffset_, abcDataPtr_.get(), abcDataSize_, arkSymbolExtractorPtr_, jsFunction) < 0) {
         DFXLOGW("Failed to parse ark frame info, pc: %{public}p, begin: %{public}p",
             reinterpret_cast<void *>(pc), reinterpret_cast<void *>(map->begin));

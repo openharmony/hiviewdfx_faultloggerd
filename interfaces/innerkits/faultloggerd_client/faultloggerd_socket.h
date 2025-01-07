@@ -17,19 +17,30 @@
 #define DFX_FAULTLOGGERD_SOCKET_H
 
 #include <cinttypes>
-#include <sys/types.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
-bool StartConnect(int& sockfd, const char* path, const int timeout);
-bool StartListen(int& sockfd, const char* name, const int listenCnt);
+const char* const FAULTLOGGERD_SOCK_BASE_PATH = "/dev/unix/socket/";
 
-bool RecvMsgCredFromSocket(int sockfd, struct ucred* pucred);
-bool RecvMsgFromSocket(int sockfd, void* fd, size_t& fdLen, int32_t& replyCode);
-bool SendMsgIovToSocket(int sockfd, void *iovBase, const int iovLen);
-void SendMsgCtlToSocket(int sockfd, const void *cmsg, const size_t cmsgLen, int32_t replyCode);
-void SendFileDescriptorToSocket(int sockfd, int fd);
-int ReadFileDescriptorFromSocket(int sockfd);
+#ifdef FAULTLOGGERD_TEST
+const char* const SERVER_SOCKET_NAME = "test.faultloggerd.server";
+const char* const SERVER_CRASH_SOCKET_NAME = "test.faultloggerd.crash.server";
+const char* const SERVER_SDKDUMP_SOCKET_NAME = "test.faultloggerd.sdkdump.server";
+#else
+const char* const SERVER_SOCKET_NAME = "faultloggerd.server";
+const char* const SERVER_CRASH_SOCKET_NAME = "faultloggerd.crash.server";
+const char* const SERVER_SDKDUMP_SOCKET_NAME = "faultloggerd.sdkdump.server";
+#endif
+
+bool StartListen(int32_t& sockFd, const char* name, uint32_t listenCnt);
+bool StartConnect(int32_t sockFd, const char* socketName, uint32_t timeout);
+int32_t CreateSocketFd();
+bool SendFileDescriptorToSocket(int32_t sockFd, const int32_t* fds, uint32_t nFds);
+bool ReadFileDescriptorFromSocket(int32_t sockFd, int32_t* fds, uint32_t nFds);
+
+bool SendMsgToSocket(int32_t sockFd, const void* data, uint32_t dataLength);
+bool GetMsgFromSocket(int32_t sockFd, void* data, uint32_t dataLength);
 #ifdef __cplusplus
 }
 #endif

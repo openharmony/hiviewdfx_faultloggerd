@@ -24,7 +24,6 @@
 
 #include "dfx_define.h"
 #include "dfx_exception.h"
-#include "dfx_socket_request.h"
 #include "errno.h"
 #include "string.h"
 
@@ -86,24 +85,13 @@ static int ConnectSocket(const char* path, const int timeout)
     return fd;
 }
 
-static bool CheckReadResp(int fd)
+int ReportException(struct CrashDumpException* exception)
 {
-    char controlBuffer[MAX_FUNC_NAME_LEN] = {0};
-    ssize_t nread = OHOS_TEMP_FAILURE_RETRY(read(fd, controlBuffer, sizeof(controlBuffer) - 1));
-    if (nread != (ssize_t)(strlen(FAULTLOGGER_DAEMON_RESP))) {
-        DFXLOGE("Failed to read expected length, nread: %{public}zd, errno(%{public}d).", nread, errno);
-        return false;
+    if (exception == NULL) {
+        return -1;
     }
-    return true;
-}
-
-int ReportException(struct CrashDumpException exception)
-{
-    struct FaultLoggerdRequest request;
-    (void)memset(&request, 0, sizeof(struct FaultLoggerdRequest));
-    request.clientType = (int32_t)REPORT_EXCEPTION_CLIENT;
-    request.pid = exception.pid;
-    request.uid = (uint32_t)(exception.uid);
+    exception->head.clientType = REPORT_EXCEPTION_CLIENT;
+    exception->head.clientPid = getpid();
     int ret = -1;
     int fd = ConnectSocket(FAULTLOGGERD_SOCKET_NAME, TIME_OUT); // connect timeout
     if (fd == -1) {
@@ -111,22 +99,11 @@ int ReportException(struct CrashDumpException exception)
         return ret;
     }
     do {
-        if (OHOS_TEMP_FAILURE_RETRY(write(fd, &request, sizeof(request))) != (long)sizeof(request)) {
+        if (OHOS_TEMP_FAILURE_RETRY(write(fd, exception, sizeof(struct CrashDumpException))) !=
+            (long)sizeof(struct CrashDumpException)) {
             DFXLOGE("Failed to write request message to socket, errno(%{public}d).", errno);
             break;
         }
-
-        if (!CheckReadResp(fd)) {
-            DFXLOGE("Failed to receive socket responces.");
-            break;
-        }
-
-        if (OHOS_TEMP_FAILURE_RETRY(write(fd, &exception,
-            sizeof(exception))) != (long)sizeof(exception)) {
-            DFXLOGE("Failed to write exception message to socket, errno(%{public}d).", errno);
-            break;
-        }
-
         ret = 0;
     } while (false);
     syscall(SYS_close, fd);

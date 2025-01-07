@@ -25,6 +25,7 @@
       "components": [
         "ability_base",
         "bounds_checking_function",
+        "cJSON",
         "c_utils",
         "ffrt",
         "hilog",

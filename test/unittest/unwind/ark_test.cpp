@@ -80,7 +80,6 @@ HWTEST_F(ArkTest, ArkTest003, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "ArkTest003: start.";
     uintptr_t byteCodePc = 0;
-    uintptr_t methodid = 0;
     uintptr_t mapBase = 0;
     const char* name = nullptr;
     uintptr_t extractorPtr = 0;
@@ -100,11 +99,10 @@ HWTEST_F(ArkTest, ArkTest004, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "ArkTest004: start.";
     uintptr_t byteCodePc = 0;
-    uintptr_t methodid = 0;
     uintptr_t mapBase = 0;
     uintptr_t offset = 0;
     JsFunction *jsFunction = nullptr;
-    DfxArk::Instance().ParseArkFrameInfoLocal(byteCodePc, methodid, mapBase, offset, jsFunction);
+    DfxArk::Instance().ParseArkFrameInfoLocal(byteCodePc, mapBase, offset, jsFunction);
     ASSERT_NE(DfxArk::Instance().parseArkFrameInfoLocalFn_, nullptr);
     DfxArk::Instance().parseArkFrameInfoLocalFn_ = nullptr;
     GTEST_LOG_(INFO) << "ArkTest004: end.";
@@ -119,15 +117,13 @@ HWTEST_F(ArkTest, ArkTest005, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "ArkTest005: start.";
     uintptr_t byteCodePc = 0;
-    uintptr_t methodid = 0;
     uintptr_t mapBase = 0;
     uintptr_t loadOffset = 0;
     uint8_t *data = nullptr;
     uint64_t dataSize = 0;
     uintptr_t extractorPtr = 0;
     JsFunction *jsFunction = nullptr;
-    DfxArk::Instance().ParseArkFrameInfo(byteCodePc, methodid, mapBase, loadOffset,
-        data, dataSize, extractorPtr, jsFunction);
+    DfxArk::Instance().ParseArkFrameInfo(byteCodePc, mapBase, loadOffset, data, dataSize, extractorPtr, jsFunction);
     ASSERT_NE(DfxArk::Instance().parseArkFrameInfoFn_, nullptr);
     DfxArk::Instance().parseArkFrameInfoFn_ = nullptr;
     GTEST_LOG_(INFO) << "ArkTest005: end.";
@@ -149,9 +145,9 @@ HWTEST_F(ArkTest, ArkTest006, TestSize.Level2)
         uintptr_t *fp = &zero;
         uintptr_t *sp = &zero;
         uintptr_t *pc = &zero;
-        uintptr_t* methodid = &zero;
         bool *isJsFrame = nullptr;
-        DfxArk::Instance().StepArkFrame(obj, readMemFn, fp, sp, pc, methodid, isJsFrame);
+        ArkStepParam arkParam(fp, sp, pc, isJsFrame);
+        DfxArk::Instance().StepArkFrame(obj, readMemFn, &arkParam);
         ASSERT_NE(DfxArk::Instance().stepArkFn_, nullptr);
         DfxArk::Instance().stepArkFn_ = nullptr;
         ASSERT_NE(DfxArk::Instance().handle_, nullptr);
@@ -247,7 +243,7 @@ HWTEST_F(ArkTest, ArkTest009, TestSize.Level2)
     const char *bufStr = reason.c_str();
     g_rustDemangleFn(bufStr);
     g_rustDemangleFn = nullptr;
-    GTEST_LOG_(INFO) << "ArkTest010: end.";
+    GTEST_LOG_(INFO) << "ArkTest009: end.";
 }
 }
 }

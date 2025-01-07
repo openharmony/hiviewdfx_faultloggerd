@@ -17,182 +17,152 @@
 
 #include <algorithm>
 #include <cerrno>
-#include <cstdio>
-#include <cstdlib>
-#include <cstring>
 #include <ctime>
+#include <string>
+
 #include <fcntl.h>
 #include <securec.h>
-#include <string>
+#include <unistd.h>
+
 #include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/syscall.h>
 #include <sys/types.h>
 #include <sys/un.h>
-#include <unistd.h>
-#include <vector>
+
 #include "dfx_define.h"
 #include "dfx_log.h"
 
 namespace OHOS {
 namespace HiviewDFX {
-namespace {
-const std::string FAULTLOGGER_PIPE_TAG = "FaultLoggerPipe";
-const int PIPE_TIMEOUT = 10000; // 10 seconds
-}
 
 FaultLoggerPipe::FaultLoggerPipe()
 {
-    init_ = false;
-    write_ = false;
-    Init();
+    int fds[PIPE_NUM_SZ] = {-1, -1};
+    if (pipe2(fds, O_NONBLOCK) != 0) {
+        DFXLOGE("%{public}s :: Failed to create pipe, errno: %{public}d.", __func__, errno);
+        return;
+    }
+    DFXLOGD("%{public}s :: create pipe.", __func__);
+    readFd_ = fds[PIPE_READ];
+    writeFd_ = fds[PIPE_WRITE];
+    if (fcntl(readFd_, F_SETPIPE_SZ, MAX_PIPE_SIZE) < 0 || fcntl(writeFd_, F_SETPIPE_SZ, MAX_PIPE_SIZE) < 0) {
+        DFXLOGE("%{public}s :: Failed to set pipe size, errno: %{public}d.", __func__, errno);
+    }
 }
 
 FaultLoggerPipe::~FaultLoggerPipe()
 {
-    Destroy();
+    DFXLOGD("%{public}s :: close pipe.", __func__);
+    Close(readFd_);
+    Close(writeFd_);
 }
 
-int FaultLoggerPipe::GetReadFd(void)
+FaultLoggerPipe::FaultLoggerPipe(FaultLoggerPipe&& rhs) noexcept: write_(rhs.write_),
+    readFd_(rhs.readFd_), writeFd_(rhs.writeFd_)
 {
-    DFXLOGD("%{public}s :: pipe read fd: %{public}d", __func__, fds_[PIPE_READ]);
-    return fds_[PIPE_READ];
+    rhs.readFd_ = -1;
+    rhs.writeFd_ = -1;
 }
 
-int FaultLoggerPipe::GetWriteFd(void)
+FaultLoggerPipe& FaultLoggerPipe::operator=(FaultLoggerPipe&& rhs) noexcept
 {
-    DFXLOGD("%{public}s :: pipe write fd: %{public}d", __func__, fds_[PIPE_WRITE]);
+    if (this != &rhs) {
+        Close(readFd_);
+        Close(writeFd_);
+        readFd_ = rhs.readFd_;
+        writeFd_ = rhs.writeFd_;
+        write_ = rhs.write_;
+        rhs.readFd_ = -1;
+        rhs.writeFd_ = -1;
+    }
+    return *this;
+}
+
+int FaultLoggerPipe::GetReadFd() const
+{
+    DFXLOGD("%{public}s :: pipe read fd: %{public}d", __func__, readFd_);
+    return readFd_;
+}
+
+int FaultLoggerPipe::GetWriteFd()
+{
+    DFXLOGD("%{public}s :: pipe write fd: %{public}d", __func__, writeFd_);
     if (!write_) {
         write_ = true;
-        return fds_[PIPE_WRITE];
+        return writeFd_;
     }
     return -1;
 }
 
-bool FaultLoggerPipe::Init(void)
-{
-    if (!init_) {
-        if (pipe2(fds_, O_NONBLOCK) != 0) {
-            DFXLOGE("%{public}s :: Failed to create pipe.", __func__);
-            return false;
-        }
-        DFXLOGD("%{public}s :: create pipe.", __func__);
-    }
-    init_ = true;
-    if (!SetSize(MAX_PIPE_SIZE)) {
-        DFXLOGE("%{public}s :: Failed to set pipe size.", __func__);
-    }
-    return true;
-}
-
-bool FaultLoggerPipe::SetSize(long sz)
-{
-    if (!init_) {
-        return false;
-    }
-    if (fcntl(fds_[PIPE_READ], F_SETPIPE_SZ, sz) < 0) {
-        return false;
-    }
-    if (fcntl(fds_[PIPE_WRITE], F_SETPIPE_SZ, sz) < 0) {
-        return false;
-    }
-    return true;
-}
-
-void FaultLoggerPipe::Destroy(void)
-{
-    if (init_) {
-        DFXLOGD("%{public}s :: close pipe.", __func__);
-        Close(fds_[PIPE_READ]);
-        Close(fds_[PIPE_WRITE]);
-    }
-    init_ = false;
-}
-
-void FaultLoggerPipe::Close(int fd) const
+void FaultLoggerPipe::Close(int& fd)
 {
     if (fd > 0) {
         syscall(SYS_close, fd);
+        fd = -1;
     }
 }
 
-FaultLoggerPipe2::FaultLoggerPipe2(uint64_t time)
+std::list<FaultLoggerPipePair> FaultLoggerPipePair::sdkDumpPipes_{};
+
+FaultLoggerPipePair::FaultLoggerPipePair(int32_t pid, uint64_t requestTime) : pid_(pid), requestTime_(requestTime) {}
+
+bool FaultLoggerPipePair::IsValid(uint64_t checkTime) const
 {
-    faultLoggerPipeBuf_ = std::unique_ptr<FaultLoggerPipe>(new FaultLoggerPipe());
-    faultLoggerPipeRes_ = std::unique_ptr<FaultLoggerPipe>(new FaultLoggerPipe());
-    time_ = time;
+    constexpr int pipeTimeOut = 10000; // 10s
+    return checkTime <= requestTime_ + pipeTimeOut;
 }
 
-FaultLoggerPipe2::~FaultLoggerPipe2()
+int32_t FaultLoggerPipePair::GetPipeFd(PipeFdUsage usage, FaultLoggerPipeType pipeType)
 {
-    faultLoggerPipeBuf_.reset();
-    faultLoggerPipeRes_.reset();
-    time_ = 0;
-}
-
-FaultLoggerPipeMap::FaultLoggerPipeMap()
-{
-    std::lock_guard<std::mutex> lck(pipeMapsMutex_);
-    faultLoggerPipes_.clear();
-}
-
-FaultLoggerPipeMap::~FaultLoggerPipeMap()
-{
-    std::lock_guard<std::mutex> lck(pipeMapsMutex_);
-    std::map<int, std::unique_ptr<FaultLoggerPipe2> >::iterator iter = faultLoggerPipes_.begin();
-    while (iter != faultLoggerPipes_.end()) {
-        faultLoggerPipes_.erase(iter++);
+    FaultLoggerPipe& targetPipe = (usage == PipeFdUsage::BUFFER_FD) ? faultLoggerPipeBuf_ : faultLoggerPipeRes_;
+    if (pipeType == FaultLoggerPipeType::PIPE_FD_READ) {
+        return targetPipe.GetReadFd();
     }
-}
-
-void FaultLoggerPipeMap::Set(int pid, uint64_t time)
-{
-    std::lock_guard<std::mutex> lck(pipeMapsMutex_);
-    if (!Find(pid)) {
-        std::unique_ptr<FaultLoggerPipe2> ptr = std::unique_ptr<FaultLoggerPipe2>(new FaultLoggerPipe2(time));
-        faultLoggerPipes_.emplace(pid, std::move(ptr));
+    if (pipeType == FaultLoggerPipeType::PIPE_FD_WRITE) {
+        return targetPipe.GetWriteFd();
     }
+    return -1;
 }
 
-bool FaultLoggerPipeMap::Check(int pid, uint64_t time)
+FaultLoggerPipePair& FaultLoggerPipePair::CreateSdkDumpPipePair(int pid, uint64_t requestTime)
 {
-    std::lock_guard<std::mutex> lck(pipeMapsMutex_);
-    std::map<int, std::unique_ptr<FaultLoggerPipe2> >::const_iterator iter = faultLoggerPipes_.find(pid);
-    if (iter != faultLoggerPipes_.end()) {
-        if ((time > faultLoggerPipes_[pid]->time_) && (time - faultLoggerPipes_[pid]->time_) > PIPE_TIMEOUT) {
-            faultLoggerPipes_.erase(iter);
-            return false;
+    auto pipePair = GetSdkDumpPipePair(pid);
+    if (pipePair != nullptr) {
+        return *pipePair;
+    }
+    return sdkDumpPipes_.emplace_back(pid, requestTime);
+}
+
+bool FaultLoggerPipePair::CheckSdkDumpRecord(int pid, uint64_t checkTime)
+{
+    auto iter = std::find_if(sdkDumpPipes_.begin(), sdkDumpPipes_.end(),
+        [pid](const FaultLoggerPipePair& faultLoggerPipePair) {
+            return faultLoggerPipePair.pid_ == pid;
+        });
+    if (iter != sdkDumpPipes_.end()) {
+        if (iter->IsValid(checkTime)) {
+            return true;
         }
-        return true;
+        sdkDumpPipes_.erase(iter);
     }
     return false;
 }
 
-FaultLoggerPipe2* FaultLoggerPipeMap::Get(int pid)
+FaultLoggerPipePair* FaultLoggerPipePair::GetSdkDumpPipePair(int pid)
 {
-    std::lock_guard<std::mutex> lck(pipeMapsMutex_);
-    if (!Find(pid)) {
-        return nullptr;
-    }
-    return faultLoggerPipes_[pid].get();
+    auto iter = std::find_if(sdkDumpPipes_.begin(), sdkDumpPipes_.end(),
+        [pid](const FaultLoggerPipePair& faultLoggerPipePair) {
+            return faultLoggerPipePair.pid_ == pid;
+        });
+    return iter == sdkDumpPipes_.end() ? nullptr : &(*iter);
 }
 
-void FaultLoggerPipeMap::Del(int pid)
+void FaultLoggerPipePair::DelSdkDumpPipePair(int pid)
 {
-    std::lock_guard<std::mutex> lck(pipeMapsMutex_);
-    std::map<int, std::unique_ptr<FaultLoggerPipe2> >::const_iterator iter = faultLoggerPipes_.find(pid);
-    if (iter != faultLoggerPipes_.end()) {
-        faultLoggerPipes_.erase(iter);
-    }
-}
-
-bool FaultLoggerPipeMap::Find(int pid) const
-{
-    std::map<int, std::unique_ptr<FaultLoggerPipe2> >::const_iterator iter = faultLoggerPipes_.find(pid);
-    if (iter != faultLoggerPipes_.end()) {
-        return true;
-    }
-    return false;
+    sdkDumpPipes_.remove_if([pid](const FaultLoggerPipePair& faultLoggerPipePair) {
+        return faultLoggerPipePair.pid_ == pid;
+    });
 }
 } // namespace HiviewDfx
 } // namespace OHOS
