@@ -56,7 +56,7 @@ bool CppCrashReporter::Format()
     if (!msg.empty()) {
         stack_ = "LastFatalMessage:" + msg + "\n";
     }
-    std::shared_ptr<DfxThread> thread = dumpMode_ == FUSION_MODE ? process_->keyThread_ : process_->vmThread_;
+    std::shared_ptr<DfxThread> thread = process_->keyThread_;
     if (thread != nullptr) {
         std::string threadInfo = thread->ToString();
         auto iterator = threadInfo.begin();

@@ -29,7 +29,7 @@ namespace HiviewDFX {
 class CppCrashReporter {
 public:
     CppCrashReporter(uint64_t time, std::shared_ptr<DfxProcess> process, int32_t dumpMode) \
-        : time_(time), dumpMode_(dumpMode), process_(process)
+        : time_(time), process_(process)
     {
         pid_ = 0;
         uid_ = 0;
@@ -65,7 +65,6 @@ private:
     uint64_t time_;
     int32_t pid_;
     uint32_t uid_;
-    int32_t dumpMode_ = FUSION_MODE;
     std::string cmdline_;
     std::string reason_;
     std::string stack_;

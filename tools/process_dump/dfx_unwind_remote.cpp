@@ -93,21 +93,13 @@ bool DfxUnwindRemote::UnwindProcess(std::shared_ptr<ProcessDumpRequest> request,
     }
 
     if (ProcessDumper::GetInstance().IsCrash()) {
-        if (request->dumpMode == SPLIT_MODE) {
-            if (process->vmThread_ == nullptr) {
-                DFXLOGW("%{public}s::unwind vm thread is not initialized.", __func__);
-            } else {
-                Printer::PrintThreadFaultStackByConfig(process, process->vmThread_, unwinder);
-            }
+        if (process->keyThread_ == nullptr) {
+            DFXLOGW("%{public}s::unwind key thread is not initialized.", __func__);
         } else {
-            if (process->keyThread_ == nullptr) {
-                DFXLOGW("%{public}s::unwind key thread is not initialized.", __func__);
-            } else {
-                pid_t nsTid = process->keyThread_->threadInfo_.nsTid;
-                process->keyThread_->threadInfo_.nsTid = vmPid; // read registers from vm process
-                Printer::PrintThreadFaultStackByConfig(process, process->keyThread_, unwinder);
-                process->keyThread_->threadInfo_.nsTid = nsTid;
-            }
+            pid_t nsTid = process->keyThread_->threadInfo_.nsTid;
+            process->keyThread_->threadInfo_.nsTid = vmPid; // read registers from vm process
+            Printer::PrintThreadFaultStackByConfig(process, process->keyThread_, unwinder);
+            process->keyThread_->threadInfo_.nsTid = nsTid;
         }
         Printer::PrintProcessMapsByConfig(unwinder->GetMaps());
         Printer::PrintLongInformation(process->openFiles);
@@ -125,9 +117,6 @@ bool DfxUnwindRemote::UnwindKeyThread(std::shared_ptr<ProcessDumpRequest> reques
 {
     bool result = false;
     std::shared_ptr<DfxThread> unwThread = process->keyThread_;
-    if (ProcessDumper::GetInstance().IsCrash() && (process->vmThread_ != nullptr)) {
-        unwThread = process->vmThread_;
-    }
     if (unwThread == nullptr) {
         DFXLOGW("%{public}s::unwind thread is not initialized.", __func__);
         return false;

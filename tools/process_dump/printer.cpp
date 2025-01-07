@@ -102,9 +102,7 @@ void Printer::PrintReason(std::shared_ptr<ProcessDumpRequest> request, std::shar
             reasonInfo += process->reason;
             return;
         }
-        bool keyThreadEmpty = (request->dumpMode == SPLIT_MODE && process->vmThread_ == nullptr) ||
-            process->keyThread_ == nullptr;
-        if (unwinder == nullptr || keyThreadEmpty) {
+        if (unwinder == nullptr || process->keyThread_ == nullptr) {
             DFXLOGW("%{public}s is nullptr", unwinder == nullptr ? "unwinder" : "keyThread_");
             return;
         }

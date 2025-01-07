@@ -98,9 +98,7 @@ void DfxStackInfoJsonFormatter::GetCrashJsonFormatInfo(Json::Value& jsonInfo) co
     }
 
     Json::Value frames(Json::arrayValue);
-    if (process_->vmThread_ != nullptr) {
-        FillFrames(process_->vmThread_, frames);
-    } else if (process_->keyThread_ != nullptr) {
+    if (process_->keyThread_ != nullptr) {
         FillFrames(process_->keyThread_, frames);
     }
     exception["frames"] = frames;
