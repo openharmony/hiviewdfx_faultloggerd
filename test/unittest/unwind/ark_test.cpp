@@ -84,7 +84,7 @@ HWTEST_F(ArkTest, ArkTest003, TestSize.Level2)
     const char* name = nullptr;
     uintptr_t extractorPtr = 0;
     JsFunction *jsFunction = nullptr;
-    DfxArk::Instance().ParseArkFileInfo(byteCodePc, methodid, mapBase, name, extractorPtr, jsFunction);
+    DfxArk::Instance().ParseArkFileInfo(byteCodePc, mapBase, name, extractorPtr, jsFunction);
     ASSERT_NE(DfxArk::Instance().parseArkFileInfoFn_, nullptr);
     DfxArk::Instance().parseArkFileInfoFn_ = nullptr;
     GTEST_LOG_(INFO) << "ArkTest003: end.";
