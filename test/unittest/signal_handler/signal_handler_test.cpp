@@ -267,8 +267,8 @@ HWTEST_F(SignalHandlerTest, SignalHandlerTest001, TestSize.Level2)
         usleep(10000); // 10000 : sleep 10ms
         GTEST_LOG_(INFO) << "process(" << getpid() << ") is ready to kill process(" << pid << ")";
         kill(pid, SIGILL);
-        sleep(2); // 2 : wait for cppcrash generating
-        bool ret = CheckCallbackCrashKeyWords(GetCppCrashFileName(pid), pid, SIGILL);
+        auto filename = WaitCreateCrashFile("cppcrash", pid);
+        bool ret = CheckCallbackCrashKeyWords(filename, pid, SIGILL);
         ASSERT_TRUE(ret);
     }
     GTEST_LOG_(INFO) << "SignalHandlerTest001: end.";
@@ -294,8 +294,8 @@ HWTEST_F(SignalHandlerTest, SignalHandlerTest002, TestSize.Level2)
         usleep(10000); // 10000 : sleep 10ms
         GTEST_LOG_(INFO) << "process(" << getpid() << ") is ready to kill process(" << pid << ")";
         kill(pid, SIGBUS);
-        sleep(2); // 2 : wait for cppcrash generating
-        bool ret = CheckCallbackCrashKeyWords(GetCppCrashFileName(pid), pid, SIGBUS);
+        auto filename = WaitCreateCrashFile("cppcrash", pid);
+        bool ret = CheckCallbackCrashKeyWords(filename, pid, SIGBUS);
         ASSERT_TRUE(ret);
     }
     GTEST_LOG_(INFO) << "SignalHandlerTest002: end.";
@@ -321,8 +321,8 @@ HWTEST_F(SignalHandlerTest, SignalHandlerTest003, TestSize.Level2)
         usleep(10000); // 10000 : sleep 10ms
         GTEST_LOG_(INFO) << "process(" << getpid() << ") is ready to kill process(" << pid << ")";
         kill(pid, SIGSEGV);
-        sleep(2); // 2 : wait for cppcrash generating
-        bool ret = CheckCallbackCrashKeyWords(GetCppCrashFileName(pid), pid, SIGSEGV);
+        auto filename = WaitCreateCrashFile("cppcrash", pid);
+        bool ret = CheckCallbackCrashKeyWords(filename, pid, SIGSEGV);
         ASSERT_TRUE(ret);
     }
     GTEST_LOG_(INFO) << "SignalHandlerTest003: end.";
@@ -344,8 +344,8 @@ HWTEST_F(SignalHandlerTest, SignalHandlerTest004, TestSize.Level2)
         std::thread (TestThread, 2, SIGILL).join(); // 2 : second thread
         _exit(0);
     } else {
-        sleep(2); // 2 : wait for cppcrash generating
-        bool ret = CheckCallbackCrashKeyWords(GetCppCrashFileName(pid), pid, SIGILL);
+        auto filename = WaitCreateCrashFile("cppcrash", pid);
+        bool ret = CheckCallbackCrashKeyWords(filename, pid, SIGILL);
         ASSERT_TRUE(ret);
     }
     GTEST_LOG_(INFO) << "SignalHandlerTest004: end.";
@@ -367,8 +367,8 @@ HWTEST_F(SignalHandlerTest, SignalHandlerTest005, TestSize.Level2)
         std::thread (TestThread, 2, SIGBUS).join(); // 2 : second thread
         _exit(0);
     } else {
-        sleep(2); // 2 : wait for cppcrash generating
-        bool ret = CheckCallbackCrashKeyWords(GetCppCrashFileName(pid), pid, SIGBUS);
+        auto filename = WaitCreateCrashFile("cppcrash", pid);
+        bool ret = CheckCallbackCrashKeyWords(filename, pid, SIGBUS);
         ASSERT_TRUE(ret);
     }
     GTEST_LOG_(INFO) << "SignalHandlerTest005: end.";
@@ -390,8 +390,8 @@ HWTEST_F(SignalHandlerTest, SignalHandlerTest006, TestSize.Level2)
         std::thread (TestThread, 2, SIGSEGV).join(); // 2 : second thread
         _exit(0);
     } else {
-        sleep(2); // 2 : wait for cppcrash generating
-        bool ret = CheckCallbackCrashKeyWords(GetCppCrashFileName(pid), pid, SIGSEGV);
+        auto filename = WaitCreateCrashFile("cppcrash", pid);
+        bool ret = CheckCallbackCrashKeyWords(filename, pid, SIGSEGV);
         ASSERT_TRUE(ret);
     }
     GTEST_LOG_(INFO) << "SignalHandlerTest006: end.";
@@ -423,8 +423,8 @@ HWTEST_F(SignalHandlerTest, SignalHandlerTest007, TestSize.Level2)
             GTEST_LOG_(INFO) << "process(" << getpid() << ") is ready to kill << process(" << pid << ")";
             GTEST_LOG_(INFO) << "signal:" << sig;
             kill(pid, sig);
-            sleep(2); // 2 : wait for cppcrash generating
-            bool ret = CheckCrashKeyWords(GetCppCrashFileName(pid), pid, sig);
+            auto filename = WaitCreateCrashFile("cppcrash", pid);
+            bool ret = CheckCrashKeyWords(filename, pid, sig);
             ASSERT_TRUE(ret);
         }
     }
@@ -475,8 +475,7 @@ HWTEST_F(SignalHandlerTest, SignalHandlerTest008, TestSize.Level2)
         }
         _exit(0);
     } else {
-        sleep(2); // 2 : wait for cppcrash generating
-        auto file = GetCppCrashFileName(pid);
+        auto file = WaitCreateCrashFile("cppcrash", pid);
         ASSERT_FALSE(file.empty());
     }
     GTEST_LOG_(INFO) << "SignalHandlerTest008: end.";
@@ -509,8 +508,7 @@ HWTEST_F(SignalHandlerTest, SignalHandlerTest009, TestSize.Level2)
         }
         _exit(0);
     } else {
-        sleep(2); // 2 : wait for cppcrash generating
-        auto file = GetCppCrashFileName(pid);
+        auto file = WaitCreateCrashFile("cppcrash", pid);
         ASSERT_FALSE(file.empty());
     }
     GTEST_LOG_(INFO) << "SignalHandlerTest009: end.";
@@ -537,8 +535,7 @@ HWTEST_F(SignalHandlerTest, SignalHandlerTest010, TestSize.Level2)
         // force crash if not crash in free
         abort();
     } else {
-        sleep(2); // 2 : wait for cppcrash generating
-        auto file = GetCppCrashFileName(pid);
+        auto file = WaitCreateCrashFile("cppcrash", pid);
         ASSERT_FALSE(file.empty());
     }
     GTEST_LOG_(INFO) << "SignalHandlerTest010: end.";
@@ -571,8 +568,7 @@ HWTEST_F(SignalHandlerTest, SignalHandlerTest011, TestSize.Level2)
         // force crash if not crash in realloc
         abort();
     } else {
-        sleep(2); // 2 : wait for cppcrash generating
-        auto file = GetCppCrashFileName(pid);
+        auto file = WaitCreateCrashFile("cppcrash", pid);
         ASSERT_FALSE(file.empty());
     }
     GTEST_LOG_(INFO) << "SignalHandlerTest011: end.";
@@ -602,8 +598,7 @@ HWTEST_F(SignalHandlerTest, SignalHandlerTest012, TestSize.Level2)
         // force crash if not crash in realloc
         abort();
     } else {
-        sleep(2); // 2 : wait for cppcrash generating
-        auto file = GetCppCrashFileName(pid);
+        auto file = WaitCreateCrashFile("cppcrash", pid);
         ASSERT_FALSE(file.empty());
     }
     GTEST_LOG_(INFO) << "SignalHandlerTest012: end.";
@@ -804,8 +799,7 @@ HWTEST_F(SignalHandlerTest, SignalHandlerTest020, TestSize.Level2)
             sleep(5); // 5: wait for stacktrace generating
             _exit(0);
         } else {
-            sleep(2); // 2 : wait for stacktrace generating
-            auto fileName = GetDumpLogFileName("stacktrace", pid, TEMP_DIR);
+            auto fileName = WaitCreateCrashFile("stacktrace", pid);
             ASSERT_TRUE(fileName.empty());
         }
     }
@@ -835,9 +829,9 @@ HWTEST_F(SignalHandlerTest, SignalHandlerTest021, TestSize.Level2)
         sleep(5); // 5: wait for stacktrace generating
         _exit(0);
     } else {
-        sleep(2); // 2 : wait for stacktrace generating
         constexpr int siCode = SIGLEAK_STACK_FDSAN;
-        bool ret = CheckDebugSignalWords(GetDumpLogFileName("stacktrace", pid, TEMP_DIR), pid, siCode);
+        auto fileName = WaitCreateCrashFile("stacktrace", pid);
+        bool ret = CheckDebugSignalWords(fileName, pid, siCode);
         ASSERT_TRUE(ret);
     }
 }
@@ -866,9 +860,9 @@ HWTEST_F(SignalHandlerTest, SignalHandlerTest022, TestSize.Level2)
         sleep(5); // 5: wait for stacktrace generating
         _exit(0);
     } else {
-        sleep(2); // 2 : wait for stacktrace generating
         constexpr int siCode = SIGLEAK_STACK_BADFD;
-        bool ret = CheckDebugSignalWords(GetDumpLogFileName("stacktrace", pid, TEMP_DIR), pid, siCode);
+        auto fileName = WaitCreateCrashFile("stacktrace", pid);
+        bool ret = CheckDebugSignalWords(fileName, pid, siCode);
         ASSERT_TRUE(ret);
     }
 }

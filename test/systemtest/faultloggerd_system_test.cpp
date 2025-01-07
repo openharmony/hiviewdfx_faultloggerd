@@ -67,20 +67,9 @@ static pid_t ForkAndExecuteCrasher(const string& option, const CrasherType type)
         }
     }
 
+    int status = 0;
+    waitpid(pid, &status, WNOHANG);
     GTEST_LOG_(INFO) << "forked pid:" << pid;
-    constexpr time_t maxWaitingTime = 60; // 60 : 60s timeout
-    time_t remainedTime = maxWaitingTime;
-    while (remainedTime > 0) {
-        time_t startTime = time(nullptr);
-        int status = 0;
-        waitpid(pid, &status, WNOHANG);
-        if (WIFEXITED(status)) {
-            break;
-        }
-        sleep(1);
-        time_t duration = time(nullptr) - startTime;
-        remainedTime = (remainedTime > duration) ? (remainedTime - duration) : 0;
-    }
     return pid;
 }
 
@@ -90,9 +79,12 @@ static pid_t TriggerCrasherAndGetFileName(const string& option, const CrasherTyp
     auto pid = ForkAndExecuteCrasher(option, type);
     int recheckCount = 0;
 
+    crashFileName = WaitCreateCrashFile("cppcrash", pid);
+    if (!crashFileName.empty()) {
+        return pid;
+    }
     // 6: means recheck times
     while (recheckCount < 6) {
-        sleep(waitSec);
         crashFileName = GetCppCrashFileName(pid, tempPath);
         if (crashFileName.size() > 0) {
             GTEST_LOG_(INFO) << "get crash file:" << crashFileName;
@@ -100,6 +92,7 @@ static pid_t TriggerCrasherAndGetFileName(const string& option, const CrasherTyp
         }
         GTEST_LOG_(INFO) << "recheck crash file, pid" << pid;
         recheckCount++;
+        sleep(waitSec);
     }
     return pid;
 }
@@ -1141,10 +1134,10 @@ HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest102, TestSize.Level2)
         GTEST_LOG_(INFO) << "FaultLoggerdSystemTest102: Failed to clone new process. errno:" << errno;
         return;
     }
-    // wait for log generation
-    sleep(3); // 3 : sleep 3s
+    // wait for get realpid, too long will not monitor create crash file
+    usleep(10000);
     int readPid = ReadRealPid();
-    string fileName = GetCppCrashFileName(readPid);
+    string fileName = WaitCreateCrashFile("cppcrash", readPid);
     EXPECT_NE(0, fileName.size());
     printf("PidNs Crash File:%s\n", fileName.c_str());
     string log[] = {
@@ -1687,7 +1680,8 @@ HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest125, TestSize.Level2)
             continue;
         }
         kill(pid, SIGABRT);
-        sleep(2); // 2 : sleep 2s
+        std::string crashFileName = WaitCreateCrashFile("cppcrash", pid);
+        GTEST_LOG_(INFO) << "Get Crash File:" << crashFileName;
         int newPid = GetProcessPid(TEST_BUNDLE_NAME);
         EXPECT_NE(pid, newPid) << "FaultLoggerdSystemTest125 Failed";
     }
@@ -1761,7 +1755,6 @@ HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest127, TestSize.Level2)
         } else {
             usleep(sleepTime);
             kill(pid, SIGKILL);
-            sleep(2);
             int status = 0;
             waitpid(pid, &status, 0);
             ASSERT_TRUE(WIFSIGNALED(status));
@@ -1789,7 +1782,6 @@ HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest128, TestSize.Level2)
     if (pid > 0) {
         system("param set faultloggerd.priv.block_crash_process.enabled true");
         kill(pid, SIGABRT);
-        sleep(3); // 3 : sleep 3s
         int newPid = GetProcessPid(TEST_BUNDLE_NAME);
         system("param set faultloggerd.priv.block_crash_process.enabled false");
         kill(pid, SIGKILL);
@@ -1824,8 +1816,7 @@ HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest129, TestSize.Level2)
             }
         }
     } else {
-        sleep(2);
-        auto fileName = GetCppCrashFileName(pid, TEMP_DIR);
+        auto fileName = WaitCreateCrashFile("cppcrash", pid);
         EXPECT_NE(0, fileName.size());
         string log[] = {
             "Pid:", "Uid", "SIGABRT", "Tid:", "#00",
