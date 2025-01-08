@@ -32,6 +32,7 @@
 #include "faultlogger_client_msg.h"
 
 #include "dfx_log.h"
+#include "dfx_util.h"
 #include "string_util.h"
 
 namespace OHOS {
@@ -45,6 +46,7 @@ constexpr const char * const KERNEL_SNAPSHOT_REASON = "CppCrashKernelSnapshot";
 constexpr int MIN_CHECK_INTERVAL = 3;
 constexpr int BUFFER_LEN = 1024;
 constexpr int SEQUENCE_LEN = 7;
+constexpr int DECIMAL_BASE = 10;
 
 enum class CrashSection {
     TIME_STAMP,
@@ -159,10 +161,9 @@ void ReportCrashEvent(CrashMap& output)
     }
 
     FaultDFXLOGIInner info;
-    const int base = 10;
-    info.time = strtol(output[CrashSection::TIME_STAMP].c_str(), nullptr, base);
-    info.id = static_cast<uint32_t>(strtoul(output[CrashSection::UID].c_str(), nullptr, base));
-    info.pid = static_cast<int32_t>(strtol(output[CrashSection::PID].c_str(), nullptr, base));
+    info.time = strtoul(output[CrashSection::TIME_STAMP].c_str(), nullptr, DECIMAL_BASE);
+    info.id = static_cast<uint32_t>(strtoul(output[CrashSection::UID].c_str(), nullptr, DECIMAL_BASE));
+    info.pid = static_cast<int32_t>(strtol(output[CrashSection::PID].c_str(), nullptr, DECIMAL_BASE));
     info.faultLogType = 2; // 2 : CPP_CRASH_TYPE
     info.module = output[CrashSection::PROCESS_NAME];
     info.reason = KERNEL_SNAPSHOT_REASON;
@@ -240,12 +241,23 @@ std::unordered_map<std::string, std::string> ConvertThreadInfoToPairs(const std:
 
 void ParseTransStart(const std::string& cont, CrashMap& output)
 {
+    /**
+     * kernel crash snapshot transaction start format:
+     * [AB_00][transaction start] now mono_time is [45.006871][1733329272.590140]
+     */
     if (cont.find("mono_time") == std::string::npos) {
         return;
     }
-    auto pos = cont.rfind("[");
-    if (pos != std::string::npos && pos + 1 < cont.length()) {
-        output[CrashSection::TIME_STAMP] = cont.substr(pos + 1, 10) + "000"; // 10 : timestamp length
+    auto msPos = cont.rfind(".");
+    std::string millsecond;
+    const int millsecondLen = 3;
+    if (msPos != std::string::npos && msPos + 1 < cont.length()) {
+        millsecond = cont.substr(msPos + 1, millsecondLen);
+    }
+    millsecond = millsecond.length() != millsecondLen ? "000" : millsecond;
+    auto secondPos = cont.rfind("[");
+    if (secondPos != std::string::npos && secondPos + 1 < cont.length()) {
+        output[CrashSection::TIME_STAMP] = cont.substr(secondPos + 1, 10) + millsecond; // 10: second timestamp length
     }
 }
 
@@ -423,6 +435,16 @@ std::string FilterEmptySection(const std::string& secHead, const std::string& se
     return secHead + secCont + end;
 }
 
+std::string FormatTimestamp(const std::string& timestamp)
+{
+    uint64_t time = strtoul(timestamp.c_str(), nullptr, DECIMAL_BASE);
+    if (errno == ERANGE) {
+        DFXLOGE("Failed to convert timestamp to uint64_t");
+        time = 0;
+    }
+    return GetCurrentTimeStr(time);
+}
+
 void OutputToFile(const std::string& filePath, CrashMap& output)
 {
     FILE* file = fopen(filePath.c_str(), "w");
@@ -432,7 +454,7 @@ void OutputToFile(const std::string& filePath, CrashMap& output)
     }
     std::string outputCont;
     outputCont += FilterEmptySection("Build info: ", GetBuildInfo(), "\n");
-    outputCont += FilterEmptySection("Timestamp: ", output[CrashSection::TIME_STAMP], "\n");
+    outputCont += FilterEmptySection("Timestamp: ", FormatTimestamp(output[CrashSection::TIME_STAMP]), "");
     outputCont += FilterEmptySection("Pid: ", output[CrashSection::PID], "\n");
     outputCont += FilterEmptySection("Uid: ", output[CrashSection::UID], "\n");
     outputCont += FilterEmptySection("Reason: ", KERNEL_SNAPSHOT_REASON, "\n");
@@ -470,7 +492,7 @@ int GetSnapshotCheckInterval()
 #else
     std::string interval = DEFAULT_CHECK_INTERVAL;
 #endif
-    int value = static_cast<int>(strtol(interval.c_str(), nullptr, 10)); // 10 : decimal
+    int value = static_cast<int>(strtol(interval.c_str(), nullptr, DECIMAL_BASE));
     if (errno == ERANGE) {
         DFXLOGE("get snapshot check interval failed, use default interval");
         value = 60; // 60 : default interval
