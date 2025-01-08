@@ -110,6 +110,13 @@ public:
     {
         DfxEnableTraceDlsym(false);
         Destroy();
+#if defined(ENABLE_MIXSTACK)
+        if (isArkCreateLocal_) {
+            if (DfxArk::ArkDestroyLocal() < 0) {
+                LOGU("Failed to ark destroy local.");
+            }
+        }
+#endif
         if (pid_ == UNWIND_TYPE_LOCAL) {
             LocalThreadContext::GetInstance().CleanUp();
         }
@@ -203,6 +210,9 @@ public:
     }
     static int DlPhdrCallback(struct dl_phdr_info *info, size_t size, void *data);
 private:
+    bool FillJsFrameLocal(DfxFrame& frame, JsFunction* jsFunction);
+
+private:
     struct StepFrame {
         uintptr_t pc = 0;
         uintptr_t methodid = 0;
@@ -250,6 +260,7 @@ private:
     bool enableFpCheckMapExec_ = false;
     bool enableMethodIdLocal_ = false;
     bool isFpStep_ = false;
+    bool isArkCreateLocal_ = false;
     MAYBE_UNUSED bool enableMixstack_ = true;
     MAYBE_UNUSED bool ignoreMixstack_ = false;
     MAYBE_UNUSED bool stopWhenArkFrame_ = false;
@@ -1222,9 +1233,11 @@ void Unwinder::Impl::FillFrame(DfxFrame& frame)
     LOGU("mapName: %s, mapOffset: %" PRIx64 "", frame.mapName.c_str(), frame.mapOffset);
     auto elf = frame.map->GetElf();
     if (elf == nullptr) {
+#if defined(ENABLE_MIXSTACK)
         if (pid_ == UNWIND_TYPE_LOCAL || pid_ == UNWIND_TYPE_CUSTOMIZE_LOCAL) {
             FillJsFrame(frame);
         }
+#endif
         return;
     }
     if (!DfxSymbols::GetFuncNameAndOffsetByPc(frame.relPc, elf, frame.funcName, frame.funcOffset)) {
@@ -1241,21 +1254,17 @@ void Unwinder::Impl::FillJsFrame(DfxFrame& frame)
     }
     DFX_TRACE_SCOPED_DLSYM("FillJsFrame:%s", frame.map->name.c_str());
     LOGU("Fill js frame, map name: %s", frame.map->name.c_str());
-    auto hap = frame.map->GetHap();
-    if (hap == nullptr) {
-        LOGW("Get hap error, name: %s", frame.map->name.c_str());
-        return;
-    }
     JsFunction jsFunction;
-    if ((pid_ == UNWIND_TYPE_LOCAL) || (pid_ == UNWIND_TYPE_CUSTOMIZE_LOCAL) || enableMethodIdLocal_) {
-        if (DfxArk::ParseArkFrameInfoLocal(static_cast<uintptr_t>(frame.pc), static_cast<uintptr_t>(frame.funcOffset),
-            static_cast<uintptr_t>(frame.map->begin), static_cast<uintptr_t>(frame.map->offset), &jsFunction) < 0) {
-            LOGW("Failed to parse ark frame info local, pc: %p, begin: %p",
-                reinterpret_cast<void *>(frame.pc), reinterpret_cast<void *>(frame.map->begin));
+    if ((pid_ == UNWIND_TYPE_LOCAL) || (pid_ == UNWIND_TYPE_CUSTOMIZE_LOCAL)) {
+        if (!FillJsFrameLocal(frame, &jsFunction)) {
             return;
         }
-        frame.isJsFrame = true;
     } else {
+        auto hap = frame.map->GetHap();
+        if (hap == nullptr) {
+            LOGW("Get hap error, name: %s", frame.map->name.c_str());
+            return;
+        }
         if (!hap->ParseHapInfo(pid_, frame.pc, static_cast<uintptr_t>(frame.funcOffset), frame.map, &jsFunction)) {
             LOGW("Failed to parse hap info, pid: %d", pid_);
             return;
@@ -1267,6 +1276,26 @@ void Unwinder::Impl::FillJsFrame(DfxFrame& frame)
     frame.column = jsFunction.column;
     LOGU("Js frame mapName: %s, funcName: %s, line: %d, column: %d",
         frame.mapName.c_str(), frame.funcName.c_str(), frame.line, frame.column);
+}
+
+bool Unwinder::Impl::FillJsFrameLocal(DfxFrame& frame, JsFunction* jsFunction)
+{
+    if (!isArkCreateLocal_) {
+        if (DfxArk::ArkCreateLocal() < 0) {
+            LOGW("Failed to ark create local.");
+            return false;
+        }
+        isArkCreateLocal_ = true;
+    }
+
+    if (DfxArk::ParseArkFrameInfoLocal(static_cast<uintptr_t>(frame.pc), static_cast<uintptr_t>(frame.funcOffset),
+        static_cast<uintptr_t>(frame.map->begin), static_cast<uintptr_t>(frame.map->offset), jsFunction) < 0) {
+        LOGW("Failed to parse ark frame info local, pc: %p, begin: %p",
+            reinterpret_cast<void *>(frame.pc), reinterpret_cast<void *>(frame.map->begin));
+        return false;
+    }
+    frame.isJsFrame = true;
+    return true;
 }
 
 bool Unwinder::Impl::GetFrameByPc(uintptr_t pc, std::shared_ptr<DfxMaps> maps, DfxFrame &frame)

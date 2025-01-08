@@ -89,12 +89,10 @@
       OHOS::HiviewDFX::DfxElf::GetElfName*;
       OHOS::HiviewDFX::DfxSymbols::ParseSymbols*;
       OHOS::HiviewDFX::DfxSymbols::AddSymbolsByPlt*;
-      OHOS::HiviewDFX::DfxArk::ArkDestoryJsSymbolExtractor*;
-      OHOS::HiviewDFX::DfxArk::ParseArkFrameInfo*;
+      OHOS::HiviewDFX::DfxArk::ArkCreateJsSymbolExtractor*;
       OHOS::HiviewDFX::DfxArk::ArkDestoryJsSymbolExtractor*;
       OHOS::HiviewDFX::DfxArk::ParseArkFrameInfo*;
       OHOS::HiviewDFX::DfxMap::IsMapExec*;
-      OHOS::HiviewDFX::DfxArk::ArkCreateJsSymbolExtractor*;
       OHOS::HiviewDFX::DfxMaps::IsLegalMapItem*;
       OHOS::HiviewDFX::DfxElf::GetMmapPtr*;
     };
