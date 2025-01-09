@@ -67,6 +67,7 @@ private:
     std::string ReadCrashObjMemory(pid_t tid, uintptr_t addr, size_t length) const;
     void GetCrashObj(std::shared_ptr<ProcessDumpRequest> request);
     void ReportAddrSanitizer(ProcessDumpRequest &request, std::string &jsonInfo);
+    void UnwindFinish(std::shared_ptr<ProcessDumpRequest> request, pid_t vmPid);
 
 private:
     std::shared_ptr<DfxProcess> process_ = nullptr;

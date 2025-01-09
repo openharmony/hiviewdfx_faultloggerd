@@ -417,19 +417,6 @@ void ProcessDumper::Dump()
     startTime_ = GetTimeMillisec();
     std::shared_ptr<ProcessDumpRequest> request = std::make_shared<ProcessDumpRequest>();
     resDump_ = DumpProcess(request);
-    if (process_ == nullptr) {
-        DFXLOGE("Dump process failed, please check permission and whether pid is valid.");
-    } else {
-        if (!IsDumpSignal(request->siginfo.si_signo)) {
-            InfoCrashUnwindResult(request, resDump_ == DumpErrorCode::DUMP_ESUCCESS);
-            BlockCrashProcExit(request);
-        }
-        if (process_->keyThread_ != nullptr) {
-            process_->keyThread_->Detach();
-        }
-        process_->Detach();
-    }
-
     std::string jsonInfo;
     if (isJsonDump_ || isCrash_) {
         DfxStackInfoJsonFormatter formatter(process_, request);
@@ -667,9 +654,27 @@ bool ProcessDumper::Unwind(std::shared_ptr<ProcessDumpRequest> request, int &dum
         dumpRes = DumpErrorCode::DUMP_ESTOPUNWIND;
         return false;
     }
-
-    UnwindWriteJit(*request);
     return true;
+}
+
+void ProcessDumper::UnwindFinish(std::shared_ptr<ProcessDumpRequest> request, pid_t vmPid)
+{
+    if (process_ == nullptr) {
+        DFXLOGE("Dump process failed, please check permission and whether pid is valid.");
+        return;
+    }
+
+    if (!IsDumpSignal(request->siginfo.si_signo)) {
+        InfoCrashUnwindResult(request, resDump_ == DumpErrorCode::DUMP_ESUCCESS);
+        BlockCrashProcExit(request);
+    }
+    if (process_->keyThread_ != nullptr) {
+        process_->keyThread_->Detach();
+    }
+    process_->Detach();
+    DfxUnwindRemote::GetInstance().ParseSymbol(request, process_, unwinder_);
+    DfxUnwindRemote::GetInstance().PrintUnwindResultInfo(request, process_, unwinder_, vmPid);
+    UnwindWriteJit(*request);
 }
 
 int ProcessDumper::DumpProcess(std::shared_ptr<ProcessDumpRequest> request)
@@ -704,6 +709,7 @@ int ProcessDumper::DumpProcess(std::shared_ptr<ProcessDumpRequest> request)
         if (!Unwind(request, dumpRes, vmPid)) {
             DFXLOGE("unwind fail.");
         }
+        UnwindFinish(request, vmPid);
     } while (false);
     return dumpRes;
 }

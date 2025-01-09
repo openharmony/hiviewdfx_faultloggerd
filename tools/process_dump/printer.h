@@ -41,8 +41,9 @@ public:
     static void PrintThreadBacktraceByConfig(std::shared_ptr<DfxThread> thread, bool isKeyThread);
     static void PrintThreadRegsByConfig(std::shared_ptr<DfxThread> thread);
     static void PrintRegsByConfig(std::shared_ptr<DfxRegs> regs);
-    static void PrintThreadFaultStackByConfig(std::shared_ptr<DfxProcess> process, std::shared_ptr<DfxThread> thread,
+    static void CollectThreadFaultStackByConfig(std::shared_ptr<DfxProcess> process, std::shared_ptr<DfxThread> thread,
                                               std::shared_ptr<Unwinder> unwinder);
+    static void PrintThreadFaultStackByConfig(std::shared_ptr<DfxThread> thread);
     static void PrintLongInformation(const std::string& info);
     static bool IsLastValidFrame(const DfxFrame& frame);
 private:

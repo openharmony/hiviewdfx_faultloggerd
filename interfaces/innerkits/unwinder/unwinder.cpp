@@ -1392,7 +1392,9 @@ void Unwinder::Impl::GetFramesByPcs(std::vector<DfxFrame>& frames, std::vector<u
             DFXLOGE("Find map error");
         }
         frame.map = map;
-        FillFrame(frame);
+        if (enableFillFrames_) {
+            FillFrame(frame);
+        }
         frames.emplace_back(frame);
     }
 }

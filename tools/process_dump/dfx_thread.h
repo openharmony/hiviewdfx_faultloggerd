@@ -26,6 +26,7 @@
 #include "dfx_frame.h"
 #include "dfx_maps.h"
 #include "dfx_regs.h"
+#include "unwinder.h"
 
 namespace OHOS {
 namespace HiviewDFX {
@@ -46,9 +47,10 @@ public:
     std::shared_ptr<DfxRegs> GetThreadRegs() const;
     void SetThreadRegs(const std::shared_ptr<DfxRegs> &regs);
     void AddFrame(DfxFrame& frame);
-    const std::vector<DfxFrame>& GetFrames() const;
+    std::vector<DfxFrame>& GetFrames();
     void SetFrames(const std::vector<DfxFrame>& frames);
     void InitFaultStack(bool needParseStack = false);
+    void ParseSymbol(std::shared_ptr<Unwinder> unwinder);
     std::shared_ptr<FaultStack> GetFaultStack() const;
     std::string ToString() const;
 

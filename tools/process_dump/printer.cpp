@@ -246,8 +246,8 @@ void Printer::PrintRegsByConfig(std::shared_ptr<DfxRegs> regs)
     }
 }
 
-void Printer::PrintThreadFaultStackByConfig(std::shared_ptr<DfxProcess> process, std::shared_ptr<DfxThread> thread,
-                                            std::shared_ptr<Unwinder> unwinder)
+void Printer::CollectThreadFaultStackByConfig(std::shared_ptr<DfxProcess> process, std::shared_ptr<DfxThread> thread,
+                                              std::shared_ptr<Unwinder> unwinder)
 {
     if (DfxConfig::GetConfig().displayFaultStack) {
         if (process == nullptr || thread == nullptr) {
@@ -263,6 +263,19 @@ void Printer::PrintThreadFaultStackByConfig(std::shared_ptr<DfxProcess> process,
             return;
         }
         faultStack->CollectRegistersBlock(process->regs_, unwinder->GetMaps());
+    }
+}
+
+void Printer::PrintThreadFaultStackByConfig(std::shared_ptr<DfxThread> thread)
+{
+    if (DfxConfig::GetConfig().displayFaultStack) {
+        if (thread == nullptr) {
+            return;
+        }
+        auto faultStack = thread->GetFaultStack();
+        if (faultStack == nullptr) {
+            return;
+        }
         faultStack->Print();
     }
 }
