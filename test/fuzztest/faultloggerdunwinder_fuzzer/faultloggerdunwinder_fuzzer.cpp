@@ -56,7 +56,7 @@ void TestStepArkFrame(const uint8_t* data, size_t size)
 
     DfxMemory dfxMemory;
     ArkStepParam arkParam(&fp, &sp, &pc, &isJsFrame);
-    DfxArk::StepArkFrame(&dfxMemory, &(Unwinder::AccessMem), &arkParam);
+    DfxArk::Instance().StepArkFrame(&dfxMemory, &(Unwinder::AccessMem), &arkParam);
 }
 
 void TestStepArkFrameWithJit(const uint8_t* data, size_t size)
@@ -79,7 +79,7 @@ void TestStepArkFrameWithJit(const uint8_t* data, size_t size)
     std::vector<uintptr_t> jitCache_ = {};
     DfxMemory dfxMemory;
     ArkUnwindParam arkParam(&dfxMemory, &(Unwinder::AccessMem), &fp, &sp, &pc, &methodid, &isJsFrame, jitCache_);
-    DfxArk::StepArkFrameWithJit(&arkParam);
+    DfxArk::Instance().StepArkFrameWithJit(&arkParam);
 }
 
 void TestJitCodeWriteFile(const uint8_t* data, size_t size)
@@ -97,7 +97,7 @@ void TestJitCodeWriteFile(const uint8_t* data, size_t size)
     std::vector<uintptr_t> jitCache = {};
     jitCache.push_back(jitCacheData);
     DfxMemory dfxMemory;
-    DfxArk::JitCodeWriteFile(&dfxMemory, &(Unwinder::AccessMem), fd, jitCache.data(), jitCache.size());
+    DfxArk::Instance().JitCodeWriteFile(&dfxMemory, &(Unwinder::AccessMem), fd, jitCache.data(), jitCache.size());
 }
 
 void TestParseArkFrameInfoLocal(const uint8_t* data, size_t size)
@@ -115,7 +115,7 @@ void TestParseArkFrameInfoLocal(const uint8_t* data, size_t size)
     STREAM_TO_VALUEINFO(data, offset);
 
     JsFunction jsFunction;
-    DfxArk::ParseArkFrameInfoLocal(static_cast<uintptr_t>(pc),
+    DfxArk::Instance().ParseArkFrameInfoLocal(static_cast<uintptr_t>(pc),
         static_cast<uintptr_t>(mapBegin), static_cast<uintptr_t>(offset), &jsFunction);
 }
 
@@ -128,7 +128,7 @@ void TestArkCreateJsSymbolExtractor(const uint8_t* data, size_t size)
 
     STREAM_TO_VALUEINFO(data, extractorPtr);
 
-    DfxArk::ArkCreateJsSymbolExtractor(&extractorPtr);
+    DfxArk::Instance().ArkCreateJsSymbolExtractor(&extractorPtr);
 }
 
 void TestArkDestoryJsSymbolExtractor(const uint8_t* data, size_t size)
@@ -140,7 +140,7 @@ void TestArkDestoryJsSymbolExtractor(const uint8_t* data, size_t size)
 
     STREAM_TO_VALUEINFO(data, extractorPtr);
 
-    DfxArk::ArkDestoryJsSymbolExtractor(extractorPtr);
+    DfxArk::Instance().ArkDestoryJsSymbolExtractor(extractorPtr);
 }
 
 void TestDfxArk(const uint8_t* data, size_t size)

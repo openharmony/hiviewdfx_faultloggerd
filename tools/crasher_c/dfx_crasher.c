@@ -21,6 +21,7 @@
 #include <sys/prctl.h>
 #include <sys/resource.h>
 #include <unistd.h>
+#include "dfx_crash.h"
 #include "errno.h"
 #include "hilog/log.h"
 #include "inttypes.h"
@@ -39,9 +40,6 @@
 #undef LOG_TAG
 #define LOG_TAG "Unwind"
 #endif
-
-static const int ARG1024 = 1024;
-static const int ARG128 = 128;
 
 NOINLINE int TriggerTrapException(void)
 {
@@ -99,18 +97,7 @@ NOINLINE int RaiseIllegalInstructionException(void)
 
 NOINLINE int IllegalInstructionException(void)
 {
-#if defined(__aarch64__)
-    __asm__ volatile(".word 0\n");
-#elif defined(__arm__)
-    __asm__ volatile(".word 0xe7f0def0\n");
-#elif defined(__x86_64__)
-    __asm__ volatile("ud2\n");
-#elif defined(__loongarch_lp64)
-    // Effective illegal instruction on LoongArch64: amswap.w $zero, $ra, $zero
-    __asm__ volatile(".word 0x38600400\n");
-#else
-#error
-#endif
+    IllegalVolatile();
     return 0;
 }
 
@@ -221,22 +208,7 @@ NOINLINE int Oom(void)
 static NOINLINE int ProgramCounterZero(void)
 {
     printf("test PCZero");
-#if defined(__arm__)
-    __asm__ volatile (
-        "mov r0, #0x00\n mov lr, pc\n bx r0\n"
-    );
-#elif defined(__aarch64__)
-    __asm__ volatile (
-        "movz x0, #0x0\n"
-        "adr x30, .\n"
-        "br x0\n"
-    );
-#elif defined(__loongarch_lp64)
-    __asm__ volatile (
-        "pcaddi $ra, 0\n"
-        "jr $zero\n"
-    );
-#endif
+    ProgramVolatile();
     return 0;
 }
 
@@ -456,81 +428,3 @@ int main(int argc, char *argv[])
     printf("ParseAndDoCrash done: %" PRIu64 "!\n", ParseAndDoCrash(argv[1]));
     return 0;
 }
-
-// auto gen function
-GEN_TEST_FUNCTION(0, 1)
-GEN_TEST_FUNCTION(1, 2)
-GEN_TEST_FUNCTION(2, 3)
-GEN_TEST_FUNCTION(3, 4)
-GEN_TEST_FUNCTION(4, 5)
-GEN_TEST_FUNCTION(5, 6)
-GEN_TEST_FUNCTION(6, 7)
-GEN_TEST_FUNCTION(7, 8)
-GEN_TEST_FUNCTION(8, 9)
-GEN_TEST_FUNCTION(9, 10)
-
-GEN_TEST_FUNCTION(10, 11)
-GEN_TEST_FUNCTION(11, 12)
-GEN_TEST_FUNCTION(12, 13)
-GEN_TEST_FUNCTION(13, 14)
-GEN_TEST_FUNCTION(14, 15)
-GEN_TEST_FUNCTION(15, 16)
-GEN_TEST_FUNCTION(16, 17)
-GEN_TEST_FUNCTION(17, 18)
-GEN_TEST_FUNCTION(18, 19)
-GEN_TEST_FUNCTION(19, 20)
-
-GEN_TEST_FUNCTION(20, 21)
-GEN_TEST_FUNCTION(21, 22)
-GEN_TEST_FUNCTION(22, 23)
-GEN_TEST_FUNCTION(23, 24)
-GEN_TEST_FUNCTION(24, 25)
-GEN_TEST_FUNCTION(25, 26)
-GEN_TEST_FUNCTION(26, 27)
-GEN_TEST_FUNCTION(27, 28)
-GEN_TEST_FUNCTION(28, 29)
-GEN_TEST_FUNCTION(29, 30)
-
-GEN_TEST_FUNCTION(30, 31)
-GEN_TEST_FUNCTION(31, 32)
-GEN_TEST_FUNCTION(32, 33)
-GEN_TEST_FUNCTION(33, 34)
-GEN_TEST_FUNCTION(34, 35)
-GEN_TEST_FUNCTION(35, 36)
-GEN_TEST_FUNCTION(36, 37)
-GEN_TEST_FUNCTION(37, 38)
-GEN_TEST_FUNCTION(38, 39)
-GEN_TEST_FUNCTION(39, 40)
-
-GEN_TEST_FUNCTION(40, 41)
-GEN_TEST_FUNCTION(41, 42)
-GEN_TEST_FUNCTION(42, 43)
-GEN_TEST_FUNCTION(43, 44)
-GEN_TEST_FUNCTION(44, 45)
-GEN_TEST_FUNCTION(45, 46)
-GEN_TEST_FUNCTION(46, 47)
-GEN_TEST_FUNCTION(47, 48)
-GEN_TEST_FUNCTION(48, 49)
-GEN_TEST_FUNCTION(49, 50)
-
-GEN_TEST_FUNCTION(50, 51)
-GEN_TEST_FUNCTION(51, 52)
-GEN_TEST_FUNCTION(52, 53)
-GEN_TEST_FUNCTION(53, 54)
-GEN_TEST_FUNCTION(54, 55)
-GEN_TEST_FUNCTION(55, 56)
-GEN_TEST_FUNCTION(56, 57)
-GEN_TEST_FUNCTION(57, 58)
-GEN_TEST_FUNCTION(58, 59)
-GEN_TEST_FUNCTION(59, 60)
-
-GEN_TEST_FUNCTION(60, 61)
-GEN_TEST_FUNCTION(61, 62)
-GEN_TEST_FUNCTION(62, 63)
-GEN_TEST_FUNCTION(63, 64)
-GEN_TEST_FUNCTION(64, 65)
-GEN_TEST_FUNCTION(65, 66)
-GEN_TEST_FUNCTION(66, 67)
-GEN_TEST_FUNCTION(67, 68)
-GEN_TEST_FUNCTION(68, 69)
-GEN_TEST_FUNCTION(69, 70)

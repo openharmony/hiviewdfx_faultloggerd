@@ -56,15 +56,6 @@ static NOINLINE int TestFunc10(void)
 }
 
 // auto gen function
-GEN_TEST_FUNCTION(0, 1)
-GEN_TEST_FUNCTION(1, 2)
-GEN_TEST_FUNCTION(2, 3)
-GEN_TEST_FUNCTION(3, 4)
-GEN_TEST_FUNCTION(4, 5)
-GEN_TEST_FUNCTION(5, 6)
-GEN_TEST_FUNCTION(6, 7)
-GEN_TEST_FUNCTION(7, 8)
-GEN_TEST_FUNCTION(8, 9)
 GEN_TEST_FUNCTION(9, 10)
 
 static bool ParseParameters(int argc, char *argv[], int32_t &pid, int32_t &tid)

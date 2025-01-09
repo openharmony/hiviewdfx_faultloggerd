@@ -781,11 +781,11 @@ const std::string ElfImitate::GetNextSymLine()
     return line;
 }
 
-bool ElfImitate::GetSectionInfo(ShdrInfo& shdr, const std::string secName)
+bool ElfImitate::GetSectionInfo(ShdrInfo& shdr, const std::string& securityName)
 {
     for (const auto &iter: shdrInfoPairs_) {
         auto tmpPair = iter.first;
-        if (tmpPair.second == secName) {
+        if (tmpPair.second == securityName) {
             shdr = iter.second;
             return true;
         }

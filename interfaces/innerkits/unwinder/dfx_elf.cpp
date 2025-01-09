@@ -706,12 +706,12 @@ bool DfxElf::FillUnwindTableByEhhdrLocal(struct DwarfEhFrameHdr* hdr, struct Unw
         (uint64_t)ehFrameStart, (int)fdeCount);
 
     if (hdr->tableEnc != (DW_EH_PE_datarel | DW_EH_PE_sdata4)) {
-        DFXLOGU("[%{public}d]: tableEnc: %{public}x", __LINE__, hdr->tableEnc);
+        DFXLOGU("tableEnc: %{public}x", hdr->tableEnc);
         if (hdr->fdeCountEnc == DW_EH_PE_omit) {
             fdeCount = ~0UL;
         }
         if (hdr->ehFramePtrEnc == DW_EH_PE_omit) {
-            DFXLOGE("[%{public}d]: ehFramePtrEnc(%{public}x) error", __LINE__, hdr->ehFramePtrEnc);
+            DFXLOGE("ehFramePtrEnc(%{public}x) error", hdr->ehFramePtrEnc);
             return false;
         }
         uti->isLinear = true;
