@@ -76,6 +76,7 @@ enum class SnapshotSection {
     DATA_AROUND_REGS,
     CONTENT_OF_USER_STACK,
     BASE_ACTV_DUMPED,
+    PROCESS_STATISTICS,
     TRANSACTION_END
 };
 
@@ -97,6 +98,7 @@ const SnapshotSectionInfo SNAPSHOT_SECTION_KEYWORDS[] = {
     {SnapshotSection::DATA_AROUND_REGS,               "Data around regs"},
     {SnapshotSection::CONTENT_OF_USER_STACK,          "Contents of user stack"},
     {SnapshotSection::BASE_ACTV_DUMPED,               "[base actv dumped]"},
+    {SnapshotSection::PROCESS_STATISTICS,             "Process statistics:"},
     {SnapshotSection::TRANSACTION_END,                "[transaction end] now mono_time"}
 };
 
@@ -290,6 +292,43 @@ void ParseStackBacktrace(const std::vector<std::string>& lines, int start, int e
     }
 }
 
+void ParseProcessRealName(const std::vector<std::string>& lines, int start, int end, CrashMap& output)
+{
+    /**
+     * kernel crash snapshot process statistics format:
+     * [ED_00]Process statistics:
+     * [ED_00] name         tid  state   tcb_cref      sched_cnt cpu_cur rq_cur cls rtprio ni pri pid ppid pgid
+     * [ED_00] SaInit1      1012 RUNNING 5022a0008106b 7         7       6       TS  -     0   20 799 1    1
+     * [ED_00] audio_server 799  BLOCKED 5022a0008108a 325       4       6       TS  -     0   20 799 1    1
+     */
+    for (int i = start + 2; i <= end; i++) { // 2 : skip header
+        const auto& item = lines[i];
+        size_t nameStart = item.find_first_not_of(' ');
+        if (nameStart == std::string::npos) {
+            continue;
+        }
+        size_t nameEnd = item.find_first_of(' ', nameStart);
+        if (nameEnd == std::string::npos) {
+            continue;
+        }
+        std::string name = item.substr(nameStart, nameEnd - nameStart);
+
+        size_t tidStart = item.find_first_not_of(' ', nameEnd);
+        if (tidStart == std::string::npos) {
+            continue;
+        }
+        size_t tidEnd = item.find_first_of(' ', tidStart);
+        if (tidEnd == std::string::npos) {
+            continue;
+        }
+        std::string tid = item.substr(tidStart, tidEnd - tidStart);
+        if (tid == output[CrashSection::PID]) {
+            output[CrashSection::PROCESS_NAME] = name;
+            break;
+        }
+    }
+}
+
 CrashSection GetSnapshotMapCrashItem(const SnapshotSection& item)
 {
     switch (item) {
@@ -332,6 +371,9 @@ void ProcessSnapshotSection(SnapshotSection sectionKey, const std::vector<std::s
             break;
         case SnapshotSection::STACK_BACKTRACE:
             ParseStackBacktrace(lines, start, end, output);
+            break;
+        case SnapshotSection::PROCESS_STATISTICS:
+            ParseProcessRealName(lines, start, end, output);
             break;
         default:
             ParseDefaultAction(lines, start, end, sectionKey, output);
@@ -457,6 +499,7 @@ void OutputToFile(const std::string& filePath, CrashMap& output)
     outputCont += FilterEmptySection("Timestamp: ", FormatTimestamp(output[CrashSection::TIME_STAMP]), "");
     outputCont += FilterEmptySection("Pid: ", output[CrashSection::PID], "\n");
     outputCont += FilterEmptySection("Uid: ", output[CrashSection::UID], "\n");
+    outputCont += FilterEmptySection("Process name: ", output[CrashSection::PROCESS_NAME], "\n");
     outputCont += FilterEmptySection("Reason: ", KERNEL_SNAPSHOT_REASON, "\n");
     outputCont += FilterEmptySection("Exception registers:\n", output[CrashSection::EXCEPTION_REGISTERS], "");
     outputCont += FilterEmptySection("Fault thread info:\n", output[CrashSection::FAULT_THREAD_INFO], "");
