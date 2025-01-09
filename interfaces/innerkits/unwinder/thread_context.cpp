@@ -87,28 +87,6 @@ std::shared_ptr<ThreadContext> GetContextLocked(int32_t tid)
     return nullptr;
 }
 
-AT_UNUSED bool RemoveContextLocked(int32_t tid)
-{
-    auto it = g_contextMap.find(tid);
-    if (it == g_contextMap.end()) {
-        DFXLOGW("Context of tid(%{public}d) is already removed.", tid);
-        return true;
-    }
-    if (it->second == nullptr) {
-        g_contextMap.erase(it);
-        return true;
-    }
-
-    // only release ucontext_t object
-    if (it->second->tid == ThreadContextStatus::CONTEXT_UNUSED) {
-        ReleaseContext(it->second);
-        return true;
-    }
-
-    DFXLOGW("Failed to release context of tid(%{public}d), still using?", tid);
-    return false;
-}
-
 bool RemoveAllContextLocked()
 {
     auto it = g_contextMap.begin();
