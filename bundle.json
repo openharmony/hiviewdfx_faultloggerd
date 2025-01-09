@@ -172,7 +172,7 @@
         }
       ],
       "test": [
-        "//base/hiviewdfx/faultloggerd/test:faultloggerd_tests"
+        "//base/hiviewdfx/faultloggerd:faultloggerd_tests"
       ]
     }
   }

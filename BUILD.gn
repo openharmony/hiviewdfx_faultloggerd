@@ -36,3 +36,26 @@ group("faultloggerd_targets") {
     }
   }
 }
+
+group("faultloggerd_tests") {
+  if (faultloggerd_enable_build_targets) {
+    deps = [
+      "test:faultloggerd_moduletest",
+      "test:faultloggerd_systemtest",
+      "test:faultloggerd_unittest",
+      "tools/crasher_c:crasher_c",
+      "tools/crasher_cpp:crasher_cpp",
+    ]
+    if (!defined(ohos_lite)) {
+      testonly = true
+      deps += [
+        "example:dumpcatcherdemo",
+        "test:faultloggerd_benchmarktest",
+        "test:faultloggerd_funchook",
+        "test:faultloggerd_fuzzertest",
+        "test:faultloggerd_performancetest",
+        "tools/panic_maker:panic_maker",
+      ]
+    }
+  }
+}
