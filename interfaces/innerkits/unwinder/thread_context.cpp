@@ -26,7 +26,13 @@
 
 #include "dfx_define.h"
 #include "dfx_log.h"
+#ifndef is_ohos_lite
+#include "file_ex.h"
+#else
+#include "file_util.h"
+#endif
 #include "fp_unwinder.h"
+#include "string_printf.h"
 #if defined(__aarch64__)
 #include "unwind_arm64_define.h"
 #endif
@@ -63,6 +69,14 @@ void ReleaseContext(std::shared_ptr<ThreadContext> threadContext)
         threadContext->ctx = nullptr;
     }
 #endif
+}
+
+void PrintThreadStatus(int32_t tid)
+{
+    std::string content;
+    std::string path = StringPrintf("/proc/%d/status", tid);
+    LoadStringFromFile(path, content);
+    DFXLOGI("%{public}s", content.c_str());
 }
 
 std::shared_ptr<ThreadContext> GetContextLocked(int32_t tid)
@@ -263,6 +277,7 @@ std::shared_ptr<ThreadContext> LocalThreadContext::CollectThreadContext(int32_t 
     }
     if (threadContext->cv.wait_for(lock, TIME_OUT) == std::cv_status::timeout) {
         DFXLOGE("wait_for timeout. tid = %{public}d", tid);
+        PrintThreadStatus(tid);
         return nullptr;
     }
     return threadContext;
@@ -312,6 +327,7 @@ bool LocalThreadContextMix::CollectThreadContext(int32_t tid)
         std::unique_lock<std::mutex> lock(mtx_);
         if (cv_.wait_for(lock, TIME_OUT) == std::cv_status::timeout) {
             DFXLOGE("wait_for timeout. tid = %{public}d", tid);
+            PrintThreadStatus(tid);
             return false;
         }
     }
