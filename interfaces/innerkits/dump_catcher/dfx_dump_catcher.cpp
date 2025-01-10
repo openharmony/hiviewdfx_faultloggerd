@@ -664,7 +664,9 @@ void DfxDumpCatcher::CollectKernelStack(pid_t pid, int waitMilliSeconds)
 void DfxDumpCatcher::AsyncGetAllTidKernelStack(pid_t pid, int waitMilliSeconds)
 {
     ReadProcessStatus(halfProcStatus_, pid);
-    ReadProcessWchan(halfProcWchan_, pid, false, true);
+    if (IsLinuxKernel()) {
+        ReadProcessWchan(halfProcWchan_, pid, false, true);
+    }
     if (g_asyncThreadRunning) {
         DFXLOGI("pid(%{public}d) get kernel stack thread is running, not get pid(%{public}d)", g_kernelStackPid, pid);
         return;
