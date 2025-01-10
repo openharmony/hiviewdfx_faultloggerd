@@ -365,5 +365,29 @@ std::string WaitCreateCrashFile(const std::string& prefix, const pid_t pid)
     close(fd);
     return fileName;
 }
+
+bool CreatePipeFd(int (&fd)[2])
+{
+    if (pipe(fd) == -1) {
+        return false;
+    }
+    return true;
+}
+
+void NotifyProcStart(int (&fd)[2])
+{
+    close(fd[0]);
+    write(fd[1], "a", 1);
+    close(fd[1]);
+}
+
+void WaitProcStart(int (&fd)[2])
+{
+    close(fd[1]);
+    const size_t size = 10;
+    char msg[size];
+    read(fd[0], msg, sizeof(msg));
+    close(fd[0]);
+}
 } // namespace HiviewDFX
 } // namespace OHOS
