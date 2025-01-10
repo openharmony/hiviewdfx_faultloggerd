@@ -54,16 +54,16 @@ void CreateContext(std::shared_ptr<ThreadContext>& threadContext)
 #endif
 }
 
+#ifndef __aarch64__
 void ReleaseContext(std::shared_ptr<ThreadContext> threadContext)
 {
-#ifndef __aarch64__
     std::unique_lock<std::mutex> lock(threadContext->mtx);
     if (threadContext->ctx != nullptr) {
         delete threadContext->ctx;
         threadContext->ctx = nullptr;
     }
-#endif
 }
+#endif
 
 std::shared_ptr<ThreadContext> GetContextLocked(int32_t tid)
 {
