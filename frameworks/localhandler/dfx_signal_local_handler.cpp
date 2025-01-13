@@ -88,7 +88,7 @@ static int DoCrashHandler(void* arg)
     }
     UnregisterAllocator();
     pthread_mutex_unlock(&g_signalHandlerMutex);
-    syscall(__NR_exit, 0);
+    _exit(0);
     return 0;
 }
 
@@ -132,7 +132,7 @@ void DFX_SignalLocalHandler(int sig, siginfo_t *si, void *context)
     FutexWait(&pseudothreadTid, childTid);
 
     DFXLOGI("child thread(%{public}d) exit.", childTid);
-    syscall(__NR_exit, 0);
+    _exit(0);
 #endif
 }
 
