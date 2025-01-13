@@ -1101,14 +1101,22 @@ static void CrashInChildThread()
 static int RunInNewPidNs(void* arg)
 {
     (void)arg;
-    struct ProcInfo g_nsProcInfo;
-    GetProcStatus(g_nsProcInfo);
-    WriteRealPid(g_nsProcInfo.pid);
-    GTEST_LOG_(INFO) << "RunInNewPidNs(): real pid = " << g_nsProcInfo.pid;
-    GTEST_LOG_(INFO) << "RunInNewPidNs(): PID = " << getpid();
-    GTEST_LOG_(INFO) << "RunInNewPidNs(): TID = " << gettid();
-    thread childThread(CrashInChildThread);
-    childThread.join();
+    int pid = fork();
+    if (pid == 0) {
+        struct ProcInfo g_nsProcInfo;
+        GetProcStatus(g_nsProcInfo);
+        WriteRealPid(g_nsProcInfo.pid);
+        GTEST_LOG_(INFO) << "RunInNewPidNs(): real pid = " << g_nsProcInfo.pid;
+        GTEST_LOG_(INFO) << "RunInNewPidNs(): PID = " << getpid();
+        GTEST_LOG_(INFO) << "RunInNewPidNs(): TID = " << gettid();
+        thread childThread(CrashInChildThread);
+        childThread.join();
+    } else if (pid < 0) {
+        GTEST_LOG_(ERROR) << "RunInNewPidNs(): fork fail";
+    } else {
+        waitpid(pid, nullptr, 0);
+        sleep(3); // 3 : 3 second wait for crash dump finish
+    }
     _exit(0);
 }
 
@@ -1135,7 +1143,7 @@ HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest102, TestSize.Level2)
         return;
     }
     // wait for get realpid, too long will not monitor create crash file
-    usleep(10000);
+    sleep(1);
     int readPid = ReadRealPid();
     string fileName = WaitCreateCrashFile("cppcrash", readPid);
     EXPECT_NE(0, fileName.size());

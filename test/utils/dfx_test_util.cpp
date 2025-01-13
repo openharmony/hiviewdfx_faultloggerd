@@ -317,10 +317,7 @@ void CheckResourceUsage(uint32_t fdCount, uint32_t mapsCount, uint64_t memCount)
 
 std::string WaitCreateCrashFile(const std::string& prefix, const pid_t pid)
 {
-    std::string fileName = GetDumpLogFileName(prefix, pid, TEMP_DIR);
-    if (!fileName.empty()) {
-        return fileName;
-    }
+    std::string fileName;
     int fd = inotify_init();
     if (fd < 0) {
         return fileName;
@@ -363,6 +360,9 @@ std::string WaitCreateCrashFile(const std::string& prefix, const pid_t pid)
     }
     inotify_rm_watch(fd, wd);
     close(fd);
+    if (fileName.empty()) {
+        fileName = GetDumpLogFileName(prefix, pid, TEMP_DIR);
+    }
     return fileName;
 }
 

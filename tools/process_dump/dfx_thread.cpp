@@ -74,7 +74,7 @@ void DfxThread::AddFrame(DfxFrame& frame)
     frames_.emplace_back(frame);
 }
 
-const std::vector<DfxFrame>& DfxThread::GetFrames() const
+std::vector<DfxFrame>& DfxThread::GetFrames()
 {
     return frames_;
 }
@@ -150,6 +150,11 @@ void DfxThread::SetFrames(const std::vector<DfxFrame>& frames)
 std::shared_ptr<FaultStack> DfxThread::GetFaultStack() const
 {
     return faultStack_;
+}
+
+void DfxThread::ParseSymbol(std::shared_ptr<Unwinder> unwinder)
+{
+    unwinder->FillFrames(frames_);
 }
 } // namespace HiviewDFX
 } // nampespace OHOS

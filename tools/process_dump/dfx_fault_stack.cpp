@@ -294,22 +294,6 @@ bool FaultStack::ParseUnwindStack(std::shared_ptr<DfxMaps> maps, std::vector<Dfx
             frame.pc = block.content[i];
             frame.map = map;
             frame.mapName = map->name;
-            int64_t loadBias = 0;
-            struct stat st;
-            if (stat(map->name.c_str(), &st) == 0 && (st.st_mode & S_IFREG)) {
-                auto elf = DfxElf::Create(frame.mapName);
-                if (elf == nullptr || !elf->IsValid()) {
-                    DFXLOGE("%{public}s : Failed to create DfxElf, elf path(%{public}s).", __func__,
-                        frame.mapName.c_str());
-                    continue;
-                }
-                loadBias = elf->GetLoadBias();
-                frame.buildId = elf->GetBuildId();
-            } else {
-                DFXLOGW("%{public}s : mapName(%{public}s) is not file.", __func__, frame.mapName.c_str());
-            }
-
-            frame.relPc = frame.pc - map->begin + map->offset + static_cast<uint64_t>(loadBias);
             frames.emplace_back(frame);
             hasAddFrame = true;
             constexpr int MAX_VALID_ADDRESS_NUM = 32;

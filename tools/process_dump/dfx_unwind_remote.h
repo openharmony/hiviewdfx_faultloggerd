@@ -39,7 +39,10 @@ public:
     bool UnwindProcess(std::shared_ptr<ProcessDumpRequest> request, std::shared_ptr<DfxProcess> process,
                        std::shared_ptr<Unwinder> unwinder, pid_t vmPid = 0);
     bool InitProcessAllThreadRegs(std::shared_ptr<ProcessDumpRequest> request, std::shared_ptr<DfxProcess> process);
-
+    void ParseSymbol(std::shared_ptr<ProcessDumpRequest> request, std::shared_ptr<DfxProcess> process,
+                     std::shared_ptr<Unwinder> unwinder);
+    void PrintUnwindResultInfo(std::shared_ptr<ProcessDumpRequest> request, std::shared_ptr<DfxProcess> process,
+                               std::shared_ptr<Unwinder> unwinder, pid_t vmPid);
 private:
     DfxUnwindRemote() = default;
     bool UnwindKeyThread(std::shared_ptr<ProcessDumpRequest> request, std::shared_ptr<DfxProcess> process,
