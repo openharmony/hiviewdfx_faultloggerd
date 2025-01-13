@@ -709,11 +709,15 @@ HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest029, TestSize.Level
 HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest030, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest030: start.";
+    int fd[2];
+    EXPECT_TRUE(CreatePipeFd(fd));
     pid_t pid = fork();
     if (pid == 0) {
+        NotifyProcStart(fd);
         std::this_thread::sleep_for(std::chrono::seconds(10));
         _exit(0);
     }
+    WaitProcStart(fd);
     GTEST_LOG_(INFO) << "dump remote process, "  << " pid:" << pid << ", tid:" << 0;
     DfxDumpCatcher dumplog;
     DfxJsonFormatter format;
