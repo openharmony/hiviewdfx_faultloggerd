@@ -103,7 +103,7 @@ bool FormatThreadKernelStack(const std::string& kernelStack, DfxThreadStack& thr
 
 bool FormatProcessKernelStack(const std::string& kernelStack, std::vector<DfxThreadStack>& processStack)
 {
-#ifdef __aarch64__
+#if !defined(is_ohos_lite) && defined(__aarch64__)
     std::vector<std::string> threadKernelStackVec;
     OHOS::SplitStr(kernelStack, "Thread info:", threadKernelStackVec);
     if (threadKernelStackVec.size() == 1) {
