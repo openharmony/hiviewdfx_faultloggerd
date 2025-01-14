@@ -50,7 +50,7 @@ bool StartConnect(int32_t sockFd, const char* socketName, uint32_t timeout)
         }
     }
 
-    struct sockaddr_un server{};
+    struct sockaddr_un server{0};
     server.sun_family = AF_LOCAL;
     std::string fullPath = std::string(FAULTLOGGERD_SOCK_BASE_PATH) + std::string(socketName);
     errno_t err = strncpy_s(server.sun_path, sizeof(server.sun_path), fullPath.c_str(), sizeof(server.sun_path) - 1);
@@ -87,8 +87,7 @@ static bool GetServerSocket(int32_t& sockFd, const char* name)
     }
 
     std::string path = std::string(FAULTLOGGERD_SOCK_BASE_PATH) + std::string(name);
-    struct sockaddr_un server;
-    (void)memset_s(&server, sizeof(server), 0, sizeof(server));
+    struct sockaddr_un server{0};
     server.sun_family = AF_LOCAL;
     if (strncpy_s(server.sun_path, sizeof(server.sun_path), path.c_str(), sizeof(server.sun_path) - 1) != 0) {
         DFXLOGE("%{public}s :: strncpy failed.", __func__);
@@ -145,7 +144,7 @@ static bool RecvMsgFromSocket(int sockFd, void* data, const size_t dataLength)
         return false;
     }
 
-    struct msghdr msgh{};
+    struct msghdr msgh{0};
     char msgBuffer[SOCKET_BUFFER_SIZE] = { 0 };
     struct iovec iov = {
         .iov_base = msgBuffer,
@@ -185,7 +184,7 @@ static bool SendMsgCtlToSocket(int sockFd, const void *cmsg, uint32_t cmsgLen)
         return false;
     }
 
-    struct msghdr msgh;
+    struct msghdr msgh{0};
     char iovBase[] = "";
     struct iovec iov = {.iov_base = iovBase, .iov_len = 1};
     msgh.msg_iov = &iov;
