@@ -245,7 +245,7 @@ void WaitForFork(unsigned long pid, unsigned long& childPid)
     int waitStatus = 0;
     waitpid(pid, &waitStatus, 0); // wait fork event
     DFXLOGI("wait for fork status %{public}d", waitStatus);
-    if (waitStatus >> 8 == (SIGTRAP | (PTRACE_EVENT_FORK << 8))) { // 8 : get fork  event flag
+    if (static_cast<unsigned int>(waitStatus) >> 8 == (SIGTRAP | (PTRACE_EVENT_FORK << 8))) { // 8 : get fork event
         ptrace(PTRACE_GETEVENTMSG, pid, NULL, &childPid);
         DFXLOGI("next child pid %{public}lu", childPid);
         waitpid(childPid, &waitStatus, 0); // wait child stop event
@@ -286,7 +286,7 @@ void ReadPids(std::shared_ptr<ProcessDumpRequest> request, int& realPid, int& vm
 
     unsigned long sonPid = 0;
     WaitForFork(childPid, sonPid);
-    vmPid = sonPid;
+    vmPid = static_cast<int>(sonPid);
 
     ptrace(PTRACE_DETACH, childPid, 0, 0);
     ReadVmRealPid(request, sonPid, realPid);
