@@ -414,7 +414,7 @@ void ParseSnapshotUnit(const std::vector<std::string>& lines, size_t& index)
     }
 
     // process other snapshot sections
-    int snapshotSecIndex = -1;
+    size_t snapshotSecIndex = 0;
     SnapshotSection snapshotSecKey;
     bool isTransEnd = false;
 
@@ -423,7 +423,7 @@ void ParseSnapshotUnit(const std::vector<std::string>& lines, size_t& index)
             if (!StartsWith(lines[index], it->second)) {
                 continue;
             }
-            if (snapshotSecIndex == -1) {
+            if (snapshotSecIndex == 0) {
                 snapshotSecIndex = index;
                 snapshotSecKey = it->first;
                 break;
