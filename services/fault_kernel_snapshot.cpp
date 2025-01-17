@@ -25,6 +25,9 @@
 #include <unistd.h>
 #include <unordered_map>
 
+#ifndef HISYSEVENT_DISABLE
+#include "hisysevent.h"
+#endif
 #ifndef is_ohos_lite
 #include "parameters.h"
 #endif // !is_ohos_lite
@@ -104,6 +107,7 @@ const SnapshotSectionInfo SNAPSHOT_SECTION_KEYWORDS[] = {
 
 using CrashMap = std::unordered_map<CrashSection, std::string>;
 
+void ReportCrashNoLogEvent(CrashMap& output);
 void SaveSnapshot(CrashMap& output);
 
 class CrashKernelFrame {
@@ -441,6 +445,7 @@ void ParseSnapshotUnit(const std::vector<std::string>& lines, size_t& index)
 
     SaveSnapshot(output);
     ReportCrashEvent(output);
+    ReportCrashNoLogEvent(output);
 }
 
 void ParseSameSeqSnapshot(const std::vector<std::string>& lines)
@@ -590,6 +595,46 @@ void MonitorCrashKernelSnapshot()
         SplitByNewLine(snapshotCont, snapshotLines);
         ParseSnapshot(snapshotLines);
     }
+}
+
+void ReportCrashNoLogEvent(CrashMap& output)
+{
+    if (output[CrashSection::UID].empty()) {
+        DFXLOGE("uid is empty, not report");
+        return;
+    }
+#ifndef HISYSEVENT_DISABLE
+    int32_t uid = static_cast<int32_t>(strtol(output[CrashSection::UID].c_str(), nullptr, DECIMAL_BASE));
+    int32_t pid = static_cast<int32_t>(strtol(output[CrashSection::PID].c_str(), nullptr, DECIMAL_BASE));
+    int64_t timeStamp = strtoll(output[CrashSection::TIME_STAMP].c_str(), nullptr, DECIMAL_BASE);
+    if (errno == ERANGE) {
+        DFXLOGE("Failed to convert string to number, error: %{public}s", strerror(errno));
+        return;
+    }
+
+    std::string summary;
+    summary += FilterEmptySection("Build info: ", GetBuildInfo(), "\n");
+    summary += FilterEmptySection("Timestamp: ", FormatTimestamp(output[CrashSection::TIME_STAMP]), "");
+    summary += FilterEmptySection("Pid: ", output[CrashSection::PID], "\n");
+    summary += FilterEmptySection("Uid: ", output[CrashSection::UID], "\n");
+    summary += FilterEmptySection("Process name: ", output[CrashSection::PROCESS_NAME], "\n");
+    summary += FilterEmptySection("Reason: ", KERNEL_SNAPSHOT_REASON, "\n");
+    summary += FilterEmptySection("Exception registers:\n", output[CrashSection::EXCEPTION_REGISTERS], "");
+    summary += FilterEmptySection("Fault thread info:\n", output[CrashSection::FAULT_THREAD_INFO], "");
+    summary += FilterEmptySection("Registers:\n", output[CrashSection::REGISTERS], "");
+    summary += FilterEmptySection("Elfs:\n", output[CrashSection::MAPS], "");
+
+    HiSysEventWrite(OHOS::HiviewDFX::HiSysEvent::Domain::RELIABILITY, "CPP_CRASH_NO_LOG",
+                    OHOS::HiviewDFX::HiSysEvent::EventType::FAULT,
+                    "UID", uid,
+                    "PID", pid,
+                    "PROCESS_NAME", output[CrashSection::PROCESS_NAME].c_str(),
+                    "HAPPEN_TIME", timeStamp,
+                    "SUMMARY", summary);
+    DFXLOGI("Report kernel snapshot event done.");
+#else
+    DFXLOGI("Not supported for kernel snapshot report.");
+#endif
 }
 } // namespace
 
