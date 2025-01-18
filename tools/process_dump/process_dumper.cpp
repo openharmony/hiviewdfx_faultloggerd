@@ -442,6 +442,12 @@ void ProcessDumper::Dump()
     DFXLOGI("Finish dump stacktrace for %{public}s(%{public}d:%{public}d).",
         request->processName, request->pid, request->tid);
     Report(request, jsonInfo);
+    if (process_ != nullptr) {
+        if (process_->keyThread_ != nullptr) {
+            process_->keyThread_->Detach();
+        }
+        process_->Detach();
+    }
 }
 
 void ProcessDumper::Report(std::shared_ptr<ProcessDumpRequest> request, std::string &jsonInfo)
@@ -668,10 +674,6 @@ void ProcessDumper::UnwindFinish(std::shared_ptr<ProcessDumpRequest> request, pi
         InfoCrashUnwindResult(request, resDump_ == DumpErrorCode::DUMP_ESUCCESS);
         BlockCrashProcExit(request);
     }
-    if (process_->keyThread_ != nullptr) {
-        process_->keyThread_->Detach();
-    }
-    process_->Detach();
     DfxUnwindRemote::GetInstance().ParseSymbol(request, process_, unwinder_);
     DfxUnwindRemote::GetInstance().PrintUnwindResultInfo(request, process_, unwinder_, vmPid);
     UnwindWriteJit(*request);

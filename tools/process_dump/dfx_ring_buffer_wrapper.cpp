@@ -138,6 +138,9 @@ void DfxRingBufferWrapper::StartThread()
 void DfxRingBufferWrapper::StopThread()
 {
     if (fd_ != INVALID_FD) {
+        if (fsync(fd_) == -1) {
+            DFXLOGW("Failed to fsync fd.");
+        }
         close(fd_);
     }
     fd_ = INVALID_FD;
