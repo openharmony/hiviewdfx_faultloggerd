@@ -40,11 +40,9 @@
       OHOS::HiviewDFX::UnwinderConfig::enableLoadSymbolLazily_*;
       OHOS::HiviewDFX::UnwinderConfig::enableMiniDebugInfo_*;
       OHOS::HiviewDFX::DfxConfig::GetConfig*;
-      OHOS::HiviewDFX::DfxElf::Create*;
       OHOS::HiviewDFX::DfxElf::Clear*;
       OHOS::HiviewDFX::DfxElf::DfxElf*;
       OHOS::HiviewDFX::DfxElf::IsValid*;
-      OHOS::HiviewDFX::DfxElf::GetLoadBias*;
       OHOS::HiviewDFX::DfxElf::GetBuildId*;
       OHOS::HiviewDFX::DfxElf::FindUnwindTableInfo*;
       OHOS::HiviewDFX::DfxElf::GetBaseOffset*;
@@ -79,11 +77,11 @@
       OHOS::HiviewDFX::DfxPtrace::Detach*;
       OHOS::HiviewDFX::DfxPtrace::Attach*;
       OHOS::HiviewDFX::DfxMemory::ReadProcMemByPid*;
-      OHOS::HiviewDFX::DfxSignal::PrintSignal*;
-      OHOS::HiviewDFX::DfxSignal::IsAddrAvailable*;
       "vtable for OHOS::HiviewDFX::DfxRegsArm";
       "vtable for OHOS::HiviewDFX::DfxRegsArm64";
       "vtable for OHOS::HiviewDFX::DfxRegsRiscv64";
+      "vtable for OHOS::HiviewDFX::RegularElfFactory";
+      "vtable for OHOS::HiviewDFX::CompressHapElfFactory";
       OHOS::HiviewDFX::DfxFrameFormatter::GetFrameStr*;
       OHOS::HiviewDFX::DfxFrameFormatter::GetFramesStr*;
       OHOS::HiviewDFX::DfxElf::GetStartVaddr*;
@@ -104,9 +102,14 @@
       OHOS::HiviewDFX::LocalThreadContextMix::GetMapByPc*;
       OHOS::HiviewDFX::LocalThreadContextMix::FindUnwindTable*;
       OHOS::HiviewDFX::LocalThreadContextMix::AccessMem*;
+      OHOS::HiviewDFX::RegularElfFactory::Create*;
+      OHOS::HiviewDFX::CompressHapElfFactory::Create*;
       OHOS::HiviewDFX::GetFileSize*;
       OHOS::HiviewDFX::TrimAndDupStr*;
       OHOS::HiviewDFX::DfxEnableTraceDlsym*;
+      OHOS::HiviewDFX::StackUtils::Instance*;
+      OHOS::HiviewDFX::StackUtils::GetMainStackRange*;
+      OHOS::HiviewDFX::StackUtils::GetSelfStackRange*;
     };
   local:
     *;

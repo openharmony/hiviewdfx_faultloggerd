@@ -20,7 +20,7 @@
 #include <vector>
 #include <iostream>
 #include <filesystem>
-#include "dfx_elf.h"
+#include "elf_factory.h"
 #include "elf_imitate.h"
 #include "unwinder_config.h"
 
@@ -50,7 +50,8 @@ public:
 HWTEST_F(DfxSymbolsTest, DfxSymbolsTest001, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "DfxSymbolsTest001: start.";
-    std::shared_ptr<DfxElf> elf = make_shared<DfxElf>(ELF32_FILE);
+    RegularElfFactory factory(ELF32_FILE);
+    auto elf = factory.Create();
     ASSERT_TRUE(elf->IsValid());
     ElfImitate elfImitate;
     elfImitate.ParseAllHeaders(ElfImitate::ElfFileType::ELF32);
@@ -91,7 +92,8 @@ HWTEST_F(DfxSymbolsTest, DfxSymbolsTest001, TestSize.Level2)
 HWTEST_F(DfxSymbolsTest, DfxSymbolsTest002, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "DfxSymbolsTest002: start.";
-    std::shared_ptr<DfxElf> elf = make_shared<DfxElf>(ELF64_FILE);
+    RegularElfFactory factory(ELF64_FILE);
+    auto elf = factory.Create();
     ASSERT_TRUE(elf->IsValid());
     ElfImitate elfImitate;
     elfImitate.ParseAllHeaders(ElfImitate::ElfFileType::ELF64);
@@ -136,9 +138,9 @@ HWTEST_F(DfxSymbolsTest, DfxSymbolsTest003, TestSize.Level2)
     GTEST_LOG_(INFO) << "DfxSymbolsTest003: start.";
     UnwinderConfig::SetEnableMiniDebugInfo(true);
     std::vector<DfxSymbol> dfxSymbols;
-    std::shared_ptr<DfxElf> elf = make_shared<DfxElf>(DUMPCATCHER_ELF_FILE);
+    RegularElfFactory factory(DUMPCATCHER_ELF_FILE);
+    auto elf = factory.Create();
     ASSERT_TRUE(elf->IsValid());
-    ASSERT_TRUE(elf->IsEmbeddedElfValid());
     DfxSymbols::ParseSymbols(dfxSymbols, elf, DUMPCATCHER_ELF_FILE);
     GTEST_LOG_(INFO) << "DfxSymbolsTest003: symbols size:" << dfxSymbols.size();
     ASSERT_GE(dfxSymbols.size(), 0);

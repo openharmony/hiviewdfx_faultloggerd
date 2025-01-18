@@ -14,42 +14,46 @@
  */
 
 #include "dfx_dump_catcher_errno.h"
-
+#include <algorithm>
 namespace OHOS {
 namespace HiviewDFX {
+struct DumpCatchErrInfo {
+    int32_t code;
+    const char *info;
+};
 
-const std::map<int32_t, std::string> ERROR_CODE_MAP = {
-    { DUMPCATCH_ESUCCESS, std::string("success") },
-    { DUMPCATCH_EPARAM, std::string("param error") },
-    { DUMPCATCH_NO_PROCESS, std::string("process has exited") },
-    { DUMPCATCH_IS_DUMPING, std::string("process is dumping") },
-    { DUMPCATCH_EPERMISSION, std::string("check permission error") },
-    { DUMPCATCH_HAS_CRASHED, std::string("process has been crashed") },
-    { DUMPCATCH_ECONNECT, std::string("failed to connect to faultloggerd") },
-    { DUMPCATCH_EWRITE, std::string("failed to write data to faultloggerd") },
-    { DUMPCATCH_EFD, std::string("buf or res fd error") },
-    { DUMPCATCH_EPOLL, std::string("poll error") },
-    { DUMPCATCH_DUMP_EPTRACE, std::string("failed to ptrace thread") },
-    { DUMPCATCH_DUMP_EUNWIND, std::string("failed to unwind") },
-    { DUMPCATCH_DUMP_EMAP, std::string("failed to find map") },
-    { DUMPCATCH_TIMEOUT_SIGNAL_BLOCK, std::string("signal has been block by target process") },
-    { DUMPCATCH_TIMEOUT_KERNEL_FROZEN, std::string("target process has been frozen in kernel") },
-    { DUMPCATCH_TIMEOUT_PROCESS_KILLED, std::string("target process has been killed during dumping") },
-    { DUMPCATCH_TIMEOUT_DUMP_SLOW, std::string("failed to fully dump due to timeout") },
-    { DUMPCATCH_KERNELSTACK_ECREATE, std::string("kernelstack fail due to create hstackval fail") },
-    { DUMPCATCH_KERNELSTACK_EOPEN, std::string("kernelstack fail due to open bbox fail") },
-    { DUMPCATCH_KERNELSTACK_EIOCTL, std::string("kernelstack fail due to ioctl fail") },
-    { DUMPCATCH_KERNELSTACK_NONEED, std::string("no need to dump kernelstack") },
-    { DUMPCATCH_UNKNOWN, std::string("unknown reason") }
+const DumpCatchErrInfo ERROR_CODE_MAPS[] = {
+    { DUMPCATCH_ESUCCESS, "success" },
+    { DUMPCATCH_EPARAM, "param error" },
+    { DUMPCATCH_NO_PROCESS, "process has exited" },
+    { DUMPCATCH_IS_DUMPING, "process is dumping" },
+    { DUMPCATCH_EPERMISSION, "check permission error" },
+    { DUMPCATCH_HAS_CRASHED, "process has been crashed" },
+    { DUMPCATCH_ECONNECT, "failed to connect to faultloggerd" },
+    { DUMPCATCH_EWRITE, "failed to write data to faultloggerd" },
+    { DUMPCATCH_EFD, "buf or res fd error" },
+    { DUMPCATCH_EPOLL, "poll error" },
+    { DUMPCATCH_DUMP_EPTRACE, "failed to ptrace thread" },
+    { DUMPCATCH_DUMP_EUNWIND, "failed to unwind" },
+    { DUMPCATCH_DUMP_EMAP, "failed to find map" },
+    { DUMPCATCH_TIMEOUT_SIGNAL_BLOCK, "signal has been block by target process" },
+    { DUMPCATCH_TIMEOUT_KERNEL_FROZEN, "target process has been frozen in kernel" },
+    { DUMPCATCH_TIMEOUT_PROCESS_KILLED, "target process has been killed during dumping" },
+    { DUMPCATCH_TIMEOUT_DUMP_SLOW, "failed to fully dump due to timeout" },
+    { DUMPCATCH_KERNELSTACK_ECREATE, "kernelstack fail due to create hstackval fail" },
+    { DUMPCATCH_KERNELSTACK_EOPEN, "kernelstack fail due to open bbox fail" },
+    { DUMPCATCH_KERNELSTACK_EIOCTL, "kernelstack fail due to ioctl fail" },
+    { DUMPCATCH_KERNELSTACK_TIMEOUT, "kernelstack fail due to wait timeout" },
+    { DUMPCATCH_KERNELSTACK_OVER_LIMITL, "kernelstack fail due to over limit" },
+    { DUMPCATCH_KERNELSTACK_NONEED, "no need to dump kernelstack" },
+    { DUMPCATCH_UNKNOWN, "unknown reason" }
 };
 
 std::string DfxDumpCatchError::ToString(const int32_t res)
 {
-    auto it = ERROR_CODE_MAP.find(res);
-    if (it != ERROR_CODE_MAP.end()) {
-        return it->second;
-    }
-    return std::string("invalid error code");
+    auto iter = std::find_if(std::begin(ERROR_CODE_MAPS), std::end(ERROR_CODE_MAPS),
+        [res](const DumpCatchErrInfo &errInfo) { return errInfo.code == res; });
+    return iter != std::end(ERROR_CODE_MAPS) ? iter->info : "invalid error code";
 }
 } // namespace HiviewDFX
 } // namespace OHOS

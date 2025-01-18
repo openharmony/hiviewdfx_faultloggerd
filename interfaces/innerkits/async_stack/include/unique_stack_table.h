@@ -79,9 +79,7 @@ public:
     bool Init();
     static UniqueStackTable* Instance();
 
-    UniqueStackTable()
-    {
-    }
+    UniqueStackTable() = default;
 
     explicit UniqueStackTable(pid_t pid) : pid_(pid)
     {
@@ -92,7 +90,7 @@ public:
     }
 
     UniqueStackTable(void* buf, uint32_t size, bool releaseBuffer = true)
-        :tableBufMMap_(buf), tableSize_(size), releaseBuffer_(releaseBuffer)
+        : tableBufMMap_(buf), tableSize_(size), releaseBuffer_(releaseBuffer)
     {
         totalNodes_ = ((tableSize_ / sizeof(Node)) >> 1) << 1;
     }

@@ -17,43 +17,26 @@
 
 #include <cstdint>
 #if defined(ENABLE_PARAMETER)
-#include <mutex>
 #include "parameter.h"
 #include "parameters.h"
 #endif
 
 namespace OHOS {
 namespace HiviewDFX {
-namespace {
-[[maybe_unused]] constexpr char MIXSTACK_ENABLED_KEY[] = "faultloggerd.priv.mixstack.enabled";
-}
-
-#if defined(ENABLE_PARAMETER)
-#define GEN_ENABLE_PARAM_FUNC(FuncName, EnableKey, DefValue, ExpValue) \
-    __attribute__((noinline)) static bool FuncName() \
-    { \
-        static bool ret = true; \
-        static std::once_flag flag; \
-        std::call_once(flag, [&] { \
-            if (OHOS::system::GetParameter(EnableKey, DefValue) == ExpValue) { \
-                ret = true; \
-            } else { \
-                ret = false; \
-            } \
-        }); \
-        return ret; \
-    }
-#else
-#define GEN_ENABLE_PARAM_FUNC(FuncName, EnableKey, DefValue, ExpValue) \
-    __attribute__((noinline)) static bool FuncName() \
-    { \
-        return false; \
-    }
-#endif
 
 class DfxParam {
 public:
-    GEN_ENABLE_PARAM_FUNC(EnableMixstack, MIXSTACK_ENABLED_KEY, "true", "true");
+    static bool IsEnableMixstack()
+    {
+#if defined(ENABLE_PARAMETER)
+        static bool isEnable = [] {
+            return OHOS::system::GetParameter("faultloggerd.priv.mixstack.enabled", "true") == "true";
+        }();
+        return isEnable;
+#else
+        return false;
+#endif
+    }
 };
 } // namespace HiviewDFX
 } // namespace OHOS

@@ -79,6 +79,7 @@ namespace {
 const char *const BLOCK_CRASH_PROCESS = "faultloggerd.priv.block_crash_process.enabled";
 const char *const GLOBAL_REGION = "const.global.region";
 const char *const LOGSYSTEM_VERSION_TYPE = "const.logsystem.versiontype";
+MAYBE_UNUSED const char *const MIXSTACK_ENABLE = "faultloggerd.priv.mixstack.enabled";
 const int MAX_FILE_COUNT = 5;
 const int ARG_MAX_NUM = 131072;
 
@@ -174,7 +175,7 @@ void FillFdsaninfo(OpenFilesList &list, pid_t nsPid, uint64_t fdTableAddr)
     size_t entryOffset = offsetof(FdTable, entries);
     uint64_t addr = fdTableAddr + entryOffset;
     FdEntry entrys[fds];
-    if (DfxMemory::ReadProcMemByPid(nsPid, addr, entrys, sizeof(FdEntry) * fds) != sizeof(FdEntry) * fds) {
+    if (ReadProcMemByPid(nsPid, addr, entrys, sizeof(FdEntry) * fds) != sizeof(FdEntry) * fds) {
         DFXLOGE("[%{public}d]: read nsPid mem error %{public}s", __LINE__, strerror(errno));
         return;
     }
@@ -187,7 +188,7 @@ void FillFdsaninfo(OpenFilesList &list, pid_t nsPid, uint64_t fdTableAddr)
     size_t overflowOffset = offsetof(FdTable, overflow);
     uintptr_t overflow = 0;
     uint64_t tmp = fdTableAddr + overflowOffset;
-    if (DfxMemory::ReadProcMemByPid(nsPid, tmp, &overflow, sizeof(overflow)) != sizeof(overflow)) {
+    if (ReadProcMemByPid(nsPid, tmp, &overflow, sizeof(overflow)) != sizeof(overflow)) {
         return;
     }
     if (!overflow) {
@@ -195,7 +196,7 @@ void FillFdsaninfo(OpenFilesList &list, pid_t nsPid, uint64_t fdTableAddr)
     }
 
     size_t overflowLength;
-    if (DfxMemory::ReadProcMemByPid(nsPid, overflow, &overflowLength, sizeof(overflowLength))
+    if (ReadProcMemByPid(nsPid, overflow, &overflowLength, sizeof(overflowLength))
         != sizeof(overflowLength)) {
         return;
     }
@@ -205,7 +206,7 @@ void FillFdsaninfo(OpenFilesList &list, pid_t nsPid, uint64_t fdTableAddr)
 
     std::vector<FdEntry> overflowFdEntrys(overflowLength);
     uint64_t address = overflow + offsetof(FdTableOverflow, entries);
-    if (DfxMemory::ReadProcMemByPid(nsPid, address, overflowFdEntrys.data(), sizeof(FdEntry) * overflowLength) !=
+    if (ReadProcMemByPid(nsPid, address, overflowFdEntrys.data(), sizeof(FdEntry) * overflowLength) !=
         sizeof(FdEntry) * overflowLength) {
         DFXLOGE("[%{public}d]: read nsPid mem error %{public}s", __LINE__, strerror(errno));
         return;
@@ -580,7 +581,7 @@ void ProcessDumper::UpdateFatalMessageWhenDebugSignal(const ProcessDumpRequest& 
 
     auto debugMsgPtr = reinterpret_cast<uintptr_t>(request.siginfo.si_value.sival_ptr);
     debug_msg_t dMsg = {0};
-    if (DfxMemory::ReadProcMemByPid(pid, debugMsgPtr, &dMsg, sizeof(dMsg)) != sizeof(debug_msg_t)) {
+    if (ReadProcMemByPid(pid, debugMsgPtr, &dMsg, sizeof(dMsg)) != sizeof(debug_msg_t)) {
         DFXLOGE("Get debug_msg_t failed.");
         return;
     }
@@ -611,7 +612,7 @@ std::string ProcessDumper::ReadCrashObjMemory(pid_t tid, uintptr_t addr, size_t 
         static_cast<uint64_t>(addr));
     size_t size = (length + step - 1) / step;
     std::vector<uintptr_t> memory(size, 0);
-    if (DfxMemory::ReadProcMemByPid(tid, addr, memory.data(), length) != length) {
+    if (ReadProcMemByPid(tid, addr, memory.data(), length) != length) {
         DFXLOGE("[%{public}d]: read target mem error %{public}s", __LINE__, strerror(errno));
         memoryContent += "\n";
         return memoryContent;

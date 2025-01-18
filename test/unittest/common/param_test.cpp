@@ -41,7 +41,7 @@ public:
 HWTEST_F(ParamTest, DfxParamTest001, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "DfxParamTest001: start.";
-    ASSERT_EQ(DfxParam::EnableMixstack(), true);
+    ASSERT_EQ(DfxParam::IsEnableMixstack(), true);
     GTEST_LOG_(INFO) << "DfxParamTest001: end.";
 }
 

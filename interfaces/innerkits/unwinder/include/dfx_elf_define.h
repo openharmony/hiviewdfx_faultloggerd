@@ -84,8 +84,8 @@ struct __attribute__((packed)) DwarfEhFrameHdr {
     ElfW(Addr) ehFrame;
 };
 
-struct MiniDebugInfo {
-    uint64_t offset = 0;
+struct GnuDebugDataHdr {
+    uint8_t *address = 0;
     uintptr_t size = 0;
 };
 

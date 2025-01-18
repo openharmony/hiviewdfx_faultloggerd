@@ -20,7 +20,6 @@
 #include <sstream>
 #include <string>
 #include <vector>
-#include "string_view_util.h"
 
 namespace OHOS {
 namespace HiviewDFX {
@@ -35,39 +34,34 @@ struct DfxSymbol {
     int32_t symbolFileIndex_ = -1; // symbols file index, used to report protobuf file
     int32_t index_ = -1;
     uint32_t symbolId_ = 0; // for frame map id
-    STRING_VIEW name_ = "";
-    STRING_VIEW demangle_ = ""; // demangle string
-    STRING_VIEW module_ = "";   // maybe empty
-    STRING_VIEW comm_ = "";     // we need a comm name like comm@0x1234
-    STRING_VIEW symbolName_ = "";
-    mutable STRING_VIEW unknow_ = "";
+    std::string name_ = "";
+    std::string demangle_ = ""; // demangle string
+    std::string module_ = "";   // maybe empty
+    std::string comm_ = "";     // we need a comm name like comm@0x1234
+    std::string symbolName_ = "";
+    mutable std::string unknow_ = "";
     uint64_t offset_ = 0;
     mutable bool matched_ = false; // if some callstack match this
     int32_t hit_ = 0;
 
     // elf use this
-    DfxSymbol(uint64_t vaddr, uint64_t size, const std::string &name, const std::string &demangle,
-              const std::string module)
+    DfxSymbol(uint64_t vaddr, uint64_t size, std::string name, std::string demangle, std::string module)
         : funcVaddr_(vaddr),
           fileVaddr_(vaddr),
           size_(size),
-          name_(StringViewHold::Get().Hold(name)),
-          demangle_(StringViewHold::Get().Hold(demangle)),
-          module_(StringViewHold::Get().Hold(module)) {}
-    DfxSymbol(uint64_t vaddr, uint64_t size, const std::string &name, const std::string &module)
-        : DfxSymbol(vaddr, size, name, name, module) {}
+          name_(std::move(name)),
+          demangle_(std::move(demangle)),
+          module_(std::move(module)) {}
+    DfxSymbol(uint64_t vaddr, uint64_t size, std::string name, std::string module)
+        : DfxSymbol(vaddr, size, name, name, std::move(module)) {}
 
     // kernel use this
-    DfxSymbol(uint64_t vaddr, const std::string &name, const std::string &module)
-        : DfxSymbol(vaddr, 0, name, name, module) {}
+    DfxSymbol(uint64_t vaddr, std::string name, std::string module)
+        : DfxSymbol(vaddr, 0, name, name, std::move(module)) {}
 
     // Symbolic use this
-    DfxSymbol(uint64_t taskVaddr = 0, const std::string &comm = "")
-        : taskVaddr_(taskVaddr), comm_(comm) {}
-
-    DfxSymbol(const DfxSymbol &other) = default;
-
-    DfxSymbol& operator=(const DfxSymbol& other) = default;
+    DfxSymbol(uint64_t taskVaddr = 0, std::string comm = "")
+        : taskVaddr_(taskVaddr), comm_(std::move(comm)) {}
 
     inline bool Equal(const DfxSymbol &b) const
     {
@@ -104,7 +98,7 @@ struct DfxSymbol {
         offset_ = fileVaddr_ - funcVaddr_;
     }
 
-    STRING_VIEW GetName() const
+    const std::string& GetName() const
     {
         if (!demangle_.empty()) {
             return demangle_;
@@ -119,7 +113,7 @@ struct DfxSymbol {
             } else {
                 ss << comm_ << "@0x" << std::hex << taskVaddr_;
             }
-            unknow_ = StringViewHold::Get().Hold(ss.str());
+            unknow_ = ss.str();
         }
         return unknow_;
     }

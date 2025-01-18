@@ -22,6 +22,7 @@
 #include "dfx_regs.h"
 #include "dfx_ring_buffer_wrapper.h"
 #include "dfx_trace.h"
+#include "dfx_util.h"
 #ifdef PARSE_LOCK_OWNER
 #include "lock_parser.h"
 #endif
@@ -97,7 +98,7 @@ void DfxUnwindAsyncThread::GetSubmitterStack(std::vector<DfxFrame> &submitterFra
     auto map = mapVec.front();
     size_t size = map->end - map->begin;
     auto tableData = std::make_shared<std::vector<uint8_t>>(size);
-    size_t byte = DfxMemory::ReadProcMemByPid(thread_->threadInfo_.nsTid, map->begin, tableData->data(), size);
+    size_t byte = ReadProcMemByPid(thread_->threadInfo_.nsTid, map->begin, tableData->data(), size);
     if (byte != size) {
         DFXLOGE("Failed to read unique_table from target");
         return;

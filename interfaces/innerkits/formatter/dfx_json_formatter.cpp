@@ -35,7 +35,7 @@ static bool FormatJsFrame(const Json::Value& frames, const uint32_t& frameIdx, s
     if (snprintf_s(buf, sizeof(buf), sizeof(buf) - 1, idxFmt, frameIdx) <= 0) {
         return false;
     }
-    outStr = std::string(buf, strlen(buf));
+    outStr = std::string(buf);
     std::string symbol = frames[frameIdx]["symbol"].asString();
     if (!symbol.empty()) {
         outStr.append(" " + symbol);
@@ -66,7 +66,7 @@ static bool FormatNativeFrame(const Json::Value& frames, const uint32_t& frameId
                    file.empty() ? "Unknown" : file.c_str()) <= 0) {
         return false;
     }
-    outStr = std::string(buf, strlen(buf));
+    outStr = std::string(buf);
     if (!symbol.empty()) {
         outStr.append("(" + symbol + "+" + offset + ")");
     }
@@ -77,7 +77,7 @@ static bool FormatNativeFrame(const Json::Value& frames, const uint32_t& frameId
 }
 }
 
-bool DfxJsonFormatter::FormatJsonStack(std::string jsonStack, std::string& outStackStr)
+bool DfxJsonFormatter::FormatJsonStack(const std::string& jsonStack, std::string& outStackStr)
 {
     Json::Reader reader;
     Json::Value threads;
@@ -157,7 +157,7 @@ static bool FormatKernelStackJson(std::vector<DfxThreadStack> processStack, std:
             if (snprintf_s(buf, sizeof(buf), sizeof(buf) - 1, format, frame.relPc) <= 0) {
                 continue;
             }
-            frameJson["pc"] = std::string(buf, strlen(buf));
+            frameJson["pc"] = std::string(buf);
             frameJson["symbol"] = "";
             frameJson["offset"] = 0;
             frameJson["file"] = frame.mapName.empty() ? "Unknown" : frame.mapName;

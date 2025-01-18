@@ -14,6 +14,7 @@
  */
 
 #include <gtest/gtest.h>
+#include <gtest/hwext/gtest-multithread.h>
 
 #include <string>
 #include <thread>
@@ -26,10 +27,12 @@
 #include "dfx_json_formatter.h"
 #include "dfx_test_util.h"
 #include "faultloggerd_client.h"
+#include "kernel_stack_async_collector.h"
 #include "procinfo.h"
 
 using namespace testing;
 using namespace testing::ext;
+using namespace testing::mt;
 
 namespace OHOS {
 namespace HiviewDFX {
@@ -50,6 +53,8 @@ static pid_t g_threadId = 0;
 static pid_t g_processId = 0;
 
 int g_testPid = 0;
+
+std::atomic<int> g_count = 0;
 
 void DumpCatcherInterfacesTest::SetUpTestCase()
 {
@@ -1107,6 +1112,169 @@ HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest040, TestSize.Level
     GTEST_LOG_(INFO) << result.second;
     EXPECT_TRUE(result.first == -1);
     GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest040: end.";
+}
+
+/**
+ * @tc.name: DumpCatcherInterfacesTest041
+ * @tc.desc: test dumpcatch self scenario
+ * @tc.type: FUNC
+ */
+HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest041, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest041: start.";
+    auto sleep = [] {
+        std::this_thread::sleep_for(std::chrono::seconds(10));
+    };
+    for (int i = 0; i < 10; i++) {
+        std::thread t(sleep);
+        t.detach();
+    }
+    DfxDumpCatcher dump;
+    std::string stack;
+    bool result = dump.DumpCatch(getpid(), 0, stack);
+    ASSERT_EQ(result, true);
+
+    result = dump.DumpCatch(getpid(), getpid(), stack);
+    ASSERT_EQ(result, true);
+
+    std::vector<int> pidV;
+    result = dump.DumpCatchMultiPid(pidV, stack);
+    ASSERT_EQ(result, false);
+    GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest041: end.";
+}
+
+/**
+ * @tc.name: DumpCatcherInterfacesTest042
+ * @tc.desc: test KernelStackAsyncCollector NotifyStartCollect interface
+ * @tc.type: FUNC
+ */
+HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest042, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest042: start.";
+    std::string res = ExecuteCommands("uname");
+    bool isSuccess = res.find("Linux") == std::string::npos;
+    if (!isSuccess) {
+        ASSERT_FALSE(isSuccess);
+        return;
+    }
+    KernelStackAsyncCollector stackCollector;
+    pid_t tid = gettid();
+    if (stackCollector.NotifyStartCollect(tid)) {
+        KernelStackAsyncCollector::KernelResult stack = stackCollector.GetCollectedStackResult();
+        ASSERT_NE(stack.first, KernelStackAsyncCollector::STACK_SUCCESS);
+        ASSERT_TRUE(stack.second.empty());
+        sleep(1);
+        stack = stackCollector.GetCollectedStackResult();
+        ASSERT_EQ(stack.first, KernelStackAsyncCollector::STACK_SUCCESS);
+        ASSERT_TRUE(stack.second.find(std::to_string(tid)) != std::string::npos);
+    }
+    GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest042: end.";
+}
+
+/**
+ * @tc.name: DumpCatcherInterfacesTest043
+ * @tc.desc: test KernelStackAsyncCollector NotifyStartCollect interface
+ * @tc.type: FUNC
+ */
+HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest043, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest043: start.";
+    std::string res = ExecuteCommands("uname");
+    bool isSuccess = res.find("Linux") == std::string::npos;
+    if (!isSuccess) {
+        ASSERT_FALSE(isSuccess);
+        return;
+    }
+    KernelStackAsyncCollector stackCollector;
+    pid_t tid = gettid();
+    int waitTime = 0;
+    KernelStackAsyncCollector::KernelResult stack = stackCollector.GetProcessStackWithTimeout(tid, waitTime);
+    ASSERT_NE(stack.first, KernelStackAsyncCollector::STACK_SUCCESS);
+    ASSERT_TRUE(stack.second.empty());
+
+    waitTime = 1000; // 1000 : 1000ms
+    stack = stackCollector.GetProcessStackWithTimeout(tid, waitTime);
+    ASSERT_EQ(stack.first, KernelStackAsyncCollector::STACK_SUCCESS);
+    ASSERT_TRUE(stack.second.find(std::to_string(tid)) != std::string::npos);
+    GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest043: end.";
+}
+
+static void NotifyCollectStackTest()
+{
+    KernelStackAsyncCollector stackCollector;
+    pid_t tid = gettid();
+    if (stackCollector.NotifyStartCollect(tid)) {
+        sleep(1);
+        KernelStackAsyncCollector::KernelResult stack = stackCollector.GetCollectedStackResult();
+        ASSERT_EQ(stack.first, KernelStackAsyncCollector::STACK_SUCCESS);
+        ASSERT_TRUE(stack.second.find(std::to_string(tid)) != std::string::npos);
+        g_count++;
+    }
+}
+
+static void CollectStackWithTimeoutTest()
+{
+    constexpr int waitTime = 1000; // 1000 : 1000ms
+    pid_t tid = gettid();
+    KernelStackAsyncCollector stackCollector;
+    KernelStackAsyncCollector::KernelResult stack = stackCollector.GetProcessStackWithTimeout(tid, waitTime);
+    if (stack.first == KernelStackAsyncCollector::STACK_SUCCESS) {
+        ASSERT_TRUE(stack.second.find(std::to_string(tid)) != std::string::npos);
+        g_count++;
+    }
+}
+
+/**
+ * @tc.name: DumpCatcherInterfacesTest044
+ * @tc.desc: test KernelStackAsyncCollector NotifyStartCollect interface
+ * @tc.type: FUNC
+ */
+HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest044, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest044: start.";
+    std::string res = ExecuteCommands("uname");
+    bool isSuccess = res.find("Linux") == std::string::npos;
+    if (!isSuccess) {
+        ASSERT_FALSE(isSuccess);
+        return;
+    }
+    SET_THREAD_NUM(3);
+    GTEST_RUN_TASK(NotifyCollectStackTest);
+    sleep(2);
+    ASSERT_EQ(g_count, 3);
+
+    SET_THREAD_NUM(10);
+    g_count = 0;
+    GTEST_RUN_TASK(NotifyCollectStackTest);
+    ASSERT_LT(g_count, 10);
+    GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest044: end.";
+}
+
+/**
+ * @tc.name: DumpCatcherInterfacesTest045
+ * @tc.desc: test KernelStackAsyncCollector GetProcessStackWithTimeout interface
+ * @tc.type: FUNC
+ */
+HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest045, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest045: start.";
+    std::string res = ExecuteCommands("uname");
+    bool isSuccess = res.find("Linux") == std::string::npos;
+    if (!isSuccess) {
+        ASSERT_FALSE(isSuccess);
+        return;
+    }
+    g_count = 0;
+    SET_THREAD_NUM(3);
+    GTEST_RUN_TASK(CollectStackWithTimeoutTest);
+    sleep(2);
+    ASSERT_EQ(g_count, 3);
+
+    SET_THREAD_NUM(10);
+    g_count = 0;
+    GTEST_RUN_TASK(CollectStackWithTimeoutTest);
+    ASSERT_LT(g_count, 10);
+    GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest045: end.";
 }
 } // namespace HiviewDFX
 } // namepsace OHOS

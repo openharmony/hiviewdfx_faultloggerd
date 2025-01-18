@@ -86,13 +86,13 @@ static const char* const PROC_SELF_EXE_PATH = "/proc/self/exe";
 #define FALLTHROUGH_INTENDED [[clang::fallthrough]]  // NOLINT
 #endif
 
-#define OHOS_TEMP_FAILURE_RETRY(exp)            \
-    ({                                          \
-    long int _rc;                               \
-    do {                                        \
-        _rc = (long int)(exp);                  \
-    } while ((_rc == -1) && (errno == EINTR));  \
-    _rc;                                        \
+#define OHOS_TEMP_FAILURE_RETRY(exp)               \
+    ({                                             \
+        long int _rc;                              \
+        do {                                       \
+            _rc = (long int)(exp);                 \
+        } while ((_rc == -1) && (errno == EINTR)); \
+        _rc;                                       \
     })
 
 #if defined(__LP64__)

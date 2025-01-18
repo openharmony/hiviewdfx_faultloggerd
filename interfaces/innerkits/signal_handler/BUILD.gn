@@ -33,6 +33,7 @@ template("lib_dfxsignalhandler_template") {
       }
 
       sources = [
+        "$faultloggerd_path/common/cutil/dfx_cutil.c",
         "dfx_signal_handler.c",
         "dfx_signalhandler_exception.c",
         "musl_log.c",
@@ -129,7 +130,6 @@ if (defined(ohos_lite)) {
       "_LIBCPP_HAS_MUSL_LIBC",
       "__BUILD_LINUX_WITH_CLANG",
       "ENABLE_SIGHAND_MUSL_LOG",
-      "ENABLE_MUSL_CUTIL",
     ]
 
     ldflags = [ "-nostdlib" ]

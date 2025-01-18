@@ -38,4 +38,10 @@ struct FaultDFXLOGIInner {
     std::map<std::string, std::string> sectionMaps;
 };
 
+#if defined(__arm__)
+static_assert(sizeof(FaultDFXLOGIInner) == 96, "faultlogger plugin must be modify together!!!");
+#elif defined(__aarch64__)
+static_assert(sizeof(FaultDFXLOGIInner) == 168, "faultlogger plugin must be modify together!!!");
+#endif
+
 #endif //FAULTLOGGER_CLIENT_MSG_H_
