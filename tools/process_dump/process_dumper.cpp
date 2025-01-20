@@ -515,7 +515,7 @@ void ProcessDumper::InitRegs(std::shared_ptr<ProcessDumpRequest> request, int &d
 
 void ProcessDumper::UnwindWriteJit(const ProcessDumpRequest &request)
 {
-    if (!isCrash_) {
+    if (!isCrash_ || !unwinder_) {
         return;
     }
 
