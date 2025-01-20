@@ -1688,8 +1688,7 @@ HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest125, TestSize.Level2)
             continue;
         }
         kill(pid, SIGABRT);
-        std::string crashFileName = WaitCreateCrashFile("cppcrash", pid);
-        GTEST_LOG_(INFO) << "Get Crash File:" << crashFileName;
+        sleep(2); // 2 : sleep 2s
         int newPid = GetProcessPid(TEST_BUNDLE_NAME);
         EXPECT_NE(pid, newPid) << "FaultLoggerdSystemTest125 Failed";
     }
