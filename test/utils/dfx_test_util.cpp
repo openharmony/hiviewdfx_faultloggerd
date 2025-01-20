@@ -389,5 +389,21 @@ void WaitProcStart(int (&fd)[2])
     read(fd[0], msg, sizeof(msg));
     close(fd[0]);
 }
+
+bool IsLinuxKernel()
+{
+    static bool isLinux = [] {
+        std::string content;
+        LoadStringFromFile("/proc/version", content);
+        if (content.empty()) {
+            return true;
+        }
+        if (content.find("Linux") != std::string::npos) {
+            return true;
+        }
+        return false;
+    }();
+    return isLinux;
+}
 } // namespace HiviewDFX
 } // namespace OHOS

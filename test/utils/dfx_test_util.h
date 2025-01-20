@@ -95,6 +95,7 @@ std::string WaitCreateCrashFile(const std::string& prefix, const pid_t pid);
 bool CreatePipeFd(int (&fd)[2]);
 void NotifyProcStart(int (&fd)[2]);
 void WaitProcStart(int (&fd)[2]);
+bool IsLinuxKernel();
 } // namespace HiviewDFX
 } // namespace OHOS
 #endif // DFX_TEST_UTIL
