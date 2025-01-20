@@ -46,8 +46,8 @@ struct SingleFileConfig {
 
 struct DirectoryConfig {
     std::string tempFilePath;
-    uint64_t maxTempFilesSize;
-    int32_t fileClearTimeAfterBoot;
+    uint64_t maxTempFilesSize = 0;
+    int32_t fileClearTimeAfterBoot = 0;
     std::vector<SingleFileConfig> singleFileConfigs;
 };
 
@@ -63,7 +63,7 @@ public:
 private:
     FaultLoggerConfig();
     ~FaultLoggerConfig() = default;
-    DirectoryConfig directoryConfig_;
+    DirectoryConfig directoryConfig_{};
 };
 } // namespace HiviewDFX
 } // namespace OHOS
