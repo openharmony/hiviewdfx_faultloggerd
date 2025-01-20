@@ -164,10 +164,6 @@ bool DfxUnwindRemote::UnwindProcess(std::shared_ptr<ProcessDumpRequest> request,
         Printer::CollectThreadFaultStackByConfig(process, process->keyThread_, unwinder);
         process->keyThread_->threadInfo_.nsTid = nsTid;
     }
-
-    if (isVmProcAttach) {
-        DfxPtrace::Detach(vmPid);
-    }
     DFXLOGI("success unwind thread cnt is %{public}d", unwCnt);
     return unwCnt > 0;
 }

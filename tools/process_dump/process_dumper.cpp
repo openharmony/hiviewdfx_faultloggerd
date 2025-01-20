@@ -45,6 +45,7 @@
 #include "dfx_dump_res.h"
 #include "dfx_fdsan.h"
 #include "dfx_logger.h"
+#include "dfx_ptrace.h"
 #include "dfx_process.h"
 #include "dfx_regs.h"
 #include "dfx_ring_buffer_wrapper.h"
@@ -712,6 +713,7 @@ int ProcessDumper::DumpProcess(std::shared_ptr<ProcessDumpRequest> request)
             DFXLOGE("unwind fail.");
         }
         UnwindFinish(request, vmPid);
+        DfxPtrace::Detach(vmPid);
     } while (false);
     return dumpRes;
 }
