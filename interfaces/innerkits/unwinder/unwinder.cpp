@@ -1150,7 +1150,7 @@ bool Unwinder::Impl::Apply(std::shared_ptr<DfxRegs> regs, std::shared_ptr<RegLoc
         errCode = UNW_ERROR_UNREADABLE_SP;
         ret = false;
     }
-    if (regs->GetPc() == prevPc && regs->GetSp() == prevSp) {
+    if (StripPac(regs->GetPc(), pacMask_) == prevPc && regs->GetSp() == prevSp) {
         errCode = UNW_ERROR_REPEATED_FRAME;
         ret = false;
     }
