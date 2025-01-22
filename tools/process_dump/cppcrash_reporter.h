@@ -16,9 +16,6 @@
 #ifndef CPP_CRASH_REPORTER_H
 #define CPP_CRASH_REPORTER_H
 
-#include <cinttypes>
-#include <csignal>
-#include <map>
 #include <memory>
 #include <string>
 #include "dfx_dump_request.h"
@@ -28,16 +25,7 @@ namespace OHOS {
 namespace HiviewDFX {
 class CppCrashReporter {
 public:
-    CppCrashReporter(uint64_t time, std::shared_ptr<DfxProcess> process, int32_t dumpMode) \
-        : time_(time), process_(process)
-    {
-        pid_ = 0;
-        uid_ = 0;
-        cmdline_ = "";
-        reason_ = "";
-        stack_ = "";
-    };
-    virtual ~CppCrashReporter() {};
+    explicit CppCrashReporter(uint64_t time) : time_(time){};
 
     void SetCrashReason(const std::string& reason)
     {
@@ -53,24 +41,22 @@ public:
     {
         cppCrashInfo_ = cppCrashInfo;
     };
-    void ReportToHiview();
-    void ReportToAbilityManagerService();
+    void ReportToHiview(const DfxProcess& process);
+    void ReportToAbilityManagerService(const DfxProcess& process);
 
 private:
-    bool Format();
+    bool Format(const DfxProcess& process);
     static std::string GetRegsString(std::shared_ptr<DfxRegs> regs);
     int32_t WriteCppCrashInfoByPipe();
 
-private:
     uint64_t time_;
-    int32_t pid_;
-    uint32_t uid_;
+    int32_t pid_{0};
+    uint32_t uid_{0};
     std::string cmdline_;
     std::string reason_;
     std::string stack_;
-    std::string registers_ = "";
-    std::string cppCrashInfo_ = "";
-    std::shared_ptr<DfxProcess> process_;
+    std::string registers_;
+    std::string cppCrashInfo_;
 };
 } // namespace HiviewDFX
 } // namespace OHOS

@@ -36,23 +36,19 @@ public:
     static DfxUnwindRemote &GetInstance();
     ~DfxUnwindRemote() = default;
 
-    bool UnwindProcess(std::shared_ptr<ProcessDumpRequest> request, std::shared_ptr<DfxProcess> process,
-                       std::shared_ptr<Unwinder> unwinder, pid_t vmPid = 0);
-    bool InitProcessAllThreadRegs(std::shared_ptr<ProcessDumpRequest> request, std::shared_ptr<DfxProcess> process);
-    void ParseSymbol(std::shared_ptr<ProcessDumpRequest> request, std::shared_ptr<DfxProcess> process,
-                     std::shared_ptr<Unwinder> unwinder);
-    void PrintUnwindResultInfo(std::shared_ptr<ProcessDumpRequest> request, std::shared_ptr<DfxProcess> process,
-                               std::shared_ptr<Unwinder> unwinder, pid_t vmPid);
+    bool UnwindProcess(const ProcessDumpRequest& request, DfxProcess& process, Unwinder& unwinder, pid_t vmPid = 0);
+    bool InitProcessAllThreadRegs(const ProcessDumpRequest& request, DfxProcess& process);
+    static void ParseSymbol(const ProcessDumpRequest& request, DfxProcess& process, Unwinder& unwinder);
+    static void PrintUnwindResultInfo(const ProcessDumpRequest& request, DfxProcess& process,
+        Unwinder& unwinder, pid_t vmPid);
 private:
     DfxUnwindRemote() = default;
-    bool UnwindKeyThread(std::shared_ptr<ProcessDumpRequest> request, std::shared_ptr<DfxProcess> process,
-                                      std::shared_ptr<Unwinder> unwinder, pid_t vmPid = 0);
-    int UnwindOtherThread(std::shared_ptr<DfxProcess> process, std::shared_ptr<Unwinder> unwinder,
-        pid_t vmPid = 0);
+    bool UnwindKeyThread(const ProcessDumpRequest& request, DfxProcess& process, Unwinder& unwinder, pid_t vmPid = 0);
+    int UnwindOtherThread(DfxProcess& process, Unwinder& unwinder, pid_t vmPid = 0);
 
     DISALLOW_COPY_AND_MOVE(DfxUnwindRemote);
-    bool InitTargetKeyThreadRegs(std::shared_ptr<ProcessDumpRequest> request, std::shared_ptr<DfxProcess> process);
-    void InitOtherThreadRegs(std::shared_ptr<DfxProcess> process);
+    static bool InitTargetKeyThreadRegs(const ProcessDumpRequest& request, DfxProcess& process);
+    void InitOtherThreadRegs(DfxProcess& process);
     bool isVmProcAttach = false;
 };
 }   // namespace HiviewDFX

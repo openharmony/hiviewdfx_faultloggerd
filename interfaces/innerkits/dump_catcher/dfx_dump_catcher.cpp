@@ -297,7 +297,6 @@ void DfxDumpCatcher::Impl::ReportDumpCatcherStats(int32_t pid,
             return;
         }
     }
-
     ReportDumpStats(stat);
 }
 

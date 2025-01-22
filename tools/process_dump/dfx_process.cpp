@@ -37,12 +37,6 @@
 
 namespace OHOS {
 namespace HiviewDFX {
-std::shared_ptr<DfxProcess> DfxProcess::Create(pid_t pid, pid_t nsPid)
-{
-    auto process = std::make_shared<DfxProcess>(pid, nsPid);
-    return process;
-}
-
 DfxProcess::DfxProcess(pid_t pid, pid_t nsPid)
 {
     InitProcessInfo(pid, nsPid);
@@ -130,7 +124,7 @@ void DfxProcess::Attach(bool hasKey)
     if (otherThreads_.empty()) {
         return;
     }
-    for (auto thread : otherThreads_) {
+    for (auto& thread : otherThreads_) {
         if (thread->threadInfo_.nsTid == processInfo_.nsPid) {
             thread->Attach(PTRACE_ATTATCH_KEY_THREAD_TIMEOUT);
             continue;
@@ -145,7 +139,7 @@ void DfxProcess::Detach()
         return;
     }
 
-    for (auto thread : otherThreads_) {
+    for (auto& thread : otherThreads_) {
         thread->Detach();
     }
 }

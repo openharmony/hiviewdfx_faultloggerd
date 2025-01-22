@@ -25,7 +25,6 @@ namespace HiviewDFX {
 class DfxFrameFormatter {
 public:
     DfxFrameFormatter() = default;
-    ~DfxFrameFormatter() = default;
 
     /**
      * @brief Get the Frame Str object
@@ -50,22 +49,6 @@ public:
      * @return std::string native frames string
      */
     static std::string GetFramesStr(const std::vector<DfxFrame>& frames);
-
-    /**
-     * @brief Get the Frames Str object
-     *
-     * @param frames native frame pointer list
-     * @return std::string native frames string
-     */
-    static std::string GetFramesStr(const std::vector<std::shared_ptr<DfxFrame>>& frames);
-
-    /**
-     * @brief Convert native frame object lists to native frame pointer list
-     *
-     * @param frames native frame object list
-     * @return std::vector<std::shared_ptr<DfxFrame>> native frame pointer list
-     */
-    static std::vector<std::shared_ptr<DfxFrame>> ConvertFrames(const std::vector<DfxFrame>& frames);
 };
 } // namespace HiviewDFX
 } // namespace OHOS

@@ -46,11 +46,12 @@ public:
 
     std::shared_ptr<DfxRegs> GetThreadRegs() const;
     void SetThreadRegs(const std::shared_ptr<DfxRegs> &regs);
-    void AddFrame(DfxFrame& frame);
-    std::vector<DfxFrame>& GetFrames();
+    void AddFrame(const DfxFrame& frame);
+    void AddFrames(const std::vector<DfxFrame>& frames);
+    const std::vector<DfxFrame>& GetFrames() const;
     void SetFrames(const std::vector<DfxFrame>& frames);
     void InitFaultStack(bool needParseStack = false);
-    void ParseSymbol(std::shared_ptr<Unwinder> unwinder);
+    void ParseSymbol(Unwinder& unwinder);
     std::shared_ptr<FaultStack> GetFaultStack() const;
     std::string ToString() const;
 
