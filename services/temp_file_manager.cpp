@@ -354,10 +354,14 @@ bool TempFileManager::TempFileWatcher::AddWatchEvent(const char* watchPath, uint
 
 void TempFileManager::TempFileWatcher::OnEventPoll()
 {
-    char eventBuf[512]{};
+    constexpr uint32_t eventLen = static_cast<uint32_t>(sizeof(inotify_event));
+    constexpr uint32_t eventLenSize = 32;
+    constexpr uint32_t buffLen = eventLenSize * eventLen;
+    constexpr uint32_t bound = buffLen - eventLen;
+    char eventBuf[buffLen] = {0};
     auto readLen = static_cast<size_t>(OHOS_TEMP_FAILURE_RETRY(read(GetFd(), eventBuf, sizeof(eventBuf))));
     size_t eventPos = 0;
-    while (readLen >= sizeof(inotify_event)) {
+    while (readLen >= eventLen && eventPos < bound) {
         auto *event = reinterpret_cast<inotify_event *>(eventBuf + eventPos);
         if (event->len > 0) {
             std::string fileName(event->name);
@@ -371,7 +375,7 @@ void TempFileManager::TempFileWatcher::OnEventPoll()
                 HandleEvent(event->mask, filePath, *fileConfig);
             }
         }
-        auto eventSize = (sizeof(inotify_event) + event->len);
+        auto eventSize = (eventLen + event->len);
         readLen -= eventSize;
         eventPos += eventSize;
     }

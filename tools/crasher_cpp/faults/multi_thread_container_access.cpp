@@ -32,9 +32,10 @@ static constexpr int THREAD_SIZE = 10;
 
 using TaskFunction = std::function<void(std::shared_ptr<MultiThreadContainerAccess>)>;
 
+namespace {
 int MultiThreadAccess(const TaskFunction& manipulate)
 {
-    auto testcase = std::make_shared<MultiThreadContainerAccess>();
+    auto testcase = std::make_shared<OHOS::HiviewDFX::MultiThreadContainerAccess>();
     testcase->Print();
     std::vector<std::thread> threads;
     for (int i = 0; i < THREAD_SIZE; i++) {
@@ -49,6 +50,7 @@ int MultiThreadAccess(const TaskFunction& manipulate)
         th.join();
     }
     return 0;
+}
 }
 
 int MultiThreadVectorAccess()

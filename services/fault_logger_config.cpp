@@ -41,12 +41,18 @@ constexpr const char* const OVER_SIZE_ACTION_DELETE = "DELETE";
 
 std::string GetStringValueFromJson(const cJSON* json, std::string defaultValue = "")
 {
-    return json == nullptr ? defaultValue : json->valuestring;
+    if (!cJSON_IsString(json)) {
+        return defaultValue;
+    }
+    return json->valuestring;
 }
 
 int32_t GetInt32ValueFromJson(const cJSON* json, int32_t defaultValue = 0)
 {
-    return json == nullptr ? defaultValue : json->valueint;
+    if (!cJSON_IsNumber(json)) {
+        return defaultValue;
+    }
+    return json->valueint;
 }
 
 void ParseSingleFileConfig(const cJSON* tempFile,  std::vector<SingleFileConfig>& singleFileConfigs)

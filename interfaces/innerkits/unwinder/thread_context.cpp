@@ -377,8 +377,8 @@ NO_SANITIZE void LocalThreadContextMix::CopyRegister(void *context)
 
 NO_SANITIZE void LocalThreadContextMix::CopyStackBuf()
 {
-    int curStackSz = stackTop_ - sp_;
-    int cpySz = std::min(curStackSz, STACK_BUFFER_SIZE);
+    uintptr_t curStackSz = stackTop_ - sp_;
+    int cpySz = std::min(static_cast<int>(curStackSz), STACK_BUFFER_SIZE);
     if (stackBuf_.size() == 0) {
         return;
     }
