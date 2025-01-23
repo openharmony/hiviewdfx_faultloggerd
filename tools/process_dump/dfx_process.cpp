@@ -166,16 +166,19 @@ bool GetProcessInfo(pid_t tid, unsigned long long &startTime)
     std::string path = "/proc/" +std::to_string(tid);
     UniqueFd dirFd(open(path.c_str(), O_DIRECTORY | O_RDONLY));
     if (dirFd == -1) {
+        DFXLOGE("GetProcessInfo open %{public}s fail. errno %{public}d", path.c_str(), errno);
         return false;
     }
 
     UniqueFd statFd(openat(dirFd.Get(), "stat", O_RDONLY | O_CLOEXEC));
     if (statFd == -1) {
+        DFXLOGE("GetProcessInfo open %{public}s/stat fail. errno %{public}d", path.c_str(), errno);
         return false;
     }
 
     std::string statStr;
     if (!ReadFdToString(statFd.Get(), statStr)) {
+        DFXLOGE("GetProcessInfo read string fail.");
         return false;
     }
 
@@ -192,6 +195,7 @@ bool GetProcessInfo(pid_t tid, unsigned long long &startTime)
             return true;
         }
     }
+    DFXLOGE("GetProcessInfo Get process info fail.");
     return false;
 }
 }
@@ -202,10 +206,12 @@ std::string DfxProcess::GetProcessLifeCycle(pid_t pid)
     sysinfo(&si);
     unsigned long long startTime = 0;
     if (GetProcessInfo(pid, startTime)) {
-        if (sysconf(_SC_CLK_TCK) == -1) {
+        auto clkTck = sysconf(_SC_CLK_TCK);
+        if (clkTck == -1) {
+            DFXLOGE("Get _SC_CLK_TCK fail. errno %{public}d", errno);
             return "";
         }
-        uint64_t upTime = si.uptime - startTime / static_cast<uint32_t>(sysconf(_SC_CLK_TCK));
+        uint64_t upTime = si.uptime - startTime / static_cast<uint32_t>(clkTck);
         return std::to_string(upTime) + "s";
     }
     return "";
