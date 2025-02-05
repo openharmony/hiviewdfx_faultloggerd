@@ -38,7 +38,7 @@ using namespace std;
 namespace OHOS {
 namespace HiviewDFX {
 namespace {
-constexpr int32_t SOCKET_TIMEOUT = 5;
+constexpr int32_t SOCKET_TIMEOUT = 1;
 constexpr int32_t FD_PAIR_NUM = 2;
 constexpr const char* const FAULTLOGGERD_SERVER_TEST_TAG = "FAULTLOGGERD_SERVER_TEST";
 void FillRequestHeadData(RequestDataHead& head, int8_t clientType)

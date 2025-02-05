@@ -34,7 +34,7 @@
 
 namespace {
 constexpr const char* const FAULTLOGGERD_CLIENT_TAG = "FAULT_LOGGERD_CLIENT";
-constexpr int32_t SOCKET_TIMEOUT = 5;
+constexpr int32_t SOCKET_TIMEOUT = 1;
 std::string GetSocketName()
 {
     char content[NAME_BUF_LEN];
