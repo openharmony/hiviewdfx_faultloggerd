@@ -122,6 +122,10 @@ if (defined(ohos_lite)) {
     if (processdump_parse_lock_owner_enable) {
       defines += [ "PARSE_LOCK_OWNER" ]
     }
+
+    if (use_hwasan) {
+      defines += [ "ENABLE_HWASAN" ]
+    }
   }
 
   ohos_source_set("process_info_src") {
