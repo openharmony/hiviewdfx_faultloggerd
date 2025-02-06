@@ -140,7 +140,7 @@ std::string DfxRegsLoongArch64::PrintRegs() const
 bool DfxRegsLoongArch64::StepIfSignalFrame(uintptr_t pc, std::shared_ptr<DfxMemory> memory)
 {
     uint64_t data;
-    if (!memory->ReadU64(pc, &data, false)) {
+    if (!memory->Read<uint64_t>(pc, &data, false)) {
         return false;
     }
     DFXLOGU("data: %llx", data);
