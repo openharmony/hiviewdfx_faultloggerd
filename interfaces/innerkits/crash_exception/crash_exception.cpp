@@ -111,8 +111,8 @@ void ReportUnwinderException(uint16_t unwError)
 
 bool CheckFaultSummaryValid(const std::string &summary)
 {
-    return (summary.find("#00 pc") != std::string::npos) && (summary.find("#01 pc") != std::string::npos) &&
-           (summary.find("#02 pc") != std::string::npos);
+    return (summary.find("#00") != std::string::npos) && (summary.find("#01") != std::string::npos) &&
+           (summary.find("#02") != std::string::npos);
 }
 
 } // namespace HiviewDFX
