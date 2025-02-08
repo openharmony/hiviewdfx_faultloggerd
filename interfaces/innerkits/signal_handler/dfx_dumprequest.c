@@ -314,6 +314,14 @@ static void RestoreDumpState(int prevState, bool isTracerStatusModified)
     }
 }
 
+static void SafeDelayOneMillSec(void)
+{
+    struct timespec ts;
+    ts.tv_sec = 0;
+    ts.tv_nsec = 1000000; // 1000000 : 1ms
+    OHOS_TEMP_FAILURE_RETRY(nanosleep(&ts, &ts));
+}
+
 static bool StartProcessdump(void)
 {
     uint64_t startTime = GetAbsTimeMilliSeconds();
@@ -353,9 +361,15 @@ static bool StartProcessdump(void)
             _exit(0);
         }
     }
-
-    if (waitpid(pid, NULL, 0) <= 0) {
-        DFXLOGE("failed to wait dummy processdump(%{public}d)", errno);
+    int timeOutCnt = 3000; // 3000 : 3 sec timeout
+    while (timeOutCnt > 0 && waitpid(pid, NULL, WNOHANG) <= 0) {
+        SafeDelayOneMillSec();
+        timeOutCnt--;
+        if (timeOutCnt == 0) {
+            DFXLOGI("waitpid %{public}d timeout", pid);
+            kill(pid, SIGKILL);
+            FillCrashExceptionAndReport(CRASH_SIGNAL_EWAITPIDTIMEOUT);
+        }
     }
     return true;
 }
