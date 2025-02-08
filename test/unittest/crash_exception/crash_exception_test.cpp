@@ -269,5 +269,21 @@ HWTEST_F(CrashExceptionTest, CrashExceptionTest011, TestSize.Level2)
     ASSERT_EQ(name, "");
     GTEST_LOG_(INFO) << "CrashExceptionTest011: end.";
 }
+
+/**
+ * @tc.name: CrashExceptionTest12
+ * @tc.desc: test CheckFaultSummaryValid, valid Fault Summary.
+ * @tc.type: FUNC
+ */
+HWTEST_F(CrashExceptionTest, CrashExceptionTest12, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "CrashExceptionTest12: start.";
+    std::string summary = std::string("Thread name:sensors\n") +
+        "#00 pc 000c5738 /system/lib/ld-musl-arm.so.1(ioctl+72)(b985d2b9b22c3e542388f5803bac6a56)\n" +
+        "#01 pc 00007fcf Not mapped\n" +
+        "#02 at /system/etc/abc/framework/stateMgmt.abc\n";
+    ASSERT_TRUE(CheckFaultSummaryValid(summary));
+    GTEST_LOG_(INFO) << "CrashExceptionTest12: end.";
+}
 } // namespace HiviewDFX
 } // namespace OHOS
