@@ -218,6 +218,10 @@ void FaultStack::CollectRegistersBlock(std::shared_ptr<DfxRegs> regs, std::share
     auto regsData = regs->GetRegsData();
     int index = 0;
     for (auto data : regsData) {
+#if defined(ENABLE_HWASAN)
+        constexpr uintptr_t tbiMask = 0xff00000000000000; // the upper eight bits are TBI
+        data &= ~tbiMask;
+#endif
         index++;
         std::shared_ptr<DfxMap> map;
         if (!maps->FindMapByAddr(data, map)) {
