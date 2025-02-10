@@ -12,12 +12,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { describe, beforeAll, beforeEach, afterEach, afterAll} from '@ohos/hypium'
+import { describe, beforeAll, beforeEach, afterEach, afterAll} from 'deccjsunit/index'
 export default function FaultloggedTest() {
 
 describe("FaultloggedTest", function () {
+    const waitMillSecond = 3000;
+    const testFuncLayer = 5;
+
+    function jsFunc(layer) {
+        if (layer > 0) {
+            jsFunc(layer - 1);
+        } else {
+            let startTime = new Date().getTime();
+            while (new Date().getTime() -  startTime < waitMillSecond);
+        }
+    }
+
     beforeAll(function() {
         console.info('FaultloggedTest beforeAll called')
+        jsFunc(testFuncLayer);
     })
 
     afterAll(function() {

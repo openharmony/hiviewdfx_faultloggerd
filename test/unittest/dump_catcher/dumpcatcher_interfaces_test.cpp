@@ -377,7 +377,12 @@ HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest014, TestSize.Level
     std::string msg = "";
     bool ret = dumplog.DumpCatch(g_testPid, 0, msg);
     GTEST_LOG_(INFO) << ret;
-    string log[] = { "Tid:", "Name:", "#00", "/system/bin/appspawn", "Name:OS_DfxWatchdog" };
+#if defined(__aarch64__)
+    string log[] = { "Tid:", "Name:", "#00", "/system/bin/appspawn", "Name:OS_DfxWatchdog",
+                     "at jsFunc", "index_.js"};
+#else
+    string log[] = { "Tid:", "Name:", "#00", "/system/bin/appspawn", "Name:OS_DfxWatchdog"};
+#endif
     log[0] += std::to_string(g_testPid);
     log[1] += TRUNCATE_TEST_BUNDLE_NAME;
     int len = sizeof(log) / sizeof(log[0]);
