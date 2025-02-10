@@ -28,6 +28,7 @@
 #include "dfx_ring_buffer_wrapper.h"
 #include "dfx_signal.h"
 #include "dfx_util.h"
+#include "crash_exception.h"
 #include "string_printf.h"
 #include "string_util.h"
 #ifndef is_ohos_lite
@@ -65,8 +66,12 @@ void Printer::PrintDumpHeader(std::shared_ptr<ProcessDumpRequest> request, std::
     DfxRingBufferWrapper::GetInstance().AppendBuf("Uid:%d\n", process->processInfo_.uid);
     DfxRingBufferWrapper::GetInstance().AppendBuf("Process name:%s\n", process->processInfo_.processName.c_str());
     if (isCrash) {
-        DfxRingBufferWrapper::GetInstance().AppendBuf("Process life time:%s\n",
-            DfxProcess::GetProcessLifeCycle(process->processInfo_.pid).c_str());
+        auto lifeCycle = DfxProcess::GetProcessLifeCycle(process->processInfo_.pid);
+        DfxRingBufferWrapper::GetInstance().AppendBuf("Process life time:%s\n", lifeCycle.c_str());
+        if (lifeCycle.empty()) {
+            ReportCrashException(request->processName, request->pid, request->uid,
+                                 CrashExceptionCode::CRASH_LOG_EPROCESS_LIFECYCLE);
+        }
 
         std::string reasonInfo;
         PrintReason(request, process, unwinder, reasonInfo);

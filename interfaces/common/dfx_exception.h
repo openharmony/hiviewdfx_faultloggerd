@@ -59,6 +59,7 @@ enum CrashExceptionCode : int32_t {
     CRASH_LOG_EMAPLOS,                  /* Maps not found */
     CRASH_LOG_EHILOGLOS,                /* Hilog not found */
     CRASH_LOG_ESUMMARYLOS,              /* Fault Summary not found */
+    CRASH_LOG_EPROCESS_LIFECYCLE,       /* Process lifecycle is null */
 
     CRASH_UNKNOWN = 500,                /* Unknown reason */
 };
