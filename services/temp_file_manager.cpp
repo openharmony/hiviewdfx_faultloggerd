@@ -276,7 +276,14 @@ int32_t TempFileManager::CreateFileDescriptor(int32_t type, int32_t pid, int32_t
     DFXLOGI("%{public}s :: create file for path(%{public}s).", TEMP_FILE_MANAGER_TAG, ss.c_str());
     int32_t fd = OHOS_TEMP_FAILURE_RETRY(open(ss.c_str(), O_RDWR | O_CREAT, S_IRUSR | S_IWUSR | S_IRGRP));
     if (fd < 0) {
-        DFXLOGE("%{public}s :: Failed to create log file, errno(%{public}d)", TEMP_FILE_MANAGER_TAG, errno);
+        int openErrno = errno;
+        const auto& dirPath = FaultLoggerConfig::GetInstance().GetTempFileConfig().tempFilePath;
+        if (access(dirPath.c_str(), F_OK) != 0) {
+            DFXLOGE("%{public}s :: Failed to create log file, errno(%{public}d). %{public}s does not exist!!!",
+                    TEMP_FILE_MANAGER_TAG, openErrno, dirPath.c_str());
+        } else {
+            DFXLOGE("%{public}s :: Failed to create log file, errno(%{public}d)", TEMP_FILE_MANAGER_TAG, openErrno);
+        }
     }
     return fd;
 }
