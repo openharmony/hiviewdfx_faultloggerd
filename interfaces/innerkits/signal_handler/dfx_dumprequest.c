@@ -322,6 +322,25 @@ static void SafeDelayOneMillSec(void)
     OHOS_TEMP_FAILURE_RETRY(nanosleep(&ts, &ts));
 }
 
+static bool IsWaitpidTimeout(pid_t pid, int timeout)
+{
+    while (timeout > 0) {
+        int res = waitpid(pid, NULL, WNOHANG);
+        if (res > 0) {
+            break;
+        } else if (res < 0) {
+            DFXLOGE("failed to wait dummy processdump(%{public}d)", errno);
+            break;
+        }
+        SafeDelayOneMillSec();
+        timeout--;
+        if (timeout == 0) {
+            return true;
+        }
+    }
+    return false;
+}
+
 static bool StartProcessdump(void)
 {
     uint64_t startTime = GetAbsTimeMilliSeconds();
@@ -361,15 +380,13 @@ static bool StartProcessdump(void)
             _exit(0);
         }
     }
+
     int timeOutCnt = 3000; // 3000 : 3 sec timeout
-    while (timeOutCnt > 0 && waitpid(pid, NULL, WNOHANG) <= 0) {
-        SafeDelayOneMillSec();
-        timeOutCnt--;
-        if (timeOutCnt == 0) {
-            DFXLOGI("waitpid %{public}d timeout", pid);
-            kill(pid, SIGKILL);
-            FillCrashExceptionAndReport(CRASH_SIGNAL_EWAITPIDTIMEOUT);
-        }
+    if (IsWaitpidTimeout(pid, timeOutCnt)) {
+        DFXLOGI("waitpid %{public}d timeout", pid);
+        kill(pid, SIGKILL);
+        FillCrashExceptionAndReport(CRASH_SIGNAL_EWAITPIDTIMEOUT);
+        return false;
     }
     return true;
 }
