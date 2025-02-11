@@ -15,6 +15,7 @@
 
 #include "dfx_crasher.h"
 
+#include <info/fatal_message.h>
 #include <pthread.h>
 #include <signal.h>
 #include <sys/mman.h>
@@ -61,10 +62,22 @@ NOINLINE int RaiseAbort(void)
     }
     return 0;
 }
+
 NOINLINE int Abort(void)
 {
     HILOG_FATAL(LOG_CORE, "Test Trigger ABORT!");
     abort();
+    return 0;
+}
+
+NOINLINE int SetLastFatalMessage(void)
+{
+    const char msg[] = "Test Trigger ABORT!";
+    set_fatal_message(msg);
+    int ret = raise(SIGABRT);
+    if (ret != 0) {
+        printf("raise SIGABRT failed!");
+    }
     return 0;
 }
 
@@ -364,6 +377,7 @@ uint64_t ParseAndDoCrash(const char *arg)
         {"SIGSEGV", RaiseSegmentFaultException},
         {"SIGTRAP", RaiseTrapException},
         {"SIGABRT", RaiseAbort},
+        {"SetLastFatalMessage", SetLastFatalMessage},
         {"triSIGABRT", Abort},
         {"triSIGSEGV", SegmentFaultException},
         {"SIGBUS", RaiseBusError},
