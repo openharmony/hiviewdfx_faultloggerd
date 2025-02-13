@@ -52,7 +52,9 @@ if (defined(ohos_lite)) {
   }
 
   group("unittest") {
-    deps = [ ":test_processdump" ]
+    if (ohos_build_type == "debug") {
+      deps = [ ":test_processdump" ]
+    }
   }
 } else {
   import("//build/config/features.gni")
