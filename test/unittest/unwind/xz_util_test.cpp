@@ -43,7 +43,7 @@ namespace {
  * @tc.desc: test XzUtil functions
  * @tc.type: FUNC
  */
-#ifndef __x86_64__
+#if !is_emulator
 HWTEST_F(DfxXzUtilTest, DfxXzUtilTest001, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "DfxXzUtilTest001: start.";

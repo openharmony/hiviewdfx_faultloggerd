@@ -65,12 +65,12 @@ HWTEST_F(ArchUtilTest, ArchUtilTest001, TestSize.Level2)
     if ((uname(&systemName)) != 0) {
         ASSERT_EQ(GetArchFromUname(systemName.machine), ArchType::ARCH_X86_64);
     }
-    ASSER_EQ(GetCurrentArch(), ArchType::ARCH_X86_64);
+    ASSERT_EQ(GetCurrentArch(), ArchType::ARCH_X86_64);
 #else
     if ((uname(&systemName)) != 0) {
         ASSERT_EQ(GetArchFromUname(systemName.machine), ArchType::ARCH_UNKNOWN);
     }
-    ASSER_EQ(GetCurrentArch(), ArchType::ARCH_UNKNOWN);
+    ASSERT_EQ(GetCurrentArch(), ArchType::ARCH_UNKNOWN);
 #endif
     ASSERT_EQ(GetArchName(ArchType::ARCH_X86), "X86_32");
     ASSERT_EQ(GetArchName(ArchType::ARCH_X86_64), "X86_64");

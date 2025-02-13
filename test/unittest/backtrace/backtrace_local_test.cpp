@@ -558,6 +558,7 @@ void CallMixFirst(int tid, bool fast, int colNumber)
     Compare(oldStr, mixStr, colNumber);
 }
 
+#if defined(__arm__) || defined(__aarch64__)
 /**
  * @tc.name: BacktraceLocalTest016
  * @tc.desc: test backtrace other thread
@@ -581,5 +582,6 @@ HWTEST_F(BacktraceLocalTest, BacktraceLocalTest016, TestSize.Level2)
         backtraceTread.join();
     }
 }
+#endif
 } // namespace HiviewDFX
 } // namepsace OHOS

@@ -25,7 +25,7 @@ static TRACE_MUTEX : Mutex<i32> = Mutex::new(0);
 #[link(name = "backtrace_local")]
 extern "C" {
     fn PrintTrace(fd : c_int) -> bool;
-    fn GetTrace(skip_frame_num : c_uint) -> *const c_char;
+    fn GetTrace(skip_frame_num : c_uint, max_frame_num : c_uint) -> *const c_char;
 }
 
 /// Print Rust trace into File
@@ -41,10 +41,11 @@ pub fn get_trace(is_crash : bool) -> String {
     unsafe {
         let mutex = TRACE_MUTEX.lock().unwrap();
         let mut skip_frame_num = 0;
+        let max_frame_num = 256;
         if is_crash {
             skip_frame_num = 8;
         }
-        let trace = GetTrace(skip_frame_num);
+        let trace = GetTrace(skip_frame_num, max_frame_num);
         CStr::from_ptr(trace).to_str().unwrap().to_owned()
     }
 }

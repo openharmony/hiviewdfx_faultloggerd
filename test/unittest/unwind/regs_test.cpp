@@ -93,18 +93,22 @@ HWTEST_F(DfxRegsTest, DfxRegsTest002, TestSize.Level2)
     uintptr_t sp = 0x00000003;
     uintptr_t pc = 0x00000004;
     dfxRegs->SetSpecialRegs(fp, lr, sp, pc);
+#if defined(__arm__) || defined(__aarch64__) || defined(__riscv)
     ASSERT_EQ(dfxRegs->GetSpecialRegsName(lr), "lr");
     ASSERT_EQ(dfxRegs->GetSpecialRegsName(fp), "fp");
+    ASSERT_EQ(dfxRegs->GetSpecialRegsName(0x0), "");
+#endif
     ASSERT_EQ(dfxRegs->GetSpecialRegsName(pc), "pc");
     ASSERT_EQ(dfxRegs->GetSpecialRegsName(sp), "sp");
-    ASSERT_EQ(dfxRegs->GetSpecialRegsName(0x0), "");
     uintptr_t fpGet;
     uintptr_t lrGet;
     uintptr_t spGet;
     uintptr_t pcGet;
     dfxRegs->GetSpecialRegs(fpGet, lrGet, spGet, pcGet);
+#if defined(__arm__) || defined(__aarch64__) || defined(__riscv)
     ASSERT_EQ(fp, fpGet);
     ASSERT_EQ(lr, lrGet);
+#endif
     ASSERT_EQ(sp, spGet);
     ASSERT_EQ(pc, pcGet);
     ASSERT_FALSE(dfxRegs->PrintRegs().empty());
@@ -288,9 +292,11 @@ HWTEST_F(DfxRegsTest, DfxRegsTest006, TestSize.Level2)
         ASSERT_EQ(dfxRegs->GetReg(maxIdx), nullptr);
         uintptr_t value = 0;
         dfxRegs->SetReg(maxIdx, &value);
+#if defined(__arm__) || defined(__aarch64__) || defined(__riscv)
         uintptr_t fp = 0x80;
         dfxRegs->SetFp(fp);
         ASSERT_EQ(dfxRegs->GetFp(), fp);
+#endif
         DfxPtrace::Detach(pid);
         _exit(0);
     }

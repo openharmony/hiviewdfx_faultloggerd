@@ -25,7 +25,10 @@ ohos_unittest("test_unwind") {
     "$faultloggerd_path/test/utils",
   ]
   configs = [ "$faultloggerd_common_path/build:coverage_flags" ]
-  defines = [ "DFX_LOG_UNWIND" ]
+  defines = [
+    "DFX_LOG_UNWIND",
+    "is_emulator=${is_emulator}",
+  ]
   sources = [
     "accessors_test.cpp",
     "ark_test.cpp",
@@ -118,6 +121,7 @@ ohos_unittest("test_exidx") {
     "DFX_LOG_UNWIND",
     "DFX_UNWIND_ERROR",
     "is_ohos=${is_ohos}",
+    "is_emulator=${is_emulator}",
     "TEST_ARM_EXIDX",
   ]
   sources = [

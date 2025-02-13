@@ -37,6 +37,10 @@ if (defined(ohos_lite)) {
       "$faultloggerd_path/interfaces/innerkits/unwinder/include",
     ]
 
+    if (is_ohos && !is_mingw && !is_emulator) {
+      defines = [ "ENABLE_XZUTIL" ]
+    }
+
     sources = [ "faultloggerdunwinder_fuzzer.cpp" ]
     deps = [
       "$faultloggerd_path/common/dfxlog:dfx_hilog",
