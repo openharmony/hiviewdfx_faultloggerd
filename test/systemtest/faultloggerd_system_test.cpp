@@ -1855,6 +1855,7 @@ HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest130, TestSize.Level2)
         FAIL();
     }
     EXPECT_TRUE(CheckCountNumAbort(fileName, pid)) << "FaultLoggerdSystemTest130 Failed";
+
     pid = TriggerCrasherAndGetFileName(cmd, CRASHER_CPP, fileName);
     GTEST_LOG_(INFO) << "test pid(" << pid << ")"  << " cppcrash file name : " << fileName;
     if (pid < 0 || fileName.size() < CPPCRASH_FILENAME_MIN_LENGTH) {
