@@ -23,6 +23,7 @@
 #include <cstring>
 #include <fstream>
 #include <hilog/log.h>
+#include <info/fatal_message.h>
 #include <iostream>
 #include <sstream>
 #include <pthread.h>
@@ -91,6 +92,7 @@ constexpr static CrasherCommandLine CMDLINE_TABLE[] = {
     {"SIGSEGV", "raise a SIGSEGV", &DfxCrasher::RaiseSegmentFaultException},
     {"SIGTRAP", "raise a SIGTRAP", &DfxCrasher::RaiseTrapException},
     {"SIGABRT", "raise a SIGABRT", &DfxCrasher::RaiseAbort},
+    {"SetLastFatalMessage", "raise a SIGABRT", &DfxCrasher::SetLastFatalMessage},
     {"SIGBUS", "raise a SIGBUS", &DfxCrasher::RaiseBusError},
 
     {"triSIGILL", "trigger a SIGILL", &DfxCrasher::IllegalInstructionException},
@@ -265,6 +267,14 @@ NOINLINE int DfxCrasher::RaiseTrapException()
 NOINLINE int DfxCrasher::RaiseAbort()
 {
     HILOG_FATAL(LOG_CORE, "Test Trigger ABORT!");
+    raise(SIGABRT);
+    return 0;
+}
+
+NOINLINE int DfxCrasher::SetLastFatalMessage()
+{
+    const char msg[] = "Test Trigger ABORT!";
+    set_fatal_message(msg);
     raise(SIGABRT);
     return 0;
 }

@@ -34,6 +34,7 @@ public:
     static int RaiseTrapException();
     static int IllegalInstructionException();
     static int SegmentFaultException();
+    static int SetLastFatalMessage();
     static int Abort();
     static int Loop();
 

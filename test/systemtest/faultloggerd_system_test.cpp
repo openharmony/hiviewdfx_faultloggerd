@@ -1837,5 +1837,33 @@ HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest129, TestSize.Level2)
     }
 }
 #endif
+
+/**
+* @tc.name: FaultLoggerdSystemTest130
+* @tc.desc: test  crasher application: SetLastFatalMessage
+* @tc.type: FUNC
+*/
+HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest130, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest130: start.";
+    string cmd = "SetLastFatalMessage";
+    string fileName;
+    pid_t pid = TriggerCrasherAndGetFileName(cmd, CRASHER_C, fileName);
+    GTEST_LOG_(INFO) << "test pid(" << pid << ")"  << " cppcrash file name : " << fileName;
+    if (pid < 0 || fileName.size() < CPPCRASH_FILENAME_MIN_LENGTH) {
+        GTEST_LOG_(ERROR) << "Trigger Crash Failed.";
+        FAIL();
+    }
+    EXPECT_TRUE(CheckCountNumAbort(fileName, pid)) << "FaultLoggerdSystemTest130 Failed";
+
+    pid = TriggerCrasherAndGetFileName(cmd, CRASHER_CPP, fileName);
+    GTEST_LOG_(INFO) << "test pid(" << pid << ")"  << " cppcrash file name : " << fileName;
+    if (pid < 0 || fileName.size() < CPPCRASH_FILENAME_MIN_LENGTH) {
+        GTEST_LOG_(ERROR) << "Trigger Crash Failed.";
+        FAIL();
+    }
+    EXPECT_TRUE(CheckCountNumAbort(fileName, pid)) << "FaultLoggerdSystemTest130 Failed";
+    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest130: end.";
+}
 } // namespace HiviewDFX
 } // namespace OHOS
