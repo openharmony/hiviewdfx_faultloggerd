@@ -571,21 +571,27 @@ std::string ProcessDumper::ReadStringByPtrace(pid_t tid, uintptr_t addr, size_t 
     return std::string(val);
 }
 
-void ProcessDumper::UpdateFatalMessageWhenDebugSignal(const ProcessDumpRequest& request)
+void ProcessDumper::UpdateFatalMessageWhenDebugSignal(const ProcessDumpRequest& request, pid_t vmPid)
 {
-    if (process_ == nullptr || request.siginfo.si_signo != SIGLEAK_STACK ||
+    pid_t pid = vmPid != 0 ? vmPid : request.nsPid;
+    if (request.siginfo.si_signo != SIGLEAK_STACK ||
         !(request.siginfo.si_code == SIGLEAK_STACK_FDSAN || request.siginfo.si_code == SIGLEAK_STACK_JEMALLOC)) {
+        return;
+    }
+
+    if (pid == 0 || process_ == nullptr) {
+        DFXLOGE("pid %{public}d, process_ is %{public}s nullptr.", pid, process_ == nullptr ? "" : "not");
         return;
     }
 
     auto debugMsgPtr = reinterpret_cast<uintptr_t>(request.siginfo.si_value.sival_ptr);
     debug_msg_t dMsg = {0};
-    if (DfxMemory::ReadProcMemByPid(request.nsPid, debugMsgPtr, &dMsg, sizeof(dMsg)) != sizeof(debug_msg_t)) {
+    if (DfxMemory::ReadProcMemByPid(pid, debugMsgPtr, &dMsg, sizeof(dMsg)) != sizeof(debug_msg_t)) {
         DFXLOGE("Get debug_msg_t failed.");
         return;
     }
     auto msgPtr = reinterpret_cast<uintptr_t>(dMsg.msg);
-    auto lastMsg = ReadStringByPtrace(request.nsPid, msgPtr, MAX_FATAL_MSG_SIZE);
+    auto lastMsg = ReadStringByPtrace(pid, msgPtr, MAX_FATAL_MSG_SIZE);
     if (lastMsg.empty()) {
         DFXLOGE("Get debug_msg_t.msg failed.");
         return;
@@ -659,7 +665,7 @@ bool ProcessDumper::Unwind(std::shared_ptr<ProcessDumpRequest> request, int &dum
     }
     GetCrashObj(request);
     if (!IsOversea() || IsBetaVersion()) {
-        UpdateFatalMessageWhenDebugSignal(*request);
+        UpdateFatalMessageWhenDebugSignal(*request, vmPid);
     }
     if (!DfxUnwindRemote::GetInstance().UnwindProcess(request, process_, unwinder_, vmPid)) {
         DFXLOGE("Failed to unwind process.");
@@ -999,6 +1005,7 @@ void ProcessDumper::ReportAddrSanitizer(ProcessDumpRequest &request, std::string
                     OHOS::HiviewDFX::HiSysEvent::EventType::FAULT,
                     "MODULE", request.processName,
                     "PID", request.pid,
+                    "UID", request.uid,
                     "HAPPEN_TIME", request.timeStamp,
                     "REASON", reason,
                     "SUMMARY", summary);

@@ -17,7 +17,9 @@
 
 #include <string>
 #include <vector>
+#include <list>
 #include <csignal>
+#include <regex>
 #include <sys/wait.h>
 
 #define NOINLINE __attribute__((noinline))
@@ -72,6 +74,15 @@ enum CrasherType {
     CRASHER_C,
     CRASHER_CPP
 };
+
+struct LineRule {
+    std::string regString;
+    std::regex lineReg;
+    size_t needMatchCnt{1};
+
+    explicit LineRule(std::string reg, size_t cnt = 1) : regString(reg), lineReg(std::regex(reg)), needMatchCnt(cnt) {}
+};
+
 std::string ExecuteCommands(const std::string& cmds);
 bool ExecuteCommands(const std::string& cmds, std::vector<std::string>& ress);
 int GetProcessPid(const std::string& processName);
@@ -96,6 +107,7 @@ bool CreatePipeFd(int (&fd)[2]);
 void NotifyProcStart(int (&fd)[2]);
 void WaitProcStart(int (&fd)[2]);
 bool IsLinuxKernel();
+bool CheckLineMatch(const std::string& filePath, std::list<LineRule>& rules);
 } // namespace HiviewDFX
 } // namespace OHOS
 #endif // DFX_TEST_UTIL
