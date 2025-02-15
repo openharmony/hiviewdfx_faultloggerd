@@ -13,8 +13,6 @@
  * limitations under the License.
  */
 import { describe, beforeAll, beforeEach, afterEach, afterAll} from 'deccjsunit/index'
-export default function FaultloggedTest() {
-
 describe("FaultloggedTest", function () {
     const waitMillSecond = 3000;
     const testFuncLayer = 5;
@@ -46,4 +44,3 @@ describe("FaultloggedTest", function () {
     })
 
 })
-}
