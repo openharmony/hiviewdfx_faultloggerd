@@ -286,7 +286,9 @@ void FaultloggerdUnwinderTest(const uint8_t* data, size_t size)
 #endif
     TestThreadContext(data, size);
     TestDfxInstrStatistic(data, size);
+#if defined(ENABLE_XZUTIL)
     TestDfxXzUtils(data, size);
+#endif
     sleep(1);
 }
 } // namespace HiviewDFX

@@ -264,6 +264,7 @@ private:
     bool enableFpCheckMapExec_ = false;
     bool isFpStep_ = false;
     bool isArkCreateLocal_ = false;
+    bool isResetFrames_ = false;
     MAYBE_UNUSED bool enableMixstack_ = true;
     MAYBE_UNUSED bool ignoreMixstack_ = false;
     MAYBE_UNUSED bool stopWhenArkFrame_ = false;
@@ -780,11 +781,11 @@ bool Unwinder::Impl::Unwind(void *ctx, size_t maxFrameNum, size_t skipFrameNum)
     Clear();
 
     bool needAdjustPc = false;
-    bool resetFrames = false;
+    isResetFrames_ = false;
     StepFrame frame;
     do {
-        if (!resetFrames && (skipFrameNum != 0) && (frames_.size() >= skipFrameNum)) {
-            resetFrames = true;
+        if (!isResetFrames_ && (skipFrameNum != 0) && (frames_.size() >= skipFrameNum)) {
+            isResetFrames_ = true;
             DFXLOGU("frames size: %{public}zu, will be reset frames", frames_.size());
             frames_.clear();
         }
@@ -1032,7 +1033,7 @@ void Unwinder::Impl::UpdateRegsState(
     }
 #endif
     } else {
-        if (enableLrFallback_ && (frames_.size() == 1) && regs_->SetPcFromReturnAddress(memory_)) {
+        if (enableLrFallback_ && (frames_.size() == 1 && !isResetFrames_) && regs_->SetPcFromReturnAddress(memory_)) {
             unwinderResult = true;
             if (pid_ != UNWIND_TYPE_CUSTOMIZE) {
                 DFXLOGW("Failed to step first frame, lr fallback");

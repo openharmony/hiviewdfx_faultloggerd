@@ -157,6 +157,7 @@ HWTEST_F(DfxElfTest, DfxElfTest003, TestSize.Level2)
     GTEST_LOG_(INFO) << "DfxElfTest003: end.";
 }
 
+#if !is_emulator
 /**
  * @tc.name: DfxElfTest004
  * @tc.desc: test DfxElf class functions with minidebugInfo
@@ -177,6 +178,7 @@ HWTEST_F(DfxElfTest, DfxElfTest004, TestSize.Level2)
     ASSERT_GE(symbols1.size(), symbols2.size());
     GTEST_LOG_(INFO) << "DfxElfTest004: end.";
 }
+#endif
 
 /**
  * @tc.name: DfxElfTest005

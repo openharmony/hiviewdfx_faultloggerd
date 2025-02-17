@@ -266,7 +266,7 @@ void *SleepThread(void *argv)
 NOINLINE int StackTop(void)
 {
     printf("test StackTop\n");
-    register void* stackTop;
+    __attribute__((unused))register void* stackTop;
 #if defined(__arm__)
     __asm__ volatile ("mov %0, sp":"=r"(stackTop)::);
     printf("crasher_c: stack top is = %08x\n", (unsigned int)stackTop);

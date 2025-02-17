@@ -80,6 +80,7 @@ const char *const BLOCK_CRASH_PROCESS = "faultloggerd.priv.block_crash_process.e
 const char *const GLOBAL_REGION = "const.global.region";
 const char *const LOGSYSTEM_VERSION_TYPE = "const.logsystem.versiontype";
 const int MAX_FILE_COUNT = 5;
+const int ARG_MAX_NUM = 131072;
 
 static bool IsOversea()
 {
@@ -126,9 +127,6 @@ void WriteData(int fd, const std::string& data, size_t blockSize)
     DFXLOGI("%{public}s :: needWriteDataSize: %{public}zu, writeDataSize: %{public}zu", __func__, dataSize, index);
 }
 
-#if !defined(__x86_64__)
-const int ARG_MAX_NUM = 131072;
-#endif
 using OpenFilesList = std::map<int, FDInfo>;
 
 bool ReadLink(std::string &src, std::string &dst)
@@ -170,7 +168,6 @@ void CollectOpenFiles(OpenFilesList &list, pid_t pid)
     }
 }
 
-#if !defined(__x86_64__)
 void FillFdsaninfo(OpenFilesList &list, pid_t nsPid, uint64_t fdTableAddr)
 {
     constexpr size_t fds = sizeof(FdTable::entries) / sizeof(*FdTable::entries);
@@ -221,7 +218,6 @@ void FillFdsaninfo(OpenFilesList &list, pid_t nsPid, uint64_t fdTableAddr)
         fdIndex++;
     }
 }
-#endif
 
 std::string DumpOpenFiles(OpenFilesList &files)
 {
@@ -499,9 +495,7 @@ std::string GetOpenFiles(int32_t pid, int nsPid, uint64_t fdTableAddr)
     DFX_TRACE_SCOPED("GetOpenFiles");
     OpenFilesList openFies;
     CollectOpenFiles(openFies, pid);
-#if !defined(__x86_64__)
     FillFdsaninfo(openFies, nsPid, fdTableAddr);
-#endif
     std::string fds = DumpOpenFiles(openFies);
     DFXLOGI("get open files info finish");
     return fds;
