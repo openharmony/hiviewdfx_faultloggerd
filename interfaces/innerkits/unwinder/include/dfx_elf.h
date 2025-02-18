@@ -44,7 +44,7 @@ public:
     std::string GetBuildId();
     void SetBuildId(const std::string& buildId);
     static std::string GetBuildId(uint64_t noteAddr, uint64_t noteSize);
-    const GnuDebugDataHdr GetGnuDebugDataHdr();
+    const GnuDebugDataHdr& GetGnuDebugDataHdr();
     uintptr_t GetGlobalPointer();
     int64_t GetLoadBias();
     uint64_t GetLoadBase(uint64_t mapStart, uint64_t mapOffset);

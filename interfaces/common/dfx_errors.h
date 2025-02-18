@@ -90,21 +90,21 @@ enum UnwindErrorCode : uint16_t {
  */
 class UnwindErrorData {
 public:
-    inline uint16_t GetCode() { return code_; }
-    inline uint64_t GetAddr() { return addr_; }
+    uint16_t GetCode() { return code_; }
+    uint64_t GetAddr() { return addr_; }
 
-    inline void SetAddrAndCode(uintptr_t addr, uint16_t code)
+    void SetAddrAndCode(uintptr_t addr, uint16_t code)
     {
         addr_ = addr;
         code_ = code;
     }
 
-    inline void SetCode(uint16_t code)
+    void SetCode(uint16_t code)
     {
         code_ = code;
     }
 
-    inline void SetAddr(uintptr_t addr)
+    void SetAddr(uintptr_t addr)
     {
         addr_ = addr;
     }

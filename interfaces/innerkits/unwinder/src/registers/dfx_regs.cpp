@@ -68,12 +68,18 @@ std::shared_ptr<DfxRegs> DfxRegs::CreateFromRegs(const UnwindMode mode, const ui
         DFXLOGE("The number of long groups is too short");
         return dfxregs;
     }
-    if (mode == UnwindMode::DWARF_UNWIND) {
-        dfxregs->SetRegsData(regs, REG_LAST);
-    } else if (mode == UnwindMode::FRAMEPOINTER_UNWIND) {
-        dfxregs->SetFromFpMiniRegs(regs, FP_MINI_REGS_SIZE);
-    } else if (mode == UnwindMode::MINIMAL_UNWIND) {
-        dfxregs->SetFromQutMiniRegs(regs, QUT_MINI_REGS_SIZE);
+    switch (mode) {
+        case UnwindMode::DWARF_UNWIND:
+            dfxregs->SetRegsData(regs, REG_LAST);
+            break;
+        case UnwindMode::FRAMEPOINTER_UNWIND:
+            dfxregs->SetFromFpMiniRegs(regs, FP_MINI_REGS_SIZE);
+            break;
+        case UnwindMode::MINIMAL_UNWIND:
+            dfxregs->SetFromQutMiniRegs(regs, QUT_MINI_REGS_SIZE);
+            break;
+        default:
+            break;
     }
     return dfxregs;
 }

@@ -14,41 +14,41 @@
 import("//base/hiviewdfx/faultloggerd/faultloggerd.gni")
 
 dfx_unwinder_sources = [
-  "$faultloggerd_interfaces_path/innerkits/unwinder/src/ark/dfx_ark.cpp",
-  "$faultloggerd_interfaces_path/innerkits/unwinder/src/ark/dfx_hap.cpp",
-  "$faultloggerd_interfaces_path/innerkits/unwinder/src/elf/dfx_elf.cpp",
-  "$faultloggerd_interfaces_path/innerkits/unwinder/src/elf/dfx_elf_parser.cpp",
-  "$faultloggerd_interfaces_path/innerkits/unwinder/src/elf/dfx_mmap.cpp",
-  "$faultloggerd_interfaces_path/innerkits/unwinder/src/elf/dfx_symbols.cpp",
-  "$faultloggerd_interfaces_path/innerkits/unwinder/src/elf/elf_factory.cpp",
-  "$faultloggerd_interfaces_path/innerkits/unwinder/src/elf/elf_factory_selector.cpp",
-  "$faultloggerd_interfaces_path/innerkits/unwinder/src/maps/dfx_map.cpp",
-  "$faultloggerd_interfaces_path/innerkits/unwinder/src/maps/dfx_maps.cpp",
-  "$faultloggerd_interfaces_path/innerkits/unwinder/src/memory/dfx_accessors.cpp",
-  "$faultloggerd_interfaces_path/innerkits/unwinder/src/memory/dfx_memory.cpp",
-  "$faultloggerd_interfaces_path/innerkits/unwinder/src/registers/dfx_regs.cpp",
-  "$faultloggerd_interfaces_path/innerkits/unwinder/src/registers/dfx_regs_arm.cpp",
-  "$faultloggerd_interfaces_path/innerkits/unwinder/src/registers/dfx_regs_arm64.cpp",
-  "$faultloggerd_interfaces_path/innerkits/unwinder/src/registers/dfx_regs_loongarch64.cpp",
-  "$faultloggerd_interfaces_path/innerkits/unwinder/src/registers/dfx_regs_riscv64.cpp",
-  "$faultloggerd_interfaces_path/innerkits/unwinder/src/registers/dfx_regs_x86_64.cpp",
-  "$faultloggerd_interfaces_path/innerkits/unwinder/src/registers/getcontext_x86_64.S",
-  "$faultloggerd_interfaces_path/innerkits/unwinder/src/unwind_local/thread_context.cpp",
-  "$faultloggerd_interfaces_path/innerkits/unwinder/src/utils/dfx_config.cpp",
-  "$faultloggerd_interfaces_path/innerkits/unwinder/src/utils/dfx_frame_formatter.cpp",
-  "$faultloggerd_interfaces_path/innerkits/unwinder/src/utils/dfx_instr_statistic.cpp",
-  "$faultloggerd_interfaces_path/innerkits/unwinder/src/utils/dfx_instructions.cpp",
-  "$faultloggerd_interfaces_path/innerkits/unwinder/src/utils/dfx_ptrace.cpp",
-  "$faultloggerd_interfaces_path/innerkits/unwinder/src/utils/unwinder_config.cpp",
-  "$faultloggerd_interfaces_path/innerkits/unwinder/unwinder.cpp",
+  "src/ark/dfx_ark.cpp",
+  "src/ark/dfx_hap.cpp",
+  "src/elf/dfx_elf.cpp",
+  "src/elf/dfx_elf_parser.cpp",
+  "src/elf/dfx_mmap.cpp",
+  "src/elf/dfx_symbols.cpp",
+  "src/elf/elf_factory.cpp",
+  "src/elf/elf_factory_selector.cpp",
+  "src/maps/dfx_map.cpp",
+  "src/maps/dfx_maps.cpp",
+  "src/memory/dfx_accessors.cpp",
+  "src/memory/dfx_memory.cpp",
+  "src/registers/dfx_regs.cpp",
+  "src/registers/dfx_regs_arm.cpp",
+  "src/registers/dfx_regs_arm64.cpp",
+  "src/registers/dfx_regs_loongarch64.cpp",
+  "src/registers/dfx_regs_riscv64.cpp",
+  "src/registers/dfx_regs_x86_64.cpp",
+  "src/registers/getcontext_x86_64.S",
+  "src/unwind_local/thread_context.cpp",
+  "src/utils/dfx_config.cpp",
+  "src/utils/dfx_frame_formatter.cpp",
+  "src/utils/dfx_instr_statistic.cpp",
+  "src/utils/dfx_instructions.cpp",
+  "src/utils/dfx_ptrace.cpp",
+  "src/utils/unwinder_config.cpp",
+  "unwinder.cpp",
 ]
 
-dfx_exidx_sources = [ "$faultloggerd_interfaces_path/innerkits/unwinder/src/unwind_entry_parser/exidx_entry_parser.cpp" ]
+dfx_exidx_sources = [ "src/unwind_entry_parser/exidx_entry_parser.cpp" ]
 
 dfx_dwarf_sources = [
-  "$faultloggerd_interfaces_path/innerkits/unwinder/src/unwind_entry_parser/dwarf_cfa_instructions.cpp",
-  "$faultloggerd_interfaces_path/innerkits/unwinder/src/unwind_entry_parser/dwarf_entry_parser.cpp",
-  "$faultloggerd_interfaces_path/innerkits/unwinder/src/unwind_entry_parser/dwarf_op.cpp",
+  "src/unwind_entry_parser/dwarf_cfa_instructions.cpp",
+  "src/unwind_entry_parser/dwarf_entry_parser.cpp",
+  "src/unwind_entry_parser/dwarf_op.cpp",
 ]
 
 if (defined(ohos_lite)) {
@@ -69,11 +69,11 @@ if (defined(ohos_lite)) {
       "$faultloggerd_common_path/dfxlog",
       "$faultloggerd_common_path/dfxutil",
       "$faultloggerd_interfaces_path/common",
-      "$faultloggerd_interfaces_path/innerkits/unwinder/include",
+      "include",
       "$hilog_lite_include_path",
     ]
 
-    dfx_unwinder_sources -= [ "$faultloggerd_interfaces_path/innerkits/unwinder/src/registers/getcontext_x86_64.S" ]
+    dfx_unwinder_sources -= [ "src/registers/getcontext_x86_64.S" ]
     sources = dfx_unwinder_sources
     sources += dfx_exidx_sources
     sources += dfx_dwarf_sources
@@ -99,11 +99,11 @@ if (defined(ohos_lite)) {
       "$faultloggerd_common_path/dfxlog",
       "$faultloggerd_common_path/dfxutil",
       "$faultloggerd_interfaces_path/common",
-      "$faultloggerd_interfaces_path/innerkits/unwinder/include",
+      "include",
       "$hilog_lite_include_path",
     ]
 
-    dfx_unwinder_sources -= [ "$faultloggerd_interfaces_path/innerkits/unwinder/src/registers/getcontext_x86_64.S" ]
+    dfx_unwinder_sources -= [ "src/registers/getcontext_x86_64.S" ]
     sources = dfx_unwinder_sources
     sources += dfx_exidx_sources
     sources += dfx_dwarf_sources
@@ -129,7 +129,7 @@ if (defined(ohos_lite)) {
       "$faultloggerd_common_path/dfxlog",
       "$faultloggerd_common_path/dfxutil",
       "$faultloggerd_interfaces_path/common",
-      "$faultloggerd_interfaces_path/innerkits/unwinder/include",
+      "include",
     ]
 
     defines = [
@@ -171,7 +171,7 @@ if (defined(ohos_lite)) {
     }
 
     if (target_cpu != "x86_64") {
-      dfx_unwinder_sources -= [ "$faultloggerd_interfaces_path/innerkits/unwinder/src/registers/getcontext_x86_64.S" ]
+      dfx_unwinder_sources -= [ "src/registers/getcontext_x86_64.S" ]
     }
     sources = dfx_unwinder_sources
     sources += dfx_exidx_sources
@@ -211,7 +211,7 @@ if (defined(ohos_lite)) {
     ]
 
     if (target_cpu != "x86_64") {
-      dfx_unwinder_sources -= [ "$faultloggerd_interfaces_path/innerkits/unwinder/src/registers/getcontext_x86_64.S" ]
+      dfx_unwinder_sources -= [ "src/registers/getcontext_x86_64.S" ]
     }
     sources = dfx_unwinder_sources
     sources += dfx_exidx_sources
@@ -242,7 +242,7 @@ if (defined(ohos_lite)) {
     defines = [ "DFX_LOG_HILOG_BASE" ]
 
     if (target_cpu != "x86_64") {
-      dfx_unwinder_sources -= [ "$faultloggerd_interfaces_path/innerkits/unwinder/src/registers/getcontext_x86_64.S" ]
+      dfx_unwinder_sources -= [ "src/registers/getcontext_x86_64.S" ]
     }
     sources = dfx_unwinder_sources
     sources += dfx_exidx_sources
@@ -276,7 +276,7 @@ if (defined(ohos_lite)) {
     ]
 
     if (target_cpu != "x86_64") {
-      dfx_unwinder_sources -= [ "$faultloggerd_interfaces_path/innerkits/unwinder/src/registers/getcontext_x86_64.S" ]
+      dfx_unwinder_sources -= [ "src/registers/getcontext_x86_64.S" ]
     }
     sources = dfx_unwinder_sources
     sources += dfx_exidx_sources
@@ -302,7 +302,7 @@ if (defined(ohos_lite)) {
     visibility = [ "*:*" ]
 
     include_dirs = [
-      "$faultloggerd_interfaces_path/innerkits/unwinder/include",
+      "include",
       "$faultloggerd_common_path/dfxlog",
       "$faultloggerd_common_path/dfxutil",
       "$faultloggerd_interfaces_path/common",
@@ -324,15 +324,17 @@ if (defined(ohos_lite)) {
       ":lzma_config",
     ]
     sources = [
-      "$faultloggerd_interfaces_path/innerkits/unwinder/src/ark/dfx_hap.cpp",
-      "$faultloggerd_interfaces_path/innerkits/unwinder/src/elf/dfx_elf.cpp",
-      "$faultloggerd_interfaces_path/innerkits/unwinder/src/elf/dfx_elf_parser.cpp",
-      "$faultloggerd_interfaces_path/innerkits/unwinder/src/elf/dfx_mmap.cpp",
-      "$faultloggerd_interfaces_path/innerkits/unwinder/src/elf/dfx_symbols.cpp",
-      "$faultloggerd_interfaces_path/innerkits/unwinder/src/maps/dfx_map.cpp",
-      "$faultloggerd_interfaces_path/innerkits/unwinder/src/maps/dfx_maps.cpp",
-      "$faultloggerd_interfaces_path/innerkits/unwinder/src/memory/dfx_memory.cpp",
-      "$faultloggerd_interfaces_path/innerkits/unwinder/src/utils/unwinder_config.cpp",
+      "src/ark/dfx_hap.cpp",
+      "src/elf/dfx_elf.cpp",
+      "src/elf/dfx_elf_parser.cpp",
+      "src/elf/dfx_mmap.cpp",
+      "src/elf/dfx_symbols.cpp",
+      "src/elf/elf_factory.cpp",
+      "src/elf/elf_factory_selector.cpp",
+      "src/maps/dfx_map.cpp",
+      "src/maps/dfx_maps.cpp",
+      "src/memory/dfx_memory.cpp",
+      "src/utils/unwinder_config.cpp",
     ]
     if (is_ohos && !is_mingw && !is_emulator) {
       public_external_deps = [ "lzma:lzma_static" ]

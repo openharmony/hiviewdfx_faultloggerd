@@ -18,7 +18,6 @@
 #include <algorithm>
 #include <cstdlib>
 #include <fcntl.h>
-#include <securec.h>
 #include <string>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -32,6 +31,9 @@
 #include "dfx_util.h"
 #if defined(ENABLE_MINIDEBUGINFO)
 #include "unwinder_config.h"
+#include "7zCrc.h"
+#include "Xz.h"
+#include "XzCrc64.h"
 #endif
 
 namespace OHOS {
@@ -71,12 +73,12 @@ std::shared_ptr<DfxElf> MiniDebugInfoFactory::Create()
     return miniDebugInfo;
 }
 
-void* MiniDebugInfoFactory::XzAlloc(ISzAllocPtr, size_t size)
+static void* XzAlloc(ISzAllocPtr, size_t size)
 {
     return malloc(size);
 }
 
-void MiniDebugInfoFactory::XzFree(ISzAllocPtr, void *address)
+static void XzFree(ISzAllocPtr, void *address)
 {
     free(address);
 }

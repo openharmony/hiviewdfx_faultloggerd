@@ -196,8 +196,7 @@ void FillFdsaninfo(OpenFilesList &list, pid_t nsPid, uint64_t fdTableAddr)
     }
 
     size_t overflowLength;
-    if (ReadProcMemByPid(nsPid, overflow, &overflowLength, sizeof(overflowLength))
-        != sizeof(overflowLength)) {
+    if (ReadProcMemByPid(nsPid, overflow, &overflowLength, sizeof(overflowLength)) != sizeof(overflowLength)) {
         return;
     }
     if (overflowLength > ARG_MAX_NUM) {

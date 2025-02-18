@@ -28,42 +28,13 @@ namespace OHOS {
 namespace HiviewDFX {
 void DfxRegsLoongArch64::SetFromUcontext(const ucontext_t &context)
 {
-    std::vector<uintptr_t> regs;
-    regs.emplace_back(uintptr_t(context.uc_mcontext.__gregs[REG_LOONGARCH64_R0]));   // 0:r0
-    regs.emplace_back(uintptr_t(context.uc_mcontext.__gregs[REG_LOONGARCH64_R1]));   // 1:r1
-    regs.emplace_back(uintptr_t(context.uc_mcontext.__gregs[REG_LOONGARCH64_R2]));   // 2:r2
-    regs.emplace_back(uintptr_t(context.uc_mcontext.__gregs[REG_LOONGARCH64_R3]));   // 3:r3
-    regs.emplace_back(uintptr_t(context.uc_mcontext.__gregs[REG_LOONGARCH64_R4]));   // 4:r4
-    regs.emplace_back(uintptr_t(context.uc_mcontext.__gregs[REG_LOONGARCH64_R5]));   // 5:r5
-    regs.emplace_back(uintptr_t(context.uc_mcontext.__gregs[REG_LOONGARCH64_R6]));   // 6:r6
-    regs.emplace_back(uintptr_t(context.uc_mcontext.__gregs[REG_LOONGARCH64_R7]));   // 7:r7
-    regs.emplace_back(uintptr_t(context.uc_mcontext.__gregs[REG_LOONGARCH64_R8]));   // 8:r8
-    regs.emplace_back(uintptr_t(context.uc_mcontext.__gregs[REG_LOONGARCH64_R9]));   // 9:r9
-    regs.emplace_back(uintptr_t(context.uc_mcontext.__gregs[REG_LOONGARCH64_R10])); // 10:r10
-    regs.emplace_back(uintptr_t(context.uc_mcontext.__gregs[REG_LOONGARCH64_R11])); // 11:r11
-    regs.emplace_back(uintptr_t(context.uc_mcontext.__gregs[REG_LOONGARCH64_R12])); // 12:r12
-    regs.emplace_back(uintptr_t(context.uc_mcontext.__gregs[REG_LOONGARCH64_R13])); // 13:r13
-    regs.emplace_back(uintptr_t(context.uc_mcontext.__gregs[REG_LOONGARCH64_R14])); // 14:r14
-    regs.emplace_back(uintptr_t(context.uc_mcontext.__gregs[REG_LOONGARCH64_R15])); // 15:r15
-    regs.emplace_back(uintptr_t(context.uc_mcontext.__gregs[REG_LOONGARCH64_R16])); // 16:r16
-    regs.emplace_back(uintptr_t(context.uc_mcontext.__gregs[REG_LOONGARCH64_R17])); // 17:r17
-    regs.emplace_back(uintptr_t(context.uc_mcontext.__gregs[REG_LOONGARCH64_R18])); // 18:r18
-    regs.emplace_back(uintptr_t(context.uc_mcontext.__gregs[REG_LOONGARCH64_R19])); // 19:r19
-    regs.emplace_back(uintptr_t(context.uc_mcontext.__gregs[REG_LOONGARCH64_R20])); // 20:r20
-    regs.emplace_back(uintptr_t(context.uc_mcontext.__gregs[REG_LOONGARCH64_R21])); // 21:r21
-    regs.emplace_back(uintptr_t(context.uc_mcontext.__gregs[REG_LOONGARCH64_R22])); // 22:r22
-    regs.emplace_back(uintptr_t(context.uc_mcontext.__gregs[REG_LOONGARCH64_R23])); // 23:r23
-    regs.emplace_back(uintptr_t(context.uc_mcontext.__gregs[REG_LOONGARCH64_R24])); // 24:r24
-    regs.emplace_back(uintptr_t(context.uc_mcontext.__gregs[REG_LOONGARCH64_R25])); // 25:r25
-    regs.emplace_back(uintptr_t(context.uc_mcontext.__gregs[REG_LOONGARCH64_R26])); // 26:r26
-    regs.emplace_back(uintptr_t(context.uc_mcontext.__gregs[REG_LOONGARCH64_R27])); // 27:r27
-    regs.emplace_back(uintptr_t(context.uc_mcontext.__gregs[REG_LOONGARCH64_R28])); // 28:r28
-    regs.emplace_back(uintptr_t(context.uc_mcontext.__gregs[REG_LOONGARCH64_R29])); // 29:r29
-    regs.emplace_back(uintptr_t(context.uc_mcontext.__gregs[REG_LOONGARCH64_R30])); // 30:r30
-    regs.emplace_back(uintptr_t(context.uc_mcontext.__gregs[REG_LOONGARCH64_R31])); // 31:r31
-    regs.emplace_back(uintptr_t(context.uc_mcontext.__pc)); // 32:pc
-
-    SetRegsData(regs);
+    if (regsData_.size() < REG_LAST) {
+        return;
+    }
+    for (uint16_t index = 0; index <= REG_LOONGARCH64_R31; index++) {
+        regsData_[index] = static_cast<uintptr_t>(context.uc_mcontext.__gregs[index]);
+    }
+    regsData_[REG_LOONGARCH64_PC] = (static_cast<uintptr_t>(context.uc_mcontext.__pc)); // 32:pc
 }
 
 void DfxRegsLoongArch64::SetFromFpMiniRegs(const uintptr_t* regs, const size_t size)

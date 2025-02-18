@@ -45,7 +45,7 @@ public:
     {
         context_.Reset(DfxRegsQut::GetQutRegsSize());
     }
-    virtual ~ExidxEntryParser() = default;
+    ~ExidxEntryParser() override = default;
 
     bool Step(uintptr_t pc, const UnwindTableInfo& uti, std::shared_ptr<RegLocState> rs) override;
 private:

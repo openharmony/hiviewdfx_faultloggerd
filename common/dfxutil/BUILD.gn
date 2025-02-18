@@ -81,7 +81,7 @@ if (defined(ohos_lite)) {
   }
 
   ohos_static_library("dfx_util_host") {
-    sources = dfx_util_sources
+    sources = [ "dfx_util.cpp" ]
     public_configs = [ ":dfx_util_config" ]
     defines = [ "DFX_NO_PRINT_LOG" ]
     if (is_ohos) {

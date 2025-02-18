@@ -85,7 +85,7 @@ struct __attribute__((packed)) DwarfEhFrameHdr {
 };
 
 struct GnuDebugDataHdr {
-    uint8_t *address = 0;
+    uint8_t *address = nullptr;
     uintptr_t size = 0;
 };
 

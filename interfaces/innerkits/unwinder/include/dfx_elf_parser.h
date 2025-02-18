@@ -61,7 +61,7 @@ public:
     virtual bool GetFuncSymbolByAddr(uint64_t addr, ElfSymbol& elfSymbol) = 0;
     const std::unordered_map<uint64_t, ElfLoadInfo>& GetPtLoads() {return ptLoads_;}
     bool Read(uintptr_t pos, void *buf, size_t size);
-    const GnuDebugDataHdr GetGnuDebugDataHdr();
+    const GnuDebugDataHdr& GetGnuDebugDataHdr() const;
     std::string GetBuildId();
     static std::string ParseHexBuildId(uint64_t noteAddr, uint64_t noteSize);
 protected:

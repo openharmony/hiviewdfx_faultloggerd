@@ -32,38 +32,9 @@ void DfxRegsRiscv64::SetFromUcontext(const ucontext_t &context)
     if (regsData_.size() < REG_LAST) {
         return;
     }
-    regsData_[REG_RISCV64_X0] = static_cast<uintptr_t>(context.uc_mcontext.__gregs[REG_RISCV64_X0]);
-    regsData_[REG_RISCV64_X1] = static_cast<uintptr_t>(context.uc_mcontext.__gregs[REG_RISCV64_X1]);
-    regsData_[REG_RISCV64_X2] = static_cast<uintptr_t>(context.uc_mcontext.__gregs[REG_RISCV64_X2]);
-    regsData_[REG_RISCV64_X3] = static_cast<uintptr_t>(context.uc_mcontext.__gregs[REG_RISCV64_X3]);
-    regsData_[REG_RISCV64_X4] = static_cast<uintptr_t>(context.uc_mcontext.__gregs[REG_RISCV64_X4]);
-    regsData_[REG_RISCV64_X5] = static_cast<uintptr_t>(context.uc_mcontext.__gregs[REG_RISCV64_X5]);
-    regsData_[REG_RISCV64_X6] = static_cast<uintptr_t>(context.uc_mcontext.__gregs[REG_RISCV64_X6]);
-    regsData_[REG_RISCV64_X7] = static_cast<uintptr_t>(context.uc_mcontext.__gregs[REG_RISCV64_X7]);
-    regsData_[REG_RISCV64_X8] = static_cast<uintptr_t>(context.uc_mcontext.__gregs[REG_RISCV64_X8]);
-    regsData_[REG_RISCV64_X9] = static_cast<uintptr_t>(context.uc_mcontext.__gregs[REG_RISCV64_X9]);
-    regsData_[REG_RISCV64_X10] = static_cast<uintptr_t>(context.uc_mcontext.__gregs[REG_RISCV64_X10]);
-    regsData_[REG_RISCV64_X11] = static_cast<uintptr_t>(context.uc_mcontext.__gregs[REG_RISCV64_X11]);
-    regsData_[REG_RISCV64_X12] = static_cast<uintptr_t>(context.uc_mcontext.__gregs[REG_RISCV64_X12]);
-    regsData_[REG_RISCV64_X13] = static_cast<uintptr_t>(context.uc_mcontext.__gregs[REG_RISCV64_X13]);
-    regsData_[REG_RISCV64_X14] = static_cast<uintptr_t>(context.uc_mcontext.__gregs[REG_RISCV64_X14]);
-    regsData_[REG_RISCV64_X15] = static_cast<uintptr_t>(context.uc_mcontext.__gregs[REG_RISCV64_X15]);
-    regsData_[REG_RISCV64_X16] = static_cast<uintptr_t>(context.uc_mcontext.__gregs[REG_RISCV64_X16]);
-    regsData_[REG_RISCV64_X17] = static_cast<uintptr_t>(context.uc_mcontext.__gregs[REG_RISCV64_X17]);
-    regsData_[REG_RISCV64_X18] = static_cast<uintptr_t>(context.uc_mcontext.__gregs[REG_RISCV64_X18]);
-    regsData_[REG_RISCV64_X19] = static_cast<uintptr_t>(context.uc_mcontext.__gregs[REG_RISCV64_X19]);
-    regsData_[REG_RISCV64_X20] = static_cast<uintptr_t>(context.uc_mcontext.__gregs[REG_RISCV64_X20]);
-    regsData_[REG_RISCV64_X21] = static_cast<uintptr_t>(context.uc_mcontext.__gregs[REG_RISCV64_X21]);
-    regsData_[REG_RISCV64_X22] = static_cast<uintptr_t>(context.uc_mcontext.__gregs[REG_RISCV64_X22]);
-    regsData_[REG_RISCV64_X23] = static_cast<uintptr_t>(context.uc_mcontext.__gregs[REG_RISCV64_X23]);
-    regsData_[REG_RISCV64_X24] = static_cast<uintptr_t>(context.uc_mcontext.__gregs[REG_RISCV64_X24]);
-    regsData_[REG_RISCV64_X25] = static_cast<uintptr_t>(context.uc_mcontext.__gregs[REG_RISCV64_X25]);
-    regsData_[REG_RISCV64_X26] = static_cast<uintptr_t>(context.uc_mcontext.__gregs[REG_RISCV64_X26]);
-    regsData_[REG_RISCV64_X27] = static_cast<uintptr_t>(context.uc_mcontext.__gregs[REG_RISCV64_X27]);
-    regsData_[REG_RISCV64_X28] = static_cast<uintptr_t>(context.uc_mcontext.__gregs[REG_RISCV64_X28]);
-    regsData_[REG_RISCV64_X29] = static_cast<uintptr_t>(context.uc_mcontext.__gregs[REG_RISCV64_X29]);
-    regsData_[REG_RISCV64_X30] = static_cast<uintptr_t>(context.uc_mcontext.__gregs[REG_RISCV64_X30]);
-    regsData_[REG_RISCV64_X31] = static_cast<uintptr_t>(context.uc_mcontext.__gregs[REG_RISCV64_X31]);
+    for (uint16_t index = 0; index <= REG_RISCV64_X31; index++) {
+        regsData_[index] = static_cast<uintptr_t>(context.uc_mcontext.__gregs[index]);
+    }
 }
 
 void DfxRegsRiscv64::SetFromFpMiniRegs(const uintptr_t* regs, const size_t size)
