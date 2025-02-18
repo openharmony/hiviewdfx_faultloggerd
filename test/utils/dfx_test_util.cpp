@@ -180,6 +180,45 @@ int CheckKeyWords(const std::string& filePath, std::string *keywords, int length
     return count;
 }
 
+bool CheckLineMatch(const std::string& filePath, std::list<LineRule>& rules)
+{
+    std::ifstream logFile(filePath);
+    if (!logFile.is_open()) {
+        return false;
+    }
+
+    std::string line;
+    while (std::getline(logFile, line)) {
+        if (!logFile.good()) {
+            break;
+        }
+
+        for (auto it = rules.begin(); it != rules.end(); /* no increment here */) {
+            if (!std::regex_match(line, it->lineReg)) {
+                ++it;
+                continue;
+            }
+
+            it->needMatchCnt -= 1;
+            if (it->needMatchCnt == 0) {
+                it = rules.erase(it);
+            }
+            break;
+        }
+
+        if (rules.empty()) {
+            break;
+        }
+    }
+    if (!rules.empty()) {
+        for (const auto& it : rules) {
+            std::cout << "not match rule: " << it.regString << std::endl;
+        }
+        return false;
+    }
+    return true;
+}
+
 bool CheckContent(const std::string& content, const std::string& keyContent, bool checkExist)
 {
     bool findKeyContent = false;

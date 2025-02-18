@@ -62,7 +62,7 @@ private:
     void Report(std::shared_ptr<ProcessDumpRequest> request, std::string &jsonInfo);
     void ReadFdTable(const ProcessDumpRequest &request);
     static std::string ReadStringByPtrace(pid_t tid, uintptr_t addr, size_t maxLen = DEFAULT_MAX_STRING_LEN);
-    void UpdateFatalMessageWhenDebugSignal(const ProcessDumpRequest& request);
+    void UpdateFatalMessageWhenDebugSignal(const ProcessDumpRequest& request, pid_t vmPid);
     std::string ReadCrashObjString(pid_t tid, uintptr_t addr) const;
     std::string ReadCrashObjMemory(pid_t tid, uintptr_t addr, size_t length) const;
     void GetCrashObj(std::shared_ptr<ProcessDumpRequest> request);

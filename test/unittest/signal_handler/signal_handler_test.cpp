@@ -28,6 +28,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <thread>
 
 #include "dfx_define.h"
 #include "dfx_signal_handler.h"
@@ -117,28 +118,30 @@ static bool CheckCrashKeyWords(const string& filePath, pid_t pid, int sig)
     return CheckKeyWords(filePath, keywords, length, minRegIdx) == length;
 }
 
-static bool CheckDebugSignalWords(const string& filePath, pid_t pid, int siCode)
+static bool CheckDebugSignalFaultlog(const string& filePath, pid_t pid, int siCode)
 {
     if (filePath.empty() || pid <= 0) {
         return false;
     }
-    map<int, string> sigKey = {
-        { SIGLEAK_STACK_FDSAN, string("SIGNAL(FDSAN)") },
-        { SIGLEAK_STACK_JEMALLOC, string("SIGNAL(JEMALLOC)") },
-        { SIGLEAK_STACK_BADFD, string("SIGNAL(BADFD)") },
-    };
-    string sigKeyword = "";
-    map<int, string>::iterator iter = sigKey.find(siCode);
-    if (iter != sigKey.end()) {
-        sigKeyword = iter->second;
+    std::list<LineRule> rules;
+    rules.push_back(LineRule(R"(^Build info:.*$)"));
+    rules.push_back(LineRule(R"(^Process name:./test_signalhandler$)"));
+    rules.push_back(LineRule(R"(^Process life time:.*$)"));
+    rules.push_back(LineRule("^Pid:" + to_string(pid) + "$"));
+    rules.push_back(LineRule(R"(^Uid:\d+$)"));
+    rules.push_back(LineRule(R"(^Reason:Signal:DEBUG SIGNAL\((FDSAN|JEMALLOC|BADFD)\).*$)"));
+    rules.push_back(LineRule(R"(^#\d+ pc [0-9a-f]+ .*$)", 5)); // match 5 times
+    rules.push_back(LineRule(R"(^Registers:$)"));
+    rules.push_back(LineRule(R"(^FaultStack:$)"));
+    rules.push_back(LineRule(R"(^Maps:$)"));
+    if (siCode != SIGLEAK_STACK_BADFD) {
+        rules.push_back(LineRule(R"(^LastFatalMessage:.*$)"));
     }
-    string keywords[] = {
-        "Pid:" + to_string(pid), "Uid:", "name:./test_signalhandler", sigKeyword,
-        "Tid:", "#00", "Registers:", "FaultStack:", "Maps:", "test_signalhandler"
-    };
-    int length = sizeof(keywords) / sizeof(keywords[0]);
-    int minRegIdx = -1;
-    return CheckKeyWords(filePath, keywords, length, minRegIdx) == length;
+    if (siCode != SIGLEAK_STACK_JEMALLOC) {
+        rules.push_back(LineRule(R"(^OpenFiles:$)"));
+        rules.push_back(LineRule(R"(^\d+->.*$)", 5)); // match 5 times
+    }
+    return CheckLineMatch(filePath, rules);
 }
 
 void ThreadInfo(char* buf, size_t len, void* context __attribute__((unused)))
@@ -218,7 +221,7 @@ static bool SendSigTestDebugSignal(int siCode)
     }
 
     sleep(2); // 2 : wait for cppcrash generating
-    return CheckDebugSignalWords(GetDumpLogFileName("stacktrace", pid, TEMP_DIR), pid, siCode);
+    return CheckDebugSignalFaultlog(GetDumpLogFileName("stacktrace", pid, TEMP_DIR), pid, siCode);
 }
 
 static void TestFdsan()
@@ -245,6 +248,14 @@ static void TestBadfd()
     close(fd);
     close(fd);
     return;
+}
+
+void TestBadfdThread(int maxCnt)
+{
+    for (int i = 0; i < maxCnt; i++) {
+        sleep(2); // Delay 2s waiting for the next triggerable cycle
+        TestBadfd();
+    }
 }
 
 /**
@@ -831,7 +842,7 @@ HWTEST_F(SignalHandlerTest, SignalHandlerTest021, TestSize.Level2)
     } else {
         constexpr int siCode = SIGLEAK_STACK_FDSAN;
         auto fileName = WaitCreateCrashFile("stacktrace", pid);
-        bool ret = CheckDebugSignalWords(fileName, pid, siCode);
+        bool ret = CheckDebugSignalFaultlog(fileName, pid, siCode);
         ASSERT_TRUE(ret);
     }
 }
@@ -862,9 +873,36 @@ HWTEST_F(SignalHandlerTest, SignalHandlerTest022, TestSize.Level2)
     } else {
         constexpr int siCode = SIGLEAK_STACK_BADFD;
         auto fileName = WaitCreateCrashFile("stacktrace", pid);
-        bool ret = CheckDebugSignalWords(fileName, pid, siCode);
+        bool ret = CheckDebugSignalFaultlog(fileName, pid, siCode);
         ASSERT_TRUE(ret);
     }
+}
+
+/**
+ * @tc.name: SignalHandlerTest023
+ * @tc.desc: test BADFD
+ * @tc.type: FUNC
+ */
+HWTEST_F(SignalHandlerTest, SignalHandlerTest023, TestSize.Level2)
+{
+    std::string res = ExecuteCommands("uname");
+    bool linuxKernel = res.find("Linux") != std::string::npos;
+    if (linuxKernel) {
+        ASSERT_TRUE(linuxKernel);
+        return;
+    }
+
+    if (DFX_InstallSignalHandler != nullptr) {
+        DFX_InstallSignalHandler();
+    }
+
+    constexpr int maxCnt = 3; // Run the test 3 times
+    std::thread testBadfdThread(TestBadfdThread, maxCnt);
+    for (int i = 0; i < maxCnt; i++) {
+        auto fileName = WaitCreateCrashFile("stacktrace", getpid());
+        ASSERT_TRUE(!fileName.empty());
+    }
+    testBadfdThread.join();
 }
 
 /**
