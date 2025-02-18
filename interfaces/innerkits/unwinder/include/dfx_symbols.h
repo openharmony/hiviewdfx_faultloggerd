@@ -43,6 +43,9 @@ private:
 #ifdef RUSTC_DEMANGLE
     static bool FindRustDemangleFunction();
 #endif
+#if defined(CJ_DEMANGLE) && defined (__LP64__)
+    static bool FindCJDemangleFunction();
+#endif
 };
 } // namespace HiviewDFX
 } // namespace OHOS
