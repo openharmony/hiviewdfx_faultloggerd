@@ -63,6 +63,7 @@ void GetThreadKernelStack(std::shared_ptr<DfxThread> thread)
             DFXLOGI("%{public}s", threadKernelStack.c_str());
         }
 #endif
+        thread->SetParseSymbolNecessity(false);
         thread->SetFrames(threadStack.frames);
     }
 }

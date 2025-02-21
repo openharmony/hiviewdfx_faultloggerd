@@ -56,6 +56,7 @@ public:
 
     void Detach();
     bool Attach(int timeout = PTRACE_ATTATCH_KEY_THREAD_TIMEOUT);
+    void SetParseSymbolNecessity(bool needParseSymbol);
 
     DfxThreadInfo threadInfo_;
 private:
@@ -72,6 +73,7 @@ private:
     std::shared_ptr<DfxRegs> regs_;
     std::vector<DfxFrame> frames_;
     std::shared_ptr<FaultStack> faultStack_;
+    bool needParseSymbol_ = true;
 };
 } // namespace HiviewDFX
 } // namespace OHOS

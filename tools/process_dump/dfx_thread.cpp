@@ -154,7 +154,15 @@ std::shared_ptr<FaultStack> DfxThread::GetFaultStack() const
 
 void DfxThread::ParseSymbol(std::shared_ptr<Unwinder> unwinder)
 {
+    if (!needParseSymbol_) {
+        return;
+    }
     unwinder->FillFrames(frames_);
+}
+
+void DfxThread::SetParseSymbolNecessity(bool needParseSymbol)
+{
+    needParseSymbol_ = needParseSymbol;
 }
 } // namespace HiviewDFX
 } // nampespace OHOS
