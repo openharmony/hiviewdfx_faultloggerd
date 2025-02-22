@@ -528,7 +528,7 @@ void ProcessDumper::UnwindWriteJit(const ProcessDumpRequest &request)
     jitRequest.type = FaultLoggerType::JIT_CODE_LOG;
     jitRequest.pid = request.pid;
     jitRequest.tid = request.tid;
-    jitRequest.time = OHOS::HiviewDFX::GetTimeMilliSeconds();
+    jitRequest.time = request.timeStamp;
     int32_t fd = RequestFileDescriptorEx(&jitRequest);
     if (fd == -1) {
         DFXLOGE("request jitlog fd failed.");
