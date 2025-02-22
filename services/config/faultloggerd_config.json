@@ -77,6 +77,14 @@
       "keepFileCount": 20,
       "maxFileCount": 40,
       "fileExistTimeInSecond": 60
+    },
+    {
+      "type": 109,
+      "fileNamePrefix": "sanitizer",
+      "maxSingleFileSizeInKB": 2048,
+      "maxFileCount": 12,
+      "fileExistTimeInSecond": 60,
+      "overTimeFileDeleteType": "ACTIVE"
     }
   ]
 }
