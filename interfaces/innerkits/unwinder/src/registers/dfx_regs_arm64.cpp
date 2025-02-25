@@ -31,7 +31,7 @@ void DfxRegsArm64::SetFromUcontext(const ucontext_t &context)
     if (regsData_.size() < REG_LAST) {
         return;
     }
-    for (uint16_t index = 0; index <= REG_AARCH64_X30; index++) {
+    for (uint16_t index = REG_AARCH64_X0; index <= REG_AARCH64_X30; index++) {
         regsData_[index] = static_cast<uintptr_t>(context.uc_mcontext.regs[index]);
     }
     regsData_[REG_AARCH64_X31] = static_cast<uintptr_t>(context.uc_mcontext.sp); // sp register

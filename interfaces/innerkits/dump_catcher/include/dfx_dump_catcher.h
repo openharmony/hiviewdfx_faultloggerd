@@ -67,7 +67,7 @@ public:
      * @param msg  message of native stack
      * @return if succeed return true, otherwise return false
     */
-    bool DumpCatchMultiPid(const std::vector<int> &pidV, std::string& msg);
+    bool DumpCatchMultiPid(const std::vector<int> &pids, std::string& msg);
     /**
      * @brief Dump stack of process
      *

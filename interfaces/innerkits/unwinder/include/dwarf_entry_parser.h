@@ -29,7 +29,7 @@ namespace OHOS {
 namespace HiviewDFX {
 class DwarfEntryParser : public UnwindEntryParser {
 public:
-    explicit DwarfEntryParser(const std::shared_ptr<DfxMemory>& memory) : UnwindEntryParser(memory) { }
+    explicit DwarfEntryParser(const std::shared_ptr<DfxMemory>& memory) : UnwindEntryParser(memory) {}
     ~DwarfEntryParser() override = default;
     bool Step(uintptr_t pc, const UnwindTableInfo& uti, std::shared_ptr<RegLocState> rs) override;
 protected:

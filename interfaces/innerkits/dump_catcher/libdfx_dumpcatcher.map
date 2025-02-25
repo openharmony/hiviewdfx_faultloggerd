@@ -3,9 +3,6 @@
     extern "C++" {
       OHOS::HiviewDFX::DfxDumpCatcher::DfxDumpCatcher*;
       OHOS::HiviewDFX::DfxDumpCatcher::DumpCatch*;
-      OHOS::HiviewDFX::KernelStackAsyncCollector::NotifyStartCollect*;
-      OHOS::HiviewDFX::KernelStackAsyncCollector::GetCollectedStackResult*;
-      OHOS::HiviewDFX::KernelStackAsyncCollector::GetProcessStackWithTimeout*;
     };
   local:
     *;

@@ -195,7 +195,8 @@ bool ElfParser::ExtractSectionHeadersInfo(const EhdrType& ehdr, ShdrType& shdr)
         }
 
         if (shdr.sh_size != 0 && secName == GNU_DEBUGDATA) {
-            gnuDebugDataHdr_.address = static_cast<uint64_t>(shdr.sh_offset) + static_cast<uint8_t *>(mmap_->Get());
+            gnuDebugDataHdr_.address = reinterpret_cast<uintptr_t>(shdr.sh_offset +
+                static_cast<uint8_t *>(mmap_->Get()));
             gnuDebugDataHdr_.size = static_cast<uintptr_t>(shdr.sh_size);
         }
 
@@ -359,7 +360,7 @@ bool ElfParser::ParseFuncSymbols(const ElfShdr& shdr)
         elfSymbol.value = static_cast<uint64_t>(sym.st_value);
         elfSymbol.size = static_cast<uint64_t>(sym.st_size);
         elfSymbol.name = static_cast<uint32_t>(sym.st_name);
-        funcSymbols_.emplace_back(elfSymbol);
+        funcSymbols_.emplace(elfSymbol);
     }
     DFXLOGU("elfSymbols.size: %{public}" PRIuPTR "", funcSymbols_.size());
     return true;
@@ -559,16 +560,16 @@ std::string ElfParser::ToReadableBuildId(const std::string& buildIdHex)
     if (buildIdHex.empty()) {
         return "";
     }
-    static const char HEXTABLE[] = "0123456789abcdef";
-    static const int HEXLENGTH = 16;
-    static const int HEX_EXPAND_PARAM = 2;
+    const char hexTable[] = "0123456789abcdef";
+    const int hexLength = 16;
+    const int hexExpandParam = 2;
     const size_t len = buildIdHex.length();
-    std::string buildId(len * HEX_EXPAND_PARAM, '\0');
+    std::string buildId(len * hexExpandParam, '\0');
 
     for (size_t i = 0; i < len; i++) {
         unsigned int n = buildIdHex[i];
-        buildId[i * HEX_EXPAND_PARAM] = HEXTABLE[(n >> 4) % HEXLENGTH]; // 4 : higher 4 bit of uint8
-        buildId[i * HEX_EXPAND_PARAM + 1] = HEXTABLE[n % HEXLENGTH];
+        buildId[i * hexExpandParam] = hexTable[(n >> 4) % hexLength]; // 4 : higher 4 bit of uint8
+        buildId[i * hexExpandParam + 1] = hexTable[n % hexLength];
     }
     return buildId;
 }
@@ -615,13 +616,13 @@ uintptr_t ElfParser64::GetGlobalPointer()
     return dtPltGotAddr_;
 }
 
-const std::vector<ElfSymbol>& ElfParser32::GetFuncSymbols()
+const std::set<ElfSymbol>& ElfParser32::GetFuncSymbols()
 {
     ParseFuncSymbols<Elf32_Sym>();
     return funcSymbols_;
 }
 
-const std::vector<ElfSymbol>& ElfParser64::GetFuncSymbols()
+const std::set<ElfSymbol>& ElfParser64::GetFuncSymbols()
 {
     ParseFuncSymbols<Elf64_Sym>();
     return funcSymbols_;

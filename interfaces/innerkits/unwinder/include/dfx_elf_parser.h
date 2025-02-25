@@ -28,6 +28,7 @@
 #include <string>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <set>
 #include <unistd.h>
 #include <unordered_map>
 #include <vector>
@@ -54,7 +55,7 @@ public:
     virtual uint64_t GetStartOffset() { return startOffset_; }
     virtual std::string GetElfName() = 0;
     virtual uintptr_t GetGlobalPointer() = 0;
-    virtual const std::vector<ElfSymbol>& GetFuncSymbols() = 0;
+    virtual const std::set<ElfSymbol>& GetFuncSymbols() = 0;
     virtual bool GetSectionInfo(ShdrInfo& shdr, const uint32_t idx);
     virtual bool GetSectionInfo(ShdrInfo& shdr, const std::string& secName);
     virtual bool GetSectionData(unsigned char *buf, uint64_t size, std::string secName);
@@ -97,7 +98,7 @@ protected:
     std::string ToReadableBuildId(const std::string& buildIdHex);
 
 protected:
-    std::vector<ElfSymbol> funcSymbols_;
+    std::set<ElfSymbol> funcSymbols_;
     uint64_t dynamicOffset_ = 0;
     uintptr_t dtPltGotAddr_ = 0;
     uintptr_t dtStrtabAddr_ = 0;
@@ -127,7 +128,7 @@ public:
     bool InitHeaders() override;
     std::string GetElfName() override;
     uintptr_t GetGlobalPointer() override;
-    const std::vector<ElfSymbol>& GetFuncSymbols() override;
+    const std::set<ElfSymbol>& GetFuncSymbols() override;
     bool GetFuncSymbolByAddr(uint64_t addr, ElfSymbol& elfSymbol) override;
 };
 
@@ -138,7 +139,7 @@ public:
     bool InitHeaders() override;
     std::string GetElfName() override;
     uintptr_t GetGlobalPointer() override;
-    const std::vector<ElfSymbol>& GetFuncSymbols() override;
+    const std::set<ElfSymbol>& GetFuncSymbols() override;
     bool GetFuncSymbolByAddr(uint64_t addr, ElfSymbol& elfSymbol) override;
 };
 

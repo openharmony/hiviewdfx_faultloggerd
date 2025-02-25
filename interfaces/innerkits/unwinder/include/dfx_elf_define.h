@@ -54,6 +54,10 @@ struct ElfSymbol {
     uint16_t shndx = 0;
     uint64_t value = 0;
     uint64_t size = 0;
+    bool operator<(const ElfSymbol& other) const
+    {
+        return value < other.value;
+    }
 };
 
 struct ElfShdr {
@@ -85,7 +89,7 @@ struct __attribute__((packed)) DwarfEhFrameHdr {
 };
 
 struct GnuDebugDataHdr {
-    uint8_t *address = nullptr;
+    uintptr_t address = 0;
     uintptr_t size = 0;
 };
 

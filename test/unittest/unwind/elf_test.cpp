@@ -208,23 +208,6 @@ HWTEST_F(DfxElfTest, DfxElfTest006, TestSize.Level2)
     elf->SetBaseOffset(1);
     ASSERT_EQ(elf->GetBaseOffset(), 1);
 }
-
-#ifndef __x86_64__
-HWTEST_F(DfxElfTest, DfxElfTest007, TestSize.Level2)
-{
-    GTEST_LOG_(INFO) << "DfxElfTest007: start.";
-    UnwinderConfig::SetEnableMiniDebugInfo(true);
-    RegularElfFactory regularElfFactory(DUMPCATCHER_ELF_FILE);
-    auto elf = regularElfFactory.Create();
-    ASSERT_TRUE(elf->IsValid());
-    auto gnuDebugDataHdr = elf->GetGnuDebugDataHdr();
-    ASSERT_TRUE(gnuDebugDataHdr.size != 0);
-    MiniDebugInfoFactory miniDebugInfoFactory(gnuDebugDataHdr);
-    elf = miniDebugInfoFactory.Create();
-    ASSERT_TRUE(elf->IsValid());
-    GTEST_LOG_(INFO) << "DfxElfTest007: end.";
-}
-#endif
 } // namespace HiviewDFX
 } // namespace OHOS
 

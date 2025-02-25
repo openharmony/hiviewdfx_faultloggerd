@@ -367,7 +367,8 @@ bool ExidxEntryParser::Eval(uintptr_t entryOffset)
 
 bool ExidxEntryParser::Step(uintptr_t pc, const UnwindTableInfo& uti, std::shared_ptr<RegLocState> rs)
 {
-    if (rs == nullptr) {
+    if (memory_ == nullptr || rs == nullptr) {
+        DFXLOGE("memory or rs is nullptr");
         return false;
     }
     rsState_ = rs;

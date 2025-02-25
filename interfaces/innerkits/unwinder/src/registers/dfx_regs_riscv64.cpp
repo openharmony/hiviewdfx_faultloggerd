@@ -32,7 +32,7 @@ void DfxRegsRiscv64::SetFromUcontext(const ucontext_t &context)
     if (regsData_.size() < REG_LAST) {
         return;
     }
-    for (uint16_t index = 0; index <= REG_RISCV64_X31; index++) {
+    for (uint16_t index = REG_RISCV64_X0; index <= REG_RISCV64_X31; index++) {
         regsData_[index] = static_cast<uintptr_t>(context.uc_mcontext.__gregs[index]);
     }
 }

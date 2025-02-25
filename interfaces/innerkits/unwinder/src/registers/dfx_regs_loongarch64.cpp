@@ -31,7 +31,7 @@ void DfxRegsLoongArch64::SetFromUcontext(const ucontext_t &context)
     if (regsData_.size() < REG_LAST) {
         return;
     }
-    for (uint16_t index = 0; index <= REG_LOONGARCH64_R31; index++) {
+    for (uint16_t index = REG_LOONGARCH64_R0; index <= REG_LOONGARCH64_R31; index++) {
         regsData_[index] = static_cast<uintptr_t>(context.uc_mcontext.__gregs[index]);
     }
     regsData_[REG_LOONGARCH64_PC] = (static_cast<uintptr_t>(context.uc_mcontext.__pc)); // 32:pc

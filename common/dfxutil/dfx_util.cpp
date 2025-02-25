@@ -197,7 +197,7 @@ bool ReadFdToString(int fd, std::string& content)
 
     char buf[BUFSIZ] = {0};
     ssize_t n;
-    while ((n = OHOS_TEMP_FAILURE_RETRY(read(fd, &buf, sizeof(buf)))) > 0) {
+    while ((n = OHOS_TEMP_FAILURE_RETRY(read(fd, buf, sizeof(buf)))) > 0) {
         content.append(buf, n);
     }
     return (n == 0);
@@ -232,7 +232,6 @@ uintptr_t StripPac(uintptr_t inAddr, uintptr_t pacMask)
 size_t ReadProcMemByPid(const pid_t pid, const uint64_t addr, void* data, size_t size)
 {
     std::vector<iovec> remoteIovs;
-    size_t totalRead = 0;
     struct iovec dataIov = {
         .iov_base = data,
         .iov_len = size,
@@ -254,15 +253,11 @@ size_t ReadProcMemByPid(const pid_t pid, const uint64_t addr, void* data, size_t
         remoteIovs.emplace_back(remoteIov);
         size -= iovLen;
     }
-
-    if (!remoteIovs.empty()) {
-        ssize_t readCount = process_vm_readv(pid, &dataIov, 1, &remoteIovs[0], remoteIovs.size(), 0);
-        if (readCount == -1) {
-            return totalRead;
-        }
-        totalRead += static_cast<size_t>(readCount);
+    if (remoteIovs.empty()) {
+        return 0;
     }
-    return totalRead;
+    ssize_t readCount = process_vm_readv(pid, &dataIov, 1, &remoteIovs[0], remoteIovs.size(), 0);
+    return readCount <= 0 ? 0 : static_cast<size_t>(readCount);
 }
 #endif
 }   // namespace HiviewDFX

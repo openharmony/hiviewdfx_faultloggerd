@@ -112,6 +112,10 @@ bool DwarfEntryParser::SearchEntry(uintptr_t pc, const UnwindTableInfo& uti, Unw
 bool DwarfEntryParser::Step(uintptr_t pc, const UnwindTableInfo& uti, std::shared_ptr<RegLocState> rs)
 {
     DFX_TRACE_SCOPED_DLSYM("DwarfEntryParserStep");
+    if (memory_ == nullptr || rs == nullptr) {
+        DFXLOGE("memory or rs is nullptr!");
+        return false;
+    }
     struct UnwindEntryInfo uei;
     if ((!uti.isLinear && !SearchEntry(pc, uti, uei)) || (uti.isLinear && !LinearSearchEntry(pc, uti, uei))) {
         DFXLOGU("Failed to search unwind entry");

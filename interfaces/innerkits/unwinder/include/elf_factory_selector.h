@@ -24,7 +24,7 @@ namespace OHOS {
 namespace HiviewDFX {
 class ElfFactorySelector {
 public:
-    static std::shared_ptr<ElfFactory> Select(DfxMap* map, pid_t pid = 0);
+    static std::shared_ptr<ElfFactory> Select(DfxMap& map, pid_t pid = 0);
 };
 } // namespace HiviewDFX
 } // namespace OHOS

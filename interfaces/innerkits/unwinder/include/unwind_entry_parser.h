@@ -26,7 +26,7 @@ namespace OHOS {
 namespace HiviewDFX {
 class UnwindEntryParser {
 public:
-    explicit UnwindEntryParser(const std::shared_ptr<DfxMemory>& memory) : memory_(memory) { }
+    explicit UnwindEntryParser(const std::shared_ptr<DfxMemory>& memory) : memory_(memory) {}
     virtual ~UnwindEntryParser() = default;
     virtual bool Step(uintptr_t pc, const UnwindTableInfo& uti, std::shared_ptr<RegLocState> rs) = 0;
     uint16_t GetLastErrorCode() { return lastErrorData_.GetCode(); }

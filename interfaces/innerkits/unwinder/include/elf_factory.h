@@ -32,41 +32,40 @@ public:
 
 class RegularElfFactory : public ElfFactory {
 public:
-    explicit RegularElfFactory(const std::string& filePath) : filePath_(filePath)  { }
+    explicit RegularElfFactory(const std::string& filePath) : filePath_(filePath) {}
     ~RegularElfFactory() override = default;
     std::shared_ptr<DfxElf> Create() override;
 private:
-    std::string filePath_ = "";
+    std::string filePath_;
 };
 
 #if defined(ENABLE_MINIDEBUGINFO)
 class MiniDebugInfoFactory : public ElfFactory {
 public:
-    explicit MiniDebugInfoFactory(const GnuDebugDataHdr& gnuDebugDataHdr) : gnuDebugDataHdr_(gnuDebugDataHdr) { }
+    explicit MiniDebugInfoFactory(const GnuDebugDataHdr& gnuDebugDataHdr) : gnuDebugDataHdr_(gnuDebugDataHdr) {}
     ~MiniDebugInfoFactory() override = default;
     std::shared_ptr<DfxElf> Create() override;
 private:
     bool XzDecompress(const uint8_t *src, size_t srcLen, std::vector<uint8_t>& out);
-    GnuDebugDataHdr gnuDebugDataHdr_ {};
+    GnuDebugDataHdr gnuDebugDataHdr_{};
 };
 #endif
 
 class CompressHapElfFactory : public ElfFactory {
 public:
-    explicit CompressHapElfFactory(const std::string& filePath, std::shared_ptr<DfxMap> prevMap, uint64_t& offset)
-        : filePath_(std::move(filePath)), prevMap_(prevMap), offset_(offset) { }
+    explicit CompressHapElfFactory(std::string filePath, std::shared_ptr<DfxMap> prevMap)
+        : filePath_(std::move(filePath)), prevMap_(prevMap) {}
     ~CompressHapElfFactory() override = default;
     std::shared_ptr<DfxElf> Create() override;
 private:
     bool VerifyElf(int fd, size_t& elfSize);
-    const std::string filePath_ = "";
-    std::shared_ptr<DfxMap> prevMap_ = nullptr;
-    uint64_t& offset_;
+    const std::string filePath_;
+    std::shared_ptr<DfxMap> prevMap_;
 };
 
 class VdsoElfFactory : public ElfFactory {
 public:
-    explicit VdsoElfFactory(uint64_t begin, size_t size, pid_t pid) : begin_(begin), size_(size), pid_(pid){ }
+    explicit VdsoElfFactory(uint64_t begin, size_t size, pid_t pid) : begin_(begin), size_(size), pid_(pid) {}
     ~VdsoElfFactory() override = default;
     std::shared_ptr<DfxElf> Create() override;
 private:

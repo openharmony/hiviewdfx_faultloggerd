@@ -464,45 +464,6 @@ HWTEST_F(DfxMemoryTest, DfxMemoryTest013, TestSize.Level2)
     EXPECT_FALSE(memory->Read<uint64_t>(addr, nullptr, false));
     GTEST_LOG_(INFO) << "DfxMemoryTest013: end.";
 }
-
-/**
- * @tc.name: DfxMemoryTest014
- * @tc.desc: test DfxMemory class Read shmm
- * @tc.type: FUNC
- */
-HWTEST_F(DfxMemoryTest, DfxMemoryTest014, TestSize.Level2)
-{
-    GTEST_LOG_(INFO) << "DfxMemoryTest014: start.";
-    std::string res = ExecuteCommands("uname");
-    bool linuxKernel = res.find("Linux") != std::string::npos;
-    if (linuxKernel) {
-        ASSERT_TRUE(linuxKernel);
-        return;
-    }
-    pid_t pid = GetProcessPid(FOUNDATION_NAME);
-    auto maps = DfxMaps::Create(pid);
-    std::vector<std::shared_ptr<DfxMap>> shmmMaps;
-    ASSERT_TRUE(maps->FindMapsByName("[shmm]", shmmMaps));
-    std::shared_ptr<DfxMap> shmmMap = nullptr;
-    for (auto map : shmmMaps) {
-        if (map->IsMapExec()) {
-            shmmMap = map;
-            break;
-        }
-    }
-    ASSERT_TRUE(shmmMap != nullptr);
-    VdsoElfFactory factory(shmmMap->begin, shmmMap->end - shmmMap->begin, pid);
-    auto shmmElf = factory.Create();
-    ASSERT_TRUE(shmmElf != nullptr);
-    std::vector<DfxSymbol> shmmSyms;
-    DfxSymbols::ParseSymbols(shmmSyms, shmmElf, "");
-    GTEST_LOG_(INFO) << "shmm symbols size" << shmmSyms.size();
-    ASSERT_GT(shmmSyms.size(), 0);
-    for (auto& sym : shmmSyms) {
-        GTEST_LOG_(INFO) << sym.ToDebugString();
-    }
-    GTEST_LOG_(INFO) << "DfxMemoryTest014 : end.";
-}
 }
 } // namespace HiviewDFX
 } // namespace OHOS

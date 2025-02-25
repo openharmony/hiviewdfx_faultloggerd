@@ -119,12 +119,12 @@ bool DfxSymbols::ParseSymbols(std::vector<DfxSymbol>& symbols, std::shared_ptr<D
     if (elf == nullptr) {
         return false;
     }
-    auto elfSymbols = elf->GetFuncSymbols();
+    const auto &elfSymbols = elf->GetFuncSymbols();
     std::string symbolsPath = filePath;
     if (elf->GetBaseOffset() != 0) {
         symbolsPath += ("!" + elf->GetElfName());
     }
-    for (auto elfSymbol : elfSymbols) {
+    for (const auto &elfSymbol : elfSymbols) {
         symbols.emplace_back(elfSymbol.value, elfSymbol.size,
             elfSymbol.nameStr, Demangle(elfSymbol.nameStr), symbolsPath);
     }

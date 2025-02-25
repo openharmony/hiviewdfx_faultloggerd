@@ -36,7 +36,7 @@ StackUtils& StackUtils::Instance()
 
 bool StackUtils::GetMainStackRange(uintptr_t& stackBottom, uintptr_t& stackTop) const
 {
-    if (!mainStack_.Valid()) {
+    if (!mainStack_.IsValid()) {
         return false;
     }
     stackBottom = mainStack_.start;
@@ -46,7 +46,7 @@ bool StackUtils::GetMainStackRange(uintptr_t& stackBottom, uintptr_t& stackTop) 
 
 bool StackUtils::GetArkStackRange(uintptr_t& start, uintptr_t& end) const
 {
-    if (!arkCode_.Valid()) {
+    if (!arkCode_.IsValid()) {
         return false;
     }
     start = arkCode_.start;
@@ -115,15 +115,15 @@ void StackUtils::ParseSelfMaps()
 
     char mapInfo[256] = {0}; // 256: map info size
     while (fgets(mapInfo, sizeof(mapInfo), fp.get()) != nullptr) {
-        if (mainStack_.Valid() && arkCode_.Valid()) {
+        if (mainStack_.IsValid() && arkCode_.IsValid()) {
             return;
         }
-        if (!mainStack_.Valid() && strstr(mapInfo, "[stack]") != nullptr) {
+        if (!mainStack_.IsValid() && (strstr(mapInfo, "[stack]") != nullptr)) {
             parser(mapInfo, false, mainStack_);
             continue;
         }
 
-        if (!arkCode_.Valid() && strstr(mapInfo, "stub.an") != nullptr) {
+        if (!arkCode_.IsValid() && strstr(mapInfo, "stub.an") != nullptr) {
             parser(mapInfo, true, arkCode_);
         }
     }

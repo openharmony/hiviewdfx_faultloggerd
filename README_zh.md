@@ -92,7 +92,7 @@ DumpCatcher是提供给第三方模块使用的抓取调用栈基础库，其中
 接口定义：
 * 默认（支持混合栈）：`bool DumpCatch(int pid, int tid, std::string& msg);`
 * 支持输出到指定文件：`bool DumpCatchFd(int pid, int tid, std::string& msg, int fd);`
-* 支持批量抓栈：`bool DumpCatchMultiPid(const std::vector<int> pidV, std::string& msg);`
+* 支持批量抓栈：`bool DumpCatchMultiPid(const std::vector<int> &pids, std::string& msg);`
 
 接口参数说明：
 * 接口返回值：

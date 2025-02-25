@@ -26,19 +26,16 @@ namespace {
 #define LOG_DOMAIN 0xD002D11
 #define LOG_TAG "ElfFactorySelector"
 }
-std::shared_ptr<ElfFactory> ElfFactorySelector::Select(DfxMap* map, pid_t pid)
+std::shared_ptr<ElfFactory> ElfFactorySelector::Select(DfxMap& map, pid_t pid)
 {
-    if (map == nullptr) {
-        DFXLOGE("map is null!");
-        return nullptr;
-    }
     std::shared_ptr<ElfFactory> elfFactory = nullptr;
-    if (EndsWith(map->name, ".hap")) {
-        elfFactory = std::make_shared<CompressHapElfFactory>(map->name, map->prevMap, map->offset);
-    } else if (map->IsVdsoMap()) {
-        elfFactory = std::make_shared<VdsoElfFactory>(map->begin, map->end - map->begin, pid);
+    if (StartsWith(map.name, "/proc") && EndsWith(map.name, ".hap")) {
+        elfFactory = std::make_shared<CompressHapElfFactory>(map.name, map.prevMap);
+        map.offset -= map.prevMap->offset;
+    } else if (map.IsVdsoMap()) {
+        elfFactory = std::make_shared<VdsoElfFactory>(map.begin, map.end - map.begin, pid);
     } else {
-        elfFactory = std::make_shared<RegularElfFactory>(map->name);
+        elfFactory = std::make_shared<RegularElfFactory>(map.name);
     }
     return elfFactory;
 }
