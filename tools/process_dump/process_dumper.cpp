@@ -222,15 +222,17 @@ void FillFdsaninfo(OpenFilesList &list, pid_t nsPid, uint64_t fdTableAddr)
 std::string DumpOpenFiles(OpenFilesList &files)
 {
     std::string openFiles = "OpenFiles:\n";
-    for (auto &[fd, entry]: files) {
-        const std::string path = entry.path;
-        uint64_t tag = entry.fdsanOwner;
+    for (auto &filePath: files) {
+        const std::string path = filePath.second.path;
+        uint64_t tag = filePath.second.fdsanOwner;
         const char* type = fdsan_get_tag_type(tag);
         uint64_t val = fdsan_get_tag_value(tag);
         if (!path.empty()) {
-            openFiles += std::to_string(fd) + "->" + path + " " + type + " " + std::to_string(val) + "\n";
+            openFiles += std::to_string(filePath.first) + "->" + path + " " + type + " " +
+                std::to_string(val) + "\n";
         } else {
-            openFiles += "OpenFilesList contain an entry (fd " + std::to_string(fd) + ") with no path or owner\n";
+            openFiles += "OpenFilesList contain an entry (fd " +
+                std::to_string(filePath.first) + ") with no path or owner\n";
         }
     }
     return openFiles;
