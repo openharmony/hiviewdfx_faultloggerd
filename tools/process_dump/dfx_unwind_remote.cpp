@@ -122,8 +122,8 @@ void DfxUnwindRemote::PrintUnwindResultInfo(std::shared_ptr<ProcessDumpRequest> 
             }
             Printer::PrintThreadHeaderByConfig(thread, false);
             Printer::PrintThreadBacktraceByConfig(thread, false);
+            index++;
         }
-        index++;
     }
 
     if (ProcessDumper::GetInstance().IsCrash()) {
