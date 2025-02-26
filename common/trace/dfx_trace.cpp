@@ -27,7 +27,7 @@ void DfxStartTrace(const char *fmt, ...)
     if (ret == -1) {
         strcpy_s(traceName, TRACE_BUF_LEN, "DefaultTraceName");
     }
-    StartTrace(HITRACE_TAG_APP, traceName);
+    StartTrace(HITRACE_TAG_APP, std::string(traceName));
 }
 
 void FormatTraceName(char *name, size_t size, const char *fmt, ...)

@@ -431,21 +431,12 @@ bool ElfParser::ParseStrTab(std::string& nameStr, const uint64_t offset, const u
         DFXLOGE("size(%{public}" PRIu64 ") is too large.", size);
         return false;
     }
-    char* namesBuf = new char[size];
-    if (namesBuf == nullptr) {
-        DFXLOGE("New failed");
-        return false;
-    }
-    (void)memset_s(namesBuf, size, '\0', size);
-    if (!Read((uintptr_t)offset, namesBuf, size)) {
+    std::vector<char> namesBuf(size, 0);
+    if (!Read((uintptr_t)offset, namesBuf.data(), size)) {
         DFXLOGE("Read failed");
-        delete[] namesBuf;
-        namesBuf = nullptr;
         return false;
     }
-    nameStr = std::string(namesBuf, namesBuf + size);
-    delete[] namesBuf;
-    namesBuf = nullptr;
+    nameStr = std::string(namesBuf.begin(), namesBuf.begin() + size);
     return true;
 }
 
