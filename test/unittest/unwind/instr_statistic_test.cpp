@@ -55,10 +55,12 @@ HWTEST_F(InstrStatisticTest, InstrStatisticTest001, TestSize.Level2)
     static pid_t pid = getpid();
     static std::string elfName;
     ReadProcessName(pid, elfName);
+    GTEST_LOG_(INFO) << "elfName: " << elfName;
+    DfxInstrStatistic::GetInstance().SetCurrentStatLib(elfName);
+    std::vector<std::pair<uint32_t, uint32_t>> result;
+    DfxInstrStatistic::GetInstance().DumpInstrStatResult(result);
     pid_t child = fork();
     if (child == 0) {
-        GTEST_LOG_(INFO) << "elfName: " << elfName;
-        DfxInstrStatistic::GetInstance().SetCurrentStatLib(elfName);
         GTEST_LOG_(INFO) << "pid: " << pid << ", ppid:" << getppid();
         auto unwinder = std::make_shared<Unwinder>(pid);
         bool unwRet = DfxPtrace::Attach(pid);
@@ -76,7 +78,6 @@ HWTEST_F(InstrStatisticTest, InstrStatisticTest001, TestSize.Level2)
         ASSERT_GT(frames.size(), 1);
         GTEST_LOG_(INFO) << "frames:\n" << Unwinder::GetFramesStr(frames);
         DfxPtrace::Detach(pid);
-        std::vector<std::pair<uint32_t, uint32_t>> result;
         DfxInstrStatistic::GetInstance().DumpInstrStatResult(result);
         ASSERT_GT(result.size(), 0);
         for (size_t i = 0; i < result.size(); ++i) {
