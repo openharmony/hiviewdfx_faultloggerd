@@ -27,6 +27,7 @@
 #include "faultloggerd_fuzzertest_common.h"
 #include "thread_context.h"
 #include "unwinder.h"
+#include "unwind_define.h"
 
 namespace OHOS {
 namespace HiviewDFX {
@@ -175,7 +176,7 @@ void TestDfxHap(const uint8_t* data, size_t size)
 #if defined(__aarch64__)
 void TestSetFromFpMiniRegs(const uint8_t* data, size_t size)
 {
-    uintptr_t regs;
+    uintptr_t regs[FP_MINI_REGS_SIZE];
     if (size < sizeof(regs)) {
         return;
     }
@@ -183,14 +184,14 @@ void TestSetFromFpMiniRegs(const uint8_t* data, size_t size)
     STREAM_TO_VALUEINFO(data, regs);
 
     auto dfxregs = std::make_shared<DfxRegsArm64>();
-    dfxregs->SetFromFpMiniRegs(&regs, size);
+    dfxregs->SetFromFpMiniRegs(regs, FP_MINI_REGS_SIZE);
 }
 #endif
 
 #if defined(__aarch64__)
 void TestSetFromQutMiniRegs(const uint8_t* data, size_t size)
 {
-    uintptr_t regs;
+    uintptr_t regs[QUT_MINI_REGS_SIZE];
     if (size < sizeof(regs)) {
         return;
     }
@@ -198,7 +199,7 @@ void TestSetFromQutMiniRegs(const uint8_t* data, size_t size)
     STREAM_TO_VALUEINFO(data, regs);
 
     auto dfxregs = std::make_shared<DfxRegsArm64>();
-    dfxregs->SetFromQutMiniRegs(&regs, size);
+    dfxregs->SetFromQutMiniRegs(regs, QUT_MINI_REGS_SIZE);
 }
 #endif
 
