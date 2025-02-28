@@ -1619,7 +1619,8 @@ HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest123, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest123: start.";
     string crashDir = "/log/crash/";
-    if (std::filesystem::exists(crashDir)) {
+    bool dirExists = std::filesystem::exists(crashDir);
+    if (dirExists) {
         string clearCrashFilesCmd = "rm -rf /log/crash/*";
         system(clearCrashFilesCmd.c_str());
         string stopFaultLoggerd = "service_control stop faultloggerd";
@@ -1636,6 +1637,8 @@ HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest123, TestSize.Level2)
             FAIL();
         }
         EXPECT_TRUE(CheckCountNum(fileName, pid, cmd)) << "FaultLoggerdSystemTest123 Failed";
+    } else {
+        EXPECT_FALSE(dirExists);
     }
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest123: end.";
 }
@@ -1707,7 +1710,8 @@ HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest126, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest126: start.";
     string crashDir = "/log/crash/";
-    if (std::filesystem::exists(crashDir)) {
+    bool dirExists = std::filesystem::exists(crashDir);
+    if (dirExists) {
         string clearCrashFilesCmd = "rm -rf /log/crash/*";
         system(clearCrashFilesCmd.c_str());
         string stopFaultLoggerd = "service_control stop faultloggerd";
@@ -1717,6 +1721,7 @@ HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest126, TestSize.Level2)
         string fileName;
         pid_t pid = -1;
         int maxFilesNum = 5;
+        string startFaultLoggerd = "service_control start faultloggerd";
         for (int i = 0; i < (maxFilesNum + 1); ++i) {
             pid = TriggerCrasherAndGetFileName(cmd, CRASHER_CPP, fileName, 1, crashDir);
             GTEST_LOG_(INFO) << "test pid(" << pid << ")"  << " cppcrash file name : " << fileName;
@@ -1726,11 +1731,12 @@ HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest126, TestSize.Level2)
                 FAIL();
             }
         }
-        string startFaultLoggerd = "service_control start faultloggerd";
         (void)ExecuteCommands(startFaultLoggerd);
         std::vector<std::string> files;
         ReadDirFiles(crashDir, files);
         EXPECT_TRUE(files.size() <= maxFilesNum) << "FaultLoggerdSystemTest126 Failed";
+    } else {
+        EXPECT_FALSE(dirExists);
     }
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest126: end.";
 }
