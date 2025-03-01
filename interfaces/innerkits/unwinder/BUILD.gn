@@ -251,7 +251,7 @@ if (defined(ohos_lite)) {
     deps = [
       "$faultloggerd_common_path/dfxlog:dfx_hilog_base_static",
       "$faultloggerd_common_path/dfxutil:dfx_util_static",
-      "$faultloggerd_common_path/trace:dfx_trace_dlsym",
+      "$faultloggerd_common_path/trace:dfx_trace_dlsym_static",
     ]
 
     public_external_deps = [ "lzma:lzma_static" ]
