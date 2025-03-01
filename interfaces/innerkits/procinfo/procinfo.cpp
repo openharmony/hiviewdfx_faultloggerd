@@ -32,9 +32,9 @@
 namespace OHOS {
 namespace HiviewDFX {
 namespace {
-const char * const PID_STR_NAME = "Pid:";
-const char * const PPID_STR_NAME = "PPid:";
-const char * const NSPID_STR_NAME = "NSpid:";
+const char PID_STR_NAME[] = "Pid:";
+const char PPID_STR_NAME[] = "PPid:";
+const char NSPID_STR_NAME[] = "NSpid:";
 const int ARGS_COUNT_ONE = 1;
 const int ARGS_COUNT_TWO = 2;
 const int STATUS_LINE_SIZE = 1024;

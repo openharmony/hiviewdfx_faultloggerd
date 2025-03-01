@@ -28,8 +28,7 @@
 #include "dfx_ptrace.h"
 #include "dfx_test_util.h"
 #include "dwarf_define.h"
-#include "elf_factory.h"
-#include "stack_utils.h"
+#include "stack_util.h"
 
 using namespace OHOS::HiviewDFX;
 using namespace testing::ext;
@@ -57,7 +56,8 @@ HWTEST_F(DfxMemoryTest, DfxMemoryTest001, TestSize.Level2)
     uintptr_t regs[] = {0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xa};
     UnwindContext ctx;
     ctx.regs = DfxRegs::CreateFromRegs(UnwindMode::DWARF_UNWIND, regs, sizeof(regs) / sizeof(regs[0]));
-    auto memory = std::make_shared<DfxMemory>(UNWIND_TYPE_LOCAL);
+    auto acc = std::make_shared<DfxAccessorsLocal>();
+    auto memory = std::make_shared<DfxMemory>(acc);
     memory->SetCtx(&ctx);
     uintptr_t value;
     bool ret = memory->ReadReg(0, &value);
@@ -78,7 +78,8 @@ HWTEST_F(DfxMemoryTest, DfxMemoryTest002, TestSize.Level2)
 
     uintptr_t addr = reinterpret_cast<uintptr_t>(&values[0]);
     uintptr_t value;
-    auto memory = std::make_shared<DfxMemory>(UNWIND_TYPE_LOCAL);
+    auto acc = std::make_shared<DfxAccessorsLocal>();
+    auto memory = std::make_shared<DfxMemory>(acc);
     bool ret = memory->Read<uintptr_t>(addr, &value, false);
     EXPECT_EQ(true, ret) << "DfxMemoryTest002: ret:" << ret;
 
@@ -109,9 +110,9 @@ HWTEST_F(DfxMemoryTest, DfxMemoryTest003, TestSize.Level2)
     GTEST_LOG_(INFO) << "DfxMemoryTest003: start.";
     uint8_t values[] = {0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8};
     UnwindContext ctx;
-    ASSERT_TRUE(StackUtils::GetSelfStackRange(ctx.stackBottom, ctx.stackTop));
-    ctx.stackCheck = true;
-    auto memory = std::make_shared<DfxMemory>(UNWIND_TYPE_LOCAL);
+    auto acc = std::make_shared<DfxAccessorsLocal>();
+    ASSERT_TRUE(GetSelfStackRange(ctx.stackBottom, ctx.stackTop));
+    auto memory = std::make_shared<DfxMemory>(acc);
     memory->SetCtx(&ctx);
     uintptr_t addr = reinterpret_cast<uintptr_t>(&values[0]);
     uintptr_t value;
@@ -148,9 +149,9 @@ HWTEST_F(DfxMemoryTest, DfxMemoryTest004, TestSize.Level2)
     GTEST_LOG_(INFO) << "DfxMemoryTest004: start.";
     uint8_t values[] = {0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8};
     UnwindContext ctx;
-    ASSERT_TRUE(StackUtils::GetSelfStackRange(ctx.stackBottom, ctx.stackTop));
-    ctx.stackCheck = true;
-    auto memory = std::make_shared<DfxMemory>(UNWIND_TYPE_LOCAL);
+    auto acc = std::make_shared<DfxAccessorsLocal>();
+    ASSERT_TRUE(GetSelfStackRange(ctx.stackBottom, ctx.stackTop));
+    auto memory = std::make_shared<DfxMemory>(acc);
     memory->SetCtx(&ctx);
     uintptr_t addr = reinterpret_cast<uintptr_t>(&values[0]);
     uint8_t tmp8;
@@ -178,9 +179,9 @@ HWTEST_F(DfxMemoryTest, DfxMemoryTest005, TestSize.Level2)
     GTEST_LOG_(INFO) << "DfxMemoryTest005: start.";
     uint8_t values[] = {0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8};
     UnwindContext ctx;
-    ASSERT_TRUE(StackUtils::GetSelfStackRange(ctx.stackBottom, ctx.stackTop));
-    ctx.stackCheck = true;
-    auto memory = std::make_shared<DfxMemory>(UNWIND_TYPE_LOCAL);
+    auto acc = std::make_shared<DfxAccessorsLocal>();
+    ASSERT_TRUE(GetSelfStackRange(ctx.stackBottom, ctx.stackTop));
+    auto memory = std::make_shared<DfxMemory>(acc);
     memory->SetCtx(&ctx);
     uintptr_t addr = reinterpret_cast<uintptr_t>(&values[0]);
     uintptr_t valuePrel32;
@@ -205,9 +206,9 @@ HWTEST_F(DfxMemoryTest, DfxMemoryTest006, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "DfxMemoryTest006: start.";
     UnwindContext ctx;
-    ASSERT_TRUE(StackUtils::GetSelfStackRange(ctx.stackBottom, ctx.stackTop));
-    ctx.stackCheck = true;
-    auto memory = std::make_shared<DfxMemory>(UNWIND_TYPE_LOCAL);
+    auto acc = std::make_shared<DfxAccessorsLocal>();
+    ASSERT_TRUE(GetSelfStackRange(ctx.stackBottom, ctx.stackTop));
+    auto memory = std::make_shared<DfxMemory>(acc);
     memory->SetCtx(&ctx);
     ASSERT_EQ(memory->GetEncodedSize(DW_EH_PE_absptr), sizeof(uintptr_t));
     ASSERT_EQ(memory->GetEncodedSize(DW_EH_PE_sdata1), 1);
@@ -228,7 +229,8 @@ HWTEST_F(DfxMemoryTest, DfxMemoryTest007, TestSize.Level2)
     uintptr_t regs[] = {0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xa};
     UnwindContext ctx;
     ctx.regs = DfxRegs::CreateFromRegs(UnwindMode::DWARF_UNWIND, regs, sizeof(regs) / sizeof(regs[0]));
-    auto memory = std::make_shared<DfxMemory>(UNWIND_TYPE_REMOTE);
+    auto acc = std::make_shared<DfxAccessorsRemote>();
+    auto memory = std::make_shared<DfxMemory>(acc);
     memory->SetCtx(&ctx);
     uintptr_t value;
     bool ret = memory->ReadReg(0, &value);
@@ -253,7 +255,8 @@ HWTEST_F(DfxMemoryTest, DfxMemoryTest008, TestSize.Level2)
         uintptr_t value;
         UnwindContext ctx;
         ctx.pid = pid;
-        auto memory = std::make_shared<DfxMemory>(UNWIND_TYPE_REMOTE);
+        auto acc = std::make_shared<DfxAccessorsRemote>();
+        auto memory = std::make_shared<DfxMemory>(acc);
         memory->SetCtx(&ctx);
         uintptr_t addr = reinterpret_cast<uintptr_t>(&values[0]);
         bool ret = memory->Read<uintptr_t>(addr, &value, false);
@@ -295,7 +298,8 @@ HWTEST_F(DfxMemoryTest, DfxMemoryTest009, TestSize.Level2)
         DfxPtrace::Attach(pid);
         UnwindContext ctx;
         ctx.pid = pid;
-        auto memory = std::make_shared<DfxMemory>(UNWIND_TYPE_REMOTE);
+        auto acc = std::make_shared<DfxAccessorsRemote>();
+        auto memory = std::make_shared<DfxMemory>(acc);
         memory->SetCtx(&ctx);
         uintptr_t addr = reinterpret_cast<uintptr_t>(&values[0]);
         uintptr_t value;
@@ -344,7 +348,8 @@ HWTEST_F(DfxMemoryTest, DfxMemoryTest010, TestSize.Level2)
 
         UnwindContext ctx;
         ctx.pid = pid;
-        auto memory = std::make_shared<DfxMemory>(UNWIND_TYPE_REMOTE);
+        auto acc = std::make_shared<DfxAccessorsRemote>();
+        auto memory = std::make_shared<DfxMemory>(acc);
         memory->SetCtx(&ctx);
         uintptr_t addr = reinterpret_cast<uintptr_t>(&values[0]);
         uint8_t tmp8;
@@ -385,7 +390,8 @@ HWTEST_F(DfxMemoryTest, DfxMemoryTest011, TestSize.Level2)
         DfxPtrace::Attach(getppid());
         UnwindContext ctx;
         ctx.pid = getppid();
-        auto memory = std::make_shared<DfxMemory>(UNWIND_TYPE_REMOTE);
+        auto acc = std::make_shared<DfxAccessorsRemote>();
+        auto memory = std::make_shared<DfxMemory>(acc);
         memory->SetCtx(&ctx);
         uintptr_t addr = reinterpret_cast<uintptr_t>(&values[0]);
         std::string resultStr;
@@ -420,7 +426,8 @@ HWTEST_F(DfxMemoryTest, DfxMemoryTest012, TestSize.Level2)
         DfxPtrace::Attach(pid);
         UnwindContext ctx;
         ctx.pid = pid;
-        auto memory = std::make_shared<DfxMemory>(UNWIND_TYPE_REMOTE);
+        auto acc = std::make_shared<DfxAccessorsRemote>();
+        auto memory = std::make_shared<DfxMemory>(acc);
         memory->SetCtx(&ctx);
         ASSERT_EQ(memory->GetEncodedSize(DW_EH_PE_absptr), sizeof(uintptr_t));
         ASSERT_EQ(memory->GetEncodedSize(DW_EH_PE_sdata1), 1);
@@ -444,7 +451,8 @@ HWTEST_F(DfxMemoryTest, DfxMemoryTest012, TestSize.Level2)
 HWTEST_F(DfxMemoryTest, DfxMemoryTest013, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "DfxMemoryTest013: start.";
-    auto memory = std::make_shared<DfxMemory>(UNWIND_TYPE_LOCAL);
+    auto acc = std::make_shared<DfxAccessorsLocal>();
+    auto memory = std::make_shared<DfxMemory>(acc);
     uintptr_t val;
     EXPECT_FALSE(memory->ReadReg(0, &val));
     uintptr_t regs[] = {0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xa};
@@ -463,6 +471,46 @@ HWTEST_F(DfxMemoryTest, DfxMemoryTest013, TestSize.Level2)
     EXPECT_FALSE(memory->Read<uint32_t>(addr, nullptr, false));
     EXPECT_FALSE(memory->Read<uint64_t>(addr, nullptr, false));
     GTEST_LOG_(INFO) << "DfxMemoryTest013: end.";
+}
+
+/**
+ * @tc.name: DfxMemoryTest014
+ * @tc.desc: test DfxMemory class ReadProcMemByPid
+ * @tc.type: FUNC
+ */
+HWTEST_F(DfxMemoryTest, DfxMemoryTest014, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "DfxMemoryTest014: start.";
+    std::string res = ExecuteCommands("uname");
+    bool linuxKernel = res.find("Linux") != std::string::npos;
+    if (linuxKernel) {
+        ASSERT_TRUE(linuxKernel);
+        return;
+    }
+    pid_t pid = GetProcessPid(FOUNDATION_NAME);
+    auto maps = DfxMaps::Create(pid);
+    std::vector<std::shared_ptr<DfxMap>> shmmMaps;
+    ASSERT_TRUE(maps->FindMapsByName("[shmm]", shmmMaps));
+    std::shared_ptr<DfxMap> shmmMap = nullptr;
+    for (auto map : shmmMaps) {
+        if (map->IsMapExec()) {
+            shmmMap = map;
+            break;
+        }
+    }
+    ASSERT_TRUE(shmmMap != nullptr);
+    auto shmmData = std::make_shared<std::vector<uint8_t>>(shmmMap->end - shmmMap->begin);
+    DfxMemory::ReadProcMemByPid(pid, shmmMap->begin, shmmData->data(), shmmMap->end - shmmMap->begin);
+    auto shmmElf = std::make_shared<DfxElf>(shmmData->data(), shmmMap->end - shmmMap->begin);
+    ASSERT_TRUE(shmmElf->IsValid());
+    std::vector<DfxSymbol> shmmSyms;
+    DfxSymbols::ParseSymbols(shmmSyms, shmmElf, "");
+    GTEST_LOG_(INFO) << "shmm symbols size" << shmmSyms.size();
+    ASSERT_GT(shmmSyms.size(), 0);
+    for (auto& sym : shmmSyms) {
+        GTEST_LOG_(INFO) << sym.ToDebugString();
+    }
+    GTEST_LOG_(INFO) << "DfxMemoryTest014 : end.";
 }
 }
 } // namespace HiviewDFX

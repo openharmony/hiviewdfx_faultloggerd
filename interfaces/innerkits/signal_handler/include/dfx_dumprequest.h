@@ -15,6 +15,8 @@
 #ifndef DFX_DUMPREQUEST_H
 #define DFX_DUMPREQUEST_H
 
+#include <pthread.h>
+
 #include "dfx_dump_request.h"
 
 #ifdef __cplusplus

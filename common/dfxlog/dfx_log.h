@@ -32,6 +32,7 @@ extern "C" {
 #ifndef DFX_NO_PRINT_LOG
 
 #ifdef DFX_LOG_HILOG_BASE
+// replace the old interface, and delete the old interface after the replacement is complete
 #ifdef DFX_LOG_UNWIND
 #define DFXLOGD(fmt, ...) HILOG_BASE_DEBUG(LOG_CORE, fmt, ##__VA_ARGS__)
 #else
@@ -57,7 +58,7 @@ extern "C" {
 #endif
 
 #else
-
+// replace the old interface, and delete the old interface after the replacement is complete
 #define DFXLOGD(fmt, ...) HILOG_DEBUG(LOG_CORE, fmt, ##__VA_ARGS__)
 #define DFXLOGI(fmt, ...) HILOG_INFO(LOG_CORE, fmt, ##__VA_ARGS__)
 #define DFXLOGW(fmt, ...) HILOG_WARN(LOG_CORE, fmt, ##__VA_ARGS__)

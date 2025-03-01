@@ -13,11 +13,7 @@
 
 import("//base/hiviewdfx/faultloggerd/faultloggerd.gni")
 
-dfx_util_sources = [
-  "dfx_signal.cpp",
-  "dfx_util.cpp",
-  "stack_utils.cpp",
-]
+dfx_util_sources = [ "dfx_util.cpp" ]
 
 if (defined(ohos_lite)) {
   static_library("dfx_util") {
@@ -81,7 +77,7 @@ if (defined(ohos_lite)) {
   }
 
   ohos_static_library("dfx_util_host") {
-    sources = [ "dfx_util.cpp" ]
+    sources = dfx_util_sources
     public_configs = [ ":dfx_util_config" ]
     defines = [ "DFX_NO_PRINT_LOG" ]
     if (is_ohos) {

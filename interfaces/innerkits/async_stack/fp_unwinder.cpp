@@ -25,11 +25,11 @@
 #include <pthread.h>
 #include "dfx_log.h"
 #include "dfx_util.h"
-#include "stack_utils.h"
+#include "stack_util.h"
 
 namespace OHOS {
 namespace HiviewDFX {
-
+static int32_t g_validPipe[PIPE_NUM_SZ] = {-1, -1};
 constexpr uintptr_t MAX_UNWIND_ADDR_RANGE = 16 * 1024;
 int32_t FpUnwinder::Unwind(uintptr_t* pcs, int32_t sz, int32_t skipFrameNum)
 {
@@ -42,11 +42,11 @@ int32_t FpUnwinder::Unwind(uintptr_t* pcs, int32_t sz, int32_t skipFrameNum)
     uintptr_t stackTop = 0;
     uint32_t realSz = 0;
     if (getpid() == gettid()) {
-        StackUtils::Instance().GetMainStackRange(stackBottom, stackTop);
+        GetMainStackRange(stackBottom, stackTop);
     } else {
-        StackUtils::GetSelfStackRange(stackBottom, stackTop);
+        GetSelfStackRange(stackBottom, stackTop);
         if (!(stackPtr >= stackBottom && stackPtr < stackTop)) {
-            StackUtils::GetSigAltStackRange(stackBottom, stackTop);
+            GetSigAltStackRange(stackBottom, stackTop);
             if (stackPtr < stackBottom || stackPtr >= stackTop) {
                 return realSz;
             }
@@ -72,8 +72,7 @@ int32_t FpUnwinder::Unwind(uintptr_t* pcs, int32_t sz, int32_t skipFrameNum)
 
 int32_t FpUnwinder::UnwindFallback(uintptr_t* pcs, int32_t sz, int32_t skipFrameNum)
 {
-    int32_t validPipe[PIPE_NUM_SZ] = {-1, -1};
-    if (pipe2(validPipe, O_CLOEXEC | O_NONBLOCK) != 0) {
+    if (pipe2(g_validPipe, O_CLOEXEC | O_NONBLOCK) != 0) {
         DFXLOGE("Failed to init pipe, errno(%{public}d)", errno);
         return 0;
     }
@@ -83,7 +82,7 @@ int32_t FpUnwinder::UnwindFallback(uintptr_t* pcs, int32_t sz, int32_t skipFrame
     int32_t realSz = 0;
     while ((index < sz - 1) && (fp - firstFp < MAX_UNWIND_ADDR_RANGE)) {
         uintptr_t addr = fp + sizeof(uintptr_t);
-        if (!ReadUintptrSafe(validPipe[PIPE_WRITE], addr, pcs[++index])) {
+        if (!ReadUintptrSafe(addr, pcs[++index])) {
             break;
         }
         if ((++index) >= skipFrameNum) {
@@ -91,21 +90,21 @@ int32_t FpUnwinder::UnwindFallback(uintptr_t* pcs, int32_t sz, int32_t skipFrame
             realSz = index - skipFrameNum + 1;
         }
         uintptr_t prevFp = fp;
-        if (!ReadUintptrSafe(validPipe[PIPE_WRITE], prevFp, fp)) {
+        if (!ReadUintptrSafe(prevFp, fp)) {
             break;
         }
         if (fp <= prevFp) {
             break;
         }
     }
-    close(validPipe[PIPE_WRITE]);
-    close(validPipe[PIPE_READ]);
+    close(g_validPipe[PIPE_WRITE]);
+    close(g_validPipe[PIPE_READ]);
     return realSz;
 }
 
-NO_SANITIZE bool FpUnwinder::ReadUintptrSafe(int pipeWrite, uintptr_t addr, uintptr_t& value)
+NO_SANITIZE bool FpUnwinder::ReadUintptrSafe(uintptr_t addr, uintptr_t& value)
 {
-    if (OHOS_TEMP_FAILURE_RETRY(syscall(SYS_write, pipeWrite, addr, sizeof(uintptr_t))) == -1) {
+    if (OHOS_TEMP_FAILURE_RETRY(syscall(SYS_write, g_validPipe[PIPE_WRITE], addr, sizeof(uintptr_t))) == -1) {
         DFXLOGE("Failed to write addr to pipe, it is a invalid addr");
         return false;
     }

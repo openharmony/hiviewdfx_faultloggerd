@@ -64,52 +64,44 @@ enum CrashExceptionCode : int32_t {
     CRASH_UNKNOWN = 500,                /* Unknown reason */
 };
 
-struct ErrCodeToMsg {
+struct ErrCodeToStr {
     /** Crash exception stage code */
     int32_t errCode;
-    /** Crash exception msg string */
-    const char* msg;
+    /** Crash exception string */
+    const char* str;
 };
 
-static inline const char* GetCrashDescription(int32_t errCode)
-{
-    const struct ErrCodeToMsg crashExceptions[] = {
-        { CRASH_SIGNAL_EMASKED,      "Signal has been masked." },
-        { CRASH_SIGNAL_EFORK,        "Failed to fork child process." },
-        { CRASH_SIGNAL_ECLONE,       "Failed to clone thread of recycle dump process." },
-        { CRASH_SIGNAL_ESETSTATE,    "Failed to set dump state." },
-        { CRASH_SIGNAL_EINHERITCAP,  "Failed to inherit capabilities." },
-        { CRASH_SIGNAL_EEXECL,       "Failed to execl processdump." },
-        { CRASH_SIGNAL_EWAITEXIT,    "Failed to wait vm process exit." },
-        { CRASH_SIGNAL_EREADPIPE,    "Failed to read pipe due to timeout."},
-        { CRASH_SIGNAL_ECREATEPIPE,  "Failed to init create pipe."},
-        { CRASH_SIGNAL_EDUMPREQUEST, "Failed to find symbol to dump request."},
-        { CRASH_SIGNAL_EWAITPIDTIMEOUT, "Signal handler waitpid timeout"},
-        { CRASH_DUMP_EREADREQ,       "Failed to read dump request." },
-        { CRASH_DUMP_EPARENTPID,     "Failed to check parent pid." },
-        { CRASH_DUMP_EATTACH,        "Failed to attach target process." },
-        { CRASH_DUMP_EWRITEFD,       "Failed to request writen fd." },
-        { CRASH_DUMP_EKILLED,        "Tagert process has been killed." },
-        { CRASH_DUMP_EREADPID,       "Failed to read real pid."},
-        { CRASH_UNWIND_ECONTEXT,     "Unwind context illegal." },
-        { CRASH_UNWIND_EFRAME,       "Failed to step ark js frame." },
-        { CRASH_UNWIND_ESTACK,       "Stack corruption." },
-        { CRASH_LOG_ESTACKLOS,       "Crash thread stack not found." },
-        { CRASH_LOG_ECHILDSTACK,     "Child thread stack not found." },
-        { CRASH_LOG_EREGLOS,         "Registers not found." },
-        { CRASH_LOG_EMEMLOS,         "Memory not found." },
-        { CRASH_LOG_ESTACKMEMLOS,    "Fault stack not found." },
-        { CRASH_LOG_EMAPLOS,         "Maps not found." },
-        { CRASH_LOG_EHILOGLOS,       "Hilog not found." },
-        { CRASH_LOG_ESUMMARYLOS,     "Fault Summary not found." },
-    };
-    for (uint8_t i = 0; i < sizeof(crashExceptions) / sizeof(crashExceptions[0]); i++) {
-        if (errCode == crashExceptions[i].errCode) {
-            return crashExceptions[i].msg;
-        }
-    }
-    return "Unknown reason.";
-}
+static struct ErrCodeToStr g_crashExceptionMap[] = {
+    {CRASH_SIGNAL_EMASKED,      "Signal has been masked." },
+    {CRASH_SIGNAL_EFORK,        "Failed to fork child process." },
+    {CRASH_SIGNAL_ECLONE,       "Failed to clone thread of recycle dump process." },
+    {CRASH_SIGNAL_ESETSTATE,    "Failed to set dump state." },
+    {CRASH_SIGNAL_EINHERITCAP,  "Failed to inherit capabilities." },
+    {CRASH_SIGNAL_EEXECL,       "Failed to execl processdump." },
+    {CRASH_SIGNAL_EWAITEXIT,    "Failed to wait vm process exit." },
+    {CRASH_SIGNAL_EREADPIPE,    "Failed to read pipe due to timeout."},
+    {CRASH_SIGNAL_ECREATEPIPE,  "Failed to init create pipe."},
+    {CRASH_SIGNAL_EDUMPREQUEST, "Failed to find symbol to dump request."},
+    {CRASH_SIGNAL_EWAITPIDTIMEOUT, "Signal handler waitpid timeout"},
+    {CRASH_DUMP_EREADREQ,       "Failed to read dump request." },
+    {CRASH_DUMP_EPARENTPID,     "Failed to check parent pid." },
+    {CRASH_DUMP_EATTACH,        "Failed to attach target process." },
+    {CRASH_DUMP_EWRITEFD,       "Failed to request writen fd." },
+    {CRASH_DUMP_EKILLED,        "Tagert process has been killed." },
+    {CRASH_DUMP_EREADPID,       "Failed to read real pid."},
+    {CRASH_UNWIND_ECONTEXT,     "Unwind context illegal." },
+    {CRASH_UNWIND_EFRAME,       "Failed to step ark js frame." },
+    {CRASH_UNWIND_ESTACK,       "Stack corruption." },
+    {CRASH_LOG_ESTACKLOS,       "Crash thread stack not found." },
+    {CRASH_LOG_ECHILDSTACK,     "Child thread stack not found." },
+    {CRASH_LOG_EREGLOS,         "Registers not found." },
+    {CRASH_LOG_EMEMLOS,         "Memory not found." },
+    {CRASH_LOG_ESTACKMEMLOS,    "Fault stack not found." },
+    {CRASH_LOG_EMAPLOS,         "Maps not found." },
+    {CRASH_LOG_EHILOGLOS,       "Hilog not found." },
+    {CRASH_LOG_ESUMMARYLOS,     "Fault Summary not found."},
+    {CRASH_UNKNOWN,             "Unknown reason." },
+};
 
 /**
  * @brief Process crash dump exception description
