@@ -232,12 +232,11 @@ uintptr_t StripPac(uintptr_t inAddr, uintptr_t pacMask)
 size_t ReadProcMemByPid(const pid_t pid, const uint64_t addr, void* data, size_t size)
 {
     std::vector<iovec> remoteIovs;
-    struct iovec dataIov = {
-        .iov_base = data,
-        .iov_len = size,
-    };
+    struct iovec dataIov;
     uint64_t currentAddr = addr;
-    while (size > 0) {
+    size_t totalReadSize = 0;
+    size_t  leftSize = size;
+    while (leftSize > 0) {
         if (currentAddr >= UINTPTR_MAX) {
             break;
         }
@@ -251,13 +250,25 @@ size_t ReadProcMemByPid(const pid_t pid, const uint64_t addr, void* data, size_t
             break;
         }
         remoteIovs.emplace_back(remoteIov);
-        size -= iovLen;
+        if (remoteIovs.size() == IOV_MAX) {
+            dataIov.iov_base = static_cast<uint8_t*>(data) + totalReadSize;
+            dataIov.iov_len = size - totalReadSize;
+            ssize_t readCount = process_vm_readv(pid, &dataIov, 1, &remoteIovs[0], IOV_MAX, 0);
+            if (readCount == -1) {
+                return totalReadSize;
+            }
+            totalReadSize += static_cast<size_t>(readCount);
+            remoteIovs.clear();
+        }
+        leftSize -= iovLen;
     }
-    if (remoteIovs.empty()) {
-        return 0;
+    if (!remoteIovs.empty()) {
+        dataIov.iov_base = static_cast<uint8_t*>(data) + totalReadSize;
+        dataIov.iov_len = size - totalReadSize;
+        ssize_t readCount = process_vm_readv(pid, &dataIov, 1, &remoteIovs[0], remoteIovs.size(), 0);
+        totalReadSize += (readCount > 0 ? static_cast<size_t>(readCount) : 0);
     }
-    ssize_t readCount = process_vm_readv(pid, &dataIov, 1, &remoteIovs[0], remoteIovs.size(), 0);
-    return readCount <= 0 ? 0 : static_cast<size_t>(readCount);
+    return totalReadSize;
 }
 #endif
 }   // namespace HiviewDFX
