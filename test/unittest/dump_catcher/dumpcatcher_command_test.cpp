@@ -16,6 +16,7 @@
 #include <gtest/gtest.h>
 
 #include <string>
+#include <thread>
 #include <unistd.h>
 
 #include "dfx_define.h"
@@ -249,34 +250,12 @@ HWTEST_F(DumpCatcherCommandTest, DumpCatcherCommandTest014, TestSize.Level2)
 
 /**
  * @tc.name: DumpCatcherCommandTest015
- * @tc.desc: test dumpcatcher abnormal scenario
+ * @tc.desc: test dumpcatcher command: -p [accountmgr] -t [main thread] -T [1500]
  * @tc.type: FUNC
  */
 HWTEST_F(DumpCatcherCommandTest, DumpCatcherCommandTest015, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "DumpCatcherCommandTest015: start.";
-    std::shared_ptr<DfxDumpCatcher> dump = make_shared<DfxDumpCatcher>();
-    std::string msg = "";
-    bool ret = dump->DoDumpCurrTid(0, msg, 0);
-    ASSERT_EQ(ret, false);
-    ret = dump->DoDumpLocalTid(-1, msg, 0);
-    ASSERT_EQ(ret, false);
-    ret = dump->DoDumpLocalPid(-1, msg, 0);
-    ASSERT_EQ(ret, false);
-    std::vector<int> pidV;
-    ret = dump->DumpCatchMultiPid(pidV, msg);
-    ASSERT_EQ(ret, false);
-    GTEST_LOG_(INFO) << "DumpCatcherCommandTest015: end.";
-}
-
-/**
- * @tc.name: DumpCatcherCommandTest016
- * @tc.desc: test dumpcatcher command: -p [accountmgr] -t [main thread] -T [1500]
- * @tc.type: FUNC
- */
-HWTEST_F(DumpCatcherCommandTest, DumpCatcherCommandTest016, TestSize.Level2)
-{
-    GTEST_LOG_(INFO) << "DumpCatcherCommandTest016: start.";
     int testPid = GetProcessPid("accountmgr");
     int timeout = 1500;
     string testCommand = "dumpcatcher -p " + to_string(testPid) + " -t " + to_string(testPid);
@@ -288,8 +267,8 @@ HWTEST_F(DumpCatcherCommandTest, DumpCatcherCommandTest016, TestSize.Level2)
     log[1] = log[1] + "accountmgr";
     int len = sizeof(log) / sizeof(log[0]);
     int count = GetKeywordsNum(dumpRes, log, len);
-    EXPECT_EQ(count, len) << "DumpCatcherCommandTest016 Failed";
-    GTEST_LOG_(INFO) << "DumpCatcherCommandTest016: end.";
+    EXPECT_EQ(count, len) << "DumpCatcherCommandTest015 Failed";
+    GTEST_LOG_(INFO) << "DumpCatcherCommandTest015: end.";
 }
 } // namespace HiviewDFX
 } // namepsace OHOS

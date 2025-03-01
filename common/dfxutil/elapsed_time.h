@@ -25,7 +25,7 @@ public:
     ElapsedTime()
     {
         begin_ = std::chrono::high_resolution_clock::now();
-    };
+    }
 
     ElapsedTime(std::string printContent, time_t limitCostMilliseconds)
         : limitCostMilliseconds_(limitCostMilliseconds), printContent_(std::move(printContent))
@@ -46,13 +46,13 @@ public:
     void Reset()
     {
         begin_ = std::chrono::high_resolution_clock::now();
-    };
+    }
 
     template<typename Duration=std::chrono::nanoseconds>
     time_t Elapsed() const
     {
         return std::chrono::duration_cast<Duration>(std::chrono::high_resolution_clock::now() - begin_).count();
-    };
+    }
 
 private:
     std::chrono::time_point<std::chrono::high_resolution_clock> begin_;

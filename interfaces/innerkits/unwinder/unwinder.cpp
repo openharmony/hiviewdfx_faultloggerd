@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023-2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2023-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -19,9 +19,6 @@
 #include <dlfcn.h>
 #include <link.h>
 
-#if defined(__arm__)
-#include "arm_exidx.h"
-#endif
 #include "dfx_ark.h"
 #include "dfx_define.h"
 #include "dfx_errors.h"
@@ -35,13 +32,13 @@
 #include "dfx_symbols.h"
 #include "dfx_trace_dlsym.h"
 #include "dfx_util.h"
-#include "dwarf_section.h"
+#include "elapsed_time.h"
 #include "fp_unwinder.h"
-#include "stack_util.h"
+#include "stack_utils.h"
 #include "string_printf.h"
 #include "string_util.h"
 #include "thread_context.h"
-#include "elapsed_time.h"
+#include "unwind_entry_parser_factory.h"
 
 namespace OHOS {
 namespace HiviewDFX {
@@ -58,8 +55,8 @@ public:
         if (needMaps) {
             maps_ = DfxMaps::Create();
         }
-        acc_ = std::make_shared<DfxAccessorsLocal>();
         enableFpCheckMapExec_ = true;
+        memory_ = std::make_shared<DfxMemory>(UNWIND_TYPE_LOCAL);
         Init();
     }
 
@@ -72,8 +69,8 @@ public:
         }
         DfxEnableTraceDlsym(true);
         maps_ = DfxMaps::Create(pid, crash);
-        acc_ = std::make_shared<DfxAccessorsRemote>();
         enableFpCheckMapExec_ = true;
+        memory_ = std::make_shared<DfxMemory>(UNWIND_TYPE_REMOTE);
         Init();
     }
 
@@ -85,8 +82,8 @@ public:
         }
         DfxEnableTraceDlsym(true);
         maps_ = DfxMaps::Create(pid, crash);
-        acc_ = std::make_shared<DfxAccessorsRemote>();
         enableFpCheckMapExec_ = true;
+        memory_ = std::make_shared<DfxMemory>(UNWIND_TYPE_REMOTE);
         Init();
     }
 
@@ -98,12 +95,12 @@ public:
         } else {
             pid_ = UNWIND_TYPE_CUSTOMIZE;
         }
-        acc_ = std::make_shared<DfxAccessorsCustomize>(accessors);
         enableFpCheckMapExec_ = false;
         enableFillFrames_ = false;
     #if defined(__aarch64__)
         pacMask_ = pacMaskDefault_;
     #endif
+        memory_ = std::make_shared<DfxMemory>(UNWIND_TYPE_CUSTOMIZE, accessors);
         Init();
     }
 
@@ -227,7 +224,7 @@ private:
     void InitParam()
     {
 #if defined(ENABLE_MIXSTACK)
-        enableMixstack_ = DfxParam::EnableMixstack();
+        enableMixstack_ = DfxParam::IsEnableMixstack();
 #endif
     }
     bool GetMainStackRangeInner(uintptr_t& stackBottom, uintptr_t& stackTop);
@@ -236,9 +233,9 @@ private:
     void DoPcAdjust(uintptr_t& pc);
     void AddFrame(const StepFrame& frame, std::shared_ptr<DfxMap> map);
     bool FindCache(uintptr_t pc, std::shared_ptr<DfxMap>& map, std::shared_ptr<RegLocState>& rs);
-    bool AddFrameMap(const StepFrame& frame, std::shared_ptr<DfxMap>& map, void* ctx);
+    bool AddFrameMap(const StepFrame& frame, std::shared_ptr<DfxMap>& map);
     bool UnwindArkFrame(StepFrame& frame, const std::shared_ptr<DfxMap>& map, bool& stopUnwind);
-    bool ParseUnwindTable(uintptr_t pc, std::shared_ptr<RegLocState>& rs, void* ctx, bool& unwinderResult);
+    bool ParseUnwindTable(uintptr_t pc, std::shared_ptr<RegLocState>& rs);
     void UpdateRegsState(StepFrame& frame, void* ctx, bool& unwinderResult, std::shared_ptr<RegLocState>& rs);
     bool CheckFrameValid(const StepFrame& frame, const std::shared_ptr<DfxMap>& map, uintptr_t prevSp);
     bool StepInner(const bool isSigFrame, StepFrame& frame, void *ctx);
@@ -273,7 +270,6 @@ private:
     int32_t pid_ = 0;
     uintptr_t pacMask_ = 0;
     std::vector<uintptr_t> jitCache_ = {};
-    std::shared_ptr<DfxAccessors> acc_ = nullptr;
     std::shared_ptr<DfxMemory> memory_ = nullptr;
     std::unordered_map<uintptr_t, StepCache> stepCache_ {};
     std::shared_ptr<DfxRegs> regs_ = nullptr;
@@ -281,10 +277,7 @@ private:
     std::vector<uintptr_t> pcs_ {};
     std::vector<DfxFrame> frames_ {};
     UnwindErrorData lastErrorData_ {};
-#if defined(__arm__)
-    std::shared_ptr<ArmExidx> armExidx_ = nullptr;
-#endif
-    std::shared_ptr<DwarfSection> dwarfSection_ = nullptr;
+    std::shared_ptr<UnwindEntryParser> unwindEntryParser_ = nullptr;
     uintptr_t firstFrameSp_ {0};
 };
 
@@ -472,12 +465,7 @@ void Unwinder::SetFrames(std::vector<DfxFrame>& frames)
 void Unwinder::Impl::Init()
 {
     Destroy();
-    memory_ = std::make_shared<DfxMemory>(acc_);
-#if defined(__arm__)
-    armExidx_ = std::make_shared<ArmExidx>(memory_);
-#endif
-    dwarfSection_ = std::make_shared<DwarfSection>(memory_);
-
+    unwindEntryParser_ = UnwindEntryParserFactory::CreateUnwindEntryParser(memory_);
     InitParam();
 #if defined(ENABLE_MIXSTACK)
     DFXLOGD("Unwinder mixstack enable: %{public}d", enableMixstack_);
@@ -492,9 +480,7 @@ void Unwinder::Impl::Clear()
     enableMixstack_ = true;
     pcs_.clear();
     frames_.clear();
-    if (memset_s(&lastErrorData_, sizeof(UnwindErrorData), 0, sizeof(UnwindErrorData)) != 0) {
-        DFXLOGE("Failed to memset lastErrorData");
-    }
+    lastErrorData_ = {};
 }
 
 void Unwinder::Impl::Destroy()
@@ -516,7 +502,7 @@ bool Unwinder::Impl::GetMainStackRangeInner(uintptr_t& stackBottom, uintptr_t& s
 {
     if (maps_ != nullptr && !maps_->GetStackRange(stackBottom, stackTop)) {
         return false;
-    } else if (maps_ == nullptr && !GetMainStackRange(stackBottom, stackTop)) {
+    } else if (maps_ == nullptr && !StackUtils::Instance().GetMainStackRange(stackBottom, stackTop)) {
         return false;
     }
     return true;
@@ -526,7 +512,7 @@ bool Unwinder::Impl::GetArkStackRangeInner(uintptr_t& arkMapStart, uintptr_t& ar
 {
     if (maps_ != nullptr && !maps_->GetArkStackRange(arkMapStart, arkMapEnd)) {
         return false;
-    } else if (maps_ == nullptr && !GetArkStackRange(arkMapStart, arkMapEnd)) {
+    } else if (maps_ == nullptr && !StackUtils::Instance().GetArkStackRange(arkMapStart, arkMapEnd)) {
         return false;
     }
     return true;
@@ -537,7 +523,7 @@ bool Unwinder::Impl::GetStackRange(uintptr_t& stackBottom, uintptr_t& stackTop)
     if (gettid() == getpid()) {
         return GetMainStackRangeInner(stackBottom, stackTop);
     }
-    return GetSelfStackRange(stackBottom, stackTop);
+    return StackUtils::GetSelfStackRange(stackBottom, stackTop);
 }
 
 bool Unwinder::Impl::UnwindLocalWithTid(const pid_t tid, size_t maxFrameNum, size_t skipFrameNum)
@@ -929,9 +915,9 @@ bool Unwinder::Impl::FindCache(uintptr_t pc, std::shared_ptr<DfxMap>& map, std::
     return false;
 }
 
-bool Unwinder::Impl::AddFrameMap(const StepFrame& frame, std::shared_ptr<DfxMap>& map, void* ctx)
+bool Unwinder::Impl::AddFrameMap(const StepFrame& frame, std::shared_ptr<DfxMap>& map)
 {
-    int mapRet = acc_->GetMapByPc(frame.pc, map, ctx);
+    int mapRet = memory_->GetMapByPc(frame.pc, map);
     if (mapRet != UNW_ERROR_NONE) {
         if (frame.isJsFrame) {
             DFXLOGW("Failed to get map with ark, frames size: %{public}zu", frames_.size());
@@ -968,48 +954,22 @@ bool Unwinder::Impl::UnwindArkFrame(StepFrame& frame, const std::shared_ptr<DfxM
     return true;
 }
 
-bool Unwinder::Impl::ParseUnwindTable(uintptr_t pc, std::shared_ptr<RegLocState>& rs, void* ctx, bool& unwinderResult)
+bool Unwinder::Impl::ParseUnwindTable(uintptr_t pc, std::shared_ptr<RegLocState>& rs)
 {
     // find unwind table and entry
     UnwindTableInfo uti;
-    int utiRet = acc_->FindUnwindTable(pc, uti, ctx);
+    int utiRet = memory_->FindUnwindTable(pc, uti);
     if (utiRet != UNW_ERROR_NONE) {
         lastErrorData_.SetAddrAndCode(pc, utiRet);
         DFXLOGU("Failed to find unwind table ret: %{public}d", utiRet);
         return false;
     }
-    // parse instructions and get cache rs
-    struct UnwindEntryInfo uei;
     rs = std::make_shared<RegLocState>();
-#if defined(__arm__)
-    if (!unwinderResult && uti.format == UNW_INFO_FORMAT_ARM_EXIDX) {
-        if (!armExidx_->SearchEntry(pc, uti, uei)) {
-            lastErrorData_.SetAddrAndCode(armExidx_->GetLastErrorAddr(), armExidx_->GetLastErrorCode());
-            DFXLOGE("Failed to search unwind entry");
-            return false;
-        }
-        if (!armExidx_->Step((uintptr_t)uei.unwindInfo, rs)) {
-            lastErrorData_.SetAddrAndCode(armExidx_->GetLastErrorAddr(), armExidx_->GetLastErrorCode());
-            DFXLOGU("Step exidx section error");
-        } else {
-            unwinderResult = true;
-        }
-    }
-#endif
-    if (!unwinderResult && uti.format == UNW_INFO_FORMAT_REMOTE_TABLE) {
-        if ((uti.isLinear == false && !dwarfSection_->SearchEntry(pc, uti, uei)) ||
-            (uti.isLinear == true && !dwarfSection_->LinearSearchEntry(pc, uti, uei))) {
-            lastErrorData_.SetAddrAndCode(dwarfSection_->GetLastErrorAddr(), dwarfSection_->GetLastErrorCode());
-            DFXLOGU("Failed to search unwind entry");
-            return false;
-        }
-        memory_->SetDataOffset(uti.segbase);
-        if (!dwarfSection_->Step(pc, (uintptr_t)uei.unwindInfo, rs)) {
-            lastErrorData_.SetAddrAndCode(dwarfSection_->GetLastErrorAddr(), dwarfSection_->GetLastErrorCode());
-            DFXLOGU("Step dwarf section error");
-        } else {
-            unwinderResult = true;
-        }
+    // parse instructions and get cache rs
+    if (!unwindEntryParser_->Step(pc, uti, rs)) {
+        lastErrorData_.SetAddrAndCode(unwindEntryParser_->GetLastErrorAddr(), unwindEntryParser_->GetLastErrorCode());
+        DFXLOGU("Step unwind entry failed");
+        return false;
     }
     return true;
 }
@@ -1095,7 +1055,7 @@ bool Unwinder::Impl::StepInner(const bool isSigFrame, StepFrame& frame, void *ct
         }
 
         // 2. find map and process frame
-        if (!AddFrameMap(frame, map, ctx)) {
+        if (!AddFrameMap(frame, map)) {
             return false;
         }
         if (isSigFrame) {
@@ -1115,12 +1075,8 @@ bool Unwinder::Impl::StepInner(const bool isSigFrame, StepFrame& frame, void *ct
             }
             break;
         }
-
         // 3. find unwind table and entry, parse instructions and get cache rs
-        if (!ParseUnwindTable(frame.pc, rs, ctx, hasRegLocState)) {
-            break;
-        }
-
+        hasRegLocState = ParseUnwindTable(frame.pc, rs);
         // 4. update rs cache
         if (hasRegLocState && enableCache_) {
             StepCache cache;
@@ -1358,12 +1314,13 @@ bool Unwinder::Impl::GetLockInfo(int32_t tid, char* buf, size_t sz)
     uintptr_t lockAddr;
     UnwindContext context;
     context.pid = tid;
-    if (acc_->AccessMem(lockPtrAddr, &lockAddr, &context) != UNW_ERROR_NONE) {
+    memory_->SetCtx(&context);
+    if (!memory_->ReadMem(lockPtrAddr, &lockAddr)) {
         DFXLOGW("Failed to find lock addr.");
         return false;
     }
 
-    size_t rsize = DfxMemory::ReadProcMemByPid(tid, lockAddr, buf, sz);
+    size_t rsize = ReadProcMemByPid(tid, lockAddr, buf, sz);
     if (rsize != sz) {
         DFXLOGW("Failed to fetch lock content, read size:%{public}zu expected size:%{public}zu", rsize, sz);
         return false;

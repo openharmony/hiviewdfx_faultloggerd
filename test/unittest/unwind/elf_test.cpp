@@ -21,6 +21,7 @@
 #include <iostream>
 #include "dfx_elf.h"
 #include "elf_imitate.h"
+#include "elf_factory.h"
 #include "unwinder_config.h"
 
 using namespace OHOS::HiviewDFX;
@@ -52,41 +53,41 @@ std::vector<std::string> interestedSections = { ".dynsym", ".eh_frame_hdr", ".eh
 HWTEST_F(DfxElfTest, DfxElfTest001, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "DfxElfTest001: start.";
-    DfxElf elf(ELF32_FILE);
-    ASSERT_TRUE(elf.IsValid());
+    RegularElfFactory factory(ELF32_FILE);
+    auto elf = factory.Create();
+    ASSERT_TRUE(elf != nullptr);
     ElfImitate elfImitate;
     ShdrInfo shdr;
     ShdrInfo shdrImitate;
     bool ret = elfImitate.ParseAllHeaders(ElfImitate::ElfFileType::ELF32);
     ASSERT_TRUE(ret);
     for (size_t i = 0; i < interestedSections.size(); i++) {
-        elf.GetSectionInfo(shdr, interestedSections[i]);
+        elf->GetSectionInfo(shdr, interestedSections[i]);
         elfImitate.GetSectionInfo(shdrImitate, interestedSections[i]);
         GTEST_LOG_(INFO) << interestedSections[i];
         ASSERT_EQ(shdr.addr, shdrImitate.addr);
         ASSERT_EQ(shdr.offset, shdrImitate.offset);
         ASSERT_EQ(shdr.size, shdrImitate.size);
     }
-    ASSERT_EQ(elf.GetArchType(), elfImitate.GetArchType());
-    ASSERT_EQ(elf.GetElfSize(), elfImitate.GetElfSize());
-    ASSERT_EQ(elf.GetLoadBias(), elfImitate.GetLoadBias());
+    ASSERT_EQ(elf->GetArchType(), elfImitate.GetArchType());
+    ASSERT_EQ(elf->GetElfSize(), elfImitate.GetElfSize());
+    ASSERT_EQ(elf->GetLoadBias(), elfImitate.GetLoadBias());
 
-    auto load = elf.GetPtLoads();
+    auto load = elf->GetPtLoads();
     auto loadImitate = elfImitate.GetPtLoads();
     ASSERT_EQ(load[PT_LOAD_OFFSET].offset, loadImitate[PT_LOAD_OFFSET].offset);
     ASSERT_EQ(load[PT_LOAD_OFFSET].tableSize, loadImitate[PT_LOAD_OFFSET].tableSize);
     ASSERT_EQ(load[PT_LOAD_OFFSET].tableVaddr, loadImitate[PT_LOAD_OFFSET].tableVaddr);
 
-    ASSERT_EQ(elf.GetClassType(), elfImitate.GetClassType());
-    ASSERT_EQ(elf.GetLoadBase(0xf78c0000, 0), elfImitate.GetLoadBase(0xf78c0000, 0));
-    ASSERT_EQ(elf.GetStartPc(), elfImitate.GetStartPc());
-    ASSERT_EQ(elf.GetEndPc(), elfImitate.GetEndPc());
-    ASSERT_EQ(elf.GetRelPc(0xf78c00f0, 0xf78c0000, 0), elfImitate.GetRelPc(0xf78c00f0, 0xf78c0000, 0));
-    ASSERT_EQ(elf.GetBuildId(), "8e5a30338be326934ff93c998dcd0d22fe345870");
-    EXPECT_NE(DfxElf::Create(ELF32_FILE), nullptr);
-    EXPECT_NE(elf.GetGlobalPointer(), 0);
-    EXPECT_FALSE(elf.GetElfSymbols().empty());
-    EXPECT_GT(elf.GetMmapSize(), 0);
+    ASSERT_EQ(elf->GetClassType(), elfImitate.GetClassType());
+    ASSERT_EQ(elf->GetLoadBase(0xf78c0000, 0), elfImitate.GetLoadBase(0xf78c0000, 0));
+    ASSERT_EQ(elf->GetStartPc(), elfImitate.GetStartPc());
+    ASSERT_EQ(elf->GetEndPc(), elfImitate.GetEndPc());
+    ASSERT_EQ(elf->GetRelPc(0xf78c00f0, 0xf78c0000, 0), elfImitate.GetRelPc(0xf78c00f0, 0xf78c0000, 0));
+    ASSERT_EQ(elf->GetBuildId(), "8e5a30338be326934ff93c998dcd0d22fe345870");
+    EXPECT_NE(elf->GetGlobalPointer(), 0);
+    EXPECT_FALSE(elf->GetFuncSymbols().empty());
+    EXPECT_GT(elf->GetMmapSize(), 0);
     GTEST_LOG_(INFO) << "DfxElfTest001: end.";
 }
 
@@ -98,8 +99,9 @@ HWTEST_F(DfxElfTest, DfxElfTest001, TestSize.Level2)
 HWTEST_F(DfxElfTest, DfxElfTest002, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "DfxElfTest002: start.";
-    DfxElf elf(ELF64_FILE);
-    ASSERT_TRUE(elf.IsValid());
+    RegularElfFactory factory(ELF64_FILE);
+    auto elf = factory.Create();
+    ASSERT_TRUE(elf != nullptr);
     ElfImitate elfImitate;
     ShdrInfo shdr;
     ShdrInfo shdrImitate;
@@ -107,31 +109,31 @@ HWTEST_F(DfxElfTest, DfxElfTest002, TestSize.Level2)
     ASSERT_TRUE(ret);
     for (size_t i = 0; i < interestedSections.size(); i++) {
         GTEST_LOG_(INFO) << interestedSections[i];
-        elf.GetSectionInfo(shdr, interestedSections[i]);
+        elf->GetSectionInfo(shdr, interestedSections[i]);
         elfImitate.GetSectionInfo(shdrImitate, interestedSections[i]);
         ASSERT_EQ(shdr.addr, shdrImitate.addr);
         ASSERT_EQ(shdr.offset, shdrImitate.offset);
         ASSERT_EQ(shdr.size, shdrImitate.size);
     }
-    ASSERT_EQ(elf.GetArchType(), elfImitate.GetArchType());
-    ASSERT_EQ(elf.GetElfSize(), elfImitate.GetElfSize());
-    ASSERT_EQ(elf.GetLoadBias(), elfImitate.GetLoadBias());
+    ASSERT_EQ(elf->GetArchType(), elfImitate.GetArchType());
+    ASSERT_EQ(elf->GetElfSize(), elfImitate.GetElfSize());
+    ASSERT_EQ(elf->GetLoadBias(), elfImitate.GetLoadBias());
 
-    auto load = elf.GetPtLoads();
+    auto load = elf->GetPtLoads();
     auto loadImitate = elfImitate.GetPtLoads();
     ASSERT_EQ(load[PT_LOAD_OFFSET64].offset, loadImitate[PT_LOAD_OFFSET64].offset);
     ASSERT_EQ(load[PT_LOAD_OFFSET64].tableSize, loadImitate[PT_LOAD_OFFSET64].tableSize);
     ASSERT_EQ(load[PT_LOAD_OFFSET64].tableVaddr, loadImitate[PT_LOAD_OFFSET64].tableVaddr);
 
-    ASSERT_EQ(elf.GetClassType(), elfImitate.GetClassType());
-    ASSERT_EQ(elf.GetLoadBase(0xf78c0000, 0), elfImitate.GetLoadBase(0xf78c0000, 0));
-    ASSERT_EQ(elf.GetStartPc(), elfImitate.GetStartPc());
-    ASSERT_EQ(elf.GetEndPc(), elfImitate.GetEndPc());
-    ASSERT_EQ(elf.GetRelPc(0xf78c00f0, 0xf78c0000, 0), elfImitate.GetRelPc(0xf78c00f0, 0xf78c0000, 0));
-    ASSERT_EQ(elf.GetBuildId(), "24c55dccc5baaaa140da0083207abcb8d523e248");
-    EXPECT_NE(elf.GetGlobalPointer(), 0);
-    EXPECT_FALSE(elf.GetElfSymbols().empty());
-    EXPECT_GT(elf.GetMmapSize(), 0);
+    ASSERT_EQ(elf->GetClassType(), elfImitate.GetClassType());
+    ASSERT_EQ(elf->GetLoadBase(0xf78c0000, 0), elfImitate.GetLoadBase(0xf78c0000, 0));
+    ASSERT_EQ(elf->GetStartPc(), elfImitate.GetStartPc());
+    ASSERT_EQ(elf->GetEndPc(), elfImitate.GetEndPc());
+    ASSERT_EQ(elf->GetRelPc(0xf78c00f0, 0xf78c0000, 0), elfImitate.GetRelPc(0xf78c00f0, 0xf78c0000, 0));
+    ASSERT_EQ(elf->GetBuildId(), "24c55dccc5baaaa140da0083207abcb8d523e248");
+    EXPECT_NE(elf->GetGlobalPointer(), 0);
+    EXPECT_FALSE(elf->GetFuncSymbols().empty());
+    EXPECT_GT(elf->GetMmapSize(), 0);
     GTEST_LOG_(INFO) << "DfxElfTest002: end.";
 }
 
@@ -143,13 +145,11 @@ HWTEST_F(DfxElfTest, DfxElfTest002, TestSize.Level2)
 HWTEST_F(DfxElfTest, DfxElfTest003, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "DfxElfTest003: start.";
-    DfxElf elf("");
+    DfxElf elf(nullptr);
     ASSERT_FALSE(elf.IsValid());
     ASSERT_EQ(elf.GetClassType(), ELFCLASSNONE);
     ASSERT_EQ(elf.GetElfSize(), 0);
     ASSERT_TRUE(elf.GetBuildId().empty());
-    EXPECT_EQ(DfxElf::Create("123"), nullptr);
-    ASSERT_TRUE(DfxElf::ToReadableBuildId("").empty());
     EXPECT_EQ(elf.GetGlobalPointer(), 0);
     ShdrInfo shdrInfo;
     EXPECT_FALSE(elf.GetSectionInfo(shdrInfo, ""));
@@ -167,15 +167,19 @@ HWTEST_F(DfxElfTest, DfxElfTest004, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "DfxElfTest004: start.";
     UnwinderConfig::SetEnableMiniDebugInfo(true);
-    DfxElf elf(DUMPCATCHER_ELF_FILE);
-    ASSERT_TRUE(elf.IsValid());
-    ASSERT_TRUE(elf.IsEmbeddedElfValid());
-    auto symbols1 = elf.GetFuncSymbols();
-    GTEST_LOG_(INFO) << "DfxElfTest004: symbols1 size:" << symbols1.size();
-    auto symbols2 = elf.GetEmbeddedElf()->GetFuncSymbols();
-    GTEST_LOG_(INFO) << "DfxElfTest004: symbols2 size:" << symbols2.size();
-    ASSERT_GE(symbols2.size(), 0);
-    ASSERT_GE(symbols1.size(), symbols2.size());
+    RegularElfFactory factory(DUMPCATCHER_ELF_FILE);
+    auto elf = factory.Create();
+    ASSERT_TRUE(elf->IsValid());
+    auto symbols = elf->GetFuncSymbols();
+    GTEST_LOG_(INFO) << "DfxElfTest004: symbols1 size:" << symbols.size();
+
+    UnwinderConfig::SetEnableMiniDebugInfo(false);
+    auto regularElf = factory.Create();
+    ASSERT_TRUE(regularElf->IsValid());
+    auto regularSymbols = regularElf->GetFuncSymbols();
+    GTEST_LOG_(INFO) << "DfxElfTest004: symbols2 size:" << regularSymbols.size();
+    ASSERT_GE(regularSymbols.size(), 0);
+    ASSERT_GE(symbols.size(), regularSymbols.size());
     GTEST_LOG_(INFO) << "DfxElfTest004: end.";
 }
 #endif
@@ -187,31 +191,19 @@ HWTEST_F(DfxElfTest, DfxElfTest004, TestSize.Level2)
  */
 HWTEST_F(DfxElfTest, DfxElfTest005, TestSize.Level2)
 {
-    auto elfFile = std::make_shared<DfxElf>("");
+    auto elfFile = std::make_shared<DfxElf>(nullptr);
     ASSERT_NE(elfFile, nullptr);
     EXPECT_STREQ(elfFile->GetBuildId().c_str(), "");
 }
 
 /**
  * @tc.name: DfxElfTest006
- * @tc.desc: test GetBuildId function when input illegal elf file path
+ * @tc.desc: test SetBaseOffset function and GetBaseOffset function
  * @tc.type: FUNC
  */
 HWTEST_F(DfxElfTest, DfxElfTest006, TestSize.Level2)
 {
-    auto elfFile = std::make_shared<DfxElf>("/proc/illegal");
-    ASSERT_NE(elfFile, nullptr);
-    EXPECT_STREQ(elfFile->GetBuildId().c_str(), "");
-}
-
-/**
- * @tc.name: DfxElfTest007
- * @tc.desc: test SetBaseOffset function and GetBaseOffset function
- * @tc.type: FUNC
- */
-HWTEST_F(DfxElfTest, DfxElfTest007, TestSize.Level2)
-{
-    auto elf = std::make_shared<DfxElf>("");
+    auto elf = std::make_shared<DfxElf>(nullptr);
     ASSERT_EQ(elf->GetBaseOffset(), 0);
     elf->SetBaseOffset(1);
     ASSERT_EQ(elf->GetBaseOffset(), 1);

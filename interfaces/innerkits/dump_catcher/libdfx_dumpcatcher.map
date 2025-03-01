@@ -1,9 +1,8 @@
 {
   global:
     extern "C++" {
-      OHOS::HiviewDFX::DfxDumpCatcher::Dump*;
-      OHOS::HiviewDFX::DfxDumpCatcher::Do*;
-      OHOS::HiviewDFX::DfxDumpCatchError::ToString*;
+      OHOS::HiviewDFX::DfxDumpCatcher::DfxDumpCatcher*;
+      OHOS::HiviewDFX::DfxDumpCatcher::DumpCatch*;
     };
   local:
     *;

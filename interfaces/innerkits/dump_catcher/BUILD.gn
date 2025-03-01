@@ -16,6 +16,7 @@ import("//base/hiviewdfx/faultloggerd/faultloggerd.gni")
 dumpcatcher_sources = [
   "dfx_dump_catcher.cpp",
   "dfx_dump_catcher_errno.cpp",
+  "kernel_stack_async_collector.cpp",
 ]
 
 if (defined(ohos_lite)) {

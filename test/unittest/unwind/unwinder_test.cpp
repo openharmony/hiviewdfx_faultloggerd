@@ -922,8 +922,7 @@ HWTEST_F(UnwinderTest, AccessMemTest001, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "AccessMemTest001: start.";
     auto unwinder = std::make_shared<Unwinder>();
-    auto acc = std::make_shared<DfxAccessorsLocal>();
-    auto memory = std::make_shared<DfxMemory>(acc);
+    auto memory = std::make_shared<DfxMemory>(UNWIND_TYPE_LOCAL);
     uintptr_t val;
     EXPECT_FALSE(memory->ReadReg(0, &val));
     uintptr_t regs[] = {0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xa};
@@ -934,7 +933,7 @@ HWTEST_F(UnwinderTest, AccessMemTest001, TestSize.Level2)
 
     uint8_t values[] = {0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8};
     uintptr_t addr = reinterpret_cast<uintptr_t>(&values[0]);
-    EXPECT_FALSE(unwinder->AccessMem(&memory, addr, nullptr));
+    EXPECT_FALSE(unwinder->AccessMem(memory.get(), addr, nullptr));
     GTEST_LOG_(INFO) << "AccessMemTest001: end.";
 }
 

@@ -22,7 +22,6 @@
 #include "dfx_config.h"
 #include "dfx_hap.h"
 #include "dfx_regs.h"
-#include "dfx_xz_utils.h"
 #include "dwarf_op.h"
 #include "faultloggerd_fuzzertest_common.h"
 #include "thread_context.h"
@@ -264,19 +263,6 @@ void TestDfxInstrStatistic(const uint8_t* data, size_t size)
     statistic.DumpInstrStatResult(result);
 }
 
-void TestDfxXzUtils(const uint8_t* data, size_t size)
-{
-    uint8_t src;
-    if (size < sizeof(src)) {
-        return;
-    }
-
-    STREAM_TO_VALUEINFO(data, src);
-
-    std::shared_ptr<std::vector<uint8_t>> out;
-    XzDecompress(&src, size, out);
-}
-
 void FaultloggerdUnwinderTest(const uint8_t* data, size_t size)
 {
     TestDfxConfig();
@@ -287,9 +273,6 @@ void FaultloggerdUnwinderTest(const uint8_t* data, size_t size)
 #endif
     TestThreadContext(data, size);
     TestDfxInstrStatistic(data, size);
-#if defined(ENABLE_XZUTIL)
-    TestDfxXzUtils(data, size);
-#endif
     sleep(1);
 }
 } // namespace HiviewDFX

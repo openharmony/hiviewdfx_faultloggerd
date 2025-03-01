@@ -26,6 +26,7 @@
 #include "dfx_json_formatter.h"
 #include "dfx_test_util.h"
 #include "faultloggerd_client.h"
+#include "kernel_stack_async_collector.h"
 #include "procinfo.h"
 
 using namespace testing;
@@ -1107,6 +1108,35 @@ HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest040, TestSize.Level
     GTEST_LOG_(INFO) << result.second;
     EXPECT_TRUE(result.first == -1);
     GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest040: end.";
+}
+
+/**
+ * @tc.name: DumpCatcherInterfacesTest041
+ * @tc.desc: test dumpcatch self scenario
+ * @tc.type: FUNC
+ */
+HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest041, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest041: start.";
+    auto sleep = [] {
+        std::this_thread::sleep_for(std::chrono::seconds(10));
+    };
+    for (int i = 0; i < 10; i++) {
+        std::thread t(sleep);
+        t.detach();
+    }
+    DfxDumpCatcher dump;
+    std::string stack;
+    bool result = dump.DumpCatch(getpid(), 0, stack);
+    ASSERT_EQ(result, true);
+
+    result = dump.DumpCatch(getpid(), getpid(), stack);
+    ASSERT_EQ(result, true);
+
+    std::vector<int> pids;
+    result = dump.DumpCatchMultiPid(pids, stack);
+    ASSERT_EQ(result, false);
+    GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest041: end.";
 }
 } // namespace HiviewDFX
 } // namepsace OHOS

@@ -47,8 +47,7 @@ if (!defined(ohos_lite)) {
       "unwind_local_benchmark.cpp",
       "unwind_remote_benchmark.cpp",
     ]
-    sources +=
-        [ "$faultloggerd_interfaces_path/innerkits/unwinder/dfx_ptrace.cpp" ]
+    sources += [ "$faultloggerd_interfaces_path/innerkits/unwinder/src/utils/dfx_ptrace.cpp" ]
     deps = [
       "$faultloggerd_common_path/dfxlog:dfx_hilog",
       "$faultloggerd_common_path/dfxutil:dfx_util",

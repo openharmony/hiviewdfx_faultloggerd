@@ -28,6 +28,7 @@
 #include <string>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <set>
 #include <unistd.h>
 #include <unordered_map>
 #include <vector>
@@ -54,14 +55,16 @@ public:
     virtual uint64_t GetStartOffset() { return startOffset_; }
     virtual std::string GetElfName() = 0;
     virtual uintptr_t GetGlobalPointer() = 0;
-    virtual const std::vector<ElfSymbol>& GetElfSymbols(bool isFunc) = 0;
+    virtual const std::set<ElfSymbol>& GetFuncSymbols() = 0;
     virtual bool GetSectionInfo(ShdrInfo& shdr, const uint32_t idx);
     virtual bool GetSectionInfo(ShdrInfo& shdr, const std::string& secName);
     virtual bool GetSectionData(unsigned char *buf, uint64_t size, std::string secName);
-    virtual bool GetElfSymbolByAddr(uint64_t addr, ElfSymbol& elfSymbol) = 0;
+    virtual bool GetFuncSymbolByAddr(uint64_t addr, ElfSymbol& elfSymbol) = 0;
     const std::unordered_map<uint64_t, ElfLoadInfo>& GetPtLoads() {return ptLoads_;}
     bool Read(uintptr_t pos, void *buf, size_t size);
-    std::shared_ptr<MiniDebugInfo> GetMiniDebugInfo();
+    const GnuDebugDataHdr& GetGnuDebugDataHdr() const;
+    std::string GetBuildId();
+    static std::string ParseHexBuildId(uint64_t noteAddr, uint64_t noteSize);
 protected:
     size_t MmapSize();
     template <typename EhdrType, typename PhdrType, typename ShdrType>
@@ -77,13 +80,13 @@ protected:
     template <typename SymType>
     bool IsFunc(const SymType sym);
     template <typename SymType>
-    bool ParseElfSymbols(bool isFunc);
+    bool ParseFuncSymbols();
     template <typename SymType>
-    bool ParseElfSymbols(ElfShdr shdr, bool isFunc);
+    bool ParseFuncSymbols(const ElfShdr& shdr);
     template <typename SymType>
-    bool ParseElfSymbolName(ShdrInfo linkShdr, SymType sym, std::string& nameStr);
+    bool ParseFuncSymbolName(const ShdrInfo& linkShdr, SymType sym, std::string& nameStr);
     template <typename SymType>
-    bool ParseElfSymbolByAddr(uint64_t addr, ElfSymbol& elfSymbol);
+    bool ParseFuncSymbolByAddr(uint64_t addr, ElfSymbol& elfSymbol);
     template <typename DynType>
     bool ParseElfDynamic();
     template <typename DynType>
@@ -92,16 +95,17 @@ protected:
     bool GetSectionNameByIndex(std::string& nameStr, const uint32_t name);
     template <typename SymType>
     bool ReadSymType(const ElfShdr& shdr, const uint32_t idx, SymType& sym);
+    std::string ToReadableBuildId(const std::string& buildIdHex);
 
 protected:
-    std::vector<ElfSymbol> elfSymbols_;
+    std::set<ElfSymbol> funcSymbols_;
     uint64_t dynamicOffset_ = 0;
     uintptr_t dtPltGotAddr_ = 0;
     uintptr_t dtStrtabAddr_ = 0;
     uintptr_t dtStrtabSize_ = 0;
     uintptr_t dtSonameOffset_ = 0;
     std::string soname_ = "";
-    std::shared_ptr<MiniDebugInfo> minidebugInfo_ = nullptr;
+    GnuDebugDataHdr gnuDebugDataHdr_;
 
 private:
     std::shared_ptr<DfxMmap> mmap_;
@@ -124,8 +128,8 @@ public:
     bool InitHeaders() override;
     std::string GetElfName() override;
     uintptr_t GetGlobalPointer() override;
-    const std::vector<ElfSymbol>& GetElfSymbols(bool isFunc) override;
-    bool GetElfSymbolByAddr(uint64_t addr, ElfSymbol& elfSymbol) override;
+    const std::set<ElfSymbol>& GetFuncSymbols() override;
+    bool GetFuncSymbolByAddr(uint64_t addr, ElfSymbol& elfSymbol) override;
 };
 
 class ElfParser64 : public ElfParser {
@@ -135,8 +139,8 @@ public:
     bool InitHeaders() override;
     std::string GetElfName() override;
     uintptr_t GetGlobalPointer() override;
-    const std::vector<ElfSymbol>& GetElfSymbols(bool isFunc) override;
-    bool GetElfSymbolByAddr(uint64_t addr, ElfSymbol& elfSymbol) override;
+    const std::set<ElfSymbol>& GetFuncSymbols() override;
+    bool GetFuncSymbolByAddr(uint64_t addr, ElfSymbol& elfSymbol) override;
 };
 
 } // namespace HiviewDFX

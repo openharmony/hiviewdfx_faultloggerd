@@ -68,9 +68,6 @@ public:
     uint64_t elfOffset = 0;
     uint64_t elfStartOffset = 0;
     int32_t symbolFileIndex = -1; // symbols file index
-#if is_ohos && !is_mingw
-    std::shared_ptr<std::vector<uint8_t>> shmmData = nullptr;
-#endif
     // use for find
     inline bool operator==(const std::string &sname) const
     {

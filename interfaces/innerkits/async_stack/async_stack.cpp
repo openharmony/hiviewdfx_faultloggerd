@@ -17,7 +17,6 @@
 
 #include <pthread.h>
 #include <threads.h>
-#include "dfx_param.h"
 #include "unique_stack_table.h"
 #include "fp_unwinder.h"
 

@@ -18,14 +18,20 @@
 
 #include "dfx_dumprequest.h"
 
+#include <errno.h>
 #include <fcntl.h>
 #include <poll.h>
 #include <pthread.h>
 #include <sched.h>
+#include <securec.h>
 #include <signal.h>
 #include <sigchain.h>
+#include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <string.h>
+#include <time.h>
+#include <unistd.h>
 #include <sys/capability.h>
 #include <sys/mman.h>
 #include <sys/prctl.h>
@@ -34,25 +40,14 @@
 #include <sys/types.h>
 #include <sys/uio.h>
 #include <sys/wait.h>
-#include <time.h>
-#include <unistd.h>
+#include <info/fatal_message.h>
+#include <linux/capability.h>
+
+#include "dfx_cutil.h"
 #include "dfx_define.h"
 #include "dfx_dump_request.h"
-#include "dfx_signalhandler_exception.h"
-#include "errno.h"
-#include "linux/capability.h"
-#include "stdbool.h"
-#include "string.h"
-#ifndef DFX_SIGNAL_LIBC
-#include <securec.h>
-#include "dfx_cutil.h"
 #include "dfx_log.h"
-#else
-#include "musl_cutil.h"
-#include "musl_log.h"
-#endif
-
-#include "info/fatal_message.h"
+#include "dfx_signalhandler_exception.h"
 
 #ifdef LOG_DOMAIN
 #undef LOG_DOMAIN
@@ -113,18 +108,6 @@ static void ResetFlags(void)
 static bool IsDumpSignal(int signo)
 {
     return signo == SIGDUMP || signo == SIGLEAK_STACK;
-}
-
-static const char* GetCrashDescription(const int32_t errCode)
-{
-    size_t i;
-
-    for (i = 0; i < sizeof(g_crashExceptionMap) / sizeof(g_crashExceptionMap[0]); i++) {
-        if (errCode == g_crashExceptionMap[i].errCode) {
-            return g_crashExceptionMap[i].str;
-        }
-    }
-    return g_crashExceptionMap[i - 1].str;    /* the end of map is "unknown reason" */
 }
 
 static void FillCrashExceptionAndReport(const int err)

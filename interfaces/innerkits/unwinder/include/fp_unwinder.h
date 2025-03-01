@@ -29,7 +29,7 @@
 #include <unistd.h>
 #include "dfx_ark.h"
 #include "dfx_define.h"
-#include "stack_util.h"
+#include "stack_utils.h"
 
 namespace OHOS {
 namespace HiviewDFX {
@@ -53,11 +53,11 @@ public:
             return 0;
         }
         if (gettid() == getpid()) {
-            if (!GetMainStackRange(stackBottom_, stackTop_)) {
+            if (!StackUtils::Instance().GetMainStackRange(stackBottom_, stackTop_)) {
                 return 0;
             }
         } else {
-            if (!GetSelfStackRange(stackBottom_, stackTop_)) {
+            if (!StackUtils::GetSelfStackRange(stackBottom_, stackTop_)) {
                 return 0;
             }
         }

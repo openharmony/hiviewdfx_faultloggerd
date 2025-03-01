@@ -34,7 +34,6 @@
 #include "string_ex.h"
 
 #include "dfx_define.h"
-#include "dfx_elf.h"
 #include "dfx_instructions.h"
 #include "dfx_log.h"
 #include "dfx_memory.h"
@@ -42,10 +41,11 @@
 #include "dwarf_cfa_instructions.h"
 #include "dwarf_define.h"
 #include "dwarf_op.h"
-#include "dwarf_section.h"
+#include "dwarf_entry_parser.h"
+#include "elf_factory.h"
 #include "thread_context.h"
 #include "unwind_arm64_define.h"
-#include "unwind_loc.h"
+#include "unwind_context.h"
 
 using namespace OHOS::HiviewDFX;
 using namespace testing::ext;
@@ -62,10 +62,14 @@ public:
     void TearDown() {}
 };
 
-class DwarfSectionTest : public DwarfSection {
+class DwarfEntryParserTest : public DwarfEntryParser {
 public:
-    explicit DwarfSectionTest(std::shared_ptr<DfxMemory> memory) : DwarfSection(memory) {};
-    ~DwarfSectionTest() {};
+    explicit DwarfEntryParserTest(std::shared_ptr<DfxMemory> memory) : DwarfEntryParser(memory) {};
+    ~DwarfEntryParserTest() {};
+    bool SearchEntryTest(uintptr_t pc, const UnwindTableInfo& uti, UnwindEntryInfo& uei)
+    {
+        return SearchEntry(pc, uti, uei);
+    }
     bool ParseFdeTest(uintptr_t addr, FrameDescEntry &fde)
     {
         return ParseFde(addr, addr, fde);
@@ -527,18 +531,17 @@ HWTEST_F(DwarfTest, DwarfTest001, TestSize.Level2)
     struct UnwindTableInfo uti;
     ASSERT_EQ(DfxElf::FindUnwindTableLocal(pc, uti), 0);
 
-    auto acc = std::make_shared<DfxAccessorsLocal>();
-    auto memory = std::make_shared<DfxMemory>(acc);
-    DwarfSectionTest dwarfSection(memory);
+    auto memory = std::make_shared<DfxMemory>(UNWIND_TYPE_LOCAL);
+    DwarfEntryParserTest dwarfEntryParser(memory);
     struct UnwindEntryInfo pi;
-    ASSERT_EQ(true, dwarfSection.SearchEntry(pc, uti, pi));
+    ASSERT_EQ(true, dwarfEntryParser.SearchEntryTest(pc, uti, pi));
 
     FrameDescEntry fde;
-    ASSERT_EQ(true, dwarfSection.ParseFdeTest(reinterpret_cast<uintptr_t>(pi.unwindInfo), fde));
+    ASSERT_EQ(true, dwarfEntryParser.ParseFdeTest(reinterpret_cast<uintptr_t>(pi.unwindInfo), fde));
     ASSERT_GT(fde.cieAddr, 0);
 
     CommonInfoEntry cie;
-    ASSERT_EQ(true, dwarfSection.ParseCieTest(fde.cieAddr, cie));
+    ASSERT_EQ(true, dwarfEntryParser.ParseCieTest(fde.cieAddr, cie));
 
     RegLocState rsState;
     DwarfCfaInstructions instructions(memory);
@@ -733,7 +736,8 @@ int32_t RedirectStdErrToFile(const std::string& path)
 HWTEST_F(DwarfTest, DwarfTest002, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "DwarfTest002: start.";
-    auto elf = DfxElf::Create("/data/test/dwarf_test_aarch64_elf");
+    RegularElfFactory elfFactory("/data/test/dwarf_test_aarch64_elf");
+    auto elf = elfFactory.Create();
     ASSERT_NE(elf, nullptr);
     uint64_t loadbase = reinterpret_cast<uint64_t>(elf->GetMmapPtr());
     elf->SetLoadBase(loadbase);
@@ -758,9 +762,8 @@ HWTEST_F(DwarfTest, DwarfTest002, TestSize.Level2)
     ASSERT_EQ(info.endPc, endPc);
     ASSERT_NE(info.format, -1);
     auto testElfFdeResult = ParseFdeResultFromFile();
-    auto acc = std::make_shared<DfxAccessorsLocal>();
-    auto memory = std::make_shared<DfxMemory>(acc);
-    DwarfSectionTest dwarfSection(memory);
+    auto memory = std::make_shared<DfxMemory>(UNWIND_TYPE_LOCAL);
+    DwarfEntryParserTest dwarfEntryParser(memory);
     ASSERT_EQ(testElfFdeResult.size(), info.tableLen); // cie
     int index = 0;
     for (auto& fdeResult : testElfFdeResult) {
@@ -769,16 +772,16 @@ HWTEST_F(DwarfTest, DwarfTest002, TestSize.Level2)
         ASSERT_LT(pc, fdeResult->relPcEnd + loadbase);
 
         struct UnwindEntryInfo pi;
-        ASSERT_EQ(true, dwarfSection.SearchEntry(pc, info, pi));
+        ASSERT_EQ(true, dwarfEntryParser.SearchEntryTest(pc, info, pi));
 
         FrameDescEntry fde;
-        ASSERT_EQ(true, dwarfSection.ParseFdeTest(reinterpret_cast<uintptr_t>(pi.unwindInfo), fde));
+        ASSERT_EQ(true, dwarfEntryParser.ParseFdeTest(reinterpret_cast<uintptr_t>(pi.unwindInfo), fde));
         ASSERT_GT(fde.cieAddr, 0);
         ASSERT_EQ(fde.pcStart, fdeResult->relPcStart + loadbase);
         ASSERT_EQ(fde.pcEnd, fdeResult->relPcEnd + loadbase);
 
         CommonInfoEntry cie;
-        ASSERT_EQ(true, dwarfSection.ParseCieTest(fde.cieAddr, cie));
+        ASSERT_EQ(true, dwarfEntryParser.ParseCieTest(fde.cieAddr, cie));
         remove("/data/test/dwarf_test_aarch64_elf_result2");
 
         int oldFd = RedirectStdErrToFile("/data/test/dwarf_test_aarch64_elf_result2");

@@ -43,18 +43,21 @@
 #define LOG_TAG "DfxSignalLocalHandler"
 #endif
 
-#define LOCAL_HANDLER_STACK_SIZE (128 * 1024) // 128K
 constexpr uint32_t FAULTLOGGERD_UID = 1202;
 
 static CrashFdFunc g_crashFdFn = nullptr;
+#if !defined(__aarch64__) && !defined(__loongarch_lp64)
+constexpr uint32_t LOCAL_HANDLER_STACK_SIZE = 128 * 1024; // 128K
 static void *g_reservedChildStack = nullptr;
+#endif
 static struct ProcessDumpRequest g_request;
 static pthread_mutex_t g_signalHandlerMutex = PTHREAD_MUTEX_INITIALIZER;
 
-static int g_platformSignals[] = {
+static constexpr int CATCHER_STACK_SIGNALS[] = {
     SIGABRT, SIGBUS, SIGILL, SIGSEGV,
 };
 
+#if !defined(__aarch64__) && !defined(__loongarch_lp64)
 static void ReserveChildThreadSignalStack(void)
 {
     // reserve stack for fork
@@ -67,6 +70,7 @@ static void ReserveChildThreadSignalStack(void)
     g_reservedChildStack = static_cast<void *>(static_cast<uint8_t *>(g_reservedChildStack) +
         LOCAL_HANDLER_STACK_SIZE - 1);
 }
+#endif
 
 AT_UNUSED static void FutexWait(volatile void* ftx, int value)
 {
@@ -115,7 +119,7 @@ void DFX_SignalLocalHandler(int sig, siginfo_t *si, void *context)
     if (ret < 0) {
         DFXLOGE("memcpy_s context fail, ret=%{public}d", ret);
     }
-#if  defined(__aarch64__) || defined(__loongarch_lp64)
+#if defined(__aarch64__) || defined(__loongarch_lp64)
     DoCrashHandler(NULL);
 #else
     int pseudothreadTid = -1;
@@ -143,7 +147,9 @@ void DFX_GetCrashFdFunc(CrashFdFunc fn)
 
 void DFX_InstallLocalSignalHandler(void)
 {
+#if !defined(__aarch64__) && !defined(__loongarch_lp64)
     ReserveChildThreadSignalStack();
+#endif
 
     sigset_t set;
     sigemptyset(&set);
@@ -153,10 +159,8 @@ void DFX_InstallLocalSignalHandler(void)
     action.sa_sigaction = DFX_SignalLocalHandler;
     action.sa_flags = SA_RESTART | SA_SIGINFO | SA_ONSTACK;
 
-    for (size_t i = 0; i < sizeof(g_platformSignals) / sizeof(g_platformSignals[0]); i++) {
-        int32_t sig = g_platformSignals[i];
+    for (auto sig : CATCHER_STACK_SIGNALS) {
         remove_all_special_handler(sig);
-
         sigaddset(&set, sig);
         if (sigaction(sig, &action, nullptr) != 0) {
             DFXLOGE("Failed to register signal(%{public}d)", sig);

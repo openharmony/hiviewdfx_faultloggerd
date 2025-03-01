@@ -60,35 +60,40 @@ enum DumpErrorCode : int32_t {
 
 class DfxDumpRes {
 public:
-    inline static std::string ToString(const int32_t& res)
+    inline static std::string ToString(int32_t res)
     {
-        std::string ss = std::to_string(res) + " ( " + GetResStr(res) + " )";
-        return ss;
+        return std::to_string(res) + " ( " + GetResStr(res) + " )";
     }
 
 private:
-    inline static const char* GetResStr(const int32_t& res)
+    struct DumpErrInfo {
+        int32_t errCode;
+        const char *info;
+    };
+    static const char* GetResStr(int32_t res)
     {
-        const char *cp;
-        switch (res) {
-            case DUMP_ESUCCESS:     cp = "no error"; break;
-            case DUMP_EREADREQUEST: cp = "read dump request error"; break;
-            case DUMP_EATTACH:      cp = "ptrace attach thread failed"; break;
-            case DUMP_EGETFD:       cp = "get fd error"; break;
-            case DUMP_ENOMEM:       cp = "out of memory"; break;
-            case DUMP_EBADREG:      cp = "bad register number"; break;
-            case DUMP_EREADONLYREG: cp = "attempt to write read-only register"; break;
-            case DUMP_ESTOPUNWIND:  cp = "stop unwinding"; break;
-            case DUMP_EINVALIDIP:   cp = "invalid IP"; break;
-            case DUMP_EBADFRAME:    cp = "bad frame"; break;
-            case DUMP_EINVAL:       cp = "unsupported operation or bad value"; break;
-            case DUMP_EBADVERSION:  cp = "unwind info has unsupported version"; break;
-            case DUMP_ENOINFO:      cp = "no unwind info found"; break;
-            case DUMP_ENOMAP:       cp = "mapinfo is not exist"; break;
-            case DUMP_EREADPID:     cp = "fail to read real pid"; break;
-            default:                cp = "invalid error code"; break;
-        }
-        return cp;
+        const DumpErrInfo errInfos[] = {
+            { DUMP_ESUCCESS, "no error" },
+            { DUMP_EREADREQUEST, "read dump request error" },
+            { DUMP_EATTACH, "ptrace attach thread failed" },
+            { DUMP_EGETFD, "get fd error" },
+            { DUMP_ENOMEM, "out of memory" },
+            { DUMP_EBADREG, "bad register number" },
+            { DUMP_EREADONLYREG, "attempt to write read-only register" },
+            { DUMP_ESTOPUNWIND, "stop unwinding" },
+            { DUMP_EINVALIDIP, "invalid IP" },
+            { DUMP_EBADFRAME, "bad frame" },
+            { DUMP_EINVAL, "unsupported operation or bad value" },
+            { DUMP_EBADVERSION, "unwind info has unsupported version" },
+            { DUMP_ENOINFO, "no unwind info found" },
+            { DUMP_ENOMAP, "mapinfo is not exist" },
+            { DUMP_EREADPID, "fail to read real pid" },
+        };
+
+        auto iter = std::find_if(std::begin(errInfos), std::end(errInfos), [res](const DumpErrInfo &ele) {
+            return ele.errCode == res;
+        });
+        return iter != std::end(errInfos) ? iter->info : "invalid error code";
     }
 };
 } // namespace HiviewDFX
