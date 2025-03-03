@@ -78,7 +78,6 @@ namespace {
 #define LOG_TAG "DfxProcessDump"
 const char *const BLOCK_CRASH_PROCESS = "faultloggerd.priv.block_crash_process.enabled";
 const char *const GLOBAL_REGION = "const.global.region";
-const char *const LOGSYSTEM_VERSION_TYPE = "const.logsystem.versiontype";
 MAYBE_UNUSED const char *const MIXSTACK_ENABLE = "faultloggerd.priv.mixstack.enabled";
 const int MAX_FILE_COUNT = 5;
 const int ARG_MAX_NUM = 131072;
@@ -90,16 +89,6 @@ static bool IsOversea()
     return isOversea;
 #else
     return false;
-#endif
-}
-
-static bool IsBetaVersion()
-{
-#ifndef is_ohos_lite
-    static bool isBetaVersion = OHOS::system::GetParameter(LOGSYSTEM_VERSION_TYPE, "") == "beta";
-    return isBetaVersion;
-#else
-    return true;
 #endif
 }
 

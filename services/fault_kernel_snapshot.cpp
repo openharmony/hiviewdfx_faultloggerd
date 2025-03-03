@@ -189,15 +189,6 @@ std::string GetBuildInfo()
 #endif
 }
 
-bool IsBetaVersion()
-{
-#ifndef is_ohos_lite
-    return OHOS::system::GetParameter("const.logsystem.versiontype", "") == "beta";
-#else
-    return false;
-#endif
-}
-
 bool PreProcessLine(std::string& line)
 {
     if (line.size() <= SEQUENCE_LEN || line[0] == '\t') {
