@@ -25,7 +25,6 @@ namespace OHOS {
 namespace HiviewDFX {
 static const int32_t INVALID_FD = -1;
 static const int32_t UNUSED_FD = -2;
-const int BACK_TRACE_RING_BUFFER_PRINT_WAIT_TIME_MS = 10;
 std::condition_variable DfxRingBufferWrapper::printCV_;
 std::mutex DfxRingBufferWrapper::printMutex_;
 
@@ -33,39 +32,6 @@ DfxRingBufferWrapper &DfxRingBufferWrapper::GetInstance()
 {
     static DfxRingBufferWrapper ins;
     return ins;
-}
-
-void DfxRingBufferWrapper::LoopPrintRingBuffer()
-{
-    if (DfxRingBufferWrapper::GetInstance().writeFunc_ == nullptr) {
-        DfxRingBufferWrapper::GetInstance().writeFunc_ = DfxRingBufferWrapper::DefaultWrite;
-    }
-
-    std::unique_lock<std::mutex> lck(printMutex_);
-    while (true) {
-        auto available = DfxRingBufferWrapper::GetInstance().ringBuffer_.Available();
-        auto item = DfxRingBufferWrapper::GetInstance().ringBuffer_.Read(available);
-
-        if (available != 0) {
-            if (item.At(0).empty()) {
-                DfxRingBufferWrapper::GetInstance().ringBuffer_.Skip(item.Length());
-                continue;
-            }
-
-            for (unsigned int i = 0; i < item.Length(); i++) {
-                DfxRingBufferWrapper::GetInstance().writeFunc_(DfxRingBufferWrapper::GetInstance().fd_, \
-                    item.At(i).c_str(), item.At(i).length());
-            }
-            DfxRingBufferWrapper::GetInstance().ringBuffer_.Skip(item.Length());
-        } else {
-            if (DfxRingBufferWrapper::GetInstance().hasFinished_) {
-                DFXLOGD("%{public}s :: print finished, exit loop.\n", __func__);
-                break;
-            }
-
-            printCV_.wait_for(lck, std::chrono::milliseconds(BACK_TRACE_RING_BUFFER_PRINT_WAIT_TIME_MS));
-        }
-    }
 }
 
 void DfxRingBufferWrapper::AppendMsg(const std::string& msg)

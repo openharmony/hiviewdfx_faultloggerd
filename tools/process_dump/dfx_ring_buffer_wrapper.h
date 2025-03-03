@@ -48,7 +48,6 @@ public:
     void AppendBaseInfo(const std::string& info);
     void PrintBaseInfo();
 private:
-    static void LoopPrintRingBuffer();
     static int DefaultWrite(int32_t fd, const char *buf, const int len);
 
     DfxRingBufferWrapper() = default;
