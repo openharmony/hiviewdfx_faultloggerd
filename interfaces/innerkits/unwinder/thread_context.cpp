@@ -304,7 +304,7 @@ bool LocalThreadContextMix::CollectThreadContext(int32_t tid)
     {
         std::unique_lock<std::mutex> lock(mtx_);
         if (cv_.wait_for(lock, TIME_OUT) == std::cv_status::timeout) {
-            DFXLOGE("wait_for timeout. tid = %{public}d", tid);
+            DFXLOGE("wait_for timeout. tid = %{public}d, status = %{public}d", tid, status_);
             PrintThreadStatus(tid);
             return false;
         }
@@ -377,15 +377,20 @@ NO_SANITIZE void LocalThreadContextMix::CopyRegister(void *context)
 
 NO_SANITIZE void LocalThreadContextMix::CopyStackBuf()
 {
-    uintptr_t curStackSz = stackTop_ - sp_;
-    int cpySz = std::min(static_cast<int>(curStackSz), STACK_BUFFER_SIZE);
-    if (stackBuf_.size() == 0) {
+    if (stackTop_ <= sp_) {
         return;
     }
+    uintptr_t curStackSz = stackTop_ - sp_;
+    size_t cpySz = std::min(static_cast<size_t>(curStackSz), static_cast<size_t>(STACK_BUFFER_SIZE));
     std::unique_lock<std::mutex> lock(mtx_);
-    auto cpyRet = memcpy_s(stackBuf_.data(), stackBuf_.size(),
-        reinterpret_cast<void *>(sp_), cpySz);
-    status_ = (cpyRet == 0 ? SyncStatus::COPY_SUCCESS : SyncStatus::COPY_FAILED);
+    if (stackBuf_.size() >= cpySz) {
+        for (int i = 0; i < cpySz; i++) {
+            stackBuf_[i] = reinterpret_cast<uint8_t*>(sp_)[i];
+        }
+        status_ = SyncStatus::COPY_SUCCESS;
+    } else {
+        status_ = SyncStatus::COPY_FAILED;
+    }
     cv_.notify_all();
 }
 

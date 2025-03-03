@@ -37,6 +37,9 @@
 #include <sys/stat.h>
 
 #include "dfx_log.h"
+#if !defined(is_ohos_lite) && !defined(DFX_UTIL_STATIC)
+#include "parameters.h"
+#endif // !is_ohos_lite
 
 #ifdef LOG_DOMAIN
 #undef LOG_DOMAIN
@@ -224,6 +227,17 @@ uintptr_t StripPac(uintptr_t inAddr, uintptr_t pacMask)
     }
 #endif
     return outAddr;
+}
+
+bool IsBetaVersion()
+{
+#if !defined(is_ohos_lite) && !defined(DFX_UTIL_STATIC)
+    const char *const logsystemVersionType = "const.logsystem.versiontype";
+    static bool isBetaVersion = OHOS::system::GetParameter(logsystemVersionType, "") == "beta";
+    return isBetaVersion;
+#else
+    return false;
+#endif
 }
 }   // namespace HiviewDFX
 }   // namespace OHOS

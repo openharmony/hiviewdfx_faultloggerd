@@ -41,6 +41,7 @@ AT_SYMBOL_HIDDEN off_t GetFileSize(const int& fd);
 AT_SYMBOL_HIDDEN bool ReadFdToString(int fd, std::string& content);
 AT_SYMBOL_HIDDEN void CloseFd(int& fd);
 AT_SYMBOL_HIDDEN uintptr_t StripPac(uintptr_t inAddr, uintptr_t pacMask);
+AT_SYMBOL_HIDDEN bool IsBetaVersion();
 } // nameapace HiviewDFX
 } // nameapace OHOS
 

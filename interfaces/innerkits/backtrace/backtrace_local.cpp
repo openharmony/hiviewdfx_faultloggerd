@@ -71,6 +71,9 @@ bool GetBacktraceStringByTid(std::string& out, int32_t tid, size_t skipFrameNum,
             frames = threadStack.frames;
             ret = true;
             DFXLOGI("Failed to get tid(%{public}d) user stack, try kernel", tid);
+            if (IsBetaVersion()) {
+                DFXLOGI("%{public}s", msg.c_str());
+            }
         }
     }
     if (ret) {
@@ -144,13 +147,18 @@ std::string GetProcessStacktrace(size_t maxFrameNums, bool enableKernelStack)
         BacktraceLocalThread thread(tid, unwinder);
         if (thread.Unwind(false, maxFrameNums, 0)) {
             ss += thread.GetFormattedStr(true) + "\n";
-        } else if (enableKernelStack) {
-            std::string msg = "";
-            DfxThreadStack threadStack;
-            if (DfxGetKernelStack(tid, msg) == 0 && FormatThreadKernelStack(msg, threadStack)) {
-                thread.SetFrames(threadStack.frames);
-                ss += thread.GetFormattedStr(true) + "\n";
-                DFXLOGI("Failed to get tid(%{public}d) user stack, try kernel", tid);
+        }
+        if (!enableKernelStack) {
+            return true;
+        }
+        std::string msg = "";
+        DfxThreadStack threadStack;
+        if (DfxGetKernelStack(tid, msg) == 0 && FormatThreadKernelStack(msg, threadStack)) {
+            thread.SetFrames(threadStack.frames);
+            ss += thread.GetFormattedStr(true) + "\n";
+            DFXLOGI("Failed to get tid(%{public}d) user stack, try kernel", tid);
+            if (IsBetaVersion()) {
+                DFXLOGI("%{public}s", msg.c_str());
             }
         }
         return true;
