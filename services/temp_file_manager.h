@@ -50,6 +50,7 @@ private:
         void HandleEvent(uint32_t eventMask, const std::string& filePath, const SingleFileConfig& fileConfig);
         void HandleFileCreate(const std::string& filePath, const SingleFileConfig& fileConfig);
         void HandleFileDeleteOrMove(const std::string& filePath, const SingleFileConfig& fileConfig);
+        void HandleDirRemoved();
         static void HandleFileWrite(const std::string& filePath, const SingleFileConfig& fileConfig);
         TempFileManager &tempFileManager_;
     };

@@ -17,11 +17,6 @@
 
 #include <bitset>
 #include <chrono>
-
-#ifndef is_ohos_lite
-#include <cJSON.h>
-#endif
-
 #include <cmath>
 #include <fcntl.h>
 #include <fstream>
@@ -39,6 +34,10 @@
 #include "dfx_trace.h"
 #include "directory_ex.h"
 #include "file_ex.h"
+
+#ifndef HISYSEVENT_DISABLE
+#include "hisysevent.h"
+#endif
 
 namespace OHOS {
 namespace HiviewDFX {
@@ -104,7 +103,6 @@ bool RemoveTempFile(const std::string& filePath)
     DFXLOGI("%{public}s :: success to remove file: %{public}s.", TEMP_FILE_MANAGER_TAG, filePath.c_str());
     return true;
 }
-
 
 void RemoveTimeOutFileIfNeed(const SingleFileConfig& fileConfig, std::list<std::string>& tempFiles)
 {
@@ -203,7 +201,7 @@ bool TempFileManager::InitTempFileWatcher()
     if (tempFileWatcher == nullptr) {
         return false;
     }
-    constexpr uint32_t watchEvent = IN_CLOSE_WRITE | IN_MOVE | IN_CREATE | IN_DELETE;
+    constexpr uint32_t watchEvent = IN_CLOSE_WRITE | IN_MOVE | IN_CREATE | IN_DELETE | IN_DELETE_SELF;
     if (!tempFileWatcher->AddWatchEvent(config.tempFilePath.c_str(), watchEvent)) {
         return false;
     }
@@ -370,6 +368,10 @@ void TempFileManager::TempFileWatcher::OnEventPoll()
     size_t eventPos = 0;
     while (readLen >= eventLen && eventPos < bound) {
         auto *event = reinterpret_cast<inotify_event *>(eventBuf + eventPos);
+        if (event->mask & IN_DELETE_SELF) {
+            HandleDirRemoved();
+            return;
+        }
         if (event->len > 0) {
             std::string fileName(event->name);
             auto fileConfig = GetTargetFileConfig([&fileName](const SingleFileConfig& fileConfig) {
@@ -455,6 +457,22 @@ void TempFileManager::TempFileWatcher::HandleFileWrite(const std::string& filePa
     } else {
         truncate64(filePath.c_str(), static_cast<off64_t>(fileConfig.maxSingleFileSize));
     }
+}
+
+void TempFileManager::TempFileWatcher::HandleDirRemoved()
+{
+    std::string summary = "The temp file directory: " +
+        FaultLoggerConfig::GetInstance().GetTempFileConfig().tempFilePath + " was removed unexpectedly";
+    DFXLOGE("%{public}s :: %{public}s", TEMP_FILE_MANAGER_TAG, summary.c_str());
+#ifndef HISYSEVENT_DISABLE
+    auto now = std::chrono::system_clock::now();
+    auto timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()).count();
+    HiSysEventWrite(OHOS::HiviewDFX::HiSysEvent::Domain::RELIABILITY, "CPP_CRASH_NO_LOG",
+        OHOS::HiviewDFX::HiSysEvent::EventType::FAULT,
+        "HAPPEN_TIME", timestamp,
+        "SUMMARY", summary);
+#endif
+    tempFileManager_.epollManager_.RemoveListener(GetFd());
 }
 
 std::unique_ptr<TempFileManager::TempFileRemover> TempFileManager::TempFileRemover::CreateInstance(
