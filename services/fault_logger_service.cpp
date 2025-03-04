@@ -25,6 +25,7 @@
 #include "dfx_log.h"
 #include "dfx_trace.h"
 #include "dfx_util.h"
+#include "fault_logger_daemon.h"
 #include "faultloggerd_socket.h"
 
 #ifndef is_ohos_lite
@@ -45,6 +46,7 @@ namespace HiviewDFX {
 namespace {
 
 constexpr const char* const FAULTLOGGERD_SERVICE_TAG = "FAULT_LOGGER_SERVICE";
+constexpr int DELAY_TIME = 7; // allow 10s for processdump report, 3s for dumpcatch timeout and 7s for delay
 bool GetUcredByPeerCred(struct ucred& rcred, int32_t connectionFd)
 {
     socklen_t credSize = sizeof(rcred);
@@ -174,26 +176,35 @@ int32_t StatsService::OnRequest(const std::string& socketName, int32_t connectio
         stats.processdumpStartTime = requestData.processdumpStartTime;
         stats.processdumpFinishTime = requestData.processdumpFinishTime;
         stats.targetProcessName = requestData.targetProcess;
-    } else if (requestData.type == DUMP_CATCHER && iter != stats_.end()) {
-        iter->requestTime = requestData.requestTime;
-        iter->dumpCatcherFinishTime = requestData.dumpCatcherFinishTime;
-        iter->callerElfName = GetElfName(requestData);
-        iter->callerProcessName = requestData.callerProcess;
-        iter->result = requestData.result;
-        iter->summary = requestData.summary;
-        ReportDumpStats(*iter);
-        stats_.erase(iter);
-    } else if (requestData.type == DUMP_CATCHER) {
-        DumpStats stats;
-        stats.pid = requestData.pid;
-        stats.requestTime = requestData.requestTime;
-        stats.dumpCatcherFinishTime = requestData.dumpCatcherFinishTime;
-        stats.callerElfName = GetElfName(requestData);
-        stats.result = requestData.result;
-        stats.callerProcessName = requestData.callerProcess;
-        stats.summary = requestData.summary;
-        stats.targetProcessName = requestData.targetProcess;
-        ReportDumpStats(stats);
+    } else {
+        auto task = [requestData, this] {
+            auto iter = std::find_if(stats_.begin(), stats_.end(), [&requestData](const DumpStats& dumpStats) {
+                return dumpStats.pid == requestData.pid;
+            });
+            if (requestData.type == DUMP_CATCHER && iter != stats_.end()) {
+                iter->requestTime = requestData.requestTime;
+                iter->dumpCatcherFinishTime = requestData.dumpCatcherFinishTime;
+                iter->callerElfName = GetElfName(requestData);
+                iter->callerProcessName = requestData.callerProcess;
+                iter->result = requestData.result;
+                iter->summary = requestData.summary;
+                ReportDumpStats(*iter);
+                stats_.erase(iter);
+            } else if (requestData.type == DUMP_CATCHER) {
+                DumpStats stats;
+                stats.pid = requestData.pid;
+                stats.requestTime = requestData.requestTime;
+                stats.dumpCatcherFinishTime = requestData.dumpCatcherFinishTime;
+                stats.callerElfName = GetElfName(requestData);
+                stats.result = requestData.result;
+                stats.callerProcessName = requestData.callerProcess;
+                stats.summary = requestData.summary;
+                stats.targetProcessName = requestData.targetProcess;
+                ReportDumpStats(stats);
+            }
+            RemoveTimeoutDumpStats();
+        };
+        StartDelayTask(task, DELAY_TIME);
     }
     RemoveTimeoutDumpStats();
 #ifdef FAULTLOGGERD_TEST
@@ -201,6 +212,16 @@ int32_t StatsService::OnRequest(const std::string& socketName, int32_t connectio
     SendMsgToSocket(connectionFd, &responseData, sizeof(responseData));
 #endif
     return ResponseCode::REQUEST_SUCCESS;
+}
+
+void StatsService::StartDelayTask(std::function<void()> workFunc, int32_t delayTime)
+{
+    EpollManager* epollManager = FaultLoggerDaemon::GetInstance().GetEpollManager(EpollManagerType::MAIN_SERVER);
+    if (epollManager == nullptr) {
+        return;
+    }
+    auto delayTask = DelayTask::CreateInstance(workFunc, delayTime, *epollManager);
+    epollManager->AddListener(std::move(delayTask));
 }
 #endif
 
