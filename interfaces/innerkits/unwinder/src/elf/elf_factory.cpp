@@ -15,14 +15,14 @@
 
 #include "elf_factory.h"
 
+#include <string>
 #include <algorithm>
 #include <cstdlib>
 #include <fcntl.h>
-#include <string>
-#include <sys/stat.h>
-#include <sys/types.h>
 #include <unistd.h>
 #include <utility>
+#include <sys/stat.h>
+#include <sys/types.h>
 
 #include "dfx_define.h"
 #include "dfx_log.h"
