@@ -19,6 +19,8 @@
 #include <cstdlib>
 #include <memory>
 #include <mutex>
+#include <pthread.h>
+#include <csignal>
 #include <thread>
 
 #include <dlfcn.h>
@@ -30,10 +32,12 @@
 #include "backtrace_local.h"
 #include "backtrace_local_thread.h"
 #include "dfx_frame_formatter.h"
+#include "dfx_json_formatter.h"
 #include "dfx_kernel_stack.h"
 #include "dfx_test_util.h"
 #include "elapsed_time.h"
 #include "ffrt_inner.h"
+#include "procinfo.h"
 #include "unwinder_config.h"
 
 using namespace testing;
@@ -121,6 +125,7 @@ HWTEST_F(BacktraceLocalTest, BacktraceLocalTest001, TestSize.Level2)
     const auto& frames = thread.GetFrames();
     ASSERT_GT(frames.size(), 0);
     GTEST_LOG_(INFO) << thread.GetFormattedStr();
+    thread.SetFrames(frames);
     GTEST_LOG_(INFO) << "BacktraceLocalTest001: end.";
 }
 
@@ -379,11 +384,25 @@ HWTEST_F(BacktraceLocalTest, BacktraceLocalTest011, TestSize.Level2)
     DfxThreadStack threadStack;
     ASSERT_TRUE(FormatThreadKernelStack(kernelStack, threadStack));
     ASSERT_GT(threadStack.frames.size(), 0);
-    for (auto const& frame : threadStack.frames) {
+    for (const auto& frame : threadStack.frames) {
         auto line = DfxFrameFormatter::GetFrameStr(frame);
         ASSERT_NE(line.find("#"), std::string::npos);
         GTEST_LOG_(INFO) << line;
     }
+    std::vector<DfxThreadStack> processStack;
+    ASSERT_TRUE(FormatProcessKernelStack(kernelStack, processStack));
+    for (const auto& stack : processStack) {
+        ASSERT_GT(stack.frames.size(), 0);
+    }
+    std::string formattedStack;
+    ASSERT_TRUE(DfxJsonFormatter::FormatKernelStack(kernelStack, formattedStack, false));
+    ASSERT_GT(formattedStack.size(), 0);
+    ASSERT_TRUE(formattedStack.find("Tid:") != std::string::npos) << formattedStack;
+    ASSERT_TRUE(formattedStack.find("backtrace_local_test") != std::string::npos) << formattedStack;
+
+    ASSERT_TRUE(DfxJsonFormatter::FormatKernelStack(kernelStack, formattedStack, true));
+    ASSERT_TRUE(formattedStack.find("\"tid\":") != std::string::npos) << formattedStack;
+    ASSERT_TRUE(formattedStack.find("backtrace_local_test") != std::string::npos) << formattedStack;
     GTEST_LOG_(INFO) << "BacktraceLocalTest011: end.";
 }
 
@@ -581,7 +600,76 @@ HWTEST_F(BacktraceLocalTest, BacktraceLocalTest016, TestSize.Level2)
     if (backtraceTread.joinable()) {
         backtraceTread.join();
     }
+    BacktraceLocalThread thread(g_tid, nullptr);
+    thread.UnwindOtherThreadMix(false);
 }
 #endif
+
+/**
+ * @tc.name: BacktraceLocalTest017
+ * @tc.desc: test FormatProcessKernelStack
+ * @tc.type: FUNC
+ */
+HWTEST_F(BacktraceLocalTest, BacktraceLocalTest017, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "BacktraceLocalTest017: start.";
+    std::string res = ExecuteCommands("uname");
+    if (res.find("Linux") != std::string::npos) {
+        return;
+    }
+    pid_t pid = GetProcessPid(FOUNDATION_NAME);
+    std::vector<int> tids;
+    std::vector<int> nstids;
+    ASSERT_TRUE(GetTidsByPid(pid, tids, nstids));
+    std::string processKernelStackInfo;
+    for (const auto& tid : tids) {
+        std::string kernelStack;
+        ASSERT_EQ(DfxGetKernelStack(tid, kernelStack), 0);
+        processKernelStackInfo += kernelStack;
+    }
+    std::vector<DfxThreadStack> processStack;
+    ASSERT_TRUE(FormatProcessKernelStack(processKernelStackInfo, processStack));
+    for (const auto& threadStack : processStack) {
+        ASSERT_GT(threadStack.frames.size(), 0);
+        for (auto const& frame : threadStack.frames) {
+            auto line = DfxFrameFormatter::GetFrameStr(frame);
+            ASSERT_NE(line.find("#"), std::string::npos);
+            GTEST_LOG_(INFO) << line;
+        }
+    }
+    GTEST_LOG_(INFO) << "BacktraceLocalTest017: end.";
+}
+
+/**
+ * @tc.name: BacktraceLocalTest018
+ * @tc.desc: test backtrace using kernel stack
+ * @tc.type: FUNC
+ */
+HWTEST_F(BacktraceLocalTest, BacktraceLocalTest018, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "BacktraceLocalTest018: start.";
+    std::string res = ExecuteCommands("uname");
+    if (res.find("Linux") != std::string::npos) {
+        return;
+    }
+    g_mutex.lock();
+    std::thread backtraceThread(Test001);
+    sleep(1);
+    if (g_tid <= 0) {
+        FAIL() << "Failed to create child thread.\n";
+    }
+    pthread_kill(g_tid, SIGSTOP);
+    std::string str;
+    ASSERT_TRUE(GetBacktraceStringByTid(str, g_tid, 0, false)) << str;
+    ASSERT_TRUE(GetBacktraceStringByTidWithMix(str, g_tid, 0, false)) << str;
+    ASSERT_TRUE(!GetProcessStacktrace().empty());
+    pthread_kill(g_tid, SIGCONT);
+    g_mutex.unlock();
+    g_tid = 0;
+    if (backtraceThread.joinable()) {
+        backtraceThread.join();
+    }
+    GTEST_LOG_(INFO) << "BacktraceLocalTest018: end.";
+}
 } // namespace HiviewDFX
 } // namepsace OHOS

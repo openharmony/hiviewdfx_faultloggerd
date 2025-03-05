@@ -124,6 +124,29 @@ HWTEST_F(CommonTest, DfxUtilTest002, TestSize.Level2)
     GTEST_LOG_(INFO) << "DfxUtilTest002: end.";
 }
 
+#if is_ohos && !is_mingw
+/**
+ * @tc.name: DfxUtilTest003
+ * @tc.desc: test DfxUtil ReadProcMemByPid
+ * @tc.type: FUNC
+ */
+HWTEST_F(CommonTest, DfxUtilTest003, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "DfxUtilTest003: start.";
+    size_t size = 4096 * 2048;
+    char *p = static_cast<char *>(malloc(size));
+    ASSERT_EQ(memset_s(p, size, '0', size), 0);
+    *(p + size - 2) = 'O';
+    *(p + size - 1) = 'K';
+    std::vector<char> data(size);
+    ASSERT_EQ(ReadProcMemByPid(getpid(), reinterpret_cast<uintptr_t>(p), data.data(), size), size);
+    ASSERT_EQ(data[size - 2], 'O') << data[size - 2];
+    ASSERT_EQ(data[size - 1], 'K') << data[size - 1];
+    free(p);
+    GTEST_LOG_(INFO) << "DfxUtilTest003: end.";
+}
+#endif
+
 /**
  * @tc.name: DfxDumpResTest001
  * @tc.desc: test DfxDumpRes functions

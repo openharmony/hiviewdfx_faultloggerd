@@ -68,6 +68,8 @@ HWTEST_F(DfxElfTest, DfxElfTest001, TestSize.Level2)
         ASSERT_EQ(shdr.addr, shdrImitate.addr);
         ASSERT_EQ(shdr.offset, shdrImitate.offset);
         ASSERT_EQ(shdr.size, shdrImitate.size);
+        std::vector<uint8_t> sectionBuffer(shdr.size);
+        ASSERT_TRUE(elf->GetSectionData(sectionBuffer.data(), shdr.size, interestedSections[i]));
     }
     ASSERT_EQ(elf->GetArchType(), elfImitate.GetArchType());
     ASSERT_EQ(elf->GetElfSize(), elfImitate.GetElfSize());
@@ -88,6 +90,7 @@ HWTEST_F(DfxElfTest, DfxElfTest001, TestSize.Level2)
     EXPECT_NE(elf->GetGlobalPointer(), 0);
     EXPECT_FALSE(elf->GetFuncSymbols().empty());
     EXPECT_GT(elf->GetMmapSize(), 0);
+    GTEST_LOG_(INFO) << elf->GetElfName();
     GTEST_LOG_(INFO) << "DfxElfTest001: end.";
 }
 
@@ -114,6 +117,9 @@ HWTEST_F(DfxElfTest, DfxElfTest002, TestSize.Level2)
         ASSERT_EQ(shdr.addr, shdrImitate.addr);
         ASSERT_EQ(shdr.offset, shdrImitate.offset);
         ASSERT_EQ(shdr.size, shdrImitate.size);
+        std::vector<uint8_t> sectionBuffer(shdr.size);
+        ASSERT_TRUE(elf->GetSectionData(sectionBuffer.data(), shdr.size, interestedSections[i]));
+        ASSERT_FALSE(elf->GetSectionData(sectionBuffer.data(), shdr.size, "invalid section name"));
     }
     ASSERT_EQ(elf->GetArchType(), elfImitate.GetArchType());
     ASSERT_EQ(elf->GetElfSize(), elfImitate.GetElfSize());
@@ -134,6 +140,7 @@ HWTEST_F(DfxElfTest, DfxElfTest002, TestSize.Level2)
     EXPECT_NE(elf->GetGlobalPointer(), 0);
     EXPECT_FALSE(elf->GetFuncSymbols().empty());
     EXPECT_GT(elf->GetMmapSize(), 0);
+    GTEST_LOG_(INFO) << elf->GetElfName();
     GTEST_LOG_(INFO) << "DfxElfTest002: end.";
 }
 
@@ -207,6 +214,19 @@ HWTEST_F(DfxElfTest, DfxElfTest006, TestSize.Level2)
     ASSERT_EQ(elf->GetBaseOffset(), 0);
     elf->SetBaseOffset(1);
     ASSERT_EQ(elf->GetBaseOffset(), 1);
+}
+
+/**
+ * @tc.name: DfxElfTest007
+ * @tc.desc: test DfxMmap abnormal case
+ * @tc.type: FUNC
+ */
+HWTEST_F(DfxElfTest, DfxElfTest007, TestSize.Level2)
+{
+    auto mMap = std::make_shared<DfxMmap>();
+    ASSERT_FALSE(mMap->Init(-1, 0U, 0));
+    uintptr_t invalidAddr = 0;
+    ASSERT_EQ(mMap->Read(invalidAddr, nullptr, 0U, true), 0);
 }
 } // namespace HiviewDFX
 } // namespace OHOS
