@@ -169,35 +169,34 @@ int TestThread(int threadId, int sig)
 
 static void SaveDebugMessage(int siCode, int64_t diffMs, const char *msg)
 {
-    if (msg == nullptr) {
-        GTEST_LOG_(INFO) << "debug msg is NULL";
-        return;
-    }
-
-    const int numberOneThousand = 1000; // 1000 : second to millisecond convert ratio
-    const int numberOneMillion = 1000000; // 1000000 : nanosecond to millisecond convert ratio
-    struct timespec ts;
-    (void)clock_gettime(CLOCK_REALTIME, &ts);
-
-    uint64_t timestamp = static_cast<uint64_t>(ts.tv_sec) * numberOneThousand +
-        static_cast<uint64_t>(ts.tv_sec) / numberOneMillion;
-    if (diffMs < 0  && timestamp < -diffMs) {
-        timestamp = 0;
-    } else if (UINT64_MAX - timestamp < diffMs) {
-        timestamp = UINT64_MAX;
-    } else {
-        timestamp += diffMs;
-    }
-
-    debug_msg_t debug_message = {0, NULL};
-    debug_message.timestamp = timestamp;
-    debug_message.msg = msg;
-
     const int signo = 42; // Custom stack capture signal and leak reuse
     siginfo_t info;
     info.si_signo = signo;
     info.si_code = siCode;
-    info.si_value.sival_ptr = &debug_message;
+
+    debug_msg_t debug_message = {0, NULL};
+    if (msg != nullptr) {
+        const int numberOneThousand = 1000; // 1000 : second to millisecond convert ratio
+        const int numberOneMillion = 1000000; // 1000000 : nanosecond to millisecond convert ratio
+        struct timespec ts;
+        (void)clock_gettime(CLOCK_REALTIME, &ts);
+
+        uint64_t timestamp = static_cast<uint64_t>(ts.tv_sec) * numberOneThousand +
+            static_cast<uint64_t>(ts.tv_sec) / numberOneMillion;
+        if (diffMs < 0  && timestamp < -diffMs) {
+            timestamp = 0;
+        } else if (UINT64_MAX - timestamp < diffMs) {
+            timestamp = UINT64_MAX;
+        } else {
+            timestamp += diffMs;
+        }
+
+        debug_message.timestamp = timestamp;
+        debug_message.msg = msg;
+
+        info.si_value.sival_ptr = &debug_message;
+    }
+
     if (syscall(SYS_rt_tgsigqueueinfo, getpid(), syscall(SYS_gettid), signo, &info) == -1) {
         GTEST_LOG_(ERROR) << "send failed errno=" << errno;
     }
@@ -238,23 +237,11 @@ static void TestFdsan()
     return;
 }
 
-static void TestBadfd()
-{
-    int fd = open("/dev/null", O_WRONLY);
-    if (fd < 0) {
-        GTEST_LOG_(ERROR) << "fd is " << fd;
-        return;
-    }
-    close(fd);
-    close(fd);
-    return;
-}
-
 void TestBadfdThread(int maxCnt)
 {
     for (int i = 0; i < maxCnt; i++) {
         sleep(2); // Delay 2s waiting for the next triggerable cycle
-        TestBadfd();
+        SaveDebugMessage(SIGLEAK_STACK_BADFD, 0, nullptr);
     }
 }
 
@@ -867,7 +854,7 @@ HWTEST_F(SignalHandlerTest, SignalHandlerTest022, TestSize.Level2)
         if (DFX_InstallSignalHandler != nullptr) {
             DFX_InstallSignalHandler();
         }
-        TestBadfd();
+        SaveDebugMessage(SIGLEAK_STACK_BADFD, 0, nullptr);
         sleep(5); // 5: wait for stacktrace generating
         _exit(0);
     } else {
