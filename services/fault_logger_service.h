@@ -88,6 +88,7 @@ private:
     void RemoveTimeoutDumpStats();
     void ReportDumpStats(const DumpStats& stat);
     static std::string GetElfName(const FaultLoggerdStatsRequest& request);
+    void StartDelayTask(std::function<void()> workFunc, int32_t delayTime);
     std::list<DumpStats> stats_{};
 };
 #endif

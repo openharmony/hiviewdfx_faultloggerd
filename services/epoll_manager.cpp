@@ -22,6 +22,7 @@
 #include <unistd.h>
 
 #include <sys/epoll.h>
+#include <sys/timerfd.h>
 
 #include "dfx_define.h"
 #include "dfx_log.h"
@@ -145,6 +146,42 @@ void EpollManager::StopEpoll()
         close(eventFd_);
         eventFd_ = -1;
     }
+}
+
+std::unique_ptr<DelayTask> DelayTask::CreateInstance(std::function<void()> workFunc,
+    int32_t timeout, EpollManager& epollManager)
+{
+    if (timeout <= 0) {
+        return nullptr;
+    }
+    int timefd = timerfd_create(CLOCK_MONOTONIC, 0);
+    if (timefd == -1) {
+        DFXLOGE("%{public}s :: failed to create time fd, errno: %{public}d", EPOLL_MANAGER, errno);
+        return nullptr;
+    }
+    struct itimerspec timeOption{};
+    timeOption.it_value.tv_sec = timeout;
+    if (timerfd_settime(timefd, 0, &timeOption, nullptr) == -1) {
+        close(timefd);
+        DFXLOGE("%{public}s :: failed to set delay time for fd, errno: %{public}d.", EPOLL_MANAGER, errno);
+        return nullptr;
+    }
+    return std::unique_ptr<DelayTask>(new (std::nothrow)DelayTask(workFunc, timefd, epollManager));
+}
+
+DelayTask::DelayTask(std::function<void()> workFunc, int32_t timeFd, EpollManager& epollManager)
+    : EpollListener(timeFd), work_(std::move(workFunc)), epollManager_(epollManager) {}
+
+void DelayTask::OnEventPoll()
+{
+    uint64_t exp;
+    auto ret = OHOS_TEMP_FAILURE_RETRY(read(GetFd(), &exp, sizeof(exp)));
+    if (ret != sizeof(exp)) {
+        DFXLOGE("%{public}s :: failed read time fd %{public}" PRId32, EPOLL_MANAGER, GetFd());
+    } else {
+        work_();
+    }
+    epollManager_.RemoveListener(GetFd());
 }
 }
 }

@@ -56,6 +56,19 @@ private:
     int32_t eventFd_;
     std::mutex epollMutex_;
 };
+
+class DelayTask : public EpollListener {
+public:
+    DelayTask(const DelayTask&) = delete;
+    DelayTask& operator=(const DelayTask&) = delete;
+    static std::unique_ptr<DelayTask> CreateInstance(std::function<void()> workFunc,
+        int32_t timeout, EpollManager& epollManager);
+    void OnEventPoll() override;
+private:
+    DelayTask(std::function<void()> workFunc, int32_t timeFd, EpollManager& epollManager);
+    std::function<void()> work_;
+    EpollManager& epollManager_;
+};
 }
 }
 

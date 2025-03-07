@@ -72,10 +72,23 @@ FaultLoggerDaemon::~FaultLoggerDaemon()
 int32_t FaultLoggerDaemon::StartServer()
 {
     std::thread([this] {
+        pthread_setname_np(pthread_self(), "HelperServer");
         secondaryEpollManager_.StartEpoll(MAX_CONNECTION);
     }).detach();
     mainEpollManager_.StartEpoll(MAX_CONNECTION);
     return 0;
+}
+
+EpollManager* FaultLoggerDaemon::GetEpollManager(EpollManagerType type)
+{
+    switch (type) {
+        case EpollManagerType::MAIN_SERVER:
+            return &mainEpollManager_;
+        case EpollManagerType::HELPER_SERVER:
+            return &secondaryEpollManager_;
+        default:
+            return nullptr;
+    }
 }
 }
 }

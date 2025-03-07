@@ -339,7 +339,8 @@ std::unique_ptr<TempFileManager::TempFileWatcher> TempFileManager::TempFileWatch
         DFXLOGE("%{public}s :: failed to init inotify fd: %{public}d.", TEMP_FILE_MANAGER_TAG, watchFd);
         return nullptr;
     }
-    return std::unique_ptr<TempFileManager::TempFileWatcher>(new TempFileWatcher(tempFileManager, watchFd));
+    return std::unique_ptr<TempFileManager::TempFileWatcher>(new (std::nothrow)TempFileWatcher(tempFileManager,
+        watchFd));
 }
 
 TempFileManager::TempFileWatcher::TempFileWatcher(TempFileManager& tempFileManager, int32_t fd)
@@ -493,7 +494,7 @@ std::unique_ptr<TempFileManager::TempFileRemover> TempFileManager::TempFileRemov
         DFXLOGE("%{public}s :: failed to set delay time for fd, errno: %{public}d.", TEMP_FILE_MANAGER_TAG, errno);
         return nullptr;
     }
-    return std::unique_ptr<TempFileRemover>(new TempFileRemover(tempFileManager, timefd));
+    return std::unique_ptr<TempFileRemover>(new (std::nothrow)TempFileRemover(tempFileManager, timefd));
 }
 
 TempFileManager::TempFileRemover::TempFileRemover(TempFileManager& tempFileManager, int32_t fd)

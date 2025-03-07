@@ -16,6 +16,7 @@
 #define FAULT_LOGGER_DAEMON_H_
 
 #include <cstdint>
+#include <memory>
 
 #include "epoll_manager.h"
 #include "temp_file_manager.h"
@@ -23,6 +24,11 @@
 
 namespace OHOS {
 namespace HiviewDFX {
+
+enum class EpollManagerType {
+    MAIN_SERVER,
+    HELPER_SERVER,
+};
 class FaultLoggerDaemon {
 public:
     FaultLoggerDaemon(const FaultLoggerDaemon&) = delete;
@@ -33,6 +39,7 @@ public:
 
     static FaultLoggerDaemon& GetInstance();
     int32_t StartServer();
+    EpollManager* GetEpollManager(EpollManagerType type);
 private:
     FaultLoggerDaemon();
     ~FaultLoggerDaemon();
