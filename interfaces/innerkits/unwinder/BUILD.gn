@@ -137,7 +137,6 @@ if (defined(ohos_lite)) {
       "is_linux=${is_linux}",
       "is_mingw=${is_mingw}",
       "RUSTC_DEMANGLE",
-      "CJ_DEMANGLE",
     ]
 
     if (libunwinder_debug) {
@@ -166,6 +165,7 @@ if (defined(ohos_lite)) {
       "$faultloggerd_common_path/build:coverage_flags",
     ]
     defines = [ "DFX_ENABLE_TRACE" ]
+    defines += [ "CJ_DEMANGLE" ]
     if (target_cpu == "arm64") {
       defines += [ "ENABLE_PARAMETER" ]
     }
@@ -209,7 +209,7 @@ if (defined(ohos_lite)) {
       ":lzma_config",
       ":mixstack_config",
     ]
-
+    defines = [ "CJ_DEMANGLE" ]
     if (target_cpu != "x86_64") {
       dfx_unwinder_sources -= [ "src/registers/getcontext_x86_64.S" ]
     }
@@ -274,7 +274,7 @@ if (defined(ohos_lite)) {
       "DFX_LOG_UNWIND",
       "INSTR_STATISTIC_ENABLE",
     ]
-
+    defines += [ "CJ_DEMANGLE" ]
     if (target_cpu != "x86_64") {
       dfx_unwinder_sources -= [ "src/registers/getcontext_x86_64.S" ]
     }
