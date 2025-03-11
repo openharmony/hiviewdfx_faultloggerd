@@ -176,7 +176,7 @@ void DelayTask::OnEventPoll()
 {
     uint64_t exp;
     auto ret = OHOS_TEMP_FAILURE_RETRY(read(GetFd(), &exp, sizeof(exp)));
-    if (ret != sizeof(exp)) {
+    if (ret < 0 || static_cast<uint64_t>(ret) != sizeof(exp)) {
         DFXLOGE("%{public}s :: failed read time fd %{public}" PRId32, EPOLL_MANAGER, GetFd());
     } else {
         work_();

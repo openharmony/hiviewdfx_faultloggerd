@@ -54,17 +54,6 @@ private:
         static void HandleFileWrite(const std::string& filePath, const SingleFileConfig& fileConfig);
         TempFileManager &tempFileManager_;
     };
-
-    class TempFileRemover : public EpollListener {
-    public:
-        static std::unique_ptr<TempFileRemover> CreateInstance(TempFileManager& tempFileManager, int32_t timeout);
-        void AddFiles(std::string fileName);
-        void OnEventPoll() override;
-    private:
-        TempFileRemover(TempFileManager& tempFileManager,  int32_t fd);
-        std::vector<std::string> tempFiles_;
-        TempFileManager &tempFileManager_;
-    };
     bool InitTempFileWatcher();
     void ScanTempFilesOnStart();
     void ClearBigFilesOnStart(bool isSizeOverLimit, std::list<std::string>& files);
