@@ -260,6 +260,7 @@ bool DfxDumpCatcher::DumpCatch(int pid, int tid, std::string& msg, size_t maxFra
     }
     if (!IsLinuxKernel()) {
         std::string statusPath = StringPrintf("/proc/%d/status", pid);
+        DFXLOG_INFO("DumpCatch:: access pid(%d) status", pid);
         if (access(statusPath.c_str(), F_OK) != 0 && errno != EACCES) {
             DFXLOG_ERROR("DumpCatch:: the pid(%d) process has exited, errno(%d)", pid, errno);
             msg.append("Result: pid(" + std::to_string(pid) + ") process has exited.\n");
