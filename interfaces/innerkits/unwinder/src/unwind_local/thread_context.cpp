@@ -385,7 +385,7 @@ NO_SANITIZE void LocalThreadContextMix::CopyStackBuf()
     size_t cpySz = std::min(static_cast<size_t>(curStackSz), static_cast<size_t>(STACK_BUFFER_SIZE));
     std::unique_lock<std::mutex> lock(mtx_);
     if (stackBuf_.size() >= cpySz) {
-        for (int i = 0; i < cpySz; i++) {
+        for (size_t i = 0; i < cpySz; i++) {
             stackBuf_[i] = reinterpret_cast<uint8_t*>(sp_)[i];
         }
         status_ = SyncStatus::COPY_SUCCESS;

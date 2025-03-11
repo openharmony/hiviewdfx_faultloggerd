@@ -215,13 +215,10 @@ void TempFileManager::ClearBigFilesOnStart(bool isSizeOverLimit, std::list<std::
         std::for_each(files.begin(), files.end(), RemoveTempFile);
         files.clear();
     } else {
-        auto tempFileRemover = TempFileRemover::CreateInstance(*this, fileClearTime);
-        if (tempFileRemover) {
-            std::for_each(files.begin(), files.end(), [&tempFileRemover](const std::string& filePath) {
-                tempFileRemover->AddFiles(filePath);
-            });
-            epollManager_.AddListener(std::move(tempFileRemover));
-        }
+        auto tempFileRemover = DelayTask::CreateInstance([files] {
+            std::for_each(files.begin(), files.end(), RemoveTempFile);
+        }, fileClearTime, epollManager_);
+        epollManager_.AddListener(std::move(tempFileRemover));
     }
 }
 
@@ -417,11 +414,10 @@ void TempFileManager::TempFileWatcher::HandleFileCreate(const std::string& fileP
             TEMP_FILE_MANAGER_TAG, filePath.c_str(), currentFileCount, fileConfig.keepFileCount,
             fileConfig.maxFileCount, fileConfig.fileExistTime, fileConfig.overTimeFileDeleteType);
     if (fileConfig.overTimeFileDeleteType == OverTimeFileDeleteType::ACTIVE) {
-        auto tempFileRemover = TempFileRemover::CreateInstance(tempFileManager_, fileConfig.fileExistTime);
-        if (tempFileRemover) {
-            tempFileRemover->AddFiles(filePath);
-            tempFileManager_.epollManager_.AddListener(std::move(tempFileRemover));
-        }
+        auto tempFileRemover = DelayTask::CreateInstance([filePath] {
+            RemoveTempFile(filePath);
+        }, fileConfig.fileExistTime, tempFileManager_.epollManager_);
+        tempFileManager_.epollManager_.AddListener(std::move(tempFileRemover));
     }
     if ((fileConfig.keepFileCount >= 0 && currentFileCount > fileConfig.keepFileCount) ||
         (fileConfig.maxFileCount >= 0 && currentFileCount > fileConfig.maxFileCount)) {
@@ -473,47 +469,6 @@ void TempFileManager::TempFileWatcher::HandleDirRemoved()
         "HAPPEN_TIME", timestamp,
         "SUMMARY", summary);
 #endif
-    tempFileManager_.epollManager_.RemoveListener(GetFd());
-}
-
-std::unique_ptr<TempFileManager::TempFileRemover> TempFileManager::TempFileRemover::CreateInstance(
-    TempFileManager& tempFileManager, int32_t timeout)
-{
-    if (timeout <= 0) {
-        return nullptr;
-    }
-    int timefd = timerfd_create(CLOCK_MONOTONIC, 0);
-    if (timefd == -1) {
-        DFXLOGE("%{public}s :: failed to create time fd, errno: %{public}d", TEMP_FILE_MANAGER_TAG, errno);
-        return nullptr;
-    }
-    struct itimerspec timeOption{};
-    timeOption.it_value.tv_sec = timeout;
-    if (timerfd_settime(timefd, 0, &timeOption, nullptr) == -1) {
-        close(timefd);
-        DFXLOGE("%{public}s :: failed to set delay time for fd, errno: %{public}d.", TEMP_FILE_MANAGER_TAG, errno);
-        return nullptr;
-    }
-    return std::unique_ptr<TempFileRemover>(new (std::nothrow)TempFileRemover(tempFileManager, timefd));
-}
-
-TempFileManager::TempFileRemover::TempFileRemover(TempFileManager& tempFileManager, int32_t fd)
-    : EpollListener(fd), tempFileManager_(tempFileManager) {}
-
-void TempFileManager::TempFileRemover::AddFiles(std::string fileName)
-{
-    tempFiles_.emplace_back(std::move(fileName));
-}
-
-void TempFileManager::TempFileRemover::OnEventPoll()
-{
-    uint64_t exp;
-    auto ret = OHOS_TEMP_FAILURE_RETRY(read(GetFd(), &exp, sizeof(exp)));
-    if (ret != sizeof(exp)) {
-        DFXLOGE("%{public}s :: failed read time fd %{public}" PRId32, TEMP_FILE_MANAGER_TAG, GetFd());
-    } else {
-        std::for_each(tempFiles_.begin(), tempFiles_.end(), RemoveTempFile);
-    }
     tempFileManager_.epollManager_.RemoveListener(GetFd());
 }
 }
