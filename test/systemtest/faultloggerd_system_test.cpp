@@ -1598,25 +1598,25 @@ HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest122, TestSize.Level2)
 HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest123, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest123: start.";
-    string clearCrashFilesCmd = "rm -rf /log/crash/*";
-    system(clearCrashFilesCmd.c_str());
-
-    string stopFaultLoggerd = "service_control stop faultloggerd";
-    (void)ExecuteCommands(stopFaultLoggerd);
-
-    string cmd = "SIGABRT";
-    string fileName;
     string crashDir = "/log/crash/";
-    pid_t pid = TriggerCrasherAndGetFileName(cmd, CRASHER_CPP, fileName, 1, crashDir);
-
-    string startFaultLoggerd = "service_control start faultloggerd";
-    (void)ExecuteCommands(startFaultLoggerd);
-    GTEST_LOG_(INFO) << "test pid(" << pid << ")"  << " cppcrash file name : " << fileName;
-    if (pid < 0 || fileName.size() < CPPCRASH_FILENAME_MIN_LENGTH) {
-        GTEST_LOG_(ERROR) << "Trigger Crash Failed.";
-        FAIL();
+    if (std::filesystem::exists(crashDir)) {
+        string clearCrashFilesCmd = "rm -rf /log/crash/*";
+        system(clearCrashFilesCmd.c_str());
+        string stopFaultLoggerd = "service_control stop faultloggerd";
+        (void)ExecuteCommands(stopFaultLoggerd);
+        string cmd = "SIGABRT";
+        string fileName;
+        pid_t pid = TriggerCrasherAndGetFileName(cmd, CRASHER_CPP, fileName, 1, crashDir);
+    
+        string startFaultLoggerd = "service_control start faultloggerd";
+        (void)ExecuteCommands(startFaultLoggerd);
+        GTEST_LOG_(INFO) << "test pid(" << pid << ")"  << " cppcrash file name : " << fileName;
+        if (pid < 0 || fileName.size() < CPPCRASH_FILENAME_MIN_LENGTH) {
+            GTEST_LOG_(ERROR) << "Trigger Crash Failed.";
+            FAIL();
+        }
+        EXPECT_TRUE(CheckCountNum(fileName, pid, cmd)) << "FaultLoggerdSystemTest123 Failed";
     }
-    EXPECT_TRUE(CheckCountNum(fileName, pid, cmd)) << "FaultLoggerdSystemTest123 Failed";
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest123: end.";
 }
 
@@ -1677,32 +1677,32 @@ HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest125, TestSize.Level2)
 HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest126, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest126: start.";
-    string clearCrashFilesCmd = "rm -rf /log/crash/*";
-    system(clearCrashFilesCmd.c_str());
-
-    string stopFaultLoggerd = "service_control stop faultloggerd";
-    string startFaultLoggerd = "service_control start faultloggerd";
-    (void)ExecuteCommands(stopFaultLoggerd);
-
-    string cmd = "SIGABRT";
-    string fileName;
     string crashDir = "/log/crash/";
-    pid_t pid = -1;
-    int maxFilesNum = 5;
+    if (std::filesystem::exists(crashDir)) {
+        string clearCrashFilesCmd = "rm -rf /log/crash/*";
+        system(clearCrashFilesCmd.c_str());
+        string stopFaultLoggerd = "service_control stop faultloggerd";
+        (void)ExecuteCommands(stopFaultLoggerd);
 
-    for (int i = 0; i < (maxFilesNum + 1); ++i) {
-        pid = TriggerCrasherAndGetFileName(cmd, CRASHER_CPP, fileName, 1, crashDir);
-        GTEST_LOG_(INFO) << "test pid(" << pid << ")"  << " cppcrash file name : " << fileName;
-        if (pid < 0 || fileName.size() < CPPCRASH_FILENAME_MIN_LENGTH) {
-            GTEST_LOG_(ERROR) << "Trigger Crash Failed.";
-            (void)ExecuteCommands(startFaultLoggerd);
-            FAIL();
+        string cmd = "SIGABRT";
+        string fileName;
+        pid_t pid = -1;
+        int maxFilesNum = 5;
+        for (int i = 0; i < (maxFilesNum + 1); ++i) {
+            pid = TriggerCrasherAndGetFileName(cmd, CRASHER_CPP, fileName, 1, crashDir);
+            GTEST_LOG_(INFO) << "test pid(" << pid << ")"  << " cppcrash file name : " << fileName;
+            if (pid < 0 || fileName.size() < CPPCRASH_FILENAME_MIN_LENGTH) {
+                GTEST_LOG_(ERROR) << "Trigger Crash Failed.";
+                (void)ExecuteCommands(startFaultLoggerd);
+                FAIL();
+            }
         }
+        string startFaultLoggerd = "service_control start faultloggerd";
+        (void)ExecuteCommands(startFaultLoggerd);
+        std::vector<std::string> files;
+        ReadDirFiles(crashDir, files);
+        EXPECT_TRUE(files.size() <= maxFilesNum) << "FaultLoggerdSystemTest126 Failed";
     }
-    (void)ExecuteCommands(startFaultLoggerd);
-    std::vector<std::string> files;
-    ReadDirFiles(crashDir, files);
-    EXPECT_TRUE(files.size() <= maxFilesNum) << "FaultLoggerdSystemTest126 Failed";
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest126: end.";
 }
 #endif
