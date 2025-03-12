@@ -124,7 +124,7 @@ void BacktraceLocalTest::TearDown()
 HWTEST_F(BacktraceLocalTest, BacktraceLocalTest001, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "BacktraceLocalTest001: start.";
-    unw_addr_space_t as;
+    unw_addr_space_t as = nullptr;
     unw_init_local_address_space(&as);
     if (as == nullptr) {
         FAIL() << "Failed to init address space.\n";
@@ -172,7 +172,7 @@ __attribute__((noinline)) void Test001()
 HWTEST_F(BacktraceLocalTest, BacktraceLocalTest003, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "BacktraceLocalTest003: start.";
-    unw_addr_space_t as;
+    unw_addr_space_t as = nullptr;
     unw_init_local_address_space(&as);
     if (as == nullptr) {
         FAIL() << "Failed to init address space.\n";

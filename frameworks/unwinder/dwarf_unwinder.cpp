@@ -57,7 +57,7 @@ void DwarfUnwinder::UpdateFrameFuncName(unw_addr_space_t as,
 
 bool DwarfUnwinder::Unwind(size_t skipFrameNum, size_t maxFrameNums)
 {
-    unw_addr_space_t as;
+    unw_addr_space_t as = nullptr;
     unw_init_local_address_space(&as);
     if (as == nullptr) {
         return false;

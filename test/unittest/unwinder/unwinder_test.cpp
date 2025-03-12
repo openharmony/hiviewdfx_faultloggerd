@@ -81,7 +81,7 @@ HWTEST_F(UnwinderTest, UnwinderTest000, TestSize.Level2)
     unw_getcontext(&context);
     pid_t child = fork();
     if (child == 0) {
-        unw_addr_space_t as;
+        unw_addr_space_t as = nullptr;
         unw_init_local_address_space(&as);
         if (as == nullptr) {
             FAIL() << "Failed to init address space.";

@@ -60,7 +60,7 @@ private:
     DISALLOW_COPY_AND_MOVE(DfxUnwindRemote);
 
 private:
-    unw_addr_space_t as_;
+    unw_addr_space_t as_ = nullptr;
     std::unique_ptr<DfxSymbols> symbols_;
     std::map<std::string, std::string> buildIds_;
 };
