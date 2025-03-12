@@ -46,7 +46,6 @@ namespace HiviewDFX {
 namespace {
 
 constexpr const char* const FAULTLOGGERD_SERVICE_TAG = "FAULT_LOGGER_SERVICE";
-constexpr int DELAY_TIME = 7; // allow 10s for processdump report, 3s for dumpcatch timeout and 7s for delay
 bool GetUcredByPeerCred(struct ucred& rcred, int32_t connectionFd)
 {
     socklen_t credSize = sizeof(rcred);
@@ -165,6 +164,7 @@ std::string StatsService::GetElfName(const FaultLoggerdStatsRequest& request)
 int32_t StatsService::OnRequest(const std::string& socketName, int32_t connectionFd,
     const FaultLoggerdStatsRequest& requestData)
 {
+    constexpr int32_t delayTime = 7; // allow 10s for processdump report, 3s for dumpcatch timeout and 7s for delay
     DFXLOGI("%{public}s :: %{public}s: HandleDumpStats", FAULTLOGGERD_SERVICE_TAG, __func__);
     auto iter = std::find_if(stats_.begin(), stats_.end(), [&requestData](const DumpStats& dumpStats) {
         return dumpStats.pid == requestData.pid;
@@ -204,7 +204,7 @@ int32_t StatsService::OnRequest(const std::string& socketName, int32_t connectio
             }
             RemoveTimeoutDumpStats();
         };
-        StartDelayTask(task, DELAY_TIME);
+        StartDelayTask(task, delayTime);
     }
     RemoveTimeoutDumpStats();
 #ifdef FAULTLOGGERD_TEST
