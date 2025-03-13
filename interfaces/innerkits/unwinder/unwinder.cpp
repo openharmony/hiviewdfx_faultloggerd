@@ -83,6 +83,7 @@ public:
         DfxEnableTraceDlsym(true);
         maps_ = DfxMaps::Create(pid, crash);
         enableFpCheckMapExec_ = true;
+        isCrash_ = crash;
         memory_ = std::make_shared<DfxMemory>(UNWIND_TYPE_REMOTE);
         Init();
     }
@@ -256,6 +257,7 @@ private:
     bool enableFillFrames_ = true;
     bool enableLrFallback_ = true;
     bool enableFpCheckMapExec_ = false;
+    bool isCrash_ = false;
     bool isFpStep_ = false;
     bool isArkCreateLocal_ = false;
     bool isResetFrames_ = false;
@@ -1053,6 +1055,15 @@ bool Unwinder::Impl::StepInner(const bool isSigFrame, StepFrame& frame, void *ct
 
         // 2. find map and process frame
         if (!AddFrameMap(frame, map)) {
+            if (isCrash_ && !isFpStep_ && !frames_.empty()) {
+                auto &lastFrame = frames_.back();
+                frame.pc = lastFrame.pc;
+                frame.sp = lastFrame.sp;
+                frame.fp = lastFrame.fp;
+                frame.isJsFrame = lastFrame.isJsFrame;
+                DFXLOGW("Dwarf unwind failed to find map, try fp unwind again");
+                break;
+            }
             return false;
         }
         if (isSigFrame) {
@@ -1154,6 +1165,7 @@ void Unwinder::Impl::AddFrame(const StepFrame& frame, std::shared_ptr<DfxMap> ma
     DfxFrame dfxFrame;
     dfxFrame.isJsFrame = frame.isJsFrame;
     dfxFrame.index = frames_.size();
+    dfxFrame.fp = static_cast<uint64_t>(frame.fp);
     dfxFrame.pc = static_cast<uint64_t>(frame.pc);
     dfxFrame.sp = static_cast<uint64_t>(frame.sp);
     dfxFrame.map = map;
