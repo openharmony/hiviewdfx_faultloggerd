@@ -15,10 +15,8 @@
 
 #include "cppcrash_reporter.h"
 
-#include <cinttypes>
 #include <dlfcn.h>
 #include <fcntl.h>
-#include <map>
 #include <string>
 #include "dfx_define.h"
 #include "dfx_logger.h"
@@ -42,23 +40,18 @@ using RecordAppExitReason = int (*)(int reason, const char *exitMsg);
 namespace OHOS {
 namespace HiviewDFX {
 
-bool CppCrashReporter::Format()
+bool CppCrashReporter::Format(const DfxProcess& process)
 {
-    if (process_ == nullptr) {
-        return false;
-    }
-
-    cmdline_ = process_->processInfo_.processName;
-    pid_ = process_->processInfo_.pid;
-    uid_ = process_->processInfo_.uid;
-    reason_ = process_->reason;
-    auto msg = process_->GetFatalMessage();
+    cmdline_ = process.processInfo_.processName;
+    pid_ = process.processInfo_.pid;
+    uid_ = process.processInfo_.uid;
+    reason_ = process.reason;
+    auto msg = process.GetFatalMessage();
     if (!msg.empty()) {
         stack_ = "LastFatalMessage:" + msg + "\n";
     }
-    std::shared_ptr<DfxThread> thread = process_->keyThread_;
-    if (thread != nullptr) {
-        std::string threadInfo = thread->ToString();
+    if (process.keyThread_) {
+        std::string threadInfo = process.keyThread_->ToString();
         auto iterator = threadInfo.begin();
         while (iterator != threadInfo.end() && *iterator != '\n') {
             if (isdigit(*iterator)) {
@@ -70,18 +63,18 @@ bool CppCrashReporter::Format()
         stack_ += threadInfo;
 
         // regs
-        registers_ = GetRegsString(process_->regs_);
+        registers_ = GetRegsString(process.regs_);
     }
     return true;
 }
 
-void CppCrashReporter::ReportToHiview()
+void CppCrashReporter::ReportToHiview(const DfxProcess& process)
 {
-    if (!Format()) {
+    if (!Format(process)) {
         DFXLOGW("Failed to format crash report.");
         return;
     }
-    if (process_->processInfo_.processName.find(HIVIEW_PROCESS_NAME) != std::string::npos) {
+    if (process.processInfo_.processName.find(HIVIEW_PROCESS_NAME) != std::string::npos) {
         DFXLOGW("Failed to report, hiview is crashed.");
         return;
     }
@@ -135,13 +128,12 @@ int32_t CppCrashReporter::WriteCppCrashInfoByPipe()
     if (fcntl(pipeFd[PIPE_READ], F_GETFL) < 0) {
         DFXLOGE("[%{public}d]: failed to set pipe size.", __LINE__);
         return -1;
-    } else {
-        uint32_t flags = static_cast<uint32_t>(fcntl(pipeFd[PIPE_READ], F_GETFL));
-        flags |= O_NONBLOCK;
-        if (fcntl(pipeFd[PIPE_READ], F_SETFL, flags) < 0) {
-            DFXLOGE("Failed to set pipe flag.");
-            return -1;
-        }
+    }
+    uint32_t flags = static_cast<uint32_t>(fcntl(pipeFd[PIPE_READ], F_GETFL));
+    flags |= O_NONBLOCK;
+    if (fcntl(pipeFd[PIPE_READ], F_SETFL, flags) < 0) {
+        DFXLOGE("Failed to set pipe flag.");
+        return -1;
     }
     ssize_t realWriteSize = -1;
     realWriteSize = OHOS_TEMP_FAILURE_RETRY(write(pipeFd[PIPE_WRITE], cppCrashInfo_.c_str(), sz));
@@ -154,12 +146,9 @@ int32_t CppCrashReporter::WriteCppCrashInfoByPipe()
     return pipeFd[PIPE_READ];
 }
 
-void CppCrashReporter::ReportToAbilityManagerService()
+void CppCrashReporter::ReportToAbilityManagerService(const DfxProcess& process)
 {
-    if (process_ == nullptr) {
-        return;
-    }
-    if (process_->processInfo_.processName.find(FOUNDATION_PROCESS_NAME) != std::string::npos) {
+    if (process.processInfo_.processName.find(FOUNDATION_PROCESS_NAME) != std::string::npos) {
         DFXLOGW("Do not to report to AbilityManagerService, foundation is crashed.");
         return;
     }

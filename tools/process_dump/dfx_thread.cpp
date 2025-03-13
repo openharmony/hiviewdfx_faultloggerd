@@ -69,12 +69,17 @@ void DfxThread::SetThreadRegs(const std::shared_ptr<DfxRegs> &regs)
     regs_ = regs;
 }
 
-void DfxThread::AddFrame(DfxFrame& frame)
+void DfxThread::AddFrame(const DfxFrame& frame)
 {
     frames_.emplace_back(frame);
 }
 
-std::vector<DfxFrame>& DfxThread::GetFrames()
+void DfxThread::AddFrames(const std::vector<DfxFrame>& frames)
+{
+    frames_.insert(frames_.end(), frames.begin(), frames.end());
+}
+
+const std::vector<DfxFrame>& DfxThread::GetFrames() const
 {
     return frames_;
 }
@@ -152,12 +157,12 @@ std::shared_ptr<FaultStack> DfxThread::GetFaultStack() const
     return faultStack_;
 }
 
-void DfxThread::ParseSymbol(std::shared_ptr<Unwinder> unwinder)
+void DfxThread::ParseSymbol(Unwinder& unwinder)
 {
     if (!needParseSymbol_) {
         return;
     }
-    unwinder->FillFrames(frames_);
+    unwinder.FillFrames(frames_);
 }
 
 void DfxThread::SetParseSymbolNecessity(bool needParseSymbol)

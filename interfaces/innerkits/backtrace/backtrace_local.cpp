@@ -43,17 +43,13 @@ namespace {
 bool GetBacktraceFramesByTid(std::vector<DfxFrame>& frames, int32_t tid, size_t skipFrameNum, bool fast,
                              size_t maxFrameNums)
 {
-    std::shared_ptr<Unwinder> unwinder = nullptr;
+    bool isNeedMaps = true;
 #if (defined(__aarch64__) || defined(__loongarch_lp64))
-    if (fast || (tid != BACKTRACE_CURRENT_THREAD)) {
-        unwinder = std::make_shared<Unwinder>(false);
-    }
+    isNeedMaps = !fast && tid == BACKTRACE_CURRENT_THREAD;
 #endif
-    if (unwinder == nullptr) {
-        unwinder = std::make_shared<Unwinder>();
-    }
-    BacktraceLocalThread thread(tid, unwinder);
-    bool ret = thread.Unwind(fast, maxFrameNums, skipFrameNum + 1);
+    Unwinder unwinder(isNeedMaps);
+    BacktraceLocalThread thread(tid);
+    bool ret = thread.Unwind(unwinder, fast, maxFrameNums, skipFrameNum + 1);
     frames = thread.GetFrames();
     return ret;
 }
@@ -68,7 +64,7 @@ bool GetBacktraceStringByTid(std::string& out, int32_t tid, size_t skipFrameNum,
         std::string msg = "";
         DfxThreadStack threadStack;
         if (DfxGetKernelStack(tid, msg) == 0 && FormatThreadKernelStack(msg, threadStack)) {
-            frames = threadStack.frames;
+            frames = std::move(threadStack.frames);
             ret = true;
             DFXLOGI("Failed to get tid(%{public}d) user stack, try kernel", tid);
             if (IsBetaVersion()) {
@@ -138,14 +134,14 @@ const char* GetTrace(size_t skipFrameNum, size_t maxFrameNums)
 
 std::string GetProcessStacktrace(size_t maxFrameNums, bool enableKernelStack)
 {
-    auto unwinder = std::make_shared<Unwinder>();
     std::string ss = "\n" + GetStacktraceHeader();
+    Unwinder unwinder{};
     std::function<bool(int)> func = [&](int tid) {
         if (tid <= 0 || tid == gettid()) {
             return false;
         }
-        BacktraceLocalThread thread(tid, unwinder);
-        if (thread.Unwind(false, maxFrameNums, 0)) {
+        BacktraceLocalThread thread(tid);
+        if (thread.Unwind(unwinder, false, maxFrameNums, 0)) {
             ss += thread.GetFormattedStr(true) + "\n";
         }
         if (!enableKernelStack) {

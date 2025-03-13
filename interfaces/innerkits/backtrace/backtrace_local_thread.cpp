@@ -41,45 +41,34 @@ std::string GetThreadHead(int32_t tid)
     return threadHead;
 }
 
-BacktraceLocalThread::BacktraceLocalThread(int32_t tid, std::shared_ptr<Unwinder> unwinder)
-    : tid_(tid), unwinder_(unwinder)
-{
-    frames_.clear();
-}
-
-BacktraceLocalThread::~BacktraceLocalThread()
-{
-    frames_.clear();
-}
-
-bool BacktraceLocalThread::Unwind(bool fast, size_t maxFrameNum, size_t skipFrameNum)
+bool BacktraceLocalThread::Unwind(Unwinder& unwinder, bool fast, size_t maxFrameNum, size_t skipFrameNum)
 {
     static std::mutex mutex;
     std::unique_lock<std::mutex> lock(mutex);
     bool ret = false;
 
-    if (unwinder_ == nullptr || tid_ < BACKTRACE_CURRENT_THREAD) {
+    if (tid_ < BACKTRACE_CURRENT_THREAD) {
         return ret;
     }
 
     if (tid_ == BACKTRACE_CURRENT_THREAD) {
-        ret = unwinder_->UnwindLocal(false, fast, maxFrameNum, skipFrameNum + 1);
+        ret = unwinder.UnwindLocal(false, fast, maxFrameNum, skipFrameNum + 1);
 #ifdef __aarch64__
         if (fast) {
-            Unwinder::GetLocalFramesByPcs(frames_, unwinder_->GetPcs());
+            Unwinder::GetLocalFramesByPcs(frames_, unwinder.GetPcs());
         }
 #endif
         if (frames_.empty()) {
-            frames_ = unwinder_->GetFrames();
+            frames_ = unwinder.GetFrames();
         }
         return ret;
     }
 
-    ret = unwinder_->UnwindLocalWithTid(tid_, maxFrameNum, skipFrameNum + 1);
+    ret = unwinder.UnwindLocalWithTid(tid_, maxFrameNum, skipFrameNum + 1);
 #ifdef __aarch64__
-    Unwinder::GetLocalFramesByPcs(frames_, unwinder_->GetPcs());
+    Unwinder::GetLocalFramesByPcs(frames_, unwinder.GetPcs());
 #else
-    frames_ = unwinder_->GetFrames();
+    frames_ = unwinder.GetFrames();
 #endif
     return ret;
 }
@@ -111,27 +100,27 @@ std::string BacktraceLocalThread::GetFormattedStr(bool withThreadName)
     return ss;
 }
 
-bool BacktraceLocalThread::UnwindOtherThreadMix(bool fast, size_t maxFrameNum, size_t skipFrameNum)
+bool BacktraceLocalThread::UnwindOtherThreadMix(Unwinder& unwinder, bool fast, size_t maxFrameNum, size_t skipFrameNum)
 {
     static std::mutex mutex;
     std::unique_lock<std::mutex> lock(mutex);
     bool ret = false;
 
-    if (unwinder_ == nullptr || tid_ < BACKTRACE_CURRENT_THREAD) {
+    if (tid_ < BACKTRACE_CURRENT_THREAD) {
         return ret;
     }
     if (tid_ == BACKTRACE_CURRENT_THREAD || tid_ == gettid()) {
-        ret = unwinder_->UnwindLocal(false, fast, maxFrameNum, skipFrameNum + 1, true);
+        ret = unwinder.UnwindLocal(false, fast, maxFrameNum, skipFrameNum + 1, true);
     } else {
-        ret = unwinder_->UnwindLocalByOtherTid(tid_, fast, maxFrameNum, skipFrameNum + 1);
+        ret = unwinder.UnwindLocalByOtherTid(tid_, fast, maxFrameNum, skipFrameNum + 1);
     }
 #ifdef __aarch64__
     if (ret && fast) {
-        unwinder_->GetFramesByPcs(frames_, unwinder_->GetPcs());
+        unwinder.GetFramesByPcs(frames_, unwinder.GetPcs());
     }
 #endif
     if (frames_.empty()) {
-        frames_ = unwinder_->GetFrames();
+        frames_ = unwinder.GetFrames();
     }
     return ret;
 }

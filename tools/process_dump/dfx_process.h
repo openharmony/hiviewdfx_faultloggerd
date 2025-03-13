@@ -35,7 +35,6 @@ struct DfxProcessInfo {
 
 class DfxProcess {
 public:
-    static std::shared_ptr<DfxProcess> Create(pid_t pid, pid_t nsPid);
     DfxProcess(pid_t pid, pid_t nsPid);
     virtual ~DfxProcess() = default;
     void Attach(bool hasKey = false);
