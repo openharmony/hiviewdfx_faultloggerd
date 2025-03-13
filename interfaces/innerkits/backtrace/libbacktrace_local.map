@@ -6,6 +6,7 @@
       OHOS::HiviewDFX::BacktraceLocalThread::BacktraceLocalThread*;
       OHOS::HiviewDFX::BacktraceLocalThread::Unwind*;
       OHOS::HiviewDFX::BacktraceLocalThread::GetFrames*;
+      OHOS::HiviewDFX::BacktraceLocalThread::SetFrames*;
       OHOS::HiviewDFX::BacktraceLocalThread::~BacktraceLocalThread*;
       OHOS::HiviewDFX::BacktraceLocalThread::GetFormattedStr*;
       OHOS::HiviewDFX::DfxGetKernelStack*;

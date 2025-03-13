@@ -55,10 +55,14 @@ HWTEST_F(DfxSymbolsTest, DfxSymbolsTest001, TestSize.Level2)
     ASSERT_TRUE(elf->IsValid());
     ElfImitate elfImitate;
     elfImitate.ParseAllHeaders(ElfImitate::ElfFileType::ELF32);
+    std::string funcName;
+    uint64_t funcOffset;
+    ASSERT_TRUE(DfxSymbols::GetFuncNameAndOffsetByPc(0x00001786, elf, funcName, funcOffset));
+    GTEST_LOG_(INFO) << funcName << " " << funcOffset;
     std::vector<DfxSymbol> symbols;
     std::vector<DfxSymbol> symbolsImitate;
-    DfxSymbols::ParseSymbols(symbols, elf, ELF32_FILE);
-    elfImitate.ParseSymbols(symbolsImitate, ELF32_FILE);
+    ASSERT_TRUE(DfxSymbols::ParseSymbols(symbols, elf, ELF32_FILE));
+    ASSERT_TRUE(elfImitate.ParseSymbols(symbolsImitate, ELF32_FILE));
     ASSERT_EQ(symbols.size(), symbolsImitate.size());
     for (size_t i = 0; i < symbolsImitate.size(); ++i) {
         symbols[i].fileVaddr_ = symbolsImitate[i].fileVaddr_;
@@ -78,9 +82,11 @@ HWTEST_F(DfxSymbolsTest, DfxSymbolsTest001, TestSize.Level2)
         symbols[i].demangle_ = symbolsImitate[i].demangle_;
         symbols[i].module_ = symbolsImitate[i].module_;
     }
-    std::string funcName;
-    uint64_t funcOffset;
-    ASSERT_TRUE(DfxSymbols::GetFuncNameAndOffsetByPc(0x00001786, elf, funcName, funcOffset));
+    ASSERT_FALSE(DfxSymbols::ParseSymbols(symbols, nullptr, ELF32_FILE));
+    elf->SetBaseOffset(0x1000);
+    ASSERT_TRUE(DfxSymbols::ParseSymbols(symbols, elf, ELF32_FILE));
+    ASSERT_FALSE(DfxSymbols::AddSymbolsByPlt(symbols, nullptr, ELF32_FILE));
+    GTEST_LOG_(INFO) << symbols[0].module_;
     GTEST_LOG_(INFO) << "DfxSymbolsTest001: end.";
 }
 
@@ -97,10 +103,14 @@ HWTEST_F(DfxSymbolsTest, DfxSymbolsTest002, TestSize.Level2)
     ASSERT_TRUE(elf->IsValid());
     ElfImitate elfImitate;
     elfImitate.ParseAllHeaders(ElfImitate::ElfFileType::ELF64);
+    std::string funcName;
+    uint64_t funcOffset;
+    ASSERT_TRUE(DfxSymbols::GetFuncNameAndOffsetByPc(0x00002a08, elf, funcName, funcOffset));
+    GTEST_LOG_(INFO) << funcName << " " << funcOffset;
     std::vector<DfxSymbol> symbols;
     std::vector<DfxSymbol> symbolsImitate;
-    DfxSymbols::ParseSymbols(symbols, elf, ELF64_FILE);
-    elfImitate.ParseSymbols(symbolsImitate, ELF64_FILE);
+    ASSERT_TRUE(DfxSymbols::ParseSymbols(symbols, elf, ELF64_FILE));
+    ASSERT_TRUE(elfImitate.ParseSymbols(symbolsImitate, ELF64_FILE));
     ASSERT_EQ(symbols.size(), symbolsImitate.size());
     for (size_t i = 0; i < symbolsImitate.size(); ++i) {
         symbols[i].fileVaddr_ = symbolsImitate[i].fileVaddr_;
@@ -120,10 +130,11 @@ HWTEST_F(DfxSymbolsTest, DfxSymbolsTest002, TestSize.Level2)
         symbols[i].demangle_ = symbolsImitate[i].demangle_;
         symbols[i].module_ = symbolsImitate[i].module_;
     }
-    std::string funcName;
-    uint64_t funcOffset;
-    ASSERT_TRUE(DfxSymbols::GetFuncNameAndOffsetByPc(0x00002a08, elf, funcName, funcOffset));
-
+    ASSERT_FALSE(DfxSymbols::ParseSymbols(symbols, nullptr, ELF64_FILE));
+    elf->SetBaseOffset(0x1000);
+    ASSERT_TRUE(DfxSymbols::ParseSymbols(symbols, elf, ELF64_FILE));
+    ASSERT_FALSE(DfxSymbols::AddSymbolsByPlt(symbols, nullptr, ELF64_FILE));
+    GTEST_LOG_(INFO) << symbols[0].module_;
     GTEST_LOG_(INFO) << "DfxSymbolsTest002: end.";
 }
 
