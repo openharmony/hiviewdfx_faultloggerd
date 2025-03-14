@@ -145,6 +145,26 @@ __attribute__((noinline)) void Test001()
     Test002();
 }
 
+__attribute__((noinline)) void TestMaskSigDumpLocalInner()
+{
+    printf("TestMaskSigDumpLocalInner\n");
+    g_mutex.lock();
+    g_mutex.unlock();
+}
+
+__attribute__((noinline)) void TestMaskSigDumpLocal()
+{
+    sigset_t set;
+    sigemptyset(&set);
+    sigaddset(&set, SIGLOCAL_DUMP);
+    if (pthread_sigmask(SIG_BLOCK, &set, nullptr) != 0) {
+        printf("pthread sigmask failed, err(%d)\n", errno);
+    }
+    g_tid = gettid();
+    printf("TestMaskSigDumpLocal:%d\n", g_tid);
+    TestMaskSigDumpLocalInner();
+}
+
 /**
  * @tc.name: BacktraceLocalTest003
  * @tc.desc: test get backtrace of a child thread
@@ -646,17 +666,15 @@ HWTEST_F(BacktraceLocalTest, BacktraceLocalTest018, TestSize.Level2)
         return;
     }
     g_mutex.lock();
-    std::thread backtraceThread(Test001);
+    std::thread backtraceThread(TestMaskSigDumpLocal);
     sleep(1);
     if (g_tid <= 0) {
         FAIL() << "Failed to create child thread.\n";
     }
-    pthread_kill(g_tid, SIGSTOP);
     std::string str;
     ASSERT_TRUE(GetBacktraceStringByTid(str, g_tid, 0, false)) << str;
     ASSERT_TRUE(GetBacktraceStringByTidWithMix(str, g_tid, 0, false)) << str;
     ASSERT_TRUE(!GetProcessStacktrace().empty());
-    pthread_kill(g_tid, SIGCONT);
     g_mutex.unlock();
     g_tid = 0;
     if (backtraceThread.joinable()) {
