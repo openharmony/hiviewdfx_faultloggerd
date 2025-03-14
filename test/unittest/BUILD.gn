@@ -30,6 +30,7 @@ group("unittest") {
       "backtrace:unittest",
       "crash_exception:unittest",
       "dump_catcher:unittest",
+      "kernel_snapshot:unittest",
       "panic_handler:unittest",
       "rustc_demangle:unittest",
       "stacktrace_rust:unittest",

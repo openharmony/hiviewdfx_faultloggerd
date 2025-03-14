@@ -354,7 +354,7 @@ void CheckResourceUsage(uint32_t fdCount, uint32_t mapsCount, uint64_t memCount)
     printf("Memory Old: %lu\n", static_cast<unsigned long>(memCount));
 }
 
-std::string WaitCreateCrashFile(const std::string& prefix, const pid_t pid)
+std::string WaitCreateCrashFile(const std::string& prefix, pid_t pid, int retryCnt)
 {
     std::string fileName;
     int fd = inotify_init();
@@ -372,7 +372,6 @@ std::string WaitCreateCrashFile(const std::string& prefix, const pid_t pid)
     fd_set rfds;
     FD_ZERO(&rfds);
     FD_SET(fd, &rfds);
-    int retryCnt = 3;
     std::string fileNamePrefix = prefix + "-" + std::to_string(pid);
     while (retryCnt > 0) {
         int ret = select(fd + 1, &rfds, nullptr, nullptr, &timeoutVal);
