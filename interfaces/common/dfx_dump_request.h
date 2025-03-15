@@ -70,10 +70,6 @@ struct ProcessDumpRequest {
     int32_t pid;
     /** namespace process id */
     int32_t nsPid;
-    /** virtual process id */
-    int32_t vmPid;
-    /** virtual namespace process id */
-    int32_t vmNsPid;
     /** process user id */
     uint32_t uid;
     /** reserved field */
