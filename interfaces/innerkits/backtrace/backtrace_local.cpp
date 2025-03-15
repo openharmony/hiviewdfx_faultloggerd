@@ -55,7 +55,7 @@ bool GetBacktraceFramesByTid(std::vector<DfxFrame>& frames, int32_t tid, size_t 
 #endif
     }
     if (!ret) {
-        unw_addr_space_t as;
+        unw_addr_space_t as = nullptr;
         unw_init_local_address_space(&as);
         if (as == nullptr) {
             return ret;
@@ -122,13 +122,14 @@ bool GetBacktrace(std::string& out, bool fast, size_t maxFrameNums)
 
 bool GetBacktrace(std::string& out, size_t skipFrameNum, bool fast, size_t maxFrameNums, bool isJson)
 {
-    if (isJson) {
-#ifndef is_ohos_lite
-        return GetBacktraceJsonByTid(out, BACKTRACE_CURRENT_THREAD, skipFrameNum + 1, fast, maxFrameNums);
-#endif
-    } else {
+    if (!isJson) {
         return GetBacktraceStringByTid(out, BACKTRACE_CURRENT_THREAD, skipFrameNum + 1, fast, maxFrameNums);
     }
+#ifndef is_ohos_lite
+    return GetBacktraceJsonByTid(out, BACKTRACE_CURRENT_THREAD, skipFrameNum + 1, fast, maxFrameNums);
+#else
+    return false;
+#endif
 }
 
 bool PrintTrace(int32_t fd, size_t maxFrameNums)
@@ -161,7 +162,7 @@ static std::string GetStacktraceHeader()
 
 std::string GetProcessStacktrace(size_t maxFrameNums, bool isJson)
 {
-    unw_addr_space_t as;
+    unw_addr_space_t as = nullptr;
     unw_init_local_address_space(&as);
     if (as == nullptr) {
         return "";

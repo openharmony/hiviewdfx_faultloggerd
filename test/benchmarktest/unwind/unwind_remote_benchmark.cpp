@@ -185,7 +185,7 @@ static void RunCache(benchmark::State& state, void* data)
     LOGU("pid: %d", pid);
     TestScopedPidReaper reap(pid);
 
-    unw_addr_space_t as;
+    unw_addr_space_t as = nullptr;
     GetCacheUnwind(pid, as);
 
     for (const auto& _ : state) {
