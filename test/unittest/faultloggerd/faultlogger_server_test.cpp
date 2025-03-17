@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2024-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -27,6 +27,7 @@
 #include "dfx_socket_request.h"
 #include "dfx_util.h"
 #include "faultloggerd_client.h"
+#include "fault_kernel_snapshot.h"
 #include "faultloggerd_socket.h"
 #include "faultloggerd_test.h"
 #include "smart_fd.h"
@@ -420,6 +421,72 @@ HWTEST_F(FaultLoggerdServiceTest, FaultloggerdSocketAbnormalTest, TestSize.Level
     ASSERT_FALSE(ReadFileDescriptorFromSocket(sockFd, &fd, 1));
     ASSERT_FALSE(SendMsgToSocket(sockFd, nullptr, 0));
     ASSERT_FALSE(GetMsgFromSocket(sockFd, nullptr, 0));
+}
+
+/**
+ * @tc.name: AbnormalTest001
+ * @tc.desc: Service exception scenario test
+ * @tc.type: FUNC
+ */
+HWTEST_F(FaultLoggerdServiceTest, AbnormalTest001, TestSize.Level2)
+{
+    bool cur = StartConnect(-1, nullptr, 0);
+    ASSERT_FALSE(cur);
+    cur = StartConnect(0, nullptr, 0);
+    ASSERT_FALSE(cur);
+    int32_t sockFd = 0;
+    char* name = nullptr;
+    cur = StartListen(sockFd, name, 0);
+    ASSERT_FALSE(cur);
+}
+
+/**
+ * @tc.name: AbnormalTest002
+ * @tc.desc: Service exception scenario test
+ * @tc.type: FUNC
+ */
+HWTEST_F(FaultLoggerdServiceTest, AbnormalTest002, TestSize.Level2)
+{
+    bool cur = SendFileDescriptorToSocket(0, nullptr, 0);
+    ASSERT_FALSE(cur);
+    cur = SendFileDescriptorToSocket(0, nullptr, 1);
+    ASSERT_FALSE(cur);
+    int32_t fd = 0;
+    int32_t* fds = &fd;
+    cur = SendFileDescriptorToSocket(-1, fds, 1);
+    ASSERT_FALSE(cur);
+}
+
+/**
+ * @tc.name: AbnormalTest003
+ * @tc.desc: Service exception scenario test
+ * @tc.type: FUNC
+ */
+HWTEST_F(FaultLoggerdServiceTest, AbnormalTest003, TestSize.Level2)
+{
+    bool cur = SendMsgToSocket(0, nullptr, 0);
+    ASSERT_FALSE(cur);
+    void* data = reinterpret_cast<void*>(1);
+    cur = SendMsgToSocket(-1, data, 0);
+    ASSERT_FALSE(cur);
+    cur = SendMsgToSocket(0, data, 0);
+    ASSERT_FALSE(cur);
+}
+
+/**
+ * @tc.name: AbnormalTest004
+ * @tc.desc: Service exception scenario test
+ * @tc.type: FUNC
+ */
+HWTEST_F(FaultLoggerdServiceTest, AbnormalTest004, TestSize.Level2)
+{
+    bool cur = GetMsgFromSocket(0, nullptr, 0);
+    ASSERT_FALSE(cur);
+    void* data = reinterpret_cast<void*>(1);
+    cur = GetMsgFromSocket(-1, data, 0);
+    ASSERT_FALSE(cur);
+    cur = GetMsgFromSocket(0, data, 0);
+    ASSERT_FALSE(cur);
 }
 } // namespace HiviewDFX
 } // namespace OHOS
