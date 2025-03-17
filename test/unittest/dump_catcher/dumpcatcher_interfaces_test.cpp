@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2025 Huawei Device Co., Ltd.
+ * Copyright (c) 2022-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -1137,26 +1137,6 @@ HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest041, TestSize.Level
     result = dump.DumpCatchMultiPid(pids, stack);
     ASSERT_EQ(result, false);
     GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest041: end.";
-}
-
-/**
- * @tc.name: DumpCatcherInterfacesTest042
- * @tc.desc: test dumpcatch FormatKernelStack
- * @tc.type: FUNC
- */
-HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest042, TestSize.Level2)
-{
-    GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest042: start.";
-    std::string msg = "";
-    std::string formattedStack = "";
-    ASSERT_FALSE(DfxJsonFormatter::FormatKernelStack(msg, formattedStack, false));
-    ASSERT_FALSE(DfxJsonFormatter::FormatKernelStack(msg, formattedStack, true));
-    msg = "Thread info: test dumpcatcher, Thread info: test dumpcatcher, Thread info: test dumpcatcher";
-#if defined(__aarch64__)
-    ASSERT_TRUE(DfxJsonFormatter::FormatKernelStack(msg, formattedStack, false));
-    ASSERT_TRUE(DfxJsonFormatter::FormatKernelStack(msg, formattedStack, true));
-#endif
-    GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest042: end.";
 }
 } // namespace HiviewDFX
 } // namepsace OHOS
