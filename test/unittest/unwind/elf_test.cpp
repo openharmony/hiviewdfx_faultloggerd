@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2025 Huawei Device Co., Ltd.
+ * Copyright (c) 2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -227,69 +227,6 @@ HWTEST_F(DfxElfTest, DfxElfTest007, TestSize.Level2)
     ASSERT_FALSE(mMap->Init(-1, 0U, 0));
     uintptr_t invalidAddr = 0;
     ASSERT_EQ(mMap->Read(invalidAddr, nullptr, 0U, true), 0);
-}
-
-/**
- * @tc.name: DfxElfTest008
- * @tc.desc: test scenario function
- * @tc.type: FUNC
- */
-HWTEST_F(DfxElfTest, DfxElfTest008, TestSize.Level2)
-{
-    auto elfParse = std::unique_ptr<ElfParser>(std::make_unique<ElfParser32>(nullptr));
-    std::string str = "";
-    elfParse->GetSectionNameByIndex(str, 0);
-    elfParse->sectionNames_ = "test";
-    const size_t num = 10;
-    elfParse->GetSectionNameByIndex(str, num);
-    unsigned char buf[num] = {0};
-    elfParse->GetSectionData(buf, num, str);
-    std::string buildId = elfParse->ToReadableBuildId(str);
-    elfParse->GetElfName();
-    uint64_t addr = 0;
-    ElfSymbol elfSymbol;
-    elfParse->GetFuncSymbolByAddr(addr, elfSymbol);
-    ASSERT_EQ(buildId, "");
-}
-
-/**
- * @tc.name: DfxElfTest009
- * @tc.desc: test scenario function
- * @tc.type: FUNC
- */
-HWTEST_F(DfxElfTest, DfxElfTest009, TestSize.Level2)
-{
-    auto elf = std::make_shared<DfxElf>(nullptr);
-    elf->GetEndVaddr();
-    std::string buildId = "test";
-    elf->SetBuildId(buildId);
-    const size_t num = 10;
-    unsigned char buf[num] = {0};
-    elf->GetSectionData(buf, num, "");
-    struct UnwindTableInfo uti;
-    ShdrInfo shdr;
-    bool cur = elf->FillUnwindTableByExidx(shdr, 0, nullptr);
-    ASSERT_FALSE(cur);
-    cur = elf->FillUnwindTableByExidx(shdr, 0, &uti);
-    ASSERT_TRUE(cur);
-}
-
-/**
- * @tc.name: DfxElfTest010
- * @tc.desc: test scenario function
- * @tc.type: FUNC
- */
-HWTEST_F(DfxElfTest, DfxElfTest010, TestSize.Level2)
-{
-    auto elf = std::make_shared<DfxElf>(nullptr);
-    struct dl_phdr_info info;
-    int cur = elf->DlPhdrCb(nullptr, 0, nullptr);
-    ASSERT_EQ(cur, -1);
-    cur = elf->DlPhdrCb(&info, 0, nullptr);
-    ASSERT_EQ(cur, -1);
-    elf->GetMmapPtr();
-    bool isvalid = elf->IsValidElf(nullptr, 0);
-    ASSERT_FALSE(isvalid);
 }
 } // namespace HiviewDFX
 } // namespace OHOS

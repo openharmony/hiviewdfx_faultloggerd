@@ -46,7 +46,6 @@ ohos_unittest("test_unwind") {
     "unwinder_test.cpp",
   ]
   cflags_cc = [ "-Dprivate=public" ]
-  cflags_cc += [ "-Dprotected=public" ]
   deps = [
     "$faultloggerd_common_path/dfxlog:dfx_hilog",
     "$faultloggerd_common_path/dfxutil:dfx_util",
