@@ -27,7 +27,6 @@
 #include "dfx_socket_request.h"
 #include "dfx_util.h"
 #include "faultloggerd_client.h"
-#include "fault_kernel_snapshot.h"
 #include "faultloggerd_socket.h"
 #include "faultloggerd_test.h"
 #include "smart_fd.h"

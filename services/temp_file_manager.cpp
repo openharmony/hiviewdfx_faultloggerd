@@ -74,6 +74,7 @@ uint64_t GetTimeFromFileName(const std::string& fileName)
     constexpr char timeStrSplit = '-';
     constexpr int decimal = 10;
     auto timeStr = fileName.substr(fileName.find_last_of(timeStrSplit) + 1, timeStrLen);
+    errno = 0;
     uint64_t num = strtoull(timeStr.c_str(), nullptr, decimal);
     if (errno == ERANGE) {
         DFXLOGE("%{public}s :: invalid timeStr for file: %{public}s", TEMP_FILE_MANAGER_TAG, timeStr.c_str());
