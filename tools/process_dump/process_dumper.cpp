@@ -740,7 +740,7 @@ bool ProcessDumper::InitUnwinder(const ProcessDumpRequest& request, pid_t &vmPid
     }
     pid_t realPid = 0;
     ReadPids(request, realPid, vmPid, *process_);
-    if (realPid == 0 || vmPid == 0) {
+    if (realPid <= 0 || vmPid <= 0) {
         ReportCrashException(request.processName, request.pid, request.uid, CrashExceptionCode::CRASH_DUMP_EREADPID);
         DFXLOGE("Failed to read real pid!");
         dumpRes = DumpErrorCode::DUMP_EREADPID;
