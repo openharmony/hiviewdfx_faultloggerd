@@ -322,17 +322,6 @@ static bool CheckTestGetCrashObjMemory(const string& filePath, const pid_t& pid)
 }
 #endif
 
-static bool CheckTestStackCorruption(const string& filePath, const pid_t& pid)
-{
-    string log[] = {
-        "Pid:" + to_string(pid), "Uid", ":crasher", "Tid:", "#00", "Registers:",
-        REGISTERS, "ExtraCrashInfo(Unwindstack):", "reparsing", "FaultStack:", "Maps:", "/crasher"
-    };
-    int minRegIdx = 5; // 5 : index of first REGISTERS - 1
-    int expectNum = sizeof(log) / sizeof(log[0]);
-    return CheckKeyWords(filePath, log, expectNum, minRegIdx) == expectNum;
-}
-
 static void RequestMemory(char* msg)
 {
     const size_t count = 5;
@@ -1302,7 +1291,7 @@ HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest108, TestSize.Level2)
         GTEST_LOG_(ERROR) << "Trigger Crash Failed.";
         FAIL();
     }
-    EXPECT_TRUE(CheckTestStackCorruption(fileName, pid)) << "FaultLoggerdSystemTest108 Failed";
+    EXPECT_TRUE(CheckCppCrashAllLabelKeywords(fileName, pid)) << "FaultLoggerdSystemTest108 Failed";
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest108: end.";
 }
 
@@ -1628,7 +1617,7 @@ HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest123, TestSize.Level2)
         string cmd = "SIGABRT";
         string fileName;
         pid_t pid = TriggerCrasherAndGetFileName(cmd, CRASHER_CPP, fileName, 1, crashDir);
-    
+
         string startFaultLoggerd = "service_control start faultloggerd";
         (void)ExecuteCommands(startFaultLoggerd);
         GTEST_LOG_(INFO) << "test pid(" << pid << ")"  << " cppcrash file name : " << fileName;
