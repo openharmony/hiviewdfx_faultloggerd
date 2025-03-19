@@ -80,7 +80,6 @@ int pthread_sigmask(int how, const sigset_t *restrict set, sigset_t *restrict ol
             if (sigismember(set, i) && (IsPlatformHandleSignal(i)) &&
                 ((how == SIG_BLOCK) || (how == SIG_SETMASK))) {
                 DFXLOGI("%{public}d:%{public}d pthread_sigmask signal(%{public}d)\n", getpid(), gettid(), i);
-                LogBacktrace();
             }
         }
     }
@@ -113,7 +112,6 @@ sighandler_t signal(int signum, sighandler_t handler)
 {
     if (IsPlatformHandleSignal(signum)) {
         DFXLOGI("%{public}d register signal handler for signal(%{public}d)\n", getpid(), signum);
-        LogBacktrace();
     }
 
     if (g_hookedSignal == NULL) {
@@ -178,7 +176,6 @@ int sigaction(int sig, const struct sigaction *restrict act, struct sigaction *r
 
     if (IsPlatformHandleSignal(sig) && (act == NULL || !IsSigactionAddr((uintptr_t)(act->sa_sigaction)))) {
         DFXLOGI("%{public}d call sigaction and signo is %{public}d\n", getpid(), sig);
-        LogBacktrace();
     }
 
     return g_hookedSigaction(sig, act, oact);

@@ -132,7 +132,7 @@ void DfxUnwindAsyncThread::UnwindThreadFallback()
     if (unwinder_.GetFrames().size() > 0) {
         return;
     }
-    // As we failed to init libunwind, just print pc and lr for first two frames
+    // As we failed to init libunwinder, just print pc and lr for first two frames
     std::shared_ptr<DfxRegs> regs = thread_.GetThreadRegs();
     if (regs == nullptr) {
         DfxRingBufferWrapper::GetInstance().AppendMsg("RegisterInfo is not existed for crash process");
