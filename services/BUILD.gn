@@ -15,7 +15,6 @@ import("//base/hiviewdfx/faultloggerd/faultloggerd.gni")
 
 faultloggerd_sources = [
   "epoll_manager.cpp",
-  "fault_kernel_snapshot.cpp",
   "fault_logger_config.cpp",
   "fault_logger_daemon.cpp",
   "fault_logger_server.cpp",
@@ -43,7 +42,6 @@ if (defined(ohos_lite)) {
       "$faultloggerd_interfaces_path/common",
       "$faultloggerd_path/common/dfxlog",
       "$faultloggerd_path/common/dfxutil",
-      "$faultloggerd_path/tools/process_dump",
       "$hilog_lite_include_path",
       "$faultloggerd_path/interfaces/innerkits/faultloggerd_client/include",
       "$faultloggerd_path/interfaces/innerkits/faultloggerd_client",
@@ -75,17 +73,26 @@ if (defined(ohos_lite)) {
     }
   }
 } else {
-  faultloggerd_sources += [ "fault_logger_pipe.cpp" ]
+  faultloggerd_sources += [
+    "./snapshot/kernel_snapshot_kernel_frame.cpp",
+    "./snapshot/kernel_snapshot_manager.cpp",
+    "./snapshot/kernel_snapshot_parser.cpp",
+    "./snapshot/kernel_snapshot_printer.cpp",
+    "./snapshot/kernel_snapshot_processor_impl.cpp",
+    "./snapshot/kernel_snapshot_reporter.cpp",
+    "./snapshot/kernel_snapshot_util.cpp",
+    "fault_logger_pipe.cpp",
+  ]
 
   config("faultloggerd_config") {
     visibility = [ ":*" ]
 
     include_dirs = [
       ".",
+      "./snapshot",
       "$faultloggerd_interfaces_path/common",
       "$faultloggerd_path/common/dfxlog",
       "$faultloggerd_path/common/dfxutil",
-      "$faultloggerd_path/tools/process_dump",
       "$faultloggerd_path/interfaces/innerkits/faultloggerd_client",
       "$faultloggerd_path/interfaces/innerkits/signal_handler",
     ]

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -13,16 +13,20 @@
  * limitations under the License.
  */
 
-#ifndef FAULT_KERNEL_SNAPSHOT_H
-#define FAULT_KERNEL_SNAPSHOT_H
+#ifndef I_KERNEL_SNAPSHOT_PRINTER_H
+#define I_KERNEL_SNAPSHOT_PRINTER_H
+
+#include <vector>
+
+#include "kernel_snapshot_data.h"
 
 namespace OHOS {
 namespace HiviewDFX {
-class FaultKernelSnapshot {
+class IKernelSnapshotPrinter {
 public:
-    void StartMonitor();
+    virtual void SaveSnapshots(std::vector<CrashMap>& outputs) = 0;
+    virtual ~IKernelSnapshotPrinter() = default;
 };
 } // namespace HiviewDFX
 } // namespace OHOS
-
 #endif
