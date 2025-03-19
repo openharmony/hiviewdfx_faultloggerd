@@ -34,17 +34,13 @@ if (!defined(ohos_lite)) {
     install_enable = true
     defines = [ "DFX_LOG_HILOG_BASE" ]
 
-    sources = [
-      "dfx_hook_utils.c",
-      "dfx_signal_hook.c",
-    ]
+    sources = [ "dfx_signal_hook.c" ]
 
     deps = [ "$faultloggerd_path/common/dfxlog:dfx_hilog_base" ]
 
     external_deps = [
       "c_utils:utils",
       "hilog:libhilog_base",
-      "libunwind:libunwind",
     ]
 
     part_name = "faultloggerd"
@@ -59,17 +55,13 @@ if (!defined(ohos_lite)) {
     install_enable = true
     defines = [ "DFX_LOG_HILOG_BASE" ]
 
-    sources = [
-      "dfx_exit_hook.c",
-      "dfx_hook_utils.c",
-    ]
+    sources = [ "dfx_exit_hook.c" ]
 
     deps = [ "$faultloggerd_path/common/dfxlog:dfx_hilog_base" ]
 
     external_deps = [
       "c_utils:utils",
       "hilog:libhilog_base",
-      "libunwind:libunwind",
     ]
 
     part_name = "faultloggerd"

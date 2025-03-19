@@ -60,8 +60,6 @@ int kill(pid_t pid, int sig)
     DFXLOGF("%{public}d send signal(%{public}d) to %{public}d", getpid(), sig, pid);
     if ((sig == SIGKILL) && (pid == getpid())) {
         abort();
-    } else if (sig == SIGKILL) {
-        LogBacktrace();
     }
 
     if (g_hookedKill == NULL) {
@@ -74,9 +72,6 @@ int kill(pid_t pid, int sig)
 void exit(int code)
 {
     DFXLOGF("%{public}d call exit with code %{public}d", getpid(), code);
-    if (!g_abortWhenExit) {
-        LogBacktrace();
-    }
 
     if ((!g_abortWhenExit) && (g_hookedExit != NULL)) {
         g_hookedExit(code);
@@ -90,9 +85,6 @@ void exit(int code)
 void _exit(int code)
 {
     DFXLOGF("%{public}d call exit with code %{public}d", getpid(), code);
-    if (!g_abortWhenExit) {
-        LogBacktrace();
-    }
 
     if ((!g_abortWhenExit) && (g_hookedExitEx != NULL)) {
         g_hookedExitEx(code);

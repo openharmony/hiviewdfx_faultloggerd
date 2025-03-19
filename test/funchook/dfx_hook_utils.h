@@ -29,12 +29,4 @@ static void GenFuncName(void) \
     } \
     DFXLOGE("Failed to find hooked %{public}s use RTLD_DEFAULT\n", FuncName); \
 }
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-void LogBacktrace(void);
-#ifdef __cplusplus
-}
-#endif
 #endif

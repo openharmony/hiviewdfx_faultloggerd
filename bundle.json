@@ -34,7 +34,6 @@
         "init",
         "ipc",
         "jsoncpp",
-        "libunwind",
         "libuv",
         "lzma",
         "selinux"

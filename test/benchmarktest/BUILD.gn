@@ -17,9 +17,6 @@ group("benchmarktest") {
   if (!defined(ohos_lite)) {
     testonly = true
     deps = [ "unwinder:benchmarktest" ]
-    if (has_libunwind) {
-      deps += [ "unwind:benchmarktest" ]
-    }
     if (has_libunwindstack) {
       deps += [ "unwindstack:benchmarktest" ]
     }
