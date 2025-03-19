@@ -769,12 +769,10 @@ int ProcessDumper::InitProcessInfo(ProcessDumpRequest& request)
     }
     process_->processInfo_.uid = request.uid;
     process_->recycleTid_ = request.recycleTid;
-    if (request.msg.type == MESSAGE_FATAL) {
+    if (request.msg.type == MESSAGE_FATAL || request.msg.type == MESSAGE_CALLBACK) {
         if (!IsOversea() || IsBetaVersion()) {
             process_->SetFatalMessage(request.msg.body);
         }
-    } else if (request.msg.type == MESSAGE_CALLBACK) {
-        process_->extraCrashInfo += StringPrintf("ExtraCrashInfo(Callback):\n%s\n", request.msg.body);
     }
 
     if (!InitKeyThread(request)) {
