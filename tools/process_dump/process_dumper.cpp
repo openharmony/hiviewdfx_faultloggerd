@@ -579,10 +579,8 @@ void ProcessDumper::UpdateFatalMessageWhenDebugSignal(const ProcessDumpRequest& 
 std::string ProcessDumper::ReadCrashObjString(pid_t tid, uintptr_t addr) const
 {
     DFXLOGI("Start read string type of crashObj.");
-    std::string stringContent = "ExtraCrashInfo(String):\n";
     constexpr int bufLen = 256;
-    auto readStr = ReadStringByPtrace(tid, addr, sizeof(long) * bufLen);
-    stringContent += (readStr + "\n");
+    std::string stringContent = ReadStringByPtrace(tid, addr, sizeof(long) * bufLen);
     return stringContent;
 }
 
@@ -620,7 +618,7 @@ void ProcessDumper::GetCrashObj(const ProcessDumpRequest& request)
     uintptr_t addr = request.crashObj & 0xffffffffffffff;
     std::vector<size_t> memorylengthTable = {0, 64, 256, 1024, 2048, 4096};
     if (type == 0) {
-        process_->extraCrashInfo += ReadCrashObjString(request.nsPid, addr);
+        process_->SetFatalMessage(ReadCrashObjString(request.nsPid, addr));
     } else if (type < memorylengthTable.size()) {
         process_->extraCrashInfo += ReadCrashObjMemory(request.nsPid, addr, memorylengthTable[type]);
     }
