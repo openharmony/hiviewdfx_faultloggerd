@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 Huawei Device Co., Ltd.
+ * Copyright (c) 2022-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -19,6 +19,7 @@
 #include <string>
 #include <vector>
 
+#include "dfx_accessors.h"
 #include "dfx_elf.h"
 #include "dfx_maps.h"
 #include "dfx_memory.h"
@@ -484,6 +485,32 @@ HWTEST_F(DfxMemoryTest, DfxMemoryTest013, TestSize.Level2)
     EXPECT_FALSE(memory->Read<uint32_t>(addr, nullptr, false));
     EXPECT_FALSE(memory->Read<uint64_t>(addr, nullptr, false));
     GTEST_LOG_(INFO) << "DfxMemoryTest013: end.";
+}
+
+/**
+ * @tc.name: DfxMemoryTest014
+ * @tc.desc: test DfxMemory class Read in error case
+ * @tc.type: FUNC
+ */
+HWTEST_F(DfxMemoryTest, DfxMemoryTest014, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "DfxMemoryTest014: start.";
+    auto memory1 = std::make_shared<DfxMemory>(UNWIND_TYPE_CUSTOMIZE, nullptr);
+    uintptr_t addr = 0;
+    int val = memory1->ReadEncodedValue(addr, DW_EH_PE_omit);
+    EXPECT_EQ(val, 0);
+    memory1->ReadEncodedValue(addr, DW_EH_PE_aligned);
+    std::shared_ptr<DfxMap> map = nullptr;
+    auto memory2 = std::make_shared<DfxMemory>(UNWIND_TYPE_CUSTOMIZE_LOCAL, nullptr);
+    auto memory3 = std::make_shared<DfxMemory>((UnwindType)1, nullptr);
+    val = memory2->GetMapByPc(0, map);
+    EXPECT_EQ(val, UNW_ERROR_INVALID_MEMORY);
+    UnwindTableInfo uti;
+    val = memory2->FindUnwindTable(0, uti);
+    EXPECT_EQ(val, UNW_ERROR_INVALID_MEMORY);
+    bool cur = DfxAccessors::GetMapByPcAndCtx(0, map, nullptr);
+    EXPECT_FALSE(cur);
+    GTEST_LOG_(INFO) << "DfxMemoryTest014: end.";
 }
 }
 } // namespace HiviewDFX

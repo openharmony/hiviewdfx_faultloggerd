@@ -119,6 +119,7 @@ if (defined(ohos_lite)) {
       "faultloggerd_test.cpp",
       "temp_file_manager_test.cpp",
     ]
+    cflags_cc = [ "-Dprivate=public" ]
     defines = [ "FAULTLOGGERD_TEST" ]
     deps = [
       "$faultloggerd_frameworks_path/localhandler:dfx_local_handler_src",
@@ -141,7 +142,7 @@ if (defined(ohos_lite)) {
 
     if (build_selinux) {
       external_deps += [ "selinux:libselinux" ]
-      cflags_cc = [ "-DHAS_LIB_SELINUX" ]
+      cflags_cc += [ "-DHAS_LIB_SELINUX" ]
     }
   }
 
