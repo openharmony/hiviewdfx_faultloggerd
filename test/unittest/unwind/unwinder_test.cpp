@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023-2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2023-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -829,6 +829,34 @@ HWTEST_F(UnwinderTest, UnwindLocalWithTidTest001, TestSize.Level2)
         unwThread.join();
     }
     GTEST_LOG_(INFO) << "UnwindLocalWithTidTest001: end.";
+}
+
+/**
+ * @tc.name: UnwindLocalWithTidTest002
+ * @tc.desc: test unwinder UnwindLocalWithTid interface
+ *  in local case
+ * @tc.type: FUNC
+ */
+HWTEST_F(UnwinderTest, UnwindLocalWithTidTest002, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "UnwindLocalWithTidTest002: start.";
+    auto unwinder = std::make_shared<Unwinder>();
+    ASSERT_FALSE(unwinder->UnwindLocalWithTid(-1));
+    ASSERT_FALSE(unwinder->UnwindLocalWithTid(gettid()));
+    UnwindContext context;
+    uintptr_t pc, sp;
+    ASSERT_FALSE(unwinder->UnwindByFp(&context));
+    ASSERT_FALSE(unwinder->FpStep(pc, sp, nullptr));
+    ASSERT_FALSE(unwinder->Step(pc, sp, &context));
+    std::vector<DfxFrame> frames;
+    std::vector<uintptr_t> pcs;
+    unwinder->GetFramesByPcs(frames, pcs);
+    std::string funcName = "";
+    uint64_t funcOffset = 0;
+    ASSERT_FALSE(unwinder->GetSymbolByPc(pc, nullptr, funcName, funcOffset));
+    ASSERT_FALSE(unwinder->UnwindLocalByOtherTid(-1));
+    ASSERT_FALSE(unwinder->UnwindLocalByOtherTid(gettid()));
+    GTEST_LOG_(INFO) << "UnwindLocalWithTidTest002: end.";
 }
 
 #if defined(__x86_64__)

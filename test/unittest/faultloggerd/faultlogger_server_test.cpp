@@ -26,6 +26,8 @@
 #include "dfx_log.h"
 #include "dfx_socket_request.h"
 #include "dfx_util.h"
+#include "fault_logger_daemon.h"
+#include "fault_logger_pipe.h"
 #include "faultloggerd_client.h"
 #include "faultloggerd_socket.h"
 #include "faultloggerd_test.h"
@@ -486,6 +488,21 @@ HWTEST_F(FaultLoggerdServiceTest, AbnormalTest004, TestSize.Level2)
     ASSERT_FALSE(cur);
     cur = GetMsgFromSocket(0, data, 0);
     ASSERT_FALSE(cur);
+}
+
+/**
+ * @tc.name: AbnormalTest005
+ * @tc.desc: Service exception scenario test
+ * @tc.type: FUNC
+ */
+HWTEST_F(FaultLoggerdServiceTest, AbnormalTest005, TestSize.Level2)
+{
+    FaultLoggerDaemon::GetInstance().GetEpollManager(EpollManagerType::HELPER_SERVER);
+    EpollManager* manager = FaultLoggerDaemon::GetInstance().GetEpollManager((EpollManagerType)(-1));
+    ASSERT_EQ(manager, nullptr);
+    int fd = -1;
+    FaultLoggerPipe faultloggerPipe;
+    faultloggerPipe.Close(fd);
 }
 } // namespace HiviewDFX
 } // namespace OHOS
