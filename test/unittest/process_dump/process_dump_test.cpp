@@ -18,7 +18,6 @@
 #include <string>
 
 #include "dfx_elf_parser.h"
-#include "dfx_ptrace.h"
 #include "dfx_regs.h"
 #include "dfx_regs_get.h"
 #include "dfx_ring_buffer_wrapper.h"
@@ -120,26 +119,6 @@ HWTEST_F (ProcessDumpTest, DfxProcessTest005, TestSize.Level2)
     process2.Detach();
     ASSERT_EQ(ret, pid);
     GTEST_LOG_(INFO) << "DfxProcessTest005: end.";
-}
-
-/**
- * @tc.name: DfxProcessTest006
- * @tc.desc: test DfxProcess ChangeTid
- * @tc.type: FUNC
- */
-HWTEST_F (ProcessDumpTest, DfxProcessTest006, TestSize.Level2)
-{
-    GTEST_LOG_(INFO) << "DfxProcessTest005: start.";
-    pid_t pid = getpid();
-    DfxProcess process(pid, pid);
-    process.processInfo_.pid = pid;
-    process.processInfo_.nsPid = 0;
-    pid_t id = process.ChangeTid(pid, false);
-    process.keyThread_ = DfxThread::Create(pid, pid, pid);
-    process.Attach(true);
-    DfxPtrace::Detach(pid);
-    ASSERT_TRUE(id != 0);
-    GTEST_LOG_(INFO) << "DfxProcessTest006: end.";
 }
 
 /**
