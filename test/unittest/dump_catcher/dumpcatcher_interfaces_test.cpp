@@ -1151,7 +1151,7 @@ HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest042, TestSize.Level
     std::string formattedStack = "";
     ASSERT_FALSE(DfxJsonFormatter::FormatKernelStack(msg, formattedStack, false));
     ASSERT_FALSE(DfxJsonFormatter::FormatKernelStack(msg, formattedStack, true));
-    msg = "Thread info: pid=0 test dumpcatcher, Thread info: pid=0 test dumpcatcher";
+    msg = "Thread info: test dumpcatcher, Thread info: test dumpcatcher, Thread info: test dumpcatcher";
 #if defined(__aarch64__)
     ASSERT_TRUE(DfxJsonFormatter::FormatKernelStack(msg, formattedStack, false));
     ASSERT_TRUE(DfxJsonFormatter::FormatKernelStack(msg, formattedStack, true));
