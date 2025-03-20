@@ -146,7 +146,7 @@ void DfxProcess::Detach()
 
 void DfxProcess::SetFatalMessage(const std::string &msg)
 {
-    fatalMsg_ = msg;
+    fatalMsg_ += msg;
 }
 
 std::string DfxProcess::GetFatalMessage() const
