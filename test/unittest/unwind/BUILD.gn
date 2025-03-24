@@ -21,6 +21,7 @@ ohos_unittest("test_unwind") {
   visibility = [ "*:*" ]
   include_dirs = [
     "$faultloggerd_interfaces_path/common",
+    "$faultloggerd_interfaces_path/nonlinux",
     "$faultloggerd_path/test/unittest/unwind/include",
     "$faultloggerd_path/test/utils",
   ]

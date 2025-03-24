@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2023-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -1156,6 +1156,26 @@ HWTEST_F(DwarfTest, DwarfTest013, TestSize.Level2)
 }
 
 /**
+ * @tc.name: DwarfTest014
+ * @tc.desc: test dwarf logical oprations
+ * @tc.type: FUNC
+ */
+HWTEST_F(DwarfTest, DwarfTest014, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "DwarfTest014: start.\n";
+    auto memory = std::make_shared<DfxMemory>();
+    auto unwindEntryParser = std::make_shared<DwarfEntryParser>(memory);
+    UnwindTableInfo uti;
+    UnwindEntryInfo uei;
+    bool ret = unwindEntryParser->LinearSearchEntry(0, uti, uei);
+    ASSERT_FALSE(ret);
+    FrameDescEntry fdeInfo;
+    uintptr_t addr = 0;
+    unwindEntryParser->GetCieOrFde(addr, fdeInfo);
+    GTEST_LOG_(INFO) << "DwarfTest014: end.\n";
+}
+
+/**
  * @tc.name: DfxInstructionsTest001
  * @tc.desc: test DfxInstructions Flush
  * @tc.type: FUNC
@@ -1165,8 +1185,8 @@ HWTEST_F(DwarfTest, DfxInstructionsTest001, TestSize.Level2)
     GTEST_LOG_(INFO) << "DfxInstructionsTest001: start.\n";
     auto instructions = std::make_shared<DfxInstructions>();
     auto regs = DfxRegs::Create();
-    auto memory = std::make_shared<DfxMemory>();
     RegLoc loc;
+    auto memory = std::make_shared<DfxMemory>();
     uintptr_t val;
     loc.type = REG_LOC_VAL_OFFSET;
     bool ret = instructions->Flush(*(regs.get()), memory, 0, loc, val);
