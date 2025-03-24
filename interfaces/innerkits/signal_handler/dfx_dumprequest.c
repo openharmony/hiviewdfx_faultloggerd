@@ -305,10 +305,15 @@ static void SafeDelayOneMillSec(void)
     OHOS_TEMP_FAILURE_RETRY(nanosleep(&ts, &ts));
 }
 
-static bool IsWaitpidTimeout(pid_t pid, int timeout)
+static bool WaitProcessExitTimeout(pid_t pid, int timeoutMs)
 {
-    while (timeout > 0) {
-        int res = waitpid(pid, NULL, WNOHANG);
+    if (timeoutMs <= 0) {
+        DFXLOGE("Invalid timeout value(%{public}d)", timeoutMs);
+        return false;
+    }
+    int status;
+    while (timeoutMs > 0) {
+        int res = waitpid(pid, &status, WNOHANG);
         if (res > 0) {
             break;
         } else if (res < 0) {
@@ -316,11 +321,18 @@ static bool IsWaitpidTimeout(pid_t pid, int timeout)
             break;
         }
         SafeDelayOneMillSec();
-        timeout--;
-        if (timeout == 0) {
-            return true;
+        timeoutMs--;
+        if (timeoutMs == 0) {
+            DFXLOGI("waitpid %{public}d timeout", pid);
+            kill(pid, SIGKILL);
+            FillCrashExceptionAndReport(CRASH_SIGNAL_EWAITPIDTIMEOUT);
+            return false;
         }
     }
+    if (WIFEXITED(status) && WEXITSTATUS(status) == 0) {
+        return true;
+    }
+    DFXLOGE("dummy processdump exit with error(%{public}d)", WEXITSTATUS(status));
     return false;
 }
 
@@ -334,15 +346,15 @@ static bool StartProcessdump(void)
     } else if (pid == 0) {
         if (!InitPipe()) {
             DFXLOGE("init pipe fail");
-            _exit(0);
+            _exit(errno);
         }
         pid_t processDumpPid = ForkBySyscall();
         if (processDumpPid < 0) {
             DFXLOGE("Failed to fork processdump(%{public}d)", errno);
-            _exit(0);
+            _exit(errno);
         } else if (processDumpPid > 0) {
-            ReadProcessDumpGetRegsMsg();
-            _exit(0);
+            int ret = ReadProcessDumpGetRegsMsg() == true ? 0 : errno;
+            _exit(ret);
         } else {
             uint64_t endTime;
             int tid;
@@ -363,15 +375,7 @@ static bool StartProcessdump(void)
             _exit(0);
         }
     }
-
-    int timeOutCnt = 3000; // 3000 : 3 sec timeout
-    if (IsWaitpidTimeout(pid, timeOutCnt)) {
-        DFXLOGI("waitpid %{public}d timeout", pid);
-        kill(pid, SIGKILL);
-        FillCrashExceptionAndReport(CRASH_SIGNAL_EWAITPIDTIMEOUT);
-        return false;
-    }
-    return true;
+    return WaitProcessExitTimeout(pid, 3000); // 3000 : 3 sec timeout
 }
 
 static bool StartVMProcessUnwind(void)
