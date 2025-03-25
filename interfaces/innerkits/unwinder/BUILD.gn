@@ -184,13 +184,17 @@ if (defined(ohos_lite)) {
     ]
 
     version_script = "libunwinder.map"
-    public_external_deps = [ "lzma:lzma_shared" ]
     external_deps = [
       "bounds_checking_function:libsec_shared",
       "c_utils:utils",
       "hilog:libhilog",
       "init:libbegetutil",
     ]
+
+    if (is_ohos && !is_mingw && !is_emulator) {
+      external_deps += [ "lzma:lzma_shared" ]
+    }
+
     install_images = [
       "system",
       "updater",
@@ -223,12 +227,16 @@ if (defined(ohos_lite)) {
       "$faultloggerd_common_path/trace:dfx_trace_dlsym",
     ]
 
-    public_external_deps = [ "lzma:lzma_shared" ]
     external_deps = [
       "bounds_checking_function:libsec_shared",
       "c_utils:utils",
       "hilog:libhilog",
     ]
+
+    if (is_ohos && !is_mingw && !is_emulator) {
+      external_deps += [ "lzma:lzma_shared" ]
+    }
+
     part_name = "faultloggerd"
     subsystem_name = "hiviewdfx"
   }
@@ -254,12 +262,16 @@ if (defined(ohos_lite)) {
       "$faultloggerd_common_path/trace:dfx_trace_dlsym_static",
     ]
 
-    public_external_deps = [ "lzma:lzma_static" ]
     external_deps = [
       "bounds_checking_function:libsec_static",
       "c_utils:utilsbase",
       "hilog:libhilog_base",
     ]
+
+    if (is_ohos && !is_mingw && !is_emulator) {
+      external_deps += [ "lzma:lzma_static" ]
+    }
+
     part_name = "faultloggerd"
     subsystem_name = "hiviewdfx"
   }
@@ -288,12 +300,16 @@ if (defined(ohos_lite)) {
       "$faultloggerd_common_path/trace:dfx_trace_dlsym",
     ]
 
-    public_external_deps = [ "lzma:lzma_shared" ]
     external_deps = [
       "bounds_checking_function:libsec_shared",
       "c_utils:utils",
       "hilog:libhilog",
     ]
+
+    if (is_ohos && !is_mingw && !is_emulator) {
+      external_deps += [ "lzma:lzma_shared" ]
+    }
+
     part_name = "faultloggerd"
     subsystem_name = "hiviewdfx"
   }
@@ -336,14 +352,16 @@ if (defined(ohos_lite)) {
       "src/memory/dfx_memory.cpp",
       "src/utils/unwinder_config.cpp",
     ]
-    if (is_ohos && !is_mingw && !is_emulator) {
-      public_external_deps = [ "lzma:lzma_static" ]
-    }
     deps = [
       "$faultloggerd_common_path/dfxutil:dfx_util_host",
       "$faultloggerd_common_path/trace:dfx_trace_dlsym",
     ]
     external_deps = [ "bounds_checking_function:libsec_static" ]
+
+    if (is_ohos && !is_mingw && !is_emulator) {
+      external_deps += [ "lzma:lzma_static" ]
+    }
+
     if (is_ohos) {
       external_deps += [ "c_utils:utils" ]
     }
