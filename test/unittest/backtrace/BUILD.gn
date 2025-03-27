@@ -92,7 +92,6 @@ ohos_unittest("backtrace_utils_test_static") {
     defines += [ "USE_JEMALLOC_DFX_INTF" ]
   }
   branch_protector_ret = "pac_ret"
-  public_external_deps = [ "lzma:lzma_static" ]
   external_deps = [
     "c_utils:utilsbase",
     "googletest:gtest_main",
@@ -122,7 +121,6 @@ ohos_unittest("backtrace_local_test_static") {
     "$faultloggerd_path/test/utils:dfx_test_util",
   ]
   branch_protector_ret = "pac_ret"
-  public_external_deps = [ "lzma:lzma_static" ]
   external_deps = [
     "bounds_checking_function:libsec_static",
     "c_utils:utilsbase",

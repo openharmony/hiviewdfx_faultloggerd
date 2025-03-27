@@ -152,7 +152,6 @@ ohos_unittest("test_exidx") {
     "$faultloggerd_common_path/dfxutil:dfx_util",
     "$faultloggerd_common_path/trace:dfx_trace_dlsym",
   ]
-  public_external_deps = [ "lzma:lzma_shared" ]
   external_deps = [
     "bounds_checking_function:libsec_shared",
     "c_utils:utils",
