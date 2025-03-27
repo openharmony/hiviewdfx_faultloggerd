@@ -85,32 +85,36 @@ DfxAccessorsLocal::~DfxAccessorsLocal(void)
     }
 }
 
-bool DfxAccessorsLocal::IsValidFrame(uintptr_t addr, uintptr_t stackBottom, uintptr_t stackTop)
-{
-    if (UNLIKELY(stackTop < stackBottom)) {
-        return false;
-    }
-    if ((addr >= stackBottom) && (addr + sizeof(uintptr_t) < stackTop)) {
-        return true;
-    }
-
-    if (CreatePipe()) {
-        return OHOS_TEMP_FAILURE_RETRY(syscall(SYS_write, pfd_[PIPE_WRITE], addr, sizeof(uintptr_t))) != -1;
-    }
-    return false;
-}
-
 NO_SANITIZE int DfxAccessorsLocal::AccessMem(uintptr_t addr, uintptr_t *val, void *arg)
 {
     if (val == nullptr) {
         return UNW_ERROR_INVALID_MEMORY;
     }
     UnwindContext* ctx = reinterpret_cast<UnwindContext *>(arg);
-    if ((ctx != nullptr) && (ctx->stackCheck == true) && (!IsValidFrame(addr, ctx->stackBottom, ctx->stackTop))) {
-        LOGU("%s", "Failed to access addr");
+    if (ctx == nullptr || ctx->stackCheck == false) {
+        *val = *reinterpret_cast<uintptr_t *>(addr);
+        return UNW_ERROR_NONE;
+    }
+    if (UNLIKELY(ctx->stackTop < ctx->stackBottom)) {
+        LOGU("Failed to access addr, the stackTop smaller than stackBottom");
         return UNW_ERROR_INVALID_MEMORY;
     }
-    *val = *reinterpret_cast<uintptr_t *>(addr);
+    if ((addr >= ctx->stackBottom) && (addr + sizeof(uintptr_t) < ctx->stackTop)) {
+        *val = *reinterpret_cast<uintptr_t *>(addr);
+        return UNW_ERROR_NONE;
+    }
+    if (!CreatePipe()) {
+        LOGU("Failed to access addr, the pipe create fail, errno:%d", errno);
+        return UNW_ERROR_INVALID_MEMORY;
+    }
+    if (OHOS_TEMP_FAILURE_RETRY(syscall(SYS_write, pfd_[PIPE_WRITE], addr, sizeof(uintptr_t))) == -1) {
+        LOGU("Failed to access addr, the pipe write fail, errno:%d", errno);
+        return UNW_ERROR_INVALID_MEMORY;
+    }
+    if (OHOS_TEMP_FAILURE_RETRY(syscall(SYS_read, pfd_[PIPE_READ], val, sizeof(uintptr_t))) == -1) {
+        LOGU("Failed to access addr, the pipe read fail, errno:%d", errno);
+        return UNW_ERROR_INVALID_MEMORY;
+    }
     return UNW_ERROR_NONE;
 }
 
