@@ -244,13 +244,13 @@ bool CompressHapElfFactory::VerifyElf(int fd, size_t& elfSize)
         DFXLOGE("Failed to mmap program header in hap.");
         return false;
     }
-    elfSize = 0;
     const uint8_t* data = static_cast<const uint8_t*>(mmap->Get());
     if (memcmp(data, ELFMAG, SELFMAG) != 0) {
-        DFXLOGD("Invalid elf hdr?");
+        DFXLOGE("Invalid elf hdr?");
         return false;
     }
     uint8_t classType = data[EI_CLASS];
+    elfSize = 0;
     if (classType == ELFCLASS32) {
         const Elf32_Ehdr* ehdr = reinterpret_cast<const Elf32_Ehdr *>(data);
         elfSize = static_cast<size_t>(ehdr->e_shoff + (ehdr->e_shentsize * ehdr->e_shnum));
@@ -258,10 +258,18 @@ bool CompressHapElfFactory::VerifyElf(int fd, size_t& elfSize)
         const Elf64_Ehdr* ehdr = reinterpret_cast<const Elf64_Ehdr *>(data);
         elfSize = static_cast<size_t>(ehdr->e_shoff + (ehdr->e_shentsize * ehdr->e_shnum));
     }
+    if (elfSize == 0) {
+        DFXLOGE("elf size equal zero, invalid elf!");
+        return false;
+    }
     auto fileSize = GetFileSize(fd);
-    if (elfSize <= 0 || elfSize + prevMap_->offset > static_cast<uint64_t>(fileSize)) {
-        DFXLOGE("Invalid elf size? elf size: %{public}d, hap size: %{public}d", (int)elfSize, (int)fileSize);
-        elfSize = 0;
+    if (fileSize <= 0) {
+        DFXLOGE("file size can not less or equal zero!");
+        return false;
+    }
+    if (elfSize + prevMap_->offset > static_cast<size_t>(fileSize)) {
+        DFXLOGE("Invalid elf size? elf size: %{public}zu, hap size: %{public}zu", elfSize,
+            static_cast<size_t>(fileSize));
         return false;
     }
     return true;

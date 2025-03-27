@@ -90,8 +90,8 @@ enum UnwindErrorCode : uint16_t {
  */
 class UnwindErrorData {
 public:
-    uint16_t GetCode() { return code_; }
-    uint64_t GetAddr() { return addr_; }
+    uint16_t GetCode() const { return code_; }
+    uint64_t GetAddr() const { return addr_; }
 
     void SetAddrAndCode(uintptr_t addr, uint16_t code)
     {
