@@ -285,6 +285,17 @@ bool IsBetaVersion()
     return false;
 #endif
 }
+
+bool IsDeveloperMode()
+{
+#if !defined(is_ohos_lite) && !defined(DFX_UTIL_STATIC)
+    const char *const developerMode = "const.security.developermode.state";
+    static bool isDeveloperMode = OHOS::system::GetParameter(developerMode, "") == "true";
+    return isDeveloperMode;
+#else
+    return false;
+#endif
+}
 }   // namespace HiviewDFX
 }   // namespace OHOS
 

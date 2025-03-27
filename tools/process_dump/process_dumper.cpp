@@ -639,9 +639,7 @@ bool ProcessDumper::Unwind(const ProcessDumpRequest& request, int &dumpRes, pid_
         }
     }
     GetCrashObj(request);
-    if (!IsOversea() || IsBetaVersion()) {
-        UpdateFatalMessageWhenDebugSignal(request, vmPid);
-    }
+    UpdateFatalMessageWhenDebugSignal(request, vmPid);
 
     if (unwinder_ && process_ &&
         DfxUnwindRemote::GetInstance().UnwindProcess(request, *process_, *unwinder_, vmPid)) {
@@ -768,7 +766,7 @@ int ProcessDumper::InitProcessInfo(ProcessDumpRequest& request)
     process_->processInfo_.uid = request.uid;
     process_->recycleTid_ = request.recycleTid;
     if (request.msg.type == MESSAGE_FATAL || request.msg.type == MESSAGE_CALLBACK) {
-        if (!IsOversea() || IsBetaVersion()) {
+        if (!IsOversea() || IsBetaVersion() || IsDeveloperMode()) {
             process_->SetFatalMessage(request.msg.body);
         }
     }
