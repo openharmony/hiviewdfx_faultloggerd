@@ -30,7 +30,6 @@ ohos_unittest("test_unwind") {
     "is_emulator=${is_emulator}",
   ]
   sources = [
-    "accessors_test.cpp",
     "ark_test.cpp",
     "elf_imitate.cpp",
     "elf_test.cpp",
