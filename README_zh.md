@@ -64,7 +64,6 @@ faultloggerd/
 │   ├── funchook                           # hook 工具测试用例
 │   ├── fuzztest                           # 模糊测试用例
 │   ├── moduletest                         # 模块测试用例
-│   ├── performancetest                    # 性能测试用例
 │   ├── systemtest                         # 系统测试用例
 │   └── unittest                           # 单元测试用例
 └── tools

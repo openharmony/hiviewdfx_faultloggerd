@@ -69,7 +69,6 @@ faultloggerd/
 ├── test                                   # Test resources
 │   ├── BUILD.gn
 │   ├── fuzztest                           # Fuzz test
-│   ├── performancetest                    # Performance test
 │   └── systemtest                         # System function test
 └── tools                                  # Tools
     ├── crasher_c                          # Crash constructor (C)
