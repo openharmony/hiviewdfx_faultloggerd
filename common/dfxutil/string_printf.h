@@ -16,18 +16,14 @@
 #ifndef STRING_PRINTF_H
 #define STRING_PRINTF_H
 
-#include <cstdint>
 #include <cstdio>
 #include <string>
 #include <securec.h>
 
 namespace OHOS {
 namespace HiviewDFX {
-namespace {
-const int STRING_BUF_LEN = 4096;
-}
 
-static int BufferAppendV(char *buf, int size, const char *fmt, va_list ap)
+inline int BufferAppendV(char *buf, int size, const char *fmt, va_list ap)
 {
     if (buf == nullptr || size <= 0) {
         return -1;
@@ -36,9 +32,10 @@ static int BufferAppendV(char *buf, int size, const char *fmt, va_list ap)
     return ret;
 }
 
-static bool StringAppendV(std::string& dst, const char* fmt, va_list ap)
+inline bool StringAppendV(std::string& dst, const char* fmt, va_list ap)
 {
-    char buffer[STRING_BUF_LEN] = {0};
+    constexpr int stringBufLen = 4096;
+    char buffer[stringBufLen] = {0};
     va_list bakAp;
     va_copy(bakAp, ap);
     int ret = BufferAppendV(buffer, sizeof(buffer), fmt, bakAp);
