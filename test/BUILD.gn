@@ -47,13 +47,6 @@ group("faultloggerd_funchook") {
   deps = [ "funchook:dfxfunchook" ]
 }
 
-group("faultloggerd_performancetest") {
-  if (!defined(ohos_lite)) {
-    testonly = true
-  }
-  deps = [ "performancetest:performance" ]
-}
-
 group("faultloggerd_fuzzertest") {
   if (!defined(ohos_lite)) {
     testonly = true
