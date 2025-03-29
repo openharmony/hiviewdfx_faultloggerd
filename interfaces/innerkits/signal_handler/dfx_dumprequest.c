@@ -85,6 +85,7 @@ static int g_pipeFds[PIPE_MAX][2] = {
 
 static const int ALARM_TIME_S = 10;
 static const uint32_t CRASH_SNAPSHOT_FLAG = 0x8;
+static const int WAITPID_TIMEOUT = 3000; // 3000 : 3 sec timeout
 enum DumpPreparationStage {
     CREATE_PIPE_FAIL = 1,
     SET_PIPE_LEN_FAIL,
@@ -317,7 +318,7 @@ static bool WaitProcessExitTimeout(pid_t pid, int timeoutMs)
         if (res > 0) {
             break;
         } else if (res < 0) {
-            DFXLOGE("failed to wait dummy processdump(%{public}d)", errno);
+            DFXLOGE("failed to wait dummy, error(%{public}d)", errno);
             break;
         }
         SafeDelayOneMillSec();
@@ -332,7 +333,7 @@ static bool WaitProcessExitTimeout(pid_t pid, int timeoutMs)
     if (WIFEXITED(status) && WEXITSTATUS(status) == 0) {
         return true;
     }
-    DFXLOGE("dummy processdump exit with error(%{public}d)", WEXITSTATUS(status));
+    DFXLOGE("dummy exit with error(%{public}d)", WEXITSTATUS(status));
     return false;
 }
 
@@ -375,7 +376,7 @@ static bool StartProcessdump(void)
             _exit(0);
         }
     }
-    return WaitProcessExitTimeout(pid, 3000); // 3000 : 3 sec timeout
+    return WaitProcessExitTimeout(pid, WAITPID_TIMEOUT);
 }
 
 static bool StartVMProcessUnwind(void)
@@ -399,10 +400,7 @@ static bool StartVMProcessUnwind(void)
         }
     }
 
-    if (waitpid(pid, NULL, 0) <= 0) {
-        DFXLOGE("failed to wait dummy vm process(%{public}d)", errno);
-    }
-    return true;
+    return WaitProcessExitTimeout(pid, WAITPID_TIMEOUT);
 }
 
 static void CleanFd(int *pipeFd)
