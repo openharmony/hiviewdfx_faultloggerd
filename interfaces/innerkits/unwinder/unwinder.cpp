@@ -593,14 +593,14 @@ bool Unwinder::Impl::UnwindLocalWithContext(const ucontext_t& context, size_t ma
 
 bool Unwinder::Impl::UnwindLocal(bool withRegs, bool fpUnwind, size_t maxFrameNum, size_t skipFrameNum)
 {
-    LOGI("UnwindLocal:: fpUnwind: %d", fpUnwind);
     uintptr_t stackBottom = 1;
     uintptr_t stackTop = static_cast<uintptr_t>(-1);
     if (!GetStackRange(stackBottom, stackTop)) {
         LOGE("%s", "Get stack range error");
         return false;
     }
-    LOGU("stackBottom: %" PRIx64 ", stackTop: %" PRIx64 "", (uint64_t)stackBottom, (uint64_t)stackTop);
+    LOGI("UnwindLocal:: fpUnwind: %d, stackBottom: %" PRIx64 ", stackTop: %" PRIx64 "",
+        fpUnwind, (uint64_t)stackBottom, (uint64_t)stackTop);
 
     if (!withRegs) {
 #if defined(__aarch64__)

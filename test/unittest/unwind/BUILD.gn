@@ -27,7 +27,6 @@ ohos_unittest("test_unwind") {
   configs = [ "$faultloggerd_common_path/build:coverage_flags" ]
   defines = [ "DFX_LOG_UNWIND" ]
   sources = [
-    "accessors_test.cpp",
     "ark_test.cpp",
     "elf_imitate.cpp",
     "elf_test.cpp",
