@@ -22,7 +22,6 @@
 #include <string>
 #include <vector>
 // some module head files not self-included.
-#include <csignal>
 #include <unistd.h>
 #include <sys/syscall.h>
 namespace OHOS {
