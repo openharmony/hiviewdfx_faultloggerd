@@ -90,14 +90,17 @@ public:
     // for customized
     Impl(const std::shared_ptr<UnwindAccessors> &accessors, bool local)
     {
-        UnwindType unwindType = local ? UNWIND_TYPE_CUSTOMIZE_LOCAL : UNWIND_TYPE_CUSTOMIZE;
-        pid_ = unwindType;
+        if (local) {
+            pid_ = UNWIND_TYPE_CUSTOMIZE_LOCAL;
+        } else {
+            pid_ = UNWIND_TYPE_CUSTOMIZE;
+        }
         enableFpCheckMapExec_ = false;
         enableFillFrames_ = false;
     #if defined(__aarch64__)
         pacMask_ = pacMaskDefault_;
     #endif
-        memory_ = std::make_shared<DfxMemory>(unwindType, accessors);
+        memory_ = std::make_shared<DfxMemory>(UNWIND_TYPE_CUSTOMIZE, accessors);
         Init();
     }
 

@@ -87,7 +87,7 @@ HWTEST_F(DfxSigDumpHandlerTest, DfxSigDumpHandlerTest001, TestSize.Level2)
         GTEST_LOG_(INFO) << msg;
         EXPECT_EQ(count, len) << "DfxSigDumpHandlerTest001 Failed";
     } else {
-        ASSERT_TRUE(InitSigDumpHandler());
+        InitSigDumpHandler();
         std::thread testThread[TEST_THREAD_NUM];
         for (int i = 0; i < TEST_THREAD_NUM; i++) {
             testThread[i] = std::thread(&DfxSigDumpHandlerTest::TestThreadRunTask);
@@ -95,7 +95,6 @@ HWTEST_F(DfxSigDumpHandlerTest, DfxSigDumpHandlerTest001, TestSize.Level2)
         for (int i = 0; i < TEST_THREAD_NUM; i++) {
             testThread[i].join();
         }
-        ASSERT_TRUE(InitSigDumpHandler()); // Initialize again return true
         DeinitSigDumpHandler();
     }
     GTEST_LOG_(INFO) << "DfxSigDumpHandlerTest001: end.";

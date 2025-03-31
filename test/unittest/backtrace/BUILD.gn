@@ -28,7 +28,6 @@ ohos_unittest("backtrace_utils_test") {
   deps = [
     "$faultloggerd_common_path/dfxutil:dfx_util",
     "$faultloggerd_interfaces_path/innerkits/backtrace:libbacktrace_local",
-    "$faultloggerd_path/interfaces/innerkits/formatter:libjson_stack_formatter",
     "$faultloggerd_path/test/utils:dfx_test_util",
   ]
   if (use_musl && musl_use_jemalloc && musl_use_jemalloc_dfx_intf) {
@@ -56,8 +55,6 @@ ohos_unittest("backtrace_local_test") {
     "$faultloggerd_common_path/dfxutil:dfx_util",
     "$faultloggerd_interfaces_path/innerkits/backtrace:libbacktrace_local",
     "$faultloggerd_interfaces_path/innerkits/unwinder:libunwinder",
-    "$faultloggerd_path/interfaces/innerkits/formatter:libjson_stack_formatter",
-    "$faultloggerd_path/interfaces/innerkits/procinfo:libdfx_procinfo",
     "$faultloggerd_path/test/utils:dfx_test_util",
   ]
   branch_protector_ret = "pac_ret"
@@ -85,7 +82,6 @@ ohos_unittest("backtrace_utils_test_static") {
     "$faultloggerd_common_path/dfxlog:dfx_hilog_base",
     "$faultloggerd_common_path/dfxutil:dfx_util_static",
     "$faultloggerd_interfaces_path/innerkits/backtrace:backtrace_local",
-    "$faultloggerd_path/interfaces/innerkits/formatter:libjson_stack_formatter",
     "$faultloggerd_path/test/utils:dfx_test_util",
   ]
   if (use_musl && musl_use_jemalloc && musl_use_jemalloc_dfx_intf) {
@@ -117,8 +113,6 @@ ohos_unittest("backtrace_local_test_static") {
     "$faultloggerd_common_path/dfxlog:dfx_hilog_base",
     "$faultloggerd_common_path/dfxutil:dfx_util_static",
     "$faultloggerd_interfaces_path/innerkits/backtrace:backtrace_local",
-    "$faultloggerd_path/interfaces/innerkits/formatter:libjson_stack_formatter",
-    "$faultloggerd_path/interfaces/innerkits/procinfo:dfx_procinfo_static",
     "$faultloggerd_path/test/utils:dfx_test_util",
   ]
   branch_protector_ret = "pac_ret"

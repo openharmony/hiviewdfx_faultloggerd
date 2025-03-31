@@ -60,10 +60,6 @@ if (defined(ohos_lite)) {
       "$faultloggerd_path/common/dfxutil",
       "$faultloggerd_path/common/trace/include",
     ]
-    defines = [
-      "is_ohos=${is_ohos}",
-      "is_mingw=${is_mingw}",
-    ]
   }
 
   module_output_path = "faultloggerd/common"

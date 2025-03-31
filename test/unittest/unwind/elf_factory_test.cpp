@@ -319,23 +319,6 @@ HWTEST_F(ElfFactoryTest, ElfFactoryTest014, TestSize.Level2)
     auto elfFactory = ElfFactorySelector::Select(map);
     auto elf = elfFactory->Create();
     ASSERT_FALSE(elf->IsValid());
-
-    map.begin = 0xc38a6000;
-    map.end = 0xc39450000;
-    map.offset = 0x1d9000;
-    map.prots |= PROT_READ;
-    map.prots |= PROT_EXEC;
-    map.name = "/proc/data/storage/el1/bundle/entry.hap"; // invalid path
-    auto prevMap = std::make_shared<DfxMap>();
-    prevMap->begin = 0xc3840000;
-    prevMap->end = 0xc38a6000;
-    prevMap->offset = 0x174000;
-    prevMap->prots |= PROT_READ;
-    prevMap->name = "/proc/data/storage/el1/bundle/entry.hap"; // invalid path
-    map.prevMap = prevMap;
-    elfFactory = ElfFactorySelector::Select(map);
-    elf = elfFactory->Create();
-    ASSERT_EQ(elf, nullptr);
     GTEST_LOG_(INFO) << "ElfFactoryTest014: end.";
 }
 }

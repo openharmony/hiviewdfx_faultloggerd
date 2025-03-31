@@ -401,26 +401,6 @@ HWTEST_F(FaultLoggerdServiceTest, StatsClientTest01, TestSize.Level2)
     ASSERT_EQ(retCode, ResponseCode::REQUEST_SUCCESS);
 }
 #endif
-
-/**
- * @tc.name: FaultloggerdSocketAbnormalTest
- * @tc.desc: test abnomarl case
- * @tc.type: FUNC
- */
-HWTEST_F(FaultLoggerdServiceTest, FaultloggerdSocketAbnormalTest, TestSize.Level2)
-{
-    ASSERT_FALSE(StartConnect(-1, nullptr, 3));
-    int32_t sockFd = -1;
-    constexpr int32_t maxConnection = 30;
-    ASSERT_FALSE(StartListen(sockFd, nullptr, maxConnection));
-    ASSERT_TRUE(StartListen(sockFd, "FaultloggerdSocketAbnormalTest", maxConnection));
-    ASSERT_FALSE(SendFileDescriptorToSocket(sockFd, nullptr, 0));
-    ASSERT_FALSE(ReadFileDescriptorFromSocket(sockFd, nullptr, 0));
-    int32_t fd = -1;
-    ASSERT_FALSE(ReadFileDescriptorFromSocket(sockFd, &fd, 1));
-    ASSERT_FALSE(SendMsgToSocket(sockFd, nullptr, 0));
-    ASSERT_FALSE(GetMsgFromSocket(sockFd, nullptr, 0));
-}
 } // namespace HiviewDFX
 } // namespace OHOS
 

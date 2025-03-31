@@ -225,7 +225,6 @@ std::shared_ptr<DfxElf> CompressHapElfFactory::Create()
             break;
         }
         compressHapElf = std::make_shared<DfxElf>(mMap);
-        compressHapElf->SetBaseOffset(prevMap_->offset);
         if (!compressHapElf->IsValid()) {
             DFXLOGE("Failed to parse compress hap Elf.");
             compressHapElf = nullptr;

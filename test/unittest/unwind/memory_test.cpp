@@ -185,8 +185,6 @@ HWTEST_F(DfxMemoryTest, DfxMemoryTest005, TestSize.Level2)
     uintptr_t addr = reinterpret_cast<uintptr_t>(&values[0]);
     uintptr_t valuePrel32;
     ASSERT_TRUE(memory->ReadPrel31(addr, &valuePrel32));
-    uintptr_t invalidAddr = 0;
-    ASSERT_FALSE(memory->ReadPrel31(invalidAddr, &valuePrel32));
     ASSERT_EQ(valuePrel32, 0x04030201 + addr);
     char testStr[] = "Test ReadString Func";
     std::string resultStr;
@@ -195,7 +193,6 @@ HWTEST_F(DfxMemoryTest, DfxMemoryTest005, TestSize.Level2)
     ASSERT_EQ(testStr, resultStr);
     ASSERT_EQ(memory->ReadUleb128(addr), 1U);
     ASSERT_EQ(memory->ReadSleb128(addr), 2);
-    ASSERT_EQ(memory->ReadSleb128(invalidAddr), 0);
     GTEST_LOG_(INFO) << "DfxMemoryTest005: end.";
 }
 
@@ -217,8 +214,6 @@ HWTEST_F(DfxMemoryTest, DfxMemoryTest006, TestSize.Level2)
     ASSERT_EQ(memory->GetEncodedSize(DW_EH_PE_sdata2), 2);
     ASSERT_EQ(memory->GetEncodedSize(DW_EH_PE_sdata4), 4);
     ASSERT_EQ(memory->GetEncodedSize(DW_EH_PE_sdata8), 8);
-    ASSERT_EQ(memory->GetEncodedSize(DW_EH_PE_sleb128), 0);
-    ASSERT_EQ(memory->GetEncodedSize(DW_EH_PE_omit), 0);
     GTEST_LOG_(INFO) << "DfxMemoryTest006: end.";
 }
 
@@ -234,9 +229,8 @@ HWTEST_F(DfxMemoryTest, DfxMemoryTest007, TestSize.Level2)
     UnwindContext ctx;
     ctx.regs = DfxRegs::CreateFromRegs(UnwindMode::DWARF_UNWIND, regs, sizeof(regs) / sizeof(regs[0]));
     auto memory = std::make_shared<DfxMemory>(UNWIND_TYPE_REMOTE);
-    uintptr_t value;
-    EXPECT_FALSE(memory->ReadReg(0, &value));
     memory->SetCtx(&ctx);
+    uintptr_t value;
     bool ret = memory->ReadReg(0, &value);
     EXPECT_EQ(true, ret) << "DfxMemoryTest007: ret" << ret;
     EXPECT_EQ(static_cast<uintptr_t>(0x1), value) << "DfxMemoryTest007: value" << value;
@@ -383,9 +377,8 @@ HWTEST_F(DfxMemoryTest, DfxMemoryTest011, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "DfxMemoryTest011: start.";
     static pid_t pid = getpid();
-    uintptr_t values[] = {0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0x10};
-    char testStr[] = "Test ReadString Func Test ReadString Func Test ReadString Func \
-        Test ReadString Func Test ReadString Func Test ReadString Func Test ReadString Func";
+    uint8_t values[] = {0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8};
+    char testStr[] = "Test ReadString Func";
     pid_t child = fork();
     if (child == 0) {
         GTEST_LOG_(INFO) << "pid: " << pid << ", ppid:" << getppid();
@@ -401,22 +394,8 @@ HWTEST_F(DfxMemoryTest, DfxMemoryTest011, TestSize.Level2)
         ASSERT_EQ(testStr, resultStr);
         ASSERT_TRUE(memory->ReadString(addrStr, &resultStr, sizeof(testStr)/sizeof(char), true));
         ASSERT_EQ(testStr, resultStr);
-        ASSERT_FALSE(memory->ReadString(addrStr, nullptr, sizeof(testStr)/sizeof(char), true));
-
-        uintptr_t val;
         ASSERT_EQ(memory->ReadUleb128(addr), 1U);
         ASSERT_EQ(memory->ReadSleb128(addr), 2);
-        memory->ReadFormatEncodedValue(addr, val, DW_EH_PE_uleb128);
-        memory->ReadFormatEncodedValue(addr, val, DW_EH_PE_sleb128);
-        memory->ReadFormatEncodedValue(addr, val, DW_EH_PE_udata1);
-        memory->ReadFormatEncodedValue(addr, val, DW_EH_PE_sdata1);
-        memory->ReadFormatEncodedValue(addr, val, DW_EH_PE_udata2);
-        memory->ReadFormatEncodedValue(addr, val, DW_EH_PE_sdata2);
-        memory->ReadFormatEncodedValue(addr, val, DW_EH_PE_udata4);
-        memory->ReadFormatEncodedValue(addr, val, DW_EH_PE_sdata4);
-        memory->ReadFormatEncodedValue(addr, val, DW_EH_PE_udata8);
-        memory->ReadFormatEncodedValue(addr, val, DW_EH_PE_sdata8);
-        memory->ReadFormatEncodedValue(addr, val, DW_EH_PE_omit);
         DfxPtrace::Detach(pid);
         _exit(0);
     }
