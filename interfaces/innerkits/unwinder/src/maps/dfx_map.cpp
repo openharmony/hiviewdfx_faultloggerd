@@ -302,7 +302,9 @@ uint64_t DfxMap::GetRelPc(uint64_t pc)
 std::string DfxMap::ToString()
 {
     char buf[LINE_BUF_SIZE] = {0};
-    std::string realMapName = UnFormatMapName(name);
+    std::string realMapName = name;
+    UnFormatMapName(realMapName);
+
     int ret = snprintf_s(buf, sizeof(buf), sizeof(buf) - 1, "%" PRIx64 "-%" PRIx64 " %s %08" PRIx64 " %s\n", \
         begin, end, perms.c_str(), offset, realMapName.c_str());
     if (ret <= 0) {
@@ -383,16 +385,15 @@ void DfxMap::FormatMapName(pid_t pid, std::string& mapName)
     }
 }
 
-std::string DfxMap::UnFormatMapName(const std::string& mapName)
+void DfxMap::UnFormatMapName(std::string& mapName)
 {
     // unformat sandbox file path, drop '/proc/xxx/root' prefix
     if (StartsWith(mapName, "/proc/")) {
         auto startPos = mapName.find("/data/storage/");
         if (startPos != std::string::npos) {
-            return mapName.substr(startPos);
+            mapName = mapName.substr(startPos);
         }
     }
-    return mapName;
 }
 
 } // namespace HiviewDFX

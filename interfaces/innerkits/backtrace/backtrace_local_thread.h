@@ -31,11 +31,11 @@ std::string GetThreadHead(int32_t tid);
 
 class BacktraceLocalThread {
 public:
-    explicit BacktraceLocalThread(int32_t tid) : tid_(tid) {}
-    bool Unwind(Unwinder& unwinder, bool fast = false,
-        size_t maxFrameNum = DEFAULT_MAX_FRAME_NUM, size_t skipFrameNum = 0);
-    bool UnwindOtherThreadMix(Unwinder& unwinder, bool fast,
-        size_t maxFrameNum = DEFAULT_MAX_FRAME_NUM, size_t skipFrameNum = 0);
+    explicit BacktraceLocalThread(int32_t tid, std::shared_ptr<Unwinder> unwinder);
+    ~BacktraceLocalThread();
+
+    bool Unwind(bool fast = false, size_t maxFrameNum = DEFAULT_MAX_FRAME_NUM, size_t skipFrameNum = 0);
+    bool UnwindOtherThreadMix(bool fast, size_t maxFrameNum = DEFAULT_MAX_FRAME_NUM, size_t skipFrameNum = 0);
 
     const std::vector<DfxFrame>& GetFrames() const;
     void SetFrames(const std::vector<DfxFrame>& frames);
@@ -43,7 +43,8 @@ public:
 
 private:
     int32_t tid_;
-    std::vector<DfxFrame> frames_{};
+    std::vector<DfxFrame> frames_;
+    std::shared_ptr<Unwinder> unwinder_;
 };
 } // namespace HiviewDFX
 } // namespace OHOS

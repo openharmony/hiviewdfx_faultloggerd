@@ -315,7 +315,7 @@ HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest006, TestSize.Level
 HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest007, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest007: start.";
-    int applyPid = 99999;
+    int applyPid = 9999;
     GTEST_LOG_(INFO) << "applyPid1:" << applyPid;
     std::vector<int> multiPid {applyPid, applyPid};
     DfxDumpCatcher dumplog;
@@ -337,7 +337,7 @@ HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest008, TestSize.Level
     std::string apply = "accountmgr";
     int applyPid1 = GetProcessPid(apply);
     GTEST_LOG_(INFO) << "applyPid1:" << applyPid1;
-    int applyPid2 = 99999;
+    int applyPid2 = 9999;
     GTEST_LOG_(INFO) << "applyPid2:" << applyPid2;
     std::vector<int> multiPid {applyPid1, applyPid2};
     DfxDumpCatcher dumplog;

@@ -16,7 +16,10 @@
 #ifndef DFX_UNWIND_ASYNC_THREAD_H
 #define DFX_UNWIND_ASYNC_THREAD_H
 
+#include <cinttypes>
 #include <csignal>
+#include <map>
+#include <memory>
 #include <string>
 #include "dfx_thread.h"
 #include "unwinder.h"
@@ -25,19 +28,17 @@ namespace OHOS {
 namespace HiviewDFX {
 class DfxUnwindAsyncThread {
 public:
-    DfxUnwindAsyncThread(DfxThread& thread, Unwinder& unwinder, uint64_t stackId)
+    DfxUnwindAsyncThread(std::shared_ptr<DfxThread> thread, std::shared_ptr<Unwinder> unwinder, uint64_t stackId)
         : thread_(thread), unwinder_(unwinder), stackId_(stackId) {}
     bool UnwindStack(pid_t vmPid = 0);
     std::string unwindFailTip = "";
 private:
     void GetSubmitterStack(std::vector<DfxFrame> &submitterFrames);
-#ifndef __x86_64__
-    void CreateFrame(DfxMaps& dfxMaps, size_t index, uintptr_t pc, uintptr_t sp = 0);
     void UnwindThreadFallback();
-#endif
     void UnwindThreadByParseStackIfNeed();
-    DfxThread& thread_;
-    Unwinder& unwinder_;
+    void MergeStack(std::vector<DfxFrame> &submitterFrames);
+    std::shared_ptr<DfxThread> thread_ = nullptr;
+    std::shared_ptr<Unwinder> unwinder_ = nullptr;
     uint64_t stackId_ = 0;
 };
 }

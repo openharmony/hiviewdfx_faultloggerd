@@ -66,6 +66,7 @@ bool GetBacktraceStringByTidWithMix(std::string& out, int32_t tid, size_t skipFr
 #if defined(__arm__)
     fast = false;
 #endif
+    std::vector<DfxFrame> frames;
     std::shared_ptr<Unwinder> unwinder = nullptr;
     if ((tid == gettid()) || (tid == BACKTRACE_CURRENT_THREAD)) {
         unwinder = std::make_shared<Unwinder>();
@@ -77,18 +78,15 @@ bool GetBacktraceStringByTidWithMix(std::string& out, int32_t tid, size_t skipFr
         accssors->FindUnwindTable = &OtherThread::FindUnwindTable;
         unwinder = std::make_shared<Unwinder>(accssors, true);
     }
-    std::vector<DfxFrame> frames{};
-    bool ret = false;
-    if (unwinder) {
-        BacktraceLocalThread thread(tid);
-        ret = thread.UnwindOtherThreadMix(*unwinder, fast, maxFrameNums, skipFrameNum + 1);
-        frames = thread.GetFrames();
-    }
+    BacktraceLocalThread thread(tid, unwinder);
+    bool ret = thread.UnwindOtherThreadMix(fast, maxFrameNums, skipFrameNum + 1);
+    frames = thread.GetFrames();
+
     if (!ret && enableKernelStack) {
         std::string msg = "";
         DfxThreadStack threadStack;
         if (DfxGetKernelStack(tid, msg) == 0 && FormatThreadKernelStack(msg, threadStack)) {
-            frames = std::move(threadStack.frames);
+            frames = threadStack.frames;
             ret = true;
             DFXLOGI("Failed to get tid(%{public}d) user stack, try kernel", tid);
             if (IsBetaVersion()) {

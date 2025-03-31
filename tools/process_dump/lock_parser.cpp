@@ -33,11 +33,11 @@ typedef struct {
     } u;
 } DfxMutex;
 }
-bool LockParser::ParseLockInfo(Unwinder& unwinder, int32_t vmPid, int32_t tid)
+bool LockParser::ParseLockInfo(std::shared_ptr<Unwinder> unwinder, int32_t vmPid, int32_t tid)
 {
 #ifdef __aarch64__
     std::vector<char> buffer(sizeof(pthread_mutex_t), 0);
-    if (unwinder.GetLockInfo(vmPid, buffer.data(), sizeof(pthread_mutex_t))) {
+    if (unwinder->GetLockInfo(vmPid, buffer.data(), sizeof(pthread_mutex_t))) {
         auto mutexInfo = reinterpret_cast<DfxMutex*>(buffer.data());
         // only PTHREAD_MUTEX_ERRORCHECK(2) type lock contains lock holder thread-id
         // the normal type only store EBUSY in owner section

@@ -22,7 +22,7 @@ namespace OHOS {
 namespace HiviewDFX {
 class LockParser {
 public:
-    static bool ParseLockInfo(Unwinder& unwinder, int32_t vmPid, int32_t tid);
+    static bool ParseLockInfo(std::shared_ptr<Unwinder> unwinder, int32_t vmPid, int32_t tid);
 };
 } // namespace HiviewDFX
 } // namespace OHOS

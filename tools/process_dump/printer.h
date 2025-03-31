@@ -33,19 +33,22 @@ namespace OHOS {
 namespace HiviewDFX {
 class Printer {
 public:
-    static void PrintDumpHeader(const ProcessDumpRequest& request, DfxProcess& process, Unwinder& unwinder);
+    static void PrintDumpHeader(std::shared_ptr<ProcessDumpRequest> request, std::shared_ptr<DfxProcess> process,
+                                std::shared_ptr<Unwinder> unwinder);
     static void PrintProcessMapsByConfig(std::shared_ptr<DfxMaps> maps);
     static void PrintOtherThreadHeaderByConfig();
     static void PrintThreadHeaderByConfig(std::shared_ptr<DfxThread> thread, bool isKeyThread);
     static void PrintThreadBacktraceByConfig(std::shared_ptr<DfxThread> thread, bool isKeyThread);
+    static void PrintThreadRegsByConfig(std::shared_ptr<DfxThread> thread);
     static void PrintRegsByConfig(std::shared_ptr<DfxRegs> regs);
-    static void CollectThreadFaultStackByConfig(DfxProcess& process, DfxThread& thread, Unwinder& unwinder);
-    static void PrintThreadFaultStackByConfig(DfxThread& thread);
+    static void CollectThreadFaultStackByConfig(std::shared_ptr<DfxProcess> process, std::shared_ptr<DfxThread> thread,
+                                              std::shared_ptr<Unwinder> unwinder);
+    static void PrintThreadFaultStackByConfig(std::shared_ptr<DfxThread> thread);
     static void PrintLongInformation(const std::string& info);
     static bool IsLastValidFrame(const DfxFrame& frame);
 private:
-    static void PrintReason(const ProcessDumpRequest& request, DfxProcess& process,
-        Unwinder& unwinder, std::string& reasonInfo);
+    static void PrintReason(std::shared_ptr<ProcessDumpRequest> request, std::shared_ptr<DfxProcess> process,
+                            std::shared_ptr<Unwinder> unwinder, std::string& reasonInfo);
 };
 } // namespace HiviewDFX
 } // namespace OHOS
