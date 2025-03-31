@@ -241,7 +241,7 @@ size_t ReadProcMemByPid(const pid_t pid, const uint64_t addr, void* data, size_t
             break;
         }
         uintptr_t misalign = currentAddr & static_cast<uint64_t>(getpagesize() - 1);
-        size_t iovLen = std::min(getpagesize() - misalign, leftSize);
+        size_t iovLen = std::min(getpagesize() - misalign, size);
         struct iovec remoteIov = {
             .iov_base = reinterpret_cast<void*>(currentAddr),
             .iov_len = iovLen,
@@ -250,7 +250,6 @@ size_t ReadProcMemByPid(const pid_t pid, const uint64_t addr, void* data, size_t
             break;
         }
         remoteIovs.emplace_back(remoteIov);
-        leftSize -= iovLen;
         if (remoteIovs.size() == IOV_MAX) {
             dataIov.iov_base = static_cast<uint8_t*>(data) + totalReadSize;
             dataIov.iov_len = size - totalReadSize;
@@ -261,6 +260,7 @@ size_t ReadProcMemByPid(const pid_t pid, const uint64_t addr, void* data, size_t
             totalReadSize += static_cast<size_t>(readCount);
             remoteIovs.clear();
         }
+        leftSize -= iovLen;
     }
     if (!remoteIovs.empty()) {
         dataIov.iov_base = static_cast<uint8_t*>(data) + totalReadSize;
