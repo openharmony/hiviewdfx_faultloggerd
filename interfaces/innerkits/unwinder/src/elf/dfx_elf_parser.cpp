@@ -170,7 +170,7 @@ bool ElfParser::ParseProgramHeaders(const EhdrType& ehdr)
     return true;
 }
 
-const GnuDebugDataHdr& ElfParser::GetGnuDebugDataHdr() const
+const GnuDebugDataHdr ElfParser::GetGnuDebugDataHdr()
 {
     return gnuDebugDataHdr_;
 }

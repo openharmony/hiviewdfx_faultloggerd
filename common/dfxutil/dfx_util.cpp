@@ -231,37 +231,45 @@ uintptr_t StripPac(uintptr_t inAddr, uintptr_t pacMask)
 #if is_ohos && !is_mingw
 size_t ReadProcMemByPid(const pid_t pid, const uint64_t addr, void* data, size_t size)
 {
-    std::vector<iovec> remoteIovs;
+    constexpr size_t maxSize = 64;
+    struct iovec RemoteIovs[maxSize];
+
+    uint64_t cur = addr;
     size_t totalRead = 0;
     struct iovec dataIov = {
-        .iov_base = data,
+        .iov_base = &reinterpret_cast<uint8_t*>(data)[totalRead],
         .iov_len = size,
     };
-    uint64_t currentAddr = addr;
+    size_t iovecsIndex = 0;
     while (size > 0) {
-        if (currentAddr >= UINTPTR_MAX) {
-            break;
-        }
-        uintptr_t misalign = currentAddr & static_cast<uint64_t>(getpagesize() - 1);
-        size_t iovLen = std::min(getpagesize() - misalign, size);
-        struct iovec remoteIov = {
-            .iov_base = reinterpret_cast<void*>(currentAddr),
-            .iov_len = iovLen,
-        };
-        if (__builtin_add_overflow(currentAddr, iovLen, &currentAddr)) {
-            break;
-        }
-        remoteIovs.emplace_back(remoteIov);
-        size -= iovLen;
-    }
-
-    if (!remoteIovs.empty()) {
-        ssize_t readCount = process_vm_readv(pid, &dataIov, 1, &remoteIovs[0], remoteIovs.size(), 0);
-        if (readCount == -1) {
+        if (cur >= UINTPTR_MAX) {
             return totalRead;
         }
-        totalRead += static_cast<size_t>(readCount);
+        RemoteIovs[iovecsIndex].iov_base = reinterpret_cast<void*>(cur);
+        uintptr_t misalign = cur & static_cast<uint64_t>(getpagesize() - 1);
+        size_t iovLen = std::min(getpagesize() - misalign, size);
+
+        size -= iovLen;
+        if (__builtin_add_overflow(cur, iovLen, &cur)) {
+            return totalRead;
+        }
+
+        RemoteIovs[iovecsIndex].iov_len = iovLen;
+        ++iovecsIndex;
+        if (iovecsIndex >= maxSize || size <= 0) {
+            ssize_t count = process_vm_readv(pid, &dataIov, 1, RemoteIovs, iovecsIndex, 0);
+            if (count == -1) {
+                return totalRead;
+            }
+            totalRead += static_cast<size_t>(count);
+            if (iovecsIndex >= maxSize) {
+                iovecsIndex -= maxSize;
+            }
+            dataIov.iov_base = &reinterpret_cast<uint8_t*>(data)[totalRead];
+            dataIov.iov_len = size;
+        }
     }
+
     return totalRead;
 }
 #endif

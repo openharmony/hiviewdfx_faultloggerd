@@ -16,9 +16,12 @@
 #include "dfx_accessors.h"
 
 #include <algorithm>
+#include <elf.h>
 #include <fcntl.h>
+#include <securec.h>
 #include <sys/ptrace.h>
 #include <sys/syscall.h>
+#include <sys/uio.h>
 #include "dfx_define.h"
 #include "dfx_errors.h"
 #include "dfx_log.h"

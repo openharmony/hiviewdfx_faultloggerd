@@ -30,21 +30,24 @@ namespace HiviewDFX {
 class DwarfEntryParser : public UnwindEntryParser {
 public:
     explicit DwarfEntryParser(const std::shared_ptr<DfxMemory>& memory) : UnwindEntryParser(memory) { }
-    ~DwarfEntryParser() override = default;
+    virtual ~DwarfEntryParser() = default;
+
     bool Step(uintptr_t pc, const UnwindTableInfo& uti, std::shared_ptr<RegLocState> rs) override;
 protected:
-    bool SearchEntry(uintptr_t pc, const UnwindTableInfo& uti, UnwindEntryInfo& uei) override;
-    bool ParseFde(uintptr_t fdeAddr, uintptr_t fdePtr, FrameDescEntry& fdeInfo);
-    bool ParseCie(uintptr_t cieAddr, uintptr_t ciePtr, CommonInfoEntry& cieInfo);
-private:
     bool LinearSearchEntry(uintptr_t pc, const UnwindTableInfo& uti, UnwindEntryInfo& uei);
+    bool SearchEntry(uintptr_t pc, const UnwindTableInfo& uti, UnwindEntryInfo& uei) override;
     bool GetCieOrFde(uintptr_t& addr, FrameDescEntry& fdeInfo);
     void ParseCieOrFdeHeader(uintptr_t& ptr, FrameDescEntry& fdeInfo, bool& isCieEntry);
+    bool ParseFde(uintptr_t fdeAddr, uintptr_t fdePtr, FrameDescEntry& fdeInfo);
     bool FillInFde(uintptr_t ptr, FrameDescEntry& fdeInfo);
+    bool ParseCie(uintptr_t cieAddr, uintptr_t ciePtr, CommonInfoEntry& cieInfo);
     bool FillInCie(uintptr_t ptr, CommonInfoEntry& cieInfo);
     void ParseAugData(uintptr_t& ptr, CommonInfoEntry& cieInfo, const std::vector<char>& augStr);
+
+protected:
     uint32_t cie32Value_ = 0;
     uint64_t cie64Value_ = 0;
+private:
     std::unordered_map<uintptr_t, FrameDescEntry> fdeEntries_;
     std::unordered_map<uintptr_t, CommonInfoEntry> cieEntries_;
 };

@@ -64,16 +64,16 @@ enum CrashExceptionCode : int32_t {
     CRASH_UNKNOWN = 500,                /* Unknown reason */
 };
 
-struct ErrCodeToMsg {
+struct ErrCodeToStr {
     /** Crash exception stage code */
     int32_t errCode;
-    /** Crash exception msg string */
-    const char* msg;
+    /** Crash exception string */
+    const char* str;
 };
 
 static inline const char* GetCrashDescription(int32_t errCode)
 {
-    const struct ErrCodeToMsg crashExceptions[] = {
+    const struct ErrCodeToStr crashExceptions[] = {
         { CRASH_SIGNAL_EMASKED,      "Signal has been masked." },
         { CRASH_SIGNAL_EFORK,        "Failed to fork child process." },
         { CRASH_SIGNAL_ECLONE,       "Failed to clone thread of recycle dump process." },
@@ -103,9 +103,9 @@ static inline const char* GetCrashDescription(int32_t errCode)
         { CRASH_LOG_EHILOGLOS,       "Hilog not found." },
         { CRASH_LOG_ESUMMARYLOS,     "Fault Summary not found." },
     };
-    for (uint8_t i = 0; i < sizeof(crashExceptions) / sizeof(crashExceptions[0]); i++) {
+    for (uint32_t i = 0; i < sizeof(crashExceptions) / sizeof(crashExceptions[0]); i++) {
         if (errCode == crashExceptions[i].errCode) {
-            return crashExceptions[i].msg;
+            return crashExceptions[i].str;
         }
     }
     return "Unknown reason.";

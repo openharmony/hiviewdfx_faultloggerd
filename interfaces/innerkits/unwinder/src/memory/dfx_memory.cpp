@@ -16,6 +16,9 @@
 #include "dfx_memory.h"
 #include <algorithm>
 #include <securec.h>
+#if is_ohos && !is_mingw
+#include <sys/uio.h>
+#endif
 #include "dfx_define.h"
 #include "dfx_errors.h"
 #include "dfx_log.h"
@@ -36,7 +39,6 @@ static const int FOUR_BYTE_SIZE = 4;
 static const int EIGHT_BYTE_SIZE = 8;
 }
 
-#if is_ohos && ! is_mingw
 DfxMemory::DfxMemory(const UnwindType& unwindType, std::shared_ptr<UnwindAccessors> accessors)
 {
     switch (unwindType) {
@@ -60,8 +62,6 @@ DfxMemory::DfxMemory(const UnwindType& unwindType, std::shared_ptr<UnwindAccesso
             break;
     }
 }
-#endif
-
 bool DfxMemory::ReadReg(int regIdx, uintptr_t* val)
 {
     if (acc_ != nullptr && acc_->AccessReg(regIdx, val, ctx_) == UNW_ERROR_NONE) {
