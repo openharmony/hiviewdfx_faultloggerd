@@ -533,7 +533,7 @@ static void SetKernelSnapshot(bool enable)
         }
 
         (void)memset_s(val, sizeof(val), 0, sizeof(val));
-        if (snprintf_s(val, sizeof(val), sizeof(val) - 1, "%x", num) < 0) {
+        if (snprintf_s(val, sizeof(val), sizeof(val) - 1, "0x%x", num) < 0) {
             DFXLOGE("Failed to format unexpecterd_die_catch val %{public}d", errno);
             break;
         }
