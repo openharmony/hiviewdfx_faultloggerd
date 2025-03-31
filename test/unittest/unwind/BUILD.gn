@@ -32,7 +32,6 @@ ohos_unittest("test_unwind") {
   sources = [
     "accessors_test.cpp",
     "ark_test.cpp",
-    "elf_factory_test.cpp",
     "elf_imitate.cpp",
     "elf_test.cpp",
     "fp_unwinder_test.cpp",
@@ -42,7 +41,6 @@ ohos_unittest("test_unwind") {
     "regs_test.cpp",
     "signal_test.cpp",
     "symbols_test.cpp",
-    "unwind_entry_parser_test.cpp",
     "unwinder_test.cpp",
   ]
   cflags_cc = [ "-Dprivate=public" ]

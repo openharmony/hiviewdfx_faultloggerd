@@ -296,7 +296,7 @@ bool DfxElf::GetSectionData(unsigned char* buf, uint64_t size, std::string secNa
     return elfParse_->GetSectionData(buf, size, secName);
 }
 
-GnuDebugDataHdr DfxElf::GetGnuDebugDataHdr()
+const GnuDebugDataHdr& DfxElf::GetGnuDebugDataHdr()
 {
     if (!IsValid()) {
         return {};
@@ -315,17 +315,23 @@ bool DfxElf::IsMiniDebugInfoValid()
     return miniDebugInfo_ != nullptr;
 }
 
-const std::set<ElfSymbol>& DfxElf::GetFuncSymbols()
+const std::vector<ElfSymbol>& DfxElf::GetFuncSymbols()
 {
     if (!IsValid() || !funcSymbols_.empty()) {
         return funcSymbols_;
     }
+    funcSymbols_ = elfParse_->GetFuncSymbols();
     if (IsMiniDebugInfoValid()) {
-        funcSymbols_ = miniDebugInfo_->elfParse_->GetFuncSymbols();
-        DFXLOGU("Get MiniDebugInfo FuncSymbols, size: %{public}zu", funcSymbols_.size());
+        auto symbols = miniDebugInfo_->elfParse_->GetFuncSymbols();
+        DFXLOGU("Get MiniDebugInfo FuncSymbols, size: %{public}zu", symbols.size());
+        funcSymbols_.insert(funcSymbols_.end(), symbols.begin(), symbols.end());
     }
-    const auto &symbols = elfParse_->GetFuncSymbols();
-    funcSymbols_.insert(symbols.begin(), symbols.end());
+    std::sort(funcSymbols_.begin(), funcSymbols_.end(), [](const ElfSymbol& sym1, const ElfSymbol& sym2) {
+        return sym1.value < sym2.value;
+    });
+    auto predicate = [](ElfSymbol a, ElfSymbol b) { return a.value == b.value; };
+    funcSymbols_.erase(std::unique(funcSymbols_.begin(), funcSymbols_.end(), predicate), funcSymbols_.end());
+    funcSymbols_.shrink_to_fit();
     DFXLOGU("GetFuncSymbols, size: %{public}zu", funcSymbols_.size());
     return funcSymbols_;
 }
@@ -342,7 +348,16 @@ bool DfxElf::GetFuncInfoLazily(uint64_t addr, ElfSymbol& elfSymbol)
     }
 
     if (findSymbol) {
-        funcSymbols_.emplace(elfSymbol);
+        // Find the first position that is not less than value
+        auto it = lower_bound(funcSymbols_.begin(), funcSymbols_.end(), elfSymbol,
+            [](const ElfSymbol& sym1, const ElfSymbol& sym2) {
+            return sym1.value < sym2.value;
+        });
+        if (it == funcSymbols_.end()) {
+            funcSymbols_.emplace_back(elfSymbol);
+        } else if (it->value != elfSymbol.value) { // Avoid inserting duplicate elements
+            funcSymbols_.emplace(it, elfSymbol);
+        }
         DFXLOGU("GetFuncInfoLazily, size: %{public}zu", funcSymbols_.size());
     }
     return findSymbol;
@@ -357,26 +372,29 @@ bool DfxElf::GetFuncInfo(uint64_t addr, ElfSymbol& elfSymbol)
         return GetFuncInfoLazily(addr, elfSymbol);
     }
 
-    const auto &symbols = GetFuncSymbols();
+    auto symbols = GetFuncSymbols();
     return FindFuncSymbol(addr, symbols, elfSymbol);
 }
 
-bool DfxElf::FindFuncSymbol(uint64_t addr, const std::set<ElfSymbol>& symbols, ElfSymbol& elfSymbol)
+bool DfxElf::FindFuncSymbol(uint64_t addr, const std::vector<ElfSymbol>& symbols, ElfSymbol& elfSymbol)
 {
     DFX_TRACE_SCOPED_DLSYM("FindFuncSymbol");
     if (symbols.empty()) {
         return false;
     }
-    // Find the first position that is not less than value
-    ElfSymbol tmpSym;
-    tmpSym.value = addr;
-    auto next = symbols.upper_bound(tmpSym);
-    if (next != symbols.begin()) {
-        next--;
-    }
-    if (next->value <= addr && addr < (next->value + next->size)) {
-        elfSymbol = *next;
-        return true;
+    size_t begin = 0;
+    size_t end = symbols.size();
+    while (begin < end) {
+        size_t mid = begin + (end - begin) / 2;
+        const auto& symbol = symbols[mid];
+        if (addr < symbol.value) {
+            end = mid;
+        } else if (addr < (symbol.value + symbol.size)) {
+            elfSymbol = symbol;
+            return true;
+        } else {
+            begin = mid + 1;
+        }
     }
     return false;
 }

@@ -32,12 +32,12 @@
 #include "dfx_symbols.h"
 #include "dfx_trace_dlsym.h"
 #include "dfx_util.h"
-#include "elapsed_time.h"
 #include "fp_unwinder.h"
 #include "stack_utils.h"
 #include "string_printf.h"
 #include "string_util.h"
 #include "thread_context.h"
+#include "elapsed_time.h"
 #include "unwind_entry_parser_factory.h"
 
 namespace OHOS {

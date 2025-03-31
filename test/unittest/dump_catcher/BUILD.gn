@@ -74,15 +74,12 @@ if (defined(ohos_lite)) {
     ]
 
     sources = [
-      "$faultloggerd_path/interfaces/innerkits/dump_catcher/kernel_stack_async_collector.cpp",
       "dumpcatcher_command_test.cpp",
       "dumpcatcher_interfaces_test.cpp",
-      "kernelstack_async_collector_test.cpp",
     ]
     cflags_cc = [ "-Dprivate=public" ]
 
     deps = [
-      "$faultloggerd_common_path/dfxlog:dfx_hilog_base",
       "$faultloggerd_interfaces_path/innerkits/backtrace:libbacktrace_local",
       "$faultloggerd_interfaces_path/innerkits/formatter:libjson_stack_formatter",
       "$faultloggerd_path/interfaces/innerkits/dump_catcher:libdfx_dumpcatcher",

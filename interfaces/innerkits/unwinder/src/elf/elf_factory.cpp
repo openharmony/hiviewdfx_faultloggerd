@@ -30,8 +30,8 @@
 #include "dfx_trace_dlsym.h"
 #include "dfx_util.h"
 #if defined(ENABLE_MINIDEBUGINFO)
-#include "7zCrc.h"
 #include "unwinder_config.h"
+#include "7zCrc.h"
 #include "Xz.h"
 #include "XzCrc64.h"
 #endif
@@ -43,6 +43,7 @@ namespace {
 #undef LOG_TAG
 #define LOG_DOMAIN 0xD002D11
 #define LOG_TAG "ElfFactory"
+#define EXPAND_FACTOR 2
 }
 #if defined(ENABLE_MINIDEBUGINFO)
 std::shared_ptr<DfxElf> MiniDebugInfoFactory::Create()
@@ -53,8 +54,7 @@ std::shared_ptr<DfxElf> MiniDebugInfoFactory::Create()
     }
 
     std::vector<uint8_t> miniDebugInfoData;
-    if (!XzDecompress(reinterpret_cast<uint8_t *>(gnuDebugDataHdr_.address),
-        gnuDebugDataHdr_.size, miniDebugInfoData)) {
+    if (!XzDecompress(gnuDebugDataHdr_.address, gnuDebugDataHdr_.size, miniDebugInfoData)) {
         DFXLOGE("Failed to decompressed .gnu_debugdata seciton.");
         return nullptr;
     }
@@ -97,9 +97,8 @@ bool MiniDebugInfoFactory::XzDecompress(const uint8_t *src, size_t srcLen, std::
     size_t dstOff = 0;
     out.resize(srcLen);
     ECoderStatus status = CODER_STATUS_NOT_FINISHED;
-    constexpr uint16_t expandFactor = 2;
     while (status == CODER_STATUS_NOT_FINISHED) {
-        out.resize(out.size() * expandFactor);
+        out.resize(out.size() * EXPAND_FACTOR);
         size_t srcRemain = srcLen - srcOff;
         size_t dstRemain = out.size() - dstOff;
         int res = XzUnpacker_Code(&state,
@@ -137,10 +136,11 @@ std::shared_ptr<DfxElf> RegularElfFactory::Create()
     }
 #endif
     std::string realPath = filePath_;
-    // sandbox file should not be check by realpath function,as start with "/proc/"
-    if (!StartsWith(filePath_, "/proc/") && !RealPath(filePath_, realPath)) {
-        DFXLOGW("Failed to realpath %{public}s, errno(%{public}d)", filePath_.c_str(), errno);
-        return regularElf;
+    if (!StartsWith(filePath_, "/proc/")) { // sandbox file should not be check by realpath function
+        if (!RealPath(filePath_, realPath)) {
+            DFXLOGW("Failed to realpath %{public}s, errno(%{public}d)", filePath_.c_str(), errno);
+            return regularElf;
+        }
     }
 #if defined(is_mingw) && is_mingw
     int fd = OHOS_TEMP_FAILURE_RETRY(open(realPath.c_str(), O_RDONLY | O_BINARY));
@@ -218,6 +218,7 @@ std::shared_ptr<DfxElf> CompressHapElfFactory::Create()
         if (!VerifyElf(fd, elfSize)) {
             break;
         }
+        offset_ -= prevMap_->offset;
         DFXLOGU("elfSize: %{public}zu", elfSize);
         auto mMap = std::make_shared<DfxMmap>();
         if (!mMap->Init(fd, elfSize, prevMap_->offset)) {

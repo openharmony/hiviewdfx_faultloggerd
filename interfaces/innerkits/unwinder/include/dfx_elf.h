@@ -16,10 +16,8 @@
 #ifndef DFX_ELF_H
 #define DFX_ELF_H
 
-#include <functional>
 #include <memory>
 #include <mutex>
-#include <set>
 #include "dfx_elf_parser.h"
 #include "dfx_map.h"
 
@@ -46,7 +44,7 @@ public:
     std::string GetBuildId();
     void SetBuildId(const std::string& buildId);
     static std::string GetBuildId(uint64_t noteAddr, uint64_t noteSize);
-    GnuDebugDataHdr GetGnuDebugDataHdr();
+    const GnuDebugDataHdr& GetGnuDebugDataHdr();
     uintptr_t GetGlobalPointer();
     int64_t GetLoadBias();
     uint64_t GetLoadBase(uint64_t mapStart, uint64_t mapOffset);
@@ -63,7 +61,7 @@ public:
     size_t GetMmapSize();
     bool Read(uintptr_t pos, void* buf, size_t size);
     const std::unordered_map<uint64_t, ElfLoadInfo>& GetPtLoads();
-    const std::set<ElfSymbol>& GetFuncSymbols();
+    const std::vector<ElfSymbol>& GetFuncSymbols();
     bool GetFuncInfo(uint64_t addr, ElfSymbol& elfSymbol);
     bool GetSectionInfo(ShdrInfo& shdr, const std::string secName);
     bool GetSectionData(unsigned char* buf, uint64_t size, std::string secName);
@@ -86,7 +84,7 @@ protected:
 #endif
     bool FillUnwindTableByEhhdr(struct DwarfEhFrameHdr* hdr, uintptr_t shdrBase, struct UnwindTableInfo* uti);
     static bool FillUnwindTableByExidx(ShdrInfo shdr, uintptr_t loadBase, struct UnwindTableInfo* uti);
-    bool FindFuncSymbol(uint64_t addr, const std::set<ElfSymbol>& symbols, ElfSymbol& elfSymbol);
+    bool FindFuncSymbol(uint64_t addr, const std::vector<ElfSymbol>& symbols, ElfSymbol& elfSymbol);
     bool IsValidElf(const void* ptr, size_t size);
     bool GetFuncInfoLazily(uint64_t addr, ElfSymbol& elfSymbol);
 
@@ -103,7 +101,7 @@ private:
     bool hasTableInfo_ = false;
     std::shared_ptr<DfxMmap> mmap_ = nullptr;
     std::unique_ptr<ElfParser> elfParse_ = nullptr;
-    std::set<ElfSymbol> funcSymbols_ {};
+    std::vector<ElfSymbol> funcSymbols_ {};
     std::shared_ptr<DfxElf> miniDebugInfo_ = nullptr;
 };
 } // namespace HiviewDFX

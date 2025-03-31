@@ -350,7 +350,7 @@ const std::shared_ptr<DfxElf> DfxMap::GetElf(pid_t pid)
             DFXLOGE("Invalid map, name empty.");
             return nullptr;
         }
-        auto elfFactory = ElfFactorySelector::Select(*this, pid);
+        auto elfFactory = ElfFactorySelector::Select(this, pid);
         if (elfFactory != nullptr) {
             elf = elfFactory->Create();
         }

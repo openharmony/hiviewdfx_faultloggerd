@@ -36,7 +36,7 @@ public:
     static bool GetSigAltStackRange(uintptr_t& stackBottom, uintptr_t& stackTop);
 private:
     struct MapRange {
-        bool IsValid() const
+        bool Valid() const
         {
             return start != 0 && start < end;
         }

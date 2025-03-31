@@ -39,16 +39,6 @@ namespace OHOS {
 namespace HiviewDFX {
 
 std::atomic<int> KernelStackAsyncCollector::asyncCount_{0};
-struct KerrCodeToErrCode {
-    KernelStackErrorCode kErrCode;
-    KernelStackAsyncCollector::ErrorCode errCode;
-};
-const struct KerrCodeToErrCode ERR_CODE_CONVERT_TABLE[] = {
-    { KERNELSTACK_ESUCCESS, KernelStackAsyncCollector::STACK_SUCCESS },
-    { KERNELSTACK_ECREATE, KernelStackAsyncCollector::STACK_ECREATE },
-    { KERNELSTACK_EOPEN, KernelStackAsyncCollector::STACK_EOPEN },
-    { KERNELSTACK_EIOCTL, KernelStackAsyncCollector::STACK_EIOCTL },
-};
 
 KernelStackAsyncCollector::KernelResult KernelStackAsyncCollector::GetProcessStackWithTimeout(int pid,
     uint32_t timeoutMs) const
@@ -170,9 +160,19 @@ bool KernelStackAsyncCollector::CheckProcessValid(int pid)
 
 KernelStackAsyncCollector::ErrorCode KernelStackAsyncCollector::ToErrCode(int kernelErr)
 {
-    auto iter = std::find_if(std::begin(ERR_CODE_CONVERT_TABLE), std::end(ERR_CODE_CONVERT_TABLE),
-        [kernelErr] (const KerrCodeToErrCode &kerrCodeToErrCode) { return kerrCodeToErrCode.kErrCode == kernelErr; });
-    return iter != std::end(ERR_CODE_CONVERT_TABLE) ? iter->errCode : STACK_UNKNOWN;
+    switch (kernelErr) {
+        case KERNELSTACK_ESUCCESS:
+            return STACK_SUCCESS;
+        case KERNELSTACK_ECREATE:
+            return STACK_ECREATE;
+        case KERNELSTACK_EOPEN:
+            return STACK_EOPEN;
+        case KERNELSTACK_EIOCTL:
+            return STACK_EIOCTL;
+        default:
+            return STACK_UNKNOWN;
+    }
 }
+
 } // namespace HiviewDFX
 } // namespace OHOS

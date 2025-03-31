@@ -24,7 +24,7 @@ namespace HiviewDFX {
 #define REGS_PRINT_LEN 1024
 #define DWARF_PRESERVED_REGS_NUM 97
 
-enum RegsEnumArm64 : uint16_t {
+enum class RegsEnumArm64 : uint16_t {
     REG_AARCH64_X0 = 0,
     REG_AARCH64_X1,
     REG_AARCH64_X2,
