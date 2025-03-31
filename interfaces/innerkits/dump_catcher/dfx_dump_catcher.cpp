@@ -30,6 +30,7 @@
 #include <sys/types.h>
 
 #include "backtrace_local.h"
+#include "kernel_stack_async_collector.h"
 #include "dfx_define.h"
 #include "dfx_dump_catcher_errno.h"
 #include "dfx_dump_res.h"
@@ -40,7 +41,6 @@
 #include "elapsed_time.h"
 #include "faultloggerd_client.h"
 #include "file_ex.h"
-#include "kernel_stack_async_collector.h"
 #include "procinfo.h"
 #include "string_printf.h"
 
