@@ -302,7 +302,7 @@ static bool CheckCppCrashAsyncStackDisableKeywords(const string& filePath, const
 static bool CheckTestGetCrashObj(const string& filePath, const pid_t& pid)
 {
     string log[] = {
-        "Pid:" + to_string(pid), "Uid", ":crasher", "SIGSEGV", "LastFatalMessage:", "crashObject",
+        "Pid:" + to_string(pid), "Uid", ":crasher", "SIGSEGV", "LastFatalMessage:", "crashObject.",
         "Tid:", "#00", "Registers:", REGISTERS, "FaultStack:", "Maps:", "/crasher"
     };
     int minRegIdx = 8; // 8 : index of first REGISTERS - 1

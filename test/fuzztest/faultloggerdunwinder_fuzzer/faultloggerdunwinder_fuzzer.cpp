@@ -266,15 +266,8 @@ void TestDfxInstrStatistic(const uint8_t* data, size_t size)
 
 void TestDfxXzUtils(const uint8_t* data, size_t size)
 {
-    uint8_t src;
-    if (size < sizeof(src)) {
-        return;
-    }
-
-    STREAM_TO_VALUEINFO(data, src);
-
-    std::shared_ptr<std::vector<uint8_t>> out;
-    XzDecompress(&src, size, out);
+    std::shared_ptr<std::vector<uint8_t>> out = std::make_shared<std::vector<uint8_t>>();
+    XzDecompress(data, size, out);
 }
 
 void FaultloggerdUnwinderTest(const uint8_t* data, size_t size)

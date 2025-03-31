@@ -37,6 +37,9 @@ static void XzFree(ISzAllocPtr, void *address)
 bool XzDecompress(const uint8_t *src, size_t srcLen, std::shared_ptr<std::vector<uint8_t>> out)
 {
     DFX_TRACE_SCOPED_DLSYM("XzDecompress");
+    if (srcLen == 0) {
+        return false;
+    }
     ISzAlloc alloc;
     CXzUnpacker state;
     alloc.Alloc = XzAlloc;

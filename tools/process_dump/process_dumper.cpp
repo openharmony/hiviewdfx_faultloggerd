@@ -405,6 +405,7 @@ void ProcessDumper::Dump()
     startTime_ = GetTimeMillisec();
     std::shared_ptr<ProcessDumpRequest> request = std::make_shared<ProcessDumpRequest>();
     resDump_ = DumpProcess(request);
+
     std::string jsonInfo;
     if (isJsonDump_ || isCrash_) {
         DfxStackInfoJsonFormatter formatter(process_, request);
