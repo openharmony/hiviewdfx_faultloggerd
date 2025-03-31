@@ -33,7 +33,7 @@ public:
      * @param outStackStr output the stack string
      * @return bool
      */
-    static bool FormatJsonStack(const std::string& jsonStack, std::string& outStackStr);
+    static bool FormatJsonStack(std::string jsonStack, std::string& outStackStr);
 
     /**
      * @brief Format kernel stack

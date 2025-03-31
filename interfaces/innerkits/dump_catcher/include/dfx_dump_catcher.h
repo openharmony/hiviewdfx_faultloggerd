@@ -17,23 +17,21 @@
 #define DFX_DUMPCATCH_H
 
 #include <cinttypes>
+#include <condition_variable>
+#include <cstring>
 #include <memory>
 #include <mutex>
+#include <poll.h>
 #include <string>
-#include <vector>
-// some module head files not self-included.
 #include <unistd.h>
-#include <sys/syscall.h>
+#include <vector>
+
+#include "dfx_dump_catcher_errno.h"
+
 namespace OHOS {
 namespace HiviewDFX {
 class DfxDumpCatcher {
 public:
-    static constexpr size_t DEFAULT_MAX_FRAME_NUM = 256;
-
-    DfxDumpCatcher();
-    DfxDumpCatcher(const DfxDumpCatcher&) = delete;
-    DfxDumpCatcher& operator=(const DfxDumpCatcher&) = delete;
-
     /**
      * @brief Dump native stack by specify pid and tid
      *
@@ -67,7 +65,7 @@ public:
      * @param msg  message of native stack
      * @return if succeed return true, otherwise return false
     */
-    bool DumpCatchMultiPid(const std::vector<int> &pidV, std::string& msg);
+    bool DumpCatchMultiPid(const std::vector<int> pidV, std::string& msg);
     /**
      * @brief Dump stack of process
      *
@@ -95,8 +93,40 @@ public:
     std::pair<int, std::string> DumpCatchWithTimeout(int pid, std::string& msg, int timeout = 3000,
         int tid = 0, bool isJson = false);
 private:
-    class Impl;
-    std::shared_ptr<Impl> impl_;
+    static constexpr size_t DEFAULT_MAX_FRAME_NUM = 256;
+    bool DoDumpCurrTid(const size_t skipFrameNum, std::string& msg, size_t maxFrameNums);
+    bool DoDumpLocalTid(const int tid, std::string& msg, size_t maxFrameNums);
+    bool DoDumpLocalPid(int pid, std::string& msg, size_t maxFrameNums);
+    bool DoDumpLocalLocked(int pid, int tid, std::string& msg, size_t maxFrameNums);
+    int32_t DoDumpRemoteLocked(int pid, int tid, std::string& msg, bool isJson = false,
+        int timeout = DUMPCATCHER_REMOTE_TIMEOUT);
+    int32_t DoDumpCatchRemote(int pid, int tid, std::string& msg, bool isJson = false,
+        int timeout = DUMPCATCHER_REMOTE_TIMEOUT);
+    int DoDumpRemotePid(int pid, std::string& msg, int (&pipeReadFd)[2],
+        bool isJson = false, int32_t timeout = DUMPCATCHER_REMOTE_TIMEOUT);
+    bool HandlePollError(const uint64_t endTime, int& remainTime,
+        bool& collectAllTidStack, std::string& resMsg, int& ret);
+    bool HandlePollTimeout(const int timeout, int& remainTime,
+        bool& collectAllTidStack, std::string& resMsg, int& ret);
+    bool HandlePollEvents(std::pair<int, std::string>& bufState, std::pair<int, std::string>& resState,
+        const struct pollfd (&readFds)[2], bool& bPipeConnect, bool& res);
+    std::pair<bool, int> DumpRemotePoll(const int timeout, std::pair<int, std::string>& bufState,
+        std::pair<int, std::string>& resState);
+    int DoDumpRemotePoll(int timeout, std::string& msg, const int (&pipeReadFd)[2], bool isJson = false);
+    bool DoReadBuf(int fd, std::string& msg);
+    bool DoReadRes(int fd, bool& ret, std::string& msg);
+    static void CollectKernelStack(pid_t pid, int waitMilliSeconds = 0);
+    void AsyncGetAllTidKernelStack(pid_t pid, int waitMilliSeconds = 0);
+    void DealWithPollRet(int pollRet, int pid, int32_t& ret, std::string& msg);
+    void DealWithSdkDumpRet(int sdkdumpRet, int pid, int32_t& ret, std::string& msg);
+
+private:
+    static const int DUMPCATCHER_REMOTE_P90_TIMEOUT = 1000;
+    static const int DUMPCATCHER_REMOTE_TIMEOUT = 10000;
+    std::mutex mutex_;
+    int32_t pid_ = -1;
+    std::string halfProcStatus_ = "";
+    std::string halfProcWchan_ = "";
 };
 } // namespace HiviewDFX
 } // namespace OHOS

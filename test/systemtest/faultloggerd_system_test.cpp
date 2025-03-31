@@ -1135,7 +1135,7 @@ HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest102, TestSize.Level2)
         FAIL();
     }
     cloneStack = static_cast<void *>(static_cast<uint8_t *>(cloneStack) + stackSz - 1);
-    int childPid = clone(RunInNewPidNs, cloneStack, SIGCHLD, nullptr);
+    int childPid = clone(RunInNewPidNs, cloneStack, CLONE_NEWPID | SIGCHLD, nullptr);
     bool isSuccess = childPid > 0;
     if (!isSuccess) {
         ASSERT_FALSE(isSuccess);

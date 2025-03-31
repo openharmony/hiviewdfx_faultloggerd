@@ -35,9 +35,7 @@
 #include <dirent.h>
 #endif
 #include <sys/stat.h>
-#if is_ohos && !is_mingw
-#include <sys/uio.h>
-#endif
+
 #include "dfx_log.h"
 
 #ifdef LOG_DOMAIN
@@ -126,7 +124,7 @@ std::string GetCurrentTimeStr(uint64_t current)
     if (ret <= 0) {
         return "invalid timestamp\n";
     }
-    return millBuf;
+    return std::string(millBuf, strlen(millBuf));
 }
 
 bool ReadDirFiles(const std::string& path, std::vector<std::string>& files)
@@ -145,16 +143,16 @@ bool ReadDirFiles(const std::string& path, std::vector<std::string>& files)
         files.emplace_back(std::string(ent->d_name));
     }
     (void)closedir(dir);
-    return !files.empty();
+    return (files.size() > 0);
 }
 
 bool VerifyFilePath(const std::string& filePath, const std::vector<const std::string>& validPaths)
 {
-    if (validPaths.empty()) {
+    if (validPaths.size() == 0) {
         return true;
     }
 
-    for (const auto &validPath : validPaths) {
+    for (auto validPath : validPaths) {
         if (filePath.find(validPath) == 0) {
             return true;
         }
@@ -175,16 +173,16 @@ void ParseSiValue(siginfo_t& si, uint64_t& endTime, int& tid)
 }
 #endif
 
-off_t GetFileSize(int fd)
+off_t GetFileSize(const int& fd)
 {
-    if (fd < 0) {
-        return 0;
+    off_t fileSize = 0;
+    if (fd >= 0) {
+        struct stat fileStat;
+        if (fstat(fd, &fileStat) == 0) {
+            fileSize = fileStat.st_size;
+        }
     }
-    struct stat fileStat;
-    if (fstat(fd, &fileStat) == 0) {
-        return fileStat.st_size;
-    }
-    return 0;
+    return fileSize;
 }
 
 bool ReadFdToString(int fd, std::string& content)
@@ -195,9 +193,9 @@ bool ReadFdToString(int fd, std::string& content)
         content.reserve(sb.st_size);
     }
 
-    char buf[BUFSIZ] = {0};
+    char buf[BUFSIZ] __attribute__((__uninitialized__));
     ssize_t n;
-    while ((n = OHOS_TEMP_FAILURE_RETRY(read(fd, &buf, sizeof(buf)))) > 0) {
+    while ((n = OHOS_TEMP_FAILURE_RETRY(read(fd, &buf[0], sizeof(buf)))) > 0) {
         content.append(buf, n);
     }
     return (n == 0);
@@ -227,52 +225,6 @@ uintptr_t StripPac(uintptr_t inAddr, uintptr_t pacMask)
 #endif
     return outAddr;
 }
-
-#if is_ohos && !is_mingw
-size_t ReadProcMemByPid(const pid_t pid, const uint64_t addr, void* data, size_t size)
-{
-    constexpr size_t maxSize = 64;
-    struct iovec RemoteIovs[maxSize];
-
-    uint64_t cur = addr;
-    size_t totalRead = 0;
-    struct iovec dataIov = {
-        .iov_base = &reinterpret_cast<uint8_t*>(data)[totalRead],
-        .iov_len = size,
-    };
-    size_t iovecsIndex = 0;
-    while (size > 0) {
-        if (cur >= UINTPTR_MAX) {
-            return totalRead;
-        }
-        RemoteIovs[iovecsIndex].iov_base = reinterpret_cast<void*>(cur);
-        uintptr_t misalign = cur & static_cast<uint64_t>(getpagesize() - 1);
-        size_t iovLen = std::min(getpagesize() - misalign, size);
-
-        size -= iovLen;
-        if (__builtin_add_overflow(cur, iovLen, &cur)) {
-            return totalRead;
-        }
-
-        RemoteIovs[iovecsIndex].iov_len = iovLen;
-        ++iovecsIndex;
-        if (iovecsIndex >= maxSize || size <= 0) {
-            ssize_t count = process_vm_readv(pid, &dataIov, 1, RemoteIovs, iovecsIndex, 0);
-            if (count == -1) {
-                return totalRead;
-            }
-            totalRead += static_cast<size_t>(count);
-            if (iovecsIndex >= maxSize) {
-                iovecsIndex -= maxSize;
-            }
-            dataIov.iov_base = &reinterpret_cast<uint8_t*>(data)[totalRead];
-            dataIov.iov_len = size;
-        }
-    }
-
-    return totalRead;
-}
-#endif
 }   // namespace HiviewDFX
 }   // namespace OHOS
 

@@ -35,7 +35,10 @@ if (!defined(ohos_lite)) {
     ldflags = [ "-rdynamic" ]
     defines = [ "LOCK_TO_CPU" ]
     if (libunwinder_debug) {
-      defines += [ "DFX_LOG_UNWIND" ]
+      defines += [
+        "DFX_LOG_UNWIND",
+        "DFX_UNWIND_ERROR",
+      ]
     }
     sources = [
       "$faultloggerd_test_path/benchmarktest/main/main_benchmark.cpp",

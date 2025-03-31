@@ -16,6 +16,8 @@
 #define DFX_COMMON_CUTIL_H
 
 #include <signal.h>
+#include <stdbool.h>
+#include <stddef.h>
 #include <stdint.h>
 #include <unistd.h>
 #include "dfx_define.h"
