@@ -44,51 +44,7 @@ static std::mutex g_mutex;
 static bool g_hasTryLoadRustDemangleLib = false;
 static RustDemangleFn g_rustDemangleFn = nullptr;
 #endif
-
-#if defined(CJ_DEMANGLE) && defined (__LP64__)
-using CJDemangleFn = char*(*)(const char *);
-const std::string CJ_RTLIB_NAME = "libcangjie-runtime.so";
-const std::string CJ_RTLIB_PATH = "/system/lib64/platformsdk/cjsdk/" + CJ_RTLIB_NAME;
-static std::mutex g_cj_mutex;
-static bool g_hasTryLoadCJDemangleLib = false;
-static CJDemangleFn g_cjDemangleFn = nullptr;
-#endif
 }
-
-#if defined(CJ_DEMANGLE) && defined(__LP64__)
-bool DfxSymbols::FindCJDemangleFunction()
-{
-    if (g_hasTryLoadCJDemangleLib) {
-        return (g_cjDemangleFn != nullptr);
-    }
-
-    g_hasTryLoadCJDemangleLib = true;
-
-    Dl_namespace ns;
-    dlns_get("cj_rom_sdk", &ns);
-    void* cjDemangleLibHandle = dlopen_ns(&ns, CJ_RTLIB_NAME.c_str(), RTLD_LAZY | RTLD_NODELETE);
-    if (cjDemangleLibHandle == nullptr) {
-        cjDemangleLibHandle = dlopen(CJ_RTLIB_PATH.c_str(), RTLD_LAZY | RTLD_NODELETE);
-        if (cjDemangleLibHandle == nullptr) {
-            DFXLOGE("Failed to dlopen libcangjie-runtime.so, %{public}s", dlerror());
-            return false;
-        }
-        g_cjDemangleFn = (CJDemangleFn)dlsym(cjDemangleLibHandle, "CJ_MRT_DemangleHandle");
-        if (g_cjDemangleFn == nullptr) {
-            DFXLOGE("Failed to dlsym CJ_MRT_DemangleHandle, %{public}s", dlerror());
-            dlclose(cjDemangleLibHandle);
-            return false;
-        }
-    } else {
-        g_cjDemangleFn = (CJDemangleFn)dlsym(cjDemangleLibHandle, "CJ_MRT_DemangleHandle");
-        if (g_cjDemangleFn == nullptr) {
-            DFXLOGE("Failed to dlsym CJ_MRT_DemangleHandle, %{public}s", dlerror());
-            return false;
-        }
-    }
-    return true;
-}
-#endif
 
 #ifdef RUSTC_DEMANGLE
 bool DfxSymbols::FindRustDemangleFunction()
@@ -191,16 +147,6 @@ std::string DfxSymbols::Demangle(const std::string& buf)
         }
     }
 #endif
-
-#if defined(CJ_DEMANGLE) && defined(__LP64__)
-    if ((buf[1] == 'C') && (demangledStr == nullptr)) {
-        std::lock_guard<std::mutex> lck(g_cj_mutex);
-        if (FindCJDemangleFunction()) {
-            demangledStr = g_cjDemangleFn(bufStr);
-        }
-    }
-#endif
-
     std::string demangleName;
     if (demangledStr != nullptr) {
         demangleName = std::string(demangledStr);

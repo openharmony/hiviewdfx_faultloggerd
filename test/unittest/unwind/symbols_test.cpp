@@ -19,7 +19,6 @@
 #include <string>
 #include <vector>
 #include <iostream>
-#include <filesystem>
 #include "dfx_elf.h"
 #include "elf_imitate.h"
 #include "unwinder_config.h"
@@ -192,28 +191,6 @@ HWTEST_F(DfxSymbolsTest, DfxDemangleTest003, TestSize.Level2)
         DfxSymbols::Demangle("_RNvNtCs2WRBrrl1bb1_3std2rt19lang_start_internal"));
     EXPECT_EQ("profcollectd::main", DfxSymbols::Demangle("_RNvCs4VPobU5SDH_12profcollectd4main"));
     GTEST_LOG_(INFO) << "DfxDemangleTest003: end.";
-}
-
-/**
- * @tc.name: DfxDemangleTest004
- * @tc.desc: test DfxSymbols demangle functions with cangjie
- * @tc.type: FUNC
- */
-HWTEST_F(DfxSymbolsTest, DfxDemangleTest004, TestSize.Level2)
-{
-    GTEST_LOG_(INFO) << "DfxDemangleTest004: start.";
-    std::filesystem::path runtimePath("/system/lib64/platformsdk/cjsdk/libcangjie-runtime.so");
-    if (std::filesystem::exists(runtimePath)) {
-        EXPECT_EQ("std.time.initLocalDefault()",
-            DfxSymbols::Demangle("_CN8std.time16initLocalDefaultHv"));
-        EXPECT_EQ("std.core.Error::init()", DfxSymbols::Demangle("_CN8std.core5Error6<init>Hv"));
-    } else {
-        EXPECT_EQ("_CN8std.time16initLocalDefaultHv",
-            DfxSymbols::Demangle("_CN8std.time16initLocalDefaultHv"));
-        EXPECT_EQ("_CN8std.core5Error6<init>Hv",
-            DfxSymbols::Demangle("_CN8std.core5Error6<init>Hv"));
-    }
-    GTEST_LOG_(INFO) << "DfxDemangleTest004: end.";
 }
 } // namespace HiviewDFX
 } // namespace OHOS

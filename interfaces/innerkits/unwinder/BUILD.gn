@@ -137,7 +137,6 @@ if (defined(ohos_lite)) {
       "is_linux=${is_linux}",
       "is_mingw=${is_mingw}",
       "RUSTC_DEMANGLE",
-      "CJ_DEMANGLE",
     ]
 
     if (libunwinder_debug) {
