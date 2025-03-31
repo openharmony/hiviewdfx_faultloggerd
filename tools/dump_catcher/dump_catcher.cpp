@@ -32,6 +32,14 @@ void DumpCatcher::Dump(int32_t pid, int32_t tid, int timeout) const
     DfxDumpCatcher dfxDump;
     std::string msg = "";
     auto dumpResult = dfxDump.DumpCatchWithTimeout(pid, msg, timeout, tid);
+    std::string toFind = "Result:";
+    size_t startPos = msg.find(toFind);
+    if (startPos != std::string::npos) {
+        size_t endPos = msg.find("\n", startPos);
+        if (endPos != std::string::npos) {
+            msg.erase(startPos, endPos - startPos + 1);
+        }
+    }
     if (dumpResult.first == -1) {
         printf("Result:dump failed.\n");
     } else if (dumpResult.first == 0) {

@@ -480,14 +480,7 @@ std::pair<int, std::string> DfxDumpCatcher::Impl::DealWithDumpCatchRet(int pid, 
             reason += "kernel stack:" + DfxDumpCatchError::ToString(DUMPCATCH_KERNELSTACK_NONEED) + "\n";
         }
     }
-    std::string toFind = "Result:";
-    size_t startPos = msg.find(toFind);
-    if (startPos != std::string::npos) {
-        size_t endPos = msg.find("\n", startPos);
-        if (endPos != std::string::npos) {
-            msg.erase(startPos, endPos - startPos + 1);
-        }
-    }
+
     return std::make_pair(result, reason);
 }
 
