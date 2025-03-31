@@ -39,9 +39,6 @@
 #include <sys/uio.h>
 #endif
 #include "dfx_log.h"
-#if !defined(is_ohos_lite) && !defined(DFX_UTIL_STATIC)
-#include "parameters.h"
-#endif // !is_ohos_lite
 
 #ifdef LOG_DOMAIN
 #undef LOG_DOMAIN
@@ -274,17 +271,6 @@ size_t ReadProcMemByPid(const pid_t pid, const uint64_t addr, void* data, size_t
     return totalReadSize;
 }
 #endif
-
-bool IsBetaVersion()
-{
-#if !defined(is_ohos_lite) && !defined(DFX_UTIL_STATIC)
-    const char *const logsystemVersionType = "const.logsystem.versiontype";
-    static bool isBetaVersion = OHOS::system::GetParameter(logsystemVersionType, "") == "beta";
-    return isBetaVersion;
-#else
-    return false;
-#endif
-}
 }   // namespace HiviewDFX
 }   // namespace OHOS
 

@@ -44,7 +44,6 @@ AT_SYMBOL_HIDDEN uintptr_t StripPac(uintptr_t inAddr, uintptr_t pacMask);
 #if is_ohos && !is_mingw
 AT_SYMBOL_HIDDEN size_t ReadProcMemByPid(const pid_t pid, const uint64_t addr, void* data, size_t size);
 #endif
-AT_SYMBOL_HIDDEN bool IsBetaVersion();
 } // nameapace HiviewDFX
 } // nameapace OHOS
 

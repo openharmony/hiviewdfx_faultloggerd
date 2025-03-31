@@ -41,6 +41,10 @@
 #ifdef PARSE_LOCK_OWNER
 #include "lock_parser.h"
 #endif
+#ifndef is_ohos_lite
+#include "parameter.h"
+#include "parameters.h"
+#endif // !is_ohos_lite
 #include "process_dumper.h"
 #include "printer.h"
 
@@ -54,9 +58,11 @@ void GetThreadKernelStack(std::shared_ptr<DfxThread> thread)
     DfxThreadStack threadStack;
     if (DfxGetKernelStack(tid, threadKernelStack) == 0 && FormatThreadKernelStack(threadKernelStack, threadStack)) {
         DFXLOGI("Failed to get tid(%{public}d) user stack, try kernel", tid);
-        if (IsBetaVersion()) {
+#ifndef is_ohos_lite
+        if (OHOS::system::GetParameter("const.logsystem.versiontype", "false") == "beta") {
             DFXLOGI("%{public}s", threadKernelStack.c_str());
         }
+#endif
         thread->SetParseSymbolNecessity(false);
         thread->SetFrames(threadStack.frames);
     }

@@ -61,7 +61,6 @@ if (defined(ohos_lite)) {
     external_deps = [
       "c_utils:utils",
       "hilog:libhilog",
-      "init:libbegetutil",
     ]
     part_name = "faultloggerd"
     subsystem_name = "hiviewdfx"
@@ -70,10 +69,7 @@ if (defined(ohos_lite)) {
   ohos_static_library("dfx_util_static") {
     sources = dfx_util_sources
     public_configs = [ ":dfx_util_config" ]
-    defines = [
-      "DFX_LOG_HILOG_BASE",
-      "DFX_UTIL_STATIC",
-    ]
+    defines = [ "DFX_LOG_HILOG_BASE" ]
     deps = [ "$faultloggerd_path/common/dfxlog:dfx_hilog_base_static" ]
     external_deps = [
       "bounds_checking_function:libsec_static",
@@ -92,7 +88,6 @@ if (defined(ohos_lite)) {
       external_deps = [
         "c_utils:utils",
         "hilog:libhilog",
-        "init:libbegetutil",
       ]
     }
     part_name = "faultloggerd"
