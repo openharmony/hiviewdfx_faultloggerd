@@ -253,7 +253,7 @@ bool GetMsgFromSocket(int32_t sockFd, void* data, uint32_t dataLength)
     }
     ssize_t nread = OHOS_TEMP_FAILURE_RETRY(read(sockFd, data, dataLength));
     if (nread <= 0) {
-        DFXLOGE("Failed to get message from socket, %{public}zd.", nread);
+        DFXLOGE("Failed to get message from socket, %{public}zd, errno(%{public}d). ", nread, errno);
         return false;
     }
     return true;

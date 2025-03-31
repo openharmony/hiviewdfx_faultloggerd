@@ -17,6 +17,7 @@
 #define DFX_SOCKET_REQUEST_H
 
 #include <inttypes.h>
+#include <stdio.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -114,6 +115,20 @@ typedef struct PipFdRequestData {
     /** type of pipe */
     int8_t pipeType;
 } __attribute__((packed)) PipFdRequestData;
+
+typedef struct SocketRequestData {
+    /** request data **/
+    const void* requestData;
+    /** request data size */
+    size_t requestSize;
+} __attribute__((packed)) SocketRequestData;
+
+typedef struct SocketFdData {
+    /** socket fd data **/
+    int* fds;
+    /** socket fd size */
+    uint32_t nFds;
+} __attribute__((packed)) SocketFdData;
 
 /**
  * @brief  request information

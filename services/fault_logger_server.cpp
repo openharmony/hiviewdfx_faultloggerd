@@ -103,10 +103,11 @@ void SocketServer::ClientRequestListener::OnEventPoll()
         int32_t retCode = service ? service->OnReceiveMsg(socketServerListener_.socketName_, GetFd(), nread, buf)
             : ResponseCode::UNKNOWN_CLIENT_TYPE;
         if (retCode != ResponseCode::REQUEST_SUCCESS) {
-            DFXLOGW("%{public}s :: Failed to resolve the request for clientType: %{public}d, "
-                    "and retCode %{public}d", FAULTLOGGERD_SERVER_TAG, dataHead->clientType, retCode);
             SendMsgToSocket(GetFd(), &retCode, sizeof(retCode));
         }
+        DFXLOGI("%{public}s :: %{public}s has processed request for pid: %{public}d, clientType: %{public}d, "
+            "and retCode %{public}d", FAULTLOGGERD_SERVER_TAG, socketServerListener_.socketName_.c_str(),
+            dataHead->clientPid, dataHead->clientType, retCode);
     }
     socketServerListener_.socketServer_.epollManager_.RemoveListener(GetFd());
 }

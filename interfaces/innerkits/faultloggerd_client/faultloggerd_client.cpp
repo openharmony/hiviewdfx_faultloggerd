@@ -34,7 +34,8 @@
 
 namespace {
 constexpr const char* const FAULTLOGGERD_CLIENT_TAG = "FAULT_LOGGERD_CLIENT";
-constexpr int32_t SOCKET_TIMEOUT = 1;
+constexpr int32_t SDKDUMP_SOCKET_TIMEOUT = 1;
+constexpr int32_t CRASHDUMP_SOCKET_TIMEOUT = 3;
 std::string GetSocketName()
 {
     char content[NAME_BUF_LEN];
@@ -48,9 +49,10 @@ void FillRequestHeadData(RequestDataHead& head, FaultLoggerClientType clientType
     head.clientPid = getpid();
 }
 
-int32_t SendRequestToSocket(int32_t sockFd, const std::string& socketName, const void* data, size_t dataSize)
+int32_t SendRequestToSocket(int32_t sockFd, const std::string& socketName, const void* data, size_t dataSize,
+    int32_t timeout)
 {
-    if (!StartConnect(sockFd, socketName.c_str(), SOCKET_TIMEOUT)) {
+    if (!StartConnect(sockFd, socketName.c_str(), timeout)) {
         return ResponseCode::CONNECT_FAILED;
     }
     if (!SendMsgToSocket(sockFd, data, dataSize)) {
@@ -61,11 +63,11 @@ int32_t SendRequestToSocket(int32_t sockFd, const std::string& socketName, const
     return retCode;
 }
 
-int32_t SendRequestToServer(const std::string& socketName, const void* data, size_t dataSize,
+int32_t SendRequestToServer(const std::string& socketName, const void* data, size_t dataSize, int32_t timeout,
     const std::function<int32_t(int32_t, int32_t)>& resultHandler = nullptr)
 {
     OHOS::HiviewDFX::SmartFd sockFd = CreateSocketFd();
-    int32_t retCode = SendRequestToSocket(sockFd, socketName, data, dataSize);
+    int32_t retCode = SendRequestToSocket(sockFd, socketName, data, dataSize, timeout);
     if (resultHandler) {
         retCode = resultHandler(sockFd, retCode);
     }
@@ -76,29 +78,35 @@ int32_t SendRequestToServer(const std::string& socketName, const void* data, siz
     return retCode;
 }
 
-int32_t RequestFileDescriptorFromServer(const std::string& socketName, const void* requestData,
-    size_t requestSize, int* fds, uint32_t nFds)
+int32_t RequestFileDescriptorFromServer(const std::string& socketName, const SocketRequestData& socketRequestData,
+    const SocketFdData& socketFdData, int32_t timeout)
 {
-    return SendRequestToServer(socketName, requestData, requestSize, [fds, nFds] (int32_t socketFd, int32_t retCode) {
+    return SendRequestToServer(socketName, socketRequestData.requestData, socketRequestData.requestSize, timeout,
+        [socketFdData] (int32_t socketFd, int32_t retCode) {
         if (retCode != ResponseCode::REQUEST_SUCCESS) {
             return retCode;
         }
-        return ReadFileDescriptorFromSocket(socketFd, fds, nFds) ? retCode : ResponseCode::RECEIVE_DATA_FAILED;
+        return ReadFileDescriptorFromSocket(socketFd, socketFdData.fds, socketFdData.nFds) ?
+            retCode : ResponseCode::RECEIVE_DATA_FAILED;
     });
 }
 
 int32_t RequestFileDescriptor(const struct FaultLoggerdRequest &request)
 {
     int32_t fd{-1};
+    SocketRequestData socketRequestData = {&request, sizeof(request)};
+    SocketFdData socketFdData = {&fd, 1};
     switch (request.type) {
         case CPP_CRASH:
         case CPP_STACKTRACE:
         case LEAK_STACKTRACE:
         case JIT_CODE_LOG:
-            RequestFileDescriptorFromServer(SERVER_CRASH_SOCKET_NAME, &request, sizeof(request), &fd, 1);
+            RequestFileDescriptorFromServer(SERVER_CRASH_SOCKET_NAME, socketRequestData, socketFdData,
+                CRASHDUMP_SOCKET_TIMEOUT);
             return fd;
         default:
-            RequestFileDescriptorFromServer(SERVER_SOCKET_NAME, &request, sizeof(request), &fd, 1);
+            RequestFileDescriptorFromServer(SERVER_SOCKET_NAME, socketRequestData, socketFdData,
+                CRASHDUMP_SOCKET_TIMEOUT);
             return fd;
     }
 }
@@ -141,8 +149,10 @@ int32_t RequestSdkDump(int32_t pid, int32_t tid, int (&pipeReadFd)[2], bool isJs
     request.callerTid = gettid();
     request.time = OHOS::HiviewDFX::GetTimeMilliSeconds();
     request.endTime = GetAbsTimeMilliSeconds() + static_cast<uint64_t>(timeout);
-    return RequestFileDescriptorFromServer(SERVER_SDKDUMP_SOCKET_NAME, &request,
-        sizeof(request), pipeReadFd, PIPE_NUM_SZ);
+    SocketRequestData socketRequestData = {&request, sizeof(request)};
+    SocketFdData socketFdData = {pipeReadFd, PIPE_NUM_SZ};
+    return RequestFileDescriptorFromServer(SERVER_SDKDUMP_SOCKET_NAME, socketRequestData, socketFdData,
+        SDKDUMP_SOCKET_TIMEOUT);
 #else
     return ResponseCode::DEFAULT_ERROR_CODE;
 #endif
@@ -159,7 +169,9 @@ int32_t RequestPipeFd(int32_t pid, int32_t pipeType, int (&pipeFd)[2])
     FillRequestHeadData(request.head, FaultLoggerClientType::PIPE_FD_CLIENT);
     request.pipeType = static_cast<int8_t>(pipeType);
     request.pid = pid;
-    return RequestFileDescriptorFromServer(GetSocketName(), &request, sizeof(request), pipeFd, PIPE_NUM_SZ);
+    SocketRequestData socketRequestData = {&request, sizeof(request)};
+    SocketFdData socketFdData = {pipeFd, PIPE_NUM_SZ};
+    return RequestFileDescriptorFromServer(GetSocketName(), socketRequestData, socketFdData, CRASHDUMP_SOCKET_TIMEOUT);
 #else
     return ResponseCode::DEFAULT_ERROR_CODE;
 #endif
@@ -172,7 +184,7 @@ int32_t RequestDelPipeFd(int32_t pid)
     FillRequestHeadData(request.head, FaultLoggerClientType::PIPE_FD_CLIENT);
     request.pipeType = FaultLoggerPipeType::PIPE_FD_DELETE;
     request.pid = pid;
-    return SendRequestToServer(GetSocketName(), &request, sizeof(request));
+    return SendRequestToServer(GetSocketName(), &request, sizeof(request), SDKDUMP_SOCKET_TIMEOUT);
 #else
     return ResponseCode::DEFAULT_ERROR_CODE;
 #endif
@@ -186,7 +198,7 @@ int32_t ReportDumpStats(struct FaultLoggerdStatsRequest *request)
     }
     FillRequestHeadData(request->head, FaultLoggerClientType::DUMP_STATS_CLIENT);
     OHOS::HiviewDFX::SmartFd socketFd = CreateSocketFd();
-    if (!StartConnect(socketFd, GetSocketName().c_str(), SOCKET_TIMEOUT)) {
+    if (!StartConnect(socketFd, GetSocketName().c_str(), SDKDUMP_SOCKET_TIMEOUT)) {
         DFXLOGE("%{public}s.%{public}s :: failed to connect server.", FAULTLOGGERD_CLIENT_TAG, __func__);
         return ResponseCode::CONNECT_FAILED;
     }
