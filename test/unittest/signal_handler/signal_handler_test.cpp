@@ -82,8 +82,8 @@ static bool CheckCallbackCrashKeyWords(const string& filePath, pid_t pid, int si
         sigKeyword = iter->second;
     }
     string keywords[] = {
-        "Pid:" + to_string(pid), "Uid:", "name:./test_signalhandler", sigKeyword,
-        "Tid:", "#00", "Registers:", "FaultStack:", "Maps:", "test_signalhandler"
+        "Pid:" + to_string(pid), "Uid:", "name:./test_signalhandler", sigKeyword, "Tid:", "#00", "Registers:",
+        "ExtraCrashInfo(Callback):", "extraCrashInfo", "FaultStack:", "Maps:", "test_signalhandler"
     };
     int length = sizeof(keywords) / sizeof(keywords[0]);
     int minRegIdx = -1;

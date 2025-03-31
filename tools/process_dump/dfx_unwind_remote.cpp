@@ -172,7 +172,7 @@ bool DfxUnwindRemote::UnwindKeyThread(const ProcessDumpRequest& request, DfxProc
     if (!unwindAsyncThread.unwindFailTip.empty()) {
         ReportCrashException(process.processInfo_.processName, process.processInfo_.pid,
                              process.processInfo_.uid, CrashExceptionCode::CRASH_UNWIND_ESTACK);
-        process.SetFatalMessage(unwindAsyncThread.unwindFailTip);
+        process.extraCrashInfo += ("ExtraCrashInfo(Unwindstack):\n" + unwindAsyncThread.unwindFailTip);
     }
     if (ProcessDumper::GetInstance().IsCrash()) {
         // Registers of unwThread has been changed, we should print regs from request context.
