@@ -57,7 +57,7 @@ if (defined(ohos_lite)) {
     include_dirs = [ "$faultloggerd_interfaces_path/common" ]
   }
 
-  module_output_path = "faultloggerd/procinfo"
+  module_output_path = "faultloggerd/faultloggerd/procinfo"
 
   ohos_unittest("test_procinfo") {
     module_out_path = module_output_path

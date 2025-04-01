@@ -25,7 +25,7 @@ if (defined(ohos_lite)) {
   import("//build/test.gni")
 
   ohos_rust_unittest("rust_stacktrace_test") {
-    module_out_path = "faultloggerd/stacktrace_rust"
+    module_out_path = "faultloggerd/faultloggerd/stacktrace_rust"
     sources = [ "main.rs" ]
     deps = [ "$faultloggerd_path/interfaces/rust/stacktrace:stacktrace_rust" ]
   }

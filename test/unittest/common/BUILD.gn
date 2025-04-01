@@ -20,7 +20,7 @@ if (defined(ohos_lite)) {
   if (ohos_build_type == "debug") {
     unittest("test_common") {
       output_extension = "bin"
-      output_dir = "$root_out_dir/test/unittest/faultloggerd"
+      output_dir = "$root_out_dir/test/unittest/faultloggerd/faultloggerd"
 
       include_dirs = [
         "$c_utils_include_path",
@@ -66,7 +66,7 @@ if (defined(ohos_lite)) {
     ]
   }
 
-  module_output_path = "faultloggerd/common"
+  module_output_path = "faultloggerd/faultloggerd/common"
 
   ohos_unittest("test_common") {
     module_out_path = module_output_path

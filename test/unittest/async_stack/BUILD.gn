@@ -15,7 +15,7 @@ import("//base/hiviewdfx/faultloggerd/faultloggerd.gni")
 import("//build/config/features.gni")
 import("//build/test.gni")
 
-module_output_path = "faultloggerd/async_stack"
+module_output_path = "faultloggerd/faultloggerd/async_stack"
 
 ohos_unittest("async_stack_test") {
   module_out_path = module_output_path

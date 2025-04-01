@@ -21,7 +21,7 @@ if (defined(ohos_lite)) {
     unittest("test_dumpcatcher") {
       output_extension = "bin"
 
-      output_dir = "$root_out_dir/test/unittest/faultloggerd"
+      output_dir = "$root_out_dir/test/unittest/faultloggerd/faultloggerd"
 
       sources = [ "dumpcatcher_interfaces_test.cpp" ]
 
@@ -56,7 +56,7 @@ if (defined(ohos_lite)) {
   import("//build/config/features.gni")
   import("//build/test.gni")
 
-  module_output_path = "faultloggerd/dump_catcher"
+  module_output_path = "faultloggerd/faultloggerd/dump_catcher"
 
   ohos_unittest("test_dumpcatcher") {
     module_out_path = module_output_path

@@ -34,7 +34,7 @@ if (defined(ohos_lite)) {
   }
 
   ohos_unittest("test_demangle") {
-    module_out_path = "faultloggerd/rustc_demangle"
+    module_out_path = "faultloggerd/faultloggerd/rustc_demangle"
 
     configs = [ ":module_private_config" ]
     defines = [ "UNITTEST" ]

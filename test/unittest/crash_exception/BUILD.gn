@@ -30,7 +30,7 @@ if (defined(ohos_lite)) {
     include_dirs = [ "$faultloggerd_interfaces_path/common" ]
   }
 
-  module_output_path = "faultloggerd/crash_exception"
+  module_output_path = "faultloggerd/faultloggerd/crash_exception"
 
   ohos_unittest("test_crash_exception") {
     module_out_path = module_output_path

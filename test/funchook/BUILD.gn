@@ -70,7 +70,7 @@ if (!defined(ohos_lite)) {
 
   ohos_unittest("DfxFuncHookUnitTest") {
     testonly = true
-    module_out_path = "faultloggerd/dfxfunchook"
+    module_out_path = "faultloggerd/faultloggerd/dfxfunchook"
     sources = [ "dfx_func_hook_unittest.cpp" ]
 
     configs = [

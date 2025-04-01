@@ -14,7 +14,7 @@
 import("//build/test.gni")
 
 ohos_js_unittest("FaultloggerdJsTest") {
-  module_out_path = "faultloggerd/resource"
+  module_out_path = "faultloggerd/faultloggerd/resource"
   hap_profile = "./config.json"
   certificate_profile = "signature/openharmony_sx.p7b"
 }

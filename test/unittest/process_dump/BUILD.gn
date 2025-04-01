@@ -73,7 +73,7 @@ if (defined(ohos_lite)) {
     ]
   }
 
-  module_output_path = "faultloggerd/process_dump"
+  module_output_path = "faultloggerd/faultloggerd/process_dump"
 
   ohos_unittest("test_processdump") {
     module_out_path = module_output_path
