@@ -24,7 +24,7 @@ if (defined(ohos_lite)) {
   import("//build/config/features.gni")
   import("//build/test.gni")
 
-  module_output_path = "faultloggerd/kernel_snapshot"
+  module_output_path = "faultloggerd/faultloggerd/kernel_snapshot"
 
   ohos_unittest("test_kernel_snapshot") {
     module_out_path = module_output_path

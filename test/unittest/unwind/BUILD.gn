@@ -14,7 +14,7 @@
 import("//base/hiviewdfx/faultloggerd/faultloggerd.gni")
 import("//build/config/features.gni")
 import("//build/test.gni")
-module_output_path = "faultloggerd/unwind"
+module_output_path = "faultloggerd/faultloggerd/unwind"
 
 ohos_unittest("test_unwind") {
   module_out_path = module_output_path

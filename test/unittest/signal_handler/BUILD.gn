@@ -24,7 +24,7 @@ if (defined(ohos_lite)) {
   import("//build/config/features.gni")
   import("//build/test.gni")
 
-  module_output_path = "faultloggerd/signal_handler"
+  module_output_path = "faultloggerd/faultloggerd/signal_handler"
 
   config("module_test_signal_config") {
     visibility = [ "*:*" ]
