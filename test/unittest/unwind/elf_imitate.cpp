@@ -756,7 +756,7 @@ bool ElfImitate::ParseElfSymbols()
         } else {
             elfSymbol.shndx = static_cast<uint16_t>(std::stoul(strVec[INDEX_I6]));
         }
-        funcSymbols_.push_back(elfSymbol);
+        elfSymbols_.push_back(elfSymbol);
     }
     return true;
 }
@@ -793,12 +793,12 @@ bool ElfImitate::GetSectionInfo(ShdrInfo& shdr, const std::string& securityName)
     return false;
 }
 
-const std::vector<ElfSymbol>& ElfImitate::GetFuncSymbols()
+const std::vector<ElfSymbol>& ElfImitate::GetElfSymbols()
 {
-    if (funcSymbols_.empty()) {
+    if (elfSymbols_.empty()) {
         ParseElfSymbols();
     }
-    return funcSymbols_;
+    return elfSymbols_;
 }
 uint64_t ElfImitate::GetLoadBase(uint64_t mapStart, uint64_t mapOffset)
 {
@@ -834,7 +834,7 @@ bool ElfImitate::IsFunc(const ElfSymbol symbol)
 
 bool ElfImitate::ParseSymbols(std::vector<DfxSymbol>& symbols, const std::string& filePath)
 {
-    std::vector<ElfSymbol> elfSymbols = GetFuncSymbols();
+    std::vector<ElfSymbol> elfSymbols = GetElfSymbols();
     for (auto elfSymbol : elfSymbols) {
         if (IsFunc(elfSymbol)) {
             if (elfSymbol.value == 0 || elfSymbol.size == 0) {

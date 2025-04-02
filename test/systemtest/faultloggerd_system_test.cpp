@@ -302,7 +302,7 @@ static bool CheckCppCrashAsyncStackDisableKeywords(const string& filePath, const
 static bool CheckTestGetCrashObj(const string& filePath, const pid_t& pid)
 {
     string log[] = {
-        "Pid:" + to_string(pid), "Uid", ":crasher", "SIGSEGV", "LastFatalMessage:", "crashObject",
+        "Pid:" + to_string(pid), "Uid", ":crasher", "SIGSEGV", "LastFatalMessage:", "crashObject.",
         "Tid:", "#00", "Registers:", REGISTERS, "FaultStack:", "Maps:", "/crasher"
     };
     int minRegIdx = 8; // 8 : index of first REGISTERS - 1
@@ -1124,7 +1124,7 @@ HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest102, TestSize.Level2)
         FAIL();
     }
     cloneStack = static_cast<void *>(static_cast<uint8_t *>(cloneStack) + stackSz - 1);
-    int childPid = clone(RunInNewPidNs, cloneStack, SIGCHLD, nullptr);
+    int childPid = clone(RunInNewPidNs, cloneStack, CLONE_NEWPID | SIGCHLD, nullptr);
     bool isSuccess = childPid > 0;
     if (!isSuccess) {
         ASSERT_FALSE(isSuccess);

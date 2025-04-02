@@ -388,7 +388,8 @@ HWTEST_F(UnwinderTest, UnwindTest004, TestSize.Level2)
     auto frames = unwinder->GetFrames();
     ASSERT_GT(frames.size(), 1);
 
-    std::string framesStr = DfxFrameFormatter::GetFramesStr(frames);
+    auto framesVec = DfxFrameFormatter::ConvertFrames(frames);
+    std::string framesStr = DfxFrameFormatter::GetFramesStr(framesVec);
     GTEST_LOG_(INFO) << "UnwindTest004: frames:\n" << framesStr;
 
     string log[] = {"pc", "test_unwind", "#00", "#01", "#02"};
@@ -921,7 +922,8 @@ HWTEST_F(UnwinderTest, AccessMemTest001, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "AccessMemTest001: start.";
     auto unwinder = std::make_shared<Unwinder>();
-    auto memory = std::make_shared<DfxMemory>(UNWIND_TYPE_LOCAL);
+    auto acc = std::make_shared<DfxAccessorsLocal>();
+    auto memory = std::make_shared<DfxMemory>(acc);
     uintptr_t val;
     EXPECT_FALSE(memory->ReadReg(0, &val));
     uintptr_t regs[] = {0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xa};
@@ -932,7 +934,7 @@ HWTEST_F(UnwinderTest, AccessMemTest001, TestSize.Level2)
 
     uint8_t values[] = {0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8};
     uintptr_t addr = reinterpret_cast<uintptr_t>(&values[0]);
-    EXPECT_FALSE(unwinder->AccessMem(memory.get(), addr, nullptr));
+    EXPECT_FALSE(unwinder->AccessMem(&memory, addr, nullptr));
     GTEST_LOG_(INFO) << "AccessMemTest001: end.";
 }
 
@@ -968,7 +970,31 @@ HWTEST_F(UnwinderTest, UnwinderTest002, TestSize.Level2)
     GTEST_LOG_(INFO) << "UnwinderTest002: start.";
     std::shared_ptr<DfxFrame> frame = nullptr;
     std::string str = DfxFrameFormatter::GetFrameStr(frame);
-    ASSERT_EQ(str, "") << "UnwinderTest002: end.";
+    ASSERT_EQ(str, "");
+    std::vector<std::shared_ptr<DfxFrame>> frames;
+    str = DfxFrameFormatter::GetFramesStr(frames);
+    ASSERT_EQ(str, "");
+    GTEST_LOG_(INFO) << "UnwinderTest002: end.";
+}
+
+/**
+ * @tc.name: UnwinderTest003
+ * @tc.desc: test DfxFrameFormatter GetFrameStr
+ * @tc.type: FUNC
+ */
+HWTEST_F(UnwinderTest, UnwinderTest003, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "UnwinderTest003: start.";
+    std::shared_ptr<DfxFrame> frame = std::make_shared<DfxFrame>();
+    frame->isJsFrame = true;
+    frame->funcName = "testFunc";
+    frame->packageName = "testPack";
+    frame->mapName = "testMap";
+    frame->line = 1;
+    frame->column = 1;
+    std::string str = DfxFrameFormatter::GetFrameStr(frame);
+    ASSERT_FALSE(str.empty());
+    GTEST_LOG_(INFO) << "UnwinderTest003: end.";
 }
 } // namespace HiviewDFX
 } // namepsace OHOS

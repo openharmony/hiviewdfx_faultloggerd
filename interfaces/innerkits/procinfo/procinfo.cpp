@@ -32,9 +32,9 @@
 namespace OHOS {
 namespace HiviewDFX {
 namespace {
-const char * const PID_STR_NAME = "Pid:";
-const char * const PPID_STR_NAME = "PPid:";
-const char * const NSPID_STR_NAME = "NSpid:";
+const char PID_STR_NAME[] = "Pid:";
+const char PPID_STR_NAME[] = "PPid:";
+const char NSPID_STR_NAME[] = "NSpid:";
 const int ARGS_COUNT_ONE = 1;
 const int ARGS_COUNT_TWO = 2;
 const int STATUS_LINE_SIZE = 1024;
@@ -145,12 +145,18 @@ bool IsThreadInPid(int32_t pid, int32_t tid)
 
 bool GetTidsByPidWithFunc(const int pid, std::vector<int>& tids, std::function<bool(int)> const& func)
 {
-    std::string path = (pid == getpid()) ? PROC_SELF_TASK_PATH : StringPrintf("/proc/%d/task", pid);
+    std::string path;
+    if (pid == getpid()) {
+        path = std::string(PROC_SELF_TASK_PATH);
+    } else {
+        path = StringPrintf("/proc/%d/task", pid);
+    }
+
     std::vector<std::string> files;
     if (ReadDirFiles(path, files)) {
         MoveMainThreadToHead(pid, files);
-        for (const auto& file : files) {
-            pid_t tid = atoi(file.c_str());
+        for (size_t i = 0; i < files.size(); ++i) {
+            pid_t tid = atoi(files[i].c_str());
             if (tid == 0) {
                 continue;
             }
@@ -166,7 +172,7 @@ bool GetTidsByPidWithFunc(const int pid, std::vector<int>& tids, std::function<b
 
 bool GetTidsByPid(const int pid, std::vector<int>& tids, std::vector<int>& nstids)
 {
-    struct ProcInfo procInfo{};
+    struct ProcInfo procInfo;
     (void)GetProcStatusByPid(pid, procInfo);
 
     std::function<bool(int)> func = nullptr;

@@ -63,7 +63,7 @@ public:
     int64_t GetLoadBias() { return loadBias_; }
     uint64_t GetStartVaddr() { return startVaddr_; }
     uint64_t GetEndVaddr() { return endVaddr_; }
-    const std::vector<ElfSymbol>& GetFuncSymbols();
+    const std::vector<ElfSymbol>& GetElfSymbols();
     bool GetSectionInfo(ShdrInfo& shdr, const std::string& securityName);
     const std::unordered_map<uint64_t, ElfLoadInfo>& GetPtLoads() {return ptLoads_;}
     uint8_t GetClassType() { return classType_;}
@@ -81,7 +81,7 @@ protected:
     bool ParseElfSymbols();
 
 protected:
-    std::vector<ElfSymbol> funcSymbols_;
+    std::vector<ElfSymbol> elfSymbols_;
 
 private:
     std::vector<std::string> StringSplit(std::string src, const std::string split);

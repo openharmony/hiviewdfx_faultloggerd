@@ -19,8 +19,6 @@
 #include <cstdlib>
 #include <memory>
 #include <mutex>
-#include <pthread.h>
-#include <csignal>
 #include <thread>
 
 #include <dlfcn.h>
@@ -32,12 +30,10 @@
 #include "backtrace_local.h"
 #include "backtrace_local_thread.h"
 #include "dfx_frame_formatter.h"
-#include "dfx_json_formatter.h"
 #include "dfx_kernel_stack.h"
 #include "dfx_test_util.h"
 #include "elapsed_time.h"
 #include "ffrt_inner.h"
-#include "procinfo.h"
 #include "unwinder_config.h"
 
 using namespace testing;
@@ -118,14 +114,13 @@ HWTEST_F(BacktraceLocalTest, BacktraceLocalTest001, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "BacktraceLocalTest001: start.";
     ElapsedTime counter;
-    Unwinder unwinder;
-    BacktraceLocalThread thread(BACKTRACE_CURRENT_THREAD);
-    ASSERT_EQ(true, thread.Unwind(unwinder, false));
+    auto unwinder = std::make_shared<Unwinder>();
+    BacktraceLocalThread thread(BACKTRACE_CURRENT_THREAD, unwinder);
+    ASSERT_EQ(true, thread.Unwind(false));
     GTEST_LOG_(INFO) << "UnwindCurrentCost:" << counter.Elapsed();
     const auto& frames = thread.GetFrames();
     ASSERT_GT(frames.size(), 0);
     GTEST_LOG_(INFO) << thread.GetFormattedStr();
-    thread.SetFrames(frames);
     GTEST_LOG_(INFO) << "BacktraceLocalTest001: end.";
 }
 
@@ -145,26 +140,6 @@ __attribute__((noinline)) void Test001()
     Test002();
 }
 
-__attribute__((noinline)) void TestMaskSigDumpLocalInner()
-{
-    printf("TestMaskSigDumpLocalInner\n");
-    g_mutex.lock();
-    g_mutex.unlock();
-}
-
-__attribute__((noinline)) void TestMaskSigDumpLocal()
-{
-    sigset_t set;
-    sigemptyset(&set);
-    sigaddset(&set, SIGLOCAL_DUMP);
-    if (pthread_sigmask(SIG_BLOCK, &set, nullptr) != 0) {
-        printf("pthread sigmask failed, err(%d)\n", errno);
-    }
-    g_tid = gettid();
-    printf("TestMaskSigDumpLocal:%d\n", g_tid);
-    TestMaskSigDumpLocalInner();
-}
-
 /**
  * @tc.name: BacktraceLocalTest003
  * @tc.desc: test get backtrace of a child thread
@@ -181,9 +156,9 @@ HWTEST_F(BacktraceLocalTest, BacktraceLocalTest003, TestSize.Level2)
     }
 
     ElapsedTime counter;
-    Unwinder unwinder;
-    BacktraceLocalThread thread(g_tid);
-    ASSERT_EQ(true, thread.Unwind(unwinder, false));
+    auto unwinder = std::make_shared<Unwinder>();
+    BacktraceLocalThread thread(g_tid, unwinder);
+    ASSERT_EQ(true, thread.Unwind(false));
     GTEST_LOG_(INFO) << "UnwindCurrentCost:" << counter.Elapsed();
     const auto& frames = thread.GetFrames();
     ASSERT_GT(frames.size(), 0);
@@ -295,16 +270,16 @@ HWTEST_F(BacktraceLocalTest, BacktraceLocalTest007, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "BacktraceLocalTest007: start.";
     ElapsedTime counter;
-    Unwinder unwinder;
-    BacktraceLocalThread oldthread(BACKTRACE_CURRENT_THREAD);
-    ASSERT_EQ(true, oldthread.Unwind(unwinder, false));
+    auto unwinder = std::make_shared<Unwinder>();
+    BacktraceLocalThread oldthread(BACKTRACE_CURRENT_THREAD, unwinder);
+    ASSERT_EQ(true, oldthread.Unwind(false));
     GTEST_LOG_(INFO) << "UnwindCurrentCost:" << counter.Elapsed();
     const auto& oldframes = oldthread.GetFrames();
     ASSERT_GT(oldframes.size(), MIN_FRAME_NUM);
     std::string oldframe = DfxFrameFormatter::GetFrameStr(oldframes[MIN_FRAME_NUM]);
     GTEST_LOG_(INFO) << oldthread.GetFormattedStr();
-    BacktraceLocalThread newthread(BACKTRACE_CURRENT_THREAD);
-    ASSERT_EQ(true, newthread.Unwind(unwinder, false, DEFAULT_MAX_FRAME_NUM, MIN_FRAME_NUM));
+    BacktraceLocalThread newthread(BACKTRACE_CURRENT_THREAD, unwinder);
+    ASSERT_EQ(true, newthread.Unwind(false, DEFAULT_MAX_FRAME_NUM, MIN_FRAME_NUM));
     GTEST_LOG_(INFO) << "UnwindCurrentCost:" << counter.Elapsed();
     const auto& newframes = newthread.GetFrames();
     GTEST_LOG_(INFO) << newthread.GetFormattedStr();
@@ -324,16 +299,16 @@ HWTEST_F(BacktraceLocalTest, BacktraceLocalTest008, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "BacktraceLocalTest008: start.";
     ElapsedTime counter;
-    Unwinder unwinder;
-    BacktraceLocalThread oldthread(BACKTRACE_CURRENT_THREAD);
-    ASSERT_EQ(true, oldthread.Unwind(unwinder, false));
+    auto unwinder = std::make_shared<Unwinder>();
+    BacktraceLocalThread oldthread(BACKTRACE_CURRENT_THREAD, unwinder);
+    ASSERT_EQ(true, oldthread.Unwind(false));
     GTEST_LOG_(INFO) << "UnwindCurrentCost:" << counter.Elapsed();
     const auto& oldframes = oldthread.GetFrames();
     ASSERT_GT(oldframes.size(), 0);
     size_t oldsize = oldframes.size() - 1;
     GTEST_LOG_(INFO) << oldthread.GetFormattedStr();
-    BacktraceLocalThread newthread(BACKTRACE_CURRENT_THREAD);
-    ASSERT_EQ(true, newthread.Unwind(unwinder, false, DEFAULT_MAX_FRAME_NUM, oldsize));
+    BacktraceLocalThread newthread(BACKTRACE_CURRENT_THREAD, unwinder);
+    ASSERT_EQ(true, newthread.Unwind(false, DEFAULT_MAX_FRAME_NUM, oldsize));
     GTEST_LOG_(INFO) << "UnwindCurrentCost:" << counter.Elapsed();
     const auto& newframes = newthread.GetFrames();
     GTEST_LOG_(INFO) << newthread.GetFormattedStr();
@@ -351,15 +326,15 @@ HWTEST_F(BacktraceLocalTest, BacktraceLocalTest009, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "BacktraceLocalTest009: start.";
     ElapsedTime counter;
-    Unwinder unwinder;
-    BacktraceLocalThread oldthread(BACKTRACE_CURRENT_THREAD);
-    ASSERT_EQ(true, oldthread.Unwind(unwinder, false, DEFAULT_MAX_FRAME_NUM, -2));
+    auto unwinder = std::make_shared<Unwinder>();
+    BacktraceLocalThread oldthread(BACKTRACE_CURRENT_THREAD, unwinder);
+    ASSERT_EQ(true, oldthread.Unwind(false, DEFAULT_MAX_FRAME_NUM, -2));
     GTEST_LOG_(INFO) << "UnwindCurrentCost:" << counter.Elapsed();
     const auto& oldframes = oldthread.GetFrames();
     ASSERT_GT(oldframes.size(), MIN_FRAME_NUM);
     GTEST_LOG_(INFO) << oldthread.GetFormattedStr();
-    BacktraceLocalThread newthread(BACKTRACE_CURRENT_THREAD);
-    ASSERT_EQ(true, newthread.Unwind(unwinder, false, DEFAULT_MAX_FRAME_NUM, DEFAULT_MAX_FRAME_NUM));
+    BacktraceLocalThread newthread(BACKTRACE_CURRENT_THREAD, unwinder);
+    ASSERT_EQ(true, newthread.Unwind(false, DEFAULT_MAX_FRAME_NUM, DEFAULT_MAX_FRAME_NUM));
     GTEST_LOG_(INFO) << "UnwindCurrentCost:" << counter.Elapsed();
     const auto& newframes = newthread.GetFrames();
     GTEST_LOG_(INFO) << newthread.GetFormattedStr();
@@ -404,25 +379,11 @@ HWTEST_F(BacktraceLocalTest, BacktraceLocalTest011, TestSize.Level2)
     DfxThreadStack threadStack;
     ASSERT_TRUE(FormatThreadKernelStack(kernelStack, threadStack));
     ASSERT_GT(threadStack.frames.size(), 0);
-    for (const auto& frame : threadStack.frames) {
+    for (auto const& frame : threadStack.frames) {
         auto line = DfxFrameFormatter::GetFrameStr(frame);
         ASSERT_NE(line.find("#"), std::string::npos);
         GTEST_LOG_(INFO) << line;
     }
-    std::vector<DfxThreadStack> processStack;
-    ASSERT_TRUE(FormatProcessKernelStack(kernelStack, processStack));
-    for (const auto& stack : processStack) {
-        ASSERT_GT(stack.frames.size(), 0);
-    }
-    std::string formattedStack;
-    ASSERT_TRUE(DfxJsonFormatter::FormatKernelStack(kernelStack, formattedStack, false));
-    ASSERT_GT(formattedStack.size(), 0);
-    ASSERT_TRUE(formattedStack.find("Tid:") != std::string::npos) << formattedStack;
-    ASSERT_TRUE(formattedStack.find("backtrace_local_test") != std::string::npos) << formattedStack;
-
-    ASSERT_TRUE(DfxJsonFormatter::FormatKernelStack(kernelStack, formattedStack, true));
-    ASSERT_TRUE(formattedStack.find("\"tid\":") != std::string::npos) << formattedStack;
-    ASSERT_TRUE(formattedStack.find("backtrace_local_test") != std::string::npos) << formattedStack;
     GTEST_LOG_(INFO) << "BacktraceLocalTest011: end.";
 }
 
@@ -434,11 +395,16 @@ HWTEST_F(BacktraceLocalTest, BacktraceLocalTest011, TestSize.Level2)
 HWTEST_F(BacktraceLocalTest, BacktraceLocalTest012, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "BacktraceLocalTest012: start.";
+    std::shared_ptr<Unwinder> unwinder1 = nullptr;
     const int tid = -2;
-    Unwinder unwinder;
-    BacktraceLocalThread backtrace(tid);
-    ASSERT_EQ(backtrace.Unwind(unwinder, false, 0, 0), false);
-    std::string str = backtrace.GetFormattedStr(false);
+    BacktraceLocalThread backtrace1(tid, unwinder1);
+    bool ret = backtrace1.Unwind(false, 0, 0);
+    ASSERT_EQ(ret, false);
+    std::shared_ptr<Unwinder> unwinder2 = std::make_shared<Unwinder>();
+    BacktraceLocalThread backtrace2(tid, unwinder2);
+    ret = backtrace2.Unwind(false, 0, 0);
+    ASSERT_EQ(ret, false);
+    std::string str = backtrace2.GetFormattedStr(false);
     ASSERT_EQ(str, "");
     GTEST_LOG_(INFO) << "BacktraceLocalTest012: end.";
 }
@@ -454,9 +420,9 @@ HWTEST_F(BacktraceLocalTest, BacktraceLocalTest013, TestSize.Level2)
     ElapsedTime counter;
     int x = 1;
     const int num = 100;
-    Unwinder unwinder;
-    BacktraceLocalThread thread(BACKTRACE_CURRENT_THREAD);
-    ffrt::submit([&]{x = num; thread.Unwind(unwinder, false, DEFAULT_MAX_FRAME_NUM, 0);}, {}, {&x});
+    auto unwinder = std::make_shared<Unwinder>();
+    BacktraceLocalThread thread(BACKTRACE_CURRENT_THREAD, unwinder);
+    ffrt::submit([&]{x = num; thread.Unwind(false, DEFAULT_MAX_FRAME_NUM, 0);}, {}, {&x});
     ffrt::wait();
     GTEST_LOG_(INFO) << "UnwindCurrentCost:" << counter.Elapsed();
     const auto& frames = thread.GetFrames();
@@ -486,13 +452,13 @@ HWTEST_F(BacktraceLocalTest, BacktraceLocalTest014, TestSize.Level2)
     ElapsedTime counter;
     int x = 1;
     const int num = 100;
-    Unwinder unwinder;
+    auto unwinder = std::make_shared<Unwinder>();
     int tid = -1;
     ffrt::submit([&]{x = num; tid = gettid();}, {}, {&x});
     ffrt::wait();
     ASSERT_GT(tid, 0);
-    BacktraceLocalThread thread(tid);
-    thread.Unwind(unwinder, false, DEFAULT_MAX_FRAME_NUM, 0);
+    BacktraceLocalThread thread(tid, unwinder);
+    thread.Unwind(false, DEFAULT_MAX_FRAME_NUM, 0);
     GTEST_LOG_(INFO) << "UnwindCurrentCost:" << counter.Elapsed();
     const auto& frames = thread.GetFrames();
     ASSERT_GT(frames.size(), MIN_FRAME_NUM);
@@ -617,70 +583,5 @@ HWTEST_F(BacktraceLocalTest, BacktraceLocalTest016, TestSize.Level2)
     }
 }
 #endif
-
-/**
- * @tc.name: BacktraceLocalTest017
- * @tc.desc: test FormatProcessKernelStack
- * @tc.type: FUNC
- */
-HWTEST_F(BacktraceLocalTest, BacktraceLocalTest017, TestSize.Level2)
-{
-    GTEST_LOG_(INFO) << "BacktraceLocalTest017: start.";
-    std::string res = ExecuteCommands("uname");
-    if (res.find("Linux") != std::string::npos) {
-        return;
-    }
-    pid_t pid = GetProcessPid(FOUNDATION_NAME);
-    std::vector<int> tids;
-    std::vector<int> nstids;
-    ASSERT_TRUE(GetTidsByPid(pid, tids, nstids));
-    std::string processKernelStackInfo;
-    for (const auto& tid : tids) {
-        std::string kernelStack;
-        ASSERT_EQ(DfxGetKernelStack(tid, kernelStack), 0);
-        processKernelStackInfo += kernelStack;
-    }
-    std::vector<DfxThreadStack> processStack;
-    ASSERT_TRUE(FormatProcessKernelStack(processKernelStackInfo, processStack));
-    for (const auto& threadStack : processStack) {
-        ASSERT_GT(threadStack.frames.size(), 0);
-        for (auto const& frame : threadStack.frames) {
-            auto line = DfxFrameFormatter::GetFrameStr(frame);
-            ASSERT_NE(line.find("#"), std::string::npos);
-            GTEST_LOG_(INFO) << line;
-        }
-    }
-    GTEST_LOG_(INFO) << "BacktraceLocalTest017: end.";
-}
-
-/**
- * @tc.name: BacktraceLocalTest018
- * @tc.desc: test backtrace using kernel stack
- * @tc.type: FUNC
- */
-HWTEST_F(BacktraceLocalTest, BacktraceLocalTest018, TestSize.Level2)
-{
-    GTEST_LOG_(INFO) << "BacktraceLocalTest018: start.";
-    std::string res = ExecuteCommands("uname");
-    if (res.find("Linux") != std::string::npos) {
-        return;
-    }
-    g_mutex.lock();
-    std::thread backtraceThread(TestMaskSigDumpLocal);
-    sleep(1);
-    if (g_tid <= 0) {
-        FAIL() << "Failed to create child thread.\n";
-    }
-    std::string str;
-    ASSERT_TRUE(GetBacktraceStringByTid(str, g_tid, 0, false)) << str;
-    ASSERT_TRUE(GetBacktraceStringByTidWithMix(str, g_tid, 0, false)) << str;
-    ASSERT_TRUE(!GetProcessStacktrace().empty());
-    g_mutex.unlock();
-    g_tid = 0;
-    if (backtraceThread.joinable()) {
-        backtraceThread.join();
-    }
-    GTEST_LOG_(INFO) << "BacktraceLocalTest018: end.";
-}
 } // namespace HiviewDFX
 } // namepsace OHOS

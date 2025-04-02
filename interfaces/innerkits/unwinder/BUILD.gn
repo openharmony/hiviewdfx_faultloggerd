@@ -1,4 +1,4 @@
-# Copyright (c) 2023-2025 Huawei Device Co., Ltd.
+# Copyright (c) 2023-2024 Huawei Device Co., Ltd.
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -14,41 +14,41 @@
 import("//base/hiviewdfx/faultloggerd/faultloggerd.gni")
 
 dfx_unwinder_sources = [
-  "src/ark/dfx_ark.cpp",
-  "src/ark/dfx_hap.cpp",
-  "src/elf/dfx_elf.cpp",
-  "src/elf/dfx_elf_parser.cpp",
-  "src/elf/dfx_mmap.cpp",
-  "src/elf/dfx_symbols.cpp",
-  "src/elf/elf_factory.cpp",
-  "src/elf/elf_factory_selector.cpp",
-  "src/maps/dfx_map.cpp",
-  "src/maps/dfx_maps.cpp",
-  "src/memory/dfx_accessors.cpp",
-  "src/memory/dfx_memory.cpp",
-  "src/registers/dfx_regs.cpp",
-  "src/registers/dfx_regs_arm.cpp",
-  "src/registers/dfx_regs_arm64.cpp",
-  "src/registers/dfx_regs_loongarch64.cpp",
-  "src/registers/dfx_regs_riscv64.cpp",
-  "src/registers/dfx_regs_x86_64.cpp",
-  "src/registers/getcontext_x86_64.S",
-  "src/unwind_local/thread_context.cpp",
-  "src/utils/dfx_config.cpp",
-  "src/utils/dfx_frame_formatter.cpp",
-  "src/utils/dfx_instr_statistic.cpp",
-  "src/utils/dfx_instructions.cpp",
-  "src/utils/dfx_ptrace.cpp",
-  "src/utils/unwinder_config.cpp",
+  "arch_util.cpp",
+  "dfx_accessors.cpp",
+  "dfx_ark.cpp",
+  "dfx_config.cpp",
+  "dfx_elf.cpp",
+  "dfx_elf_parser.cpp",
+  "dfx_frame_formatter.cpp",
+  "dfx_hap.cpp",
+  "dfx_instr_statistic.cpp",
+  "dfx_instructions.cpp",
+  "dfx_map.cpp",
+  "dfx_maps.cpp",
+  "dfx_memory.cpp",
+  "dfx_mmap.cpp",
+  "dfx_ptrace.cpp",
+  "dfx_regs.cpp",
+  "dfx_regs_arm.cpp",
+  "dfx_regs_arm64.cpp",
+  "dfx_regs_loongarch64.cpp",
+  "dfx_regs_riscv64.cpp",
+  "dfx_regs_x86_64.cpp",
+  "dfx_signal.cpp",
+  "dfx_symbols.cpp",
+  "getcontext_x86_64.S",
+  "thread_context.cpp",
   "unwinder.cpp",
+  "unwinder_config.cpp",
 ]
 
-dfx_exidx_sources = [ "src/unwind_entry_parser/exidx_entry_parser.cpp" ]
+dfx_exidx_sources = [ "arm_exidx.cpp" ]
 
 dfx_dwarf_sources = [
-  "src/unwind_entry_parser/dwarf_cfa_instructions.cpp",
-  "src/unwind_entry_parser/dwarf_entry_parser.cpp",
-  "src/unwind_entry_parser/dwarf_op.cpp",
+  "dwarf_cfa_instructions.cpp",
+  "dwarf_op.cpp",
+  "dwarf_section.cpp",
 ]
 
 if (defined(ohos_lite)) {
@@ -65,15 +65,15 @@ if (defined(ohos_lite)) {
     public_configs = [ ":ohos_lite_config" ]
 
     include_dirs = [
+      "include",
       "$c_utils_include_path",
       "$faultloggerd_common_path/dfxlog",
       "$faultloggerd_common_path/dfxutil",
       "$faultloggerd_interfaces_path/common",
-      "include",
       "$hilog_lite_include_path",
     ]
 
-    dfx_unwinder_sources -= [ "src/registers/getcontext_x86_64.S" ]
+    dfx_unwinder_sources -= [ "getcontext_x86_64.S" ]
     sources = dfx_unwinder_sources
     sources += dfx_exidx_sources
     sources += dfx_dwarf_sources
@@ -95,15 +95,15 @@ if (defined(ohos_lite)) {
     public_configs = [ ":ohos_lite_config" ]
 
     include_dirs = [
+      "include",
       "$c_utils_include_path",
       "$faultloggerd_common_path/dfxlog",
       "$faultloggerd_common_path/dfxutil",
       "$faultloggerd_interfaces_path/common",
-      "include",
       "$hilog_lite_include_path",
     ]
 
-    dfx_unwinder_sources -= [ "src/registers/getcontext_x86_64.S" ]
+    dfx_unwinder_sources -= [ "getcontext_x86_64.S" ]
     sources = dfx_unwinder_sources
     sources += dfx_exidx_sources
     sources += dfx_dwarf_sources
@@ -126,10 +126,10 @@ if (defined(ohos_lite)) {
     visibility = [ "*:*" ]
 
     include_dirs = [
+      "include",
       "$faultloggerd_common_path/dfxlog",
       "$faultloggerd_common_path/dfxutil",
       "$faultloggerd_interfaces_path/common",
-      "include",
     ]
 
     defines = [
@@ -164,14 +164,16 @@ if (defined(ohos_lite)) {
       ":mixstack_config",
       "$faultloggerd_common_path/build:coverage_flags",
     ]
-    defines = [ "DFX_ENABLE_TRACE" ]
-    defines += [ "CJ_DEMANGLE" ]
+    defines = [
+      "DFX_UNWIND_ERROR",
+      "DFX_ENABLE_TRACE",
+    ]
     if (target_cpu == "arm64") {
       defines += [ "ENABLE_PARAMETER" ]
     }
 
     if (target_cpu != "x86_64") {
-      dfx_unwinder_sources -= [ "src/registers/getcontext_x86_64.S" ]
+      dfx_unwinder_sources -= [ "getcontext_x86_64.S" ]
     }
     sources = dfx_unwinder_sources
     sources += dfx_exidx_sources
@@ -183,6 +185,9 @@ if (defined(ohos_lite)) {
       "$faultloggerd_common_path/trace:dfx_trace_dlsym",
     ]
 
+    if (is_ohos && !is_mingw && !is_emulator) {
+      sources += [ "dfx_xz_utils.cpp" ]
+    }
     version_script = "libunwinder.map"
     public_external_deps = [ "lzma:lzma_shared" ]
     external_deps = [
@@ -209,9 +214,9 @@ if (defined(ohos_lite)) {
       ":lzma_config",
       ":mixstack_config",
     ]
-    defines = [ "CJ_DEMANGLE" ]
+
     if (target_cpu != "x86_64") {
-      dfx_unwinder_sources -= [ "src/registers/getcontext_x86_64.S" ]
+      dfx_unwinder_sources -= [ "getcontext_x86_64.S" ]
     }
     sources = dfx_unwinder_sources
     sources += dfx_exidx_sources
@@ -223,6 +228,9 @@ if (defined(ohos_lite)) {
       "$faultloggerd_common_path/trace:dfx_trace_dlsym",
     ]
 
+    if (is_ohos && !is_mingw && !is_emulator) {
+      sources += [ "dfx_xz_utils.cpp" ]
+    }
     public_external_deps = [ "lzma:lzma_shared" ]
     external_deps = [
       "bounds_checking_function:libsec_shared",
@@ -242,7 +250,7 @@ if (defined(ohos_lite)) {
     defines = [ "DFX_LOG_HILOG_BASE" ]
 
     if (target_cpu != "x86_64") {
-      dfx_unwinder_sources -= [ "src/registers/getcontext_x86_64.S" ]
+      dfx_unwinder_sources -= [ "getcontext_x86_64.S" ]
     }
     sources = dfx_unwinder_sources
     sources += dfx_exidx_sources
@@ -254,6 +262,9 @@ if (defined(ohos_lite)) {
       "$faultloggerd_common_path/trace:dfx_trace_dlsym_static",
     ]
 
+    if (is_ohos && !is_mingw && !is_emulator) {
+      sources += [ "dfx_xz_utils.cpp" ]
+    }
     public_external_deps = [ "lzma:lzma_static" ]
     external_deps = [
       "bounds_checking_function:libsec_static",
@@ -272,11 +283,12 @@ if (defined(ohos_lite)) {
     ]
     defines = [
       "DFX_LOG_UNWIND",
+      "DFX_UNWIND_ERROR",
       "INSTR_STATISTIC_ENABLE",
     ]
-    defines += [ "CJ_DEMANGLE" ]
+
     if (target_cpu != "x86_64") {
-      dfx_unwinder_sources -= [ "src/registers/getcontext_x86_64.S" ]
+      dfx_unwinder_sources -= [ "getcontext_x86_64.S" ]
     }
     sources = dfx_unwinder_sources
     sources += dfx_exidx_sources
@@ -288,6 +300,9 @@ if (defined(ohos_lite)) {
       "$faultloggerd_common_path/trace:dfx_trace_dlsym",
     ]
 
+    if (is_ohos && !is_mingw && !is_emulator) {
+      sources += [ "dfx_xz_utils.cpp" ]
+    }
     public_external_deps = [ "lzma:lzma_shared" ]
     external_deps = [
       "bounds_checking_function:libsec_shared",
@@ -319,24 +334,20 @@ if (defined(ohos_lite)) {
   }
 
   ohos_static_library("unwinder_host") {
-    public_configs = [
-      ":unwinder_host_config",
-      ":lzma_config",
-    ]
+    public_configs = [ ":unwinder_host_config" ]
     sources = [
-      "src/ark/dfx_hap.cpp",
-      "src/elf/dfx_elf.cpp",
-      "src/elf/dfx_elf_parser.cpp",
-      "src/elf/dfx_mmap.cpp",
-      "src/elf/dfx_symbols.cpp",
-      "src/elf/elf_factory.cpp",
-      "src/elf/elf_factory_selector.cpp",
-      "src/maps/dfx_map.cpp",
-      "src/maps/dfx_maps.cpp",
-      "src/memory/dfx_memory.cpp",
-      "src/utils/unwinder_config.cpp",
+      "dfx_elf.cpp",
+      "dfx_elf_parser.cpp",
+      "dfx_hap.cpp",
+      "dfx_map.cpp",
+      "dfx_maps.cpp",
+      "dfx_memory.cpp",
+      "dfx_mmap.cpp",
+      "dfx_symbols.cpp",
+      "unwinder_config.cpp",
     ]
     if (is_ohos && !is_mingw && !is_emulator) {
+      sources += [ "dfx_xz_utils.cpp" ]
       public_external_deps = [ "lzma:lzma_static" ]
     }
     deps = [

@@ -105,10 +105,8 @@ bool FormatProcessKernelStack(const std::string& kernelStack, std::vector<DfxThr
 {
 #if !defined(is_ohos_lite) && defined(__aarch64__)
     std::vector<std::string> threadKernelStackVec;
-    std::string keyWord = "Thread info:";
-    OHOS::SplitStr(kernelStack, keyWord, threadKernelStackVec);
-    if (threadKernelStackVec.size() == 1 && kernelStack.find(keyWord) == std::string::npos) {
-        DFXLOGE("Invalid kernelStack, please check it!");
+    OHOS::SplitStr(kernelStack, "Thread info:", threadKernelStackVec);
+    if (threadKernelStackVec.size() == 1) {
         return false;
     }
     for (const std::string& threadKernelStack : threadKernelStackVec) {

@@ -19,8 +19,7 @@
 #include <string>
 #include <vector>
 #include <iostream>
-#include <filesystem>
-#include "elf_factory.h"
+#include "dfx_elf.h"
 #include "elf_imitate.h"
 #include "unwinder_config.h"
 
@@ -50,19 +49,14 @@ public:
 HWTEST_F(DfxSymbolsTest, DfxSymbolsTest001, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "DfxSymbolsTest001: start.";
-    RegularElfFactory factory(ELF32_FILE);
-    auto elf = factory.Create();
+    std::shared_ptr<DfxElf> elf = make_shared<DfxElf>(ELF32_FILE);
     ASSERT_TRUE(elf->IsValid());
     ElfImitate elfImitate;
     elfImitate.ParseAllHeaders(ElfImitate::ElfFileType::ELF32);
-    std::string funcName;
-    uint64_t funcOffset;
-    ASSERT_TRUE(DfxSymbols::GetFuncNameAndOffsetByPc(0x00001786, elf, funcName, funcOffset));
-    GTEST_LOG_(INFO) << funcName << " " << funcOffset;
     std::vector<DfxSymbol> symbols;
     std::vector<DfxSymbol> symbolsImitate;
-    ASSERT_TRUE(DfxSymbols::ParseSymbols(symbols, elf, ELF32_FILE));
-    ASSERT_TRUE(elfImitate.ParseSymbols(symbolsImitate, ELF32_FILE));
+    DfxSymbols::ParseSymbols(symbols, elf, ELF32_FILE);
+    elfImitate.ParseSymbols(symbolsImitate, ELF32_FILE);
     ASSERT_EQ(symbols.size(), symbolsImitate.size());
     for (size_t i = 0; i < symbolsImitate.size(); ++i) {
         symbols[i].fileVaddr_ = symbolsImitate[i].fileVaddr_;
@@ -82,11 +76,9 @@ HWTEST_F(DfxSymbolsTest, DfxSymbolsTest001, TestSize.Level2)
         symbols[i].demangle_ = symbolsImitate[i].demangle_;
         symbols[i].module_ = symbolsImitate[i].module_;
     }
-    ASSERT_FALSE(DfxSymbols::ParseSymbols(symbols, nullptr, ELF32_FILE));
-    elf->SetBaseOffset(0x1000);
-    ASSERT_TRUE(DfxSymbols::ParseSymbols(symbols, elf, ELF32_FILE));
-    ASSERT_FALSE(DfxSymbols::AddSymbolsByPlt(symbols, nullptr, ELF32_FILE));
-    GTEST_LOG_(INFO) << symbols[0].module_;
+    std::string funcName;
+    uint64_t funcOffset;
+    ASSERT_TRUE(DfxSymbols::GetFuncNameAndOffsetByPc(0x00001786, elf, funcName, funcOffset));
     GTEST_LOG_(INFO) << "DfxSymbolsTest001: end.";
 }
 
@@ -98,19 +90,14 @@ HWTEST_F(DfxSymbolsTest, DfxSymbolsTest001, TestSize.Level2)
 HWTEST_F(DfxSymbolsTest, DfxSymbolsTest002, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "DfxSymbolsTest002: start.";
-    RegularElfFactory factory(ELF64_FILE);
-    auto elf = factory.Create();
+    std::shared_ptr<DfxElf> elf = make_shared<DfxElf>(ELF64_FILE);
     ASSERT_TRUE(elf->IsValid());
     ElfImitate elfImitate;
     elfImitate.ParseAllHeaders(ElfImitate::ElfFileType::ELF64);
-    std::string funcName;
-    uint64_t funcOffset;
-    ASSERT_TRUE(DfxSymbols::GetFuncNameAndOffsetByPc(0x00002a08, elf, funcName, funcOffset));
-    GTEST_LOG_(INFO) << funcName << " " << funcOffset;
     std::vector<DfxSymbol> symbols;
     std::vector<DfxSymbol> symbolsImitate;
-    ASSERT_TRUE(DfxSymbols::ParseSymbols(symbols, elf, ELF64_FILE));
-    ASSERT_TRUE(elfImitate.ParseSymbols(symbolsImitate, ELF64_FILE));
+    DfxSymbols::ParseSymbols(symbols, elf, ELF64_FILE);
+    elfImitate.ParseSymbols(symbolsImitate, ELF64_FILE);
     ASSERT_EQ(symbols.size(), symbolsImitate.size());
     for (size_t i = 0; i < symbolsImitate.size(); ++i) {
         symbols[i].fileVaddr_ = symbolsImitate[i].fileVaddr_;
@@ -130,11 +117,10 @@ HWTEST_F(DfxSymbolsTest, DfxSymbolsTest002, TestSize.Level2)
         symbols[i].demangle_ = symbolsImitate[i].demangle_;
         symbols[i].module_ = symbolsImitate[i].module_;
     }
-    ASSERT_FALSE(DfxSymbols::ParseSymbols(symbols, nullptr, ELF64_FILE));
-    elf->SetBaseOffset(0x1000);
-    ASSERT_TRUE(DfxSymbols::ParseSymbols(symbols, elf, ELF64_FILE));
-    ASSERT_FALSE(DfxSymbols::AddSymbolsByPlt(symbols, nullptr, ELF64_FILE));
-    GTEST_LOG_(INFO) << symbols[0].module_;
+    std::string funcName;
+    uint64_t funcOffset;
+    ASSERT_TRUE(DfxSymbols::GetFuncNameAndOffsetByPc(0x00002a08, elf, funcName, funcOffset));
+
     GTEST_LOG_(INFO) << "DfxSymbolsTest002: end.";
 }
 
@@ -149,9 +135,9 @@ HWTEST_F(DfxSymbolsTest, DfxSymbolsTest003, TestSize.Level2)
     GTEST_LOG_(INFO) << "DfxSymbolsTest003: start.";
     UnwinderConfig::SetEnableMiniDebugInfo(true);
     std::vector<DfxSymbol> dfxSymbols;
-    RegularElfFactory factory(DUMPCATCHER_ELF_FILE);
-    auto elf = factory.Create();
+    std::shared_ptr<DfxElf> elf = make_shared<DfxElf>(DUMPCATCHER_ELF_FILE);
     ASSERT_TRUE(elf->IsValid());
+    ASSERT_TRUE(elf->IsEmbeddedElfValid());
     DfxSymbols::ParseSymbols(dfxSymbols, elf, DUMPCATCHER_ELF_FILE);
     GTEST_LOG_(INFO) << "DfxSymbolsTest003: symbols size:" << dfxSymbols.size();
     ASSERT_GE(dfxSymbols.size(), 0);
@@ -205,28 +191,6 @@ HWTEST_F(DfxSymbolsTest, DfxDemangleTest003, TestSize.Level2)
         DfxSymbols::Demangle("_RNvNtCs2WRBrrl1bb1_3std2rt19lang_start_internal"));
     EXPECT_EQ("profcollectd::main", DfxSymbols::Demangle("_RNvCs4VPobU5SDH_12profcollectd4main"));
     GTEST_LOG_(INFO) << "DfxDemangleTest003: end.";
-}
-
-/**
- * @tc.name: DfxDemangleTest004
- * @tc.desc: test DfxSymbols demangle functions with cangjie
- * @tc.type: FUNC
- */
-HWTEST_F(DfxSymbolsTest, DfxDemangleTest004, TestSize.Level2)
-{
-    GTEST_LOG_(INFO) << "DfxDemangleTest004: start.";
-    std::filesystem::path runtimePath("/system/lib64/platformsdk/cjsdk/libcangjie-runtime.so");
-    if (std::filesystem::exists(runtimePath)) {
-        EXPECT_EQ("std.time.initLocalDefault()",
-            DfxSymbols::Demangle("_CN8std.time16initLocalDefaultHv"));
-        EXPECT_EQ("std.core.Error::init()", DfxSymbols::Demangle("_CN8std.core5Error6<init>Hv"));
-    } else {
-        EXPECT_EQ("_CN8std.time16initLocalDefaultHv",
-            DfxSymbols::Demangle("_CN8std.time16initLocalDefaultHv"));
-        EXPECT_EQ("_CN8std.core5Error6<init>Hv",
-            DfxSymbols::Demangle("_CN8std.core5Error6<init>Hv"));
-    }
-    GTEST_LOG_(INFO) << "DfxDemangleTest004: end.";
 }
 } // namespace HiviewDFX
 } // namespace OHOS

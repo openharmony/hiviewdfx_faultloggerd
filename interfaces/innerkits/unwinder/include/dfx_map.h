@@ -32,7 +32,7 @@ public:
     static std::shared_ptr<DfxMap> Create(std::string buf, size_t size);
     static void PermsToProts(const std::string perms, uint32_t& prots, uint32_t& flag);
     static void FormatMapName(pid_t pid, std::string& mapName);
-    static std::string UnFormatMapName(const std::string& mapName);
+    static void UnFormatMapName(std::string& mapName);
 
     DfxMap() = default;
     DfxMap(uint64_t begin, uint64_t end, uint64_t offset,
@@ -68,6 +68,9 @@ public:
     uint64_t elfOffset = 0;
     uint64_t elfStartOffset = 0;
     int32_t symbolFileIndex = -1; // symbols file index
+#if is_ohos && !is_mingw
+    std::shared_ptr<std::vector<uint8_t>> shmmData = nullptr;
+#endif
     // use for find
     inline bool operator==(const std::string &sname) const
     {

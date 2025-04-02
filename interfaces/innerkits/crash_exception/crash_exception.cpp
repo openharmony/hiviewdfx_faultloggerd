@@ -50,6 +50,18 @@ void SetCrashProcInfo(std::string& name, int32_t pid, int32_t uid)
     g_crashProcessUid = uid;
 }
 
+static const char* GetCrashDescription(const int32_t errCode)
+{
+    size_t i;
+
+    for (i = 0; i < sizeof(g_crashExceptionMap) / sizeof(g_crashExceptionMap[0]); i++) {
+        if (errCode == g_crashExceptionMap[i].errCode) {
+            return g_crashExceptionMap[i].str;
+        }
+    }
+    return g_crashExceptionMap[i - 1].str;    /* the end of map is "unknown reason" */
+}
+
 void ReportCrashException(const char* pName, int32_t pid, int32_t uid, int32_t errCode)
 {
     if (pName == nullptr || strnlen(pName, NAME_BUF_LEN) == NAME_BUF_LEN) {

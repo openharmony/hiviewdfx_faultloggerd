@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023-2025 Huawei Device Co., Ltd.
+ * Copyright (c) 2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -33,7 +33,7 @@ public:
     virtual ~DfxMmap() { Clear(); }
 
     bool Init(const int fd, const size_t size, const off_t offset = 0);
-    bool Init(std::vector<uint8_t>&& data);
+    bool Init(uint8_t *decompressedData, size_t size);
     void Clear();
 
     inline void* Get()
@@ -44,13 +44,13 @@ public:
         return nullptr;
     }
     inline size_t Size() { return size_; }
+    inline void SetNeedUnmap(bool need) { needUnmap_ = need; }
 
     size_t Read(uintptr_t& addr, void* val, size_t size, bool incre = false) override;
 
 private:
     void *mmap_ = MAP_FAILED;
     size_t size_ = 0;
-    std::vector<uint8_t> data_;
     bool needUnmap_ = true;
 };
 } // namespace HiviewDFX

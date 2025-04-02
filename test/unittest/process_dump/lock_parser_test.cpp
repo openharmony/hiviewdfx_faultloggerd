@@ -225,13 +225,13 @@ HWTEST_F(LockParserUnittest, LockParserUnittest003, TestSize.Level2)
 
     WaitThreadBlock(tid);
     printf("CurrentTid:%d BlockTid:%d\n", gettid(), tid);
-    Unwinder unwinder;
-    ASSERT_EQ(unwinder.UnwindLocalWithTid(tid), true);
+    auto unwinder = std::make_shared<Unwinder>(true);
+    ASSERT_EQ(unwinder->UnwindLocalWithTid(tid), true);
 
-    std::vector<uintptr_t> pcs = unwinder.GetPcs();
+    std::vector<uintptr_t> pcs = unwinder->GetPcs();
     std::vector<DfxFrame> frames;
-    (void)unwinder.GetFramesByPcs(frames, pcs);
-    unwinder.SetFrames(frames);
+    (void)unwinder->GetFramesByPcs(frames, pcs);
+    unwinder->SetFrames(frames);
 
     bool ret = LockParser::ParseLockInfo(unwinder, getpid(), tid);
     ASSERT_EQ(ret, true);
@@ -264,13 +264,13 @@ HWTEST_F(LockParserUnittest, LockParserUnittest004, TestSize.Level2)
 
     WaitThreadBlock(tid);
     printf("CurrentTid:%d BlockTid:%d\n", gettid(), tid);
-    Unwinder unwinder;
-    ASSERT_EQ(unwinder.UnwindLocalWithTid(tid), true);
+    auto unwinder = std::make_shared<Unwinder>(true);
+    ASSERT_EQ(unwinder->UnwindLocalWithTid(tid), true);
 
-    std::vector<uintptr_t> pcs = unwinder.GetPcs();
+    std::vector<uintptr_t> pcs = unwinder->GetPcs();
     std::vector<DfxFrame> frames;
-    (void)unwinder.GetFramesByPcs(frames, pcs);
-    unwinder.SetFrames(frames);
+    (void)unwinder->GetFramesByPcs(frames, pcs);
+    unwinder->SetFrames(frames);
 
     bool ret = LockParser::ParseLockInfo(unwinder, getpid(), tid);
     ASSERT_EQ(ret, true);
@@ -303,19 +303,19 @@ HWTEST_F(LockParserUnittest, LockParserUnittest005, TestSize.Level2)
 
     WaitThreadBlock(tid);
     printf("CurrentTid:%d BlockTid:%d\n", gettid(), tid);
-    Unwinder unwinder;
-    ASSERT_EQ(unwinder.UnwindLocalWithTid(tid), true);
+    auto unwinder = std::make_shared<Unwinder>(true);
+    ASSERT_EQ(unwinder->UnwindLocalWithTid(tid), true);
 
-    std::vector<uintptr_t> pcs = unwinder.GetPcs();
+    std::vector<uintptr_t> pcs = unwinder->GetPcs();
     ASSERT_FALSE(pcs.empty());
 
     std::vector<DfxFrame> frames;
-    (void)unwinder.GetFramesByPcs(frames, pcs);
+    (void)unwinder->GetFramesByPcs(frames, pcs);
     ASSERT_FALSE(frames.empty());
-    unwinder.SetFrames(frames);
+    unwinder->SetFrames(frames);
 
     std::vector<char> buffer(sizeof(pthread_mutex_t), 0);
-    if (!unwinder.GetLockInfo(tid, buffer.data(), sizeof(pthread_mutex_t))) {
+    if (!unwinder->GetLockInfo(tid, buffer.data(), sizeof(pthread_mutex_t))) {
         ASSERT_TRUE(false);
     }
 

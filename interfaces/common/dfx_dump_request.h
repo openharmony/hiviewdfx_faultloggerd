@@ -98,6 +98,8 @@ struct ProcessDumpRequest {
     char appRunningId[MAX_APP_RUNNING_UNIQUE_ID_LEN];
     /** source child process with processdump pipe */
     int childPipeFd[2];
+    /** is integrate crash dump flow 0:false 1:true */
+    int32_t dumpMode;
     /** vm process pid addr */
     intptr_t vmProcRealPidAddr;
     /** whether block source process pid */

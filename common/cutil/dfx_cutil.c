@@ -15,42 +15,56 @@
 
 #include "dfx_cutil.h"
 
-#include <errno.h>
 #include <fcntl.h>
 #include <stdio.h>
 #include <syscall.h>
 #include <unistd.h>
 #include <sys/time.h>
 #include <time.h>
-#ifndef DFX_SIGNAL_LIBC
 #include <securec.h>
-#endif
 #include <stdio.h>
 #include <string.h>
 #include "dfx_define.h"
+
+static const char PID_STR_NAME[] = "Pid:";
 
 static bool ReadStringFromFile(const char* path, char* dst, size_t dstSz)
 {
     if ((dst == NULL) || (path == NULL) || (dstSz == 0)) {
         return false;
     }
-    int fd = OHOS_TEMP_FAILURE_RETRY(open(path, O_RDONLY));
+    char name[NAME_BUF_LEN];
+    char nameFilter[NAME_BUF_LEN];
+    (void)memset_s(name, sizeof(name), '\0', sizeof(name));
+    (void)memset_s(nameFilter, sizeof(nameFilter), '\0', sizeof(nameFilter));
+
+    int fd = -1;
+    fd = OHOS_TEMP_FAILURE_RETRY(open(path, O_RDONLY));
     if (fd < 0) {
         return false;
     }
 
-    char name[NAME_BUF_LEN] = {0};
     ssize_t nRead = OHOS_TEMP_FAILURE_RETRY(read(fd, name, NAME_BUF_LEN - 1));
     if (nRead <= 0) {
         syscall(SYS_close, fd);
         return false;
     }
 
-    size_t i = 0;
-    for (; i < dstSz - 1 && name[i] != '\n' && name[i] != '\0'; i++) {
-        dst[i] = name[i];
+    char* p = name;
+    int i = 0;
+    while (*p != '\0') {
+        if ((*p == '\n') || (i == NAME_BUF_LEN)) {
+            break;
+        }
+        nameFilter[i] = *p;
+        p++, i++;
     }
-    dst[i] = '\0';
+    nameFilter[NAME_BUF_LEN - 1] = '\0';
+
+    if (memcpy_s(dst, dstSz, nameFilter, strlen(nameFilter) + 1) != 0) {
+        syscall(SYS_close, fd);
+        return false;
+    }
 
     syscall(SYS_close, fd);
     return true;
@@ -64,11 +78,7 @@ bool GetThreadName(char* buffer, size_t bufferSz)
 bool GetThreadNameByTid(int32_t tid, char* buffer, size_t bufferSz)
 {
     char threadNamePath[NAME_BUF_LEN] = { 0 };
-#ifdef DFX_SIGNAL_LIBC
-    if (snprintf(threadNamePath, sizeof(threadNamePath), "/proc/%d/comm", tid) <= 0) {
-#else
     if (snprintf_s(threadNamePath, sizeof(threadNamePath), sizeof(threadNamePath) - 1, "/proc/%d/comm", tid) <= 0) {
-#endif
         return false;
     }
     return ReadStringFromFile(threadNamePath, buffer, bufferSz);
@@ -81,7 +91,35 @@ bool GetProcessName(char* buffer, size_t bufferSz)
 
 pid_t GetRealPid(void)
 {
-    return syscall(SYS_getpid);
+    pid_t pid = syscall(SYS_getpid);
+    int fd = OHOS_TEMP_FAILURE_RETRY(open(PROC_SELF_STATUS_PATH, O_RDONLY));
+    if (fd < 0) {
+        return pid;
+    }
+
+    char buf[LINE_BUF_SIZE];
+    int i = 0;
+    char b;
+    while (1) {
+        ssize_t nRead = OHOS_TEMP_FAILURE_RETRY(read(fd, &b, sizeof(char)));
+        if (nRead <= 0 || b == '\0') {
+            break;
+        }
+
+        if (b == '\n' || i == LINE_BUF_SIZE) {
+            if (strncmp(buf, PID_STR_NAME, strlen(PID_STR_NAME)) == 0) {
+                (void)sscanf_s(buf, "%*[^0-9]%d", &pid);
+                break;
+            }
+            i = 0;
+            (void)memset_s(buf, sizeof(buf), '\0', sizeof(buf));
+            continue;
+        }
+        buf[i] = b;
+        i++;
+    }
+    syscall(SYS_close, fd);
+    return pid;
 }
 
 uint64_t GetTimeMilliseconds(void)

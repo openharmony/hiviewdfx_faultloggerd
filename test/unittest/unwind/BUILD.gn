@@ -31,7 +31,6 @@ ohos_unittest("test_unwind") {
   ]
   sources = [
     "ark_test.cpp",
-    "elf_factory_test.cpp",
     "elf_imitate.cpp",
     "elf_test.cpp",
     "fp_unwinder_test.cpp",
@@ -41,8 +40,8 @@ ohos_unittest("test_unwind") {
     "regs_test.cpp",
     "signal_test.cpp",
     "symbols_test.cpp",
-    "unwind_entry_parser_test.cpp",
     "unwinder_test.cpp",
+    "xz_util_test.cpp",
   ]
   cflags_cc = [ "-Dprivate=public" ]
   deps = [
@@ -119,32 +118,32 @@ ohos_unittest("test_exidx") {
   configs = [ "$faultloggerd_common_path/build:coverage_flags" ]
   defines = [
     "DFX_LOG_UNWIND",
+    "DFX_UNWIND_ERROR",
     "is_ohos=${is_ohos}",
     "is_emulator=${is_emulator}",
     "TEST_ARM_EXIDX",
   ]
   sources = [
-    "$faultloggerd_interfaces_path/innerkits/unwinder/src/ark/dfx_ark.cpp",
-    "$faultloggerd_interfaces_path/innerkits/unwinder/src/elf/dfx_elf.cpp",
-    "$faultloggerd_interfaces_path/innerkits/unwinder/src/elf/dfx_elf_parser.cpp",
-    "$faultloggerd_interfaces_path/innerkits/unwinder/src/elf/dfx_mmap.cpp",
-    "$faultloggerd_interfaces_path/innerkits/unwinder/src/elf/dfx_symbols.cpp",
-    "$faultloggerd_interfaces_path/innerkits/unwinder/src/elf/elf_factory.cpp",
-    "$faultloggerd_interfaces_path/innerkits/unwinder/src/elf/elf_factory_selector.cpp",
-    "$faultloggerd_interfaces_path/innerkits/unwinder/src/maps/dfx_map.cpp",
-    "$faultloggerd_interfaces_path/innerkits/unwinder/src/maps/dfx_maps.cpp",
-    "$faultloggerd_interfaces_path/innerkits/unwinder/src/memory/dfx_accessors.cpp",
-    "$faultloggerd_interfaces_path/innerkits/unwinder/src/memory/dfx_memory.cpp",
-    "$faultloggerd_interfaces_path/innerkits/unwinder/src/registers/dfx_regs.cpp",
-    "$faultloggerd_interfaces_path/innerkits/unwinder/src/registers/dfx_regs_arm.cpp",
-    "$faultloggerd_interfaces_path/innerkits/unwinder/src/unwind_entry_parser/exidx_entry_parser.cpp",
-    "$faultloggerd_interfaces_path/innerkits/unwinder/src/utils/dfx_config.cpp",
-    "$faultloggerd_interfaces_path/innerkits/unwinder/src/utils/dfx_frame_formatter.cpp",
-    "$faultloggerd_interfaces_path/innerkits/unwinder/src/utils/dfx_instructions.cpp",
-    "$faultloggerd_interfaces_path/innerkits/unwinder/src/utils/dfx_ptrace.cpp",
+    "$faultloggerd_interfaces_path/innerkits/unwinder/arch_util.cpp",
+    "$faultloggerd_interfaces_path/innerkits/unwinder/arm_exidx.cpp",
+    "$faultloggerd_interfaces_path/innerkits/unwinder/dfx_accessors.cpp",
+    "$faultloggerd_interfaces_path/innerkits/unwinder/dfx_ark.cpp",
+    "$faultloggerd_interfaces_path/innerkits/unwinder/dfx_config.cpp",
+    "$faultloggerd_interfaces_path/innerkits/unwinder/dfx_elf.cpp",
+    "$faultloggerd_interfaces_path/innerkits/unwinder/dfx_elf_parser.cpp",
+    "$faultloggerd_interfaces_path/innerkits/unwinder/dfx_frame_formatter.cpp",
+    "$faultloggerd_interfaces_path/innerkits/unwinder/dfx_instructions.cpp",
+    "$faultloggerd_interfaces_path/innerkits/unwinder/dfx_map.cpp",
+    "$faultloggerd_interfaces_path/innerkits/unwinder/dfx_maps.cpp",
+    "$faultloggerd_interfaces_path/innerkits/unwinder/dfx_memory.cpp",
+    "$faultloggerd_interfaces_path/innerkits/unwinder/dfx_mmap.cpp",
+    "$faultloggerd_interfaces_path/innerkits/unwinder/dfx_ptrace.cpp",
+    "$faultloggerd_interfaces_path/innerkits/unwinder/dfx_regs.cpp",
+    "$faultloggerd_interfaces_path/innerkits/unwinder/dfx_regs_arm.cpp",
+    "$faultloggerd_interfaces_path/innerkits/unwinder/dfx_symbols.cpp",
+    "$faultloggerd_interfaces_path/innerkits/unwinder/dfx_xz_utils.cpp",
     "arm_exidx_test.cpp",
   ]
-  cflags_cc = [ "-Dprivate=public" ]
   deps = [
     "$faultloggerd_common_path/dfxlog:dfx_hilog",
     "$faultloggerd_common_path/dfxutil:dfx_util",
@@ -173,7 +172,7 @@ ohos_unittest("test_dwarf") {
   ]
   configs = [ "$faultloggerd_path/common/build:coverage_flags" ]
   sources = [
-    "$faultloggerd_interfaces_path/innerkits/unwinder/src/unwind_entry_parser/dwarf_cfa_instructions.cpp",
+    "$faultloggerd_interfaces_path/innerkits/unwinder/dwarf_cfa_instructions.cpp",
     "dwarf_test.cpp",
   ]
   cflags_cc = [ "-Dprivate=public" ]
@@ -202,10 +201,12 @@ ohos_unittest("test_unwind_supporting") {
   ]
   defines = [ "is_ohos=${is_ohos}" ]
   sources = [
-    "$faultloggerd_interfaces_path/innerkits/unwinder/src/ark/dfx_ark.cpp",
-    "$faultloggerd_interfaces_path/innerkits/unwinder/src/ark/dfx_hap.cpp",
-    "$faultloggerd_interfaces_path/innerkits/unwinder/src/maps/dfx_maps.cpp",
-    "$faultloggerd_interfaces_path/innerkits/unwinder/src/memory/dfx_memory.cpp",
+    "$faultloggerd_interfaces_path/innerkits/unwinder/arch_util.cpp",
+    "$faultloggerd_interfaces_path/innerkits/unwinder/dfx_ark.cpp",
+    "$faultloggerd_interfaces_path/innerkits/unwinder/dfx_hap.cpp",
+    "$faultloggerd_interfaces_path/innerkits/unwinder/dfx_maps.cpp",
+    "$faultloggerd_interfaces_path/innerkits/unwinder/dfx_memory.cpp",
+    "arch_util_test.cpp",
     "dfx_hap_test.cpp",
   ]
   deps = [

@@ -88,29 +88,37 @@ enum UnwindErrorCode : uint16_t {
 /**
  * @brief Unwind error data
  */
-class UnwindErrorData {
-public:
-    uint16_t GetCode() { return code_; }
-    uint64_t GetAddr() { return addr_; }
+struct UnwindErrorData {
+    inline const uint16_t& GetCode() { return code_; }
+    inline const uint64_t& GetAddr() { return addr_; }
 
-    void SetAddrAndCode(uintptr_t addr, uint16_t code)
+    template <typename T1, typename T2>
+    inline void SetAddrAndCode([[maybe_unused]] T1 addr, [[maybe_unused]] T2 code)
     {
-        addr_ = addr;
-        code_ = code;
+#ifdef DFX_UNWIND_ERROR
+        addr_ = static_cast<uint64_t>(addr);
+        code_ = static_cast<uint16_t>(code);
+#endif
     }
 
-    void SetCode(uint16_t code)
+    template <typename T>
+    inline void SetCode([[maybe_unused]] T code)
     {
-        code_ = code;
+#ifdef DFX_UNWIND_ERROR
+        code_ = static_cast<uint16_t>(code);
+#endif
     }
 
-    void SetAddr(uintptr_t addr)
+    template <typename T>
+    inline void SetAddr([[maybe_unused]] T addr)
     {
-        addr_ = addr;
+#ifdef DFX_UNWIND_ERROR
+        addr_ = static_cast<uint64_t>(addr);
+#endif
     }
 private:
     uint16_t code_ = 0;
-    uintptr_t addr_ = 0;
+    uint64_t addr_ = 0;
 };
 } // namespace HiviewDFX
 } // namespace OHOS

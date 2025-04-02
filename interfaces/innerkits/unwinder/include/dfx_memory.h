@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023-2025 Huawei Device Co., Ltd.
+ * Copyright (c) 2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -27,7 +27,7 @@ namespace HiviewDFX {
 class DfxMemory {
 public:
     DfxMemory() = default;
-    explicit DfxMemory(const UnwindType& unwindType, std::shared_ptr<UnwindAccessors> accessors = nullptr);
+    explicit DfxMemory(std::shared_ptr<DfxAccessors> acc) : acc_(acc) {}
     virtual ~DfxMemory() = default;
 
     void SetCtx(void* ctx) { ctx_ = ctx; }
@@ -73,8 +73,6 @@ public:
 #if is_ohos && !is_mingw
     static size_t ReadProcMemByPid(const pid_t pid, const uint64_t addr, void* data, size_t size);
 #endif
-    int FindUnwindTable(uintptr_t pc, UnwindTableInfo& uti) const;
-    int GetMapByPc(uintptr_t pc, std::shared_ptr<DfxMap>& map) const;
 private:
     std::shared_ptr<DfxAccessors> acc_ = nullptr;
     void* ctx_ = nullptr;

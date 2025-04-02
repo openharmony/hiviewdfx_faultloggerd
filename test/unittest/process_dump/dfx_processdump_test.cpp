@@ -437,12 +437,12 @@ HWTEST_F(DfxProcessDumpTest, DfxProcessDumpTest017, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "DfxProcessDumpTest017: start.";
     ProcessDumper& ins = ProcessDumper::GetInstance();
-    struct ProcessDumpRequest request{};
+    std::shared_ptr<ProcessDumpRequest> request = std::make_shared<ProcessDumpRequest>();
     int result = ins.InitProcessInfo(request);
     ASSERT_EQ(result, -1);
 
-    request.pid = 1;
-    request.nsPid = 1;
+    request->pid = 1;
+    request->nsPid = 1;
     result = ins.InitProcessInfo(request);
     ASSERT_EQ(result, -1);
     ins.isCrash_ = true;
@@ -450,10 +450,14 @@ HWTEST_F(DfxProcessDumpTest, DfxProcessDumpTest017, TestSize.Level2)
     ASSERT_EQ(result, 0);
 
     ins.process_ = nullptr;
-    bool ret = ins.InitKeyThread(request);
+    bool ret = ins.InitKeyThread(nullptr);
+    ASSERT_FALSE(ret);
+    ins.InitKeyThread(request);
     ASSERT_FALSE(ret);
 
-    ins.process_ = std::make_shared<DfxProcess>(request.pid, request.nsPid);
+    ins.process_ = DfxProcess::Create(request->pid, request->nsPid);
+    ret = ins.InitKeyThread(nullptr);
+    ASSERT_FALSE(ret);
     ret = ins.InitKeyThread(request);
     ASSERT_TRUE(ret);
     ins.process_->keyThread_ = nullptr;
@@ -471,22 +475,22 @@ HWTEST_F(DfxProcessDumpTest, DfxProcessDumpTest020, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "DfxProcessDumpTest020: start.";
     ProcessDumper& ins = ProcessDumper::GetInstance();
-    ProcessDumpRequest request{};
+    std::shared_ptr<ProcessDumpRequest> request = std::make_shared<ProcessDumpRequest>();
     ins.isCrash_ = true;
-    request.siginfo.si_signo = SIGLEAK_STACK;
+    request->siginfo.si_signo = SIGLEAK_STACK;
     int result = ins.InitPrintThread(request);
     ASSERT_NE(result, -1);
     ins.isCrash_ = true;
-    request.siginfo.si_signo = CPP_CRASH;
+    request->siginfo.si_signo = CPP_CRASH;
     result = ins.InitPrintThread(request);
     ASSERT_NE(result, -1);
     ins.isCrash_ = false;
-    request.siginfo.si_signo = SIGLEAK_STACK;
+    request->siginfo.si_signo = SIGLEAK_STACK;
     result = ins.InitPrintThread(request);
     ASSERT_NE(result, -1);
     ins.isCrash_ = false;
     ins.bufferFd_ = -1;
-    request.siginfo.si_signo = CPP_CRASH;
+    request->siginfo.si_signo = CPP_CRASH;
     result = ins.InitPrintThread(request);
     ASSERT_EQ(result, -1);
 
