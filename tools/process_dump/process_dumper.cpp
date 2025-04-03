@@ -401,6 +401,7 @@ void ProcessDumper::Dump()
     startTime_ = GetTimeMillisec();
     ProcessDumpRequest request{};
     resDump_ = DumpProcess(request);
+
     std::string jsonInfo;
     if (isJsonDump_ || isCrash_) {
         if (process_) {
