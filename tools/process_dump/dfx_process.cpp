@@ -197,7 +197,11 @@ bool GetProcessInfo(pid_t tid, unsigned long long &startTime)
 std::string DfxProcess::GetProcessLifeCycle(pid_t pid)
 {
     struct sysinfo si;
-    sysinfo(&si);
+    constexpr uint64_t invalidTimeLimit = 2 * 365 * 24 * 3600; // 2 year
+    if (sysinfo(&si) != 0) {
+        DFXLOGE("sysinfo fail. errno %{public}d", errno);
+        return "";
+    }
     unsigned long long startTime = 0;
     if (GetProcessInfo(pid, startTime)) {
         auto clkTck = sysconf(_SC_CLK_TCK);
@@ -206,6 +210,10 @@ std::string DfxProcess::GetProcessLifeCycle(pid_t pid)
             return "";
         }
         uint64_t upTime = si.uptime - startTime / static_cast<uint32_t>(clkTck);
+        if (upTime > invalidTimeLimit) {
+            DFXLOGE("invalid upTime: %{public}" PRIu64 ", startTime: %{public}llu.", upTime, startTime);
+            return "";
+        }
         return std::to_string(upTime) + "s";
     }
     return "";
