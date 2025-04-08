@@ -98,7 +98,6 @@ public:
     bool DumpCatch(int pid, int tid, std::string& msg, size_t maxFrameNums, bool isJson);
     bool DumpCatchFd(int pid, int tid, std::string& msg, int fd, size_t maxFrameNums);
     bool DumpCatchMultiPid(const std::vector<int> &pids, std::string& msg);
-    int DumpCatchProcess(int pid, std::string& msg, size_t maxFrameNums, bool isJson);
     std::pair<int, std::string> DumpCatchWithTimeout(int pid, std::string& msg, int timeout, int tid, bool isJson);
 private:
     bool DoDumpCurrTid(const size_t skipFrameNum, std::string& msg, size_t maxFrameNums);
@@ -152,11 +151,6 @@ bool DfxDumpCatcher::DumpCatchFd(int pid, int tid, std::string& msg, int fd, siz
 bool DfxDumpCatcher::DumpCatchMultiPid(const std::vector<int> &pids, std::string& msg)
 {
     return impl_->DumpCatchMultiPid(pids, msg);
-}
-
-int DfxDumpCatcher::DumpCatchProcess(int pid, std::string& msg, size_t maxFrameNums, bool isJson)
-{
-    return impl_->DumpCatchProcess(pid, msg, maxFrameNums, isJson);
 }
 
 std::pair<int, std::string> DfxDumpCatcher::DumpCatchWithTimeout(int pid, std::string& msg,
@@ -531,19 +525,6 @@ std::pair<int, std::string> DfxDumpCatcher::Impl::DumpCatchWithTimeout(int pid, 
         pid, counter.Elapsed<std::chrono::milliseconds>(), msg.size(), result.first, result.second.c_str());
     DfxEnableTraceDlsym(false);
     return result;
-}
-
-int DfxDumpCatcher::Impl::DumpCatchProcess(int pid, std::string& msg, size_t maxFrameNums, bool isJson)
-{
-    if (DumpCatch(pid, 0, msg, maxFrameNums, isJson)) {
-        return 0;
-    }
-    // kernel stack
-    if (stack_.first == KernelStackAsyncCollector::STACK_SUCCESS && !stack_.second.empty()) {
-        msg.append(std::move(stack_.second));
-        return 1;
-    }
-    return -1;
 }
 
 bool DfxDumpCatcher::Impl::DumpCatch(int pid, int tid, std::string& msg, size_t maxFrameNums, bool isJson)
