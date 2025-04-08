@@ -102,6 +102,7 @@ static inline const char* GetCrashDescription(int32_t errCode)
         { CRASH_LOG_EMAPLOS,         "Maps not found." },
         { CRASH_LOG_EHILOGLOS,       "Hilog not found." },
         { CRASH_LOG_ESUMMARYLOS,     "Fault Summary not found." },
+        { CRASH_LOG_EPROCESS_LIFECYCLE, "Life Cycle timestamp invalid"},
     };
     for (uint8_t i = 0; i < sizeof(crashExceptions) / sizeof(crashExceptions[0]); i++) {
         if (errCode == crashExceptions[i].errCode) {

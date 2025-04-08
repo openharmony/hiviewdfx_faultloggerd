@@ -61,10 +61,11 @@ void Printer::PrintDumpHeader(const ProcessDumpRequest& request, DfxProcess& pro
     DfxRingBufferWrapper::GetInstance().AppendBuf("Pid:%d\n", process.processInfo_.pid);
     DfxRingBufferWrapper::GetInstance().AppendBuf("Uid:%d\n", process.processInfo_.uid);
     DfxRingBufferWrapper::GetInstance().AppendBuf("Process name:%s\n", process.processInfo_.processName.c_str());
+
     if (isCrash) {
         auto lifeCycle = DfxProcess::GetProcessLifeCycle(process.processInfo_.pid);
         DfxRingBufferWrapper::GetInstance().AppendBuf("Process life time:%s\n", lifeCycle.c_str());
-        if (lifeCycle.empty()) {
+        if (lifeCycle.empty() && request.siginfo.si_signo != SIGLEAK_STACK) {
             ReportCrashException(request.processName, request.pid, request.uid,
                                  CrashExceptionCode::CRASH_LOG_EPROCESS_LIFECYCLE);
         }
