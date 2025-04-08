@@ -70,18 +70,6 @@ public:
     */
     bool DumpCatchMultiPid(const std::vector<int> &pids, std::string& msg);
     /**
-     * @brief Dump stack of process
-     *
-     * @param pid  process id
-     * @param msg  message of stack
-     * @param maxFrameNums the maximum number of frames to dump,
-     *  if pid is not equal to caller pid then it does not support setting
-     * @param isJson whether message of stack is json formatted
-     * @return -1: dump catch failed 0:msg is normal stack 1:msg is kernel stack(not json format)
-    */
-    int DumpCatchProcess(int pid, std::string& msg, size_t maxFrameNums = DEFAULT_MAX_FRAME_NUM,
-        bool isJson = false);
-    /**
      * @brief Dump stack of process with timeout
      *
      * @param pid  process id
