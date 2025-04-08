@@ -37,6 +37,7 @@
       OHOS::HiviewDFX::Unwinder::FillLocalFrames*;
       OHOS::HiviewDFX::Unwinder::GetLockInfo*;
       OHOS::HiviewDFX::Unwinder::AccessMem*;
+      OHOS::HiviewDFX::Unwinder::ParseFrameSymbol*;
       OHOS::HiviewDFX::UnwinderConfig::enableLoadSymbolLazily_*;
       OHOS::HiviewDFX::UnwinderConfig::enableMiniDebugInfo_*;
       OHOS::HiviewDFX::DfxConfig::GetConfig*;

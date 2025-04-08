@@ -56,6 +56,10 @@ enum DumpErrorCode : int32_t {
     DUMP_ENOMAP,
     /** fail to read real pid */
     DUMP_EREADPID,
+    /** no enough time to parse symbol*/
+    DUMP_ESYMBOL_NO_PARSE,
+    /** parse symbol timeout */
+    DUMP_ESYMBOL_PARSE_TIMEOUT,
 };
 
 class DfxDumpRes {
@@ -88,6 +92,8 @@ private:
             { DUMP_ENOINFO, "no unwind info found" },
             { DUMP_ENOMAP, "mapinfo is not exist" },
             { DUMP_EREADPID, "fail to read real pid" },
+            { DUMP_ESYMBOL_NO_PARSE, "no enough time to parse symbol" },
+            { DUMP_ESYMBOL_PARSE_TIMEOUT, "parse symbol timeout" },
         };
 
         auto iter = std::find_if(std::begin(errInfos), std::end(errInfos), [res](const DumpErrInfo &ele) {
