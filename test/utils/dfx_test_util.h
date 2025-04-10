@@ -24,7 +24,7 @@
 
 #define NOINLINE __attribute__((noinline))
 
-#define ACCOUNTMGR_NAME           "accountmgr"
+#define POWERMGR_NAME             "powermgr"
 #define FOUNDATION_NAME           "foundation"
 #define APPSPAWN_NAME             "appspawn"
 #define TEST_BUNDLE_NAME          "com.example.myapplication"

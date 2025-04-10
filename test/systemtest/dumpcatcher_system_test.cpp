@@ -1522,11 +1522,11 @@ static void TestDumpCatch(const int targetPid, const string& processName, const 
 HWTEST_F(DumpCatcherSystemTest, DumpCatcherSystemTest201, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "DumpCatcherSystemTest201: start.";
-    int accountmgrPid = GetProcessPid(ACCOUNTMGR_NAME);
+    int accountmgrPid = GetProcessPid(POWERMGR_NAME);
     setuid(ROOT_UID);
     g_checkCnt = 0;
     for (int threadIdx = 0; threadIdx < MULTITHREAD_TEST_COUNT; threadIdx++) {
-        thread(TestDumpCatch, accountmgrPid, ACCOUNTMGR_NAME, threadIdx).detach();
+        thread(TestDumpCatch, accountmgrPid, POWERMGR_NAME, threadIdx).detach();
     }
     sleep(2); // 2 : sleep 2 seconds
     EXPECT_GT(g_checkCnt, 0) << "DumpCatcherSystemTest201 failed";
@@ -1541,7 +1541,7 @@ HWTEST_F(DumpCatcherSystemTest, DumpCatcherSystemTest201, TestSize.Level2)
 HWTEST_F(DumpCatcherSystemTest, DumpCatcherSystemTest202, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "DumpCatcherSystemTest202: start.";
-    vector<string> testProcessNameVecs = {ACCOUNTMGR_NAME, FOUNDATION_NAME, APPSPAWN_NAME};
+    vector<string> testProcessNameVecs = {POWERMGR_NAME, FOUNDATION_NAME, APPSPAWN_NAME};
     vector<int> testPidVecs;
     for (auto processName : testProcessNameVecs) {
         testPidVecs.emplace_back(GetProcessPid(processName));

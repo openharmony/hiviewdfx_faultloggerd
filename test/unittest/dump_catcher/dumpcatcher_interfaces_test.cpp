@@ -136,13 +136,13 @@ static void ForkMultiThreadProcess(void)
 
 /**
  * @tc.name: DumpCatcherInterfacesTest001
- * @tc.desc: test DumpCatchMultiPid API: multiPid{PID(accountmgr), PID(foundation)}
+ * @tc.desc: test DumpCatchMultiPid API: multiPid{PID(powermgr), PID(foundation)}
  * @tc.type: FUNC
  */
 HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest001, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest001: start.";
-    std::string testProcess1 = "accountmgr";
+    std::string testProcess1 = "powermgr";
     int testPid1 = GetProcessPid(testProcess1);
     GTEST_LOG_(INFO) << "testPid1:" << testPid1;
     std::string testProcess2 = "foundation";
@@ -208,13 +208,13 @@ HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest003, TestSize.Level
 
 /**
  * @tc.name: DumpCatcherInterfacesTest004
- * @tc.desc: test DumpCatchMultiPid API: multiPid{PID(accountmgr), 0}
+ * @tc.desc: test DumpCatchMultiPid API: multiPid{PID(powermgr), 0}
  * @tc.type: FUNC
  */
 HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest004, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest004: start.";
-    std::string testProcess = "accountmgr";
+    std::string testProcess = "powermgr";
     int applyPid1 = GetProcessPid(testProcess);
     GTEST_LOG_(INFO) << "applyPid1:" << applyPid1;
     int applyPid2 = 0;
@@ -226,7 +226,7 @@ HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest004, TestSize.Level
     GTEST_LOG_(INFO) << ret;
     string log[] = { "Tid:", "Name:", "Failed" };
     log[0] = log[0] + std::to_string(applyPid1);
-    log[1] = log[1] + "accountmgr";
+    log[1] = log[1] + "powermgr";
     int len = sizeof(log) / sizeof(log[0]);
     int count = GetKeywordsNum(msg, log, len);
     EXPECT_EQ(count, len) << msg << "DumpCatcherInterfacesTest004 Failed";
@@ -235,14 +235,14 @@ HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest004, TestSize.Level
 
 /**
  * @tc.name: DumpCatcherInterfacesTest005
- * @tc.desc: test DumpCatchMultiPid API: multiPid{PID(accountmgr),PID(foundation),PID(systemui)}
+ * @tc.desc: test DumpCatchMultiPid API: multiPid{PID(powermgr),PID(foundation),PID(systemui)}
  * @tc.type: FUNC
  */
 HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest005, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest005: start.";
-    std::vector<string> testProcessName = { "accountmgr", "foundation", "com.ohos.systemui" };
-    string matchProcessName[] = { "accountmgr", "foundation", "m.ohos.systemui" };
+    std::vector<string> testProcessName = { "powermgr", "foundation", "com.ohos.systemui" };
+    string matchProcessName[] = { "powermgr", "foundation", "m.ohos.systemui" };
     std::vector<int> multiPid;
     std::vector<string> matchLog;
     int index = 0;
@@ -282,13 +282,13 @@ HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest005, TestSize.Level
 
 /**
  * @tc.name: DumpCatcherInterfacesTest006
- * @tc.desc: test DumpCatchMultiPid API: multiPid{PID(accountmgr), -11}
+ * @tc.desc: test DumpCatchMultiPid API: multiPid{PID(powermgr), -11}
  * @tc.type: FUNC
  */
 HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest006, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest006: start.";
-    std::string testProcess = "accountmgr";
+    std::string testProcess = "powermgr";
     int testPid1 = GetProcessPid(testProcess);
     GTEST_LOG_(INFO) << "applyPid1:" << testPid1;
     int testPid2 = -11;
@@ -300,7 +300,7 @@ HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest006, TestSize.Level
     GTEST_LOG_(INFO) << ret;
     string log[] = { "Tid:", "Name:", "Failed"};
     log[0] = log[0] + std::to_string(testPid1);
-    log[1] = log[1] + "accountmgr";
+    log[1] = log[1] + "powermgr";
     int len = sizeof(log) / sizeof(log[0]);
     int count = GetKeywordsNum(msg, log, len);
     EXPECT_EQ(count, len) << msg << "DumpCatcherInterfacesTest006 Failed";
@@ -328,13 +328,13 @@ HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest007, TestSize.Level
 
 /**
  * @tc.name: DumpCatcherInterfacesTest008
- * @tc.desc: test DumpCatchMultiPid API: multiPid{PID(accountmgr), 9999}
+ * @tc.desc: test DumpCatchMultiPid API: multiPid{PID(powermgr), 9999}
  * @tc.type: FUNC
  */
 HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest008, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest008: start.";
-    std::string apply = "accountmgr";
+    std::string apply = "powermgr";
     int applyPid1 = GetProcessPid(apply);
     GTEST_LOG_(INFO) << "applyPid1:" << applyPid1;
     int applyPid2 = 99999;
@@ -524,13 +524,13 @@ HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest020, TestSize.Level
 
 /**
  * @tc.name: DumpCatcherInterfacesTest021
- * @tc.desc: test DumpCatchFd API: PID(accountmgr), TID(0)
+ * @tc.desc: test DumpCatchFd API: PID(powermgr), TID(0)
  * @tc.type: FUNC
  */
 HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest021, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest021: start.";
-    std::string apply = "accountmgr";
+    std::string apply = "powermgr";
     int applyPid = GetProcessPid(apply);
     GTEST_LOG_(INFO) << "apply:" << apply << ", pid:" << applyPid;
     DfxDumpCatcher dumplog;
@@ -543,13 +543,13 @@ HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest021, TestSize.Level
 
 /**
  * @tc.name: DumpCatcherInterfacesTest022
- * @tc.desc: test DumpCatchFd API: PID(accountmgr), TID(accountmgr main thread)
+ * @tc.desc: test DumpCatchFd API: PID(powermgr), TID(powermgr main thread)
  * @tc.type: FUNC
  */
 HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest022, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest022: start.";
-    std::string apply = "accountmgr";
+    std::string apply = "powermgr";
     int applyPid = GetProcessPid(apply);
     GTEST_LOG_(INFO) << "apply:" << apply << ", pid:" << applyPid;
     DfxDumpCatcher dumplog;
@@ -562,13 +562,13 @@ HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest022, TestSize.Level
 
 /**
  * @tc.name: DumpCatcherInterfacesTest023
- * @tc.desc: test DumpCatchFd API: PID(accountmgr), TID(-1)
+ * @tc.desc: test DumpCatchFd API: PID(powermgr), TID(-1)
  * @tc.type: FUNC
  */
 HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest023, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest023: start.";
-    std::string apply = "accountmgr";
+    std::string apply = "powermgr";
     int applyPid = GetProcessPid(apply);
     GTEST_LOG_(INFO) << "apply:" << apply << ", pid:" << applyPid;
     DfxDumpCatcher dumplog;
@@ -581,13 +581,13 @@ HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest023, TestSize.Level
 
 /**
  * @tc.name: DumpCatcherInterfacesTest024
- * @tc.desc: test DumpCatchFd API: PID(accountmgr), TID(9999)
+ * @tc.desc: test DumpCatchFd API: PID(powermgr), TID(9999)
  * @tc.type: FUNC
  */
 HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest024, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest024: start.";
-    std::string apply = "accountmgr";
+    std::string apply = "powermgr";
     int applyPid = GetProcessPid(apply);
     GTEST_LOG_(INFO) << "apply:" << apply << ", pid:" << applyPid;
     DfxDumpCatcher dumplog;
