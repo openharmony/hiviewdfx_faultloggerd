@@ -355,6 +355,7 @@ static bool StartProcessdump(void)
             _exit(errno);
         } else if (processDumpPid > 0) {
             int ret = ReadProcessDumpGetRegsMsg() == true ? 0 : errno;
+            DFXLOGI("exit the processdump parent process.");
             _exit(ret);
         } else {
             uint64_t endTime;
