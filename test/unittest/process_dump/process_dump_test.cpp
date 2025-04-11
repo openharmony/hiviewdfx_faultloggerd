@@ -167,7 +167,7 @@ HWTEST_F (ProcessDumpTest, DfxThreadTest002, TestSize.Level2)
 HWTEST_F (ProcessDumpTest, DfxUnwindRemoteTest001, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "DfxUnwindRemoteTest001: start.";
-    pid_t pid = GetProcessPid(ACCOUNTMGR_NAME);
+    pid_t pid = GetProcessPid(POWERMGR_NAME);
     pid_t tid = pid;
     DfxProcess process(pid, pid);
     Unwinder unwinder(pid);
@@ -190,7 +190,7 @@ HWTEST_F (ProcessDumpTest, DfxUnwindRemoteTest001, TestSize.Level2)
 HWTEST_F (ProcessDumpTest, DfxUnwindRemoteTest002, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "DfxUnwindRemoteTest002: start.";
-    pid_t pid = GetProcessPid(ACCOUNTMGR_NAME);
+    pid_t pid = GetProcessPid(POWERMGR_NAME);
     pid_t tid = pid;
     DfxProcess process(pid, pid);
     Unwinder unwinder(pid);
@@ -251,7 +251,7 @@ HWTEST_F (ProcessDumpTest, DfxUnwindAsyncThreadTest001, TestSize.Level2)
     GTEST_LOG_(INFO) << "DfxUnwindAsyncThreadTest001: start.";
     Printer printer;
     printer.PrintRegsByConfig(nullptr);
-    pid_t pid = GetProcessPid(ACCOUNTMGR_NAME);
+    pid_t pid = GetProcessPid(POWERMGR_NAME);
     pid_t tid = pid;
     DfxThread thread(pid, tid, tid);
     Unwinder unwinder(pid);
@@ -275,7 +275,7 @@ HWTEST_F (ProcessDumpTest, DfxUnwindAsyncThreadTest001, TestSize.Level2)
 HWTEST_F (ProcessDumpTest, DfxUnwindAsyncThreadTest002, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "DfxUnwindAsyncThreadTest002: start.";
-    pid_t pid = GetProcessPid(ACCOUNTMGR_NAME);
+    pid_t pid = GetProcessPid(POWERMGR_NAME);
     Unwinder unwinder(pid);
     DfxThread thread(pid, pid, pid);
     DfxUnwindAsyncThread asyncThread2(thread, unwinder, 0);

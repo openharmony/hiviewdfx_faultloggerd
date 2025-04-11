@@ -61,19 +61,19 @@ void DumpCatcherCommandTest::TearDown()
 
 /**
  * @tc.name: DumpCatcherCommandTest001
- * @tc.desc: test dumpcatcher command: -p [accountmgr]
+ * @tc.desc: test dumpcatcher command: -p [powermgr]
  * @tc.type: FUNC
  */
 HWTEST_F(DumpCatcherCommandTest, DumpCatcherCommandTest001, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "DumpCatcherCommandTest001: start.";
-    int testPid = GetProcessPid("accountmgr");
+    int testPid = GetProcessPid("powermgr");
     string testCommand = "dumpcatcher -p " + to_string(testPid);
     string dumpRes = ExecuteCommands(testCommand);
     GTEST_LOG_(INFO) << dumpRes;
     string log[] = {"Pid:", "Name:", "#00", "#01", "#02"};
     log[0] = log[0] + to_string(testPid);
-    log[1] = log[1] + "accountmgr";
+    log[1] = log[1] + "powermgr";
     int len = sizeof(log) / sizeof(log[0]);
     int count = GetKeywordsNum(dumpRes, log, len);
     EXPECT_EQ(count, len) << "DumpCatcherCommandTest001 Failed";
@@ -82,19 +82,19 @@ HWTEST_F(DumpCatcherCommandTest, DumpCatcherCommandTest001, TestSize.Level2)
 
 /**
  * @tc.name: DumpCatcherCommandTest002
- * @tc.desc: test dumpcatcher command: -p [accountmgr] -t [main thread]
+ * @tc.desc: test dumpcatcher command: -p [powermgr] -t [main thread]
  * @tc.type: FUNC
  */
 HWTEST_F(DumpCatcherCommandTest, DumpCatcherCommandTest002, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "DumpCatcherCommandTest002: start.";
-    int testPid = GetProcessPid("accountmgr");
+    int testPid = GetProcessPid("powermgr");
     string testCommand = "dumpcatcher -p " + to_string(testPid) + " -t " + to_string(testPid);
     string dumpRes = ExecuteCommands(testCommand);
     GTEST_LOG_(INFO) << dumpRes;
     string log[] = {"Pid:", "Name:", "#00", "#01", "#02"};
     log[0] = log[0] + to_string(testPid);
-    log[1] = log[1] + "accountmgr";
+    log[1] = log[1] + "powermgr";
     int len = sizeof(log) / sizeof(log[0]);
     int count = GetKeywordsNum(dumpRes, log, len);
     EXPECT_EQ(count, len) << "DumpCatcherCommandTest002 Failed";
@@ -250,13 +250,13 @@ HWTEST_F(DumpCatcherCommandTest, DumpCatcherCommandTest014, TestSize.Level2)
 
 /**
  * @tc.name: DumpCatcherCommandTest015
- * @tc.desc: test dumpcatcher command: -p [accountmgr] -t [main thread] -T [1500]
+ * @tc.desc: test dumpcatcher command: -p [powermgr] -t [main thread] -T [1500]
  * @tc.type: FUNC
  */
 HWTEST_F(DumpCatcherCommandTest, DumpCatcherCommandTest015, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "DumpCatcherCommandTest015: start.";
-    int testPid = GetProcessPid("accountmgr");
+    int testPid = GetProcessPid("powermgr");
     int timeout = 1500;
     string testCommand = "dumpcatcher -p " + to_string(testPid) + " -t " + to_string(testPid);
     testCommand += " -T " + to_string(timeout);
@@ -264,7 +264,7 @@ HWTEST_F(DumpCatcherCommandTest, DumpCatcherCommandTest015, TestSize.Level2)
     GTEST_LOG_(INFO) << dumpRes;
     string log[] = {"Pid:", "Name:", "#00", "#01", "#02"};
     log[0] = log[0] + to_string(testPid);
-    log[1] = log[1] + "accountmgr";
+    log[1] = log[1] + "powermgr";
     int len = sizeof(log) / sizeof(log[0]);
     int count = GetKeywordsNum(dumpRes, log, len);
     EXPECT_EQ(count, len) << "DumpCatcherCommandTest015 Failed";
