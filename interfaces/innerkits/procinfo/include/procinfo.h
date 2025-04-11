@@ -29,11 +29,11 @@ namespace HiviewDFX {
 */
 typedef struct ProcInfo {
     /** process id */
-    int pid;
+    int pid = 0;
     /** parent process id */
-    int ppid;
+    int ppid = 0;
     /** namespace process id */
-    int nsPid;
+    int nsPid = 0;
     /** namespace is enabled or not */
     bool ns = false;
 } ProcInfo;
