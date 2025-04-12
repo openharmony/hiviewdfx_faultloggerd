@@ -81,6 +81,7 @@ const char *const GLOBAL_REGION = "const.global.region";
 MAYBE_UNUSED const char *const MIXSTACK_ENABLE = "faultloggerd.priv.mixstack.enabled";
 const int MAX_FILE_COUNT = 5;
 const int ARG_MAX_NUM = 131072;
+const int LESS_REMAIN_MS = 50;
 
 static bool IsOversea()
 {
@@ -90,6 +91,18 @@ static bool IsOversea()
 #else
     return false;
 #endif
+}
+
+static uint64_t GetExpectedTimeOutEndTime(siginfo_t &si)
+{
+    const int flagOffset = 63;
+    uint64_t endTime = 0;
+
+    if ((reinterpret_cast<uint64_t>(si.si_value.sival_ptr) & (1ULL << flagOffset)) != 0) {
+        endTime = reinterpret_cast<uint64_t>(si.si_value.sival_ptr) & (~(1ULL << flagOffset));
+    }
+
+    return endTime;
 }
 
 static bool IsBlockCrashProcess()
@@ -259,6 +272,7 @@ void ReadPids(const ProcessDumpRequest& request, int& realPid, int& vmPid, DfxPr
 {
     unsigned long childPid = 0;
 
+    DFX_TRACE_SCOPED("ReadPids");
     WaitForFork(request.tid, childPid);
     ptrace(PTRACE_CONT, childPid, NULL, NULL);
 
@@ -652,17 +666,38 @@ bool ProcessDumper::Unwind(const ProcessDumpRequest& request, int &dumpRes, pid_
     return false;
 }
 
-void ProcessDumper::UnwindFinish(const ProcessDumpRequest& request, pid_t vmPid)
+void ProcessDumper::UnwindFinish(const ProcessDumpRequest& request, pid_t vmPid, int &dumpRes)
 {
     if (process_ == nullptr) {
         DFXLOGE("Dump process failed, please check permission and whether pid is valid.");
         return;
     }
 
-    if (unwinder_) {
-        DfxUnwindRemote::ParseSymbol(request, *process_, *unwinder_);
-        DfxUnwindRemote::PrintUnwindResultInfo(request, *process_, *unwinder_, vmPid);
+    if (unwinder_ == nullptr) {
+        DFXLOGE("unwinder nullptr");
+        return;
     }
+
+    uint64_t curTime = GetAbsTimeMilliSeconds();
+    uint64_t reservedSymbolParseTime = static_cast<uint64_t>(DfxConfig::GetConfig().reservedParseSymbolTime);
+    reservedSymbolParseTime = reservedSymbolParseTime > LESS_REMAIN_MS ? reservedSymbolParseTime : LESS_REMAIN_MS;
+    if (request.siginfo.si_signo != SIGDUMP || expectedTimeoutEndTime_ == 0) {
+        DfxUnwindRemote::ParseSymbol(request, *process_, *unwinder_);
+    } else if (expectedTimeoutEndTime_ > curTime && expectedTimeoutEndTime_ - curTime >= reservedSymbolParseTime) {
+        parseSymbolTask_ = std::async(std::launch::async, [&request, this]() {
+            DFX_TRACE_SCOPED("parse symbol task");
+            DfxUnwindRemote::ParseSymbol(request, *process_, *unwinder_);
+        });
+        uint64_t waitTime = expectedTimeoutEndTime_ - curTime - LESS_REMAIN_MS;
+        if (parseSymbolTask_.wait_for(std::chrono::milliseconds(waitTime)) != std::future_status::ready) {
+            DFXLOGW("Parse symbol timeout");
+            dumpRes = DumpErrorCode::DUMP_ESYMBOL_PARSE_TIMEOUT;
+        }
+    } else {
+        DFXLOGW("No parse symbol, remain %{public}" PRId64 "ms", expectedTimeoutEndTime_ - curTime);
+        dumpRes = DumpErrorCode::DUMP_ESYMBOL_NO_PARSE;
+    }
+    DfxUnwindRemote::PrintUnwindResultInfo(request, *process_, *unwinder_, vmPid);
     UnwindWriteJit(request);
 }
 
@@ -674,6 +709,7 @@ int ProcessDumper::DumpProcess(ProcessDumpRequest& request)
         if ((dumpRes = ReadRequestAndCheck(request)) != DumpErrorCode::DUMP_ESUCCESS) {
             break;
         }
+        expectedTimeoutEndTime_ = GetExpectedTimeOutEndTime(request.siginfo);
         SetProcessdumpTimeout(request.siginfo);
         isCrash_ = request.siginfo.si_signo != SIGDUMP;
         DFXLOGI("Processdump SigVal(%{public}d), TargetPid(%{public}d:%{public}d), TargetTid(%{public}d), " \
@@ -698,7 +734,7 @@ int ProcessDumper::DumpProcess(ProcessDumpRequest& request)
         if (!Unwind(request, dumpRes, vmPid)) {
             DFXLOGE("unwind fail.");
         }
-        UnwindFinish(request, vmPid);
+        UnwindFinish(request, vmPid, dumpRes);
         DfxPtrace::Detach(vmPid);
     } while (false);
     return dumpRes;
