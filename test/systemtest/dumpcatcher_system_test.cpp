@@ -1379,10 +1379,15 @@ HWTEST_F(DumpCatcherSystemTest, DumpCatcherSystemTest101, TestSize.Level2)
     string procCMD = "dumpcatcher -p " + to_string(pid);
     string procDumpLog = ExecuteCommands(procCMD);
     GTEST_LOG_(INFO) << "procDumpLog: " << procDumpLog;
-    string log[] = { "Failed", "status:", "Name:", "nonvoluntary_ctxt_switches:", "wchan:", "Tid:" };
-    int count = GetKeywordsNum(procDumpLog, log, sizeof(log) / sizeof(log[0]));
+    std::vector<std::string> matchWords = { "Failed", "status:", "Name:", "nonvoluntary_ctxt_switches:" };
+    if (IsLinuxKernel()) {
+        matchWords.emplace_back("wchan:");
+        matchWords.emplace_back("Tid:");
+    }
+    int matchCount = static_cast<int>(matchWords.size());
+    int count = GetKeywordsNum(procDumpLog, matchWords.data(), matchCount);
     kill(pid, SIGKILL);
-    EXPECT_EQ(count, sizeof(log) / sizeof(log[0])) << "DumpCatcherSystemTest101 Failed";
+    EXPECT_EQ(count, matchCount) << "DumpCatcherSystemTest101 Failed";
     GTEST_LOG_(INFO) << "DumpCatcherSystemTest101: end.";
 }
 
@@ -1407,10 +1412,16 @@ HWTEST_F(DumpCatcherSystemTest, DumpCatcherSystemTest102, TestSize.Level2)
         GTEST_LOG_(ERROR) << "DumpCatcherSystemTest102: Failed to dump target process.";
     }
     GTEST_LOG_(INFO) << msg;
-    string log[] = { "timeout", "status:", "Name:", "nonvoluntary_ctxt_switches:", "wchan:", "Tid:" };
-    int count = GetKeywordsNum(msg, log, sizeof(log) / sizeof(log[0]));
+
+    std::vector<std::string> matchWords = { "timeout", "status:", "Name:", "nonvoluntary_ctxt_switches:" };
+    if (IsLinuxKernel()) {
+        matchWords.emplace_back("wchan:");
+        matchWords.emplace_back("Tid:");
+    }
+    int matchCount = static_cast<int>(matchWords.size());
+    int count = GetKeywordsNum(msg, matchWords.data(), matchCount);
     kill(pid, SIGKILL);
-    EXPECT_EQ(count, sizeof(log) / sizeof(log[0])) << "DumpCatcherSystemTest102 Failed";
+    EXPECT_EQ(count, matchCount) << "DumpCatcherSystemTest102 Failed";
     GTEST_LOG_(INFO) << "DumpCatcherSystemTest102: end.";
 }
 

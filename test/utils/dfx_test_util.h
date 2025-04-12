@@ -89,6 +89,7 @@ uint32_t GetSelfFdCount();
 uint32_t GetSelfMapsCount();
 uint64_t GetSelfMemoryCount();
 void CheckResourceUsage(uint32_t fdCount, uint32_t mapsCount, uint64_t memCount);
+bool IsLinuxKernel();
 } // namespace HiviewDFX
 } // namespace OHOS
 #endif // DFX_TEST_UTIL
