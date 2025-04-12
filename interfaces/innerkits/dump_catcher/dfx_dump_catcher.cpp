@@ -394,7 +394,9 @@ void DfxDumpCatcher::Impl::DealWithPollRet(int pollRet, int pid, int32_t& ret, s
     std::string halfProcStatus;
     std::string halfProcWchan;
     ReadProcessStatus(halfProcStatus, pid);
-    ReadProcessWchan(halfProcWchan, pid, false, true);
+    if (IsLinuxKernel()) {
+        ReadProcessWchan(halfProcWchan, pid, false, true);
+    }
     msg.append(std::move(halfProcStatus));
     msg.append(std::move(halfProcWchan));
     switch (pollRet) {
