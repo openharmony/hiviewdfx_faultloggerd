@@ -33,15 +33,15 @@
 #include <pthread.h>
 #include <unistd.h>
 #include <dirent.h>
+#if !defined(is_ohos_lite) && !defined(DFX_UTIL_STATIC)
+#include "parameters.h"
+#endif
 #endif
 #include <sys/stat.h>
 #if is_ohos && !is_mingw
 #include <sys/uio.h>
 #endif
 #include "dfx_log.h"
-#if !defined(is_ohos_lite) && !defined(DFX_UTIL_STATIC)
-#include "parameters.h"
-#endif // !is_ohos_lite
 
 #ifdef LOG_DOMAIN
 #undef LOG_DOMAIN
@@ -176,6 +176,28 @@ void ParseSiValue(siginfo_t& si, uint64_t& endTime, int& tid)
         tid = si.si_value.sival_int;
     }
 }
+
+bool IsBetaVersion()
+{
+#if !defined(is_ohos_lite) && !defined(DFX_UTIL_STATIC)
+    const char *const logsystemVersionType = "const.logsystem.versiontype";
+    static bool isBetaVersion = OHOS::system::GetParameter(logsystemVersionType, "") == "beta";
+    return isBetaVersion;
+#else
+    return false;
+#endif
+}
+
+bool IsDeveloperMode()
+{
+#if !defined(is_ohos_lite) && !defined(DFX_UTIL_STATIC)
+    const char *const developerMode = "const.security.developermode.state";
+    static bool isDeveloperMode = OHOS::system::GetParameter(developerMode, "") == "true";
+    return isDeveloperMode;
+#else
+    return false;
+#endif
+}
 #endif
 
 off_t GetFileSize(int fd)
@@ -274,28 +296,6 @@ size_t ReadProcMemByPid(const pid_t pid, const uint64_t addr, void* data, size_t
     return totalReadSize;
 }
 #endif
-
-bool IsBetaVersion()
-{
-#if !defined(is_ohos_lite) && !defined(DFX_UTIL_STATIC)
-    const char *const logsystemVersionType = "const.logsystem.versiontype";
-    static bool isBetaVersion = OHOS::system::GetParameter(logsystemVersionType, "") == "beta";
-    return isBetaVersion;
-#else
-    return false;
-#endif
-}
-
-bool IsDeveloperMode()
-{
-#if !defined(is_ohos_lite) && !defined(DFX_UTIL_STATIC)
-    const char *const developerMode = "const.security.developermode.state";
-    static bool isDeveloperMode = OHOS::system::GetParameter(developerMode, "") == "true";
-    return isDeveloperMode;
-#else
-    return false;
-#endif
-}
 }   // namespace HiviewDFX
 }   // namespace OHOS
 
