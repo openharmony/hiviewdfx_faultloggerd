@@ -211,7 +211,8 @@ std::string DfxProcess::GetProcessLifeCycle(pid_t pid)
         }
         uint64_t upTime = si.uptime - startTime / static_cast<uint32_t>(clkTck);
         if (upTime > invalidTimeLimit) {
-            DFXLOGE("invalid upTime: %{public}" PRIu64 ", startTime: %{public}llu.", upTime, startTime);
+            DFXLOGE("invalid system upTime %{public}ld, upTime: %{public}" PRIu64 ", startTime: %{public}llu.",
+                si.uptime, upTime, startTime);
             return "";
         }
         return std::to_string(upTime) + "s";
