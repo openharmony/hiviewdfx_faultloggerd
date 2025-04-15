@@ -20,6 +20,7 @@
 #ifdef HISYSEVENT_ENABLE
 #include "hisysevent_manager.h"
 #include "rustpanic_listener.h"
+#include "dfx_test_util.h"
 
 using namespace testing;
 using namespace testing::ext;
@@ -53,7 +54,7 @@ void PanicHandlerTest::TearDown()
     panicListener = nullptr;
 }
 
-static void ForkAndTriggerRustPanic(bool ismain)
+static void ForkAndTriggerRustPanic(bool ismain, uint32_t hilogCnt = 0)
 {
     pid_t pid = fork();
     if (pid < 0) {
@@ -61,9 +62,9 @@ static void ForkAndTriggerRustPanic(bool ismain)
         return;
     } else if (pid == 0) {
         if (ismain) {
-            execl("/data/rustpanic_maker", "rustpanic_maker", "main", nullptr);
+            execl("/data/rustpanic_maker", "rustpanic_maker", "main", std::to_string(hilogCnt).c_str(), nullptr);
         } else {
-            execl("/data/rustpanic_maker", "rustpanic_maker", "child", nullptr);
+            execl("/data/rustpanic_maker", "rustpanic_maker", "child", std::to_string(hilogCnt).c_str(), nullptr);
         }
     }
 }
@@ -75,6 +76,31 @@ static void ListenAndCheckHiSysevent()
     std::vector<ListenerRule> sysRules;
     sysRules.push_back(tagRule);
     HiSysEventManager::AddListener(panicListener, sysRules);
+}
+
+static std::string WaitFaultloggerFile()
+{
+    std::regex reg(R"(rustpanic-rustpanic_maker-0-\d{17}.log)");
+    const std::string folder = "/data/log/faultlog/faultlogger/";
+    return WaitCreateFile(folder, reg);
+}
+
+static bool CheckRustPanicFaultlog(const string& filePath, bool isMain)
+{
+    if (filePath.empty()) {
+        return false;
+    }
+    std::list<LineRule> rules;
+    rules.push_back(LineRule(R"(^Build info:.*$)"));
+    rules.push_back(LineRule(R"(^Module name:rustpanic_maker$)"));
+    if (isMain) {
+        rules.push_back(LineRule(R"(^Reason:.*message:panic in main thread$)"));
+    } else {
+        rules.push_back(LineRule(R"(^Reason:.*message:panic in child thread$)"));
+    }
+    rules.push_back(LineRule(R"(^#\d+ pc [0-9a-f]+ .*$)"));
+    rules.push_back(LineRule(R"(^HiLog:$)"));
+    return CheckLineMatch(filePath, rules);
 }
 
 /**
@@ -113,6 +139,34 @@ HWTEST_F(PanicHandlerTest, PanicHandlerTest002, TestSize.Level2)
         ASSERT_TRUE(panicListener->CheckKeywordInReasons());
     }
     GTEST_LOG_(INFO) << "PanicHandlerTest002: end.";
+}
+
+/**
+ * @tc.name: PanicHandlerTest003
+ * @tc.desc: test panic in main thread
+ * @tc.type: FUNC
+ */
+HWTEST_F(PanicHandlerTest, PanicHandlerTest003, TestSize.Level2)
+{
+    AsyncWorker<string> listenFileCreate([](std::string& data) { data.clear(); });
+    listenFileCreate.Start(WaitFaultloggerFile);
+    ForkAndTriggerRustPanic(true, 1000); // print hilog 1000 lines
+    auto fileName = listenFileCreate.GetResult(std::chrono::seconds(10)); // 10s timeout
+    ASSERT_TRUE(CheckRustPanicFaultlog(fileName, true));
+}
+
+/**
+ * @tc.name: PanicHandlerTest004
+ * @tc.desc: test panic in child thread
+ * @tc.type: FUNC
+ */
+HWTEST_F(PanicHandlerTest, PanicHandlerTest004, TestSize.Level2)
+{
+    AsyncWorker<string> listenFileCreate([](std::string& data) { data.clear(); });
+    listenFileCreate.Start(WaitFaultloggerFile);
+    ForkAndTriggerRustPanic(false, 1000); // print hilog 1000 lines
+    auto fileName = listenFileCreate.GetResult(std::chrono::seconds(10)); // 10s timeout
+    ASSERT_TRUE(CheckRustPanicFaultlog(fileName, false));
 }
 } // namespace HiviewDFX
 } // namespace OHOS
