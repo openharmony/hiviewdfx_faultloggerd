@@ -48,14 +48,14 @@ bool KernelSnapshotReporter::ReportCrashNoLogEvent(CrashMap& output)
         return false;
     }
 
-    auto ret = HiSysEventWrite(OHOS::HiviewDFX::HiSysEvent::Domain::RELIABILITY, "CPP_CRASH_NO_LOG",
+    int ret = HiSysEventWrite(OHOS::HiviewDFX::HiSysEvent::Domain::RELIABILITY, "CPP_CRASH_NO_LOG",
         OHOS::HiviewDFX::HiSysEvent::EventType::FAULT,
         "UID", uid,
         "PID", pid,
         "PROCESS_NAME", output[CrashSection::PROCESS_NAME],
         "HAPPEN_TIME", timeStamp,
         "SUMMARY", KernelSnapshotUtil::FillSummary(output));
-    DFXLOGI("Report kernel snapshot event done.");
+    DFXLOGI("Report kernel snapshot event done, ret %{public}d", ret);
     return ret == 0;
 #else
     DFXLOGI("Not supported for kernel snapshot report.");
