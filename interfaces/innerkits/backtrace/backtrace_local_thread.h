@@ -22,6 +22,7 @@
 
 #include "dfx_frame.h"
 #include "unwinder.h"
+#include "proc_util.h"
 
 namespace OHOS {
 namespace HiviewDFX {
@@ -31,7 +32,8 @@ std::string GetThreadHead(int32_t tid);
 
 class BacktraceLocalThread {
 public:
-    explicit BacktraceLocalThread(int32_t tid) : tid_(tid) {}
+    explicit BacktraceLocalThread(int32_t tid, bool includeThreadInfo = false)
+        : tid_(tid), includeThreadInfo_(includeThreadInfo) {}
     bool Unwind(Unwinder& unwinder, bool fast = false,
         size_t maxFrameNum = DEFAULT_MAX_FRAME_NUM, size_t skipFrameNum = 0);
     bool UnwindOtherThreadMix(Unwinder& unwinder, bool fast,
@@ -44,6 +46,7 @@ public:
 private:
     int32_t tid_;
     std::vector<DfxFrame> frames_{};
+    bool includeThreadInfo_;
 };
 } // namespace HiviewDFX
 } // namespace OHOS
