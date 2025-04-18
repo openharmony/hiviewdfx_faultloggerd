@@ -532,8 +532,9 @@ HWTEST_F(DfxMemoryTest, DfxMemoryTest015, TestSize.Level2)
     uintptr_t invalidAddr = 0;
     ASSERT_FALSE(memory->ReadPrel31(invalidAddr, &valuePrel32));
     ASSERT_EQ(valuePrel32, 0x04030201 + addr);
-    char testStr[] = "Test ReadString Func adfjak adfaaea- adfaf zxcdaa adfae ?dafafe aeacvdcx edascccfae egfag xzfafasdaeacvdcx"
-                     " edfae egfag xzfafasd Test ReadString Func adfjak adfaaea- adfaf zxcdaa adfae ?dafafe aeacvdcx edascccfae"
+    char testStr[] = "Test ReadString Func adfjak adfaaea- adfaf zxcdaa adfae ?dafafe aeacvdcx "
+                     "edascccfae egfag xzfafasdaeacvdcx edfae egfag xzfafasd Test ReadString"
+                     " Func adfjak adfaaea- adfaf zxcdaa adfae ?dafafe aeacvdcx edascccfae"
                      " egfag xzfafasdaeacvdcx edfae egfag xzfafasdc";
     std::string resultStr;
     uintptr_t addrStr = reinterpret_cast<uintptr_t>(&testStr[0]);
