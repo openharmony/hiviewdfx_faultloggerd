@@ -64,6 +64,7 @@ Note:If the text contains special characters, please escape them according to th
         </policylist>
         <filefilterlist>
             <filefilter name="defaultFilter" desc="Files not to check">
+                <filteritem type="filename" name="stat" desc="test resource file, no license header"/>
             </filefilter>
             <filefilter name="defaultPolicyFilter" desc="Filters for compatibility, license header policies">
                 <filteritem type="filename" name="ehdr_from_readelf_32" desc="test resource file, no license header"/>
