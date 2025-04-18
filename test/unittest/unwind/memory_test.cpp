@@ -512,6 +512,38 @@ HWTEST_F(DfxMemoryTest, DfxMemoryTest014, TestSize.Level2)
     EXPECT_FALSE(cur);
     GTEST_LOG_(INFO) << "DfxMemoryTest014: end.";
 }
+/**
+?* @tc.name: DfxMemoryTest015
+?* @tc.desc: test DfxMemory class 256 Read
+?* @tc.type: FUNC
+?*/
+HWTEST_F(DfxMemoryTest, DfxMemoryTest015, TestSize.Level2)
+{
+? ? GTEST_LOG_(INFO) << "DfxMemoryTest015: start.";
+? ? uint8_t values[] = {0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8};
+? ? UnwindContext ctx;
+? ? auto acc = std::make_shared<DfxAccessorsLocal>();
+? ? ASSERT_TRUE(GetSelfStackRange(ctx.stackBottom, ctx.stackTop));
+? ? auto memory = std::make_shared<DfxMemory>(acc);
+? ? memory->SetCtx(&ctx);
+? ? uintptr_t addr = reinterpret_cast<uintptr_t>(&values[0]);
+? ? uintptr_t valuePrel32;
+? ? ASSERT_TRUE(memory->ReadPrel31(addr, &valuePrel32));
+? ? ASSERT_EQ(valuePrel32, 0x04030201 + addr);
+
+? ? GTEST_LOG_(INFO) << "testStr length: 256";
+? ? char testStr[] = "Test ReadString Func adfjak adfaaea- adfaf zxcdaa adfae ?dafafe aeacvdcx edascccfae egfag xzfafasdaeacvdcx"
+                     " edfae egfag xzfafasd Test ReadString Func adfjak adfaaea- adfaf zxcdaa adfae ?dafafe aeacvdcx edascccfae"
+                     " egfag xzfafasdaeacvdcx edfae egfag xzfafasdc";
+? ? std::string resultStr;
+? ? uintptr_t addrStr = reinterpret_cast<uintptr_t>(&testStr[0]);
+? ? ASSERT_TRUE(memory->ReadString(addrStr, &resultStr, sizeof(testStr)/sizeof(char), true));
+
+? ? ASSERT_EQ(testStr, resultStr);
+? ? ASSERT_EQ(memory->ReadUleb128(addr), 1U);
+? ? ASSERT_EQ(memory->ReadSleb128(addr), 2);
+? ? GTEST_LOG_(INFO) << "DfxMemoryTest015: end.";
+}
 }
 } // namespace HiviewDFX
 } // namespace OHOS
