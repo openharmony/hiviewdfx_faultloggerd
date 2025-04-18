@@ -404,6 +404,50 @@ std::string WaitCreateCrashFile(const std::string& prefix, pid_t pid, int retryC
     return fileName;
 }
 
+std::string WaitCreateFile(const std::string& folder, std::regex& reg, time_t timeOut)
+{
+    std::string fileName;
+    int fd = inotify_init();
+    if (fd < 0) {
+        return fileName;
+    }
+    int wd = inotify_add_watch(fd, folder.c_str(), IN_CLOSE_WRITE);
+    if (wd < 0) {
+        close(fd);
+        return fileName;
+    }
+    time_t end = time(nullptr) + timeOut;
+    struct timeval timeoutVal;
+    timeoutVal.tv_usec = 0;
+    fd_set rfds;
+    bool isRun = true;
+    while (isRun) {
+        FD_ZERO(&rfds);
+        FD_SET(fd, &rfds);
+        timeoutVal.tv_sec = end - time(nullptr);
+        int ret = select(fd + 1, &rfds, nullptr, nullptr, &timeoutVal);
+        if (ret <= 0 || !FD_ISSET(fd, &rfds)) {
+            continue;
+        }
+        char buffer[EVENT_BUF_LEN] = {0};
+        int length = read(fd, buffer, EVENT_BUF_LEN);
+        int eventCnt = 0;
+        while (length > 0 && eventCnt < length) {
+            struct inotify_event *event = reinterpret_cast<struct inotify_event*>(&buffer[eventCnt]);
+            if ((event->len) && (event->mask & IN_CLOSE_WRITE) && std::regex_match(event->name, reg)) {
+                fileName = folder;
+                fileName.append(event->name);
+                isRun = false;
+                break;
+            }
+            eventCnt += EVENT_SIZE + event->len;
+        }
+    }
+    inotify_rm_watch(fd, wd);
+    close(fd);
+    return fileName;
+}
+
 bool CreatePipeFd(int (&fd)[2])
 {
     if (pipe(fd) == -1) {
