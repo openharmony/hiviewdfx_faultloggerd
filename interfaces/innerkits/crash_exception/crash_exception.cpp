@@ -69,7 +69,7 @@ void ReportCrashException(std::string name, int32_t pid, int32_t uid, int32_t er
         HiSysEvent::Domain::RELIABILITY,
         "CPP_CRASH_EXCEPTION",
         HiSysEvent::EventType::FAULT,
-        "PROCESS_NAME", name,
+        "PROCESS_NAME", name.c_str(),
         "PID", pid,
         "UID", uid,
         "HAPPEN_TIME", GetTimeMillisec(),

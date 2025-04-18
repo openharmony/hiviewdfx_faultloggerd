@@ -676,8 +676,8 @@ int ProcessDumper::DumpProcess(ProcessDumpRequest& request)
         SetProcessdumpTimeout(request.siginfo);
         isCrash_ = request.siginfo.si_signo != SIGDUMP;
         DFXLOGI("Processdump SigVal(%{public}d), TargetPid(%{public}d:%{public}d), TargetTid(%{public}d), " \
-            "threadname(%{public}s).",
-            request.siginfo.si_value.sival_int, request.pid, request.nsPid, request.tid, request.threadName);
+            "processname(%{public}s), threadname(%{public}s).", request.siginfo.si_value.sival_int,
+            request.pid, request.nsPid, request.tid, request.processName, request.threadName);
 
         if (InitProcessInfo(request) < 0) {
             DFXLOGE("Failed to init crash process info.");
