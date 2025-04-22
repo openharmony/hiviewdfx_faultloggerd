@@ -89,6 +89,7 @@ void DfxUnwindRemote::ParseSymbol(const ProcessDumpRequest& request, DfxProcess&
 void DfxUnwindRemote::PrintUnwindResultInfo(const ProcessDumpRequest& request, DfxProcess& process,
     Unwinder& unwinder, pid_t vmPid)
 {
+    DFX_TRACE_SCOPED("PrintUnwindResultInfo");
     // print key thread
     Printer::PrintDumpHeader(request, process, unwinder);
     Printer::PrintThreadHeaderByConfig(process.keyThread_, true);

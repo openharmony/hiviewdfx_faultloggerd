@@ -162,7 +162,13 @@ void DfxThread::ParseSymbol(Unwinder& unwinder)
     if (!needParseSymbol_) {
         return;
     }
-    unwinder.FillFrames(frames_);
+
+    for (auto& frame : frames_) {
+        if (frame.isJsFrame) { // js frame parse in unwinder
+            continue;
+        }
+        unwinder.ParseFrameSymbol(frame);
+    }
 }
 
 void DfxThread::SetParseSymbolNecessity(bool needParseSymbol)
