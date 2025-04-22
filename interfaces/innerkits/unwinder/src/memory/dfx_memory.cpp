@@ -140,7 +140,7 @@ bool DfxMemory::ReadString(uintptr_t& addr, std::string* str, size_t maxSize, bo
     uintptr_t ptr = addr;
     for (size_t offset = 0; offset < maxSize; offset += size) {
         size_t readn = std::min(sizeof(buf), maxSize - offset);
-        ptr = ptr + offset;
+        ptr = addr + offset;
         size = Read(ptr, buf, readn, false);
         if (size == 0) {
             return false;
