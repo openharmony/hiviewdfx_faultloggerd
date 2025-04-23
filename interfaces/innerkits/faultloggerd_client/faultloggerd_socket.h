@@ -16,8 +16,7 @@
 #ifndef DFX_FAULTLOGGERD_SOCKET_H
 #define DFX_FAULTLOGGERD_SOCKET_H
 
-#include <cinttypes>
-
+#include <cstdint>
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -34,14 +33,46 @@ const char* const SERVER_SDKDUMP_SOCKET_NAME = "faultloggerd.sdkdump.server";
 #endif
 
 bool StartListen(int32_t& sockFd, const char* name, uint32_t listenCnt);
-bool StartConnect(int32_t sockFd, const char* socketName, uint32_t timeout);
-int32_t CreateSocketFd();
 bool SendFileDescriptorToSocket(int32_t sockFd, const int32_t* fds, uint32_t nFds);
-bool ReadFileDescriptorFromSocket(int32_t sockFd, int32_t* fds, uint32_t nFds);
-
 bool SendMsgToSocket(int32_t sockFd, const void* data, uint32_t dataLength);
 bool GetMsgFromSocket(int32_t sockFd, void* data, uint32_t dataLength);
+
 #ifdef __cplusplus
 }
 #endif
+
+typedef struct SocketRequestData {
+    /** request data **/
+    const void* requestData;
+    /** request data size */
+    uint32_t requestSize;
+} __attribute__((packed)) SocketRequestData;
+
+typedef struct SocketFdData {
+    /** socket fd data **/
+    int* fds;
+    /** socket fd size */
+    uint32_t nFds;
+} __attribute__((packed)) SocketFdData;
+
+class FaultLoggerdSocket {
+public:
+    explicit FaultLoggerdSocket(bool signalSafely = false) : signalSafely_(signalSafely) {}
+    explicit FaultLoggerdSocket(int32_t fd, bool signalSafely = false) : socketFd_(fd), signalSafely_(signalSafely) {}
+    void CloseSocketFileDescriptor();
+    bool CreateSocketFileDescriptor(uint32_t timeout);
+    bool StartConnect(const char* socketName);
+    bool SendFileDescriptorToSocket(const int32_t* fds, uint32_t nFds) const;
+    bool ReadFileDescriptorFromSocket(int32_t* fds, uint32_t nFds) const;
+    bool SendMsgToSocket(const void* data, uint32_t dataLength) const;
+    bool GetMsgFromSocket(void* data, uint32_t dataLength) const;
+    int32_t RequestServer(const SocketRequestData& socketRequestData) const;
+    int32_t RequestFdsFromServer(const SocketRequestData& socketRequestData, SocketFdData& socketFdData) const;
+private:
+    bool ConcatenateSocketName(char* dst, uint32_t dstSize, const char* src, uint32_t srcSize) const;
+    bool SetSocketTimeOut(uint32_t timeout, int optName);
+    int32_t socketFd_ = -1;
+    bool signalSafely_;
+};
+
 #endif

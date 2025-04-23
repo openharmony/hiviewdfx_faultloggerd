@@ -32,24 +32,20 @@ namespace OHOS {
 namespace HiviewDFX {
 
 namespace {
-void SendMsgToServer(int32_t socketFd, const void* data, size_t msgLen)
+void SendRequestToServer(const SocketRequestData &socketRequestData, SocketFdData* socketFdData = nullptr)
 {
+    FaultLoggerdSocket faultLoggerdSocket;
+    if (!faultLoggerdSocket.CreateSocketFileDescriptor(0)) {
+        return;
+    }
     std::string socketNames[] = { SERVER_SOCKET_NAME, SERVER_SDKDUMP_SOCKET_NAME, SERVER_CRASH_SOCKET_NAME };
     srand(static_cast<unsigned>(time(nullptr)));
     int randomSocketIndex = rand() % 3;
-    if (StartConnect(socketFd, socketNames[randomSocketIndex].c_str(), 0)) {
-        SendMsgToSocket(socketFd, data, msgLen);
+    if (faultLoggerdSocket.StartConnect(socketNames[randomSocketIndex].c_str())) {
+        socketFdData ? faultLoggerdSocket.RequestFdsFromServer(socketRequestData, *socketFdData) :
+            faultLoggerdSocket.RequestServer(socketRequestData);
     }
-}
-
-bool GetFileDescriptorFromServer(int32_t socketFd, int32_t* fds, uint32_t nFds)
-{
-    int32_t retCode{ResponseCode::RECEIVE_DATA_FAILED};
-    GetMsgFromSocket(socketFd, &retCode, sizeof (retCode));
-    if (retCode == ResponseCode::REQUEST_SUCCESS) {
-        return ReadFileDescriptorFromSocket(socketFd, fds, nFds);
-    }
-    return false;
+    faultLoggerdSocket.CloseSocketFileDescriptor();
 }
 
 void FillRequestHeadData(RequestDataHead& head, FaultLoggerClientType clientType)
@@ -82,8 +78,7 @@ void FaultLoggerdServerTest(const uint8_t* data, size_t size)
     if (size < sizeof(FaultLoggerdRequest)) {
         return;
     }
-    SmartFd socketFd(CreateSocketFd());
-    SendMsgToServer(socketFd, data, size);
+    SendRequestToServer({data, static_cast<uint32_t>(size)});
 }
 
 void FileDesServiceTest(const uint8_t* data, size_t size)
@@ -93,12 +88,10 @@ void FileDesServiceTest(const uint8_t* data, size_t size)
     }
     FaultLoggerdRequest requestData = *reinterpret_cast<const FaultLoggerdRequest*>(data);
     FillRequestHeadData(requestData.head, FaultLoggerClientType::LOG_FILE_DES_CLIENT);
-    SmartFd socketFd(CreateSocketFd());
-    SendMsgToServer(socketFd, &requestData, sizeof(FaultLoggerdRequest));
     int32_t fd = -1;
-    if (GetFileDescriptorFromServer(socketFd, &fd, 1)) {
-        CloseFd(fd);
-    }
+    struct SocketFdData fds =  {&fd, 1};
+    SendRequestToServer({&requestData, sizeof(FaultLoggerdRequest)}, &fds);
+    CloseFd(fd);
 }
 
 void ExceptionReportServiceTest(const uint8_t* data, size_t size)
@@ -108,8 +101,7 @@ void ExceptionReportServiceTest(const uint8_t* data, size_t size)
     }
     CrashDumpException requestData = *reinterpret_cast<const CrashDumpException*>(data);
     FillRequestHeadData(requestData.head, FaultLoggerClientType::REPORT_EXCEPTION_CLIENT);
-    SmartFd socketFd(CreateSocketFd());
-    SendMsgToServer(socketFd, &requestData, sizeof(CrashDumpException));
+    SendRequestToServer({&requestData, sizeof(CrashDumpException)});
 }
 
 void DumpStatsServiceTest(const uint8_t* data, size_t size)
@@ -119,8 +111,7 @@ void DumpStatsServiceTest(const uint8_t* data, size_t size)
     }
     FaultLoggerdStatsRequest requestData = *reinterpret_cast<const FaultLoggerdStatsRequest*>(data);
     FillRequestHeadData(requestData.head, FaultLoggerClientType::DUMP_STATS_CLIENT);
-    SmartFd socketFd(CreateSocketFd());
-    SendMsgToServer(socketFd, &requestData, sizeof(FaultLoggerdStatsRequest));
+    SendRequestToServer({&requestData, sizeof(FaultLoggerdStatsRequest)});
 }
 
 void SdkDumpServiceTest(const uint8_t* data, size_t size)
@@ -130,14 +121,12 @@ void SdkDumpServiceTest(const uint8_t* data, size_t size)
     }
     SdkDumpRequestData requestData = *reinterpret_cast<const SdkDumpRequestData*>(data);
     FillRequestHeadData(requestData.head, FaultLoggerClientType::SDK_DUMP_CLIENT);
-    SmartFd socketFd(CreateSocketFd());
-    SendMsgToServer(socketFd, &requestData, sizeof(SdkDumpRequestData));
     int32_t fds[PIPE_NUM_SZ] = {-1, -1};
-    if (GetFileDescriptorFromServer(socketFd, fds, PIPE_NUM_SZ)) {
-        CloseFd(fds[PIPE_BUF_INDEX]);
-        CloseFd(fds[PIPE_RES_INDEX]);
-        RequestDelPipeFd(requestData.pid);
-    }
+    struct SocketFdData fdPair =  {fds, 2};
+    SendRequestToServer({&requestData, sizeof(SdkDumpRequestData)}, &fdPair);
+    CloseFd(fds[PIPE_BUF_INDEX]);
+    CloseFd(fds[PIPE_RES_INDEX]);
+    RequestDelPipeFd(requestData.pid);
 }
 
 void PipServiceTest(const uint8_t* data, size_t size)
@@ -147,13 +136,12 @@ void PipServiceTest(const uint8_t* data, size_t size)
     }
     PipFdRequestData requestData = *reinterpret_cast<const PipFdRequestData*>(data);
     FillRequestHeadData(requestData.head, FaultLoggerClientType::PIPE_FD_CLIENT);
-    SmartFd socketFd(CreateSocketFd());
-    SendMsgToServer(socketFd, &requestData, sizeof(PipFdRequestData));
     int32_t fds[PIPE_NUM_SZ] = {-1, -1};
-    if (GetFileDescriptorFromServer(socketFd, fds, PIPE_NUM_SZ)) {
-        CloseFd(fds[PIPE_BUF_INDEX]);
-        CloseFd(fds[PIPE_RES_INDEX]);
-    }
+    struct SocketFdData fdPair =  {fds, 2};
+    SendRequestToServer({&requestData, sizeof(PipFdRequestData)}, &fdPair);
+    CloseFd(fds[PIPE_BUF_INDEX]);
+    CloseFd(fds[PIPE_RES_INDEX]);
+    RequestDelPipeFd(requestData.pid);
 }
 
 void TempFileManagerTest(const uint8_t* data, size_t size)

@@ -49,43 +49,43 @@ void FillRequestHeadData(RequestDataHead& head, int8_t clientType)
     head.clientPid = getpid();
 }
 
-int32_t SendRequestToSocket(int32_t sockFd, const std::string& socketName, const void* requestData, size_t requestSize)
+bool SendRequestToServerWithoutResponse(const std::string& socketName, const void* requestData, uint32_t requestSize)
 {
-    if (!StartConnect(sockFd, socketName.c_str(), SOCKET_TIMEOUT)) {
-        return ResponseCode::CONNECT_FAILED;
+    FaultLoggerdSocket faultLoggerdSocket;
+    if (!faultLoggerdSocket.CreateSocketFileDescriptor(SOCKET_TIMEOUT)) {
+        return false;
     }
-    if (!SendMsgToSocket(sockFd, requestData, requestSize)) {
-        return ResponseCode::SEND_DATA_FAILED;
+    bool ret = false;
+    if (faultLoggerdSocket.StartConnect(SERVER_SDKDUMP_SOCKET_NAME)) {
+        ret = faultLoggerdSocket.SendMsgToSocket(requestData, requestSize);
     }
-    int32_t responseCode{ResponseCode::RECEIVE_DATA_FAILED};
-    GetMsgFromSocket(sockFd, &responseCode, sizeof (responseCode));
-    return responseCode;
+    faultLoggerdSocket.CloseSocketFileDescriptor();
+    return ret;
 }
 
-int32_t SendRequestToServer(const std::string& socketName, const void* requestData, size_t requestSize,
-    std::function<void(int32_t, int32_t&)> callback = nullptr)
+int32_t SendRequestToServer(const std::string& socketName, const void* requestData, uint32_t requestSize,
+    SocketFdData* socketFdData = nullptr)
 {
-    SmartFd sockFd = CreateSocketFd();
-    int responseCode = SendRequestToSocket(sockFd, socketName, requestData, requestSize);
-    if (callback) {
-        callback(sockFd, responseCode);
+    FaultLoggerdSocket faultLoggerdSocket;
+    if (!faultLoggerdSocket.CreateSocketFileDescriptor(SOCKET_TIMEOUT)) {
+        return ResponseCode::CONNECT_FAILED;
     }
-    if (responseCode != ResponseCode::REQUEST_SUCCESS) {
-        DFXLOGE("%{public}s :: failed to get filedescriptor from Server and response code %{public}d",
-            FAULTLOGGERD_SERVER_TEST_TAG, responseCode);
+    int32_t retCode{ResponseCode::DEFAULT_ERROR_CODE};
+    if (!faultLoggerdSocket.StartConnect(socketName.c_str())) {
+        retCode =  ResponseCode::CONNECT_FAILED;
+    } else {
+        retCode = socketFdData ? faultLoggerdSocket.RequestFdsFromServer({requestData, requestSize},
+            *socketFdData) :  faultLoggerdSocket.RequestServer({requestData, requestSize});
     }
-    return responseCode;
+    faultLoggerdSocket.CloseSocketFileDescriptor();
+    return retCode;
 }
 
 int32_t RequestFileDescriptorFromServer(const std::string& socketName, const void* requestData,
     size_t requestSize, int* fds, uint32_t nfds = 1)
 {
-    return SendRequestToServer(socketName, requestData, requestSize, [fds, nfds] (int32_t socketFd, int32_t& retCode) {
-        if (retCode == ResponseCode::REQUEST_SUCCESS) {
-            retCode = ReadFileDescriptorFromSocket(socketFd, fds, nfds) ?
-                ResponseCode::REQUEST_SUCCESS : ResponseCode::RECEIVE_DATA_FAILED;
-        }
-    });
+    SocketFdData socketFdData{fds, nfds};
+    return SendRequestToServer(socketName, requestData, requestSize, &socketFdData);
 }
 }
 
@@ -353,9 +353,7 @@ HWTEST_F(FaultLoggerdServiceTest, ReportExceptionClientTest02, TestSize.Level2)
         return;
     }
     requestData.uid = getuid();
-    SmartFd socketFd = CreateSocketFd();
-    StartConnect(socketFd, SERVER_SDKDUMP_SOCKET_NAME, SOCKET_TIMEOUT);
-    ASSERT_TRUE(SendMsgToSocket(socketFd, &requestData, sizeof (requestData)));
+    ASSERT_TRUE(SendRequestToServerWithoutResponse(SERVER_SDKDUMP_SOCKET_NAME, &requestData, sizeof(requestData)));
 }
 
 /**
@@ -411,15 +409,19 @@ HWTEST_F(FaultLoggerdServiceTest, StatsClientTest01, TestSize.Level2)
  */
 HWTEST_F(FaultLoggerdServiceTest, FaultloggerdSocketAbnormalTest, TestSize.Level2)
 {
-    ASSERT_FALSE(StartConnect(-1, nullptr, 3));
+    FaultLoggerdSocket faultLoggerdSocket;
+    ASSERT_TRUE(faultLoggerdSocket.CreateSocketFileDescriptor(0));
+    ASSERT_FALSE(faultLoggerdSocket.StartConnect(nullptr));
+    ASSERT_FALSE(faultLoggerdSocket.ReadFileDescriptorFromSocket(nullptr, 0));
+    int32_t fd = -1;
+    faultLoggerdSocket.CloseSocketFileDescriptor();
+    ASSERT_FALSE(faultLoggerdSocket.StartConnect(SERVER_CRASH_SOCKET_NAME));
+    ASSERT_FALSE(faultLoggerdSocket.ReadFileDescriptorFromSocket(&fd, 0));
     int32_t sockFd = -1;
     constexpr int32_t maxConnection = 30;
     ASSERT_FALSE(StartListen(sockFd, nullptr, maxConnection));
     ASSERT_TRUE(StartListen(sockFd, "FaultloggerdSocketAbnormalTest", maxConnection));
     ASSERT_FALSE(SendFileDescriptorToSocket(sockFd, nullptr, 0));
-    ASSERT_FALSE(ReadFileDescriptorFromSocket(sockFd, nullptr, 0));
-    int32_t fd = -1;
-    ASSERT_FALSE(ReadFileDescriptorFromSocket(sockFd, &fd, 1));
     ASSERT_FALSE(SendMsgToSocket(sockFd, nullptr, 0));
     ASSERT_FALSE(GetMsgFromSocket(sockFd, nullptr, 0));
 }
@@ -431,14 +433,9 @@ HWTEST_F(FaultLoggerdServiceTest, FaultloggerdSocketAbnormalTest, TestSize.Level
  */
 HWTEST_F(FaultLoggerdServiceTest, AbnormalTest001, TestSize.Level2)
 {
-    bool cur = StartConnect(-1, nullptr, 0);
-    ASSERT_FALSE(cur);
-    cur = StartConnect(0, nullptr, 0);
-    ASSERT_FALSE(cur);
     int32_t sockFd = 0;
     char* name = nullptr;
-    cur = StartListen(sockFd, name, 0);
-    ASSERT_FALSE(cur);
+    ASSERT_FALSE(StartListen(sockFd, name, 0));
 }
 
 /**
