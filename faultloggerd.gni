@@ -23,7 +23,7 @@ declare_args() {
   has_libunwindstack = false
   processdump_minidebuginfo_enable = true
   faultloggerd_hisysevent_enable = false
-  processdump_parse_lock_owner_enable = true
+  processdump_parse_lock_owner_enable = false
   faultloggerd_enable_build_targets = true
   if (defined(global_parts_info)) {
     if (defined(global_parts_info.hiviewdfx_hisysevent)) {

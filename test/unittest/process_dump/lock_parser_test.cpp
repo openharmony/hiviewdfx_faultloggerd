@@ -132,10 +132,12 @@ HWTEST_F(LockParserUnittest, LockParserUnittest001, TestSize.Level2)
 
     std::vector<char> buffer(sizeof(pthread_mutex_t), 0);
     if (!unwinder->GetLockInfo(tid, buffer.data(), sizeof(pthread_mutex_t))) {
+        pthread_mutex_unlock(&mutex);
         ASSERT_TRUE(false);
     }
 
     if (memcmp(buffer.data(), &mutex, sizeof(pthread_mutex_t)) != 0) {
+        pthread_mutex_unlock(&mutex);
         ASSERT_TRUE(false);
     }
 
@@ -186,10 +188,12 @@ HWTEST_F(LockParserUnittest, LockParserUnittest002, TestSize.Level2)
 
     std::vector<char> buffer(sizeof(pthread_mutex_t), 0);
     if (!unwinder->GetLockInfo(tid, buffer.data(), sizeof(pthread_mutex_t))) {
+        pthread_mutex_unlock(&mutex);
         ASSERT_TRUE(false);
     }
 
     if (memcmp(buffer.data(), &mutex, sizeof(pthread_mutex_t)) != 0) {
+        pthread_mutex_unlock(&mutex);
         ASSERT_TRUE(false);
     }
 
@@ -316,10 +320,12 @@ HWTEST_F(LockParserUnittest, LockParserUnittest005, TestSize.Level2)
 
     std::vector<char> buffer(sizeof(pthread_mutex_t), 0);
     if (!unwinder->GetLockInfo(tid, buffer.data(), sizeof(pthread_mutex_t))) {
+        pthread_mutex_unlock(&mutex);
         ASSERT_TRUE(false);
     }
 
     if (memcmp(buffer.data(), &mutex, sizeof(pthread_mutex_t)) != 0) {
+        pthread_mutex_unlock(&mutex);
         ASSERT_TRUE(false);
     }
 

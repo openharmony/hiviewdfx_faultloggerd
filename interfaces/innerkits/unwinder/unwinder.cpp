@@ -1353,7 +1353,7 @@ bool Unwinder::Impl::GetLockInfo(int32_t tid, char* buf, size_t sz)
         return false;
     }
 
-    uintptr_t lockPtrAddr = firstFrameSp_ + 56; // 56 : sp + 0x38
+    uintptr_t lockPtrAddr = firstFrameSp_ + 64; // 64 : sp + 0x40
     uintptr_t lockAddr;
     UnwindContext context;
     context.pid = tid;
