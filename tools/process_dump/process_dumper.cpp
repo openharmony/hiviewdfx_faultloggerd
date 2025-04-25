@@ -648,9 +648,8 @@ bool ProcessDumper::Unwind(std::shared_ptr<ProcessDumpRequest> request, int &dum
         }
     }
     GetCrashObj(request);
-    if (!IsOversea() || IsBetaVersion()) {
-        UpdateFatalMessageWhenDebugSignal(*request, vmPid);
-    }
+    UpdateFatalMessageWhenDebugSignal(*request, vmPid);
+
     if (!DfxUnwindRemote::GetInstance().UnwindProcess(request, process_, unwinder_, vmPid)) {
         DFXLOGE("Failed to unwind process.");
         dumpRes = DumpErrorCode::DUMP_ESTOPUNWIND;
@@ -781,7 +780,7 @@ int ProcessDumper::InitProcessInfo(std::shared_ptr<ProcessDumpRequest> request)
     process_->processInfo_.uid = request->uid;
     process_->recycleTid_ = request->recycleTid;
     if (request->msg.type == MESSAGE_FATAL || request->msg.type == MESSAGE_CALLBACK) {
-        if (!IsOversea() || IsBetaVersion()) {
+        if (!IsOversea() || IsBetaVersion() || IsDeveloperMode()) {
             process_->SetFatalMessage(request->msg.body);
         }
     }
