@@ -68,7 +68,7 @@ int32_t RequestFileDescriptor(const struct FaultLoggerdRequest &request)
     SocketFdData socketFdData = {&fd, 1};
     switch (request.type) {
         case FFRT_CRASH_LOG:
-            SendRequestToServer(SERVER_CRASH_SOCKET_NAME, socketRequestData, CRASHDUMP_SOCKET_TIMEOUT,
+            SendRequestToServer(SERVER_SOCKET_NAME, socketRequestData, CRASHDUMP_SOCKET_TIMEOUT,
                 &socketFdData, true);
             return fd;
         case CPP_CRASH:
