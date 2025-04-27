@@ -624,6 +624,7 @@ static bool StartProcessdump(void)
             DFXLOG_ERROR("Failed to fork processdump(%d)", errno);
             _exit(0);
         } else if (processDumpPid > 0) {
+            DFXLOG_INFO("exit the processdump parent process.");
             _exit(0);
         } else {
             uint64_t endTime;
