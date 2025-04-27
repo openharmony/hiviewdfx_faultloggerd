@@ -1197,7 +1197,7 @@ static bool CheckProcessStart(const std::string& procName, pid_t& pid)
 
 static int GetParentPid(int pid)
 {
-    std::ifstream statFile("/proc" + std::to_string(pid) + "/status");
+    std::ifstream statFile("/proc/" + std::to_string(pid) + "/status");
     if (!statFile) {
         GTEST_LOG_(ERROR) << "GetParentPid: No process status file" << pid;
         return -1;
