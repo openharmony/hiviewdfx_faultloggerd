@@ -132,7 +132,7 @@ HWTEST_F(CommonCutilTest, TraceTest001, TestSize.Level2)
  * @tc.desc: test StartsWith functions
  * @tc.type: FUNC
  */
-HWTEST_F(CommonCutilTest, ParseSiValueTest001, TestSize.Level2)
+HWTEST_F(CommonCutilTest, ParseSiValueTest001, TestSize.Level0)
 {
     GTEST_LOG_(INFO) << "ParseSiValueTest001: start.";
     siginfo_t si = {0};

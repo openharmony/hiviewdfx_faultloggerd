@@ -83,7 +83,7 @@ static void ListenAndCheckHiSysevent()
  * @tc.type: FUNC
  * @tc.require: issueI6HM7C
  */
-HWTEST_F(PanicHandlerTest, PanicHandlerTest001, TestSize.Level2)
+HWTEST_F(PanicHandlerTest, PanicHandlerTest001, TestSize.Level0)
 {
     GTEST_LOG_(INFO) << "PanicHandlerTest001: start.";
     ListenAndCheckHiSysevent();

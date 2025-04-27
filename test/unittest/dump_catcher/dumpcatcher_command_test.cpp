@@ -64,7 +64,7 @@ void DumpCatcherCommandTest::TearDown()
  * @tc.desc: test dumpcatcher command: -p [powermgr]
  * @tc.type: FUNC
  */
-HWTEST_F(DumpCatcherCommandTest, DumpCatcherCommandTest001, TestSize.Level2)
+HWTEST_F(DumpCatcherCommandTest, DumpCatcherCommandTest001, TestSize.Level0)
 {
     GTEST_LOG_(INFO) << "DumpCatcherCommandTest001: start.";
     int testPid = GetProcessPid("powermgr");

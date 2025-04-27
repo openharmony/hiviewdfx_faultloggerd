@@ -47,7 +47,7 @@ static constexpr int32_t TEST_UID = 5678;
  * @tc.desc: test ReportCrashException
  * @tc.type: FUNC
  */
-HWTEST_F(CrashExceptionTest, CrashExceptionTest001, TestSize.Level2)
+HWTEST_F(CrashExceptionTest, CrashExceptionTest001, TestSize.Level0)
 {
     GTEST_LOG_(INFO) << "CrashExceptionTest001: start.";
     char testProcessName[] = "process_name_ptr";

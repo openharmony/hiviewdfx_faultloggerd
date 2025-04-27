@@ -66,7 +66,7 @@ void *SleepThread(void *argv)
  * @tc.desc: test init other threads
  * @tc.type: FUNC
  */
-HWTEST_F (ProcessDumpTest, DfxProcessTest003, TestSize.Level2)
+HWTEST_F (ProcessDumpTest, DfxProcessTest003, TestSize.Level0)
 {
     GTEST_LOG_(INFO) << "DfxProcessTest003: start.";
     DfxProcess process(getpid(), getpid());

@@ -75,7 +75,7 @@ HWTEST_F(ArmExidxTest, ArmExidxTest001, TestSize.Level2)
  * @tc.desc: test ExtractEntryData inline compact model
  * @tc.type: FUNC
  */
-HWTEST_F(ArmExidxTest, ArmExidxTest002, TestSize.Level2)
+HWTEST_F(ArmExidxTest, ArmExidxTest002, TestSize.Level0)
 {
     GTEST_LOG_(INFO) << "ArmExidxTest002: start.";
     std::shared_ptr<DfxMemory> memory = std::make_shared<DfxMemory>(UNWIND_TYPE_LOCAL);

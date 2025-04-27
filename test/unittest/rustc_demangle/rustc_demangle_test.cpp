@@ -52,7 +52,7 @@ void RustcDemangleTest::TearDown()
  * @tc.desc: test RustcDemangle ok
  * @tc.type: FUNC
  */
-HWTEST_F(RustcDemangleTest, RustcDemangleTest001, TestSize.Level2)
+HWTEST_F(RustcDemangleTest, RustcDemangleTest001, TestSize.Level0)
 {
     GTEST_LOG_(INFO) << "RustcDemangleTest001: start.";
     char buf[BUF_LEN] = "_RNvCs7FufEY4pgE0_21panic_handler_example4main\0";

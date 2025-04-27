@@ -69,7 +69,7 @@ HWTEST_F(ProcinfoTest, ProcinfoTest002, TestSize.Level2)
  * @tc.desc: test GetProcStatusByPid, GetTidsByPid, IsThreadInPid
  * @tc.type: FUNC
  */
-HWTEST_F(ProcinfoTest, ProcinfoTest003, TestSize.Level2)
+HWTEST_F(ProcinfoTest, ProcinfoTest003, TestSize.Level0)
 {
     GTEST_LOG_(INFO) << "ProcinfoTest003: start.";
     struct ProcInfo procInfo;

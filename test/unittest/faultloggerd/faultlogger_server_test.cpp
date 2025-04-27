@@ -110,7 +110,7 @@ void FaultLoggerdServiceTest::SetUpTestCase()
  * @tc.desc: test for invalid request data.
  * @tc.type: FUNC
  */
-HWTEST_F(FaultLoggerdServiceTest, FaultloggerdServerTest01, TestSize.Level2)
+HWTEST_F(FaultLoggerdServiceTest, FaultloggerdServerTest01, TestSize.Level0)
 {
     FaultLoggerdStatsRequest requestData;
     FillRequestHeadData(requestData.head, FaultLoggerClientType::REPORT_EXCEPTION_CLIENT);

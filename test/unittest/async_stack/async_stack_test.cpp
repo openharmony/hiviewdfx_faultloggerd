@@ -104,7 +104,7 @@ HWTEST_F(AsyncStackTest, AsyncStackTest002, TestSize.Level2)
  * @tc.desc: test UnwindFallback Function
  * @tc.type: FUNC
  */
-HWTEST_F(AsyncStackTest, AsyncStackTest003, TestSize.Level2)
+HWTEST_F(AsyncStackTest, AsyncStackTest003, TestSize.Level0)
 {
     GTEST_LOG_(INFO) << "AsyncStackTest003: start.";
     const int32_t maxSize = 16;

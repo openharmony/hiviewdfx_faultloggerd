@@ -51,7 +51,7 @@ if (defined(ohos_lite)) {
   import("//build/config/features.gni")
   import("//build/test.gni")
 
-  module_output_path = "faultloggerd/faultloggerd_native"
+  module_output_path = "faultloggerd/faultloggerd/faultloggerd_native"
 
   ohos_moduletest("FaultloggerdModuleTest") {
     module_out_path = module_output_path

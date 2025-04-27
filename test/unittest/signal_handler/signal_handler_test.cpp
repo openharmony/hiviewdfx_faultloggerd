@@ -250,7 +250,7 @@ void TestBadfdThread(int maxCnt)
  * @tc.desc: test thread cash SignalHandler signo(SIGILL)
  * @tc.type: FUNC
  */
-HWTEST_F(SignalHandlerTest, SignalHandlerTest001, TestSize.Level2)
+HWTEST_F(SignalHandlerTest, SignalHandlerTest001, TestSize.Level0)
 {
     GTEST_LOG_(INFO) << "SignalHandlerTest001: start.";
     pid_t pid = fork();

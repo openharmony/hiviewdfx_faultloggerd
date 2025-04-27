@@ -226,7 +226,7 @@ static int KillAndWaitPid(int pid)
  * @tc.desc: test SignalHandler signal
  * @tc.type: FUNC
  */
-HWTEST_F(SignalChainTest, SignalChainTest001, TestSize.Level2)
+HWTEST_F(SignalChainTest, SignalChainTest001, TestSize.Level0)
 {
     GTEST_LOG_(INFO) << "SignalChainTest001: start.";
     SignalInit();

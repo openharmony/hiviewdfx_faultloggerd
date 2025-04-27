@@ -101,7 +101,7 @@ void WaitThreadBlock(int& tid)
  * @tc.desc: unwinder parse errorcheck lock owner
  * @tc.type: FUNC
  */
-HWTEST_F(LockParserUnittest, LockParserUnittest001, TestSize.Level2)
+HWTEST_F(LockParserUnittest, LockParserUnittest001, TestSize.Level0)
 {
     GTEST_LOG_(INFO) << "LockParserUnittest001: start.";
     pthread_mutex_t mutex;

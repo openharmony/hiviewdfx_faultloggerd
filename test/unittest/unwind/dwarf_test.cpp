@@ -831,7 +831,7 @@ HWTEST_F(DwarfTest, DwarfTest003, TestSize.Level2)
  * @tc.desc: test dwarf DW_OP_reserved oprations
  * @tc.type: FUNC
  */
-HWTEST_F(DwarfTest, DwarfTest004, TestSize.Level2)
+HWTEST_F(DwarfTest, DwarfTest004, TestSize.Level0)
 {
     GTEST_LOG_(INFO) << "DwarfTest004: start.\n";
     auto memory = std::make_shared<DfxMemoryTest>();
