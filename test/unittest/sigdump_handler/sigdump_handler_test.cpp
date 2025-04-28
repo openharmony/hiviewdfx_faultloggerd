@@ -67,7 +67,7 @@ void DfxSigDumpHandlerTest::TestThreadRunTask()
  * @tc.desc: test DfxSigDumpHandler
  * @tc.type: FUNC
  */
-HWTEST_F(DfxSigDumpHandlerTest, DfxSigDumpHandlerTest001, TestSize.Level2)
+HWTEST_F(DfxSigDumpHandlerTest, DfxSigDumpHandlerTest001, TestSize.Level0)
 {
     GTEST_LOG_(INFO) << "DfxSigDumpHandlerTest001: start.";
     pid_t targetPid = getpid();

@@ -106,7 +106,7 @@ public:
  * @tc.desc: test KernelSnapshotProcessorImpl
  * @tc.type: FUNC
  */
-HWTEST_F(KernelSnapshotTest, KernelSnapshotTest002, TestSize.Level2)
+HWTEST_F(KernelSnapshotTest, KernelSnapshotTest002, TestSize.Level0)
 {
     GTEST_LOG_(INFO) << "KernelSnapshotTest002: start.";
     std::shared_ptr<IKernelSnapshotProcessor> processor = std::make_shared<KernelSnapshotProcessorImpl>();

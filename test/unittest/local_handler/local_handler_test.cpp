@@ -98,7 +98,7 @@ static bool CheckLocalCrashKeyWords(const string& filePath, pid_t pid, int sig)
  * @tc.desc: test crashlocalhandler signo(SIGILL)
  * @tc.type: FUNC
  */
-HWTEST_F(LocalHandlerTest, LocalHandlerTest001, TestSize.Level2)
+HWTEST_F(LocalHandlerTest, LocalHandlerTest001, TestSize.Level0)
 {
     GTEST_LOG_(INFO) << "LocalHandlerTest001: start.";
     pid_t pid = fork();

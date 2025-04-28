@@ -208,7 +208,7 @@ HWTEST_F(BacktraceLocalTest, BacktraceLocalTest003, TestSize.Level2)
  * @tc.desc: test get backtrace of a child thread
  * @tc.type: FUNC
  */
-HWTEST_F(BacktraceLocalTest, BacktraceLocalTest004, TestSize.Level2)
+HWTEST_F(BacktraceLocalTest, BacktraceLocalTest004, TestSize.Level0)
 {
     GTEST_LOG_(INFO) << "BacktraceLocalTest004: start.";
     g_mutex.lock();

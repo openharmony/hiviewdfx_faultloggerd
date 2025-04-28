@@ -147,7 +147,7 @@ bool CheckCppCrashExtraKeyWords(const string& filePath, std::string *keywords, i
  * @tc.desc: test SIGILL crash
  * @tc.type: FUNC
  */
-HWTEST_F(DfxProcessDumpTest, DfxProcessDumpTest001, TestSize.Level2)
+HWTEST_F(DfxProcessDumpTest, DfxProcessDumpTest001, TestSize.Level0)
 {
     GTEST_LOG_(INFO) << "DfxProcessDumpTest001: start.";
     pid_t testProcess = CreateMultiThreadProcess(10); // 10 : create a process with ten threads

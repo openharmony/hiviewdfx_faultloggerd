@@ -39,7 +39,7 @@ public:
  * @tc.desc: test DfxHap functions ParseHapInfo exception
  * @tc.type: FUNC
  */
-HWTEST_F(DfxHapTest, DfxHapTest001, TestSize.Level2)
+HWTEST_F(DfxHapTest, DfxHapTest001, TestSize.Level0)
 {
     GTEST_LOG_(INFO) << "DfxHapTest001: start.";
     DfxHap dfxHap;

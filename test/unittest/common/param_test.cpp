@@ -50,7 +50,7 @@ HWTEST_F(ParamTest, DfxParamTest001, TestSize.Level2)
  * @tc.desc: test FormatTraceName functions
  * @tc.type: FUNC
  */
-HWTEST_F(ParamTest, TraceTest001, TestSize.Level2)
+HWTEST_F(ParamTest, TraceTest001, TestSize.Level0)
 {
     GTEST_LOG_(INFO) << "TraceTest001: start.";
     char *name = nullptr;

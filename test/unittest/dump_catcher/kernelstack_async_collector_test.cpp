@@ -44,7 +44,7 @@ public:
  * @tc.desc: test KernelStackAsyncCollectorTest NotifyStartCollect interface
  * @tc.type: FUNC
  */
-HWTEST_F(KernelStackAsyncCollectorTest, KernelStackAsyncCollectorTest001, TestSize.Level2)
+HWTEST_F(KernelStackAsyncCollectorTest, KernelStackAsyncCollectorTest001, TestSize.Level0)
 {
     GTEST_LOG_(INFO) << "KernelStackAsyncCollectorTest001: start.";
     std::string res = ExecuteCommands("uname");

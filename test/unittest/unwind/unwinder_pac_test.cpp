@@ -47,7 +47,7 @@ public:
  * @tc.desc: test unwinder unwind interface with pac
  * @tc.type: FUNC
  */
-HWTEST_F(UnwinderPacTest, UnwinderPacTest001, TestSize.Level2)
+HWTEST_F(UnwinderPacTest, UnwinderPacTest001, TestSize.Level0)
 {
     GTEST_LOG_(INFO) << "UnwinderPacTest001: start.";
     static pid_t pid = getpid();

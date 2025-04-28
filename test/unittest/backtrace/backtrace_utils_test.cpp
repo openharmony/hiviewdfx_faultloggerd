@@ -254,7 +254,7 @@ HWTEST_F(BacktraceUtilsTest, BacktraceUtilsTest004, TestSize.Level2)
  * @tc.desc: test PrintTrace to hilog, stdout and file
  * @tc.type: FUNC
  */
-HWTEST_F(BacktraceUtilsTest, BacktraceUtilsTest005, TestSize.Level2)
+HWTEST_F(BacktraceUtilsTest, BacktraceUtilsTest005, TestSize.Level0)
 {
     GTEST_LOG_(INFO) << "BacktraceUtilsTest005: start.";
     ASSERT_EQ(true, PrintTrace(STDIN_FILENO));

@@ -139,7 +139,7 @@ static void ForkMultiThreadProcess(void)
  * @tc.desc: test DumpCatchMultiPid API: multiPid{PID(powermgr), PID(foundation)}
  * @tc.type: FUNC
  */
-HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest001, TestSize.Level2)
+HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest001, TestSize.Level0)
 {
     GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest001: start.";
     std::string testProcess1 = "powermgr";

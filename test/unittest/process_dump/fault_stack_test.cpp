@@ -77,7 +77,7 @@ namespace {
  * @tc.desc: check whether fault stack and register can be print out
  * @tc.type: FUNC
  */
-HWTEST_F(FaultStackUnittest, FaultStackUnittest001, TestSize.Level2)
+HWTEST_F(FaultStackUnittest, FaultStackUnittest001, TestSize.Level0)
 {
     GTEST_LOG_(INFO) << "FaultStackUnittest001: start.";
 

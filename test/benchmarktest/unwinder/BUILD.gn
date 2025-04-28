@@ -17,7 +17,7 @@ if (!defined(ohos_lite)) {
   import("//build/config/features.gni")
   import("//build/test.gni")
 
-  module_output_path = "faultloggerd/benchmarktest"
+  module_output_path = "faultloggerd/faultloggerd/benchmarktest"
 
   ohos_benchmarktest("UnwinderBenchmarkTest") {
     module_out_path = module_output_path
