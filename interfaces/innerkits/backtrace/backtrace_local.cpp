@@ -147,6 +147,7 @@ std::string GetProcessStacktrace(size_t maxFrameNums, bool enableKernelStack)
         BacktraceLocalThread thread(tid, unwinder);
         if (thread.Unwind(false, maxFrameNums, 0)) {
             ss += thread.GetFormattedStr(true) + "\n";
+            return true;
         }
         if (!enableKernelStack) {
             return true;
