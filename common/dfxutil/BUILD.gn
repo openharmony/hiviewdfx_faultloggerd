@@ -17,7 +17,6 @@ dfx_util_sources = [
   "dfx_signal.cpp",
   "dfx_util.cpp",
   "stack_utils.cpp",
-  "proc_util.cpp",
 ]
 
 if (defined(ohos_lite)) {

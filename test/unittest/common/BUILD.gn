@@ -73,11 +73,9 @@ if (defined(ohos_lite)) {
     sources = [
       "common_cutil_test.cpp",
       "common_test.cpp",
-      "proc_util_test.cpp",
     ]
     defines = [ "DFX_ENABLE_TRACE" ]
     configs = [ ":module_private_config" ]
-    resource_config_file = "$faultloggerd_path/test/resource/ohos_test.xml"
 
     deps = [
       "$faultloggerd_common_path/trace:dfx_trace_dlsym",

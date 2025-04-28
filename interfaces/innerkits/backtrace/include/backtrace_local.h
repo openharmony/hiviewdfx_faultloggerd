@@ -98,13 +98,11 @@ bool GetBacktrace(std::string& out, size_t skipFrameNum, bool fast = false,
  *
  * @param maxFrameNums the maximum number of frames to backtrace
  * @param enableKernelStack if set to true, when failed to get user stack, try to get kernel stack.
- * @param includeThreadInfo if set to true, capture thread status information
  * @return formatted stacktrace string
  * @warning If enableKernelStack set to true,  this interface requires that the caller process
  *          has ioctl system call permission, otherwise it may cause the calling process to crash.
 */
-std::string GetProcessStacktrace(size_t maxFrameNums = DEFAULT_MAX_FRAME_NUM, bool enableKernelStack = true,
-                                 bool includeThreadInfo = true);
+std::string GetProcessStacktrace(size_t maxFrameNums = DEFAULT_MAX_FRAME_NUM, bool enableKernelStack = true);
 
 extern "C" {
     /**
