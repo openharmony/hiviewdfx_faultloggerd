@@ -688,7 +688,7 @@ bool Unwinder::Impl::StepArkJsFrame(StepFrame& frame)
         ", isJsFrame:" + std::to_string(frame.isJsFrame);
     ElapsedTime counter(timeLimitCheck, 20); // 20 : limit cost time 20 ms
     if (pid_ != UNWIND_TYPE_CUSTOMIZE) {
-        DFXLOGD("+++ark pc: %{public}p, fp: %{public}p, sp: %{public}p, isJsFrame: %{public}d.",
+        DFXLOGD("+++ark pc: %{private}p, fp: %{private}p, sp: %{private}p, isJsFrame: %{public}d.",
             reinterpret_cast<void *>(frame.pc),
             reinterpret_cast<void *>(frame.fp), reinterpret_cast<void *>(frame.sp), frame.isJsFrame);
     }
@@ -708,7 +708,7 @@ bool Unwinder::Impl::StepArkJsFrame(StepFrame& frame)
         return false;
     }
     if (pid_ != UNWIND_TYPE_CUSTOMIZE) {
-        DFXLOGD("---ark pc: %{public}p, fp: %{public}p, sp: %{public}p, isJsFrame: %{public}d.",
+        DFXLOGD("---ark pc: %{private}p, fp: %{private}p, sp: %{private}p, isJsFrame: %{public}d.",
             reinterpret_cast<void *>(frame.pc),
             reinterpret_cast<void *>(frame.fp), reinterpret_cast<void *>(frame.sp), frame.isJsFrame);
     }
@@ -727,7 +727,7 @@ bool Unwinder::Impl::UnwindFrame(void *ctx, StepFrame& frame, bool& needAdjustPc
     // Check if this is a signal frame.
     if (pid_ != UNWIND_TYPE_LOCAL && pid_ != UNWIND_TYPE_CUSTOMIZE_LOCAL &&
         regs_->StepIfSignalFrame(static_cast<uintptr_t>(frame.pc), memory_)) {
-        DFXLOGW("Step signal frame, pc: %{public}p", reinterpret_cast<void *>(frame.pc));
+        DFXLOGW("Step signal frame, pc: %{private}p", reinterpret_cast<void *>(frame.pc));
         StepInner(true, frame, ctx);
         return true;
     }
@@ -886,7 +886,7 @@ bool Unwinder::Impl::Step(uintptr_t& pc, uintptr_t& sp, void *ctx)
     frame.fp = regs_->GetFp();
     // Check if this is a signal frame.
     if (regs_->StepIfSignalFrame(frame.pc, memory_)) {
-        DFXLOGW("Step signal frame, pc: %{public}p", reinterpret_cast<void *>(frame.pc));
+        DFXLOGW("Step signal frame, pc: %{private}p", reinterpret_cast<void *>(frame.pc));
         ret = StepInner(true, frame, ctx);
     } else {
         ret = StepInner(false, frame, ctx);
@@ -940,7 +940,7 @@ bool Unwinder::Impl::UnwindArkFrame(StepFrame& frame, const std::shared_ptr<DfxM
     }
     if ((enableMixstack_) && ((map != nullptr && map->IsArkExecutable()) || frame.isJsFrame)) {
         if (!StepArkJsFrame(frame)) {
-            DFXLOGE("Failed to step ark Js frame, pc: %{public}p", reinterpret_cast<void *>(frame.pc));
+            DFXLOGE("Failed to step ark Js frame, pc: %{private}p", reinterpret_cast<void *>(frame.pc));
             lastErrorData_.SetAddrAndCode(frame.pc, UNW_ERROR_STEP_ARK_FRAME);
             return false;
         }
@@ -1004,7 +1004,7 @@ void Unwinder::Impl::UpdateRegsState(
         unwinderResult = FpStep(frame.fp, frame.pc, ctx);
         if (unwinderResult && !isFpStep_) {
             if (pid_ != UNWIND_TYPE_CUSTOMIZE) {
-                DFXLOGI("First enter fp step, pc: %{public}p", reinterpret_cast<void *>(frame.pc));
+                DFXLOGI("First enter fp step, pc: %{private}p", reinterpret_cast<void *>(frame.pc));
             }
             isFpStep_ = true;
         }
@@ -1284,7 +1284,7 @@ bool Unwinder::Impl::FillJsFrameLocal(DfxFrame& frame, JsFunction* jsFunction)
 
     if (DfxArk::Instance().ParseArkFrameInfoLocal(static_cast<uintptr_t>(frame.pc),
         static_cast<uintptr_t>(frame.map->begin), static_cast<uintptr_t>(frame.map->offset), jsFunction) < 0) {
-        DFXLOGW("Failed to parse ark frame info local, pc: %{public}p, begin: %{public}p",
+        DFXLOGW("Failed to parse ark frame info local, pc: %{private}p, begin: %{private}p",
             reinterpret_cast<void *>(frame.pc), reinterpret_cast<void *>(frame.map->begin));
         return false;
     }

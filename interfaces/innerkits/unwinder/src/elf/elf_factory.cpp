@@ -148,7 +148,7 @@ std::shared_ptr<DfxElf> RegularElfFactory::Create()
     int fd = OHOS_TEMP_FAILURE_RETRY(open(realPath.c_str(), O_RDONLY));
 #endif
     if (fd <= 0) {
-        DFXLOGE("Failed to open file: %{public}s, errno(%d)", filePath_.c_str(), errno);
+        DFXLOGE("Failed to open file: %{public}s, errno(%{public}d)", filePath_.c_str(), errno);
         return regularElf;
     }
     do {
