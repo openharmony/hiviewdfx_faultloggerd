@@ -157,7 +157,7 @@ static bool ParseStatFromString(const std::string& statStr, ProcessInfo& info)
     size_t commEnd = statStr.find_last_of(")");
     if (commStart == std::string::npos || commEnd == std::string::npos ||
         commStart >= commEnd || commEnd - commStart > TASK_COMM_LEN + 1) {
-        DFXLOGE("parser comm error. %{public}d", commEnd - commStart);
+        DFXLOGE("parser comm error. %{public}zu", commEnd - commStart);
         return false;
     }
 
@@ -229,9 +229,9 @@ bool ParseStat(const std::string& statPath, ProcessInfo& info)
     return ParseStatFromString(line, info);
 }
 
-bool ParseProcInfo(pid_t tid, ProcessInfo& info)
+bool ParseProcInfo(pid_t pid, ProcessInfo& info)
 {
-    std::string path = "/proc/" + std::to_string(tid) + "/stat";
+    std::string path = "/proc/" + std::to_string(pid) + "/stat";
     return ParseStat(path, info);
 }
 } // namespace HiviewDFX
