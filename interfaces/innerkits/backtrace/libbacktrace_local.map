@@ -11,6 +11,7 @@
       OHOS::HiviewDFX::DfxGetKernelStack*;
       OHOS::HiviewDFX::FormatThreadKernelStack*;
       OHOS::HiviewDFX::FormatProcessKernelStack*;
+      OHOS::HiviewDFX::FpBacktrace*;
     };
     extern "C" {
       PrintTrace*;
