@@ -37,6 +37,7 @@
 #if defined(__aarch64__)
 #include "unwind_arm64_define.h"
 #endif
+#include "safe_readers.h"
 
 namespace OHOS {
 namespace HiviewDFX {
@@ -384,10 +385,9 @@ NO_SANITIZE void LocalThreadContextMix::CopyStackBuf()
     uintptr_t curStackSz = stackTop_ - sp_;
     size_t cpySz = std::min(static_cast<size_t>(curStackSz), static_cast<size_t>(STACK_BUFFER_SIZE));
     std::unique_lock<std::mutex> lock(mtx_);
-    if (stackBuf_.size() >= cpySz) {
-        for (size_t i = 0; i < cpySz; i++) {
-            stackBuf_[i] = reinterpret_cast<uint8_t*>(sp_)[i];
-        }
+
+    SafeReaders readers;
+    if (readers.CopyReadbaleBufSafe(reinterpret_cast<uintptr_t>(stackBuf_.data()), stackBuf_.size(), sp_, cpySz) > 0) {
         status_ = SyncStatus::COPY_SUCCESS;
     } else {
         status_ = SyncStatus::COPY_FAILED;
