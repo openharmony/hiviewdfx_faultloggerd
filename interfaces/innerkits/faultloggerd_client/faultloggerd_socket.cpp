@@ -161,7 +161,7 @@ bool FaultLoggerdSocket::ConcatenateSocketName(char* dst, uint32_t dstSize, cons
     }
     auto err = strncpy_s(dst, dstSize, src, srcSize);
     if (err != EOK) {
-        LOGE(signalSafely_, "%{public}s :: strncpy failed, err = %{public}d.", __func__, (int)err);
+        LOGE(signalSafely_, "%{public}s :: strncpy failed, err = %{public}d.", __func__, static_cast<int>(err));
         return false;
     }
     return true;
