@@ -88,32 +88,39 @@ bool FaultStack::CollectStackInfo(const std::vector<DfxFrame>& frames, bool need
 
     size_t index = 1;
     uintptr_t minAddr = 4096;
-    uintptr_t frameSteps = 0;
+    uintptr_t size = 0;
     uintptr_t prevSp = 0;
     uintptr_t prevEndAddr = 0;
-    uintptr_t totalSteps = DfxConfig::GetConfig().highAddressStep;
+    uintptr_t highAddrLength = DfxConfig::GetConfig().highAddressStep;
     if (needParseStack) {
-        totalSteps = 8192; // 8192 : 32k / STEP
+        highAddrLength = 8192; // 8192 : 32k / STEP
     }
 
     auto firstFrame = frames.at(0);
     prevSp = static_cast<uintptr_t>(firstFrame.sp);
-    while (totalSteps > 0 && index < frames.size() && prevSp > minAddr) {
+    constexpr size_t maxFaultStackSz = 4;
+    for (index = 1; index < frames.size(); index++) {
+        if (index > maxFaultStackSz) {
+            break;
+        }
+
         auto frame = frames.at(index);
         uintptr_t curSp = static_cast<uintptr_t>(frame.sp);
 
-        frameSteps = 0;
+        size = 0;
         if (curSp > prevSp) {
-            frameSteps = std::min(totalSteps, static_cast<uintptr_t>((curSp - prevSp) / STEP));
+            size = std::min(highAddrLength, static_cast<uintptr_t>(((curSp - prevSp) / STEP) - 1));
         } else {
-            index++;    // when js frame to native frame, frame sp is same
-            continue;
+            break;
         }
 
-        prevEndAddr = AdjustAndCreateMemoryBlock(index, prevSp, prevEndAddr, frameSteps);
+        prevEndAddr = AdjustAndCreateMemoryBlock(index, prevSp, prevEndAddr, size);
         prevSp = curSp;
-        index++;
-        totalSteps -= frameSteps;
+    }
+
+    if ((blocks_.size() < maxFaultStackSz) && (prevSp > minAddr)) {
+        size = highAddrLength;
+        prevEndAddr = AdjustAndCreateMemoryBlock(index, prevSp, prevEndAddr, size);
     }
 
     const uintptr_t minCorruptedStackSz = 1024;
@@ -149,6 +156,9 @@ uintptr_t FaultStack::PrintMemoryBlock(const MemoryBlockInfo& info, uintptr_t st
             DfxRingBufferWrapper::GetInstance().AppendBuf("    " PRINT_FORMAT " " PRINT_FORMAT "\n",
                 targetAddr,
                 info.content.at(i));
+        }
+        if (targetAddr - stackStartAddr > STEP * DfxConfig::GetConfig().highAddressStep) {
+            break;
         }
         targetAddr += STEP;
     }
