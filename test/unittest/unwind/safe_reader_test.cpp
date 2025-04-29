@@ -26,7 +26,7 @@
 
 #include "dfx_define.h"
 #include "dfx_maps.h"
-#include "safe_readers.h"
+#include "safe_reader.h"
 #include "smart_fd.h"
 
 using namespace testing::ext;
@@ -35,11 +35,11 @@ namespace OHOS {
 namespace HiviewDFX {
 
 /**
- * @tc.name: SafeReadersTest001
+ * @tc.name: SafeReaderTest001
  * @tc.desc: test CopyReadbaleBufSafe read stack
  * @tc.type: FUNC
  */
-HWTEST(SafeReadersTest, SafeReadersTest001, TestSize.Level2)
+HWTEST(SafeReaderTest, SafeReaderTest001, TestSize.Level2)
 {
     /**
      * @tc.steps: step1. read maps.
@@ -52,40 +52,46 @@ HWTEST(SafeReadersTest, SafeReadersTest001, TestSize.Level2)
 
     std::vector<uint8_t> stackBuf;
     constexpr int stackBufferSize = 64 * 1024;
-    SafeReaders readers;
+    SafeReader reader;
     stackBuf.resize(stackBufferSize);
 
     /**
      * @tc.steps: step2. read stack form bottom.
      * @tc.expected: read sucess
      */
-    ASSERT_TRUE(readers.CopyReadbaleBufSafe(reinterpret_cast<uintptr_t>(stackBuf.data()), stackBuf.size(),
-                                            bottom, top - bottom));
+    uintptr_t stackSize = top - bottom;
+    auto ret = reader.CopyReadbaleBufSafe(reinterpret_cast<uintptr_t>(stackBuf.data()), stackBuf.size(),
+                                           bottom, stackSize);
+    ASSERT_EQ(ret, std::min(stackSize, stackBuf.size()));
 
     /**
      * @tc.steps: step3. read stack form top - 2048.
      * @tc.expected: read sucess
      */
     constexpr uintptr_t offset = 2048;
-    ASSERT_TRUE(readers.CopyReadbaleBufSafe(reinterpret_cast<uintptr_t>(stackBuf.data()), stackBuf.size(),
-                                            top - offset, top - bottom));
-    ASSERT_TRUE(readers.CopyReadbaleBufSafe(reinterpret_cast<uintptr_t>(stackBuf.data()), stackBuf.size(),
-                                            top - offset, offset));
+    ret = reader.CopyReadbaleBufSafe(reinterpret_cast<uintptr_t>(stackBuf.data()), stackBuf.size(),
+                                      top - offset, top - bottom);
+    ASSERT_EQ(ret, offset);
+
+    ret = reader.CopyReadbaleBufSafe(reinterpret_cast<uintptr_t>(stackBuf.data()), stackBuf.size(),
+                                      top - offset, offset);
+    ASSERT_EQ(ret, offset);
 
     /**
      * @tc.steps: step4. read stack form top + 2048.
      * @tc.expected: read failed
      */
-    ASSERT_FALSE(readers.CopyReadbaleBufSafe(reinterpret_cast<uintptr_t>(stackBuf.data()), stackBuf.size(),
-                                            top + offset, offset));
+    ret = reader.CopyReadbaleBufSafe(reinterpret_cast<uintptr_t>(stackBuf.data()), stackBuf.size(),
+                                      top + offset, offset);
+    ASSERT_EQ(ret, 0);
 }
 
 /**
- * @tc.name: SafeReadersTest002
+ * @tc.name: SafeReaderTest002
  * @tc.desc: test DfxParam class functions
  * @tc.type: FUNC
  */
-HWTEST(SafeReadersTest, SafeReadersTest002, TestSize.Level2)
+HWTEST(SafeReaderTest, SafeReaderTest002, TestSize.Level2)
 {
     /**
      * @tc.steps: step1. read data from /dev/random.
@@ -97,8 +103,8 @@ HWTEST(SafeReadersTest, SafeReadersTest002, TestSize.Level2)
     constexpr uintptr_t socLen = 1024 * 6;
     constexpr uintptr_t destBuf1 = 1024 * 8;
     constexpr uintptr_t destBuf2 = 1024 * 3;
-    srcBuf.resize(socLen);
-    destBuf.resize(destBuf1);
+    srcBuf.resize(socLen, 1);
+    destBuf.resize(destBuf1, 0);
     ssize_t ret = read(fd, srcBuf.data(), srcBuf.size());
     ASSERT_EQ(ret, srcBuf.size());
 
@@ -106,9 +112,10 @@ HWTEST(SafeReadersTest, SafeReadersTest002, TestSize.Level2)
      * @tc.steps: step2. test CopyReadbaleBufSafe.
      * @tc.expected: copy sucess
      */
-    SafeReaders readers;
-    ASSERT_TRUE(readers.CopyReadbaleBufSafe(reinterpret_cast<uintptr_t>(destBuf.data()), destBuf.size(),
-                                            reinterpret_cast<uintptr_t>(srcBuf.data()), srcBuf.size()));
+    SafeReader reader;
+    ret = reader.CopyReadbaleBufSafe(reinterpret_cast<uintptr_t>(destBuf.data()), destBuf.size(),
+                                           reinterpret_cast<uintptr_t>(srcBuf.data()), srcBuf.size());
+    ASSERT_EQ(ret, std::min(destBuf.size(), srcBuf.size()));
 
     /**
      * @tc.steps: step3. compare data.
@@ -121,14 +128,15 @@ HWTEST(SafeReadersTest, SafeReadersTest002, TestSize.Level2)
      * @tc.steps: step4. clear destBuf.
      */
     destBuf.clear();
-    destBuf.resize(destBuf2);
+    destBuf.resize(destBuf2, 0);
 
     /**
      * @tc.steps: step5. test CopyReadbaleBufSafe.
      * @tc.expected: copy sucess
      */
-    ASSERT_TRUE(readers.CopyReadbaleBufSafe(reinterpret_cast<uintptr_t>(destBuf.data()), destBuf.size(),
-                                            reinterpret_cast<uintptr_t>(srcBuf.data()), srcBuf.size()));
+    ret = reader.CopyReadbaleBufSafe(reinterpret_cast<uintptr_t>(destBuf.data()), destBuf.size(),
+                                      reinterpret_cast<uintptr_t>(srcBuf.data()), srcBuf.size());
+    ASSERT_EQ(ret, std::min(destBuf.size(), srcBuf.size()));
 
     /**
      * @tc.steps: step6. compare data.
@@ -139,55 +147,55 @@ HWTEST(SafeReadersTest, SafeReadersTest002, TestSize.Level2)
 }
 
 /**
- * @tc.name: SafeReadersTest003
+ * @tc.name: SafeReaderTest003
  * @tc.desc: test fd = -1
  * @tc.type: FUNC
  */
-HWTEST(SafeReadersTest, SafeReadersTest003, TestSize.Level2)
+HWTEST(SafeReaderTest, SafeReaderTest003, TestSize.Level2)
 {
     /**
      * @tc.steps: step1. close fd
      */
 
-    SafeReaders readers;
-    if (readers.pfd_[PIPE_READ] > 0) {
-        syscall(SYS_close, readers.pfd_[PIPE_READ]);
-        readers.pfd_[PIPE_READ] = -1;
+    SafeReader reader;
+    if (reader.pfd_[PIPE_READ] > 0) {
+        syscall(SYS_close, reader.pfd_[PIPE_READ]);
+        reader.pfd_[PIPE_READ] = -1;
     }
-    if (readers.pfd_[PIPE_WRITE] > 0) {
-        syscall(SYS_close, readers.pfd_[PIPE_WRITE]);
-        readers.pfd_[PIPE_WRITE] = -1;
+    if (reader.pfd_[PIPE_WRITE] > 0) {
+        syscall(SYS_close, reader.pfd_[PIPE_WRITE]);
+        reader.pfd_[PIPE_WRITE] = -1;
     }
 
     /**
      * @tc.steps: step2. compare data.
      * @tc.expected: data consistency
      */
-    ASSERT_FALSE(readers.IsReadbaleAddr(0));
+    ASSERT_FALSE(reader.IsReadbaleAddr(0));
 }
 
 /**
- * @tc.name: SafeReadersTest004
+ * @tc.name: SafeReaderTest004
  * @tc.desc: test GetCurrentPageEndAddr
  * @tc.type: FUNC
  */
-HWTEST(SafeReadersTest, SafeReadersTest004, TestSize.Level2)
+HWTEST(SafeReaderTest, SafeReaderTest004, TestSize.Level2)
 {
     int pageSize = getpagesize();
 
     /**
      * @tc.steps: step1. 0 ~ (pageSize - 1) >>> pageSize
      */
-    ASSERT_EQ(SafeReaders::GetCurrentPageEndAddr(0), pageSize);
-    ASSERT_EQ(SafeReaders::GetCurrentPageEndAddr(1), pageSize);
-    ASSERT_EQ(SafeReaders::GetCurrentPageEndAddr(pageSize - 1), pageSize);
+    ASSERT_EQ(SafeReader::GetCurrentPageEndAddr(0), pageSize);
+    ASSERT_EQ(SafeReader::GetCurrentPageEndAddr(1), pageSize);
+    ASSERT_EQ(SafeReader::GetCurrentPageEndAddr(pageSize - 1), pageSize);
 
     /**
      * @tc.steps: step1. pageSize ~ (2*pageSize - 1) >>> 2*pageSize
      */
-    ASSERT_EQ(SafeReaders::GetCurrentPageEndAddr(pageSize), pageSize * 2);
-    ASSERT_EQ(SafeReaders::GetCurrentPageEndAddr(pageSize + 1), pageSize * 2);
-    ASSERT_EQ(SafeReaders::GetCurrentPageEndAddr(2 * pageSize - 1), pageSize * 2);
+    ASSERT_EQ(SafeReader::GetCurrentPageEndAddr(pageSize), pageSize * 2);
+    ASSERT_EQ(SafeReader::GetCurrentPageEndAddr(pageSize + 1), pageSize * 2);
+    ASSERT_EQ(SafeReader::GetCurrentPageEndAddr(2 * pageSize - 1), pageSize * 2);
 }
 } // namespace HiviewDFX
 } // namespace OHOS

@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-#include "safe_readers.h"
+#include "safe_reader.h"
 
 #include <algorithm>
 #include <cerrno>
@@ -24,7 +24,7 @@
 #include <sys/syscall.h>
 #include <sys/types.h>
 
-SafeReaders::SafeReaders()
+SafeReader::SafeReader()
 {
     if (syscall(SYS_pipe2, pfd_, O_CLOEXEC | O_NONBLOCK) != 0) {
         pfd_[PIPE_READ] = -1;
@@ -32,7 +32,7 @@ SafeReaders::SafeReaders()
     }
 }
 
-SafeReaders::~SafeReaders()
+SafeReader::~SafeReader()
 {
     if (pfd_[PIPE_READ] > 0) {
         syscall(SYS_close, pfd_[PIPE_READ]);
@@ -44,7 +44,7 @@ SafeReaders::~SafeReaders()
     }
 }
 
-NO_SANITIZE bool SafeReaders::IsReadbaleAddr(uintptr_t addr)
+NO_SANITIZE bool SafeReader::IsReadbaleAddr(uintptr_t addr)
 {
     if (pfd_[PIPE_WRITE] < 0) {
         return false;
@@ -57,13 +57,12 @@ NO_SANITIZE bool SafeReaders::IsReadbaleAddr(uintptr_t addr)
     return true;
 }
 
-NO_SANITIZE bool SafeReaders::CopyReadbaleBufSafe(uintptr_t destPtr, size_t destLen, uintptr_t srcPtr, size_t srcLen)
+NO_SANITIZE size_t SafeReader::CopyReadbaleBufSafe(uintptr_t destPtr, size_t destLen, uintptr_t srcPtr, size_t srcLen)
 {
     size_t copeSize = std::min(destLen, srcLen);
     uintptr_t currentPtr = srcPtr;
     uintptr_t srcEndPtr = srcPtr + copeSize;
     size_t destIndex = 0;
-    bool status = false;
     while (currentPtr < srcEndPtr) {
         uintptr_t pageEndPtr = GetCurrentPageEndAddr(currentPtr);
         pageEndPtr = std::min(pageEndPtr, srcEndPtr);
@@ -73,12 +72,11 @@ NO_SANITIZE bool SafeReaders::CopyReadbaleBufSafe(uintptr_t destPtr, size_t dest
         while (currentPtr < pageEndPtr) {
             reinterpret_cast<uint8_t*>(destPtr)[destIndex++] = *reinterpret_cast<uint8_t*>(currentPtr++);
         }
-        status = true;
     }
-    return status;
+    return destIndex;
 }
 
-uintptr_t SafeReaders::GetCurrentPageEndAddr(uintptr_t addr)
+uintptr_t SafeReader::GetCurrentPageEndAddr(uintptr_t addr)
 {
     int pageSize = getpagesize();
     return (addr + pageSize) & (~(pageSize - 1));
