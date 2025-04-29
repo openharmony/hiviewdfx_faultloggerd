@@ -12,22 +12,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef SAFE_READERS_H
-#define SAFE_READERS_H
+#ifndef SAFE_READER_H
+#define SAFE_READER_H
 
 #include <cstdio>
 #include <stdint.h>
 
 #include "dfx_define.h"
 
-class SafeReaders {
+class SafeReader {
 public:
-    SafeReaders();
-    ~SafeReaders();
-    SafeReaders(const SafeReaders&) = delete;
-    SafeReaders& operator=(const SafeReaders&) = delete;
+    SafeReader();
+    ~SafeReader();
+    SafeReader(const SafeReader&) = delete;
+    SafeReader& operator=(const SafeReader&) = delete;
 
-    NO_SANITIZE ssize_t CopyReadbaleBufSafe(uintptr_t destPtr, size_t destLen, uintptr_t srcPtr, size_t srcLen);
+    NO_SANITIZE size_t CopyReadbaleBufSafe(uintptr_t destPtr, size_t destLen, uintptr_t srcPtr, size_t srcLen);
 
 private:
     NO_SANITIZE bool IsReadbaleAddr(uintptr_t addr);
