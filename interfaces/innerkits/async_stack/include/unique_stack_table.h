@@ -103,7 +103,7 @@ public:
         }
     }
 
-    uint64_t PutPcsInTable(StackId *stackId, uintptr_t *pcs, size_t nr);
+    uint64_t PutPcsInTable(StackId *stackId, const uintptr_t *pcs, size_t nr);
     bool GetPcsByStackId(const StackId stackId, std::vector<uintptr_t>& pcs);
     bool ImportNode(uint32_t index, const Node& node);
     size_t GetWriteSize();
