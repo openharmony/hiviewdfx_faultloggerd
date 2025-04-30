@@ -65,6 +65,7 @@
 
 #define NUMBER_SIXTYFOUR 64
 #define INHERITABLE_OFFSET 32
+#define HILOG_SNAPSHOT_LINES 1000
 
 static struct ProcessDumpRequest *g_request = NULL;
 
@@ -566,6 +567,7 @@ static int ProcessDump(int signo)
     if (!IsDumpSignal(signo)) {
         ResetFlags();
         SetKernelSnapshot(true);
+        HiLogRecordSnapshot(HILOG_SNAPSHOT_LINES, g_request->timeStamp);
     }
 
     do {
