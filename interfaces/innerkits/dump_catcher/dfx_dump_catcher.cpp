@@ -794,7 +794,7 @@ bool DfxDumpCatcher::Impl::DoReadBuf(int fd, std::string& msg)
         }
         DFXLOGD("%{public}s :: nread: %{public}zu", __func__, nread);
         ret = true;
-        msg.append(buffer);
+        msg.append(buffer, static_cast<size_t>(nread));
     } while (false);
     delete []buffer;
     return ret;
