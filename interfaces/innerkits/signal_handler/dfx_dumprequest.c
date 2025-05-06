@@ -567,7 +567,9 @@ static int ProcessDump(int signo)
     if (!IsDumpSignal(signo)) {
         ResetFlags();
         SetKernelSnapshot(true);
+#ifndef is_ohos_lite
         HiLogRecordSnapshot(HILOG_SNAPSHOT_LINES, g_request->timeStamp);
+#endif
     }
 
     do {
