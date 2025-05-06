@@ -220,13 +220,13 @@ ohos_unittest("test_unwind_supporting") {
   ]
 }
 
-ohos_unittest("test_readers") {
+ohos_unittest("test_reader") {
   module_out_path = module_output_path
   include_dirs = [
     "$faultloggerd_interfaces_path/common",
     "$faultloggerd_interfaces_path/innerkits/unwinder/include",
   ]
-  sources = [ "safe_readers_test.cpp" ]
+  sources = [ "safe_reader_test.cpp" ]
   cflags_cc = [ "-Dprivate=public" ]
   
   deps = [ "$faultloggerd_interfaces_path/innerkits/unwinder:libunwinder_static" ]
@@ -245,7 +245,7 @@ group("unittest") {
     ":test_unwind_pac",
     ":test_unwind_separate_code",
     ":test_unwind_supporting",
-    ":test_readers",
+    ":test_reader",
   ]
   if (target_cpu == "arm") {
     deps += [ ":test_exidx" ]
