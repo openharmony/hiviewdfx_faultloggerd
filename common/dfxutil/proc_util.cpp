@@ -96,7 +96,10 @@ void Schedstat::Reset()
 bool ThreadInfo::ParserThreadInfo(pid_t tid)
 {
     std::string schedstatPath = std::string(PROC_SELF_TASK_PATH) + "/" + std::to_string(tid) + "/schedstat";
-    schedstat_.ParseSchedstat(schedstatPath);
+    if (!schedstat_.ParseSchedstat(schedstatPath) && tid == getpid()) {
+        schedstatPath = std::string("/proc/self/schedstat");
+        schedstat_.ParseSchedstat(schedstatPath);
+    }
 
     ProcessInfo info;
     if (!ParseProcInfo(tid, info)) {
