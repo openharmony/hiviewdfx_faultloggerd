@@ -145,6 +145,20 @@ __attribute__((noinline)) void Test001()
     Test002();
 }
 
+__attribute__((noinline)) void Test003()
+{
+    g_mutex.lock();
+    printf("Test003:%d\n", gettid());
+    std::thread backtraceThread(Test001);
+    sleep(1);
+    std::string stacktrace = GetProcessStacktrace();
+    g_mutex.unlock();
+    ASSERT_GT(stacktrace.size(), 0);
+    GTEST_LOG_(INFO) << stacktrace;
+    backtraceThread.join();
+    return;
+}
+
 __attribute__((noinline)) void TestMaskSigDumpLocalInner()
 {
     printf("TestMaskSigDumpLocalInner\n");
@@ -681,6 +695,19 @@ HWTEST_F(BacktraceLocalTest, BacktraceLocalTest018, TestSize.Level2)
         backtraceThread.join();
     }
     GTEST_LOG_(INFO) << "BacktraceLocalTest018: end.";
+}
+
+/**
+ * @tc.name: BacktraceLocalTest019
+ * @tc.desc: test get backtrace of current process
+ * @tc.type: FUNC
+ */
+HWTEST_F(BacktraceLocalTest, BacktraceLocalTest019, TestSize.Level2)
+{
+    std::thread backtraceThread(Test003);
+    backtraceThread.join();
+    ASSERT_GT(g_tid, 0) << "Failed to create child thread.\n";
+    g_tid = 0;
 }
 } // namespace HiviewDFX
 } // namepsace OHOS

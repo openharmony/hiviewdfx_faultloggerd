@@ -43,7 +43,7 @@ HWTEST(ProcUtilTest, ParseStatTest002, TestSize.Level2)
     ASSERT_TRUE(ParseStat(path, info));
     ASSERT_EQ(info.pid, 1716);
     ASSERT_EQ(info.comm, std::string("at-spi-bus-laun"));
-    ASSERT_EQ(info.state, ThreadState::SLEEP);
+    ASSERT_EQ(info.state, ThreadState::RUNNING);
     ASSERT_EQ(info.ppid, 1695);
     ASSERT_EQ(info.utime, 0);
     ASSERT_EQ(info.stime, 0);
@@ -101,7 +101,7 @@ HWTEST(ProcUtilTest, ParseStatTest004, TestSize.Level2)
     ASSERT_TRUE(ParseStat(path, info));
     ASSERT_EQ(info.pid, -111);
     ASSERT_EQ(info.comm, std::string("222"));
-    ASSERT_EQ(info.state, ThreadState::SLEEP);
+    ASSERT_EQ(info.state, ThreadState::DISK_SLEEP);
     ASSERT_EQ(info.ppid, -444);
     ASSERT_EQ(info.utime, 1414);
     ASSERT_EQ(info.stime, 1515);
@@ -142,7 +142,7 @@ HWTEST(ProcUtilTest, ParseStatTest006, TestSize.Level2)
     ASSERT_TRUE(ParseStat(path, info));
     ASSERT_EQ(info.pid, -111);
     ASSERT_EQ(info.comm, std::string("222)"));
-    ASSERT_EQ(info.state, ThreadState::SLEEP);
+    ASSERT_EQ(info.state, ThreadState::ZOMBIE);
     ASSERT_EQ(info.ppid, -444);
     ASSERT_EQ(info.utime, 1414);
     ASSERT_EQ(info.stime, 1515);
@@ -171,7 +171,7 @@ HWTEST(ProcUtilTest, ParseStatTest007, TestSize.Level2)
     ASSERT_TRUE(ParseStat(path, info));
     ASSERT_EQ(info.pid, -111);
     ASSERT_EQ(info.comm, std::string("222) "));
-    ASSERT_EQ(info.state, ThreadState::SLEEP);
+    ASSERT_EQ(info.state, ThreadState::IDLE);
     ASSERT_EQ(info.ppid, -444);
     ASSERT_EQ(info.utime, 1414);
     ASSERT_EQ(info.stime, 1515);
@@ -200,7 +200,7 @@ HWTEST(ProcUtilTest, ParseStatTest008, TestSize.Level2)
     ASSERT_TRUE(ParseStat(path, info));
     ASSERT_EQ(info.pid, -111);
     ASSERT_EQ(info.comm, std::string("0123456789abcdef"));
-    ASSERT_EQ(info.state, ThreadState::SLEEP);
+    ASSERT_EQ(info.state, ThreadState::STOPPED);
     ASSERT_EQ(info.ppid, -444);
     ASSERT_EQ(info.utime, 1414);
     ASSERT_EQ(info.stime, 1515);
