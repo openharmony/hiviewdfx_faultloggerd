@@ -85,6 +85,16 @@
       "maxFileCount": 12,
       "fileExistTimeInSecond": 60,
       "overTimeFileDeleteType": "ACTIVE"
+    },
+    {
+      "type": 110,
+      "fileNamePrefix": "cjheap",
+      "maxSingleFileSizeInKB": 2097152,
+      "overFileSizeAction": "DELETE",
+      "keepFileCount": 12,
+      "maxFileCount": 24,
+      "fileExistTimeInSecond": 120,
+      "overTimeFileDeleteType": "ACTIVE"
     }
   ]
 }

@@ -51,7 +51,9 @@ typedef enum FaultLoggerType : int32_t {
     /** jit code log */
     JIT_CODE_LOG,
     /** address sanitizer log*/
-    ADDR_SANITIZER
+    ADDR_SANITIZER,
+    /** cj heap */
+    CJ_HEAP_SNAPSHOT = 110
 } FaultLoggerType;
 
 /**
