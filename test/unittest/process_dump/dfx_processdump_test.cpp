@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2022-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -23,9 +23,7 @@
 #include <unistd.h>
 #include <vector>
 
-#include "dfx_config.h"
 #include "dfx_define.h"
-#include "dfx_logger.h"
 #include "dfx_test_util.h"
 #include "dfx_util.h"
 #include "directory_ex.h"
@@ -44,65 +42,13 @@ namespace OHOS {
 namespace HiviewDFX {
 class DfxProcessDumpTest : public testing::Test {
 public:
-    static void SetUpTestCase(void);
-    static void TearDownTestCase(void);
-    void SetUp();
-    void TearDown();
+    static void SetUpTestCase(void) {}
+    static void TearDownTestCase(void) {}
+    void SetUp() {}
+    void TearDown() {}
 };
 } // namespace HiviewDFX
 } // namespace OHOS
-
-void DfxProcessDumpTest::SetUpTestCase(void)
-{
-}
-
-void DfxProcessDumpTest::TearDownTestCase(void)
-{
-}
-
-void DfxProcessDumpTest::SetUp(void)
-{
-}
-
-void DfxProcessDumpTest::TearDown(void)
-{
-}
-
-static pid_t CreateMultiThreadProcess(int threadNum)
-{
-    pid_t pid = fork();
-    if (pid < 0) {
-        GTEST_LOG_(ERROR) << "Failed to fork new test process.";
-    } else if (pid == 0) {
-        (void)MultiThreadConstructor(threadNum);
-    }
-    return pid;
-}
-
-static pid_t CreateMultiThreadForThreadCrash(int threadNum)
-{
-    pid_t pid = fork();
-    if (pid < 0) {
-        GTEST_LOG_(ERROR) << "Failed to fork new test process.";
-    } else if (pid == 0) {
-        (void)MultiThreadConstructorForThreadCrash(threadNum);
-    }
-    return pid;
-}
-
-static pid_t CreateMultiThreadForThreadCrashWithOpen(int threadNum, int openNum)
-{
-    pid_t pid = fork();
-    if (pid < 0) {
-        GTEST_LOG_(ERROR) << "Failed to fork new test process.";
-    } else if (pid == 0) {
-        for (int i = 0; i < openNum; ++i) {
-            fopen("/dev/null", "r");
-        }
-        (void)MultiThreadConstructorForThreadCrash(threadNum);
-    }
-    return pid;
-}
 
 static bool CheckCppCrashKeyWords(const string& filePath, pid_t pid, int sig)
 {
@@ -400,13 +346,14 @@ HWTEST_F(DfxProcessDumpTest, DfxProcessDumpTest014, TestSize.Level2)
     info.pid = 1;
     info.pipeFd = -1;
     info.faultLogType = 2; // 2 : CPP_CRASH_TYPE
+    info.logFileCutoffSizeBytes = 0;
     info.module = "";
     info.reason = "";
     info.summary = "";
     info.registers = "";
     addFaultLog(&info);
     dlclose(handle);
-    GTEST_LOG_(INFO) << "DfxProcessDumpTest01: end.";
+    GTEST_LOG_(INFO) << "DfxProcessDumpTest014: end.";
 }
 
 /**
@@ -428,9 +375,10 @@ HWTEST_F(DfxProcessDumpTest, DfxProcessDumpTest015, TestSize.Level2)
     GTEST_LOG_(INFO) << "DfxProcessDumpTest015: end.";
 }
 
+
 /**
  * @tc.name: DfxProcessDumpTest017
- * @tc.desc: Testing InitProcessInfo、InitKeyThread、InitRegs exception
+ * @tc.desc: Testing InitDfxProcess、InitRegs exception
  * @tc.type: FUNC
  */
 HWTEST_F(DfxProcessDumpTest, DfxProcessDumpTest017, TestSize.Level2)
@@ -438,63 +386,39 @@ HWTEST_F(DfxProcessDumpTest, DfxProcessDumpTest017, TestSize.Level2)
     GTEST_LOG_(INFO) << "DfxProcessDumpTest017: start.";
     ProcessDumper& ins = ProcessDumper::GetInstance();
     struct ProcessDumpRequest request{};
-    int result = ins.InitProcessInfo(request);
-    ASSERT_EQ(result, -1);
+    ASSERT_FALSE(ins.InitDfxProcess(request));
 
     request.pid = 1;
     request.nsPid = 1;
-    result = ins.InitProcessInfo(request);
-    ASSERT_EQ(result, -1);
-    ins.isCrash_ = true;
-    result = ins.InitProcessInfo(request);
-    ASSERT_EQ(result, 0);
-
-    ins.process_ = nullptr;
-    bool ret = ins.InitKeyThread(request);
-    ASSERT_FALSE(ret);
-
-    ins.process_ = std::make_shared<DfxProcess>(request.pid, request.nsPid);
-    ret = ins.InitKeyThread(request);
-    ASSERT_TRUE(ret);
-    ins.process_->keyThread_ = nullptr;
-    ret = ins.InitKeyThread(request);
-    ASSERT_TRUE(ret);
+    ASSERT_FALSE(ins.InitDfxProcess(request));
     GTEST_LOG_(INFO) << "DfxProcessDumpTest017: end.";
 }
 
 /**
- * @tc.name: DfxProcessDumpTest020
- * @tc.desc: Testing InitProcessInfo Function
+ * @tc.name: DfxProcessDumpTest018
+ * @tc.desc: Testing InitDfxProcess Function
  * @tc.type: FUNC
  */
-HWTEST_F(DfxProcessDumpTest, DfxProcessDumpTest020, TestSize.Level2)
+HWTEST_F(DfxProcessDumpTest, DfxProcessDumpTest018, TestSize.Level2)
 {
-    GTEST_LOG_(INFO) << "DfxProcessDumpTest020: start.";
+    GTEST_LOG_(INFO) << "DfxProcessDumpTest018: start.";
     ProcessDumper& ins = ProcessDumper::GetInstance();
-    ProcessDumpRequest request{};
-    ins.isCrash_ = true;
-    request.siginfo.si_signo = SIGLEAK_STACK;
-    int result = ins.InitPrintThread(request);
+    ProcessDumpRequest request{
+        .type = ProcessDumpType::DUMP_TYPE_MEM_LEAK,
+    };
+    int result = ins.InitBufferWriter(request);
     ASSERT_NE(result, -1);
-    ins.isCrash_ = true;
-    request.siginfo.si_signo = CPP_CRASH;
-    result = ins.InitPrintThread(request);
+
+    request.type = ProcessDumpType::DUMP_TYPE_CPP_CRASH;
+    result = ins.InitBufferWriter(request);
     ASSERT_NE(result, -1);
-    ins.isCrash_ = false;
-    request.siginfo.si_signo = SIGLEAK_STACK;
-    result = ins.InitPrintThread(request);
-    ASSERT_NE(result, -1);
-    ins.isCrash_ = false;
-    ins.bufferFd_ = -1;
-    request.siginfo.si_signo = CPP_CRASH;
-    result = ins.InitPrintThread(request);
+
+    request.type = ProcessDumpType::DUMP_TYPE_DUMP_CATCH;
+    result = ins.InitBufferWriter(request);
     ASSERT_EQ(result, -1);
 
-    result = ins.WriteDumpBuf(1, nullptr, 1);
-    ASSERT_EQ(result, -1);
-    ins.resFd_ = -1;
-    ins.WriteDumpRes(1, getpid());
-    ASSERT_EQ(ins.resFd_, -1);
-    GTEST_LOG_(INFO) << "DfxProcessDumpTest020: end.";
+    request.type = ProcessDumpType::DUMP_TYPE_DUMP_CATCH;
+    ins.WriteDumpResIfNeed(request, 1);
+    GTEST_LOG_(INFO) << "DfxProcessDumpTest018: end.";
 }
 }

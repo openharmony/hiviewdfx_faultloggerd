@@ -176,6 +176,28 @@ void ParseSiValue(siginfo_t& si, uint64_t& endTime, int& tid)
         tid = si.si_value.sival_int;
     }
 }
+
+bool IsBetaVersion()
+{
+#if !defined(is_ohos_lite) && !defined(DFX_UTIL_STATIC)
+    const char *const logsystemVersionType = "const.logsystem.versiontype";
+    static bool isBetaVersion = OHOS::system::GetParameter(logsystemVersionType, "") == "beta";
+    return isBetaVersion;
+#else
+    return false;
+#endif
+}
+
+bool IsOversea()
+{
+#if !defined(is_ohos_lite) && !defined(DFX_UTIL_STATIC)
+    const char *const globalRegion = "const.global.region";
+    static bool isOversea = OHOS::system::GetParameter(globalRegion, "CN") != "CN";
+    return isOversea;
+#else
+    return false;
+#endif
+}
 #endif
 
 off_t GetFileSize(int fd)
@@ -274,17 +296,6 @@ size_t ReadProcMemByPid(const pid_t pid, const uint64_t addr, void* data, size_t
     return totalReadSize;
 }
 #endif
-
-bool IsBetaVersion()
-{
-#if !defined(is_ohos_lite) && !defined(DFX_UTIL_STATIC)
-    const char *const logsystemVersionType = "const.logsystem.versiontype";
-    static bool isBetaVersion = OHOS::system::GetParameter(logsystemVersionType, "") == "beta";
-    return isBetaVersion;
-#else
-    return false;
-#endif
-}
 }   // namespace HiviewDFX
 }   // namespace OHOS
 

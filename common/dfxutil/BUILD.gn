@@ -16,8 +16,8 @@ import("//base/hiviewdfx/faultloggerd/faultloggerd.gni")
 dfx_util_sources = [
   "dfx_signal.cpp",
   "dfx_util.cpp",
-  "stack_utils.cpp",
   "proc_util.cpp",
+  "stack_utils.cpp",
 ]
 
 if (defined(ohos_lite)) {

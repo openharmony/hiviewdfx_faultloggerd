@@ -78,6 +78,21 @@ uintptr_t DFX_SetCrashObj(uint8_t type, uintptr_t addr);
  * @param crashObj return of DFX_SetCrashObj
 */
 void DFX_ResetCrashObj(uintptr_t crashObj);
+
+enum CrashLogConfigType : uint8_t {
+    EXTEND_PRINT_PC_LR = 0,
+    CUT_OFF_LOG_FILE,
+    SIMPLIFY_PRINT_MAPS,
+};
+/**
+ * @brief set crash log config through HiAppEvent
+ *
+ * @param type  type of config attribute, using enum CrashLogConfigType
+ * @param value value of config attribute
+ * @return if succeed return 0, otherwise return -1. The reason for the failure can be found in 'errno'
+ * @warning this interface is non-thread safety and signal safety
+*/
+int DFX_SetCrashLogConfig(uint8_t type, uint32_t value);
 #ifdef __cplusplus
 }
 #endif

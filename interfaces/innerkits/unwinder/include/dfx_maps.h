@@ -17,6 +17,7 @@
 #define DFX_MAPS_H
 
 #include <mutex>
+#include <set>
 #include <string>
 #include <vector>
 #include "dfx_map.h"
@@ -42,6 +43,7 @@ public:
     void EnableMapIndex(bool enableMapIndex) { enableMapIndex_ = enableMapIndex; }
     void EnableOnlyExec(bool onlyExec) { onlyExec_ = onlyExec; }
     bool FindMapByAddr(uintptr_t addr, std::shared_ptr<DfxMap>& map) const;
+    bool FindMapGroupByAddr(uintptr_t addr, std::set<DfxMap>& maps) const;
     bool FindMapByFileInfo(std::string name, uint64_t offset, std::shared_ptr<DfxMap>& map) const;
     bool FindMapsByName(std::string name, std::vector<std::shared_ptr<DfxMap>>& maps) const;
     const std::vector<std::shared_ptr<DfxMap>>& GetMaps() const { return maps_; }
@@ -55,6 +57,7 @@ public:
 private:
     bool Parse(const pid_t pid, const std::string& path);
     void HandleSpecialMap(const std::shared_ptr<DfxMap>& map);
+    int FindMapIndexByAddr(uintptr_t addr) const;
 
 protected:
     std::vector<std::shared_ptr<DfxMap>> maps_ {};

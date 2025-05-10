@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2024-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -24,7 +24,7 @@
 
 #include <pthread.h>
 
-#include "lock_parser.h"
+#include "dump_utils.h"
 #include "unwinder.h"
 #include "unwinder_config.h"
 
@@ -34,35 +34,24 @@ using namespace std;
 
 namespace OHOS {
 namespace HiviewDFX {
-class LockParserUnittest : public testing::Test {
+class DumpUtilsTest : public testing::Test {
 public:
     static void SetUpTestCase(void);
-    static void TearDownTestCase(void);
-    void SetUp();
-    void TearDown();
+    static void TearDownTestCase(void) {}
+    void SetUp() {};
+    void TearDown() {}
 };
 } // namespace HiviewDFX
 } // namespace OHOS
 
-void LockParserUnittest::SetUpTestCase(void)
+void DumpUtilsTest::SetUpTestCase(void)
 {
     UnwinderConfig::SetEnableMiniDebugInfo(true);
     UnwinderConfig::SetEnableLoadSymbolLazily(true);
 }
-
-void LockParserUnittest::TearDownTestCase(void)
-{
-}
-
-void LockParserUnittest::SetUp(void)
-{
-}
-
-void LockParserUnittest::TearDown(void)
-{
-}
-
+ 
 namespace {
+#ifdef __aarch64__
 constexpr const int LOCK_TYPE_IDX = 0;
 constexpr const int LOCK_OWNER_IDX = 1;
 constexpr const int LOCK_OWNER_MASK = 0x3fffffff;
@@ -101,7 +90,7 @@ void WaitThreadBlock(int& tid)
  * @tc.desc: unwinder parse errorcheck lock owner
  * @tc.type: FUNC
  */
-HWTEST_F(LockParserUnittest, LockParserUnittest001, TestSize.Level2)
+HWTEST_F(DumpUtilsTest, LockParserUnittest001, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "LockParserUnittest001: start.";
     pthread_mutex_t mutex;
@@ -155,7 +144,7 @@ HWTEST_F(LockParserUnittest, LockParserUnittest001, TestSize.Level2)
  * @tc.desc: unwinder parse normal lock owner
  * @tc.type: FUNC
  */
-HWTEST_F(LockParserUnittest, LockParserUnittest002, TestSize.Level2)
+HWTEST_F(DumpUtilsTest, LockParserUnittest002, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "LockParserUnittest002: start.";
     pthread_mutex_t mutex;
@@ -209,7 +198,7 @@ HWTEST_F(LockParserUnittest, LockParserUnittest002, TestSize.Level2)
  * @tc.desc: test lock parser parse normal lock
  * @tc.type: FUNC
  */
-HWTEST_F(LockParserUnittest, LockParserUnittest003, TestSize.Level2)
+HWTEST_F(DumpUtilsTest, LockParserUnittest003, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "LockParserUnittest003: start.";
     pthread_mutex_t mutex;
@@ -233,7 +222,7 @@ HWTEST_F(LockParserUnittest, LockParserUnittest003, TestSize.Level2)
     (void)unwinder.GetFramesByPcs(frames, pcs);
     unwinder.SetFrames(frames);
 
-    bool ret = LockParser::ParseLockInfo(unwinder, getpid(), tid);
+    bool ret = DumpUtils::ParseLockInfo(unwinder, getpid(), tid);
     ASSERT_EQ(ret, true);
 
     pthread_mutex_unlock(&mutex);
@@ -242,13 +231,13 @@ HWTEST_F(LockParserUnittest, LockParserUnittest003, TestSize.Level2)
     }
     GTEST_LOG_(INFO) << "LockParserUnittest003: end.";
 }
-
+ 
 /**
  * @tc.name: LockParserUnittest004
  * @tc.desc: test lock parser parse errorcheck lock
  * @tc.type: FUNC
  */
-HWTEST_F(LockParserUnittest, LockParserUnittest004, TestSize.Level2)
+HWTEST_F(DumpUtilsTest, LockParserUnittest004, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "LockParserUnittest004: start.";
     pthread_mutex_t mutex;
@@ -272,7 +261,7 @@ HWTEST_F(LockParserUnittest, LockParserUnittest004, TestSize.Level2)
     (void)unwinder.GetFramesByPcs(frames, pcs);
     unwinder.SetFrames(frames);
 
-    bool ret = LockParser::ParseLockInfo(unwinder, getpid(), tid);
+    bool ret = DumpUtils::ParseLockInfo(unwinder, getpid(), tid);
     ASSERT_EQ(ret, true);
 
     pthread_mutex_unlock(&mutex);
@@ -281,13 +270,13 @@ HWTEST_F(LockParserUnittest, LockParserUnittest004, TestSize.Level2)
     }
     GTEST_LOG_(INFO) << "LockParserUnittest004: end.";
 }
-
+ 
 /**
  * @tc.name: LockParserUnittest005
  * @tc.desc: test lock parser parse PTHREAD_MUTEX_RECURSIVE lock
  * @tc.type: FUNC
  */
-HWTEST_F(LockParserUnittest, LockParserUnittest005, TestSize.Level2)
+HWTEST_F(DumpUtilsTest, LockParserUnittest005, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "LockParserUnittest005: start.";
     pthread_mutex_t mutex;
@@ -328,7 +317,7 @@ HWTEST_F(LockParserUnittest, LockParserUnittest005, TestSize.Level2)
     ASSERT_EQ(gettid(), lockOwner);
     printf("CurrentTid:%d Lock owner:%d\n", gettid(), lockOwner);
     ASSERT_EQ(PTHREAD_MUTEX_RECURSIVE, mutexInt[LOCK_TYPE_IDX]);
-    ASSERT_EQ(LockParser::ParseLockInfo(unwinder, getpid(), tid), true);
+    ASSERT_EQ(DumpUtils::ParseLockInfo(unwinder, getpid(), tid), true);
 
     pthread_mutex_unlock(&mutex);
     if (t1.joinable()) {
@@ -336,4 +325,5 @@ HWTEST_F(LockParserUnittest, LockParserUnittest005, TestSize.Level2)
     }
     GTEST_LOG_(INFO) << "LockParserUnittest005: end.";
 }
+#endif
 }

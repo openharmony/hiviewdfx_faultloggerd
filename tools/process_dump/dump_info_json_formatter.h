@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -28,18 +28,19 @@
 namespace OHOS {
 namespace HiviewDFX {
 
-class DfxStackInfoJsonFormatter {
+class DumpInfoJsonFormatter {
 public:
-    bool GetJsonFormatInfo(bool isDump, std::string& jsonStringInfo, const ProcessDumpRequest& request,
-        DfxProcess& process) const;
+    bool GetJsonFormatInfo(const ProcessDumpRequest& request, DfxProcess& process,
+        std::string& jsonStringInfo);
 
 private:
 #ifndef is_ohos_lite
-    void GetCrashJsonFormatInfo(Json::Value& jsonInfo, const ProcessDumpRequest& request, DfxProcess& process) const;
-    void GetDumpJsonFormatInfo(Json::Value& jsonInfo, DfxProcess& process) const;
-    static bool FillFrames(DfxThread& thread, Json::Value& jsonInfo);
-    static void FillNativeFrame(const DfxFrame& frame, Json::Value& jsonInfo);
+    void GetCrashJsonFormatInfo(const ProcessDumpRequest& request, DfxProcess& process, Json::Value& jsonInfo);
+    void GetDumpJsonFormatInfo(DfxProcess& process, Json::Value& jsonInfo);
     void AppendThreads(const std::vector<std::shared_ptr<DfxThread>>& threads, Json::Value& jsonInfo) const;
+    bool FillFramesJson(const std::vector<DfxFrame>& frames, Json::Value& jsonInfo) const;
+    void FillJsFrameJson(const DfxFrame& frame, Json::Value& jsonInfo) const;
+    void FillNativeFrameJson(const DfxFrame& frame, Json::Value& jsonInfo) const;
 #endif
 };
 } // namespace HiviewDFX

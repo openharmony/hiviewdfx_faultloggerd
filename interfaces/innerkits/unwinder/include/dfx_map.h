@@ -50,7 +50,7 @@ public:
     const std::shared_ptr<DfxElf> GetElf(pid_t pid = 0);
     std::string GetElfName();
     uint64_t GetRelPc(uint64_t pc);
-    std::string ToString();
+    std::string ToString() const;
 
     uint64_t begin = 0;
     uint64_t end = 0;

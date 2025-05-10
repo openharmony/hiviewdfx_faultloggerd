@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2022-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -15,12 +15,15 @@
 
 #ifndef MULTITHREAD_CONSTRUCTOR_H
 #define MULTITHREAD_CONSTRUCTOR_H
-#include "dfx_test_func.h"
+#include <sys/types.h>
 #ifdef __cplusplus
 extern "C" {
 #endif
 int MultiThreadConstructor(const int threadNum);
 int MultiThreadConstructorForThreadCrash(const int threadNum);
+pid_t CreateMultiThreadProcess(int threadNum);
+pid_t CreateMultiThreadForThreadCrashWithOpen(int threadNum, int openNum);
+pid_t CreateMultiThreadForThreadCrash(int threadNum);
 #ifdef __cplusplus
 }
 #endif

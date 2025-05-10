@@ -40,7 +40,6 @@
       OHOS::HiviewDFX::Unwinder::ParseFrameSymbol*;
       OHOS::HiviewDFX::UnwinderConfig::enableLoadSymbolLazily_*;
       OHOS::HiviewDFX::UnwinderConfig::enableMiniDebugInfo_*;
-      OHOS::HiviewDFX::DfxConfig::GetConfig*;
       OHOS::HiviewDFX::DfxElf::Clear*;
       OHOS::HiviewDFX::DfxElf::DfxElf*;
       OHOS::HiviewDFX::DfxElf::IsValid*;
@@ -61,6 +60,7 @@
       OHOS::HiviewDFX::DfxMaps::Create*;
       OHOS::HiviewDFX::DfxMaps::ToString*;
       OHOS::HiviewDFX::DfxMaps::FindMapByAddr*;
+      OHOS::HiviewDFX::DfxMaps::FindMapGroupByAddr*;
       OHOS::HiviewDFX::DfxMaps::FindMapsByName*;
       OHOS::HiviewDFX::DfxMaps::GetStackRange*;
       OHOS::HiviewDFX::DfxRegs::CreateRemoteRegs*;

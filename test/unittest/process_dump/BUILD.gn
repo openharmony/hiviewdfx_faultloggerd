@@ -79,9 +79,26 @@ if (defined(ohos_lite)) {
     module_out_path = module_output_path
     sources = [
       "dfx_processdump_test.cpp",
+      "dump_info_header_test.cpp",
+      "dump_utils_test.cpp",
+      "fault_stack_test.cpp",
+      "maps_test.cpp",
+      "memory_near_register_test.cpp",
       "multithread_constructor.c",
+      "open_files_test.cpp",
+      "process_dump_config_test.cpp",
       "process_dump_test.cpp",
+      "registers_test.cpp",
+      "thread_dump_info_test.cpp",
     ]
+
+    if (target_cpu == "arm64") {
+      sources += [
+        "extra_crash_info_test.cpp",
+        "submitter_stack_test.cpp",
+      ]
+    }
+
     cflags_cc = [ "-Dprivate=public" ]
 
     configs = [
@@ -92,6 +109,9 @@ if (defined(ohos_lite)) {
     defines = [ "UNITTEST" ]
 
     deps = [
+      "$faultloggerd_path/common/cutil:dfx_cutil",
+      "$faultloggerd_path/interfaces/innerkits/async_stack:libasync_stack",
+      "$faultloggerd_path/interfaces/innerkits/procinfo:dfx_procinfo_static",
       "$faultloggerd_path/interfaces/innerkits/unwinder:libunwinder_static",
       "$faultloggerd_path/test/utils:dfx_test_util",
       "$faultloggerd_path/tools/process_dump:process_info_src",
@@ -108,64 +128,8 @@ if (defined(ohos_lite)) {
     }
     resource_config_file = "$faultloggerd_path/test/resource/ohos_test.xml"
   }
-
-  ohos_unittest("test_faultstack") {
-    module_out_path = module_output_path
-    sources = [ "fault_stack_test.cpp" ]
-
-    configs = [
-      ":module_private_config",
-      "$faultloggerd_path/common/build:coverage_flags",
-    ]
-
-    defines = [ "UNITTEST" ]
-
-    deps = [
-      "$faultloggerd_path/interfaces/innerkits/unwinder:libunwinder_static",
-      "$faultloggerd_path/tools/process_dump:process_info_src",
-    ]
-
-    external_deps = [
-      "c_utils:utils",
-      "googletest:gmock_main",
-      "googletest:gtest_main",
-      "hilog:libhilog",
-      "jsoncpp:jsoncpp",
-    ]
-  }
-
-  ohos_unittest("test_lock_parser") {
-    module_out_path = module_output_path
-    sources = [ "lock_parser_test.cpp" ]
-    if (!processdump_parse_lock_owner_enable) {
-      sources += [ "$faultloggerd_path/tools/process_dump/lock_parser.cpp" ]
-    }
-    configs = [
-      ":module_private_config",
-      "$faultloggerd_path/common/build:coverage_flags",
-    ]
-
-    deps = [
-      "$faultloggerd_path/interfaces/innerkits/unwinder:libunwinder_static",
-      "$faultloggerd_path/tools/process_dump:process_info_src",
-    ]
-
-    external_deps = [
-      "c_utils:utils",
-      "googletest:gmock_main",
-      "googletest:gtest_main",
-      "hilog:libhilog",
-    ]
-  }
   group("unittest") {
     testonly = true
-    deps = [
-      ":test_faultstack",
-      ":test_processdump",
-    ]
-
-    if (target_cpu == "arm64") {
-      deps += [ ":test_lock_parser" ]
-    }
+    deps = [ ":test_processdump" ]
   }
 }
