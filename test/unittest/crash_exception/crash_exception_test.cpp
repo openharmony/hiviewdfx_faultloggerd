@@ -102,7 +102,7 @@ HWTEST_F(CrashExceptionTest, CrashExceptionTest003, TestSize.Level2)
     HiSysEventManager::AddListener(crashListener, sysRules);
     crashListener->SetKeyWord(testProcessName);
     ReportCrashException(testProcessName, TEST_PROCESS_ID, TEST_UID, CrashExceptionCode::CRASH_UNKNOWN);
-    ASSERT_FALSE(crashListener->CheckKeywordInReasons());
+    ASSERT_TRUE(crashListener->CheckKeywordInReasons());
     HiSysEventManager::RemoveListener(crashListener);
     GTEST_LOG_(INFO) << "CrashExceptionTest003: end.";
 }
@@ -164,7 +164,7 @@ HWTEST_F(CrashExceptionTest, CrashExceptionTest006, TestSize.Level2)
     sysRules.push_back(tagRule);
     HiSysEventManager::AddListener(crashListener, sysRules);
     crashListener->SetKeyWord(keyWord);
-    SetCrashProcInfo(keyWord, TEST_PROCESS_ID, TEST_UID);
+    SetCrashProcInfo(ProcessDumpType::DUMP_TYPE_CPP_CRASH, keyWord, TEST_PROCESS_ID, TEST_UID);
     ReportUnwinderException(UnwindErrorCode::UNW_ERROR_STEP_ARK_FRAME);
     ASSERT_TRUE(crashListener->CheckKeywordInReasons());
     HiSysEventManager::RemoveListener(crashListener);
@@ -186,7 +186,7 @@ HWTEST_F(CrashExceptionTest, CrashExceptionTest007, TestSize.Level2)
     sysRules.push_back(tagRule);
     HiSysEventManager::AddListener(crashListener, sysRules);
     crashListener->SetKeyWord(keyWord);
-    SetCrashProcInfo(keyWord, TEST_PROCESS_ID, TEST_UID);
+    SetCrashProcInfo(ProcessDumpType::DUMP_TYPE_CPP_CRASH, keyWord, TEST_PROCESS_ID, TEST_UID);
     ReportUnwinderException(0);
     ASSERT_FALSE(crashListener->CheckKeywordInReasons());
     HiSysEventManager::RemoveListener(crashListener);
@@ -264,7 +264,7 @@ HWTEST_F(CrashExceptionTest, CrashExceptionTest011, TestSize.Level2)
     GTEST_LOG_(INFO) << "CrashExceptionTest011: start.";
     std::string name = "";
     const int32_t pid = -1;
-    SetCrashProcInfo(name, pid, 0);
+    SetCrashProcInfo(ProcessDumpType::DUMP_TYPE_CPP_CRASH, name, pid, 0);
     ReportUnwinderException(0);
     ASSERT_EQ(name, "");
     GTEST_LOG_(INFO) << "CrashExceptionTest011: end.";

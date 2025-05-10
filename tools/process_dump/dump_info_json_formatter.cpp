@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023-2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2023-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -13,47 +13,39 @@
  * limitations under the License.
  */
 
-#include "dfx_stack_info_json_formatter.h"
+#include "dump_info_json_formatter.h"
 
 #include <cinttypes>
 #include <string>
 
 #include "dfx_define.h"
-#include "dfx_logger.h"
+
+#include "dfx_log.h"
 #include "dfx_maps.h"
 #include "dfx_process.h"
 #include "dfx_signal.h"
 #include "dfx_thread.h"
+#include "dump_utils.h"
 #include "process_dumper.h"
-#if defined(__aarch64__)
-#include "printer.h"
-#endif
 
 namespace OHOS {
 namespace HiviewDFX {
-namespace {
-static const char NATIVE_CRASH_TYPE[] = "NativeCrash";
 
-#ifndef is_ohos_lite
-void FillJsFrame(const DfxFrame& frame, Json::Value& jsonInfo)
-{
-    Json::Value frameJson;
-    frameJson["file"] = frame.mapName;
-    frameJson["packageName"] = frame.packageName;
-    frameJson["symbol"] = frame.funcName;
-    frameJson["line"] = frame.line;
-    frameJson["column"] = frame.column;
-    jsonInfo.append(frameJson);
-}
-#endif
-}
-
-bool DfxStackInfoJsonFormatter::GetJsonFormatInfo(bool isDump, std::string& jsonStringInfo,
-    const ProcessDumpRequest& request, DfxProcess& process) const
+bool DumpInfoJsonFormatter::GetJsonFormatInfo(const ProcessDumpRequest& request, DfxProcess& process,
+    std::string& jsonStringInfo)
 {
 #ifndef is_ohos_lite
     Json::Value jsonInfo;
-    isDump ? GetDumpJsonFormatInfo(jsonInfo, process) : GetCrashJsonFormatInfo(jsonInfo, request, process);
+    switch (request.type) {
+        case ProcessDumpType::DUMP_TYPE_CPP_CRASH:
+            GetCrashJsonFormatInfo(request, process, jsonInfo);
+            break;
+        case ProcessDumpType::DUMP_TYPE_DUMP_CATCH:
+            GetDumpJsonFormatInfo(process, jsonInfo);
+            break;
+        default:
+            break;
+    }
     jsonStringInfo.append(Json::FastWriter().write(jsonInfo));
     return true;
 #endif
@@ -61,14 +53,14 @@ bool DfxStackInfoJsonFormatter::GetJsonFormatInfo(bool isDump, std::string& json
 }
 
 #ifndef is_ohos_lite
-void DfxStackInfoJsonFormatter::GetCrashJsonFormatInfo(Json::Value& jsonInfo, const ProcessDumpRequest& request,
-    DfxProcess& process) const
+void DumpInfoJsonFormatter::GetCrashJsonFormatInfo(const ProcessDumpRequest& request, DfxProcess& process,
+    Json::Value& jsonInfo)
 {
     jsonInfo["time"] = request.timeStamp;
     jsonInfo["uuid"] = "";
-    jsonInfo["crash_type"] = NATIVE_CRASH_TYPE;
-    jsonInfo["pid"] = process.processInfo_.pid;
-    jsonInfo["uid"] = process.processInfo_.uid;
+    jsonInfo["crash_type"] = "NativeCrash";
+    jsonInfo["pid"] = process.GetProcessInfo().pid;
+    jsonInfo["uid"] = process.GetProcessInfo().uid;
     jsonInfo["app_running_unique_id"] = request.appRunningId;
 
     DfxSignal dfxSignal(request.siginfo.si_signo);
@@ -80,14 +72,15 @@ void DfxStackInfoJsonFormatter::GetCrashJsonFormatInfo(Json::Value& jsonInfo, co
     Json::Value exception;
     exception["signal"] = signal;
     exception["message"] = process.GetFatalMessage();
+
     Json::Value frames(Json::arrayValue);
-    if (process.keyThread_ == nullptr) {
+    if (process.GetKeyThread() == nullptr) {
         exception["thread_name"] = "";
         exception["tid"] = 0;
     } else {
-        exception["thread_name"] = process.keyThread_->threadInfo_.threadName;
-        exception["tid"] = process.keyThread_->threadInfo_.tid;
-        FillFrames(*process.keyThread_, frames);
+        exception["thread_name"] = process.GetKeyThread()->GetThreadInfo().threadName;
+        exception["tid"] = process.GetKeyThread()->GetThreadInfo().tid;
+        FillFramesJson(process.GetKeyThread()->GetFrames(), frames);
     }
     exception["frames"] = frames;
     jsonInfo["exception"] = exception;
@@ -101,17 +94,17 @@ void DfxStackInfoJsonFormatter::GetCrashJsonFormatInfo(Json::Value& jsonInfo, co
     }
 }
 
-void DfxStackInfoJsonFormatter::GetDumpJsonFormatInfo(Json::Value& jsonInfo, DfxProcess& process) const
+void DumpInfoJsonFormatter::GetDumpJsonFormatInfo(DfxProcess& process, Json::Value& jsonInfo)
 {
     Json::Value thread;
     Json::Value frames(Json::arrayValue);
-    if (process.keyThread_ == nullptr) {
+    if (process.GetKeyThread() == nullptr) {
         thread["thread_name"] = "";
         thread["tid"] = 0;
     } else {
-        thread["thread_name"] = process.keyThread_->threadInfo_.threadName;
-        thread["tid"] = process.keyThread_->threadInfo_.tid;
-        FillFrames(*process.keyThread_, frames);
+        thread["thread_name"] = process.GetKeyThread()->GetThreadInfo().threadName;
+        thread["tid"] = process.GetKeyThread()->GetThreadInfo().tid;
+        FillFramesJson(process.GetKeyThread()->GetFrames(), frames);
     }
     thread["frames"] = frames;
     jsonInfo.append(thread);
@@ -123,25 +116,51 @@ void DfxStackInfoJsonFormatter::GetDumpJsonFormatInfo(Json::Value& jsonInfo, Dfx
     }
 }
 
-bool DfxStackInfoJsonFormatter::FillFrames(DfxThread& thread, Json::Value& jsonInfo)
+void DumpInfoJsonFormatter::AppendThreads(const std::vector<std::shared_ptr<DfxThread>>& threads,
+                                          Json::Value& jsonInfo) const
 {
-    const auto& threadFrames = thread.GetFrames();
-    for (const auto& frame : threadFrames) {
+    for (auto const& oneThread : threads) {
+        if (oneThread != nullptr) {
+            Json::Value threadJson;
+            threadJson["thread_name"] = oneThread->GetThreadInfo().threadName;
+            threadJson["tid"] = oneThread->GetThreadInfo().tid;
+            Json::Value framesJson(Json::arrayValue);
+            FillFramesJson(oneThread->GetFrames(), framesJson);
+            threadJson["frames"] = framesJson;
+            jsonInfo.append(threadJson);
+        }
+    }
+}
+
+bool DumpInfoJsonFormatter::FillFramesJson(const std::vector<DfxFrame>& frames, Json::Value& jsonInfo) const
+{
+    for (const auto& frame : frames) {
         if (frame.isJsFrame) {
-            FillJsFrame(frame, jsonInfo);
-            continue;
-        }
-        FillNativeFrame(frame, jsonInfo);
+            FillJsFrameJson(frame, jsonInfo);
+        } else {
+            FillNativeFrameJson(frame, jsonInfo);
 #if defined(__aarch64__)
-        if (Printer::IsLastValidFrame(frame)) {
-            break;
-        }
+            if (DumpUtils::IsLastValidFrame(frame)) {
+                break;
+            }
 #endif
+        }
     }
     return true;
 }
 
-void DfxStackInfoJsonFormatter::FillNativeFrame(const DfxFrame& frame, Json::Value& jsonInfo)
+void DumpInfoJsonFormatter::FillJsFrameJson(const DfxFrame& frame, Json::Value& jsonInfo) const
+{
+    Json::Value frameJson;
+    frameJson["file"] = frame.mapName;
+    frameJson["packageName"] = frame.packageName;
+    frameJson["symbol"] = frame.funcName;
+    frameJson["line"] = frame.line;
+    frameJson["column"] = frame.column;
+    jsonInfo.append(frameJson);
+}
+
+void DumpInfoJsonFormatter::FillNativeFrameJson(const DfxFrame& frame, Json::Value& jsonInfo) const
 {
     Json::Value frameJson;
 #ifdef __LP64__
@@ -160,22 +179,6 @@ void DfxStackInfoJsonFormatter::FillNativeFrame(const DfxFrame& frame, Json::Val
     frameJson["file"] = strippedMapName;
     frameJson["buildId"] = frame.buildId;
     jsonInfo.append(frameJson);
-}
-
-void DfxStackInfoJsonFormatter::AppendThreads(const std::vector<std::shared_ptr<DfxThread>>& threads,
-                                              Json::Value& jsonInfo) const
-{
-    for (auto const& oneThread : threads) {
-        if (oneThread != nullptr) {
-            Json::Value threadJson;
-            threadJson["thread_name"] = oneThread->threadInfo_.threadName;
-            threadJson["tid"] = oneThread->threadInfo_.tid;
-            Json::Value frames(Json::arrayValue);
-            FillFrames(*oneThread, frames);
-            threadJson["frames"] = frames;
-            jsonInfo.append(threadJson);
-        }
-    }
 }
 #endif
 } // namespace HiviewDFX

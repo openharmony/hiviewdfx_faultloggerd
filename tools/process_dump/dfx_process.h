@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -19,8 +19,10 @@
 #include <cinttypes>
 #include <map>
 #include <memory>
+#include <set>
 #include <string>
 
+#include "dfx_dump_request.h"
 #include "dfx_regs.h"
 #include "dfx_thread.h"
 
@@ -32,37 +34,108 @@ struct DfxProcessInfo {
     uid_t uid = 0;
     std::string processName = "";
 };
-
-class DfxProcess {
+struct CrashLogConfig {
+    bool enabledCrashLogConfig = false;
+    bool extendPcLrPrinting = false;
+    bool simplifyVmaPrinting = false;
+    uint32_t logFileCutoffSizeBytes = 0;
+};
+class DfxProcess final {
 public:
-    DfxProcess(pid_t pid, pid_t nsPid);
-    virtual ~DfxProcess() = default;
+    void InitProcessInfo(pid_t pid, pid_t nsPid, uid_t uid, const std::string& processName);
     void Attach(bool hasKey = false);
     void Detach();
-
-    bool InitOtherThreads(bool attach = false);
+    bool InitKeyThread(const ProcessDumpRequest& request);
+    bool InitOtherThreads(pid_t requestTid);
     std::vector<std::shared_ptr<DfxThread>>& GetOtherThreads();
+    std::shared_ptr<DfxThread>& GetKeyThread()
+    {
+        return keyThread_;
+    }
+
+    const DfxProcessInfo& GetProcessInfo() const
+    {
+        return processInfo_;
+    }
+
+    void SetFaultThreadRegisters(std::shared_ptr<DfxRegs> regs)
+    {
+        regs_ = regs;
+    }
+
+    const std::shared_ptr<DfxRegs>& GetFaultThreadRegisters() const
+    {
+        return regs_;
+    }
+
+    void SetReason(const std::string& reason)
+    {
+        reason_ = reason;
+    }
+
+    const std::string& GetReason() const
+    {
+        return reason_;
+    }
+
+    const std::string& GetCrashInfoJson() const
+    {
+        return crashInfoJson_;
+    }
+
+    void SetCrashInfoJson(const std::string& crashInfoJson)
+    {
+        crashInfoJson_ = crashInfoJson;
+    }
+
+    void SetVmPid(pid_t pid)
+    {
+        vmPid_ = pid;
+    }
+
+    pid_t GetVmPid() const
+    {
+        return vmPid_;
+    }
+
+    const CrashLogConfig& GetCrashLogConfig()
+    {
+        return crashLogConfig_;
+    }
+
+    void SetCrashLogConfig(const CrashLogConfig& crashLogConfig)
+    {
+        crashLogConfig_ = crashLogConfig;
+    }
+
+    const std::vector<uintptr_t>& GetStackValues()
+    {
+        return stackValues_;
+    }
+
+    void SetStackValues(const std::vector<uintptr_t>& stackValues)
+    {
+        stackValues_ = stackValues;
+    }
+    
     void ClearOtherThreads();
     pid_t ChangeTid(pid_t tid, bool ns);
 
-    void SetFatalMessage(const std::string &msg);
-    std::string GetFatalMessage() const;
-    static std::string GetProcessLifeCycle(pid_t pid);
-
-    DfxProcessInfo processInfo_;
-    pid_t recycleTid_ = 0;
-    std::shared_ptr<DfxThread> keyThread_ = nullptr; // comment: crash thread or dump target thread
-    std::string reason = "";
-    std::string openFiles = "";
-    std::shared_ptr<DfxRegs> regs_;
-    std::string extraCrashInfo = "";
+    void AppendFatalMessage(const std::string &msg);
+    const std::string& GetFatalMessage() const;
+    std::string GetProcessLifeCycle();
 private:
-    DfxProcess() = default;
-    void InitProcessInfo(pid_t pid, pid_t nsPid);
-
-    std::string fatalMsg_ = "";
+    DfxProcessInfo processInfo_;
+    CrashLogConfig crashLogConfig_;
+    std::shared_ptr<DfxRegs> regs_;
+    std::shared_ptr<DfxThread> keyThread_ = nullptr; // comment: crash thread or dump target thread
     std::vector<std::shared_ptr<DfxThread>> otherThreads_;
+    std::string reason_ = "";
+    std::string fatalMsg_ = "";
     std::map<int, int> kvThreads_;
+    std::string crashInfoJson_ = "";
+    pid_t vmPid_ = 0;
+    std::vector<uintptr_t> stackValues_;
 };
 } // namespace HiviewDFX
 } // namespace OHOS

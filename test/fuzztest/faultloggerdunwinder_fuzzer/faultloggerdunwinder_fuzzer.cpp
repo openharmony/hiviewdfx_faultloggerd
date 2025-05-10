@@ -19,7 +19,6 @@
 #include <cstdint>
 
 #include "dfx_ark.h"
-#include "dfx_config.h"
 #include "dfx_hap.h"
 #include "dfx_regs.h"
 #include "dwarf_op.h"
@@ -31,11 +30,6 @@
 namespace OHOS {
 namespace HiviewDFX {
 const int FAULTLOGGER_FUZZTEST_MAX_STRING_LENGTH = 50;
-
-void TestDfxConfig()
-{
-    DfxConfig::GetConfig();
-}
 
 void TestStepArkFrame(const uint8_t* data, size_t size)
 {
@@ -86,7 +80,7 @@ void TestJitCodeWriteFile(const uint8_t* data, size_t size)
 {
     int fd;
     uintptr_t jitCacheData;
-    int offsetTotalLength = sizeof(fd) + sizeof(jitCacheData);
+    size_t offsetTotalLength = sizeof(fd) + sizeof(jitCacheData);
     if (offsetTotalLength > size) {
         return;
     }
@@ -265,7 +259,6 @@ void TestDfxInstrStatistic(const uint8_t* data, size_t size)
 
 void FaultloggerdUnwinderTest(const uint8_t* data, size_t size)
 {
-    TestDfxConfig();
     TestDfxArk(data, size);
     TestDfxHap(data, size);
 #if defined(__aarch64__)

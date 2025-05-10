@@ -56,6 +56,13 @@ public:
     {
         return fd_;
     }
+
+    int32_t Release()
+    {
+        int fd = fd_;
+        fd_ = -1;
+        return fd;
+    }
 private:
     int32_t fd_;
 };

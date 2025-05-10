@@ -206,13 +206,8 @@ void DfxMaps::AddMap(std::shared_ptr<DfxMap> map, bool enableMapIndex)
         mapIndex_.emplace_back(maps_.size() - 1);
     }
 }
-
-bool DfxMaps::FindMapByAddr(uintptr_t addr, std::shared_ptr<DfxMap>& map) const
+int DfxMaps::FindMapIndexByAddr(uintptr_t addr) const
 {
-    if ((maps_.empty()) || (addr == 0x0)) {
-        return false;
-    }
-
     size_t first = 0;
     size_t last = maps_.size();
     while (first < last) {
@@ -222,18 +217,66 @@ bool DfxMaps::FindMapByAddr(uintptr_t addr, std::shared_ptr<DfxMap>& map) const
             continue;
         }
         if (addr >= cur->begin && addr < cur->end) {
-            map = cur;
-            if (index > 0) {
-                map->prevMap = maps_[index - 1];
-            }
-            return true;
+            return index;
         } else if (addr < cur->begin) {
             last = index;
         } else {
             first = index + 1;
         }
     }
-    return false;
+    return -1;
+}
+
+bool DfxMaps::FindMapByAddr(uintptr_t addr, std::shared_ptr<DfxMap>& map) const
+{
+    if ((maps_.empty()) || (addr == 0x0)) {
+        return false;
+    }
+    int findMapIndex = FindMapIndexByAddr(addr);
+    if (findMapIndex >= 0) {
+        map = maps_[findMapIndex];
+    }
+    if (findMapIndex >= 1) {
+        map->prevMap = maps_[findMapIndex - 1];
+    }
+    return findMapIndex >= 0;
+}
+
+bool DfxMaps::FindMapGroupByAddr(uintptr_t addr, std::set<DfxMap>& maps) const
+{
+    if ((maps_.empty()) || (addr == 0x0)) {
+        return false;
+    }
+    int findMapIndex = FindMapIndexByAddr(addr);
+    if (findMapIndex == -1 || maps_[findMapIndex] == nullptr) {
+        return false;
+    }
+    maps.emplace(*maps_[findMapIndex]);
+    if (maps_[findMapIndex]->inode == 0) { // anno page
+        return true;
+    }
+    // Find other segments mapped to the same file
+    for (int index = findMapIndex - 1; index >= 0; --index) { // search up
+        if (maps_[index] == nullptr) {
+            continue;
+        }
+        if (maps_[index]->inode != maps_[findMapIndex]->inode) {
+            break;
+        }
+        maps.emplace(*maps_[index]);
+    }
+
+    for (size_t index = static_cast<size_t>(findMapIndex + 1); index < maps_.size(); ++index) { // search down
+        if (maps_[index] == nullptr) {
+            continue;
+        }
+        if (maps_[index]->inode != maps_[findMapIndex]->inode) {
+            break;
+        }
+        maps.emplace(*maps_[index]);
+    }
+
+    return true;
 }
 
 bool DfxMaps::FindMapByFileInfo(std::string name, uint64_t offset, std::shared_ptr<DfxMap>& map) const

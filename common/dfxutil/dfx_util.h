@@ -36,6 +36,8 @@ AT_SYMBOL_DEFAULT std::string GetCurrentTimeStr(uint64_t current = 0);
 AT_SYMBOL_HIDDEN bool ReadDirFiles(const std::string& path, std::vector<std::string>& files);
 AT_SYMBOL_HIDDEN bool VerifyFilePath(const std::string& filePath, const std::vector<const std::string>& validPaths);
 AT_SYMBOL_HIDDEN void ParseSiValue(siginfo_t& si, uint64_t& endTime, int& tid);
+AT_SYMBOL_HIDDEN bool IsBetaVersion();
+AT_SYMBOL_HIDDEN bool IsOversea();
 #endif
 AT_SYMBOL_HIDDEN off_t GetFileSize(int fd);
 AT_SYMBOL_HIDDEN bool ReadFdToString(int fd, std::string& content);
@@ -44,7 +46,6 @@ AT_SYMBOL_HIDDEN uintptr_t StripPac(uintptr_t inAddr, uintptr_t pacMask);
 #if is_ohos && !is_mingw
 AT_SYMBOL_HIDDEN size_t ReadProcMemByPid(const pid_t pid, const uint64_t addr, void* data, size_t size);
 #endif
-AT_SYMBOL_HIDDEN bool IsBetaVersion();
 } // nameapace HiviewDFX
 } // nameapace OHOS
 

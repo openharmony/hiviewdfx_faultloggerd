@@ -30,6 +30,7 @@ struct FaultDFXLOGIInner {
     int32_t pid{-1};
     int32_t pipeFd{-1};
     int32_t faultLogType{0};
+    uint32_t logFileCutoffSizeBytes{0};
     std::string module;
     std::string reason;
     std::string summary;
@@ -39,9 +40,9 @@ struct FaultDFXLOGIInner {
 };
 
 #if defined(__arm__)
-static_assert(sizeof(FaultDFXLOGIInner) == 96, "faultlogger plugin must be modify together!!!");
+static_assert(sizeof(FaultDFXLOGIInner) == 104, "faultlogger plugin must be modify together!!!");
 #elif defined(__aarch64__)
-static_assert(sizeof(FaultDFXLOGIInner) == 168, "faultlogger plugin must be modify together!!!");
+static_assert(sizeof(FaultDFXLOGIInner) == 176, "faultlogger plugin must be modify together!!!");
 #endif
 
 #endif //FAULTLOGGER_CLIENT_MSG_H_

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -28,10 +28,8 @@
 #include "dfx_log.h"
 #include "dfx_ptrace.h"
 #include "dfx_util.h"
+#include "dump_utils.h"
 #include "procinfo.h"
-#if defined(__aarch64__)
-#include "printer.h"
-#endif
 namespace OHOS {
 namespace HiviewDFX {
 std::shared_ptr<DfxThread> DfxThread::Create(pid_t pid, pid_t tid, pid_t nsTid)
@@ -74,45 +72,31 @@ void DfxThread::AddFrame(const DfxFrame& frame)
     frames_.emplace_back(frame);
 }
 
-void DfxThread::AddFrames(const std::vector<DfxFrame>& frames)
-{
-    frames_.insert(frames_.end(), frames.begin(), frames.end());
-}
-
 const std::vector<DfxFrame>& DfxThread::GetFrames() const
 {
     return frames_;
 }
 
-std::string DfxThread::ToString() const
+std::string DfxThread::ToString(bool needPrintTid) const
 {
-    if (frames_.size() == 0) {
-        return "No frame info";
+    std::string dumpThreadInfo;
+    if (needPrintTid) {
+        dumpThreadInfo += "Tid:" + std::to_string(threadInfo_.tid) +
+        ", Name:" + threadInfo_.threadName + "\n";
+    } else {
+        if (frames_.size() == 0) {
+            return "No frame info";
+        }
+        dumpThreadInfo += "Thread name:" + threadInfo_.threadName + "\n";
     }
 
-    std::string ss = "Thread name:" + threadInfo_.threadName + "\n";
-    bool needSkip = false;
-    bool isSubmitter = true;
-    for (const auto& frame : frames_) {
-        if (frame.index == 0) {
-            isSubmitter = !isSubmitter;
-        }
-        if (isSubmitter) {
-            ss += "========SubmitterStacktrace========\n";
-            isSubmitter = false;
-            needSkip = false;
-        }
-        if (needSkip) {
-            continue;
-        }
-        ss += DfxFrameFormatter::GetFrameStr(frame);
-#if defined(__aarch64__)
-        if (Printer::IsLastValidFrame(frame)) {
-            needSkip = true;
-        }
-#endif
+    dumpThreadInfo += DumpUtils::GetStackTrace(frames_);
+
+    if (!submitterFrames_.empty()) {
+        dumpThreadInfo += "========SubmitterStacktrace========\n";
+        dumpThreadInfo += DumpUtils::GetStackTrace(submitterFrames_);
     }
-    return ss;
+    return dumpThreadInfo;
 }
 
 void DfxThread::Detach()
@@ -137,24 +121,9 @@ bool DfxThread::Attach(int timeout)
     return true;
 }
 
-void DfxThread::InitFaultStack(bool needParseStack)
-{
-    if (faultStack_ != nullptr) {
-        return;
-    }
-    faultStack_ = std::make_shared<FaultStack>(threadInfo_.nsTid);
-    faultStack_->CollectStackInfo(frames_, needParseStack);
-}
-
-
 void DfxThread::SetFrames(const std::vector<DfxFrame>& frames)
 {
     frames_ = frames;
-}
-
-std::shared_ptr<FaultStack> DfxThread::GetFaultStack() const
-{
-    return faultStack_;
 }
 
 void DfxThread::ParseSymbol(Unwinder& unwinder)
