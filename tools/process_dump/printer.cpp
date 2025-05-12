@@ -28,6 +28,7 @@
 #include "dfx_ring_buffer_wrapper.h"
 #include "dfx_signal.h"
 #include "dfx_util.h"
+#include "file_util.h"
 #include "crash_exception.h"
 #include "string_printf.h"
 #include "string_util.h"
@@ -42,6 +43,47 @@ constexpr size_t PAGE_SIZE = 4096;
 
 namespace OHOS {
 namespace HiviewDFX {
+uint64_t GetProcRssMemInfo(pid_t pid)
+{
+    if (pid <= 0) {
+        return 0;
+    }
+
+    constexpr int tokenNum = 2;
+    constexpr int decimalBase = 10;
+    std::string statmPath = "/proc/" + std::to_string(pid) + "/statm";
+    std::string readContent;
+
+    if (!LoadStringFromFile(statmPath, readContent)) {
+        return 0;
+    }
+
+    std::istringstream iss(readContent);
+    std::vector<std::string> tokens;
+    for (int i = 0; i < tokenNum; i++) {
+        std::string token;
+        getline(iss, token, ' ');
+        if (!token.empty()) {
+            tokens.push_back(token);
+        }
+    }
+
+    if (tokens.size() < tokenNum) {
+        return 0;
+    }
+
+    std::string rssStr = tokens.at(1);
+    uint64_t rss = static_cast<uint64_t>(strtoull(rssStr.c_str(), nullptr, decimalBase));
+    if (rss == 0) {
+        return rss;
+    }
+    constexpr int pageSizeKB = 4;
+    constexpr int sizekiB = 1024;
+    constexpr int sizekB = 1000;
+    rss = (rss * pageSizeKB * sizekiB) / sizekB;
+    return rss;
+}
+
 void Printer::PrintDumpHeader(const ProcessDumpRequest& request, DfxProcess& process, Unwinder& unwinder)
 {
     std::string headerInfo;
@@ -70,6 +112,11 @@ void Printer::PrintDumpHeader(const ProcessDumpRequest& request, DfxProcess& pro
                                  CrashExceptionCode::CRASH_LOG_EPROCESS_LIFECYCLE);
         }
 
+        uint64_t rssMem = GetProcRssMemInfo(process.processInfo_.pid);
+        DfxRingBufferWrapper::GetInstance().AppendBuf("Process Memory(kB): %" PRIu64 "(Rss)\n", rssMem);
+        headerInfo += "Process Memory(kB): ";
+        headerInfo += std::to_string(rssMem);
+        headerInfo += "(Rss)\n";
         std::string reasonInfo;
         PrintReason(request, process, unwinder, reasonInfo);
         headerInfo += reasonInfo + "\n";

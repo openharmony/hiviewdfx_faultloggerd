@@ -32,6 +32,7 @@
 #include "backtrace_local.h"
 #include "dfx_define.h"
 #include "dfx_dump_catcher_errno.h"
+#include "dfx_dump_catcher_slow_policy.h"
 #include "dfx_dump_res.h"
 #include "dfx_log.h"
 #include "dfx_socket_request.h"
@@ -68,14 +69,25 @@ enum DfxDumpPollRes : int32_t {
     DUMP_POLL_FAILED,
     DUMP_POLL_TIMEOUT,
     DUMP_POLL_RETURN,
+    DUMP_POLL_NO_PARSE_SYMBOL,
+    DUMP_POLL_PARSE_SYMBOL_TIMEOUT,
 };
 
 enum DfxDumpStatRes : int32_t {
     DUMP_RES_NO_KERNELSTACK = -2,
     DUMP_RES_WITH_KERNELSTACK = -1,
     DUMP_RES_WITH_USERSTACK = 0,
+    DUMP_RES_WITH_USERSTACK_NO_PARSE_SYMBOL = 1,
+    DUMP_RES_WITH_USERSTACK_PARSE_SYMBOL_TIMEOUT = 2,
 };
 }
+
+struct DumpCatcherPipeData {
+    int bufPipeFd = -1;
+    int resPipeFd = -1;
+    std::string bufMsg = "";
+    std::string resMsg = "";
+} ;
 
 static bool IsLinuxKernel()
 {
@@ -108,17 +120,17 @@ private:
         int timeout = DUMPCATCHER_REMOTE_TIMEOUT);
     int32_t DoDumpCatchRemote(int pid, int tid, std::string& msg, bool isJson = false,
         int timeout = DUMPCATCHER_REMOTE_TIMEOUT);
-    int DoDumpRemotePid(int pid, std::string& msg, int (&pipeReadFd)[2],
+    int DoDumpRemotePid(int pid, std::string& msg, DumpCatcherPipeData& pipeData,
         bool isJson = false, int32_t timeout = DUMPCATCHER_REMOTE_TIMEOUT);
-    bool HandlePollError(const uint64_t endTime, int& remainTime, std::string& resMsg, int& ret);
-    bool HandlePollTimeout(const int timeout, int& remainTime, std::string& resMsg, int& ret);
-    bool HandlePollEvents(std::pair<int, std::string>& bufState, std::pair<int, std::string>& resState,
-        const struct pollfd (&readFds)[2], bool& bPipeConnect, bool& res);
-    std::pair<bool, int> DumpRemotePoll(const int timeout, std::pair<int, std::string>& bufState,
-        std::pair<int, std::string>& resState);
-    int DoDumpRemotePoll(int timeout, std::string& msg, const int (&pipeReadFd)[2], bool isJson = false);
-    bool DoReadBuf(int fd, std::string& msg);
-    bool DoReadRes(int fd, bool& ret, std::string& msg);
+    bool HandlePollError(int pid, const uint64_t endTime, int& remainTime, int& pollRet, std::string& resMsg);
+    bool HandlePollTimeout(int pid, const int timeout, int& remainTime, int& pollRet, std::string& resMsg);
+    bool HandlePollEvents(int pid, const struct pollfd (&readFds)[2],
+        bool& bPipeConnect, int& pollRet, DumpCatcherPipeData& pipeData);
+    int DumpRemotePoll(int pid, const int timeout, DumpCatcherPipeData& pipeData);
+    int DoDumpRemotePoll(int pid, int timeout, std::string& msg, DumpCatcherPipeData& pipeData, bool isJson = false);
+    bool DoReadBuf(DumpCatcherPipeData& pipeData);
+    bool DoReadRes(int& pollRet, DumpCatcherPipeData& pipeData);
+    void DealAfterPollFail(int pid, std::string& msg);
     void DealWithPollRet(int pollRet, int pid, int32_t& ret, std::string& msg);
     void DealWithSdkDumpRet(int sdkdumpRet, int pid, int32_t& ret, std::string& msg);
     std::pair<int, std::string> DealWithDumpCatchRet(int pid, int32_t& ret, std::string& msg);
@@ -129,7 +141,6 @@ private:
     static const int DUMPCATCHER_REMOTE_TIMEOUT = 10000;
 
     std::mutex mutex_;
-    int32_t pid_ = -1;
     bool notifyCollect_ = false;
     KernelStackAsyncCollector stackKit_;
     KernelStackAsyncCollector::KernelResult stack_;
@@ -241,6 +252,25 @@ bool DfxDumpCatcher::Impl::DoDumpLocalLocked(int pid, int tid, std::string& msg,
     return ret;
 }
 
+static int32_t ConvertDumpResultToDumpStats(int32_t dumpRes)
+{
+    int32_t stats = DUMP_RES_WITH_KERNELSTACK;
+    switch (dumpRes) {
+        case DUMPCATCH_ESUCCESS:
+            stats = DUMP_RES_WITH_USERSTACK;
+            break;
+        case DUMPCATCH_DUMP_ESYMBOL_NO_PARSE:
+            stats = DUMP_RES_WITH_USERSTACK_NO_PARSE_SYMBOL;
+            break;
+        case DUMPCATCH_DUMP_ESYMBOL_PARSE_TIMEOUT:
+            stats = DUMP_RES_WITH_USERSTACK_PARSE_SYMBOL_TIMEOUT;
+            break;
+        default:
+            break;
+    }
+    return stats;
+}
+
 void DfxDumpCatcher::Impl::ReportDumpCatcherStats(int32_t pid,
     uint64_t requestTime, int32_t ret, void* retAddr)
 {
@@ -250,8 +280,8 @@ void DfxDumpCatcher::Impl::ReportDumpCatcherStats(int32_t pid,
     stat->pid = pid;
     stat->requestTime = requestTime;
     stat->dumpCatcherFinishTime = GetTimeMilliSeconds();
-    stat->result = (ret == DUMPCATCH_ESUCCESS) ? DUMP_RES_WITH_USERSTACK : DUMP_RES_WITH_KERNELSTACK;
-    if ((ret != DUMPCATCH_ESUCCESS) && stack_.second.empty()) {
+    stat->result = ConvertDumpResultToDumpStats(ret);
+    if ((stat->result == DUMP_RES_WITH_KERNELSTACK) && stack_.second.empty()) {
         stat->result = DUMP_RES_NO_KERNELSTACK;
     }
     size_t copyLen;
@@ -378,12 +408,8 @@ static void AnalyzeTimeoutReason(int pid, int32_t& ret)
     ret = DUMPCATCH_TIMEOUT_DUMP_SLOW;
 }
 
-void DfxDumpCatcher::Impl::DealWithPollRet(int pollRet, int pid, int32_t& ret, std::string& msg)
+void DfxDumpCatcher::Impl::DealAfterPollFail(int pid, std::string& msg)
 {
-    if (pollRet == DUMP_POLL_OK) {
-        ret = DUMPCATCH_ESUCCESS;
-        return;
-    }
     // get result
     if (notifyCollect_) {
         stack_ = stackKit_.GetCollectedStackResult();
@@ -399,7 +425,25 @@ void DfxDumpCatcher::Impl::DealWithPollRet(int pollRet, int pid, int32_t& ret, s
     }
     msg.append(std::move(halfProcStatus));
     msg.append(std::move(halfProcWchan));
+}
+
+void DfxDumpCatcher::Impl::DealWithPollRet(int pollRet, int pid, int32_t& ret, std::string& msg)
+{
+    bool isPollFail = true;
+
     switch (pollRet) {
+        case DUMP_POLL_OK:
+            ret = DUMPCATCH_ESUCCESS;
+            isPollFail = false;
+            break;
+        case DUMP_POLL_NO_PARSE_SYMBOL:
+            ret = DUMPCATCH_DUMP_ESYMBOL_NO_PARSE;
+            isPollFail = false;
+            break;
+        case DUMP_POLL_PARSE_SYMBOL_TIMEOUT:
+            ret = DUMPCATCH_DUMP_ESYMBOL_PARSE_TIMEOUT;
+            isPollFail = false;
+            break;
         case DUMP_POLL_FD:
             ret = DUMPCATCH_EFD;
             break;
@@ -408,6 +452,9 @@ void DfxDumpCatcher::Impl::DealWithPollRet(int pollRet, int pid, int32_t& ret, s
             break;
         case DUMP_POLL_TIMEOUT:
             AnalyzeTimeoutReason(pid, ret);
+            if (ret == DUMPCATCH_TIMEOUT_DUMP_SLOW) {
+                DfxDumpCatcherSlowPolicy::GetInstance().SetDumpCatcherSlowStat(pid);
+            }
             break;
         case DUMP_POLL_RETURN:
             if (msg.find("ptrace attach thread failed") != std::string::npos) {
@@ -423,6 +470,10 @@ void DfxDumpCatcher::Impl::DealWithPollRet(int pollRet, int pid, int32_t& ret, s
         default:
             ret = DUMPCATCH_UNKNOWN;
             break;
+    }
+
+    if (isPollFail) {
+        DealAfterPollFail(pid, msg);
     }
 }
 
@@ -464,6 +515,9 @@ std::pair<int, std::string> DfxDumpCatcher::Impl::DealWithDumpCatchRet(int pid, 
     std::string reason;
     if (result == 0) {
         reason = "Reason:" + DfxDumpCatchError::ToString(ret) + "\n";
+    } else if (ret == DUMPCATCH_DUMP_ESYMBOL_NO_PARSE || ret == DUMPCATCH_DUMP_ESYMBOL_PARSE_TIMEOUT) {
+        reason = "Reason:" + DfxDumpCatchError::ToString(ret) + "\n";
+        result = 0;
     } else {
         reason = "Reason:\nnormal stack:" + DfxDumpCatchError::ToString(ret) + "\n";
         if (stack_.first != KernelStackAsyncCollector::STACK_SUCCESS) {
@@ -481,7 +535,7 @@ std::pair<int, std::string> DfxDumpCatcher::Impl::DealWithDumpCatchRet(int pid, 
 }
 
 std::pair<int, std::string> DfxDumpCatcher::Impl::DumpCatchWithTimeout(int pid, std::string& msg, int timeout,
-    int tid, bool isJson)
+                                                                       int tid, bool isJson)
 {
     DfxEnableTraceDlsym(true);
     ElapsedTime counter;
@@ -563,14 +617,17 @@ bool DfxDumpCatcher::Impl::DumpCatch(int pid, int tid, std::string& msg, size_t 
         }
         int timeout = (tid == 0 ? 3 : 10) * 1000; // when tid not zero, timeout is 10s
         int32_t res = DoDumpRemoteLocked(pid, tid, msg, isJson, timeout);
-        if (res != DUMPCATCH_ESUCCESS && stack_.first != KernelStackAsyncCollector::STACK_SUCCESS) {
+        if (res == DUMPCATCH_ESUCCESS ||
+            res == DUMPCATCH_DUMP_ESYMBOL_NO_PARSE ||
+            res == DUMPCATCH_DUMP_ESYMBOL_PARSE_TIMEOUT) {
+            ret = true;
+        }
+        if (!ret && stack_.first != KernelStackAsyncCollector::STACK_SUCCESS) {
             res = KernelRet2DumpcatchRet(stack_.first);
         }
         void* retAddr = __builtin_return_address(0);
         ReportDumpCatcherStats(pid, requestTime, res, retAddr);
-        ret = res == DUMPCATCH_ESUCCESS;
     }
-
     DFXLOGI("dump_catch : pid = %{public}d, elapsed time = %{public}" PRId64 " ms, ret = %{public}d, " \
         "msgLength = %{public}zu",
         pid, counter.Elapsed<std::chrono::milliseconds>(), ret, msg.size());
@@ -592,12 +649,20 @@ int32_t DfxDumpCatcher::Impl::DoDumpCatchRemote(int pid, int tid, std::string& m
 {
     DFX_TRACE_SCOPED_DLSYM("DoDumpCatchRemote");
     int32_t ret = DUMPCATCH_UNKNOWN;
+
     if (pid <= 0 || tid < 0 || timeout <= WAIT_GET_KERNEL_STACK_TIMEOUT) {
         msg.append("Result: pid(" + std::to_string(pid) + ") param error.\n");
         DFXLOGW("%{public}s :: %{public}s", __func__, msg.c_str());
         return DUMPCATCH_EPARAM;
     }
-    pid_ = pid;
+
+    if (DfxDumpCatcherSlowPolicy::GetInstance().IsDumpCatcherInSlowPeriod(pid)) {
+        DFXLOGW("dumpcatch in slow period, return pid (%{public}d) kernel stack directly!", pid);
+        msg.append("Result: pid(" + std::to_string(pid) + ") last dump slow, return kernel stack directly.\n");
+        stack_ = stackKit_.GetProcessStackWithTimeout(pid, WAIT_GET_KERNEL_STACK_TIMEOUT);
+        return DUMPCATCH_TIMEOUT_DUMP_IN_SLOWPERIOD;
+    }
+
     int pipeReadFd[] = { -1, -1 };
     uint64_t sdkDumpStartTime = GetAbsTimeMilliSeconds();
     int sdkdumpRet = RequestSdkDump(pid, tid, pipeReadFd, isJson, timeout);
@@ -607,31 +672,35 @@ int32_t DfxDumpCatcher::Impl::DoDumpCatchRemote(int pid, int tid, std::string& m
     }
     // timeout sub the cost time of sdkdump
     timeout -= static_cast<int>(GetAbsTimeMilliSeconds() - sdkDumpStartTime);
-    int pollRet = DoDumpRemotePid(pid, msg, pipeReadFd, isJson, timeout);
+    DumpCatcherPipeData pipeData;
+    pipeData.bufPipeFd = pipeReadFd[PIPE_BUF_INDEX];
+    pipeData.resPipeFd = pipeReadFd[PIPE_RES_INDEX];
+    int pollRet = DoDumpRemotePid(pid, msg, pipeData, isJson, timeout);
     DealWithPollRet(pollRet, pid, ret, msg);
     DFXLOGI("%{public}s :: pid(%{public}d) ret: %{public}d", __func__, pid, ret);
     return ret;
 }
 
-int DfxDumpCatcher::Impl::DoDumpRemotePid(int pid, std::string& msg, int (&pipeReadFd)[2], bool isJson, int32_t timeout)
+int DfxDumpCatcher::Impl::DoDumpRemotePid(int pid, std::string& msg, DumpCatcherPipeData& pipeData,
+                                          bool isJson, int32_t timeout)
 {
     DFX_TRACE_SCOPED_DLSYM("DoDumpRemotePid");
     if (timeout <= 0) {
         DFXLOGW("timeout less than 0, try to get kernel stack and return directly!");
         stack_ = stackKit_.GetProcessStackWithTimeout(pid, WAIT_GET_KERNEL_STACK_TIMEOUT);
         RequestDelPipeFd(pid);
-        CloseFd(pipeReadFd[PIPE_BUF_INDEX]);
-        CloseFd(pipeReadFd[PIPE_RES_INDEX]);
+        CloseFd(pipeData.bufPipeFd);
+        CloseFd(pipeData.resPipeFd);
         return DUMP_POLL_TIMEOUT;
     } else if (timeout < 1000) { // 1000 : one thousand milliseconds
         DFXLOGW("timeout less than 1 seconds, get kernel stack directly!");
         notifyCollect_ = stackKit_.NotifyStartCollect(pid);
     }
-    int ret = DoDumpRemotePoll(timeout, msg, pipeReadFd, isJson);
+    int ret = DoDumpRemotePoll(pid, timeout, msg, pipeData, isJson);
     // request close fds in faultloggerd
     RequestDelPipeFd(pid);
-    CloseFd(pipeReadFd[PIPE_BUF_INDEX]);
-    CloseFd(pipeReadFd[PIPE_RES_INDEX]);
+    CloseFd(pipeData.bufPipeFd);
+    CloseFd(pipeData.resPipeFd);
     DFXLOGI("%{public}s :: pid(%{public}d) poll ret: %{public}d", __func__, pid, ret);
     return ret;
 }
@@ -654,40 +723,42 @@ int32_t DfxDumpCatcher::Impl::KernelRet2DumpcatchRet(int32_t ret)
     }
 }
 
-bool DfxDumpCatcher::Impl::HandlePollError(const uint64_t endTime, int& remainTime, std::string& resMsg, int& ret)
+bool DfxDumpCatcher::Impl::HandlePollError(int pid, const uint64_t endTime, int& remainTime,
+                                           int& pollRet, std::string& resMsg)
 {
     if (errno == EINTR) {
         uint64_t now = GetAbsTimeMilliSeconds();
         if (now >= endTime) {
-            ret = DUMP_POLL_TIMEOUT;
+            pollRet = DUMP_POLL_TIMEOUT;
             resMsg.append("Result: poll timeout.\n");
             return false;
         }
         if (!notifyCollect_ && (remainTime == DUMPCATCHER_REMOTE_P90_TIMEOUT)) {
-            notifyCollect_ = stackKit_.NotifyStartCollect(pid_);
+            notifyCollect_ = stackKit_.NotifyStartCollect(pid);
         }
         remainTime = static_cast<int>(endTime - now);
         return true;
     }
-    ret = DUMP_POLL_FAILED;
+    pollRet = DUMP_POLL_FAILED;
     resMsg.append("Result: poll error, errno(" + std::to_string(errno) + ")\n");
     return false;
 }
 
-bool DfxDumpCatcher::Impl::HandlePollTimeout(const int timeout, int& remainTime, std::string& resMsg, int& ret)
+bool DfxDumpCatcher::Impl::HandlePollTimeout(int pid, const int timeout, int& remainTime,
+                                             int& pollRet, std::string& resMsg)
 {
     if (!notifyCollect_ && (remainTime == DUMPCATCHER_REMOTE_P90_TIMEOUT)) {
-        notifyCollect_ = stackKit_.NotifyStartCollect(pid_);
+        notifyCollect_ = stackKit_.NotifyStartCollect(pid);
         remainTime = timeout - DUMPCATCHER_REMOTE_P90_TIMEOUT;
         return true;
     }
-    ret = DUMP_POLL_TIMEOUT;
+    pollRet = DUMP_POLL_TIMEOUT;
     resMsg.append("Result: poll timeout.\n");
     return false;
 }
 
-bool DfxDumpCatcher::Impl::HandlePollEvents(std::pair<int, std::string>& bufState,
-    std::pair<int, std::string>& resState, const struct pollfd (&readFds)[2], bool& bPipeConnect, bool& res)
+bool DfxDumpCatcher::Impl::HandlePollEvents(int pid, const struct pollfd (&readFds)[2], bool& bPipeConnect,
+                                            int& pollRet, DumpCatcherPipeData& pipeData)
 {
     bool bufRet = true;
     bool resRet = false;
@@ -700,7 +771,7 @@ bool DfxDumpCatcher::Impl::HandlePollEvents(std::pair<int, std::string>& bufStat
         if (bPipeConnect &&
             ((static_cast<uint32_t>(readFd.revents) & POLLERR) || (static_cast<uint32_t>(readFd.revents) & POLLHUP))) {
             eventRet = false;
-            resState.second.append("Result: poll events error.\n");
+            pipeData.resMsg.append("Result: poll events error.\n");
             break;
         }
 
@@ -708,10 +779,10 @@ bool DfxDumpCatcher::Impl::HandlePollEvents(std::pair<int, std::string>& bufStat
             continue;
         }
 
-        if (readFd.fd == bufState.first) {
-            bufRet = DoReadBuf(bufState.first, bufState.second);
-        } else if (readFd.fd == resState.first) {
-            resRet = DoReadRes(resState.first, res, resState.second);
+        if (readFd.fd == pipeData.bufPipeFd) {
+            bufRet = DoReadBuf(pipeData);
+        } else if (readFd.fd == pipeData.resPipeFd) {
+            resRet = DoReadRes(pollRet, pipeData);
         }
     }
 
@@ -722,16 +793,14 @@ bool DfxDumpCatcher::Impl::HandlePollEvents(std::pair<int, std::string>& bufStat
     return true;
 }
 
-std::pair<bool, int> DfxDumpCatcher::Impl::DumpRemotePoll(const int timeout,
-    std::pair<int, std::string>& bufState, std::pair<int, std::string>& resState)
+int DfxDumpCatcher::Impl::DumpRemotePoll(int pid, const int timeout, DumpCatcherPipeData& pipeData)
 {
-    int ret = DUMP_POLL_INIT;
-    bool res = false;
+    int pollRet = DUMP_POLL_INIT;
     struct pollfd readFds[2];
     (void)memset_s(readFds, sizeof(readFds), 0, sizeof(readFds));
-    readFds[0].fd = bufState.first;
+    readFds[0].fd = pipeData.bufPipeFd;
     readFds[0].events = POLLIN;
-    readFds[1].fd = resState.first;
+    readFds[1].fd = pipeData.resPipeFd;
     readFds[1].events = POLLIN;
     int fdsSize = sizeof(readFds) / sizeof(readFds[0]);
     bool bPipeConnect = false;
@@ -740,78 +809,91 @@ std::pair<bool, int> DfxDumpCatcher::Impl::DumpRemotePoll(const int timeout,
     uint64_t endTime = startTime + static_cast<uint64_t>(timeout);
     bool isContinue = true;
     do {
-        int pollRet = poll(readFds, fdsSize, remainTime);
-        if (pollRet < 0) {
-            isContinue = HandlePollError(endTime, remainTime, resState.second, ret);
+        int pRet = poll(readFds, fdsSize, remainTime);
+        if (pRet < 0) {
+            isContinue = HandlePollError(pid, endTime, remainTime, pollRet, pipeData.resMsg);
             continue;
-        } else if (pollRet == 0) {
-            isContinue = HandlePollTimeout(timeout, remainTime, resState.second, ret);
+        } else if (pRet == 0) {
+            isContinue = HandlePollTimeout(pid, timeout, remainTime, pollRet, pipeData.resMsg);
             continue;
         }
-        if (!HandlePollEvents(bufState, resState, readFds, bPipeConnect, res)) {
-            ret = DUMP_POLL_RETURN;
+        if (!HandlePollEvents(pid, readFds, bPipeConnect, pollRet, pipeData)) {
             break;
         }
         uint64_t now = GetAbsTimeMilliSeconds();
         if (now >= endTime) {
-            ret = DUMP_POLL_TIMEOUT;
-            resState.second.append("Result: poll timeout.\n");
+            pollRet = DUMP_POLL_TIMEOUT;
+            pipeData.resMsg.append("Result: poll timeout.\n");
             break;
         }
         remainTime = static_cast<int>(endTime - now);
     } while (isContinue);
-    return std::make_pair(res, ret);
+    return pollRet;
 }
 
-int DfxDumpCatcher::Impl::DoDumpRemotePoll(int timeout, std::string& msg, const int (&pipeReadFd)[2], bool isJson)
+int DfxDumpCatcher::Impl::DoDumpRemotePoll(int pid, int timeout, std::string& msg,
+    DumpCatcherPipeData& pipeData, bool isJson)
 {
     DFX_TRACE_SCOPED_DLSYM("DoDumpRemotePoll");
-    if (pipeReadFd[PIPE_BUF_INDEX] < 0 || pipeReadFd[PIPE_RES_INDEX] < 0) {
+    if (pipeData.bufPipeFd < 0 || pipeData.resPipeFd < 0) {
         if (!isJson) {
             msg = "Result: bufFd or resFd < 0.\n";
         }
         DFXLOGE("invalid bufFd or resFd");
         return DUMP_POLL_FD;
     }
-    std::pair<int, std::string> bufState = std::make_pair(pipeReadFd[PIPE_BUF_INDEX], "");
-    std::pair<int, std::string> resState = std::make_pair(pipeReadFd[PIPE_RES_INDEX], "");
-    std::pair<bool, int> result = DumpRemotePoll(timeout, bufState, resState);
 
-    DFXLOGI("%{public}s :: %{public}s", __func__, resState.second.c_str());
-    msg = isJson && result.first ? bufState.second : (resState.second + bufState.second);
-    return result.first ? DUMP_POLL_OK : result.second;
+    int res = DumpRemotePoll(pid, timeout, pipeData);
+    bool isDumpSuccess = (res == DUMP_POLL_OK) || (res == DUMP_POLL_NO_PARSE_SYMBOL)
+        || (res == DUMP_POLL_PARSE_SYMBOL_TIMEOUT);
+    DFXLOGI("%{public}s :: %{public}s", __func__, pipeData.resMsg.c_str());
+    msg = isJson && isDumpSuccess ? pipeData.bufMsg : (pipeData.resMsg + pipeData.bufMsg);
+    return res;
 }
 
-bool DfxDumpCatcher::Impl::DoReadBuf(int fd, std::string& msg)
+bool DfxDumpCatcher::Impl::DoReadBuf(DumpCatcherPipeData& pipeData)
 {
     bool ret = false;
     char *buffer = new char[MAX_PIPE_SIZE];
     do {
-        ssize_t nread = OHOS_TEMP_FAILURE_RETRY(read(fd, buffer, MAX_PIPE_SIZE));
+        ssize_t nread = OHOS_TEMP_FAILURE_RETRY(read(pipeData.bufPipeFd, buffer, MAX_PIPE_SIZE));
         if (nread <= 0) {
             DFXLOGW("%{public}s :: read error", __func__);
             break;
         }
         DFXLOGD("%{public}s :: nread: %{public}zu", __func__, nread);
         ret = true;
-        msg.append(buffer, static_cast<size_t>(nread));
+        pipeData.bufMsg.append(buffer, static_cast<size_t>(nread));
     } while (false);
     delete []buffer;
     return ret;
 }
 
-bool DfxDumpCatcher::Impl::DoReadRes(int fd, bool& ret, std::string& msg)
+bool DfxDumpCatcher::Impl::DoReadRes(int& pollRet, DumpCatcherPipeData& pipeData)
 {
     int32_t res = DumpErrorCode::DUMP_ESUCCESS;
-    ssize_t nread = OHOS_TEMP_FAILURE_RETRY(read(fd, &res, sizeof(res)));
+    ssize_t nread = OHOS_TEMP_FAILURE_RETRY(read(pipeData.resPipeFd, &res, sizeof(res)));
     if (nread <= 0 || nread != sizeof(res)) {
         DFXLOGW("%{public}s :: read error", __func__);
         return false;
     }
-    if (res == DumpErrorCode::DUMP_ESUCCESS) {
-        ret = true;
+
+    switch (res) {
+        case DUMP_ESUCCESS:
+            pollRet = DUMP_POLL_OK;
+            break;
+        case DUMP_ESYMBOL_NO_PARSE:
+            pollRet = DUMP_POLL_NO_PARSE_SYMBOL;
+            break;
+        case DUMP_ESYMBOL_PARSE_TIMEOUT:
+            pollRet = DUMP_POLL_PARSE_SYMBOL_TIMEOUT;
+            break;
+        default:
+            pollRet = DUMP_POLL_RETURN;
+            break;
     }
-    msg.append("Result: " + DfxDumpRes::ToString(res) + "\n");
+
+    pipeData.resMsg.append("Result: " + DfxDumpRes::ToString(res) + "\n");
     return true;
 }
 

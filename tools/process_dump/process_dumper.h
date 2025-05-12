@@ -18,6 +18,7 @@
 
 #include <cinttypes>
 #include <condition_variable>
+#include <future>
 #include <memory>
 #include <mutex>
 #include <string>
@@ -65,7 +66,7 @@ private:
     std::string ReadCrashObjMemory(pid_t tid, uintptr_t addr, size_t length) const;
     void GetCrashObj(const ProcessDumpRequest& request);
     void ReportAddrSanitizer(const ProcessDumpRequest &request, std::string &jsonInfo);
-    void UnwindFinish(const ProcessDumpRequest& request, pid_t vmPid);
+    void UnwindFinish(const ProcessDumpRequest& request, pid_t vmPid, int &dumpRes);
 
 private:
     std::shared_ptr<DfxProcess> process_ = nullptr;
@@ -79,6 +80,8 @@ private:
 
     uint64_t startTime_ = 0;
     uint64_t finishTime_ = 0;
+    uint64_t expectedTimeoutEndTime_ = 0;
+    std::future<void> parseSymbolTask_;
     static constexpr size_t DEFAULT_MAX_STRING_LEN = 2048;
 };
 } // namespace HiviewDFX

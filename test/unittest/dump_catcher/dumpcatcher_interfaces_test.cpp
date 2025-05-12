@@ -15,6 +15,8 @@
 
 #include <gtest/gtest.h>
 
+#include <filesystem>
+#include <fstream>
 #include <string>
 #include <thread>
 #include <vector>
@@ -25,6 +27,7 @@
 #include "dfx_dump_catcher.h"
 #include "dfx_json_formatter.h"
 #include "dfx_test_util.h"
+#include "dfx_util.h"
 #include "faultloggerd_client.h"
 #include "kernel_stack_async_collector.h"
 #include "procinfo.h"
@@ -136,28 +139,36 @@ static void ForkMultiThreadProcess(void)
 
 /**
  * @tc.name: DumpCatcherInterfacesTest001
- * @tc.desc: test DumpCatchMultiPid API: multiPid{PID(powermgr), PID(foundation)}
+ * @tc.desc: test DumpCatch API: PID(test hap), TID(0)
  * @tc.type: FUNC
  */
 HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest001, TestSize.Level0)
 {
     GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest001: start.";
-    std::string testProcess1 = "powermgr";
-    int testPid1 = GetProcessPid(testProcess1);
-    GTEST_LOG_(INFO) << "testPid1:" << testPid1;
-    std::string testProcess2 = "foundation";
-    int testPid2 = GetProcessPid(testProcess2);
-    GTEST_LOG_(INFO) << "testPid2:" << testPid2;
-    std::vector<int> multiPid {testPid1, testPid2};
+    bool isSuccess = g_testPid != 0;
+    if (!isSuccess) {
+        ASSERT_FALSE(isSuccess);
+        GTEST_LOG_(ERROR) << "Failed to launch target hap.";
+        return;
+    }
+    isSuccess = CheckProcessComm(g_testPid, TRUNCATE_TEST_BUNDLE_NAME);
+    if (!isSuccess) {
+        ASSERT_FALSE(isSuccess);
+        GTEST_LOG_(ERROR) << "Error process comm";
+        return;
+    }
     DfxDumpCatcher dumplog;
     std::string msg = "";
-    bool ret = dumplog.DumpCatchMultiPid(multiPid, msg);
+    bool ret = dumplog.DumpCatch(g_testPid, 0, msg);
     GTEST_LOG_(INFO) << ret;
-    string log[] = {"Tid:", "Name:", "Tid:", "Name:"};
-    log[0] = log[0] + std::to_string(testPid1);
-    log[1] = log[1] + testProcess1;
-    log[2] = log[2] + std::to_string(testPid2);
-    log[3] = log[3] + testProcess2;
+#if defined(__aarch64__)
+    string log[] = { "Tid:", "Name:", "#00", "/system/bin/appspawn", "Name:OS_DfxWatchdog",
+                     "at jsFunc", "index_.js"};
+#else
+    string log[] = { "Tid:", "Name:", "#00", "/system/bin/appspawn", "Name:OS_DfxWatchdog"};
+#endif
+    log[0] += std::to_string(g_testPid);
+    log[1] += TRUNCATE_TEST_BUNDLE_NAME;
     int len = sizeof(log) / sizeof(log[0]);
     int count = GetKeywordsNum(msg, log, len);
     EXPECT_EQ(count, len) << msg << "DumpCatcherInterfacesTest001 Failed";
@@ -355,37 +366,29 @@ HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest008, TestSize.Level
 
 /**
  * @tc.name: DumpCatcherInterfacesTest014
- * @tc.desc: test DumpCatch API: PID(test hap), TID(0)
+ * @tc.desc: test DumpCatchMultiPid API: multiPid{PID(powermgr), PID(foundation)}
  * @tc.type: FUNC
  * @tc.require: issueI5PJ9O
  */
 HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest014, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest014: start.";
-    bool isSuccess = g_testPid != 0;
-    if (!isSuccess) {
-        ASSERT_FALSE(isSuccess);
-        GTEST_LOG_(ERROR) << "Failed to launch target hap.";
-        return;
-    }
-    isSuccess = CheckProcessComm(g_testPid, TRUNCATE_TEST_BUNDLE_NAME);
-    if (!isSuccess) {
-        ASSERT_FALSE(isSuccess);
-        GTEST_LOG_(ERROR) << "Error process comm";
-        return;
-    }
+    std::string testProcess1 = "powermgr";
+    int testPid1 = GetProcessPid(testProcess1);
+    GTEST_LOG_(INFO) << "testPid1:" << testPid1;
+    std::string testProcess2 = "foundation";
+    int testPid2 = GetProcessPid(testProcess2);
+    GTEST_LOG_(INFO) << "testPid2:" << testPid2;
+    std::vector<int> multiPid {testPid1, testPid2};
     DfxDumpCatcher dumplog;
     std::string msg = "";
-    bool ret = dumplog.DumpCatch(g_testPid, 0, msg);
+    bool ret = dumplog.DumpCatchMultiPid(multiPid, msg);
     GTEST_LOG_(INFO) << ret;
-#if defined(__aarch64__)
-    string log[] = { "Tid:", "Name:", "#00", "/system/bin/appspawn", "Name:OS_DfxWatchdog",
-                     "at jsFunc", "index_.js"};
-#else
-    string log[] = { "Tid:", "Name:", "#00", "/system/bin/appspawn", "Name:OS_DfxWatchdog"};
-#endif
-    log[0] += std::to_string(g_testPid);
-    log[1] += TRUNCATE_TEST_BUNDLE_NAME;
+    string log[] = {"Tid:", "Name:", "Tid:", "Name:"};
+    log[0] = log[0] + std::to_string(testPid1);
+    log[1] = log[1] + testProcess1;
+    log[2] = log[2] + std::to_string(testPid2);
+    log[3] = log[3] + testProcess2;
     int len = sizeof(log) / sizeof(log[0]);
     int count = GetKeywordsNum(msg, log, len);
     EXPECT_EQ(count, len) << msg << "DumpCatcherInterfacesTest014 Failed";
@@ -1022,6 +1025,7 @@ HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest040, TestSize.Level
     ExecuteCommands(startFaultloggerdCmd);
     GTEST_LOG_(INFO) << result.second;
     EXPECT_TRUE(result.first == -1);
+    std::this_thread::sleep_for(std::chrono::seconds(1));
     GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest040: end.";
 }
 
@@ -1072,6 +1076,122 @@ HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest042, TestSize.Level
     ASSERT_TRUE(DfxJsonFormatter::FormatKernelStack(msg, formattedStack, true));
 #endif
     GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest042: end.";
+}
+
+#if defined(__aarch64__)
+static bool IsPidDir(const std::filesystem::directory_entry& entry)
+{
+    if (!entry.is_directory()) {
+        return false;
+    }
+    const std::string fileName = entry.path().filename();
+    return std::all_of(fileName.begin(), fileName.end(), [](char c) { return std::isdigit(c); });
+}
+
+static bool CheckProcessStart(const std::string& procName, pid_t& pid)
+{
+    for (const auto& entry : std::filesystem::directory_iterator("/proc")) {
+        if (!IsPidDir(entry)) {
+            continue;
+        }
+        std::ifstream commFile(entry.path() / "comm");
+        if (!commFile) {
+            continue;
+        }
+        std::string processName;
+        if (std::getline(commFile, processName)) {
+            processName.erase(processName.find_last_not_of("\n") + 1);
+            if (processName == procName) {
+                pid = std::stoi(entry.path().filename());
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+static int GetParentPid(int pid)
+{
+    std::ifstream statFile("/proc/" + std::to_string(pid) + "/status");
+    if (!statFile) {
+        GTEST_LOG_(ERROR) << "GetParentPid: No process status file" << pid;
+        return -1;
+    }
+
+    if (!statFile.is_open()) {
+        GTEST_LOG_(ERROR) << "GetParentPid: open fail";
+        return -1;
+    }
+
+    int ppid = -1;
+    const size_t compareSize = 5;
+    std::string line;
+    while (std::getline(statFile, line)) {
+        if (line.compare(0, compareSize, "PPid:") == 0) {
+            std::istringstream iss(line.substr(compareSize));
+            iss >> ppid;
+            break;
+        }
+    }
+    return ppid;
+}
+#endif
+
+/**
+ * @tc.name: DumpCatcherInterfacesTest043
+ * @tc.desc: test dumpcatch no parse symbol
+ * @tc.type: FUNC
+ */
+HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest043, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest043: start.";
+#if defined(__aarch64__)
+    pid_t pid = fork();
+    if (pid < 0) {
+        GTEST_LOG_(ERROR) << "DumpCatcherInterfacesTest043: fork fail";
+    } else if (pid == 0) {
+        std::this_thread::sleep_for(std::chrono::seconds(5)); // 5 : sleep 5s
+        _exit(0);
+    }
+    const int checkCnt = 500; // 500 : check processdump start in 500ms
+    const int waitForkPidStartTime = 50; // 50 : 50ms
+    const int hungUpProcessdumpTime = 2900; // 2900 : 2.9s
+    int timeStart = static_cast<int>(GetAbsTimeMilliSeconds());
+    pid_t pidCheck = fork();
+    if (pidCheck < 0) {
+        GTEST_LOG_(ERROR) << "DumpCatcherInterfacesTest043: fork fail";
+    } else if (pidCheck == 0) {
+        for (int i = 0; i < checkCnt; i++) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(1));
+            pid_t processdumpPid = 0;
+            if (!CheckProcessStart("processdump", processdumpPid) ||
+                pid != GetParentPid(GetParentPid(processdumpPid))) {
+                continue;
+            }
+            GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest043: processdump " << processdumpPid << " has been forked";
+            if (processdumpPid > 0) {
+                kill(processdumpPid, SIGSTOP);
+                int now = static_cast<int>(GetAbsTimeMilliSeconds());
+                int timeWait = hungUpProcessdumpTime - (now - timeStart - waitForkPidStartTime);
+                timeWait = timeWait > 0 ? timeWait : 0;
+                std::this_thread::sleep_for(std::chrono::milliseconds(hungUpProcessdumpTime));
+                kill(processdumpPid, SIGCONT);
+            }
+            break;
+        }
+        _exit(0);
+    }
+    DfxDumpCatcher dump;
+    std::string stack;
+    std::this_thread::sleep_for(std::chrono::milliseconds(waitForkPidStartTime));
+    dump.DumpCatch(pid, 0, stack);
+    GTEST_LOG_(INFO) << stack;
+    kill(pid, SIGKILL);
+    kill(pidCheck, SIGKILL);
+    bool result = stack.find("no enough time to parse symbol") != std::string::npos;
+    ASSERT_EQ(result, true);
+#endif
+    GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest043: end.";
 }
 } // namespace HiviewDFX
 } // namepsace OHOS
