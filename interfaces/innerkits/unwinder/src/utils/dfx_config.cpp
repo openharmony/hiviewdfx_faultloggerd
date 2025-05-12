@@ -61,6 +61,7 @@ void DfxConfig::InitConfigMaps(DfxConfigInfo& config, std::map<std::string, bool
         {std::string("displayFaultStack.lowAddressStep"), &(config.lowAddressStep)},
         {std::string("displayFaultStack.highAddressStep"), &(config.highAddressStep)},
         {std::string("maxFrameNums"), &(config.maxFrameNums)},
+        {std::string("reservedParseSymbolTime"), &(config.reservedParseSymbolTime)},
     };
 }
 

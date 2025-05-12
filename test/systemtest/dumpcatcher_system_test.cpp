@@ -31,6 +31,8 @@ using namespace std;
 
 namespace OHOS {
 namespace HiviewDFX {
+static constexpr uint64_t TEST_WAIT_SLOW_PERIOD = 5;
+
 class DumpCatcherSystemTest : public testing::Test {
 public:
     static void SetUpTestCase(void);
@@ -1469,9 +1471,12 @@ HWTEST_F(DumpCatcherSystemTest, DumpCatcherSystemTest102, TestSize.Level2)
     if (pid < 0) {
         FAIL() << "DumpCatcherSystemTest102: Failed to fork a test process";
     } else if (pid == 0) {
-        sleep(3); // 3 : sleep 3 seconds
+        std::this_thread::sleep_for(std::chrono::seconds(12)); // 12 : sleep 12 seconds
+        _exit(0);
     }
+    std::this_thread::sleep_for(std::chrono::seconds(1));
     kill(pid, SIGSTOP);
+    std::this_thread::sleep_for(std::chrono::seconds(1));
     DfxDumpCatcher dumplog;
     string msg = "";
     if (!dumplog.DumpCatch(pid, 0, msg)) {
@@ -1486,6 +1491,17 @@ HWTEST_F(DumpCatcherSystemTest, DumpCatcherSystemTest102, TestSize.Level2)
     }
     int matchCount = static_cast<int>(matchWords.size());
     int count = GetKeywordsNum(msg, matchWords.data(), matchCount);
+    kill(pid, SIGCONT);
+    std::this_thread::sleep_for(std::chrono::seconds(1));
+    msg.clear();
+    bool res = dumplog.DumpCatch(pid, 0, msg);
+    EXPECT_EQ(res, false) << "DumpCatcherSystemTest102 Failed";
+    GTEST_LOG_(INFO) << "first dump result:" << msg;
+    std::this_thread::sleep_for(std::chrono::seconds(TEST_WAIT_SLOW_PERIOD));
+    msg.clear();
+    res = dumplog.DumpCatch(pid, 0, msg);
+    EXPECT_EQ(res, true) << "DumpCatcherSystemTest102 Failed";
+    GTEST_LOG_(INFO) << "second dump result:" << msg;
     kill(pid, SIGKILL);
     EXPECT_EQ(count, matchCount) << "DumpCatcherSystemTest102 Failed";
     GTEST_LOG_(INFO) << "DumpCatcherSystemTest102: end.";
