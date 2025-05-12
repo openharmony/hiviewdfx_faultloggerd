@@ -26,6 +26,21 @@
 
 namespace OHOS {
 namespace HiviewDFX {
+
+constexpr int VREGS_ARRAY_LEN = 32;
+
+struct Aarch64CtxHead {
+    uint32_t magic;
+    uint32_t size;
+};
+
+struct Aarch64FpsimdContext {
+    struct Aarch64CtxHead head;
+    uint32_t fpsr;
+    uint32_t fpcr;
+    __uint128_t vregs[VREGS_ARRAY_LEN];
+};
+
 void DfxRegsArm64::SetFromUcontext(const ucontext_t &context)
 {
     if (regsData_.size() < REG_LAST) {
@@ -36,6 +51,10 @@ void DfxRegsArm64::SetFromUcontext(const ucontext_t &context)
     }
     regsData_[REG_AARCH64_X31] = static_cast<uintptr_t>(context.uc_mcontext.sp); // sp register
     regsData_[REG_AARCH64_PC] = static_cast<uintptr_t>(context.uc_mcontext.pc); // pc register
+    regsData_[REG_AARCH64_PSTATE] = static_cast<uintptr_t>(context.uc_mcontext.pstate);
+    uint8_t* pMctxRes = reinterpret_cast<uint8_t*>(const_cast<long double*>(&context.uc_mcontext.__reserved[0]));
+    regsData_[REG_AARCH64_ESR] = *reinterpret_cast<uintptr_t*>(pMctxRes + sizeof(Aarch64FpsimdContext) +
+        sizeof(Aarch64CtxHead));
 }
 
 void DfxRegsArm64::SetFromFpMiniRegs(const uintptr_t* regs, const size_t size)
@@ -104,6 +123,8 @@ std::string DfxRegsArm64::PrintRegs() const
     BufferPrintf(buf + strlen(buf), sizeof(buf) - strlen(buf), "lr:%016lx sp:%016lx pc:%016lx\n", \
         regs[REG_AARCH64_X30], regs[REG_SP], regs[REG_PC]);
 
+    BufferPrintf(buf + strlen(buf), sizeof(buf) - strlen(buf), "pstate:%016lx esr:%016lx\n", \
+        regs[REG_AARCH64_PSTATE], regs[REG_AARCH64_ESR]);
     std::string regString = StringPrintf("Registers:\n%s", buf);
     return regString;
 }

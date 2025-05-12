@@ -125,11 +125,11 @@ static bool CheckCppCrashKeyWords(const string& filePath, pid_t pid, int sig)
         sigKeyword = iter->second;
     }
     string keywords[] = {
-        "Pid:" + to_string(pid), "Uid:", "test_processdump", sigKeyword, "Tid:", "#00", "Registers:", REGISTERS,
-        "FaultStack:", "Maps:", "test_processdump"
+        "Pid:" + to_string(pid), "Uid:", "test_processdump", "Rss", sigKeyword, "Tid:", "#00", "Registers:",
+        REGISTERS, "FaultStack:", "Maps:", "test_processdump"
     };
     int length = sizeof(keywords) / sizeof(keywords[0]);
-    int minRegIdx = 6; // 6 : index of REGISTERS
+    int minRegIdx = 7; // 7 : index of REGISTERS
     int count = CheckKeyWords(filePath, keywords, length, minRegIdx);
     return count == length;
 }
