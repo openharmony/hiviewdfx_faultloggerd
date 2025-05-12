@@ -55,7 +55,8 @@ bool EpollManager::AddEpollEvent(EpollListener& epollListener) const
     ev.events = EPOLLIN;
     ev.data.fd = epollListener.GetFd();
     if (epoll_ctl(eventFd_, EPOLL_CTL_ADD, ev.data.fd, &ev) < 0) {
-        DFXLOGE("%s :: Failed to epoll ctl add fd(%d), errno(%d)", EPOLL_MANAGER, epollListener.GetFd(), errno);
+        DFXLOGE("%s :: Failed to epoll ctl add fd %{public}d, errno %{public}d",
+            EPOLL_MANAGER, epollListener.GetFd(), errno);
         return false;
     }
     return true;
@@ -70,7 +71,7 @@ bool EpollManager::DelEpollEvent(int32_t fd) const
     ev.events = EPOLLIN;
     ev.data.fd = fd;
     if (epoll_ctl(eventFd_, EPOLL_CTL_DEL, fd, &ev) < 0) {
-        DFXLOGW("%s :: Failed to epoll ctl delete Fd(%d), errno(%d)", EPOLL_MANAGER, fd, errno);
+        DFXLOGW("%s :: Failed to epoll ctl delete Fd %{public}d, errno %{public}d", EPOLL_MANAGER, fd, errno);
         return false;
     }
     return true;
@@ -126,6 +127,8 @@ void EpollManager::StartEpoll(int maxConnection)
         }
         for (int i = 0; i < epollNum; i++) {
             if (!(events[i].events & EPOLLIN)) {
+                DFXLOGE("%{public}s :: client fd %{public}d disconnected", EPOLL_MANAGER, events[i].data.fd);
+                RemoveListener(events[i].data.fd);
                 continue;
             }
             auto listener = GetTargetListener(events[i].data.fd);
