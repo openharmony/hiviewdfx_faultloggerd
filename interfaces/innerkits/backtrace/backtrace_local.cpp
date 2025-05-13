@@ -132,7 +132,7 @@ const char* GetTrace(size_t skipFrameNum, size_t maxFrameNums)
     return trace.c_str();
 }
 
-std::string GetProcessStacktrace(size_t maxFrameNums, bool enableKernelStack)
+std::string GetProcessStacktrace(size_t maxFrameNums, bool enableKernelStack, bool includeThreadInfo)
 {
     std::string ss = "\n" + GetStacktraceHeader();
     Unwinder unwinder{};
@@ -140,7 +140,7 @@ std::string GetProcessStacktrace(size_t maxFrameNums, bool enableKernelStack)
         if (tid <= 0 || tid == gettid()) {
             return false;
         }
-        BacktraceLocalThread thread(tid);
+        BacktraceLocalThread thread(tid, includeThreadInfo);
         if (thread.Unwind(unwinder, false, maxFrameNums, 0)) {
             ss += thread.GetFormattedStr(true) + "\n";
             return true;
