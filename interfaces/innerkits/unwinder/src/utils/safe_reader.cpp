@@ -24,22 +24,32 @@
 #include <sys/syscall.h>
 #include <sys/types.h>
 
+// defile Domain ID
+#ifndef LOG_DOMAIN
+#undef LOG_DOMAIN
+#endif
+#define LOG_DOMAIN 0xD002D11
+
 SafeReader::SafeReader()
 {
     if (syscall(SYS_pipe2, pfd_, O_CLOEXEC | O_NONBLOCK) != 0) {
         pfd_[PIPE_READ] = -1;
         pfd_[PIPE_WRITE] = -1;
     }
+    uint64_t ownerTag = fdsan_create_owner_tag(FDSAN_OWNER_TYPE_FILE, LOG_DOMAIN);
+    fdsan_exchange_owner_tag(pfd_[PIPE_READ], 0, ownerTag);
+    fdsan_exchange_owner_tag(pfd_[PIPE_WRITE], 0, ownerTag);
 }
 
 SafeReader::~SafeReader()
 {
+    uint64_t ownerTag = fdsan_create_owner_tag(FDSAN_OWNER_TYPE_FILE, LOG_DOMAIN);
     if (pfd_[PIPE_READ] > 0) {
-        syscall(SYS_close, pfd_[PIPE_READ]);
+        fdsan_close_with_tag(pfd_[PIPE_READ], ownerTag);
         pfd_[PIPE_READ] = -1;
     }
     if (pfd_[PIPE_WRITE] > 0) {
-        syscall(SYS_close, pfd_[PIPE_WRITE]);
+        fdsan_close_with_tag(pfd_[PIPE_WRITE], ownerTag);
         pfd_[PIPE_WRITE] = -1;
     }
 }

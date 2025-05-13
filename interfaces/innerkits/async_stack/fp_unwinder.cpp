@@ -77,6 +77,10 @@ int32_t FpUnwinder::UnwindFallback(uintptr_t* pcs, int32_t sz, int32_t skipFrame
         DFXLOGE("Failed to init pipe, errno(%{public}d)", errno);
         return 0;
     }
+    uint64_t ownerTag = fdsan_create_owner_tag(FDSAN_OWNER_TYPE_FILE, LOG_DOMAIN);
+    fdsan_exchange_owner_tag(validPipe[PIPE_WRITE], 0, ownerTag);
+    fdsan_exchange_owner_tag(validPipe[PIPE_READ], 0, ownerTag);
+
     uintptr_t firstFp = pcs[1];
     uintptr_t fp = firstFp;
     int32_t index = 0;
@@ -98,8 +102,8 @@ int32_t FpUnwinder::UnwindFallback(uintptr_t* pcs, int32_t sz, int32_t skipFrame
             break;
         }
     }
-    close(validPipe[PIPE_WRITE]);
-    close(validPipe[PIPE_READ]);
+    fdsan_close_with_tag(validPipe[PIPE_READ], ownerTag);
+    fdsan_close_with_tag(validPipe[PIPE_WRITE], ownerTag);
     return realSz;
 }
 

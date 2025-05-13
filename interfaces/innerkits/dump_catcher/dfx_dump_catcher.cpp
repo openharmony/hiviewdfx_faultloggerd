@@ -675,6 +675,10 @@ int32_t DfxDumpCatcher::Impl::DoDumpCatchRemote(int pid, int tid, std::string& m
     DumpCatcherPipeData pipeData;
     pipeData.bufPipeFd = pipeReadFd[PIPE_BUF_INDEX];
     pipeData.resPipeFd = pipeReadFd[PIPE_RES_INDEX];
+    uint64_t ownerTag = fdsan_create_owner_tag(FDSAN_OWNER_TYPE_FILE, LOG_DOMAIN);
+    fdsan_exchange_owner_tag(pipeData.bufPipeFd, 0, ownerTag);
+    fdsan_exchange_owner_tag(pipeData.resPipeFd, 0, ownerTag);
+
     int pollRet = DoDumpRemotePid(pid, msg, pipeData, isJson, timeout);
     DealWithPollRet(pollRet, pid, ret, msg);
     DFXLOGI("%{public}s :: pid(%{public}d) ret: %{public}d", __func__, pid, ret);

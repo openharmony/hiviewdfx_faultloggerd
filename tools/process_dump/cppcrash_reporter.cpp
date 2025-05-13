@@ -120,6 +120,8 @@ int32_t CppCrashReporter::WriteCppCrashInfoByPipe()
         DFXLOGE("Failed to create pipe.");
         return -1;
     }
+    uint64_t ownerTag = fdsan_create_owner_tag(FDSAN_OWNER_TYPE_FILE, LOG_DOMAIN);
+    fdsan_exchange_owner_tag(pipeFd[PIPE_WRITE], 0, ownerTag);
     if (fcntl(pipeFd[PIPE_READ], F_SETPIPE_SZ, sz) < 0 ||
         fcntl(pipeFd[PIPE_WRITE], F_SETPIPE_SZ, sz) < 0) {
         DFXLOGE("[%{public}d]: failed to set pipe size.", __LINE__);
@@ -137,7 +139,7 @@ int32_t CppCrashReporter::WriteCppCrashInfoByPipe()
     }
     ssize_t realWriteSize = -1;
     realWriteSize = OHOS_TEMP_FAILURE_RETRY(write(pipeFd[PIPE_WRITE], cppCrashInfo_.c_str(), sz));
-    close(pipeFd[PIPE_WRITE]);
+    fdsan_close_with_tag(pipeFd[PIPE_WRITE], ownerTag);
     if (static_cast<ssize_t>(cppCrashInfo_.size()) != realWriteSize) {
         DFXLOGE("Failed to write pipe. realWriteSize %{public}zd, json size %{public}zd", realWriteSize, sz);
         close(pipeFd[PIPE_READ]);

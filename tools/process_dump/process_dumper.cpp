@@ -531,10 +531,13 @@ void ProcessDumper::UnwindWriteJit(const ProcessDumpRequest &request)
         DFXLOGE("request jitlog fd failed.");
         return;
     }
+    uint64_t ownerTag = fdsan_create_owner_tag(FDSAN_OWNER_TYPE_FILE, LOG_DOMAIN);
+    fdsan_exchange_owner_tag(fd, 0, ownerTag);
+
     if (unwinder_->ArkWriteJitCodeToFile(fd) < 0) {
         DFXLOGE("jit code write file failed.");
     }
-    (void)close(fd);
+    fdsan_close_with_tag(fd, ownerTag);
 }
 
 std::string ProcessDumper::ReadStringByPtrace(pid_t tid, uintptr_t addr, size_t maxLen)
@@ -917,6 +920,10 @@ int ProcessDumper::InitPrintThread(const ProcessDumpRequest& request)
         DFXLOGW("Failed to request fd from faultloggerd.");
         ReportCrashException(request.processName, request.pid, request.uid, CrashExceptionCode::CRASH_DUMP_EWRITEFD);
     }
+    uint64_t ownerTag = fdsan_create_owner_tag(FDSAN_OWNER_TYPE_FILE, LOG_DOMAIN);
+    fdsan_exchange_owner_tag(bufferFd_, 0, ownerTag);
+    fdsan_exchange_owner_tag(resFd_, 0, ownerTag);
+
     int result = bufferFd_;
     if (!isJsonDump_) {
         DfxRingBufferWrapper::GetInstance().SetWriteBufFd(bufferFd_);
@@ -945,6 +952,8 @@ void ProcessDumper::WriteDumpRes(int32_t res, pid_t pid)
             DFXLOGE("%{public}s request pipe failed, err:%{public}d", __func__, errno);
             return;
         }
+        uint64_t ownerTag = fdsan_create_owner_tag(FDSAN_OWNER_TYPE_FILE, LOG_DOMAIN);
+        fdsan_exchange_owner_tag(pipeWriteFd[0], 0, ownerTag);
         CloseFd(pipeWriteFd[0]);
         resFd_ = pipeWriteFd[1];
     }

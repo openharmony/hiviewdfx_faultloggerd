@@ -107,7 +107,7 @@ void DfxRingBufferWrapper::StopThread()
         if (fsync(fd_) == -1) {
             DFXLOGW("Failed to fsync fd.");
         }
-        close(fd_);
+        fdsan_close_with_tag(fd_, fdsan_create_owner_tag(FDSAN_OWNER_TYPE_FILE, LOG_DOMAIN));
     }
     fd_ = INVALID_FD;
 }
