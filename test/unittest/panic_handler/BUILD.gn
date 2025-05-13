@@ -27,14 +27,20 @@ if (defined(ohos_lite)) {
   ohos_unittest("test_panic_handler") {
     module_out_path = "faultloggerd/faultloggerd/panic_handler"
 
-    include_dirs = [ "." ]
+    include_dirs = [
+      ".",
+      "$faultloggerd_path/test/utils",
+    ]
 
     sources = [
       "panic_handler_test.cpp",
       "rustpanic_listener.cpp",
     ]
 
-    deps = [ "$faultloggerd_path/tools/panic_maker:panic_maker" ]
+    deps = [
+      "$faultloggerd_path/tools/panic_maker:panic_maker",
+      "$faultloggerd_path/test/utils:dfx_test_util",
+    ]
 
     resource_config_file = "$faultloggerd_path/test/resource/ohos_test.xml"
 

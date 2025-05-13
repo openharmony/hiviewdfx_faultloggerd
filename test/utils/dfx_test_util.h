@@ -21,6 +21,10 @@
 #include <csignal>
 #include <regex>
 #include <sys/wait.h>
+#include <thread>
+#include <mutex>
+#include <atomic>
+#include <ctime>
 
 #define NOINLINE __attribute__((noinline))
 
@@ -103,11 +107,63 @@ uint32_t GetSelfMapsCount();
 uint64_t GetSelfMemoryCount();
 void CheckResourceUsage(uint32_t fdCount, uint32_t mapsCount, uint64_t memCount);
 std::string WaitCreateCrashFile(const std::string& prefix, pid_t pid, int retryCnt = 3);
+std::string WaitCreateFile(const std::string& folder, std::regex& reg, time_t timeOut = 10);
 bool CreatePipeFd(int (&fd)[2]);
 void NotifyProcStart(int (&fd)[2]);
 void WaitProcStart(int (&fd)[2]);
 bool IsLinuxKernel();
 bool CheckLineMatch(const std::string& filePath, std::list<LineRule>& rules);
+
+template<typename T>
+class AsyncWorker {
+public:
+    explicit AsyncWorker(std::function<void(T&)> dataClean)
+        : thread_(), result_(), ready_(false), resultClean_(dataClean) {}
+    ~AsyncWorker()
+    {
+        if (thread_.joinable()) {
+            thread_.join();
+        }
+    }
+
+    // 启动异步任务（只能调用一次）
+    void Start(std::function<T(void)> func)
+    {
+        if (!started_.test_and_set()) {
+            thread_ = std::thread([this, func] { this->Task(func); });
+        }
+    }
+
+    // 等待并获取结果
+    T GetResult(std::chrono::seconds timeOut)
+    {
+        std::unique_lock<std::mutex> lock(mutex_);
+        if (!cv_.wait_for(lock, timeOut, [this] { return ready_; })) {
+            resultClean_(result_);
+        }
+        return result_;
+    }
+
+private:
+    void Task(std::function<T(void)> func)
+    {
+        T res = func();
+        {
+            std::lock_guard<std::mutex> lock(mutex_);
+            result_ = res;
+            ready_ = true;
+        }
+        cv_.notify_one();
+    }
+
+    std::thread thread_;
+    std::mutex mutex_;
+    std::condition_variable cv_;
+    T result_;
+    bool ready_;
+    std::atomic_flag started_ = ATOMIC_FLAG_INIT;
+    std::function<void(T&)> resultClean_;
+};
 } // namespace HiviewDFX
 } // namespace OHOS
 #endif // DFX_TEST_UTIL

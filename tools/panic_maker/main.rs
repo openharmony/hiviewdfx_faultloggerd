@@ -19,30 +19,81 @@ extern crate panic_handler;
 extern crate stacktrace_rust;
 
 use std::{panic, thread};
+use hilog_rust::{hilog, HiLogLabel, LogType};
+use std::ffi::{c_char, CString};
+
+const LOG_LABEL: HiLogLabel = HiLogLabel {
+    log_type: LogType::LogCore,
+    domain: 0xd003200,
+    tag: "testTag",
+};
 
 /// function main
 fn main() {
-    let args: Vec<String> = std::env::args().collect();
     panic_handler::init();
-    if args.len() > 1 {
-        test_panic(&args[1]);
-    } else {
+    let args: Vec<String> = std::env::args().collect();
+
+    if args.len() < 2 {
         println!("Invalid arguments.");
+        usage(&args);
+        return;
     }
+
+    test_panic(&args);
 }
 
-fn test_panic(pt: &String) {
-    if pt == "main" {
-        panic_main();
-    } else if pt == "child" {
-        panic_child();
-    } else if pt == "multi" {
-        get_trace_in_multi_thread();
-    }else if pt == "print_trace" {
-        stacktrace_rust::print_trace(1);
-    } else if pt == "get_trace" {
-        let ret = stacktrace_rust::get_trace(false);
-        println!("{}", ret);
+fn usage(args: &[String]) {
+    println!("Usage:");
+    println!("{} cmd [option]", args[0]);
+    println!("cmd:");
+    println!("\tmain\t\tConstruct a panic in the main thread.");
+    println!("\t\t\tSpecifies the number of hilog lines using options.");
+    println!("\tchild\t\tConstruct a panic in the child thread.");
+    println!("\t\t\tSpecifies the number of hilog lines using options.");
+    println!("\tmulti\t\tMulti-thread test C language interface GetTrace.");
+    println!("\tprint_trace\tTest the PrintTrace interface in C language.");
+    println!("\tget_trace\tTest the GetTrace interface in C language.");
+}
+
+fn test_panic(args: &[String]) {
+    let read_cnt = |args: &[String]| -> Option<u32> {
+        match args.len() {
+            3 => Some(args[2].parse().unwrap()),
+            4 .. => {
+                usage(args);
+                None
+            },
+            _ => Some(0),
+        }
+    };
+    match args[1].as_str() {
+        "main" => {
+            let Some(hilog_cnt) = read_cnt(args) else {
+                return;
+            };
+            for cnt in 1 ..= hilog_cnt {
+                hilog_rust::info!(LOG_LABEL, "hilog print test. No.{cnt}");
+            }
+            panic_main();
+        },
+        "child" => {
+            let Some(hilog_cnt) = read_cnt(args) else {
+                return;
+            };
+            for cnt in 1 ..= hilog_cnt {
+                hilog_rust::info!(LOG_LABEL, "hilog print test. No.{cnt}");
+            }
+            panic_child();
+        },
+        "multi" => get_trace_in_multi_thread(),
+        "print_trace" => {
+            stacktrace_rust::print_trace(1);
+        },
+        "get_trace" => {
+            let ret = stacktrace_rust::get_trace(false);
+            println!("{}", ret);
+        },
+        _ => usage(args),
     }
 }
 

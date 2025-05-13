@@ -26,6 +26,7 @@ if (defined(ohos_lite)) {
       "$faultloggerd_path/interfaces/rust/panic_handler:panic_handler",
       "$faultloggerd_path/interfaces/rust/stacktrace:stacktrace_rust",
     ]
+    external_deps = [ "hilog:hilog_rust" ]
     part_name = "faultloggerd"
     subsystem_name = "hiviewdfx"
   }
