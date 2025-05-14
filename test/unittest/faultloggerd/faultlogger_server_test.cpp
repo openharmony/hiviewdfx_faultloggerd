@@ -49,20 +49,6 @@ void FillRequestHeadData(RequestDataHead& head, int8_t clientType)
     head.clientPid = getpid();
 }
 
-bool SendRequestToServerWithoutResponse(const std::string& socketName, const void* requestData, uint32_t requestSize)
-{
-    FaultLoggerdSocket faultLoggerdSocket;
-    if (!faultLoggerdSocket.CreateSocketFileDescriptor(SOCKET_TIMEOUT)) {
-        return false;
-    }
-    bool ret = false;
-    if (faultLoggerdSocket.StartConnect(SERVER_SDKDUMP_SOCKET_NAME)) {
-        ret = faultLoggerdSocket.SendMsgToSocket(requestData, requestSize);
-    }
-    faultLoggerdSocket.CloseSocketFileDescriptor();
-    return ret;
-}
-
 int32_t SendRequestToServer(const std::string& socketName, const void* requestData, uint32_t requestSize,
     SocketFdData* socketFdData = nullptr)
 {
@@ -350,7 +336,8 @@ HWTEST_F(FaultLoggerdServiceTest, ReportExceptionClientTest02, TestSize.Level2)
     requestData.pid = requestData.head.clientPid;
     if (!strcpy_s(requestData.message, sizeof(requestData.message), "Test")) {
         requestData.uid = getuid();
-        ASSERT_TRUE(SendRequestToServerWithoutResponse(SERVER_SDKDUMP_SOCKET_NAME, &requestData, sizeof(requestData)));
+        ASSERT_EQ(SendRequestToServer(SERVER_SDKDUMP_SOCKET_NAME, &requestData, sizeof(requestData)),
+            ResponseCode::REQUEST_SUCCESS);
     }
 }
 
@@ -487,14 +474,66 @@ HWTEST_F(FaultLoggerdServiceTest, AbnormalTest004, TestSize.Level2)
 
 /**
  * @tc.name: AbnormalTest005
- * @tc.desc: Service exception scenario test
+ * @tc.desc: Clean up timed-out connections.
  * @tc.type: FUNC
  */
 HWTEST_F(FaultLoggerdServiceTest, AbnormalTest005, TestSize.Level2)
 {
-    FaultLoggerDaemon::GetInstance().GetEpollManager(EpollManagerType::HELPER_SERVER);
-    EpollManager* manager = FaultLoggerDaemon::GetInstance().GetEpollManager((EpollManagerType)(-1));
-    ASSERT_EQ(manager, nullptr);
+    FaultLoggerdSocket faultLoggerdSocket;
+    faultLoggerdSocket.CreateSocketFileDescriptor(0);
+    faultLoggerdSocket.StartConnect(SERVER_SOCKET_NAME);
+    std::this_thread::sleep_for(std::chrono::seconds(4));
+    FaultLoggerdStatsRequest requestData;
+    FillRequestHeadData(requestData.head, FaultLoggerClientType::DUMP_STATS_CLIENT);
+    EXPECT_EQ(faultLoggerdSocket.RequestServer({&requestData, sizeof(requestData)}),
+        ResponseCode::SEND_DATA_FAILED);
+    faultLoggerdSocket.CloseSocketFileDescriptor();
+}
+
+/**
+ * @tc.name: AbnormalTest006
+ * @tc.desc: Establish multiple connections simultaneously.
+ * @tc.type: FUNC
+ */
+HWTEST_F(FaultLoggerdServiceTest, AbnormalTest006, TestSize.Level2)
+{
+    FaultLoggerdSocket faultLoggerdSocket;
+    faultLoggerdSocket.CreateSocketFileDescriptor(0);
+    faultLoggerdSocket.StartConnect(SERVER_SOCKET_NAME);
+    FaultLoggerdSocket faultLoggerdSocket2;
+    faultLoggerdSocket2.CreateSocketFileDescriptor(0);
+    faultLoggerdSocket2.StartConnect(SERVER_SOCKET_NAME);
+    std::this_thread::sleep_for(std::chrono::seconds(1));
+    FaultLoggerdStatsRequest requestData;
+    FillRequestHeadData(requestData.head, FaultLoggerClientType::DUMP_STATS_CLIENT);
+    EXPECT_EQ(faultLoggerdSocket2.RequestServer({&requestData, sizeof(requestData)}),
+        ResponseCode::SEND_DATA_FAILED);
+    EXPECT_EQ(faultLoggerdSocket.RequestServer({&requestData, sizeof(requestData)}),
+        ResponseCode::REQUEST_SUCCESS);
+    faultLoggerdSocket.CloseSocketFileDescriptor();
+    faultLoggerdSocket2.CloseSocketFileDescriptor();
+}
+
+/**
+ * @tc.name: AbnormalTest007
+ * @tc.desc: After establishing the connection, close the socket directly without sending any data.
+ * @tc.type: FUNC
+ */
+HWTEST_F(FaultLoggerdServiceTest, AbnormalTest007, TestSize.Level2)
+{
+    FaultLoggerdSocket faultLoggerdSocket;
+    faultLoggerdSocket.CreateSocketFileDescriptor(0);
+    faultLoggerdSocket.StartConnect(SERVER_SOCKET_NAME);
+    faultLoggerdSocket.CloseSocketFileDescriptor();
+    std::this_thread::sleep_for(std::chrono::seconds(1));
+    FaultLoggerdSocket faultLoggerdSocket2;
+    faultLoggerdSocket2.CreateSocketFileDescriptor(0);
+    faultLoggerdSocket2.StartConnect(SERVER_SOCKET_NAME);
+    FaultLoggerdStatsRequest requestData;
+    FillRequestHeadData(requestData.head, FaultLoggerClientType::DUMP_STATS_CLIENT);
+    EXPECT_EQ(faultLoggerdSocket2.RequestServer({&requestData, sizeof(requestData)}),
+        ResponseCode::REQUEST_SUCCESS);
+    faultLoggerdSocket2.CloseSocketFileDescriptor();
 }
 } // namespace HiviewDFX
 } // namespace OHOS

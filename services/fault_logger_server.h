@@ -16,8 +16,9 @@
 #ifndef FAULT_LOGGER_SERVER_H_
 #define FAULT_LOGGER_SERVER_H_
 
-#include "epoll_manager.h"
+#include <map>
 
+#include "epoll_manager.h"
 #include "fault_logger_service.h"
 
 namespace OHOS {
@@ -39,15 +40,17 @@ private:
 
     class ClientRequestListener : public EpollListener {
     public:
-        ClientRequestListener(SocketServerListener& socketServerListener, int32_t fd);
+        ClientRequestListener(SocketServerListener& socketServerListener, int32_t fd, uid_t clientUid);
+        ~ClientRequestListener() override;
         void OnEventPoll() override;
-        SocketServerListener& socketServerListener_;
-
     private:
+        SocketServerListener& socketServerListener_;
+        uid_t clientUid_;
         IFaultLoggerService* GetTargetService(int32_t faultLoggerClientType) const;
     };
     EpollManager& epollManager_;
     std::vector<std::pair<int32_t, std::unique_ptr<IFaultLoggerService>>> faultLoggerServices_{};
+    std::map<uid_t, uint32_t> connectionNums_{};
 };
 }
 }

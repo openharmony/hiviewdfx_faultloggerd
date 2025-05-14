@@ -38,7 +38,6 @@
 
 #include "string_printf.h"
 #include "temp_file_manager.h"
-#include "smart_fd.h"
 
 namespace OHOS {
 namespace HiviewDFX {
@@ -121,6 +120,10 @@ int32_t ExceptionReportService::OnRequest(const std::string& socketName, int32_t
         "HAPPEN_TIME", requestData.time,
         "ERROR_CODE", requestData.error,
         "ERROR_MSG", requestData.message);
+#ifdef FAULTLOGGERD_TEST
+    int32_t responseData = ResponseCode::REQUEST_SUCCESS;
+    SendMsgToSocket(connectionFd, &responseData, sizeof(responseData));
+#endif
     return ResponseCode::REQUEST_SUCCESS;
 }
 
@@ -216,12 +219,8 @@ int32_t StatsService::OnRequest(const std::string& socketName, int32_t connectio
 
 void StatsService::StartDelayTask(std::function<void()> workFunc, int32_t delayTime)
 {
-    EpollManager* epollManager = FaultLoggerDaemon::GetInstance().GetEpollManager(EpollManagerType::MAIN_SERVER);
-    if (epollManager == nullptr) {
-        return;
-    }
-    auto delayTask = DelayTask::CreateInstance(workFunc, delayTime, *epollManager);
-    epollManager->AddListener(std::move(delayTask));
+    auto delayTask = DelayTask::CreateInstance(workFunc, delayTime);
+    FaultLoggerDaemon::GetEpollManager(EpollManagerType::MAIN_SERVER).AddListener(std::move(delayTask));
 }
 #endif
 
@@ -291,7 +290,6 @@ int32_t SdkDumpService::OnRequest(const std::string& socketName, int32_t connect
     DFXLOGI("Receive dump request for pid:%{public}d tid:%{public}d.", requestData.pid, requestData.tid);
     struct ucred creds;
     if (!GetUcredByPeerCred(creds, connectionFd)) {
-        DFXLOGE("Sdk dump pid(%{public}d) request failed to get cred.", requestData.pid);
         return ResponseCode::REQUEST_REJECT;
     }
     int32_t responseCode = Filter(socketName, requestData, creds.uid);
