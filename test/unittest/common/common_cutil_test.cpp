@@ -154,23 +154,22 @@ HWTEST_F(CommonCutilTest, ParseSiValueTest001, TestSize.Level0)
         ASSERT_EQ(tid, 100);
         ASSERT_EQ(timeout, 0);
         GTEST_LOG_(INFO) << "ParseSiValueTest001: end.";
-        return;
+    } else {
+        ASSERT_EQ(tid, 0);
+        ASSERT_EQ(timeout, 100);
+    
+        data = 0xFFFFFFFAAAAAAAA;
+        si.si_value.sival_ptr = (void*)(data);
+        ParseSiValue(&si, &timeout, &tid);
+        ASSERT_EQ(tid, 0XAAAAAAAA);
+        ASSERT_EQ(timeout, 0);
+    
+        data |= 1ULL << flagOffset;
+        si.si_value.sival_ptr = (void*)(data);
+        ParseSiValue(&si, &timeout, &tid);
+        ASSERT_EQ(tid, 0);
+        ASSERT_EQ(timeout, data & ~(1ULL << flagOffset));
     }
-
-    ASSERT_EQ(tid, 0);
-    ASSERT_EQ(timeout, 100);
-
-    data = 0xFFFFFFFAAAAAAAA;
-    si.si_value.sival_ptr = (void*)(data);
-    ParseSiValue(&si, &timeout, &tid);
-    ASSERT_EQ(tid, 0XAAAAAAAA);
-    ASSERT_EQ(timeout, 0);
-
-    data |= 1ULL << flagOffset;
-    si.si_value.sival_ptr = (void*)(data);
-    ParseSiValue(&si, &timeout, &tid);
-    ASSERT_EQ(tid, 0);
-    ASSERT_EQ(timeout, data & ~(1ULL << flagOffset));
 }
 }
 } // namespace HiviewDFX

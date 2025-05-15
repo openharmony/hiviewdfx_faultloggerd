@@ -55,21 +55,21 @@ HWTEST_F(DfxFuncHookUnitTest, FuncHookTest001, TestSize.Level3)
     bool isSuccess = pid >= 0;
     if (!isSuccess) {
         ASSERT_FALSE(isSuccess);
-        return;
-    }
-    if (pid == 0) {
-        exit(retCode);
     } else {
-        int status;
-        int ret = waitpid(pid, &status, 0);
-        printf("child ret with pid:%d status:%d\n", ret, status);
-        if (WIFEXITED(status)) {
-            int code = WEXITSTATUS(status);
-            printf("Exit code was %d\n", code);
-            EXPECT_EQ(code, retCode);
+        if (pid == 0) {
+            exit(retCode);
+        } else {
+            int status;
+            int ret = waitpid(pid, &status, 0);
+            printf("child ret with pid:%d status:%d\n", ret, status);
+            if (WIFEXITED(status)) {
+                int code = WEXITSTATUS(status);
+                printf("Exit code was %d\n", code);
+                EXPECT_EQ(code, retCode);
+            }
         }
+        GTEST_LOG_(INFO) << "FuncHookTest001: end.";
     }
-    GTEST_LOG_(INFO) << "FuncHookTest001: end.";
 }
 
 /**
@@ -84,24 +84,24 @@ HWTEST_F(DfxFuncHookUnitTest, FuncHookTest002, TestSize.Level3)
     bool isSuccess = pid >= 0;
     if (!isSuccess) {
         ASSERT_FALSE(isSuccess);
-        return;
-    }
-    if (pid == 0) {
-        while (true) {
-            sleep(1);
-        }
     } else {
-        printf("child pid:%d\n", pid);
-        kill(pid, SIGKILL);
-        int status;
-        int ret = waitpid(pid, &status, 0);
-        printf("child ret with pid:%d status:%d\n", ret, status);
-        if (WIFSIGNALED(status)) {
-            int signal = WTERMSIG(status);
-            printf("Exit signal was %d\n", signal);
-            EXPECT_EQ(signal, SIGKILL);
+        if (pid == 0) {
+            while (true) {
+                sleep(1);
+            }
+        } else {
+            printf("child pid:%d\n", pid);
+            kill(pid, SIGKILL);
+            int status;
+            int ret = waitpid(pid, &status, 0);
+            printf("child ret with pid:%d status:%d\n", ret, status);
+            if (WIFSIGNALED(status)) {
+                int signal = WTERMSIG(status);
+                printf("Exit signal was %d\n", signal);
+                EXPECT_EQ(signal, SIGKILL);
+            }
         }
+        GTEST_LOG_(INFO) << "FuncHookTest002: end.";
     }
-    GTEST_LOG_(INFO) << "FuncHookTest002: end.";
 }
 }

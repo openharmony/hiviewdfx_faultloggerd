@@ -331,12 +331,11 @@ HWTEST_F(FaultLoggerdServiceTest, ReportExceptionClientTest01, TestSize.Level2)
     requestData.uid = getuid();
     int32_t retCode = SendRequestToServer(SERVER_SDKDUMP_SOCKET_NAME, &requestData, sizeof(requestData));
     ASSERT_EQ(retCode, ResponseCode::REQUEST_REJECT);
-    if (strcpy_s(requestData.message, sizeof(requestData.message) / sizeof(requestData.message[0]), "Test")) {
-        return;
+    if (!strcpy_s(requestData.message, sizeof(requestData.message) / sizeof(requestData.message[0]), "Test")) {
+        requestData.uid = -1;
+        retCode = SendRequestToServer(SERVER_SDKDUMP_SOCKET_NAME, &requestData, sizeof(requestData));
+        ASSERT_EQ(retCode, ResponseCode::REQUEST_REJECT);
     }
-    requestData.uid = -1;
-    retCode = SendRequestToServer(SERVER_SDKDUMP_SOCKET_NAME, &requestData, sizeof(requestData));
-    ASSERT_EQ(retCode, ResponseCode::REQUEST_REJECT);
 }
 
 /**
@@ -349,11 +348,10 @@ HWTEST_F(FaultLoggerdServiceTest, ReportExceptionClientTest02, TestSize.Level2)
     CrashDumpException requestData;
     FillRequestHeadData(requestData.head, FaultLoggerClientType::REPORT_EXCEPTION_CLIENT);
     requestData.pid = requestData.head.clientPid;
-    if (strcpy_s(requestData.message, sizeof(requestData.message), "Test")) {
-        return;
+    if (!strcpy_s(requestData.message, sizeof(requestData.message), "Test")) {
+        requestData.uid = getuid();
+        ASSERT_TRUE(SendRequestToServerWithoutResponse(SERVER_SDKDUMP_SOCKET_NAME, &requestData, sizeof(requestData)));
     }
-    requestData.uid = getuid();
-    ASSERT_TRUE(SendRequestToServerWithoutResponse(SERVER_SDKDUMP_SOCKET_NAME, &requestData, sizeof(requestData)));
 }
 
 /**

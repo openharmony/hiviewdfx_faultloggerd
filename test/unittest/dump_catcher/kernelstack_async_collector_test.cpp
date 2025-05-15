@@ -51,19 +51,19 @@ HWTEST_F(KernelStackAsyncCollectorTest, KernelStackAsyncCollectorTest001, TestSi
     bool isSuccess = res.find("Linux") == std::string::npos;
     if (!isSuccess) {
         ASSERT_FALSE(isSuccess);
-        return;
+    } else {
+        KernelStackAsyncCollector stackCollector;
+        pid_t tid = gettid();
+        ASSERT_TRUE(stackCollector.NotifyStartCollect(tid));
+        KernelStackAsyncCollector::KernelResult stack = stackCollector.GetCollectedStackResult();
+        ASSERT_NE(stack.first, KernelStackAsyncCollector::STACK_SUCCESS);
+        ASSERT_TRUE(stack.second.empty());
+        sleep(1);
+        stack = stackCollector.GetCollectedStackResult();
+        ASSERT_EQ(stack.first, KernelStackAsyncCollector::STACK_SUCCESS);
+        ASSERT_TRUE(stack.second.find(std::to_string(tid)) != std::string::npos);
+        GTEST_LOG_(INFO) << "KernelStackAsyncCollectorTest001: end.";
     }
-    KernelStackAsyncCollector stackCollector;
-    pid_t tid = gettid();
-    ASSERT_TRUE(stackCollector.NotifyStartCollect(tid));
-    KernelStackAsyncCollector::KernelResult stack = stackCollector.GetCollectedStackResult();
-    ASSERT_NE(stack.first, KernelStackAsyncCollector::STACK_SUCCESS);
-    ASSERT_TRUE(stack.second.empty());
-    sleep(1);
-    stack = stackCollector.GetCollectedStackResult();
-    ASSERT_EQ(stack.first, KernelStackAsyncCollector::STACK_SUCCESS);
-    ASSERT_TRUE(stack.second.find(std::to_string(tid)) != std::string::npos);
-    GTEST_LOG_(INFO) << "KernelStackAsyncCollectorTest001: end.";
 }
 
 /**
@@ -78,20 +78,20 @@ HWTEST_F(KernelStackAsyncCollectorTest, KernelStackAsyncCollectorTest002, TestSi
     bool isSuccess = res.find("Linux") == std::string::npos;
     if (!isSuccess) {
         ASSERT_FALSE(isSuccess);
-        return;
+    } else {
+        KernelStackAsyncCollector stackCollector;
+        pid_t tid = gettid();
+        int waitTime = 0;
+        KernelStackAsyncCollector::KernelResult stack = stackCollector.GetProcessStackWithTimeout(tid, waitTime);
+        ASSERT_NE(stack.first, KernelStackAsyncCollector::STACK_SUCCESS);
+        ASSERT_TRUE(stack.second.empty());
+    
+        waitTime = 1000; // 1000 : 1000ms
+        stack = stackCollector.GetProcessStackWithTimeout(tid, waitTime);
+        ASSERT_EQ(stack.first, KernelStackAsyncCollector::STACK_SUCCESS);
+        ASSERT_TRUE(stack.second.find(std::to_string(tid)) != std::string::npos);
+        GTEST_LOG_(INFO) << "KernelStackAsyncCollectorTest002: end.";
     }
-    KernelStackAsyncCollector stackCollector;
-    pid_t tid = gettid();
-    int waitTime = 0;
-    KernelStackAsyncCollector::KernelResult stack = stackCollector.GetProcessStackWithTimeout(tid, waitTime);
-    ASSERT_NE(stack.first, KernelStackAsyncCollector::STACK_SUCCESS);
-    ASSERT_TRUE(stack.second.empty());
-
-    waitTime = 1000; // 1000 : 1000ms
-    stack = stackCollector.GetProcessStackWithTimeout(tid, waitTime);
-    ASSERT_EQ(stack.first, KernelStackAsyncCollector::STACK_SUCCESS);
-    ASSERT_TRUE(stack.second.find(std::to_string(tid)) != std::string::npos);
-    GTEST_LOG_(INFO) << "KernelStackAsyncCollectorTest002: end.";
 }
 
 static void NotifyCollectStackTest()
@@ -131,19 +131,19 @@ HWTEST_F(KernelStackAsyncCollectorTest, KernelStackAsyncCollectorTest003, TestSi
     bool isSuccess = res.find("Linux") == std::string::npos;
     if (!isSuccess) {
         ASSERT_FALSE(isSuccess);
-        return;
+    } else {
+        int threadCount = 3;
+        SET_THREAD_NUM(threadCount);
+        GTEST_RUN_TASK(NotifyCollectStackTest);
+        sleep(2); // 2 : 2s
+        ASSERT_EQ(g_count, threadCount);
+        threadCount = 10;
+        SET_THREAD_NUM(threadCount);
+        g_count = 0;
+        GTEST_RUN_TASK(NotifyCollectStackTest);
+        ASSERT_LT(g_count, threadCount);
+        GTEST_LOG_(INFO) << "KernelStackAsyncCollectorTest003: end.";
     }
-    int threadCount = 3;
-    SET_THREAD_NUM(threadCount);
-    GTEST_RUN_TASK(NotifyCollectStackTest);
-    sleep(2); // 2 : 2s
-    ASSERT_EQ(g_count, threadCount);
-    threadCount = 10;
-    SET_THREAD_NUM(threadCount);
-    g_count = 0;
-    GTEST_RUN_TASK(NotifyCollectStackTest);
-    ASSERT_LT(g_count, threadCount);
-    GTEST_LOG_(INFO) << "KernelStackAsyncCollectorTest003: end.";
 }
 
 /**
@@ -158,20 +158,20 @@ HWTEST_F(KernelStackAsyncCollectorTest, KernelStackAsyncCollectorTest004, TestSi
     bool isSuccess = res.find("Linux") == std::string::npos;
     if (!isSuccess) {
         ASSERT_FALSE(isSuccess);
-        return;
+    } else {
+        g_count = 0;
+        int threadCount = 3;
+        SET_THREAD_NUM(threadCount);
+        GTEST_RUN_TASK(CollectStackWithTimeoutTest);
+        sleep(2); // 2 : 2s
+        ASSERT_EQ(g_count, threadCount);
+        threadCount = 10;
+        SET_THREAD_NUM(threadCount);
+        g_count = 0;
+        GTEST_RUN_TASK(CollectStackWithTimeoutTest);
+        ASSERT_LT(g_count, threadCount);
+        GTEST_LOG_(INFO) << "KernelStackAsyncCollectorTest004: end.";
     }
-    g_count = 0;
-    int threadCount = 3;
-    SET_THREAD_NUM(threadCount);
-    GTEST_RUN_TASK(CollectStackWithTimeoutTest);
-    sleep(2); // 2 : 2s
-    ASSERT_EQ(g_count, threadCount);
-    threadCount = 10;
-    SET_THREAD_NUM(threadCount);
-    g_count = 0;
-    GTEST_RUN_TASK(CollectStackWithTimeoutTest);
-    ASSERT_LT(g_count, threadCount);
-    GTEST_LOG_(INFO) << "KernelStackAsyncCollectorTest004: end.";
 }
 
 /**
@@ -186,16 +186,16 @@ HWTEST_F(KernelStackAsyncCollectorTest, KernelStackAsyncCollectorTest005, TestSi
     bool isSuccess = res.find("Linux") == std::string::npos;
     if (!isSuccess) {
         ASSERT_FALSE(isSuccess);
-        return;
+    } else {
+        KernelStackAsyncCollector stackCollector;
+        pid_t tid = 0;
+        ASSERT_TRUE(stackCollector.NotifyStartCollect(tid));
+        sleep(1); // 1 : 1s
+        KernelStackAsyncCollector::KernelResult stack = stackCollector.GetCollectedStackResult();
+        ASSERT_EQ(stack.first, KernelStackAsyncCollector::STACK_NO_PROCESS);
+        ASSERT_TRUE(stack.second.empty());
+        GTEST_LOG_(INFO) << "KernelStackAsyncCollectorTest005: end.";
     }
-    KernelStackAsyncCollector stackCollector;
-    pid_t tid = 0;
-    ASSERT_TRUE(stackCollector.NotifyStartCollect(tid));
-    sleep(1); // 1 : 1s
-    KernelStackAsyncCollector::KernelResult stack = stackCollector.GetCollectedStackResult();
-    ASSERT_EQ(stack.first, KernelStackAsyncCollector::STACK_NO_PROCESS);
-    ASSERT_TRUE(stack.second.empty());
-    GTEST_LOG_(INFO) << "KernelStackAsyncCollectorTest005: end.";
 }
 
 /**
@@ -210,14 +210,14 @@ HWTEST_F(KernelStackAsyncCollectorTest, KernelStackAsyncCollectorTest006, TestSi
     bool isSuccess = res.find("Linux") == std::string::npos;
     if (!isSuccess) {
         ASSERT_FALSE(isSuccess);
-        return;
+    } else {
+        KernelStackAsyncCollector stackCollector;
+        int waitTime = 1000; // 1000 : 1000ms
+        KernelStackAsyncCollector::KernelResult stack = stackCollector.GetProcessStackWithTimeout(0, waitTime);
+        ASSERT_EQ(stack.first, KernelStackAsyncCollector::STACK_NO_PROCESS);
+        ASSERT_TRUE(stack.second.empty());
+        GTEST_LOG_(INFO) << "KernelStackAsyncCollectorTest006: end.";
     }
-    KernelStackAsyncCollector stackCollector;
-    int waitTime = 1000; // 1000 : 1000ms
-    KernelStackAsyncCollector::KernelResult stack = stackCollector.GetProcessStackWithTimeout(0, waitTime);
-    ASSERT_EQ(stack.first, KernelStackAsyncCollector::STACK_NO_PROCESS);
-    ASSERT_TRUE(stack.second.empty());
-    GTEST_LOG_(INFO) << "KernelStackAsyncCollectorTest006: end.";
 }
 } // namespace HiviewDFX
 } // namepsace OHOS
