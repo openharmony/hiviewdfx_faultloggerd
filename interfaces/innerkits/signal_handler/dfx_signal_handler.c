@@ -374,8 +374,8 @@ static bool DFX_SigchainHandler(int signo, siginfo_t *si, void *context)
             signo, g_request.pid, g_request.tid);
         return IsDumpSignal(signo);
     }
-    DFXLOGI("DFX_SigchainHandler :: signo(%{public}d), pid(%{public}d), processName(%{public}s), \
-        threadName(%{public}s).", signo, g_request.pid, g_request.processName, g_request.threadName);
+    DFXLOGI("DFX_SigchainHandler :: signo(%{public}d), pid(%{public}d), processName(%{public}s), " \
+        "threadName(%{public}s).", signo, g_request.pid, g_request.processName, g_request.threadName);
     DumpRequest(signo);
     pthread_mutex_unlock(&g_signalHandlerMutex);
     DFXLOGI("Finish handle signal(%{public}d) in %{public}d:%{public}d.", signo, g_request.pid, g_request.tid);
